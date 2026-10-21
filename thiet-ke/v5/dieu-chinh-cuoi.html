@@ -168,6 +168,21 @@
   .bieu .lop { fill: var(--hong); }
   .bieu .nhan-dong { font-family: var(--phong); font-size: 12px; font-weight: 700; fill: var(--chu-2); }
 
+  .bang-td td { padding: 8px 12px; } .bang-td th { padding: 0 12px; }
+  .td-kq { font: 700 14px var(--phong-so); color: var(--chu); background: var(--nhan-nen); border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+  .td-kq.canh { background: var(--canh-bao-nen); color: var(--canh-bao); }
+  .mo-them { font: inherit; font-size: 13px; color: var(--nhan); background: none; border: 0; cursor: pointer; padding: 0; }
+  .case-v { border-top: 1px solid var(--vien); }
+  .case-v-dau { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--vien); }
+  .case-v-dau .tieu { font-weight: 700; font-size: 15px; }
+  .case-v-tt { display: grid; grid-template-columns: 1.1fr 1.6fr 1fr .7fr 1fr; gap: 12px; }
+  .pa-v { display: grid; grid-template-columns: 34px minmax(0, 1fr) 110px 190px 70px 150px; gap: 12px; align-items: center; padding: 10px 14px; border-bottom: 1px dashed var(--vien); }
+  .pa-v-dau { font-size: 12px; color: var(--chu-3); font-weight: 600; padding-top: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--vien); }
+  .pa-v .nd { font-weight: 600; min-width: 0; } .pa-v .nd small { display: block; font-weight: 400; color: var(--chu-3); font-size: 12px; }
+  .pa-v .kq { font-weight: 700; font-size: 14px; } .pa-v .kq.canh { color: var(--canh-bao); } .pa-v .kq.dat { color: var(--dat); }
+  .pa-v .thao-tac { display: flex; gap: 6px; justify-content: flex-end; }
+  .pa-v .the-pa { font: 700 12px var(--phong); color: var(--nhan); background: var(--nhan-nen); border-radius: 4px; padding: 2px 5px; text-align: center; }
+
   /* ===== (d) HV & LỚP ===== */
   .dai-loc { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--vien); }
   .dai-loc .o { width: auto; height: 34px; font-size: 14px; }
@@ -478,7 +493,7 @@
 
 <!-- ======================================================================= (c) -->
 <section class="khu-mau" id="c">
-<div class="demo"><span class="ma">c</span> Hồ sơ HV Lê Quang Huy · cô Hà. Hành trình theo TỪNG kỹ năng (không line chart nhiều đường): chấm MT chính thức + kỳ vọng bậc thang mờ + bảng mốc; "Tiến độ trên lớp" dòng riêng, thang riêng.</div>
+<div class="demo"><span class="ma">c</span> Hồ sơ HV Lê Quang Huy · cô Hà. Bấm ô điểm → hành trình + Case &amp; PA của đúng kỹ năng đó. Tiến độ trên lớp ở bảng dưới biểu đồ (3 dòng mới nhất + Xem thêm).</div>
 <nav class="dh" aria-label="Điều hướng chính"><span class="logo">PISA</span><a href="#">Tổng quan</a><a href="#" aria-current="page">HV &amp; Lớp</a><a href="#">Test</a><a href="#">Công việc<span class="dem">7</span></a><a href="#" class="an-dt">Phân tích</a><a href="#" class="an-dt">Tutor</a></nav>
 <main class="trang">
   <a href="#b" class="phu" style="text-decoration:none">‹ MB FT 101</a>
@@ -496,7 +511,7 @@
   <div class="the">
     <div class="the-dau"><h2 class="h-khoi">Hành trình · Reading</h2><span class="phu">bấm ô điểm phía trên để đổi kỹ năng</span><button class="nut-hoi day" title="Chấm = điểm MT chính thức; vạch đứt = kỳ vọng từng lượt. Tiến độ trên lớp ghi nguyên văn GV nhập, không vào MT / KPI.">?</button></div>
     <div class="bieu">
-      <svg viewBox="0 0 1000 330" role="img" aria-label="Reading theo tuần: MT1 W2 JUL 6.0, MT2 W3 AUG 5.0, MT3 W3 SEP 5.5; kỳ vọng 5.5 rồi 6.0">
+      <svg viewBox="0 0 1000 254" role="img" aria-label="Reading theo tuần: MT1 W2 JUL 6.0, MT2 W3 AUG 5.0, MT3 W3 SEP 5.5; kỳ vọng 5.5 rồi 6.0">
         <!-- 11 tuần: x = 90 + i*86 (W1 JUL … W3 SEP) -->
         <g>
           <line class="tuan-luoi" x1="90" y1="30" x2="90" y2="282"/><line class="tuan-luoi" x1="176" y1="30" x2="176" y2="282"/><line class="tuan-luoi" x1="262" y1="30" x2="262" y2="282"/><line class="tuan-luoi" x1="348" y1="30" x2="348" y2="282"/><line class="tuan-luoi" x1="434" y1="30" x2="434" y2="282"/><line class="tuan-luoi" x1="520" y1="30" x2="520" y2="282"/><line class="tuan-luoi" x1="606" y1="30" x2="606" y2="282"/><line class="tuan-luoi" x1="692" y1="30" x2="692" y2="282"/><line class="tuan-luoi" x1="778" y1="30" x2="778" y2="282"/><line class="tuan-luoi" x1="864" y1="30" x2="864" y2="282"/><line class="tuan-luoi" x1="950" y1="30" x2="950" y2="282"/>
@@ -510,60 +525,57 @@
         <circle class="dat" cx="176" cy="104" r="8"/><text class="so" x="150" y="88">MT1 6.0</text>
         <circle class="duoi" cx="606" cy="168" r="8"/><text class="so" x="580" y="194">MT2 5.0</text>
         <circle class="duoi" cx="950" cy="136" r="8"/><text class="so" x="900" y="124">MT3 5.5</text>
-        <!-- Tiến độ trên lớp: ghi nguyên văn, đặt đúng tuần, không chung trục điểm -->
-        <line class="truc" x1="60" y1="214" x2="990" y2="214"/>
-        <text x="0" y="208" class="nhan-dong">Tiến độ trên lớp</text>
-        <rect class="td-o" x="214" y="224" width="96" height="24" rx="5"/><text class="td-chu" x="222" y="241">BTVN 8/10</text>
-        <rect class="td-o" x="380" y="224" width="108" height="24" rx="5"/><text class="td-chu" x="388" y="241">KT 15' · 14/20</text>
-        <rect class="td-o" x="472" y="252" width="96" height="24" rx="5"/><text class="td-chu" x="480" y="269">Nhận xét ✎</text>
-        <rect class="td-o" x="640" y="224" width="104" height="24" rx="5"/><text class="td-chu" x="648" y="241">BTVN 5/8 bài</text>
-        <rect class="td-o" x="812" y="224" width="104" height="24" rx="5"/><text class="td-chu" x="820" y="241">KT · 32/40</text>
         <!-- mốc tuần -->
-        <text class="tuan-chu" x="72" y="302">W1 JUL</text><text class="tuan-chu" x="166" y="302">W2</text><text class="tuan-chu" x="252" y="302">W3</text><text class="tuan-chu" x="338" y="302">W4</text>
-        <text class="tuan-chu" x="414" y="302">W1 AUG</text><text class="tuan-chu" x="510" y="302">W2</text><text class="tuan-chu" x="596" y="302">W3</text><text class="tuan-chu" x="682" y="302">W4</text>
-        <text class="tuan-chu" x="758" y="302">W1 SEP</text><text class="tuan-chu" x="854" y="302">W2</text><text class="tuan-chu tuan-nay" x="934" y="302">W3</text>
-        <text x="900" y="322" class="tuan-chu tuan-nay">tuần này</text>
+        <text class="tuan-chu" x="72" y="232">W1 JUL</text><text class="tuan-chu" x="166" y="232">W2</text><text class="tuan-chu" x="252" y="232">W3</text><text class="tuan-chu" x="338" y="232">W4</text>
+        <text class="tuan-chu" x="414" y="232">W1 AUG</text><text class="tuan-chu" x="510" y="232">W2</text><text class="tuan-chu" x="596" y="232">W3</text><text class="tuan-chu" x="682" y="232">W4</text>
+        <text class="tuan-chu" x="758" y="232">W1 SEP</text><text class="tuan-chu" x="854" y="232">W2</text><text class="tuan-chu tuan-nay" x="934" y="232">W3</text>
+        <text x="900" y="248" class="tuan-chu tuan-nay">tuần này</text>
       </svg>
     </div>
-    <div class="cuon-bang">
-      <table class="bang">
-        <thead><tr><th>Tuần</th><th>Loại</th><th>Kết quả</th><th>Ghi chú</th><th>GV</th></tr></thead>
-        <tbody>
-          <tr><td class="so">W2 JUL</td><td><b>MT1</b></td><td><span class="diem vuot">6.0</span> <span class="muoi">/ KV 5.5</span></td><td class="muoi">—</td><td>Thầy Khoa</td></tr>
-          <tr><td class="so">W3 JUL</td><td>Tiến độ trên lớp</td><td><b>BTVN 8/10</b></td><td class="muoi">—</td><td>Thầy Khoa</td></tr>
-          <tr><td class="so">W1 AUG</td><td>Tiến độ trên lớp</td><td><b>KT 15' · 14/20</b></td><td>True/False/Not Given còn sai 4 câu</td><td>Thầy Khoa</td></tr>
-          <tr><td class="so">W2 AUG</td><td>Tiến độ trên lớp</td><td class="muoi">—</td><td>Đọc lướt nhanh hơn, còn đoán đáp án</td><td>Thầy Khoa</td></tr>
-          <tr><td class="so">W3 AUG</td><td><b>MT2</b></td><td><span class="diem duoi">5.0</span> <span class="muoi">/ KV 6.0</span></td><td>Case R mở</td><td>Thầy Khoa</td></tr>
-          <tr><td class="so">W4 AUG</td><td>Tiến độ trên lớp</td><td><b>BTVN 5/8 bài</b></td><td>Thiếu 3 bài</td><td>Thầy Khoa</td></tr>
-          <tr><td class="so">W2 SEP</td><td>Tiến độ trên lớp</td><td><b>KT · 32/40</b></td><td class="muoi">—</td><td>Thầy Khoa</td></tr>
-          <tr><td class="so">W3 SEP</td><td><b>MT3</b></td><td><span class="diem duoi">5.5</span> <span class="muoi">/ KV 6.0</span></td><td class="muoi">—</td><td>Thầy Khoa</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="hang-ngang" style="padding:10px 16px"><button class="nut nut-nho">+ Tiến độ trên lớp</button></div>
+    <div class="the-dau" style="border-top:1px solid var(--vien)"><h3 class="h-khoi" style="font-size:15px">Tiến độ trên lớp</h3><span class="phu">GV ghi tuỳ ý · không vào MT</span><button class="nut nut-nho day">+ Ghi tiến độ</button></div>
+    <table class="bang bang-td">
+      <colgroup><col style="width:12%"><col style="width:26%"><col style="width:44%"><col style="width:18%"></colgroup>
+      <thead><tr><th>Tuần</th><th>Kết quả</th><th>Nhận xét</th><th>GV</th></tr></thead>
+      <tbody>
+        <tr><td class="so">W2 SEP</td><td><span class="td-kq">KT · 32/40</span></td><td class="muoi">—</td><td>Thầy Khoa</td></tr>
+        <tr><td class="so">W4 AUG</td><td><span class="td-kq canh">BTVN 5/8 bài</span></td><td>Thiếu 3 bài</td><td>Thầy Khoa</td></tr>
+        <tr><td class="so">W2 AUG</td><td class="muoi">—</td><td>Đọc lướt nhanh hơn, còn đoán đáp án</td><td>Thầy Khoa</td></tr>
+        <tr><td colspan="4"><button class="mo-them">Xem thêm 2 dòng ▾</button></td></tr>
+      </tbody>
+    </table>
   </div>
 
   <div class="the">
-    <div class="the-dau"><h2 class="h-khoi">Case &amp; phương án theo kỹ năng</h2><span class="phu">bấm hàng để mở · sửa tại chỗ</span></div>
-    <div class="cuon-bang">
-    <table class="bang kn-ht">
-      <colgroup><col style="width:4%"><col style="width:10%"><col style="width:14%"><col style="width:36%"><col style="width:36%"></colgroup>
-      <thead><tr><th></th><th>Kỹ năng</th><th>MT3</th><th>Case</th><th>Việc tiếp</th></tr></thead>
-      <tbody>
-        <tr><td><button class="mo-nut" aria-expanded="false">▸</button></td><td><b>L</b></td><td><span class="diem bang-kv">6.0</span></td><td class="muoi">Không có Case mở</td><td class="muoi">—</td></tr>
-        <tr class="mo-kn"><td><button class="mo-nut" aria-expanded="true">▾</button></td><td><b>R</b></td><td><span class="diem duoi">5.5</span> <span class="muoi">/ 6.0</span></td><td><span class="bd bd-sos m2">SOS 2</span> Case R · từ MT2 <span class="bd bd-td dang">Đang làm</span></td><td>Ghi KQ PA · <span class="han">14/09</span></td></tr>
-        <tr class="chi-tiet"><td colspan="5">
-          <div class="case-the">
-            <div class="case-dau"><span class="tieu">Case R · MT2 Reading không đạt</span><span class="bd bd-td dang">Đang làm</span><span class="phu">mở 02/09 · phụ trách thầy Khoa</span><span class="day hang-ngang"><button class="nut nut-nho">Sửa Case</button><button class="nut nut-ma nut-nho">Lịch sử</button></span></div>
-            <div class="pa"><span class="the-pa">PA</span><span class="nd">Luyện skimming 3 buổi / tuần · tutor kèm T5<small>từ W1 SEP · đến MT3 · đã điều chỉnh 1 lần</small></span><span class="nhan-gt"><span class="n">Kết quả W1–W2 SEP</span><span class="g" style="color:var(--canh-bao)">Chưa ghi</span></span><span class="nhan-gt"><span class="n">Hạn</span><span class="g han">14/09</span></span><span class="hang-ngang"><button class="nut nut-chinh nut-nho">Ghi kết quả PA</button><button class="nut nut-nho">Sửa PA</button></span></div>
-            <div class="pa"><span class="the-pa">PA</span><span class="nd">Đọc báo tiếng Anh 15 phút / ngày<small>W3 AUG – W4 AUG · đã kết thúc</small></span><span class="nhan-gt"><span class="n">Kết quả</span><span class="g" style="color:var(--dat)">Cải thiện</span></span><span class="nhan-gt"><span class="n">Xong</span><span class="g so">30/08</span></span><span class="hang-ngang"><button class="nut nut-ma nut-nho">Xem</button></span></div>
-          </div>
-        </td></tr>
-        <tr><td><button class="mo-nut" aria-expanded="false">▸</button></td><td><b>W1</b></td><td><span class="diem duoi">5.0</span> <span class="muoi">/ 6.0</span></td><td><span class="bd bd-sos m2">SOS 2</span> Case W1 · 1 PA <span class="bd bd-td dang">Đang làm</span></td><td>Ghi KQ PA · <span class="han">21/09</span></td></tr>
-        <tr><td><button class="mo-nut" aria-expanded="false">▸</button></td><td><b>W2</b></td><td><span class="diem duoi">5.5</span> <span class="muoi">/ 6.0</span></td><td class="muoi">Không có Case mở</td><td><button class="nut nut-nho">+ Case</button></td></tr>
-        <tr><td><button class="mo-nut" aria-expanded="false">▸</button></td><td><b>S</b></td><td><span class="diem bang-kv">6.0</span></td><td class="muoi">Không có Case mở</td><td class="muoi">—</td></tr>
-      </tbody>
-    </table>
+    <div class="the-dau"><h2 class="h-khoi">Case &amp; phương án · Reading</h2><span class="phu">theo kỹ năng đang chọn ở trên</span></div>
+    <div class="case-v">
+      <div class="case-v-dau">
+        <div class="hang-ngang"><span class="tieu">Case R · MT2 Reading dưới kỳ vọng</span><span class="bd bd-sos m2">SOS 2</span><span class="bd bd-td dang">Đang làm</span><span class="day hang-ngang"><button class="nut nut-nho">Sửa Case</button><button class="nut nut-ma nut-nho">Lịch sử</button></span></div>
+        <div class="case-v-tt">
+          <span class="nhan-gt"><span class="n">Từ</span><span class="g">MT2 · <span class="diem duoi">5.0</span> / KV 6.0</span></span>
+          <span class="nhan-gt"><span class="n">Nguyên nhân</span><span class="g">Kỹ năng đọc lướt · từ vựng chủ đề</span></span>
+          <span class="nhan-gt"><span class="n">Phụ trách</span><span class="g">Thầy Khoa</span></span>
+          <span class="nhan-gt"><span class="n">Mở</span><span class="g so">02/09</span></span>
+          <span class="nhan-gt"><span class="n">Mục tiêu</span><span class="g">MT3 R ≥ 6.0</span></span>
+        </div>
+      </div>
+      <div class="pa-v pa-v-dau"><span></span><span>Phương án</span><span>Trạng thái</span><span>Kết quả gần nhất</span><span>Hạn</span><span></span></div>
+      <div class="pa-v">
+        <span class="the-pa">PA</span>
+        <span class="nd">Luyện skimming 3 buổi / tuần · tutor kèm T5<small>W1 SEP → MT3 · ghi kết quả 2 tuần / lần · sửa 1 lần</small></span>
+        <span><span class="bd bd-td dang">Đang làm</span></span>
+        <span class="kq canh">Chưa ghi · W1–W2 SEP</span>
+        <span class="han">14/09</span>
+        <span class="thao-tac"><button class="nut nut-chinh nut-nho">Ghi kết quả</button><button class="nut nut-nho" aria-label="Thêm thao tác">⋯</button></span>
+      </div>
+      <div class="pa-v">
+        <span class="the-pa">PA</span>
+        <span class="nd">Đọc báo tiếng Anh 15 phút / ngày<small>W3 AUG → W4 AUG · đã kết thúc</small></span>
+        <span><span class="bd bd-td xong">Xong</span></span>
+        <span class="kq dat">Cải thiện · W3–W4 AUG</span>
+        <span class="so muoi">30/08</span>
+        <span class="thao-tac"><button class="nut nut-nho" aria-label="Thêm thao tác">⋯</button></span>
+      </div>
+      <div class="hang-ngang" style="padding:10px 14px"><button class="nut nut-nho">+ Phương án</button></div>
     </div>
   </div>
 </main>
@@ -584,10 +596,10 @@
       <colgroup><col style="width:16%"><col style="width:10%"><col style="width:19%"><col style="width:7%"><col style="width:12%"><col style="width:8%"><col style="width:14%"><col style="width:14%"></colgroup>
       <thead><tr><th>Học viên</th><th>Lộ trình</th><th>MT gần nhất</th><th>Xu hướng</th><th>Hỗ trợ</th><th>Ý thức</th><th>Lịch thi</th><th>Việc</th></tr></thead>
       <tbody>
-        <tr><td class="ten-dong"><a class="ten-ho-so" href="#c">Mai Anh Thư</a><span class="phu-o">MB FT 101 · TVV Phan Mai</span></td><td><b class="so">MT3/3</b><span class="phu-o">Target 6.5 · tuần 16/24</span></td><td><span class="diem vuot">6.5</span> <span class="muoi">/ KV 6.5 · W3 SEP</span><span class="mini-kn" style="display:flex"><span><span class="k">L</span>6.5</span><span><span class="k">R</span>6.5</span><span><span class="k">W1</span>6.0</span><span><span class="k">W2</span>6.5</span><span><span class="k">S</span>7.0</span></span></td><td><span class="so" style="color:var(--dat)">↑ 0.5</span><span class="phu-o">so MT2</span></td><td class="muoi">Không có Case</td><td class="muoi">—</td><td><span class="bd bd-lich">Thi 17/09</span></td><td class="muoi">—</td></tr>
-        <tr><td class="ten-dong"><a class="ten-ho-so" href="#c">Lê Quang Huy</a><span class="phu-o">MB FT 101 · TVV Phan Mai</span></td><td><b class="so">MT3/3</b><span class="phu-o">Target 6.5 · tuần 16/24</span></td><td><span class="diem bang-kv">6.0</span> <span class="muoi">/ KV 6.0 · W3 SEP</span><span class="mini-kn" style="display:flex"><span><span class="k">L</span>6.0</span><span style="color:var(--loi)"><span class="k">R</span>5.5</span><span style="color:var(--loi)"><span class="k">W1</span>5.0</span><span style="color:var(--loi)"><span class="k">W2</span>5.5</span><span><span class="k">S</span>6.0</span></span></td><td><span class="so" style="color:var(--dat)">↑ 0.5</span><span class="phu-o">so MT2</span></td><td><span class="bd bd-sos m2">SOS 2 · R W</span><span class="phu-o">2 Case · 2 PA</span></td><td><span class="bd bd-td dang">Report 1</span></td><td><span class="bd bd-lich chua">Chưa có lịch</span></td><td class="viec-o"><span>Ghi KQ PA · R</span><span class="han">14/09</span></td></tr>
-        <tr><td class="ten-dong"><a class="ten-ho-so" href="#c">Cao Đức Thịnh</a><span class="phu-o">MB FT 102 · TVV Phan Mai</span></td><td><b class="so">MT2/3</b><span class="phu-o">Target 7.0 · tuần 10/24</span></td><td><span class="diem duoi">6.0</span> <span class="muoi">/ KV 6.5 · W1 SEP</span><span class="mini-kn" style="display:flex"><span><span class="k">L</span>6.5</span><span><span class="k">R</span>6.5</span><span><span class="k">W1</span>6.0</span><span><span class="k">W2</span>6.0</span><span style="color:var(--loi)"><span class="k">S</span>5.5</span></span></td><td><span class="so" style="color:var(--loi)">↓ 0.5</span><span class="phu-o">so MT1</span></td><td><span class="bd bd-sos m1">SOS 1 · S</span><span class="phu-o">PA quá hạn</span></td><td class="muoi">—</td><td><span class="bd bd-lich du-kien">Chưa chốt · 09/2026</span></td><td class="viec-o"><span>Ghi KQ PA · S</span><span class="han qua">12/09</span></td></tr>
-        <tr><td class="ten-dong"><a class="ten-ho-so" href="#c">Hà Gia Hân</a><span class="phu-o">MB FT 103 · chưa có TVV</span></td><td><b class="so">MT2/3</b><span class="phu-o">Target 6.5 · tuần 9/24</span></td><td><span class="diem bang-kv">6.0</span> <span class="muoi">/ KV 6.0 · W2 SEP</span><span class="mini-kn" style="display:flex"><span><span class="k">L</span>6.0</span><span><span class="k">R</span>6.0</span><span><span class="k">W1</span>5.5</span><span><span class="k">W2</span>6.0</span><span><span class="k">S</span>6.5</span></span></td><td><span class="so muoi">= 0</span><span class="phu-o">so MT1</span></td><td class="muoi">Không có Case</td><td class="muoi">—</td><td><span class="bd bd-lich du-kien">Dự kiến 10/2026</span></td><td class="viec-o"><span>Bổ sung hồ sơ · QL</span></td></tr>
+        <tr><td class="ten-dong"><a class="ten-ho-so" href="#c">Mai Anh Thư</a><span class="phu-o">MB FT 101 · TVV Phan Mai</span></td><td><b class="so">MT3/3</b><span class="phu-o">Target 6.5</span></td><td><span class="diem vuot">6.5</span> <span class="muoi">/ KV 6.5 · W3 SEP</span><span class="mini-kn" style="display:flex"><span><span class="k">L</span>6.5</span><span><span class="k">R</span>6.5</span><span><span class="k">W1</span>6.0</span><span><span class="k">W2</span>6.5</span><span><span class="k">S</span>7.0</span></span></td><td><span class="so" style="color:var(--dat)">↑ 0.5</span><span class="phu-o">so MT2</span></td><td class="muoi">Không có Case</td><td class="muoi">—</td><td><span class="bd bd-lich">Thi 17/09</span></td><td class="muoi">—</td></tr>
+        <tr><td class="ten-dong"><a class="ten-ho-so" href="#c">Lê Quang Huy</a><span class="phu-o">MB FT 101 · TVV Phan Mai</span></td><td><b class="so">MT3/3</b><span class="phu-o">Target 6.5</span></td><td><span class="diem bang-kv">6.0</span> <span class="muoi">/ KV 6.0 · W3 SEP</span><span class="mini-kn" style="display:flex"><span><span class="k">L</span>6.0</span><span style="color:var(--loi)"><span class="k">R</span>5.5</span><span style="color:var(--loi)"><span class="k">W1</span>5.0</span><span style="color:var(--loi)"><span class="k">W2</span>5.5</span><span><span class="k">S</span>6.0</span></span></td><td><span class="so" style="color:var(--dat)">↑ 0.5</span><span class="phu-o">so MT2</span></td><td><span class="bd bd-sos m2">SOS 2 · R W</span><span class="phu-o">2 Case · 2 PA</span></td><td><span class="bd bd-td dang">Report 1</span></td><td><span class="bd bd-lich chua">Chưa có lịch</span></td><td class="viec-o"><span>Ghi KQ PA · R</span><span class="han">14/09</span></td></tr>
+        <tr><td class="ten-dong"><a class="ten-ho-so" href="#c">Cao Đức Thịnh</a><span class="phu-o">MB FT 102 · TVV Phan Mai</span></td><td><b class="so">MT2/3</b><span class="phu-o">Target 7.0</span></td><td><span class="diem duoi">6.0</span> <span class="muoi">/ KV 6.5 · W1 SEP</span><span class="mini-kn" style="display:flex"><span><span class="k">L</span>6.5</span><span><span class="k">R</span>6.5</span><span><span class="k">W1</span>6.0</span><span><span class="k">W2</span>6.0</span><span style="color:var(--loi)"><span class="k">S</span>5.5</span></span></td><td><span class="so" style="color:var(--loi)">↓ 0.5</span><span class="phu-o">so MT1</span></td><td><span class="bd bd-sos m1">SOS 1 · S</span><span class="phu-o">PA quá hạn</span></td><td class="muoi">—</td><td><span class="bd bd-lich du-kien">Chưa chốt · 09/2026</span></td><td class="viec-o"><span>Ghi KQ PA · S</span><span class="han qua">12/09</span></td></tr>
+        <tr><td class="ten-dong"><a class="ten-ho-so" href="#c">Hà Gia Hân</a><span class="phu-o">MB FT 103 · chưa có TVV</span></td><td><b class="so">MT2/3</b><span class="phu-o">Target 6.5</span></td><td><span class="diem bang-kv">6.0</span> <span class="muoi">/ KV 6.0 · W2 SEP</span><span class="mini-kn" style="display:flex"><span><span class="k">L</span>6.0</span><span><span class="k">R</span>6.0</span><span><span class="k">W1</span>5.5</span><span><span class="k">W2</span>6.0</span><span><span class="k">S</span>6.5</span></span></td><td><span class="so muoi">= 0</span><span class="phu-o">so MT1</span></td><td class="muoi">Không có Case</td><td class="muoi">—</td><td><span class="bd bd-lich du-kien">Dự kiến 10/2026</span></td><td class="viec-o"><span>Bổ sung hồ sơ · QL</span></td></tr>
       </tbody>
     </table>
     <div class="panel hop-xuat" role="dialog" aria-label="Xuất Excel">
@@ -697,40 +709,7 @@
 
 <!-- ======================================================================= (f) -->
 <section class="khu-mau" id="f">
-<div class="demo"><span class="ma">f</span> Phân tích › Báo cáo HV · QL Vy · MB. Thay bảng "Kết quả theo lớp" bằng "Hành trình theo kỹ năng": % đạt kỳ vọng theo lượt của từng HV (MT1 → MT3), ↑↓ so lượt trước, kỹ năng yếu nhất.</div>
-<nav class="dh" aria-label="Điều hướng chính"><span class="logo">PISA</span><a href="#">Tổng quan</a><a href="#">HV &amp; Lớp</a><a href="#">Test</a><a href="#">Công việc<span class="dem">4</span></a><a href="#" class="an-dt" aria-current="page">Phân tích</a><a href="#" class="an-dt">Tutor</a></nav>
-<main class="trang">
-  <div class="dau-trang"><h1 class="h-trang">Phân tích</h1></div>
-  <div class="tabs" role="tablist"><button role="tab" aria-selected="true">Báo cáo HV</button><button role="tab" aria-selected="false">Báo cáo GV</button><button role="tab" aria-selected="false">Phân tích GV</button></div>
-  <div class="the">
-    <div class="dai-loc"><button class="chip" aria-pressed="false">Toàn bộ</button><button class="chip" aria-pressed="true">Chọn khoảng tuần</button><input class="o so" value="W1 JUL" style="width:110px"> → <input class="o so" value="W3 SEP" style="width:110px"><select class="o"><option>Monbay · Fast Track</option></select></div>
-    <div class="dai-chi-so" style="grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--vien)">
-      <div class="chi-so"><span class="ten">Đạt MT</span><span class="gia-tri">71 %</span><span class="mau">73/103 HV</span></div>
-      <div class="chi-so"><span class="ten">SOS hiện tại</span><span class="gia-tri">18</span><span class="mau">HV · 2 SOS 3</span></div>
-      <div class="chi-so"><span class="ten">Case có PA</span><span class="gia-tri">83 %</span><span class="mau">20/24 Case</span></div>
-      <div class="chi-so"><span class="ten">Đạt Target – Thi thật</span><span class="gia-tri">61 %</span><span class="mau">23/38 HV có KQ</span></div>
-    </div>
-    <div class="muc-bc gap">▸ Kết quả MT trong kỳ<span class="phu">đạt / chưa đạt / chưa đủ theo lượt</span></div>
-    <div class="the-dau"><h2 class="h-khoi">▾ Hành trình theo kỹ năng</h2><span class="phu">% HV đạt kỳ vọng ở lượt MT của chính em</span><button class="nut-hoi day" title="MT2 của mỗi HV tính vào cột MT2 dù HV thi tuần nào trong kỳ. Bấm ô để xem danh sách HV.">?</button></div>
-    <div style="padding:0 10px 6px">
-      <table class="ma-tran">
-        <thead><tr><th></th><th>MT1</th><th>MT2</th><th>MT3</th></tr></thead>
-        <tbody>
-          <tr><td class="kn">L</td><td class="t1"><span class="pt">80 %</span><span class="mau">36/45</span></td><td class="t1"><span class="pt">82 %</span><span class="mau">31/38</span><span class="xu len">↑2</span></td><td class="t1"><span class="pt">85 %</span><span class="mau">17/20</span><span class="xu len">↑3</span></td></tr>
-          <tr><td class="kn">R</td><td class="t2"><span class="pt">69 %</span><span class="mau">31/45</span></td><td class="t2"><span class="pt">63 %</span><span class="mau">24/38</span><span class="xu xuong-x">↓6</span></td><td class="t2"><span class="pt">70 %</span><span class="mau">14/20</span><span class="xu len">↑7</span></td></tr>
-          <tr><td class="kn">W1</td><td class="t2"><span class="pt">60 %</span><span class="mau">27/45</span></td><td class="t2"><span class="pt">61 %</span><span class="mau">23/38</span><span class="xu len">↑1</span></td><td class="t3"><span class="pt">55 %</span><span class="mau">11/20</span><span class="xu xuong-x">↓6</span></td></tr>
-          <tr><td class="kn">W2</td><td class="t3"><span class="pt">47 %</span><span class="mau">21/45</span></td><td class="t3"><span class="pt">53 %</span><span class="mau">20/38</span><span class="xu len">↑6</span></td><td class="t3"><span class="pt">45 %</span><span class="mau">9/20</span><span class="xu xuong-x">↓8</span></td></tr>
-          <tr><td class="kn">S</td><td class="t1"><span class="pt">78 %</span><span class="mau">35/45</span></td><td class="t2"><span class="pt">71 %</span><span class="mau">27/38</span><span class="xu xuong-x">↓7</span></td><td class="t1"><span class="pt">75 %</span><span class="mau">15/20</span><span class="xu len">↑4</span></td></tr>
-          <tr class="ovr"><td class="kn">Overall</td><td class="t2"><span class="pt">71 %</span><span class="mau">32/45</span></td><td class="t2"><span class="pt">68 %</span><span class="mau">26/38</span><span class="xu xuong-x">↓3</span></td><td class="t1"><span class="pt">75 %</span><span class="mau">15/20</span><span class="xu len">↑7</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="yeu"><span class="nhan-nho">Kỹ năng yếu nhất</span><span class="ky">W2</span><b>45 % ở MT3</b><span class="phu">· 11 HV chưa đạt · 6 có Case W</span><a href="#" class="day">Danh sách ›</a></div>
-    <div class="muc-bc gap" style="border-top:1px solid var(--vien)">▸ SOS &amp; Case / PA trong kỳ<span class="phu">mở mới · đã có PA · PA cải thiện</span></div>
-    <div class="muc-bc gap">▸ Thi thật &amp; Target<span class="phu">đã thi · đạt Target · chờ KQ · thi tháng này</span></div>
-    <div class="muc-bc gap">▸ Theo chi nhánh / lớp<span class="phu">QL, QT</span></div>
-  </div>
-</main>
+<div class="demo"><span class="ma">f</span> Báo cáo HV: GIỮ nguyên báo cáo V5 (<a href="phan-tich.html">phan-tich.html</a> › Báo cáo HV). Chỉ thay bảng "Kết quả theo lớp" bằng <b>"Đường tới Target"</b> — sửa thẳng trong phan-tich.html (ảnh anh/phan-tich-bao-cao-duong-toi-target-1440.png).</div>
 </section>
 
 </body>
