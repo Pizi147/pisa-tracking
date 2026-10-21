@@ -9487,6 +9487,9 @@ await runPrKhungLoiTests({ check, assert } as any);
 // ==================================================================== CASE-NHIEU (Tạo Case nhiều kỹ năng: một giao dịch, người phụ trách, trùng / chờ xác nhận, gửi lại, quyền, tệp)
 const { runCaseLoTests } = await import('./caseLo.tests.ts');
 await runCaseLoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+
+const { runPrSl1Tests } = await import('./prSl1.tests.ts');
+await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

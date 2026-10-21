@@ -556,10 +556,10 @@ export async function runPrVaiATests(t: YThucTestKit) {
       VALUES (?,?,?,?,?,?,?,?,?)`).run(userId, kind, `thử ${kind}`, null, entityType, entityId, `vaia:${kind}:${Math.random()}`, readAt, NOW).lastInsertRowid);
 
   check('VAI-a (10a) · nhomThongBao: bảng Cần làm / Để biết; loại lạ → Để biết; con_viec = 0 → Để biết', () => {
-    for (const k of ['nhac_viec', 'nhac_ban_giao', 'duyet_moi', 'duyet_qua_han', 'duyet_tu_choi', 'sos', 'discipline', 'schedule_move', 'phoi_hop', 'dang_ky', 'lenh_loi', 'ban_giao', 'bao_len']) {
+    for (const k of ['nhac_viec', 'nhac_ban_giao', 'duyet_moi', 'duyet_qua_han', 'duyet_tu_choi', 'sos', 'discipline', 'schedule_move', 'phoi_hop', 'dang_ky', 'lenh_loi', 'bao_len']) {
       eq(d.nhomThongBao({ kind: k }), 'can-lam', k);
     }
-    for (const k of ['duyet_ket_qua', 'duyet_tu_duyet', 'transfer_in', 'sap_nhan', 'huy_lenh', 'bo_tro_mien_phi', 'discipline_de_biet', 'tu_doi_lich', 'loai-la']) {
+    for (const k of ['duyet_ket_qua', 'duyet_tu_duyet', 'transfer_in', 'sap_nhan', 'huy_lenh', 'bo_tro_mien_phi', 'discipline_de_biet', 'tu_doi_lich', 'loai-la', 'ban_giao' /* SL1 (rà #502): "Đã có bàn giao" là tin */]) {
       eq(d.nhomThongBao({ kind: k }), 'de-biet', k);
     }
     eq(d.nhomThongBao({ kind: 'sos', con_viec: 0 }), 'de-biet', 'việc đã xong rời Cần làm');

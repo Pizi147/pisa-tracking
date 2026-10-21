@@ -538,7 +538,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 </p>
                 {sosRows.length === 0
                   ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
-                  : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} cot="ql" dam={dam} dienThoai={dienThoai} ds={dsHocVien}
+                  : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} tatCa={sosRows} cot="ql" dam={dam} dienThoai={dienThoai} ds={dsHocVien}
                       onMo={(r) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} dangMo={panelEm?.id ?? null} /><PhanTrang {...pt.thanh} duoi /></>}
               </>
             )
@@ -555,7 +555,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
                 </p>
                 {viecHien.length === 0
                   ? <Card><Empty title={locPhu ? t('Không có việc nào khớp lọc') : t('Không có việc nào')} /></Card>
-                  : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecHien)} coNguoi={laQl || admin} coPhuHuynh={false} dienThoai={dienThoai} ds={dsHocVien} /><PhanTrang {...pt.thanh} duoi /></>}
+                  : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecHien)} tatCa={viecHien} coNguoi={laQl || admin} coPhuHuynh={false} dienThoai={dienThoai} ds={dsHocVien} /><PhanTrang {...pt.thanh} duoi /></>}
               </>
             )
       )}

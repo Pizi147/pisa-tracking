@@ -26,3 +26,12 @@ export function taoKhoPanel(): KhoPanel {
     },
   };
 }
+
+/**
+ * KHOÁ `?so-lieu=` CỦA MỘT SỐ BẤM ĐƯỢC (OV-13b; SL1 A1-01). Hai nơi cùng trang vẽ cùng một số (dải "HV cần chú ý" và hàng tổng bảng) phải khác
+ * `vung` — trùng khoá thì bấm một số mở HAI panel, kho một panel đóng cả hai (số "nháy"). Không `vung` = khoá cũ (link đã lưu vẫn mở).
+ */
+export function khoaSoLieu(o: { id?: string; extra?: Record<string, string>; nguon?: string; vung?: string }): string {
+  const goc = o.id !== undefined ? `${o.id}${o.extra ? `|${new URLSearchParams(o.extra)}` : ''}` : `nguon:${o.nguon}`;
+  return o.vung ? `${goc}|@${o.vung}` : goc;
+}

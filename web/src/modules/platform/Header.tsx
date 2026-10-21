@@ -9,7 +9,8 @@ import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { skillShort } from '../../lib/format.ts';
-import { buocDanhSach, chuanHoaMaLop, duongThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, dongChuong, duongThongBao, loaiHanThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
+import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -113,6 +114,9 @@ export function Header() {
   const moDuoc = (n: any) => moDuocThongBao(n, session?.nav ?? {});
   const dsThongBao = useMemo(() => (notifications.data ?? []).filter((n) => !gocKhac || moDuocThongBao(n, session?.nav ?? {})), [notifications.data, gocKhac, session?.nav]);
   const unread = useMemo(() => dsThongBao.filter((n) => !n.read_at).length, [dsThongBao]);
+  /* SL1 (chuông N1, 9.2-4): số trên nút = số việc Cần làm còn mở (một Case một dòng, sắp theo hạn); Để biết chưa đọc chỉ là chấm, không số. */
+  const chuong = useMemo(() => dongChuong(dsThongBao), [dsThongBao]);
+  const bietChuaDoc = chuong.deBiet.some((n) => !n.read_at);
   /* OV-11f (TQ-15): chỉ lớp đang mở (`/ref/classes` = lớp đang hoạt động trong phạm vi) — lớp đã kết thúc không còn ở menu tài khoản. */
   const lopMo = lopRef.data ? new Set(lopRef.data.map((l) => l.id)) : null;
   const lopDangMo = (a: { classId: number }) => !lopMo || lopMo.has(a.classId);
@@ -206,12 +210,13 @@ export function Header() {
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm relative max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent"
           onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
-          aria-label={t('Thông báo') + (unread ? t(', {n} chưa đọc', { n: unread }) : '')} aria-expanded={openMenu === 'notif'}>
+          aria-label={t('Thông báo') + (chuong.soNut ? t(', {n} việc cần làm', { n: chuong.soNut }) : '') + (bietChuaDoc ? t(', có tin chưa đọc') : '')} aria-expanded={openMenu === 'notif'}>
           <span className="hidden sm:inline">{t('Thông báo')}</span>
           {/* Chuông nét mảnh 20 px thay emoji (luật "dấu nhỏ gọn", 23C). Số chưa đọc đè góc trên phải trên điện thoại. */}
           <svg className="sm:hidden" aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
-          {unread > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[12px] tabular-nums max-sm:absolute max-sm:right-px max-sm:top-[3px] max-sm:ml-0 max-sm:min-w-[18px] max-sm:rounded-[9px] max-sm:text-center max-sm:leading-[18px]">{unread}</span>}
+          {chuong.soNut > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[12px] tabular-nums max-sm:absolute max-sm:right-px max-sm:top-[3px] max-sm:ml-0 max-sm:min-w-[18px] max-sm:rounded-[9px] max-sm:text-center max-sm:leading-[18px]">{chuong.soNut}</span>}
+          {!chuong.soNut && bietChuaDoc && <span aria-hidden className="ml-1 inline-block h-2 w-2 rounded-full bg-[color:var(--accent)] max-sm:absolute max-sm:right-[7px] max-sm:top-[9px] max-sm:ml-0" />}
         </button>
         {openMenu === 'notif' && (
           /*
@@ -239,11 +244,11 @@ export function Header() {
             </div>
             {dsThongBao.length === 0 && <div className="p-4 text-sm text-slate-500">{t('Không có thông báo nào.')}</div>}
             {(['can-lam', 'de-biet'] as const).map((nhom) => {
-              const ds = dsThongBao.filter((n) => nhomThongBao(n) === nhom);
+              const ds = nhom === 'can-lam' ? chuong.canLam : chuong.deBiet;
               if (!ds.length) return null;
               return (
                 <div key={nhom}>
-                  <div className="flex items-baseline gap-2 border-b px-3.5 py-1.5 text-[12px] font-bold  text-slate-400"
+                  <div className="flex items-baseline gap-2 border-b px-3.5 py-1.5 text-xs font-semibold text-slate-400"
                     style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
                     {nhom === 'can-lam' ? t('Cần làm') : t('Để biết')} <span className="tabular-nums">{ds.length}</span>
                   </div>
@@ -268,6 +273,7 @@ export function Header() {
                         </span>
                         <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500" title={nhan(homNay, n.created_at)}>{thoiGianThongBao(n.created_at, homNay)}</time>
                         {n.body && <span className="col-start-2 text-xs text-slate-400">{dich(n.body)}</span>}
+                        {nhom === 'can-lam' && n.han && <span className="col-start-2 text-xs"><Han loai={loaiHanThongBao(n)} han={n.han} /></span>}
                         {toi && (
                           <span className="col-start-2 inline-flex items-center gap-1 text-xs text-[color:var(--accent)]">
                             {toi}

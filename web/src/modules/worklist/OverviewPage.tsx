@@ -98,7 +98,7 @@ export default function OverviewPage() {
           </div>
           {/* Hai khối việc của QL (quyền xem việc người khác, `/tong-quan/quan-ly`) — lỗi / đang tải riêng, không chờ phần theo khung. */}
           {ql.data && <DaiTomTat data={ql.data} bang={tq.data?.bang ?? null} branchId={branchId} ct={khung} />}
-          {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} />}
+          {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} branchId={branchId} />}
           {/* Phần theo khung (`/tong-quan/ql`): lỗi / đang tải chỉ che Lớp cần chú ý + Tuần này. */}
           {tq.error ? <ErrorState message={tq.error.message} hint={tq.error.hint} onRetry={tq.reload} />
             : !tq.data ? <Skeleton rows={6} />

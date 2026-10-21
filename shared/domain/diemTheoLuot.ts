@@ -31,14 +31,19 @@ export function nhanMaLuot(m: MaLuot): string {
 export type TomTatLuot = {
   ma: string; nhan: string; tuanStart: string | null; lichSu: boolean;
   duDiem: number; coLich: number; oTrong: number;
+  /** SL1 (V2B-3): hạn sớm nhất của ô QUÁ HẠN của người xem trong lượt (GV = ô mình giữ, QL = mọi ô); null = không có. */
+  quaHan?: string | null;
 };
 
 /**
  * Lượt mở sẵn (DL-6b): trong các lượt còn ô trống, ưu tiên (1) tuần lớn nhất ≤ tuần chứa `homNay` (bài đã qua / đang thi);
  * (2) không có → tuần tương lai gần nhất; (3) không có → lượt chưa xếp tuần (NULL); mọi lượt đủ → lượt cuối theo tuần (NULL cuối).
  * OV-11e (TE-11): hai lượt cùng tuần → lượt nhiều ô trống hơn (Final cả lớp trước MT0 một em), không theo thứ tự đầu vào.
+ * SL1 (V2B-3): trước hết — lượt có ô quá hạn của người xem, hạn sớm nhất (cùng hạn: nhiều ô trống hơn).
  */
 export function luotMacDinh(ds: TomTatLuot[], homNay: string): string | null {
+  const tre = ds.filter((l) => l.quaHan).sort((a, b) => (a.quaHan! < b.quaHan! ? -1 : a.quaHan! > b.quaHan! ? 1 : b.oTrong - a.oTrong))[0];
+  if (tre) return tre.ma;
   const xep = [...ds].sort((a, b) =>
     a.tuanStart === b.tuanStart ? 0 : a.tuanStart === null ? 1 : b.tuanStart === null ? -1 : a.tuanStart < b.tuanStart ? -1 : 1);
   const thuHai = mondayOfDate(homNay);
@@ -116,4 +121,14 @@ export function cauChanDoiLuot(soLoi: number, soHopLyDo: number, dich: 'luot' | 
   const n = Math.max(soLoi, 1), hop = Math.min(soHopLyDo, n), o = n - hop;
   const nut = hop === 0 ? t('Bấm "Lưu lại" ở ô đó') : o === 0 ? t('Bấm "Lưu" trong hộp lý do') : t('Bấm "Lưu lại" ở ô lỗi, "Lưu" ở hộp lý do');
   return t('{chuOChuaLuu}. {nut} rồi mới chuyển {x}.', { chuOChuaLuu: chuOChuaLuu(n), nut, x: dich === 'lop' ? t('lớp') : t('lượt') });
+}
+
+/** SL1 (CV-01): em của MỘT việc nhập điểm — việc một em (`studentId`) hoặc nhóm em (`emIds`); null = không giới hạn (cả lớp). */
+export function emCuaViec(v: { studentId?: number | null; emIds?: readonly number[] | null }): readonly number[] | null {
+  return v.studentId != null ? [v.studentId] : v.emIds?.length ? v.emIds : null;
+}
+/** Lượt (attempt) của các em đó trong một lưới chấm — panel của việc chỉ vẽ những hàng này (số hàng = số em trên dòng việc). */
+export function attemptCuaEm(rows: readonly { studentId: number; attemptId: number }[], em: readonly number[] | null): Set<number> {
+  const co = em ? new Set(em) : null;
+  return new Set(rows.filter((r) => !co || co.has(r.studentId)).map((r) => r.attemptId));
 }
