@@ -139,7 +139,7 @@ function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => P
   };
   return (
     <p className="m-0 flex min-h-6 flex-wrap items-center gap-2 border-t pt-2.5 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
-      <span className="font-semibold text-ok">✓ {t('Đã lưu')} <span className="tabular-nums">{luc}</span></span>
+      <span className="font-semibold text-done">✓ {t('Đã lưu')} <span className="tabular-nums">{luc}</span></span>
       <span className="flex-1" />
       {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
       {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}

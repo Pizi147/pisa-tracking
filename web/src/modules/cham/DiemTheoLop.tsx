@@ -189,7 +189,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
                       {dich(l.nhan)}{l.lichSu ? t(' · cũ') : ''}
                     </span>
                     {/* Tab chọn: --text-dim trên --accent-soft (tối 5,07:1 · sáng 6,75:1); --text-faint chỉ 4,10:1 ở tối. */}
-                    <span className={`text-[11.5px] tabular-nums ${on ? 'text-slate-400' : 'text-slate-500'}`}>{dongPhuLuot(l)}</span>
+                    <span className={`text-[12px] tabular-nums ${on ? 'text-slate-400' : 'text-slate-500'}`}>{dongPhuLuot(l)}</span>
                   </button>
                 );
               })}

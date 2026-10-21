@@ -128,7 +128,7 @@ function EmCuaToiOLop({ lop }: { lop: HoSoLop }) {
   const so = (f: (r: (typeof em)[number]) => boolean) => em.filter(f).length;
   return (
     <section aria-label={t('Ở lớp này · học viên của tôi')} className="rounded-[10px] bg-[color:var(--surface-2)] px-3 py-2.5 text-[13px] text-slate-200">
-      <h2 className="m-0 mb-1.5 text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">{t('Ở lớp này · học viên của tôi')}</h2>
+      <h2 className="m-0 mb-1.5 text-[12px] font-bold  text-slate-400">{t('Ở lớp này · học viên của tôi')}</h2>
       {em.length ? (
         <>
           <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1">

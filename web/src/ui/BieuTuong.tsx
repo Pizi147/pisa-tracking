@@ -95,13 +95,21 @@ export function IconSang(p: P) {
 }
 
 /**
- * KÝ HIỆU KẾT QUẢ ĐIỂM (OV-15a, C05 + mục 6 chủ SP 19/10): ✓ / ✗ nét trơn, không vòng tròn — vượt kỳ vọng ✓ xanh lá · bằng ✓ xanh dương ·
- * dưới ✗ đỏ. Không chữ "thiếu / vượt", không "=". "Chưa đủ điểm" chỉ ghi chữ (không ký hiệu) — chỗ gọi tự xử lý `null`.
+ * MÀU KẾT QUẢ ĐIỂM — MỘT CHỖ (NEN-TYPO-MAU, 04 mục 5.1): tô chính con số + ký hiệu bằng 3 token `--kq-*`; `null` (chưa đủ điểm, không kỳ
+ * vọng, KCK dưới kỳ vọng…) = trung tính (chỗ gọi giữ màu chữ thường). Phép kiểm `prNenTypoMau` K-MAU-3.
  */
-export function DauKetQua({ kq, size = 12 }: { kq: 'vuot' | 'bang' | 'duoi'; size?: number }) {
+export function lopKq(kq: 'vuot' | 'bang' | 'duoi' | null): string {
+  return kq === 'duoi' ? 'text-kq-duoi' : kq === 'bang' ? 'text-kq-bang' : kq === 'vuot' ? 'text-kq-vuot' : '';
+}
+
+/**
+ * KÝ HIỆU KẾT QUẢ ĐIỂM (OV-15a, C05 + mục 6 chủ SP 19/10): ✓ / ✗ nét trơn 14 px, không vòng tròn — vượt kỳ vọng ✓ · bằng ✓ · dưới ✗ (màu `lopKq`).
+ * Không chữ "thiếu / vượt", không "=". "Chưa đủ điểm" chỉ ghi chữ (không ký hiệu) — chỗ gọi tự xử lý `null`.
+ */
+export function DauKetQua({ kq, size = 14 }: { kq: 'vuot' | 'bang' | 'duoi'; size?: number }) {
   const ten = kq === 'duoi' ? t('Dưới kỳ vọng') : kq === 'bang' ? t('Bằng kỳ vọng') : t('Vượt kỳ vọng');
   return (
-    <span className={`inline-flex ${kq === 'duoi' ? 'text-bad' : kq === 'bang' ? 'text-doing' : 'text-ok'}`} title={ten}>
+    <span className={`inline-flex ${lopKq(kq)}`} title={ten}>
       {kq === 'duoi' ? <IconKhong size={size} /> : <IconDat size={size} />}<span className="sr-only">{ten}</span>
     </span>
   );
@@ -112,7 +120,7 @@ export function MuiTenKyVong({ kq }: { kq: 'vuot' | 'bang' | 'duoi' | null }) {
   if (kq !== 'vuot' && kq !== 'duoi') return null;
   const ten = kq === 'duoi' ? t('Dưới kỳ vọng') : t('Vượt kỳ vọng');
   return (
-    <span className={`inline-flex ${kq === 'duoi' ? 'text-bad' : 'text-ok'}`} title={ten}>
+    <span className={`inline-flex ${lopKq(kq)}`} title={ten}>
       <svg {...khung({ size: 10 })}><path d={kq === 'duoi' ? 'M6 10 1.2 2.4h9.6z' : 'M6 2 10.8 9.6H1.2z'} fill="currentColor" /></svg>
       <span className="sr-only">{ten}</span>
     </span>

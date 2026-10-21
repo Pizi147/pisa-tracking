@@ -878,7 +878,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('PR-OMT (C2, C3) · quét nguồn: OMt.tsx cỡ chip vuông 20px / 11,5px, không nhãn "cũ" trong ô, không hex, chấm đang thi; NhanCu còn cho nơi khác', () => {
     const o = nguon('web/src/ui/OMt.tsx');
-    assert(/h-5 /.test(o) && /text-\[11\.5px\]/.test(o) && /rounded-md/.test(o), 'cỡ chip 20 / 11,5 / góc 6');
+    assert(/h-5 /.test(o) && /text-\[12px\]/.test(o) && /rounded-md/.test(o), 'cỡ chip 20 / 12 (NEN-TYPO-MAU: tối thiểu 12) / góc 6');
     assert(!/\{v\.cu && <NhanCu/.test(o) && /export function NhanCu\b/.test(o), 'ô MT không còn nhãn cũ; NhanCu còn xuất');
     assert(/r\.kieu === 'dang-thi' && <span aria-hidden/.test(o) && /r\.doc/.test(o), 'chấm đang thi + aria-label từ doc');
     assert(!/#[0-9a-fA-F]{3,8}\b/.test(o), 'OMt.tsx có mã hex');

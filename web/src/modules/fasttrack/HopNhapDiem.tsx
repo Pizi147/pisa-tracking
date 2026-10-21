@@ -79,7 +79,7 @@ export const oVangCua = (c: Cell, tuanXem?: string | null) =>
  * chốt (Writing mới một task); ô chỉ đọc không có gì: một ký tự "—". `doc` = câu cho trình đọc màn hình.
  */
 function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; doc: string; kieu: keyof typeof KIEU_O | null } {
-  const hai = (a: string, b: string) => <><span>{a}</span><span className="text-[11px]">{b}</span></>;
+  const hai = (a: string, b: string) => <><span>{a}</span><span className="text-[12px]">{b}</span></>;
   if (c.progress === 'cancelled') return { chu: t('Đã huỷ'), doc: t('Đã huỷ phần thi'), kieu: 'huy' };
   if (vangGoc && c.daChot?.doiSang) return { chu: hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
   if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { chu: hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
@@ -140,7 +140,7 @@ function ChuThieu({ cell }: { cell: Cell }) {
 /** Số câu đúng (L / R) — dòng phụ dưới band ở lưới (mockup 2: "7.0 ✓" / "30 câu"). */
 function SoCau({ cell }: { cell: Cell }) {
   if (cell.rawScore === null || cell.band === null) return null;
-  return <span className="block text-right text-[11px] leading-tight text-slate-500 tabular-nums">{t('{rawScore} câu', { rawScore: cell.rawScore })}</span>;
+  return <span className="block text-right text-[12px] leading-tight text-slate-500 tabular-nums">{t('{rawScore} câu', { rawScore: cell.rawScore })}</span>;
 }
 
 export function ODiemMt({ cell, lon = false, mo, onMo, chinh = false, dauKq = null, ...hop }: Omit<HopProps, 'anchor' | 'onDong'> & {

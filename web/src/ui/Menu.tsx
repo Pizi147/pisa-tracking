@@ -73,16 +73,16 @@ export function Menu({ label, items, align = 'right', className = 'btn btn-sm bt
             return (
               <Fragment key={`${i}-${it.label}`}>
                 {dauNhom && (
-                  <div role="presentation" className={`px-3 pb-0.5 pt-2 text-[11px] font-bold uppercase tracking-[.05em] text-slate-400 ${i > 0 ? 'mt-1' : ''}`}
+                  <div role="presentation" className={`px-3 pb-0.5 pt-2 text-[12px] font-bold  text-slate-400 ${i > 0 ? 'mt-1' : ''}`}
                     style={i > 0 ? { borderTop: '1px solid var(--line)' } : undefined}>{it.nhom}</div>
                 )}
                 <button type="button" role="menuitem" tabIndex={-1}
-                  className={`block w-full rounded-md px-3 py-1.5 text-left text-sm hover:bg-white/5 ${it.danger ? 'text-rose-200' : 'text-slate-200'} ${
+                  className={`block w-full rounded-md px-3 py-1.5 text-left text-sm bam ${it.danger ? 'text-rose-200' : 'text-slate-200'} ${
                     vach && !dauNhom ? 'mt-1 rounded-t-none pt-2' : ''}`}
                   style={vach && !dauNhom ? { borderTop: vach } : undefined}
                   onClick={() => { setOpen(false); it.onClick(); }}>
                   {it.label}
-                  {it.hint && <span className="block text-[11.5px] text-slate-400">{it.hint}</span>}
+                  {it.hint && <span className="block text-[12px] text-slate-400">{it.hint}</span>}
                 </button>
               </Fragment>
             );

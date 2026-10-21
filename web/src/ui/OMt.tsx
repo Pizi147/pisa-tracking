@@ -9,7 +9,7 @@ import { t } from '@shared/i18n/index.ts';
 export function NhanCu() {
   return (
     <span title={t('MT cũ — nhập bù, không tính hạn')}
-      className="inline-flex items-center whitespace-nowrap rounded border border-current px-[3px] align-middle text-[11px] font-bold leading-4 text-dim">
+      className="inline-flex items-center whitespace-nowrap rounded border border-current px-[3px] align-middle text-[12px] font-bold leading-4 text-dim">
       {t('cũ')}
     </span>
   );
@@ -48,7 +48,7 @@ export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href
   const r = huy ? { ...oMt(v, homNay, ct), tuan: null, viec: t('Đã huỷ'), doc: t('MT{so}, đã huỷ', { so: v.so }), title: t('MT{so} đã huỷ', { so: v.so }) } : oMt(v, homNay, ct);
   const phan = chon && chuChon !== undefined ? [chuChon] : [r.tuan, r.viec].filter(Boolean);
   const tuongTac = !!(onClick || href);
-  const cls = `relative inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 text-[11.5px] font-semibold leading-[18px] no-underline ${
+  const cls = `relative inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 text-[12px] font-semibold leading-[18px] no-underline ${
     chon ? MAU_CHON : huy ? 'border-dashed border-muted-line bg-transparent text-muted' : MAU_O_MT[r.kieu]} ${v.khongDung ? 'opacity-60' : ''} ${tuongTac ? "max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']" : ''}`;
   const ruot = (
     <>

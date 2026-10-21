@@ -291,7 +291,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     let cau = ''; try { xm.xuatExcel(P.mbManager, f, 1000); } catch (e: any) { cau = e.message; }
     assert(/Thu hẹp phạm vi/.test(cau) && /cột Gọn/.test(cau), cau);
     assert(xm.xuatExcel(P.mbManager, f).sheets.length >= 2, 'dưới trần vẫn xuất');
-    assert(docWeb('modules/test/NganXuatMt.tsx').includes('break-words text-[12.5px]'), 'dòng xem trước xuống dòng');
+    assert(docWeb('modules/test/NganXuatMt.tsx').includes('break-words text-[13px]'), 'dòng xem trước xuống dòng');
   });
 
   check('S4F (13) · web/src không dùng biến CSS không tồn tại (--card, --surface-1, --soon-bg…); mũi tên hàng lớn là SVG; việc tiếp không lấn lề ô', () => {

@@ -66,7 +66,7 @@ function ODiemFt({ h, k }: { h: NonNullable<DongRoster['history']>[number] | und
     <>
       {v === null ? <span className="sr-only">{t('Chưa có')}</span>
         : <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-slate-100">{fmtBand(v)}{kq && <DauKetQua kq={kq} />}</span>}
-      {w && w.some((x) => x !== null) && <span className="block text-[11px] tabular-nums text-slate-500">{w.map((x) => (x === null ? '–' : fmtBand(x))).join(' · ')}</span>}
+      {w && w.some((x) => x !== null) && <span className="block text-[12px] tabular-nums text-slate-500">{w.map((x) => (x === null ? '–' : fmtBand(x))).join(' · ')}</span>}
     </>
   );
 }
@@ -283,7 +283,7 @@ export function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof k
       <span className="flex flex-wrap items-center gap-x-1.5">
         <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
         {k.lech && <span className={`text-xs font-semibold tabular-nums ${k.kckDuoi ? 'text-slate-400' : 'text-bad'}`} title={t('Dưới kỳ vọng {n}', { n: k.lech.replace('−', '') })}>{k.lech}</span>}
-        {k.dat && <span className="text-[11px] text-slate-400" title={thuong ? t('Đạt mọi môn') : t('Đạt kỳ vọng')}>✓</span>}
+        {k.dat && <span className="text-[12px] text-slate-400" title={thuong ? t('Đạt mọi môn') : t('Đạt kỳ vọng')}>✓</span>}
         {k.kckDuoi && <ChipDuoiKck />}
         {k.sos && chipSosTuKetQua(standing) && <ChipSos {...chipSosTuKetQua(standing)!} />}
       </span>

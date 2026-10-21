@@ -443,7 +443,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
 
       <div role={dt ? 'list' : 'table'} aria-label={`Chuyển lớp · ${data.lop.code}`} className={dt ? 'mt-3 space-y-2' : 'surface-2 mt-3 overflow-x-auto rounded-lg'}>
         {!dt && (
-          <div role="row" className={`${LUOI_NHIEU} min-w-max border-b px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 lg:min-w-0`} style={{ borderColor: 'var(--line)' }}>
+          <div role="row" className={`${LUOI_NHIEU} min-w-max border-b px-3 py-2 text-[12px] font-extrabold  text-slate-500 lg:min-w-0`} style={{ borderColor: 'var(--line)' }}>
             <span role="columnheader"><span className="sr-only">Chọn</span></span>
             <span role="columnheader">Học viên</span>
             <span role="columnheader">Final Test</span>
@@ -521,7 +521,7 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
           {final}
         </label>
         <p className="mb-2 mt-1 text-xs text-slate-400">Đang ở {e.lopHienTai.code}</p>
-        <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Lớp chuyển đến</span>
+        <span className="mb-1 block text-[12px] font-bold text-slate-200">Lớp chuyển đến</span>
         {oLop}{oTarget}{chuLoi}
       </div>
     );

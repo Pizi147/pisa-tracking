@@ -205,7 +205,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
   return (
     <>
       {overallDat && (
-        <p className="m-0 mb-2 rounded-lg bg-ok-bg px-3 py-2 text-[12.5px] text-ok">
+        <p className="m-0 mb-2 rounded-lg bg-ok-bg px-3 py-2 text-[13px] text-ok">
           {t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '') })}
         </p>
       )}
@@ -213,10 +213,10 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
         <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-100">
           <TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} />
         </div>
-        {data.summary && <p className="m-0 text-[13.5px] text-slate-300">{data.summary}</p>}
+        {data.summary && <p className="m-0 text-[14px] text-slate-300">{data.summary}</p>}
         {data.note && <p className="m-0 text-xs text-slate-400">{data.note}</p>}
         {(primary || secondary.length > 0 || context.length > 0) && (
-          <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-[12.5px]">
+          <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-[13px]">
             {(primary || secondary.length > 0) && <>
               <dt className="text-slate-400">{t('Nhóm nguyên nhân')}</dt>
               {/* Hotfix 15/10 (L2): đủ nhóm có số thứ tự + nhận xét (Case MT không có Mô tả — nhận xét của bài là nội dung). */}
@@ -250,7 +250,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
             )}
             {paKhep.length > 0 && (
               <details open={paMo.length === 0}>
-                <summary className="flex min-h-[44px] cursor-pointer items-center text-[12.5px] text-slate-400 sm:min-h-0">{t('Lịch sử PA · {n}', { n: paKhep.length })}</summary>
+                <summary className="flex min-h-[44px] cursor-pointer items-center text-[13px] text-slate-400 sm:min-h-0">{t('Lịch sử PA · {n}', { n: paKhep.length })}</summary>
                 <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
                   {paKhep.map((iv) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh} />)}
                 </ul>
@@ -267,7 +267,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
         ) : null}
         {lichSu.length > 0 && (
           <details>
-            <summary className="flex min-h-[44px] cursor-pointer items-center text-[12.5px] text-slate-400 sm:min-h-0">{t('Nhật ký · {n}', { n: lichSu.length })}</summary>
+            <summary className="flex min-h-[44px] cursor-pointer items-center text-[13px] text-slate-400 sm:min-h-0">{t('Nhật ký · {n}', { n: lichSu.length })}</summary>
             <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
                 <li key={m.key} className="text-xs">
@@ -294,7 +294,7 @@ function The({ tieuDe, dem, luat, children }: { tieuDe: string; dem?: number; lu
   return (
     <section className="mt-3 overflow-hidden rounded-[10px] border" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
       <div className="flex min-h-[40px] items-center gap-2 border-b px-3 py-1.5 surface-2" style={{ borderColor: 'var(--line)' }}>
-        <h3 className="m-0 text-[13.5px] font-bold text-slate-100">{tieuDe}</h3>
+        <h3 className="m-0 text-[14px] font-bold text-slate-100">{tieuDe}</h3>
         {dem !== undefined && <span className="text-xs font-semibold tabular-nums text-slate-500">{dem}</span>}
         <span className="flex-1" />
         {luat && <NutLuat>{luat}</NutLuat>}
@@ -365,7 +365,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
           soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
       </div>}
       {!anDau && <DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={onDoi} />}
-      {iv.description && <p className="m-0 text-[13.5px] text-slate-300">{iv.description}</p>}
+      {iv.description && <p className="m-0 text-[14px] text-slate-300">{iv.description}</p>}
       {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (
         <p className="m-0 text-xs text-slate-400">{t('PA chung · {x}', { x: bt.mon.map((m) => m.tenMon).join(', ') })}</p>
       )}
@@ -374,7 +374,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
           {[thayCho && t('Thay cho: {tenPA}', { tenPA: tenPA(thayCho) }), thayBang && t('Được thay bằng: {tenPA}', { tenPA: tenPA(thayBang) })].filter(Boolean).join(' · ')}
         </p>
       )}
-      <p className="m-0 flex flex-wrap gap-x-3.5 gap-y-0.5 text-[12.5px] text-slate-300">
+      <p className="m-0 flex flex-wrap gap-x-3.5 gap-y-0.5 text-[13px] text-slate-300">
         {coNguoiDay(iv.kind) && (
           <span><span className="text-slate-500">{nhanNguoiDay(iv.kind) === 'Người dạy' ? t('Dạy') : t('Thực hiện')}</span> {nguoi ?? <span className="text-slate-500">{t('chưa chọn')}</span>}</span>
         )}
@@ -383,7 +383,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
         )}
       </p>
       {dem && (
-        <div className="flex flex-wrap items-center gap-2.5 text-[12.5px] text-slate-300">
+        <div className="flex flex-wrap items-center gap-2.5 text-[13px] text-slate-300">
           <VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />
           <span>{t('Đã dạy')} <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b></span>
           {dem.tt === 'du' ? <span className="font-semibold text-ok">{t('· đủ buổi')}</span>
@@ -399,7 +399,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
       {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
       <DongXinYKien x={iv.xinYKien} ngan={ngan} />
       {fSua && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-slate-300">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-300">
           <span className="min-w-0">
             <span className="text-slate-500">{t('Kết quả {tuanLich} ·', { tuanLich: tuanLich(fSua.observedOn, homNay) })} </span>{outcomeLabelFor(fSua.outcome)}
             <span className="text-slate-500"> → {NEXT_STEP_LABEL[fSua.nextStep as keyof typeof NEXT_STEP_LABEL] ?? fSua.nextStep}</span>
@@ -412,7 +412,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
         <div className="flex flex-wrap items-center gap-2 border-t border-dashed pt-1" style={{ borderColor: 'var(--line)' }}>
           {/* Hạn Kết quả: "Kết quả · hạn T2 13/10"; quá hạn → "Kết quả · quá hạn n ngày" cam đậm; em Tạm dừng → nhãn Tạm dừng. */}
           {hienHan && hanGhi && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
-            : <span className={`text-[12.5px] tabular-nums ${quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>{t('Kết quả · {x}', { x: hanGhi.quaHan ?? hanGhi.han })}</span>)}
+            : <span className={`text-[13px] tabular-nums ${quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>{t('Kết quả · {x}', { x: hanGhi.quaHan ?? hanGhi.han })}</span>)}
           {hienChoQl && (
             <span className="text-xs text-slate-500 tabular-nums">
               {t('Đang chờ Quản lý trả lời{x} — thời gian chờ tính cho Quản lý.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}
@@ -474,11 +474,11 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi }: {
         {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400"><KhoaNho />{t('theo quy chế')}</span>}
         <Nhan tone="doing">{t('Đang chạy')}</Nhan>
         {fGan && (
-          <span className="text-[12.5px] text-slate-400">· {t('kết quả gần nhất')} <span className="tabular-nums">{tuanLich(fGan.observedOn, homNay)}</span>{' '}
+          <span className="text-[13px] text-slate-400">· {t('kết quả gần nhất')} <span className="tabular-nums">{tuanLich(fGan.observedOn, homNay)}</span>{' '}
             <b className="font-semibold text-slate-200">{dich(outcomeLabelFor(fGan.outcome))}</b></span>
         )}
         {hanGhi && !daLuu && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
-          : <span className={`text-[12.5px] tabular-nums ${hanGhi.tone === 'overdue' ? 'font-semibold text-late' : 'text-slate-400'}`}>· {hanGhi.quaHan ? `⚠ ${hanGhi.quaHan}` : t('hạn kế {ngay}', { ngay: ngan(iv.actionDue) })}</span>)}
+          : <span className={`text-[13px] tabular-nums ${hanGhi.tone === 'overdue' ? 'font-semibold text-late' : 'text-slate-400'}`}>· {hanGhi.quaHan ? `⚠ ${hanGhi.quaHan}` : t('hạn kế {ngay}', { ngay: ngan(iv.actionDue) })}</span>)}
         <span className="flex-1" />
         <MenuPa iv={iv} ten={iv.description || iv.kind} xoa={nut.xoa} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
           soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
@@ -491,7 +491,7 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi }: {
             {loiNguoi && <span role="alert" className="text-xs text-bad">⚠ {loiNguoi}</span>}
           </div>
         ) : (
-          <p className="m-0 flex flex-wrap items-center gap-x-2 text-[12.5px]">
+          <p className="m-0 flex flex-wrap items-center gap-x-2 text-[13px]">
             <span className="font-semibold text-soon">{t('Chưa chọn người dạy')}</span>
             {nut.sua && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setChonNguoi(true)}>{t('Chọn')}</button>}
           </p>
@@ -536,7 +536,7 @@ function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan:
     const the = data.viewer.canApprove ? (data.interventions ?? []).find((x: any) => x.id === d.paMoiId)?.yeuCau ?? null : null;
     return (
       <div className="flex flex-col gap-1.5">
-        <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-slate-300">
+        <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-300">
           <Nhan tone="muted">{t('Chờ duyệt đổi PA')}</Nhan>
           <span>→ <b className="font-semibold text-slate-100">{tenMoi}</b></span>
           <span className="text-slate-400">· {iv.status === 'started' ? t('PA gốc vẫn chạy') : t('chưa chạy')} · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}{d.hanDuyet ? ` · ${t('QL hạn {ngay}', { ngay: ngan(d.hanDuyet) })}` : ''}</span>
@@ -549,7 +549,7 @@ function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan:
   }
   return (
     <div className="flex flex-col gap-2">
-      <p className="m-0 text-[12.5px] text-slate-300">
+      <p className="m-0 text-[13px] text-slate-300">
         <b className="font-semibold text-late">{t('QL từ chối đổi PA')}</b>{d.lyDoTuChoi ? `: “${d.lyDoTuChoi}”` : ''}
         {iv.status === 'started' && iv.ghiDuoc && !lai && <> · <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setLai(true)}>{t('Đề xuất lại')}</button></>}
       </p>

@@ -63,6 +63,11 @@
     --sos3-rgb: 230 74 160;  --sos3-chu-rgb: 242 127 189;
     /* OV-15a: hàng ĐÃ THI (từ hôm sau ngày thi tới khi chọn Bước tiếp) — nền cả hàng + vạch trái 3 px màu `ok`. Nền hàng chỉ dành cho nghĩa này. */
     --da-thi-bg-rgb: 22 64 42;
+    /*
+     * NEN-TYPO-MAU (04 mục 5.1): KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới.
+     * Đo (`prNenTypoMau`): ≥ 4,5 : 1 trên 9 nền thật hai chế độ; vượt ↔ dưới tách bằng độ sáng (mù màu đỏ–lục ΔE ≥ 10).
+     */
+    --kq-vuot-rgb: 134 239 172;  --kq-bang-rgb: 165 180 252;  --kq-duoi-rgb: 255 130 130;
 
     /* Tên cũ giữ làm bí danh để chỗ đang dùng không vỡ. */
     --ok: rgb(var(--ok-rgb));
@@ -73,7 +78,7 @@
     --text-faint: rgb(var(--text-faint-rgb));
 
     /* N-2 — hàng lớn / hàng con (bảng, danh sách). Vạch trái luôn xanh trung tính, không màu trạng thái. */
-    --hang-lon-bg: #1a2a46;       --hang-lon-vach: #7db3f0;
+    --hang-lon-bg: #1a2a46;       --hang-lon-vach: #5d7194;   /* NEN (04 mục 6.3): vạch trái hàng nhóm trung tính — màu nhấn để dành cho "đang chọn" */
     --hang-lon-dong-bg: #152137;  --hang-lon-dong-vach: #3a4f72;
     --hang-con-bg: #0e1626;       --hang-con-chu: #c9d4e6;
     /* Ô sửa được / chỉ đọc (lưới chấm) */
@@ -88,6 +93,8 @@
     --chu-1-rgb: 241 245 249;  --chu-2-rgb: 226 232 240;  --chu-3-rgb: 203 213 225;
     --chu-mo-rgb: 71 85 105;   --chu-mo-2-rgb: 51 65 85;
     --phu-rgb: 255 255 255;
+    /* NEN (HTT-1, HTT-2): phủ rê chuột lên chính phần tử bấm được (ΔL ≥ 5,8 mọi nền) · dò hàng bảng dày không bấm được. */
+    --phu-re: rgb(var(--phu-rgb) / .08);  --phu-do: rgb(var(--phu-rgb) / .035);
     --nut-hover: #24304a;      --o-nhap-nen: #0e1727;        --o-nhap-tat: #0b1322;   --o-nhap-vien: #64748b;
     --cuon: rgba(160, 178, 214, 0.2);  --cuon-hover: rgba(160, 178, 214, 0.35);
 
@@ -102,7 +109,7 @@
     --accent-soft: rgba(29, 95, 191, 0.08);  --accent-line: rgba(29, 95, 191, 0.35);
     --text: #0f172a;
 
-    --ok-rgb: 21 122 66;      --ok-bg-rgb: 220 243 229;    --ok-line-rgb: 143 209 171;
+    --ok-rgb: 22 101 52;      --ok-bg-rgb: 220 243 229;    --ok-line-rgb: 143 209 171;
     --bad-rgb: 180 35 35;     --bad-bg-rgb: 253 226 226;   --bad-line-rgb: 240 163 163;
     --late-rgb: 180 64 15;    --late-bg-rgb: 253 230 216;  --late-line-rgb: 241 174 138;
     --soon-rgb: 138 90 0;     --soon-bg-rgb: 253 241 207;  --soon-line-rgb: 230 196 107;
@@ -114,8 +121,9 @@
     --sos2-rgb: 224 106 16;  --sos2-chu-rgb: 168 67 10;
     --sos3-rgb: 181 18 94;   --sos3-chu-rgb: 163 16 79;
     --da-thi-bg-rgb: 214 240 223;
+    --kq-vuot-rgb: 22 101 52;    --kq-bang-rgb: 30 64 175;    --kq-duoi-rgb: 200 30 30;
 
-    --hang-lon-bg: #eaf1fb;       --hang-lon-vach: #1d5fbf;
+    --hang-lon-bg: #eaf1fb;       --hang-lon-vach: #7c8799;
     --hang-lon-dong-bg: #f1f4f8;  --hang-lon-dong-vach: #9fb0c8;
     --hang-con-bg: #fafbfc;       --hang-con-chu: #334155;
     --o-sua-vien: #7c8799;        --o-sua-nen: #ffffff;   --o-sua-focus: #1d5fbf;
@@ -123,6 +131,7 @@
     --chu-1-rgb: 15 23 42;  --chu-2-rgb: 30 41 59;  --chu-3-rgb: 51 65 85;
     --chu-mo-rgb: 148 163 184;  --chu-mo-2-rgb: 203 213 225;
     --phu-rgb: 15 23 42;
+    --phu-re: rgb(var(--phu-rgb) / .09);
     --nut-hover: #e4e8ee;  --o-nhap-nen: #ffffff;  --o-nhap-tat: #f1f4f8;  --o-nhap-vien: #7c8799;
     --cuon: rgba(15, 23, 42, 0.2);  --cuon-hover: rgba(15, 23, 42, 0.35);
   }
@@ -132,7 +141,8 @@
     background: var(--bg);
     color: var(--text);
     font-family: var(--font-sans);
-    font-size: 14px;
+    font-size: 15px;   /* NEN-TYPO-MAU: chữ thường 15 (thang 12 · 13 · 14 · 15 · 17 · 22 · 28) */
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
   * { border-color: var(--line); }
@@ -220,18 +230,18 @@
   .btn-primary:hover:not(:disabled) { background: var(--accent-strong); color: var(--accent-ink); }
   .btn-danger { border-color: rgb(var(--bad-rgb) / 0.42); color: var(--danger); }
   .btn-danger:hover:not(:disabled) { background: rgb(var(--bad-rgb) / 0.12); }
-  .btn-sm { padding: 0.25rem 0.6rem; font-size: 12px; border-radius: 0.4rem; }
+  .btn-sm { padding: 0.25rem 0.6rem; font-size: 13px; font-weight: 600; border-radius: 0.4rem; }
   .btn-ghost { background: transparent; border-color: transparent; }
   .btn-ghost:hover:not(:disabled) { background: rgb(var(--phu-rgb) / 0.1); }
 
   /*
-   * NÚT LỌC DẠNG VIÊN THUỐC (PR-HK2, T4) — là NÚT, không phải badge: chữ 12 px, cao 32 (điện thoại 44). Dáng đã duyệt ở Học viên & Lớp.
+   * NÚT LỌC DẠNG VIÊN THUỐC (PR-HK2, T4) — là NÚT, không phải badge: chữ 13 px (NEN), cao 32 (điện thoại 44). Dáng đã duyệt ở Học viên & Lớp.
    * Đang lọc = `aria-pressed="true"` (nút bật/tắt) hoặc `.nut-loc-dang` (nút "bỏ lọc ✕" luôn ở trạng thái đang lọc).
    */
   .nut-loc {
-    @apply inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-300/30 bg-transparent px-3 text-xs font-semibold text-slate-300 max-sm:min-h-[44px];
+    @apply inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-300/30 bg-transparent px-3 text-[13px] font-semibold text-slate-300 max-sm:min-h-[44px];
   }
-  .nut-loc:hover { filter: brightness(1.2); }
+  .nut-loc:hover { background-image: linear-gradient(var(--phu-re), var(--phu-re)); }   /* HTT-1 (bỏ filter: brightness) */
   .nut-loc:where([aria-pressed='true'], .nut-loc-dang) {   /* :where = độ đặc 0 — tông màu riêng (ChipDem) vẫn đè được */
     border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-strong);
   }
@@ -253,32 +263,74 @@
     /* OV-14b: Safari iPhone tự phóng to khi chạm ô chữ < 16px — điện thoại mọi ô gõ / ô chọn 16px (thắng `text-xs` của ô gọn); máy tính giữ cỡ cũ. */
     .field, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
   }
-  .label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }
+  .label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 600; }   /* NEN: nhãn ô form 13 / 600 */
 
   .th {
     position: sticky; top: var(--th-top, 0px); z-index: 10;
     background: var(--surface-2); color: var(--text-dim);
-    font-size: 12px; font-weight: 600;   /* OV-15a (C09): đầu cột 12 px, không in hoa */
+    font-size: 13px; font-weight: 600; line-height: 1.45;   /* NEN-TYPO-MAU: đầu cột 13 px, không in hoa */
     padding: 0.6rem 0.75rem; text-align: left;
     border-bottom: 1px solid var(--line-strong); white-space: nowrap;
   }
-  .td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 13px; }   /* OV-15a (C09): ô bảng 13 px */
+  .td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 15px; }   /* NEN-TYPO-MAU: ô bảng 15 px (lưới điểm 14 ở BANG-1) */
   /* OV-15a (C06): SỐ căn giữa + chữ số thẳng cột; chữ dài căn trái (mặc định). Ô số = `tabular-nums`; đầu cột số (`text-right` cũ) căn theo. */
   td.td.tabular-nums, th.th.tabular-nums, th.th.text-right { text-align: center; font-variant-numeric: tabular-nums; }
-  .row-hover:hover { background: rgb(var(--phu-rgb) / 0.04); }   /* OV-15a: rê chuột = phủ xám rất nhẹ (nền nhấn chỉ cho "đang chọn"); không đổi nền hàng đã thi */
+  /*
+   * HỆ TRẠNG THÁI HTT (NEN-TYPO-MAU, 04 mục 12). Phủ bằng `background-image` lên CHÍNH phần tử / TỪNG ô — thắng nền riêng của cột dính,
+   * hàng con, hàng đã thi (phủ lên `tr` bị nền `td` che).
+   * HTT-1 `.bam` = thứ bấm được: con trỏ tay + phủ `--phu-re` khi rê / chạm. HTT-2 `.do-hang` = hàng KHÔNG bấm được của bảng dày: phủ `--phu-do`
+   * rất nhẹ để dò hàng. `.row-hover` = bí danh cũ của `.do-hang` (BANG-1 thay khi bảng vào `Bang`).
+   * HTT-6 `.dang-mo` = đang chọn / đang mở: nền nhấn nhạt + vạch trái 3 px (không viền khung 2 px — trùng vòng focus). `.row-active` = bí danh.
+   */
+  .bam { cursor: pointer; }
+  .bam:not(tr):not(:disabled):is(:hover, :active), tr.bam:is(:hover, :active) > td { background-image: linear-gradient(var(--phu-re), var(--phu-re)); }
+  :is(.do-hang, .row-hover):not(tr):hover, tr:is(.do-hang, .row-hover):hover > td { background-image: linear-gradient(var(--phu-do), var(--phu-do)); }
   /* Học viên đã kết thúc: làm dịu nhưng vẫn phải đọc rõ, không hạ opacity tới mức mất chữ. */
   /* OV-15a: hàng ĐÃ THI (từ hôm sau ngày thi tới khi chọn Bước tiếp) — nền cả hàng + vạch trái 3 px; chữ phụ lên một bậc để giữ tương phản. */
   tr.hang-da-thi > td, .hang-da-thi:not(tr) { background: rgb(var(--da-thi-bg-rgb)); --text-faint-rgb: var(--text-dim-rgb); }
   tr.hang-da-thi > td:first-child, .hang-da-thi:not(tr) { box-shadow: inset 3px 0 0 rgb(var(--ok-rgb)); }
-  /* OV-15a (mockup 1 §1d): ĐANG CHỌN = viền khung 2 px nhấn quanh cả hàng, không tô nền — thắng mọi nền (kể cả hàng đã thi). */
-  .row-active:not(tr) { box-shadow: inset 0 0 0 2px var(--accent); }
-  tr.row-active > td { box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
-  tr.row-active > td:first-child { box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
-  tr.row-active > td:last-child { box-shadow: inset -2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  /* HTT-6 (PTA-v4-9, đảo m1 §1d): ĐANG CHỌN = nền nhấn nhạt + vạch trái 3 px. Hàng đã thi đang chọn: giữ nền đã thi, vạch đổi màu nhấn. */
+  :is(.dang-mo, .row-active):not(tr) { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); box-shadow: inset 3px 0 0 var(--accent-strong); }
+  tr:is(.dang-mo, .row-active) > td { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); }
+  tr:is(.dang-mo, .row-active).bam:hover > td { background-image: linear-gradient(var(--phu-re), var(--phu-re)), linear-gradient(var(--accent-soft), var(--accent-soft)); }
+  tr:is(.dang-mo, .row-active) > td:first-child, .hang-da-thi:not(tr):is(.dang-mo, .row-active) { box-shadow: inset 3px 0 0 var(--accent-strong); }
+  tr.hang-da-thi:is(.dang-mo, .row-active) > td { background-image: none; }
   .row-muted { color: var(--text-faint); }
   .row-muted .link { color: var(--text-dim); }
 
   .sticky-col { position: sticky; left: 0; z-index: 5; background: var(--surface); }
+
+  /*
+   * BẢNG MỘT MẪU (BANG-0, 04 mục 6) — `ui/Bang.tsx`. Căn theo KIỂU CỘT: `data-kieu` gắn trên CẢ th và td (luật `KIEU_COT` ở
+   * `shared/domain/bang.ts`; phép kiểm prBang0 so khối này với luật): chữ trái · số / điểm giữa · nút phải → tiêu đề và ô không lệch.
+   * Hàng 44 px / 64 px khi ô có dòng phụ (`data-phu-odiem`), mọi ô chung đường cơ sở. Cột nổi bật (Kỳ vọng, Overall) = một dải nền nhấn.
+   */
+  .bang { width: 100%; table-layout: fixed; }   /* cột px theo kiểu (colgroup), một cột linh hoạt; rộng hơn khung → cuộn trong khung */
+  .bang :is(th, td) { vertical-align: baseline; }
+  /* Một hàng = một dòng chính: tên / chữ / việc dài thì cắt "…" (line-height 1.5 — không xén dấu). */
+  .bang td:is([data-kieu="ten"], [data-kieu="chu"], [data-kieu="viec"]) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bang .bang-phu { overflow: hidden; text-overflow: ellipsis; }
+  .bang td[data-kieu="chip"] { white-space: nowrap; }
+  /* HTT-3: hàng bấm được nhận focus phím — vòng 2 px quanh cả hàng (vẽ trong ô, không bị khung cuộn cắt). */
+  .bang > tbody > tr.bam:focus-visible { outline: none; }
+  .bang > tbody > tr.bam:focus-visible > td { box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  .bang > tbody > tr.bam:focus-visible > td:first-child { box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  .bang > tbody > tr.bam:focus-visible > td:last-child { box-shadow: inset -2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  /* Hàng có ô / nút cao 32 px (ô điểm sửa, ⋯): đệm dọc 6 → vẫn 44 / 64. */
+  .bang > tbody > tr:has(.o-sua, button:not(.link)) > td { padding-top: 6px; padding-bottom: 6px; }
+  /* Chữ trong chip lùi 8 px (đệm chip) → tiêu đề cột chip lùi theo để thẳng chữ; chữ thường trong cột chip cũng lùi 8 (`px-2`). */
+  .bang th[data-kieu="chip"] { padding-left: 20px; }
+  .bang :is(th, td):is([data-kieu="ten"], [data-kieu="chu"], [data-kieu="chip"], [data-kieu="tuan"], [data-kieu="viec"]) { text-align: left; }
+  .bang :is(th, td):is([data-kieu="so"], [data-kieu="diem"], [data-kieu="noi-bat"], [data-kieu="diem-ti-le"], [data-kieu="phan-tram"]) { text-align: center; font-variant-numeric: tabular-nums; }
+  .bang :is(th, td):is([data-kieu="nut"]) { text-align: right; }
+  .bang > tbody > tr > td { height: 44px; padding: 10px 12px; line-height: 1.5; }
+  .bang > tbody > tr:has([data-phu-odiem]) > td { height: 64px; }
+  .bang[data-day] > tbody > tr > td { font-size: 14px; }
+  .bang :is(th, td)[data-kieu="noi-bat"] { background-color: var(--accent-soft); }
+  .bang .bang-phu { display: block; font-size: 12px; line-height: 1.4; color: var(--text-faint); font-weight: 400; }
+  .bang .bang-chu-thich { font-size: 12px; font-weight: 400; color: var(--text-faint); }
+  .bang-nhom > th { height: 32px; padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--text-dim); background: var(--surface-2); text-align: center; }
+  .bang-nhom > th[data-co-nhom] { box-shadow: inset 1px 0 0 var(--accent-line), inset -1px 0 0 var(--accent-line); border-bottom: 1px solid var(--line); }
   .th.sticky-col { z-index: 15; background: var(--surface-2); }
 
   /*
@@ -286,7 +338,7 @@
    * xanh trung tính (không màu trạng thái), chữ đậm 12.5px, cao 38px; đang đóng thì mờ hơn. Hàng con: thụt 16px
    * sau cột mũi tên 16px, nền tối hơn, chữ 12px, cao tối thiểu 32px. Số tổng thẳng cột với số con vì cùng bảng.
    */
-  .hang-lon > td { background: var(--hang-lon-bg); font-weight: 800; font-size: 12.5px; height: 38px; }
+  .hang-lon > td { background: var(--hang-lon-bg); font-weight: 700; font-size: 15px; height: 40px; }   /* NEN: hàng nhóm 40 px, 15 / 700 */
   .hang-lon > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-vach); }
   .hang-lon.dong > td { background: var(--hang-lon-dong-bg); }
   .hang-lon.dong > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-dong-vach); }
@@ -302,23 +354,23 @@
       background: linear-gradient(var(--hang-lon-bg), var(--hang-lon-bg)), var(--surface);
     }
   }
-  .hang-con > td { background: var(--hang-con-bg); font-size: 12px; color: var(--hang-con-chu); height: 32px; }
+  .hang-con > td { background: var(--hang-con-bg); font-size: 13px; color: var(--hang-con-chu); height: 32px; }
   .hang-con > td:first-child { padding-left: calc(0.75rem + 32px); }
   /* PR-SOS (M7, T20): Case và PA khác hẳn — hàng Case sáng hơn một bậc, cao hơn; hàng PA giữ nền hàng con (thụt ở ô). */
   .hang-con.hang-case > td { background: var(--hang-lon-dong-bg); height: 38px; }
   .hang-con.hang-case > td:first-child { padding-left: calc(0.75rem + 20px); }
   /* Cùng kiểu cho danh sách (không phải bảng): đầu nhóm + thân nhóm. */
   .khoi-nhom-dau {
-    display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 12px;
+    display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px;
     background: var(--hang-lon-bg); box-shadow: inset 3px 0 0 var(--hang-lon-vach);
-    font-weight: 800; font-size: 12.5px; cursor: pointer;
+    font-weight: 700; font-size: 15px; cursor: pointer;
   }
   .khoi-nhom-dau.dong { background: var(--hang-lon-dong-bg); box-shadow: inset 3px 0 0 var(--hang-lon-dong-vach); }
   .khoi-nhom-dau.rong { cursor: default; }
   /* PR-LT3 (T17): lưới mở dưới dòng khối 1 là MỤC CON nhẹ — tiêu đề cột nhỏ hơn bảng cha. */
-  .muc-con th { font-size: 12px; background: transparent; }   /* OV-15a: đầu cột 12 px mọi bảng (luật S8: không chữ < 11 px) */
+  .muc-con th { font-size: 13px; background: transparent; }   /* NEN: đầu cột 13 px mọi bảng */
   .muc-con .sticky-col { background: var(--hang-con-bg); }
-  .khoi-nhom-con { background: var(--hang-con-bg); font-size: 12px; color: var(--hang-con-chu); padding-left: 28px; }
+  .khoi-nhom-con { background: var(--hang-con-bg); font-size: 13px; color: var(--hang-con-chu); padding-left: 28px; }
 
   /* Ô điểm/ô nhập: sửa được có viền + nền riêng, chỉ đọc thì không viền, nền trong suốt. */
   .o-sua { border: 1px solid var(--o-sua-vien); background: var(--o-sua-nen); border-radius: 0.375rem; }

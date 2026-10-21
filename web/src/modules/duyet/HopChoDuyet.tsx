@@ -252,7 +252,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
           {lyDoTc !== null && (
             <div className="w-full space-y-1.5 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
               <label className="block">
-                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Lý do từ chối (người gửi sẽ đọc)<span aria-hidden className="text-bad"> *</span></span>
+                <span className="mb-1 block text-[12px] font-bold text-slate-200">Lý do từ chối (người gửi sẽ đọc)<span aria-hidden className="text-bad"> *</span></span>
                 <textarea className="field w-full" rows={2} maxLength={2000} autoFocus aria-label="Lý do từ chối" value={lyDoTc} aria-invalid={tcDaBam && !lyDoTc.trim()}
                   onChange={(e) => setLyDoTc(e.target.value)} />
               </label>

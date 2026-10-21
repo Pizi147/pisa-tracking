@@ -92,7 +92,7 @@ export function LopToiDay() {
         <div className="table-scroll">   {/* CV-LOI (CV-10): bỏ `bang-dinh` — bảng trong thẻ 560 px cuộn ngang trong thẻ, không tràn ra ngoài */}
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
-              <tr className="text-left text-[11.5px] font-semibold text-slate-400">
+              <tr className="text-left text-[12px] font-semibold text-slate-400">
                 <th className="px-4 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tôi dạy')}</th>
                 {laThuong && <th className="px-3 py-2 font-semibold">{t('Tuần học')}</th>}
                 <th className="px-3 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi} <NutLuat phai label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat></th>

@@ -28,8 +28,8 @@ export function NutNgonNgu({ kieu = 'menu', daDangNhap = true }: { kieu?: 'menu'
     <div className="flex min-h-[44px] items-center justify-between gap-3 px-1">
       <span className="text-sm text-slate-300" id="nhan-ngon-ngu">{t('Ngôn ngữ')}</span>
       <div role="group" aria-labelledby="nhan-ngon-ngu" className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
-        {nut('vi', 'VI', 'min-h-[44px] min-w-[64px] px-4 text-[12.5px] sm:min-h-[36px]', 'Tiếng Việt')}
-        {nut('en', 'EN', 'min-h-[44px] min-w-[64px] px-4 text-[12.5px] sm:min-h-[36px]', 'English')}
+        {nut('vi', 'VI', 'min-h-[44px] min-w-[64px] px-4 text-[13px] sm:min-h-[36px]', 'Tiếng Việt')}
+        {nut('en', 'EN', 'min-h-[44px] min-w-[64px] px-4 text-[13px] sm:min-h-[36px]', 'English')}
       </div>
     </div>
   );

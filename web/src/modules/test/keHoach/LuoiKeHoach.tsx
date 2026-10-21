@@ -93,7 +93,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
             {cots.map((c) => (
               <Th key={c.key} align="center">
                 <span className="block">{c.tieu}</span>
-                {c.phu && <span className="block text-[11px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
+                {c.phu && <span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
               </Th>
             ))}
           </tr>
@@ -115,7 +115,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                   <td key={c.key} className={`td py-1.5 align-middle ${loai === 'ft' ? 'text-center' : ''}`}>
                     {loai === 'ft' && c.dot.loai === 'ft' ? (
                       /* PR-OMT C6 (G1): đã có đợt = chip theo nhóm kỹ năng (đủ L R W S + trạng thái); chưa có đợt = Ô MT `MT3 · chưa xếp`. */
-                      !homNay ? <span className="text-[11px] text-slate-500">…</span> : dot.attemptId !== null ? (
+                      !homNay ? <span className="text-[12px] text-slate-500">…</span> : dot.attemptId !== null ? (
                         <ChipDotFT so={c.dot.attemptNo} kn={dot.kn} cu={!!dot.lichSu} homNay={homNay} onMo={moHop}
                           /* "Đang chọn" = ô của em đang mở hộp. */
                           chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key} />
@@ -164,7 +164,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
           <GhiChuTaiCho khoa={{ classId: data.classId }} ghiChu={data.ghiChuLop ?? null} onDoi={onReload}
             nhan={t('Ghi chú lớp · {lop}', { lop: data.classCode })} them={t('+ Ghi chú lớp')} />
         </div>
-        {data.ghiChuLop && <span className="text-[11px] text-slate-500">{[data.ghiChuLop.ai, fmtDateTime(data.ghiChuLop.luc)].filter(Boolean).join(' · ')}</span>}
+        {data.ghiChuLop && <span className="text-[12px] text-slate-500">{[data.ghiChuLop.ai, fmtDateTime(data.ghiChuLop.luc)].filter(Boolean).join(' · ')}</span>}
       </div>
 
       {huy && huy.cot.dot.loai === 'ft' && (() => {

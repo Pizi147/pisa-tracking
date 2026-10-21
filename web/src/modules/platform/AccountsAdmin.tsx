@@ -252,7 +252,7 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai }: 
     <tr className={u.status === 'deleted' ? 'opacity-60' : 'row-hover'}>
       <td className="td sticky-col whitespace-nowrap">
         <span className="text-slate-100">{u.fullName}</span>
-        <span className="block text-[11px] text-slate-500">{u.code}{u.phone ? ` · ${u.phone}` : ''}</span>
+        <span className="block text-[12px] text-slate-500">{u.code}{u.phone ? ` · ${u.phone}` : ''}</span>
       </td>
       <td className="td text-xs text-slate-300">{u.email ?? <span className="text-rose-200">chưa có</span>}</td>
       <td className="td">

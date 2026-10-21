@@ -85,7 +85,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged }: {
       <div role="button" tabIndex={0} aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
-        className="grid gap-x-3 gap-y-1 items-center px-3 py-2.5 cursor-pointer row-hover grid-cols-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]">
+        className="grid gap-x-3 gap-y-1 items-center px-3 py-2.5 cursor-pointer bam grid-cols-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]">
         <div className="col-span-2 md:col-span-1 min-w-0">
           <span className="block text-sm font-semibold text-slate-100">{cot1 === 'luot' ? mtSos : luot.studentName}</span>
           <span className="block text-xs text-slate-500">

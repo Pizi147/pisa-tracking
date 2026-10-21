@@ -111,7 +111,7 @@ export function DongDaLuu({ kq, onHoanTac }: { kq: DaLuuNhanh; onHoanTac: (kq: D
   };
   return (
     <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-[13px] text-slate-300" role="status">
-      <b className="font-bold text-ok">✓ {t('Đã lưu')}</b>
+      <b className="font-bold text-done">✓ {t('Đã lưu')}</b>
       <span>· {dich(outcomeLabelFor(kq.outcome))} · {t('Giữ nguyên')}</span>
       {kq.hanKe && <span className="text-slate-400">· {t('hạn kế {ngay}', { ngay: ngan(kq.hanKe) })}</span>}
       {con && (

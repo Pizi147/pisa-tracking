@@ -180,7 +180,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         {tieuDe ? (
-          <span className="text-[11px] uppercase tracking-wide text-slate-500">
+          <span className="text-[12px]  text-slate-500">
             {tieuDe}{rows.length > 0 && <> · {rows.length}</>}
           </span>
         ) : <span />}

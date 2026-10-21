@@ -29,7 +29,7 @@ function Khoi({ tieuDe, phu, children, className = '' }: { tieuDe: string; phu?:
 function So({ so, nhan, phu, canhBao }: { so: ReactNode; nhan: string; phu?: ReactNode; canhBao?: boolean }) {
   return (
     <div className="flex min-w-0 flex-col">
-      <span className={`text-[20px] font-bold leading-tight tabular-nums ${canhBao ? 'text-late' : 'text-slate-100'}`}>{canhBao && <span aria-hidden>⚠ </span>}{so}</span>
+      <span className={`text-[22px] font-bold leading-tight tabular-nums ${canhBao ? 'text-late' : 'text-slate-100'}`}>{canhBao && <span aria-hidden>⚠ </span>}{so}</span>
       <span className="text-xs text-slate-300">{nhan}</span>
       {phu && <span className="text-xs text-slate-400">{phu}</span>}
     </div>

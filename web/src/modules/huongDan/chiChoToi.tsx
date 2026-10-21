@@ -94,7 +94,7 @@ export function KhoanhPhanTu() {
         </>
       ) : <div aria-hidden className="fixed inset-0 bg-black/60" />}
       {(k || khongThay) && (
-        <div ref={chu} tabIndex={-1} role="status" className="fixed flex max-w-[360px] items-center gap-2.5 rounded-[10px] border px-3 py-2.5 text-[13.5px] text-slate-100 shadow-2xl outline-none"
+        <div ref={chu} tabIndex={-1} role="status" className="fixed flex max-w-[360px] items-center gap-2.5 rounded-[10px] border px-3 py-2.5 text-[14px] text-slate-100 shadow-2xl outline-none"
           style={{ ...viTri, ...(hep ? { maxWidth: 'none' } : {}), background: 'var(--surface)', borderColor: 'var(--accent-line)' }}>
           <span className="min-w-0 flex-1"><ChuDam chu={k ? t(chi.chu) : t('Chưa có việc nào ở đây')} /></span>
           <span className="shrink-0 text-xs text-slate-500">Esc</span>

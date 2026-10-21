@@ -55,6 +55,38 @@ export function tuongPhan(a: RGB | string, b: RGB | string): number {
   return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
 }
 
+/** Trộn màu có độ trong lên nền (trộn trong sRGB như trình duyệt): `a` = độ phủ 0–1. */
+export function tronMau(tren: RGB, nen: RGB, a: number): RGB {
+  return [0, 1, 2].map((i) => Math.round(tren[i] * a + nen[i] * (1 - a))) as RGB;
+}
+
+const tuyenTinh = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const veSrgb = (c: number) => Math.round(255 * Math.min(1, Math.max(0, c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)));
+
+/** Mô phỏng mù màu (Machado 2009, mức 1.0) — NEN-TYPO-MAU: cặp vượt ↔ dưới phải còn phân biệt được (04 mục 4.4). */
+const MU_MAU = {
+  deutan: [[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.01182, 0.04294, 0.968881]],
+  protan: [[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]],
+} as const;
+export function moPhongMuMau(c: RGB, loai: keyof typeof MU_MAU): RGB {
+  const l = c.map(tuyenTinh);
+  return MU_MAU[loai].map((h) => veSrgb(h[0] * l[0] + h[1] * l[1] + h[2] * l[2])) as RGB;
+}
+
+/** CIELAB (D65) để đo khác biệt màu ΔE76. */
+function lab(c: RGB): [number, number, number] {
+  const [r, g, b] = c.map(tuyenTinh);
+  const xyz = [(0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047, 0.2126 * r + 0.7152 * g + 0.0722 * b, (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883];
+  const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116);
+  const [fx, fy, fz] = xyz.map(f);
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+/** ΔE76 giữa hai màu, làm tròn 1 chữ số. */
+export function deltaE(a: RGB, b: RGB): number {
+  const [x, y] = [lab(a), lab(b)];
+  return Math.round(Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) * 10) / 10;
+}
+
 /** Thân khối CSS ĐẦU TIÊN có đúng bộ chọn (`:root` không khớp `:root[data-theme="light"]`); không có thì ''. */
 export function docKhoiCss(css: string, boChon: string): string {
   const goc = boChon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

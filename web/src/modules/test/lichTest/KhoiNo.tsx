@@ -147,7 +147,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                             {d.classCode} · {dotTuan(d, homNay)} · <span title={k.goiY}>{dich(k.chu)}</span>
                           </div>
                           {k.phu && <div className="truncate text-xs text-slate-500">{dich(k.phu)}</div>}
-                          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11.5px] text-slate-400 tabular-nums">
+                          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-slate-400 tabular-nums">
                             <span className="whitespace-nowrap">{t('còn')}{' '}{xong ? 0 : conCua(d)}{' '}{t('bài')}</span>
                             {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} /></span>}
                             <NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} />

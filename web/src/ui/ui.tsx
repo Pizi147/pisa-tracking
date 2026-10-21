@@ -312,7 +312,7 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
 }) {
   const inner = (
     <div className={`card p-4 h-full transition-colors ${to ? 'hover:border-doing/40 cursor-pointer' : ''}`}>
-      <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">{label}</div>
+      <div className="text-[12px]  text-slate-400 font-semibold">{label}</div>
       <div className={`mt-2 text-2xl font-semibold tabular-nums ${
         tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : tone === 'ok' ? 'text-doing' : 'text-slate-100'
       }`}>{value}</div>
@@ -419,7 +419,7 @@ export function Th({ children, hint, align = 'left', sort, className = '' }: {
       aria-sort={sort ? (sort.active ? (sort.dir === 'desc' ? 'descending' : 'ascending') : 'none') : undefined}>
       {sort ? (
         <button type="button" onClick={sort.onSort}
-          className="appearance-none bg-transparent border-0 p-0 font-[inherit] text-[inherit] tracking-[inherit] uppercase cursor-pointer hover:text-slate-200">
+          className="appearance-none bg-transparent border-0 p-0 font-[inherit] text-[inherit]  cursor-pointer hover:text-slate-200">
           {inner}
         </button>
       ) : inner}
@@ -449,7 +449,7 @@ export function BandCell({ cell, target }: {
         : t('Lượt trước {truoc} → lượt này {nay}', { truoc: cell.prev, nay: cell.now })}>
       <span className={`tabular-nums ${tone}`}>{cell.now}</span>
       {delta !== null && delta !== 0 && (
-        <span className={`text-[11px] ${cell.dir > 0 ? 'text-ok' : 'text-bad'}`}>
+        <span className={`text-[12px] ${cell.dir > 0 ? 'text-ok' : 'text-bad'}`}>
           {cell.dir > 0 ? '▲' : '▼'}{Math.abs(delta)}
         </span>
       )}
@@ -517,7 +517,7 @@ export function NutChon({ chon, onClick, children, nho, className = '', disabled
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
       className={`btn ${nho ? 'btn-sm' : ''} relative min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
-      {chon && <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-[color:var(--accent)] bg-[color:var(--surface)] text-[11px] leading-none tabular-nums text-[color:var(--accent-strong)]">{dau}</span>}{children}
+      {chon && <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-[color:var(--accent)] bg-[color:var(--surface)] text-[12px] leading-none tabular-nums text-[color:var(--accent-strong)]">{dau}</span>}{children}
     </button>
   );
 }
@@ -540,7 +540,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
           <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
             className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold disabled:pointer-events-none max-sm:rounded-lg max-sm:border sm:min-h-[32px] ${i ? 'sm:border-l' : ''} ${
               chon ? 'bg-[color:var(--accent-soft)] text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
-            <span aria-hidden className={`text-[11px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
+            <span aria-hidden className={`text-[12px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
           </button>
         );

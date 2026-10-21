@@ -99,7 +99,7 @@ export function Header() {
     role: 'option',
     'aria-selected': i === dong,
     tabIndex: -1,
-    className: `w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 text-sm ${i === dong ? 'bg-white/5' : 'hover:bg-white/5'}`,
+    className: `w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 text-sm ${i === dong ? 'bg-white/5' : 'bam'}`,
     onMouseEnter: () => setDong(i),
     onMouseDown: (e: ReactMouseEvent) => e.preventDefault(),
     onClick: () => moMuc(i),
@@ -162,7 +162,7 @@ export function Header() {
       {coDs && (
         <ul id={idDs} role="listbox" aria-label={t('Kết quả tìm học viên, lớp')}
           className={`${lopDs} card overflow-hidden list-none p-0 m-0`}>
-          {hits.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">{t('Học viên')}</li>}
+          {hits.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[12px] text-slate-500">{t('Học viên')}</li>}
           {hits.map((h, i) => (
             <li key={`hv${h.id}`} role="none">
               <button {...nutMuc(i)}>
@@ -172,7 +172,7 @@ export function Header() {
               </button>
             </li>
           ))}
-          {lops.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[11px] text-slate-500">{t('Lớp')}</li>}
+          {lops.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[12px] text-slate-500">{t('Lớp')}</li>}
           {lops.map((l, j) => (
             <li key={`lop${l.id}`} role="none">
               <button {...nutMuc(hits.length + j)}>
@@ -215,7 +215,7 @@ export function Header() {
           {/* Chuông nét mảnh 20 px thay emoji (luật "dấu nhỏ gọn", 23C). Số chưa đọc đè góc trên phải trên điện thoại. */}
           <svg className="sm:hidden" aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
-          {chuong.soNut > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[11.5px] tabular-nums max-sm:absolute max-sm:right-px max-sm:top-[3px] max-sm:ml-0 max-sm:min-w-[18px] max-sm:rounded-[9px] max-sm:text-center max-sm:leading-[18px]">{chuong.soNut}</span>}
+          {chuong.soNut > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[12px] tabular-nums max-sm:absolute max-sm:right-px max-sm:top-[3px] max-sm:ml-0 max-sm:min-w-[18px] max-sm:rounded-[9px] max-sm:text-center max-sm:leading-[18px]">{chuong.soNut}</span>}
           {!chuong.soNut && bietChuaDoc && <span aria-hidden className="ml-1 inline-block h-2 w-2 rounded-full bg-[color:var(--accent)] max-sm:absolute max-sm:right-[7px] max-sm:top-[9px] max-sm:ml-0" />}
         </button>
         {openMenu === 'notif' && (
@@ -256,7 +256,7 @@ export function Header() {
                     const toi = noiDenThongBao(n);
                     return (
                       <button key={n.id} type="button"
-                        className="grid w-full grid-cols-[10px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5 border-b px-3.5 py-2.5 text-left hover:bg-white/5"
+                        className="grid w-full grid-cols-[10px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5 border-b px-3.5 py-2.5 text-left bam"
                         style={{ borderColor: 'var(--line)' }}
                         onClick={async () => {
                           if (!moDuoc(n)) { toast.push('error', t('Mở ở vai gốc (đổi Góc nhìn trong menu tài khoản).')); return; }
@@ -316,7 +316,7 @@ export function Header() {
                       onClick={() => { setOpenMenu(null); if (!dangO) void doiGocNhin(v.role === g.vaiGoc ? null : v.role).catch((e) => toast.push('error', e instanceof Error ? e.message : t('Không đổi được góc nhìn.'))); }}
                       className={`flex w-full min-h-[40px] max-sm:min-h-[44px] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-sm ${dangO
                         ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] font-medium'
-                        : 'border-transparent text-slate-200 hover:bg-white/5'}`}>
+                        : 'border-transparent text-slate-200 bam'}`}>
                       <span className="shrink-0">{dich(v.nhan)}</span>
                       <span className="min-w-0 truncate text-xs font-normal text-slate-500" title={v.phamVi}>· {v.phamVi}</span>
                     </button>

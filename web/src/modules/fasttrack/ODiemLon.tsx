@@ -10,7 +10,7 @@
  */
 import { useRef, type ReactNode } from 'react';
 import { CHU_O_THIEU, chuDoiVang, ngay, skillShort, soKyVong, tuanLich } from '@shared/domain/index.ts';
-import { DauKetQua } from '../../ui/BieuTuong.tsx';
+import { DauKetQua, lopKq } from '../../ui/BieuTuong.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -106,16 +106,16 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
       phu = trangThaiO(l, bai[0], lichSu, homNay);
     }
     const nhapBoi = bai.filter((c) => c.enteredByName).map((c) => t('{skillLabel}: nhập bởi {enteredByName}', { skillLabel: skillLabel(c.skill), enteredByName: c.enteredByName })).join('\n');
+    const kq = band !== null && v && v.passed !== null ? soKyVong(band, result.expectation) ?? (v.passed ? 'bang' : 'duoi') : null;
     const noiDung = (
       <>
         <span className="block text-xs font-medium text-slate-400">{NHAN[k]}</span>
+        {/* NEN-TYPO-MAU: ✓ / ✗ đứng TRƯỚC số, số tô cùng màu kết quả (`lopKq`). */}
         <span className="mt-0.5 flex items-center gap-1.5">
-          <span className={`text-[28px] font-bold leading-none tabular-nums ${band === null ? 'text-slate-600' : v?.passed === false ? 'text-bad' : 'text-slate-100'}`}>
+          {kq && <DauKetQua kq={kq} />}
+          <span className={`text-[28px] font-bold leading-none tabular-nums ${band === null ? 'text-slate-600' : lopKq(kq) || 'text-slate-100'}`}>
             {band === null ? '—' : fmtBand(band)}
           </span>
-          {band !== null && v && v.passed !== null && (
-            <DauKetQua kq={soKyVong(band, result.expectation) ?? (v.passed ? 'bang' : 'duoi')} size={14} />
-          )}
         </span>
         <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>
         {/* OV-12b: bài có điểm còn thiếu nhận xét / nhóm (dữ liệu trước luật) — chữ, không chỉ màu. Writing ghi task. */}
@@ -132,7 +132,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
     return sua ? (
       <button key={k} type="button" aria-expanded={dangMo} aria-haspopup="dialog" ref={(el) => { neo.current[bai[0].skill] = el; }}
         title={[nhapBoi, t('Bấm để nhập / sửa điểm tại chỗ.')].filter(Boolean).join('\n')}
-        className={`${vo} hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-strong)]`}
+        className={`${vo} bam focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-strong)]`}
         style={dangMo ? undefined : { borderColor: 'var(--line)' }}
         onClick={() => onMo(dangMo ? null : bai[0].skill)}>
         {noiDung}
@@ -142,6 +142,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
     );
   };
 
+  const kqOverall = soKyVong(result.overall, result.expectation);
   const oMo = mo ? oCua(mo) : undefined;
   const neoMo = mo ? neo.current[mo] : null;
   return (
@@ -150,8 +151,12 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
         {KY_NANG_LON.map(oKyNang)}
         <div className="col-span-2 flex min-w-0 flex-col rounded-lg border px-3 py-2.5 sm:col-span-1" style={{ borderColor: 'var(--line)' }}>
           <span className="block text-xs font-medium text-slate-400">Overall</span>
-          <span className={`mt-0.5 block text-[28px] font-bold leading-none tabular-nums ${result.overall === null ? 'text-slate-600' : 'text-slate-100'}`}>
-            {result.overall === null ? '—' : fmtBand(result.overall)}
+          {/* NEN-TYPO-MAU (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
+          <span className="mt-0.5 flex items-center gap-1.5">
+            {kqOverall && <DauKetQua kq={kqOverall} />}
+            <span className={`text-[28px] font-bold leading-none tabular-nums ${result.overall === null ? 'text-slate-600' : lopKq(kqOverall) || 'text-slate-100'}`}>
+              {result.overall === null ? '—' : fmtBand(result.overall)}
+            </span>
           </span>
           <span className="mt-1 block min-h-[1rem] truncate">
             {ketLuanOverall ?? <KetQuaDot phan="overall" coDiem={result.scoredRequired} yeuCau={result.required.length} dat={ketLuan}
