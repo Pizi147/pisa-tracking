@@ -36,7 +36,7 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
                 WHERE s.full_name = 'Bùi Thảo Vy' AND a.attempt_no = 2 AND sc.skill = 'listening'`).b === 7, 'Vy L 7.0');
   });
   check('SU-5 thi thật: có KQ + đã chốt bước tiếp, có KQ chưa bước tiếp, "Đã thi · chờ KQ" theo ngày', () => {
-    assert(one(`SELECT COUNT(*) n FROM learning_cycles WHERE thi_that_l IS NOT NULL AND buoc_tiep IS NOT NULL`).n >= 2, 'đã chốt');
+    assert(one(`SELECT COUNT(*) n FROM learning_cycles WHERE thi_that_l IS NOT NULL AND buoc_tiep IS NOT NULL`).n >= 1, 'đã chốt');
     assert(one(`SELECT 1 FROM learning_cycles WHERE thi_that_l IS NOT NULL AND buoc_tiep IS NULL AND status = 'active'`), 'chưa bước tiếp');
     assert(loTrinhChoKetQuaThi(DEMO_DATE).some((x: any) => x.c.exam_date), 'chờ KQ có ngày thi');
     assert(one(`SELECT 1 FROM learning_cycles WHERE status = 'active' AND exam_month IS NOT NULL AND exam_date IS NULL`), 'em chưa chốt ngày thi');

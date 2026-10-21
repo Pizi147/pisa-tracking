@@ -4,10 +4,10 @@
  *   U1  tài khoản: GV Speaking không dạy lớp nào "Đoàn Minh Thư" (MB) · Admin VP Monbay · TVV MB (Phan Mai, Lê Thu) / BC / HD / UB.
  *   U2  gán TVV + SĐT phụ huynh cho đa số em đang học; mỗi chi nhánh chừa em đầu tiên không TVV (việc về QL); 4 em của TVV Hương giữ nguyên.
  *   U3  MT2 MB FT 101 của Bùi Thảo Vy · Tạ Minh Quân · Lương Bảo Anh theo mockup ov14-6 khung m3 (Trần Thu Hà, Vũ Hải Đăng đã có MT2 theo V5).
- *   U4  thi thật: UB FT 401 Dương Minh Quân (Đạt) + Lý Thanh Trúc (Chưa đạt) có KQ 15/08 và đã chốt bước tiếp · CP FT 110 Đinh Ngọc Quyên thi 12/09,
+ *   U4  thi thật: UB FT 401 Dương Minh Quân (Đạt, chưa chốt bước tiếp) + Lý Thanh Trúc (Chưa đạt, đã chốt) có KQ 15/08 · CP FT 110 Đinh Ngọc Quyên thi 12/09,
  *       KQ 14/09, chưa chọn bước tiếp (T09) · UB FT 401 Phan Hải Anh thi 05/09 "Đã thi · chờ KQ". Em chưa chốt ngày thi = các em chỉ có tháng (sẵn có).
  *   U5  lớp mới MB FT 106 (GV mới Mạc Thùy Linh, TVV Phan Mai): MT1 cũ có "-" (S, ghi khi MT đã qua → Không dự thi); 3 em PA Tutor, 12 buổi
- *       17/08–13/09 (6 tutor danh sách + 1 tên gõ tay, một tutor có buổi "Không" → nhóm Cần chú ý); 2 em có lần xử lý vi phạm (11/09, 03/09).
+ *       17/08–13/09 (6 tutor danh sách + 1 tên gõ tay, một tutor có buổi "Không" → nhóm chú ý của trang Tutor); 2 em có lần xử lý vi phạm (11/09, 03/09).
  *   U6  lớp thường mới MB FOU 17: Giữa khoá W2 SEP — 4 em đủ điểm mọi môn đạt, 1 em "17/25" một môn trượt (Báo PH chưa làm), 1 em trượt đã Báo PH.
  *   U7  kẹp `notifications.created_at` về ≤ ngày demo (không gì ở tương lai).
  * Đi qua hàm dịch vụ; SQL thẳng chỉ để lùi ngày nghiệp vụ / gán TVV. Dựng SAU `buildHeadTutor` (id người dùng cũ không đổi). Tên, SĐT GIẢ.
@@ -139,6 +139,8 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
       conn.prepare('UPDATE case_followups SET created_at = ? WHERE id = ?').run(`${ngay}T10:00:00.000Z`, f);
       conn.prepare('UPDATE case_followup_buoi SET ghi_luc = ? WHERE followup_id = ?').run(`${ngay}T10:00:00.000Z`, f);
     }
+    /* Mỗi lần ghi "Giữ nguyên" dời mốc kỳ về ngày ghi; kịch bản ghi bù nhiều tuần cùng lúc → mốc kỳ = ngày PA bắt đầu (không lần ghi nào trước mốc). */
+    conn.prepare('UPDATE case_interventions SET cycle_started_on = ? WHERE id = ?').run('2026-08-17', iv);
   };
   buoiTutor(emFt[3], 'listening', [
     ['2026-08-21', [{ tutor: 'Nguyễn Thu Lan', danhGia: 4 }, { tutor: 'Nguyễn Thu Lan', danhGia: 5 }]],
@@ -213,7 +215,7 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
       conn.prepare('UPDATE learning_cycles SET buoc_tiep_luc = ? WHERE id = ?').run(`${addDays(nhapLuc, 2)}T09:00:00.000Z`, c.id);
     }
   };
-  thiThat('Dương Minh Quân', '2026-08-15', '2026-08-25', { l: 7.5, r: 7.5, w: 6.5, s: 6.5 }, 'ket_thuc');
+  thiThat('Dương Minh Quân', '2026-08-15', '2026-08-25', { l: 7.5, r: 7.5, w: 6.5, s: 6.5 });   // chưa chốt bước tiếp (việc TVV UB)
   thiThat('Lý Thanh Trúc', '2026-08-15', '2026-08-25', { l: 6.0, r: 6.5, w: 5.5, s: 6.0 }, 'ket_thuc');
   thiThat('Đinh Ngọc Quyên', '2026-09-12', DEMO_DATE, { l: 7.0, r: 7.5, w: 6.5, s: 7.0 });
   const choKq = cycleCua('Phan Hải Anh');

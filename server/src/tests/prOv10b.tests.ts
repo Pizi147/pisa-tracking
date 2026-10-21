@@ -69,12 +69,13 @@ export async function runPrOv10bTests(t: YThucTestKit) {
     for (const k of ['TVV', 'CX', 'QL', 'ADMIN'] as const) {
       thu(() => {
         const v = vai()[k];
+        const phCu = one('SELECT parent_phone FROM students WHERE id = ?', em[0]).parent_phone;   // SEED-UX: seed đã có SĐT phụ huynh
         students.updateStudent(v, em[0], LH);
         const p = profile.studentProfile(v, em[0]);
         assert(JSON.stringify(p.lienHe) === JSON.stringify(LH), `${k} đọc lại: ${JSON.stringify(p.lienHe)}`);
         const nk = one(`SELECT before_json, after_json FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.update' ORDER BY id DESC LIMIT 1`, em[0]);
         const truoc = JSON.parse(nk.before_json); const sau = JSON.parse(nk.after_json);
-        assert(truoc.parent_phone === null && sau.parent_phone === LH.parentPhone && sau.phone === LH.phone, `${k} nhật ký: ${nk.after_json}`);
+        assert(truoc.parent_phone === phCu && sau.parent_phone === LH.parentPhone && sau.phone === LH.phone, `${k} nhật ký: ${nk.after_json}`);
       });
     }
   });
