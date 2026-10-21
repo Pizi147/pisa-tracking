@@ -33,7 +33,7 @@ import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
-import { viecBoSungHoSo, viecChotNgayThi } from './viecTvv.ts';
+import { viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 
 /**
@@ -1147,8 +1147,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   /* SV-TVV-VIEC: hai việc không hạn của TVV (em chưa có TVV → QL chi nhánh) — Chốt ngày thi · Bổ sung hồ sơ thiếu (một dòng tổng). */
-  if (co('missing_data')) items.push(...viecChotNgayThi(p, { today, tatCa, branchId: f.branchId ?? null }));
-  if (co('bo_sung_ho_so')) items.push(...viecBoSungHoSo(p, { tatCa, branchId: f.branchId ?? null }));
+  items.push(...viecHoSoTvv(p, { today, tatCa, branchId: f.branchId ?? null, chot: co('missing_data'), boSung: co('bo_sung_ho_so') }));
 
   /* K2-32: MT CŨ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
   for (const l of co('missing_data') ? mtLichSuChuaNhap(p, { branchId: f.branchId ?? null }) : []) {

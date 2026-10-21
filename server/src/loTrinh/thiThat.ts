@@ -7,8 +7,8 @@ import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, canNamGan, diemThiHopLe, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, coQuyenBuocTiep, napTruocPhamVi, type Principal } from '../permissions.ts';
-import { chuViecTvv, coTheGiuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
+import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
+import { coTheGiuViecTvv, nguoiGiuTvv } from '../worklist/viecTvv.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
@@ -119,7 +119,7 @@ import { COT_SAU_THI, LO_TRINH_MOI_NHAT, NGAY_CO_KQ } from './cotSauThi.ts';
  * Lộ trình FT chưa có kết quả thi thật đã qua ngày thi (`trangThaiSauThi` = "Đã thi · chờ kết quả") — MỘT câu cho việc GVCN / QL (`viecThiThat`),
  * góc Cần làm của TVV (OV-12f), ô Tổng quan "Đã thi · chờ kết quả" (OV-13q) và migrate `prOv13q`.
  */
-export const SQL_CHO_KET_QUA_THI = `SELECT c.id, c.student_id, s.full_name AS ten, ${COT_SAU_THI},
+export const SQL_CHO_KET_QUA_THI = `SELECT c.id, c.student_id, s.full_name AS ten, s.consultant_user_id AS tvv, ${COT_SAU_THI},
       COALESCE((SELECT class_id FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.class_id IS NOT NULL ORDER BY lan DESC LIMIT 1),
                (SELECT a.class_id FROM assessment_attempts a WHERE a.cycle_id = c.id AND a.class_id IS NOT NULL AND a.kind != 'mt0' ORDER BY a.id DESC LIMIT 1),
                (SELECT e.class_id FROM enrollments e WHERE e.student_id = c.student_id ORDER BY e.id DESC LIMIT 1)) AS class_id
@@ -159,13 +159,12 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
   theoLo(idLop, (lo, ph) => {
     for (const l of conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) lop.set(l.id, l);
   });
-  const tvv = tvvCuaEm(moc.map((x) => x.c.student_id));
-  napTruocPhamVi(moc.map((x) => x.c.student_id));
+  const giu = nguoiGiuTvv(p, f.today);
   const out: any[] = [];
   for (const { c, s } of moc) {
     const l = c.class_id ? lop.get(c.class_id) : null;
     if (f.branchId && l && l.branch_id !== f.branchId) continue;
-    const chu = chuViecTvv(p, c.student_id, tvv.get(c.student_id) ?? null, f.tatCa);
+    const chu = giu(l?.branch_id ?? null, c.tvv ?? null, f.tatCa);
     if (!chu) continue;
     const ke = examPlanOf({ exam_period_id: null, exam_month: c.exam_month, exam_date: c.exam_date, ...(c.exam_week ? { exam_period_id: 1, exam_week_code: tuanLich(c.exam_week), exam_week_start: c.exam_week } : {}) });
     const thi = ke.confidence === 'none' ? null : ke.label;

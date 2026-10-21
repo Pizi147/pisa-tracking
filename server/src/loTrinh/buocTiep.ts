@@ -22,7 +22,7 @@ import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
-import { chuViecTvv, coTheGiuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
+import { chuViecTvv, coTheGiuViecTvv } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
@@ -352,7 +352,7 @@ export const hanBuocTiep = (c: DongSauThi, today: string): string => trangThaiSa
  * Lộ trình chờ chọn bước tiếp (chưa lọc quyền) — một nguồn cho việc QL / TVV (`viecBuocTiep`), ô "Chờ chọn bước tiếp" (OV-10c) và đếm trước deploy (`SQL_CHO_BUOC_TIEP`).
  * OV-13m: sinh NGAY khi có kết quả, cả khi em còn ghi danh (lộ trình còn mở); lộ trình đã đóng thì không đóng vì chuyển lớp. Lớp = lớp cuối (bản chụp) hoặc lớp đang giữ.
  */
-export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten, ${COT_SAU_THI}, c.status, b.ket_luan,
+export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten, s.consultant_user_id AS tvv, ${COT_SAU_THI}, c.status, b.ket_luan,
        COALESCE(b.class_id, e.class_id) AS class_id, COALESCE(b.class_code, l.code) AS class_code, COALESCE(b.branch_id, l.branch_id) AS branch_id
   FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
   LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id
@@ -373,12 +373,11 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
   if (!coTheGiuViecTvv(p)) return [];
   const ds = choBuocTiep(f.studentId);
   napTruocPhamVi(ds.map((c) => c.student_id));   // quyền theo em đọc phạm vi một câu cho cả tập — không N+1
-  const tvv = tvvCuaEm(ds.map((c) => c.student_id));
   const out: any[] = [];
   for (const c of ds) {
     if ((f.branchId && c.branch_id && c.branch_id !== f.branchId) || (f.studentId && c.student_id !== f.studentId)) continue;
     /* SV-TVV-VIEC: MỘT người giữ = TVV của em (không có → QL chi nhánh) — QL / TVV khác của chi nhánh vẫn chọn được (`coQuyenBuocTiep`) nhưng không là việc của họ. */
-    const chu = chuViecTvv(p, c.student_id, tvv.get(c.student_id) ?? null, f.tatCa);
+    const chu = chuViecTvv(p, c.student_id, c.tvv ?? null, f.tatCa);
     if (!chu) continue;
     const st = trangThaiSauThi(c, f.today);
     const han = st.han ?? f.today;
