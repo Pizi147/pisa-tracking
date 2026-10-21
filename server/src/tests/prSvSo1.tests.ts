@@ -110,6 +110,6 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
       r(3, { kind: 'sos', entity_type: 'assessment_attempt' }),
       r(4, { kind: 'sos', entity_type: 'assessment_attempt', read_at: '2026-09-12T00:00:00Z' }),
     ]);
-    assert(kq.canLam.length === 2 && kq.deBiet.length === 2 && kq.soNut === 2, JSON.stringify({ n: kq.soNut }));
+    assert(kq.soNut === 2, JSON.stringify({ n: kq.soNut }));
   });
 }

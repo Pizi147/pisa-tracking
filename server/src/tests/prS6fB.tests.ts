@@ -77,11 +77,11 @@ async function runTask12(t: YThucTestKit) {
   };
 
   // ------------------------------------------------------------------ Task 12 · tốc độ — trang đầu, tín hiệu, route chết (D14, D16)
-  check('S6F-b (12) · D14: useApi gộp GET ĐANG BAY cùng đường dẫn (xoá khi xong / khi invalidate); badge GV đọc /my-work (summary.overdue), không còn /my-work/dem', () => {
+  check('S6F-b (12) · D14: useApi gộp GET ĐANG BAY cùng đường dẫn (xoá khi xong / khi invalidate); badge GV đọc /my-work (V5 SV-SO1: summary.viec), không còn /my-work/dem', () => {
     const u = doc('web/src/lib/useApi.ts');
     assert(/const dangBay = new Map<string, Promise<unknown>>\(\)/.test(u) && /dangBay\.delete\(/.test(u), 'useApi chưa gộp GET đang bay');
     const app = doc('web/src/App.tsx');
-    assert(/useApi<[^>]*>\([^;]*'\/my-work'/.test(app) && /summary\??\.overdue/.test(app) && !app.includes('/my-work/dem'), 'App: badge GV');
+    assert(/useApi<[^>]*>\([^;]*'\/my-work'/.test(app) && /summary\??\.viec\b/.test(app) && !app.includes('/my-work/dem'), 'App: badge GV');
     assert(!doc('server/src/routes/index.ts').includes("'/my-work/dem'"), 'route /my-work/dem còn');
   });
 

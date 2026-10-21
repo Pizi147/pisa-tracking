@@ -191,7 +191,7 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       ]);
       assert(kq.canLam.map((x: any) => x.id).join(',') === '3,1,6', `Cần làm ${kq.canLam.map((x: any) => x.id)}`);
       assert(kq.deBiet.map((x: any) => x.id).sort().join(',') === '4,5', `Để biết ${kq.deBiet.map((x: any) => x.id)}`);
-      assert(kq.soNut === 3, `số trên nút = Cần làm còn mở (kể cả đã đọc): ${kq.soNut}`);
+      assert(kq.soNut === 4, `V5 SV-SO1: số trên nút = tin chưa đọc (cả Để biết): ${kq.soNut}`);
     });
 
     await checkAsync('SL1-10b · chuông thật: GV — mọi "Quá hạn chấm" ở Cần làm, có hạn, sắp theo hạn, 0 dòng SOS-lượt; QL — "Chốt lộ trình" ở Cần làm', async () => {
@@ -267,7 +267,7 @@ export async function runPrSl1Tests(t: YThucTestKit) {
         assert(nhom(loi) === 'can-lam', 'chưa đọc: còn ở Cần làm');
         assert(nhom(them('lenh_loi', 'student', em, true)) === 'de-biet', 'không biết trạng thái mà đã đọc → Để biết');
         const kq = d.dongChuong(tb.thongBaoCua(qt));
-        assert(kq.soNut === kq.canLam.length && kq.canLam.some((n: any) => n.id === dk), 'số nút = Cần làm, có đăng ký còn chờ');
+        assert(kq.soNut === [...kq.canLam, ...kq.deBiet].filter((n: any) => !n.read_at).length && kq.canLam.some((n: any) => n.id === dk), 'V5 SV-SO1: số nút = tin chưa đọc, có đăng ký còn chờ');
       });
     });
   } finally {

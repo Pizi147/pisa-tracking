@@ -345,10 +345,12 @@ export type SkillCell = {
   kyVong: number | null;
   thieuNhanXet: ThieuNhanXet | null;
   /**
-   * V5 SV-SO1 (brief 8.1): ô có điểm mà thiếu nhận xét bắt buộc (`thieuNhanXetMt`) CHƯA xong — vẫn là nợ / việc Nhập điểm của người phụ trách, quá hạn
-   * theo hạn ô. Chỉ khi lượt còn ô chờ điểm: lượt đã đủ điểm thì không đòi lại (rà #383; Case dưới kỳ vọng đã có việc "Ghi nhận xét").
+   * V5 SV-SO1 (brief 8.1): ô có điểm mà thiếu nhận xét bắt buộc (`thieuNhanXetMt`) CHƯA xong — vẫn là nợ (`scoreDebt`) / việc Nhập điểm của người
+   * phụ trách (`myPendingDetail`), quá hạn theo hạn ô (`nxQuaHan`). Chỉ khi lượt còn ô chờ điểm: lượt đủ điểm không đòi lại (rà #383; Case dưới
+   * kỳ vọng đã có "Ghi nhận xét"). Không S chấm chéo (không nợ ai — R2), không MT cũ. `overdue` / tiến độ ô giữ nghĩa cũ (lưới, Lịch Test).
    */
   nxChuaXong: boolean;
+  nxQuaHan: boolean;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). Chỉ ô `speaking`. */
   gvCham: { userId: number | null; ten: string } | null;
 };
@@ -358,9 +360,8 @@ export function pendingInputOf(cells: SkillCell[]): PendingCell[] {
   return cells.map((c) => ({
     skill: c.skill,
     required: c.required,
-    /* V5 SV-SO1: ô thiếu nhận xét bắt buộc chưa xong — đếm như ô chờ điểm. */
-    scored: c.band !== null && !c.nxChuaXong,
-    progress: c.nxChuaXong ? 'due' : c.progress,
+    scored: c.band !== null,
+    progress: c.progress,
     mine: c.mine,
     /* Bài đã báo "không có bài" không phải bài cần chấm. */
     noShow: c.noShow !== null,
@@ -469,7 +470,7 @@ export function skillCells(
     const thieuNx = thieuNhanXetMt({
       batBuoc: batBuocNx, coDiem: hasScore, band: row?.band ?? null, kyVong, nhanXet: row?.comment, nhom: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
     });
-    const nxThieu = required && cellScored && thieuNx !== null && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent';
+    const nxThieu = required && cellScored && thieuNx !== null && !chamCheo && !attempt.lich_su && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent';
     /* E8 (T53 Q6): bài đã xác nhận vắng không nhập ở đâu cả — nhập bù thì Quản lý "Xếp lại bài vắng" / "Khôi phục" trước. */
     const canEdit = required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
       /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ (`kiemDaToiTuanThi`), kể cả ô đã có điểm mà
@@ -500,7 +501,7 @@ export function skillCells(
       deadline: view.deadline,
       deadlineSource: view.deadlineSource,
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */
-      overdue: required && (!cellScored || nxThieu) && quaHanNhapDiem(view.deadline, view.weekStart, today)   // PR-UXF-a Q10: cùng luật `viewSkill`
+      overdue: required && !cellScored && quaHanNhapDiem(view.deadline, view.weekStart, today)   // PR-UXF-a Q10: cùng luật `viewSkill`
         && progress !== 'absent' && progress !== 'cancelled' && !attempt.lich_su
         /* Đã báo "không có bài" thì không nợ điểm ở ô này — hạn nhập điểm chỉ áp cho bài CÓ thực hiện. */
         && noShow === null,
@@ -533,6 +534,7 @@ export function skillCells(
       /* Rà #383: chữ "thiếu …" chỉ ở ô GV còn bổ sung được — lượt đã hoàn tất không báo (Case cũ: OV-12c). */
       thieuNhanXet: hoanTat.hoanTat || !canEdit ? null : thieuNx,
       nxChuaXong: nxThieu,
+      nxQuaHan: nxThieu && quaHanNhapDiem(view.deadline, view.weekStart, today),
       gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
         ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
         : null,
@@ -543,7 +545,7 @@ export function skillCells(
   });
   /* V5 SV-SO1: lượt không còn ô chờ điểm (đủ điểm) → ô thiếu nhận xét không là việc / quá hạn (`nxChuaXong`). */
   if (!cells.some((c) => c.required && c.band === null && awaitingScore(c.progress) && !c.noShow)) {
-    for (const c of cells) if (c.nxChuaXong) { c.nxChuaXong = false; c.overdue = false; }
+    for (const c of cells) { c.nxChuaXong = false; c.nxQuaHan = false; }
   }
   return cells;
 }
@@ -908,7 +910,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       /* Bài đã báo "-" không còn là việc phải chấm — cùng luật với `pendingSkillsOf`, không hai luật đếm. */
       myPendingDetail: cells
         .filter((c) => c.mine && ((c.band === null && awaitingScore(c.progress)) || c.nxChuaXong) && !c.noShow)
-        .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null, overdue: !!c.overdue })),
+        .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null, overdue: !!c.overdue || c.nxQuaHan })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
       pendingSkills: pending,
       /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — cùng ý như nhánh lớp thường. */
