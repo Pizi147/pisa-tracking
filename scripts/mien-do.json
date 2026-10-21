@@ -1,0 +1,15 @@
+[
+  {"cong_cu":"do-khung","pr":"M2","ly_do":"có sẵn trên main (b-may-do B-06 \"phát hiện nhẹ\"): panel Chấm Speaking GVBM cuộn trong trang","khop":"^gvbm-1440-(toi|sang) b cuộn lồng "},
+  {"cong_cu":"do-khung","pr":"M2","ly_do":"có sẵn trên main (b-may-do B-06): Vận hành 375 chữ «Mọi người» mất 2 px chân chữ","khop":"^cv-van-hanh-375-(toi|sang) c chữ cắt [0-9]+x16<[0-9]+x18 «Mọi người»"},
+  {"cong_cu":"do-bang","pr":"BANG-1","ly_do":"lưới MT + lưới lớp thường (ô tổng bị ⋯ đè) ở các lối vào lưới","khop":"^(nhap-diem|gv-nhap-diem|bang-diem-thuong|gv-bang-diem-thuong|test-lichTest|gvbm-test|test-diem-lop|gv-diem-lop|gv-hop-diem)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"BANG-1","ly_do":"lưới MT / Final Test trong hồ sơ lớp","khop":"^(lop-ft|lop-ft-phan-tich|lop-ft-y-thuc|lop-thuong|lop-thuong-phan-tich|panel-sua-tt|panel-them-hv|chon-nhieu-hv)-\\d+-(toi|sang) «(MT\\d|Final Test|bảng 1)» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"BANG-1","ly_do":"lưới Nhập điểm trong Công việc","khop":"^(.+)-\\d+-(toi|sang) «Nhập điểm · [^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M3","ly_do":"bảng hồ sơ lớp (Bang)","khop":"^(lop-ft|lop-ft-phan-tich|lop-ft-y-thuc|lop-thuong|lop-thuong-phan-tich|panel-sua-tt|panel-them-hv|chon-nhieu-hv)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M3b","ly_do":"bảng hồ sơ HV (Bang)","khop":"^(hv-hoc-thuat|hv-y-thuc|hv-hanh-trinh|hv-thuong|hv-thuong-hanh-trinh|hv-gvbm|hv-menu|panel-pa|panel-tao-case|panel-vi-pham)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M4","ly_do":"bảng Học viên & Lớp, Đang SOS, Lưu trữ (Bang)","khop":"^(hvl|hvl-gvcn|hvl-cuoi|hvl-gvbm|luu-tru|sos-ql|sos-gv|sos-tvv|sos-cx|panel-mot-em-ql|panel-mot-em-gv)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M1","ly_do":"bảng Tổng quan QL (Bang)","khop":"^(tong-quan)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M2","ly_do":"bảng Công việc + trang đầu GV (Bang)","khop":"^(tong-quan-gv|cv-ho-tro|cv-cho-duyet|cv-van-hanh|cv-bao-cao|cv-gv|gvbm|gv-yeu-cau|gv-ket-qua-pa|gv-chuong|menu-tk)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M5","ly_do":"bảng Kế hoạch Test (Bang)","khop":"^(test-ke-hoach|hop-ky-nang-mt|panel-xep-lich-mt)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M6","ly_do":"bảng Phân tích (Bang)","khop":"^(phan-tich|phan-tich-thuong)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M7","ly_do":"bảng Quản trị + Hồ sơ GV (Bang)","khop":"^(quan-tri|quan-tri-quyen|gv-ho-so|ho-so-ca-nhan)-\\d+-(toi|sang) «[^»]+» g[1-5] "}
+]

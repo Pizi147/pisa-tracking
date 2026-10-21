@@ -9,7 +9,7 @@ import { skillShort } from '../../lib/format.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
-  NHAN_NHOM_XU_LY, deadlineView, duongDotTest, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
+  NHAN_NHOM_XU_LY, deadlineView, duongDotTest, nhomTrenTrang, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
 } from '@shared/domain/index.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 
@@ -42,7 +42,7 @@ export const nhomDong = (r: DongSos): NhomXuLy => r.cases.reduce<NhomXuLy>((m, c
 
 /** Một dòng "kỹ năng · chữ" cho mỗi Case; kỹ năng người xem dạy đậm, còn lại mờ (GVBM — mockup 3 v2 §5). */
 function TheoCase({ r, dam, chu }: { r: DongSos; dam: ((topic: string | null) => boolean) | null; chu: (c: CaseTomTat) => ReactNode }) {
-  if (!r.cases.length) return <span className="text-slate-600">—</span>;
+  if (!r.cases.length) return <span className="text-slate-500">—</span>;
   return (
     <span className="flex flex-col gap-0.5">
       {r.cases.map((c) => {
@@ -64,7 +64,7 @@ function TheoCase({ r, dam, chu }: { r: DongSos; dam: ((topic: string | null) =>
 function ViecTiepDong({ r }: { r: DongSos }) {
   const { homNay } = useNgayNghiepVu();
   const ds = r.cases.filter((c) => c.viecTiep).sort((a, b) => Number(b.viecTiep!.quaHan) - Number(a.viecTiep!.quaHan) || (a.viecTiep!.han ?? '9').localeCompare(b.viecTiep!.han ?? '9'));
-  if (!ds.length) return <span className="text-slate-600">—</span>;
+  if (!ds.length) return <span className="text-slate-500">—</span>;
   const v = ds[0].viecTiep!;
   const d = v.han ? deadlineView({ kind: v.loaiHan ?? 'xac-minh-sos', due: v.han, today: homNay }) : null;
   return (
@@ -105,8 +105,10 @@ const chuKetQua = (c: CaseTomTat) => (c.done && c.ketQua ? `${t('Xong')} · ${di
  * MT · tuần. Cột: Học viên · SOS · Nguyên nhân · Phương án (QL / GV) · Kết quả đến nay · Trạng thái (chữ Tổng hợp) · Việc tiếp (QL / GV) · Phụ huynh
  * (TVV / CX) · TVV (CX) · Mở (panel một em). Không Nhắc. < 640 px: mỗi em một thẻ.
  */
-export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: {
+export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo, dangMo = null }: {
   data: TrangSos; cot: CotSos; dienThoai: boolean;
+  /** SL1 (A3-02): mọi lượt trước khi chia trang — số đầu lớp đếm trên đây, không trên trang. */
+  tatCa?: DongSos[];
   /** OV-14b: em đang mở panel — hàng / thẻ tô `row-active` như các bảng khác. */
   dangMo?: number | null;
   /** GVBM / GVCN: kỹ năng mình dạy đậm, còn lại mờ (null = không làm mờ). */
@@ -126,14 +128,17 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: 
   const mo = (id: number) => (soLop <= 5 || data.rows.length <= 40) !== gap.has(id);
   const doi = (id: number) => setGap((cu) => { const s = new Set(cu); if (s.has(id)) s.delete(id); else s.add(id); return s; });
 
-  const dauLop = (em: DongSos[]) => {
-    const r = em[0];
+  const toanLop = nhomTrenTrang(tatCa, data.rows, (x) => x.classId);
+  const dauLop = (trang: DongSos[]) => {
+    const r = trang[0];
+    const em = toanLop.get(r.classId)?.tatCa ?? trang;
     const soEm = new Set(em.map((x) => x.studentId)).size;
     const cho = em.filter((x) => nhomDong(x) === 'cho-duyet').length;
     const tre = em.filter((x) => x.cases.some((c) => c.viecTiep?.quaHan)).length;
     return (
       <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
         <Link to={`/hoc-vien/lop/${r.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{r.classCode}</Link>
+        {toanLop.get(r.classId)?.tiep && <span className="text-xs text-slate-400">{t('(tiếp)')}</span>}
         {cot === 'cx' && r.branchName && <span className="text-xs text-slate-400">{r.branchName}</span>}
         <Nhan tone="muted">{toanBo ? t('{n} em · {m} lượt SOS', { n: soEm, m: em.length }) : t('{n} em SOS', { n: soEm })}</Nhan>
         {cot === 'ql' && cho > 0 && <Nhan tone="muted">{t('{n} chờ duyệt', { n: cho })}</Nhan>}
@@ -217,7 +222,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: 
                       <td className="td">{ketQua(r)}</td>
                       <td className="td">{trangThai(r)}</td>
                       {cot === 'ql' && <td className="td"><ViecTiepDong r={r} /></td>}
-                      {cot === 'cx' && <td className="td truncate text-xs text-slate-300" title={r.tvv ?? undefined}>{r.tvv ?? <span className="text-slate-600">—</span>}</td>}
+                      {cot === 'cx' && <td className="td truncate text-xs text-slate-300" title={r.tvv ?? undefined}>{r.tvv ?? <span className="text-slate-500">—</span>}</td>}
                       {cot !== 'ql' && <td className="td text-sm"><OPhuHuynh l={r.lienHe} /></td>}
                       <td className="td text-center">{nutMo(r)}</td>
                     </HangCon>

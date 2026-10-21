@@ -112,19 +112,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     }
   }
   /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. */
-  const canXepLai = new Map<number, number>();
-  if (ftClassIds.length) {
-    for (const r of conn
-      .prepare(
-        `SELECT a.class_id, COUNT(DISTINCT a.student_id) AS n FROM attempt_skills k
-           JOIN assessment_attempts a ON a.id = k.attempt_id AND a.status = 'planned' AND a.lich_su = 0 AND a.kind = 'mock'
-           JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
-          WHERE a.class_id IN (${phOf(ftClassIds.length)}) AND k.required = 1 AND k.sit_status IN ('absent', 'cancelled')
-            AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.skill = k.skill AND r.status = 'pending')
-          GROUP BY a.class_id`,
-      )
-      .all(...ftClassIds) as any[]) canXepLai.set(r.class_id, r.n);
-  }
+  const canXepLai = new Map([...emCanXepLai(ftClassIds)].map(([lop, em]) => [lop, em.size]));
   const tomTatFT = (classId: number): string => {
     const luot = luotCuaLop.get(classId) ?? [];
     const hv = hvCuaLop.get(classId) ?? [];
@@ -1360,8 +1348,26 @@ export function lopTheoLoTrinh(cycleIds: readonly number[], p?: Principal): Map<
   return out;
 }
 
+/** Em cần Quản lý xếp lại theo lớp (K4-11, Q7) — một câu; số trên chip "Chỉ cần xếp lại" và tệp xuất của chip đó cùng tập (SL1 V3B-07 #4). */
+function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
+  const out = new Map<number, Set<number>>();
+  theoLo([...classIds], (lo, ph) => {
+    for (const r of db()
+      .prepare(
+        `SELECT DISTINCT a.class_id, a.student_id FROM attempt_skills k
+           JOIN assessment_attempts a ON a.id = k.attempt_id AND a.status = 'planned' AND a.lich_su = 0 AND a.kind = 'mock'
+           JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
+          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status IN ('absent', 'cancelled')
+            AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.skill = k.skill AND r.status = 'pending')`,
+      )
+      .all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, new Set()).get(r.class_id)!).add(r.student_id);
+  });
+  return out;
+}
+
 /** POST /ke-hoach-test/xuat — tệp Kế hoạch Test 13 cột theo bộ lọc đang xem (chỉ Fast Track). `xemTruoc` không ghi nhật ký. */
-export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds: number[]; xemTruoc: boolean }, luc = nowIso()) {
+export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds: number[]; xemTruoc: boolean;
+  /** SL1 (V3B-07 #4): chip "Chỉ cần xếp lại" đang bật — tệp chỉ em cần xếp lại (trước: mọi em của lớp). */ chiXepLai?: boolean }, luc = nowIso()) {
   const lop = lopFtXuat(p, i.branchId, i.classIds);
   const conn = db();
   const em: any[] = [];
@@ -1372,6 +1378,10 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
          FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
         WHERE e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')}`).all(...lo) as any[]);
   });
+  if (i.chiXepLai) {
+    const can = emCanXepLai(lop.map((l) => l.id as number));
+    em.splice(0, em.length, ...em.filter((e) => can.get(e.class_id)?.has(e.id)));
+  }
   const maLop = new Map(lop.map((l) => [l.id as number, l.code as string]));
   /* OV-15h2 (ý 6): em học cùng lúc hai lớp FT = MỘT hàng; mọi lớp đang học vào cột Lớp (theo thứ tự lớp). */
   const lopDangHoc = new Map<number, string[]>();
@@ -1401,13 +1411,13 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
   });
   const bang = bangKeHoachXuat(hv);
   const chiNhanh = tenChiNhanh(lop);
-  const boLoc = `Fast Track · ${lop.length === 1 ? lop[0].code : `${lop.length} lớp`} · ${hv.length} học viên`;
+  const boLoc = `Fast Track · ${lop.length === 1 ? lop[0].code : `${lop.length} lớp`}${i.chiXepLai ? ' · chỉ cần xếp lại' : ''} · ${hv.length} học viên`;
   const sheets: SheetXuat[] = [
     { ten: 'Kế hoạch Test', aoa: bang.aoa },
     { ten: 'Thông tin xuất', aoa: bangThongTinXuat({ chiNhanh, boLoc, luc: gioVn(luc), nguoi: p.fullName, ngoai: bang.ngoai }) },
   ];
   if (!i.xemTruoc) {
-    writeAudit({ actorUserId: p.userId, action: 'ke_hoach.xuat_excel', entityType: 'xuat_ke_hoach', entityLabel: `${hv.length} học viên · ${boLoc}`, after: { branchId: i.branchId, classIds: i.classIds } });
+    writeAudit({ actorUserId: p.userId, action: 'ke_hoach.xuat_excel', entityType: 'xuat_ke_hoach', entityLabel: `${hv.length} học viên · ${boLoc}`, after: { branchId: i.branchId, classIds: i.classIds, chiXepLai: !!i.chiXepLai } });
   }
   return { sheets, tenTep: `Ke-hoach-Test_${chuTep(chiNhanh)}_${ngayTep(demoToday())}.xlsx`, dem: { hocVien: hv.length, lop: lop.length }, boLoc };
 }

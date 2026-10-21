@@ -49,7 +49,8 @@ export default function OverviewPage() {
    * CX "Số liệu" (ô đếm học viên mọi chi nhánh + Số liệu, không "Việc hôm nay"). QL / Quản trị giữ nguyên.
    */
   const vai: 'ql' | 'admin' | 'cx' = laVaiQuanLy(session?.roles) ? 'ql' : session?.nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
-  const nhanTabDau = vai === 'admin' ? 'Mock Test' : vai === 'cx' ? t('Số liệu') : TAB_TONG_QUAN_LABEL['tong-quan'];
+  /* KHUNG-LOI (A1-07): tiêu đề = tên menu ở mọi vai (trước: "Mock Test" Admin, "Số liệu" CX, "Việc hôm nay" QL / QT). */
+  const nhanTabDau = TAB_TONG_QUAN_LABEL['tong-quan'];
   const laTqQl = vai === 'ql' && canSeeBoard && !session?.nav?.hvCuaToi;
   const tq = useApi<TongQuanQlData>(laTqQl ? `/tong-quan/ql?${thamSoTq(branchId, khung)}` : null, [branchId, khung]);
   /* Cần bạn quyết + dải tóm tắt: việc của QL (quyền xem việc người khác), gộp hai khung — đổi khung không tải lại. */
@@ -59,7 +60,7 @@ export default function OverviewPage() {
   if (session?.nav?.hvCuaToi) {
     return (
       <div className="page space-y-4">
-        <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Học viên của tôi')}</h1>
+        <h1 className="m-0 text-lg font-semibold text-slate-100">{TAB_TONG_QUAN_LABEL['tong-quan']}</h1>
         <DaiMoiDung />
         <HocVienCuaToi />
       </div>
@@ -97,7 +98,7 @@ export default function OverviewPage() {
           </div>
           {/* Hai khối việc của QL (quyền xem việc người khác, `/tong-quan/quan-ly`) — lỗi / đang tải riêng, không chờ phần theo khung. */}
           {ql.data && <DaiTomTat data={ql.data} bang={tq.data?.bang ?? null} branchId={branchId} ct={khung} />}
-          {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} />}
+          {session?.nav?.work && <KhoiCanQuyet data={ql.data} loading={ql.loading} error={ql.error} reload={ql.reload} branchId={branchId} />}
           {/* Phần theo khung (`/tong-quan/ql`): lỗi / đang tải chỉ che Lớp cần chú ý + Tuần này. */}
           {tq.error ? <ErrorState message={tq.error.message} hint={tq.error.hint} onRetry={tq.reload} />
             : !tq.data ? <Skeleton rows={6} />

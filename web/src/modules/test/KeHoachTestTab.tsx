@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { ChuGiaiMau } from './keHoach/ChipKyNang.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
@@ -182,14 +183,9 @@ export function KeHoachTestTab() {
                 {monTheoCt.length ? '.' : ''} Môn cùng tuần thì gộp một chip, khác tuần thì tách dòng.
               </span>
             )}
-            <span className="block">
-              Xám = đã thi xong · xanh dương = đã xếp · vàng = đã dời vì vắng · nét đứt = chưa xếp. Lớp thường ghi thêm tuần
-              trong khoá (<b>W5/10</b>).
-            </span>
-            <span className="block">
-              Cam = vắng, Quản lý xếp lại · tím = chờ Quản lý duyệt dời · viền đỏ = trễ (tuần thi đã hết, chưa có điểm) · gạch ngang =
-              đã huỷ phần thi. Dấu nửa tròn trước chip = đợt dở, còn kỹ năng phải thi.
-            </span>
+            {/* KHUNG-LOI (TST-05): chú giải màu sinh từ bảng màu thật của chip. */}
+            <ChuGiaiMau ft={loai === 'ft'} />
+            {loai !== 'ft' && <span className="block">Lớp thường ghi thêm tuần trong khoá (<b>W5/10</b>).</span>}
             <span className="block">Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.</span>
           </NutLuat>
         </span>
@@ -224,7 +220,7 @@ export function KeHoachTestTab() {
           onDoiKhung={setXep} onClose={() => setXep(null)} onDone={reload} />
       )}
       {xuat === 'ke-hoach' && (
-        <NganXuatKeHoach branchId={branchId} classIds={danhSach.length === lopFT.length ? [] : danhSach.map((l) => l.id)} onDong={() => setXuat(null)} />
+        <NganXuatKeHoach branchId={branchId} classIds={danhSach.length === lopFT.length ? [] : danhSach.map((l) => l.id)} chiXepLai={locXepLai} onDong={() => setXuat(null)} />
       )}
       {xuat === 'diem' && (
         <NganXuatDiem branchId={branchId} lopFt={lopFT} lopDau={lopChon?.loai === 'ft' ? lopChon.id : null} onDong={() => setXuat(null)} />

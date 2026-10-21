@@ -113,11 +113,11 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
   const oLuot = (s: DongRoster) => {
     const l = luotGanNhat(s);
     return l ? <><span className="block tabular-nums text-slate-200">{l.nhan}</span><span className="block text-xs tabular-nums text-slate-500">{t('{co}/{can} ô có điểm', { co: l.co, can: l.can })}</span></>
-      : <span className="text-slate-600">—</span>;
+      : <span className="text-slate-500">—</span>;
   };
   const oTrong = (s: DongRoster) => {
     const l = luotGanNhat(s);
-    return l && l.can > l.co ? <span className="tabular-nums text-slate-100">{l.can - l.co}</span> : <span className="text-slate-600">—</span>;
+    return l && l.can > l.co ? <span className="tabular-nums text-slate-100">{l.can - l.co}</span> : <span className="text-slate-500">—</span>;
   };
   const menuDong = (s: DongRoster) => tt.mucCua({
     id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(lop.id, thuong, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc,
@@ -199,8 +199,8 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                   ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-xs text-slate-500">{khoa.phu}</span>}</>
                   : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
                 { nhan: t('Dự kiến thi'), noiDung: <><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</> },
-                { nhan: t('Sắp tới'), noiDung: sapToi.chu ? <span title={sapToi.title} className={sapToi.thiThat ? 'text-slate-400' : ''}>{sapToi.chu}</span> : <span className="text-slate-600">—</span> },
-                { nhan: 'Case', noiDung: s.openCases || <span className="text-slate-600">—</span> },
+                { nhan: t('Sắp tới'), noiDung: sapToi.chu ? <span title={sapToi.title} className={sapToi.thiThat ? 'text-slate-400' : ''}>{sapToi.chu}</span> : <span className="text-slate-500">—</span> },
+                { nhan: 'Case', noiDung: s.openCases || <span className="text-slate-500">—</span> },
                 { nhan: t('Việc tiếp'), noiDung: (
                   <DanhSachViecTiep viec={(conLai.get(s.id) ?? []).map(dichViec)}
                     den={(v) => duongViecTiep(v, { studentId: s.id, classId: lop.id, laLopThuong: thuong, timeline: s.timeline })}
@@ -254,11 +254,11 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
             </td>
             <td className="td text-xs"><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</td>
             <td className={`td text-xs tabular-nums ${sapToi.thiThat ? 'text-slate-400' : 'text-slate-300'}`} title={sapToi.title}>
-              {sapToi.chu ?? <span className="text-slate-600">—</span>}
+              {sapToi.chu ?? <span className="text-slate-500">—</span>}
             </td>
             <td className="td text-right tabular-nums"
               title={s.handoverCases ? t('{n} Case bàn giao từ lớp trước', { n: s.handoverCases }) : undefined}>
-              {s.openCases || <span className="text-slate-600">—</span>}
+              {s.openCases || <span className="text-slate-500">—</span>}
             </td>
             <td className="td">
               <DanhSachViecTiep viec={(conLai.get(s.id) ?? []).map(dichViec)}

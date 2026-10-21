@@ -6,6 +6,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
+import { ganChuCaseThieu } from '../cases/owner.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { chuyenCaseSangLoTrinh, closeCasesBySystem, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
@@ -317,6 +318,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
         .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
         .run(d.sid, d.toClassId, d.ngay, nowIso());
       conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(toClass.branch_id, d.sid);
+      /* CV-LOI: Case chưa có người phụ trách của em → gán theo lớp mới (GV môn → GVCN), cùng giao dịch, có lịch sử. */
+      ganChuCaseThieu({ studentIds: [d.sid], actorId: p.userId, luc: nowIso() });
       addJourney({
         studentId: d.sid, eventType: 'transfer', eventDate: d.ngay, title: `Chuyển sang lớp ${toClass.code}`,
         detail: [d.lyDo, d.luuY].filter(Boolean).join(' — ') || null, createdBy: p.userId,
@@ -353,6 +356,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
     .run(d.sid, d.toClassId, d.ngay, nowIso());
   conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(toClass.branch_id, d.sid);
+  /* CV-LOI: Case chưa có người phụ trách của em → gán theo lớp mới (GV môn → GVCN), cùng giao dịch, có lịch sử. */
+  ganChuCaseThieu({ studentIds: [d.sid], actorId: p.userId, luc: nowIso() });
 
   const curCycle = conn.prepare(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(d.sid) as any;
   /*
@@ -635,6 +640,8 @@ export function apDungCaLop(p: Principal, o: {
       conn.prepare(`UPDATE students SET branch_id = ? WHERE id IN (${ph})`).run(branchId, ...ids);
     }
   }
+  /* CV-LOI: Case chưa có người phụ trách của các em → gán theo lớp mới, cùng giao dịch (ponytail: một lô ≤ cỡ một lớp, dưới trần 900 tham số). */
+  ganChuCaseThieu({ studentIds: o.dongs.map((d) => d.sid), actorId: p.userId, luc: now });
 
   /* PR-NT (chủ sản phẩm 04/10): lên lớp / học lại lớp thường giữ Target + Dự kiến thi — đọc khoá cũ MỘT câu trước khi đóng. */
   const khoaCu = new Map<number, any>();

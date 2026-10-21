@@ -16,14 +16,13 @@ import { LopToiDay } from '../worklist/LopToiDay.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
-import { KhungTaiCho, coPanelDangSua } from '../../ui/KhungPanel.tsx';
-import { PanelPhanCong, PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
-import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
+import { KhungTaiCho, coPanelDangSua, dangChoHoanTac } from '../../ui/KhungPanel.tsx';
+import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
-  LOC_NHANH, viecTuMo, type LocNhanh, type NhomViec as MaNhomViec,
-  CHAM_CHEO, LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, demNguoiViec, khopNguoiViec, trongKhoiHomNay, tuanLich, type DemYeuCau, type LocNguoiViec,
+  LOC_NHANH, viecKeTiep, viecTuMo, type LocNhanh, type NhomViec as MaNhomViec,
+  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, demNguoiViec, khopNguoiViec, trongKhoiHomNay, tuanLich, type DemYeuCau, type LocNguoiViec,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -171,20 +170,17 @@ export function HoTroHocVienTab() {
   const moHet = loc !== 'tat-ca' || !!nhom;
 
   // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
-  /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang và việc đã xong. */
-  const thuTu = useMemo(() => dsNhom.flatMap((g) => g.items.flatMap((x) => (x.con && !moCaDong(x) ? x.con : [x]))).filter((x) => lamTaiCho(x)), [dsNhom]);
+  /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang. `nhom` = nhóm đang vẽ (CV-05: việc kế cùng nhóm). */
+  const thuTu = useMemo(() => dsNhom.flatMap((g) => g.items.flatMap((x) => (x.con && !moCaDong(x) ? x.con : [x])).map((x) => ({ ...x, nhom: g.key })))
+    .filter((x) => lamTaiCho(x)), [dsNhom]);
   /* Địa chỉ (không `viec`) lúc mở panel bằng một bước lịch sử — đóng chỉ lùi khi bộ lọc chưa đổi, không thì mất lựa chọn lọc vừa bấm. */
   const daDay = useRef<string | null>(null);
   const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); return x.toString(); };
   const cuon = useRef(0);
-  /*
-   * OV-13b (mockup OV-13 §1): Kết quả PA ghi nhanh được (`ghiNhanh`) mở NGAY DƯỚI dòng — không panel phải; "Điều chỉnh / Kết thúc…" chuyển việc đó sang
-   * panel lớn (`panelLon`). Lưu xong: dòng gập "✓ Đã lưu · … · Hoàn tác", việc kế tự mở.
-   */
-  const [panelLon, setPanelLon] = useState<ReadonlySet<string>>(new Set());
-  const [daLuuNhanh, setDaLuuNhanh] = useState<ReadonlyMap<string, DaLuuNhanh>>(new Map());
-  const laNhanh = (x: WorkItem) => x.group === 'ghi_ket_qua_pa' && !!x.ghiNhanh && !!x.paId && !panelLon.has(x.key);
+  /* CV-09: việc do trang tự mở (không phải người bấm) — panel không đặt con trỏ, không cuộn. */
+  const tuMo = useRef<string | null>(null);
   const mo = (it: WorkItem) => {
+    tuMo.current = null;
     if (!lamTaiCho(it)) { navigate(it.href); return; }
     const next = new URLSearchParams(params);
     next.set('viec', it.key);
@@ -193,7 +189,7 @@ export function HoTroHocVienTab() {
     else {
       daDay.current = khongViec(params);
       const v = vungCuon();
-      if (v && window.matchMedia(MAN_HEP).matches && !laNhanh(it)) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
+      if (v && window.matchMedia(MAN_HEP).matches) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
       setParams(next);
     }
   };
@@ -212,8 +208,9 @@ export function HoTroHocVienTab() {
     if (vuaCo.current && !coChon && window.matchMedia(MAN_HEP).matches) vungCuon()?.scrollTo(0, cuon.current);
     vuaCo.current = coChon;
   }, [coChon]);
-  const viTri = thuTu.findIndex((x) => x.key === viec);
-  const keTiep = thuTu.slice(viTri + 1).find((x) => !xong.has(x.key)) ?? null;
+  /* ponytail: "đang hiện" đọc từ DOM — nhóm gập, việc sau "Xem thêm", em của dòng gộp chưa mở không được vẽ; nâng lên state nếu NhomViec đổi cách vẽ. */
+  const dangHien = (k: string) => !!document.querySelector(`[data-khoa="${CSS.escape(k)}"]`);
+  const keTiep = viecKeTiep(thuTu, viec, (x) => !xong.has(x.key) && dangHien(x.key));
   const daLam = (it: WorkItem) => setGiu((m) => new Map(m).set(it.key, it));
   /*
    * OV-15d HÀNG ĐỢI (mockup 2 mục 2): việc đang mở đã lưu XONG (máy chủ không còn trả việc đó) → tự sang việc kế; một dải "✓ Xong … · ‹ việc vừa xong"
@@ -224,6 +221,8 @@ export function HoTroHocVienTab() {
   useEffect(() => {
     if (!chon || !xong.has(chon.key) || daTuSang.current === chon.key) return;
     daTuSang.current = chon.key;
+    /* CV-05: panel còn "✓ Đã lưu · Hoàn tác" hoặc đang có chữ gõ dở → ở lại; người dùng bấm "Việc tiếp ›" (Hoàn tác vẫn bấm được, chữ không mất). */
+    if (dangChoHoanTac() || coPanelDangSua()) return;
     setVuaXong(chon);
     if (keTiep) mo(keTiep); else setParam('viec', null);
   }, [chon, xong, keTiep]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -234,27 +233,14 @@ export function HoTroHocVienTab() {
   const daTuMo = useRef<string | null>(null);
   useEffect(() => {
     if (!data || data.scopeEmpty) return;
-    const k = viecTuMo(thuTu.filter((x) => !laNhanh(x)), { manHep: window.matchMedia(MAN_HEP).matches, dangMo: !!viec, daTuMo: daTuMo.current === khoaLoc });
+    const k = viecTuMo(thuTu, { manHep: window.matchMedia(MAN_HEP).matches, dangMo: !!viec, daTuMo: daTuMo.current === khoaLoc });
     daTuMo.current = khoaLoc;
-    if (k) setParam('viec', k);
+    if (k) { tuMo.current = k; setParam('viec', k); }
   }, [data, khoaLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const moRong = (x: WorkItem) => {
-    const kq = daLuuNhanh.get(x.key);
-    if (kq) {
-      return <DongDaLuu kq={kq} onHoanTac={() => { setDaLuuNhanh((m) => { const y = new Map(m); y.delete(x.key); return y; }); reload(); mo(x); }} />;
-    }
-    if (x.key !== viec || !laNhanh(x)) return null;
-    return (
-      <GhiNhanh key={x.key} paId={x.paId!} trongDong
-        onDaLuu={(r) => { setDaLuuNhanh((m) => new Map(m).set(x.key, r)); daLam(x); reload(); if (keTiep) mo(keTiep); else setParam('viec', null); }}
-        onMoPanel={() => setPanelLon((s) => new Set(s).add(x.key))} />
-    );
-  };
 
   // ------------------------------------------------------------------ lọc người + chip đang lọc (OV-15d, mockup 2 mục 3: 11 lựa chọn → 3)
   const [tenGv, setTenGv] = useState<string | null>(null);
   const [giaHan, setGiaHan] = useState<WorkItem | null>(null);
-  const [phanCong, setPhanCong] = useState<number | null>(null);
   const [giaoViec, setGiaoViec] = useState(false);
   const coLoc = loc !== 'tat-ca' || !!nhom || !!loai || typeof nguoi === 'number' || khung !== 'tat-ca';
   const xoaLoc = () => {
@@ -275,9 +261,6 @@ export function HoTroHocVienTab() {
   const demDuyet = useApi<DemYeuCau>(session?.nav?.workApprove ? `/yeu-cau/dem${branchId ? `?branchId=${branchId}` : ''}` : null, [branchId]).data;
   const [moDuyet, setMoDuyet] = useState(true);
   const [moQuanLy, setMoQuanLy] = useState(false);
-  /* "Chưa có người": việc có chủ mà chưa ai giữ (không tính chấm chéo — T18, không tính việc cả lớp như Chốt lộ trình). */
-  const chuaCoNguoi = (x: WorkItem) => x.ownerId === null && !x.mine && !x.owner && x.classId !== null && !x.con
-    && dich(x.statusLabel) !== CHAM_CHEO && !['chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'mgmt'].includes(x.group);
   const coVanHanh = !!session?.nav?.workOps && !chiChamDiem;
   const coBaoCao = !!session?.nav?.workReports;
   const cuoiNhom = (key: string) => (key === 'van-hanh' && coVanHanh ? <LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} /> : null);
@@ -288,8 +271,7 @@ export function HoTroHocVienTab() {
   const tenChao = (session?.user?.fullName ?? '').trim().split(/\s+/).pop() ?? '';
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  const nhanhChon = !!chon && laNhanh(chon);
-  const anTrenDienThoai = chon && !nhanhChon ? 'max-lg:hidden' : '';
+  const anTrenDienThoai = chon ? 'max-lg:hidden' : '';
   return (
     <div className="space-y-3">
       <div className={`space-y-2.5 ${anTrenDienThoai}`}>
@@ -300,7 +282,7 @@ export function HoTroHocVienTab() {
             <h1 className="m-0 text-lg font-semibold text-slate-100">{tenChao ? t('Chào {ten}', { ten: tenChao }) : t('Công việc')}</h1>
             <span className="text-xs text-slate-500">{t('Tuần')}{' '}<b className="font-semibold tabular-nums text-slate-300">{tuanLich(homNay, homNay)}</b>{' '}{t('· hôm nay')}{' '}{ngan(homNay)}</span>
           </div>
-        ) : <h1 className="m-0 text-lg font-semibold text-slate-100">{chiChamDiem ? t('Chấm điểm') : t('Công việc')}</h1>}
+        ) : <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Công việc')}</h1>}{/* KHUNG-LOI (A1-07): = tên menu, cả Admin */}
         <div className="flex flex-wrap items-center gap-2" data-hd="cv-loc-them">
           {laQuanLy && data && (
             <>
@@ -339,7 +321,7 @@ export function HoTroHocVienTab() {
         <div className={`card px-3 py-1 ${anTrenDienThoai}`}>
           <KhoiNhom id="nhom-cho-duyet" mo={moDuyet} onMo={() => setMoDuyet((x) => !x)} nhan={t('Chờ bạn duyệt')} tieuDe={t('Chờ bạn duyệt')} dem={demDuyet.cho}
             phu={demDuyet.quaHan ? <span className="font-bold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: demDuyet.quaHan })}</span> : null}>
-            <div className="pb-3"><HopChoDuyet gon /></div>
+            <div className="pb-3"><HopChoDuyet gon branchId={branchId} /></div>
           </KhoiNhom>
         </div>
       )}
@@ -361,13 +343,10 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
-              <NhomViec nhom={dsNhomXem} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moRong={moRong} moCaDong={moCaDong}
+              <NhomViec nhom={dsNhomXem} soHien={10} moHet={moHet} onOpen={(x) => { if (x.key === viec || boDuocChu()) mo(x); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
                 cuoiNhom={cuoiNhom}
                 nutPhu={(x) => (!x.con && x.cycleId && (x.group === 'thi_that' || x.group === 'buoc_tiep') && !xong.has(x.key)
-                  ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button>
-                  /* Việc chưa có người: "Phân công…" mở Phân công GV môn của lớp (người phụ trách đi theo phân công) — chỉ QL. */
-                  : laQuanLy && !chiChamDiem && chuaCoNguoi(x) && !xong.has(x.key)
-                    ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setPhanCong(x.classId)}>{t('Phân công…')}</button> : null)} />
+                  ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button> : null)} />
             </Card>
           )}
           {/* OV-15h1: không có việc Vận hành nào — "Việc quản lý" vẫn là MỘT nhóm gập ở cuối danh sách (Giao việc · Vận hành · Báo cáo đơn vị), không thẻ rời. */}
@@ -386,7 +365,7 @@ export function HoTroHocVienTab() {
           )}
         </div>
         {/* Cột phải dính khi cuộn danh sách dài (mockup `.pn` sticky). */}
-        <div className={`lg:sticky lg:top-3 ${chon && !nhanhChon ? 'space-y-2' : 'max-lg:hidden'}`}>
+        <div className={`lg:sticky lg:top-3 ${chon ? 'space-y-2' : 'max-lg:hidden'}`}>
           {vuaXong && chon?.key !== vuaXong.key && (
             <div role="status" className="card flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[13px]">
               <span className="min-w-0 flex-1 truncate text-ok">✓ {t('Xong:')} {dich(vuaXong.tieuDe)}</span>
@@ -394,13 +373,13 @@ export function HoTroHocVienTab() {
                 onClick={() => { if (boDuocChu()) { daTuSang.current = vuaXong.key; mo(vuaXong); setVuaXong(null); } }}>{t('‹ việc vừa xong')}</button>
             </div>
           )}
-          {chon && !nhanhChon ? (
+          {chon ? (
             <>
               {/* Điện thoại: danh sách vừa ẩn → focus về nút lùi (máy tính nút ẩn, `autoFocus` không có tác dụng). */}
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => { if (boDuocChu()) dong(); }}>{t('‹ Công việc')}</button>
               <KhungTaiCho.Provider value>
-                <PanelViec key={chon.key} it={chon} onDong={dong} onDaLam={() => daLam(chon)} onTiep={keTiep ? () => mo(keTiep) : null}
+                <PanelViec key={chon.key} it={chon} tuMo={tuMo.current === chon.key} onDong={dong} onDaLam={() => daLam(chon)} onTiep={keTiep ? () => mo(keTiep) : null}
                   onMo={(x) => { if (boDuocChu()) mo(x); }} />
               </KhungTaiCho.Provider>
             </>
@@ -416,7 +395,6 @@ export function HoTroHocVienTab() {
       */}
       {/* OV-13q: Gia hạn sau thi ngay ở dòng việc — hộp nhỏ đè lên, không đổi việc đang mở. */}
       {giaHan && <HopGiaHan x={{ cycleId: giaHan.cycleId!, han: giaHan.due, daGiaHan: !!giaHan.daGiaHan }} hocVien={giaHan.studentName} lop={giaHan.classCode} onClose={() => setGiaHan(null)} />}
-      {phanCong !== null && <PanelPhanCong classId={phanCong} onDong={() => setPhanCong(null)} onDaLam={() => { invalidate('/my-work'); reload(); }} />}
       <CreateTask open={giaoViec} onClose={() => setGiaoViec(false)} onDone={() => invalidate('/my-work')} branchId={branchId} />
       <NganViecVanHanh taskId={moViec} onClose={() => setParam('mo-viec', null)} onDone={() => invalidate('/my-work')} />
     </div>

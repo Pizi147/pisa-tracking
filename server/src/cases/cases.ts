@@ -21,7 +21,7 @@ import {
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { HttpError, addDays, badRequest, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -31,10 +31,10 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regular.ts';
-import { suggestCaseOwner } from './owner.ts';
+import { chuCaseTheoKyNang, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
-import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
+import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, xuLyCaseMany } from './sosState.ts';
 import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
@@ -500,6 +500,8 @@ export function reportIssue(p: Principal, input: {
    *     đang chạy.
    */
   backfill?: boolean;
+  /** CASE-NHIEU (`reportIssues`): "mở riêng" vẫn bị chặn khi kỹ năng có Case chờ xác nhận. Đường một kỹ năng giữ như cũ (seed dựng Case song song). */
+  kiemChoXacNhan?: boolean;
 }) {
   const conn = db();
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
@@ -527,8 +529,10 @@ export function reportIssue(p: Principal, input: {
    * không biết em vướng gì, và không bảng tổng hợp nào đếm được.
    */
   /* PR-Dọn (Q4, quét #24): tên ≤ 200, mô tả ≤ 2 000 ký tự. */
+  /* CASE-NHIEU: "Ghi vào Case đang có" không đặt tên mới (05 mục 7.1b) — tên khi đó kiểm sau, chỉ khi không có Case để ghi vào. */
   const title = chuTuDo(input.title, 'Tên Case', 200) ?? '';
-  if (title.length < 6) {
+  const thieuTen = title.length < 6;
+  if (thieuTen && !input.mergeIntoExisting) {
     throw badRequest('Đặt tên cho Case — một câu ngắn nói đúng vấn đề, ví dụ '
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
@@ -604,8 +608,9 @@ export function reportIssue(p: Principal, input: {
 
   const category = categoryOf(topic);
 
+  /* CASE-NHIEU: lô (`kiemChoXacNhan`) tra Case đang có KỂ CẢ khi "mở riêng" — "mở riêng" không lách được luật Case chờ xác nhận (K3-23) ngay dưới. */
   const dedupKey = caseDedupKey({
-    category, studentId: input.studentId, cycleId: cycle?.id ?? null, parallel: input.parallel,
+    category, studentId: input.studentId, cycleId: cycle?.id ?? null, parallel: input.parallel && !input.kiemChoXacNhan,
   });
   const caCu = dedupKey
     ? (conn.prepare(`SELECT * FROM sos_cases WHERE dedup_key = ? AND status != 'done'`).get(dedupKey) as any)
@@ -648,7 +653,15 @@ export function reportIssue(p: Principal, input: {
     );
   }
 
+  if (thieuTen && !existing) {
+    throw badRequest('Đặt tên cho Case — một câu ngắn nói đúng vấn đề, ví dụ '
+      + '"Reading: chưa xử lý được dạng True/False/Not Given".');
+  }
+
   if (existing && input.mergeIntoExisting) {
+    /* CASE-NHIEU: gửi lại cùng khoá (mạng đứt sau khi đã lưu) → không ghi chữ lần hai. Khoá nằm ở audit vì Case đang có đã có khoá riêng. */
+    if (key && conn.prepare(`SELECT 1 FROM audit_logs WHERE entity_type = 'sos_case' AND action = 'case.report.merge' AND entity_id = ? AND after_json LIKE ?`)
+      .get(existing.id, `%"khoa":${JSON.stringify(key)}%`)) return caseDetail(p, existing.id);
     /* "Ghi vào Case đang có" — thêm chữ của người báo, không tạo bản ghi thứ hai. */
     return tx(() => {
       conn
@@ -670,7 +683,7 @@ export function reportIssue(p: Principal, input: {
       });
       writeAudit({ actorUserId: p.userId, action: 'case.report.merge', entityType: 'sos_case',
         entityId: existing.id, entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`,
-        after: { mergedInto: existing.id } });
+        after: { mergedInto: existing.id, khoa: key } });
       return caseDetail(p, existing.id);
     });
   }
@@ -687,10 +700,11 @@ export function reportIssue(p: Principal, input: {
      * giữ nguyên. Việc nối Case mới vào Case cũ do đường tín hiệu lo, vì chỉ ở đó mới biết
      * đây là tái diễn hay là một vấn đề khác.
      */
-    if (dedupKey) {
+    if (dedupKey && !input.parallel) {
       conn.prepare(`UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE dedup_key = ? AND (status = 'done' OR id = ?)`)
         .run(nowIso(), dedupKey, caChuongTrinhKhac ? caCu.id : 0);
     }
+    const chuCase = input.ownerUserId ?? suggestCaseOwner({ classId, category });
     const info = conn
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category, origin_kind,
@@ -708,7 +722,7 @@ export function reportIssue(p: Principal, input: {
             * hộ mở Case rất thường xuyên; gán họ làm người phụ trách là ghi sai trách nhiệm.
             * Ai báo thì lưu ở `reported_by`, còn đây là gợi ý theo phân công.
             */
-           input.ownerUserId ?? suggestCaseOwner({ classId, category }),
+           chuCase,
            nowIso());
     const caseId = Number(info.lastInsertRowid);
 
@@ -731,11 +745,58 @@ export function reportIssue(p: Principal, input: {
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_open:${caseId}`,
     });
+    /* SL1 (02 4.7 C23): Case tạo tay cho kỹ năng người khác phụ trách → chuông Cần làm của người phụ trách (như Rb §20.11 "Case SOS mới"). */
+    if (chuCase && chuCase !== p.userId && !input.backfill) {
+      notify({ userId: chuCase, kind: 'case_giao', title: `Thêm PA · Case ${caseTopicLabel(topic, ctCuaCase)} · ${student.full_name}`, body: summary.slice(0, 120),
+        entityType: 'sos_case', entityId: caseId, dedupKey: `case_giao:${caseId}`, han: xuLyCaseMany([caseId], demoToday()).get(caseId)?.han ?? null });
+    }
     writeAudit({ actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',
       entityType: 'sos_case', entityId: caseId,
       entityLabel: `${student.student_code} · ${summary.slice(0, 40)}`, after: { urgency, detectedAt } });
     return caseDetail(p, caseId);
   });
+}
+
+/**
+ * TẠO CASE NHIỀU KỸ NĂNG MỘT LẦN (CASE-NHIEU · 05 mục 7.1b · 02 B16, C21).
+ *
+ * Mỗi kỹ năng vẫn MỘT Case độc lập — gọi đúng `reportIssue` n lần (cùng luật, cùng người phụ trách, cùng hạn), trong MỘT giao dịch:
+ * một thẻ sai / mất quyền / Case chờ xác nhận → không Case nào được lưu, lỗi mang `details.kyNang` để form chỉ đúng thẻ.
+ * Khoá gửi đôi theo lô + kỹ năng (`{khoá}:{kỹ năng}`): gửi lại sau mạng đứt trả đúng các Case đã có.
+ */
+export function reportIssues(p: Principal, input: {
+  studentId: number; cycleId?: number | null; urgency?: string; detectedAt?: string | null; idempotencyKey?: string;
+  kyNang: { topic: string; primaryCode?: string | null; observation?: string | null; title?: string | null; summary: string;
+    /** Kỹ năng đã có Case mở cùng hạng mục: người dùng chọn trước khi gửi (mục 7.13). */
+    gop?: 'ghi-vao' | 'rieng' | null }[];
+}) {
+  const ds = input.kyNang;
+  /* Trần = số kỹ năng nhiều nhất của một chương trình (FT: L · R · W1 · W2 · S); `reportIssue` vẫn kiểm từng kỹ năng thuộc chương trình của em. */
+  if (!Array.isArray(ds) || !ds.length || ds.length > caseTopicsFor(true, null).length) throw badRequest('Chọn từ 1 đến 5 kỹ năng.');
+  if (ds.some((k) => !k || typeof k.topic !== 'string') || new Set(ds.map((k) => k.topic)).size !== ds.length) {
+    throw badRequest('Mỗi kỹ năng chỉ một thẻ.');
+  }
+  const khoa = input.idempotencyKey?.trim() || null;
+  return tx(() => ({
+    cases: ds.map((k) => {
+      const khoaKn = khoa ? `${khoa}:${k.topic}` : undefined;
+      try {
+        const c = reportIssue(p, {
+          studentId: input.studentId, cycleId: input.cycleId, urgency: input.urgency, detectedAt: input.detectedAt,
+          topic: k.topic, primaryCode: k.primaryCode, observation: k.observation, title: k.title, summary: k.summary,
+          mergeIntoExisting: k.gop === 'ghi-vao', parallel: k.gop === 'rieng', kiemChoXacNhan: true, idempotencyKey: khoaKn,
+        }) as any;
+        /* Ghi vào = Case trả về không phải Case mang khoá của thẻ này (`gop: 'ghi-vao'` mà Case cũ vừa đóng thì `reportIssue` mở Case mới). */
+        const gop = k.gop === 'ghi-vao' && caseDaCoTheoKhoa(khoaKn) !== c.id;
+        return { id: c.id as number, title: c.title as string, topic: k.topic, gop,
+          /* Người tạo đính kèm được vào Case mình vừa tạo; ghi vào Case đang có thì theo quyền sửa Case đó. */
+          canEdit: !!c.viewer?.canEdit || !gop, viecTiep: c.viecTiep ?? null };
+      } catch (e) {
+        if (e instanceof HttpError) e.details = { ...(e.details as object ?? {}), kyNang: k.topic };
+        throw e;
+      }
+    }),
+  }));
 }
 
 /**
@@ -759,7 +820,8 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
   const ratio = !!(cycle && isRatioCycle(cycle));
   const chuongTrinh: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
   /* PR-SOS (K3-23): kỹ năng đang có Case chờ xác nhận nguyên nhân — form "+ Case" chấm nhỏ nút đó và dẫn sang Xác nhận Case. */
-  const mo = conn.prepare(`SELECT sc.id, sc.topic, sc.category, sc.sos_level, a.attempt_no, a.kind AS attempt_kind FROM sos_cases sc
+  const mo = conn.prepare(`SELECT sc.id, sc.topic, sc.category, sc.sos_level, sc.title, sc.origin_kind, sc.kck, sc.detected_at, sc.dedup_key, sc.goc_programme_code,
+        a.attempt_no, a.kind AS attempt_kind, (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS so_pa FROM sos_cases sc
       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.student_id = ? AND sc.status != 'done'`).all(studentId) as any[];
   const cho = new Set(awaitingCauseCaseIds(mo.map((c) => c.id as number)));
   const choNguyenNhan: Record<string, { caseId: number; mt: number | null; sos: number | null; dot: string | null }> = {};
@@ -767,7 +829,20 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
   const topics = caseTopicsFor(ratio, chuongTrinh);
   /* OV-11d (HV-19): kỹ năng người xem ghi bù được ("Đã xong từ trước") — CÙNG quyền `recordIntervention` (`SOS_EDIT` theo kỹ năng, C02 giữ). */
   const ghiBuDuoc = topics.filter((t) => can(p, PERMISSIONS.SOS_EDIT, { classId: enr?.class_id ?? null, studentId, skill: t === 'tong_hop' ? undefined : t }));
-  return { ratio, topics, chuongTrinh, choNguyenNhan, ghiBuDuoc };
+  /*
+   * CASE-NHIEU (05 mục 7.1b): Case mở CÙNG HẠNG MỤC của từng kỹ năng — đúng khoá trùng `reportIssue` dùng (`caseDedupKey`, bỏ Case chương trình
+   * khác) — để form hỏi "Ghi vào / mở riêng" ngay khi chọn chip thay vì chờ lỗi 400. Kỹ năng chờ xác nhận đã ở `choNguyenNhan`.
+   */
+  const ctLop = chuongTrinhCuaLop(enr?.class_id ?? null);
+  const dangMo: Record<string, { id: number; title: string; detectedAt: string; soPa: number }> = {};
+  for (const k of topics) {
+    if (choNguyenNhan[k]) continue;
+    const khoa = caseDedupKey({ category: categoryOf(k), studentId, cycleId: cycle?.id ?? null });
+    const c = khoa ? mo.find((x) => x.dedup_key === khoa && !caseKhacChuongTrinh(x, ctLop)) : null;
+    if (c) dangMo[k] = { id: c.id, title: caseTitleOf(c), detectedAt: c.detected_at, soPa: c.so_pa };
+  }
+  const phuTrach = chuCaseTheoKyNang(enr?.class_id ?? null, topics);
+  return { ratio, topics, chuongTrinh, choNguyenNhan, ghiBuDuoc, dangMo, phuTrach };
 }
 
 /**
@@ -1852,6 +1927,10 @@ export function caseDetail(p: Principal, caseId: number) {
       supersededBy: iv.superseded_by ?? null,
       /* HẠN của chu kỳ đang chạy — hai tuần với Case học thuật, một tuần với Ý thức/Khác. */
       actionDue: iv.action_due ?? null,
+      /* CV-LOI (CV-14): PA bổ trợ miễn phí còn chờ Mini Test — hạn của việc là hạn Mini Test (cùng `mini_test.han` của dòng Công việc). */
+      miniTestHan: iv.kind === 'bo_tro_mien_phi' && iv.nhom_bo_tro != null
+        ? ((conn.prepare('SELECT MIN(han) AS han FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NULL').get(iv.nhom_bo_tro) as any)?.han ?? null) as string | null
+        : null,
       actionOverdue: !!iv.action_due && iv.action_due < demoToday()
         && (iv.status === 'planned' || iv.status === 'started')
         && (iv.approval_state ?? '') !== 'pending',

@@ -7,12 +7,14 @@ import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
-import { useDienThoai } from '../../ui/TheDong.tsx';
+import { useManHinh } from '../../ui/TheDong.tsx';
 import { skillShort } from '../../lib/format.ts';
-import { buocDanhSach, chuanHoaMaLop, duongThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, dongChuong, duongThongBao, loaiHanThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
+import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 
 type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null };
 
@@ -35,7 +37,8 @@ export function Header() {
   /** Chỉ số dòng đang sáng khi đi bằng mũi tên, đếm chung học viên rồi lớp (−1 = chưa chọn). */
   const [dong, setDong] = useState(-1);
   /** Điện thoại (< 640 px, VN33): ô tìm là nút kính lúp; bấm thì ô mở neo hai mép ngay dưới thanh trên. */
-  const dienThoai = useDienThoai();
+  /* KHUNG-LOI (A1-05, 04 "Thanh trên"): dưới 1 440 px ô tìm cũng thu thành nút kính lúp — nhường chỗ cho 6 mục menu. */
+  const timGon = useManHinh('(max-width: 1439px)');
   const [moTimDt, setMoTimDt] = useState(false);
   const nutTim = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -64,13 +67,7 @@ export function Header() {
     return () => clearTimeout(t);
   }, [q, timDu]);
 
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) { setMoTim(false); setOpenMenu(null); setMoTimDt(false); }
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
+  useBamNgoai(true, () => { setMoTim(false); setOpenMenu(null); setMoTimDt(false); }, boxRef);
 
   /* Một danh sách cho bàn phím: học viên trước, lớp sau. */
   const den = [...hits.map((h) => `/hoc-vien/${h.id}`), ...lops.map((l) => `/hoc-vien/lop/${l.id}`)];
@@ -117,6 +114,9 @@ export function Header() {
   const moDuoc = (n: any) => moDuocThongBao(n, session?.nav ?? {});
   const dsThongBao = useMemo(() => (notifications.data ?? []).filter((n) => !gocKhac || moDuocThongBao(n, session?.nav ?? {})), [notifications.data, gocKhac, session?.nav]);
   const unread = useMemo(() => dsThongBao.filter((n) => !n.read_at).length, [dsThongBao]);
+  /* SL1 (chuông N1, 9.2-4): số trên nút = số việc Cần làm còn mở (một Case một dòng, sắp theo hạn); Để biết chưa đọc chỉ là chấm, không số. */
+  const chuong = useMemo(() => dongChuong(dsThongBao), [dsThongBao]);
+  const bietChuaDoc = chuong.deBiet.some((n) => !n.read_at);
   /* OV-11f (TQ-15): chỉ lớp đang mở (`/ref/classes` = lớp đang hoạt động trong phạm vi) — lớp đã kết thúc không còn ở menu tài khoản. */
   const lopMo = lopRef.data ? new Set(lopRef.data.map((l) => l.id)) : null;
   const lopDangMo = (a: { classId: number }) => !lopMo || lopMo.has(a.classId);
@@ -126,13 +126,13 @@ export function Header() {
   const hoTen = session?.user?.fullName ?? '';
   const chuCaiDau = [...(hoTen.trim().split(/\s+/).pop() ?? '')][0]?.toUpperCase() ?? '';
   /** Danh sách kết quả: máy tính thả dưới ô; điện thoại nằm trong khung ô tìm đã neo hai mép. */
-  const lopDs = dienThoai ? 'mt-1 w-full' : 'absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 shadow-2xl';
+  const lopDs = timGon ? 'mt-1 w-full' : 'absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 shadow-2xl';
 
   const oTimVaKetQua = (
     <>
       <input
         ref={oTim}
-        autoFocus={dienThoai}
+        autoFocus={timGon}
         className="field"
         placeholder={t('Tìm học viên, lớp…')}
         value={q}
@@ -194,14 +194,14 @@ export function Header() {
   return (
     <div className="flex items-center gap-2 max-sm:gap-0.5 min-w-0" ref={boxRef}>
       {/* TU-b (đặc tả Tutor mục 4): không có quyền xem học viên (Head tutor) → không ô tìm học viên. */}
-      {!session?.nav?.students ? null : dienThoai ? (
+      {!session?.nav?.students ? null : timGon ? (
         <>
           <button ref={nutTim} type="button" data-hd="tim-hv" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent" aria-label={t('Tìm học viên, lớp')}
             aria-expanded={moTimDt} onClick={() => { setMoTimDt((v) => !v); setOpenMenu(null); }}>
             <svg aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
           </button>
-          {moTimDt && <div className="card absolute inset-x-2 top-full z-40 mt-1 p-2 shadow-2xl">{oTimVaKetQua}</div>}
+          {moTimDt && <div className="card absolute inset-x-2 top-full z-40 mt-1 p-2 shadow-2xl sm:left-auto sm:w-[min(26rem,calc(100vw-2rem))]">{oTimVaKetQua}</div>}
         </>
       ) : (
         <div className="relative w-52 lg:w-64 shrink" data-hd="tim-hv">{oTimVaKetQua}</div>
@@ -210,12 +210,13 @@ export function Header() {
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm relative max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent"
           onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
-          aria-label={t('Thông báo') + (unread ? t(', {n} chưa đọc', { n: unread }) : '')} aria-expanded={openMenu === 'notif'}>
+          aria-label={t('Thông báo') + (chuong.soNut ? t(', {n} việc cần làm', { n: chuong.soNut }) : '') + (bietChuaDoc ? t(', có tin chưa đọc') : '')} aria-expanded={openMenu === 'notif'}>
           <span className="hidden sm:inline">{t('Thông báo')}</span>
           {/* Chuông nét mảnh 20 px thay emoji (luật "dấu nhỏ gọn", 23C). Số chưa đọc đè góc trên phải trên điện thoại. */}
           <svg className="sm:hidden" aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
-          {unread > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[11.5px] tabular-nums max-sm:absolute max-sm:right-px max-sm:top-[3px] max-sm:ml-0 max-sm:min-w-[18px] max-sm:rounded-[9px] max-sm:text-center max-sm:leading-[18px]">{unread}</span>}
+          {chuong.soNut > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[11.5px] tabular-nums max-sm:absolute max-sm:right-px max-sm:top-[3px] max-sm:ml-0 max-sm:min-w-[18px] max-sm:rounded-[9px] max-sm:text-center max-sm:leading-[18px]">{chuong.soNut}</span>}
+          {!chuong.soNut && bietChuaDoc && <span aria-hidden className="ml-1 inline-block h-2 w-2 rounded-full bg-[color:var(--accent)] max-sm:absolute max-sm:right-[7px] max-sm:top-[9px] max-sm:ml-0" />}
         </button>
         {openMenu === 'notif' && (
           /*
@@ -243,11 +244,11 @@ export function Header() {
             </div>
             {dsThongBao.length === 0 && <div className="p-4 text-sm text-slate-500">{t('Không có thông báo nào.')}</div>}
             {(['can-lam', 'de-biet'] as const).map((nhom) => {
-              const ds = dsThongBao.filter((n) => nhomThongBao(n) === nhom);
+              const ds = nhom === 'can-lam' ? chuong.canLam : chuong.deBiet;
               if (!ds.length) return null;
               return (
                 <div key={nhom}>
-                  <div className="flex items-baseline gap-2 border-b px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-slate-400"
+                  <div className="flex items-baseline gap-2 border-b px-3.5 py-1.5 text-xs font-semibold text-slate-400"
                     style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
                     {nhom === 'can-lam' ? t('Cần làm') : t('Để biết')} <span className="tabular-nums">{ds.length}</span>
                   </div>
@@ -272,6 +273,7 @@ export function Header() {
                         </span>
                         <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500" title={nhan(homNay, n.created_at)}>{thoiGianThongBao(n.created_at, homNay)}</time>
                         {n.body && <span className="col-start-2 text-xs text-slate-400">{dich(n.body)}</span>}
+                        {nhom === 'can-lam' && n.han && <span className="col-start-2 text-xs"><Han loai={loaiHanThongBao(n)} han={n.han} /></span>}
                         {toi && (
                           <span className="col-start-2 inline-flex items-center gap-1 text-xs text-[color:var(--accent)]">
                             {toi}
@@ -297,7 +299,8 @@ export function Header() {
           <span className="hidden max-w-[10rem] truncate text-slate-200 sm:inline">{hoTen}</span>
         </button>
         {openMenu === 'account' && (
-          <div className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] card p-3 z-40 shadow-2xl">
+          /* KHUNG-LOI (B-09): không cao quá màn — cuộn trong menu, "Đăng xuất" dính đáy (trước: trang cuộn, Đăng xuất ra ngoài màn ở 375). */
+          <div role="dialog" aria-label={t('Tài khoản {ten}', { ten: hoTen })} className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] max-h-[70dvh] sm:max-h-[calc(100dvh-8rem)] overflow-y-auto overscroll-contain card p-3 pb-0 z-40 shadow-2xl">
             <div className="text-sm font-medium text-slate-100">{session?.user?.fullName}</div>
             <div className="text-xs text-slate-500 mb-3">{session?.user?.title && dich(session.user.title)}</div>
 
@@ -382,7 +385,9 @@ export function Header() {
               <CongTacGiaoDien />
               <NutNgonNgu kieu="menu" />
             </div>
-            <button className="btn btn-sm w-full justify-center" onClick={signOut}>{t('Đăng xuất')}</button>
+            <div className="sticky bottom-0 -mx-3 px-3 pb-3 pt-1" style={{ background: 'var(--surface)' }}>
+              <button className="btn btn-sm w-full justify-center" onClick={signOut}>{t('Đăng xuất')}</button>
+            </div>
           </div>
         )}
       </div>

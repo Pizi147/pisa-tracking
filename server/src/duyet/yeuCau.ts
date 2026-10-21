@@ -68,6 +68,8 @@ export type TaoYeuCauVao = {
   lopId?: number | null; chiNhanhId?: number | null; nguoiXin: number | null; lyDo?: string | null; bangChung?: unknown; duLieu?: unknown;
   /** Không truyền = hạn mặc định của loại; `null` = không hạn. */
   hanDuyet?: string | null;
+  /** LUAT-5: thẻ tạo rồi QL tự chốt ngay trong cùng giao dịch (QL thu hồi thẳng) — không chuông "Chờ duyệt" cho QL khác. */
+  khongBao?: boolean;
 };
 
 /**
@@ -100,6 +102,7 @@ export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
     v.lyDo?.trim() || null, json(v.bangChung), json(v.duLieu), han, mocNghiepVu());
   if (!info.changes) return null;
   const id = Number(info.lastInsertRowid);
+  if (v.khongBao) return id;
   /* OV-11c (CA1-4): thẻ của lớp (không học viên) nói tên lớp trong thông báo — ba chuông "Lớp hết khoá" không còn giống hệt nhau. */
   const hv = tenHocVien(conn, hocVienId) ?? (lopId ? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(lopId) as any)?.code ?? null : null);
   const baoLen = meta.kieuNut === 'nhac';
@@ -334,7 +337,12 @@ export function hopChoDuyet(p: Principal, f: {
     ? conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]
     : conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai != 'cho' AND xu_ly_luc >= ?`).all(tuNgay(NGAY_DA_XU_LY)) as any[]);
   if (f.studentId) rows = rows.filter((r) => r.hoc_vien_id === f.studentId);
-  if (f.branchId) rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
+  /* SL1 (A7-01, X-03): hộp theo chi nhánh của trang — thẻ đang chờ ở chi nhánh khác không giấu, chỉ đếm để hiện dòng "n thẻ ở chi nhánh khác". */
+  let khacChiNhanh = 0;
+  if (f.branchId) {
+    if (xem === 'cho') khacChiNhanh = rows.filter((r) => r.chi_nhanh_id !== f.branchId && nhomCuaLoai(r.loai) === 'can-quyet').length;
+    rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
+  }
   /* PR-S4F #5: badge "n chờ duyệt" của một lớp mở hộp lọc ĐÚNG lớp đó — cùng luật đếm `viecHocVienTheoLop` (thẻ theo lớp, thẻ không lớp thì lớp em đang học). */
   let lopDangLoc: { id: number; code: string } | null = null;
   if (f.classId) {
@@ -350,7 +358,7 @@ export function hopChoDuyet(p: Principal, f: {
   const ngu = napNguCanh(conn, rows, homNay);
   const huyDuoc = xem === 'da-xu-ly' ? theHuyDuoc(conn, rows) : new Set<number>();
   const the = rows.map((r) => (huyDuoc.has(r.id) ? { ...theRa(r, ngu), coTheHuy: true } : theRa(r, ngu)));
-  return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc };
+  return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc, khacChiNhanh };
 }
 
 /** Yêu cầu của tôi: mọi thẻ đang chờ + thẻ đã xử lý trong 60 ngày gần nhất. */

@@ -67,7 +67,7 @@ export async function runPrUx2Tests(t: YThucTestKit) {
   });
 
   check('UX2-4 · Hỗ trợ học viên: tự mở việc đầu (máy tính, chưa mở việc, chưa tự mở ở bộ lọc này); điện thoại / 0 việc thì không', () => {
-    const ds = [{ key: 'a' }, { key: 'b' }];
+    const ds = [{ key: 'a', mine: true }, { key: 'b', mine: true }];
     eq(d.viecTuMo(ds, { manHep: false, dangMo: false, daTuMo: false }), 'a', 'máy tính');
     eq(d.viecTuMo(ds, { manHep: true, dangMo: false, daTuMo: false }), null, 'điện thoại');
     eq(d.viecTuMo([], { manHep: false, dangMo: false, daTuMo: false }), null, '0 việc');

@@ -89,7 +89,7 @@ const NHIEU_DONG = 150;
 
 /** Ô "Cần chú ý" (chỉ đọc): SOS · Case mới (kỹ năng) · Ý thức · Chờ chọn bước tiếp — đúng lý do em vào chip Cần chú ý. */
 export function OCanChuY({ c }: { c: LyDoChuY | null }) {
-  if (!c) return <span className="text-slate-600">—</span>;
+  if (!c) return <span className="text-slate-500">—</span>;
   return (
     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-400">
       {!!c.sos && <ChipSos muc={c.sos} />}
@@ -313,11 +313,11 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         sos.error ? <ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} />
           : !sos.data ? <Skeleton rows={6} />
             : sosRows.length === 0 ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
-              : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} dangMo={panelEm} /><PhanTrang {...pt.thanh} duoi /></>
+              : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} tatCa={sosRows} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} dangMo={panelEm} /><PhanTrang {...pt.thanh} duoi /></>
       )}
       {goc === 'can-lam' && data && (viecTvv.length === 0
         ? <Card><Empty title={t('Không có việc nào')} /></Card>
-        : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecTvv)} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} /><PhanTrang {...pt.thanh} duoi /></>)}
+        : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecTvv)} tatCa={viecTvv} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} /><PhanTrang {...pt.thanh} duoi /></>)}
       {goc === 'lich-thi' && (
         <GocLichThi duongGoc={`${vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'}${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} />
       )}
@@ -394,7 +394,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
                     </td>
                     <td className="td"><KetQuaOHocVien k={ketQuaGanNhat(d.standing)} standing={d.standing} thuong={!(d.lop?.ft ?? true)} /></td>
                     <td className="td"><OCanChuY c={d.chuY} /></td>
-                    {vai === 'cx' && <td className="td truncate text-xs text-slate-300" title={d.tvv ?? undefined}>{d.tvv ?? <span className="text-slate-600">—</span>}</td>}
+                    {vai === 'cx' && <td className="td truncate text-xs text-slate-300" title={d.tvv ?? undefined}>{d.tvv ?? <span className="text-slate-500">—</span>}</td>}
                     <td className="td text-sm"><OPhuHuynh l={d.lienHe} /></td>
                     <td className="td text-center"><MenuDong muc={menuCua(d)} /></td>
                   </HangCon>

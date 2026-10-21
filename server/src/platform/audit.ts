@@ -67,14 +67,16 @@ export function notify(n: {
   entityType?: string | null; entityId?: number | null; dedupKey: string;
   /** PR-DUYET (K5-12): đường mở riêng — Nhắc trỏ đúng dòng việc. Không có thì chuông suy từ `entityType`. */
   duong?: string | null;
+  /** SL1 (N1): hạn của việc mà thông báo trỏ tới — Cần làm sắp theo hạn. */
+  han?: string | null;
 }) {
   db()
     .prepare(
-      `INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)
-       VALUES (?,?,?,?,?,?,?,?,?)
-       ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body, duong = excluded.duong`,   /* OV-15d: thông báo cũ mở đúng việc mới */
+      `INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong, han)
+       VALUES (?,?,?,?,?,?,?,?,?,?)
+       ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body, duong = excluded.duong, han = excluded.han`,   /* OV-15d: thông báo cũ mở đúng việc mới */
     )
-    .run(n.userId, n.kind, n.title, n.body ?? null, n.entityType ?? null, n.entityId ?? null, n.dedupKey, nowIso(), n.duong ?? null);
+    .run(n.userId, n.kind, n.title, n.body ?? null, n.entityType ?? null, n.entityId ?? null, n.dedupKey, nowIso(), n.duong ?? null, n.han ?? null);
 }
 
 /** Quản lý của một chi nhánh (kể cả Quản lý toàn hệ thống) còn hoạt động — người nhận thông báo "để biết" (PR-QU: GVCN phân công, GV đóng Case). */

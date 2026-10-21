@@ -356,7 +356,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
 
   // ================================================================== Task 5 · ba tầng + phần Số liệu theo khung
   check('VAI-a (5a) · tab "Việc hôm nay"; Điểm đáng chú ý lớp thường theo chương trình, nhãn Cần chú ý / Tốt, số = số dòng khi mở (ctLop)', () => {
-    eq(d.TAB_TONG_QUAN_LABEL['tong-quan'], 'Việc hôm nay', 'tên tab');
+    eq(d.TAB_TONG_QUAN_LABEL['tong-quan'], 'Tổng quan', 'tên tab (KHUNG-LOI A1-07: tiêu đề = tên menu)');
     const ung = [
       { loai: 'lop-chua-dat', metricId: 'hv-duoi-ky-vong-mon', extra: { ctLop: 'FOU' }, tu: 5, mau: 22, nhanMon: 'FOU', tenBai: null },
       { loai: 'lop-chua-dat', metricId: 'hv-duoi-ky-vong-mon', extra: { ctLop: 'BE' }, tu: 2, mau: 3, nhanMon: 'BE', tenBai: 'Progress Test' },
@@ -556,10 +556,10 @@ export async function runPrVaiATests(t: YThucTestKit) {
       VALUES (?,?,?,?,?,?,?,?,?)`).run(userId, kind, `thử ${kind}`, null, entityType, entityId, `vaia:${kind}:${Math.random()}`, readAt, NOW).lastInsertRowid);
 
   check('VAI-a (10a) · nhomThongBao: bảng Cần làm / Để biết; loại lạ → Để biết; con_viec = 0 → Để biết', () => {
-    for (const k of ['nhac_viec', 'nhac_ban_giao', 'duyet_moi', 'duyet_qua_han', 'duyet_tu_choi', 'sos', 'discipline', 'schedule_move', 'phoi_hop', 'dang_ky', 'lenh_loi', 'ban_giao', 'bao_len']) {
+    for (const k of ['nhac_viec', 'nhac_ban_giao', 'duyet_moi', 'duyet_qua_han', 'duyet_tu_choi', 'sos', 'discipline', 'schedule_move', 'phoi_hop', 'dang_ky', 'lenh_loi', 'bao_len']) {
       eq(d.nhomThongBao({ kind: k }), 'can-lam', k);
     }
-    for (const k of ['duyet_ket_qua', 'duyet_tu_duyet', 'transfer_in', 'sap_nhan', 'huy_lenh', 'bo_tro_mien_phi', 'discipline_de_biet', 'tu_doi_lich', 'loai-la']) {
+    for (const k of ['duyet_ket_qua', 'duyet_tu_duyet', 'transfer_in', 'sap_nhan', 'huy_lenh', 'bo_tro_mien_phi', 'discipline_de_biet', 'tu_doi_lich', 'loai-la', 'ban_giao' /* SL1 (rà #502): "Đã có bàn giao" là tin */]) {
       eq(d.nhomThongBao({ kind: k }), 'de-biet', k);
     }
     eq(d.nhomThongBao({ kind: 'sos', con_viec: 0 }), 'de-biet', 'việc đã xong rời Cần làm');

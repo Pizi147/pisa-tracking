@@ -11,7 +11,8 @@
 import { badRequest, notFound } from '../util.ts';
 import { db, theoLo } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { classScopeSql, requireXemLuotCham, scopeXemLuotCham, type Principal } from '../permissions.ts';
+import { classScopeSql, defaultWorkScope, requireXemLuotCham, scopeXemLuotCham, type Principal } from '../permissions.ts';
+import { scoreDebtCells } from '../worklist/scoreDebt.ts';
 import {
   docMaLuot, luotMacDinh, mondayOfDate, nhanMaLuot, soSanhLop, vietMaLuot, type AssessedSkill, type MaLuot, type TomTatLuot,
 } from '../../../shared/domain/index.ts';
@@ -36,7 +37,7 @@ type Gom = TomTatLuot & { classId: number; thuTu: number };
  * (Writing FT = W1 + W2) không có điểm và không có dấu "-" đúng tuần hiện tại của kỹ năng (G6). OV-11e (TE-10): và ĐÃ TỚI tuần thi của kỹ năng
  * (T19 — chưa tới tuần / chưa xếp tuần thì chưa nhập được, không phải việc).
  */
-function tomTatLop(classIds: number[], today: string): Map<number, TomTatLuot[]> {
+function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<number, string>): Map<number, TomTatLuot[]> {
   const conn = db();
   const thuHai = mondayOfDate(today);
   /* Mỗi attempt: lượt của nó + số ô trống `n`. */
@@ -93,8 +94,10 @@ function tomTatLop(classIds: number[], today: string): Map<number, TomTatLuot[]>
       }
     }
   });
-  for (const { g, n, thieu } of luotCua.values()) {
+  for (const [id, { g, n, thieu }] of luotCua) {
     g.oTrong += n;
+    const h = quaHan?.get(id);
+    if (h && (!g.quaHan || h < g.quaHan)) g.quaHan = h;
     if (thieu === 0) g.duDiem += 1;
   }
   const out = new Map<number, TomTatLuot[]>(classIds.map((id) => [id, []]));
@@ -108,7 +111,15 @@ export const tomTatLuotCuaLop = (classId: number, today: string = demoToday()): 
 /** Các lượt của một lớp + lượt mở sẵn (luật DL-1, sửa DL-6b theo `today`). */
 export function danhSachLuot(p: Principal, classId: number, today: string = demoToday()): { classId: number; mode: CheDo; luot: TomTatLuot[]; macDinh: string | null } {
   const mode = lopDuocXem(p, classId);
-  const luot = tomTatLop([classId], today).get(classId)!;
+  /* SL1 (V2B-3): ô QUÁ HẠN của người xem (GV = ô mình giữ, QL = mọi ô) — cùng tập nợ điểm của Công việc (`scoreDebtCells`), chỉ lớp này. */
+  const cuaToi = defaultWorkScope(p) === 'mine';
+  const quaHan = new Map<number, string>();
+  for (const c of scoreDebtCells(p, today, null, [classId])) {
+    if (!c.overdue || (cuaToi && c.userId !== p.userId)) continue;
+    const h = c.han ?? today;
+    if (!quaHan.has(c.attemptId) || h < quaHan.get(c.attemptId)!) quaHan.set(c.attemptId, h);
+  }
+  const luot = tomTatLop([classId], today, quaHan).get(classId)!;
   return { classId, mode, luot, macDinh: luotMacDinh(luot, today) };
 }
 

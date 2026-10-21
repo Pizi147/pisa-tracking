@@ -9,6 +9,7 @@
  */
 import type { HoSoTab } from './hoSoHocVien.ts';
 import type { NavQuyen } from './dieuHuong.ts';
+import type { DeadlineKind } from './display.ts';
 import { duongThe } from './yeuCauDuyet.ts';
 import { t } from '../i18n/index.ts';
 
@@ -141,6 +142,8 @@ export type ThongBaoRow = {
   ten_hv?: string | null; mon?: string | null; lop?: string | null; con_viec?: number | null;
   /** OV-11f (TQ-7): Case mà tín hiệu đã vào — chuông mở thẳng Case. */
   case_id?: number | null;
+  /** SL1 (N1): hạn của việc mà dòng trỏ tới (thông báo tự động / Case giao lưu sẵn; thẻ duyệt, Case suy ra) — Cần làm sắp theo đây. */
+  han?: string | null;
 };
 
 /**
@@ -149,12 +152,50 @@ export type ThongBaoRow = {
  */
 const LOAI_CAN_LAM = new Set([
   'nhac_viec', 'nhac_ban_giao', 'duyet_moi', 'duyet_qua_han', 'duyet_tu_choi', 'sos', 'sos_new', 'discipline', 'schedule_move', 'phoi_hop',
-  'dang_ky', 'lenh_loi', 'ban_giao', 'overdue_score', 'overdue_task',
+  'dang_ky', 'lenh_loi', 'overdue_score', 'overdue_task',   // SL1 (rà #502): 'ban_giao' "Đã có bàn giao" là tin → Để biết
   'bao_len',   // PR-S6F-a Q12: thẻ Báo QL đang chờ chính Quản lý quyết
+  /* SL1 (A1-04, A7-05): ba thông báo tự động OV-15d thay "Nhắc" — chính là việc (máy chủ chỉ giữ khi việc còn). C23: Case tạo tay giao người khác phụ trách. */
+  'cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'case_giao',
 ]);
-export function nhomThongBao(n: { kind: string | null; con_viec?: number | null }): 'can-lam' | 'de-biet' {
+export function nhomThongBao(n: { kind: string | null; con_viec?: number | null; entity_type?: string | null; read_at?: string | null }): 'can-lam' | 'de-biet' {
   if (n.con_viec === 0) return 'de-biet';
+  /* SL1 (rà #502): máy chủ không biết việc của dòng còn hay xong (`con_viec` trống) mà người đọc đã đọc → Để biết, để số chuông không chỉ tăng. */
+  if (n.con_viec == null && n.read_at) return 'de-biet';
+  /* SL1 (v4d): "SOS n · em · MTn" gửi GVCN (`notifyTeachers`, gắn lượt) là tin một chiều — không có việc nào để nó rời nhóm. */
+  if (n.kind === 'sos' && n.entity_type === 'assessment_attempt') return 'de-biet';
   return LOAI_CAN_LAM.has(n.kind ?? '') ? 'can-lam' : 'de-biet';
+}
+
+/** Loại hạn (`Han`) của một dòng Cần làm — mỗi hạn một đồng hồ trong rule book (HE_GIAO_DIEN §4). */
+export function loaiHanThongBao(n: { kind: string | null; entity_type?: string | null }): DeadlineKind {
+  if (n.kind === 'cham_qua_han') return 'nhap-diem';
+  if (n.kind === 'chot_lo_trinh') return 'chot-len-ft';
+  if (n.entity_type === 'yeu_cau_duyet') return 'duyet';
+  if (n.kind === 'sos' || n.kind === 'sos_new') return 'xac-minh-sos';
+  return 'lap-pa';
+}
+
+/**
+ * CHUÔNG N1 (SL1 — 05 mục 2.7, v4d): tách hai nhóm và đếm số trên nút. Cần làm = việc còn mở của chính người đọc (`nhomThongBao`), **một Case một
+ * dòng** (Case đã có dòng việc thì bỏ dòng "Case chưa chốt PA quá hạn" — giữ dòng đầu theo hạn), sắp **theo hạn** (không hạn xuống cuối, rồi mới nhất);
+ * Để biết = tin một chiều, giữ thứ tự máy chủ (chưa đọc trước). Số trên nút = số dòng Cần làm (9.2-4: chỉ việc còn mở, đọc rồi vẫn đếm tới khi xong).
+ * ponytail: N1 vẫn đọc nhật ký thông báo — việc không phát thông báo không vào chuông; M2 đổi sang đọc hàng đợi trang đầu (N2).
+ */
+export function dongChuong<T extends { id: number; kind: string | null; entity_type?: string | null; entity_id?: number | null; con_viec?: number | null; han?: string | null }>(
+  rows: readonly T[],
+): { canLam: T[]; deBiet: T[]; soNut: number } {
+  const canLam: T[] = [], deBiet: T[] = [];
+  for (const n of rows) (nhomThongBao(n) === 'can-lam' ? canLam : deBiet).push(n);
+  const xep = (a: T, b: T) => (a.han && b.han ? (a.han < b.han ? -1 : a.han > b.han ? 1 : 0) : a.han ? -1 : b.han ? 1 : 0) || b.id - a.id;
+  canLam.sort((a, b) => Number(a.kind === 'case_chua_chot_pa') - Number(b.kind === 'case_chua_chot_pa') || xep(a, b));
+  const daCo = new Set<number>();
+  const motCase = canLam.filter((n) => {
+    if (n.entity_type !== 'sos_case' || n.entity_id == null) return true;
+    if (daCo.has(n.entity_id)) return false;
+    daCo.add(n.entity_id);
+    return true;
+  }).sort(xep);
+  return { canLam: motCase, deBiet, soNut: motCase.length };
 }
 
 /** Dòng xanh "bấm tới đâu" (Q21): đọc từ CHÍNH đường `duongThongBao` sẽ mở — không đoán theo chữ. `null` = không điều hướng. */

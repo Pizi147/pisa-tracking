@@ -94,7 +94,9 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 |---|---|
 | Biên dịch | `tsc`. **Không** dùng `tsx`/`esbuild` làm trình chạy TS. Import phải có đuôi `.ts`/`.tsx` |
 | Sửa máy chủ | `npm run build:server` (`npm run dev` không tự dựng lại máy chủ) |
-| Kiểm | `npm run check` = build + test + typecheck. Phép kiểm mới: file `server/src/tests/pr<Mã>.tests.ts`, gọi ở **cuối** `run.ts` |
+| Kiểm | `npm run check` = build + test + typecheck + **cảnh báo esbuild = lỗi** (`scripts/kiem-esbuild.mjs`: `case` trùng…). Phép kiểm mới: file `server/src/tests/pr<Mã>.tests.ts`, gọi ở **cuối** `run.ts` |
+| Đo trên trang thật (CONG-CU) | `npm run dev` cổng riêng, rồi `KHUNG_BASE=http://localhost:<WEB_PORT>`: `node scripts/do-khung.mjs [lọc]` (khung + bảng `do-bang` 1440 / 1280 / 375 + kịch bản `lich`: bấm trong lịch không đóng hộp cha) · `node scripts/do-bang.mjs [lọc]` (chỉ bảng). Lỗi đã biết: `scripts/mien-do.json` — mỗi dòng ghi PR gỡ; PR sửa xong **gỡ dòng** (dòng thừa = đỏ); `MIEN=0` xem lỗi thật |
+| Ảnh cặp mockup \| web | `node scripts/anh-cap.mjs <tệp mockup> <khung CSS \| -> <đường web> <vai> <bề rộng> [ra.png]` — một PNG trái mockup / phải web toàn trang (375 sáng, còn lại tối); cách chạy ở đầu tệp |
 | `shared/domain/*` | Hàm mới re-export qua `shared/domain/index.ts` |
 | Ngày demo | **14/09/2026** cố định: `demoToday()` (máy chủ), `session.demoDate` (web). Tuần T2→CN, thuộc tháng chứa thứ Năm |
 | Thời gian trên màn | Mã tuần `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký |
@@ -221,6 +223,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 14/10 (chiều) | **OV-12 — chủ SP chốt:** hạn kết quả PA **2 tuần**, hết **Thứ Ba**, kỳ theo tuần từ tuần bắt đầu PA (17/09 → 29/09, 13/10…), hạn cố định (ghi sớm / muộn / ghi bù không dời lịch), PA đang chạy tính lại (không sớm hơn hạn cũ) · QL xoá lớp **trống**, xoá **nhiều** HV, lưu trữ (điều kiện giữ) · TVV nhập thi thật + chọn **Bước tiếp sau thi cả 3 hướng** (không phải PA học thuật) · MT **bắt buộc nhận xét** L/R/W1/W2/S trong hộp chấm + **nhóm nguyên nhân khi dưới kỳ vọng** = nguyên nhân Case SOS → **bỏ xác nhận nguyên nhân** (giữ xác nhận PA) · Case MT cũ chờ nguyên nhân → việc "Ghi nhận xét" · Tổng hợp Xử lý: HV - Case · Chờ duyệt (rộng) · Đang xử lý · "Đang SOS" theo **tuần thi** · hồ sơ MT có bảng Case (thay Rulebook 17.5). Planning tự quyết P1–P14: đặc tả OV-12 mục 2 | OV-12 |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
+
+- **CV-LOI #499 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `PanelPhanCongMon` gửi nguyên bức tranh phân công đọc lúc mở → người khác vừa
+  đổi phân công lớp đó thì bị ghi đè (cần khoá phiên bản / gửi một ô) · bước gán chủ Case (`migratePrCvLoi`) chạy mỗi lần migrate, người gán ghi
+  "hệ thống" (actor NULL) · dòng dự phòng "Chọn người phụ trách" mở hồ sơ em nhưng chưa có ô đổi người phụ trách (cần API đổi chủ Case, có lịch sử).
+- **LUAT-5 #495 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `huyDuoc` của thẻ thu hồi vướng `ux_ycd_dang_cho` (chung mọi loại thẻ) · `du_lieu` thẻ thu hồi
+  (bậc về / số vi phạm) không tự cập nhật khi GVCN sửa vi phạm của lần xử lý lúc thẻ còn chờ · người gửi đã rời lớp vẫn sửa / rút được thẻ của mình.
 
 ### OVERHAUL 11/10 (OV) — đặc tả DUYỆT 11/10, bắt đầu OV-1a · ưu tiên trên mọi việc khác
 - **Đặc tả (nguồn chi tiết duy nhất):** `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` — đối chiếu hiện trạng, ma trận vai,
@@ -350,7 +358,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **PR-EN** bản tiếng Anh (kế hoạch `2026-10-07-pr-en-tieng-anh.md` — đếm lại chuỗi vì OV / OV-12 đổi nhiều màn; chạy **sau OV-12**) → deploy lần nữa. **PR-SOTAY bỏ** (15/10): thay bằng Hướng dẫn trên web — HD-a (khung + GV), HD-b (QL / QT / TVV / CX / Admin).
 - **PR-NC** thống kê nghiên cứu: xem lại tháng 12 (cần 2–3 tháng dữ liệu).
 
-### Ghi chú không chặn còn mở (kiểm lại khi PR đụng tới; đã bỏ mục DON #308, VN3 #302, NO-CT2-KV #290 đã xử lý)
+### Ghi chú không chặn còn mở (kiểm lại khi PR đụng tới; đã bỏ mục DON #308, VN3 #302, NO-CT2-KV #290 đã xử lý)
+- **SL1 #502 → SL2 / M2:** chuông lấy tối đa 50 dòng (chưa đọc trước) — dòng Cần làm đã đọc có thể bị đẩy ra ngoài (M2 đọc hàng đợi, N2) · `case_giao` gửi người phụ trách lúc tạo, không theo khi đổi người phụ trách · `khacChiNhanh` (Chờ duyệt) không lọc theo lớp `?lop=` · hộp Chờ duyệt theo chi nhánh đã nhớ, badge menu vẫn mọi chi nhánh (SL2 một nghĩa badge) · khung FT/thường của PA: Báo cáo theo lớp hiện tại, Hiệu quả PA theo nơi học lúc làm PA (SL2).
 - Hồ sơ MT: lượt không có `classId` → "Dời lịch thi cả đợt" không mở gì (hiếm) — HOP1.
 - `suggestCaseOwner` chạy theo (lớp FT, kỹ năng): lô 500 em nhiều lớp có thể > 200 câu — KV; **OV-3b chạm KQĐR thì đo lại**.
 - Case Học viên (KQĐR "Không đạt · Học viên") mang kỹ năng đầu tiên — KV, chủ SP xem khi rà OV-3b.
@@ -559,6 +568,12 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 21/10/2026 | CASE-NHIEU (Opus 5.5) · `claude/case-nhieu-5155e1` | Tạo Case nhiều kỹ năng một lần: `POST /cases/report` nhận `kyNang` (n Case một giao dịch, khoá lô + kỹ năng, "Ghi vào" gửi lại không lặp chữ); `case-topics` trả `dangMo` + `phuTrach`; panel chip chọn nhiều, một khối mỗi kỹ năng; phép kiểm `caseLo.tests.ts` |
+| 21/10/2026 | SL1 (Opus 5.5) · `claude/sl1-ebc8d0` | Số đúng: tháng cũ đọc đúng tháng + hộp thời gian chỉ tuần, PA trong kỳ, Chờ duyệt theo chi nhánh (+ dòng chi nhánh khác), số dải không nháy, đầu nhóm đếm trước chia trang, panel việc chỉ em của việc, lượt mở sẵn theo ô quá hạn, dải Lịch thi, 2 phạm vi xuất; chuông N1 (Cần làm theo hạn, một Case một dòng, số = việc còn mở, Case giao → người phụ trách; cột `notifications.han`). Kiểm `prSl1` |
+| 21/10/2026 | CV-LOI (Opus 5.5) · `claude/cv-loi-aa83a8` | Công việc chạy đúng: Case không chủ tự gán (migrate + phân công, có lịch sử), một dòng "Phân công GV …" chỉ QL; Kết quả PA khung phải; hàng đợi cùng nhóm, giữ Hoàn tác; QL không tự mở việc GV; `case` trùng `yt_xem`; nút 403; Excel panel việc; A1-14/15, A5-08, CV-10/14, X-74 |
+| 21/10/2026 | LUAT-5 (Opus 5.5) · `claude/luat-5-26daba` | Luật 5: "Thu hồi…" thay Xoá lần xử lý (GVCN → thẻ Chờ duyệt Ý thức, QL thẳng, lý do bắt buộc ở máy chủ), "Đã thu hồi" giữ dòng + lịch sử, một cửa `trangThaiYThuc` bỏ khỏi mọi số; không tăng bậc qua Đề xuất (tệp tuỳ chọn); Huỷ quyết định trong ngày |
+| 21/10/2026 | KHUNG-LOI (Opus 5.5) · `claude/khung-loi-994378` | Khung: thứ tự menu 20/10, thanh trên đo chỗ thật + "Thêm ▾", ô tìm kính lúp < 1440, thanh dưới ≤ 5; hook `useBamNgoai` thay 15 bản (vá `BoChonThoiGian` tự đóng); `Menu` phím; vùng bấm số ≥ 24/44; focus không bị che; menu TK cuộn trong; "—" / "/" đủ tương phản; chú giải màu Kế hoạch Test sinh từ màu thật; tiêu đề = tên menu; "Nếu duyệt" PA ghi ngày; `do-khung` k–n + `thanh` / `focus` / `menu-phim`, sửa 3 kịch bản hỏng |
+| 21/10/2026 | CONG-CU (Opus 5.5) · `claude/cong-cu-821f86` | Công cụ: `do-bang` (g1–g5) gắn `do-khung` 1440/1280/375, bỏ miễn đo lưới chấm; esbuild cảnh báo = lỗi trong check; kịch bản `lich`; `anh-cap.mjs`; lỗi đã biết ở `mien-do.json` (BANG-1, CV-LOI, KHUNG-LOI gỡ) |
 | 20/10/2026 | OV-15i1 (Opus 5.5) · `claude/pr-ov15i1-plan-z54zlx` | Lịch sử: góp ý đi chỉ mục `idx_audit_viec` (không LIKE), ô điểm phân trang con trỏ, thi-that cùng cổng hv (GVBM 403), Sửa cả lớp / Dán Excel một mục ở lớp, lô 0 em không ghi, HV đã xoá, đổi chương trình ghi phân công, `batDau` mọi loại, chữ EN; nhãn PA chờ duyệt đổi; trần 3 đường mới. Không làm: gộp GET Tổng quan (ý 11), chuông hết ngay do người khác (ý 12b) — lý do trong PR. |
 | 20/10/2026 | OV-15i2 (Opus 5.5) · `claude/sharp-ride-q33fc0` | Việc lẻ: Dán Excel thử lại không ghi trùng mục tổng · ≤ 2 lệnh mỗi môn · lớp thường khớp email; bỏ `viewer.huyLuot`; Xuất điểm Test không `a.*`, cột Lớp theo phạm vi; tutor gợi ý theo lớp nhóm PA; Lịch thi TVV/CX mang ô tìm + hỏi "Bỏ ngày …?"; CODE_MAP. Phép kiểm `prOv15i2` |
 | 20/10/2026 | OV-15h1 (Opus 5.5) · `claude/vibrant-davinci-5gzwos` | Tổng quan QL: GET dữ liệu 5 → 3 (`/tong-quan/ql` một GET cho Lớp cần chú ý + Tuần này + Trễ chấm, số giữ nguyên), Lớp cần chú ý theo mockup 3, Chốt lộ trình tại chỗ, Cần bạn quyết ≤ 7 ngày; thông báo theo lô; Chờ bạn duyệt theo chi nhánh. |

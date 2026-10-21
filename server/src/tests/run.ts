@@ -327,8 +327,9 @@ check('[12.1] Bộ demo có đủ độ đa dạng mà mục 11.4 yêu cầu', (
              AND NOT EXISTS (SELECT 1 FROM sos_cases c WHERE c.student_id = s.id)`)],
     ['case đã hoàn thành có kết quả',
       one(`SELECT COUNT(*) n FROM sos_cases WHERE status='done' AND outcome IS NOT NULL`)],
-    ['case chưa có người phụ trách',
-      one(`SELECT COUNT(*) n FROM sos_cases WHERE status!='done' AND owner_user_id IS NULL`)],
+    /* CV-LOI (02 4.7 A13): Case không chủ nay tự gán theo luật tạo Case (lớp có GV môn / GVCN) — demo thể hiện lần tự gán có lịch sử. */
+    ['case tự gán người phụ trách',
+      one(`SELECT COUNT(DISTINCT case_id) n FROM sos_case_history WHERE field = 'owner_user_id' AND old_value IS NULL`)],
     ['case song song', one(`SELECT COUNT(*) n FROM sos_cases WHERE parallel = 1`)],
     ['case tái diễn', one(`SELECT COUNT(*) n FROM sos_cases WHERE previous_case_id IS NOT NULL`)],
     ['phương án bị thay thế',
@@ -9465,12 +9466,27 @@ await runPrOv15i1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 // ==================================================================== OV-15i2 (Dán Excel thử lại / trần môn / email lớp thường / Hoàn tác "- → x", bỏ huyLuot, xuất điểm Test, tutor theo lớp)
 const { runPrOv15i2Tests } = await import('./prOv15i2.tests.ts');
 await runPrOv15i2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== CV-LOI (Case không chủ tự gán · một dòng Phân công · Xếp lại bài vắng theo quyền · hạn Mini Test)
+const { runPrCvLoiTests } = await import('./prCvLoi.tests.ts');
+await runPrCvLoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
 const { runPrTd7bTests } = await import('./prTd7b.tests.ts');
 await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TU-b (trang Tutor: Cần chú ý, bảng / panel, phạm vi QL, thêm sửa xoá, nhận xét, tải danh sách, gộp tên)
 const { runPrTubTests } = await import('./prTub.tests.ts');
 await runPrTubTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== LUAT-5 (luật 5: thu hồi / không tăng bậc qua QL, lý do bắt buộc, "Đã thu hồi" giữ dòng)
+const { runPrLuat5Tests } = await import('./prLuat5.tests.ts');
+await runPrLuat5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== KHUNG-LOI (thứ tự menu, thanh trên "Thêm ▾" / thanh dưới ≤ 5, chú giải màu ô MT, tiêu đề, "Nếu duyệt" ghi ngày)
+const { runPrKhungLoiTests } = await import('./prKhungLoi.tests.ts');
+await runPrKhungLoiTests({ check, assert } as any);
+// ==================================================================== CASE-NHIEU (Tạo Case nhiều kỹ năng: một giao dịch, người phụ trách, trùng / chờ xác nhận, gửi lại, quyền, tệp)
+const { runCaseLoTests } = await import('./caseLo.tests.ts');
+await runCaseLoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+
+const { runPrSl1Tests } = await import('./prSl1.tests.ts');
+await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
