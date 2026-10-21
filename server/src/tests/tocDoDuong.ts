@@ -83,7 +83,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
   /* PR-Ra: trang "Công việc" — Hỗ trợ học viên dùng lại `/my-work`, nay có thêm `nguoi`. */
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work' },
-  /* SV-YT-TVV: việc của TVV (Báo PH sau lưu xử lý) ở Tổng quan TVV (TVV không có khu Công việc). */
+  /* SV-YT-TVV + SV-TVV-VIEC: việc của TVV (Báo PH, Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật) ở Tổng quan TVV (TVV không có khu Công việc). */
   { trang: 'Việc TVV', vai: ['TVV'], url: '/tong-quan/viec-cua-toi' },
   {
     trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/my-work?nguoi=tat-ca',
@@ -439,10 +439,10 @@ export const TRAN: Record<string, number> = {
   'GVBM /my-work': 63,   // TD4: đo 61 (trước 64)
   'GVCN_THUONG /my-work': 63,   // TD4: đo 61 (trước 64)
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 64,   // TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu)
-  'QT /my-work': 64,   // TD4: đo 61 (trước 64); SV-YT-TVV +1
-  'QL /my-work?nguoi=tat-ca': 74,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1 = 74
-  'QT /my-work?nguoi=tat-ca': 74,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1 = 74
+  'QL /my-work': 65,   // TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu)
+  'QT /my-work': 65,   // TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1
+  'QL /my-work?nguoi=tat-ca': 75,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75
+  'QT /my-work?nguoi=tat-ca': 75,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75
   'GVCN /my-work?nguoi=tat-ca': 15,
   'QL /my-work?nguoi=7': 68,
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */

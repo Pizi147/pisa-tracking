@@ -98,7 +98,7 @@ export function idsHocVienLop(p: Principal): { rows: { id: number; scoringMode: 
 }
 
 export function danhSachHocVienLop(
-  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null; them?: boolean } = {},
+  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null; them?: boolean; chuaTvv?: boolean } = {},
 ): TrangHocVienLop {
   const today = demoToday();
   const conn = db();
@@ -159,7 +159,7 @@ export function danhSachHocVienLop(
        JOIN classes c ON c.id = e.class_id
        JOIN students s ON s.id = e.student_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${dangDung === 'cua-toi' ? ' AND s.consultant_user_id = ?' : ''}`,
+      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${dangDung === 'cua-toi' ? ' AND s.consultant_user_id = ?' : ''}${f.chuaTvv ? ' AND s.consultant_user_id IS NULL' : ''}`,
   ).all(mondayOfDate(demoToday()), ...ids, ...(dangDung === 'cua-toi' ? [p.userId] : [])) as any[];
   const lopCuaHv = new Map<number, number>(hv.map((h) => [h.id as number, h.class_id as number]));
 

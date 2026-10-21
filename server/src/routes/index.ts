@@ -1501,6 +1501,7 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
     cnNho: qInt(req, 'cnNho') ?? null, them: qStr(req, 'them') === '1',   // OV-15h2: nhãn Bộ lọc thêm
+    chuaTvv: qStr(req, 'tvv') === 'chua',   // SV-TVV-VIEC: em chưa có TVV — tập việc "Bổ sung hồ sơ thiếu" của QL
   });
 }));
 
@@ -2021,7 +2022,7 @@ api.get('/tong-quan/hoc-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return soHocVien(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
 }));
-/* SV-YT-TVV (Q-A1 ①): "Việc của bạn" ở trang đầu TVV — TVV không có khu Công việc (`/my-work` chặn), nên việc TVV giữ đọc ở đây (cùng `myWork`, chỉ nhóm của TVV). */
+/* SV-YT-TVV + SV-TVV-VIEC (Q-A1 ①): "Việc của bạn" ở trang đầu TVV — TVV không có khu Công việc (`/my-work` chặn), nên việc TVV giữ đọc ở đây (cùng `myWork`, chỉ nhóm của TVV). */
 api.get('/tong-quan/viec-cua-toi', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return nheMyWork(myWork(principalOf(req), { branchId: qInt(req, 'branchId'), chiNhom: NHOM_VIEC_TVV }));

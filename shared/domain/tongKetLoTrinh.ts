@@ -94,7 +94,8 @@ export const coKetQuaCu = (c: { outcome?: string | null; outcome_score?: number 
  * Ngày thi = ngày thi thật đã nhập, không thì ngày dự kiến; LT-SV (Q-C3 ① 21/10): chỉ tuần / chỉ tháng = "chưa chốt ngày" → KHÔNG có ngày thi (không
  * bịa ngày, không thành "đã thi"); không có dự kiến nào → ngày đóng lộ trình (giữ luật nhắc cũ). Từ HÔM SAU ngày thi: "Đã thi · chờ kết quả". Hạn gốc = ngày thi + 7, dùng chung cho Cập nhật kết quả và Chọn bước tiếp;
  * gia hạn (`han_sau_thi`) chỉ có hiệu lực khi muộn hơn hạn gốc (sửa ngày thi → hạn tính lại, gia hạn muộn hơn thì giữ). Bước tiếp: hạn = muộn hơn của
- * hạn đó và ngày có kết quả (nhập muộn không quá hạn ngay; sửa kết quả không dời). Không chặn gì — chỉ là hạn.
+ * hạn đó và ngày có kết quả + 7 (SV-TVV-VIEC, 21/10-TVV: hạn 1 tuần từ khi có KQ; sửa kết quả không dời). Không chặn gì — chỉ là hạn.
+ * SV-TVV-VIEC: "Đã thi · chờ kết quả" (việc Cập nhật KQ thi thật của TVV) KHÔNG hạn — `han` null, không quá hạn.
  * Vào: dòng `learning_cycles` (+ `exam_week` = thứ Hai tuần thi dự kiến, `ngay_kq` = ngày có kết quả lần đầu).
  */
 export const NGAY_HAN_SAU_THI = 7;
@@ -125,9 +126,10 @@ export function trangThaiSauThi(c: DongSauThi, homNay: string): TrangThaiSauThi 
   let han = daGiaHan ? gh : hanGoc;
   const giaiDoan: GiaiDoanSauThi = coKq ? (c.buoc_tiep ? 'xong' : 'cho_buoc_tiep') : ngayThi && ngayThi < homNay ? 'da_thi_cho_kq' : 'chua_thi';
   const nkq = c.ngay_kq ? c.ngay_kq.slice(0, 10) : null;
-  /* LT-SV: không có ngày thi (chỉ tháng / tuần, "Không thi") → hạn Chọn bước tiếp = ngày có kết quả + 7 (21/10-TVV), không đỏ ngay hôm sau. */
-  const mocKq = nkq && !ngayThi ? addDaysIso(nkq, NGAY_HAN_SAU_THI) : nkq;
+  /* 21/10-TVV: hạn Chọn bước tiếp = muộn hơn của hạn gốc (ngày thi + 7 / gia hạn) và ngày có kết quả + 7 — không có ngày thi thì chỉ ngày có KQ + 7. */
+  const mocKq = nkq ? addDaysIso(nkq, NGAY_HAN_SAU_THI) : null;
   if (giaiDoan === 'cho_buoc_tiep' && mocKq && (!han || mocKq > han)) han = mocKq;
+  if (giaiDoan === 'da_thi_cho_kq') han = null;
   return {
     /* rà #436: hạn đang dùng đến từ ngày có kết quả (muộn hơn gia hạn) → không ghi "đã gia hạn". */
     giaiDoan, ngayThi, hanGoc, han, daGiaHan: daGiaHan && han === gh, soLanGiaHan: c.han_sau_thi_so_lan ?? 0,
