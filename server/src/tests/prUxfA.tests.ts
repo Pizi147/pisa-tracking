@@ -146,21 +146,15 @@ export async function runPrUxfATests(t: YThucTestKit) {
   const pL = loadPrincipal(gvMb[0]), pR = loadPrincipal(gvMb[1]), pNgoai = loadPrincipal(gvMb[2]);
 
   // ==================================================================== Task 3
-  check('UXF-a (3) · K2-05 hai đường: em lớp thường đã có Final Test (không lượt planned) không "thiếu mốc tiếp theo" ở cả roster lẫn Học viên & Lớp; em chưa có bài nào thì cả hai có', () => {
+  check('UXF-a (3) · K2-05 → SV-TVV-VIEC (Q-D4 ①): "mốc tiếp theo" không còn trong Thiếu ở cả roster lẫn Học viên & Lớp (có hay chưa có bài); hai đường vẫn khớp', () => {
     const roster = classes.classRoster(P.admin, LOP) as any[];
     const hv = hvl.danhSachHocVienLop(P.admin, { phamVi: 'chi-nhanh', branchId: MB }).hocVien as any[];
     const thieuMoc = (sid: number) => roster.find((r) => r.id === sid).missing.some((m: any) => m.key === 'next_milestone');
     const thieuTt = (sid: number) => hv.find((h) => h.id === sid).loc.includes('thieu_tt');
-    assert(!thieuMoc(Z.sid), `Z đã xong Final Test mà roster còn "thiếu mốc tiếp theo"`);
-    assert(thieuMoc(Y.sid) && thieuTt(Y.sid), `Y chưa có bài: roster ${thieuMoc(Y.sid)} · hvl ${thieuTt(Y.sid)}`);
-    /* Hai đường: badge Thiếu thông tin ở Học viên & Lớp = danh sách thiếu của roster (cùng `missingForStudent`, cùng `coMocTiepTheoThuong`). */
+    assert(!thieuMoc(Z.sid) && !thieuMoc(Y.sid), 'không còn "thiếu mốc tiếp theo"');
+    /* Hai đường: badge Thiếu thông tin ở Học viên & Lớp = danh sách thiếu của roster (cùng `missingForStudent`). */
     for (const r of roster) assert(thieuTt(r.id) === r.missing.length > 0, `hai đường lệch ở ${r.fullName}: hvl ${thieuTt(r.id)} · roster ${JSON.stringify(r.missing)}`);
-    /* Z bỏ bài Cuối khoá (huỷ) → lại thiếu mốc ở cả hai đường. */
-    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(luotZ);
-    const r2 = (classes.classRoster(P.admin, LOP) as any[]).find((r) => r.id === Z.sid);
-    const h2 = (hvl.danhSachHocVienLop(P.admin, { phamVi: 'chi-nhanh', branchId: MB }).hocVien as any[]).find((h) => h.id === Z.sid);
-    conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(luotZ);
-    assert(r2.missing.some((m: any) => m.key === 'next_milestone') && h2.loc.includes('thieu_tt'), 'Final Test đã huỷ → thiếu mốc ở cả hai đường');
+    void luotZ;
   });
 
   check('UXF-a (3) · VN29 hai đường: GVBM L có ô L quá hạn → em vào Cần làm + Quá hạn; dem = số dòng = badge hồ sơ lớp; PHỦ ĐỊNH GVBM R không nhận việc của ô L', () => {

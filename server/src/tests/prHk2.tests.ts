@@ -27,12 +27,12 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   const th: any = await import('../phanTich/tongHop.ts');
   console.log('\nPR-HK2 · Task 1 · hai họ chip, "+n", ⋯, nút lọc');
 
-  check('C1 · Nhan.tsx export CHIP_TRON và CHIP_VUONG: cùng text-[13px], leading-[22px], border (NEN-TYPO-MAU: chip 13 / 600 cao 24)', () => {
+  check('C1 · Nhan.tsx export CHIP_TRON và CHIP_VUONG: cùng text-xs, h-[22px], border (NEN-V5: badge 12 / 600 cao 22)', () => {
     const s = doc('web/src/ui/Nhan.tsx');
     for (const ten of ['CHIP_TRON', 'CHIP_VUONG']) {
       const m = new RegExp(`export const ${ten} = '([^']*)'`).exec(s);
       assert(m, `${ten} chưa export`);
-      for (const lop of ['text-[13px]', 'leading-[22px]', 'border']) assert(m![1].split(' ').includes(lop), `${ten} thiếu ${lop}`);
+      for (const lop of ['text-xs', 'h-[22px]', 'border']) assert(m![1].split(' ').includes(lop), `${ten} thiếu ${lop}`);
     }
   });
 
@@ -87,11 +87,10 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   console.log('\nPR-HK2 · Task 2 · K6 chữ nội dung 12 px');
 
-  check('C7 · Field (gợi ý/lỗi), SectionNote, KpiTile (ví dụ, dòng phụ) không còn text-[11px]; .hang-con > td / .khoi-nhom-con không còn 11.5px', () => {
+  check('C7 · Field (gợi ý/lỗi), SectionNote, OChiSo (dòng phụ) không còn text-[11px]; .hang-con > td / .khoi-nhom-con không còn 11.5px', () => {
     const ui = doc('web/src/ui/ui.tsx');
     for (const ten of ['Field', 'SectionNote']) assert(!/text-\[11px\]/.test(than(ui, ten)), `${ten} còn text-[11px]`);
-    const kpi = than(ui, 'KpiTile').split('\n').filter((d) => !/uppercase/.test(d)).join('\n');   // nhãn in hoa của ô = đầu cột nhỏ, giữ 11 px
-    assert(!/text-\[11px\]/.test(kpi), 'KpiTile còn text-[11px] ở dòng phụ / "Xem danh sách"');
+    assert(!/text-\[11px\]/.test(than(ui, 'OChiSo')), 'OChiSo (NEN-V5, thay KpiTile) còn text-[11px]');
     const css = doc('web/src/index.css');
     assert(!/\.hang-con > td \{[^}]*11\.5px/.test(css), '.hang-con > td còn 11.5px');
     assert(!/\.khoi-nhom-con \{[^}]*11\.5px/.test(css), '.khoi-nhom-con còn 11.5px');
@@ -174,7 +173,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'choDuyet').nhan('ft') === 'Chưa chốt PA', 'choDuyet');
   });
 
-  check('C13 · một cột hvCase "HV - Case" thay hvCoCase + case; máy chủ giữ hai nguồn; Excel giữ hai cột riêng; ô web có hai SoLieuO riêng', () => {
+  check('C13 · một cột hvCase "HV - Case" thay hvCoCase + case; máy chủ giữ hai nguồn; Excel giữ hai cột riêng; ô web có hai OSo riêng', () => {
     for (const ct of ['ft', 'thuong'] as const) {
       const khoa = d.cotTongHopFor(ct).map((c: any) => c.khoa);
       assert(khoa.includes('hvCase') && !khoa.includes('hvCoCase') && !khoa.includes('case'), `${ct}: ${khoa.join()}`);
@@ -231,10 +230,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   console.log('\nPR-HK2 · Task 5 · điện thoại: thanh trên 23C, demo bar một dòng, Học viên & Lớp');
 
-  check('C16a · thanh trên: chữ PISA ở < 640 px (khối "PISA Tracking" ẩn ở sm-); Tìm / Thông báo / Tài khoản không viền, biểu tượng 20, số chuông đè góc', () => {
+  check('C16a · thanh trên: logo PISA mọi cỡ (NEN-V5 thay chữ PISA / "PISA Tracking"); Tìm / Thông báo / Tài khoản không viền, biểu tượng 20, số chuông đè góc', () => {
     const app = doc('web/src/App.tsx');
-    assert(/sm:hidden[^>]*>PISA</.test(app), 'App.tsx: thiếu chữ PISA (sm:hidden)');
-    assert(/hidden sm:block/.test(app) && /PISA Tracking/.test(app), 'App.tsx: khối tên đầy đủ phải ẩn ở < 640 px');
+    assert(/<img src=\{logoPisa\} alt="PISA"/.test(app), 'App.tsx: thiếu logo PISA (alt="PISA")');
     assert(/max-sm:h-\[52px\]/.test(app), 'App.tsx: thanh trên điện thoại cao 52 px');
     const hd = doc('web/src/modules/platform/Header.tsx');
     const nut = (moc: string) => { const i = hd.indexOf(moc); assert(i >= 0, `Header.tsx: không thấy ${moc}`); return hd.slice(i, i + 900); };

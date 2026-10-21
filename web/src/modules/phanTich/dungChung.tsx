@@ -1,15 +1,15 @@
 import { useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { SoLieuO } from '../../ui/SoLieuO.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { NganDanhSach, type DongSoLieu } from '../../ui/SoLieu.tsx';
 import type { ChuongTrinh, KhoangNgay } from '@shared/domain/index.ts';
 
 /**
- * `SoLieuO` trong ô bảng căn phải: ngăn danh sách (KhungPanel) nằm ngay dưới ô nên thừa hưởng `text-align: right` — bọc `text-left` để chữ trong
+ * `OSo` trong ô bảng căn phải: ngăn danh sách (KhungPanel) nằm ngay dưới ô nên thừa hưởng `text-align: right` — bọc `text-left` để chữ trong
  * ngăn căn trái như mọi ngăn khác.
  */
-export function SoO(props: Parameters<typeof SoLieuO>[0]) {
-  return <span className="inline-block text-left"><SoLieuO {...props} /></span>;
+export function SoO(props: Parameters<typeof OSo>[0]) {
+  return <span className="inline-block text-left"><OSo {...props} /></span>;
 }
 
 /** Props chung của các góc nhìn của Phân tích — cùng bộ lọc chi nhánh · chương trình · khoảng thời gian (OV-15e, C29) · lớp (PhanTich.tsx). */
@@ -33,7 +33,7 @@ export function thamSoLoc(p: PhamViPhanTich, them: Record<string, string> = {}):
 export const DINH_TRAI = '[&>td:first-child]:sticky [&>td:first-child]:left-0 [&>td:first-child]:z-[5]';
 
 /**
- * NÚT CHỮ MỞ MỘT NGĂN DANH SÁCH (G-8: một ngăn một lúc, G-10: số ngăn = số dòng). Giống `SoLieuO nguon=…` nhưng nút là một cụm chữ
+ * NÚT CHỮ MỞ MỘT NGĂN DANH SÁCH (G-8: một ngăn một lúc, G-10: số ngăn = số dòng). Giống `OSo nguon=…` nhưng nút là một cụm chữ
  * ("Mở danh sách Case cần GV phân loại →") chứ không phải một con số; nguồn phải trả `{ n, tieuDe, rows }` bằng chính hàm sinh ra số.
  */
 export function NutMoDanhSach({ nguon, tieuDe, children, className = '' }: { nguon: string; tieuDe: string; children: ReactNode; className?: string }) {

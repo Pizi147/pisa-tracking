@@ -4063,8 +4063,9 @@ check('Badge "Thiếu thông tin" gom mọi thứ còn thiếu vào MỘT nhãn'
     cycle: { start_period_id: null, exam_month: null, target_score: null },
     student: { dob: null, email: null }, isFastTrack: true,
   });
-  assert(ft.some((m) => m.key === 'exam_month') && ft.some((m) => m.key === 'target'),
-    'Lớp FT phải bị nhắc cả tháng thi lẫn Target');
+  /* SV-TVV-VIEC (Q-D4 ①): tháng thi không còn trong "Thiếu" — có việc Chốt ngày thi riêng; FT vẫn nhắc Target. */
+  assert(!ft.some((m) => m.key === 'exam_month') && ft.some((m) => m.key === 'target'),
+    'Lớp FT nhắc Target, không nhắc tháng thi');
   for (const m of ft) assert(m.who, `Mục "${m.label}" không nói ai điền được`);
 
   /* Khai đủ thì badge biến mất hẳn, không để lại một nhãn rỗng. */
@@ -9500,6 +9501,9 @@ await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runPrSl2Tests } = await import('./prSl2.tests.ts');
 await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== SV-YT-TVV (việc Báo PH của TVV sau lưu xử lý vi phạm — K1–K12, thu hồi / từ chối / rút, quyền)
+const { runPrSvYtTvvTests } = await import('./prSvYtTvv.tests.ts');
+await runPrSvYtTvvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== V5 Phân tích GV theo Overall (C08–C10), bỏ gợi ý MT4 (C20)
 const { runPrPtGvOverallTests } = await import('./prPtGvOverall.tests.ts');
 await runPrPtGvOverallTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9509,6 +9513,9 @@ await runPrSvBaiLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 SV-SO2 (Overall ở Phân tích lớp / hồ sơ GV, Đạt MT theo HV, Việc / Điểm đúng hạn, hồ sơ GV theo kỳ, panel chỉ đọc)
 const { runPrSvSo2Tests } = await import('./prSvSo2.tests.ts');
 await runPrSvSo2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== SV-TVV-VIEC (4 việc TVV: một người giữ = TVV của em / QL; Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật)
+const { runPrSvTvvViecTests } = await import('./prSvTvvViec.tests.ts');
+await runPrSvTvvViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

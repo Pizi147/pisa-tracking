@@ -340,7 +340,7 @@ export async function runPrGvTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 5–6 · giao diện (quét mã nguồn — web không có bộ kiểm riêng)
-  await t.checkAsync('PR-GV (5) · HoSoGiaoVienPage: không KPI / không nút sắp xếp / không màu viết cứng / chữ >= 12 px / tuần viết mã; SoLieuO nhận nhan', async () => {
+  await t.checkAsync('PR-GV (5) · HoSoGiaoVienPage: không KPI / không nút sắp xếp / không màu viết cứng / chữ >= 12 px / tuần viết mã; OSo nhận nhan', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const { fileURLToPath } = await import('node:url');
@@ -353,7 +353,7 @@ export async function runPrGvTests(t: YThucTestKit) {
     assert(!/text-\[(?:[0-9]|1[01])(?:\.\d+)?px\]/.test(trang), 'chữ >= 12 px');
     assert(/tuanLich\(/.test(trang), 'tuần hiện mã (W2 OCT)');
     assert(!/'progress'|writing1|attempt_no/.test(trang), 'không lộ mã kỹ thuật');
-    assert(/nhan\?: string/.test(doc('ui/SoLieuO.tsx')), 'SoLieuO có prop nhan');
+    assert(/nhan\?: string/.test(doc('ui/OSo.tsx')), 'OSo có prop nhan');
     assert(/path="\/giao-vien\/:id"/.test(doc('App.tsx')), 'route /giao-vien/:id');
   });
   await t.checkAsync('PR-GV (6) · bảng GV chi nhánh không xếp hạng; BranchPulse dùng BangGiaoVienChiNhanh; menu tài khoản có Hồ sơ giáo viên; bảng quyền ghi quyền dẫn xuất', async () => {

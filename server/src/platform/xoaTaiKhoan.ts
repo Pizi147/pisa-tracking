@@ -54,6 +54,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('cycle_target_revisions', 'actor_user_id', DV, 'lộ trình'),
   c('discipline_measures', 'owner_user_id', DV, 'lần xử lý'), c('discipline_measures', 'performed_by', DV, 'lần xử lý'),
   c('discipline_measures', 'confirmed_by', DV, 'lần xử lý'), c('discipline_measures', 'created_by', DV, 'lần xử lý'),
+  c('viec_bao_ph', 'bo_boi', DV, 'việc Báo PH'), c('viec_bao_ph_lan', 'ghi_boi', DV, 'việc Báo PH'),   // SV-YT-TVV
   c('journey_events', 'created_by', DV, 'hành trình'), c('lo_trinh_tiep_theo', 'updated_by', DV, 'lộ trình tiếp theo'),
   c('lo_trinh_tiep_theo', 'quyet_boi', DV, 'lộ trình tiếp theo'), c('mini_test', 'ghi_boi', DV, 'Mini Test'),
   c('lo_trinh_tiep_theo', 'kq_de_xuat_boi', DV, 'lộ trình tiếp theo'), c('lo_trinh_nhap', 'sua_boi', DV, 'nháp lộ trình'),   // OV-3b

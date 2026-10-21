@@ -1,4 +1,4 @@
-import { useId, useState, type MouseEvent, type ReactNode } from 'react';
+import { Fragment, useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { GIAI_THICH_KCK, KCK, chuTrangThai, loaiHoSo, trangCha, type TrangThai } from '@shared/domain/index.ts';
 import { fmtBand } from '../lib/format.ts';
@@ -48,10 +48,11 @@ export type LevelTone = Tone | 'late';
  */
 export type ScoreTone = 'rose' | 'sky' | 'emerald' | 'slate' | 'sos1' | 'sos2' | 'sos3' | 'tam';
 export const SCORE_CHIP: Record<ScoreTone, string> = {
-  rose: 'bg-bad-bg text-bad border-bad-line',
-  sky: 'bg-doing-bg text-doing border-doing-line',
-  emerald: 'bg-dat-bg text-dat border-dat-line',
-  slate: 'bg-muted-bg text-muted border-muted-line',
+  /* NEN-V5 (badge nhóm 1): viền màu nghĩa trên nền thẻ — cùng họ với SOS (C23). */
+  rose: 'bg-[color:var(--surface)] text-bad border-bad-line',
+  sky: 'bg-[color:var(--surface)] text-doing border-doing-line',
+  emerald: 'bg-[color:var(--surface)] text-dat border-dat-line',
+  slate: 'bg-[color:var(--surface)] text-muted border-muted-line',
   sos1: lopSos(1),
   sos2: lopSos(2),
   sos3: lopSos(3),
@@ -239,9 +240,9 @@ export function Alert({ tone = 'danger', children, title, quaHan }: {
  * là một lời khen không ai kiểm chứng.
  */
 const OUTCOME_CLASS: Record<string, string> = {
-  ok: 'bg-ok-bg text-ok border-ok-line',
-  warn: 'bg-soon-bg text-soon border-soon-line',
-  danger: 'bg-bad-bg text-bad border-bad-line',
+  ok: 'bg-[color:var(--surface)] text-ok border-ok-line',
+  warn: 'bg-[color:var(--surface)] text-soon border-soon-line',
+  danger: 'bg-[color:var(--surface)] text-bad border-bad-line',
   muted: 'bg-transparent text-dim border-muted-line',
 };
 export function Outcome({ tone, mark, children, title }: {
@@ -307,20 +308,32 @@ export function Skeleton({ rows = 5, className = '' }: { rows?: number; classNam
   );
 }
 
-export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
-  label: string; value: ReactNode; tone?: Tone; to?: string; sub?: string;
+/**
+ * Ô CHỈ SỐ V5 (NEN-V5, thay KpiTile; `bang-mau.html` mục 6): tên 13 · số lớn 28 / 700 (chữ số Inter) · dòng mẫu số 12 ngay dưới.
+ * Mẫu 0 → `giaTri` là chữ "Chưa có dữ liệu" (T19), không vẽ "0 %". Số bấm được = `OSo` / `TyLe` bên trong.
+ */
+export function OChiSo({ ten, giaTri, mau, className = '', children }: {
+  ten: ReactNode; giaTri: ReactNode; mau?: ReactNode; className?: string; children?: ReactNode;
 }) {
-  const inner = (
-    <div className={`card p-4 h-full transition-colors ${to ? 'hover:border-doing/40 cursor-pointer' : ''}`}>
-      <div className="text-[12px]  text-slate-400 font-semibold">{label}</div>
-      <div className={`mt-2 text-2xl font-semibold tabular-nums ${
-        tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : tone === 'ok' ? 'text-doing' : 'text-slate-100'
-      }`}>{value}</div>
-      {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
-      {to && <div className="text-xs text-doing mt-2">{t('Xem danh sách →')}</div>}
+  return (
+    <div className={`card flex h-full flex-col gap-0.5 px-4 py-3.5 ${className}`}>
+      <div className="text-[13px] font-medium text-slate-400">{ten}</div>
+      <div className="text-2xl font-bold tabular-nums text-slate-100">{giaTri}</div>
+      {mau && <div className="text-xs text-slate-500">{mau}</div>}
+      {children}
     </div>
   );
-  return to ? <Link to={to} className="block h-full no-underline">{inner}</Link> : inner;
+}
+
+/** NEN-V5 (P2, chủ SP 22/10): NHÃN ≠ GIÁ TRỊ — nhãn 13 xám, giá trị đậm. Một kiểu cho mọi khối "Nhãn  giá trị" (panel, đầu hồ sơ). */
+export const LOP_NHAN = 'text-[13px] font-medium text-slate-500';
+export const LOP_GIA_TRI = 'font-semibold text-slate-100';
+export function NhanGiaTri({ hang, className = '' }: { hang: ReadonlyArray<readonly [ReactNode, ReactNode]>; className?: string }) {
+  return (
+    <dl className={`m-0 grid grid-cols-[minmax(6rem,auto)_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 ${className}`}>
+      {hang.map(([nhan, gt], i) => <Fragment key={i}><dt className={LOP_NHAN}>{nhan}</dt><dd className={`m-0 min-w-0 ${LOP_GIA_TRI}`}>{gt}</dd></Fragment>)}
+    </dl>
+  );
 }
 
 /**
