@@ -2,6 +2,7 @@ import { db } from '../db.ts';
 import { tenMon } from '../../../shared/domain/index.ts';
 import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, xuLyCaseMany } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
+import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
 /** Chuông trả tối đa bấy nhiêu dòng: MỌI dòng chưa đọc trước, rồi dòng mới nhất (PR-VAI-a Q18). */
 export const THONG_BAO_TOI_DA = 50;
@@ -49,6 +50,9 @@ export function thongBaoCua(userId: number) {
                     WHEN n.entity_type = 'sos_case' AND n.kind IN ('sos', 'sos_new') THEN
                       CASE WHEN sc.status != 'done' AND ${LA_CASE_SOS('sc')} AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
                                 AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') THEN 1 ELSE 0 END
+                    /* SL1 (rà #502): đăng ký còn việc khi tài khoản còn chờ duyệt; đề nghị dời lịch còn việc khi còn chờ. */
+                    WHEN n.kind = 'dang_ky' AND n.entity_type = 'user' THEN CASE WHEN uu.approval_state = 'pending' THEN 1 ELSE 0 END
+                    WHEN n.kind = 'schedule_move' AND n.entity_type = 'skill_move_requests' THEN CASE WHEN smr.status = 'pending' THEN 1 ELSE 0 END
                     WHEN n.entity_type = 'yeu_cau_duyet' AND n.kind IN ('duyet_moi', 'duyet_qua_han', 'bao_len') THEN
                       CASE WHEN ycd.trang_thai = 'cho' THEN 1 ELSE 0 END
                     WHEN n.entity_type = 'yeu_cau_duyet' AND n.kind = 'duyet_tu_choi' THEN
@@ -69,6 +73,7 @@ export function thongBaoCua(userId: number) {
              LEFT JOIN assessment_attempts aa2 ON aa2.id = smr.attempt_id
              LEFT JOIN discipline_measures dm ON n.entity_type = 'discipline_measure' AND dm.id = n.entity_id
              LEFT JOIN yeu_cau_duyet ycd ON n.entity_type = 'yeu_cau_duyet' AND ycd.id = n.entity_id
+             LEFT JOIN users uu ON n.kind = 'dang_ky' AND n.entity_type = 'user' AND uu.id = n.entity_id
             WHERE n.user_id = ?
          ) x
          LEFT JOIN students s ON s.id = x.student_id
@@ -78,8 +83,15 @@ export function thongBaoCua(userId: number) {
   /* SL1 (N1): hạn của dòng — lưu sẵn (tự động, Case giao) → hạn thẻ duyệt → hạn việc tiếp của Case (`xuLyCaseMany`, một câu mỗi lô). */
   const caseCan = [...new Set(rows.filter((r) => !r.han && r.entity_type === 'sos_case').map((r) => r.entity_id as number))];
   const xl = caseCan.length ? xuLyCaseMany(caseCan, demoToday()) : null;
+  /* SL1 (rà #502): "Cần xử lý / Vi phạm mới" (Ý thức) còn việc khi em còn vi phạm mới hoặc bắt buộc xử lý chưa gửi — CÙNG `trangThaiYThuc` của Công việc. */
+  const emYt = [...new Set(rows.filter((r) => r.kind === 'discipline' && r.entity_type === 'student').map((r) => r.entity_id as number))];
+  const yt = emYt.length ? trangThaiYThuc(emYt, demoToday()) : null;
   for (const r of rows) {
     r.mon = r.mon_goc ? tenMon(r.ct ?? null, r.mon_goc) : null;
+    if (yt && r.kind === 'discipline' && r.entity_type === 'student') {
+      const em = yt.get(r.entity_id);
+      r.con_viec = em && !em.tamDung && ((em.soBatBuoc > 0 && !em.coChoDuyet) || em.soMoi > 0) ? 1 : 0;
+    }
     r.han = r.han ?? r.han_the ?? (r.entity_type === 'sos_case' ? xl?.get(r.entity_id)?.han ?? null : null);
     delete r.mon_goc; delete r.ct; delete r.han_the;
   }

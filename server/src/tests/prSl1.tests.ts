@@ -187,7 +187,7 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       const kq = d.dongChuong([
         r(1, { kind: 'sos', entity_type: 'sos_case', entity_id: 56, con_viec: 1, han: '2026-09-20' }),
         r(2, { kind: 'case_chua_chot_pa', entity_type: 'sos_case', entity_id: 56, han: '2026-09-10' }),
-        r(3, { han: '2026-09-01', read_at: '2026-09-12T00:00:00Z' }),
+        r(3, { han: '2026-09-01', read_at: '2026-09-12T00:00:00Z', con_viec: 1 }),
         r(4, { kind: 'sos', entity_type: 'assessment_attempt' }),
         r(5, { kind: 'duyet_moi', entity_type: 'yeu_cau_duyet', con_viec: 0 }),
         r(6, { kind: 'chot_lo_trinh', han: null }),
@@ -242,6 +242,34 @@ export async function runPrSl1Tests(t: YThucTestKit) {
         const tu = cases.reportIssue(P.mbManager, { studentId: em, topic: 'reading', title: 'SL1 tự phụ trách', summary: 'Em bỏ sót câu hỏi cuối bài Reading, sai dạng True False Not Given.', primaryCode: d.issuesForTopic('reading')[0].code,
           idempotencyKey: `sl1-c23b-${Math.random()}`, parallel: true, ownerUserId: P.mbManager.userId }) as any;
         assert(!(tb.thongBaoCua(P.mbManager.userId) as any[]).some((x) => x.kind === 'case_giao' && x.entity_id === tu.id), 'tự tạo cho mình: không chuông');
+      });
+    });
+
+    check('SL1-10d · số chuông giảm được: đăng ký đã duyệt, đề nghị dời đã xử lý, Ý thức đã xử lý → Để biết; "Đã có bàn giao" là tin; dòng không biết trạng thái đã đọc → Để biết', () => {
+      const tb: any = await_tb;
+      thu(() => {
+        const qt = P.admin.userId, NOW = new Date().toISOString();
+        const them = (kind: string, et: string, eid: number, docRoi = false) => Number(conn.prepare(`INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, created_at, read_at)
+          VALUES (?,?,?,?,?,?,?,?)`).run(qt, kind, `sl1 ${kind}`, et, eid, `sl1:${kind}:${eid}:${Math.random()}`, NOW, docRoi ? NOW : null).lastInsertRowid);
+        const nhom = (id: number) => d.nhomThongBao((tb.thongBaoCua(qt) as any[]).find((n) => n.id === id));
+        /* dang_ky: còn việc khi tài khoản còn chờ duyệt. */
+        const u = one(`SELECT id FROM users WHERE approval_state IS NULL OR approval_state != 'pending' LIMIT 1`).id;
+        const dk = them('dang_ky', 'user', u);
+        assert(nhom(dk) === 'de-biet', 'đăng ký đã duyệt phải rời Cần làm');
+        conn.prepare(`UPDATE users SET approval_state = 'pending' WHERE id = ?`).run(u);
+        assert(nhom(dk) === 'can-lam', 'đăng ký còn chờ duyệt ở Cần làm');
+        /* schedule_move: còn việc khi đề nghị dời còn chờ. */
+        const r = one(`SELECT id, status FROM skill_move_requests WHERE status != 'pending' LIMIT 1`);
+        if (r) assert(nhom(them('schedule_move', 'skill_move_requests', r.id)) === 'de-biet', 'đề nghị dời đã xử lý phải rời Cần làm');
+        /* discipline: em không còn vi phạm mới / bắt buộc xử lý → rời Cần làm. */
+        const em = one(`SELECT s.id FROM students s WHERE NOT EXISTS (SELECT 1 FROM violations v WHERE v.student_id = s.id) LIMIT 1`).id;
+        assert(nhom(them('discipline', 'student', em)) === 'de-biet', 'Ý thức đã xử lý (không còn việc) phải rời Cần làm');
+        assert(nhom(them('ban_giao', 'student', em)) === 'de-biet', '"Đã có bàn giao" là tin');
+        const loi = them('lenh_loi', 'student', em);
+        assert(nhom(loi) === 'can-lam', 'chưa đọc: còn ở Cần làm');
+        assert(nhom(them('lenh_loi', 'student', em, true)) === 'de-biet', 'không biết trạng thái mà đã đọc → Để biết');
+        const kq = d.dongChuong(tb.thongBaoCua(qt));
+        assert(kq.soNut === kq.canLam.length && kq.canLam.some((n: any) => n.id === dk), 'số nút = Cần làm, có đăng ký còn chờ');
       });
     });
   } finally {

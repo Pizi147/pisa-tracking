@@ -704,6 +704,7 @@ export function reportIssue(p: Principal, input: {
       conn.prepare(`UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE dedup_key = ? AND (status = 'done' OR id = ?)`)
         .run(nowIso(), dedupKey, caChuongTrinhKhac ? caCu.id : 0);
     }
+    const chuCase = input.ownerUserId ?? suggestCaseOwner({ classId, category });
     const info = conn
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category, origin_kind,
@@ -721,7 +722,7 @@ export function reportIssue(p: Principal, input: {
             * hộ mở Case rất thường xuyên; gán họ làm người phụ trách là ghi sai trách nhiệm.
             * Ai báo thì lưu ở `reported_by`, còn đây là gợi ý theo phân công.
             */
-           input.ownerUserId ?? suggestCaseOwner({ classId, category }),
+           chuCase,
            nowIso());
     const caseId = Number(info.lastInsertRowid);
 
@@ -745,9 +746,8 @@ export function reportIssue(p: Principal, input: {
       dedupKey: `case_open:${caseId}`,
     });
     /* SL1 (02 4.7 C23): Case tạo tay cho kỹ năng người khác phụ trách → chuông Cần làm của người phụ trách (như Rb §20.11 "Case SOS mới"). */
-    const chu = (conn.prepare('SELECT owner_user_id AS u FROM sos_cases WHERE id = ?').get(caseId) as any)?.u as number | null;
-    if (chu && chu !== p.userId && !input.backfill) {
-      notify({ userId: chu, kind: 'case_giao', title: `Thêm PA · Case ${caseTopicLabel(topic, ctCuaCase)} · ${student.full_name}`, body: summary.slice(0, 120),
+    if (chuCase && chuCase !== p.userId && !input.backfill) {
+      notify({ userId: chuCase, kind: 'case_giao', title: `Thêm PA · Case ${caseTopicLabel(topic, ctCuaCase)} · ${student.full_name}`, body: summary.slice(0, 120),
         entityType: 'sos_case', entityId: caseId, dedupKey: `case_giao:${caseId}`, han: xuLyCaseMany([caseId], demoToday()).get(caseId)?.han ?? null });
     }
     writeAudit({ actorUserId: p.userId, action: input.backfill ? 'case.backfill' : 'case.report',

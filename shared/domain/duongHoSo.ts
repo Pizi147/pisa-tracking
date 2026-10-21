@@ -152,13 +152,15 @@ export type ThongBaoRow = {
  */
 const LOAI_CAN_LAM = new Set([
   'nhac_viec', 'nhac_ban_giao', 'duyet_moi', 'duyet_qua_han', 'duyet_tu_choi', 'sos', 'sos_new', 'discipline', 'schedule_move', 'phoi_hop',
-  'dang_ky', 'lenh_loi', 'ban_giao', 'overdue_score', 'overdue_task',
+  'dang_ky', 'lenh_loi', 'overdue_score', 'overdue_task',   // SL1 (rà #502): 'ban_giao' "Đã có bàn giao" là tin → Để biết
   'bao_len',   // PR-S6F-a Q12: thẻ Báo QL đang chờ chính Quản lý quyết
   /* SL1 (A1-04, A7-05): ba thông báo tự động OV-15d thay "Nhắc" — chính là việc (máy chủ chỉ giữ khi việc còn). C23: Case tạo tay giao người khác phụ trách. */
   'cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'case_giao',
 ]);
-export function nhomThongBao(n: { kind: string | null; con_viec?: number | null; entity_type?: string | null }): 'can-lam' | 'de-biet' {
+export function nhomThongBao(n: { kind: string | null; con_viec?: number | null; entity_type?: string | null; read_at?: string | null }): 'can-lam' | 'de-biet' {
   if (n.con_viec === 0) return 'de-biet';
+  /* SL1 (rà #502): máy chủ không biết việc của dòng còn hay xong (`con_viec` trống) mà người đọc đã đọc → Để biết, để số chuông không chỉ tăng. */
+  if (n.con_viec == null && n.read_at) return 'de-biet';
   /* SL1 (v4d): "SOS n · em · MTn" gửi GVCN (`notifyTeachers`, gắn lượt) là tin một chiều — không có việc nào để nó rời nhóm. */
   if (n.kind === 'sos' && n.entity_type === 'assessment_attempt') return 'de-biet';
   return LOAI_CAN_LAM.has(n.kind ?? '') ? 'can-lam' : 'de-biet';

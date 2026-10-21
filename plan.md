@@ -358,7 +358,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **PR-EN** bản tiếng Anh (kế hoạch `2026-10-07-pr-en-tieng-anh.md` — đếm lại chuỗi vì OV / OV-12 đổi nhiều màn; chạy **sau OV-12**) → deploy lần nữa. **PR-SOTAY bỏ** (15/10): thay bằng Hướng dẫn trên web — HD-a (khung + GV), HD-b (QL / QT / TVV / CX / Admin).
 - **PR-NC** thống kê nghiên cứu: xem lại tháng 12 (cần 2–3 tháng dữ liệu).
 
-### Ghi chú không chặn còn mở (kiểm lại khi PR đụng tới; đã bỏ mục DON #308, VN3 #302, NO-CT2-KV #290 đã xử lý)
+### Ghi chú không chặn còn mở (kiểm lại khi PR đụng tới; đã bỏ mục DON #308, VN3 #302, NO-CT2-KV #290 đã xử lý)
+- **SL1 #502 → SL2 / M2:** chuông lấy tối đa 50 dòng (chưa đọc trước) — dòng Cần làm đã đọc có thể bị đẩy ra ngoài (M2 đọc hàng đợi, N2) · `case_giao` gửi người phụ trách lúc tạo, không theo khi đổi người phụ trách · `khacChiNhanh` (Chờ duyệt) không lọc theo lớp `?lop=` · hộp Chờ duyệt theo chi nhánh đã nhớ, badge menu vẫn mọi chi nhánh (SL2 một nghĩa badge) · khung FT/thường của PA: Báo cáo theo lớp hiện tại, Hiệu quả PA theo nơi học lúc làm PA (SL2).
 - Hồ sơ MT: lượt không có `classId` → "Dời lịch thi cả đợt" không mở gì (hiếm) — HOP1.
 - `suggestCaseOwner` chạy theo (lớp FT, kỹ năng): lô 500 em nhiều lớp có thể > 200 câu — KV; **OV-3b chạm KQĐR thì đo lại**.
 - Case Học viên (KQĐR "Không đạt · Học viên") mang kỹ năng đầu tiên — KV, chủ SP xem khi rà OV-3b.
