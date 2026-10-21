@@ -250,7 +250,7 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
                 </Truong>
               </Hang2>
               <Truong nhan={t('Mô tả chung')} batBuoc={canChung} loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: MO_TA_MIN }}>
-                <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} onChange={(ev) => setMoTa(ev.target.value)}
+                <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} readOnly={busy} onChange={(ev) => setMoTa(ev.target.value)}
                   placeholder={t('Ví dụ: Đã gửi Report cho PH qua Zalo')} />
               </Truong>
             </>

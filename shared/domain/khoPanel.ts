@@ -74,3 +74,18 @@ export function xoaNhapViec(kho: KhoNhap | null, viec: string): void {
 export async function luuRoiTiep(luu: () => Promise<boolean | void>, tiep: () => void): Promise<void> {
   if ((await luu()) !== false) tiep();
 }
+
+/**
+ * CHỦ NHÁP (rà #530): nháp chỉ của MỘT người + góc nhìn. Phiên đổi chủ (đăng xuất, đổi tài khoản, đổi góc nhìn, hết phiên rồi người khác đăng
+ * nhập cùng thẻ) → xoá mọi nháp trước khi trang mới vẽ — chữ của người trước không lọt sang người sau cùng máy. Khoá chủ ngoài tiền tố nháp.
+ */
+export function datChuNhap(kho: KhoNhap | null, chu: string): void {
+  if (!kho) return;
+  try {
+    if (kho.getItem('pisa-nhap-chu') === chu) return;
+    const bo: string[] = [];
+    for (let i = 0; i < kho.length; i++) { const k = kho.key(i); if (k?.startsWith(TIEN_TO_NHAP)) bo.push(k); }
+    for (const k of bo) kho.removeItem(k);
+    kho.setItem('pisa-nhap-chu', chu);
+  } catch { /* kho hỏng: không có nháp để lọt */ }
+}

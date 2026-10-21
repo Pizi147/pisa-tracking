@@ -75,10 +75,10 @@ export function useXoaNhap(): () => void {
  * T21 (375 + bàn phím): bàn phím ảo che phần dưới vùng nhìn — đo bằng `visualViewport`, đặt `--ban-phim` (px bị che) + `data-ban-phim` lên <html>:
  * panel phủ co lên trên bàn phím, chân lưu dính ngay trên bàn phím, thanh điều hướng dưới ẩn (`index.css`).
  */
-function useBanPhim() {
+function useBanPhim(bat: boolean) {
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return undefined;
+    if (!bat || !vv) return undefined;
     const goc = document.documentElement;
     const bo = () => { delete goc.dataset.banPhim; goc.style.removeProperty('--ban-phim'); };
     const doi = () => {
@@ -88,7 +88,7 @@ function useBanPhim() {
     doi();
     vv.addEventListener('resize', doi); vv.addEventListener('scroll', doi);
     return () => { vv.removeEventListener('resize', doi); vv.removeEventListener('scroll', doi); bo(); };
-  }, []);
+  }, [bat]);
 }
 
 /** T16 (mockup `cong-viec.html` `.hop-hoi`): hộp nhỏ, "Ở lại" là nút chính và nhận focus; bỏ chữ là nút thường nói rõ việc sẽ làm. */
@@ -214,7 +214,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     panelDangSua.set(id, (tiep) => setHoi({ nut: t('Bỏ chữ, sang việc khác'), tiep }));
     return () => { panelDangSua.delete(id); };
   }, [id, daSua]);
-  useBanPhim();
+  useBanPhim(!trongKhung);   // rà #530: một nơi đo — panel con đóng không gỡ `--ban-phim` khi panel ngoài còn mở
 
   /* OV-12e (rà #395): "← Danh sách / ← tên em / ← Case" bỏ panel đang gõ — đang sửa dở thì hỏi trước (cùng hộp), không mất chữ âm thầm. */
   const veLai = () => {
@@ -241,7 +241,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             <div className="flex items-start gap-2.5">
               <h2 className="m-0 min-w-0 flex-1 text-[17px] font-extrabold leading-6 text-slate-100">{tieuDe}</h2>
               {dau.han}
-              <button type="button" className={`btn btn-sm btn-ghost -my-1 min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>
+              <button type="button" className={`btn btn-sm btn-ghost -my-1 min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]`} onClick={dong} aria-label={t('Đóng')}>✕</button>
             </div>
             <p className="m-0 flex flex-wrap items-baseline text-sm leading-snug text-slate-400">
               {dau.dong2.filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
@@ -253,8 +253,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
           <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
-          {/* Tại chỗ trên điện thoại: "‹ Công việc" của nơi gọi thay ✕. */}
-          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>
+          {/* Rà #530: ✕ ở mọi cỡ như mockup V5 (375 có thêm "‹ Công việc" của nơi gọi — cùng đường đóng). */}
+          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]`} onClick={dong} aria-label={t('Đóng')}>✕</button>
         </header>
         )}
         {quayLai && (
@@ -295,8 +295,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   if (taiCho) {
     /* OV-14c: Esc từ hộp nằm trong portal (hộp nhập điểm) nổi bọt qua cây React — chỉ đóng panel khi Esc phát ra TRONG khung panel. */
     return (
+      /* 375 toàn màn (08 NEN-PANEL, `.dt-toan`): `-mx-4` bù đệm `p-4` của <main> — thẻ tràn sát hai mép, không bo góc. */
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
-        className={`card flex flex-col -outline-offset-2 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
+        className={`card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTaiCho.Provider value={false}>{voi(than)}</KhungTaiCho.Provider>
       </section>
     );

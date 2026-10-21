@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { api, invalidateAll } from './api.ts';
 import { datNguoiDungKhung } from '../ui/CongTacKhung.tsx';
 import { dongBoNgonNgu } from './ngonNgu.ts';
-import type { NavQuyen } from '@shared/domain/index.ts';
+import { datChuNhap, type NavQuyen } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+
+const khoPhien = () => { try { return window.sessionStorage; } catch { return null; } };
 
 export type Grant = {
   id: number; role: string; roleName: string;
@@ -97,6 +99,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (uid) dongBoNgonNgu(session?.ngonNgu); }, [uid]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Q7: khung đã nhớ (CongTacKhung) theo người — đặt trước khi trang con đọc. */
   datNguoiDungKhung(session?.user?.id ?? null, session?.gocNhin?.dangChon ?? null, session?.khungPhamVi ?? null);
+  /* NEN-PANEL (rà #530): nháp panel thuộc một người + góc nhìn — phiên đã tải (không phải lỗi mạng) mà đổi chủ thì xoá hết nháp, trước khi trang con đọc. */
+  if (session && !session.loiKetNoi) datChuNhap(khoPhien(), session.authenticated ? `${session.user?.id}|${session.gocNhin?.dangChon ?? ''}` : 'khach');
 
   const switchAccount = useCallback(async (userId: number) => {
     await api.post('/demo/session', { userId });

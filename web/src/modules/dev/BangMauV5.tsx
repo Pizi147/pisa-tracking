@@ -270,7 +270,7 @@ function PanelViecMau() {
   const trangThai: TtLuu | null = tt ?? (daGo ? 'nhap' : null);
   return (
     <KhungPanel tieuDe="Báo PH · Ngô Hải Yến" loai="VIỆC · BÁO PH" onDong={() => undefined}
-      dau={{ dong2: ['CP FT 110', 'Lần 1', <span key="h" className="font-semibold text-soon">{nhanHan('2026-09-18', HOM_NAY)}</span>] }}
+      dau={{ dong2: ['CP FT 110', 'Lần 1', <Nhan key="h" tone="soon">{nhanHan('2026-09-18', HOM_NAY)}</Nhan>] }}
       chan={{
         huy: null, daSua: daGo && tt !== 'da',
         trai: trangThai && <ChuLuu tt={trangThai} luc="10:42" loi="mất mạng" />,

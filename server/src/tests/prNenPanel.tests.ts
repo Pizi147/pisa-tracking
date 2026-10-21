@@ -55,6 +55,38 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     assert(d.docNhap(k, 'v', 'o') === undefined, 'JSON hỏng phải bỏ qua');
   });
 
+  check('NEN-PANEL rà #530 · chủ nháp đổi (đăng xuất / đổi tài khoản / đổi góc nhìn / người khác đăng nhập) → xoá MỌI nháp; cùng chủ → giữ', () => {
+    const k = khoGia();
+    d.datChuNhap(k, '7|');
+    d.ghiNhap(k, 'phoi_hop:12', 'ghi-chu', 'chữ của cô Hà', false);
+    d.datChuNhap(k, '7|');
+    assert(d.docNhap(k, 'phoi_hop:12', 'ghi-chu') === 'chữ của cô Hà', 'cùng người + góc nhìn (tải lại trang) phải giữ nháp');
+    k.m.set('pisa-giao-dien', 'light');
+    d.datChuNhap(k, '9|');
+    assert(d.docNhap(k, 'phoi_hop:12', 'ghi-chu') === undefined, 'người khác vào cùng thẻ vẫn thấy nháp của người trước');
+    assert(k.m.get('pisa-giao-dien') === 'light', 'xoá lan sang khoá không phải nháp');
+    d.ghiNhap(k, 'v', 'o', 'x', false); d.datChuNhap(k, '9|qlcn');
+    assert(d.docNhap(k, 'v', 'o') === undefined, 'đổi góc nhìn phải xoá nháp');
+    d.ghiNhap(k, 'v', 'o', 'x', false); d.datChuNhap(k, 'khach');
+    assert(d.docNhap(k, 'v', 'o') === undefined, 'đăng xuất phải xoá nháp');
+    d.datChuNhap(khoGia(true), 'x'); d.datChuNhap(null, 'x');
+    const ss = docSach('web/src/lib/session.tsx');
+    assert(/if \(session && !session\.loiKetNoi\) datChuNhap\(khoPhien\(\), session\.authenticated \? `\$\{session\.user\?\.id\}\|\$\{session\.gocNhin\?\.dangChon \?\? ''\}` : 'khach'\)/.test(ss),
+      'session.tsx phải đặt chủ nháp = người + góc nhìn khi phiên đã tải (không khi lỗi mạng — mất mạng không được xoá chữ)');
+  });
+
+  check('NEN-PANEL rà #530 · đang lưu: ô nháp chỉ đọc (chữ gõ thêm lúc gửi không bị xoaNhap xoá); bàn phím chỉ đo ở panel ngoài cùng; 375 toàn màn', () => {
+    for (const [f, re] of [['web/src/modules/cases/GhiNhanh.tsx', /value=\{note\} readOnly=\{busy\}/], ['web/src/modules/cases/CapNhatTuan.tsx', /value=\{progress\} readOnly=\{busy\}/],
+      ['web/src/modules/yThuc/XacNhanXuLyPanel.tsx', /value=\{moTa\} readOnly=\{busy\}/], ['web/src/modules/yThuc/LoYThucPanel.tsx', /value=\{moTa\} readOnly=\{busy\}/],
+      ['web/src/modules/yThuc/CaseSosControls.tsx', /value=\{moTa\} disabled=\{busy\}[\s\S]*value=\{nx\} disabled=\{busy\}/]] as const) {
+      assert(re.test(docSach(f)), `${f}: ô nháp chưa khoá khi đang lưu`);
+    }
+    assert(/chon=\{outcome === x\} disabled=\{busy\}/.test(docSach('web/src/modules/cases/GhiNhanh.tsx')), 'GhiNhanh: chip Tiến triển chưa khoá khi đang lưu');
+    const kp = docSach('web/src/ui/KhungPanel.tsx');
+    assert(/useBanPhim\(!trongKhung\)/.test(kp) && /if \(!bat \|\| !vv\) return undefined;/.test(kp), 'useBanPhim phải chỉ chạy ở panel ngoài cùng');
+    assert(/max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0/.test(kp), 'panel tại chỗ ở 375 chưa toàn màn');
+  });
+
   await t.checkAsync('NEN-PANEL · "Lưu và tiếp": chỉ sang việc kế sau khi lưu xong; lưu lỗi / còn thiếu → ở lại', async () => {
     const { luuRoiTiep } = d;
     let sang = 0;

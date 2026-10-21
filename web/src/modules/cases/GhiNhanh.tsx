@@ -66,14 +66,14 @@ export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, tr
         <span id={idTt} className="mb-1.5 block text-[13px] font-semibold text-slate-300">{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span></span>
         <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={idTt} aria-invalid={daBam && thieuMuc}>
           {FOLLOWUP_OUTCOMES.map((x) => (
-            <NutChon key={x} nho chon={outcome === x} onClick={() => setOutcome(x)} className="rounded-full px-3">{dich(outcomeLabelFor(x))}</NutChon>
+            <NutChon key={x} nho chon={outcome === x} disabled={busy} onClick={() => setOutcome(x)} className="rounded-full px-3">{dich(outcomeLabelFor(x))}</NutChon>
           ))}
         </div>
         {daBam && thieuMuc && <span className="mt-1 block text-xs text-late">{t('Chọn một mức')}</span>}
       </div>
       <label className="block">
         <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span>
-        <textarea className={`field w-full ${daBam && thieuNx ? 'border-late ring-1 ring-late/40' : ''}`} rows={2} value={note} aria-invalid={daBam && thieuNx}
+        <textarea className={`field w-full ${daBam && thieuNx ? 'border-late ring-1 ring-late/40' : ''}`} rows={2} value={note} readOnly={busy} aria-invalid={daBam && thieuNx}
           onChange={(e) => setNote(e.target.value)} placeholder={dich(GOI_Y_KET_QUA_PA)} />
         {daBam && thieuNx && <span className="mt-1 block text-xs text-late">{t('Ghi rõ hơn — ít nhất 8 ký tự')}</span>}
       </label>
