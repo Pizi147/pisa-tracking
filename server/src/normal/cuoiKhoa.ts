@@ -144,6 +144,8 @@ function tinhEmXetLai(p: Principal, branchId: number | null, today: string): Lop
 
 export type EmCuoiKhoa = {
   attemptId: number | null; tyLe: number | null; scored: number; required: number; monTruot: string[];
+  /** SV-LOP (R3a): bài Final đủ điểm mọi môn + ngưỡng đạt của lớp — `danhGiaDauRa`. */
+  du: boolean; nguong: number | null;
   mon: { skill: string; ratio: number | null }[];
   goiY: GoiYCuoiKhoa | null;
   /** Quản lý đã quyết khi thi hành chuyển lớp (`lo_trinh_tiep_theo.quyet_*`); `huong` = hướng đã ghi ở dòng đó. */
@@ -190,6 +192,7 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o
     const t = attemptId ? tyLe.get(attemptId) : undefined;
     out.set(sid, {
       attemptId, tyLe: t?.tyLe ?? null, scored: t?.scored ?? 0, required: t?.required ?? 0, monTruot: t?.monTruot ?? [], mon: t?.mon ?? [],
+      du: t?.du ?? false, nguong: t?.nguong ?? null,
       goiY: t ? goiYCuoiKhoa({ ct: t.ct, tyLe: t.tyLe, monTruot: t.monTruot, nguong: t.nguong }) : null,
       ...ketLuanCuaDong(dinhKem.get(sid)),
     });

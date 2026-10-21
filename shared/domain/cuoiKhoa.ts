@@ -30,6 +30,16 @@ export function daiCuoiKhoa(tyLe: number, nguong: number = RATIO_PASS_THRESHOLD)
 }
 
 /**
+ * SV-LOP (V5 `08` R3a): ĐÁNH GIÁ ĐẦU RA lớp thường — CHỈ khi bài Final đủ điểm mọi môn (`du`); trước đó `cho-final` ("Chờ Final"), không Đạt / Chưa đạt
+ * tạm. Đủ thì Đạt khi % tổng (chưa làm tròn) ≥ ngưỡng của lớp — cùng ngưỡng với dải Cuối khoá. Lớp FT không qua hàm này (luật hiện có).
+ */
+export type DanhGiaDauRa = { trangThai: 'cho-final' | 'dat' | 'chua-dat'; tyLe: number | null; scored: number; required: number };
+export function danhGiaDauRa(e: { du: boolean; tyLe: number | null; scored: number; required: number; nguong: number | null } | null | undefined): DanhGiaDauRa {
+  if (!e || !e.du || e.tyLe === null) return { trangThai: 'cho-final', tyLe: null, scored: e?.scored ?? 0, required: e?.required ?? 0 };
+  return { trangThai: e.tyLe >= (e.nguong ?? RATIO_PASS_THRESHOLD) ? 'dat' : 'chua-dat', tyLe: e.tyLe, scored: e.scored, required: e.required };
+}
+
+/**
  * PR-CL (B5, §7): "Kết quả không phù hợp lộ trình" — đã chốt lên (lên lớp / Lên FT) mà Final < 50%, hoặc học lại mà Final ≥ 70%.
  * Tỷ lệ CHƯA làm tròn; `null` (chưa đủ môn) hoặc hướng khác → false.
  */

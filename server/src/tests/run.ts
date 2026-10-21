@@ -9522,6 +9522,9 @@ await runPrSvTvvViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY
 // ==================================================================== SV-S-EXPERT (lượt S Expert: chỉ QL / Admin thêm, GV S chấm, không vào tính toán, lịch sử)
 const { runPrSvSExpertTests } = await import('./prSvSExpert.tests.ts');
 await runPrSvSExpertTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== SV-LOP (Đánh giá đầu ra chờ Final, việc theo em từ /my-work, W1 / W2; nợ rà S Ex ở SSEX-8…12)
+const { runPrSvLopTests } = await import('./prSvLop.tests.ts');
+await runPrSvLopTests({ check, assert, conn, P, classId } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
