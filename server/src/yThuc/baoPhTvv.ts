@@ -47,10 +47,17 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
   ).run(m.id, m.studentId, nhan, han, nowIso());
   if (!info.changes) return;
   const id = Number(info.lastInsertRowid);
-  for (const uid of nguoiGiuBaoPh(m.studentId)) {
-    notify({ userId: uid, kind: 'bao_ph_xu_ly', title: `Báo PH · ${nhan} · ${tenEm}`, entityType: 'discipline_measure', entityId: m.id,
-      dedupKey: `bao-ph:${id}`, duong: duongHoSoHocVien(m.studentId, { tab: 'y-thuc' }), han });
-  }
+  /* Chuông người giữ — MỘT câu (lô: ~2 câu / em): TVV của em, không có → QL chi nhánh (cùng luật `nguoiGiuBaoPh`). */
+  db().prepare(
+    `INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, created_at, duong, han)
+     SELECT g.id, 'bao_ph_xu_ly', ?, 'discipline_measure', ?, ?, ?, ?, ? FROM (
+       SELECT s.consultant_user_id AS id FROM students s WHERE s.id = ? AND s.consultant_user_id IS NOT NULL
+       UNION
+       SELECT ur.user_id FROM students s, user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+        WHERE s.id = ? AND s.consultant_user_id IS NULL AND r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL
+          AND (ur.branch_id IS NULL OR ur.branch_id = ${CHI_NHANH_EM})
+     ) g WHERE true ON CONFLICT(user_id, dedup_key) DO NOTHING`,
+  ).run(`Báo PH · ${nhan} · ${tenEm}`, m.id, `bao-ph:${id}`, nowIso(), duongHoSoHocVien(m.studentId, { tab: 'y-thuc' }), han, m.studentId, m.studentId);
 }
 
 /**
