@@ -29,7 +29,7 @@ export async function runPrViecNhoTests(t: YThucTestKit) {
     const coLich = docCua({ listening: o({}) });
     assert(/, có lịch,/.test(coLich[0]), `có lịch: ${coLich}`);
     const dangThi = docCua({ listening: o({ tuan: '2026-09-14', tuanKetThuc: '2026-09-20' }) });
-    assert(/, đang thi,/.test(dangThi[0]), `đang thi: ${dangThi}`);
+    assert(/, đang làm bài,/.test(dangThi[0]), `đang thi: ${dangThi}`);
     const cho = docCua({ listening: o({ tuan: '2026-09-07', tuanKetThuc: '2026-09-13' }) });
     assert(/, chờ chấm,/.test(cho[0]) && !/có lịch|xong/.test(cho[0]), `chờ: ${cho}`);
     const tach = docCua({ listening: o({ trangThai: 'xong', tuan: '2026-09-07', tuanKetThuc: '2026-09-13' }), reading: o({}) });

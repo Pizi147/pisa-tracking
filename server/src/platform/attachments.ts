@@ -79,7 +79,7 @@ function unitReportOwner(unitReportId: number): OwnerAccess {
       `SELECT ru.branch_id FROM unit_reports ur JOIN reporting_units ru ON ru.id = ur.reporting_unit_id WHERE ur.id = ?`,
     )
     .get(unitReportId) as any;
-  if (!row) throw notFound('Không tìm thấy báo cáo đơn vị');
+  if (!row) throw notFound('Không tìm thấy họp đơn vị');
   const ctx = { branchId: row.branch_id, anyScope: row.branch_id === null };
   return {
     requireView: (p) => require_(p, PERMISSIONS.MEETING_VIEW, ctx, 'Bản ghi này nằm ngoài phạm vi bạn được xem.'),

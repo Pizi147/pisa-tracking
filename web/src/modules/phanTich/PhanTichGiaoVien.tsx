@@ -14,7 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 /**
  * PHÂN TÍCH GIÁO VIÊN (PR-Pb2-b, mockup 25 màn A–D) — góc nhìn cuối hàng ở Tổng quan › Phân tích, Quản lý + Quản trị. Một hàng một giáo viên,
- * sắp theo tên; KHÔNG KPI, KHÔNG xếp hạng, KHÔNG hàng tổng, KHÔNG nút sắp (Q30-5). Ô ghi `n/m` trước, % 12 px dưới; dưới 5 mục "mẫu nhỏ".
+ * sắp theo tên; KHÔNG KPI, KHÔNG xếp hạng, KHÔNG hàng tổng, KHÔNG nút sắp (Q30-5). Ô ghi `n/m` trước, % 12 px dưới (chủ SP 22/10: không ghi "mẫu nhỏ").
  * Chỉ % ô KẾT QUẢ có màu (không thanh — Q27). OV-15e: khung + khoảng = hàng lọc chung của Phân tích (C29); chi nhánh lấy ô chi nhánh đầu trang.
  * Bấm số (C30): Chấm điểm mở panel (màn C), ô khác mở panel ĐÚNG GV + khoảng (`/phan-tich/giao-vien/o`) — `0/20` vẫn mở 20 mục.
  * Điện thoại: mỗi GV một thẻ, dòng không áp dụng ẩn (màn D).
@@ -23,14 +23,13 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 /** Chú thích nổi từng cột — chữ theo "Định nghĩa từng cột" của mockup 25 (Một mục là · Tử số). */
 const GIAI: Record<string, (ft: boolean) => string> = {
   'dang-day': (ft) => `Ngữ cảnh, không phải chỉ số. Số ${ft ? 'lớp Fast Track' : 'lớp thường'} giáo viên có phân công (GVCN hoặc một môn) ở chi nhánh này, và số học viên các lớp đó, tính ở ngày cuối của khoảng.`,
-  'cham-diem': () => 'Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công lúc tới hạn, tuần thi trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn chấm; sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", học viên tạm dừng, ô chưa tới hạn.',
+  'cham-diem': () => 'Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công lúc tới hạn, tuần Test trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn chấm; sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", học viên tạm dừng, ô chưa tới hạn.',
   'ghi-pa': (ft) => `${ft ? '' : 'Lớp thường ngắn nên Case, PA ít; cột để mờ. '}Một mục là một lần Kết quả PA (mỗi kỳ hai tuần) ở Case giáo viên phụ trách, hạn ghi trong khoảng. Đúng hạn khi ghi trước hạn; quá hạn mà chưa ghi là trễ.`,
-  'vi-pham': () => 'Chỉ lớp giáo viên làm GVCN. Một mục là một vi phạm thành "Cần xử lý", hạn xử lý trong khoảng. Đúng hạn khi GVCN xác nhận xử lý, hoặc gửi đề xuất cho Quản lý, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN.',
   'pa-hieu-qua': () => 'PA giáo viên tự thêm vào Case (không tính PA theo quy chế, PA bổ trợ) đã có kết quả cuối trong khoảng. Số trên: PA có tiến bộ (cùng luật góc nhìn Hiệu quả PA) / PA đã có kết quả cuối.',
   'ket-qua': (ft) => ft
     ? 'Một mục là một học viên × một kỹ năng ở bài MT hoặc kỳ thi thật trong khoảng, gán người dạy kỹ năng đó lúc thi (thi thật: lớp cuối trước ngày thi). Overall đạt kỳ vọng (thi thật: đạt Target) thì kỹ năng thấp hơn vẫn tính đạt; Overall chưa đạt thì xét từng kỹ năng (W1, W2 so từng bài). Chưa đủ 4 kỹ năng: chưa đủ dữ liệu, không tính.'
-    : 'Đạt từ 70%. Một mục là một học viên × một bài (Progress Test, Final Test) có tuần thi trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —.',
-  'tien-bo': () => 'Một mục là một học viên × một kỹ năng giáo viên dạy, ở bài có tuần thi trong khoảng, mà em đã có điểm kỹ năng đó ở bài trước. Tiến bộ khi điểm cao hơn bài trước; bằng hoặc thấp hơn thì không.',
+    : 'Đạt từ 70%. Một mục là một học viên × một bài (Progress Test, Final Test) có tuần Test trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —.',
+  'tien-bo': () => 'Một mục là một học viên × một kỹ năng giáo viên dạy, ở bài có tuần Test trong khoảng, mà em đã có điểm kỹ năng đó ở bài trước. Tiến bộ khi điểm cao hơn bài trước; bằng hoặc thấp hơn thì không.',
   'w-gv': () => 'BE, ELE: Writing. FOU: Grammar + Vocabulary (G+V).',
   's-p': () => 'BE, ELE: Speaking. FOU: Pronunciation (P).',
 };
@@ -102,16 +101,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
               <span>
                 <span className="tabular-nums">{data.hang.length}</span> giáo viên có {data.khung === 'ft' ? 'lớp Fast Track' : 'lớp thường'} ở {data.tenChiNhanh} trong{' '}
                 <b className="font-semibold tabular-nums text-slate-200">{nhanKhoang(khoang).chinh}</b>
-                {' '}· sắp theo tên{!dienThoai && ' · rê chuột hoặc Tab vào tên cột gạch chấm để xem cách tính'}
+                {' '}· sắp theo tên
               </span>
-              {!dienThoai && (
-                <span className="flex flex-wrap gap-x-4 gap-y-0.5">
-                  <span><b className="font-semibold tabular-nums text-slate-200">18/20</b> đúng hạn / có hạn trong khoảng</span>
-                  <span><b className="text-slate-200">—</b> không áp dụng</span>
-                  <span>Chưa có dữ liệu = áp dụng, chưa có mục</span>
-                  <span>mẫu nhỏ = dưới 5 mục</span>
-                </span>
-              )}
             </div>
             {!data.hang.length
               ? <Empty title={`Không có giáo viên nào có ${data.khung === 'ft' ? 'lớp Fast Track' : 'lớp thường'} trong khoảng này.`} />
@@ -143,7 +134,7 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
     <div className="table-scroll min-h-[13rem] rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label="Bảng Phân tích giáo viên, cuộn ngang" tabIndex={0}>
       <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: ft || cotKq.length > 4 ? '1000px' : '820px' }}>
         <colgroup>
-          <col style={{ width: 176 }} /><col style={{ width: 80 }} /><col style={{ width: 88 }} /><col style={{ width: 112 }} /><col style={{ width: 108 }} />
+          <col style={{ width: 176 }} /><col style={{ width: 80 }} /><col style={{ width: 88 }} /><col style={{ width: 112 }} />
           {ft && <col style={{ width: 88 }} />}
           {cotKq.map((k) => <col key={k} style={{ width: rongKq }} />)}
           {ft && <col style={{ width: 88 }} />}
@@ -152,7 +143,7 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
           <tr>
             <th rowSpan={2} className={`${th} sticky left-0 z-10`} style={{ background: 'var(--surface-2, var(--surface))' }}>Giáo viên</th>
             <th rowSpan={2} className={`${th} text-right`}><DauCot nhan="Đang dạy" giai={GIAI['dang-day'](ft)} trai /></th>
-            <th colSpan={3} className={`${th} ${bl} text-center align-middle text-slate-200`}>Đúng hạn</th>
+            <th colSpan={2} className={`${th} ${bl} text-center align-middle text-slate-200`}>Đúng hạn</th>
             {ft && <th rowSpan={2} className={`${th} ${bl} text-right`}><DauCot nhan="PA hiệu quả" giai={GIAI['pa-hieu-qua'](ft)} /></th>}
             <th colSpan={cotKq.length} className={`${th} ${bl} text-center align-middle text-slate-200`}><DauCot nhan="Kết quả môn mình dạy" giai={GIAI['ket-qua'](ft)} /></th>
             {ft && <th rowSpan={2} className={`${th} ${bl} text-right`}><DauCot nhan="HV tiến bộ" giai={GIAI['tien-bo'](ft)} /></th>}
@@ -160,7 +151,6 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
           <tr>
             <th className={`${th} ${bl} text-right`}><DauCot nhan="Chấm điểm" giai={GIAI['cham-diem'](ft)} trai /></th>
             <th className={`${th} text-right ${ft ? '' : 'font-medium'}`}><DauCot nhan="Kết quả PA" giai={GIAI['ghi-pa'](ft)} /></th>
-            <th className={`${th} text-right`}><DauCot nhan="Xử lý vi phạm" giai={GIAI['vi-pham'](ft)} /></th>
             {cotKq.map((k, i) => {
               const [nhan, phu] = nhanKq[k];
               return (
@@ -186,7 +176,6 @@ function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPt
                 </td>
                 <td className={`td text-right align-top ${bl}`}><OSo o={h.chamDiem} onBam={() => onChamDiem(h)} /></td>
                 <td className="td text-right align-top"><OSo o={h.ghiKetQuaPa} onBam={bamO(h, 'ghi-pa', 'Kết quả PA đúng hạn')} mo={!ft} /></td>
-                <td className="td text-right align-top"><OSo o={h.xuLyViPham} onBam={bamO(h, 'vi-pham', 'Xử lý vi phạm đúng hạn')} /></td>
                 {ft && <td className={`td text-right align-top ${bl}`}><OSo o={h.paHieuQua} onBam={bamO(h, 'pa-hieu-qua', 'PA hiệu quả')} /></td>}
                 {cotKq.map((k, i) => <td key={k} className={`td text-right align-top ${i === 0 ? bl : ''}`}><OSo o={h.ketQua[k]} onBam={bamO(h, `ket-qua:${k}`, `Kết quả ${nhanKq[k][0]}`)} /></td>)}
                 {ft && <td className={`td text-right align-top ${bl}`}><OSo o={h.tienBo} onBam={bamO(h, 'tien-bo', 'HV tiến bộ')} /></td>}
@@ -211,7 +200,6 @@ function TheGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPtG
         const dong: { nhan: string; noiDung: ReactNode; o: OPtGv | undefined }[] = [
           { nhan: 'Chấm đúng hạn', o: h.chamDiem, noiDung: <OSo o={h.chamDiem} onBam={() => onChamDiem(h)} /> },
           { nhan: 'Kết quả PA đúng hạn', o: h.ghiKetQuaPa, noiDung: <OSo o={h.ghiKetQuaPa} onBam={bamO(h, 'ghi-pa', 'Kết quả PA đúng hạn')} mo={!ft} /> },
-          { nhan: 'Xử lý vi phạm đúng hạn', o: h.xuLyViPham, noiDung: <OSo o={h.xuLyViPham} onBam={bamO(h, 'vi-pham', 'Xử lý vi phạm đúng hạn')} /> },
           ...(ft ? [{ nhan: 'PA hiệu quả', o: h.paHieuQua, noiDung: <OSo o={h.paHieuQua} onBam={bamO(h, 'pa-hieu-qua', 'PA hiệu quả')} /> }] : []),
           ...cotKetQuaGv(kq).map((k) => ({
             nhan: `Kết quả ${nhanKq[k][0]}${nhanKq[k][1] ? ` ${nhanKq[k][1]}` : ''} · ${ft ? 'đạt kỳ vọng' : 'đạt'}`, o: h.ketQua[k],
@@ -264,7 +252,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
     <KhungPanel tieuDe={`Chấm đúng hạn · ${h.ten}`} rong="rong" onDong={onDong}
       ngCanh={data ? (
         <span className="text-xs text-slate-400">
-          {kq.khung === 'ft' ? 'Fast Track' : 'Lớp thường'} · {data.tenChiNhanh} · tuần thi <span className="tabular-nums">{khoang}</span> ·{' '}
+          {kq.khung === 'ft' ? 'Fast Track' : 'Lớp thường'} · {data.tenChiNhanh} · tuần Test <span className="tabular-nums">{khoang}</span> ·{' '}
           <b className="tabular-nums text-slate-200">{data.n}</b> đúng hạn · <b className="tabular-nums text-slate-200">{data.tre}</b> trễ · <span className="tabular-nums">{data.rows.length}</span> ô
         </span>
       ) : undefined}
@@ -291,7 +279,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
             <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '640px' }}>
               <colgroup><col style={{ width: '20%' }} /><col style={{ width: '23%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '16%' }} /><col style={{ width: '19%' }} /></colgroup>
               <thead><tr className="whitespace-nowrap">
-                <th className="th">Học viên</th><th className="th">Lớp · bài · kỹ năng</th><th className="th">Tuần thi</th>
+                <th className="th">Học viên</th><th className="th">Lớp · bài · kỹ năng</th><th className="th">Tuần Test</th>
                 <th className="th text-right">Hạn chấm</th><th className="th text-right">Lần nhập đầu</th><th className="th">Kết quả</th>
               </tr></thead>
               <tbody>

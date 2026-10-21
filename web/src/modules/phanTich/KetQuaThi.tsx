@@ -39,7 +39,7 @@ export function KetQuaThi(props: PhamViPhanTich) {
   };
   return (
     <div className="space-y-3">
-      <HangTab cap="con" ariaLabel={t('Loại thi')} value={loai} onChange={(k) => dat('loai', k === 'mock' ? null : k)}
+      <HangTab cap="con" ariaLabel={t('Loại kết quả')} value={loai} onChange={(k) => dat('loai', k === 'mock' ? null : k)}
         tabs={LOAI_THI.map((k) => ({ key: k, label: NHAN_LOAI_THI[k] }))} />
       {loai === 'mock' ? <BangMock pv={props} /> : <BangThiThat pv={props} />}
     </div>
@@ -69,7 +69,7 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
     if (!data) return;
     const XLSX = await import('xlsx');
     const aoa: (string | number)[][] = [
-      [`Kết quả thi · Mock Test · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
+      [`Kết quả Test · Mock Test · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
       ['Học viên', 'Lớp', 'MT', 'Tuần', 'OVR', 'L', 'R', 'W', 'S', 'Kỳ vọng', 'Kết quả', 'SOS', 'Case / PA', 'Việc tiếp'],
       ...rows.map((r) => [r.ten, r.lop, `MT${r.mt}`, tuanLich(r.tuan, homNay), fmtBand(r.ovr), ...KN_THI.map((k) => fmtBand(r.kn[k].band)), fmtBand(r.kyVong),
         NHAN_KET_QUA_MOCK[r.ketQua], r.sos ? `SOS ${r.sos}${r.sosTam ? ' tạm' : ''}` : '', r.casePa ?? '', r.viecTiep ?? '']),

@@ -408,7 +408,7 @@ function LoiVanHanh({ cn, baoCao, onGiao }: { cn: number | null; baoCao: boolean
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 text-[13px]">
       <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={onGiao}>{t('+ Giao việc')}</button>
       <Link to={`/cong-viec/van-hanh${q}`} className="link max-sm:py-3">{t('Vận hành ›')}</Link>
-      {baoCao && <Link to={`/cong-viec/bao-cao${q}`} className="link max-sm:py-3">{t('Báo cáo đơn vị ›')}</Link>}
+      {baoCao && <Link to={`/cong-viec/bao-cao${q}`} className="link max-sm:py-3">{t('Họp đơn vị ›')}</Link>}
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { rateView } from '@shared/domain/index.ts';
-import { Info } from './ui.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -10,7 +9,7 @@ import { t } from '@shared/i18n/index.ts';
  *
  *   · NEN-V5 (C03): phần trăm TO đứng trước, `n/N` + đơn vị ngay sau (cùng dòng); `lon` = % cỡ 28 và n/N xuống dòng dưới (ô tóm tắt).
  *   · N = 0 → `Chưa có dữ liệu`. KHÔNG bao giờ vẽ `0%`.
- *   · N < 5 → nhãn `mẫu nhỏ`.
+ *   · N < 5: chỉ số và % (chủ SP 22/10 bỏ chữ "mẫu nhỏ"; cờ `smallSample` vẫn có).
  *   · Số vô lý (n > N, số âm) → báo `Số liệu không hợp lệ` thay vì vẽ một phần trăm nghe hợp lý.
  *
  * CỐ Ý KHÔNG NHẬN prop kiểu "tốt nhất" hay "xếp hạng": một tỷ lệ chỉ là một tỷ lệ, và xếp hạng
@@ -33,7 +32,6 @@ export function TyLe({ n, N, nhan, soN, lon }: {
       <span className={lon ? 'text-xs text-slate-500' : 'text-slate-400'}>
         {soN ?? v.n}/{v.N}{nhan && <> {nhan}</>}
       </span>
-      {v.smallSample && <Info title={t('Ít hơn 5 mẫu — chưa đủ để so sánh')}>{t('mẫu nhỏ')}</Info>}
     </span>
   );
 }

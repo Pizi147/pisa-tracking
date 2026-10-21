@@ -119,7 +119,7 @@ export async function runPrGvbTests(t: YThucTestKit) {
     const dem = { cho: 4, quaHan: 1, baoLen: 3, deBiet: 3, deBietQuaHan: 1, cuaToiCho: 0, cuaToiTuChoi: 0,
       chip: { 'tat-ca': 4, 'hoc-thuat': 3, 'y-thuc': 0, 'lich-thi': 1, 'thong-tin-hv': 0, 'bao-len': 0 } } as any;
     const c = d.chipChoDuyet(dem);
-    assert(c.map((x) => `${x.nhan} ${x.so}`).join(' | ') === 'Học thuật 3 | Lịch thi 1 | Quá hạn 1', c.map((x) => `${x.nhan} ${x.so}`).join(' | '));
+    assert(c.map((x) => `${x.nhan} ${x.so}`).join(' | ') === 'Học thuật 3 | Dời lịch Test 1 | Quá hạn 1', c.map((x) => `${x.nhan} ${x.so}`).join(' | '));
     assert(!c.some((x) => x.key === 'de-biet') && c.find((x) => x.key === 'qua-han')!.den === '?qua-han=1', JSON.stringify(c));
     assert(!('dongPhuChoDuyet' in d), 'hàm câu tóm tắt cũ còn sót');
   });

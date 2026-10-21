@@ -1,8 +1,8 @@
 /**
  * TAB PHÂN TÍCH LỚP (PR-Qa, đặc tả §3.7, mockup 06) — lớp tiến bộ hay đi lùi ở kỹ năng nào qua các đợt.
  *
- *   FT         5 kỹ năng (L · R · W1 · W2 · S) × MT1…MT5. Ô = số HV có band ≥ kỳ vọng CỦA ĐỢT ĐÓ / số HV có điểm ô đó.
- *              W1, W2 so riêng từng bài với kỳ vọng (SOS vẫn tính Writing gộp — web ghi rõ ở ⓘ).
+ *   FT         5 kỹ năng (L · R · W1 · W2 · S) × MT1…MT5. Ô = số HV đạt / số HV có điểm ô đó ở lượt ĐỦ Overall (V5 C09, C10 — `danhGiaMon`):
+ *              Overall ≥ kỳ vọng CỦA ĐỢT ĐÓ → mọi kỹ năng đạt; chưa đạt → band từng kỹ năng (W1, W2 riêng) so kỳ vọng; thiếu Overall → ngoài mẫu.
  *   Lớp thường 4 môn (L · R · W · S) × Giữa khoá / Cuối khoá. Ô = số HV đạt (từ 70%) / số HV có điểm môn đó.
  *
  * Chỉ học viên ĐANG HỌC lớp này (không lưu trữ), chỉ lộ trình đang chạy. Chưa có điểm KHÁC trượt: không vào mẫu số.
@@ -16,8 +16,8 @@ import { require_, type Principal } from '../permissions.ts';
 import { classIssueBoard } from '../cases/effectiveness.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { badRequest } from '../util.ts';
-import { loadBundle } from '../fasttrack/attempts.ts';
-import { expectationFor } from '../fasttrack/scoring.ts';
+import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
+import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, nguongDatLop, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
 
 export type OPhanTich = { dat: number; tong: number };
@@ -119,7 +119,7 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
   for (const a of attempts) {
     if ((a.kind ?? 'mock') !== 'mock') continue;
     soDot = Math.max(soDot, a.attempt_no);
-    for (const x of danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, mucTieu.get(a.cycle_id) ?? null)?.mon ?? []) {
+    for (const x of danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, mucTieu.get(a.cycle_id) ?? null, bundle.skips.get(a.id) ?? [])?.mon ?? []) {
       cong(`${x.skill}|mt${a.attempt_no}`, x.dat, a.student_id);
     }
   }
@@ -132,24 +132,34 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
 }
 
 /**
- * LUẬT CHẤM ĐẠT TỪNG MÔN CỦA MỘT BÀI (PR-Pb2-b tách nguyên thân từ `tinhMotLop` — tab Phân tích lớp và bảng Phân tích giáo viên gọi chung):
- *   FT (`mock`)          band ≥ kỳ vọng của đợt (`expectationFor`, theo Target + lộ trình); không kỳ vọng (KCK) → null. W1, W2 so riêng.
+ * LUẬT CHẤM ĐẠT TỪNG MÔN CỦA MỘT BÀI (PR-Pb2-b tách nguyên thân từ `tinhMotLop` — tab Phân tích lớp, hồ sơ GV và bảng Phân tích giáo viên gọi chung):
+ *   FT (`mock`)          V5 C09, C10 (chỉ cho xem kết quả / đánh giá GV — KHÔNG đổi SOS / Case): Overall lượt (`evaluateAttempt`, `skips` = kỹ năng bỏ)
+ *                        ≥ kỳ vọng của đợt (`expectationFor`) → mọi kỹ năng có điểm Đạt; chưa đạt → band từng kỹ năng ≥ kỳ vọng (W1, W2 riêng);
+ *                        thiếu Overall (chưa đủ 4 kỹ năng / có kỹ năng bỏ) → null (Chưa đủ dữ liệu, ngoài mẫu). Không kỳ vọng (KCK) → null.
  *   Lớp thường           Giữa / Cuối khoá, Checkpoint (PET / KET — OV-11h): `evaluateRegular` (từ 70%) — chỉ môn đã đủ điểm (pass / fail); kèm % tổng cho dòng "Cả bài".
- * `null` = bài không chấm đạt ở đây (loại bài khác, hoặc không có kỳ vọng).
+ * `null` = bài không chấm đạt ở đây (loại bài khác, không có kỳ vọng, hoặc FT chưa đủ Overall). `ovr`, `kv`: FT để panel ghi lý do.
  */
-export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo | null, mucTieu: number | null): { mon: { skill: string; dat: boolean }[]; tyLeTong: number | null; nguong: number } | null {
+export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo | null, mucTieu: number | null, skips: readonly string[] = []): {
+  mon: { skill: string; dat: boolean }[]; tyLeTong: number | null; nguong: number; ovr: number | null; kv: number | null;
+} | null {
   if (prog?.scoringMode === 'ratio') {
     if (a.kind !== 'progress' && a.kind !== 'final' && a.kind !== 'checkpoint') return null;
     const r = evaluateRegular([...(prog?.skills ?? REGULAR_SKILLS)], scores as any, prog?.code, nguongDatLop(a.class_id));
     return {
       mon: r.skills.filter((x) => x.outcome === 'pass' || x.outcome === 'fail').map((x) => ({ skill: x.skill as string, dat: x.outcome === 'pass' })),
-      tyLeTong: r.tyLeTong ?? null, nguong: r.passThreshold,
+      tyLeTong: r.tyLeTong ?? null, nguong: r.passThreshold, ovr: null, kv: null,
     };
   }
   if ((a.kind ?? 'mock') !== 'mock') return null;
   const kyVong = expectationFor(mucTieu, a.attempt_no, a.route);
   if (kyVong === null) return null;
-  return { mon: scores.filter((s) => s.band !== null && s.band !== undefined).map((s) => ({ skill: s.skill as string, dat: s.band >= kyVong })), tyLeTong: null, nguong: RATIO_PASS_THRESHOLD };
+  const ovr = evaluateAttempt(null, a.attempt_no, entryBandsOf(scores as any), skips).overall;
+  if (ovr === null) return null;
+  const overallDat = ovr >= kyVong;
+  return {
+    mon: scores.filter((s) => s.band !== null && s.band !== undefined).map((s) => ({ skill: s.skill as string, dat: overallDat || s.band >= kyVong })),
+    tyLeTong: null, nguong: RATIO_PASS_THRESHOLD, ovr, kv: kyVong,
+  };
 }
 
 /**

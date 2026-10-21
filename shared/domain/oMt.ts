@@ -17,8 +17,8 @@ import { t } from '../i18n/index.ts';
 export type KieuOMt = 'chua-lich' | 'co-lich' | 'dang-thi' | 'cho-cham' | 'cho-cham-cu' | 'tre-cham' | 'con-viec' | 'xong';
 /** KHUNG-LOI (TST-05): nhãn chú giải từng kiểu ô — chú giải màu sinh từ đây + `MAU_O_MT` (một nguồn, không viết tay chữ màu). */
 export const NHAN_KIEU_O_MT: Record<KieuOMt, string> = {
-  'chua-lich': t('Chưa xếp'), 'co-lich': t('Đã xếp'), 'dang-thi': t('Đang thi'), 'cho-cham': t('Chờ chấm'), 'cho-cham-cu': t('Chờ nhập bù (MT cũ)'),
-  'tre-cham': t('Trễ chấm'), 'con-viec': t('Vắng · huỷ · chờ duyệt'), xong: t('Đã thi'),
+  'chua-lich': t('Chưa xếp'), 'co-lich': t('Đã xếp'), 'dang-thi': t('Đang làm bài'), 'cho-cham': t('Chờ chấm'), 'cho-cham-cu': t('Chờ nhập bù (MT cũ)'),
+  'tre-cham': t('Trễ chấm'), 'con-viec': t('Vắng · huỷ · chờ duyệt'), xong: t('Đã làm bài'),
 };
 
 /** `attemptId` null = chưa có lượt (cùng kiểu "chưa xếp", C5). `cu` chỉ còn đổi tooltip + `aria-label` (ô không ghi chữ "cũ", C3). */
@@ -50,7 +50,7 @@ const troCham = (o: OKyNang, homNay: string) => !!o.hanCham && homNay > ngayCua(
 /** Tooltip một kỹ năng: `Listening: W3 SEP · xong`. */
 function dongKn(ct: string | null | undefined, k: KyNangKH, o: OKyNang, loai: Loai, homNay: string, cu: boolean): string {
   const tt: Record<Loai, string | null> = {
-    xong: 'xong', 'khong-yeu-cau': t('không yêu cầu'), 'khong-du-thi': cu ? t('đã huỷ') : t('không dự thi'), 'tuan-nay': t('tuần này'), 'co-lich': null, 'chua-lich': null,
+    xong: 'xong', 'khong-yeu-cau': t('không yêu cầu'), 'khong-du-thi': cu ? t('đã huỷ') : t('vắng'), 'tuan-nay': t('tuần này'), 'co-lich': null, 'chua-lich': null,
     'da-huy': `${o.huyVang ? t('huỷ (vắng 2 lần)') : t('đã huỷ')}${o.choDuyet ? t(' · chờ Quản lý duyệt') : ''}`,   // đề nghị dời đang chờ (I1)
     vang: o.choDuyet ? t('chờ Quản lý duyệt') : t('vắng'),
     // Hạn chấm là hạn cụ thể → được hiện ngày (luật thời gian trên màn); null (MT cũ, không hạn) thì không ghi.
@@ -92,7 +92,7 @@ export function oMt(v: OMtVao, homNay: string, ct?: string | null): OMtRa {
   const ra = (kieu: KieuOMt, tuan: string | null, viec: string | null, title: string): OMtRa => {
     const chu = [tuan, viec].filter(Boolean).join(' · ');
     const dai = viec ? chuCham(viec) : null;
-    const tt = kieu === 'xong' ? [t('xong'), tuan] : kieu === 'dang-thi' ? [t('đang thi'), tuan] : kieu === 'co-lich' ? [t('có lịch'), tuan] : [tuan, dai];
+    const tt = kieu === 'xong' ? [t('xong'), tuan] : kieu === 'dang-thi' ? [t('đang làm bài'), tuan] : kieu === 'co-lich' ? [t('có lịch'), tuan] : [tuan, dai];
     return { kieu, tuan, viec, chu, cu: v.cu, title, doc: [`MT${v.so}`, ...tt].filter(Boolean).join(', ') };
   };
   if (v.attemptId === null) return ra('chua-lich', null, t('chưa xếp'), t('Chưa có đợt'));
@@ -160,9 +160,9 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
       : tre ? ['tre-cham', t('trễ')] : x.loai === 'het-tuan' ? [cu ? 'cho-cham-cu' : 'cho-cham', t('chờ')]
       : x.loai === 'vang' ? ['con-viec', t('vắng')] : x.loai === 'da-huy' ? ['con-viec', t('huỷ')]
       : x.loai === 'tuan-nay' ? ['dang-thi', null] : x.loai === 'co-lich' ? ['co-lich', null]
-      : x.loai === 'khong-du-thi' ? ['chua-lich', cu ? t('đã huỷ') : t('không dự thi')] : ['chua-lich', null];   // LUAT-34: MT cũ "-" = Đã huỷ
+      : x.loai === 'khong-du-thi' ? ['chua-lich', cu ? t('đã huỷ') : t('vắng')] : ['chua-lich', null];   // LUAT-34: MT cũ "-" = Đã huỷ
     const tuan = x.o.tuan ? tuanLich(x.o.tuan, homNay) : null;
-    const tt = (viec ? chuCham(viec) : null) ?? ({ xong: t('xong'), 'dang-thi': t('đang thi'), 'co-lich': t('có lịch') } as Partial<Record<KieuOMt, string>>)[kieu] ?? null;
+    const tt = (viec ? chuCham(viec) : null) ?? ({ xong: t('xong'), 'dang-thi': t('đang làm bài'), 'co-lich': t('có lịch') } as Partial<Record<KieuOMt, string>>)[kieu] ?? null;
     return { kyNang: xs.map((y) => y.k), ten: ten(xs), kieu, tuan, viec, title: dong(xs), doc: [ten(xs), tt, tuan ?? t('chưa xếp')].filter(Boolean).join(', ') };
   });
 }
@@ -173,7 +173,7 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
  */
 export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null, cu = false): { chu: string; tone: 'bad' | 'soon' | 'muted' } | null {
   if (!o.batBuoc) return null;
-  if (o.khongDuThi) return { chu: cu ? t('Đã huỷ') : t('Không dự thi'), tone: 'muted' };   // LUAT-34: MT cũ = Đã huỷ · OV-11a (CA3-5): dòng kỹ năng hộp một đợt "W2 SEP · Không dự thi"
+  if (o.khongDuThi) return { chu: cu ? t('Đã huỷ') : t('Vắng'), tone: 'muted' };   // LUAT-34: MT cũ = Đã huỷ · OV-11a (CA3-5): dòng kỹ năng hộp một đợt "W2 SEP · Không dự thi"
   // Ô MT cần một khe kỹ năng; dùng `listening` làm khe tạm cho đúng MỘT kỹ năng này.
   const r = oMt({ so: 0, attemptId: 0, kn: { listening: o }, cu }, homNay, ct);
   switch (r.kieu) {

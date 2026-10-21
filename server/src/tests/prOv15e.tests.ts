@@ -85,7 +85,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(!d.khuVucHienThi(navOf(P.w1Teacher)).some((k: any) => k.key === 'phan-tich'), 'GV không có mục Phân tích');
     assert(d.khuVucCuaDuong('/phan-tich') === 'phan-tich', 'tô sáng mục Phân tích');
     assert([...d.GOC_NHIN].join(',') === 'bao-cao,tong-hop,ket-qua-thi,hieu-qua-pa,giao-vien,y-thuc', [...d.GOC_NHIN].join(','));
-    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo · Test + SOS · Kết quả thi · Hiệu quả PA · Phân tích GV · Ý thức', 'tên tab');
+    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo · Test + SOS · Kết quả Test · Hiệu quả PA · Phân tích GV · Ý thức', 'tên tab');
     const g = (s: string) => d.gocNhinTuThamSo(new URLSearchParams(s));
     assert(g('').goc === 'bao-cao', 'không tham số → Báo cáo');
     assert(g('goc=van-de').goc === 'tong-hop' && g('goc=van-de').gocMoi === 'tong-hop', 'van-de cũ → Test + SOS');
@@ -172,7 +172,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     const kq = gvPt.phanTichGiaoVien(QL, f);
     let soO = 0;
     for (const h of kq.hang) {
-      const o: [string, any][] = [['ghi-pa', h.ghiKetQuaPa], ['vi-pham', h.xuLyViPham], ['pa-hieu-qua', h.paHieuQua], ['tien-bo', h.tienBo],
+      const o: [string, any][] = [['ghi-pa', h.ghiKetQuaPa], ['pa-hieu-qua', h.paHieuQua], ['tien-bo', h.tienBo],
         ...Object.entries(h.ketQua).map(([k, v]) => [`ket-qua:${k}`, v] as [string, any])];
       for (const [cot, x] of o) {
         if (!x || x.k !== 'so') continue;

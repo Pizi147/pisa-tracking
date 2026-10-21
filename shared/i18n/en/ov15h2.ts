@@ -22,9 +22,8 @@ export const EN_OV15H2 = {
   'Tích hàng ở bảng để chọn': 'Tick rows in the table to select',
   'Đã bỏ chọn {n} HV vì đổi bộ lọc': (b) => `Cleared ${b.n} selected students because the filter changed`,
   'Bộ lọc thêm': 'More filters',
-  '<b>Bộ lọc thêm</b> (góc Tất cả): Case / PA · kỹ năng · kết quả · tuần thi — trong nhóm là "hoặc", giữa nhóm là "và". Tích ô trước tên em → <b>Xuất các HV đã chọn</b>.':
+  '<b>Bộ lọc thêm</b> (góc Tất cả): Case / PA · kỹ năng · kết quả · thời gian — trong nhóm là "hoặc", giữa nhóm là "và". Tích ô trước tên em → <b>Xuất các HV đã chọn</b>.':
     '<b>More filters</b> (All view): Case / plan · skill · result · test week — "or" inside a group, "and" across groups. Tick the box before a name → <b>Export selected students</b>.',
-  'Tuần thi của kết quả': 'Test week of the result',
   'Mọi lúc': 'Any time',
   'Chọn khoảng': 'Pick a range',
   'Xoá lọc thêm': 'Clear more filters',

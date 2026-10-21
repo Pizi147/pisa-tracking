@@ -94,7 +94,7 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     const kn = (o: any) => ({ listening: { batBuoc: true, tuan: '2026-08-24', sit: 'scheduled', khoa: null, ...o } });
     assert(d.lyDoKhongXoa(kn({})) === null, 'được xóa');
     assert(d.lyDoKhongXoa(kn({ khoa: 'đã có điểm' })) === 'Đã có điểm — không xóa được', 'có điểm');
-    assert(d.lyDoKhongXoa(kn({ sit: 'sat', khoa: 'đã thi' })) === 'Đã thi — không xóa được', 'đã thi');
+    assert(d.lyDoKhongXoa(kn({ sit: 'sat', khoa: 'đã làm bài' })) === 'Đã làm bài — không xóa được', 'đã thi');
     assert(d.lyDoKhongXoa(kn({ tuan: null })) === 'Chưa xếp lịch', 'chưa xếp');
     const dd = { ovr: 6.5, kyVong: 6.5, danhGiaDuoc: true };
     assert(d.ketQuaLuot(dd) === 'Đạt' && d.ketQuaLuot({ ...dd, ovr: 6 }) === 'Chưa đạt' && d.ketQuaLuot({ ...dd, danhGiaDuoc: false }) === 'Chưa đủ điểm', 'kết quả');

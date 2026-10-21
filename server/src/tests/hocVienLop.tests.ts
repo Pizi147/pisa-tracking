@@ -153,7 +153,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const c = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 8, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
     eq(c.hien, [], 'Không còn badge "Case mở" (K2-06)');
     assert(!/Progress(?! Test)|Final(?! Test)/.test(Object.values(d.CLASS_PHASE_LABEL).join(' ')), 'CLASS_PHASE_LABEL còn Progress/Final');
-    eq(d.CLASS_PHASE_LABEL.progress_week, 'Thi Progress Test tuần này', 'Chữ chặng thi');
+    eq(d.CLASS_PHASE_LABEL.progress_week, 'Progress Test tuần này', 'Chữ chặng thi');
   });
 
   check('PR-Qa · §3.7 dòng GV bộ môn gom theo người ("L · R Trần Ngọc Hà"), kỹ năng thiếu người ghi "Chưa phân công"', () => {
@@ -416,12 +416,13 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 7 · Phân tích lớp
 
-  check('PR-Qa · §3.7 Phân tích lớp FT: 5 kỹ năng × MT1…MT5, ô = số HV đạt kỳ vọng của đợt / số HV có điểm', () => {
+  /* V5 C09, C10 (SV-SO2): ô chỉ tính lượt ĐỦ Overall; Overall < kỳ vọng (5.5 < 6.0) → xét từng kỹ năng như cũ (thiếu Overall → ngoài mẫu: phép kiểm SVSO2 T08). */
+  check('PR-Qa · §3.7 Phân tích lớp FT: 5 kỹ năng × MT1…MT5, ô = số HV đạt / số HV có điểm (lượt đủ Overall, luật Overall)', () => {
     const cid = taoLop('MB FT QA3', 'FT');
     const a = taoHocVien({ cid, ft: true, target: 6.5 });
     const b = taoHocVien({ cid, ft: true, target: 6.5 });
-    bandFT(themLuot({ ...a, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 5.0, reading: 6.0 });
-    bandFT(themLuot({ ...b, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 6.5, reading: 5.5 });
+    bandFT(themLuot({ ...a, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 5.0, reading: 6.0, writing1: 5.5, writing2: 5.5, speaking: 5.5 });
+    bandFT(themLuot({ ...b, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 6.5, reading: 5.5, writing1: 5.0, writing2: 5.0, speaking: 5.0 });
     const r = ptl.phanTichLop(P.admin, cid);
     eq([r.loai, r.dong.map((x: any) => x.nhan).join(' '), r.cot.map((x: any) => x.nhan).join(' ')],
       ['ft', 'L R W1 W2 S', 'MT1 MT2 MT3 MT4 MT5'], 'Khung');

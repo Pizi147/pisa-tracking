@@ -109,7 +109,7 @@ export const CHU_KY_NANG: Record<KyNangKH, string> = { listening: 'L', reading: 
  */
 export type OKyNang = {
   trangThai: TrangThaiO; tuan: string | null; periodId: number | null; doiTu: string | null; batBuoc: boolean;
-  khoa: 'đã có điểm' | 'đã thi' | 'đã huỷ phần thi' | null;
+  khoa: 'đã có điểm' | 'đã làm bài' | 'đã huỷ' | null;
   /** PR-XLMT: trạng thái thi thô, Chủ nhật tuần thi, đang có đề nghị dời chờ duyệt — hộp và menu thao tác cần. */
   sit: string | null; tuanKetThuc: string | null; choDuyet: boolean;
   /** T3 (PR-MTa): huỷ vì vắng 2 lần — ô MT "S huỷ" (PR-MTb). */
@@ -225,7 +225,7 @@ export function gomBaiXemTruoc(bai: BaiXemTruoc[]): Array<Omit<BaiXemTruoc, 'ski
 /** Dòng tóm tắt của một lớp Fast Track (Q12): `MT3 đang thi · MT4 chưa xếp 4 em · 2 em cần xếp lại`, bỏ vế trống. */
 export function tomTatLopFT(i: { dangThi: number | null; chuaXep: { dot: number; soEm: number } | null; canXepLai?: number }): string {
   const ve: string[] = [];
-  if (i.dangThi !== null) ve.push(`MT${i.dangThi} đang thi`);
+  if (i.dangThi !== null) ve.push(`MT${i.dangThi} đang làm bài`);
   if (i.chuaXep && i.chuaXep.soEm > 0) ve.push(`MT${i.chuaXep.dot} chưa xếp ${i.chuaXep.soEm} em`);
   if (i.canXepLai) ve.push(`${i.canXepLai} em cần xếp lại`);
   return ve.join(' · ');
@@ -261,7 +261,7 @@ export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false)
     if (can.some((k) => k.choDuyet)) return { loai: 'chan', no: n, cau: `MT${n} còn kỹ năng chờ Quản lý duyệt dời — trả lời đề nghị trước.` };
     const cd = can.filter((k) => k.coDiem).map((k) => k.skill);
     if (!ep) return { loai: 'chan', no: n, cau: `MT${n} đã xong.` };
-    return cd.length ? { loai: 'da-du', no: n, coDiem: cd } : { loai: 'chan', no: n, cau: `MT${n} đã thi, đang chờ chấm.` };
+    return cd.length ? { loai: 'da-du', no: n, coDiem: cd } : { loai: 'chan', no: n, cau: `MT${n} đã làm bài, đang chờ chấm.` };
   }
   if (can.some((k) => k.coDiem || k.daThi)) return { loai: 'xep-not', no: n, kyNang: conThi.map((k) => k.skill) };
   return { loai: 'doi', no: n };

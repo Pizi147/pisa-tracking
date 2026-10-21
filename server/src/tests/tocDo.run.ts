@@ -1023,6 +1023,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  *   "Báo PH vi phạm" (`bao_ph_yt`) — em demo chưa có TVV → QL chi nhánh giữ. Việc GV không đổi (6 băm GV / Admin giữ).
  * 21/10 SV-TVV-VIEC: chụp lại 5 băm QL / QT (Của tôi, Tất cả, Tất cả chi nhánh) — đổi CÓ CHỦ Ý: Chốt ngày thi / Cập nhật KQ thi thật / Chọn bước tiếp có
  *   MỘT người giữ (TVV của em; em demo chưa có TVV → QL chi nhánh), KQ thi thật không hạn, thêm dòng "Bổ sung hồ sơ thiếu". 6 băm GV / Admin giữ.
+ * 22/10 SV-TVV-VIEC #517 (chụp lại ở SV-SO2 vì main đỏ): 'QL toi' / 'QT toi' / 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: việc TVV của em
+ *   không có TVV về QL chi nhánh (R1) và 4 việc TVV mới (N6) hiện ở Công việc của QL / QT.
  * 21/10 CV-LOI (sửa theo rà): chụp lại 'QT tat-ca' — chuyển lớp nay gán chủ Case trống (`ganChuCaseThieu` trong `apDungMotDong`): em chưa có lớp của
  *   Task2(e) có Case trống chủ, chuyển sang lớp CP → Case có GV phụ trách → dòng Thêm PA hiện ở góc nhìn toàn hệ thống (trước: Case vô hình). 10 băm khác giữ.
  * 21/10 CV-LOI: chụp lại 10 băm (ADMIN giữ) — đổi CÓ CHỦ Ý (02 4.7 A13, 9.2-10): seed gán chủ Case không chủ theo luật tạo Case (Case 14 → GV R, 25 → GV S

@@ -155,7 +155,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
   }));
 
   check('OV1b-6 · ca Trâm Anh: lượt mọi phần thi đã huỷ hiện "Đã huỷ phần thi", không là mốc kế tiếp', () => thu(() => {
-    assert(dm.nhanLuot('planned', 0, 4, true) === 'Đã huỷ phần thi', `nhãn: ${dm.nhanLuot('planned', 0, 4, true)}`);
+    assert(dm.nhanLuot('planned', 0, 4, true) === 'Đã huỷ', `nhãn: ${dm.nhanLuot('planned', 0, 4, true)}`);
     assert(dm.nhanLuot('planned', 0, 4, false) === 'Đã lên lịch', 'lượt thường vẫn "Đã lên lịch"');
     const a = luot[3];
     dung(a);
