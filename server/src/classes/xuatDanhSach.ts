@@ -10,7 +10,7 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  MAU_XUAT_DS, PERMISSIONS, ketLuanHienTai, bangThongTinXuatDs, bangXuatDanhSach, chuTep, chuoiLop, cotXuatDs, ketQuaLuot, tuanNam,
+  MAU_XUAT_DS, PERMISSIONS, ketLuanHienTai, bangThongTinXuatDs, bangXuatDanhSach, chuTep, chuoiLop, cotXuatDs, ketQuaLuot, tuanNam, nhanLichThi, trangThaiLichThi,
   type HvXuatDs, type MauXuatDs,
 } from '../../../shared/domain/index.ts';
 import { gioVn } from '../../../shared/domain/xuatMt.ts';
@@ -44,13 +44,14 @@ export function xuatDanhSach(
   const cot = cotXuatDs(mau as MauXuatDs, i.cot);
   const dieuKien = String(i.boLoc ?? '').trim().slice(0, 300) || 'Không lọc';
   const conn = db();
+  const homNay = demoToday();   // LT-SV: một lần cho cả tệp (đọc cấu hình là một câu SQL)
 
   /* Em + lớp đang học (đủ lớp, theo thứ tự vào lớp) + lộ trình đang chạy. */
   const hs = new Map<number, any>();
   const lopHienTai = new Map<number, { code: string; coSo: string | null; branchId: number | null; classId: number; dang: boolean }[]>();
   theoLo(ids, (lo, ph) => {
     for (const s of conn.prepare(
-      `SELECT s.id, s.full_name, s.email, cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_date, cy.exam_period_id,
+      `SELECT s.id, s.full_name, s.email, cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_date, cy.thi_that_ngay, cy.exam_period_id,
               rp.week_start AS exam_week_start, rp.code AS exam_week_code, ${COT_LICH_THI_SQL}
          FROM students s LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
          LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi WHERE s.id IN (${ph})`).all(...lo) as any[]) hs.set(s.id, s);
@@ -146,7 +147,7 @@ export function xuatDanhSach(
       caseTt: caseCua.get(id)?.caseTt || null, paTt: caseCua.get(id)?.paTt || null,
       phuTrach: ds.map((x) => gvcn.get(x.classId)).find(Boolean) ?? null,
       diem: { OVR: r?.overall ?? null, L: r?.bands.listening ?? null, R: r?.bands.reading ?? null, W1: diemW('writing1'), W2: diemW('writing2'), S: r?.bands.speaking ?? null },
-      target, lichThi: plan.confidence === 'none' ? null : plan.label, tuanThi: tuan ? tuanNam(tuan) : null,
+      target, lichThi: plan.confidence === 'none' && !s?.exam_date ? null : /* LT-SV: một hàm nhãn */ nhanLichThi(trangThaiLichThi(s, plan, homNay), homNay, true), tuanThi: tuan ? tuanNam(tuan) : null,
       ketQua: r ? ketQuaLuot({ ovr: r.overall, kyVong: r.expectation, danhGiaDuoc: r.evaluable }) : null,
       ketLuan: KET_LUAN_NHAN[ketLuanHienTai({ coNgay: !!s?.exam_date, thangDuKien: plan.month, luu }) ?? ''] ?? null,
       ghiChuHop: luu?.ghiChu ?? null,

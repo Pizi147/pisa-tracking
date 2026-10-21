@@ -2,6 +2,9 @@
  * OV-15f — LUẬT THUẦN của "Lịch thi" (rà soát lịch thi thật khi họp, mockup 5 khung 1) và "Xuất Excel danh sách học viên" (C31, mockup 5 khung 2).
  * Không đọc DB. Máy chủ (`classes/lichThi.ts`, `classes/xuatDanhSach.ts`) và web (`GocLichThi.tsx`, `NganXuatDs.tsx`) dùng chung một nguồn.
  */
+import { shortDate } from './display.ts';
+import { tuanLich } from './hienThiNgay.ts';
+import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------------------------ Lịch thi
 
@@ -25,6 +28,47 @@ const congThang = (m: string, n: number): string => {
   const k = Number(m.slice(0, 4)) * 12 + (Number(m.slice(5, 7)) - 1) + n;
   return `${Math.floor(k / 12)}-${String((k % 12) + 1).padStart(2, '0')}`;
 };
+
+/**
+ * LT-SV (07 mục 4, Q-C3 ① 21/10) — MỘT hàm trạng thái lịch thi thật cho mọi nơi (Lịch thi, đầu hồ sơ, "Sắp tới", việc Chốt ngày thi, tệp xuất).
+ *   có ngày (thi thật đã nhập / ngày dự kiến): ≥ hôm nay → `da-chot-ngay` (A) · < hôm nay → `da-thi`
+ *   chưa ngày, có tháng HOẶC tuần: tháng ≤ tháng này → `chua-chot-ngay` (B) · sau → `du-kien` · không gì → `chua-co`
+ * Không bịa ngày từ tháng / tuần. `ke` = `examPlanOf` của lộ trình (tuần thắng tháng, tháng rác = chưa có).
+ */
+export type TrangThaiLich = 'chua-co' | 'du-kien' | 'chua-chot-ngay' | 'da-chot-ngay' | 'da-thi';
+export type LichThi = { trangThai: TrangThaiLich; ngay: string | null; thang: string | null; tuan: string | null };
+export function trangThaiLichThi(
+  c: { thi_that_ngay?: string | null; exam_date?: string | null } | null | undefined,
+  ke: { confidence: 'none' | 'month' | 'week'; month: string | null; weekStart: string | null }, homNay: string,
+): LichThi {
+  const la = (v: string | null | undefined) => (v && NGAY.test(v.slice(0, 10)) ? v.slice(0, 10) : null);
+  const ngay = la(c?.thi_that_ngay) ?? la(c?.exam_date);
+  if (ngay) return { trangThai: ngay < homNay ? 'da-thi' : 'da-chot-ngay', ngay, thang: ngay.slice(0, 7), tuan: null };
+  if (ke.confidence === 'none' || !ke.month) return { trangThai: 'chua-co', ngay: null, thang: null, tuan: null };
+  const tuan = ke.confidence === 'week' ? ke.weekStart : null;
+  return { trangThai: ke.month <= homNay.slice(0, 7) ? 'chua-chot-ngay' : 'du-kien', ngay: null, thang: ke.month, tuan };
+}
+/** Nhãn của `trangThaiLichThi`, tách đôi cho dòng "nhãn **giá trị**" (đầu hồ sơ): { nhan: 'Thi', gt: '21/11 · còn 9 ngày' } · 'Đã thi' · 'Chưa chốt ngày thi'
+ *  '11/2026' / 'W2 DEC' · 'Dự kiến thi' · 'Chưa có tháng thi' (gt rỗng). `tep`: tệp xuất — bỏ "còn n ngày" (chữ trong tệp không cũ theo ngày mở). */
+export function tachNhanLichThi(l: LichThi, homNay: string, tep = false): { nhan: string; gt: string } {
+  const moc = l.tuan ? tuanLich(l.tuan, homNay) : l.thang ? nhanThang(l.thang) : '';
+  switch (l.trangThai) {
+    case 'da-thi': return { nhan: t('Đã thi'), gt: shortDate(l.ngay, homNay) };
+    case 'da-chot-ngay': {
+      const con = Math.round((Date.parse(`${l.ngay}T00:00:00Z`) - Date.parse(`${homNay}T00:00:00Z`)) / 86_400_000);
+      const sau = tep ? '' : con === 0 ? ` · ${t('hôm nay')}` : con <= 14 ? ` · ${t('còn {n} ngày', { n: con })}` : '';
+      return { nhan: t('Thi'), gt: `${shortDate(l.ngay, homNay)}${sau}` };
+    }
+    case 'chua-chot-ngay': return { nhan: t('Chưa chốt ngày thi'), gt: moc };
+    case 'du-kien': return { nhan: t('Dự kiến thi'), gt: moc };
+    default: return { nhan: t('Chưa có tháng thi'), gt: '' };
+  }
+}
+/** MỘT hàm nhãn: "Thi 21/11 · còn 9 ngày" · "Đã thi 28/11" · "Chưa chốt ngày thi 11/2026" · "Dự kiến thi W2 DEC" · "Chưa có tháng thi". */
+export function nhanLichThi(l: LichThi, homNay: string, tep = false): string {
+  const { nhan, gt } = tachNhanLichThi(l, homNay, tep);
+  return gt ? `${nhan} ${gt}` : nhan;
+}
 
 /** Tháng kế tiếp của ngày nghiệp vụ — đích của lối "Lịch thi thật ›" ở Test › Lịch Test. */
 export const thangKeTiep = (homNay: string): string => congThang(homNay.slice(0, 7), 1);

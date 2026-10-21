@@ -4,7 +4,6 @@
  */
 import { addDaysIso } from './sos.ts';
 import { tuanLich } from './hienThiNgay.ts';
-import { mondayOfDate } from './week.ts';
 import { t } from '../i18n/index.ts';
 
 export const LY_DO_DONG = ['lo_trinh_moi', 'chuyen_lop', 'len_lop', 'hoc_lai', 'sang_ft', 'ket_thuc', 'tam_dung', 'sua_tay', 'khong_ro'] as const;
@@ -92,8 +91,8 @@ export const coKetQuaCu = (c: { outcome?: string | null; outcome_score?: number 
 
 /**
  * OV-13q (chủ SP 16/10) — "ĐÃ THI XONG · HẠN 1 TUẦN": MỘT hàm trạng thái sau thi cho Công việc, Tổng quan, Học viên & Lớp, hồ sơ.
- * Ngày thi = ngày thi thật đã nhập, không thì ngày dự kiến; chỉ tuần → Chủ nhật tuần thi; chỉ tháng → ngày cuối tháng; không có dự kiến → ngày đóng
- * lộ trình (giữ luật nhắc cũ). Từ HÔM SAU ngày thi: "Đã thi · chờ kết quả". Hạn gốc = ngày thi + 7, dùng chung cho Cập nhật kết quả và Chọn bước tiếp;
+ * Ngày thi = ngày thi thật đã nhập, không thì ngày dự kiến; LT-SV (Q-C3 ① 21/10): chỉ tuần / chỉ tháng = "chưa chốt ngày" → KHÔNG có ngày thi (không
+ * bịa ngày, không thành "đã thi"); không có dự kiến nào → ngày đóng lộ trình (giữ luật nhắc cũ). Từ HÔM SAU ngày thi: "Đã thi · chờ kết quả". Hạn gốc = ngày thi + 7, dùng chung cho Cập nhật kết quả và Chọn bước tiếp;
  * gia hạn (`han_sau_thi`) chỉ có hiệu lực khi muộn hơn hạn gốc (sửa ngày thi → hạn tính lại, gia hạn muộn hơn thì giữ). Bước tiếp: hạn = muộn hơn của
  * hạn đó và ngày có kết quả (nhập muộn không quá hạn ngay; sửa kết quả không dời). Không chặn gì — chỉ là hạn.
  * Vào: dòng `learning_cycles` (+ `exam_week` = thứ Hai tuần thi dự kiến, `ngay_kq` = ngày có kết quả lần đầu).
@@ -114,9 +113,7 @@ export function ngayThiSauThi(c: DongSauThi): string | null {
   const ngay = (v: string | null | undefined) => (v && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null);
   if (ngay(c.thi_that_ngay)) return ngay(c.thi_that_ngay);
   if (ngay(c.exam_date)) return ngay(c.exam_date);
-  if (ngay(c.exam_week)) return addDaysIso(mondayOfDate(ngay(c.exam_week)!), 6);
-  const m = c.exam_month;
-  if (m && /^\d{4}-\d{2}$/.test(m)) return addDaysIso(`${m}-01`, new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate() - 1);
+  if (ngay(c.exam_week) || (c.exam_month && /^\d{4}-\d{2}$/.test(c.exam_month))) return null;
   return ngay(c.ended_at);
 }
 export function trangThaiSauThi(c: DongSauThi, homNay: string): TrangThaiSauThi {
@@ -128,7 +125,9 @@ export function trangThaiSauThi(c: DongSauThi, homNay: string): TrangThaiSauThi 
   let han = daGiaHan ? gh : hanGoc;
   const giaiDoan: GiaiDoanSauThi = coKq ? (c.buoc_tiep ? 'xong' : 'cho_buoc_tiep') : ngayThi && ngayThi < homNay ? 'da_thi_cho_kq' : 'chua_thi';
   const nkq = c.ngay_kq ? c.ngay_kq.slice(0, 10) : null;
-  if (giaiDoan === 'cho_buoc_tiep' && nkq && (!han || nkq > han)) han = nkq;
+  /* LT-SV: không có ngày thi (chỉ tháng / tuần, "Không thi") → hạn Chọn bước tiếp = ngày có kết quả + 7 (21/10-TVV), không đỏ ngay hôm sau. */
+  const mocKq = nkq && !ngayThi ? addDaysIso(nkq, NGAY_HAN_SAU_THI) : nkq;
+  if (giaiDoan === 'cho_buoc_tiep' && mocKq && (!han || mocKq > han)) han = mocKq;
   return {
     /* rà #436: hạn đang dùng đến từ ngày có kết quả (muộn hơn gia hạn) → không ghi "đã gia hạn". */
     giaiDoan, ngayThi, hanGoc, han, daGiaHan: daGiaHan && han === gh, soLanGiaHan: c.han_sau_thi_so_lan ?? 0,
