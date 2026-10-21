@@ -233,7 +233,7 @@ function veQL() {
   const bangLop = tt === 'rong'
     ? `<div class="rong"><div class="tieu">Không lớp nào cần chú ý tuần này</div><div style="font-size:14px;margin-top:4px">4 lớp Monbay: không SOS 2–3, không Case thiếu PA. <a href="#">Học viên &amp; Lớp ›</a></div></div>`
     : `<div class="cuon-bang"><table class="bang xep"><colgroup><col style="width:32%"><col style="width:20%"><col style="width:22%"><col style="width:13%"><col style="width:13%"></colgroup>
-      <thead><tr><th>Lớp</th><th data-kieu="phan-tram">Đạt MT</th><th>SOS hiện tại</th><th data-kieu="so">Case chưa PA</th><th data-kieu="so">Thi tuần này</th></tr></thead>
+      <thead><tr><th>Lớp</th><th data-kieu="phan-tram">Đạt MT</th><th>SOS hiện tại</th><th data-kieu="so">Case chưa PA</th><th data-kieu="so">Thi tháng này</th></tr></thead>
       <tbody>${(locLop === 'ft' ? lopFt : lopThuong).map(dongLop).join('')}</tbody></table></div>`;
 
   const gvHc = [['Lê Minh Khoa', 'R, W1', '86 %', '12/14 việc', '95 %', '63/66 bài', 1], ['Trần Ngọc Hà', 'L, R', '78 %', '14/18 việc', '100 %', '88/88 bài', 1], ['Phạm Thu Trang', 'S', '90 %', '9/10 việc', '82 %', '41/50 bài', 1]];
@@ -251,15 +251,15 @@ function veQL() {
   const phai = `
     ${choDuyet.length ? the('Chờ bạn duyệt', `${choDuyet.length} đề xuất`, `<ul class="ds-phai" id="dsDuyet">${choDuyet.map((d, i) => `<li><button class="dong-duyet" type="button" onclick="moDuyet(${i}, this)"><span class="t1">${d[0]}</span><span class="cho">${d[2].startsWith('⚠') ? `<span style="color:var(--loi);font-weight:700">${d[2]}</span>` : d[2]}</span><span class="t2">${d[1]}</span></button></li>`).join('')}</ul>`, { chan: `<a class="xem-ca" href="#">Hộp duyệt ›</a>` }) : ''}
     ${diTiep(tt === 'rong'
-      ? [['<span class="so">2</span> HV thi tuần này', 'Lịch thi · W3 SEP'], ['Báo cáo tuần trước', 'W1 SEP – W2 SEP']]
-      : [['<span class="so">2</span> HV thi tuần này', 'Lịch thi · W3 SEP'], ['<span class="so">1</span> Case chưa có PA', 'HV &amp; Lớp · đã lọc "Case chưa PA"'], ['<span class="so">2</span> HV chưa có lịch thi', 'HV &amp; Lớp · đã lọc "Chưa có lịch"'], ['Báo cáo tuần trước', 'W1 SEP – W2 SEP']])}`;
+      ? [['<span class="so">2</span> HV thi tháng này', 'Lịch thi · W3 SEP'], ['Báo cáo tuần trước', 'W1 SEP – W2 SEP']]
+      : [['<span class="so">2</span> HV thi tháng này', 'Lịch thi · W3 SEP'], ['<span class="so">1</span> Case chưa có PA', 'HV &amp; Lớp · đã lọc "Case chưa PA"'], ['<span class="so">2</span> HV chưa có lịch thi', 'HV &amp; Lớp · đã lọc "Chưa có lịch"'], ['Báo cáo tuần trước', 'W1 SEP – W2 SEP']])}`;
 
   return `${dauTrang('Monbay', `<select class="o" aria-label="Chương trình"><option>Mọi chương trình</option><option>Fast Track</option><option>Lớp thường</option></select>`)}
     <div class="dai-chi-so">
       ${chiSo('Đạt MT', oso('75 %', 'datmt', 'Đạt MT: 75 %, 15 trên 20 HV'), '15/20 HV đủ dữ liệu', { ky: 'W1 SEP – W2 SEP', i: 'HV có lượt MT chốt trong kỳ, so Overall với kỳ vọng lượt' })}
       ${chiSo('Case có PA', oso('83 %', 'casepa', 'Case có PA: 83 %, 5 trên 6 Case'), '5/6 Case', { ky: 'hiện tại · đến 14/09' })}
       ${chiSo('Chờ duyệt', `<span>${choDuyet.length}</span>`, 'đề xuất · ⚠ 1 quá 1 ngày', { ky: 'hiện tại' })}
-      ${chiSo('Thi tuần này', '<span>2</span>', 'HV có ngày thi đã chốt', { ky: 'W3 SEP' })}
+      ${chiSo('Thi tháng này', '<span>2</span>', 'HV có ngày thi đã chốt', { ky: 'W3 SEP' })}
     </div>
     <div class="bo-cuc"><div class="cot-trai">${trai}</div><div class="cot-phai">${phai}</div></div>`;
 }
@@ -272,7 +272,7 @@ function veQT() {
               ['Hải Dương', '—', 'không có lượt', '—', '', '—', '', 0]];
   const pt = (v, p) => v === '—' ? `<span class="mo">—</span>${p ? `<span class="phu-o">${p}</span>` : ''}` : v === 'Chưa có dữ liệu' ? `<span class="bd bd-kq thieu">– Chưa có dữ liệu</span><span class="phu-o">${p}</span>` : `${oso(v, 'datmt', v)}<span class="phu-o">${p}</span>`;
   const bang = `<div class="cuon-bang"><table class="bang xep"><colgroup><col style="width:22%"><col><col><col><col style="width:13%"></colgroup>
-    <thead><tr><th>Chi nhánh</th><th data-kieu="phan-tram">Đạt MT</th><th data-kieu="phan-tram">Case có PA</th><th data-kieu="phan-tram">Đạt Target thi thật</th><th data-kieu="so">Thi tuần này</th></tr></thead>
+    <thead><tr><th>Chi nhánh</th><th data-kieu="phan-tram">Đạt MT</th><th data-kieu="phan-tram">Case có PA</th><th data-kieu="phan-tram">Đạt Target thi thật</th><th data-kieu="so">Thi tháng này</th></tr></thead>
     <tbody>${cn.map(c => `<tr class="co-phu bam" onclick="alert('Mockup: chọn chi nhánh → trang chuyển về mức QL của ${c[0]} (?cn=)')"><td><b>${c[0]}</b><span class="phu-o">bấm hàng → mức QL</span></td><td data-kieu="phan-tram">${pt(c[1], c[2])}</td><td data-kieu="phan-tram">${pt(c[3], c[4])}</td><td data-kieu="phan-tram">${pt(c[5], c[6])}</td><td data-kieu="so">${c[7] || '<span class="oso-0">0</span>'}</td></tr>`).join('')}
     <tr class="hang-nhom"><td>Toàn hệ thống</td><td data-kieu="phan-tram">${oso('61 %', 'datmt', '61 %')}<span class="phu-o">23/38 HV</span></td><td data-kieu="phan-tram">${oso('67 %', 'casepa', '67 %')}<span class="phu-o">10/15 Case</span></td><td data-kieu="phan-tram">67 %<span class="phu-o">2/3 HV · mẫu nhỏ</span></td><td data-kieu="so">3</td></tr></tbody></table></div>
     <p class="chu-thich">Toàn hệ thống = tổng tử / tổng mẫu (23/38 = 61 %), không lấy trung bình các % chi nhánh (57 %).</p>`;
@@ -281,10 +281,10 @@ function veQT() {
       ${chiSo('Đạt MT', oso('61 %', 'datmt', 'Đạt MT toàn hệ thống 61 %'), '23/38 HV · 5 chi nhánh', { ky: 'W1 SEP – W2 SEP' })}
       ${chiSo('Case có PA', oso('67 %', 'casepa', 'Case có PA 67 %'), '10/15 Case', { ky: 'hiện tại · đến 14/09' })}
       ${chiSo('Chi nhánh cần xem', '<span>1</span>', 'Bãi Cháy: Đạt MT 2/10 · 1 lượt chưa có điểm', { ky: 'hiện tại' })}
-      ${chiSo('Thi tuần này', '<span>3</span>', 'HV có ngày thi đã chốt', { ky: 'W3 SEP' })}
+      ${chiSo('Thi tháng này', '<span>3</span>', 'HV có ngày thi đã chốt', { ky: 'W3 SEP' })}
     </div>
     <div class="bo-cuc"><div class="cot-trai">${the('Theo chi nhánh', 'chọn một chi nhánh để xem lớp, GV', bang)}</div>
-    <div class="cot-phai">${diTiep([['<span class="so">1</span> lượt MT chưa có điểm', 'Bãi Cháy · BC FT 205 MT2 · Lịch tuần'], ['<span class="so">3</span> HV thi tuần này', 'Lịch thi · W3 SEP'], ['Phân tích GV', 'một bảng Hành chính · Học thuật']])}</div></div>`;
+    <div class="cot-phai">${diTiep([['<span class="so">1</span> lượt MT chưa có điểm', 'Bãi Cháy · BC FT 205 MT2 · Lịch tuần'], ['<span class="so">3</span> HV thi tháng này', 'Lịch thi · W3 SEP'], ['Phân tích GV', 'một bảng Hành chính · Học thuật']])}</div></div>`;
 }
 
 function veGV() {
@@ -298,7 +298,7 @@ function veGV() {
   const khoiDay = the('Kỹ năng tôi dạy', 'R · W1 · W (lớp thường)', `<div class="cuon-bang"><table class="bang xep"><thead><tr><th style="width:28%">Lớp</th><th>Kỹ năng</th><th data-kieu="phan-tram">Đạt</th><th>Chấm của tôi</th></tr></thead><tbody>
     ${day.map(d => `<tr class="co-phu"><td><a class="ten-ho-so" href="#">${d[0]}</a><span class="phu-o">${d[2]}</span></td><td><span class="ky">${d[1]}</span></td><td data-kieu="phan-tram">${d[3] === '—' || !d[3] ? `<span class="mo">—</span>` : oso(d[3], 'gv', d[3])}<span class="phu-o">${d[4]}</span></td><td style="font-size:14px">${d[5]}</td></tr>`).join('')}</tbody></table></div>
     <p class="chu-thich">Đạt = HV có Overall đạt kỳ vọng, hoặc Overall chưa đạt nhưng kỹ năng của tôi không dưới kỳ vọng. Chỉ bài của tôi — L/R của cô Linh, S của cô Trang không tính.</p>`);
-  const khoiCn = the('Lớp tôi chủ nhiệm', '2 lớp', `<div class="cuon-bang"><table class="bang xep"><thead><tr><th style="width:30%">Lớp</th><th>SOS hiện tại</th><th data-kieu="so">Ý thức chờ xử lý</th><th data-kieu="so">Thi tuần này</th></tr></thead><tbody>
+  const khoiCn = the('Lớp tôi chủ nhiệm', '2 lớp', `<div class="cuon-bang"><table class="bang xep"><thead><tr><th style="width:30%">Lớp</th><th>SOS hiện tại</th><th data-kieu="so">Ý thức chờ xử lý</th><th data-kieu="so">Thi tháng này</th></tr></thead><tbody>
     ${cn.map(c => `<tr class="co-phu"><td><a class="ten-ho-so" href="#">${c[0]}</a><span class="phu-o">${c[1]}</span></td><td>${c[2]}</td><td data-kieu="so">${c[3]}</td><td data-kieu="so"><span class="mo">${c[4]}</span></td></tr>`).join('')}</tbody></table></div>
     <p class="chu-thich">Số chủ nhiệm tách riêng, không cộng vào việc kỹ năng.</p>`);
   return `${dauTrang('Lê Minh Khoa · Monbay')}
@@ -316,14 +316,14 @@ function veTVV() {
   const nhom = [
     ['Báo PH đang mở', '2 HV', 'Ngô Hải Yến · Chưa liên hệ được lần 1 · hạn 18/09', 'Lý Tuấn Bình · hạn 18/09'],
     ['Sau thi · chưa chốt bước tiếp', '1 HV', 'Đinh Ngọc Quyên · Đã có kết quả · hạn 21/09', ''],
-    ['Thi tuần này', '1 HV', 'CP FT 110 · ngày thi đã chốt', ''],
+    ['Thi tháng này', '1 HV', 'CP FT 110 · ngày thi đã chốt', ''],
   ];
   const khoi = the('Cần chú ý', 'HV của tôi · Cẩm Phả', `<ul class="ds-phai">${nhom.map(n => `<li><a class="di-tiep" href="#"><span class="t1">${n[0]} · <span class="so">${n[1]}</span></span><span class="mui" aria-hidden="true">›</span><span class="t2">${n[2]}${n[3] ? '<br>' + n[3] : ''}</span></a></li>`).join('')}</ul>`);
   return `${dauTrang('Cẩm Phả · HV của tôi')}
     <div class="dai-chi-so">
       ${chiSo('Báo PH đúng hạn', '<span class="bd bd-kq thieu" style="font-size:13px">– Chưa có dữ liệu</span>', 'chưa việc nào tới hạn trong kỳ', { ky: 'W1 SEP – W3 SEP', i: 'Việc Báo PH đã báo trước hạn / việc Báo PH có hạn trong kỳ' })}
       ${chiSo('Chưa liên hệ được', '<span>1</span>', 'HV · lần thử gần nhất 14/09', { ky: 'hiện tại' })}
-      ${chiSo('Thi tuần này', '<span>1</span>', 'HV có ngày thi đã chốt', { ky: 'W3 SEP' })}
+      ${chiSo('Thi tháng này', '<span>1</span>', 'HV có ngày thi đã chốt', { ky: 'W3 SEP' })}
       ${chiSo('Chờ KQ / bước tiếp', '<span>0 · 1</span>', '0 chờ KQ · 1 chưa chốt bước tiếp', { ky: 'hiện tại' })}
     </div>
     <div class="bo-cuc"><div class="cot-trai">${khoi}</div>

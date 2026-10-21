@@ -15,7 +15,7 @@ export const EN_OV15D = {
   '‹ việc vừa xong': '‹ task just done',
   '+ Giao việc': '+ Assign task',
   'Vận hành ›': 'Operations ›',
-  'Báo cáo đơn vị ›': 'Unit reports ›',
+  'Họp đơn vị ›': 'Unit meeting ›',
   '{n} yêu cầu chờ duyệt ›': '{n} requests awaiting approval ›',
   'Chưa có người': 'Unassigned',
   'Báo cáo ›': 'Report ›',
@@ -34,7 +34,7 @@ export const EN_OV15D = {
   'quá hạn lên đầu': 'overdue first',
   // Hướng dẫn (shared/huongDan/{gv,ql,admin}.ts) sửa theo OV-15d
   '<b>Case chưa chốt PA</b> quá hạn → <b>Mở Case</b>; <b>Chọn bước tiếp</b> sau thi; <b>Chốt lộ trình</b> khi tới hạn.': 'Overdue <b>Case without confirmed plan</b> → <b>Open Case</b>; <b>Choose next step</b> after the exam; <b>Confirm pathway</b> when due.',
-  '<b>Chờ bạn duyệt</b> ở đầu; <b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Báo cáo đơn vị ›</b>.': '<b>Awaiting your approval</b> first; <b>Management tasks</b> last (collapsed) with <b>+ Assign task</b>, <b>Operations ›</b>, <b>Unit reports ›</b>.',
+  '<b>Chờ bạn duyệt</b> ở đầu; <b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Họp đơn vị ›</b>.': '<b>Awaiting your approval</b> first; <b>Management tasks</b> last (collapsed) with <b>+ Assign task</b>, <b>Operations ›</b>, <b>Unit meeting ›</b>.',
   '<b>Chờ duyệt</b>: thẻ "Nếu duyệt: …", <b>Duyệt · Từ chối…</b> tại chỗ; <b>Mở hộp duyệt ›</b> xem hết.': '<b>Awaiting approval</b>: cards "If approved: …", <b>Approve · Reject…</b> in place; <b>Open approval box ›</b> to see all.',
   '<b>Công việc</b>: chỉ nhóm Chấm điểm của chi nhánh; ô <b>▾</b> chọn một GV.': '<b>Tasks</b>: only the branch Marking group; the <b>▾</b> box picks one teacher.',
   '<b>Của tôi · Của GV · Tất cả</b> (mặc định Tất cả); ô <b>▾</b> chọn một GV.': '<b>Mine · Teachers\' · All</b> (default All); the <b>▾</b> box picks one teacher.',

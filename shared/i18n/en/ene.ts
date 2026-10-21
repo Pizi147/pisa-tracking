@@ -34,7 +34,7 @@ export const EN_ENE = {
   'lượt có Meeting CX/GĐCN (sau Mock) quá hạn xác nhận': 'Meeting CX/BD (after Mock) overdue for confirmation',
   /* Lỗi máy chủ của Đang SOS / panel một em (`hocVienSos.ts`) — web dịch bằng `dich` ở `api.ts`. */
   'Đang SOS dành cho người theo dõi Case.': 'In SOS is only for Case followers.',
-  'Tuần thi không hợp lệ.': 'Invalid exam week.',
+  'Tuần Test không hợp lệ.': 'Invalid test week.',
   'Bạn không xem được học viên này.': 'You cannot view this student.',
   /* Công việc của QL — dòng phụ "Chốt lộ trình" (`chuViecChotLoTrinh`, máy chủ ghép) + Xác nhận PA (`mywork.ts`): web dịch theo mẫu từng đoạn. */
   '{n} em chưa chọn': (b) => `${so(b.n, 'student', 'students')} not chosen`,

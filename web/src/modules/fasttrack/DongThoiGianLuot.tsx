@@ -17,14 +17,14 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   deadline_set: { chu: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-han'] }), loai: 'lich' }, deadline_cleared: { chu: t('Bỏ dời hạn chấm cả đợt'), loai: 'lich' },
   skill_deadline_set: { chu: CHU_THAO_TAC['doi-han'], loai: 'lich' }, skill_deadline_cleared: { chu: t('Bỏ dời hạn chấm'), loai: 'lich' },
   skill_skipped: { chu: CHU_THAO_TAC['bo-ky-nang'], loai: 'huy' }, skill_restored: { chu: CHU_THAO_TAC['dua-lai'], loai: 'lich' },
-  skill_no_show_settled: { chu: t('{x} / không dự thi', { x: CHU_THAO_TAC['bao-vang'] }), loai: 'vang' },
+  skill_no_show_settled: { chu: t('{x} / vắng', { x: CHU_THAO_TAC['bao-vang'] }), loai: 'vang' },
   skill_week_moved_absence: { chu: t('Dời do vắng'), loai: 'vang' }, skill_unscheduled: { chu: t('Huỷ lịch (về Chưa xếp lịch)'), loai: 'huy' },
   cancelled: { chu: t('Huỷ lượt'), loai: 'huy' }, skill_part_cancelled: { chu: t('Huỷ phần còn lại'), loai: 'huy' },
   skill_cancelled_absence: { chu: t('Huỷ do vắng 2 lần'), loai: 'huy' }, skill_part_restored: { chu: CHU_THAO_TAC['khoi-phuc'], loai: 'lich' }, reopened: { chu: t('Mở lại'), loai: 'lich' },
   skill_absence_undone: { chu: t('Bỏ vắng'), loai: 'vang' },   // PR-BV: xoá "-" đã chốt
-  skill_sit_status: { chu: t('Trạng thái thi'), loai: 'lich' }, completion_week: { chu: t('Tuần dự kiến hoàn tất'), loai: 'lich' },
+  skill_sit_status: { chu: t('Trạng thái làm bài'), loai: 'lich' }, completion_week: { chu: t('Tuần dự kiến hoàn tất'), loai: 'lich' },
 };
-const SIT: Record<string, string> = { scheduled: t('Theo lịch'), sat: t('Đã thi'), absent: t('Vắng'), cancelled: t('Đã huỷ phần thi'), required: t('Trong đợt'), skipped: t('Đã bỏ khỏi đợt') };
+const SIT: Record<string, string> = { scheduled: t('Theo lịch'), sat: t('Đã làm bài'), absent: t('Vắng'), cancelled: t('Đã huỷ'), required: t('Trong đợt'), skipped: t('Đã bỏ khỏi đợt') };
 
 /** Biểu tượng 12 px bằng SVG — ký tự Unicode nhỏ của Inter ở cỡ này thành dấu chấm (bẫy đã gặp 28/09). */
 function BieuTuong({ loai }: { loai: Loai }) {

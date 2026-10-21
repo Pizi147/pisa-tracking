@@ -324,7 +324,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
   check('MTb (PR-OMT C2/C3) · oMt: `doc` cho người đọc màn hình đọc đủ trạng thái (màu không có chữ)', () => {
     const doc = (v: any) => d.oMt(v, H).doc;
     assert(doc(luot(xongKn())) === 'MT2, xong, W3 SEP', doc(luot(xongKn())));
-    assert(doc(luot(bonKn('da-xep', TUAN.nay))) === 'MT2, đang thi, W2 OCT', 'đang thi');
+    assert(doc(luot(bonKn('da-xep', TUAN.nay))) === 'MT2, đang làm bài, W2 OCT', 'đang thi');
     assert(doc(luot(bonKn('da-xep', TUAN.toi))) === 'MT2, có lịch, W3 OCT', 'có lịch');
     assert(doc(luot({}, { attemptId: null, so: 3 })) === 'MT3, chưa xếp', 'chưa xếp');
     assert(doc(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } }))) === 'MT2, W4 SEP, trễ chấm W', 'trễ');
@@ -449,7 +449,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
   check('MTb (T5) · menuHopKyNang: (a) chưa tới tuần thi — Đổi tuần + Nhật ký sáng, "Dời hạn chấm" MỜ theo luật máy chủ (lệch mockup)', () => {
     assert(JSON.stringify(dsDuoc('chua-toi-tuan')) === '[true,false,false,false,true]', JSON.stringify(dsDuoc('chua-toi-tuan')));
     const m = duoc('chua-toi-tuan');
-    assert(m[1].viSao === 'Chưa tới tuần thi' && m[2].viSao === 'Chưa tới tuần thi' && m[3].viSao === 'Chưa có điểm', JSON.stringify(m));
+    assert(m[1].viSao === 'Chưa tới tuần Test' && m[2].viSao === 'Chưa tới tuần Test' && m[3].viSao === 'Chưa có điểm', JSON.stringify(m));
   });
 
   check('MTb (T5) · menuHopKyNang: (b) đã có điểm (T20) — Đổi tuần SÁNG cho Quản lý, Huỷ điểm sáng; Dời hạn / Báo vắng mờ "Đã có điểm"', () => {
@@ -786,7 +786,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(!/b6/.test(d.LOI_TIEU_CHI), d.LOI_TIEU_CHI);
     assert(/skill_cancelled_absence: \{ chu: t\('Huỷ do vắng 2 lần'\)/.test(nguon('web/src/modules/fasttrack/DongThoiGianLuot.tsx')), 'nhãn lịch sử');
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
-    assert(/r\.huyVang \? '' : (?:t\()?', quá hạn thì huỷ phần thi'/.test(m), 'dòng đề nghị dời chưa phân biệt huyVang');
+    assert(/r\.huyVang \? '' : (?:t\()?', quá hạn thì huỷ kỹ năng'/.test(m), 'dòng đề nghị dời chưa phân biệt huyVang');
   });
   // ------------------------------------------------------------------ sau rà độc lập — đợt 2 (giao diện)
   check('MTb sau rà đợt 2 (1) · đầu hộp một đợt: tên là Link tới `duongDotTest` khi đã có đợt (đóng hộp khi bấm), đợt mới là chữ', () => {

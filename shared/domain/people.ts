@@ -183,7 +183,7 @@ export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_LABEL: Record<string, string> = {
   'plan.week': 'Chốt tuần MT',
-  'schedule.move': 'Dời lịch thi (lớp thường, đúng phần phụ trách)',
+  'schedule.move': 'Dời lịch Test (lớp thường, đúng phần phụ trách)',
   'attempt.cancel': 'Huỷ cả lượt MT',
   'attempt.skip_skill': 'Đánh dấu kỹ năng không mock',
   'deadline.override': 'Đặt hạn nhập điểm riêng',
@@ -266,7 +266,7 @@ export const STUDENT_FILTERS: {
   { key: 'case_overdue', label: 'Case quá hạn cập nhật', needs: 'case.view',
     hint: 'Đã qua hẹn xem lại mà chưa ai cập nhật kết quả sau hỗ trợ.' },
   { key: 'my_scores', label: 'Cần nhập điểm Test', needs: 'attempt.view',
-    hint: 'Lượt MT đã thi mà còn ô điểm để trống.' },
+    hint: 'Lượt MT đã làm bài mà còn ô điểm để trống.' },
   { key: 'no_plan', label: 'Chưa có tuần MT', needs: 'plan.week',
     hint: 'Học viên chưa được chốt tuần cho lượt MT tiếp theo. Việc của Quản lý.' },
 ];

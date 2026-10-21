@@ -460,7 +460,7 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
     const doiLt = x.nguonFt && !!x.routeNguon && !!x.routeDich && x.routeNguon !== x.routeDich;
     dong.push(doiLt ? `Giữ lộ trình FT, đổi ${x.routeNguon} → ${x.routeDich}, tuần học tính như cũ`
       : x.nguonFt ? `Giữ lộ trình FT ${x.routeNguon ?? ''}`.trim() : `Giữ khoá ${ct}`);
-    dong.push(x.nguonFt ? 'MT chưa thi chuyển sang lớp mới' : 'Bài chưa làm chuyển sang lớp mới');
+    dong.push(x.nguonFt ? 'MT chưa làm bài chuyển sang lớp mới' : 'Bài chưa làm chuyển sang lớp mới');
   } else {
     dong.push('Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ');
   }

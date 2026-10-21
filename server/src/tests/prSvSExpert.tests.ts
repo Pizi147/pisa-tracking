@@ -219,6 +219,20 @@ export async function runPrSvSExpertTests(t: any) {
     try { sex.themSEx(P.mbManager, { studentId: sid, tuan }); } catch (e: any) { loi = `${e.status} ${e.message}`; }
     assert(/^400 .*lớp đang học/.test(loi), `400 + lý do: ${loi}`);
     assert(!get('SELECT 1 AS c FROM s_expert WHERE student_id = ?', sid), 'không thêm');
+    /* Rà #529 (3): HV Tạm dừng (ghi danh vẫn active) cũng không thêm được — cùng điều kiện `HV_DANG_HOC_SQL` với Lịch Test. */
+    const sid2 = em(LOP_THUONG);
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid2);   // Tạm dừng (`luatLoTrinh.ts`)
+    xoaNho();
+    assert(maLoi(() => sex.themSEx(P.mbManager, { studentId: sid2, tuan })) === 400, 'HV tạm dừng → 400');
+  }));
+
+  check('SSEX-13 (rà #529) · "lưu y nguyên" vẫn kiểm quyền theo HV: GV S chi nhánh khác / GVCN gửi đúng giá trị cũ → 403, không trả doi:false', () => thu(() => {
+    const sid = em();
+    const { id } = sex.themSEx(P.mbManager, { studentId: sid, tuan });
+    for (const [ten, p] of [['GV S CP', taoNguoi('teacher', ['CP'], ['speaking'])], ['GV W1', P.w1Teacher]] as const) {
+      assert(maLoi(() => sex.suaSEx(p, id, { tuan })) === 403, `${ten} lưu y nguyên → 403`);
+    }
+    assert(sex.suaSEx(P.sTeacher, id, { tuan }).doi === false, 'GV S cùng chi nhánh lưu y nguyên → doi:false');
   }));
 
   check('SSEX-12 (nợ 5) · chấm theo chi nhánh ghi danh ACTIVE: em đã rời lớp MB, đang học lớp CP → GV S MB 403, GV S CP chấm; QL nhập hộ như S MT', () => thu(() => {

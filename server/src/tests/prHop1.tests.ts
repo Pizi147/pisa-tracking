@@ -79,7 +79,7 @@ export async function runPrHop1Tests(t: YThucTestKit) {
   check('HOP1-c · dời vượt MT sau từ hộp: kiem trả dòng chặn (câu đỏ #282), lưu 400 cùng câu, không đổi gì', () => {
     const a = em();
     const tw = d.tuanLich(t.addDays(tuanNay, 56));
-    const cau = `MT3 thi ${tw}. Chọn tuần trước ${tw}, hoặc dời MT3 trước.`;
+    const cau = `MT3 làm bài ${tw}. Chọn tuần trước ${tw}, hoặc dời MT3 trước.`;
     const kyNang = [{ skill: 'speaking', periodId: tuan(9).id }];
     const k = keHoach.kiemDot(QL, { attemptId: a.m2, kyNang });
     assert(k.bai.some((b: any) => b.ghiChu === 'chan' && b.cau === cau), JSON.stringify(k.bai));

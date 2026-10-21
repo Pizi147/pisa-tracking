@@ -281,13 +281,13 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Lý do không cần theo dõi')}>
                 {CASE_DISMISS_REASONS.map((r) => <NutChon key={r} nho chon={lyDoKtd === r} onClick={() => setLyDoKtd(r)}>{CASE_DISMISS_REASON_LABEL[r]}</NutChon>)}
               </div>
-              <OKhac hien={reasonNeedsText(lyDoKtd)} value={chu} onChange={setChu} goiY={t('Ví dụ: Em ốm cả tuần thi')} loi={daBam ? loiChu : null} />
+              <OKhac hien={reasonNeedsText(lyDoKtd)} value={chu} onChange={setChu} goiY={t('Ví dụ: Em ốm cả tuần Test')} loi={daBam ? loiChu : null} />
               {daBam && !lyDoKtd && <p className="m-0 text-[12px] text-late">{loiChu}</p>}
             </div>
           ) : o.loai === 'tuan' ? (
             <div>
-              <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-tuan`}>{t('Tuần thi mới')}</label>
-              <ONgay id={`${uid}-tuan`} kieu="tuan" value={tuan || null} onChange={setTuan} toiThieu={homNay} ariaLabel={t('Tuần thi mới')} />
+              <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-tuan`}>{t('Tuần Test mới')}</label>
+              <ONgay id={`${uid}-tuan`} kieu="tuan" value={tuan || null} onChange={setTuan} toiThieu={homNay} ariaLabel={t('Tuần Test mới')} />
               <p className="m-0 mt-1 text-xs text-slate-400">{t('Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.')}</p>
             </div>
           ) : (

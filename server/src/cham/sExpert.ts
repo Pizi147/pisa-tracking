@@ -34,7 +34,8 @@ const coQuyenQl = (p: Principal) => p.grants.some((g) => g.permissions.has(PERMI
 
 /* Nhớ trong request: `dong()` gọi `chamDuoc` cho từng lượt của Kế hoạch Test / Lịch Test — không một câu SQL mỗi lượt (Turso). */
 const lopDangHoc = (studentId: number) => nho('sex-lop:' + studentId, () => db().prepare(
-  `SELECT c.id, c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active'`,
+  `SELECT c.id, c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = e.student_id
+    WHERE e.student_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
 ).all(studentId) as { id: number; branch_id: number | null }[]);
 
 /** Như ô S MT ở một lớp đang học của em (GV S phân công · QL / Admin nhập hộ) hoặc GV Speaking cùng chi nhánh ghi danh active (N7). */
@@ -122,7 +123,7 @@ export function themSEx(p: Principal, body: Record<string, unknown>) {
   if (!studentId) throw badRequest('Thiếu học viên.');
   if (!db().prepare('SELECT 1 AS c FROM students WHERE id = ?').get(studentId)) throw notFound('Không tìm thấy học viên.');
   require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, QL_MSG);
-  if (!lopDangHoc(studentId).length) throw badRequest('Học viên không có lớp đang học — xếp em vào lớp trước khi thêm lượt S Expert.');
+  if (!lopDangHoc(studentId).length) throw badRequest('Học viên không có lớp đang học (hoặc đang tạm dừng) — xếp em vào lớp / cho em học lại trước khi thêm lượt S Expert.');
   const t = docThan(body, null, today);
   const luc = nowIso();
   const chamBoi = t.diem !== null || t.nhanXet ? p.userId : null;
@@ -156,6 +157,8 @@ export function suaSEx(p: Principal, id: number, body: Record<string, unknown>) 
   if (!coQuyenQl(p) && !grantGvNhapDiem(p).length) throw forbidden(CHAM_MSG);
   return tx(() => {
     const { studentId, t: cu } = docLuot(id);
+    /* Kiểm quyền theo HV TRƯỚC mọi phản hồi khác ("lưu y nguyên", 400) — người ngoài phạm vi chỉ nhận 403. */
+    if (!laQl(p, studentId) && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
     const t = docThan(body, cu, today);
     const doiLich = t.tuan !== cu.tuan || t.ngay !== cu.ngay;
     const doiDiem = t.diem !== cu.diem || t.nhanXet !== cu.nhanXet;

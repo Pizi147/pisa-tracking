@@ -7,7 +7,7 @@ export const EN_UX1 = {
   '{n} lớp còn bài': (b) => `${so(b.n, 'class', 'classes')} with work left`,
   '{n} xong': (b) => `${b.n} done`,
   '{n} lớp xong': (b) => `${so(b.n, 'class', 'classes')} done`,
-  'bài thi {tuan}': (b) => `test ${b.tuan}`,
+  'bài Test {tuan}': (b) => `test ${b.tuan}`,
   'Chưa tải được · bấm để thử lại': 'Could not load · click to retry',
   /* Hướng dẫn · thuật ngữ */
   'Case tạm / SOS tạm': 'Provisional case / provisional SOS',

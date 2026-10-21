@@ -180,7 +180,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     ['Duyệt dời / Xử lý việc vắng', /Duyệt dời|Xử lý việc vắng/],
     ['Gửi duyệt', /Gửi duyệt|Gửi QL duyệt/],
     ['+ Công việc', /\+ Công việc(?! con)/],
-    ['Dời lịch / Lùi lịch', /Lùi lịch thi|Dời lịch một kỹ năng|Đổi tuần thi kỹ năng|Ghi vắng thi|Huỷ lượt (MT|Test)|Bỏ khỏi đợt/],
+    /* CHU-THI (Rulebook §21.4 T6, 21/10): "Bỏ khỏi đợt" là tên nút bỏ kỹ năng khỏi đợt — gỡ khỏi danh sách cấm của bảng 01/10. */
+    ['Dời lịch / Lùi lịch', /Lùi lịch thi|Dời lịch một kỹ năng|Đổi tuần thi kỹ năng|Ghi vắng thi|Huỷ lượt (MT|Test)/],
     ['Tiếp tục theo dõi / Hoàn thành case', /Tiếp tục theo dõi|Hoàn thành case/],
     /* PR-PA (§8, mockup pa-dong-bo §7): nút lưu panel Kết quả là "Lưu kết quả" — bỏ khỏi danh sách cấm (D-047 cũ). */
     ['Chọn tuần…', /Chọn tuần…|Tuần khác…|xoá điểm/],

@@ -23,10 +23,10 @@ const GV_LOP_MINH = 'GV: chỉ lớp mình dạy.';
 
 export const MO_TA_QUYEN: Record<PermissionKey, { nhom: NhomQuyenKey; moTa: string; phamVi?: string }> = {
   'plan.week': { nhom: 'lich_test', moTa: 'Chốt và đổi tuần của một lượt Mock Test, xếp lịch Fast Track.' },
-  'schedule.move': { nhom: 'lich_test', moTa: 'Dời lịch thi một kỹ năng của lớp thường.',
+  'schedule.move': { nhom: 'lich_test', moTa: 'Dời lịch Test một kỹ năng của lớp thường.',
     phamVi: 'GV: chỉ lớp thường, đúng môn mình dạy; GVCN mọi môn lớp mình chủ nhiệm.' },
   'attempt.cancel': { nhom: 'lich_test', moTa: 'Huỷ cả một lượt Mock Test.' },
-  'attempt.skip_skill': { nhom: 'lich_test', moTa: 'Đánh dấu một kỹ năng không thi trong lượt Mock Test đó.' },
+  'attempt.skip_skill': { nhom: 'lich_test', moTa: 'Bỏ một kỹ năng khỏi lượt Mock Test đó.' },
   'deadline.override': { nhom: 'lich_test', moTa: 'Đặt hạn nhập điểm khác hạn mặc định.' },
   'attempt.view': { nhom: 'diem', moTa: 'Xem lịch và kết quả Mock Test.', phamVi: GV_LOP_MINH },
   'score.edit': { nhom: 'diem', moTa: 'Nhập điểm kỹ năng mình được phân công.', phamVi: 'GV: chỉ lớp mình dạy, môn mình dạy.' },
@@ -93,7 +93,7 @@ export const KHONG_CAP_RIENG: readonly PermissionKey[] = [PERMISSIONS.ADMIN_CONF
 export const CAM_CAP_VAI: Record<string, { quyen: PermissionKey; lyDo: string }[]> = {
   teacher: [{
     quyen: PERMISSIONS.PLAN_WEEK,
-    lyDo: 'SCH-01: giáo viên chỉ dời lịch lớp thường (quyền Dời lịch thi). Chốt tuần MT kèm xếp lịch Fast Track là việc của Quản lý.',
+    lyDo: 'SCH-01: giáo viên chỉ dời lịch lớp thường (quyền Dời lịch Test). Chốt tuần MT kèm xếp lịch Fast Track là việc của Quản lý.',
   }],
 };
 

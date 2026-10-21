@@ -85,7 +85,7 @@ W = (W1 + 2×W2)/3 làm tròn 0,5 · Overall = TB 4 kỹ năng làm tròn 0,5 (x
 | Dương Minh Quân | UB FT 401 | thi thật 15/08: Overall 7.0 (L 7.5 R 7.5 W 6.5 S 6.5) ≥ Target 7.0 → ✓ Đạt Target (W, S dưới không tính tạch — C10) |
 | Lý Thanh Trúc | UB FT 401 | thi thật 15/08: Overall 6.0 < Target 6.5 → ✗ Chưa đạt; đã chốt bước tiếp |
 | **Đinh Ngọc Quyên** | CP FT 110 | **T09** [V5]: thi thật 12/09, TVV Hương nhập điểm 14/09 (Overall 7.0), **chưa chọn bước tiếp** → "Đã có kết quả · Chưa chốt bước tiếp" |
-| Đặng Ngọc Lam | HD FT 302 | **T18** [V5]: cô Yến ghi bài trên lớp Reading 7/10 (thang /10) — chỉ ở Hành trình, không vào MT / KPI |
+| Đặng Ngọc Lam | HD FT 302 | **T18** [V5]: cô Yến ghi tiến độ trên lớp Reading 7/10 (thang /10) — chỉ ở Hành trình, không vào MT / KPI |
 | Trương Gia Huy | BC FT 205 | MT2 07/09 chưa có điểm → bài quá hạn (đỏ ở Lịch tuần, nhóm Quá hạn ở Chấm Test) |
 
 ## 7. Công việc & đếm (cùng số ở mọi màn)
@@ -145,7 +145,7 @@ Bài Speaking chấm chéo chưa nhận không vào "Điểm đúng hạn" của
 | T15 | Cô Hà và QL Vy cùng sửa điểm R MT2 Lê Quang Huy; mất mạng khi lưu |
 | T16 | TVV đang gõ ghi chú Ngô Hải Yến, bấm sang Lý Tuấn Bình |
 | T17 | Panel 15/20 phân trang |
-| T18 | Đặng Ngọc Lam (bài trên lớp /10) |
+| T18 | Đặng Ngọc Lam (tiến độ trên lớp /10) |
 | T19 | Đạt Target thi thật MB = Chưa có dữ liệu |
 | T20 | Toàn hệ thống 23/38 |
 | T21 | Panel Báo PH ở 375 khi mở bàn phím |

@@ -7,7 +7,7 @@
 
 | Yêu cầu | Khung (ảnh `anh/`) | Thành phần |
 |---|---|---|
-| Brief 10 đầu trang gọn | `lop-ft-1440-sang`, `-toi` | Một dòng: mã lớp · chương trình · GVCN · số HV · tuần; một dòng số: Đạt MT2 75 % (15/20, ô số → panel báo cáo) · SOS 5 HV · Thi tuần này 1 · Việc của tôi ở lớp 6; hai nút + Case, ⋯ |
+| Brief 10 đầu trang gọn | `lop-ft-1440-sang`, `-toi` | Một dòng: mã lớp · chương trình · GVCN · số HV · tuần; một dòng số: Đạt MT2 75 % (15/20, ô số → panel báo cáo) · SOS 5 HV · Thi tháng này 1 · Việc của tôi ở lớp 6; hai nút + Case, ⋯ |
 | Tab có mục đích, ít tầng | `lop-ft-*`, `lop-fou12-1440` | Học viên · Ý thức & Phối hợp · Phân tích lớp (+ Đánh giá đầu ra khi lớp có việc này); bảng chính hiện ngay, không lớp "cách xem" thứ hai |
 | C18 / T13 tách W1 / W2 | `lop-ft-1440-sang`, `lop-ft-375` | Cột W1, W2 riêng; cột W nền xám nhạt chỉ để tính Overall (ⓘ công thức); thẻ 375 vẫn W1 · W2 |
 | C21 cột Ngày thi đúng ngày / chưa chốt | `lop-ft-1440-sang` | Badge nhóm lịch thi: "Ngày thi 17/09" nền đặc + "còn 3 ngày" · "Dự kiến FEB 2027" viền · "Chưa có lịch" viền xám — dự kiến không trông như đã chốt |

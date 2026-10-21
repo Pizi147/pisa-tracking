@@ -108,7 +108,7 @@ export function themBaiTrenLop(p: Principal, studentId: number, body: Record<str
 
 function docBai(id: number): Dong {
   const r = db().prepare('SELECT id, student_id, class_id, skill, ten_bai, diem, thang, tuan, nhan_xet FROM bai_tren_lop WHERE id = ?').get(id) as Dong | undefined;
-  if (!r) throw notFound('Không tìm thấy bài trên lớp.');
+  if (!r) throw notFound('Không tìm thấy tiến độ trên lớp.');
   return r;
 }
 

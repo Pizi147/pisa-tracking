@@ -453,7 +453,7 @@ function knHop(d: Detail): KnO {
     const coDiem = o.some((c) => c.band !== null || c.rawScore !== null);
     kn[r.skill as KyNangKH] = {
       ...oKyNangTuLich(r, khongDuThiTuO(d.cells, r.skill)),
-      khoa: r.sitStatus === 'cancelled' ? 'đã huỷ phần thi' : coDiem ? 'đã có điểm' : r.sitStatus === 'sat' ? 'đã thi' : null,
+      khoa: r.sitStatus === 'cancelled' ? 'đã huỷ' : coDiem ? 'đã có điểm' : r.sitStatus === 'sat' ? 'đã làm bài' : null,
       ...(bands.length ? { diem: bands.map((b) => b.toFixed(1)).join(' / ') } : {}),
     };
   }
@@ -632,7 +632,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
     /* OV-11a: MỘT dòng trạng thái — Không dự thi (CA3-5) thay "Chờ nhập điểm"; huỷ vì vắng ghi số lần thật, bỏ dòng "Đã dời do vắng" (CA3-3). */
     const khongDuThi = khongDuThiO(c);
     const huy = prog === 'cancelled';
-    const nhanTT = khongDuThi ? (c.noShow?.state === 'da-huy' ? t('Đã huỷ · vắng MT cũ') : t('Không dự thi'))
+    const nhanTT = khongDuThi ? (c.noShow?.state === 'da-huy' ? t('Đã huỷ · vắng MT cũ') : t('Vắng'))
       : huy && r.huyVang ? t('{progressLabel} · vắng {x} lần', { progressLabel: progressLabel('cancelled'), x: r.absenceMoveCount + 1 }) : progressLabel(prog);
 
     return (
@@ -677,7 +677,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
           {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
           {ownsSchedule && r.pendingMove && (
             <div className="text-xs text-amber-200">
-              {t('Đề nghị dời sang')}{' '}{r.pendingMove.toWeek ?? t('tuần kế tiếp')}{' '}{t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })}{' '}{fmtDate(r.pendingMove.decideBy)}{r.huyVang ? '' : t(', quá hạn thì huỷ phần thi')}.
+              {t('Đề nghị dời sang')}{' '}{r.pendingMove.toWeek ?? t('tuần kế tiếp')}{' '}{t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })}{' '}{fmtDate(r.pendingMove.decideBy)}{r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.
             </div>
           )}
           {!r.required && r.scopeReason && <div className="text-xs text-slate-500">{r.scopeReason}</div>}
@@ -713,12 +713,12 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
   return (
     <Card title={t('Lịch Test')}
       action={<div className="flex items-center gap-2">
-        {d.splitWeeks && <Tag>{t('Đợt này thi ở nhiều tuần')}</Tag>}
+        {d.splitWeeks && <Tag>{t('Đợt này làm bài ở nhiều tuần')}</Tag>}
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onOpenHistory}>{t('Lịch sử')}</button>
       </div>}>
       {!d.completionWeek.valid && (
         <p className="text-xs text-amber-200 mt-0 mb-3">
-          {t('Chưa có kế hoạch hợp lệ cho tuần dự kiến hoàn tất:')}{' '}{d.completionWeek.blockingLabels.join(', ')}{' '}{t('chưa có tuần thi hoặc đã bị huỷ phần thi. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.')}
+          {t('Chưa có kế hoạch hợp lệ cho tuần dự kiến hoàn tất:')}{' '}{d.completionWeek.blockingLabels.join(', ')}{' '}{t('chưa có tuần Test hoặc đã bị huỷ. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.')}
         </p>
       )}
       {d.cells.length === 0 ? (
@@ -818,7 +818,7 @@ function DeadlineModal({ onClose, detail, onDone }: {
         ),
       }}>
       <div className="space-y-3 pt-3">
-        <label className="block" title={t('Hạn mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần thi môn đó. Hạn đặt ở đây áp cho CẢ ĐỢT; chỉ một môn thì dùng "{x}" ở dòng môn đó. Hết ngày hạn mới tính quá hạn.', { x: CHU_THAO_TAC['doi-han'] })}>
+        <label className="block" title={t('Hạn mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần Test môn đó. Hạn đặt ở đây áp cho CẢ ĐỢT; chỉ một môn thì dùng "{x}" ở dòng môn đó. Hết ngày hạn mới tính quá hạn.', { x: CHU_THAO_TAC['doi-han'] })}>
           <span className="label">{t('Hạn chấm mới')}</span>
           <ONgay kieu="ngay" value={date} onChange={setDate} />
         </label>
@@ -905,7 +905,7 @@ function AbsenceMoveModal({ row, detail, onClose, onDone }: {
 
           {alsoAbsent.length > 0 && (
             <div>
-              <span className="label">{t('Cùng buổi thi này còn môn nào vắng?')}</span>
+              <span className="label">{t('Cùng buổi Test này còn môn nào vắng?')}</span>
               <div className="space-y-1 mt-1">
                 {alsoAbsent.map((r) => (
                   <label key={r.skill} className="flex items-center gap-2 text-sm text-slate-300">
@@ -918,7 +918,7 @@ function AbsenceMoveModal({ row, detail, onClose, onDone }: {
                 ))}
               </div>
               <p className="text-xs text-slate-500 mt-1 mb-0">
-                {t('Tick các môn thi CÙNG buổi. Mỗi môn vẫn được xét riêng: môn đã dời một lần thì phải xin Quản lý duyệt, môn chưa dời lần nào thì đổi được ngay.')}
+                {t('Tick các môn làm bài CÙNG buổi. Mỗi môn vẫn được xét riêng: môn đã dời một lần thì phải xin Quản lý duyệt, môn chưa dời lần nào thì đổi được ngay.')}
               </p>
             </div>
           )}
@@ -935,7 +935,7 @@ function AbsenceMoveModal({ row, detail, onClose, onDone }: {
               </>
             ) : (
               <>
-                {t('Môn này đã dời do vắng rồi, nên lần này là')}{' '}<strong>{t('đề nghị cần Quản lý duyệt')}</strong>{t('. Lịch giữ nguyên cho tới khi có quyết định. Quản lý phải trả lời TRƯỚC khi tuần mới bắt đầu; từ chối hoặc hết hạn thì phần thi bị huỷ và chỉ Quản lý mới khôi phục được.')}
+                {t('Môn này đã dời do vắng rồi, nên lần này là')}{' '}<strong>{t('đề nghị cần Quản lý duyệt')}</strong>{t('. Lịch giữ nguyên cho tới khi có quyết định. Quản lý phải trả lời TRƯỚC khi tuần mới bắt đầu; từ chối hoặc hết hạn thì kỹ năng bị huỷ và chỉ Quản lý mới khôi phục được.')}
               </>
             )}
           </SectionNote>
