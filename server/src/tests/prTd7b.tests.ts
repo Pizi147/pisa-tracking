@@ -44,11 +44,13 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     dung(ten, id);
     assert(co(id) !== truoc, `${ten}: thao tác không đổi cờ (${truoc}) — fixture sai`);
   };
-  const S4 = [6, 6.5, 6, 7];
+  /* V5 SV-SO1: ô XONG = band + đủ nhận xét bắt buộc — điểm trên mọi kỳ vọng (không cần nhóm nguyên nhân) + nhận xét ≥ 10 ký tự. */
+  const S4 = [9, 9, 9, 9];
+  const NX = 'Nhận xét đủ mười ký tự.';
   const CHUA = [null, null, null, null];
   const nhapDu = (aid: number) => {
-    att.saveScore(QL, aid, 'listening', { rawScore: 30 }, TODAY); att.saveScore(QL, aid, 'reading', { rawScore: 30 }, TODAY);
-    for (const k of ['writing1', 'writing2', 'speaking']) att.saveScore(QL, aid, k, { criteria: S4 }, TODAY);
+    att.saveScore(QL, aid, 'listening', { rawScore: 39, nhanXet: NX }, TODAY); att.saveScore(QL, aid, 'reading', { rawScore: 39, nhanXet: NX }, TODAY);
+    for (const k of ['writing1', 'writing2', 'speaking']) att.saveScore(QL, aid, k, { criteria: S4, nhanXet: NX }, TODAY);
   };
   /** Em mới ở lớp, MT1 tuần này — dựng qua `commitIntake` + `createAttempt` (như HSM). */
   const emMoi = (lop: string, ten: string) => {
@@ -116,11 +118,11 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     const aid = emMoi('MB FT 101', 'Diem');
     assert(co(aid) === tuanNay, `lượt mới tuần này: cờ ${co(aid)} ≠ ${tuanNay}`);
     dung('tạo lượt', aid);
-    att.saveScore(QL, aid, 'listening', { rawScore: 30 }, TODAY); dung('nhập L', aid);
-    att.saveScore(QL, aid, 'reading', { rawScore: 30 }, TODAY); dung('nhập R', aid);
-    doiCo('nhập đủ ô cuối', aid, () => { for (const k of ['writing1', 'writing2', 'speaking']) att.saveScore(QL, aid, k, { criteria: S4 }, TODAY); });
+    att.saveScore(QL, aid, 'listening', { rawScore: 39, nhanXet: NX }, TODAY); dung('nhập L', aid);
+    att.saveScore(QL, aid, 'reading', { rawScore: 39, nhanXet: NX }, TODAY); dung('nhập R', aid);
+    doiCo('nhập đủ ô cuối', aid, () => { for (const k of ['writing1', 'writing2', 'speaking']) att.saveScore(QL, aid, k, { criteria: S4, nhanXet: NX }, TODAY); });
     assert(co(aid) === null, 'đủ điểm: cờ phải NULL');
-    att.saveScore(QL, aid, 'writing1', { criteria: [7, 7, 7, 7] }, TODAY); dung('sửa điểm', aid);
+    att.saveScore(QL, aid, 'writing1', { criteria: [8, 8, 8, 8], nhanXet: NX }, TODAY); dung('sửa điểm', aid);
     doiCo('xoá điểm một ô', aid, () => att.saveScore(QL, aid, 'speaking', { rawScore: null, criteria: CHUA, lyDo: 'Chấm nhầm' }, TODAY));
     assert(co(aid) === tuanNay, 'xoá ô: cờ về tuần thi');
   }));
@@ -204,8 +206,8 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     }
     /* Vắng chờ Quản lý duyệt (không tự dời được): ô S thành `absent`, cờ phải hết ô đó dù không ai đổi tuần. */
     const a = emMoi('MB FT 101', 'VangCho');
-    for (const k of ['listening', 'reading']) att.saveScore(QL, a, k, { rawScore: 30 }, TODAY);
-    for (const k of ['writing1', 'writing2']) att.saveScore(QL, a, k, { criteria: S4 }, TODAY);
+    for (const k of ['listening', 'reading']) att.saveScore(QL, a, k, { rawScore: 39, nhanXet: NX }, TODAY);
+    for (const k of ['writing1', 'writing2']) att.saveScore(QL, a, k, { criteria: S4, nhanXet: NX }, TODAY);
     const st = get('SELECT student_id s, cycle_id c FROM assessment_attempts WHERE id = ?', a);
     luotThu(conn, att.createAttempt, P.admin, { studentId: st.s, cycleId: st.c, classId: classId('MB FT 101'), no: 2, periodId: week.ensurePeriod(addDays(tuanNay, 7)).id });
     doiCo('báo vắng S chờ Quản lý duyệt (tuần kế bị MT2 chặn)', a, () => absence.baoVang(P.coreTeacher, a, 'speaking', 'Em ốm', TODAY));
@@ -238,8 +240,8 @@ export async function runPrTd7bTests(t: YThucTestKit) {
 
   check('TD7b-12 · vắng lần 2 huỷ phần thi, khôi phục phần thi, "Không mock lại"; Mini đổi mốc lớp (setClassProgress); chuyển lớp một em: cờ theo kịp', () => thu(() => {
     const aid = emMoi('MB FT 101', 'Vang2');
-    for (const k of ['listening', 'reading']) att.saveScore(QL, aid, k, { rawScore: 30 }, TODAY);
-    for (const k of ['writing1', 'writing2']) att.saveScore(QL, aid, k, { criteria: S4 }, TODAY);
+    for (const k of ['listening', 'reading']) att.saveScore(QL, aid, k, { rawScore: 39, nhanXet: NX }, TODAY);
+    for (const k of ['writing1', 'writing2']) att.saveScore(QL, aid, k, { criteria: S4, nhanXet: NX }, TODAY);
     const tuanSau = addDays(tuanNay, 7);
     doiCo('vắng lần 1 ("-") dời S sang tuần sau', aid, () => att.saveScore(QL, aid, 'speaking', { noShow: true }, TODAY));
     assert(co(aid) === tuanSau, `lần 1: cờ ${co(aid)}`);

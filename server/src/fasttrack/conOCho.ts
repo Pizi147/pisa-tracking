@@ -88,6 +88,6 @@ export const CON_O_SQL_TRUOC_TD7B = `a.status != 'cancelled' AND (CASE WHEN a.ki
   ELSE EXISTS (SELECT 1 FROM (SELECT 'listening' AS o, 'listening' AS kn UNION ALL SELECT 'reading' AS o, 'reading' AS kn
       UNION ALL SELECT 'writing1' AS o, 'writing' AS kn UNION ALL SELECT 'writing2' AS o, 'writing' AS kn
       UNION ALL SELECT 'speaking' AS o, 'speaking' AS kn) e
-    WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = e.o AND sc.band IS NOT NULL)
+    WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = e.o AND ${O_FT_XONG_SQL('sc', 'a')})   -- V5 SV-SO1: cùng luật "xong"
       AND ${oChoDiemCu('e.kn')})
   END)`;

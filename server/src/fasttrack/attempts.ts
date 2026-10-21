@@ -387,9 +387,20 @@ export function skillCells(
   const batBuocNx = batBuocNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
   const kyVong = kyVongCuaLuot(attempt);
 
-  /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã có band (W cần cả W1 và W2). */
-  const scoredAssessed = (assessed: AssessedSkill): boolean =>
-    entrySkillsOf(assessed).every((k) => (rows.find((r) => r.skill === k)?.band ?? null) !== null);
+  /*
+   * V5 SV-SO1 (chủ SP 22/10, brief 8.1): ô XONG = có band VÀ không thiếu nhận xét bắt buộc (`thieuNhanXetMt` — MT thường, không MT cũ / MT0), áp mọi điểm.
+   * Ô có band mà thiếu nhận xét vẫn là bài của người chấm, cùng hạn / tuần như bài chưa chấm.
+   */
+  const thieuNxCua = (k: string) => {
+    const r = rows.find((x) => x.skill === k);
+    return thieuNhanXetMt({
+      batBuoc: batBuocNx, coDiem: (r?.band ?? null) !== null || (r?.raw_score ?? null) !== null, band: r?.band ?? null, kyVong, nhanXet: r?.comment,
+      nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan),
+    });
+  };
+  const xongO = (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null && thieuNxCua(k) === null;
+  /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã xong (W cần cả W1 và W2). */
+  const scoredAssessed = (assessed: AssessedSkill): boolean => entrySkillsOf(assessed).every(xongO);
 
   return ENTRY_SKILLS.map((skill) => {
     const assessed = assessedSkillOf(skill);
@@ -419,15 +430,9 @@ export function skillCells(
      * Lúc đó môn Writing chưa xong, nhưng ô W1 thì đã xong — nói ngược lại là giục giáo
      * viên đã nộp bài đi nộp lại.
      */
-    /*
-     * V5 SV-SO1 (chủ SP 22/10, brief 8.1): ô có band mà THIẾU NHẬN XÉT BẮT BUỘC (`thieuNhanXetMt` — MT thường, không MT cũ / MT0) CHƯA xong — vẫn là bài
-     * của người chấm, cùng hạn bài chưa chấm, áp mọi điểm (không mốc ngày). `cellScored` = "xong"; band vẫn hiện (`band`).
-     */
+    /* V5 SV-SO1: `cellScored` = ô XONG (`xongO`); band vẫn hiện (`band`), "thiếu …" ở `thieuNhanXet`. */
     const coBand = (row?.band ?? null) !== null;
-    const thieuNx = thieuNhanXetMt({
-      batBuoc: batBuocNx, coDiem: coBand || (row?.raw_score ?? null) !== null, band: row?.band ?? null, kyVong, nhanXet: row?.comment,
-      nhom: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
-    });
+    const thieuNx = thieuNxCua(skill);
     const cellScored = coBand && thieuNx === null;
     const progress: SkillProgress =
       !required ? 'skipped'
@@ -509,7 +514,8 @@ export function skillCells(
       canEdit,
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
       viec: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
-        && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
+        /* V5 SV-SO1: ô chưa xong (thiếu nhận xét) ở lượt đủ điểm vẫn là việc của người được phân công, không của người sửa sau hoàn tất. */
+        && (hoanTat.hoanTat && cellScored ? suaSauHoanTat : viecList.includes(skill)),
       /* LUAT-34: "Đủ điểm" — chỉ là trạng thái của đợt (tên trường giữ từ R11), không còn khoá ô. */
       khoa: hoanTat.hoanTat,
       /* LUAT-34 (T20b): ô có điểm đã huỷ còn cất → "Khôi phục điểm". */

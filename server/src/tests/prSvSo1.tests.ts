@@ -113,7 +113,7 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
     const tc = mw.myWork(P.mbManager, { nguoi: 'tat-ca' });
     assert(tc.items.filter((i: any) => !i.mine && i.ownerId === null).every((i: any) => i.lamThay === false), '"Tất cả": việc chưa phân công → lamThay false');
     /* Case: SOS_EDIT theo ngữ cảnh Case (như cases.ts) — QL chi nhánh được; GV khác kỹ năng KHÔNG. */
-    const ca = tc.items.filter((i: any) => i.caseId && d.nhomViecCua(i.group) === 'case-hoc-thuat' && i.ownerId !== null);
+    const ca = tc.items.filter((i: any) => i.caseId && d.nhomViecCua(i.group) === 'case-hoc-thuat' && i.ownerId !== null && !i.mine);
     assert(ca.length > 0 && ca.every((i: any) => i.lamThay === true), `QL làm thay Case: ${ca.filter((i: any) => !i.lamThay).map((i: any) => i.key)}`);
     const khac = ca.filter((i: any) => i.ownerId !== P.w1Teacher.userId);
     const ltGv = mw.lamThayCua(P.w1Teacher, khac);

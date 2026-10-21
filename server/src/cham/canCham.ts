@@ -16,7 +16,7 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import {
-  ASSESSED_SKILLS, khoaBai, nhanBai, CHAM_CHEO, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
+  ASSESSED_SKILLS, O_FT_XONG_SQL, khoaBai, nhanBai, CHAM_CHEO, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
   tenMonNgan, type Khung, nhanLopLichTest,
   soSanhLop, trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
@@ -505,6 +505,8 @@ export type LichTest = {
 type OiemLuu = {
   skill: string; band: number | null; raw_score: number | null;
   no_show_period_id: number | null; no_show_settled_at: string | null; no_show_late: number | null; no_show_cu?: number | null;
+  /** V5 SV-SO1: band + đủ nhận xét bắt buộc (`O_FT_XONG_SQL` — cùng luật `skillCells`). */
+  band_xong?: number;
 };
 
 /**
@@ -514,7 +516,8 @@ type OiemLuu = {
 function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: string | null; sitStatus: string; today: string }) {
   const row = diem.find((x) => x.skill === nhap);
   if (!row) return false;
-  if (row.band !== null || row.raw_score !== null) return true;
+  if (row.band !== null) return !!row.band_xong;   // V5 SV-SO1: có band mà thiếu nhận xét bắt buộc → chưa xong
+  if (row.raw_score !== null) return true;
   return dauTruCuaO({
     marked: !!row.no_show_period_id, hasScore: false, sameWeek: row.no_show_period_id === v.periodId, weekEnd: v.weekEnd, today: v.today,
     settled: !!row.no_show_settled_at, cu: !!row.no_show_cu, sitStatus: v.sitStatus,
@@ -579,8 +582,9 @@ function hangLopTuan(
   const diemCua = new Map<number, OiemLuu[]>();
   theoLo([...new Set(rows.map((r) => r.id as number))], (lo, ph) => {
     for (const x of conn.prepare(
-      `SELECT attempt_id, skill, band, raw_score, no_show_period_id, no_show_settled_at, no_show_late, no_show_cu
-         FROM assessment_scores WHERE attempt_id IN (${ph})`,
+      `SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id, sc.no_show_settled_at, sc.no_show_late, sc.no_show_cu,
+              CASE WHEN ${O_FT_XONG_SQL('sc', 'a')} THEN 1 ELSE 0 END AS band_xong
+         FROM assessment_scores sc JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.attempt_id IN (${ph})`,
     ).all(...lo) as any[]) {
       (diemCua.get(x.attempt_id) ?? diemCua.set(x.attempt_id, []).get(x.attempt_id)!).push(x);
     }
