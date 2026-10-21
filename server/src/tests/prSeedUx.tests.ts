@@ -5,8 +5,7 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
   const { bangTutor } = await import('../tutors/trang.ts');
   const { loTrinhChoKetQuaThi } = await import('../loTrinh/thiThat.ts');
   const { DEMO_DATE } = await import('../seed/data.ts');
-  const debt = await import('../worklist/scoreDebt.ts');
-  const require_ = (_: string) => debt;
+  const { scoreDebtCells } = await import('../worklist/scoreDebt.ts');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const uid = (ten: string) => one('SELECT id FROM users WHERE full_name = ?', ten)?.id as number;
   console.log('\nSEED-UX · dữ liệu demo cho mockup V5');
@@ -64,7 +63,6 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
     assert(l?.ket_qua === 'chua_lien_he' && l.ghi_luc === '2026-09-14T08:30:00.000Z' && l.han === '2026-09-18', JSON.stringify(l));
   });
   check('SU-10 K2 (R2): nợ chấm "Của tôi" của cô Trang không có ô Speaking Mock (chấm chéo, không tính nợ); BC FT 205 S MT2 vẫn là ô chờ chấm chéo', () => {
-    const { scoreDebtCells } = require_('../worklist/scoreDebt.ts');
     const trang = uid('Phạm Thu Trang');
     const o = scoreDebtCells(loadPrincipal(trang), DEMO_DATE, null) as any[];
     assert(!o.some((c) => c.userId === trang && c.skill === 'speaking' && c.chamCheo), 'S Mock tính nợ của Trang');
