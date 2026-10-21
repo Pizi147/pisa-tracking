@@ -25,7 +25,7 @@ export function TheKyNangDs({ rows, onMoCase }: { rows: SkillBoardRow[]; onMoCas
         ? <TheGon key={row.category} row={row} onMoCase={onMoCase} />
         : <TheKyNang key={row.category} row={row} onMoCase={onMoCase} />))}
       {/* PR-UXF-b (R5-5): Case của lớp trước có tên môn khác — nhóm riêng cuối bảng, không nằm ở thẻ Writing / Speaking của chương trình mới. */}
-      {rows.some((r) => r.tuLopTruoc) && <h3 className="m-0 px-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">{t('Case bàn giao')}</h3>}
+      {rows.some((r) => r.tuLopTruoc) && <h3 className="m-0 px-1 pt-2 text-[12px] font-semibold  text-slate-400">{t('Case bàn giao')}</h3>}
       {rows.filter((r) => r.tuLopTruoc).map((row) => <TheKyNang key={`${row.category}@truoc`} row={row} onMoCase={onMoCase} />)}
     </div>
   );
@@ -96,7 +96,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
     : v.loaiHan === 'cap-nhat-pa' ? { viec: 'ghi-ket-qua', paId: v.paId } : undefined;
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
-      <div className="flex min-w-0 items-center gap-1.5 text-[12.5px] font-bold text-slate-100">
+      <div className="flex min-w-0 items-center gap-1.5 text-[13px] font-bold text-slate-100">
         <NhanLoai loai="Case" /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words"><TenCase c={c} /></span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] text-slate-400">
@@ -140,7 +140,7 @@ function KhoiPa({ p, c, onMoCase }: { p: Plan; c: CaseCard; onMoCase: (caseId: n
   return (
     <div className="relative ml-3 mt-2 rounded-lg bg-[color:var(--surface-2)] px-2.5 py-2 pl-3">
       <span aria-hidden className="absolute -left-3 top-0 h-4 w-3 rounded-bl-md border-b-[1.5px] border-l-[1.5px]" style={{ borderColor: 'var(--line-strong)' }} />
-      <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} className="flex w-full min-w-0 items-center gap-1.5 border-0 bg-transparent p-0 text-left text-[12.5px] font-semibold text-slate-100">
+      <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} className="flex w-full min-w-0 items-center gap-1.5 border-0 bg-transparent p-0 text-left text-[13px] font-semibold text-slate-100">
         <NhanLoai loai="PA" /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{p.name}</span>
       </button>
       <div className="mt-0.5 truncate text-[12px] text-slate-400 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{[chuNguoi(p), khoang, chuBuoi(p)].filter(Boolean).join(' · ')}</div>

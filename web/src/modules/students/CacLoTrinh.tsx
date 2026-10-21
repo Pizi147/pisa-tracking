@@ -19,7 +19,7 @@ export type DongCacLoTrinh = {
 export const toneHuong = (h: string): ToneNhan => (h === 'Học lại' ? 'soon' : h === 'Kết thúc' || h === 'Chuyển lớp' ? 'muted' : 'doing');
 
 const toneXong = (kl: string | null): ToneNhan => (kl === 'not_reached' ? 'bad' : kl === 'reached' ? 'ok' : 'muted');
-const NUT_CHU = 'link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[12.5px] font-semibold sm:min-h-0';
+const NUT_CHU = 'link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0';
 
 function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cycleId: number) => void; onDoi: () => void }) {
   const { homNay } = useNgayNghiepVu();
@@ -38,14 +38,14 @@ function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cyc
         {bt.hen ? <><Nhan tone="muted">{t('Hẹn bắt đầu {tuan}', { tuan: tuanLich(bt.hen, homNay) })}</Nhan>{bt.coTheChon && <button type="button" className={NUT_CHU} onClick={() => void huyHen()}>{t('Huỷ hẹn')}</button>}</>
           : bt.chon ? (!d.dangHoc && d.huong && <Nhan tone={toneHuong(d.huong)}>{dich(d.huong)}</Nhan>)
             : bt.coTheChon && onBuocTiep ? <button type="button" className={NUT_CHU} onClick={() => onBuocTiep(d.id)}>{t('Chọn bước tiếp ›')}</button>
-              : <span className="text-[11.5px] text-slate-500">{t('Chờ QL / TVV chọn bước tiếp')}</span>}
+              : <span className="text-[12px] text-slate-500">{t('Chờ QL / TVV chọn bước tiếp')}</span>}
       </span>
     );
   }
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
       {k ? <Nhan tone={k.tone}>{dich(k.chinh)}</Nhan> : <span className="text-slate-500">—</span>}
-      {k?.phu && <span className="text-[11.5px] text-slate-500">{dich(k.phu)}</span>}
+      {k?.phu && <span className="text-[12px] text-slate-500">{dich(k.phu)}</span>}
       {!d.dangHoc && d.huong && <Nhan tone={toneHuong(d.huong)}>{dich(d.huong)}</Nhan>}
     </span>
   );
@@ -78,7 +78,7 @@ export function CacLoTrinh({ studentId, onTongKet, onHocThuat, onBuocTiep }: {
           <div className="hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[640px] text-[13px]">
               <thead>
-                <tr className="text-left text-[11.5px] text-slate-400">
+                <tr className="text-left text-[12px] text-slate-400">
                   <th className="px-4 py-2 font-semibold">{t('Lộ trình')}</th><th className="px-3 py-2 font-semibold">{t('Lớp')}</th>
                   <th className="px-3 py-2 font-semibold">{t('Thời gian')}</th><th className="px-3 py-2 font-semibold">{t('Kết quả')}</th><th className="w-28 px-4 py-2" />
                 </tr>

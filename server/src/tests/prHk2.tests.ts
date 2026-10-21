@@ -27,12 +27,12 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   const th: any = await import('../phanTich/tongHop.ts');
   console.log('\nPR-HK2 · Task 1 · hai họ chip, "+n", ⋯, nút lọc');
 
-  check('C1 · Nhan.tsx export CHIP_TRON và CHIP_VUONG: cùng text-[11.5px], leading-[18px], border', () => {
+  check('C1 · Nhan.tsx export CHIP_TRON và CHIP_VUONG: cùng text-[13px], leading-[22px], border (NEN-TYPO-MAU: chip 13 / 600 cao 24)', () => {
     const s = doc('web/src/ui/Nhan.tsx');
     for (const ten of ['CHIP_TRON', 'CHIP_VUONG']) {
       const m = new RegExp(`export const ${ten} = '([^']*)'`).exec(s);
       assert(m, `${ten} chưa export`);
-      for (const lop of ['text-[11.5px]', 'leading-[18px]', 'border']) assert(m![1].split(' ').includes(lop), `${ten} thiếu ${lop}`);
+      for (const lop of ['text-[13px]', 'leading-[22px]', 'border']) assert(m![1].split(' ').includes(lop), `${ten} thiếu ${lop}`);
     }
   });
 
@@ -243,7 +243,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       assert(/min-h-\[44px\]/.test(n) && /min-w-\[44px\]/.test(n), `${moc}: nút < 44 px`);
     }
     assert(/width="20" height="20"/.test(nut('ref={nutTim}')) && /sm:hidden" aria-hidden width="20" height="20"/.test(nut('ref={nutThongBao}')), 'biểu tượng Tìm / chuông phải 20 px');
-    assert(/max-sm:absolute/.test(nut('{unread > 0 &&')), 'số chưa đọc phải max-sm:absolute đè góc chuông');
+    assert(/max-sm:absolute/.test(nut('{chuong.soNut > 0 &&')), 'số trên chuông phải max-sm:absolute đè góc chuông');   // SL1: số = việc Cần làm còn mở
   });
 
   /* OV-15a (C11): mọi kích thước — Giao diện nằm trong menu Tài khoản (phép kiểm thanh trên ở prOv15a). */

@@ -80,7 +80,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <colgroup><col className="w-[96px]" /><col /><col className="w-[240px]" /><col className="w-[150px]" /><col className="w-[160px]" /></colgroup>
             <thead>
-              <tr className="text-left text-[11.5px] font-semibold text-slate-400">
+              <tr className="text-left text-[12px] font-semibold text-slate-400">
                 <th className="px-4 py-2 font-semibold">Trạng thái</th><th className="px-3 py-2 font-semibold">Việc</th>
                 <th className="px-3 py-2 font-semibold">Người phụ trách</th><th className="px-3 py-2 font-semibold">Hạn</th>
                 <th className="px-4 py-2"><span className="sr-only">Mở việc</span></th>

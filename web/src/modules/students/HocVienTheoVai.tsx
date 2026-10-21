@@ -298,7 +298,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
           )}
         </div>
         {data && goc !== 'lich-thi' && (
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-slate-400" aria-live="polite">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-slate-400" aria-live="polite">
             <span>{t('Đang xem')}: <b className="font-semibold text-slate-200">{dangXem}</b></span>
             <span aria-hidden>·</span>
             <span className="tabular-nums">{t('{n} học viên', { n: goc === 'sos' ? demGoc.sos ?? 0 : goc === 'can-lam' ? demGoc['can-lam'] ?? 0 : hien.length })}</span>
@@ -313,11 +313,11 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         sos.error ? <ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} />
           : !sos.data ? <Skeleton rows={6} />
             : sosRows.length === 0 ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
-              : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} dangMo={panelEm} /><PhanTrang {...pt.thanh} duoi /></>
+              : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} tatCa={sosRows} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} dangMo={panelEm} /><PhanTrang {...pt.thanh} duoi /></>
       )}
       {goc === 'can-lam' && data && (viecTvv.length === 0
         ? <Card><Empty title={t('Không có việc nào')} /></Card>
-        : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecTvv)} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} /><PhanTrang {...pt.thanh} duoi /></>)}
+        : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecTvv)} tatCa={viecTvv} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} /><PhanTrang {...pt.thanh} duoi /></>)}
       {goc === 'lich-thi' && (
         <GocLichThi duongGoc={`${vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'}${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} />
       )}

@@ -1705,6 +1705,7 @@ CREATE TABLE notifications (
   read_at TEXT,
   created_at TEXT NOT NULL,
   duong TEXT,                         -- PR-DUYET: đường mở riêng (Nhắc trỏ đúng dòng việc); NULL = suy từ entity
+  han TEXT,                           -- SL1: hạn của việc mà thông báo trỏ tới (Cần làm sắp theo hạn); NULL = suy từ thẻ / Case hoặc không hạn
   UNIQUE (user_id, dedup_key)
 );
 

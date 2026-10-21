@@ -80,7 +80,7 @@ export function PersonPicker({ value, valueName, onChange, disabled, placeholder
           {rows.map((p) => (
             <button
               key={p.id}
-              className="w-full text-left px-3 py-2 hover:bg-white/5 appearance-none bg-transparent border-0"
+              className="w-full text-left px-3 py-2 bam appearance-none bg-transparent border-0"
               onClick={() => { onChange(p.id, p); setOpen(false); setTerm(''); }}
             >
               <div className="text-sm text-slate-100">{p.name}</div>
@@ -440,7 +440,7 @@ export function ChonNguoi({
               {opt.kind === 'ngoai' && trangThai}
               {/* TU-a: tiêu đề nhóm trước dòng đầu của mỗi nhóm (không bấm, mũi tên bỏ qua). */}
               {opt.kind === 'nguoi' && opt.row.nhom && (options[i - 1]?.kind !== 'nguoi' || (options[i - 1] as { row: NguoiTrongDs }).row.nhom !== opt.row.nhom) && (
-                <div role="presentation" className="px-3 pt-2 pb-0.5 text-[11.5px] font-semibold text-slate-500">{opt.row.nhom}</div>
+                <div role="presentation" className="px-3 pt-2 pb-0.5 text-[12px] font-semibold text-slate-500">{opt.row.nhom}</div>
               )}
               <button
                 id={`${uid}-opt-${i}`}
@@ -450,7 +450,7 @@ export function ChonNguoi({
                 tabIndex={-1}
                 type="button"
                 className={`w-full text-left px-3 py-2 appearance-none bg-transparent border-0 ${
-                  tat(opt) ? 'cursor-default' : i === activeIndex ? 'bg-white/5' : 'hover:bg-white/5'}`}
+                  tat(opt) ? 'cursor-default' : i === activeIndex ? 'bg-white/5' : 'bam'}`}
                 onMouseEnter={() => { if (!tat(opt)) setActiveIndex(i); }}
                 onClick={() => chon(opt)}
               >

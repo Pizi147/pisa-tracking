@@ -38,7 +38,7 @@ const tenNguoi = (x: Viec) => (x.nguoi.id ? x.nguoi.ten : dich(x.nguoi.ten));
  *               (PR-NT 04/10: Target + thi IELTS chỉ hiện khi có; FT không bao giờ "n/16")
  */
 export function DongThongTin({ tt }: { tt: any }) {
-  if (!tt?.lop) return <p className="mb-0 mt-1 text-[12.5px] text-slate-400">{t('Chưa xếp lớp')}</p>;
+  if (!tt?.lop) return <p className="mb-0 mt-1 text-[13px] text-slate-400">{t('Chưa xếp lớp')}</p>;
   const target = ((tt.target !== null && tt.target !== undefined) || tt.kck)   // OV-9: "6.5 · KCK" · "— · KCK"
     && <span key="tg">Target <b><TargetText band={tt.target} kck={tt.kck} /></b></span>;
   const muc: ReactNode[] = [
@@ -52,7 +52,7 @@ export function DongThongTin({ tt }: { tt: any }) {
     tt.gvcn && <span key="gv">{t('GVCN')} <b>{tt.gvcn}</b></span>,
   ].filter(Boolean);
   return (
-    <ul className="m-0 mt-1 flex list-none flex-wrap gap-y-0.5 p-0 text-[12.5px] text-slate-400 [&_b]:font-semibold [&_b]:text-slate-100">
+    <ul className="m-0 mt-1 flex list-none flex-wrap gap-y-0.5 p-0 text-[13px] text-slate-400 [&_b]:font-semibold [&_b]:text-slate-100">
       {muc.map((m, i) => (
         <li key={i}>{m}{i < muc.length - 1 && <span aria-hidden className="px-[7px] opacity-70">·</span>}</li>
       ))}
@@ -80,8 +80,8 @@ export function DongLienHe({ l, email, dob, tvv }: { l: LienHe | null | undefine
     tvv && <span key="tvv">{t('TVV')} {tvv}</span>,
   ].filter(Boolean);
   return (
-    <ul aria-label={t('Liên hệ')} className="m-0 mt-1 flex list-none flex-wrap items-baseline gap-y-0.5 p-0 text-[12.5px] text-slate-300">
-      <li className="pr-2 text-[11.5px] font-semibold tracking-[.03em] text-slate-500">{t('Liên hệ')}</li>
+    <ul aria-label={t('Liên hệ')} className="m-0 mt-1 flex list-none flex-wrap items-baseline gap-y-0.5 p-0 text-[13px] text-slate-300">
+      <li className="pr-2 text-[12px] font-semibold tracking-[.03em] text-slate-500">{t('Liên hệ')}</li>
       {muc.map((m, i) => (
         <li key={i}>{m}{i < muc.length - 1 && <span aria-hidden className="px-[7px] text-slate-500">·</span>}</li>
       ))}
@@ -99,7 +99,7 @@ export function DangXuLy({ viec, homNay }: { viec: { cuaBan: Viec[]; nguoiKhac: 
   if (!ds.length) return null;
   return (
     <section aria-label={t('Đang xử lý')} className="rounded-[10px] bg-[color:var(--surface-2)] px-3 py-[9px]">
-      <h2 className="m-0 mb-1 text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">{t('Đang xử lý')}</h2>
+      <h2 className="m-0 mb-1 text-[12px] font-bold  text-slate-400">{t('Đang xử lý')}</h2>
       <ul className="m-0 flex list-none flex-col gap-1 p-0">
         {ds.map((x) => (
           <li key={x.key} className="grid grid-cols-1 items-baseline gap-x-3 gap-y-0.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -165,8 +165,8 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
     <section aria-label={t('Việc của tôi với học viên này')}>
       <div className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 rounded-[10px] px-3 py-[9px] ${qh
         ? 'bg-bad-bg shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]' : 'bg-[color:var(--surface-2)] shadow-[inset_3px_0_0_var(--accent)]'}`}>
-        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">{t('Việc của tôi')}</span>
-        <span className="min-w-0 flex-1 basis-full text-[13.5px] text-slate-100 sm:basis-auto">
+        <span className="whitespace-nowrap text-[12px] font-bold  text-slate-400">{t('Việc của tôi')}</span>
+        <span className="min-w-0 flex-1 basis-full text-[14px] text-slate-100 sm:basis-auto">
           <ChuViec chu={chuViec(dau)} /> {dau.han && <HanViec x={dau} homNay={homNay} chiQuaHan />}
         </span>
         {dau.mo && <button type="button" className="btn btn-primary btn-sm min-h-[44px] w-full sm:min-h-0 sm:w-auto" onClick={() => onLam(dau)}>{nutViec(dau)}</button>}
@@ -230,7 +230,7 @@ function O({ nhan, tren, children, phu, onClick, title, phuNgoai }: {
       <div className="flex min-w-0 flex-col gap-[3px] rounded-[10px] border bg-[color:var(--surface)] px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
         <button type="button" onClick={onClick} disabled={!onClick} title={title}
           className="flex flex-col gap-[3px] border-0 bg-transparent p-0 text-left enabled:cursor-pointer">
-          <span className="text-[11.5px] font-semibold tracking-[.03em] text-slate-400">{nhan}</span>
+          <span className="text-[12px] font-semibold tracking-[.03em] text-slate-400">{nhan}</span>
           {tren && <span className="text-[12px] text-slate-400">{tren}</span>}
           <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-bold leading-[1.35] text-slate-100">{children}</span>
         </button>
@@ -243,7 +243,7 @@ function O({ nhan, tren, children, phu, onClick, title, phuNgoai }: {
     <Khung type={onClick ? 'button' : undefined} onClick={onClick} title={title}
       className={`flex min-w-0 flex-col gap-[3px] rounded-[10px] border bg-[color:var(--surface)] px-3 py-2.5 text-left ${onClick ? 'cursor-pointer hover:border-[color:var(--line-strong)]' : ''}`}
       style={{ borderColor: 'var(--line)' }}>
-      <span className="text-[11.5px] font-semibold tracking-[.03em] text-slate-400">{nhan}</span>
+      <span className="text-[12px] font-semibold tracking-[.03em] text-slate-400">{nhan}</span>
       {tren && <span className="text-[12px] text-slate-400">{tren}</span>}
       <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-bold leading-[1.35] text-slate-100">{children}</span>
       {phu && <span className="text-[12px] leading-[1.45] text-slate-400">{phu}</span>}
@@ -307,7 +307,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
             {h.dong.slice(0, 3).map((d: any, i: number) => (
               <span key={i} className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                 <span className="min-w-[30px] font-bold tabular-nums text-slate-100">{d.kn}</span>
-                <span className={`whitespace-nowrap rounded-md px-1.5 text-[11.5px] font-semibold leading-[18px] ${MAU_NHAN[d.t] ?? ''}`}>{dk(d.nhan, d.nhanK)}</span>
+                <span className={`whitespace-nowrap rounded-md px-1.5 text-[12px] font-semibold leading-[18px] ${MAU_NHAN[d.t] ?? ''}`}>{dk(d.nhan, d.nhanK)}</span>
                 {d.viec && <span>{dich(d.viec)}</span>}
               </span>
             ))}
@@ -373,7 +373,7 @@ export function DaiChoDuyet({ studentId, homNay, onDoi, onThemPa }: {
     <section aria-label={t('Yêu cầu chờ bạn duyệt')} className="rounded-[10px] bg-muted-bg">
       <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
         className="flex w-full flex-wrap items-center gap-x-2.5 gap-y-1 border-0 bg-transparent px-3 py-[9px] text-left text-[13px] text-slate-100">
-        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-muted">{t('Chờ duyệt')}</span>
+        <span className="whitespace-nowrap text-[12px] font-bold  text-muted">{t('Chờ duyệt')}</span>
         <span><b className="font-semibold">{t('{n} yêu cầu chờ bạn duyệt', { n: ds.length })}</b>
           {quaHan > 0 && <span className="font-semibold text-bad"> · {t('{n} quá hạn', { n: quaHan })}</span>}</span>
         <span className="text-muted"><IconGap mo={mo} /></span>

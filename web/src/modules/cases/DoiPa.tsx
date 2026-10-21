@@ -41,7 +41,7 @@ export function FormDoiPa({ d, lf, studentId, chuNgay }: {
   return (
     <div className="space-y-3">
       <div>
-        <span id={idLoai} className="mb-1 block text-[11.5px] font-bold text-slate-200">{t('PA mới')}<span aria-hidden className="text-bad"> *</span></span>
+        <span id={idLoai} className="mb-1 block text-[12px] font-bold text-slate-200">{t('PA mới')}<span aria-hidden className="text-bad"> *</span></span>
         <span className="mb-1.5 block text-xs text-slate-400">{t('Thay cho {loai}', { loai: tenLoai(d.gocKind) })}</span>
         <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={idLoai}>
           {LOAI_PA_DOI.filter((k) => k !== d.gocKind).map((k) => (

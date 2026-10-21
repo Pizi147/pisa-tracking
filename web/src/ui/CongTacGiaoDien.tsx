@@ -30,7 +30,7 @@ export function CongTacGiaoDien() {
       <div role="group" aria-labelledby="nhan-giao-dien" className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
         {([['may', t('Theo máy')], ['light', t('Sáng')], ['dark', t('Tối')]] as const).map(([la, ten]) => (
           <button key={la} type="button" aria-pressed={chon === la} onClick={() => dat(la)}
-            className={`min-h-[44px] border-0 px-3 text-[12.5px] sm:min-h-[36px] ${chon === la ? 'bg-[color:var(--accent-soft)] font-semibold text-slate-100 shadow-[inset_0_0_0_2px_var(--accent)]' : 'bg-transparent text-slate-300'}`}>{ten}</button>
+            className={`min-h-[44px] border-0 px-3 text-[13px] sm:min-h-[36px] ${chon === la ? 'bg-[color:var(--accent-soft)] font-semibold text-slate-100 shadow-[inset_0_0_0_2px_var(--accent)]' : 'bg-transparent text-slate-300'}`}>{ten}</button>
         ))}
       </div>
     </div>

@@ -258,7 +258,7 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
         </CanLam>
         {khongDua.length > 0 && viec !== 'cap-bac' && (
           <div className="flex flex-col gap-1.5">
-            <span className="text-[12.5px] font-semibold text-slate-500">{t('Không đưa vào · {n}', { n: khongDua.length })}</span>
+            <span className="text-[13px] font-semibold text-slate-500">{t('Không đưa vào · {n}', { n: khongDua.length })}</span>
             <dl className="m-0 grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-[13px] max-sm:grid-cols-1 max-sm:gap-y-0.5">
               {khongDua.map((e) => (
                 <div key={e.studentId} className="contents">

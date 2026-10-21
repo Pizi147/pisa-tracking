@@ -160,7 +160,7 @@ const STATE_KIND: Record<Row['state'], 'doing' | 'waiting' | 'done' | 'idle'> = 
  */
 export function NhanTamDung({ tu }: { tu: string }) {
   return (
-    <span className="inline-flex items-center whitespace-nowrap rounded-md bg-soon-bg px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums text-soon"
+    <span className="inline-flex items-center whitespace-nowrap rounded-md bg-soon-bg px-1.5 py-0.5 text-[12px] font-semibold tabular-nums text-soon"
       title={t('Em đang Tạm dừng học — mọi hạn đang dừng; quay lại học thì hạn tính lại từ ngày quay lại')}>
       {chuTamDung(`${tu.slice(8, 10)}/${tu.slice(5, 7)}`, true)}
     </span>
@@ -210,7 +210,7 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
           return (
             <tbody key={khoa}>
               {r.tuLopTruoc && !rows[i - 1]?.tuLopTruoc && (
-                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400">{t('Case bàn giao')}</th></tr>
+                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold  text-slate-400">{t('Case bàn giao')}</th></tr>
               )}
               <SkillRows row={r} open={selected === khoa}
                 onToggle={() => onPick(selected === khoa ? null : khoa)}
@@ -346,10 +346,10 @@ export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
   const { mt, giua, sos, kck } = c.tenSos;
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
-      {mt && <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 text-slate-300 tabular-nums">MT{mt}</span>}
+      {mt && <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[12px] font-semibold leading-4 text-slate-300 tabular-nums">MT{mt}</span>}
       <span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{giua}</span>
       {/* OV-9: Case nhẹ của em KCK — chip trung tính, không SOS, không đỏ. */}
-      {kck ? <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 text-slate-300" title={GIAI_THICH_KCK}>KCK</span>
+      {kck ? <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[12px] font-semibold leading-4 text-slate-300" title={GIAI_THICH_KCK}>KCK</span>
         : sos ? <ChipSos muc={sos} dot={mt ? `MT${mt}` : null} tinh /> : null}
     </span>
   );
@@ -430,7 +430,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
               <MuiTen mo={mo} />
             </button>
             <NhanLoai loai="Case" />
-            <span className="min-w-0 truncate text-[12.5px] font-bold text-slate-100" title={c.title}><TenCase c={c} /></span>
+            <span className="min-w-0 truncate text-[13px] font-bold text-slate-100" title={c.title}><TenCase c={c} /></span>
           </span>
           {dongPhu && <span className="block truncate pl-[26px] text-[12px] text-slate-500" title={dongPhu}>{dongPhu}</span>}
         </td>

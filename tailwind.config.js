@@ -9,8 +9,22 @@ const nghia = (n) => ({ DEFAULT: v(n), bg: v(`${n}-bg`), line: v(`${n}-line`) })
 export default {
   content: ['./index.html', './web/src/**/*.{ts,tsx}'],
   theme: {
+    /*
+     * NEN-TYPO-MAU (04 mục 2.2): THANG CHỮ 12 · 13 · 14 · 15 · 17 · 22 · 28 — đặt `fontSize` (không extend) để lớp ngoài thang không sinh được.
+     * 13 dùng `text-[13px]`. Line-height Việt: một dòng có cắt ≥ 1,5; nhiều dòng ≥ 1,45; tiêu đề ≥ 1,3. Phép kiểm `prNenTypoMau` K-CHU-1/2.
+     */
+    fontSize: {
+      xs: ['12px', '1.4'],    // tối thiểu: badge, dòng phụ ô điểm, chú thích
+      sm: ['14px', '1.45'],   // lưới dày, giá trị trong panel
+      base: ['15px', '1.5'],  // chữ thường, ô bảng, nút
+      lg: ['17px', '1.35'],   // tiêu đề khối / panel
+      xl: ['22px', '1.3'],    // tiêu đề trang
+      '2xl': ['28px', '1.1'], // số lớn
+    },
     extend: {
       colors: {
+        // NEN-TYPO-MAU: kết quả điểm — chỉ tô chính con số / ký hiệu ✓ ✗ (`text-kq-vuot`), không nền.
+        'kq-vuot': v('kq-vuot'), 'kq-bang': v('kq-bang'), 'kq-duoi': v('kq-duoi'),
         ok: nghia('ok'), bad: nghia('bad'), late: nghia('late'), soon: nghia('soon'),
         doing: nghia('doing'), done: nghia('done'), muted: nghia('muted'),
         dat: nghia('dat'),

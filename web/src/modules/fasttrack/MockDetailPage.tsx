@@ -415,7 +415,7 @@ function KhoiCaseLuot({ d, onDoi }: { d: Detail; onDoi: () => void }) {
   const luoi = chiDoc ? LUOI_DOC : LUOI;
   return (
     <Card title={t('Case & phương án')} bodyClass="p-0" action={<span className="text-xs tabular-nums text-slate-400">{d.caseLuot.length} Case</span>}>
-      <div className={`hidden px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 ${luoi}`}>
+      <div className={`hidden px-3 pt-2 text-[12px] font-semibold  text-slate-500 ${luoi}`}>
         <span>{t('Kỹ năng')}</span><span>Case</span><span>{t('PA đang làm')}</span>{!chiDoc && <span>{t('Việc tiếp · hạn')}</span>}
       </div>
       <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
@@ -435,7 +435,7 @@ function KhoiCaseLuot({ d, onDoi }: { d: Detail; onDoi: () => void }) {
 function Info({ label, title, children }: { label: string; title?: string; children: React.ReactNode }) {
   return (
     <div title={title}>
-      <dt className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{label}</dt>
+      <dt className="text-[12px]  text-slate-500 font-semibold">{label}</dt>
       <dd className="text-sm text-slate-100 mt-1 m-0">{children}</dd>
     </div>
   );
@@ -722,7 +722,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
       ) : (
         <div role="table" aria-label={t('Lịch Test theo kỹ năng')}>
           <div role="row"
-            className={`${ROW_GRID} hidden px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500`}>
+            className={`${ROW_GRID} hidden px-2 pb-2 text-[12px] font-semibold  text-slate-500`}>
             <div role="columnheader">{t('Kỹ năng')}</div>
             <div role="columnheader">{t('Lịch Test')}</div>
             <div role="columnheader">{t('Trạng thái và hạn')}</div>
@@ -753,7 +753,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
 
 /** Nhãn cột chỉ hiện ở dạng thẻ (điện thoại); từ `md` trở lên đã có hàng tiêu đề. */
 function Label({ children }: { children: React.ReactNode }) {
-  return <span className="mb-0.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:hidden">{children}</span>;
+  return <span className="mb-0.5 block text-[12px] font-semibold  text-slate-500 md:hidden">{children}</span>;
 }
 
 // ---------------------------------------------------------------- lịch sử thay đổi

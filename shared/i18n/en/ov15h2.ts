@@ -2,9 +2,16 @@
 import type { Dich } from '../en.ts';
 
 export const EN_OV15H2 = {
+  /* LT-SV (thêm vào đây cho khỏi sửa dòng chung `en.ts`): nhãn trạng thái lịch thi thật (`nhanLichThi`), việc Chốt ngày thi. */
+  'Thi': 'Exam',
+  'Chưa chốt ngày thi': 'Exam date not set',
+  'Chưa có tháng thi': 'No exam month',
+  'Chốt ngày thi': 'Set exam date',
   /* OV-15i2 (thêm vào đây cho khỏi sửa dòng chung `en.ts`): Lịch thi hỏi trước khi bỏ ngày đã chốt; ô chọn cả danh sách. */
   'Bỏ ngày {ngay}?': (b) => `Remove date ${b.ngay}?`,
   'Bỏ ngày': 'Remove date',
+  /* BANG-0: ô điểm tỉ lệ có mẫu số khác tổng của cột. */
+  'Đề khác': 'Different paper',
   'Chọn cả danh sách': 'Select the whole list',
   'chốt {ngay}': (b) => `set ${b.ngay}`,
   'Tích hàng ở bảng để chọn': 'Tick rows in the table to select',

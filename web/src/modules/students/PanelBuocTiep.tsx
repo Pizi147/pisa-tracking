@@ -115,7 +115,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     : <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button>;
 
   const dongKetQua = (
-    <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-[13.5px]">
+    <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-[14px]">
       <span className="font-semibold text-slate-100"><span className="text-ok">✓</span> {dich(bt.daXong)}</span>
       {bt.ngayThi && <span className="text-slate-400">· {t('thi {ngay}', { ngay: thuNgay(bt.ngayThi, hn) })}</span>}
       {!bt.chon && bt.daGiaHan && <span className="text-slate-400">· {t('đã gia hạn')}</span>}

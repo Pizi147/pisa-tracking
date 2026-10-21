@@ -9464,6 +9464,9 @@ await runPrOv15i1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 // ==================================================================== OV-15i2 (Dán Excel thử lại / trần môn / email lớp thường / Hoàn tác "- → x", bỏ huyLuot, xuất điểm Test, tutor theo lớp)
 const { runPrOv15i2Tests } = await import('./prOv15i2.tests.ts');
 await runPrOv15i2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== LT-SV (lịch thi thật: trạng thái A / B, hết "tháng = đã thi", việc Chốt ngày thi, ngày đã qua, Sắp tới)
+const { runPrLtSvTests } = await import('./prLtSv.tests.ts');
+await runPrLtSvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== CV-LOI (Case không chủ tự gán · một dòng Phân công · Xếp lại bài vắng theo quyền · hạn Mini Test)
 const { runPrCvLoiTests } = await import('./prCvLoi.tests.ts');
 await runPrCvLoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9476,6 +9479,12 @@ await runPrTubTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== LUAT-34 (bảng chuyển trạng thái Mock Test T01–T31 · chuyenVang · Luật 3 sửa sau lưu)
 const { runMtTrangThaiTests } = await import('./mtTrangThai.tests.ts');
 await runMtTrangThaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== NEN-TYPO-MAU (thang chữ 12–28, 3 token kết quả: tương phản 9 nền + mù màu, hệ trạng thái HTT)
+const { runPrNenTypoMauTests } = await import('./prNenTypoMau.tests.ts');
+await runPrNenTypoMauTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== BANG-0 (Bang + 13 kiểu cột, ODiem, phép kiểm BANG-1…5 — danh sách miễn chỉ giảm)
+const { runPrBang0Tests } = await import('./prBang0.tests.ts');
+await runPrBang0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== LUAT-5 (luật 5: thu hồi / không tăng bậc qua QL, lý do bắt buộc, "Đã thu hồi" giữ dòng)
 const { runPrLuat5Tests } = await import('./prLuat5.tests.ts');
 await runPrLuat5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9485,6 +9494,9 @@ await runPrKhungLoiTests({ check, assert } as any);
 // ==================================================================== CASE-NHIEU (Tạo Case nhiều kỹ năng: một giao dịch, người phụ trách, trùng / chờ xác nhận, gửi lại, quyền, tệp)
 const { runCaseLoTests } = await import('./caseLo.tests.ts');
 await runCaseLoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+
+const { runPrSl1Tests } = await import('./prSl1.tests.ts');
+await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

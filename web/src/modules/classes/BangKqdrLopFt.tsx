@@ -38,7 +38,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
     if (!m) return <span className="text-slate-500">—</span>;
     const so = (v: number | null, duoi: boolean) => (v === null ? '—' : <span className={duoi ? 'font-semibold text-late' : ''}>{duoi && <DauDuoi />}{b1(v)}</span>);
     return (
-      <span className="whitespace-nowrap text-[12.5px] tabular-nums text-slate-300">
+      <span className="whitespace-nowrap text-[13px] tabular-nums text-slate-300">
         {REGULAR_SKILLS.map((k, i) => <Fragment key={k}>{i > 0 && ' · '}{so(m[k], m.monTruot.includes(k))}</Fragment>)}
         {' · '}<b className={m.dat ? 'text-slate-100' : 'text-late'}>{!m.dat && <DauDuoi />}{b1(m.overall)}</b>
       </span>
@@ -60,7 +60,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
     </span>
   ) : <span className="text-slate-500">—</span>);
   const oBanGiao = (e: Em) => (e.banGiao
-    ? <span className="whitespace-pre-line break-words text-[12.5px] text-slate-300">{e.banGiao}</span>
+    ? <span className="whitespace-pre-line break-words text-[13px] text-slate-300">{e.banGiao}</span>
     : <span className="text-xs text-slate-500">{t('Chưa bàn giao')}</span>);
   const oFinal = (e: Em) => (e.final === null ? <span className="text-slate-500">—</span>
     : <Nhan tone={e.finalDat ? 'ok' : 'soon'}>{`${Math.round(e.final * 100)}%`}</Nhan>);

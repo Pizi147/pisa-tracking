@@ -1,4 +1,4 @@
-import type { ExamPlan, GiaiDoanSauThi, NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
+import type { ExamPlan, GiaiDoanSauThi, LichThi, NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
 import { NhanSauThi } from './HopGiaHan.tsx';
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -33,6 +33,7 @@ export type DongRoster = {
   standing: (KetQuaVao & { nextAttemptLabel?: string | null; nextWeekStart?: string | null; nextKyVong?: number | null; nhanLuotChuaXep?: string | null }) | null;
   /** Dự kiến thi ở đúng mức chắc chắn đang có (cột "Dự kiến thi"; roster FT và lớp thường đều trả). */
   examPlan: ExamPlan;
+  lichThi?: LichThi | null;
   /** OV-14b: "Đã thi · chờ kết quả" / "Đã xong · chờ bước tiếp" (`sauThiTheoEm`, cùng hàm panel một em) — dưới Dự kiến thi. */
   sauThi?: NhanSauThiEm | null;
   openCases: number; handoverCases: number;
@@ -65,7 +66,7 @@ function ODiemFt({ h, k }: { h: NonNullable<DongRoster['history']>[number] | und
     <>
       {v === null ? <span className="sr-only">{t('Chưa có')}</span>
         : <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-slate-100">{fmtBand(v)}{kq && <DauKetQua kq={kq} />}</span>}
-      {w && w.some((x) => x !== null) && <span className="block text-[11px] tabular-nums text-slate-500">{w.map((x) => (x === null ? '–' : fmtBand(x))).join(' · ')}</span>}
+      {w && w.some((x) => x !== null) && <span className="block text-[12px] tabular-nums text-slate-500">{w.map((x) => (x === null ? '–' : fmtBand(x))).join(' · ')}</span>}
     </>
   );
 }
@@ -141,12 +142,12 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
     const st = s.standing;
     const chu = chuSapToi({
       nhanLuot: st?.nextAttemptLabel ?? null, tuanBatDau: st?.nextWeekStart ?? null, kyVong: st?.nextKyVong ?? null,
-      conLuotChuaXep: st?.nhanLuotChuaXep ?? null, duKienThi: s.examPlan ?? null, homNay, khung: thuong ? 'thuong' : 'ft',
+      conLuotChuaXep: st?.nhanLuotChuaXep ?? null, lichThi: s.lichThi ?? null, homNay, khung: thuong ? 'thuong' : 'ft',
     });
     const title = st?.nextAttemptLabel
       ? [st.nextAttemptLabel, st.nextWeekStart && t('tuần thi {tuan}', { tuan: tuanLich(st.nextWeekStart, homNay) }), st.nextKyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(st.nextKyVong) })].filter(Boolean).join(' · ')
       : chu ? dich(chu) : undefined;
-    return { chu: chu && dich(chu), title, thiThat: !!chu?.startsWith(t('Thi thật')) };   // chuSapToi đã theo tiếng của trang (EN-b) — so cùng tiếng
+    return { chu: chu && dich(chu), title, thiThat: !!chu && !st?.nextAttemptLabel && !st?.nhanLuotChuaXep };   // LT-SV: chữ là lịch thi thật (không còn tiền tố "Thi thật ·")
   };
   const khoaCua = (s: DongRoster) => thuong
     ? khoaLopThuong({ maChuongTrinh: lop.programmeCode, tuanHienTai: lop.currentWeek, tongTuan: lop.totalWeeks,
@@ -282,7 +283,7 @@ export function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof k
       <span className="flex flex-wrap items-center gap-x-1.5">
         <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
         {k.lech && <span className={`text-xs font-semibold tabular-nums ${k.kckDuoi ? 'text-slate-400' : 'text-bad'}`} title={t('Dưới kỳ vọng {n}', { n: k.lech.replace('−', '') })}>{k.lech}</span>}
-        {k.dat && <span className="text-[11px] text-slate-400" title={thuong ? t('Đạt mọi môn') : t('Đạt kỳ vọng')}>✓</span>}
+        {k.dat && <span className="text-[12px] text-slate-400" title={thuong ? t('Đạt mọi môn') : t('Đạt kỳ vọng')}>✓</span>}
         {k.kckDuoi && <ChipDuoiKck />}
         {k.sos && chipSosTuKetQua(standing) && <ChipSos {...chipSosTuKetQua(standing)!} />}
       </span>

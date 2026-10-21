@@ -359,7 +359,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
       <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
         {nhomChung.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tuần chung</span>
+            <span className="text-[12px] font-bold  text-slate-400">Tuần chung</span>
             <div className="min-w-[220px] flex-1">
               <TuanNho nam d={{ periodId: chung?.periodId ?? null, weekStart: chung?.weekStart ?? null }} goc={homNay} onTuan={datChung} nhanKhoa={nhanChung} />
             </div>
@@ -382,17 +382,17 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
         {/* C21 (mockup 4): ghi chú lịch thi — chỉ là ghi chú, không dời lịch; lưu cùng nút Lưu. */}
         {ghiChu !== undefined && <div className="border-t pt-2" style={{ borderColor: 'var(--line)' }}>
           <label className="block">
-            <span className="text-[11px] font-bold text-slate-400">{t('Ghi chú lịch thi')}</span>
+            <span className="text-[12px] font-bold text-slate-400">{t('Ghi chú lịch thi')}</span>
             <input className="field mt-1 w-full" maxLength={GHI_CHU_TOI_DA} value={ghi} onChange={(e) => setGhi(e.target.value)} placeholder={t('Thêm ghi chú…')} />
           </label>
           {ghiChu && (
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500">
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px] text-slate-500">
               <span>{chuTacGia(ghiChu)}</span>
               <button type="button" className="link min-h-[44px] sm:min-h-0" aria-expanded={!!lichSuGhi} onClick={moLichSuGhi}>{t('Lịch sử')}</button>
             </div>
           )}
           {lichSuGhi && (
-            <ul className="m-0 mt-1 list-none space-y-1 p-0 text-[11px]" aria-label={t('Lịch sử ghi chú')}>
+            <ul className="m-0 mt-1 list-none space-y-1 p-0 text-[12px]" aria-label={t('Lịch sử ghi chú')}>
               {lichSuGhi.map((g, i) => (
                 <li key={i}><span className="text-slate-300">{g.noiDung || t('(đã xoá)')}</span> <span className="text-slate-500">· {chuTacGia(g)}</span></li>
               ))}

@@ -9,7 +9,7 @@ import { skillShort } from '../../lib/format.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
-  NHAN_NHOM_XU_LY, deadlineView, duongDotTest, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
+  NHAN_NHOM_XU_LY, deadlineView, duongDotTest, nhomTrenTrang, tuanLich, type DeadlineKind, type LienHe, type NguCanhDs, type NhomXuLy,
 } from '@shared/domain/index.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 
@@ -50,7 +50,7 @@ function TheoCase({ r, dam, chu }: { r: DongSos; dam: ((topic: string | null) =>
         const x = chu(c);
         return (
           <span key={c.id} className={`flex min-w-0 items-baseline gap-1.5 ${c.done ? 'opacity-60' : ''}`}>
-            <span className={`shrink-0 text-[11.5px] font-bold ${mo ? 'text-slate-500' : 'text-slate-200'}`}>{c.topic ? skillShort(c.topic) : 'Case'}</span>
+            <span className={`shrink-0 text-[12px] font-bold ${mo ? 'text-slate-500' : 'text-slate-200'}`}>{c.topic ? skillShort(c.topic) : 'Case'}</span>
             {/* OV-14b: chữ dài cắt — rê chuột đọc đủ (mẫu truncate + title, G4). */}
             <span className={`min-w-0 truncate text-xs ${mo ? 'text-slate-500' : 'text-slate-300'}`} title={typeof x === 'string' ? x : undefined}>{x}</span>
           </span>
@@ -105,8 +105,10 @@ const chuKetQua = (c: CaseTomTat) => (c.done && c.ketQua ? `${t('Xong')} · ${di
  * MT · tuần. Cột: Học viên · SOS · Nguyên nhân · Phương án (QL / GV) · Kết quả đến nay · Trạng thái (chữ Tổng hợp) · Việc tiếp (QL / GV) · Phụ huynh
  * (TVV / CX) · TVV (CX) · Mở (panel một em). Không Nhắc. < 640 px: mỗi em một thẻ.
  */
-export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: {
+export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo, dangMo = null }: {
   data: TrangSos; cot: CotSos; dienThoai: boolean;
+  /** SL1 (A3-02): mọi lượt trước khi chia trang — số đầu lớp đếm trên đây, không trên trang. */
+  tatCa?: DongSos[];
   /** OV-14b: em đang mở panel — hàng / thẻ tô `row-active` như các bảng khác. */
   dangMo?: number | null;
   /** GVBM / GVCN: kỹ năng mình dạy đậm, còn lại mờ (null = không làm mờ). */
@@ -126,14 +128,17 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: 
   const mo = (id: number) => (soLop <= 5 || data.rows.length <= 40) !== gap.has(id);
   const doi = (id: number) => setGap((cu) => { const s = new Set(cu); if (s.has(id)) s.delete(id); else s.add(id); return s; });
 
-  const dauLop = (em: DongSos[]) => {
-    const r = em[0];
+  const toanLop = nhomTrenTrang(tatCa, data.rows, (x) => x.classId);
+  const dauLop = (trang: DongSos[]) => {
+    const r = trang[0];
+    const em = toanLop.get(r.classId)?.tatCa ?? trang;
     const soEm = new Set(em.map((x) => x.studentId)).size;
     const cho = em.filter((x) => nhomDong(x) === 'cho-duyet').length;
     const tre = em.filter((x) => x.cases.some((c) => c.viecTiep?.quaHan)).length;
     return (
       <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
         <Link to={`/hoc-vien/lop/${r.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{r.classCode}</Link>
+        {toanLop.get(r.classId)?.tiep && <span className="text-xs text-slate-400">{t('(tiếp)')}</span>}
         {cot === 'cx' && r.branchName && <span className="text-xs text-slate-400">{r.branchName}</span>}
         <Nhan tone="muted">{toanBo ? t('{n} em · {m} lượt SOS', { n: soEm, m: em.length }) : t('{n} em SOS', { n: soEm })}</Nhan>
         {cot === 'ql' && cho > 0 && <Nhan tone="muted">{t('{n} chờ duyệt', { n: cho })}</Nhan>}
@@ -157,7 +162,7 @@ export function BangSos({ data, cot, dam, dienThoai, ds, onMo, dangMo = null }: 
       <div className="space-y-2">
         {nhom.map((g) => (
           <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? t('Lớp Fast Track') : t('Lớp thường')}>
-            {nhom.length > 1 && <h2 className="m-0 px-1 text-[11.5px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
+            {nhom.length > 1 && <h2 className="m-0 px-1 text-[12px] font-semibold  text-slate-500">{g.k === 'ft' ? 'Fast Track' : t('Lớp thường')}</h2>}
             {g.lop.map((em) => (
               <div key={em[0].classId} className="card overflow-hidden">
                 <button type="button" aria-expanded={mo(em[0].classId)} onClick={() => doi(em[0].classId)}
