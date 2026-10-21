@@ -119,7 +119,8 @@ export type ViecBaoPhView = {
 
 export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
   const v = loadViec(id);
-  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: v.student_id }) && !coTheGhi(p, v)) throw forbidden('Học viên ngoài phạm vi của bạn.');
+  const ghi = coTheGhi(p, v);
+  if (!ghi && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: v.student_id })) throw forbidden('Học viên ngoài phạm vi của bạn.');
   const homNay = demoToday();
   const han = hanBaoPhHieuLuc(v.han, khoangTamDung([v.student_id])[v.student_id]);
   const lan = (db().prepare(
@@ -132,8 +133,9 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     han, quaHan: v.trang_thai === 'mo' && han < homNay, trangThai: v.trang_thai, nhanTrangThai,
     xuLy: xl, nhanXuLy: xl === 'con' ? null : LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong],
     bo: v.trang_thai === 'bo' ? { lyDo: v.bo_ly_do, nhan: nhanLyDo(v.bo_ly_do), chu: v.bo_ly_do_chu ?? null, luc: v.bo_luc } : null,
-    lan, lienHe: { ten: v.parent_name ?? null, quanHe: v.parent_relation ?? null, sdt: v.parent_phone ?? null },
-    coTheGhi: v.trang_thai !== 'bo' && xl === 'con' && coTheGhi(p, v),
+    /* SĐT phụ huynh chỉ cho người làm việc (TVV / QL) — người chỉ xem trạng thái (GV) không cần. */
+    lan, lienHe: ghi ? { ten: v.parent_name ?? null, quanHe: v.parent_relation ?? null, sdt: v.parent_phone ?? null } : { ten: null, quanHe: null, sdt: null },
+    coTheGhi: v.trang_thai !== 'bo' && xl === 'con' && ghi,
   };
 }
 
