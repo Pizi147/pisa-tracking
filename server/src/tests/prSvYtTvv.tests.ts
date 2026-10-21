@@ -102,16 +102,17 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     xuLy(gvcn, sid, [v1]);
     const it = viecToi(ql, sid);
     assert(it.length === 1 && it[0].mine && it[0].ownerId === ql.userId, 'QL giữ: ' + JSON.stringify(it));
-    assert(chuong(ql).some((n) => n.student_id === sid && n.con_viec === 1), 'QL nhận chuông');
+    assert(chuong(ql).some((n) => n.con_viec === 1), 'QL nhận chuông (một dòng gộp mọi việc QL giữ)');
     const han = viecCua(sid)[0].han;
     const a = tvvMoi(); const b = tvvMoi();
     conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(a.userId, sid);
     assert(viecToi(a, sid).length === 1 && viecToi(ql, sid).length === 0 && viecToi(a, sid)[0].due === han, 'gán TVV A');
     conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(b.userId, sid);
     assert(viecToi(b, sid)[0]?.due === han && viecToi(a, sid).length === 0, 'đổi sang TVV B, hạn giữ');
-    assert(ma(() => ghi(a, [viecCua(sid)[0].id], 'da_bao')) === 403, 'TVV cũ 403');
     ghi(b, [viecCua(sid)[0].id], 'da_bao');
     assert(viecCua(sid)[0].trang_thai === 'xong', 'TVV mới ghi được');
+    ghi(a, [viecCua(sid)[0].id], 'chua_lien_he', { ghiChu: 'TVV cũ ghi thay' });   // chủ SP 22/10: TVV cùng chi nhánh làm thay được, có lịch sử
+    assert(hang('SELECT ghi_boi FROM viec_bao_ph_lan WHERE viec_id = ? ORDER BY id', viecCua(sid)[0].id).map((r) => r.ghi_boi).join() === `${b.userId},${a.userId}`, 'lịch sử ghi đúng người');
   }));
 
   await checkAsync('SVYT-K4 · Ghi nhận / Khai bậc → không có việc', () => thu(() => {
@@ -211,11 +212,16 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(ma(() => ghi(tvv, [v.id], 'da_bao', { ngay: '31/12' })) === 400, 'ngày sai dạng');
   }));
 
-  await checkAsync('SVYT-K9 · GVCN / GVBM / TVV khác ghi → 403; QL chi nhánh ghi được; bỏ việc: lý do sẵn có, "Khác" bắt chữ, đã bỏ thì không ghi', () => thu(() => {
+  await checkAsync('SVYT-K9 · GVCN / GVBM / CX / TVV chi nhánh khác ghi → 403; TVV cùng chi nhánh làm thay được (không thành việc của mình); QL chi nhánh ghi được; bỏ việc: lý do sẵn có, "Khác" bắt chữ, đã bỏ thì không ghi', () => thu(() => {
     const tvv = tvvMoi(); const khac = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
     xuLy(gvcn, sid, [v1]);
     const [v] = viecCua(sid);
-    assert(ma(() => ghi(gvcn, [v.id], 'da_bao')) === 403 && ma(() => ghi(gvbm, [v.id], 'da_bao')) === 403 && ma(() => ghi(khac, [v.id], 'da_bao')) === 403, 'không phải người giữ');
+    assert(ma(() => ghi(gvcn, [v.id], 'da_bao')) === 403 && ma(() => ghi(gvbm, [v.id], 'da_bao')) === 403, 'GV / GVCN 403');
+    const tvvCp = loadPrincipal(accounts.createAccount(P.admin, { email: `svyt.cp${dem}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-svyt', fullName: `TVV CP SVYT ${dem}`, roles: [{ role: 'consultant', branches: ['CP'] }] }).userId);
+    const cx = loadPrincipal(accounts.createAccount(P.admin, { email: `svyt.cx${dem}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-svyt', fullName: `CX SVYT ${dem}`, roles: [{ role: 'cx', branches: [] }] }).userId);
+    assert(ma(() => ghi(tvvCp, [v.id], 'da_bao')) === 403 && ma(() => ghi(cx, [v.id], 'da_bao')) === 403, 'TVV chi nhánh khác / CX 403');
+    assert(bp.xemViecBaoPh(khac, v.id).coTheGhi === true, 'TVV cùng chi nhánh: làm thay được');
+    assert(viecToi(khac, sid).length === 0, 'TVV cùng chi nhánh: không phải việc của mình');
     assert(ma(() => bp.boViecBaoPh(gvcn, v.id, { lyDo: 'not_needed' })) === 403, 'GVCN không bỏ được');
     assert(ma(() => ghi(P.cpManager, [v.id], 'da_bao')) === 403, 'QL chi nhánh khác 403');
     assert(ma(() => bp.boViecBaoPh(tvv, v.id, { lyDo: 'xyz' })) === 400 && ma(() => bp.boViecBaoPh(tvv, v.id, { lyDo: 'other' })) === 400, 'lý do');
@@ -236,12 +242,13 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     const kq = ghi(tvv, ds.map((x: any) => x.id), 'da_bao', { ghiChu: 'Báo chung một cuộc gọi' });
     assert(kq.viec.length === 2 && hang('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id IN (?,?)', ds[0].id, ds[1].id).length === 2, 'hai dòng');
     const s2 = moiEm(tvvMoi()); xuLy(gvcn, s2, [nVp(s2, 1)[0]]);
+    bp.boViecBaoPh(P.mbManager, viecCua(s2)[0].id, { lyDo: 'not_needed' });
     const s3 = moiEm(tvv); xuLy(gvcn, s3, [nVp(s3, 1)[0]]);
-    assert(ma(() => ghi(tvv, [viecCua(s3)[0].id, viecCua(s2)[0].id], 'da_bao')) === 403, 'một việc không phải của mình');
+    assert(ma(() => ghi(tvv, [viecCua(s3)[0].id, viecCua(s2)[0].id], 'da_bao')) === 400, 'một việc đã bỏ → 400');
     assert(viecCua(s3)[0].trang_thai === 'mo' && hang('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ?', viecCua(s3)[0].id).length === 0, 'lui cả lần ghi');
   }));
 
-  await checkAsync('SVYT-K11 · chuông Báo PH: MỘT dòng mỗi việc (quá hạn đổi chữ, không thêm dòng) · đổi TVV → chuông sang người mới · em Tạm dừng → không đếm · ghi xong → hết', () => thu(() => {
+  await checkAsync('SVYT-K11 · chuông Báo PH: MỘT dòng mỗi người (quá hạn đổi chữ; nhiều việc gộp "· n em") · đổi TVV → chuông sang người mới · em Tạm dừng → không đếm · ghi xong → hết', () => thu(() => {
     const tvv = tvvMoi(); const moi = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
     xuLy(gvcn, sid, [v1]);
     const [v] = viecCua(sid);
@@ -258,8 +265,13 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(chuong(moi).length === 0, 'em Tạm dừng: đồng bộ xoá');
     conn.prepare("UPDATE students SET status = 'active' WHERE id = ?").run(sid);
     assert(chuong(moi).length === 1, 'quay lại: chuông lại');
+    const s2 = moiEm(moi); xuLy(gvcn, s2, [nVp(s2, 1)[0]]);
+    const gop = chuong(moi);
+    assert(gop.length === 1 && /^Quá hạn · Báo PH vi phạm · 2 em$/.test(gop[0].title) && gop[0].han === addDays(TODAY, -2), 'hai việc → MỘT dòng: ' + JSON.stringify(gop));
     ghi(moi, [v.id], 'da_bao');
-    assert(chuong(moi).length === 0, 'ghi xong → hết');
+    assert(chuong(moi)[0]?.title.startsWith('Báo PH · Report 1 ·') && chuong(moi)[0].con_viec === 1, 'còn một việc: dòng về tên em, hết "Quá hạn"');
+    ghi(moi, [viecCua(s2)[0].id], 'da_bao');
+    assert(chuong(moi).length === 0, 'ghi xong hết → hết');
   }));
 
   await checkAsync('SVYT-K13 · QL từ chối chỉ đóng việc khi đề xuất thật sự vừa bị từ chối; tên bậc đọc từ lần xử lý (loại đổi → tên theo)', () => thu(() => {

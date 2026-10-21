@@ -7,14 +7,14 @@
  *    `viec_bao_ph_lan`. Trạng thái = lần ghi mới nhất (ghi "Chưa liên hệ được" sau "Đã báo PH" = sửa nhầm, mở lại).
  *  · Kết thúc ngoại lệ = Bỏ việc với lý do bỏ sẵn có (`COORDINATION_USER_REMOVE_REASONS`).
  *  · Xử lý bị thu hồi (được duyệt) / QL từ chối / GVCN rút: việc chưa xong → "Đã bỏ" kèm lý do hệ thống; việc đã xong giữ + nhãn + chuông để biết.
- * Quyền ghi kiểm ở MÁY CHỦ: TVV của em, hoặc QL / Quản trị trong phạm vi em (`request.approve`). GV / GVCN không ghi.
+ * Quyền ghi kiểm ở MÁY CHỦ: TVV của em / TVV cùng chi nhánh làm thay (chủ SP 22/10), hoặc QL / Quản trị trong phạm vi em. GV / GVCN / CX không ghi.
  */
 import { db, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
   HAN_BAO_PH_NGAY, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
-import { can, scopeFor, type Principal } from '../permissions.ts';
+import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -91,10 +91,14 @@ function loadViec(id: number): any {
   return { ...v, nhan: nhanViec(v) };
 }
 
-/** Ghi được = TVV của em, hoặc QL / Quản trị trong phạm vi em. */
-const coTheGhi = (p: Principal, v: any): boolean => v.consultant_user_id === p.userId || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: v.student_id });
+/**
+ * Ghi được = TVV của em · TVV cùng chi nhánh làm thay (chủ SP 22/10 — như Chọn bước tiếp, `coQuyenBuocTiep`; lịch sử ghi người làm) · QL / Quản trị trong
+ * phạm vi em. CX, GV, GVCN: không. Người GIỮ việc (việc của tôi, chuông) vẫn chỉ một: TVV của em / QL khi em chưa có TVV.
+ */
+const coTheGhi = (p: Principal, v: any): boolean =>
+  v.consultant_user_id === p.userId || coQuyenBuocTiep(p, v.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: v.student_id });
 function requireGhi(p: Principal, v: any): void {
-  if (!coTheGhi(p, v)) throw forbidden('Chỉ TVV của em (hoặc Quản lý chi nhánh) ghi được kết quả báo phụ huynh.');
+  if (!coTheGhi(p, v)) throw forbidden('Chỉ TVV hoặc Quản lý chi nhánh của em ghi được kết quả báo phụ huynh.');
 }
 /** Lần xử lý còn hiệu lực (không thu hồi / từ chối / rút). */
 const xuLyCon = (v: any): 'con' | 'thu_hoi' | 'tu_choi' | 'rut' =>
