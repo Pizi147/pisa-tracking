@@ -187,17 +187,16 @@ export async function runPrLopTests(t: YThucTestKit) {
       assert(c.classCount === soLop, `${c.name}: ${c.classCount} ≠ ${soLop} lớp`);
     }
   });
-  check('LOP (9) · việc "Chưa có người phụ trách" của lớp thiếu GV môn → Sửa phân công (K1-05)', () => {
+  check('LOP (9) · Case chưa có người phụ trách của lớp thiếu GV môn → một dòng "Phân công GV …" mở phân công lớp (K1-05, CV-LOI)', () => {
     const hv = conn.prepare(`SELECT e.student_id sid, e.class_id cid FROM enrollments e JOIN classes c ON c.id = e.class_id
       JOIN students s ON s.id = e.student_id WHERE c.code = 'MB FT 101' AND e.status = 'active' AND s.archived_at IS NULL LIMIT 1`).get() as any;
     const caseId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, category, topic, origin_kind, status, owner_user_id, created_at)
       VALUES (?, 'reading', 'reading', 'teacher_report', 'open', NULL, ?)`).run(hv.sid, new Date().toISOString()).lastInsertRowid);
     const dong = () => (mywork.myWork(P.admin).items as any[]).find((i) => i.key === `owner:${caseId}`);
     try {
-      assert(dong()?.actionLabel === 'Chọn người phụ trách', 'lớp đủ GV môn → giữ việc cũ');
       conn.prepare(`UPDATE teacher_assignments SET status = 'tam_lop9' WHERE class_id = ? AND skill = 'reading' AND status = 'active'`).run(hv.cid);
       const r = dong();
-      assert(r?.actionLabel === 'Sửa phân công' && r.href === `/hoc-vien/lop/${hv.cid}?viec=phan-cong`, JSON.stringify(r));
+      assert(r?.actionLabel === 'Phân công' && r.thieuNguoi?.mon === 'reading' && r.href === `/hoc-vien/lop/${hv.cid}?viec=phan-cong`, JSON.stringify(r));
     } finally {
       conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE class_id = ? AND status = 'tam_lop9'`).run(hv.cid);
       conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(caseId);

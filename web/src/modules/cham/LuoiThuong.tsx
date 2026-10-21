@@ -50,6 +50,8 @@ type SkillSchedule = {
   nhanXetDuoc?: boolean;
   /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ. */
   khongVang?: string | null;
+  /** CV-LOI (V4B H15): máy chủ cho đổi lịch môn này — nút "Xếp lại bài vắng". */
+  doiLich?: boolean;
 };
 type Row = {
   /** Khoá bài (`khoaBai`): `progress` / `final`; OV-6b2 Checkpoint kèm số (`checkpoint:2`). */
@@ -430,7 +432,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
     const s = lichCua(row, k);
     const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
     const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
-    const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat,
+    const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat, doiLich: s?.doiLich,
       huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE) });
     const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
     /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯. */

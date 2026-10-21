@@ -31,8 +31,8 @@ function ketQuaThi(d: Dong): { tone: ToneNhan; chu: string } | null {
   if (d.thiThat?.ovr != null) return null;   // có Overall (kết quả cũ) mà kết luận chưa rõ: không nhãn "Chờ"
   return { tone: 'muted', chu: d.thiThat?.khongThi ? t('Không thi') : t('Chờ kết quả thi thật') };
 }
-const Huong = ({ d }: { d: Dong }) => (d.huongTiep ? <Nhan tone={toneHuong(d.huongTiep)}>{dich(d.huongTiep)}</Nhan> : <span className="text-slate-600">—</span>);
-const Gach = <span className="text-slate-600">—</span>;
+const Huong = ({ d }: { d: Dong }) => (d.huongTiep ? <Nhan tone={toneHuong(d.huongTiep)}>{dich(d.huongTiep)}</Nhan> : <span className="text-slate-500">—</span>);
+const Gach = <span className="text-slate-500">—</span>;
 
 function Giua({ g }: { g: Dong['giuaKhoa'] }) {
   if (!g) return Gach;

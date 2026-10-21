@@ -35,6 +35,7 @@ import { migratePrOv1c } from '../migrate/prOv1c.ts';
 import { migratePrOv11e } from '../migrate/prOv11e.ts';
 import { migratePrOv12c } from '../migrate/prOv12c.ts';
 import { migratePrOv12a } from '../migrate/prOv12a.ts';
+import { migratePrCvLoi } from '../migrate/prCvLoi.ts';
 import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
 
 const NOW = nowIso();
@@ -307,6 +308,8 @@ export function runSeed() {
     migratePrOv12a(conn, []);
     /* OV-12c: Case dựng bằng SQL thẳng theo luật cũ → nguyên nhân MT từ nhận xét, nhãn SOS Progress (cùng hàm với migrate). */
     migratePrOv12c(conn, []);
+    /* CV-LOI: Case dựng thẳng SQL không khai người phụ trách → gán theo luật tạo Case (cùng hàm với migrate). */
+    migratePrCvLoi(conn, []);
 
     capNhatConOChoTatCa();   // TD7b: dữ liệu mẫu ghi thẳng SQL — tính cờ "còn ô chờ điểm" một lần cho mọi lượt
     conn.prepare('UPDATE demo_config SET value = ?, updated_at = ? WHERE key = ?').run(nowIso(), nowIso(), MOC_LICH_SU);   // OV-15g: bộ demo dựng thẳng SQL không có lịch sử — mốc SAU mọi dữ liệu mẫu

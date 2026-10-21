@@ -47,9 +47,9 @@ export const KHU_VUC: readonly KhuVucMuc[] = [
   { key: 'tong-quan', to: '/', label: t('Tổng quan'), labelNgan: t('Tổng quan') },
   { key: 'hoc-vien', to: '/hoc-vien', label: t('Học viên & Lớp'), labelNgan: t('Học viên') },
   { key: 'test', to: '/test', label: t('Test'), labelNgan: t('Test') },
-  /* OV-15e (plan §7): Phân tích là mục thanh trên (trước là tab của Tổng quan). */
-  { key: 'phan-tich', to: '/phan-tich', label: t('Phân tích'), labelNgan: t('Phân tích') },
+  /* Thứ tự chủ SP chốt 20/10 (đánh giá 10.0 I.2): Công việc trước Phân tích. OV-15e: Phân tích là mục thanh trên. */
   { key: 'cong-viec', to: '/cong-viec', label: t('Công việc'), labelNgan: t('Công việc') },
+  { key: 'phan-tich', to: '/phan-tich', label: t('Phân tích'), labelNgan: t('Phân tích') },
   /* TU-a: Head tutor chỉ có mục này; QL / Quản trị thêm ở cuối. */
   { key: 'tutor', to: '/tutor', label: t('Tutor'), labelNgan: t('Tutor') },
 ];
@@ -70,6 +70,25 @@ const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
 /* OV-15d: Công việc là MỘT danh sách — "Chờ bạn duyệt" là nhóm đầu khi có thẻ, nên mục menu luôn mở `/cong-viec` (tham số giữ cho nơi gọi cũ). */
 export function khuVucHienThi(nav: NavQuyen, _soChoDuyet = 0): KhuVucMuc[] {
   return KHU_VUC.filter((k) => HIEN[k.key](nav));
+}
+
+/**
+ * KHUNG-LOI (A1-05): thanh trên không bị cắt. `rongMuc` = rộng đo được của từng mục, `rongCo` = chỗ của khung menu, `rongThem` = nút "Thêm ▾".
+ * Vừa hết → không gom; không vừa → giữ mục đầu nhiều nhất có thể (chừa chỗ nút Thêm), phần còn lại theo thứ tự vào Thêm.
+ * Chưa đo (`rongCo` ≤ 0) → vẽ đủ.
+ */
+export function chiaMucThanh<T>(muc: readonly T[], rongMuc: readonly number[], rongCo: number, rongThem: number): { hien: T[]; them: T[] } {
+  const tong = rongMuc.reduce((a, b) => a + b, 0);
+  if (rongCo <= 0 || tong <= rongCo) return { hien: [...muc], them: [] };
+  let n = 0;
+  for (let dung = rongThem; n < muc.length && dung + rongMuc[n] <= rongCo; n++) dung += rongMuc[n];
+  return { hien: muc.slice(0, n), them: muc.slice(n) };
+}
+
+/** Thanh dưới điện thoại ≤ 5 nút (04 "Thanh dưới 375"): > 5 → 4 đầu + "Thêm"; một mục (Head tutor) → không vẽ thanh. */
+export function chiaThanhDuoi<T>(muc: readonly T[], toiDa = 5): { hien: T[]; them: T[] } {
+  if (muc.length <= 1) return { hien: [], them: [] };
+  return muc.length <= toiDa ? { hien: [...muc], them: [] } : { hien: muc.slice(0, toiDa - 1), them: muc.slice(toiDa - 1) };
 }
 
 const thuoc = (p: string, goc: string) => p === goc || p.startsWith(`${goc}/`);
@@ -156,8 +175,8 @@ export function tabCongViecTuDuong(seg: string | undefined): TabCongViec | null 
 
 // ---------------------------------------------------------------- Tổng quan
 
-/** PR-VAI-a (K1-10, Q10): tab đầu đổi tên "Việc hôm nay" — không lặp chữ "Tổng quan" của menu. */
-export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': t('Việc hôm nay'), 'phan-tich': t('Phân tích') };
+/** KHUNG-LOI (A1-07): tiêu đề trang = tên menu ở mọi vai ("Việc hôm nay" của PR-VAI-a bỏ — tab đã bỏ ở OV-15e). */
+export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': t('Tổng quan'), 'phan-tich': t('Phân tích') };
 
 // ---------------------------------------------------------------- Đường dẫn cũ
 

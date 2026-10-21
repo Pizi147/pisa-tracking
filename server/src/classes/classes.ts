@@ -9,6 +9,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { ganChuCaseThieu } from '../cases/owner.ts';
 import {
   can, classScopeSql, coTheXemLuotCham, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
   type Principal,
@@ -1121,6 +1122,8 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
     added += 1;
   }
 
+  /* CV-LOI (A13): phân công vừa có người cho môn / GVCN → Case mở chưa có người phụ trách của lớp tự có chủ, cùng giao dịch, có lịch sử. */
+  if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso() });
   if (added || ended) {
     const code = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
     writeAudit({

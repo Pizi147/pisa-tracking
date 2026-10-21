@@ -99,7 +99,8 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
     });
   }
-  const xuLy = emIds.flatMap((sid) => (trang.get(sid)?.xuLy ?? []).filter((m) => trongChuoi(sid, m.cycleId)).map((m) => ({ sid, m })));
+  /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
+  const xuLy = emIds.flatMap((sid) => { const em = trang.get(sid); return [...(em?.xuLy ?? []), ...(em?.thuHoi ?? [])].filter((m) => trongChuoi(sid, m.cycleId)).map((m) => ({ sid, m })); });
   const phu = new Map<number, { nguoi: string | null; soTep: number }>();
   const mIds = xuLy.map((x) => x.m.id);
   for (let i = 0; i < mIds.length; i += 400) {

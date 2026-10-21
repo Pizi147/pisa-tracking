@@ -14,6 +14,17 @@ const nganPanel: string[] = [];
 /** PR-EN: panel đang sửa dở (`chan.daSua`) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ. */
 const panelDangSua = new Set<string>();
 export const coPanelDangSua = () => panelDangSua.size > 0;
+/** CV-LOI (CV-05): panel đang hiện "✓ Đã lưu · Hoàn tác" còn bấm được — hàng đợi Công việc không tự sang việc kế (Hoàn tác không bị thay). */
+const choHoanTac = new Set<symbol>();
+export const dangChoHoanTac = () => choHoanTac.size > 0;
+export function useChoHoanTac(con: boolean) {
+  useEffect(() => {
+    if (!con) return undefined;
+    const k = Symbol('hoan-tac');
+    choHoanTac.add(k);
+    return () => { choHoanTac.delete(k); };
+  }, [con]);
+}
 
 /**
  * OV-5a: PANEL TẠI CHỖ — cột phải trang Công việc (mockup M1 §1). Panel nằm ngay trong context này vẽ trong luồng trang (thẻ dính, cao tối đa
