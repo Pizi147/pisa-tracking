@@ -33,6 +33,9 @@ CAP = [(c, NEN, 4.5) for c in ['chu', 'chu-2', 'chu-3', 'nhan', 'hong-chu', 'loi
     # dấu không chữ
     ('hong', ['be-mat', 'dieu-huong-nen'], 3.0), ('vien-o', ['be-mat'], 3.0), ('focus', ['be-mat', 'be-mat-2'], 3.0),
     ('sos1', ['be-mat'], 3.0), ('sos2', ['be-mat'], 3.0), ('sos3', ['be-mat'], 3.0),
+    # V5-D P6: chữ trên nền SOS đặc + nền SOS tách khỏi mặt
+    ('sos1-chu', ['sos1-nen'], 4.5), ('sos2-tren', ['sos2-nen'], 4.5), ('sos3-tren', ['sos3-nen'], 4.5),
+    ('sos3-nen', ['be-mat'], 3.0),  # SOS 2 tách khỏi mặt nhờ viền --sos2 (đã đo ở trên)
 ]
 
 loi = 0
@@ -45,7 +48,7 @@ for ten, bo in (('SÁNG', sang), ('TỐI', toi)):
             loi += not ok
             print(f"{'ok ' if ok else 'TRƯỢT'} {chu:18} trên {n:16} {r:5.2f} (≥ {nguong})")
 # chữ trên nút chính
-for ten, bo, chu in (('SÁNG', sang, '#ffffff'), ('TỐI', toi, '#0b1026')):
+for ten, bo, chu in (('SÁNG', sang, '#ffffff'), ('TỐI', toi, '#060c18')):
     r = ti(chu, bo['nhan']); loi += r < 4.5
     print(f"{ten} chữ nút chính trên --nhan {r:.2f}")
 sys.exit(1 if loi else 0)
