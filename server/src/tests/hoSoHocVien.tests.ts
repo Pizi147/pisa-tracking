@@ -131,7 +131,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
       coViec += tatCa.length;
       for (const x of tatCa) {
         assert((x.quaHanNgay !== null) === (x.han !== null && x.han < t.TODAY), `HV ${student_id}: quaHanNgay phải = (hạn < hôm nay ${t.TODAY}): ${JSON.stringify(x)}`);
-        if (x.loai !== 'cho-duyet') {
+        if (x.loai !== 'cho-duyet' && x.loai !== 'buoc-tiep') {   // SEED-UX: dòng Chọn bước tiếp hiện nhãn kết quả "Đã xong · OVR …" (OV-13m)
           assert(/^(Xác nhận Case|Thêm PA|Xác nhận PA|Kết quả|Nộp kế hoạch bổ trợ|Báo phụ huynh|Ghi Mini Test|Xác nhận xử lý|Ghi nhận|Ghi "Đã thực hiện"|Bàn giao) /.test(x.chu), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${x.chu}"`);
         }
         /* Mục 3 (chủ sản phẩm 22/09): tên kỹ năng ĐẦY ĐỦ, không viết tắt L / R / W1 / W2 / S. */

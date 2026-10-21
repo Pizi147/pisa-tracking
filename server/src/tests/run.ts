@@ -140,6 +140,8 @@ async function assertRejects(fn: () => Promise<unknown>, match: RegExp, msg: str
 }
 
 const conn = db();
+/* SEED-UX: phép kiểm chỉ đọc bộ demo — chạy NGAY sau seed, trước mọi mục ghi thêm. */
+await (await import('./prSeedUx.tests.ts')).runPrSeedUxTests({ check, assert, conn } as any);
 /**
  * PR-S3F #8: `setIssues` chặn Case SOS chưa xác nhận nguyên nhân (đường chính là `xacNhanCase`). Phép kiểm cũ chỉ cần "Case đã có nguyên nhân"
  * để dựng tình huống của nó → ghi thẳng như dữ liệu cũ, đúng như `setIssues` từng làm (ghi nguyên nhân + đồng bộ trạng thái Case).
