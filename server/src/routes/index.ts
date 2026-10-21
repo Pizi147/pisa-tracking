@@ -105,7 +105,7 @@ import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
-import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { NHOM_VIEC_TVV, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
@@ -2002,6 +2002,11 @@ api.get('/tong-quan/diem-chu-y', requireAuth, wrap((req) => {
 api.get('/tong-quan/hoc-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return soHocVien(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
+}));
+/* SV-TVV-VIEC (Q-A1 ①): "Việc của bạn" ở trang đầu TVV — TVV không có khu Công việc (`/my-work` chặn), nên việc TVV giữ đọc ở đây (cùng `myWork`, chỉ nhóm của TVV). */
+api.get('/tong-quan/viec-cua-toi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return nheMyWork(myWork(principalOf(req), { branchId: qInt(req, 'branchId'), chiNhom: NHOM_VIEC_TVV }));
 }));
 /* OV-10c: Tổng quan Admin — tab "Mock Test" (4 ô + GV chấm quá hạn); mỗi số từ hàm của màn ô đó mở. */
 api.get('/tong-quan/mock-test', requireAuth, wrap((req) => {

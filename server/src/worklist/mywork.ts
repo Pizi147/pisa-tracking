@@ -1448,6 +1448,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   };
 }
 
+/** SV-TVV-VIEC: nhóm việc của TVV — đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`), TVV không có khu Công việc. `missing_data` của TVV chỉ có Chốt ngày thi. */
+export const NHOM_VIEC_TVV: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>(['missing_data', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so']);
 export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
 
 /** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`). OV-12h: bỏ Nhắc trên dòng. */

@@ -83,6 +83,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
   /* PR-Ra: trang "Công việc" — Hỗ trợ học viên dùng lại `/my-work`, nay có thêm `nguoi`. */
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work' },
+  /* SV-TVV-VIEC: việc của TVV (Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật) ở Tổng quan TVV. */
+  { trang: 'Việc TVV', vai: ['TVV'], url: '/tong-quan/viec-cua-toi' },
   {
     trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/my-work?nguoi=tat-ca',
     maChuDich: { GVCN: 403 },

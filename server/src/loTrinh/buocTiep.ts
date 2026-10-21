@@ -22,7 +22,7 @@ import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
-import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
+import { chuViecTvv, coTheGiuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
@@ -370,6 +370,7 @@ export function choBuocTiep(studentId?: number): any[] {
  * quyền hỏi theo em (tập nhỏ: em có kết quả, chưa chọn). Dòng: "Chọn bước tiếp" · em · lớp · "đã thi T7 10/10 · OVR 6.5 · Đạt Target" (mockup OV-13 bước tiếp §3).
  */
 export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null; studentId?: number; tatCa?: boolean }): any[] {
+  if (!coTheGiuViecTvv(p)) return [];
   const ds = choBuocTiep(f.studentId);
   napTruocPhamVi(ds.map((c) => c.student_id));   // quyền theo em đọc phạm vi một câu cho cả tập — không N+1
   const tvv = tvvCuaEm(ds.map((c) => c.student_id));

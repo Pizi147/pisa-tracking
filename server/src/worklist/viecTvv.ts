@@ -34,12 +34,15 @@ export function tvvCuaEm(ids: readonly number[]): Map<number, number | null> {
 
 /** Người xem có thể giữ việc TVV nào không — TVV giữ em của mình; QL / Quản trị giữ em chưa có TVV. Không thì khỏi đọc. */
 const laQl = (p: Principal) => can(p, PERMISSIONS.CYCLE_EDIT, { anyScope: true });
+/** GV / GVCN không giữ việc TVV nào — khỏi tốn câu. */
+export const coTheGiuViecTvv = (p: Principal) => p.roleKeys.includes('consultant') || laQl(p);
 
 /**
  * Em FT đang học đã tới tháng (tuần) dự kiến thi mà CHƯA có ngày (`trangThaiLichThi` = chưa chốt ngày) → "Chốt ngày thi", KHÔNG hạn (LT-SV Q-C3 ①).
  * Hết việc khi có ngày / dời tháng / có kết quả / "Không thi" / em Tạm dừng, Lưu trữ. Một câu.
  */
 export function viecChotNgayThi(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null }): WorkItem[] {
+  if (!coTheGiuViecTvv(p)) return [];
   const ql = laQl(p);
   const ds = db().prepare(
     `SELECT s.id, s.full_name, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, c.branch_id, cy.id AS cycle_id,
@@ -81,6 +84,7 @@ export function viecChotNgayThi(p: Principal, o: { today: string; tatCa: boolean
  * Tuần bắt đầu · Target FT). Không hạn. Mở danh sách Học viên chip "Thiếu thông tin". Một câu.
  */
 export function viecBoSungHoSo(p: Principal, o: { tatCa: boolean; branchId: number | null }): WorkItem[] {
+  if (!coTheGiuViecTvv(p)) return [];
   const ql = laQl(p);
   const ds = db().prepare(
     `SELECT s.id, s.dob, s.email, s.consultant_user_id AS tvv, c.branch_id, c.is_fast_track, cy.id AS cycle_id, cy.start_period_id, cy.target_score

@@ -8,7 +8,7 @@ import { PERMISSIONS, canNamGan, diemThiHopLe, docNgayNhap, duongHoSoHocVien, ng
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, napTruocPhamVi, type Principal } from '../permissions.ts';
-import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
+import { chuViecTvv, coTheGiuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
@@ -151,6 +151,7 @@ export const chuDaThi = (s: TrangThaiSauThi, today: string): string =>
  */
 export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; branchId: number | null }): any[] {
   const conn = db();
+  if (!coTheGiuViecTvv(p)) return [];
   const moc = loTrinhChoKetQuaThi(f.today);
   if (!moc.length) return [];
   const idLop = [...new Set(moc.map((x) => x.c.class_id as number | null).filter((x): x is number => !!x))];
