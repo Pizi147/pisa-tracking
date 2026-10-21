@@ -243,7 +243,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       assert(/min-h-\[44px\]/.test(n) && /min-w-\[44px\]/.test(n), `${moc}: nút < 44 px`);
     }
     assert(/width="20" height="20"/.test(nut('ref={nutTim}')) && /sm:hidden" aria-hidden width="20" height="20"/.test(nut('ref={nutThongBao}')), 'biểu tượng Tìm / chuông phải 20 px');
-    assert(/max-sm:absolute/.test(nut('{unread > 0 &&')), 'số chưa đọc phải max-sm:absolute đè góc chuông');
+    assert(/max-sm:absolute/.test(nut('{chuong.soNut > 0 &&')), 'số trên chuông phải max-sm:absolute đè góc chuông');   // SL1: số = việc Cần làm còn mở
   });
 
   /* OV-15a (C11): mọi kích thước — Giao diện nằm trong menu Tài khoản (phép kiểm thanh trên ở prOv15a). */

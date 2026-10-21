@@ -214,7 +214,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
       )}
       {!!data?.khacChiNhanh && (
         <p className="m-0 text-[13px] text-slate-400">
-          {data.khacChiNhanh} thẻ ở chi nhánh khác · <Link to="/cong-viec/cho-duyet?cn=tat-ca" className="link">Xem</Link>
+          {data.khacChiNhanh} thẻ ở chi nhánh khác · <Link to="/cong-viec/cho-duyet?cn=tat-ca" className="link max-sm:inline-block max-sm:py-3">Xem</Link>
         </p>
       )}
       {gon && data && (

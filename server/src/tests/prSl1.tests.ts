@@ -61,8 +61,12 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       const tu = d.addDaysIso(t2, -7 * 25), den = d.addDaysIso(t2, 6);
       const ky = metrics.metricSet(qt, 'pa-co-ket-qua', { branchId: MB, program: 'ft', from: tu, to: den });
       const pa = hq.paCoKetQua({ branchIds: [MB], ct: 'ft', tu: d.mondayOfDate(tu), den: d.mondayOfDate(den) });
-      const a = [...ky.ids].sort((x: number, y: number) => x - y).join(','), b = [...new Set(pa.map((x: any) => x.id))].sort((x: any, y: any) => x - y).join(',');
-      assert(pa.length > 0 && a === b, `Báo cáo ${a} ≠ Hiệu quả PA ${b}`);
+      /* Cùng kỳ → Báo cáo ⊆ Hiệu quả PA. Khung (FT / thường) của PA: Báo cáo theo lớp HIỆN TẠI của em, Hiệu quả PA theo nơi em học LÚC làm PA (F03) —
+         em đổi lớp thì lệch; trên bộ demo vừa dựng hai tập bằng nhau. ponytail: một luật khung cho mọi số là SL2 (một phạm vi một trang). */
+      const b = new Set(pa.map((x: any) => x.id));
+      const lech = pa.length - ky.ids.length;
+      assert(pa.length > 0 && ky.ids.every((x: number) => b.has(x)), `Báo cáo có PA ngoài Hiệu quả PA: ${ky.ids.filter((x: number) => !b.has(x))}`);
+      if (lech) console.log(`      (đo: ${lech} PA lệch khung do em đổi lớp — SL2)`);
       const jan = metrics.metricSet(qt, 'pa-co-ket-qua', { branchId: MB, program: 'ft', from: '2026-01-05', to: '2026-01-18' });
       assert(jan.n === 0, `01/2026 phải 0, được ${jan.n}`);
       const hep = metrics.metricSet(qt, 'pa-co-ket-qua', { branchId: MB, program: 'ft', from: d.addDaysIso(t2, -14), to: d.addDaysIso(t2, -1) });
@@ -220,7 +224,11 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       const cases: any = await_cases;
       const tb: any = await_tb;
       thu(() => {
-        const em = one(`SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE c.code = 'MB FT 101' AND e.status = 'active' LIMIT 1`).id;
+        /* Lớp FT Monbay đang có GV Reading khác QL (các phép kiểm trước có thể đã đổi phân công lớp mẫu). */
+        const em = one(`SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id
+          JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.skill = 'reading' AND ta.status = 'active' AND ta.user_id != ?
+          JOIN students s ON s.id = e.student_id AND s.archived_at IS NULL
+         WHERE c.branch_id = ? AND c.is_fast_track = 1 AND c.status = 'active' AND e.status = 'active' LIMIT 1`, P.mbManager.userId, MB).id;
         const c = cases.reportIssue(P.mbManager, { studentId: em, topic: 'reading', title: 'SL1 thử Case giao', summary: 'Em đọc chậm, bỏ sót 5 câu cuối Passage 3, sai dạng Matching Headings.',
           primaryCode: d.issuesForTopic('reading')[0].code, idempotencyKey: `sl1-c23-${Math.random()}`, parallel: true }) as any;
         const chu = one('SELECT owner_user_id AS u FROM sos_cases WHERE id = ?', c.id).u;
