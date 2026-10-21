@@ -27,7 +27,7 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
   const GET = <T>(fn: () => T): T => { xoaNho(); try { return chayTrongRequest('GET', () => JSON.parse(JSON.stringify(fn()))); } finally { xoaNho(); } };
   const bo = (o: any, keys: string[]) => JSON.parse(JSON.stringify(o, (k, v) => (keys.includes(k) ? undefined : v)));
   const r1 = (fn: () => unknown) => { try { GET(fn); return 200; } catch (e: any) { return e?.status ?? 500; } };
-  const MOI = ['chuaLich', 'chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'];
+  const MOI = ['chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'];
   const vai: [string, any, number | null][] = [['QL', P.mbManager, null], ['QL·MB', P.mbManager, MB], ['QT', P.admin, null], ['QT·MB', P.admin, MB]];
 
   check('H1-1 · /tong-quan/ql một request = các đường cũ chạy riêng: Lớp cần chú ý (cột cũ) · Lịch — từng số giữ nguyên; Trễ chấm thay /giao-vien (H1-3)', () => {
@@ -50,13 +50,12 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
     }
   });
 
-  check('H1-2 · Lớp cần chú ý: SOS 1 + 2 + 3 = SOS hiện tại mỗi hàng; Chưa lịch · Chưa điểm hàng tổng = chỉ số; GVCN mỗi lớp; phân rã Case chưa chốt PA cộng đúng tổng', () => {
+  check('H1-2 · Lớp cần chú ý: SOS 1 + 2 + 3 = SOS hiện tại mỗi hàng; Chưa điểm hàng tổng = chỉ số; GVCN mỗi lớp; phân rã Case chưa chốt PA cộng đúng tổng', () => {
     for (const ct of ['ft', 'thuong']) {
       const r = GET(() => tqQl.tongQuanQl(P.mbManager, { branchId: MB, ct }));
       const hang = [...r.bang.hang, r.bang.tong ? { nhan: 'tong', o: r.bang.tong } : null].filter(Boolean) as any[];
       for (const h of hang) assert(h.o.sos1.n + h.o.sos2.n + h.o.sos3.n === h.o.sos.n, `${ct} ${h.nhan}: SOS 1/2/3 ≠ SOS hiện tại`);
-      const chuaLich = GET(() => m.metricSet(P.mbManager, 'hv-ft-xong-mt-cuoi-chua-mt-ke', { branchId: MB, program: ct }).n);
-      assert(r.bang.tong.chuaLich.n === (ct === 'ft' ? chuaLich : 0), `${ct}: Chưa lịch tổng ${r.bang.tong.chuaLich.n} ≠ chỉ số ${chuaLich}`);
+      assert(!('chuaLich' in r.bang.tong), 'V5 C20: không còn cột Chưa lịch');
       const bai = GET(() => m.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB, program: ct }).ids) as number[];
       const hv = new Set(bai.length ? (conn.prepare(`SELECT student_id FROM assessment_attempts WHERE id IN (${[...new Set(bai.map((b) => d.tachBaiId(b).attemptId))].join(',')})`).all() as any[]).map((x) => x.student_id) : []);
       assert(r.bang.tong.chuaDiem.n === hv.size, `${ct}: Chưa điểm tổng ${r.bang.tong.chuaDiem.n} ≠ HV có bài quá hạn ${hv.size}`);

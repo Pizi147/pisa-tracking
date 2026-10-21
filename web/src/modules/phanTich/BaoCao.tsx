@@ -156,7 +156,6 @@ export function BaoCao(pv: PhamViPhanTich) {
         )}
 
         <Khoi tieuDe={t('HV cần chú ý')} phu={t('tại {ngay}', { ngay: tai })} className={mk ? 'lg:col-span-4 print:col-span-4' : 'lg:col-span-6 print:col-span-6'}>
-          {data.chuY.chuaLich !== null && <So so={<SoLieuO id="hv-ft-xong-mt-cuoi-chua-mt-ke" giaTri={data.chuY.chuaLich} phamVi={loc} ten={t('Chưa lịch Test')} />} nhan={t('chưa lịch Test')} />}
           <So so={<SoLieuO id="hv-sos-hien-tai" giaTri={data.chuY.sosHienTai} phamVi={loc} ten={t('SOS hiện tại')} />} nhan={t('SOS hiện tại')} />
           <So so={data.chuY.chuaDiemHv} nhan={t('chưa điểm')} phu={<><SoLieuO id="bai-qua-han-nhap-diem" giaTri={data.chuY.chuaDiemBai} phamVi={loc} ten={t('Bài chưa điểm')} /> {t('bài')}</>} />
           <So so={data.chuY.caseChuaChotHv} nhan={t('Case chưa chốt PA')} phu={<><SoLieuO id="case-cho-xac-dinh-nguyen-nhan" giaTri={data.chuY.caseChuaChot} phamVi={loc} ten={t('Case chưa chốt PA')} /> Case</>} />

@@ -2095,6 +2095,25 @@ CREATE TABLE gop_y_tuan (
 );
 CREATE INDEX idx_gop_y_tuan_lop ON gop_y_tuan(class_id, period_id);
 
+-- SV-BAI-LOP (V5 C11, T18): BÀI TRÊN LỚP ở hồ sơ HV — tuỳ chọn, thang của bài (diem / thang, không quy đổi band); KHÔNG vào MT, Overall, KPI,
+-- không sinh việc. `tuan` = thứ Hai của tuần. Lịch sử sửa / xoá ở `audit_logs` (bai_tren_lop.*, entity HV).
+CREATE TABLE bai_tren_lop (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  skill TEXT NOT NULL,
+  ten_bai TEXT NOT NULL,
+  diem REAL NOT NULL,
+  thang REAL NOT NULL,
+  tuan TEXT NOT NULL,
+  nhan_xet TEXT,
+  ghi_boi INTEGER REFERENCES users(id),
+  ghi_luc TEXT NOT NULL,
+  sua_boi INTEGER REFERENCES users(id),
+  sua_luc TEXT
+);
+CREATE INDEX idx_bai_tren_lop_hv ON bai_tren_lop(student_id, tuan);
+
 -- OV-15c (C21): GHI CHÚ LỊCH THI ở Kế hoạch Test — CHỈ ghi chú, không dời lịch. Mỗi lần lưu THÊM một dòng (lịch sử: tác giả, lúc);
 -- dòng mới nhất của một khoá là ghi chú hiện tại, `noi_dung = ''` = đã xoá. Khoá: FT (student_id, cycle_id, dot 'mt4') — MT đánh số theo lộ trình;
 -- lớp thường (student_id, class_id, dot 'progress' | 'final' | 'cp2'); ghi chú lớp (class_id, student_id NULL, dot NULL). Migrate `prOv15c` chép y câu này.

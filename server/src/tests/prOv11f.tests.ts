@@ -86,16 +86,7 @@ export async function runPrOv11fTests(t: YThucTestKit) {
     assert(!r1.ids.includes(sid) && !r1.denominatorIds.includes(sid), 'em KCK còn trong Dưới kỳ vọng');
   }));
 
-  check('OV11f-6 · "xong MT{n}, chưa có MT kế" = đủ điểm bắt buộc (cùng nghĩa Kế hoạch Test)', () => thu(() => {
-    const r = metrics.metricSet(P.mbManager, 'hv-ft-xong-mt-cuoi-chua-mt-ke', {});
-    for (const sid of r.ids) {
-      const xong = one(`SELECT 1 x FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
-        WHERE a.student_id = ? AND a.kind = 'mock' AND a.status = 'done' LIMIT 1`, sid);
-      assert(xong, `em ${sid} chưa có lượt MT đủ điểm mà vẫn "xong"`);
-    }
-    const anh = em('Lương Bảo Anh');
-    if (anh) assert(!r.ids.includes(anh), 'Lương Bảo Anh (MT3 mới 2/4 kỹ năng) không được tính "xong MT3"');
-  }));
+  /* OV11f-6 ("xong MT{n}, chưa có MT kế") bỏ cùng chỉ số — V5 C20. */
 
   check('OV11f-7 · QL kiêm TVV ở vai gốc: nav không bật "Học viên của tôi" (giữ Tổng quan QL); chỉ TVV thì bật', () => thu(() => {
     const tvv = vai('consultant');   // TVV thuần — lấy trước khi QL nhận thêm vai TVV

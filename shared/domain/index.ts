@@ -91,6 +91,7 @@ export * from './paDongBo.ts';
 export * from './gopViec.ts';
 export * from './lienHe.ts';
 export * from './gopYTuan.ts';
+export * from './baiTrenLop.ts';
 export * from './chipSos.ts';
 export * from './khungLichTest.ts';
 export * from './danExcel.ts';

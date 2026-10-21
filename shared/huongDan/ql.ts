@@ -55,11 +55,11 @@ export const HD_QL: HuongDan = {
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'ql-tq-cho-duyet', ten: 'HV cần chú ý', buoc: ['Dải đầu trang: <b>chưa lịch Test</b> · <b>chưa điểm</b> · <b>HV · Case chưa chốt PA</b> (⚠ quá hạn) · <b>bài trễ chấm · n GV</b>.', 'Bấm số mở danh sách tại chỗ; thống kê theo kỳ ở <b>Phân tích</b>; <b>Báo cáo ›</b> mở trang Báo cáo.'],
+        { id: 'ql-tq-cho-duyet', ten: 'HV cần chú ý', buoc: ['Dải đầu trang: <b>chưa điểm</b> · <b>HV · Case chưa chốt PA</b> (⚠ quá hạn) · <b>bài trễ chấm · n GV</b>.', 'Bấm số mở danh sách tại chỗ; thống kê theo kỳ ở <b>Phân tích</b>; <b>Báo cáo ›</b> mở trang Báo cáo.'],
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
         { id: 'ql-tq-can-xu-ly', ten: 'Cần bạn quyết', buoc: ['<b>Chờ duyệt</b>: thẻ "Nếu duyệt: …", <b>Duyệt · Từ chối…</b> tại chỗ; <b>Mở hộp duyệt ›</b> xem hết.', '<b>Case chưa chốt PA</b> quá hạn → <b>Mở Case</b>; <b>Chọn bước tiếp</b> sau thi; <b>Chốt lộ trình</b> khi tới hạn.', 'Không có Nhắc: GV tự nhận thông báo khi quá hạn.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc cần bạn quyết — quá hạn ở đầu.' } },
-        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Tuần này', buoc: ['<b>Lớp cần chú ý</b>: Chưa lịch, Chưa điểm, SOS 1 · 2 · 3, <b>Case chưa chốt PA</b> (HV / Case; <b>?</b> chia theo trạng thái), Đã thi · chờ KQ; mặc định <b>Chỉ lớp có vấn đề</b>.', '<b>Tuần này</b>: lịch Test sắp tới + <b>Trễ chấm</b> theo GV (bấm số bài để nhập thay).'],
+        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Tuần này', buoc: ['<b>Lớp cần chú ý</b>: Chưa điểm, SOS 1 · 2 · 3, <b>Case chưa chốt PA</b> (HV / Case; <b>?</b> chia theo trạng thái), Đã thi · chờ KQ; mặc định <b>Chỉ lớp có vấn đề</b>.', '<b>Tuần này</b>: lịch Test sắp tới + <b>Trễ chấm</b> theo GV (bấm số bài để nhập thay).'],
           chi: { hd: 'tq-lop-chu-y', duong: '/', chu: 'Mỗi lớp một hàng; bấm số để xử lý.' } },
       ],
     },
