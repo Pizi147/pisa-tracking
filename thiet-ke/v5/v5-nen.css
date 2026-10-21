@@ -80,10 +80,11 @@
   /* Kết quả điểm — tô chính con số + ✓ / ✗ trước số (G12), không nền */
   --kq-vuot: #146c43;  --kq-bang: #273c8f;  --kq-duoi: #b42318;
 
-  /* SOS — thang vàng → cam → đỏ, KHÔNG hồng (brief 5.2). Viền dày dần + chữ "SOS n"; tạm = viền đứt. */
-  --sos1: #a87a00;  --sos1-chu: #7a5900;
-  --sos2: #d9650f;  --sos2-chu: #a3470a;
-  --sos3: #b42318;  --sos3-chu: #9b1c14;
+  /* SOS — thang vàng → cam → đỏ, KHÔNG hồng (brief 5.2). V5-D (09 I.6, P6): 3 mức khác hẳn bằng ĐỘ ĐẶC của nền —
+     SOS 1 nền vàng nhạt · SOS 2 nền cam đặc · SOS 3 nền đỏ thẫm đặc chữ trắng; luôn kèm chữ "SOS n"; tạm = viền đứt. Logic SOS không đổi. */
+  --sos1: #b38600;  --sos1-chu: #6b4e00;  --sos1-nen: #fff1b8;
+  --sos2: #e07a16;  --sos2-chu: #a3470a;  --sos2-nen: #f28a1f;  --sos2-tren: #1f1000;
+  --sos3: #8f1610;  --sos3-chu: #9b1c14;  --sos3-nen: #8f1610;  --sos3-tren: #ffffff;
 
   /* Lịch thi — nền xanh lơ nhạt đặc, góc vuông: khác hẳn kết quả học tập (C23) */
   --lich-nen: #d9eaf5;  --lich-chu: #164e72;  --lich-vien: #9cc4dd;
@@ -110,25 +111,26 @@
 
 /* ---------------- TỐI: cùng tên token, chỉ đổi giá trị ---------------- */
 :root[data-theme="dark"] {
+  /* V5-D (09 I.3, P3): xanh bớt ngả tím (hue ≈ 228° → ≈ 216°) và tối hơn một nấc. */
   color-scheme: dark;
-  --nen: #0b1026;  --be-mat: #121a38;  --be-mat-2: #19234a;  --be-mat-noi: #172046;
-  --vien: #2a3560;  --vien-dam: #3c4a80;  --vien-o: #6a78aa;
-  --chu: #e9ecf7;  --chu-2: #bcc4e0;  --chu-3: #a2acce;  --chu-tren-dam: #ffffff;
-  --dieu-huong-nen: #111a42;  --dieu-huong-chu: #c9d1ee;  --dieu-huong-chu-mo: #ffffff;  --dieu-huong-hover: #1b2659;
-  --nhan: #a8b8f5;  --nhan-hover: #c3cefa;  --nhan-nen: #1f2b5c;  --nhan-vien: #4f63b3;  --focus: #a8b8f5;
-  --hong: #f57aae;  --hong-chu: #f79cc2;  --hong-nen: #3a1830;
-  --hover: #1a2450;  --dang-mo: #1f2b5c;
+  --nen: #060c18;  --be-mat: #0d1628;  --be-mat-2: #131f36;  --be-mat-noi: #101a30;
+  --vien: #233149;  --vien-dam: #344766;  --vien-o: #5d7398;
+  --chu: #e8edf6;  --chu-2: #b7c2d8;  --chu-3: #9aa8c2;  --chu-tren-dam: #ffffff;
+  --dieu-huong-nen: #0b1730;  --dieu-huong-chu: #c6d2ea;  --dieu-huong-chu-mo: #ffffff;  --dieu-huong-hover: #15264a;
+  --nhan: #98c0f2;  --nhan-hover: #bad6fa;  --nhan-nen: #16294a;  --nhan-vien: #3d68a6;  --focus: #98c0f2;
+  --hong: #f57aae;  --hong-chu: #f79cc2;  --hong-nen: #351628;
+  --hover: #14223d;  --dang-mo: #16294a;
   --loi: #ff9a8f;      --loi-nen: #3b1719;   --loi-vien: #8f3a33;
-  --canh-bao: #f2c450; --canh-bao-nen: #33290f; --canh-bao-vien: #7d6420;
-  --dat: #74d9a3;      --dat-nen: #12342a;   --dat-vien: #2f7a55;
-  --thieu: #a2acce;    --thieu-nen: #19234a; --thieu-vien: #6a78aa;
-  --dang: #a8b8f5;     --dang-nen: #1f2b5c;  --dang-vien: #4f63b3;
-  --kq-vuot: #74d9a3;  --kq-bang: #a8b8f5;  --kq-duoi: #ff9a8f;
-  --sos1: #d6b828;  --sos1-chu: #e3c84a;
-  --sos2: #e8702a;  --sos2-chu: #f5935a;
-  --sos3: #f0645a;  --sos3-chu: #ff9a8f;
-  --lich-nen: #1a3d5c;  --lich-chu: #9fd0f0;  --lich-vien: #2d5f82;  --da-thi-nen: #0f2335;
-  --bong-noi: 0 8px 24px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .35);
+  --canh-bao: #f2c450; --canh-bao-nen: #30270e; --canh-bao-vien: #7d6420;
+  --dat: #74d9a3;      --dat-nen: #10302a;   --dat-vien: #2f7a55;
+  --thieu: #9aa8c2;    --thieu-nen: #131f36; --thieu-vien: #5d7398;
+  --dang: #98c0f2;     --dang-nen: #16294a;  --dang-vien: #3d68a6;
+  --kq-vuot: #74d9a3;  --kq-bang: #98c0f2;  --kq-duoi: #ff9a8f;
+  --sos1: #d6b828;  --sos1-chu: #f0d24a;  --sos1-nen: #3a3006;
+  --sos2: #f28a1f;  --sos2-chu: #f7a25a;  --sos2-nen: #f28a1f;  --sos2-tren: #1f1000;
+  --sos3: #c62828;  --sos3-chu: #ff9a8f;  --sos3-nen: #c62828;  --sos3-tren: #ffffff;
+  --lich-nen: #133a58;  --lich-chu: #9fd0f0;  --lich-vien: #2d5f82;  --da-thi-nen: #0c2033;
+  --bong-noi: 0 8px 24px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
 }
 
 /* ================= THÀNH PHẦN DÙNG CHUNG (mockup) ================= */
@@ -162,7 +164,7 @@ h1, h2, h3 { margin: 0; line-height: 1.3; }
 .nut { font: inherit; font-size: var(--c-14); font-weight: 600; height: var(--cao-nut); padding: 0 14px; border-radius: var(--bo-o); border: 1px solid var(--vien-o); background: var(--be-mat); color: var(--chu); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .nut:hover { background: var(--hover); }
 .nut-chinh { background: var(--nhan); border-color: var(--nhan); color: #fff; }
-:root[data-theme="dark"] .nut-chinh { color: #0b1026; }
+:root[data-theme="dark"] .nut-chinh { color: #060c18; }
 .nut-chinh:hover { background: var(--nhan-hover); border-color: var(--nhan-hover); }
 .nut-ma { border-color: transparent; background: transparent; color: var(--nhan); }
 .nut-ma:hover { background: var(--hover); }
@@ -193,12 +195,12 @@ textarea.o { height: auto; min-height: 72px; padding: 8px 10px; resize: vertical
 .bd-kq.dat { color: var(--dat); border-color: var(--dat-vien); }
 .bd-kq.chua-dat { color: var(--loi); border-color: var(--loi-vien); }
 .bd-kq.thieu { color: var(--thieu); border-color: var(--thieu-vien); border-style: dashed; }
-/* Nhóm 4 — MỨC SOS: cùng họ viền với kết quả; mức tách bằng độ dày viền + chữ "SOS n" (không chỉ màu). Tạm = viền đứt. */
-.bd-sos { border-radius: var(--bo-badge); background: var(--be-mat); border: 1px solid; }
-.bd-sos.m1 { color: var(--sos1-chu); border-color: var(--sos1); }
-.bd-sos.m2 { color: var(--sos2-chu); border-color: var(--sos2); border-width: 2px; padding: 0 7px; }
-.bd-sos.m3 { color: var(--sos3-chu); border-color: var(--sos3); border-width: 3px; border-style: double; padding: 0 6px; }
-.bd-sos.tam { border-style: dashed; }
+/* Nhóm 4 — MỨC SOS (V5-D, P6): mức tách bằng độ đặc nền + chữ "SOS n" — nhạt (1) · cam đặc (2) · đỏ thẫm đặc (3). Tạm = viền đứt. */
+.bd-sos { border-radius: var(--bo-badge); border: 1px solid; font-weight: 700; }
+.bd-sos.m1 { color: var(--sos1-chu); background: var(--sos1-nen); border-color: var(--sos1); }
+.bd-sos.m2 { color: var(--sos2-tren); background: var(--sos2-nen); border-color: var(--sos2); }
+.bd-sos.m3 { color: var(--sos3-tren); background: var(--sos3-nen); border-color: var(--sos3); }
+.bd-sos.tam { border-style: dashed; border-color: var(--chu); }
 /* Nhóm 2 — TÌNH TRẠNG LỊCH THI: nền xanh lơ đặc, góc vuông 2 px, KHÔNG viền màu kết quả. "Đã thi · chờ KQ" ở đây — không thể nhầm với Đạt. */
 .bd-lich { border-radius: 2px; background: var(--lich-nen); color: var(--lich-chu); }
 .bd-lich.du-kien { background: transparent; box-shadow: inset 0 0 0 1px var(--lich-vien); }
