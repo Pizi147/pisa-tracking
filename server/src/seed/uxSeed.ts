@@ -91,7 +91,7 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   const w3Aug = ensurePeriod('2026-08-17').id;
   const BU_MT2: [string, boolean][] = [
     ['Hà Gia Bình', true], ['Ngô Thanh Tùng', true], ['Trịnh Gia Bảo', true], ['Đặng Thu Hà', true], ['Ngô Bảo Châu', true], ['Lý Thanh Tâm', true],
-    ['Võ Minh Triết', false], ['Trịnh Bảo Ngọc', false], ['Hồ Ngọc Diệp', false], ['Vũ Ngọc Lan', false],
+    ['Võ Minh Triết', false], ['Phạm Khánh Linh', false], ['Chu Nhật Minh', false], ['Kiều Thảo Nhi', false],   // em không thuộc kịch bản demo nào
   ];
   for (const [ten, dat] of BU_MT2) {
     const a = conn.prepare(`SELECT a.id, a.target_at_attempt AS t FROM assessment_attempts a JOIN students s ON s.id = a.student_id
