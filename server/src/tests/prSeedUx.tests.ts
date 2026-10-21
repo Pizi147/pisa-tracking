@@ -5,6 +5,7 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
   const { bangTutor } = await import('../tutors/trang.ts');
   const { loTrinhChoKetQuaThi } = await import('../loTrinh/thiThat.ts');
   const { DEMO_DATE } = await import('../seed/data.ts');
+  const { evaluateAttempt } = await import('../fasttrack/scoring.ts');
   const { scoreDebtCells } = await import('../worklist/scoreDebt.ts');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const uid = (ten: string) => one('SELECT id FROM users WHERE full_name = ?', ten)?.id as number;
@@ -67,6 +68,17 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
     const o = scoreDebtCells(loadPrincipal(trang), DEMO_DATE, null) as any[];
     assert(!o.some((c) => c.userId === trang && c.skill === 'speaking' && c.chamCheo), 'S Mock tính nợ của Trang');
     assert(o.some((c) => c.chamCheo && c.userId === null), 'không có ô S chấm chéo nào');
+  });
+  check('SU-11 T11: MT2 MB FT 101 = 20 em đủ dữ liệu · 15 đạt (75 % = 15/20)', () => {
+    let du = 0, dat = 0;
+    for (const a of conn.prepare(`SELECT a.id, a.target_at_attempt AS t, cy.route FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
+        JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE c.code = 'MB FT 101' AND a.attempt_no = 2 AND a.kind = 'mock' AND a.status != 'cancelled'`).all() as any[]) {
+      const e: Record<string, number | null> = {};
+      for (const x of conn.prepare('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[]) e[x.skill] = x.band;
+      const v = evaluateAttempt(a.t, 2, e as any, [], a.route);
+      if (v.evaluable) { du++; if (v.overall! >= v.expectation!) dat++; }
+    }
+    assert(du === 20 && dat === 15, `${dat}/${du}`);
   });
   check('SU-8 không thông báo nào sau ngày demo', () => {
     assert(!one(`SELECT 1 FROM notifications WHERE created_at > ?`, `${DEMO_DATE}T16:59:59.999Z`), 'thông báo ở tương lai');

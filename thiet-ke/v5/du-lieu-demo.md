@@ -53,7 +53,7 @@ Mật khẩu demo mọi tài khoản: `pisa2026` (không in trên mockup). GVCN 
 | MB FT RF 12 | FT RF | 07/09 | Hà / Khoa / W1 Khoa · W2 Linh / Trang | Khoa | 9 | MT1 W1 OCT |
 | MB FOU 12 | Thường (FOU) | 27/07 | Hà / Hà / Khoa / Trang | Hà | 12 | Progress 17/08 · Final L/R 14/09, W 21/09, S 28/09 |
 | CP FT 110 | FT LT1 | 13/04 | Nam / Nam / Dũng / Nam | Nam | 10 | MT1–MT3 xong, MT4 28/09 (QL thêm tay) |
-| BC FT 205 | FT LT2 | 08/06 | Quân / Quân / W1 Hân · W2 Quân / Trang | Quân | 11 | MT2 07/09 **chưa có điểm → quá hạn** |
+| BC FT 205 | FT LT2 | 08/06 | Quân / Quân / W1 Hân · W2 Quân / Trang | Quân | 11 | MT2 thi 31/08 (W1 SEP) **chưa có điểm → quá hạn** (hạn 09/09, quá 5 ngày — K3) |
 | UB FT 401 | FT LT2 | 23/02 | Kiên ×5 | Kiên | 8 | MT1–MT4 xong; thi thật 15/08 |
 
 Số HV lớp là **[V5]** (seed có ít HV hơn; mockup cần mẫu số 20 cho T11).
@@ -79,14 +79,14 @@ W = (W1 + 2×W2)/3 làm tròn 0,5 · Overall = TB 4 kỹ năng làm tròn 0,5 (x
 |---|---|---|
 | **Phan Gia Hân** | MB FT RF 12 | **T01** [V5]: Case R + Case W1, cả hai Lê Minh Khoa phụ trách → hai việc riêng "Ghi kết quả PA · R" và "Ghi kết quả PA · W1" |
 | Chu Minh Hiếu | MB FT 102 | **T02**: Khoa chỉ dạy W ở FT 102 → nợ chấm của Khoa chỉ gồm W (14 bài), không gồm L/R của Linh, S của Trang |
-| Ngô Hải Yến | CP FT 110 | **T10**: GVCN Nam lưu xử lý Report 1 lúc 10:00 T2 14/09 → việc Báo PH của TVV Hương, hạn 23:59 T6 18/09; lần 1 "Chưa liên hệ được" 15/09 |
+| Ngô Hải Yến | CP FT 110 | **T10**: GVCN Nam lưu xử lý Report 1 lúc 10:00 T2 14/09 → việc Báo PH của TVV Hương, hạn 23:59 T6 18/09; lần 1 "Chưa liên hệ được" 14/09 15:30 (K4) |
 | Lý Tuấn Bình | CP FT 110 | việc Báo PH kế tiếp (minh hoạ "Lưu và tiếp") [V5]; HV của TVV Hương |
 | Hồ Thanh Tùng | CP FT 110 | **T04**: xong MT1–MT3 → không có gợi ý / việc MT4; QL Mai thêm MT4 W1 OCT tay trong Kế hoạch Test |
 | Dương Minh Quân | UB FT 401 | thi thật 15/08: Overall 7.0 (L 7.5 R 7.5 W 6.5 S 6.5) ≥ Target 7.0 → ✓ Đạt Target (W, S dưới không tính tạch — C10) |
 | Lý Thanh Trúc | UB FT 401 | thi thật 15/08: Overall 6.0 < Target 6.5 → ✗ Chưa đạt; đã chốt bước tiếp |
 | **Đinh Ngọc Quyên** | CP FT 110 | **T09** [V5]: thi thật 12/09, TVV Hương nhập điểm 14/09 (Overall 7.0), **chưa chọn bước tiếp** → "Đã có kết quả · Chưa chốt bước tiếp" |
 | Đặng Ngọc Lam | HD FT 302 | **T18** [V5]: cô Yến ghi tiến độ trên lớp Reading 7/10 (thang /10) — chỉ ở Hành trình, không vào MT / KPI |
-| Trương Gia Huy | BC FT 205 | MT2 07/09 chưa có điểm → bài quá hạn (đỏ ở Lịch tuần, nhóm Quá hạn ở Chấm Test) |
+| Trương Gia Huy | BC FT 205 | MT2 thi 31/08 (W1 SEP), hạn 09/09, chưa có điểm → bài quá hạn (đỏ ở Lịch tuần, nhóm Quá hạn ở Chấm Test) |
 
 ## 7. Công việc & đếm (cùng số ở mọi màn)
 
@@ -96,7 +96,7 @@ W = (W1 + 2×W2)/3 làm tròn 0,5 · Overall = TB 4 kỹ năng làm tròn 0,5 (x
 |---|---|---|
 | Cô Hà | **7 việc** | Chấm điểm 3 (MT3 L FT 101 · MT3 R FT 101 · Final L/R MB FOU 12 = 22 + 22 + 24 bài) · Case 2 (PA R Lê Quang Huy · PA L Phạm Bảo Ngọc) · Ý thức 2 (Huy hạn 14/09 · Ngọc quá hạn 1 ngày) |
 | Thầy Khoa | **6 việc · 4 HV** | Chấm 2 (W MT3 FT 101 = 22 bài, hạn 23/09 — **T14** gập · W MT2 FT 102 = 14 bài) · Case 4 (PA R Nguyễn Minh An · PA W1 Lê Quang Huy · PA R + PA W1 Phan Gia Hân — **T01**) |
-| Cô Trang | **2 việc** | Chấm S MT3 FT 101 (tuần thi này, hạn 23/09) · Chấm S MT2 BC FT 205 **quá hạn** |
+| Cô Trang | theo mã (K2 / R2) | S Mock là **chấm chéo, không tính nợ** của ai (`scoreDebt.ts`) — S MT3 FT 101 và S MT2 BC FT 205 nằm ở "Bài thi Speaking" / Quá hạn với nhãn "chấm chéo · không tính nợ", không vào "Của tôi" |
 | Cô Đỗ Thu Hương (GV) | **0 việc** | nhưng thấy **Bài thi Speaking tuần này** MB (FT 101 S 22 bài, FT 102 S 14 bài) — nguồn có thể chấm, không phải nợ (**T03**) |
 | TVV Nguyễn Thu Hương | **3 việc** | Báo PH Ngô Hải Yến (hạn 18/09) · Báo PH Lý Tuấn Bình (hạn 18/09) · Sau thi Đinh Ngọc Quyên (chọn bước tiếp) |
 | QL Vy | **4 chờ duyệt** | dời MT3 S Trần Thu Hà · PA Tutor (quá 1 ngày) · đổi Target Huy 6.5 → 7.0 · WL 3 Lương Gia Bảo |

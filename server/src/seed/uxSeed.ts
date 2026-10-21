@@ -19,7 +19,7 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { loadPrincipal } from '../permissions.ts';
 import { commitIntake, createClass } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
-import { LISTENING_BY_RAW } from '../fasttrack/scoring.ts';
+import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
 import { ghiKetQuaBaoPh } from '../yThuc/baoPhTvv.ts';
@@ -86,6 +86,24 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   nhapMt2('Bùi Thảo Vy', 30, 28, 6.0, 6.5, 6.0);
   nhapMt2('Tạ Minh Quân', 27, 28, 6.5, 6.5, 6.5);
   nhapMt2('Lương Bảo Anh', 27, 27, 6.0, null, null);
+  /* Số nghiệm thu T11 (08 mục 2): MT2 MB FT 101 = 20 em đủ dữ liệu · 15 đạt. 10 lượt MT2 còn trống dời về W3 AUG (tuần MT2 của lớp) rồi nhập:
+     6 em Overall = kỳ vọng (Đạt), 4 em dưới kỳ vọng 0.5 (Chưa đạt). Kỳ vọng MT2 = Target − 0.5. */
+  const w3Aug = ensurePeriod('2026-08-17').id;
+  const BU_MT2: [string, boolean][] = [
+    ['Hà Gia Bình', true], ['Ngô Thanh Tùng', true], ['Trịnh Gia Bảo', true], ['Đặng Thu Hà', true], ['Ngô Bảo Châu', true], ['Lý Thanh Tâm', true],
+    ['Võ Minh Triết', false], ['Trịnh Bảo Ngọc', false], ['Hồ Ngọc Diệp', false], ['Vũ Ngọc Lan', false],
+  ];
+  for (const [ten, dat] of BU_MT2) {
+    const a = conn.prepare(`SELECT a.id, a.target_at_attempt AS t FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+                             WHERE s.full_name = ? AND a.attempt_no = 2 AND a.kind = 'mock' AND a.status != 'cancelled'`).get(ten) as any;
+    if (!a?.t) continue;
+    conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(w3Aug, a.id);
+    conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(w3Aug, a.id);
+    const b = a.t - 0.5 - (dat ? 0 : 0.5);
+    saveScore(admin, a.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(b), resultDate: '2026-08-21' });
+    saveScore(admin, a.id, 'reading', { rawScore: READING_BY_RAW.indexOf(b), resultDate: '2026-08-21' });
+    for (const k of ['writing1', 'writing2', 'speaking']) saveScore(admin, a.id, k, { criteria: [b, b, b, b], resultDate: '2026-08-22' });
+  }
 
   // ---------------------------------------------------------------- U5 · HD FT 306 (lớp mới, GV mới)
   /* Ở HD, không ở MB: lớp FT thêm ở MB làm vỡ phép đo tốc độ QL MB ×3 (TD3-b-2, TD7) — quy tắc dừng của kế hoạch SEED-UX mục 2.4. */
@@ -186,7 +204,7 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     conn.prepare('UPDATE viec_bao_ph_lan SET ghi_luc = ? WHERE id = (SELECT MAX(id) FROM viec_bao_ph_lan WHERE viec_id = ?)').run(`${ngay}T${luc}.000Z`, viecId);
   };
   viPham(emFt[0], ['2026-09-07', '2026-09-08', '2026-09-09'], '2026-09-11');
-  viPham(emFt[2], ['2026-08-31', '2026-09-01', '2026-09-02'], '2026-09-03');
+  viPham(emFt[2], ['2026-08-31', '2026-09-01', '2026-09-02'], '2026-09-03');   // CỐ Ý: việc Báo PH hạn 07/09 chưa ghi → ca "Báo PH quá hạn" của TVV HD
 
   // ---------------------------------------------------------------- U6 · HD FOU 06 (lớp thường, Giữa khoá đủ điểm) — ở HD cùng lý do U5
   const kgFou = '2026-08-17';
