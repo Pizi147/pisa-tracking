@@ -258,10 +258,10 @@ export default function App() {
         </div>
       )}
       {/* NEN-V5: thanh xanh màu logo (`.thanh-xanh`, token đổi tại chỗ) + logo PISA hồng; điện thoại cao 52 px. */}
-      <header className="thanh-xanh relative shrink-0 print:hidden">
+      <header className="relative thanh-xanh shrink-0 print:hidden">
         <div className="flex items-center gap-3 px-3 sm:px-5 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
           <Link to="/" className="mr-3 flex shrink-0 items-center gap-2 no-underline max-sm:mr-1" aria-label={t('PISA — Tổng quan')}>
-            <img src={logoPisa} alt="PISA" width={76} height={24} className="h-6 w-auto" />
+            <img src={logoPisa} alt="PISA" title="PISA Tracking" width={76} height={24} className="h-6 w-auto" />
             {!banChinh && <span className="hidden text-xs text-[color:var(--dieu-huong-chu)] lg:inline">{t('Bản demo nội bộ')}</span>}
           </Link>
           <ThanhTren items={items} dangO={dangO} so={so} soTutor={soTutor} />

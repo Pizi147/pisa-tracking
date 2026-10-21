@@ -122,7 +122,7 @@ export function BangMauV5() {
         <p className="m-0 max-w-[880px] text-[13px] text-slate-400">Nền chung V5 trong mã (<code>web/src/index.css</code> ← <code>thiet-ke/v5/v5-nen.css</code>). Dữ liệu demo cố định (hôm nay T2 14/09/2026 · W3 SEP) — không gọi API.</p>
       </header>
 
-      <Muc so={1} ten="Màu PISA từ logo" ghi={<>Xanh <b>#273C8F</b> = cấu trúc (thanh điều hướng, nút chính, link, focus, đang chọn) · hồng <b>#F25A98</b> = điểm nhấn nhận diện (vạch menu đang mở, mốc "tuần này", dấu "của tôi") — <b>hồng không bao giờ nghĩa là lỗi hay SOS</b>.</>}>
+      <Muc so={1} ten="Màu PISA từ logo" ghi={<>Xanh logo = cấu trúc (thanh điều hướng, nút chính, link, focus, đang chọn) · hồng logo = điểm nhấn nhận diện (vạch menu đang mở, mốc "tuần này", dấu "của tôi") — <b>hồng không bao giờ nghĩa là lỗi hay SOS</b>.</>}>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
           {O_MAU.map(([ten, v, kieu]) => (
             <div key={ten} className="card flex items-center gap-2.5 p-2 text-[13px]">
@@ -159,7 +159,7 @@ export function BangMauV5() {
             <NhanLich loai="da-thi">Đã thi · chờ KQ</NhanLich><NhanLich loai="co">Có KQ · chờ bước tiếp</NhanLich>
           </HangBd>
           <HangBd ten="Tiến độ xử lý" phu="viên tròn · chấm / ⚠">
-            <Nhan tone="muted">Chờ duyệt</Nhan><Nhan tone="doing">Đang làm</Nhan><Nhan tone="ok">Đã xong</Nhan><Nhan tone="soon">Hạn hôm nay</Nhan>
+            <Nhan tone="muted">Chờ duyệt</Nhan><Nhan tone="doing">Đang làm</Nhan><Nhan tone="ok">Xong</Nhan><Nhan tone="soon">Hạn hôm nay</Nhan>
             <Nhan tone="late">Quá hạn 2 ngày</Nhan><Nhan tone="muted">Chưa liên hệ được · lần 1</Nhan>
           </HangBd>
         </div>
@@ -170,7 +170,7 @@ export function BangMauV5() {
           <div className="flex flex-wrap items-center gap-2.5 px-4 py-3.5">
             <button type="button" className="btn btn-primary">Ghi kết quả PA</button>
             <button type="button" className="btn">Chốt ngày</button><button type="button" className="btn">Nhập điểm</button><button type="button" className="btn">Ghi báo PH</button>
-            <button type="button" className="btn btn-ghost text-[color:var(--accent)]">Huỷ</button><button type="button" className="btn" disabled>Lưu</button>
+            <button type="button" className="btn btn-ghost text-[color:var(--accent)]">Đóng</button><button type="button" className="btn" disabled>Lưu</button>
           </div>
           <HangBd ten="Nút động từ" phu="mở panel việc"><span className="text-[13px] text-slate-400">Tên = việc sẽ làm. Không còn nút "Mở". Nút chính chỉ một trên mỗi vùng.</span></HangBd>
           <HangBd ten="Tên + ↗" phu="mở hồ sơ"><a href="#v5-m4" className="font-semibold text-slate-100 no-underline hover:underline">Nguyễn Minh An <span aria-hidden className="font-normal text-slate-500">↗</span></a><span className="text-[13px] text-slate-400">mở hồ sơ (đổi trang, Quay lại về đúng chỗ)</span></HangBd>
@@ -219,7 +219,7 @@ export function BangMauV5() {
             [<span key="n" className="font-semibold text-soon">● Chưa lưu</span>, <><button type="button" className="btn btn-sm">Lưu</button><button type="button" className="btn btn-sm btn-primary">Lưu và tiếp</button></>],
             [<span key="d" className="font-semibold text-doing">Đang lưu…</span>, <><button type="button" className="btn btn-sm" disabled>Lưu</button><button type="button" className="btn btn-sm btn-primary" disabled>Lưu và tiếp</button></>],
             [<span key="x" className="font-semibold text-dim">✓ Đã lưu 10:42</span>, <><button type="button" className="btn btn-sm">Đóng</button><button type="button" className="btn btn-sm btn-primary">Việc kế: Báo PH · Lý Tuấn Bình</button></>],
-            [<span key="l" className="font-semibold text-bad">⚠ Chưa lưu được — mất mạng. Chữ đang gõ vẫn giữ.</span>, <button type="button" className="btn btn-sm btn-primary">Thử lại</button>],
+            [<span key="l" className="font-semibold text-bad">⚠ Không lưu được — mất mạng. Chữ đang gõ vẫn giữ.</span>, <button type="button" className="btn btn-sm btn-primary">Thử lại</button>],
           ] as const).map(([tt, nut], i) => (
             <div key={i} className={`flex flex-wrap items-center gap-2.5 rounded-lg border px-4 py-2.5 text-[13px] ${i === 3 ? 'border-bad-line bg-bad-bg' : ''}`}>
               <span className="min-w-0 flex-1">{tt}</span>{nut}
