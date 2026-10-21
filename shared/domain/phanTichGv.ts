@@ -69,14 +69,11 @@ export function khoangPtGv(q: { tu?: string | null; den?: string | null; thang?:
 
 /** % làm tròn (Q19). */
 export const phanTramGv = (dung: number, tong: number) => Math.round((100 * dung) / tong);
-/** Dưới 5 mục: "mẫu nhỏ" thay cho % (cùng ngưỡng "Ít dữ liệu" ở Hiệu quả PA). */
-export const MAU_NHO_GV = 5;
-
-/** Chữ một ô: "18/20" + "90%" · dưới 5 mục "mẫu nhỏ" · "—" không áp dụng · "Chưa có dữ liệu" áp dụng mà mẫu 0 (V5 T19 — không hiện 0 %). */
+/** Chữ một ô: "18/20" + "90%" (chủ SP 22/10: bỏ chữ "mẫu nhỏ") · "—" không áp dụng · "Chưa có dữ liệu" áp dụng mà mẫu 0 (V5 T19 — không hiện 0 %). */
 export function chuOPtGv(o: OPtGv): { so: string | null; phu: string } {
   if (o.k === 'na') return { so: null, phu: '—' };
   if (o.k === 'rong') return { so: null, phu: 'Chưa có dữ liệu' };
-  return { so: `${o.dung}/${o.tong}`, phu: o.tong < MAU_NHO_GV ? 'mẫu nhỏ' : `${phanTramGv(o.dung, o.tong)}%` };
+  return { so: `${o.dung}/${o.tong}`, phu: `${phanTramGv(o.dung, o.tong)}%` };
 }
 
 /** Ô từ tập (dung ⊆ tong) + có áp dụng không. */

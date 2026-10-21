@@ -7592,9 +7592,9 @@ check('PR-E · <TyLe>: n/N đứng trước, phần trăm trong ngoặc đứng 
   assert(t.indexOf('12/18') < t.indexOf('%'), 'Phần trăm không được đứng trước n/N');
 });
 
-check('PR-E · <TyLe>: mẫu dưới 5 gắn nhãn "mẫu nhỏ"; từ 5 trở lên thì không', () => {
-  assert(domain.rateText(1, 1) === '1/1 (100%) · mẫu nhỏ', `Đang ghi "${domain.rateText(1, 1)}"`);
-  assert(domain.rateText(3, 4) === '3/4 (75%) · mẫu nhỏ', `Đang ghi "${domain.rateText(3, 4)}"`);
+check('PR-E · <TyLe>: mẫu dưới 5 vẫn có cờ smallSample nhưng không ghi chữ "mẫu nhỏ" (chủ SP 22/10)', () => {
+  assert(domain.rateText(1, 1) === '1/1 (100%)', `Đang ghi "${domain.rateText(1, 1)}"`);
+  assert(domain.rateText(3, 4) === '3/4 (75%)', `Đang ghi "${domain.rateText(3, 4)}"`);
   assert(domain.rateText(4, 5) === '4/5 (80%)', `N=5 chưa phải mẫu nhỏ, đang ghi "${domain.rateText(4, 5)}"`);
   assert(domain.rateView(1, 1).kind === 'value' && (domain.rateView(1, 1) as any).smallSample === true,
     'rateView phải báo smallSample để giao diện gắn nhãn');
@@ -7903,7 +7903,7 @@ check('PR-F · Tỷ lệ có cải thiện là 2/3, KHÔNG phải 2/4: chưa xá
   assert(after.n === before.n + 2, `Tử số phải +2 (tiến bộ + một phần), đang ${before.n} → ${after.n}`);
   assert(after.numeratorIds.length === after.n && after.denominatorIds.length === after.N,
     'Số phải bằng độ dài của tập ID sinh ra nó');
-  assert(domain.rateText(after.n - before.n, after.N - before.N) === '2/3 (67%) · mẫu nhỏ',
+  assert(domain.rateText(after.n - before.n, after.N - before.N) === '2/3 (67%)',
     `Câu hiển thị phải là 2/3, đang "${domain.rateText(after.n - before.n, after.N - before.N)}"`);
 });
 

@@ -14,7 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 /**
  * PHÂN TÍCH GIÁO VIÊN (PR-Pb2-b, mockup 25 màn A–D) — góc nhìn cuối hàng ở Tổng quan › Phân tích, Quản lý + Quản trị. Một hàng một giáo viên,
- * sắp theo tên; KHÔNG KPI, KHÔNG xếp hạng, KHÔNG hàng tổng, KHÔNG nút sắp (Q30-5). Ô ghi `n/m` trước, % 12 px dưới; dưới 5 mục "mẫu nhỏ".
+ * sắp theo tên; KHÔNG KPI, KHÔNG xếp hạng, KHÔNG hàng tổng, KHÔNG nút sắp (Q30-5). Ô ghi `n/m` trước, % 12 px dưới (chủ SP 22/10: không ghi "mẫu nhỏ").
  * Chỉ % ô KẾT QUẢ có màu (không thanh — Q27). OV-15e: khung + khoảng = hàng lọc chung của Phân tích (C29); chi nhánh lấy ô chi nhánh đầu trang.
  * Bấm số (C30): Chấm điểm mở panel (màn C), ô khác mở panel ĐÚNG GV + khoảng (`/phan-tich/giao-vien/o`) — `0/20` vẫn mở 20 mục.
  * Điện thoại: mỗi GV một thẻ, dòng không áp dụng ẩn (màn D).
@@ -102,16 +102,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
               <span>
                 <span className="tabular-nums">{data.hang.length}</span> giáo viên có {data.khung === 'ft' ? 'lớp Fast Track' : 'lớp thường'} ở {data.tenChiNhanh} trong{' '}
                 <b className="font-semibold tabular-nums text-slate-200">{nhanKhoang(khoang).chinh}</b>
-                {' '}· sắp theo tên{!dienThoai && ' · rê chuột hoặc Tab vào tên cột gạch chấm để xem cách tính'}
+                {' '}· sắp theo tên
               </span>
-              {!dienThoai && (
-                <span className="flex flex-wrap gap-x-4 gap-y-0.5">
-                  <span><b className="font-semibold tabular-nums text-slate-200">18/20</b> đúng hạn / có hạn trong khoảng</span>
-                  <span><b className="text-slate-200">—</b> không áp dụng</span>
-                  <span>Chưa có dữ liệu = áp dụng, chưa có mục</span>
-                  <span>mẫu nhỏ = dưới 5 mục</span>
-                </span>
-              )}
             </div>
             {!data.hang.length
               ? <Empty title={`Không có giáo viên nào có ${data.khung === 'ft' ? 'lớp Fast Track' : 'lớp thường'} trong khoảng này.`} />

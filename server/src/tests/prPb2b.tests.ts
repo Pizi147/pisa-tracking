@@ -315,7 +315,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   });
   check('Pb2b (4b) · chuOPtGv bốn dạng (V5 C08: không màu ngưỡng) · khungPtGvTuThamSo("ca-hai") = ft', () => {
     assert(JSON.stringify(d.chuOPtGv({ k: 'so', dung: 18, tong: 20 })) === '{"so":"18/20","phu":"90%"}', 'số');
-    assert(d.chuOPtGv({ k: 'so', dung: 3, tong: 4 }).phu === 'mẫu nhỏ' && d.chuOPtGv({ k: 'na' }).phu === '—' && d.chuOPtGv({ k: 'rong' }).phu === 'Chưa có dữ liệu', 'ba dạng');
+    assert(d.chuOPtGv({ k: 'so', dung: 3, tong: 4 }).phu === '75%' && d.chuOPtGv({ k: 'na' }).phu === '—' && d.chuOPtGv({ k: 'rong' }).phu === 'Chưa có dữ liệu', 'ba dạng');
     assert(d.khungPtGvTuThamSo('ca-hai') === 'ft' && d.khungPtGvTuThamSo(null) === 'ft' && d.khungPtGvTuThamSo('thuong') === 'thuong', 'khung');
   });
 

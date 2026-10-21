@@ -209,7 +209,6 @@ export const EN_C = {
   'Chưa phân công': 'Unassigned',
 
   /* ---------------------------------------------------------------- shared/domain/display — hạn, tiến độ đợt */
-  ' · mẫu nhỏ': ' · small sample',
   'Số liệu không hợp lệ': 'Invalid data',
   'Số liệu tiến độ không hợp lệ ({why})': 'Invalid progress data ({why})',
   'đợt không có {donVi} bắt buộc nào': 'round has no required {donVi}',
@@ -597,7 +596,7 @@ export const EN_C = {
   'Đã kết thúc với kết quả có tiến bộ hoặc tiến bộ một phần.': 'Ended with clear or some progress.',
   'Thành công': 'Success',
   'Tỷ lệ': 'Rate',
-  "Thành công trên đã thực hiện. Dưới 5 mẫu chỉ ghi 'mẫu nhỏ'; chưa có mẫu thì 'Chưa có dữ liệu'.": "Success over done. Under 5 shows 'small sample'; none shows 'No data yet'.",
+  'Thành công trên đã thực hiện.': 'Success over done.',
   'PA {loai} đang thực hiện': 'PA {loai} running',
   'PA {loai} đã thực hiện': 'PA {loai} done',
   'PA {loai} thành công': 'PA {loai} successful',

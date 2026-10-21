@@ -71,7 +71,7 @@
   <span class="nhan-tt">ĐỀ XUẤT · V5-B2 · dữ liệu demo</span>
   <label>Học viên <select id="chon-hv"><option value="huy">Lê Quang Huy · MB FT 101 (T07)</option><option value="lam">Đặng Ngọc Lam · HD FT 302 (T18)</option><option value="moi">HV mới · MB FT RF 12 (chưa có MT)</option></select></label>
   <label>Xem như <select id="chon-vai"><option value="ha">Cô Trần Ngọc Hà · GVCN</option><option value="tam">CX Vũ Thanh Tâm · chỉ xem</option></select></label>
-  <label>Khung <select id="chon-khung"><option value="thuong">Bình thường</option><option value="tai">Đang tải</option><option value="loi-tai">Lỗi tải</option><option value="ghi-bai">Ghi bài trên lớp (panel)</option></select></label>
+  <label>Khung <select id="chon-khung"><option value="thuong">Bình thường</option><option value="tai">Đang tải</option><option value="loi-tai">Lỗi tải</option><option value="ghi-bai">Ghi tiến độ trên lớp (panel)</option></select></label>
   <span>Hôm nay <b>T2 14/09/2026 · W3 SEP</b></span>
   <button class="nut nut-nho" type="button" onclick="B2.doiSangToi()">Sáng / Tối</button>
 </div>
@@ -100,7 +100,7 @@
 
   /* ---------- DỮ LIỆU HÀNH TRÌNH ----------
    * Huy: MT2 = du-lieu-demo mục 5. MT1 + mốc đổi Target 6.0 → 6.5 (20/07) [B2]. MT3 thi 14/09, cô Hà đang chấm (hạn 23/09) → ô trống, không phải "không đổi".
-   * Lam: HD FT 302, cô Yến ghi bài trên lớp Reading 7/10 (du-lieu-demo mục 6, T18); MT [B2]. */
+   * Lam: HD FT 302, cô Yến ghi tiến độ trên lớp Reading 7/10 (du-lieu-demo mục 6, T18); MT [B2]. */
   var HV = {
     huy: { ten: 'Lê Quang Huy', lop: 'MB FT 101', ct: 'FT LT1', target: 6.5, gvcn: 'Trần Ngọc Hà', lich: '<span class="bd bd-lich chua">Chưa có lịch thi</span>', lh: 'Mẹ · 0987 *** 215',
       kq: '<span class="bd bd-kq chua-dat">✗ Chưa đạt MT2</span> <span class="bd bd-sos m2">SOS 2 · R, W</span>',
@@ -140,7 +140,7 @@
   var KN = ['L', 'R', 'W', 'S'];
   h += '<section class="the" style="overflow:hidden" aria-label="Hành trình"><div class="tab-kn" role="tablist" aria-label="Kỹ năng"><b style="font-size:15px;margin-right:6px">Hành trình</b>' +
     KN.map(function (k) { return '<button type="button" role="tab" data-kn="' + k + '" aria-selected="' + (k === kn) + '">' + (k === 'W' ? 'W <span style="font-weight:500;font-size:12px">W1 · W2</span>' : k) + '</button>'; }).join('') +
-    '<span class="chu-giai"><span><i class="bd-dung"></i>MT chính thức</span><span><i class="bd-thi"></i>Thi thật</span><span><i class="bd-lop"></i>Bài trên lớp (thang riêng)</span><span><i class="bd-kv"></i>Kỳ vọng lúc thi</span><span><i class="bd-trong"></i>Chưa có điểm</span></span></div>';
+    '<span class="chu-giai"><span><i class="bd-dung"></i>MT chính thức</span><span><i class="bd-thi"></i>Thi thật</span><span><i class="bd-lop"></i>Tiến độ trên lớp (thang riêng)</span><span><i class="bd-kv"></i>Kỳ vọng lúc thi</span><span><i class="bd-trong"></i>Chưa có điểm</span></span></div>';
 
   if (!hv.luot.length) {
     h += '<div class="rong"><div class="tieu">Chưa có lượt MT nào</div><div style="font-size:14px;margin-top:4px">MT1 của lớp thi W1 OCT (28/09). Hành trình hiện từ lượt đầu — chưa có điểm không phải là không tiến bộ.</div></div>';
@@ -148,9 +148,9 @@
     h += '<div class="bieu-do">' + veBieuDo(hv, kn) + '</div>';
     h += bangMoc(hv, kn);
   }
-  /* Bài trên lớp: tuỳ chọn, thang riêng, không vào MT / KPI (C11, T18) */
+  /* Tiến độ trên lớp: tuỳ chọn, thang riêng, không vào MT / KPI (C11, T18) */
   var bl = hv.baiLop.filter(function (b) { return b.kn === kn || kn === 'tat'; });
-  h += '<div class="bai-lop"><div class="dau"><b style="font-size:14px">Bài trên lớp · ' + kn + '</b><span class="phu">tuỳ chọn · thang của bài · không tính vào MT, Overall hay báo cáo GV</span>' + (chiXem ? '' : '<button class="nut nut-nho" type="button" style="margin-left:auto" data-ghi>+ Ghi bài trên lớp</button>') + '</div>' +
+  h += '<div class="bai-lop"><div class="dau"><b style="font-size:14px">Tiến độ trên lớp · ' + kn + '</b><span class="phu">tuỳ chọn · thang của bài · không tính vào MT, Overall hay báo cáo GV</span>' + (chiXem ? '' : '<button class="nut nut-nho" type="button" style="margin-left:auto" data-ghi>+ Ghi tiến độ trên lớp</button>') + '</div>' +
     (bl.length ? '<div class="muc">' + bl.map(function (b) { return '<div class="the-bai"><b>' + b.diem + '</b> <span class="phu">' + b.tuan + '</span><div>' + b.ten + '</div><div class="phu">' + b.ai + ' ghi</div></div>'; }).join('') + '</div>' : '<span class="phu">Chưa ghi bài nào. Không ghi cũng không sao — không có nhắc hay cảnh báo.</span>') + '</div>';
   h += '</section>';
   noi.innerHTML = h;
@@ -217,7 +217,7 @@
       '<div class="panel-than"><p class="phu" style="margin:0">Cùng panel như ở Hồ sơ lớp và Công việc (một việc, một bản ghi).</p></div><div class="panel-chan"><span class="trai"><span class="tt-luu nhap">● Chưa lưu</span></span><button class="nut" type="button">Lưu</button><button class="nut nut-chinh" type="button">Lưu và tiếp</button></div>');
   }
   function moPanelGhi() {
-    hien(dau('GHI NHẬN · TUỲ CHỌN', 'Bài trên lớp · ' + hv.ten, hv.lop + ' · không sinh việc, không vào MT / KPI') +
+    hien(dau('GHI NHẬN · TUỲ CHỌN', 'Tiến độ trên lớp · ' + hv.ten, hv.lop + ' · không sinh việc, không vào MT / KPI') +
       '<div class="panel-than"><div class="truong"><span class="nhan-truong">Kỹ năng</span><div class="lua-chon"><label>L</label><label class="chon">R</label><label>W</label><label>S</label></div></div>' +
       '<div class="truong"><label for="tb">Tên bài</label><input id="tb" class="o" value="Matching headings"></div>' +
       '<div class="truong"><span class="nhan-truong">Điểm</span><div style="display:flex;gap:8px;align-items:center"><input class="o so" style="width:80px;text-align:center" value="7" aria-label="Điểm đạt"><span>/</span><input class="o so" style="width:80px;text-align:center" value="10" aria-label="Thang điểm"><span class="phu">thang của bài · không quy đổi band</span></div></div>' +

@@ -54,7 +54,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'role.permission.grant': 'Cấp quyền cho vai', 'role.permission.revoke': 'Bỏ quyền của vai', 'role.retired': 'Bỏ vai cũ', 'rule.changed': 'Đổi luật',
   'schedule.autoplan': 'Tự xếp lịch Test',
   'gop_y_tuan.ghi': 'Ghi góp ý hàng tuần', 'gop_y_tuan.xoa': 'Xoá góp ý hàng tuần',
-  'bai_tren_lop.them': 'Ghi bài trên lớp', 'bai_tren_lop.sua': 'Sửa bài trên lớp', 'bai_tren_lop.xoa': 'Xoá bài trên lớp',
+  'bai_tren_lop.them': 'Ghi tiến độ trên lớp', 'bai_tren_lop.sua': 'Sửa tiến độ trên lớp', 'bai_tren_lop.xoa': 'Xoá tiến độ trên lớp',
   'score.edit': 'Nhập điểm', 'score.override': 'Sửa điểm', 'score.no_show': 'Báo vắng', 'score.no_show_cleared': 'Bỏ báo vắng',
   'score.nhan_xet': 'Sửa nhận xét',
   'score.nhan_xet_phu_trach': 'Nhận xét GV phụ trách',   // OV-13k

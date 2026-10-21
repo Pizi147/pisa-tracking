@@ -12,8 +12,8 @@
 | Hành trình riêng L / R / W (W1 / W2) / S | `hv-1440-sang` (R), `hv-w1-w2-1280` (W) | Nút kỹ năng; biểu đồ đường theo tuần (SVG) + bảng mốc bên dưới (số liệu đầy đủ, đọc được bằng trình đọc màn hình); W vẽ hai đường W1, W2, bảng có W1 · W2 · W |
 | Mốc kỳ vọng đổi theo thời gian, không tô lại lịch sử | `hv-1440-sang` | Đường KV bậc thang nét đứt: "Target 6.0 → KV 5.5" rồi vạch hồng "Target 6.5 · 20/07 → KV 6.0"; điểm MT1 so KV 5.5, MT2 so KV 6.0; cột "KV lúc thi" (`target_at_attempt`) |
 | Khoảng trống ≠ không tiến bộ | `hv-1440-sang`, `hv-chua-co-mt-1440` | MT3 thi 14/09 chưa chấm: nét chấm xám + "MT3 chưa có điểm"; bảng ghi "Chưa có điểm (hạn chấm 23/09) — không phải 'không đổi'"; HV chưa có MT: "Chưa có lượt MT nào … chưa có điểm không phải là không tiến bộ" |
-| Loại dữ liệu rõ | mọi khung | Chú giải: ● MT chính thức · ◆ Thi thật · □ Bài trên lớp (thang riêng) · nét đứt KV · nét chấm chưa có điểm |
-| C11 / T18 bài trên lớp tuỳ chọn, thang riêng | `hv-t18-bai-tren-lop-1440`, `hv-ghi-bai-panel-1440`, `hv-ghi-bai-375` | Khối viền đứt "Bài trên lớp · R — tuỳ chọn · không tính vào MT, Overall hay báo cáo GV"; thẻ "6/10 W4 AUG", "7/10 W2 SEP" (cô Yến); panel "GHI NHẬN · TUỲ CHỌN": kỹ năng, tên bài, điểm "7 / 10" (thang của bài, không quy đổi band), tuần, nhận xét không bắt buộc; không có nhắc / cảnh báo khi không ghi |
+| Loại dữ liệu rõ | mọi khung | Chú giải: ● MT chính thức · ◆ Thi thật · □ Tiến độ trên lớp (thang riêng) · nét đứt KV · nét chấm chưa có điểm |
+| C11 / T18 tiến độ trên lớp tuỳ chọn, thang riêng | `hv-t18-bai-tren-lop-1440`, `hv-ghi-bai-panel-1440`, `hv-ghi-bai-375` | Khối viền đứt "Tiến độ trên lớp · R — tuỳ chọn · không tính vào MT, Overall hay báo cáo GV"; thẻ "6/10 W4 AUG", "7/10 W2 SEP" (cô Yến); panel "GHI NHẬN · TUỲ CHỌN": kỹ năng, tên bài, điểm "7 / 10" (thang của bài, không quy đổi band), tuần, nhận xét không bắt buộc; không có nhắc / cảnh báo khi không ghi |
 | Chỉ xem / tải / lỗi | `hv-chi-xem-1440`, `hv-tai-1440`, `hv-loi-tai-1440` | CX: dải chỉ xem, ẩn nút; khung xương; `bao-loi` |
 
 ## 2. BỎ / GIỮ
@@ -30,6 +30,6 @@
 ## 3. Giả định · cần xác minh
 
 - **[B2]** MT1 của Lê Quang Huy, mốc đổi Target 6.0 → 6.5 ngày 20/07, MT của Đặng Ngọc Lam, liên hệ PH.
-- **[XM] Dữ liệu mới:** mã chưa có chỗ lưu "bài trên lớp có điểm" (góp ý tuần chỉ là chữ ≤ 500, `schema.sql:2085-2095`). Cần một bảng riêng (kỹ năng, tên bài, điểm, thang, tuần, người ghi) — V5-C quyết; không trộn vào bảng điểm MT. → **SV-BAI-LOP PR #513**: bảng `bai_tren_lop` + API `/students/:id/bai-tren-lop`, `/bai-tren-lop/:id`, lịch sử `/lich-su?loai=bai-lop`.
+- **[XM] Dữ liệu mới:** mã chưa có chỗ lưu "tiến độ trên lớp có điểm" (góp ý tuần chỉ là chữ ≤ 500, `schema.sql:2085-2095`). Cần một bảng riêng (kỹ năng, tên bài, điểm, thang, tuần, người ghi) — V5-C quyết; không trộn vào bảng điểm MT. → **SV-BAI-LOP PR #513**: bảng `bai_tren_lop` + API `/students/:id/bai-tren-lop`, `/bai-tren-lop/:id`, lịch sử `/lich-su?loai=bai-lop`.
 - **[ĐX]** Biểu đồ không dùng radar (brief 11); thang trục 4.0–7.5 cố định cho FT; lớp thường hiển thị theo thang của bài, không quy đổi band.
 - Panel việc từ thanh việc dùng chung khung với Hồ sơ lớp / Công việc (vẽ đủ ở `ho-so-lop.html`).
