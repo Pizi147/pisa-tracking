@@ -44,7 +44,7 @@ export type TongQuanQlData = {
 export const thamSoTq = (branchId: number | null, ct: ChuongTrinh) => `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
 
 /** Hàng lớp "có vấn đề" (mockup 3 "Chỉ lớp có vấn đề"): có em chưa lịch / chưa điểm / SOS / Case chưa chốt PA / đã thi chờ KQ. */
-const coVanDe = (o: Record<CotBang, OBang>) => o.chuaLich.n + o.chuaDiem.n + o.sos.n + o.caseChuaChot.n + o.daThiChoKq.n > 0;
+const coVanDe = (o: Record<CotBang, OBang>) => o.chuaDiem.n + o.sos.n + o.caseChuaChot.n + o.daThiChoKq.n > 0;
 
 export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang']; branchId: number | null; ct: ChuongTrinh }) {
   const dt = useDienThoai();
@@ -112,7 +112,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
               const o = h.o;
               const muc = ([
                 ['sos', t('SOS hiện tại'), ft && o.sos.n], ['chuaDiem', t('Chưa điểm'), o.chuaDiem.n], ['case', t('Case chưa chốt PA'), o.caseChuaChot.n],
-                ['chuaLich', t('Chưa lịch'), ft && o.chuaLich.n], ['daThiChoKq', t('Đã thi · chờ KQ'), ft && o.daThiChoKq.n],
+                ['daThiChoKq', t('Đã thi · chờ KQ'), ft && o.daThiChoKq.n],
               ] as const).filter((x) => !!x[2]);
               return (
                 <li key={h.khoa} className={`border-t px-4 py-2.5 first:border-t-0 ${h.khoa === 'tong' ? 'bg-white/5' : ''}`} style={{ borderColor: 'var(--line)' }}>
@@ -140,12 +140,11 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
             <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: ft ? '56rem' : '36rem' }}>
               <colgroup>
                 <col style={{ width: '13rem' }} /><col style={{ width: '12rem' }} /><col />
-                {ft && <col />}<col />{ft && <col style={{ width: '9.5rem' }} />}<col style={{ width: '9rem' }} />{ft && <col />}
+                <col />{ft && <col style={{ width: '9.5rem' }} />}<col style={{ width: '9rem' }} />{ft && <col />}
               </colgroup>
               <thead><tr>
                 <th className="th sticky-col text-left">{t('Lớp')}</th><th className="th text-left">{t('GVCN')}</th>
                 <th className="th text-center">{t('HV')}</th>
-                {ft && <th className="th text-center">{t('Chưa lịch')}</th>}
                 <th className="th text-center">{t('Chưa điểm')}</th>
                 {ft && (
                   <th className="th text-center">
@@ -165,7 +164,6 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
                       </td>
                       <td className="td truncate text-slate-400">{h.gvcn ?? ''}</td>
                       <td className="td text-center tabular-nums">{h.o.hocVien.n}</td>
-                      {ft && <td className="td text-center">{so(h, 'chuaLich', h.o.chuaLich)}</td>}
                       <td className="td text-center">{so(h, 'chuaDiem', h.o.chuaDiem)}</td>
                       {ft && <td className="td text-center">{sos(h)}</td>}
                       <td className="td text-center">{caseHv(h)}</td>
@@ -188,7 +186,7 @@ export function LopCanChuY({ data, branchId, ct }: { data: TongQuanQlData['bang'
 const COT_TEN: Record<CotBang, string> = {
   hocVien: 'Học viên', duoiKyVong: 'Dưới kỳ vọng', sos: 'SOS hiện tại', caseMo: 'Case đang mở', thieuPa: 'Case chưa có PA', duDuLieu: 'Tỷ lệ đủ dữ liệu',
   caseChuaChotHv: 'HV có Case chưa chốt PA', caseChuaChot: 'Case chưa chốt PA',
-  chuaLich: 'Chưa lịch Test', chuaDiem: 'Chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
+  chuaDiem: 'Chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
 };
 
 /** TRỄ CHẤM THEO GV (mockup 3): tên · kỹ năng · số bài (bấm → panel đúng bài, QL nhập tại chỗ) · lớp · trễ nhất. Không Nhắc — GV đã nhận thông báo tự động. */

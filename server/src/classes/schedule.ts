@@ -586,7 +586,7 @@ export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; 
 }
 
 /**
- * HAI ĐIỀU KIỆN CỦA `tomTatMt`, tách thành hằng SQL để chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` (PR-VAI-a Q8c) dùng ĐÚNG luật này.
+ * HAI ĐIỀU KIỆN CỦA `tomTatMt`, tách thành hằng SQL (V5 C20 đã bỏ chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` dùng chung).
  *   CO_MOC_KE_TIEP  — lộ trình có lượt mốc kế tiếp (`MOC_KE_TIEP_SQL`), MỘT tham số `?` = thứ Hai tuần này.
  *   XONG_MT_CUOI    — đã có lượt MT ĐỦ ĐIỂM bắt buộc (OV-11f Q5) ở số thứ tự ≥ số MT trong lịch của lớp `c` (bản chụp, cùng lộ trình) / của lộ trình em, tính cả MT lịch sử. Không tham số.
  */
