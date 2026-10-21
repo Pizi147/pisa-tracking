@@ -50,6 +50,7 @@ import { migratePrOv13l } from './migrate/prOv13l.ts';
 import { migratePrOv13n } from './migrate/prOv13n.ts';
 import { migratePrOv13m } from './migrate/prOv13m.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
+import { migratePrSvBaiLop } from './migrate/prSvBaiLop.ts';
 import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
 import { migratePrOv12c } from './migrate/prOv12c.ts';
@@ -384,6 +385,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-15i1: chỉ mục audit_logs(entity_type, action, entity_id) — Lịch sử góp ý tuần không đọc mọi dòng nhật ký của em (chỉ thêm, chạy lặp được). */ buoc(() => migratePrOv15i1(conn, applied));
     /* CV-LOI: Case mở chưa có người phụ trách → gán theo luật tạo Case (GV môn → GVCN), có lịch sử (đổi dữ liệu, chạy lặp không đổi). */ buoc(() => migratePrCvLoi(conn, applied));
     /* SL1: cột notifications.han — chuông Cần làm sắp theo hạn (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrSl1(conn, applied));
+    /* SV-BAI-LOP: bảng bai_tren_lop — Bài trên lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvBaiLop(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

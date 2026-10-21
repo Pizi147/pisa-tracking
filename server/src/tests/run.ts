@@ -9500,6 +9500,9 @@ await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runPrSl2Tests } = await import('./prSl2.tests.ts');
 await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+
+const { runPrSvBaiLopTests } = await import('./prSvBaiLop.tests.ts');
+await runPrSvBaiLopTests({ check, assert, conn, P, classId } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
