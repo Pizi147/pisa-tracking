@@ -41,8 +41,8 @@ function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<
       ? t('Tuần thi đã qua: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.', { mon })
       : laThuong
         ? t('Ghi "-" cho {mon}: môn này dời sang {x} ngay.', { mon, x: vang?.tuanMoi ?? t('tuần sau') })
-        : t('Ghi "-" cho {mon} và chốt ngay. Lần vắng đầu máy tự dời sang tuần kế tiếp; lần 2 huỷ phần thi này.', { mon });
-    case 'huy-diem': return t('Ô điểm trở về trống. Điểm cũ vẫn nằm trong Lịch sử cùng lý do.');
+        : t('Ghi "-" cho {mon} và chốt ngay. Lần đầu máy tự dời sang tuần kế tiếp (tuần đó đã qua thì gửi Quản lý); lần 2 huỷ phần thi này.', { mon });
+    case 'huy-diem': return t('Ô điểm trở về trống; nhận xét giữ. Lấy lại bằng ⋯ "Khôi phục điểm".');
     case 'khong-mock-lai': return t('{mon} đã huỷ vì vắng 2 lần sẽ không thi lại; đợt tính trên các kỹ năng còn lại.', { mon });
     case 'khoi-phuc': return t('Mở lại phần thi {mon} đã huỷ và đặt tuần thi mới trong cùng một lần.', { mon });
     default: return '';

@@ -120,7 +120,7 @@ export const lockedByNoShow = (cell: Cell) => (cell.noShow?.state === 'khong-du-
   || cell.noShow?.state === 'cho-ql-hieu-chinh';
 
 /** LUAT-34 (L3): "Đủ điểm" chỉ là trạng thái — GV đúng ô vẫn sửa được (thay câu khoá R11). */
-export const KHOA_HOAN_TAT_HINT = t('Mọi kỹ năng đã có điểm — vẫn sửa được.');
+export const KHOA_HOAN_TAT_HINT = t('Mọi kỹ năng đã có điểm hoặc "-" — vẫn sửa được.');
 /** Lớp đã kết thúc: chỉ Quản lý sửa điểm (Q-B1 ①) — cùng câu máy chủ `kiemLopKetThuc`. */
 export const KHOA_KET_THUC_HINT = t('Lớp đã kết thúc — chỉ Quản lý sửa được điểm.');
 /** E8 (T53 Q6): bài đã xác nhận vắng không nhập điểm ở lưới — nhập bù thì Quản lý xếp lại bài trước. */
@@ -169,7 +169,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       const r = patch.khoiPhuc
         ? await api.post<any>(`/attempts/${attemptId}/skills/${skill}/khoi-phuc-diem`, {})
         : await api.put<any>(`/attempts/${attemptId}/scores/${skill}`, patch);
-      if (patch.khoiPhuc) toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: ENTRY_SKILL_SHORT[skill as EntrySkill], x2: tenHv ? ` · ${tenHv}` : '' }));
+      if (patch.khoiPhuc) toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: ((r?.o as string[] | undefined) ?? [skill]).map((k) => ENTRY_SKILL_SHORT[k as EntrySkill]).join(' + '), x2: tenHv ? ` · ${tenHv}` : '' }));
       /* PR-BV: xoá "-" đã chốt — máy chủ trả tuần bài về / giữ (mockup bản 2). */
       if (r?.goVang?.tuanVe) {
         toast.push('ok', t('Đã bỏ vắng {x}{x2} · {x3} {tuanVe}', { x: ENTRY_SKILL_SHORT[skill as EntrySkill], x2: tenHv ? ` · ${tenHv}` : '', x3: r.goVang.giuLich ? t('giữ') : t('về'), tuanVe: r.goVang.tuanVe }));

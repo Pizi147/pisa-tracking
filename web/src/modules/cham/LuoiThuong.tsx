@@ -426,14 +426,17 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
   const [lichSu, setLichSu] = useState<string | null>(null);
   const toast = useToast();
+  const dangKhoiPhuc = useRef(false);   // chống bấm đúp
   /* LUAT-34 (T20b): "Khôi phục điểm" một bấm — máy chủ ghi lại điểm cất qua đúng đường lưu điểm (quyền, nhật ký). */
   const khoiPhuc = async (k: string) => {
     try {
+      if (dangKhoiPhuc.current) return;
+      dangKhoiPhuc.current = true;
       await api.post(`/attempts/${row.attemptId}/skills/${k}/khoi-phuc-diem`, {});
-      invalidate('/regular'); invalidate('/classes'); invalidate('/attempts');
+      invalidate('/regular'); invalidate('/classes'); invalidate('/attempts'); invalidate('/students'); invalidate('/my-work');
       toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: tenMonNgan(ct, k), x2: ` · ${row.studentName}` }));
       onReload();
-    } catch (e: any) { toast.push('error', e.message); }
+    } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
   };
   /*
    * MENU ⋯ TỪNG Ô (K4-32): thao tác theo `thaoTacKyNang` (laFt = false → không bao giờ có "Bỏ kỹ năng khỏi đợt") + mục cuối

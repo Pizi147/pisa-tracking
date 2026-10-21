@@ -572,14 +572,17 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
 }) {
   const [moveFor, setMoveFor] = useState<SkillRow | null>(null);
   const toast = useToast();
+  const dangKhoiPhuc = useRef(false);   // chống bấm đúp
   /* LUAT-34 (T20b): "Khôi phục điểm" một bấm — máy chủ ghi lại điểm cất (mọi ô của kỹ năng) qua đúng đường lưu điểm. */
   const khoiPhuc = async (skill: string) => {
     try {
+      if (dangKhoiPhuc.current) return;
+      dangKhoiPhuc.current = true;
       await api.post(`/attempts/${d.id}/skills/${skill}/khoi-phuc-diem`, {});
-      invalidate('/attempts'); invalidate('/classes');
+      invalidate('/attempts'); invalidate('/classes'); invalidate('/students'); invalidate('/my-work');
       toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: skillLabel(skill), x2: '' }));
       onDone();
-    } catch (e: any) { toast.push('error', e.message); }
+    } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
   };
   const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
   const [hop, setHop] = useState<{ t: ThaoTac; r: SkillRow; c: Cell } | null>(null);
@@ -589,7 +592,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
   const order = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
   const cells = [...d.cells].sort((a, b) => order.indexOf(a.skill) - order.indexOf(b.skill));
   const coDiemO = (c: Cell) => c.band !== null || c.rawScore !== null;
-  /* LUAT-34: ô "-" MT cũ = Đã huỷ (`da-huy`) — như "Không dự thi" cũ: không hạn, nút chính Nhập điểm. */
+  /* LUAT-34: ô "-" MT cũ = Đã huỷ (`da-huy`) — như "Không dự thi" cũ: không hạn; GV đúng ô: nút chính Nhập điểm (gỡ "-" trong hộp). */
   const khongDuThiO = (c: Cell) => (c.noShow?.state === 'khong-du-thi' || c.noShow?.state === 'da-huy') && !c.daChot && !coDiemO(c);
 
   const renderRow = (c: Cell) => {
@@ -602,7 +605,8 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
     const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || (!!c.noShow && !khongDuThiO(c));
 
     /* LUAT-34 (S13): MT cũ, mọi ô của kỹ năng "Đã huỷ" → Khôi phục / Không mock lại như vắng 2 lần. */
-    const huyCu = d.lichSu && d.cells.filter((x) => x.assessedSkill === c.assessedSkill).every((x) => x.noShow?.state === 'da-huy');
+    /* Khôi phục / Giữ huỷ chỉ là việc của Quản lý — GV giữ trạng thái MT cũ (nút Nhập điểm), không kẹt ở dòng không thao tác. */
+    const huyCu = d.viewer.canPlanWeek && d.lichSu && d.cells.filter((x) => x.assessedSkill === c.assessedSkill).every((x) => x.noShow?.state === 'da-huy');
     const tt = trangThaiTT({
       batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang, huyCu,
     });
