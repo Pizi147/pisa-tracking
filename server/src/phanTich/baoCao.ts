@@ -9,6 +9,7 @@ import {
   type BaoCaoKq, type ChuongTrinh, type DongMock, type DongSosBc, type GvQuaHanBc,
 } from '../../../shared/domain/index.ts';
 import { badRequest } from '../util.ts';
+import { t } from '../../../shared/i18n/index.ts';
 import type { Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -112,8 +113,8 @@ export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: S
 }
 
 /**
- * THI THÁNG NÀY (P4, 22/10 — thay "Thi tuần này"): HV có NGÀY THI THẬT đã chốt (`exam_date`; tháng dự kiến không tính) trong tháng của hôm nay, lớp gần nhất
- * của em trong phạm vi Phân tích + chi nhánh + khung đang xem. Số TẠI LÚC XEM (không theo kỳ). Lộ trình bỏ dở, HV lưu trữ không tính.
+ * THI THÁNG NÀY (P4, 22/10 — thay "Thi tuần này"): HV có NGÀY THI THẬT đã chốt (`exam_date`; tháng dự kiến không tính) trong tháng của hôm nay, lớp em ĐANG HỌC
+ * (ghi danh còn hiệu lực) trong phạm vi Phân tích + chi nhánh + khung đang xem. Số TẠI LÚC XEM (không theo kỳ). Lộ trình bỏ dở, HV lưu trữ không tính.
  */
 export function tapThiThangNay(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): Map<number, string> {
   const { cs } = phamViPhanTich(p, f.branchId ?? null, null);
@@ -124,7 +125,7 @@ export function tapThiThangNay(p: Principal, f: { branchId?: number | null; ct: 
   const out = new Map<number, string>();
   for (const r of db().prepare(
     `SELECT cy.student_id, MIN(cy.exam_date) AS ngay FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
-       JOIN enrollments e ON e.id = (SELECT MAX(e2.id) FROM enrollments e2 WHERE e2.student_id = cy.student_id)
+       JOIN enrollments e ON e.student_id = cy.student_id AND e.status = 'active'   -- lớp em đang học (ghi danh còn hiệu lực)
        JOIN classes c ON c.id = e.class_id
       WHERE ${where.join(' AND ')} GROUP BY cy.student_id`).all(...args) as any[]) out.set(r.student_id, r.ngay);
   return out;
@@ -215,19 +216,19 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     /* Panel chỉ đọc Đạt MT (05 mục 4): mẫu — chưa đạt trước, dòng phụ lớp · lượt · tuần thi · Overall · kỳ vọng · kết quả; "Chưa đủ dữ liệu" là tập riêng. */
     if (f.ct !== 'ft') throw badRequest('Đạt MT chỉ có ở Fast Track.');
     const d = tapDatMt(p, f);
-    if (f.o === 'dat-mt-chua-du') return ra('hoc-vien', d.chuaDu, 'chưa đủ dữ liệu (ngoài mẫu Đạt MT)');
+    if (f.o === 'dat-mt-chua-du') return ra('hoc-vien', d.chuaDu, t('chưa đủ dữ liệu (ngoài mẫu Đạt MT)'));
     const ids = [...d.mau].sort((a, b) => Number(d.dat.has(a)) - Number(d.dat.has(b)) || a - b);
     const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => {
       const x = d.luot.get(row.id)!;
-      return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`, `Overall ${x.ovr!.toFixed(1)}`, `kỳ vọng ${x.kyVong!.toFixed(1)}`, d.dat.has(row.id) ? 'Đạt' : 'Chưa đạt'].join(' · ') };
+      return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`, `Overall ${x.ovr!.toFixed(1)}`, t('kỳ vọng {kv}', { kv: x.kyVong!.toFixed(1) }), d.dat.has(row.id) ? t('Đạt') : t('Chưa đạt')].join(' · ') };
     });
-    return { n: ids.length, tieuDe: `Đạt MT · ${d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0} % = ${d.dat.size}/${d.mau.size} HV`, rows };
+    return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows };
   }
   if (f.o === 'thi-thang-nay') {
-    const t = tapThiThangNay(p, f);
-    const ids = [...t.keys()].sort((a, b) => t.get(a)!.localeCompare(t.get(b)!) || a - b);
-    const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, `thi ${t.get(row.id)!.slice(8, 10)}/${t.get(row.id)!.slice(5, 7)}`].filter(Boolean).join(' · ') }));
-    return { n: ids.length, tieuDe: `${ids.length} HV — thi tháng này`, rows };
+    const tap = tapThiThangNay(p, f);
+    const ids = [...tap.keys()].sort((a, b) => tap.get(a)!.localeCompare(tap.get(b)!) || a - b);
+    const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, t('thi {ngay}', { ngay: `${tap.get(row.id)!.slice(8, 10)}/${tap.get(row.id)!.slice(5, 7)}` })].filter(Boolean).join(' · ') }));
+    return { n: ids.length, tieuDe: t('{n} HV — thi tháng này', { n: ids.length }), rows };
   }
   if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã thi');
   if (f.o === 'bai-da-cham') return ra('bai', r.daCham, 'đã chấm');

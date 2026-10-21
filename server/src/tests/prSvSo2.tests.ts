@@ -153,6 +153,24 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     assert(p.rows.find((r: any) => r.id === co.sid)?.sub.endsWith(`thi 28/${D.slice(5, 7)}`), JSON.stringify(p.rows[0]));
   }));
 
+  check('SVSO2 (rà #521-1) · GV có phân công đã kết thúc ở chi nhánh khác tự xem kỳ cũ → không 403; số = số QT thấy (Kết quả PA theo chủ Case, không theo phạm vi người xem)', () => thu(() => {
+    const cp = get(`SELECT c.id, c.branch_id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code = 'CP' AND c.is_fast_track = 1 ORDER BY c.id LIMIT 1`);
+    assert(cp, 'seed thiếu lớp FT ở CP');
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, effective_to, status, created_at) VALUES (?, ?, 'reading', 0, ?, ?, 'ended', ?)`)
+      .run(gvR, cp.id, t.addDays(tuanNay, -70), t.addDays(tuanNay, -14), D);
+    const cas = get(`SELECT sc.id FROM sos_cases sc JOIN case_interventions iv ON iv.case_id = sc.id JOIN classes c ON c.id = sc.goc_class_id
+      WHERE c.branch_id = ? AND c.is_fast_track = 1 ORDER BY sc.id LIMIT 1`, cp.branch_id);
+    if (cas) conn.prepare(`UPDATE sos_cases SET owner_user_id = ? WHERE id = ?`).run(gvR, cas.id);
+    xoaNho();
+    const ky = { tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
+    const tuXem = pt.chiSoHoSoGv(loadPrincipal(gvR!), gvR, ky);
+    xoaNho();
+    const qt = pt.chiSoHoSoGv(P.admin, gvR, ky);
+    assert(JSON.stringify(tuXem) === JSON.stringify(qt), JSON.stringify({ tuXem: tuXem.ghiKetQuaPa, qt: qt.ghiKetQuaPa }));
+    const pTu = pt.oChiSoHoSoGv(loadPrincipal(gvR!), gvR, { ...ky, cot: 'ghi-pa' });
+    assert(qt.ghiKetQuaPa.k !== 'so' || pTu.n === qt.ghiKetQuaPa.tong, `panel ${pTu.n}`);
+  }));
+
   check('SVSO2 (K9) · Đạt MT theo ngày chốt điểm cuối: MT thi 2 tuần trước, nhập xong tuần này → vào kỳ tuần này, không vào kỳ tuần thi', () => thu(() => {
     const truoc = t.addDays(tuanNay, -14);
     const e = mt1(DU(6.5), truoc, D);
