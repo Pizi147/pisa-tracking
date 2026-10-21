@@ -115,7 +115,8 @@ export type HangDem = { ketLuan: KetLuanLichThi | null; chuaCoDuKien: boolean; c
 export function demKetLuan(rows: readonly HangDem[]) {
   const o = { chotNgay: 0, giuThang: 0, chuyenThang: 0, canXacNhan: 0, chuaRa: 0, chuaCoDuKien: 0 };
   for (const r of rows) {
-    if (r.chuaCoDuKien && !r.chuyenSang) { if (r.ketLuan === 'can-xac-nhan') o.canXacNhan += 1; else o.chuaCoDuKien += 1; continue; }
+    /* SL1 (V2A-06): em chưa có dự kiến không nằm trong "n HV" của dải — kết luận gì cũng chỉ đếm ở `chuaCoDuKien` (trước: "Cần xác nhận" bị cộng, 2 ≠ 1). */
+    if (r.chuaCoDuKien && !r.chuyenSang) { o.chuaCoDuKien += 1; continue; }
     if (r.chuyenSang) o.chuyenThang += 1;
     else if (r.ketLuan === 'chot-ngay') o.chotNgay += 1;
     else if (r.ketLuan === 'giu-thang') o.giuThang += 1;

@@ -57,7 +57,9 @@ export function khoangTuUrl(q: { get(k: string): string | null }, homNay: string
   const tu = q.get('tu'), den = q.get('den');
   const thang = q.get('thang');
   if (kieu === 'thang' || (!kieu && thang)) {
-    const k = khoangThang(thang ?? (tu ?? '').slice(0, 7));
+    /* SL1 (A5-01): `tu` của kiểu tháng là Thứ Hai tuần đầu — thường rơi vào tháng trước; tháng = tháng chứa thứ Năm của tuần đó. */
+    const thangTu = laNgay(tu) ? (({ year, month }) => `${year}-${String(month).padStart(2, '0')}`)(owningMonthOf(mondayOfDate(tu))) : '';
+    const k = khoangThang(thang ?? thangTu);
     if (k) return { kieu: 'thang', ...k };
   }
   if (laNgay(tu) && laNgay(den) && (kieu === 'tuy-chon' || kieu === 'tuan' || kieu === '2-tuan' || !kieu)) {
@@ -70,6 +72,13 @@ export function khoangTuUrl(q: { get(k: string): string | null }, homNay: string
     return { kieu: 'tuan', tu: addDaysIso(t2, -7 * (tg - 1)), den: addDaysIso(t2, 6) };
   }
   return khoangMacDinh(homNay);
+}
+
+/** SL1 (A5-01): hộp chỉ còn Từ tuần – Đến tuần — mọi khoảng về Thứ Hai đầu → Chủ nhật cuối; trùng mặc định thì là "2 tuần vừa qua" (URL trống). */
+export function khoangVeTuan(k: { tu: string; den: string }, homNay: string): KhoangNgay {
+  const tu = mondayOfDate(k.tu), den = addDaysIso(mondayOfDate(k.den), 6);
+  const md = khoangMacDinh(homNay);
+  return md.tu === tu && md.den === den ? md : { kieu: 'tuan', tu, den };
 }
 
 /** Tham số URL của một khoảng — 2 tuần vừa qua (mặc định) không ghi gì. */

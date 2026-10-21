@@ -1,0 +1,62 @@
+[
+  {
+    "ten": "1440-toi phân tích tháng",
+    "nhan": "Khoảng thời gian 09/2026 31/08 – 27/09/2026 · 4 tuần ▾",
+    "coChonKieu": false,
+    "loi": []
+  },
+  {
+    "ten": "1440-toi chuông 7",
+    "aria": "Thông báo, 16 việc cần làm, có tin chưa đọc",
+    "nhom": [
+      "Cần làm\n16",
+      "Để biết\n23"
+    ],
+    "loi": []
+  },
+  {
+    "ten": "1440-toi chuông 2",
+    "aria": "Thông báo, 19 việc cần làm, có tin chưa đọc",
+    "nhom": [
+      "Cần làm\n19",
+      "Để biết\n11"
+    ],
+    "loi": []
+  },
+  {
+    "ten": "375-sang phân tích tháng",
+    "nhan": "Khoảng thời gian 09/2026 ▾",
+    "coChonKieu": false,
+    "loi": []
+  },
+  {
+    "ten": "375-sang chuông 7",
+    "aria": "Thông báo, 16 việc cần làm, có tin chưa đọc",
+    "nhom": [
+      "Cần làm\n16",
+      "Để biết\n23"
+    ],
+    "loi": []
+  },
+  {
+    "ten": "375-sang chuông 2",
+    "aria": "Thông báo, 19 việc cần làm, có tin chưa đọc",
+    "nhom": [
+      "Cần làm\n19",
+      "Để biết\n11"
+    ],
+    "loi": []
+  },
+  {
+    "ten": "QT tổng quan",
+    "choDuyet": "Chờ duyệt 10",
+    "soThe": 3,
+    "khac": "2 thẻ ở chi nhánh khác",
+    "panelSauBamDai": 1,
+    "loi": []
+  },
+  {
+    "ten": "GV10 panel việc",
+    "loi": []
+  }
+]

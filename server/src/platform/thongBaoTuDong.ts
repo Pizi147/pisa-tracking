@@ -7,7 +7,7 @@
  * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người. Không email / push.
  */
 import { chenNhieuDong, db, theoLo } from '../db.ts';
-import { ngay, tenMon } from '../../../shared/domain/index.ts';
+import { tenMon } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
@@ -18,14 +18,12 @@ export const CHOT_TOI_HAN_NGAY = 7;
 /** OV-15h1: một luật "tới hạn" cho thông báo Chốt lộ trình và "Cần bạn quyết" ở Tổng quan QL. Không có hạn → chưa tới hạn. */
 export const toiHan = (han: string | null | undefined, homNay: string) => !!han && han <= addDays(homNay, CHOT_TOI_HAN_NGAY);
 const KIND = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh'] as const;
-type Muon = { kind: (typeof KIND)[number]; title: string; body: string; entityType: string; entityId: number | null; duong: string };
+type Muon = { kind: (typeof KIND)[number]; title: string; body: string; entityType: string; entityId: number | null; duong: string;
+  /** SL1 (N1): hạn của việc — chuông sắp Cần làm theo hạn. */ han: string | null };
 
 /** Một lớp · một đợt (lượt + tuần thi) — khoá gom việc Nhập điểm quá hạn thành MỘT thông báo. */
 export const khoaChamQuaHan = (x: Pick<WorkItem, 'classId' | 'attemptNo' | 'periodId'> & { luot?: string }) =>
   `${x.classId ?? 0}:${x.luot ?? x.attemptNo ?? ''}:${x.periodId ?? ''}`;
-
-const NGAY_MS = 86_400_000;
-const soNgay = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / NGAY_MS);
 
 /** Case đang mở của MỘT người phụ trách — Case thật (OV-13a), em chưa lưu trữ, như tập chỉ số; đi chỉ mục `idx_case_owner`. */
 export const CAU_CASE_CUA_NGUOI = `SELECT sc.id, s.full_name AS ten, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct
@@ -49,8 +47,9 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
     const han = ds.map((x) => x.due).filter((h): h is string => !!h).sort()[0];
     muon.set(`tudong:cham:${k}`, {
       kind: 'cham_qua_han', title: `Quá hạn chấm · ${dau.classCode ?? dau.studentName}`,
-      body: [dau.contextLabel, `${bai} bài`, han ? `quá hạn ${soNgay(han, homNay)} ngày` : null].filter(Boolean).join(' · '),
-      entityType: 'class', entityId: dau.classId, duong: `/cong-viec?viec=${encodeURIComponent(dau.key)}`,
+      /* SL1: hạn không viết vào thân — chuông vẽ `han` bằng `Han` (cùng một kiểu cho mọi dòng Cần làm). */
+      body: [dau.contextLabel, `${bai} bài`].filter(Boolean).join(' · '),
+      entityType: 'class', entityId: dau.classId, duong: `/cong-viec?viec=${encodeURIComponent(dau.key)}`, han: han ?? null,
     });
   }
 
@@ -58,8 +57,8 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   for (const x of items) {
     if (x.group !== 'chot_len_ft' || !toiHan(x.due, homNay) || !x.due) continue;
     muon.set(`tudong:chot:${x.classId}`, {
-      kind: 'chot_lo_trinh', title: x.tieuDe, body: `hạn ${ngay(x.due, homNay)}${x.due < homNay ? ` · quá hạn ${soNgay(x.due, homNay)} ngày` : ''}`,
-      entityType: 'class', entityId: x.classId, duong: `/cong-viec?viec=${encodeURIComponent(x.key)}`,
+      kind: 'chot_lo_trinh', title: x.tieuDe, body: '',
+      entityType: 'class', entityId: x.classId, duong: `/cong-viec?viec=${encodeURIComponent(x.key)}`, han: x.due,
     });
   }
 
@@ -71,8 +70,8 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
     if (x?.cot !== 'choDuyet' || !x.quaHan) continue;
     muon.set(`tudong:case:${c.id}`, {
       kind: 'case_chua_chot_pa', title: `Case chưa chốt PA quá hạn · ${c.ten}`,
-      body: [c.mon ? tenMon(c.ct ?? null, c.mon) : null, x.han ? `quá hạn ${soNgay(x.han, homNay)} ngày` : null].filter(Boolean).join(' · '),
-      entityType: 'sos_case', entityId: c.id, duong: `/hoc-thuat/case/${c.id}`,
+      body: c.mon ? tenMon(c.ct ?? null, c.mon) : '',
+      entityType: 'sos_case', entityId: c.id, duong: `/hoc-thuat/case/${c.id}`, han: x.han ?? null,
     });
   }
   return muon;
@@ -85,16 +84,16 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
 export function dongBoThongBaoTuDong(p: Principal, homNay: string): number {
   const muon = viecMuon(p, homNay);
   const co = db().prepare(
-    `SELECT id, dedup_key, title, body, duong FROM notifications WHERE user_id = ? AND kind IN (${KIND.map(() => '?').join(',')})`,
+    `SELECT id, dedup_key, title, body, duong, han FROM notifications WHERE user_id = ? AND kind IN (${KIND.map(() => '?').join(',')})`,
   ).all(p.userId, ...KIND) as any[];
   const het = co.filter((n) => !muon.has(n.dedup_key)).map((n) => n.id as number);
   theoLo(het, (lo, ph) => { db().prepare(`DELETE FROM notifications WHERE id IN (${ph})`).run(...lo); });   // ≤ THAM_SO_TOI_DA tham số mỗi câu (Turso)
   const cu = new Map(co.map((n) => [n.dedup_key as string, n]));
   const luc = nowIso();
-  const doi = [...muon].filter(([k, m]) => { const n = cu.get(k); return !n || n.title !== m.title || (n.body ?? '') !== m.body || n.duong !== m.duong; })
-    .map(([k, m]) => [p.userId, m.kind, m.title, m.body, m.entityType, m.entityId, k, luc, m.duong]);
-  chenNhieuDong('INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)', doi,
-    ' ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body, duong = excluded.duong');
+  const doi = [...muon].filter(([k, m]) => { const n = cu.get(k); return !n || n.title !== m.title || (n.body ?? '') !== m.body || n.duong !== m.duong || (n.han ?? null) !== m.han; })
+    .map(([k, m]) => [p.userId, m.kind, m.title, m.body, m.entityType, m.entityId, k, luc, m.duong, m.han]);
+  chenNhieuDong('INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong, han)', doi,
+    ' ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body, duong = excluded.duong, han = excluded.han');
   return het.length + doi.length;
 }
 

@@ -163,8 +163,8 @@ export async function runPrNvTests(t: YThucTestKit) {
     assert(/coDichLienKet\(/.test(docNguon('web/src/modules/students/StudentsPage.tsx')), 'Học viên & Lớp gửi cnNho cả khi link trỏ lớp');
   });
 
-  check('NV-5 (rà) · hộp Chờ duyệt LUÔN mở Tất cả chi nhánh (chủ sản phẩm 06/10): không dùng chi nhánh mặc định; chip Tất cả = badge', () => {
-    assert(!/useChiNhanhMacDinh/.test(docNguon('web/src/modules/duyet/HopChoDuyet.tsx')), 'HopChoDuyet còn áp chi nhánh mặc định');
+  /* SL1 (A7-01, X-03 / 9.2-3 — chủ SP 20/10 thay luật 06/10): hộp theo chi nhánh của trang; còn lại: chip Tất cả (không lọc) = badge mọi chi nhánh. */
+  check('NV-5 (rà) · hộp Chờ duyệt không lọc chi nhánh: chip Tất cả = badge', () => {
     for (const p of [P.admin, P.mbManager]) assert(yc.hopChoDuyet(p, {}).dem['tat-ca'] === yc.demYeuCau(p).cho, `badge ≠ chip Tất cả (${p.userId})`);
   });
 }

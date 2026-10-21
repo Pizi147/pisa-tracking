@@ -321,7 +321,7 @@ export function HoTroHocVienTab() {
         <div className={`card px-3 py-1 ${anTrenDienThoai}`}>
           <KhoiNhom id="nhom-cho-duyet" mo={moDuyet} onMo={() => setMoDuyet((x) => !x)} nhan={t('Chờ bạn duyệt')} tieuDe={t('Chờ bạn duyệt')} dem={demDuyet.cho}
             phu={demDuyet.quaHan ? <span className="font-bold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: demDuyet.quaHan })}</span> : null}>
-            <div className="pb-3"><HopChoDuyet gon /></div>
+            <div className="pb-3"><HopChoDuyet gon branchId={branchId} /></div>
           </KhoiNhom>
         </div>
       )}

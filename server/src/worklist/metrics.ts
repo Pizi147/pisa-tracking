@@ -903,8 +903,9 @@ function metricSetGoc(
     }
     case 'pa-co-ket-qua': {
       const ids = new Set<number>();
+      /* SL1 (A7-02): "trong kỳ" — theo ngày kết quả cuối của PA (luật `planOutcomes`, cùng tập Hiệu quả PA); không khoảng = mọi lúc. */
       for (const s of effectivenessScopes(p, scope.branchId)) {
-        for (const r of planOutcomes(s)) if (r.group !== 'undetermined') ids.add(r.id);
+        for (const r of planOutcomes({ ...s, fromDate: f.from ?? null, toDate: f.to ?? null })) if (r.group !== 'undetermined') ids.add(r.id);
       }
       return done([...ids]);
     }
