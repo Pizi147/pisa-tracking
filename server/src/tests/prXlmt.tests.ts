@@ -196,7 +196,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   /* LUAT-34: MT cũ không còn bị chặn — Báo vắng ở MT cũ = Đã huỷ ngay (mtTrangThai T06). */
   check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · đã có điểm', () => {
     assertThrows(() => absence.baoVang(P.subjectTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /chủ nhiệm/, 'GVBM');
-    assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần thi/, 'tương lai');
+    assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần Test/, 'tương lai');
     diem(m1.id, 'reading');
     assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY), /đã có điểm/, 'có điểm');
   });

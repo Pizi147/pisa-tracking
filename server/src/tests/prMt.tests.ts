@@ -512,7 +512,7 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(lich('listening').sit_status === 'cancelled', 'lịch giữ nguyên tới khi QL duyệt');
     /* PR-Dọn (Q14): `moTaDoiLan2` (chỉ phép kiểm gọi) đã xoá — gọi thẳng `chuTheDoiLan2`, như thẻ Chờ duyệt. */
     const mo = absence.chuTheDoiLan2({ skill: r.skill, attemptNo: 1, moveNo: r.move_no, tuanDich: r.dich, homNay: TODAY });
-    assert(mo === 'Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT', mo);
+    assert(mo === 'Dời L · MT1 · lần 2 · Duyệt = L làm bài W1 OCT', mo);
   });
   check('PR-MT (8) · Hết Chủ nhật mà QL chưa trả lời → đề nghị hết hạn, huỷ phần thi (C09)', () => {
     demoCfg.setConfig('demo_date', '2026-09-28');

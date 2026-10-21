@@ -332,7 +332,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   const phu = (cell.khongDuThi ? t('Vắng') : null)
     ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? t('Đã dời sang {tuanHienTai}', { tuanHienTai: cell.tuanHienTai }) : null)
     ?? quaHan
-    ?? (cell.chuaToiTuan && cell.tuanHienTai ? `Làm bài ${cell.tuanHienTai}` : null)
+    ?? (cell.chuaToiTuan && cell.tuanHienTai ? t('Làm bài {tuan}', { tuan: cell.tuanHienTai }) : null)
     ?? ketQua
     ?? '';
   return (

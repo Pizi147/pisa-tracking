@@ -335,7 +335,7 @@ export function DeadlinePill({ cell }: { cell: Cell }) {
    * Nguồn hạn (riêng môn / riêng cả đợt) chuyển thành ghi chú đứng sau, không mất thông tin.
    */
   if (cell.progress === 'upcoming') {
-    return <Han loai="nhap-diem" han={cell.deadline} tienTo={`Làm bài ${cell.weekStart ? tuanLich(cell.weekStart, homNay) : cell.weekRange ?? cell.periodCode ?? ''}`.trim()} />;
+    return <Han loai="nhap-diem" han={cell.deadline} tienTo={t('Làm bài {tuan}', { tuan: cell.weekStart ? tuanLich(cell.weekStart, homNay) : cell.weekRange ?? cell.periodCode ?? '' }).trim()} />;
   }
   const ghiChu = cell.deadlineSource === 'skill_override' ? t('riêng môn này')
     : cell.deadlineSource === 'attempt_override' ? t('riêng cả đợt')
@@ -766,7 +766,7 @@ export function ODiemThuong({
     const chu = cell.khongDuThi ? t('Vắng') : dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : <><span className="sr-only">{t('Chưa có')}</span><span className="text-transparent" aria-hidden>0</span></>;
     const title = cell.khongDuThi ? t('{khongDay} Vắng · {x}', { khongDay, x: cell.tuanHienTai ?? '' }).trim()
       : dau && cell.tuanHienTai ? t('{khongDay} Đã dời sang {tuanHienTai}.', { khongDay, tuanHienTai: cell.tuanHienTai })
-      : cell.chuaToiTuan && cell.tuanHienTai ? `${khongDay} Làm bài ${cell.tuanHienTai}.` : khongDay;
+      : cell.chuaToiTuan && cell.tuanHienTai ? t('{khongDay} Làm bài {tuan}.', { khongDay, tuan: cell.tuanHienTai }) : khongDay;
     const chuDoc = <span className="text-xs text-slate-500 tabular-nums" title={title}>{chu}</span>;
     /* Điện thoại: giữ chỗ nút "−" để chữ thẳng cột với ô nhập của các dòng khác. */
     return lon ? <span className="inline-flex items-center gap-1">{chuDoc}<ChoNutDau /></span> : chuDoc;

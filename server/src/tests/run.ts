@@ -8048,7 +8048,7 @@ check('PR-G · Câu trạng thái đúng chữ của bộ chữ: gợi ý, khôn
     `Sau khi lưu: "${domain.noShowText(early, 'W3 SEP 2026', '2026-09-14')}"`);
   const settled = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: PRG_MON,
     enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh' });
-  assert(domain.noShowText(settled, 'W3 SEP 2026', PRG_MON) === 'Không dự thi · Tuần W3 SEP 2026',
+  assert(domain.noShowText(settled, 'W3 SEP 2026', PRG_MON) === 'Vắng · Tuần W3 SEP 2026',
     `Sau chốt: "${domain.noShowText(settled, 'W3 SEP 2026', PRG_MON)}"`);
   const late = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: '2026-09-28',
     enteredAfterWeekEnd: true, lateRule: 'cho-ql-hieu-chinh' });
@@ -8097,7 +8097,7 @@ check('PR-G · (OV-1b) GV nhập "-" trong tuần thi: chốt vắng NGAY — d�
   assert(c.rawScore === null && c.band === null, `"-" không phải điểm 0: raw=${c.rawScore} band=${c.band}`);
   assert(c.daChot?.doiSang, `Ô phải ghi đã dời: ${JSON.stringify(c.daChot)}`);
   assert(!prgCell(id, 'reading').noShow, 'Dấu "-" của Listening lây sang Reading');
-  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any), /Chưa tới tuần thi/,
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any), /Chưa tới tuần Test/,
     'Bấm lại "-" khi tuần mới chưa tới');
   assert(prgSettled(id, 'listening') === 1, 'Bấm lại làm bộ đếm vắng tăng');
   const doi = conn.prepare(

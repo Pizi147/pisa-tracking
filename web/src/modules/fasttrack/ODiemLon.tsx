@@ -48,7 +48,7 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   if (l.doiTu && l.absenceMoveCount > 0) return chuDoiVang(l, homNay);
   if (c?.noShow) return { chu: c.noShow.text };
   if (!l.weekStart) return { chu: t('Chưa xếp tuần') };
-  if (l.progress === 'upcoming') return { chu: `Làm bài ${tuanLich(l.weekStart, homNay)}` };
+  if (l.progress === 'upcoming') return { chu: t('Làm bài {tuan}', { tuan: tuanLich(l.weekStart, homNay) }) };
   if (l.deadline) return { chu: <Han loai="nhap-diem" han={l.deadline} /> };
   return { chu: t('Chưa có điểm') };
 }

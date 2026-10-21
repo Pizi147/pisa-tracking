@@ -7,6 +7,8 @@ export const EN_CHU_THI = {
   'Chưa kết luận': 'Not concluded',
   'chưa kết luận': 'not concluded',
   'không dời': 'not moved',
+  'Làm bài {tuan}': 'Test {tuan}',
+  '{khongDay} Làm bài {tuan}.': '{khongDay} Test {tuan}.',
   'Đã thi': 'Exam taken',
   'Dời lịch thi': 'Reschedule test',
   'Không dự thi': 'Absent',

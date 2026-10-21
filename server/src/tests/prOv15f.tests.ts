@@ -237,7 +237,7 @@ export async function runPrOv15fTests(t: YThucTestKit) {
     await voiMayChu(async (goi) => {
       const x = await json(await goi(QL, '/hoc-vien-lop/xuat', post({ ids: [a.sid], mau: 'ket-qua-thi', boLoc: 'Tất cả', xemTruoc: true })));
       const [dau, dong] = x.sheets[0].aoa;
-      assert(dau.join() === 'Tên học sinh,Gmail,Lớp,MT liên quan,Tuần thi,OVR,L,R,W1,W2,S,Target,Kết quả', dau.join());
+      assert(dau.join() === 'Tên học sinh,Gmail,Lớp,MT liên quan,Tuần Test,OVR,L,R,W1,W2,S,Target,Kết quả', dau.join());
       assert(dong[dau.indexOf('L')] === 6 && dong[dau.indexOf('R')] === 6.5 && dong[dau.indexOf('W1')] === 5.5, JSON.stringify(dong));
       assert(['Đạt', 'Chưa đạt', 'Chưa đủ điểm'].includes(dong[dau.indexOf('Kết quả')]), `kết quả: ${dong[dau.indexOf('Kết quả')]}`);
       assert(dong[dau.indexOf('Target')] === '6.5', 'Target');

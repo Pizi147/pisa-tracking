@@ -70,7 +70,7 @@ export async function runPrLmTests(t: YThucTestKit) {
 
   check('PR-LM (6) · chuDoiVang: thi bù đúng tuần đang xem → "Thi bù tuần này (lần 1)"; tuần khác → mã tuần, không ngày; chữ mẫu nhận xét "Ví dụ:"', () => {
     const a = d.chuDoiVang({ weekStart: '2026-09-28', doiTu: 'W3 SEP', absenceMoveCount: 1 }, '2026-10-01');
-    assert(a.chu === 'Thi bù tuần này (lần 1)' && /Dời từ W3 SEP sang W1 OCT/.test(a.title), JSON.stringify(a));
+    assert(a.chu === 'Làm bù tuần này (lần 1)' && /Dời từ W3 SEP sang W1 OCT/.test(a.title), JSON.stringify(a));
     const b = d.chuDoiVang({ weekStart: '2026-09-21', doiTu: 'W2 SEP', absenceMoveCount: 2 }, '2026-10-01');
     assert(b.chu === 'vắng · dời sang W4 SEP · lần 2', JSON.stringify(b));
     const nx = nguon('web/src/modules/fasttrack/NhanXet.tsx');
@@ -140,7 +140,7 @@ export async function runPrLmMayChu(t: YThucTestKit) {
   check('PR-LM (2.1) · dời cả 4 kỹ năng MT1 sang T+5 (vượt MT2 ở T+4) → kiểm trước chặn, lưu 400, MT2 giữ lịch', () => {
     const a = emMoi();
     const k = keHoach.kiemDot(QL, { attemptId: a.m1, kyNang: bonKyNang(5) });
-    assert(k.bai.every((b: any) => b.ghiChu === 'chan' && /^MT2 thi /.test(b.cau)) && !('seHuyLich' in k), JSON.stringify(k));
+    assert(k.bai.every((b: any) => b.ghiChu === 'chan' && /^MT2 làm bài /.test(b.cau)) && !('seHuyLich' in k), JSON.stringify(k));
     const t2 = tuanCua(a.m2);
     const e = loiCua(() => keHoach.luuDot(QL, { attemptId: a.m1, kyNang: bonKyNang(5) }));
     assert(e.status === 400 && /Chọn tuần trước/.test(e.message) && tuanCua(a.m2) === t2, `${e.status} ${e.message}`);
