@@ -2,16 +2,16 @@
  * XUẤT EXCEL DANH SÁCH HỌC VIÊN (OV-15f, C31, mockup 5 khung 2) — "lọc ở đâu, xuất ở đó".
  *
  * Nhận ĐÚNG danh sách em web đang hiện theo bộ lọc của trang (nên số em trong nút = số trong tệp) — máy chủ KIỂM QUYỀN XEM từng em (một em ngoài
- * phạm vi → 403, không âm thầm bỏ), rồi dựng chữ từ cùng nguồn trang dùng. Cột SOS (mức · tạm / chính thức · MT · kỹ năng) lấy từ CHÍNH `dangSos` của góc
- * Đang SOS (web gửi kèm bộ lọc góc đó: tuần · phạm vi · chi nhánh · tìm) — lượt SOS MỚI NHẤT của em, kể cả lớp thường; không tính SOS riêng cho tệp.
+ * phạm vi → 403, không âm thầm bỏ), rồi dựng chữ từ cùng nguồn trang dùng. Cột SOS (mức · tạm / chính thức · MT · kỹ năng) = "SOS hiện tại" của từng em
+ * trong tệp (`latestAttempts`, cùng hàm Đang SOS — SL2), kể cả lớp thường.
  * Kết quả gần nhất / điểm: `standingFor` + `loadBundle`; Case / PA: `listCases` CHỈ của các em trong tệp (`studentIds`) + `tomTatCase`; lịch thi: `examPlanOf`
  * + cột `lich_thi_*`. Một hàng một em (em học hai lớp: cột Lớp ghi cả hai). `xemTruoc` không ghi nhật ký.
- * Dòng đọc: mỗi lô ≤ 900 em một câu em + lớp, một câu lộ trình; `standingFor` chỉ khi có cột điểm / kết quả / MT; `dangSos` chỉ khi có cột SOS.
+ * Dòng đọc: mỗi lô ≤ 900 em một câu em + lớp, một câu lộ trình; `standingFor` chỉ khi có cột điểm / kết quả / MT; `latestAttempts` chỉ khi có cột SOS.
  */
 import { db, theoLo } from '../db.ts';
 import {
-  MAU_XUAT_DS, PERMISSIONS, ketLuanHienTai, bangThongTinXuatDs, bangXuatDanhSach, chuTep, chuoiLop, cotXuatDs, ketQuaLuot, tuanNam, nhanLichThi, trangThaiLichThi,
-  type HvXuatDs, type MauXuatDs,
+  ATTEMPT_KIND_SHORT, MAU_XUAT_DS, PERMISSIONS, vaiXemHocVien, ketLuanHienTai, bangThongTinXuatDs, bangXuatDanhSach, chuTep, chuoiLop, cotXuatDs, ketQuaLuot, tuanNam, nhanLichThi, trangThaiLichThi,
+  type AttemptKind, type HvXuatDs, type MauXuatDs,
 } from '../../../shared/domain/index.ts';
 import { gioVn } from '../../../shared/domain/xuatMt.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -24,7 +24,7 @@ import { loadBundle, resultOf } from '../fasttrack/attempts.ts';
 import { lopTheoLoTrinh } from '../keHoach/keHoachTest.ts';
 import { listCases } from '../cases/cases.ts';
 import { COT_LICH_THI_SQL, luuTuCot } from './lichThi.ts';
-import { dangSos } from './hocVienSos.ts';
+import { latestAttempts } from '../worklist/danhGia.ts';
 import { tomTatCase } from './hocVienSos.ts';
 
 const TOI_DA = 5000;
@@ -73,19 +73,21 @@ export function xuatDanhSach(
   };
   if (ids.some((id) => !hs.has(id) || !xemDuoc(id))) throw forbidden('Có học viên nằm ngoài phạm vi bạn được xuất.');
   const coCot = (k: string) => (cot as string[]).includes(k);
-  /* SOS: từ `dangSos` của góc Đang SOS (cùng bộ lọc web gửi; SL2: một em một dòng = SOS hiện tại); Admin không có Đang SOS (403) → cột để trống. */
+  /*
+   * SOS: "SOS hiện tại" (SL2, 9.1-4) — CHÍNH hàm dưới `hv-sos-hien-tai` / Đang SOS (`latestAttempts` 'valid': đợt mới nhất hợp lệ, gồm tạm), chỉ cho
+   * các em trong tệp (không tính cả chi nhánh). Người không theo dõi Case (Admin) không có Đang SOS → cột để trống, như trước.
+   */
   const nguonSos = coCot('sos') || coCot('tamChinh') || coCot('kyNang');
   const sosCua = new Map<number, { sosLevel: number; tam: boolean; luot: string; tuan: string; kyNang: string[] }>();
-  if (nguonSos) {
-    const b: any = i.sos && typeof i.sos === 'object' ? i.sos : {};
-    try {
-      const t = dangSos(p, { phamVi: typeof b.phamVi === 'string' ? b.phamVi : null,
-        branchId: Number.isInteger(b.branchId) ? b.branchId : null, cnNho: Number.isInteger(b.cnNho) ? b.cnNho : null, q: typeof b.q === 'string' ? b.q : null });
-      for (const r of t.rows) {
-        const cu = sosCua.get(r.studentId);
-        if (!cu || r.tuan > cu.tuan) sosCua.set(r.studentId, { sosLevel: r.sosLevel, tam: r.tam, luot: r.luot, tuan: r.tuan, kyNang: r.kyNang });
-      }
-    } catch { /* không có góc Đang SOS với vai này — cột SOS để trống */ }
+  if (nguonSos && vaiXemHocVien(p.roleKeys) !== 'admin' && can(p, PERMISSIONS.CASE_VIEW, { anyScope: true })) {
+    for (const [id, a] of latestAttempts(ids, 'valid', demoToday())) {
+      if ((a.sosLevel ?? 0) <= 0) continue;
+      sosCua.set(id, {
+        sosLevel: Math.min(3, a.sosLevel!), tam: a.provisional, tuan: a.weekStart ?? '',
+        luot: a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,
+        kyNang: Object.entries(a.skills).filter(([, x]) => x.evaluable && x.under).map(([k]) => k),
+      });
+    }
   }
   const standing = coCot('diem') || coCot('ketQua') || coCot('tuanThi') || (coCot('mt') && !nguonSos) ? standingFor(ids) : standingFor([]);
   const cycleIds = [...hs.values()].map((s) => s.cycle_id).filter((x): x is number => !!x);
