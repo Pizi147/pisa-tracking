@@ -21,8 +21,6 @@ export type BaoCaoKq = {
   /** `thiThangNay` (P4): HV có ngày thi thật trong tháng hiện tại — số hôm nay, panel `o=thi-thang-nay`. */
   chuY: { chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number; sosHienTai: number; thiThangNay: number };
   casePa: { caseMo: number; paKetQua: number; quaHanChotPa: number; quaHanKetQuaPa: number };
-  /** SV-SO3 (`10` mục 5): bảng "Kết quả MT" — luôn đủ 5 hàng MT0 · MT1 · MT2 · MT3+ · Thi thật. Chỉ Fast Track. */
-  kqMt: DongKqMt[] | null;
 };
 
 /**
@@ -39,6 +37,8 @@ export type CotKqMt = (typeof COT_KQ_MT)[number];
 export const NHAN_COT_KQ_MT: Record<CotKqMt, string> = {
   dat: t('Đạt Target'), 'thieu-0.5': t('Thiếu 0.5'), 'thieu-1.0': t('Thiếu 1.0'), 'thieu-1.5': t('Thiếu ≥ 1.5'), 'chua-du': t('Chưa đủ'),
 };
+/** `GET /phan-tich/bao-cao/ket-qua-mt` — luôn đủ 5 hàng theo `LUOT_KQ_MT`. */
+export type KetQuaMtKq = { tu: string; den: string; rows: DongKqMt[] };
 export type DongKqMt = { luot: LuotKqMt; hv: number; mau: number; dem: Record<CotKqMt, number>; soTruoc: { tang: number; bang: number; giam: number } };
 
 /** MT3, MT4… gộp một hàng "MT3+". */

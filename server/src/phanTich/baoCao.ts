@@ -6,7 +6,7 @@
 import { db, theoLo } from '../db.ts';
 import {
   COT_KQ_MT, LUOT_KQ_MT, NHAN_COT_KQ_MT, NHAN_LUOT_KQ_MT, PERMISSIONS, addDaysIso, baiId, cotKqMt, khoangTruoc, luotKqMt, tachBaiId, tenMonNgan, tuanLich,
-  type BaoCaoKq, type ChuongTrinh, type CotKqMt, type DongKqMt, type DongMock, type DongSosBc, type GvQuaHanBc, type LuotKqMt,
+  type BaoCaoKq, type ChuongTrinh, type CotKqMt, type DongKqMt, type KetQuaMtKq, type DongMock, type DongSosBc, type GvQuaHanBc, type LuotKqMt,
 } from '../../../shared/domain/index.ts';
 import { badRequest } from '../util.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -139,7 +139,7 @@ type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: 
  * (CHÍNH `mockTrongKhoang` của tab Kết quả thi), mỗi em lấy lượt mới nhất của hàng (MT3+ gộp MT3 trở đi); Target = Target lúc thi của lượt.
  * Thi thật: CHÍNH dòng `ketQuaThiThatKq` (đủ 4 kỹ năng, ngày thi trong kỳ; "Không thi" không vào), Target = Target lộ trình. Em KCK không vào.
  * Lượt trước: lượt có Overall số MT nhỏ hơn gần nhất trong cùng lộ trình (Thi thật: MT cuối có Overall).
- * Số câu cố định theo lô: lượt trong kỳ (1) + chấm + Thi thật + Target lộ trình (1) + lượt của các lộ trình (1) + chấm.
+ * Số câu cố định theo lô: lượt trong kỳ (1) + Thi thật (không hỏi quyền từng em) + Target lộ trình (1) + lượt của các lộ trình (1) + MỘT lần chấm.
  */
 export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, EmKqMt>> {
   const { cs } = phamViPhanTich(p, f.branchId ?? null, null);
@@ -147,19 +147,10 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
   const args: unknown[] = [...cs.params, mondayOf(f.tu), mondayOf(f.den)];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
   const luot = luotTrongKhoang(where.join(' AND '), args);
-  const cua = new Map(luot.map((a) => [a.id as number, a]));
-  const chon = new Map<LuotKqMt, Map<number, DongMock>>(LUOT_KQ_MT.map((l) => [l, new Map()]));
-  for (const d of mockTrongKhoang(p, f, { luot, boCase: true })) {
-    if (kckCuaLuot(cua.get(d.attemptId))) continue;
-    const m = chon.get(luotKqMt(d.mt))!;
-    const cu = m.get(d.studentId);
-    if (!cu || d.mt > cu.mt || (d.mt === cu.mt && d.tuan > cu.tuan)) m.set(d.studentId, d);
-  }
   const thi = new Map<number, ReturnType<typeof ketQuaThiThatKq>['rows'][number]>();
-  for (const r of ketQuaThiThatKq(p, { branchId: f.branchId, tu: mondayOf(f.tu), den: addDaysIso(mondayOf(f.den), 6) }).rows) {
+  for (const r of ketQuaThiThatKq(p, { branchId: f.branchId, tu: mondayOf(f.tu), den: addDaysIso(mondayOf(f.den), 6) }, { boQuyen: true }).rows) {
     if (!r.khongThi && (!thi.has(r.studentId) || (r.ngayThi ?? '') > (thi.get(r.studentId)!.ngayThi ?? ''))) thi.set(r.studentId, r);
   }
-
   const conn = db();
   const loTrinh = new Map<number, { target: number | null; kck: boolean }>();
   theoLo([...thi.values()].map((r) => r.cycleId), (lo, ph) => {
@@ -168,18 +159,25 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
     }
   });
   for (const [s, r] of thi) if (loTrinh.get(r.cycleId)?.kck) thi.delete(s);
-  /* Overall các lượt của những lộ trình có mặt — "so lượt trước". */
-  const cycleCua = (d: DongMock) => cua.get(d.attemptId)!.cycle_id as number | null;
-  const cyc = [...new Set([...[...chon.values()].flatMap((m) => [...m.values()].map(cycleCua)), ...[...thi.values()].map((r) => r.cycleId)])].filter((x): x is number => x !== null);
-  const luotCyc: any[] = [];
-  theoLo(cyc, (lo, ph) => { luotCyc.push(...luotTrongKhoang(`a.cycle_id IN (${ph}) AND a.status != 'cancelled' AND a.kind IN ('mock', 'mt0')`, lo)); });
-  const cycLuot = new Map(luotCyc.map((a) => [a.id as number, a.cycle_id as number]));
+
+  /* MỘT lần chấm cho lượt trong kỳ + mọi lượt của các lộ trình có mặt ("so lượt trước"). */
+  const cyc = [...new Set([...luot.map((a) => a.cycle_id as number | null), ...[...thi.values()].map((r) => r.cycleId)])].filter((x): x is number => x !== null);
+  const trongKy = new Set(luot.map((a) => a.id as number));
+  const cua = new Map(luot.map((a) => [a.id as number, a]));
+  theoLo(cyc, (lo, ph) => {
+    for (const a of luotTrongKhoang(`a.cycle_id IN (${ph}) AND a.status != 'cancelled' AND a.kind IN ('mock', 'mt0')`, lo)) if (!cua.has(a.id)) cua.set(a.id, a);
+  });
+  const chon = new Map<LuotKqMt, Map<number, DongMock>>(LUOT_KQ_MT.map((l) => [l, new Map()]));
   const ovrCyc = new Map<number, { mt: number; ovr: number }[]>();
-  for (const d of mockTrongKhoang(p, f, { luot: luotCyc, boCase: true })) {
-    if (d.ovr === null) continue;
-    const c = cycLuot.get(d.attemptId)!;
-    ovrCyc.set(c, [...(ovrCyc.get(c) ?? []), { mt: d.mt, ovr: d.ovr }]);
+  for (const d of mockTrongKhoang(p, f, { luot: [...cua.values()], boCase: true })) {
+    const a = cua.get(d.attemptId)!;
+    if (d.ovr !== null && a.cycle_id !== null) ovrCyc.set(a.cycle_id, [...(ovrCyc.get(a.cycle_id) ?? []), { mt: d.mt, ovr: d.ovr }]);
+    if (!trongKy.has(d.attemptId) || kckCuaLuot(a)) continue;
+    const m = chon.get(luotKqMt(d.mt))!;
+    const cu = m.get(d.studentId);
+    if (!cu || d.mt > cu.mt || (d.mt === cu.mt && d.tuan > cu.tuan)) m.set(d.studentId, d);
   }
+  const cycleCua = (d: DongMock) => cua.get(d.attemptId)!.cycle_id as number | null;
   const truoc = (c: number | null, mt: number): number | null => {
     const ds = (c === null ? [] : ovrCyc.get(c) ?? []).filter((x) => x.mt < mt).sort((a, b) => b.mt - a.mt);
     return ds[0]?.ovr ?? null;
@@ -199,6 +197,13 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
     return [s, { cot: cotKqMt(r.ovr, target), ovr: r.ovr, target, truoc: r.ovr === null ? null : truoc(r.cycleId, Infinity), lop: r.lop ?? '', nhan: t('thi {ngay}', { ngay }) }];
   })));
   return out;
+}
+
+/** `GET /phan-tich/bao-cao/ket-qua-mt` — bảng Kết quả MT (đường riêng: Báo cáo giữ trần câu SQL của nó; web tải song song). Chỉ Fast Track. */
+export function ketQuaMt(p: Principal, f: LocBaoCao): KetQuaMtKq {
+  if (f.ct !== 'ft') throw badRequest('Kết quả MT chỉ có ở Fast Track.');
+  const k = tapKqMt(p, f);
+  return { tu: f.tu, den: f.den, rows: LUOT_KQ_MT.map((l) => dongKqMt(l, k.get(l)!)) };
 }
 
 const dongKqMt = (l: LuotKqMt, m: Map<number, EmKqMt>): DongKqMt => {
@@ -279,7 +284,6 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
       quaHanChotPa: metricSet(p, 'case-xac-dinh-nguyen-nhan-qua-han', loc).n,
       quaHanKetQuaPa: metricSet(p, 'pa-can-cap-nhat', loc).n,
     },
-    kqMt: ft ? (() => { const k = tapKqMt(p, f); return LUOT_KQ_MT.map((l) => dongKqMt(l, k.get(l)!)); })() : null,
   };
 }
 

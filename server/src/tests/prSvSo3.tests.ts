@@ -44,7 +44,7 @@ export async function runPrSvSo3Tests(t: YThucTestKit) {
   };
   const DU = (b: number) => ({ listening: b, reading: b, writing1: b, writing2: b, speaking: b });
   const f = { branchId: null, ct: 'ft', tu: tuanNay, den: tuanNay };
-  const kqMt = (p = P.mbManager, loc: any = f) => { xoaNho(); return bc.baoCao(p, loc).kqMt as any[]; };
+  const kqMt = (p = P.mbManager, loc: any = f) => { xoaNho(); return bc.ketQuaMt(p, loc).rows as any[]; };
   const hang = (rows: any[], l: string) => rows.find((r) => r.luot === l);
 
   check('SVSO3 · cột Kết quả MT theo Overall − Target (band 0.5): 6.5 Đạt · 6.0 Thiếu 0.5 · 5.5 Thiếu 1.0 · 5.0 Thiếu ≥ 1.5 · thiếu Overall Chưa đủ; MT3, MT4 → MT3+', () => {
@@ -53,12 +53,13 @@ export async function runPrSvSo3Tests(t: YThucTestKit) {
     assert(d.luotKqMt(0) === 'mt0' && d.luotKqMt(2) === 'mt2' && d.luotKqMt(3) === 'mt3+' && d.luotKqMt(5) === 'mt3+', 'luotKqMt');
   });
 
-  check('SVSO3 · Kết quả MT luôn đủ 5 hàng; kỳ không có lượt → mọi hàng 0 HV, mẫu 0 ("Chưa có dữ liệu"); lớp thường → null', () => {
+  check('SVSO3 · Kết quả MT luôn đủ 5 hàng; kỳ không có lượt → mọi hàng 0 HV, mẫu 0 ("Chưa có dữ liệu"); lớp thường → 400', () => {
     const xa = week.mondayOf(t.addDays(TODAY, 7 * 60));
     const r = kqMt(P.mbManager, { ...f, tu: xa, den: xa });
     assert(r.map((x) => x.luot).join() === d.LUOT_KQ_MT.join() && r.every((x) => x.hv === 0 && x.mau === 0), JSON.stringify(r));
-    xoaNho();
-    assert(bc.baoCao(P.mbManager, { ...f, ct: 'thuong' }).kqMt === null, 'lớp thường');
+    let loi = false;
+    try { bc.ketQuaMt(P.mbManager, { ...f, ct: 'thuong' }); } catch { loi = true; }
+    assert(loi, 'lớp thường → 400');
   });
 
   check('SVSO3 (P8) · lượt của TỪNG em: MT1 5.5 tuần trước + MT2 6.0 tuần này → MT2 Thiếu 0.5, So lượt trước ↑; em thiếu Overall → Chưa đủ, ngoài mẫu', () => thu(() => {

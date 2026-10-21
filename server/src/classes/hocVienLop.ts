@@ -278,7 +278,7 @@ export function danhSachHocVienLop(
     /* OV-12f: tên + mã + ô thiếu — dòng "Thiếu thông tin" / "Chờ duyệt" của góc Cần làm (em không có việc ở Công việc vẫn có tên). */
     return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const,
       ten: h.full_name as string, ma: (h.student_code ?? '') as string, ...(thieu.length ? { thieu: thieu.map((m) => m.label) } : {}),
-      ...(them ? { them: them.get(h.id as number) } : {}), ...(hang.has(h.id) ? { hang: hang.get(h.id) } : {}) };
+      ...(them ? { them: them.get(h.id as number) } : {}), ...(ft && hang.has(h.id) ? { hang: hang.get(h.id) } : {}) };
   });
   /*
    * OV-11g (HL-19, Q11): em Kết thúc học chưa Lưu trữ — hiện mờ ở lớp CUỐI (cùng điều kiện `classRoster(…, kemKetThuc)`), chỉ trong "Tất cả":
