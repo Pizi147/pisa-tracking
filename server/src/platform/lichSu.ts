@@ -57,7 +57,7 @@ function docLichSu(p: Principal, q: { loai?: string | null; id?: number | null; 
 
 const NHOM_HV = [{ key: 'thong-tin', nhan: 'Thông tin' }, { key: 'target', nhan: 'Target / lộ trình' }, { key: 'trang-thai', nhan: 'Trạng thái' }];
 const NHOM_LOP = [{ key: 'thong-tin', nhan: 'Thông tin' }, { key: 'tien-do', nhan: 'Tiến độ' }, { key: 'phan-cong', nhan: 'Phân công' }];
-const NHOM_O = [{ key: 'diem', nhan: 'Điểm' }, { key: 'nhan-xet', nhan: 'Nhận xét' }, { key: 'lich', nhan: 'Lịch thi' }];
+const NHOM_O = [{ key: 'diem', nhan: 'Điểm' }, { key: 'nhan-xet', nhan: 'Nhận xét' }, { key: 'lich', nhan: 'Lịch Test' }];
 
 /** Mốc bắt đầu ghi (migrate OV-15g) — chỉ báo ở TRANG CUỐI và khi đối tượng có từ trước mốc. OV-15i1: một mốc cho mọi loại (hv, lớp, góp ý,
  *  nhập HV, thi thật, ô điểm) — mốc OV-15g là lúc máy chủ ghi đủ mọi loại; trước đó loại nào cũng có thể thiếu dòng. */
@@ -217,7 +217,7 @@ function truongLop(r: DongNk, ct: string | null): { nguon: string | null; lyDo: 
     }
     case 'class.progress.doi_bai':
       /* Cùng lần lưu đổi mốc: bài chưa thi của các em dời theo (PR-LTGON luật 6). */
-      return { nguon: null, lyDo: null, truong: [{ ten: `Bài ${r.label === 'final' ? 'Final' : 'Progress'} Test chưa thi`, cu: chu(b.week), moi: chu(f.week), n: 'tien-do' }] };
+      return { nguon: null, lyDo: null, truong: [{ ten: `Bài ${r.label === 'final' ? 'Final' : 'Progress'} Test chưa làm`, cu: chu(b.week), moi: chu(f.week), n: 'tien-do' }] };
     case 'class.assign': {
       const nguon = f.via === 'gvcn' ? 'GVCN đổi GV bộ môn' : f.via === 'tao_lop' ? 'Tạo lớp' : f.via === 'doi_ct' ? 'Đổi chương trình' : null;
       if (!Array.isArray(f.sau)) {
@@ -284,7 +284,7 @@ function thiThat(p: Principal, cycleId: number, tiep: number | null): TrangLs {
 
 // ------------------------------------------------------------------ ô điểm của một lượt (điểm · "-" · nhận xét · GV chấm · lịch)
 
-const TRANG_THAI_THI: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ', excused: 'Không dự thi' };
+const TRANG_THAI_THI: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã làm bài', absent: 'Vắng', cancelled: 'Đã huỷ', excused: 'Vắng' };
 
 function oDiem(p: Principal, attemptId: number, loc: string | null, tiep: number | null): TrangLs {
   const a = db().prepare('SELECT class_id, student_id, created_at FROM assessment_attempts WHERE id = ?').get(attemptId) as { class_id: number | null; student_id: number; created_at: string } | undefined;
@@ -305,7 +305,7 @@ function oDiem(p: Principal, attemptId: number, loc: string | null, tiep: number
        LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.attempt_id = ? ORDER BY h.id DESC LIMIT 300`,
   ).all(attemptId) as any[]).map((h) => ({
     luc: h.luc, nguoi: h.ten ?? 'Hệ thống', lyDo: chu(h.reason), khoa: `l${h.id}`,
-    t: { ten: `Lịch · ${h.field === 'planned_period' ? 'Tuần thi' : tenMon(null, String(h.field))}`, cu: TRANG_THAI_THI[h.cu] ?? chu(h.cu), moi: TRANG_THAI_THI[h.moi] ?? chu(h.moi), n: 'lich' },
+    t: { ten: `Lịch · ${h.field === 'planned_period' ? 'Tuần Test' : tenMon(null, String(h.field))}`, cu: TRANG_THAI_THI[h.cu] ?? chu(h.cu), moi: TRANG_THAI_THI[h.moi] ?? chu(h.moi), n: 'lich' },
   }));
   /* Mới → cũ; dòng của MỘT lần lưu (cùng người, ≤ 5 giây) là một mục. OV-15i1: trang theo CON TRỎ `tiep` = mốc ms × 1000 + số dòng CÙNG mốc ms đã hiện
    * (dòng sắp theo ms rồi khoá) — có người lưu thêm giữa hai lần "Xem thêm" không lặp mục; nhiều dòng cùng mili-giây không mất. Mục gom từ dòng mới nhất

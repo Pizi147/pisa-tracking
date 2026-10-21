@@ -68,8 +68,8 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('tasks', 'assignee_user_id', DV, 'công việc'), c('tasks', 'watcher_user_id', DV, 'công việc'),
   c('tasks', 'created_by', DV, 'công việc'), c('tasks', 'help_user_id', DV, 'công việc'),
   c('teacher_estimates', 'assessed_by', DV, 'ước lượng'),
-  c('unit_report_history', 'actor_user_id', DV, 'báo cáo đơn vị'), c('unit_report_task_links', 'created_by', DV, 'báo cáo đơn vị'),
-  c('unit_reports', 'reporter_user_id', DV, 'báo cáo đơn vị'), c('unit_reports', 'submitted_by', DV, 'báo cáo đơn vị'),
+  c('unit_report_history', 'actor_user_id', DV, 'họp đơn vị'), c('unit_report_task_links', 'created_by', DV, 'họp đơn vị'),
+  c('unit_reports', 'reporter_user_id', DV, 'họp đơn vị'), c('unit_reports', 'submitted_by', DV, 'họp đơn vị'),
   /* Q10: lịch sử duyệt / cấp quyền cho NGƯỜI KHÁC — xoá hẳn là mất căn cứ "ai duyệt" */
   c('user_permissions', 'granted_by', DV, 'duyệt, cấp quyền'), c('users', 'approved_by', DV, 'duyệt, cấp quyền'),
   c('yeu_cau_duyet', 'nguoi_xin', DV, 'yêu cầu duyệt'), c('yeu_cau_duyet', 'nguoi_duyet', DV, 'yêu cầu duyệt'),
@@ -79,7 +79,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('lenh_chuyen_lop', 'nguoi_ra_lenh', DV, 'quyết định chuyển lớp'), c('lenh_chuyen_lop', 'huy_boi', DV, 'quyết định chuyển lớp'),
   c('lenh_chuyen_lop', 'xac_nhan_boi', DV, 'bàn giao'), c('ban_giao_mon', 'nguoi_ghi', DV, 'bàn giao'),
   c('gop_y_tuan', 'ghi_boi', DV, 'góp ý hàng tuần'),   // OV-12g
-  c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch thi'),   // OV-15c
+  c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch Test'),   // OV-15c
   c('tutors', 'created_by', DV, 'danh sách tutor'), c('tutors', 'updated_by', DV, 'danh sách tutor'),   // TU-a
   c('tutor_nhan_xet', 'nguoi_id', DV, 'nhận xét về tutor'),
 ];

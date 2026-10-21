@@ -135,7 +135,7 @@ export const MAU_XUAT_DS: readonly MauXuatDs[] = ['co-ban', 'theo-doi-sos', 'ket
 export const COT_XUAT_DS = {
   ten: 'Tên học sinh', gmail: 'Gmail', lop: 'Lớp', coSo: 'Cơ sở', sos: 'Mức SOS', tamChinh: 'Tạm / Chính thức', mt: 'MT liên quan',
   kyNang: 'Kỹ năng cần xử lý', caseTt: 'Trạng thái Case', paTt: 'Trạng thái PA', phuTrach: 'Người phụ trách',
-  diem: 'Điểm', target: 'Target', lichThi: 'Lịch thi thật', tuanThi: 'Tuần thi', ketQua: 'Kết quả', ketLuan: 'Kết luận', ghiChuHop: 'Ghi chú họp',
+  diem: 'Điểm', target: 'Target', lichThi: 'Lịch thi thật', tuanThi: 'Tuần Test', ketQua: 'Kết quả', ketLuan: 'Kết luận', ghiChuHop: 'Ghi chú',
 } as const;
 export type KhoaCotXuatDs = keyof typeof COT_XUAT_DS;
 /** Sáu cột con của "Điểm", đúng thứ tự mockup 5. */
@@ -170,7 +170,7 @@ export function bangXuatDanhSach(hv: readonly HvXuatDs[], cot: readonly KhoaCotX
 }
 
 /** Nhãn mẫu cột trong sheet "Thông tin xuất". */
-export const NHAN_MAU_XUAT: Record<MauXuatDs, string> = { 'co-ban': 'Cơ bản', 'theo-doi-sos': 'Theo dõi SOS', 'ket-qua-thi': 'Kết quả thi' };
+export const NHAN_MAU_XUAT: Record<MauXuatDs, string> = { 'co-ban': 'Cơ bản', 'theo-doi-sos': 'Theo dõi SOS', 'ket-qua-thi': 'Kết quả Test' };
 
 /** Sheet "Thông tin xuất" (mockup 5 khung 2b): Mục · Giá trị — điều kiện lọc, thời điểm, phạm vi, số em, mẫu cột, người xuất. */
 export function bangThongTinXuatDs(o: { dieuKien: string; luc: string; pham: 'loc' | 'chon'; soHv: number; mau: MauXuatDs; soCot: number; nguoi: string }): (string | number | null)[][] {

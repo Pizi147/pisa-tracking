@@ -340,7 +340,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
             {soNgay > 0 && (
               <p role="note" className="m-0 rounded-lg border px-3 py-2 text-sm font-semibold text-soon" style={KHOI_VANG}>
                 ⚠ {t('Chuyển ngay, không hoàn tác')} · <span className="tabular-nums">{soNgay}</span> em
-                {emNgay.some(cungCt) && <span className="mt-1 block font-normal text-slate-200">{t('Bài Test đang dở đi theo em sang lớp mới; bài đã thi xong ở lại {cu}', { cu: data.from.code })}</span>}
+                {emNgay.some(cungCt) && <span className="mt-1 block font-normal text-slate-200">{t('Bài Test đang dở đi theo em sang lớp mới; bài đã làm xong ở lại {cu}', { cu: data.from.code })}</span>}
                 {emNgay.some((r) => !cungCt(r)) && <span className="mt-1 block font-normal text-slate-200">{t('Điểm đã có ở lại khoá cũ (xem ở hồ sơ)')}</span>}
               </p>
             )}

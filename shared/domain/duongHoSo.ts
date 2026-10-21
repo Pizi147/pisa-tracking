@@ -214,7 +214,7 @@ export function noiDenThongBao(n: ThongBaoRow): string | null {
   if (path.startsWith('/cong-viec/yeu-cau')) return t('Công việc › Yêu cầu của tôi');
   if (path.startsWith('/cong-viec/cho-duyet')) return t('Công việc › Chờ duyệt');
   if (path.startsWith('/cong-viec')) return t('Công việc');
-  if (path.startsWith('/mock-test/')) return t('Test › Lượt thi{x}', { x: n.ten_hv ? t(' của {ten_hv}', { ten_hv: n.ten_hv }) : '' });
+  if (path.startsWith('/mock-test/')) return t('Test › Lượt{x}', { x: n.ten_hv ? t(' của {ten_hv}', { ten_hv: n.ten_hv }) : '' });
   if (path.startsWith('/test')) return t('Test › Lịch Test / Chấm Test');
   if (path.startsWith('/quan-tri')) return t('Quản trị › Tài khoản');
   return null;

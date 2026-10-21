@@ -111,7 +111,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
   const trong = canEdit && diem === null && s?.progress !== 'upcoming'
     && s?.progress !== 'cancelled' && s?.progress !== 'absent' && !s?.khongDuThi;
   const dung = diem === null && (s?.progress === 'absent' || s?.progress === 'cancelled');
-  const chuDung = !dung ? null : s!.progress === 'absent' ? t('Đã vắng · chờ xếp lại') : t('Đã huỷ phần thi');
+  const chuDung = !dung ? null : s!.progress === 'absent' ? t('Đã vắng · chờ xếp lại') : t('Đã huỷ');
   /* Quá hạn chấm của CHÍNH môn này (hạn riêng từng môn, mục 10.5), ngày dạng dd/mm. */
   const quaHan = diem === null && s?.overdue && s.deadline ? t('Quá hạn {ngay}', { ngay: ngay(s.deadline, homNay) }) : null;
   const cell = {
@@ -481,7 +481,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
         if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
           return (
             <OBang key={k} c={cc[k]} className="group relative text-slate-500" data-kn={k} tabIndex={0}
-              title={t('{tenMon}: thi tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>
+              title={t('{tenMon}: làm bài tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>
               <span className="inline-flex items-baseline gap-1">{tuanLich(s.weekStart, homNay)}{menuO(k)}</span>
             </OBang>
           );
@@ -584,7 +584,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
       chu: t('{x} dời sang {x2}', { x: doiDau[1].map(ngan).join(', '), x2: doiDau[0] }), tone: 'text-slate-400',
       title: t('{x}: em không làm bài, môn đã dời sang {x2}.', { x: doiDau[1].map(du).join(', '), x2: doiDau[0] }),
     }
-    : kdt.length ? { chu: t('{x} không dự thi', { x: kdt.map(ngan).join(', ') }), tone: 'text-slate-400', title: t('{x}: Không dự thi.', { x: kdt.map(du).join(', ') }) }
+    : kdt.length ? { chu: t('{x} vắng', { x: kdt.map(ngan).join(', ') }), tone: 'text-slate-400', title: t('{x}: Vắng.', { x: kdt.map(du).join(', ') }) }
     : row.goiY
       ? { chu: row.goiY.nhanNgan, tone: 'text-slate-500', title: `${row.goiY.nhan}${kq.phu ? ` — ${kq.phu}` : ''}` }
     : kq.phu && !row.chip

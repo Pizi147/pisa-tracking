@@ -130,7 +130,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
     ...(cot.mt ? [{ key: 'mt', nhan: 'MT', kieu: 'so', rong: 56, goiY: t('Số thứ tự lượt Mock Test (MT) trong lộ trình của em.') } as const] : []),
     ...(cot.trangThai ? [{ key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 146, goiY: t('Lượt đã chấm xong, đang chờ, hay đã huỷ.') } as const] : []),
-    ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 128, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.') } as const] : []),
+    ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 128, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần Test của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.') } as const] : []),
     ...rawCot.map(oKn), ...wCot.map(oKn),
     ...(cot.w ? [{ key: 'w', nhan: 'W', kieu: 'diem', rong: 64, tinh: true, sang: khopKn('writing', kn), goiY: W_HINT } as const] : []),
     ...(hien('speaking') ? [oKn('speaking')] : []),
@@ -245,13 +245,13 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
   const weeks = new Set(cells.filter((c) => c.required && c.periodCode).map((c) => c.periodCode));
   const phu = dongDau ?? (weeks.size > 1 && (
     <span className="max-w-full truncate text-xs text-slate-400" title={skillLabel(soonest.skill)}>
-      {skillShort(soonest.skill)}{' '}{t('· đợt này thi {size} tuần', { size: weeks.size })}
+      {skillShort(soonest.skill)}{' '}{t('· đợt này làm bài trong {size} tuần', { size: weeks.size })}
     </span>
   ));
   /* BANG-1: hàng tối đa 64 px — hạn đã quá thì pill đã hai dòng ("hạn …" + "⚠ quá hạn …"): dòng phụ vào tooltip của ô. */
   const quaHan = !!homNay && soonest.deadline!.slice(0, 10) < homNay;
   const goiY = quaHan && phu ? (dongDau ? noShows.map((c) => `${skillShort(c.skill)}: ${dich(c.noShow!.text)}`).join('\n')
-    : `${skillShort(soonest.skill)} ${t('· đợt này thi {size} tuần', { size: weeks.size })}`) : undefined;
+    : `${skillShort(soonest.skill)} ${t('· đợt này làm bài trong {size} tuần', { size: weeks.size })}`) : undefined;
   return (
     <div className="flex flex-col items-start gap-0.5 min-w-0" title={goiY} data-phu-odiem={quaHan || phu ? '' : undefined}>{/* hai dòng → hàng 64 */}
       <DeadlinePill cell={soonest} />
@@ -292,7 +292,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   const khacTuan = (cell: Cell) => khacTuanFt(cell, tuanDangXem) && !nutTuanGoc(cell);
   const oKhacTuan = (s: string, cell: Cell) => (
     <OBang key={s} c={cc[s]} className="text-slate-500" data-kn={s}
-      title={cell.daChot?.doiSang ? t('{skillLabel}: vắng, đã dời sang {doiSang}', { skillLabel: skillLabel(s), doiSang: cell.daChot.doiSang }) : t('{skillLabel}: thi tuần {tuanLich}', { skillLabel: skillLabel(s), tuanLich: tuanLich(cell.weekStart) })}>
+      title={cell.daChot?.doiSang ? t('{skillLabel}: vắng, đã dời sang {doiSang}', { skillLabel: skillLabel(s), doiSang: cell.daChot.doiSang }) : t('{skillLabel}: làm bài tuần {tuanLich}', { skillLabel: skillLabel(s), tuanLich: tuanLich(cell.weekStart) })}>
       {cell.daChot?.doiSang ? t('Đã dời sang {doiSang}', { doiSang: cell.daChot.doiSang }) : tuanLich(cell.weekStart)}
     </OBang>
   );
@@ -392,7 +392,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
             row.result.kckDuoi ? <ChipDuoiKck />   /* OV-9: em KCK dưới kỳ vọng — chip trung tính, không SOS */
               : row.result.chot && row.result.sosLevel !== null ? <SosLuot row={row} />
               : row.result.provisional && (row.result.sosLevel ?? 0) > 0 ? <SosLuot row={row} tam />
-                : tuanChuaToi ? <Level tone="muted" title={t('Chưa tới tuần thi')}>{tuanLich(tuanChuaToi)}</Level>
+                : tuanChuaToi ? <Level tone="muted" title={t('Chưa tới tuần Test')}>{tuanLich(tuanChuaToi)}</Level>
                 : <Level tone="muted">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</Level>
           )}
           {row.result.scopeNote && (

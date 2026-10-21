@@ -9500,6 +9500,9 @@ await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runPrSl2Tests } = await import('./prSl2.tests.ts');
 await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== CHU-THI (Rulebook §21.4: Thi = thi thật, Test = "làm bài" — chặn chữ cũ trong tệp Test)
+const { runPrChuThiTests } = await import('./prChuThi.tests.ts');
+await runPrChuThiTests({ checkAsync, assert } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

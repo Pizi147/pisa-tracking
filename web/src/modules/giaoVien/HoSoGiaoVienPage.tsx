@@ -224,7 +224,7 @@ function KhoiLop({ data, dienThoai, ketQuaCua }: { data: HoSo; dienThoai: boolea
               <colgroup><col style={{ width: '17%' }} /><col style={{ width: '15%' }} /><col style={{ width: '20%' }} /><col style={{ width: '12%' }} /><col style={{ width: '19%' }} /><col style={{ width: '17%' }} /></colgroup>
               <thead><tr>
                 <Th>{t('Lớp')}</Th><Th>{t('Khung')}</Th><Th>{t('Vai trò')}</Th><Th align="right">{t('Học viên')}</Th>
-                <Th align="right" hint={t('Một bài = một kỹ năng của một em trong một lượt, tuần thi đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.')}>{t('Bài chưa nhập điểm')}</Th>
+                <Th align="right" hint={t('Một bài = một kỹ năng của một em trong một lượt, tuần Test đã bắt đầu. Cùng số với Lịch Test. Khác với số ở khối Việc đang có, vốn đếm việc.')}>{t('Bài chưa nhập điểm')}</Th>
                 <Th align="right">{t('Bài quá hạn')}</Th>
               </tr></thead>
               <tbody>

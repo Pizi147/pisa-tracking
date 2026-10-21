@@ -119,7 +119,7 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
     const rows = ensureSkillRows(attemptId);
     for (const l of lich) {
       const r = rows.find((x) => x.skill === l.skill);
-      if (r?.sit_status === 'cancelled') throw badRequest(`${tenMon(null, l.skill)} của ${nhan} đã huỷ phần thi — không khôi phục được.`);
+      if (r?.sit_status === 'cancelled') throw badRequest(`${tenMon(null, l.skill)} của ${nhan} đã huỷ — không khôi phục được.`);
       if (!l.planned_period_id) continue;
       const pr = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any;
       const c = checkSkillWeekMove({ attemptId, skill: l.skill, newWeekStart: pr.week_start });

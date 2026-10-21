@@ -38,9 +38,9 @@ export type KetQuaVang = { kq: 'doi' | 'huy' | 'huy-cu' | 'khong-du-thi' | 'cho-
 /** Thông báo sau khi ghi — nói đúng hậu quả (CA3-1). */
 export function cauDaGhiVang(mon: string, tenHv: string | undefined, k: KetQuaVang | null | undefined): string {
   const em = tenHv ? ` · ${tenHv}` : '';
-  if (k?.kq === 'khong-du-thi') return t('Đã ghi Không dự thi · {mon}{em}', { mon, em });
+  if (k?.kq === 'khong-du-thi') return t('Đã ghi Vắng · {mon}{em}', { mon, em });
   if (k?.kq === 'huy-cu') return t('Đã huỷ · vắng MT cũ · {mon}{em}', { mon, em });
-  const sau = k?.kq === 'doi' && k.tuanMoi ? t(' · dời {tuanMoi}', { tuanMoi: k.tuanMoi }) : k?.kq === 'huy' ? t(' · huỷ phần thi') : k?.kq === 'cho-ql' ? t(' · chờ Quản lý') : '';
+  const sau = k?.kq === 'doi' && k.tuanMoi ? t(' · dời {tuanMoi}', { tuanMoi: k.tuanMoi }) : k?.kq === 'huy' ? t(' · huỷ kỹ năng') : k?.kq === 'cho-ql' ? t(' · chờ Quản lý') : '';
   return t('Đã ghi vắng {mon}{em}{sau}', { mon, em, sau });
 }
 

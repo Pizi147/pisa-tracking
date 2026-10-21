@@ -21,12 +21,12 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'ad-xep-lich', ten: 'Xếp / dời lịch MT', khi: 'mỗi tuần',
       buoc: ['<b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> cho nhiều lớp.',
-        'Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Xếp lịch</b>, <b>Dời lịch thi</b>, <b>Trả lời đề nghị dời</b>.',
+        'Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Xếp lịch</b>, <b>Dời lịch Test</b>, <b>Trả lời đề nghị dời</b>.',
         '<b>Dời hạn chấm</b>, đổi tuần cả đợt: chỉ Quản lý.'],
       chi: { hd: 'kht-loc', duong: '/test/ke-hoach', chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' },
     },
     {
-      id: 'ad-cham', ten: 'Theo dõi chấm điểm', khi: 'sau mỗi tuần thi',
+      id: 'ad-cham', ten: 'Theo dõi chấm điểm', khi: 'sau mỗi tuần Test',
       buoc: ['<b>Test › Lịch Test / Chấm Test</b>: <b>Test quá hạn chấm</b> · <b>Test chấm tuần này</b> (hạn <b>Thứ Tư</b>).',
         '<b>Công việc</b>: chỉ nhóm Chấm điểm của chi nhánh; ô <b>▾</b> chọn một GV.', 'GV quá hạn tự nhận thông báo; việc tự hết khi GV nhập đủ điểm.'],
       chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Lọc việc chấm theo một GV ở đây.' },
@@ -53,7 +53,7 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      muc: [{ id: 'ad-pt', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả thi</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.', 'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
+      muc: [{ id: 'ad-pt', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.', 'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
         chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }],
     },
     {
@@ -78,8 +78,8 @@ export const HD_ADMIN: HuongDan = {
       muc: [
         { id: 'ad-kh-xep', ten: 'Xếp lịch nhiều lớp', buoc: ['<b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường).', 'Chip <b>Cần xếp lại</b>: em vắng cần xếp lại.'],
           chi: { hd: 'kht-loc', duong: '/test/ke-hoach', chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' } },
-        { id: 'ad-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm chip kỹ năng: chọn tuần, <b>Lưu</b>.', '<b>⋯</b>: <b>Xếp lịch</b> · <b>Dời lịch thi</b> · <b>Sửa điểm</b> · <b>Trả lời đề nghị dời</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'] },
-        { id: 'ad-kh-xoa', ten: 'Xóa lịch, ghi chú', buoc: ['Chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã thi: nút mờ).', 'Ô <b>Ghi chú lịch thi</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.'] },
+        { id: 'ad-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm chip kỹ năng: chọn tuần, <b>Lưu</b>.', '<b>⋯</b>: <b>Xếp lịch</b> · <b>Dời lịch Test</b> · <b>Sửa điểm</b> · <b>Trả lời đề nghị dời</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'] },
+        { id: 'ad-kh-xoa', ten: 'Xóa lịch, ghi chú', buoc: ['Chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã làm bài: nút mờ).', 'Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.'] },
         { id: 'ad-kh-xuat', ten: 'Tìm, xuất Excel', buoc: ['<b>Tìm lớp, học viên hoặc email…</b>: chọn em → lớp mở, hàng em được đánh dấu.', '<b>Xuất Excel</b> (Kế hoạch Test 13 cột) · <b>Xuất điểm Test</b>.'] },
       ],
     },
@@ -93,7 +93,7 @@ export const HD_ADMIN: HuongDan = {
   ],
   luat: [
     ...luatGv('han-cham', 'dau-gach'),
-    { id: 'ad-luat-quyen', ten: 'Admin làm / không làm', buoc: ['Làm: xếp / dời lịch thi, nhập bù / sửa điểm, sửa thông tin HV.', 'Chỉ Quản lý: dời hạn chấm, huỷ / khôi phục lượt, Target, lộ trình.', 'Case, Ý thức, Phối hợp: chỉ xem.'] },
+    { id: 'ad-luat-quyen', ten: 'Admin làm / không làm', buoc: ['Làm: xếp / dời lịch Test, nhập bù / sửa điểm, sửa thông tin HV.', 'Chỉ Quản lý: dời hạn chấm, huỷ / khôi phục lượt, Target, lộ trình.', 'Case, Ý thức, Phối hợp: chỉ xem.'] },
   ],
-  tu: HD_GV.tu.filter((x) => ['MT (bài thi thử)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Speaking chấm chéo', 'KCK', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
+  tu: HD_GV.tu.filter((x) => ['MT (Mock Test)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Speaking chấm chéo', 'KCK', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
 };

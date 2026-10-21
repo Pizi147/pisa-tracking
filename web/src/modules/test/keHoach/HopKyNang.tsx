@@ -72,7 +72,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   const { pathname } = useLocation();
 
   /* PR-MTa T20: Quản lý dời được kỹ năng đã có điểm / đã thi (điểm đi theo) — chỉ phần đã huỷ là chỉ đọc. */
-  const laKhoa = (k: KyNangKH) => !moi && kn[k]?.khoa === 'đã huỷ phần thi';
+  const laKhoa = (k: KyNangKH) => !moi && kn[k]?.khoa === 'đã huỷ';
   /* Menu ⋯ từng dòng theo `thaoTacKyNang` qua `menuHopKyNang` (T38; mockup phần 2). Hộp là màn của Quản lý. */
   const quyen = { nhapDiem: true, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false,
     huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE) };
@@ -376,13 +376,13 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
         </div>
         {!moi && coDoi && (
           <Truong nhan="Lý do" tuyChon>
-            <input className="field w-full" maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: trùng lịch phòng thi" />
+            <input className="field w-full" maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: trùng lịch phòng" />
           </Truong>
         )}
         {/* C21 (mockup 4): ghi chú lịch thi — chỉ là ghi chú, không dời lịch; lưu cùng nút Lưu. */}
         {ghiChu !== undefined && <div className="border-t pt-2" style={{ borderColor: 'var(--line)' }}>
           <label className="block">
-            <span className="text-[12px] font-bold text-slate-400">{t('Ghi chú lịch thi')}</span>
+            <span className="text-[12px] font-bold text-slate-400">{t('Ghi chú lịch Test')}</span>
             <input className="field mt-1 w-full" maxLength={GHI_CHU_TOI_DA} value={ghi} onChange={(e) => setGhi(e.target.value)} placeholder={t('Thêm ghi chú…')} />
           </label>
           {ghiChu && (
@@ -486,7 +486,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
         <label className="relative grid place-items-center max-sm:min-h-[44px] max-sm:after:absolute max-sm:after:-inset-x-2.5 max-sm:after:inset-y-0 max-sm:after:content-['']">
           <input type="checkbox" className="accent-sky-400 disabled:opacity-60" checked={d.tick} disabled={!tickDuoc} onChange={(e) => onTick(e.target.checked)}
             aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`}
-            title={!tickDuoc ? (o?.khoa ?? 'Đã tới tuần thi') : d.tick ? 'Bỏ kỹ năng khỏi đợt' : 'Đưa lại vào đợt'} />
+            title={!tickDuoc ? (o?.khoa ?? 'Đã tới tuần Test') : d.tick ? 'Bỏ kỹ năng khỏi đợt' : 'Đưa lại vào đợt'} />
         </label>
       ) : <span />}
       <div className="text-xs text-slate-200">

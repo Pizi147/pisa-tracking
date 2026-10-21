@@ -82,7 +82,7 @@ export function BaoCao(pv: PhamViPhanTich) {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-12 print:grid-cols-12">
         <Khoi tieuDe={`Test ${nhan.chinh}`} className={data.sos ? 'lg:col-span-7 print:col-span-7' : 'lg:col-span-12 print:col-span-12'}>
           <div className="grid grid-cols-3 gap-3">
-            <So so={soO(data.test.hvDaThi, 'hv-da-thi', t('HV đã thi'))} nhan={t('HV đã thi')} phu={t('{n} lượt lớp', { n: data.test.luotLop })} />
+            <So so={soO(data.test.hvDaThi, 'hv-da-thi', t('HV đã làm bài'))} nhan={t('HV đã làm bài')} phu={t('{n} lượt lớp', { n: data.test.luotLop })} />
             <So so={<>{soO(data.test.baiDaCham, 'bai-da-cham', t('Bài đã chấm'))}<span className="text-slate-400">/{data.test.baiTong}</span></>} nhan={t('bài đã chấm')} phu={tyLe !== null ? `${tyLe}%` : undefined} />
             <So so={soO(data.test.quaHan, 'bai-qua-han', t('Bài quá hạn'))} nhan={t('bài quá hạn')} phu={`${data.test.gvQuaHan.filter((g) => g.gvId).length} GV`} canhBao={data.test.quaHan > 0} />
           </div>

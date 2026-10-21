@@ -159,7 +159,7 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const ds = [...new Set(ids)].sort((a, b) => a - b);
     return { n: ds.length, tieuDe: `${ds.length} ${donVi === 'bai' ? 'bài' : 'HV'} — ${tieuDe}`, rows: rowsFor(donVi, ds, undefined, p) };
   };
-  if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã thi');
+  if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã làm bài');
   if (f.o === 'bai-da-cham') return ra('bai', r.daCham, 'đã chấm');
   if (f.o === 'bai-qua-han') return ra('bai', r.quaHan, 'quá hạn chấm');
   const gv = /^gv:(-?\d+)$/.exec(f.o);

@@ -1347,7 +1347,7 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
   /* PR-MTGON (luật 1): Quản lý dời cả đợt = mọi kỹ năng bắt buộc chưa huỷ, kể cả đã có điểm / đã thi — điểm giữ, chỉ dời (như hộp một đợt). */
   const movable = rows.filter((r) => r.required && r.sit_status !== 'cancelled' && r.planned_period_id !== periodId);
   if (!movable.length) {
-    throw badRequest('Không kỹ năng nào còn đổi được tuần: các kỹ năng bắt buộc đã huỷ phần thi hoặc vốn đã ở tuần này.');
+    throw badRequest('Không kỹ năng nào còn đổi được tuần: các kỹ năng bắt buộc đã huỷ hoặc vốn đã ở tuần này.');
   }
   /* Kiểm vượt trên CẢ lần dời (không từng kỹ năng) — 400 trước khi ghi bất cứ gì. */
   const vuot = kiemVuot(attemptId, tuanCuoiSauKhiDoi(rows, new Map(movable.map((r) => [r.skill, period.week_start])))!).chan;
@@ -2053,12 +2053,12 @@ export function saveScore(
    * trước — sửa xong mới nhập được điểm, và lịch sử giữ cả hai lần.
    */
   if (scheduleRow.sit_status === 'cancelled') {
-    throw badRequest(`Phần thi ${assessed} của đợt này đã bị huỷ. Khôi phục và đặt tuần mới trước khi nhập điểm.`);
+    throw badRequest(`Kỹ năng ${assessed} của đợt này đã bị huỷ. Khôi phục và đặt tuần mới trước khi nhập điểm.`);
   }
   if (scheduleRow.sit_status === 'absent') {
     throw badRequest(
-      `${assessed} đang được ghi nhận là học viên đã vắng. Nếu thực ra em có thi, `
-      + 'sửa trạng thái thi trước rồi mới nhập điểm.',
+      `${assessed} đang được ghi nhận là học viên đã vắng. Nếu thực ra em có làm bài, `
+      + 'sửa trạng thái làm bài trước rồi mới nhập điểm.',
     );
   }
 
@@ -2112,7 +2112,7 @@ export function saveScore(
           );
         }
         if (!scheduleRow.planned_period_id || !scheduleRow.week_end) {
-          throw badRequest(`${assessed} chưa có tuần thi nên chưa báo "không có bài" được.`);
+          throw badRequest(`${assessed} chưa có tuần Test nên chưa báo "không có bài" được.`);
         }
         /* Báo lại cùng một tuần là VÔ HẠI: không đổi gì, và không biến một dấu báo đúng hạn thành báo muộn. */
         if (existing?.no_show_period_id === scheduleRow.planned_period_id) return done();
@@ -2126,7 +2126,7 @@ export function saveScore(
          * Ô `sat` mà không ô nào của buổi có điểm (điểm đã xoá — ca thật 09/10) vẫn nhận "-" như ô chưa thi.
          */
         if (scheduleRow.week_start && scheduleRow.week_start.slice(0, 10) > mondayOf(today)) {
-          throw badRequest(`Chưa tới tuần thi ${tuanLich(scheduleRow.week_start, today)} — muốn đổi tuần thì "Dời lịch thi".`);
+          throw badRequest(`Chưa tới tuần Test ${tuanLich(scheduleRow.week_start, today)} — muốn đổi tuần thì "Dời lịch".`);
         }
         const late = today > scheduleRow.week_end.slice(0, 10);
         const cu = a.lich_su || (late && a.kind !== 'mock') ? 1 : 0;

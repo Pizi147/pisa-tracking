@@ -11,7 +11,7 @@ export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-
   | 'xep-lai' | 'tra-loi-de-nghi' | 'khoi-phuc' | 'khong-mock-lai' | 'khoi-phuc-diem';
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
-  'nhap-diem': t('Nhập điểm'), 'sua-diem': t('Sửa điểm'), 'dat-lich': t('Xếp lịch'), 'doi-lich': t('Dời lịch thi'), 'doi-han': t('Dời hạn chấm'),
+  'nhap-diem': t('Nhập điểm'), 'sua-diem': t('Sửa điểm'), 'dat-lich': t('Xếp lịch'), 'doi-lich': t('Dời lịch'), 'doi-han': t('Dời hạn chấm'),
   'bo-ky-nang': t('Huỷ kỹ năng'), 'dua-lai': t('Đưa lại vào đợt'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
   'xep-lai': t('Xếp lại bài vắng'), 'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'),
   'khong-mock-lai': t('Không mock lại'), 'khoi-phuc-diem': t('Khôi phục điểm'),
@@ -94,13 +94,13 @@ function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
   if (muc === 'huy-diem' && tt !== 'co-diem') return t('Chưa có điểm');
   switch (tt) {
     case 'co-diem': return t('Đã có điểm');
-    case 'chua-xep': case 'chua-toi-tuan': return t('Chưa tới tuần thi');
+    case 'chua-xep': case 'chua-toi-tuan': return t('Chưa tới tuần Test');
     case 'vang': return t('Bài đang vắng');
-    case 'da-huy': case 'huy-vang': return t('Phần thi đã huỷ');
+    case 'da-huy': case 'huy-vang': return t('Kỹ năng đã huỷ');
     case 'cho-duyet': return t('Chờ duyệt');
     case 'lich-su': return t('MT cũ');
     /* OV-11e (TE-12): Đổi tuần / Dời hạn chấm mờ ở đây là thiếu quyền (Admin không dời hạn — OV-10a), không phải "không thi". */
-    default: return muc === 'doi-tuan' || muc === 'doi-han' ? t('Chỉ Quản lý') : t('Không thi đợt này');
+    default: return muc === 'doi-tuan' || muc === 'doi-han' ? t('Chỉ Quản lý') : t('Không có trong đợt này');
   }
 }
 

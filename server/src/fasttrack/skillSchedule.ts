@@ -561,13 +561,13 @@ export function checkWeekVsNeighbours(input: {
     if (soSanh(o) < 0) {
       if (input.newWeekStart < o.last_week) {
         blockers.push(
-          `${labelDot(o.attempt_no, o.kind)} có phần thi ở tuần ${tuanLich(o.last_week)}. `
-          + 'Phần thi của lượt sau không được xếp trước phần cuối của lượt trước.',
+          `${labelDot(o.attempt_no, o.kind)} có kỹ năng ở tuần ${tuanLich(o.last_week)}. `
+          + 'Kỹ năng của lượt sau không được xếp trước phần cuối của lượt trước.',
         );
       } else if (input.newWeekStart === o.last_week) {
         blockers.push(
           `Trùng tuần ${tuanLich(o.last_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.last_week)}). `
-          + 'Hai lượt không thi cùng một tuần.',
+          + 'Hai lượt không làm bài cùng một tuần.',
         );
       } else if (daysBetween(o.last_week, input.newWeekStart) === 7) {
         warnings.push(`Chỉ cách ${labelDot(o.attempt_no, o.kind)} đúng một tuần.`);
@@ -575,13 +575,13 @@ export function checkWeekVsNeighbours(input: {
     } else if (soSanh(o) > 0) {
       if (input.newWeekStart > o.first_week) {
         blockers.push(
-          `${labelDot(o.attempt_no, o.kind)} đã có phần thi ở tuần ${tuanLich(o.first_week)}. `
-          + 'Phần thi của lượt trước không được xếp vượt qua lượt kế tiếp.',
+          `${labelDot(o.attempt_no, o.kind)} đã có kỹ năng ở tuần ${tuanLich(o.first_week)}. `
+          + 'Kỹ năng của lượt trước không được xếp vượt qua lượt kế tiếp.',
         );
       } else if (input.newWeekStart === o.first_week) {
         blockers.push(
           `Trùng tuần ${tuanLich(o.first_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.first_week)}). `
-          + 'Hai lượt không thi cùng một tuần.',
+          + 'Hai lượt không làm bài cùng một tuần.',
         );
       } else if (daysBetween(input.newWeekStart, o.first_week) === 7) {
         warnings.push(`Chỉ cách ${labelDot(o.attempt_no, o.kind)} đúng một tuần.`);
@@ -681,7 +681,7 @@ export function kiemVuotTu(a: { attempt_no: number; kind: string }, rows: readon
   const x = luotBiVuot(ds, { attemptNo: a.attempt_no, tuanCuoiMoi }).biVuot[0];
   if (!x) return { chan: null };
   const nhan = nhanDot(x.kind, x.attemptNo), tw = tuanLich(x.tuanDau);
-  return { chan: `${nhan} thi ${tw}. Chọn tuần trước ${tw}, hoặc dời ${nhan} trước.` };
+  return { chan: `${nhan} làm bài ${tw}. Chọn tuần trước ${tw}, hoặc dời ${nhan} trước.` };
 }
 
 /** Tuần MUỘN NHẤT của lượt sau khi đặt `tuanMoi` cho các kỹ năng `doi` (kể cả kỹ năng đang huỷ / bỏ sắp được đưa lại — PR-MTGON)
@@ -709,7 +709,7 @@ export function boTuanLuot(p: Principal, attemptId: number, o: { lyDo?: string |
   if (a.status === 'cancelled') throw badRequest(`${nhan} đã huỷ.`);
   const rows = ensureSkillRows(attemptId);
   if (a.co_diem) throw badRequest(`${nhan} đã có điểm — không huỷ lịch được.`);
-  if (rows.some((r) => r.required && r.sit_status === 'sat')) throw badRequest(`${nhan} đã thi — không huỷ lịch được.`);
+  if (rows.some((r) => r.required && r.sit_status === 'sat')) throw badRequest(`${nhan} đã làm bài — không huỷ lịch được.`);
   const cho = conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending' LIMIT 1`).get(attemptId);
   if (cho) throw badRequest(`${nhan} đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước.`);
   const bo = rows.filter((r) => r.required && r.sit_status === 'scheduled' && r.planned_period_id);
@@ -813,7 +813,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   const { attempt, row } = loadOne(attemptId, skill);
   requireMoveSkillSchedule(
     p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
-    'Bạn không có quyền đổi lịch thi của kỹ năng này.',
+    'Bạn không có quyền đổi lịch Test của kỹ năng này.',
   );
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ. Mở lại trước khi đổi lịch.');
   if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của đợt này.`);
@@ -837,12 +837,12 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   if (!lichSu && !quanLy) {
     if (hasScore(attemptId, row.skill)) {
       throw badRequest(
-        `${skill} đã có điểm ở đợt này. Phần đã thi giữ nguyên lịch thật; `
+        `${skill} đã có điểm ở đợt này. Phần đã làm bài giữ nguyên lịch thật; `
         + 'muốn sửa lịch sử thì dùng hiệu chỉnh có lý do, không dời như một lịch tương lai.',
       );
     }
     if (row.sit_status === 'sat') {
-      throw badRequest(`${skill} đã được xác nhận là đã thi. Việc còn lại là chấm, không phải dời lịch.`);
+      throw badRequest(`${skill} đã được xác nhận là đã làm bài. Việc còn lại là chấm, không phải dời lịch.`);
     }
   }
 
@@ -934,8 +934,8 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
  * bài quá hạn vẫn nhập được (tính trễ như cũ).
  */
 export function kiemDaToiTuanThi(row: { week_start: string | null }, today: string): void {
-  if (!row.week_start) throw badRequest('Chưa xếp tuần thi — chưa nhập điểm được.');
-  if (row.week_start.slice(0, 10) > mondayOf(today)) throw badRequest(`Chưa tới tuần thi ${tuanLich(row.week_start, today)} — chưa nhập điểm được.`);
+  if (!row.week_start) throw badRequest('Chưa xếp tuần Test — chưa nhập điểm được.');
+  if (row.week_start.slice(0, 10) > mondayOf(today)) throw badRequest(`Chưa tới tuần Test ${tuanLich(row.week_start, today)} — chưa nhập điểm được.`);
 }
 
 /** GVCN đang hoạt động của một lớp. */
@@ -1058,17 +1058,17 @@ export function setSkillScope(
  */
 export function setSitStatus(p: Principal, attemptId: number, skill: string, status: string, note?: string | null) {
   const { attempt, row } = loadOne(attemptId, skill);
-  if (!(SIT_STATUSES as readonly string[]).includes(status)) throw badRequest('Trạng thái thi không hợp lệ.');
+  if (!(SIT_STATUSES as readonly string[]).includes(status)) throw badRequest('Trạng thái làm bài không hợp lệ.');
   requireMoveSkillSchedule(
     p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
-    'Bạn không có quyền xác nhận trạng thái thi của kỹ năng này.',
+    'Bạn không có quyền xác nhận trạng thái làm bài của kỹ năng này.',
   );
   if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của đợt này.`);
   if (status === 'absent' && hasScore(attemptId, row.skill)) {
     throw badRequest(`${skill} đã có điểm ở đợt này, không thể xác nhận là vắng.`);
   }
   if (status !== 'scheduled' && !row.planned_period_id) {
-    throw badRequest(`${skill} chưa có tuần thi, chưa xác nhận được em đã thi hay vắng.`);
+    throw badRequest(`${skill} chưa có tuần Test, chưa xác nhận được em đã làm bài hay vắng.`);
   }
   if (row.sit_status === status) return { ok: true, unchanged: true };
 

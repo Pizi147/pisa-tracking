@@ -38,17 +38,17 @@ const coDiem = (c: Cell | undefined) => !!c && (c.band !== null || c.rawScore !=
  */
 function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean, homNay: string): { chu: React.ReactNode; mau?: string; title?: string } {
   if (!l || !l.required) return { chu: t('Ngoài phạm vi') };
-  if (l.sitStatus === 'cancelled' || l.progress === 'cancelled') return { chu: t('Đã huỷ phần thi') };
+  if (l.sitStatus === 'cancelled' || l.progress === 'cancelled') return { chu: t('Đã huỷ') };
   if (l.pendingMove) {
     const cau = t('chờ Quản lý duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: l.pendingMove.moveNo, ngay: ngay(l.pendingMove.decideBy, homNay) });
-    return { chu: cau, mau: 'text-muted', title: t('Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ phần thi.', { x: l.pendingMove.toWeek ?? t('tuần kế tiếp'), ngay: ngay(l.pendingMove.decideBy, homNay) }) };
+    return { chu: cau, mau: 'text-muted', title: t('Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ kỹ năng.', { x: l.pendingMove.toWeek ?? t('tuần kế tiếp'), ngay: ngay(l.pendingMove.decideBy, homNay) }) };
   }
   if (l.sitStatus === 'absent') return { chu: t('vắng · chờ xếp lại'), title: t('Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.') };
   if (lichSu) return { chu: t('Nhập bù, không tính hạn') };
   if (l.doiTu && l.absenceMoveCount > 0) return chuDoiVang(l, homNay);
   if (c?.noShow) return { chu: c.noShow.text };
   if (!l.weekStart) return { chu: t('Chưa xếp tuần') };
-  if (l.progress === 'upcoming') return { chu: `Thi ${tuanLich(l.weekStart, homNay)}` };
+  if (l.progress === 'upcoming') return { chu: `Làm bài ${tuanLich(l.weekStart, homNay)}` };
   if (l.deadline) return { chu: <Han loai="nhap-diem" han={l.deadline} /> };
   return { chu: t('Chưa có điểm') };
 }
