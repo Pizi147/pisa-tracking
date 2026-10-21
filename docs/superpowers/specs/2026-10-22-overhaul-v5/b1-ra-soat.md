@@ -1,6 +1,6 @@
 # B1 — Rà soát Tổng quan theo vai · Công việc · TVV / Sau thi (pha 1)
 
-> Soạn 22/10/2026, session cloud V5-B1. Nguồn: brief [`00`](00-brief-chu-sp.md) mục 5, 6, 7, 9, 15, 18 · [`01`](01-quyet-dinh-22-10.md) · mã trên `main` (đọc, không sửa) · mockup V4 `thiet-ke/mockup-v4-tong-quan`, `-cong-viec`, `-viec-tvv` (tham khảo).
+> Soạn 22/10/2026, session cloud V5-B1. Pha 2 (mockup): `thiet-ke/v5/tong-quan.html`, `cong-viec.html`, `tvv.html` + truy vết. Nguồn: brief [`00`](00-brief-chu-sp.md) mục 5, 6, 7, 9, 15, 18 · [`01`](01-quyet-dinh-22-10.md) · mã trên `main` (đọc, không sửa) · mockup V4 `thiet-ke/mockup-v4-tong-quan`, `-cong-viec`, `-viec-tvv` (tham khảo).
 > Nhãn: **[MÃ]** = hiện trạng đã đọc trong mã · **[KH]** = đã chốt trong `plan.md` 1.6 nhưng CHƯA có trong mã · **[CHỐT]** = brief / chủ SP 22/10 · **[ĐX]** = đề xuất thiết kế · **[XM]** = cần xác minh.
 
 ## 1. Vai thực tế trong mã [MÃ]
@@ -51,7 +51,7 @@ Nguồn: `shared/domain/people.ts:19-41`, `server/src/seed/data.ts:49-110`, `ser
 | Báo PH kết quả Test lớp thường | `sos_coordination_actions.kind='bao_ph_tvv'` — việc của **GVCN** (Final: QL), không hạn; form `performedOn` + `note` + chụp 4 nội dung; trạng thái `pending/done/removed`; "Bỏ" có lý do (`yThuc/phoiHop.ts:98-131, 470-500`, `shared/domain/sos.ts:130-151`) | N6: giữ GVCN | **Không** thuộc trang TVV — tránh nhầm hai việc cùng chữ "báo PH" |
 | Chưa liên hệ được · lịch sử lần thử | không có (một dòng mỗi bài) | brief 9.1 [CHỐT C15]: một lần thử, việc còn mở, giữ hạn | dữ liệu mới: bảng lần thử (ngày, người, kết quả, ghi chú) |
 | Kết quả thi thật | `datKetQuaThiThat` (`loTrinh/thiThat.ts:59-120`) **tách** khỏi `chonBuocTiep` (`buocTiep.ts:187`) — lưu điểm riêng **đã được** | N6: chuyển từ GVCN sang TVV, không hạn | Giao diện: hôm nay GVCN lớp cuối nhập (`thiThat.ts:160-185`); TVV nhập được qua `student.edit_more` |
-| Bước tiếp sau thi | trạng thái `chua_thi · da_thi_cho_kq · cho_buoc_tiep · xong` (`shared/domain/tongKetLoTrinh.ts:101-136`); hạn = max(ngày thi + 7 / `han_sau_thi`, ngày có KQ); gia hạn đếm lần; `ownerId` null, `mine` cho mọi QL / TVV CN | N6: **TVV của em giữ**, hạn 1 tuần từ khi có KQ | [XM] mốc "từ khi có KQ" vs mã "ngày thi + 7, không sớm hơn ngày có KQ" — mockup ghi "hạn 7 ngày" theo mã, đánh dấu XM. Gán lại TVV **không reset hạn** (hạn trên `learning_cycles`) ✓ |
+| Bước tiếp sau thi | trạng thái `chua_thi · da_thi_cho_kq · cho_buoc_tiep · xong` (`shared/domain/tongKetLoTrinh.ts:101-136`); hạn = max(ngày thi + 7 / `han_sau_thi`, ngày có KQ); gia hạn đếm lần; `ownerId` null, `mine` cho mọi QL / TVV CN | N6: **TVV của em giữ**, hạn 1 tuần từ khi có KQ | mã khớp N6 (xem XM1 mục 7). Gán lại TVV **không reset hạn** (hạn trên `learning_cycles`) ✓ |
 | Chốt ngày thi | kind `chot-ngay-thi:<cycleId>`, nhóm `missing_data`, không hạn — **GVCN** (`mywork.ts:1140-1160`) | N6: TVV | chuyển chủ việc (GĐ1b) |
 | Bổ sung hồ sơ thiếu | không kind; chỉ chip `thieu_tt`, "Thiếu email" (`hvCuaToi.ts:9,42`) | N6: TVV | kind mới; V4 Q-D4: 4 trường (Ngày sinh · Email · Tuần bắt đầu · Target FT) |
 | SĐT PH | `students.parent_phone`, `parent_name`, `parent_relation` (`schema.sql:294`) | — | có dữ liệu cho "bấm gọi" |
@@ -85,6 +85,6 @@ Số việc không đổi khi gập nhóm / phân trang (T17): đếm trước k
 
 ## 7. Cần xác minh (chỉ câu chưa có căn cứ)
 
-- XM1 — Hạn bước tiếp: `plan.md` N6 "1 tuần từ khi có KQ" vs mã "ngày thi + 7, không sớm hơn ngày có KQ". Mockup theo mã (giữ luật đã code), PR triển khai đối chiếu.
+- ~~XM1 — Hạn bước tiếp~~ **Đã rõ** (V5-A `06` điểm 3): hạn = muộn hơn của (ngày thi + 7, ngày có KQ + 7) — khớp N6 "1 tuần từ khi có KQ". Mockup: Quyên thi 12/09, có KQ 14/09 → hạn 21/09.
 - XM2 — Trang đầu GV: G3 (21/10) "GV → Công việc" vs brief 6.4 (Tổng quan GV). Mockup vẽ Tổng quan GV; nếu giữ G3 thì Tổng quan GV thành dải đầu trang Công việc.
 - XM3 — "Kết thúc · không liên hệ được" (V4 Q-D3 ①) có giữ không: brief 9.1 cho phép "thao tác phụ"; mockup để trong menu "⋯" của việc, không trên form chính.
