@@ -195,7 +195,7 @@ export function luuXuLy(p: Principal, hv: { full_name: string; student_code: str
     const link = db().prepare('INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
     for (const vid of ids) { link.run(mId, vid, p.userId, nowIso()); noteMeasureChange(vid, null, mId, p.userId); }
     ghiPhanHoi(ids, homNay);
-    sinhViecBaoPh({ id: mId, studentId, kind: ke.kind }, hv.full_name, homNay);   // SV-YT-TVV (luật 1)
+    sinhViecBaoPh({ id: mId, studentId, kind: ke.kind }, homNay);   // SV-YT-TVV (luật 1)
     writeAudit({ actorUserId: p.userId, action: 'discipline.handle', entityType: 'discipline_measure', entityId: mId,
       entityLabel: `${hv.student_code} · ${nhanLoaiXuLy(ke.kind)}`, after: { kind: ke.kind, bac: ke.bac, violations: ids, performedOn } });
     if (BAC_BAO_QL.has(ke.kind)) {
@@ -565,7 +565,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
       duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: nhanLoaiXuLy(em.keTiep.kind), soViPham: vIds.length, soTep: tep.length },
     });
     /* SV-YT-TVV (luật 1): lần chờ QL duyệt cũng sinh việc Báo PH ngay. */
-    sinhViecBaoPh({ id: measureId, studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null }, hv.full_name, demoToday());
+    sinhViecBaoPh({ id: measureId, studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null }, demoToday());
     writeAudit({ actorUserId: p.userId, action: 'discipline.propose', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · gửi QL ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { bangChung: tep } });
   });
@@ -784,8 +784,9 @@ function xoaXuLyTrongTx(p: Principal, m: any, hv: { student_code: string }, khoa
   const files = purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
   for (const id of vIds) noteMeasureChange(id, measureId, null, p.userId);
   db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
+  /* SV-YT-TVV (rà #516): rút chỉ xoá lần CÒN chờ — câu xoá có điều kiện `cho_duyet` (không đổi dòng → lui cả giao dịch, việc Báo PH không bị đóng). */
   dongViecTheoXuLy(measureId, 'system_rut', lyDoDong, p.userId);
-  db().prepare('DELETE FROM discipline_measures WHERE id = ?').run(measureId);
+  if (!db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'cho_duyet'`).run(measureId).changes) throw conflict('Đề xuất này không còn chờ QL duyệt — mở lại.');
   chotYeuCau(db(), { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId }, 'tu_dong', { lyDo: lyDoDong });
   chotHanXuLy([m.student_id]);
   writeAudit({ actorUserId: p.userId, action: 'discipline.delete', entityType: 'discipline_measure', entityId: measureId,

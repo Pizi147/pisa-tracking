@@ -20,8 +20,12 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
   const lo: any = await import('../yThuc/lo.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
   const bp: any = await import('../yThuc/baoPhTvv.ts');
+  const loaiYc: any = await import('../duyet/loaiYeuCau.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { dongBoThongBaoTuDong } = await import('../platform/thongBaoTuDong.ts');
+  const { thongBaoCua } = await import('../platform/thongBao.ts');
+  /** Chuông Báo PH của một người sau đồng bộ (như lúc mở chuông) — kèm `con_viec` (Cần làm) đúng câu của trang chuông. */
+  const chuong = (p: any) => { xoaNho(); dongBoThongBaoTuDong(p, TODAY); return (thongBaoCua(p.userId) as any[]).filter((n) => n.kind === 'bao_ph_xu_ly'); };
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const gvbm = P.w1Teacher; const gvcn = P.coreTeacher; const ql = P.mbManager;
@@ -75,8 +79,8 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     const it = viecToi(tvv, sid);
     assert(it.length === 1 && it[0].mine && it[0].ownerId === tvv.userId && it[0].due === addDays(TODAY, 4) && /^Báo PH · Report 1 · SVYT em/.test(it[0].tieuDe)
       && it[0].viecId === ds[0].id && it[0].urgency === 'normal' && it[0].statusLabel === 'Chưa báo', JSON.stringify(it));
-    const tb = hang("SELECT * FROM notifications WHERE user_id = ? AND kind = 'bao_ph_xu_ly'", tvv.userId);
-    assert(tb.length === 1 && tb[0].han === addDays(TODAY, 4) && /Báo PH · Report 1/.test(tb[0].title), JSON.stringify(tb));
+    const tb = chuong(tvv);
+    assert(tb.length === 1 && tb[0].han === addDays(TODAY, 4) && /^Báo PH · Report 1/.test(tb[0].title) && tb[0].con_viec === 1 && tb[0].student_id === sid, JSON.stringify(tb));
     assert(viecToi(gvcn, sid).length === 0 && viecToi(ql, sid).length === 0, 'GVCN / QL "Của tôi" không có việc TVV giữ');
     assert(viecToi(ql, sid, { nguoi: 'tat-ca' }).some((x: any) => x.ownerId === tvv.userId), 'QL "Của GV" thấy việc của TVV');
   }));
@@ -98,7 +102,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     xuLy(gvcn, sid, [v1]);
     const it = viecToi(ql, sid);
     assert(it.length === 1 && it[0].mine && it[0].ownerId === ql.userId, 'QL giữ: ' + JSON.stringify(it));
-    assert(hang("SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'bao_ph_xu_ly'", ql.userId).length >= 1, 'QL nhận chuông');
+    assert(chuong(ql).some((n) => n.student_id === sid && n.con_viec === 1), 'QL nhận chuông');
     const han = viecCua(sid)[0].han;
     const a = tvvMoi(); const b = tvvMoi();
     conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(a.userId, sid);
@@ -237,18 +241,39 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(viecCua(s3)[0].trang_thai === 'mo' && hang('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ?', viecCua(s3)[0].id).length === 0, 'lui cả lần ghi');
   }));
 
-  await checkAsync('SVYT-K11 · quá hạn → MỘT chuông "Quá hạn · Báo PH…" cho người giữ (đồng bộ lại không thêm); ghi xong → chuông hết', () => thu(() => {
-    const tvv = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
+  await checkAsync('SVYT-K11 · chuông Báo PH: MỘT dòng mỗi việc (quá hạn đổi chữ, không thêm dòng) · đổi TVV → chuông sang người mới · em Tạm dừng → không đếm · ghi xong → hết', () => thu(() => {
+    const tvv = tvvMoi(); const moi = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
     xuLy(gvcn, sid, [v1]);
     const [v] = viecCua(sid);
     conn.prepare('UPDATE viec_bao_ph SET han = ? WHERE id = ?').run(addDays(TODAY, -2), v.id);
-    xoaNho(); dongBoThongBaoTuDong(tvv, TODAY);
-    xoaNho(); dongBoThongBaoTuDong(tvv, TODAY);
-    const tb = hang("SELECT * FROM notifications WHERE user_id = ? AND kind = 'bao_ph_qua_han'", tvv.userId);
-    assert(tb.length === 1 && /^Quá hạn · Báo PH · Report 1/.test(tb[0].title) && tb[0].han === addDays(TODAY, -2), JSON.stringify(tb));
-    ghi(tvv, [v.id], 'da_bao');
-    xoaNho(); dongBoThongBaoTuDong(tvv, TODAY);
-    assert(hang("SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'bao_ph_qua_han'", tvv.userId).length === 0, 'chuông hết');
+    chuong(tvv);
+    const tb = chuong(tvv);
+    assert(tb.length === 1 && /^Quá hạn · Báo PH · Report 1/.test(tb[0].title) && tb[0].han === addDays(TODAY, -2) && tb[0].con_viec === 1, 'quá hạn 1 dòng: ' + JSON.stringify(tb));
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(moi.userId, sid);
+    assert(chuong(moi).filter((n) => n.student_id === sid && n.con_viec === 1).length === 1, 'TVV mới có chuông');
+    assert(!(thongBaoCua(tvv.userId) as any[]).some((n) => n.kind === 'bao_ph_xu_ly' && n.con_viec === 1), 'TVV cũ (chưa mở chuông) không còn Cần làm');
+    assert(chuong(tvv).length === 0, 'TVV cũ mở chuông → dòng hết');
+    conn.prepare("UPDATE students SET status = 'inactive' WHERE id = ?").run(sid);
+    assert(!(thongBaoCua(moi.userId) as any[]).some((n) => n.kind === 'bao_ph_xu_ly' && n.con_viec === 1), 'em Tạm dừng: không đếm');
+    assert(chuong(moi).length === 0, 'em Tạm dừng: đồng bộ xoá');
+    conn.prepare("UPDATE students SET status = 'active' WHERE id = ?").run(sid);
+    assert(chuong(moi).length === 1, 'quay lại: chuông lại');
+    ghi(moi, [v.id], 'da_bao');
+    assert(chuong(moi).length === 0, 'ghi xong → hết');
+  }));
+
+  await checkAsync('SVYT-K13 · QL từ chối chỉ đóng việc khi đề xuất thật sự vừa bị từ chối; tên bậc đọc từ lần xử lý (loại đổi → tên theo)', () => thu(() => {
+    const tvv = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
+    const n = xu.deXuat(gvcn, sid, { kind: 'meeting_cx', violationIds: [v1], note: 'Mời gia đình lên trao đổi về việc học' });
+    conn.prepare("INSERT INTO attachments (owner_type, owner_id, kind, display_name, url, uploaded_by, created_at) VALUES ('discipline_measure', ?, 'link', 'bb', 'https://vd.vn/bb', ?, ?)").run(n.id, gvcn.userId, new Date().toISOString());
+    xu.guiDeXuat(gvcn, n.id);
+    const the = hang("SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'", n.id)[0].id;
+    const ld = loaiYc.DINH_NGHIA_LOAI.find((x: any) => x.loai === 'y_thuc');
+    conn.prepare("UPDATE discipline_measures SET status = 'da_duyet' WHERE id = ?").run(n.id);   // đã được duyệt ở đường khác
+    ld.khiTuChoi(ql, { id: the, doi_tuong_id: n.id, hoc_vien_id: sid }, 'Muộn');
+    assert(viecCua(sid)[0].trang_thai === 'mo', 'lần xử lý không còn chờ → việc giữ');
+    conn.prepare("UPDATE discipline_measures SET kind = 'suspension' WHERE id = ?").run(n.id);
+    assert(viecToi(tvv, sid)[0].tieuDe.startsWith(`Báo PH · ${d.nhanLoaiXuLy('suspension')} ·`) && bp.xemViecBaoPh(tvv, viecCua(sid)[0].id).nhan === d.nhanLoaiXuLy('suspension'), 'tên theo loại mới');
   }));
 
   await checkAsync('SVYT-K12 · xử lý lô 3 em → 3 việc (mỗi em một việc, đúng người giữ)', () => thu(() => {

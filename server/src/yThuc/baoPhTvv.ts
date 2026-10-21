@@ -28,6 +28,9 @@ type LyDoHeThong = keyof typeof LY_DO_HE_THONG;
 const nhanLyDo = (code: string | null): string | null =>
   code ? (LY_DO_HE_THONG as Record<string, string>)[code] ?? (COORDINATION_REMOVE_REASON_LABEL as Record<string, string>)[code] ?? code : null;
 
+/** Tên bậc của việc — đọc từ lần xử lý (rà #516: loại đổi thì tên theo); lần xử lý đã xoá (rút) → tên lưu lúc sinh việc. */
+const nhanViec = (r: { nhan: string; m_kind?: string | null; m_custom?: string | null }): string => (r.m_kind ? nhanLoaiXuLy(r.m_kind, r.m_custom ?? null) : r.nhan);
+
 /** Chi nhánh của em = lớp đang học, không có thì chi nhánh hồ sơ. */
 const CHI_NHANH_EM = `COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), s.branch_id)`;
 
@@ -38,26 +41,14 @@ export function nguoiGiuBaoPh(studentId: number): number[] {
   return s.tvv ? [s.tvv as number] : s.branch_id ? quanLyCuaChiNhanh(s.branch_id) : [];
 }
 
-/** TRONG tx của lần lưu: một việc cho lần xử lý (UNIQUE measure_id — gửi lại cùng khoá không sinh việc thứ hai) + chuông người giữ. */
-export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; customName?: string | null }, tenEm: string, homNay: string): void {
+/** TRONG tx của lần lưu: một việc cho lần xử lý (UNIQUE measure_id — gửi lại cùng khoá không sinh việc thứ hai). */
+export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; customName?: string | null }, homNay: string): void {
   const nhan = nhanLoaiXuLy(m.kind, m.customName ?? null);
   const han = hanBaoPh(homNay);
-  const info = db().prepare(
+  /* Chuông: đồng bộ tự động (`thongBaoTuDong`) theo người giữ HIỆN TẠI — đổi TVV thì chuông sang người mới (rà #516). */
+  db().prepare(
     `INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (?,?,?,?, 'mo', ?) ON CONFLICT(measure_id) DO NOTHING`,
   ).run(m.id, m.studentId, nhan, han, nowIso());
-  if (!info.changes) return;
-  const id = Number(info.lastInsertRowid);
-  /* Chuông người giữ — MỘT câu (lô: ~2 câu / em): TVV của em, không có → QL chi nhánh (cùng luật `nguoiGiuBaoPh`). */
-  db().prepare(
-    `INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, created_at, duong, han)
-     SELECT g.id, 'bao_ph_xu_ly', ?, 'discipline_measure', ?, ?, ?, ?, ? FROM (
-       SELECT s.consultant_user_id AS id FROM students s WHERE s.id = ? AND s.consultant_user_id IS NOT NULL
-       UNION
-       SELECT ur.user_id FROM students s, user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
-        WHERE s.id = ? AND s.consultant_user_id IS NULL AND r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL
-          AND (ur.branch_id IS NULL OR ur.branch_id = ${CHI_NHANH_EM})
-     ) g WHERE true ON CONFLICT(user_id, dedup_key) DO NOTHING`,
-  ).run(`Báo PH · ${nhan} · ${tenEm}`, m.id, `bao-ph:${id}`, nowIso(), duongHoSoHocVien(m.studentId, { tab: 'y-thuc' }), han, m.studentId, m.studentId);
 }
 
 /**
@@ -65,8 +56,10 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
  * Rút xoá lần xử lý → gỡ `measure_id` (việc + lịch sử giữ, `nhan` còn tên bậc).
  */
 export function dongViecTheoXuLy(measureId: number, lyDo: LyDoHeThong, chu: string | null, boi: number | null): void {
-  const v = db().prepare(`SELECT v.*, s.full_name FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.measure_id = ?`).get(measureId) as any;
+  const v = db().prepare(`SELECT v.*, s.full_name, m.kind AS m_kind, m.custom_name AS m_custom FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
+    LEFT JOIN discipline_measures m ON m.id = v.measure_id WHERE v.measure_id = ?`).get(measureId) as any;
   if (!v) return;
+  v.nhan = nhanViec(v);
   if (v.trang_thai === 'mo') {
     db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_ly_do_chu = ?, bo_boi = ?, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`)
       .run(lyDo, chu?.slice(0, 2000) ?? null, boi, nowIso(), v.id);
@@ -90,11 +83,12 @@ export function moLaiViecTheoXuLy(measureId: number): void {
 
 function loadViec(id: number): any {
   const v = db().prepare(
-    `SELECT v.*, s.full_name, s.student_code, s.consultant_user_id, s.parent_name, s.parent_relation, s.parent_phone, m.status AS xu_ly_status
+    `SELECT v.*, s.full_name, s.student_code, s.consultant_user_id, s.parent_name, s.parent_relation, s.parent_phone, m.status AS xu_ly_status,
+            m.kind AS m_kind, m.custom_name AS m_custom
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id WHERE v.id = ?`,
   ).get(id) as any;
   if (!v) throw notFound('Không tìm thấy việc Báo PH.');
-  return v;
+  return { ...v, nhan: nhanViec(v) };
 }
 
 /** Ghi được = TVV của em, hoặc QL / Quản trị trong phạm vi em. */
@@ -205,11 +199,12 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   if (!ql && !p.roleKeys.includes('consultant')) return [];   // GV không giữ việc này — khỏi tốn câu
   const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
   const rows = db().prepare(
-    `SELECT v.id, v.student_id, v.nhan, v.han, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
+    `SELECT v.id, v.student_id, v.nhan, m.kind AS m_kind, m.custom_name AS m_custom, v.han, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
             (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${HAN_BAO_PH_NGAY} day')
                AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}
+       LEFT JOIN discipline_measures m ON m.id = v.measure_id
        LEFT JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id AND x.status = 'active')
        LEFT JOIN classes c ON c.id = e.class_id
       WHERE v.trang_thai = 'mo' AND (s.consultant_user_id = ? OR ? = 1) ORDER BY v.han, v.id`,
@@ -224,6 +219,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     else if (o.tatCa) ownerId = r.tvv;
     else continue;
     const han = hanBaoPhHieuLuc(r.han, r.quay_lai ? [{ tu: r.han, den: r.quay_lai }] : []);
+    r.nhan = nhanViec(r);
     items.push({
       key: `bao-ph:${r.id}`, group: 'bao_ph_yt', urgency: han < o.today ? 'overdue' : han === o.today ? 'today' : 'normal',
       studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
