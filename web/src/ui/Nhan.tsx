@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { deadlineView, nhanQuaHan, shortDate, TONE_TRANG_THAI, type DeadlineKind } from '@shared/domain/index.ts';
+import { deadlineView, nhanHan, nhanQuaHan, TONE_TRANG_THAI, type DeadlineKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { IconKhong } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -24,14 +24,15 @@ export const CHIP_TRON = 'inline-flex h-[22px] items-center whitespace-nowrap ro
 export const CHIP_VUONG = 'inline-flex h-[22px] items-center whitespace-nowrap rounded border px-2 text-xs font-semibold leading-none tabular-nums';
 
 /**
- * DÁNG CHIP SOS — MỘT CHỖ (C23): vàng → cam → ĐỎ (không hồng), chỉ VIỀN + chữ trên nền thẻ; bậc đọc được cả khi không phân biệt màu:
- * viền 1 → 2 → 3 px (SOS 3 viền đôi); tạm = viền đứt. `SCORE_CHIP` (ô kết quả) dùng lại lớp này.
+ * DÁNG CHIP SOS — MỘT CHỖ (C23 + P6 chủ SP 22/10): vàng → cam → ĐỎ (không hồng); ba mức khác hẳn, đọc được cả khi không phân biệt màu:
+ * SOS 1 viền mảnh trên nền thẻ · SOS 2 viền 2 px + nền cam nhạt · SOS 3 nền đỏ đặc chữ trắng. Tạm = viền đứt (SOS 3 tạm: không nền, viền đứt 2 px).
+ * `SCORE_CHIP` (ô kết quả) dùng lại lớp này.
  */
 export function lopSos(muc: number, tam?: boolean): string {
-  const vien = muc <= 1 ? 'border border-sos1 text-sos1-chu'
-    : muc === 2 ? 'border-2 !px-[7px] border-sos2 text-sos2-chu'
-    : 'border-[3px] !px-[6px] border-double border-sos3 text-sos3-chu';
-  return `bg-[color:var(--surface)] ${vien} ${tam ? '!border-dashed' : ''}`;
+  if (muc <= 1) return `bg-[color:var(--surface)] border border-sos1 text-sos1-chu ${tam ? '!border-dashed' : ''}`;
+  if (muc === 2) return `border-2 !px-[7px] border-sos2 text-sos2-chu ${tam ? 'bg-[color:var(--surface)] !border-dashed' : 'bg-[color:var(--sos2-nen)]'}`;
+  return tam ? 'bg-[color:var(--surface)] border-2 !px-[7px] border-dashed border-sos3 text-sos3-chu'
+    : 'border border-[color:var(--sos3-nen)] bg-[color:var(--sos3-nen)] font-bold text-[color:var(--sos3-tren)]';
 }
 /** Khung chip SOS (cùng họ góc 4 px với kết quả — C23). */
 export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded px-2 text-xs font-semibold leading-none tabular-nums';
@@ -116,8 +117,8 @@ const CHU_HAN = 'inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-
 export function ChipSoQuaHan({ n }: { n: number }) {
   return <span className={`${CHU_HAN} font-semibold text-late`}><span aria-hidden>⚠</span>{t('{n} quá hạn', { n })}</span>;
 }
-/** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày vàng · xa hơn chữ phụ; luôn có chữ, không chỉ màu.
- *  Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). Hạn chỉ ghi ngày ("hạn 18/09", OV-15a). */
+/** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày (gồm hôm nay) vàng · xa hơn chữ phụ; luôn có chữ.
+ *  Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). Chữ hạn = `nhanHan` "hạn 18/09" (NEN-V5 P7: ngày thật, kể cả hôm nay). */
 export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null }) {
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
@@ -125,8 +126,7 @@ export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null 
   const lop = v.tone === 'overdue' ? 'font-semibold text-late' : v.ganHan ? 'font-semibold text-soon' : 'text-dim';
   return (
     <span title={v.text} className={`${CHU_HAN} ${lop}`}>
-      {v.tone === 'overdue' ? <><span aria-hidden>⚠</span>{t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</> : v.homNay ? t('Hạn hôm nay')
-        : t('hạn {ngan}', { ngan: shortDate(han, homNay) })}
+      {v.tone === 'overdue' ? <><span aria-hidden>⚠</span>{t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</> : nhanHan(han, homNay)}
     </span>
   );
 }

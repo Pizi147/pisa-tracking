@@ -1,4 +1,4 @@
-import { useId, useState, type MouseEvent, type ReactNode } from 'react';
+import { Fragment, useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { GIAI_THICH_KCK, KCK, chuTrangThai, loaiHoSo, trangCha, type TrangThai } from '@shared/domain/index.ts';
 import { fmtBand } from '../lib/format.ts';
@@ -322,6 +322,17 @@ export function OChiSo({ ten, giaTri, mau, className = '', children }: {
       {mau && <div className="text-xs text-slate-500">{mau}</div>}
       {children}
     </div>
+  );
+}
+
+/** NEN-V5 (P2, chủ SP 22/10): NHÃN ≠ GIÁ TRỊ — nhãn 13 xám, giá trị đậm. Một kiểu cho mọi khối "Nhãn  giá trị" (panel, đầu hồ sơ). */
+export const LOP_NHAN = 'text-[13px] font-medium text-slate-500';
+export const LOP_GIA_TRI = 'font-semibold text-slate-100';
+export function NhanGiaTri({ hang, className = '' }: { hang: ReadonlyArray<readonly [ReactNode, ReactNode]>; className?: string }) {
+  return (
+    <dl className={`m-0 grid grid-cols-[minmax(6rem,auto)_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 ${className}`}>
+      {hang.map(([nhan, gt], i) => <Fragment key={i}><dt className={LOP_NHAN}>{nhan}</dt><dd className={`m-0 min-w-0 ${LOP_GIA_TRI}`}>{gt}</dd></Fragment>)}
+    </dl>
   );
 }
 

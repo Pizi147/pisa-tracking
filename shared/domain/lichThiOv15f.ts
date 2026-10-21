@@ -23,6 +23,8 @@ export function dsThangLichThi(s: string | null | undefined): string[] {
 
 /** `2026-11` → `11/2026`. */
 export const nhanThang = (m: string): string => `${m.slice(5, 7)}/${m.slice(0, 4)}`;
+/** NEN-V5 (P5, chủ SP 22/10): MỘT cách viết tháng thi dự kiến cho cả web — luôn kèm năm: "Dự kiến 02/2027". */
+export const nhanThangDuKien = (m: string): string => t('Dự kiến {thang}', { thang: nhanThang(m) });
 
 const congThang = (m: string, n: number): string => {
   const k = Number(m.slice(0, 4)) * 12 + (Number(m.slice(5, 7)) - 1) + n;

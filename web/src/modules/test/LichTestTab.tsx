@@ -13,7 +13,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { addDaysIso, chuOChuaLuu, demLopConBai, khungLichTestMacDinh, mondayOfDate, ngay, tenMon, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
+import { addDaysIso, chuOChuaLuu, demLopConBai, khungLichTestMacDinh, mondayOfDate, ngay, nhanHan, tenMon, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
 import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -253,7 +253,7 @@ export function LichTestTab() {
   /* Khối "Test chấm tuần này": hạn chấm mặc định = thứ Tư tuần này (xám trước · vàng đúng hôm đó · đỏ từ thứ Năm). */
   const hanT4 = homNay ? addDaysIso(mondayOfDate(homNay), 2) : null;
   const chipHan = hanT4 && homNay && (
-    homNay < hanT4 ? <Nhan tone="muted">{t('hạn {ngan}', { ngan: ngay(hanT4, homNay) })}</Nhan>
+    homNay < hanT4 ? <Nhan tone="muted">{nhanHan(hanT4, homNay)}</Nhan>
       : homNay === hanT4 ? <Nhan tone="soon">{t('hạn hôm nay')}</Nhan>
         : <Nhan tone="late">{t('Quá hạn')} · {ngay(hanT4, homNay)}</Nhan>
   );

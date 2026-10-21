@@ -6,7 +6,9 @@ import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { LOP_OSO } from '../../ui/SoLieu.tsx';
-import { DaiChiXem, Empty, ErrorState, OChiSo } from '../../ui/ui.tsx';
+import { DaiChiXem, Empty, ErrorState, NhanGiaTri, OChiSo } from '../../ui/ui.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
+import { nhanHan, nhanThangDuKien } from '@shared/domain/index.ts';
 
 /**
  * BẢNG MẪU V5 (NEN-V5, 08 mục 6) — bản web của `thiet-ke/v5/bang-mau.html`, dựng bằng THÀNH PHẦN THẬT (token `index.css`, `Nhan*`, `ChipSos`,
@@ -18,8 +20,9 @@ const Muc = ({ so, ten, children, ghi }: { so: number; ten: ReactNode; children:
   <section className="flex flex-col gap-3" aria-labelledby={`v5-m${so}`}>
     <h2 id={`v5-m${so}`} className="m-0 flex items-baseline gap-2.5 text-lg font-bold text-slate-100">
       <span className="tabular-nums text-[color:var(--hong-chu)]">{so}</span><span>{ten}</span>
+      {/* P1 (chủ SP 22/10): câu giải thích không nằm trên màn — mở bằng ⓘ. */}
+      {ghi && <NutLuat label="Giải thích">{ghi}</NutLuat>}
     </h2>
-    {ghi && <p className="m-0 max-w-[880px] text-[13px] text-slate-400">{ghi}</p>}
     {children}
   </section>
 );
@@ -30,6 +33,7 @@ const O_MAU: Array<[string, string, string?]> = [
   ['⚠ Lỗi · quá hạn · ✗', 'rgb(var(--bad-rgb))'], ['⚠ Sắp hạn · chú ý', 'rgb(var(--soon-rgb))'], ['✓ Đạt · đã lưu', 'rgb(var(--ok-rgb))'],
   ['– Thiếu dữ liệu', '--surface-2', 'dut'], ['Lịch thi', '--lich-nen'],
 ];
+const HOM_NAY = '2026-09-14';
 const nen = (v: string) => (v.startsWith('--') ? `var(${v})` : v);
 
 const THANG: Array<[string, string, string, string?]> = [
@@ -68,20 +72,20 @@ const COT: DinhNghiaCot[] = [
 const khac = (s: string) => <span className="text-xs text-slate-500">{s}</span>;
 const HANG: HangHv[] = [
   { id: 1, ten: 'Nguyễn Minh An', target: '6.5', l: ['6.0', 'bang'], r: ['6.0', 'bang'], w: ['6.0', 'bang', 'W1 5.5 · W2 6.0'], s: ['6.0', 'bang'], ovr: ['6.0', 'bang'],
-    kq: <NhanKq kq="dat">Đạt</NhanKq>, thi: <NhanLich loai="du-kien">Dự kiến FEB</NhanLich>,
+    kq: <NhanKq kq="dat">Đạt</NhanKq>, thi: <NhanLich loai="du-kien">{nhanThangDuKien('2027-02')}</NhanLich>,
     viec: <span className="flex flex-col items-start gap-1"><NutViec>Nhập điểm L · MT3</NutViec>{khac('+ Ghi kết quả PA · R (Lê Minh Khoa)')}</span> },
   { id: 2, ten: 'Trần Thu Hà', target: '6.0', l: ['5.5', 'bang'], r: ['5.5', 'bang'], w: ['5.5', 'bang', 'W1 5.5 · W2 5.5'], s: ['5.0', 'duoi'], ovr: ['5.5', 'bang'],
-    kq: <NhanKq kq="dat">Đạt</NhanKq>, thi: <NhanLich loai="du-kien">Dự kiến JAN</NhanLich>,
-    viec: <span className="flex flex-col items-start gap-1"><Nhan tone="muted">Chờ QL duyệt · dời MT3 S</Nhan>{khac('Overall đạt → không SOS; S vẫn hiện ✗ 5.0 (T06)')}</span> },
+    kq: <NhanKq kq="dat">Đạt</NhanKq>, thi: <NhanLich loai="du-kien">{nhanThangDuKien('2027-01')}</NhanLich>,
+    viec: <Nhan tone="muted">Chờ QL duyệt · dời MT3 S</Nhan> },
   { id: 3, ten: 'Lê Quang Huy', target: '6.5', l: ['6.0', 'bang'], r: ['5.0', 'duoi'], w: ['5.5', 'duoi', 'W1 5.0 · W2 5.5'], s: ['6.0', 'bang'], ovr: ['5.5', 'duoi'],
     kq: <span className="flex flex-wrap gap-1"><NhanKq kq="chua-dat">Chưa đạt</NhanKq><ChipSos muc={2} kyNang={['R', 'W']} dot="MT2" tinh /></span>, thi: <NhanLich loai="chua">Chưa có lịch</NhanLich>,
     viec: <span className="flex flex-col items-start gap-1"><NutViec>Ghi kết quả PA · R</NutViec><NutViec>Xử lý vi phạm</NutViec>{khac('+ Ghi kết quả PA · W (Lê Minh Khoa)')}</span> },
   { id: 4, ten: 'Phạm Bảo Ngọc', target: '7.0', l: ['6.5', 'bang'], r: ['7.0', 'vuot'], w: ['6.5', 'bang', 'W1 6.5 · W2 6.5'], s: ['6.5', 'bang'], ovr: ['6.5', 'bang'],
-    kq: <NhanKq kq="dat">Đạt</NhanKq>, thi: <NhanLich loai="du-kien">Dự kiến MAR</NhanLich>,
+    kq: <NhanKq kq="dat">Đạt</NhanKq>, thi: <NhanLich loai="du-kien">{nhanThangDuKien('2027-03')}</NhanLich>,
     viec: <span className="flex flex-col items-start gap-1"><NutViec>Xử lý vi phạm</NutViec><Nhan tone="late">Quá hạn 1 ngày</Nhan></span> },
   { id: 5, ten: 'Tô Ngọc Hân', target: '6.0', l: ['5.5', 'bang'], r: ['6.0', 'vuot'], w: ['5.5', 'bang', 'W1 5.5 · W2 5.5'], s: [null, null, 'Vắng'], ovr: [null, null],
     kq: <NhanKq kq="thieu">Chưa đủ dữ liệu</NhanKq>, thi: <NhanLich loai="chua">Chưa có lịch</NhanLich>, viec: khac('Không có việc của tôi') },
-  { id: 6, ten: 'Dương Minh Quân', phuTen: 'UB FT 401 · ví dụ hàng đã thi', target: '7.0', l: ['—', null], r: ['—', null], w: ['—', null, ''], s: [null, null], ovr: [null, null],
+  { id: 6, ten: 'Dương Minh Quân', phuTen: 'UB FT 401', target: '7.0', l: ['—', null], r: ['—', null], w: ['—', null, ''], s: [null, null], ovr: [null, null],
     kq: <NhanLich loai="da-thi">Đã thi · chờ KQ</NhanLich>, thi: <NhanLich loai="co">Ngày thi 15/08</NhanLich>, viec: khac('TVV: Ghi KQ thi thật'), daThi: true },
 ];
 
@@ -119,7 +123,6 @@ export function BangMauV5() {
           <h1 className="m-0 text-xl font-bold text-slate-100">Bảng mẫu V5</h1>
           <Nhan tone="soon">ĐỀ XUẤT THIẾT KẾ · chờ chủ SP duyệt</Nhan>
         </div>
-        <p className="m-0 max-w-[880px] text-[13px] text-slate-400">Nền chung V5 trong mã (<code>web/src/index.css</code> ← <code>thiet-ke/v5/v5-nen.css</code>). Dữ liệu demo cố định (hôm nay T2 14/09/2026 · W3 SEP) — không gọi API.</p>
       </header>
 
       <Muc so={1} ten="Màu PISA từ logo" ghi={<>Xanh logo = cấu trúc (thanh điều hướng, nút chính, link, focus, đang chọn) · hồng logo = điểm nhấn nhận diện (vạch menu đang mở, mốc "tuần này", dấu "của tôi") — <b>hồng không bao giờ nghĩa là lỗi hay SOS</b>.</>}>
@@ -150,16 +153,16 @@ export function BangMauV5() {
           <HangBd dau ten="Kết quả học tập" phu="viền 1 px · ✓ ✗ –">
             <NhanKq kq="dat">Đạt</NhanKq><NhanKq kq="chua-dat">Chưa đạt</NhanKq><NhanKq kq="thieu">Chưa đủ dữ liệu</NhanKq><NhanKq kq="dat">Đạt Target</NhanKq>
           </HangBd>
-          <HangBd ten="Mức SOS" phu={'viền dày dần · chữ "SOS n"'}>
+          <HangBd ten="Mức SOS" phu="viền mảnh · viền dày + nền · nền đặc">
             <ChipSos muc={1} kyNang={['S']} dot="MT2" tinh /><ChipSos muc={2} kyNang={['R', 'W']} dot="MT2" tinh />
             <ChipSos muc={3} kyNang={['L', 'R', 'W']} dot="MT2" tinh /><ChipSos muc={2} tam dot="MT2" tinh />
           </HangBd>
           <HangBd ten="Trạng thái lịch thi" phu="nền đặc · góc vuông">
-            <NhanLich loai="co">Ngày thi 10/10</NhanLich><NhanLich loai="du-kien">Dự kiến NOV</NhanLich><NhanLich loai="chua">Chưa có lịch</NhanLich>
+            <NhanLich loai="co">Ngày thi 10/10</NhanLich><NhanLich loai="du-kien">{nhanThangDuKien('2026-11')}</NhanLich><NhanLich loai="chua">Chưa có lịch</NhanLich>
             <NhanLich loai="da-thi">Đã thi · chờ KQ</NhanLich><NhanLich loai="co">Có KQ · chờ bước tiếp</NhanLich>
           </HangBd>
           <HangBd ten="Tiến độ xử lý" phu="viên tròn · chấm / ⚠">
-            <Nhan tone="muted">Chờ duyệt</Nhan><Nhan tone="doing">Đang làm</Nhan><Nhan tone="ok">Xong</Nhan><Nhan tone="soon">Hạn hôm nay</Nhan>
+            <Nhan tone="muted">Chờ duyệt</Nhan><Nhan tone="doing">Đang làm</Nhan><Nhan tone="ok">Xong</Nhan><Nhan tone="soon">{nhanHan('2026-09-14', HOM_NAY)}</Nhan>
             <Nhan tone="late">Quá hạn 2 ngày</Nhan><Nhan tone="muted">Chưa liên hệ được · lần 1</Nhan>
           </HangBd>
         </div>
@@ -172,10 +175,10 @@ export function BangMauV5() {
             <button type="button" className="btn">Chốt ngày</button><button type="button" className="btn">Nhập điểm</button><button type="button" className="btn">Ghi báo PH</button>
             <button type="button" className="btn btn-ghost text-[color:var(--accent)]">Đóng</button><button type="button" className="btn" disabled>Lưu</button>
           </div>
-          <HangBd ten="Nút động từ" phu="mở panel việc"><span className="text-[13px] text-slate-400">Tên = việc sẽ làm. Không còn nút "Mở". Nút chính chỉ một trên mỗi vùng.</span></HangBd>
-          <HangBd ten="Tên + ↗" phu="mở hồ sơ"><a href="#v5-m4" className="font-semibold text-slate-100 no-underline hover:underline">Nguyễn Minh An <span aria-hidden className="font-normal text-slate-500">↗</span></a><span className="text-[13px] text-slate-400">mở hồ sơ (đổi trang, Quay lại về đúng chỗ)</span></HangBd>
-          <HangBd ten="Số gạch chân" phu="OSo"><SoBam>15/20</SoBam><span className="text-[13px] text-slate-400">mở panel dữ liệu <b>chỉ đọc</b> · số 0 không bấm:</span><span className="font-medium tabular-nums text-slate-500">0</span></HangBd>
-          <HangBd ten="ⓘ" phu="giải thích"><button type="button" className="btn btn-sm btn-ghost" aria-label="Giải thích Đạt MT">ⓘ</button><span className="text-[13px] text-slate-400">giải thích cách tính, không đổi dữ liệu</span></HangBd>
+          
+          <HangBd ten="Tên + ↗" phu="mở hồ sơ"><a href="#v5-m4" className="font-semibold text-slate-100 no-underline hover:underline">Nguyễn Minh An <span aria-hidden className="font-normal text-slate-500">↗</span></a></HangBd>
+          <HangBd ten="Số gạch chân" phu="OSo"><SoBam>15/20</SoBam><span className="font-medium tabular-nums text-slate-500">0</span></HangBd>
+          <HangBd ten="ⓘ" phu="giải thích"><NutLuat label="Giải thích Đạt MT">Đạt MT = Overall ≥ kỳ vọng của lượt.</NutLuat></HangBd>
         </div>
       </Muc>
 
@@ -193,7 +196,7 @@ export function BangMauV5() {
               <OChiSo ten="Đạt Target thi thật" giaTri={<span className="text-lg font-semibold leading-[42px] text-slate-500">Chưa có dữ liệu</span>} mau="0 HV có kết quả · 0 không bấm" />
               <OChiSo ten="Thi tuần này" giaTri="2" mau={<><SoBam>2</SoBam> HV · W3 SEP</>} />
             </div>
-            <p className="m-0 text-[13px] text-slate-400">Phần trăm là số chính (C03), tử / mẫu ngay dưới: <TyLe n={15} N={20} nhan="HV đủ dữ liệu" /> · mẫu 0: <TyLe n={0} N={0} />. Số trên trang = số dòng panel, cùng hàm, cùng phạm vi (G7).</p>
+            <div className="flex flex-wrap items-baseline gap-6 text-[13px]"><TyLe n={15} N={20} nhan="HV đủ dữ liệu" /><TyLe n={0} N={0} /></div>
           </div>
           <aside className="card overflow-hidden shadow-2xl" aria-label="Panel báo cáo">
             <div className="border-b px-5 pb-3 pt-4">
@@ -202,19 +205,19 @@ export function BangMauV5() {
               <div className="mt-1 text-[13px] text-slate-400">Monbay · MB FT 101 · MT2 (W3 AUG) · số chốt lúc lưu MT2</div>
             </div>
             <div className="flex flex-col gap-4 px-5 py-4">
-              <div className="surface-2 rounded-lg px-3 py-2.5 text-[13px] text-slate-400"><b className="text-slate-100">Cách tính:</b> HV có Overall MT2 ≥ kỳ vọng của lượt (Target − 0,5) / HV đủ 4 kỹ năng MT2. <b className="text-slate-100">Không tính:</b> 2 HV chưa đủ dữ liệu, HV đã nghỉ.</div>
+              <NhanGiaTri hang={[['Lớp', 'MB FT 101'], ['Lượt', 'MT2 · W3 AUG'], ['Kỳ vọng', 'Target − 0,5'], ['Cách tính', <NutLuat key="l" label="Cách tính">HV có Overall MT2 ≥ kỳ vọng của lượt / HV đủ 4 kỹ năng MT2. Không tính: HV chưa đủ dữ liệu, HV đã nghỉ.</NutLuat>]]} />
               <div className="flex flex-wrap items-baseline gap-6 tabular-nums">
                 <span><b className="text-2xl">15</b> <span className="text-slate-400">đạt</span></span><span><b className="text-2xl">5</b> <span className="text-slate-400">chưa đạt</span></span>
                 <span><b className="text-2xl text-slate-500">2</b> <span className="text-slate-400">chưa đủ dữ liệu (ngoài mẫu)</span></span>
               </div>
             </div>
-            <div className="border-t px-5 py-3 text-xs text-slate-500">Không có nút xử lý trong panel báo cáo (C22).</div>
           </aside>
         </div>
       </Muc>
 
-      <Muc so={7} ten="Panel việc · trạng thái lưu (khung hiện có — NEN-PANEL sửa)">
+      <Muc so={7} ten="Panel việc · nhãn / giá trị · trạng thái lưu" ghi="Khung panel (dòng loại, chân lưu, nháp) làm ở NEN-PANEL; mục này chỉ màu, chữ và kiểu nhãn / giá trị (P2).">
         <div className="card flex flex-col gap-2.5 px-4 py-3.5">
+          <NhanGiaTri className="max-w-[560px]" hang={[['GVCN ghi', 'Report 1 · nghỉ không phép 2 buổi (10/09, 12/09)'], ['Người ghi', 'Ngô Bảo Nam · 14/09 10:00'], ['Liên hệ PH', <span key="p" className="tabular-nums">Mẹ · 0912 *** 418</span>], ['Hạn', <span key="h" className="text-soon">{nhanHan('2026-09-18', HOM_NAY)}</span>]]} />
           {([
             [<span key="n" className="font-semibold text-soon">● Chưa lưu</span>, <><button type="button" className="btn btn-sm">Lưu</button><button type="button" className="btn btn-sm btn-primary">Lưu và tiếp</button></>],
             [<span key="d" className="font-semibold text-doing">Đang lưu…</span>, <><button type="button" className="btn btn-sm" disabled>Lưu</button><button type="button" className="btn btn-sm btn-primary" disabled>Lưu và tiếp</button></>],
@@ -230,9 +233,9 @@ export function BangMauV5() {
 
       <Muc so={8} ten="Rỗng · lỗi tải · chỉ xem">
         <div className="grid grid-cols-3 items-start gap-4 max-[1100px]:grid-cols-1">
-          <div className="card"><Empty title="Không còn việc quá hạn" hint="7 việc hạn tuần này đang ở nhóm dưới." /></div>
+          <div className="card"><Empty title="Không còn việc quá hạn" hint="7 việc còn hạn ở nhóm dưới." /></div>
           <div className="card p-4"><ErrorState message="Không tải được danh sách." hint="Kiểm tra mạng rồi bấm Tải lại. Dữ liệu đã lưu không mất." onRetry={() => undefined} /></div>
-          <div className="card flex flex-col gap-2.5 p-4"><DaiChiXem>Chỉ xem · QL Nguyễn Khánh Vy xem việc của cô Hà</DaiChiXem><span className="text-sm">Nút động từ ẩn; chỉ hiện "Làm thay" nếu quyền máy chủ cho phép (brief 7).</span></div>
+          <div className="card flex flex-col gap-2.5 p-4"><DaiChiXem>Chỉ xem · QL Nguyễn Khánh Vy xem việc của cô Hà</DaiChiXem></div>
         </div>
       </Muc>
     </div>
