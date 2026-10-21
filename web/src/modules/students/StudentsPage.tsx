@@ -301,11 +301,11 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
     if (daChon.size) { toast.push('info', t('Đã bỏ chọn {n} HV vì đổi bộ lọc', { n: daChon.size })); setDaChon(new Set()); }
   }, [khoaLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* PR-DH (04/10): cột Dự kiến thi cho CẢ hai nhóm (lớp thường cũng có Target + Dự kiến thi sau PR-NT). */
+  /* PR-DH (04/10): cột Ngày thi (V5 C21, trước là "Dự kiến thi") cho CẢ hai nhóm (lớp thường cũng có Target + Dự kiến thi sau PR-NT). */
   /* OV-10b (mockup vai mục 6): Admin — Học viên · Lượt MT gần nhất · Ô chưa nhập · ⋯ (không Case / Việc tiếp theo). */
   /* OV-15b (C13): nhóm FT thêm OVR · L · R · W · S sau Kết quả gần nhất (số căn giữa). */
   const tieuDeCot = (k: 'ft' | 'thuong') => admin ? [t('Học viên'), t('Lượt MT gần nhất'), t('Ô chưa nhập'), '']
-    : [t('Học viên'), t('Kết quả gần nhất'), ...(k === 'ft' ? COT_DIEM_FT.map((c) => NHAN_COT_DIEM_FT[c]) : []), k === 'ft' ? 'Target' : t('Khoá'), t('Dự kiến thi'), t('Sắp tới'), 'Case', t('Việc tiếp theo'), ''];
+    : [t('Học viên'), t('Kết quả gần nhất'), ...(k === 'ft' ? COT_DIEM_FT.map((c) => NHAN_COT_DIEM_FT[c]) : []), k === 'ft' ? 'Target' : t('Khoá'), t('Ngày thi'), t('Sắp tới'), 'Case', t('Việc tiếp theo'), ''];
   const canhCot = (k: 'ft' | 'thuong', i: number) => admin ? (i === 2 ? 'text-right' : '')
     : k === 'ft' && i >= 2 && i < 2 + COT_DIEM_FT.length ? 'text-center' : i === (k === 'ft' ? 5 + COT_DIEM_FT.length : 5) ? 'text-right' : '';
   const openIds = lopMoSan({

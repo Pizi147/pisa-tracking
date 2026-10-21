@@ -199,7 +199,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 { nhan: thuong ? t('Khoá') : 'Target', noiDung: thuong
                   ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-xs text-slate-500">{khoa.phu}</span>}</>
                   : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-                { nhan: t('Dự kiến thi'), noiDung: <><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</> },
+                { nhan: t('Ngày thi'), noiDung: <><ExamPlanText plan={s.examPlan} />{s.sauThi && <NhanSauThi s={s.sauThi} gon />}</> },
                 { nhan: t('Sắp tới'), noiDung: sapToi.chu ? <span title={sapToi.title} className={sapToi.thiThat ? 'text-slate-400' : ''}>{sapToi.chu}</span> : <span className="text-slate-500">—</span> },
                 { nhan: 'Case', noiDung: s.openCases || <span className="text-slate-500">—</span> },
                 { nhan: t('Việc tiếp'), noiDung: (

@@ -16,7 +16,7 @@ export type BaoCaoKq = {
   sos: { hang: DongSosBc[]; tong: DongSosBc } | null;
   mock: { dat: number; chuaDat: number; chuaDu: number } | null;
   /** `sosHienTai` (SL2): chỉ số `hv-sos-hien-tai` — cùng số Tổng quan · Đang SOS, số hôm nay. */
-  chuY: { chuaLich: number | null; chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number; sosHienTai: number };
+  chuY: { chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number; sosHienTai: number };
   casePa: { caseMo: number; paKetQua: number; quaHanChotPa: number; quaHanKetQuaPa: number };
 };
 

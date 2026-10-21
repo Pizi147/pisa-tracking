@@ -85,7 +85,7 @@ export function gomNhomViec<T extends ViecGom>(items: T[]): NhomViecXem<T>[] {
 // ------------------------------------------------------------------ Cần xử lý (Quản lý)
 export type MaCanXuLy =
   | 'bai-qua-han-nhap-diem' | 'pa-can-cap-nhat' | 'phoi-hop-qua-han'
-  | 'van-hanh-can-quyet-dinh' | 'lop-thieu-gv-mon' | 'hv-ft-xong-mt-cuoi-chua-mt-ke' | 'hv-len-ft-chua-ky-vong'
+  | 'van-hanh-can-quyet-dinh' | 'lop-thieu-gv-mon' | 'hv-len-ft-chua-ky-vong'
   | 'lop-chua-chot-len-ft' | 'case-xac-dinh-nguyen-nhan-qua-han';
 /** Nhãn trạng thái một dòng Cần xử lý (§7.3) — chữ, không chấm màu. */
 export type TrangThaiCanXuLy = 'qua-han' | 'can-lam';
@@ -115,7 +115,6 @@ export const CAN_XU_LY: readonly {
   /* PR-LCb: MỘT dòng "lớp cần Chốt lộ trình" (thay "em chưa có quyết định chuyển lớp" + "lớp cần Chốt lên FT") — cùng hàm với việc "Chốt lộ trình · lớp". */
   { metricId: 'lop-chua-chot-len-ft', nhan: t('lớp cần Chốt lộ trình'), nut: t('Lộ trình tiếp theo'), cuaNguoiXem: true },
   { metricId: 'lop-thieu-gv-mon', nhan: t('lớp thiếu GV môn'), nut: t('Sửa phân công'), cuaNguoiXem: true },
-  { metricId: 'hv-ft-xong-mt-cuoi-chua-mt-ke', nhan: t('học viên FT xong MT3, chưa có MT kế tiếp'), nut: t('Xem học viên'), cuaNguoiXem: true },   // OV-11f: mở danh sách em
   { metricId: 'hv-len-ft-chua-ky-vong', nhan: t('học viên lên FT chưa chốt Kết quả đầu ra'), nut: t('Mở hồ sơ'), cuaNguoiXem: true },
 ];
 export const CAN_XU_LY_TOI_DA = 10;
@@ -209,14 +208,14 @@ export function chonDiemDangChuY(ds: UngVienChuY[], ct: ChuongTrinh): DiemChuY[]
 
 // ------------------------------------------------------------------ bảng Theo chi nhánh (mockup 02 phương án A)
 /* OV-15d: + "Case chưa chốt PA" hai vùng bấm (HV / Case) — cột của Lớp cần chú ý (mockup 3). */
-/* OV-15h1: + cột "Lớp cần chú ý" (mockup 3) — Chưa lịch · Chưa điểm · SOS 1 / 2 / 3 · Đã thi · chờ KQ; chỉ tính khi bảng ở chế độ chú ý (rỗng ở bảng chi nhánh). */
+/* OV-15h1: + cột "Lớp cần chú ý" (mockup 3) — Chưa điểm · SOS 1 / 2 / 3 · Đã thi · chờ KQ; chỉ tính khi bảng ở chế độ chú ý (rỗng ở bảng chi nhánh). */
 export const COT_BANG = ['hocVien', 'duoiKyVong', 'sos', 'caseMo', 'thieuPa', 'duDuLieu', 'caseChuaChotHv', 'caseChuaChot',
-  'chuaLich', 'chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'] as const;
+  'chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'] as const;
 export type CotBang = (typeof COT_BANG)[number];
 export const COT_BANG_DON_VI: Record<CotBang, 'hoc-vien' | 'case'> = {
   hocVien: 'hoc-vien', duoiKyVong: 'hoc-vien', sos: 'hoc-vien', caseMo: 'case', thieuPa: 'case', duDuLieu: 'hoc-vien',
   caseChuaChotHv: 'hoc-vien', caseChuaChot: 'case',
-  chuaLich: 'hoc-vien', chuaDiem: 'hoc-vien', sos1: 'hoc-vien', sos2: 'hoc-vien', sos3: 'hoc-vien', daThiChoKq: 'hoc-vien',
+  chuaDiem: 'hoc-vien', sos1: 'hoc-vien', sos2: 'hoc-vien', sos3: 'hoc-vien', daThiChoKq: 'hoc-vien',
 };
 /**
  * OV-15h1 (C23): phân rã "Case chưa chốt PA" — mỗi Case đúng MỘT nhóm (`trangThaiCaseV4` + PA), cộng đúng tổng. Thứ tự = thứ tự trong `?`.
