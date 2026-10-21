@@ -22,6 +22,7 @@ import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
+import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
@@ -368,13 +369,16 @@ export function choBuocTiep(studentId?: number): any[] {
  * Một dòng mỗi lộ trình chờ chọn. Ai thấy: người chọn được (`coQuyenBuocTiep` — Quản lý / Quản trị / TVV của chi nhánh), là việc của chính họ. Một câu cho cả tập;
  * quyền hỏi theo em (tập nhỏ: em có kết quả, chưa chọn). Dòng: "Chọn bước tiếp" · em · lớp · "đã thi T7 10/10 · OVR 6.5 · Đạt Target" (mockup OV-13 bước tiếp §3).
  */
-export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null; studentId?: number }): any[] {
+export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null; studentId?: number; tatCa?: boolean }): any[] {
   const ds = choBuocTiep(f.studentId);
-  napTruocPhamVi(ds.map((c) => c.student_id));   // quyền theo em (`coQuyenBuocTiep`) đọc phạm vi một câu cho cả tập — không N+1
+  napTruocPhamVi(ds.map((c) => c.student_id));   // quyền theo em đọc phạm vi một câu cho cả tập — không N+1
+  const tvv = tvvCuaEm(ds.map((c) => c.student_id));
   const out: any[] = [];
   for (const c of ds) {
     if ((f.branchId && c.branch_id && c.branch_id !== f.branchId) || (f.studentId && c.student_id !== f.studentId)) continue;
-    if (!coQuyenBuocTiep(p, c.student_id)) continue;
+    /* SV-TVV-VIEC: MỘT người giữ = TVV của em (không có → QL chi nhánh) — QL / TVV khác của chi nhánh vẫn chọn được (`coQuyenBuocTiep`) nhưng không là việc của họ. */
+    const chu = chuViecTvv(p, c.student_id, tvv.get(c.student_id) ?? null, f.tatCa);
+    if (!chu) continue;
     const st = trangThaiSauThi(c, f.today);
     const han = st.han ?? f.today;
     const kq = daXongCua({ ...c, bc_ket_luan: c.ket_luan });
@@ -386,7 +390,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: st.daGiaHan ? `${kq} · đã gia hạn` : kq, count: null,
       reason: [c.class_code ?? null, thi, ketQua].filter(Boolean).join(' · '),
       tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chọn',
-      href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: null, owner: null, mine: true,
+      href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
       due: han, statusLabel: `hạn ${tuanLich(han, f.today)}`,
     });
   }

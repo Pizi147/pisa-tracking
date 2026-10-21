@@ -3,11 +3,12 @@
  * (`ketQuaThiThat`, so với Target; lộ trình đã đóng thì so với Target trong BẢN CHỤP — Target lúc đóng). Không còn ô chọn kết luận tay.
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
-import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, canNamGan, diemThiHopLe, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
+import { can, coQuyenBuocTiep, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
@@ -145,42 +146,36 @@ export const chuDaThi = (s: TrangThaiSauThi, today: string): string =>
   [s.ngayThi ? `Đã thi ${thuNgay(s.ngayThi, today)}` : null, s.han ? `hạn ${ngay(s.han, today)}` : null, s.daGiaHan ? 'đã gia hạn' : null].filter(Boolean).join(' · ');
 
 /**
- * Một dòng việc cho mỗi lộ trình FT chưa có kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") mà đã qua ngày thi
- * (OV-13q: từ HÔM SAU ngày thi, hạn = hạn sau thi của `trangThaiSauThi`). Ai thấy: GVCN lớp cuối; lớp không có GVCN → Quản lý chi nhánh; Quản lý xem "Tất cả"
- * thấy việc của GV (TVV: góc Cần làm của Học viên & Lớp; CX chỉ xem). Quá hạn đỏ, KHÔNG chặn, không tự huỷ.
- * Hết việc khi lưu đủ 4 kỹ năng hoặc "Không thi". Một câu cho cả tập + một câu lớp + một câu GVCN (không N+1).
+ * Một dòng việc cho mỗi lộ trình FT chưa có kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") mà đã qua ngày thi (OV-13q: từ HÔM SAU ngày thi).
+ * SV-TVV-VIEC (21/10-TVV): người giữ = TVV của em, em chưa có TVV → Quản lý chi nhánh (`chuViecTvv`); GVCN không còn việc này; KHÔNG hạn
+ * (không quá hạn, không chuông). Hết việc khi lưu đủ 4 kỹ năng hoặc "Không thi". Một câu cho cả tập + một câu lớp + một câu TVV (không N+1).
  */
 export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; branchId: number | null }): any[] {
   const conn = db();
   const moc = loTrinhChoKetQuaThi(f.today);
   if (!moc.length) return [];
   const idLop = [...new Set(moc.map((x) => x.c.class_id as number | null).filter((x): x is number => !!x))];
-  const lop = new Map<number, any>(); const gvcn = new Map<number, number[]>();
+  const lop = new Map<number, any>();
   theoLo(idLop, (lo, ph) => {
     for (const l of conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) lop.set(l.id, l);
-    for (const t of conn.prepare(`SELECT class_id, user_id FROM teacher_assignments WHERE is_core = 1 AND status = 'active' AND (effective_to IS NULL OR effective_to >= ?) AND class_id IN (${ph})`).all(f.today, ...lo) as any[]) {
-      gvcn.set(t.class_id, [...(gvcn.get(t.class_id) ?? []), t.user_id]);
-    }
-  }, THAM_SO_TOI_DA - 1);   // câu GVCN còn một tham số `today` → ≤ 900
+  });
+  const tvv = tvvCuaEm(moc.map((x) => x.c.student_id));
+  napTruocPhamVi(moc.map((x) => x.c.student_id));
   const out: any[] = [];
   for (const { c, s } of moc) {
     const l = c.class_id ? lop.get(c.class_id) : null;
     if (f.branchId && l && l.branch_id !== f.branchId) continue;
-    const gv = c.class_id ? gvcn.get(c.class_id) ?? [] : [];
-    const laGvcn = gv.includes(p.userId);
-    /* Quyền Quản lý chỉ hỏi khi cần (không phải GVCN của lớp): `can` theo lớp, phạm vi đã nạp một lần ở trên. */
-    const ql = !laGvcn && (!gv.length || f.tatCa) && !!c.class_id && can(p, PERMISSIONS.CYCLE_EDIT, { classId: c.class_id });
-    const mine = laGvcn || (!gv.length && ql);
-    if (!mine && !(f.tatCa && ql)) continue;
+    const chu = chuViecTvv(p, c.student_id, tvv.get(c.student_id) ?? null, f.tatCa);
+    if (!chu) continue;
     const ke = examPlanOf({ exam_period_id: null, exam_month: c.exam_month, exam_date: c.exam_date, ...(c.exam_week ? { exam_period_id: 1, exam_week_code: tuanLich(c.exam_week), exam_week_start: c.exam_week } : {}) });
     const thi = ke.confidence === 'none' ? null : ke.label;
     out.push({
-      key: `thi_that:${c.id}`, group: 'thi_that', urgency: s.quaHan ? 'overdue' : 'normal', cycleId: c.id, daGiaHan: s.daGiaHan,
+      key: `thi_that:${c.id}`, group: 'thi_that', urgency: 'normal', cycleId: c.id, daGiaHan: false,
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: l?.code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chuDaThi(s, f.today), count: null,
       reason: [c.ten, l?.code ?? '—', thi ? `thi ${thi}` : null].filter(Boolean).join(' · '), tieuDe: 'Cập nhật kết quả thi thật', actionLabel: 'Nhập kết quả',
-      href: duongHoSoHocVien(c.student_id, { loTrinh: c.id, viec: 'thi-that' }), ownerId: gv[0] ?? null, owner: null, mine,
-      due: s.han, statusLabel: `hạn ${tuanLich(s.han!, f.today)}`,
+      href: duongHoSoHocVien(c.student_id, { loTrinh: c.id, viec: 'thi-that' }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
+      due: null, statusLabel: 'Không tính hạn',
     });
   }
   return out;
