@@ -16,6 +16,7 @@ import { can, coTheXemLuotCham, grantGvNhapDiem, laGvSpeaking, require_, scoreEd
 import { writeAudit } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 export type DongSEx = {
   id: number; loai: 's-ex'; studentId: number; ten: string; ma: string; classId: number | null; classCode: string | null;
@@ -31,9 +32,10 @@ const laQl = (p: Principal, studentId: number) => can(p, PERMISSIONS.PLAN_WEEK, 
 /** Có `plan.week` ở phạm vi nào đó — kiểm TRƯỚC khi tra dòng, để vai khác nhận 403 chứ không 404. */
 const coQuyenQl = (p: Principal) => p.grants.some((g) => g.permissions.has(PERMISSIONS.PLAN_WEEK));
 
-const lopDangHoc = (studentId: number) => db().prepare(
+/* Nhớ trong request: `dong()` gọi `chamDuoc` cho từng lượt của Kế hoạch Test / Lịch Test — không một câu SQL mỗi lượt (Turso). */
+const lopDangHoc = (studentId: number) => nho('sex-lop:' + studentId, () => db().prepare(
   `SELECT c.id, c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active'`,
-).all(studentId) as { id: number; branch_id: number | null }[];
+).all(studentId) as { id: number; branch_id: number | null }[]);
 
 /** Như ô S MT ở một lớp đang học của em (GV S phân công · QL / Admin nhập hộ) hoặc GV Speaking cùng chi nhánh ghi danh active (N7). */
 export function chamDuoc(p: Principal, studentId: number): boolean {
