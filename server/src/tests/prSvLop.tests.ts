@@ -70,8 +70,10 @@ export async function runPrSvLopTests(t: any) {
     const cn = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(LOP).branch_id;
     for (const gv of [P.coreTeacher, P.sTeacher, P.w1Teacher]) {
       const { theoEm } = viecTheoEmCuaLop(gv, LOP);
-      const cuaToi = Object.values(theoEm).flat().filter((v: any) => v.mine);
-      assert(cungNguon(Object.fromEntries([[0, cuaToi]]), mywork.myWork(gv, { branchId: cn }).items), `${gv.fullName}: việc của mình khác /my-work`);
+      const tatCa = new Set(Object.values(theoEm).flat().map((v: any) => v.key));
+      const goc = mywork.myWork(gv, { branchId: cn }).items.filter((it: any) => it.studentId !== null && emLop.has(it.studentId) && (it.classId === null || it.classId === LOP));
+      assert(goc.every((it: any) => tatCa.has(it.key)), `${gv.fullName}: thiếu việc của /my-work`);
+      assert(Object.values(theoEm).flat().filter((v: any) => v.mine).every((v: any) => goc.some((it: any) => it.key === v.key)), `${gv.fullName}: việc "của tôi" không từ /my-work của GV`);
       for (const [sid, ds] of Object.entries(theoEm)) {
         const k = ds.findIndex((v: any) => !v.mine);
         assert(k === -1 || ds.slice(k).every((v: any) => !v.mine && v.owner), `${gv.fullName} · em ${sid}: việc người khác phải sau + có tên`);

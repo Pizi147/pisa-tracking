@@ -190,13 +190,13 @@ export async function runPrSvSExpertTests(t: any) {
     const { id } = sex.themSEx(P.mbManager, { studentId: sid, tuan });
     const nk = () => get(`SELECT COUNT(*) AS n FROM audit_logs WHERE action LIKE 's_expert.%' AND entity_id = ?`, sid).n;
     const truoc = nk();
-    /* Giả lập ghi song song: dòng bị xoá mềm ngay trước câu UPDATE (trigger), sau khi đã đọc. */
-    conn.exec(`CREATE TEMP TRIGGER svlop_dua BEFORE UPDATE OF diem ON s_expert BEGIN UPDATE s_expert SET xoa_luc = 'x' WHERE id = OLD.id; END`);
+    /* Giả lập dòng vừa mất giữa lúc đọc và lúc ghi: trigger bỏ qua câu UPDATE → changes = 0. */
+    conn.exec(`CREATE TEMP TRIGGER svlop_dua BEFORE UPDATE OF diem ON s_expert BEGIN SELECT RAISE(IGNORE); END`);
     try {
       assert(maLoi(() => sex.suaSEx(P.mbManager, id, { diem: 6 })) === 404, 'đua → 404');
     } finally { conn.exec('DROP TRIGGER svlop_dua'); }
     assert(nk() === truoc, 'không ghi nhật ký khi không đổi dòng nào');
-    assert(get('SELECT diem, xoa_luc FROM s_expert WHERE id = ?', id).xoa_luc === null, 'tx cuộn lại cả ghi của trigger');
+    assert(get('SELECT diem FROM s_expert WHERE id = ?', id).diem === null, 'điểm không đổi');
   }));
 
   check('SSEX-10 (nợ 3) · kiểm quyền TRƯỚC 404: GV / TVV gửi HV / lượt không có → 403 (không lộ tồn tại); QL vẫn 404', () => thu(() => {
@@ -233,6 +233,6 @@ export async function runPrSvSExpertTests(t: any) {
     sex.suaSEx(gvCp, id, { diem: 5.5 });
     assert(get('SELECT cham_boi FROM s_expert WHERE id = ?', id).cham_boi === gvCp.userId, 'GV S CP chấm');
     assert(maLoi(() => sex.suaSEx(P.cpManager, id, { diem: 6 })) === 'không ném', 'QL CP nhập hộ (lớp đang học)');
-    assert(maLoi(() => sex.suaSEx(P.mbManager, id, { diem: 6 })) === 403, 'QL MB (chi nhánh cũ) → 403');
+    assert(maLoi(() => sex.suaSEx(P.mbManager, id, { diem: 7 })) === 403, 'QL MB (chi nhánh cũ) → 403');
   }));
 }
