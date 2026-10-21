@@ -82,7 +82,7 @@ export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string;
   'can-lam': { nhan: NHAN_TRANG_THAI['can-lam'], goiY: t('Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).'), can: null },
   'qua-han': { nhan: NHAN_TRANG_THAI['qua-han'], goiY: t('Có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".'), can: null },
   'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: t('Có yêu cầu đang chờ Quản lý duyệt.'), can: null },
-  sos: { nhan: t('Đang SOS'), goiY: t('Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.'), can: 'case.view' },
+  sos: { nhan: t('Đang SOS'), goiY: t('SOS hiện tại: đợt Test mới nhất ở mức SOS 1–3.'), can: 'case.view' },
   thieu_tt: { nhan: t('Thiếu thông tin'), goiY: t('Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.'), can: null },
   'da-thi': { nhan: t('Đã thi · chờ kết quả'), goiY: t('Đã qua ngày thi, chưa có kết quả thi thật — hạn 1 tuần sau ngày thi.'), can: null },
 };

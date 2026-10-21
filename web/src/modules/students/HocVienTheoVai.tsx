@@ -23,7 +23,6 @@ import { GocLichThi } from './GocLichThi.tsx';
 import { NganXuatDs } from './NganXuatDs.tsx';
 import { BangSos, type TrangSos } from './BangSos.tsx';
 import { BangCanLam, type ViecCanLam } from './BangCanLam.tsx';
-import { ChonTuanSos } from './ChonTuanSos.tsx';
 import { PanelMotEm } from './PanelMotEm.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
@@ -156,11 +155,10 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   const trang = useApi<TrangVai>(duong, [duong]);
   const branches = useApi<Branch[]>(vai === 'cx' ? '/ref/branches' : null);
   const data = trang.data;
-  const tuan = params.get('tuan');
   /* TVV "Cả chi nhánh": gửi ĐÚNG chi nhánh trang TVV đã chọn (`phamVi.chiNhanh`) — TVV hai chi nhánh không bị lệch sang chi nhánh khác (rà #391). */
   const cnTvv = phamViUrl ? data?.phamVi.chiNhanh ?? null : null;
   const duongSos = phamViUrl && !cnTvv ? null
-    : `/hoc-vien-lop?goc=sos${phamViUrl ? `&phamVi=chi-nhanh&branchId=${cnTvv}` : cn ? `&branchId=${cn}` : ''}${tuan ? `&tuan=${tuan}` : ''}`;
+    : `/hoc-vien-lop?goc=sos${phamViUrl ? `&phamVi=chi-nhanh&branchId=${cnTvv}` : cn ? `&branchId=${cn}` : ''}`;
   const sos = useApi<TrangSos>(duongSos, [duongSos]);
   const [panelEm, setPanelEm] = useState<number | null>(null);
   const [buocTiep, setBuocTiep] = useState<{ cycleId: number; em: { id: number; ten: string }; lop: string | null } | null>(null);
@@ -227,7 +225,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   };
   /* OV-15f — phân trang (một hook, cỡ trang nhớ chung): góc nhóm theo LỚP, Đang SOS / Cần làm theo dòng. Xuất Excel lấy đủ mọi trang của góc đang xem. */
   const tongGoc = goc === 'tat-ca' || goc === 'can-chu-y' ? nhom.length : goc === 'sos' ? sosRows.length : goc === 'can-lam' ? viecTvv.length : 0;
-  const pt = usePhanTrang(tongGoc, [goc, chip, q, phamViUrl, cn, tuan].join('|'), goc === 'tat-ca' || goc === 'can-chu-y' ? t('lớp') : goc === 'sos' ? t('lượt') : t('việc'));
+  const pt = usePhanTrang(tongGoc, [goc, chip, q, phamViUrl, cn].join('|'), goc === 'tat-ca' || goc === 'can-chu-y' ? t('lớp') : goc === 'sos' ? t('em') : t('việc'));
   const idsXuat = goc === 'sos' ? [...new Set(sosRows.map((r) => r.studentId))]
     : goc === 'can-lam' ? [...new Set(viecTvv.flatMap((v) => (v.studentId !== null ? [v.studentId] : [])))]
     : goc === 'lich-thi' ? [] : hien.map((d) => d.id);
@@ -293,9 +291,6 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
               ))}
             </div>
           )}
-          {goc === 'sos' && sos.data && (
-            <ChonTuanSos tuan={sos.data.tuan} toanBo={sos.data.toanBo} tuanGanNhat={sos.data.tuanGanNhat} tu={sos.data.tu} den={sos.data.den} onChon={(t) => setParam({ tuan: t || null })} />
-          )}
         </div>
         {data && goc !== 'lich-thi' && (
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-slate-400" aria-live="polite">
@@ -312,7 +307,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
       {goc === 'sos' && (
         sos.error ? <ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} />
           : !sos.data ? <Skeleton rows={6} />
-            : sosRows.length === 0 ? <Card><Empty title={sos.data.toanBo ? t('Không có học viên SOS trong 8 tuần') : t('Không có học viên SOS ở tuần thi này')} hint={t('Chọn tuần khác hoặc Toàn bộ.')} /></Card>
+            : sosRows.length === 0 ? <Card><Empty title={t('Không có học viên SOS')} /></Card>
               : <><PhanTrang {...pt.thanh} /><BangSos data={{ ...sos.data, rows: pt.cat(sosRows) }} tatCa={sosRows} cot={vai} dam={null} dienThoai={dienThoai} ds={ds} onMo={(r) => setPanelEm(r.studentId)} dangMo={panelEm} /><PhanTrang {...pt.thanh} duoi /></>
       )}
       {goc === 'can-lam' && data && (viecTvv.length === 0
@@ -321,7 +316,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
       {goc === 'lich-thi' && (
         <GocLichThi duongGoc={`${vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'}${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} />
       )}
-      {xuat && goc !== 'lich-thi' && <NganXuatDs ids={idsXuat} boLoc={dangXem} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} locSos={{ tuan, phamVi: phamViUrl, branchId: cnTvv ?? cn, q: q.trim() || null }} onDong={() => setXuat(false)} />}
+      {xuat && goc !== 'lich-thi' && <NganXuatDs ids={idsXuat} boLoc={dangXem} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} locSos={{ phamVi: phamViUrl, branchId: cnTvv ?? cn, q: q.trim() || null }} onDong={() => setXuat(false)} />}
       {panelEm !== null && <PanelMotEm key={panelEm} studentId={panelEm} onClose={() => setPanelEm(null)} />}
       {buocTiep && <PanelBuocTiep cycleId={buocTiep.cycleId} hocVien={buocTiep.em} lop={buocTiep.lop} onClose={() => setBuocTiep(null)} onDone={trang.reload} />}
       {suaEm && <SuaThongTinMotEm viec={suaEm.viec} studentId={suaEm.id} studentName={suaEm.ten} lop={suaEm.lop} onClose={() => setSuaEm(null)} onDone={() => { setSuaEm(null); trang.reload(); }} />}

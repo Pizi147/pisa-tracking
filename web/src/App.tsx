@@ -79,7 +79,7 @@ function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }
   if (!so?.n) return null;
   return (
     <>
-      <span aria-hidden className={`${className} ${CHIP_TRON} min-w-[1.25rem] justify-center tabular-nums ${
+      <span aria-hidden title={so.sr} className={`${className} ${CHIP_TRON} min-w-[1.25rem] justify-center tabular-nums ${
         so.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{so.n}</span>
       <span className="sr-only">, {so.sr}</span>
     </>
@@ -215,7 +215,7 @@ export default function App() {
    */
   const viecGv = useApi<{ summary: { overdue: number } }>(session?.authenticated && !session.nav?.workApprove && session.nav?.workSupport ? '/my-work' : null, []).data;
   const gv = viecGv ? { quaHan: viecGv.summary?.overdue ?? 0 } : null;
-  const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: t('{n} thẻ cần duyệt', { n: dem.cho }) + (dem.quaHan ? t(', {n} quá hạn', { n: dem.quaHan }) : '') }
+  const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: t('{n} thẻ cần duyệt', { n: dem.cho }) + (dem.quaHan ? t(', {n} quá hạn', { n: dem.quaHan }) : '') + t(' · mọi chi nhánh') }   // SL2: badge cố ý khác phạm vi trang — ghi rõ
     : gv?.quaHan ? { n: gv.quaHan, quaHan: true, sr: t('{n} việc quá hạn', { n: gv.quaHan }) } : null;
   /* TU-b: "Tutor n" = số tutor Cần chú ý — chỉ Head tutor / Quản trị (`tutor.manage`); ghi nhận xét / gộp gọi `invalidate('/tutors')` nên số đổi ngay. */
   const demTutor = useApi<{ n: number }>(session?.authenticated && session.nav?.tutorSua ? '/tutors/dem' : null, [lanDem]).data;

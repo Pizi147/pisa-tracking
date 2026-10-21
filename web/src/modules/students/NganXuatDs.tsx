@@ -31,8 +31,8 @@ const TEN_MAU: Record<MauXuatDs, string> = { 'co-ban': t('Danh sách cơ bản')
 export function NganXuatDs({ ids, daChon, phamDau, boLoc, macDinh, mauMacDinh, locSos, onDong }: {
   /** `daChon` có (kể cả rỗng) = nơi gọi có cột tick: hiện "Các HV đã chọn" (0 em → tắt). `phamDau`: phạm vi chọn sẵn (nút "Xuất các HV đã chọn" → `chon`). */
   ids: number[]; daChon?: number[]; phamDau?: 'loc' | 'chon'; boLoc: string; macDinh?: KhoaCotXuatDs[]; mauMacDinh?: MauXuatDs;
-  /** Bộ lọc góc Đang SOS của trang (tuần · phạm vi · chi nhánh · tìm) — máy chủ lấy cột SOS từ CHÍNH danh sách đó. */
-  locSos?: { tuan: string | null; phamVi: string | null; branchId: number | null; q: string | null }; onDong: () => void;
+  /** Bộ lọc góc Đang SOS của trang (phạm vi · chi nhánh · tìm) — máy chủ lấy cột SOS từ CHÍNH danh sách đó. */
+  locSos?: { phamVi: string | null; branchId: number | null; q: string | null }; onDong: () => void;
 }) {
   const toast = useToast();
   const uid = useSession().session?.user?.id ?? null;

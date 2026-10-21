@@ -116,7 +116,8 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
         <p className="m-0 flex flex-wrap gap-x-3 px-4 py-2 text-xs text-slate-400">
           <b className="font-semibold tabular-nums text-slate-100">{t('{n} lượt · {hv} HV', { n: tg.luot, hv: tg.hv })}</b>
           <span className="tabular-nums">{t('{a} Đạt · {b} Chưa đạt · {c} Chưa đủ điểm', { a: tg.dat, b: tg.chuaDat, c: tg.chuaDu })}</span>
-          <span className="tabular-nums">SOS 3: {tg.sos3} · SOS 2: {tg.sos2} · SOS 1: {tg.sos1}</span>
+          {/* SL2 (a7 dòng 8): đơn vị "lượt" + số SOS tạm — Báo cáo "SOS trong kỳ" đếm HV cùng luật. */}
+          <span className="tabular-nums">SOS 3: {tg.sos3} · SOS 2: {tg.sos2} · SOS 1: {tg.sos1} {t('lượt')}{tg.sosTam ? ` · ${t('{n} tạm', { n: tg.sosTam })}` : ''}</span>
         </p>
       )}
       {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>

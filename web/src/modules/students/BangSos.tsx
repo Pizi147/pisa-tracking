@@ -25,7 +25,8 @@ export type DongSos = {
   attemptId: number; studentId: number; ten: string; ma: string; classId: number; classCode: string; branchName: string | null; ft: boolean;
   luot: string; tuan: string; sosLevel: number; kyNang: string[]; cases: CaseTomTat[]; tvv: string | null; lienHe: LienHe;
 };
-export type TrangSos = { tuan: string | null; toanBo: boolean; tuanGanNhat: string; tu: string; den: string; tuanCo: string[]; rows: DongSos[] };
+/** SL2: Đang SOS = SOS hiện tại — một em một dòng (lượt = đợt mới nhất hợp lệ), không lọc tuần. */
+export type TrangSos = { rows: DongSos[] };
 
 /** Cột theo vai (mockup 3 v2 §10): QL / GV đủ cột · TVV chỉ đọc + Phụ huynh · CX như TVV + TVV, đầu nhóm ghi chi nhánh. */
 export type CotSos = 'ql' | 'tvv' | 'cx';
@@ -78,15 +79,13 @@ function ViecTiepDong({ r }: { r: DongSos }) {
   );
 }
 
-function OSos({ r, toanBo }: { r: DongSos; toanBo: boolean }) {
-  const { homNay } = useNgayNghiepVu();
+function OSos({ r }: { r: DongSos }) {
   return (
     <>
       <span className="flex flex-wrap items-center gap-1.5">
         <ChipSos muc={r.sosLevel} hienKyNang={false} kyNang={r.kyNang.map((k) => skillShort(k))} dot={r.luot} ten={r.ten} thuong={!r.ft} />
         <span className="text-xs font-semibold text-slate-200">{r.kyNang.map((k) => skillShort(k)).join(', ')}</span>
       </span>
-      {!toanBo && <Link className="link block text-xs" to={duongDotTest({ id: r.attemptId, kind: r.ft ? 'mock' : 'progress', classId: r.classId })}>{r.ft ? `${r.luot} · ${tuanLich(r.tuan, homNay)}` : `Progress · ${tuanLich(r.tuan, homNay)}`}</Link>}
     </>
   );
 }
@@ -117,7 +116,6 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
 }) {
   const { homNay } = useNgayNghiepVu();
   const [gap, setGap] = useState<Set<number>>(new Set());
-  const toanBo = data.toanBo;
   const nhom = (['ft', 'thuong'] as const).map((k) => {
     const lop = new Map<number, DongSos[]>();
     for (const r of data.rows.filter((x) => x.ft === (k === 'ft'))) lop.set(r.classId, [...(lop.get(r.classId) ?? []), r]);
@@ -140,7 +138,7 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
         <Link to={`/hoc-vien/lop/${r.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{r.classCode}</Link>
         {toanLop.get(r.classId)?.tiep && <span className="text-xs text-slate-400">{t('(tiếp)')}</span>}
         {cot === 'cx' && r.branchName && <span className="text-xs text-slate-400">{r.branchName}</span>}
-        <Nhan tone="muted">{toanBo ? t('{n} em · {m} lượt SOS', { n: soEm, m: em.length }) : t('{n} em SOS', { n: soEm })}</Nhan>
+        <Nhan tone="muted">{t('{n} em SOS', { n: soEm })}</Nhan>
         {cot === 'ql' && cho > 0 && <Nhan tone="muted">{t('{n} chờ duyệt', { n: cho })}</Nhan>}
         {cot === 'ql' && tre > 0 && <Nhan tone="late">⚠ {t('{n} quá hạn', { n: tre })}</Nhan>}
       </span>
@@ -149,9 +147,9 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
   const nutMo = (r: DongSos) => (
     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" aria-label={t('Mở {ten}', { ten: r.ten })} onClick={() => onMo(r)}>{t('Mở')}</button>
   );
-  const tenEm = (r: DongSos, lap: boolean) => (
+  const tenEm = (r: DongSos) => (
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
-      <Link className={`link max-w-full truncate font-semibold ${lap ? 'opacity-60' : ''}`} title={r.ten} to={`/hoc-vien/${r.studentId}`} state={{ ds }}>{r.ten}</Link>
+      <Link className="link max-w-full truncate font-semibold" title={r.ten} to={`/hoc-vien/${r.studentId}`} state={{ ds }}>{r.ten}</Link>
     </span>
   );
   const trangThai = (r: DongSos) => { const n = nhomDong(r); return <Nhan tone={TONE_NHOM[n]}>{t(NHAN_NHOM_XU_LY[n])}</Nhan>; };
@@ -174,7 +172,7 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
                 </button>
                 {mo(em[0].classId) && em.map((r) => (
                   <TheDong key={r.attemptId} className={r.studentId === dangMo ? 'row-active' : ''}
-                    dau={<span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">{tenEm(r, false)}<ChipSos muc={r.sosLevel} hienKyNang={false} kyNang={r.kyNang.map((k) => skillShort(k))} dot={r.luot} ten={r.ten} thuong={!r.ft} />{trangThai(r)}</span>}
+                    dau={<span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">{tenEm(r)}<ChipSos muc={r.sosLevel} hienKyNang={false} kyNang={r.kyNang.map((k) => skillShort(k))} dot={r.luot} ten={r.ten} thuong={!r.ft} />{trangThai(r)}</span>}
                     hanhDong={nutMo(r)}
                     dong={[
                       { nhan: r.ft ? t('Kỹ năng') : t('Môn'), noiDung: `${r.kyNang.map((k) => skillShort(k)).join(', ')} · ${r.luot} · ${tuanLich(r.tuan, homNay)}` },
@@ -194,7 +192,7 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
     );
   }
 
-  const tieuDe = ['Học viên', ...(toanBo ? ['MT · tuần'] : []), 'SOS', 'Nguyên nhân', ...(cot === 'ql' ? ['Phương án'] : []), 'Kết quả đến nay', 'Trạng thái',
+  const tieuDe = ['Học viên', 'MT · tuần', 'SOS', 'Nguyên nhân', ...(cot === 'ql' ? ['Phương án'] : []), 'Kết quả đến nay', 'Trạng thái',
     ...(cot === 'ql' ? ['Việc tiếp'] : []), ...(cot === 'cx' ? ['TVV'] : []), ...(cot !== 'ql' ? ['Phụ huynh'] : []), ''];
   const rong: Record<string, string> = {
     'Học viên': 'w-[15%]', 'MT · tuần': 'w-[9%]', SOS: 'w-[12%]', 'Nguyên nhân': 'w-[16%]', 'Phương án': 'w-[15%]', 'Kết quả đến nay': 'w-[13%]',
@@ -210,13 +208,12 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
             {g.lop.map((em) => (
               <tbody key={em[0].classId}>
                 <HangNhom mo={mo(em[0].classId)} onMo={() => doi(em[0].classId)} nhan={t('lớp {ma}', { ma: em[0].classCode })} soCotDau={tieuDe.length} tieuDe={dauLop(em)} />
-                {mo(em[0].classId) && em.map((r, i) => {
-                  const lap = toanBo && i > 0 && em[i - 1].studentId === r.studentId;
+                {mo(em[0].classId) && em.map((r) => {
                   return (
                     <HangCon key={r.attemptId} className={`row-hover ${nhomDong(r) === 'xong' ? 'row-muted' : ''} ${r.studentId === dangMo ? 'row-active' : ''}`}>
-                      <td className="td h-14">{tenEm(r, lap)}</td>
-                      {toanBo && <td className="td text-xs tabular-nums text-slate-300"><Link className="link" to={duongDotTest({ id: r.attemptId, kind: r.ft ? 'mock' : 'progress', classId: r.classId })}>{r.luot} · {tuanLich(r.tuan, homNay)}</Link></td>}
-                      <td className="td"><OSos r={r} toanBo={toanBo} /></td>
+                      <td className="td h-14">{tenEm(r)}</td>
+                      <td className="td text-xs tabular-nums text-slate-300"><Link className="link" to={duongDotTest({ id: r.attemptId, kind: r.ft ? 'mock' : 'progress', classId: r.classId })}>{r.luot} · {tuanLich(r.tuan, homNay)}</Link></td>
+                      <td className="td"><OSos r={r} /></td>
                       <td className="td"><TheoCase r={r} dam={dam} chu={chuNguyenNhan} /></td>
                       {cot === 'ql' && <td className="td"><TheoCase r={r} dam={dam} chu={chuPa} /></td>}
                       <td className="td">{ketQua(r)}</td>
