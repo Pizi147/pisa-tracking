@@ -175,12 +175,12 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
         </Buoc>
 
         <Buoc so="2" tieuDe={t('Bước tiếp')} mo={!khoaBuoc2 || daChonTruoc || !!daChot} phu={coKq && b.han ? t('hạn {ngay}', { ngay: shortDate(b.han, hn) }) : null}>
-          <Truong nhan={t('Bước tiếp')} as="div" loi={lf.loiCua(loiB, 'chon')}>
-            <div {...lf.o(loiB, 'chon')} tabIndex={-1} className="outline-none">
-              <LuaChonRadio ten={`bt-${cycleId}`} nhan={t('Bước tiếp')} value={daChot || daChonTruoc ? (b.chon as Chon | null) : chon} disabled={khoaBuoc2}
-                muc={LUA_CHON_SAU_THI.map((k) => [k, NHAN_SAU_THI[k]] as const)} onChange={(k) => { setChon(k); if (tt === 'loi') setTt(null); }} />
-            </div>
-          </Truong>
+          {/* Tiêu đề bước đã là "Bước tiếp" — nhóm nút không nhãn riêng; lỗi (sau khi bấm Chốt) ngay dưới. */}
+          <div {...lf.o(loiB, 'chon')} tabIndex={-1} className="outline-none">
+            <LuaChonRadio ten={`bt-${cycleId}`} nhan={t('Bước tiếp')} value={daChot || daChonTruoc ? (b.chon as Chon | null) : chon} disabled={khoaBuoc2}
+              muc={LUA_CHON_SAU_THI.map((k) => [k, NHAN_SAU_THI[k]] as const)} onChange={(k) => { setChon(k); if (tt === 'loi') setTt(null); }} />
+            {lf.loiCua(loiB, 'chon') && <p role="alert" className="m-0 mt-1.5 text-[13px] text-bad">{lf.loiCua(loiB, 'chon')}</p>}
+          </div>
           {chon === 'lo_trinh_moi' && !khoaBuoc2 && (
             <div className="flex flex-col gap-3">
               <Truong nhan={t('Lớp')} as="div" loi={lf.loiCua(loiB, 'lop')}>

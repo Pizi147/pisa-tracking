@@ -64,7 +64,7 @@
 | C15 + bối cảnh Báo PH, SĐT bấm gọi | `PanelBaoPhTvv` | KHỚP (chữ phụ "mặc định hôm nay…" bỏ — P1) |
 | T10 lần thử · T15 lỗi lưu · T16 hỏi bỏ chữ · T21 375 | `PanelBaoPhTvv` + `KhungPanel` (NEN-PANEL) | KHỚP |
 | T22 GVCN xin thu hồi | `thuHoiCho` (máy chủ) + báo vàng | KHỚP |
-| C16 / T09 Sau thi hai bước | `PanelSauThi` | KHÁC nhỏ: không ô "Ghi chú" bước tiếp (máy chủ không có trường), "Thôi học" thay "Kết thúc học" (một khái niệm một tên), Lịch sử mở thay panel |
+| C16 / T09 Sau thi hai bước (+ Ghi chú bước tiếp, lưu ở `buoc_tiep_json` + nhật ký) | `PanelSauThi` | KHỚP (khác nhỏ: "Thôi học" thay "Kết thúc học" — một khái niệm một tên; Lịch sử mở thay panel, không đếm số) |
 | Chốt ngày thi | `PanelChotNgayThi` (`PUT /hoc-vien-lop/lich-thi`) | KHỚP |
 | Bổ sung hồ sơ 4 trường | dòng tổng mở trang Thiếu thông tin ↗ (sẵn có) | KHÁC: máy chủ gom một dòng (Q-D4 ①); panel 4 ô cần luật Target / Tuần bắt đầu theo vai — giữ đường cũ |
 | Rỗng · đang tải · lỗi tải | `HoTroHocVienTab` | KHỚP (rỗng: "Không còn việc đang mở" + HV của tôi ›, câu giải thích bỏ — P1) |
