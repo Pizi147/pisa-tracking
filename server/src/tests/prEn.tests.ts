@@ -352,8 +352,8 @@ const FILE_DA_DICH = [
   ...['web/src/ui', 'web/src/lib'].flatMap((d) => fs.readdirSync(path.join(GOC_REPO, d)).filter((f) => /\.tsx?$/.test(f) && f !== 'chu.ts').map((f) => `${d}/${f}`)),
   ...['oNgay', 'chonNgay', 'loiForm', 'hienThiNgay', 'trangThai', 'dieuHuong', 'khac', 'quayLai'].map((f) => `shared/domain/${f}.ts`),
   /* Đợt b — Tổng quan GV, Công việc, Yêu cầu của tôi, Lịch Test, Điểm theo lớp, nhập điểm, hộp chấm MT, hồ sơ Mock, Ghi kết quả PA. */
-  ...['OverviewPage', 'WorkList', 'NhomViec', 'LopToiDay'].map((f) => `web/src/modules/worklist/${f}.tsx`),
-  ...['ChonPhuTrach', 'CongViecPage', 'HoTroHocVienTab', 'PanelViec'].map((f) => `web/src/modules/congViec/${f}.tsx`),
+  ...['OverviewPage', 'WorkList', 'LopToiDay'].map((f) => `web/src/modules/worklist/${f}.tsx`),
+  ...['ChonPhuTrach', 'CongViecPage', 'HoTroHocVienTab', 'PanelViec', 'DanhSachViec'].map((f) => `web/src/modules/congViec/${f}.tsx`),
   ...['YeuCauCuaToi', 'TheYeuCau', 'DeXuatSuaPanel'].map((f) => `web/src/modules/duyet/${f}.tsx`),
   ...['TestPage', 'LichTestTab'].map((f) => `web/src/modules/test/${f}.tsx`),
   ...fs.readdirSync(path.join(GOC_REPO, 'web/src/modules/test/lichTest')).map((f) => `web/src/modules/test/lichTest/${f}`),
@@ -378,7 +378,7 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/fasttrack/DongThoiGianLuot.tsx', text: /^Trống$/ },
   { file: 'web/src/modules/fasttrack/MockDetailPage.tsx', text: /^(đã huỷ|đã có điểm|đã làm bài)$/ },
   { file: 'shared/domain/paDongBo.ts', text: /^(Người dạy|Người thực hiện)$/ },
-  { file: 'web/src/modules/worklist/WorkList.tsx', text: /^Lớp \{/ },
+  { file: 'web/src/modules/congViec/DanhSachViec.tsx', text: /^Lớp \{/ },
   { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{…\}: \{x\}$/ },   // ghi chú gửi máy chủ, lưu vào nhật ký (giữ Việt) — OV-12f
   /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
   { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA)$/ },
