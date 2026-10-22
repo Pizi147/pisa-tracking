@@ -49,3 +49,10 @@
 
 - T01: từ trang Công việc tới panel PA W1 của Phan Gia Hân: 1 bấm, 0 đổi trang; từ panel R sang W1: 1 bấm ("Em này còn").
 - Số "6 việc" = badge = tổng việc các nhóm, kể cả nhóm gập (T17).
+
+## 6. Triển khai → PR UI-CONG-VIEC (`claude/cool-wright-mvmdhe`, 22/10)
+
+Mục 1 + 2 + 3 → `web/src/modules/congViec/DanhSachViec.tsx`, `HoTroHocVienTab.tsx`, `ui/KhungPanel.tsx` (`DauViecCongViec`), `PanelViec.tsx` (Case mở tại chỗ).
+Lệch có lý do: ghi chú T02 "Chỉ phần W của bạn…" và câu giải thích nhóm Speaking bỏ theo P1 · nhãn vạch "Hạn đến 20/09 / Hạn sau 20/09" thay "tuần này / tuần sau" (P7) ·
+QL giữ "Của tôi · Của GV · Tất cả" + Chọn GV (P11) thay một ô chọn · chuông dạng nút của thanh chung (NEN-V5), không đổi ở màn này.
+Đo T01 (seed SEED-UX không có Case R + W1 của Phan Gia Hân): từ danh sách 1 bấm mở panel, 0 đổi trang; "Em này còn" 1 bấm sang việc kia (đo trên Đặng Quốc Bảo).

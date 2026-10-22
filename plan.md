@@ -571,6 +571,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 22/10/2026 | UI-CONG-VIEC (Opus 5.5) · `claude/cool-wright-mvmdhe` | `/cong-viec` theo `thiet-ke/v5/cong-viec.html`: đầu trang n nhóm · việc · HV · bài, thẻ nhóm, dòng theo em (T01), vạch hạn dd/mm (T14), Speaking chéo riêng (T03), theo dõi + Làm thay / Nhập hộ theo `lamThay`, "Em này còn", Case mở tại chỗ; bỏ tự mở / tự sang việc — chờ chủ SP duyệt ảnh |
 | 22/10/2026 | SV-S-EXPERT (Opus 5.5) · `claude/determined-sagan-o4nmiy` | Bảng `s_expert` + API thêm / sửa / xoá có lịch sử (`/lich-su?loai=s-ex`): thêm / dời / xoá chỉ `plan.week` (QL / Admin / QT), chấm = GV Speaking cùng chi nhánh (N7) hoặc QL; `sEx` kèm Lịch Test tuần + Kế hoạch Test (`loai: 's-ex'`); không vào tính toán nào (XM-1 mở) |
 | 22/10/2026 | SV-SO2 (Opus 5.5) · `claude/quirky-mayer-vvqmb5` | Overall ở tab Phân tích lớp + hồ sơ GV (một `danhGiaMon`); Đạt MT theo HV, kỳ theo ngày chốt điểm cuối (K9, T11, T20); Việc đúng hạn (việc) + Điểm đúng hạn (bài); API hồ sơ GV theo kỳ; panel số không trả khối việc (C22); `05` #1b. |
 | 22/10/2026 | NEN-V5 (Opus 5.5) · `claude/nen-v5-deployment-pr-3d4tqq` | Token V5 (`v5-nen.css` → `index.css`, tên cũ giữ, sáng + tối) · badge 4 nhóm (`NhanKq`, `NhanLich`, `Nhan` chấm, SOS vàng → cam → đỏ) · `TyLe` % trước · `OSo` (gộp SoLieuO / OSoNho) · `OChiSo` thay KpiTile · thanh xanh + logo · GV có Tổng quan (K10, tạm khối Lớp tôi dạy) · bảng mẫu `/dev/thanh-phan`; chờ chủ SP duyệt ảnh cặp |

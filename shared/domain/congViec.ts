@@ -305,3 +305,40 @@ export function demNguoiViec(ds: readonly { mine: boolean }[]): Record<LocNguoiV
   const toi = ds.filter((x) => x.mine).length;
   return { toi, gv: ds.length - toi, 'tat-ca': ds.length };
 }
+
+// ====================================================================== V5 UI-CONG-VIEC — dòng theo em, vạch hạn (T01, T14)
+
+export type MucTheoEm<T> = { kieu: 'dong'; it: T } | { kieu: 'em'; khoa: string; ten: string; lop: string | null; viec: T[] };
+/**
+ * T01 (mockup V5 `cong-viec.html .hv-gop`): một em có ≥ 2 việc trong cùng nhóm → MỘT dòng tên em + dòng con từng việc (Case R ≠ Case W1, mỗi việc
+ * hạn riêng). Dòng gộp lớp mà mọi việc là của một em ("1 em · 2 việc", BỎ ở truy vết mục 3) tách ra thành việc của em đó. Dòng gộp nhiều em và
+ * dòng làm cả dòng (`caDong`: Xác nhận PA cùng lúc, Nhập điểm theo tuần) giữ nguyên. Thứ tự: khối em đứng ở chỗ việc đầu tiên của em.
+ */
+export function xepTheoEm<T extends { key: string; studentId: number | null; studentName: string; classCode: string | null; con?: T[] }>(
+  ds: readonly T[], caDong: (it: T) => boolean,
+): MucTheoEm<T>[] {
+  const phangDs = ds.flatMap((it) => (it.con?.length && !caDong(it) && it.con.every((c) => c.studentId !== null && c.studentId === it.con![0].studentId) ? it.con : [it]));
+  const le = (it: T) => !it.con?.length && it.studentId !== null;
+  const dem = new Map<number, number>();
+  for (const it of phangDs) if (le(it)) dem.set(it.studentId!, (dem.get(it.studentId!) ?? 0) + 1);
+  const daDat = new Set<number>();
+  const out: MucTheoEm<T>[] = [];
+  for (const it of phangDs) {
+    if (!le(it) || (dem.get(it.studentId!) ?? 0) < 2) { out.push({ kieu: 'dong', it }); continue; }
+    if (daDat.has(it.studentId!)) continue;
+    daDat.add(it.studentId!);
+    const viec = phangDs.filter((x) => le(x) && x.studentId === it.studentId);
+    out.push({ kieu: 'em', khoa: `em:${it.studentId}`, ten: it.studentName, lop: it.classCode, viec });
+  }
+  return out;
+}
+
+/**
+ * T14 (mockup V5 `.vach-han`, P7): nhóm Chấm điểm chia ba vạch theo hạn — Quá hạn · Hạn đến hết tuần này · Hạn sau tuần này (gập sẵn, chữ trung
+ * tính). `cuoiTuan` = Chủ nhật tuần này — nhãn vạch ghi ngày thật (`dd/mm`), không "tuần này / tuần sau".
+ */
+export function chiaVachHan<T extends MucLocNhanh>(ds: readonly T[], homNay: string): { quaHan: T[]; denHetTuan: T[]; sau: T[]; cuoiTuan: string } {
+  const quaHan = ds.filter((x) => x.urgency === 'overdue');
+  const denHetTuan = ds.filter((x) => x.urgency !== 'overdue' && trongKhoiHomNay(x, homNay));
+  return { quaHan, denHetTuan, sau: ds.filter((x) => !trongKhoiHomNay(x, homNay)), cuoiTuan: addDaysIso(mondayOfDate(homNay), 6) };
+}

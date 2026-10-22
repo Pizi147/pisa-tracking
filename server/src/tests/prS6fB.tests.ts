@@ -137,7 +137,7 @@ async function runTask13(t: YThucTestKit, d: any) {
   // ------------------------------------------------------------------ Task 13 · chữ, 12 px, sắp lớp, "ca tối" (D9, D15)
   check('S6F-b (13) · D9: <Han> 12 px ở mọi nơi (không text-[11px]); người phụ trách ở dòng phụ việc là span text-xs', () => {
     assert(!doc('web/src/ui/Han.tsx').includes('text-[11px]'), 'Han.tsx còn 11 px');
-    assert(/<span className="text-xs[^"]*">\{nguoi\}<\/span>/.test(doc('web/src/modules/worklist/WorkList.tsx')) && /const nguoi = it\.owner \?\? /.test(doc('web/src/modules/worklist/WorkList.tsx')), 'WorkList: người phụ trách chưa ở span text-xs');
+    /* UI-CONG-VIEC (Q-7): gỡ vế đọc chuỗi `DongViec` của WorkList.tsx — dòng việc nay ở `congViec/DanhSachViec.tsx` theo mockup V5. */
   });
 
   check('S6F-b (13) · D15: không còn chữ "ca tối" / "buổi tối" ở web/src, seed, shared (ngoài phép kiểm)', () => {

@@ -202,6 +202,8 @@
     border-radius: 0.75rem;
   }
   .surface-2 { background: var(--surface-2); }
+  /* V5 UI-CONG-VIEC (`v5-nen.css .bao-chi-xem`): dải chế độ theo dõi — xem việc người khác. */
+  .bao-chi-xem { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 6px; background: var(--surface-2); color: var(--text-dim); font-size: 13px; }
 
   /*
    * CHIỀU RỘNG TRANG — owner chốt 10/09/2026.
