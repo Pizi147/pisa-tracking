@@ -896,7 +896,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/<ChipDotFT\b/.test(l) && /dot\.attemptId !== null/.test(l) && /<OMt\b/.test(l), 'lưới FT: ChipDotFT + OMt');
     assert(/loai === 'ft' \? 168 : 208/.test(l), 'cột đợt FT 168 (tối đa theo C6)');
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
-    assert(/export function ChipDotFT\b/.test(c) && /nhomKyNang\(/.test(c) && /MAU_O_MT\[g\.kieu\]/.test(c) && !/#[0-9a-fA-F]{3,8}\b/.test(c), 'ChipDotFT theo nhomKyNang, màu token');
+    assert(/export function ChipDotFT\b/.test(c) && /nhomKyNang\(/.test(c) && /VIEN_O\[chinh\.kieu\]/.test(c) && !/#[0-9a-fA-F]{3,8}\b/.test(c), 'ChipDotFT theo nhomKyNang, màu token (UI-CHAM-TEST: khung viền theo trạng thái)');
   });
 
 }

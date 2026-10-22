@@ -37,7 +37,8 @@ export async function runPrViecNhoTests(t: YThucTestKit) {
     const chua = docCua({ listening: o({ tuan: null, tuanKetThuc: null, periodId: null }) });
     assert(/chưa xếp$/.test(chua[0]) && !/chưa xếp.*chưa xếp/.test(chua[0]), `chưa xếp: ${chua}`);
     const c = doc('web/src/modules/test/keHoach/ChipKyNang.tsx');
-    assert(/aria-label=\{`MT\$\{so\}, \$\{g\.doc\}`\}/.test(c.slice(c.indexOf('export function ChipDotFT'))), 'ChipDotFT chưa dùng g.doc');
+    /* UI-CHAM-TEST: một ô đợt = một nút, câu đọc gộp `doc` của mọi nhóm. */
+    assert(/aria-label=\{`MT\$\{so\}, \$\{nhom\.map\(\(g\) => g\.doc\)/.test(c.slice(c.indexOf('export function ChipDotFT'))), 'ChipDotFT chưa dùng g.doc');
   });
 
   /* ---------------------------------------------------------------- 5. Chốt lên FT: tách em chờ duyệt đề xuất */
