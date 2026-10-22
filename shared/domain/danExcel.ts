@@ -1,6 +1,6 @@
 import { ENTRY_SKILLS, ENTRY_SKILL_SHORT, type EntrySkill } from './skills.ts';
 import { bandTuSoCau, criteriaPatchFrom, kiemBand, type PatchDiem } from './chamDiem.ts';
-import { canNhomNguyenNhan, CAU_THIEU_NHAN_XET, kiemNhanXet, thieuNhanXetMt } from './nhanXet.ts';
+import { canNhomNguyenNhan, kiemNhanXet } from './nhanXet.ts';
 import { chuanTieuDe } from './nhapHocVien.ts';
 import { t } from '../i18n/index.ts';
 
@@ -213,15 +213,11 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
     } else return { loai: 'loi', loi: t('Bốn tiêu chí, mỗi tiêu chí 0–9 bậc 0.5 (ví dụ 5.5 6 6 5.5)') };
     sau = chuBand(band!);
   }
-  const nhanXetSau = nx || cell.nhanXet || null;
   const doiNx = !!nx && nx !== (cell.nhanXet ?? '');
   /* Giống hệt điểm + nhận xét đang có → không gửi gì (dán lại cả bảng không ghi đè lịch sử). */
   if (truoc !== null && sau === truoc && !doiNx) return { loai: 'bo' };
   if (!patch && !doiNx) return { loai: 'bo' };
-  const coDiem = band !== null || (patch?.rawScore ?? cell.rawScore) !== null;
-  const thieu = thieuNhanXetMt({ batBuoc: !!cell.batBuocNhanXet, coDiem, band, kyVong: cell.kyVong ?? null, nhanXet: nhanXetSau, nhom: ['?'] });
-  if (thieu) return { loai: 'loi', loi: CAU_THIEU_NHAN_XET[thieu] };
-  /* Nhóm nguyên nhân chỉ bắt buộc ở MT thường (`batBuocNhanXet`, như `thieuNhanXetMt` của máy chủ); MT cũ / MT0 không hỏi. */
+  /* LUAT-NX-MT (chủ SP 22/10): thiếu nhận xét không là lỗi dòng. Nhóm nguyên nhân chỉ gợi ý ở MT thường (`batBuocNhanXet`); MT cũ / MT0 không hỏi. */
   const canNhom = !!cell.batBuocNhanXet && canNhomNguyenNhan(band, cell.kyVong) && !cell.nhomNguyenNhan?.length;
   const p: PatchDan = { ...(patch && sau !== truoc ? patch : {}), ...(doiNx ? { nhanXet: nx } : {}) };
   return { loai: 'ghi', patch: p, band, truoc: patch && sau !== truoc ? truoc : null, sau, canNhom };

@@ -165,7 +165,8 @@ export function DanExcel({ bo, tenLuot, luot, hep, hoiBanDau = false, onDong, on
   const thieuNhom = (d: DongXem, o: ODong) => o.x.loai === 'ghi' && o.x.canNhom && !nhom[khoaNhom(d.so, o.skill)]?.length;
   const loiO = (d: DongXem) => d.o.filter((o) => o.x.loai === 'loi').length + (d.trungDong !== null ? 1 : 0);
   const ghi = (d: DongXem) => d.o.filter((o) => o.x.loai === 'ghi');
-  const hopLe = (d: DongXem) => !!d.hang && d.trungDong === null && !loiO(d) && ghi(d).length > 0 && !ghi(d).some((o) => thieuNhom(d, o));
+  /* LUAT-NX-MT: thiếu nhóm nguyên nhân chỉ nhắc (chữ vàng) — không giữ dòng lại. */
+  const hopLe = (d: DongXem) => !!d.hang && d.trungDong === null && !loiO(d) && ghi(d).length > 0;
   const luuDuoc = dong.filter(hopLe);
   /* Mới / ghi đè: dòng khớp em, không lỗi (kể cả dòng còn chờ chọn nhóm nguyên nhân). */
   const sach = (d: DongXem) => !!d.hang && d.trungDong === null && !loiO(d) && !d.loiMay && ghi(d).length > 0;
@@ -449,7 +450,7 @@ function OCh({ o, ngan, gon, tho, anLoi }: { o: ODong; ngan: (k: string) => stri
     <span>
       {ten}{x.truoc !== null ? <span className="tabular-nums"><s className="text-slate-500">{x.truoc}</s> → <b>{x.sau}</b></span> : <b className="tabular-nums">{x.sau}</b>}
       {!gon && (o.nhanXet || x.truoc !== null) && <small className="block max-w-[18ch] text-xs text-slate-400">{x.truoc !== null ? `${t('Ghi đè')}${o.nhanXet ? ' · ' : ''}` : ''}{o.nhanXet}</small>}
-      {x.canNhom && <small className="block text-xs font-semibold text-[color:var(--accent-strong)]">{t('Nguyên nhân *')}</small>}
+      {x.canNhom && <small className="block text-xs font-semibold text-soon">{t('Nguyên nhân')}</small>}
       {x.canhBao && <small className="block text-xs text-slate-400">{x.canhBao}</small>}
     </span>
   );
@@ -468,7 +469,7 @@ function NhomDong({ d, ngan, thieuNhom, nhom, setNhom, khoa }: {
         const thieu = o.x.loai === 'ghi' && o.x.kyVong != null && o.x.band !== null ? o.x.kyVong - o.x.band : null;
         return (
           <div key={o.skill} className="flex flex-wrap items-center gap-2">
-            <span id={id} className={`text-xs font-semibold ${thieuNhom(d, o) ? 'text-bad' : 'text-slate-300'}`}>
+            <span id={id} className={`text-xs font-semibold ${thieuNhom(d, o) ? 'text-soon' : 'text-slate-300'}`}>
               {ngan(o.skill)} · {d.hang!.studentName}{thieu !== null ? ` · ${t('thiếu {x}', { x: thieu.toFixed(1) })}` : ''} · {t('Nhóm nguyên nhân')}
             </span>
             <ChonNhom skill={o.skill} nhanId={id} value={nhom[khoa(d.so, o.skill)] ?? []}

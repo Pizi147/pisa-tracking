@@ -159,15 +159,15 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     assert(one(`SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL`, e.m2).n === 1, 'bản mới phải còn treo');
   }));
 
-  check('OV4a-4 · Tuần cũ nay vướng thứ tự đợt → Khôi phục vẫn đưa điểm về, lượt về "Chưa xếp lịch" kèm câu', () => thu(() => {
+  check('OV4a-4 → LUAT-NX-MT · Tuần cũ sau MT1 đã dời → Khôi phục đưa điểm về, GIỮ tuần cũ (giữa các MT không chặn thứ tự)', () => thu(() => {
     const e = dung();
     diemSql(e.m2, 'listening', 7);
     attempts.huyLuot(QL, e.m2, { lyDo: 'x' });
     keHoach.luuDot(QL, { attemptId: e.m1, kyNang: KN.map((skill) => ({ skill, periodId: tuan(5) })) });   // MT1 dời qua tuần cũ của MT2
     const r = attempts.reopenAttempt(QL, e.m2);
-    assert(r.chuaXep && /Chưa xếp lịch/.test(r.cau.join(' ')), JSON.stringify(r));
+    assert(!r.chuaXep, JSON.stringify(r));
     assert(diemCo(e.m2).length === 1, 'mất điểm');
-    assert(all('SELECT 1 FROM attempt_skills WHERE attempt_id = ? AND required = 1 AND planned_period_id IS NOT NULL', e.m2).length === 0, 'còn tuần vướng');
+    assert(all('SELECT 1 FROM attempt_skills WHERE attempt_id = ? AND required = 1 AND planned_period_id IS NOT NULL', e.m2).length > 0, 'mất tuần cũ');
   }));
 
   check('OV4a-5 · Ca MT4 Nguyễn Minh Ngọc (lượt huỷ + bản cất dời vượt treo): Khôi phục đưa điểm về, nhóm 3 hết báo; xếp lại không xoá bản cất', () => thu(() => {

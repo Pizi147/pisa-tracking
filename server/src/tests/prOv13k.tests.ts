@@ -129,10 +129,10 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     run(`UPDATE assessment_scores SET cho_phu_trach_xem = 1 WHERE attempt_id = ? AND skill = 'speaking'`, aid); xoaNho();   // trả việc cho phép kiểm sau
   }));
 
-  await checkAsync('OV13k-3 · GV phụ trách: nhận xét không bắt buộc, lưu riêng (nhận xét người chấm giữ), nhật ký; sửa nhóm → nguyên nhân Case đổi; bỏ hết nhóm → 400; việc hết', () => voiMayChu(async (goi) => {
+  await checkAsync('OV13k-3 · GV phụ trách: nhận xét không bắt buộc, lưu riêng (nhận xét người chấm giữ), nhật ký; sửa nhóm → nguyên nhân Case đổi; bỏ hết nhóm → lưu (LUAT-NX-MT, chỉ nhắc); việc hết', () => voiMayChu(async (goi) => {
     const url = `/attempts/${aid}/scores/speaking/phu-trach`;
+    await ma(await goi(gvPT, url, put({ nhomNguyenNhan: [] })), 200, 'bỏ hết nhóm khi dưới kỳ vọng (LUAT-NX-MT: không 400)');
     const truoc = nk(gvPT);
-    await ma(await goi(gvPT, url, put({ nhomNguyenNhan: [] })), 400, 'bỏ hết nhóm khi dưới kỳ vọng');
     await ma(await goi(gvPT, url, put({ nhanXetPhuTrach: 'Em cần luyện Part 2 thêm 2 phút mỗi buổi.', nhomNguyenNhan: [n2, n1] })), 200, 'GV phụ trách lưu');
     const r = o();
     assert(r.comment === NX && r.nhan_xet_phu_trach === 'Em cần luyện Part 2 thêm 2 phút mỗi buổi.' && r.nhan_xet_phu_trach_by === gvPT && r.cho_phu_trach_xem === 0,

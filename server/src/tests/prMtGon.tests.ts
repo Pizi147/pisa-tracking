@@ -72,36 +72,31 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(band(a.m2, 'listening') === 6, 'mất điểm sau Dời cả đợt');
   });
 
-  check('MTG-1b · dời MT2 vượt MT3 (có / không có điểm): mọi cổng 400 "MT3 thi … Chọn tuần trước …", không ket_qua_huy, MT3 giữ nguyên', () => {
+  /* LUAT-NX-MT (chủ SP 22/10, `10` mục 7.3) thay PR-MTGON luật 1: giữa các MT không chặn thứ tự — dời vượt / trùng tuần MT khác lưu được. */
+  check('MTG-1b → LUAT-NX-MT · dời MT2 vượt MT3 (có / không có điểm): mọi cổng lưu được, không ket_qua_huy, MT3 giữ lịch + điểm', () => {
+    const T9 = t.addDays(tuanNay, 63);
     for (const coDiem of [true, false]) {
-      const a = emMoi();
-      if (coDiem) diem(a.m3, 'reading');
-      const truoc = [tuanCua(a.m2), tuanCua(a.m3)].join('|');
-      const kq = soKqHuy();
-      const cau = CAU_VUOT(3, 8);
       for (const [ten, fn] of [
-        ['luuDot', () => keHoach.luuDot(QL, { attemptId: a.m2, kyNang: bonKyNang(9), xacNhanHuyLich: true, reason: 'x' })],
-        ['setSkillWeek', () => skillSch.setSkillWeek(QL, a.m2, 'speaking', tuan(9).id, { huyLichVuot: true, reason: 'x' })],
-        ['setPlanningWeek', () => attemptsSvc.setPlanningWeek(QL, a.m2, tuan(9).id, 'x', { huyLichVuot: true })],
+        ['luuDot', (a: any) => keHoach.luuDot(QL, { attemptId: a.m2, kyNang: bonKyNang(9) })],
+        ['setSkillWeek', (a: any) => skillSch.setSkillWeek(QL, a.m2, 'speaking', tuan(9).id, {})],
+        ['setPlanningWeek', (a: any) => attemptsSvc.setPlanningWeek(QL, a.m2, tuan(9).id)],
+        ['xepHangLoat', (a: any) => assert(keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 2, studentIds: [a.sid], tuan: bonTuan(9) }).daLuu === 1, 'hàng loạt')],
       ] as const) {
-        const e = loiCua(fn);
-        assert(e.status === 400 && e.message.includes(cau), `${ten} (${coDiem}): ${e.status} ${e.message}`);
+        const a = emMoi();
+        if (coDiem) diem(a.m3, 'reading');
+        const t3 = tuanCua(a.m3), kq = soKqHuy();
+        fn(a);
+        assert(tuanCua(a.m2).includes(T9), `${ten} (${coDiem}): MT2 phải sang T+9 — ${tuanCua(a.m2)}`);
+        assert(tuanCua(a.m3) === t3 && soKqHuy() === kq, `${ten} (${coDiem}): MT3 đổi / có ket_qua_huy`);
+        if (coDiem) assert(band(a.m3, 'reading') === 6, 'MT3 mất điểm');
       }
-      const h = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 2, studentIds: [a.sid], tuan: bonTuan(9), xacNhanHuyLich: true, lyDo: 'x' });
-      assert(h.daLuu === 0 && h.dong[0].hanhDong === 'loi' && h.dong[0].loi.includes(cau), JSON.stringify(h.dong[0]));
-      assert(!h.dong[0].seHuyLich, 'hàng loạt còn seHuyLich');
-      assert(soKqHuy() === kq, 'có ket_qua_huy mới');
-      assert([tuanCua(a.m2), tuanCua(a.m3)].join('|') === truoc, 'lịch đã đổi');
-      if (coDiem) assert(band(a.m3, 'reading') === 6, 'MT3 mất điểm');
-      const k = keHoach.kiemDot(QL, { attemptId: a.m2, kyNang: bonKyNang(9) });
-      assert(!('seHuyLich' in k) && k.bai.every((b: any) => b.ghiChu === 'chan' && b.cau === cau), JSON.stringify(k));
     }
   });
 
-  check('MTG-1c · dời trùng tuần MT khác → 400 như cũ', () => {
+  check('MTG-1c → LUAT-NX-MT · dời trùng tuần MT khác → lưu được', () => {
     const a = emMoi();
-    const e = loiCua(() => skillSch.setSkillWeek(QL, a.m2, 'listening', tuan(1).id, {}));
-    assert(e.status === 400 && /Trùng tuần/.test(e.message), `${e.status} ${e.message}`);
+    skillSch.setSkillWeek(QL, a.m2, 'listening', tuan(1).id, {});
+    assert(kn(a.m2, 'listening').planned_period_id === tuan(1).id, JSON.stringify(kn(a.m2, 'listening')));
   });
 
   check('MTG-1d · web: không còn cờ xacNhanHuyLich / popup huỷ kết quả do dời vượt', () => {
@@ -162,7 +157,7 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(!conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(a.m1), 'đưa lại phải rút đề nghị dời đang chờ');
     attemptsSvc.setSkillSkip(QL, a.m1, 'reading', false, null);
     const s = kn(a.m1, 'speaking'), r = kn(a.m1, 'reading');
-    assert(s.sit_status === 'scheduled' && s.required === 1 && s.planned_period_id === null, `speaking vượt MT2 phải về Chưa xếp: ${JSON.stringify(s)}`);
+    assert(s.sit_status === 'scheduled' && s.required === 1 && s.planned_period_id === tuan(5).id, `speaking sau MT2 giữ tuần (LUAT-NX-MT không chặn): ${JSON.stringify(s)}`);
     assert(r.sit_status === 'scheduled' && r.planned_period_id === tuan(1).id, `reading giữ tuần hợp lệ: ${JSON.stringify(r)}`);
   });
 
@@ -190,27 +185,26 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(e.status === 403, `GV: ${e.status}`);
   });
 
-  check('MTG-3b · xếp lại MT2 → hồi sinh đúng dòng MT2, không mang điểm; bản cất giữ (PR-OV4a); tuần phải hợp lệ', () => {
+  check('MTG-3b · xếp lại MT2 → hồi sinh đúng dòng MT2, không mang điểm; bản cất giữ (PR-OV4a); sau MT3 cũng được (LUAT-NX-MT)', () => {
     const a = emMoi();
     diem(a.m2, 'listening');
     attemptsSvc.huyLuot(QL, a.m2, { lyDo: 'Em nghỉ đợt này' });
     conn.prepare(`INSERT INTO ket_qua_huy (attempt_id, vuot_boi_attempt_id, diem_json, lich_json, so_diem, ly_do, huy_boi, huy_luc)
       VALUES (?, ?, '[]', '[]', 1, 'cũ', NULL, '2026-01-01')`).run(a.m2, a.m1);
-    const e = loiCua(() => keHoach.xepMoi(QL, { studentId: a.sid, attemptNo: 2, tuan: bonTuan(9) }));
-    assert(e.status === 400, `vượt MT3: ${e.status} ${e.message}`);
-    const mt = keHoach.xepMoi(QL, { studentId: a.sid, attemptNo: 2, tuan: bonTuan(5) });
+    const mt = keHoach.xepMoi(QL, { studentId: a.sid, attemptNo: 2, tuan: bonTuan(9) });   // LUAT-NX-MT: sau MT3 cũng được
     assert(mt.id === a.m2 && mt.status === 'planned', JSON.stringify(mt));
     assert(band(a.m2, 'listening') === null, 'mang điểm cũ');
     const kq = conn.prepare('SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL').get(a.m2) as any;
     assert(kq.n === 2, `bản cất (huỷ lượt + dời vượt) phải còn để Khôi phục: ${kq.n}`);   // PR-OV4a: không bỏ khi xếp lại
   });
 
-  check('MTG-3c · "Mở lại lượt" vào tuần vượt MT sau → mở lại ở Chưa xếp', () => {
+  check('MTG-3c → LUAT-NX-MT · "Mở lại lượt" vào tuần trước MT1 đã dời → giữ tuần cũ (không chặn thứ tự MT)', () => {
     const a = emMoi();
     attemptsSvc.huyLuot(QL, a.m2, { lyDo: 'Em nghỉ đợt này' });
     keHoach.luuDot(QL, { attemptId: a.m1, kyNang: bonKyNang(5) });   // MT2 huỷ → MT1 dời qua tuần cũ của MT2 được
     attemptsSvc.reopenAttempt(QL, a.m2);
-    assert(luot(a.m2).status === 'planned' && tuanCua(a.m2) === '-,-,-,-', tuanCua(a.m2));
+    const T4 = t.addDays(tuanNay, 28);
+    assert(luot(a.m2).status === 'planned' && tuanCua(a.m2) === [T4, T4, T4, T4].join(','), tuanCua(a.m2));
   });
 
   check('MTG-3d · lượt mọi kỹ năng "cancelled": hàng loạt chọn được; "Đưa lại cả 4 kỹ năng" một lần', () => {

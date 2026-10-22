@@ -355,12 +355,13 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(w?.c1 === 6 && w.band === 6 && w.comment === 'Ý rõ' && w.nhap_dau_ngay === t.addDays(TODAY, -3), JSON.stringify(w));
   });
 
-  check('MTa T2 (R3, R4) · MT1 vẫn sau tuần cũ của MT2 → 400 có câu chỉ đường, DB không đổi; GVCN → 403', () => {
+  check('MTa T2 (R3, R4) → LUAT-NX-MT · MT1 vẫn sau tuần cũ của MT2 → khôi phục được (không chặn thứ tự MT); GVCN → 403', () => {
     const a = emCoDiemMt2();
     huyCu(a);
-    assertThrows(() => ketQuaHuy.khoiPhucKetQua(QL, a.m2), /Dời lượt trước về trước rồi khôi phục/, 'R3');
-    assert(soDiem(a.m2) === 0 && luot(a.m2).planned_period_id === null, 'DB đổi');
     assert(loiCua(() => ketQuaHuy.khoiPhucKetQua(P.coreTeacher, a.m2)).status === 403, 'R4');
+    assert(soDiem(a.m2) === 0, 'GVCN bị chặn mà DB đổi');
+    ketQuaHuy.khoiPhucKetQua(QL, a.m2);
+    assert(soDiem(a.m2) > 0, 'R3: khôi phục phải trả điểm');
   });
 
   check('MTa T2 (R5) · màn đọc: lichMtLoTrinh / attemptDetail có ketQuaHuy; lịch sử điểm có "Huỷ do dời vượt" kèm lý do', () => {

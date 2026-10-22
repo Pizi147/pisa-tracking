@@ -2,7 +2,7 @@ import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, LOI_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -344,16 +344,15 @@ export type SkillCell = {
   batBuocNhanXet: boolean;
   kyVong: number | null;
   thieuNhanXet: ThieuNhanXet | null;
-  /** V5 SV-SO1: ô XONG = có band VÀ đủ nhận xét bắt buộc — mọi nơi đếm bài / nợ / việc đọc cờ này, không đọc `band`. */
+  /** ô XONG = có band (LUAT-NX-MT: thiếu nhận xét chỉ nhắc — `thieuNhanXet`) — mọi nơi đếm bài / nợ / việc đọc cờ này. */
   xong: boolean;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). Chỉ ô `speaking`. */
   gvCham: { userId: number | null; ten: string } | null;
 };
 
 /**
- * V5 SV-SO1 (chủ SP 22/10, brief 8.1) — MỘT HÀM "Ô FT XONG": có band VÀ không thiếu nhận xét bắt buộc (`thieuNhanXetMt` — MT thường, không MT cũ / MT0;
- * band dưới kỳ vọng của lượt → có nhóm nguyên nhân), áp mọi điểm. Ô có band mà thiếu nhận xét vẫn là bài của người chấm, cùng hạn / tuần như bài chưa chấm.
- * `skillCells`, chi tiết lượt (`scheduleRows`), Kế hoạch Test (`xongKyNang`) cùng gọi; câu SQL lọc dùng `O_FT_XONG_SQL` (cùng luật).
+ * MỘT HÀM "Ô FT XONG" (V5 SV-SO1; LUAT-NX-MT — chủ SP 22/10, `10` mục 7.2): xong = CÓ BAND. `thieuNx` (`thieuNhanXetMt` — MT thường, không MT cũ / MT0)
+ * chỉ để NHẮC (ô vàng), không làm ô thành chưa xong / việc / nợ. `skillCells`, chi tiết lượt, Kế hoạch Test (`xongKyNang`) cùng gọi; SQL: `O_FT_XONG_SQL`.
  */
 export function oXongCua(attempt: any, rows: readonly { skill: string; band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null }[]) {
   const batBuoc = batBuocNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
@@ -366,7 +365,7 @@ export function oXongCua(attempt: any, rows: readonly { skill: string; band?: nu
     kv ??= { v: kyVongCuaLuot(attempt) };
     return thieuNhanXetMt({ batBuoc, coDiem, band: r?.band ?? null, kyVong: kv.v, nhanXet: r?.comment, nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan) });
   };
-  return { thieuNx, xong: (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null && thieuNx(k) === null };
+  return { thieuNx, xong: (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null };
 }
 
 /** Đưa ô điểm về đúng hình dạng mà luật đếm dùng chung cần. */
@@ -438,10 +437,8 @@ export function skillCells(
      * Lúc đó môn Writing chưa xong, nhưng ô W1 thì đã xong — nói ngược lại là giục giáo
      * viên đã nộp bài đi nộp lại.
      */
-    /* V5 SV-SO1: `cellScored` = ô XONG (`xongO`); band vẫn hiện (`band`), "thiếu …" ở `thieuNhanXet`. */
     const coBand = (row?.band ?? null) !== null;
-    const thieuNx = thieuNxCua(skill);
-    const cellScored = coBand && thieuNx === null;
+    const cellScored = xongO(skill);
     const progress: SkillProgress =
       !required ? 'skipped'
       : cellScored ? 'scored'
@@ -522,8 +519,7 @@ export function skillCells(
       canEdit,
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
       viec: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
-        /* V5 SV-SO1: ô có band mà thiếu nhận xét ở lượt đủ điểm vẫn là việc của người được phân công, không của người sửa sau hoàn tất. */
-        && (hoanTat.hoanTat && !(coBand && thieuNx) ? suaSauHoanTat : viecList.includes(skill)),
+        && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
       /* LUAT-34: "Đủ điểm" — chỉ là trạng thái của đợt (tên trường giữ từ R11), không còn khoá ô. */
       khoa: hoanTat.hoanTat,
       /* LUAT-34 (T20b): ô có điểm đã huỷ còn cất → "Khôi phục điểm". */
@@ -545,9 +541,8 @@ export function skillCells(
       nhomNguyenNhan: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
       batBuocNhanXet: batBuocNx,
       kyVong,
-      /* Rà #383: chữ "thiếu …" chỉ ở ô GV còn bổ sung được — lượt đã hoàn tất không báo (Case cũ: OV-12c). */
-      /* V5 SV-SO1: báo "thiếu …" cả khi lượt đã đủ điểm (thay rà #383 — chủ SP 22/10: thiếu nhận xét chưa xong ở mọi điểm). */
-      thieuNhanXet: !canEdit ? null : thieuNx,
+      /* LUAT-NX-MT: chỉ NHẮC (ô vàng "Nên có nhận xét") ở ô người xem sửa được — không chặn, không thành việc. */
+      thieuNhanXet: !canEdit ? null : thieuNxCua(skill),
       xong: cellScored,
       gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
         ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
@@ -1783,18 +1778,11 @@ export type ScorePatch = {
 };
 
 /**
- * OV-12b: nhóm sẽ lưu (JSON hoặc NULL) + kiểm luật nhận xét MT trên TRẠNG THÁI SAU KHI GHI của ô. `luat` = lệnh từ người dùng (route): thiếu → 400,
- * chưa ghi gì. Đường nội bộ (seed, khôi phục, Thi lại) không đòi — dữ liệu ấy không phải bài GV vừa chấm.
+ * OV-12b: nhóm nguyên nhân sẽ lưu (JSON hoặc NULL) — chỉ giữ khi band của ô dưới kỳ vọng. LUAT-NX-MT (chủ SP 22/10, `10` mục 7.2): thiếu nhận xét /
+ * nhóm chỉ NHẮC (ô vàng — `thieuNhanXet` của `skillCells`), không 400.
  */
-function nhomVaLuatNhanXet(
-  a: any, o: { band: number | null; coDiem: boolean; comment: string | null; nhomGui: string[] | undefined; nhomCu: string | null | undefined; luat: boolean },
-): string | null {
-  const kyVong = kyVongCuaLuot(a);
-  const nhom = canNhomNguyenNhan(o.band, kyVong) ? (o.nhomGui ?? docNhomNguyenNhan(o.nhomCu)) : [];
-  if (o.luat) {
-    const thieu = thieuNhanXetMt({ batBuoc: batBuocNhanXetMt({ kind: a.kind, lichSu: !!a.lich_su }), coDiem: o.coDiem, band: o.band, kyVong, nhanXet: o.comment, nhom });
-    if (thieu) throw badRequest(LOI_THIEU_NHAN_XET[thieu]);
-  }
+function nhomSeLuu(a: any, o: { band: number | null; nhomGui: string[] | undefined; nhomCu: string | null | undefined }): string | null {
+  const nhom = canNhomNguyenNhan(o.band, kyVongCuaLuot(a)) ? (o.nhomGui ?? docNhomNguyenNhan(o.nhomCu)) : [];
   return nhom.length ? JSON.stringify(nhom) : null;
 }
 
@@ -1815,7 +1803,7 @@ function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>) {
 function luuNhanXet(
   p: Principal, a: any, skill: string,
   nhanXet: string | null | undefined, gv: { userId: number | null; name: string | null } | null | undefined,
-  nhomGui: string[] | undefined, luat: boolean,
+  nhomGui: string[] | undefined,
 ) {
   const conn = db();
   const attemptId = a.id as number;
@@ -1824,15 +1812,7 @@ function luuNhanXet(
   const exUser = gv !== undefined ? gv?.userId ?? null : cu?.examiner_user_id ?? null;
   const exName = gv !== undefined ? gv?.name ?? null : cu?.examiner_name ?? null;
   const band = cu?.band ?? null;
-  const coDiem = band !== null || (cu?.raw_score ?? null) !== null;
-  const nhom = nhomVaLuatNhanXet(a, { band, coDiem, comment, nhomGui, nhomCu: cu?.nhom_nguyen_nhan, luat: false });
-  /* OV-12b (rà #383): chỉ kiểm phần ĐƯỢC GỬI — hồ sơ MT lưu nhận xét và chip riêng, ô cũ thiếu cả hai vẫn bổ sung được từng phần; chỉ đổi GV chấm không kiểm. */
-  if (luat && coDiem && batBuocNhanXetMt({ kind: a.kind, lichSu: !!a.lich_su })) {
-    const t = (comment ?? '').trim();
-    const thieu: ThieuNhanXet | null = nhanXet !== undefined && t.length < NHAN_XET_MT_TOI_THIEU ? (t ? 'nhan-xet-ngan' : 'ghi-nhan-xet')
-      : nhomGui !== undefined && !nhomGui.length && canNhomNguyenNhan(band, kyVongCuaLuot(a)) ? 'chon-nhom' : null;
-    if (thieu) throw badRequest(LOI_THIEU_NHAN_XET[thieu]);
-  }
+  const nhom = nhomSeLuu(a, { band, nhomGui, nhomCu: cu?.nhom_nguyen_nhan });
   if (cu) {
     conn.prepare('UPDATE assessment_scores SET comment = ?, examiner_user_id = ?, examiner_name = ?, nhom_nguyen_nhan = ? WHERE id = ?')
       .run(comment, exUser, exName, nhom, cu.id);
@@ -1979,9 +1959,8 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
     if (!cu || ((cu.band ?? null) === null && (cu.raw_score ?? null) === null)) throw badRequest('Bài Speaking này chưa có điểm — chờ người chấm.');
     const band = cu.band ?? null;
     const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
-    if (nhomGui !== undefined && !nhomGui.length && canNhomNguyenNhan(band, kyVongCuaLuot(a))) throw badRequest(LOI_THIEU_NHAN_XET['chon-nhom']);
     const chu = coNx ? (nx && 'gt' in nx ? nx.gt : null) : cu.nhan_xet_phu_trach ?? null;
-    const nhom = nhomVaLuatNhanXet(a, { band, coDiem: true, comment: cu.comment ?? null, nhomGui, nhomCu: cu.nhom_nguyen_nhan, luat: false });
+    const nhom = nhomSeLuu(a, { band, nhomGui, nhomCu: cu.nhom_nguyen_nhan });
     /* Lưu mà không đổi gì (GV phụ trách chỉ "đã xem") → hết việc; người / lúc lưu và nhật ký giữ như cũ. */
     const doi = chu !== (cu.nhan_xet_phu_trach ?? null) || nhom !== (cu.nhom_nguyen_nhan ?? null);
     conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = ?, nhom_nguyen_nhan = ?, cho_phu_trach_xem = 0,
@@ -2008,8 +1987,8 @@ function chiNhanXetNhom(patch: ScorePatch): boolean {
 export function saveScore(
   p: Principal, attemptId: number, skill: string, patch: ScorePatch, today: string = demoToday(),
   /** PR-BV: `thiLai` — ô xoá để THI LẠI (Case đóng theo không mở lại khi nhập điểm mới). Chỉ `keHoach.thiLai` truyền.
-   *  OV-12b: `tuNguoiDung` — lệnh từ route (cửa người dùng): áp luật nhận xét MT bắt buộc (`nhomVaLuatNhanXet`). */
-  o: { thiLai?: boolean; tuNguoiDung?: boolean } = {},
+   */
+  o: { thiLai?: boolean } = {},
 ) {
   const conn = db();
   const a = loadAttempt(attemptId);
@@ -2105,11 +2084,10 @@ export function saveScore(
   const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill) : null;
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
   const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
-  const luat = !!o.tuNguoiDung;
   if (ghiDiem) kiemDaToiTuanThi(scheduleRow, today);
   const chiNhanXet = (coNhanXet || coGvCham || coNhom) && patch.rawScore === undefined && patch.band === undefined && patch.rawTotal === undefined
     && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
-  if (chiNhanXet) return tx(() => luuNhanXet(p, a, skill, nxGt, gv, nhomGui, luat));
+  if (chiNhanXet) return tx(() => luuNhanXet(p, a, skill, nxGt, gv, nhomGui));
 
   return tx(() => {
     const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
@@ -2293,9 +2271,9 @@ export function saveScore(
      */
     const coDiemThat = raw !== null || band !== null;
     const nhapDau = coDiemThat ? existing?.nhap_dau_ngay ?? today : null;
-    /* OV-12b: kiểm luật trước mọi câu ghi (400 không để lại gì). LUAT-34: Huỷ điểm giữ nhóm cũ (Thi lại → NULL như nhận xét). */
+    /* LUAT-34: Huỷ điểm giữ nhóm cũ (Thi lại → NULL như nhận xét). */
     const nhom = matHet && !boKem ? existing?.nhom_nguyen_nhan ?? null
-      : nhomVaLuatNhanXet(a, { band, coDiem: coDiemThat, comment, nhomGui, nhomCu: existing?.nhom_nguyen_nhan, luat });
+      : nhomSeLuu(a, { band, nhomGui, nhomCu: existing?.nhom_nguyen_nhan });
     /* LUAT-34 (T20, T20b): cất điểm vừa huỷ; ô trống nhập điểm mới / Thi lại → bản cất cũ hết hiệu lực. */
     if (matHet && !boKem) catDiemO(conn, { attemptId, row: existing!, actor: p.userId, lyDo: patch.lyDo ? String(patch.lyDo).trim() : null });
     else if ((hasValue && !daCoDiem) || boKem) dongBanCat(conn, attemptId, skill, boKem ? 'Thi lại' : 'Đã nhập điểm mới');

@@ -447,7 +447,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(loi(() => attempts.huyLuot(QL, a, { quaWeb: true }))?.status === 400, 'quaWeb → 400');
   }));
 
-  check('T26 · Dời vượt MT sau: chặn', () => thu(() => {
+  check('T26 → LUAT-NX-MT · Dời MT trước vượt MT sau: KHÔNG chặn', () => thu(() => {
     const a = luot[0];
     dung(a);
     const truoc = one(`SELECT x.id FROM assessment_attempts x JOIN assessment_attempts a ON a.cycle_id = x.cycle_id
@@ -455,8 +455,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(truoc, 'tiền đề: có MT trước');
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'scheduled', required = 1 WHERE attempt_id = ?`).run(truoc.id);
     xoaNho();
-    const e = loi(() => skillSchedule.setSkillWeek(QL, truoc.id, 'listening', W3, { today: TRONG, force: true }));
-    assert(e?.status === 400, `dời MT trước vượt MT sau phải chặn: ${e?.status} ${e?.message}`);
+    skillSchedule.setSkillWeek(QL, truoc.id, 'listening', W3, { today: TRONG, force: true });   // không ném = không chặn
   }));
 
   check('T27 · mọi xếp / dời (cả QL duyệt thẻ dời do vắng) → cờ MT cũ tính lại', () => thu(() => {
