@@ -1,7 +1,7 @@
 import { issuesForTopic } from './cases.ts';
 import { t } from '../i18n/index.ts';
 
-/** Nhận xét (OV-4b: mọi bài nhập L/R/W1/W2/S; OV-12b: MT bắt buộc — `thieuNhanXetMt`) + GV chấm Speaking (YC-13.5, T39) — luật một chỗ cho máy chủ, lưới, hồ sơ Mock và xuất Excel (PR-XUAT). */
+/** Nhận xét (OV-4b: mọi bài nhập L/R/W1/W2/S; MT nên có — `thieuNhanXetMt`, chỉ nhắc) + GV chấm Speaking (YC-13.5, T39) — luật một chỗ cho máy chủ, lưới, hồ sơ Mock và xuất Excel (PR-XUAT). */
 export const NHAN_XET_TOI_DA = 1000;
 
 /** `null` = xoá. Trả chuỗi đã cắt (rỗng → null) hoặc câu lỗi. */
@@ -14,25 +14,20 @@ export function kiemNhanXet(s: unknown): { gt: string | null } | { loi: string }
 }
 
 /**
- * OV-12b (chủ SP 14/10) — NHẬN XÉT MT BẮT BUỘC. Ô MT (kind `mock`, không MT0, không MT cũ / nhập bù `lich_su`) có điểm phải có nhận xét
- * ≥ 10 ký tự; band của CHÍNH ô đó (W1, W2 theo từng task) dưới kỳ vọng → ≥ 1 nhóm nguyên nhân (chip, thứ tự chọn: 1 = chính).
- * Ô Vắng / "-" / Không dự thi / huỷ phần thi không có điểm → không đòi. Một luật cho máy chủ (`saveScore` → 400), hộp chấm, hồ sơ MT, lưới.
+ * OV-12b → LUAT-NX-MT (chủ SP 22/10, `10` mục 7.2) — NHẬN XÉT MT: NÊN CÓ, KHÔNG BẮT BUỘC CỨNG. Ô MT (kind `mock`, không MT0, không MT cũ / nhập bù
+ * `lich_su`) có điểm mà thiếu nhận xét ≥ 10 ký tự, hoặc band của CHÍNH ô (W1, W2 theo từng task) dưới kỳ vọng mà chưa có nhóm nguyên nhân → chỉ NHẮC
+ * (ô vàng + chữ). Không 400, không tắt nút Lưu, không thành việc / nợ, dán Excel không báo lỗi dòng. Ô xong = có band (`oXongCua`).
  */
 export const NHAN_XET_MT_TOI_THIEU = 10;
 export type ThieuNhanXet = 'ghi-nhan-xet' | 'nhan-xet-ngan' | 'chon-nhom';
-/** Dòng lý do ngay trên nút Lưu (hộp chấm). */
+/** Dòng nhắc ngay trên nút Lưu (hộp chấm) — nút vẫn bấm được. */
 export const CAU_THIEU_NHAN_XET: Record<ThieuNhanXet, string> = {
-  'ghi-nhan-xet': t('Ghi nhận xét'), 'nhan-xet-ngan': t('Nhận xét ≥ {x} ký tự', { x: NHAN_XET_MT_TOI_THIEU }), 'chon-nhom': t('Chọn nhóm nguyên nhân'),
+  'ghi-nhan-xet': t('Nên có nhận xét — dùng làm mô tả vấn đề trên Case'), 'nhan-xet-ngan': t('Nên có nhận xét — dùng làm mô tả vấn đề trên Case'),
+  'chon-nhom': t('Nên chọn nhóm nguyên nhân'),
 };
-/** Chữ dưới ô điểm trên lưới (dữ liệu trước luật) — không chỉ bằng màu. */
+/** Chữ nhắc dưới ô điểm trên lưới (ô vàng) — không chỉ bằng màu. */
 export const CHU_O_THIEU: Record<ThieuNhanXet, string> = {
-  'ghi-nhan-xet': t('thiếu nhận xét'), 'nhan-xet-ngan': t('thiếu nhận xét'), 'chon-nhom': t('thiếu nhóm nguyên nhân'),
-};
-/** Câu 400 của máy chủ. */
-export const LOI_THIEU_NHAN_XET: Record<ThieuNhanXet, string> = {
-  'ghi-nhan-xet': t('Bài Mock Test có điểm phải có nhận xét (≥ {x} ký tự).', { x: NHAN_XET_MT_TOI_THIEU }),
-  'nhan-xet-ngan': t('Nhận xét cần ≥ {x} ký tự.', { x: NHAN_XET_MT_TOI_THIEU }),
-  'chon-nhom': t('Điểm dưới kỳ vọng — chọn ít nhất một nhóm nguyên nhân.'),
+  'ghi-nhan-xet': t('nên có nhận xét'), 'nhan-xet-ngan': t('nên có nhận xét'), 'chon-nhom': t('nên chọn nguyên nhân'),
 };
 export const batBuocNhanXetMt = (a: { kind?: string | null; lichSu: boolean }): boolean => a.kind === 'mock' && !a.lichSu;
 /** Ô cần chip "Nhóm nguyên nhân": band của chính ô dưới kỳ vọng của lượt. */
@@ -52,15 +47,10 @@ export function thieuNhanXetMt(o: {
 }
 
 /**
- * V5 SV-SO1 — "Ô FT ĐÃ XONG" cho câu SQL (`sc` = assessment_scores, `a` = lượt): có band VÀ không thiếu nhận xét bắt buộc — cùng luật `thieuNhanXetMt`
- * (MT thường, không MT cũ; nhận xét ≥ 10 ký tự; band dưới kỳ vọng của lượt → có nhóm nguyên nhân). Dùng ở câu LỌC TRƯỚC (cờ `o_cho_tu`, hàng đợi
- * Speaking): lệch chỉ được về phía "chưa xong" (đọc thừa), luật thật vẫn ở `skillCells`.
+ * "Ô FT ĐÃ XONG" cho câu SQL (`sc` = assessment_scores, `a` = lượt) — cùng luật `oXongCua`: xong = có band (LUAT-NX-MT, chủ SP 22/10 — thiếu nhận xét
+ * chỉ nhắc, không làm ô thành chưa xong). Giữ tham số `a` để mọi nơi gọi không đổi.
  */
-export const O_FT_XONG_SQL = (sc: string, a: string) => `(${sc}.band IS NOT NULL AND (${a}.kind != 'mock' OR COALESCE(${a}.lich_su, 0) = 1 OR (
-    length(trim(COALESCE(${sc}.comment, ''), ' ' || char(9) || char(10) || char(13))) >= ${NHAN_XET_MT_TOI_THIEU}
-    AND NOT (${a}.target_at_attempt IS NOT NULL AND COALESCE(${sc}.nhom_nguyen_nhan, '') IN ('', '[]')
-      AND ${sc}.band < ${a}.target_at_attempt - (CASE WHEN ${a}.attempt_no <= 0 OR (SELECT cy.route FROM learning_cycles cy WHERE cy.id = ${a}.cycle_id) = 'RF' THEN 0
-        WHEN ${a}.attempt_no = 1 THEN 1.0 WHEN ${a}.attempt_no = 2 THEN 0.5 ELSE 0 END)))))`;
+export const O_FT_XONG_SQL = (sc: string, _a: string) => `(${sc}.band IS NOT NULL)`;
 
 /** Cột `assessment_scores.nhom_nguyen_nhan` (JSON mảng mã theo thứ tự) → mảng; hỏng / trống → []. */
 export function docNhomNguyenNhan(s: string | null | undefined): string[] {

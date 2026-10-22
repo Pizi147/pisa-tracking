@@ -15,6 +15,7 @@ import {
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { fmtBand } from '../../lib/format.ts';
 
 /**
  * TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-UX5; PR-VAI-b — mockup 26 bản 2 + bản 1). Đầu tab: CHƯƠNG THEO LỚP (`ChuongLop`). Dưới: TRỤC TUẦN
@@ -49,6 +50,8 @@ type Hop = {
   diem: DiemMoc[]; conCho: boolean; dotCho: DotRef | null;
   caseMo: { mo: string; soPa: number }[]; coTungCase: boolean;
   diemCuoiChuaDat: boolean | null; xongGanNhat: string | null; huyGanNhat?: boolean; vanDe: VanDe[];
+  /** LUAT-NX-MT: S Ex đã chấm (cũ trước) — chỉ hộp Speaking, hiện cạnh điểm S, không tính. */
+  sEx?: { diem: number; tuan: string }[];
 };
 type TuanHocTruc = Parameters<typeof soTuanCot>[0];
 type HanhTrinhData = {
@@ -407,6 +410,11 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
                     </Fragment>
                   );
                 })}
+              {hop.sEx?.map((x, k) => (
+                <span key={`sex-${k}`} className="ml-2 text-[12px] text-faint" title={t('S Expert {tuan} — chỉ hiện, không tính điểm', { tuan: x.tuan })}>
+                  {t('S Ex')} {fmtBand(x.diem)}
+                </span>
+              ))}
             </span>
           </div>
           {badge ? (

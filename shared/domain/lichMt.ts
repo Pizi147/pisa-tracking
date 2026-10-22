@@ -9,7 +9,7 @@
  */
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
-import { tuanLich } from './hienThiNgay.ts';
+import { docTuanLich, tuanLich } from './hienThiNgay.ts';
 import { t } from '../i18n/index.ts';
 
 export const CUA_SO_CASE_LICH_SU_NGAY = 28;
@@ -161,7 +161,7 @@ export type LuotLanCan = { attemptId: number; attemptNo: number; kind: string; t
 
 /**
  * Q-0310-1 + D1: dời lượt `attemptNo` tới tuần cuối `tuanCuoiMoi` thì mọi lượt SAU có tuần sớm nhất ≤ tuần đó là "bị vượt".
- * PR-MTGON (luật 1): bị vượt = tuần mới KHÔNG HỢP LỆ — máy chủ chặn (`kiemVuotTu`), không còn bỏ lịch / huỷ kết quả lượt bị vượt.
+ * LUAT-NX-MT (chủ SP 22/10): bị vượt không còn chặn — chỉ NHẮC ("MT2 W sau MT3", `lechThuTuMt`).
  * Bỏ qua lượt trước, lượt đã huỷ, lượt chưa xếp tuần (`tuanDau` null — không có gì để vượt).
  */
 export function luotBiVuot(ds: readonly LuotLanCan[], o: { attemptNo: number; tuanCuoiMoi: string }): { biVuot: LuotLanCan[] } {
@@ -176,14 +176,13 @@ export function luotBiVuot(ds: readonly LuotLanCan[], o: { attemptNo: number; tu
 export type KetQuaHuy = { id: number; attemptId: number; luc: string; lyDo: string; nguoi: string | null; soDiem: number; vuotBoi: string | null };
 
 /**
- * Dòng phụ ô điểm của kỹ năng ĐÃ DỜI DO VẮNG (hồ sơ MT, I5 — PR-LM LM-6): tuần thi bù là tuần đang xem → "Thi bù tuần này (lần N)";
- * tuần khác → "vắng · dời sang W4 SEP · lần N" (mã tuần, không ngày). `title` giữ câu đầy đủ "Dời từ … sang …".
+ * LUAT-NX-MT (chủ SP 22/10, `10` mục 7.4) — GHI CHÚ VẮNG dưới ô điểm của kỹ năng ĐÃ DỜI DO VẮNG: "vắng W3 SEP" (tuần CŨ — tuần có "-").
+ * MỘT hàm cho mọi ô điểm (Kế hoạch Test, lưới lớp, Hồ sơ MT). `tuanCu` = thứ Hai (ISO) hoặc mã tuần "W3 SEP 2026" / "W3 SEP"; trống → null.
  */
-export function chuDoiVang(l: { weekStart: string | null; doiTu: string | null; absenceMoveCount: number }, homNay: string): { chu: string; title: string } {
-  const tuan = tuanLich(l.weekStart, homNay);
-  const title = t('Dời từ {doiTu} sang {tuan} (vắng lần {x}).', { doiTu: l.doiTu, tuan, x: l.absenceMoveCount });
-  if (l.weekStart && homNay && mondayOfDate(l.weekStart) === mondayOfDate(homNay)) return { chu: t('Làm bù tuần này (lần {x})', { x: l.absenceMoveCount }), title };
-  return { chu: t('vắng · dời sang {tuan} · lần {x}', { tuan, x: l.absenceMoveCount }), title };
+export function chuDoiVang(tuanCu: string | null | undefined, homNay?: string | null): string | null {
+  if (!tuanCu) return null;
+  const iso = /^\d{4}-\d{2}-\d{2}/.test(tuanCu) ? tuanCu : homNay ? docTuanLich(tuanCu, homNay) : null;
+  return t('vắng {tuan}', { tuan: iso ? tuanLich(iso, homNay) : tuanCu.replace(/ \d{4}$/, '') });
 }
 
 /** Một lượt cần lưu ở tab "Xếp theo học viên" (PR-XTHV): tuần sớm nhất trước / sau khi sửa; `taoMoi` = lượt chưa có (đi `/xep-moi`). */

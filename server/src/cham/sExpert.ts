@@ -1,7 +1,8 @@
 /**
  * S EXPERT (SV-S-EXPERT, V5 `10` mục 2 · `08` mục 5) — lượt Speaking với chuyên gia bổ sung riêng từng HV. KHÔNG phải lượt MT: bảng riêng `s_expert`,
  * không thay S MT, không vào luồng S chấm chéo; điểm chỉ lưu (band + nhận xét), KHÔNG vào Overall / SOS / Case / KPI / Phân tích / nợ chấm / đếm việc
- * tới khi chủ SP chốt luật điểm (XM-1). Hiện ở Lịch Test tuần (`lichTest().sEx`) + Kế hoạch Test (`hang[].sEx`), đánh dấu `loai: 's-ex'`.
+ * (XM-1 đóng — chủ SP 22/10, `10` mục 7.1; QL nhập hộ không cần lý do). Hiện ở Lịch Test tuần (`lichTest().sEx`) + Kế hoạch Test (`hang[].sEx`),
+ * đánh dấu `loai: 's-ex'`, và cạnh điểm S ở Hành trình (`hanhTrinh.ts`).
  *
  * QUYỀN (máy chủ, mỗi lần ghi): thêm / đổi ngày / xoá / khôi phục = `plan.week` của HV (QL, Admin, QT — như "chỉ QL thêm MT tay"); chấm (điểm,
  * nhận xét) = như ô S MT ở lớp đang học của em (`scoreEditPath`: GV S phân công, QL / Admin nhập hộ) hoặc GV Speaking cùng chi nhánh ghi danh ACTIVE
@@ -96,7 +97,7 @@ function docLich(body: Record<string, unknown>): Pick<Than, 'tuan' | 'ngay'> {
   return { tuan: mondayOf(body.tuan), ngay: null };
 }
 
-/** Thân yêu cầu gộp lên bản cũ: khoá có mặt mới đổi. Band 0..9 bậc 0.5 — không suy luật điểm nào khác (XM-1). */
+/** Thân yêu cầu gộp lên bản cũ: khoá có mặt mới đổi. Band 0..9 bậc 0.5 — không suy luật điểm nào khác (XM-1 đóng: không tính). */
 function docThan(body: Record<string, unknown>, cu: Than | null, today: string): Than {
   const lich = cu && !('ngay' in body) && !('tuan' in body) ? { tuan: cu.tuan, ngay: cu.ngay } : docLich(body);
   let diem = cu?.diem ?? null;

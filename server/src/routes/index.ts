@@ -1041,9 +1041,9 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
     noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
     /* PR-HSM: nhận xét W/S + GV chấm Speaking — máy chủ kiểm lại mọi luật trong `saveScore`. */
     nhanXet: b.nhanXet, gvCham: b.gvCham,
-    /* OV-12b: nhóm nguyên nhân (ô MT dưới kỳ vọng) — `saveScore` kiểm mã + luật nhận xét bắt buộc (cửa người dùng: `tuNguoiDung`). */
+    /* OV-12b: nhóm nguyên nhân (ô MT dưới kỳ vọng) — `saveScore` kiểm mã (thiếu chỉ nhắc — LUAT-NX-MT). */
     nhomNguyenNhan: b.nhomNguyenNhan,
-  }, undefined, { tuNguoiDung: true });
+  });
 }));
 
 /** OV-15b: Dán từ Excel — nhiều ô nhiều em một lần; mỗi dòng một giao dịch qua `saveScore` (quyền, nhận xét MT, band) — `cham/luuLo.ts`. */

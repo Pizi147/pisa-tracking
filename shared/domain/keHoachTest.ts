@@ -120,6 +120,8 @@ export type OKyNang = {
   hanCham: string | null;
   /** T5 (PR-MTb): điểm đã có để hộp một đợt ghi `W3 SEP · 6.5` — FT: band (Writing `5.5 / 6.5`); lớp thường: `x/y`. Chưa có điểm → vắng trường. */
   diem?: string;
+  /** LUAT-NX-MT (chủ SP 22/10, `10` mục 7.3): kỹ năng làm bài cùng / sau tuần đầu của MT số này — chỉ NHẮC "W sau MT3", không chặn. */
+  sauMt?: number;
 };
 
 export type ChipKH = { kyNang: KyNangKH[]; tuan: string | null; trangThai: TrangThaiO; doiTu: string | null; khongDuThi?: boolean };

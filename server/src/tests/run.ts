@@ -5426,7 +5426,7 @@ check('[10.5] Dời một môn chỉ đổi hạn của môn đó, không gia h�
     'Dời Writing đã kéo theo hạn chấm của Listening');
 });
 
-check('[10.4] Không xếp một phần thi vượt qua đợt kế tiếp', () => {
+check('[10.4] → LUAT-NX-MT · Xếp một phần thi MT vượt qua MT kế tiếp KHÔNG chặn (chỉ nhắc ở Kế hoạch Test)', () => {
   /* Lấy một lộ trình có ít nhất hai đợt MT còn hiệu lực. */
   const pair = conn
     .prepare(
@@ -5453,7 +5453,7 @@ check('[10.4] Không xếp một phần thi vượt qua đợt kế tiếp', () 
   const chk = skillSchedule.checkSkillWeekMove({
     attemptId: pair.id, skill: 'speaking', newWeekStart: addDays(nextFirst.w, 14),
   });
-  assert(chk.blockers.length > 0, 'Xếp một phần thi vượt qua đợt kế tiếp mà không bị chặn');
+  assert(chk.blockers.length === 0, `MT vượt MT kế tiếp không còn bị chặn (LUAT-NX-MT): ${JSON.stringify(chk)}`);
 
   /* Cách đúng một tuần thì CẢNH BÁO, không chặn — người có quyền xác nhận được. */
   const warn = skillSchedule.checkSkillWeekMove({
@@ -5489,7 +5489,7 @@ check('[10.4] R/L/W và Speaking của CÙNG một đợt không bị gọi là 
 });
 
 /* PR-MTa T20 thay [10.4] cho Quản lý / Quản trị: dời được phần đã có điểm (điểm đi theo) — GV vẫn bị chặn (prMta T20). */
-check('[10.4→T20] Quản trị dời phần đã có điểm: không còn chặn "đã có điểm" (ở đây dừng ở luật vượt lượt sau — PR-MTGON)', () => {
+check('[10.4→T20] Quản trị dời phần đã có điểm: không còn chặn "đã có điểm"; LUAT-NX-MT: vượt MT sau cũng không chặn (cuộn lại — lượt seed)', () => {
   const scored = conn
     .prepare(
       `SELECT a.id, a.class_id FROM assessment_attempts a
@@ -5499,8 +5499,9 @@ check('[10.4→T20] Quản trị dời phần đã có điểm: không còn ch�
     .get() as any;
   assert(scored, 'Seed thiếu lượt đã có điểm Listening');
   let loi: any = null;
-  try { skillSchedule.setSkillWeek(P.admin, scored.id, 'listening', periodOf(addDays(demoToday(), 28)), { force: true }); } catch (e) { loi = e; }
-  assert(!loi || (!/đã có điểm/.test(loi.message) && /Chọn tuần trước/.test(loi.message)), `Quản trị: ${loi?.message}`);
+  conn.exec('BEGIN IMMEDIATE');
+  try { skillSchedule.setSkillWeek(P.admin, scored.id, 'listening', periodOf(addDays(demoToday(), 28)), { force: true }); } catch (e) { loi = e; } finally { conn.exec('ROLLBACK'); }
+  assert(!loi, `Quản trị: ${loi?.message}`);
 });
 
 check('[10.1] Lớp Normal luôn phải đủ bốn môn — không có thao tác miễn môn', () => {
@@ -7376,23 +7377,23 @@ function threeConsecutiveMocks() {
   return [] as any[];
 }
 
-check('T13 · Dời MT2 VƯỢT quá tuần đầu MT3 (đợt sau) bị CHẶN, chỉ rõ xung đột', () => {
+check('T13 → LUAT-NX-MT · Dời MT2 VƯỢT quá tuần đầu MT3 KHÔNG chặn (chủ SP 22/10)', () => {
   const [mt1, mt2, mt3] = threeConsecutiveMocks();
   const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
   const pastMt3 = addDays(mt3Week, 7); // hẳn sau tuần đầu MT3 — đây mới là "vượt", không phải "trùng"
   const check = skillSchedule.checkSkillWeekMove({
     attemptId: mt2.attemptId, skill: 'listening', newWeekStart: pastMt3,
   });
-  assert(check.blockers.length > 0, `Dời MT2 vượt quá tuần đầu MT3 phải bị CHẶN, đang ra: ${JSON.stringify(check)}`);
+  assert(check.blockers.length === 0, `Dời MT2 vượt quá tuần đầu MT3 không còn bị chặn, đang ra: ${JSON.stringify(check)}`);
 });
 
-check('T15 · Dời MT2 TRÙNG đúng tuần đầu MT3 bị CHẶN (chốt 23/09: trùng tuần là chặn, không còn chỉ cảnh báo)', () => {
+check('T15 → LUAT-NX-MT · Dời MT2 TRÙNG đúng tuần đầu MT3 KHÔNG chặn (chủ SP 22/10 thay chốt 23/09)', () => {
   const [mt1, mt2, mt3] = threeConsecutiveMocks();
   const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
   const check = skillSchedule.checkSkillWeekMove({
     attemptId: mt2.attemptId, skill: 'listening', newWeekStart: mt3Week,
   });
-  assert(check.blockers.length > 0, `Trùng đúng tuần đầu đợt sau phải bị CHẶN, đang ra: ${JSON.stringify(check)}`);
+  assert(check.blockers.length === 0, `Trùng tuần đầu MT sau không còn bị chặn, đang ra: ${JSON.stringify(check)}`);
 });
 
 check('T13 · Hai đợt MT cách nhau đúng một tuần chỉ CẢNH BÁO, không chặn', () => {
@@ -9550,6 +9551,9 @@ await runPrUiLichTuanTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== V5 UI-HO-SO-LOP (Việc cần làm của người xem, roster bỏ viecTiepTheo, Đánh giá đầu ra C17)
 const { runPrUiHoSoLopTests } = await import('./prUiHoSoLop.tests.ts');
 await runPrUiHoSoLopTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== V5 LUAT-NX-MT (nhận xét chỉ nhắc, xếp MT nới lỏng, ghi chú vắng, S Ex ở Hành trình)
+const { runPrLuatNxMtTests } = await import('./prLuatNxMt.tests.ts');
+await runPrLuatNxMtTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

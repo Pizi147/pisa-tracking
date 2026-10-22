@@ -12,6 +12,7 @@ import { addDays } from '../util.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds, sosCaseStateMany } from '../cases/sosState.ts';
 import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
+import { sExCuaHv } from '../cham/sExpert.ts';
 
 /**
  * MÁY CHỦ CỦA TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-VAI-b Task 9, mockup 26 bản 2 + bản 1) — trả dữ liệu THÔ; mọi nhãn, màu, tầng tính ở
@@ -250,6 +251,10 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   });
   const attemptGiaiDoan = attemptRows.filter((a) => cycleIds.includes(a.cycle_id));
   const boHop = giaiDoan ? caseCategoriesFor(ratio ? 'ratio' : 'ielts_band', ct) : [];
+  /* LUAT-NX-MT (chủ SP 22/10, `10` mục 7.1): S Ex đã chấm hiện CẠNH điểm S của hộp Speaking — chỉ hiện, không vào chuỗi điểm / badge / Case. */
+  const sEx = (boHop as readonly string[]).includes('speaking')
+    ? (sExCuaHv(p, [studentId], homNay).get(studentId) ?? []).filter((x) => x.diem !== null).reverse().map((x) => ({ diem: x.diem!, tuan: x.tuanMa }))
+    : [];
   const hop = boHop.map((kyNang) => {
     const diem: DiemMoc[] = [];
     let conCho = false;
@@ -305,6 +310,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     return {
       kyNang, nhan: ratio ? tenMon(ct, kyNang) : CASE_CATEGORY_LABEL[kyNang], nhanNgan: tenMonNgan(ratio ? ct : null, kyNang), cheDo: ratio ? ('ratio' as const) : ('ielts' as const),
       diem, conCho, dotCho: dotCho as DotRef | null,
+      ...(kyNang === 'speaking' && sEx.length ? { sEx } : {}),
       caseMo: openCases.map((c) => ({ mo: c.detected_at, soPa: (ivByCase.get(c.id) ?? []).length, choNguyenNhan: choNguyenNhan.has(c.id), choNhanXet: !!stMo.get(c.id)?.choNhanXet, choDuyet: !!c.co_the_ktd, quaHan: quaHanCua(c) })),
       coTungCase: casesOfSkill.length > 0, diemCuoiChuaDat: diem.length ? diem[diem.length - 1].chuaDat : null,
       xongGanNhat: !openCases.length && doneCases.length

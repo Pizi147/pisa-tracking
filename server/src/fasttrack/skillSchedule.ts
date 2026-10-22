@@ -2,8 +2,8 @@ import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
-  kiemTuanMt0, kiemTuanXep, laMtCu, luotBiVuot, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
-  type AssessedSkill, type LuotLanCan, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
+  kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
+  type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -558,14 +558,17 @@ export function checkWeekVsNeighbours(input: {
   const soSanh = (o: { attempt_no: number; kind: string; route: string | null }) =>
     (!o.route ? soThuTuLuot(o, { kind: input.kind ?? '', attempt_no: input.attemptNo }) : o.attempt_no - input.attemptNo);
   for (const o of others) {
+    /* LUAT-NX-MT (chủ SP 22/10, `10` mục 7.3): giữa hai MT không chặn vượt / trùng tuần — chỉ nhắc ở Kế hoạch Test (`sauMt`); cảnh báo
+       "cách đúng một tuần" giữ như cũ. MT0 ↔ MT1 và lớp thường giữ luật chặn. */
+    const chan = !(o.kind === 'mock' && input.kind === 'mock');
     if (soSanh(o) < 0) {
       if (input.newWeekStart < o.last_week) {
-        blockers.push(
+        if (chan) blockers.push(
           `${labelDot(o.attempt_no, o.kind)} có kỹ năng ở tuần ${tuanLich(o.last_week)}. `
           + 'Kỹ năng của lượt sau không được xếp trước phần cuối của lượt trước.',
         );
       } else if (input.newWeekStart === o.last_week) {
-        blockers.push(
+        if (chan) blockers.push(
           `Trùng tuần ${tuanLich(o.last_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.last_week)}). `
           + 'Hai lượt không làm bài cùng một tuần.',
         );
@@ -574,12 +577,12 @@ export function checkWeekVsNeighbours(input: {
       }
     } else if (soSanh(o) > 0) {
       if (input.newWeekStart > o.first_week) {
-        blockers.push(
+        if (chan) blockers.push(
           `${labelDot(o.attempt_no, o.kind)} đã có kỹ năng ở tuần ${tuanLich(o.first_week)}. `
           + 'Kỹ năng của lượt trước không được xếp vượt qua lượt kế tiếp.',
         );
       } else if (input.newWeekStart === o.first_week) {
-        blockers.push(
+        if (chan) blockers.push(
           `Trùng tuần ${tuanLich(o.first_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.first_week)}). `
           + 'Hai lượt không làm bài cùng một tuần.',
         );
@@ -606,30 +609,17 @@ export function checkSkillWeekMove(input: {
   });
 }
 
-// ---------------------------------------------------------------- PR-LM + PR-MTGON: dời vượt lượt sau → chặn
+// ---------------------------------------------------------------- PR-MT0 + LUAT-NX-MT: luật thứ tự còn chặn
 
 export type KiemVuot = { chan: string | null };
 
 /**
- * Q-0310-1, D1 + PR-MTGON (luật 1): lượt `attemptId` sau khi dời có tuần cuối `tuanCuoiMoi` mà vượt (hoặc trùng tuần đầu của) một lượt SAU
- * → `chan` = câu "MT{n} thi … Chọn tuần trước …, hoặc dời MT{n} trước.". Chỉ lượt MT: Giữa khoá / Cuối khoá của lớp thường giữ luật chặn
- * cũ (`checkWeekVsNeighbours`). Không ghi.
+ * Tuần mới của lượt `attemptId` (tuần cuối `tuanCuoiMoi`, tuần đầu `tuanMoi`) có bị CHẶN vì thứ tự không. LUAT-NX-MT (chủ SP 22/10, `10` mục 7.3):
+ * giữa các MT không còn chặn (một vài kỹ năng MT trước làm bài sau MT sau — chỉ nhắc ở Kế hoạch Test, `lechThuTuMt`); còn chặn: MT0 trước MT1
+ * (`kiemTuanMt0Cho`). Giữa khoá / Cuối khoá của lớp thường giữ luật cũ (`checkWeekVsNeighbours`). Không ghi.
  */
 export function kiemVuot(attemptId: number, tuanCuoiMoi: string, tuanMoi: string = tuanCuoiMoi): KiemVuot {
-  const conn = db();
-  /* PR-MT0: MT0 muộn nhất tuần 2 FT và luôn trước MT1 — chặn TRƯỚC khi tới `luotBiVuot` (MT0 không bao giờ "vượt" MT1). */
-  const mt0 = kiemTuanMt0Cho(attemptId, tuanMoi, tuanCuoiMoi);
-  if (mt0) return { chan: mt0 };
-  const a = conn.prepare('SELECT id, cycle_id, attempt_no, kind FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  if (!a || a.kind !== 'mock') return { chan: null };
-  const rows = conn.prepare(
-    `SELECT a.id, a.attempt_no, a.kind, a.status,
-            (SELECT MIN(pr.week_start) FROM attempt_skills k JOIN report_periods pr ON pr.id = k.planned_period_id
-              WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled') AS tuan_dau
-       FROM assessment_attempts a
-      WHERE a.cycle_id = ? AND a.attempt_no > ? AND a.status != 'cancelled'`,
-  ).all(a.cycle_id, a.attempt_no) as any[];
-  return kiemVuotTu(a, rows, tuanCuoiMoi);
+  return { chan: kiemTuanMt0Cho(attemptId, tuanMoi, tuanCuoiMoi) };
 }
 
 /**
@@ -664,24 +654,6 @@ export function kiemTuanMt0Cho(attemptId: number, tuanMoi: string, tuanCuoiMoi: 
   }
   const tuanMt0 = tuanLuot('mt0', 0, 'MAX');
   return tuanMt0 ? kiemTuanMt0({ tuanMoi: tuanMt0, tuanMuonNhat: null, tuanMt1: tuanMoi }) : null;
-}
-
-/** Một lượt SAU cùng lộ trình, đã đọc sẵn (xếp hàng loạt đọc theo lô — `docFtTheoLo`, không N+1). */
-export type LuotSauDoc = { id: number; attempt_no: number; kind: string; status: string; tuan_dau: string | null };
-
-/**
- * Lõi thuần của `kiemVuot` trên dữ liệu đã đọc. PR-MTGON (luật 1, chủ sản phẩm 08/10): vượt qua lượt sau (kể cả trùng tuần đầu của nó)
- * là KHÔNG HỢP LỆ — chặn và nói lượt nào đứng ở đâu; không còn tự bỏ lịch / huỷ kết quả lượt bị vượt.
- */
-export function kiemVuotTu(a: { attempt_no: number; kind: string }, rows: readonly LuotSauDoc[], tuanCuoiMoi: string): KiemVuot {
-  if (a.kind !== 'mock') return { chan: null };
-  const ds: LuotLanCan[] = rows.filter((r) => r.attempt_no > a.attempt_no && r.status !== 'cancelled').map((r) => ({
-    attemptId: r.id, attemptNo: r.attempt_no, kind: r.kind, tuanDau: r.tuan_dau ?? null, coDiem: false, daThi: false, huy: false,
-  }));
-  const x = luotBiVuot(ds, { attemptNo: a.attempt_no, tuanCuoiMoi }).biVuot[0];
-  if (!x) return { chan: null };
-  const nhan = nhanDot(x.kind, x.attemptNo), tw = tuanLich(x.tuanDau);
-  return { chan: `${nhan} làm bài ${tw}. Chọn tuần trước ${tw}, hoặc dời ${nhan} trước.` };
 }
 
 /** Tuần MUỘN NHẤT của lượt sau khi đặt `tuanMoi` cho các kỹ năng `doi` (kể cả kỹ năng đang huỷ / bỏ sắp được đưa lại — PR-MTGON)

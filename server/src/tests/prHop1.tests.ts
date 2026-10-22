@@ -76,16 +76,12 @@ export async function runPrHop1Tests(t: YThucTestKit) {
     assert(band(a.m2, 'listening') === 6, 'mất điểm L');
   });
 
-  check('HOP1-c · dời vượt MT sau từ hộp: kiem trả dòng chặn (câu đỏ #282), lưu 400 cùng câu, không đổi gì', () => {
+  check('HOP1-c → LUAT-NX-MT · dời vượt MT sau từ hộp: kiem không chặn, lưu được (chỉ nhắc ở ô)', () => {
     const a = em();
-    const tw = d.tuanLich(t.addDays(tuanNay, 56));
-    const cau = `MT3 làm bài ${tw}. Chọn tuần trước ${tw}, hoặc dời MT3 trước.`;
     const kyNang = [{ skill: 'speaking', periodId: tuan(9).id }];
     const k = keHoach.kiemDot(QL, { attemptId: a.m2, kyNang });
-    assert(k.bai.some((b: any) => b.ghiChu === 'chan' && b.cau === cau), JSON.stringify(k.bai));
-    let e: any = null;
-    try { keHoach.luuDot(QL, { attemptId: a.m2, kyNang, lyDoBo: null, reason: null, force: true }); } catch (x) { e = x; }
-    assert(e?.status === 400 && e.message.includes(cau), `${e?.status} ${e?.message}`);
-    assert(tuanKn(a.m2, 'speaking') === t.addDays(tuanNay, 28), 'lịch đã đổi');
+    assert(k.bai.every((b: any) => b.ghiChu !== 'chan'), JSON.stringify(k.bai));
+    keHoach.luuDot(QL, { attemptId: a.m2, kyNang, lyDoBo: null, reason: null, force: true });
+    assert(tuanKn(a.m2, 'speaking') === t.addDays(tuanNay, 63), 'lịch phải đổi');
   });
 }

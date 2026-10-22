@@ -45,7 +45,9 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   }
   if (l.sitStatus === 'absent') return { chu: t('vắng · chờ xếp lại'), title: t('Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.') };
   if (lichSu) return { chu: t('Nhập bù, không tính hạn') };
-  if (l.doiTu && l.absenceMoveCount > 0) return chuDoiVang(l, homNay);
+  if (l.doiTu && l.absenceMoveCount > 0) {
+    return { chu: chuDoiVang(l.doiTu, homNay), title: t('Dời từ {doiTu} sang {tuan} (vắng lần {x}).', { doiTu: l.doiTu, tuan: tuanLich(l.weekStart, homNay), x: l.absenceMoveCount }) };
+  }
   if (c?.noShow) return { chu: c.noShow.text };
   if (!l.weekStart) return { chu: t('Chưa xếp tuần') };
   if (l.progress === 'upcoming') return { chu: t('Làm bài {tuan}', { tuan: tuanLich(l.weekStart, homNay) }) };
@@ -101,7 +103,8 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
       /* PR-S4F #10: tên dài bị cắt (truncate) — title cho đủ tên. */
       phu = { chu: t('GV chấm: {ten}', { ten: bai[0].gvCham.ten }), title: t('GV chấm: {ten}', { ten: bai[0].gvCham.ten }) };
     } else if (band !== null) {
-      phu = { chu: '' };
+      /* LUAT-NX-MT: bài đã dời do vắng giữ ghi chú "vắng W3 SEP" cả khi đã có điểm. */
+      phu = { chu: l?.doiTu && l.absenceMoveCount > 0 ? chuDoiVang(l.doiTu, homNay) : '' };
     } else {
       phu = trangThaiO(l, bai[0], lichSu, homNay);
     }

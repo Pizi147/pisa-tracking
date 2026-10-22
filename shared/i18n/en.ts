@@ -36,6 +36,7 @@ import { EN_NEN_PANEL } from './en/nenPanel.ts';
 import { EN_UI_CONG_VIEC } from './en/uiCongViec.ts';
 import { EN_UI_HO_SO_LOP } from './en/uiHoSoLop.ts';
 import { EN_UI_CV_TVV } from './en/uiCvTvv.ts';
+import { EN_LUAT_NX_MT } from './en/luatNxMt.ts';
 import { EN_OV15F } from './en/ov15f.ts';
 import { EN_OV15H1 } from './en/ov15h1.ts';   // OV-15h1
 import { EN_OV15H2 } from './en/ov15h2.ts';
@@ -63,4 +64,4 @@ export type ChuKhoa = { chu: string; khoa?: string; bien?: Bien };
 /** Chữ thường, hoặc hàm khi cần số ít / số nhiều. */
 export type Dich = string | ((b: Bien) => string);
 
-export const EN = { ...EN_A, ...EN_B, ...EN_C, ...EN_F, ...EN_D, ...EN_OV12E, ...EN_HD, ...EN_HDB, ...EN_OV13B, ...EN_OV13C, ...EN_OV13D, ...EN_OV13G, ...EN_OV13J, ...EN_OV13L, ...EN_OV13K, ...EN_OV13M , ...EN_OV13O, ...EN_UX1, ...EN_UX2, ...EN_OV13Q, ...EN_ENE, ...EN_OV14A, ...EN_OV14C, ...EN_OV15A, ...EN_OV15C, ...EN_OV15D, ...EN_OV15E, ...EN_OV15F, ...EN_OV15B, ...EN_TU, ...EN_TUB, ...EN_OV15H2, ...EN_OV15G, ...EN_OV15H1, ...EN_LUAT5, ...EN_KHUNG_LOI, ...EN_CV_LOI, ...EN_CASE_NHIEU, ...EN_SL1, ...EN_LUAT34, ...EN_SL2, ...EN_NEN_V5, ...EN_SV_SO2, ...EN_SV_SO3, ...EN_CHU_THI, ...EN_NEN_PANEL, ...EN_UI_CONG_VIEC, ...EN_UI_CHAM_TEST, ...EN_UI_LICH_TUAN, ...EN_UI_CV_TVV, ...EN_UI_HO_SO_LOP };
+export const EN = { ...EN_A, ...EN_B, ...EN_C, ...EN_F, ...EN_D, ...EN_OV12E, ...EN_HD, ...EN_HDB, ...EN_OV13B, ...EN_OV13C, ...EN_OV13D, ...EN_OV13G, ...EN_OV13J, ...EN_OV13L, ...EN_OV13K, ...EN_OV13M , ...EN_OV13O, ...EN_UX1, ...EN_UX2, ...EN_OV13Q, ...EN_ENE, ...EN_OV14A, ...EN_OV14C, ...EN_OV15A, ...EN_OV15C, ...EN_OV15D, ...EN_OV15E, ...EN_OV15F, ...EN_OV15B, ...EN_TU, ...EN_TUB, ...EN_OV15H2, ...EN_OV15G, ...EN_OV15H1, ...EN_LUAT5, ...EN_KHUNG_LOI, ...EN_CV_LOI, ...EN_CASE_NHIEU, ...EN_SL1, ...EN_LUAT34, ...EN_SL2, ...EN_NEN_V5, ...EN_SV_SO2, ...EN_SV_SO3, ...EN_CHU_THI, ...EN_NEN_PANEL, ...EN_UI_CONG_VIEC, ...EN_UI_CHAM_TEST, ...EN_UI_LICH_TUAN, ...EN_UI_CV_TVV, ...EN_LUAT_NX_MT, ...EN_UI_HO_SO_LOP };

@@ -71,3 +71,10 @@ Chỉ vẽ phần **bố cục mới thật sự** (còn lại sửa thẳng khi
 2. **Nhận xét KHÔNG bắt buộc cứng** (thay luật "thiếu nhận xét ≠ xong" của SV-SO1 #528 và luật chặn lưu cũ): ô **xong = có band**. Thiếu nhận xét / thiếu nhóm nguyên nhân (MT dưới kỳ vọng) → **chỉ nhắc**: ô vàng + ghi chú "Nên có nhận xét — dùng làm mô tả vấn đề trên Case". Không 400, không tắt nút Lưu, không thành việc / nợ / trễ chấm, nhập Excel không báo lỗi dòng. Giữ kiểm kiểu / độ dài tối đa. Nhận xét vẫn chép vào nguyên nhân Case như hiện tại. Chữ gợi ý ô nhận xét: tập trung vào **vấn đề học thuật** của kỹ năng, không ý thức / chuyện ngoài bài. (Form Case "≥ 10 ký tự" là luật Case, giữ.)
 3. **Xếp MT nới lỏng:** bỏ chặn thứ tự giữa các MT (tuần muộn nhất MTn < tuần sớm nhất MTn+1) — một vài kỹ năng MT trước được làm bài **sau** MT sau. Giữ luật thật: số MT liền mạch, MT0 trước MT1, luật vắng "-" (LUAT-34, vắng 2 lần huỷ), không xếp tuần đã qua. Lệch thứ tự chỉ hiện **nhắc** nhỏ ("MT2 W sau MT3"), không chặn.
 4. **Ghi chú vắng dưới ô điểm:** kỹ năng đã dời do vắng → dòng nhỏ "vắng W3 SEP" (tuần cũ), một hàm chung (`chuDoiVang`), dùng ở mọi ô điểm (Kế hoạch Test, lưới lớp, Hồ sơ HV, Lịch Test).
+
+## 8. Chủ SP 22/10 (tối)
+
+- **V5 bổ sung trên V4, không thay:** mọi thao tác V4 / web đã có mà mockup V5 không vẽ (Nhập điểm, + Case, ⋯ sửa lớp / tác vụ lớp, Xuất, Dán Excel…) **GIỮ**, đặt theo luật giao diện mới (vị trí V4 đã duyệt + màu / badge / chữ V5). Mỗi PR màn liệt kê thao tác giữ trong khop-khac (dòng GIỮ). Áp cho MỌI yếu tố web, không chỉ chỗ chủ SP nêu.
+- **SOS 3** bớt chói (sáng + tối), vẫn khác rõ SOS 2 → UI-CON-LAI (token `v5-nen.css` / `index.css`).
+- **Logo web:** chữ "PISA" hồng + "TRACKING" trắng (tối) / đen (sáng), không in đậm / phông khác được — không dùng logo trung tâm → UI-CON-LAI.
+- **Nâng cấp, không bắt chước:** mockup là tham chiếu. PR màn sửa CẢ phần mockup không vẽ cho đồng bộ với yêu cầu đã chốt (luật nghiệp vụ, tính năng sẵn có, luật giao diện V5), tự cân nhắc hợp lý; chỗ xung đột giữa mockup / luật / tính năng cũ → ghi [XM] trong PR, hỏi PTA Plan trước khi bỏ hay đổi.
