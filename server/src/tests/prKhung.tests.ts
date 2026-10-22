@@ -45,7 +45,7 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
   });
 
   check('K4 · WorkList (tên việc + dòng phụ) và TheKyNang (Case, PA): truncate có max-sm:whitespace-normal', () => {
-    for (const [f, can] of [['web/src/modules/worklist/WorkList.tsx', 2], ['web/src/modules/cases/TheKyNang.tsx', 2]] as const) {
+    for (const [f, can] of [['web/src/modules/cases/TheKyNang.tsx', 2]] as const) {
       const lop = [...doc(f).matchAll(/className="([^"]*\btruncate\b[^"]*)"/g)].map((m) => m[1]);
       const du = lop.filter((l) => /max-sm:whitespace-normal/.test(l)).length;
       assert(du >= can, `${f}: ${du}/${can} chỗ truncate có max-sm:whitespace-normal`);

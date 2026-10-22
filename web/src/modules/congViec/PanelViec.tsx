@@ -13,6 +13,7 @@ import { chonNguoi, phuGv } from '../classes/ClassCreatePanel.tsx';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NganCase } from '../students/NganCase.tsx';
+import { ThanCase, tenNganCase, type ViewCase } from '../cases/CasePanel.tsx';
 import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
 import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { DaThucHienPanel } from '../yThuc/DaThucHienPanel.tsx';
@@ -21,7 +22,7 @@ import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { LuoiChamLop, duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
-import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, outcomeLabelFor, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, shortDate, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, outcomeLabelFor, tenMon, tuanLich } from '@shared/domain/index.ts';
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
@@ -330,11 +331,19 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
   const { homNay } = useNgayNghiepVu();
   const [lon, setLon] = useState(false);
   const [daLuu, setDaLuu] = useState<DaLuuNhanh | null>(null);
-  const { data } = useApi<any>(`/cases/${it.caseId}`, [it.caseId]);
+  const { data, reload } = useApi<any>(`/cases/${it.caseId}`, [it.caseId]);
+  /* V5 UI-CONG-VIEC (09 III.2): bấm "Case" → thân Case mở ngay dưới bối cảnh (PA, lịch sử, sửa theo quyền); việc của Case (Sửa Case, Thêm PA…) thay
+     panel tại chỗ, "‹ Việc" về lại — bước duyệt vẫn đi đường của Case. */
+  const [moCase, setMoCase] = useState(false);
+  const [viecCase, setViecCase] = useState<ViewCase | null>(null);
   /* Bối cảnh giữ như lúc mở — lưu xong (tải lại Case) không biến lần vừa ghi thành "kỳ trước". */
   const daTruoc = useRef<any>(undefined);
   const em = it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null;
   if (lon) return <NganCase caseId={it.caseId!} paId={it.paId} viec="ghi-ket-qua" hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
+  if (viecCase) {
+    return <NganCase caseId={it.caseId!} viecBanDau={viecCase} hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={() => { reload(); onDaLam(); }}
+      veNguon={{ nhan: t('‹ Việc'), onClick: () => setViecCase(null) }} />;
+  }
   const iv = (data?.interventions ?? []).find((x: any) => x.id === it.paId);
   if (data && daTruoc.current === undefined) daTruoc.current = (data.followups ?? []).find((f: any) => f.interventionId === it.paId && f.outcome) ?? null;
   const truoc = daTruoc.current;
@@ -344,10 +353,18 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
       dau={dauViec({ han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.ghi_ket_qua_pa ?? 'cap-nhat-pa'} han={it.due} /> : null, em, lop: it.classCode, ngCanh: it.contextLabel })}>
       <div className="flex flex-col gap-4 pt-3">
         <BoiCanh dong={[
+          ['Case', data ? (
+            <button type="button" aria-expanded={moCase} onClick={() => setMoCase((x) => !x)}
+              className="inline-flex min-h-[44px] appearance-none items-center gap-1.5 border-0 bg-transparent p-0 text-left font-semibold text-[color:var(--accent)] sm:min-h-0">
+              {dich(tenNganCase(data))}{data.detectedAt ? ` · ${t('mở {ngan}', { ngan: shortDate(data.detectedAt, homNay) })}` : ''}<span aria-hidden className="text-xs">{moCase ? '▴' : '▾'}</span>
+            </button>
+          ) : null],
           [t('Phương án'), iv ? [iv.description || tenLoai, iv.performer, iv.mocChu].filter(Boolean).join(' · ') : null],
           [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(truoc.outcome))}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
         ]} />
-        {daLuu ? (
+        {moCase && data && <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}><ThanCase data={data} onViec={setViecCase} onDoi={() => { reload(); onDaLam(); }} /></div>}
+        {/* Thân Case đang mở đã có ô ghi kết quả của PA này — không vẽ form thứ hai. */}
+        {moCase ? null : daLuu ? (
           <div className="flex flex-col gap-2">
             <DongDaLuu kq={daLuu} onHoanTac={() => setDaLuu(null)} />
             <div>

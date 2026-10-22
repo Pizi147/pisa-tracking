@@ -132,7 +132,7 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
 
   check('NEN-PANEL · dòng loại (vạch hồng): panel việc mặc định "VIỆC"; panel số không dòng làm được = "BÁO CÁO · CHỈ ĐỌC"', () => {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
-    assert(/loai === undefined \? \(dau \? t\('VIỆC'\) : null\) : loai/.test(kp) && /bg-\[color:var\(--hong\)\]/.test(kp), 'dòng loại');
+    assert(/loai === undefined \? \(cvNgoai\?\.loai \?\? \(dau \? t\('VIỆC'\) : null\)\) : loai/.test(kp) && /bg-\[color:var\(--hong\)\]/.test(kp), 'dòng loại');
     assert(/t\('BÁO CÁO · CHỈ ĐỌC'\)/.test(docSach('web/src/ui/SoLieu.tsx')), 'SoLieu chưa đặt loại báo cáo');
   });
 }

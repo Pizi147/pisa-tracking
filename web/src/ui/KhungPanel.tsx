@@ -124,6 +124,9 @@ export function useChoHoanTac(con: boolean) {
  * `<main>` (trừ thanh trên). Điện thoại: thẻ thay chỗ danh sách, nơi gọi có "‹ Công việc".
  */
 export const KhungTaiCho = createContext(false);
+/** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …") + dòng "Em này còn" dưới đầu. */
+/** `khoa`: chế độ theo dõi — thân + chân panel chỉ xem (`fieldset disabled`), đầu panel (✕, "Em này còn", link hồ sơ) vẫn bấm được. */
+export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; khoa?: boolean } | null>(null);
 
 /**
  * KHUÔN PANEL CHUNG (PR-UX0, N-4 — mockup 15 (1)). Ngăn phải 480px (V5 07 mục 4: 420–480; form dạng bảng `rong` = 720px), 375px toàn màn.
@@ -221,7 +224,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     if (daSua) setHoi({ nut: t('Bỏ chữ, quay lại'), tiep: () => quayLai?.onClick() });
     else quayLai?.onClick();
   };
-  const dongLoai = loai === undefined ? (dau ? t('VIỆC') : null) : loai;
+  const dauCv = useContext(DauViecCongViec);
+  const cvNgoai = dauCv && !trongKhung ? dauCv : null;
+  const dongLoai = loai === undefined ? (cvNgoai?.loai ?? (dau ? t('VIỆC') : null)) : loai;
   const vachLoai = dongLoai && (
     <div className="mb-1 flex items-center gap-1.5 text-xs font-bold tracking-[.02em] text-slate-500">
       <span aria-hidden className="h-[3px] w-3.5 shrink-0 rounded-sm bg-[color:var(--hong)]" />{dongLoai}
@@ -246,15 +251,17 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             <p className="m-0 flex flex-wrap items-baseline text-sm leading-snug text-slate-400">
               {dau.dong2.filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
             </p>
+            {cvNgoai?.them}
           </header>
         ) : (
-        <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${vachLoai ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
+        <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${vachLoai || cvNgoai?.them ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
           {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
           <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           {/* Rà #530: ✕ ở mọi cỡ như mockup V5 (375 có thêm "‹ Công việc" của nơi gọi — cùng đường đóng). */}
           <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]`} onClick={dong} aria-label={t('Đóng')}>✕</button>
+          {cvNgoai?.them && <div className="w-full pb-1">{cvNgoai.them}</div>}
         </header>
         )}
         {quayLai && (
@@ -265,6 +272,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
         {tabs && <div className="shrink-0 border-b px-4" style={{ borderColor: 'var(--line)' }}>{tabs}</div>}
         {/* PR-KHUNG: pb-2 — thân cuộn bắt đầu cách dòng ngữ cảnh; không có thì ô bị cắt ngay sát chữ, trông như đè nhãn (rà LUI-a1, 375). */}
         {ngCanh && <div className="shrink-0 truncate px-4 pb-2 pt-2 text-xs text-slate-400 max-sm:whitespace-normal">{ngCanh}</div>}
+        <fieldset disabled={!!cvNgoai?.khoa} className="contents">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
@@ -288,6 +296,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             </div>
           </footer>
         )}
+        </fieldset>
         {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => setHoi(null)} onBo={boChu} />}
     </>
   );
