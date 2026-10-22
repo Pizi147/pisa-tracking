@@ -7,7 +7,7 @@
  */
 import { kyGhiKetQua, type DeadlineKind } from './display.ts';
 import { t } from '../i18n/index.ts';
-import { KHOA_CHAM_SPEAKING } from './gopViec.ts';
+import { KHOA_CHAM_SPEAKING, laViecChamCheo } from './gopViec.ts';
 
 // ------------------------------------------------------------------ chương trình
 /* PR-Pb2-a (Q31-1, T60): chỉ còn hai khung, FT trước. Nút "Cả hai" đã bỏ — khối không theo kỹ năng gộp bằng `null`. */
@@ -48,6 +48,28 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   xet_lai_lo_trinh: 'van-hanh',   // PR-CL: Xét lại lộ trình
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
+
+/**
+ * V5 SV-SO1 (brief 7, T01–T03, T17) — ĐƠN VỊ ĐẾM của Công việc, đếm trên việc THẬT (`items`, trước gộp dòng) nên gập nhóm / phân trang không đổi số.
+ *  · việc = một loại × một đối tượng × một kỹ năng: dòng Nhập điểm (một lớp · một tuần thi) = số kỹ năng của nó (T01: Case R ≠ Case W);
+ *  · bài = kỹ năng × em chưa có điểm (`soBai`) của các việc Nhập điểm; · nhóm = nhóm hiển thị (`nhomViecCua`) có việc; · hv = em khác nhau.
+ * Bài Speaking chấm chéo (`laViecChamCheo`) không là việc / nợ của ai (R2, `scoreDebt.ts`) → không vào số nào ở đây.
+ */
+export type DemViec = { viec: number; bai: number; nhom: number; hv: number };
+export function demViec(items: readonly { key: string; group: string; studentId: number | null; emIds?: number[]; kns?: string[]; soBai?: number }[]): DemViec {
+  let viec = 0, bai = 0;
+  const nhom = new Set<NhomViec>(), hv = new Set<number>();
+  for (const it of items) {
+    if (laViecChamCheo(it)) continue;
+    const cham = it.group === 'score';
+    viec += cham ? Math.max(1, it.kns?.length ?? 1) : 1;
+    if (cham) bai += it.soBai ?? 0;
+    nhom.add(nhomViecCua(it.group));
+    if (it.studentId !== null) hv.add(it.studentId);
+    for (const id of it.emIds ?? []) hv.add(id);
+  }
+  return { viec, bai, nhom: nhom.size, hv: hv.size };
+}
 
 /** Loại hạn của từng loại việc — để dòng việc hiện hạn qua `<Han>` (G-10). Loại không có ở đây: hạn là ngày trơn. */
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {

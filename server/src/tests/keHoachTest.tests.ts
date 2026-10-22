@@ -910,10 +910,11 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     );
     assert((conn.prepare(`SELECT COUNT(*) n FROM attempt_skills WHERE attempt_id=? AND skill LIKE 'writing%'`).get(mt.id) as any).n === 1, 'W phải là MỘT dòng lịch');
     const wTrangThai = () => keHoachMod.luoiFT(P.mbManager, mbClass).hang.find((h: any) => h.studentId === em).dot[1].kn.writing.trangThai;
-    const ins = conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, c1, c2, c3, c4, band, entered_at) VALUES (?,?,?,?,?,?,?,?)`);
-    ins.run(mt.id, 'writing1', 6, 6, 6, 6, 6, '2026-04-01');
+    /* V5 SV-SO1: ô xong = band + đủ nhận xét bắt buộc — band trên kỳ vọng + nhận xét. */
+    const ins = conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, c1, c2, c3, c4, band, entered_at, comment) VALUES (?,?,?,?,?,?,?,?,'Nhận xét đủ mười ký tự.')`);
+    ins.run(mt.id, 'writing1', 9, 9, 9, 9, 9, '2026-04-01');
     assert(wTrangThai() !== 'xong', 'Mới có W1 thì W chưa xong');
-    ins.run(mt.id, 'writing2', 6, 6, 6, 6, 6, '2026-04-01');
+    ins.run(mt.id, 'writing2', 9, 9, 9, 9, 9, '2026-04-01');
     assert(wTrangThai() === 'xong', 'Có cả W1 và W2 thì W xong');
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill='writing2'`).run(mt.id);
     assert(wTrangThai() !== 'xong', 'Xoá band W2 thì W hết xong');

@@ -454,8 +454,8 @@ export const TRAN: Record<string, number> = {
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
   'QL /my-work': 67,   // TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu); SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3)
   'QT /my-work': 67,   // TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3)
-  'QL /my-work?nguoi=tat-ca': 77,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3)
-  'QT /my-work?nguoi=tat-ca': 77,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3)
+  'QL /my-work?nguoi=tat-ca': 78,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu)
+  'QT /my-work?nguoi=tat-ca': 78,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu)
   'GVCN /my-work?nguoi=tat-ca': 15,
   'QL /my-work?nguoi=7': 68,
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */
@@ -871,35 +871,36 @@ export const TRAN_DONG: Record<string, number> = {
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
-  'QL /my-work': 1104,   // TD4: đo 849 (trước 2155)
-  'GVCN /my-work': 1069,   // TD4: đo 822 (trước 1784)
-  'GVBM /my-work': 1102,   // TD4: đo 847 (trước 2016)
-  'GVCN_THUONG /my-work': 1069,   // TD4: đo 822 (trước 1784)
-  'QT /my-work': 1263,   // TD4: đo 971 (trước 2889)
-  'QL /my-work?nguoi=tat-ca': 1455,   // TD4: đo 1119 (trước 2793)
-  'QT /my-work?nguoi=tat-ca': 1631,   // TD4: đo 1254 (trước 3688)
+  'QL /my-work': 1551,   // TD4: đo 849 (trước 2155); V5 SV-SO1: đo 1193 (trước 1104) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
+  'GVCN /my-work': 1481,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVBM /my-work': 1553,   // TD4: đo 847 (trước 2016)   // V5 SV-SO1 sau gộp main: đo 1194 (trần cũ 1102) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVCN_THUONG /my-work': 1481,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QT /my-work': 2264,   // TD4: đo 971 (trước 2889); V5 SV-SO1: đo 1741 (trước 1263) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
+  'QL /my-work?nguoi=tat-ca': 1943,   // TD4: đo 1119 (trước 2793); V5 SV-SO1: đo 1494 (trước 1455) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
+  'QT /my-work?nguoi=tat-ca': 2681,   // TD4: đo 1254 (trước 3688); V5 SV-SO1: đo 2062 (trước 1631) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
   'QL /classes/3/roster': 2226,   // đo 1712
   'GVCN /classes/3/roster': 2447,   // đo 1882
   'GVBM /classes/3/roster': 2463,   // đo 1894
   'GVCN_THUONG /classes/3/roster': 2447,   // đo 1882
   'QT /classes/3/roster': 2153,   // đo 1656
-  'QL /cham/lich-test': 748,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'GVCN /cham/lich-test': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'GVBM /cham/lich-test': 631,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'GVCN_THUONG /cham/lich-test': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'QT /cham/lich-test': 900,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // SEED-UX: 893 — BC FT 205 MT2 dời W1 SEP (K3) + lớp HD mới; trước 860
-  'QL /cham/lich-test?phamVi=tat-ca': 748,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'GVCN /cham/lich-test?phamVi=tat-ca': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'GVBM /cham/lich-test?phamVi=tat-ca': 631,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'QT /cham/lich-test?phamVi=tat-ca': 900,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // SEED-UX: 893 — BC FT 205 MT2 dời W1 SEP (K3) + lớp HD mới; trước 860
-  'QL /cham/lich-test?classId=3': 653,   // TD7c: đo 502 (trước TD7c 559; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'QT /cham/lich-test?classId=3': 678,   // TD7c: đo 521 (trước TD7c 578; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'GVCN /cham/lich-test?classId=3': 556,   // TD7c: đo 427 (trước TD7c 484; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'GVBM /cham/lich-test?classId=3': 591,   // TD7c: đo 454 (trước TD7c 511; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
+  'QL /cham/lich-test': 1079,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 830 (trần cũ 748) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVCN /cham/lich-test': 835,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 642 (trần cũ 579) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVBM /cham/lich-test': 922,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 709 (trần cũ 631) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVCN_THUONG /cham/lich-test': 835,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 642 (trần cũ 579) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QT /cham/lich-test': 2095,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // SEED-UX: 893 — BC FT 205 MT2 dời W1 SEP (K3) + lớp HD mới; trước 860   // V5 SV-SO1 sau gộp main: đo 1611 (trần cũ 900) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QL /cham/lich-test?phamVi=tat-ca': 1079,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 830 (trần cũ 748) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVCN /cham/lich-test?phamVi=tat-ca': 835,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 642 (trần cũ 579) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVBM /cham/lich-test?phamVi=tat-ca': 922,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 709 (trần cũ 631) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 835,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 642 (trần cũ 579) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QT /cham/lich-test?phamVi=tat-ca': 2095,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // SEED-UX: 893 — BC FT 205 MT2 dời W1 SEP (K3) + lớp HD mới; trước 860   // V5 SV-SO1 sau gộp main: đo 1611 (trần cũ 900) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QL /cham/lich-test?classId=3': 909,   // TD7c: đo 502 (trước TD7c 559; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 699 (trần cũ 653) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QT /cham/lich-test?classId=3': 961,   // TD7c: đo 521 (trước TD7c 578; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 739 (trần cũ 678) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVCN /cham/lich-test?classId=3': 812,   // TD7c: đo 427 (trước TD7c 484; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 624 (trần cũ 556) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVBM /cham/lich-test?classId=3': 847,   // TD7c: đo 454 (trước TD7c 511; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 651 (trần cũ 591) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
   /* OV-15h1: trần = max(đo + 50, ⌈đo × 1,3⌉), đo demo 20/10 (QL 1 914 · 1 862 · 483; QT 2 393 · 2 322 · 583). */
-  'QL /tong-quan/ql?ct=ft': 2489, 'QL /tong-quan/ql?ct=thuong': 2421, 'QT /tong-quan/ql?ct=ft': 3111, 'QT /tong-quan/ql?ct=thuong': 3019,
-  'QL /tong-quan/ql/tre?ct=ft&gv=-1': 628, 'QT /tong-quan/ql/tre?ct=ft&gv=-1': 758,
+  'QL /tong-quan/ql?ct=ft': 2489, 'QL /tong-quan/ql?ct=thuong': 2421, 'QT /tong-quan/ql?ct=ft': 4402, 'QT /tong-quan/ql?ct=thuong': 4073,   // V5 SV-SO1 sau gộp main: đo 3386 (trần cũ 3111) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ   // V5 SV-SO1 sau gộp main: đo 3133 (trần cũ 3019) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  /* V5 SV-SO1: đo 817 · 1626 (trước 628 · 758) — ô thiếu nhận xét bắt buộc là nợ điểm (trễ chấm). */
+  'QL /tong-quan/ql/tre?ct=ft&gv=-1': 1063, 'QT /tong-quan/ql/tre?ct=ft&gv=-1': 2114,
   'QL /tong-quan/chi-nhanh': 3336,   // đo 2566
   'QT /tong-quan/chi-nhanh': 4397,   // đo 3382
   'QL /tong-quan/diem-chu-y?ct=ft': 3260,   // đo 2507
@@ -914,11 +915,11 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /hoc-vien-lop': 2975,   // TD3-b: đo 2288 (72 câu)
   'GVCN_THUONG /hoc-vien-lop': 2602,   // TD3-b: đo 2001 (72 câu)
   'QT /hoc-vien-lop': 3305,   // TD3-b: đo 2542 (67 câu)
-  'QL /classes/3/overview': 1152,   // TD3-b: đo 886 (56 câu)
-  'GVCN /classes/3/overview': 1211,   // TD3-b: đo 931 (60 câu)
-  'GVBM /classes/3/overview': 1208,   // TD3-b: đo 929 (60 câu)
-  'GVCN_THUONG /classes/3/overview': 1211,   // TD3-b: đo 931 (60 câu)
-  'QT /classes/3/overview': 1076,   // TD3-b: đo 827 (53 câu)
+  'QL /classes/3/overview': 1605,   // TD3-b: đo 886 (56 câu)   // V5 SV-SO1 sau gộp main: đo 1234 (trần cũ 1152) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVCN /classes/3/overview': 1675,   // TD3-b: đo 931 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1288 (trần cũ 1211) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVBM /classes/3/overview': 1672,   // TD3-b: đo 929 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1286 (trần cũ 1208) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'GVCN_THUONG /classes/3/overview': 1675,   // TD3-b: đo 931 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1288 (trần cũ 1211) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QT /classes/3/overview': 1537,   // TD3-b: đo 827 (53 câu)   // V5 SV-SO1 sau gộp main: đo 1182 (trần cũ 1076) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
   'QL /classes/6/overview': 801,   // TD3-b: đo 616 (68 câu)
   'QT /classes/6/overview': 756,   // TD3-b: đo 581 (65 câu)
   'GVCN_THUONG /classes/6/overview': 819,   // TD3-b: đo 630 (72 câu)

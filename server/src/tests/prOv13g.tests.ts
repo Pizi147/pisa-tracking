@@ -69,7 +69,7 @@ export async function runPrOv13gTests(t: YThucTestKit) {
     const truoc = baiCua(dongCc(p)[0]);
     const lopS = new Set<number>(perm.lopFtChoGvSpeaking(p, TODAY));
     const c = noCheo().find((x) => lopS.has(x.classId))!;
-    svc.saveScore(p, c.attemptId, 'speaking', { criteria: [6, 6.5, 6, 7], gvCham: { performerSelf: true } }, TODAY);
+    svc.saveScore(p, c.attemptId, 'speaking', { criteria: [9, 9, 9, 9], nhanXet: 'Fluent, good range of vocabulary.', gvCham: { performerSelf: true } }, TODAY);   // V5 SV-SO1: xong = band + đủ nhận xét
     xoaNho();
     const sau = dongCc(trang());
     assert((sau.length ? baiCua(sau[0]) : 0) === truoc - 1, `${truoc} → ${sau.length ? baiCua(sau[0]) : 0}`);

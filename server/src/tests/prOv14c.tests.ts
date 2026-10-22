@@ -95,7 +95,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     const r = truoc.rows.find((x: any) => x.cho && x.cell.canEdit && (x.weekStart ?? '').slice(0, 10) >= tuanTruoc)
       ?? truoc.rows.find((x: any) => x.cho && x.cell.canEdit);
     assert(r, 'cần một bài S chờ chấm sửa được');
-    svc.saveScore(p, r.attemptId, 'speaking', { criteria: [6, 6.5, 6, 7], nhanXet: 'Fluent, good range of vocabulary.', gvCham: { performerSelf: true } }, TODAY);
+    svc.saveScore(p, r.attemptId, 'speaking', { criteria: [9, 9, 9, 9], nhanXet: 'Fluent, good range of vocabulary.', gvCham: { performerSelf: true } }, TODAY);   // V5 SV-SO1: trên kỳ vọng — không cần nhóm nguyên nhân
     xoaNho();
     const sau = svc.baiChamSpeaking(gvS(), TODAY);
     assert(sau.soBai === truoc.soBai - 1, `số bài ${truoc.soBai} → ${sau.soBai}`);

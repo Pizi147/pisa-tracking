@@ -97,8 +97,8 @@ export async function runPrDlTests(t: YThucTestKit) {
   const bam = (x: unknown) => createHash('sha256')
     /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
        OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. OV-4c: ô thêm `bandThang` (phép kiểm riêng prOv4c) — cũng vậy.
-       OV-12b: ô thêm `nhomNguyenNhan` · `batBuocNhanXet` · `kyVong` · `thieuNhanXet` (phép kiểm riêng prOv12b) — cũng vậy. OV-14c: ô thêm `enteredById` (prOv14c) — cũng vậy. */
-    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' || k === 'bandThang' || k === 'enteredById' || OV12B.has(k) ? undefined : v))).digest('hex').slice(0, 16);
+       OV-12b: ô thêm `nhomNguyenNhan` · `batBuocNhanXet` · `kyVong` · `thieuNhanXet` (phép kiểm riêng prOv12b) — cũng vậy. OV-14c: ô thêm `enteredById` (prOv14c) — cũng vậy. V5 SV-SO1: ô thêm `xong` (prSvSo1) — cũng vậy. */
+    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' || k === 'bandThang' || k === 'enteredById' || k === 'xong' || OV12B.has(k) ? undefined : v))).digest('hex').slice(0, 16);
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
@@ -133,7 +133,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* LUAT-34: chụp lại — phép kiểm chạy trước trên MB FT 101 đổi theo luật 4 sửa 21/10 (PR-G: "-" ghi muộn → thẻ QL / Hoàn tác, W1 "-" + W2 có điểm
    * dời cả W; prOv1b / prOv11a "-" ghi muộn dời tuần kế) và luật 3 (`moi` = góc GVBM: ô có điểm ở hàng Đủ điểm nay `canEdit` true). */
   /* CHU-THI: chụp lại — chỉ đổi chữ ô "Không dự thi · Tuần W…" → "Vắng · Tuần W…" (3 ô; đã so JSON origin/main ↔ nhánh, ngoài dấu thời gian). */
-  const ANH_CHUP = { tuan: '5637439ae70e629c', moi: '12573fb4bb3506b5' };   // MAIN-DO: hai commit cuối SEED-UX đổi em MT2 Đạt / Chưa đạt (uxSeed BU_MT2) mà chưa chụp lại `moi` — trước: c225a20ee8f5a125 · SEED-UX: MT2 MB FT 101 thêm điểm 3 em (Vy, Quân, Bảo Anh) — trước: tuan cb0b81467b7ecc83 · moi 635e3b82b5659547     // trước CHU-THI: tuan 03b552713c5091dc · moi 098ab4054764382e · V5 C20: bỏ phép kiểm VAI-a (2c) chạy trước (HV thử) → id dịch; trước: tuan ea4c647e05ebdfc3 · moi 302cb2d7a4636a80   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
+  const ANH_CHUP = { tuan: 'e34f451bc62b2410', moi: '860c3b4793616779' };   // V5 SV-SO1 (chủ SP 22/10, sau gộp main): ô có band thiếu nhận xét bắt buộc (seed MB FT 101) chưa xong → tiến độ / quá hạn / việc của ô đổi CÓ CHỦ Ý (bỏ `xong` khỏi băm); phép kiểm UX2 (cùng lớp, chạy trước) nay ghi nhận xét — trước: tuan 5637439ae70e629c · moi 12573fb4bb3506b5   // MAIN-DO: hai commit cuối SEED-UX đổi em MT2 Đạt / Chưa đạt (uxSeed BU_MT2) mà chưa chụp lại `moi` — trước: c225a20ee8f5a125 · SEED-UX: MT2 MB FT 101 thêm điểm 3 em (Vy, Quân, Bảo Anh) — trước: tuan cb0b81467b7ecc83 · moi 635e3b82b5659547     // trước CHU-THI: tuan 03b552713c5091dc · moi 098ab4054764382e · V5 C20: bỏ phép kiểm VAI-a (2c) chạy trước (HV thử) → id dịch; trước: tuan ea4c647e05ebdfc3 · moi 302cb2d7a4636a80   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -325,7 +325,7 @@ export async function runPrDlTests(t: YThucTestKit) {
         const k = conn.prepare(`SELECT k.attempt_id, k.skill FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
           WHERE a.class_id = ? AND a.attempt_no = ? AND k.required = 1`).all(lop4, no) as any[];
         for (const r of k) for (const nhap of r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill]) {
-          conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,6)').run(r.attempt_id, nhap);
+          conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, comment) VALUES (?,?,9,'Nhận xét đủ mười ký tự.')`).run(r.attempt_id, nhap);   // V5 SV-SO1: đủ điểm = band + nhận xét
         }
       };
       du(1); du(3);
@@ -389,10 +389,12 @@ export async function runPrDlTests(t: YThucTestKit) {
       const trong = new Map<number, number>();
       let tong = 0;
       for (const k of o) for (const nhap of k.skill === 'writing' ? ['writing1', 'writing2'] : [k.skill]) {
-        const sc = get('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', k.attempt_id, nhap);
-        const xong = sc && (sc.band !== null || sc.raw_score !== null || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
-        trong.set(k.attempt_id, (trong.get(k.attempt_id) ?? 0) + (xong ? 0 : 1));
-        if (!xong && k.week_start && k.week_start <= week.mondayOf(TODAY)) tong += 1;
+        const sc = get(`SELECT sc.*, ${d.O_FT_XONG_SQL('sc', 'a')} AS band_xong FROM assessment_scores sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+          WHERE sc.attempt_id = ? AND sc.skill = ?`, k.attempt_id, nhap);
+        const coDiem = sc && (sc.band !== null || sc.raw_score !== null || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
+        /* V5 SV-SO1: đủ điểm đòi band + đủ nhận xét bắt buộc; ô trống vẫn là ô chưa có gì. */
+        trong.set(k.attempt_id, (trong.get(k.attempt_id) ?? 0) + (coDiem && (sc.band === null || sc.band_xong) ? 0 : 1));
+        if (!coDiem && k.week_start && k.week_start <= week.mondayOf(TODAY)) tong += 1;
       }
       assert(mt2.oTrong === tong, `oTrong ${mt2.oTrong} ≠ ${tong}`);
       assert(mt2.duDiem === [...trong.values()].filter((x) => x === 0).length, `duDiem ${mt2.duDiem}`);

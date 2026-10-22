@@ -222,7 +222,7 @@ export function gomBaiXemTruoc(bai: BaiXemTruoc[]): Array<Omit<BaiXemTruoc, 'ski
   return [...nhom.values()];
 }
 
-/** Dòng tóm tắt của một lớp Fast Track (Q12): `MT3 đang thi · MT4 chưa xếp 4 em · 2 em cần xếp lại`, bỏ vế trống. */
+/** Dòng tóm tắt của một lớp Fast Track (Q12): `MT2 đang thi · MT3 chưa xếp 4 em · 2 em cần xếp lại`, bỏ vế trống (V5 C20: không gợi ý MT4+). */
 export function tomTatLopFT(i: { dangThi: number | null; chuaXep: { dot: number; soEm: number } | null; canXepLai?: number }): string {
   const ve: string[] = [];
   if (i.dangThi !== null) ve.push(`MT${i.dangThi} đang làm bài`);

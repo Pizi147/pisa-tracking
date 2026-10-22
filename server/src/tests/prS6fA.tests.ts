@@ -161,7 +161,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const trongKhoang = new Set(nap.o.map((x: any) => x.id));
     const tre = new Set([...pt.tapChamDiem(c, nap).dong.values()].filter((r: any) => !r.dung && !r.nhapDau).map((r: any) => r.id));
     const no = (debt.scoreDebtCells(P.mbManager, TODAY, [MB]) as any[])
-      .filter((x) => x.overdue && x.userId !== null).map((x) => d.baiId(x.attemptId, x.skill)).filter((id) => trongKhoang.has(id));
+      .filter((x) => x.overdue && x.userId !== null && !x.thieuNhanXet).map(   /* V5 SV-SO1: ô có band thiếu nhận xét là nợ, nhưng không "chưa nhập" */(x) => d.baiId(x.attemptId, x.skill)).filter((id) => trongKhoang.has(id));
     const thieu = no.filter((id) => !tre.has(id));
     assert(no.length > 0 && thieu.length === 0, `${no.length} ô nợ quá hạn, thiếu ở bảng GV: ${thieu.slice(0, 10).join(', ')}`);
   });

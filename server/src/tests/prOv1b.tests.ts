@@ -173,8 +173,9 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     const cuaGvL = all(`SELECT DISTINCT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active' AND skill IS NOT NULL`, lop, gvL.userId)
       .map((r) => r.skill as string);
     for (const k of cuaGvL) {
-      if (k === 'listening' || k === 'reading') attempts.saveScore(QL, a, k, { rawScore: 30 }, TRONG);
-      else attempts.saveScore(QL, a, k, { criteria: [6, 6, 6, 6] }, TRONG);
+      /* V5 SV-SO1: xong = band + đủ nhận xét bắt buộc — điểm trên kỳ vọng + nhận xét. */
+      if (k === 'listening' || k === 'reading') attempts.saveScore(QL, a, k, { rawScore: 39, nhanXet: 'Nhận xét đủ mười ký tự.' }, TRONG);
+      else attempts.saveScore(QL, a, k, { criteria: [9, 9, 9, 9], nhanXet: 'Nhận xét đủ mười ký tự.' }, TRONG);
     }
     const hang = (p: any) => (canCham.lichTest(p, W, null, thu5, { phamVi: 'tat-ca' }) as any).lop.find((l: any) => l.classId === lop);
     const g = hang(gvL);

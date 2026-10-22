@@ -158,13 +158,13 @@ export async function runPrOv12bTests(t: any) {
     assert(c('listening').thieuNhanXet === 'ghi-nhan-xet' && c('reading').thieuNhanXet === 'chon-nhom' && c('speaking').thieuNhanXet === null
       && c('writing1').thieuNhanXet === null, `cờ: ${['listening', 'reading', 'speaking', 'writing1'].map((s) => c(s).thieuNhanXet)}`);
     assert(c('listening').batBuocNhanXet === true && c('reading').kyVong === kv() && Array.isArray(c('reading').nhomNguyenNhan), 'trường ô');
-    /* Rà #383: lượt đã hoàn tất (đủ điểm, qua Chủ nhật) → không báo "thiếu …" (GV không còn bổ sung được). */
+    /* Rà #383 → V5 SV-SO1 (chủ SP 22/10): lượt đã hoàn tất (đủ band, qua Chủ nhật) VẪN báo "thiếu …" — thiếu nhận xét bắt buộc chưa xong ở mọi điểm. */
     for (const k of ['writing1', 'writing2']) attempts.saveScore(P.admin, luot, k, { criteria: [8, 8, 8, 8] }, TRONG);
     const SAU = '2026-12-14';
     assert(hoanTatMod.dotHoanTat(luot, SAU).hoanTat, 'tiền đề: lượt phải hoàn tất');
     xoaNho();
     const l3 = attempts.classScoreSheet(P.admin, lop, W, SAU).rows.find((x: any) => x.attemptId === luot).cells.find((c: any) => c.skill === 'listening');
-    assert(l3.thieuNhanXet === null, `hoàn tất vẫn báo: ${l3.thieuNhanXet}`);
+    assert(l3.thieuNhanXet === 'ghi-nhan-xet' && l3.xong === false, `hoàn tất phải vẫn báo: ${l3.thieuNhanXet}`);
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(luot);
     const c2 = o(true);
     assert(c2('listening').thieuNhanXet === null && c2('listening').batBuocNhanXet === false, 'MT cũ không đòi');
