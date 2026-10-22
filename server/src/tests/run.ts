@@ -9518,6 +9518,8 @@ await runPrSvBaiLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 SV-SO2 (Overall ở Phân tích lớp / hồ sơ GV, Đạt MT theo HV, Việc / Điểm đúng hạn, hồ sơ GV theo kỳ, panel chỉ đọc)
 const { runPrSvSo2Tests } = await import('./prSvSo2.tests.ts');
 await runPrSvSo2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+const { runPrSvSo3Tests } = await import('./prSvSo3.tests.ts');
+await runPrSvSo3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== V5 SV-SO1 (đơn vị đếm Công việc, S chéo không nợ, thiếu nhận xét ≠ xong, không gợi ý MT4, theo dõi, chuông = tin)
 const { runPrSvSo1Tests } = await import('./prSvSo1.tests.ts');
 await runPrSvSo1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9530,6 +9532,9 @@ await runPrSvSExpertTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== SV-LOP (Đánh giá đầu ra chờ Final, việc theo em từ /my-work, W1 / W2; nợ rà S Ex ở SSEX-8…12)
 const { runPrSvLopTests } = await import('./prSvLop.tests.ts');
 await runPrSvLopTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== V5 NEN-PANEL (nháp theo việc, hộp bỏ chữ, Lưu và tiếp, chân lưu, 375 + bàn phím)
+const { runPrNenPanelTests } = await import('./prNenPanel.tests.ts');
+await runPrNenPanelTests({ check, checkAsync, assert } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

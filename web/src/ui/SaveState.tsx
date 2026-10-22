@@ -1,18 +1,17 @@
 import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { capNhatLuuO, tomTatLuuDong, type TrangThaiLuuO } from '@shared/domain/index.ts';
-import { Alert, Status } from './ui.tsx';
+import { ChuLuu } from './KhuonViec.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
+/** NEN-PANEL: cùng chữ + ký hiệu với chân panel (`ChuLuu`) — bản gọn cho hàng lưới. "Đã lưu" là việc xong, xám (mục 2.2). */
 export function SaveIndicator({ status, error, onRetry }: { status: SaveStatus; error?: string; onRetry?: () => void }) {
   if (status === 'idle') return null;
-  if (status === 'saving') return <Status kind="doing">{t('Đang lưu…')}</Status>;
-  /* "Đã lưu" là việc xong, không phải điểm tốt — nên xám, không xanh lá (mục 2.2). */
-  if (status === 'saved') return <Status kind="done">{t('Đã lưu')}</Status>;
+  if (status !== 'error') return <span className="text-[13px]"><ChuLuu tt={status === 'saving' ? 'dang' : 'da'} /></span>;
   return (
-    <span className="inline-flex items-center gap-1">
-      <Alert title={error}>{t('Không lưu được')}</Alert>
+    <span className="inline-flex items-center gap-1.5 text-[13px]">
+      <ChuLuu tt="loi" loi={error} gon />
       {onRetry && <button className="btn btn-sm" onClick={onRetry}>{t('Thử lại')}</button>}
     </span>
   );

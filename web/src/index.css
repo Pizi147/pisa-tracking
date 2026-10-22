@@ -298,6 +298,16 @@
     /* OV-14b: Safari iPhone tự phóng to khi chạm ô chữ < 16px — điện thoại mọi ô gõ / ô chọn 16px (thắng `text-xs` của ô gọn); máy tính giữ cỡ cũ. */
     .field, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
   }
+  /*
+   * NEN-PANEL (T21): chân panel tại chỗ dính đáy ở 375 — sát trên thanh dưới (mép dính tính từ đệm `pb-20` = 80 px của `main`, thanh 57 px → lùi 23 px);
+   * bàn phím ảo mở (`useBanPhim` đặt `--ban-phim`) → thanh dưới ẩn, chân dính ngay trên bàn phím.
+   */
+  :root { --ban-phim: 0px; }   /* `useBanPhim` ghi đè khi bàn phím mở */
+  @media not all and (min-width: 640px) {
+    .chan-dinh-375 { position: sticky; z-index: 20; bottom: calc(env(safe-area-inset-bottom) - 23px); }
+    html[data-ban-phim] .chan-dinh-375 { bottom: calc(var(--ban-phim) - 80px); }
+  }
+  html[data-ban-phim] [data-thanh-duoi] { display: none; }
   .label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 600; }   /* NEN: nhãn ô form 13 / 600 */
 
   .th {

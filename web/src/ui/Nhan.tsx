@@ -111,7 +111,7 @@ export function DauDuoi() {
   return <span className="mr-1 inline-flex align-middle" style={{ marginTop: -2 }}><IconKhong size={11} /></span>;
 }
 
-/** OV-15a (mockup 1 §1c): hạn ở đầu panel là CHỮ — không nền, không viền, không chip. Quá hạn = chữ cam đậm + ⚠; sắp hạn / hôm nay = chữ vàng; xa hơn = chữ phụ. */
+/** OV-15a (mockup 1 §1c): hạn ở đầu panel là CHỮ — NEN-PANEL: quá hạn / sắp hạn thành badge theo mockup V5 (`ChipHan`). Quá hạn = chữ cam đậm + ⚠; sắp hạn / hôm nay = chữ vàng; xa hơn = chữ phụ. */
 const CHU_HAN = 'inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[13px] tabular-nums';
 /** OV-12e: "⚠ n quá hạn" ở đầu panel số liệu — cùng kiểu chữ hạn quá hạn. */
 export function ChipSoQuaHan({ n }: { n: number }) {
@@ -123,10 +123,13 @@ export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null 
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
-  const lop = v.tone === 'overdue' ? 'font-semibold text-late' : v.ganHan ? 'font-semibold text-soon' : 'text-dim';
+  /* NEN-PANEL (mockup V5 `v5-nen.css .bd-td.sap / .qua`, thay OV-15a "chỉ chữ"): quá hạn / sắp hạn = badge tiến độ có ⚠; xa hạn giữ chữ phụ. */
+  const can = v.tone === 'overdue' || v.ganHan;
+  const lop = v.tone === 'overdue' ? 'bg-late-bg font-semibold text-late' : v.ganHan ? 'bg-soon-bg font-semibold text-soon' : 'text-dim';
   return (
-    <span title={v.text} className={`${CHU_HAN} ${lop}`}>
-      {v.tone === 'overdue' ? <><span aria-hidden>⚠</span>{t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</> : nhanHan(han, homNay)}
+    <span title={v.text} className={`${CHU_HAN} ${lop} ${can ? 'h-[22px] rounded-full px-2 text-xs' : ''}`}>
+      {can && <span aria-hidden>⚠</span>}
+      {v.tone === 'overdue' ? t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : <span className="inline-block first-letter:uppercase">{nhanHan(han, homNay)}</span>}
     </span>
   );
 }

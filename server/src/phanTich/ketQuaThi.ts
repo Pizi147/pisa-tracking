@@ -110,9 +110,9 @@ export const SQL_THI_THAT = `SELECT c.id, c.student_id, s.full_name AS ten, COAL
 /**
  * Thi thật: lộ trình FT có kết quả (đủ 4 kỹ năng / Không thi) với ngày thi trong khoảng; lớp = lớp của lượt MT cuối của lộ trình (một câu theo lô),
  * không có lượt → ghi danh cuối. Phạm vi: lớp trong `classScopeSql` của quyền Phân tích.
- * ponytail: `coQuyenBuocTiep` hỏi quyền theo từng em — bảng thi thật một khoảng chỉ vài chục hàng.
+ * ponytail: `coQuyenBuocTiep` hỏi quyền theo từng em — bảng thi thật một khoảng chỉ vài chục hàng. `boQuyen` (Kết quả MT chỉ đếm): không hỏi, `coTheChon` false.
  */
-export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi): KetQuaThiThatKq {
+export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi, o: { boQuyen?: boolean } = {}): KetQuaThiThatKq {
   const scope = phamVi(p);
   const conn = db();
   const ds = conn.prepare(SQL_THI_THAT).all(f.tu, f.den, f.tu, f.den) as any[];
@@ -149,7 +149,7 @@ export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi): KetQuaThiThatKq 
       dat: c.thi_that_khong_thi ? null : c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null,
       buocTiep: chon, buocTiepChu: chon ? NHAN_SAU_THI[chon] : null, buocTiepPhu: g.lopMoiCode ? `lớp ${g.lopMoiCode}` : null,
       nguoiChon: chon ? c.nguoi_chon ?? null : null, ngayChon: chon ? c.buoc_tiep_luc ?? null : null,
-      coTheChon: coQuyenBuocTiep(p, c.student_id),
+      coTheChon: !o.boQuyen && coQuyenBuocTiep(p, c.student_id),
     };
   }).sort((a, b) => (a.lop ?? '').localeCompare(b.lop ?? '', 'vi', { numeric: true }) || (a.ngayThi ?? '').localeCompare(b.ngayThi ?? '') || a.ten.localeCompare(b.ten, 'vi'));
   return {

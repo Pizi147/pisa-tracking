@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BoiCanh, CanLam, NhomCoSo, NutChu, TrangThaiLuu as TrangThaiLuuV3, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, CanLam, DiemKq, NhomCoSo, NutChu, TrangThaiLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { FormDoiPa, useDoiPa } from '../cases/DoiPa.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
@@ -73,22 +73,12 @@ export function DongNguyenNhan({ issues }: { issues: any[] }) {
     </>
   );
 }
-/** Kết quả gần nhất của Case MT: mốc mở / trượt lại mới nhất có band — "MT2 · R 5.0 · kỳ vọng 5.5". */
-export function ketQuaGanNhat(data: CaseDetail): string | null {
+/** Kết quả gần nhất của Case MT: mốc mở / trượt lại mới nhất có band — "MT2 · R ✗ 5.0 · kỳ vọng 5.5" (điểm tô màu kết quả, P2). */
+export function ketQuaGanNhat(data: CaseDetail): ReactNode {
   const m = [...(data.milestones ?? [])].reverse().find((x: any) => (x.kind === 'opened' || x.kind === 'repeat') && x.band != null);
   if (!m) return null;
-  return `MT${m.attemptNo} · ${skillShort(data.topic ?? '')} ${Number(m.band).toFixed(1)}${m.expectation != null ? t(' · kỳ vọng {toFixed}', { toFixed: Number(m.expectation).toFixed(1) }) : ''}`;
-}
-/** Dòng trạng thái lưu ở chân (chữ + ký hiệu, không chỉ màu). */
-function TrangThaiLuu({ tt, onHuy }: { tt: 'nhap' | 'dang' | null; onHuy?: () => void }) {
-  if (!tt) return null;
-  return (
-    <>
-      <span>{tt === 'dang' ? t('Đang lưu…') : t('Chưa lưu')}</span>
-      <span className="flex-1" />
-      {tt === 'nhap' && onHuy && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={onHuy}>{t('Huỷ sửa')}</button>}
-    </>
-  );
+  const kv = m.expectation != null ? Number(m.expectation) : null;
+  return <>MT{m.attemptNo} · {skillShort(data.topic ?? '')} <DiemKq diem={Number(m.band)} kyVong={kv} />{kv != null ? t(' · kỳ vọng {toFixed}', { toFixed: kv.toFixed(1) }) : ''}</>;
 }
 
 /**
@@ -104,7 +94,8 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
   const pa = (data.interventions ?? []).find((x: any) => x.kind === 'bo_tro' && x.status === 'planned') ?? null;
   const goc: GiaTriPa | null = pa ? { ...paMoi(pa.kind), description: pa.description ?? '', soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa) } : null;
   const [nhom, setNhom] = useState<string[]>([]);
-  const [moTa, setMoTa] = useState('');
+  const [moTa, setMoTa] = useNhap('xac-nhan-case-mo-ta', '');
+  const xoaNhap = useXoaNhap();
   const [sua, setSua] = useState(false);
   const [v, setV] = useState<GiaTriPa | null>(goc);
   const [busy, setBusy] = useState(false);
@@ -131,6 +122,7 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
       }
       await api.post(`/cases/${caseId}/xac-nhan`, { nhom, moTa: moTa.trim(), ...(paSua && Object.keys(paSua).length ? { pa: paSua } : {}) });
       invalidateCases();
+      xoaNhap();
       toast.push('ok', pa ? t('Đã xác nhận Case — PA Bổ trợ bắt đầu từ hôm nay') : t('Đã xác nhận Case'));
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -237,7 +229,7 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
     <KhungPanel tieuDe={t('Xác nhận PA')} {...chung} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, [`MT${data.tenSos?.mt ?? data.attemptNo ?? ''}`, data.categoryLabel ?? '', data.sosLevel ? `SOS ${data.sosLevel}` : null].filter(Boolean).join(' · '), true)}
       chan={{ v3: true, chinh: cheDo === 'ktd' ? undefined : nut, daSua, conThieu: lf.conThieu(loi),
-        dongTren: busy || loiLuu || daSua ? <TrangThaiLuuV3 tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined }}>
+        dongTren: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         {tuChoi && (
           <p className="m-0 rounded-lg bg-late-bg px-3 py-2 text-[13px] text-slate-200" role="status">
@@ -299,7 +291,8 @@ export function GhiNhanXetPanel({ data, onXong, ...chung }: ChungPanel & { data:
   const toast = useToast();
   const skill = data.topic ?? '';
   const attemptId = data.attemptId;
-  const [nx, setNx] = useState('');
+  const [nx, setNx] = useNhap('ghi-nhan-xet', '');
+  const xoaNhap = useXoaNhap();
   const [nhom, setNhom] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
@@ -312,6 +305,7 @@ export function GhiNhanXetPanel({ data, onXong, ...chung }: ChungPanel & { data:
     try {
       await api.put(`/attempts/${attemptId}/scores/${skill}`, { nhanXet: nx.trim(), nhomNguyenNhan: nhom });
       invalidateCases(); invalidate('/attempts'); invalidate('/classes');
+      xoaNhap();
       toast.push('ok', t('Đã lưu nhận xét — Case sang Xác nhận PA'));
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

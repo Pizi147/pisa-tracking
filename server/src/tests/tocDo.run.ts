@@ -898,9 +898,10 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
   const ov = dongSauNhan.get(`QL /classes/${LOP_FT}/overview`) ?? Infinity, hvl = dongSauNhan.get('QL /hoc-vien-lop') ?? Infinity;
   console.log(`      (đo: overview ${ov}, hoc-vien-lop ${hvl} dòng)`);
   /* MAIN-DO: dữ liệu SEED-UX BU_MT2 (10 lượt MT2 MB FT 101 có điểm + Case SOS 4 em, ×3) thêm dòng: hoc-vien-lop 6 463 (58a2d268) → 7 095. Mã đường
-     không đổi (SV-LOP riêng: 6 373). Trần Học viên & Lớp theo dữ liệu nay: 7 100 (thay ⌊8 417 × 80 %⌋ = 6 733) — chờ planning duyệt. */
-  /* V5 SV-SO1: ô có band thiếu nhận xét bắt buộc là việc / bài chờ (seed 385 ô): hoc-vien-lop 7 191 → trần 7 300; overview 2 904 vẫn ≤ 50 %. */
-  assert(ov <= Math.floor(5829 * 0.5) && hvl <= 7300, `overview ${ov} / hoc-vien-lop ${hvl}`);
+     không đổi (SV-LOP riêng: 6 373). Trần Học viên & Lớp theo dữ liệu nay: 7 100 (thay ⌊8 417 × 80 %⌋ = 6 733) — chờ planning duyệt.
+     SV-SO3: hàng HV khu d (Xu hướng) đọc thêm các lượt có điểm trước lượt gần nhất của em có Overall + tuần thi: 7 095 → 7 220 → trần 7 220.
+     V5 SV-SO1: ô có band thiếu nhận xét bắt buộc là việc / bài chờ (seed 385 ô) → đọc thêm lượt còn ô chờ: đo trên main + SV-SO1 7 316 (main 7 220, +96) → trần 7 320; overview 2 904 vẫn ≤ 50 %. */
+  assert(ov <= Math.floor(5829 * 0.5) && hvl <= 7320, `overview ${ov} / hoc-vien-lop ${hvl}`);
 });
 
 /*

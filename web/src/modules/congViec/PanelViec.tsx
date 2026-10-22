@@ -5,7 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { BoiCanh, dauViec } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -79,13 +79,19 @@ export const moCaDong = (it: WorkItem): boolean => !!it.con?.length && !laViecCh
  * `MotKyNang` (danh sách em một kỹ năng, ô mở hộp nhập điểm "Lưu · em tiếp ›"). Nơi gọi bọc `KhungTaiCho` để panel nằm tại chỗ.
  * `onDaLam`: việc vừa có thay đổi đã lưu — nơi gọi giữ dòng ở chỗ cũ (mờ + gạch khi máy chủ không còn trả việc đó).
  */
-export function PanelViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo }: {
+type PropsViec = {
   it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null;
   /** CV-LOI (CV-09): panel do trang tự mở (không phải người bấm) — lưới điểm không đặt con trỏ, không cuộn. */
   tuMo?: boolean;
   /** OV-13c: mở một việc khác tại chỗ (Xác nhận PA cùng lúc → "Đề xuất PA khác cho em này…" mở panel Xác nhận PA của em đó). */
   onMo?: (it: WorkItem) => void;
-}) {
+};
+/** NEN-PANEL (K12): khoá nháp = khoá việc — chữ đang gõ trong panel của việc này giữ ở máy tới khi lưu / bỏ. */
+export function PanelViec(p: PropsViec) {
+  return <NhapViec khoa={p.it.key}><PanelMotViec {...p} /></NhapViec>;
+}
+
+function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo }: PropsViec) {
   const lop = it.classCode;
   const hv = it.studentId !== null ? it.studentName : null;
   const doi = () => { invalidate('/my-work'); onDaLam(); };
@@ -351,7 +357,7 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
             </div>
           </div>
         ) : (
-          <GhiNhanh key={it.paId} paId={it.paId!} batBuoc={!!iv?.batBuoc} onDaLuu={(kq) => { setDaLuu(kq); onDaLam(); }} onMoPanel={() => setLon(true)} />
+          <GhiNhanh key={it.paId} paId={it.paId!} batBuoc={!!iv?.batBuoc} onTiep={onTiep} onDaLuu={(kq) => { setDaLuu(kq); onDaLam(); }} onMoPanel={() => setLon(true)} />
         )}
       </div>
     </KhungPanel>

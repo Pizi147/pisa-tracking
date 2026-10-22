@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
-import { taoKhoPanel } from '@shared/domain/index.ts';
+import { docNhap, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
+import { Modal } from './Drawer.tsx';
 import { DongCanSua, useNoiLoi, type MucThieu } from './loiForm.tsx';
 import { useGiuFocus } from './giuFocus.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
@@ -11,9 +12,99 @@ import { t } from '@shared/i18n/index.ts';
 export const khoPanelChung = taoKhoPanel();
 /** Panel đang mở, mở sau ở cuối — Esc chỉ đóng panel cuối (panel vẽ qua portal nên không còn lồng nhau trong DOM). */
 const nganPanel: string[] = [];
-/** PR-EN: panel đang sửa dở (`chan.daSua`) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ. */
-const panelDangSua = new Set<string>();
+/**
+ * PR-EN: panel đang sửa dở (`chan.daSua` hoặc còn nháp) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ.
+ * NEN-PANEL (T16): mỗi panel ghi kèm cách HỎI của nó (hộp "Bỏ chữ đang gõ?" vẽ trong panel) — `boChuRoi` dùng khi đổi việc.
+ */
+const panelDangSua = new Map<string, (tiep: () => void) => void>();
 export const coPanelDangSua = () => panelDangSua.size > 0;
+/** Đổi việc / "‹ Công việc" / mở việc khác: còn chữ chưa lưu thì panel hỏi (Ở lại = nút chính); bỏ chữ hoặc không có chữ → `tiep`. */
+export function boChuRoi(tiep: () => void) {
+  const hoi = [...panelDangSua.values()].pop();
+  if (hoi) hoi(tiep); else tiep();
+}
+
+type NhapPanel = { viec: string; coChu: boolean; bao: (o: string, coChu: boolean) => void; xoa: () => void };
+const NhapCuaPanel = createContext<NhapPanel | null>(null);
+/** Đã ở trong một `KhungPanel` — panel con (hộp mở đè) không tính nháp của việc là "đang sửa" của nó. */
+const TrongKhung = createContext(false);
+const khoNhap = (): KhoNhap | null => { try { return window.sessionStorage; } catch { return null; } };
+
+/**
+ * NEN-PANEL (K12): bọc panel của MỘT việc (vd `PanelViec`, khoá = `it.key`) — ô `useNhap` bên trong (kể cả ở component vẽ `KhungPanel`) giữ chữ ở
+ * máy theo khoá này; panel ngoài cùng biết còn chữ → ✕ / đổi việc hỏi trước.
+ */
+export function NhapViec({ khoa, children }: { khoa: string; children: ReactNode }) {
+  const [oCoChu, setOCoChu] = useState<ReadonlySet<string>>(() => new Set());
+  const bao = useCallback((o: string, co: boolean) => setOCoChu((x) => {
+    if (x.has(o) === co) return x;
+    const n = new Set(x); if (co) n.add(o); else n.delete(o);
+    return n;
+  }), []);
+  const coChu = oCoChu.size > 0;
+  const v = useMemo<NhapPanel>(() => ({ viec: khoa, coChu, bao, xoa: () => { xoaNhapViec(khoNhap(), khoa); setOCoChu(new Set()); } }), [khoa, coChu, bao]);
+  return <NhapCuaPanel.Provider value={v}>{children}</NhapCuaPanel.Provider>;
+}
+
+/**
+ * Ô GIỮ NHÁP (K12, T15, T16): như `useState`, thêm — trong panel có khoá việc — chữ ghi vào `sessionStorage` theo khoá việc + `o`, mở lại
+ * đúng việc thì chữ còn; panel biết còn chữ → ✕ / đổi việc hỏi trước. Lưu thành công thì nơi gọi gọi `useXoaNhap()`. Ngoài panel việc = `useState`.
+ */
+export function useNhap<T>(o: string, dau: T): [T, Dispatch<SetStateAction<T>>] {
+  const n = useContext(NhapCuaPanel);
+  const [v, setV] = useState<T>(() => (n ? docNhap<T>(khoNhap(), n.viec, o) : undefined) ?? dau);
+  const [goc] = useState(() => JSON.stringify(dau));
+  const lanDau = useRef(true);
+  useEffect(() => {
+    if (!n) return;
+    const trong = JSON.stringify(v) === goc;
+    if (!lanDau.current) ghiNhap(khoNhap(), n.viec, o, v, trong);   // lần đầu: giá trị vừa đọc từ kho / ban đầu — không ghi lại
+    lanDau.current = false;
+    n.bao(o, !trong);
+  }, [v]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => n?.bao(o, false), []);   // eslint-disable-line react-hooks/exhaustive-deps -- ô gỡ: không còn chữ để hỏi; nháp vẫn trong kho
+  return [v, setV];
+}
+/** Lưu xong: bỏ nháp của việc (mọi ô) — panel thôi coi là "đang sửa" tới khi gõ tiếp. */
+export function useXoaNhap(): () => void {
+  const n = useContext(NhapCuaPanel);
+  return useCallback(() => n?.xoa(), [n]);
+}
+
+/**
+ * T21 (375 + bàn phím): bàn phím ảo che phần dưới vùng nhìn — đo bằng `visualViewport`, đặt `--ban-phim` (px bị che) + `data-ban-phim` lên <html>:
+ * panel phủ co lên trên bàn phím, chân lưu dính ngay trên bàn phím, thanh điều hướng dưới ẩn (`index.css`).
+ */
+function useBanPhim(bat: boolean) {
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!bat || !vv) return undefined;
+    const goc = document.documentElement;
+    const bo = () => { delete goc.dataset.banPhim; goc.style.removeProperty('--ban-phim'); };
+    const doi = () => {
+      const che = Math.round(window.innerHeight - vv.height - vv.offsetTop);
+      if (che > 80) { goc.dataset.banPhim = ''; goc.style.setProperty('--ban-phim', `${che}px`); } else bo();   // < 80 px: thanh công cụ trình duyệt, không phải bàn phím
+    };
+    doi();
+    vv.addEventListener('resize', doi); vv.addEventListener('scroll', doi);
+    return () => { vv.removeEventListener('resize', doi); vv.removeEventListener('scroll', doi); bo(); };
+  }, [bat]);
+}
+
+/** T16 (mockup `cong-viec.html` `.hop-hoi`): hộp nhỏ, "Ở lại" là nút chính và nhận focus; bỏ chữ là nút thường nói rõ việc sẽ làm. */
+function HopBoChu({ viec, nut, onO, onBo }: { viec: string; nut: string; onO: () => void; onBo: () => void }) {
+  const oLai = useRef<HTMLButtonElement>(null);
+  useEffect(() => { oLai.current?.focus(); }, []);   // sau effect giữ focus của Modal (con chạy trước) — focus vào "Ở lại"
+  return (
+    <Modal open onClose={onO} title={t('Bỏ chữ đang gõ?')} width="max-w-[420px]" z="z-[70]"
+      footer={<>
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onBo}>{nut}</button>
+        <button ref={oLai} type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onO}>{t('Ở lại')}</button>
+      </>}>
+      <p className="m-0 text-sm text-slate-300">{t('{viec} chưa lưu — chữ đang gõ sẽ mất.', { viec })}</p>
+    </Modal>
+  );
+}
 /** CV-LOI (CV-05): panel đang hiện "✓ Đã lưu · Hoàn tác" còn bấm được — hàng đợi Công việc không tự sang việc kế (Hoàn tác không bị thay). */
 const choHoanTac = new Set<symbol>();
 export const dangChoHoanTac = () => choHoanTac.size > 0;
@@ -35,15 +126,18 @@ export function useChoHoanTac(con: boolean) {
 export const KhungTaiCho = createContext(false);
 
 /**
- * KHUÔN PANEL CHUNG (PR-UX0, N-4 — mockup 15 (1)). Ngăn phải 560px (form dạng bảng `rong` = 720px), 375px toàn màn.
+ * KHUÔN PANEL CHUNG (PR-UX0, N-4 — mockup 15 (1)). Ngăn phải 480px (V5 07 mục 4: 420–480; form dạng bảng `rong` = 720px), 375px toàn màn.
  * Đầu 52px MỘT dòng: tiêu đề · tên HV · lớp (mờ, cắt "…") · ✕; tab (nếu có) dính dưới đầu; ngữ cảnh ≤ 1 dòng.
  * Thân chia KHỐI (`Khoi`, tiêu đề nhỏ, luật dài vào ⓘ), nhãn TRÊN ô (`Truong`), ≤ 2 ô một hàng (`Hang2`).
  * Chân CỐ ĐỊNH: trái Huỷ / Xoá (viền đỏ), phải nút phụ + MỘT nút chính; dòng xám "n ô cần sửa ↑" trên chân (PR-N1,
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, longTrong, z = 'z-50', dau, onDong, children }: {
+export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, longTrong, z = 'z-50', dau, loai, onDong, children }: {
   tieuDe: string; hocVien?: string | null; lop?: string | null;
+  /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". Panel việc (`dau`)
+   *  mặc định "VIỆC"; `null` = không vẽ. */
+  loai?: string | null;
   /** OV-12c — ĐẦU PANEL v3 (mockup panel v3 §1): dòng 1 tên việc 17 px + MỘT chip hạn (`ChipHan`) + ✕; dòng 2 em (link ↗) · lớp · ngữ cảnh.
    *  Có `dau` thì `hocVien` / `lop` không vẽ ở đầu một dòng cũ. */
   dau?: { han?: ReactNode; dong2: ReactNode[] };
@@ -59,6 +153,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     /** `null` = không vẽ nút trái (panel tự có nút Đóng ở `chinh`, ví dụ ngăn Tổng kết lộ trình). */
     huy?: { nhan?: string; onClick: () => void; disabled?: boolean } | null; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
+    /** NEN-PANEL (`.panel-chan .trai`): trạng thái lưu (`TrangThaiLuu` / `ChuLuu`) đầu hàng nút, trước Lưu / Lưu và tiếp. */
+    trai?: ReactNode;
     /** Luật S3 (I1): form đã sửa → nút trái mặc định "Huỷ thay đổi", chưa sửa → "Đóng". `huy.nhan` riêng (Xong, ‹ Sửa…) thắng. */
     daSua?: boolean;
     /** OV-14a (F12): nơi gọi tự hỏi khi đóng (hộp nêu đúng số em bị ảnh hưởng) — khung không hỏi thêm lần nữa ở ✕ / Esc / nền. */
@@ -75,11 +171,18 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   const khung = useRef<HTMLDivElement>(null);
   const dongRef = useRef(onDong);
   dongRef.current = onDong;
-  /* Hotfix 15/10 (L5): ✕ / Esc / bấm nền đi chung một đường — đang sửa dở thì hỏi trước, không mất chữ âm thầm. */
-  const daSuaRef = useRef(false);
-  daSuaRef.current = !!chan?.daSua && !chan?.tuHoi;
-  const dong = () => { if (!daSuaRef.current || window.confirm(t('Bỏ nội dung đang gõ?'))) dongRef.current(); };
   const taiCho = useContext(KhungTaiCho);
+  /* NEN-PANEL (K12): panel ngoài cùng của việc — ô `useNhap` còn chữ → coi là đang sửa như `chan.daSua`. */
+  const nhap = useContext(NhapCuaPanel);
+  const trongKhung = useContext(TrongKhung);
+  const daSua = !!chan?.daSua || (!trongKhung && !!nhap?.coChu);
+  /* Hotfix 15/10 (L5) · NEN-PANEL (T16): ✕ / Esc / bấm nền / ← / đổi việc đi chung một đường — đang sửa dở thì hộp "Bỏ chữ đang gõ?" (Ở lại /
+     Bỏ chữ), không mất chữ âm thầm. Bỏ chữ = xoá nháp của việc rồi làm tiếp. */
+  const [hoi, setHoi] = useState<{ nut: string; tiep: () => void } | null>(null);
+  const daSuaRef = useRef(false);
+  daSuaRef.current = daSua && !chan?.tuHoi;
+  const dong = () => { if (daSuaRef.current) setHoi({ nut: t('Bỏ chữ, đóng'), tiep: () => dongRef.current() }); else dongRef.current(); };
+  const boChu = () => { const h = hoi; setHoi(null); nhap?.xoa(); h?.tiep(); };
 
   useEffect(() => {
     if (longTrong || taiCho) return undefined;
@@ -106,18 +209,24 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     return () => { document.removeEventListener('keydown', onKey); nganPanel.splice(nganPanel.indexOf(id), 1); };
   }, [id, taiCho]);
 
-  const daSua = !!chan?.daSua;
   useEffect(() => {
     if (!daSua) return undefined;
-    panelDangSua.add(id);
+    panelDangSua.set(id, (tiep) => setHoi({ nut: t('Bỏ chữ, sang việc khác'), tiep }));
     return () => { panelDangSua.delete(id); };
   }, [id, daSua]);
+  useBanPhim(!trongKhung);   // rà #530: một nơi đo — panel con đóng không gỡ `--ban-phim` khi panel ngoài còn mở
 
-  /* OV-12e (rà #395): "← Danh sách / ← tên em / ← Case" bỏ panel đang gõ — đang sửa dở thì hỏi trước (cùng cách hỏi khi đổi ngôn ngữ), không mất chữ âm thầm. */
+  /* OV-12e (rà #395): "← Danh sách / ← tên em / ← Case" bỏ panel đang gõ — đang sửa dở thì hỏi trước (cùng hộp), không mất chữ âm thầm. */
   const veLai = () => {
-    if (daSua && !window.confirm(t('Đang sửa dở — quay lại sẽ mất phần chưa lưu. Vẫn quay lại?'))) return;
-    quayLai?.onClick();
+    if (daSua) setHoi({ nut: t('Bỏ chữ, quay lại'), tiep: () => quayLai?.onClick() });
+    else quayLai?.onClick();
   };
+  const dongLoai = loai === undefined ? (dau ? t('VIỆC') : null) : loai;
+  const vachLoai = dongLoai && (
+    <div className="mb-1 flex items-center gap-1.5 text-xs font-bold tracking-[.02em] text-slate-500">
+      <span aria-hidden className="h-[3px] w-3.5 shrink-0 rounded-sm bg-[color:var(--hong)]" />{dongLoai}
+    </div>
+  );
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy === null ? null : chan?.huy ?? { onClick: onDong };
   useGiuFocus(khung, !taiCho);
@@ -128,22 +237,24 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     <>
         {dau ? (
           <header className="flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 pt-4 sm:px-5" style={{ borderColor: 'var(--line)' }}>
+            {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
             <div className="flex items-start gap-2.5">
               <h2 className="m-0 min-w-0 flex-1 text-[17px] font-extrabold leading-6 text-slate-100">{tieuDe}</h2>
               {dau.han}
-              <button type="button" className={`btn btn-sm btn-ghost -my-1 min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>
+              <button type="button" className={`btn btn-sm btn-ghost -my-1 min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]`} onClick={dong} aria-label={t('Đóng')}>✕</button>
             </div>
             <p className="m-0 flex flex-wrap items-baseline text-sm leading-snug text-slate-400">
               {dau.dong2.filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
             </p>
           </header>
         ) : (
-        <header className="flex h-[52px] shrink-0 items-center gap-2 border-b px-4" style={{ borderColor: 'var(--line)' }}>
+        <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${vachLoai ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
+          {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
           <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
-          {/* Tại chỗ trên điện thoại: "‹ Công việc" của nơi gọi thay ✕. */}
-          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${taiCho ? 'max-lg:hidden' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>
+          {/* Rà #530: ✕ ở mọi cỡ như mockup V5 (375 có thêm "‹ Công việc" của nơi gọi — cùng đường đóng). */}
+          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]`} onClick={dong} aria-label={t('Đóng')}>✕</button>
         </header>
         )}
         {quayLai && (
@@ -158,42 +269,46 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
-          <footer className={`flex shrink-0 flex-col gap-2 border-t px-4 pb-3.5 pt-2.5 ${chan.dongTren || chan.conThieu?.length ? '' : 'sm:hidden'} ${taiCho ? 'max-sm:sticky max-sm:bottom-[calc(env(safe-area-inset-bottom)-23px)] max-sm:z-20' : ''}`} style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+          <footer className={`flex shrink-0 flex-col gap-2 border-t px-4 pb-3.5 pt-2.5 ${chan.dongTren || chan.conThieu?.length ? '' : 'sm:hidden'} ${taiCho ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren && <div className="flex min-h-6 items-center gap-2 text-[13px] text-slate-400">{chan.dongTren}</div>}
             {chan.chinh && <div className="sm:hidden [&>button]:min-h-[48px] [&>button]:w-full [&>button]:justify-center [&>button]:text-[15px] [&>button]:font-bold">{chan.chinh}</div>}
           </footer>
         )}
         {chan && !chan.v3 && (
-          <footer className="shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
+          <footer className={`shrink-0 border-t ${taiCho ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
               {huy && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>}
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? t('Xoá')}</button>}
-              <span className="flex-1" />
+              {chan.trai ? <span className="flex min-w-0 flex-1 items-center gap-2 text-[13px] max-sm:basis-full">{chan.trai}</span> : <span className="flex-1" />}
               {chan.phu}
               {chan.chinh}
             </div>
           </footer>
         )}
+        {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => setHoi(null)} onBo={boChu} />}
     </>
   );
+  const voi = (x: ReactNode) => <TrongKhung.Provider value>{x}</TrongKhung.Provider>;
   if (taiCho) {
     /* OV-14c: Esc từ hộp nằm trong portal (hộp nhập điểm) nổi bọt qua cây React — chỉ đóng panel khi Esc phát ra TRONG khung panel. */
     return (
+      /* 375 toàn màn (08 NEN-PANEL, `.dt-toan`): `-mx-4` bù đệm `p-4` của <main> — thẻ tràn sát hai mép, không bo góc. */
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
-        className={`card flex flex-col -outline-offset-2 lg:max-h-[calc(100dvh-8rem)] ${chan?.v3 ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
-        <KhungTaiCho.Provider value={false}>{than}</KhungTaiCho.Provider>
+        className={`card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
+        <KhungTaiCho.Provider value={false}>{voi(than)}</KhungTaiCho.Provider>
       </section>
     );
   }
   return createPortal(
-    <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} role="dialog" aria-modal="true" aria-label={tieuDe}>
+    /* T21: `bottom` = phần bàn phím ảo che (`useBanPhim`) — panel co lên, chân lưu nằm ngay trên bàn phím. */
+    <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} style={{ bottom: 'var(--ban-phim, 0px)' }} role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={dong} />
-      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
+      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[480px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
-        {than}
+        {voi(than)}
       </div>
     </div>,
     document.body,

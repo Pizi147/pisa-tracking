@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { duongHoSoHocVien } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useChoHoanTac } from './KhungPanel.tsx';
+import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
 
 /**
  * KHUÔN PANEL LÀM VIỆC v3 (OV-12c, mockup `thiet-ke/mockup-ov12-panel-v3-2026-10-14.html` §1) — phần dùng chung đặt trong `KhungPanel`:
  *   (ChipHan — chip hạn ở đầu panel — nằm ở `ui/Nhan.tsx` cùng các chip khác.)
  *   CanLam    Khối "Cần làm" — khối DUY NHẤT có màu (nền accent-soft + vạch trái 3 px); chứa đúng ô cần điền + một nút chính.
  *   BoiCanh   ≤ 3 dòng nhãn – giá trị (Nguyên nhân · Phương án · Kết quả gần nhất); "Xem thêm" mở ngay dưới, không chuyển trang.
+ *             NEN-PANEL (P2, `09-anh1`, `v5-nen.css .khoi-ngu-canh`): khối nền nhạt, nhãn nhỏ xám / giá trị đậm; điểm trong giá trị tô màu kết quả (`DiemKq`).
  * Đầu panel 2 dòng = `KhungPanel dau`. Chân = `KhungPanel chan` (dòng trạng thái + nút chính dính đáy ở 375).
  */
 export function CanLam({ children, trongDong }: { children: ReactNode; /** OV-12e: trong dòng mở rộng (nền dòng đã accent-soft) → nền surface. */ trongDong?: boolean }) {
@@ -26,14 +28,17 @@ export function BoiCanh({ dong, them }: { dong: [string, ReactNode][]; them?: Re
   if (!co.length && !them) return null;
   return (
     <div className="flex flex-col gap-1.5">
-      <dl className="m-0 grid grid-cols-[132px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[13px] max-sm:grid-cols-1 max-sm:gap-y-0.5">
-        {co.map(([nhan, gt]) => (
-          <div key={nhan} className="contents">
-            <dt className="text-slate-500">{nhan}</dt>
-            <dd className="m-0 text-slate-400 max-sm:mb-1.5">{gt}</dd>
-          </div>
-        ))}
-      </dl>
+      {co.length > 0 && (
+        <dl className="m-0 grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 rounded-lg px-3.5 py-3 text-sm max-sm:grid-cols-[6rem_minmax(0,1fr)]"
+          style={{ background: 'var(--surface-2)' }}>
+          {co.map(([nhan, gt]) => (
+            <div key={nhan} className="contents">
+              <dt className={LOP_NHAN}>{nhan}</dt>
+              <dd className={`m-0 min-w-0 ${LOP_GIA_TRI}`}>{gt}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
       {them && (
         <>
           <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
@@ -64,26 +69,43 @@ export function dauViec({ han, em, lop, ngCanh }: {
 }
 
 /**
- * CHÂN v3 — trạng thái lưu MỘT dòng, chữ + ký hiệu (không chỉ màu): Chưa lưu (Huỷ sửa) · Đang lưu… · ⚠ Không lưu được (Thử lại). Chữ đã gõ giữ nguyên
- * khi lỗi. "Còn thiếu n ô" do `KhungPanel chan.conThieu` vẽ.
+ * CHÂN LƯU THỐNG NHẤT (NEN-PANEL, `v5-nen.css .tt-luu`, bảng mẫu mục 7) — MỘT dòng, chữ + ký hiệu (không chỉ màu), cùng chữ ở mọi panel:
+ * ● Chưa lưu (Huỷ sửa) · ⟳ Đang lưu… · ✓ Đã lưu HH:MM · ⚠ Không lưu được — {lý do}. Chữ đang gõ vẫn giữ. (Thử lại). "Còn thiếu n ô" do
+ * `KhungPanel chan.conThieu` vẽ. `SaveIndicator` (ô điểm, lưới) dùng cùng hàm vẽ.
  */
-export function TrangThaiLuu({ tt, loi, onHuy, onThuLai }: { tt: 'nhap' | 'dang' | 'loi' | null; loi?: string | null; onHuy?: () => void; onThuLai?: () => void }) {
+export type TtLuu = 'nhap' | 'dang' | 'da' | 'loi';
+export function TrangThaiLuu({ tt, loi, luc, onHuy, onThuLai }: {
+  tt: TtLuu | null; loi?: string | null; onHuy?: () => void; onThuLai?: () => void;
+  /** Giờ đã lưu `HH:MM` (tt = 'da'). */
+  luc?: string | null;
+}) {
   if (!tt) return null;
   const nut = (chu: string, f: () => void) => (
     <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={f}>{chu}</button>
   );
   return (
     <>
-      {tt === 'loi'
-        ? <span role="alert" className="font-semibold text-bad">⚠ {t('Không lưu được')}{loi ? ` — ${loi}` : ''}</span>
-        : <span className={tt === 'nhap' ? 'inline-flex items-center gap-1.5 text-slate-300' : ''}>
-            {tt === 'nhap' && <span aria-hidden className="inline-block h-2 w-2 rounded-full bg-soon" />}{tt === 'dang' ? t('Đang lưu…') : t('Chưa lưu')}
-          </span>}
+      <ChuLuu tt={tt} loi={loi} luc={luc} />
       <span className="flex-1" />
       {tt === 'nhap' && onHuy && nut(t('Huỷ sửa'), onHuy)}
       {tt === 'loi' && onThuLai && nut(t('Thử lại'), onThuLai)}
     </>
   );
+}
+
+/** Chữ trạng thái lưu (không nút) — dùng chung cho chân panel và `SaveIndicator`. */
+export function ChuLuu({ tt, loi, luc, gon }: { tt: TtLuu; loi?: string | null; luc?: string | null; /** Hàng lưới chật: lý do vào tooltip, không câu "vẫn giữ". */ gon?: boolean }) {
+  if (tt === 'loi' && gon) return <span role="alert" title={loi ?? undefined} className="font-semibold text-bad">⚠ {t('Không lưu được')}</span>;
+  if (tt === 'loi') return <span role="alert" className="font-semibold text-bad">⚠ {t('Không lưu được')}{loi ? ` — ${loi}` : ''}. {t('Chữ đang gõ vẫn giữ.')}</span>;
+  if (tt === 'dang') {
+    return (
+      <span role="status" className="inline-flex items-center gap-1.5 font-semibold text-doing">
+        <span aria-hidden className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />{t('Đang lưu…')}
+      </span>
+    );
+  }
+  if (tt === 'da') return <span role="status" className="font-semibold text-done">✓ {t('Đã lưu')}{luc ? <span className="tabular-nums"> {luc}</span> : null}</span>;
+  return <span className="inline-flex items-center gap-1.5 font-semibold text-soon"><span aria-hidden>●</span>{t('Chưa lưu')}</span>;
 }
 
 /** Nút chữ (nút phụ v3) — đứng sau nút chính trong khối Cần làm; một nút chính duy nhất nổi. */
@@ -145,4 +167,12 @@ function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => P
       {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
     </p>
   );
+}
+
+/** Điểm trong dòng bối cảnh (P2): dưới kỳ vọng = đỏ ✗, đạt = xanh ✓ (cùng token `kq-*` của ô điểm); không kỳ vọng → số thường. */
+export function DiemKq({ diem, kyVong }: { diem: number; kyVong?: number | null }) {
+  const so = diem.toFixed(1);
+  if (kyVong == null) return <span className="tabular-nums">{so}</span>;
+  const dat = diem >= kyVong;
+  return <span className={`font-bold tabular-nums ${dat ? 'text-kq-bang' : 'text-kq-duoi'}`}><span aria-hidden>{dat ? '✓ ' : '✗ '}</span>{so}</span>;
 }
