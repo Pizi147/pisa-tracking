@@ -79,15 +79,28 @@ export async function runPrSvSo3Tests(t: YThucTestKit) {
 
   check('SVSO3 · MT3+ gộp: em có MT3 và MT4 cùng kỳ → MỘT lần ở MT3+, theo lượt mới nhất (MT4)', () => thu(() => {
     const goc = hang(kqMt(), 'mt3+');
-    const a = em(); a.luot(3, tuanNay, DU(5.0));
-    let mt4 = true;
-    try { a.luot(4, tuanNay, DU(6.5)); } catch { mt4 = false; }
+    const a = em(); a.luot(3, tuanNay, DU(5.0)); a.luot(4, tuanNay, DU(6.5));
     const r = hang(kqMt(), 'mt3+');
-    assert(r.hv === goc.hv + 1, JSON.stringify({ r, goc }));
-    assert(!mt4 || r.dem.dat === goc.dem.dat + 1, 'phải lấy MT4 (Đạt), không MT3');
+    assert(r.hv === goc.hv + 1 && r.dem.dat === goc.dem.dat + 1 && r.dem['thieu-1.5'] === goc.dem['thieu-1.5'], JSON.stringify({ r, goc }));
     xoaNho();
-    const p = bc.oBaoCao(P.mbManager, { ...f, o: mt4 ? 'kq-mt:mt3+:dat' : 'kq-mt:mt3+:thieu-1.5' });
-    assert(p.rows.filter((x: any) => x.id === a.sid).length === 1, 'một em một dòng');
+    const p = bc.oBaoCao(P.mbManager, { ...f, o: 'kq-mt:mt3+:dat' });
+    assert(p.rows.filter((x: any) => x.id === a.sid).length === 1 && p.rows.find((x: any) => x.id === a.sid).sub.includes('MT4'), 'một em một dòng, lượt MT4');
+  }));
+
+  check('SVSO3 · hàng Thi thật: Đạt Target theo `outcome` lúc nhập (không so lại Target hiện tại) · chưa đạt theo khoảng thiếu · em KCK không vào · so MT cuối', () => thu(() => {
+    const goc = hang(kqMt(), 'thi');
+    const thi = (x: { cy: number }, ovr: number, outcome: string, target: number, kck = 0) => conn.prepare(
+      `UPDATE learning_cycles SET thi_that_ngay = ?, thi_that_l = ?, thi_that_r = ?, thi_that_w = ?, thi_that_s = ?, outcome = ?, outcome_score = ?, target_score = ?, khong_cam_ket = ?
+        WHERE id = ?`).run(TODAY, ovr, ovr, ovr, ovr, outcome, ovr, target, kck, x.cy);
+    const a = em(); a.luot(3, t.addDays(tuanNay, -14), DU(6.0)); thi(a, 6.5, 'reached', 7.0);   // Target nâng lên 7.0 sau khi nhập → vẫn Đạt
+    const b = em(); b.luot(3, t.addDays(tuanNay, -14), DU(6.0)); thi(b, 6.0, 'not_reached', 6.5);
+    const c = em(); c.luot(3, t.addDays(tuanNay, -14), DU(6.0)); thi(c, 5.0, 'not_reached', 6.5, 1);   // KCK
+    const r = hang(kqMt(), 'thi');
+    assert(r.hv === goc.hv + 2 && r.dem.dat === goc.dem.dat + 1 && r.dem['thieu-0.5'] === goc.dem['thieu-0.5'] + 1, JSON.stringify({ r, goc }));
+    assert(r.soTruoc.tang === goc.soTruoc.tang + 1 && r.soTruoc.bang === goc.soTruoc.bang + 1, 'so MT cuối: a ↑ (6.0 → 6.5), b = (6.0)');
+    xoaNho();
+    const p = bc.oBaoCao(P.mbManager, { ...f, o: 'kq-mt:thi:dat' });
+    assert(p.rows.some((x: any) => x.id === a.sid && /so lượt trước \+0\.5/.test(x.sub)) && !p.rows.some((x: any) => x.id === c.sid), JSON.stringify(p.rows.find((x: any) => x.id === a.sid)));
   }));
 
   check('SVSO3 (T20) · Kết quả MT nhiều chi nhánh = Σ theo chi nhánh (mỗi hàng, mỗi cột)', () => {

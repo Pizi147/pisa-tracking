@@ -18,6 +18,7 @@ import { phamViPhanTich } from './phamVi.ts';
 import { luotTrongKhoang } from './tongHop.ts';
 import { ketQuaThiThatKq, mockTrongKhoang } from './ketQuaThi.ts';
 import { kckCuaLuot } from '../fasttrack/attempts.ts';
+import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 
 export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string };
 
@@ -137,9 +138,9 @@ type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: 
 /**
  * KẾT QUẢ MT (SV-SO3, `10` mục 5) — hàng → em → kết quả. MT: lượt MT0 (lớp thường hoặc FT) / MT lớp FT có tuần thi trong kỳ, đã có ít nhất một band
  * (CHÍNH `mockTrongKhoang` của tab Kết quả thi), mỗi em lấy lượt mới nhất của hàng (MT3+ gộp MT3 trở đi); Target = Target lúc thi của lượt.
- * Thi thật: CHÍNH dòng `ketQuaThiThatKq` (đủ 4 kỹ năng, ngày thi trong kỳ; "Không thi" không vào), Target = Target lộ trình. Em KCK không vào.
+ * Thi thật: CHÍNH dòng `ketQuaThiThatKq` (đủ 4 kỹ năng, ngày thi trong kỳ; "Không thi" không vào); Đạt Target = `outcome` lúc nhập. Em KCK không vào.
  * Lượt trước: lượt có Overall số MT nhỏ hơn gần nhất trong cùng lộ trình (Thi thật: MT cuối có Overall).
- * Số câu cố định theo lô: lượt trong kỳ (1) + Thi thật (không hỏi quyền từng em) + Target lộ trình (1) + lượt của các lộ trình (1) + MỘT lần chấm.
+ * Số câu cố định theo lô: lượt trong kỳ (1) + chấm + Thi thật (không hỏi quyền từng em) + Target lộ trình (1) + `luotTheoLoTrinh` (1 + `loadBundle` nhớ theo lượt).
  */
 export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, EmKqMt>> {
   const { cs } = phamViPhanTich(p, f.branchId ?? null, null);
@@ -160,28 +161,19 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
   });
   for (const [s, r] of thi) if (loTrinh.get(r.cycleId)?.kck) thi.delete(s);
 
-  /* MỘT lần chấm cho lượt trong kỳ + mọi lượt của các lộ trình có mặt ("so lượt trước"). */
-  const cyc = [...new Set([...luot.map((a) => a.cycle_id as number | null), ...[...thi.values()].map((r) => r.cycleId)])].filter((x): x is number => x !== null);
-  const trongKy = new Set(luot.map((a) => a.id as number));
   const cua = new Map(luot.map((a) => [a.id as number, a]));
-  theoLo(cyc, (lo, ph) => {
-    for (const a of luotTrongKhoang(`a.cycle_id IN (${ph}) AND a.status != 'cancelled' AND a.kind IN ('mock', 'mt0')`, lo)) if (!cua.has(a.id)) cua.set(a.id, a);
-  });
   const chon = new Map<LuotKqMt, Map<number, DongMock>>(LUOT_KQ_MT.map((l) => [l, new Map()]));
-  const ovrCyc = new Map<number, { mt: number; ovr: number }[]>();
-  for (const d of mockTrongKhoang(p, f, { luot: [...cua.values()], boCase: true })) {
-    const a = cua.get(d.attemptId)!;
-    if (d.ovr !== null && a.cycle_id !== null) ovrCyc.set(a.cycle_id, [...(ovrCyc.get(a.cycle_id) ?? []), { mt: d.mt, ovr: d.ovr }]);
-    if (!trongKy.has(d.attemptId) || kckCuaLuot(a)) continue;
+  for (const d of mockTrongKhoang(p, f, { luot, boCase: true })) {
+    if (kckCuaLuot(cua.get(d.attemptId))) continue;
     const m = chon.get(luotKqMt(d.mt))!;
     const cu = m.get(d.studentId);
     if (!cu || d.mt > cu.mt || (d.mt === cu.mt && d.tuan > cu.tuan)) m.set(d.studentId, d);
   }
+  /* "So lượt trước" — CÙNG hàm Xu hướng của hàng HV (`luotTruocCoOverall`). */
   const cycleCua = (d: DongMock) => cua.get(d.attemptId)!.cycle_id as number | null;
-  const truoc = (c: number | null, mt: number): number | null => {
-    const ds = (c === null ? [] : ovrCyc.get(c) ?? []).filter((x) => x.mt < mt).sort((a, b) => b.mt - a.mt);
-    return ds[0]?.ovr ?? null;
-  };
+  const theoCy = luotTheoLoTrinh([...[...chon.values()].flatMap((m) => [...m.values()].map(cycleCua)), ...[...thi.values()].map((r) => r.cycleId)]
+    .filter((x): x is number => x !== null));
+  const truoc = (c: number | null, mt: number): number | null => (c === null ? null : luotTruocCoOverall(theoCy.get(c), mt)?.ovr ?? null);
 
   const out = new Map<LuotKqMt, Map<number, EmKqMt>>();
   for (const [l, m] of chon) {
@@ -194,7 +186,10 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
   out.set('thi', new Map([...thi].map(([s, r]) => {
     const target = loTrinh.get(r.cycleId)?.target ?? null;
     const ngay = r.ngayThi ? `${r.ngayThi.slice(8, 10)}/${r.ngayThi.slice(5, 7)}` : '';
-    return [s, { cot: cotKqMt(r.ovr, target), ovr: r.ovr, target, truoc: r.ovr === null ? null : truoc(r.cycleId, Infinity), lop: r.lop ?? '', nhan: t('thi {ngay}', { ngay }) }];
+    /* Đạt Target = kết luận lúc nhập (`outcome`, như tab Kết quả thi) — không so lại Target hiện tại; chưa đạt thì khoảng thiếu theo Target lộ trình. */
+    const theoTarget = cotKqMt(r.ovr, target);
+    const cot: CotKqMt = r.dat === true ? 'dat' : r.dat === false ? (theoTarget === 'dat' ? 'thieu-0.5' : theoTarget) : 'chua-du';
+    return [s, { cot, ovr: r.ovr, target, truoc: r.ovr === null ? null : truoc(r.cycleId, Infinity), lop: r.lop ?? '', nhan: t('thi {ngay}', { ngay }) }];
   })));
   return out;
 }
