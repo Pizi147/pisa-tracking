@@ -287,7 +287,8 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   const attempts = studentIds.length
     ? (conn
         .prepare(
-          `SELECT a.* FROM assessment_attempts a
+          `SELECT a.*, cy.route AS route   -- V5 SV-SO1: kỳ vọng của lượt (\`oXongCua\`) không hỏi lộ trình lẻ từng lượt
+             FROM assessment_attempts a
              JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
             WHERE a.kind = 'mock' AND a.student_id IN (${phOf(studentIds.length)})
             ORDER BY a.attempt_no`,

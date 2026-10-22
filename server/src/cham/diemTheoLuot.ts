@@ -89,10 +89,12 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
       const daToi = !!k.week_start && String(k.week_start).slice(0, 10) <= thuHai;
       for (const nhap of l.ft ? entrySkillsOf(k.skill as AssessedSkill) : [k.skill as string]) {
         const sc = diem.get(`${k.attempt_id}|${nhap}`);
-        /* V5 SV-SO1: có band mà thiếu nhận xét bắt buộc chưa xong (`O_FT_XONG_SQL`, cùng luật `oXongCua`). */
-        const xong = sc && (sc.band !== null ? !!sc.band_xong : sc.raw_score !== null
+        const coDiem = sc && (sc.band !== null || sc.raw_score !== null
           || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
-        if (!xong) { l.thieu += 1; if (daToi) l.n += 1; }
+        /* V5 SV-SO1: "đủ điểm" (`thieu`) đòi band + đủ nhận xét bắt buộc (`O_FT_XONG_SQL`, cùng luật `oXongCua`); "ô TRỐNG" (`n`, chip / bộ lọc lưới
+           `oTrongLuotFt`) vẫn là ô chưa có gì — ô có band thiếu nhận xét không trống. */
+        if (!coDiem || (sc.band !== null && !sc.band_xong)) l.thieu += 1;
+        if (!coDiem && daToi) l.n += 1;
       }
     }
   });

@@ -325,7 +325,7 @@ export async function runPrDlTests(t: YThucTestKit) {
         const k = conn.prepare(`SELECT k.attempt_id, k.skill FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
           WHERE a.class_id = ? AND a.attempt_no = ? AND k.required = 1`).all(lop4, no) as any[];
         for (const r of k) for (const nhap of r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill]) {
-          conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,6)').run(r.attempt_id, nhap);
+          conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, comment) VALUES (?,?,9,'Nhận xét đủ mười ký tự.')`).run(r.attempt_id, nhap);   // V5 SV-SO1: đủ điểm = band + nhận xét
         }
       };
       du(1); du(3);
@@ -389,10 +389,12 @@ export async function runPrDlTests(t: YThucTestKit) {
       const trong = new Map<number, number>();
       let tong = 0;
       for (const k of o) for (const nhap of k.skill === 'writing' ? ['writing1', 'writing2'] : [k.skill]) {
-        const sc = get('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', k.attempt_id, nhap);
-        const xong = sc && (sc.band !== null || sc.raw_score !== null || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
-        trong.set(k.attempt_id, (trong.get(k.attempt_id) ?? 0) + (xong ? 0 : 1));
-        if (!xong && k.week_start && k.week_start <= week.mondayOf(TODAY)) tong += 1;
+        const sc = get(`SELECT sc.*, ${d.O_FT_XONG_SQL('sc', 'a')} AS band_xong FROM assessment_scores sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+          WHERE sc.attempt_id = ? AND sc.skill = ?`, k.attempt_id, nhap);
+        const coDiem = sc && (sc.band !== null || sc.raw_score !== null || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
+        /* V5 SV-SO1: đủ điểm đòi band + đủ nhận xét bắt buộc; ô trống vẫn là ô chưa có gì. */
+        trong.set(k.attempt_id, (trong.get(k.attempt_id) ?? 0) + (coDiem && (sc.band === null || sc.band_xong) ? 0 : 1));
+        if (!coDiem && k.week_start && k.week_start <= week.mondayOf(TODAY)) tong += 1;
       }
       assert(mt2.oTrong === tong, `oTrong ${mt2.oTrong} ≠ ${tong}`);
       assert(mt2.duDiem === [...trong.values()].filter((x) => x === 0).length, `duDiem ${mt2.duDiem}`);

@@ -357,13 +357,14 @@ export type SkillCell = {
  */
 export function oXongCua(attempt: any, rows: readonly { skill: string; band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null }[]) {
   const batBuoc = batBuocNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
-  const kyVong = kyVongCuaLuot(attempt);
+  /* Kỳ vọng (đọc lộ trình của lượt) chỉ tính khi cần — lượt không đòi nhận xét / ô không band không hỏi DB (Kế hoạch Test nhiều lượt). */
+  let kv: { v: number | null } | null = null;
   const thieuNx = (k: string) => {
     const r = rows.find((x) => x.skill === k);
-    return thieuNhanXetMt({
-      batBuoc, coDiem: (r?.band ?? null) !== null || (r?.raw_score ?? null) !== null, band: r?.band ?? null, kyVong, nhanXet: r?.comment,
-      nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan),
-    });
+    const coDiem = (r?.band ?? null) !== null || (r?.raw_score ?? null) !== null;
+    if (!batBuoc || !coDiem) return null;
+    kv ??= { v: kyVongCuaLuot(attempt) };
+    return thieuNhanXetMt({ batBuoc, coDiem, band: r?.band ?? null, kyVong: kv.v, nhanXet: r?.comment, nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan) });
   };
   return { thieuNx, xong: (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null && thieuNx(k) === null };
 }
