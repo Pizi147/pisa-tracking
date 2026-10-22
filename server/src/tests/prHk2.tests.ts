@@ -72,7 +72,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const con = tsx('web/src').filter((f) => doc(f).includes('⋮'));
     assert(con.length === 0, `còn ⋮: ${con.join(', ')}`);
     assert(/kieu === 'chip'/.test(doc('web/src/ui/MenuDong.tsx')), 'MenuDong thiếu kieu="chip"');
-    for (const f of ['web/src/modules/students/StudentsPage.tsx', 'web/src/modules/classes/DauTrangLop.tsx']) {
+    for (const f of ['web/src/modules/classes/DauTrangLop.tsx']) {   // UI-HV-LOP: dải lớp ở Học viên & Lớp hiện đủ badge (không "+n")
       assert(/<MenuDong kieu="chip" bieuTuong=\{`\+/.test(doc(f)), `${f}: "+n" chưa dùng kieu="chip"`);
     }
     assert(!/label="⋮"/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'StudentDetailPage còn label="⋮"');
@@ -267,11 +267,11 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C19a · Học viên & Lớp: ô tìm "Lọc trong danh sách này…"; "+ Lớp mới" / "+ Học viên" max-sm:hidden và có trong MenuDong "Thao tác trang" (chỉ < 640 px)', () => {
     const s = doc('web/src/modules/students/StudentsPage.tsx');
-    assert(/placeholder=\{t\('Lọc trong danh sách này…'\)\}/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
-    assert(/className="btn btn-sm max-sm:hidden"[^]*?>\{t\('\+ Lớp mới'\)\}</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\{t\('\+ Học viên'\)\}</.test(s), 'hai nút ngoài phải max-sm:hidden');
+    /* UI-HV-LOP (khu d): ô tìm "Tìm học viên, lớp"; đầu trang Xuất + "+ Thêm học viên" (max-sm:hidden, vào ⋯ ở < 640 px); "+ Lớp mới" trong ⋯. */
+    assert(/placeholder=\{t\('Tìm học viên, lớp'\)\}/.test(s), 'placeholder ô tìm');
+    assert(/className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\{t\('\+ Thêm học viên'\)\}</.test(s), 'nút thêm HV ngoài phải max-sm:hidden');
     const mn = s.slice(s.indexOf("<MenuDong nhan={t('Thao tác trang')}"), s.indexOf("<MenuDong nhan={t('Thao tác trang')}") + 900);
-    assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: t\('\+ Lớp mới'\)/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
-    assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: t\('\+ Học viên'\)/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');   // OV-11g HL-14: cờ trang
+    assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: t\('\+ Thêm học viên'\)/.test(mn) && /nhan: t\('\+ Lớp mới'\)/.test(mn), 'mục thêm trong ⋯');
     assert(/keTruoc/.test(mn), 'Lưu trữ cách một đường kẻ khi có mục thêm');
   });
 

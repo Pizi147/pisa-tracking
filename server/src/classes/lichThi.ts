@@ -9,7 +9,7 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  PERMISSIONS, chuanHoaMaLop, dsThangLichThi, ketLuanHienTai, suaLichTheoKetLuan, trangThaiLichThi, KET_LUAN_LICH_THI, laThangIso,
+  PERMISSIONS, chuanHoaMaLop, mondayOfDate, dsThangLichThi, ketLuanHienTai, suaLichTheoKetLuan, trangThaiLichThi, KET_LUAN_LICH_THI, laThangIso,
   type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -21,6 +21,7 @@ import { phamViTrang } from './hocVienLop.ts';
 import { cycleById, examPlanOf, updateCycle } from '../fasttrack/cycles.ts';
 import { chanLuuTru } from '../students/students.ts';
 import { standingFor } from '../students/standing.ts';
+import { diemCuaLuot } from '../fasttrack/attempts.ts';
 
 const GHI_CHU_TOI_DA = 300;
 
@@ -35,6 +36,13 @@ export type HangLichThi = {
   ketLuan: KetLuanLichThi | null; luu: LuuLichThi | null; coTheSua: boolean;
   /** OV-15h2 (ý 2): ai · lúc đặt ngày thi đang có ("chốt 05/10 · Lê Thu"); chỉ khi đã chốt ngày và có nhật ký. */
   chot: { luc: string; ai: string | null } | null;
+  /** UI-HV-LOP (V4 khung Lịch thi — mở dưới hàng): 5 ô MT gần nhất · Test sắp tới (mã lượt + tuần) · Case đang mở (kỹ năng) · lịch sử lịch thi (mới trước, ≤ 3). */
+  chiTiet: {
+    kn: Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null> | null;
+    sapToi: { luot: string; tuan: string } | null;
+    caseMo: string[];
+    lichSu: { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null }[];
+  };
 };
 export type TrangLichThi = { thang: string[]; rows: HangLichThi[] };
 
@@ -137,6 +145,7 @@ export function danhSachLichThi(
   const suaDuoc = new Map<number, boolean>();
   const suaLop = (classId: number) => { if (!suaDuoc.has(classId)) suaDuoc.set(classId, can(p, PERMISSIONS.STUDENT_EDIT, { classId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId })); return suaDuoc.get(classId)!; };
   const chot = chotNgayCua(chon.filter((x) => x.r.cycle_id).map((x) => ({ id: x.r.cycle_id as number, exam_date: x.r.exam_date ?? null })));
+  const chiTiet = chiTietLichThi(chon.map((x) => x.r), standing, hom);
   const rows: HangLichThi[] = chon.map(({ r }) => {
     const l = lop.get(r.class_id);
     return {
@@ -145,10 +154,64 @@ export function danhSachLichThi(
       target: r.target_score ?? null, kck: !!r.khong_cam_ket, standing: (standing.get(r.id) as KetQuaVao | undefined) ?? null,
       ...tinhLich(r, luuTuCot(r), hom, chot.get(r.cycle_id) ?? null),
       coTheSua: !!r.cycle_id && suaLop(r.class_id),
+      chiTiet: chiTiet(r),
     };
   });
   rows.sort((a, b) => a.classCode.localeCompare(b.classCode, 'vi', { numeric: true }) || a.ten.localeCompare(b.ten, 'vi') || a.studentId - b.studentId);
   return { thang, rows };
+}
+
+/**
+ * Phần mở dưới hàng Lịch thi (V4 `mockup-v4-hoc-vien-lop.html` khung 3) — đọc THEO LÔ cho cả trang: điểm lượt của `standing` (`diemCuaLuot`, nhớ theo request),
+ * một câu lượt kế hoạch sắp tới, một câu Case đang mở, hai câu nhật ký lịch thi (`lich_thi.luu` · `cycle.update` có đổi ngày / tháng thi) — mỗi lô ≤ 900.
+ */
+function chiTietLichThi(ds: readonly any[], standing: ReturnType<typeof standingFor>, hom: string): (r: any) => HangLichThi['chiTiet'] {
+  const luotSt = [...new Set(ds.map((r) => standing.get(r.id)?.attemptId).filter((x): x is number => !!x))];
+  const diem = diemCuaLuot(luotSt);
+  const cyc = [...new Set(ds.map((r) => r.cycle_id).filter((x): x is number => !!x))];
+  const sapToi = new Map<number, { luot: string; tuan: string }>();
+  const lichSu = new Map<number, HangLichThi['chiTiet']['lichSu']>();
+  theoLo(cyc, (lo, ph) => {
+    for (const a of db().prepare(
+      `SELECT a.cycle_id, a.kind, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.cycle_id IN (${ph}) AND a.status = 'planned' AND rp.week_start >= ? ORDER BY rp.week_start, a.attempt_no`).all(...lo, mondayOfDate(hom)) as any[]) {
+      if (!sapToi.has(a.cycle_id)) sapToi.set(a.cycle_id, { luot: a.kind === 'mt0' ? 'MT0' : a.kind === 'final' ? 'Final' : `MT${a.attempt_no}`, tuan: a.week_start });
+    }
+    /* Hai câu, mỗi câu theo chỉ mục `idx_audit_entity` (entity_type, entity_id) — không OR giữa hai loại (Turso quét cả bảng nhật ký). */
+    const nk = [
+      ...db().prepare(
+        `SELECT a.id, a.entity_id, a.action, a.created_at, u.full_name AS ai, a.after_json FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
+          WHERE a.entity_type = 'lich_thi' AND a.entity_id IN (${ph}) AND a.action = 'lich_thi.luu'`).all(...lo) as any[],
+      ...db().prepare(
+        `SELECT a.id, a.entity_id, a.action, a.created_at, u.full_name AS ai, a.after_json FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
+          WHERE a.entity_type = 'learning_cycle' AND a.entity_id IN (${ph}) AND a.action = 'cycle.update'
+            AND (json_extract(a.after_json, '$.exam_date') IS NOT json_extract(a.before_json, '$.exam_date')
+              OR json_extract(a.after_json, '$.exam_month') IS NOT json_extract(a.before_json, '$.exam_month'))`).all(...lo) as any[],
+    ].sort((x, y) => y.id - x.id);
+    for (const x of nk) {
+      const ls = lichSu.get(x.entity_id) ?? [];
+      if (ls.length >= 3) continue;
+      const sau = (() => { try { return JSON.parse(x.after_json ?? 'null') ?? {}; } catch { return {}; } })();
+      ls.push(x.action === 'lich_thi.luu'
+        ? { luc: x.created_at, ai: x.ai ?? null, ketLuan: sau.ketLuan ?? null, ngay: null, ghiChu: sau.ghiChu ?? null }
+        : { luc: x.created_at, ai: x.ai ?? null, ketLuan: null, ngay: sau.exam_date ?? sau.exam_month ?? null, ghiChu: null });
+      lichSu.set(x.entity_id, ls);
+    }
+  });
+  const caseMo = new Map<number, string[]>();
+  theoLo([...new Set(ds.map((r) => r.id as number))], (lo, ph) => {
+    for (const c of db().prepare(`SELECT student_id, topic FROM sos_cases WHERE student_id IN (${ph}) AND status != 'done' AND tam = 0 ORDER BY id`).all(...lo) as any[]) {
+      if (c.topic) caseMo.set(c.student_id, [...new Set([...(caseMo.get(c.student_id) ?? []), c.topic as string])]);
+    }
+  });
+  return (r) => {
+    const st = standing.get(r.id);
+    const band = (k: string) => diem.get(st?.attemptId as number)?.find((x) => x.skill === k)?.band ?? null;
+    return {
+      kn: st?.attemptId && st.mode === 'ielts_band' ? { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') } : null,
+      sapToi: sapToi.get(r.cycle_id) ?? null, caseMo: caseMo.get(r.id) ?? [], lichSu: lichSu.get(r.cycle_id) ?? [],
+    };
+  };
 }
 
 /**

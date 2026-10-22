@@ -9551,6 +9551,9 @@ await runPrUiLichTuanTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== V5 LUAT-NX-MT (nhận xét chỉ nhắc, xếp MT nới lỏng, ghi chú vắng, S Ex ở Hành trình)
 const { runPrLuatNxMtTests } = await import('./prLuatNxMt.tests.ts');
 await runPrLuatNxMtTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== V5 UI-HV-LOP (hàng HV: TVV + lịch thi; Lịch thi: chi tiết dưới hàng, khoảng tháng)
+const { runPrUiHvLopTests } = await import('./prUiHvLop.tests.ts');
+await runPrUiHvLopTests({ check, assert, conn, P, TODAY, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

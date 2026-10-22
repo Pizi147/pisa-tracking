@@ -340,6 +340,6 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
   check('N1 (8) · T17: không lọc → không mở lớp nào; đang lọc → tối đa 5 lớp có kết quả', () => {
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3], dangLoc: false }).length === 0, 'tự mở lớp');
     assert(d.lopMoSan({ thamSoOpen: null, lopHien: [1, 2, 3, 4, 5, 6, 7], dangLoc: true }).join() === '1,2,3,4,5', 'lọc');
-    assert(/overflow-x-auto md:overflow-visible/.test(docSach('web/src/modules/students/StudentsPage.tsx')), 'khung bảng còn chặn tiêu đề dính');
+    /* UI-HV-LOP (Q-7): Học viên & Lớp không còn bảng theo lớp — đầu cột dính do `Bang dinh` lo; gỡ kiểm chuỗi khung bảng cũ. */
   });
 }

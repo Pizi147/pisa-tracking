@@ -226,9 +226,10 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   /* OV-15f — phân trang (một hook, cỡ trang nhớ chung): góc nhóm theo LỚP, Đang SOS / Cần làm theo dòng. Xuất Excel lấy đủ mọi trang của góc đang xem. */
   const tongGoc = goc === 'tat-ca' || goc === 'can-chu-y' ? nhom.length : goc === 'sos' ? sosRows.length : goc === 'can-lam' ? viecTvv.length : 0;
   const pt = usePhanTrang(tongGoc, [goc, chip, q, phamViUrl, cn].join('|'), goc === 'tat-ca' || goc === 'can-chu-y' ? t('lớp') : goc === 'sos' ? t('em') : t('việc'));
+  const [idsLichThi, setIdsLichThi] = useState<number[]>([]);
   const idsXuat = goc === 'sos' ? [...new Set(sosRows.map((r) => r.studentId))]
     : goc === 'can-lam' ? [...new Set(viecTvv.flatMap((v) => (v.studentId !== null ? [v.studentId] : [])))]
-    : goc === 'lich-thi' ? [] : hien.map((d) => d.id);
+    : goc === 'lich-thi' ? idsLichThi : hien.map((d) => d.id);
   const [xuat, setXuat] = useState(false);
   const cot = ['Học viên', 'Target · Dự kiến thi', 'Kết quả gần nhất', 'Cần chú ý', ...(vai === 'cx' ? ['TVV'] : []), 'Phụ huynh', ''];
 
@@ -314,9 +315,10 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
         ? <Card><Empty title={t('Không có việc nào')} /></Card>
         : <><PhanTrang {...pt.thanh} /><BangCanLam viec={pt.cat(viecTvv)} tatCa={viecTvv} coNguoi={false} coPhuHuynh dienThoai={dienThoai} ds={ds} /><PhanTrang {...pt.thanh} duoi /></>)}
       {goc === 'lich-thi' && (
-        <GocLichThi duongGoc={`${vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'}${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} />
+        <GocLichThi duongGoc={`${vai === 'tvv' ? `?phamVi=${phamViUrl ?? 'cua-toi'}` : cn ? `?branchId=${cn}` : '?phamVi=tat-ca'}${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })} onIds={setIdsLichThi} />
       )}
-      {xuat && goc !== 'lich-thi' && <NganXuatDs ids={idsXuat} boLoc={dangXem} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined} onDong={() => setXuat(false)} />}
+      {xuat && <NganXuatDs ids={idsXuat} boLoc={dangXem} mauMacDinh={goc === 'sos' ? 'theo-doi-sos' : undefined}
+        macDinh={goc === 'lich-thi' ? ['ten', 'gmail', 'lop', 'coSo', 'target', 'lichThi', 'ketLuan', 'ghiChuHop'] : undefined} onDong={() => setXuat(false)} />}
       {panelEm !== null && <PanelMotEm key={panelEm} studentId={panelEm} onClose={() => setPanelEm(null)} />}
       {buocTiep && <PanelBuocTiep cycleId={buocTiep.cycleId} hocVien={buocTiep.em} lop={buocTiep.lop} onClose={() => setBuocTiep(null)} onDone={trang.reload} />}
       {suaEm && <SuaThongTinMotEm viec={suaEm.viec} studentId={suaEm.id} studentName={suaEm.ten} lop={suaEm.lop} onClose={() => setSuaEm(null)} onDone={() => { setSuaEm(null); trang.reload(); }} />}

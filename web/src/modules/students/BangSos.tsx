@@ -62,7 +62,7 @@ function TheoCase({ r, dam, chu }: { r: DongSos; dam: ((topic: string | null) =>
 }
 
 /** Việc tiếp của dòng: việc gấp nhất (quá hạn trước) + "+n việc". */
-function ViecTiepDong({ r }: { r: DongSos }) {
+export function ViecTiepDong({ r }: { r: DongSos }) {
   const { homNay } = useNgayNghiepVu();
   const ds = r.cases.filter((c) => c.viecTiep).sort((a, b) => Number(b.viecTiep!.quaHan) - Number(a.viecTiep!.quaHan) || (a.viecTiep!.han ?? '9').localeCompare(b.viecTiep!.han ?? '9'));
   if (!ds.length) return <span className="text-slate-500">—</span>;

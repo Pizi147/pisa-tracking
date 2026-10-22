@@ -97,7 +97,7 @@ export async function runPrUxdTests(t: YThucTestKit) {
   check('UXD (6) · StudentsPage: kiểu LopTrenTrang có route; dòng phụ (thẻ điện thoại + bảng) đọc lop.route qua cùng một chuỗi', () => {
     const sp = doc('web/src/modules/students/StudentsPage.tsx');
     assert(/route: string \| null/.test(sp), 'LopTrenTrang chưa có route');
-    assert((sp.match(/lop\.route/g) ?? []).length >= 1 && (sp.match(/\bchuLop\b/g) ?? []).length >= 3, 'dòng phụ chưa dùng chuLop (thẻ + bảng)');
+    assert((sp.match(/lop\.route/g) ?? []).length >= 1 && /\bchuLop\b/.test(sp), 'dải lớp chưa dùng chuLop');   // UI-HV-LOP: một dải lớp (không còn thẻ + bảng theo lớp)
   });
 
   // ------------------------------------------------------------------ Task 7 · Sót 375 ở màn GV hằng ngày

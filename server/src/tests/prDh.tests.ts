@@ -103,12 +103,8 @@ export async function runPrDhTests(t: YThucTestKit) {
   });
 
   check('PR-DH (2) · Học viên & Lớp: cả hai nhóm có cột "Ngày thi" (V5 C21; ExamPlanText ở bảng và thẻ), 8 cột khớp hàng lớp', () => {
-    const sp = doc('web/src/modules/students/StudentsPage.tsx');
-    assert(sp.includes("k === 'ft' ? 'Target' : t('Khoá'), t('Ngày thi'), t('Sắp tới'), 'Case', t('Việc tiếp theo'), ''"), 'tieuDeCot: Ngày thi sau Target/Khoá, không phân nhánh theo nhóm');
-    /* OV-10b: Admin có bảng riêng 1+2+1 (Lượt MT gần nhất · Ô chưa nhập); QL / GV giữ 3+4+1. */
-    /* OV-15b (C13): lớp FT thêm cột điểm OVR · L · R · W · S (`COT_DIEM_FT`) — hàng lớp 3+4+1 (+ cột điểm FT), bảng FT rộng hơn. */
-    assert(/colSpan=\{admin \? 2 : thuong \? 4 : 4 \+ COT_DIEM_FT\.length\}/.test(sp) && /soCot=\{admin \? 4 : thuong \? 8 : 8 \+ COT_DIEM_FT\.length\}/.test(sp)
-      && (sp.match(/min-w-\[960px\]/g) ?? []).length === 2, 'hàng lớp 3+4+1 cột (+ cột điểm FT), bảng min-w 960');
+    /* UI-HV-LOP (Q-7): Học viên & Lớp là danh sách gọn (cột Lịch thi — `ChipLichThi`); bảng theo lớp còn ở hồ sơ lớp (BangHocVienLop). */
+    assert(/<ChipLichThi l=\{h\.lich\} \/>/.test(doc('web/src/modules/students/DanhSachHvLop.tsx')), 'cột Lịch thi');
     const bg = doc('web/src/modules/students/BangHocVienLop.tsx');
     assert((bg.match(/<ExamPlanText plan=\{s\.examPlan\}/g) ?? []).length === 2 && /chuSapToi\(/.test(bg), 'ExamPlanText ở bảng + thẻ, Sắp tới qua chuSapToi');
   });

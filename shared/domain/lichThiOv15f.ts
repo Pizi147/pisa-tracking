@@ -72,6 +72,13 @@ export function nhanLichThi(l: LichThi, homNay: string, tep = false): string {
   return gt ? `${nhan} ${gt}` : nhan;
 }
 
+/** UI-HV-LOP: các tháng từ `tu` tới `den` (gồm hai đầu, tối đa 12 — trần của `dsThangLichThi`); `den` < `tu` → rỗng. */
+export function thangTrongKhoang(tu: string, den: string): string[] {
+  const out: string[] = [];
+  for (let m = tu; m <= den && out.length < 12; m = congThang(m, 1)) out.push(m);
+  return out;
+}
+
 /** Tháng kế tiếp của ngày nghiệp vụ — đích của lối "Lịch thi thật ›" ở Test › Lịch Test. */
 export const thangKeTiep = (homNay: string): string => congThang(homNay.slice(0, 7), 1);
 
