@@ -1,7 +1,7 @@
 /**
  * NHẬN XÉT (PR-HSM, YC-13.5; OV-4b: cả L/R). ≤ 1000 ký tự; không phải điểm — lưu không hỏi lý do, không đổi "Nhập bởi". Lưu qua đúng
  * đường ghi điểm (`save(k, { nhanXet })` → `PUT /attempts/:id/scores/:skill`). Nhập cùng điểm: hộp nhập điểm.
- * OV-12b → LUAT-NX-MT: ô MT có điểm — nhận xét NÊN có (`batBuoc`: thiếu / ngắn vẫn lưu, chỉ nhắc vàng); dưới kỳ vọng → chip nhóm nguyên nhân.
+ * OV-12b → LUAT-NX-MT: ô MT có điểm — nhận xét NÊN có (`nenCo`: thiếu / ngắn vẫn lưu, chỉ nhắc vàng); dưới kỳ vọng → chip nhóm nguyên nhân.
  *
  *   ONhanXet    Nằm ở: Test › một lượt MT (hồ sơ Mock) → khối "Nhận xét" (Listening · Reading · Writing Task 1 · Task 2 · Speaking).
  *   ChonNhom    Hàng chip "Nhóm nguyên nhân" (`issuesForTopic`; W1/W2 bộ Writing) — chọn nhiều, chip đã chọn mang số thứ tự (1 = chính).
@@ -31,12 +31,12 @@ function Dem({ n }: { n: number }) {
  * Ô nhận xét tại chỗ của hồ sơ Mock: tự cao theo chữ, lưu khi rời ô hoặc Ctrl+Enter, trạng thái lưu nhỏ bên phải nhãn.
  * Lỗi mạng: giữ chữ đã gõ, hiện "Chưa lưu — thử lại" (bấm để gửi lại).
  */
-export function ONhanXet({ nhan, phu, giaTri, onLuu, batBuoc = false, kyNang = null }: {
+export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = null }: {
   nhan: string; phu?: string | null; giaTri: string | null; onLuu: (v: string | null) => Promise<boolean>;
   /** OV-14b: kỹ năng của ô — chữ gợi ý đúng kỹ năng (`viDuNhanXet`). */
   kyNang?: string | null;
   /** LUAT-NX-MT: ô MT đã có điểm — xoá / dưới 10 ký tự vẫn lưu, viền vàng + "Nên có nhận xét …" (chỉ nhắc). */
-  batBuoc?: boolean;
+  nenCo?: boolean;
 }) {
   const [nhap, setNhap] = useState(giaTri ?? '');
   const [tt, setTt] = useState<'idle' | 'dang' | 'xong' | 'loi'>('idle');
@@ -57,7 +57,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, batBuoc = false, kyNang = n
     setTt(ok ? 'xong' : 'loi');
     if (ok) sua.current = false;
   };
-  const nhacNx = batBuoc && nhap.trim().length < NHAN_XET_MT_TOI_THIEU;
+  const nhacNx = nenCo && nhap.trim().length < NHAN_XET_MT_TOI_THIEU;
   return (
     <label className="block min-w-0">
       <span className="flex items-baseline gap-2 text-xs text-slate-400">

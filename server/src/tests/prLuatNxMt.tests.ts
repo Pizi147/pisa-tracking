@@ -95,7 +95,7 @@ export async function runPrLuatNxMtTests(t: YThucTestKit) {
 
   check('LNM-2d · dán Excel: MT thường thiếu / ngắn nhận xét không là lỗi dòng', () => {
     const cell = { skill: 'listening', required: true, canEdit: true, rawScore: null, band: null, criteria: [null, null, null, null],
-      bandThang: false, batBuocNhanXet: true, kyVong: 6, nhanXet: null, nhomNguyenNhan: [], progress: 'scheduled' };
+      bandThang: false, nenCoNhanXet: true, kyVong: 6, nhanXet: null, nhomNguyenNhan: [], progress: 'scheduled' };
     assert(d.xetODan({ diem: '28', nhanXet: '' }, cell, 'cau').loai === 'ghi' && d.xetODan({ diem: '28', nhanXet: 'ngắn' }, cell, 'cau').loai === 'ghi', 'phải ghi');
   });
 
