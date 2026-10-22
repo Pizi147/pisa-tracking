@@ -57,3 +57,10 @@ Chỉ vẽ phần **bố cục mới thật sự** (còn lại sửa thẳng khi
 - Báo cáo HV: bảng thay "Kết quả theo lớp" tên **"Kết quả MT"** (không "Đường tới Target"); hàng **MT3+** (gộp MT3 trở đi) thay "MT3". Còn lại như `thiet-ke/v5/phan-tich.html` (Đạt Target · Thiếu 0.5 · Thiếu 1.0 · Thiếu ≥ 1.5 · Chưa đủ · So lượt trước; theo lượt của từng HV; hàng Thi thật).
 - Hồ sơ HV (`dieu-chinh-cuoi.html` khu c): bấm ô điểm (Overall · L · R · W1 · W2 · S) đổi kỹ năng; biểu đồ chỉ MT + mốc tuần; "Tiến độ trên lớp" là bảng dưới biểu đồ (3 dòng mới nhất + "Xem thêm"), ghi nguyên văn, không vào MT; Case & PA chỉ của kỹ năng đang chọn, cột PA cố định (nút không đẩy chữ).
 - HV & Lớp (khu d): cột Lộ trình · MT gần nhất (Overall / KV + 5 kỹ năng, W1 W2 riêng) · Xu hướng · Hỗ trợ · Ý thức · Lịch thi · Việc; không "tuần n/24". Lịch thi bấm hàng mở chi tiết dưới hàng (như V4).
+
+## 6. Chủ SP chốt 22/10 (sau ảnh UI-CHAM-TEST) — Kế hoạch Test: "+ MT", S Ex là một lượt riêng
+
+- Mỗi HV mặc định 3 MT (MT1–MT3); **cuối hàng HV có nút "+ MT"** (QL / Admin) để thêm MT4, MT5… như MT thường — không cột "+ S Ex" riêng.
+- **S Ex = một lượt riêng lẻ** của HV: có thể trùng tuần với MT chính hoặc không, **có thể nhiều lần**. Thêm qua cùng nút "+ MT" (chọn loại: MT thường · S Ex). Hiện trên hàng HV như một ô lượt, nhãn "S Ex", xếp theo tuần cùng các MT.
+- Lịch Test (UI-LICH-TUAN) vẫn hiện MT thường là chính; S Ex là dòng phụ thêm của em trong tuần đó.
+- Luật điểm S Ex giữ XM-1 (chỉ lưu điểm + nhận xét, không vào tính toán). Máy chủ: bảng `s_expert` đã cho nhiều lượt / HV; MT4+ dùng đường "Tạo MT" sẵn có của Kế hoạch Test.
