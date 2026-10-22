@@ -129,7 +129,31 @@ Luật đợt: ≤ 3 session cloud cùng lúc, khác tệp · ≤ 2 PR giao di�
 | 6 | UI-HO-SO-GV · UI-PHAN-TICH | SV-SO3 | theo lượt duyệt ảnh |
 | 7 | UI-CON-LAI → TL-V5 (planning) → CHAM-LAI | mọi PR màn | — |
 
-Tutor: không đợt nào (P10, chủ SP 22/10: tuần sau mới xét).
+Tutor: không đợt nào (P10, chủ SP 22/10: tuần sau mới xét). **AN-TUTOR #537** đã ẩn Tutor khỏi web mọi vai (dữ liệu giữ).
+
+**Trạng thái 22/10 chiều:** đã merge thêm SV-SO1 #528 · NEN-PANEL #530 · SV-LOP #529 · SV-SO3 #531 · MAIN-DO #532 · UI-CONG-VIEC #533 · UI-CHAM-TEST #534 · AN-TUTOR #537 · deploy #535. Còn: UI-CV-TVV · UI-LICH-TUAN (chạy ngay) → UI-HO-SO-LOP · UI-HV-LOP → UI-HO-SO-HV · UI-TONG-QUAN → UI-HO-SO-GV · UI-PHAN-TICH → UI-CON-LAI → TL-V5 → CHAM-LAI. Chủ SP deploy khi xong hết; mọi màn **giống hệt mockup**.
+
+## 6c. Nợ dồn từ các PR đã merge → PR nhận [V5-E, 22/10]
+
+Không PR nào trong danh sách còn lại làm trùng nhau (đã đối chiếu tệp / route). Việc dưới chưa có trong dòng PR ở mục 6 — PR nhận làm luôn, ghi trong mô tả:
+
+| Nợ | Từ | PR nhận |
+|---|---|---|
+| S Ex là **dòng phụ** của em trong tuần (không cột S Ex riêng); `10` mục 6 | chủ SP 22/10 | UI-LICH-TUAN |
+| Khu chấm Speaking chéo chỉ lọc theo lớp, chưa theo MT | #534 | UI-LICH-TUAN |
+| Gỡ `KhoiCanQuyet` (mã chết sau C22) + Tổng quan gọn đúng mockup (không liệt kê từng Case) | #521, chủ SP 22/10 | UI-TONG-QUAN |
+| Head tutor: Tổng quan rỗng sau AN-TUTOR — chỉ dòng "Tutor tạm ẩn", không khối số | #537 | UI-TONG-QUAN |
+| `ketQuaHoSoGv` ("MT gần nhất của lớp") → thay bằng `ketQuaTheoLop` rồi xoá | #521 | UI-HO-SO-GV |
+| Gỡ `viecTiepCuaEm` ở `/roster` + trần `tocDo` cho `/classes/:id/viec-theo-em` (N+1 theo GV) | #529 | UI-HO-SO-LOP (`/roster` phần HV & Lớp → UI-HV-LOP) |
+| Chỗ lưu "Nhận xét + Đề xuất bước tiếp" của GVCN khi đánh giá đầu ra (C17) | #529 | UI-HO-SO-LOP |
+| Chữ "mẫu nhỏ" còn trong mockup V5 / chỗ khác (`effectiveness.ts`) | #522 | UI-PHAN-TICH |
+| Badge "việc của tôi" còn đếm việc `mine:false` (Thêm PA Case người khác); `viecQuaHan` đếm cả kỹ năng chưa quá hạn của dòng | #528 | UI-CON-LAI (máy chủ nhỏ, kèm phép kiểm) |
+| Chữ "Đã xong · OVR…" ở bước tiếp hồ sơ HV (miễn luật động từ ở `hoSoHocVien.tests.ts:134`) | #515 | UI-HO-SO-HV |
+| Truy vết `thiet-ke/v5/*-truy-vet.md` ghi "→ PR #n" cho #533, #534 | luật 8 mục 4 | TL-V5 |
+| DEMO.md / CODE_MAP.md theo SEED-UX + màn V5; DESIGN.md (tiêu đề trang 22 px vs 20) | #515, #533 | TL-V5 |
+| XM-1 luật điểm S Ex; QL nhập hộ S Ex có bắt lý do như S MT | #526 | câu chủ SP (giữ tạm: không tính, không lý do) |
+| Tutor bật lại | P10 | tuần sau, hỏi chủ SP |
+
 
 ## 7. Đo số bước (kịch bản thật — ghi số đo trong PR; đích lấy từ truy vết)
 
