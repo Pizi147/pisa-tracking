@@ -7,7 +7,7 @@
  * riêng rồi gọi `listCases(p, {})` KHÔNG lọc phạm vi gì để lấy Case — quét mọi Case trong hệ thống, chậm hàng chục giây
  * trên Turso. Xem `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/task-17-planning-fix-report.md`.
  */
-import { ATTEMPT_KIND_SHORT, PERMISSIONS, soThuTuLuot, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, PERMISSIONS, bacHoacNgoaiThang, soThuTuLuot, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { activeAt, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
@@ -106,7 +106,11 @@ export function viecHocVienTheoLop(p: Principal, o: {
   chuongTrinhTheoLop?: ReadonlyMap<number, string | null>;
   /** PR-UXF-a VN29: nhập điểm của người xem theo em (`nhapDiemTheoEm`) — dựng MỘT lần cho cả trang. */
   nhapDiemTheoEm?: ReadonlyMap<number, NhapDiemViec>;
-}): { theoEm: Map<number, ViecEm>; soChoDuyet: Map<number, number>; soEmQuaHan: Map<number, number> } {
+}): {
+  theoEm: Map<number, ViecEm>; soChoDuyet: Map<number, number>; soEmQuaHan: Map<number, number>;
+  /** SV-SO3 (hàng HV, khu d): PA của các Case đang mở + có việc Case quá hạn · bậc Ý thức (`bacHoacNgoaiThang`) — từ chính các câu đã đọc ở đây. */
+  hoTro: Map<number, { soPa: number; quaHan: boolean }>; bacYThuc: Map<number, string>;
+} {
   /* Một em có thể còn ghi danh `active` ở nhiều lớp (dữ liệu chuyển lớp dở) — đếm cho MỖI lớp em đang có mặt, việc của em tính một lần. */
   const lopCua = new Map<number, number[]>();
   for (const [lop, ds] of o.emTheoLop) for (const id of ds) if (!lopCua.get(id)?.includes(lop)) lopCua.set(id, [...(lopCua.get(id) ?? []), lop]);
@@ -114,15 +118,22 @@ export function viecHocVienTheoLop(p: Principal, o: {
   const mo = o.cases.filter((c) => c.status !== 'done' && c.studentId !== null && lopCua.has(c.studentId));
   const chiTiet = chiTietCaseMo(mo);
   const caseCua = new Map<number, CaseViec[]>();
+  const hoTro = new Map<number, { soPa: number; quaHan: boolean }>();
   for (const c of mo) {
     const x = chiTiet.get(c.id);
-    if (x) caseCua.set(x.studentId, [...(caseCua.get(x.studentId) ?? []), { caseId: c.id, topic: c.topic, viecTiep: x.viecTiep }]);
+    if (!x) continue;
+    caseCua.set(x.studentId, [...(caseCua.get(x.studentId) ?? []), { caseId: c.id, topic: c.topic, viecTiep: x.viecTiep }]);
+    const h = hoTro.get(x.studentId) ?? { soPa: 0, quaHan: false };
+    hoTro.set(x.studentId, { soPa: h.soPa + x.pas.length, quaHan: h.quaHan || x.quaHan });
   }
   const lopXemDuoc = emIds.length ? [...o.emTheoLop.keys()].filter((l) => can(p, PERMISSIONS.STUDENT_VIEW, { classId: l })) : [];
   const yThuc = new Map<number, NhanYThucEm>();
+  const bacYThuc = new Map<number, string>();
   for (const [id, em] of trangThaiYThuc(lopXemDuoc.flatMap((l) => o.emTheoLop.get(l) ?? []))) {
     const n = em.tamDung ? null : nhanNhomEm(em);
     if (n) yThuc.set(id, n);
+    const bac = bacHoacNgoaiThang(em.bac, em.xuLy);
+    if (bac) bacYThuc.set(id, bac);
   }
   /* PR-S4F #5: quét trước khi đếm, như mọi đường đọc hộp (K5-17) — không thì badge đếm thiếu thẻ Báo QL mà hộp (quét rồi) có. */
   quetYeuCau(o.homNay);
@@ -159,5 +170,5 @@ export function viecHocVienTheoLop(p: Principal, o: {
     theoEm.set(id, { viec, choDuyet: emChoDuyet.has(id) });
     if (viec.some((v) => v.tone === 'danger')) for (const lop of lops) soEmQuaHan.set(lop, (soEmQuaHan.get(lop) ?? 0) + 1);
   }
-  return { theoEm, soChoDuyet, soEmQuaHan };
+  return { theoEm, soChoDuyet, soEmQuaHan, hoTro, bacYThuc };
 }
