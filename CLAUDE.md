@@ -18,6 +18,11 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Luật giao diện (chi tiết `DESIGN.md` mục "Luật 21/10"): Thi = thi thật, Test = MT / Progress / Final… · việc của tôi ở trang đầu vai · một danh sách một kiểu mở ·
   thang làm tại chỗ 0–5 · ô số = mở tại chỗ, chữ "›" = đổi trang, ⓘ = giải thích · báo cáo thuần · cấm điều khiển trong tiêu đề bảng · "Toàn bộ" chỉ ở Phân tích.
 
+## PR giao diện V5 = NÂNG CẤP, không chép mockup (chủ SP 22/10 — `docs/superpowers/specs/2026-10-22-overhaul-v5/10-pta-ap-phan-hoi-cuoi.md` mục 8)
+- Mockup là tham chiếu. GIỮ mọi tính năng / thao tác đã có (V4 đã duyệt: Nhập điểm, + Case, ⋯, Xuất, Dán Excel…) và sửa đồng bộ CẢ phần mockup không vẽ
+  (panel Công việc, hộp thông tin, popover, chân lưu, rỗng / lỗi) theo luật đã chốt; xung đột mockup / luật / tính năng cũ → ghi [XM], hỏi PTA Plan, không tự bỏ.
+- khop-khac.md của PR có bảng thao tác TRƯỚC → SAU PR (mất thao tác nào phải có lý do). Chỉnh nhỏ cho hợp lý / đẹp hơn được.
+
 ## Luật cứng của chủ sản phẩm (08/10)
 - Nghĩ tới **đầu ra** trước (em có lịch, có điểm…). Việc không ảnh hưởng đầu ra thì KHÔNG thêm bước, câu hỏi, trạng thái hay điều kiện chặn.
 - Workflow đơn giản, ít thao tác, không để người dùng kẹt; sửa trên nền có sẵn, không làm lại.
@@ -39,7 +44,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Với chủ SP: phân biệt hiện trạng đã kiểm / lỗi chủ SP báo / yêu cầu đã chốt / đề xuất / câu hỏi. "Đề xuất", "cân nhắc" ≠ đã duyệt. Luật nghiệp vụ không tự đổi.
 
 ## Skill `karpathy-guidelines` (chủ SP cài 11/10)
-- Dùng ở mọi session có viết / sửa / rà code hoặc viết kế hoạch PR: nghĩ trước khi làm, nêu giả định, chọn cách đơn giản nhất, sửa đúng chỗ cần sửa,
+- Dùng ở MỌI session có viết / sửa / rà code hoặc viết kế hoạch PR (prompt PR phải ghi tên skill): nghĩ trước khi làm, nêu giả định, chọn cách đơn giản nhất, sửa đúng chỗ cần sửa,
   có tiêu chí kiểm được. Đi cùng `ponytail` (không thay); mâu thuẫn thì theo thứ tự mục "Khi các nguồn mâu thuẫn" ở trên.
 - Câu hỏi đơn giản, đọc log, trả lời chủ SP: không cần gọi.
 
