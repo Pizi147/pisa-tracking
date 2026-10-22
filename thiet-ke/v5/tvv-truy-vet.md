@@ -54,7 +54,7 @@
 - Ca thường "đã gọi, PH đã nghe": mở trang (việc đầu chọn sẵn khi là việc của mình) → chọn "Đã báo PH" → gõ ghi chú → "Lưu và tiếp": **2 bấm + gõ**, 0 đổi trang.
 - Sau thi lưu riêng điểm: 4 ô + "Lưu điểm" = 1 bấm; chốt bước tiếp sau: 2 bấm.
 
-## 6. Triển khai → PR UI-CV-TVV (22/10)
+## 6. Triển khai → PR #540 UI-CV-TVV (22/10)
 
 | Khung / yêu cầu | Web | Kết quả |
 |---|---|---|
