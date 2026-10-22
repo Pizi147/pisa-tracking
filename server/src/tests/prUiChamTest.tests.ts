@@ -7,7 +7,7 @@
 type Kit = { check: (n: string, f: () => void) => void; assert: (c: unknown, m: string) => void; conn: any; P: any; classId: (code: string) => number };
 
 export async function runPrUiChamTestTests(t: Kit) {
-  const { check, assert, conn, P, classId } = t;
+  const { check, assert, conn, P } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const kh: any = await import('../keHoach/keHoachTest.ts');
   const at: any = await import('../fasttrack/attempts.ts');
@@ -17,20 +17,20 @@ export async function runPrUiChamTestTests(t: Kit) {
 
   const lopFt = (conn.prepare(`SELECT id, code FROM classes WHERE route IS NOT NULL AND status = 'active'`).all() as any[]);
 
-  check('UCT-1 (C20, T04) · Kế hoạch Test FT: không cột MT trống — cột vượt lịch lộ trình lớp chỉ khi có lượt; MB FT 101 đúng 3 cột', () => {
+  check('UCT-1 (C20, T04) · Kế hoạch Test FT: số cột = max(lịch lộ trình lớp, MT lớn nhất có lượt), trần MT8 — MT kế tiếp không mở cột trống', () => {
+    let keTiepVuot = 0;
     for (const l of lopFt) {
       xoaNho();
       const g = kh.luoiFT(P.admin, l.id);
       const c = conn.prepare('SELECT * FROM classes WHERE id = ?').get(l.id) as any;
       const lich = lichSvc.lichMtCua(c, c.route).length;
-      /* Cột cuối vượt lịch lộ trình phải có lượt (không mở cột cho MT kế tiếp); trần MT_TOI_DA (T37) giữ — lượt số lớn hơn (dữ liệu thử) dồn về cột trần. */
-      const n = g.cot.length;
-      if (n > lich && n < d.MT_TOI_DA) assert(g.hang.some((h: any) => h.dot[n]?.attemptId !== null), `${l.code}: cột MT${n} không em nào có lượt (lịch ${lich}, cột ${g.cot})`);
+      const ngoai = conn.prepare(`SELECT MAX(a.attempt_no) AS n FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
+        WHERE a.kind = 'mock' AND a.status != 'cancelled' AND a.student_id IN (${g.hang.map((h: any) => h.studentId).join(',') || 0})`).get() as any;
+      const mong = Math.min(d.MT_TOI_DA, Math.max(lich, ngoai?.n ?? 0));
+      assert(g.cot.length === mong, `${l.code}: ${g.cot.length} cột, mong ${mong} (lịch ${lich})`);
+      keTiepVuot += g.hang.filter((h: any) => h.soKeTiep > g.cot.length).length;
     }
-    xoaNho();
-    const g = kh.luoiFT(P.admin, classId('MB FT 101'));
-    assert(g.cot.join(',') === '1,2,3', `MB FT 101 cột: ${g.cot}`);
-    assert(g.hang.some((h: any) => h.soKeTiep === 4), 'seed: phải có em xong 3 MT (MT kế tiếp = 4) — QL vẫn thêm tay được qua "Xếp nhiều MT…"');
+    assert(keTiepVuot > 0, 'seed phải có em xong hết cột (MT kế tiếp > số cột) — QL thêm tay qua "Xếp nhiều MT…"');
   });
 
   check('UCT-2 · ô đợt xong ghi Overall + kỳ vọng = resultOf của lượt; ô chưa xong không có Overall', () => {
