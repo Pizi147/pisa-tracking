@@ -7,14 +7,15 @@ import { loadBundle, resultOf } from './attempts.ts';
 
 export type LuotLoTrinh = { attemptId: number; mt: number; tuan: string | null; ovr: number | null };
 
-/** Mọi lượt MT0 / MT / Cuối khoá chưa huỷ của các lộ trình, theo lộ trình, xếp số MT tăng dần. */
+/** Lượt MT0 / MT / Cuối khoá chưa huỷ ĐÃ CÓ ĐIỂM của các lộ trình (điểm + lịch kỹ năng thường đã nạp ở `standingFor` — nhớ theo lượt), xếp số MT tăng dần. */
 export function luotTheoLoTrinh(cycleIds: readonly number[]): Map<number, LuotLoTrinh[]> {
   const luot: any[] = [];
   theoLo([...new Set(cycleIds)], (lo, ph) => {
     luot.push(...db().prepare(
       `SELECT a.*, rp.week_start, cy.route, cy.khong_cam_ket AS cy_kck FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.cycle_id IN (${ph}) AND a.status != 'cancelled' AND a.kind IN ('mock', 'mt0', 'final')`).all(...lo) as any[]);
+        WHERE a.cycle_id IN (${ph}) AND a.status != 'cancelled' AND a.kind IN ('mock', 'mt0', 'final')
+          AND EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id)`).all(...lo) as any[]);   // chưa điểm thì không có Overall
   });
   const bd = loadBundle(luot.map((a) => a.id));
   const out = new Map<number, LuotLoTrinh[]>();

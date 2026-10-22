@@ -300,14 +300,20 @@ export function danhSachHocVienLop(
 
 /**
  * TRƯỜNG HÀNG HV (SV-SO3, `HangHv`) cho em Fast Track. MT gần nhất = lượt của `standing` với CHÍNH Overall / kỳ vọng / SOS của nó (cùng số cột Kết quả các màn);
- * 5 ô điểm từ `diemCuaLuot` (đã nạp ở `standingFor`); Xu hướng = `luotTruocCoOverall` (cùng hàm So lượt trước của Kết quả MT). Case / PA / Ý thức đọc từ
- * `viecHocVienTheoLop` đã chạy cho trang. Thêm: `luotTheoLoTrinh` (1 câu / lô + `loadBundle`).
+ * tuần (theo `periodCode`) + 5 ô điểm (`diemCuaLuot` đã nạp ở `standingFor`); Xu hướng = `luotTruocCoOverall` (cùng hàm So lượt trước của Kết quả MT). Case / PA / Ý thức đọc từ
+ * `viecHocVienTheoLop` đã chạy cho trang. Thêm: tuần (1 câu) + `luotTheoLoTrinh` (1 câu / lô, chỉ em có Xu hướng).
  */
 function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases: readonly MappedCase[],
   vl: { hoTro: Map<number, { soPa: number; quaHan: boolean }>; bacYThuc: Map<number, string> }): Map<number, HangHv> {
   const out = new Map<number, HangHv>();
   if (!hv.length) return out;
-  const theoCy = luotTheoLoTrinh(hv.map((h) => standing.get(h.id)?.cycleId).filter((x): x is number => !!x));
+  /* Chỉ lộ trình của em có Overall ở lượt ≥ MT1 — mới có Xu hướng (TD3-b: không đọc lượt của em không cần). */
+  const theoCy = luotTheoLoTrinh(hv.map((h) => standing.get(h.id)).filter((st) => st?.overall != null && (st.attemptNo ?? 0) > 0).map((st) => st!.cycleId!).filter(Boolean));
+  /* Tuần thi của lượt `standing` theo nhãn tuần (`periodCode` "W1 SEP 2026" kèm năm) — một câu, mỗi tuần một dòng. */
+  const tuanCua = new Map<string, string>();
+  theoLo([...new Set(hv.map((h) => standing.get(h.id)?.periodCode).filter((x): x is string => !!x))], (lo, ph) => {
+    for (const r of db().prepare(`SELECT code, week_start FROM report_periods WHERE code IN (${ph})`).all(...lo) as any[]) tuanCua.set(r.code, r.week_start);
+  });
   const diem = diemCuaLuot(hv.map((h) => standing.get(h.id)?.attemptId).filter((x): x is number => !!x));
   const soCase = new Map<number, number>();
   for (const c of allCases) if (c.status !== 'done' && c.studentId !== null) soCase.set(c.studentId, (soCase.get(c.studentId) ?? 0) + 1);
@@ -321,7 +327,7 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
     out.set(h.id, {
       loTrinh: { mt: h.mt_cuoi ?? 0, soMt: lichMtCua({ lich_mt: h.lop_lich_mt, route: h.lop_route }, h.route).length,
         target: h.target_score ?? null, kck: !!h.khong_cam_ket },
-      mtGan: coLuot ? { mt: st!.attemptNo!, tuan: ds?.find((l) => l.attemptId === st!.attemptId)?.tuan ?? null, ovr: st!.overall, kyVong: st!.expectation,
+      mtGan: coLuot ? { mt: st!.attemptNo!, tuan: st!.periodCode ? tuanCua.get(st!.periodCode) ?? null : null, ovr: st!.overall, kyVong: st!.expectation,
         kn: { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') } } : null,
       xuHuong: truoc ? { lech: st!.overall! - truoc.ovr, soMt: truoc.mt } : null,
       hoTro: { sos, kyNang: sos ? (st?.belowSkills ?? []).map((b) => b.skill) : [], soCase: soCase.get(h.id) ?? 0,
