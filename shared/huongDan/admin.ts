@@ -27,7 +27,7 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'ad-cham', ten: 'Theo dõi chấm điểm', khi: 'sau mỗi tuần Test',
-      buoc: ['<b>Test › Lịch Test / Chấm Test</b>: <b>Test quá hạn chấm</b> · <b>Test chấm tuần này</b> (hạn <b>Thứ Tư</b>).',
+      buoc: ['<b>Test › Lịch Test</b>: <b>Test quá hạn chấm</b> · <b>Test chấm tuần này</b> (hạn <b>Thứ Tư</b>).',
         '<b>Công việc</b>: chỉ nhóm Chấm điểm của chi nhánh; ô <b>▾</b> chọn một GV.', 'GV quá hạn tự nhận thông báo; việc tự hết khi GV nhập đủ điểm.'],
       chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Lọc việc chấm theo một GV ở đây.' },
     },

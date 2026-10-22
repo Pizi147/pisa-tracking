@@ -136,7 +136,7 @@ export const EN_HD = {
   '<b>W2 OCT</b> = tuần thứ 2 của tháng 10; tuần thuộc tháng chứa Thứ Năm.': '<b>W2 OCT</b> = the 2nd week of October; a week belongs to the month of its Thursday.',
   'Quản lý chi nhánh — duyệt Case, PA, đề xuất, lịch Test.': 'Branch manager — approves Cases, PAs, proposals, Test schedules.',
   // ---------------------------------------------------------------- sửa sau rà planning #417
-  'Mở <b>Test › Lịch Test / Chấm Test</b>: khối "Test chấm tuần này", hạn hết <b>Thứ Tư</b>.': 'Open <b>Tests › Schedule / Marking</b>: the "Marking this week" block, due end of <b>Wednesday</b>.',
+  'Mở <b>Test › Chấm Test</b>: nhóm theo hạn chấm, bấm một nhóm để chấm ngay bên phải.': 'Open <b>Tests › Marking</b>: groups by marking deadline, click a group to mark it on the right.',
   'Bấm lớp, gõ điểm; mọi ô MT có điểm cần <b>nhận xét</b>, ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.': 'Click a class and type scores; every MT cell with a score needs a <b>comment</b>, a cell below expected also needs a <b>cause group</b>.',
   'Mỗi việc một dòng, quá hạn ở đầu — bấm dòng để làm.': 'One task per row, overdue on top — click a row to do it.',
   'Góp ý: mở hồ sơ lớp › tab <b>Học viên</b> › Cách xem <b>Góp ý hàng tuần</b>.': 'Feedback: open the class profile › <b>Students</b> tab › View <b>Weekly feedback</b>.',

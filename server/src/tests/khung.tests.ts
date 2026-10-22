@@ -65,14 +65,14 @@ export async function runKhungTests(t: YThucTestKit) {
     for (const [p, want] of cases) assert(d.khuVucCuaDuong(p) === want, `${p} → ${d.khuVucCuaDuong(p)}, cần ${want}`);
   });
 
-  check('PR-O · O2/O2b Tab Test theo quyền: GV Lịch Test; ai cũng mở vào Lịch Test (PR-UX1 bỏ Cần chấm; OV-15b bỏ tab Điểm theo lớp → panel lớp)', () => {
+  check('PR-O · O2/O2b Tab Test theo quyền: GV Chấm Test + Lịch Test, mở vào Chấm Test (UI-CHAM-TEST); QL mở Lịch Test (OV-15b bỏ tab Điểm theo lớp → panel lớp)', () => {
     assert(d.tabTestHienThi(QL).join(',') === 'lich,ke-hoach', `QL: ${d.tabTestHienThi(QL)}`);
-    assert(d.tabTestHienThi(GV).join(',') === 'lich', `GV: ${d.tabTestHienThi(GV)}`);
-    assert(d.tabTestMacDinh(GV) === 'lich', `GV mặc định: ${d.tabTestMacDinh(GV)}`);
+    assert(d.tabTestHienThi(GV).join(',') === 'cham,lich', `GV: ${d.tabTestHienThi(GV)}`);
+    assert(d.tabTestMacDinh(GV) === 'cham', `GV mặc định: ${d.tabTestMacDinh(GV)}`);
     assert(d.tabTestMacDinh(QL) === 'lich', `QL mặc định: ${d.tabTestMacDinh(QL)}`);
     assert(d.tabTestMacDinh(d.NAV_RONG) === null, 'Không có tab nào thì không có mặc định');
     assert(d.tabTestTuDuong('ke-hoach') === 'ke-hoach' && d.tabTestTuDuong(undefined) === null && d.tabTestTuDuong('x') === null, 'Đọc tab từ đường dẫn');
-    assert(Object.values(d.TAB_TEST_LABEL).join(',') === 'Lịch Test / Chấm Test,Điểm theo lớp,Kế hoạch Test', 'Chữ tab Test');
+    assert(Object.values(d.TAB_TEST_LABEL).join(',') === 'Chấm Test,Lịch Test,Điểm theo lớp,Kế hoạch Test', 'Chữ tab Test');
     assert(d.DUONG_TAB_TEST.lich === '/test/lich', 'Đường dẫn tab Test');
   });
 
@@ -140,12 +140,12 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(navOf(t.P.admin).admin && !navOf(t.P.mbManager).admin, 'Chỉ Quản trị thấy màn Quản trị');
   });
 
-  check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test: Lịch Test (OV-15b bỏ Điểm theo lớp); Công việc: Việc học viên + Yêu cầu của tôi (PR-DUYET); không Phân tích', () => {
+  check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test: Chấm Test + Lịch Test (UI-CHAM-TEST; OV-15b bỏ Điểm theo lớp); Công việc: Việc học viên + Yêu cầu của tôi (PR-DUYET); không Phân tích', () => {
     for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
       const n = navOf(p);
       /* NEN-V5 (08 K10): GV có lại Tổng quan (thay OV-15d). OV-15b: bỏ tab Điểm theo lớp. */
-      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|lich|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // OV-15b + NEN-V5
-      assert(d.tabTestMacDinh(n) === 'lich', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
+      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|cham,lich|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // OV-15b + NEN-V5 + UI-CHAM-TEST
+      assert(d.tabTestMacDinh(n) === 'cham', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
       assert(!n.workOps && !n.workReports, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
     }
   });

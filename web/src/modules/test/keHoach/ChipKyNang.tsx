@@ -1,5 +1,7 @@
-import { NHAN_KIEU_O_MT, gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanNam, type ChipKH, type KieuOMt, type KyNangKH } from '@shared/domain/index.ts';
+import { NHAN_KIEU_O_MT, gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanNamChu, type ChipKH, type KieuOMt, type KyNangKH } from '@shared/domain/index.ts';
 import { MAU_O_MT } from '../../../ui/OMt.tsx';
+import { fmtBand } from '../../../lib/format.ts';
+import { t } from '@shared/i18n/index.ts';
 import type { KnO } from './kieu.ts';
 
 /**
@@ -24,7 +26,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
     return (
       <button type="button" onClick={(e) => onMo(null, e.currentTarget)} title={`Xếp ${tenDot} cho em này (đang là đề xuất)`}
         className="flex h-[44px] w-full flex-col items-center justify-center rounded border border-dashed border-muted-line text-[12px] text-slate-500 hover:text-slate-200">
-        <span>đề xuất {deXuat ? tuanNam(deXuat) : '—'}</span>
+        <span>đề xuất {deXuat ? tuanNamChu(deXuat) : '—'}</span>
         {nhanDeXuat && <span className="text-[12px]">{nhanDeXuat}</span>}
       </button>
     );
@@ -32,7 +34,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
 
   const g = gomChip(kn);
   const tooltip = (chip: ChipKH) => chip.kyNang
-    .map((k) => `${tenMon(ct, k)}: ${kn[k]?.tuan ? tuanNam(kn[k]!.tuan!) : 'chưa xếp'}${kn[k]?.doiTu ? ` (dời từ ${tuanNam(kn[k]!.doiTu!)})` : ''}${kn[k]?.khoa ? ` (${kn[k]!.khoa})` : ''}`)
+    .map((k) => `${tenMon(ct, k)}: ${kn[k]?.tuan ? tuanNamChu(kn[k]!.tuan!) : 'chưa xếp'}${kn[k]?.doiTu ? ` (dời từ ${tuanNamChu(kn[k]!.doiTu!)})` : ''}${kn[k]?.khoa ? ` (${kn[k]!.khoa})` : ''}`)
     .join('\n');
 
   if (g.xong) {
@@ -41,7 +43,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
         <button type="button" className={`${CHIP_CLS} bg-done-bg text-done border-done-line`} title="Đã làm bài — xem" onClick={(e) => onMo(null, e.currentTarget)}>
           <span className="font-bold">Xong</span>
           <span className="whitespace-nowrap tabular-nums">
-            {g.tuanXong ? tuanNam(g.tuanXong) : ''}<span aria-hidden title="Đã làm bài"> ✓</span>
+            {g.tuanXong ? tuanNamChu(g.tuanXong) : ''}<span aria-hidden title="Đã làm bài"> ✓</span>
             <NhanKhoa tuan={g.tuanXong} khaiGiang={khaiGiang} tongTuan={tongTuan} />
           </span>
         </button>
@@ -60,7 +62,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
     <div className={bao}>
       {hienThi.map((c, i) => (
         <Chip key={i} c={c} ct={ct} khaiGiang={khaiGiang} tongTuan={tongTuan}
-          them={i === 1 && them > 0 ? { n: them, ds: conLai.map((x) => `${x.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${x.tuan ? tuanNam(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
+          them={i === 1 && them > 0 ? { n: them, ds: conLai.map((x) => `${x.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${x.tuan ? tuanNamChu(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
           title={tooltip(c)} onMo={onMo} />
       ))}
     </div>
@@ -125,7 +127,7 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
         {chu}{!chua && tt?.duoi && <span className="font-normal"> · {tt.duoi}</span>}
       </span>
       <span className="whitespace-nowrap tabular-nums">
-        {chua ? 'chưa xếp' : tuanNam(c.tuan!)}
+        {chua ? 'chưa xếp' : tuanNamChu(c.tuan!)}
         {c.trangThai === 'xong' && !c.khongDuThi && <span aria-hidden title="Đã làm bài"> ✓</span>}
         {!chua && <NhanKhoa tuan={c.tuan} khaiGiang={khaiGiang} tongTuan={tongTuan} />}
         {them && <span className="ml-1 text-[12px]" title={them.ds}>+{them.n}</span>}
@@ -134,31 +136,54 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
   );
 }
 
+/** Viền ô đợt FT theo trạng thái chính (mockup V5 `dieu-chinh-cuoi.html` `.o-kh`): khung viền, không chip nền màu; trạng thái còn ghi bằng chữ. */
+const VIEN_O: Partial<Record<KieuOMt, string>> = {
+  xong: 'border-ok-line', 'dang-thi': 'border-doing-line shadow-[inset_3px_0_0_rgb(var(--doing-rgb))]', 'tre-cham': 'border-bad-line bg-bad-bg',
+  'con-viec': 'border-soon-line', 'chua-lich': 'border-dashed border-muted-line',
+};
+const CHU_TT: Partial<Record<KieuOMt, string>> = { xong: t('xong'), 'dang-thi': t('Tuần này'), 'co-lich': t('đã xếp'), 'chua-lich': t('chưa xếp') };
+const MAU_TT_O: Partial<Record<KieuOMt, string>> = { xong: 'text-ok', 'dang-thi': 'text-doing', 'tre-cham': 'text-bad', 'con-viec': 'text-soon' };
+/** Nhóm "chính" của ô — việc gấp nhất quyết viền + dòng trạng thái. */
+const UU_TIEN: KieuOMt[] = ['tre-cham', 'con-viec', 'dang-thi', 'cho-cham', 'cho-cham-cu', 'co-lich', 'chua-lich', 'xong'];
+
 /**
- * Ô MỘT ĐỢT của lớp FT ở lưới Kế hoạch Test (PR-OMT C6, mockup G1 — kiểu cũ): cả đợt cùng tuần + cùng trạng thái → MỘT chip
- * `L R W S · W4 SEP`; tách tuần / khác trạng thái → một chip mỗi nhóm (`L R W · W4 SEP`, `S · vắng · W4 SEP`); hiện đủ kỹ năng và trạng thái.
- * Ô dày (nhiều dòng) nhưng hẹp: xuống dòng theo nhóm, không kéo cột. Màu + chữ việc theo `nhomKyNang` (cùng luật ô MT). Mọi chip mở hộp cả đợt.
+ * Ô MỘT ĐỢT của lớp FT ở lưới Kế hoạch Test (UI-CHAM-TEST theo mockup V5 khu a, thay chip màu PR-OMT C6): MỘT khung viền, ba dòng —
+ * kỹ năng (nhóm khác trạng thái / tuần ghi kèm chữ việc: `L R W · S vắng`) · tuần `W3 SEP 2026` · trạng thái (`Tuần này`, `đã xếp`, `trễ chấm`…;
+ * đợt xong = `✓ / ✗ Overall 6.0`). Màu + chữ việc vẫn theo `nhomKyNang` (cùng luật ô MT). Bấm mở hộp cả đợt.
  */
-export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
-  so: number; kn: KnO; cu: boolean; homNay: string; ct?: string | null; chon: boolean; onMo: (el: HTMLElement) => void;
+export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, ovr, kyVong, onMo }: {
+  so: number; kn: KnO; cu: boolean; homNay: string; ct?: string | null; chon: boolean;
+  /** Đợt xong: Overall + kỳ vọng của lượt (máy chủ `luoiFT`). */
+  ovr?: number; kyVong?: number | null;
+  onMo: (el: HTMLElement) => void;
 }) {
   const nhom = nhomKyNang(kn, homNay, ct, cu);
-  /* C20 (OV-15c): Kế hoạch Test luôn kèm năm — tuần của nhóm (nhóm "xong" = tuần muộn nhất) đọc lại từ `kn`, cùng luật gom của `nhomKyNang`. */
+  /* C20: tuần của nhóm (nhóm "xong" = tuần muộn nhất) đọc lại từ `kn`, cùng luật gom của `nhomKyNang`. */
   const tuanCua = (ks: readonly KyNangKH[]) => ks.map((k) => kn[k]?.tuan).filter((x): x is string => !!x).sort().pop() ?? null;
   if (!nhom.length) return <span className="block text-center text-[12px] text-slate-500" title="Đợt này không có kỹ năng nào">—</span>;
+  const chinh = [...nhom].sort((a, b) => UU_TIEN.indexOf(a.kieu) - UU_TIEN.indexOf(b.kieu))[0];
+  const tuan = chinh.tuan ? tuanNamChu(tuanCua(chinh.kyNang)) : null;
+  const dat = ovr !== undefined && kyVong != null ? ovr >= kyVong : null;
+  const tt = chinh.kieu === 'xong' && ovr !== undefined
+    ? `${dat === null ? '' : dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(ovr)}`
+    : chinh.viec ? chuViec(chinh.viec) : CHU_TT[chinh.kieu] ?? null;
   return (
-    <div className="mx-auto flex w-full max-w-[168px] flex-col gap-[3px]">
-      {nhom.map((g) => (
-        <button key={g.ten} type="button" onClick={(e) => onMo(e.currentTarget)} title={g.title}
-          aria-label={`MT${so}, ${g.doc}`}
-          className={`flex min-h-5 max-sm:min-h-[32px] w-full flex-wrap items-center justify-between gap-x-1 rounded-md border px-1.5 text-left text-[12px] font-semibold leading-[18px] ${MAU_O_MT[g.kieu]} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
-          {/* Không cắt chữ (FIX-DTL): tuần dài (`W4 MAR 2026`) xuống dòng trong chip, cột giữ hẹp (C6). */}
-          <span className="font-bold">
-            {g.ten}{g.viec && <span className="font-medium"> · {g.viec}</span>}
-          </span>
-          <span className="ml-auto whitespace-nowrap tabular-nums">{g.tuan ? tuanNam(tuanCua(g.kyNang)) : 'chưa xếp'}{g.kieu === 'xong' && <span aria-hidden> ✓</span>}</span>
-        </button>
-      ))}
-    </div>
+    <button type="button" onClick={(e) => onMo(e.currentTarget)} title={nhom.map((g) => g.title).join('\n')}
+      aria-label={`MT${so}, ${nhom.map((g) => g.doc).join('; ')}${ovr !== undefined ? `, Overall ${fmtBand(ovr)}` : ''}`}
+      className={`mx-auto flex w-full max-w-[168px] flex-col items-start gap-px rounded-md border bg-[var(--surface)] px-2 py-1 text-left max-sm:min-h-[44px] ${dat === false && chinh.kieu === 'xong' ? 'border-bad-line' : VIEN_O[chinh.kieu] ?? 'border-[var(--line)]'} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
+      <span className="flex flex-wrap gap-x-1.5 text-xs font-bold tracking-wide text-slate-300">
+        {nhom.map((g, i) => (
+          <span key={g.ten}>{i > 0 && <span aria-hidden className="font-normal opacity-60">· </span>}{g.ten}
+            {g !== chinh && g.viec && <span className="font-medium"> {g.viec}</span>}
+            {g !== chinh && g.kieu === 'xong' && <span aria-hidden> ✓</span>}
+            {g !== chinh && g.tuan && chinh.tuan && tuanCua(g.kyNang) !== tuanCua(chinh.kyNang) && <span className="font-medium"> {g.tuan}</span>}</span>
+        ))}
+      </span>
+      <span className="whitespace-nowrap text-sm font-bold tabular-nums text-slate-100">{tuan ?? t('chưa xếp')}</span>
+      {tt && <span className={`text-xs font-semibold tabular-nums ${dat === false && chinh.kieu === 'xong' ? 'text-bad' : MAU_TT_O[chinh.kieu] ?? 'text-slate-400'}`}>{tt}</span>}
+    </button>
   );
 }
+
+/** Chữ việc trên ô ("chờ" → "chờ chấm", "trễ" → "trễ chấm") — câu đủ như dòng kỹ năng hộp một đợt. */
+const chuViec = (v: string) => (v === t('chờ') ? t('chờ chấm') : v === t('trễ') ? t('trễ chấm') : v);

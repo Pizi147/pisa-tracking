@@ -53,3 +53,13 @@ export function luatVangThuong(tuanThi: string, homNay: string): { khongDuThi: t
   if (addDaysIso(mondayOfDate(tuanThi), 14) <= nay) return { khongDuThi: true };
   return { khongDuThi: false, tuanMoi: tuanKeTiep(nay) };
 }
+
+/**
+ * LÝ DO "ĐÃ HUỶ" MỘT KỸ NĂNG MT (Rulebook §21.4 T5, UI-CHAM-TEST): MT cũ "-" → "vắng MT cũ" · vắng lần 2 (`huyVang`) → "vắng 2 lần" ·
+ * huỷ khác của kỹ năng (Quản lý từ chối thẻ dời / thẻ hết hạn không duyệt) → "QL từ chối dời". Không phải huỷ kỹ năng (cả lượt huỷ) → null.
+ */
+export function lyDoHuy(o: { mtCu?: boolean; huyVang?: boolean; sit?: string | null }): string | null {
+  if (o.mtCu) return t('vắng MT cũ');
+  if (o.huyVang) return t('vắng 2 lần');
+  return o.sit === 'cancelled' ? t('QL từ chối dời') : null;
+}

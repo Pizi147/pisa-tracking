@@ -6,7 +6,7 @@
   {"cong_cu":"do-bang","pr":"M4","ly_do":"bảng Học viên & Lớp, Đang SOS, Lưu trữ (Bang)","khop":"^(hvl|hvl-gvcn|hvl-cuoi|hvl-gvbm|luu-tru|sos-ql|sos-gv|sos-tvv|sos-cx|panel-mot-em-ql|panel-mot-em-gv)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"M1","ly_do":"bảng Tổng quan QL (Bang)","khop":"^(tong-quan)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"M2","ly_do":"bảng Công việc + trang đầu GV (Bang)","khop":"^(tong-quan-gv|cv-ho-tro|cv-cho-duyet|cv-van-hanh|cv-bao-cao|cv-gv|gvbm|gv-yeu-cau|gv-ket-qua-pa|gv-chuong|menu-tk)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
-  {"cong_cu":"do-bang","pr":"M5","ly_do":"bảng Kế hoạch Test (Bang)","khop":"^(test-ke-hoach|hop-ky-nang-mt|panel-xep-lich-mt)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
+  {"cong_cu":"do-bang","pr":"M5","ly_do":"bảng Kế hoạch Test (Bang)","khop":"^(test-ke-hoach|cham-test-kh-lop|hop-ky-nang-mt|panel-xep-lich-mt)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"M6","ly_do":"bảng Phân tích (Bang)","khop":"^(phan-tich|phan-tich-thuong)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"M7","ly_do":"bảng Quản trị + Hồ sơ GV (Bang)","khop":"^(quan-tri|quan-tri-quyen|gv-ho-so|ho-so-ca-nhan)-\\d+-(toi|sang) «[^»]+» g[1-5] "}
 ]

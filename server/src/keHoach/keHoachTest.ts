@@ -264,6 +264,8 @@ export type DotFT = {
   do?: boolean; huyPhan?: boolean;
   /** PR-OV4a: số MT này chỉ có lượt ĐÃ HUỶ (id) — ô "MT2 · Đã huỷ", bấm mở hộp Khôi phục. `attemptId` vẫn null (ô chưa có đợt). */
   huy?: number;
+  /** UI-CHAM-TEST: đợt xong — Overall + kỳ vọng của lượt (null: lượt không có kỳ vọng). */
+  ovr?: number; kyVong?: number | null;
 };
 
 export function luoiFT(p: Principal, classId: number, today: string = demoToday()) {
@@ -287,7 +289,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   const attempts = studentIds.length
     ? (conn
         .prepare(
-          `SELECT a.*, cy.route AS route   -- V5 SV-SO1: kỳ vọng của lượt (\`oXongCua\`) không hỏi lộ trình lẻ từng lượt
+          `SELECT a.*, cy.route AS route, cy.khong_cam_ket AS cy_kck   -- V5 SV-SO1 / UI-CHAM-TEST: kỳ vọng + Overall (\`resultOf\`) không hỏi lộ trình lẻ từng lượt
              FROM assessment_attempts a
              JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
             WHERE a.kind = 'mock' AND a.student_id IN (${phOf(studentIds.length)})
@@ -337,11 +339,11 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
     attempt_no: a.attempt_no, status: a.status,
     coDiem: (bundle.scores.get(a.id) ?? []).some((x: any) => (x.band ?? null) !== null || (x.raw_score ?? null) !== null),
   })))]));
-  /* T37: cột 1 … min(MT8, max(số lớn nhất còn hiệu lực, MT kế tiếp lớn nhất, lịch mặc định của lộ trình lớp)). */
+  /* T37 → UI-CHAM-TEST (C20, T04): cột 1 … min(MT8, max(số lớn nhất còn hiệu lực, lịch mặc định của lộ trình lớp)) — MT kế tiếp không mở cột
+     (không cột MT4 trống "chưa xếp"); Quản lý thêm MT4+ tay qua "Xếp nhiều MT…", có lượt thì cột hiện. */
   const soCot = Math.min(MT_TOI_DA, Math.max(
     lichMtCua(cls, cls.route).length,
     ...attempts.filter((a) => a.status !== 'cancelled').map((a) => a.attempt_no as number),
-    ...soKeTiepCua.values(),
   ));
   const cot = Array.from({ length: soCot }, (_, i) => i + 1);
 
@@ -358,8 +360,11 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
       const kn = knCua(a);
       const batBuoc = Object.values(kn).filter((o) => o && o.trangThai !== 'khong-yeu-cau') as OKyNang[];
       const xongCa = batBuoc.length > 0 && batBuoc.every((o) => o.trangThai === 'xong');
+      /* UI-CHAM-TEST (dieu-chinh-cuoi khu a): ô xong ghi Overall + kỳ vọng của lượt — cùng `resultOf` mọi màn, điểm đã nạp sẵn. */
+      const kq = xongCa ? resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], skillRows.get(a.id) ?? []) : null;
       dot[n] = {
         attemptId: a.id, trangThaiDot: a.status === 'done' || xongCa ? 'xong' : a.status, kn, lichSu: !!a.lich_su,
+        ...(kq && kq.overall !== null ? { ovr: kq.overall, kyVong: kq.expectation ?? null } : {}),
         do: batBuoc.some((o) => o.trangThai === 'xong') && batBuoc.some((o) => o.trangThai !== 'xong' && o.trangThai !== 'da-huy'),
         huyPhan: batBuoc.some((o) => o.sit === 'cancelled'),
       };

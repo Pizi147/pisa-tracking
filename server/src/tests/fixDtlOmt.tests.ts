@@ -172,6 +172,7 @@ export async function runFixDtlOmtTests(t: YThucTestKit) {
     const c = doc('web/src/modules/test/keHoach/ChipKyNang.tsx');
     const ft = c.slice(c.indexOf('export function ChipDotFT'));
     assert(!/truncate/.test(ft), 'ChipDotFT còn truncate');
-    assert(/min-h-5/.test(ft) && /flex-wrap/.test(ft) && !/(?<![\w-])h-5\b/.test(ft), 'chip FT chưa xuống dòng được');
+    /* UI-CHAM-TEST (mockup V5 khu a): ô đợt = khung viền ba dòng — dòng kỹ năng xuống dòng được, không cao cố định. */
+    assert(/flex-wrap/.test(ft) && !/(?<![\w-])h-5\b/.test(ft), 'chip FT chưa xuống dòng được');
   });
 }

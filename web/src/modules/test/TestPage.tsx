@@ -3,6 +3,9 @@ import { useSession } from '../../lib/session.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { LichTestTab } from './LichTestTab.tsx';
 import { KeHoachTestTab } from './KeHoachTestTab.tsx';
+import { ChamTestTab, viecChamCuaToi } from './ChamTestTab.tsx';
+import { useApi } from '../../lib/useApi.ts';
+import type { WorkItem } from '../worklist/WorkList.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import {
   DUONG_TAB_TEST, NAV_RONG, TAB_TEST_LABEL, moDiemLopCu, tabTestHienThi, tabTestMacDinh, tabTestTuDuong, type TabTest,
@@ -23,6 +26,8 @@ export default function TestPage() {
   const tabs = tabTestHienThi(nav);
   const macDinh = tabTestMacDinh(nav);
   const tab = tabTestTuDuong(seg);
+  /* UI-CHAM-TEST: số nhóm "Của tôi" trên tab Chấm Test — cùng GET `/my-work` với badge Công việc (gộp GET đang bay). */
+  const viec = useApi<{ dong: WorkItem[] }>(tabs.includes('cham') ? '/my-work' : null, [tabs.includes('cham')]);
 
   if (!macDinh) return <Navigate to="/" replace />;
   const lopCu = tab === 'diem-lop' && moDiemLopCu(nav) ? Number(params.get('lop')) || null : null;
@@ -40,10 +45,11 @@ export default function TestPage() {
       <h1 className="text-lg font-semibold text-slate-100 m-0">{t('Test')}</h1>
       {tabs.length > 1 && (
         <HangTab ariaLabel={t('Test')} value={lopCu ? 'lich' : tab} onChange={go}
-          tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k] }))} />
+          tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k], ...(k === 'cham' && viec.data ? { so: viecChamCuaToi(viec.data.dong).length, donVi: t('nhóm') } : {}) }))} />
       )}
       {(tab === 'lich' || lopCu) && <LichTestTab />}
       {lopCu && <PanelNhapDiemLop classId={lopCu} luot={params.get('luot')} onDong={dongLopCu} />}
+      {tab === 'cham' && <ChamTestTab />}
       {tab === 'ke-hoach' && <KeHoachTestTab />}
     </div>
   );

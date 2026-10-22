@@ -590,6 +590,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(d.tabTestHienThi(nav({ testGrade: true, testPlan: true })).join(',') === 'lich,ke-hoach', 'thứ tự (G4)');
     assert(d.TAB_TEST_LABEL['diem-lop'] === 'Điểm theo lớp' && d.DUONG_TAB_TEST['diem-lop'] === '/test/diem-lop', 'nhãn, đường');
     assert(d.tabTestMacDinh(nav({ testGrade: true })) === 'lich', 'mở Test vẫn vào Lịch Test');
+    assert(d.tabTestMacDinh(nav({ testGrade: true, workSupport: true })) === 'cham', 'GV (UI-CHAM-TEST): mở Test vào Chấm Test');
   });
 
   {

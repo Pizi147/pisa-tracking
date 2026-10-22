@@ -16,13 +16,23 @@ export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 
 /** `do`: có kỹ năng xong và còn kỹ năng phải thi (◐) · `huyPhan`: có phần thi đã huỷ (PR-XLMT). */
 /** `huy` (PR-OV4a): số MT chỉ có lượt đã huỷ (id) — ô "MT2 · Đã huỷ"; `attemptId` vẫn null. */
-export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO; lichSu?: boolean; do?: boolean; huyPhan?: boolean; huy?: number };
+export type DotFT = {
+  attemptId: number | null; trangThaiDot: string | null; kn: KnO; lichSu?: boolean; do?: boolean; huyPhan?: boolean; huy?: number;
+  /** UI-CHAM-TEST: đợt xong — Overall + kỳ vọng của lượt. */
+  ovr?: number; kyVong?: number | null;
+};
+/** SV-S-EXPERT: một lượt S Expert của em (`server/src/cham/sExpert.ts` › `DongSEx`) — `sua` đổi ngày / xoá (QL / Admin), `cham` nhập điểm. */
+export type DongSEx = {
+  id: number; tuan: string; ngay: string | null; diem: number | null; nhanXet: string | null;
+  nguoiCham: string | null; themBoi: string | null; sua: boolean; cham: boolean;
+};
 /** `soKeTiep` (PR-MT, K4-08): chỉ ô MT này có "+ xếp" — số MT liền mạch. */
 /** OV-15c (C21): ghi chú lịch thi hiện tại — chữ · ai · lúc. Khoá theo `khoaDot` (`mt4`, `progress`…). */
 export type GhiChuLich = { noiDung: string; ai: string | null; luc: string };
 export type HangFT = {
   studentId: number; ten: string; ma: string; cycleId?: number | null; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number;
   ghiChu?: Record<string, GhiChuLich>;
+  sEx?: DongSEx[];
 };
 export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[]; ghiChuLop?: GhiChuLich | null };
 

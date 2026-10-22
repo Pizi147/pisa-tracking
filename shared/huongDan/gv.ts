@@ -13,7 +13,7 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'nhap-diem', ten: 'Nhập điểm MT + Speaking chấm chéo', khi: 'sau mỗi tuần Test',
-      buoc: ['Mở <b>Test › Lịch Test / Chấm Test</b>: khối "Test chấm tuần này", hạn hết <b>Thứ Tư</b>.', 'Bấm lớp, gõ điểm; mọi ô MT có điểm cần <b>nhận xét</b>, ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.',
+      buoc: ['Mở <b>Test › Chấm Test</b>: nhóm theo hạn chấm, bấm một nhóm để chấm ngay bên phải.', 'Bấm lớp, gõ điểm; mọi ô MT có điểm cần <b>nhận xét</b>, ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.',
         'Em vắng: gõ <b>-</b>.', 'Chấm Speaking: <b>Công việc</b>, dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b> — không tính quá hạn.'],
       chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' },
     },

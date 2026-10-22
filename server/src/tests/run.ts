@@ -9538,6 +9538,9 @@ await runPrNenPanelTests({ check, checkAsync, assert } as any);
 // ==================================================================== V5 UI-CONG-VIEC (dòng theo em T01, vạch hạn T14)
 const { runPrUiCongViecTests } = await import('./prUiCongViec.tests.ts');
 await runPrUiCongViecTests({ check, assert } as any);
+// ==================================================================== V5 UI-CHAM-TEST (Kế hoạch Test 3 MT + Overall, lý do "Đã huỷ")
+const { runPrUiChamTestTests } = await import('./prUiChamTest.tests.ts');
+await runPrUiChamTestTests({ check, assert, conn, P, classId } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

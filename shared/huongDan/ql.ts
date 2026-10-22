@@ -24,7 +24,7 @@ export const HD_QL: HuongDan = {
       buoc: ['Mở <b>Test › Kế hoạch Test</b>; chip <b>Cần xếp lại</b> đếm em cần xếp lại.',
         'Nhiều lớp FT: <b>Xếp nhiều MT…</b>; lớp thường: <b>Xếp lịch Test…</b>.',
         'Một kỹ năng: bấm chip kỹ năng ở dòng lớp; <b>⋯</b> có <b>Dời lịch Test</b>, <b>Dời hạn chấm</b>, <b>Bỏ khỏi đợt</b>.',
-        'Theo dõi chấm: <b>Lịch Test / Chấm Test</b> — khối <b>Test quá hạn chấm</b> và <b>Test chấm tuần này</b>.'],
+        'Theo dõi chấm: <b>Lịch Test</b> — khối <b>Test quá hạn chấm</b> và <b>Test chấm tuần này</b>.'],
       chi: { hd: 'kht-loc', duong: '/test/ke-hoach', chu: 'Chọn chương trình, lọc lớp, xếp nhiều MT ở hàng này.' },
     },
     {

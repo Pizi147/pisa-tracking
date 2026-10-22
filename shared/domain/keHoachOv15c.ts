@@ -14,6 +14,8 @@ export function tuanNam(d: string | null | undefined): string {
   const thuHai = mondayOfDate(s);
   return `${tuanLich(thuHai)}/${owningMonthOf(thuHai).year}`;
 }
+/** UI-CHAM-TEST (mockup V5 khu a, 08 mục 6): trên MÀN Kế hoạch Test ghi `W3 SEP 2026` (khoảng trắng); `tuanNam` "/" giữ cho tệp Excel (C17). */
+export const tuanNamChu = (d: string | null | undefined): string => tuanNam(d).replace('/', ' ');
 
 // ------------------------------------------------------------------ Xóa lịch (mục 6)
 

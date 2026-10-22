@@ -27,10 +27,13 @@ const sap = (a: Dong, b: Dong) => soSanhLop({ code: a.classCode }, { code: b.cla
  * sẵn có (`ODiemMt` → `HopNhapDiem`: 4 tiêu chí + nhận xét), Enter / "Lưu · em tiếp ›" sang em chưa chấm kế tiếp trong danh sách đang lọc.
  * Dòng vừa lưu đứng nguyên chỗ (bài còn tồn cũ rời hàng đợi máy chủ sau khi chấm — vẫn giữ để thấy đã lưu).
  */
-export function PanelChamSpeaking({ onDong, onDaLam }: { onDong: () => void; onDaLam: () => void }) {
+export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: () => void; onDaLam: () => void;
+  /** UI-CHAM-TEST: mở từ một lớp ở Chấm Test — lọc sẵn lớp đó (đổi được). */
+  lopDau?: number | null;
+}) {
   const { data, error, reload } = useApi<{ rows: Dong[]; soBai: number }>('/my-work/cham-speaking');
   const [q, setQ] = useState('');
-  const [lop, setLop] = useState<number | null>(null);
+  const [lop, setLop] = useState<number | null>(lopDau);
   const [mo, setMo] = useState<number | null>(null);
   const [giu, setGiu] = useState<ReadonlyMap<number, Dong>>(new Map());
   const rows = useMemo(() => {

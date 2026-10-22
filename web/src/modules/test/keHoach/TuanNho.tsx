@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { api } from '../../../lib/api.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { LichNho } from '../../../ui/LichNho.tsx';
-import { ngay, tuanLich, tuanNam } from '@shared/domain/index.ts';
+import { ngay, tuanLich, tuanNamChu } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 
 export type Tuan = { periodId: number; weekStart: string };
@@ -45,7 +45,7 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null, gon 
           className="field flex min-h-[44px] min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-0 px-2 py-1 text-left text-xs sm:min-h-[32px]"
           aria-haspopup="dialog" aria-expanded={mo} onClick={() => setMo((v) => !v)}
           title={d.weekStart ? `${khoang(d.weekStart)} · bấm để chọn tuần khác` : 'Chọn tuần khác'}>
-          <span className="whitespace-nowrap text-slate-100">{d.weekStart ? (nam ? tuanNam(d.weekStart) : tuanLich(d.weekStart, homNay)) : 'Chọn tuần'}</span>
+          <span className="whitespace-nowrap text-slate-100">{d.weekStart ? (nam ? tuanNamChu(d.weekStart) : tuanLich(d.weekStart, homNay)) : 'Chọn tuần'}</span>
           {d.weekStart && !gon && <span className="text-xs tabular-nums text-slate-500">{khoang(d.weekStart)}</span>}
         </button>
         <button type="button" className={nut} disabled={busy || !co} onClick={() => co && chon(addDaysStr(co, 7))} aria-label="Tuần sau">›</button>
