@@ -499,8 +499,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const thuong = doc('web/src/modules/classes/BangDiemLopThuong.tsx');
     assert(!/MT\d|MT\$\{|kỳ vọng|Progress(?! Test)|Final(?! Test)|Normal/.test(thuong), 'BangDiemLopThuong.tsx có chữ FT/tiếng Anh');
     assert(!/case SOS/.test(doc('web/src/modules/students/StudentsPage.tsx')), 'Q2: còn nhãn "case SOS"');
-    const roster = doc('web/src/modules/students/ClassRoster.tsx');
-    assert(!/Lớp Normal|isRatio|REGULAR_SKILL_LABEL/.test(roster), 'ClassRoster.tsx còn nhánh lớp thường');
+    const roster = doc('web/src/modules/classes/BangHoSoLop.tsx');   // UI-HO-SO-LOP: bảng FT mới
+    assert(!/Lớp Normal|isRatio|REGULAR_SKILL_LABEL/.test(roster), 'BangHoSoLop.tsx còn nhánh lớp thường');
     assert(!/ENTRY_SKILL_SHORT\[k as EntrySkill\] \?\? k/.test(roster), 'Chữ thô `writing` (§6)');
     for (const p of ['web/src/modules/classes/DauTrangLop.tsx', 'web/src/modules/classes/BangCanHoTro.tsx', 'web/src/modules/students/BangHocVienLop.tsx']) {
       assert(!/SectionNote|\d{4}-\d{2}-\d{2}/.test(doc(p)), `${p}: khối chữ cho dev (G-5) / ngày ISO (G-6)`);

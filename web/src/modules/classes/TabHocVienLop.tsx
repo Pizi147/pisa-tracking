@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Level } from '../../ui/ui.tsx';
+import { BoLocDoan, Level } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { NoiDungThongTinLop } from './ThongTinLopPanel.tsx';
@@ -73,10 +73,11 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
   const doiCheDo = (m: CheDoHocVien) => { if (m !== 'diem') chon.bo(); onCheDo(m); };
   return (
     <div className="space-y-2">
-      {/* UI-HO-SO-LOP: bỏ hàng "Cách xem" (truy vết BỎ) — cách xem cũ còn mở qua ⋯ / URL (`?che-do=`); "‹ Học viên" về bảng chính. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 empty:hidden">
-        {cheDo !== 'diem' && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] sm:min-h-0" onClick={() => doiCheDo('diem')}>{t('‹ Học viên')} · {CHE_DO_NHAN[cheDo]}</button>}
-        <span className="ml-auto flex flex-wrap items-center gap-2 empty:hidden">
+      {/* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8): GIỮ hàng "Cách xem" ở vị trí V4 — [XM] truy vết V5 ghi BỎ, chờ PTA Plan. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <BoLocDoan ariaLabel={t('Cách xem')} value={cheDo} onChange={doiCheDo}
+          muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
+        <span className="flex flex-wrap items-center gap-2">
           {onSuaThongTin && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>{t('Sửa thông tin')}</button>}
           {coTheChon && (
             <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}
@@ -102,7 +103,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
         : thuong
           ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
               chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} />
-          : <BangHoSoLop classId={lop.id} maLop={lop.code} onDoi={onDoi} chon={coTheChon ? chon : undefined}
+          : <BangHoSoLop classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
               onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}

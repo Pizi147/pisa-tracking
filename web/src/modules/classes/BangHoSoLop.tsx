@@ -3,18 +3,25 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
-import { fmtBand } from '../../lib/format.ts';
+import { fmtBand, skillShort } from '../../lib/format.ts';
 import { Bang, OBang } from '../../ui/Bang.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
+import { NhanCu } from '../../ui/OMt.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
-import { ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NganCase } from '../students/NganCase.tsx';
 import { KetLuan, type RosterRow } from '../students/ClassRoster.tsx';
 import { OChon, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
+import { MissingBadge } from '../students/MissingBadge.tsx';
+import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
+import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
+import { MoiVao } from './DaiChuyenLop.tsx';
+import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import type { CaseDetail, ViewCase } from '../cases/CasePanel.tsx';
 import {
   duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
@@ -44,14 +51,18 @@ const ketQua = (r: Hang, h: Moc | null): 'sos' | 'dat' | 'thieu' | 'khac' => {
   return (h.sosLevel ?? 0) > 0 ? 'sos' : 'dat';
 };
 
-const COT: DinhNghiaCot[] = [
+/* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8): GIỮ Target (mockup `ho-so-lop.html`), cột Phụ huynh của TVV / CX (OV-10b) và ⋯ thao tác từng dòng (V4). */
+const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
   { key: 'ten', nhan: t('Học viên'), kieu: 'ten' },
+  { key: 'target', nhan: 'Target', kieu: 'so', rong: 72 },
   { key: 'mt', nhan: 'MT', kieu: 'so', rong: 64 },
   { key: 'l', nhan: 'L', kieu: 'diem', rong: 76 }, { key: 'r', nhan: 'R', kieu: 'diem', rong: 76 },
   { key: 'w', nhan: 'W', phu: 'W1 · W2', kieu: 'diem', rong: 104 }, { key: 's', nhan: 'S', kieu: 'diem', rong: 76 },
   { key: 'ovr', nhan: 'Overall', kieu: 'diem', rong: 92 },
   { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 150 }, { key: 'thi', nhan: t('Ngày thi'), kieu: 'chip', rong: 136 },
   { key: 'cp', nhan: 'Case + PA', kieu: 'chip', rong: 138 },
+  ...(theoVai ? [{ key: 'ph', nhan: t('Phụ huynh'), kieu: 'chip' as const, rong: 170 }] : []),
+  { key: 'nut', nhan: '', kieu: 'nut' },
 ];
 
 /**
@@ -61,14 +72,16 @@ const COT: DinhNghiaCot[] = [
  * Case; thao tác (Ghi KQ PA · Sửa · Lịch sử) mở panel Case của Công việc tại trang (`NganCase`). Việc của em ở thanh Việc cần làm (cột Việc bỏ).
  * < 640 px: bảng cuộn ngang trong khung (mockup 375 — không đổi thành thẻ).
  */
-export function BangHoSoLop({ classId, maLop, onDoi, chon, onThemHocVien }: {
-  classId: number; maLop: string; onDoi: () => void; onThemHocVien?: () => void;
+export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien }: {
+  classId: number; maLop: string; quyen: QuyenDong; onDoi: () => void; onThemHocVien?: () => void;
   /** PR-LUI-b: "Chọn nhiều học viên" (Quản lý) — bật thì ô chọn cạnh tên. */
   chon?: ChonNhieu;
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const roster = useApi<Hang[]>(`/classes/${classId}/roster`, [classId]);
   const cases = useApi<{ rows: CaseLop[] }>(`/cases?classId=${classId}`, [classId]);
+  const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, onDone: () => { roster.reload(); onDoi(); } });
+  const COT = cotCua(!!quyen.theoVai);
   const [loc, setLoc] = useState<Loc>('tat-ca');
   const [mo, setMo] = useState<number | null>(null);
   const [pop, setPop] = useState<{ sid: number; kn: 'w' | 's'; nut: HTMLElement } | null>(null);
@@ -84,7 +97,7 @@ export function BangHoSoLop({ classId, maLop, onDoi, chon, onThemHocVien }: {
   const ds = tatCa.filter((r) => loc === 'tat-ca' || kq.get(r.id) === loc);
   const tuan = tatCa.map((r) => { const h = mocCua(r); return h ? r.timeline.find((x) => x.id === h.id) as { weekStart?: string | null } | undefined : undefined; })
     .map((x) => x?.weekStart).filter((w): w is string => !!w).sort();
-  const nguCanh: NguCanhDs = { loai: 'hoc-vien', ids: ds.map((s) => s.id), nhan: t('Lớp {lop}', { lop: maLop }) };
+  const ngCanh: NguCanhDs = { loai: 'hoc-vien', ids: ds.map((s) => s.id), nhan: t('Lớp {lop}', { lop: maLop }) };
   const xong = () => { invalidate(`/cases?classId=${classId}`); cases.reload(); roster.reload(); onDoi(); };
 
   const oDiem = (r: Hang, h: Moc | null, k: 'l' | 'r' | 'w' | 's' | 'ovr') => {
@@ -102,8 +115,20 @@ export function BangHoSoLop({ classId, maLop, onDoi, chon, onThemHocVien }: {
   const oCua = (r: Hang, c: DinhNghiaCot): ReactNode => {
     const h = mocCua(r);
     switch (c.key) {
-      case 'ten': return <span className="inline-flex items-center gap-2">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}<Link className="font-semibold text-slate-100 no-underline hover:underline" to={`/hoc-vien/${r.id}`} state={{ ds: nguCanh }}>{r.fullName} <span aria-hidden className="font-normal text-slate-500">↗</span></Link></span>;
-      case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-200 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
+      case 'ten': return (
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          {chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
+          <span className="flex min-w-0 flex-col items-start">
+            <TenEm s={r} ds={ngCanh} />
+            {/* Nhãn cạnh tên (mới vào · thiếu thông tin · Ý thức) xuống dòng dưới tên — tên không bị cắt ở cột 205 px. */}
+            {(r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="flex flex-wrap items-center gap-1.5">{r.moiVao && <MoiVao />}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></span>}
+          </span>
+        </span>
+      );
+      case 'target': return <TargetText band={r.cycle?.target} kck={r.cycle?.khongCamKet} />;
+      case 'ph': return r.lienHe ? <OPhuHuynh l={r.lienHe} /> : <span className="text-faint">—</span>;
+      case 'nut': return <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })} />;
+      case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-200 no-underline hover:underline">{dich(h.label)}{h.lichSu && <> <NhanCu /></>}</Link> : <span className="text-faint">—</span>;
       case 'l': case 'r': case 'w': case 's': case 'ovr': return oDiem(r, h, c.key);
       case 'kq': return <OKetQua r={r} h={h} kq={kq.get(r.id)!} />;
       case 'thi': return <OLichThi l={r.lichThi} homNay={homNay} />;
@@ -133,7 +158,7 @@ export function BangHoSoLop({ classId, maLop, onDoi, chon, onThemHocVien }: {
       <tr className={`${mo === r.id ? 'dang-mo' : ''} ${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
         {COT.map((c) => {
           const phu = phuCua(r, c);
-          return <OBang key={c.key} c={c}>{oCua(r, c)}{phu && <span className="bang-phu" data-phu-odiem="">{phu}</span>}</OBang>;
+          return <OBang key={c.key} c={c} className={c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}>{oCua(r, c)}{phu && <span className="bang-phu" data-phu-odiem="">{phu}</span>}</OBang>;
         })}
       </tr>
       {mo === r.id && (
@@ -166,11 +191,17 @@ export function BangHoSoLop({ classId, maLop, onDoi, chon, onThemHocVien }: {
       <Bang ten={t('Học viên lớp {lop}', { lop: maLop })} cot={COT} hang={ds} khoa={(r) => r.id} oCua={oCua} phuCua={phuCua} hangRieng={hangCua}
         the375={false} khung={false} rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca' && onThemHocVien ? <button type="button" className="btn btn-sm" onClick={onThemHocVien}>{t('Thêm học viên')}</button> : undefined }} />
       {pop && (() => { const r = tatCa.find((x) => x.id === pop.sid); const h = r && mocCua(r); return h ? <PopThanhPhan attemptId={h.id} kn={pop.kn} nut={pop.nut} tong={h.writing ?? null} onDong={() => setPop(null)} /> : null; })()}
+      {tt.panels}
       {ngan2 && (
         <NganCase caseId={ngan2.caseId} viecBanDau={ngan2.view} hocVien={ngan2.hv} lop={maLop} onClose={() => setNgan2(null)} onChanged={xong} />
       )}
     </section>
   );
+}
+
+/** Tên em → hồ sơ HV; mang danh sách đang xem (`state.ds`) để hồ sơ đi Trước / Sau theo đúng thứ tự bảng (PR-DH). */
+function TenEm({ s, ds }: { s: Hang; ds: NguCanhDs }) {
+  return <Link className="truncate font-semibold text-slate-100 no-underline hover:underline" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName} <span aria-hidden className="font-normal text-slate-500">↗</span></Link>;
 }
 
 /** Kết quả lượt của em: SOS (thay "Chưa đạt" — không hai badge) · Đạt · Chưa đủ dữ liệu; em KCK / đã kết thúc giữ kết luận cũ (`KetLuan`). */
@@ -197,14 +228,14 @@ function OLichThi({ l, homNay }: { l?: LichThi; homNay: string }) {
 function TheCase({ c, ngan, onMo }: { c: CaseLop; ngan: (d: string | null | undefined) => string; onMo: (v: ViewCase) => void }) {
   const { data, error, reload } = useApi<CaseDetail>(`/cases/${c.id}`, [c.id]);
   const { homNay } = useNgayNghiepVu();
-  const kn = c.categoryLabel ?? c.category ?? '';
+  const kn = c.category ? skillShort(c.category) : c.categoryLabel ?? '';
   const pa = (data?.interventions ?? []).filter((x: any) => (x.status === 'planned' || x.status === 'started') && !(x.laPaDoi && (x.approvalState === 'pending' || x.approvalState === 'declined')));
   const kqCua = (paId: number) => [...(data?.followups ?? [])].filter((f: any) => f.interventionId === paId).sort((a: any, b: any) => (b.observedOn ?? '').localeCompare(a.observedOn ?? ''))[0];
   return (
     <div className="overflow-hidden rounded-[10px] border bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-center gap-2.5 border-b px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>
         {kn && <span className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 text-xs font-bold text-slate-300">{kn}</span>}
-        <span className="font-bold text-slate-100">{dich(c.title)}</span>
+        <span className="font-bold text-slate-100">{kn ? `Case ${kn} · ` : ''}{dich(c.title).replace(' - ', ' · ')}</span>
         {(c.sosLevel ?? 0) > 0 && <ChipSos muc={c.sosLevel!} tinh />}
         <span className="text-[13px] text-slate-400">{[c.ownerName, t('mở {ngay}', { ngay: ngan(c.detectedAt) })].filter(Boolean).join(' · ')}</span>
         {data?.trangThaiV4 && <span className="ml-auto"><Nhan tone="doing">{dich(data.trangThaiV4.chu)}</Nhan></span>}

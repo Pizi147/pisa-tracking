@@ -22,7 +22,7 @@ type DongDauRa = { studentId: number; nhanXet: string | null; deXuat: string | n
 type DauRa = { rows: DongDauRa[]; coTheGhi: boolean };
 
 /** Đề xuất bước tiếp — cùng mã hướng Lộ trình tiếp theo (máy chủ `DE_XUAT_DAU_RA`). */
-const DE_XUAT: [string, string][] = [['len_lop', t('Lên lớp kế')], ['fast_track', t('Lên FT')], ['hoc_lai', t('Học lại')], ['bao_luu', t('Tạm dừng')], ['dung_hoc', t('Dừng học')]];
+const DE_XUAT: [string, string][] = [['len_lop', t('Lên lớp kế')], ['fast_track', t('Lên FT')], ['hoc_lai', t('Học lại')], ['bao_luu', t('Tạm dừng')], ['dung_hoc', t('Dừng học hẳn')]];
 const nhanDeXuat = (k: string | null) => DE_XUAT.find(([m]) => m === k)?.[1] ?? null;
 const daGhi = (d?: DongDauRa) => !!d && (!!d.nhanXet || !!d.deXuat);
 const tong = (r: Record<string, Ti> | null | undefined) => {

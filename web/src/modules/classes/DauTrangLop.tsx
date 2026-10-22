@@ -13,7 +13,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, demQuaHan, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
+  DUONG_TAB_TEST, demQuaHan, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -148,18 +148,9 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
     return [...dau, { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) }];
   });
 
-  /* UI-HO-SO-LOP: "Nhập điểm" vào ⋯ (đầu trang chỉ + Case · ⋯ — mockup `ho-so-lop.html`); việc nhập điểm của người xem ở thanh Việc cần làm. */
-  /* Cách xem cũ của tab Học viên (hàng "Cách xem" đã bỏ — truy vết BỎ): Góp ý hàng tuần · Kết quả đầu ra lớp trước (FT, còn đợt) · Thông tin lớp (vai chỉ đọc). */
-  const cheDo = (k: CheDoHocVien) => () => navigate(`/hoc-vien/lop/${data.id}?che-do=${k}`);
-  const vaiXem = vaiXemHocVien(session?.roles);
-  const cachXem: MucMenu[] = [
-    ...(vaiXem !== 'admin' ? [{ key: 'cd-gop-y', nhan: CHE_DO_NHAN['gop-y'], onChon: cheDo('gop-y') }] : []),
-    ...(!thuong && (data.dai?.kqdrDot ?? 0) > 0 && vaiXem !== 'admin' ? [{ key: 'cd-ket-qua', nhan: CHE_DO_NHAN['ket-qua'], onChon: cheDo('ket-qua') }] : []),
-    ...(!mucLop.some((m) => m.key === 'thong-tin') && vaiXem ? [{ key: 'cd-thong-tin', nhan: CHE_DO_NHAN['thong-tin'], onChon: cheDo('thong-tin') }] : []),
-  ];
-  const menuDu: MucMenu[] = [...(data.viewer.canEnterScores ? [{ key: 'nhap-diem', nhan: t('Nhập điểm'), onChon: () => setNhapDiem(true) }] : []), ...cachXem, ...menu];
-  /* Badge còn lại sau thanh Việc cần làm: bỏ "n bài chờ chấm" · "n việc quá hạn" (đã là ô việc) và nhãn chặng (đầu trang gọn — brief 10). */
-  const bConLai = { hien: b.hien.filter((x) => x.key !== 'cham' && x.key !== 'qua-han' && x.key !== 'chang'), an: b.an.filter((x) => x.key !== 'cham' && x.key !== 'qua-han') };
+  /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8 — nâng cấp, không chép mockup): GIỮ nút Nhập điểm · + Case · ⋯ và mọi badge ở vị trí V4; màu / chữ V5. */
+  const bConLai = b;
+  const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
 
   return (
     <header className="space-y-3">
@@ -195,11 +186,14 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
           )} />
         )}
         <div className="ml-auto flex items-center gap-2 max-sm:ml-0">
+          {data.viewer.canEnterScores && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
           {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
           {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onViec('case')}>+ Case</button>}
-          <MenuDong muc={menuDu} nhan={t('Thao tác khác')} />
+          <MenuDong muc={menu} nhan={t('Thao tác khác')} />
         </div>
       </div>
+
+      <DongGiaoVienBoMon nhom={nhom} />
 
       {bConLai.hien.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
@@ -248,4 +242,39 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   const homNayTuan = homNay ?? '9999';
   const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
   return { sos, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
+}
+
+/**
+ * GV BỘ MÔN MỘT DÒNG KHÔNG XUỐNG HÀNG (06c §1): "L · R Trần Ngọc Hà   W1 Lê Minh Khoa …". Điện thoại hiện 2 nhóm, máy tính 5 nhóm,
+ * còn lại "+k" — bấm ra đủ danh sách ngay bên dưới (không popover trong vùng cắt `overflow-x-clip`). Lớp CSS là chuỗi tĩnh.
+ */
+function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
+  const [du, setDu] = useState(false);
+  if (!nhom.length) return null;
+  const mot = (g: NhomGiaoVien, i: number, luonHien: boolean) => (
+    <span key={`${g.nhan}-${i}`}
+      className={`items-baseline gap-1 whitespace-nowrap ${luonHien || i < 2 ? 'inline-flex' : i < 5 ? 'hidden sm:inline-flex' : 'hidden'}`}>
+      <abbr className="font-medium text-slate-500 no-underline" title={g.title}>{g.nhan}</abbr>
+      {g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>}
+    </span>
+  );
+  return (
+    <div className="text-xs">
+      {/* HL-18: cắt chiều ngang thôi (`overflow-x-clip`) — vùng chạm 44 px của tên GV / "+k" ở 375 không bị cắt theo chiều dọc. */}
+      <div className="flex items-center gap-3.5 overflow-x-clip whitespace-nowrap">
+        {nhom.map((g, i) => mot(g, i, false))}
+        {nhom.length > 2 && (
+          <button type="button" aria-expanded={du} className="link relative border-0 bg-transparent p-0 text-xs sm:hidden after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-['']" onClick={() => setDu((v) => !v)}>
+            +{nhom.length - 2}
+          </button>
+        )}
+        {nhom.length > 5 && (
+          <button type="button" className="link hidden border-0 bg-transparent p-0 text-xs sm:inline" onClick={() => setDu((v) => !v)}>
+            +{nhom.length - 5}
+          </button>
+        )}
+      </div>
+      {du && <div className="mt-1 flex flex-wrap gap-x-3.5 gap-y-1">{nhom.map((g, i) => mot(g, i, true))}</div>}
+    </div>
+  );
 }

@@ -46,8 +46,8 @@ export default function ClassOverviewPage() {
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
   const [xetLai, setXetLai] = useState(false);
-  /** PR-DL → UI-HO-SO-LOP: khối "Điểm Test của lớp" — chỉ ở tab Học viên, GẬP sẵn (truy vết BỎ "lưới mở sẵn dưới mọi tab"). */
-  const [moDiem, setMoDiem] = useState(false);
+  /** PR-DL → PR-OV3a: khối "Điểm Test của lớp" cuối trang — mở sẵn, vẫn thu gọn được. UI-HO-SO-LOP: GIỮ vị trí V4 ([XM] truy vết V5 ghi "gập, chỉ tab Học viên"). */
+  const [moDiem, setMoDiem] = useState(true);
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
   const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
   const [caseFor, setCaseFor] = useState(0);
@@ -149,7 +149,7 @@ export default function ClassOverviewPage() {
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
       {tab === 'dau-ra' && <TabDauRa classId={data.id} maLop={data.code} chuongTrinh={data.programme?.code ?? null} />}
 
-      {tab === 'hoc-vien' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
+      {data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
       {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}

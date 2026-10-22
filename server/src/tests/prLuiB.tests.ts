@@ -336,7 +336,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const p = doc('web/src/modules/students/XemTruocHangLoatPanel.tsx');
     for (const chu of ['Bỏ qua', 'Thử lại', 'Đã lưu ', 'chưa lưu', 'Quyết định chuyển lớp huỷ', 'PA huỷ', 'Case đóng', 'học viên', 'Về lớp cũ', 'Sang lớp mới']) assert(p.includes(chu), `thiếu chữ "${chu}"`);
     assert(p.includes('!l.ft'), 'Học lại hàng loạt chỉ sang lớp thường');
-    assert(doc('web/src/modules/students/ClassRoster.tsx').includes('OChon') && doc('web/src/modules/classes/BangDiemLopThuong.tsx').includes('OChon'), 'ô chọn ở cả hai bảng');
+    assert(doc('web/src/modules/classes/BangHoSoLop.tsx').includes('OChon') && doc('web/src/modules/classes/BangDiemLopThuong.tsx').includes('OChon'), 'ô chọn ở cả hai bảng');
     /* OV-15h2 (ý 1, mockup 5 khung 2): bảng Học viên & Lớp có ô chọn CHỈ để Xuất Excel "Các HV đã chọn" — không việc hàng loạt nào khác. */
     const sp = doc('web/src/modules/students/StudentsPage.tsx');
     const thanh = sp.slice(sp.indexOf('<ThanhChonNhieu'), sp.indexOf('/>', sp.indexOf('<ThanhChonNhieu')));

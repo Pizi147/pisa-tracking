@@ -121,7 +121,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('C10 · mỗi bảng vừa khung ở 1440 có bang-dinh (không cùng overflow-x-auto); khung bao (card / ô) không còn overflow-hidden', () => {
     const DS: Array<[string, number]> = [   // [tệp, số chỗ bang-dinh tối thiểu]
       ['web/src/modules/worklist/KhoiCanXuLy.tsx', 1], ['web/src/modules/worklist/BranchPulse.tsx', 1],   // CV-LOI (CV-10): LopToiDay nằm trong thẻ 560 px — bỏ bang-dinh, cuộn trong thẻ
-      ['web/src/modules/students/ClassRoster.tsx', 1], ['web/src/modules/classes/BangDiemLopThuong.tsx', 1], ['web/src/modules/classes/TabTongKetLop.tsx', 1],
+      ['web/src/modules/classes/BangDiemLopThuong.tsx', 1],   // UI-HO-SO-LOP: ClassRoster → BangHoSoLop (bảng `Bang`)
+      ['web/src/modules/classes/TabTongKetLop.tsx', 1],
       ['web/src/modules/test/lichTest/HangLop.tsx', 1], ['web/src/modules/test/lichTest/KhoiNo.tsx', 1],
       ['web/src/ui/Bang.tsx', 1],   // BANG-1: lưới FT / lớp thường dính đầu qua `Bang dinh` (kiểm riêng bên dưới)
       ['web/src/modules/platform/AdminPage.tsx', 1], ['web/src/modules/platform/AccountsAdmin.tsx', 1], ['web/src/modules/platform/CatalogAdmin.tsx', 1],   // OV-6b1: một bảng Chương trình (gộp Lộ trình)
@@ -341,7 +342,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('C24 · OV-13f (Q8, thay J2): không màn nào in mã học viên (giữ ở DB, nhật ký, đường dẫn, tìm kiếm); Excel không cột Mã', () => {
     const CAC_FILE = ['web/src/modules/students/StudentDetailPage.tsx', 'web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/cham/MotKyNang.tsx',
       'web/src/modules/cham/DiemTheoLop.tsx', 'web/src/modules/students/LuuTruPage.tsx', 'web/src/modules/classes/TransitionPanel.tsx', 'web/src/modules/platform/Header.tsx',
-      'web/src/modules/students/ClassRoster.tsx', 'web/src/modules/students/BangHocVienLop.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx',
+      'web/src/modules/classes/BangHoSoLop.tsx', 'web/src/modules/students/BangHocVienLop.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx',
       'web/src/modules/cases/QuickReport.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/students/XoaHocVienPanel.tsx'];
     for (const f of CAC_FILE) {
       const sai = doc(f).split('\n').map((dong, i) => [dong, i + 1] as const).filter(([dong]) => /\.studentCode\b|student\.code\b|maHocVienNgan|\bd\.ma\b/.test(dong));

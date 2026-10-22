@@ -67,7 +67,7 @@ export async function runPrDhTests(t: YThucTestKit) {
   check('PR-DH (3)(4) · hồ sơ HV và hồ sơ lớp dùng ThanhTruocSau; danh sách đi qua link tên em / tên lớp', () => {
     assert(/<ThanhTruocSau loai="hoc-vien"/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ HV');
     assert(/<ThanhTruocSau loai="lop"/.test(doc('web/src/modules/classes/DauTrangLop.tsx')), 'hồ sơ lớp (DH-4)');
-    for (const f of ['students/BangHocVienLop', 'students/ClassRoster', 'classes/BangDiemLopThuong']) {
+    for (const f of ['students/BangHocVienLop', 'classes/BangHoSoLop', 'classes/BangDiemLopThuong']) {
       assert(/to=\{`\/hoc-vien\/\$\{s\.id\}`\}[^>]*state=\{\{ ds \}\}/.test(doc(`web/src/modules/${f}.tsx`)), `${f}: link tên em phải mang state.ds`);
     }
     const sp = doc('web/src/modules/students/StudentsPage.tsx');

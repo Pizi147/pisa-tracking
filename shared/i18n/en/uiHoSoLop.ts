@@ -8,7 +8,7 @@ export const EN_UI_HO_SO_LOP = {
   'Ghi đánh giá đầu ra': 'Record end-of-course review',
   'Chưa ghi': 'Not recorded',
   'Chờ Final': 'Awaiting Final',
-  'Dừng học': 'Stop studying',
+  'Dừng học hẳn': 'Stop studying',
   'GVCN đề xuất, QL chốt': 'Homeroom teacher proposes, manager decides',
   'Ghi KQ PA': 'Record PA result',
   'Hạn ghi KQ': 'Result due',
@@ -20,7 +20,7 @@ export const EN_UI_HO_SO_LOP = {
   'Nhận xét GVCN': 'Homeroom teacher comment',
   'Sửa ›': 'Edit ›',
   'VIỆC · ĐÁNH GIÁ ĐẦU RA': 'TASK · END-OF-COURSE REVIEW',
-  'Xem tất cả ở Công việc ›': 'See all in Tasks ›',
+  '+{n} việc khác ở Công việc ›': '+{n} more tasks in Tasks ›',
   'Xoá đánh giá': 'Review cleared',
   'chưa nhập': 'not entered',
   'chờ Final': 'awaiting Final',
@@ -35,5 +35,4 @@ export const EN_UI_HO_SO_LOP = {
   'Đánh giá đầu ra lớp {lop}': 'End-of-course review of {lop}',
   'Đã đánh giá {n} / {tong}': 'Reviewed {n} / {tong}',
   'Đề xuất bước tiếp': 'Proposed next step',
-  '‹ Học viên': '‹ Students',
 } satisfies Record<string, Dich>;

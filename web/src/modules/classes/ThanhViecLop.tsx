@@ -12,12 +12,12 @@ import { dich, t } from '@shared/i18n/index.ts';
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp. */
 export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[] };
 export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-em`;
-const TOI_DA = 6;
+const TOI_DA = 3;   // mockup khu b: một hàng ba ô; còn lại ở Công việc
 
 /**
  * THANH "VIỆC CẦN LÀM" ĐẦU HỒ SƠ LỚP (`dieu-chinh-cuoi.html` khu b, `.thanh-viec`): mỗi việc CỦA NGƯỜI XEM ở lớp một ô — tên việc (+ em) · trạng thái
  * hạn + hạn `dd/mm` (P7) · nút động từ. Vạch trái: quá hạn đỏ · hạn hôm nay vàng · còn lại xanh. Bấm nút = panel Công việc ngay tại trang (`PanelViec`,
- * không đổi trang). Không có việc → không vẽ thanh. Quá 6 việc → "Xem tất cả ở Công việc ›".
+ * không đổi trang). Không có việc → không vẽ thanh. Quá 3 việc → "Xem tất cả ở Công việc ›".
  */
 export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () => void }) {
   const { data, reload } = useApi<ViecLop>(duongViecLop(classId), [classId]);
@@ -28,10 +28,12 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
   return (
     <>
       {ds.length > 0 && (
-        <section aria-label={t('Việc cần làm')} className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-          {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => setMo(it)} />)}
+        <section aria-label={t('Việc cần làm')} className="flex flex-col gap-1.5">
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => setMo(it)} />)}
+          </div>
           {ds.length > TOI_DA && (
-            <Link to={`/cong-viec?lop=${classId}`} className="link self-center text-[13px]">{t('Xem tất cả ở Công việc ›')}</Link>
+            <Link to="/cong-viec" className="link self-end text-[13px]">{t('+{n} việc khác ở Công việc ›', { n: ds.length - TOI_DA })}</Link>
           )}
         </section>
       )}
@@ -45,12 +47,13 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
 function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const vach = it.urgency === 'overdue' ? 'rgb(var(--bad-rgb))' : it.urgency === 'today' ? 'rgb(var(--soon-line-rgb))' : 'var(--accent)';
-  const ten = [dich(it.tieuDe), it.studentId !== null ? it.studentName : null].filter(Boolean).join(' · ');
+  const tieuDe = dich(it.tieuDe);
+  const ten = it.studentId !== null && !tieuDe.includes(it.studentName) ? `${tieuDe} · ${it.studentName}` : tieuDe;
   return (
     <div className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 rounded-[10px] border border-l-4 px-3 py-2.5 ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)]'}`}
       style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
       <span className="min-w-0 truncate text-[14px] font-bold text-slate-100" title={ten}>{ten}</span>
-      <button type="button" className={`btn btn-sm row-span-2 max-sm:min-h-[44px] ${it.group === 'score' ? 'btn-primary' : ''}`} onClick={onMo} aria-expanded={dangMo}>
+      <button type="button" className={['btn btn-sm row-span-2 max-sm:min-h-[44px]', it.group === 'score' && 'btn-primary'].filter(Boolean).join(' ')} onClick={onMo} aria-expanded={dangMo}>
         {dich(it.actionLabel)}
       </button>
       <span className="flex min-w-0 flex-wrap items-center gap-2 text-[13px] text-slate-400">

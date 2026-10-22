@@ -566,8 +566,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
   });
 
   check('PR-HVL (8) · web: bảng điểm FT bỏ Gọn/Đầy đủ, có nhánh MT lịch sử xám + nhãn, cột Theo dõi là ViecTiep bấm được; Lộ trình tiếp theo có Kết quả gần nhất, câu "Chỉ là dự định" hiện thẳng; Chuyển tiếp báo lỗi sau khi sửa/bấm', () => {
-    const r = web('modules/students/ClassRoster.tsx');
-    assert(!/Gọn|Đầy đủ/.test(r) && /lichSu/.test(r) && /NhanCu/.test(r) && /viecTiepTheo\[0\]/.test(r) && /<ViecTiep /.test(r), 'ClassRoster');  // PR-MTb T2 thay ChipLichSu → NhanCu
+    /* UI-HO-SO-LOP (Q-7): bảng FT mới `BangHoSoLop` — bỏ vế cột Theo dõi (việc ở thanh Việc cần làm); MT lịch sử không so kỳ vọng. */
+    const r = web('modules/classes/BangHoSoLop.tsx');
+    assert(!/Gọn|Đầy đủ/.test(r) && /h\.lichSu \? null/.test(r), 'BangHoSoLop');  // PR-MTb T2 thay ChipLichSu → NhanCu
     /* OV-3b: LoTrinhTiepPanel đã xoá — Lộ trình tiếp theo một em nay là hộp Lộ trình ở bảng lớp (BangLoTrinhTiep). */
     const tp = web('modules/classes/TransitionPanel.tsx');
     assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: lớp FT cột Kết quả gần nhất dùng ketQuaGanNhat)');
@@ -581,13 +582,14 @@ export async function runPrHvlTests(t: YThucTestKit) {
   check('PR-HVL (9) · D2: TheDong dùng chung; StudentsPage/BangHocVienLop, ClassRoster, BangDiemLopThuong, BangCanHoTro có nhánh điện thoại (< 640 px) dùng TheDong; tablet cuộn ngang trong vùng bảng, cột tên dính', () => {
     const td = web('ui/TheDong.tsx');
     assert(/export function TheDong/.test(td) && /export function useDienThoai/.test(td) && /max-width: 639px/.test(td) && /tabular-nums/.test(td), 'TheDong.tsx');
-    for (const f of ['modules/students/BangHocVienLop.tsx', 'modules/students/ClassRoster.tsx', 'modules/classes/BangDiemLopThuong.tsx', 'modules/classes/BangCanHoTro.tsx']) {
+    /* UI-HO-SO-LOP: bảng FT hồ sơ lớp (`BangHoSoLop`) cuộn ngang ở 375 theo mockup V5 — không còn trong danh sách thẻ. */
+    for (const f of ['modules/students/BangHocVienLop.tsx', 'modules/classes/BangDiemLopThuong.tsx', 'modules/classes/BangCanHoTro.tsx']) {
       assert(/<TheDong\b/.test(web(f)), `${f} chưa dùng TheDong`);
     }
     const sp = web('modules/students/StudentsPage.tsx');
     assert(/useDienThoai\(\)/.test(sp) && /<HopLop key=\{c\.id\} the /.test(sp) && /if \(the\)/.test(sp), 'StudentsPage phải có nhánh thẻ gập ở điện thoại');
     assert(/aria-expanded=\{mo\}/.test(sp), 'thẻ lớp gập cần aria-expanded');
-    assert(/sticky-col/.test(web('modules/students/ClassRoster.tsx')) && /sticky-col/.test(web('modules/classes/BangDiemLopThuong.tsx')), 'cột tên dính (640–1023 px)');
+    assert(/<Bang /.test(web('modules/classes/BangHoSoLop.tsx')) && /sticky-col/.test(web('modules/classes/BangDiemLopThuong.tsx')), 'cột tên dính (640–1023 px) — Bang dính cột tên');
   });
 
   check('PR-HVL (2) · roster: `history[i].lichSu` là cờ thật của mốc; Standing có `nextWeekStart` (cột Sắp tới)', () => {
