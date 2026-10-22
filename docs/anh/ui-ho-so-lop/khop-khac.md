@@ -60,3 +60,25 @@ Vai: cô Trần Ngọc Hà (GVCN, id 7) · lớp MB FT 101 (id 3), MB FOU 12 (id
 | V8 | Bảng điểm lớp thường (Progress | Final) | tab Học viên lớp thường |
 
 **Đếm:** 11 + 22 = 33 dòng — KHỚP 23 · KHÁC 10 (8 [XM] do GIỮ V4 / tab Ý thức, 1 chưa xác minh T15, 1 K11 theo `08`). **23/33 = 69,7 %**; nếu chủ SP chấp nhận 8 dòng [XM] (GIỮ V4 theo 10 mục 8) và K11: 32/33 = 97 %.
+
+## Thao tác TRƯỚC → SAU PR (CLAUDE.md "PR giao diện V5 = nâng cấp")
+
+| Thao tác (V4 / main) | Sau PR | Ghi chú |
+|---|---|---|
+| Nhập điểm (đầu trang) | GIỮ — cùng chỗ | + ô "Nhập điểm" ở thanh Việc cần làm (panel tại chỗ) |
+| + Case | GIỮ | |
+| ⋯ đầu trang (Thông tin lớp, Sửa thông tin HV, + Học viên, Lộ trình tiếp theo / Chuyển tiếp, Xuất Excel, Lịch sử, Mở lại / Xoá / Kết thúc) | GIỮ | |
+| Badge lớp bấm được | GIỮ | |
+| Dòng GV bộ môn | GIỮ | [XM] truy vết V5 ghi BỎ |
+| Trước / Sau lớp, ‹ Học viên & Lớp | GIỮ | |
+| Cách xem (Tổng hợp · Góp ý tuần · Lộ trình tiếp theo · Cần hỗ trợ · Kết quả đầu ra · Thông tin lớp) | GIỮ | [XM] truy vết V5 ghi BỎ |
+| Sửa thông tin · Chọn nhiều học viên (QL) + thanh hàng loạt | GIỮ | ô chọn cạnh tên ở bảng mới |
+| ⋯ từng dòng em | GIỮ | cột cuối bảng |
+| Cột Theo dõi (một việc, link đổi trang) | ĐỔI → thanh Việc cần làm (mọi việc của tôi, panel tại chỗ) + Case + PA mở dưới hàng | khu b; 3 ô + "+n việc khác ở Công việc ›" |
+| 2 mốc điểm chồng (mốc cũ mờ) | ĐỔI → một lượt của từng em (cột MT); lượt cũ xem ở hồ sơ HV / bấm MT | P8, khu b |
+| Bảng FT dạng thẻ ở < 640 px | ĐỔI → bảng cuộn ngang | mockup 375 |
+| Khối Điểm Mock Test của lớp (Dán Excel, sửa ô) | GIỮ — mở sẵn, cuối trang | [XM] truy vết V5 ghi "gập, chỉ tab Học viên" |
+| Tab Ý thức & Phối hợp (Ghi vi phạm, Chọn nhiều, khung trái / phải) | GIỮ nguyên | [XM] mockup vẽ bảng 4 cột — PR riêng nếu duyệt |
+| — | MỚI: popover điểm thành phần W / S · Case + PA dưới hàng (Ghi KQ PA · Sửa · Lịch sử) · tab Đánh giá đầu ra + panel lần lượt (lớp thường) | |
+
+Không mất thao tác nào. Còn thiếu so với luật mới: ghi chú "vắng W3 SEP" (`chuDoiVang`) chưa có trong ô điểm của bảng mới — `/roster` chưa trả tuần dời từng kỹ năng [XM].
