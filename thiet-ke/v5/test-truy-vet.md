@@ -20,9 +20,9 @@
 | T05 chuỗi "-" theo #503 | `test-cham-1440-sang` (cô Trang, MB FT 101 S) | Nguyễn Minh An "Vắng lần 1 · dời W4 SEP" (badge lịch); Trần Thu Hà "Đã huỷ · vắng 2 lần" + dòng chuỗi "W2 SEP – → dời → W3 SEP – · QL đề nghị dời lại, chờ duyệt" |
 | MT cũ "-" = huỷ ngay + Hoàn tác 10 s (quyết định 22/10) | `test-mt-cu-hoan-tac-1440` | Toast đáy "Đã huỷ S · MT2 … (MT cũ) · QL nhận chuông để biết" + "Hoàn tác · 10 s" |
 | Lớp thường tự lưu khi rời ô | `test-lop-thuong-tu-luu-1440` | Cùng khu chấm; ô /25 có ✓ / ⟳ / ⚠ ngay cạnh ô; chân ghi "✓ Đã lưu 4 ô · 10:42"; không "Lưu và tiếp" (không có nhận xét bắt buộc) |
-| C13 Lịch tuần một tuần + chuyển tuần | `test-lich-1440-sang`, `-toi`, `test-lich-tuan-cu-1440`, `test-lich-tuan-rong-1440` | Thanh "‹ W2 SEP · W3 SEP tuần này · W4 SEP ›" + "Về tuần này"; dòng = lớp × lượt; ô kỹ năng "L 1/22 Hà" |
-| C13 QL / Admin thấy tình trạng chấm trong lịch; quá hạn còn thiếu mới đỏ | `test-lich-qt-qua-han-1280`, `test-lich-tuan-cu-1440` | Dải "⚠ Quá hạn còn thiếu: BC FT 205 · MT2 · S 0/11 · hạn 09/09 · Xem W1 SEP ›"; ô kỹ năng đỏ + ⚠ chỉ khi quá hạn và thiếu; đủ = ✓ xanh |
-| C13 vẫn chấm ngay trên lịch theo quyền | `test-lich-gv-1440`, `test-lich-1440-sang` | GV: "Nhập điểm L, R" (phần mình viền nhấn); QL: "Nhập điểm" (có quyền override — `permissions.ts:612-619`) / "Nhắc chấm" ở dòng quá hạn |
+| C13 Lịch tuần một tuần + chuyển tuần | `test-lich-1440-sang`, `-toi`, `test-lich-tuan-cu-1440`, `test-lich-tuan-rong-1440` | Thanh "‹ W2 SEP · W3 SEP tuần này · W4 SEP ›" + "Về tuần này"; dòng = lớp × lượt; ô kỹ năng "L 1/22 Hà"  → PR #539 (UI-LICH-TUAN, theo `dieu-chinh-cuoi.html` khu a) |
+| C13 QL / Admin thấy tình trạng chấm trong lịch; quá hạn còn thiếu mới đỏ | `test-lich-qt-qua-han-1280`, `test-lich-tuan-cu-1440` | Dải "⚠ Quá hạn còn thiếu: BC FT 205 · MT2 · S 0/11 · hạn 09/09 · Xem W1 SEP ›"; ô kỹ năng đỏ + ⚠ chỉ khi quá hạn và thiếu; đủ = ✓ xanh  → PR #539 (UI-LICH-TUAN, theo `dieu-chinh-cuoi.html` khu a) |
+| C13 vẫn chấm ngay trên lịch theo quyền | `test-lich-gv-1440`, `test-lich-1440-sang` | GV: "Nhập điểm L, R" (phần mình viền nhấn); QL: "Nhập điểm" (có quyền override — `permissions.ts:612-619`) / "Nhắc chấm" ở dòng quá hạn  → PR #539 (UI-LICH-TUAN, theo `dieu-chinh-cuoi.html` khu a) |
 | Chỉ xem | `test-lich-chi-xem-1440` | CX: dải "Chỉ xem · CX không có quyền nhập điểm", không nút |
 | C20 / T04 mặc định 3 MT, không gợi ý MT4, QL thêm tay | `test-ke-hoach-t04-1440`, `test-ke-hoach-375` | CP FT 110: "Xong 3 MT · 10/10 HV"; cột MT4 chỉ hiện vì Hồ Thanh Tùng có MT4 "W1 OCT · QL thêm tay"; nút "+ Thêm lượt MT" (chủ động) |
 | Tải / lỗi / rỗng | `test-tai-1440`, `test-loi-tai-1440`, `test-rong-1440` | Khung xương; `bao-loi` + Tải lại ("Điểm đã lưu không mất"); "Không còn bài nào cần chấm" |
@@ -82,3 +82,5 @@
 | BỎ | "Đang thấy 8 / 22 HV · ↑ ↓ đổi em…" dưới khu chấm; khung "KV = Target − 0,5" đầu khu | P1 (chữ giải thích không lên web) | — |
 
 **Tỉ lệ (đếm lại sau chủ SP 22/10): 21 / 23 KHỚP = 91 %.** KHÁC: #7 (cột điểm lượt trước — lưới giữ nguyên, R4) — chờ chủ SP; #17 ("+ MT" thay cột S Ex — quyết định mới của chủ SP, mockup cũ).
+
+## 5. Triển khai → PR #539 UI-LICH-TUAN (Lịch tuần theo `dieu-chinh-cuoi.html` khu a — bảng KHỚP / KHÁC `docs/anh/ui-lich-tuan/khop-khac.md`)

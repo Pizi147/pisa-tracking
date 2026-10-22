@@ -1,5 +1,5 @@
 import { Component, Suspense, useEffect, useLayoutEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
@@ -13,7 +13,7 @@ import logoPisa from './ui/logo-pisa.png';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { KhoanhPhanTu } from './modules/huongDan/chiChoToi.tsx';
 import { MenuDong } from './ui/MenuDong.tsx';
-import { NAV_RONG, chiaMucThanh, chiaThanhDuoi, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
+import { NAV_RONG, chiaMucThanh, chiaThanhDuoi, duongMoi, duongNhapDiemCu, moDiemLopCu, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
 import { NGON_NGU, t } from '@shared/i18n/index.ts';
 /* Khoá 'Thêm' của từ điển là "Add" (thêm mới); nút gom menu là "More". */
 const THEM = NGON_NGU === 'en' ? 'More' : 'Thêm';
@@ -43,7 +43,6 @@ class BatLoiTrang extends Component<{ duong: string; children: ReactNode }, { ma
 /* Tách gói theo trang (PR-TOCDO): trang nào mở mới tải; sau khi mở xong, nạp ngầm các trang còn lại để chuyển trang không phải chờ. */
 const OverviewPage = lazyTai(() => import('./modules/worklist/OverviewPage.tsx'));
 const MockDetailPage = lazyTai(() => import('./modules/fasttrack/MockDetailPage.tsx'));
-const ChamDiemPage = lazyTai(() => import('./modules/cham/ChamDiemPage.tsx'));
 const StudentsPage = lazyTai(() => import('./modules/students/StudentsPage.tsx'));
 const ClassOverviewPage = lazyTai(() => import('./modules/classes/ClassOverviewPage.tsx'));
 const StudentDetailPage = lazyTai(() => import('./modules/students/StudentDetailPage.tsx'));
@@ -56,7 +55,7 @@ const ProfilePage = lazyTai(() => import('./modules/platform/ProfilePage.tsx'));
 const HoSoGiaoVienPage = lazyTai(() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx').then((m) => ({ default: m.HoSoGiaoVienPage })));
 const HuongDanPage = lazyTai(() => import('./modules/huongDan/HuongDanPage.tsx'));
 const PhanTichPage = lazyTai(() => import('./modules/phanTich/PhanTichPage.tsx'));
-const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => import('./modules/fasttrack/MockDetailPage.tsx'), () => import('./modules/cham/ChamDiemPage.tsx'), () => import('./modules/students/StudentsPage.tsx'), () => import('./modules/classes/ClassOverviewPage.tsx'), () => import('./modules/students/StudentDetailPage.tsx'), () => import('./modules/students/LuuTruPage.tsx'), () => import('./modules/cases/CaseBoardPage.tsx'), () => import('./modules/test/TestPage.tsx'), () => import('./modules/congViec/CongViecPage.tsx'), () => import('./modules/platform/AdminPage.tsx'), () => import('./modules/platform/ProfilePage.tsx'), () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx'), () => import('./modules/huongDan/HuongDanPage.tsx'), () => import('./modules/phanTich/PhanTichPage.tsx')];
+const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => import('./modules/fasttrack/MockDetailPage.tsx'), () => import('./modules/students/StudentsPage.tsx'), () => import('./modules/classes/ClassOverviewPage.tsx'), () => import('./modules/students/StudentDetailPage.tsx'), () => import('./modules/students/LuuTruPage.tsx'), () => import('./modules/cases/CaseBoardPage.tsx'), () => import('./modules/test/TestPage.tsx'), () => import('./modules/congViec/CongViecPage.tsx'), () => import('./modules/platform/AdminPage.tsx'), () => import('./modules/platform/ProfilePage.tsx'), () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx'), () => import('./modules/huongDan/HuongDanPage.tsx'), () => import('./modules/phanTich/PhanTichPage.tsx')];
 
 /**
  * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
@@ -76,6 +75,14 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazyTai(() => import('./modules/dev/
  * đỏ khi có việc quá hạn (`summary.viecQuaHan`). Thanh trên và thanh dưới cùng một số.
  */
 type SoBadge = { n: number; quaHan: boolean; sr: string } | null;
+/** UI-LICH-TUAN: `/nhap-diem/:lop` · `/bang-diem-thuong/:lop` → Lịch tuần (lớp FT theo tuần) hoặc panel Nhập điểm lớp (lượt không theo tuần). */
+function ChuyenNhapDiemCu() {
+  const { classId = '' } = useParams();
+  const [q] = useSearchParams();
+  const { session } = useSession();
+  return <Navigate to={duongNhapDiemCu(classId, q, moDiemLopCu(session?.nav ?? NAV_RONG))} replace />;
+}
+
 function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }) {
   if (!so?.n) return null;
   return (
@@ -299,8 +306,9 @@ export default function App() {
           <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <Navigate to="/" replace />} />
           {/* Một trang lưới cho cả hai loại lớp — máy chủ trả `mode`, trang chọn lưới đúng (đặc tả §3.5, §6). */}
           {/* OV-11i (TE-12): TVV / CX (không `nav.test`) mở thẳng lưới nhập điểm → Tổng quan, như `/test`. */}
-          <Route path="/nhap-diem/:classId" element={nav.test ? <ChamDiemPage /> : <Navigate to="/" replace />} />
-          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChamDiemPage /> : <Navigate to="/" replace />} />
+          {/* UI-LICH-TUAN: lưới cũ thành chuyển hướng về Lịch tuần / panel Nhập điểm lớp (`duongNhapDiemCu`). */}
+          <Route path="/nhap-diem/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <Navigate to="/" replace />} />
+          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <Navigate to="/" replace />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <Navigate to="/" replace />} />
           {/*

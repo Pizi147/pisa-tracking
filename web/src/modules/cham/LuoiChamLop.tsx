@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
-import { LuoiFT, tenDotFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
+import { LuoiFT, tenDotFt, type FtSheet, type HangMo, type SExTuan } from './LuoiFT.tsx';
 import { DanExcel, boDanFt, boDanThuong } from './DanExcel.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
@@ -58,7 +58,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
 }
 
 /**
- * LƯỚI CHẤM CỦA MỘT LỚP — phần dùng chung của trang lưới đầy đủ (`ChamDiemPage`) và của Lịch Test (PR-UX1, lưới mở
+ * LƯỚI CHẤM CỦA MỘT LỚP — phần dùng chung của Lịch Test tuần (PR-UX1; UI-LICH-TUAN: là lưới đầy đủ, `/nhap-diem/*` chuyển về đây — lưới mở
  * tại chỗ dưới hàng lớp / dòng Nợ). Chọn lưới theo `mode` máy chủ trả; màn hẹp (< 768px) chuyển sang MỘT KỸ NĂNG MỘT
  * LÚC (`MotKyNang`), nút chữ nhỏ "Xem dạng bảng" mở lại lưới (cuộn ngang TRONG THẺ, G-11).
  *
@@ -70,7 +70,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anDan = false,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anDan = false, sEx,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -88,6 +88,8 @@ export function LuoiChamLop({
   nutCaLop?: boolean;
   /** CV-LOI (12.3, V4A-07): panel việc ở Công việc không có Dán từ Excel (chỉ lưới theo lượt của lớp). */
   anDan?: boolean;
+  /** UI-LICH-TUAN: lượt S Ex của tuần (Lịch tuần) — cột S Ex của lưới FT. */
+  sEx?: SExTuan;
 }) {
   const hep = useManHinhHep();
   /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
@@ -156,12 +158,14 @@ export function LuoiChamLop({
     return () => cancelAnimationFrame(id);
   }, [data, thuong, kn, hv, khoaCuon, datConTro]);
 
-  const tungKyNang = hep && !xemBang;
+  /* UI-LICH-TUAN (mockup 375 khu a): lưới FT ở Lịch tuần (có `sEx`) trên điện thoại = thẻ từng em, không "một kỹ năng một lúc". */
+  const theHv = hep && laFt && sEx !== undefined && !xemBang;
+  const tungKyNang = hep && !xemBang && !theHv;
   const luoi = (
     <>
       {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} tuanDangXem={tuanDangXem} />}
-      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} />}
+      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} sEx={sEx} the={theHv} />}
       {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} />}
     </>
   );

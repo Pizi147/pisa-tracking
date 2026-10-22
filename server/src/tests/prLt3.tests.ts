@@ -103,9 +103,9 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(q.tong === truoc.lop.reduce((n: number, l: any) => n + l.tong, 0) && q.no.bai === truoc.no.reduce((n: number, x: any) => n + x.conBai, 0),
       'tuần khác: dải số = khối 3 + khối 1');
     const nay = xem(NAY), qn = nay.tongQuan;
-    const k23 = [...nay.chamTuanNay, ...nay.lop];
-    assert(qn.tong === k23.reduce((n: number, l: any) => n + l.tong, 0) && qn.conPhaiCham === k23.reduce((n: number, l: any) => n + l.conBai, 0)
-      && !('quaHan' in qn), 'tuần này: dải số = khối 2 + khối 3, không còn ô Quá hạn');
+    /* UI-LICH-TUAN (C13): Lịch tuần một tuần — tuần này cũng chỉ cộng khối 3 (khối 2 không còn trên màn). */
+    assert(qn.tong === nay.lop.reduce((n: number, l: any) => n + l.tong, 0) && qn.conPhaiCham === nay.lop.reduce((n: number, l: any) => n + l.conBai, 0)
+      && !('quaHan' in qn), 'tuần này: dải số = khối 3, không còn ô Quá hạn');
   });
   check('LT3-2 (d) G-10: tổng ba khối = badge "n bài chờ chấm" ở tuần hiện tại (mỗi lớp FT)', () => {
     emMoi(4, TRUOC);

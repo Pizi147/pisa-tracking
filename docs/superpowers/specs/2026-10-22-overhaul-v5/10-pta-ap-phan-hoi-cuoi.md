@@ -64,3 +64,10 @@ Chỉ vẽ phần **bố cục mới thật sự** (còn lại sửa thẳng khi
 - **S Ex = một lượt riêng lẻ** của HV: có thể trùng tuần với MT chính hoặc không, **có thể nhiều lần**. Thêm qua cùng nút "+ MT" (chọn loại: MT thường · S Ex). Hiện trên hàng HV như một ô lượt, nhãn "S Ex", xếp theo tuần cùng các MT.
 - Lịch Test (UI-LICH-TUAN) vẫn hiện MT thường là chính; S Ex là dòng phụ thêm của em trong tuần đó.
 - Luật điểm S Ex giữ XM-1 (chỉ lưu điểm + nhận xét, không vào tính toán). Máy chủ: bảng `s_expert` đã cho nhiều lượt / HV; MT4+ dùng đường "Tạo MT" sẵn có của Kế hoạch Test.
+
+## 7. Chủ SP chốt 22/10 (chiều) — luật nhận xét, xếp MT, ghi chú vắng, S Ex → PR **LUAT-NX-MT**
+
+1. **S Ex:** không tính vào Overall / SOS / Case / KPI / Phân tích (đóng XM-1). Chỉ **hiện cạnh điểm S** ở kết quả + Hành trình (Hồ sơ HV). QL nhập hộ S Ex **không** cần lý do.
+2. **Nhận xét KHÔNG bắt buộc cứng** (thay luật "thiếu nhận xét ≠ xong" của SV-SO1 #528 và luật chặn lưu cũ): ô **xong = có band**. Thiếu nhận xét / thiếu nhóm nguyên nhân (MT dưới kỳ vọng) → **chỉ nhắc**: ô vàng + ghi chú "Nên có nhận xét — dùng làm mô tả vấn đề trên Case". Không 400, không tắt nút Lưu, không thành việc / nợ / trễ chấm, nhập Excel không báo lỗi dòng. Giữ kiểm kiểu / độ dài tối đa. Nhận xét vẫn chép vào nguyên nhân Case như hiện tại. Chữ gợi ý ô nhận xét: tập trung vào **vấn đề học thuật** của kỹ năng, không ý thức / chuyện ngoài bài. (Form Case "≥ 10 ký tự" là luật Case, giữ.)
+3. **Xếp MT nới lỏng:** bỏ chặn thứ tự giữa các MT (tuần muộn nhất MTn < tuần sớm nhất MTn+1) — một vài kỹ năng MT trước được làm bài **sau** MT sau. Giữ luật thật: số MT liền mạch, MT0 trước MT1, luật vắng "-" (LUAT-34, vắng 2 lần huỷ), không xếp tuần đã qua. Lệch thứ tự chỉ hiện **nhắc** nhỏ ("MT2 W sau MT3"), không chặn.
+4. **Ghi chú vắng dưới ô điểm:** kỹ năng đã dời do vắng → dòng nhỏ "vắng W3 SEP" (tuần cũ), một hàm chung (`chuDoiVang`), dùng ở mọi ô điểm (Kế hoạch Test, lưới lớp, Hồ sơ HV, Lịch Test).

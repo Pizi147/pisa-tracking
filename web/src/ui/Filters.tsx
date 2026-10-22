@@ -80,8 +80,10 @@ export function resolveWeek(weekStart: string): Promise<{ id: number }> {
  * chục tuần (sổ §13.8). `LichNho` vẽ qua PORTAL, `position: fixed`, tự lo vị trí, bấm ngoài và Esc (chỉ đóng lịch). Mã tuần HIỆN RA dạng `W3 SEP` qua `tuanLich` (G-6 — chỉ thêm năm khi khác năm), không có
  * hàm tính tuần thứ hai ở đây.
  */
-export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, clearable, toiThieu }: {
+export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, clearable, toiThieu, gon }: {
   periodId: number | null; onPeriod: (id: number | null) => void;
+  /** UI-LICH-TUAN (dieu-chinh-cuoi khu a): một cụm nhỏ "‹ [W3 SEP 14/09 – 20/09] ›" trong thanh của thẻ — không nhãn; "Về tuần này" chỉ khi đang xem tuần khác. */
+  gon?: boolean;
   label?: string | null;
   /** 'planning' mở cửa sổ tuần XA về tương lai — xếp lịch MT là việc của tương lai. */
   scope?: 'planning';
@@ -158,6 +160,37 @@ export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, cle
     void pick(addDaysStr(base, 7 * deltaWeeks));
   }
 
+  const lui = shown ? t('Tuần trước · {tuan}', { tuan: tuanLich(addDaysStr(shown.weekStart, -7), today) }) : t('Tuần trước');
+  const toi = shown ? t('Tuần sau · {tuan}', { tuan: tuanLich(addDaysStr(shown.weekStart, 7), today) }) : t('Tuần sau');
+  const lich = open && (
+    <LichNho kieu="tuan" goNgay value={shown?.weekStart ?? null} homNay={today} luat={toiThieu ? { toiThieu } : {}} neo={field}
+      onChon={(t2) => { if (!busy) void pick(t2); }} onDong={() => setOpen(false)} />
+  );
+  if (gon) {
+    return (
+      <div className="flex min-w-0 items-center gap-2">
+        <button type="button" className="btn btn-sm h-9 w-9 flex-none justify-center !px-0 max-sm:h-11 max-sm:w-11" disabled={busy || (!!toiThieu && !!shown && shown.weekStart <= toiThieu)}
+          onClick={() => goAdjacent(-1)} aria-label={lui} title={lui}>‹</button>
+        <button ref={field} type="button" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((v) => !v)} disabled={busy}
+          className="field inline-flex h-9 w-auto min-w-0 items-baseline gap-2.5 !px-3 tabular-nums max-sm:h-11">
+          {shown ? (
+            <>
+              <b className="font-bold text-slate-100">{tuanLich(shown.weekStart, today)}</b>
+              <span className="text-xs text-slate-500">{ngay(shown.weekStart, today)} – {ngay(addDaysStr(shown.weekStart, 6), today)}</span>
+            </>
+          ) : <span className="text-slate-500">{t('Đang tải…')}</span>}
+        </button>
+        <button type="button" className="btn btn-sm h-9 w-9 flex-none justify-center !px-0 max-sm:h-11 max-sm:w-11" disabled={busy}
+          onClick={() => goAdjacent(1)} aria-label={toi} title={toi}>›</button>
+        {/* C13 (test.html): "Về tuần này" chỉ khi đang xem tuần khác. */}
+        {shown && todayWeekStart && shown.weekStart !== todayWeekStart && (
+          <button type="button" className="link min-h-[44px] whitespace-nowrap text-xs sm:min-h-0" disabled={busy} onClick={() => void pick(todayWeekStart)}>{t('Về tuần này')}</button>
+        )}
+        {lich}
+      </div>
+    );
+  }
+
   return (
     <div className="block min-w-0">
       {label && <span className="label">{label}</span>}
@@ -198,10 +231,7 @@ export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, cle
         )}
       </div>
 
-      {open && (
-        <LichNho kieu="tuan" goNgay value={shown?.weekStart ?? null} homNay={today} luat={toiThieu ? { toiThieu } : {}} neo={field}
-          onChon={(t2) => { if (!busy) void pick(t2); }} onDong={() => setOpen(false)} />
-      )}
+      {lich}
     </div>
   );
 }

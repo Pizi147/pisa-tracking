@@ -42,8 +42,8 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
   /** Chữ sau số: `Fast Track · 3 lớp`. Trống = chỉ số. */
   donVi?: string;
   coTatCa?: boolean;
-  /** `chon` = ô chọn "Loại lớp: …" (Học viên & Lớp, K1 — không có hai chữ "Tất cả" cạnh nhau); mặc định phân đoạn như các trang Test. */
-  kieu?: 'doan' | 'chon';
+  /** `chon` = ô chọn "Loại lớp: …" (Học viên & Lớp, K1 — không có hai chữ "Tất cả" cạnh nhau); `chip` = chip rời (Lịch tuần V5, dieu-chinh-cuoi khu a); mặc định phân đoạn. */
+  kieu?: 'doan' | 'chon' | 'chip';
 }) {
   /* UX-2 (5): hiện theo lớp trong phạm vi người xem; chưa biết phạm vi thì theo dữ liệu đang xem như cũ. */
   const coDuLieu = khungCuaPhamVi ? (['ft', 'thuong'] as const).filter((k) => khungCuaPhamVi![k]) : (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
@@ -58,6 +58,22 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
         <option value="ft">{t('Loại lớp: {loai}', { loai: chu('Fast Track', 'ft') })}</option>
         <option value="thuong">{t('Loại lớp: {loai}', { loai: chu(t('Lớp thường'), 'thuong') })}</option>
       </select>
+    );
+  }
+  if (kieu === 'chip') {
+    const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null && k !== 'tat-ca' ? `${ten} · ${dem[k]}` : ten);
+    const muc: [KhungLoc, string][] = [...(coTatCa ? [['tat-ca', t('Tất cả')] as [KhungLoc, string]] : []), ['ft', 'Fast Track'], ['thuong', t('Lớp thường')]];
+    return (
+      <span className="inline-flex flex-wrap items-center gap-2" role="group" aria-label={t('Khung lớp')}>
+        {muc.map(([k, ten]) => (
+          <button key={k} type="button" aria-pressed={value === k} onClick={() => { nhoKhung(trang, k); onChange(k); }}
+            className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] font-semibold max-sm:h-11 ${value === k
+              ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]'
+              : 'border-[color:var(--line-strong)] bg-[color:var(--surface)] text-slate-300 hover:text-slate-100'}`}>
+            {chu(ten, k)}
+          </button>
+        ))}
+      </span>
     );
   }
   return (

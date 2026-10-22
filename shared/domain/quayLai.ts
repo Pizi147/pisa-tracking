@@ -93,7 +93,7 @@ export function trangCha(loai: LoaiHoSo, o: { studentId?: number | null; tenHv?:
   }
 }
 
-const TEN_TAB_TEST: Record<string, string> = { lich: t('Lịch Test'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
+const TEN_TAB_TEST: Record<string, string> = { lich: t('Lịch Test tuần'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
 const noi = (...x: (string | null | undefined | false)[]) => x.filter(Boolean).join(' · ') || undefined;
 const nhan = <K extends string>(bang: Record<K, string>, v: string | null, boQua?: K) => (v && v !== boQua && v in bang ? bang[v as K] : null);
 

@@ -26,6 +26,8 @@ import {
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useApi } from '../../lib/useApi.ts';
+import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -44,7 +46,28 @@ export type NguCanhHop = {
   tenHv: string; lop: string | null; luot: string; kyVong?: number | null; mt0?: boolean;
   /** Band của task Writing còn lại (ô W1 ↔ W2) — dòng "Task 2 chưa có". */
   bandTaskKia?: number | null;
+  /** UI-LICH-TUAN: lượt của ô — có thì ô đã có điểm hiện "Lịch sử" (ai nhập / sửa, lúc nào) ngay trong hộp. */
+  attemptId?: number;
 };
+
+/**
+ * LỊCH SỬ MỘT Ô ngay trong hộp (UI-LICH-TUAN, dieu-chinh-cuoi khu a: "R · MT3 · 14/09 10:12 Cô Hà · 5.0 → 5.5"): bấm mới tải `GET /attempts/:id`,
+ * chỉ dòng của đúng kỹ năng — cùng dòng thời gian với hồ sơ MT (`DongThoiGianLuot`), không panel mới.
+ */
+function LichSuO({ attemptId, skill }: { attemptId: number; skill: string }) {
+  const [mo, setMo] = useState(false);
+  const { data, error } = useApi<{ scoreHistory: any[] }>(mo ? `/attempts/${attemptId}` : null);
+  return (
+    <div className="text-[13px]">
+      <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px]" aria-expanded={mo} onClick={() => setMo((v) => !v)}>
+        {mo ? t('Ẩn lịch sử') : t('Lịch sử')}
+      </button>
+      {mo && (error ? <p className="m-0 mt-1 text-bad">{error.message}</p>
+        : !data ? <p className="m-0 mt-1 text-slate-500">{t('Đang tải…')}</p>
+          : <div className="mt-1"><DongThoiGianLuot history={[]} scoreHistory={data.scoreHistory.filter((h) => h.skill === skill)} gioiHan={5} /></div>)}
+    </div>
+  );
+}
 
 /** Đầu hộp của trang một lượt (hồ sơ MT, Lộ trình — `GET /attempts/:id`): em · lớp · MT{n}; MT0 một ô Band. */
 export const nguCanhChiTiet = (d: { student: { name: string }; classCode: string | null; kind: string; attemptNo: number; result?: any }) => ({
@@ -349,6 +372,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const nguoiKhac = laS && coDiemChinhThuc(cell) && !!cell.enteredByName && cell.enteredById != null && cell.enteredById !== session?.user?.id;
   const than = (
     <>
+      {ctx.attemptId && coDiemChinhThuc(cell) && <LichSuO attemptId={ctx.attemptId} skill={cell.skill} />}
       {nguoiKhac && (
         <div role="note" className="rounded-lg border border-muted-line bg-muted-bg px-3 py-2 text-[13px] text-slate-200">
           {t('Đã chấm bởi {ten} lúc {luc}', { ten: cell.enteredByName!, luc: cell.enteredAt ? lucNgan(cell.enteredAt, homNay) : '—' })}

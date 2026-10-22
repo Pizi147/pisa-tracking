@@ -449,6 +449,8 @@ export type LopLichTest = {
   /** MH2/MH4: mã chương trình lớp + bộ môn của lớp (FT: 4 kỹ năng đánh giá; FOU L R W S hiện L R G+V P; Pre FOU `tong_hop`). */
   chuongTrinh: string | null; boMon: string[];
   kind: string | null; dotLabel: string;
+  /** UI-LICH-TUAN: số em làm bài trong tuần (lượt còn ngồi thi) + tách theo lượt (`MT3` · `MT2`…), lượt đông em trước. */
+  soHv: number; luot: { dot: string; soHv: number }[];
   /** Môn đánh giá có thi tuần này, thứ tự L · R · W · S. */
   kyNangTuan: string[];
   tong: number; daCham: number; conBai: number; conBaiCuaToi: number;
@@ -476,7 +478,7 @@ export type PhanCuaBan = {
   khac: { kyNang: string[]; con: number; quaHanNgay: number | null } | null;
 };
 /**
- * Dải số (PR-LT3 Q1): đã chấm x/y + còn phải chấm (khối 2 + 3 ở tuần hiện tại; tuần khác: khối 3) · quá hạn chấm (khối 1).
+ * Dải số (UI-LICH-TUAN): đã chấm x/y + còn phải chấm của tuần đang xem (khối 3) · quá hạn chấm (khối 1).
  * OV-11e (TE-7): người có phân công — mọi số là PHẦN CỦA NGƯỜI XEM; `khac` = bài GV khác còn (khối 2 + 3) / quá hạn (khối 1), ghi nhạt.
  */
 export type TongQuanLich = { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; khac: { con: number; no: number } };
@@ -566,7 +568,7 @@ function hangLopTuan(
   if (branchId) { where += ' AND c.branch_id = ?'; params.push(branchId); }
   const rows = conn
     .prepare(
-      `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.deadline_override AS han_dot,
+      `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.student_id, a.deadline_override AS han_dot,
               c.code AS class_code, b.name AS branch_name, c.programme_code,
               ask.skill, ask.sit_status, ask.deadline_override AS han_mon
          FROM assessment_attempts a
@@ -602,8 +604,8 @@ function hangLopTuan(
     return cuaToiNho.get(k)!;
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
-  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart' | 'phan' | 'tongCuaToi'> & {
-    dong: Map<string, DongTam>; _dot: string[]; _kn: Set<string>; _hanNo: string | null; _conKhongCheo: number;
+  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart' | 'phan' | 'tongCuaToi' | 'soHv' | 'luot'> & {
+    dong: Map<string, DongTam>; _dot: string[]; _hv: Set<number>; _luot: Map<string, Set<number>>; _kn: Set<string>; _hanNo: string | null; _conKhongCheo: number;
     /* OV-1b: phần của người xem / của GV khác. */
     _toiKn: Set<string>; _toiQuaHan: boolean; _quaHanMoi: boolean; _khacKn: Set<string>; _khacCon: number; _khacTre: number | null; _tongToi: number;
   };
@@ -637,13 +639,15 @@ function hangLopTuan(
           : mode === 'ratio'
           ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(bai)}`
           : `/nhap-diem/${r.class_id}?periodId=${periodId}`,
-        dong: new Map(), _dot: [], _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
+        dong: new Map(), _dot: [], _hv: new Set(), _luot: new Map(), _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
         _toiKn: new Set(), _toiQuaHan: false, _quaHanMoi: false, _khacKn: new Set(), _khacCon: 0, _khacTre: null, _tongToi: 0,
       };
       byLop.set(khoa, lop);
     }
     const dot = dotLabelOf(r.kind, r.attempt_no ?? null);
     if (!lop._dot.includes(dot)) lop._dot.push(dot);
+    lop._hv.add(r.student_id);
+    (lop._luot.get(dot) ?? lop._luot.set(dot, new Set()).get(dot)!).add(r.student_id);
     lop._kn.add(r.skill);
     const key = `${r.kind}:${r.attempt_no ?? 0}:${r.skill}`;
     let d = lop.dong.get(key);
@@ -704,7 +708,7 @@ function hangLopTuan(
 
   /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ — "MB FT 10" không đứng trước "MB FT 9"). */
   return [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({
-    dong, _dot, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, _tongToi, ...l
+    dong, _dot, _hv, _luot, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, _tongToi, ...l
   }) => {
     /* OV-1b (3.5): nhãn "Quá hạn" của hàng = ô CỦA NGƯỜI XEM quá hạn (GV); Quản lý / Quản trị (xếp lịch được lớp) — mọi ô, như cũ. */
     const phanRieng = coPhanCong && !can(p, PERMISSIONS.PLAN_WEEK, { classId: l.classId });
@@ -717,6 +721,9 @@ function hangLopTuan(
         khac: _khacCon ? { kyNang: gopW(_khacKn), con: _khacCon, quaHanNgay: _khacTre } : null,
       } : null,
       dotLabel: _dot.join(', '),
+      soHv: _hv.size,
+      /* UI-LICH-TUAN: "MT3 20 · MT2 1" — số em theo lượt của TỪNG em (không giả định cả lớp cùng MT), lượt đông em trước. */
+      luot: [..._luot].map(([dot, hv]) => ({ dot, soHv: hv.size })).sort((a, b) => b.soHv - a.soHv),
       kyNangTuan: [...new Set([..._kn].map((k) => assessedSkillOf(k)))].sort(theoThuTu),
       daCham: l.tong - l.conBai,
       han: _hanNo ?? skillScoreDeadline(l.mode === 'ratio' ? 'ratio' : 'band', tuan.week_start, l.kind === 'mt0'),
@@ -801,7 +808,9 @@ export function lichTest(
       || soSanhLop({ code: x.classCode }, { code: y.classCode }) || y.weekStart.localeCompare(x.weekStart));
   }
 
-  const k23 = [...(chamTuanNay ?? []), ...lop];
+  /* UI-LICH-TUAN (C13, dieu-chinh-cuoi khu a): Lịch tuần một tuần — dải số chỉ cộng hàng của TUẦN ĐANG XEM (khối 3) + quá hạn (khối 1),
+     cùng tập với danh sách trên màn.
+     shortcut: `chamTuanNay` (tuần trước) vẫn tính (~3–6 câu SQL mỗi lần) dù web không vẽ — phép kiểm badge = trang (OV11e, LT3) đọc nó; gỡ khi chủ SP chốt badge HV & Lớp theo tuần. */
   /* OV-11e (TE-7): hàng / dòng có `phan` (người có phân công) cộng PHẦN CỦA NGƯỜI XEM; phần GV khác cộng riêng (`khac`, ghi nhạt). */
   const tq = (ds: LopLichTest[], n: DongNo[]): TongQuanLich => {
     let tong = 0, con = 0, khacCon = 0, bai = 0, khacNo = 0;
@@ -824,9 +833,9 @@ export function lichTest(
     tuan: { id: tuan.id, weekStart: tuan.week_start, weekEnd: tuan.week_end },
     laTuanNay, phamVi, coPhamViRong, coPhanCong,
     lopDangLoc: lopDangLoc ? { id: lopDangLoc.id as number, code: lopDangLoc.code as string } : null,
-    tongQuan: tq(k23, no.dong),
+    tongQuan: tq(lop, no.dong),
     tongQuanKhung: Object.fromEntries((['ft', 'thuong'] as const).map((k) => [k,
-      tq(k23.filter((x) => khungDong(x) === k), no.dong.filter((x) => khungDong(x) === k))])) as Record<Khung, TongQuanLich>,
+      tq(lop.filter((x) => khungDong(x) === k), no.dong.filter((x) => khungDong(x) === k))])) as Record<Khung, TongQuanLich>,
     no: no.dong,
     chamTuanNay,
     lop,

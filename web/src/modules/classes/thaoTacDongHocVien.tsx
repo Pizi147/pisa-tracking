@@ -38,7 +38,7 @@ export function nhapDiemCua(
 ): DongChoMenu['nhapDiem'] {
   const lu = timeline.find((x) => x.myPending.length > 0);
   if (!lu) return null;
-  /* HL-3: mọi "Nhập điểm" của lớp mở Điểm theo lớp (như nút đầu hồ sơ lớp), đúng lượt; route cũ `/nhap-diem`, `/bang-diem-thuong` vẫn chạy. */
+  /* HL-3: mọi "Nhập điểm" của lớp mở Điểm theo lớp (như nút đầu hồ sơ lớp), đúng lượt; route cũ `/nhap-diem`, `/bang-diem-thuong` chỉ còn chuyển hướng (UI-LICH-TUAN). */
   const ma: MaLuot | null = laLopThuong
     ? lu.kind === 'checkpoint' ? (lu.attemptNo ? { loai: 'cp', so: lu.attemptNo } : null)
       : lu.kind === 'progress' || lu.kind === 'final' || lu.kind === 'mt0' ? { loai: 'thuong', kind: lu.kind } : null

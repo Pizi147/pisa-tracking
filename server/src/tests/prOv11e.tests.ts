@@ -65,7 +65,9 @@ export async function runPrOv11eTests(t: YThucTestKit) {
     for (const lop of [FT101, FOU12]) {
       const badge = classes.listClassSummaries(gvS, { classId: lop }).rows.find((c: any) => c.id === lop)?.needScores ?? 0;
       const tr = cham.lichTest(gvS, tuanNay, null, TODAY, { classId: lop });
-      assert(badge === tr.tongQuan.conPhaiCham + tr.tongQuan.no.bai, `lớp ${lop}: badge ${badge} ≠ trang ${tr.tongQuan.conPhaiCham} + ${tr.tongQuan.no.bai}`);
+      /* UI-LICH-TUAN (C13 một tuần): dải số chỉ tuần đang xem — bài tuần trước chưa quá hạn nằm ở ‹ tuần trước (`chamTuanNay`, phần của mình). */
+      const truoc = (tr.chamTuanNay ?? []).reduce((n: number, l: any) => n + (l.phan ? l.conBaiCuaToi : l.conBai), 0);
+      assert(badge === tr.tongQuan.conPhaiCham + tr.tongQuan.no.bai + truoc, `lớp ${lop}: badge ${badge} ≠ trang ${tr.tongQuan.conPhaiCham} + ${tr.tongQuan.no.bai} + tuần trước ${truoc}`);
       assert(conCuaToi(tr) === tr.tongQuan.no.bai, 'khối 1 cộng phần của mình = ô "Quá hạn chấm"');
     }
   }));

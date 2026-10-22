@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { attemptCuaEm } from '@shared/domain/index.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../../ui/ui.tsx';
-import { LuoiChamLop, duongCham, useManHinhHep, type Cham } from '../../cham/LuoiChamLop.tsx';
+import { LuoiChamLop, duongCham, type Cham } from '../../cham/LuoiChamLop.tsx';
+import type { SExTuan } from '../../cham/LuoiFT.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -11,10 +12,9 @@ import { t } from '@shared/i18n/index.ts';
  * nên luật chấm không đổi: ô môn mình dạy sửa được, môn khác là chữ; sửa ô có điểm hỏi lý do; đợt hoàn tất khoá.
  *
  * Lưu một ô → tải lại lưới NÀY và báo `onDaLuu` (Lịch Test gộp 1,5 s rồi mới tải lại dải số — Q14).
- * "Mở lưới đầy đủ ↗": hàng lớp trên máy tính đã có ↗ ở cột riêng (`coLinkRieng`) nên không lặp; màn hẹp thì hàng lớp gập,
- * link về lại trên lưới.
+ * "Mở lưới đầy đủ ↗" (→ Lịch tuần lọc lớp): chỉ khi lưới nằm ngoài Lịch tuần (panel việc); trong Lịch (`coLinkRieng`) không lặp.
  */
-export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, anDan }: {
+export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, anDan, sEx }: {
   classId: number; periodId: number | null; kind: string | null; tuanDangXem: string | null;
   chiAttempt?: ReadonlySet<number> | null; kn?: string | null; hrefDayDu: string; datConTro: boolean;
   onDaLuu: () => void; coLinkRieng?: boolean; onSoOChuaLuu?: (n: number) => void;
@@ -24,12 +24,14 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
   anDan?: boolean;
   /** SL1 (CV-01): panel việc — chỉ hàng em của việc (`emCuaViec`); "Cả lớp" trong lưới vẫn mở hết. */
   chiHv?: readonly number[] | null;
+  /** UI-LICH-TUAN: lượt S Ex của tuần (Lịch tuần) — cột S Ex của lưới FT. */
+  sEx?: SExTuan;
 }) {
   const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
   const chiAttempt = useMemo(() => chiAttemptVao ?? (chiHv && data ? attemptCuaEm(data.ft?.rows ?? data.thuong?.rows ?? [], chiHv) : null),
     [chiAttemptVao, chiHv, data]);
-  const hep = useManHinhHep();
-  const link = coLinkRieng && !hep ? null : (
+  /* UI-LICH-TUAN: Lịch tuần chính là lưới đầy đủ (`/nhap-diem/*` chuyển về đây) — không lặp link; panel việc vẫn có. */
+  const link = coLinkRieng ? null : (
     <Link to={hrefDayDu} className="inline-flex min-h-[32px] max-sm:min-h-10 items-center px-2 text-xs text-slate-400 no-underline hover:text-slate-100"
       title={t('Mở lưới đầy đủ của lớp này ở trang riêng')}>
       {t('Mở lưới đầy đủ ↗')}
@@ -42,7 +44,7 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
         : (
           <LuoiChamLop data={data} kind={kind} kn={kn} onReload={() => { reload(); onDaLuu(); }}
             gon tuanDangXem={tuanDangXem} chiAttempt={chiAttempt} datConTro={datConTro} thanhTren={link}
-            onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} anDan={anDan} />
+            onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} anDan={anDan} sEx={sEx} />
         )}
     </div>
   );
