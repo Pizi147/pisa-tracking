@@ -18,7 +18,6 @@ import {
 import { dotGvCham, duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info, Level } from '../../ui/ui.tsx';
-import { NhanCu } from '../../ui/OMt.tsx';
 import {
   ChoNutDau, KHOA_HOAN_TAT_HINT, ODiemThuong, apDiemVuaLuu, datPhanTram, suaDuoc, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
@@ -226,7 +225,7 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, o
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
       phu={phu} phuTitle={kv !== null ? t('Kỳ vọng (KV) của lượt này: {fmtBand}', { fmtBand: fmtBand(kv) }) : undefined}
-      luu={<>{row.lichSu && <NhanCu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
+      luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       mo={!!row.ngungHoc}
       nhan={row.ngungHoc ? <Level tone="muted" title={row.cells[0]?.lyDoKhoa && dich(row.cells[0].lyDoKhoa)}>{dich(row.ngungHoc)}</Level> : <NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
       thi={row.cells.filter((x) => x.required && x.progress !== 'cancelled')
