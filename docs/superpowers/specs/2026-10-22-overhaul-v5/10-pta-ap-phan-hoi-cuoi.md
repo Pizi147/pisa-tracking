@@ -77,3 +77,4 @@ Chỉ vẽ phần **bố cục mới thật sự** (còn lại sửa thẳng khi
 - **V5 bổ sung trên V4, không thay:** mọi thao tác V4 / web đã có mà mockup V5 không vẽ (Nhập điểm, + Case, ⋯ sửa lớp / tác vụ lớp, Xuất, Dán Excel…) **GIỮ**, đặt theo luật giao diện mới (vị trí V4 đã duyệt + màu / badge / chữ V5). Mỗi PR màn liệt kê thao tác giữ trong khop-khac (dòng GIỮ). Áp cho MỌI yếu tố web, không chỉ chỗ chủ SP nêu.
 - **SOS 3** bớt chói (sáng + tối), vẫn khác rõ SOS 2 → UI-CON-LAI (token `v5-nen.css` / `index.css`).
 - **Logo web:** chữ "PISA" hồng + "TRACKING" trắng (tối) / đen (sáng), không in đậm / phông khác được — không dùng logo trung tâm → UI-CON-LAI.
+- **Nâng cấp, không bắt chước:** mockup là tham chiếu. PR màn sửa CẢ phần mockup không vẽ cho đồng bộ với yêu cầu đã chốt (luật nghiệp vụ, tính năng sẵn có, luật giao diện V5), tự cân nhắc hợp lý; chỗ xung đột giữa mockup / luật / tính năng cũ → ghi [XM] trong PR, hỏi PTA Plan trước khi bỏ hay đổi.
