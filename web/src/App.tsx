@@ -9,7 +9,6 @@ import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
 import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
-import logoPisa from './ui/logo-pisa.png';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { KhoanhPhanTu } from './modules/huongDan/chiChoToi.tsx';
 import { MenuDong } from './ui/MenuDong.tsx';
@@ -261,11 +260,15 @@ export default function App() {
           <button type="button" className="btn btn-sm" disabled={dangThu} onClick={() => { void thuLai(); }}>{dangThu ? t('Đang thử…') : t('Thử lại')}</button>
         </div>
       )}
-      {/* NEN-V5: thanh xanh màu logo (`.thanh-xanh`, token đổi tại chỗ) + logo PISA hồng; điện thoại cao 52 px. */}
+      {/* NEN-V5: thanh xanh màu logo (`.thanh-xanh`, token đổi tại chỗ); điện thoại cao 52 px. NEN-SUA (chủ SP 22/10): chữ "PISA" hồng + "TRACKING",
+          không đậm, không ảnh logo trung tâm. TRACKING trắng cả khi sáng vì thanh sáng vẫn nền xanh (chữ đen chỉ 2,1 : 1). */}
       <header className="relative thanh-xanh shrink-0 print:hidden">
         <div className="flex items-center gap-3 px-3 sm:px-5 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
           <Link to="/" className="mr-3 flex shrink-0 items-center gap-2 no-underline max-sm:mr-1" aria-label={t('PISA — Tổng quan')}>
-            <img src={logoPisa} alt="PISA" title="PISA Tracking" width={76} height={24} className="h-6 w-auto" />
+            <span className="whitespace-nowrap text-[20px] font-normal leading-none tracking-[.04em]">
+              <span className="text-[color:var(--hong)]">PISA</span>{' '}
+              <span className="text-[color:var(--dieu-huong-chu-mo)]">TRACKING</span>
+            </span>
             {!banChinh && <span className="hidden text-xs text-[color:var(--dieu-huong-chu)] lg:inline">{t('Bản demo nội bộ')}</span>}
           </Link>
           <ThanhTren items={items} dangO={dangO} so={so} />
