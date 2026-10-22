@@ -265,7 +265,7 @@ export default function App() {
       <header className="relative thanh-xanh shrink-0 print:hidden">
         <div className="flex items-center gap-3 px-3 sm:px-5 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
           <Link to="/" className="mr-3 flex shrink-0 items-center gap-2 no-underline max-sm:mr-1" aria-label={t('PISA — Tổng quan')}>
-            <span title="PISA Tracking" className="whitespace-nowrap text-[20px] font-normal leading-none tracking-[.04em]">
+            <span title="PISA Tracking" className="whitespace-nowrap text-[22px] font-normal leading-none tracking-[.04em]">
               <span className="text-[color:var(--hong)]">PISA</span>{' '}
               <span className="text-[color:var(--dieu-huong-chu-mo)]">TRACKING</span>
             </span>
