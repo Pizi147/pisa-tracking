@@ -103,11 +103,15 @@ export function trongGiaoDichDoc<T>(nguon: any, fn: () => T): T {
 }
 
 /** Chép mọi bảng (cấu trúc + dữ liệu) rồi mọi chỉ mục/view/trigger của `nguon` sang `dich` đang RỖNG. */
-export function saoLuu(nguon: any, dich: any): { bang: number; dong: number } {
+export function saoLuu(nguon: any, dich: any, o: { giaoDich?: boolean } = {}): { bang: number; dong: number } {
   if (dich.prepare(`SELECT 1 FROM sqlite_master WHERE ${KHONG_NOI_BO} LIMIT 1`).get()) {
     throw new Error('Database đích không rỗng — sao lưu chỉ ghi vào một file MỚI, không bao giờ ghi đè.');
   }
-  return trongGiaoDichDoc(nguon, () => {
+  /* ponytail: Turso cắt giao dịch tương tác dài ("connection closed before message completed", 22/10, DB 9 MB) — nguồn ở
+     xa đọc từng bảng không giao dịch; bù lại chạy lúc không ai nhập liệu (TRIEN_KHAI mục 10). Cần đúng một thời điểm thì
+     đọc theo lô trong nhiều giao dịch ngắn. */
+  const chay = <T>(fn: () => T): T => (o.giaoDich === false ? fn() : trongGiaoDichDoc(nguon, fn));
+  return chay(() => {
     const { bang, conLai } = docCauTruc(nguon);
     dich.pragma('foreign_keys = OFF');
     for (const b of bang) dich.exec(b.sql);
@@ -151,7 +155,7 @@ function kiemBanSao(c: any, ten: string, soSanh?: string): void {
  * (đã thử 22/09: xoá/đổi tên → EPERM), còn DETACH thì nhả ngay; và `rename` trên Windows GHI ĐÈ file cùng tên.
  * Hỏng ở bất kỳ bước nào → chỉ xoá file tạm của chính lần này, và file thật chỉ khi chính lần này đã tạo ra nó.
  */
-export function saoLuuRaFile(nguon: any, duongDan: string): { bang: number; dong: number } {
+export function saoLuuRaFile(nguon: any, duongDan: string, o: { giaoDich?: boolean } = {}): { bang: number; dong: number } {
   const tam = `${duongDan}.dang-ghi`;
   if (fs.existsSync(duongDan)) {
     throw new Error(`Đã có file ${path.basename(duongDan)} — không ghi đè bản sao lưu nào. Chờ một phút rồi chạy lại.`);
@@ -165,7 +169,7 @@ export function saoLuuRaFile(nguon: any, duongDan: string): { bang: number; dong
   let daTaoTam = false;
   let daTaoFile = false;
   try {
-    const ketQua = saoLuu(nguon, boNho);
+    const ketQua = saoLuu(nguon, boNho, o);
     kiemBanSao(boNho, 'main');
     try { boNho.exec(`VACUUM INTO ${chuoiTam}`); daTaoTam = true; } catch (e) {
       /* 'already exists' = có ai tạo file tạm đúng lúc này — không phải của mình, không đụng. Lỗi khác = file dở của mình. */

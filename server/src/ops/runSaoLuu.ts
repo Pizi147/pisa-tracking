@@ -40,7 +40,7 @@ console.log(`[sao-luu] Nguồn: ${DB_PATH} (không in token) → ${file}`);
 console.log('[sao-luu] Chỉ ĐỌC nguồn. Các bảng được chép lần lượt — nên chạy lúc không ai đang nhập liệu. Database ở xa thì có thể mất vài phút.');
 
 try {
-  const r = saoLuuRaFile(db(), file);
+  const r = saoLuuRaFile(db(), file, { giaoDich: !laDbTuXa() });
   console.log(`[sao-luu] Database: đã chép ${r.bang} bảng, ${r.dong} dòng — đã mở lại bản sao để kiểm (toàn vẹn, có người dùng).`);
 } catch (e) {
   console.error(`[sao-luu] LỖI — không tạo bản sao lưu nào: ${(e as Error).message}`);
