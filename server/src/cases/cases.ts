@@ -17,7 +17,7 @@ import {
   canEndWithOutcome, hanThemPa, stepsForMode, hanKe, hanKyGhiKetQua, LY_DO_KET_THUC_PA_TOI_THIEU,
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
-  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, NHAN_XET_MT_TOI_THIEU,
+  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
@@ -37,6 +37,8 @@ import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from '
 import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, xuLyCaseMany } from './sosState.ts';
 import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
+import { ganMoTaTuO } from './nguyenNhanO.ts';
+import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
@@ -1351,6 +1353,56 @@ export function suaCase(p: Principal, caseId: number, input: {
   });
 }
 
+/**
+ * SV-NX-CASE (plan.md 1.6 N8 ③, chủ SP 23/10) — XÁC NHẬN CASE SPEAKING CHẤM CHÉO. Người chấm chéo (không phải GV phụ trách S của em) lưu nhận xét ô S →
+ * ô chờ (`cho_phu_trach_xem` = 1), nhận xét đó KHÔNG tự thành mô tả. GV phụ trách S (GVCN / Quản lý làm thay — cùng quyền "Nhận xét GV phụ trách", OV-13k) chọn:
+ *   `dung` — nhận xét chấm chéo thành mô tả (đi theo nhận xét ô đó, như GV tự nhập) · `giu` — giữ mô tả đang có · `viet` — mô tả khác (`moTa` ≥ 10 ký tự, tách
+ *   khỏi nhận xét). Nhóm: giữ nhóm chính đang có, chưa có thì nhóm của ô / "Khác". Xong → hạ cờ, việc hết. Lịch sử `sos_case_history` + nhật ký `case.xac_nhan_s`.
+ */
+export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknown; moTa?: unknown }) {
+  const conn = db();
+  const c = loadCase(caseId);
+  if (c.status === 'done' || c.tam || c.topic !== 'speaking' || c.attempt_kind !== 'mock') throw badRequest('Case này không có nhận xét Speaking chấm chéo chờ xác nhận.');
+  const o = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(c.attempt_id) as any;
+  if (!o?.cho_phu_trach_xem) throw badRequest('Nhận xét Speaking chấm chéo đã được xác nhận.');
+  if (!quyenPhuTrachS(p, c.attempt_class_id ?? null)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Quản lý xác nhận được Case này.');
+  const cach = body.cach;
+  if (cach !== 'dung' && cach !== 'giu' && cach !== 'viet') throw badRequest('Chọn: dùng nhận xét chấm chéo, giữ mô tả, hoặc viết mô tả khác.');
+  const chinh = conn.prepare(`SELECT * FROM case_issues WHERE case_id = ? AND role = 'primary' ORDER BY id LIMIT 1`).get(caseId) as any;
+  const nx = String(o.comment ?? '').trim();
+  if (cach === 'dung' && !nx) throw badRequest('Bài chưa có nhận xét chấm chéo — viết mô tả khác.');
+  if (cach === 'giu' && !chinh) throw badRequest('Case chưa có mô tả — dùng nhận xét chấm chéo hoặc viết mô tả khác.');
+  const moTa = cach === 'viet' ? String(body.moTa ?? '').trim() : '';
+  if (cach === 'viet' && (moTa.length < NHAN_XET_MT_TOI_THIEU || moTa.length > NHAN_XET_TOI_DA)) {
+    throw loi(400, 'Mô tả Case cần ít nhất {n} ký tự — vấn đề học thuật của kỹ năng.', { n: NHAN_XET_MT_TOI_THIEU });
+  }
+  return tx(() => {
+    const luc = nowIso();
+    const ls = conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)`);
+    if (cach === 'dung') {
+      conn.prepare('UPDATE sos_cases SET mo_ta_attempt_id = NULL WHERE id = ?').run(caseId);   // ép ghi lại (kể cả Case đang có mô tả / đã sửa riêng)
+      ganMoTaTuO(conn, caseId, 'speaking', c.attempt_id, nx, o.nhom_nguyen_nhan);
+      if ((chinh?.observation ?? null) !== nx) ls.run(caseId, 'observation', chinh?.observation ?? null, nx, p.userId, luc);
+      if (chinh?.created_by != null) ls.run(caseId, 'mo_ta_nguon', 'sua_rieng', 'nhan_xet', p.userId, luc);
+    } else if (cach === 'viet') {
+      const boNhom = issuesForTopic('speaking');
+      const code = chinh?.taxonomy_code ?? docNhomNguyenNhan(o.nhom_nguyen_nhan).find((x) => boNhom.some((i) => i.code === x))
+        ?? boNhom.find((i) => laKhac(i.code))?.code;
+      if (!code) throw badRequest('Chọn nhóm nguyên nhân.');
+      if (chinh) conn.prepare('UPDATE case_issues SET observation = ?, created_by = ? WHERE id = ?').run(moTa, p.userId, chinh.id);
+      else addIssues(caseId, p.userId, { primaryCode: code, observation: moTa, topic: 'speaking' });
+      ls.run(caseId, 'observation', chinh?.observation ?? null, moTa, p.userId, luc);
+      if (!chinh || chinh.created_by == null) ls.run(caseId, 'mo_ta_nguon', chinh ? 'nhan_xet' : null, 'sua_rieng', p.userId, luc);
+    }
+    conn.prepare('UPDATE assessment_scores SET cho_phu_trach_xem = 0 WHERE id = ?').run(o.id);
+    conn.prepare('UPDATE sos_cases SET updated_at = ? WHERE id = ?').run(luc, caseId);
+    dongBoTrangThaiCase(caseId);
+    writeAudit({ actorUserId: p.userId, action: 'case.xac_nhan_s', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
+      before: { moTa: chinh?.observation ?? null }, after: { cach, moTa: cach === 'dung' ? nx : cach === 'viet' ? moTa : chinh?.observation ?? null } });
+    return caseDetail(p, caseId);
+  });
+}
+
 /** Câu xoá con → cha của MỘT PA (tham số ?1 = id PA). Tệp đọc riêng trước để xoá trong kho SAU khi chốt. */
 const PA_F = 'SELECT id FROM case_followups WHERE intervention_id = ?1';
 const CAU_XOA_PA: readonly string[] = [
@@ -1877,6 +1929,14 @@ export function caseDetail(p: Principal, caseId: number) {
     (chinhMt as any).moTaTuMt = `MT${(conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?').get(c.mo_ta_attempt_id) as any)?.attempt_no ?? '?'}`;
     (chinhMt as any).moTaTuAttemptId = c.mo_ta_attempt_id;
   }
+  /* SV-NX-CASE (N8 ③): nhận xét Speaking chấm chéo đang chờ GV phụ trách xác nhận Case — panel hiện sẵn nhận xét + ba lựa chọn (`xacNhanCaseS`). */
+  const oS = c.topic === 'speaking' && c.attempt_kind === 'mock' && c.status !== 'done' && !c.tam
+    ? conn.prepare(`SELECT s.comment, s.cho_phu_trach_xem, COALESCE(u.full_name, s.examiner_name) AS nguoi_cham FROM assessment_scores s
+        LEFT JOIN users u ON u.id = s.examiner_user_id WHERE s.attempt_id = ? AND s.skill = 'speaking'`).get(c.attempt_id) as any : null;
+  const choXacNhanS = oS?.cho_phu_trach_xem
+    ? { nhanXet: (oS.comment ?? null) as string | null, nguoiCham: (oS.nguoi_cham ?? null) as string | null, luot: `MT${c.attempt_no}`, han: (c.han_xac_nhan ?? null) as string | null,
+        coTheXacNhan: quyenPhuTrachS(p, c.attempt_class_id ?? null) }
+    : null;
   /* OV-12c (P5): Case MT — nguyên nhân theo TỪNG lượt (mốc mở / trượt lại ↔ nhận xét + nhóm của ô lượt đó, đọc sống từ ô): "MT1: … · MT2: …". */
   const nguyenNhanTheoLuot = (conn.prepare(
     `SELECT a.id AS attempt_id, a.attempt_no, s.comment, s.nhom_nguyen_nhan, s.nhan_xet_phu_trach FROM case_milestones m
@@ -2157,7 +2217,7 @@ export function caseDetail(p: Principal, caseId: number) {
     milestones: milestonesOf(caseId),
     /* Ngày demo, để giao diện so hạn mà không phải hỏi thêm một lần nữa. */
     today: demoToday(),
-    issues, interventions, followups, nguyenNhanTheoLuot,
+    issues, interventions, followups, nguyenNhanTheoLuot, choXacNhanS,
     /** Trạng thái Case từ SOS (rulebook v3): chờ xác định nguyên nhân, hạn `hanXacNhan` (5 ngày; Gấp / SOS 3: 3), lý do đóng `Không cần theo dõi`. */
     sos: sosSt,
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */

@@ -335,6 +335,64 @@ export function GhiNhanXetPanel({ data, onXong, ...chung }: ChungPanel & { data:
 }
 
 /**
+ * SV-NX-CASE (N8 ③): XÁC NHẬN CASE SPEAKING CHẤM CHÉO — nhận xét của người chấm chéo hiện sẵn; GV phụ trách S chọn dùng nó làm mô tả, giữ mô tả đang có, hoặc
+ * viết mô tả khác (≥ 10 ký tự). Lưu xong việc "Xác nhận Case" hết. Máy chủ: `POST /cases/:id/xac-nhan-s`.
+ */
+export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void }) {
+  const toast = useToast();
+  const x = data.choXacNhanS!;
+  const moTaCu = (data.issues ?? []).find((i: any) => i.role === 'primary')?.observation ?? null;
+  const [cach, setCach] = useState<'dung' | 'giu' | 'viet'>(x.nhanXet ? 'dung' : 'viet');
+  const [moTa, setMoTa] = useNhap(`xac-nhan-s-${data.id}`, '');
+  const xoaNhap = useXoaNhap();
+  const [busy, setBusy] = useState(false);
+  const lf = useLoiForm();
+  const loi = dsLoi(cach === 'viet' ? [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU }] : [], { 'mo-ta': moTa });
+  const luu = async () => {
+    lf.bam();
+    if (loi.length > 0) return;
+    setBusy(true);
+    try {
+      await api.post(`/cases/${data.id}/xac-nhan-s`, { cach, ...(cach === 'viet' ? { moTa: moTa.trim() } : {}) });
+      invalidateCases(); invalidate('/attempts');
+      xoaNhap();
+      toast.push('ok', t('Đã xác nhận Case'));
+      onXong();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+  const nut = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Xác nhận Case')}</button>;
+  const lua = (k: 'dung' | 'giu' | 'viet', chu: string) => <NutChon chon={cach === k} onClick={() => setCach(k)}>{chu}</NutChon>;
+  return (
+    <KhungPanel tieuDe={t('Xác nhận Case {x}', { x: data.categoryLabel ?? '' }).trim()} {...chung} onDong={chung.onClose}
+      dau={dauCase(data, chung.lop, `${x.luot} · ${data.categoryLabel ?? ''}`, true)}
+      chan={{ v3: true, chinh: nut, daSua: cach === 'viet' && !!moTa.trim(), conThieu: lf.conThieu(loi), dongTren: busy ? <span>{t('Đang lưu…')}</span> : undefined }}>
+      <div className="flex flex-col gap-5 pt-4">
+        <CanLam>
+          <div className="text-sm">
+            <span className="block text-[13px] font-semibold text-slate-300">{t('Nhận xét chấm chéo')}{x.nguoiCham ? ` · ${x.nguoiCham}` : ''}</span>
+            <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-200">{x.nhanXet ?? t('Chưa có nhận xét')}</p>
+          </div>
+          <div className="flex flex-wrap gap-2" role="group" aria-label={t('Mô tả Case')}>
+            {x.nhanXet && lua('dung', t('Dùng làm mô tả'))}
+            {moTaCu && lua('giu', t('Giữ mô tả đang có'))}
+            {lua('viet', t('Viết mô tả khác'))}
+          </div>
+          {cach === 'giu' && moTaCu && <p className="m-0 whitespace-pre-wrap break-words text-sm text-slate-300">{moTaCu}</p>}
+          {cach === 'viet' && (
+            <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
+              <textarea className="field w-full" rows={3} maxLength={NHAN_XET_TOI_DA} {...lf.o(loi, 'mo-ta')} value={moTa} disabled={busy} onChange={(e) => setMoTa(e.target.value)}
+                placeholder={viDuNhanXet('speaking')} />
+            </Truong>
+          )}
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
+        </CanLam>
+        <BoiCanh dong={[[t('Kết quả gần nhất'), ketQuaGanNhat(data)]]} />
+      </div>
+    </KhungPanel>
+  );
+}
+
+/**
  * `KHÔNG CẦN THEO DÕI…` (S4-5, YC-12.4) — lý do chọn nhanh (Khác cần ghi rõ) rồi GỬI QUẢN LÝ DUYỆT. Case chưa đóng: hàng Case thành
  * "Chờ Quản lý duyệt · không theo dõi"; kết quả xem ở Yêu cầu của tôi.
  */

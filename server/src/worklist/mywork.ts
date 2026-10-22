@@ -18,7 +18,7 @@ import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
-import { CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
+import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
@@ -206,8 +206,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   /* OV-13k (chủ SP 15/10): người chấm chéo đã lưu bài Speaking có nhận xét — GV phụ trách S của lớp xem; không hạn, không đỏ. */
   xem_nx_s: {
-    label: 'Xem nhận xét Speaking',
-    hint: 'Người chấm chéo đã ghi nhận xét bài Speaking. Ghi thêm nhận xét GV phụ trách nếu cần, sửa nhóm nguyên nhân, Xác nhận PA nếu có Case.',
+    label: 'Xác nhận Case Speaking',
+    hint: 'Người chấm chéo đã ghi nhận xét bài Speaking của em có Case. Dùng nhận xét đó làm mô tả Case, giữ mô tả đang có hoặc viết mô tả khác — hạn = hạn SOS.',
   },
   /* PR-LT2a (N3, T45): GVCN báo phụ huynh qua TVV — không hạn (M-05). */
   phoi_hop: {
@@ -972,9 +972,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   for (const c of xacNhanPa) dongCase(c, 'xac_nhan_pa');
 
   /*
-   * OV-13k (chủ SP 15/10): XEM NHẬN XÉT SPEAKING — người chấm chéo lưu ô S Mock có nhận xét (`cho_phu_trach_xem`) → việc của GV phụ trách S lớp
-   * (`phanCongDangHieuLuc`). Không hạn / không đỏ (Case có thể chưa sinh); hết khi GV phụ trách lưu hoặc PA của Case bài đó đã xác nhận.
-   * Quản lý ở "Tất cả" thấy dòng của GV trong phạm vi.
+   * OV-13k → SV-NX-CASE (plan.md 1.6 N8 ③, chủ SP 23/10): XÁC NHẬN CASE SPEAKING CHẤM CHÉO — người chấm chéo (không phải GV phụ trách S của em) lưu ô S Mock
+   * có nhận xét (`cho_phu_trach_xem`) mà em có Case S thật đang mở theo lượt đó → việc của GV phụ trách S lớp (`phanCongDangHieuLuc`), hạn = hạn SOS của Case
+   * (`han_xac_nhan`). GV chọn dùng nhận xét chấm chéo làm mô tả, giữ mô tả đang có, hoặc viết mô tả khác (`xacNhanCaseS`) → việc hết. Không có Case → không việc.
+   * Thay việc "Xem nhận xét Speaking" (khoá nhóm `xem_nx_s` giữ để bộ lọc / Tổng quan không đổi). Quản lý ở "Tất cả" thấy dòng của GV trong phạm vi.
    */
   /* Chỉ người có phân công Speaking (của mình) hoặc "Tất cả" mới có dòng — vai khác không tốn câu SQL nào. */
   const lopS = [...new Set(p.assignments.filter((x) => x.skill === 'speaking' && activeAt(x, today)).map((x) => x.classId))];
@@ -985,35 +986,38 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ...(f.branchId ? ['c.branch_id = ?'] : []),
     ];
     const ds = conn.prepare(
-      `SELECT a.id AS attempt_id, a.attempt_no, a.kind, a.class_id, c.code AS class_code, c.branch_id, a.student_id, st.full_name
+      `SELECT a.id AS attempt_id, a.attempt_no, a.kind, a.class_id, c.code AS class_code, c.branch_id, a.student_id, st.full_name,
+              sc.id AS case_id, sc.han_xac_nhan AS due, sc.sos_level
          /* TD7a: CROSS JOIN giữ assessment_scores làm bảng ngoài → đi chỉ mục một phần idx_score_cho_phu_trach (vài ô), không duyệt mọi lượt của lớp / chi nhánh. */
          FROM assessment_scores s CROSS JOIN assessment_attempts a ON a.id = s.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
          JOIN students st ON st.id = a.student_id AND ${HV_DANG_HOC_SQL('st')}
          JOIN classes c ON c.id = a.class_id
-        WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${loc.map((x) => ` AND ${x}`).join('')}
-          /* Hết khi PA của CHÍNH lượt này đã xác nhận: PA xác nhận sau mốc mở / trượt lại của lượt (Case giữ qua MT2+, PA cũ của MT1 không tính). */
-          AND NOT EXISTS (SELECT 1 FROM case_milestones m JOIN sos_cases sc ON sc.id = m.case_id AND sc.topic = 'speaking'
-                            JOIN case_interventions iv ON iv.case_id = sc.id
-                           WHERE m.attempt_id = a.id AND m.kind IN ('opened', 'repeat') AND iv.confirmed_at >= m.created_at)`,
+         JOIN sos_cases sc ON sc.attempt_id = a.id AND sc.topic = 'speaking' AND sc.status != 'done' AND ${CASE_THAT('sc')}
+        WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${loc.map((x) => ` AND ${x}`).join('')}`,
     ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
     const gvS = ds.length ? phanCongDangHieuLuc([...new Set(ds.map((r) => r.class_id as number))], today) : new Map();
     if (tatCa) napTruocPhamVi(ds.map((r) => r.student_id));   // quyền theo em một lần cho cả danh sách (không N+1)
+    const caseXnS = new Set<number>();
     for (const r of ds) {
+      caseXnS.add(r.case_id as number);
       const chu_ = gvS.get(`${r.class_id}|speaking`)?.userId ?? null;
       const mine = chu_ === p.userId;
       if (!mine && !(tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.student_id }))) continue;
       const mt = `MT${r.attempt_no}`;
       items.push({
-        key: `xem_nx_s:${r.attempt_id}`, group: 'xem_nx_s', urgency: 'normal',
+        key: `xem_nx_s:${r.attempt_id}`, group: 'xem_nx_s', urgency: urgencyOf(r.due ?? null, today),
         studentId: r.student_id, studentName: r.full_name, classId: r.class_id, classCode: r.class_code,
-        attemptId: r.attempt_id, attemptNo: r.attempt_no, caseId: null, level: null,
+        attemptId: r.attempt_id, attemptNo: r.attempt_no, caseId: r.case_id, level: r.sos_level ?? null,
         contextLabel: mt, count: null,
-        reason: 'Người chấm chéo đã ghi nhận xét Speaking',
-        tieuDe: `Xem nhận xét Speaking · ${r.full_name} · ${mt}`, phu: 'Speaking',
-        actionLabel: 'Xem nhận xét', href: attemptHref({ id: r.attempt_id, kind: r.kind, classId: r.class_id }),
-        ownerId: chu_, owner: null, mine, due: null, statusLabel: 'Chờ GV phụ trách xem',
+        reason: 'Người chấm chéo đã ghi nhận xét Speaking — chọn mô tả Case',
+        tieuDe: `Xác nhận Case Speaking · ${r.full_name} · ${mt}`, phu: 'Speaking',
+        actionLabel: 'Xác nhận Case', href: duongHoSoHocVien(r.student_id, { caseId: r.case_id }),
+        ownerId: chu_, owner: null, mine, due: r.due ?? null, statusLabel: 'Chờ xác nhận Case',
+        caseSos: true,
       });
     }
+    /* Một Case một việc: Case S chưa có mô tả mà đang chờ xác nhận nhận xét chấm chéo — bỏ dòng "Ghi nhận xét" trùng. */
+    for (let i = items.length - 1; i >= 0; i -= 1) if (items[i].group === 'ghi_nhan_xet' && caseXnS.has(items[i].caseId as number)) items.splice(i, 1);
   }
 
   // ------------------------------------- 3c. Giữa khoá lớp thường: BÁO PHỤ HUYNH QUA TVV (PR-LT2a; PR-CT2 bỏ nhóm Nộp kế hoạch bổ trợ)

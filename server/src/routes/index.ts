@@ -2291,6 +2291,11 @@ api.patch('/cases/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.suaCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
+/** SV-NX-CASE (N8 ③): GV phụ trách S xác nhận Case Speaking sau khi người chấm chéo ghi nhận xét — `cach`: dung | giu | viet (+ `moTa`). */
+api.post('/cases/:id/xac-nhan-s', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.xacNhanCaseS(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
 api.delete('/cases/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.xoaCase(principalOf(req), pInt(req, 'id'));

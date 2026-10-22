@@ -1938,18 +1938,22 @@ export function quyenPhuTrachS(p: Principal, classId: number | null): boolean {
 }
 
 /**
- * OV-13k (chủ SP 15/10): người chấm chéo (không phải GV phụ trách S) lưu ô S Mock có nhận xét mới → GV phụ trách S của lớp nhận thông báo +
- * việc "Xem nhận xét Speaking" (`cho_phu_trach_xem`), hết khi GV phụ trách lưu (`luuNhanXetPhuTrach`) hoặc PA của Case đã xác nhận.
+ * OV-13k → SV-NX-CASE (N8 ③): người chấm chéo (không phải GV phụ trách S) lưu ô S Mock có nhận xét mới → ô chờ (`cho_phu_trach_xem`): nhận xét KHÔNG tự
+ * thành mô tả Case; GV phụ trách S có thông báo + việc "Xác nhận Case" khi em có Case S (`xacNhanCaseS` hạ cờ). GV phụ trách tự lưu nhận xét → thành mô tả
+ * ngay (hạ cờ nếu đang chờ).
  */
 function baoPhuTrachS(p: Principal, a: any, comment: string | null, cu: string | null | undefined, nguoiCham: number | null) {
   if (!laChamCheo(a.kind, 'speaking') || !comment?.trim() || comment.trim() === (cu ?? '').trim()) return;
   const gv = gvPhuTrachS(a.class_id);
-  if (!gv || gv === p.userId || gv === nguoiCham) return;   // GV phụ trách tự chấm (hoặc được ghi là người chấm) — không có gì để xem
   const conn = db();
+  if (!gv || gv === p.userId || gv === nguoiCham) {   // GV phụ trách tự chấm (hoặc được ghi là người chấm) — nhận xét của họ là mô tả, không chờ ai
+    conn.prepare(`UPDATE assessment_scores SET cho_phu_trach_xem = 0 WHERE attempt_id = ? AND skill = 'speaking' AND cho_phu_trach_xem = 1`).run(a.id);
+    return;
+  }
   conn.prepare(`UPDATE assessment_scores SET cho_phu_trach_xem = 1 WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
   const r = conn.prepare(`SELECT s.full_name, c.code FROM students s LEFT JOIN classes c ON c.id = ? WHERE s.id = ?`).get(a.class_id, a.student_id) as any;
   notify({
-    userId: gv, kind: 'nhan_xet_speaking', title: `Xem nhận xét Speaking · ${r?.full_name ?? ''} · MT${a.attempt_no}`,
+    userId: gv, kind: 'nhan_xet_speaking', title: `Nhận xét Speaking chấm chéo · ${r?.full_name ?? ''} · MT${a.attempt_no}`,
     body: [r?.code, `chấm bởi ${p.fullName}`].filter(Boolean).join(' · '),
     entityType: 'assessment_attempt', entityId: a.id, dedupKey: `nxs:${a.id}`, duong: attemptHref({ id: a.id, kind: a.kind, classId: a.class_id }),
   });
@@ -1959,7 +1963,7 @@ function baoPhuTrachS(p: Principal, a: any, comment: string | null, cu: string |
 
 /**
  * OV-13k — "NHẬN XÉT GV PHỤ TRÁCH" + NHÓM NGUYÊN NHÂN của ô S Mock chấm chéo. Không đụng điểm, nhận xét người chấm, "Nhập bởi". Nhận xét không bắt
- * buộc (`null` / rỗng = xoá); nhóm cùng luật ô MT (thứ tự chọn, ≥ 1 khi dưới kỳ vọng). Lưu = GV phụ trách đã xem (`cho_phu_trach_xem` = 0).
+ * buộc (`null` / rỗng = xoá); nhóm cùng luật ô MT (thứ tự chọn, ≥ 1 khi dưới kỳ vọng). SV-NX-CASE: KHÔNG hạ cờ `cho_phu_trach_xem` — việc chỉ hết khi Xác nhận Case.
  * Nhật ký `score.nhan_xet_phu_trach`; Case MT nguyên nhân đồng bộ lại (`dongBoNguyenNhanMt`).
  */
 export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhanXetPhuTrach?: unknown; nhomNguyenNhan?: unknown }) {
@@ -1984,9 +1988,9 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
     const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
     const chu = coNx ? (nx && 'gt' in nx ? nx.gt : null) : cu.nhan_xet_phu_trach ?? null;
     const nhom = nhomSeLuu(a, { band, nhomGui, nhomCu: cu.nhom_nguyen_nhan });
-    /* Lưu mà không đổi gì (GV phụ trách chỉ "đã xem") → hết việc; người / lúc lưu và nhật ký giữ như cũ. */
+    /* Lưu mà không đổi gì → người / lúc lưu và nhật ký giữ như cũ. */
     const doi = chu !== (cu.nhan_xet_phu_trach ?? null) || nhom !== (cu.nhom_nguyen_nhan ?? null);
-    conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = ?, nhom_nguyen_nhan = ?, cho_phu_trach_xem = 0,
+    conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = ?, nhom_nguyen_nhan = ?,
                          nhan_xet_phu_trach_by = ?, nhan_xet_phu_trach_at = ? WHERE id = ?`)
       .run(chu, nhom, doi ? p.userId : cu.nhan_xet_phu_trach_by ?? null, doi ? nowIso() : cu.nhan_xet_phu_trach_at ?? null, cu.id);
     if (doi) {
