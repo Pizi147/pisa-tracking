@@ -94,7 +94,8 @@ export async function runPrOv10aTests(t: YThucTestKit) {
   });
 
   check('OV10a-5 · link vào Test / Công việc: TVV · CX không có khu (nav.test / nav.work), Admin có Test + Công việc nhưng không Chờ duyệt; web gắn link theo nav', () => {
-    for (const vai of ['TVV', 'CX'] as const) { const n = navOf(V[vai]); assert(!n.test && !n.work, `${vai}: không Test, không Công việc`); }
+    /* UI-CV-TVV: TVV có Công việc (chỉ việc của mình, không Chờ duyệt); CX vẫn không. */
+    for (const vai of ['TVV', 'CX'] as const) { const n = navOf(V[vai]); assert(!n.test && (vai === 'TVV' ? n.work && !n.workApprove : !n.work), `${vai}: không Test; Công việc chỉ TVV`); }
     const n = navOf(V.Admin);
     assert(n.test && n.work && !n.workApprove, 'Admin: có Test, Công việc, không Chờ duyệt');
     const lop = doc('web/src/modules/classes/DauTrangLop.tsx');

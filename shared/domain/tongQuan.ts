@@ -79,24 +79,38 @@ export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   thi_that: 'sau-thi', buoc_tiep: 'sau-thi',   // OV-13q
 };
 
+/**
+ * UI-CV-TVV (mockup `thiet-ke/v5/tvv.html`): Công việc của TVV chia theo VIỆC của TVV, không theo 4 nhóm GV — Báo PH · Sau thi (KQ thi thật → bước tiếp) ·
+ * Chốt ngày thi · Bổ sung hồ sơ. `missing_data` của TVV chỉ có Chốt ngày thi (máy chủ `NHOM_VIEC_TVV`).
+ */
+export const NHOM_CV_TVV = ['bao-ph', 'sau-thi', 'chot-ngay-thi', 'bo-sung'] as const;
+export type NhomViecTvv = (typeof NHOM_CV_TVV)[number];
+export const NHOM_CV_TVV_LABEL: Record<NhomViecTvv, string> = {
+  'bao-ph': t('Báo PH'), 'sau-thi': t('Sau thi'), 'chot-ngay-thi': t('Chốt ngày thi'), 'bo-sung': t('Bổ sung hồ sơ'),
+};
+const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { bao_ph_yt: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
+export const nhomViecTvvCua = (loai: string): NhomViecTvv => NHOM_TVV_CUA_LOAI[loai] ?? 'bo-sung';
+
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null; key?: string };
 export type NhomViecXem<T> = {
-  key: NhomViec; label: string; items: T[];
+  key: NhomViec | NhomViecTvv; label: string; items: T[];
   /** Số việc — mọi số đếm từ `items` (PR-VAI-a: không còn dòng nhắc mềm cộng tay). */
   n: number; quaHan: number; homNay: number;
   /** Nhóm có việc quá hạn tự mở (§3.2). PR-YT4: Ý thức có hạn thật nên cũng tự mở khi quá hạn (bỏ luật W02). */
   moSan: boolean;
 };
-export function gomNhomViec<T extends ViecGom>(items: T[]): NhomViecXem<T>[] {
+export function gomNhomViec<T extends ViecGom>(items: T[], tvv = false): NhomViecXem<T>[] {
   const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
-  return NHOM_VIEC.map((key) => {
-    const list = items.filter((i) => nhomViecCua(i.group) === key)
+  const cua: (g: string) => string = tvv ? nhomViecTvvCua : nhomViecCua;
+  const nhan = (k: string) => (tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] : NHOM_VIEC_LABEL[k as NhomViec]);
+  return (tvv ? NHOM_CV_TVV : NHOM_VIEC).map((key) => {
+    const list = items.filter((i) => cua(i.group) === key)
       /* OV-14c: việc "Chấm Speaking · n bài" của GV Speaking đứng đầu nhóm (chủ SP 18/10). */
       .sort((a, b) => Number(b.key === KHOA_CHAM_SPEAKING) - Number(a.key === KHOA_CHAM_SPEAKING)
         || w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999'));
     const quaHan = list.filter((i) => i.urgency === 'overdue').length;
     return {
-      key, label: NHOM_VIEC_LABEL[key], items: list,
+      key, label: nhan(key), items: list,
       n: list.length,
       quaHan, homNay: list.filter((i) => i.urgency === 'today').length,
       moSan: quaHan > 0,

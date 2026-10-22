@@ -165,7 +165,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     assert(hoSo(a.sid).archived_at === null && loTrinh(a.cy).buoc_tiep === null, 'không đổi gì');
   }));
 
-  await checkAsync('OV8a-7 · Không thi → việc + gợi ý Học lại; Kết thúc học em FT đã có kết quả → không Lưu trữ, có việc; nhiều em cùng lớp → một dòng gộp', () => thu(() => {
+  await checkAsync('OV8a-7 · Không thi → việc + gợi ý Học lại; Kết thúc học em FT đã có kết quả → không Lưu trữ, có việc; nhiều em cùng lớp → mỗi em một dòng (UI-CV-TVV)', () => thu(() => {
     const lop = taoLop();
     const a = emDaKetThuc(lop);
     thiThatSvc.datKetQuaThiThat(P.admin, a.cy, { khongThi: true });
@@ -183,7 +183,8 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     studentsSvc.setStudentStatus(P.admin, sid, 'finished', NGAY, 'Hết khoá');
     assert(hoSo(sid).archived_at === null && viecBt(QL, sid).length === 1, 'Kết thúc học: chờ QL chọn');
     const dong = ((myWork.myWork(QL, {}) as any).dong as any[]).filter((x: any) => x.group === 'buoc_tiep' && x.classId === lop);
-    assert(dong.length === 1 && dong[0].con?.length === 2, JSON.stringify(dong.map((x: any) => [x.key, x.con?.length])));
+    /* UI-CV-TVV (mockup `tvv.html`): Chọn bước tiếp không gộp lớp — mỗi em một dòng, một panel Sau thi. */
+    assert(dong.length === 2 && dong.every((x: any) => !x.con), JSON.stringify(dong.map((x: any) => [x.key, x.con?.length])));
   }));
 
   await checkAsync('OV8a-8 · migrate prOv8a thêm cột, chạy lặp không đổi gì', () => thu(async () => {

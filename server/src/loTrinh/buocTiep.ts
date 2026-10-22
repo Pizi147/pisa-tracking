@@ -15,7 +15,7 @@ import {
   type DongSauThi, type LuaChonSauThi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
+import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso, chuTuDo } from '../util.ts';
 import { can, loadPrincipal, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, setStudentStatus, unarchiveStudent } from '../students/students.ts';
 import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
@@ -85,6 +85,8 @@ export type ChonBuocTiepVao = {
   chon?: unknown; lopMoiId?: unknown; mucTieu?: number | string | null; thangThi?: string | null; date?: string; lyDo?: unknown; moLaiLop?: boolean;
   /** OV-13m (Lộ trình mới): 'ngay' / trống = Ngay bây giờ (tuần này là tuần 1), hoặc Thứ Hai từ tuần sau = Hẹn bắt đầu. */
   batDau?: unknown;
+  /** UI-CV-TVV (mockup `tvv.html` Sau thi ②): ghi chú trao đổi với HV / PH — lưu cùng lựa chọn (`buoc_tiep_json`, nhật ký). */
+  ghiChu?: unknown;
 };
 
 const CHI_QL = 'Chỉ Quản lý hoặc TVV của chi nhánh chọn được bước tiếp sau thi.';
@@ -107,6 +109,8 @@ type GhiBuocTiep = {
   /** OV-13m: Tạm dừng — lộ trình đóng lần này · em Tạm dừng lần này. */
   dongLoTrinh?: boolean; tamDung?: boolean;
   /** OV-13m: Lộ trình mới — lệnh Chuyển lớp (lớp khác) · hẹn chưa bắt đầu (lớp + Target để bắt đầu) · từ Tạm dừng (Quay lại học; hoàn tác = Tạm dừng lại). */
+  /** UI-CV-TVV: ghi chú của lần chọn. */
+  ghiChu?: string | null;
   lenhId?: number; lopMoiId?: number | null; lopMoiCode?: string | null; mucTieu?: number | string | null; tuTamDung?: boolean;
   /** Lựa chọn Tạm dừng trước đó (dữ liệu hoàn tác + ngày + người) — hoàn tác Lộ trình mới trả đúng về nó. */
   tamDungCu?: { json: string | null; luc: string | null; boi: number | null };
@@ -206,13 +210,15 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   const mucTieu = input.mucTieu === undefined || input.mucTieu === null || input.mucTieu === '' ? null : input.mucTieu;
   const tg = mucTieu === null ? null : docTarget(mucTieu);
   const tgLenh = tg ? ghepMucTieu(tg.target, tg.kck) : null;
-  const thamSo = JSON.stringify([lopMoiId, hen, mucTieu === null ? null : String(mucTieu)]);
+  const ghiChu = chuTuDo(input.ghiChu, 'Ghi chú', 2000);
+  /* Ghi chú vào khoá chỉ khi có — lựa chọn cũ (không ghi chú) gửi lại vẫn là "không làm lại gì". */
+  const thamSo = JSON.stringify([lopMoiId, hen, mucTieu === null ? null : String(mucTieu), ...(ghiChu ? [ghiChu] : [])]);
   return tx(() => {
     /* Đọc lại TRONG giao dịch: hai người bấm cùng lúc thì người sau hoàn tác đúng lựa chọn người trước vừa ghi. */
     const cu = docLoTrinh(cycleId);
     /* Lưu lại ĐÚNG lựa chọn đang có (bấm đúp, gửi lại) → không làm lại gì. */
     if (cu.buoc_tiep === chon && (JSON.parse(cu.buoc_tiep_json ?? '{}') as GhiBuocTiep).thamSo === thamSo) return trangThaiBuocTiep(p, cycleId);
-    const ghi: GhiBuocTiep = { thamSo };
+    const ghi: GhiBuocTiep = { thamSo, ...(ghiChu ? { ghiChu } : {}) };
     /* OV-13m: em Tạm dừng sau thi → Lộ trình mới = Quay lại học (hạn tính lại từ hôm nay), không gỡ Tạm dừng; hoàn tác thì Tạm dừng lại. */
     if (cu.buoc_tiep === 'tam_dung' && chon === 'lo_trinh_moi') {
       if (cu.em_status === 'inactive') setStudentStatus(q, cu.student_id, 'active', homNay, 'Quay lại học');
@@ -256,7 +262,8 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     conn.prepare('UPDATE learning_cycles SET buoc_tiep_json = ? WHERE id = ?').run(JSON.stringify(ghi), cycleId);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: homNay, title: `Sau thi: ${NHAN_SAU_THI[chon]}`,
-      detail: [lop ? `lớp ${lop}` : null, hen ? `hẹn bắt đầu ${tuanLich(hen, homNay)}` : null, cu.buoc_tiep ? `đổi từ ${NHAN_SAU_THI[cu.buoc_tiep as LuaChonSauThi]}` : null].filter(Boolean).join(' · ') || null,
+      detail: [lop ? `lớp ${lop}` : null, hen ? `hẹn bắt đầu ${tuanLich(hen, homNay)}` : null, cu.buoc_tiep ? `đổi từ ${NHAN_SAU_THI[cu.buoc_tiep as LuaChonSauThi]}` : null, ghiChu]
+        .filter(Boolean).join(' · ') || null,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId, dedupKey: `buoc_tiep:${cycleId}:${nowIso()}`,
     });
     /* OV-13j: nhật ký theo trường (Lịch sử sửa đọc `buoc_tiep` / `buoc_tiep_hen`). */
@@ -389,7 +396,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: c.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: st.daGiaHan ? `${kq} · đã gia hạn` : kq, count: null,
       reason: [c.class_code ?? null, thi, ketQua].filter(Boolean).join(' · '),
-      tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chọn',
+      tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chốt bước tiếp',
       href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
       due: han, statusLabel: `hạn ${tuanLich(han, f.today)}`,
     });

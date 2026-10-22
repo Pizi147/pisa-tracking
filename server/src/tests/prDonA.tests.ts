@@ -750,6 +750,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/violations/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/violations/similar': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/y-thuc/xu-ly/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
+    '/y-thuc/bao-ph/': 'PanelViec (UI-CV-TVV) — panel Báo PH, chỉ khi bấm việc',
     '/my-work/cham-speaking': 'PanelViec (OV-14c) — panel Chấm Speaking, chỉ khi bấm việc',
   };
   check('Dọn-a (9e) · tải trang đầu Tổng quan bắt được route mới: mọi GET trong cây OverviewPage (+ App, Header) có trong TAI_TRANG hoặc trong danh sách "gọi khi bấm"', () => {

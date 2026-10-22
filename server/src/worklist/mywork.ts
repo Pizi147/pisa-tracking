@@ -136,6 +136,8 @@ export type WorkItem = {
   pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi: number | null };
   /** SV-YT-TVV: id việc Báo PH (`viec_bao_ph`) — form ghi kết quả gửi đúng việc. */
   viecId?: number;
+  /** UI-CV-TVV: số lần đã ghi "Chưa liên hệ được" của việc Báo PH đang mở — dòng "⚠ Chưa liên hệ được · lần n". */
+  soLanThu?: number;
   /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
   lamThay?: boolean;
 };

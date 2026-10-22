@@ -76,6 +76,8 @@ const KICH_BAN = [
   ['tong-quan', 2, '/'], ['tong-quan-gv', 7, '/'], ['phan-tich', 2, '/phan-tich', null, RONG_MAY], ['phan-tich-thuong', 2, '/phan-tich?ct=thuong', null, RONG_MAY],
   ['cv-ho-tro', 2, '/cong-viec'], ['cv-cho-duyet', 2, '/cong-viec/cho-duyet'], ['cv-van-hanh', 2, '/cong-viec/van-hanh'],
   ['cv-bao-cao', 2, '/cong-viec/bao-cao'], ['cv-gv', 7, '/cong-viec'],
+  /* UI-CV-TVV: Công việc của TVV (23) — danh sách + panel Báo PH, panel Sau thi. */
+  ['cv-tvv', 23, '/cong-viec'], ['cv-tvv-bao-ph', 23, '/cong-viec?viec=bao-ph%3A10'], ['cv-tvv-sau-thi', 23, '/cong-viec?viec=buoc_tiep%3A23'],
   ['lop-ft', 7, '/hoc-vien/lop/3?tab=hoc-vien'], ['lop-ft-phan-tich', 7, '/hoc-vien/lop/3?tab=phan-tich'],
   ['lop-ft-y-thuc', 7, '/hoc-vien/lop/3?tab=y-thuc'], ['lop-thuong', 2, '/hoc-vien/lop/6?tab=hoc-vien'],
   ['lop-thuong-phan-tich', 2, '/hoc-vien/lop/6?tab=phan-tich'],

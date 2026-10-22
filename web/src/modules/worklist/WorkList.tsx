@@ -33,6 +33,8 @@ export type WorkItem = {
   pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi?: number | null };
   /** OV-13q: Cập nhật kết quả thi thật · Chọn bước tiếp — lộ trình (nút Gia hạn) + hạn đã gia hạn. */
   cycleId?: number; daGiaHan?: boolean;
+  /** UI-CV-TVV: Báo PH — id việc (`viec_bao_ph`) · số lần "Chưa liên hệ được". */
+  viecId?: number; soLanThu?: number;
 };
 export type WorkGroup = { key: string; label: string; hint: string; items: WorkItem[]; overdue: number; today: number };
 

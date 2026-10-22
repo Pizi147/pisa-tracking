@@ -172,7 +172,7 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
       key: `thi_that:${c.id}`, group: 'thi_that', urgency: 'normal', cycleId: c.id, daGiaHan: false,
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: l?.code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chuDaThi(s, f.today), count: null,
-      reason: [c.ten, l?.code ?? '—', thi ? `thi ${thi}` : null].filter(Boolean).join(' · '), tieuDe: 'Cập nhật kết quả thi thật', actionLabel: 'Nhập kết quả',
+      reason: [c.ten, l?.code ?? '—', thi ? `thi ${thi}` : null].filter(Boolean).join(' · '), tieuDe: 'Cập nhật kết quả thi thật', actionLabel: 'Nhập KQ thi',
       href: duongHoSoHocVien(c.student_id, { loTrinh: c.id, viec: 'thi-that' }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
       due: null, statusLabel: 'Không tính hạn',
     });

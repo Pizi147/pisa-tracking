@@ -1,5 +1,5 @@
 /**
- * HD-b — Hướng dẫn TƯ VẤN VIÊN. TVV không có Test, Công việc: việc của TVV nằm ở Tổng quan "Học viên của tôi" và Học viên & Lớp › Cần làm
+ * HD-b — Hướng dẫn TƯ VẤN VIÊN. TVV không có Test; Công việc (UI-CV-TVV) chỉ việc của mình. Việc khác ở Tổng quan "Học viên của tôi" và Học viên & Lớp › Cần làm
  * (panel mở tại chỗ). Học thuật (điểm, Case, PA) chỉ xem; thông tin em, Target, Tạm dừng / Thôi học, kết quả thi thật, Bước tiếp sửa được.
  */
 import { HD_GV } from './gv.ts';
@@ -70,6 +70,14 @@ export const HD_TVV: HuongDan = {
     },
   ],
   man: [
+    {
+      /* UI-CV-TVV (C05): TVV có Công việc — chỉ việc của mình. */
+      id: 'cong-viec', ten: 'Công việc', duong: ['/cong-viec'],
+      muc: [{ id: 'tvv-cv', ten: 'Việc cần làm', buoc: ['<b>Báo PH</b> · <b>Sau thi</b> · <b>Chốt ngày thi</b> · <b>Bổ sung hồ sơ</b> — bấm dòng, làm ngay ở panel bên phải.',
+        '<b>Báo PH</b>: chọn <b>Đã báo PH</b> hoặc <b>Chưa liên hệ được</b>, ghi chú, <b>Lưu và tiếp</b>. Chưa liên hệ được: việc vẫn mở, giữ hạn.',
+        '<b>Sau thi</b>: lưu điểm thi thật trước, chốt bước tiếp sau.'],
+        chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Bấm dòng để làm việc.' } }],
+    },
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [{ id: 'tvv-tq-o', ten: 'Học viên của tôi', buoc: ['Em được gán cho bạn: <b>Cần chú ý</b> (SOS · Case mới · Ý thức) · <b>Tạm dừng</b> · <b>Sắp thi</b> (6 tuần tới) · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.', 'Có em chờ bạn: thêm ô <b>Chờ chọn bước tiếp</b>.'],
