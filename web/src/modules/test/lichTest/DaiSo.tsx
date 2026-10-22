@@ -5,48 +5,40 @@ import { t } from '@shared/i18n/index.ts';
 export type OSo = 'da-cham' | 'con-phai-cham' | 'no';
 
 /**
- * DẢI SỐ của Lịch Test (PR-UX1, G-10; PR-LT3 Q1 còn ba ô) — số nào cũng bấm được và mở đúng TẬP tạo ra số đó: hai ô đầu → khối 2
- * (tuần hiện tại) hoặc khối 3 (tuần khác); ô ba "Quá hạn chấm" (UX-2) = Tổng quan "Bài quá hạn" của khung đang xem (OV-14b; gồm ô tuần trước nằm ở khối 2) → mở
- * DANH SÁCH các ô đó, không mở một khối. Ba ô một hàng cả trên điện thoại. Số đã cộng sẵn ở máy chủ.
+ * DẢI SỐ của Lịch tuần (UI-LICH-TUAN, dieu-chinh-cuoi khu a) — ba ô một hàng trong thẻ, số to trước, chữ sau: "117/177 bài đã chấm" ·
+ * "60 bài còn chấm" · "3 bài quá hạn" (đỏ khi > 0). Hai ô đầu = tuần đang xem; ô ba = Tổng quan "Bài quá hạn" của khung đang xem (UX-2,
+ * OV-14b) → mở DANH SÁCH các ô đó. Số nào cũng bấm được và mở đúng tập tạo ra số đó. Số đã cộng sẵn ở máy chủ.
  * OV-11e (TE-7): người có phân công — số là bài của CHÍNH họ; bài GV khác ghi nhạt dưới số ("n bài của GV khác").
  */
-export function DaiSo({ tq, tenTuan, onBam, dangTaiNo = false }: {
-  tq: TongQuanLich; tenTuan: string; onBam: (o: OSo) => void;
+export function DaiSo({ tq, onBam, dangTaiNo = false }: {
+  tq: TongQuanLich; onBam: (o: OSo) => void;
   /** UX-2 (1): số "Quá hạn chấm" đến từ đường riêng — đang tải thì "…", không hiện tạm một số khác. */
   dangTaiNo?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('Tiến độ chấm điểm')}>
-      <O onClick={() => onBam('da-cham')} nhan={t('{tenTuan} đã chấm', { tenTuan })} mo={tq.tong === 0}>
-        {tq.daCham}/{tq.tong} <Don>{t('bài')}</Don>
-      </O>
-      <O onClick={() => onBam('con-phai-cham')} nhan={t('Còn phải chấm')} mo={tq.conPhaiCham === 0}>
-        {tq.conPhaiCham} <Don>{t('bài')}</Don>
-        {tq.khac.con > 0 && <Khac n={tq.khac.con} />}
-      </O>
-      <O onClick={() => onBam('no')} nhan={t('Quá hạn chấm')} mo={dangTaiNo || tq.no.bai === 0} mau={!dangTaiNo && tq.no.bai > 0 ? 'text-late' : undefined}>
-        {dangTaiNo ? '…' : tq.no.bai} <Don>{t('bài')}</Don>
-        {tq.no.lop > 0 && <Don>{' '}{t('· {lop} lớp', { lop: tq.no.lop })}</Don>}
-        {tq.khac.no > 0 && <Khac n={tq.khac.no} />}
-      </O>
+    <div className="grid grid-cols-3 border-b border-[color:var(--line)]" role="group" aria-label={t('Tiến độ chấm điểm')}>
+      <O onClick={() => onBam('da-cham')} nhan={t('bài đã chấm')} mo={tq.tong === 0}
+        so={<>{tq.daCham}<span className="text-[15px] text-slate-500">/{tq.tong}</span></>} />
+      <O onClick={() => onBam('con-phai-cham')} nhan={t('bài còn chấm')} mo={tq.conPhaiCham === 0} so={tq.conPhaiCham}
+        phu={tq.khac.con > 0 && <Khac n={tq.khac.con} />} />
+      <O onClick={() => onBam('no')} nhan={t('bài quá hạn')} mo={dangTaiNo || tq.no.bai === 0} mau={!dangTaiNo && tq.no.bai > 0 ? 'text-late' : undefined}
+        so={dangTaiNo ? '…' : tq.no.bai} phu={tq.khac.no > 0 && <Khac n={tq.khac.no} />} />
     </div>
   );
 }
 
-const Don = ({ children }: { children: ReactNode }) => <span className="text-xs font-normal text-slate-400">{children}</span>;
-const Khac = ({ n }: { n: number }) => <span className="block text-xs font-normal leading-tight text-slate-500">{t('{n} bài của GV khác', { n })}</span>;
+const Khac = ({ n }: { n: number }) => <span className="block w-full text-xs font-normal leading-tight text-slate-500">{t('{n} bài của GV khác', { n })}</span>;
 
-/** Một ô số: nhãn nhỏ trên, số to dưới (`tabular-nums`). `mo` = số 0 → chữ phụ, vẫn bấm được. */
-function O({ nhan, children, onClick, mo, mau }: {
-  nhan: string; children: ReactNode; onClick: () => void; mo?: boolean; mau?: string;
+/** Một ô số: số to trước, chữ sau (điện thoại: số trên, chữ dưới). `mo` = số 0 → chữ phụ, vẫn bấm được. */
+function O({ nhan, so, phu, onClick, mo, mau }: {
+  nhan: string; so: ReactNode; phu?: ReactNode; onClick: () => void; mo?: boolean; mau?: string;
 }) {
   return (
     <button type="button" onClick={onClick}
-      className="card min-h-[44px] min-w-0 px-2 py-2 text-left appearance-none cursor-pointer hover:brightness-125 sm:px-3">
-      <span className="block whitespace-nowrap text-[12px] tracking-[-0.015em] text-slate-400 leading-tight sm:tracking-normal">{nhan}</span>
-      <span className={`block text-base font-bold tabular-nums leading-tight sm:text-lg ${mau ?? (mo ? 'text-slate-500' : 'text-slate-100')}`}>
-        {children}
-      </span>
+      className="flex min-h-[44px] min-w-0 cursor-pointer appearance-none flex-wrap items-baseline gap-x-2 border-0 border-r border-[color:var(--line)] bg-transparent px-2.5 py-2 text-left last:border-r-0 do-hang max-sm:flex-col max-sm:gap-0 sm:px-4 sm:py-2.5">
+      <span className={`text-lg font-bold tabular-nums leading-tight sm:text-[22px] ${mau ?? (mo ? 'text-slate-500' : 'text-slate-100')}`}>{so}</span>
+      <span className="text-[13px] text-slate-400">{nhan}</span>
+      {phu}
     </button>
   );
 }

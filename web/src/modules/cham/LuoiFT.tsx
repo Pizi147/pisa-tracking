@@ -15,6 +15,8 @@ import { ENTRY_SKILLS, chipSosMt0, type DinhNghiaCot, soKyVong, soLieuSos, chuOC
 import { DongThi } from './DongThi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
+import { HopSEx } from '../test/keHoach/HopSEx.tsx';
+import type { DongSEx } from '../test/keHoach/kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
@@ -45,6 +47,12 @@ const W_SKILLS = ['writing1', 'writing2'] as const;
 /** `?kn=writing` (kỹ năng đánh giá) khớp cả hai cột W1, W2 — Lịch Test / Việc cần làm gom Writing thành một môn. */
 export const khopKn = (skill: string, kn: string | null | undefined) =>
   !!kn && (skill === kn || (kn === 'writing' && skill.startsWith('writing')));
+
+/**
+ * UI-LICH-TUAN: lượt S Expert của tuần (Lịch tuần) — chủ SP 22/10 (10 mục 6): MT thường là chính, S Ex là DÒNG PHỤ của em trong tuần
+ * (khác S MT, không vào Overall / SOS — XM-1). Em chỉ có S Ex trong tuần (không MT) → hàng riêng cuối lưới.
+ */
+export type SExTuan = readonly (DongSEx & { studentId: number; ten: string })[];
 
 /** HÀNG MỜ cuối bảng (PR-DL): em chưa có lịch lượt đang xem — không có ô nhập, chỉ một câu `chu` trải hết các cột điểm. */
 export type HangMo = { studentId: number; ten: string; chu: ReactNode };
@@ -92,7 +100,7 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
 
 /**
  * LƯỚI CHẤM LỚP FAST TRACK — phần bảng của màn nhập điểm cả lớp trong một tuần (dời nguyên từ `ScoreSheetPage`).
- * Trang bao (`ChamDiemPage`) tải dữ liệu, dựng đầu trang và bộ chọn tuần; ở đây chỉ còn bảng.
+ * Nơi gọi (`LuoiChamLop` — Lịch Test tuần, panel việc, Điểm theo lớp) tải dữ liệu; ở đây chỉ còn bảng.
  *
  * OV-4b: mọi ô điểm là nút → hộp nhập điểm (`HopNhapDiem`) neo ngay ô; một hộp một lúc, "Lưu · em tiếp ›" (Enter) mở hộp cùng cột ở
  * em kế còn mở được. `kn` tô cột kỹ năng đang được mở từ Lịch Test; `hv` tô dòng của một học viên.
@@ -100,19 +108,25 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, sEx, the = false }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
   hangMo?: HangMo[];
   /** OV-15b (mục 1): mở từ việc — chỉ cột kỹ năng của việc + Kết quả (`writing` = W1 + W2); null = đủ cột. */
   chiCot?: readonly string[] | null;
+  /** UI-LICH-TUAN (10 mục 6): lượt S Ex của tuần ở lớp này (Lịch tuần) → dòng phụ dưới hàng của em. */
+  sEx?: SExTuan;
+  /** UI-LICH-TUAN (mockup 375 khu a): điện thoại ở Lịch tuần — mỗi em một thẻ, 5 ô L R W1 W2 S (cùng ô / hộp / lưu với bảng). */
+  the?: boolean;
 }) {
   /* Hộp đang mở: lượt × kỹ năng. */
   const [mo, setMo] = useState<{ aid: number; s: string } | null>(null);
+  const [hetHv, setHetHv] = useState(false);
   const hien = (s: string) => !chiCot || chiCot.some((k) => khopKn(s, k));
   const cot = {
-    mt: !gon || new Set(data.rows.map((r) => r.attemptNo)).size > 1,
+    /* UI-LICH-TUAN: lưới theo tuần (Lịch tuần, panel việc) luôn ghi MT của từng em — không giả định cả lớp cùng MT. */
+    mt: !gon || !!tuanDangXem || new Set(data.rows.map((r) => r.attemptNo)).size > 1,
     trangThai: !gon,
     han: !gon,
     /* PR-MT0: lưới chỉ MT0 (`kind=mt0`) — không kỳ vọng. */
@@ -121,6 +135,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ovr: !chiCot,
   };
   const rawCot = RAW_SKILLS.filter(hien), wCot = W_SKILLS.filter(hien);
+  /* UI-LICH-TUAN (mockup khu a): ở Lịch tuần (có `sEx`) Kỳ vọng / Overall là cột thường (không dải nổi bật), tên em chữ đậm + ↗. */
+  const lich = sEx !== undefined;
   /* Cột theo đúng những cột đang hiện (BANG-1: định nghĩa cột của `Bang`). */
   const goiYO = (s: string) => (s === 'listening' || s === 'reading'
     ? t('{skillLabel} — bấm ô để nhập số câu đúng (0–40), máy tự quy ra band.', { skillLabel: skillLabel(s) })
@@ -134,8 +150,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...rawCot.map(oKn), ...wCot.map(oKn),
     ...(cot.w ? [{ key: 'w', nhan: 'W', kieu: 'diem', rong: 64, tinh: true, sang: khopKn('writing', kn), goiY: W_HINT } as const] : []),
     ...(hien('speaking') ? [oKn('speaking')] : []),
-    ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: 'noi-bat', goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
-    ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: 'noi-bat', rong: 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
+    ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich ? 'diem' : 'noi-bat', rong: lich ? 80 : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
+    ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
     { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') },
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
@@ -145,13 +161,26 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const dot = dotGvCham(data.period?.id, data.rows.map((r) => r.attemptNo));
   const [gvCot, setGvCot] = useGvChamCot(data.classId, dot);
 
-  if (data.rows.length === 0 && hangMo.length === 0) {
+  if (data.rows.length === 0 && hangMo.length === 0 && !sEx?.length) {
     return (
       <Empty title={t('Không có lượt Mock nào của lớp này trong tuần đã chọn')}
         hint={t('Đổi tuần ở trên, hoặc quay lại Test để chọn lớp khác.')} />
     );
   }
   const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem));
+  /* UI-LICH-TUAN (#31, như Kế hoạch Test #534): lớp dài ở Lịch tuần hiện 10 em đầu + "Hiện tất cả n"; mở từ việc / em (kn, hv) thì hiện hết. */
+  const gonHv = lich && !hetHv && hv === null && !kn && rows.length > 12;
+  const rowsHien = gonHv ? rows.slice(0, 10) : rows;
+  const dongHetHv = gonHv && (
+    <span className="text-[13px] text-slate-400">
+      {t('+ {n} HV', { n: rows.length - rowsHien.length })} ·{' '}
+      <button type="button" className="link appearance-none border-0 bg-transparent p-0 max-sm:min-h-[44px]" onClick={() => setHetHv(true)}>
+        {t('Hiện tất cả {n}', { n: rows.length })}
+      </button>
+    </span>
+  );
+  /* Em chỉ có S Ex trong tuần (không lượt MT trong lưới) — dòng S Ex riêng cuối lưới. */
+  const chiSEx = (sEx ?? []).filter((x) => !rows.some((r) => r.studentId === x.studentId));
   /* Hộp ở lưới tuần: tuần đang xem (Lịch Test) hoặc tuần của lưới (Nhập điểm) — ô dời vì vắng chỉ là ô Vắng ở tuần gốc (OV-11a). */
   const tuanXem = tuanDangXem ?? data.period?.weekStart ?? null;
 
@@ -163,9 +192,30 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
       const c = r.cells.find((x) => x.skill === s);
       return !!c && suaDuoc(c) && !khacTuanFt(c, tuanDangXem);
     });
+    if (ke && rows.indexOf(ke) >= 10) setHetHv(true);
     setMo(ke ? { aid: ke.attemptId, s } : null);
   };
 
+
+  if (the) {
+    return (
+      <div>
+        {suaS && dot && <div className="flex justify-end px-3 py-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
+        {rowsHien.map((r) => (
+          <TheHv key={r.attemptId} row={r} lop={data.classCode} active={hv !== null && r.studentId === hv} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
+            onReload={onReload} gvMacDinh={gvCot} moS={mo?.aid === r.attemptId ? mo.s : null}
+            onMo={(s2) => setMo(s2 ? { aid: r.attemptId, s: s2 } : null)} onTiep={(s2) => tiep(r.attemptId, s2)}
+            sEx={sEx?.filter((x) => x.studentId === r.studentId)} />
+        ))}
+        {chiSEx.map((d) => (
+          <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] px-3.5 py-3">
+            <span className="font-semibold">{d.ten}</span><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
+          </article>
+        ))}
+        {dongHetHv && <div className="px-3.5 py-2">{dongHetHv}</div>}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -173,7 +223,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
     {suaS && dot && hien('speaking') && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
     {/* gon (Điểm theo lớp / Lịch Test) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng hơn khung → cuộn ngang trong khung. */}
-    <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={rows} khoa={(r) => r.attemptId} day the375={false} khung={false} dinh={gon ? '1440' : false}
+    <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={rowsHien} khoa={(r) => r.attemptId} day the375={false} khung={false} dinh={gon ? '1440' : false}
       hangRieng={(r) => (
         <SheetRow
           row={r}
@@ -182,17 +232,18 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
           cot={cot} cc={cc} hien={hien} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
           onReload={onReload}
           gvMacDinh={gvCot}
+          sEx={sEx?.filter((x) => x.studentId === r.studentId)} cotDs={cotDs} lich={lich}
           moS={mo?.aid === r.attemptId ? mo.s : null}
           onMo={(s) => setMo(s ? { aid: r.attemptId, s } : null)}
           onTiep={(s) => tiep(r.attemptId, s)}
         />
       )}
-      cuoi={hangMo.map((h) => (
+      cuoi={<>{dongHetHv && <tr><td className="td py-2" colSpan={cotDs.length}>{dongHetHv}</td></tr>}{chiSEx.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={d.ten} studentId={d.studentId} cotDs={cotDs} cc={cc} rieng />)}{hangMo.map((h) => (
         <tr key={`mo-${h.studentId}`} data-hv={h.studentId}>
           <OBang c={cc.hv} className="text-slate-500"><span title={h.ten}>{h.ten}</span></OBang>
           <td className="td text-xs text-slate-400" colSpan={cotDs.length - 1}>{h.chu}</td>
         </tr>
-      ))} />
+      ))}</>} />
     </>
   );
 }
@@ -260,13 +311,14 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
   );
 }
 
-function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, onMo, onTiep }: {
+function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, onMo, onTiep, sEx, cotDs, lich = false }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean;
   cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
   tuanDangXem: string | null; tuanXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
   moS: string | null; onMo: (s: string | null) => void; onTiep: (s: string) => void;
+  sEx?: SExTuan; cotDs: DinhNghiaCot[]; lich?: boolean;
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(row.attemptId, onReload, row.studentName);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- bảng tải lại (dòng mới) thì bỏ điểm tạm
@@ -283,7 +335,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
     <ODiemMt cell={cell} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={() => onTiep(s)} tuanXem={tuanXem}
       dauKq={soKyVong(cell.band, kyVong)}
       onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
-      ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, kyVong: row.result.expectation ?? null, mt0: !!row.mt0Sos,
+      ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong: row.result.expectation ?? null, mt0: !!row.mt0Sos,
         bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />
   );
   /* OV-1b: mọi phần thi đã huỷ / bỏ khỏi đợt — lượt không còn "Đã lên lịch". */
@@ -298,10 +350,11 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   );
 
   return (
+    <>
     <tr className={`do-hang ${row.ngungHoc ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`} data-hv={row.studentId}>
       {/* Tên + chip "Đủ điểm" một dòng; MỘT dòng phụ: dòng thi (Điểm theo lớp) · "lịch sử" · dấu lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
-        <span className="inline-flex max-w-full items-center gap-1.5 align-baseline">
+        <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline after:shrink-0 after:text-[13px] after:font-normal after:text-slate-500 after:content-['↗']" : ''}`}>
           <Link className="link min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
         </span>
@@ -363,7 +416,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           </OBang>
         );
       })}
-      {cot.kyVong && <OBang c={cc.kv} className="font-extrabold">{fmtBand(row.result.expectation)}</OBang>}
+      {cot.kyVong && <OBang c={cc.kv} className={lich ? 'text-slate-300' : 'font-extrabold'}>{fmtBand(row.result.expectation)}</OBang>}
       {cot.ovr && (
         <OBang c={cc.ovr}>
           {/* NEN (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
@@ -402,6 +455,116 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           )}
         </div>
       </OBang>
+    </tr>
+    {sEx?.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={row.studentName} studentId={row.studentId} cotDs={cotDs} cc={cc} />)}
+    </>
+  );
+}
+
+/** Chip "S Ex · dd/mm" (thẻ điện thoại) — bấm mở hộp S Ex khi có quyền; có điểm thì ghi điểm. */
+function ChipSEx({ d, ten, studentId }: { d: SExTuan[number]; ten: string; studentId: number }) {
+  const [mo, setMo] = useState(false);
+  const { homNay } = useNgayNghiepVu();
+  const chu = `S Ex${d.ngay ? ` · ${ngay(d.ngay, homNay)}` : ''}${d.diem != null ? ` · ${fmtBand(d.diem)}` : ''}`;
+  const lop = 'inline-flex h-[22px] items-center whitespace-nowrap rounded border border-[color:var(--hong)] bg-[color:var(--hong-nen)] px-1.5 text-xs font-bold text-[color:var(--hong-chu)]';
+  if (!(d.sua || d.cham)) return <span className={lop}>{chu}</span>;
+  return (
+    <>
+      <button type="button" className={`${lop} max-sm:min-h-[32px]`} onClick={() => setMo(true)}>{chu}</button>
+      {mo && <HopSEx studentId={studentId} ten={ten} dong={d} onDong={() => setMo(false)} onXong={() => undefined} />}
+    </>
+  );
+}
+
+/**
+ * THẺ MỘT EM (điện thoại, Lịch tuần — mockup 375 khu a): tên ↗ · "MT3 · kỳ vọng 6.0" · kết quả bên phải; 5 ô L R W1 W2 S (ô `ODiemMt` cỡ lớn,
+ * cùng hộp nhập / "Lưu · em tiếp ›" / lưu của bảng — không luật thứ hai); dòng dưới: dấu lưu + chip S Ex.
+ */
+function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, onMo, onTiep, sEx }: {
+  row: FtSheet['rows'][number]; lop: string; active: boolean; tuanDangXem: string | null; tuanXem: string | null;
+  onReload: () => void; gvMacDinh: NguoiChon | null; moS: string | null; onMo: (s: string | null) => void; onTiep: (s: string) => void;
+  sEx?: SExTuan;
+}) {
+  const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(row.attemptId, onReload, row.studentName);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bảng tải lại (dòng mới) thì bỏ điểm tạm
+  useEffect(() => { xoaVuaLuu(); }, [row]);
+  const cellOf = (skill: string) => { const c = row.cells.find((x) => x.skill === skill); return c && apDiemVuaLuu(c, vuaLuu[skill]); };
+  const kyVong = row.result.expectation ?? null;
+  const ketQua = row.ngungHoc ? <Level tone="muted">{dich(row.ngungHoc)}</Level>
+    : row.result.kckDuoi ? <ChipDuoiKck />
+    : row.result.chot && row.result.sosLevel !== null ? <SosLuot row={row} />
+    : row.result.provisional && (row.result.sosLevel ?? 0) > 0 ? <SosLuot row={row} tam />
+    : <span className="text-xs text-slate-400">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</span>;
+  return (
+    <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
+      <div className="flex min-w-0 items-center gap-x-2">
+        <Link className="link inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
+        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
+        <span className="ml-auto shrink-0">{ketQua}</span>
+      </div>
+      <div className="grid grid-cols-5 gap-1.5 text-center">
+        {(['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const).map((s) => {
+          const cell = cellOf(s);
+          return (
+            <div key={s} className={`relative flex min-w-0 flex-col items-center [&_[data-phu-odiem]]:max-w-full [&_[data-phu-odiem]]:whitespace-normal [&_[data-phu-odiem]]:text-center [&_[data-phu-odiem]]:leading-tight ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}
+              data-trong={cell && !row.ngungHoc && oTrongFt(cell) && !khacTuanFt(cell, tuanDangXem) ? '1' : undefined}>
+              <span className="block text-xs text-slate-500">{skillShort(s)}</span>
+              {!cell ? <span className="text-slate-500">·</span>
+                : khacTuanFt(cell, tuanDangXem) && !nutTuanGoc(cell) ? <span className="text-xs text-slate-500">{cell.daChot?.doiSang ?? tuanLich(cell.weekStart)}</span>
+                : (
+                  <>
+                    <ODiemMt cell={cell} lon mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={() => onTiep(s)} tuanXem={tuanXem}
+                      dauKq={soKyVong(cell.band, kyVong)} onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
+                      ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong, mt0: !!row.mt0Sos,
+                        bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />
+                    <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} lon />
+                  </>
+                )}
+            </div>
+          );
+        })}
+      </div>
+      {(status !== 'idle' || soLoi > 0 || !!sEx?.length) && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
+          {sEx?.map((d) => <ChipSEx key={d.id} d={d} ten={row.studentName} studentId={row.studentId} />)}
+        </div>
+      )}
+    </article>
+  );
+}
+
+/**
+ * DÒNG PHỤ S EX của một em trong tuần (UI-LICH-TUAN; 10 mục 6): chip "S Ex · dd/mm" dưới tên · GV chấm · ô điểm thẳng cột S · "không vào Overall".
+ * Bấm ô (QL / Admin đổi ngày · GV S chấm) mở hộp S Ex sẵn có (`HopSEx`); máy chủ kiểm quyền, giữ lịch sử.
+ */
+function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
+  d: SExTuan[number]; ten: string; studentId: number; cotDs: DinhNghiaCot[]; cc: Record<string, DinhNghiaCot>;
+  /** Em không có MT tuần này — dòng S Ex đứng riêng, ghi tên em. */
+  rieng?: boolean;
+}) {
+  const [mo, setMo] = useState(false);
+  const { homNay } = useNgayNghiepVu();
+  const iS = cotDs.findIndex((c) => c.key === 'speaking');
+  const sua = d.sua || d.cham;
+  const chip = (
+    <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border border-[color:var(--hong)] bg-[color:var(--hong-nen)] px-1.5 text-xs font-bold text-[color:var(--hong-chu)]">
+      S Ex{d.ngay ? ` · ${ngay(d.ngay, homNay)}` : ''}
+    </span>
+  );
+  return (
+    <tr className="do-hang" data-hv={studentId} data-sex={d.id}>
+      <OBang c={cc.hv}>
+        {rieng ? <span className="inline-flex max-w-full items-center gap-1.5"><span className="truncate font-semibold" title={ten}>{ten}</span>{chip}</span> : <span className="pl-3">{chip}</span>}
+      </OBang>
+      <td className="td text-xs text-slate-400" colSpan={Math.max(iS - 1, 1)}>{d.nguoiCham ?? ''}{d.nhanXet ? <span className="block truncate" title={d.nhanXet}>{d.nhanXet}</span> : null}</td>
+      {iS > 0 && (
+        <OBang c={cc.speaking}>
+          <ODiem kieu={sua ? 'sua' : 'doc'} so={d.diem != null ? fmtBand(d.diem) : null} nhan="S Ex" onBam={() => setMo(true)} />
+          {mo && <HopSEx studentId={studentId} ten={ten} dong={d} onDong={() => setMo(false)} onXong={() => undefined} />}
+        </OBang>
+      )}
+      <td className="td text-xs text-slate-500" colSpan={Math.max(cotDs.length - iS - 1, 1)}>{d.diem != null ? t('không vào Overall') : ''}</td>
     </tr>
   );
 }

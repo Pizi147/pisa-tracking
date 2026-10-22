@@ -108,7 +108,7 @@ export function khuVucCuaDuong(pathname: string): KhuVuc | null {
 
 /** PR-DL (G4): "Điểm theo lớp" giữa Lịch Test và Kế hoạch Test, hiện theo `testGrade`. UI-CHAM-TEST: "Chấm Test" đầu hàng — GV (chấm được, không xếp lịch). */
 const TAB_TEST: readonly TabTest[] = ['cham', 'lich', 'diem-lop', 'ke-hoach'];
-export const TAB_TEST_LABEL: Record<TabTest, string> = { cham: t('Chấm Test'), lich: t('Lịch Test'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
+export const TAB_TEST_LABEL: Record<TabTest, string> = { cham: t('Chấm Test'), lich: t('Lịch Test tuần'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
 export const DUONG_TAB_TEST: Record<TabTest, string> = { cham: '/test/cham', lich: '/test/lich', 'diem-lop': '/test/diem-lop', 'ke-hoach': '/test/ke-hoach' };
 /** PR-UX1 Q16: Cần chấm gộp vào Lịch Test — ai chấm được (`testGrade`) hay xếp được lịch (`testSchedule`) đều thấy. */
 const HIEN_TEST: Record<TabTest, (n: NavQuyen) => boolean> = {
@@ -121,6 +121,27 @@ export function tabTestHienThi(nav: NavQuyen): TabTest[] {
 }
 /** OV-15b: link cũ `/test/diem-lop?lop=` → panel nhập điểm của đúng lớp đó (trên Lịch Test) — cùng quyền tab cũ. */
 export const moDiemLopCu = (nav: NavQuyen): boolean => nav.test && HIEN_TEST['diem-lop'](nav);
+/**
+ * UI-LICH-TUAN (08 mục 6): trang lưới cũ `/nhap-diem/:lop` · `/bang-diem-thuong/:lop` thành CHUYỂN HƯỚNG — Lịch tuần là lưới đầy đủ.
+ * Có `periodId` (lớp FT theo tuần) → Lịch tuần đúng tuần, lọc lớp, giữ `kn`; có `kind` (lớp thường / MT0 / Checkpoint, không theo tuần)
+ * → panel Nhập điểm lớp đúng lượt (`/test/diem-lop`, người có quyền); còn lại → Lịch tuần tuần này lọc lớp.
+ */
+export function duongNhapDiemCu(classId: string, q: URLSearchParams, coDiemLop: boolean): string {
+  const lop = Number(classId);
+  if (!Number.isInteger(lop) || lop <= 0) return DUONG_TAB_TEST.lich;
+  const kind = q.get('kind');
+  const period = Number(q.get('periodId'));
+  const kn = q.get('kn');
+  if (kind && !(kind === 'mt0' && period > 0) && coDiemLop) {
+    const cp = /^checkpoint:([1-9]\d{0,5})$/.exec(kind);
+    const luot = cp ? `cp:${cp[1]}` : ['progress', 'final', 'mt0'].includes(kind) ? `thuong:${kind}` : null;
+    return `${DUONG_TAB_TEST['diem-lop']}?lop=${lop}${luot ? `&luot=${encodeURIComponent(luot)}` : ''}`;
+  }
+  const ra = new URLSearchParams({ classId: String(lop) });
+  if (Number.isInteger(period) && period > 0) ra.set('periodId', String(period));
+  if (kn) ra.set('kn', kn);
+  return `${DUONG_TAB_TEST.lich}?${ra}`;
+}
 export function tabTestTuDuong(seg: string | undefined): TabTest | null {
   return (TAB_TEST as readonly string[]).includes(seg ?? '') ? (seg as TabTest) : null;
 }

@@ -524,7 +524,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/<LuoiThuong[^>]*anNutTao=\{anNutTao\}/.test(lcl) && /<MotKyNang mode="ratio"[^>]*anNutTao=\{anNutTao\}/.test(lcl), 'LuoiChamLop chuyền anNutTao');
     assert(/<LuoiThuong[^>]*anNutTao=\{anNutTao\}/.test(f('MotKyNang')), 'MotKyNang chuyền anNutTao khi quay về LuoiThuong');
     assert(/const nutTao = data\.canPlan && !anNutTao/.test(f('LuoiThuong')), 'LuoiThuong ẩn nút theo anNutTao');
-    assert(!/anNutTao/.test(f('ChamDiemPage')) && !/anNutTao/.test(doc('web/src/modules/test/lichTest/LuoiNhung.tsx')), 'trang cũ giữ nút');
+    assert(!/anNutTao/.test(doc('web/src/modules/test/lichTest/LuoiNhung.tsx')), 'Lịch tuần giữ nút');   // UI-LICH-TUAN: ChamDiemPage đã thành chuyển hướng
     for (const ten of ['LuoiFT', 'MotKyNang']) assert(/row\.lichSu && <NhanCu \/>/.test(f(ten)), `${ten}: chip lịch sử cạnh tên`);  // PR-MTb T2 thay ChipLichSu → NhanCu
   });
 

@@ -647,8 +647,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
     for (const [ten, p] of [['QL', P.mbManager], ['GVCN', P.coreTeacher], ['GVBM', P.normalSubjectTeacher]] as const) {
       const r = cham.lichTest(p, tuanId(TUAN_NAY), null, TODAY);
       const q = r.tongQuan;
-      /* PR-LT3 Q1: tuần hiện tại — đã chấm / còn phải chấm cộng khối 2 + khối 3; ô "Quá hạn" cũ bỏ (khối 1 toàn quá hạn). */
-      const hang = [...(r.chamTuanNay ?? []), ...r.lop];
+      /* UI-LICH-TUAN (C13): đã chấm / còn phải chấm = hàng của tuần đang xem (khối 3); khối 1 toàn quá hạn. */
+      const hang = r.lop;
       /* OV-11e (TE-7): hàng có `phan` (người có phân công) cộng phần của người xem. */
       assert(q.tong === hang.reduce((n: number, l: any) => n + (l.phan ? l.tongCuaToi : l.tong), 0), `${ten}: tổng = cộng các hàng`);
       assert(q.daCham + q.conPhaiCham === q.tong, `${ten}: đã chấm + còn phải chấm = tổng`);

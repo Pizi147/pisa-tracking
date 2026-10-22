@@ -1,6 +1,6 @@
 import { Fragment, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { KhoiNhom } from '../../../ui/HangNhom.tsx';
+import { NhomDau } from './NhomDau.tsx';
 import { Nhan, TONE_TRANG_THAI } from '../../../ui/Nhan.tsx';
 import { Han } from '../../../ui/Han.tsx';
 import { CHAM_CHEO, chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
@@ -95,14 +95,18 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
     [dongMo?.d.attemptIds.join(',')],
   );
 
-  const tieuDe = t('Test quá hạn chấm');
-  if (!ds.length) return <div id="lich-test-no" className="card overflow-clip p-0"><KhoiNhom id="lich-test-no-than" rong phang mo={false} onMo={onMo} nhan={tieuDe} tieuDe={tieuDe} dem={0} /></div>;
+  /* UI-LICH-TUAN (dieu-chinh-cuoi khu a): nhóm "Quá hạn chấm" trong thẻ Lịch tuần, thu sẵn; dòng tóm tắt nói đủ khi chỉ một dòng. */
+  const tieuDe = t('Quá hạn chấm');
+  if (!ds.length) return <div id="lich-test-no"><NhomDau id="lich-test-no-than" rong mo={false} onMo={onMo} tieuDe={tieuDe} phu={t('{n} bài', { n: 0 })} /></div>;
   const soCot = hep ? 2 : 9;
+  const mot = ds.length === 1 ? ds[0].d : null;
+  const tomTat = mot
+    ? <>{mot.classCode} · {mot.dotLabel} · {dich(kyNangCua(mot, homNay).chu)} · {t('{n} bài', { n: soBai })} · <Han loai="nhap-diem" han={mot.han} boTinHieu={!!mot.phan && !mot.quaHan} /></>
+    : t('{soLop} lớp · {n} bài', { soLop, n: soBai });
 
   return (
-    <div id="lich-test-no" className="card overflow-clip p-0">
-      <KhoiNhom id="lich-test-no-than" phang mo={mo} onMo={onMo} nhan={tieuDe} tieuDe={tieuDe} dem={soBai} demMau={soBai > 0 ? 'late' : undefined}
-        phu={t('{soLop} lớp', { soLop })}>
+    <div id="lich-test-no">
+      <NhomDau id="lich-test-no-than" qua={soBai > 0} mo={mo} onMo={onMo} tieuDe={tieuDe} phu={tomTat}>
         <table className="w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             {hep ? (<><col /><col style={{ width: COT_THAO_TAC - 4 }} /></>) : (
@@ -120,7 +124,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                 <th className="th">{t('Lớp')}</th><th className="th">{t('Đợt')}</th><th className="th">{t('Kỹ năng')}</th>
                 <th className="th text-right">{t('Còn')}</th><th className="th">{t('Hạn')}</th><th className="th">{t('GV chấm')}</th>
                 <th className="th"><span className="sr-only">{t('Trạng thái')}</span></th>
-                <th className="th"><span className="sr-only">{t('Mở lưới đầy đủ')}</span></th>
+                <th className="th"><span className="sr-only">{t('Hồ sơ lớp')}</span></th>
                 <th className="th"><span className="sr-only">{t('Thao tác')}</span></th>
               </tr>
             </thead>
@@ -171,7 +175,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                         <td className="td py-1.5 text-xs leading-[1.35] text-slate-300"><GvCham gv={d.gvNo} /></td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
                         <td className="px-1 text-center">
-                          <Link to={d.hrefDayDu} title={t('Mở lưới đầy đủ')} aria-label={t('Mở lưới đầy đủ lớp {classCode}', { classCode: d.classCode })}
+                          <Link to={`/hoc-vien/lop/${d.classId}`} title={t('Hồ sơ lớp')} aria-label={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 no-underline hover:text-slate-100">↗</Link>
                         </td>
                         <td className="td text-right">{nut}</td>
@@ -196,7 +200,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
             })}
           </tbody>
         </table>
-      </KhoiNhom>
+      </NhomDau>
     </div>
   );
 }

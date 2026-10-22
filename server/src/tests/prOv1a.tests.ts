@@ -109,7 +109,7 @@ export async function runPrOv1aTests(t: YThucTestKit) {
   });
 
   check('OV1a-5 · tên tab "Lịch Test" (UI-CHAM-TEST tách "Chấm Test"); Tổng hợp theo tuần: đúng một hàng tuanNay (hàng "tuần này")', () => {
-    assert(dm.TAB_TEST_LABEL.lich === 'Lịch Test', `nhãn: ${dm.TAB_TEST_LABEL.lich}`);
+    assert(dm.TAB_TEST_LABEL.lich === 'Lịch Test tuần', `nhãn: ${dm.TAB_TEST_LABEL.lich}`);
     let coTuanNay = 0;
     for (const ct of ['ft', 'thuong']) {
       const r = tongHop.tongHop(QL, { ct, soTuan: 12, theo: 'tuan' });
