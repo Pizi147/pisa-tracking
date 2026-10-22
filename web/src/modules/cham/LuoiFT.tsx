@@ -122,6 +122,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
 }) {
   /* Hộp đang mở: lượt × kỹ năng. */
   const [mo, setMo] = useState<{ aid: number; s: string } | null>(null);
+  const [hetHv, setHetHv] = useState(false);
   const hien = (s: string) => !chiCot || chiCot.some((k) => khopKn(s, k));
   const cot = {
     /* UI-LICH-TUAN: lưới theo tuần (Lịch tuần, panel việc) luôn ghi MT của từng em — không giả định cả lớp cùng MT. */
@@ -167,6 +168,17 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     );
   }
   const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem));
+  /* UI-LICH-TUAN (#31, như Kế hoạch Test #534): lớp dài ở Lịch tuần hiện 10 em đầu + "Hiện tất cả n"; mở từ việc / em (kn, hv) thì hiện hết. */
+  const gonHv = lich && !hetHv && hv === null && !kn && rows.length > 12;
+  const rowsHien = gonHv ? rows.slice(0, 10) : rows;
+  const dongHetHv = gonHv && (
+    <span className="text-[13px] text-slate-400">
+      {t('+ {n} HV', { n: rows.length - rowsHien.length })} ·{' '}
+      <button type="button" className="link appearance-none border-0 bg-transparent p-0 max-sm:min-h-[44px]" onClick={() => setHetHv(true)}>
+        {t('Hiện tất cả {n}', { n: rows.length })}
+      </button>
+    </span>
+  );
   /* Em chỉ có S Ex trong tuần (không lượt MT trong lưới) — dòng S Ex riêng cuối lưới. */
   const chiSEx = (sEx ?? []).filter((x) => !rows.some((r) => r.studentId === x.studentId));
   /* Hộp ở lưới tuần: tuần đang xem (Lịch Test) hoặc tuần của lưới (Nhập điểm) — ô dời vì vắng chỉ là ô Vắng ở tuần gốc (OV-11a). */
@@ -180,6 +192,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
       const c = r.cells.find((x) => x.skill === s);
       return !!c && suaDuoc(c) && !khacTuanFt(c, tuanDangXem);
     });
+    if (ke && rows.indexOf(ke) >= 10) setHetHv(true);
     setMo(ke ? { aid: ke.attemptId, s } : null);
   };
 
@@ -188,7 +201,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     return (
       <div>
         {suaS && dot && <div className="flex justify-end px-3 py-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
-        {rows.map((r) => (
+        {rowsHien.map((r) => (
           <TheHv key={r.attemptId} row={r} lop={data.classCode} active={hv !== null && r.studentId === hv} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
             onReload={onReload} gvMacDinh={gvCot} moS={mo?.aid === r.attemptId ? mo.s : null}
             onMo={(s2) => setMo(s2 ? { aid: r.attemptId, s: s2 } : null)} onTiep={(s2) => tiep(r.attemptId, s2)}
@@ -199,6 +212,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             <span className="font-semibold">{d.ten}</span><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
           </article>
         ))}
+        {dongHetHv && <div className="px-3.5 py-2">{dongHetHv}</div>}
       </div>
     );
   }
@@ -209,7 +223,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
     {suaS && dot && hien('speaking') && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
     {/* gon (Điểm theo lớp / Lịch Test) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng hơn khung → cuộn ngang trong khung. */}
-    <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={rows} khoa={(r) => r.attemptId} day the375={false} khung={false} dinh={gon ? '1440' : false}
+    <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={rowsHien} khoa={(r) => r.attemptId} day the375={false} khung={false} dinh={gon ? '1440' : false}
       hangRieng={(r) => (
         <SheetRow
           row={r}
@@ -224,7 +238,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
           onTiep={(s) => tiep(r.attemptId, s)}
         />
       )}
-      cuoi={<>{chiSEx.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={d.ten} studentId={d.studentId} cotDs={cotDs} cc={cc} rieng />)}{hangMo.map((h) => (
+      cuoi={<>{dongHetHv && <tr><td className="td py-2" colSpan={cotDs.length}>{dongHetHv}</td></tr>}{chiSEx.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={d.ten} studentId={d.studentId} cotDs={cotDs} cc={cc} rieng />)}{hangMo.map((h) => (
         <tr key={`mo-${h.studentId}`} data-hv={h.studentId}>
           <OBang c={cc.hv} className="text-slate-500"><span title={h.ten}>{h.ten}</span></OBang>
           <td className="td text-xs text-slate-400" colSpan={cotDs.length - 1}>{h.chu}</td>

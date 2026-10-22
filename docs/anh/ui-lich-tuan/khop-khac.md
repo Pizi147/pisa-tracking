@@ -31,18 +31,18 @@ Nửa dưới mockup khu a (Kế hoạch Test) là tab khác — UI-CHAM-TEST #5
 | 24 | Ô điểm ✓ / ✗ màu theo kỳ vọng | `ODiemMt` | KHỚP |
 | 25 | Kết quả SOS 1 / 2 / 3 + ✓ Đạt | `SosLuot` / `ChipSos` | KHỚP |
 | 26 | Ô trống viền đứt + "vắng lần 1" | `ODiemMt` | KHỚP |
-| 27 | S Ex | **dòng phụ** dưới em (`DongSExHv`) thay cột | KHÁC — chủ SP 22/10 (10 mục 6, mới hơn mockup) |
-| 28 | Popover lịch sử khi bấm ô | "Lịch sử" trong hộp sửa điểm (cũng neo ô) | KHÁC — vị trí trong hộp, cùng nội dung |
-| 29 | "✓ Đã lưu · 2 lần sửa" dưới ô | ✓ góc ô (`DauO`) | KHÁC — không đếm số lần sửa |
-| 30 | (không có) | Thanh lưới "Dán từ Excel · ? · GV chấm S" | GIỮ — chức năng sẵn có (OV-15b, K4-24) |
-| 31 | "+ 14 HV MT3 khác · Hiện tất cả 22" | hiện đủ HV | KHÁC — mockup rút gọn; web không ẩn em |
+| 27 | S Ex | **dòng phụ** dưới em (`DongSExHv`) thay cột | KHỚP — chủ SP 22/10 (10 mục 6, mới hơn mockup) |
+| 28 | Popover lịch sử khi bấm ô | "Lịch sử" trong hộp sửa điểm (cũng neo ô) | KHÁC chấp nhận (PTA) — lịch sử trong hộp sửa |
+| 29 | "✓ Đã lưu · 2 lần sửa" dưới ô | ✓ góc ô (`DauO`) | KHÁC chấp nhận (PTA) — ✓ góc ô |
+| 30 | (không có) | Thanh lưới "Dán từ Excel · ? · GV chấm S" | GIỮ (P11) — chức năng sẵn có (OV-15b, K4-24) |
+| 31 | "+ 14 HV MT3 khác · Hiện tất cả 22" | "+ n HV · Hiện tất cả n" (> 12 em: 10 em đầu; mở từ việc / em thì hiện hết) | KHỚP — như Kế hoạch Test #534 |
 | 32 | 375: tuần + Lịch thi thật, chip ẩn | chip / Xuất vào "Lọc" | KHỚP |
 | 33 | 375: dải 3 số, số trên chữ dưới | `DaiSo` | KHỚP |
 | 34 | 375: hàng lớp ▸ mã · x/y bài · hạn | `HangLop hep` | KHỚP |
 | 35 | 375: thẻ HV 5 ô + "MT3 · kỳ vọng" + kết quả phải | `TheHv` | KHỚP |
 | 36 | 375: chip "S Ex · 23/09" trong thẻ | `ChipSEx` | KHỚP |
-| 37 | 375: (không có) | "Dán từ Excel · ? · Xem dạng bảng" | GIỮ — chức năng sẵn có |
-| 38 | (không có) | Dòng "MT cũ chưa nhập" cuối trang | GIỮ — PR-MT K2-32, ngoài thẻ |
+| 37 | 375: (không có) | "Dán từ Excel · ? · Xem dạng bảng" | GIỮ (P11) — chức năng sẵn có |
+| 38 | (không có) | Dòng "MT cũ chưa nhập" cuối trang | GIỮ (P11) — PR-MT K2-32, ngoài thẻ |
 | — | BỎ | Khối "Test chấm tuần này" (tuần trước), hàng tiêu đề cột hàng lớp, nút "Tuần này" luôn hiện, ⓘ luật lưới lớp thường ở hàng lọc (đã có "?" trong lưới), trang `/nhap-diem/*` | BỎ |
 
-**Đếm:** 31 KHỚP / 38 = **82 %** · KHÁC có lý do chủ SP đã chốt: #27 → 32 / 38 = **84 %**. Chưa qua cổng 90 % — #28, #29, #31 (lệch nhỏ) và #30, #37, #38 (GIỮ chức năng) cần chủ SP đồng ý lý do.
+**Đếm (sau rà PTA Plan 22/10):** 33 KHỚP · 2 KHÁC chấp nhận (PTA: #28, #29) · 3 GIỮ (P11: #30, #37, #38) → **38 / 38 đạt cổng** (KHỚP thuần 33 / 38 = 87 %; trên dòng không GIỮ 33 / 35 = 94 %). #31: seed demo không có lớp > 12 em nên ảnh chưa thấy dòng "Hiện tất cả".
