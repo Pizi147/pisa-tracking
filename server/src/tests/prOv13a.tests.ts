@@ -84,7 +84,7 @@ export async function runPrOv13aTests(t: YThucTestKit) {
       : s === 'listening' || s === 'reading' ? { band } : { criteria: [band, band, band, band] };
     const nx = o.nx === undefined ? NX(s) : o.nx;
     return attempts.saveScore(QL, aid, s, { ...so, ...(nx !== null && band !== null ? { nhanXet: nx } : {}),
-      ...(band !== null && band < 6.5 && nx !== null ? { nhomNguyenNhan: nhom(s) } : {}) }, o.today ?? TRONG, { tuNguoiDung: nx !== null });
+      ...(band !== null && band < 6.5 && nx !== null ? { nhomNguyenNhan: nhom(s) } : {}) }, o.today ?? TRONG);
   };
   const vang = (aid: number, s: string, today = TRONG) => attempts.saveScore(QL, aid, s, { noShow: true }, today);
   const caseEm = (aid: number) => all(`SELECT * FROM sos_cases WHERE student_id = (SELECT student_id FROM assessment_attempts WHERE id = ?) AND status != 'done' ORDER BY id`, aid);

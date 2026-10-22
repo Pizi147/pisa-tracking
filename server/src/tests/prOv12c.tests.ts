@@ -73,7 +73,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
   const diem = (aid: number, s: string, band: number, o: { nx?: string; nhom?: string[]; today?: string; who?: any } = {}) => {
     const so = s === 'listening' || s === 'reading' ? { band } : { criteria: [band, band, band, band] };
     return attempts.saveScore(o.who ?? QL, aid, s, { ...so, nhanXet: o.nx ?? NX(s), ...(band < 6.5 ? { nhomNguyenNhan: o.nhom ?? nhom(s) } : {}) },
-      o.today ?? TRONG, { tuNguoiDung: true });
+      o.today ?? TRONG);
   };
   const caseCua = (aid: number) => all(`SELECT DISTINCT c.* FROM sos_cases c JOIN case_signals g ON g.case_id = c.id WHERE g.attempt_id = ? ORDER BY c.id`, aid);
   const issues = (caseId: number) => all(`SELECT role, taxonomy_code, observation FROM case_issues WHERE case_id = ? ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`, caseId);
@@ -118,7 +118,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     chotSos2(luot);
     const cL = caseCua(luot).find((c) => c.topic === 'listening')!;
     const moi = nhom('listening', 3).reverse();
-    attempts.saveScore(QL, luot, 'listening', { nhanXet: 'Sai nhiều câu điền số và tên riêng.', nhomNguyenNhan: moi }, TRONG, { tuNguoiDung: true });
+    attempts.saveScore(QL, luot, 'listening', { nhanXet: 'Sai nhiều câu điền số và tên riêng.', nhomNguyenNhan: moi }, TRONG);
     const iL = issues(cL.id);
     assert(iL.length === 3 && iL[0].taxonomy_code === moi[0] && iL.slice(1).map((i) => i.taxonomy_code).join() === moi.slice(1).join(), JSON.stringify(iL));
     assert(iL[0].observation === 'Sai nhiều câu điền số và tên riêng.', `quan sát mới: ${iL[0].observation}`);
@@ -283,11 +283,11 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     const gv = P.lrTeacher;
     const it = mywork.myWork(gv, {}).items.find((x: any) => x.caseId === cL.id);
     assert(it && it.group === 'ghi_nhan_xet' && it.tieuDe.startsWith(`Ghi nhận xét Listening · MT${no}`) && it.luot && it.kn === 'listening', `việc: ${JSON.stringify(it && { g: it.group, t: it.tieuDe, l: it.luot, k: it.kn })}`);
-    attempts.saveScore(gv, luot, 'listening', { nhanXet: 'Bổ sung: nghe sót số liệu Part 1.', nhomNguyenNhan: [nhom('listening')[0]] }, '2026-12-01', { tuNguoiDung: true });
+    attempts.saveScore(gv, luot, 'listening', { nhanXet: 'Bổ sung: nghe sót số liệu Part 1.', nhomNguyenNhan: [nhom('listening')[0]] }, '2026-12-01');
     assert(cases.caseDetail(QL, cL.id).trangThaiV4.k === 'cho-xac-nhan-pa', 'lưu nhận xét xong → Chờ xác nhận PA');
     assert(choXn().includes(cL.id), 'OV-12d: đã có nhận xét → Chờ xác nhận PA, vẫn trong "Case chờ duyệt"');
     let loi = '';
-    try { attempts.saveScore(gv, luot, 'listening', { band: 7 }, '2026-12-01', { tuNguoiDung: true }); } catch (e: any) { loi = e.message; }
+    try { attempts.saveScore(gv, luot, 'listening', { band: 7 }, '2026-12-01'); } catch (e: any) { loi = e.message; }
     assert(loi === '', `LUAT-34: sau Đủ điểm GV đúng ô sửa được điểm: ${loi}`);
   }));
 

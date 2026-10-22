@@ -52,7 +52,7 @@ function docLo(v: unknown, kieu: Kieu): DongLo[] {
  * DÁN TỪ EXCEL — LƯU (OV-15b mục 2, `POST /attempts/scores/lo`; OV-15h2 ý 10 lớp thường: `POST /regular/scores/lo`, `kieu = 'thuong'`, mỗi ô qua
  * `saveRegularScore`). Thân: `{ dong, classId, luot?, loId, cuoi?, truoc?, hoanTac? }`.
  *  · Mọi lượt phải thuộc đúng lớp (và đúng lượt `luot` = `mt:2` / `thuong:final`… khi web gửi) — sai một dòng là 400 cả lô.
- *  · Mỗi dòng (một em) MỘT giao dịch: mọi ô qua `saveScore` cửa người dùng (`tuNguoiDung`: nhận xét MT bắt buộc, nhóm nguyên nhân, band tự tính)
+ *  · Mỗi dòng (một em) MỘT giao dịch: mọi ô qua `saveScore` (kiểm nhận xét, nhóm nguyên nhân, band tự tính)
  *    với đúng quyền từng ô — một ô bị từ chối thì cả dòng cuộn lại (dòng nằm lại nháp ở web), dòng khác vẫn lưu.
  *  · Nhật ký từng ô mang nguồn "Dán từ Excel · lớp"; một lần dán (nhiều request cùng `loId`) = MỘT mục tổng ở request cuối (`cuoi`), gắn lớp;
  *    Hoàn tác (`hoanTac`) ghi mục riêng.
@@ -89,7 +89,7 @@ export function luuDiemLo(p: Principal, body: any, kieu: Kieu = 'ft') {
           skill = o.skill;
           const { skill: _k, ...patch } = o;
           if (kieu === 'thuong') saveRegularScore(p, d.attemptId, o.skill, patch as any);   // OV-15h2: CHÍNH đường lưu ô lớp thường (quyền môn, "-", đúng ≤ tổng)
-          else saveScore(p, d.attemptId, o.skill, patch as any, undefined, { tuNguoiDung: true });
+          else saveScore(p, d.attemptId, o.skill, patch as any, undefined);
         }
       }));
       return { attemptId: d.attemptId, ok: true as const };

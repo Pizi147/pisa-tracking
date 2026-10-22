@@ -1045,12 +1045,13 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
+    /* LUAT-NX-MT (chủ SP 22/10): ô có band thiếu nhận xét không còn là việc Nhập điểm → GV / QL "tất cả" đổi CÓ CHỦ Ý; QL / QT "của tôi", ADMIN giữ. */
     /* MAIN-DO: chụp lại theo dữ liệu SEED-UX cuối (BU_MT2, 32504e72 → 9a078719) — so JSON 58a2d268 ↔ 9a078719: việc lệch CHỈ ở 4 em MT2 chưa đạt
        (Ngô Bảo Châu, Lý Thanh Tâm, Phạm Khánh Linh, Kiều Thảo Nhi: việc Case MT2; Case cũ của Kiều Thảo Nhi đổi) và dòng lớp MB FT 101 (MT2 dời W3 AUG); id Case dời. ADMIN giữ.
        SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
-    'QL toi': '3ea67fbf71f97f26', 'QT toi': 'ae31cc97e115aae1', 'GVCN toi': 'bf54bf6269e3ad5f', 'GVBM toi': '379c1f440089fd73',
-    'GVCN_THUONG toi': 'bf54bf6269e3ad5f', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '2f7359aa47d23b0c', 'QT tat-ca': '401e538406e00894',
-    'QT tat-ca cn': 'b170bfe6935c1b37', 'QL gvcn': '8f775ea2ddac4e29', 'GVS toi': '2862965e9fa40978',
+    'QL toi': '3ea67fbf71f97f26', 'QT toi': 'ae31cc97e115aae1', 'GVCN toi': '80841402855460fc', 'GVBM toi': 'f0e52756d39e2508',
+    'GVCN_THUONG toi': '80841402855460fc', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '308a1cd5cdf610d4', 'QT tat-ca': 'd99e66a82939f985',
+    'QT tat-ca cn': 'b3b9eb54c28af290', 'QL gvcn': '2bfa98682602b48b', 'GVS toi': '97693a60d0ace310',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

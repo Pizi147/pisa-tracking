@@ -57,7 +57,7 @@ export async function runPrOv13bTests(t: YThucTestKit) {
   const nhom = (s: string) => dm.issuesForTopic(s).filter((i: any) => !dm.laKhac(i.code)).slice(0, 2).map((i: any) => i.code) as string[];
   const diem = (s: string, band: number) => attempts.saveScore(QL, luot, s,
     { ...(s === 'listening' || s === 'reading' ? { band } : { criteria: [band, band, band, band] }), nhanXet: `Nhận xét ${s}: làm chậm, sai dạng bài quen thuộc.`,
-      ...(band < 6.5 ? { nhomNguyenNhan: nhom(s) } : {}) }, TRONG, { tuNguoiDung: true });
+      ...(band < 6.5 ? { nhomNguyenNhan: nhom(s) } : {}) }, TRONG);
   /** L 5 + S 5.5 → chốt SOS 2: Case L (GV = GV Listening) với PA quy chế chờ xác nhận. */
   const dungCase = () => {
     dung();

@@ -28,7 +28,7 @@ const tongBai = (ds: readonly { soBai?: number }[]) => ds.reduce((n, x) => n + (
  * Quá hạn · Hạn đến {CN tuần này} · Speaking chấm chéo (mở) · Hạn sau {CN tuần này} (gập). "Của tôi" = việc Nhập điểm của chính người xem trên
  * `/my-work` (cùng nguồn badge / Công việc — số không lệch); Speaking chấm chéo KHÔNG là nợ của ai (R2, `scoreDebt.ts`) → nhóm riêng, "Có thể
  * chấm", không cộng vào "Của tôi". Bấm một dòng → khu chấm phải tại chỗ: panel sẵn có (`PanelViec` = lưới điểm `LuoiNhung` của đúng lớp · tuần ·
- * kỹ năng; `PanelChamSpeaking` lọc sẵn lớp) — luật chấm, lưu, nhận xét bắt buộc không đổi. Dòng đang chấm nằm trong URL (`nhom`). Điện thoại
+ * kỹ năng; `PanelChamSpeaking` lọc sẵn lớp) — luật chấm, lưu, nhận xét (LUAT-NX-MT: chỉ nhắc) không đổi. Dòng đang chấm nằm trong URL (`nhom`). Điện thoại
  * (< 1024): bấm dòng → khu chấm thay danh sách, "‹ Chấm Test" về lại.
  */
 export function ChamTestTab() {

@@ -23,7 +23,6 @@
     "dem-tvv": "npm run build:server && node scripts/dem-tvv.mjs",
     "kiem-du-lieu-mt": "npm run build:server && node dist-server/server/src/ops/kiemDuLieuMt.js",
     "kiem-o-lop": "npm run build:server && node dist-server/server/src/ops/kiemOLop.js",
-    "dem-thieu-nhan-xet": "npm run build:server && node dist-server/server/src/ops/demThieuNhanXet.js",
     "kiem-truoc-ov1b": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv1b.js",
     "kiem-truoc-ov1c": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv1c.js",
     "kiem-truoc-ov13a": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv13a.js",

@@ -85,7 +85,7 @@ export async function runPrOv13hTests(t: YThucTestKit) {
   };
   const nx = 'Làm bài ổn định, cần luyện thêm dạng bài mới.';
   const diemQl = (aid: number, s: string, ngay: string) => attempts.saveScore(QL, aid, s,
-    { ...(s === 'listening' || s === 'reading' ? { band: 8 } : { criteria: [8, 8, 8, 8] }), nhanXet: nx }, ngay, { tuNguoiDung: true });
+    { ...(s === 'listening' || s === 'reading' ? { band: 8 } : { criteria: [8, 8, 8, 8] }), nhanXet: nx }, ngay);
   const lopTam = (id: number, fn: () => Promise<void>) => async () => {
     const cu = one('SELECT status, finished_at FROM classes WHERE id = ?', id);
     run(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`, TODAY, id); xoaNho();

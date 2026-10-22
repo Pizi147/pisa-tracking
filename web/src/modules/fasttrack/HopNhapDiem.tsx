@@ -14,15 +14,15 @@
  * OV-11a: ô đã dời vì vắng chỉ là ô Vắng ở lưới TUẦN GỐC (`tuanXem` ≠ tuần thi); ở tuần thi bù là ô thường + dòng "vắng lần 1 · dời từ …"
  * (nút Vắng = lần 2). LUAT-34: nút luôn ghi "Vắng" (máy chủ quyết dời / thẻ / huỷ — `chuyenVang`); ô trống có điểm đã huỷ còn cất → "Khôi phục điểm".
  * Đóng khi đã gõ: hỏi ngay chân hộp (Bỏ · Gõ tiếp).
- * OV-12b (chủ SP 14/10, mockup ov12-1 §1–2): MT (không MT0 / MT cũ) — "Nhận xét *" bắt buộc khi ô sẽ có điểm (≥ 10 ký tự); band dưới kỳ vọng →
- * hàng chip "Nhóm nguyên nhân *" (số thứ tự, 1 = chính); thiếu → Lưu tắt + một dòng lý do; Enter nhảy tới chỗ thiếu. "Kỳ vọng MT{n}" ở mọi kỹ năng.
- * Ô đã có điểm mà thiếu (dữ liệu trước luật): chữ "thiếu nhận xét" / "thiếu nhóm nguyên nhân" dưới số (không vẽ ✓ "đủ" — trùng dấu "đã lưu" của ô).
+ * OV-12b → LUAT-NX-MT (chủ SP 22/10): MT (không MT0 / MT cũ) — "Nhận xét" NÊN có khi ô có điểm (≥ 10 ký tự); band dưới kỳ vọng → hàng chip
+ * "Nhóm nguyên nhân" (số thứ tự, 1 = chính); thiếu → chỉ một dòng nhắc vàng trên nút, Lưu vẫn bấm được. "Kỳ vọng MT{n}" ở mọi kỹ năng.
+ * Ô có điểm mà thiếu: chữ nhắc vàng "nên có nhận xét" / "nên chọn nguyên nhân" dưới số (không vẽ ✓ "đủ" — trùng dấu "đã lưu" của ô).
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom,
-  demNguocSuaDau, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type NguoiChon,
+  chuDoiVang, demNguocSuaDau, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -34,7 +34,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { DauKetQua, MuiTenKyVong, lopKq } from '../../ui/BieuTuong.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
-import { ChonNhom } from './NhanXet.tsx';
+import { ChonNhom, viDuNhanXet } from './NhanXet.tsx';
 import {
   bandBanDau, chanDau, coDiemChinhThuc, lockedByNoShow, lyDoChiDoc, suaDuoc, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
@@ -129,11 +129,14 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; phu?: string; doc: 
 
 /**
  * DÒNG NHỎ DƯỚI Ô: dấu "-" chưa chốt (DS02, Q17, C41) — còn cửa sổ sửa thì đếm ngược bằng chữ xám, câu đầy đủ ở tooltip; OV-11a: ô tuần
- * thi bù — "vắng lần 1". Xuống dòng, không cắt (CA3-2).
+ * thi bù — "vắng W3 SEP" (tuần cũ). Xuống dòng, không cắt (CA3-2).
  */
 function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
   const { homNay } = useNgayNghiepVu();
-  if (thiBu && cell.daChot) return <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{t('vắng lần')}{' '}{Math.max(1, cell.daChot.lan)}</span>;
+  /* LUAT-NX-MT: ô tuần thi bù — "vắng W3 SEP" (tuần cũ, `chuDoiVang` chung mọi ô điểm); lần vắng ở tooltip. */
+  if (thiBu && cell.daChot) {
+    return <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="" title={`${t('vắng lần')} ${Math.max(1, cell.daChot.lan)}`}>{chuDoiVang(cell.daChot.tuTuan, homNay)}</span>;
+  }
   if (cell.noShow?.state !== 'khong-co-bai' || cell.daChot) return null;
   const dem = demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay);
   return (
@@ -254,8 +257,6 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const [nx, setNx] = useState(cell.nhanXet ?? '');
   const nhom0 = cell.nhomNguyenNhan ?? [];
   const [nhom, setNhom] = useState<string[]>(nhom0);
-  const nxRef = useRef<HTMLTextAreaElement>(null);
-  const nhomRef = useRef<HTMLDivElement>(null);
   const gvCu = gvChamThanhChon(cell.gvCham);
   const gv0 = gvCu ?? gvMacDinh;
   const [gv, setGv] = useState<NguoiChon | null>(gv0);
@@ -325,12 +326,6 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
     /* Rà #410: ô không nhận "-" (lớp đã kết thúc — cờ máy chủ `khongVang`): báo tại hộp, không gửi. */
     if (cell.khongVang && doiDiem && diem.patch?.noShow === true) { setLoi({ cau: dich(cell.khongVang), o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
-    /* OV-12b: thiếu → không gửi; con trỏ tới đúng chỗ thiếu (nút Lưu đã tắt, đây là đường Enter / Ctrl+Enter). */
-    if (thieu) {
-      if (thieu === 'chon-nhom') nhomRef.current?.querySelector<HTMLElement>('button')?.focus();
-      else nxRef.current?.focus();
-      return;
-    }
     const them: SavePatch = {};
     if (doiNx) them.nhanXet = nx.trim() || null;
     if (doiNhom) them.nhomNguyenNhan = nhom;
@@ -454,11 +449,11 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
       {(!vang || (batBuoc && coDiemSau)) && nhapDuoc && (
         <label className="block">
           <span className="mb-1.5 flex items-baseline justify-between text-xs font-medium text-slate-300">
-            <span>{laW ? t('Nhận xét Task {nTask}', { nTask }) : t('Nhận xét')}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>
+            <span>{laW ? t('Nhận xét Task {nTask}', { nTask }) : t('Nhận xét')}</span>
             {nx.length > 800 && <span className={`tabular-nums ${nx.length >= NHAN_XET_TOI_DA ? 'text-bad' : 'text-slate-500'}`}>{nx.length}/{NHAN_XET_TOI_DA}</span>}
           </span>
-          <textarea ref={nxRef} className="field w-full text-sm" rows={2} maxLength={NHAN_XET_TOI_DA} value={nx} disabled={busy}
-            aria-required={batBuoc && coDiemSau ? true : undefined} onChange={(e) => setNx(e.target.value)} />
+          <textarea className="field w-full text-sm" rows={2} maxLength={NHAN_XET_TOI_DA} value={nx} disabled={busy}
+            placeholder={viDuNhanXet(cell.skill)} onChange={(e) => setNx(e.target.value)} />
         </label>
       )}
       {/* OV-13k: nhận xét riêng của GV phụ trách Speaking lớp — chỉ đọc ở hộp chấm (GV phụ trách ghi ở hồ sơ MT). */}
@@ -469,8 +464,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         </div>
       )}
       {canNhom && nhapDuoc && (
-        <div ref={nhomRef}>
-          <span id="hop-nhom-nn" className="mb-1.5 block text-xs font-medium text-slate-300">{t('Nhóm nguyên nhân')}<span aria-hidden className="text-bad"> *</span></span>
+        <div>
+          <span id="hop-nhom-nn" className="mb-1.5 block text-xs font-medium text-slate-300">{t('Nhóm nguyên nhân')}</span>
           <ChonNhom skill={cell.skill} value={nhom} onChange={setNhom} disabled={busy} nhanId="hop-nhom-nn" />
         </div>
       )}
@@ -496,7 +491,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong)}>{t('Bỏ vắng')}</button>
       )}
       <LyDoThieu thieu={thieu} />
-      {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(false)}>{busy ? t('Đang lưu…') : t('Lưu điểm')}</button>}
+      {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{busy ? t('Đang lưu…') : t('Lưu điểm')}</button>}
     </>
   ) : (
     <>
@@ -510,8 +505,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
         </button>
       )}
       <LyDoThieu thieu={thieu} />
-      <button type="button" className={onTiep ? nut : `${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(false)}>{busy && !onTiep ? t('Đang lưu…') : t('Lưu')}</button>
-      {onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy || !!thieu} onClick={() => luu(true)}>{busy ? t('Đang lưu…') : t('Lưu · em tiếp ›')}</button>}
+      <button type="button" className={onTiep ? nut : `${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{busy && !onTiep ? t('Đang lưu…') : t('Lưu')}</button>
+      {onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(true)}>{busy ? t('Đang lưu…') : t('Lưu · em tiếp ›')}</button>}
     </>
   );
 
@@ -530,11 +525,11 @@ function DongKyVong({ luot, kv }: { luot: string; kv: number | null }) {
   return <div className="mt-1.5 text-xs tabular-nums text-slate-500">{t('Kỳ vọng {dot}', { dot: luot })}{' '}{fmtBand(kv)}</div>;
 }
 
-/** OV-12b: lý do nút Lưu tắt — một dòng ngay trước nút (375: dòng riêng phía trên). Chỗ trống đẩy nút sang phải khi đủ. */
+/** LUAT-NX-MT: dòng NHẮC (vàng) ngay trước nút — nút vẫn bấm được (375: dòng riêng phía trên). Chỗ trống đẩy nút sang phải khi đủ. */
 function LyDoThieu({ thieu }: { thieu: ReturnType<typeof thieuNhanXetMt> }) {
   return (
     <>
-      <span role="status" className={`min-w-0 flex-1 text-right text-xs text-slate-400 ${thieu ? 'max-sm:basis-full' : ''}`}>
+      <span role="status" className={`min-w-0 flex-1 text-right text-xs text-soon ${thieu ? 'max-sm:basis-full' : ''}`}>
         {thieu ? CAU_THIEU_NHAN_XET[thieu] : ''}
       </span>
       {thieu && <span aria-hidden className="flex-1 sm:hidden" />}

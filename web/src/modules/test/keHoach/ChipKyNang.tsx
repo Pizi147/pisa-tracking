@@ -1,4 +1,4 @@
-import { NHAN_KIEU_O_MT, gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanNamChu, type ChipKH, type KieuOMt, type KyNangKH } from '@shared/domain/index.ts';
+import { KY_NANG_KE_HOACH, NHAN_KIEU_O_MT, chuDoiVang, gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanNamChu, type ChipKH, type KieuOMt, type KyNangKH } from '@shared/domain/index.ts';
 import { MAU_O_MT } from '../../../ui/OMt.tsx';
 import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -164,12 +164,19 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, ovr, kyVong, on
   const chinh = [...nhom].sort((a, b) => UU_TIEN.indexOf(a.kieu) - UU_TIEN.indexOf(b.kieu))[0];
   const tuan = chinh.tuan ? tuanNamChu(tuanCua(chinh.kyNang)) : null;
   const dat = ovr !== undefined && kyVong != null ? ovr >= kyVong : null;
+  /* LUAT-NX-MT: dòng nhắc nhỏ — "S vắng W3 SEP" (dời do vắng, tuần cũ) · "W sau MT3" (lệch thứ tự giữa các MT, không chặn). */
+  const ghi = KY_NANG_KE_HOACH.flatMap((k) => {
+    const o = kn[k];
+    if (!o) return [];
+    const ten = tenMonNgan(ct, k);
+    return [o.doiTu ? `${ten} ${chuDoiVang(o.doiTu, homNay)}` : null, o.sauMt ? t('{ten} sau MT{n}', { ten, n: o.sauMt }) : null].filter((x): x is string => !!x);
+  });
   const tt = chinh.kieu === 'xong' && ovr !== undefined
     ? `${dat === null ? '' : dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(ovr)}`
     : chinh.viec ? chuViec(chinh.viec) : CHU_TT[chinh.kieu] ?? null;
   return (
     <button type="button" onClick={(e) => onMo(e.currentTarget)} title={nhom.map((g) => g.title).join('\n')}
-      aria-label={`MT${so}, ${nhom.map((g) => g.doc).join('; ')}${ovr !== undefined ? `, Overall ${fmtBand(ovr)}` : ''}`}
+      aria-label={`MT${so}, ${nhom.map((g) => g.doc).join('; ')}${ovr !== undefined ? `, Overall ${fmtBand(ovr)}` : ''}${ghi.length ? `, ${ghi.join(', ')}` : ''}`}
       className={`mx-auto flex w-full max-w-[168px] flex-col items-start gap-px rounded-md border bg-[var(--surface)] px-2 py-1 text-left max-sm:min-h-[44px] ${dat === false && chinh.kieu === 'xong' ? 'border-bad-line' : VIEN_O[chinh.kieu] ?? 'border-[var(--line)]'} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
       <span className="flex flex-wrap gap-x-1.5 text-xs font-bold tracking-wide text-slate-300">
         {nhom.map((g, i) => (
@@ -181,6 +188,7 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, ovr, kyVong, on
       </span>
       <span className="whitespace-nowrap text-sm font-bold tabular-nums text-slate-100">{tuan ?? t('chưa xếp')}</span>
       {tt && <span className={`text-xs font-semibold tabular-nums ${dat === false && chinh.kieu === 'xong' ? 'text-bad' : MAU_TT_O[chinh.kieu] ?? 'text-slate-400'}`}>{tt}</span>}
+      {ghi.length > 0 && <span className="text-xs tabular-nums text-slate-400">{ghi.join(' · ')}</span>}
     </button>
   );
 }
