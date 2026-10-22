@@ -75,6 +75,8 @@ export type Cell = {
   /** OV-12b (máy chủ tính, `thieuNhanXetMt`): nhóm nguyên nhân đã chọn (thứ tự) · lượt MT đòi nhận xét · kỳ vọng lượt · ô có điểm còn thiếu. */
   nhomNguyenNhan?: string[];
   batBuocNhanXet?: boolean;
+  /** SV-NX-CASE: ô Mock có chip nhóm nguyên nhân (mọi MT); `batBuocNhanXet` = chỉ NHẮC (MT mới nhất của em). */
+  coNhom?: boolean;
   kyVong?: number | null;
   thieuNhanXet?: ThieuNhanXet | null;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). */

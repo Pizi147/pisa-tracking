@@ -160,12 +160,28 @@ function docTheoLo<T extends { attempt_id: number }>(ids: number[], sql: (ph: st
   return out;
 }
 
+/**
+ * SV-NX-CASE (plan.md 1.6 N8 ①, chủ SP 23/10) — MỘT HÀM "MT MỚI NHẤT CỦA EM": lượt Mock (không MT0) chưa huỷ mà em KHÔNG có lượt Mock chưa huỷ nào
+ * có band ở số MT lớn hơn (lộ trình mới hơn tính là sau). Chỉ ô của MT này nhắc vàng "nên có nhận xét / nhóm" (kể cả MT ≥ 2 tuần); MT trước không nhắc.
+ * Không đổi luật "-" của MT cũ (N4 — `lich_su`). Trả tập id lượt (trong `attemptIds`) là MT mới nhất; nhớ theo lượt trong request GET (`loadBundle` nạp trước).
+ */
+export function laMtMoiNhatCuaEm(attemptIds: number[]): Set<number> {
+  const m = nhoTheoId('mt-moi-nhat:', attemptIds, (ids) => docTheoLo<{ attempt_id: number }>(ids,
+    (ph) => `SELECT a.id AS attempt_id FROM assessment_attempts a
+              WHERE a.id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled'
+                AND NOT EXISTS (SELECT 1 FROM assessment_attempts b WHERE b.student_id = a.student_id AND b.kind = 'mock' AND b.status != 'cancelled'
+                      AND (COALESCE(b.cycle_id, 0) > COALESCE(a.cycle_id, 0) OR (COALESCE(b.cycle_id, 0) = COALESCE(a.cycle_id, 0) AND b.attempt_no > a.attempt_no))
+                      AND EXISTS (SELECT 1 FROM assessment_scores sb WHERE sb.attempt_id = b.id AND sb.band IS NOT NULL))`));
+  return new Set(m.keys());
+}
+
 /** TD7: `boCase` — người gọi không đọc `bundle.cases` (đánh giá lượt mới nhất) thì bỏ câu Case theo lượt. */
 export function loadBundle(attemptIds: number[], o: { boCase?: boolean } = {}): AttemptBundle {
   const bundle: AttemptBundle = { scores: new Map(), skips: new Map(), skillRows: new Map(), cases: new Map() };
   if (!attemptIds.length) return bundle;
   bundle.skillRows = loadSkillRows(attemptIds);
   bundle.scores = diemCuaLuot(attemptIds);
+  laMtMoiNhatCuaEm(attemptIds);   // SV-NX-CASE: nạp trước một câu cho cả trang — `oXongCua` của từng lượt đọc từ bộ nhớ request
   for (const id of attemptIds) {
     const rows = bundle.skillRows.get(id);
     if (rows?.length) bundle.skips.set(id, skippedSkillsOf(rows));
@@ -342,6 +358,8 @@ export type SkillCell = {
    *  ô đã có điểm mà còn thiếu (dữ liệu trước luật) — lưới ghi chữ "thiếu nhận xét" / "thiếu nhóm nguyên nhân". */
   nhomNguyenNhan: string[];
   batBuocNhanXet: boolean;
+  /** SV-NX-CASE: ô Mock có chip "Nhóm nguyên nhân" (mọi MT, kể cả MT trước — giữ thao tác cũ); `batBuocNhanXet` nay chỉ là NHẮC của MT mới nhất. */
+  coNhom: boolean;
   kyVong: number | null;
   thieuNhanXet: ThieuNhanXet | null;
   /** ô XONG = có band (LUAT-NX-MT: thiếu nhận xét chỉ nhắc — `thieuNhanXet`) — mọi nơi đếm bài / nợ / việc đọc cờ này. */
@@ -354,8 +372,12 @@ export type SkillCell = {
  * MỘT HÀM "Ô FT XONG" (V5 SV-SO1; LUAT-NX-MT — chủ SP 22/10, `10` mục 7.2): xong = CÓ BAND. `thieuNx` (`thieuNhanXetMt` — MT thường, không MT cũ / MT0)
  * chỉ để NHẮC (ô vàng), không làm ô thành chưa xong / việc / nợ. `skillCells`, chi tiết lượt, Kế hoạch Test (`xongKyNang`) cùng gọi; SQL: `O_FT_XONG_SQL`.
  */
+/** SV-NX-CASE (N8 ①): ô của lượt này có NHẮC nhận xét / nhóm không — chỉ MT mới nhất của em (`laMtMoiNhatCuaEm`), không còn phân biệt MT cũ. */
+export const nhacNhanXetCua = (attempt: { id: number; kind?: string | null }): boolean =>
+  batBuocNhanXetMt({ kind: attempt.kind, lichSu: false }) && laMtMoiNhatCuaEm([attempt.id]).has(attempt.id);
+
 export function oXongCua(attempt: any, rows: readonly { skill: string; band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null }[]) {
-  const batBuoc = batBuocNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
+  const batBuoc = nhacNhanXetCua(attempt);
   /* Kỳ vọng (đọc lộ trình của lượt) chỉ tính khi cần — lượt không đòi nhận xét / ô không band không hỏi DB (Kế hoạch Test nhiều lượt). */
   let kv: { v: number | null } | null = null;
   const thieuNx = (k: string) => {
@@ -402,7 +424,7 @@ export function skillCells(
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
-  const batBuocNx = batBuocNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
+  const batBuocNx = nhacNhanXetCua(attempt);
   const kyVong = kyVongCuaLuot(attempt);
 
   const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
@@ -540,6 +562,7 @@ export function skillCells(
       nhanXet: row?.comment ?? null,
       nhomNguyenNhan: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
       batBuocNhanXet: batBuocNx,
+      coNhom: batBuocNhanXetMt({ kind: attempt.kind, lichSu: false }),
       kyVong,
       /* LUAT-NX-MT: chỉ NHẮC (ô vàng "Nên có nhận xét") ở ô người xem sửa được — không chặn, không thành việc. */
       thieuNhanXet: !canEdit ? null : thieuNxCua(skill),
