@@ -11,7 +11,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp. */
 export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[] };
-export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-em`;
+export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-em?chi=toi`;
 const TOI_DA = 3;   // mockup khu b: một hàng ba ô; còn lại ở Công việc
 
 /**

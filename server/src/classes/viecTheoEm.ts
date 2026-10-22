@@ -20,7 +20,7 @@ const itemsCua = (w: unknown) => ((w as { items?: WorkItem[] }).items ?? []);
  * GET /classes/:id/viec-theo-em → `{ theoEm: { [studentId]: ViecEmLop[] }, cuaToi: ViecEmLop[] }` — chỉ em đang học lớp, chỉ việc gắn lớp này (hoặc không gắn lớp).
  * UI-HO-SO-LOP: `cuaToi` = thanh "Việc cần làm" đầu hồ sơ lớp — việc CỦA NGƯỜI XEM ở lớp này (việc của em + việc cấp lớp như Chấm MTn), cùng thứ tự.
  */
-export function viecTheoEmCuaLop(p: Principal, classId: number): { theoEm: Record<number, ViecEmLop[]>; cuaToi: ViecEmLop[] } {
+export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiCuaToi?: boolean } = {}): { theoEm: Record<number, ViecEmLop[]>; cuaToi: ViecEmLop[] } {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
   const lop = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as { branch_id: number | null } | undefined;
@@ -42,7 +42,8 @@ export function viecTheoEmCuaLop(p: Principal, classId: number): { theoEm: Recor
   } else {
     /* GV: việc của mình, rồi việc của từng GV đang dạy lớp — người xem đã qua `require_` lớp này; dòng người khác vẫn qua `can` từng em như `viecCuaNguoi`. */
     const homNay = demoToday();
-    const gv = (conn.prepare(
+    /* UI-HO-SO-LOP: `chiCuaToi` (thanh Việc cần làm) — không nạp `/my-work` của từng GV khác (N+1 theo số GV dạy lớp). */
+    const gv = o.chiCuaToi ? [] : (conn.prepare(
       `SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?) AND user_id != ?`,
     ).all(classId, homNay, homNay, p.userId) as any[]).map((r) => r.user_id as number);
     const daCo = new Set<string>();

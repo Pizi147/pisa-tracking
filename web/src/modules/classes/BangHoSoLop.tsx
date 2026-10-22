@@ -108,7 +108,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
     const dangMo = pop?.sid === r.id && pop.kn === k;
     return (
       <button type="button" aria-haspopup="dialog" aria-expanded={dangMo} title={t('Điểm thành phần')}
-        className="appearance-none rounded border-0 bg-transparent px-1 py-0.5 hover:bg-[color:var(--nut-hover)]"
+        className="appearance-none rounded border-0 bg-transparent px-1 py-0.5 hover:bg-[color:var(--nut-hover)] max-sm:min-h-[44px]"
         onClick={(e) => { const nut = e.currentTarget; setPop(dangMo ? null : { sid: r.id, kn: k, nut }); }}>{o}</button>
     );
   };
@@ -293,6 +293,8 @@ function PopThanhPhan({ attemptId, kn, nut, tong, onDong }: { attemptId: number;
   nutRef.current = nut;
   useBamNgoai(true, onDong, hop, nutRef);
   const [cho, setCho] = useState<CSSProperties>(() => viTri(nut));
+  /* Hộp vẽ cuối <body> — đưa focus vào để bàn phím tới được "Sửa ›" (không cuộn: cuộn = đóng). */
+  useEffect(() => { hop.current?.focus({ preventScroll: true }); }, []);
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { onDong(); nut.focus(); } };
     const dong = () => onDong();
@@ -306,7 +308,7 @@ function PopThanhPhan({ attemptId, kn, nut, tong, onDong }: { attemptId: number;
   const o = (k: EntrySkill) => data?.cells.find((x) => x.skill === k);
   const [w1, w2] = [o('writing1')?.band ?? null, o('writing2')?.band ?? null];
   return createPortal(
-    <div ref={hop} role="dialog" aria-label={kn === 'w' ? t('Điểm thành phần W') : t('Điểm thành phần S')} style={cho}
+    <div ref={hop} role="dialog" tabIndex={-1} aria-label={kn === 'w' ? t('Điểm thành phần W') : t('Điểm thành phần S')} style={cho}
       className="fixed z-50 flex w-[300px] flex-col gap-2 rounded-[10px] border bg-[color:var(--surface)] px-3.5 py-3 text-[13px] shadow-xl">
       {error ? <span className="text-bad">{error.message}</span> : !data ? <Skeleton rows={3} /> : (
         <>

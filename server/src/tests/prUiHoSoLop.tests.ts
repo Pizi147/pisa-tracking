@@ -30,6 +30,8 @@ export async function runPrUiHoSoLopTests(t: any) {
       assert(cuaToi.every((v: any) => v.mine && !('con' in v)), `${p.fullName}: có việc không phải của tôi`);
       const cuaEm = Object.values(theoEm).flat().filter((v: any) => v.mine).map((v: any) => v.key);
       assert(cuaEm.every((k) => cuaToi.some((v: any) => v.key === k)), `${p.fullName}: việc của tôi ở cột em thiếu trên thanh`);
+      const nhe = viecTheoEmCuaLop(p, LOP, { chiCuaToi: true }).cuaToi.map((v: any) => v.key);   // ?chi=toi (web) — cùng tập, không nạp việc GV khác
+      assert(JSON.stringify(nhe) === JSON.stringify(cuaToi.map((v: any) => v.key)), `${p.fullName}: ?chi=toi khác bản đủ`);
     }
     assert(viecTheoEmCuaLop(P.coreTeacher, LOP).cuaToi.length > 0, 'seed: GVCN MB FT 101 cần có việc ở lớp');
   });
