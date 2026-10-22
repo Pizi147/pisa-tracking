@@ -10,10 +10,10 @@ import { HopKyNang } from './HopKyNang.tsx';
 import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
 import { HopSEx } from './HopSEx.tsx';
-import { NutLuat } from '../../../ui/NutLuat.tsx';
+import { Menu } from '../../../ui/Menu.tsx';
 import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
-import { tuanNamChu } from '@shared/domain/index.ts';
+import { MT_TOI_DA, tuanNamChu } from '@shared/domain/index.ts';
 import {
   dotCuaEm, emXongDot, khoaDot, nhanDot,
   type DongSEx, type DotChon, type DotFT, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
@@ -23,7 +23,8 @@ type Cot = { key: string; dot: DotChon; tieu: string; phu: string | null; deXuat
 type Hop = { anchor: HTMLElement; hang: HangFT | HangThuong; cot: Cot; kyNangDau: KyNangKH | null };
 
 const RONG_TEN = 180;
-/** UI-CHAM-TEST: cột S Ex (lớp FT) — lượt S Expert của em, nút "+ S Ex" (QL / Admin: Kế hoạch Test chỉ người xếp lịch thấy). */
+/** Chủ SP 22/10 (10 mục 6): cột cuối hàng HV (lớp FT) — các lượt S Ex của em theo tuần + nút "+ MT" (MT kế tiếp · S Ex). Kế hoạch Test chỉ
+ *  QL / Admin thấy (`plan.week`), máy chủ kiểm lại khi ghi. */
 const RONG_SEX = 168;
 const HANG_GON = 10;
 
@@ -109,11 +110,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
               </Th>
             ))}
             {loai === 'ft' && (
-              <Th align="center">
-                <span className="inline-flex items-center gap-1">{t('S Ex')}
-                  <NutLuat label={t('S Ex')}>{t('Speaking với chuyên gia — lượt bổ sung riêng từng HV, Quản lý / Admin thêm. Không thay S MT, chưa vào Overall / SOS.')}</NutLuat>
-                </span>
-              </Th>
+              <Th align="center"><span className="sr-only">{t('Lượt thêm')}</span></Th>
             )}
           </tr>
         </thead>
@@ -176,7 +173,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
               {loai === 'ft' && (
                 <td className="td py-1.5 text-center align-middle">
                   <div className="mx-auto flex max-w-[152px] flex-col gap-1">
-                    {((h as HangFT).sEx ?? []).map((x) => (
+                    {[...((h as HangFT).sEx ?? [])].sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id).map((x) => (
                       /* Mockup khu a `.o-kh.ex`: khung viền đứt hồng — "S Ex" · tuần · điểm hoặc "dd/mm · người thêm". */
                       <button key={x.id} type="button" onClick={() => setSEx({ hang: h as HangFT, dong: x })}
                         className="flex w-full flex-col items-start gap-px rounded-md border border-dashed border-[var(--hong)] bg-[var(--surface)] px-2 py-1 text-left max-sm:min-h-[44px]"
@@ -189,7 +186,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                         </span>
                       </button>
                     ))}
-                    <button type="button" className="btn btn-sm min-h-[32px] self-center border-dashed sm:min-h-0" onClick={() => setSEx({ hang: h as HangFT, dong: null })}>{t('+ S Ex')}</button>
+                    <NutThemLuot hang={h as HangFT} onMt={(n, el) => setHop({ anchor: el, hang: h, cot: cotMt(n), kyNangDau: null })}
+                      onSEx={() => setSEx({ hang: h as HangFT, dong: null })} />
                   </div>
                 </td>
               )}
@@ -240,3 +238,22 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   );
 }
 
+
+/** Cột ảo của MT số `n` (MT kế tiếp có thể vượt số cột đang vẽ — hộp xếp đợt mới vẫn mở được). */
+const cotMt = (n: number): Cot => ({ key: `mt${n}`, dot: { loai: 'ft', attemptNo: n }, tieu: `MT${n}`, phu: null, deXuat: null, nhanDeXuat: null });
+
+/**
+ * "+ MT" cuối hàng HV (chủ SP 22/10, 10 mục 6): chọn loại — MT kế tiếp (hộp xếp đợt sẵn có `HopKyNang`, đường "Tạo MT" của Kế hoạch Test) · S Ex
+ * (`HopSEx`, `/s-expert`). MT vượt MT_TOI_DA thì chỉ còn S Ex. Neo hộp xếp đợt vào chính nút.
+ */
+function NutThemLuot({ hang, onMt, onSEx }: { hang: HangFT; onMt: (n: number, el: HTMLElement) => void; onSEx: () => void }) {
+  const neo = useRef<HTMLSpanElement>(null);
+  return (
+    <span ref={neo} className="self-center">
+      <Menu label={t('+ MT')} align="right" className="btn btn-sm min-h-[32px] border-dashed sm:min-h-0" items={[
+        ...(hang.soKeTiep <= MT_TOI_DA ? [{ label: t('MT{n} · MT thường', { n: hang.soKeTiep }), onClick: () => onMt(hang.soKeTiep, neo.current!) }] : []),
+        { label: t('S Ex · Speaking với chuyên gia'), onClick: onSEx },
+      ]} />
+    </span>
+  );
+}

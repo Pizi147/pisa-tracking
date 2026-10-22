@@ -9,7 +9,6 @@ export const EN_UI_CHAM_TEST = {
   'Band': 'Band score',
   'Overall': 'Overall band',
   'Kỳ vọng {kv}': 'Expected {kv}',
-  'Speaking với chuyên gia — lượt bổ sung riêng từng HV, Quản lý / Admin thêm. Không thay S MT, chưa vào Overall / SOS.': 'Speaking with an expert — an extra session per student, added by a manager / admin. Does not replace MT Speaking; not counted in Overall / SOS yet.',
   '{ai} chấm': 'marked by {ai}',
   '{ai} thêm': 'added by {ai}',
   'Đã lưu S Ex · {ten}': 'Expert S saved · {ten}',
@@ -37,4 +36,8 @@ export const EN_UI_CHAM_TEST = {
   'đã xếp': 'scheduled',
   '+ {n} HV': '+ {n} students',
   'Hiện tất cả {n}': 'Show all {n}',
+  '+ MT': '+ Mock',
+  'Lượt thêm': 'Extra rounds',
+  'MT{n} · MT thường': 'MT{n} · regular MT',
+  'S Ex · Speaking với chuyên gia': 'Expert S · Speaking with an expert',
 } as const;
