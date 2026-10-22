@@ -50,9 +50,9 @@ const TRUONG: Record<string, [string, LoaiLichSu, Kieu]> = {
   /* OV-15g: Lịch thi (OV-15f, nhật ký `lich_thi.luu`) — kết luận họp, tháng, ghi chú. */
   ket_luan: ['Kết luận lịch thi', 'target', 'ketLuan'],
   thang: ['Tháng thi', 'target', 'thang'],
-  ghi_chu: ['Ghi chú lịch thi', 'target', 'chu'],
+  ghi_chu: ['Ghi chú lịch Test', 'target', 'chu'],
 };
-const KET_LUAN: Record<string, string> = { 'giu-thang': 'Giữ tháng', 'chot-ngay': 'Chốt ngày', 'chuyen-thang': 'Chuyển tháng', 'can-xac-nhan': 'Cần xác nhận' };
+const KET_LUAN: Record<string, string> = { 'giu-thang': 'Giữ tháng', 'chot-ngay': 'Chốt ngày', 'chuyen-thang': 'Chuyển tháng', 'can-xac-nhan': 'Chưa kết luận' };
 const THU_TU = Object.keys(TRUONG);
 const BIET_DANH: Record<string, string> = { target: 'target_score', targetScore: 'target_score' };
 const cot = (k: string) => BIET_DANH[k] ?? k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);

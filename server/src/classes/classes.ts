@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, viecTiepCuaEm,
+  oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, viecTiepCuaEm, danhGiaDauRa,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
   coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong,
 } from '../../../shared/domain/index.ts';
@@ -726,6 +726,8 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
       choDuyetChuyen: choDuyetChuyen.has(s.id),
       /* PR-OV3a: chỉ % tổng — hướng gợi ý tự tính không còn ở bảng Tổng hợp (Excel, hồ sơ HV, panel Lộ trình tiếp theo vẫn đọc `cuoiKhoaTheoHocVien`). */
       cuoiKhoa: (() => { const e = cuoiKhoaLop?.get(s.id); return e ? { tyLe: e.tyLe } : null; })(),
+      /* SV-LOP (R3a): Đánh giá đầu ra lớp thường — chỉ khi Final đủ điểm, trước đó "cho-final"; lớp FT null (Kết quả đầu ra theo luật hiện có). */
+      dauRa: isRatio ? danhGiaDauRa(cuoiKhoaLop?.get(s.id)) : null,
       loTrinhChot: loTrinhChot?.get(s.id) ?? null,
       /* PR-OV3a (M2 §5): FT chưa có MT0 → dòng "Đầu vào" từ điểm đầu vào của lộ trình — chỉ để nhìn, không vào SOS / Overall / Phân tích. */
       dauVao: isRatio || timeline.some((t) => t.kind === 'mt0' && t.status !== 'cancelled') ? null : dauVaoCua(s),

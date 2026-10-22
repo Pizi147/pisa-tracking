@@ -160,7 +160,7 @@
       <div class="the chi-so"><span class="ten">Đạt Target thi thật <span class="ghi-ky">· trong kỳ</span></span>
         <span class="gia-tri chu-ko chi-ql"><button class="oso" data-p="thithat" style="color:var(--thieu)">– Chưa có dữ liệu</button></span><span class="gia-tri chi-qt"><button class="oso" data-p="thithat">2/3</button></span>
         <span class="mau chi-ql">0 HV có KQ thi thật — không tính trượt</span><span class="mau chi-qt">HV có KQ · mẫu nhỏ, không đọc %</span></div>
-      <div class="the chi-so"><span class="ten">Thi tuần này <span class="ghi-ky">· W3 SEP</span></span>
+      <div class="the chi-so"><span class="ten">Thi tháng này <span class="ghi-ky">· W3 SEP</span></span>
         <span class="gia-tri chi-ql"><button class="oso" data-p="thituan">2</button></span><span class="gia-tri chi-qt"><button class="oso" data-p="thituan">3</button></span>
         <span class="mau">HV có ngày thi đã chốt · tháng dự kiến không tính</span></div>
     </div>
@@ -171,7 +171,7 @@
       <div class="cuon-bang bang-dai">
         <table class="bang" aria-label="Theo chi nhánh" style="min-width:860px">
           <colgroup><col style="width:180px"><col><col><col><col style="width:130px"><col style="width:90px"></colgroup>
-          <thead><tr><th>Chi nhánh</th><th data-kieu="phan-tram">Đạt MT</th><th data-kieu="phan-tram">Case có PA</th><th data-kieu="phan-tram">Đạt Target thi thật</th><th data-kieu="so">Thi tuần này</th><th></th></tr></thead>
+          <thead><tr><th>Chi nhánh</th><th data-kieu="phan-tram">Đạt MT</th><th data-kieu="phan-tram">Case có PA</th><th data-kieu="phan-tram">Đạt Target thi thật</th><th data-kieu="so">Thi tháng này</th><th></th></tr></thead>
           <tbody>
             <tr class="co-phu"><td>Monbay</td><td data-kieu="phan-tram"><button class="oso" data-p="datmt">75 %</button><span class="phu-so">15/20 HV</span></td><td data-kieu="phan-tram"><button class="oso" data-p="case">83 %</button><span class="phu-so">5/6 Case</span></td><td data-kieu="phan-tram"><span class="ko">– Chưa có dữ liệu</span></td><td data-kieu="so" class="so">2</td><td data-kieu="nut"><a href="?pv=ql">Xem ›</a></td></tr>
             <tr class="co-phu"><td>Cẩm Phả</td><td data-kieu="phan-tram"><button class="oso" data-p="datmt-qt">75 %</button><span class="phu-so">6/8 HV</span></td><td data-kieu="phan-tram"><button class="oso" data-p="case">75 %</button><span class="phu-so">3/4 Case · mẫu nhỏ</span></td><td data-kieu="phan-tram"><button class="oso" data-p="thithat">1/1</button><span class="phu-so">mẫu nhỏ</span></td><td data-kieu="so" class="so">1</td><td data-kieu="nut"><a href="#">Xem ›</a></td></tr>
@@ -309,7 +309,7 @@
     case: { t: 'Case có PA · 83 % = 5/6 Case', v: 'Monbay · Fast Track · hiện tại đến 14/09', d: '<b>Cách tính:</b> Case đã có PA hợp lệ / Case cần PA (mở, không huỷ). Mẫu là <b>Case</b>, không phải HV.', s: [[5, 'có PA'], [1, 'chưa có PA']], c: ['Case', 'HV · lớp', 'Người phụ trách', 'PA'],
       r: [['R', '<a class="ten-ho-so" href="#">Lê Quang Huy</a> · FT 101', 'Trần Ngọc Hà', '<span class="bd bd-td cho">Chưa có PA</span>'], ['W1', '<a class="ten-ho-so" href="#">Lê Quang Huy</a> · FT 101', 'Lê Minh Khoa', 'Viết lại Task 1'], ['R', '<a class="ten-ho-so" href="#">Nguyễn Minh An</a> · FT 101', 'Lê Minh Khoa', 'Đọc lướt 2 tuần'], ['L', '<a class="ten-ho-so" href="#">Phạm Bảo Ngọc</a> · FT 101', 'Trần Ngọc Hà', 'Nghe chép chính tả'], ['R', '<a class="ten-ho-so" href="#">Phan Gia Hân</a> · RF 12', 'Lê Minh Khoa', 'Đọc theo dạng'], ['W1', '<a class="ten-ho-so" href="#">Phan Gia Hân</a> · RF 12', 'Lê Minh Khoa', 'Sửa lỗi câu']], n: 6 },
     thithat: { t: 'Đạt Target thi thật · Chưa có dữ liệu', v: 'Monbay · ngày thi trong W1 SEP – W2 SEP', d: '<b>Mẫu = 0:</b> chưa HV nào có kết quả thi thật hợp lệ trong kỳ → không hiện 0 % (T19). HV đã thi chờ KQ hiện riêng, không tính trượt.', s: [[0, 'có KQ'], [0, 'đã thi · chờ KQ']], c: [], r: [], n: 0 },
-    thituan: { t: 'Thi tuần này · 2 HV', v: 'Monbay · W3 SEP · ngày thi đã chốt', d: '<b>Cách tính:</b> HV có ngày thi đã chốt trong W3 SEP. Tháng / tuần dự kiến không tính.', s: [[2, 'HV']], c: ['HV · lớp', 'Ngày thi', 'Target'],
+    thituan: { t: 'Thi tháng này · 2 HV', v: 'Monbay · W3 SEP · ngày thi đã chốt', d: '<b>Cách tính:</b> HV có ngày thi đã chốt trong W3 SEP. Tháng / tuần dự kiến không tính.', s: [[2, 'HV']], c: ['HV · lớp', 'Ngày thi', 'Target'],
       r: [['<a class="ten-ho-so" href="#">Chu Minh Hiếu</a> · FT 102', '<span class="bd bd-lich">T6 18/09</span>', '6.0'], ['<a class="ten-ho-so" href="#">Đỗ Khánh Linh</a> · FT 102', '<span class="bd bd-lich">T7 19/09</span>', '6.0']], n: 2 },
     tienbo: { t: 'Tiến bộ R · 60 % = 12/20 HV', v: 'Monbay · Fast Track · mốc sau trong W1 SEP – W2 SEP', d: '<b>Cách tính:</b> HV có band R ở mốc sau cao hơn mốc MT trước / HV có đủ hai mốc. <b>Ngoài mẫu:</b> HV chỉ có 1 mốc — khoảng trống không phải "không tiến bộ".', s: [[12, 'tăng'], [8, 'không tăng'], [2, 'chỉ 1 mốc']], c: ['HV', 'MT1 → MT2', 'Kết quả'],
       r: [['<a class="ten-ho-so" href="#">Phạm Bảo Ngọc</a>', '6.5 → 7.0', '↑ tăng'], ['<a class="ten-ho-so" href="#">Lê Quang Huy</a>', '5.0 → 5.0', '= không tăng']], n: 20 },

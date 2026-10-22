@@ -27,7 +27,7 @@ type KetQuaKiem = { loi: string | null; canhBao: string | null };
 
 /** Ô sửa được ở tab này: kỹ năng bắt buộc, chưa xong, chưa có điểm, chưa thi. Ô có điểm chỉ đọc (dời ô có điểm dùng hộp một đợt). */
 const suaDuoc = (o: OKyNang | undefined): o is OKyNang =>
-  !!o && o.trangThai !== 'khong-yeu-cau' && o.trangThai !== 'xong' && !o.diem && o.khoa !== 'đã có điểm' && o.khoa !== 'đã thi';
+  !!o && o.trangThai !== 'khong-yeu-cau' && o.trangThai !== 'xong' && !o.diem && o.khoa !== 'đã có điểm' && o.khoa !== 'đã làm bài';
 const doiThat = (o: OKyNang | undefined, t: Tuan | undefined) => !!t && (!o || t.periodId !== o.periodId || o.sit === 'cancelled');
 const coLichTiep = (h: Hang) => Object.values(h.dot).some((o) => o.trangThaiDot === 'planned' && Object.values(o.kn).some((k) => !!k?.tuan));
 /** Cùng luật "Cần xếp lại" của lưới Kế hoạch Test (`LuoiKeHoach`). */

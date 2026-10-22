@@ -132,7 +132,8 @@ export async function runPrDlTests(t: YThucTestKit) {
    * dời −2. Đã so JSON `moi` origin/main ↔ nhánh: chỉ khác `periodId` (100 dòng, đều −2), không trường nào khác. */
   /* LUAT-34: chụp lại — phép kiểm chạy trước trên MB FT 101 đổi theo luật 4 sửa 21/10 (PR-G: "-" ghi muộn → thẻ QL / Hoàn tác, W1 "-" + W2 có điểm
    * dời cả W; prOv1b / prOv11a "-" ghi muộn dời tuần kế) và luật 3 (`moi` = góc GVBM: ô có điểm ở hàng Đủ điểm nay `canEdit` true). */
-  const ANH_CHUP = { tuan: '7d63e6a318ff69df', moi: '5f2a306e9b5d844d' };   // V5 SV-SO1 (chủ SP 22/10): ô có band thiếu nhận xét bắt buộc (seed MB FT 101) chưa xong → tiến độ / quá hạn / việc của ô đổi CÓ CHỦ Ý (bỏ `xong` khỏi băm); trước: tuan 03b552713c5091dc · moi 098ab4054764382e   // V5 C20: bỏ phép kiểm VAI-a (2c) chạy trước (HV thử) → id dịch; trước: tuan ea4c647e05ebdfc3 · moi 302cb2d7a4636a80   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
+  /* CHU-THI: chụp lại — chỉ đổi chữ ô "Không dự thi · Tuần W…" → "Vắng · Tuần W…" (3 ô; đã so JSON origin/main ↔ nhánh, ngoài dấu thời gian). */
+  const ANH_CHUP = { tuan: '5637439ae70e629c', moi: '12573fb4bb3506b5' };   // MAIN-DO: hai commit cuối SEED-UX đổi em MT2 Đạt / Chưa đạt (uxSeed BU_MT2) mà chưa chụp lại `moi` — trước: c225a20ee8f5a125 · SEED-UX: MT2 MB FT 101 thêm điểm 3 em (Vy, Quân, Bảo Anh) — trước: tuan cb0b81467b7ecc83 · moi 635e3b82b5659547     // trước CHU-THI: tuan 03b552713c5091dc · moi 098ab4054764382e · V5 C20: bỏ phép kiểm VAI-a (2c) chạy trước (HV thử) → id dịch; trước: tuan ea4c647e05ebdfc3 · moi 302cb2d7a4636a80   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -507,7 +508,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-5 DiemTheoLop: chữ đúng đặc tả, tablist, hỏi khi còn ô đang lưu, nhớ "Chỉ ô còn trống" bọc try/catch', () => {
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
     for (const chu of ['Còn ô đang lưu. Đợi lưu xong rồi chuyển?', 'Chưa có lịch {nhan} —', 'xếp ở panel Lộ trình', "{ mo: 'lo-trinh' }", 'Chỉ ô còn trống',
-      'là MT cũ: nhập bù điểm; "-" là em không dự thi.',   // PR-MTa: "MT cũ"; T23 thay "không nhận dấu".
+      'là MT cũ: nhập bù điểm; "-" là Đã huỷ · vắng MT cũ.',   // PR-MTa: "MT cũ"; T23 thay "không nhận dấu".
       'Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.', 'role="tablist"', 'colSpan', 'onRetry={'])
       assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
     assert(/try\s*\{[^}]*localStorage\.getItem/.test(f) && /try\s*\{[^}]*localStorage\.setItem/.test(f), 'localStorage phải bọc try/catch');

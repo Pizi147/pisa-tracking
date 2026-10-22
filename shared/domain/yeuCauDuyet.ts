@@ -11,7 +11,7 @@ import { t } from '../i18n/index.ts';
 export const PHAN_LOAI = ['hoc-thuat', 'y-thuc', 'lich-thi', 'thong-tin-hv', 'bao-len'] as const;
 export type PhanLoai = (typeof PHAN_LOAI)[number];
 export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
-  'hoc-thuat': t('Học thuật'), 'y-thuc': t('Ý thức'), 'lich-thi': t('Lịch thi'), 'thong-tin-hv': t('Thông tin HV'), 'bao-len': t('Báo QL'),
+  'hoc-thuat': t('Học thuật'), 'y-thuc': t('Ý thức'), 'lich-thi': t('Dời lịch Test'), 'thong-tin-hv': t('Thông tin HV'), 'bao-len': t('Báo QL'),
 };
 
 /**
@@ -48,7 +48,7 @@ export type LoaiYcMeta = {
 export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   de_xuat_pa: { phanLoai: 'hoc-thuat', nhan: t('Đề xuất PA'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: true },
   xin_y_kien: { phanLoai: 'hoc-thuat', nhan: t('Xin ý kiến'), kieuNut: 'tra-loi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
-  lich_thi: { phanLoai: 'lich-thi', nhan: t('Dời lịch thi lần 2'), kieuNut: 'duyet-tu-choi', hanNgay: null, hangLoat: true },
+  lich_thi: { phanLoai: 'lich-thi', nhan: t('Dời lịch Test lần 2'), kieuNut: 'duyet-tu-choi', hanNgay: null, hangLoat: true },
   sua_thong_tin: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất sửa'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
   bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: t('Case quá hạn xác nhận'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-SOS (S4-5, T23): GVBM xin không theo dõi Case SOS chờ nguyên nhân — Quản lý duyệt trong 5 ngày. */

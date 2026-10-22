@@ -66,6 +66,8 @@ import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
 import * as kyVongSvc from '../normal/kyVong.ts';
 import * as gopYSvc from '../classes/gopYTuan.ts';
 import * as baiLopSvc from '../students/baiTrenLop.ts';
+import * as sExSvc from '../cham/sExpert.ts';
+import { viecTheoEmCuaLop } from '../classes/viecTheoEm.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as lichThiSvc from '../classes/lichThi.ts';
@@ -889,7 +891,7 @@ api.post('/attempts/:id/dua-lai-ca-luot', requireAuth, wrap((req) => {
 api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId);
-  if (!periodId) throw badRequest('Cần chọn tuần thi cho kỹ năng này.');
+  if (!periodId) throw badRequest('Cần chọn tuần Test cho kỹ năng này.');
   /*
    * ĐƯỜNG NÀY LÀ DỜI CHỦ ĐỘNG. Dời vì em vắng đi qua `/attempts/:id/absence-move` — ở đó mới
    * có bộ đếm, người duyệt và hạn trả lời (mục 10.6).
@@ -927,7 +929,7 @@ api.post('/attempts/:id/absence-move', requireAuth, wrap((req) => {
 api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId);
-  if (!periodId) throw badRequest('Khôi phục thì phải đặt luôn tuần mới — không để phần thi treo không lịch.');
+  if (!periodId) throw badRequest('Khôi phục thì phải đặt luôn tuần mới — không để kỹ năng treo không lịch.');
   return absenceSvc.restoreCancelledSkill(principalOf(req), pInt(req, 'id'), String(req.params.skill), periodId, {
     reason: req.body?.reason ?? null,
   });
@@ -1113,6 +1115,12 @@ api.get('/classes', requireAuth, wrap((req) => {
     q: qStr(req, 'q'),
     scope: qScope(req),
   });
+}));
+
+/** SV-LOP (C19): việc theo em của hồ sơ lớp — từng việc của `/my-work`, việc của người xem trước (`viecTheoEm.ts`). */
+api.get('/classes/:id/viec-theo-em', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'));
 }));
 
 /** Danh sách học viên của lớp — chỉ gọi khi người dùng mở rộng lớp đó. */
@@ -2316,6 +2324,24 @@ api.put('/bai-tren-lop/:id', requireAuth, wrap((req) => {
 api.delete('/bai-tren-lop/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return baiLopSvc.xoaBaiTrenLop(principalOf(req), pInt(req, 'id'));
+}));
+
+/** SV-S-EXPERT: lượt S Expert — thêm / dời / xoá chỉ QL / Admin, chấm = GV Speaking cùng chi nhánh; đọc kèm Lịch Test + Kế hoạch Test; lịch sử: /lich-su?loai=s-ex. */
+api.post('/s-expert', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sExSvc.themSEx(principalOf(req), req.body ?? {});
+}));
+api.put('/s-expert/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sExSvc.suaSEx(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.delete('/s-expert/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sExSvc.xoaSEx(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/s-expert/:id/khoi-phuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sExSvc.khoiPhucSEx(principalOf(req), pInt(req, 'id'));
 }));
 
 /** Chủ đề Case mở được cho một học viên (F07) — form đọc route này thay vì tự đoán chương trình. */

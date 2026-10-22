@@ -27,7 +27,7 @@ export type KnXoa = { batBuoc: boolean; tuan: string | null; sit: string | null;
 export function lyDoKhongXoa(kn: Partial<Record<string, KnXoa | undefined>>): string | null {
   const ds = Object.values(kn).filter((o): o is KnXoa => !!o && o.batBuoc);
   if (ds.some((o) => o.khoa === 'đã có điểm')) return t('Đã có điểm — không xóa được');
-  if (ds.some((o) => o.sit === 'sat' || o.khoa === 'đã thi')) return t('Đã thi — không xóa được');
+  if (ds.some((o) => o.sit === 'sat' || o.khoa === 'đã làm bài')) return t('Đã làm bài — không xóa được');
   if (!ds.some((o) => o.tuan && o.sit === 'scheduled')) return t('Chưa xếp lịch');
   return null;
 }
@@ -90,7 +90,7 @@ export function bangThongTinXuat(o: { chiNhanh: string; boLoc: string; luc: stri
 // ------------------------------------------------------------------ Xuất điểm Test (mockup 6 khung 9)
 
 export type NoiDungXuatDiem = 'diem-nhan-xet' | 'chi-diem';
-export const COT_XUAT_DIEM: readonly string[] = ['Tên học sinh', 'Gmail', 'Lớp', 'MT', 'Tuần thi', 'L', 'R', 'W1', 'W2', 'W', 'S', 'OVR', 'Kỳ vọng', 'Kết quả'];
+export const COT_XUAT_DIEM: readonly string[] = ['Tên học sinh', 'Gmail', 'Lớp', 'MT', 'Tuần Test', 'L', 'R', 'W1', 'W2', 'W', 'S', 'OVR', 'Kỳ vọng', 'Kết quả'];
 export const COT_NHAN_XET: readonly string[] = ['Nhận xét L · R', 'Nhận xét W · S'];
 
 export type DongDiem = {

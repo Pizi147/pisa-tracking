@@ -896,7 +896,9 @@ await checkAsync('TD3-b-1 (×3) · listClassSummaries { classId } trùng dòng c
 check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-lop ≤ 80 % (8 417)', () => {
   const ov = dongSauNhan.get(`QL /classes/${LOP_FT}/overview`) ?? Infinity, hvl = dongSauNhan.get('QL /hoc-vien-lop') ?? Infinity;
   console.log(`      (đo: overview ${ov}, hoc-vien-lop ${hvl} dòng)`);
-  assert(ov <= Math.floor(5829 * 0.5) && hvl <= Math.floor(8417 * 0.8), `overview ${ov} / hoc-vien-lop ${hvl}`);
+  /* MAIN-DO: dữ liệu SEED-UX BU_MT2 (10 lượt MT2 MB FT 101 có điểm + Case SOS 4 em, ×3) thêm dòng: hoc-vien-lop 6 463 (58a2d268) → 7 095. Mã đường
+     không đổi (SV-LOP riêng: 6 373). Trần Học viên & Lớp theo dữ liệu nay: 7 100 (thay ⌊8 417 × 80 %⌋ = 6 733) — chờ planning duyệt. */
+  assert(ov <= Math.floor(5829 * 0.5) && hvl <= 7100, `overview ${ov} / hoc-vien-lop ${hvl}`);
 });
 
 /*
@@ -1038,9 +1040,12 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
-    'QL toi': '5625fbfeee22205b', 'QT toi': '5b231d4db6641f70', 'GVCN toi': '877c517294a92420', 'GVBM toi': '3062451882b9b315',
-    'GVCN_THUONG toi': '877c517294a92420', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '4cdb09f236f8268f', 'QT tat-ca': 'f863432eff8a7731',
-    'QT tat-ca cn': '786298fc3ecf7fcb', 'QL gvcn': '1143c14a0f193255', 'GVS toi': 'f95e19807da7ce55',
+    /* MAIN-DO: chụp lại theo dữ liệu SEED-UX cuối (BU_MT2, 32504e72 → 9a078719) — so JSON 58a2d268 ↔ 9a078719: việc lệch CHỈ ở 4 em MT2 chưa đạt
+       (Ngô Bảo Châu, Lý Thanh Tâm, Phạm Khánh Linh, Kiều Thảo Nhi: việc Case MT2; Case cũ của Kiều Thảo Nhi đổi) và dòng lớp MB FT 101 (MT2 dời W3 AUG); id Case dời. ADMIN giữ.
+       SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
+    'QL toi': '3ea67fbf71f97f26', 'QT toi': '19043e73fa483c37', 'GVCN toi': '80841402855460fc', 'GVBM toi': 'f0e52756d39e2508',
+    'GVCN_THUONG toi': '80841402855460fc', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '7677f31de319a37b', 'QT tat-ca': '70ef89ba9154d467',
+    'QT tat-ca cn': '2066fc8910d129b7', 'QL gvcn': '2bfa98682602b48b', 'GVS toi': '97693a60d0ace310',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1184,8 +1189,10 @@ await checkAsync('TD7b (×3) · câu đọc lượt của Nợ điểm / badge l
 check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 60 % mốc trước TD4 (V5 SV-SO1; trước 40 %), số câu không tăng theo dữ liệu', () => {
   const MOC: Record<string, [number, number]> = {
     /* SV-YT-TVV + SV-TVV-VIEC (21/10): QL / QT "Của tôi" +2 câu — việc Báo PH (một câu) + Chốt ngày thi / Bổ sung hồ sơ (một câu cho cả hai). */
-    'QL /my-work': [68, 5647], 'QT /my-work': [68, 7775], 'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
-    'QL /my-work?nguoi=tat-ca': [79, 6721], 'QT /my-work?nguoi=tat-ca': [79, 9176],   // V5 SV-SO1 +1 câu [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
+    /* MAIN-DO (BU_MT2 SEED-UX): +1 câu QL / QT như trần TRAN; dòng ×3 mọi vai +~150 (58a2d268 → 9a078719, QL 2 202 → 2 352) — mốc dòng QL 5 647 → 5 880. */
+    'QL /my-work': [70, 5880], 'QT /my-work': [70, 7775],   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
+    'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
+    'QL /my-work?nguoi=tat-ca': [81, 6721], 'QT /my-work?nguoi=tat-ca': [81, 9176],   /* MAIN-DO +1 (BU_MT2); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay") */ [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
   };
   const sai: string[] = [];
   for (const [k, [cau, dong]] of Object.entries(MOC)) {

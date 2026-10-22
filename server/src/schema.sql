@@ -2114,6 +2114,29 @@ CREATE TABLE bai_tren_lop (
 );
 CREATE INDEX idx_bai_tren_lop_hv ON bai_tren_lop(student_id, tuan);
 
+-- SV-S-EXPERT (V5 `10` mục 2): LƯỢT SPEAKING VỚI CHUYÊN GIA (S Ex) — bổ sung riêng từng HV, chỉ QL / Admin thêm; KHÔNG phải lượt MT (không thay S MT,
+-- không vào S chấm chéo), điểm KHÔNG vào Overall / SOS / Case / KPI / Phân tích tới khi chủ SP chốt (XM-1). `tuan` = thứ Hai; `ngay` tuỳ chọn.
+-- `cham_boi` = GV chấm (người lưu điểm / nhận xét gần nhất). Lịch sử ở `audit_logs` (s_expert.*, entity HV).
+CREATE TABLE s_expert (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  tuan TEXT NOT NULL,
+  ngay TEXT,
+  diem REAL,
+  nhan_xet TEXT,
+  cham_boi INTEGER REFERENCES users(id),
+  cham_luc TEXT,
+  them_boi INTEGER REFERENCES users(id),
+  them_luc TEXT NOT NULL,
+  sua_boi INTEGER REFERENCES users(id),
+  sua_luc TEXT,
+  -- SV-LOP: xoá MỀM — dòng có `xoa_luc` không hiện ở đâu; QL / Admin khôi phục được (POST /s-expert/:id/khoi-phuc).
+  xoa_luc TEXT,
+  xoa_boi INTEGER REFERENCES users(id)
+);
+CREATE INDEX idx_s_expert_tuan ON s_expert(tuan, student_id);
+CREATE INDEX idx_s_expert_hv ON s_expert(student_id);
+
 -- OV-15c (C21): GHI CHÚ LỊCH THI ở Kế hoạch Test — CHỈ ghi chú, không dời lịch. Mỗi lần lưu THÊM một dòng (lịch sử: tác giả, lúc);
 -- dòng mới nhất của một khoá là ghi chú hiện tại, `noi_dung = ''` = đã xoá. Khoá: FT (student_id, cycle_id, dot 'mt4') — MT đánh số theo lộ trình;
 -- lớp thường (student_id, class_id, dot 'progress' | 'final' | 'cp2'); ghi chú lớp (class_id, student_id NULL, dot NULL). Migrate `prOv15c` chép y câu này.

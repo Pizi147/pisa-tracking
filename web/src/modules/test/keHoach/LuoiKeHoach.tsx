@@ -149,7 +149,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                     )}
                     {/* C21: ghi chú lịch thi một dòng dưới chip — bấm sửa tại chỗ (Enter lưu · Esc huỷ). Chỉ ghi chú, không dời lịch. */}
                     <GhiChuTaiCho khoa={{ classId: data.classId, studentId: h.studentId, dot: khoaDot(c.dot) }} ghiChu={h.ghiChu?.[khoaDot(c.dot)] ?? null}
-                      onDoi={onReload} nhan={t('Ghi chú lịch thi {dot}', { dot: nhanDot(c.dot) })} className="mx-auto mt-0.5 max-w-[168px]" />
+                      onDoi={onReload} nhan={t('Ghi chú lịch Test {dot}', { dot: nhanDot(c.dot) })} className="mx-auto mt-0.5 max-w-[168px]" />
                   </td>
                 );
               })}

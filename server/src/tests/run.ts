@@ -140,6 +140,8 @@ async function assertRejects(fn: () => Promise<unknown>, match: RegExp, msg: str
 }
 
 const conn = db();
+/* SEED-UX: phép kiểm chỉ đọc bộ demo — chạy NGAY sau seed, trước mọi mục ghi thêm. */
+await (await import('./prSeedUx.tests.ts')).runPrSeedUxTests({ check, assert, conn } as any);
 /**
  * PR-S3F #8: `setIssues` chặn Case SOS chưa xác nhận nguyên nhân (đường chính là `xacNhanCase`). Phép kiểm cũ chỉ cần "Case đã có nguyên nhân"
  * để dựng tình huống của nó → ghi thẳng như dữ liệu cũ, đúng như `setIssues` từng làm (ghi nguyên nhân + đồng bộ trạng thái Case).
@@ -1158,7 +1160,7 @@ check('Bỏ một kỹ năng khỏi phạm vi: đã có điểm thì 409 hỏi X
     .get(classId('CP FT 110')) as any;
   const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assertThrows(() => attempts.setSkillSkip(P.cpManager, xong.id, 'speaking', true, 'Quản lý chốt lại: đợt này không yêu cầu Speaking'),
-    /đã có điểm — Xoá điểm và huỷ kỹ năng\?/, 'PR-MTGON: huỷ kỹ năng đã có điểm phải hỏi xoá điểm trước');
+    /đã có điểm — Xoá điểm và bỏ khỏi đợt\?/, 'PR-MTGON: huỷ kỹ năng đã có điểm phải hỏi xoá điểm trước');
   const afterScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assert(afterScores === beforeScores, 'Đánh dấu không mock đã xoá điểm đã có');
   /* PR-XLMT: phần "tính lại mẫu số" giữ nguyên, chuyển sang một đợt CHƯA TỚI tuần thi, Speaking chưa có điểm. */
@@ -7593,9 +7595,9 @@ check('PR-E · <TyLe>: n/N đứng trước, phần trăm trong ngoặc đứng 
   assert(t.indexOf('12/18') < t.indexOf('%'), 'Phần trăm không được đứng trước n/N');
 });
 
-check('PR-E · <TyLe>: mẫu dưới 5 gắn nhãn "mẫu nhỏ"; từ 5 trở lên thì không', () => {
-  assert(domain.rateText(1, 1) === '1/1 (100%) · mẫu nhỏ', `Đang ghi "${domain.rateText(1, 1)}"`);
-  assert(domain.rateText(3, 4) === '3/4 (75%) · mẫu nhỏ', `Đang ghi "${domain.rateText(3, 4)}"`);
+check('PR-E · <TyLe>: mẫu dưới 5 vẫn có cờ smallSample nhưng không ghi chữ "mẫu nhỏ" (chủ SP 22/10)', () => {
+  assert(domain.rateText(1, 1) === '1/1 (100%)', `Đang ghi "${domain.rateText(1, 1)}"`);
+  assert(domain.rateText(3, 4) === '3/4 (75%)', `Đang ghi "${domain.rateText(3, 4)}"`);
   assert(domain.rateText(4, 5) === '4/5 (80%)', `N=5 chưa phải mẫu nhỏ, đang ghi "${domain.rateText(4, 5)}"`);
   assert(domain.rateView(1, 1).kind === 'value' && (domain.rateView(1, 1) as any).smallSample === true,
     'rateView phải báo smallSample để giao diện gắn nhãn');
@@ -7904,7 +7906,7 @@ check('PR-F · Tỷ lệ có cải thiện là 2/3, KHÔNG phải 2/4: chưa xá
   assert(after.n === before.n + 2, `Tử số phải +2 (tiến bộ + một phần), đang ${before.n} → ${after.n}`);
   assert(after.numeratorIds.length === after.n && after.denominatorIds.length === after.N,
     'Số phải bằng độ dài của tập ID sinh ra nó');
-  assert(domain.rateText(after.n - before.n, after.N - before.N) === '2/3 (67%) · mẫu nhỏ',
+  assert(domain.rateText(after.n - before.n, after.N - before.N) === '2/3 (67%)',
     `Câu hiển thị phải là 2/3, đang "${domain.rateText(after.n - before.n, after.N - before.N)}"`);
 });
 
@@ -8049,7 +8051,7 @@ check('PR-G · Câu trạng thái đúng chữ của bộ chữ: gợi ý, khôn
     `Sau khi lưu: "${domain.noShowText(early, 'W3 SEP 2026', '2026-09-14')}"`);
   const settled = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: PRG_MON,
     enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh' });
-  assert(domain.noShowText(settled, 'W3 SEP 2026', PRG_MON) === 'Không dự thi · Tuần W3 SEP 2026',
+  assert(domain.noShowText(settled, 'W3 SEP 2026', PRG_MON) === 'Vắng · Tuần W3 SEP 2026',
     `Sau chốt: "${domain.noShowText(settled, 'W3 SEP 2026', PRG_MON)}"`);
   const late = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: '2026-09-28',
     enteredAfterWeekEnd: true, lateRule: 'cho-ql-hieu-chinh' });
@@ -8098,7 +8100,7 @@ check('PR-G · (OV-1b) GV nhập "-" trong tuần thi: chốt vắng NGAY — d�
   assert(c.rawScore === null && c.band === null, `"-" không phải điểm 0: raw=${c.rawScore} band=${c.band}`);
   assert(c.daChot?.doiSang, `Ô phải ghi đã dời: ${JSON.stringify(c.daChot)}`);
   assert(!prgCell(id, 'reading').noShow, 'Dấu "-" của Listening lây sang Reading');
-  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any), /Chưa tới tuần thi/,
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any), /Chưa tới tuần Test/,
     'Bấm lại "-" khi tuần mới chưa tới');
   assert(prgSettled(id, 'listening') === 1, 'Bấm lại làm bộ đếm vắng tăng');
   const doi = conn.prepare(
@@ -9501,6 +9503,9 @@ await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runPrSl2Tests } = await import('./prSl2.tests.ts');
 await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== CHU-THI (Rulebook §21.4: Thi = thi thật, Test = "làm bài" — chặn chữ cũ trong tệp Test)
+const { runPrChuThiTests } = await import('./prChuThi.tests.ts');
+await runPrChuThiTests({ checkAsync, assert } as any);
 // ==================================================================== SV-YT-TVV (việc Báo PH của TVV sau lưu xử lý vi phạm — K1–K12, thu hồi / từ chối / rút, quyền)
 const { runPrSvYtTvvTests } = await import('./prSvYtTvv.tests.ts');
 await runPrSvYtTvvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9519,6 +9524,12 @@ await runPrSvSo1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== SV-TVV-VIEC (4 việc TVV: một người giữ = TVV của em / QL; Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật)
 const { runPrSvTvvViecTests } = await import('./prSvTvvViec.tests.ts');
 await runPrSvTvvViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== SV-S-EXPERT (lượt S Expert: chỉ QL / Admin thêm, GV S chấm, không vào tính toán, lịch sử)
+const { runPrSvSExpertTests } = await import('./prSvSExpert.tests.ts');
+await runPrSvSExpertTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== SV-LOP (Đánh giá đầu ra chờ Final, việc theo em từ /my-work, W1 / W2; nợ rà S Ex ở SSEX-8…12)
+const { runPrSvLopTests } = await import('./prSvLop.tests.ts');
+await runPrSvLopTests({ check, assert, conn, P, classId } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

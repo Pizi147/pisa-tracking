@@ -439,7 +439,7 @@ export function createMgmtTask(p: Principal, input: {
           WHERE ur.id = ?`,
       )
       .get(input.unitReportId) as any;
-    if (!ur) throw notFound('Không tìm thấy báo cáo đơn vị.');
+    if (!ur) throw notFound('Không tìm thấy họp đơn vị.');
     /* Đơn vị Tutor không có chi nhánh — việc nối vào phải là việc "Toàn hệ thống" (branch_id NULL). */
     const wantBranch = ur.unit_kind === 'department' ? null : ur.unit_branch_id;
     if (taskBranchId !== wantBranch) throw badRequest('Việc phải cùng chi nhánh với đơn vị báo cáo.');

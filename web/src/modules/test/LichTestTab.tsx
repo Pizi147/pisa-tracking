@@ -257,7 +257,7 @@ export function LichTestTab() {
       : homNay === hanT4 ? <Nhan tone="soon">{t('hạn hôm nay')}</Nhan>
         : <Nhan tone="late">{t('Quá hạn')} · {ngay(hanT4, homNay)}</Nhan>
   );
-  const phuK2 = <> · {t('bài thi {tuan}', { tuan: tuanLich(addDaysIso(tuanXem, -7), homNay) })} {chipHan}</>;
+  const phuK2 = <> · {t('bài Test {tuan}', { tuan: tuanLich(addDaysIso(tuanXem, -7), homNay) })} {chipHan}</>;
 
   /* Các phần của hàng lọc — máy tính xếp một hàng, điện thoại gom vào khối "Lọc". */
   const tuanPicker = (

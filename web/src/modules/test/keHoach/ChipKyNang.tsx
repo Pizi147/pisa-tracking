@@ -38,10 +38,10 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
   if (g.xong) {
     return (
       <div className={bao}>
-        <button type="button" className={`${CHIP_CLS} bg-done-bg text-done border-done-line`} title="Đã thi — xem" onClick={(e) => onMo(null, e.currentTarget)}>
+        <button type="button" className={`${CHIP_CLS} bg-done-bg text-done border-done-line`} title="Đã làm bài — xem" onClick={(e) => onMo(null, e.currentTarget)}>
           <span className="font-bold">Xong</span>
           <span className="whitespace-nowrap tabular-nums">
-            {g.tuanXong ? tuanNam(g.tuanXong) : ''}<span aria-hidden title="Đã thi"> ✓</span>
+            {g.tuanXong ? tuanNam(g.tuanXong) : ''}<span aria-hidden title="Đã làm bài"> ✓</span>
             <NhanKhoa tuan={g.tuanXong} khaiGiang={khaiGiang} tongTuan={tongTuan} />
           </span>
         </button>
@@ -50,7 +50,7 @@ export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeX
   }
 
   if (!g.chip.length) {
-    return <div className={bao}><span className="text-center text-[12px] text-slate-500" title="Đợt này không thi kỹ năng nào">—</span></div>;
+    return <div className={bao}><span className="text-center text-[12px] text-slate-500" title="Đợt này không có kỹ năng nào">—</span></div>;
   }
 
   const hienThi = g.chip.slice(0, 2);
@@ -83,14 +83,14 @@ const MAU_TT: Record<string, { mau: string; duoi: string | null; nghia: string |
   'da-doi': { mau: 'bg-soon-bg text-soon border-soon-line', duoi: 'dời', nghia: null },
   vang: { mau: 'bg-late-bg text-late border-late-line', duoi: 'vắng', nghia: 'vắng · Quản lý xếp lại' },
   'cho-duyet': { mau: 'bg-muted-bg text-muted border-muted-line', duoi: 'chờ duyệt', nghia: 'chờ Quản lý duyệt đề nghị dời' },
-  tre: { mau: 'bg-transparent text-bad border-bad-line', duoi: 'trễ', nghia: 'trễ — tuần thi đã hết, chưa có điểm' },
-  'da-huy': { mau: 'bg-done-bg text-done border-done-line line-through', duoi: 'đã huỷ', nghia: 'đã huỷ phần thi' },
+  tre: { mau: 'bg-transparent text-bad border-bad-line', duoi: 'trễ', nghia: 'trễ — tuần Test đã hết, chưa có điểm' },
+  'da-huy': { mau: 'bg-done-bg text-done border-done-line line-through', duoi: 'đã huỷ', nghia: 'đã huỷ' },
   xong: { mau: 'bg-done-bg text-done border-done-line', duoi: null, nghia: null },
 };
 
 /** Chữ chú giải từng trạng thái chip lớp thường (cùng khoá `MAU_TT`). */
 const NHAN_TT: Record<keyof typeof MAU_TT, string> = {
-  'da-doi': 'Đã dời', vang: 'Vắng', 'cho-duyet': 'Chờ duyệt dời', tre: 'Trễ (chưa có điểm)', 'da-huy': 'Đã huỷ', xong: 'Đã thi ✓',
+  'da-doi': 'Đã dời', vang: 'Vắng', 'cho-duyet': 'Chờ duyệt dời', tre: 'Trễ (chưa có điểm)', 'da-huy': 'Đã huỷ', xong: 'Đã làm bài ✓',
 };
 
 /**
@@ -116,7 +116,7 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
 }) {
   const chua = c.trangThai === 'chua-xep' || c.tuan === null;
   /* OV-11a: Không dự thi — chữ riêng, không ✓ (không phải "đã thi"). */
-  const tt = c.khongDuThi ? { mau: 'border-muted-line bg-muted-bg text-muted', duoi: 'không dự thi', nghia: 'Không dự thi — không dời, không nợ' } : MAU_TT[c.trangThai];
+  const tt = c.khongDuThi ? { mau: 'border-muted-line bg-muted-bg text-muted', duoi: 'vắng', nghia: 'Vắng — không dời, không nợ' } : MAU_TT[c.trangThai];
   const mau = chua ? 'border-dashed border-muted-line bg-transparent text-muted' : tt?.mau ?? 'bg-doing-bg text-doing border-doing-line';
   const chu = c.kyNang.map((k) => tenMonNgan(ct, k)).join(' ');
   return (
@@ -126,7 +126,7 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
       </span>
       <span className="whitespace-nowrap tabular-nums">
         {chua ? 'chưa xếp' : tuanNam(c.tuan!)}
-        {c.trangThai === 'xong' && !c.khongDuThi && <span aria-hidden title="Đã thi"> ✓</span>}
+        {c.trangThai === 'xong' && !c.khongDuThi && <span aria-hidden title="Đã làm bài"> ✓</span>}
         {!chua && <NhanKhoa tuan={c.tuan} khaiGiang={khaiGiang} tongTuan={tongTuan} />}
         {them && <span className="ml-1 text-[12px]" title={them.ds}>+{them.n}</span>}
       </span>
@@ -145,7 +145,7 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
   const nhom = nhomKyNang(kn, homNay, ct, cu);
   /* C20 (OV-15c): Kế hoạch Test luôn kèm năm — tuần của nhóm (nhóm "xong" = tuần muộn nhất) đọc lại từ `kn`, cùng luật gom của `nhomKyNang`. */
   const tuanCua = (ks: readonly KyNangKH[]) => ks.map((k) => kn[k]?.tuan).filter((x): x is string => !!x).sort().pop() ?? null;
-  if (!nhom.length) return <span className="block text-center text-[12px] text-slate-500" title="Đợt này không thi kỹ năng nào">—</span>;
+  if (!nhom.length) return <span className="block text-center text-[12px] text-slate-500" title="Đợt này không có kỹ năng nào">—</span>;
   return (
     <div className="mx-auto flex w-full max-w-[168px] flex-col gap-[3px]">
       {nhom.map((g) => (

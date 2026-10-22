@@ -67,7 +67,7 @@ function KyNang({ l }: { l: LopLichTest }) {
         const ten = tenMon(l.chuongTrinh, k);
         return (
           <span key={k} className={co ? 'text-slate-200' : 'text-slate-500'}
-            title={co ? ten : t('{ten} — không thi tuần này', { ten })}>
+            title={co ? ten : t('{ten} — không làm bài tuần này', { ten })}>
             {tenMonNgan(l.chuongTrinh, k)}
           </span>
         );
@@ -140,7 +140,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, homNay, tuanChinh, 
           <tr>
             <th className="th">{t('Lớp')}</th>
             <th className="th">{t('Đợt')}</th>
-            <th className="th" title={t('Môn thi tuần này — môn mờ là không thi tuần này')}>{t('Kỹ năng')}</th>
+            <th className="th" title={t('Môn làm bài tuần này — môn mờ là không làm bài tuần này')}>{t('Kỹ năng')}</th>
             {coChiNhanh && <th className="th">{t('Chi nhánh')}</th>}
             <th className="th" title={t('Số bài đã chấm / số bài')}>{t('Tiến độ')}</th>
             <th className="th">{t('Hạn chấm')}</th>

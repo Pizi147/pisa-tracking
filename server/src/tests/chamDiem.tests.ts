@@ -287,7 +287,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
       `SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ?`,
     ).get(attemptId) as any).n;
     assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-22'),
-      /Chưa tới tuần thi W\d [A-Z]{3} — chưa ghi "-" được/, 'Tuần thi 28/09 chưa tới (hôm nay 22/09) thì không ghi "-"');
+      /Chưa tới tuần Test W\d [A-Z]{3} — chưa ghi "-" được/, 'Tuần thi 28/09 chưa tới (hôm nay 22/09) thì không ghi "-"');
     const sc = dauCua(attemptId, k);
     assert(!sc || !sc.no_show_period_id, 'Không có dòng dấu "-" nào được ghi');
     assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-28', 'Lịch giữ nguyên');

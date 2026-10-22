@@ -67,7 +67,9 @@ export async function runPrOv11cTests(t: YThucTestKit) {
   check('OV11c-3 · "Của GV" = "Của một GV" (cùng tập việc của GV, gồm Bàn giao); "Của tôi" của QL không có việc người khác giữ', () => thu(() => {
     const w = tatCa(P.mbManager);
     const items = w.items as any[];
-    const gvs = [...new Set(items.map((it) => it.ownerId).filter((x: any) => x !== null && x !== P.mbManager.userId))] as number[];
+    /* SEED-UX: MB có TVV giữ việc (Báo PH, Chốt ngày thi…) — "Của một GV" chỉ cho người có vai Giáo viên. */
+    const laGv = (id: number) => !!conn.prepare(`SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND r.key = 'teacher'`).get(id);
+    const gvs = [...new Set(items.map((it) => it.ownerId).filter((x: any) => x !== null && x !== P.mbManager.userId && laGv(x)))] as number[];
     assert(gvs.length > 2, 'demo phải có nhiều GV');
     let coBanGiao = false;
     for (const gv of gvs) {

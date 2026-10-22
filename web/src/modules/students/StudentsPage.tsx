@@ -443,7 +443,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
           <NhomLocThem ten={t('Kỹ năng cần xử lý')} ds={LOC_KY_NANG} nhan={(k) => KN_NGAN[k]} dang={locThem.kn} onBat={(k) => batLoc('lk', locThem.kn, k)} />
           <NhomLocThem ten={t('Kết quả gần nhất')} ds={LOC_KET_QUA} nhan={(k) => t(NHAN_LOC_KET_QUA[k])} dang={locThem.kq} onBat={(k) => batLoc('lq', locThem.kq, k)} />
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-full text-xs text-slate-400 sm:w-40">{t('Tuần thi của kết quả')}</span>
+            <span className="w-full text-xs text-slate-400 sm:w-40">{t('Thời gian')}</span>
             {locThem.tu && locThem.den ? (
               <>
                 <BoChonThoiGian khoang={{ kieu: kieuKhoang, tu: locThem.tu, den: locThem.den }} onChange={(k) => setParam({ ltu: k.tu, lden: k.den, lkieu: k.kieu, open: null })} />

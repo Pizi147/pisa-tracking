@@ -230,7 +230,7 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, t('thi {ngay}', { ngay: `${tap.get(row.id)!.slice(8, 10)}/${tap.get(row.id)!.slice(5, 7)}` })].filter(Boolean).join(' · ') }));
     return { n: ids.length, tieuDe: t('{n} HV — thi tháng này', { n: ids.length }), rows };
   }
-  if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã thi');
+  if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã làm bài');
   if (f.o === 'bai-da-cham') return ra('bai', r.daCham, 'đã chấm');
   if (f.o === 'bai-qua-han') return ra('bai', r.quaHan, 'quá hạn chấm');
   const gv = /^gv:(-?\d+)$/.exec(f.o);

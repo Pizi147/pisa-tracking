@@ -2,6 +2,7 @@ import { capNhatConOChoTatCa } from '../fasttrack/conOCho.ts';
 import { buildOv2aDemo } from './ov2aSeed.ts';
 import { buildHeadTutor, buildTutorDs } from './tuSeed.ts';
 import { buildPetDemo } from './petSeed.ts';
+import { buildUxDemo } from './uxSeed.ts';
 import crypto from 'node:crypto';
 import { db, recreateSchema, tx } from '../db.ts';
 import {
@@ -302,6 +303,9 @@ export function runSeed() {
     const pet = buildPetDemo(conn, { adminId, mbId: branchId.get('MB')!, userId });
     /* TU-a: tài khoản Head tutor + một kết luận "Ngừng hợp tác" — sau PET để id người dùng / học viên cũ không đổi. */
     buildHeadTutor(conn);
+    /* SEED-UX: TVV / Admin VP / GV S không lớp, gán TVV + SĐT PH, thi thật, buổi tutor, lớp HD FT 306 + HD FOU 06 — sau Head tutor để id cũ không đổi. */
+    const ux = buildUxDemo(conn, adminId);
+    buNgayPb2b(conn);   // ô điểm / vi phạm bộ UX: bù ngày nhập đầu + hạn xử lý (chỉ điền ô NULL)
     /* OV-11e (Q8): lượt MT đã chốt dựng bằng SQL thẳng chưa có dấu KCK theo lượt — chụp theo cờ hiện tại (cùng hàm với migrate). Sau mọi bộ demo. */
     migratePrOv11e(conn, []);
     /* OV-12a: PA dựng bằng SQL thẳng với hạn kiểu cũ (Thứ Hai hằng tuần) → lịch kỳ hai tuần, hết Thứ Ba (cùng hàm với migrate; seed → migrate không đổi gì). */
@@ -322,6 +326,7 @@ export function runSeed() {
       'Giáo viên': TEACHERS.length,
       'Học viên của TVV demo (PR-OV2a)': ov2a.soHv,
       'Học viên lớp PET demo (OV-6b2)': pet.soHv,
+      'Bộ UX (SEED-UX) — HV có TVV · buổi tutor 4 tuần': `${ux.soHvTvv} · ${ux.buoiTutor}`,
       'Học viên': counts.students,
       'Lộ trình': counts.cycles,
       'Lượt đánh giá': counts.attempts,

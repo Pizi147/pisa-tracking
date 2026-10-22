@@ -79,7 +79,7 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
                 <Th align="right" hint={t('Phương án đang làm hoặc chờ kết quả (không tính phương án theo quy chế chưa được xác nhận).')}>{t('Đang thực hiện')}</Th>
                 <Th align="right" hint={t('Phương án đã kết thúc có kết quả xác định — cũng là mẫu số của tỷ lệ.')}>{t('Đã thực hiện')}</Th>
                 <Th align="right" hint={t('Đã kết thúc với kết quả có tiến bộ hoặc tiến bộ một phần.')}>{t('Thành công')}</Th>
-                <Th align="right" hint={t("Thành công trên đã thực hiện. Dưới 5 mẫu chỉ ghi 'mẫu nhỏ'; chưa có mẫu thì 'Chưa có dữ liệu'.")}>{t('Tỷ lệ')}</Th>
+                <Th align="right" hint={t('Thành công trên đã thực hiện.')}>{t('Tỷ lệ')}</Th>
               </tr>
             </thead>
             <tbody>

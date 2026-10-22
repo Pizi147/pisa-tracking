@@ -172,7 +172,7 @@ export function tuanDichMacDinh(attemptId: number, skill: string, today: string)
 /** Chữ thẻ "Dời lịch MT lần 2" (tiêu đề thẻ Lịch thi ở hộp Chờ duyệt): `Dời S · MT3 · lần 2 · Duyệt = S thi W2 OCT`. Hàm thuần. */
 export function chuTheDoiLan2(o: { skill: string; attemptNo: number | null; moveNo: number; tuanDich: string | null; homNay: string; ct?: string | null }): string {
   const k = tenMonNgan(o.ct ?? null, o.skill);   // MH2: tên môn theo chương trình lớp (FOU G+V/P)
-  return `Dời ${k} · MT${o.attemptNo ?? '?'} · lần ${o.moveNo} · Duyệt = ${k} thi ${o.tuanDich ? tuanLich(o.tuanDich, o.homNay) : '—'}`;
+  return `Dời ${k} · MT${o.attemptNo ?? '?'} · lần ${o.moveNo} · Duyệt = ${k} làm bài ${o.tuanDich ? tuanLich(o.tuanDich, o.homNay) : '—'}`;
 }
 
 export type MoveOutcome = {
@@ -201,7 +201,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
 } = {}): { outcomes: MoveOutcome[] } {
   const attempt = loadAttempt(attemptId);
   if (!canRequest(p, attempt)) {
-    throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới xử lý được việc vắng thi.');
+    throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý mới xử lý được việc vắng.');
   }
   chanVangLopKetThuc(attempt.class_id);
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
@@ -229,11 +229,11 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
       if (row.sit_status !== 'absent') {
         throw badRequest(
           `${skillName(skill)} chưa được xác nhận là vắng. Xác nhận vắng trước rồi mới dời lịch — `
-          + 'ô điểm trống chưa đủ để kết luận em không đi thi.',
+          + 'ô điểm trống chưa đủ để kết luận em không làm bài.',
         );
       }
       if (!row.planned_period_id || !row.week_start) {
-        throw badRequest(`${skillName(skill)} chưa có tuần thi để dời.`);
+        throw badRequest(`${skillName(skill)} chưa có tuần Test để dời.`);
       }
       if (pendingMove(attemptId, skill)) {
         throw badRequest(`${skillName(skill)} đã có một đề nghị dời đang chờ Quản lý trả lời.`);
@@ -298,7 +298,7 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
   const id = insertRequest(conn, {
     attemptId, skill, moveNo, from: row.planned_period_id, to: dich.id,
     /* Máy gửi (lần 2 / chuyển Quản lý) thì lý do là dấu "-", không phải "máy tự dời" — thẻ Lịch thi đọc câu này. */
-    reason: actor === null ? 'Vắng — dấu "-" trong tuần thi' : o.lyDo, by: actor, on: today, decideBy: hanDeNghi, idem: o.idem,
+    reason: actor === null ? 'Vắng — dấu "-" trong tuần Test' : o.lyDo, by: actor, on: today, decideBy: hanDeNghi, idem: o.idem,
   });
   const han = `hết Chủ nhật ${ngay(hanDeNghi, today)}`;
   /* PR-DUYET: `insertRequest` đã tạo thẻ Lịch thi (hạn = `hanDuyetDoiLan2`, người xin null khi máy gửi) — không báo riêng người xếp lịch. */
@@ -382,7 +382,7 @@ export function khongMockLai(p: Principal, attemptId: number, skill: string, lyD
   if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới chốt được "Không mock lại".');
   if (attempt.kind !== 'mock') throw badRequest('Chỉ áp cho Mock Test.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  if (!row?.required || (row.sit_status !== 'cancelled' && !oHuyCu(attempt, skill))) throw badRequest(`${skillName(skill)} chưa huỷ — dùng "Bỏ kỹ năng khỏi đợt".`);
+  if (!row?.required || (row.sit_status !== 'cancelled' && !oHuyCu(attempt, skill))) throw badRequest(`${skillName(skill)} chưa huỷ — dùng "Bỏ khỏi đợt".`);
   return tx(() => {
     khongMockLaiNoi(p, attemptId, skill, lyDo);
     return { ok: true as const };
@@ -564,7 +564,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
     if (!target) throw notFound('Không tìm thấy tuần.');
     if (target.week_start <= today) {
       throw badRequest(
-        `Tuần ${target.code} đã bắt đầu. Chọn một tuần chưa tới để lịch mới là một buổi thi có thật.`,
+        `Tuần ${target.code} đã bắt đầu. Chọn một tuần chưa tới để lịch mới là một buổi Test có thật.`,
       );
     }
     const check = checkSkillWeekMove({
@@ -616,7 +616,7 @@ export function sweepExpiredMoves(): number {
       /* T3 (PR-MTa): thẻ "Xin dời" hết hạn → kỹ năng giữ "huỷ (vắng 2 lần)", không huỷ lần hai, không báo Quản lý. */
       if (!row.huy_vang) cancelPart(conn, null, attempt, row, req.id, 'Hết hạn duyệt mà chưa có quyết định.');
       chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: req.id }, 'tu_dong',
-        { lyDo: row.huy_vang ? 'Hết hạn duyệt — giữ huỷ (vắng 2 lần)' : 'Hết hạn duyệt — phần thi bị huỷ' });
+        { lyDo: row.huy_vang ? 'Hết hạn duyệt — giữ huỷ (vắng 2 lần)' : 'Hết hạn duyệt — kỹ năng bị huỷ' });
       n += 1;
     }
     return n;
@@ -666,10 +666,10 @@ function cancelPart(
   notifyPlanners(
     attempt,
     ratio
-      ? `Đã huỷ lịch hẹn ${skillName(row.skill)} — ${why} Môn này vẫn phải thi, chờ Quản lý xếp lại.`
-      : `Đã huỷ phần thi ${skillName(row.skill)} — ${why} Đợt này chưa đủ kết quả cho tới khi được khôi phục.`,
+      ? `Đã huỷ lịch hẹn ${skillName(row.skill)} — ${why} Môn này vẫn phải làm bài, chờ Quản lý xếp lại.`
+      : `Đã huỷ ${skillName(row.skill)} — ${why} Đợt này chưa đủ kết quả cho tới khi được khôi phục.`,
     requestId, actor, {},
-    ratio ? `Xếp lại lịch ${skillName(row.skill)}` : `Khôi phục phần thi ${skillName(row.skill)}`,
+    ratio ? `Xếp lại lịch ${skillName(row.skill)}` : `Khôi phục kỹ năng ${skillName(row.skill)}`,
   );
 }
 
@@ -687,7 +687,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
 } = {}) {
   const attempt = loadAttempt(attemptId);
   if (!canDecide(p, attempt)) {
-    throw forbidden('Chỉ Quản lý mới khôi phục được phần thi đã huỷ và đặt tuần mới.');
+    throw forbidden('Chỉ Quản lý mới khôi phục được kỹ năng đã huỷ và đặt tuần mới.');
   }
   const rows = ensureSkillRows(attemptId);
   const row = rows.find((r) => r.skill === skill);
@@ -764,7 +764,7 @@ function notifyPlanners(
   attempt: any, message: string, refId: number, actor: number | null,
   opts: { entityType?: string; dedupBase?: string } = {},
   /** PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp — không còn một tiêu đề lịch thi chung chung cho mọi trường hợp. */
-  viec = 'Xếp lại lịch thi',
+  viec = 'Xếp lại lịch Test',
 ) {
   const conn = db();
   const ai = conn.prepare('SELECT s.full_name AS hv, (SELECT code FROM classes WHERE id = ?) AS lop FROM students s WHERE s.id = ?')
@@ -799,7 +799,7 @@ export function chotVangNgay(conn: any, p: Principal, attempt: any, row: any, to
   /* LUAT-34 (T07): Writing — task kia "-" HOẶC đã có điểm thì buổi là vắng (dời cả W, điểm task kia đi theo); task kia còn trống thì chờ. */
   if (!dau.length || !entry.every((k) => o.some((d) => d.skill === k && (coDiem(d) || dau.includes(d))))) return false;
   return settleGroup(conn, attempt.id, row.id, row.skill, row.week_end, row.period_code ?? '', dau.map((d) => d.id), p.userId,
-    'Vắng — dấu "-" trong tuần thi', today);
+    'Vắng — dấu "-" trong tuần Test', today);
 }
 
 /**
@@ -910,7 +910,7 @@ export function duocGoDau(p: Principal, o: {
   if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
     return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Quản lý gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }
-  return o.daHuyPhan && !o.hoanTac ? 'Đã huỷ phần thi (vắng 2 lần) — Quản lý khôi phục phần thi.' : null;
+  return o.daHuyPhan && !o.hoanTac ? 'Đã huỷ · vắng 2 lần — Quản lý khôi phục kỹ năng.' : null;
 }
 
 /** Dấu "-" ĐÃ CHỐT của một ô Mock (không phải MT cũ) — dòng điểm, hoặc null. */
@@ -1016,10 +1016,10 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
   if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong lượt này.`);
   if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
-    throw badRequest(`${skillName(skill)} không còn chờ thi (đã thi, đang vắng hoặc đã huỷ) — không báo vắng được.`);
+    throw badRequest(`${skillName(skill)} không còn chờ làm bài (đã làm bài, đang vắng hoặc đã huỷ) — không báo vắng được.`);
   }
   if (row.week_start.slice(0, 10) > mondayOf(today)) {
-    throw badRequest(`${skillName(skill)} chưa tới tuần thi — muốn đổi tuần thì "Dời lịch thi".`);
+    throw badRequest(`${skillName(skill)} chưa tới tuần Test — muốn đổi tuần thì "Dời lịch".`);
   }
   /* LUAT-34: MT cũ → Đã huỷ ngay (`chuyenVang` mtCu) — dấu `no_show_cu`, không dời, không đếm. Ghi muộn ở MT hiện tại → chốt như trong tuần. */
   const huyCu = !!a.lich_su;

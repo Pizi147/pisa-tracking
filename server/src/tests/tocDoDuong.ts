@@ -450,10 +450,10 @@ export const TRAN: Record<string, number> = {
   'GVBM /my-work': 63,   // TD4: đo 61 (trước 64)
   'GVCN_THUONG /my-work': 63,   // TD4: đo 61 (trước 64)
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 65,   // TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu)
-  'QT /my-work': 65,   // TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1
-  'QL /my-work?nguoi=tat-ca': 76,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu)
-  'QT /my-work?nguoi=tat-ca': 76,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; V5 SV-SO1 +1 (ngữ cảnh Case)
+  'QL /my-work': 67,   // TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu); SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3)
+  'QT /my-work': 67,   // TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3)
+  'QL /my-work?nguoi=tat-ca': 78,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu)
+  'QT /my-work?nguoi=tat-ca': 78,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu)
   'GVCN /my-work?nguoi=tat-ca': 15,
   'QL /my-work?nguoi=7': 68,
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */
@@ -879,12 +879,12 @@ export const TRAN_DONG: Record<string, number> = {
   'GVCN /cham/lich-test': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVBM /cham/lich-test': 631,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVCN_THUONG /cham/lich-test': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'QT /cham/lich-test': 1628,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước); V5 SV-SO1: đo 1252 (trước 860) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
+  'QT /cham/lich-test': 900,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // SEED-UX: 893 — BC FT 205 MT2 dời W1 SEP (K3) + lớp HD mới; trước 860
   'QL /cham/lich-test?phamVi=tat-ca': 748,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVCN /cham/lich-test?phamVi=tat-ca': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVBM /cham/lich-test?phamVi=tat-ca': 631,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 579,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
-  'QT /cham/lich-test?phamVi=tat-ca': 1628,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước); V5 SV-SO1: đo 1252 (trước 860) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
+  'QT /cham/lich-test?phamVi=tat-ca': 900,   // TD7c: đo 661 (trước TD7c 868; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // SEED-UX: 893 — BC FT 205 MT2 dời W1 SEP (K3) + lớp HD mới; trước 860
   'QL /cham/lich-test?classId=3': 653,   // TD7c: đo 502 (trước TD7c 559; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'QT /cham/lich-test?classId=3': 678,   // TD7c: đo 521 (trước TD7c 578; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
   'GVCN /cham/lich-test?classId=3': 556,   // TD7c: đo 427 (trước TD7c 484; khối 1 chỉ nạp lượt có ô thi trước tuần trước)
