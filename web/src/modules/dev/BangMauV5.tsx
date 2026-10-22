@@ -3,10 +3,10 @@ import type { DinhNghiaCot } from '@shared/domain/index.ts';
 import { Bang } from '../../ui/Bang.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
+import { ChipHan, Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { LOP_OSO } from '../../ui/SoLieu.tsx';
-import { DaiChiXem, Empty, ErrorState, NhanGiaTri, NutChon, OChiSo } from '../../ui/ui.tsx';
+import { DaiChiXem, Empty, ErrorState, NhanGiaTri, OChiSo } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { luuRoiTiep, nhanHan, nhanThangDuKien } from '@shared/domain/index.ts';
 import { KhungPanel, NhapViec, KhungTaiCho, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
@@ -270,7 +270,7 @@ function PanelViecMau() {
   const trangThai: TtLuu | null = tt ?? (daGo ? 'nhap' : null);
   return (
     <KhungPanel tieuDe="Báo PH · Ngô Hải Yến" loai="VIỆC · BÁO PH" onDong={() => undefined}
-      dau={{ dong2: ['CP FT 110', 'Lần 1', <Nhan key="h" tone="soon">{nhanHan('2026-09-18', HOM_NAY)}</Nhan>] }}
+      dau={{ dong2: ['CP FT 110', 'Lần 1', <ChipHan key="h" loai="phoi-hop" han="2026-09-16" />] }}
       chan={{
         huy: null, daSua: daGo && tt !== 'da',
         trai: trangThai && <ChuLuu tt={trangThai} luc="10:42" loi="mất mạng" />,
@@ -285,10 +285,15 @@ function PanelViecMau() {
           ['Người ghi', 'Ngô Bảo Nam · 14/09 10:00'],
           ['Liên hệ PH', <span key="p" className="tabular-nums">Mẹ · 0912 *** 418</span>],
         ]} />
+        {/* Mockup `.lua-chon`: nút radio thật (một nhóm, ↑ ↓ đổi), mục chọn viền + nền nhấn. */}
         <Truong nhan="Kết quả" as="div">
-          <div className="flex flex-wrap gap-2">
-            <NutChon chon={kq === 'da-bao'} onClick={() => setKq('da-bao')}>Đã báo PH</NutChon>
-            <NutChon chon={kq === 'chua-lien-he'} onClick={() => setKq('chua-lien-he')}>Chưa liên hệ được</NutChon>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Kết quả">
+            {([['da-bao', 'Đã báo PH'], ['chua-lien-he', 'Chưa liên hệ được']] as const).map(([v, chu]) => (
+              <label key={v} className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border px-3.5 text-sm max-sm:min-h-[44px] ${kq === v ? 'font-semibold text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`}
+                style={kq === v ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : { borderColor: 'var(--o-nhap-vien)' }}>
+                <input type="radio" name="dev-bao-ph-kq" checked={kq === v} onChange={() => setKq(v)} className="accent-[color:var(--accent)]" />{chu}
+              </label>
+            ))}
           </div>
         </Truong>
         <Truong nhan="Ngày"><div className="max-w-[220px]"><ONgay kieu="ngay" value={ngay} onChange={setNgay} toiDa={HOM_NAY} /></div></Truong>
