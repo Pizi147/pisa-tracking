@@ -8,14 +8,16 @@
 import { db, theoLo } from '../db.ts';
 import {
   ENTRY_SKILLS, MOC_KE_TIEP_SQL, PERMISSIONS, chiNhanhMacDinh, chuanHoaMaLop, coMocTiepTheo, coMocTiepTheoThuong, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
-  laVaiQuanLy, kyNangLoc, ketQuaLoc, nhomCaseEm, type LocHocVien, type PhamVi, type ThemEm, type KetQuaVao,
+  laVaiQuanLy, kyNangLoc, ketQuaLoc, nhomCaseEm, type HangHv, type LocHocVien, type PhamVi, type ThemEm, type KetQuaVao,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { bangLop, can, editableSkills, scopeFor, type Principal } from '../permissions.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { classProgressMany, lichMtCua, missingForStudent } from './schedule.ts';
-import { standingFor } from '../students/standing.ts';
+import { standingFor, type Standing } from '../students/standing.ts';
+import { diemCuaLuot } from '../fasttrack/attempts.ts';
+import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -43,7 +45,7 @@ export type TrangHocVienLop = {
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
   /** `khung`: Fast Track hay lớp thường của em — công tắc `Tất cả · Fast Track · Lớp thường` đếm chip bằng `demLoc(hocVien, khung)`. */
-  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true; them?: ThemEm }[];
+  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true; them?: ThemEm; hang?: HangHv }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** HL-14: "+ Học viên" đầu trang — có lớp trong phạm vi thêm được học viên, KHÔNG phụ thuộc ô tìm (tìm không ra em là lúc cần thêm). */
@@ -249,6 +251,7 @@ export function danhSachHocVienLop(
   const laFt = new Map(lops.map((r) => [r.id, r.programmeCode === 'FT']));
   /* OV-14b: lọc "Đã thi · chờ kết quả" — cùng tập với chip TVV / CX (`hvCuaToi.ts`). */
   const daThi = new Set(loTrinhChoKetQuaThi(today).map((x) => x.c.student_id as number));
+  const hang = hangHvFt(hvKhop.filter((h) => laFt.get(h.class_id)), standing, allCases, vl);
   const hocVien: TrangHocVienLop['hocVien'] = hvKhop.map((h) => {
     const loc: LocHocVien[] = ['tat-ca'];
     const ft = !!laFt.get(h.class_id);
@@ -276,7 +279,7 @@ export function danhSachHocVienLop(
     /* OV-12f: tên + mã + ô thiếu — dòng "Thiếu thông tin" / "Chờ duyệt" của góc Cần làm (em không có việc ở Công việc vẫn có tên). */
     return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const,
       ten: h.full_name as string, ma: (h.student_code ?? '') as string, ...(thieu.length ? { thieu: thieu.map((m) => m.label) } : {}),
-      ...(them ? { them: them.get(h.id as number) } : {}) };
+      ...(them ? { them: them.get(h.id as number) } : {}), ...(ft && hang.has(h.id) ? { hang: hang.get(h.id) } : {}) };
   });
   /*
    * OV-11g (HL-19, Q11): em Kết thúc học chưa Lưu trữ — hiện mờ ở lớp CUỐI (cùng điều kiện `classRoster(…, kemKetThuc)`), chỉ trong "Tất cả":
@@ -293,6 +296,46 @@ export function danhSachHocVienLop(
 
   const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheThemHocVien);
   return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru };
+}
+
+/**
+ * TRƯỜNG HÀNG HV (SV-SO3, `HangHv`) cho em Fast Track. MT gần nhất = lượt của `standing` với CHÍNH Overall / kỳ vọng / SOS của nó (cùng số cột Kết quả các màn);
+ * tuần (theo `periodCode`) + 5 ô điểm (`diemCuaLuot` đã nạp ở `standingFor`); Xu hướng = `luotTruocCoOverall` (cùng hàm So lượt trước của Kết quả MT). Case / PA / Ý thức đọc từ
+ * `viecHocVienTheoLop` đã chạy cho trang. Thêm: tuần (1 câu) + `luotTheoLoTrinh` (1 câu / lô, chỉ em có Xu hướng).
+ */
+function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases: readonly MappedCase[],
+  vl: { hoTro: Map<number, { soPa: number; quaHan: boolean }>; bacYThuc: Map<number, string> }): Map<number, HangHv> {
+  const out = new Map<number, HangHv>();
+  if (!hv.length) return out;
+  /* Chỉ lộ trình của em có Overall ở lượt ≥ MT1 — mới có Xu hướng (TD3-b: không đọc lượt của em không cần). */
+  const theoCy = luotTheoLoTrinh(hv.map((h) => standing.get(h.id)).filter((st) => st?.overall != null && (st.attemptNo ?? 0) > 0).map((st) => st!.cycleId!).filter(Boolean));
+  /* Tuần thi của lượt `standing` theo nhãn tuần (`periodCode` "W1 SEP 2026" kèm năm) — một câu, mỗi tuần một dòng. */
+  const tuanCua = new Map<string, string>();
+  theoLo([...new Set(hv.map((h) => standing.get(h.id)?.periodCode).filter((x): x is string => !!x))], (lo, ph) => {
+    for (const r of db().prepare(`SELECT code, week_start FROM report_periods WHERE code IN (${ph})`).all(...lo) as any[]) tuanCua.set(r.code, r.week_start);
+  });
+  const diem = diemCuaLuot(hv.map((h) => standing.get(h.id)?.attemptId).filter((x): x is number => !!x));
+  const soCase = new Map<number, number>();
+  for (const c of allCases) if (c.status !== 'done' && c.studentId !== null) soCase.set(c.studentId, (soCase.get(c.studentId) ?? 0) + 1);
+  for (const h of hv) {
+    const st = standing.get(h.id);
+    const ds = st?.cycleId ? theoCy.get(st.cycleId) : undefined;
+    const coLuot = st?.attemptId != null && st.attemptNo != null;
+    const truoc = coLuot && st!.overall !== null ? luotTruocCoOverall(ds, st!.attemptNo!) : null;
+    const band = (k: string) => (coLuot ? diem.get(st!.attemptId!)?.find((r) => r.skill === k)?.band ?? null : null);
+    const sos = st?.sosLevel && st.sosLevel > 0 ? st.sosLevel : null;
+    out.set(h.id, {
+      loTrinh: { mt: h.mt_cuoi ?? 0, soMt: lichMtCua({ lich_mt: h.lop_lich_mt, route: h.lop_route }, h.route).length,
+        target: h.target_score ?? null, kck: !!h.khong_cam_ket },
+      mtGan: coLuot ? { mt: st!.attemptNo!, tuan: st!.periodCode ? tuanCua.get(st!.periodCode) ?? null : null, ovr: st!.overall, kyVong: st!.expectation,
+        kn: { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') } } : null,
+      xuHuong: truoc ? { lech: st!.overall! - truoc.ovr, soMt: truoc.mt } : null,
+      hoTro: { sos, kyNang: sos ? (st?.belowSkills ?? []).map((b) => b.skill) : [], soCase: soCase.get(h.id) ?? 0,
+        soPa: vl.hoTro.get(h.id)?.soPa ?? 0, quaHan: vl.hoTro.get(h.id)?.quaHan ?? false },
+      yThuc: vl.bacYThuc.get(h.id) ?? null,
+    });
+  }
+  return out;
 }
 
 /**

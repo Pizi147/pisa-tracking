@@ -821,6 +821,10 @@ api.get('/phan-tich/bao-cao', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req));
 }));
+api.get('/phan-tich/bao-cao/ket-qua-mt', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return baoCaoSvc.ketQuaMt(principalOf(req), filterBaoCaoOf(req));
+}));
 api.get('/phan-tich/bao-cao/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return baoCaoSvc.oBaoCao(principalOf(req), { ...filterBaoCaoOf(req), o: qStr(req, 'o') ?? '' });
