@@ -9,16 +9,22 @@ import { ChipDotFT, ChipKyNang } from './ChipKyNang.tsx';
 import { HopKyNang } from './HopKyNang.tsx';
 import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
+import { HopSEx } from './HopSEx.tsx';
+import { NutLuat } from '../../../ui/NutLuat.tsx';
+import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
+import { tuanNam } from '@shared/domain/index.ts';
 import {
   dotCuaEm, emXongDot, khoaDot, nhanDot,
-  type DotChon, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
+  type DongSEx, type DotChon, type DotFT, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
 } from './kieu.ts';
 
 type Cot = { key: string; dot: DotChon; tieu: string; phu: string | null; deXuat: string | null; nhanDeXuat: string | null };
 type Hop = { anchor: HTMLElement; hang: HangFT | HangThuong; cot: Cot; kyNangDau: KyNangKH | null };
 
 const RONG_TEN = 180;
+/** UI-CHAM-TEST: cột S Ex (lớp FT) — lượt S Expert của em, nút "+ S Ex" (QL / Admin: Kế hoạch Test chỉ người xếp lịch thấy). */
+const RONG_SEX = 168;
 
 /**
  * LƯỚI DÙNG CHUNG CHO CẢ LỚP FT VÀ LỚP THƯỜNG (mockup 14 (1), (4)): hàng = học viên, cột = đợt (FT `MT1…MT5[+]`, lớp
@@ -36,6 +42,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   const [hop, setHop] = useState<Hop | null>(null);
   /** PR-OV4a: ô "Đã huỷ" đang mở hộp Khôi phục (`anchor` giữ để "Xếp MT{n} mới" mở hộp xếp đúng ô). */
   const [huy, setHuy] = useState<{ attemptId: number; anchor: HTMLElement; hang: HangFT; cot: Cot } | null>(null);
+  const [sEx, setSEx] = useState<{ hang: HangFT; dong: DongSEx | null } | null>(null);
   const homNay = useNgayNghiepVu().homNay;
   const cuon = useRef<HTMLDivElement>(null);
 
@@ -82,10 +89,11 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
 
   return (
     <div ref={cuon} className="overflow-x-auto">
-      <table className="text-sm" style={{ tableLayout: 'fixed', width: RONG_TEN + cots.length * rongDot, minWidth: '100%' }}>
+      <table className="text-sm" style={{ tableLayout: 'fixed', width: RONG_TEN + cots.length * rongDot + (loai === 'ft' ? RONG_SEX : 0), minWidth: '100%' }}>
         <colgroup>
           <col style={{ width: RONG_TEN }} />
           {cots.map((c) => <col key={c.key} style={{ width: rongDot }} />)}
+          {loai === 'ft' && <col style={{ width: RONG_SEX }} />}
         </colgroup>
         <thead>
           <tr>
@@ -96,6 +104,13 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                 {c.phu && <span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
               </Th>
             ))}
+            {loai === 'ft' && (
+              <Th align="center">
+                <span className="inline-flex items-center gap-1">{t('S Ex')}
+                  <NutLuat label={t('S Ex')}>{t('Speaking với chuyên gia — lượt bổ sung riêng từng HV, Quản lý / Admin thêm. Không thay S MT, chưa vào Overall / SOS.')}</NutLuat>
+                </span>
+              </Th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -116,9 +131,12 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                     {loai === 'ft' && c.dot.loai === 'ft' ? (
                       /* PR-OMT C6 (G1): đã có đợt = chip theo nhóm kỹ năng (đủ L R W S + trạng thái); chưa có đợt = Ô MT `MT3 · chưa xếp`. */
                       !homNay ? <span className="text-[12px] text-slate-500">…</span> : dot.attemptId !== null ? (
-                        <ChipDotFT so={c.dot.attemptNo} kn={dot.kn} cu={!!dot.lichSu} homNay={homNay} onMo={moHop}
-                          /* "Đang chọn" = ô của em đang mở hộp. */
-                          chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key} />
+                        <>
+                          <ChipDotFT so={c.dot.attemptNo} kn={dot.kn} cu={!!dot.lichSu} homNay={homNay} onMo={moHop}
+                            /* "Đang chọn" = ô của em đang mở hộp. */
+                            chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key} />
+                          <OverallDot d={dot as DotFT} />
+                        </>
                       ) : dot.huy ? (
                         /* PR-OV4a: số MT chỉ có lượt đã huỷ — chữ "Đã huỷ" (không chỉ màu), viền đứt; bấm mở hộp Khôi phục. */
                         <OMt v={{ so: c.dot.attemptNo, attemptId: null, kn: {}, cu: false }} homNay={homNay} huy
@@ -153,6 +171,21 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                   </td>
                 );
               })}
+              {loai === 'ft' && (
+                <td className="td py-1.5 text-center align-middle">
+                  <div className="mx-auto flex max-w-[152px] flex-col gap-1">
+                    {((h as HangFT).sEx ?? []).map((x) => (
+                      <button key={x.id} type="button" onClick={() => setSEx({ hang: h as HangFT, dong: x })}
+                        className="flex min-h-5 max-sm:min-h-[32px] w-full items-center justify-between gap-1 rounded-md border border-muted-line bg-muted-bg px-1.5 text-left text-[12px] font-semibold"
+                        title={[x.themBoi && t('{ai} thêm', { ai: x.themBoi }), x.nguoiCham && t('{ai} chấm', { ai: x.nguoiCham }), x.nhanXet].filter(Boolean).join('\n')}>
+                        <span className="whitespace-nowrap tabular-nums">{tuanNam(x.tuan)}</span>
+                        <span className="tabular-nums">{x.diem !== null ? fmtBand(x.diem) : <span className="font-normal text-slate-500">{t('chờ chấm')}</span>}</span>
+                      </button>
+                    ))}
+                    <button type="button" className="btn btn-sm min-h-[32px] self-center border-dashed sm:min-h-0" onClick={() => setSEx({ hang: h as HangFT, dong: null })}>{t('+ S Ex')}</button>
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -174,6 +207,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
             onXepMoi={n === huy.hang.soKeTiep ? () => { setHop({ anchor: huy.anchor, hang: huy.hang, cot: huy.cot, kyNangDau: null }); setHuy(null); } : undefined} />
         );
       })()}
+      {sEx && <HopSEx studentId={sEx.hang.studentId} ten={sEx.hang.ten} dong={sEx.dong} onDong={() => setSEx(null)} onXong={onReload} />}
       {hop && (() => {
         const dot = o(hop.hang, hop.cot);
         return (
@@ -186,5 +220,17 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         );
       })()}
     </div>
+  );
+}
+
+/** UI-CHAM-TEST (dieu-chinh-cuoi khu a): đợt xong — "✓ Overall 6.0" (đạt kỳ vọng) / "✗ Overall 5.5" (dưới); không kỳ vọng thì chỉ số. Dấu + chữ, không chỉ màu. */
+function OverallDot({ d }: { d: DotFT }) {
+  if (d.ovr === undefined) return null;
+  const dat = d.kyVong == null ? null : d.ovr >= d.kyVong;
+  return (
+    <span className={`mt-0.5 block text-center text-[12px] font-semibold tabular-nums ${dat === null ? 'text-slate-300' : dat ? 'text-ok' : 'text-bad'}`}
+      title={d.kyVong != null ? t('Kỳ vọng {kv}', { kv: fmtBand(d.kyVong) }) : undefined}>
+      {dat === null ? '' : dat ? '✓ ' : '✗ '}{t('Overall')} {fmtBand(d.ovr)}
+    </span>
   );
 }

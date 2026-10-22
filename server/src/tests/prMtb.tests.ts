@@ -487,8 +487,8 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(JSON.stringify(chip(o('da-xep', TUAN.vua, { hanCham: '2026-10-07' }))) === '{"chu":"chờ chấm","tone":"muted"}', 'chờ chấm');
     assert(JSON.stringify(chip(o('vang', TUAN.qua, { sit: 'absent' }))) === '{"chu":"vắng","tone":"soon"}', 'vắng');
     assert(JSON.stringify(chip(o('cho-duyet', TUAN.qua, { sit: 'absent', choDuyet: true }))) === '{"chu":"vắng","tone":"soon"}', 'chờ duyệt dời = vắng');
-    assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled' }))) === '{"chu":"huỷ","tone":"soon"}', 'huỷ');
-    assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled', huyVang: true }))) === '{"chu":"huỷ","tone":"soon"}', 'huỷ vì vắng 2 lần');
+    assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled' }))) === '{"chu":"huỷ · QL từ chối dời","tone":"soon"}', 'huỷ (UI-CHAM-TEST: kèm lý do — §21.4 T5)');
+    assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled', huyVang: true }))) === '{"chu":"huỷ · vắng 2 lần","tone":"soon"}', 'huỷ vì vắng 2 lần');
     assert(JSON.stringify(chip(o('chua-xep', null))) === '{"chu":"chưa xếp","tone":"muted"}', 'chưa xếp');
     assert(chip(o('da-xep', TUAN.nay)) === null && chip(o('da-xep', TUAN.toi)) === null && chip(o('xong', TUAN.vua)) === null, 'không chip');
     assert(chip(o('khong-yeu-cau', null, { batBuoc: false })) === null, 'không yêu cầu');
@@ -725,7 +725,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const s: any = { trangThai: 'da-huy', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'cancelled', tuanKetThuc: '2026-09-13', choDuyet: true, huyVang: true, hanCham: null };
     const r = d.oMt({ so: 1, attemptId: 1, kn: { speaking: s }, cu: false }, '2026-09-16');
     assert(r.kieu === 'con-viec' && r.viec === 'huỷ' && r.tuan === 'W2 SEP' && /chờ Quản lý duyệt/.test(r.title), JSON.stringify(r));
-    assert(d.chipDongKyNang(s, '2026-09-16')?.chu === 'huỷ', 'chip');
+    assert(d.chipDongKyNang(s, '2026-09-16')?.chu === 'huỷ · vắng 2 lần', 'chip');
   });
 
   /** MT cũ: L R W có điểm, S ghi "-" (không dự thi, `no_show_cu`). */

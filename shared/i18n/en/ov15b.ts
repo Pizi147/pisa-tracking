@@ -75,7 +75,7 @@ export const EN_OV15B = {
   'Kiểm bảng xem trước: ô mới, ghi đè, lỗi; trùng tên thì chọn em; dưới kỳ vọng chọn nhóm nguyên nhân.': 'Check the preview: new cells, overwrites, errors; pick the student for same names; below expectation pick the cause groups.',
   'W1, W2, S: bốn tiêu chí cách nhau dấu cách. <b>Lưu n dòng</b>: dòng chưa đủ còn là nháp; <b>Hoàn tác</b> trả lại như trước.': 'W1, W2, S: four criteria separated by spaces. <b>Save n rows</b>: incomplete rows stay as drafts; <b>Undo</b> restores the previous values.',
   'Mở lưới điểm (bấm dòng lớp ở Lịch Test, hoặc <b>⋯</b> hàng lớp › <b>Nhập điểm</b>).': 'Open the score grid (click a class row in Schedule / Marking, or <b>⋯</b> on the class row › <b>Enter scores</b>).',
-  'Mở lưới điểm của lớp (Test › Lịch Test / Chấm Test, hoặc ⋯ hàng lớp › Nhập điểm).': 'Open the class score grid (Tests › Schedule / Marking, or ⋯ on the class row › Enter scores).',
+  'Mở lưới điểm của lớp (Test › Lịch Test, hoặc ⋯ hàng lớp › Nhập điểm).': 'Open the class score grid (Tests › Test schedule, or ⋯ on the class row › Enter scores).',
   /* Máy chủ — POST /attempts/scores/lo */
   'Không có dòng nào để lưu.': 'No rows to save.',
   'Mỗi lần lưu tối đa {n} dòng.': 'At most {n} rows per save.',

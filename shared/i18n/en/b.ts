@@ -1672,7 +1672,7 @@ const EN_B_MAY = {
   'Công việc › Chờ duyệt': 'Tasks › Pending',
   'Test › Lượt{x}': 'Tests › Test{x}',
   ' của {ten_hv}': ' of {ten_hv}',
-  'Test › Lịch Test / Chấm Test': 'Tests › Schedule / Marking',
+  'Test › Lịch Test': 'Tests › Test schedule',
   'Quản trị › Tài khoản': 'Admin › Accounts',
   'Ngày nghiệp vụ {b} · Ghi nhận {r}': 'Business date {b} · Recorded {r}',
   'Ghi nhận {dm}': 'Recorded {dm}',

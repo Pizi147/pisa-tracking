@@ -8,7 +8,7 @@ import { laLoaiBoQuen } from './phanTich.ts';
 import { t } from '../i18n/index.ts';
 
 export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'phan-tich' | 'cong-viec' | 'tutor';
-export type TabTest = 'lich' | 'diem-lop' | 'ke-hoach';
+export type TabTest = 'cham' | 'lich' | 'diem-lop' | 'ke-hoach';
 export type TabCongViec = 'cho-duyet' | 'ho-tro' | 'yeu-cau' | 'van-hanh' | 'bao-cao';
 export type TabTongQuan = 'tong-quan' | 'phan-tich';
 
@@ -107,13 +107,13 @@ export function khuVucCuaDuong(pathname: string): KhuVuc | null {
 
 // ---------------------------------------------------------------- Test
 
-/** PR-DL (G4): "Điểm theo lớp" giữa Lịch Test và Kế hoạch Test, hiện theo `testGrade`. */
-const TAB_TEST: readonly TabTest[] = ['lich', 'diem-lop', 'ke-hoach'];
-export const TAB_TEST_LABEL: Record<TabTest, string> = { lich: t('Lịch Test / Chấm Test'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
-export const DUONG_TAB_TEST: Record<TabTest, string> = { lich: '/test/lich', 'diem-lop': '/test/diem-lop', 'ke-hoach': '/test/ke-hoach' };
+/** PR-DL (G4): "Điểm theo lớp" giữa Lịch Test và Kế hoạch Test, hiện theo `testGrade`. UI-CHAM-TEST: "Chấm Test" đầu hàng — GV (chấm được, không xếp lịch). */
+const TAB_TEST: readonly TabTest[] = ['cham', 'lich', 'diem-lop', 'ke-hoach'];
+export const TAB_TEST_LABEL: Record<TabTest, string> = { cham: t('Chấm Test'), lich: t('Lịch Test'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
+export const DUONG_TAB_TEST: Record<TabTest, string> = { cham: '/test/cham', lich: '/test/lich', 'diem-lop': '/test/diem-lop', 'ke-hoach': '/test/ke-hoach' };
 /** PR-UX1 Q16: Cần chấm gộp vào Lịch Test — ai chấm được (`testGrade`) hay xếp được lịch (`testSchedule`) đều thấy. */
 const HIEN_TEST: Record<TabTest, (n: NavQuyen) => boolean> = {
-  lich: (n) => n.testSchedule || n.testGrade, 'diem-lop': (n) => n.testGrade, 'ke-hoach': (n) => n.testPlan,
+  cham: (n) => n.testGrade && !n.testPlan && n.workSupport, lich: (n) => n.testSchedule || n.testGrade, 'diem-lop': (n) => n.testGrade, 'ke-hoach': (n) => n.testPlan,
 };
 
 export function tabTestHienThi(nav: NavQuyen): TabTest[] {
@@ -125,10 +125,10 @@ export const moDiemLopCu = (nav: NavQuyen): boolean => nav.test && HIEN_TEST['di
 export function tabTestTuDuong(seg: string | undefined): TabTest | null {
   return (TAB_TEST as readonly string[]).includes(seg ?? '') ? (seg as TabTest) : null;
 }
-/** PR-UX1: ai cũng mở Test vào Lịch Test (Cần chấm đã gộp vào đó). Tab mặc định luôn là một tab người đó thấy được. */
+/** PR-UX1: mở Test vào Lịch Test; UI-CHAM-TEST: GV có "Chấm Test" thì vào đó. Tab mặc định luôn là một tab người đó thấy được. */
 export function tabTestMacDinh(nav: NavQuyen): TabTest | null {
   const tabs = tabTestHienThi(nav);
-  return tabs.includes('lich') ? 'lich' : tabs[0] ?? null;
+  return tabs.includes('cham') ? 'cham' : tabs.includes('lich') ? 'lich' : tabs[0] ?? null;
 }
 
 /**

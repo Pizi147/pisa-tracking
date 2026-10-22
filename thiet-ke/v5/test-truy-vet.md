@@ -50,3 +50,33 @@
 - **[ĐX]** "Lưu và tiếp" ở khu chấm Mock = lưu em này rồi sang em kế trong cùng nhóm; Enter = Lưu và tiếp, ↑ ↓ đổi em.
 - Thang lớp thường /25 ở mockup là **[B2] giả định** (mã dùng "đúng/tổng" theo bài).
 - Chưa vẽ: hộp chọn tuần khi "+ Thêm lượt MT", xem bài đã chấm để sửa (cùng khu chấm, ô đã lưu bấm được).
+
+## 4. Triển khai → PR UI-CHAM-TEST (khu Chấm Test + Kế hoạch Test; Lịch tuần để UI-LICH-TUAN)
+
+Ảnh cặp `docs/anh/ui-cham-test/{cham,ke-hoach}-{1440s,1440,1280,375}.png` (trái mockup, phải web; seed nguyên, GV Hà / QL Vy).
+
+| # | Khung (mục 1 / `dieu-chinh-cuoi.html` khu a) | Web | Chấm |
+|---|---|---|---|
+| 1 | C14 bốn nhóm, thứ tự cố định | `ChamTestTab.tsx` — tên nhóm theo ngày thật (P7): Quá hạn · Hạn đến 20/09 · Speaking chấm chéo · Hạn sau 20/09 | KHỚP |
+| 2 | Speaking theo tuần làm bài, một bài một bản ghi | nhóm S chéo gom lớp × MT, dòng "MT1 · làm bài W1 JUL – W3 SEP" | KHỚP |
+| 3 | T03 / R2: "Của tôi" chỉ phần phân công, "Có thể chấm n bài Speaking", nhãn "chấm chéo · không tính nợ" | đầu danh sách + `Nhan` (T12) | KHỚP |
+| 4 | T02 GV một kỹ năng | dòng = việc của chính GV (kỹ năng ở tiêu đề); BỎ dòng chú "không tính vào bài của bạn" (P1) | KHỚP |
+| 5 | T14 Hạn tuần sau gập, không đỏ, không tự mở | `<details>` gập, máy tính tự mở nhóm đầu Quá hạn → Hạn đến → Speaking | KHỚP |
+| 6 | Khu chấm tại chỗ | `PanelViec` / `PanelChamSpeaking` trong `KhungTaiCho` (lưới `LuoiNhung`, R4 không làm lại lưới) | KHỚP |
+| 7 | Cột "điểm lượt trước" trong khu chấm | lưới hiện có không có cột này (R4) | KHÁC |
+| 8 | "Lưu" / "Lưu và tiếp", trạng thái lưu, lỗi lưu giữ chữ | GIỮ hành vi lưới + hộp nhập Mock "Lưu · em tiếp" (tự lưu từng ô, ⚠ Lưu lại) | KHỚP |
+| 9 | Thiếu nhận xét ≠ xong | chữ "thiếu nhận xét" ở ô (SV-SO1) | KHỚP |
+| 10 | T05 chuỗi "-", "Đã huỷ" kèm lý do | ô lưới `Đã huỷ` + dòng phụ vắng 2 lần / QL từ chối dời / vắng MT cũ (`lyDoHuy`, §21.4 T5) | KHỚP |
+| 11 | MT cũ "-" huỷ ngay + Hoàn tác 10 s | GIỮ (LUAT-34) | KHỚP |
+| 12 | Lớp thường tự lưu khi rời ô | GIỮ lưới lớp thường | KHỚP |
+| 13 | C20 / T04 mặc định 3 MT, không cột MT4 trống | `luoiFT` bỏ `soKeTiep` khỏi số cột; MT4 hiện khi có lượt | KHỚP |
+| 14 | Nút "+ Thêm lượt MT" | dùng "Xếp nhiều MT…" sẵn có (đã cho MT kế tiếp — P11 không thêm nút trùng) | KHÁC |
+| 15 | Kế hoạch: từng HV × MT1–MT3, kỹ năng · tuần · năm | GIỮ lưới cũ (`ChipDotFT`), tuần ghi `W2 JUL/2026` (C20 OV-15c) thay `W2 JUL 2026` | KHỚP |
+| 16 | Ô xong "✓ Overall 6.0" / "✗ Overall 5.5" | `OverallDot` (Overall + kỳ vọng từ `resultOf`) | KHỚP |
+| 17 | Cột S Ex + "+ S Ex" (QL / Admin), ? giải thích | cột S Ex + `HopSEx` (ngày · band · nhận xét · Xoá hai bước) | KHỚP |
+| 18 | Tab "Chấm Test · n nhóm" | `HangTab` số nhóm Của tôi | KHỚP |
+| 19 | Tải / lỗi / rỗng | `Skeleton` · `ErrorState` Thử lại · "Không còn bài nào cần chấm" | KHỚP |
+| 20 | 375: danh sách → bấm nhóm → khu chấm toàn màn + "‹ Quay lại" | "‹ Chấm Test" (cùng mẫu Công việc) | KHỚP |
+| BỎ | "Đang thấy 8 / 22 HV · ↑ ↓ đổi em…" dưới khu chấm; khung "KV = Target − 0,5" đầu khu | P1 (chữ giải thích không lên web) | — |
+
+**Tỉ lệ: 18 / 20 KHỚP = 90 %.** KHÁC (#7, #14) chờ chủ SP đồng ý lý do.

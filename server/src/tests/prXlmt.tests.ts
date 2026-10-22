@@ -246,9 +246,9 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   const diemDu = (attemptId: number, ks = ['listening', 'reading', 'writing1', 'writing2', 'speaking']) => { for (const k of ks) diem(attemptId, k, 6.5); };
   const bonTuan = (n: number) => ({ listening: tuan(n).id, reading: tuan(n).id, writing: tuan(n).id, speaking: tuan(n).id });
 
-  check('PR-XLMT (3) · Lưới FT: cột tới MT kế tiếp (không cứng 8); em có MT8 → 8 cột, không hơn (T37)', () => {
+  check('PR-XLMT (3) · Lưới FT: cột tới MT lớn nhất có lượt (UI-CHAM-TEST, C20: MT kế tiếp không mở cột trống; không cứng 8); em có MT8 → 8 cột, không hơn (T37)', () => {
     const l0 = keHoach.luoiFT(QL, LOP1, TODAY);
-    const maxNo = Math.max(3, ...l0.hang.flatMap((h: any) => [h.soKeTiep, ...Object.entries(h.dot).filter(([, v]: any) => v.attemptId).map(([k]) => Number(k))]));
+    const maxNo = Math.max(3, ...l0.hang.flatMap((h: any) => Object.entries(h.dot).filter(([, v]: any) => v.attemptId).map(([k]) => Number(k))));
     assert(l0.cot.length === Math.min(8, maxNo) && l0.cot.length < 8, `cột ${l0.cot.length}, mong ${maxNo}`);
     const s8 = them('MB FT 101', 'XLMT Em Tám MT');
     const cy = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(s8) as any).id;

@@ -9535,6 +9535,9 @@ await runPrSvLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 NEN-PANEL (nháp theo việc, hộp bỏ chữ, Lưu và tiếp, chân lưu, 375 + bàn phím)
 const { runPrNenPanelTests } = await import('./prNenPanel.tests.ts');
 await runPrNenPanelTests({ check, checkAsync, assert } as any);
+// ==================================================================== V5 UI-CHAM-TEST (Kế hoạch Test 3 MT + Overall, lý do "Đã huỷ")
+const { runPrUiChamTestTests } = await import('./prUiChamTest.tests.ts');
+await runPrUiChamTestTests({ check, assert, conn, P, classId } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
