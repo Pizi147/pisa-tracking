@@ -132,5 +132,11 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
       r(4, { kind: 'sos', entity_type: 'assessment_attempt', read_at: '2026-09-12T00:00:00Z' }),
     ]);
     assert(kq.soNut === 2, JSON.stringify({ n: kq.soNut }));
+    /* Hai tin chưa đọc của CÙNG một Case: hộp gộp một dòng Cần làm, nhưng số = 2 (= "2 chưa đọc" trong hộp — đếm trước gộp). */
+    const mot = d.dongChuong([
+      r(10, { kind: 'sos', entity_type: 'sos_case', entity_id: 77, con_viec: 1, han: '2026-09-20' }),
+      r(11, { kind: 'case_chua_chot_pa', entity_type: 'sos_case', entity_id: 77, han: '2026-09-10' }),
+    ]);
+    assert(mot.canLam.length === 1 && mot.soNut === 2, JSON.stringify({ canLam: mot.canLam.length, n: mot.soNut }));
   });
 }

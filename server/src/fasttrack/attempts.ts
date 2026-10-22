@@ -350,6 +350,24 @@ export type SkillCell = {
   gvCham: { userId: number | null; ten: string } | null;
 };
 
+/**
+ * V5 SV-SO1 (chủ SP 22/10, brief 8.1) — MỘT HÀM "Ô FT XONG": có band VÀ không thiếu nhận xét bắt buộc (`thieuNhanXetMt` — MT thường, không MT cũ / MT0;
+ * band dưới kỳ vọng của lượt → có nhóm nguyên nhân), áp mọi điểm. Ô có band mà thiếu nhận xét vẫn là bài của người chấm, cùng hạn / tuần như bài chưa chấm.
+ * `skillCells`, chi tiết lượt (`scheduleRows`), Kế hoạch Test (`xongKyNang`) cùng gọi; câu SQL lọc dùng `O_FT_XONG_SQL` (cùng luật).
+ */
+export function oXongCua(attempt: any, rows: readonly { skill: string; band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null }[]) {
+  const batBuoc = batBuocNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
+  const kyVong = kyVongCuaLuot(attempt);
+  const thieuNx = (k: string) => {
+    const r = rows.find((x) => x.skill === k);
+    return thieuNhanXetMt({
+      batBuoc, coDiem: (r?.band ?? null) !== null || (r?.raw_score ?? null) !== null, band: r?.band ?? null, kyVong, nhanXet: r?.comment,
+      nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan),
+    });
+  };
+  return { thieuNx, xong: (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null && thieuNx(k) === null };
+}
+
 /** Đưa ô điểm về đúng hình dạng mà luật đếm dùng chung cần. */
 export function pendingInputOf(cells: SkillCell[]): PendingCell[] {
   return cells.map((c) => ({
@@ -387,18 +405,7 @@ export function skillCells(
   const batBuocNx = batBuocNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
   const kyVong = kyVongCuaLuot(attempt);
 
-  /*
-   * V5 SV-SO1 (chủ SP 22/10, brief 8.1): ô XONG = có band VÀ không thiếu nhận xét bắt buộc (`thieuNhanXetMt` — MT thường, không MT cũ / MT0), áp mọi điểm.
-   * Ô có band mà thiếu nhận xét vẫn là bài của người chấm, cùng hạn / tuần như bài chưa chấm.
-   */
-  const thieuNxCua = (k: string) => {
-    const r = rows.find((x) => x.skill === k);
-    return thieuNhanXetMt({
-      batBuoc: batBuocNx, coDiem: (r?.band ?? null) !== null || (r?.raw_score ?? null) !== null, band: r?.band ?? null, kyVong, nhanXet: r?.comment,
-      nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan),
-    });
-  };
-  const xongO = (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null && thieuNxCua(k) === null;
+  const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
   /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã xong (W cần cả W1 và W2). */
   const scoredAssessed = (assessed: AssessedSkill): boolean => entrySkillsOf(assessed).every(xongO);
 
@@ -1101,7 +1108,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       row, mode,
       attemptOverride: a.deadline_override ?? null,
       attemptCancelled: a.status === 'cancelled',
-      scored: entrySkillsOf(skill).every((k) => (scores.find((x) => x.skill === k)?.band ?? null) !== null),
+      scored: entrySkillsOf(skill).every(oXongCua(a, scores).xong),   // V5 SV-SO1: cùng luật "xong" với ô (band + đủ nhận xét bắt buộc)
       pendingMove: pendingView(a.id, skill),
       lichSu: !!a.lich_su,
       mt0: laMt0(a),

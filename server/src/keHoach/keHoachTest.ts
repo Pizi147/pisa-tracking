@@ -20,7 +20,7 @@ import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from 
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor } from '../fasttrack/scoring.ts';
-import { createAttempt, loadBundle, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
+import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, nextAttemptNo } from '../fasttrack/cycles.ts';
 import {
   baoGvcnDoiLichThuongLop, checkWeekVsNeighbours, kiemVuot, kiemVuotTu, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
@@ -176,13 +176,15 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
 
 type CheDo = 'ft' | 'thuong';
 
-/** Một kỹ năng đã có ĐỦ điểm chưa: FT cần mọi ô nhập có band (Writing = W1 + W2); lớp thường có `raw_score`. Không dự thi tính là xong. */
-function xongKyNang(cheDo: CheDo, skill: string, scores: any[], periodId: number | null): boolean {
+/**
+ * Một kỹ năng đã có ĐỦ điểm chưa: FT cần mọi ô nhập XONG (Writing = W1 + W2; V5 SV-SO1: band + đủ nhận xét bắt buộc — `oXongCua` của lượt `a`, cùng hàm
+ * với `skillCells`); lớp thường có `raw_score`. Không dự thi tính là xong.
+ */
+function xongKyNang(cheDo: CheDo, skill: string, scores: any[], periodId: number | null, a: any): boolean {
   if (cheDo === 'thuong') {
     return scores.some((s) => s.skill === skill && s.raw_score !== null && s.raw_score !== undefined) || khongDuThiCua(cheDo, skill, scores, periodId);
   }
-  return entrySkillsOf(skill as any).every((k) => scores.some((r) => r.skill === k && r.band !== null && r.band !== undefined))
-    || khongDuThiCua(cheDo, skill, scores, periodId);
+  return entrySkillsOf(skill as any).every(oXongCua(a, scores).xong) || khongDuThiCua(cheDo, skill, scores, periodId);
 }
 
 /**
@@ -225,10 +227,10 @@ function diemChu(cheDo: CheDo, row: any, scores: any[]): string | undefined {
  * đợt `attemptOverride` › thứ Tư tuần kế tuần thi); không bắt buộc / MT cũ / đã huỷ phần thi / chưa có tuần → null.
  * OV-11e (TE-12): lớp thường truyền `chiTre` — chỉ thêm chip trễ như FT (không vắng / chờ duyệt / hạn chấm).
  */
-function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu: string | null,
+function oKyNangCua(cheDo: CheDo, a: any, row: any, scores: any[], daDoi: boolean, doiTu: string | null,
   them?: { choDuyet: boolean; lichSu: boolean; homNay: string; attemptOverride?: string | null; mt0?: boolean; chiTre?: boolean }): OKyNang {
   const batBuoc = row.required === 1;
-  const xong = xongKyNang(cheDo, row.skill, scores, row.planned_period_id ?? null);
+  const xong = xongKyNang(cheDo, row.skill, scores, row.planned_period_id ?? null, a);
   const choDuyet = !!them?.choDuyet;
   const tre = !!them && !xong && !them.lichSu && !!row.week_end && row.sit_status !== 'absent' && row.sit_status !== 'cancelled'
     && String(row.week_end).slice(0, 10) < them.homNay;
@@ -323,7 +325,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
     for (const r of (skillRows.get(a.id) ?? []) as any[]) {
       if (!(KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)) continue;
       const daDoi = (r.absence_move_count ?? 0) > 0;
-      kn[r.skill as KyNangKH] = oKyNangCua('ft', r, scores, daDoi, daDoi ? dichuyenGanNhat.get(`${a.id}:${r.skill}`) ?? null : null,
+      kn[r.skill as KyNangKH] = oKyNangCua('ft', a, r, scores, daDoi, daDoi ? dichuyenGanNhat.get(`${a.id}:${r.skill}`) ?? null : null,
         { choDuyet: choDuyet.has(`${a.id}:${r.skill}`), lichSu: !!a.lich_su, homNay: today, attemptOverride: a.deadline_override ?? null });
     }
     return kn;
@@ -424,7 +426,7 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
     const kn: Partial<Record<KyNangKH, OKyNang>> = {};
     const kyNang = ds.map((r) => {
       const daDoi = (r.absence_move_count ?? 0) > 0;
-      const o = oKyNangCua('ft', r, scores, daDoi, null, { choDuyet: choDuyet.has(`${a.id}:${r.skill}`), lichSu: !!a.lich_su, homNay: today, attemptOverride: a.deadline_override ?? null, mt0: a.kind === 'mt0' });
+      const o = oKyNangCua('ft', a, r, scores, daDoi, null, { choDuyet: choDuyet.has(`${a.id}:${r.skill}`), lichSu: !!a.lich_su, homNay: today, attemptOverride: a.deadline_override ?? null, mt0: a.kind === 'mt0' });
       kn[r.skill as KyNangKH] = o;
       return { skill: r.skill as KyNangKH, periodId: r.planned_period_id ?? null, weekStart: r.week_start ?? null,
         coDiem: o.khoa === 'đã có điểm', daThi: r.sit_status === 'sat', batBuoc: !!r.required };
@@ -797,7 +799,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
       if (!(bo as readonly string[]).includes(r.skill)) continue;
       const sc = scores.find((s: any) => s.skill === r.skill);
       const daDoi = !!sc?.no_show_period_id && sc.no_show_period_id !== r.planned_period_id;
-      kn[r.skill as KyNangKH] = oKyNangCua('thuong', r, scores, daDoi, daDoi ? tuanDau.get(sc.no_show_period_id as number) ?? null : null,
+      kn[r.skill as KyNangKH] = oKyNangCua('thuong', a, r, scores, daDoi, daDoi ? tuanDau.get(sc.no_show_period_id as number) ?? null : null,
         { choDuyet: false, lichSu: false, homNay: today, chiTre: true });
     }
     return { attemptId: a.id, kn };
@@ -814,7 +816,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
     const scores = bundle.scores.get(a.id) ?? [];
     const kn: Partial<Record<KyNangKH, OKyNang>> = {};
     for (const r of (skillRows.get(a.id) ?? []) as any[]) {
-      kn[r.skill as KyNangKH] = oKyNangCua('ft', r, scores, false, null, { choDuyet: false, lichSu: false, homNay, attemptOverride: a.deadline_override ?? null, mt0: true });
+      kn[r.skill as KyNangKH] = oKyNangCua('ft', a, r, scores, false, null, { choDuyet: false, lichSu: false, homNay, attemptOverride: a.deadline_override ?? null, mt0: true });
     }
     return [a.student_id as number, { attemptId: a.id as number, kn, khongDung: ttMt0.get(a.student_id)?.trangThai === 'khong_dung' }];
   }));

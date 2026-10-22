@@ -14,7 +14,7 @@ import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, defaultWorkScope, requireXemLuotCham, scopeXemLuotCham, type Principal } from '../permissions.ts';
 import { scoreDebtCells } from '../worklist/scoreDebt.ts';
 import {
-  docMaLuot, luotMacDinh, mondayOfDate, nhanMaLuot, soSanhLop, vietMaLuot, type AssessedSkill, type MaLuot, type TomTatLuot,
+  O_FT_XONG_SQL, docMaLuot, luotMacDinh, mondayOfDate, nhanMaLuot, soSanhLop, vietMaLuot, type AssessedSkill, type MaLuot, type TomTatLuot,
 } from '../../../shared/domain/index.ts';
 import { entrySkillsOf } from '../fasttrack/scoring.ts';
 import { cheDoCua, type CheDo } from '../normal/regular.ts';
@@ -73,7 +73,8 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
     }
     const diem = new Map<string, any>();
     for (const sc of conn.prepare(
-      `SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id FROM assessment_scores sc
+      `SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id, CASE WHEN ${O_FT_XONG_SQL('sc', 'a')} THEN 1 ELSE 0 END AS band_xong
+         FROM assessment_scores sc
          JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
     ).all(...lo) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
     for (const k of conn.prepare(
@@ -88,7 +89,8 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
       const daToi = !!k.week_start && String(k.week_start).slice(0, 10) <= thuHai;
       for (const nhap of l.ft ? entrySkillsOf(k.skill as AssessedSkill) : [k.skill as string]) {
         const sc = diem.get(`${k.attempt_id}|${nhap}`);
-        const xong = sc && (sc.band !== null || sc.raw_score !== null
+        /* V5 SV-SO1: có band mà thiếu nhận xét bắt buộc chưa xong (`O_FT_XONG_SQL`, cùng luật `oXongCua`). */
+        const xong = sc && (sc.band !== null ? !!sc.band_xong : sc.raw_score !== null
           || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
         if (!xong) { l.thieu += 1; if (daToi) l.n += 1; }
       }
