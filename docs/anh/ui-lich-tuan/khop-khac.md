@@ -1,6 +1,9 @@
 # UI-LICH-TUAN — bảng truy vết + KHỚP / KHÁC (khung `thiet-ke/v5/dieu-chinh-cuoi.html` khu a, phần Lịch Test tuần)
 
-Ảnh: `cap-1440-sang.png` · `cap-1440-toi.png` · `cap-1280.png` · `cap-375.png` (trái mockup `?khu=a`, phải web, QL Vy, seed nguyên + 2 lượt S Ex).
+Ảnh (chụp lại theo rà PTA 22/10, DB demo cục bộ có thêm điểm mẫu + 4 lượt S Ex, không đổi seed):
+- `cap-1440-sang` · `cap-1440-toi` · `cap-1280` · `cap-375` — **W3 AUG, MB FT 101 (15 em, đã có điểm)**: ✓ / ✗ theo kỳ vọng, Đạt, SOS 3, "Đủ điểm", "thiếu nhận xét", Đã kết thúc học, S Ex dòng phụ (có điểm + chưa chấm), **"+ 5 HV · Hiện tất cả 15"** (#31).
+- `cap-1440-tuan-nay-vang` · `cap-375-tuan-nay-vang` — W3 SEP: ô vắng lần 1, "Vắng", SOS tạm, dời W4 SEP.
+- `hop-lich-su-1440` — hộp sửa điểm R đang mở "Lịch sử" (3 lần hiệu chỉnh + lý do).
 Nửa dưới mockup khu a (Kế hoạch Test) là tab khác — UI-CHAM-TEST #534, không chấm ở đây. Thanh điều hướng trên cùng: khung chung NEN-V5, không chấm.
 
 | # | Khung mockup | Thành phần web | Kết quả |
@@ -45,4 +48,4 @@ Nửa dưới mockup khu a (Kế hoạch Test) là tab khác — UI-CHAM-TEST #5
 | 38 | (không có) | Dòng "MT cũ chưa nhập" cuối trang | GIỮ (P11) — PR-MT K2-32, ngoài thẻ |
 | — | BỎ | Khối "Test chấm tuần này" (tuần trước), hàng tiêu đề cột hàng lớp, nút "Tuần này" luôn hiện, ⓘ luật lưới lớp thường ở hàng lọc (đã có "?" trong lưới), trang `/nhap-diem/*` | BỎ |
 
-**Đếm (sau rà PTA Plan 22/10):** 33 KHỚP · 2 KHÁC chấp nhận (PTA: #28, #29) · 3 GIỮ (P11: #30, #37, #38) → **38 / 38 đạt cổng** (KHỚP thuần 33 / 38 = 87 %; trên dòng không GIỮ 33 / 35 = 94 %). #31: seed demo không có lớp > 12 em nên ảnh chưa thấy dòng "Hiện tất cả".
+**Đếm (sau rà PTA Plan 22/10):** 33 KHỚP · 2 KHÁC chấp nhận (PTA: #28, #29) · 3 GIỮ (P11: #30, #37, #38) → **38 / 38 đạt cổng** (KHỚP thuần 33 / 38 = 87 %; trên dòng không GIỮ 33 / 35 = 94 %). #31 thấy ở ảnh W3 AUG. 375: "thiếu nhận xét" xuống dòng, thẻ "Đã kết thúc học" gọn một dòng (tên cắt …).

@@ -100,7 +100,7 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
 
 /**
  * LƯỚI CHẤM LỚP FAST TRACK — phần bảng của màn nhập điểm cả lớp trong một tuần (dời nguyên từ `ScoreSheetPage`).
- * Trang bao (`ChamDiemPage`) tải dữ liệu, dựng đầu trang và bộ chọn tuần; ở đây chỉ còn bảng.
+ * Nơi gọi (`LuoiChamLop` — Lịch Test tuần, panel việc, Điểm theo lớp) tải dữ liệu; ở đây chỉ còn bảng.
  *
  * OV-4b: mọi ô điểm là nút → hộp nhập điểm (`HopNhapDiem`) neo ngay ô; một hộp một lúc, "Lưu · em tiếp ›" (Enter) mở hộp cùng cột ở
  * em kế còn mở được. `kn` tô cột kỹ năng đang được mở từ Lịch Test; `hv` tô dòng của một học viên.
@@ -497,16 +497,16 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     : <span className="text-xs text-slate-400">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</span>;
   return (
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Link className="link min-h-[44px] inline-flex items-center font-semibold" to={duongDotTest({ id: row.attemptId })}>{row.studentName}</Link>
-        <span className="text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
-        <span className="ml-auto">{ketQua}</span>
+      <div className="flex min-w-0 items-center gap-x-2">
+        <Link className="link inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
+        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
+        <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
       <div className="grid grid-cols-5 gap-1.5 text-center">
         {(['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const).map((s) => {
           const cell = cellOf(s);
           return (
-            <div key={s} className={`relative flex min-w-0 flex-col items-center [&_[data-phu-odiem]]:max-w-full [&_[data-phu-odiem]]:truncate ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}
+            <div key={s} className={`relative flex min-w-0 flex-col items-center [&_[data-phu-odiem]]:max-w-full [&_[data-phu-odiem]]:whitespace-normal [&_[data-phu-odiem]]:text-center [&_[data-phu-odiem]]:leading-tight ${o[s] === 'loi' ? VIEN_LOI : ''}`} data-kn={s}
               data-trong={cell && !row.ngungHoc && oTrongFt(cell) && !khacTuanFt(cell, tuanDangXem) ? '1' : undefined}>
               <span className="block text-xs text-slate-500">{skillShort(s)}</span>
               {!cell ? <span className="text-slate-500">·</span>

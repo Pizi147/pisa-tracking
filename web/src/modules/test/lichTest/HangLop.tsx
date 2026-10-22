@@ -122,7 +122,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, urlClassId, urlKn, 
   /** SV-S-EXPERT: lượt S Ex của tuần — cột S Ex trong lưới FT. */
   sEx: LichTest['sEx'];
 }) {
-  const cot = hep ? [null, 92, 96] : [174, null, ...(coChiNhanh ? [110] : []), 120, 110, 150, 44];
+  const cot = hep ? [null, 92, 96] : [174, null, ...(coChiNhanh ? [110] : []), 110, 180, 140, 44];   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày"
   const soCot = cot.length;
 
   return (

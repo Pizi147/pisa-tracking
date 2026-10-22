@@ -58,7 +58,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
 }
 
 /**
- * LƯỚI CHẤM CỦA MỘT LỚP — phần dùng chung của trang lưới đầy đủ (`ChamDiemPage`) và của Lịch Test (PR-UX1, lưới mở
+ * LƯỚI CHẤM CỦA MỘT LỚP — phần dùng chung của Lịch Test tuần (PR-UX1; UI-LICH-TUAN: là lưới đầy đủ, `/nhap-diem/*` chuyển về đây — lưới mở
  * tại chỗ dưới hàng lớp / dòng Nợ). Chọn lưới theo `mode` máy chủ trả; màn hẹp (< 768px) chuyển sang MỘT KỸ NĂNG MỘT
  * LÚC (`MotKyNang`), nút chữ nhỏ "Xem dạng bảng" mở lại lưới (cuộn ngang TRONG THẺ, G-11).
  *
