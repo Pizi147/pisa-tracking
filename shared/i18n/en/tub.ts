@@ -187,4 +187,6 @@ export const EN_TUB = {
   '{n} buổi không gửi feedback cho GV': (b) => `${b.n} sessions without feedback to the teacher`,
   '{n} buổi đánh giá {sao}/5': (b) => `${b.n} sessions rated ${b.sao}/5`,
   '{n} buổi đánh giá ≤ {sao}/5': (b) => `${b.n} sessions rated ≤ ${b.sao}/5`,
+  /* AN-TUTOR */
+  'Trang Tutor tạm ẩn khỏi web; dữ liệu tutor vẫn giữ nguyên.': 'The Tutor page is hidden from the web for now; tutor data is kept.',
 } satisfies Record<string, Dich>;

@@ -6,7 +6,11 @@ import type { HuongDan } from './kieu.ts';
 
 export const HD_HT: HuongDan = {
   viec: [],
-  man: MAN_HO_SO_TVV.filter((m) => m.id === 'ho-so-ca-nhan' || m.id === 'huong-dan'),
+  man: [
+    { id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
+      muc: [{ id: 'ht-tong-quan', ten: 'Trang đầu', buoc: ['Trang Tutor tạm ẩn khỏi web; dữ liệu tutor vẫn giữ nguyên.'] }] },
+    ...MAN_HO_SO_TVV.filter((m) => m.id === 'ho-so-ca-nhan' || m.id === 'huong-dan'),
+  ],
   luat: [],
   tu: [],
 };
