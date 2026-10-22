@@ -133,7 +133,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       assert(!/"[^"\n]*\boverflow-x-auto\b[^"\n]*\bbang-dinh\b|"[^"\n]*\bbang-dinh\b[^"\n]*\boverflow-x-auto\b/.test(src), `${f}: bang-dinh đi cùng overflow-x-auto (tiện ích thắng .bang-dinh)`);
     }
     // Khung bao của bảng dính không được là khung cuộn: overflow-hidden → overflow-clip (giữ bo góc, không thành khung cuộn).
-    for (const [f, dau] of [['web/src/modules/test/LichTestTab.tsx', 'const khoiLop'], ['web/src/modules/test/lichTest/KhoiNo.tsx', 'id="lich-test-no" className'],
+    /* UI-LICH-TUAN: Lịch tuần một thẻ bao (khối Quá hạn nằm trong thẻ, không khung riêng). */
+    for (const [f, dau] of [['web/src/modules/test/LichTestTab.tsx', '<div className="card overflow-clip p-0">'],
       ['web/src/modules/cham/DiemTheoLop.tsx', 'id={`bang-${classId}`}'], ['web/src/modules/classes/TabTongKetLop.tsx', '<section className="card']] as const) {
       const src = doc(f);
       const i = src.indexOf(dau);
@@ -380,7 +381,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   console.log('\nPR-HK2 · Task 6b · J8, C33–C37');
 
   check('J8 · tên lớp / đợt có title; lưới chấm: tên break-words, chip "Đã hoàn tất" xuống dòng DƯỚI tên (không cùng hàng flex)', () => {
-    assert(/<span className="truncate" title=\{`?[^}]*classCode/.test(doc('web/src/modules/cham/ChamDiemPage.tsx')), 'ChamDiemPage: tiêu đề "lớp · đợt" thiếu title');
+    /* UI-LICH-TUAN: ChamDiemPage (trang lưới cũ) đã thành chuyển hướng — bỏ phép kiểm tiêu đề của nó (Q-7). */
     /* Điện thoại (MotKyNang): tên xuống dòng, chip dưới tên. */
     const mk = /<div className="([^"]*)">\s*<Link className="([^"]*)" to=\{.*\} title=\{ten\}>/.exec(doc('web/src/modules/cham/MotKyNang.tsx'));
     assert(mk && /break-words/.test(mk[2]) && !/(^|\s)flex(\s|$)/.test(mk[1]), `MotKyNang: khối tên em (${mk?.[1]} · ${mk?.[2]})`);

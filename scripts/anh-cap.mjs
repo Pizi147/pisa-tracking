@@ -11,13 +11,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const [tep, khung, duong, vai, rongChu, ra = `docs/anh/cap/${path.basename(tep ?? '', '.html')}-${rongChu}.png`] = process.argv.slice(2);
+const [tep, khung, duong, vai, rongChu, ra = `docs/anh/cap/${path.basename((tep ?? '').split('?')[0], '.html')}-${rongChu}.png`] = process.argv.slice(2);
 const rong = Number(rongChu);
 if (!tep || !khung || !duong || !Number(vai) || !rong) {
   console.error('Dùng: node scripts/anh-cap.mjs <tệp mockup> <khung|-> <đường web> <vai> <bề rộng> [ra.png]');
   process.exit(2);
 }
-if (!fs.existsSync(tep)) { console.error(`Không thấy tệp mockup: ${tep}`); process.exit(2); }
+// UI-LICH-TUAN: `tệp.html?khu=a` — tham số gửi kèm khi mở mockup (mockup V5 có `?khu=` chỉ hiện một khu, `?theme=`).
+const [tepFile, tepQuery = ''] = tep.split('?');
+if (!fs.existsSync(tepFile)) { console.error(`Không thấy tệp mockup: ${tepFile}`); process.exit(2); }
 const { chromium } = await import(process.env.PW ? pathToFileURL(process.env.PW).href : 'playwright');
 const BASE = process.env.KHUNG_BASE ?? `http://localhost:${process.env.WEB_PORT ?? 5173}`;
 const sang = process.env.GIAO_DIEN ? process.env.GIAO_DIEN === 'sang' : rong < 768;
@@ -25,7 +27,7 @@ const trinh = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.
 
 // Trái: khung mockup (khung nhìn rộng hơn khung 1440 để khung không bị co).
 const pm = await (await trinh.newContext({ viewport: { width: khung === '-' ? rong : Math.max(rong, 1440) + 160, height: 900 }, deviceScaleFactor: 1 })).newPage();
-await pm.goto(pathToFileURL(path.resolve(tep)).href, { waitUntil: 'networkidle' });
+await pm.goto(pathToFileURL(path.resolve(tepFile)).href + (tepQuery ? `?${tepQuery}` : ''), { waitUntil: 'networkidle' });
 // NEN-V5: mockup V5 sáng mặc định, tối qua `data-theme="dark"` — chụp cùng chế độ với web.
 await pm.evaluate((s) => { if (!s && /\/v5\//.test(location.pathname)) document.documentElement.dataset.theme = 'dark'; }, sang);
 await pm.evaluate(() => document.fonts.ready);

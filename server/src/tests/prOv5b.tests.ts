@@ -86,7 +86,7 @@ export async function runPrOv5bTests(t: YThucTestKit) {
     const n = (u: string) => { const x = d.tenNguon(u); return x.chiTiet ? `${x.ten} | ${x.chiTiet}` : x.ten; };
     assert(n('/cong-viec?loc=qua-han&nhom=case-hoc-thuat') === 'Công việc | Quá hạn · Case học thuật', n('/cong-viec?loc=qua-han&nhom=case-hoc-thuat'));
     assert(n('/cong-viec/van-hanh') === 'Công việc | Vận hành', n('/cong-viec/van-hanh'));
-    assert(n('/') === 'Tổng quan' && n('/test/lich?periodId=5') === 'Lịch Test' && n('/test/diem-lop') === 'Điểm theo lớp', 'Tổng quan, Test');
+    assert(n('/') === 'Tổng quan' && n('/test/lich?periodId=5') === 'Lịch Test tuần' && n('/test/diem-lop') === 'Điểm theo lớp', 'Tổng quan, Test');
     assert(n('/phan-tich?goc=hieu-qua-pa') === 'Phân tích | Hiệu quả PA', n('/phan-tich?goc=hieu-qua-pa'));   // OV-15e: van-de đã bỏ
     assert(n('/hoc-vien?q=Minh') === 'Học viên & Lớp | “Minh”', n('/hoc-vien?q=Minh'));
     assert(n('/hoc-vien/12') === 'Hồ sơ học viên' && n('/trang-la') === 'Trang trước', 'mặc định');

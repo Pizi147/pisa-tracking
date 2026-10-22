@@ -72,7 +72,7 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(d.tabTestMacDinh(QL) === 'lich', `QL mặc định: ${d.tabTestMacDinh(QL)}`);
     assert(d.tabTestMacDinh(d.NAV_RONG) === null, 'Không có tab nào thì không có mặc định');
     assert(d.tabTestTuDuong('ke-hoach') === 'ke-hoach' && d.tabTestTuDuong(undefined) === null && d.tabTestTuDuong('x') === null, 'Đọc tab từ đường dẫn');
-    assert(Object.values(d.TAB_TEST_LABEL).join(',') === 'Chấm Test,Lịch Test,Điểm theo lớp,Kế hoạch Test', 'Chữ tab Test');
+    assert(Object.values(d.TAB_TEST_LABEL).join(',') === 'Chấm Test,Lịch Test tuần,Điểm theo lớp,Kế hoạch Test', 'Chữ tab Test');
     assert(d.DUONG_TAB_TEST.lich === '/test/lich', 'Đường dẫn tab Test');
   });
 
