@@ -33,5 +33,8 @@ export const EN_UI_CHAM_TEST = {
   "{n} nhóm · {bai} bài": "{n} groups · {bai} tests",
   "‹ Chấm Test": "‹ Marking",
   "Bài = một kỹ năng của một HV trong một lượt. \"Của tôi\" chỉ gồm phần được phân công cho bạn; Speaking chấm chéo không tính nợ.": "A test = one skill of one student in one round. \"Mine\" only counts what is assigned to you; cross-marked Speaking is not owed.",
-  'Bấm lần nữa để xoá': 'Click again to delete',
+  'Đã khôi phục S Ex · {ten}': 'Expert S restored · {ten}',
+  'đã xếp': 'scheduled',
+  '+ {n} HV': '+ {n} students',
+  'Hiện tất cả {n}': 'Show all {n}',
 } as const;

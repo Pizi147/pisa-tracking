@@ -71,12 +71,14 @@
 | 12 | Lớp thường tự lưu khi rời ô | GIỮ lưới lớp thường | KHỚP |
 | 13 | C20 / T04 mặc định 3 MT, không cột MT4 trống | `luoiFT` bỏ `soKeTiep` khỏi số cột; MT4 hiện khi có lượt | KHỚP |
 | 14 | Nút "+ Thêm lượt MT" | dùng "Xếp nhiều MT…" sẵn có (đã cho MT kế tiếp — P11 không thêm nút trùng) | KHÁC |
-| 15 | Kế hoạch: từng HV × MT1–MT3, kỹ năng · tuần · năm | GIỮ lưới cũ (`ChipDotFT`), tuần ghi `W2 JUL/2026` (C20 OV-15c) thay `W2 JUL 2026` | KHỚP |
+| 15 | Kế hoạch: từng HV × MT1–MT3, ô khung viền ba dòng kỹ năng · tuần `W2 JUL 2026` · trạng thái | `ChipDotFT` thành khung viền (viền theo trạng thái, không chip nền màu), `tuanNamChu` (Excel giữ `W2 JUL/2026`) | KHỚP |
 | 16 | Ô xong "✓ Overall 6.0" / "✗ Overall 5.5" | `OverallDot` (Overall + kỳ vọng từ `resultOf`) | KHỚP |
-| 17 | Cột S Ex + "+ S Ex" (QL / Admin), ? giải thích | cột S Ex + `HopSEx` (ngày · band · nhận xét · Xoá hai bước) | KHỚP |
+| 17 | Cột S Ex + "+ S Ex" (QL / Admin), ? giải thích | cột S Ex + `HopSEx` (ngày · band · nhận xét · Xoá + toast Hoàn tác → `/s-expert/:id/khoi-phuc`) | KHỚP |
+| 17b | Lớp dài: một phần + "+ n HV · Hiện tất cả N" | 10 em đầu + "Hiện tất cả" (tìm em / Cần xếp lại thì hiện hết) | KHỚP |
+| 17c | Ô S Ex có lượt: khung viền đứt hồng "S Ex · tuần · ngày · QL thêm" | khung viền đứt hồng: "S Ex" · `W4 SEP 2026` · "23/09 · {người} thêm" (có điểm: band) | KHỚP |
 | 18 | Tab "Chấm Test · n nhóm" | `HangTab` số nhóm Của tôi | KHỚP |
 | 19 | Tải / lỗi / rỗng | `Skeleton` · `ErrorState` Thử lại · "Không còn bài nào cần chấm" | KHỚP |
 | 20 | 375: danh sách → bấm nhóm → khu chấm toàn màn + "‹ Quay lại" | "‹ Chấm Test" (cùng mẫu Công việc) | KHỚP |
 | BỎ | "Đang thấy 8 / 22 HV · ↑ ↓ đổi em…" dưới khu chấm; khung "KV = Target − 0,5" đầu khu | P1 (chữ giải thích không lên web) | — |
 
-**Tỉ lệ: 18 / 20 KHỚP = 90 %.** KHÁC (#7, #14) chờ chủ SP đồng ý lý do.
+**Tỉ lệ (rà #534, đếm lại): 21 / 23 KHỚP = 91 %.** KHÁC: #7, #14 — chờ chủ SP đồng ý lý do.

@@ -22,18 +22,13 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
   const [nhanXet, setNhanXet] = useState(dong?.nhanXet ?? '');
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
-  /* Xoá hai bước (bấm lại để chắc) — máy chủ xoá mềm, nhật ký giữ bản trước khi xoá. */
-  const [hoiXoa, setHoiXoa] = useState(false);
   const suaLich = !dong || dong.sua;
   const cham = !!dong?.cham;
   const band = diem.trim() === '' ? null : Number(diem.trim().replace(',', '.'));
   const loiBand = band === null ? null : kiemBand(band);
 
-  const xong = (chu: string) => {
-    for (const k of ['/ke-hoach-test', '/cham', '/lich-su']) invalidate(k);
-    toast.push('ok', chu);
-    onXong(); onDong();
-  };
+  const lamMoi = () => { for (const k of ['/ke-hoach-test', '/cham', '/lich-su']) invalidate(k); onXong(); };
+  const xong = (chu: string) => { toast.push('ok', chu); lamMoi(); onDong(); };
   const luu = async () => {
     if (busy) return;
     if (!ngay) { setLoi(t('Chọn ngày')); return; }
@@ -51,11 +46,15 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
   };
   const xoa = async () => {
     if (!dong || busy) return;
-    if (!hoiXoa) { setHoiXoa(true); return; }
     setBusy(true); setLoi(null);
     try {
       await api.del(`/s-expert/${dong.id}`);
-      xong(t('Đã xoá S Ex · {ten}', { ten }));
+      /* Máy chủ xoá mềm — Hoàn tác = khôi phục y như trước khi xoá (`POST /s-expert/:id/khoi-phuc`, có nhật ký). */
+      toast.hoanTac(t('Đã xoá S Ex · {ten}', { ten }), async () => {
+        try { await api.post(`/s-expert/${dong.id}/khoi-phuc`); toast.push('ok', t('Đã khôi phục S Ex · {ten}', { ten })); lamMoi(); }
+        catch (e: any) { toast.push('error', e.message); }
+      }, { key: `s-ex-${dong.id}` });
+      lamMoi(); onDong();
     } catch (e: any) { setLoi(e.message); } finally { setBusy(false); }
   };
 
@@ -63,7 +62,7 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
     <Modal open onClose={busy ? () => {} : onDong} width="max-w-md" title={`${dong ? t('S Ex') : t('+ S Ex')} · ${ten}`}
       footer={(
         <>
-          {dong?.sua && <button type="button" className="btn btn-danger mr-auto min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{hoiXoa ? t('Bấm lần nữa để xoá') : t('Xoá')}</button>}
+          {dong?.sua && <button type="button" className="btn btn-danger mr-auto min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{t('Xoá')}</button>}
           <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onDong}>{t('Đóng')}</button>
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (!suaLich && !cham)} onClick={() => void luu()}>
             {busy ? t('Đang lưu…') : t('Lưu')}

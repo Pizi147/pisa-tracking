@@ -8,7 +8,7 @@ import { useToast } from '../../../ui/Toast.tsx';
 import { useSession } from '../../../lib/session.tsx';
 import {
   CAU_TUAN_DA_QUA, CHU_MUC_HOP, PERMISSIONS, chipDongKyNang, duongDotTest, kiemTuanXep, lyDoKhongXoa, menuHopKyNang, mondayOfDate,
-  nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, theoTuanChung, trangThaiTT, tuanDaSo, tuanMacDinhDotMoi, tuanNam,
+  nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, theoTuanChung, trangThaiTT, tuanDaSo, tuanMacDinhDotMoi, tuanNamChu,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
 import { KY, khoaBaiThuong, khoaDot, nhanDot, thanDot, type DotChon, type GhiChuLich, type KnO } from './kieu.ts';
@@ -477,7 +477,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
   /* Tuần đã đổi (chưa lưu) thì trạng thái cũ (vắng, trễ chấm …) không còn đúng — chỉ hiện chip tuần mới. */
   const daDoiTuan = !moi && d.periodId !== (o?.periodId ?? null);
   const chip = !moi && o && !daDoiTuan && homNay ? chipDongKyNang(o, homNay, ct, lichSu) : null;
-  const chuTuan = (iso: string) => tuanNam(iso);   // C20: hộp lịch luôn kèm năm
+  const chuTuan = (iso: string) => tuanNamChu(iso);   // C20: hộp lịch luôn kèm năm
   const grid = coTick ? 'grid-cols-[24px_104px_minmax(0,1fr)_auto]' : 'grid-cols-[0px_104px_minmax(0,1fr)_auto]';
   return (
     <div className={`grid ${grid} items-center gap-x-2 gap-y-1 border-t py-1.5 first:border-t-0 max-sm:min-h-[48px] ${noiBat ? 'rounded bg-white/5' : ''}`} style={{ borderColor: 'var(--line)' }}>

@@ -12,6 +12,7 @@ export async function runPrUiChamTestTests(t: Kit) {
   const kh: any = await import('../keHoach/keHoachTest.ts');
   const at: any = await import('../fasttrack/attempts.ts');
   const lichSvc: any = await import('../classes/schedule.ts');
+  const sexSvc: any = await import('../cham/sExpert.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nV5 · UI-CHAM-TEST — Kế hoạch Test 3 MT + Overall, lý do "Đã huỷ"');
 
@@ -51,6 +52,11 @@ export async function runPrUiChamTestTests(t: Kit) {
     assert(co > 0, 'seed phải có ít nhất một đợt xong có Overall');
   });
 
+  check('UCT-6 (rà #534) · ô Kế hoạch Test ghi tuần "W4 AUG 2026" (tuanNamChu); tệp Excel giữ "W4 AUG/2026" (tuanNam, C17)', () => {
+    assert(d.tuanNamChu('2026-08-24') === 'W4 AUG 2026', d.tuanNamChu('2026-08-24'));
+    assert(d.tuanNam('2026-08-24') === 'W4 AUG/2026' && d.tuanNamChu(null) === '—', 'tuanNam / trống');
+  });
+
   check('UCT-3 (Rulebook §21.4 T5) · lyDoHuy: vắng MT cũ › vắng 2 lần › QL từ chối dời; không huỷ kỹ năng → null', () => {
     assert(d.lyDoHuy({ mtCu: true, huyVang: true, sit: 'cancelled' }) === 'vắng MT cũ', 'MT cũ');
     assert(d.lyDoHuy({ huyVang: true, sit: 'cancelled' }) === 'vắng 2 lần', 'vắng 2 lần');
@@ -65,5 +71,26 @@ export async function runPrUiChamTestTests(t: Kit) {
     assert(JSON.stringify(viec) === JSON.stringify(['huỷ · QL từ chối dời', 'huỷ · vắng 2 lần']), JSON.stringify(viec));
     assert(d.chipDongKyNang(o({ huyVang: true }), '2026-09-14')?.chu === 'huỷ · vắng 2 lần', 'dòng hộp một đợt');
     assert(d.chipDongKyNang({ ...o({}), trangThai: 'xong', khongDuThi: true, sit: 'sat' }, '2026-09-14', null, true)?.chu === 'Đã huỷ · vắng MT cũ', 'MT cũ');
+  });
+
+  check('UCT-5 (rà #534) · S Ex ở Kế hoạch Test: xoá → mất khỏi lưới; Hoàn tác (khôi phục) → trở lại đúng lượt cũ, nhật ký xoá + khôi phục', () => {
+    const sx: any = sexSvc;
+    const lop = (conn.prepare(`SELECT c.id FROM classes c JOIN enrollments e ON e.class_id = c.id AND e.status = 'active'
+      WHERE c.route IS NOT NULL AND c.status = 'active' ORDER BY c.id LIMIT 1`).get() as any).id;
+    xoaNho();
+    const sid = kh.luoiFT(P.admin, lop).hang[0].studentId;
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      xoaNho();
+      const { id } = sx.themSEx(P.admin, { studentId: sid, ngay: '2026-09-23' });
+      const coLuot = () => { xoaNho(); return kh.luoiFT(P.admin, lop).hang.find((h: any) => h.studentId === sid).sEx.some((x: any) => x.id === id); };
+      assert(coLuot(), 'vừa thêm phải hiện');
+      sx.xoaSEx(P.admin, id);
+      assert(!coLuot(), 'đã xoá vẫn hiện');
+      sx.khoiPhucSEx(P.admin, id);
+      assert(coLuot(), 'Hoàn tác không trả lượt');
+      const tt = (conn.prepare(`SELECT action FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? ORDER BY id DESC LIMIT 2`).all(sid) as any[]).map((r) => r.action);
+      assert(tt.join() === 's_expert.khoi_phuc,s_expert.xoa', `nhật ký: ${tt}`);
+    } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
 }
