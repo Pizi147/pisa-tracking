@@ -81,10 +81,10 @@
   --kq-vuot: #146c43;  --kq-bang: #273c8f;  --kq-duoi: #b42318;
 
   /* SOS — thang vàng → cam → đỏ, KHÔNG hồng (brief 5.2). V5-D (09 I.6, P6): 3 mức khác hẳn bằng ĐỘ ĐẶC của nền —
-     SOS 1 nền vàng nhạt · SOS 2 nền cam đặc · SOS 3 nền đỏ gạch đặc chữ trắng (NEN-SUA 22/10: bớt chói, giảm bão hoà); luôn kèm chữ "SOS n"; tạm = viền đứt. Logic SOS không đổi. */
+     SOS 1 nền vàng nhạt · SOS 2 nền cam đặc · SOS 3 nền đỏ đậm đặc chữ trắng (NEN-SUA 22/10: bớt chói = đậm hơn; tối có viền --sos3-vien sáng hơn để tách mặt ≥ 3 : 1); luôn kèm chữ "SOS n"; tạm = viền đứt. Logic SOS không đổi. */
   --sos1: #b38600;  --sos1-chu: #6b4e00;  --sos1-nen: #fff1b8;
   --sos2: #e07a16;  --sos2-chu: #a3470a;  --sos2-nen: #f28a1f;  --sos2-tren: #1f1000;
-  --sos3: #8f1610;  --sos3-chu: #9b1c14;  --sos3-nen: #9b433b;  --sos3-tren: #ffffff;
+  --sos3: #8f1610;  --sos3-chu: #9b1c14;  --sos3-nen: #911c18;  --sos3-tren: #ffffff;  --sos3-vien: #911c18;
 
   /* Lịch thi — nền xanh lơ nhạt đặc, góc vuông: khác hẳn kết quả học tập (C23) */
   --lich-nen: #d9eaf5;  --lich-chu: #164e72;  --lich-vien: #9cc4dd;
@@ -128,7 +128,7 @@
   --kq-vuot: #74d9a3;  --kq-bang: #98c0f2;  --kq-duoi: #ff9a8f;
   --sos1: #d6b828;  --sos1-chu: #f0d24a;  --sos1-nen: #3a3006;
   --sos2: #f28a1f;  --sos2-chu: #f7a25a;  --sos2-nen: #f28a1f;  --sos2-tren: #1f1000;
-  --sos3: #c62828;  --sos3-chu: #ff9a8f;  --sos3-nen: #ab5049;  --sos3-tren: #ffffff;
+  --sos3: #c62828;  --sos3-chu: #ff9a8f;  --sos3-nen: #9c201c;  --sos3-tren: #ffffff;  --sos3-vien: #d32f2f;
   --lich-nen: #133a58;  --lich-chu: #9fd0f0;  --lich-vien: #2d5f82;  --da-thi-nen: #0c2033;
   --bong-noi: 0 8px 24px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
 }
@@ -199,7 +199,7 @@ textarea.o { height: auto; min-height: 72px; padding: 8px 10px; resize: vertical
 .bd-sos { border-radius: var(--bo-badge); border: 1px solid; font-weight: 700; }
 .bd-sos.m1 { color: var(--sos1-chu); background: var(--sos1-nen); border-color: var(--sos1); }
 .bd-sos.m2 { color: var(--sos2-tren); background: var(--sos2-nen); border-color: var(--sos2); }
-.bd-sos.m3 { color: var(--sos3-tren); background: var(--sos3-nen); border-color: var(--sos3-nen); }
+.bd-sos.m3 { color: var(--sos3-tren); background: var(--sos3-nen); border-color: var(--sos3-vien); }
 .bd-sos.tam { border-style: dashed; border-color: var(--chu); }
 /* Nhóm 2 — TÌNH TRẠNG LỊCH THI: nền xanh lơ đặc, góc vuông 2 px, KHÔNG viền màu kết quả. "Đã thi · chờ KQ" ở đây — không thể nhầm với Đạt. */
 .bd-lich { border-radius: 2px; background: var(--lich-nen); color: var(--lich-chu); }
