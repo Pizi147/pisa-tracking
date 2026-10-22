@@ -510,7 +510,7 @@ export type LichTest = {
 type OiemLuu = {
   skill: string; band: number | null; raw_score: number | null;
   no_show_period_id: number | null; no_show_settled_at: string | null; no_show_late: number | null; no_show_cu?: number | null;
-  /** V5 SV-SO1: band + đủ nhận xét bắt buộc (`O_FT_XONG_SQL` — cùng luật `skillCells`). */
+  /** Ô xong = có band (`O_FT_XONG_SQL` — cùng luật `skillCells`; LUAT-NX-MT: thiếu nhận xét chỉ nhắc, không làm ô chưa xong). */
   band_xong?: number;
 };
 
@@ -521,7 +521,7 @@ type OiemLuu = {
 function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: string | null; sitStatus: string; today: string }) {
   const row = diem.find((x) => x.skill === nhap);
   if (!row) return false;
-  if (row.band !== null) return !!row.band_xong;   // V5 SV-SO1: có band mà thiếu nhận xét bắt buộc → chưa xong
+  if (row.band !== null) return !!row.band_xong;   // `O_FT_XONG_SQL`: có band là xong (LUAT-NX-MT)
   if (row.raw_score !== null) return true;
   return dauTruCuaO({
     marked: !!row.no_show_period_id, hasScore: false, sameWeek: row.no_show_period_id === v.periodId, weekEnd: v.weekEnd, today: v.today,

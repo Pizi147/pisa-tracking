@@ -91,8 +91,8 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
         const sc = diem.get(`${k.attempt_id}|${nhap}`);
         const coDiem = sc && (sc.band !== null || sc.raw_score !== null
           || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
-        /* V5 SV-SO1: "đủ điểm" (`thieu`) đòi band + đủ nhận xét bắt buộc (`O_FT_XONG_SQL`, cùng luật `oXongCua`); "ô TRỐNG" (`n`, chip / bộ lọc lưới
-           `oTrongLuotFt`) vẫn là ô chưa có gì — ô có band thiếu nhận xét không trống. */
+        /* "Đủ điểm" (`thieu`) = có band (`O_FT_XONG_SQL`, cùng luật `oXongCua`; LUAT-NX-MT: thiếu nhận xét chỉ nhắc); "ô TRỐNG" (`n`, chip / bộ lọc lưới
+           `oTrongLuotFt`) là ô chưa có gì. */
         if (!coDiem || (sc.band !== null && !sc.band_xong)) l.thieu += 1;
         if (!coDiem && daToi) l.n += 1;
       }
