@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Hang2, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { CanLam, NutChu, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
@@ -56,7 +56,8 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
   const [bac, setBac] = useState<Record<number, number>>({});
   const [ngayTh, setNgayTh] = useState(homNay);
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
-  const [moTa, setMoTa] = useState('');
+  const [moTa, setMoTa] = useNhap('lo-mo-ta', '');
+  const xoaNhap = useXoaNhap();
   const [busy, setBusy] = useState(false);
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const [kq, setKq] = useState<Map<number, KqEm>>(new Map());
@@ -122,7 +123,7 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
       setLoiLuu(e instanceof ApiError ? dich(e.message) : String(e?.message ?? e));
     } finally {
       setBusy(false); setTienDo(null);
-      if (coOk) { onDone?.(); lamMoi(); reload(); }
+      if (coOk) { xoaNhap(); onDone?.(); lamMoi(); reload(); }
     }
   };
 
@@ -249,7 +250,7 @@ export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onD
                 </Truong>
               </Hang2>
               <Truong nhan={t('Mô tả chung')} batBuoc={canChung} loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: MO_TA_MIN }}>
-                <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} onChange={(ev) => setMoTa(ev.target.value)}
+                <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} readOnly={busy} onChange={(ev) => setMoTa(ev.target.value)}
                   placeholder={t('Ví dụ: Đã gửi Report cho PH qua Zalo')} />
               </Truong>
             </>

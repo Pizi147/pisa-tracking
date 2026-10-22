@@ -9529,6 +9529,9 @@ await runPrSvSExpertTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== SV-LOP (Đánh giá đầu ra chờ Final, việc theo em từ /my-work, W1 / W2; nợ rà S Ex ở SSEX-8…12)
 const { runPrSvLopTests } = await import('./prSvLop.tests.ts');
 await runPrSvLopTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== V5 NEN-PANEL (nháp theo việc, hộp bỏ chữ, Lưu và tiếp, chân lưu, 375 + bàn phím)
+const { runPrNenPanelTests } = await import('./prNenPanel.tests.ts');
+await runPrNenPanelTests({ check, checkAsync, assert } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
