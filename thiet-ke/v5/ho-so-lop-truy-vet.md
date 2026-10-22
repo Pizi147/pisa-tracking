@@ -42,3 +42,5 @@
 - ~~**[XM] T12 với dữ liệu tới 14/09:** MB FOU 12 chưa có Final (L, R thi 14/09 chưa nhập; W 21/09; S 28/09) → Kết quả hiện "– Chưa đủ dữ liệu", GVCN vẫn ghi nhận xét + đề xuất. Khi đủ Final, cùng panel hiện Đạt / Chưa đạt (mã hiện: KQĐR chỉ sau QL chốt Lên FT + có MT0 — `BangLoTrinhTiep.tsx:180-182`). Cần chủ SP xác nhận đánh giá đầu ra lớp thường có thể bắt đầu trước khi đủ Final.~~
 - **[ĐX]** "Đánh giá đầu ra" là tên tác vụ (không dùng "Kết quả lớp trước" — brief 10).
 - Mockup chưa vẽ: QL chốt bước tiếp trong cùng panel (dùng cùng khung, thêm nút "Chốt"), tab Phân tích lớp (B3).
+
+> → PR #547 (UI-HO-SO-LOP): khu b + T12 làm; GIỮ V4 (Cách xem, GV bộ môn, khối Điểm lớp, tab Ý thức) ghi [XM] — chấm trong `docs/anh/ui-ho-so-lop/khop-khac.md`.
