@@ -62,7 +62,8 @@ export async function runPrHdTests(t: any) {
   });
 
   check('HD-VIEC · mỗi vai đúng 5 việc hằng tuần, mỗi việc 2–4 bước; mỗi vai đủ 4 phần', () => {
-    for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) {
+    /* AN-TUTOR (chủ SP 22/10): Head tutor không còn việc trên web — chỉ Tổng quan, Hồ sơ cá nhân, Hướng dẫn. */
+    for (const [vai, h] of Object.entries(hd.HUONG_DAN).filter(([v]) => v !== 'ht') as [string, any][]) {
       assert(h.viec.length === 5, `${vai}: ${h.viec.length} việc`);
       for (const m of h.viec) assert(m.buoc.length >= 2, `${vai} ${m.id}: việc hằng tuần cần 2–4 bước (${m.buoc.length})`);
       for (const m of [...h.viec, ...h.man.flatMap((x: any) => x.muc), ...h.luat]) assert(m.buoc.length >= 1 && m.buoc.length <= 4, `${vai} ${m.id}: ${m.buoc.length} bước`);
@@ -101,7 +102,7 @@ export async function runPrHdTests(t: any) {
       }
     }
     assert(loi.length === 0, loi.join(' · '));
-    for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) assert(h.viec.filter((m: any) => m.chi).length >= 3, `${vai}: việc hằng tuần thiếu Chỉ cho tôi`);
+    for (const [vai, h] of Object.entries(hd.HUONG_DAN).filter(([v]) => v !== 'ht') as [string, any][]) assert(h.viec.filter((m: any) => m.chi).length >= 3, `${vai}: việc hằng tuần thiếu Chỉ cho tôi`);
   });
 
   check('HD-TIM · tìm không dấu ("han") ra mục có chữ "hạn"; chữ lạ → rỗng', () => {

@@ -50,8 +50,7 @@ export const KHU_VUC: readonly KhuVucMuc[] = [
   /* Thứ tự chủ SP chốt 20/10 (đánh giá 10.0 I.2): Công việc trước Phân tích. OV-15e: Phân tích là mục thanh trên. */
   { key: 'cong-viec', to: '/cong-viec', label: t('Công việc'), labelNgan: t('Công việc') },
   { key: 'phan-tich', to: '/phan-tich', label: t('Phân tích'), labelNgan: t('Phân tích') },
-  /* TU-a: Head tutor chỉ có mục này; QL / Quản trị thêm ở cuối. */
-  { key: 'tutor', to: '/tutor', label: t('Tutor'), labelNgan: t('Tutor') },
+  /* AN-TUTOR (chủ SP 22/10): Tutor ẩn khỏi web mọi vai — dữ liệu, API, quyền `tutor.view` giữ nguyên. */
 ];
 
 const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {

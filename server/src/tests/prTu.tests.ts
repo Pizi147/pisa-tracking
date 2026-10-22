@@ -5,6 +5,8 @@
  * Mỗi ca ghi dữ liệu cuộn lại (`thu`).
  */
 import Database from 'libsql';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 export async function runPrTuTests(t: any) {
   const { check, assert, conn, P } = t;
@@ -254,14 +256,15 @@ export async function runPrTuTests(t: any) {
   const { loadPrincipal } = await import('../permissions.ts');
   const dh: any = await import('../../../shared/domain/dieuHuong.ts');
   const accounts: any = await import('../platform/accounts.ts');
-  check('TU-5a · Head tutor: thanh trên chỉ "Tutor", không Tổng quan / Công việc / Học viên; QL, Quản trị có Tutor; GV không', () => {
+  check('AN-TUTOR · menu mọi vai không có Tutor; Head tutor trang đầu = Tổng quan; quyền tutor.view giữ', () => {
     const ht = loadPrincipal(get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'head_tutor' LIMIT 1`).id);
     const nav = navOf(ht);
     const khu = dh.khuVucHienThi(nav).map((k: any) => k.key).join();
-    assert(khu === 'tutor' && !nav.overview && !nav.work && !nav.students && nav.tutor, `Head tutor: ${khu} · ${JSON.stringify({ o: nav.overview, w: nav.work, s: nav.students })}`);
-    assert(navOf(P.mbManager).tutor && navOf(P.admin).tutor && navOf(P.mbManager).overview, 'QL / QT có Tutor và vẫn có Tổng quan');
-    assert(!navOf(GV).tutor && !dh.khuVucHienThi(navOf(GV)).some((k: any) => k.key === 'tutor'), 'GV không có Tutor');
-    assert(dh.khuVucCuaDuong('/tutor') === 'tutor', 'tô sáng mục Tutor');
+    assert(khu === 'tong-quan' && nav.overview && nav.tutor, `Head tutor: ${khu} · ${JSON.stringify({ o: nav.overview, t: nav.tutor })}`);
+    for (const p of [ht, P.mbManager, P.admin, GV]) assert(!dh.khuVucHienThi(navOf(p)).some((k: any) => k.key === 'tutor'), 'menu có Tutor');
+    assert(navOf(P.mbManager).tutor && navOf(P.admin).tutor && !navOf(GV).tutor, 'cờ quyền tutor giữ nguyên');
+    const app = readFileSync(join(process.cwd(), 'web/src/App.tsx'), 'utf8');
+    assert(/path="\/tutor\/\*" element=\{<Navigate to="\/" replace \/>\}/.test(app) && !/TutorPage/.test(app), '/tutor/* phải chuyển hướng về trang đầu');
   });
   check('TU-5b · Quản trị cấp vai Head tutor không chọn chi nhánh → một grant toàn hệ thống (branch_id NULL)', () => thu(() => {
     const r = accounts.createAccount(P.admin, { fullName: 'Thử Head Tutor', email: 'thu.headtutor.tu.pisa@gmail.com', password: 'Matkhau123!', roles: [{ role: 'head_tutor', branches: [] }] });
