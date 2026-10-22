@@ -12,7 +12,7 @@
 import { db, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
-  HAN_BAO_PH_NGAY, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
+  HAN_BAO_PH_NGAY, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -84,8 +84,9 @@ export function moLaiViecTheoXuLy(measureId: number): void {
 function loadViec(id: number): any {
   const v = db().prepare(
     `SELECT v.*, s.full_name, s.student_code, s.consultant_user_id, s.parent_name, s.parent_relation, s.parent_phone, m.status AS xu_ly_status,
-            m.kind AS m_kind, m.custom_name AS m_custom
-       FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id WHERE v.id = ?`,
+            m.kind AS m_kind, m.custom_name AS m_custom, m.note AS m_note, m.created_at AS m_luc, mu.full_name AS m_nguoi, mc.code AS m_lop
+       FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
+       LEFT JOIN users mu ON mu.id = m.created_by LEFT JOIN classes mc ON mc.id = m.class_id WHERE v.id = ?`,
   ).get(id) as any;
   if (!v) throw notFound('Không tìm thấy việc Báo PH.');
   return { ...v, nhan: nhanViec(v) };
@@ -113,7 +114,27 @@ export type ViecBaoPhView = {
   lan: { ketQua: KetQuaBaoPh; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null; luc: string }[];
   lienHe: { ten: string | null; quanHe: string | null; sdt: string | null };
   coTheGhi: boolean;
+  /** UI-CV-TVV (mockup `tvv.html` khối bối cảnh): lần xử lý GVCN đã lưu — người lưu · giờ lưu · lớp · nội dung (vi phạm + ghi chú GVCN). */
+  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null };
+  /** T22: GVCN đang xin thu hồi lần xử lý (thẻ chờ QL) — TVV chỉ cần biết, lịch sử báo PH giữ. */
+  thuHoiCho: { lyDo: string | null } | null;
 };
+
+/** "Không làm bài tập về nhà (09/09, 10/09, 11/09)" — vi phạm của lần xử lý theo tên, kèm ghi chú GVCN. Một câu. */
+function noiDungXuLy(measureId: number | null, note: string | null): string | null {
+  if (!measureId) return note;
+  const vp = db().prepare(
+    `SELECT COALESCE(NULLIF(x.ten, ''), NULLIF(x.description, ''), x.category) AS ten, x.occurred_on FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id
+      WHERE mv.measure_id = ? ORDER BY x.occurred_on, x.id`,
+  ).all(measureId) as any[];
+  const theoTen = new Map<string, string[]>();
+  for (const r of vp) {
+    const ten = (VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.ten] ?? String(r.ten);
+    theoTen.set(ten, [...(theoTen.get(ten) ?? []), `${r.occurred_on.slice(8, 10)}/${r.occurred_on.slice(5, 7)}`]);
+  }
+  const cau = [...theoTen].map(([ten, ngay]) => `${ten} (${ngay.join(', ')})`).join('; ');
+  return [cau, note?.trim()].filter(Boolean).join('. ') || null;
+}
 
 export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
   const v = loadViec(id);
@@ -125,6 +146,9 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     `SELECT l.ket_qua, l.ngay, l.ghi_chu, l.ghi_luc, u.full_name FROM viec_bao_ph_lan l LEFT JOIN users u ON u.id = l.ghi_boi WHERE l.viec_id = ? ORDER BY l.id`,
   ).all(id) as any[]).map((l) => ({ ketQua: l.ket_qua, nhan: NHAN_KET_QUA_BAO_PH[l.ket_qua as KetQuaBaoPh] ?? l.ket_qua, ngay: l.ngay, ghiChu: l.ghi_chu ?? null, nguoi: l.full_name ?? null, luc: l.ghi_luc }));
   const xl = xuLyCon(v);
+  const the = v.measure_id
+    ? db().prepare(`SELECT ly_do FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(v.measure_id) as { ly_do: string | null } | undefined
+    : undefined;
   const nhanTrangThai = v.trang_thai === 'xong' ? 'Đã báo PH' : v.trang_thai === 'bo' ? 'Đã bỏ' : lan.length ? 'Chưa liên hệ được' : 'Chưa báo';
   return {
     id, measureId: v.measure_id ?? null, studentId: v.student_id, ten: v.full_name, nhan: v.nhan, tieuDe: `Báo PH · ${v.nhan} · ${v.full_name}`,
@@ -134,6 +158,8 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     /* SĐT phụ huynh chỉ cho người làm việc (TVV / QL) — người chỉ xem trạng thái (GV) không cần. */
     lan, lienHe: ghi ? { ten: v.parent_name ?? null, quanHe: v.parent_relation ?? null, sdt: v.parent_phone ?? null } : { ten: null, quanHe: null, sdt: null },
     coTheGhi: v.trang_thai !== 'bo' && xl === 'con' && ghi,
+    boiCanh: { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(v.measure_id ?? null, v.m_note ?? null) },
+    thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
   };
 }
 
@@ -229,9 +255,9 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
       studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: r.nhan, count: null,
       reason: `Đã lưu xử lý ${r.nhan} — báo phụ huynh và ghi kết quả`,
-      tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi kết quả',
+      tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), ownerId, owner: null, mine: ownerId === p.userId,
-      due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id,
+      due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,
     });
   }
   return items;

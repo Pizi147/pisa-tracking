@@ -129,6 +129,9 @@ export const api = Router();
  */
 const KHU_TEST = [/^\/cham\/lich-test\/?$/, /^\/diem-theo-lop(\/|$)/, /^\/ke-hoach-test(\/|$)/];
 const KHU_VIEC = [/^\/my-work(\/|$)/, /^\/mgmt-tasks(\/|$)/, /^\/meeting(\/|$)/, /^\/tasks(\/|$)/, /^\/signals\/?$/, /^\/yeu-cau\/dem\/?$/];
+/** UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1): TVV không có `work.view` vẫn đọc `GET /my-work` — route trả CHỈ việc TVV của chính mình (`NHOM_VIEC_TVV`). */
+const laMyWorkTvv = (p: Principal, duong: string, method: string) =>
+  method === 'GET' && /^\/my-work\/?$/.test(duong) && p.roleKeys.includes('consultant');
 api.use((req, _res, next) => {
   const p = req.principal;
   if (!p) { next(); return; }
@@ -136,7 +139,7 @@ api.use((req, _res, next) => {
   const duong = req.path.toLowerCase();
   const laViec = KHU_VIEC.some((r) => r.test(duong)) || (/^\/yeu-cau\/?$/.test(duong) && req.method === 'GET' && !req.query.studentId);
   const quyen = KHU_TEST.some((r) => r.test(duong)) ? PERMISSIONS.TEST_VIEW : laViec ? PERMISSIONS.WORK_VIEW : null;
-  if (quyen && !can(p, quyen, { anyScope: true })) {
+  if (quyen && !can(p, quyen, { anyScope: true }) && !(laMyWorkTvv(p, duong, req.method))) {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
     return;
   }
@@ -528,6 +531,11 @@ api.get('/my-work', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const branchId = qInt(req, 'branchId');
   const nguoi = thamSoNguoi(qStr(req, 'nguoi'));
+  /* UI-CV-TVV: không có khu Công việc (TVV) → chỉ việc TVV của chính mình; không xem việc người khác. */
+  if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })) {
+    if (nguoi === 'tat-ca' || typeof nguoi === 'number') throw forbidden('Bạn chỉ xem được việc của mình.');
+    return nheMyWork(myWork(p, { branchId, chiNhom: NHOM_VIEC_TVV }));
+  }
 
   if (nguoi === 'tat-ca') {
     if (!phamViXemViec(p)) throw forbidden('Bạn chỉ xem được việc của mình.');

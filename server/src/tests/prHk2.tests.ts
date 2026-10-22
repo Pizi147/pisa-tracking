@@ -50,8 +50,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     }
   });
 
-  check('C3 · không chip rounded-full tự dựng ngoài ui/Nhan.tsx (trừ vòng số bước KhungPanel, nút điểm 44 px MotKyNang)', () => {
-    const CHO_PHEP = ['web/src/ui/Nhan.tsx', 'web/src/ui/KhungPanel.tsx', 'web/src/modules/cham/MotKyNang.tsx'];
+  check('C3 · không chip rounded-full tự dựng ngoài ui/Nhan.tsx (trừ vòng số bước KhungPanel / PanelSauThi, nút điểm 44 px MotKyNang)', () => {
+    /* UI-CV-TVV: PanelSauThi — vòng số bước ① ② (như vòng số bước KhungPanel), không phải chip. */
+    const CHO_PHEP = ['web/src/ui/Nhan.tsx', 'web/src/ui/KhungPanel.tsx', 'web/src/modules/cham/MotKyNang.tsx', 'web/src/modules/congViec/PanelSauThi.tsx'];
     const sai: string[] = [];
     for (const f of tsx('web/src')) {
       if (CHO_PHEP.includes(f)) continue;

@@ -9541,6 +9541,9 @@ await runPrUiCongViecTests({ check, assert } as any);
 // ==================================================================== V5 UI-CHAM-TEST (Kế hoạch Test 3 MT + Overall, lý do "Đã huỷ")
 const { runPrUiChamTestTests } = await import('./prUiChamTest.tests.ts');
 await runPrUiChamTestTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== V5 UI-CV-TVV (TVV có Công việc chỉ việc của mình, dòng từng em, bối cảnh Báo PH)
+const { runPrUiCvTvvTests } = await import('./prUiCvTvv.tests.ts');
+await runPrUiCvTvvTests({ check, checkAsync, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== V5 UI-LICH-TUAN (Lịch tuần: HV theo lượt, dải số một tuần, chuyển hướng /nhap-diem)
 const { runPrUiLichTuanTests } = await import('./prUiLichTuan.tests.ts');
 await runPrUiLichTuanTests({ check, assert, conn, P, TODAY } as any);

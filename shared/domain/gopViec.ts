@@ -48,7 +48,10 @@ export const khoaDongGop = (group: string, classId: number, ownerId: number | nu
 /** Nhóm của khoá dòng gộp (`gop:{nhóm}:{lớp}:u{người}`); khoá khác → null. */
 export const nhomCuaKhoaGop = (key: string): string | null => (key.startsWith('gop:') ? key.split(':')[1] ?? null : null);
 
-const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !(it.khung === 'ft' && it.caseSos && GIU_TUNG_DONG_FT.has(it.group));
+/** UI-CV-TVV (mockup `tvv.html`): việc TVV theo từng em — mỗi việc một dòng, một panel (Báo PH có lịch sử từng em; Sau thi; Chốt ngày thi). */
+const GIU_TUNG_DONG_TVV = new Set(['bao_ph_yt', 'thi_that', 'buoc_tiep']);
+const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !(it.khung === 'ft' && it.caseSos && GIU_TUNG_DONG_FT.has(it.group))
+  && !GIU_TUNG_DONG_TVV.has(it.group) && !it.key.startsWith('chot-ngay-thi:');
 /**
  * Dòng Nhập điểm gộp theo tuần thi qua nhiều lớp (OV-13c). Chấm chéo không gom theo tuần: QL "Tất cả" (u0) gom theo lớp như cũ; GV Speaking có
  * MỘT việc "Chấm Speaking" (OV-14c, `KHOA_CHAM_SPEAKING`, không gắn lớp).

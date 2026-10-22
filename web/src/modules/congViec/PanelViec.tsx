@@ -26,8 +26,8 @@ import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, shortDate, LOAI_HAN_CUA_VI
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
-import { KetQuaThiThatPanel } from '../students/KetQuaThiThatPanel.tsx';
-import { PanelBuocTiep } from '../students/PanelBuocTiep.tsx';
+import { PanelChotNgayThi, PanelSauThi } from './PanelSauThi.tsx';
+import { PanelBaoPhTvv } from './PanelBaoPhTvv.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
@@ -58,7 +58,8 @@ export function lamTaiCho(it: WorkItem): boolean {
     /* OV-13b (đặc tả OV-13 §1): Ghi nhận vi phạm · Báo phụ huynh qua TVV · Điền Target (Thiếu thông tin) · Chọn người phụ trách — tại chỗ.
        Thiếu thông tin khác (Chốt tuần MT, Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */
     case 'phoi_hop': return it.studentId !== null;
-    case 'missing_data': return it.studentId !== null && it.key.startsWith('target:');
+    case 'missing_data': return it.studentId !== null && (it.key.startsWith('target:') || it.key.startsWith('chot-ngay-thi:'));   // UI-CV-TVV: Chốt ngày thi
+    case 'bao_ph_yt': return !!it.viecId && it.studentId !== null;   // UI-CV-TVV: Báo PH (TVV / QL khi em chưa có TVV)
     case 'no_owner': return it.classId !== null && !!it.thieuNguoi;   // CV-LOI: Phân công GV môn / GVCN còn thiếu — tại chỗ
     default: return false;
   }
@@ -86,13 +87,15 @@ type PropsViec = {
   tuMo?: boolean;
   /** OV-13c: mở một việc khác tại chỗ (Xác nhận PA cùng lúc → "Đề xuất PA khác cho em này…" mở panel Xác nhận PA của em đó). */
   onMo?: (it: WorkItem) => void;
+  /** UI-CV-TVV: tên em của việc kế ("Việc kế: Lý Tuấn Bình"). */
+  tenTiep?: string | null;
 };
 /** NEN-PANEL (K12): khoá nháp = khoá việc — chữ đang gõ trong panel của việc này giữ ở máy tới khi lưu / bỏ. */
 export function PanelViec(p: PropsViec) {
   return <NhapViec khoa={p.it.key}><PanelMotViec {...p} /></NhapViec>;
 }
 
-function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo }: PropsViec) {
+function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep }: PropsViec) {
   const lop = it.classCode;
   const hv = it.studentId !== null ? it.studentName : null;
   const doi = () => { invalidate('/my-work'); onDaLam(); };
@@ -135,15 +138,20 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo }: Props
       return <KhaiBacPanel key={it.key} studentId={it.studentId} onClose={onDong} onDone={doi} />;
     case 'mgmt':
       return <NganViecVanHanh key={it.key} taskId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
-    case 'buoc_tiep':
-      return <PanelBuocTiep key={it.key} cycleId={soCuaKhoa(it.key)!} hocVien={hv ? { id: it.studentId!, ten: hv } : null} lop={lop} onClose={onDong} onDone={doi} onTiep={onTiep} />;
-    case 'thi_that':
-      return <KetQuaThiThatPanel key={it.key} cycleId={soCuaKhoa(it.key)!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
+    /* UI-CV-TVV (mockup `tvv.html`): KQ thi thật + Chọn bước tiếp = MỘT panel Sau thi hai bước. */
+    case 'buoc_tiep': case 'thi_that':
+      return <PanelSauThi key={it.key} cycleId={soCuaKhoa(it.key)!} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
+    case 'bao_ph_yt':
+      return <PanelBaoPhTvv key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
     case 'phoi_hop_sos':
       return <PanelPhoiHop key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'phoi_hop':
       return <PanelBaoPh key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'missing_data':
+      if (it.key.startsWith('chot-ngay-thi:')) {
+        return <PanelChotNgayThi key={it.key} cycleId={soCuaKhoa(it.key)!} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} duKien={it.contextLabel}
+          onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
+      }
       return <SuaThongTinMotEm key={it.key} studentId={it.studentId!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
     case 'no_owner':
       return <PanelPhanCongMon key={it.key} it={it} onDong={onDong} onDaLam={doi} />;

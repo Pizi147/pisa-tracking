@@ -20,7 +20,7 @@ const DAY_MS = 86_400_000;
 const dayNumber = (iso: string) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / DAY_MS;
 
 /** Số ngày từ `from` đến `to` (dương nếu `to` muộn hơn). */
-function daysBetween(from: string, to: string): number {
+export function daysBetween(from: string, to: string): number {
   return Math.round(dayNumber(to) - dayNumber(from));
 }
 

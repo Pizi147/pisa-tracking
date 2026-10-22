@@ -27,6 +27,8 @@ export function navOf(p: Principal): NavQuyen {
   const analysis = coPhamVi(PERMISSIONS.ANALYSIS_VIEW);
   const hvCuaToi = p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys);
   const tutor = coPhamVi(PERMISSIONS.TUTOR_VIEW);
+  /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1, C05): TVV có Công việc — CHỈ việc của chính mình (`/my-work` lọc `NHOM_VIEC_TVV`), không Chấm điểm / Case / duyệt. */
+  const viecTvv = !viec && p.roleKeys.includes('consultant');
   return {
     /* NEN-V5 (08 K10, 01 mục 2): mọi vai có Tổng quan (GV: trang đầu = Tổng quan, dữ liệu chỉ phạm vi của mình). AN-TUTOR: Head tutor cũng vậy. */
     overview: true,
@@ -37,8 +39,8 @@ export function navOf(p: Principal): NavQuyen {
     /* OV-11f (TQ-8): QL / Quản trị kiêm TVV ở vai gốc giữ Tổng quan QL; Học viên của tôi chỉ khi Góc nhìn = TVV (vai QL bị lọc khỏi `roleKeys`). */
     hvCuaToi,
     test, testGrade: test, testSchedule: test, testPlan: test && plan,
-    work: viec && (attempt || board || meeting),
-    workSupport: support, workOps: viec && board, workReports: viec && meeting,
+    work: (viec && (attempt || board || meeting)) || viecTvv,
+    workSupport: support || viecTvv, workOps: viec && board, workReports: viec && meeting,
     /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
     workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !chamDiem,
     workChamDiem: support && chamDiem,

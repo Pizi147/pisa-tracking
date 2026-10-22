@@ -53,3 +53,18 @@
 
 - Ca thường "đã gọi, PH đã nghe": mở trang (việc đầu chọn sẵn khi là việc của mình) → chọn "Đã báo PH" → gõ ghi chú → "Lưu và tiếp": **2 bấm + gõ**, 0 đổi trang.
 - Sau thi lưu riêng điểm: 4 ô + "Lưu điểm" = 1 bấm; chốt bước tiếp sau: 2 bấm.
+
+## 6. Triển khai → PR #540 UI-CV-TVV (22/10)
+
+| Khung / yêu cầu | Web | Kết quả |
+|---|---|---|
+| C05 menu Công việc + badge | `platform/nav.ts` (`viecTvv`), `/my-work` chỉ việc TVV | KHỚP |
+| Nhóm Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ | `gomNhomViec(…, tvv)` | KHỚP (luật hạn → ⓘ, P1) |
+| Dòng việc (hạn · tên · em · lớp · badge · nút) | `DanhSachViec` (`BadgeViecTvv`, `HanPhu`) | KHỚP (+ "Gia hạn" sẵn có ở Sau thi) |
+| C15 + bối cảnh Báo PH, SĐT bấm gọi | `PanelBaoPhTvv` | KHỚP (chữ phụ "mặc định hôm nay…" bỏ — P1) |
+| T10 lần thử · T15 lỗi lưu · T16 hỏi bỏ chữ · T21 375 | `PanelBaoPhTvv` + `KhungPanel` (NEN-PANEL) | KHỚP |
+| T22 GVCN xin thu hồi | `thuHoiCho` (máy chủ) + báo vàng | KHỚP |
+| C16 / T09 Sau thi hai bước (+ Ghi chú bước tiếp, lưu ở `buoc_tiep_json` + nhật ký) | `PanelSauThi` | KHỚP (khác nhỏ: "Thôi học" thay "Kết thúc học" — một khái niệm một tên; Lịch sử mở thay panel, không đếm số) |
+| Chốt ngày thi | `PanelChotNgayThi` (`PUT /hoc-vien-lop/lich-thi`) | KHỚP |
+| Bổ sung hồ sơ 4 trường | dòng tổng mở trang Thiếu thông tin ↗ (sẵn có) | KHÁC: máy chủ gom một dòng (Q-D4 ①); panel 4 ô cần luật Target / Tuần bắt đầu theo vai — giữ đường cũ |
+| Rỗng · đang tải · lỗi tải | `HoTroHocVienTab` | KHỚP (rỗng: "Không còn việc đang mở" + HV của tôi ›, câu giải thích bỏ — P1) |

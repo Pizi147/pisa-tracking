@@ -106,7 +106,8 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     const v = V();
     for (const k of ['TVV', 'CX'] as const) {
       const n = navOf((v as any)[k]);
-      assert(!n.test && !n.work && n.students && n.analysis, `${k}: ${JSON.stringify(n)}`);
+      /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1): TVV có Công việc chỉ việc của mình — không Chấm điểm / duyệt / Vận hành; CX vẫn không. */
+      assert(!n.test && (k === 'TVV' ? n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests : !n.work) && n.students && n.analysis, `${k}: ${JSON.stringify(n)}`);
       assert(!(n as any).phanTichGv, `${k} còn Phân tích theo GV`);
     }
     const a = navOf(v.Admin);
@@ -191,8 +192,9 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         ['TVV Lịch Test', tv, 'GET', '/cham/lich-test'],
         ['TVV Điểm theo lớp', tv, 'GET', '/diem-theo-lop/lop'],
         ['TVV Kế hoạch Test', tv, 'GET', `/ke-hoach-test/lop?branchId=${cn}`],
-        ['TVV Công việc', tv, 'GET', '/my-work'],
-        ['TVV Công việc (đổi hoa thường)', tv, 'GET', '/My-Work'], ['CX Lịch Test (đổi hoa thường)', cx, 'GET', '/CHAM/Lich-Test'],
+        /* UI-CV-TVV: TVV đọc `/my-work` (chỉ việc TVV của mình — prUiCvTvv); việc người khác / khu khác của Công việc vẫn 403. */
+        ['TVV Công việc người khác', tv, 'GET', '/my-work?nguoi=tat-ca'], ['TVV Vận hành', tv, 'GET', '/mgmt-tasks'],
+        ['TVV Công việc (đổi hoa thường)', tv, 'GET', '/My-Work?nguoi=tat-ca'], ['CX Lịch Test (đổi hoa thường)', cx, 'GET', '/CHAM/Lich-Test'],
         ['TVV Yêu cầu', tv, 'GET', '/yeu-cau'],
         ['TVV sửa Target', tv, 'PATCH', `/cycles/${chuKy}`, { targetScore: 7, lyDo: 'thử' }],
         ['CX Lịch Test', cx, 'GET', '/cham/lich-test'],
