@@ -27,11 +27,9 @@ export function navOf(p: Principal): NavQuyen {
   const analysis = coPhamVi(PERMISSIONS.ANALYSIS_VIEW);
   const hvCuaToi = p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys);
   const tutor = coPhamVi(PERMISSIONS.TUTOR_VIEW);
-  /* TU-a: chỉ có trang Tutor (Head tutor) — không Tổng quan, `/` mở `/tutor`. */
-  const chiTutor = tutor && !analysis && !viec && !hvCuaToi && !coPhamVi(PERMISSIONS.STUDENT_VIEW);
   return {
-    /* NEN-V5 (08 K10, 01 mục 2): mọi vai có Tổng quan (GV: trang đầu = Tổng quan, dữ liệu chỉ phạm vi của mình) — trừ Head tutor chỉ có Tutor. */
-    overview: !chiTutor,
+    /* NEN-V5 (08 K10, 01 mục 2): mọi vai có Tổng quan (GV: trang đầu = Tổng quan, dữ liệu chỉ phạm vi của mình). AN-TUTOR: Head tutor cũng vậy. */
+    overview: true,
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     analysis,

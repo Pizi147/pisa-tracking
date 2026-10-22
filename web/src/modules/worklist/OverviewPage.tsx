@@ -72,6 +72,15 @@ export default function OverviewPage() {
    * NEN-V5 (08 K10): GIÁO VIÊN có Tổng quan (trang đầu) — tạm dùng khối "Lớp tôi dạy" sẵn có (chỉ lớp / bài của chính GV, không thêm quyền) + lối vào
    * Công việc; bố cục Tổng quan GV V5 ("Kỹ năng tôi dạy" · "Lớp tôi chủ nhiệm") làm ở UI-TONG-QUAN. Vai không có Công việc giữ đường cũ.
    */
+  /* AN-TUTOR (chủ SP 22/10): Head tutor không còn trang Tutor, không có Học viên — trang đầu là Tổng quan (chỉ tiêu đề + dải Hướng dẫn), không chuyển tiếp. */
+  if (!canSeeBoard && !session?.nav?.work && !session?.nav?.students) {
+    return (
+      <div className="page space-y-4">
+        <h1 className="m-0 text-lg font-semibold text-slate-100">{nhanTabDau}</h1>
+        <DaiMoiDung />
+      </div>
+    );
+  }
   if (!canSeeBoard && !session?.nav?.work) return <Navigate to="/hoc-vien" replace />;
   if (!canSeeBoard) {
     return (
