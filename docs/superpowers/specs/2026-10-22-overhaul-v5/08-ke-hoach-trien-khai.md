@@ -151,7 +151,8 @@ Không PR nào trong danh sách còn lại làm trùng nhau (đã đối chiếu
 | Chữ "Đã xong · OVR…" ở bước tiếp hồ sơ HV (miễn luật động từ ở `hoSoHocVien.tests.ts:134`) | #515 | UI-HO-SO-HV |
 | Truy vết `thiet-ke/v5/*-truy-vet.md` ghi "→ PR #n" cho #533, #534 | luật 8 mục 4 | TL-V5 |
 | DEMO.md / CODE_MAP.md theo SEED-UX + màn V5; DESIGN.md (tiêu đề trang 22 px vs 20) | #515, #533 | TL-V5 |
-| XM-1 luật điểm S Ex; QL nhập hộ S Ex có bắt lý do như S MT | #526 | câu chủ SP (giữ tạm: không tính, không lý do) |
+| S Ex hiện cạnh S ở Hành trình; XM-1 đóng (không tính, không lý do) | chủ SP 22/10, `10` mục 7 | LUAT-NX-MT |
+| Nhận xét không bắt buộc cứng · xếp MT nới lỏng · ghi chú "vắng W3 SEP" | chủ SP 22/10, `10` mục 7 | **LUAT-NX-MT** (máy chủ + web nhỏ; chạy ngay, merge sau UI-CV-TVV vì chung `mywork.ts`, `scoreDebt.ts`) |
 | Tutor bật lại | P10 | tuần sau, hỏi chủ SP |
 
 
