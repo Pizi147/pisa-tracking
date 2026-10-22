@@ -1,7 +1,9 @@
 /**
  * PHÉP KIỂM OV-13k (chủ SP 15/10) — Speaking chấm chéo: GV phụ trách Speaking của lớp được báo, ghi "Nhận xét GV phụ trách", sửa nhóm, chốt Case.
  * Gọi QUA HTTP như bản chính (mẫu prOv13h); trạng thái dùng chung trả lại trong `finally`; chạy cuối `run.ts` (không bọc giao dịch).
- *  1 · người chấm chéo lưu ô S có nhận xét → GV phụ trách S có thông báo + việc "Xem nhận xét Speaking · {em} · MT{n}" (không hạn, không đỏ)
+ *  SV-NX-CASE (N8 ③, 23/10): việc "Xem nhận xét Speaking" → "Xác nhận Case" (chỉ khi có Case S thật, hạn = hạn SOS, hết khi Xác nhận Case — phép kiểm
+ *  `prSvNxCase`); các ca dưới sửa theo luật đó.
+ *  1 · người chấm chéo lưu ô S có nhận xét → GV phụ trách S có thông báo; chưa có Case S thật → chưa có việc
  *  2 · quyền: người chấm chéo / GV môn khác 403; GV phụ trách · GVCN · QL 200
  *  3 · nhận xét phụ trách không bắt buộc, lưu riêng (không đè nhận xét người chấm), có nhật ký; sửa nhóm → nguyên nhân Case đổi; việc hết khi lưu
  *  4 · người chấm sửa lại nhận xét → việc quay lại; Xác nhận PA bởi GV phụ trách → việc hết
@@ -107,12 +109,11 @@ export async function runPrOv13kTests(t: YThucTestKit) {
   const nk2 = (id: number) => one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'score.nhan_xet_phu_trach' AND entity_id = ?`, id).n as number;
   const nk = (u: number) => one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'score.nhan_xet_phu_trach' AND actor_user_id = ? AND entity_id = ?`, u, aid).n as number;
 
-  await checkAsync('OV13k-1 · người chấm chéo lưu ô S có nhận xét → GV phụ trách S: thông báo + việc "Xem nhận xét Speaking · {em} · MT{n}" (không hạn, không đỏ); người chấm không có việc', () => voiMayChu(async (goi) => {
+  await checkAsync('OV13k-1 · người chấm chéo lưu ô S có nhận xét → GV phụ trách S: thông báo + ô chờ xác nhận; lượt chưa chốt (chưa Case S thật) → chưa việc; người chấm không có việc', () => voiMayChu(async (goi) => {
     assert(!viec(gvPT).length, 'chưa chấm mà đã có việc');
     await ma(await goi(gvCheo, `/attempts/${aid}/scores/speaking`, put({ criteria: [5, 5, 5, 5], nhanXet: NX, nhomNguyenNhan: [n1], gvCham: { performerSelf: true } })), 200, 'người chấm chéo lưu S');
     xoaNho();
-    const v = viec(gvPT);
-    assert(v.length === 1 && v[0].tieuDe === `Xem nhận xét Speaking · OV13k Em 1 · ${mt}` && v[0].urgency === 'normal' && v[0].due === null && v[0].mine, JSON.stringify(v));
+    assert(!viec(gvPT).length && o().cho_phu_trach_xem === 1, `chưa Case thật → chưa việc: ${JSON.stringify(viec(gvPT))}`);
     assert(one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key = ?`, gvPT, `nxs:${aid}`).n === 1, 'GV phụ trách chưa có thông báo');
     assert(!viec(gvCheo).length && !one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key = ?`, gvCheo, `nxs:${aid}`).n, 'người chấm không nhận việc / thông báo của chính mình');
   }));
@@ -135,27 +136,26 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     const truoc = nk(gvPT);
     await ma(await goi(gvPT, url, put({ nhanXetPhuTrach: 'Em cần luyện Part 2 thêm 2 phút mỗi buổi.', nhomNguyenNhan: [n2, n1] })), 200, 'GV phụ trách lưu');
     const r = o();
-    assert(r.comment === NX && r.nhan_xet_phu_trach === 'Em cần luyện Part 2 thêm 2 phút mỗi buổi.' && r.nhan_xet_phu_trach_by === gvPT && r.cho_phu_trach_xem === 0,
+    assert(r.comment === NX && r.nhan_xet_phu_trach === 'Em cần luyện Part 2 thêm 2 phút mỗi buổi.' && r.nhan_xet_phu_trach_by === gvPT && r.cho_phu_trach_xem === 1,   // SV-NX-CASE: chỉ Xác nhận Case hạ cờ
       JSON.stringify({ c: r.comment, pt: r.nhan_xet_phu_trach, by: r.nhan_xet_phu_trach_by, cho: r.cho_phu_trach_xem }));
     assert(JSON.stringify(dm.docNhomNguyenNhan(r.nhom_nguyen_nhan)) === JSON.stringify([n2, n1]), `nhóm: ${r.nhom_nguyen_nhan}`);
     assert(nk(gvPT) === truoc + 1, 'thiếu nhật ký score.nhan_xet_phu_trach');
     xoaNho();
-    assert(!viec(gvPT).length, 'việc phải hết khi GV phụ trách đã lưu');
     const sc = one(`SELECT id FROM sos_cases WHERE attempt_id = ? AND topic = 'speaking' AND status != 'done'`, aid);
     if (sc) {
+      /* SV-NX-CASE: nhận xét chấm chéo chưa xác nhận → chưa thành mô tả Case. */
       const cs = ((await (await goi(gvPT, `/cases/${sc.id}`)).json()) as any);
-      const chinh = (cs.issues ?? []).find((i: any) => i.role === 'primary');
-      assert(chinh?.code === n2 && chinh?.observation === NX && chinh?.nhanXetPhuTrach === 'Em cần luyện Part 2 thêm 2 phút mỗi buổi.', `Case: ${JSON.stringify(cs.issues)}`);
+      assert(!(cs.issues ?? []).some((i: any) => i.role === 'primary') && cs.choXacNhanS?.nhanXet === NX, `Case: ${JSON.stringify(cs.issues)} ${JSON.stringify(cs.choXacNhanS)}`);
     }
     /* Nhận xét phụ trách không bắt buộc: chỉ đổi nhóm, không gửi nhận xét → nhận xét giữ. */
     await ma(await goi(gvPT, url, put({ nhomNguyenNhan: [n3] })), 200, 'chỉ đổi nhóm');
     assert(o().nhan_xet_phu_trach === 'Em cần luyện Part 2 thêm 2 phút mỗi buổi.', 'nhận xét phụ trách bị mất khi chỉ đổi nhóm');
   }));
 
-  await checkAsync('OV13k-4 · người chấm sửa nhận xét → việc quay lại; chốt lượt → Xác nhận PA (panel OV-13b) bởi GV phụ trách → việc hết', () => voiMayChu(async (goi) => {
+  await checkAsync('OV13k-4 · người chấm sửa nhận xét → ô vẫn chờ; chốt lượt → việc Xác nhận Case (hạn SOS) → Xác nhận Case → việc hết → Xác nhận PA (panel OV-13b)', () => voiMayChu(async (goi) => {
     await ma(await goi(gvCheo, `/attempts/${aid}/scores/speaking`, put({ nhanXet: `${NX} Cần mở rộng ý.` })), 200, 'người chấm sửa nhận xét');
     xoaNho();
-    assert(viec(gvPT).length === 1, 'việc phải quay lại khi người chấm sửa nhận xét');
+    assert(o().cho_phu_trach_xem === 1, 'ô phải còn chờ khi người chấm sửa nhận xét');
     /* Chốt lượt: QL nhập L R W1 W2 đúng kỳ vọng 6.5 (Overall dưới Target) → Case MT Speaking có PA quy chế chờ xác nhận. */
     for (const s of ['listening', 'reading', 'writing1', 'writing2']) {
       await ma(await goi(QL.userId, `/attempts/${aid}/scores/${s}`, put({ ...(s === 'listening' || s === 'reading' ? { band: 6.5 } : { criteria: [6.5, 6.5, 6.5, 6.5] }), nhanXet: 'Làm bài ổn định, đúng yêu cầu.' })), 200, `QL nhập ${s}`);
@@ -164,10 +164,13 @@ export async function runPrOv13kTests(t: YThucTestKit) {
         WHERE sc.attempt_id = ? AND sc.topic = 'speaking' AND iv.preset IS NOT NULL AND iv.confirmed_at IS NULL AND iv.status = 'planned' AND iv.kind != 'bo_tro'`, aid);
     assert(iv, `lượt chốt phải có Case MT Speaking với PA quy chế chờ xác nhận: ${JSON.stringify(all(`SELECT sc.id, sc.topic, sc.status, sc.sos_level, iv.kind, iv.preset, iv.status ivs, iv.confirmed_at FROM sos_cases sc LEFT JOIN case_interventions iv ON iv.case_id = sc.id WHERE sc.attempt_id = ?`, aid))} ${JSON.stringify(one('SELECT status FROM assessment_attempts WHERE id = ?', aid))}`);
     xoaNho();
-    assert(viec(gvPT).length === 1, 'việc còn trước khi Xác nhận PA');
-    await ma(await goi(gvPT, `/interventions/${iv.id}/xac-nhan-pa`, post({ description: 'Luyện Part 2 hai buổi mỗi tuần, GV phụ trách kèm.', performerSelf: true, soBuoi: 2 })), 200, 'GV phụ trách Xác nhận PA');
+    const v = viec(gvPT);
+    assert(v.length === 1 && v[0].tieuDe === `Xác nhận Case Speaking · OV13k Em 1 · ${mt}` && v[0].due, `việc Xác nhận Case: ${JSON.stringify(v)}`);
+    const caseS = one(`SELECT case_id FROM case_interventions WHERE id = ?`, iv.id).case_id;
+    await ma(await goi(gvPT, `/cases/${caseS}/xac-nhan-s`, post({ cach: 'dung' })), 200, 'GV phụ trách Xác nhận Case');
     xoaNho();
-    assert(!viec(gvPT).length, 'việc phải hết khi PA đã xác nhận');
+    assert(!viec(gvPT).length, 'việc phải hết khi đã Xác nhận Case');
+    await ma(await goi(gvPT, `/interventions/${iv.id}/xac-nhan-pa`, post({ description: 'Luyện Part 2 hai buổi mỗi tuần, GV phụ trách kèm.', performerSelf: true, soBuoi: 2 })), 200, 'GV phụ trách Xác nhận PA');
   }));
 
   await checkAsync('OV13k-5 · hồ sơ MT: ô S có "Nhận xét GV phụ trách" + cờ phuTrachS (GV phụ trách có, người chấm chéo không); Excel có cột "Nhận xét GV phụ trách S"', () => voiMayChu(async (goi) => {
@@ -251,21 +254,23 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     const iv = one(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id = ? AND sc.topic = 'speaking'
         AND iv.preset IS NOT NULL AND iv.confirmed_at IS NULL AND iv.status = 'planned' AND iv.kind != 'bo_tro'`, x.sid);
     assert(iv, 'MT trước phải có PA quy chế chờ xác nhận');
+    const caseS = one(`SELECT case_id FROM case_interventions WHERE id = ?`, iv.id).case_id;
+    await ma(await goi(gvPT, `/cases/${caseS}/xac-nhan-s`, post({ cach: 'dung' })), 200, 'Xác nhận Case lượt trước');   // SV-NX-CASE
     await ma(await goi(gvPT, `/interventions/${iv.id}/xac-nhan-pa`, post({ description: 'Luyện Part 2 hai buổi mỗi tuần, GV phụ trách kèm.', performerSelf: true, soBuoi: 2 })), 200, 'Xác nhận PA lượt trước');
     xoaNho();
     const viec2 = () => (mywork.myWork(loadPrincipal(gvPT)).items as any[]).filter((v) => v.group === 'xem_nx_s' && v.attemptId === m2);
     await chot(m2);
     assert(one(`SELECT COUNT(*) n FROM case_milestones m JOIN sos_cases sc ON sc.id = m.case_id WHERE m.attempt_id = ? AND sc.topic = 'speaking'`, m2).n > 0, 'lượt sau phải có mốc Case Speaking');
-    assert(viec2().length === 1, `lượt sau phải còn việc Xem nhận xét (PA cũ của lượt trước không tính): ${JSON.stringify(viec2())}`);
+    assert(viec2().length === 1, `lượt sau phải có việc Xác nhận Case: ${JSON.stringify(viec2())}`);
     /* Chuông: đọc rồi, người chấm sửa nhận xét → chưa đọc lại. */
     run(`UPDATE notifications SET read_at = ? WHERE user_id = ? AND dedup_key = ?`, '2026-01-01T00:00:00Z', gvPT, `nxs:${m2}`);
     await ma(await goi(gvCheo, `/attempts/${m2}/scores/speaking`, put({ nhanXet: `${NX} Cần mở rộng ý.` })), 200, 'người chấm sửa nhận xét');
     assert(one(`SELECT read_at FROM notifications WHERE user_id = ? AND dedup_key = ?`, gvPT, `nxs:${m2}`).read_at === null, 'chuông phải chưa đọc lại khi việc quay lại');
-    /* Lưu không đổi gì → hết việc, không nhật ký. */
+    /* Lưu không đổi gì → không nhật ký; SV-NX-CASE: việc còn (chỉ Xác nhận Case làm hết). */
     const truoc = nk2(m2);
     await ma(await goi(gvPT, `/attempts/${m2}/scores/speaking/phu-trach`, put({ nhanXetPhuTrach: null })), 200, 'lưu không đổi');
     xoaNho();
-    assert(nk2(m2) === truoc && !viec2().length, `không đổi gì: nhật ký ${truoc} → ${nk2(m2)}, việc ${viec2().length}`);
+    assert(nk2(m2) === truoc && viec2().length === 1, `không đổi gì: nhật ký ${truoc} → ${nk2(m2)}, việc ${viec2().length}`);
   }));
 
   check('OV13k-6 · migrate chỉ thêm cột, chạy hai lần không đổi (DB mới + DB đã có cột)', () => {

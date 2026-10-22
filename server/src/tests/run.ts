@@ -9551,6 +9551,9 @@ await runPrUiLichTuanTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== V5 LUAT-NX-MT (nhận xét chỉ nhắc, xếp MT nới lỏng, ghi chú vắng, S Ex ở Hành trình)
 const { runPrLuatNxMtTests } = await import('./prLuatNxMt.tests.ts');
 await runPrLuatNxMtTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== SV-NX-CASE (N8: MT mới nhất nhắc nhận xét, mô tả Case theo nhận xét, Xác nhận Case S chấm chéo)
+const { runPrSvNxCaseTests } = await import('./prSvNxCase.tests.ts');
+await runPrSvNxCaseTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
