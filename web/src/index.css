@@ -65,8 +65,8 @@
     --sos1-rgb: 214 184 40;  --sos1-chu-rgb: 227 200 74;
     --sos2-rgb: 232 112 42;  --sos2-chu-rgb: 245 147 90;
     --sos3-rgb: 240 100 90;  --sos3-chu-rgb: 255 154 143;
-    /* P6 (chủ SP 22/10): 3 mức khác hẳn — SOS 1 viền mảnh · SOS 2 viền dày + nền cam nhạt · SOS 3 nền đỏ đặc chữ trắng. */
-    --sos2-nen: #3a2410;  --sos3-nen: #b8322a;  --sos3-tren: #ffffff;
+    /* P6 (chủ SP 22/10): 3 mức khác hẳn — SOS 1 viền mảnh · SOS 2 viền dày + nền cam nhạt · SOS 3 nền đỏ đậm đặc chữ trắng (NEN-SUA: bớt chói = đậm hơn; viền --sos3-vien tách mặt tối). */
+    --sos2-nen: #3a2410;  --sos3-nen: #9c201c;  --sos3-vien: #d32f2f;  --sos3-tren: #ffffff;
     /* Hàng ĐÃ THI · chờ KQ — nền cả hàng + vạch trái 3 px màu lịch (V5 `--da-thi-nen`). */
     --da-thi-bg-rgb: 15 35 53;
     /* KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới. */
@@ -127,7 +127,7 @@
     --sos1-rgb: 168 122 0;   --sos1-chu-rgb: 122 89 0;
     --sos2-rgb: 217 101 15;  --sos2-chu-rgb: 163 71 10;
     --sos3-rgb: 180 35 24;   --sos3-chu-rgb: 155 28 20;
-    --sos2-nen: #fdebd9;  --sos3-nen: #b42318;  --sos3-tren: #ffffff;
+    --sos2-nen: #fdebd9;  --sos3-nen: #911c18;  --sos3-vien: #911c18;  --sos3-tren: #ffffff;
     --da-thi-bg-rgb: 238 245 250;
     --kq-vuot-rgb: 20 108 67;    --kq-bang-rgb: 39 60 143;    --kq-duoi-rgb: 180 35 24;
 

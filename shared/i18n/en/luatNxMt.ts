@@ -5,7 +5,7 @@ export const EN_LUAT_NX_MT = {
   'Nên có nhận xét — dùng làm mô tả vấn đề trên Case': 'Add a comment — it becomes the problem description on the Case',
   'Nên chọn nhóm nguyên nhân': 'Pick a cause group',
   'nên có nhận xét': 'add a comment',
-  'nên chọn nguyên nhân': 'pick a cause',
+  'nên chọn nguyên nhân': 'pick a cause group',   // NEN-SUA: cùng chữ hộp chấm ("Pick a cause group")
   'Vấn đề học thuật của kỹ năng — không ghi ý thức, chuyện ngoài bài': 'Academic issues in this skill — not conduct or off-test matters',
   'vắng {tuan}': 'absent {tuan}',
   '{ten} sau MT{n}': '{ten} after MT{n}',
