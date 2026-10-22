@@ -111,6 +111,7 @@ export async function runPrXlmtTests(t: YThucTestKit) {
 }
 
 export async function runPrXlmtMayChu(t: YThucTestKit) {
+  const { viecTiepLop: vtl } = await import('./viecTiepLop.ts');   // UI-HO-SO-LOP
   const { check, assert, assertThrows, conn, P, TODAY, classId } = t;
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
@@ -400,7 +401,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     datTuan(luotCua(s)[0].id, tuan(0).id);
     const hangQL = classSvc.classRoster(QL, LOP1).find((r: any) => r.studentId === s || r.id === s);
     const hangGV = classSvc.classRoster(P.lrTeacher, LOP1).find((r: any) => r.studentId === s || r.id === s);
-    assert(hangQL && hangQL.myPending.length === 0 && !hangQL.viecTiepTheo?.some?.((v: any) => /Nhập điểm/.test(JSON.stringify(v))), `QL: ${JSON.stringify(hangQL?.myPending)}`);
+    assert(hangQL && hangQL.myPending.length === 0 && !(vtl(QL, LOP1).get(hangQL.id) ?? []).some((v: any) => /Nhập điểm/.test(JSON.stringify(v))), `QL: ${JSON.stringify(hangQL?.myPending)}`);
     assert(hangGV && hangGV.myPending.includes('listening'), `GV L phải có việc nhập L: ${JSON.stringify(hangGV?.myPending)}`);
     const quanLyCo = classSvc.classRoster(QL, LOP1).filter((r: any) => r.myPending.length > 0).length;
     assert(quanLyCo === 0, `QL không được có việc Nhập điểm ở hàng nào (${quanLyCo} hàng)`);

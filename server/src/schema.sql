@@ -2137,6 +2137,21 @@ CREATE TABLE s_expert (
 CREATE INDEX idx_s_expert_tuan ON s_expert(tuan, student_id);
 CREATE INDEX idx_s_expert_hv ON s_expert(student_id);
 
+-- UI-HO-SO-LOP (V5 `08` 6c, C17): NHẬN XÉT + ĐỀ XUẤT BƯỚC TIẾP của GVCN khi đánh giá đầu ra lớp thường — một dòng mỗi (em, lớp), ghi đè;
+-- lịch sử ở `audit_logs` (dau_ra.ghi, entity HV, nhãn `lop:{id}`). Chỉ đề xuất: QL chốt ở Lộ trình tiếp theo. `de_xuat` = mã hướng
+-- (len_lop|fast_track|hoc_lai|bao_luu|dung_hoc). Kết quả Đạt / Chưa đạt không lưu ở đây (máy tính từ Final).
+CREATE TABLE danh_gia_dau_ra (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  nhan_xet TEXT,
+  de_xuat TEXT,
+  sua_boi INTEGER REFERENCES users(id),
+  sua_luc TEXT NOT NULL,
+  UNIQUE (student_id, class_id)
+);
+CREATE INDEX idx_danh_gia_dau_ra_lop ON danh_gia_dau_ra(class_id);
+
 -- OV-15c (C21): GHI CHÚ LỊCH THI ở Kế hoạch Test — CHỈ ghi chú, không dời lịch. Mỗi lần lưu THÊM một dòng (lịch sử: tác giả, lúc);
 -- dòng mới nhất của một khoá là ghi chú hiện tại, `noi_dung = ''` = đã xoá. Khoá: FT (student_id, cycle_id, dot 'mt4') — MT đánh số theo lộ trình;
 -- lớp thường (student_id, class_id, dot 'progress' | 'final' | 'cp2'); ghi chú lớp (class_id, student_id NULL, dot NULL). Migrate `prOv15c` chép y câu này.

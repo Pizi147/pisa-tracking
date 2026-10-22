@@ -68,6 +68,7 @@ import * as gopYSvc from '../classes/gopYTuan.ts';
 import * as baiLopSvc from '../students/baiTrenLop.ts';
 import * as sExSvc from '../cham/sExpert.ts';
 import { viecTheoEmCuaLop } from '../classes/viecTheoEm.ts';
+import { ghiDanhGiaDauRa, xemDanhGiaDauRa } from '../classes/danhGiaDauRa.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as lichThiSvc from '../classes/lichThi.ts';
@@ -1133,6 +1134,16 @@ api.get('/classes', requireAuth, wrap((req) => {
 api.get('/classes/:id/viec-theo-em', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'));
+}));
+
+/** UI-HO-SO-LOP (C17): nhận xét + đề xuất bước tiếp của GVCN khi đánh giá đầu ra lớp thường (`danhGiaDauRa.ts`). */
+api.get('/classes/:id/danh-gia-dau-ra', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return xemDanhGiaDauRa(principalOf(req), pInt(req, 'id'));
+}));
+api.put('/classes/:id/danh-gia-dau-ra/:studentId', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return ghiDanhGiaDauRa(principalOf(req), pInt(req, 'id'), pInt(req, 'studentId'), req.body ?? {});
 }));
 
 /** Danh sách học viên của lớp — chỉ gọi khi người dùng mở rộng lớp đó. */

@@ -82,6 +82,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('gop_y_tuan', 'ghi_boi', DV, 'góp ý hàng tuần'),   // OV-12g
   c('bai_tren_lop', 'ghi_boi', DV, 'tiến độ trên lớp'), c('bai_tren_lop', 'sua_boi', DV, 'tiến độ trên lớp'),   // SV-BAI-LOP
   c('s_expert', 'them_boi', DV, 'S Expert'), c('s_expert', 'sua_boi', DV, 'S Expert'), c('s_expert', 'cham_boi', DV, 'S Expert'), c('s_expert', 'xoa_boi', DV, 'S Expert'),   // SV-S-EXPERT · SV-LOP
+  c('danh_gia_dau_ra', 'sua_boi', DV, 'đánh giá đầu ra'),   // UI-HO-SO-LOP
   c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch Test'),   // OV-15c
   c('tutors', 'created_by', DV, 'danh sách tutor'), c('tutors', 'updated_by', DV, 'danh sách tutor'),   // TU-a
   c('tutor_nhan_xet', 'nguoi_id', DV, 'nhận xét về tutor'),

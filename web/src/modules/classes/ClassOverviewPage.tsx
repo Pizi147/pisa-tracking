@@ -26,6 +26,8 @@ import { PhanTichLopTab } from './PhanTichLopTab.tsx';
 import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, type TabHoSoLop } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
+import { ThanhViecLop } from './ThanhViecLop.tsx';
+import { TabDauRa } from './TabDauRa.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -44,8 +46,8 @@ export default function ClassOverviewPage() {
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
   const [xetLai, setXetLai] = useState(false);
-  /** PR-DL → PR-OV3a: khối "Điểm Test của lớp" cuối trang — mở sẵn, vẫn thu gọn được. */
-  const [moDiem, setMoDiem] = useState(true);
+  /** PR-DL → UI-HO-SO-LOP: khối "Điểm Test của lớp" — chỉ ở tab Học viên, GẬP sẵn (truy vết BỎ "lưới mở sẵn dưới mọi tab"). */
+  const [moDiem, setMoDiem] = useState(false);
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
   const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
   const [caseFor, setCaseFor] = useState(0);
@@ -110,10 +112,12 @@ export default function ClassOverviewPage() {
 
   /* PR-TK: lớp đã kết thúc có thêm tab "Tổng kết" — đứng đầu và là tab mở mặc định (tab khác phải ghi rõ trên URL). */
   const daKetThuc = data.status === 'finished';
-  const tab = tabMacDinhLop(params.get('tab'), daKetThuc);
-  const tabMacDinh = tabMacDinhLop(null, daKetThuc);
-
   const thuong = data.programme?.scoringMode === 'ratio';
+  /* UI-HO-SO-LOP (khung T12): lớp thường (không liên tục) có tab "Đánh giá đầu ra" ngay sau Học viên. */
+  const coDauRa = thuong && !data.lienTuc;
+  const tab: TabHoSoLop | 'dau-ra' = coDauRa && params.get('tab') === 'dau-ra' ? 'dau-ra' : tabMacDinhLop(params.get('tab'), daKetThuc);
+  const tabMacDinh = tabMacDinhLop(null, daKetThuc);
+  const dsTab = tabHienCuaLop(daKetThuc).flatMap((k) => (k === 'hoc-vien' && coDauRa ? [k, 'dau-ra' as const] : [k]));
   const dong = () => setViec(null);
   /* OV-3b: lớp thường — ⋯ Lộ trình tiếp theo / dải nhắc / Chuyển tiếp mở cách xem "Lộ trình tiếp theo" ở tab Học viên, không panel. */
   const moViec = (v: ViecDauTrang) => {
@@ -127,9 +131,11 @@ export default function ClassOverviewPage() {
       <DauTrangLop data={data} onViec={moViec}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
 
+      {!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
+
       <HangTab ariaLabel={t('Hồ sơ lớp')} value={tab}
-        onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k })}
-        tabs={tabHienCuaLop(daKetThuc).map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
+        onChange={(k: TabHoSoLop | 'dau-ra') => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null })}
+        tabs={dsTab.map((k) => ({ key: k, label: k === 'dau-ra' ? t('Đánh giá đầu ra') : TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
 
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
@@ -141,8 +147,9 @@ export default function ClassOverviewPage() {
       )}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
+      {tab === 'dau-ra' && <TabDauRa classId={data.id} maLop={data.code} chuongTrinh={data.programme?.code ?? null} />}
 
-      {data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
+      {tab === 'hoc-vien' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
       {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}

@@ -8,6 +8,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runHocVienLopTests(t: YThucTestKit) {
+  const { viecTiepLop: vtl } = await import('./viecTiepLop.ts');   // UI-HO-SO-LOP
   const { check, assert, assertThrows, conn, TODAY, P, addDays, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const { loadPrincipal } = await import('../permissions.ts');
@@ -389,11 +390,11 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const at = themLuot({ ...b, cid: LOP_THUONG, no: 1, kind: 'progress', weekStart: '2026-08-31' });
     diemThuong(at, { listening: [30, 40], reading: [32, 40], speaking: [8, 10] });
     /* PR-UXF-a VN29: việc nhập điểm = ô được PHÂN CÔNG (cùng luật hàng đợi Công việc) — Quản trị không phải người nhập; kiểm bằng GVBM môn W. */
-    assert(!classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid).viecTiepTheo.some((v: any) => v.dich.loai === 'nhap-diem'), 'Quản trị không nhận việc nhập điểm');
+    assert(!(vtl(P.admin, LOP_THUONG).get(b.sid) ?? []).some((v: any) => v.dich.loai === 'nhap-diem'), 'Quản trị không nhận việc nhập điểm');
     const gvW = (conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ? ORDER BY u.id LIMIT 1`).get(MB) as any).id as number;
     const pcW = Number(conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing', 0, 'active', '2026-08-03', ?)`)
       .run(LOP_THUONG, gvW, NOW).lastInsertRowid);
-    const row = classes.classRoster(loadPrincipal(gvW), LOP_THUONG).find((s: any) => s.id === b.sid);
+    const row = { ...classes.classRoster(loadPrincipal(gvW), LOP_THUONG).find((s: any) => s.id === b.sid), viecTiepTheo: vtl(loadPrincipal(gvW), LOP_THUONG).get(b.sid) ?? [] };
     conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(pcW);
     /* PR-N1 A6: máy chủ truyền hạn nhập điểm → việc trễ nói đủ "quá hạn n ngày". */
     // PR-MON (MH2): lớp FOU — ô W hiện G+V.

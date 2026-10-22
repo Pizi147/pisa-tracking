@@ -6,6 +6,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrHvlTests(t: YThucTestKit) {
+  const { viecTiepLop: vtl } = await import('./viecTiepLop.ts');   // UI-HO-SO-LOP
   const { check, checkAsync, assert, assertThrows } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const eq = (got: unknown, want: unknown, m: string) =>
@@ -221,8 +222,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     for (const id of cho.slice(0, 6)) {
       const c: any = moTatCa().find((x) => x.id === id);
       if (!c.homeClassId) continue;
-      const r = classesMod.classRoster(P.admin, c.homeClassId).find((x: any) => x.id === c.studentId);
-      const v = r?.viecTiepTheo.find((x: any) => x.dich?.loai === 'case' && x.dich.caseId === id);
+      const v = (vtl(P.admin, c.homeClassId).get(c.studentId) ?? []).find((x: any) => x.dich?.loai === 'case' && x.dich.caseId === id);
       if (!v) continue;
       thay++;
       assert(/^Xác nhận Case /.test(v.viec) && ['warn', 'danger'].includes(v.tone) && v.dich.ghiKetQua === false, JSON.stringify(v));
@@ -231,8 +231,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     let yt = 0;
     for (const lopId of (conn.prepare(`SELECT id FROM classes WHERE status = 'active'`).all() as any[]).map((r) => r.id as number)) {
       for (const [sid] of dongHv.canhBaoTheoHocVien(P.admin, lopId)) {
-        const r = classesMod.classRoster(P.admin, lopId).find((x: any) => x.id === sid);
-        if (r?.viecTiepTheo.some((x: any) => x.viec === 'Xử lý vi phạm' && x.dich.loai === 'y-thuc')) yt++;
+        if ((vtl(P.admin, lopId).get(sid) ?? []).some((x: any) => x.viec === 'Xử lý vi phạm' && x.dich.loai === 'y-thuc')) yt++;
       }
     }
     assert(yt > 0, 'Không em Ý thức nào có việc "Xử lý vi phạm"');
@@ -250,8 +249,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     try {
       const sau = dem();
       assert(sau <= truoc + 1, `Roster ${truoc} → ${sau} câu khi thêm 10 Case`);
-      const r = classesMod.classRoster(P.admin, lop).find((x: any) => x.id === hv.id);
-      assert(r.viecTiepTheo.filter((x: any) => x.dich?.loai === 'case').length >= 10, 'Việc của 10 Case mới phải có mặt');
+      assert((vtl(P.admin, lop).get(hv.id) ?? []).filter((x: any) => x.dich?.loai === 'case').length >= 10, 'Việc của 10 Case mới phải có mặt');
     } finally {
       conn.prepare(`DELETE FROM sos_cases WHERE id IN (${moi.map(() => '?').join(',')})`).run(...moi);
     }
@@ -293,9 +291,10 @@ export async function runPrHvlTests(t: YThucTestKit) {
     let khop = 0; let soLop = 0;
     for (const lop of lopCungCase(r)) {
       soLop++;
-      for (const s of classesMod.classRoster(P.admin, lop.id)) {
+      for (const [id, viec] of vtl(P.admin, lop.id)) {   // UI-HO-SO-LOP: roster bỏ viecTiepTheo — cùng luật qua viecHocVienTheoLop
+        const s = { id };
         if (!trong.has(s.id)) continue;
-        const co = s.viecTiepTheo.some((v: any) => v.dich?.loai !== 'nhap-diem' && (v.tone === 'danger' || v.tone === 'warn'));
+        const co = viec.some((v: any) => v.dich?.loai !== 'nhap-diem' && (v.tone === 'danger' || v.tone === 'warn'));
         if (co) khop++;
         eq(canLam.has(s.id), co, `Em ${s.id} (lớp ${lop.code}): chip Cần làm ≠ việc gấp ở roster`);
       }
@@ -328,7 +327,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     let tong = 0;
     const trong = new Set(admin.hocVien.map((h: any) => h.id));
     for (const lop of lopCungCase(admin)) {
-      const n = new Set(classesMod.classRoster(P.admin, lop.id).filter((s: any) => trong.has(s.id) && s.viecTiepTheo.some((v: any) => v.dich?.loai !== 'nhap-diem' && v.tone === 'danger')).map((s: any) => s.id)).size;
+      const n = new Set([...vtl(P.admin, lop.id)].filter(([id, viec]) => trong.has(id) && viec.some((v: any) => v.dich?.loai !== 'nhap-diem' && v.tone === 'danger')).map(([id]) => id)).size;
       eq(lop.soEmQuaHan, n, `soEmQuaHan lớp ${lop.code}`);
       tong += n;
     }
@@ -547,7 +546,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   check('PR-HVL (7) · web đầu hồ sơ lớp: nút cố định Nhập điểm · + Case · ⋯ (menuHoSoLop), Thông tin lớp có phần Tuần khai giảng / Lịch Test, LT bọc abbr; không "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Progress Test ẩn với Pre FOU', () => {
     const dau = web('modules/classes/DauTrangLop.tsx'); const pn = web('modules/classes/ClassProgressPanel.tsx'); const pg = web('modules/classes/ClassOverviewPage.tsx');
     const tt = web('modules/classes/ThongTinLopPanel.tsx');
-    assert(/menuHoSoLop\(/.test(dau) && /onViec\('case'\)/.test(dau) && /'Tuần khai giảng'/.test(tt) && /ROUTE_NAME\[/.test(dau) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(dau), 'DauTrangLop');
+    assert(/menuHoSoLop\(/.test(dau) && /onViec\('case'\)/.test(dau) && /'Tuần khai giảng'/.test(tt) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{bConLai\.an\.length\}`\}/.test(dau), 'DauTrangLop');
     assert(!/Lộ trình lớp/.test(dau + pn + pg) && !/Mở từng em rồi bấm/.test(pn), 'chữ cũ còn sót');
     assert(/data\.coGiuaKhoa &&/.test(pn) && /onChuyenTiep/.test(pn) && /tomTatMt/.test(pn) && /Đổi tuần khai giảng không dời lịch MT/.test(pn), 'ClassProgressPanel');
     assert(!/rgba\(242, 161, 161/.test(pn), 'khung hết khoá không còn tô đỏ');

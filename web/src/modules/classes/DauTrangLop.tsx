@@ -1,7 +1,7 @@
-import { Fragment, useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
-import { Nhan, toneBadgeLop } from '../../ui/Nhan.tsx';
+import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -13,11 +13,13 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, demQuaHan, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  DUONG_TAB_TEST, demQuaHan, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
+import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
+import type { RosterRow } from '../students/ClassRoster.tsx';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
@@ -90,7 +92,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const thuong = data.programme?.scoringMode === 'ratio';
   const s = data.summary;
   const gvcn = data.coreTeachers[0] ?? null;
-  const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
+  const tomTat = useTomTatLop(data, homNay);
   /* OV-13b: badge "n việc quá hạn" = cùng danh sách việc với Học viên & Lớp › Cần làm (`/my-work`, `demQuaHan`) — bấm ra đúng số dòng. */
   const laQl = laVaiQuanLy(session?.roles);
   const viec = useApi<{ dong: WorkItem[] }>(laQl ? `/my-work?nguoi=tat-ca&branchId=${data.branchId}` : '/my-work', [data.branchId, laQl]);
@@ -145,18 +147,22 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
     const dau = m.nhom && m.nhom !== truoc?.nhom ? [{ key: `nhom-${m.nhom}`, nhan: t(m.nhom), tieuDe: true, keTruoc: false, onChon: () => undefined }] : [];
     return [...dau, { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) }];
   });
-  const tuan = thuong && s?.currentWeek && s.currentWeek >= 1
-    ? s.totalWeeks ? tuanKhoa(Math.min(s.currentWeek, s.totalWeeks), s.totalWeeks) : data.lienTuc ? t('tuần {n}', { n: s.currentWeek }) : null : null;   // OV-6b2: liên tục không "/tổng"
-  /* K2-13: giữ ký hiệu LT1 · LT2 · RF, tên đủ ở tooltip. */
-  const thongTin = [
-    data.branchName,
-    data.route ? <abbr key="lt" title={ROUTE_NAME[data.route as keyof typeof ROUTE_NAME] ?? data.route} className="no-underline">{data.route}</abbr> : null,
-    t('{n} học viên', { n: s?.studentCount ?? 0 }), tuan,
-    data.startDate ? t('khai giảng {tuan}', { tuan: tuanLich(data.startDate, homNay) }) : null,   // mã tuần (CLAUDE.md 30/09, mockup 20)
-  ].filter(Boolean);
+
+  /* UI-HO-SO-LOP: "Nhập điểm" vào ⋯ (đầu trang chỉ + Case · ⋯ — mockup `ho-so-lop.html`); việc nhập điểm của người xem ở thanh Việc cần làm. */
+  /* Cách xem cũ của tab Học viên (hàng "Cách xem" đã bỏ — truy vết BỎ): Góp ý hàng tuần · Kết quả đầu ra lớp trước (FT, còn đợt) · Thông tin lớp (vai chỉ đọc). */
+  const cheDo = (k: CheDoHocVien) => () => navigate(`/hoc-vien/lop/${data.id}?che-do=${k}`);
+  const vaiXem = vaiXemHocVien(session?.roles);
+  const cachXem: MucMenu[] = [
+    ...(vaiXem !== 'admin' ? [{ key: 'cd-gop-y', nhan: CHE_DO_NHAN['gop-y'], onChon: cheDo('gop-y') }] : []),
+    ...(!thuong && (data.dai?.kqdrDot ?? 0) > 0 && vaiXem !== 'admin' ? [{ key: 'cd-ket-qua', nhan: CHE_DO_NHAN['ket-qua'], onChon: cheDo('ket-qua') }] : []),
+    ...(!mucLop.some((m) => m.key === 'thong-tin') && vaiXem ? [{ key: 'cd-thong-tin', nhan: CHE_DO_NHAN['thong-tin'], onChon: cheDo('thong-tin') }] : []),
+  ];
+  const menuDu: MucMenu[] = [...(data.viewer.canEnterScores ? [{ key: 'nhap-diem', nhan: t('Nhập điểm'), onChon: () => setNhapDiem(true) }] : []), ...cachXem, ...menu];
+  /* Badge còn lại sau thanh Việc cần làm: bỏ "n bài chờ chấm" · "n việc quá hạn" (đã là ô việc) và nhãn chặng (đầu trang gọn — brief 10). */
+  const bConLai = { hien: b.hien.filter((x) => x.key !== 'cham' && x.key !== 'qua-han' && x.key !== 'chang'), an: b.an.filter((x) => x.key !== 'cham' && x.key !== 'qua-han') };
 
   return (
-    <header className="card space-y-2 p-3 sm:p-4">
+    <header className="space-y-3">
       {/* PR-DH (Q-0310-4): Quay lại + Lớp trước/sau theo danh sách vừa mở; mở thẳng bằng link thì theo các lớp cùng khung ở Học viên & Lớp. */}
       <ThanhTruocSau loai="lop" id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
         chiTiet={CHE_DO_NHAN[sp.get('che-do') as CheDoHocVien] ?? TAB_HO_SO_LOP_NHAN[sp.get('tab') as TabHoSoLop]}
@@ -169,42 +175,43 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
         /* HL-10 (Q4): Quản lý của lớp vẫn sửa điểm (máy chủ `kiemLopKetThuc`) — "chỉ xem" chỉ cho người khác. */
         <DaiChiXem>{t('Lớp đã kết thúc')}{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ` — ${t('chỉ xem')}`}</DaiChiXem>
       )}
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-0">
-          <div className="text-xs text-slate-500">{t('Hồ sơ lớp')}</div>
-          <h1 className="m-0 text-lg font-semibold text-slate-100">{data.code} · {dich(data.programme?.name ?? data.kind)}</h1>
-        </div>
-        <div className="flex-1" />
-        <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
-          {data.viewer.canEnterScores && <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:flex-1" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
+      {/* UI-HO-SO-LOP (`dieu-chinh-cuoi.html` khu b): mã lớp + nhãn nhỏ xám / giá trị đậm (P2) — GVCN · Học viên · Lượt gần nhất · Đạt · SOS; + Case · ⋯ bên phải. */}
+      <div className="flex flex-wrap items-center gap-x-[22px] gap-y-2.5">
+        <h1 className="m-0 text-[22px] font-bold leading-tight text-slate-100" title={dich(data.programme?.name ?? data.kind)}>{data.code}</h1>
+        <NhanGt n={t('GVCN')} g={gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-soon">{t('Chưa có GVCN')}</span>} />
+        <NhanGt n={t('Học viên')} g={<span className="tabular-nums">{s?.studentCount ?? 0}</span>} />
+        {tomTat?.luot && <NhanGt n={t('Lượt gần nhất')} g={tomTat.luot} />}
+        {tomTat?.dat && (
+          <NhanGt n={tomTat.dat.nhan} g={(
+            <span className="tabular-nums text-dat">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %{' '}
+              <span className="text-[13px] font-medium text-slate-500">{tomTat.dat.so}/{tomTat.dat.tong}</span></span>
+          )} />
+        )}
+        {tomTat && tomTat.sos.length > 0 && (
+          <NhanGt n="SOS" g={(
+            <span className="flex flex-wrap items-center gap-1.5">
+              {tomTat.sos.map(([muc, n]) => <span key={muc} className={`${CHIP_SOS} ${lopSos(muc)}`} title={t('SOS {muc}: {n} HV', { muc, n })}>{muc} · {n}</span>)}
+            </span>
+          )} />
+        )}
+        <div className="ml-auto flex items-center gap-2 max-sm:ml-0">
           {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
-          {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:flex-1" onClick={() => onViec('case')}>+ Case</button>}
-          <MenuDong muc={menu} nhan={t('Thao tác khác')} />
+          {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onViec('case')}>+ Case</button>}
+          <MenuDong muc={menuDu} nhan={t('Thao tác khác')} />
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-        <span>{thongTin.map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)}</span>
-        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">{t('Final Test: {du}/{tong} em có đủ điểm', { du: data.cuoiKhoa.du, tong: data.cuoiKhoa.tong })}{data.cuoiKhoa.canQl ? ` · ${t('{n} em Quản lý cân nhắc', { n: data.cuoiKhoa.canQl })}` : ''}</span>}
-        <span className="whitespace-nowrap rounded-md border px-2 py-0.5 text-slate-300" style={{ borderColor: 'var(--line)' }}>
-          <abbr title={t('Giáo viên chủ nhiệm')} className="no-underline">{t('GVCN')}</abbr>{' '}
-          {gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">{t('Chưa có GVCN')}</span>}
-        </span>
-      </div>
-
-      <DongGiaoVienBoMon nhom={nhom} />
-
-      {b.hien.length > 0 && (
+      {bConLai.hien.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {b.hien.map((x) => {
+          {bConLai.hien.map((x) => {
             const bam = bamBadge(x);
             return bam
               ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={bam}>{x.nhan}</Nhan>
               : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{x.nhan}</Nhan>;
           })}
-          {b.an.length > 0 && (
-            <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={t('{n} việc khác của lớp', { n: b.an.length })}
-              muc={b.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
+          {bConLai.an.length > 0 && (
+            <MenuDong kieu="chip" bieuTuong={`+${bConLai.an.length}`} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
+              muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
           )}
         </div>
       )}
@@ -214,37 +221,31 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   );
 }
 
-/**
- * GV BỘ MÔN MỘT DÒNG KHÔNG XUỐNG HÀNG (06c §1): "L · R Trần Ngọc Hà   W1 Lê Minh Khoa …". Điện thoại hiện 2 nhóm, máy tính 5 nhóm,
- * còn lại "+k" — bấm ra đủ danh sách ngay bên dưới (không popover trong vùng cắt `overflow-x-clip`). Lớp CSS là chuỗi tĩnh.
- */
-function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
-  const [du, setDu] = useState(false);
-  if (!nhom.length) return null;
-  const mot = (g: NhomGiaoVien, i: number, luonHien: boolean) => (
-    <span key={`${g.nhan}-${i}`}
-      className={`items-baseline gap-1 whitespace-nowrap ${luonHien || i < 2 ? 'inline-flex' : i < 5 ? 'hidden sm:inline-flex' : 'hidden'}`}>
-      <abbr className="font-medium text-slate-500 no-underline" title={g.title}>{g.nhan}</abbr>
-      {g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>}
+/** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2). */
+function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
+  return (
+    <span className="flex min-w-0 flex-col gap-px">
+      <span className="text-xs font-medium text-slate-500">{n}</span>
+      <span className="text-[15px] font-bold text-slate-100">{g}</span>
     </span>
   );
-  return (
-    <div className="text-xs">
-      {/* HL-18: cắt chiều ngang thôi (`overflow-x-clip`) — vùng chạm 44 px của tên GV / "+k" ở 375 không bị cắt theo chiều dọc. */}
-      <div className="flex items-center gap-3.5 overflow-x-clip whitespace-nowrap">
-        {nhom.map((g, i) => mot(g, i, false))}
-        {nhom.length > 2 && (
-          <button type="button" aria-expanded={du} className="link relative border-0 bg-transparent p-0 text-xs sm:hidden after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-['']" onClick={() => setDu((v) => !v)}>
-            +{nhom.length - 2}
-          </button>
-        )}
-        {nhom.length > 5 && (
-          <button type="button" className="link hidden border-0 bg-transparent p-0 text-xs sm:inline" onClick={() => setDu((v) => !v)}>
-            +{nhom.length - 5}
-          </button>
-        )}
-      </div>
-      {du && <div className="mt-1 flex flex-wrap gap-x-3.5 gap-y-1">{nhom.map((g, i) => mot(g, i, true))}</div>}
-    </div>
-  );
+}
+
+/**
+ * SỐ ĐẦU TRANG (khu b): Lượt gần nhất = lượt của lớp có tuần thi gần nhất đã tới (không lượt lịch sử) · Đạt = em đạt kỳ vọng ở LƯỢT GẦN NHẤT ĐÃ
+ * ĐỦ ĐIỂM CỦA TỪNG EM (P8 — không lấy một MT chung của lớp; cùng một MT thì nhãn "Đạt MT2") · SOS theo mức (`sosLevel` của bảng lớp). Dùng lại
+ * hai đường tab Học viên đã tải trước (`/roster`, `/diem-theo-luot`) — không thêm lời gọi.
+ */
+function useTomTatLop(data: HoSoLop, homNay: string | null) {
+  const roster = useApi<RosterRow[]>(`/classes/${data.id}/roster`, [data.id]);
+  const ds = useApi<DanhSachLuot>(data.viewer.coTheXemDiem ? duongDiemTheoLuot(data.id) : null, [data.id]);
+  if (!roster.data) return null;
+  const em = roster.data.filter((r) => r.status === 'active' && !r.archived);
+  const sos = ([1, 2, 3] as const).map((m) => [m, em.filter((r) => (r.sosLevel ?? 0) === m || (m === 3 && (r.sosLevel ?? 0) > 3)).length] as [number, number]).filter(([, n]) => n > 0);
+  const moi = em.map((r) => r.history.find((h) => h.evaluable && !h.lichSu)).filter((h): h is NonNullable<typeof h> => !!h);
+  const nhanLuot = [...new Set(moi.map((h) => h.label))];
+  const dat = moi.length ? { nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : t('Đạt kỳ vọng'), so: moi.filter((h) => h.sosLevel === 0).length, tong: moi.length } : null;
+  const homNayTuan = homNay ?? '9999';
+  const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
+  return { sos, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
 }
