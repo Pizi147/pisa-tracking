@@ -128,7 +128,14 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
   }).filter((m) => m.loai !== 'trong' || !laMt0(ds.find((a) => a.id === m.id)!));
   const sx = row?.category === 'speaking' ? sEx.map((x) => ({ ...x, tuan: mondayOfDate(x.tuan) })) : [];
   if (!moc.some((m) => m.loai === 'diem')) {
-    return <p ref={khung as never} className="m-0 px-4 py-6 text-center text-[14px] text-slate-400">{t('Chưa có điểm MT nào ở {kn} — hành trình hiện từ lượt đầu có điểm.', { kn: tenKn })}</p>;
+    /* Khung ho-so-hv `hv=moi`: nói lượt nào tới tuần nào — chưa có điểm không phải là không tiến bộ. */
+    const lich = moc.map((m) => `${m.ten} ${tuanLich(m.tuan, homNay)}${m.loai === 'trong' ? ` (${t('chưa có điểm')})` : ''}`).join(' · ');
+    return (
+      <div ref={khung} className="px-4 py-6 text-center">
+        <p className="m-0 text-[15px] font-semibold text-slate-100">{t('Chưa có điểm MT nào ở {kn}', { kn: tenKn })}</p>
+        <p className="m-0 mt-1 text-[14px] text-slate-400">{lich ? `${lich} — ` : ''}{t('hành trình hiện từ lượt đầu có điểm; chưa có điểm không phải là không tiến bộ.')}</p>
+      </div>
+    );
   }
 
   /* Trục tuần: từ lượt đầu tới max(tuần này, lượt cuối); mỗi cột một tuần. */

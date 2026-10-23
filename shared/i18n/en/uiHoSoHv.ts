@@ -5,7 +5,8 @@ export const EN_UI_HO_SO_HV = {
   'Bạn không ghi được tiến độ trên lớp của học viên này.': 'You cannot log class progress for this student.',
   'Case · Phương án': 'Case · Plan',
   'Chưa có ghi nhận nào.': 'Nothing logged yet.',
-  'Chưa có điểm MT nào ở {kn} — hành trình hiện từ lượt đầu có điểm.': 'No MT score in {kn} yet — the journey starts from the first scored round.',
+  'Chưa có điểm MT nào ở {kn}': 'No MT score in {kn} yet',
+  'hành trình hiện từ lượt đầu có điểm; chưa có điểm không phải là không tiến bộ.': 'the journey starts from the first scored round; no score yet does not mean no progress.',
   'Chưa nhập': 'Not entered',
   'Chấm = điểm MT chính thức, màu theo kỳ vọng của chính lượt đó; vạch đứt = kỳ vọng từng lượt (đổi Target không tô lại lượt cũ). Vòng đứt = lượt đã tới tuần mà chưa có điểm. Tiến độ trên lớp ghi nguyên văn GV nhập, không vào MT / KPI.':
     'Dot = official MT score, coloured against that round\'s expectation; dashed line = expectation per round (changing the Target does not repaint past rounds). Dashed ring = round whose week has passed with no score. Class progress shows exactly what the teacher logged and does not count towards MT / KPI.',
