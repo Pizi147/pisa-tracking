@@ -290,13 +290,6 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const l = hoSo.hoSoGiaoVien(P.admin, P.normalCoreTeacher.userId).lop.find((x: any) => x.id === lopFouMoi);
     assert(l && l.banGiao === null, JSON.stringify(l?.banGiao));
   });
-  check('Pb2b (3e) · ketQuaHoSoGv lớp thường: khoá dòng ∈ listening/reading/writing/speaking (Pre FOU tong_hop) — web xếp đúng 4 cột cố định', () => {
-    for (const gv of all(`SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.is_fast_track = 0 AND ta.status = 'active' LIMIT 6`)) {
-      for (const k of hoSo.ketQuaHoSoGv(P.admin, gv.user_id).ketQua.filter((x: any) => x.khung === 'thuong')) {
-        assert(k.o.every((o: any) => ['listening', 'reading', 'writing', 'speaking', 'tong_hop', 'listening_speaking', 'reading_writing'].includes(o.dong)), `${k.ma}: ${k.o.map((o: any) => o.dong)}`);
-      }
-    }
-  });
 
   // ------------------------------------------------------------------ khối 4 · bảng Phân tích giáo viên — máy chủ (Task 4)
   console.log('\nPR-Pb2-b · Bảng Phân tích giáo viên: mỗi cột một hàm tập, hai đường, quyền, không N+1');

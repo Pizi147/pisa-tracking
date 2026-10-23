@@ -10,7 +10,6 @@ export async function runPrOv11hTests(t: YThucTestKit) {
   const tongHop: any = await import('../phanTich/tongHop.ts');
   const xuatMt: any = await import('../phanTich/xuatMt.ts');
   const ptGv: any = await import('../phanTich/giaoVien.ts');
-  const hoSoGv: any = await import('../giaoVien/hoSo.ts');
   const phamVi: any = await import('../giaoVien/phamVi.ts');
   const cases: any = await import('../cases/cases.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
@@ -48,10 +47,10 @@ export async function runPrOv11hTests(t: YThucTestKit) {
 
     const gvId = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening_speaking' AND status = 'active' LIMIT 1`, pet.id)?.user_id;
     assert(gvId, 'lớp PET phải có GV môn L+S');
-    const kq = hoSoGv.ketQuaHoSoGv(P.mbManager, gvId).ketQua.find((x: any) => x.classId === pet.id);
-    assert(kq?.moc?.nhan === 'Checkpoint 1' && kq.o.some((x: any) => x.tong > 0), `hồ sơ GV "Kết quả gần nhất": ${JSON.stringify(kq)}`);
-
     const tuan = one(`SELECT rp.week_start FROM report_periods rp WHERE rp.id = ?`, cp[0].planned_period_id).week_start;
+    /* UI-HO-SO-GV: hồ sơ GV theo kỳ — hàng lớp PET ở bảng Học thuật (thay "Kết quả gần nhất"). */
+    const kq = ptGv.chiSoHoSoGv(P.mbManager, gvId, { tu: d.mondayOfDate(d.addDaysIso(tuan, -14)), den: d.mondayOfDate(d.addDaysIso(tuan, 14)) }).hocThuatTheoLop.find((x: any) => x.classId === pet.id);
+    assert(kq?.ketQua.k === 'so' && kq.theoBai.some((b: any) => b.bai === 'Checkpoint 1'), `hồ sơ GV Học thuật: ${JSON.stringify(kq)}`);
     const gv = ptGv.phanTichGiaoVien(P.mbManager, { ct: 'thuong', cn: pet.branch_id, tu: d.mondayOfDate(d.addDaysIso(tuan, -14)), den: d.mondayOfDate(d.addDaysIso(tuan, 14)) })
       .hang.find((h: any) => h.id === gvId);
     assert(gv?.ketQua?.listening_speaking?.k === 'so', `Phân tích GV cột L+S: ${JSON.stringify(gv?.ketQua)}`);

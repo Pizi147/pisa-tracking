@@ -9563,6 +9563,9 @@ await runPrUiHvLopTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== V5 UI-TONG-QUAN (Tổng quan mọi vai — số = Báo cáo, Σ tử / Σ mẫu, quyền)
 const { runPrUiTongQuanTests } = await import('./prUiTongQuan.tests.ts');
 await runPrUiTongQuanTests({ check, assert, conn, P } as any);
+// ==================================================================== V5 UI-HO-SO-GV (thi thật · panel có điểm · lọc Đạt / Chưa đạt · Case theo trạng thái)
+const { runPrUiHoSoGvTests } = await import('./prUiHoSoGv.tests.ts');
+await runPrUiHoSoGvTests({ check, assert, conn, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
