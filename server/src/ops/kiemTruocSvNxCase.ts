@@ -14,7 +14,7 @@ if (process.argv[1] && /kiemTruocSvNxCase\.[jt]s$/.test(process.argv[1])) {
     const ds = kiemTruocSvNxCase(db());
     if (!ds.length) console.log('\nKhông có dòng nào cần đổi.');
     else {
-      for (const p of ['A', 'B-ha-co', 'B-xac-nhan-case', 'B-chua-co-case'] as const) console.log(`  ${p}: ${ds.filter((d) => d.phan === p).length}`);
+      for (const p of ['A', 'A-khong-khop', 'B-ha-co', 'B-xac-nhan-case', 'B-chua-co-case'] as const) console.log(`  ${p}: ${ds.filter((d) => d.phan === p).length}`);
       for (const d of ds) console.log(`  [${d.phan}] #${d.id} · ${d.hocVien} · ${d.luot}: ${d.ghi}`);
     }
   } catch (e) {

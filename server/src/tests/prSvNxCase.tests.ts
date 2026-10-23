@@ -14,6 +14,7 @@
  *  NX12 SOS tạm (lượt chưa chốt): Case tạm không hạn, không việc Xác nhận Case
  *  NX13 Overall đạt → Case chưa xử lý tự mất
  *  NX14 migrate: Case mô tả từ nhận xét gắn nguồn (nội dung giữ), cờ S đã hết việc hạ, lần hai không đổi; kiểm trước không ghi
+ *  NX15 migrate: Case đã trượt sang MT2 mà mô tả là nhận xét MT1 → nguồn MT1 (nhận xét MT2 không đè); mô tả không trùng nhận xét nào → NULL, không bị đè
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { emailThu } from '../seed/emailThu.ts';
@@ -272,5 +273,28 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     const ap3: string[] = [];
     mig.migratePrSvNxCase(conn, ap3);
     assert(!ap3.length, `lần sau phải không đổi: ${JSON.stringify(ap3)}`);
+  }));
+
+  check('NX15 · migrate A: Case trượt sang MT2, mô tả = nhận xét MT1 → nguồn MT1, nhận xét MT2 sau đó không đè; mô tả không trùng nhận xét nào → nguồn NULL, giữ', () => thu(() => {
+    const { gvPT } = nguoiS();
+    const a = emMoi();
+    const c = chot(a.m1, { bandS: 5, nxS: NX.speaking, nguoiLuuS: gvPT });
+    /* Dữ liệu trước PR: Case đã trượt sang MT2 (lượt đang theo = MT2), ô S MT2 có nhận xét khác, mô tả vẫn là nhận xét MT1, chưa có nguồn. */
+    run('UPDATE sos_cases SET attempt_id = ?, mo_ta_attempt_id = NULL WHERE id = ?', a.m2, c.id);
+    run(`INSERT INTO case_milestones (case_id, kind, attempt_id, occurred_on, created_at) VALUES (?, 'repeat', ?, ?, ?)`, c.id, a.m2, TODAY, new Date().toISOString());
+    run(`INSERT INTO assessment_scores (attempt_id, skill, band, comment) VALUES (?, 'speaking', 5, 'MT2: Part 3 trả lời quá ngắn.')`, a.m2);
+    /* Case thứ hai cùng em (Listening): mô tả không trùng nhận xét nào. */
+    const cL = Number(run(`INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category, origin_kind, status, created_at)
+        SELECT id, student_id, cycle_id, 'listening', 'listening', 'mock', 'open', ? FROM assessment_attempts WHERE id = ?`, new Date().toISOString(), a.m1).lastInsertRowid);
+    run(`INSERT INTO case_issues (case_id, role, taxonomy_code, skill, observation, created_by, created_at) VALUES (?, 'primary', ?, 'listening', 'Mô tả cũ không trùng nhận xét nào.', NULL, ?)`,
+      cL, d.issuesForTopic('listening')[0].code, new Date().toISOString());
+    const kt = mig.kiemTruocSvNxCase(conn);
+    assert(kt.find((x: any) => x.id === c.id)?.nguon === a.m1 && kt.find((x: any) => x.id === cL)?.phan === 'A-khong-khop', JSON.stringify(kt.filter((x: any) => [c.id, cL].includes(x.id))));
+    mig.migratePrSvNxCase(conn, []);
+    assert(one('SELECT mo_ta_attempt_id n FROM sos_cases WHERE id = ?', c.id).n === a.m1 && one('SELECT mo_ta_attempt_id n FROM sos_cases WHERE id = ?', cL).n === null, 'nguồn sai');
+    svc.saveScore(gvPT, a.m2, 'speaking', { nhanXet: 'MT2: nhận xét mới sau migrate, không được đè mô tả.' }, TODAY);
+    assert(moTa(c.id)?.observation === NX.speaking, `mô tả MT1 bị đè: ${moTa(c.id)?.observation}`);
+    svc.saveScore(QL, a.m1, 'listening', { band: 4, nhanXet: 'Nhận xét L mới — Case không nguồn không bị đè.' }, TODAY);
+    assert(moTa(cL)?.observation === 'Mô tả cũ không trùng nhận xét nào.', `mô tả không nguồn bị đè: ${moTa(cL)?.observation}`);
   }));
 }
