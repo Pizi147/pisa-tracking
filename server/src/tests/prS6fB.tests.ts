@@ -86,7 +86,8 @@ async function runTask12(t: YThucTestKit) {
   });
 
   check('S6F-b (12) · dải Chờ duyệt (Tổng quan QL) báo lỗi thay vì biến mất', () => {
-    assert(/export function DaiChoDuyet[\s\S]{0,400}if \(error\) return <ErrorState/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'DaiChoDuyet nuốt lỗi');
+    /* UI-TONG-QUAN: DaiChoDuyet (KhoiCanXuLy) đã gỡ — Chờ bạn duyệt ở Tổng quan V5 là `ChoDuyetGon`; lỗi tải hộp vẫn hiện ở Công việc. */
+    assert(!fs.existsSync(path.join(REPO, 'web/src/modules/worklist/KhoiCanXuLy.tsx')), 'KhoiCanXuLy còn');
   });
 
   check('S6F-b (12) · /signals: mỗi chỉ số gọi metricSet MỘT lần (không theo chi nhánh) — HAI ĐƯỜNG: số mỗi chi nhánh = metricSet(id, {branchId}).n; số câu không tăng khi thêm 2 chi nhánh có lớp', () => {

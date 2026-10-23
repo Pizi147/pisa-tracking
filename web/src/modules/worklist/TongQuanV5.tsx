@@ -12,7 +12,6 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
-import { thamSoTq } from './TongQuanQl.tsx';
 import { addDaysIso, mondayOfDate, rateView, thamSoCt, tuanLich, type ChuongTrinh, type PhanTichGvKq, type OPtGv, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -29,6 +28,9 @@ export type TongQuanV5Data = {
   datMt: (TyLeV5 & { chuaDu: number }) | null; casePa: { coPa: number; mo: number; chuaPa: number }; thiThangNay: number; thiThat: TyLeV5 | null;
   lop: DongLop[] | null; chiNhanh: DongCn[] | null; tre: GvTre[];
 };
+
+/** Tham số chung của mọi đường trên trang (chi nhánh + khung). */
+export const thamSoTq = (branchId: number | null, ct: ChuongTrinh) => `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
 
 /* ───────────── khung chung ───────────── */
 

@@ -65,12 +65,9 @@ const MIEN_TABLE: string[] = [
   'web/src/modules/tutor/PanelTutor.tsx',
   'web/src/modules/tutor/TaiDanhSach.tsx',
   'web/src/modules/tutor/TutorPage.tsx',
-  'web/src/modules/worklist/BranchPulse.tsx',
-  'web/src/modules/worklist/KhoiCanXuLy.tsx',
   'web/src/modules/worklist/LopToiDay.tsx',
   'web/src/modules/worklist/MeetingPage.tsx',
   'web/src/modules/worklist/MgmtTasksPage.tsx',
-  'web/src/modules/worklist/TongQuanQl.tsx',
 ];
 /** BANG-2: tệp còn lớp căn (`text-left|center|right`) trên `<td>` / `<th>`. Chỉ được GIẢM. */
 const MIEN_CAN: string[] = [
@@ -103,9 +100,7 @@ const MIEN_CAN: string[] = [
   'web/src/modules/test/lichTest/HangLop.tsx',
   'web/src/modules/test/lichTest/KhoiNo.tsx',
   'web/src/modules/tutor/TutorPage.tsx',
-  'web/src/modules/worklist/BranchPulse.tsx',
   'web/src/modules/worklist/LopToiDay.tsx',
-  'web/src/modules/worklist/TongQuanQl.tsx',
 ];
 /** BANG-2: tệp còn ô nhập / nút trong `<th>` (trừ `ui/ui.tsx` — nút sắp xếp của `Th`). Chỉ được GIẢM. */
 const MIEN_TH_DIEU_KHIEN: string[] = [

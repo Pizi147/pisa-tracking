@@ -9,9 +9,8 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { thamSoTq } from './TongQuanQl.tsx';
 import {
-  DauTrangTq, TongQuanAdminV5, TongQuanCxV5, TongQuanGvV5, TongQuanQlV5, TongQuanQtV5, TongQuanTutorAn, TongQuanTvvV5, type TongQuanV5Data,
+  DauTrangTq, thamSoTq, TongQuanAdminV5, TongQuanCxV5, TongQuanGvV5, TongQuanQlV5, TongQuanQtV5, TongQuanTutorAn, TongQuanTvvV5, type TongQuanV5Data,
 } from './TongQuanV5.tsx';
 import { laVaiQuanLy } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
