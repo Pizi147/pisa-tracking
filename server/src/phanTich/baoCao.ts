@@ -20,7 +20,8 @@ import { ketQuaThiThatKq, mockTrongKhoang } from './ketQuaThi.ts';
 import { kckCuaLuot } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 
-export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string };
+/** `classId` (UI-TONG-QUAN): chỉ panel Đạt MT / Thi tháng này của MỘT lớp (Tổng quan › Lớp cần chú ý) — tập em theo lớp của lượt / lớp đang học. */
+export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string; classId?: number | null };
 
 const LOAI_LUOT: Record<ChuongTrinh, string> = { ft: `a.kind = 'mock'`, thuong: `a.kind IN ('progress', 'final', 'checkpoint')` };
 
@@ -118,18 +119,23 @@ export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: S
  * THI THÁNG NÀY (P4, 22/10 — thay "Thi tuần này"): HV có NGÀY THI THẬT đã chốt (`exam_date`; tháng dự kiến không tính) trong tháng của hôm nay, lớp em ĐANG HỌC
  * (ghi danh còn hiệu lực) trong phạm vi Phân tích + chi nhánh + khung đang xem. Số TẠI LÚC XEM (không theo kỳ). Lộ trình bỏ dở, HV lưu trữ không tính.
  */
-export function tapThiThangNay(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): Map<number, string> {
+export function tapThiThangNay(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; classId?: number | null }): Map<number, string> {
+  return new Map([...tapThiThangNayLop(p, f)].filter(([, x]) => !f.classId || x.lop === f.classId).map(([s, x]) => [s, x.ngay]));
+}
+
+/** Như `tapThiThangNay` kèm LỚP em đang học (lớp nhỏ nhất nếu nhiều) — Tổng quan chia theo lớp / chi nhánh (UI-TONG-QUAN), cùng một câu. */
+export function tapThiThangNayLop(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): Map<number, { ngay: string; lop: number }> {
   const { cs } = phamViPhanTich(p, f.branchId ?? null, null);
   const thang = demoToday().slice(0, 7);
   const where = [cs.sql, 'c.is_fast_track = ?', `cy.exam_date BETWEEN ? AND ?`, `cy.status != 'abandoned'`, 's.archived_at IS NULL'];
   const args: unknown[] = [...cs.params, f.ct === 'ft' ? 1 : 0, `${thang}-01`, `${thang}-31`];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
-  const out = new Map<number, string>();
+  const out = new Map<number, { ngay: string; lop: number }>();
   for (const r of db().prepare(
-    `SELECT cy.student_id, MIN(cy.exam_date) AS ngay FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
+    `SELECT cy.student_id, MIN(cy.exam_date) AS ngay, MIN(c.id) AS lop FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
        JOIN enrollments e ON e.student_id = cy.student_id AND e.status = 'active'   -- lớp em đang học (ghi danh còn hiệu lực)
        JOIN classes c ON c.id = e.class_id
-      WHERE ${where.join(' AND ')} GROUP BY cy.student_id`).all(...args) as any[]) out.set(r.student_id, r.ngay);
+      WHERE ${where.join(' AND ')} GROUP BY cy.student_id`).all(...args) as any[]) out.set(r.student_id, { ngay: r.ngay, lop: r.lop });
   return out;
 }
 
@@ -313,7 +319,9 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
   if (f.o === 'dat-mt' || f.o === 'dat-mt-chua-du') {
     /* Panel chỉ đọc Đạt MT (05 mục 4): mẫu — chưa đạt trước, dòng phụ lớp · lượt · tuần thi · Overall · kỳ vọng · kết quả; "Chưa đủ dữ liệu" là tập riêng. */
     if (f.ct !== 'ft') throw badRequest('Đạt MT chỉ có ở Fast Track.');
-    const d = tapDatMt(p, f);
+    const d0 = tapDatMt(p, f);
+    const cuaLop = (s: number) => !f.classId || d0.luot.get(s)?.classId === f.classId;
+    const d = f.classId ? { ...d0, mau: new Set([...d0.mau].filter(cuaLop)), dat: new Set([...d0.dat].filter(cuaLop)) } : d0;
     if (f.o === 'dat-mt-chua-du') return ra('hoc-vien', d.chuaDu, t('chưa đủ dữ liệu (ngoài mẫu Đạt MT)'));
     const ids = [...d.mau].sort((a, b) => Number(d.dat.has(a)) - Number(d.dat.has(b)) || a - b);
     const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => {
