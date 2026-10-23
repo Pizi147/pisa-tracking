@@ -53,6 +53,7 @@ Số trên web là seed (khác số demo của mockup) — so khung, thứ tự,
 ## [XM] — cần PTA Plan / chủ SP
 
 - ~~XM-1~~ ô "Phản hồi vấn đề HV": chủ SP bỏ (23/10).
+- **XM-5** thi thật ≠ Test (chủ SP 23/10: "thi thật là thi IELTS thật, Final / Progress là phạm trù khác"): hồ sơ GV (và Tổng quan GV "Đạt MT", cùng API `chi-so`) **đã tách** — Đạt kỳ vọng / lượt / panel kết quả chỉ MT, Progress, Final; thi thật chỉ ở ô Đạt Target thi thật, cột Thi thật, bảng Theo kỹ năng. **Bảng Phân tích GV** (`phanTichGiaoVien`, màn khác) vẫn gộp thi thật vào cột kết quả theo C10 → **khuyến nghị** UI-PHAN-TICH tách giống hồ sơ (cột thi thật riêng), cần PTA Plan chốt.
 - **XM-2** thẻ lớp không có mốc Test tiếp ("MT1 W1 OCT"): ngoài phạm vi việc giao, cần API mốc tiếp theo lớp. **Khuyến nghị:** để `plan.md` mục 4 nếu chủ SP muốn.
 - **XM-3** Tiến bộ "lượt" thay "HV": máy chủ đếm theo lượt kỹ năng (K5); đổi sang HV cần luật mới. **Khuyến nghị:** giữ "lượt".
 - **XM-4** khối V4 (Việc đang có, Case đang phụ trách, Yêu cầu đã gửi): `ho-so-gv-truy-vet.md` BỎ "Yêu cầu đã gửi" + chip bàn giao, nhưng luật 22/10 tối "GIỮ thao tác V4" → **giữ cả ba** (chip bàn giao vẫn ở thẻ lớp). Chờ PTA Plan nói bỏ.

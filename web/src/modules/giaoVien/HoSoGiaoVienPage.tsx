@@ -271,7 +271,7 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   };
   const COT: CotBang[] = [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 170 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 120 },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 200 },
     /* Cột linh hoạt duy nhất: chữ "12 · MT3 10 · MT2 2" (lượt theo bài) — các cột số giữ bề rộng cố định, không co chữ. */
     { key: 'luot', nhan: t('Lượt trong kỳ'), kieu: 'chu' },
     { key: 'kq', nhan: t('Đạt kỳ vọng'), kieu: 'phan-tram', rong: 170 },
@@ -284,7 +284,7 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
     const dam = h.cong ? 'font-bold' : '';
     switch (c.key) {
       case 'lop': return h.cong || h.classId === null ? <b className="font-bold">{h.ma}</b> : <Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so font-semibold">{h.ma}</Link>;
-      case 'ky': return <span className="flex flex-wrap gap-1">{h.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
+      case 'ky': return <span className="flex gap-1">{h.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
       case 'luot': return (
         <span className={`tabular-nums ${dam}`}>{h.luot}
           {h.theoBai.length > 0 && <span className="font-normal text-slate-500"> · {h.theoBai.map((b) => `${b.bai} ${b.n}`).join(' · ')}</span>}
@@ -348,7 +348,7 @@ function TheoKyNang({ id, d, ky }: { id: number; d: ChiSoHoSoGv; ky: string }) {
     <OSo giaTri={n} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&loc=${loc}&${ky}`} tieuDe={tieuDe} className={`${vung} ${lop}`} />
   );
   const COT: CotBang[] = [
-    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'ten', rong: 170 },
+    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chip', rong: 170 },
     { key: 'kq', nhan: t('Đạt kỳ vọng'), kieu: 'chu' },
     { key: 'chua', nhan: t('Chưa đạt'), kieu: 'so', rong: 110 },
     ...(coThi ? [{ key: 'thi', nhan: t('Thi thật'), kieu: 'chu', rong: 220, goiY: t('Đạt Target thi thật') } as CotBang] : []),
@@ -467,6 +467,13 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
                 <OSo giaTri={x.n} tieuDe={`Case · ${dich(NHAN_TRANG_THAI[x.tt])}`} nguon={nguon(id, `cot=case-mo&tt=${x.tt}`)} className={`${vung} font-bold ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-100'}`} />
               </span>
             ))}
+            {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. */}
+            {ds.some((c) => c.quaHan) && (
+              <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold text-bad" style={{ borderColor: 'var(--line-strong)' }}>
+                ⚠ {t('việc tiếp quá hạn')}
+                <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
+              </span>
+            )}
           </div>
           {truoc.length > 0 && (
             <div>
