@@ -20,7 +20,7 @@ Số trên web là dữ liệu seed (khác số demo của mockup) — so khung,
 | 9 | Chờ bạn duyệt: dòng gọn (loại · đối tượng · người gửi · thời gian chờ) → panel duyệt; "Hộp duyệt ›" | `ChoDuyetGon` → `KhungPanel` "DUYỆT" + `TheYeuCau` (V4) | KHỚP |
 | 10 | Đi tiếp (web: **Điều hướng**): "n HV thi tháng này" · "Case chưa có PA" · "HV chưa có lịch thi" · "Báo cáo tuần trước" | `DiTiep`: HV thi tháng này (lọc `thi=1`) · **n Case chưa có PA → Công việc nhóm Case học thuật** · **Lịch thi → HV & Lớp › Lịch thi** · Việc của tôi · Báo cáo | KHỚP (XM-3 theo chủ SP 23/10) |
 | 11 | QT: bảng Theo chi nhánh (Đạt MT · Case có PA · Đạt Target thi thật · Thi tháng này), hàng "Toàn hệ thống" Σ tử / Σ mẫu (T20); bấm hàng → mức QL | `TheoChiNhanh` (`onHang` → `?cn=`) | KHỚP |
-| 12 | QT chỉ số "Chi nhánh cần xem" | thay bằng "Đạt Target thi thật" (Σ tử / Σ mẫu) | KHÁC — [XM-4] |
+| 12 | QT chỉ số "Chi nhánh cần xem" | thay bằng "Đạt Target thi thật" (Σ tử / Σ mẫu) | KHỚP (XM-4 chủ SP chọn khuyến nghị 23/10) |
 | 13 | GV: Việc đúng hạn · Bài chờ chấm · Case đang xử lý · Đạt MT kỹ năng tôi dạy | (chủ SP 23/10) Việc của tôi (+ quá hạn) · **Case đang xử lý** (bấm → danh sách) · Đạt MT kỹ năng tôi dạy · Tiến bộ | KHỚP (theo chủ SP 23/10; ý "17/20" chủ SP bỏ — việc xong không còn trong danh sách nên không có "tổng") |
 | 14 | GV: hai khối "Kỹ năng tôi dạy" · "Lớp tôi chủ nhiệm" | GIỮ "Lớp tôi dạy" V4 (`LopToiDay`, cột "Tôi dạy" ghi kỹ năng / GVCN); tách hai khối đã vào `plan.md` mục 4 (SV-TQ-GV) | KHÁC — [XM-5] |
 | 15 | TVV: chỉ 3 nhóm Xử lý đúng hạn · Thi tháng này · Chờ KQ / Lộ trình tiếp (V5-D) | `TongQuanTvvV5`: Báo PH đúng hạn (K6) · Thi tháng này · Chờ KQ · Lộ trình tiếp | KHỚP |
@@ -36,14 +36,14 @@ Số trên web là dữ liệu seed (khác số demo của mockup) — so khung,
 | — | BỎ: `KhoiCanQuyet` (Cần bạn quyết), dải tóm tắt, "Tuần này", form nhúng (nợ 145, truy vết mục 3) | việc ở Công việc; Trễ chấm thành cột "Quá hạn" của GV cần chú ý | BỎ |
 | — | BỎ: Tổng quan CX cũ (6 ô số, Điểm đáng chú ý, Lịch sắp tới, Theo chi nhánh V4) · TVV "Học viên của tôi" 6 ô đếm | khung V5 | BỎ |
 
-**Đếm (23/10 sau phản hồi chủ SP):** 21 KHỚP · 2 KHÁC (dòng 12 [XM-4], 14 [XM-5]) → 21 / 23 = **91 % — đạt cổng 90 %**. Chủ SP chọn khuyến nghị XM-4 → 22 / 23 = 96 %; XM-5 đã vào `plan.md` (SV-TQ-GV) — cần API mới, không làm trong PR giao diện này.
+**Đếm (23/10 sau phản hồi chủ SP):** 22 KHỚP · 1 KHÁC (dòng 14 [XM-5], đã vào `plan.md` SV-TQ-GV — cần API mới) → 22 / 23 = **96 % — đạt cổng 90 %**.
 
 ## [XM] — trạng thái 23/10
 
 - **XM-1** công tắc FT / Thường ở đầu trang — **chủ SP duyệt**.
 - **XM-2** "Case có PA" theo GV — **đã làm**: máy chủ `caseGv` (Case đang mở GV phụ trách ở chi nhánh, trừ Case chưa chốt PA — cùng tập "Case chưa chốt PA" của bảng lớp); bấm % → Case đang mở của GV (`/giao-vien/:id/o?cot=case-mo`, cùng hàm hồ sơ GV). Cột cũng hiện ở Lớp thường (Case không riêng FT).
 - **XM-3** — **đã làm**: "n Case chưa có PA" → Công việc nhóm **Case học thuật** (nơi có việc xác định nguyên nhân / nhận xét / xác nhận PA để chốt); "HV chưa có lịch thi" bỏ, thay **Lịch thi** → HV & Lớp › Lịch thi.
-- **XM-4** QT "Chi nhánh cần xem" — *giải thích:* muốn ĐẾM "chi nhánh cần xem" phải có một vạch, vd "Đạt MT dưới 50 % là cần xem". Con số 50 % đó là **ngưỡng**; luật C08 (đã chốt) cấm ngưỡng kiểu này vì nó tự chấm chi nhánh tốt / xấu, chi nhánh nhỏ vài em là nhảy qua lại vạch. **Khuyến nghị: giữ "Đạt Target thi thật"** (đã có, cùng số Báo cáo); bảng Theo chi nhánh ngay dưới đã cho thấy chi nhánh nào thấp. → chủ SP chọn: giữ / hay đặt ngưỡng (phải sửa luật C08).
+- **XM-4** QT "Chi nhánh cần xem" — **chủ SP chọn khuyến nghị (23/10): giữ "Đạt Target thi thật"**, không đặt ngưỡng (luật C08 giữ nguyên).
 - **XM-5** tách "Kỹ năng tôi dạy" / "Lớp tôi chủ nhiệm" — **nên làm** (GV thấy rõ phần mình chịu trách nhiệm theo môn và theo lớp CN), nhưng cần API `lop-toi-day` trả hai phần → **đã đưa vào `plan.md` mục 4 (SV-TQ-GV)**; PR này giữ "Lớp tôi dạy" V4 để không mất số bấm được.
 - **XM-6** Admin — **đã làm theo chủ SP** (bỏ Đề nghị dời chờ; "MT chưa xếp lịch" → "HV chưa có MT tiếp theo" = em FT đang học không còn lượt MT nào đã xếp tuần, cùng số Kế hoạch Test).
 - ~~XM-7~~ ô "17/20": chủ SP bỏ (23/10) — việc làm xong rời danh sách nên không có "tổng"; ô giữ "n việc đang mở · ⚠ k quá hạn".
