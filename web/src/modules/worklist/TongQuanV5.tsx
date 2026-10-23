@@ -165,7 +165,7 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
     if (c.key === 'sos') {
       if (!l.sos.some((n) => n > 0)) return <span className="text-slate-500">—</span>;
       return (
-        <span className="inline-flex gap-1">
+        <span className="inline-flex flex-wrap gap-1">
           {l.sos.map((n, i) => n > 0 && (
             <span key={i} className={`${CHIP_SOS} ${lopSos(i + 1)}`}>SOS {i + 1} · <OSo giaTri={n} className="no-underline" tieuDe={`SOS ${i + 1} · ${l.ma}`} nguon={qCn(d, `sos${i + 1}`, l.khoa)} /></span>
           ))}
