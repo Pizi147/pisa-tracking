@@ -215,8 +215,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   );
 }
 
-/** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2). */
-function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
+/** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2) — hồ sơ lớp + hồ sơ HV. */
+export function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
   return (
     <span className="flex min-w-0 flex-col gap-px">
       <span className="text-xs font-medium text-slate-500">{n}</span>

@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { CHU_THEM_PA, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
+import { CHU_DA_XONG, CHU_THEM_PA, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { diffDays } from '../util.ts';
@@ -56,7 +56,9 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
      (`viecBuocTiep`: QL / TVV của chi nhánh). Dòng: "Đã xong · OVR 6.5 · Đạt Target" + nút mở panel Bước tiếp. */
   const bt: ViecHocVien[] = (n.choBuocTiep === false ? [] : viecBuocTiep(p, { today, branchId: null, studentId: sid })).map((v) => {
     const quaHanNgay = v.due < today ? diffDays(today, v.due) : null;
-    return { key: v.key, loai: 'buoc-tiep', chu: v.contextLabel, kyNang: null, caseId: null, paId: null, han: v.due, quaHanNgay,
+    /* UI-HO-SO-HV (nợ #515): câu bắt đầu bằng động từ như mọi việc — "Chọn bước tiếp · OVR 6.5 · Đạt Target" (không "Đã xong · …"). */
+    const kq = String(v.contextLabel ?? '').replace(new RegExp(`^${CHU_DA_XONG}( · )?`), '');   // contextLabel = nhanDaXong(…) [· đã gia hạn]
+    return { key: v.key, loai: 'buoc-tiep', chu: kq ? `Chọn bước tiếp · ${kq}` : 'Chọn bước tiếp', ...(kq ? { khoa: 'Chọn bước tiếp · {kq}', bien: { kq } } : {}), kyNang: null, caseId: null, paId: null, han: v.due, quaHanNgay,
       tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Chọn bước tiếp ›', mo: { loai: 'duong', href: v.href } };
   });
   /* OV-13q: "Cập nhật kết quả thi thật ›" mở panel Kết quả thi thật ngay trong hồ sơ (`?viec=thi-that`); hạn = hạn sau thi (cùng việc Công việc). */

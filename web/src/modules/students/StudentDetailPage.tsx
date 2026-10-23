@@ -6,16 +6,17 @@ import { api } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
-import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
+import { CaseKyNang, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
+import { BieuDoHanhTrinh, DauHanhTrinh, DiemDau, OVERALL, TienDoTrenLop, type ChonKn } from './HanhTrinhKyNang.tsx';
 import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { CHU_DA_XONG } from '@shared/domain/index.ts';
-import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
+import { DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -99,7 +100,7 @@ export default function StudentDetailPage() {
    * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối Case bên dưới.
    * Bấm "Reading" ở bảng trên là khối dưới chỉ còn Case Reading; bấm lại thì bỏ lọc.
    */
-  const [skillPick, setSkillPick] = useState<string | null>(null);
+  const [chonTay, setChonTay] = useState<ChonKn | null>(null);
   /*
    * BẢNG KỸ NĂNG NẠP Ở ĐÂY, KHÔNG NẠP TRONG KHỐI CON.
    *
@@ -144,8 +145,8 @@ export default function StudentDetailPage() {
     } else if (p.kn && data.cycle) {
       const boHop = caseCategoriesFor(data.cycle.ratio ? 'ratio' : 'ielts_band', data.cycle.programmeCode);
       const mapped = anhXaKyNang(p.kn, boHop);
-      if (mapped) setSkillPick(mapped);
-      return cuonOnDinh(() => document.getElementById('bang-ky-nang'), null);
+      if (mapped) setChonTay(mapped);
+      return cuonOnDinh(() => document.getElementById('hanh-trinh-kn'), null);
     }
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,12 +177,16 @@ export default function StudentDetailPage() {
       setParams(next, { replace: true });
     }
   };
-  /** Bấm một ô số (R8c, Q11): về tab Học thuật, chọn kỹ năng, cuộn tới bảng. */
-  const moKyNang = (kn: string | null | undefined) => {
-    if (!kn) return;
-    // Giữ nguyên lộ trình đang xem — không để bấm ô số làm nhảy về lộ trình mặc định.
-    navigate(duongHoSoHocVien(data.id, { kn, loTrinh: p.loTrinh }));
-  };
+  /*
+   * Ô ĐIỂM ĐANG CHỌN (UI-HO-SO-HV, `10` mục 5): bấm ô ở đầu trang = đổi kỹ năng của Hành trình + Case & PA (về tab Học thuật nếu đang ở tab khác).
+   * Chưa bấm: `?kn=` của liên kết, không thì kỹ năng có Case gấp nhất (`dauHoSo.o.hocThuat`), không thì Overall.
+   */
+  const rowsFt = (skillRows ?? []).filter((r) => !r.tuLopTruoc);
+  const macDinh = data.dauHoSo?.o?.hocThuat?.dong?.[0]?.category as string | undefined;
+  const chon: ChonKn = chonTay ?? (macDinh && rowsFt.some((r) => r.category === macDinh) ? macDinh : cy?.ratio && rowsFt[0] ? rowsFt[0].category : OVERALL);
+  const hangChon = chon === OVERALL ? null : (skillRows ?? []).find((r) => r.category === chon && !r.tuLopTruoc) ?? null;
+  const tenChon = chon === OVERALL ? 'Overall' : hangChon ? dich(hangChon.label) : chon;
+  const chonKn = (k: ChonKn) => { setChonTay(k); if (tab !== 'hoc-thuat') setTab('hoc-thuat'); };
 
   /** Nút động từ của thanh việc: mở đúng Ngăn Case / tab Ý thức / trang bàn giao. */
   const lamViec = (x: Viec) => {
@@ -217,32 +222,28 @@ export default function StudentDetailPage() {
         {data.lopHoc?.chiXem && (
           <DaiChiXem>{t('Học viên đã lưu trữ{ngay} — chỉ xem', { ngay: data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : '' })}</DaiChiXem>
         )}
-        <div className="rounded-xl border p-3 sm:p-4 mt-1.5"
-             style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <span className="block text-xs text-slate-500">
-                {t('Hồ sơ học viên')}
-              </span>
-              <h1 className="text-xl font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0 mt-0.5">
-                {data.fullName}
-                <MissingBadge items={data.missing} />
-                {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
-                {data.archivedAt && <Info>{t('Đã lưu trữ')}</Info>}
-                {/* OV-13q: "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" thay nhãn "Đã xong" khi còn việc sau thi. */}
-                {data.sauThi ? <NhanSauThi s={data.sauThi} /> : bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
-                {data.sauThi?.coTheGiaHan && !data.lopHoc?.chiXem && (
-                  <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>
-                )}
-              </h1>
-              <DongThongTin tt={data.dauHoSo.thongTin} />
-              <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} tvv={data.tvv?.ten ?? data.consultantName} />
-            </div>
-
+        {/*
+          UI-HO-SO-HV (`dieu-chinh-cuoi.html` khu c + `ho-so-hv.html`): đầu HAI dòng, không khung — dòng 1 tên + nhãn trạng thái | + Case · ⋯ (GIỮ V4);
+          dòng 2 nhãn nhỏ / giá trị đậm (Lớp · Lộ trình · Target · Tuần học · Ngày thi · GVCN · TVV); liên hệ một dòng nhỏ dưới (GIỮ OV-10b).
+          Câu tóm tắt máy viết + bốn ô (PR-VAI-b) BỎ — số ở ô điểm to, việc ở thanh Việc cần làm (truy vết `ho-so-hv` mục 2).
+        */}
+        <header className="mt-1.5 space-y-2.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="m-0 flex flex-wrap items-center gap-2 text-[22px] font-bold leading-tight text-slate-100">
+              {data.fullName}
+              <MissingBadge items={data.missing} />
+              {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
+              {data.archivedAt && <Info>{t('Đã lưu trữ')}</Info>}
+              {/* OV-13q: "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" thay nhãn "Đã xong" khi còn việc sau thi. */}
+              {data.sauThi ? <NhanSauThi s={data.sauThi} /> : bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
+              {data.sauThi?.coTheGiaHan && !data.lopHoc?.chiXem && (
+                <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>
+              )}
+            </h1>
             {/* ml-auto: xuống dòng ở 375 thì nút vẫn bám phải — menu ⋯ (mở về bên trái) không tràn khỏi màn. */}
-            <div className="flex flex-wrap gap-2 items-start ml-auto">
+            <div className="ml-auto flex flex-wrap items-start gap-2">
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
-                <button className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
+                <button className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
               {(() => {
@@ -255,18 +256,16 @@ export default function StudentDetailPage() {
                 return vaiXem ? muc.map((m) => (
                   <button key={m.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
                 )) : (
-                  <Menu label="⋯" className="btn min-h-[44px] sm:min-h-0" items={muc.map((m) => ({
+                  <Menu label="⋯" className="btn btn-sm min-h-[44px] sm:min-h-0" items={muc.map((m) => ({
                     label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, onClick: () => mo(m.key),
                   }))} />
                 );
               })()}
             </div>
           </div>
-
-          {/* PR-VAI-b (Q6): câu tóm tắt máy viết — "em đang thế nào", dưới vạch mảnh của khung thông tin. */}
-          <CauTomTat manh={data.dauHoSo.tomTat} />
-
-        </div>
+          <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} />
+          <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} />
+        </header>
       </div>
 
       {/* PR-VAI-b (T65, mockup 24 D1): dải vàng Tạm dừng — đọc TRƯỚC bốn ô vì nó đổi nghĩa mọi con số bên dưới. */}
@@ -282,13 +281,10 @@ export default function StudentDetailPage() {
           navigate(`/hoc-vien/lop/${d.lopNguon.id}?viec=ban-giao&lenh=${d.lenhId}${k === 'ban-giao-mon' && d.mon ? `&mon=${d.mon.ma}` : ''}`);
         }} />
 
-      {/* BỐN Ô (PR-VAI-b, K3-03, T72): Kết quả gần nhất · Học thuật · Ý thức · Sắp tới — mỗi ô một nguồn, bấm mở đúng chỗ sinh số. */}
-      <BonO o={data.dauHoSo.o} homNay={homNay}
-        onDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId, loTrinh: p.loTrinh }))}
-        onKn={moKyNang} onYThuc={() => setTab('y-thuc')}
-        kyNangHref={(kn, attemptId) => (attemptId && !data.dauHoSo.o?.ketQua?.ratio ? duongDotTest({ id: attemptId, kind: 'mock' }, kn) : null)} />
+      {/* UI-HO-SO-HV: ô điểm to Overall · L · R · W1 · W2 · S — bấm đổi kỹ năng của Hành trình + Case & PA (khu c `.diem-dau`). */}
+      {cy && skillRows && <DiemDau rows={skillRows} attempts={data.attempts} ketQuaId={data.dauHoSo?.o?.ketQua?.kq?.attemptId ?? null} chon={chon} onChon={chonKn} homNay={homNay} />}
 
-      {/* PR-VAI-b (K3-01, T72): việc gấp nhất của NGƯỜI XEM với em; không có việc thì không vẽ gì. */}
+      {/* UI-HO-SO-HV: thanh Việc cần làm — chỗ DUY NHẤT có việc; bấm = mở đúng chỗ làm ngay tại trang. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
       {vaiXem && <DangXuLy viec={data.dauHoSo.viec} homNay={homNay} />}
       {/* PR-VAI-b (V1/K3-47): Quản lý duyệt ngay trong hồ sơ — chỗ của thanh việc (Quản lý không có việc học thuật với em). */}
@@ -324,21 +320,28 @@ export default function StudentDetailPage() {
             <KetLuanKhoa studentId={data.id} studentName={data.fullName} lop={data.cuoiKhoa.lop ?? data.currentClass?.code ?? null} classId={data.currentClass?.id ?? null} ct={data.cuoiKhoa.ct ?? cy.programmeCode ?? null}
               cuoiKhoa={data.cuoiKhoa} coTheKetLuan={!!data.viewer?.coTheKetLuan} onDoi={reload} />
           )}
-          {/* id để R8c/kn cuộn tới đúng khung này (Task 5) — không sửa SkillBoard. */}
-          <div id="bang-ky-nang">
-            <Card title={dienThoai ? t('Tiến độ theo kỹ năng · Case gấp lên trước') : t('Tiến độ và hỗ trợ theo kỹ năng')}
-              action={dienThoai ? undefined : <span className="text-xs text-slate-500">{t('Bấm một hàng để mở chi tiết ngay bên dưới')}</span>}
-              bodyClass="p-0">
-              <SkillBoard rows={skillRows}
-                loading={board.loading} error={board.error} onRetry={board.reload}
-                selected={skillPick}
-                onPick={setSkillPick}
+          {/*
+            HÀNH TRÌNH THEO KỸ NĂNG ĐANG CHỌN (khu c, `10` mục 5): biểu đồ chỉ MT chính thức + kỳ vọng bậc thang + mốc tuần (FT; lớp thường không
+            vẽ trục band — điểm theo thang của bài ở bảng Kết quả Test) · Tiến độ trên lớp là bảng dưới biểu đồ, thang riêng, không vào MT.
+          */}
+          <section id="hanh-trinh-kn" className="card overflow-hidden" aria-label={t('Hành trình · {kn}', { kn: tenChon })}>
+            <DauHanhTrinh tenKn={tenChon} />
+            {board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
+              : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
+              : !cy.ratio && homNay && <BieuDoHanhTrinh studentId={data.id} row={hangChon} attempts={data.attempts} homNay={homNay} tenKn={tenChon} />}
+            {homNay && <TienDoTrenLop studentId={data.id} hocVien={data.fullName} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} />}
+          </section>
+
+          {/* CASE & PHƯƠNG ÁN CHỈ CỦA KỸ NĂNG ĐANG CHỌN (Overall: mọi kỹ năng có Case) — cùng hàng Case / PA, nút, ngăn Case với bảng kỹ năng cũ. */}
+          {skillRows && (
+            <Card title={t('Case & phương án · {kn}', { kn: tenChon })} bodyClass="p-0">
+              <CaseKyNang rows={hangChon ? [hangChon] : skillRows}
                 onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? baoCase : undefined}
                 onChanged={() => { board.reload(); reload(); }}
                 onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })}
                 tamDungTu={board.data?.tamDungTu ?? null} />
             </Card>
-          </div>
+          )}
 
           {/*
             TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp Fast Track là "Mock Test",

@@ -2352,6 +2352,13 @@ api.get('/students/:id/skill-board', requireAuth, wrap((req) => {
 }));
 
 /** SV-BAI-LOP (C11, T18): hồ sơ HV › Bài trên lớp — tuỳ chọn, thang của bài, không vào MT / KPI, không sinh việc. Quyền kiểm ở máy chủ; lịch sử: /lich-su?loai=bai-lop. */
+/** UI-HO-SO-HV (LUAT-NX-MT 7.1): S Expert đã chấm của em — Hành trình Speaking hiện cạnh S, không tính. Đường riêng: hồ sơ giữ trần 90 câu (PR-Dọn 9a). */
+api.get('/students/:id/s-expert', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req), id = pInt(req, 'id');
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return (sExSvc.sExCuaHv(p, [id]).get(id) ?? []).filter((x) => x.diem !== null).map((x) => ({ diem: x.diem!, tuan: x.tuan, tuanMa: x.tuanMa }));
+}));
 api.get('/students/:id/bai-tren-lop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return baiLopSvc.dsBaiTrenLop(principalOf(req), pInt(req, 'id'));
