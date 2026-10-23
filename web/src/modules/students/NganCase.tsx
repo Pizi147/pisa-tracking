@@ -13,7 +13,7 @@ import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
-import { DongNguyenNhan, GhiNhanXetPanel, XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
+import { DongNguyenNhan, GhiNhanXetPanel, XacNhanCasePanel, XacNhanPaPanel, XacNhanSPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { BoiCanh, KhoiDaLuu, NutChu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -61,7 +61,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   useEffect(() => {
     if (!tuDong.current || !data) return;
     tuDong.current = false;
-    if (data.trangThaiV4?.k === 'cho-nhan-xet' && data.viewer.canEdit) setView({ loai: 'ghi-nhan-xet' });
+    if (data.choXacNhanS?.coTheXacNhan) setView({ loai: 'xac-nhan-s' });   // SV-NX-CASE: S chấm chéo chờ GV phụ trách
+    else if (data.trangThaiV4?.k === 'cho-nhan-xet' && data.viewer.canEdit) setView({ loai: 'ghi-nhan-xet' });
     else if (data.trangThaiV4?.k === 'cho-nguyen-nhan' && data.viewer.coTheXacNhanCase) setView({ loai: 'xac-nhan' });
   }, [data]);
   /* Làm xong một việc: về nơi mở (panel em / danh sách) nếu có, không thì về thân Case. */
@@ -156,6 +157,9 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   if (view.loai === 'xac-nhan' && data.trangThaiV4?.k === 'cho-nguyen-nhan') {
     return <XacNhanCasePanel {...chung} data={data} onXong={() => { reload(); onChanged?.(); veSau(); }} />;
   }
+  if (view.loai === 'xac-nhan-s' && data.choXacNhanS?.coTheXacNhan) {
+    return <XacNhanSPanel {...chung} data={data} onXong={() => { reload(); onChanged?.(); if (paCho[0]) setView({ loai: 'xac-nhan-pa', paId: paCho[0].id }); else veSau(); }} />;
+  }
   if ((view.loai === 'ghi-nhan-xet' || view.loai === 'xac-nhan') && data.trangThaiV4?.k === 'cho-nhan-xet') {
     return <GhiNhanXetPanel {...chung} data={data} onXong={() => { reload(); onChanged?.(); if (paCho[0]) setView({ loai: 'xac-nhan-pa', paId: paCho[0].id }); else veSau(); }} />;
   }
@@ -202,7 +206,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
    * + Bối cảnh 3 dòng (+ Phụ huynh · Gọi cho TVV / CX); toàn bộ thân Case (PA, lịch sử, bằng chứng) ở "Xem thêm", không mất thông tin.
    */
   const vw = data.viewer;
-  if (!vw.canEdit && !vw.canApprove && !vw.canClose && !vw.coTheXacNhanCase && !vw.coTheMoLai && !vw.coTheSua) {
+  if (!vw.canEdit && !vw.canApprove && !vw.canClose && !vw.coTheXacNhanCase && !vw.coTheMoLai && !vw.coTheSua && !data.choXacNhanS?.coTheXacNhan) {
     const vt = data.viecTiep ?? null;
     const hv3 = vt?.han ? deadlineView({ kind: (vt.loaiHan ?? 'xac-minh-sos') as DeadlineKind, due: vt.han, today: homNay }) : null;   // ngưỡng một chỗ
     const paChay = (data.interventions ?? []).find((x: any) => x.status === 'planned' || x.status === 'started');
@@ -276,6 +280,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const paNutChinh = data.viewer.canEdit && canDong && v?.chu.startsWith('Xác nhận PA') && v.paId ? v.paId : null;
   const nutChinh = (() => {
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;
+    if (data.choXacNhanS?.coTheXacNhan && canDong) return nut(t('Xác nhận Case'), () => setView({ loai: 'xac-nhan-s' }));
     if (v?.chu === 'Xác nhận Case') return data.viewer.coTheXacNhanCase && canDong ? nut(t('Xác nhận Case'), () => setView({ loai: 'xac-nhan' })) : undefined;
     if (!data.viewer.canEdit || !canDong) return undefined;
     if (v?.chu === 'Ghi nhận xét') return nut(t('Ghi nhận xét'), () => setView({ loai: 'ghi-nhan-xet' }));

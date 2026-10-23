@@ -97,8 +97,8 @@ export async function runPrDlTests(t: YThucTestKit) {
   const bam = (x: unknown) => createHash('sha256')
     /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
        OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. OV-4c: ô thêm `bandThang` (phép kiểm riêng prOv4c) — cũng vậy.
-       OV-12b: ô thêm `nhomNguyenNhan` · `nenCoNhanXet` · `kyVong` · `thieuNhanXet` (phép kiểm riêng prOv12b) — cũng vậy. OV-14c: ô thêm `enteredById` (prOv14c) — cũng vậy. V5 SV-SO1: ô thêm `xong` (prSvSo1) — cũng vậy. NEN-SUA: ô có điểm đã dời do vắng thêm `doiTu` (prOv11a OV11a-1) — cũng vậy. */
-    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' || k === 'bandThang' || k === 'enteredById' || k === 'xong' || k === 'doiTu' || OV12B.has(k) ? undefined : v))).digest('hex').slice(0, 16);
+       OV-12b: ô thêm `nhomNguyenNhan` · `nenCoNhanXet` · `kyVong` · `thieuNhanXet` (phép kiểm riêng prOv12b) — cũng vậy. OV-14c: ô thêm `enteredById` (prOv14c) — cũng vậy. V5 SV-SO1: ô thêm `xong` (prSvSo1) — cũng vậy. SV-NX-CASE: ô thêm `coNhom` (prSvNxCase) — cũng vậy. */
+    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' || k === 'kckDuoi' || k === 'bandThang' || k === 'enteredById' || k === 'xong' || k === 'doiTu' || k === 'coNhom' || OV12B.has(k) ? undefined : v))).digest('hex').slice(0, 16);
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
@@ -133,7 +133,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* LUAT-34: chụp lại — phép kiểm chạy trước trên MB FT 101 đổi theo luật 4 sửa 21/10 (PR-G: "-" ghi muộn → thẻ QL / Hoàn tác, W1 "-" + W2 có điểm
    * dời cả W; prOv1b / prOv11a "-" ghi muộn dời tuần kế) và luật 3 (`moi` = góc GVBM: ô có điểm ở hàng Đủ điểm nay `canEdit` true). */
   /* CHU-THI: chụp lại — chỉ đổi chữ ô "Không dự thi · Tuần W…" → "Vắng · Tuần W…" (3 ô; đã so JSON origin/main ↔ nhánh, ngoài dấu thời gian). */
-  const ANH_CHUP = { tuan: '751043742b0376d4', moi: '3c01046d10799cb4' };   // LUAT-NX-MT (chủ SP 22/10): ô có band thiếu nhận xét nay XONG (tiến độ / quá hạn / việc của ô đổi CÓ CHỦ Ý); phép kiểm cũ dời vượt MT nay lưu được (em thử ở MB FT 101 đổi lịch) — trước: tuan e34f451bc62b2410 · moi 860c3b4793616779   // V5 SV-SO1 (chủ SP 22/10, sau gộp main): ô có band thiếu nhận xét bắt buộc (seed MB FT 101) chưa xong → tiến độ / quá hạn / việc của ô đổi CÓ CHỦ Ý (bỏ `xong` khỏi băm); phép kiểm UX2 (cùng lớp, chạy trước) nay ghi nhận xét — trước: tuan 5637439ae70e629c · moi 12573fb4bb3506b5   // MAIN-DO: hai commit cuối SEED-UX đổi em MT2 Đạt / Chưa đạt (uxSeed BU_MT2) mà chưa chụp lại `moi` — trước: c225a20ee8f5a125 · SEED-UX: MT2 MB FT 101 thêm điểm 3 em (Vy, Quân, Bảo Anh) — trước: tuan cb0b81467b7ecc83 · moi 635e3b82b5659547     // trước CHU-THI: tuan 03b552713c5091dc · moi 098ab4054764382e · V5 C20: bỏ phép kiểm VAI-a (2c) chạy trước (HV thử) → id dịch; trước: tuan ea4c647e05ebdfc3 · moi 302cb2d7a4636a80   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
+  const ANH_CHUP = { tuan: '751043742b0376d4', moi: '4f563dbb2f8cbbf6' };   // SV-NX-CASE: seed sosV3 (MB FT 101) ghi GV chấm S = GV phụ trách S (N8 ③ — nhận xét thành mô tả ngay) → ô S `gvCham` các lượt seed đổi CÓ CHỦ Ý; `tuan` giữ — trước: moi 3c01046d10799cb4   // LUAT-NX-MT (chủ SP 22/10): ô có band thiếu nhận xét nay XONG (tiến độ / quá hạn / việc của ô đổi CÓ CHỦ Ý); phép kiểm cũ dời vượt MT nay lưu được (em thử ở MB FT 101 đổi lịch) — trước: tuan e34f451bc62b2410 · moi 860c3b4793616779   // V5 SV-SO1 (chủ SP 22/10, sau gộp main): ô có band thiếu nhận xét bắt buộc (seed MB FT 101) chưa xong → tiến độ / quá hạn / việc của ô đổi CÓ CHỦ Ý (bỏ `xong` khỏi băm); phép kiểm UX2 (cùng lớp, chạy trước) nay ghi nhận xét — trước: tuan 5637439ae70e629c · moi 12573fb4bb3506b5   // MAIN-DO: hai commit cuối SEED-UX đổi em MT2 Đạt / Chưa đạt (uxSeed BU_MT2) mà chưa chụp lại `moi` — trước: c225a20ee8f5a125 · SEED-UX: MT2 MB FT 101 thêm điểm 3 em (Vy, Quân, Bảo Anh) — trước: tuan cb0b81467b7ecc83 · moi 635e3b82b5659547     // trước CHU-THI: tuan 03b552713c5091dc · moi 098ab4054764382e · V5 C20: bỏ phép kiểm VAI-a (2c) chạy trước (HV thử) → id dịch; trước: tuan ea4c647e05ebdfc3 · moi 302cb2d7a4636a80   // trước LUAT-34: tuan 98dff5c3c389b7b3 · moi 53d25ee1fd6e5732   // OV-15b: hàng thêm `studentEmail` (Dán từ Excel), ô chưa có giá trị (điểm / tiêu chí) không gửi người nhập   // OV-13n: phép kiểm sosV3 (cùng lớp MB FT 101, chạy trước) thêm HV thử / đổi việc phối hợp → dòng lớp đổi   // OV-13l: em chuyển FT → FT giữ lộ trình — lượt chưa thi đi theo em, bảng lớp cũ đổi
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -525,7 +525,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/<LuoiThuong[^>]*anNutTao=\{anNutTao\}/.test(f('MotKyNang')), 'MotKyNang chuyền anNutTao khi quay về LuoiThuong');
     assert(/const nutTao = data\.canPlan && !anNutTao/.test(f('LuoiThuong')), 'LuoiThuong ẩn nút theo anNutTao');
     assert(!/anNutTao/.test(doc('web/src/modules/test/lichTest/LuoiNhung.tsx')), 'Lịch tuần giữ nút');   // UI-LICH-TUAN: ChamDiemPage đã thành chuyển hướng
-    for (const ten of ['LuoiFT', 'MotKyNang']) assert(/row\.lichSu && <NhanCu \/>/.test(f(ten)), `${ten}: chip lịch sử cạnh tên`);  // PR-MTb T2 thay ChipLichSu → NhanCu
+    for (const ten of ['LuoiFT', 'MotKyNang']) assert(!/NhanCu/.test(f(ten)), `${ten}: không còn nhãn "cũ"`);  // SV-NX-CASE (N8): bỏ chữ "cũ" (trước: PR-MTb NhanCu)
   });
 
   check('DL-5 fix 2 hộp hỏi đổi lượt: chỉ tự chuyển sau "Đợi rồi chuyển"; lưu hỏng bỏ đích chờ; hết lỗi thì hộp đóng', () => {
@@ -659,9 +659,9 @@ export async function runPrDlTests(t: YThucTestKit) {
     /* BANG-1: dòng phụ của ô tên = `.bang-phu` (dòng thi · lịch sử · dấu lưu); dòng tên không có chip lịch sử. */
     const dongTen = ft.slice(ft.indexOf('to={duongDotTest({ id: row.attemptId })}'), ft.indexOf('className="bang-phu'));
     const dongPhu = ft.slice(ft.indexOf('className="bang-phu'), ft.indexOf('</OBang>', ft.indexOf('className="bang-phu')));
-    assert(!dongTen.includes('NhanCu') && /\{row\.lichSu && <NhanCu \/>\}\s*<DauLuu/.test(dongPhu), 'LuoiFT: chip lịch sử ở dòng phụ (trạng thái lưu — OV-13f bỏ mã HV)');  // PR-MTb T2 thay ChipLichSu → NhanCu
+    assert(!dongTen.includes('NhanCu') && !dongPhu.includes('NhanCu') && /<DauLuu/.test(dongPhu), 'LuoiFT: dòng phụ chỉ trạng thái lưu (SV-NX-CASE N8 bỏ nhãn "cũ")');
     const mk = doc('web/src/modules/cham/MotKyNang.tsx');
-    assert(/luu=\{<>\{row\.lichSu && <NhanCu \/>\}<DauLuu/.test(mk) && !/nhan=\{<>\{row\.lichSu/.test(mk), 'MotKyNang: chip lịch sử ở dòng phụ');  // PR-MTb T2 thay ChipLichSu → NhanCu
+    assert(/luu=\{<DauLuu/.test(mk) && !/NhanCu/.test(mk) && !/nhan=\{<>\{row\.lichSu/.test(mk), 'MotKyNang: dòng phụ chỉ trạng thái lưu (SV-NX-CASE N8 bỏ nhãn "cũ")');
   });
 
   {

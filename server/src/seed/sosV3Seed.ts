@@ -3,7 +3,7 @@ import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
-import { saveScore } from '../fasttrack/attempts.ts';
+import { gvPhuTrachS, saveScore } from '../fasttrack/attempts.ts';
 import { baoVang } from '../fasttrack/absence.ts';
 import { hanKyGhiKetQua, issuesForTopic, lichMtGoc, tuanHocCuaMt } from '../../../shared/domain/index.ts';
 import { guiKhongTheoDoi, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
@@ -84,6 +84,8 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
       : skill === 'reading' ? { rawScore: READING_BY_RAW.indexOf(band) }
       : { criteria: [band, band, band, band] }),
     ...(nx ? { nhanXet: NHAN_XET_DEMO[skill], nhomNguyenNhan: [issuesForTopic(skill)[0].code] } : {}),
+    /* SV-NX-CASE (N8 ③): Admin nhập hộ S, người chấm = GV phụ trách S của lớp → nhận xét thành mô tả Case ngay (không chờ Xác nhận Case). */
+    ...(skill === 'speaking' && gvPhuTrachS(classId) ? { gvCham: { performerUserId: gvPhuTrachS(classId) } } : {}),
   });
   /** OV-1c: kỹ năng còn thiếu = "Không dự thi" ("-" nhập sau tuần thi) → lượt chốt. */
   const khongDuThi = (a: any, skill: string) => saveScore(admin, a.id, skill, { noShow: true });

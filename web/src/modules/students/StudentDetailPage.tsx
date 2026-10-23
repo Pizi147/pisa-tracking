@@ -34,7 +34,6 @@ import {
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
-import { NhanCu } from '../../ui/OMt.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
@@ -467,7 +466,6 @@ function NhanDot({ a, ct = null }: {
   const toiDa = a.lichSu ? 1 : 2;
   return (
     <>
-      {a.lichSu && <> <NhanCu /></>}
       {nhan.slice(0, toiDa).map((x) => (
         <span key={x.chu} title={x.title}
           className="ml-1 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[12px] leading-4 text-muted">

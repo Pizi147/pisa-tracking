@@ -300,7 +300,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const bandSau = doiDiem ? (diem.patch && !('noShow' in diem.patch) ? diem.preview : null) : cell.band;
   const coDiemSau = doiDiem ? bandSau !== null : coDiemChinhThuc(cell);
   const nenCo = !!cell.nenCoNhanXet && !theoBand;
-  const canNhom = nenCo && coDiemSau && canNhomNguyenNhan(bandSau, kv);
+  const canNhom = !!cell.coNhom && !theoBand && coDiemSau && canNhomNguyenNhan(bandSau, kv);   // SV-NX-CASE: chip ở mọi MT, nhắc chỉ MT mới nhất
   const doiNhom = canNhom && nhom.join() !== nhom0.join();
   const thieu = nhapDuoc ? thieuNhanXetMt({ nenCo, coDiem: coDiemSau, band: bandSau, kyVong: kv, nhanXet: nx, nhom }) : null;
   const daGo = doiDiem || doiNx || doiGv || doiNhom || lyDo.trim() !== '';

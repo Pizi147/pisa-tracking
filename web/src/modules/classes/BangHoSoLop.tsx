@@ -6,7 +6,6 @@ import { invalidate } from '../../lib/api.ts';
 import { fmtBand, skillShort } from '../../lib/format.ts';
 import { Bang, OBang } from '../../ui/Bang.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
-import { NhanCu } from '../../ui/OMt.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
@@ -126,7 +125,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
       case 'target': return <TargetText band={r.cycle?.target} kck={r.cycle?.khongCamKet} />;
       case 'ph': return r.lienHe ? <OPhuHuynh l={r.lienHe} /> : <span className="text-faint">—</span>;
       case 'nut': return <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })} />;
-      case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-200 no-underline hover:underline">{dich(h.label)}{h.lichSu && <> <NhanCu /></>}</Link> : <span className="text-faint">—</span>;
+      case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-200 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
       case 'l': case 'r': case 'w': case 's': case 'ovr': return oDiem(r, h, c.key);
       case 'kq': return <OKetQua r={r} h={h} kq={kq.get(r.id)!} />;
       case 'thi': return <OLichThi l={r.lichThi} homNay={homNay} />;

@@ -398,8 +398,8 @@ export function nhanGhim(a: {
 }): NhanGhim {
   const ghep = (...phan: (string | null | undefined)[]) => phan.filter(Boolean).join(' · ');
   if (a.cheDo === 'ielts') {
-    const so = `MT${a.attemptNo}`;   // bản gọn (điện thoại) không kèm "cũ"
-    const mt = a.lichSu ? t('{so} cũ', { so }) : so;
+    const so = `MT${a.attemptNo}`;
+    const mt = so;   // SV-NX-CASE (N8): không ghi chữ "cũ" 
     const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
     if (a.kind === 'mt0' && a.nhanNgan && a.nhanNgan !== so) return { chu: dich(a.nhanNgan), gon: so, day: ghep(dich(a.nhanNgan), tuan), mau: 'tam', hai: [so, ''] };
     if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? t('nhập bù, không tính hạn') : t('chưa có điểm')), mau: 'tam', hai: [so, ''] };

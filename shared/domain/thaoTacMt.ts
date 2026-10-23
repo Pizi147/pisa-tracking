@@ -98,7 +98,7 @@ function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
     case 'vang': return t('Bài đang vắng');
     case 'da-huy': case 'huy-vang': return t('Kỹ năng đã huỷ');
     case 'cho-duyet': return t('Chờ duyệt');
-    case 'lich-su': return t('MT cũ');
+    case 'lich-su': return t('Chỉ nhập bù');   // SV-NX-CASE (N8): không ghi chữ "cũ"
     /* OV-11e (TE-12): Đổi tuần / Dời hạn chấm mờ ở đây là thiếu quyền (Admin không dời hạn — OV-10a), không phải "không thi". */
     default: return muc === 'doi-tuan' || muc === 'doi-han' ? t('Chỉ Quản lý') : t('Không có trong đợt này');
   }

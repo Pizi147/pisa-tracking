@@ -992,7 +992,9 @@ CREATE TABLE sos_cases (
   /* PR-OV9: 1 = Case nhẹ của em KCK dưới kỳ vọng — không PA quy chế, không hạn, không Phối hợp / chuông. Không dấu phẩy (DROP COLUMN) */
   kck INTEGER NOT NULL DEFAULT 0,
   /* PR-OV13a (Q2): 1 = Case TẠM của lượt Mock FT chưa chốt ("Chờ chốt SOS") — chưa hạn / PA / việc / chuông; lượt chốt thì thành Case thật hoặc xoá. Không dấu phẩy (DROP COLUMN) */
-  tam INTEGER NOT NULL DEFAULT 0
+  tam INTEGER NOT NULL DEFAULT 0,
+  /* SV-NX-CASE (N8 ②): NGUỒN MÔ TẢ Case MT — lượt có nhận xét (ô lượt này × topic) mà mô tả đang đi theo. NULL = chưa có mô tả từ nhận xét. Mô tả do người sửa riêng (case_issues.created_by có người) thì tách hẳn và cột này chỉ còn để tra. Không dấu phẩy (DROP COLUMN) */
+  mo_ta_attempt_id INTEGER
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.
@@ -1047,6 +1049,8 @@ CREATE INDEX idx_case_student ON sos_cases(student_id, status);
 CREATE INDEX idx_case_cycle ON sos_cases(cycle_id);
 /* TD5: Case của một lượt (huy hiệu Case mở, `EXISTS … x.attempt_id = a.id`) — trước đây quét cả bảng cho mỗi lượt. */
 CREATE INDEX idx_case_attempt ON sos_cases(attempt_id, status, sos_level);
+-- SV-NX-CASE: Case MT có mô tả đi theo nhận xét của lượt nào (đồng bộ khi ô lượt đó đổi nhận xét).
+CREATE INDEX idx_case_mo_ta_attempt ON sos_cases(mo_ta_attempt_id) WHERE mo_ta_attempt_id IS NOT NULL;
 /* OV-15d: Case theo người phụ trách — thông báo tự động "Case chưa chốt PA quá hạn" đọc Case đang mở của MỘT người khi mở chuông. */
 CREATE INDEX idx_case_owner ON sos_cases(owner_user_id, status);
 

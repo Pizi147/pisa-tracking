@@ -125,7 +125,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'score.nhan_xet' AND entity_id = ? AND entity_label = 'listening'`, luot).n >= 1, 'nhật ký nhận xét');
   }));
 
-  check('OV12c-3 · trượt lại lượt sau → mốc lặp + nguyên nhân theo lượt mới; lượt cũ giữ nhận xét của nó', () => thu(() => {
+  check('OV12c-3 · trượt lại lượt sau → mốc lặp; mô tả Case giữ theo nhận xét lượt trước (N8); nguyên nhân theo lượt hiện đủ hai lượt', () => thu(() => {
     const truoc = luotEm[luotEm.length - 2];
     dung(truoc);
     chotSos2(truoc);
@@ -137,7 +137,8 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     const lap = one(`SELECT * FROM case_milestones WHERE case_id = ? AND kind = 'repeat' AND attempt_id = ?`, cL.id, luot);
     assert(!!lap, 'phải có mốc Trượt lại');
     const iL = issues(cL.id);
-    assert(iL[0].taxonomy_code === nhom('listening', 3)[2] && iL[0].observation === 'MT sau: vẫn sai Part 3, nghe chậm ý chính.', `nguyên nhân theo lượt mới: ${JSON.stringify(iL)}`);
+    /* SV-NX-CASE (N8 ②): Case đã có mô tả (theo nhận xét lượt trước) → nhận xét lượt sau không đè. */
+    assert(iL[0].observation === NX('listening'), `mô tả giữ theo lượt trước: ${JSON.stringify(iL)}`);
     const ct = cases.caseDetail(QL, cL.id);
     const theoLuot = (ct.nguyenNhanTheoLuot ?? []) as { luot: string; nhanXet: string }[];
     assert(theoLuot.length === 2 && theoLuot[0].nhanXet === NX('listening') && theoLuot[1].nhanXet.startsWith('MT sau'), `theo lượt: ${JSON.stringify(theoLuot)}`);

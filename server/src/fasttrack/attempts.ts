@@ -160,12 +160,33 @@ function docTheoLo<T extends { attempt_id: number }>(ids: number[], sql: (ph: st
   return out;
 }
 
+/**
+ * SV-NX-CASE (plan.md 1.6 N8 ①, chủ SP 23/10) — MỘT HÀM "MT MỚI NHẤT CỦA EM": lượt Mock (không MT0) chưa huỷ mà em KHÔNG có lượt Mock chưa huỷ nào
+ * có band ở số MT lớn hơn (lộ trình mới hơn tính là sau). Chỉ ô của MT này nhắc vàng "nên có nhận xét / nhóm" (kể cả MT ≥ 2 tuần); MT trước không nhắc.
+ * Không đổi luật "-" của MT cũ (N4 — `lich_su`). Trả tập id lượt (trong `attemptIds`) là MT mới nhất; nhớ theo lượt trong request GET (`loadBundle` nạp trước).
+ */
+export function laMtMoiNhatCuaEm(attemptIds: number[]): Set<number> {
+  /* Lượt `loadBundle` đã nạp trong request mà chưa hỏi: gộp vào câu đầu tiên có người hỏi (một câu cả trang; trang không hỏi — xuất Excel, Tổng hợp — không tốn câu). */
+  const cho = nho(MT_MOI_NHAT_CHO, () => new Set<number>());
+  const hoi = cho.size ? [...new Set([...attemptIds, ...cho])] : attemptIds;
+  cho.clear();
+  const m = nhoTheoId('mt-moi-nhat:', hoi, (ids) => docTheoLo<{ attempt_id: number }>(ids,
+    (ph) => `SELECT a.id AS attempt_id FROM assessment_attempts a
+              WHERE a.id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled'
+                AND NOT EXISTS (SELECT 1 FROM assessment_attempts b WHERE b.student_id = a.student_id AND b.kind = 'mock' AND b.status != 'cancelled'
+                      AND (COALESCE(b.cycle_id, 0) > COALESCE(a.cycle_id, 0) OR (COALESCE(b.cycle_id, 0) = COALESCE(a.cycle_id, 0) AND b.attempt_no > a.attempt_no))
+                      AND EXISTS (SELECT 1 FROM assessment_scores sb WHERE sb.attempt_id = b.id AND sb.band IS NOT NULL))`));
+  return new Set(attemptIds.filter((id) => m.has(id)));
+}
+const MT_MOI_NHAT_CHO = 'mt-moi-nhat-cho';
+
 /** TD7: `boCase` — người gọi không đọc `bundle.cases` (đánh giá lượt mới nhất) thì bỏ câu Case theo lượt. */
 export function loadBundle(attemptIds: number[], o: { boCase?: boolean } = {}): AttemptBundle {
   const bundle: AttemptBundle = { scores: new Map(), skips: new Map(), skillRows: new Map(), cases: new Map() };
   if (!attemptIds.length) return bundle;
   bundle.skillRows = loadSkillRows(attemptIds);
   bundle.scores = diemCuaLuot(attemptIds);
+  for (const id of attemptIds) nho(MT_MOI_NHAT_CHO, () => new Set<number>()).add(id);   // SV-NX-CASE: `laMtMoiNhatCuaEm` hỏi cả trang một câu khi cần
   for (const id of attemptIds) {
     const rows = bundle.skillRows.get(id);
     if (rows?.length) bundle.skips.set(id, skippedSkillsOf(rows));
@@ -344,6 +365,8 @@ export type SkillCell = {
    *  ô đã có điểm mà còn thiếu (dữ liệu trước luật) — lưới ghi chữ "thiếu nhận xét" / "thiếu nhóm nguyên nhân". */
   nhomNguyenNhan: string[];
   nenCoNhanXet: boolean;
+  /** SV-NX-CASE: ô Mock có chip "Nhóm nguyên nhân" (mọi MT, kể cả MT trước — giữ thao tác cũ); `nenCoNhanXet` nay chỉ là NHẮC của MT mới nhất. */
+  coNhom: boolean;
   kyVong: number | null;
   thieuNhanXet: ThieuNhanXet | null;
   /** ô XONG = có band (LUAT-NX-MT: thiếu nhận xét chỉ nhắc — `thieuNhanXet`) — mọi nơi đếm bài / nợ / việc đọc cờ này. */
@@ -356,16 +379,23 @@ export type SkillCell = {
  * MỘT HÀM "Ô FT XONG" (V5 SV-SO1; LUAT-NX-MT — chủ SP 22/10, `10` mục 7.2): xong = CÓ BAND. `thieuNx` (`thieuNhanXetMt` — MT thường, không MT cũ / MT0)
  * chỉ để NHẮC (ô vàng), không làm ô thành chưa xong / việc / nợ. `skillCells`, chi tiết lượt, Kế hoạch Test (`xongKyNang`) cùng gọi; SQL: `O_FT_XONG_SQL`.
  */
+/** SV-NX-CASE (N8 ①): ô của lượt này có NHẮC nhận xét / nhóm không — chỉ MT mới nhất của em (`laMtMoiNhatCuaEm`), không còn phân biệt MT cũ. */
+export const nhacNhanXetCua = (attempt: { id: number; kind?: string | null }): boolean =>
+  nenCoNhanXetMt({ kind: attempt.kind, lichSu: false }) && laMtMoiNhatCuaEm([attempt.id]).has(attempt.id);
+
 export function oXongCua(attempt: any, rows: readonly { skill: string; band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null }[]) {
-  const nenCo = nenCoNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
+  /* SV-NX-CASE: hỏi "MT mới nhất" chỉ khi ô có điểm cần xét nhắc — nơi chỉ đọc `xong` (Kế hoạch Test, Tổng hợp) không tốn câu nào. */
+  let nhac: boolean | null = null;
   /* Kỳ vọng (đọc lộ trình của lượt) chỉ tính khi cần — lượt không đòi nhận xét / ô không band không hỏi DB (Kế hoạch Test nhiều lượt). */
   let kv: { v: number | null } | null = null;
   const thieuNx = (k: string) => {
     const r = rows.find((x) => x.skill === k);
     const coDiem = (r?.band ?? null) !== null || (r?.raw_score ?? null) !== null;
-    if (!nenCo || !coDiem) return null;
+    if (!coDiem || attempt.kind !== 'mock') return null;
+    nhac ??= nhacNhanXetCua(attempt);
+    if (!nhac) return null;
     kv ??= { v: kyVongCuaLuot(attempt) };
-    return thieuNhanXetMt({ nenCo, coDiem, band: r?.band ?? null, kyVong: kv.v, nhanXet: r?.comment, nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan) });
+    return thieuNhanXetMt({ nenCo: nhac, coDiem, band: r?.band ?? null, kyVong: kv.v, nhanXet: r?.comment, nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan) });
   };
   return { thieuNx, xong: (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null };
 }
@@ -421,7 +451,9 @@ export function skillCells(
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
-  const nenCoNx = nenCoNhanXetMt({ kind: attempt.kind, lichSu: !!attempt.lich_su });
+  /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
+     trang GET gộp một câu cho cả trang (`loadBundle`). */
+  const batBuocNx = editable.length > 0 && nhacNhanXetCua(attempt);
   const kyVong = kyVongCuaLuot(attempt);
 
   const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
@@ -560,7 +592,8 @@ export function skillCells(
       ...(doiTu ? { doiTu } : {}),
       nhanXet: row?.comment ?? null,
       nhomNguyenNhan: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
-      nenCoNhanXet: nenCoNx,
+      nenCoNhanXet: batBuocNx,
+      coNhom: nenCoNhanXetMt({ kind: attempt.kind, lichSu: false }),
       kyVong,
       /* LUAT-NX-MT: chỉ NHẮC (ô vàng "Nên có nhận xét") ở ô người xem sửa được — không chặn, không thành việc. */
       thieuNhanXet: !canEdit ? null : thieuNxCua(skill),
@@ -1846,7 +1879,7 @@ function luuNhanXet(
     before: cu ? { comment: cu.comment ?? null, examinerUserId: cu.examiner_user_id ?? null, examinerName: cu.examiner_name ?? null, nhom: cu.nhom_nguyen_nhan ?? null } : null,
     after: { comment, examinerUserId: exUser, examinerName: exName, nhom },
   });
-  if (skill === 'speaking') baoPhuTrachS(p, a, comment, cu?.comment, exUser);
+  if (skill === 'speaking') baoPhuTrachS(p, a, comment, cu?.comment, gv !== undefined ? exUser : null);   // người chấm chỉ tính khi CHÍNH lần lưu này ghi
   dongBoNguyenNhanMt({ attemptId, skill });   // OV-12c: nhận xét + nhóm của ô = nguyên nhân Case MT (liên kết sống)
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   return {
@@ -1936,18 +1969,23 @@ export function quyenPhuTrachS(p: Principal, classId: number | null): boolean {
 }
 
 /**
- * OV-13k (chủ SP 15/10): người chấm chéo (không phải GV phụ trách S) lưu ô S Mock có nhận xét mới → GV phụ trách S của lớp nhận thông báo +
- * việc "Xem nhận xét Speaking" (`cho_phu_trach_xem`), hết khi GV phụ trách lưu (`luuNhanXetPhuTrach`) hoặc PA của Case đã xác nhận.
+ * OV-13k → SV-NX-CASE (N8 ③): người chấm chéo (không phải GV phụ trách S) lưu ô S Mock có nhận xét mới → ô chờ (`cho_phu_trach_xem`): nhận xét KHÔNG tự
+ * thành mô tả Case; GV phụ trách S có thông báo + việc "Xác nhận Case" khi em có Case S (`xacNhanCaseS` hạ cờ). GV phụ trách tự lưu nhận xét (hoặc lần lưu
+ * này ghi người chấm = GV phụ trách — QL nhập hộ) → thành mô tả ngay (hạ cờ nếu đang chờ). `nguoiCham` = người chấm CHÍNH lần lưu này ghi (null = không ghi):
+ * người chấm chéo sửa nhận xét của ô mà người chấm cũ là GV phụ trách vẫn phải chờ xác nhận.
  */
 function baoPhuTrachS(p: Principal, a: any, comment: string | null, cu: string | null | undefined, nguoiCham: number | null) {
   if (!laChamCheo(a.kind, 'speaking') || !comment?.trim() || comment.trim() === (cu ?? '').trim()) return;
   const gv = gvPhuTrachS(a.class_id);
-  if (!gv || gv === p.userId || gv === nguoiCham) return;   // GV phụ trách tự chấm (hoặc được ghi là người chấm) — không có gì để xem
   const conn = db();
+  if (!gv || gv === p.userId || gv === nguoiCham) {   // GV phụ trách tự chấm (hoặc được ghi là người chấm) — nhận xét của họ là mô tả, không chờ ai
+    conn.prepare(`UPDATE assessment_scores SET cho_phu_trach_xem = 0 WHERE attempt_id = ? AND skill = 'speaking' AND cho_phu_trach_xem = 1`).run(a.id);
+    return;
+  }
   conn.prepare(`UPDATE assessment_scores SET cho_phu_trach_xem = 1 WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
   const r = conn.prepare(`SELECT s.full_name, c.code FROM students s LEFT JOIN classes c ON c.id = ? WHERE s.id = ?`).get(a.class_id, a.student_id) as any;
   notify({
-    userId: gv, kind: 'nhan_xet_speaking', title: `Xem nhận xét Speaking · ${r?.full_name ?? ''} · MT${a.attempt_no}`,
+    userId: gv, kind: 'nhan_xet_speaking', title: `Nhận xét Speaking chấm chéo · ${r?.full_name ?? ''} · MT${a.attempt_no}`,
     body: [r?.code, `chấm bởi ${p.fullName}`].filter(Boolean).join(' · '),
     entityType: 'assessment_attempt', entityId: a.id, dedupKey: `nxs:${a.id}`, duong: attemptHref({ id: a.id, kind: a.kind, classId: a.class_id }),
   });
@@ -1957,7 +1995,7 @@ function baoPhuTrachS(p: Principal, a: any, comment: string | null, cu: string |
 
 /**
  * OV-13k — "NHẬN XÉT GV PHỤ TRÁCH" + NHÓM NGUYÊN NHÂN của ô S Mock chấm chéo. Không đụng điểm, nhận xét người chấm, "Nhập bởi". Nhận xét không bắt
- * buộc (`null` / rỗng = xoá); nhóm cùng luật ô MT (thứ tự chọn, ≥ 1 khi dưới kỳ vọng). Lưu = GV phụ trách đã xem (`cho_phu_trach_xem` = 0).
+ * buộc (`null` / rỗng = xoá); nhóm cùng luật ô MT (thứ tự chọn, ≥ 1 khi dưới kỳ vọng). SV-NX-CASE: KHÔNG hạ cờ `cho_phu_trach_xem` — việc chỉ hết khi Xác nhận Case.
  * Nhật ký `score.nhan_xet_phu_trach`; Case MT nguyên nhân đồng bộ lại (`dongBoNguyenNhanMt`).
  */
 export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhanXetPhuTrach?: unknown; nhomNguyenNhan?: unknown }) {
@@ -1982,9 +2020,9 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
     const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
     const chu = coNx ? (nx && 'gt' in nx ? nx.gt : null) : cu.nhan_xet_phu_trach ?? null;
     const nhom = nhomSeLuu(a, { band, nhomGui, nhomCu: cu.nhom_nguyen_nhan });
-    /* Lưu mà không đổi gì (GV phụ trách chỉ "đã xem") → hết việc; người / lúc lưu và nhật ký giữ như cũ. */
+    /* Lưu mà không đổi gì → người / lúc lưu và nhật ký giữ như cũ. */
     const doi = chu !== (cu.nhan_xet_phu_trach ?? null) || nhom !== (cu.nhom_nguyen_nhan ?? null);
-    conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = ?, nhom_nguyen_nhan = ?, cho_phu_trach_xem = 0,
+    conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = ?, nhom_nguyen_nhan = ?,
                          nhan_xet_phu_trach_by = ?, nhan_xet_phu_trach_at = ? WHERE id = ?`)
       .run(chu, nhom, doi ? p.userId : cu.nhan_xet_phu_trach_by ?? null, doi ? nowIso() : cu.nhan_xet_phu_trach_at ?? null, cu.id);
     if (doi) {
@@ -2338,7 +2376,7 @@ export function saveScore(
     if (boKem && skill === 'speaking') {
       conn.prepare(`UPDATE assessment_scores SET nhan_xet_phu_trach = NULL, nhan_xet_phu_trach_by = NULL, nhan_xet_phu_trach_at = NULL, cho_phu_trach_xem = 0
                      WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
-    } else if (skill === 'speaking' && !matHet) baoPhuTrachS(p, a, comment, existing?.comment, exUser);
+    } else if (skill === 'speaking' && !matHet) baoPhuTrachS(p, a, comment, existing?.comment, gv !== undefined || gvMacDinh ? exUser : null);
 
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill);
     const afterGhi = (patch.lyDo || hoanTat.hoanTat)
