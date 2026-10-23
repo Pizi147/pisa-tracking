@@ -40,4 +40,3 @@ configure_defaults() {
   fi
 }
 configure_defaults "ponytail@ponytail" '{"ledger":"true","sendNames":"true"}'
-configure_defaults "ecc@ecc" '{"hooks_enabled":"true","hook_profile":"standard"}'
