@@ -50,6 +50,8 @@ export type ChiSoHoSoGv = {
   hocThuatTheoLop: { classId: number; ma: string; khung: KhungPtGv; kyNang: string[]; luot: number; theoBai: { bai: string; n: number }[]; ketQua: OPtGv; tienBo: OPtGv; thiThat: OPtGv }[];
   /** UI-HO-SO-GV: Đạt Target thi thật — HV (một lần thi) có ngày thi thật trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi; `na` khi không dạy FT. Panel `thi-that[-lop:<lớp>]`. */
   thiThat: OPtGv;
+  /** Thi thật theo kỹ năng GV phụ trách (chỉ kỹ năng có lần thi). Panel `thi-that-ky:<kỹ năng>` (+ `loc=dat|chua`). */
+  thiThatTheoKyNang: { skill: string; nhan: string; o: OPtGv }[];
 };
 export type PhanTichGvKq = { cn: number; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; thang: string | null; homNay: string; hang: HangPtGv[] };
 

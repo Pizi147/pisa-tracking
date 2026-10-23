@@ -132,6 +132,13 @@ export type MetricRow = {
   viec?: ViecDong | null;
   /** Câu tình trạng khi không có việc để làm (Chờ Quản lý duyệt · không theo dõi…). */
   tinhTrang?: string | null;
+  /**
+   * UI-HO-SO-GV (chủ SP 23/10): dòng KẾT QUẢ — điểm từng kỹ năng của lượt (`cua` = kỹ năng GV đang xem phụ trách, panel làm nổi + chênh với `soVoi`),
+   * Overall, mốc so (Target thi thật / kỳ vọng MT) và kết luận (tab Chưa đạt · Đạt của panel).
+   */
+  diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua';
+  /** `%`: điểm lớp thường (tỉ lệ) — panel ghi "72 %", chênh theo điểm %. Vắng = band. */
+  donVi?: '%';
 };
 
 /** Ngữ cảnh quyền sửa một Case (cùng `sosEditCtx` ở cases.ts): lớp hiện tại của em trước, lớp của lượt sau. */

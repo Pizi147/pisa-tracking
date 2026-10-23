@@ -5,7 +5,7 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, baiId, canChamCheo, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, mondayOfDate, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, TRANG_THAI, baiId, canChamCheo, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, mondayOfDate, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
   type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -247,7 +247,8 @@ export function viecHoSoGv(p: Principal, gvId: number): { viec: { nhom: NhomViec
 
 // ------------------------------------------------------------------ danh sách sau một số (ô bấm được)
 
-export type ThamSoO = { cot: string; lop?: number | null; cn?: number | null; ct?: string | null };
+/** `tt`: chỉ Case có trạng thái đó (`TRANG_THAI`) — hàng đếm theo trạng thái ở khối Case đang phụ trách (UI-HO-SO-GV). */
+export type ThamSoO = { cot: string; lop?: number | null; cn?: number | null; ct?: string | null; tt?: string | null };
 
 export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; tieuDe: string; rows: MetricRow[] } {
   if (!laCotOGv(q.cot)) throw badRequest('Cột không hợp lệ.');
@@ -271,7 +272,8 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
     return ket(rows, (n) => `${n} yêu cầu ${cot === 'yc-cho' ? 'đang chờ duyệt' : 'bị từ chối'}`);
   }
   if (cot === 'case-mo' || cot === 'case-qua-han') {
-    const ds = caseMoCuaGv(p, gvId, branchIds, ct).filter((c) => cot === 'case-mo' || c.quaHan);
+    if (q.tt != null && !(TRANG_THAI as readonly string[]).includes(q.tt)) throw badRequest('Trạng thái không hợp lệ.');
+    const ds = caseMoCuaGv(p, gvId, branchIds, ct).filter((c) => (cot === 'case-mo' || c.quaHan) && (!q.tt || c.trangThai.t === q.tt));
     return ket(rowsFor('case', ds.map((c) => c.id), undefined, p), (n) => `${n} Case ${cot === 'case-mo' ? 'đang phụ trách' : 'có việc tiếp quá hạn'}`);
   }
 

@@ -18,7 +18,9 @@ Màn: `/giao-vien/:id` (`web/src/modules/giaoVien/HoSoGiaoVienPage.tsx`). Seed n
 Vai demo: QL = Nguyễn Khánh Vy (2). GV nhiều lớp + GVCN = Lê Minh Khoa (8: 16 lớp, GVCN 5 lớp). GV ít dữ liệu = Đỗ Thu Hương (17: 1 lớp, việc đúng hạn trống).
 Số trên web là seed (khác số demo của mockup) — so khung, thứ tự, tên, kiểu ô; số kiểm bằng phép kiểm (`prGv`, `prSvSo2`, `prOv11h`: ô = số dòng panel).
 
-Ảnh (`docs/anh/ui-ho-so-gv/`): `cap-gv8-1440-toi.png` · `cap-gv8-1440-sang.png` · `cap-gv8-1280.png` · `cap-gv8-375.png` (nhiều lớp + GVCN) · `cap-gv17-1440-toi.png` · `cap-gv17-375.png` (ít dữ liệu, so `ho-so-gv.html?tt=rong`) · `cap-gv8-tu-xem-1440-toi.png` (GV tự xem).
+Ảnh (`docs/anh/ui-ho-so-gv/`): `cap-gv8-1440-toi.png` · `cap-gv8-1440-sang.png` · `cap-gv8-1280.png` · `cap-gv8-375.png` (nhiều lớp + GVCN) · `cap-gv17-1440-toi.png` · `cap-gv17-375.png` (ít dữ liệu, so `ho-so-gv.html?tt=rong`) · `cap-gv8-tu-xem-1440-toi.png` (GV tự xem) · `cap-gv16-thi-that-1440-toi.png` · `cap-gv16-thi-that-375.png` (GV 16 Dương Tuấn Kiên, kỳ W2 AUG – W3 SEP — seed chỉ có thi thật ở lớp UB FT 401; Quản trị xem) · panel: `panel-lop-co-diem-1440.png` · `panel-thi-that-ky-nang-1440.png` · `panel-lop-thuong-1440.png`.
+
+**Phản hồi chủ SP 23/10 (đã áp):** bỏ ô "Phản hồi vấn đề HV" · thêm **Đạt Target thi thật** (ô dải số + cột bảng theo lớp + bảng **Theo kỹ năng**) · panel kết quả có **điểm từng kỹ năng**, kỹ năng GV phụ trách nổi bật + ▲/▼ chênh so với Target / kỳ vọng (lớp thường: % so ngưỡng đạt), Overall, tab **Chưa đạt · Đạt**, một em một dòng · khối **Case đang phụ trách gọn** (đếm theo trạng thái, 5 Case cần làm trước, "Xem cả n Case" → panel phân trang).
 
 ## Truy vết khung → thành phần
 
@@ -27,7 +29,7 @@ Số trên web là seed (khác số demo của mockup) — so khung, thứ tự,
 | 1 | Khu e: đầu một hàng — tên · **Vai** (GV · chi nhánh) · **Kỹ năng** (chip) · **GVCN** n lớp; bỏ chuỗi "4 lớp: …" | `HoSoGiaoVienPage` đầu (`NhanDau`: nhãn nhỏ xám / giá trị đậm — P2) | KHỚP |
 | 2 | Khu e: Từ tuần [ô] đến [ô] ? (P9, mặc định 4 tuần tới tuần này) | hai `ONgay kieu="tuan"` (gõ được + nút lịch) + `NutLuat`; giá trị ghi `?tu=&den=` (mặc định không ghi); tuần đầu > tuần cuối → báo ⚠, không gọi API | KHỚP |
 | 3 | Khu e: dải 6 chỉ số trong MỘT thẻ, ô ngăn vạch (Việc đúng hạn · Điểm đúng hạn · Quá hạn · Đạt kỳ vọng · Tiến bộ · Case có PA) | `DaiChiSo` — % gạch chân = panel chỉ đọc (`/giao-vien/:id/chi-so/o`), cùng hàm số (SV-SO2) | KHỚP |
-| 4 | Mốc "phản hồi vấn đề HV" (C, R3c) → "Chưa có dữ liệu" | ô thứ 7 "Phản hồi vấn đề HV · – Chưa có dữ liệu" + "?" | KHÁC — [XM-1] (khu e không vẽ ô; việc giao yêu cầu hiện) |
+| 4 | Mốc "phản hồi vấn đề HV" (C, R3c) | **BỎ** theo chủ SP 23/10 ("không cần thiết"); chỗ đó là ô **Đạt Target thi thật** (n/N HV, bấm → panel có điểm) | KHÁC — theo chủ SP |
 | 5 | Mẫu 0 → "– Chưa có dữ liệu", không "0 %" (T19) | `PhanTram` (dùng lại của Tổng quan V5) | KHỚP |
 | 6 | Khu e: khối **Lớp đang dạy** thẻ: mã lớp + chip GVCN · chip kỹ năng · n HV · "GVCN cô …" | `KhoiLop` (thẻ, 4 cột ≥ 1280, 2 cột ≥ 640, 1 cột 375); tiêu đề "n lớp · n HV" (HV bấm được — V4) | KHỚP |
 | 7 | Thẻ lớp GVCN có "MT1 W1 OCT" / "Final 28/09" (mốc tiếp) | không vẽ — việc giao "lớp · kỹ năng · số HV · GVCN"; thay bằng "n chưa nhập" (V4 giữ, bấm → panel) | KHÁC — [XM-2] |
@@ -36,19 +38,21 @@ Số trên web là seed (khác số demo của mockup) — so khung, thứ tự,
 | 10 | Số → panel chỉ đọc (C22) | ô % mỗi hàng → `ket-qua-lop:<lớp>` / `tien-bo-lop:<lớp>`; Quá hạn → bài quá hạn của lớp (V4); hàng Cộng không bấm (số đã ở dải) | KHỚP |
 | 11 | Tiến bộ đơn vị "HV" | "lượt" — máy chủ đếm lượt kỹ năng (K5, cùng Tổng quan "Tiến bộ · lượt") | KHÁC — [XM-3] |
 | 12 | Mockup chỉ vẽ lớp FT | lớp thường cùng bảng (sau FT), Tiến bộ "—"; lớp đang dạy chưa có lượt trong kỳ vẫn có hàng (0 · —) để không mất ô Quá hạn | KHỚP (mở rộng theo dữ liệu thật) |
+| 12b | (chủ SP 23/10) thi thật theo kỹ năng: "dạy kỹ năng này đạt nhiều hay trượt nhiều" | bảng **Theo kỹ năng** đầu khối Học thuật: Đạt kỳ vọng (% + thanh trung tính, không màu ngưỡng) · Chưa đạt · Thi thật ▲ Đạt n ▼ Chưa đạt n; 375 mỗi kỹ năng một dòng | MỚI — theo chủ SP |
+| 12c | C: panel chỉ đọc "bảng dữ liệu" (`-panel-dat-mt-1440`) | panel kết quả: một em một dòng · điểm L R W S (kỹ năng GV phụ trách viền nhấn + ▲/▼ chênh) · Overall · Target / kỳ vọng · tab Chưa đạt · Đạt; bấm "Chưa đạt" / "Đạt" ở bảng → panel lọc sẵn (`loc=`) | KHỚP (nâng theo chủ SP) |
 | 13 | C: trạng thái tải / lỗi một khối / rỗng | `Skeleton` từng khối; lỗi `chi-so` chỉ báo ở dải + Học thuật (khối khác vẫn đúng); rỗng "Chưa có dữ liệu · Không có lượt nào…" | KHỚP |
 | 14 | C: 375 — dải 2 cột, bảng → thẻ, panel toàn màn | `grid-cols-2`, `Bang` thẻ < 640, `KhungPanel` | KHỚP |
 | 15 | C08: không xếp hạng, không màu ngưỡng | số màu trung tính; chỉ quá hạn ⚠ đỏ (không chỉ màu) | KHỚP |
 | 16 | C: QL xem = theo dõi; link Công việc chế độ theo dõi | nút "Việc của Khoa ›" (V4, `duongViecCuaGv`); GV tự xem: "Mở Công việc ›" | KHỚP |
 | — | BỎ: khối "Kết quả gần nhất của lớp đang dạy" (mốc gần nhất của lớp — P8) | xoá web + máy chủ (`ketQuaHoSoGv`, `/giao-vien/:id/ket-qua`, ô `cot=ket-qua`) — nợ #521 | BỎ |
 | — | BỎ: hộp chữ "Quy tắc Overall…", "Bấm số gạch chân…", "Phạm vi QL" dòng chữ (P1) | về "?" (phạm vi QL nằm trong "?" của kỳ) | BỎ |
-| — | GIỮ (mockup không vẽ): Việc đang có · Case đang phụ trách · Yêu cầu đã gửi (V4) | giữ nguyên thao tác, đặt sau Học thuật | GIỮ — [XM-4] |
+| — | GIỮ (mockup không vẽ): Việc đang có · Case đang phụ trách · Yêu cầu đã gửi (V4) | giữ thao tác, đặt sau Học thuật; **Case đang phụ trách gọn** (chủ SP 23/10): tổng Case + đếm theo trạng thái (Quá hạn · Cần làm · Chờ duyệt · Đang làm, bấm → panel đúng nhóm `tt=`) · tối đa 5 Case "Cần làm trước" (quá hạn, hạn gần) · "Xem cả n Case" → panel phân trang 10/20/50, dòng mở rộng làm việc tại chỗ | GIỮ — [XM-4] |
 
-**Đếm:** 13 KHỚP + 3 KHÁC (XM-1, XM-2, XM-3) trên 16 dòng khung → 13 / 16 = **81 %** nếu chưa duyệt; chủ SP đồng ý lý do 3 dòng KHÁC → tính KHỚP (Q-5).
+**Đếm:** 14 KHỚP + 3 KHÁC (dòng 4 theo chủ SP, XM-2, XM-3) trên 17 dòng khung (12b mới, không tính) → 14 / 17 = **82 %**; dòng 4 là lời chủ SP → 15 / 17 = **88 %**; XM-2, XM-3 cần chủ SP đồng ý lý do để qua cổng 90 % (Q-5).
 
 ## [XM] — cần PTA Plan / chủ SP
 
-- **XM-1** ô "Phản hồi vấn đề HV · Chưa có dữ liệu": việc giao ghi "mốc phản hồi thiếu → Chưa có dữ liệu", khu e không vẽ ô. **Khuyến nghị:** giữ ô (đúng R3c, báo rõ số chưa có) — hoặc bỏ tới khi có mốc (P11).
+- ~~XM-1~~ ô "Phản hồi vấn đề HV": chủ SP bỏ (23/10).
 - **XM-2** thẻ lớp không có mốc Test tiếp ("MT1 W1 OCT"): ngoài phạm vi việc giao, cần API mốc tiếp theo lớp. **Khuyến nghị:** để `plan.md` mục 4 nếu chủ SP muốn.
 - **XM-3** Tiến bộ "lượt" thay "HV": máy chủ đếm theo lượt kỹ năng (K5); đổi sang HV cần luật mới. **Khuyến nghị:** giữ "lượt".
 - **XM-4** khối V4 (Việc đang có, Case đang phụ trách, Yêu cầu đã gửi): `ho-so-gv-truy-vet.md` BỎ "Yêu cầu đã gửi" + chip bàn giao, nhưng luật 22/10 tối "GIỮ thao tác V4" → **giữ cả ba** (chip bàn giao vẫn ở thẻ lớp). Chờ PTA Plan nói bỏ.
@@ -67,9 +71,13 @@ Số trên web là seed (khác số demo của mockup) — so khung, thứ tự,
 | Kết quả gần nhất: bấm ô đạt/tổng (mốc gần nhất) → panel HV | **ĐỔI** → bấm % Đạt kỳ vọng / Tiến bộ theo lớp trong kỳ → panel lượt (P8) | ô cũ trái P8 |
 | — | **MỚI** chọn kỳ Từ tuần – Đến tuần (P9) | |
 | — | **MỚI** dải chỉ số theo kỳ, bấm % → panel chỉ đọc | |
-| Case đang phụ trách: bấm HV / Case / việc tiếp; số Case, Case quá hạn → panel; "Hiệu quả PA của X ›" | **GIỮ** | |
+| Case đang phụ trách: bấm HV / Case / việc tiếp; số Case, Case quá hạn → panel; "Hiệu quả PA của X ›" | **GIỮ** — 5 Case gấp nhất bấm HV / Case / việc tiếp như cũ; mọi Case khác qua panel ("Xem cả n Case", dòng mở rộng có nút làm việc); "Case quá hạn" → nhóm Quá hạn | chủ SP 23/10: bỏ bảng dài |
+| — | **MỚI** đếm Case theo trạng thái → panel đúng nhóm | |
+| — | **MỚI** bảng Theo kỹ năng: bấm Chưa đạt / Đạt / Thi thật → panel lọc sẵn | |
 | Yêu cầu đã gửi: số chờ / từ chối → panel; "Yêu cầu của tôi ›" / "Chờ duyệt ›" | **GIỮ** | XM-4 |
 
 ## Phép kiểm gỡ / đổi (Q-7)
 - Gỡ: `prPb2b` (3e) (khoá dòng `ketQuaHoSoGv` lớp thường) · `prGv` (3) "kết quả gần nhất khớp Phân tích lớp" · `prGv` dòng GVBM gọi `ketQuaHoSoGv` · ô `cot=ket-qua` dòng lạ / thiếu lớp.
-- Đổi: `prGv` (3) số = số dòng → `hocThuatTheoLop` × panel `ket-qua-lop` / `tien-bo-lop`; HTTP `/ket-qua` → `/chi-so`; `prSvSo2` hàng lớp = Σ kỹ năng; `prOv11h` PET → hàng Học thuật có "Checkpoint 1"; `tocDoDuong` `/giao-vien/9/ket-qua` → `/giao-vien/9/chi-so`.
+- Thêm `prUiHoSoGv` (thi thật: ô = panel, Chưa đạt trước, mỗi dòng 4 điểm + kỹ năng phụ trách + Target, lọc Đạt + Chưa đạt = cả tập, Theo kỹ năng / theo lớp = panel, Σ lớp = ô; Case theo trạng thái Σ = tổng; tham số lạ → 400).
+- Gỡ `prBang0` hồ sơ GV khỏi hai danh sách miễn (BANG-2, BANG-3 — trang không còn tự viết `<table>`).
+- Đổi: `prGv` (3) số = số dòng → `hocThuatTheoLop` × panel `ket-qua-lop` / `tien-bo-lop` (panel gộp một lượt một dòng → kiểm tử / mẫu ở tiêu đề + Đạt + Chưa đạt = mọi dòng); HTTP `/ket-qua` → `/chi-so`; `prSvSo2` hàng lớp = Σ kỹ năng; `prOv11h` PET → hàng Học thuật có "Checkpoint 1"; `tocDoDuong` `/giao-vien/9/ket-qua` → `/giao-vien/9/chi-so`.

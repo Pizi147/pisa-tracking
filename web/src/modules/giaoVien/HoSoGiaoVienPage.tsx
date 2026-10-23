@@ -2,12 +2,12 @@ import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
-  type ChipBanGiao, type ChiSoHoSoGv, type NhomViec, type OPtGv, type TrangThai, type ViecTiepCase,
+  NHAN_TRANG_THAI, type ChipBanGiao, type ChiSoHoSoGv, type NhomViec, type OPtGv, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
-import { Card, Empty, ErrorState, LOP_NHAN, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, LOP_NHAN, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -15,7 +15,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
-import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PhanTram, tuMau, tyLeGv, type TyLeV5 } from '../worklist/TongQuanV5.tsx';
 import { TenCase } from '../cases/SkillBoard.tsx';
@@ -317,9 +317,84 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
       action={<NutLuat label={t('Học thuật')} phai>{t('Đạt kỳ vọng theo quy tắc Overall; lượt = một lượt MT của một HV × kỹ năng GV dạy, gán theo lớp em học lúc thi. Case có PA, Quá hạn: hiện tại.')}</NutLuat>}>
       {cs.error ? <ErrorState message={cs.error.message} hint={cs.error.hint} onRetry={cs.reload} />
         : !d && cs.loading ? <Skeleton rows={3} className="p-4" />
-        : <Bang ten={t('Học thuật')} cot={COT} hang={hang.length ? [...hang, tong] : []} khoa={(h) => h.khoa} oCua={oCua} khung={false}
-            rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt nào có tuần thi trong kỳ này.') }} />}
+        : (
+          <>
+            {d && <TheoKyNang id={id} d={d} ky={ky} />}
+            <h3 className="m-0 border-t px-4 pb-1 pt-3 text-[13px] font-semibold text-slate-400" style={{ borderColor: 'var(--line)' }}>{t('Theo lớp')}</h3>
+            <Bang ten={t('Học thuật')} cot={COT} hang={hang.length ? [...hang, tong] : []} khoa={(h) => h.khoa} oCua={oCua} khung={false}
+              rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt nào có tuần thi trong kỳ này.') }} />
+          </>
+        )}
     </Card>
+  );
+}
+
+/**
+ * THEO KỸ NĂNG (chủ SP 23/10 — "dạy kỹ năng này đạt nhiều hay trượt nhiều"): mỗi kỹ năng GV phụ trách một hàng — Đạt kỳ vọng (MT + thi thật, như dải số)
+ * · số chưa đạt · Thi thật đạt / chưa đạt. Mỗi số mở panel đúng nhóm (`loc=dat|chua`): điểm cả lượt, kỹ năng GV phụ trách nổi bật, chênh với Target / kỳ vọng.
+ */
+type HangKn = { khoa: string; nhan: string; kq: Extract<OPtGv, { k: 'so' }> | null; cotKq: string; thi: Extract<OPtGv, { k: 'so' }> | null; skill: string };
+function TheoKyNang({ id, d, ky }: { id: number; d: ChiSoHoSoGv; ky: string }) {
+  const dienThoai = useDienThoai();
+  const haiKhung = new Set(d.ketQuaTheoKyNang.map((x) => x.khung)).size > 1;
+  const so = (o: OPtGv | undefined) => (o && o.k === 'so' && o.tong > 0 ? o : null);
+  const hang: HangKn[] = d.ketQuaTheoKyNang.map((x) => ({
+    khoa: `${x.khung}:${x.skill}`, skill: x.skill, nhan: haiKhung ? `${x.nhan} · ${x.khung === 'ft' ? 'FT' : t('Lớp thường')}` : x.nhan,
+    kq: so(x.o), cotKq: `ket-qua:${x.khung}:${x.skill}`, thi: x.khung === 'ft' ? so(d.thiThatTheoKyNang.find((y) => y.skill === x.skill)?.o) : null,
+  }));
+  if (!hang.length) return null;
+  const coThi = hang.some((h) => h.thi);
+  const mo = (cot: string, loc: 'dat' | 'chua', n: number, tieuDe: string, lop = '') => (
+    <OSo giaTri={n} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&loc=${loc}&${ky}`} tieuDe={tieuDe} className={`${vung} ${lop}`} />
+  );
+  const COT: CotBang[] = [
+    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'ten', rong: 170 },
+    { key: 'kq', nhan: t('Đạt kỳ vọng'), kieu: 'chu' },
+    { key: 'chua', nhan: t('Chưa đạt'), kieu: 'so', rong: 110 },
+    ...(coThi ? [{ key: 'thi', nhan: t('Thi thật'), kieu: 'chu', rong: 220, goiY: t('Đạt Target thi thật') } as CotBang] : []),
+  ];
+  const oCua = (h: HangKn, c: CotBang): ReactNode => {
+    if (c.key === 'kn') return <ChipKy k={h.nhan} />;
+    if (c.key === 'kq') {
+      if (!h.kq) return <span className="text-slate-500">—</span>;
+      const pt = Math.round((100 * h.kq.dung) / h.kq.tong);
+      /* Thanh tỉ lệ trung tính (không màu ngưỡng — C08): độ dài = % đạt; số đạt bấm được. */
+      return (
+        <span className="flex min-w-0 items-center gap-2.5">
+          <b className="w-12 shrink-0 tabular-nums text-slate-100">{pt} %</b>
+          <span aria-hidden className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-[color:var(--line)]"><span className="block h-full rounded-full bg-[color:var(--accent)]" style={{ width: `${pt}%` }} /></span>
+          <span className="whitespace-nowrap text-xs text-slate-400">{mo(h.cotKq, 'dat', h.kq.dung, `${t('Đạt kỳ vọng')} · ${h.nhan}`, 'text-slate-200')}/{h.kq.tong} {t('lượt')}</span>
+        </span>
+      );
+    }
+    if (c.key === 'chua') return h.kq ? mo(h.cotKq, 'chua', h.kq.tong - h.kq.dung, `${t('Chưa đạt')} · ${h.nhan}`, 'font-semibold text-slate-100') : <span className="text-slate-500">—</span>;
+    if (!h.thi) return <span className="text-slate-500">—</span>;
+    const cot = `thi-that-ky:${h.skill}`;
+    return (
+      <span className="inline-flex items-baseline gap-3 whitespace-nowrap text-[13px]">
+        <span className="text-slate-400">▲ {t('Đạt')} {mo(cot, 'dat', h.thi.dung, `${t('Thi thật')} ${h.nhan} · ${t('Đạt')}`, 'font-semibold text-slate-100')}</span>
+        <span className="text-slate-400">▼ {t('Chưa đạt')} {mo(cot, 'chua', h.thi.tong - h.thi.dung, `${t('Thi thật')} ${h.nhan} · ${t('Chưa đạt')}`, 'font-semibold text-slate-100')}</span>
+      </span>
+    );
+  };
+  return (
+    <>
+      <h3 className="m-0 px-4 pb-1 pt-3 text-[13px] font-semibold text-slate-400">{t('Theo kỹ năng')}</h3>
+      {dienThoai ? (
+        /* 375: mỗi kỹ năng MỘT dòng (thẻ của `Bang` cao gấp ba) — kỹ năng · % + thanh · chưa đạt · thi thật. */
+        <ul className="m-0 list-none px-4 pb-2">
+          {hang.map((h) => (
+            <li key={h.khoa} className="flex flex-col gap-1 border-t py-2 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+              <span className="flex items-center justify-between gap-2"><ChipKy k={h.nhan} />{oCua(h, COT[1])}</span>
+              <span className="flex flex-wrap items-baseline gap-x-3 text-[13px] text-slate-400">
+                {h.kq && <span>{t('Chưa đạt')} {oCua(h, COT[2])}</span>}
+                {h.thi && <span>{t('Thi thật')}: {oCua(h, { key: 'thi', nhan: '', kieu: 'chu' })}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : <Bang ten={t('Theo kỹ năng')} cot={COT} hang={hang} khoa={(h) => h.khoa} oCua={oCua} khung={false} />}
+    </>
   );
 }
 
@@ -363,63 +438,60 @@ function KhoiViec({ gvId, nguoiXem, homNay, ngan, viec }: {
 
 // ------------------------------------------------------------------ 4 · Case đang phụ trách
 
+/**
+ * CASE ĐANG PHỤ TRÁCH — gọn (chủ SP 23/10: không trải cả danh sách). Một hàng đếm theo trạng thái (bấm → panel đúng nhóm, tại chỗ) · tối đa 5 Case
+ * cần làm trước (quá hạn, rồi hạn gần — thứ tự máy chủ) · "Xem cả n Case" mở panel (phân trang 10 / 20 / 50, dòng mở rộng làm việc tại chỗ).
+ */
+const CASE_TRUOC = 5;
 function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa: { den: string; chu: string } | null }) {
-  const dienThoai = useDienThoai();
   const id = data.gv.id;
   const ds = data.caseMo;
-  const quaHan = ds.filter((c) => c.quaHan).length;
   const viec = (c: CaseHs) => {
     const [v] = viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: null });
     return v ? <ViecTiep v={v} den={duongHoSoHocVien(c.studentId, { caseId: c.id })} /> : <span className="text-slate-500">—</span>;
   };
-  const ten = (c: CaseHs) => (
-    <Link to={duongHoSoHocVien(c.studentId, { caseId: c.id })} className="link inline-flex min-w-0 max-w-full text-left font-semibold" title={dich(c.tieuDe)}><TenCase c={{ title: dich(c.tieuDe), tenSos: c.tenSos && { ...c.tenSos, giua: dich(c.tenSos.giua) } }} /></Link>
-  );
-  const trangThai = (c: CaseHs) => <NhanTrangThai t={c.trangThai.t} title={dich(c.trangThai.chu)} />;
+  /* Trạng thái theo thứ tự gấp: Quá hạn · Cần làm · Chờ duyệt · Đang làm (chỉ nhóm có Case). */
+  const nhom = (['qua-han', 'can-lam', 'cho-duyet', 'dang-lam'] as const).map((tt) => ({ tt, n: ds.filter((c) => c.trangThai.t === tt).length })).filter((x) => x.n > 0);
+  const truoc = ds.filter((c) => c.viecTiep).slice(0, CASE_TRUOC);
   return (
-    <Card title={t('Case đang phụ trách')} bodyClass="p-0"
-      action={ds.length || linkPa ? (
-        <span className="flex flex-wrap items-baseline gap-x-3 text-xs text-slate-400">
-          {ds.length > 0 && <span>
-          {/* PR-S5F-b: mỗi cụm `17 Case` · `2 việc tiếp quá hạn` giữ liền một dòng — hẹp thì xuống dòng GIỮA hai cụm, không giữa số và chữ. */}
-          <span className="whitespace-nowrap"><OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} className={`${vung} text-slate-200`} /> Case</span> ·{' '}
-          {quaHan > 0
-            ? <span className="whitespace-nowrap"><OSo giaTri={quaHan} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} ${soDam} text-bad`} /> <span className="text-bad">{t('việc tiếp quá hạn')}</span></span>
-            : <span className="whitespace-nowrap">{t('không có việc tiếp quá hạn')}</span>}
-          </span>}
-          {/* P6 (Q26): Quản lý, Quản trị xem → Hiệu quả PA lọc theo giáo viên này (URL hợp đồng Pb2-a). */}
-          {linkPa && <Link to={linkPa.den} className="link whitespace-nowrap py-2 -my-2 text-xs">{linkPa.chu}</Link>}
-        </span>
-      ) : undefined}>
-      {!ds.length ? <Empty title={t('Không có Case nào đang mở.')} />
-        : dienThoai ? (
-          <div>
-            {ds.map((c) => (
-              <TheDong key={c.id} className={c.quaHan ? 'shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]' : ''}
-                dau={<span className="block min-w-0"><Link to={`/hoc-vien/${c.studentId}`} className="link font-semibold">{c.hocVien}</Link>{c.maLop && <span className="text-xs text-slate-400"> · {c.maLop}</span>}</span>}
-                dong={[{ nhan: 'Case', noiDung: ten(c) }, { nhan: t('Trạng thái'), noiDung: trangThai(c) }, { nhan: t('Việc tiếp'), noiDung: viec(c) }]} />
+    <Card title={t('Case đang phụ trách')}
+      action={linkPa ? <Link to={linkPa.den} className="link whitespace-nowrap py-2 -my-2 text-xs">{linkPa.chu}</Link> : undefined}>
+      {!ds.length ? <Empty title={t('Không có Case nào đang mở.')} /> : (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-2xl font-bold tabular-nums text-slate-100"><OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} /></span>
+            <span className="mr-2 text-sm text-slate-400">Case</span>
+            {nhom.map((x) => (
+              <span key={x.tt} className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px]" style={{ borderColor: 'var(--line-strong)' }}>
+                <NhanTrangThai t={x.tt} />
+                <OSo giaTri={x.n} tieuDe={`Case · ${dich(NHAN_TRANG_THAI[x.tt])}`} nguon={nguon(id, `cot=case-mo&tt=${x.tt}`)} className={`${vung} font-bold ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-100'}`} />
+              </span>
             ))}
           </div>
-        ) : (
-          <div className="table-scroll">
-            <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '47rem' }}>
-              <colgroup><col style={{ width: '17%' }} /><col style={{ width: '12%' }} /><col style={{ width: '28%' }} /><col style={{ width: '14%' }} /><col style={{ width: '29%' }} /></colgroup>
-              <thead><tr><Th>{t('Học viên')}</Th><Th>{t('Lớp')}</Th><Th>Case</Th><Th>{t('Trạng thái')}</Th><Th>{t('Việc tiếp')}</Th></tr></thead>
-              <tbody>
-                {ds.map((c) => (
-                  <tr key={c.id} className="row-hover" style={c.quaHan ? { boxShadow: 'inset 3px 0 0 rgb(var(--bad-rgb))' } : undefined}>
-                    <td className="td"><Link to={`/hoc-vien/${c.studentId}`} className="link">{c.hocVien}</Link></td>
-                    <td className="td text-slate-300">{c.maLop ?? '—'}</td>
-                    <td className="td min-w-0">{ten(c)}
-                      {(c.nguyenNhan || c.moTu) && <span className="block truncate text-xs text-slate-500">{[c.nguyenNhan, c.moTu].filter((x): x is string => !!x).map((x) => x.split(', ').map((y) => dich(y)).join(', ')).join(' · ')}</span>}</td>
-                    <td className="td">{trangThai(c)}</td>
-                    <td className="td min-w-0">{viec(c)}</td>
-                  </tr>
+          {truoc.length > 0 && (
+            <div>
+              <h3 className="m-0 mb-1 text-[13px] font-semibold text-slate-400">{t('Cần làm trước')}</h3>
+              <ul className="m-0 list-none p-0">
+                {truoc.map((c) => (
+                  <li key={c.id} className="grid gap-x-4 gap-y-0.5 border-t py-2 first:border-t-0 sm:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)_minmax(0,16rem)] sm:items-center"
+                    style={{ borderColor: 'var(--line)', ...(c.quaHan ? { boxShadow: 'inset 3px 0 0 rgb(var(--bad-rgb))', paddingLeft: 8 } : {}) }}>
+                    <span className="min-w-0 truncate text-sm"><Link to={`/hoc-vien/${c.studentId}`} className="link font-semibold">{c.hocVien}</Link>{c.maLop && <span className="text-xs text-slate-400"> · {c.maLop}</span>}</span>
+                    <Link to={duongHoSoHocVien(c.studentId, { caseId: c.id })} className="link inline-flex min-w-0 max-w-full text-left text-sm" title={dich(c.tieuDe)}>
+                      <TenCase c={{ title: dich(c.tieuDe), tenSos: c.tenSos && { ...c.tenSos, giua: dich(c.tenSos.giua) } }} />
+                    </Link>
+                    <span className="min-w-0 text-sm">{viec(c)}</span>
+                  </li>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              </ul>
+            </div>
+          )}
+          {ds.length > truoc.length && (
+            <span className="text-sm text-slate-400">
+              <OSo giaTri={ds.length} nhan={t('Xem cả {n} Case', { n: ds.length })} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} className={vung} />
+            </span>
+          )}
+        </div>
+      )}
     </Card>
   );
 }

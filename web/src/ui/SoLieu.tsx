@@ -45,7 +45,42 @@ export type DongSoLieu = {
   id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null;
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
+  /** UI-HO-SO-GV: dòng kết quả — điểm từng kỹ năng (`cua` = kỹ năng GV phụ trách), Overall, mốc so, kết luận (tab Chưa đạt · Đạt). */
+  diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%';
 };
+
+/**
+ * Điểm của một dòng kết quả (chủ SP 23/10): kỹ năng GV phụ trách nổi bật (viền + nền nhấn + đậm) kèm chênh với mốc so (▲ vượt / ▼ thiếu — ký hiệu,
+ * không chỉ màu); kỹ năng khác chữ thường xám; rồi Overall và mốc (Target / kỳ vọng).
+ */
+function DiemDong({ r }: { r: DongSoLieu }) {
+  const so = r.soVoi?.v ?? null;
+  const pt = r.donVi === '%';
+  const chu = (v: number) => (pt ? `${Math.round(v)} %` : v.toFixed(1));
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] tabular-nums">
+      {r.diem!.map((d) => {
+        const lech = d.cua && d.v !== null && so !== null ? Math.round((d.v - so) * 10) / 10 : null;
+        return (
+          <span key={d.k} className={d.cua
+            ? 'inline-flex items-baseline gap-1 rounded-md border border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-1.5 py-0.5 font-bold text-slate-100'
+            : 'inline-flex items-baseline gap-1 px-1 text-slate-400'}>
+            <span className={d.cua ? 'text-[color:var(--accent)]' : ''}>{d.k}</span>{d.v === null ? '—' : chu(d.v)}
+            {lech !== null && (
+              <span className={`text-xs ${lech >= 0 ? 'text-ok' : 'text-bad'}`} aria-label={lech >= 0 ? t('vượt {n}', { n: chu(lech) }) : t('thiếu {n}', { n: chu(Math.abs(lech)) })}>
+                {lech >= 0 ? '▲' : '▼'}{pt ? Math.round(Math.abs(lech)) : Math.abs(lech).toFixed(1)}
+              </span>
+            )}
+          </span>
+        );
+      })}
+      <span className="ml-1 whitespace-nowrap text-slate-400">
+        {r.overall != null && <>Overall <b className="font-bold text-slate-100">{r.overall.toFixed(1)}</b> </>}
+        {r.soVoi && <>· {r.soVoi.nhan} <b className="font-bold text-slate-200">{chu(r.soVoi.v)}</b></>}
+      </span>
+    </span>
+  );
+}
 
 type Drill = {
   id: string; unit: ChiSo['donVi']; n: number; numerator: number | null;
@@ -123,10 +158,15 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const hien: (DongSoLieu & { xong?: string })[] = [...xep];
   for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
   const soTre = xep.filter(tre).length;
+  /* UI-HO-SO-GV (chủ SP 23/10): dòng có kết luận → hai tab Chưa đạt · Đạt (mặc định Chưa đạt nếu có); chỉ một loại thì không tab. */
+  const soChua = hien.filter((r) => r.ketQua === 'chua').length, soDat = hien.filter((r) => r.ketQua === 'dat').length;
+  const coTab = soChua > 0 && soDat > 0;
+  const [tab, setTab] = useState<'chua' | 'dat'>('chua');
+  const hienTab = coTab ? hien.filter((r) => r.ketQua === tab) : hien;
   /* OV-15e: panel số liệu phân trang 10 / 20 / 50 (thanh đầu + cuối); dòng đang mở (`?dong=`) ở trang sau vẫn mở được khi lật tới. */
-  const pt = usePhanTrang(hien.length, tieuDe, dv ?? t('mục'));
+  const pt = usePhanTrang(hienTab.length, tieuDe, dv ?? t('mục'));
   /* Dòng đang mở (về từ hồ sơ) nằm ở trang sau → lật tới trang đó. */
-  const viTriMo = mo === null ? -1 : hien.findIndex((r) => r.id === mo);
+  const viTriMo = mo === null ? -1 : hienTab.findIndex((r) => r.id === mo);
   useEffect(() => {
     if (viTriMo >= 0 && (viTriMo < pt.thanh.dau || viTriMo >= pt.thanh.cuoi)) pt.thanh.onTrang(Math.floor(viTriMo / pt.thanh.co) + 1);
   }, [viTriMo]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -162,7 +202,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const veDong = (r: DongSoLieu & { xong?: string }) => {
     const v = r.viec ?? null;
     const moRong = mo === r.id && !r.xong;
-    const dong2 = r.em || r.lop || r.ngCanh
+    /* UI-HO-SO-GV: dòng chỉ có `lop` (không em / ngữ cảnh) trước đây mất cả câu `sub` — nay chỉ dùng đầu dòng v3 khi có em hoặc ngữ cảnh. */
+    const dong2 = r.em || r.ngCanh
       ? [r.em?.ten, r.lop, r.ngCanh, r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
       : [r.sub];
     const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
@@ -180,6 +221,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
               {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{i === 0 && r.em ? <b className="font-bold text-slate-200">{x}</b> : x}</span>)}
             </span>
           )}
+          {r.diem?.length ? <DiemDong r={r} /> : null}
         </button>
         {moRong && (
           <div className="flex flex-col gap-3 px-4 pb-4 pt-1" style={nen}>
@@ -236,8 +278,18 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         : !hien.length ? <Empty title={trong ?? t('Không có mục nào')} />
         : (
           <>
+            {coTab && (
+              <div role="tablist" aria-label={t('Kết quả')} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
+                {([['chua', t('Chưa đạt'), soChua], ['dat', t('Đạt'), soDat]] as const).map(([k, nhan, n]) => (
+                  <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+                    className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm font-semibold ${tab === k ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
+                    {k === 'chua' ? '▼ ' : '▲ '}{nhan} <span className="tabular-nums">{n}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <PhanTrang {...pt.thanh} />
-            <ul ref={ds} className="-mx-4 m-0 list-none p-0">{pt.cat(hien).map(veDong)}</ul>
+            <ul ref={ds} className="-mx-4 m-0 list-none p-0">{pt.cat(hienTab).map(veDong)}</ul>
             <PhanTrang {...pt.thanh} duoi />
           </>
         )}

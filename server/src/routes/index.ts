@@ -2018,12 +2018,12 @@ api.get('/giao-vien/:id/chi-so', requireAuth, wrap((req) => {
 api.get('/giao-vien/:id/chi-so/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return giaoVienPtSvc.oChiSoHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'),
-    { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, cot: qStr(req, 'cot') ?? '' });
+    { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, cot: qStr(req, 'cot') ?? '', loc: qStr(req, 'loc') ?? null });
 }));
 api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return oHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'), {
-    cot: qStr(req, 'cot') ?? '', lop: soDuong(req.query.lop, 'lop'),
+    cot: qStr(req, 'cot') ?? '', lop: soDuong(req.query.lop, 'lop'), tt: qStr(req, 'tt') ?? null,
     cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null,
   });
 }));
