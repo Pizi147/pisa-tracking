@@ -14,6 +14,7 @@
  *  NX12 SOS tạm (lượt chưa chốt): Case tạm không hạn, không việc Xác nhận Case
  *  NX13 Overall đạt → Case chưa xử lý tự mất
  *  NX14 migrate: Case mô tả từ nhận xét gắn nguồn (nội dung giữ), cờ S đã hết việc hạ, lần hai không đổi; kiểm trước không ghi
+ *  NX17 người chấm chéo sửa nhận xét ô S mà người chấm cũ là GV phụ trách → vẫn chờ Xác nhận Case, mô tả không đổi
  *  NX16 Sửa Case MT chưa mô tả chỉ đổi tên / mức độ → lưu (không đòi mô tả); `luc` cũ → 409, không ghi; mô tả > 1000 → 400; lượt nguồn mất → không "MT?"
  *  NX15 migrate: Case đã trượt sang MT2 mà mô tả là nhận xét MT1 → nguồn MT1 (nhận xét MT2 không đè); mô tả không trùng nhận xét nào → NULL, không bị đè
  */
@@ -322,5 +323,16 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     run('UPDATE sos_cases SET mo_ta_attempt_id = ? WHERE id = ?', 99999999, c.id);   // lượt nguồn không còn
     const chinh = cases.caseDetail(QL, c.id).issues.find((x: any) => x.role === 'primary');
     assert(chinh && !chinh.moTaTuMt, `không được hiện MT?: ${JSON.stringify(chinh)}`);
+  }));
+
+  check('NX17 · GV phụ trách chấm S (mô tả theo nhận xét) → người chấm chéo sửa nhận xét ô đó → chờ Xác nhận Case, mô tả KHÔNG đổi', () => thu(() => {
+    const { gvPT, gvCheo } = nguoiS();
+    const a = emMoi();
+    const c = chot(a.m1, { bandS: 5, nxS: NX.speaking, nguoiLuuS: gvPT });
+    assert(moTa(c.id)?.observation === NX.speaking, 'tiền đề: mô tả theo nhận xét GV phụ trách');
+    svc.saveScore(gvCheo, a.m1, 'speaking', { nhanXet: 'Người chấm chéo: Part 3 trả lời quá ngắn.' }, TODAY);
+    xoaNho();
+    assert(moTa(c.id)?.observation === NX.speaking, `mô tả bị đè: ${moTa(c.id)?.observation}`);
+    assert(viec(gvPT, 'xem_nx_s', c.id).length === 1, 'phải có việc Xác nhận Case');
   }));
 }
