@@ -478,7 +478,7 @@ function KhoiNhanXet({ cells, save, phuTrach }: {
   const o = (k: string) => cells.find((c) => c.skill === k);
   const sua = (c: Cell | undefined): boolean => !!c && c.canEdit && !lockedByNoShow(c);
   const phu = (c: Cell) => (c.enteredByName ? t('Người nhập điểm: {enteredByName}', { enteredByName: c.enteredByName }) : null);
-  const batBuoc = (c: Cell) => !!c.batBuocNhanXet && coDiemChinhThuc(c);
+  const nenCo = (c: Cell) => !!c.nenCoNhanXet && coDiemChinhThuc(c);
   const canNhom = (c: Cell) => !!c.coNhom && coDiemChinhThuc(c) && canNhomNguyenNhan(c.band, c.kyVong ?? null);
   /** `nhomSua`: chỉ đọc nhận xét người chấm nhưng sửa được nhóm (GV phụ trách S — OV-13k). */
   const phan = (c: Cell | undefined, nhan: string, nhomSua?: (v: string[]) => Promise<boolean>) => {
@@ -486,7 +486,7 @@ function KhoiNhanXet({ cells, save, phuTrach }: {
     if (sua(c) && !nhomSua) {
       return (
         <div key={c.skill} className="min-w-0 space-y-2.5">
-          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} giaTri={c.nhanXet ?? null} batBuoc={batBuoc(c)} onLuu={(v) => save(c.skill, { nhanXet: v })} />
+          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} giaTri={c.nhanXet ?? null} nenCo={nenCo(c)} onLuu={(v) => save(c.skill, { nhanXet: v })} />
           {canNhom(c) && <NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={(v) => save(c.skill, { nhomNguyenNhan: v })} />}
         </div>
       );

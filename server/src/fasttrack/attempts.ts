@@ -2,7 +2,7 @@ import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, batBuocNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -357,13 +357,15 @@ export type SkillCell = {
     /** OV-4b (hộp "Vắng lần n · đã dời sang …"): lần vắng của kỹ năng · lúc ghi "-" · người ghi. */
     lan: number; ghiLuc: string | null; ghiBoi: string | null;
   } | null;
-  /** PR-HSM (YC-13.5), OV-4b: nhận xét của bài nhập này (L/R/W1/W2/S); OV-12b: MT bắt buộc (`batBuocNhanXet`). */
+  /** NEN-SUA (nợ #544): ô ĐÃ CÓ ĐIỂM của kỹ năng đã dời do vắng — mã tuần cũ ("W3 SEP 2026") cho dòng "vắng W3 SEP"; ô chưa điểm dùng `daChot.tuTuan`. Chỉ gửi khi có. */
+  doiTu?: string;
+  /** PR-HSM (YC-13.5), OV-4b: nhận xét của bài nhập này (L/R/W1/W2/S); OV-12b → LUAT-NX-MT: MT nên có (`nenCoNhanXet`). */
   nhanXet: string | null;
   /** OV-12b: nhóm nguyên nhân đã chọn (thứ tự, phần tử đầu = chính) · lượt MT đòi nhận xét · kỳ vọng của lượt (chip khi band dưới) ·
    *  ô đã có điểm mà còn thiếu (dữ liệu trước luật) — lưới ghi chữ "thiếu nhận xét" / "thiếu nhóm nguyên nhân". */
   nhomNguyenNhan: string[];
-  batBuocNhanXet: boolean;
-  /** SV-NX-CASE: ô Mock có chip "Nhóm nguyên nhân" (mọi MT, kể cả MT trước — giữ thao tác cũ); `batBuocNhanXet` nay chỉ là NHẮC của MT mới nhất. */
+  nenCoNhanXet: boolean;
+  /** SV-NX-CASE: ô Mock có chip "Nhóm nguyên nhân" (mọi MT, kể cả MT trước — giữ thao tác cũ); `nenCoNhanXet` nay chỉ là NHẮC của MT mới nhất. */
   coNhom: boolean;
   kyVong: number | null;
   thieuNhanXet: ThieuNhanXet | null;
@@ -379,7 +381,7 @@ export type SkillCell = {
  */
 /** SV-NX-CASE (N8 ①): ô của lượt này có NHẮC nhận xét / nhóm không — chỉ MT mới nhất của em (`laMtMoiNhatCuaEm`), không còn phân biệt MT cũ. */
 export const nhacNhanXetCua = (attempt: { id: number; kind?: string | null }): boolean =>
-  batBuocNhanXetMt({ kind: attempt.kind, lichSu: false }) && laMtMoiNhatCuaEm([attempt.id]).has(attempt.id);
+  nenCoNhanXetMt({ kind: attempt.kind, lichSu: false }) && laMtMoiNhatCuaEm([attempt.id]).has(attempt.id);
 
 export function oXongCua(attempt: any, rows: readonly { skill: string; band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null }[]) {
   /* SV-NX-CASE: hỏi "MT mới nhất" chỉ khi ô có điểm cần xét nhắc — nơi chỉ đọc `xong` (Kế hoạch Test, Tổng hợp) không tốn câu nào. */
@@ -393,7 +395,7 @@ export function oXongCua(attempt: any, rows: readonly { skill: string; band?: nu
     nhac ??= nhacNhanXetCua(attempt);
     if (!nhac) return null;
     kv ??= { v: kyVongCuaLuot(attempt) };
-    return thieuNhanXetMt({ batBuoc: nhac, coDiem, band: r?.band ?? null, kyVong: kv.v, nhanXet: r?.comment, nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan) });
+    return thieuNhanXetMt({ nenCo: nhac, coDiem, band: r?.band ?? null, kyVong: kv.v, nhanXet: r?.comment, nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan) });
   };
   return { thieuNx, xong: (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null };
 }
@@ -418,11 +420,28 @@ export function pendingInputOf(cells: SkillCell[]): PendingCell[] {
  * một dòng lịch — dòng của môn Writing. Đây là lý do lịch được giữ theo kỹ năng ĐÁNH GIÁ
  * chứ không theo ô nhập điểm.
  */
+/**
+ * NEN-SUA (nợ #544): mã tuần CŨ của kỹ năng đã dời do vắng — dòng `skill_week_moved_absence` MỚI NHẤT của lịch sử đợt (cùng nguồn
+ * Kế hoạch Test, `dungLuiLich`). Một câu cho cả bảng. Khoá `${attemptId}:${kỹ năng đánh giá}`.
+ */
+export function tuanVangCu(attemptIds: number[]): Map<string, string> {
+  const out = new Map<string, string>();
+  theoLo([...new Set(attemptIds)], (lo, ph) => {
+    for (const r of db().prepare(
+      `SELECT attempt_id, field, old_value FROM attempt_schedule_history
+        WHERE action = 'skill_week_moved_absence' AND attempt_id IN (${ph}) AND old_value IS NOT NULL ORDER BY id`,
+    ).all(...lo) as any[]) out.set(`${r.attempt_id}:${r.field}`, r.old_value);
+  });
+  return out;
+}
+
 export function skillCells(
   p: Principal, attempt: any, rows: ScoreRow[], skips: AssessedSkill[],
   today = demoToday(), skillRows?: SkillRow[],
   /** R11: truyền từ nơi gọi (`dotHoanTatMany` cho cả bảng) — không tự hỏi lại lẻ từng dòng ở đây. */
   hoanTat: { hoanTat: boolean; chuNhatCuoi: string | null } = { hoanTat: false, chuNhatCuoi: null },
+  /** NEN-SUA: `tuanVangCu` của các màn vẽ ô điểm (ô có điểm ghi "vắng W3 SEP"); nơi chỉ đếm việc không truyền — không thêm câu đọc. */
+  vangCu?: Map<string, string>,
 ): SkillCell[] {
   const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, today)) : [];
   /* PR-XLMT (rà #126): "việc nhập điểm" không tính vế Quản lý sửa mọi lúc. */
@@ -511,6 +530,7 @@ export function skillCells(
           };
         })()
       : null;
+    const doiTu = hasScore && view.absenceMoveCount > 0 ? vangCu?.get(`${attempt.id}:${assessed}`) ?? null : null;
     /* E8 (T53 Q6): bài đã xác nhận vắng không nhập ở đâu cả — nhập bù thì Quản lý "Xếp lại bài vắng" / "Khôi phục" trước. */
     const canEdit = required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
       /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ (`kiemDaToiTuanThi`), kể cả ô đã có điểm mà
@@ -567,10 +587,11 @@ export function skillCells(
       noShow,
       noShowNote,
       daChot,
+      ...(doiTu ? { doiTu } : {}),
       nhanXet: row?.comment ?? null,
       nhomNguyenNhan: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
-      batBuocNhanXet: batBuocNx,
-      coNhom: batBuocNhanXetMt({ kind: attempt.kind, lichSu: false }),
+      nenCoNhanXet: batBuocNx,
+      coNhom: nenCoNhanXetMt({ kind: attempt.kind, lichSu: false }),
       kyVong,
       /* LUAT-NX-MT: chỉ NHẮC (ô vàng "Nên có nhận xét") ở ô người xem sửa được — không chặn, không thành việc. */
       thieuNhanXet: !canEdit ? null : thieuNxCua(skill),
@@ -1122,7 +1143,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const result = resultOf(a, scores, skips, skillRows);
   const today = demoToday();
   /* R11 (Z2c-c, A3): đợt đã hoàn tất thì ô chỉ sửa được bởi Quản lý — thiếu dòng này GVBM thấy nút "Sửa điểm" rồi bị máy chủ chặn. */
-  const cells0 = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today));
+  const cells0 = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today), tuanVangCu([attemptId]));
   /* Rà #410: lớp đã kết thúc — ô không nhận "-" (`khongVang`), hộp nhập điểm không gửi. */
   const cells = laLopKetThuc(a.class_id) ? cells0.map((c) => ({ ...c, khongVang: CAU_KHONG_VANG })) : cells0;
   const mode = scoringModeOf(a);
@@ -2461,6 +2482,7 @@ export function classScoreSheet(
       const bundle = loadBundle(attempts.map((a) => a.id));
       /* R11: một câu hỏi cho cả bảng (`dotHoanTatMany`) — không hỏi lẻ từng dòng. */
       const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
+      const vangCu = tuanVangCu(attempts.map((a) => a.id));
       /* OV-11g (HL-10, Q4): lớp đã kết thúc — như bài đã hoàn tất (Quản lý sửa qua hộp lý do); GV chỉ đọc, cùng luật `kiemLopKetThuc` của `saveScore`. */
       const ketThuc = cls.status === 'finished';
       const gvKetThuc = ketThuc && !quyenSuaSauHoanTat(p, classId);
@@ -2470,7 +2492,7 @@ export function classScoreSheet(
       const ht = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
       const hoanTat = ketThuc ? { hoanTat: true, chuNhatCuoi: ht.chuNhatCuoi ?? cls.finished_at ?? null } : ht;
       const ngung = ngungHocCua(a.student_status, a.student_archived_at);
-      const cells0 = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat);
+      const cells0 = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat, vangCu);
       /* OV-13h: GV giữ `canEdit` ở ô chưa có điểm (skillCells đã xét `oChuaCoDiem`); ô có điểm khoá, không gỡ "-". */
       /* Rà #410: lớp đã kết thúc — mọi ô không nhận "-" (`khongVang`, cùng câu máy chủ), kể cả QL. */
       const cells = ketThuc ? cells0.map((c) => ({ ...c, khongVang: CAU_KHONG_VANG,
@@ -2527,9 +2549,10 @@ export function baiChamSpeaking(p: Principal, today = demoToday()) {
   });
   const bundle = loadBundle(attempts.map((a) => a.id));
   const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
+  const vangCu = tuanVangCu(attempts.map((a) => a.id));
   const rows = attempts.flatMap((a) => {
     const scores = bundle.scores.get(a.id) ?? [];
-    const cells = skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id), hoanTatOf.get(a.id));
+    const cells = skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id), hoanTatOf.get(a.id), vangCu);
     const cell = cells.find((c) => c.skill === 'speaking');
     if (!cell?.required) return [];
     const cho = pendingSkillsOf(pendingInputOf(cells), 'managed').includes('speaking') && canChamCheo(true, cell.weekStart, tuanNay);

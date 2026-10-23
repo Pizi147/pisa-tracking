@@ -99,7 +99,7 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     svc.saveScore(QL, a.m1, 'listening', { rawScore: 30 }, TODAY);
     xoaNho();
     const l = o(a.m1, 'listening');
-    assert(l.thieuNhanXet === 'ghi-nhan-xet' && l.batBuocNhanXet === true && svc.laMtMoiNhatCuaEm([a.m1]).has(a.m1), JSON.stringify({ t: l.thieuNhanXet, b: l.batBuocNhanXet }));
+    assert(l.thieuNhanXet === 'ghi-nhan-xet' && l.nenCoNhanXet === true && svc.laMtMoiNhatCuaEm([a.m1]).has(a.m1), JSON.stringify({ t: l.thieuNhanXet, b: l.nenCoNhanXet }));
   }));
 
   check('NX2 · MT trước (MT sau đã có band): không nhắc nhận xét / nhóm; chip nhóm vẫn có; MT sau nhắc', () => thu(() => {
@@ -108,7 +108,7 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     svc.saveScore(QL, a.m2, 'listening', { rawScore: 30 }, TODAY);
     xoaNho();
     const r = o(a.m1, 'reading');
-    assert(r.thieuNhanXet === null && r.batBuocNhanXet === false && r.coNhom === true, JSON.stringify({ t: r.thieuNhanXet, b: r.batBuocNhanXet, n: r.coNhom }));
+    assert(r.thieuNhanXet === null && r.nenCoNhanXet === false && r.coNhom === true, JSON.stringify({ t: r.thieuNhanXet, b: r.nenCoNhanXet, n: r.coNhom }));
     assert(o(a.m2, 'listening').thieuNhanXet === 'ghi-nhan-xet', 'MT mới nhất phải nhắc');
     const moi = svc.laMtMoiNhatCuaEm([a.m1, a.m2, a.m3]);
     assert(!moi.has(a.m1) && moi.has(a.m2), 'MT1 không còn là mới nhất; MT2 là mới nhất (MT3 chưa band — không có ô để nhắc)');

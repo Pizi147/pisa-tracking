@@ -5,8 +5,8 @@ import { O_FT_XONG_SQL } from '../../../shared/domain/index.ts';
  * TD7b — CỜ "CÒN Ô CHỜ ĐIỂM" của lượt: `assessment_attempts.o_cho_tu`.
  *
  * = `week_start` SỚM NHẤT trong các ô đang chờ điểm của lượt; NULL = lượt không còn ô nào chờ. Ô chờ = ô của bộ kỹ năng chưa có điểm
- * (lớp chấm tỷ lệ: môn của chương trình, có điểm = `raw_score`; còn lại — FT, MT0 mọi lớp, lượt không lớp: L R W1 W2 S, có điểm = `band` và đủ nhận xét
- * bắt buộc — `O_FT_XONG_SQL`, V5 SV-SO1;
+ * (lớp chấm tỷ lệ: môn của chương trình, có điểm = `raw_score`; còn lại — FT, MT0 mọi lớp, lượt không lớp: L R W1 W2 S, có điểm = `band`
+ * — `O_FT_XONG_SQL`; LUAT-NX-MT: thiếu nhận xét chỉ nhắc, không giữ ô chờ;
  * dấu "-" vẫn là chưa có điểm, vì dời "-" phải còn hiện) VÀ có thể đang chờ: dòng lịch của môn `required = 1`, không huỷ / vắng, có tuần;
  * thiếu dòng lịch của môn → dự phòng của `skillScheduleOf` (bắt buộc, tuần của lượt).
  *
@@ -88,6 +88,6 @@ export const CON_O_SQL_TRUOC_TD7B = `a.status != 'cancelled' AND (CASE WHEN a.ki
   ELSE EXISTS (SELECT 1 FROM (SELECT 'listening' AS o, 'listening' AS kn UNION ALL SELECT 'reading' AS o, 'reading' AS kn
       UNION ALL SELECT 'writing1' AS o, 'writing' AS kn UNION ALL SELECT 'writing2' AS o, 'writing' AS kn
       UNION ALL SELECT 'speaking' AS o, 'speaking' AS kn) e
-    WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = e.o AND ${O_FT_XONG_SQL('sc', 'a')})   -- V5 SV-SO1: cùng luật "xong"
+    WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = e.o AND ${O_FT_XONG_SQL('sc', 'a')})   -- cùng luật "xong" (O_FT_XONG_SQL)
       AND ${oChoDiemCu('e.kn')})
   END)`;
