@@ -145,7 +145,8 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     if (sc) {
       /* SV-NX-CASE: nhận xét chấm chéo chưa xác nhận → chưa thành mô tả Case. */
       const cs = ((await (await goi(gvPT, `/cases/${sc.id}`)).json()) as any);
-      assert(!(cs.issues ?? []).some((i: any) => i.role === 'primary') && cs.choXacNhanS?.nhanXet === NX, `Case: ${JSON.stringify(cs.issues)} ${JSON.stringify(cs.choXacNhanS)}`);
+      const tam = one('SELECT tam FROM sos_cases WHERE id = ?', sc.id).tam;   // lượt chưa chốt → Case tạm: chưa có việc / khối Xác nhận Case
+      assert(!(cs.issues ?? []).some((i: any) => i.role === 'primary') && (tam === 1 ? !cs.choXacNhanS : cs.choXacNhanS?.nhanXet === NX), `Case: ${JSON.stringify(cs.issues)} ${JSON.stringify(cs.choXacNhanS)}`);
     }
     /* Nhận xét phụ trách không bắt buộc: chỉ đổi nhóm, không gửi nhận xét → nhận xét giữ. */
     await ma(await goi(gvPT, url, put({ nhomNguyenNhan: [n3] })), 200, 'chỉ đổi nhóm');

@@ -110,7 +110,8 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     const r = o(a.m1, 'reading');
     assert(r.thieuNhanXet === null && r.batBuocNhanXet === false && r.coNhom === true, JSON.stringify({ t: r.thieuNhanXet, b: r.batBuocNhanXet, n: r.coNhom }));
     assert(o(a.m2, 'listening').thieuNhanXet === 'ghi-nhan-xet', 'MT mới nhất phải nhắc');
-    assert(svc.laMtMoiNhatCuaEm([a.m1, a.m2, a.m3]).size === 1 && svc.laMtMoiNhatCuaEm([a.m2]).has(a.m2), 'chỉ MT2 là mới nhất (MT3 chưa band)');
+    const moi = svc.laMtMoiNhatCuaEm([a.m1, a.m2, a.m3]);
+    assert(!moi.has(a.m1) && moi.has(a.m2), 'MT1 không còn là mới nhất; MT2 là mới nhất (MT3 chưa band — không có ô để nhắc)');
   }));
 
   check('NX3 · MT mới nhất ≥ 2 tuần (`lich_su` = 1) vẫn nhắc nhận xét', () => thu(() => {
