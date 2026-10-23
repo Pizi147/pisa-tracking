@@ -273,10 +273,10 @@ export function TongQuanQlV5({ d }: { d: TongQuanV5Data }) {
 /* ───────────── QT / CX: theo chi nhánh ───────────── */
 
 const COT_CN: readonly CotBang[] = [
-  { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten' }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram' }, { key: 'case', nhan: t('Case có PA'), kieu: 'phan-tram' },
-  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram' }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'so' },
+  { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten' }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 130 }, { key: 'case', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 130 },
+  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'so', rong: 120 },
 ];
-const COT_CN_CX: readonly CotBang[] = [{ key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten' }, { key: 'sos', nhan: t('SOS 2–3'), kieu: 'so' }, { key: 'case', nhan: t('Case chưa PA'), kieu: 'so' }];
+const COT_CN_CX: readonly CotBang[] = [{ key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten' }, { key: 'sos', nhan: t('SOS 2–3'), kieu: 'so', rong: 120 }, { key: 'case', nhan: t('Case chưa PA'), kieu: 'so', rong: 130 }];
 const ptChu = (x: TyLeV5 | null, gon = false) => (!x ? <span className="text-slate-500">—</span>
   : x.mau ? <span className="font-semibold tabular-nums">{Math.round((100 * x.dat) / x.mau)} %</span>
     : gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span> : <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>);
