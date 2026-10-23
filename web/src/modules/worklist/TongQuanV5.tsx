@@ -97,7 +97,7 @@ export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: s
 const So = ({ n }: { n: number }) => <b className="tabular-nums">{n}</b>;
 
 /** Công tắc hai nút ngoài tiêu đề bảng (đầu thẻ). */
-function CongTac<K extends string>({ value, onChange, muc }: { value: K; onChange: (k: K) => void; muc: [K, string][] }) {
+export function CongTac<K extends string>({ value, onChange, muc }: { value: K; onChange: (k: K) => void; muc: [K, string][] }) {
   return (
     <span role="group" aria-label={t('Lọc')} className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
       {muc.map(([k, nhan]) => (

@@ -57,24 +57,26 @@ function DiemDong({ r }: { r: DongSoLieu }) {
   const so = r.soVoi?.v ?? null;
   const pt = r.donVi === '%';
   const chu = (v: number) => (pt ? `${Math.round(v)} %` : v.toFixed(1));
+  /* Chủ SP 23/10: đang xem một GV → kỹ năng GV phụ trách nổi bật hẳn (ô to, viền nhấn dày, chữ trắng đậm, chênh với mốc so);
+     kỹ năng khác nhỏ, mờ. Overall + mốc so dồn mép phải. Panel rộng (720) để cả dãy một hàng. */
   return (
-    <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] tabular-nums">
+    <span className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 tabular-nums">
       {r.diem!.map((d) => {
         const lech = d.cua && d.v !== null && so !== null ? Math.round((d.v - so) * 10) / 10 : null;
-        return (
-          <span key={d.k} className={d.cua
-            ? 'inline-flex items-baseline gap-1 rounded-md border border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-1.5 py-0.5 font-bold text-slate-100'
-            : 'inline-flex items-baseline gap-1 px-1 text-slate-400'}>
-            <span className={d.cua ? 'text-[color:var(--accent)]' : ''}>{d.k}</span>{d.v === null ? '—' : chu(d.v)}
+        return d.cua ? (
+          <span key={d.k} className="inline-flex items-baseline gap-1.5 rounded-md border-2 border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-2 py-0.5 text-[15px] font-bold text-slate-100">
+            <span className="text-xs text-[color:var(--accent)]">{d.k}</span>{d.v === null ? '—' : chu(d.v)}
             {lech !== null && (
               <span className={`text-xs ${lech >= 0 ? 'text-ok' : 'text-bad'}`} aria-label={lech >= 0 ? t('vượt {n}', { n: chu(lech) }) : t('thiếu {n}', { n: chu(Math.abs(lech)) })}>
                 {lech >= 0 ? '▲' : '▼'}{pt ? Math.round(Math.abs(lech)) : Math.abs(lech).toFixed(1)}
               </span>
             )}
           </span>
+        ) : (
+          <span key={d.k} className="inline-flex items-baseline gap-1 px-1 text-xs text-slate-500">{d.k} {d.v === null ? '—' : chu(d.v)}</span>
         );
       })}
-      <span className="ml-1 whitespace-nowrap text-slate-400">
+      <span className="ml-auto whitespace-nowrap pl-2 text-[13px] text-slate-400">
         {r.overall != null && <>Overall <b className="font-bold text-slate-100">{r.overall.toFixed(1)}</b> </>}
         {r.soVoi && <>· {r.soVoi.nhan} <b className="font-bold text-slate-200">{chu(r.soVoi.v)}</b></>}
       </span>
@@ -161,6 +163,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   /* UI-HO-SO-GV (chủ SP 23/10): dòng có kết luận → hai tab Chưa đạt · Đạt (mặc định Chưa đạt nếu có); chỉ một loại thì không tab. */
   const soChua = hien.filter((r) => r.ketQua === 'chua').length, soDat = hien.filter((r) => r.ketQua === 'dat').length;
   const soVuot = hien.filter((r) => r.vuot).length;
+  const laThi = hien.length > 0 && hien.every((r) => r.soVoi?.nhan === 'Target');
   /* Thi thật: tab thứ ba "Vượt" (Overall / kỹ năng cao hơn Target — tập con của Đạt). */
   const coTab = (soChua > 0 && soDat > 0) || (soVuot > 0 && soVuot < hien.length);
   const [tab, setTab] = useState<'chua' | 'dat' | 'vuot'>(soChua > 0 ? 'chua' : 'dat');
@@ -267,7 +270,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onDong}
+    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={goc.some((r) => r.diem?.length) ? 'rong' : 'hep'}
       /* NEN-PANEL: không dòng nào làm được ở đây = panel báo cáo (07 mục 3). */
       loai={hien.some((r) => r.viec?.lam) ? t('VIỆC') : t('BÁO CÁO · CHỈ ĐỌC')}
       dau={{
@@ -282,7 +285,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           <>
             {coTab && (
               <div role="tablist" aria-label={t('Kết quả')} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
-                {([['chua', t('Chưa đạt'), soChua, '▼ '], ['dat', t('Đạt'), soDat, '▲ '], ...(soVuot ? [['vuot', t('Vượt Target'), soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
+                {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). */}
+                {([['chua', laThi ? 'Fail' : t('Chưa đạt'), soChua, '▼ '], ['dat', laThi ? 'Pass' : t('Đạt'), soDat, '▲ '], ...(soVuot ? [['vuot', 'Exceed', soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
                   <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
                     className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm font-semibold ${tab === k ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
                     {dau}{nhan} <span className="tabular-nums">{n}</span>

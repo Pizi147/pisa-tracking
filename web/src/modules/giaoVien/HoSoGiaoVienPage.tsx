@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
@@ -17,20 +17,20 @@ import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { PhanTram, tuMau, tyLeGv, type TyLeV5 } from '../worklist/TongQuanV5.tsx';
+import { CongTac, PhanTram, tuMau, tyLeGv, type TyLeV5 } from '../worklist/TongQuanV5.tsx';
 import { TenCase } from '../cases/SkillBoard.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * HỒ SƠ GIÁO VIÊN V5 (UI-HO-SO-GV — `thiet-ke/v5/dieu-chinh-cuoi.html` khu e + `ho-so-gv.html` phương án C). Đầu gọn (tên · Vai · Kỹ năng · GVCN) +
  * kỳ Từ tuần – Đến tuần (tự do, mặc định 4 tuần — P9) · dải chỉ số theo kỳ · Lớp đang dạy · Học thuật theo lớp (lượt của từng HV — P8) ·
- * khối V4 giữ (Việc đang có, Case đang phụ trách, Yêu cầu đã gửi). Không điểm đánh giá người, không xếp hạng, không màu ngưỡng (C08).
+ * khối V4 giữ (Việc đang tồn, Case đang phụ trách, Yêu cầu đã gửi). Không điểm đánh giá người, không xếp hạng, không màu ngưỡng (C08).
  * Số gạch chân = panel chỉ đọc cùng hàm tập với số (`/giao-vien/:id/chi-so/o`, `/giao-vien/:id/o`); "›" = đổi trang; "?" = giải thích (P1).
  */
 
 type NhomSo = { nhom: NhomViec; n: number; quaHan: number };
 type LopHs = {
-  id: number; ma: string; khung: 'ft' | 'thuong'; ct: string | null; vai: string; laGvcn: boolean; kyNang: string[]; gvcn: string | null;
+  id: number; ma: string; khung: 'ft' | 'thuong'; ct: string | null; vai: string; laGvcn: boolean; kyNang: string[]; gvcn: string | null; khai: string | null;
   hocVien: number; chuaNhap: number; quaHan: number; banGiao: ChipBanGiao | null;
 };
 type CaseHs = {
@@ -125,7 +125,7 @@ export function HoSoGiaoVienPage() {
         {kyLoi && <p className="m-0 mt-2 text-sm font-semibold text-bad" role="alert">⚠ {kyLoi}</p>}
       </div>
 
-      <DaiChiSo data={data} cs={cs} viec={viec.data?.viec ?? null} ky={ky} />
+      <DaiChiSo data={data} cs={cs} ky={ky} />
       <KhoiLop data={data} />
       <KhoiHocThuat data={data} cs={cs} ky={ky} />
       <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} homNay={homNay} ngan={ngan} viec={viec} />
@@ -151,40 +151,58 @@ type ApiCs = { data: ChiSoHoSoGv | null; loading: boolean; error: { message: str
 
 // ------------------------------------------------------------------ dải chỉ số (một thẻ, các ô ngăn bằng vạch — khung khu e)
 
-function DaiChiSo({ data, cs, viec, ky }: { data: HoSo; cs: ApiCs; viec: NhomSo[] | null; ky: string }) {
+/** Kết quả thi thật (IELTS): ▼ Fail · ▲ Pass · ★ Exceed — màu theo kết quả + ký hiệu (không chỉ màu); số bấm → panel đúng nhóm. */
+const MAU_THI = { chua: 'text-bad', dat: 'text-ok', vuot: 'text-[color:var(--accent)]' } as const;
+function BaThi({ cot, fail, pass, exceed, nguonCua, ten, motDong, gon }: {
+  cot: string; fail: number; pass: number; exceed: number; nguonCua: (cot: string, loc: string) => string; ten: string;
+  /** Ô bảng: chỉ ký hiệu + số (chữ ở tiêu đề cột; trình đọc màn vẫn đọc chữ). */
+  gon?: boolean;
+  /** Ô bảng rộng (≥ 640): một dòng, không xuống hàng; ô hẹp (dải số, thẻ 375) xuống hàng giữa các cụm. */
+  motDong?: boolean;
+}) {
+  const o = (loc: 'chua' | 'dat' | 'vuot', dau: string, chu: string, n: number) => (
+    <span className={`inline-flex items-baseline gap-1 whitespace-nowrap ${MAU_THI[loc]}`}>
+      <span aria-hidden>{dau}</span>{gon ? <span className="sr-only">{chu}</span> : chu}
+      <OSo giaTri={n} tieuDe={`${ten} · ${chu}`} nguon={nguonCua(cot, loc)} className={`${vung} font-bold ${n > 0 ? MAU_THI[loc] : ''}`} />
+    </span>
+  );
+  return <span className={`inline-flex items-baseline gap-x-3 gap-y-0.5 ${motDong ? 'whitespace-nowrap' : 'flex-wrap'}`}>{o('chua', '▼', 'Fail', fail)}{o('dat', '▲', 'Pass', pass)}{o('vuot', '★', 'Exceed', exceed)}</span>;
+}
+
+/* Chủ SP 23/10 (lượt 3): dải 4 ô — Đúng hạn · Đạt kỳ vọng Test · Case có PA · Kết quả thi thật (cuối). Quá hạn hiện tại đã ở "Việc đang tồn". */
+function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   const id = data.gv.id;
   const d = cs.data;
-  const o = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram x={tyLeGv(x)} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&${ky}`} tieuDe={ten} /> : <span className="text-slate-500">…</span>);
-  const quaHan = viec ? viec.reduce((a, x) => a + x.quaHan, 0) : null;
+  const nguonCs = (cot: string, loc = '') => `/giao-vien/${id}/chi-so/o?cot=${cot}${loc ? `&loc=${loc}` : ''}&${ky}`;
+  const o = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram x={tyLeGv(x)} nguon={nguonCs(cot)} tieuDe={ten} /> : <span className="text-slate-500">…</span>);
   const pa: TyLeV5 = { dat: data.caseMo.filter((c) => c.coPa).length, mau: data.caseMo.length };
   const paCt = d && d.paHieuQua.k === 'so' ? d.paHieuQua : null;
   const o1 = (ten: string, giaTri: ReactNode, mau: ReactNode, luat?: string) => ({ ten, giaTri, mau, luat });
   /* Số phụ trong ô (dòng nhỏ): % gạch chân bấm → panel; mẫu 0 → "—". */
-  const nho = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram gon x={tyLeGv(x)} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&${ky}`} tieuDe={ten} /> : '…');
-  const vuot = d && d.thiThat.k === 'so' ? d.thiThatVuot : 0;
-  /* Chủ SP 23/10: dải còn 5 ô — gộp Việc + Điểm đúng hạn, Tiến bộ vào Đạt kỳ vọng; GIỮ riêng % Test đạt và % Pass Target (thi thật). */
+  const nho = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram gon x={tyLeGv(x)} nguon={nguonCs(cot)} tieuDe={ten} /> : '…');
+  const thi = d && d.thiThat.k === 'so' ? d.thiThat : null;
   const ds = [
     o1(t('Đúng hạn'), o(d?.diemDungHan, 'cham-diem', t('Điểm đúng hạn')),
-      <>{tuMau(tyLeGv(d?.diemDungHan), t('bài'))}{d && <> · {t('Việc')} {nho(d.viecDungHan, 'viec-dung-han', t('Việc đúng hạn'))}</>}</>,
-      t('Số to: bài nhập điểm trước hạn / bài tới hạn nhập trong kỳ (theo người được phân công ở hạn nhập). Việc: việc có hạn trong kỳ (ghi kết quả PA) xong trước hạn.')),
-    o1(t('Quá hạn'), quaHan === null ? '…' : <span className={quaHan > 0 ? 'text-bad' : 'text-slate-500'}>{quaHan > 0 && '⚠ '}{quaHan}</span>, t('việc · hiện tại')),
-    o1(t('Đạt kỳ vọng'), o(d?.ketQua, 'ket-qua', t('Kết quả')),
-      <>{tuMau(tyLeGv(d?.ketQua), t('lượt'))}{d && d.tienBo.k !== 'na' && <> · {t('Tiến bộ')} {nho(d.tienBo, 'tien-bo', t('HV tiến bộ'))}</>}</>,
+      <>{tuMau(tyLeGv(d?.diemDungHan), t('bài Test'))}{d && <> · {t('Việc')} {nho(d.viecDungHan, 'viec-dung-han', t('Việc đúng hạn'))}</>}</>,
+      t('Số to: bài Test nhập điểm trước hạn / bài Test tới hạn nhập trong kỳ (theo người được phân công ở hạn nhập). Việc: việc có hạn trong kỳ (ghi kết quả PA) xong trước hạn.')),
+    o1(t('Đạt kỳ vọng Test'), o(d?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test')),
+      <>{tuMau(tyLeGv(d?.ketQua), t('lượt Test'))}{d && d.tienBo.k !== 'na' && <> · {t('Tiến bộ')} {nho(d.tienBo, 'tien-bo', t('HV tiến bộ'))}</>}</>,
       t('Test (MT, Progress, Final — không gồm thi thật): theo quy tắc Overall, một lượt = một lượt Test của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi. Tiến bộ: lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (Fast Track).')),
-    /* Chủ SP 23/10: thi thật (IELTS) RẤT quan trọng — Pass Target + số vượt Target (bấm → danh sách có điểm). */
-    o1(t('Đạt Target thi thật'), o(d?.thiThat, 'thi-that', t('Đạt Target thi thật')),
-      <>{tuMau(tyLeGv(d?.thiThat), 'HV') ?? (d?.thiThat.k === 'rong' ? t('Thi thật trong kỳ') : null)}
-        {vuot > 0 && <> · {t('Vượt')} <OSo giaTri={vuot} tieuDe={t('Vượt Target thi thật')} nguon={`/giao-vien/${id}/chi-so/o?cot=thi-that&loc=vuot&${ky}`} className={`${vung} font-semibold text-slate-200`} /></>}</>,
-      t('HV có ngày thi thật (IELTS) trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi; Đạt = Overall đạt Target, Vượt = Overall cao hơn Target.')),
     o1(t('Case có PA'), <PhanTram x={pa} nguon={nguon(id, 'cot=case-mo')} tieuDe={t('Case đang phụ trách')} />,
-      paCt ? <>{t('PA cải thiện')} <OSo giaTri={paCt.tong} nhan={`${paCt.dung}/${paCt.tong}`} nguon={`/giao-vien/${id}/chi-so/o?cot=pa-hieu-qua&${ky}`} tieuDe={t('PA hiệu quả')} className={vung} /></> : t('Case đang phụ trách')),
+      paCt ? <>{t('PA cải thiện')} <OSo giaTri={paCt.tong} nhan={`${paCt.dung}/${paCt.tong}`} nguon={nguonCs('pa-hieu-qua')} tieuDe={t('PA hiệu quả')} className={vung} /></> : t('Case đang phụ trách')),
+    /* Chủ SP 23/10: thi thật (IELTS) RẤT quan trọng — % Pass Target + Fail · Pass · Exceed (bấm → danh sách có điểm). */
+    o1(t('Kết quả thi thật'),
+      d?.thiThat.k === 'na' ? <span className="text-slate-500">—</span> : <span className="inline-flex items-baseline gap-2">{o(d?.thiThat, 'thi-that', t('Kết quả thi thật'))}{thi && <span className="text-xs font-medium text-slate-400">Pass Target</span>}</span>,
+      thi ? <BaThi cot="thi-that" fail={thi.tong - thi.dung} pass={thi.dung} exceed={d!.thiThatVuot} nguonCua={nguonCs} ten={t('Kết quả thi thật')} />
+        : d?.thiThat.k === 'na' ? t('Không dạy lớp Fast Track') : t('Thi thật trong kỳ'),
+      t('HV có ngày thi thật (IELTS) trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi. Pass = Overall đạt Target · Fail = chưa đạt · Exceed = Overall cao hơn Target.')),
   ];
   return (
     <section aria-label={t('Chỉ số')} className="card overflow-clip">
       {cs.error && <div className="border-b p-3" style={{ borderColor: 'var(--line)' }}><ErrorState message={cs.error.message} hint={cs.error.hint} onRetry={cs.reload} /></div>}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4">
         {ds.map((x) => (
-          <div key={x.ten} className="flex min-w-0 flex-col gap-0.5 border-b border-r px-4 py-3.5 max-sm:last:col-span-2" style={{ borderColor: 'var(--line)' }}>
+          <div key={x.ten} className="flex min-w-0 flex-col gap-0.5 border-b border-r px-4 py-3.5" style={{ borderColor: 'var(--line)' }}>
             <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-400">{x.ten}{x.luat && <NutLuat label={x.ten}>{x.luat}</NutLuat>}</span>
             <span className="text-2xl font-bold tabular-nums text-slate-100">{x.giaTri}</span>
             {x.mau && <span className="text-xs text-slate-500">{x.mau}</span>}
@@ -234,6 +252,10 @@ function KhoiLop({ data }: { data: HoSo }) {
                 {l.chuaNhap > 0 && (
                   <span className="whitespace-nowrap">· <OSo giaTri={l.chuaNhap} tieuDe={`${t('Bài chưa nhập điểm')} · ${l.ma}`} nguon={nguon(id, `cot=chua-nhap&lop=${l.id}`)} className={`${vung} text-slate-200`} /> {t('chưa nhập')}</span>
                 )}
+                {/* V4 GIỮ: bài quá hạn nhập theo lớp (trước ở bảng lớp) — ⚠ + chữ, không chỉ màu. */}
+                {l.quaHan > 0 && (
+                  <span className="whitespace-nowrap font-semibold text-bad">· ⚠ <OSo giaTri={l.quaHan} tieuDe={`${t('Bài quá hạn chưa nhập điểm')} · ${l.ma}`} nguon={nguon(id, `cot=qua-han&lop=${l.id}`)} className={`${vung} text-bad`} /> {t('quá hạn')}</span>
+                )}
               </span>
             </li>
           ))}
@@ -243,171 +265,191 @@ function KhoiLop({ data }: { data: HoSo }) {
   );
 }
 
-// ------------------------------------------------------------------ Học thuật (một hàng một lớp em học lúc thi — P8)
+// ------------------------------------------------------------------ Học thuật (chủ SP 23/10: FT | Lớp thường, bảng Kỹ năng ‖ bảng Lớp cạnh nhau)
 
-type HangHt = {
-  khoa: string; classId: number | null; ma: string; kyNang: string[]; luot: number; theoBai: { bai: string; n: number }[];
-  ketQua: TyLeV5 | null; tienBo: TyLeV5 | null; thiThat: TyLeV5 | null; casePa: TyLeV5 | null; quaHan: number | null; cong?: boolean;
-};
+type Khung = 'ft' | 'thuong';
+type SoOk = Extract<OPtGv, { k: 'so' }>;
+const laSo = (o: OPtGv | undefined): SoOk | null => (o && o.k === 'so' && o.tong > 0 ? o : null);
 const cong = (a: TyLeV5 | null, b: TyLeV5 | null): TyLeV5 | null => (!a ? b : !b ? a : { dat: a.dat + b.dat, mau: a.mau + b.mau });
+/** Thanh tỉ lệ trung tính (không màu ngưỡng — C08). */
+const Thanh = ({ p }: { p: number }) => (
+  <span aria-hidden className="h-1.5 w-8 shrink-0 overflow-hidden rounded-full bg-[color:var(--line)]"><span className="block h-full rounded-full bg-[color:var(--accent)]" style={{ width: `${p}%` }} /></span>
+);
+/**
+ * MỘT kiểu ô tỉ lệ cho MỌI cột % của khối Học thuật (chủ SP 23/10: hai bảng cùng chỉ số thì cùng cách hiện): % đậm (gạch chân bấm → panel) · thanh · n/N nhỏ.
+ * Mẫu 0 → "—". Hàng Cộng: % không bấm (số đã bấm được ở dải).
+ */
+function OTyLe({ x, nguon: ng, tieuDe, dam }: { x: TyLeV5 | null; nguon?: string; tieuDe: string; dam?: boolean }) {
+  if (!x || !x.mau) return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
+  const p = Math.round((100 * x.dat) / x.mau);
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <span className="w-11 shrink-0">{ng && !dam ? <PhanTram gon x={x} nguon={ng} tieuDe={tieuDe} /> : <b className="font-bold tabular-nums text-slate-100">{p} %</b>}</span>
+      <Thanh p={p} />
+      <span className="w-9 shrink-0 text-xs tabular-nums text-slate-500">{x.dat}/{x.mau}</span>
+    </span>
+  );
+}
+/** Khung riêng cho một bảng (chủ SP 23/10: hai bảng tách hẳn — viền + dải tiêu đề, cách nhau). */
+function KhungBang({ ten, phai, children }: { ten: string; phai?: ReactNode; children: ReactNode }) {
+  return (
+    <section aria-label={ten} className="min-w-0 overflow-clip rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
+      <h3 className="m-0 flex min-h-11 items-center justify-between gap-2 border-b px-4 py-2 text-sm font-bold text-slate-100" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+        {ten}{phai}
+      </h3>
+      {children}
+    </section>
+  );
+}
 
 function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
-  const id = data.gv.id;
   const d = cs.data;
-  const casePa = (ma: string): TyLeV5 | null => {
-    const ds = data.caseMo.filter((c) => c.maLop === ma);
-    return ds.length ? { dat: ds.filter((c) => c.coPa).length, mau: ds.length } : null;
-  };
-  const lopNay = new Map(data.lop.map((l) => [l.id, l]));
-  const hang: HangHt[] = (d?.hocThuatTheoLop ?? []).map((h) => ({
-    khoa: `l${h.classId}`, classId: h.classId, ma: h.ma, kyNang: h.kyNang, luot: h.luot, theoBai: h.theoBai,
-    ketQua: tyLeGv(h.ketQua), tienBo: tyLeGv(h.tienBo), thiThat: tyLeGv(h.thiThat), casePa: casePa(h.ma), quaHan: lopNay.get(h.classId)?.quaHan ?? null,
-  }));
-  /* Lớp đang dạy chưa có lượt trong kỳ vẫn có hàng — giữ ô Quá hạn (V4) và cho thấy "Chưa có dữ liệu" thay vì mất lớp. */
-  for (const l of data.lop) {
-    if (!hang.some((h) => h.classId === l.id)) {
-      hang.push({ khoa: `l${l.id}`, classId: l.id, ma: l.ma, kyNang: l.kyNang, luot: 0, theoBai: [], ketQua: { dat: 0, mau: 0 }, tienBo: l.khung === 'ft' ? { dat: 0, mau: 0 } : null, thiThat: l.khung === 'ft' ? { dat: 0, mau: 0 } : null, casePa: casePa(l.ma), quaHan: l.quaHan });
-    }
-  }
-  const coFt = hang.some((h) => h.tienBo !== null);
-  const tong: HangHt = {
-    khoa: 'cong', classId: null, ma: t('Cộng'), kyNang: [], luot: hang.reduce((a, h) => a + h.luot, 0), theoBai: [], cong: true,
-    ketQua: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.ketQua), null), tienBo: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.tienBo), null),
-    thiThat: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.thiThat), null),
-    casePa: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.casePa), null), quaHan: hang.reduce((a, h) => a + (h.quaHan ?? 0), 0),
-  };
-  const COT: CotBang[] = [
-    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 170 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 200 },
-    /* Cột linh hoạt duy nhất: chữ "12 · MT3 10 · MT2 2" (lượt theo bài) — các cột số giữ bề rộng cố định, không co chữ. */
-    { key: 'luot', nhan: t('Lượt trong kỳ'), kieu: 'chu' },
-    { key: 'kq', nhan: t('Đạt kỳ vọng'), kieu: 'phan-tram', rong: 170 },
-    ...(coFt ? [{ key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 170 } as CotBang,
-      { key: 'tt', nhan: t('Thi thật'), kieu: 'phan-tram', rong: 150, goiY: t('Đạt Target thi thật') } as CotBang] : []),
-    { key: 'pa', nhan: t('Case có PA'), kieu: 'so', rong: 110 },
-    { key: 'qh', nhan: t('Quá hạn'), kieu: 'so', rong: 96, goiY: t('Bài quá hạn chưa nhập điểm (hiện tại) — lớp đang dạy') },
-  ];
-  const oCua = (h: HangHt, c: CotBang): ReactNode => {
-    const dam = h.cong ? 'font-bold' : '';
-    switch (c.key) {
-      case 'lop': return h.cong || h.classId === null ? <b className="font-bold">{h.ma}</b> : <Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so font-semibold">{h.ma}</Link>;
-      case 'ky': return <span className="flex gap-1">{h.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
-      case 'luot': return (
-        <span className={`tabular-nums ${dam}`}>{h.luot}
-          {h.theoBai.length > 0 && <span className="font-normal text-slate-500"> · {h.theoBai.map((b) => `${b.bai} ${b.n}`).join(' · ')}</span>}
-        </span>
-      );
-      case 'kq': case 'tb': case 'tt': {
-        const x = c.key === 'kq' ? h.ketQua : c.key === 'tb' ? h.tienBo : h.thiThat;
-        const mau = tuMau(x, c.key === 'tt' ? 'HV' : t('lượt'));
-        const cot = `${c.key === 'kq' ? 'ket-qua' : c.key === 'tb' ? 'tien-bo' : 'thi-that'}-lop:${h.classId}`;
-        /* Khung khu e: "75 % 9/12 lượt" một dòng (hàng 44 px). Hàng Cộng không bấm (số đã bấm được ở dải chỉ số). */
-        const so = h.cong ? (x && x.mau ? <b className="tabular-nums">{Math.round((100 * x.dat) / x.mau)} %</b> : <span className="text-slate-500">—</span>)
-          : <PhanTram gon x={x} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&${ky}`} tieuDe={`${c.nhan} · ${h.ma}`} />;
-        return <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap font-semibold">{so}{mau && <span className="text-xs font-normal text-slate-500">{mau}</span>}</span>;
-      }
-      case 'pa': return h.casePa ? <span className={`tabular-nums ${dam}`}>{h.casePa.dat}/{h.casePa.mau}</span> : <span className="text-slate-500">—</span>;
-      case 'qh': {
-        if (h.quaHan === null) return <span className="text-slate-500">—</span>;
-        if (h.quaHan <= 0) return <span className="tabular-nums text-slate-500">0</span>;
-        return (
-          <span className={`font-semibold text-bad ${dam}`}>⚠ <OSo giaTri={h.quaHan} tieuDe={h.cong ? t('Bài quá hạn chưa nhập điểm') : `${t('Bài quá hạn chưa nhập điểm')} · ${h.ma}`}
-            nguon={nguon(id, h.cong ? 'cot=qua-han' : `cot=qua-han&lop=${h.classId}`)} className="text-bad" /></span>
-        );
-      }
-      default: return null;
-    }
-  };
+  const coKhung = new Set<Khung>([...data.lop.map((l) => l.khung), ...(d?.hocThuatTheoLop ?? []).map((h) => h.khung), ...(d?.ketQuaTheoKyNang ?? []).map((x) => x.khung)]);
+  const macDinh: Khung = coKhung.has('ft') || !coKhung.size ? 'ft' : 'thuong';
+  const [chon, setChon] = useThamSoUrl('khung', macDinh);
+  const khung: Khung = coKhung.has(chon as Khung) ? (chon as Khung) : macDinh;
   return (
     <Card bodyClass="p-0"
-      title={<span className="inline-flex flex-wrap items-baseline gap-x-2">{t('Học thuật')}<span className="text-xs font-normal text-slate-500">{t('lượt của từng HV có tuần thi trong kỳ')}</span></span>}
-      action={<NutLuat label={t('Học thuật')} phai>{t('Đạt kỳ vọng theo quy tắc Overall; lượt = một lượt MT của một HV × kỹ năng GV dạy, gán theo lớp em học lúc thi. Case có PA, Quá hạn: hiện tại.')}</NutLuat>}>
+      title={<span className="inline-flex flex-wrap items-baseline gap-x-2">{t('Học thuật')}<span className="text-xs font-normal text-slate-500">{t('lượt Test của từng HV có tuần Test trong kỳ')}</span></span>}
+      action={(
+        <span className="flex items-center gap-2">
+          {coKhung.size > 1 && <CongTac value={khung} onChange={(k) => setChon(k)} muc={[['ft', 'Fast Track'], ['thuong', t('Lớp thường')]]} />}
+          <NutLuat label={t('Học thuật')} phai>{t('Đạt kỳ vọng Test theo quy tắc Overall; lượt = một lượt Test của một HV × kỹ năng GV dạy, gán theo lớp em học lúc Test. Thi thật (IELTS) tính riêng. Bảng lớp: lớp đang học khai giảng lâu nhất lên đầu, rồi lớp đáng lo; lớp đã kết thúc ở cuối.')}</NutLuat>
+        </span>
+      )}>
       {cs.error ? <ErrorState message={cs.error.message} hint={cs.error.hint} onRetry={cs.reload} />
-        : !d && cs.loading ? <Skeleton rows={3} className="p-4" />
+        : !d ? <Skeleton rows={3} className="p-4" />
         : (
-          <>
-            {d && <TheoKyNang id={id} d={d} ky={ky} />}
-            <h3 className="m-0 border-t px-4 pb-1 pt-3 text-[13px] font-semibold text-slate-400" style={{ borderColor: 'var(--line)' }}>{t('Theo lớp')}</h3>
-            <Bang ten={t('Học thuật')} cot={COT} hang={hang.length ? [...hang, tong] : []} khoa={(h) => h.khoa} oCua={oCua} khung={false}
-              rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt nào có tuần thi trong kỳ này.') }} />
-          </>
+          <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <BangKyNang id={data.gv.id} d={d} ky={ky} khung={khung} />
+            <BangLop data={data} d={d} ky={ky} khung={khung} />
+          </div>
         )}
     </Card>
   );
 }
 
-/**
- * THEO KỸ NĂNG (chủ SP 23/10 — "dạy kỹ năng này đạt nhiều hay trượt nhiều"): mỗi kỹ năng GV phụ trách một hàng — Đạt kỳ vọng (MT + thi thật, như dải số)
- * · số chưa đạt · Thi thật đạt / chưa đạt. Mỗi số mở panel đúng nhóm (`loc=dat|chua`): điểm cả lượt, kỹ năng GV phụ trách nổi bật, chênh với Target / kỳ vọng.
- */
-type HangKn = { khoa: string; nhan: string; kq: Extract<OPtGv, { k: 'so' }> | null; cotKq: string; thi: Extract<OPtGv, { k: 'so' }> | null; vuot: number; skill: string };
-function TheoKyNang({ id, d, ky }: { id: number; d: ChiSoHoSoGv; ky: string }) {
+/** BẢNG KỸ NĂNG: kỹ năng GV phụ trách · Đạt kỳ vọng Test (% + thanh) · FT: Kết quả thi thật (Fail · Pass · Exceed) · Thường: Chưa đạt Test. */
+type HangKn = { skill: string; nhan: string; kq: SoOk | null; thi: SoOk | null; vuot: number };
+function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: string; khung: Khung }) {
   const dienThoai = useDienThoai();
-  const haiKhung = new Set(d.ketQuaTheoKyNang.map((x) => x.khung)).size > 1;
-  const so = (o: OPtGv | undefined) => (o && o.k === 'so' && o.tong > 0 ? o : null);
-  const hang: HangKn[] = d.ketQuaTheoKyNang.map((x) => ({
-    khoa: `${x.khung}:${x.skill}`, skill: x.skill, nhan: haiKhung ? `${x.nhan} · ${x.khung === 'ft' ? 'FT' : t('Lớp thường')}` : x.nhan,
-    kq: so(x.o), cotKq: `ket-qua:${x.khung}:${x.skill}`, thi: x.khung === 'ft' ? so(d.thiThatTheoKyNang.find((y) => y.skill === x.skill)?.o) : null,
-    vuot: x.khung === 'ft' ? d.thiThatTheoKyNang.find((y) => y.skill === x.skill)?.vuot ?? 0 : 0,
-  }));
-  if (!hang.length) return null;
-  const coThi = hang.some((h) => h.thi);
-  const mo = (cot: string, loc: 'dat' | 'chua' | 'vuot', n: number, tieuDe: string, lop = '') => (
-    <OSo giaTri={n} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&loc=${loc}&${ky}`} tieuDe={tieuDe} className={`${vung} ${lop}`} />
-  );
+  const nguonCs = (cot: string, loc = '') => `/giao-vien/${id}/chi-so/o?cot=${cot}${loc ? `&loc=${loc}` : ''}&${ky}`;
+  const hang: HangKn[] = d.ketQuaTheoKyNang.filter((x) => x.khung === khung).map((x) => {
+    const tt = khung === 'ft' ? d.thiThatTheoKyNang.find((y) => y.skill === x.skill) : undefined;
+    return { skill: x.skill, nhan: x.nhan, kq: laSo(x.o), thi: laSo(tt?.o), vuot: tt?.vuot ?? 0 };
+  });
+  /* Kỹ năng chỉ có thi thật (chưa có lượt Test trong kỳ) vẫn có hàng. */
+  if (khung === 'ft') for (const y of d.thiThatTheoKyNang) if (!hang.some((h) => h.skill === y.skill)) hang.push({ skill: y.skill, nhan: y.nhan, kq: null, thi: laSo(y.o), vuot: y.vuot });
+  const ft = khung === 'ft';
   const COT: CotBang[] = [
-    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chip', rong: 170 },
-    { key: 'kq', nhan: t('Đạt kỳ vọng'), kieu: 'chu' },
-    { key: 'chua', nhan: t('Chưa đạt'), kieu: 'so', rong: 110 },
-    ...(coThi ? [{ key: 'thi', nhan: t('Thi thật'), kieu: 'chu', rong: 330, goiY: t('Đạt Target thi thật') } as CotBang] : []),
+    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chip', rong: 84 },
+    { key: 'kq', nhan: ft ? t('Đạt kỳ vọng Test') : t('Đạt Test'), kieu: 'chu' },
+    /* FT: chưa đạt mở từ % (panel có tab Chưa đạt); cột thi thật gọn ▼ ▲ ★ + số (chữ Fail · Pass · Exceed ở tiêu đề + nhãn đọc màn). */
+    ft ? { key: 'thi', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: 150, goiY: 'Fail · Pass · Exceed' } : { key: 'chua', nhan: t('Chưa đạt Test'), kieu: 'so', rong: 112 },
   ];
   const oCua = (h: HangKn, c: CotBang): ReactNode => {
+    const cot = `ket-qua:${khung}:${h.skill}`;
     if (c.key === 'kn') return <ChipKy k={h.nhan} />;
-    if (c.key === 'kq') {
-      if (!h.kq) return <span className="text-slate-500">—</span>;
-      const pt = Math.round((100 * h.kq.dung) / h.kq.tong);
-      /* Thanh tỉ lệ trung tính (không màu ngưỡng — C08): độ dài = % đạt; số đạt bấm được. */
-      return (
-        <span className="flex min-w-0 items-center gap-2.5">
-          <b className="w-12 shrink-0 tabular-nums text-slate-100">{pt} %</b>
-          <span aria-hidden className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-[color:var(--line)]"><span className="block h-full rounded-full bg-[color:var(--accent)]" style={{ width: `${pt}%` }} /></span>
-          <span className="whitespace-nowrap text-xs text-slate-400">{mo(h.cotKq, 'dat', h.kq.dung, `${t('Đạt kỳ vọng')} · ${h.nhan}`, 'text-slate-200')}/{h.kq.tong} {t('lượt')}</span>
-        </span>
-      );
-    }
-    if (c.key === 'chua') return h.kq ? mo(h.cotKq, 'chua', h.kq.tong - h.kq.dung, `${t('Chưa đạt')} · ${h.nhan}`, 'font-semibold text-slate-100') : <span className="text-slate-500">—</span>;
+    if (c.key === 'kq') return <OTyLe x={h.kq && { dat: h.kq.dung, mau: h.kq.tong }} nguon={nguonCs(cot)} tieuDe={`${c.nhan} · ${h.nhan}`} />;
+    if (c.key === 'chua') return h.kq ? <OSo giaTri={h.kq.tong - h.kq.dung} tieuDe={`${t('Chưa đạt Test')} · ${h.nhan}`} nguon={nguonCs(cot, 'chua')} className={`${vung} font-semibold text-slate-100`} /> : <span className="text-slate-500">—</span>;
     if (!h.thi) return <span className="text-slate-500">—</span>;
-    const cot = `thi-that-ky:${h.skill}`;
-    return (
-      <span className="inline-flex items-baseline gap-3 whitespace-nowrap text-[13px]">
-        <span className="text-slate-400">▲ {t('Đạt')} {mo(cot, 'dat', h.thi.dung, `${t('Thi thật')} ${h.nhan} · ${t('Đạt')}`, 'font-semibold text-slate-100')}</span>
-        <span className="text-slate-400">▼ {t('Chưa đạt')} {mo(cot, 'chua', h.thi.tong - h.thi.dung, `${t('Thi thật')} ${h.nhan} · ${t('Chưa đạt')}`, 'font-semibold text-slate-100')}</span>
-        <span className="text-slate-400">★ {t('Vượt')} {mo(cot, 'vuot', h.vuot, `${t('Thi thật')} ${h.nhan} · ${t('Vượt Target')}`, 'font-semibold text-slate-100')}</span>
-      </span>
-    );
+    return <BaThi gon={!dienThoai} motDong={!dienThoai} cot={`thi-that-ky:${h.skill}`} fail={h.thi.tong - h.thi.dung} pass={h.thi.dung} exceed={h.vuot} nguonCua={nguonCs} ten={`${t('Kết quả thi thật')} ${h.nhan}`} />;
   };
   return (
-    <>
-      <h3 className="m-0 px-4 pb-1 pt-3 text-[13px] font-semibold text-slate-400">{t('Theo kỹ năng')}</h3>
-      {dienThoai ? (
-        /* 375: mỗi kỹ năng MỘT dòng (thẻ của `Bang` cao gấp ba) — kỹ năng · % + thanh · chưa đạt · thi thật. */
-        <ul className="m-0 list-none px-4 pb-2">
-          {hang.map((h) => (
-            <li key={h.khoa} className="flex flex-col gap-1 border-t py-2 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-              <span className="flex items-center justify-between gap-2"><ChipKy k={h.nhan} />{oCua(h, COT[1])}</span>
-              <span className="flex flex-wrap items-baseline gap-x-3 text-[13px] text-slate-400">
-                {h.kq && <span>{t('Chưa đạt')} {oCua(h, COT[2])}</span>}
-                {h.thi && <span>{t('Thi thật')}: {oCua(h, { key: 'thi', nhan: '', kieu: 'chu' })}</span>}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : <Bang ten={t('Theo kỹ năng')} cot={COT} hang={hang} khoa={(h) => h.khoa} oCua={oCua} khung={false} />}
-    </>
+    <KhungBang ten={t('Theo kỹ năng')} phai={ft && hang.some((h) => h.thi) && (
+      /* Chú giải ký hiệu thi thật — ô bảng chỉ còn ký hiệu + số. */
+      <span className="flex gap-2.5 text-xs font-semibold"><span className={MAU_THI.chua}>▼ Fail</span><span className={MAU_THI.dat}>▲ Pass</span><span className={MAU_THI.vuot}>★ Exceed</span></span>
+    )}>
+      <Bang ten={t('Theo kỹ năng')} cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} khung={false}
+        rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt Test nào trong kỳ này.') }} />
+    </KhungBang>
   );
 }
 
-// ------------------------------------------------------------------ 1 · Việc đang có
+/**
+ * BẢNG LỚP (chủ SP 23/10): 7 hàng một trang · lớp đang học khai giảng lâu nhất lên đầu, cùng tuần khai giảng thì lớp đáng lo trước
+ * (Đạt kỳ vọng Test thấp, có Fail thi thật) · lớp đã kết thúc ở cuối, mờ đi · hàng Cộng (mọi lớp của khung) cuối mỗi trang.
+ */
+type HangL = {
+  khoa: string; classId: number | null; ma: string; kyNang: string[]; luot: number; theoBai: { bai: string; n: number }[]; khai: string | null; xong: boolean;
+  ketQua: TyLeV5 | null; tienBo: TyLeV5 | null; thiThat: TyLeV5 | null; cong?: boolean;
+};
+const MOI_TRANG = 7;
+function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: string; khung: Khung }) {
+  const id = data.gv.id;
+  const nguonCs = (cot: string, loc = '') => `/giao-vien/${id}/chi-so/o?cot=${cot}${loc ? `&loc=${loc}` : ''}&${ky}`;
+  const ft = khung === 'ft';
+  const hang: HangL[] = d.hocThuatTheoLop.filter((h) => h.khung === khung).map((h) => ({
+    khoa: `l${h.classId}`, classId: h.classId, ma: h.ma, kyNang: h.kyNang, luot: h.luot, theoBai: h.theoBai, khai: h.khai, xong: h.xong,
+    ketQua: tyLeGv(h.ketQua), tienBo: tyLeGv(h.tienBo), thiThat: tyLeGv(h.thiThat),
+  }));
+  /* Lớp đang dạy chưa có lượt trong kỳ vẫn có hàng — không mất lớp, ô ghi "—". */
+  for (const l of data.lop) {
+    if (l.khung === khung && !hang.some((h) => h.classId === l.id)) {
+      hang.push({ khoa: `l${l.id}`, classId: l.id, ma: l.ma, kyNang: l.kyNang, luot: 0, theoBai: [], khai: l.khai, xong: false, ketQua: null, tienBo: null, thiThat: null });
+    }
+  }
+  const lo = (h: HangL) => [h.ketQua?.mau ? h.ketQua.dat / h.ketQua.mau : 2, -((h.thiThat?.mau ?? 0) - (h.thiThat?.dat ?? 0))];
+  hang.sort((a, b) => Number(a.xong) - Number(b.xong) || (a.khai ?? '9999').localeCompare(b.khai ?? '9999')
+    || lo(a)[0] - lo(b)[0] || lo(a)[1] - lo(b)[1] || a.ma.localeCompare(b.ma, 'vi', { numeric: true }));
+  const [trang, setTrang] = useState(0);
+  const soTrang = Math.max(1, Math.ceil(hang.length / MOI_TRANG));
+  const tr = Math.min(trang, soTrang - 1);
+  const tong: HangL = {
+    khoa: 'cong', classId: null, ma: t('Cộng'), kyNang: [], luot: hang.reduce((a, h) => a + h.luot, 0), theoBai: [], khai: null, xong: false, cong: true,
+    ketQua: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.ketQua), null), tienBo: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.tienBo), null),
+    thiThat: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.thiThat), null),
+  };
+  const COT: CotBang[] = ft ? [
+    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 168 },
+    { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'chu', rong: 152 },
+    { key: 'tb', nhan: t('Tiến bộ'), kieu: 'chu', rong: 152 },
+    { key: 'tt', nhan: 'Pass Target', kieu: 'chu', rong: 152, goiY: t('Kết quả thi thật') },
+  ] : [
+    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 136 },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 120 },
+    { key: 'luot', nhan: t('Bài Test trong kỳ'), kieu: 'chu' },
+    { key: 'kq', nhan: t('Đạt Test'), kieu: 'chu', rong: 152 },
+    { key: 'chua', nhan: t('Chưa đạt Test'), kieu: 'so', rong: 112 },
+  ];
+  const oCua = (h: HangL, c: CotBang): ReactNode => {
+    const mo = h.xong ? 'opacity-60' : '';
+    switch (c.key) {
+      case 'lop': return h.cong ? <b className="font-bold">{h.ma}</b>
+        : <span className={`inline-flex min-w-0 items-baseline gap-1.5 ${mo}`}><Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so truncate font-semibold">{h.ma}</Link>{h.xong && <span className="text-xs text-slate-500">{t('đã kết thúc')}</span>}</span>;
+      case 'ky': return <span className={`flex gap-1 ${mo}`}>{h.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
+      case 'luot': return <span className={`whitespace-nowrap tabular-nums ${mo}`}>{h.luot}{h.theoBai.length > 0 && <span className="text-slate-500"> · {h.theoBai.map((b) => `${b.bai} ${b.n}`).join(' · ')}</span>}</span>;
+      case 'kq': case 'tb': case 'tt': {
+        const x = c.key === 'kq' ? h.ketQua : c.key === 'tb' ? h.tienBo : h.thiThat;
+        const cot = `${c.key === 'kq' ? 'ket-qua' : c.key === 'tb' ? 'tien-bo' : 'thi-that'}-lop:${h.classId}`;
+        return <span className={mo}><OTyLe x={x} dam={h.cong} nguon={h.cong ? undefined : nguonCs(cot)} tieuDe={`${c.nhan} · ${h.ma}`} /></span>;
+      }
+      case 'chua': {
+        const x = h.ketQua;
+        if (!x || !x.mau) return <span className="text-slate-500">—</span>;
+        return h.cong ? <b className="tabular-nums">{x.mau - x.dat}</b>
+          : <span className={mo}><OSo giaTri={x.mau - x.dat} tieuDe={`${t('Chưa đạt Test')} · ${h.ma}`} nguon={nguonCs(`ket-qua-lop:${h.classId}`, 'chua')} className={`${vung} font-semibold text-slate-100`} /></span>;
+      }
+      default: return null;
+    }
+  };
+  const trangNay = hang.slice(tr * MOI_TRANG, (tr + 1) * MOI_TRANG);
+  return (
+      <KhungBang ten={t('Theo lớp')} phai={soTrang > 1 && (
+        <span className="flex items-center gap-1 text-[13px] font-normal text-slate-400">
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={tr === 0} onClick={() => setTrang(tr - 1)} aria-label={t('Trang trước')}>‹</button>
+          <span className="tabular-nums">{tr + 1}/{soTrang}</span>
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={tr >= soTrang - 1} onClick={() => setTrang(tr + 1)} aria-label={t('Trang sau')}>›</button>
+        </span>
+      )}>
+      <Bang ten={t('Theo lớp')} cot={COT} hang={hang.length ? [...trangNay, tong] : []} khoa={(h) => h.khoa} oCua={oCua} khung={false}
+        rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt Test nào trong kỳ này.') }} />
+      </KhungBang>
+  );
+}
+
+// ------------------------------------------------------------------ 1 · Việc đang tồn
 
 function KhoiViec({ gvId, nguoiXem, homNay, ngan, viec }: {
   gvId: number; nguoiXem: { userId: number; laQuanLy: boolean }; homNay: string; ngan: (iso: string) => string;
@@ -416,7 +458,7 @@ function KhoiViec({ gvId, nguoiXem, homNay, ngan, viec }: {
   const { data, loading, error, reload } = viec;
   return (
     <Card
-      title={<>{t('Việc đang có')}<Goi chu={t('Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}
+      title={<>{t('Việc đang tồn')}<Goi chu={t('Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}
       action={<span className="text-xs text-slate-400">{t('hôm nay {ngay} · tuần', { ngay: ngan(homNay) })} <span className="tabular-nums text-slate-200">{tuanLich(homNay, homNay)}</span></span>}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : loading || !data ? <Skeleton rows={2} />
@@ -479,7 +521,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
             {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. */}
             {ds.some((c) => c.quaHan) && (
               <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold text-bad" style={{ borderColor: 'var(--line-strong)' }}>
-                ⚠ {t('việc tiếp quá hạn')}
+                ⚠ {t('việc quá hạn')}
                 <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
               </span>
             )}

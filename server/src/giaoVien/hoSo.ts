@@ -51,6 +51,8 @@ export type LopGv = {
   /** Mã kỹ năng/môn thật được phân công (không phải nhãn) — để tô viền ô môn mình dạy. */
   monDay: string[];
   hocVien: number;
+  /** Tuần khai giảng (Thứ Hai) hoặc ngày khai giảng — bảng lớp hồ sơ GV xếp lớp lâu nhất lên đầu. */
+  khai: string | null;
   /** Học viên đang học của lớp — để đếm học viên KHÁC NHAU của cả hồ sơ (một em học hai lớp của GV chỉ đếm một lần). */
   hvIds: Set<number>;
 };
@@ -64,8 +66,8 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
   if (Array.isArray(branchIds) && !branchIds.length) return [];
   const conn = db();
   const rows = conn.prepare(
-    `SELECT ta.class_id, ta.is_core, ta.skill, c.code, c.branch_id, c.programme_code
-       FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+    `SELECT ta.class_id, ta.is_core, ta.skill, c.code, c.branch_id, c.programme_code, COALESCE(sp.week_start, c.start_date) AS khai
+       FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id LEFT JOIN report_periods sp ON sp.id = c.start_period_id
       WHERE ta.user_id = ? AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
         AND c.status = 'active' ${branchIds ? `AND c.branch_id IN (${cho(branchIds.length)})` : ''}
       ORDER BY ta.id`).all(gvId, homNay, homNay, ...(branchIds ?? [])) as any[];
@@ -75,7 +77,7 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
     const khung = bang.get(r.class_id)?.isFastTrack ? 'ft' : 'thuong';
     if (!locKhung(ct, khung)) continue;
     const l = theoLop.get(r.class_id)
-      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, vai: '', laGvcn: false, monDay: [], hocVien: 0, hvIds: new Set() } as LopGv;
+      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, khai: r.khai ?? null, vai: '', laGvcn: false, monDay: [], hocVien: 0, hvIds: new Set() } as LopGv;
     theoLop.set(r.class_id, l);
     if (r.is_core) l.laGvcn = true;
     if (r.skill && !l.monDay.includes(r.skill)) l.monDay.push(r.skill);

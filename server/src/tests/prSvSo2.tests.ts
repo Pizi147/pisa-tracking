@@ -75,7 +75,7 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     if (soCn === 1) assert((o?.tong ?? 0) + thiR.tong === h.ketQua.reading.tong && (o?.dung ?? 0) + thiR.dung === h.ketQua.reading.dung, JSON.stringify({ o, thiR, bang: h.ketQua.reading }));
     const p = pt.oChiSoHoSoGv(P.mbManager, h.id, { tu: tuanNay, den: tuanNay, cot: 'ket-qua:ft:reading' });
     const dong = p.rows.find((r: any) => r.href === `/hoc-vien/${e.sid}`);
-    assert(dong?.sub.endsWith('Đạt') && dong.sub.includes('R 5.0') && p.tieuDe.includes('lượt kỹ năng') && p.n === o.tong, JSON.stringify({ dong, t: p.tieuDe, n: p.n }));
+    assert(dong?.sub.endsWith('Đạt') && dong.sub.includes('R 5.0') && p.tieuDe.includes('lượt Test') && p.n === o.tong, JSON.stringify({ dong, t: p.tieuDe, n: p.n }));
     assert(p.rows.every((r: any) => !('viec' in r)), 'panel có khối việc');
     /* UI-HO-SO-GV: hàng lớp bảng Học thuật (`hocThuatTheoLop`) — cùng tập với ô kỹ năng (Σ các kỹ năng của lớp). */
     const hl = ky.hocThuatTheoLop.find((x: any) => x.classId === MB_FT);

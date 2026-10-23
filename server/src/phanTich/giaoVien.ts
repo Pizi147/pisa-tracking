@@ -48,7 +48,8 @@ const them = (t: Tap, gv: number, id: number, dung: boolean) => {
 const gopTap = (...ts: ({ dung: number[]; tong: number[] } | undefined)[]) => ({ dung: ts.flatMap((t) => t?.dung ?? []), tong: ts.flatMap((t) => t?.tong ?? []) });
 
 type PhanCong = { id: number; gv: number; ten: string; lop: number; skill: string | null; core: boolean; tu: string; den: string | null };
-type Lop = { id: number; ma: string; ct: string | null; xong: boolean };
+/** `khai`: tuần khai giảng (Thứ Hai tuần bắt đầu, vắng → ngày khai giảng) — bảng lớp hồ sơ GV xếp lớp lâu nhất lên đầu. */
+type Lop = { id: number; ma: string; ct: string | null; xong: boolean; khai: string | null };
 /** Ngữ cảnh một lần nạp: quyền, khoảng, lớp của chi nhánh + khung, MỌI phân công của các lớp đó (một câu). */
 export type NguCanhPtGv = {
   cn: number; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; cuoi: string; thang: string | null; homNay: string;
@@ -79,11 +80,12 @@ function nguCanhCn(cn: number, f: LocPtGv): NguCanhPtGv {
   const pc: PhanCong[] = [];
   /* Một câu: lớp của chi nhánh + khung kèm MỌI dòng phân công (kể cả đã kết thúc — gán người theo ngày). */
   for (const r of conn.prepare(
-    `SELECT c.id AS lop, c.code, c.programme_code, c.status AS lop_status, ta.id, ta.user_id, u.full_name, ta.skill, ta.is_core, ta.effective_from, ta.effective_to
+    `SELECT c.id AS lop, c.code, c.programme_code, c.status AS lop_status, COALESCE(sp.week_start, c.start_date) AS khai, ta.id, ta.user_id, u.full_name, ta.skill, ta.is_core, ta.effective_from, ta.effective_to
        FROM classes c LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.status IN ('active', 'ended')
        LEFT JOIN users u ON u.id = ta.user_id
+       LEFT JOIN report_periods sp ON sp.id = c.start_period_id
       WHERE c.branch_id = ? AND c.is_fast_track = ?`).all(cn, khung === 'ft' ? 1 : 0) as any[]) {
-    lop.set(r.lop, { id: r.lop, ma: r.code, ct: r.programme_code ?? null, xong: r.lop_status !== 'active' });
+    lop.set(r.lop, { id: r.lop, ma: r.code, ct: r.programme_code ?? null, xong: r.lop_status !== 'active', khai: r.khai ?? null });
     if (r.id) pc.push({ id: r.id, gv: r.user_id, ten: r.full_name, lop: r.lop, skill: r.skill ?? null, core: !!r.is_core, tu: r.effective_from, den: r.effective_to ?? null });
   }
   const theoO = new Map<string, PhanCong[]>();
@@ -459,6 +461,7 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
 function tieuDeChiSo(nhan: string, ai: string, dung: number, tong: number, donVi: string): string {
   const b = { nhan, ai, dung, tong };
   if (donVi === 'lượt kỹ năng') return t('{nhan} · {ai} · {dung}/{tong} lượt kỹ năng', b);
+  if (donVi === 'lượt Test') return t('{nhan} · {ai} · {dung}/{tong} lượt Test', b);
   if (donVi === 'việc') return t('{nhan} · {ai} · {dung}/{tong} việc', b);
   if (donVi === 'bài') return t('{nhan} · {ai} · {dung}/{tong} bài', b);
   return `${nhan} · ${ai} · ${dung}/${tong}`;
@@ -682,10 +685,10 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
   const cham: ({ dung: number[]; tong: number[] } | undefined)[] = [], ghi: ({ dung: number[]; tong: number[] } | undefined)[] = [], tb: ({ dung: number[]; tong: number[] } | undefined)[] = [], pa: ({ dung: number[]; tong: number[] } | undefined)[] = [];
   const kq = new Map<string, { khung: KhungPtGv; skill: string; tap: ({ dung: number[]; tong: number[] } | undefined)[] }>();
   const theoLop: ChiSoHoSoGv['ketQuaTheoLop'] = [];
-  const hang = new Map<number, { ma: string; khung: KhungPtGv; ct: string | null; skill: Set<string>; kq: { dung: number[]; tong: number[] }[]; tb?: { dung: number[]; tong: number[] }; luot: Map<string, string> }>();
+  const hang = new Map<number, { ma: string; khung: KhungPtGv; ct: string | null; khai: string | null; xong: boolean; skill: Set<string>; kq: { dung: number[]; tong: number[] }[]; tb?: { dung: number[]; tong: number[] }; luot: Map<string, string> }>();
   const thi = new Map<string, ThiGv>();
   const hangCua = (c: NguCanhPtGv, classId: number) => hang.get(classId)
-    ?? hang.set(classId, { ma: c.lop.get(classId)!.ma, khung: c.khung, ct: c.lop.get(classId)!.ct, skill: new Set(), kq: [], luot: new Map() }).get(classId)!;
+    ?? hang.set(classId, { ma: c.lop.get(classId)!.ma, khung: c.khung, ct: c.lop.get(classId)!.ct, khai: c.lop.get(classId)!.khai, xong: c.lop.get(classId)!.xong, skill: new Set(), kq: [], luot: new Map() }).get(classId)!;
   for (const c of g.ds) {
     const nap = napBai(p, c);
     cham.push(tapChamDiem(c, nap).tap.get(gvId));
@@ -738,7 +741,7 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
       const bai = new Map<string, number>();
       for (const b of h.luot.values()) bai.set(b, (bai.get(b) ?? 0) + 1);
       return {
-        classId, ma: h.ma, khung: h.khung,
+        classId, ma: h.ma, khung: h.khung, khai: h.khai, xong: h.xong,
         kyNang: COT_KET_QUA_GV[h.khung].filter((k) => h.skill.has(k)).map((k) => tenMonNgan(h.ct, k)),
         luot: h.luot.size, theoBai: [...bai].map(([ten, n]) => ({ bai: ten, n })).sort((a, b) => b.n - a.n || b.bai.localeCompare(a.bai, 'vi', { numeric: true })),
         ketQua: oTuTap(true, gopTap(...h.kq)), tienBo: oTuTap(h.khung === 'ft', h.tb),
@@ -788,7 +791,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
       sub: [x.ma, `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, x.ovr !== null ? `Overall ${x.ovr.toFixed(1)}` : null,
         x.kv !== null ? `Target ${x.kv.toFixed(1)}` : null, datCua(x) ? t('Đạt') : t('Chưa đạt')].filter(Boolean).join(' · '),
     }));
-    const nhan = mt[2] ? `${t('Thi thật')} ${tenMonNgan(null, mt[2])}` : t('Đạt Target thi thật');
+    const nhan = mt[2] ? `${t('Kết quả thi thật')} ${tenMonNgan(null, mt[2])}` : t('Kết quả thi thật');
     return { n: rows.length, tieuDe: t('{nhan} · {ai} · {dung}/{tong} HV', { nhan, ai: kyChu, dung: ds.filter(datCua).length, tong: ds.length }), rows };
   }
   const m = /^ket-qua:(ft|thuong):(\w+)(?::(\d+))?$/.exec(q.cot);
@@ -802,7 +805,9 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
   const maLop = lopId !== null ? ds.find((c) => c.lop.has(lopId))?.lop.get(lopId)?.ma : null;
   if (lopId !== null && !maLop) throw badRequest('Lớp này không có trong kỳ của giáo viên.');
   const dong = phan.flatMap((x) => x.dong).filter((d) => !maLop || d.row.lop === maLop).sort((a, b) => Number(a.dung) - Number(b.dung));
-  const dau = phan[0] ?? { nhan: q.cot === 'cham-diem' ? t('Điểm đúng hạn') : q.cot === 'viec-dung-han' ? t('Việc đúng hạn') : t('Kết quả'), donVi: '' };
+  const dau0 = phan[0] ?? { nhan: q.cot === 'cham-diem' ? t('Điểm đúng hạn') : q.cot === 'viec-dung-han' ? t('Việc đúng hạn') : t('Kết quả'), donVi: '' };
+  /* Thuật ngữ chốt 23/10 (THUAT_NGU HSGV-1, 6): hồ sơ GV ghi "Đạt kỳ vọng Test" · "lượt Test" — bảng Phân tích GV giữ chữ cũ tới đợt overhaul thuật ngữ. */
+  const dau = { nhan: dau0.nhan.replace(/^Kết quả\b/, t('Đạt kỳ vọng Test')), donVi: dau0.donVi === 'lượt kỹ năng' ? 'lượt Test' : dau0.donVi };
   const dung = dong.filter((d) => d.dung).length;
   return { n: dong.length, tieuDe: tieuDeChiSo(dau.nhan, `${tuanLichNgan(g.tu)} – ${tuanLichNgan(g.den)}`, dung, dong.length, dau.donVi), rows: dong.map((d) => d.row) };
 }

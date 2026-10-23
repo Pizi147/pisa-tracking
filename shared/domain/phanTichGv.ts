@@ -47,7 +47,7 @@ export type ChiSoHoSoGv = {
    * UI-HO-SO-GV (bảng Học thuật): một hàng một LỚP EM HỌC LÚC THI (P8). `luot` = lượt khác nhau (một MT / một lần thi thật của một HV) có mục ở kỹ năng GV dạy,
    * `theoBai` tách theo bài (MT3 10 · MT2 2). `ketQua` = Σ các kỹ năng (lượt kỹ năng, cùng `ketQuaTheoLop`) · `tienBo` chỉ FT. Panel `ket-qua-lop:<lớp>` · `tien-bo-lop:<lớp>`.
    */
-  hocThuatTheoLop: { classId: number; ma: string; khung: KhungPtGv; kyNang: string[]; luot: number; theoBai: { bai: string; n: number }[]; ketQua: OPtGv; tienBo: OPtGv; thiThat: OPtGv }[];
+  hocThuatTheoLop: { classId: number; ma: string; khung: KhungPtGv; khai: string | null; xong: boolean; kyNang: string[]; luot: number; theoBai: { bai: string; n: number }[]; ketQua: OPtGv; tienBo: OPtGv; thiThat: OPtGv }[];
   /** UI-HO-SO-GV: Đạt Target thi thật — HV (một lần thi) có ngày thi thật trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi; `na` khi không dạy FT. Panel `thi-that[-lop:<lớp>]`. */
   thiThat: OPtGv;
   /** Thi thật theo kỹ năng GV phụ trách (chỉ kỹ năng có lần thi). Panel `thi-that-ky:<kỹ năng>` (+ `loc=dat|chua`). */
