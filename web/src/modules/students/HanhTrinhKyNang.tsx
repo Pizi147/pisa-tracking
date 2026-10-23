@@ -137,7 +137,7 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
   const tuan: string[] = [];
   for (let d = Date.parse(tuanDau); d <= Date.parse(tuanCuoi) && tuan.length < 80; d += 7 * 86_400_000) tuan.push(new Date(d).toISOString().slice(0, 10));
   if (tuan.length < 2) tuan.push(new Date(Date.parse(tuan[0]) + 7 * 86_400_000).toISOString().slice(0, 10));
-  const W = Math.max(320, rong || (hep ? 343 : 1000)), H = hep ? 250 : 240, x0 = hep ? 40 : 56, x1 = W - (hep ? 24 : 40), y0 = 30, y1 = H - 64;
+  const W = Math.max(320, rong || (hep ? 343 : 1000)), H = hep ? 250 : 300, x0 = hep ? 40 : 56, x1 = W - (hep ? 24 : 40), y0 = 30, y1 = H - 64;
   const X = (iso: string) => x0 + ((x1 - x0) * Math.max(0, tuan.indexOf(iso))) / (tuan.length - 1);
   const so = [...moc.flatMap((m) => [m.v, m.kv]), ...sx.map((x) => x.diem)].filter((v): v is number => v !== null);
   let lo = Math.floor((Math.min(...so) - 0.5) * 2) / 2, hi = Math.ceil((Math.max(...so) + 0.5) * 2) / 2;
