@@ -8,6 +8,7 @@
 export async function runPrUiHoSoLopTests(t: any) {
   const { check, assert, conn, P, classId } = t;
   const classes: any = await import('../classes/classes.ts');
+  const { tuanVangCu } = await import('../fasttrack/attempts.ts');
   const { viecTheoEmCuaLop, viecTiepTheoCuaLop } = await import('../classes/viecTheoEm.ts');
   const { ghiDanhGiaDauRa, xemDanhGiaDauRa } = await import('../classes/danhGiaDauRa.ts');
   const { migratePrUiHoSoLop } = await import('../migrate/prUiHoSoLop.ts');
@@ -45,6 +46,20 @@ export async function runPrUiHoSoLopTests(t: any) {
     }
     assert(Object.values(viecTiepTheoCuaLop(P.admin, LOP).viecTiep).some((ds: any) => ds.length > 0), 'seed: phải có em có việc');
     assert(maLoi(() => viecTiepTheoCuaLop(P.cpManager, LOP)) === 403, 'QL CP → 403');
+  });
+
+  check('HSL-2c (LUAT-NX-MT) · /roster: mỗi mốc FT mang tuần cũ của kỹ năng dời do vắng (= tuanVangCu) — ô bảng lớp ghi "vắng W3 SEP"', () => {
+    let co = 0;
+    for (const code of ['MB FT 101']) {
+      const lop = classId(code);
+      for (const r of classes.classRoster(P.admin, lop) as any[]) for (const h of r.history) {
+        const mong = Object.fromEntries([...tuanVangCu([h.id])].map(([k, v]) => [k.split(':')[1], v]));
+        assert(JSON.stringify(h.vangCu ?? {}) === JSON.stringify(mong), `${r.fullName} · ${h.label}: ${JSON.stringify(h.vangCu)} ≠ ${JSON.stringify(mong)}`);
+        if (h.vangCu) co++;
+      }
+    }
+    assert(classes.classRoster(P.admin, classId('MB FOU 12')).every((r: any) => r.history.every((h: any) => !h.vangCu)), 'lớp thường không có');
+    console.log(`    (${co} mốc có kỹ năng dời do vắng)`);
   });
 
   check('HSL-2 · /roster không còn viecTiepTheo (bảng lớp FT + lớp thường)', () => {

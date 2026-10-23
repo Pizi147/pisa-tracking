@@ -15,7 +15,7 @@ import {
   type Principal,
 } from '../permissions.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
-import { CON_O_SQL, loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
+import { CON_O_SQL, loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells, tuanVangCu } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
@@ -388,6 +388,14 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
     )
     .all(...sids) as any[];
   const bundle = loadBundle(attempts.map((a) => a.id));
+  /* UI-HO-SO-LOP (luật LUAT-NX-MT / NEN-SUA): tuần cũ của kỹ năng đã dời do vắng — ô điểm bảng lớp ghi "vắng W3 SEP". MỘT câu cho cả lớp, chỉ lớp FT. */
+  const vangCu = new Map<number, Record<string, string>>();
+  if (programmeOfClass(classId)?.scoringMode !== 'ratio') {
+    for (const [k, v] of tuanVangCu(attempts.map((a) => a.id))) {
+      const [id, kn] = k.split(':');
+      vangCu.set(Number(id), { ...(vangCu.get(Number(id)) ?? {}), [kn]: v });
+    }
+  }
   const today = demoToday();
   const sauThi = sauThiTheoEm(sids, today);
   const byStudent = new Map<number, any[]>();
@@ -619,6 +627,8 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
         expectation: t.expectation, writing: t.writing,
         bands: (t as any).bands ?? null,
         ratios: (t as any).ratios ?? null,
+        /** Kỹ năng đã dời do vắng → mã tuần cũ (`chuDoiVang` ở web). */
+        vangCu: vangCu.get(t.id) ?? null,
       }));
 
     return {

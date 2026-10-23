@@ -24,7 +24,7 @@ import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDon
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import type { CaseDetail, ViewCase } from '../cases/CasePanel.tsx';
 import {
-  chipSosTuKetQua, ketQuaGanNhat, type KetQuaVao, duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
+  chipSosTuKetQua, chuDoiVang, ketQuaGanNhat, type KetQuaVao, duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -147,7 +147,11 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
   };
   const phuCua = (r: Hang, c: DinhNghiaCot): ReactNode => {
     const h = mocCua(r);
-    if (c.key !== 'w' || !h) return null;
+    if (!h) return null;
+    /* LUAT-NX-MT (luật chung mọi ô điểm): kỹ năng đã dời do vắng → "vắng W3 SEP" (tuần cũ) thay dòng phụ. */
+    const kn = { l: 'listening', r: 'reading', w: 'writing', s: 'speaking' }[c.key as 'l' | 'r' | 'w' | 's'];
+    if (kn && h.vangCu?.[kn]) return chuDoiVang(h.vangCu[kn], homNay);
+    if (c.key !== 'w') return null;
     const [w1, w2] = [h.bands?.writing1 ?? null, h.bands?.writing2 ?? null];
     return w1 === null && w2 === null ? null : `${w1 === null ? '—' : fmtBand(w1)} · ${w2 === null ? '—' : fmtBand(w2)}`;
   };
