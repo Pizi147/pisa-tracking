@@ -73,6 +73,7 @@ import { migratePrOv15e } from './migrate/prOv15e.ts';
 import { migratePrTd7 } from './migrate/prTd7.ts';
 import { migratePrTu } from './migrate/prTu.ts';
 import { migratePrTub } from './migrate/prTub.ts';
+import { migratePrUiHoSoLop } from './migrate/prUiHoSoLop.ts';
 import { migratePrSl1 } from './migrate/prSl1.ts';
 import { migratePrSvYtTvv } from './migrate/prSvYtTvv.ts';
 import { migratePrOv15g } from './migrate/prOv15g.ts';
@@ -392,6 +393,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* SV-YT-TVV: bảng việc Báo PH của TVV (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvYtTvv(conn, applied));
     /* SV-BAI-LOP: bảng bai_tren_lop — Bài trên lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvBaiLop(conn, applied));
     /* SV-S-EXPERT: bảng s_expert — lượt S Expert (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvSExpert(conn, applied));
+    /* UI-HO-SO-LOP: bảng danh_gia_dau_ra — nhận xét + đề xuất của GVCN khi đánh giá đầu ra (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrUiHoSoLop(conn, applied));
     /* SV-NX-CASE (N8): Case MT mô tả từ nhận xét → gắn nguồn (nội dung giữ) · việc Xem nhận xét Speaking còn mở → Xác nhận Case (đổi dữ liệu, chạy lặp không đổi). */ buoc(() => { migratePrSvNxCase(conn, applied); });
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")

@@ -13,7 +13,8 @@ const chuKq = (kq: 'vuot' | 'bang' | 'duoi') => (kq === 'duoi' ? t('Dưới kỳ
  * - Một dòng phụ 12 px (`phu`) dưới ô — ưu tiên "thiếu nhận xét" > "vắng lần n" > "n câu" do nơi gọi chọn.
  */
 export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, luu, onBam, onLuuLai, nhan, kyVong }: {
-  kieu?: 'doc' | 'sua' | 'ti-le' | 'lon';
+  /** UI-HO-SO-LOP: `to` = chữ 17 px (bảng hồ sơ lớp — "điểm to, rõ", `09-anh2`). */
+  kieu?: 'doc' | 'sua' | 'ti-le' | 'lon' | 'to';
   /** Chữ số đã định dạng ("6.5", "17"); null = chưa có. */
   so: string | null;
   kq?: Kq;
@@ -38,7 +39,7 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
         <span className={`inline-block min-w-[2ch] text-right text-[15px] font-bold ${mau}`}>{so}</span>
         <span className={`inline-block min-w-[3ch] text-left text-[13px] font-normal ${deKhac ? 'text-soon' : 'text-faint'}`} title={deKhac ? t('Đề khác') : undefined}>/{tong}</span>
       </>
-    : <span className={`${kieu === 'lon' ? 'text-[28px] leading-none' : 'text-[15px]'} font-bold ${mau}`}>{so}</span>;
+    : <span className={`${kieu === 'lon' ? 'text-[28px] leading-none' : kieu === 'to' ? 'text-[17px]' : 'text-[15px]'} font-bold ${mau}`}>{so}</span>;
   const dongPhu = (phu || (kck && kq === 'duoi')) && (
     <span className="block text-[12px] leading-4 text-faint" data-phu-odiem="">{phu ?? 'KCK'}</span>
   );

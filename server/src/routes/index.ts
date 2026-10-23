@@ -67,7 +67,8 @@ import * as kyVongSvc from '../normal/kyVong.ts';
 import * as gopYSvc from '../classes/gopYTuan.ts';
 import * as baiLopSvc from '../students/baiTrenLop.ts';
 import * as sExSvc from '../cham/sExpert.ts';
-import { viecTheoEmCuaLop } from '../classes/viecTheoEm.ts';
+import { viecTheoEmCuaLop, viecTiepTheoCuaLop } from '../classes/viecTheoEm.ts';
+import { ghiDanhGiaDauRa, xemDanhGiaDauRa } from '../classes/danhGiaDauRa.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as lichThiSvc from '../classes/lichThi.ts';
@@ -1132,7 +1133,18 @@ api.get('/classes', requireAuth, wrap((req) => {
 /** SV-LOP (C19): việc theo em của hồ sơ lớp — từng việc của `/my-work`, việc của người xem trước (`viecTheoEm.ts`). */
 api.get('/classes/:id/viec-theo-em', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'));
+  if (qStr(req, 'kieu') === 'tiep') return viecTiepTheoCuaLop(principalOf(req), pInt(req, 'id'));   // Học viên & Lớp: cột Việc tiếp theo
+  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'), { chiCuaToi: qStr(req, 'chi') === 'toi' });
+}));
+
+/** UI-HO-SO-LOP (C17): nhận xét + đề xuất bước tiếp của GVCN khi đánh giá đầu ra lớp thường (`danhGiaDauRa.ts`). */
+api.get('/classes/:id/danh-gia-dau-ra', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return xemDanhGiaDauRa(principalOf(req), pInt(req, 'id'));
+}));
+api.put('/classes/:id/danh-gia-dau-ra/:studentId', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return ghiDanhGiaDauRa(principalOf(req), pInt(req, 'id'), pInt(req, 'studentId'), req.body ?? {});
 }));
 
 /** Danh sách học viên của lớp — chỉ gọi khi người dùng mở rộng lớp đó. */

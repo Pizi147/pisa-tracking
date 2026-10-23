@@ -9548,6 +9548,9 @@ await runPrUiCvTvvTests({ check, checkAsync, assert, conn, P, classId, TODAY } a
 // ==================================================================== V5 UI-LICH-TUAN (Lịch tuần: HV theo lượt, dải số một tuần, chuyển hướng /nhap-diem)
 const { runPrUiLichTuanTests } = await import('./prUiLichTuan.tests.ts');
 await runPrUiLichTuanTests({ check, assert, conn, P, TODAY } as any);
+// ==================================================================== V5 UI-HO-SO-LOP (Việc cần làm của người xem, roster bỏ viecTiepTheo, Đánh giá đầu ra C17)
+const { runPrUiHoSoLopTests } = await import('./prUiHoSoLop.tests.ts');
+await runPrUiHoSoLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 LUAT-NX-MT (nhận xét chỉ nhắc, xếp MT nới lỏng, ghi chú vắng, S Ex ở Hành trình)
 const { runPrLuatNxMtTests } = await import('./prLuatNxMt.tests.ts');
 await runPrLuatNxMtTests({ check, assert, conn, P, TODAY, classId, addDays } as any);

@@ -786,8 +786,8 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(trang.includes('/students/${id}/y-thuc') && tab.includes('/students/${studentId}/y-thuc') && !/violation-warning/.test(trang + tab), 'một đường');
   });
 
-  check('PR-Qb (7) · ClassRoster.tsx: nhãn đợt dùng duongHoSoHocVien, không còn tự dựng /mock-test/ ở đó', () => {
-    const src = doc('web/src/modules/students/ClassRoster.tsx');
+  check('PR-Qb (7) · BangHoSoLop.tsx (UI-HO-SO-LOP thay ClassRoster): nhãn đợt dùng duongHoSoHocVien, không còn tự dựng /mock-test/ ở đó', () => {
+    const src = doc('web/src/modules/classes/BangHoSoLop.tsx');
     assert(src.includes('duongHoSoHocVien'), 'Phải dùng duongHoSoHocVien');
     assert(!/to=\{h\.kind === 'mock' \? `\/mock-test\//.test(src), 'Không còn tự dựng /mock-test/ ở nhãn đợt');
   });
