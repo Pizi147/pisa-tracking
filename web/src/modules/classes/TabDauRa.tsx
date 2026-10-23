@@ -49,7 +49,8 @@ export function TabDauRa({ classId, maLop, chuongTrinh }: { classId: number; maL
   const [mo, setMo] = useState<number | null>(null);
   if (roster.error || dr.error) return <ErrorState message={(roster.error ?? dr.error)!.message} onRetry={() => { roster.reload(); dr.reload(); }} />;
   if (!roster.data || !dr.data) return <div className="card p-4"><Skeleton rows={6} /></div>;
-  const em = roster.data.filter((e) => e.status === 'active' && !e.archived);
+  /* Mọi em của lớp (kể cả tạm dừng / đã chuyển cuối khoá, lớp đã kết thúc) — máy chủ nhận đánh giá của em từng ghi danh lớp. */
+  const em = roster.data.filter((e) => !e.archived);
   const cua = new Map(dr.data.rows.map((d) => [d.studentId, d]));
   const soXong = em.filter((e) => daGhi(cua.get(e.id))).length;
   const dau = em.findIndex((e) => !daGhi(cua.get(e.id)));

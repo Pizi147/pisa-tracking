@@ -24,7 +24,7 @@ import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDon
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import type { CaseDetail, ViewCase } from '../cases/CasePanel.tsx';
 import {
-  duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
+  chipSosTuKetQua, ketQuaGanNhat, type KetQuaVao, duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -33,22 +33,20 @@ type CaseLop = {
   id: number; studentId: number | null; status: string; sosLevel: number | null; title: string; category: string | null; categoryLabel: string | null;
   ownerName: string | null; detectedAt: string; interventionCount: number;
 };
-type Hang = RosterRow & { lichThi?: LichThi };
+type Hang = RosterRow & { lichThi?: LichThi; standing?: KetQuaVao | null };
 type Moc = RosterRow['history'][number] & { writing?: number | null; expectation?: number | null };
 type Loc = 'tat-ca' | 'sos' | 'thieu';
 /* Chip lọc — cùng dáng chip của `CongTacKhung` (kieu chip). */
 const CHIP_CHON = 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]';
 const CHIP_THUONG = 'border-[color:var(--line-strong)] bg-transparent text-slate-300 hover:text-slate-100';
 
-/** Lượt hiện của em (P8 — lượt của TỪNG HV, không một MT chung của lớp): lượt mới nhất đã đủ điểm; chưa có → lượt mới nhất có điểm. */
-const mocCua = (r: Hang): Moc | null => (r.history.find((h) => h.evaluable && !h.lichSu) ?? r.history[0] ?? null) as Moc | null;
-const KN = [['listening', 'L'], ['reading', 'R'], ['writing', 'W'], ['speaking', 'S']] as const;
-/** Kỹ năng dưới kỳ vọng của lượt (W = Writing tổng — SOS xét cột này). */
-const knDuoi = (h: Moc) => KN.filter(([k]) => soKyVong(k === 'writing' ? h.writing ?? null : h.bands?.[k] ?? null, h.expectation ?? null) === 'duoi').map(([, n]) => n);
-const ketQua = (r: Hang, h: Moc | null): 'sos' | 'dat' | 'thieu' | 'khac' => {
-  if (r.status !== 'active' || r.kckDuoi || (h?.sosLevel == null && r.cycle?.khongCamKet)) return 'khac';
-  if (!h?.evaluable) return 'thieu';
-  return (h.sosLevel ?? 0) > 0 ? 'sos' : 'dat';
+/** Lượt hiện của em (P8 — lượt của TỪNG HV): lượt máy chủ kết luận (`standing`, cùng `standingFor` của Học viên & Lớp); chưa có → lượt mới nhất có điểm. */
+const mocCua = (r: Hang): Moc | null => (r.history.find((h) => h.id === r.standing?.attemptId) ?? r.history[0] ?? null) as Moc | null;
+/** Kết quả = kết luận máy chủ (`ketQuaGanNhat(standing)` — cùng hàm ô Kết quả gần nhất ở Học viên & Lớp), web không tự so điểm. */
+const ketQua = (r: Hang): 'sos' | 'dat' | 'thieu' | 'khac' => {
+  if (r.status !== 'active' || r.kckDuoi || (!r.standing && r.cycle?.khongCamKet)) return 'khac';
+  const k = ketQuaGanNhat(r.standing ?? null);
+  return k.sos ? 'sos' : k.dat ? 'dat' : 'thieu';
 };
 
 /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8): GIỮ Target (mockup `ho-so-lop.html`), cột Phụ huynh của TVV / CX (OV-10b) và ⋯ thao tác từng dòng (V4). */
@@ -92,7 +90,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
   const caseCua = new Map<number, CaseLop[]>();
   for (const c of cases.data?.rows ?? []) if (c.studentId !== null && c.status !== 'done') caseCua.set(c.studentId, [...(caseCua.get(c.studentId) ?? []), c]);
   const tatCa = roster.data.filter((r) => !r.archived);
-  const kq = new Map(tatCa.map((r) => [r.id, ketQua(r, mocCua(r))]));
+  const kq = new Map(tatCa.map((r) => [r.id, ketQua(r)]));
   const dem = { 'tat-ca': tatCa.length, sos: tatCa.filter((r) => kq.get(r.id) === 'sos').length, thieu: tatCa.filter((r) => kq.get(r.id) === 'thieu').length };
   const ds = tatCa.filter((r) => loc === 'tat-ca' || kq.get(r.id) === loc);
   const tuan = tatCa.map((r) => { const h = mocCua(r); return h ? r.timeline.find((x) => x.id === h.id) as { weekStart?: string | null } | undefined : undefined; })
@@ -206,7 +204,7 @@ function TenEm({ s, ds }: { s: Hang; ds: NguCanhDs }) {
 
 /** Kết quả lượt của em: SOS (thay "Chưa đạt" — không hai badge) · Đạt · Chưa đủ dữ liệu; em KCK / đã kết thúc giữ kết luận cũ (`KetLuan`). */
 function OKetQua({ r, h, kq }: { r: Hang; h: Moc | null; kq: ReturnType<typeof ketQua> }) {
-  if (kq === 'sos') return <ChipSos muc={h!.sosLevel!} kyNang={knDuoi(h!)} dot={dich(h!.label)} ten={r.fullName} />;
+  if (kq === 'sos') return <ChipSos {...chipSosTuKetQua(r.standing ?? null)!} ten={r.fullName} />;
   if (kq === 'dat') return <NhanKq kq="dat">{t('Đạt')}</NhanKq>;
   if (kq === 'thieu') return <NhanKq kq="thieu">{t('Chưa đủ dữ liệu')}</NhanKq>;
   if (r.kckDuoi) return <ChipDuoiKck />;

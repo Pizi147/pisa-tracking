@@ -13,7 +13,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, demQuaHan, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
+  DUONG_TAB_TEST, demQuaHan, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -236,9 +236,10 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   if (!roster.data) return null;
   const em = roster.data.filter((r) => r.status === 'active' && !r.archived);
   const sos = ([1, 2, 3] as const).map((m) => [m, em.filter((r) => (r.sosLevel ?? 0) === m || (m === 3 && (r.sosLevel ?? 0) > 3)).length] as [number, number]).filter(([, n]) => n > 0);
-  const moi = em.map((r) => r.history.find((h) => h.evaluable && !h.lichSu)).filter((h): h is NonNullable<typeof h> => !!h);
-  const nhanLuot = [...new Set(moi.map((h) => h.label))];
-  const dat = moi.length ? { nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : t('Đạt kỳ vọng'), so: moi.filter((h) => h.sosLevel === 0).length, tong: moi.length } : null;
+  /* Kết luận máy chủ (`standing` → `ketQuaGanNhat`, cùng ô Kết quả của bảng): mẫu = em có lượt đủ điểm, đạt = `dat`. */
+  const moi = em.map((r) => (r as { standing?: KetQuaVao | null }).standing).filter((k): k is KetQuaVao => !!k && k.scored >= k.required && !!k.attemptLabel);
+  const nhanLuot = [...new Set(moi.map((k) => k.attemptLabel!))];
+  const dat = moi.length ? { nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : t('Đạt kỳ vọng'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length } : null;
   const homNayTuan = homNay ?? '9999';
   const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
   return { sos, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
