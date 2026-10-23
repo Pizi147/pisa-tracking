@@ -127,11 +127,13 @@ export function tapThiThangNay(p: Principal, f: { branchId?: number | null; ct: 
 }
 
 /** Như `tapThiThangNay` kèm LỚP em đang học (lớp nhỏ nhất nếu nhiều) — Tổng quan chia theo lớp / chi nhánh (UI-TONG-QUAN), cùng một câu. */
-export function tapThiThangNayLop(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): Map<number, { ngay: string; lop: number }> {
+export function tapThiThangNayLop(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }, khoang?: { tu: string; den: string } | null): Map<number, { ngay: string; lop: number }> {
   const { cs } = phamViPhanTich(p, f.branchId ?? null, null);
   const thang = demoToday().slice(0, 7);
+  /* UI-PHAN-TICH "Thi đợt này": cùng câu, ngày thi trong khoảng đang xem (Báo cáo HV) thay cho tháng hiện tại. */
+  const [tu, den] = khoang ? [khoang.tu, khoang.den] : [`${thang}-01`, `${thang}-31`];
   const where = [cs.sql, 'c.is_fast_track = ?', `cy.exam_date BETWEEN ? AND ?`, `cy.status != 'abandoned'`, 's.archived_at IS NULL'];
-  const args: unknown[] = [...cs.params, f.ct === 'ft' ? 1 : 0, `${thang}-01`, `${thang}-31`];
+  const args: unknown[] = [...cs.params, f.ct === 'ft' ? 1 : 0, tu, den];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
   const out = new Map<number, { ngay: string; lop: number }>();
   for (const r of db().prepare(
@@ -289,7 +291,7 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
       quaHanChotPa: metricSet(p, 'case-xac-dinh-nguyen-nhan-qua-han', loc).n,
       quaHanKetQuaPa: metricSet(p, 'pa-can-cap-nhat', loc).n,
     },
-    tienBo: ft && f.branchId ? [...tienBoTheoKyNang(p, f.branchId, f)].map(([skill, x]) => ({ skill, dung: x.dung.length, tong: x.tong.length, ngoai: x.ngoai.length }))
+    tienBo: ft && f.branchId ? [...tienBoTheoKyNang(p, f.branchId, f)].map(([skill, x]) => ({ skill, tang: x.dung.length, giam: x.giam.length, tong: x.tong.length }))
       .sort((a, b) => THU_TU_KN.indexOf(a.skill) - THU_TU_KN.indexOf(b.skill)) : null,
   };
 }
@@ -335,11 +337,22 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     });
     return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows };
   }
-  if (f.o === 'thi-thang-nay') {
-    const tap = tapThiThangNay(p, f);
+  if (f.o === 'thi-thang-nay' || f.o === 'thi-dot-nay') {
+    /* `thi-dot-nay` (Báo cáo HV): ngày thi trong khoảng đang xem — cùng hàm. */
+    const tap = f.o === 'thi-dot-nay'
+      ? new Map([...tapThiThangNayLop(p, f, f)].filter(([, x]) => !f.classId || x.lop === f.classId).map(([s, x]) => [s, x.ngay]))
+      : tapThiThangNay(p, f);
     const ids = [...tap.keys()].sort((a, b) => tap.get(a)!.localeCompare(tap.get(b)!) || a - b);
     const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, t('thi {ngay}', { ngay: `${tap.get(row.id)!.slice(8, 10)}/${tap.get(row.id)!.slice(5, 7)}` })].filter(Boolean).join(' · ') }));
-    return { n: ids.length, tieuDe: t('{n} HV — thi tháng này', { n: ids.length }), rows };
+    return { n: ids.length, tieuDe: f.o === 'thi-dot-nay' ? t('{n} HV — thi đợt này', { n: ids.length }) : t('{n} HV — thi tháng này', { n: ids.length }), rows };
+  }
+  if (f.o === 'pa-co-ket-qua') {
+    /* Panel chỉ đọc "PA cải thiện": mẫu = CHÍNH tập `pa-co-ket-qua` của kỳ (cùng số ô), chưa cải thiện lên đầu. */
+    const r = metricSet(p, 'pa-co-ket-qua', { branchId: f.branchId ?? null, program: f.ct, from: f.tu, to: f.den });
+    const cai = new Set(r.numeratorIds ?? []);
+    const ids = [...r.ids].sort((a, b) => Number(cai.has(a)) - Number(cai.has(b)) || a - b);
+    const rows = rowsFor('phuong-an', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, cai.has(row.id) ? t('Cải thiện') : t('Chưa cải thiện')].filter(Boolean).join(' · ') }));
+    return { n: ids.length, tieuDe: t('PA cải thiện · {a}/{b} PA', { a: cai.size, b: ids.length }), rows };
   }
   const tb = /^tien-bo:(\w+)$/.exec(f.o);
   if (tb) {
@@ -347,9 +360,10 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     if (f.ct !== 'ft' || !f.branchId) throw badRequest('Tiến bộ theo kỹ năng cần Fast Track và một chi nhánh.');
     phamViPhanTich(p, f.branchId, null);
     const x = tienBoTheoKyNang(p, f.branchId, f).get(tb[1]);
-    const dung = new Set(x?.dung ?? []);
-    const ids = [...(x?.tong ?? [])].sort((a, b) => Number(dung.has(a)) - Number(dung.has(b)) || a - b);
-    const rows = rowsFor('bai', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, dung.has(row.id) ? t('Tăng') : t('Không tăng')].filter(Boolean).join(' · ') }));
+    const dung = new Set(x?.dung ?? []), giam = new Set(x?.giam ?? []);
+    const hang = (id: number) => (dung.has(id) ? 0 : giam.has(id) ? 2 : 1);
+    const ids = [...(x?.tong ?? [])].sort((a, b) => hang(b) - hang(a) || a - b);   // giảm trước
+    const rows = rowsFor('bai', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, [t('Tăng'), t('Giữ nguyên'), t('Giảm')][hang(row.id)]].filter(Boolean).join(' · ') }));
     return { n: ids.length, tieuDe: t('Tiến bộ {kn} · {dung}/{tong}', { kn: tenMonNgan(null, tb[1]), dung: dung.size, tong: ids.length }), rows };
   }
   if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã làm bài');

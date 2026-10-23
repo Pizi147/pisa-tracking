@@ -102,7 +102,7 @@ export function PhanTich() {
       </div>
       <div className="flex flex-wrap items-center gap-2 print:hidden">
         {coCt && <ChonChuongTrinh value={ct} onChange={setCt} />}
-        <BoChonThoiGian khoang={khoang} onChange={setKhoang} />
+        <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo />
         {coLop && (
           <select className="field w-40 text-xs max-sm:min-h-[44px]" value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
             <option value="">{t('Mọi lớp')}</option>
@@ -114,6 +114,8 @@ export function PhanTich() {
             )}
           </select>
         )}
+        {/* "In" (V4, Báo cáo HV): giấy sáng A4 ngang — cuối hàng lọc như mockup. */}
+        {goc === 'bao-cao' && <button type="button" className="btn btn-sm max-sm:hidden sm:ml-auto" onClick={() => window.print()}>{t('In')}</button>}
       </div>
 
       {goc === 'bao-cao' && <BaoCao {...pv} />}

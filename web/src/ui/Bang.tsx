@@ -13,7 +13,7 @@ export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
  * Tiêu đề chỉ nhận chữ (`nhan`, `phu`) — cấm ô nhập / nút trong `th`. < 640 px: thẻ từ cùng định nghĩa cột.
  * Hàng bấm được (`onHang`) = `.bam` + Enter; đang mở = `.dang-mo`; bảng ≥ 8 cột không bấm = dò hàng `.do-hang`.
  */
-export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, hangRieng, cuoi, the375 = true, dinh, khung = true }: {
+export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, hangRieng, cuoi, the375 = true, dinh, khung = true, deu }: {
   /** Tên bảng cho trình đọc màn + công cụ đo `do-bang`. */
   ten: string;
   cot: readonly DinhNghiaCot[];
@@ -39,7 +39,10 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   dinh?: boolean | '1440';
   /** false: không bọc thẻ (nơi gọi đã ở trong thẻ / panel). */
   khung?: boolean;
+  /** UI-PHAN-TICH: cột tên giữ `rong` của nó, phần dư chia đều cho MỌI cột theo tỉ lệ — bảng ít cột số không dồn hết sang phải. */
+  deu?: boolean;
 }) {
+  const rongCua = (c: DinhNghiaCot) => (deu && c.rong ? c.rong : rongCot(c, cot));
   const dienThoai = useDienThoai();
   const nhom = nhomTieuDe(cot);
   const lop = (h: H) => `${onHang ? 'bam' : cot.length >= 8 ? 'do-hang' : ''} ${dangMo?.(h) ? 'dang-mo' : ''}`;
@@ -82,8 +85,8 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   } else {
     than = (
       <div className={`table-scroll ${dinh ? 'bang-dinh' : ''} ${dinh === '1440' ? 'bang-dinh-1440' : ''}`}>
-        <table className="bang" data-day={day || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCot(c, cot) ?? (c.kieu === 'ten' ? 205 : 240)), 0) }}>
-          <colgroup>{cot.map((c) => { const r = rongCot(c, cot); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
+        <table className="bang" data-day={day || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.kieu === 'ten' ? 205 : 240)), 0) }}>
+          <colgroup>{cot.map((c) => { const r = rongCua(c); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
             {nhom && (
               <tr className="bang-nhom">
@@ -92,7 +95,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
             )}
             <tr>
               {cot.map((c) => (
-                <th key={c.key} scope="col" data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-sang={c.sang || undefined} title={c.goiY}
+                <th key={c.key} scope="col" data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-sang={c.sang || undefined} title={c.goiY}
                   className={`th ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                   {c.nhan}{c.phu && <span className="bang-chu-thich"> {c.phu}</span>}
                 </th>
@@ -106,7 +109,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
                 <tr key={khoa(h)} className={lop(h)}
                   tabIndex={onHang ? 0 : undefined} onClick={onHang ? () => onHang(h) : undefined} onKeyDown={phim(h)}>
                   {cot.map((c, i) => (
-                    <td key={c.key} data-kieu={c.kieu} data-tinh={c.tinh || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
+                    <td key={c.key} data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                       {oCua(h, c)}
                       {coPhu(phu[i]) && <span className="bang-phu" data-phu-odiem="">{phu[i]}</span>}
                     </td>
@@ -132,6 +135,6 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
 /** Ô của hàng tự vẽ (`hangRieng`): cùng `data-kieu` với tiêu đề → căn, rộng, nền giống hệt ô do `Bang` vẽ. Cột tên dính trái. */
 export function OBang({ c, className = '', children, ...td }: { c: DinhNghiaCot; children?: ReactNode } & TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td data-kieu={c.kieu} data-tinh={c.tinh || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''} ${className}`} {...td}>{children}</td>
+    <td data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''} ${className}`} {...td}>{children}</td>
   );
 }

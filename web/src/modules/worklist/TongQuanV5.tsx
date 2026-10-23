@@ -196,7 +196,7 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
 
 const COT_GV_HC: readonly CotBang[] = [
   { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 130 },
-  { key: 'diem', nhan: t('Điểm đúng hạn'), kieu: 'phan-tram', rong: 130 }, { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 120 },
+  { key: 'diem', nhan: t('Chấm Test đúng hạn'), kieu: 'phan-tram', rong: 150 }, { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 120 },
 ];
 const COT_GV_HT: readonly CotBang[] = [
   { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'kq', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 },
@@ -209,17 +209,8 @@ export const gopKq = (kq: Record<string, OPtGv>): TyLeV5 | null => {
   return so.reduce((a, o) => ({ dat: a.dat + o.dung, mau: a.mau + o.tong }), { dat: 0, mau: 0 });
 };
 type HangGv = PhanTichGvKq['hang'][number];
-/** Chủ SP 23/10: môn dạy (chữ thường) và lớp chủ nhiệm (thẻ viền "GVCN") khác kiểu, không gộp một chuỗi. Tổng quan + Phân tích GV dùng chung. */
-export const phuGv = (h: Pick<HangGv, 'mon' | 'lopCn'>) => (!h.mon && !h.lopCn.length ? null : (
-  <span className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-0.5">
-    {h.mon && <span>{h.mon}</span>}
-    {h.lopCn.length > 0 && (
-      <span className="truncate rounded border px-1.5 text-xs leading-[18px] text-slate-300" style={{ borderColor: 'var(--line-strong)' }} title={`GVCN ${h.lopCn.join(', ')}`}>
-        <b className="font-semibold">GVCN</b> {h.lopCn.join(', ')}
-      </span>
-    )}
-  </span>
-));
+/** Dòng phụ tên GV = môn dạy ("L · R · W2"). Chủ SP 23/10 (vòng 2): bỏ hẳn dòng "GVCN + danh sách lớp" (xấu, dài) — Tổng quan + Phân tích GV dùng chung. */
+export const phuGv = (h: Pick<HangGv, 'mon'>) => h.mon || null;
 
 /** GV cần chú ý — bảng Phân tích GV của chi nhánh (4 tuần tới tuần này), không xếp hạng, không ngưỡng màu (C08). Quá hạn = Trễ chấm V4. */
 function GvCanChuY({ d }: { d: TongQuanV5Data }) {
@@ -297,22 +288,28 @@ export function TongQuanQlV5({ d }: { d: TongQuanV5Data }) {
 /* ───────────── QT / CX: theo chi nhánh ───────────── */
 
 const COT_CN: readonly CotBang[] = [
-  { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten' }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 130 }, { key: 'case', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 130 },
+  { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten', rong: 200 }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 130 }, { key: 'case', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 130 },
   { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'so', rong: 120 },
 ];
 /** CX (chủ SP 23/10): thiên về điểm + tình trạng HV — Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa PA. */
 const COT_CN_CX: readonly CotBang[] = [
-  { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten' }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 }, { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 },
+  { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten', rong: 200 }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 }, { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 },
   { key: 'sos', nhan: t('SOS 2–3'), kieu: 'so', rong: 100 }, { key: 'case', nhan: t('Case chưa PA'), kieu: 'so', rong: 120 },
+];
+/** UI-PHAN-TICH · Báo cáo HV (QT): kết quả trước, hỗ trợ sau — "Thi đợt này" theo kỳ đang xem; cột tên cố định để các cột số trải đều cả bề rộng. */
+const COT_CN_BC: readonly CotBang[] = [
+  { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten', rong: 200 }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 150 },
+  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 }, { key: 'thi', nhan: t('Thi đợt này'), kieu: 'so', rong: 150 },
+  { key: 'case', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 150 }, { key: 'sos', nhan: t('SOS 2–3'), kieu: 'so', rong: 150 },
 ];
 export const ptChu = (x: TyLeV5 | null, gon = false) => (!x ? <span className="text-slate-500">—</span>
   : x.mau ? <span className="font-semibold tabular-nums">{Math.round((100 * x.dat) / x.mau)} %</span>
     : gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span> : <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>);
 
-export function TheoChiNhanh({ d, cx, onChiNhanh }: { d: TongQuanV5Data; cx?: boolean; onChiNhanh: (id: number) => void }) {
+export function TheoChiNhanh({ d, cx, baoCao, onChiNhanh }: { d: TongQuanV5Data; cx?: boolean; /** Báo cáo HV (kỳ chọn tự do): cột "Thi đợt này" + SOS 2–3. */ baoCao?: boolean; onChiNhanh: (id: number) => void }) {
   type H = DongCn & { tong?: boolean };
   const hang: H[] = [...(d.chiNhanh ?? []), ...(cx ? [] : [{
-    id: 0, khoa: 'tong', ten: t('Toàn hệ thống'), datMt: d.datMt, casePa: d.casePa, thiThat: d.thiThat, thiThangNay: d.thiThangNay, sos23: 0, caseChuaPa: d.casePa.chuaPa, tong: true,
+    id: 0, khoa: 'tong', ten: t('Toàn hệ thống'), datMt: d.datMt, casePa: d.casePa, thiThat: d.thiThat, thiThangNay: d.thiThangNay, sos23: (d.chiNhanh ?? []).reduce((n, h) => n + h.sos23, 0), caseChuaPa: d.casePa.chuaPa, tong: true,
   }])];
   const bc = (h: H, o: string) => `/phan-tich/bao-cao/o?o=${o}${h.tong ? '' : `&branchId=${h.id}`}${thamSoCt(d.ct)}${kyQ(d)}`;
   const oCua = (h: H, c: CotBang): ReactNode => {
@@ -320,7 +317,7 @@ export function TheoChiNhanh({ d, cx, onChiNhanh }: { d: TongQuanV5Data; cx?: bo
     if (c.key === 'dat') return <PhanTram gon x={h.datMt} nguon={bc(h, 'dat-mt')} tieuDe={`${t('Đạt MT')} · ${h.ten}`} />;
     if (c.key === 'case' && !cx) return <PhanTram gon x={{ dat: h.casePa.coPa, mau: h.casePa.mo }} nguon={qCn(d, 'caseMo', h.khoa)} tieuDe={`${t('Case đang mở')} · ${h.ten}`} />;
     if (c.key === 'tt') return ptChu(h.thiThat, true);
-    if (c.key === 'thi') return <OSo giaTri={h.thiThangNay} tieuDe={`${t('Thi tháng này')} · ${h.ten}`} nguon={bc(h, 'thi-thang-nay')} />;
+    if (c.key === 'thi') return <OSo giaTri={h.thiThangNay} tieuDe={`${c.nhan} · ${h.ten}`} nguon={bc(h, baoCao ? 'thi-dot-nay' : 'thi-thang-nay')} />;
     if (c.key === 'sos') return <span className="tabular-nums">{h.sos23}</span>;
     return <OSo giaTri={h.caseChuaPa} tieuDe={`${t('Case chưa chốt PA')} · ${h.ten}`} nguon={qCn(d, 'caseChuaChot', h.khoa)} />;
   };
@@ -328,7 +325,7 @@ export function TheoChiNhanh({ d, cx, onChiNhanh }: { d: TongQuanV5Data; cx?: bo
     : c.key === 'tt' ? tuMau(h.thiThat, t('HV')) : null);
   return (
     <Card title={t('Theo chi nhánh')} bodyClass="p-0">
-      <Bang ten={t('Theo chi nhánh')} cot={cx ? COT_CN_CX : COT_CN} hang={hang} khoa={(h) => h.khoa} oCua={oCua} phuCua={phuCua} khung={false}
+      <Bang ten={t('Theo chi nhánh')} cot={cx ? COT_CN_CX : baoCao ? COT_CN_BC : COT_CN} hang={hang} khoa={(h) => h.khoa} oCua={oCua} phuCua={phuCua} khung={false} deu
         onHang={cx ? undefined : (h) => { if (!h.tong) onChiNhanh(h.id); }} rong={{ tieuDe: t('Chưa có lớp nào trong khung này') }} />
     </Card>
   );

@@ -19,26 +19,28 @@ import { gopKq, phuGv, tyLeGv } from '../worklist/TongQuanV5.tsx';
  * PHÂN TÍCH GV (UI-PHAN-TICH, `thiet-ke/v5/phan-tich.html` tab "Phân tích GV"; `10` mục 1 + dòng UI-PHAN-TICH): MỘT bảng, hai nhóm cột Hành chính / Học thuật.
  * Bộ cột Gọn (mặc định, vừa 1280 không cuộn) / Đầy đủ (`?cot=day`). Không KPI, không xếp hạng, không màu ngưỡng (C08) — xếp theo tên. Mỗi số mở panel
  * CHỈ ĐỌC đúng tập (C22): `/phan-tich/giao-vien/o` (cùng hàm ô), Quá hạn = Trễ chấm Tổng quan, Case có PA = hồ sơ GV — cùng nguồn Tổng quan › GV cần chú ý.
- * Điểm đúng hạn giữ panel Chấm điểm V4 (lọc Trễ). "Xử lý vi phạm" bỏ (10, 22/10). < 640 px: thẻ (Bang).
+ * Chấm Test đúng hạn giữ panel Chấm điểm V4 (lọc Trễ). "Xử lý vi phạm" bỏ (10, 22/10). < 640 px: thẻ (Bang).
  */
 type TyLe = { dat: number; mau: number };
 const HC = t('HÀNH CHÍNH'), HT = t('HỌC THUẬT');
+/*
+ * Chủ SP 23/10 (vòng 2): cột tên cố định (các cột số trải đều cả bề rộng, không dồn phải); bỏ cột "Quá hạn" — bài trễ chấm hiếm, hiện "⚠ n quá hạn" ngay dưới
+ * ô "Chấm Test đúng hạn"; Hành chính | Học thuật tách bằng vạch dọc + nền đầu nhóm. Đầy đủ không còn "Ghi KQ PA" (trùng hẳn "Việc đúng hạn" — một tập việc).
+ */
 const COT_GON: readonly CotBang[] = [
-  { key: 'gv', nhan: t('GV · kỹ năng · lớp'), kieu: 'ten' },
-  { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 150, nhom: HC },
-  { key: 'diem', nhan: t('Điểm đúng hạn'), kieu: 'phan-tram', rong: 150, nhom: HC },
-  { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 150, nhom: HC },
-  { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 150, nhom: HT },
+  { key: 'gv', nhan: t('Giáo viên'), kieu: 'ten', rong: 240 },
+  { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 160, nhom: HC, tach: true },
+  { key: 'diem', nhan: t('Chấm Test đúng hạn'), kieu: 'phan-tram', rong: 170, nhom: HC },
+  { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 150, nhom: HT, tach: true },
   { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 150, nhom: HT },
   { key: 'chuY', nhan: t('HV cần chú ý'), kieu: 'so', rong: 150, nhom: HT },
 ];
 const COT_DAY: readonly CotBang[] = [
-  COT_GON[0], ...COT_GON.slice(1, 4).map((c) => ({ ...c, rong: 100 })),
-  { key: 'ghiPa', nhan: t('Ghi KQ PA'), kieu: 'phan-tram', rong: 100, nhom: HC },
-  ...COT_GON.slice(4).map((c) => ({ ...c, rong: 100 })),
-  { key: 'casePa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 100, nhom: HT },
-  { key: 'pa', nhan: t('PA cải thiện'), kieu: 'phan-tram', rong: 100, nhom: HT },
-  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 128, nhom: HT },
+  { ...COT_GON[0], rong: 220 }, ...COT_GON.slice(1, 3).map((c) => ({ ...c, rong: 124 })),
+  ...COT_GON.slice(3).map((c) => ({ ...c, rong: 108 })),
+  { key: 'casePa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 108, nhom: HT },
+  { key: 'pa', nhan: t('PA cải thiện'), kieu: 'phan-tram', rong: 108, nhom: HT },
+  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 124, nhom: HT },
 ];
 /** Cột chỉ Fast Track (lớp thường không có MT / tiến bộ band / PA cải thiện / thi thật) — "Đạt MT" lớp thường đổi thành "Kết quả" (đạt ≥ 70 %). */
 const CHI_FT = new Set(['tb', 'pa', 'tt']);
@@ -76,20 +78,16 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const ctQ = `cn=${branchId}&ct=${khung}`;
   /* Mỗi cột: tỷ lệ (`TyLe`) + nguồn panel — cùng nguồn với Tổng quan › GV cần chú ý. */
   const tyLe = (h: HangPtGv, k: string): TyLe | null => ({
-    viec: tyLeGv(h.viecDungHan), diem: tyLeGv(h.chamDiem), ghiPa: tyLeGv(h.ghiKetQuaPa),
+    viec: tyLeGv(h.viecDungHan), diem: tyLeGv(h.chamDiem),
     dat: h.datMt ? tyLeGv(h.datMt) : gopKq(h.ketQua), tb: tyLeGv(h.tienBo), casePa: tyLeGv(h.casePa), pa: tyLeGv(h.paHieuQua), tt: tyLeGv(h.thiThat),
   } as Record<string, TyLe | null>)[k] ?? null;
   const NGUON: Record<string, (h: HangPtGv) => string> = {
-    viec: (h) => nguonO(h, 'viec-dung-han'), ghiPa: (h) => nguonO(h, 'ghi-pa'), dat: (h) => nguonO(h, ft ? 'dat-mt' : 'ket-qua'), tb: (h) => nguonO(h, 'tien-bo'),
+    viec: (h) => nguonO(h, 'viec-dung-han'), dat: (h) => nguonO(h, ft ? 'dat-mt' : 'ket-qua'), tb: (h) => nguonO(h, 'tien-bo'),
     casePa: (h) => `/giao-vien/${h.id}/o?cot=case-mo&${ctQ}`, pa: (h) => nguonO(h, 'pa-hieu-qua'), tt: (h) => nguonO(h, 'thi-that'),
   };
-  const DV: Record<string, string> = { viec: t('việc'), diem: t('bài'), ghiPa: t('việc'), dat: t('lượt'), tb: t('lượt'), casePa: 'Case', pa: 'PA', tt: t('lượt') };
+  const DV: Record<string, string> = { viec: t('việc'), diem: t('bài'), dat: t('lượt'), tb: t('lượt'), casePa: 'Case', pa: 'PA', tt: t('lượt') };
   const oCua = (h: HangPtGv, c: CotBang): ReactNode => {
     if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
-    if (c.key === 'tre') {
-      return h.quaHan ? <span className="font-semibold text-bad">⚠ <OSo giaTri={h.quaHan} className="text-bad" tieuDe={t('Bài trễ chấm · {ten}', { ten: h.ten })} nguon={`/tong-quan/ql/tre?gv=${h.id}&branchId=${branchId}&ct=${khung}`} /></span>
-        : <span className="tabular-nums text-slate-500">0</span>;
-    }
     if (c.key === 'chuY') return <OSo giaTri={h.hvChuY} tieuDe={`${t('HV cần chú ý')} · ${h.ten}`} nguon={nguonO(h, 'hv-chu-y')} />;
     const tieuDe = `${c.nhan} · ${h.ten}`;
     if (c.key === 'diem') return <OPt x={tyLe(h, 'diem')} tieuDe={tieuDe} onBam={() => setChamDiem(h)} />;
@@ -97,7 +95,17 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   };
   const phuCua = (h: HangPtGv, c: CotBang): ReactNode => {
     if (c.key === 'gv') return phuGv(h);
-    if (c.key === 'tre') return h.quaHan ? t('bài') : null;
+    if (c.key === 'diem') {
+      const x = tyLe(h, 'diem');
+      return (
+        <>
+          {x && x.mau ? `${x.dat}/${x.mau} ${t('bài')}` : null}
+          {h.quaHan > 0 && (
+            <span className="block font-semibold text-bad">⚠ <OSo giaTri={h.quaHan} nhan={t('{n} quá hạn', { n: h.quaHan })} className="text-bad" tieuDe={t('Bài trễ chấm · {ten}', { ten: h.ten })} nguon={`/tong-quan/ql/tre?gv=${h.id}&branchId=${branchId}&ct=${khung}`} /></span>
+          )}
+        </>
+      );
+    }
     if (c.key === 'chuY') return null;
     const x = tyLe(h, c.key);
     return x && x.mau ? `${x.dat}/${x.mau} ${DV[c.key] ?? ''}`.trim() : null;
@@ -126,7 +134,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
           <>
             <PhanTrang {...pt.thanh} />
             <div className="bang-gv">
-            <Bang ten={t('Phân tích GV — Hành chính và Học thuật')} cot={cot} hang={pt.cat(hang)} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua}
+            <Bang ten={t('Phân tích GV — Hành chính và Học thuật')} cot={cot} hang={pt.cat(hang)} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua} deu
               rong={{ tieuDe: tim.trim() ? t('Không GV nào khớp "{q}"', { q: tim.trim() }) : t('Không có giáo viên nào có {khung} trong khoảng này.', { khung: ft ? t('lớp Fast Track') : t('lớp thường') }) }} />
             </div>
             <PhanTrang {...pt.thanh} duoi />
@@ -164,7 +172,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
   const pt = usePhanTrang(rows.length, `${q}|${chiTre}`, 'ô');
   const khoang = `${tuanLich(kq.tu, homNay)} – ${tuanLich(kq.den, homNay)}`;
   return (
-    <KhungPanel tieuDe={`Chấm đúng hạn · ${h.ten}`} rong="rong" onDong={onDong}
+    <KhungPanel tieuDe={`${t('Chấm Test đúng hạn')} · ${h.ten}`} rong="rong" onDong={onDong}
       ngCanh={data ? (
         <span className="text-xs text-slate-400">
           {kq.khung === 'ft' ? 'Fast Track' : 'Lớp thường'} · {data.tenChiNhanh} · tuần Test <span className="tabular-nums">{khoang}</span> ·{' '}

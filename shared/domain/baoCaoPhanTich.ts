@@ -22,8 +22,8 @@ export type BaoCaoKq = {
   chuY: { chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number; sosHienTai: number; thiThangNay: number };
   /** `paCaiThien` (UI-PHAN-TICH): PA "cải thiện" (nhóm success) trong chính tập `pa-co-ket-qua` của kỳ — mẫu = `paKetQua`. */
   casePa: { caseMo: number; paKetQua: number; paCaiThien: number; quaHanChotPa: number; quaHanKetQuaPa: number };
-  /** UI-PHAN-TICH · Tiến bộ theo kỹ năng (FT, một chi nhánh): mục "HV tiến bộ" của Phân tích GV gom theo kỹ năng; `ngoai` = chưa có mốc trước. Panel `o=tien-bo:<kỹ năng>`. */
-  tienBo: { skill: string; dung: number; tong: number; ngoai: number }[] | null;
+  /** UI-PHAN-TICH · Tiến bộ theo kỹ năng (FT, một chi nhánh): mục "HV tiến bộ" của Phân tích GV (lượt có mốc MT trước) gom theo kỹ năng — tăng · giảm · còn lại giữ nguyên. Panel `o=tien-bo:<kỹ năng>`. */
+  tienBo: { skill: string; tang: number; giam: number; tong: number }[] | null;
 };
 
 /**

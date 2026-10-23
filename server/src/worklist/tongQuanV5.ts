@@ -46,7 +46,8 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
   const ft = f.ct === 'ft';
   const loc = { branchId: bang.branchId, ct: f.ct, tu: ky.tu, den: ky.den };
   const dm = ft ? tapDatMt(p, loc) : null;
-  const thi = tapThiThangNayLop(p, loc);
+  /* Có kỳ (Báo cáo HV) → "Thi đợt này" = ngày thi trong kỳ; không kỳ (Tổng quan) → tháng hiện tại. */
+  const thi = tapThiThangNayLop(p, loc, f.ky);
 
   /* lớp → chi nhánh (chế độ chi nhánh) — từ chính hàng của bảng. */
   const cnCua = new Map<number, number>();

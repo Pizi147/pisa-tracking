@@ -316,13 +316,13 @@ function tapKetQua(c: NguCanhPtGv, muc: readonly MucKq[]): Map<string, TapKq> {
 }
 
 /** Q21 (FT): mục = ô có điểm mà em ĐÃ có điểm kỹ năng đó ở lượt MT gần nhất trước đó (bất kỳ lớp); tiến bộ ⇔ band cao hơn. W1, W2 riêng. KCK vẫn tính. */
-type TapKn = Map<string, { dung: number[]; tong: number[]; ngoai: number[] }>;
+type TapKn = Map<string, { dung: number[]; giam: number[]; tong: number[] }>;
 function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<number>>; theoKyNang: TapKn } {
   const tap: Tap = new Map();
   const lop = new Map<number, Set<number>>();
-  /* UI-PHAN-TICH (Báo cáo HV · Tiến bộ theo kỹ năng): CÙNG mục, gom theo kỹ năng cho cả chi nhánh (không cần người dạy); `ngoai` = ô chưa có mốc trước. */
+  /* UI-PHAN-TICH (Báo cáo HV · Tiến bộ theo kỹ năng): CÙNG mục, gom theo kỹ năng cho cả chi nhánh (không cần người dạy): tăng (`dung`) · giảm · còn lại giữ nguyên. */
   const theoKyNang: TapKn = new Map();
-  const kn = (skill: string) => theoKyNang.get(skill) ?? theoKyNang.set(skill, { dung: [], tong: [], ngoai: [] }).get(skill)!;
+  const kn = (skill: string) => theoKyNang.get(skill) ?? theoKyNang.set(skill, { dung: [], giam: [], tong: [] }).get(skill)!;
   const coBand = nap.o.filter((x) => x.band !== null && (nap.attempts.get(x.attemptId)?.kind ?? 'mock') === 'mock');
   const em = [...new Set(coBand.map((x) => x.studentId))];
   const truoc = new Map<string, { tuan: string; id: number; band: number }[]>();
@@ -341,9 +341,10 @@ function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<n
     const cu = (truoc.get(`${x.studentId}|${x.skill}`) ?? [])
       .filter((t) => t.id !== x.attemptId && (t.tuan < tuanBai || (t.tuan === tuanBai && t.id < x.attemptId)))
       .sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id).pop();
-    if (!cu) { kn(x.skill).ngoai.push(x.id); continue; }
+    if (!cu) continue;
     kn(x.skill).tong.push(x.id);
     if (x.band! > cu.band) kn(x.skill).dung.push(x.id);
+    else if (x.band! < cu.band) kn(x.skill).giam.push(x.id);
     const gv = c.nguoiLuc(x.classId, x.skill, x.tuan);
     if (gv == null) continue;
     them(tap, gv, x.id, x.band! > cu.band);

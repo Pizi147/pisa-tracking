@@ -24,6 +24,9 @@ export async function runPrUiPhanTichTests(t: any) {
     const r = bc.baoCao(P.mbManager, { branchId: c.branchId, ct: 'ft', ...k4 });
     assert(c.datMt.dat === r.datMt.dat && c.datMt.mau === r.datMt.mau && c.ky.tu === k4.tu, `kỳ 6 tuần: ${JSON.stringify(c.datMt)} ≠ ${JSON.stringify(r.datMt)}`);
     assert(r.casePa.paCaiThien <= r.casePa.paKetQua, 'PA cải thiện vượt mẫu');
+    /* "Thi đợt này": có kỳ → ngày thi trong kỳ, = panel `o=thi-dot-nay`. */
+    const o = bc.oBaoCao(P.mbManager, { branchId: c.branchId, ct: 'ft', ...k4, o: 'thi-dot-nay' });
+    assert(o.n === c.thiThangNay, `Thi đợt này ${c.thiThangNay} ≠ panel ${o.n}`);
   });
 
   check('UI-PHAN-TICH · Tiến bộ theo kỹ năng: mỗi kỹ năng tử ≤ mẫu, số = dòng panel; Lớp thường / không chi nhánh → null', () => {
@@ -32,7 +35,7 @@ export async function runPrUiPhanTichTests(t: any) {
     const r = bc.baoCao(P.mbManager, { branchId: cn, ct: 'ft', ...kk });
     assert(Array.isArray(r.tienBo), 'FT một chi nhánh phải có tienBo');
     for (const x of r.tienBo) {
-      assert(x.dung <= x.tong, `${x.skill}: ${x.dung} > ${x.tong}`);
+      assert(x.tang + x.giam <= x.tong, `${x.skill}: ${x.tang}+${x.giam} > ${x.tong}`);
       const o = bc.oBaoCao(P.mbManager, { branchId: cn, ct: 'ft', ...kk, o: `tien-bo:${x.skill}` });
       assert(o.n === x.tong && o.rows.length === x.tong, `${x.skill}: panel ${o.n} ≠ ${x.tong}`);
     }
