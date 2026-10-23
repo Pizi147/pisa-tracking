@@ -70,11 +70,13 @@ export type Cell = {
     /** OV-4b: lần vắng · lúc ghi "-" · người ghi (hộp ô Vắng). */
     lan: number; ghiLuc: string | null; ghiBoi: string | null;
   } | null;
+  /** NEN-SUA: ô ĐÃ CÓ ĐIỂM ở tuần thi bù — mã tuần có "-" (tuần cũ), dòng "vắng W3 SEP". */
+  doiTu?: string;
   /** PR-HSM (YC-13.5), OV-4b: nhận xét của bài nhập (L/R/W1/W2/S). */
   nhanXet?: string | null;
   /** OV-12b (máy chủ tính, `thieuNhanXetMt`): nhóm nguyên nhân đã chọn (thứ tự) · lượt MT đòi nhận xét · kỳ vọng lượt · ô có điểm còn thiếu. */
   nhomNguyenNhan?: string[];
-  batBuocNhanXet?: boolean;
+  nenCoNhanXet?: boolean;
   kyVong?: number | null;
   thieuNhanXet?: ThieuNhanXet | null;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). */

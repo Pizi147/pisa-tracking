@@ -234,7 +234,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C16a · thanh trên: logo PISA mọi cỡ (NEN-V5 thay chữ PISA / "PISA Tracking"); Tìm / Thông báo / Tài khoản không viền, biểu tượng 20, số chuông đè góc', () => {
     const app = doc('web/src/App.tsx');
-    assert(/<img src=\{logoPisa\} alt="PISA"/.test(app), 'App.tsx: thiếu logo PISA (alt="PISA")');
+    /* NEN-SUA (chủ SP 22/10): logo chữ "PISA" + "TRACKING" thay ảnh logo trung tâm. */
+    assert(/>PISA<\/span>/.test(app) && />TRACKING<\/span>/.test(app) && !/logoPisa/.test(app), 'App.tsx: thiếu logo chữ PISA TRACKING');
     assert(/max-sm:h-\[52px\]/.test(app), 'App.tsx: thanh trên điện thoại cao 52 px');
     const hd = doc('web/src/modules/platform/Header.tsx');
     const nut = (moc: string) => { const i = hd.indexOf(moc); assert(i >= 0, `Header.tsx: không thấy ${moc}`); return hd.slice(i, i + 900); };

@@ -29,16 +29,17 @@ export const CAU_THIEU_NHAN_XET: Record<ThieuNhanXet, string> = {
 export const CHU_O_THIEU: Record<ThieuNhanXet, string> = {
   'ghi-nhan-xet': t('nên có nhận xét'), 'nhan-xet-ngan': t('nên có nhận xét'), 'chon-nhom': t('nên chọn nguyên nhân'),
 };
-export const batBuocNhanXetMt = (a: { kind?: string | null; lichSu: boolean }): boolean => a.kind === 'mock' && !a.lichSu;
+/** LUAT-NX-MT: lượt MT thường NÊN có nhận xét (chỉ nhắc, không chặn) — không MT cũ / MT0. */
+export const nenCoNhanXetMt = (a: { kind?: string | null; lichSu: boolean }): boolean => a.kind === 'mock' && !a.lichSu;
 /** Ô cần chip "Nhóm nguyên nhân": band của chính ô dưới kỳ vọng của lượt. */
 export const canNhomNguyenNhan = (band: number | null | undefined, kyVong: number | null | undefined): boolean =>
   band !== null && band !== undefined && kyVong !== null && kyVong !== undefined && band < kyVong;
 
 export function thieuNhanXetMt(o: {
-  batBuoc: boolean; coDiem: boolean; band: number | null; kyVong: number | null;
+  nenCo: boolean; coDiem: boolean; band: number | null; kyVong: number | null;
   nhanXet: string | null | undefined; nhom: readonly string[] | null | undefined;
 }): ThieuNhanXet | null {
-  if (!o.batBuoc || !o.coDiem) return null;
+  if (!o.nenCo || !o.coDiem) return null;
   const t = (o.nhanXet ?? '').trim();
   if (!t) return 'ghi-nhan-xet';
   if (t.length < NHAN_XET_MT_TOI_THIEU) return 'nhan-xet-ngan';

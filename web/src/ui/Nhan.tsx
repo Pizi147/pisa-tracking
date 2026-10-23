@@ -32,7 +32,7 @@ export function lopSos(muc: number, tam?: boolean): string {
   if (muc <= 1) return `bg-[color:var(--surface)] border border-sos1 text-sos1-chu ${tam ? '!border-dashed' : ''}`;
   if (muc === 2) return `border-2 !px-[7px] border-sos2 text-sos2-chu ${tam ? 'bg-[color:var(--surface)] !border-dashed' : 'bg-[color:var(--sos2-nen)]'}`;
   return tam ? 'bg-[color:var(--surface)] border-2 !px-[7px] border-dashed border-sos3 text-sos3-chu'
-    : 'border border-[color:var(--sos3-nen)] bg-[color:var(--sos3-nen)] font-bold text-[color:var(--sos3-tren)]';
+    : 'border border-[color:var(--sos3-vien)] bg-[color:var(--sos3-nen)] font-bold text-[color:var(--sos3-tren)]';
 }
 /** Khung chip SOS (cùng họ góc 4 px với kết quả — C23). */
 export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded px-2 text-xs font-semibold leading-none tabular-nums';
