@@ -30,7 +30,8 @@ export type CaseTomTat = {
   /** Kết quả PA gần nhất (tình trạng tới hôm nay) — chữ 5 mức + ngày ghi. */
   ketQua: string | null; ketQuaNgay: string | null;
   nhom: NhomXuLy; trangThai: string;
-  viecTiep: { chu: string; han: string | null; loaiHan: string | null; quaHan: boolean } | null;
+  /** `nguoi` (UI-HV-LOP, khu d): người làm việc tiếp — người của PA việc đó, việc mức Case thì người giữ Case. */
+  viecTiep: { chu: string; han: string | null; loaiHan: string | null; quaHan: boolean; nguoi: string | null } | null;
   /** Lượt sinh / lặp Case — panel ghép Case với lượt SOS ("MT2"). */
   attemptId: number | null; attemptNo: number | null; done: boolean;
 };
@@ -63,7 +64,8 @@ export function tomTatCase(cases: readonly MappedCase[]): Map<number, CaseTomTat
       pa: x.pas.map((p) => ({ id: p.id, ten: tenPaGon(p.ten), nguoi: p.nguoi, choXacNhan: p.choXacNhan, xong: p.xong })),
       ketQua: c.lastOutcome ? outcomeLabelFor(c.lastOutcome) : null, ketQuaNgay: c.lastOutcomeOn,
       nhom: NHOM_THEO_COT[xl.get(c.id)?.cot ?? 'choDuyet'], trangThai: x.trangThai.chu,
-      viecTiep: x.viecTiep ? { chu: x.viecTiep.chu, han: x.viecTiep.han, loaiHan: x.viecTiep.loaiHan, quaHan: !!x.viecTiep.han && x.viecTiep.han < homNay } : null,
+      viecTiep: x.viecTiep ? { chu: x.viecTiep.chu, han: x.viecTiep.han, loaiHan: x.viecTiep.loaiHan, quaHan: !!x.viecTiep.han && x.viecTiep.han < homNay,
+        nguoi: (x.viecTiep.paId != null ? x.pas.find((p) => p.id === x.viecTiep!.paId)?.nguoi : null) ?? c.ownerName ?? null } : null,
       attemptId: c.attemptId, attemptNo: c.attemptNo, done: c.status === 'done',
     });
   }

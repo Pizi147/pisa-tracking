@@ -67,7 +67,8 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
   });
 
   check('K7 · Học viên & Lớp: đầu cột dính sát mép <main> (md:-top-5), hàng lớp mở dính ngay dưới (top trừ đệm)', () => {
-    assert(/md:sticky md:-top-5/.test(doc('web/src/modules/students/StudentsPage.tsx')), 'đầu cột chưa md:-top-5');
+    /* UI-HV-LOP (Q-7): Học viên & Lớp không còn khối tiêu đề theo lớp — đầu cột dính do `Bang dinh` (bảng danh sách gọn). */
+    assert(/\bdinh \/>/.test(doc('web/src/modules/students/DanhSachHvLop.tsx')), 'bảng danh sách chưa dính đầu cột');
     const css = doc('web/src/index.css');
     assert(!/\.hang-lon-dinh > td\s*\{[^}]*top:\s*40px;/.test(css), '.hang-lon-dinh còn top: 40px');
   });

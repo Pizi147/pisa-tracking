@@ -343,18 +343,16 @@ export async function runPrHvlTests(t: YThucTestKit) {
   const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src', f), 'utf8');
 
   check('PR-HVL (4) · Học viên & Lớp: công tắc khung, mỗi nhóm một <section> tiêu đề dính riêng, cột Sắp tới, không còn cột "Target / Khoá"', () => {
+    /* UI-HV-LOP (Q-7, khu d): danh sách gọn một bảng — gỡ kiểm chuỗi nhóm khung / hàng lớp; giữ: không cột "Target / Khoá", không badge Case ở dải lớp. */
     const s = web('modules/students/StudentsPage.tsx');
-    assert(/<CongTacKhung trang="hoc-vien-lop" coTatCa/.test(s) && /demLoc\(/.test(s), 'thiếu công tắc khung / demLoc');
-    assert(/<section key=\{g\.k\}/.test(s) && /md:sticky md:-top-5/.test(s), 'mỗi nhóm khung phải là một <section> chứa khối tiêu đề dính');
-    assert(!/Target \/ Khoá/.test(s) && /'Sắp tới'/.test(s), 'cột');
-    assert(/<MenuDong kieu="chip" bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(s) && !/x\.key === 'case'/.test(s), '"+n" phải là MenuDong, không còn badge Case');
+    assert(!/Target \/ Khoá/.test(s) && !/x\.key === 'case'/.test(s), 'cột / badge Case');
   });
 
   check('PR-HVL (4) · Kết quả hai dòng không cắt "…" (không truncate); việc tiếp bấm được; hàng "Cả lớp"; tên em đậm', () => {
     const b = web('modules/students/BangHocVienLop.tsx');
     const kq = b.slice(b.indexOf('k.dong1'), b.indexOf('k.dong1') + 400);
     assert(/k\.dong1/.test(b) && !/truncate/.test(kq), 'dòng Kết quả còn truncate');
-    assert(/tachViecChung/.test(b) && /Cả lớp:/.test(b) && /duongViecTiep/.test(b) && /font-semibold/.test(b), 'thiếu Cả lớp / link việc / tên đậm');
+    /* UI-HV-LOP (Q-7): bảng HV theo lớp (hàng "Cả lớp", link việc tiếp) đã gỡ — Học viên & Lớp là danh sách gọn; còn kiểm ô Kết quả dùng chung. */
     assert(/den \? <Link to=\{den\}/.test(web('ui/ViecTiep.tsx')), 'ViecTiep chưa có link');
   });
 
@@ -583,12 +581,11 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const td = web('ui/TheDong.tsx');
     assert(/export function TheDong/.test(td) && /export function useDienThoai/.test(td) && /max-width: 639px/.test(td) && /tabular-nums/.test(td), 'TheDong.tsx');
     /* UI-HO-SO-LOP: bảng FT hồ sơ lớp (`BangHoSoLop`) cuộn ngang ở 375 theo mockup V5 — không còn trong danh sách thẻ. */
-    for (const f of ['modules/students/BangHocVienLop.tsx', 'modules/classes/BangDiemLopThuong.tsx', 'modules/classes/BangCanHoTro.tsx']) {
+    for (const f of ['modules/classes/BangDiemLopThuong.tsx', 'modules/classes/BangCanHoTro.tsx']) {   // UI-HV-LOP: BangHocVienLop không còn bảng
       assert(/<TheDong\b/.test(web(f)), `${f} chưa dùng TheDong`);
     }
-    const sp = web('modules/students/StudentsPage.tsx');
-    assert(/useDienThoai\(\)/.test(sp) && /<HopLop key=\{c\.id\} the /.test(sp) && /if \(the\)/.test(sp), 'StudentsPage phải có nhánh thẻ gập ở điện thoại');
-    assert(/aria-expanded=\{mo\}/.test(sp), 'thẻ lớp gập cần aria-expanded');
+    /* UI-HV-LOP (Q-7): Học viên & Lớp ở điện thoại = mỗi em một thẻ (`TheHvGon`), không còn thẻ lớp gập. */
+    assert(/useDienThoai\(\)/.test(web('modules/students/StudentsPage.tsx')) && /<TheHvGon\b/.test(web('modules/students/StudentsPage.tsx')), 'StudentsPage phải có nhánh thẻ ở điện thoại');
     assert(/<Bang /.test(web('modules/classes/BangHoSoLop.tsx')) && /sticky-col/.test(web('modules/classes/BangDiemLopThuong.tsx')), 'cột tên dính (640–1023 px) — Bang dính cột tên');
   });
 

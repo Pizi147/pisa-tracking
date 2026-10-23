@@ -57,6 +57,8 @@ export type HangHv = {
   loTrinh: { mt: number; soMt: number; target: number | null; kck: boolean };
   mtGan: { mt: number; tuan: string | null; ovr: number | null; kyVong: number | null; kn: Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null> } | null;
   xuHuong: { lech: number; soMt: number } | null;
+  /** UI-HV-LOP (Đang SOS "→ MT3 6.0"): lượt kế tiếp của lộ trình + kỳ vọng của lượt đó (`standingFor`). */
+  ke: { luot: string; kyVong: number | null } | null;
   hoTro: { sos: number | null; kyNang: string[]; soCase: number; soPa: number; quaHan: boolean };
   yThuc: string | null;
 };

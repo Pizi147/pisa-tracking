@@ -337,10 +337,8 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     for (const chu of ['Bỏ qua', 'Thử lại', 'Đã lưu ', 'chưa lưu', 'Quyết định chuyển lớp huỷ', 'PA huỷ', 'Case đóng', 'học viên', 'Về lớp cũ', 'Sang lớp mới']) assert(p.includes(chu), `thiếu chữ "${chu}"`);
     assert(p.includes('!l.ft'), 'Học lại hàng loạt chỉ sang lớp thường');
     assert(doc('web/src/modules/classes/BangHoSoLop.tsx').includes('OChon') && doc('web/src/modules/classes/BangDiemLopThuong.tsx').includes('OChon'), 'ô chọn ở cả hai bảng');
-    /* OV-15h2 (ý 1, mockup 5 khung 2): bảng Học viên & Lớp có ô chọn CHỈ để Xuất Excel "Các HV đã chọn" — không việc hàng loạt nào khác. */
-    const sp = doc('web/src/modules/students/StudentsPage.tsx');
-    const thanh = sp.slice(sp.indexOf('<ThanhChonNhieu'), sp.indexOf('/>', sp.indexOf('<ThanhChonNhieu')));
-    assert(thanh.includes("key: 'xuat'") && (thanh.match(/key: '/g) ?? []).length === 1, `thanh chọn ở Học viên & Lớp chỉ có Xuất: ${thanh}`);
+    /* UI-HV-LOP (khu d, `10` mục 4): Học viên & Lớp bỏ cột tick — "Xuất" lấy đúng phạm vi bộ lọc (không thanh chọn). */
+    assert(!/<ThanhChonNhieu/.test(doc('web/src/modules/students/StudentsPage.tsx')), 'Học viên & Lớp không còn thanh chọn');
   });
   check('LUIb-18 · web Lưu trữ › Học viên: nút Chọn nhiều học viên, thanh dính đáy (Bỏ lưu trữ · Học lại), nút Học lại mỗi dòng mở panel có chọn đích', () => {
     const l = doc('web/src/modules/students/LuuTruPage.tsx');
