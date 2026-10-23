@@ -72,7 +72,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
   check('PR-HV · A6 ?tab= đọc đúng ba giá trị, mọi giá trị khác về Học thuật', () => {
     assert(JSON.stringify(domain.HO_SO_TABS) === JSON.stringify(['hoc-thuat', 'y-thuc', 'hanh-trinh']), 'Ba tab đúng thứ tự');
     assert(domain.HO_SO_TAB_LABEL['hoc-thuat'] === 'Học thuật' && domain.HO_SO_TAB_LABEL['y-thuc'] === 'Ý thức & Phối hợp'
-      && domain.HO_SO_TAB_LABEL['hanh-trinh'] === 'Hành trình', 'Nhãn ba tab');
+      && domain.HO_SO_TAB_LABEL['hanh-trinh'] === 'Lộ trình & lớp', 'Nhãn ba tab (UI-HO-SO-HV: "Hành trình" nay là biểu đồ theo kỹ năng ở tab Học thuật)');
     for (const k of ['y-thuc', 'hanh-trinh', 'hoc-thuat']) assert(domain.parseHoSoTab(k) === k, `Giá trị hợp lệ ${k} phải giữ nguyên`);
     for (const v of [null, undefined, '', 'Y-THUC', 'tong-quan', ' y-thuc']) {
       assert(domain.parseHoSoTab(v) === 'hoc-thuat', `Giá trị lạ ${JSON.stringify(v)} phải về hoc-thuat, được ${domain.parseHoSoTab(v)}`);
@@ -131,8 +131,8 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
       coViec += tatCa.length;
       for (const x of tatCa) {
         assert((x.quaHanNgay !== null) === (x.han !== null && x.han < t.TODAY), `HV ${student_id}: quaHanNgay phải = (hạn < hôm nay ${t.TODAY}): ${JSON.stringify(x)}`);
-        if (x.loai !== 'cho-duyet' && x.loai !== 'buoc-tiep') {   // SEED-UX: dòng Chọn bước tiếp hiện nhãn kết quả "Đã xong · OVR …" (OV-13m)
-          assert(/^(Xác nhận Case|Thêm PA|Xác nhận PA|Kết quả|Nộp kế hoạch bổ trợ|Báo phụ huynh|Ghi Mini Test|Xác nhận xử lý|Ghi nhận|Ghi "Đã thực hiện"|Bàn giao) /.test(x.chu), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${x.chu}"`);
+        if (x.loai !== 'cho-duyet') {   // UI-HO-SO-HV (nợ #515): Chọn bước tiếp cũng bắt đầu bằng động từ
+          assert(/^(Chọn bước tiếp|Xác nhận Case|Thêm PA|Xác nhận PA|Kết quả|Nộp kế hoạch bổ trợ|Báo phụ huynh|Ghi Mini Test|Xác nhận xử lý|Ghi nhận|Ghi "Đã thực hiện"|Bàn giao) /.test(x.chu), `HV ${student_id}: câu phải bắt đầu bằng động từ: "${x.chu}"`);
         }
         /* Mục 3 (chủ sản phẩm 22/09): tên kỹ năng ĐẦY ĐỦ, không viết tắt L / R / W1 / W2 / S. */
         assert(!/ (L|R|W|W1|W2|S)$/.test(x.chu), `HV ${student_id}: câu phải dùng tên đầy đủ của kỹ năng: "${x.chu}"`);

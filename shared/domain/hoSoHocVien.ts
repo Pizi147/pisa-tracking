@@ -22,7 +22,7 @@ import { dich, ghepChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
 export const HO_SO_TABS = ['hoc-thuat', 'y-thuc', 'hanh-trinh'] as const;
 export type HoSoTab = (typeof HO_SO_TABS)[number];
 export const HO_SO_TAB_LABEL: Record<HoSoTab, string> = {
-  'hoc-thuat': t('Học thuật'), 'y-thuc': t('Ý thức & Phối hợp'), 'hanh-trinh': t('Hành trình'),
+  'hoc-thuat': t('Học thuật'), 'y-thuc': t('Ý thức & Phối hợp'), 'hanh-trinh': t('Lộ trình & lớp'),
 };
 /** Giá trị lạ, rỗng hay thiếu → 'hoc-thuat' (tab mặc định). Không nhớ bằng localStorage (A6). */
 export function parseHoSoTab(v: string | null | undefined): HoSoTab {
