@@ -607,7 +607,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const homNayHs = demoToday();
   /* UI-HO-SO-HV (LUAT-NX-MT 7.4): tuần cũ của kỹ năng đã dời do vắng — ô điểm / hành trình ghi "vắng W3 SEP" (`chuDoiVang`). Một câu cho mọi lượt. */
   const vangCu = new Map<number, Record<string, string>>();
-  for (const [k, v] of tuanVangCu(attemptRows.map((a) => a.id))) {
+  for (const [k, v] of tuanVangCu([...lichCua].filter(([, r]) => r.some((x) => x.absence_move_count > 0)).map(([id]) => id))) {   // chỉ lượt có kỹ năng từng dời — không thêm câu cho em không vắng
     const [id, kn] = k.split(':');
     vangCu.set(Number(id), { ...(vangCu.get(Number(id)) ?? {}), [kn]: v });
   }

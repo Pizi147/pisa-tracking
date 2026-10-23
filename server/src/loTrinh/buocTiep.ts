@@ -394,7 +394,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
     out.push({
       key: `buoc_tiep:${c.id}`, group: 'buoc_tiep', urgency: f.today > han ? 'overdue' : 'normal', cycleId: c.id, daGiaHan: st.daGiaHan,
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: c.class_code ?? null,
-      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: st.daGiaHan ? `${kq} · đã gia hạn` : kq, ketQua, count: null,
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: st.daGiaHan ? `${kq} · đã gia hạn` : kq, count: null,
       reason: [c.class_code ?? null, thi, ketQua].filter(Boolean).join(' · '),
       tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chốt bước tiếp',
       href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
