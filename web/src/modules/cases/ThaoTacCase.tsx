@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -15,12 +15,11 @@ import {
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui, tuanLich,
   giaTriCuaPa, loiFormPa, paMoi, paPayload, thanSuaPa, type GiaTriPa, type KetQuaNhatKy,
-  URGENCY_LEVELS, URGENCY_LABEL, duongDotTest, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan,
+  URGENCY_LEVELS, URGENCY_LABEL, duongDotTest, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import { FormPa, NgayKhoa, NhatKyPa } from './FormPa.tsx';
 import type { BanDieuChinh } from './CapNhatTuan.tsx';
-import { DongNguyenNhan } from '../yThuc/CaseSosControls.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
 
@@ -308,9 +307,11 @@ export type CaseDeSua = {
   id: number; topic?: string | null; chuongTrinh?: string | null; ratio: boolean; urgency: string | null; summary: string | null;
   /** Lượt MT của Case — link "hồ sơ MT" khi nguyên nhân lấy từ bài. */
   attemptId?: number | null;
-  issues: { role: string; code: string; label?: string; observation: string | null; byName?: string | null }[];
-  /** OV-12c: Case Mock Test — nguyên nhân do máy lấy từ nhận xét + nhóm của bài (`byName` null) thì sửa ở bài, không ở đây. */
+  issues: { role: string; code: string; label?: string; observation: string | null; byName?: string | null; /** SV-NX-CASE: mô tả đang theo nhận xét MT nào. */ moTaTuMt?: string | null }[];
+  /** SV-NX-CASE (N8 ②): Case Mock Test — mô tả = quan sát của nhóm chính; sửa ở đây thì tách khỏi nhận xét của bài. */
   sos?: { laMt?: boolean } | null;
+  /** SV-NX-CASE: mốc phiên bản (409 khi Case vừa đổi). */
+  capNhatLuc?: string | null;
   viewer: { khoaKyNang?: boolean; coTheXoa?: boolean; chanXoa?: string | null; tenSua?: string | null };
 };
 
@@ -327,9 +328,9 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
   const toast = useToast();
   const ct = c.chuongTrinh ?? null;
   const goc = c.issues.find((i) => i.role === 'primary') ?? null;
-  const nnTuBai = !!c.sos?.laMt && !!goc && goc.byName == null;
-  /* OV-13a (Q1): Case Mock Test không có ô Mô tả — mô tả là nhận xét của bài (cả Case MT cũ GV đã tự chọn nhóm). */
-  const coMoTa = !c.sos?.laMt;
+  const laMt = !!c.sos?.laMt;
+  /* OV-13a (Q1) → SV-NX-CASE: Case Mock Test không có ô Mô tả riêng (`summary`) — mô tả là quan sát của nhóm chính, mặc định theo nhận xét của bài. */
+  const coMoTa = !laMt;
   const [topic, setTopic] = useState(c.topic ?? '');
   const [primaryCode, setPrimaryCode] = useState(goc?.code ?? '');
   const [ghiRo, setGhiRo] = useState(goc?.observation ?? '');
@@ -338,12 +339,17 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
   const [summary, setSummary] = useState(c.summary ?? '');
   const [busy, setBusy] = useState(false);
   const [hoiXoa, setHoiXoa] = useState(false);
+  /* SV-NX-CASE: mốc phiên bản gửi kèm — 409 thì giữ chữ đang gõ, lấy mốc mới để lần Lưu sau ghi đè có chủ ý. */
+  const [luc, setLuc] = useState<string | null | undefined>(c.capNhatLuc);
   const lf = useLoiForm();
   const topics = caseTopicsFor(c.ratio, ct);
+  /* Case MT chưa có mô tả: chỉ đổi tên / mức độ thì không đòi nhóm + mô tả; gõ một trong hai thì đòi đủ. */
+  const doiNguyenNhan = !(laMt && !goc && !primaryCode && !ghiRo.trim());
   const causes = topic ? issuesForTopic(topic, ct) : [];
   const loi = dsLoi([
-    { khoa: 'phan-loai', nhan: t('Nhóm nguyên nhân'), chon: true },
-    ...(laKhac(primaryCode) && !nnTuBai ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ'), toiThieu: KHAC_TOI_THIEU }] : []),
+    ...(doiNguyenNhan ? [{ khoa: 'phan-loai', nhan: t('Nhóm nguyên nhân'), chon: true }] : []),
+    ...(laMt ? (doiNguyenNhan ? [{ khoa: 'ghi-ro', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU }] : [])
+      : laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ'), toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'muc-do', nhan: t('Mức độ'), chon: true },
     { khoa: 'ten', nhan: t('Tên Case'), toiThieu: 3 },
     ...(coMoTa ? [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15 }] : []),
@@ -357,12 +363,17 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
     setBusy(true);
     try {
       await api.patch(`/cases/${c.id}`, {
-        topic, ...(nnTuBai ? {} : { primaryCode, observation: laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), ...(coMoTa ? { summary: summary.trim() } : {}),
+        /* Case MT: chỉ gửi nhóm + mô tả khi đổi — đổi mức độ / tên không tách mô tả khỏi nhận xét. */
+        luc, topic, ...(laMt && primaryCode === (goc?.code ?? '') && ghiRo === (goc?.observation ?? '') ? {}
+          : { primaryCode, observation: laMt || laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), ...(coMoTa ? { summary: summary.trim() } : {}),
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
       toast.push('ok', t('Đã lưu Case'));
       onSaved();
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+    } catch (e: any) {
+      if (e instanceof ApiError && e.status === 409) setLuc(e.details?.luc ?? null);   // chữ đang gõ giữ nguyên
+      toast.push('error', e?.message ?? t('Không lưu được'));
+    } finally { setBusy(false); }
   };
   const xoa = async () => {
     setBusy(true);
@@ -406,16 +417,6 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
               </div>
             )}
           </Truong>
-          {nnTuBai ? (
-            <Truong nhan={t('Nhóm nguyên nhân')} as="div">
-              <div className="text-sm text-slate-300"><DongNguyenNhan issues={c.issues} /></div>
-              <div className="mt-1 text-xs text-slate-400">
-                {c.attemptId
-                  ? <Link className="link" to={duongDotTest({ id: c.attemptId, kind: 'mock' }, c.topic)}>{t('Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.')}</Link>
-                  : t('Lấy từ nhận xét + nhóm của bài — sửa ở hồ sơ Mock Test.')}
-              </div>
-            </Truong>
-          ) : (
           <div>
             <Truong nhan={t('Nhóm nguyên nhân')} batBuoc loi={lf.loiCua(loi, 'phan-loai')}>
               <select className="field w-full" {...lf.o(loi, 'phan-loai')} value={primaryCode} onChange={(e) => setPrimaryCode(e.target.value)}
@@ -424,10 +425,24 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
                 {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
               </select>
             </Truong>
+            {laMt ? (
+              <div className="mt-4">
+              <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'ghi-ro')} dem={{ co: ghiRo.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
+                <textarea className="field w-full" {...lf.o(loi, 'ghi-ro')} rows={3} maxLength={NHAN_XET_TOI_DA} value={ghiRo} onChange={(e) => setGhiRo(e.target.value)} />
+                <div className="mt-1 text-xs text-slate-400">
+                  {goc?.moTaTuMt
+                    ? (c.attemptId
+                      ? <Link className="link" to={duongDotTest({ id: c.attemptId, kind: 'mock' }, c.topic)}>{t('Đang theo nhận xét {mt} — sửa ở đây thì mô tả tách khỏi nhận xét.', { mt: goc.moTaTuMt })}</Link>
+                      : t('Đang theo nhận xét {mt} — sửa ở đây thì mô tả tách khỏi nhận xét.', { mt: goc.moTaTuMt }))
+                    : goc?.byName ? t('Mô tả đã sửa riêng — nhận xét của bài không đè.') : null}
+                </div>
+              </Truong>
+              </div>
+            ) : (
             <OKhac hien={laKhac(primaryCode)} value={ghiRo} onChange={setGhiRo} goiY={t('Ví dụ: Chưa quen dạng bài mới')}
               id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
+            )}
           </div>
-          )}
           <Truong nhan={t('Mức độ')} batBuoc as="div" loi={lf.loiCua(loi, 'muc-do')}>
             <div className="grid grid-cols-2 gap-2 outline-none sm:w-80" {...lf.o(loi, 'muc-do')} tabIndex={-1}>
               {URGENCY_LEVELS.map((u) => (

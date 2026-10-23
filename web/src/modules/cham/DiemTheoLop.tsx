@@ -186,7 +186,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
                       on ? 'bg-[color:var(--accent-soft)] border-[color:var(--accent-line)]'
                         : 'border-[color:var(--line-strong)] hover:bg-[color:var(--surface-2)]'}`}>
                     <span className={`font-semibold text-sm ${on ? 'text-[color:var(--accent-strong)]' : 'text-slate-200'}`}>
-                      {dich(l.nhan)}{l.lichSu ? t(' · cũ') : ''}
+                      {dich(l.nhan)}
                     </span>
                     {/* Tab chọn: --text-dim trên --accent-soft (tối 5,07:1 · sáng 6,75:1); --text-faint chỉ 4,10:1 ở tối. */}
                     <span className={`text-[12px] tabular-nums ${on ? 'text-slate-400' : 'text-slate-500'}`}>{dongPhuLuot(l)}</span>

@@ -61,6 +61,7 @@ import { migratePrOv13e } from './migrate/prOv13e.ts';
 import { migratePrHd } from './migrate/prHd.ts';
 import { migratePrOv13p } from './migrate/prOv13p.ts';
 import { migratePrOv13k } from './migrate/prOv13k.ts';
+import { migratePrSvNxCase, themCotPrSvNxCase } from './migrate/prSvNxCase.ts';
 import { migratePrTd5 } from './migrate/prTd5.ts';
 import { migratePrOv13q, themCotPrOv13q } from './migrate/prOv13q.ts';
 import { themCotPrOv15f } from './migrate/prOv15f.ts';
@@ -136,6 +137,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   conn.pragma('foreign_keys = OFF');
     /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv11e(conn, applied));
     /* PR-OV13a: cột sos_cases.tam (Case tạm) — TRƯỚC mọi bước có thể chạy luật Case (đọc / ghi cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv13a(conn, applied));
+    /* SV-NX-CASE: cột sos_cases.mo_ta_attempt_id (nguồn mô tả Case MT) — TRƯỚC mọi bước có thể đồng bộ mô tả Case (`dongBoNguyenNhanMt` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrSvNxCase(conn, applied));
     /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));
     /* OV-13q: cột hạn sau thi (learning_cycles.han_sau_thi…) — TRƯỚC mọi bước có thể đọc việc thi thật / bước tiếp (COT_SAU_THI). Chỉ thêm cột. */ buoc(() => themCotPrOv13q(conn, applied));
     /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
@@ -392,6 +394,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* SV-BAI-LOP: bảng bai_tren_lop — Bài trên lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvBaiLop(conn, applied));
     /* SV-S-EXPERT: bảng s_expert — lượt S Expert (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvSExpert(conn, applied));
     /* UI-HO-SO-LOP: bảng danh_gia_dau_ra — nhận xét + đề xuất của GVCN khi đánh giá đầu ra (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrUiHoSoLop(conn, applied));
+    /* SV-NX-CASE (N8): Case MT mô tả từ nhận xét → gắn nguồn (nội dung giữ) · việc Xem nhận xét Speaking còn mở → Xác nhận Case (đổi dữ liệu, chạy lặp không đổi). */ buoc(() => { migratePrSvNxCase(conn, applied); });
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

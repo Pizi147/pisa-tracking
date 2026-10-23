@@ -9554,6 +9554,9 @@ await runPrUiHoSoLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 LUAT-NX-MT (nhận xét chỉ nhắc, xếp MT nới lỏng, ghi chú vắng, S Ex ở Hành trình)
 const { runPrLuatNxMtTests } = await import('./prLuatNxMt.tests.ts');
 await runPrLuatNxMtTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== SV-NX-CASE (N8: MT mới nhất nhắc nhận xét, mô tả Case theo nhận xét, Xác nhận Case S chấm chéo)
+const { runPrSvNxCaseTests } = await import('./prSvNxCase.tests.ts');
+await runPrSvNxCaseTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== V5 UI-HV-LOP (hàng HV: TVV + lịch thi; Lịch thi: chi tiết dưới hàng, khoảng tháng)
 const { runPrUiHvLopTests } = await import('./prUiHvLop.tests.ts');
 await runPrUiHvLopTests({ check, assert, conn, P, TODAY, addDays } as any);

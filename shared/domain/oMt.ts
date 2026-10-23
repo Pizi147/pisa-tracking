@@ -18,7 +18,7 @@ import { t } from '../i18n/index.ts';
 export type KieuOMt = 'chua-lich' | 'co-lich' | 'dang-thi' | 'cho-cham' | 'cho-cham-cu' | 'tre-cham' | 'con-viec' | 'xong';
 /** KHUNG-LOI (TST-05): nhãn chú giải từng kiểu ô — chú giải màu sinh từ đây + `MAU_O_MT` (một nguồn, không viết tay chữ màu). */
 export const NHAN_KIEU_O_MT: Record<KieuOMt, string> = {
-  'chua-lich': t('Chưa xếp'), 'co-lich': t('Đã xếp'), 'dang-thi': t('Đang làm bài'), 'cho-cham': t('Chờ chấm'), 'cho-cham-cu': t('Chờ nhập bù (MT cũ)'),
+  'chua-lich': t('Chưa xếp'), 'co-lich': t('Đã xếp'), 'dang-thi': t('Đang làm bài'), 'cho-cham': t('Chờ chấm'), 'cho-cham-cu': t('Chờ nhập bù'),
   'tre-cham': t('Trễ chấm'), 'con-viec': t('Vắng · huỷ · chờ duyệt'), xong: t('Đã làm bài'),
 };
 
@@ -58,7 +58,7 @@ function dongKn(ct: string | null | undefined, k: KyNangKH, o: OKyNang, loai: Lo
     'het-tuan': `${troCham(o, homNay) ? t('trễ chấm') : t('chờ chấm')}${o.hanCham ? t(' · hạn {ngay}', { ngay: ngay(o.hanCham, homNay) }) : ''}`,
   };
   const tuan = loai === 'khong-yeu-cau' ? null : o.tuan ? tuanLich(o.tuan, homNay) : loai === 'chua-lich' ? t('chưa xếp') : null;
-  return `${tenMon(ct, k)}: ${[tuan, tt[loai], cu ? t('cũ') : null].filter(Boolean).join(' · ')}`;
+  return `${tenMon(ct, k)}: ${[tuan, tt[loai]].filter(Boolean).join(' · ')}`;
 }
 
 export type OMtRa = {

@@ -145,7 +145,7 @@ export async function runPrOv12bTests(t: any) {
     assert(dong('reading').no_show_period_id === W, '"-"');
   }));
 
-  check('OV12b-7 · lưới: ô cũ có điểm thiếu nhận xét → "ghi-nhan-xet"; dưới kỳ vọng thiếu nhóm → "chon-nhom"; đủ / MT cũ → null', () => thu(() => {
+  check('OV12b-7 · lưới: ô cũ có điểm thiếu nhận xét → "ghi-nhan-xet"; dưới kỳ vọng thiếu nhóm → "chon-nhom"; đủ → null; MT cũ mới nhất vẫn nhắc (N8)', () => thu(() => {
     dung(luot);
     /* Dữ liệu trước luật: ghi thẳng bằng đường nội bộ (không phải người dùng). */
     attempts.saveScore(P.admin, luot, 'listening', { rawScore: 35 }, TRONG);
@@ -167,9 +167,10 @@ export async function runPrOv12bTests(t: any) {
     xoaNho();
     const l3 = attempts.classScoreSheet(P.admin, lop, W, SAU).rows.find((x: any) => x.attemptId === luot).cells.find((c: any) => c.skill === 'listening');
     assert(l3.thieuNhanXet === 'ghi-nhan-xet' && l3.xong === true, `hoàn tất: nhắc + xong — ${l3.thieuNhanXet} ${l3.xong}`);
+    /* SV-NX-CASE (N8 ①): MT mới nhất của em vẫn nhắc dù là MT cũ (≥ 2 tuần). */
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(luot);
     const c2 = o(true);
-    assert(c2('listening').thieuNhanXet === null && c2('listening').nenCoNhanXet === false, 'MT cũ không đòi');
+    assert(c2('listening').thieuNhanXet === 'ghi-nhan-xet' && c2('listening').nenCoNhanXet === true, 'MT mới nhất (cũ) vẫn nhắc');
   }));
 
   check('OV12b-8 · Excel đầy đủ: cột Nhận xét L, R, W1, W2, S + Nhóm nguyên nhân (thay "Nhận xét W" gộp)', () => {

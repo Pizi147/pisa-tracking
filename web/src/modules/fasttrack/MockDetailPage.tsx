@@ -479,7 +479,7 @@ function KhoiNhanXet({ cells, save, phuTrach }: {
   const sua = (c: Cell | undefined): boolean => !!c && c.canEdit && !lockedByNoShow(c);
   const phu = (c: Cell) => (c.enteredByName ? t('Người nhập điểm: {enteredByName}', { enteredByName: c.enteredByName }) : null);
   const nenCo = (c: Cell) => !!c.nenCoNhanXet && coDiemChinhThuc(c);
-  const canNhom = (c: Cell) => nenCo(c) && canNhomNguyenNhan(c.band, c.kyVong ?? null);
+  const canNhom = (c: Cell) => !!c.coNhom && coDiemChinhThuc(c) && canNhomNguyenNhan(c.band, c.kyVong ?? null);
   /** `nhomSua`: chỉ đọc nhận xét người chấm nhưng sửa được nhóm (GV phụ trách S — OV-13k). */
   const phan = (c: Cell | undefined, nhan: string, nhomSua?: (v: string[]) => Promise<boolean>) => {
     if (!c) return null;

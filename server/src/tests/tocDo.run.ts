@@ -1045,13 +1045,14 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
+    /* SV-NX-CASE (N8 ③, 23/10): "Xem nhận xét Speaking" → "Xác nhận Case" chỉ khi có Case S thật (hạn SOS) — so JSON ×1 gốc df72ee4 ↔ nhánh: lệch CHỈ 3 việc xem_nx_s (bài không Case) ở GV S / QL tất cả; ×3 thêm Case S chấm chéo chờ xác nhận (chưa mô tả → Ghi nhận xét / Xác nhận Case). Trước: GVCN toi 80841402855460fc, GVCN_THUONG toi 80841402855460fc, QL tat-ca 308a1cd5cdf610d4, QT tat-ca d99e66a82939f985, QT tat-ca cn b3b9eb54c28af290, QL gvcn 2bfa98682602b48b, GVS toi 97693a60d0ace310 */
     /* LUAT-NX-MT (chủ SP 22/10): ô có band thiếu nhận xét không còn là việc Nhập điểm → GV / QL "tất cả" đổi CÓ CHỦ Ý; QL / QT "của tôi", ADMIN giữ. */
     /* MAIN-DO: chụp lại theo dữ liệu SEED-UX cuối (BU_MT2, 32504e72 → 9a078719) — so JSON 58a2d268 ↔ 9a078719: việc lệch CHỈ ở 4 em MT2 chưa đạt
        (Ngô Bảo Châu, Lý Thanh Tâm, Phạm Khánh Linh, Kiều Thảo Nhi: việc Case MT2; Case cũ của Kiều Thảo Nhi đổi) và dòng lớp MB FT 101 (MT2 dời W3 AUG); id Case dời. ADMIN giữ.
        SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
-    'QL toi': '3ea67fbf71f97f26', 'QT toi': 'ae31cc97e115aae1', 'GVCN toi': '80841402855460fc', 'GVBM toi': 'f0e52756d39e2508',
-    'GVCN_THUONG toi': '80841402855460fc', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '308a1cd5cdf610d4', 'QT tat-ca': 'd99e66a82939f985',
-    'QT tat-ca cn': 'b3b9eb54c28af290', 'QL gvcn': '2bfa98682602b48b', 'GVS toi': '97693a60d0ace310',
+    'QL toi': '3ea67fbf71f97f26', 'QT toi': 'ae31cc97e115aae1', 'GVCN toi': '54c27b39ee9b881f', 'GVBM toi': 'f0e52756d39e2508',
+    'GVCN_THUONG toi': '54c27b39ee9b881f', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '420043d1c928ba28', 'QT tat-ca': '3e43c0b2dc0ade75',
+    'QT tat-ca cn': '200388dc93d64b79', 'QL gvcn': 'f66534617b5b28a0', 'GVS toi': 'bde6ca74489b52be',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1197,7 +1198,7 @@ check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 70 % mốc trước TD4 (V5 
   const MOC: Record<string, [number, number]> = {
     /* SV-YT-TVV + SV-TVV-VIEC (21/10): QL / QT "Của tôi" +2 câu — việc Báo PH (một câu) + Chốt ngày thi / Bổ sung hồ sơ (một câu cho cả hai). */
     /* MAIN-DO (BU_MT2 SEED-UX): +1 câu QL / QT như trần TRAN; dòng ×3 mọi vai +~150 (58a2d268 → 9a078719, QL 2 202 → 2 352) — mốc dòng QL 5 647 → 5 880. */
-    'QL /my-work': [70, 5880], 'QT /my-work': [70, 7775],   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
+    'QL /my-work': [71, 5880], 'QT /my-work': [71, 7775],   /* SV-NX-CASE +1 (MT mới nhất của em: một câu / trang) */   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
     'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
     'QL /my-work?nguoi=tat-ca': [81, 6721], 'QT /my-work?nguoi=tat-ca': [81, 9176],   /* MAIN-DO +1 (BU_MT2); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay") */ [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
   };

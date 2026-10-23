@@ -186,10 +186,10 @@ export function tenGiuaCua(c: { title?: string | null; topic?: string | null; ca
  */
 export function kiemNoiDungCase(topic: string | null, ct: string | null, input: {
   primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
-}, o: { khongDoiMoTa?: boolean } = {}) {
+}, o: { khongDoiMoTa?: boolean; /** SV-NX-CASE: Case MT chưa mô tả, người sửa không gửi mô tả / nhóm (chỉ đổi tên, mức độ) — không đòi nhóm. */ boNguyenNhan?: boolean } = {}) {
   const primaryCode = String(input.primaryCode ?? '').trim();
-  if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân.');
-  if (!issueBranchOf(primaryCode) || !issuesForTopic(topic as string, ct).some((i) => i.code === primaryCode)) {
+  if (!primaryCode && !o.boNguyenNhan) throw badRequest('Chọn nhóm nguyên nhân.');
+  if (primaryCode && (!issueBranchOf(primaryCode) || !issuesForTopic(topic as string, ct).some((i) => i.code === primaryCode))) {
     throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic ?? '', ct) });
   }
   const observation = String(input.observation ?? '').trim() || null;

@@ -103,6 +103,8 @@ export type CaseDetail = {
   issues: any[]; interventions: any[]; followups: any[]; history: any[];
   /** OV-12c (P5): Case MT — nguyên nhân theo từng lượt (nhận xét + nhóm của bài lượt đó). */
   nguyenNhanTheoLuot?: { attemptId: number; luot: string; nhanXet: string | null; nhanXetPhuTrach?: string | null; nhom: { code: string; label: string }[] }[];
+  /** SV-NX-CASE (N8 ③): nhận xét Speaking chấm chéo chờ GV phụ trách xác nhận Case (null = không chờ). */
+  choXacNhanS?: { nhanXet: string | null; nguoiCham: string | null; luot: string; han: string | null; coTheXacNhan: boolean } | null;
   viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean; /** OV-12c: Xác nhận Case Progress (GVCN lớp đang học làm được). */ coTheXacNhanCase?: boolean;
     /** PR-LUI-a2: Mở lại (Case đã hoàn thành, QL/QT) · Sửa Case · Xoá Case / câu chặn · Kỹ năng khoá · tên để sửa. */
     coTheMoLai?: boolean; coTheSua?: boolean; coTheXoa?: boolean; chanXoa?: string | null; khoaKyNang?: boolean; tenSua?: string | null;
@@ -116,6 +118,8 @@ export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } 
   | { loai: 'xac-nhan' } | { loai: 'xac-nhan-pa'; paId: number }
   /* OV-12c: Case MT cũ bài chưa nhận xét → Ghi nhận xét (nhận xét + nhóm = nguyên nhân). */
   | { loai: 'ghi-nhan-xet' }
+  /* SV-NX-CASE (N8 ③): Speaking chấm chéo — GV phụ trách chọn mô tả Case. */
+  | { loai: 'xac-nhan-s' }
   /* PR-LUI-a2: Sửa Case (+ Xoá Case ở chân). */
   | { loai: 'sua' }
   /* PR-PA (§8): Sửa PA — cùng form Thêm PA; mở từ ⋯ của dòng PA. */

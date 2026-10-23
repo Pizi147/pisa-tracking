@@ -3,19 +3,6 @@ import { oMt, type KieuOMt, type OMtVao } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
- * NHÃN "cũ" cạnh số đợt (T1: "MT cũ" — nhập bù, không tính hạn): viền mảnh cùng màu chữ, KHÔNG màu nghĩa, KHÔNG ⚠ (MT cũ không phải
- * việc trễ). 11px (không nhỏ hơn: `prSang` S8). `whitespace-nowrap` để không tách dòng khỏi "MT2" trên điện thoại.
- */
-export function NhanCu() {
-  return (
-    <span title={t('MT cũ — nhập bù, không tính hạn')}
-      className="inline-flex items-center whitespace-nowrap rounded border border-current px-[3px] align-middle text-[12px] font-bold leading-4 text-dim">
-      {t('cũ')}
-    </span>
-  );
-}
-
-/**
  * Màu từng kiểu (mockup bản 2) — MÀU Ô = TRẠNG THÁI, chỉ token nghĩa. `xong` = xanh lá `ok` và KHÔNG chữ; chưa có đợt và chưa xếp là
  * cùng MỘT kiểu `chua-lich` (C5).
  */
@@ -59,7 +46,7 @@ export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href
       {(chon || (!huy && r.kieu === 'xong')) && <span aria-hidden>✓</span>}
     </>
   );
-  const doc = [chon && chuChon !== undefined ? `MT${v.so}, ${chuChon}` : r.doc, v.cu ? t('MT cũ') : null, v.khongDung ? t('không dùng') : null, chon ? t('đang chọn') : null].filter(Boolean).join(', ');
+  const doc = [chon && chuChon !== undefined ? `MT${v.so}, ${chuChon}` : r.doc, v.khongDung ? t('không dùng') : null, chon ? t('đang chọn') : null].filter(Boolean).join(', ');
   const tip = ghiChu ? `${r.title}\n${ghiChu}` : r.title;
   if (href) return <Link id={id} to={href} className={cls} title={tip} aria-label={doc}>{ruot}</Link>;
   if (onClick) return <button id={id} type="button" className={cls} title={tip} aria-label={doc} onClick={(e) => onClick(e.currentTarget)}>{ruot}</button>;

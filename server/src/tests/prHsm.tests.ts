@@ -188,7 +188,8 @@ export async function runPrHsmTests(t: YThucTestKit) {
     svc.saveScore(QL, e.aid, 'speaking', { criteria: S4, nhanXet: 'Tốt', gvCham: { performerName: 'Cô Lan' } }, TODAY);
     svc.classScoreSheet(QL, LOP, pid, TODAY);
     const n1 = nguCanh.soCauSql(); svc.classScoreSheet(QL, LOP, pid, TODAY); const sau = nguCanh.soCauSql() - n1;
-    assert(truoc === sau, `${truoc} → ${sau} câu`);
+    /* SV-NX-CASE: ô đầu tiên CÓ ĐIỂM của trang làm hỏi "MT mới nhất" — một câu cho cả trang (không theo số ô / nhận xét). */
+    assert(sau <= truoc + 1, `${truoc} → ${sau} câu`);
   });
 
   // ------------------------------------------------------------------ khối 3: ô điểm dùng chung (đọc nguồn)
