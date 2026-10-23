@@ -2,6 +2,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLt2bTests(t: YThucTestKit) {
+  const { viecTiepLop: vtl } = await import('./viecTiepLop.ts');   // UI-HO-SO-LOP
   const { check, assert, assertThrows, conn, P, TODAY, addDays, classId } = t;
   const d = await import('../../../shared/domain/index.ts');
   const { migratePrLt2b } = await import('../migrate/prLt2b.ts');
@@ -560,7 +561,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(v.length === 1 && v[0].viec === 'Ghi Mini Test' && v[0].dich.loai === 'case' && (v[0].dich as any).paId === 9 && v[0].tone === 'warn', JSON.stringify(v));
     assert(d.viecTiepCuaEm({ nhapDiem: null, cases: [], yThuc: null, homNay: TODAY, miniTest: { han: addDays(TODAY, -1), caseId: null, paId: null } })[0].tone === 'danger', 'quá hạn → đỏ');
     const x = dungMiniTest();
-    const hang = (classesMod.classRoster(gvcnDich(), x.be) as any[]).find((r: any) => r.id === x.s);
+    const hang = { viecTiepTheo: vtl(gvcnDich(), x.be).get(x.s) };   // UI-HO-SO-LOP: roster bỏ viecTiepTheo — cùng luật qua viecHocVienTheoLop
     assert(hang?.viecTiepTheo?.some((y: any) => y.viec === 'Ghi Mini Test'), 'roster của GVCN lớp mới phải có việc Ghi Mini Test: ' + JSON.stringify(hang?.viecTiepTheo));
   });
   check('LT2b (9) · web: panel mới dùng useLoiForm, không type="date"; form Ghi kết quả cuối có ô Mini Test; hồ sơ HV mount hộp + ô; chữ không SOS', () => {

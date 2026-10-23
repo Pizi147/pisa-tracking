@@ -4,7 +4,7 @@ import { BoLocDoan, Level } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { NoiDungThongTinLop } from './ThongTinLopPanel.tsx';
-import { ClassRoster } from '../students/ClassRoster.tsx';
+import { BangHoSoLop } from './BangHoSoLop.tsx';
 import { BangDiemLopThuong } from './BangDiemLopThuong.tsx';
 import { BangCanHoTro } from './BangCanHoTro.tsx';
 import { BangLoTrinhTiep } from './BangLoTrinhTiep.tsx';
@@ -73,6 +73,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
   const doiCheDo = (m: CheDoHocVien) => { if (m !== 'diem') chon.bo(); onCheDo(m); };
   return (
     <div className="space-y-2">
+      {/* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8): GIỮ hàng "Cách xem" ở vị trí V4 — [XM] truy vết V5 ghi BỎ, chờ PTA Plan. */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <BoLocDoan ariaLabel={t('Cách xem')} value={cheDo} onChange={doiCheDo}
           muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
@@ -102,8 +103,8 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
         : thuong
           ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
               chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} />
-          : <ClassRoster classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
-              onAddStudents={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
+          : <BangHoSoLop classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
+              onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
           viec={[{ key: 'luu-tru', nhan: t('Lưu trữ') }, { key: 'ket-thuc', nhan: t('Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}

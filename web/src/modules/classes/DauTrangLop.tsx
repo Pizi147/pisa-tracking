@@ -1,7 +1,7 @@
-import { Fragment, useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
-import { Nhan, toneBadgeLop } from '../../ui/Nhan.tsx';
+import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -13,11 +13,13 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, demQuaHan, ROUTE_NAME, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  DUONG_TAB_TEST, demQuaHan, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
+import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
+import type { RosterRow } from '../students/ClassRoster.tsx';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
@@ -90,7 +92,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const thuong = data.programme?.scoringMode === 'ratio';
   const s = data.summary;
   const gvcn = data.coreTeachers[0] ?? null;
-  const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
+  const tomTat = useTomTatLop(data, homNay);
   /* OV-13b: badge "n việc quá hạn" = cùng danh sách việc với Học viên & Lớp › Cần làm (`/my-work`, `demQuaHan`) — bấm ra đúng số dòng. */
   const laQl = laVaiQuanLy(session?.roles);
   const viec = useApi<{ dong: WorkItem[] }>(laQl ? `/my-work?nguoi=tat-ca&branchId=${data.branchId}` : '/my-work', [data.branchId, laQl]);
@@ -145,18 +147,13 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
     const dau = m.nhom && m.nhom !== truoc?.nhom ? [{ key: `nhom-${m.nhom}`, nhan: t(m.nhom), tieuDe: true, keTruoc: false, onChon: () => undefined }] : [];
     return [...dau, { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) }];
   });
-  const tuan = thuong && s?.currentWeek && s.currentWeek >= 1
-    ? s.totalWeeks ? tuanKhoa(Math.min(s.currentWeek, s.totalWeeks), s.totalWeeks) : data.lienTuc ? t('tuần {n}', { n: s.currentWeek }) : null : null;   // OV-6b2: liên tục không "/tổng"
-  /* K2-13: giữ ký hiệu LT1 · LT2 · RF, tên đủ ở tooltip. */
-  const thongTin = [
-    data.branchName,
-    data.route ? <abbr key="lt" title={ROUTE_NAME[data.route as keyof typeof ROUTE_NAME] ?? data.route} className="no-underline">{data.route}</abbr> : null,
-    t('{n} học viên', { n: s?.studentCount ?? 0 }), tuan,
-    data.startDate ? t('khai giảng {tuan}', { tuan: tuanLich(data.startDate, homNay) }) : null,   // mã tuần (CLAUDE.md 30/09, mockup 20)
-  ].filter(Boolean);
+
+  /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8 — nâng cấp, không chép mockup): GIỮ nút Nhập điểm · + Case · ⋯ và mọi badge ở vị trí V4; màu / chữ V5. */
+  const bConLai = b;
+  const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
 
   return (
-    <header className="card space-y-2 p-3 sm:p-4">
+    <header className="space-y-3">
       {/* PR-DH (Q-0310-4): Quay lại + Lớp trước/sau theo danh sách vừa mở; mở thẳng bằng link thì theo các lớp cùng khung ở Học viên & Lớp. */}
       <ThanhTruocSau loai="lop" id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
         chiTiet={CHE_DO_NHAN[sp.get('che-do') as CheDoHocVien] ?? TAB_HO_SO_LOP_NHAN[sp.get('tab') as TabHoSoLop]}
@@ -169,42 +166,46 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
         /* HL-10 (Q4): Quản lý của lớp vẫn sửa điểm (máy chủ `kiemLopKetThuc`) — "chỉ xem" chỉ cho người khác. */
         <DaiChiXem>{t('Lớp đã kết thúc')}{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ` — ${t('chỉ xem')}`}</DaiChiXem>
       )}
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-0">
-          <div className="text-xs text-slate-500">{t('Hồ sơ lớp')}</div>
-          <h1 className="m-0 text-lg font-semibold text-slate-100">{data.code} · {dich(data.programme?.name ?? data.kind)}</h1>
-        </div>
-        <div className="flex-1" />
-        <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
-          {data.viewer.canEnterScores && <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:flex-1" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
+      {/* UI-HO-SO-LOP (`dieu-chinh-cuoi.html` khu b): mã lớp + nhãn nhỏ xám / giá trị đậm (P2) — GVCN · Học viên · Lượt gần nhất · Đạt · SOS; + Case · ⋯ bên phải. */}
+      <div className="flex flex-wrap items-center gap-x-[22px] gap-y-2.5">
+        <h1 className="m-0 text-[22px] font-bold leading-tight text-slate-100" title={dich(data.programme?.name ?? data.kind)}>{data.code}</h1>
+        <NhanGt n={t('GVCN')} g={gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-soon">{t('Chưa có GVCN')}</span>} />
+        <NhanGt n={t('Học viên')} g={<span className="tabular-nums">{s?.studentCount ?? 0}</span>} />
+        {tomTat?.luot && <NhanGt n={t('Lượt gần nhất')} g={tomTat.luot} />}
+        {tomTat?.dat && (
+          <NhanGt n={tomTat.dat.nhan} g={(
+            <span className="tabular-nums text-dat">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %{' '}
+              <span className="text-[13px] font-medium text-slate-500">{tomTat.dat.so}/{tomTat.dat.tong}</span></span>
+          )} />
+        )}
+        {tomTat && tomTat.sos.length > 0 && (
+          <NhanGt n="SOS" g={(
+            <span className="flex flex-wrap items-center gap-1.5">
+              {tomTat.sos.map(([muc, n]) => <span key={muc} className={`${CHIP_SOS} ${lopSos(muc)}`} title={t('SOS {muc}: {n} HV', { muc, n })}>{muc} · {n}</span>)}
+            </span>
+          )} />
+        )}
+        <div className="ml-auto flex items-center gap-2 max-sm:ml-0">
+          {data.viewer.canEnterScores && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
           {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
-          {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:flex-1" onClick={() => onViec('case')}>+ Case</button>}
+          {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onViec('case')}>+ Case</button>}
           <MenuDong muc={menu} nhan={t('Thao tác khác')} />
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-        <span>{thongTin.map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)}</span>
-        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">{t('Final Test: {du}/{tong} em có đủ điểm', { du: data.cuoiKhoa.du, tong: data.cuoiKhoa.tong })}{data.cuoiKhoa.canQl ? ` · ${t('{n} em Quản lý cân nhắc', { n: data.cuoiKhoa.canQl })}` : ''}</span>}
-        <span className="whitespace-nowrap rounded-md border px-2 py-0.5 text-slate-300" style={{ borderColor: 'var(--line)' }}>
-          <abbr title={t('Giáo viên chủ nhiệm')} className="no-underline">{t('GVCN')}</abbr>{' '}
-          {gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">{t('Chưa có GVCN')}</span>}
-        </span>
-      </div>
-
       <DongGiaoVienBoMon nhom={nhom} />
 
-      {b.hien.length > 0 && (
+      {bConLai.hien.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {b.hien.map((x) => {
+          {bConLai.hien.map((x) => {
             const bam = bamBadge(x);
             return bam
               ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={bam}>{x.nhan}</Nhan>
               : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{x.nhan}</Nhan>;
           })}
-          {b.an.length > 0 && (
-            <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={t('{n} việc khác của lớp', { n: b.an.length })}
-              muc={b.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
+          {bConLai.an.length > 0 && (
+            <MenuDong kieu="chip" bieuTuong={`+${bConLai.an.length}`} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
+              muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
           )}
         </div>
       )}
@@ -212,6 +213,36 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
       <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} anLoTrinh={sp.get('che-do') === 'lo-trinh'} />
     </header>
   );
+}
+
+/** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2). */
+function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
+  return (
+    <span className="flex min-w-0 flex-col gap-px">
+      <span className="text-xs font-medium text-slate-500">{n}</span>
+      <span className="text-[15px] font-bold text-slate-100">{g}</span>
+    </span>
+  );
+}
+
+/**
+ * SỐ ĐẦU TRANG (khu b): Lượt gần nhất = lượt của lớp có tuần thi gần nhất đã tới (không lượt lịch sử) · Đạt = em đạt kỳ vọng ở LƯỢT GẦN NHẤT ĐÃ
+ * ĐỦ ĐIỂM CỦA TỪNG EM (P8 — không lấy một MT chung của lớp; cùng một MT thì nhãn "Đạt MT2") · SOS theo mức (`sosLevel` của bảng lớp). Dùng lại
+ * hai đường tab Học viên đã tải trước (`/roster`, `/diem-theo-luot`) — không thêm lời gọi.
+ */
+function useTomTatLop(data: HoSoLop, homNay: string | null) {
+  const roster = useApi<RosterRow[]>(`/classes/${data.id}/roster`, [data.id]);
+  const ds = useApi<DanhSachLuot>(data.viewer.coTheXemDiem ? duongDiemTheoLuot(data.id) : null, [data.id]);
+  if (!roster.data) return null;
+  const em = roster.data.filter((r) => r.status === 'active' && !r.archived);
+  const sos = ([1, 2, 3] as const).map((m) => [m, em.filter((r) => (r.sosLevel ?? 0) === m || (m === 3 && (r.sosLevel ?? 0) > 3)).length] as [number, number]).filter(([, n]) => n > 0);
+  /* Kết luận máy chủ (`standing` → `ketQuaGanNhat`, cùng ô Kết quả của bảng): mẫu = em có lượt đủ điểm, đạt = `dat`. */
+  const moi = em.map((r) => (r as { standing?: KetQuaVao | null }).standing).filter((k): k is KetQuaVao => !!k && k.scored >= k.required && !!k.attemptLabel);
+  const nhanLuot = [...new Set(moi.map((k) => k.attemptLabel!))];
+  const dat = moi.length ? { nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : t('Đạt kỳ vọng'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length } : null;
+  const homNayTuan = homNay ?? '9999';
+  const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
+  return { sos, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
 }
 
 /**

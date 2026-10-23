@@ -336,7 +336,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const p = doc('web/src/modules/students/XemTruocHangLoatPanel.tsx');
     for (const chu of ['Bỏ qua', 'Thử lại', 'Đã lưu ', 'chưa lưu', 'Quyết định chuyển lớp huỷ', 'PA huỷ', 'Case đóng', 'học viên', 'Về lớp cũ', 'Sang lớp mới']) assert(p.includes(chu), `thiếu chữ "${chu}"`);
     assert(p.includes('!l.ft'), 'Học lại hàng loạt chỉ sang lớp thường');
-    assert(doc('web/src/modules/students/ClassRoster.tsx').includes('OChon') && doc('web/src/modules/classes/BangDiemLopThuong.tsx').includes('OChon'), 'ô chọn ở cả hai bảng');
+    assert(doc('web/src/modules/classes/BangHoSoLop.tsx').includes('OChon') && doc('web/src/modules/classes/BangDiemLopThuong.tsx').includes('OChon'), 'ô chọn ở cả hai bảng');
     /* UI-HV-LOP (khu d, `10` mục 4): Học viên & Lớp bỏ cột tick — "Xuất" lấy đúng phạm vi bộ lọc (không thanh chọn). */
     assert(!/<ThanhChonNhieu/.test(doc('web/src/modules/students/StudentsPage.tsx')), 'Học viên & Lớp không còn thanh chọn');
   });

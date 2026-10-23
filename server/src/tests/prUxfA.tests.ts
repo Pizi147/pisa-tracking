@@ -2,6 +2,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrUxfATests(t: YThucTestKit) {
+  const { viecTiepLop: vtl } = await import('./viecTiepLop.ts');   // UI-HO-SO-LOP
   const { check, assert, conn, P, TODAY } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const lenh: any = await import('../classes/lenhChuyen.ts');
@@ -167,7 +168,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     const lop = r.rows.find((l: any) => l.id === LOP);
     const cuaLop = quaHan.filter((h: any) => h.classId === LOP).length;
     assert(lop.soEmQuaHan === cuaLop && classes.classOverview(pL, LOP).soEmQuaHan === cuaLop, `badge ${lop.soEmQuaHan} / hồ sơ ${classes.classOverview(pL, LOP).soEmQuaHan} ≠ ${cuaLop}`);
-    const dongRoster = (classes.classRoster(pL, LOP) as any[]).find((s) => s.id === X.sid);
+    const dongRoster = { viecTiepTheo: vtl(pL, LOP).get(X.sid) ?? [] };   // UI-HO-SO-LOP: roster bỏ viecTiepTheo — cùng luật qua viecHocVienTheoLop
     assert(dongRoster.viecTiepTheo[0]?.viec.startsWith('Nhập điểm L') && dongRoster.viecTiepTheo[0].tone === 'danger', `roster: ${JSON.stringify(dongRoster.viecTiepTheo)}`);
     const xR = hvl.danhSachHocVienLop(pR, { phamVi: 'toi' }).hocVien.find((h: any) => h.id === X.sid);
     assert(xR && !xR.loc.includes('can-lam') && !xR.loc.includes('qua-han'), `GVBM R: ${JSON.stringify(xR)}`);
