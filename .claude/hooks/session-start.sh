@@ -10,12 +10,10 @@ fi
 MARKETPLACES=(
   "anthropics/claude-plugins-official"
   "DietrichGebert/ponytail"
-  "https://github.com/affaan-m/ECC.git"
 )
 PLUGINS=(
   "superpowers@claude-plugins-official"
   "ponytail@ponytail"
-  "ecc@ecc"
 )
 
 installed_marketplaces=$(claude plugin marketplace list 2>&1 || true)
