@@ -568,7 +568,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
 
   check('PR-HVL (8) · web: bảng điểm FT bỏ Gọn/Đầy đủ, có nhánh MT lịch sử xám + nhãn, cột Theo dõi là ViecTiep bấm được; Lộ trình tiếp theo có Kết quả gần nhất, câu "Chỉ là dự định" hiện thẳng; Chuyển tiếp báo lỗi sau khi sửa/bấm', () => {
     const r = web('modules/students/ClassRoster.tsx');
-    assert(!/Gọn|Đầy đủ/.test(r) && /lichSu/.test(r) && /NhanCu/.test(r) && /viecTiepTheo\[0\]/.test(r) && /<ViecTiep /.test(r), 'ClassRoster');  // PR-MTb T2 thay ChipLichSu → NhanCu
+    assert(!/Gọn|Đầy đủ/.test(r) && /lichSu/.test(r) && !/NhanCu/.test(r) && /viecTiepTheo\[0\]/.test(r) && /<ViecTiep /.test(r), 'ClassRoster');  // PR-MTb T2 thay ChipLichSu → NhanCu; SV-NX-CASE (N8) bỏ nhãn "cũ"
     /* OV-3b: LoTrinhTiepPanel đã xoá — Lộ trình tiếp theo một em nay là hộp Lộ trình ở bảng lớp (BangLoTrinhTiep). */
     const tp = web('modules/classes/TransitionPanel.tsx');
     assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: lớp FT cột Kết quả gần nhất dùng ketQuaGanNhat)');

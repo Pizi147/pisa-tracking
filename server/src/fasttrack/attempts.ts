@@ -377,15 +377,18 @@ export const nhacNhanXetCua = (attempt: { id: number; kind?: string | null }): b
   batBuocNhanXetMt({ kind: attempt.kind, lichSu: false }) && laMtMoiNhatCuaEm([attempt.id]).has(attempt.id);
 
 export function oXongCua(attempt: any, rows: readonly { skill: string; band?: number | null; raw_score?: number | null; comment?: string | null; nhom_nguyen_nhan?: string | null }[]) {
-  const batBuoc = nhacNhanXetCua(attempt);
+  /* SV-NX-CASE: hỏi "MT mới nhất" chỉ khi ô có điểm cần xét nhắc — nơi chỉ đọc `xong` (Kế hoạch Test, Tổng hợp) không tốn câu nào. */
+  let nhac: boolean | null = null;
   /* Kỳ vọng (đọc lộ trình của lượt) chỉ tính khi cần — lượt không đòi nhận xét / ô không band không hỏi DB (Kế hoạch Test nhiều lượt). */
   let kv: { v: number | null } | null = null;
   const thieuNx = (k: string) => {
     const r = rows.find((x) => x.skill === k);
     const coDiem = (r?.band ?? null) !== null || (r?.raw_score ?? null) !== null;
-    if (!batBuoc || !coDiem) return null;
+    if (!coDiem || attempt.kind !== 'mock') return null;
+    nhac ??= nhacNhanXetCua(attempt);
+    if (!nhac) return null;
     kv ??= { v: kyVongCuaLuot(attempt) };
-    return thieuNhanXetMt({ batBuoc, coDiem, band: r?.band ?? null, kyVong: kv.v, nhanXet: r?.comment, nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan) });
+    return thieuNhanXetMt({ batBuoc: nhac, coDiem, band: r?.band ?? null, kyVong: kv.v, nhanXet: r?.comment, nhom: docNhomNguyenNhan(r?.nhom_nguyen_nhan) });
   };
   return { thieuNx, xong: (k: string) => (rows.find((r) => r.skill === k)?.band ?? null) !== null };
 }
