@@ -43,7 +43,7 @@ export function DongThongTin({ tt, tvv }: { tt: any; tvv?: string | null }) {
   const target = ((tt.target !== null && tt.target !== undefined) || tt.kck)   // OV-9: "6.5 · KCK" · "— · KCK"
     && <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} /></span>} />;
   const thi = tt.thiDuKien
-    ? <NhanGt key="thi" n={tt.lopThuong ? dich(tt.thiDuKien.nhan) : t('Ngày thi')} g={<span className="tabular-nums">{tt.lopThuong ? tt.thiDuKien.gt : `${dich(tt.thiDuKien.nhan)} ${tt.thiDuKien.gt}`.trim()}</span>} />
+    ? <NhanGt key="thi" n={tt.lopThuong ? dich(tt.thiDuKien.nhan) : t('Ngày thi')} g={<span className="tabular-nums">{tt.lopThuong ? tt.thiDuKien.gt : `${tt.thiDuKien.nhan === 'Dự kiến thi' ? t('Dự kiến') : dich(tt.thiDuKien.nhan)} ${tt.thiDuKien.gt}`.trim()}</span>} />
     : !tt.lopThuong && <NhanGt key="thi" n={t('Ngày thi')} g={<NhanLich loai="chua">{t('Chưa có lịch')}</NhanLich>} />;
   const muc: ReactNode[] = [
     <NhanGt key="lop" n={t('Lớp')} g={tt.lopId ? <Link to={`/hoc-vien/lop/${tt.lopId}`} className="text-slate-100 no-underline hover:underline">{tt.lop}</Link> : tt.lop} />,

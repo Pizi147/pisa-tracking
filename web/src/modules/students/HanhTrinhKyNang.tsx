@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -101,6 +101,19 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
   row: SkillBoardRow | null; attempts: Luot[]; sEx: SEx[]; homNay: string; tenKn: string;
 }) {
   const hep = useDienThoai();
+  /* viewBox = bề rộng thật của khung → chữ trục giữ 12 px ở mọi cỡ màn (không phóng to theo SVG). */
+  const khung = useRef<HTMLDivElement>(null);
+  const [rong, setRong] = useState(0);
+  useLayoutEffect(() => {
+    const el = khung.current;
+    if (!el) return undefined;
+    const do_ = () => setRong(el.clientWidth);
+    do_();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(do_);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const nay = mondayOfDate(homNay);
   const ds = luotTruc(attempts).sort((a, b) => a.weekStart!.localeCompare(b.weekStart!) || a.attemptNo - b.attemptNo);
   const moc: Moc[] = ds.map((a): Moc => {
@@ -115,7 +128,7 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
   }).filter((m) => m.loai !== 'trong' || !laMt0(ds.find((a) => a.id === m.id)!));
   const sx = row?.category === 'speaking' ? sEx.map((x) => ({ ...x, tuan: mondayOfDate(x.tuan) })) : [];
   if (!moc.some((m) => m.loai === 'diem')) {
-    return <p className="m-0 px-4 py-6 text-center text-[14px] text-slate-400">{t('Chưa có điểm MT nào ở {kn} — hành trình hiện từ lượt đầu có điểm.', { kn: tenKn })}</p>;
+    return <p ref={khung as never} className="m-0 px-4 py-6 text-center text-[14px] text-slate-400">{t('Chưa có điểm MT nào ở {kn} — hành trình hiện từ lượt đầu có điểm.', { kn: tenKn })}</p>;
   }
 
   /* Trục tuần: từ lượt đầu tới max(tuần này, lượt cuối); mỗi cột một tuần. */
@@ -124,7 +137,7 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
   const tuan: string[] = [];
   for (let d = Date.parse(tuanDau); d <= Date.parse(tuanCuoi) && tuan.length < 80; d += 7 * 86_400_000) tuan.push(new Date(d).toISOString().slice(0, 10));
   if (tuan.length < 2) tuan.push(new Date(Date.parse(tuan[0]) + 7 * 86_400_000).toISOString().slice(0, 10));
-  const W = hep ? 440 : 1000, H = hep ? 250 : 240, x0 = hep ? 40 : 56, x1 = W - (hep ? 34 : 64), y0 = 30, y1 = H - 64;
+  const W = Math.max(320, rong || (hep ? 343 : 1000)), H = hep ? 250 : 240, x0 = hep ? 40 : 56, x1 = W - (hep ? 24 : 40), y0 = 30, y1 = H - 64;
   const X = (iso: string) => x0 + ((x1 - x0) * Math.max(0, tuan.indexOf(iso))) / (tuan.length - 1);
   const so = [...moc.flatMap((m) => [m.v, m.kv]), ...sx.map((x) => x.diem)].filter((v): v is number => v !== null);
   let lo = Math.floor((Math.min(...so) - 0.5) * 2) / 2, hi = Math.ceil((Math.max(...so) + 0.5) * 2) / 2;
@@ -137,7 +150,7 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
   /* Kỳ vọng bậc thang: giữ mức của lượt trước tới tuần lượt sau. */
   const kvMoc = moc.filter((m) => m.kv !== null);
   let kvD = '';
-  kvMoc.forEach((m, i) => { kvD += i === 0 ? `M${X(tuan[0])} ${Y(m.kv!)} H${X(m.tuan)}` : ` V${Y(m.kv!)} H${X(m.tuan)}`; });
+  kvMoc.forEach((m, i) => { kvD += i === 0 ? `M${X(m.tuan)} ${Y(m.kv!)}` : ` H${X(m.tuan)} V${Y(m.kv!)}`; });
   if (kvMoc.length) kvD += ` H${X(tuan.at(-1)!)}`;
   /* Nối chấm liền nhau; lượt trống ở giữa thì không nối (khoảng thiếu để trống). */
   const noi: string[] = [];
@@ -148,14 +161,14 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
     const dauThang = i === 0 || tuanLich(tuan[i - 1], homNay).split(' ')[1] !== chu.split(' ')[1];
     return dauThang ? chu : chu.split(' ')[0];
   };
-  const thua = Math.ceil(tuan.length / (hep ? 6 : 14));
+  const thua = Math.ceil(tuan.length / Math.max(3, Math.floor((x1 - x0) / 64)));
   const mauCua = (m: Moc) => { const k = soKyVong(m.v, m.kv); return k ? `rgb(var(--kq-${k}-rgb))` : 'var(--text-dim)'; };
   const moTa = [
     ...moc.filter((m) => m.loai === 'diem').map((m) => `${m.ten} ${tuanLich(m.tuan, homNay)} ${fmtBand(m.v)}${m.kv !== null ? ` (${t('kỳ vọng {kv}', { kv: fmtBand(m.kv) })})` : ''}`),
     ...moc.filter((m) => m.loai === 'trong').map((m) => `${m.ten} ${t('chưa có điểm')}`),
   ].join('; ');
   return (
-    <div className="px-4 pb-1 pt-2">
+    <div ref={khung} className="px-4 pb-1 pt-2">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${tenKn}: ${moTa}`} className="block h-auto w-full" style={{ fontFamily: 'var(--phong-so, inherit)' }}>
         {tuan.map((w) => <line key={w} x1={X(w)} x2={X(w)} y1={y0 - 6} y2={y1} stroke="var(--line)" strokeDasharray="2 4" />)}
         {vach.map((v) => (
@@ -165,7 +178,7 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
           </g>
         ))}
         {kvD && <path d={kvD} fill="none" stroke="var(--text-dim)" strokeWidth="2" strokeDasharray="4 4" opacity=".7" />}
-        {kvMoc.length > 0 && <text x={X(tuan.at(-1)!) + 6} y={Y(kvMoc.at(-1)!.kv!) + 4} fontSize="12" fill="var(--text-dim)">{t('kỳ vọng')}</text>}
+        {kvMoc.length > 0 && <text x={X(tuan.at(-1)!)} y={Y(kvMoc.at(-1)!.kv!) - 8} textAnchor="end" fontSize="12" fill="var(--text-dim)">{t('kỳ vọng')}</text>}
         {noi.map((d) => <path key={d} d={d} fill="none" stroke="var(--accent-line)" strokeWidth="1.5" />)}
         {moc.map((m) => {
           const x = X(m.tuan);
@@ -180,7 +193,7 @@ export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
             return (
               <g key={m.id}>
                 <circle cx={x} cy={y} r="7" fill="none" stroke="var(--text-dim)" strokeDasharray="3 3" />
-                <text x={x} y={y - 14} textAnchor={x > x1 - 60 ? 'end' : 'middle'} fontSize="12" fill="var(--text-dim)">{m.chu ? `${m.ten} · ${m.chu}` : t('{mt} chưa có điểm', { mt: m.ten })}</text>
+                <text x={x} y={y + 24} textAnchor={x > x1 - 60 ? 'end' : 'middle'} fontSize="12" fill="var(--text-dim)">{m.chu ? `${m.ten} · ${m.chu}` : t('{mt} chưa có điểm', { mt: m.ten })}</text>
               </g>
             );
           }
@@ -245,7 +258,7 @@ export function TienDoTrenLop({ studentId, hocVien, lopNay, chon, ct, homNay }: 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] table-fixed text-sm">
               <colgroup><col className="w-[12%]" />{!kn && <col className="w-[8%]" />}<col className="w-[28%]" /><col /><col className="w-[18%]" /></colgroup>
-              <thead><tr><th className="th">{t('Tuần')}</th>{!kn && <th className="th">{t('Kỹ năng')}</th>}<th className="th">{t('Kết quả')}</th><th className="th">{t('Nhận xét')}</th><th className="th">GV</th></tr></thead>
+              <thead><tr><th className="th tabular-nums">{t('Tuần')}</th>{!kn && <th className="th">{t('Kỹ năng')}</th>}<th className="th">{t('Kết quả')}</th><th className="th">{t('Nhận xét')}</th><th className="th">GV</th></tr></thead>
               <tbody>
                 {hien.map((b) => (
                   <tr key={b.id} className={b.sua ? 'bam cursor-pointer' : ''} onClick={b.sua ? () => setMo(b) : undefined}>
