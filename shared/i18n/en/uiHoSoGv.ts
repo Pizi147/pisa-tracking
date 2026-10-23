@@ -2,7 +2,9 @@
 export const EN_UI_HO_SO_GV = {
   'Bài nhập điểm trước hạn / bài tới hạn nhập trong kỳ — theo người được phân công ở hạn nhập.': 'Scores entered by the deadline / scores due in the period — by the teacher assigned at the deadline.',
   'Bài quá hạn chưa nhập điểm (hiện tại) — lớp đang dạy': 'Overdue scores not yet entered (now) — current classes',
-  'Chưa có mốc ghi nhận lúc GV phản hồi vấn đề của HV — số sẽ hiện khi có dữ liệu.': 'No timestamp yet for when the teacher responds to a student issue — the figure appears once data exists.',
+  '{nhan} · {ai} · {dung}/{tong} HV': '{nhan} · {ai} · {dung}/{tong} students',
+  'HV có ngày thi thật trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi; Đạt = Overall đạt Target.': 'Students with a real exam date in the period, taught a skill by this teacher in their last class before the exam; Met = Overall reached Target.',
+  'Thi thật trong kỳ': 'Real exams in period',
   'Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. Số theo kỳ: Việc đúng hạn, Điểm đúng hạn, Đạt kỳ vọng, Tiến bộ, bảng Học thuật.': 'Pick any two weeks; default is the 4 weeks to this week. Period figures: Tasks on time, Scores on time, Met expectation, Progress, Academic table.',
   'Cộng': 'Total',
   'Không có lượt nào có tuần thi trong kỳ này.': 'No attempts with a test week in this period.',
@@ -10,7 +12,6 @@ export const EN_UI_HO_SO_GV = {
   'Lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (chỉ Fast Track).': "Attempts scoring higher than the student's previous MT in the same skill (Fast Track only).",
   'Lượt trong kỳ': 'Attempts in period',
   'PA cải thiện': 'Plans improved',
-  'Phản hồi vấn đề HV': 'Student issue response',
   'Theo quy tắc Overall: MT so Overall với kỳ vọng của lượt, thi thật so với Target. Một lượt = một lượt MT của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi.': 'Overall rule: an MT compares Overall with the attempt expectation, a real exam with the Target. One attempt = one student MT × a skill the teacher teaches, credited to the teacher in the test week.',
   'Tuần đầu phải trước tuần cuối.': 'The first week must be before the last week.',
   'Vai': 'Role',

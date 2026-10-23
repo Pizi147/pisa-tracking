@@ -10,7 +10,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { bangLop, can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';

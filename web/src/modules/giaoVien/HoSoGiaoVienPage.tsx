@@ -163,10 +163,12 @@ function DaiChiSo({ data, cs, viec, ky }: { data: HoSo; cs: ApiCs; viec: NhomSo[
     o1(t('Việc đúng hạn'), o(d?.viecDungHan, 'viec-dung-han', t('Việc đúng hạn')), tuMau(tyLeGv(d?.viecDungHan), t('việc')), t('Việc có hạn trong kỳ (ghi kết quả PA) xong trước hạn / việc có hạn trong kỳ.')),
     o1(t('Điểm đúng hạn'), o(d?.diemDungHan, 'cham-diem', t('Điểm đúng hạn')), tuMau(tyLeGv(d?.diemDungHan), t('bài')), t('Bài nhập điểm trước hạn / bài tới hạn nhập trong kỳ — theo người được phân công ở hạn nhập.')),
     o1(t('Quá hạn'), quaHan === null ? '…' : <span className={quaHan > 0 ? 'text-bad' : 'text-slate-500'}>{quaHan > 0 && '⚠ '}{quaHan}</span>, t('việc · hiện tại')),
-    o1(t('Phản hồi vấn đề HV'), <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>, null, t('Chưa có mốc ghi nhận lúc GV phản hồi vấn đề của HV — số sẽ hiện khi có dữ liệu.')),
     o1(t('Đạt kỳ vọng'), o(d?.ketQua, 'ket-qua', t('Kết quả')), tuMau(tyLeGv(d?.ketQua), t('lượt kỹ năng')),
       t('Theo quy tắc Overall: MT so Overall với kỳ vọng của lượt, thi thật so với Target. Một lượt = một lượt MT của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi.')),
     o1(t('Tiến bộ'), o(d?.tienBo, 'tien-bo', t('HV tiến bộ')), tuMau(tyLeGv(d?.tienBo), t('lượt kỹ năng')), t('Lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (chỉ Fast Track).')),
+    /* Chủ SP 23/10: kết quả thi thật RẤT quan trọng — Đạt Target thi thật trong kỳ (bấm → danh sách HV thi, chưa đạt trước). */
+    o1(t('Đạt Target thi thật'), o(d?.thiThat, 'thi-that', t('Đạt Target thi thật')), tuMau(tyLeGv(d?.thiThat), 'HV') ?? (d?.thiThat.k === 'rong' ? t('Thi thật trong kỳ') : null),
+      t('HV có ngày thi thật trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi; Đạt = Overall đạt Target.')),
     o1(t('Case có PA'), <PhanTram x={pa} nguon={nguon(id, 'cot=case-mo')} tieuDe={t('Case đang phụ trách')} />,
       paCt ? <>{t('PA cải thiện')} <OSo giaTri={paCt.tong} nhan={`${paCt.dung}/${paCt.tong}`} nguon={`/giao-vien/${id}/chi-so/o?cot=pa-hieu-qua&${ky}`} tieuDe={t('PA hiệu quả')} className={vung} /></> : t('Case đang phụ trách')),
   ];
@@ -238,7 +240,7 @@ function KhoiLop({ data }: { data: HoSo }) {
 
 type HangHt = {
   khoa: string; classId: number | null; ma: string; kyNang: string[]; luot: number; theoBai: { bai: string; n: number }[];
-  ketQua: TyLeV5 | null; tienBo: TyLeV5 | null; casePa: TyLeV5 | null; quaHan: number | null; cong?: boolean;
+  ketQua: TyLeV5 | null; tienBo: TyLeV5 | null; thiThat: TyLeV5 | null; casePa: TyLeV5 | null; quaHan: number | null; cong?: boolean;
 };
 const cong = (a: TyLeV5 | null, b: TyLeV5 | null): TyLeV5 | null => (!a ? b : !b ? a : { dat: a.dat + b.dat, mau: a.mau + b.mau });
 
@@ -252,18 +254,19 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   const lopNay = new Map(data.lop.map((l) => [l.id, l]));
   const hang: HangHt[] = (d?.hocThuatTheoLop ?? []).map((h) => ({
     khoa: `l${h.classId}`, classId: h.classId, ma: h.ma, kyNang: h.kyNang, luot: h.luot, theoBai: h.theoBai,
-    ketQua: tyLeGv(h.ketQua), tienBo: tyLeGv(h.tienBo), casePa: casePa(h.ma), quaHan: lopNay.get(h.classId)?.quaHan ?? null,
+    ketQua: tyLeGv(h.ketQua), tienBo: tyLeGv(h.tienBo), thiThat: tyLeGv(h.thiThat), casePa: casePa(h.ma), quaHan: lopNay.get(h.classId)?.quaHan ?? null,
   }));
   /* Lớp đang dạy chưa có lượt trong kỳ vẫn có hàng — giữ ô Quá hạn (V4) và cho thấy "Chưa có dữ liệu" thay vì mất lớp. */
   for (const l of data.lop) {
     if (!hang.some((h) => h.classId === l.id)) {
-      hang.push({ khoa: `l${l.id}`, classId: l.id, ma: l.ma, kyNang: l.kyNang, luot: 0, theoBai: [], ketQua: { dat: 0, mau: 0 }, tienBo: l.khung === 'ft' ? { dat: 0, mau: 0 } : null, casePa: casePa(l.ma), quaHan: l.quaHan });
+      hang.push({ khoa: `l${l.id}`, classId: l.id, ma: l.ma, kyNang: l.kyNang, luot: 0, theoBai: [], ketQua: { dat: 0, mau: 0 }, tienBo: l.khung === 'ft' ? { dat: 0, mau: 0 } : null, thiThat: l.khung === 'ft' ? { dat: 0, mau: 0 } : null, casePa: casePa(l.ma), quaHan: l.quaHan });
     }
   }
   const coFt = hang.some((h) => h.tienBo !== null);
   const tong: HangHt = {
     khoa: 'cong', classId: null, ma: t('Cộng'), kyNang: [], luot: hang.reduce((a, h) => a + h.luot, 0), theoBai: [], cong: true,
     ketQua: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.ketQua), null), tienBo: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.tienBo), null),
+    thiThat: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.thiThat), null),
     casePa: hang.reduce<TyLeV5 | null>((a, h) => cong(a, h.casePa), null), quaHan: hang.reduce((a, h) => a + (h.quaHan ?? 0), 0),
   };
   const COT: CotBang[] = [
@@ -272,7 +275,8 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
     /* Cột linh hoạt duy nhất: chữ "12 · MT3 10 · MT2 2" (lượt theo bài) — các cột số giữ bề rộng cố định, không co chữ. */
     { key: 'luot', nhan: t('Lượt trong kỳ'), kieu: 'chu' },
     { key: 'kq', nhan: t('Đạt kỳ vọng'), kieu: 'phan-tram', rong: 170 },
-    ...(coFt ? [{ key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 170 } as CotBang] : []),
+    ...(coFt ? [{ key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 170 } as CotBang,
+      { key: 'tt', nhan: t('Thi thật'), kieu: 'phan-tram', rong: 150, goiY: t('Đạt Target thi thật') } as CotBang] : []),
     { key: 'pa', nhan: t('Case có PA'), kieu: 'so', rong: 110 },
     { key: 'qh', nhan: t('Quá hạn'), kieu: 'so', rong: 96, goiY: t('Bài quá hạn chưa nhập điểm (hiện tại) — lớp đang dạy') },
   ];
@@ -286,10 +290,10 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
           {h.theoBai.length > 0 && <span className="font-normal text-slate-500"> · {h.theoBai.map((b) => `${b.bai} ${b.n}`).join(' · ')}</span>}
         </span>
       );
-      case 'kq': case 'tb': {
-        const x = c.key === 'kq' ? h.ketQua : h.tienBo;
-        const mau = tuMau(x, t('lượt'));
-        const cot = `${c.key === 'kq' ? 'ket-qua' : 'tien-bo'}-lop:${h.classId}`;
+      case 'kq': case 'tb': case 'tt': {
+        const x = c.key === 'kq' ? h.ketQua : c.key === 'tb' ? h.tienBo : h.thiThat;
+        const mau = tuMau(x, c.key === 'tt' ? 'HV' : t('lượt'));
+        const cot = `${c.key === 'kq' ? 'ket-qua' : c.key === 'tb' ? 'tien-bo' : 'thi-that'}-lop:${h.classId}`;
         /* Khung khu e: "75 % 9/12 lượt" một dòng (hàng 44 px). Hàng Cộng không bấm (số đã bấm được ở dải chỉ số). */
         const so = h.cong ? (x && x.mau ? <b className="tabular-nums">{Math.round((100 * x.dat) / x.mau)} %</b> : <span className="text-slate-500">—</span>)
           : <PhanTram gon x={x} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&${ky}`} tieuDe={`${c.nhan} · ${h.ma}`} />;
