@@ -426,6 +426,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
               </select>
             </Truong>
             {laMt ? (
+              <div className="mt-4">
               <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'ghi-ro')} dem={{ co: ghiRo.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
                 <textarea className="field w-full" {...lf.o(loi, 'ghi-ro')} rows={3} maxLength={NHAN_XET_TOI_DA} value={ghiRo} onChange={(e) => setGhiRo(e.target.value)} />
                 <div className="mt-1 text-xs text-slate-400">
@@ -436,6 +437,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
                     : goc?.byName ? t('Mô tả đã sửa riêng — nhận xét của bài không đè.') : null}
                 </div>
               </Truong>
+              </div>
             ) : (
             <OKhac hien={laKhac(primaryCode)} value={ghiRo} onChange={setGhiRo} goiY={t('Ví dụ: Chưa quen dạng bài mới')}
               id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
