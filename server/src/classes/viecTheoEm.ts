@@ -72,8 +72,8 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiCuaToi?:
 }
 
 /**
- * GET /classes/:id/viec-theo-em?kieu=tiep → `{ viecTiep: { [studentId]: ViecTiepTheo[] } }` — cột "Việc tiếp theo" ở Học viên & Lớp (`BangHocVienLop`),
- * CÙNG hàm `viecHocVienTheoLop` của badge lớp / chip Cần làm (thay `viecTiepTheo` đã gỡ khỏi `/roster` — UI-HO-SO-LOP). Chỉ em đang học lớp.
+ * Việc tiếp theo theo em của MỘT lớp — CÙNG hàm `viecHocVienTheoLop` của badge lớp (thay `viecTiepTheo` đã gỡ khỏi `/roster` — UI-HO-SO-LOP). Chỉ em đang học lớp.
+ * UI-HV-LOP: web không còn gọi (`?kieu=tiep` gỡ khỏi route); giữ làm cửa phép kiểm luật `viecTiepCuaEm` (`tests/viecTiepLop.ts`, HSL-2b).
  */
 export function viecTiepTheoCuaLop(p: Principal, classId: number): { viecTiep: Record<number, ViecTiepTheo[]> } {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');

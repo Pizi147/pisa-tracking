@@ -67,7 +67,8 @@ export async function runPrDhTests(t: YThucTestKit) {
   check('PR-DH (3)(4) · hồ sơ HV và hồ sơ lớp dùng ThanhTruocSau; danh sách đi qua link tên em / tên lớp', () => {
     assert(/<ThanhTruocSau loai="hoc-vien"/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ HV');
     assert(/<ThanhTruocSau loai="lop"/.test(doc('web/src/modules/classes/DauTrangLop.tsx')), 'hồ sơ lớp (DH-4)');
-    for (const f of ['students/BangHocVienLop', 'classes/BangHoSoLop', 'classes/BangDiemLopThuong']) {
+    assert(/to=\{`\/hoc-vien\/\$\{h\.id\}`\} state=\{\{ ds \}\}/.test(doc('web/src/modules/students/DanhSachHvLop.tsx')), 'DanhSachHvLop: link tên em phải mang state.ds');
+    for (const f of ['classes/BangHoSoLop', 'classes/BangDiemLopThuong']) {
       assert(/to=\{`\/hoc-vien\/\$\{s\.id\}`\}[^>]*state=\{\{ ds \}\}/.test(doc(`web/src/modules/${f}.tsx`)), `${f}: link tên em phải mang state.ds`);
     }
     const sp = doc('web/src/modules/students/StudentsPage.tsx');
@@ -103,10 +104,8 @@ export async function runPrDhTests(t: YThucTestKit) {
   });
 
   check('PR-DH (2) · Học viên & Lớp: cả hai nhóm có cột "Ngày thi" (V5 C21; ExamPlanText ở bảng và thẻ), 8 cột khớp hàng lớp', () => {
-    /* UI-HV-LOP (Q-7): Học viên & Lớp là danh sách gọn (cột Lịch thi — `ChipLichThi`); bảng theo lớp còn ở hồ sơ lớp (BangHocVienLop). */
+    /* UI-HV-LOP (Q-7): Học viên & Lớp là danh sách gọn (cột Lịch thi — `ChipLichThi`); bảng HV theo lớp đã gỡ khỏi BangHocVienLop. */
     assert(/<ChipLichThi l=\{h\.lich\} \/>/.test(doc('web/src/modules/students/DanhSachHvLop.tsx')), 'cột Lịch thi');
-    const bg = doc('web/src/modules/students/BangHocVienLop.tsx');
-    assert((bg.match(/<ExamPlanText plan=\{s\.examPlan\}/g) ?? []).length === 2 && /chuSapToi\(/.test(bg), 'ExamPlanText ở bảng + thẻ, Sắp tới qua chuSapToi');
   });
 
   /* PR-OV3a (M2 §3): Tổng hợp lớp thường bỏ cột Dự kiến thi (bàn + điện thoại); Target giữ. */

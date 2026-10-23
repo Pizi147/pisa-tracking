@@ -92,7 +92,6 @@ const MIEN_CAN: string[] = [
   'web/src/modules/platform/CatalogAdmin.tsx',
   'web/src/modules/platform/XoaTaiKhoanPanel.tsx',
   'web/src/modules/students/BangCanLam.tsx',
-  'web/src/modules/students/BangHocVienLop.tsx',
   'web/src/modules/students/BangSos.tsx',
   'web/src/modules/students/CacLoTrinh.tsx',
   'web/src/modules/students/HocVienTheoVai.tsx',
