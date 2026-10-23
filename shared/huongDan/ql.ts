@@ -59,7 +59,7 @@ export const HD_QL: HuongDan = {
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
         { id: 'ql-tq-can-xu-ly', ten: 'Chờ bạn duyệt · Đi tiếp', buoc: ['<b>Chờ bạn duyệt</b>: bấm dòng mở panel duyệt; <b>Hộp duyệt ›</b> xem hết.', '<b>Đi tiếp</b>: link sang danh sách đã lọc, Công việc, Báo cáo.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' } },
-        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · GV cần chú ý', buoc: ['<b>Lớp cần chú ý</b>: Đạt MT, SOS 1 · 2 · 3, Case chưa PA, Thi tháng này; mặc định <b>Chỉ lớp có vấn đề</b>.', '<b>GV cần chú ý</b>: Hành chính / Học thuật; cột <b>Quá hạn nay</b> bấm số bài để nhập thay.'],
+        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · GV cần chú ý', buoc: ['<b>Lớp cần chú ý</b>: Đạt MT, SOS 1 · 2 · 3, Case chưa PA, Thi tháng này; 5 lớp cần chú ý nhất.', '<b>GV cần chú ý</b>: Hành chính / Học thuật; cột <b>Quá hạn</b> bấm số bài để nhập thay.'],
           chi: { hd: 'tq-lop-chu-y', duong: '/', chu: 'Mỗi lớp một hàng; bấm số để xử lý.' } },
       ],
     },

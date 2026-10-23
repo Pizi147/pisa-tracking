@@ -15,7 +15,7 @@ Số trên web là dữ liệu seed (khác số demo của mockup) — so khung,
 | 5 | QL: Đạt MT · Case có PA · Chờ duyệt · Thi tháng này | `TongQuanQlV5` (`/tong-quan/v5`, `/yeu-cau?hop=cho-duyet`) | KHỚP |
 | 6 | QL: Lớp cần chú ý (Lớp + HV · Đạt MT · SOS hiện tại chip 1/2/3 · Case chưa PA · Thi tháng này), theo lượt từng HV (P8) | `LopCanChuY` (`Bang`, chip `CHIP_SOS`); máy chủ chia CHÍNH `tapDatMt` theo lớp của lượt mỗi em | KHỚP |
 | 7 | Công tắc Fast Track / Lớp thường trên thẻ Lớp cần chú ý | công tắc khung ở đầu trang (áp MỌI số — V4 SL2) | KHÁC — [XM-1] |
-| 8 | QL: GV cần chú ý — Hành chính (Việc đúng hạn · Điểm đúng hạn · Quá hạn nay) / Học thuật (Đạt MT · Tiến bộ · Case có PA) | `GvCanChuY` (bảng Phân tích GV 4 tuần + Trễ chấm V4) | KHÁC một cột — [XM-2] |
+| 8 | QL: GV cần chú ý — Hành chính (Việc đúng hạn · Điểm đúng hạn · Quá hạn nay → web "Quá hạn") / Học thuật (Đạt MT · Tiến bộ · Case có PA) | `GvCanChuY` (bảng Phân tích GV 4 tuần + Trễ chấm V4) | KHÁC một cột — [XM-2] |
 | 9 | Chờ bạn duyệt: dòng gọn (loại · đối tượng · người gửi · thời gian chờ) → panel duyệt; "Hộp duyệt ›" | `ChoDuyetGon` → `KhungPanel` "DUYỆT" + `TheYeuCau` (V4) | KHỚP |
 | 10 | Đi tiếp: "n HV thi tháng này" · "Case chưa có PA" · "HV chưa có lịch thi" · "Báo cáo tuần trước" | `DiTiep`: HV thi tháng này (lọc `thi=1`) · Việc của tôi · Báo cáo | KHÁC — [XM-3] |
 | 11 | QT: bảng Theo chi nhánh (Đạt MT · Case có PA · Đạt Target thi thật · Thi tháng này), hàng "Toàn hệ thống" Σ tử / Σ mẫu (T20); bấm hàng → mức QL | `TheoChiNhanh` (`onHang` → `?cn=`) | KHỚP |
@@ -32,7 +32,7 @@ Số trên web là dữ liệu seed (khác số demo của mockup) — so khung,
 | 22 | Không xếp hạng GV, không ngưỡng màu (C08) | bảng GV xếp theo tên (máy chủ) | KHỚP |
 | 23 | 375: một cột, chỉ số 2 × 2, bảng → thẻ, panel toàn màn | `grid-cols-2`, `Bang` thẻ < 640, `KhungPanel` | KHỚP |
 | — | BỎ: dòng chú thích mockup ("Quy tắc Overall…", "Toàn hệ thống = …", "Số chủ nhiệm tách riêng…") — P1 | không lên web; "Lớp tôi dạy" bỏ "Bấm số để xem danh sách em" | BỎ |
-| — | BỎ: `KhoiCanQuyet` (Cần bạn quyết), dải tóm tắt, "Tuần này", form nhúng (nợ 145, truy vết mục 3) | việc ở Công việc; Trễ chấm thành cột "Quá hạn nay" của GV cần chú ý | BỎ |
+| — | BỎ: `KhoiCanQuyet` (Cần bạn quyết), dải tóm tắt, "Tuần này", form nhúng (nợ 145, truy vết mục 3) | việc ở Công việc; Trễ chấm thành cột "Quá hạn" của GV cần chú ý | BỎ |
 | — | BỎ: Tổng quan CX cũ (6 ô số, Điểm đáng chú ý, Lịch sắp tới, Theo chi nhánh V4) · TVV "Học viên của tôi" 6 ô đếm | khung V5 | BỎ |
 
 **Đếm:** 16 KHỚP · 7 KHÁC (đều có [XM]) → 16 / 23 = **70 % — chưa đạt cổng 90 %**. Nếu chủ SP chấp nhận XM-1, XM-5, XM-6 (giữ thao tác V4) → 20 / 23 = 87 %; chấp nhận cả 6 → 100 %. Các KHÁC còn lại cần số / bộ lọc máy chủ chưa có — chủ SP chọn làm tiếp ở PR này hay để sau.
@@ -53,8 +53,8 @@ Số trên web là dữ liệu seed (khác số demo của mockup) — so khung,
 | QL: duyệt thẻ Chờ duyệt tại chỗ (`HopChoDuyet gon` trong Cần bạn quyết) | **GIỮ** — bấm dòng → panel "DUYỆT" có cùng thẻ `TheYeuCau` (Duyệt / Từ chối / Thêm PA) | C04: không form khi chưa bấm |
 | QL: "Mở Case" / "Chọn bước tiếp" / "Chốt lộ trình" trong Cần bạn quyết | Ở **Công việc** (cùng việc, cùng panel) — "Việc của tôi ›" ở Đi tiếp | nợ 145 + truy vết mục 3 |
 | QL: bấm số ô Lớp cần chú ý (SOS 1/2/3, Case chưa chốt PA) → panel | **GIỮ** (cùng nguồn `/tong-quan/chi-nhanh/o?chuY=1`) | |
-| QL: "Chỉ lớp có vấn đề" | **GIỮ** (nút đầu thẻ, nhớ ở URL `lop-vd`) | |
-| QL: Trễ chấm theo GV → bấm số bài → panel | **GIỮ** ở cột "Quá hạn nay" bảng GV cần chú ý (cùng `/tong-quan/ql/tre`) | |
+| QL: "Chỉ lớp có vấn đề" | **BỎ** — bảng chỉ 5 lớp cần chú ý nhất (SOS 3 → SOS 2 → Case chưa PA → SOS 1 → Thi tháng này) | chủ SP 23/10 |
+| QL: Trễ chấm theo GV → bấm số bài → panel | **GIỮ** ở cột "Quá hạn" bảng GV cần chú ý (cùng `/tong-quan/ql/tre`) | |
 | QL: Tuần này / Lịch sắp tới | Test › Lịch tuần | mockup không có khối này |
 | QL: "Báo cáo ›" | **GIỮ** ở Đi tiếp | |
 | QL / QT / CX: chọn chi nhánh, công tắc FT / Thường | **GIỮ** (đầu trang) | |

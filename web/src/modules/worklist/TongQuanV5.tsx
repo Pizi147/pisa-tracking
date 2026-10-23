@@ -155,10 +155,12 @@ const COT_LOP: readonly CotBang[] = [
 ];
 const coVanDe = (l: DongLop) => l.sos.some((n) => n > 0) || l.caseChuaPa > 0 || l.thiThangNay > 0 || (!!l.datMt && l.datMt.dat < l.datMt.mau);
 
+/** Chủ SP 23/10: không nút lọc — bảng chỉ 5 lớp cần chú ý nhất (SOS 3 → SOS 2 → Case chưa PA → SOS 1 → Thi tháng này), không xếp theo %. */
+const mucChuY = (l: DongLop) => [l.sos[2], l.sos[1], l.caseChuaPa, l.sos[0], l.thiThangNay];
+const soMuc = (a: DongLop, b: DongLop) => { const x = mucChuY(a), y = mucChuY(b); const i = x.findIndex((v, k) => v !== y[k]); return i < 0 ? 0 : y[i] - x[i]; };
+
 function LopCanChuY({ d }: { d: TongQuanV5Data }) {
-  const [chiVanDe, setChiVanDe] = useThamSoUrl('lop-vd', '1');
-  const loc = chiVanDe === '1';
-  const ds = (d.lop ?? []).filter((l) => !loc || coVanDe(l));
+  const ds = (d.lop ?? []).filter(coVanDe).sort(soMuc).slice(0, 5);
   const oCua = (l: DongLop, c: CotBang): ReactNode => {
     if (c.key === 'lop') return <Link to={`/hoc-vien/lop/${l.id}`} className="ten-ho-so font-semibold">{l.ma}</Link>;
     if (c.key === 'dat') return <PhanTram gon x={l.datMt} nguon={qBc(d, `&o=dat-mt&lop=${l.id}`)} tieuDe={t('Đạt MT · {lop}', { lop: l.ma })} />;
@@ -178,9 +180,7 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
   const phuCua = (l: DongLop, c: CotBang) => (c.key === 'lop' ? [t('{n} HV', { n: l.hv }), l.gvcn].filter(Boolean).join(' · ')
     : c.key === 'dat' ? tuMau(l.datMt, t('HV')) : null);
   return (
-    <Card bodyClass="p-0" title={<>{t('Lớp cần chú ý')} <span className="font-normal text-slate-500">· {kyChu(d.ky)}</span></>}
-      action={<button type="button" aria-pressed={loc} onClick={() => setChiVanDe(loc ? '0' : '1')}
-        className={`btn btn-sm min-h-[44px] sm:min-h-[28px] ${loc ? 'border-[color:var(--accent)] text-[color:var(--accent)]' : ''}`}>{t('Chỉ lớp có vấn đề')}</button>}>
+    <Card bodyClass="p-0" title={<>{t('Lớp cần chú ý')} <span className="font-normal text-slate-500">· {kyChu(d.ky)}</span></>}>
       <div data-hd="tq-lop-chu-y">
         <Bang ten={t('Lớp cần chú ý')} cot={COT_LOP} hang={ds} khoa={(l) => l.id} oCua={oCua} phuCua={phuCua} khung={false}
           rong={{ tieuDe: t('Không lớp nào cần chú ý'), goiY: t('Không SOS, không Case chưa PA, không HV thi tháng này.'), nut: <Link to="/hoc-vien" className="link">{t('Học viên & Lớp ›')}</Link> }} />
@@ -191,7 +191,7 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
 
 const COT_GV_HC: readonly CotBang[] = [
   { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 130 },
-  { key: 'diem', nhan: t('Điểm đúng hạn'), kieu: 'phan-tram', rong: 130 }, { key: 'tre', nhan: t('Quá hạn nay'), kieu: 'so', rong: 120 },
+  { key: 'diem', nhan: t('Điểm đúng hạn'), kieu: 'phan-tram', rong: 130 }, { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 120 },
 ];
 const COT_GV_HT: readonly CotBang[] = [
   { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'kq', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 },
@@ -205,7 +205,7 @@ const gopKq = (kq: Record<string, OPtGv>): TyLeV5 | null => {
 };
 type HangGv = PhanTichGvKq['hang'][number];
 
-/** GV cần chú ý — bảng Phân tích GV của chi nhánh (4 tuần tới tuần này), không xếp hạng, không ngưỡng màu (C08). Quá hạn nay = Trễ chấm V4. */
+/** GV cần chú ý — bảng Phân tích GV của chi nhánh (4 tuần tới tuần này), không xếp hạng, không ngưỡng màu (C08). Quá hạn = Trễ chấm V4. */
 function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const [loai, setLoai] = useThamSoUrl('gv', 'hc');
   const den = mondayOfDate(d.homNay), tu = addDaysIso(den, -21);

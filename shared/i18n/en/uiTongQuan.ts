@@ -59,7 +59,6 @@ export const EN_UI_TONG_QUAN = {
   "đề xuất": "requests",
   "Case chưa PA": "Cases without plan",
   "GV": "Teacher",
-  "Quá hạn nay": "Overdue now",
   "SOS 2–3": "SOS levels 2–3",
   "Mock Test": "Mock tests",
   "Mở <b>Tổng quan</b>: dải chỉ số — bấm số mở danh sách chỉ đọc.": "Open <b>Overview</b>: the figures band — click a number to open a read-only list.",
@@ -74,6 +73,6 @@ export const EN_UI_TONG_QUAN = {
   "<b>Chờ bạn duyệt</b>: bấm dòng mở panel duyệt; <b>Hộp duyệt ›</b> xem hết.": "<b>Awaiting your approval</b>: click a row to open the approval panel; <b>Approval box ›</b> shows all.",
   "<b>Đi tiếp</b>: link sang danh sách đã lọc, Công việc, Báo cáo.": "<b>Go to</b>: links to filtered lists, Work, Report.",
   "Lớp cần chú ý · GV cần chú ý": "Classes to watch · Teachers to watch",
-  "<b>Lớp cần chú ý</b>: Đạt MT, SOS 1 · 2 · 3, Case chưa PA, Thi tháng này; mặc định <b>Chỉ lớp có vấn đề</b>.": "<b>Classes to watch</b>: MT met, SOS 1 · 2 · 3, cases without plan, exams this month; <b>Only classes with issues</b> by default.",
-  "<b>GV cần chú ý</b>: Hành chính / Học thuật; cột <b>Quá hạn nay</b> bấm số bài để nhập thay.": "<b>Teachers to watch</b>: Admin / Academic; in <b>Overdue now</b> click the count to enter scores on their behalf.",
+  "<b>Lớp cần chú ý</b>: Đạt MT, SOS 1 · 2 · 3, Case chưa PA, Thi tháng này; 5 lớp cần chú ý nhất.": "<b>Classes to watch</b>: MT met, SOS 1 · 2 · 3, cases without plan, exams this month; the 5 classes most in need.",
+  "<b>GV cần chú ý</b>: Hành chính / Học thuật; cột <b>Quá hạn</b> bấm số bài để nhập thay.": "<b>Teachers to watch</b>: Admin / Academic; in <b>Overdue</b> click the count to enter scores on their behalf.",
 };
