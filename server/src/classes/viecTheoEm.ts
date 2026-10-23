@@ -11,6 +11,10 @@ import { demoToday } from '../demoConfig.ts';
 import { can, loadPrincipal, require_, type Principal } from '../permissions.ts';
 import { myWork, NHOM_VIEC_TVV, type WorkItem } from '../worklist/mywork.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
+import { listCases } from '../cases/cases.ts';
+import { programmeOfClass } from '../normal/regular.ts';
+import { nhapDiemTheoEm, viecHocVienTheoLop } from './dongHocVien.ts';
+import type { ViecTiepTheo } from '../../../shared/domain/index.ts';
 
 export type ViecEmLop = Omit<WorkItem, 'con' | 'emIds'>;
 
@@ -65,4 +69,20 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiCuaToi?:
   for (const it of items) (theoEm[it.studentId!] ??= []).push(gon(it));
   const cuaToi = [...lopToi, ...items.filter((it) => it.mine)].sort((a, b) => hang(a) - hang(b) || (a.due ?? '9').localeCompare(b.due ?? '9')).map(gon);
   return { theoEm, cuaToi };
+}
+
+/**
+ * GET /classes/:id/viec-theo-em?kieu=tiep → `{ viecTiep: { [studentId]: ViecTiepTheo[] } }` — cột "Việc tiếp theo" ở Học viên & Lớp (`BangHocVienLop`),
+ * CÙNG hàm `viecHocVienTheoLop` của badge lớp / chip Cần làm (thay `viecTiepTheo` đã gỡ khỏi `/roster` — UI-HO-SO-LOP). Chỉ em đang học lớp.
+ */
+export function viecTiepTheoCuaLop(p: Principal, classId: number): { viecTiep: Record<number, ViecTiepTheo[]> } {
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  const em = (db().prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'`).all(classId) as any[]).map((r) => r.student_id as number);
+  const homNay = demoToday();
+  const vl = viecHocVienTheoLop(p, {
+    emTheoLop: new Map([[classId, em]]), cases: listCases(p, { classId }).rows, homNay,
+    chuongTrinhTheoLop: new Map([[classId, programmeOfClass(classId)?.code ?? null]]),
+    nhapDiemTheoEm: nhapDiemTheoEm(p, [classId], homNay, () => classId),
+  });
+  return { viecTiep: Object.fromEntries([...vl.theoEm].map(([id, v]) => [id, v.viec])) };
 }

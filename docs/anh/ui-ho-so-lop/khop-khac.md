@@ -79,6 +79,7 @@ Vai: cô Trần Ngọc Hà (GVCN, id 7) · lớp MB FT 101 (id 3), MB FOU 12 (id
 | Bảng FT dạng thẻ ở < 640 px | ĐỔI → bảng cuộn ngang | mockup 375 |
 | Khối Điểm Mock Test của lớp (Dán Excel, sửa ô) | GIỮ — mở sẵn, cuối trang | [XM] truy vết V5 ghi "gập, chỉ tab Học viên" |
 | Tab Ý thức & Phối hợp (Ghi vi phạm, Chọn nhiều, khung trái / phải) | GIỮ nguyên | [XM] mockup vẽ bảng 4 cột — PR riêng nếu duyệt |
+| Học viên & Lớp › cột Việc tiếp theo, chip Quá hạn, hàng "Cả lớp" (đọc `viecTiepTheo` của `/roster`) | GIỮ — nay đọc `/classes/:id/viec-theo-em?kieu=tiep` (cùng `viecHocVienTheoLop` của badge lớp) | rà #547 mục 1: bản đầu PR làm sập hộp lớp ở Học viên & Lớp |
 | — | MỚI: popover điểm thành phần W / S · Case + PA dưới hàng (Ghi KQ PA · Sửa · Lịch sử) · tab Đánh giá đầu ra + panel lần lượt (lớp thường) | |
 
 Không mất thao tác nào. Còn thiếu so với luật mới: ghi chú "vắng W3 SEP" (`chuDoiVang`) chưa có trong ô điểm của bảng mới — `/roster` chưa trả tuần dời từng kỹ năng [XM].

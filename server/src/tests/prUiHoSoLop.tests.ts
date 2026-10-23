@@ -8,7 +8,7 @@
 export async function runPrUiHoSoLopTests(t: any) {
   const { check, assert, conn, P, classId } = t;
   const classes: any = await import('../classes/classes.ts');
-  const { viecTheoEmCuaLop } = await import('../classes/viecTheoEm.ts');
+  const { viecTheoEmCuaLop, viecTiepTheoCuaLop } = await import('../classes/viecTheoEm.ts');
   const { ghiDanhGiaDauRa, xemDanhGiaDauRa } = await import('../classes/danhGiaDauRa.ts');
   const { migratePrUiHoSoLop } = await import('../migrate/prUiHoSoLop.ts');
   const mywork: any = await import('../worklist/mywork.ts');
@@ -34,6 +34,17 @@ export async function runPrUiHoSoLopTests(t: any) {
       assert(JSON.stringify(nhe) === JSON.stringify(cuaToi.map((v: any) => v.key)), `${p.fullName}: ?chi=toi khác bản đủ`);
     }
     assert(viecTheoEmCuaLop(P.coreTeacher, LOP).cuaToi.length > 0, 'seed: GVCN MB FT 101 cần có việc ở lớp');
+  });
+
+  check('HSL-2b · Học viên & Lớp: ?kieu=tiep = việc tiếp theo cùng hàm badge lớp — số em có việc đỏ = soEmQuaHan của hồ sơ lớp; ngoài phạm vi 403', () => {
+    for (const p of [P.admin, P.coreTeacher, P.mbManager]) {
+      const v = viecTiepTheoCuaLop(p, LOP).viecTiep;
+      const doEm = Object.values(v).filter((ds: any) => ds.some((x: any) => x.tone === 'danger')).length;
+      assert(doEm === classes.classOverview(p, LOP).soEmQuaHan, `${p.fullName}: ${doEm} ≠ soEmQuaHan`);
+      assert(Object.keys(v).every((id) => emLop.has(Number(id))), 'em ngoài lớp');
+    }
+    assert(Object.values(viecTiepTheoCuaLop(P.admin, LOP).viecTiep).some((ds: any) => ds.length > 0), 'seed: phải có em có việc');
+    assert(maLoi(() => viecTiepTheoCuaLop(P.cpManager, LOP)) === 403, 'QL CP → 403');
   });
 
   check('HSL-2 · /roster không còn viecTiepTheo (bảng lớp FT + lớp thường)', () => {

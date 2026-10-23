@@ -39,7 +39,6 @@ export type DongRoster = {
   openCases: number; handoverCases: number;
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
-  viecTiepTheo: ViecTiepTheo[];
   timeline: {
     id: number; kind: string; kindLabel: string; myPending: string[]; overdueSkills: number;
     /** OV-10b: cột Admin "Lượt MT gần nhất" · "Ô chưa nhập". */
@@ -105,7 +104,10 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
   const thuong = lop.scoringMode === 'ratio';
   /* OV-11g (HL-19): kèm em Kết thúc học chưa Lưu trữ của lớp cuối — dòng mờ cuối lớp, ⋯ Lưu trữ · Học lại. */
   const { data, loading, error, reload } = useApi<DongRoster[]>(`/classes/${lop.id}/roster?kemKetThuc=1`, [lop.id]);
-  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: admin ? { ...lop.viewer, theoVai: true } : lop.viewer, maLop: lop.code, classId: lop.id, onDone: () => { reload(); onDoi(); } });
+  /* UI-HO-SO-LOP: việc tiếp theo không còn ở `/roster` — cùng hàm `viecHocVienTheoLop` của badge lớp (`viecTiepTheoCuaLop`). */
+  const viec = useApi<{ viecTiep: Record<number, ViecTiepTheo[]> }>(`/classes/${lop.id}/viec-theo-em?kieu=tiep`, [lop.id]);
+  const viecCua = (id: number) => viec.data?.viecTiep[id] ?? [];
+  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: admin ? { ...lop.viewer, theoVai: true } : lop.viewer, maLop: lop.code, classId: lop.id, onDone: () => { reload(); viec.reload(); onDoi(); } });
   /** Admin: lượt đã tới tuần thi gần nhất (không tính lượt huỷ) + số ô còn trống của lượt đó. */
   const luotGanNhat = (s: DongRoster) => {
     const t = s.timeline.filter((x) => !!x.weekStart && x.weekStart <= homNay && x.status !== 'cancelled').at(-1);
@@ -128,11 +130,11 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
       .filter((s) => !s.archived && (!chiHien || chiHien.has(s.id)))
       .map((s) => ({
         ...s, ten: s.fullName,
-        quaHan: s.viecTiepTheo.some((v) => v.tone === 'danger'),
+        viecTiepTheo: viecCua(s.id), quaHan: viecCua(s.id).some((v) => v.tone === 'danger'),
         canhBao: !!s.canhBaoYThuc, sosLevel: s.standing?.sosLevel ?? null, soCaseMo: s.openCases,
       })),
     sapXep,
-  ).sort((a, b) => Number(a.status === 'finished') - Number(b.status === 'finished')), [data, chiHien, sapXep]);
+  ).sort((a, b) => Number(a.status === 'finished') - Number(b.status === 'finished')), [data, viec.data, chiHien, sapXep]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { onThuTu?.(lop.id, rows.map((s) => s.id)); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
   /* Q6/B8: việc chung của lớp lên hàng "Cả lớp", không lặp ở từng em. */
   const { chung, conLai } = useMemo(() => tachViecChung(rows.map((s) => ({ id: s.id, viec: s.viecTiepTheo }))), [rows]);
