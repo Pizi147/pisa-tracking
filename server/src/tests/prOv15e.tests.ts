@@ -84,8 +84,8 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(d.khuVucHienThi(n).map((k: any) => k.key).join(',') === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', d.khuVucHienThi(n).map((k: any) => k.key).join(','));
     assert(!d.khuVucHienThi(navOf(P.w1Teacher)).some((k: any) => k.key === 'phan-tich'), 'GV không có mục Phân tích');
     assert(d.khuVucCuaDuong('/phan-tich') === 'phan-tich', 'tô sáng mục Phân tích');
-    assert([...d.GOC_NHIN].join(',') === 'bao-cao,tong-hop,ket-qua-thi,hieu-qua-pa,giao-vien,y-thuc', [...d.GOC_NHIN].join(','));
-    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo · Test + SOS · Kết quả Test · Hiệu quả PA · Phân tích GV · Ý thức', 'tên tab');
+    assert([...d.GOC_NHIN].join(',') === 'bao-cao,giao-vien,tong-hop,ket-qua-thi,hieu-qua-pa,y-thuc', [...d.GOC_NHIN].join(','));   // UI-PHAN-TICH: thứ tự mockup V5
+    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo HV · Phân tích GV · Test + SOS · Kết quả Test · Hiệu quả PA · Ý thức', 'tên tab');
     const g = (s: string) => d.gocNhinTuThamSo(new URLSearchParams(s));
     assert(g('').goc === 'bao-cao', 'không tham số → Báo cáo');
     assert(g('goc=van-de').goc === 'tong-hop' && g('goc=van-de').gocMoi === 'tong-hop', 'van-de cũ → Test + SOS');

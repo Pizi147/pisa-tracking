@@ -375,7 +375,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(nem, 'GV không dạy em phải bị chặn');
   });
   check('UXF-b (11) · polish: khung bảng Phân tích GV đủ cao cho một chú thích nổi khi bảng 1–2 hàng (Q18); nhóm "Case bàn giao" có tiêu đề ngữ nghĩa; thẻ Xin ý kiến trên 375 px cho xuống dòng', () => {
-    assert(/table-scroll min-h-\[13rem\]/.test(doc('web/src/modules/phanTich/PhanTichGiaoVien.tsx')), 'Q18 min-height');
+    /* UI-PHAN-TICH (Q-7): bảng Phân tích GV không còn chú thích nổi ở tiêu đề (P1) — bỏ kiểm min-height Q18. */
     assert(/<th colSpan=\{4\} scope="colgroup"[^>]*>\{t\('Case bàn giao'\)\}/.test(doc('web/src/modules/cases/SkillBoard.tsx')) && /<h3[^>]*>\{t\('Case bàn giao'\)\}/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'tiêu đề nhóm');
     assert(/<DongXinYKien x=\{p\.xinYKien\} ngan=\{ngan\} \/>/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'thẻ 375 px không cắt dòng Xin ý kiến');
   });
