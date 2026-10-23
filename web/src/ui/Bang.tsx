@@ -53,7 +53,8 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
     const phan = chiaThe(cot);
     const theoKey = new Map(cot.map((c) => [c.key, c]));
     const o = (h: H, k: string) => oCua(h, theoKey.get(k)!);
-    const tiLe = cot.some((x) => x.kieu === 'diem-ti-le');
+    /* Ô rộng 120 khi có điểm tỉ lệ hoặc nhãn dài (vd "Việc đúng hạn") — 76 px làm nhãn + số tràn chồng sang ô bên (UI-TONG-QUAN 8b). */
+    const tiLe = cot.some((x) => x.kieu === 'diem-ti-le') || phan.diem.some((k) => theoKey.get(k)!.nhan.length > 8);
     than = hang.map((h) => (
       <article key={khoa(h)} className={`border-t px-3 py-2.5 first:border-t-0 ${lop(h)}`} style={{ borderColor: 'var(--line)' }}
         tabIndex={onHang ? 0 : undefined} onClick={onHang ? () => onHang(h) : undefined} onKeyDown={phim(h)}>
@@ -62,7 +63,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
         {phan.diem.length > 0 && (
           <div className={`mt-1.5 grid gap-x-3 gap-y-1 ${tiLe ? 'grid-cols-[repeat(auto-fill,minmax(120px,1fr))]' : 'grid-cols-[repeat(auto-fill,minmax(76px,1fr))]'}`}>
             {phan.diem.map((k) => (
-              <span key={k} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <span key={k} className="inline-flex min-w-0 flex-wrap items-center gap-x-1.5">
                 <span className="text-[13px] text-slate-400">{theoKey.get(k)!.nhan}</span>{o(h, k)}
               </span>
             ))}

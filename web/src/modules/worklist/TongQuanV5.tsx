@@ -371,7 +371,7 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
           mau={ft ? tuMau(d.datMt, t('HV đủ dữ liệu')) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Đạt Target thi thật')} ky={kyChu(d.ky)} giaTri={ft ? ptChu(d.thiThat) : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.thiThat, t('HV')) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('HV SOS 2–3')} ky={t('hiện tại')} giaTri={<Link to={`/hoc-vien?view=sos${cn}`} className="link">{sos23}</Link>} mau={t('Học viên & Lớp · Đang SOS')} />
+        <ChiSo ten={t('HV SOS 2–3')} ky={t('hiện tại')} giaTri={<b className="tabular-nums">{sos23}</b>} />
         <ChiSo ten={t('Chờ KQ · bước tiếp')} ky={t('hiện tại')}
           giaTri={hv.data ? <span className="inline-flex gap-1.5"><Link to={den('da-thi')} className="link">{hv.data.dem['da-thi']}</Link>·<Link to={den('cho-buoc-tiep')} className="link">{hv.data.dem['cho-buoc-tiep']}</Link></span> : '…'}
           mau={t('HV chờ KQ · chưa chốt bước tiếp')} />
@@ -404,8 +404,9 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: ReactNode }) {
   return (
     <>
       <DaiChiSo>
-        <ChiSo ten={t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
-          mau={viec?.viecQuaHan ? <span className="font-semibold text-bad">⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span> : t('không việc nào quá hạn')} />
+        {/* Head tutor chưa có Công việc (không `workSupport`) → không ô Việc. */}
+        {session?.nav?.workSupport && <ChiSo ten={t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
+          mau={viec?.viecQuaHan ? <span className="font-semibold text-bad">⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span> : t('không việc nào quá hạn')} />}
         <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} />}
           mau={t('Case tôi phụ trách')} />
         <ChiSo ten={t('Đạt MT · kỹ năng tôi dạy')} ky={ky} giaTri={o(cs.data?.ketQua, 'ket-qua', t('Kết quả'))} mau={tuMau(tyLeGv(cs.data?.ketQua), t('lượt'))} />
