@@ -22,4 +22,5 @@ export const EN_SV_NX_CASE = {
   'Dùng làm mô tả (thay mô tả đang có)': 'Use as description (replaces the current one)',
   'Mô tả đang có — sẽ thay bằng nhận xét chấm chéo (cả nhóm nguyên nhân theo bài)': 'Current description — will be replaced by the cross-marker comment (cause groups from the test too)',
   'Mô tả đang có': 'Current description',
+  'Case vừa được cập nhật lúc {luc} — xem lại rồi bấm Lưu lần nữa để ghi đè': 'The Case was just updated at {luc} — review it, then press Save again to overwrite',
 } satisfies Record<string, Dich>;

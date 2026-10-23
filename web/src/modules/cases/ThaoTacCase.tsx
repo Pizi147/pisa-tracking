@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -310,6 +310,8 @@ export type CaseDeSua = {
   issues: { role: string; code: string; label?: string; observation: string | null; byName?: string | null; /** SV-NX-CASE: mô tả đang theo nhận xét MT nào. */ moTaTuMt?: string | null }[];
   /** SV-NX-CASE (N8 ②): Case Mock Test — mô tả = quan sát của nhóm chính; sửa ở đây thì tách khỏi nhận xét của bài. */
   sos?: { laMt?: boolean } | null;
+  /** SV-NX-CASE: mốc phiên bản (409 khi Case vừa đổi). */
+  capNhatLuc?: string | null;
   viewer: { khoaKyNang?: boolean; coTheXoa?: boolean; chanXoa?: string | null; tenSua?: string | null };
 };
 
@@ -337,12 +339,16 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
   const [summary, setSummary] = useState(c.summary ?? '');
   const [busy, setBusy] = useState(false);
   const [hoiXoa, setHoiXoa] = useState(false);
+  /* SV-NX-CASE: mốc phiên bản gửi kèm — 409 thì giữ chữ đang gõ, lấy mốc mới để lần Lưu sau ghi đè có chủ ý. */
+  const [luc, setLuc] = useState<string | null | undefined>(c.capNhatLuc);
   const lf = useLoiForm();
   const topics = caseTopicsFor(c.ratio, ct);
+  /* Case MT chưa có mô tả: chỉ đổi tên / mức độ thì không đòi nhóm + mô tả; gõ một trong hai thì đòi đủ. */
+  const doiNguyenNhan = !(laMt && !goc && !primaryCode && !ghiRo.trim());
   const causes = topic ? issuesForTopic(topic, ct) : [];
   const loi = dsLoi([
-    { khoa: 'phan-loai', nhan: t('Nhóm nguyên nhân'), chon: true },
-    ...(laMt ? [{ khoa: 'ghi-ro', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU }]
+    ...(doiNguyenNhan ? [{ khoa: 'phan-loai', nhan: t('Nhóm nguyên nhân'), chon: true }] : []),
+    ...(laMt ? (doiNguyenNhan ? [{ khoa: 'ghi-ro', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU }] : [])
       : laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ'), toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'muc-do', nhan: t('Mức độ'), chon: true },
     { khoa: 'ten', nhan: t('Tên Case'), toiThieu: 3 },
@@ -358,13 +364,16 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
     try {
       await api.patch(`/cases/${c.id}`, {
         /* Case MT: chỉ gửi nhóm + mô tả khi đổi — đổi mức độ / tên không tách mô tả khỏi nhận xét. */
-        topic, ...(laMt && primaryCode === (goc?.code ?? '') && ghiRo === (goc?.observation ?? '') ? {}
+        luc, topic, ...(laMt && primaryCode === (goc?.code ?? '') && ghiRo === (goc?.observation ?? '') ? {}
           : { primaryCode, observation: laMt || laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), ...(coMoTa ? { summary: summary.trim() } : {}),
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
       toast.push('ok', t('Đã lưu Case'));
       onSaved();
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+    } catch (e: any) {
+      if (e instanceof ApiError && e.status === 409) setLuc(e.details?.luc ?? null);   // chữ đang gõ giữ nguyên
+      toast.push('error', e?.message ?? t('Không lưu được'));
+    } finally { setBusy(false); }
   };
   const xoa = async () => {
     setBusy(true);

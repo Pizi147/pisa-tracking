@@ -14,6 +14,7 @@
  *  NX12 SOS tạm (lượt chưa chốt): Case tạm không hạn, không việc Xác nhận Case
  *  NX13 Overall đạt → Case chưa xử lý tự mất
  *  NX14 migrate: Case mô tả từ nhận xét gắn nguồn (nội dung giữ), cờ S đã hết việc hạ, lần hai không đổi; kiểm trước không ghi
+ *  NX16 Sửa Case MT chưa mô tả chỉ đổi tên / mức độ → lưu (không đòi mô tả); `luc` cũ → 409, không ghi; mô tả > 1000 → 400; lượt nguồn mất → không "MT?"
  *  NX15 migrate: Case đã trượt sang MT2 mà mô tả là nhận xét MT1 → nguồn MT1 (nhận xét MT2 không đè); mô tả không trùng nhận xét nào → NULL, không bị đè
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -301,5 +302,25 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     assert(moTa(c.id)?.observation === NX.speaking, `mô tả MT1 bị đè: ${moTa(c.id)?.observation}`);
     svc.saveScore(QL, a.m1, 'listening', { band: 4, nhanXet: 'Nhận xét L mới — Case không nguồn không bị đè.' }, TODAY);
     assert(moTa(cL)?.observation === 'Mô tả cũ không trùng nhận xét nào.', `mô tả không nguồn bị đè: ${moTa(cL)?.observation}`);
+  }));
+
+  check('NX16 · Sửa Case MT chưa mô tả chỉ đổi tên / mức độ → lưu; `luc` cũ → 409 không ghi; mô tả > 1000 → 400; lượt nguồn mất → không "MT?"', () => thu(() => {
+    const { gvPT } = nguoiS();
+    const a = emMoi();
+    const c = chot(a.m1, { bandS: 5, nguoiLuuS: gvPT });
+    assert(!moTa(c.id), 'tiền đề: Case chưa mô tả');
+    const luc0 = cases.caseDetail(gvPT, c.id).capNhatLuc;
+    cases.suaCase(gvPT, c.id, { title: 'Speaking dưới kỳ vọng — đổi tên', urgency: 'urgent', luc: luc0 });
+    assert(one('SELECT title FROM sos_cases WHERE id = ?', c.id).title === 'Speaking dưới kỳ vọng — đổi tên' && !moTa(c.id), 'đổi tên phải lưu, không sinh mô tả');
+    let loi: any = null;
+    try { cases.suaCase(gvPT, c.id, { title: 'Ghi đè im lặng', luc: luc0 }); } catch (e) { loi = e; }
+    assert(loi?.status === 409 && one('SELECT title FROM sos_cases WHERE id = ?', c.id).title !== 'Ghi đè im lặng', `luc cũ phải 409: ${loi?.status}`);
+    loi = null;
+    try { cases.suaCase(gvPT, c.id, { primaryCode: d.issuesForTopic('speaking')[0].code, observation: 'x'.repeat(d.NHAN_XET_TOI_DA + 1) }); } catch (e) { loi = e; }
+    assert(loi?.status === 400, `mô tả quá dài phải 400: ${loi?.status}`);
+    svc.saveScore(gvPT, a.m1, 'speaking', { nhanXet: NX.speaking }, TODAY);
+    run('UPDATE sos_cases SET mo_ta_attempt_id = ? WHERE id = ?', 99999999, c.id);   // lượt nguồn không còn
+    const chinh = cases.caseDetail(QL, c.id).issues.find((x: any) => x.role === 'primary');
+    assert(chinh && !chinh.moTaTuMt, `không được hiện MT?: ${JSON.stringify(chinh)}`);
   }));
 }
