@@ -53,6 +53,7 @@ import { docHet, thongBaoCua } from '../platform/thongBao.ts';
 import { dongBoKhiMoChuong } from '../platform/thongBaoTuDong.ts';
 import { daGhi } from '../platform/thongBaoTuDong.ts';   // OV-15h1
 import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
+import * as tongQuanV5Svc from '../worklist/tongQuanV5.ts';   // UI-TONG-QUAN
 import * as yeuCauSvc from '../duyet/yeuCau.ts';
 import * as deXuatSuaSvc from '../duyet/deXuatSua.ts';
 import * as classSvc from '../classes/classes.ts';
@@ -2089,6 +2090,20 @@ api.get('/tong-quan/lop-toi-day/o', requireAuth, wrap((req) => {
 api.get('/tong-quan/ql', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanQlSvc.tongQuanQl(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+}));
+/** UI-TONG-QUAN: Tổng quan V5 QL / QT / CX MỘT GET — chỉ số + Lớp cần chú ý (chế độ lớp) / Theo chi nhánh + Trễ chấm, gọi lại hàm tập của Phân tích. */
+api.get('/tong-quan/v5', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+}));
+/** UI-TONG-QUAN: Tổng quan TVV (Báo PH đúng hạn · Thi tháng này) + panel `o=bao-ph`. */
+api.get('/tong-quan/tvv', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanV5Svc.tongQuanTvv(principalOf(req));
+}));
+api.get('/tong-quan/tvv/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanV5Svc.oTongQuanTvv(principalOf(req), qStr(req, 'o') ?? '');
 }));
 /** OV-15h1: panel "n bài" của một GV ở Trễ chấm (`gv`: id · 0 chưa phân công · -1 Speaking chấm chéo). */
 api.get('/tong-quan/ql/tre', requireAuth, wrap((req) => {

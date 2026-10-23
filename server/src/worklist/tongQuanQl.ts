@@ -32,7 +32,7 @@ const soNgay = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(
  * TRỄ CHẤM THEO GV (mockup 3: tên · kỹ năng · số bài · lớp · trễ nhất) — chia CHÍNH tập "bài trễ chấm" (`bai-qua-han-nhap-diem`, người chấm của từng bài
  * trong `chiTiet`): Σ hàng = số ở dải tóm tắt; số mỗi GV = cột "Bài quá hạn" bảng GV (H1-3). Nhiều bài trước, rồi theo tên.
  */
-function treCham(p: Principal, branchId: number | null, ct: ChuongTrinh) {
+export function treCham(p: Principal, branchId: number | null, ct: ChuongTrinh) {
   if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) return { dong: [] as GvTre[], baiCua: new Map<number, number[]>() };
   const r = metricSet(p, 'bai-qua-han-nhap-diem', { branchId, program: ct });
   const baiCua = new Map<number, number[]>();

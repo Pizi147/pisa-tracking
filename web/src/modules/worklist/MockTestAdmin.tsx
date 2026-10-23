@@ -8,11 +8,11 @@ import { ODem } from './HocVienCuaToi.tsx';
 type GvQuaHan = { key: string; ownerId: number; gv: string; kyNang: string; lop: string | null; luot: string | null; soBai: number; han: string | null };
 type TongQuanMt = {
   tuan: string; luotTuanNay: { so: number; soLop: number }; oChuaNhap: { so: number; quaHan: number };
-  deNghiDoi: number; chuaXepLich: number; gvQuaHan: GvQuaHan[];
+  chuaXepLich: number; gvQuaHan: GvQuaHan[];
 };
 
 /**
- * TỔNG QUAN ADMIN — tab "Mock Test" (OV-10c, mockup vai mục 4): bốn ô bấm được (mở đúng chỗ ở Test / Công việc, số cùng hàm với màn đó)
+ * TỔNG QUAN ADMIN — tab "Mock Test" (OV-10c, mockup vai mục 4): ba ô bấm được (UI-TONG-QUAN, chủ SP 23/10: bỏ "Đề nghị dời chờ") (mở đúng chỗ ở Test / Công việc, số cùng hàm với màn đó)
  * + danh sách GV chấm quá hạn (OV-12h: chỉ xem, bỏ Nhắc).
  */
 export function MockTestAdmin({ branchId }: { branchId: number | null }) {
@@ -28,13 +28,12 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4" data-hd="tq-mock-test" aria-label="Số liệu Mock Test">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3" data-hd="tq-mock-test" aria-label="Số liệu Mock Test">
         <ODem to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} so={data.luotTuanNay.so} nhan="Lượt MT tuần này"
           phu={`${tuanLich(data.tuan, homNay)} · ${data.luotTuanNay.soLop} lớp`} />
         <ODem to={`/cong-viec?nhom=cham-diem&khung=tat-ca${cn}`} so={data.oChuaNhap.so} nhan="Ô điểm chưa nhập"
           phu={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">⚠ {data.oChuaNhap.quaHan} quá hạn</span> : 'không ô nào quá hạn'} />
-        <ODem to={`/test/lich${cn ? `?${cn.slice(1)}` : ''}`} so={data.deNghiDoi} nhan="Đề nghị dời chờ" phu="vắng tuần này · chờ Quản lý duyệt" />
-        <ODem to={`/test/ke-hoach?loai=ft${cn}`} so={data.chuaXepLich} nhan="MT chưa xếp lịch" phu="em FT chưa có lượt MT nào" />
+        <ODem to={`/test/ke-hoach?loai=ft${cn}`} so={data.chuaXepLich} nhan="HV chưa có MT tiếp theo" phu="đã thi hết lượt MT đã xếp · xem có cần thêm lượt" />
       </div>
       <section className="card" aria-labelledby="gv-qua-han">
         <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">

@@ -66,7 +66,6 @@ export function LopToiDay() {
           <h2 id="lop-toi-day" className="m-0 text-sm font-semibold text-slate-200">{t('Lớp tôi dạy')}</h2>
           {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} donVi={t('lớp')} onChange={(k) => { daBam.current = true; setKhung(k === 'thuong' ? 'thuong' : 'ft'); }} />}
         </div>
-        {!dienThoai && <span className="text-xs text-slate-500">{t('Bấm số để xem danh sách em')}</span>}
       </header>
       {loading || !data ? <div className="p-4"><Skeleton rows={3} /></div> : !data.rows.length ? (
         <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Bạn không dạy lớp')}{' '}{laThuong ? t('thường') : 'Fast Track'}{' '}{t('nào đang mở.')}</p>

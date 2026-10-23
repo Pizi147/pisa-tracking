@@ -225,6 +225,9 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+- **SV-TQ-GV — Tổng quan GV sau UI-TONG-QUAN #551 (chủ SP 23/10, XM-5; Opus 5.5, `/ponytail lite`, impeccable `layout`):** tách "Lớp tôi dạy" thành hai khối như mockup:
+  **Kỹ năng tôi dạy** (theo môn: Đạt MT, Tiến bộ, bài chờ chấm) · **Lớp tôi chủ nhiệm** (SOS, Case, Thi tháng này) — cần `GET /tong-quan/lop-toi-day` trả hai phần
+  (môn / chủ nhiệm) thay một bảng; GIỮ mọi số bấm được → danh sách em / bài như V4. Mockup: `thiet-ke/v5/tong-quan.html?k=gv`.
 - **CV-LOI #499 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `PanelPhanCongMon` gửi nguyên bức tranh phân công đọc lúc mở → người khác vừa
   đổi phân công lớp đó thì bị ghi đè (cần khoá phiên bản / gửi một ô) · bước gán chủ Case (`migratePrCvLoi`) chạy mỗi lần migrate, người gán ghi
   "hệ thống" (actor NULL) · dòng dự phòng "Chọn người phụ trách" mở hồ sơ em nhưng chưa có ô đổi người phụ trách (cần API đổi chủ Case, có lịch sử).

@@ -2,19 +2,18 @@
  * TỔNG QUAN ADMIN — tab "Mock Test" (OV-10c, mockup vai 13/10 mục 4). Không hàm đếm thứ hai: mỗi số lấy từ đúng hàm của màn ô đó mở.
  *  · Lượt MT tuần này — `highlights` tuần đầu (Kế hoạch Test `?tuan=` đọc cùng đường).
  *  · Ô điểm chưa nhập (n quá hạn) — `myWork` nhóm Chấm điểm, đếm bằng `demPhamVi` như dòng phạm vi Công việc ("m bài cần chấm"; lọc Quá hạn = `khopLocNhanh`).
- *  · Đề nghị dời chờ — `lichTest` tuần này, cột `choDuyetDoi` (hàng lớp Lịch Test ghi "n bài vắng · chờ Quản lý duyệt dời").
- *  · MT chưa xếp lịch — `danhSachLop` của Kế hoạch Test, `chuaCoLichTiep` các lớp FT (em đang học không có lượt MT nào có tuần).
+ *  · HV chưa có MT tiếp theo — `danhSachLop` của Kế hoạch Test, `chuaCoLichTiep` các lớp FT (em đang học không còn lượt MT nào đã xếp tuần: đã thi hết
+ *    lượt đã xếp, hoặc chưa có lượt) — để QL / Admin xem có cần thêm lượt MT. UI-TONG-QUAN (chủ SP 23/10): bỏ ô "Đề nghị dời chờ" (đề nghị ở Test › Lịch).
  *  · GV chấm quá hạn — dòng Chấm điểm quá hạn của `myWork` có người phụ trách (OV-12h: chỉ xem, bỏ Nhắc).
  */
 import { demPhamVi, khopLocNhanh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { forbidden } from '../util.ts';
 import type { Principal } from '../permissions.ts';
-import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { mondayOf } from '../platform/week.ts';
 import { highlights } from './highlights.ts';
 import { myWork } from './mywork.ts';
 import { phamViXemViec } from './xemViec.ts';
-import { lichTest } from '../cham/canCham.ts';
 import { danhSachLop } from '../keHoach/keHoachTest.ts';
 
 export type GvQuaHan = {
@@ -24,7 +23,6 @@ export type TongQuanMt = {
   tuan: string;
   luotTuanNay: { so: number; soLop: number };
   oChuaNhap: { so: number; quaHan: number };
-  deNghiDoi: number;
   chuaXepLich: number;
   gvQuaHan: GvQuaHan[];
 };
@@ -37,7 +35,6 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
   const tuanDau = highlights(p, { branchId, program: 'ft' }).weeks[0];
   const w = myWork(p, { branchId, nguoi: 'tat-ca' }) as any;
   const dong = (w.dong ?? []) as any[];
-  const lich = lichTest(p, ensurePeriod(today).id, branchId, today, { phamVi: 'tat-ca' });
   const keHoach = danhSachLop(p, { branchId });
 
   const gvQuaHan: GvQuaHan[] = ((w.items ?? []) as any[])
@@ -54,7 +51,6 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
       so: demPhamVi(dong, true).so,
       quaHan: demPhamVi(dong.filter((d) => khopLocNhanh(d, 'qua-han', today)), true, { loc: 'qua-han', homNay: today }).so,   // OV-11c: chỉ bài quá hạn
     },
-    deNghiDoi: lich.lop.reduce((n, l) => n + l.choDuyetDoi, 0),
     chuaXepLich: keHoach.lop.filter((l) => l.loai === 'ft').reduce((n, l) => n + l.chuaCoLichTiep, 0),
     gvQuaHan,
   };
