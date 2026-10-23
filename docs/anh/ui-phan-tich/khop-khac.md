@@ -5,6 +5,22 @@ Vai demo: QL = Nguyễn Khánh Vy (2, Monbay) · QT = Đỗ Vũ Tuấn Phong (1,
 Bề rộng: 1440 tối (QL, QT, CX) + 1440 sáng (QL) · 1280 (QL — bảng GV Gọn **và** Đầy đủ vừa khung, không cuộn) · 375 sáng (QL, QT, CX).
 Số trên web là dữ liệu seed (khác số demo mockup) — so khung, thứ tự, tên, kiểu ô; số kiểm bằng phép kiểm `prUiPhanTich`.
 
+## Vòng 2 — phản hồi chủ SP 23/10 (đã áp, sắp lại cả trang)
+
+| # | Chủ SP | Đã làm |
+|---|---|---|
+| 1 | Khung thời gian phải đồng bộ, theo luật đã chốt | `BoChonThoiGian` (MỘT component cho Phân tích, Tutor, HV & Lớp › Lọc thêm) hiện thẳng **Tuần bắt đầu [ô] → Tuần kết thúc [ô]** (ô gõ + lịch), đổi là áp dụng; Phân tích thêm **Toàn bộ · Chọn khoảng tuần** (DESIGN.md G10). Bỏ hộp bấm mở, bỏ ‹ ›, bỏ chữ "Khoảng thời gian · 31/08 – 13/09/2026 · 2 tuần". Chọn tuần đầu sau tuần cuối → tự kéo đầu kia |
+| 2 | "Thi tháng này" vô nghĩa khi chọn kỳ | **"Thi đợt này"** = HV có ngày thi trong kỳ đang chọn (cùng hàm `tapThiThangNayLop`, tham số khoảng); ô số + bảng chi nhánh + panel `o=thi-dot-nay`. Tổng quan giữ "Thi tháng này" |
+| 3 | "Ngoài mẫu" vô dụng | bỏ cột Ngoài mẫu + chữ "n ngoài mẫu" ở Đạt MT; Tiến bộ theo kỹ năng thành **Tăng · Giữ nguyên · Giảm** (số bấm được, % dưới) |
+| 4 | Dòng chữ nhỏ thừa, chỗ trống dưới bảng trái, "quá hạn" lặp | bỏ dòng "chấm đúng hạn…" (việc GV ở tab Phân tích GV); bỏ khối "Hỗ trợ · Case / PA" (Case có PA trùng ô số) → **dải 5 số**: Đạt MT · Đạt Target thi thật · Thi đợt này · Case có PA · PA cải thiện; hai bảng Kết quả MT · Tiến bộ đứng cạnh nhau **cùng chiều cao** |
+| 5 | Cột bị cắt chữ | Tiến bộ đủ 4 cột ở 1440 / 1280 / 375; tiêu đề bảng GV xuống dòng |
+| 6 | Bảng chi nhánh dồn phải, thừa ô trống | `Bang deu`: cột tên giữ rộng của nó, phần dư chia đều mọi cột; Báo cáo HV thêm cột **Thi đợt này · SOS 2–3** (Tổng quan cũng hết dồn phải) |
+| 7.1 | Dòng "GVCN + danh sách lớp" xấu | **bỏ hẳn** (Phân tích GV và Tổng quan › GV cần chú ý); dòng phụ chỉ môn dạy |
+| 7.2 | Quá hạn không nên là một cột | bỏ cột; "⚠ n quá hạn" (bấm → bài trễ) nằm dưới ô Chấm Test đúng hạn, chỉ hiện khi > 0 |
+| 7.3 | "Điểm đúng hạn" → "Chấm Test đúng hạn" | đổi ở Phân tích GV, panel, Tổng quan |
+| 7.4 | Tách Hành chính / Học thuật rõ hơn | đầu nhóm có nền màu (xanh / hồng) + vạch trên; vạch dọc đậm chạy suốt bảng giữa hai nhóm |
+| — | (tự quyết) | Đầy đủ bỏ "Ghi KQ PA" — trùng hẳn "Việc đúng hạn" (cùng một tập việc); "In" lên cuối hàng lọc (ẩn ở 375) |
+
 ## Không hàm đếm thứ hai (số = Tổng quan #551)
 
 | Số | Nguồn (một hàm) | Tổng quan dùng |
