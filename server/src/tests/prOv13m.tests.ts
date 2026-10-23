@@ -103,7 +103,7 @@ export async function runPrOv13mTests(t: YThucTestKit) {
       const dong = (await json(await goi(QL, `/students/${x.sid}/lo-trinh`))) as any[];
       assert(dong[0].buocTiep?.daXong === bt.daXong, JSON.stringify(dong[0]));
       const hoSo = await json(await goi(QL, `/students/${x.sid}`));
-      assert(hoSo.buocTiep?.daXong === bt.daXong && hoSo.dauHoSo.viec.cuaBan.some((i: any) => i.loai === 'buoc-tiep' && i.chu === bt.daXong), JSON.stringify(hoSo.dauHoSo.viec.cuaBan));
+      assert(hoSo.buocTiep?.daXong === bt.daXong && hoSo.dauHoSo.viec.cuaBan.some((i: any) => i.loai === 'buoc-tiep' && i.chu === 'Chọn bước tiếp · OVR 6.5 · Đạt Target'), JSON.stringify(hoSo.dauHoSo.viec.cuaBan));
       /* TVV: ô Tổng quan "Chờ chọn bước tiếp" = góc Cần làm (Học viên & Lớp) — cùng tập em. */
       conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(TVV, x.sid);   // em của TVV (phạm vi "Của tôi" của cả hai màn)
       const tq = await json(await goi(TVV, '/tong-quan/hoc-vien'));

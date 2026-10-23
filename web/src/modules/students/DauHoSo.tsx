@@ -1,11 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { chuPhuHuynh, chuTamDung, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { chuPhuHuynh, chuTamDung, chuTuanHoc, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
 import { NhanLich } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
-import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
-import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { IconCanhBao, IconGap, IconTamDung } from '../../ui/BieuTuong.tsx';
@@ -43,13 +41,13 @@ export function DongThongTin({ tt, tvv }: { tt: any; tvv?: string | null }) {
   const target = ((tt.target !== null && tt.target !== undefined) || tt.kck)   // OV-9: "6.5 · KCK" · "— · KCK"
     && <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} /></span>} />;
   const thi = tt.thiDuKien
-    ? <NhanGt key="thi" n={tt.lopThuong ? dich(tt.thiDuKien.nhan) : t('Ngày thi')} g={<span className="tabular-nums">{tt.lopThuong ? tt.thiDuKien.gt : `${tt.thiDuKien.nhan === 'Dự kiến thi' ? t('Dự kiến') : dich(tt.thiDuKien.nhan)} ${tt.thiDuKien.gt}`.trim()}</span>} />
+    ? <NhanGt key="thi" n={tt.lopThuong ? dich(tt.thiDuKien.nhan) : t('Ngày thi')} g={<span className="tabular-nums">{tt.lopThuong ? tt.thiDuKien.gt : `${dich(tt.thiDuKien.nhan) === t('Dự kiến thi') ? t('Dự kiến') : dich(tt.thiDuKien.nhan)} ${tt.thiDuKien.gt}`.trim()}</span>} />
     : !tt.lopThuong && <NhanGt key="thi" n={t('Ngày thi')} g={<NhanLich loai="chua">{t('Chưa có lịch')}</NhanLich>} />;
   const muc: ReactNode[] = [
     <NhanGt key="lop" n={t('Lớp')} g={tt.lopId ? <Link to={`/hoc-vien/lop/${tt.lopId}`} className="text-slate-100 no-underline hover:underline">{tt.lop}</Link> : tt.lop} />,
     tt.loTrinh && <NhanGt key="lt" n={tt.lopThuong ? t('Chương trình') : t('Lộ trình')} g={dich(tt.loTrinh)} />,
     !tt.lopThuong && target,
-    tt.tuanHoc && <NhanGt key="tuan" n={t('Tuần học')} g={<span className="tabular-nums">{[tt.tuanHoc.tuan === null ? null : tt.tuanHoc.tong ? `${tt.tuanHoc.tuan}/${tt.tuanHoc.tong}` : String(tt.tuanHoc.tuan), tt.tuanHoc.dangDung ? t('đang dừng') : null].filter(Boolean).join(' · ')}</span>} />,
+    tt.tuanHoc && <NhanGt key="tuan" n={t('Khoá học')} g={<span className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</span>} />,
     thi,
     tt.lopThuong && target,
     tt.thiIelts && <NhanGt key="ielts" n={t('Thi IELTS dự kiến')} g={<span className="tabular-nums">{tt.thiIelts}</span>} />,
@@ -194,7 +192,7 @@ function OViec({ x, chinh, homNay, onLam }: { x: Viec; chinh: boolean; homNay: s
       style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
       <span className="min-w-0 truncate text-[14px] text-slate-100" title={chuViec(x)}><ChuViec chu={chuViec(x)} /></span>
       {x.mo
-        ? <button type="button" className={`btn btn-sm row-span-2 max-sm:min-h-[44px] ${chinh ? 'btn-primary' : ''}`} onClick={() => onLam(x)}>{nutViec(x)}</button>
+        ? <button type="button" className={['btn btn-sm row-span-2 max-sm:min-h-[44px]', chinh && 'btn-primary'].filter(Boolean).join(' ')} onClick={() => onLam(x)}>{nutViec(x)}</button>
         : <span className="row-span-2" />}
       <span className="min-w-0 text-[13px] text-slate-400">{x.han ? <HanViec x={x} homNay={homNay} /> : t('không hạn')}</span>
     </div>

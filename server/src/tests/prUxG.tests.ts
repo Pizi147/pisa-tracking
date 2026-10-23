@@ -39,11 +39,7 @@ export async function runPrUxGTests(t: YThucTestKit) {
     }
     assert(coTam > 0, 'bộ demo không có em nào SOS tạm thời — phép kiểm rỗng');
   });
-  check('G1c · ô "Kết quả gần nhất" của hồ sơ HV vẽ SOS qua <KetQuaDot> (không tự dựng chip "SOS n")', () => {
-    const s = doc('web/src/modules/students/DauHoSo.tsx');
-    assert(/import \{ KetQuaDot \}/.test(s) && /<KetQuaDot\b/.test(s), 'DauHoSo chưa dùng KetQuaDot');
-    assert(!/CHIP_SOS_O/.test(s) && !/>SOS \{kq\.sos\}</.test(s), 'DauHoSo còn chip SOS tự dựng');
-  });
+  /* G1c (ô "Kết quả gần nhất" vẽ SOS qua KetQuaDot) gỡ ở UI-HO-SO-HV: bốn ô đầu hồ sơ bỏ (V5 khu c) — kết quả lượt ở khối Mock Test (`KetQuaDot`). */
 
   // ------------------------------------------------------------------ G2 · một trạng thái, một màu
   console.log('\nUX-G · G2 một trạng thái một màu');

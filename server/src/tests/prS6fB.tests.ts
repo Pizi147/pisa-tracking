@@ -346,7 +346,7 @@ async function runTask8(t: YThucTestKit, d: any) {
       }
     }
     assert(so > 0, 'bộ demo phải có em FT dưới kỳ vọng');
-    assert(/kyNangHref=\{\(kn, attemptId\) =>/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'StudentDetailPage: liên kết theo attemptId của hàng');
+    /* UI-HO-SO-HV: bốn ô (kyNangHref) bỏ — liên kết kỹ năng → hồ sơ MT ở khối Mock Test (`duongDotTest`). */
   });
 
   check('S6F-b (8) · hồ sơ HV không tự ghép `/mock-test/${…}` (StudentPlanPanel, IntakePanel → duongDotTest + Link); dải chờ duyệt có "+ Thêm PA"; hàng PA không lặp "chưa có lịch"', () => {
