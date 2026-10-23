@@ -11,5 +11,17 @@
   },
   "env": {
     "GATEGUARD_BASH_ROUTINE_DISABLED": "1"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
   }
 }
