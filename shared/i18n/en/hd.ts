@@ -155,7 +155,7 @@ export const EN_HD = {
   'MT0: hết <b>Thứ Tư</b> tuần sau.': 'MT0: by end of <b>Wednesday</b> the next week.',
   'Mỗi việc có chip hạn ở cuối dòng.': 'Each task shows a due chip at the end of the row.',
   'Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.': 'Number of skills below expected on an MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.',
-  'Mọi ô MT có điểm cần nhận xét từ <b>10</b> ký tự (trừ MT0, MT cũ / nhập bù).': 'Every MT cell with a score needs a comment of at least <b>10</b> characters (except MT0, old MT / late entry).',
+  'Ô có điểm nên có nhận xét từ <b>10</b> ký tự — chỉ MT mới nhất của em (chỉ nhắc, không chặn).': 'Cells with a score should have a comment of at least <b>10</b> characters — only on the student\'s latest MT (a reminder, never a block).',
   'Ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.': 'A cell below expected also needs a <b>cause group</b>.',
   'Nhận xét + nhóm là nguyên nhân của Case.': 'The comment + group are the cause recorded on the Case.',
   'Mỗi ô = một em × một kỹ năng × một tuần; tối đa <b>500</b> ký tự.': 'Each box = one student × one skill × one week; up to <b>500</b> characters.',
