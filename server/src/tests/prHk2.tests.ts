@@ -120,7 +120,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C10 · mỗi bảng vừa khung ở 1440 có bang-dinh (không cùng overflow-x-auto); khung bao (card / ô) không còn overflow-hidden', () => {
     const DS: Array<[string, number]> = [   // [tệp, số chỗ bang-dinh tối thiểu]
-      ['web/src/modules/worklist/KhoiCanXuLy.tsx', 1], ['web/src/modules/worklist/BranchPulse.tsx', 1],   // CV-LOI (CV-10): LopToiDay nằm trong thẻ 560 px — bỏ bang-dinh, cuộn trong thẻ
+      // UI-TONG-QUAN: KhoiCanXuLy, BranchPulse đã gỡ (Tổng quan V5 dùng `Bang`). CV-LOI (CV-10): LopToiDay nằm trong thẻ 560 px — bỏ bang-dinh, cuộn trong thẻ
       ['web/src/modules/classes/BangDiemLopThuong.tsx', 1],   // UI-HO-SO-LOP: ClassRoster → BangHoSoLop (bảng `Bang`)
       ['web/src/modules/classes/TabTongKetLop.tsx', 1],
       ['web/src/modules/test/lichTest/HangLop.tsx', 1], ['web/src/modules/test/lichTest/KhoiNo.tsx', 1],
@@ -287,7 +287,6 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   check('C19 · J4: KhoiCanXuLy không còn "Gộp hai khung", OverviewPage không còn "Chỉ phần số đổi"', () => {
-    assert(!/Gộp hai khung/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'còn "Gộp hai khung"');
     assert(!/Chỉ phần số đổi/.test(doc('web/src/modules/worklist/OverviewPage.tsx')), 'còn "Chỉ phần số đổi"');
   });
 
@@ -303,7 +302,6 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       }
     }
     assert(soQuaHan > 0, 'bộ demo phải có dòng quá hạn dạng chữ');
-    assert(/⚠ \{x\.han\.chu\}/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'KhoiCanXuLy chưa in ⚠ trước chữ quá hạn');
   });
 
   const mywork: any = await import('../worklist/mywork.ts');
@@ -318,7 +316,6 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const khac = tatCa.filter((i) => i.ownerId !== null && i.ownerId !== P.mbManager.userId);
     assert(khac.length > 0 && khac.every((i) => typeof i.owner === 'string' && i.owner !== 'Bạn'), 'việc người khác phải ghi tên thật');
     assert(!/'Bạn'/.test(doc('server/src/worklist/mywork.ts')), 'mywork.ts còn "Bạn"');
-    assert(/Bạn/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'cột "Người giữ việc" của Tổng quan QL phải giữ "Bạn"');
   });
 
   check('C22 · J9: "Xác nhận PA Tutor" không kèm mô tả máy gán (· đến lúc thi / đến MT n / 1 tháng); tên người dạy tự viết giữ nguyên, kể cả có " · "', () => {

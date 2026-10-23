@@ -717,6 +717,7 @@ export async function runPrDonATests(t: YThucTestKit) {
    * `TAI_TRANG` cũng không có ở đây → phép (9e) đỏ, buộc người sửa đo lại trần tải trang.
    */
   const GOI_KHI_BAM: Record<string, string> = {
+    '/giao-vien/': 'UI-TONG-QUAN: chỉ số của chính GV — đo ở TAI_TRANG GV `/giao-vien/{gv}/chi-so`',
     '/cases': 'UI-HO-SO-LOP: bảng hồ sơ lớp (Case + PA) — không gọi ở Tổng quan',
     '/ref/periods': 'Filters.tsx — bộ lọc tuần, Tổng quan không vẽ', '/ref/current-period': 'Filters.tsx — như trên', '/ref/period-window': 'Filters.tsx — như trên',
     '/phan-tich/hieu-qua-pa': 'tab Phân tích — khi bấm tab', '/phan-tich/giao-vien': 'tab Phân tích', '/phan-tich/giao-vien/cham-diem': 'tab Phân tích',
@@ -777,10 +778,8 @@ export async function runPrDonATests(t: YThucTestKit) {
         }
       }
     }
-    /* Sáu ô số gọi `/metrics/{id}` lúc mở trang — id ghi trong MetricTiles.tsx. OV-15d: Tổng quan QL A bỏ ô số, còn ở Tổng quan CX. */
-    const o = [...docNguon('web/src/modules/worklist/MetricTiles.tsx').matchAll(/<(?:O|SoPhu) id="([^"]+)"/g)].map((m) => `/metrics/${m[1]}`);
-    for (const u of o) if (!TAI_TRANG['CX trang Tổng quan'].urls.some((x) => goc(x) === u)) thieu.push(`MetricTiles: ${u}`);
-    assert(tep.size > 20 && o.length >= 4 && !thieu.length, `GET lúc mở trang chưa có trong TAI_TRANG:\n${[...new Set(thieu)].join('\n')}`);
+    /* UI-TONG-QUAN: MetricTiles (ô số CX) đã gỡ — Tổng quan CX một GET `/tong-quan/v5`. */
+    assert(tep.size > 20 && !thieu.length, `GET lúc mở trang chưa có trong TAI_TRANG:\n${[...new Set(thieu)].join('\n')}`);
   });
 
   check('Dọn-a (9f) · VN31 khoá lại: phamViXuatMt (nav "Xuất") không chạy câu SQL nào trong request', () => {

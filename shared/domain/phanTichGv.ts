@@ -14,6 +14,8 @@ export type HangPtGv = {
   id: number; ten: string;
   /** "R · W1 · W2 · GVCN MB FT 103" (mockup 25). */
   phu: string;
+  /** UI-TONG-QUAN (chủ SP 23/10): hai phần của `phu` tách riêng để Tổng quan hiện khác kiểu — môn ("R · W1") · lớp chủ nhiệm. */
+  mon: string; lopCn: string[];
   dangDay: { lop: number; hv: number };
   /** `chamDiem` = "Điểm đúng hạn" (đơn vị BÀI). */
   chamDiem: OPtGv; ghiKetQuaPa: OPtGv;

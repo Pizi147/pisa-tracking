@@ -16,9 +16,7 @@ export async function runPrOv10cTests(t: YThucTestKit) {
   const { tongQuanMt } = await import('../worklist/tongQuanMt.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { highlights } = await import('../worklist/highlights.ts');
-  const { lichTest } = await import('../cham/canCham.ts');
   const { danhSachLop } = await import('../keHoach/keHoachTest.ts');
-  const { ensurePeriod } = await import('../platform/week.ts');
   const { demPhamVi, khopLocNhanh } = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV10c · Tổng quan theo vai: Admin Mock Test · TVV Học viên của tôi · CX Số liệu');
@@ -99,9 +97,9 @@ export async function runPrOv10cTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Admin "Mock Test" (Móng Bình: demo có MT tuần này, ô quá hạn, đề nghị dời)
   const idAdmin = tao([{ role: 'office_admin', branches: ['MB'] }]);
   const mb = one(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
-  const KHOA_MT = ['tuan', 'luotTuanNay', 'oChuaNhap', 'deNghiDoi', 'chuaXepLich', 'gvQuaHan'].sort().join();
+  const KHOA_MT = ['tuan', 'luotTuanNay', 'oChuaNhap', 'chuaXepLich', 'gvQuaHan'].sort().join();
 
-  check('OV10c-5 · Admin: bốn số bằng số ở màn ô đó mở (Kế hoạch Test tuần này · Công việc Chấm điểm · Lịch Test · Kế hoạch Test); không khối Case / PA', () => {
+  check('OV10c-5 · Admin: ba số bằng số ở màn ô đó mở (Kế hoạch Test tuần này · Công việc Chấm điểm · Kế hoạch Test; UI-TONG-QUAN bỏ Đề nghị dời); không khối Case / PA', () => {
     const ad = loadPrincipal(idAdmin);
     const r = tongQuanMt(ad, { branchId: mb });
     assert(Object.keys(r).sort().join() === KHOA_MT, `khoá lạ: ${Object.keys(r)}`);
@@ -113,33 +111,8 @@ export async function runPrOv10cTests(t: YThucTestKit) {
     assert(r.oChuaNhap.so === demPhamVi(w.dong, true).so, `Ô chưa nhập ${r.oChuaNhap.so} ≠ Công việc`);
     /* OV-11c (TE-4): lọc Quá hạn chỉ đếm bài quá hạn (việc con khớp lọc). */
     assert(r.oChuaNhap.quaHan === demPhamVi(w.dong.filter((d: any) => khopLocNhanh(d, 'qua-han', today)), true, { loc: 'qua-han', homNay: today }).so, 'Quá hạn ≠ Công việc lọc Quá hạn');
-    const lich = lichTest(ad, ensurePeriod(today).id, mb, today, { phamVi: 'tat-ca' });
-    assert(r.deNghiDoi === lich.lop.reduce((n: number, l: any) => n + l.choDuyetDoi, 0), 'Đề nghị dời ≠ Lịch Test');
     const kh = danhSachLop(ad, { branchId: mb });
     assert(r.chuaXepLich === kh.lop.filter((l: any) => l.loai === 'ft').reduce((n: number, l: any) => n + l.chuaCoLichTiep, 0), 'Chưa xếp lịch ≠ Kế hoạch Test');
-  });
-
-  check('OV10c-5b · việc đã xong không còn đếm: đề nghị dời đã duyệt → ô "Đề nghị dời chờ" giảm', () => {
-    thu(() => {
-      const ad = loadPrincipal(idAdmin);
-      /* Tự dựng: một kỹ năng MT tuần này của lớp FT Móng Bình vắng + đề nghị dời chờ (các phép trước có thể đã xử lý đề nghị của demo). */
-      const tuan = ensurePeriod(demoToday()).id;
-      const k = one(`SELECT k.attempt_id, k.skill FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id JOIN classes c ON c.id = a.class_id
-          JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
-         WHERE c.branch_id = ? AND c.is_fast_track = 1 AND a.kind = 'mock' AND a.status != 'cancelled' AND k.planned_period_id = ? AND k.sit_status = 'scheduled'
-           AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = k.attempt_id AND r.skill = k.skill AND r.status = 'pending')
-         ORDER BY k.attempt_id LIMIT 1`, mb, tuan);
-      assert(k, 'demo Móng Bình cần một kỹ năng MT tuần này');
-      const truoc = tongQuanMt(ad, { branchId: mb }).deNghiDoi;
-      conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = ?`).run(k.attempt_id, k.skill);
-      const id = conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, requested_on, decide_by, status, created_at)
-        VALUES (?, ?, 2, ?, ?, ?, ?, 'pending', datetime('now'))`).run(k.attempt_id, k.skill, tuan, tuan, demoToday(), demoToday()).lastInsertRowid;
-      xoaNho();
-      assert(tongQuanMt(ad, { branchId: mb }).deNghiDoi === truoc + 1, 'đề nghị chờ mới không được đếm');
-      conn.prepare(`UPDATE skill_move_requests SET status = 'approved' WHERE id = ?`).run(id);
-      xoaNho();
-      assert(tongQuanMt(ad, { branchId: mb }).deNghiDoi === truoc, 'đề nghị đã duyệt vẫn đếm');
-    });
   });
 
   check('OV10c-6 · GV chấm quá hạn: đúng dòng Chấm điểm quá hạn có người của Công việc; tổng ô ≤ số quá hạn', () => {

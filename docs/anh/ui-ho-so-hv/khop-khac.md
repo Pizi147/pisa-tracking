@@ -24,7 +24,7 @@ Em: Lê Quang Huy (id 3, SOS 1 + Case / PA) · Lê Minh Đức (id 74, thiếu d
 | C8 | Kết quả ghi nguyên văn (KT · 32/40) | KHÁC nhỏ — máy chủ lưu `tên bài` + `điểm / thang` (SV-BAI-LOP), nên hiện "KT nghe Unit 4 · 7/10"; chip vàng "BTVN 5/8 bài" của mockup không có luật màu → không tô |
 | C9 | Case & phương án · {kỹ năng}, chỉ của kỹ năng đang chọn → `CaseKyNang` (hàng Case / PA của bảng kỹ năng) | KHỚP |
 | C10 | Cột PA cố định (nút không đẩy chữ) | KHỚP (`table-fixed`, 4 cột) |
-| C11 | Đầu Case dạng lưới Từ · Nguyên nhân · Phụ trách · Mở · Mục tiêu + Sửa Case · Lịch sử | KHÁC [XM] — giữ hàng Case V4 (tên · nhóm nguyên nhân · nhận xét · trạng thái · Mở Case); Sửa / Lịch sử ở ngăn Case. Đổi lưới = sửa `HangCase` dùng chung với Hồ sơ lớp → PR riêng nếu PTA Plan duyệt |
+| C11 | Đầu Case dạng lưới Từ · Nguyên nhân · Phụ trách · Mở · Mục tiêu + Sửa Case · Lịch sử | KHÁC [XM] — giữ hàng Case V4 (tên · nhóm nguyên nhân · nhận xét · trạng thái · Mở Case); Sửa / Lịch sử ở ngăn Case. Đổi lưới = sửa `HangCase` dùng chung với Hồ sơ lớp → PR riêng sau. **Chủ SP chốt 23/10: GIỮ hàng Case V4** |
 | C12 | "+ Phương án" cuối khối | KHÁC — "+ Thêm PA" ở hàng Case khi Case chưa có PA (luật V4); Case đã có PA thêm qua ngăn Case |
 
 ## Truy vết `ho-so-hv.html`
@@ -41,13 +41,15 @@ Em: Lê Quang Huy (id 3, SOS 1 + Case / PA) · Lê Minh Đức (id 74, thiếu d
 | T8 | Chỉ xem / tải / lỗi | KHỚP (dải chỉ xem + ẩn nút theo quyền máy chủ; khung xương; lỗi tải có Thử lại; lỗi lưu panel giữ chữ — bấm thử mạng tắt) |
 | T9 | S Ex cạnh điểm S ở Hành trình (LUAT-NX-MT 7.1) | KHỚP (thoi hồng "S Ex 6.5", không tính) |
 | B1 | BỎ câu tóm tắt + bốn ô ở đầu | KHỚP (gỡ `CauTomTat`, `BonO`) |
-| B2 | BỎ lưới tuần CSS + chú giải 9 ký hiệu (`HanhTrinh.tsx`) | KHÁC [XM] — tab cũ đổi tên "Lộ trình & lớp" (Các lộ trình · chương theo lớp · trục tuần Case / PA) vẫn GIỮ: chương theo lớp + lịch sử Case / PA theo tuần chưa có chỗ khác. Bỏ hẳn nếu PTA Plan duyệt |
+| B2 | BỎ lưới tuần CSS + chú giải 9 ký hiệu (`HanhTrinh.tsx`) | KHÁC [XM] — tab cũ đổi tên "Lộ trình & lớp" (Các lộ trình · chương theo lớp · trục tuần Case / PA) vẫn GIỮ: chương theo lớp + lịch sử Case / PA theo tuần chưa có chỗ khác. **Chủ SP chốt 23/10: GIỮ lưới tuần trong tab "Lộ trình & lớp"** |
 | B3 | BỎ bỏ qua lượt thiếu điểm | KHỚP (vẽ khoảng trống) |
 | G1 | GIỮ kỳ vọng theo lượt (`target_at_attempt`) | KHỚP |
 | G2 | GIỮ FT tách W1 / W2 | KHỚP |
 | G3 | GIỮ Ý thức, Thông tin, Case / PA chi tiết | KHỚP |
 
 **Đếm:** 12 + 15 = 27 dòng — KHỚP 22 · KHÁC 5 (C8 nhỏ, C11 [XM], C12, T6 theo P1, B2 [XM]). **22/27 = 81 %**; nếu chủ SP chấp nhận C8, C12, T6 (theo luật đã chốt / dữ liệu máy chủ): 25/27 = 93 %.
+
+**Chủ SP chốt 23/10:** C11 giữ hàng Case V4 (đổi lưới = PR riêng sau) · B2 giữ lưới tuần trong tab "Lộ trình & lớp" · chấp nhận C8 / C12 / T6 → **cổng 93 % (≥ 90 %) ĐẠT**.
 
 ## Thao tác TRƯỚC → SAU PR (CLAUDE.md "PR giao diện V5 = nâng cấp")
 
@@ -63,7 +65,7 @@ Em: Lê Quang Huy (id 3, SOS 1 + Case / PA) · Lê Minh Đức (id 74, thiếu d
 | Khối Mock Test / Kết quả Test (MT{n} → hồ sơ MT, điểm kỹ năng → hồ sơ MT cuộn tới kỹ năng, nhãn dời / huỷ phần) | GIỮ — cuối tab Học thuật | |
 | Mini Test · Kết luận khoá | GIỮ | |
 | Tab Ý thức & Phối hợp | GIỮ | |
-| Tab Hành trình (Các lộ trình · Tổng kết · Bước tiếp · chương theo lớp · trục tuần) | GIỮ — tên tab "Lộ trình & lớp" | B2 [XM]; "Hành trình" nay là biểu đồ theo kỹ năng |
+| Tab Hành trình (Các lộ trình · Tổng kết · Bước tiếp · chương theo lớp · trục tuần) | GIỮ — tên tab "Lộ trình & lớp" | B2 (chủ SP chốt giữ); "Hành trình" nay là biểu đồ theo kỹ năng |
 | `?kn=` · `?dot=` · `?case=` · `?tong-ket=` · `?buoc-tiep=` · `?viec=` · `?mo=lo-trinh` | GIỮ (`?kn=` chọn ô điểm + cuộn tới Hành trình) | |
 | — | MỚI: Tiến độ trên lớp (đọc / ghi / sửa / xoá, API SV-BAI-LOP #513) · S Ex cạnh S · "vắng W3 SEP" dưới ô điểm / ở khoảng trống | |
 

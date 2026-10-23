@@ -50,6 +50,13 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/ql?ct=ft', maChuDich: { GVCN: 403 } },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/ql?ct=thuong' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/ql/tre?ct=ft&gv=-1' },
+  /* UI-TONG-QUAN: Tổng quan V5 MỘT GET (QL chế độ lớp · QT chế độ chi nhánh · CX) + TVV (Báo PH đúng hạn, Thi tháng này) và panel Báo PH. */
+  { trang: 'Tổng quan V5', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=ft' },
+  { trang: 'Tổng quan V5', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=thuong' },
+  { trang: 'Tổng quan V5', vai: ['QT'], url: '/tong-quan/v5?ct=ft&branchId={cn}' },
+  { trang: 'Tổng quan V5', vai: ['CX'], url: '/tong-quan/v5?ct=ft' },
+  { trang: 'Tổng quan V5', vai: ['TVV'], url: '/tong-quan/tvv' },
+  { trang: 'Tổng quan V5', vai: ['TVV'], url: '/tong-quan/tvv/o?o=bao-ph' },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/yeu-cau/dem?branchId={cn}' },
   /* PR-S6F-b (UXF-a P1): Báo cáo đơn vị — tín hiệu đọc sổ chỉ số MỘT lần mỗi chỉ số (không theo chi nhánh). */
   { trang: 'Báo cáo đơn vị', vai: ['QL', 'QT'], url: '/signals' },
@@ -1006,25 +1013,24 @@ export const TRAN_GHI_LO = {
 export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number }> = {
   'GV trang Tổng quan': {
     vai: 'GVCN', tran: 205,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289)
-    urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day?ct=ft', '/yeu-cau/dem'],
+    urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day?ct=ft', '/yeu-cau/dem', '/giao-vien/{gv}/chi-so'],   // UI-TONG-QUAN: + chỉ số GV
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
   'TVV trang Tổng quan': {
-    vai: 'TVV', tran: 120,
-    urls: ['/demo/session', '/notifications', '/ref/classes', '/tong-quan/hoc-vien'],
+    vai: 'TVV', tran: 186,   // UI-TONG-QUAN: + /tong-quan/tvv + /my-work (n việc của tôi) — đo 143 → max(143 + 10, ⌈143 × 1,3⌉)
+    urls: ['/demo/session', '/notifications', '/ref/classes', '/tong-quan/hoc-vien', '/tong-quan/tvv', '/my-work'],   // UI-TONG-QUAN: 3 nhóm TVV
   },
   'QL trang Tổng quan': {
     vai: 'QL', tran: 450,   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
     /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới). OV-15d (Tổng quan QL A): bỏ sáu ô số + Điểm đáng chú ý;
        thêm bảng GV (Trễ chấm). Thẻ "Chờ duyệt" (`/yeu-cau?hop=cho-duyet`) chỉ tải khi có thẻ. */
     /* OV-15h1: GET dữ liệu 4 → 2 — Lớp cần chú ý + Tuần này + Trễ chấm thành một `/tong-quan/ql`; Cần bạn quyết giữ `/tong-quan/quan-ly` (gộp khung). */
-    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/yeu-cau/dem', '/tong-quan/quan-ly', '/tong-quan/ql?ct=ft'],
+    /* UI-TONG-QUAN: Tổng quan V5 — một `/tong-quan/v5` (chỉ số + Lớp cần chú ý + Trễ chấm) · Chờ bạn duyệt dòng gọn · GV cần chú ý (bảng Phân tích GV). */
+    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/yeu-cau/dem', '/tong-quan/v5?ct=ft', '/yeu-cau?hop=cho-duyet&branchId={cn}', '/phan-tich/giao-vien?cn={cn}&ct=ft'],
   },
   'CX trang Tổng quan': {
     vai: 'CX', tran: 450,
-    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/tong-quan/hoc-vien', '/tong-quan/diem-chu-y?ct=ft',
-      '/metrics/hv-duoi-ky-vong-mon?ct=ft', '/metrics/hv-co-case-mo?ct=ft', '/metrics/case-mo?ct=ft', '/metrics/case-cho-xac-dinh-nguyen-nhan?ct=ft',
-      '/metrics/case-xac-dinh-nguyen-nhan-qua-han?ct=ft', '/metrics/pa-can-cap-nhat?ct=ft', '/highlights?ct=ft', '/tong-quan/chi-nhanh?ct=ft'],
+    urls: ['/demo/session', '/notifications', '/ref/branches', '/ref/classes', '/tong-quan/hoc-vien', '/tong-quan/v5?ct=ft'],   // UI-TONG-QUAN: một GET
   },
   'Admin trang Tổng quan': {
     vai: 'ADMIN', tran: 450,
