@@ -10,7 +10,7 @@ import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import {
-  DauTrangTq, thamSoTq, TongQuanAdminV5, TongQuanCxV5, TongQuanGvV5, TongQuanQlV5, TongQuanQtV5, TongQuanTutorAn, TongQuanTvvV5, type TongQuanV5Data,
+  DauTrangTq, thamSoTq, TongQuanAdminV5, TongQuanCxV5, TongQuanGvV5, TongQuanQlV5, TongQuanQtV5, TongQuanTvvV5, type TongQuanV5Data,
 } from './TongQuanV5.tsx';
 import { laVaiQuanLy } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -18,7 +18,7 @@ import { t } from '@shared/i18n/index.ts';
 /**
  * TỔNG QUAN THEO VAI V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B) — trang đầu mọi vai (K10: GV cũng vậy). Chia vai theo cờ điều hướng của
  * máy chủ (`nav.ts`), dữ liệu theo quyền máy chủ: QL / QT / CX một GET `/tong-quan/v5`; GV `/giao-vien/:id/chi-so` + Lớp tôi dạy; TVV `/tong-quan/tvv`;
- * Admin giữ 4 ô Mock Test + Lịch sắp tới (V4); Head tutor chỉ dòng "Tutor tạm ẩn" (AN-TUTOR). Chi nhánh đang chọn ở URL (`cn`), khung nhớ theo máy.
+ * Admin 3 ô Mock Test + Lịch sắp tới (V4, bỏ "Đề nghị dời chờ"); Head tutor tạm dùng góc nhìn GV (chủ SP 23/10 — chưa có bộ thông tin Tutor). Chi nhánh đang chọn ở URL (`cn`), khung nhớ theo máy.
  */
 export default function OverviewPage() {
   const { session } = useSession();
@@ -48,9 +48,8 @@ export default function OverviewPage() {
     </div>
   );
 
-  if (vai === 'ht') return trang(t('Tutor'), <TongQuanTutorAn />);
   if (vai === 'tvv') return trang(t('HV của tôi'), <TongQuanTvvV5 />);
-  if (vai === 'gv') return trang(session?.user?.fullName ?? '', <TongQuanGvV5 lopToiDay={<LopToiDay />} />);
+  if (vai === 'gv' || vai === 'ht') return trang(session?.user?.fullName ?? '', <TongQuanGvV5 lopToiDay={<LopToiDay />} />);
   if (vai === 'admin') {
     return trang(t('Mock Test'), <TongQuanAdminV5 cn={branchId} mockTest={<MockTestAdmin branchId={branchId} />} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
   }

@@ -114,6 +114,12 @@ export type CaseGv = CaseChiTiet & { hocVien: string; maLop: string | null };
 export function caseMoCuaGv(p: Principal, gvId: number, branchIds: number[] | null, ct: ChuongTrinh | null = null): CaseGv[] {
   return caseGvTuRows(listCases(p, { ownerUserId: gvId }).rows, branchIds, ct).map(({ chu, ...c }) => c);
 }
+/** UI-TONG-QUAN (XM-2): Case đang mở theo người phụ trách ở chi nhánh `cn` — CÙNG luật bảng GV chi nhánh / panel `/giao-vien/:id/o?cot=case-mo&cn=&ct=`. */
+export function caseMoTheoChu(p: Principal, cn: number, ct: ChuongTrinh | null): Map<number, number[]> {
+  const m = new Map<number, number[]>();
+  for (const c of caseGvTuRows(listCases(p, { branchId: cn }).rows.filter((c) => c.ownerUserId !== null), [cn], ct)) (m.get(c.chu) ?? m.set(c.chu, []).get(c.chu)!).push(c.id);
+  return m;
+}
 /** Cùng luật lọc cho hồ sơ một GV và bảng chi nhánh (số ở bảng = số ở hồ sơ): Case chưa xong, chi nhánh gốc ∈ `branchIds`, khung `ct`. */
 function caseGvTuRows(mapped: readonly MappedCase[], branchIds: number[] | null, ct: ChuongTrinh | null): (CaseGv & { chu: number })[] {
   const rows = mapped.filter((c) => c.state !== 'done'

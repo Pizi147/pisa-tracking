@@ -57,7 +57,7 @@ export const HD_QL: HuongDan = {
       muc: [
         { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Đạt MT</b> · <b>Case có PA</b> · <b>Chờ duyệt</b> · <b>Thi tháng này</b>.', 'Bấm số mở danh sách chỉ đọc; thống kê theo kỳ ở <b>Phân tích</b>.'],
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
-        { id: 'ql-tq-can-xu-ly', ten: 'Chờ bạn duyệt · Đi tiếp', buoc: ['<b>Chờ bạn duyệt</b>: bấm dòng mở panel duyệt; <b>Hộp duyệt ›</b> xem hết.', '<b>Đi tiếp</b>: link sang danh sách đã lọc, Công việc, Báo cáo.'],
+        { id: 'ql-tq-can-xu-ly', ten: 'Chờ bạn duyệt · Điều hướng', buoc: ['<b>Chờ bạn duyệt</b>: bấm dòng mở panel duyệt; <b>Hộp duyệt ›</b> xem hết.', '<b>Điều hướng</b>: link sang danh sách đã lọc, Công việc, Lịch thi, Báo cáo.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' } },
         { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · GV cần chú ý', buoc: ['<b>Lớp cần chú ý</b>: Đạt MT, SOS 1 · 2 · 3, Case chưa PA, Thi tháng này; 5 lớp cần chú ý nhất.', '<b>GV cần chú ý</b>: Hành chính / Học thuật; cột <b>Quá hạn</b> bấm số bài để nhập thay.'],
           chi: { hd: 'tq-lop-chu-y', duong: '/', chu: 'Mỗi lớp một hàng; bấm số để xử lý.' } },

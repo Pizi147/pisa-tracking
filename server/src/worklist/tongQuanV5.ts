@@ -7,7 +7,8 @@ import { demoToday } from '../demoConfig.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
 import { treCham } from './tongQuanQl.ts';
 import { tapDatMt, tapKqMt, tapThiThangNayLop } from '../phanTich/baoCao.ts';
-import type { MetricRow } from './metrics.ts';
+import { metricSet, type MetricRow } from './metrics.ts';
+import { caseMoTheoChu } from '../giaoVien/hoSo.ts';
 
 /**
  * TỔNG QUAN V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B) — MỘT GET cho QL / QT / CX. KHÔNG ĐẾM LẠI: mọi số gọi CHÍNH hàm tập của Báo cáo
@@ -31,6 +32,8 @@ export type TongQuanV5 = {
   /** Chế độ lớp (một chi nhánh) — Lớp cần chú ý. */ lop: DongLopV5[] | null;
   /** Chế độ chi nhánh (QT / CX chưa chọn chi nhánh). */ chiNhanh: DongCnV5[] | null;
   tre: ReturnType<typeof treCham>['dong'];
+  /** XM-2 (chủ SP 23/10): "Case có PA" theo người phụ trách (chế độ lớp) — mẫu = Case đang mở của GV (`caseMoTheoChu`), tử = mẫu trừ Case chưa chốt PA. */
+  caseGv: Record<number, { coPa: number; mo: number }>;
 };
 
 const tang = (m: Map<number, number>, k: number | undefined) => { if (k !== undefined) m.set(k, (m.get(k) ?? 0) + 1); };
@@ -55,26 +58,30 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
     return { datMt: (k: number): TyLeV5 | null => (dm ? { dat: dat.get(k) ?? 0, mau: mau.get(k) ?? 0 } : null), thi: (k: number) => th.get(k) ?? 0 };
   };
 
+  /* Đạt Target thi thật: CHÍNH hàng "Thi thật" của Kết quả MT — em theo lớp của dòng; mẫu = em có Overall + Target. Chỉ FT. Cả hai chế độ (CX xem tổng). */
+  const tt = ft ? tapKqMt(p, loc).get('thi') : null;
+  const thiThat: TyLeV5 | null = tt ? [...tt.values()].reduce((a, e) => (e.cot === 'chua-du' ? a : { dat: a.dat + (e.cot === 'dat' ? 1 : 0), mau: a.mau + 1 }), { dat: 0, mau: 0 }) : null;
   let lop: DongLopV5[] | null = null;
   let chiNhanh: DongCnV5[] | null = null;
-  let thiThat: TyLeV5 | null = null;
+  const caseGv: TongQuanV5['caseGv'] = {};
   if (bang.cheDo === 'lop') {
     const s = theo((l) => l);
     lop = bang.hang.map((h) => ({
       id: h.id, khoa: h.khoa, ma: h.nhan, hv: h.o.hocVien.n, gvcn: h.gvcn ?? null,
       datMt: s.datMt(h.id), sos: [h.o.sos1.n, h.o.sos2.n, h.o.sos3.n], caseChuaPa: h.o.caseChuaChot.n, thiThangNay: s.thi(h.id),
     }));
+    if (bang.branchId) {
+      const chua = new Set(metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', { branchId: bang.branchId, program: f.ct }).ids);
+      for (const [gv, ids] of caseMoTheoChu(p, bang.branchId, f.ct)) caseGv[gv] = { mo: ids.length, coPa: ids.filter((id) => !chua.has(id)).length };
+    }
   } else {
     const s = theo((l) => cnCua.get(l));
-    /* Đạt Target thi thật (QT): CHÍNH hàng "Thi thật" của Kết quả MT — em theo lớp của dòng; mẫu = em có Overall + Target. Chỉ FT. */
-    const tt = ft ? tapKqMt(p, loc).get('thi') : null;
     const ttMau = new Map<number, number>(), ttDat = new Map<number, number>();
     for (const e of tt?.values() ?? []) {
       if (e.cot === 'chua-du') continue;
       const k = cnTheoMa.get(e.lop);
       tang(ttMau, k); if (e.cot === 'dat') tang(ttDat, k);
     }
-    if (tt) thiThat = [...tt.values()].reduce((a, e) => (e.cot === 'chua-du' ? a : { dat: a.dat + (e.cot === 'dat' ? 1 : 0), mau: a.mau + 1 }), { dat: 0, mau: 0 });
     chiNhanh = bang.hang.map((h) => ({
       id: h.id, khoa: h.khoa, ten: h.nhan, datMt: s.datMt(h.id),
       casePa: { coPa: Math.max(0, h.o.caseMo.n - h.o.caseChuaChot.n), mo: h.o.caseMo.n },
@@ -89,6 +96,7 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
     casePa: { coPa: Math.max(0, mo - chuaPa), mo, chuaPa }, thiThangNay: thi.size, thiThat,
     lop, chiNhanh,
     tre: bang.cheDo === 'lop' ? treCham(p, bang.branchId, f.ct).dong : [],
+    caseGv,
   };
 }
 
