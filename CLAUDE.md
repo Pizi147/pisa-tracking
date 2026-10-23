@@ -8,7 +8,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
    `thiet-ke/PISA-Rulebook-2026-09-19.md`.
 2. **Khung mockup đã duyệt** trong `thiet-ke/` thắng kế hoạch, đặc tả, `DESIGN.md` và luật giao diện cũ hơn ngày duyệt (trừ mục 1); quyết định mới trái khung → sửa mockup.
 3. Kế hoạch PR, đặc tả, `DESIGN.md`.
-4. Skill (impeccable, ponytail, superpowers, ecc, web-design-guidelines, ui-ux-pro-max). Skill gợi ý trái với mục 1–3 thì không tự làm: ghi vào báo cáo để
+4. Skill (impeccable, ponytail, superpowers, web-design-guidelines, ui-ux-pro-max). Skill gợi ý trái với mục 1–3 thì không tự làm: ghi vào báo cáo để
    chủ sản phẩm quyết.
 
 ## Overhaul 21/10 (chủ SP duyệt #486) — nguồn `docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/` (02 quyết định · 04 hệ thiết kế · 05 workflow · 06 mockup · 07 PR)
@@ -71,13 +71,11 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Không bao giờ bớt: kiểm tra dữ liệu nhập, xử lý lỗi chống mất dữ liệu, phân quyền, bảo mật.
 - Chú thích `ponytail:` được phép, nhưng liệt kê chúng trong mô tả PR. Trước khi mở PR: `/ponytail-review`.
 
-## Rà PR bằng ECC (chủ SP duyệt 20/10)
-- Chỉ khi **rà sâu** (plan.md 1.3), planning chạy agent theo phạm vi PR, tối đa 2:
-  quyền, đăng nhập → `ecc:security-reviewer` · có thể mất dữ liệu, migrate, API → `ecc:silent-failure-hunter` ·
-  logic máy chủ / React lớn → `ecc:typescript-reviewer` hoặc `ecc:react-reviewer`. PR thường: không chạy (planning đọc diff là đủ).
-- Không dùng `ecc:browser-qa`, `ecc:click-path-audit` (trùng bước bấm thử một lần ở session code).
-- Không dùng `orch-*`, `multi-*`, `gan-*`, `loop-*` (tốn token, trùng quy trình PTA Plan).
-- Plugin superpowers, ponytail, ecc khai báo trong `.claude/settings.json` để session cloud cũng có.
+## Rà sâu PR (chủ SP 23/10: gỡ ECC vì trùng)
+- Chỉ khi **rà sâu** (plan.md 1.3), planning chạy lệnh có sẵn theo phạm vi PR:
+  quyền, đăng nhập → `/security-review` · mất dữ liệu, migrate, API, logic máy chủ / React lớn → `/code-review high`.
+  PR thường: không chạy (planning đọc diff là đủ).
+- Plugin superpowers, ponytail khai báo trong `.claude/settings.json` để session cloud cũng có.
 
 ## Session planning soạn prompt cho session code
 - Có việc giao diện: ghi rõ lệnh impeccable cần chạy và `/ponytail lite`.

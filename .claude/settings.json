@@ -11,21 +11,11 @@
         "source": "github",
         "repo": "DietrichGebert/ponytail"
       }
-    },
-    "ecc": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/affaan-m/ECC.git"
-      }
     }
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true,
-    "ponytail@ponytail": true,
-    "ecc@ecc": true
-  },
-  "env": {
-    "GATEGUARD_BASH_ROUTINE_DISABLED": "1"
+    "ponytail@ponytail": true
   },
   "hooks": {
     "SessionStart": [
