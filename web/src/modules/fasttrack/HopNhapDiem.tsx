@@ -198,6 +198,8 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, ...hop }: O
   const coDongDau = (thiBu && !!cell.daChot) || (cell.noShow?.state === 'khong-co-bai' && !cell.daChot);
   const phu = cell.thieuNhanXet ? <ChuThieu cell={cell} />
     : coDongDau ? <DongDau cell={cell} thiBu={thiBu} />
+    /* NEN-SUA (nợ #544): ô đã có điểm ở tuần thi bù giữ "vắng W3 SEP" (thay "n câu"). */
+    : cell.doiTu ? <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDoiVang(cell.doiTu)}</span>
     : h.phu ? <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{h.phu}</span>
     : <SoCau cell={cell} />;
   if (!suaDuoc(cell)) {
@@ -297,10 +299,10 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
   const kv = theoBand ? null : ctx.kyVong ?? cell.kyVong ?? null;
   const bandSau = doiDiem ? (diem.patch && !('noShow' in diem.patch) ? diem.preview : null) : cell.band;
   const coDiemSau = doiDiem ? bandSau !== null : coDiemChinhThuc(cell);
-  const batBuoc = !!cell.batBuocNhanXet && !theoBand;
-  const canNhom = batBuoc && coDiemSau && canNhomNguyenNhan(bandSau, kv);
+  const nenCo = !!cell.nenCoNhanXet && !theoBand;
+  const canNhom = nenCo && coDiemSau && canNhomNguyenNhan(bandSau, kv);
   const doiNhom = canNhom && nhom.join() !== nhom0.join();
-  const thieu = nhapDuoc ? thieuNhanXetMt({ batBuoc, coDiem: coDiemSau, band: bandSau, kyVong: kv, nhanXet: nx, nhom }) : null;
+  const thieu = nhapDuoc ? thieuNhanXetMt({ nenCo, coDiem: coDiemSau, band: bandSau, kyVong: kv, nhanXet: nx, nhom }) : null;
   const daGo = doiDiem || doiNx || doiGv || doiNhom || lyDo.trim() !== '';
   const hoiLyDo = coDiemChinhThuc(cell) && doiDiem && !!diem.patch && !('noShow' in diem.patch);
   const nhanVang = nhapDuoc && !vang && !coDiemChinhThuc(cell) && !chanDau(cell) && !doiDiem && !cell.khongVang;
@@ -446,7 +448,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
           </div>
         </div>
       )}
-      {(!vang || (batBuoc && coDiemSau)) && nhapDuoc && (
+      {(!vang || (nenCo && coDiemSau)) && nhapDuoc && (
         <label className="block">
           <span className="mb-1.5 flex items-baseline justify-between text-xs font-medium text-slate-300">
             <span>{laW ? t('Nhận xét Task {nTask}', { nTask }) : t('Nhận xét')}</span>

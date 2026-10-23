@@ -145,7 +145,7 @@ export function khopHocVien(ten: string, ds: readonly { attemptId: number; ten: 
 /** Phần của ô lưới (`Cell` ở web) mà xem trước cần. */
 export type ODanHienCo = {
   skill: string; required: boolean; canEdit: boolean; rawScore: number | null; band: number | null; criteria: (number | null)[];
-  bandThang: boolean; batBuocNhanXet?: boolean; kyVong?: number | null; nhanXet?: string | null; nhomNguyenNhan?: string[];
+  bandThang: boolean; nenCoNhanXet?: boolean; kyVong?: number | null; nhanXet?: string | null; nhomNguyenNhan?: string[];
   lyDoKhoa?: string; progress?: string; khongVang?: string | null;
   /** Dấu "-" còn trên ô (chưa chốt / đã chốt) — như `coDau` của lưới. */
   noShow?: unknown; daChot?: unknown;
@@ -217,8 +217,8 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
   /* Giống hệt điểm + nhận xét đang có → không gửi gì (dán lại cả bảng không ghi đè lịch sử). */
   if (truoc !== null && sau === truoc && !doiNx) return { loai: 'bo' };
   if (!patch && !doiNx) return { loai: 'bo' };
-  /* LUAT-NX-MT (chủ SP 22/10): thiếu nhận xét không là lỗi dòng. Nhóm nguyên nhân chỉ gợi ý ở MT thường (`batBuocNhanXet`); MT cũ / MT0 không hỏi. */
-  const canNhom = !!cell.batBuocNhanXet && canNhomNguyenNhan(band, cell.kyVong) && !cell.nhomNguyenNhan?.length;
+  /* LUAT-NX-MT (chủ SP 22/10): thiếu nhận xét không là lỗi dòng. Nhóm nguyên nhân chỉ gợi ý ở MT thường (`nenCoNhanXet`); MT cũ / MT0 không hỏi. */
+  const canNhom = !!cell.nenCoNhanXet && canNhomNguyenNhan(band, cell.kyVong) && !cell.nhomNguyenNhan?.length;
   const p: PatchDan = { ...(patch && sau !== truoc ? patch : {}), ...(doiNx ? { nhanXet: nx } : {}) };
   return { loai: 'ghi', patch: p, band, truoc: patch && sau !== truoc ? truoc : null, sau, canNhom };
 }
@@ -226,7 +226,7 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
 /**
  * HOÀN TÁC một ô vừa dán: ô trước khi lưu → các lệnh trả lại như cũ, theo thứ tự (gửi cùng `POST /attempts/scores/lo`). Ô trống → xoá; vừa dán
  * "-" → gỡ dấu; ô "-" bị điểm đè → xoá điểm rồi đặt lại "-"; L / R giữ dạng cũ (số câu / band), W / S giữ tiêu chí (hoặc band MT cũ);
- * nhận xét trả khi lần dán có gửi; nhóm nguyên nhân cũ LUÔN gửi lại (điểm cũ dưới kỳ vọng thiếu nhóm thì máy chủ từ chối).
+ * nhận xét trả khi lần dán có gửi; nhóm nguyên nhân cũ LUÔN gửi lại để ô về đúng nhóm cũ (LUAT-NX-MT: thiếu nhóm chỉ nhắc, máy chủ không từ chối).
  */
 export function patchTruoc(c: Pick<ODanHienCo, 'skill' | 'rawScore' | 'band' | 'criteria' | 'nhanXet' | 'nhomNguyenNhan' | 'noShow' | 'daChot'>, p: PatchDan): PatchDan[] {
   if (p.noShow) return [{ noShow: false }];

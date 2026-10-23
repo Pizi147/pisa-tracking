@@ -35,7 +35,7 @@ CAP = [(c, NEN, 4.5) for c in ['chu', 'chu-2', 'chu-3', 'nhan', 'hong-chu', 'loi
     ('sos1', ['be-mat'], 3.0), ('sos2', ['be-mat'], 3.0), ('sos3', ['be-mat'], 3.0),
     # V5-D P6: chữ trên nền SOS đặc + nền SOS tách khỏi mặt
     ('sos1-chu', ['sos1-nen'], 4.5), ('sos2-tren', ['sos2-nen'], 4.5), ('sos3-tren', ['sos3-nen'], 4.5),
-    ('sos3-nen', ['be-mat'], 3.0),  # SOS 2 tách khỏi mặt nhờ viền --sos2 (đã đo ở trên)
+    ('sos3-vien', ['be-mat', 'be-mat-2'], 3.0),  # NEN-SUA: viền SOS 3 tách mặt (nền đỏ đậm tối < 3 : 1). SOS 2 tách khỏi mặt nhờ viền --sos2 (đã đo ở trên)
 ]
 
 loi = 0

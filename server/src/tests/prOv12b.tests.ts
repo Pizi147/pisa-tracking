@@ -52,13 +52,13 @@ export async function runPrOv12bTests(t: any) {
   const soCau = (b: number) => { for (let n = 40; n >= 0; n -= 1) if (d.bandTuSoCau('reading', n) === b) return n; throw new Error(`không có ${b}`); };
 
   check('OV12b-1 · luật chung: thiếu / ngắn / thiếu nhóm khi dưới kỳ vọng; miễn ô không điểm, MT cũ, MT0', () => {
-    const o = (x: any) => d.thieuNhanXetMt({ batBuoc: true, coDiem: true, band: 6, kyVong: 5.5, nhanXet: NX, nhom: [], ...x });
+    const o = (x: any) => d.thieuNhanXetMt({ nenCo: true, coDiem: true, band: 6, kyVong: 5.5, nhanXet: NX, nhom: [], ...x });
     assert(o({ nhanXet: null }) === 'ghi-nhan-xet' && o({ nhanXet: '   ' }) === 'ghi-nhan-xet', 'trống');
     assert(o({ nhanXet: 'Làm tốt' }) === 'nhan-xet-ngan' && o({ nhanXet: '123456789' }) === 'nhan-xet-ngan' && o({ nhanXet: '1234567890' }) === null, 'ngưỡng 10');
     assert(o({ band: 4.5 }) === 'chon-nhom' && o({ band: 4.5, nhom: [R[1]] }) === null && o({ band: 4.5, kyVong: null }) === null, 'nhóm khi dưới kỳ vọng');
-    assert(o({ coDiem: false, nhanXet: null }) === null && o({ batBuoc: false, nhanXet: null }) === null, 'miễn');
-    assert(d.batBuocNhanXetMt({ kind: 'mock', lichSu: false }) && !d.batBuocNhanXetMt({ kind: 'mock', lichSu: true })
-      && !d.batBuocNhanXetMt({ kind: 'mt0', lichSu: false }) && !d.batBuocNhanXetMt({ kind: 'progress', lichSu: false }), 'phạm vi MT');
+    assert(o({ coDiem: false, nhanXet: null }) === null && o({ nenCo: false, nhanXet: null }) === null, 'miễn');
+    assert(d.nenCoNhanXetMt({ kind: 'mock', lichSu: false }) && !d.nenCoNhanXetMt({ kind: 'mock', lichSu: true })
+      && !d.nenCoNhanXetMt({ kind: 'mt0', lichSu: false }) && !d.nenCoNhanXetMt({ kind: 'progress', lichSu: false }), 'phạm vi MT');
     assert(JSON.stringify(d.kiemNhomNguyenNhan([R[3], R[1]], 'reading')) === JSON.stringify({ gt: [R[3], R[1]] }), 'giữ thứ tự');
     assert('loi' in d.kiemNhomNguyenNhan([Wc[0]], 'reading') && 'loi' in d.kiemNhomNguyenNhan([R[0], R[0]], 'reading')
       && 'loi' in d.kiemNhomNguyenNhan('x', 'reading') && 'gt' in d.kiemNhomNguyenNhan([Wc[0]], 'writing2'), 'mã sai kỹ năng / trùng / kiểu');
@@ -159,7 +159,7 @@ export async function runPrOv12bTests(t: any) {
     const c = o();
     assert(c('listening').thieuNhanXet === 'ghi-nhan-xet' && c('reading').thieuNhanXet === 'chon-nhom' && c('speaking').thieuNhanXet === null
       && c('writing1').thieuNhanXet === null, `cờ: ${['listening', 'reading', 'speaking', 'writing1'].map((s) => c(s).thieuNhanXet)}`);
-    assert(c('listening').batBuocNhanXet === true && c('reading').kyVong === kv() && Array.isArray(c('reading').nhomNguyenNhan), 'trường ô');
+    assert(c('listening').nenCoNhanXet === true && c('reading').kyVong === kv() && Array.isArray(c('reading').nhomNguyenNhan), 'trường ô');
     /* LUAT-NX-MT: lượt đã hoàn tất (đủ band, qua Chủ nhật) vẫn NHẮC "thiếu …" ở ô sửa được, nhưng ô đã XONG (có band). */
     for (const k of ['writing1', 'writing2']) attempts.saveScore(P.admin, luot, k, { criteria: [8, 8, 8, 8] }, TRONG);
     const SAU = '2026-12-14';
@@ -169,7 +169,7 @@ export async function runPrOv12bTests(t: any) {
     assert(l3.thieuNhanXet === 'ghi-nhan-xet' && l3.xong === true, `hoàn tất: nhắc + xong — ${l3.thieuNhanXet} ${l3.xong}`);
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(luot);
     const c2 = o(true);
-    assert(c2('listening').thieuNhanXet === null && c2('listening').batBuocNhanXet === false, 'MT cũ không đòi');
+    assert(c2('listening').thieuNhanXet === null && c2('listening').nenCoNhanXet === false, 'MT cũ không đòi');
   }));
 
   check('OV12b-8 · Excel đầy đủ: cột Nhận xét L, R, W1, W2, S + Nhóm nguyên nhân (thay "Nhận xét W" gộp)', () => {
