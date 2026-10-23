@@ -45,6 +45,7 @@ export const EN_UI_PHAN_TICH = {
   "Lùi 1 tuần": "Back 1 week",
   "Tới 1 tuần": "Forward 1 week",
   "Hồ sơ HV ›": "Student profile ›",
+  "lần thi": "exams",
   "Chấm Test đúng hạn": "Tests marked on time",
   "HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.": "Students with an MT finalised in the period; Overall vs the attempt's expectation. Students without full scores are not counted.",
   "HV có ngày thi trong kỳ": "students with an exam date in the period",

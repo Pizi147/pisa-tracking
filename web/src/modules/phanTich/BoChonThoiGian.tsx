@@ -5,7 +5,7 @@ import { t } from '@shared/i18n/index.ts';
 
 /**
  * BỘ LỌC THỜI GIAN CHUNG — MỘT component cho mọi trang có lọc thời gian (Phân tích, Tutor, HV & Lớp › Lọc thêm) để cùng một kiểu (DESIGN.md G10, chủ SP 20/10 + 23/10):
- * hiện thẳng trên hàng lọc "Tuần bắt đầu [ô tuần] → Tuần kết thúc [ô tuần]" (ô gõ + lịch, `ONgay`), đổi là áp dụng ngay — không hộp bấm mở, không nút ‹ ›.
+ * hiện thẳng trên hàng lọc "[ô tuần] → [ô tuần]" (không chữ nhãn — chủ SP 24/10; trình đọc màn có aria "Tuần bắt đầu" / "Tuần kết thúc") (ô gõ + lịch, `ONgay`), đổi là áp dụng ngay — không hộp bấm mở, không nút ‹ ›.
  * `toanBo` (chỉ Phân tích): thêm lựa chọn "Toàn bộ" · "Chọn khoảng tuần" (P9, không trần). Chọn tuần bắt đầu sau tuần kết thúc → tự kéo đầu kia theo (không báo lỗi).
  */
 export function BoChonThoiGian({ khoang, onChange, toanBo = false }: { khoang: KhoangNgay; onChange: (k: KhoangNgay) => void; toanBo?: boolean }) {
@@ -25,10 +25,8 @@ export function BoChonThoiGian({ khoang, onChange, toanBo = false }: { khoang: K
       )}
       {!laTb && (
         <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-400">
-          <span className="max-sm:sr-only">{t('Tuần bắt đầu')}</span>
           <span className="w-36"><ONgay kieu="tuan" gon value={tuanDau} ariaLabel={t('Tuần bắt đầu')} onChange={(v) => v && dat(v, v > tuanCuoi ? v : tuanCuoi)} /></span>
           <span aria-hidden>→</span>
-          <span className="max-sm:sr-only">{t('Tuần kết thúc')}</span>
           <span className="w-36"><ONgay kieu="tuan" gon value={tuanCuoi} ariaLabel={t('Tuần kết thúc')} onChange={(v) => v && dat(v < tuanDau ? v : tuanDau, v)} /></span>
         </span>
       )}

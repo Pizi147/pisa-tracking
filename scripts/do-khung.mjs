@@ -101,6 +101,8 @@ const KICH_BAN = [
   }],
   ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('button', { name: /^(Kết quả PA|PA result)/ }).first().click(); await p.waitForTimeout(800); }],
   ['gv-ho-so', 7, '/giao-vien/7'],
+  // UI-HO-SO-GV: QL xem GV nhiều lớp + GVCN; Quản trị xem GV có thi thật trong kỳ (bảng Theo kỹ năng, cột Thi thật).
+  ['gv-ho-so-ql', 2, '/giao-vien/8'], ['gv-ho-so-thi', 1, '/giao-vien/16?tu=2026-08-10'],
   ['hv-menu', 7, '/hoc-vien/3', async (p) => { await p.locator('#noi-dung button[aria-haspopup]').first().click(); await p.waitForTimeout(400); }],
   // EN-e: Đang SOS bốn vai + panel một em (bấm Mở dòng đầu).
   ['sos-ql', 2, '/hoc-vien?view=sos'], ['sos-gv', 7, '/hoc-vien?view=sos'], ['sos-tvv', 23, '/hoc-vien?view=sos'], ['sos-cx', 24, '/hoc-vien?view=sos'],

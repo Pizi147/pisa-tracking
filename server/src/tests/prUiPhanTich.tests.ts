@@ -8,7 +8,6 @@ export async function runPrUiPhanTichTests(t: any) {
   const v5: any = await import('../worklist/tongQuanV5.ts');
   const bc: any = await import('../phanTich/baoCao.ts');
   const gv: any = await import('../phanTich/giaoVien.ts');
-  const ql: any = await import('../worklist/tongQuanQl.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const { demoToday } = await import('../demoConfig.ts');
   console.log('\nV5 · UI-PHAN-TICH — Báo cáo HV = Tổng quan, Phân tích GV cột mới = panel, Toàn bộ / không trần');
@@ -42,23 +41,26 @@ export async function runPrUiPhanTichTests(t: any) {
     assert(bc.baoCao(P.mbManager, { branchId: cn, ct: 'thuong', ...kk }).tienBo === null, 'Lớp thường không có tienBo');
   });
 
-  check('UI-PHAN-TICH · Phân tích GV: Đạt MT + thi thật = Kết quả gộp; Quá hạn = Trễ chấm; Case có PA = Tổng quan; ô = số dòng panel', () => {
+  check('UI-PHAN-TICH · Phân tích GV: Đạt MT + thi thật = Kết quả gộp; Case có PA = Tổng quan; ô = số dòng panel', () => {
     const cn = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft' }).branchId;
     const tq = v5.tongQuanV5(P.mbManager, { branchId: cn, ct: 'ft' });
     const den = d.mondayOfDate(homNay), tu = d.addDaysIso(den, -56);
     const f = { cn, ct: 'ft', tu, den };
     const r = gv.phanTichGiaoVien(P.mbManager, f);
-    const tre = ql.treCham(P.mbManager, cn, 'ft').baiCua;
     const so = (o: any) => (o?.k === 'so' ? o : { dung: 0, tong: 0 });
     let dem = 0;
     for (const h of r.hang) {
       const kq = Object.values(h.ketQua).map(so);
       const tong = kq.reduce((s: number, o: any) => s + o.tong, 0), dung = kq.reduce((s: number, o: any) => s + o.dung, 0);
-      assert(so(h.datMt).tong + so(h.thiThat).tong === tong && so(h.datMt).dung + so(h.thiThat).dung === dung, `${h.ten}: MT + thi thật ≠ Kết quả`);
-      assert(h.quaHan === (tre.get(h.id)?.length ?? 0), `${h.ten}: Quá hạn ${h.quaHan} ≠ Trễ chấm`);
+      assert(so(h.datMt).tong <= tong && so(h.datMt).dung <= dung, `${h.ten}: Đạt kỳ vọng Test vượt Kết quả gộp`);
+      /* XM-5 (24/10): Pass Target theo lần thi = hồ sơ GV (cùng `thiThatCuaGv`) khi GV chỉ dạy chi nhánh này. */
+      if (h.thiThat?.k === 'so') {
+        const hs = gv.chiSoHoSoGv(P.mbManager, h.id, { tu, den });
+        assert(hs.thiThat.k === 'so' && hs.thiThat.tong >= h.thiThat.tong, `${h.ten}: Pass Target ${JSON.stringify(h.thiThat)} lệch hồ sơ ${JSON.stringify(hs.thiThat)}`);
+      }
       const cp = tq.caseGv[h.id];
       assert(cp ? h.casePa.k === 'so' && h.casePa.dung === cp.coPa && h.casePa.tong === cp.mo : h.casePa.k === 'rong', `${h.ten}: Case có PA lệch Tổng quan`);
-      for (const [cot, o] of [['dat-mt', h.datMt], ['thi-that', h.thiThat]] as const) {
+      for (const [cot, o] of [['dat-mt', h.datMt]] as const) {
         if (o?.k !== 'so') continue;
         const p = gv.oChiSoGv(P.mbManager, { ...f, gv: h.id, cot });
         assert(p.n === o.tong, `${h.ten} · ${cot}: panel ${p.n} ≠ ${o.tong}`);

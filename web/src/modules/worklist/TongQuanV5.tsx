@@ -19,7 +19,7 @@ import { t } from '@shared/i18n/index.ts';
  * TỔNG QUAN V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B "Tình hình trái · Điều hướng phải"). Không ô nhập trên trang (C04): số gạch chân
  * = panel chỉ đọc (cùng hàm Phân tích), "›" = đổi trang, "?" = giải thích. Mỗi vai một hàm vẽ; dữ liệu QL / QT / CX từ MỘT GET `/tong-quan/v5`.
  */
-type TyLeV5 = { dat: number; mau: number };
+export type TyLeV5 = { dat: number; mau: number };
 type DongLop = { id: number; khoa: string; ma: string; hv: number; gvcn: string | null; datMt: TyLeV5 | null; sos: [number, number, number]; caseChuaPa: number; thiThangNay: number };
 type DongCn = { id: number; khoa: string; ten: string; datMt: TyLeV5 | null; casePa: { coPa: number; mo: number }; thiThat: TyLeV5 | null; thiThangNay: number; sos23: number; caseChuaPa: number };
 type GvTre = { khoa: number; ten: string; bai: number };
@@ -97,7 +97,7 @@ export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: s
 const So = ({ n }: { n: number }) => <b className="tabular-nums">{n}</b>;
 
 /** Công tắc hai nút ngoài tiêu đề bảng (đầu thẻ). */
-function CongTac<K extends string>({ value, onChange, muc }: { value: K; onChange: (k: K) => void; muc: [K, string][] }) {
+export function CongTac<K extends string>({ value, onChange, muc }: { value: K; onChange: (k: K) => void; muc: [K, string][] }) {
   return (
     <span role="group" aria-label={t('Lọc')} className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
       {muc.map(([k, nhan]) => (
@@ -199,7 +199,7 @@ const COT_GV_HC: readonly CotBang[] = [
   { key: 'diem', nhan: t('Chấm Test đúng hạn'), kieu: 'phan-tram', rong: 150 }, { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 120 },
 ];
 const COT_GV_HT: readonly CotBang[] = [
-  { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'kq', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 },
+  { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'phan-tram', rong: 150 },
   { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 120 }, { key: 'pa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 120 },
 ];
 export const tyLeGv = (o: OPtGv | undefined): TyLeV5 | null => (!o || o.k === 'na' ? null : o.k === 'rong' ? { dat: 0, mau: 0 } : { dat: o.dung, mau: o.tong });
@@ -221,7 +221,7 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const tre = new Map(d.tre.map((x) => [x.khoa, x.bai]));
   const ht = loai === 'ht';
   const COT: Record<string, string> = { viec: 'viec-dung-han', diem: 'cham-diem', kq: d.ct === 'ft' ? 'dat-mt' : 'ket-qua', tb: 'tien-bo' };
-  const DV: Record<string, string> = { viec: t('việc'), diem: t('bài'), kq: t('lượt'), tb: t('lượt'), pa: 'Case' };
+  const DV: Record<string, string> = { viec: t('việc'), diem: t('bài Test'), kq: t('lượt Test'), tb: t('lượt Test'), pa: 'Case' };
   /* XM-2: Case có PA theo người phụ trách — mẫu = Case đang mở của GV, panel = cùng danh sách ở hồ sơ GV (`case-mo`). */
   const casePa = (h: HangGv): TyLeV5 => { const x = d.caseGv[h.id]; return x ? { dat: x.coPa, mau: x.mo } : { dat: 0, mau: 0 }; };
   const giaTri = (h: HangGv, c: CotBang): TyLeV5 | null => (c.key === 'viec' ? tyLeGv(h.viecDungHan) : c.key === 'diem' ? tyLeGv(h.chamDiem)

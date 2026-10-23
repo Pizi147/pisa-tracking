@@ -31,7 +31,7 @@ const COT_GON: readonly CotBang[] = [
   { key: 'gv', nhan: t('Giáo viên'), kieu: 'ten', rong: 240 },
   { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 160, nhom: HC, tach: true },
   { key: 'diem', nhan: t('Chấm Test đúng hạn'), kieu: 'phan-tram', rong: 170, nhom: HC },
-  { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 150, nhom: HT, tach: true },
+  { key: 'dat', nhan: t('Đạt kỳ vọng Test'), kieu: 'phan-tram', rong: 150, nhom: HT, tach: true },
   { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 150, nhom: HT },
   { key: 'chuY', nhan: t('HV cần chú ý'), kieu: 'so', rong: 150, nhom: HT },
 ];
@@ -40,9 +40,9 @@ const COT_DAY: readonly CotBang[] = [
   ...COT_GON.slice(3).map((c) => ({ ...c, rong: 108 })),
   { key: 'casePa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 108, nhom: HT },
   { key: 'pa', nhan: t('PA cải thiện'), kieu: 'phan-tram', rong: 108, nhom: HT },
-  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 124, nhom: HT },
+  { key: 'tt', nhan: 'Pass Target', kieu: 'phan-tram', rong: 124, nhom: HT, goiY: t('Kết quả thi thật') },
 ];
-/** Cột chỉ Fast Track (lớp thường không có MT / tiến bộ band / PA cải thiện / thi thật) — "Đạt MT" lớp thường đổi thành "Kết quả" (đạt ≥ 70 %). */
+/** Cột chỉ Fast Track (lớp thường không có MT / tiến bộ band / PA cải thiện / thi thật) — lớp thường: "Đạt Test" (≥ ngưỡng đạt của lớp; HSGV-1). */
 const CHI_FT = new Set(['tb', 'pa', 'tt']);
 const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
@@ -73,7 +73,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   if (!branchId) return <Empty title={t('Chọn một chi nhánh')} hint={t('Bảng giáo viên luôn là một chi nhánh — chọn ở ô chi nhánh đầu trang.')} />;
   const ft = khung === 'ft';
   const day = boCot === 'day';
-  const cot = (day ? COT_DAY : COT_GON).filter((c) => ft || !CHI_FT.has(c.key)).map((c) => (!ft && c.key === 'dat' ? { ...c, nhan: t('Kết quả') } : c));
+  const cot = (day ? COT_DAY : COT_GON).filter((c) => ft || !CHI_FT.has(c.key)).map((c) => (!ft && c.key === 'dat' ? { ...c, nhan: t('Đạt Test') } : c));
   const nguonO = (h: HangPtGv, c: string) => `/phan-tich/giao-vien/o?${q}&gv=${h.id}&cot=${encodeURIComponent(c)}`;
   const ctQ = `cn=${branchId}&ct=${khung}`;
   /* Mỗi cột: tỷ lệ (`TyLe`) + nguồn panel — cùng nguồn với Tổng quan › GV cần chú ý. */
@@ -83,9 +83,11 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   } as Record<string, TyLe | null>)[k] ?? null;
   const NGUON: Record<string, (h: HangPtGv) => string> = {
     viec: (h) => nguonO(h, 'viec-dung-han'), dat: (h) => nguonO(h, ft ? 'dat-mt' : 'ket-qua'), tb: (h) => nguonO(h, 'tien-bo'),
-    casePa: (h) => `/giao-vien/${h.id}/o?cot=case-mo&${ctQ}`, pa: (h) => nguonO(h, 'pa-hieu-qua'), tt: (h) => nguonO(h, 'thi-that'),
+    casePa: (h) => `/giao-vien/${h.id}/o?cot=case-mo&${ctQ}`, pa: (h) => nguonO(h, 'pa-hieu-qua'),
+    /* Pass Target: panel của hồ sơ GV (cùng `thiThatCuaGv`, một dòng một lần thi). shortcut: hồ sơ gộp mọi chi nhánh GV dạy — GV dạy hai chi nhánh thì panel có thể dài hơn ô. */
+    tt: (h) => `/giao-vien/${h.id}/chi-so/o?cot=thi-that&tu=${data?.tu ?? ''}&den=${data?.den ?? ''}`,
   };
-  const DV: Record<string, string> = { viec: t('việc'), diem: t('bài'), dat: t('lượt'), tb: t('lượt'), casePa: 'Case', pa: 'PA', tt: t('lượt') };
+  const DV: Record<string, string> = { viec: t('việc'), diem: t('bài Test'), dat: t('lượt Test'), tb: t('lượt Test'), casePa: 'Case', pa: 'PA', tt: t('lần thi') };
   const oCua = (h: HangPtGv, c: CotBang): ReactNode => {
     if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
     if (c.key === 'chuY') return <OSo giaTri={h.hvChuY} tieuDe={`${t('HV cần chú ý')} · ${h.ten}`} nguon={nguonO(h, 'hv-chu-y')} />;
@@ -95,17 +97,6 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   };
   const phuCua = (h: HangPtGv, c: CotBang): ReactNode => {
     if (c.key === 'gv') return phuGv(h);
-    if (c.key === 'diem') {
-      const x = tyLe(h, 'diem');
-      return (
-        <>
-          {x && x.mau ? `${x.dat}/${x.mau} ${t('bài')}` : null}
-          {h.quaHan > 0 && (
-            <span className="block font-semibold text-bad">⚠ <OSo giaTri={h.quaHan} nhan={t('{n} quá hạn', { n: h.quaHan })} className="text-bad" tieuDe={t('Bài trễ chấm · {ten}', { ten: h.ten })} nguon={`/tong-quan/ql/tre?gv=${h.id}&branchId=${branchId}&ct=${khung}`} /></span>
-          )}
-        </>
-      );
-    }
     if (c.key === 'chuY') return null;
     const x = tyLe(h, c.key);
     return x && x.mau ? `${x.dat}/${x.mau} ${DV[c.key] ?? ''}`.trim() : null;

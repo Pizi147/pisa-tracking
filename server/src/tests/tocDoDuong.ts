@@ -297,9 +297,8 @@ export const DUONG_DO: MucDo[] = [
   // ---------------------------------------------------------------- PR-GV — hồ sơ giáo viên + ô danh sách (GV chỉ xem chính mình: GVBM → 403; GVCN và GVCN_THUONG là cùng một người, id 7)
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/viec', maChuDich: { GVBM: 403 } },
-  { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/ket-qua', maChuDich: { GVBM: 403 } },
-  /* PR-S5F-b: GV nhiều lớp nhất bộ demo (Phạm Thu Trang, id 9 — 18 lớp): kết quả đọc mọi lớp một lượt, số câu không tăng theo lớp. */
-  { trang: 'Hồ sơ GV', vai: ['QL', 'QT'], url: '/giao-vien/9/ket-qua' },
+  /* UI-HO-SO-GV: `/ket-qua` (mốc gần nhất của lớp) đã xoá — GV nhiều lớp nhất bộ demo (Phạm Thu Trang, id 9 — 18 lớp) đo ở `/chi-so` (bảng Học thuật theo lớp). */
+  { trang: 'Hồ sơ GV', vai: ['QL', 'QT'], url: '/giao-vien/9/chi-so' },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=chua-nhap', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=case-mo', maChuDich: { GVBM: 403 } },
   /* Bảng giáo viên của chi nhánh (Tổng quan › Theo lớp › Theo giáo viên): chỉ Quản lý / Quản trị; GVCN → 403. */
@@ -796,14 +795,6 @@ export const TRAN: Record<string, number> = {
   'GVBM /giao-vien/7/viec': 16,
   'GVCN_THUONG /giao-vien/7/viec': 80,
   'QT /giao-vien/7/viec': 91,
-  /* PR-S5F-b: `phanTichNhieuLop` đọc mọi lớp một lượt — đo 23–24 câu (trước 73–79, tăng theo số lớp) → trần HẠ về max(sau+10, ⌈sau×1.3⌉). */
-  'QL /giao-vien/7/ket-qua': 30,
-  'GVCN /giao-vien/7/ket-qua': 28,
-  'GVBM /giao-vien/7/ket-qua': 16,
-  'GVCN_THUONG /giao-vien/7/ket-qua': 28,
-  'QT /giao-vien/7/ket-qua': 29,
-  'QL /giao-vien/9/ket-qua': 30,   // PR-S5F-b: GV 18 lớp — trước 105–111 câu (vượt trần cứng 100), nay 24
-  'QT /giao-vien/9/ket-qua': 29,
   'QL /giao-vien/7/o?cot=chua-nhap': 34,
   'GVCN /giao-vien/7/o?cot=chua-nhap': 32,
   'GVBM /giao-vien/7/o?cot=chua-nhap': 16,

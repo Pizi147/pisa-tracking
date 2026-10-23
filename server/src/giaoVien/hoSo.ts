@@ -1,18 +1,18 @@
 /**
  * HỒ SƠ GIÁO VIÊN (PR-GV). Không luật số mới: mọi số gọi hàm đang có — `myWork`/`viecCuaNguoi` (việc), `scoreDebtCells`
- * (ô điểm nợ), `listCases` + `chiTietCaseMo` (Case), `phanTichLop` (kết quả lớp), `yeuCauCuaToi` (yêu cầu).
+ * (ô điểm nợ), `listCases` + `chiTietCaseMo` (Case), `yeuCauCuaToi` (yêu cầu).
  * Số ở ô và danh sách khi bấm (`oHoSoGv`) đi qua CÙNG các hàm tập bên dưới nên luôn bằng nhau.
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, baiId, canChamCheo, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, mondayOfDate, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, TRANG_THAI, baiId, canChamCheo, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, mondayOfDate, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
   type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { bangLop, can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { phanTichLop, phanTichNhieuLop, type PhanTichLop } from '../classes/phanTichLop.ts';
+import { xuLyCaseMany } from '../cases/sosState.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo, type CaseChiTiet } from '../cases/caseLop.ts';
 import { trongPhamVi, yeuCauCuaToi } from '../duyet/yeuCau.ts';
@@ -51,6 +51,8 @@ export type LopGv = {
   /** Mã kỹ năng/môn thật được phân công (không phải nhãn) — để tô viền ô môn mình dạy. */
   monDay: string[];
   hocVien: number;
+  /** Tuần khai giảng (Thứ Hai) hoặc ngày khai giảng — bảng lớp hồ sơ GV xếp lớp lâu nhất lên đầu. */
+  khai: string | null;
   /** Học viên đang học của lớp — để đếm học viên KHÁC NHAU của cả hồ sơ (một em học hai lớp của GV chỉ đếm một lần). */
   hvIds: Set<number>;
 };
@@ -64,8 +66,8 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
   if (Array.isArray(branchIds) && !branchIds.length) return [];
   const conn = db();
   const rows = conn.prepare(
-    `SELECT ta.class_id, ta.is_core, ta.skill, c.code, c.branch_id, c.programme_code
-       FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+    `SELECT ta.class_id, ta.is_core, ta.skill, c.code, c.branch_id, c.programme_code, COALESCE(sp.week_start, c.start_date) AS khai
+       FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id LEFT JOIN report_periods sp ON sp.id = c.start_period_id
       WHERE ta.user_id = ? AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
         AND c.status = 'active' ${branchIds ? `AND c.branch_id IN (${cho(branchIds.length)})` : ''}
       ORDER BY ta.id`).all(gvId, homNay, homNay, ...(branchIds ?? [])) as any[];
@@ -75,7 +77,7 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
     const khung = bang.get(r.class_id)?.isFastTrack ? 'ft' : 'thuong';
     if (!locKhung(ct, khung)) continue;
     const l = theoLop.get(r.class_id)
-      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, vai: '', laGvcn: false, monDay: [], hocVien: 0, hvIds: new Set() } as LopGv;
+      ?? { id: r.class_id, ma: r.code, khung, ct: r.programme_code ?? null, branchId: r.branch_id, khai: r.khai ?? null, vai: '', laGvcn: false, monDay: [], hocVien: 0, hvIds: new Set() } as LopGv;
     theoLop.set(r.class_id, l);
     if (r.is_core) l.laGvcn = true;
     if (r.skill && !l.monDay.includes(r.skill)) l.monDay.push(r.skill);
@@ -161,36 +163,18 @@ const soYeuCau = (the: TheGv[], homNay: string) => ({
   tuChoi: the.filter((t) => t.trangThai === 'tu_choi').length,
 });
 
-// ------------------------------------------------------------------ kết quả gần nhất (Q7 + chốt 30/09: không cột "Cả bài", môn mình dạy có viền)
-
-export type KetQuaLop = {
-  classId: number; ma: string; khung: 'ft' | 'thuong'; ct: string | null;
-  moc: { key: string; nhan: string } | null;
-  o: { dong: string; nhan: string; dat: number; tong: number; cuaMinh: boolean }[];
-};
-/** "Mốc gần nhất" = cột CUỐI (theo thứ tự `cot`) có ít nhất một ô có điểm — một mốc cho cả dòng lớp. */
-function ketQuaCuaLop(l: LopGv, pt: PhanTichLop): KetQuaLop {
-  const dong = pt.dong.filter((d) => d.key !== 'ca-bai');
-  const moc = [...pt.cot].reverse().find((c) => dong.some((d) => (pt.o[`${d.key}|${c.key}`]?.tong ?? 0) > 0)) ?? null;
-  return {
-    classId: l.id, ma: l.ma, khung: l.khung, ct: l.ct, moc,
-    o: moc ? dong.map((d) => {
-      const x = pt.o[`${d.key}|${moc.key}`] ?? { dat: 0, tong: 0 };
-      return { dong: d.key, nhan: d.nhan, dat: x.dat, tong: x.tong, cuaMinh: l.monDay.includes(d.key) };
-    }) : [],
-  };
-}
-
 // ------------------------------------------------------------------ hồ sơ một giáo viên
 
 export type HoSoGv = {
   gv: { id: number; ten: string; vai: string[]; chiNhanh: string[]; kyNang: string[]; laChinhMinh: boolean };
   /** `cn`: chi nhánh cho link "Hiệu quả PA của …" (P6, Q26) — chi nhánh duy nhất trong phạm vi người xem, không thì chi nhánh của GV. */
   phamVi: { chiNhanh: string[] | null; cn: number | null };
-  lop: (Omit<LopGv, 'monDay' | 'branchId' | 'hvIds' | 'laGvcn'> & { chuaNhap: number; quaHan: number; banGiao: ChipBanGiao | null })[];
+  /** `gvcn`: tên GVCN của lớp khi GV này không phải GVCN (khối Lớp đang dạy, V5-D khu e). */
+  lop: (Omit<LopGv, 'monDay' | 'branchId' | 'hvIds'> & { kyNang: string[]; gvcn: string | null; chuaNhap: number; quaHan: number; banGiao: ChipBanGiao | null })[];
   /** Học viên KHÁC NHAU ở mọi lớp trên — cùng số với ô "Học viên" (`oHoSoGv` cot=hoc-vien). */
   tongHocVien: number;
-  caseMo: CaseGv[];
+  /** `coPa`: Case đã chốt PA (không nằm ở cột "Chờ duyệt" — CÙNG `xuLyCaseMany` của chỉ số "Case chưa chốt PA", Tổng quan XM-2). */
+  caseMo: (CaseGv & { coPa: boolean })[];
   yeuCau: { cho: number; choQuaHan: number; tuChoi: number };
   homNay: string;
 };
@@ -212,6 +196,16 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
   const no = noDiemCuaGv(p, gvId, homNay, lop);
   const dem = (id: number, chiQuaHan: boolean) => no.filter((d) => d.classId === id && (!chiQuaHan || d.overdue)).length;
   const banGiao = chipBanGiao(gvId);
+  const caseMo = caseMoCuaGv(p, gvId, branchIds);
+  const xl = xuLyCaseMany(caseMo.map((c) => c.id), homNay);
+  const gvcnLop = new Map<number, string>();
+  const khongCn = lop.filter((l) => !l.laGvcn).map((l) => l.id);
+  if (khongCn.length) {
+    for (const r of conn.prepare(
+      `SELECT ta.class_id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+        WHERE ta.class_id IN (${cho(khongCn.length)}) AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
+        ORDER BY ta.id`).all(...khongCn, homNay, homNay) as any[]) gvcnLop.set(r.class_id, r.full_name);
+  }
   return {
     gv: {
       id: gvId, ten, laChinhMinh,
@@ -223,9 +217,12 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
       chiNhanh: laChinhMinh ? null : tenChiNhanh,
       cn: branchIds?.length === 1 ? branchIds[0] : vaiRows.map((r) => r.cn as number | null).find((b) => b != null && (!branchIds || branchIds.includes(b))) ?? null,
     },
-    lop: lop.map(({ monDay, branchId, hvIds, laGvcn, ...l }) => ({ ...l, chuaNhap: dem(l.id, false), quaHan: dem(l.id, true), banGiao: banGiao.get(l.id) ?? null })),
+    lop: lop.map(({ monDay, branchId, hvIds, ...l }) => ({
+      ...l, kyNang: monDay.map((k) => tenMonNgan(l.ct, k)), gvcn: l.laGvcn ? null : gvcnLop.get(l.id) ?? null,
+      chuaNhap: dem(l.id, false), quaHan: dem(l.id, true), banGiao: banGiao.get(l.id) ?? null,
+    })),
     tongHocVien: new Set(lop.flatMap((l) => [...l.hvIds])).size,
-    caseMo: caseMoCuaGv(p, gvId, branchIds),
+    caseMo: caseMo.map((c) => ({ ...c, coPa: xl.get(c.id)?.cot !== 'choDuyet' })),
     yeuCau: soYeuCau(theYeuCauCuaGv(p, gvId), homNay),
     homNay,
   };
@@ -258,19 +255,10 @@ export function viecHoSoGv(p: Principal, gvId: number): { viec: { nhom: NhomViec
   return { viec: viecCuaGv(p, gvId) };
 }
 
-/* shortcut: khối cũ "mốc gần nhất của lớp" — P8 (22/10) bỏ cách đại diện này; web hiện tại còn đọc. UI-HO-SO-GV chuyển sang `chiSoHoSoGv().ketQuaTheoLop` (lượt từng HV trong kỳ) rồi xoá hàm này. */
-export function ketQuaHoSoGv(p: Principal, gvId: number): { ketQua: KetQuaLop[] } {
-  const { branchIds } = phamViHoSoGv(p, gvId);
-  /* Lớp người xem không có quyền xem điểm (vd GV được phân công lớp ở chi nhánh khác vai của họ) thì bỏ khỏi khối kết quả — không làm cả hồ sơ 403. */
-  const lop = lopCuaGv(gvId, demoToday(), branchIds).filter((l) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: l.id }));
-  /* PR-S5F-b: mọi lớp một lượt (bài thi + điểm đọc một câu mỗi bảng) — số câu không tăng theo số lớp. */
-  const pt = phanTichNhieuLop(lop.map((l) => l.id));
-  return { ketQua: lop.map((l) => ketQuaCuaLop(l, pt.get(l.id)!)) };
-}
-
 // ------------------------------------------------------------------ danh sách sau một số (ô bấm được)
 
-export type ThamSoO = { cot: string; lop?: number | null; dong?: string | null; moc?: string | null; cn?: number | null; ct?: string | null };
+/** `tt`: chỉ Case có trạng thái đó (`TRANG_THAI`) — hàng đếm theo trạng thái ở khối Case đang phụ trách (UI-HO-SO-GV). */
+export type ThamSoO = { cot: string; lop?: number | null; cn?: number | null; ct?: string | null; tt?: string | null };
 
 export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; tieuDe: string; rows: MetricRow[] } {
   if (!laCotOGv(q.cot)) throw badRequest('Cột không hợp lệ.');
@@ -294,7 +282,8 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
     return ket(rows, (n) => `${n} yêu cầu ${cot === 'yc-cho' ? 'đang chờ duyệt' : 'bị từ chối'}`);
   }
   if (cot === 'case-mo' || cot === 'case-qua-han') {
-    const ds = caseMoCuaGv(p, gvId, branchIds, ct).filter((c) => cot === 'case-mo' || c.quaHan);
+    if (q.tt != null && !(TRANG_THAI as readonly string[]).includes(q.tt)) throw badRequest('Trạng thái không hợp lệ.');
+    const ds = caseMoCuaGv(p, gvId, branchIds, ct).filter((c) => (cot === 'case-mo' || c.quaHan) && (!q.tt || c.trangThai.t === q.tt));
     return ket(rowsFor('case', ds.map((c) => c.id), undefined, p), (n) => `${n} Case ${cot === 'case-mo' ? 'đang phụ trách' : 'có việc tiếp quá hạn'}`);
   }
 
@@ -315,17 +304,7 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
     return ket(rowsFor('bai', o.map((d) => baiId(d.attemptId, d.skill)), undefined, p), (n) => `${n} bài ${cot === 'chua-nhap' ? 'chưa nhập' : 'quá hạn nhập'}`);
   }
 
-  // cot === 'ket-qua': ô đạt/tổng của một lớp ở một mốc
-  if (q.lop == null || !q.dong || !q.moc) throw badRequest('Thiếu lớp, dòng hoặc mốc của ô kết quả.');
-  const l = chonLop[0];
-  const pt = phanTichLop(p, l.id);
-  if (!pt.dong.some((d) => d.key === q.dong && d.key !== 'ca-bai') || !pt.cot.some((c) => c.key === q.moc)) throw badRequest('Ô kết quả không có trong bảng của lớp này.');
-  const x = pt.ds[`${q.dong}|${q.moc}`] ?? { dat: [], chua: [] };
-  /* V5 C09: FT theo Overall lượt (`danhGiaMon`) — kỹ năng dưới kỳ vọng vẫn có thể "Đạt", nên không ghi "Đạt kỳ vọng". */
-  const chu = ['Đạt', 'Chưa đạt'];
-  const dong = pt.dong.find((d) => d.key === q.dong)!;
-  const gan = (ids: number[], nhan: string) => rowsFor('hoc-vien', ids).map((r) => ({ ...r, sub: [r.sub, nhan].filter(Boolean).join(' · ') }));
-  return ket([...gan(x.dat, chu[0]), ...gan(x.chua, chu[1])], (n) => `${n} học viên · ${l.ma} · ${dong.nhan}`);
+  throw badRequest('Cột không hợp lệ.');
 }
 
 // ------------------------------------------------------------------ bảng giáo viên của một chi nhánh (Q11, K1-28) — không xếp hạng, không hàng tổng
