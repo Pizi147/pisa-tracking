@@ -807,7 +807,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
   const dong = phan.flatMap((x) => x.dong).filter((d) => !maLop || d.row.lop === maLop).sort((a, b) => Number(a.dung) - Number(b.dung));
   const dau0 = phan[0] ?? { nhan: q.cot === 'cham-diem' ? t('Điểm đúng hạn') : q.cot === 'viec-dung-han' ? t('Việc đúng hạn') : t('Kết quả'), donVi: '' };
   /* Thuật ngữ chốt 23/10 (THUAT_NGU HSGV-1, 6): hồ sơ GV ghi "Đạt kỳ vọng Test" · "lượt Test" — bảng Phân tích GV giữ chữ cũ tới đợt overhaul thuật ngữ. */
-  const dau = { nhan: dau0.nhan.replace(/^Kết quả\b/, t('Đạt kỳ vọng Test')), donVi: dau0.donVi === 'lượt kỹ năng' ? 'lượt Test' : dau0.donVi };
+  const dau = { nhan: dau0.nhan.replace(/^Kết quả(?= |$)/, t('Đạt kỳ vọng Test')), donVi: dau0.donVi === 'lượt kỹ năng' ? 'lượt Test' : dau0.donVi };
   const dung = dong.filter((d) => d.dung).length;
   return { n: dong.length, tieuDe: tieuDeChiSo(dau.nhan, `${tuanLichNgan(g.tu)} – ${tuanLichNgan(g.den)}`, dung, dong.length, dau.donVi), rows: dong.map((d) => d.row) };
 }

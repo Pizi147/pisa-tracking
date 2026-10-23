@@ -60,11 +60,13 @@ function DiemDong({ r }: { r: DongSoLieu }) {
   /* Chủ SP 23/10: đang xem một GV → kỹ năng GV phụ trách nổi bật hẳn (ô to, viền nhấn dày, chữ trắng đậm, chênh với mốc so);
      kỹ năng khác nhỏ, mờ. Overall + mốc so dồn mép phải. Panel rộng (720) để cả dãy một hàng. */
   return (
-    <span className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 tabular-nums">
+    <span className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 tabular-nums sm:flex-nowrap">
       {r.diem!.map((d) => {
-        const lech = d.cua && d.v !== null && so !== null ? Math.round((d.v - so) * 10) / 10 : null;
+        /* Bằng đúng mốc so → không ký hiệu (chủ SP 23/10: không "▲0.0"). */
+        const lech0 = d.cua && d.v !== null && so !== null ? Math.round((d.v - so) * 10) / 10 : null;
+        const lech = lech0 === 0 ? null : lech0;
         return d.cua ? (
-          <span key={d.k} className="inline-flex items-baseline gap-1.5 rounded-md border-2 border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-2 py-0.5 text-[15px] font-bold text-slate-100">
+          <span key={d.k} className="inline-flex shrink-0 items-baseline gap-1 rounded-md border-2 border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-1.5 py-0.5 text-[15px] font-bold text-slate-100">
             <span className="text-xs text-[color:var(--accent)]">{d.k}</span>{d.v === null ? '—' : chu(d.v)}
             {lech !== null && (
               <span className={`text-xs ${lech >= 0 ? 'text-ok' : 'text-bad'}`} aria-label={lech >= 0 ? t('vượt {n}', { n: chu(lech) }) : t('thiếu {n}', { n: chu(Math.abs(lech)) })}>
@@ -73,7 +75,7 @@ function DiemDong({ r }: { r: DongSoLieu }) {
             )}
           </span>
         ) : (
-          <span key={d.k} className="inline-flex items-baseline gap-1 px-1 text-xs text-slate-500">{d.k} {d.v === null ? '—' : chu(d.v)}</span>
+          <span key={d.k} className="inline-flex shrink-0 items-baseline gap-1 px-1 text-xs text-slate-500">{d.k} {d.v === null ? '—' : chu(d.v)}</span>
         );
       })}
       <span className="ml-auto whitespace-nowrap pl-2 text-[13px] text-slate-400">

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
@@ -192,7 +192,7 @@ function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
       paCt ? <>{t('PA cải thiện')} <OSo giaTri={paCt.tong} nhan={`${paCt.dung}/${paCt.tong}`} nguon={nguonCs('pa-hieu-qua')} tieuDe={t('PA hiệu quả')} className={vung} /></> : t('Case đang phụ trách')),
     /* Chủ SP 23/10: thi thật (IELTS) RẤT quan trọng — % Pass Target + Fail · Pass · Exceed (bấm → danh sách có điểm). */
     o1(t('Kết quả thi thật'),
-      d?.thiThat.k === 'na' ? <span className="text-slate-500">—</span> : <span className="inline-flex items-baseline gap-2">{o(d?.thiThat, 'thi-that', t('Kết quả thi thật'))}{thi && <span className="text-xs font-medium text-slate-400">Pass Target</span>}</span>,
+      d?.thiThat.k === 'na' ? <span className="text-slate-500">—</span> : <span className="inline-flex flex-wrap items-baseline gap-x-2"><span className="whitespace-nowrap">{o(d?.thiThat, 'thi-that', t('Kết quả thi thật'))}</span>{thi && <span className="whitespace-nowrap text-xs font-medium text-slate-400">Pass Target</span>}</span>,
       thi ? <BaThi cot="thi-that" fail={thi.tong - thi.dung} pass={thi.dung} exceed={d!.thiThatVuot} nguonCua={nguonCs} ten={t('Kết quả thi thật')} />
         : d?.thiThat.k === 'na' ? t('Không dạy lớp Fast Track') : t('Thi thật trong kỳ'),
       t('HV có ngày thi thật (IELTS) trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi. Pass = Overall đạt Target · Fail = chưa đạt · Exceed = Overall cao hơn Target.')),
@@ -302,6 +302,31 @@ function KhungBang({ ten, phai, children }: { ten: string; phai?: ReactNode; chi
   );
 }
 
+/** Bề rộng MỘT cột tỉ lệ: ô % 44 + thanh 32 + n/N 36 + khoảng 12 + đệm ô 24. */
+const RONG_TL = 156;
+/**
+ * 375 (chủ SP 23/10): bảng thẻ của `Bang` cao gấp ba — mỗi hàng một khối gọn: dòng đầu (`dau`: tên / chip), dưới là các cặp "nhãn số" nối tiếp, xuống dòng giữa các cặp.
+ */
+function BangGon<H>({ cot, hang, khoa, oCua, dau = [cot[0].key] }: {
+  cot: readonly CotBang[]; hang: readonly H[]; khoa: (h: H) => string; oCua: (h: H, c: CotBang) => ReactNode; dau?: string[];
+}) {
+  if (!hang.length) return <Empty title={t('Chưa có dữ liệu')} />;
+  return (
+    <ul className="m-0 list-none p-0">
+      {hang.map((h) => (
+        <li key={khoa(h)} className="flex flex-col gap-1.5 border-t px-4 py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+          <span className="flex min-w-0 flex-wrap items-center gap-2">{cot.filter((c) => dau.includes(c.key)).map((c) => <Fragment key={c.key}>{oCua(h, c)}</Fragment>)}</span>
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
+            {cot.filter((c) => !dau.includes(c.key)).map((c) => (
+              <span key={c.key} className="inline-flex items-center gap-1.5"><span className="whitespace-nowrap text-xs text-slate-400">{c.nhan}</span>{oCua(h, c)}</span>
+            ))}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   const d = cs.data;
   const coKhung = new Set<Khung>([...data.lop.map((l) => l.khung), ...(d?.hocThuatTheoLop ?? []).map((h) => h.khung), ...(d?.ketQuaTheoKyNang ?? []).map((x) => x.khung)]);
@@ -341,17 +366,17 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
   /* Kỹ năng chỉ có thi thật (chưa có lượt Test trong kỳ) vẫn có hàng. */
   if (khung === 'ft') for (const y of d.thiThatTheoKyNang) if (!hang.some((h) => h.skill === y.skill)) hang.push({ skill: y.skill, nhan: y.nhan, kq: null, thi: laSo(y.o), vuot: y.vuot });
   const ft = khung === 'ft';
+  /* Chủ SP 23/10: khoảng trống dồn sau cột Kỹ năng (cột linh hoạt duy nhất); cột số gọn, sát nhau bên phải. Không cột "Chưa đạt Test" — % đã kèm n/N, bấm % ra danh sách có tab Chưa đạt. */
   const COT: CotBang[] = [
-    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chip', rong: 84 },
-    { key: 'kq', nhan: ft ? t('Đạt kỳ vọng Test') : t('Đạt Test'), kieu: 'chu' },
-    /* FT: chưa đạt mở từ % (panel có tab Chưa đạt); cột thi thật gọn ▼ ▲ ★ + số (chữ Fail · Pass · Exceed ở tiêu đề + nhãn đọc màn). */
-    ft ? { key: 'thi', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: 150, goiY: 'Fail · Pass · Exceed' } : { key: 'chua', nhan: t('Chưa đạt Test'), kieu: 'so', rong: 112 },
+    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'kq', nhan: ft ? t('Đạt kỳ vọng Test') : t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
+    ...(ft ? [{ key: 'thi', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: 150, goiY: 'Fail · Pass · Exceed' } as CotBang] : []),
   ];
   const oCua = (h: HangKn, c: CotBang): ReactNode => {
     const cot = `ket-qua:${khung}:${h.skill}`;
-    if (c.key === 'kn') return <ChipKy k={h.nhan} />;
+    /* Cột "chu" linh hoạt: chữ trong chip thẳng mép chữ tiêu đề (cùng cách `th[data-kieu=chip]` đệm 20 px). */
+    if (c.key === 'kn') return <span className={dienThoai ? '' : '-ml-1.5 inline-flex'}><ChipKy k={h.nhan} /></span>;
     if (c.key === 'kq') return <OTyLe x={h.kq && { dat: h.kq.dung, mau: h.kq.tong }} nguon={nguonCs(cot)} tieuDe={`${c.nhan} · ${h.nhan}`} />;
-    if (c.key === 'chua') return h.kq ? <OSo giaTri={h.kq.tong - h.kq.dung} tieuDe={`${t('Chưa đạt Test')} · ${h.nhan}`} nguon={nguonCs(cot, 'chua')} className={`${vung} font-semibold text-slate-100`} /> : <span className="text-slate-500">—</span>;
     if (!h.thi) return <span className="text-slate-500">—</span>;
     return <BaThi gon={!dienThoai} motDong={!dienThoai} cot={`thi-that-ky:${h.skill}`} fail={h.thi.tong - h.thi.dung} pass={h.thi.dung} exceed={h.vuot} nguonCua={nguonCs} ten={`${t('Kết quả thi thật')} ${h.nhan}`} />;
   };
@@ -360,8 +385,9 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
       /* Chú giải ký hiệu thi thật — ô bảng chỉ còn ký hiệu + số. */
       <span className="flex gap-2.5 text-xs font-semibold"><span className={MAU_THI.chua}>▼ Fail</span><span className={MAU_THI.dat}>▲ Pass</span><span className={MAU_THI.vuot}>★ Exceed</span></span>
     )}>
-      <Bang ten={t('Theo kỹ năng')} cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} khung={false}
-        rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt Test nào trong kỳ này.') }} />
+      {dienThoai ? <BangGon cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} />
+        : <Bang ten={t('Theo kỹ năng')} cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} khung={false}
+            rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt Test nào trong kỳ này.') }} />}
     </KhungBang>
   );
 }
@@ -376,6 +402,7 @@ type HangL = {
 };
 const MOI_TRANG = 7;
 function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: string; khung: Khung }) {
+  const dienThoai = useDienThoai();
   const id = data.gv.id;
   const nguonCs = (cot: string, loc = '') => `/giao-vien/${id}/chi-so/o?cot=${cot}${loc ? `&loc=${loc}` : ''}&${ky}`;
   const ft = khung === 'ft';
@@ -402,34 +429,27 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
   };
   const COT: CotBang[] = ft ? [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 168 },
-    { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'chu', rong: 152 },
-    { key: 'tb', nhan: t('Tiến bộ'), kieu: 'chu', rong: 152 },
-    { key: 'tt', nhan: 'Pass Target', kieu: 'chu', rong: 152, goiY: t('Kết quả thi thật') },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'chu', rong: RONG_TL },
+    { key: 'tb', nhan: t('Tiến bộ'), kieu: 'chu', rong: RONG_TL },
+    { key: 'tt', nhan: 'Pass Target', kieu: 'chu', rong: RONG_TL, goiY: t('Kết quả thi thật') },
   ] : [
-    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 136 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 120 },
-    { key: 'luot', nhan: t('Bài Test trong kỳ'), kieu: 'chu' },
-    { key: 'kq', nhan: t('Đạt Test'), kieu: 'chu', rong: 152 },
-    { key: 'chua', nhan: t('Chưa đạt Test'), kieu: 'so', rong: 112 },
+    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'luot', nhan: t('Bài Test trong kỳ'), kieu: 'chu', rong: 168 },
+    { key: 'kq', nhan: t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
   ];
   const oCua = (h: HangL, c: CotBang): ReactNode => {
     const mo = h.xong ? 'opacity-60' : '';
     switch (c.key) {
       case 'lop': return h.cong ? <b className="font-bold">{h.ma}</b>
         : <span className={`inline-flex min-w-0 items-baseline gap-1.5 ${mo}`}><Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so truncate font-semibold">{h.ma}</Link>{h.xong && <span className="text-xs text-slate-500">{t('đã kết thúc')}</span>}</span>;
-      case 'ky': return <span className={`flex gap-1 ${mo}`}>{h.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
+      case 'ky': return <span className={`flex gap-1 ${dienThoai ? '' : '-ml-1.5'} ${mo}`}>{h.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
       case 'luot': return <span className={`whitespace-nowrap tabular-nums ${mo}`}>{h.luot}{h.theoBai.length > 0 && <span className="text-slate-500"> · {h.theoBai.map((b) => `${b.bai} ${b.n}`).join(' · ')}</span>}</span>;
       case 'kq': case 'tb': case 'tt': {
         const x = c.key === 'kq' ? h.ketQua : c.key === 'tb' ? h.tienBo : h.thiThat;
         const cot = `${c.key === 'kq' ? 'ket-qua' : c.key === 'tb' ? 'tien-bo' : 'thi-that'}-lop:${h.classId}`;
         return <span className={mo}><OTyLe x={x} dam={h.cong} nguon={h.cong ? undefined : nguonCs(cot)} tieuDe={`${c.nhan} · ${h.ma}`} /></span>;
-      }
-      case 'chua': {
-        const x = h.ketQua;
-        if (!x || !x.mau) return <span className="text-slate-500">—</span>;
-        return h.cong ? <b className="tabular-nums">{x.mau - x.dat}</b>
-          : <span className={mo}><OSo giaTri={x.mau - x.dat} tieuDe={`${t('Chưa đạt Test')} · ${h.ma}`} nguon={nguonCs(`ket-qua-lop:${h.classId}`, 'chua')} className={`${vung} font-semibold text-slate-100`} /></span>;
       }
       default: return null;
     }
@@ -443,8 +463,9 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={tr >= soTrang - 1} onClick={() => setTrang(tr + 1)} aria-label={t('Trang sau')}>›</button>
         </span>
       )}>
-      <Bang ten={t('Theo lớp')} cot={COT} hang={hang.length ? [...trangNay, tong] : []} khoa={(h) => h.khoa} oCua={oCua} khung={false}
-        rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt Test nào trong kỳ này.') }} />
+      {dienThoai ? <BangGon cot={COT} hang={hang.length ? [...trangNay, tong] : []} khoa={(h) => h.khoa} oCua={oCua} dau={['lop', 'ky']} />
+        : <Bang ten={t('Theo lớp')} cot={COT} hang={hang.length ? [...trangNay, tong] : []} khoa={(h) => h.khoa} oCua={oCua} khung={false}
+            rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt Test nào trong kỳ này.') }} />}
       </KhungBang>
   );
 }
