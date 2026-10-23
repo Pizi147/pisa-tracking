@@ -68,8 +68,8 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
   check xanh và GitHub báo mergeable clean.
 - **Rà sâu** (agent mẫu 10B: worktree, `npm run check`, gọi API bằng vai khác, bấm thử) CHỈ khi PR: đổi quyền · có thể mất dữ
   liệu / migrate · sửa luồng chính (xếp lịch, nhập điểm, huỷ, chuyển lớp) · ảnh thiếu hoặc đáng ngờ · logic máy chủ lớn.
-  Rà sâu dùng agent ECC theo phạm vi (tối đa 2, CLAUDE.md "Rà PR bằng ECC"): quyền → `ecc:security-reviewer` ·
-  mất dữ liệu / migrate / API → `ecc:silent-failure-hunter` · logic lớn → `ecc:typescript-reviewer` / `ecc:react-reviewer`.
+  Rà sâu dùng lệnh có sẵn theo phạm vi (CLAUDE.md "Rà sâu PR"): quyền → `/security-review` ·
+  mất dữ liệu / migrate / API / logic lớn → `/code-review high`.
 - **PR đổi bố cục:** agent rà (mẫu 10B) chấm từng dòng bảng truy vết trên ảnh cặp → KHỚP / KHÁC; **≥ 90 % KHỚP** (KHÁC chỉ khi chủ SP đồng ý lý do),
   planning đăng bảng chấm làm bình luận PR; "tự quyết / lệch / chưa xác minh" chép vào mục 4 trước merge, còn "chưa xác minh" ở luồng chính → không merge.
   Merge chỉ sau bình luận "chủ SP: đạt", không merge qua đêm (mục 1.6).
@@ -436,7 +436,7 @@ Chọn model ở ô chọn model **trước khi dán prompt**. **Không Fable**;
 | OV-2a | Opus 5.5 · XHigh | Opus 5.5 · High | full | `clarify` · `adapt` · `audit` | Quyền — rà sâu + `/security-review` |
 | OV-2b, OV-3a, OV-3c, OV-6a | Opus 5.5 · High | Sonnet 5.5 · High | lite | `layout` · `clarify` · `harden` · `adapt` · `audit` | Giao diện theo mockup |
 | OV-3b, OV-4b, OV-5, OV-6b1, OV-6b2 | Opus 5.5 · XHigh | Opus 5.5 · High | lite | `layout` · `clarify` · `harden` · `adapt` · `audit` | Lớn, migrate / luồng chính — rà sâu |
-| Session planning | Opus 5.5 · XHigh | Opus 5.5 · High | — | `critique` khi cần (+ `ui-ux-pro-max` rà UX lớn) | brainstorming · writing-plans · agent ECC khi rà sâu (1.3) |
+| Session planning | Opus 5.5 · XHigh | Opus 5.5 · High | — | `critique` khi cần (+ `ui-ux-pro-max` rà UX lớn) | brainstorming · writing-plans · `/security-review`, `/code-review` khi rà sâu (1.3) |
 
 Mọi PR có giao diện: `audit` + `web-design-guidelines` cuối PR (1.2 bước 5).
 
@@ -515,7 +515,7 @@ Mỗi PR một session Opus 5.5 trong `.claude/worktrees/`; xong nhắn "PTA Pla
 | **TL-QT** | luật 21/10 vào CLAUDE.md / plan.md 1.6 + 9.5 + 10B / DESIGN.md | — | PTA tự merge |
 | **TL-LUAT** | Rulebook: 16 chỗ v4b + 3 chỗ v3a, luật 1–5 (luật 4 bản sửa), việc TVV, S chéo, bảng thuật ngữ Thi ↔ Test; đánh dấu mockup hết hiệu lực (06 mục 3) | — (khác tệp TL-QT) | PTA tự merge |
 | **CONG-CU** | `do-bang`, cảnh báo esbuild = lỗi, phép kiểm lịch trong hộp, script ảnh cặp | — | PTA tự merge |
-| **LUAT-34** | luật 3 (gỡ R11, Khôi phục điểm) + luật 4 bản sửa 21/10 (bảng 31 chuyển T01–T31) | TL-LUAT | PTA tự merge sau rà sâu `ecc:silent-failure-hunter` |
+| **LUAT-34** | luật 3 (gỡ R11, Khôi phục điểm) + luật 4 bản sửa 21/10 (bảng 31 chuyển T01–T31) | TL-LUAT | PTA tự merge sau rà sâu `/code-review high` |
 | **LUAT-5** | thu hồi / không tăng bậc qua QL, lý do bắt buộc, "Đã thu hồi" | TL-LUAT | PTA tự merge sau rà sâu |
 | **LT-SV** | `trangThaiLichThi` A / B, bỏ "tháng = đã thi", Chốt ngày thi không hạn | — | **chờ chủ SP** (danh sách em đổi trạng thái trước merge) |
 | **NEN-TYPO-MAU → BANG-0 → BANG-1** | thang chữ + token điểm + trạng thái → `Bang` + `ODiem` → lưới điểm 6 lối vào | CONG-CU | BANG-1 **chờ chủ SP duyệt bảng mẫu** `/dev/thanh-phan` |
