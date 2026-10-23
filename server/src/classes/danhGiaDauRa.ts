@@ -76,10 +76,11 @@ export function ghiDanhGiaDauRa(p: Principal, classId: number, studentId: number
       'SELECT d.nhan_xet, d.de_xuat, d.sua_luc, u.full_name AS boi FROM danh_gia_dau_ra d LEFT JOIN users u ON u.id = d.sua_boi WHERE d.class_id = ? AND d.student_id = ?',
     ).get(classId, studentId) as any;
     if (input.luc !== undefined && (input.luc ?? null) !== (cu?.sua_luc ?? null)) {
-      throw loi(409, 'Đã có người sửa lúc {luc} ({ai}) — chữ của bạn vẫn giữ; bấm Lưu lần nữa để ghi đè.', { luc: gioNgay(cu?.sua_luc), ai: cu?.boi ?? '—' }, { luc: cu?.sua_luc ?? null });
+      throw loi(409, 'Đã có người sửa lúc {luc} ({ai}) — bấm Lưu lần nữa để ghi đè', { luc: gioNgay(cu?.sua_luc), ai: cu?.boi ?? '—' }, { luc: cu?.sua_luc ?? null });
     }
     if (cu && cu.nhan_xet === nhanXet && cu.de_xuat === deXuat) return { nhanXet, deXuat, doi: false, luc: cu.sua_luc as string };
-    const now = nowIso();
+    /* `sua_luc` là mốc phiên bản (409): luôn tăng, kể cả hai lần lưu trong cùng một mili-giây. */
+    const now = cu?.sua_luc && nowIso() <= cu.sua_luc ? new Date(Date.parse(cu.sua_luc) + 1).toISOString() : nowIso();
     conn.prepare(
       `INSERT INTO danh_gia_dau_ra (student_id, class_id, nhan_xet, de_xuat, sua_boi, sua_luc) VALUES (?,?,?,?,?,?)
        ON CONFLICT(student_id, class_id) DO UPDATE SET nhan_xet = excluded.nhan_xet, de_xuat = excluded.de_xuat, sua_boi = excluded.sua_boi, sua_luc = excluded.sua_luc`,
@@ -93,6 +94,9 @@ export function ghiDanhGiaDauRa(p: Principal, classId: number, studentId: number
 }
 
 /** `HH:MM dd/mm` giờ Việt Nam — câu 409. */
-const gioNgay = (iso: string | null | undefined) => (iso
-  ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', hour12: false }).format(new Date(iso))
-  : '—');
+const gioNgay = (iso: string | null | undefined) => {
+  if (!iso) return '—';
+  const v = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', hour12: false })
+    .formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+  return `${v.hour}:${v.minute} ${v.day}/${v.month}`;
+};

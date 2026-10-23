@@ -31,7 +31,7 @@ Vai: cô Trần Ngọc Hà (GVCN, id 7) · lớp MB FT 101 (id 3), MB FOU 12 (id
 | T6 | Việc cấp lớp hàng riêng, lưới gập | KHÁC [XM] — ô "Nhập điểm" ở thanh việc; khối "Điểm Mock Test của lớp" GIỮ vị trí + mở sẵn như V4 |
 | T7 | C17 panel việc tại chỗ | KHỚP (`PanelViec`) |
 | T8 | Trạng thái lưu, việc kế | KHỚP |
-| T9 | T15 hai người cùng sửa | KHÁC — chưa xác minh (sửa điểm đi qua hồ sơ lượt, luồng cũ) |
+| T9 | T15 hai người cùng sửa | KHỚP (Đánh giá đầu ra: 409 "Đã có người sửa lúc … (người)", giữ chữ đang gõ, Lưu lần nữa = ghi đè có chủ ý, lịch sử đủ hai bản — bấm thử GVCN + QL; sửa điểm ô vẫn qua hồ sơ lượt như cũ) |
 | T10 | T12 đánh giá đầu ra liên tiếp trong panel | KHỚP (`TabDauRa`, "Lưu và em tiếp"; chỗ lưu C17 mới) |
 | T11 | Ý thức & Phối hợp phân cấp màu | KHÁC [XM] — GIỮ tab Ý thức V4 (khung trái / phải, Chọn nhiều, Ghi vi phạm); làm lại = PR riêng nếu PTA Plan duyệt |
 | T12 | Báo PH trên hàng Ý thức | KHÁC [XM] — như T11 |
@@ -59,7 +59,7 @@ Vai: cô Trần Ngọc Hà (GVCN, id 7) · lớp MB FT 101 (id 3), MB FOU 12 (id
 | V7 | Khối Điểm Mock Test của lớp (Dán từ Excel, ô sửa) | cuối trang |
 | V8 | Bảng điểm lớp thường (Progress | Final) | tab Học viên lớp thường |
 
-**Đếm:** 11 + 22 = 33 dòng — KHỚP 23 · KHÁC 10 (8 [XM] do GIỮ V4 / tab Ý thức, 1 chưa xác minh T15, 1 K11 theo `08`). **23/33 = 69,7 %**; nếu chủ SP chấp nhận 8 dòng [XM] (GIỮ V4 theo 10 mục 8) và K11: 32/33 = 97 %.
+**Đếm (sau rà #547):** 11 + 22 = 33 dòng — KHỚP 24 · KHÁC 9 (8 [XM] do GIỮ V4 / tab Ý thức + K11 theo `08`). **24/33 = 72,7 %**; nếu chủ SP chấp nhận 8 dòng [XM] (GIỮ V4 theo 10 mục 8) và K11: 33/33 = 100 %.
 
 ## Thao tác TRƯỚC → SAU PR (CLAUDE.md "PR giao diện V5 = nâng cấp")
 
