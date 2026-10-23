@@ -58,4 +58,8 @@ export const EN_UI_TONG_QUAN = {
   "Đạt MT · {lop}": "MT met · {lop}",
   "Đạt Target thi thật": "Real exam target met",
   "đề xuất": "requests",
+  "Case chưa PA": "Cases without plan",
+  "GV": "Teacher",
+  "Quá hạn nay": "Overdue now",
+  "SOS 2–3": "SOS 2–3",
 };
