@@ -224,6 +224,54 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
   );
 }
 
+/** Đang xử lý / mới cập nhật lên trước, đã hoàn thành xuống dưới, đã huỷ / hệ thống đóng cuối cùng. */
+function xepCase(cases: CaseCard[]): CaseCard[] {
+  const done = (x: CaseCard) => (x.trangThaiV4.t === 'da-huy' ? 2 : x.status === 'done' ? 1 : 0);
+  return [...cases].sort((a, b) => done(a) - done(b) || (b.touchedOn ?? '').localeCompare(a.touchedOn ?? '') || b.id - a.id);
+}
+
+/**
+ * CASE & PHƯƠNG ÁN CỦA KỸ NĂNG ĐANG CHỌN (UI-HO-SO-HV, `dieu-chinh-cuoi.html` khu c) — đúng các hàng Case / PA của bảng kỹ năng (cùng nút Mở Case ·
+ * + Thêm PA · Xác nhận · Kết quả, cùng ngăn Case), luôn mở, bảng `table-fixed` nên cột PA cố định (nút không đẩy chữ). Nhiều hàng (Overall) → mỗi kỹ năng
+ * có Case một nhóm. < 640 px: thẻ kỹ năng như bảng cũ.
+ */
+export function CaseKyNang({ rows, onReport, onChanged, onMoCase, tamDungTu = null }: {
+  rows: Row[]; tamDungTu?: string | null;
+  onReport?: (category: string) => void; onChanged?: () => void;
+  onMoCase: (caseId: number, o?: MoCase) => void;
+}) {
+  const dienThoai = useDienThoai();
+  const { ngan } = useNgayNghiepVu();
+  const ds = rows.length > 1 ? rows.filter((r) => r.cases.length) : rows;
+  if (!ds.length) return <p className="m-0 px-4 py-3 text-[13px] text-slate-400">{t('Không có Case nào.')}</p>;
+  if (dienThoai) return <TamDungCtx.Provider value={tamDungTu}><TheKyNangDs rows={ds} onMoCase={onMoCase} /></TamDungCtx.Provider>;
+  return (
+    <TamDungCtx.Provider value={tamDungTu}>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[680px] table-fixed text-sm">
+          <colgroup><col className="w-[24%]" /><col className="w-[20%]" /><col className="w-[26%]" /><col className="w-[30%]" /></colgroup>
+          <thead><tr><th className="th" colSpan={2}>{t('Case · Phương án')}</th><th className="th">{t('Trạng thái · Kết quả')}</th><th className="th">{t('Việc')}</th></tr></thead>
+          {ds.map((r) => (
+            <tbody key={khoaHang(r)}>
+              {ds.length > 1 && (
+                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold text-slate-400">{r.label}{r.tuLopTruoc ? ` · ${t('từ {tuLopTruoc}', { tuLopTruoc: r.tuLopTruoc })}` : ''}</th></tr>
+              )}
+              {r.cases.length ? xepCase(r.cases).map((c) => <HangCase key={c.id} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />) : (
+                <HangCon>
+                  <td className="td text-[13px] font-normal text-slate-400" colSpan={4}>
+                    {t('Không có vấn đề nào đang theo dõi ở {label}.', { label: r.label })}
+                    {onReport && <button type="button" className="btn btn-sm ml-2" onClick={() => onReport(r.category)}>{t('+ Case cho {label}', { label: dich(r.label) })}</button>}
+                  </td>
+                </HangCon>
+              )}
+            </tbody>
+          ))}
+        </table>
+      </div>
+    </TamDungCtx.Provider>
+  );
+}
+
 /**
  * Dòng phụ của cột Việc tiếp (12 px, Q22): `hạn hết 02/10 · Đỗ Thanh Tùng` · quá hạn: ⚠ SVG + `quá hạn 3 ngày` đỏ + người · hôm nay vàng.
  * Em Tạm dừng: nhãn vàng thay MỌI hạn (T65 — "mọi hạn đang dừng", kể cả hạn chưa tới), giữ người. Chỗ DUY NHẤT nói quá hạn của kỹ năng.
@@ -256,12 +304,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const expandable = row.cases.length > 0 || row.band !== null;
-  /* Đang xử lý / mới cập nhật lên trước, đã hoàn thành xuống dưới, đã huỷ / hệ thống đóng cuối cùng. */
-  const ordered = [...row.cases].sort((a, b) => {
-    const done = (x: CaseCard) => (x.trangThaiV4.t === 'da-huy' ? 2 : x.status === 'done' ? 1 : 0);
-    if (done(a) !== done(b)) return done(a) - done(b);
-    return (b.touchedOn ?? '').localeCompare(a.touchedOn ?? '') || b.id - a.id;
-  });
+  const ordered = xepCase(row.cases);
   const buoc = viecTiepHang(row.cases, homNay);
 
   return (

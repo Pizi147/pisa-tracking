@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { chuPhuHuynh, chuTamDung, chuTuanHoc, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { chuPhuHuynh, chuTamDung, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
+import { NhanLich } from '../../ui/Nhan.tsx';
+import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { useApi } from '../../lib/useApi.ts';
@@ -32,32 +34,29 @@ const vaiViec = (x: Viec) => (x.nguoi.vai ? dich(x.nguoi.vai) : null);
 const tenNguoi = (x: Viec) => (x.nguoi.id ? x.nguoi.ten : dich(x.nguoi.ten));
 
 /**
- * DÒNG THÔNG TIN — "em là ai" (mockup 24 A/C/D1).
- *   FT          MB FT 101 · LT1 · target 6.5 · tuần học 9 · dự kiến thi 06/2027 · GVCN …
- *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS dự kiến 06/2027 · GVCN …
- *               (PR-NT 04/10: Target + thi IELTS chỉ hiện khi có; FT không bao giờ "n/16")
+ * DÒNG THÔNG TIN — "em là ai" (UI-HO-SO-HV, khu c `.dau-lop`): nhãn nhỏ xám / giá trị đậm (P2) —
+ *   FT          Lớp MB FT 101 · Lộ trình LT1 · Target 6.5 · Tuần học 9 · Ngày thi (Dự kiến 02/2027 | Thi 21/11 | Chưa có lịch) · GVCN · TVV
+ *   lớp thường  Lớp MB FOU 15 · Chương trình FOU · Tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS 06/2027 · GVCN · TVV
  */
-export function DongThongTin({ tt }: { tt: any }) {
-  if (!tt?.lop) return <p className="mb-0 mt-1 text-[13px] text-slate-400">{t('Chưa xếp lớp')}</p>;
+export function DongThongTin({ tt, tvv }: { tt: any; tvv?: string | null }) {
+  if (!tt?.lop) return <p className="m-0 text-[13px] text-slate-400">{t('Chưa xếp lớp')}</p>;
   const target = ((tt.target !== null && tt.target !== undefined) || tt.kck)   // OV-9: "6.5 · KCK" · "— · KCK"
-    && <span key="tg">Target <b><TargetText band={tt.target} kck={tt.kck} /></b></span>;
+    && <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} /></span>} />;
+  const thi = tt.thiDuKien
+    ? <NhanGt key="thi" n={tt.lopThuong ? dich(tt.thiDuKien.nhan) : t('Ngày thi')} g={<span className="tabular-nums">{tt.lopThuong ? tt.thiDuKien.gt : `${dich(tt.thiDuKien.nhan)} ${tt.thiDuKien.gt}`.trim()}</span>} />
+    : !tt.lopThuong && <NhanGt key="thi" n={t('Ngày thi')} g={<NhanLich loai="chua">{t('Chưa có lịch')}</NhanLich>} />;
   const muc: ReactNode[] = [
-    <b key="lop">{tt.lop}</b>,
-    tt.loTrinh && <b key="lt">{dich(tt.loTrinh)}</b>,
+    <NhanGt key="lop" n={t('Lớp')} g={tt.lopId ? <Link to={`/hoc-vien/lop/${tt.lopId}`} className="text-slate-100 no-underline hover:underline">{tt.lop}</Link> : tt.lop} />,
+    tt.loTrinh && <NhanGt key="lt" n={tt.lopThuong ? t('Chương trình') : t('Lộ trình')} g={dich(tt.loTrinh)} />,
     !tt.lopThuong && target,
-    tt.tuanHoc && <span key="tuan"><b className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</b></span>,
-    tt.thiDuKien && <span key="thi">{dich(tt.thiDuKien.nhan)} <b className="tabular-nums">{tt.thiDuKien.gt}</b></span>,
+    tt.tuanHoc && <NhanGt key="tuan" n={t('Tuần học')} g={<span className="tabular-nums">{[tt.tuanHoc.tuan === null ? null : tt.tuanHoc.tong ? `${tt.tuanHoc.tuan}/${tt.tuanHoc.tong}` : String(tt.tuanHoc.tuan), tt.tuanHoc.dangDung ? t('đang dừng') : null].filter(Boolean).join(' · ')}</span>} />,
+    thi,
     tt.lopThuong && target,
-    tt.thiIelts && <span key="ielts">{t('thi IELTS dự kiến')} <b className="tabular-nums">{tt.thiIelts}</b></span>,
-    tt.gvcn && <span key="gv">{t('GVCN')} <b>{tt.gvcn}</b></span>,
+    tt.thiIelts && <NhanGt key="ielts" n={t('Thi IELTS dự kiến')} g={<span className="tabular-nums">{tt.thiIelts}</span>} />,
+    tt.gvcn && <NhanGt key="gv" n={t('GVCN')} g={tt.gvcn} />,
+    tvv && <NhanGt key="tvv" n={t('TVV')} g={tvv} />,
   ].filter(Boolean);
-  return (
-    <ul className="m-0 mt-1 flex list-none flex-wrap gap-y-0.5 p-0 text-[13px] text-slate-400 [&_b]:font-semibold [&_b]:text-slate-100">
-      {muc.map((m, i) => (
-        <li key={i}>{m}{i < muc.length - 1 && <span aria-hidden className="px-[7px] opacity-70">·</span>}</li>
-      ))}
-    </ul>
-  );
+  return <div className="flex flex-wrap items-start gap-x-[22px] gap-y-2.5">{muc}</div>;
 }
 
 /** Số gọi được trên điện thoại (`tel:`), chữ giữ nguyên như người nhập. */
@@ -151,39 +150,33 @@ function NutGap({ mo, onClick, children }: { mo: boolean; onClick: () => void; c
 }
 
 /**
- * THANH "VIỆC CỦA BẠN" (K3-01, Q31-8, T72) — việc gấp nhất của NGƯỜI XEM với em này (quá hạn → hạn sớm → không hạn), nút động từ mở đúng
- * chỗ làm. "n việc khác của bạn" và "m việc của người khác" gập bên dưới. Người xem không có việc nào với em → KHÔNG VẼ GÌ (T72): việc của
- * người khác xem ở cột Việc tiếp và trong câu tóm tắt.
+ * THANH "VIỆC CẦN LÀM" (UI-HO-SO-HV, `ho-so-hv.html` `.thanh-viec` + ô việc của Hồ sơ lớp khu b) — CHỖ DUY NHẤT trên hồ sơ có việc: mỗi việc CỦA NGƯỜI XEM
+ * với em một ô (tên việc · hạn `dd/mm` · nút động từ), vạch trái theo hạn (quá hạn đỏ · còn lại xanh), việc gấp nhất là nút chính. Bấm = mở đúng chỗ làm
+ * ngay tại trang (ngăn Case / tab Ý thức / panel). Quá 3 việc → "+n việc khác của tôi"; việc của người khác gập. Người xem không có việc → không vẽ (T72).
  */
 export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; nguoiKhac: Viec[] } | null | undefined; homNay: string | null; onLam: (x: Viec) => void }) {
   const [mo, setMo] = useState<'ban' | 'khac' | null>(null);
   if (!viec?.cuaBan.length) return null;
-  const [dau, ...con] = viec.cuaBan;
-  const qh = dau.quaHanNgay !== null;
-  const ds = mo === 'ban' ? con : mo === 'khac' ? viec.nguoiKhac : [];
+  const hien = mo === 'ban' ? viec.cuaBan : viec.cuaBan.slice(0, 3);
+  const con = viec.cuaBan.length - 3;
   return (
-    <section aria-label={t('Việc của tôi với học viên này')}>
-      <div className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 rounded-[10px] px-3 py-[9px] ${qh
-        ? 'bg-bad-bg shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]' : 'bg-[color:var(--surface-2)] shadow-[inset_3px_0_0_var(--accent)]'}`}>
-        <span className="whitespace-nowrap text-[12px] font-bold  text-slate-400">{t('Việc của tôi')}</span>
-        <span className="min-w-0 flex-1 basis-full text-[14px] text-slate-100 sm:basis-auto">
-          <ChuViec chu={chuViec(dau)} /> {dau.han && <HanViec x={dau} homNay={homNay} chiQuaHan />}
-        </span>
-        {dau.mo && <button type="button" className="btn btn-primary btn-sm min-h-[44px] w-full sm:min-h-0 sm:w-auto" onClick={() => onLam(dau)}>{nutViec(dau)}</button>}
-        {con.length > 0 && <NutGap mo={mo === 'ban'} onClick={() => setMo(mo === 'ban' ? null : 'ban')}>{t('{n} việc khác của tôi', { n: con.length })}</NutGap>}
-        {viec.nguoiKhac.length > 0 && (
-          <NutGap mo={mo === 'khac'} onClick={() => setMo(mo === 'khac' ? null : 'khac')}>{t('{n} việc của người khác', { n: viec.nguoiKhac.length })}</NutGap>
-        )}
+    <section aria-label={t('Việc cần làm')} className="flex flex-col gap-1.5">
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        {hien.map((x, i) => <OViec key={x.key} x={x} chinh={i === 0} homNay={homNay} onLam={onLam} />)}
       </div>
-      {ds.length > 0 && (
-        <ul className="m-0 flex list-none flex-col gap-1.5 pb-0.5 pl-[15px] pr-3 pt-1.5">
-          {ds.map((x) => (
+      {(con > 0 || viec.nguoiKhac.length > 0) && (
+        <div className="flex flex-wrap items-center justify-end gap-x-3.5">
+          {con > 0 && <NutGap mo={mo === 'ban'} onClick={() => setMo(mo === 'ban' ? null : 'ban')}>{t('{n} việc khác của tôi', { n: con })}</NutGap>}
+          {viec.nguoiKhac.length > 0 && (
+            <NutGap mo={mo === 'khac'} onClick={() => setMo(mo === 'khac' ? null : 'khac')}>{t('{n} việc của người khác', { n: viec.nguoiKhac.length })}</NutGap>
+          )}
+        </div>
+      )}
+      {mo === 'khac' && (
+        <ul className="m-0 flex list-none flex-col gap-1.5 px-3 pb-0.5">
+          {viec.nguoiKhac.map((x) => (
             <li key={x.key} className="grid grid-cols-1 items-baseline gap-x-3 gap-y-0.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_auto]">
-              {x.cuaBan && x.mo
-                ? <button type="button" className="border-0 bg-transparent p-0 text-left text-slate-100 hover:underline" onClick={() => onLam(x)} title={nutViec(x) ?? undefined}>{chuViec(x)}</button>
-                : <span className="text-slate-200">{chuViec(x)}{!x.cuaBan && (
-                  <span className="text-[12px] text-slate-400"> · {tenNguoi(x)}{x.nguoi.vai ? `, ${vaiViec(x)}` : ''}</span>
-                )}</span>}
+              <span className="text-slate-200">{chuViec(x)}<span className="text-[12px] text-slate-400"> · {tenNguoi(x)}{x.nguoi.vai ? `, ${vaiViec(x)}` : ''}</span></span>
               <span className="sm:text-right"><HanViec x={x} homNay={homNay} /></span>
             </li>
           ))}
@@ -193,138 +186,17 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
   );
 }
 
-// ====================================================================== câu tóm tắt + bốn ô (Task 3)
-
-const MAU_MANH: Record<string, string> = {
-  danger: 'text-bad', warn: 'text-soon', sos1: 'text-sos1-chu', sos2: 'text-sos2-chu', sos3: 'text-sos3-chu', wait: 'text-muted', accent: 'text-doing',
-};
-
-/** CÂU TÓM TẮT (Q6) — máy viết, tối đa 3 mảnh, mỗi mảnh một màu theo nghĩa, ngăn bằng `·` mờ. 14 px, dưới vạch mảnh của khung thông tin. */
-export function CauTomTat({ manh }: { manh: (ChuKhoa & { tone: string | null })[] | null | undefined }) {
-  if (!manh?.length) return null;
+/** Một ô việc (cùng dáng `OViec` của Hồ sơ lớp): tên đậm · hạn · nút bên phải. */
+function OViec({ x, chinh, homNay, onLam }: { x: Viec; chinh: boolean; homNay: string | null; onLam: (x: Viec) => void }) {
+  const vach = x.quaHanNgay !== null ? 'rgb(var(--bad-rgb))' : 'var(--accent)';
   return (
-    <p className="m-0 mt-2.5 border-t pt-2.5 text-[14px] leading-[1.55] text-slate-200" style={{ borderColor: 'var(--line)' }}>
-      {manh.map((m, i) => (
-        <span key={i}>
-          {i > 0 && <span aria-hidden className="px-1.5 text-slate-500">·</span>}
-          <span className={m.tone ? `font-semibold ${MAU_MANH[m.tone] ?? ''}` : ''}>{dichChu(m)}</span>
-        </span>
-      ))}
-    </p>
-  );
-}
-
-const MAU_NHAN: Record<string, string> = {
-  'qua-han': 'bg-bad-bg text-bad', 'can-lam': 'border border-[color:var(--line-strong)] text-slate-200', 'cho-duyet': 'bg-muted-bg text-muted',
-  'dang-lam': 'bg-[color:var(--surface-2)] text-slate-200', 'tam-dung': 'bg-soon-bg text-soon',
-};
-
-/** Một ô: nhãn 11,5 px · dòng trên 12 px · giá trị 17 px đậm · dòng phụ 12 px. Là `<button>` khi có chỗ để mở (mở đúng chỗ sinh ra số). */
-function O({ nhan, tren, children, phu, onClick, title, phuNgoai }: {
-  nhan: string; tren?: ReactNode; children: ReactNode; phu?: ReactNode; onClick?: () => void; title: string;
-  /** Dòng phụ có liên kết (G5) → nằm NGOÀI nút (không lồng liên kết trong nút); phần trên vẫn bấm được. */
-  phuNgoai?: boolean;
-}) {
-  if (phuNgoai) {
-    return (
-      <div className="flex min-w-0 flex-col gap-[3px] rounded-[10px] border bg-[color:var(--surface)] px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
-        <button type="button" onClick={onClick} disabled={!onClick} title={title}
-          className="flex flex-col gap-[3px] border-0 bg-transparent p-0 text-left enabled:cursor-pointer">
-          <span className="text-[12px] font-semibold tracking-[.03em] text-slate-400">{nhan}</span>
-          {tren && <span className="text-[12px] text-slate-400">{tren}</span>}
-          <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-bold leading-[1.35] text-slate-100">{children}</span>
-        </button>
-        {phu && <span className="text-[12px] leading-[1.45] text-slate-400">{phu}</span>}
-      </div>
-    );
-  }
-  const Khung = onClick ? 'button' : 'div';
-  return (
-    <Khung type={onClick ? 'button' : undefined} onClick={onClick} title={title}
-      className={`flex min-w-0 flex-col gap-[3px] rounded-[10px] border bg-[color:var(--surface)] px-3 py-2.5 text-left ${onClick ? 'cursor-pointer hover:border-[color:var(--line-strong)]' : ''}`}
-      style={{ borderColor: 'var(--line)' }}>
-      <span className="text-[12px] font-semibold tracking-[.03em] text-slate-400">{nhan}</span>
-      {tren && <span className="text-[12px] text-slate-400">{tren}</span>}
-      <span className="flex flex-wrap items-center gap-1.5 text-[17px] font-bold leading-[1.35] text-slate-100">{children}</span>
-      {phu && <span className="text-[12px] leading-[1.45] text-slate-400">{phu}</span>}
-    </Khung>
-  );
-}
-
-/**
- * BỐN Ô (K3-03, T72): Kết quả gần nhất · Học thuật · Ý thức · Sắp tới — mỗi ô MỘT nguồn (máy chủ `dauHoSo.o`), bấm mở đúng chỗ:
- * đợt Test · bảng kỹ năng ở Case gấp nhất · tab Ý thức · đợt Test kế tiếp. < 760 px: lưới 2×2.
- */
-export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
-  o: any; homNay: string | null; onDot: (attemptId: number) => void; onKn: (kn: string) => void; onYThuc: () => void;
-  /** G5 (Task 8): đường tới hồ sơ Mock cuộn tới kỹ năng — null thì mã kỹ năng chỉ là chữ. */
-  kyNangHref?: (kn: string, attemptId: number | null) => string | null;
-}) {
-  if (!o) return null;
-  const k = o.ketQua;
-  const kq = k.kq;
-  const h = o.hocThuat;
-  const y = o.yThuc;
-  const s = o.sapToi;
-  /* OV-9: em KCK có Target thì có kỳ vọng như thường; chỉ em KCK CHƯA có Target (không kỳ vọng) mới hiện OVR trơn. */
-  const kckKhongKyVong = k.kck && !!kq && !kq.kckDuoi && kq.sos === null;
-  const giaTriKq = !kq ? '—'
-    : k.ratio ? (kq.phanTram !== null ? `Final Test ${kq.phanTram}%` : kq.dat === null ? t('{a}/{b} môn có điểm', { a: kq.coDiem, b: kq.yeuCau }) : t('{a}/{b} môn đạt', { a: kq.yeuCau - (kq.soMonChuaDat ?? 0), b: kq.yeuCau }))
-    : kq.kckDuoi ? <ChipDuoiKck />
-    : kckKhongKyVong ? null
-    : kq.sos ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} chot={kq.chot} />   /* G1: một câu chung, giữ "tạm thời" + viền đứt */
-    : kq.dat ? <span className="text-ok">{t('Đạt kỳ vọng')}</span> : t('Chưa đủ điểm');
-  /* Chưa có đợt nào chấm xong (kq null) mà vẫn có kỹ năng "dưới kỳ vọng" từ bảng Học thuật: không có tên đợt để ghi → không vẽ dòng này (trước đây sập cả hồ sơ). */
-  const duoi = kq && k.duoi?.length ? (
-    <>{t('dưới kỳ vọng:')} {k.duoi.map((d: any, i: number) => {
-      const href = kyNangHref?.(d.kn, d.attemptId ?? null) ?? null;
-      return (
-        <span key={d.kn}>{i > 0 && ' · '}{href
-          ? <Link to={href} className="link max-sm:inline-block max-sm:px-1.5 max-sm:py-3 max-sm:-my-3" title={`${t('Mở Hồ sơ Mock Test')} · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
-          : d.ngan}</span>
-      );
-    })}</>
-  ) : null;
-  const phuKq = !kq ? t('chưa có điểm nào')
-    : k.ratio ? (k.huong ? <>{dich(k.huong)}{k.duoi?.length ? <> · {t('không đạt: {ds}', { ds: k.duoi.map((d: any) => d.ngan).join(' · ') })}</> : null}</>
-      : k.duoi?.length ? <>{t('Không đạt: {ds}', { ds: k.duoi.map((d: any) => d.ngan).join(' · ') })}</> : null)
-    : kckKhongKyVong ? t('KCK · chưa có Target')
-    : kq.sos && kq.coDiem < kq.yeuCau ? duoi   /* KetQuaDot đã ghi "n/4 kỹ năng" */
-    : <>{t('{a}/{b} phần có điểm', { a: kq.coDiem, b: kq.yeuCau })}{duoi && <> · {duoi}</>}</>;
-  const gap = h.dong[0];
-  return (
-    <div className="grid grid-cols-2 gap-2.5 min-[760px]:grid-cols-4">
-      <O nhan={t('Kết quả gần nhất')} tren={kq?.nhan} phu={phuKq} title={t('Mở đợt Test này ở bảng Học thuật')} phuNgoai={!!kyNangHref && !!k.duoi?.length}
-        onClick={kq ? () => onDot(kq.attemptId) : undefined}>
-        {kckKhongKyVong
-          ? <span className="rounded-md border px-2 text-[15px] leading-6 tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>OVR {k.overall !== null ? k.overall.toFixed(1) : '—'}</span>
-          : giaTriKq}
-      </O>
-      <O nhan={t('Học thuật')} title={t('Mở bảng kỹ năng ở Case gấp nhất')}
-        onClick={gap ? () => onKn(gap.category) : undefined}
-        phu={h.dong.length ? (
-          <span className="flex flex-col gap-[3px]">
-            {h.dong.slice(0, 3).map((d: any, i: number) => (
-              <span key={i} className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                <span className="min-w-[30px] font-bold tabular-nums text-slate-100">{d.kn}</span>
-                <span className={`whitespace-nowrap rounded-md px-1.5 text-[12px] font-semibold leading-[18px] ${MAU_NHAN[d.t] ?? ''}`}>{dk(d.nhan, d.nhanK)}</span>
-                {d.viec && <span>{dich(d.viec)}</span>}
-              </span>
-            ))}
-            {h.dong.length > 3 && <span>{t('+{n} Case khác', { n: h.dong.length - 3 })}</span>}
-            {h.phu && <span>{dich(h.phu)}</span>}
-          </span>
-        ) : dk(h.phu)}>
-        {h.so} Case
-      </O>
-      <O nhan={t('Ý thức')} tren={dk(y.tren)} title={t('Mở tab Ý thức & Phối hợp')} onClick={onYThuc}
-        phu={<span className={y.tone === 'danger' ? 'font-semibold text-bad' : y.tone === 'warn' ? 'font-semibold text-soon' : y.tone === 'wait' ? 'text-muted' : ''}>{dk(y.phu, y.phuK)}</span>}>
-        <span className={y.tren ? '' : 'text-[15px]'}>{dk(y.gt)}</span>
-      </O>
-      <O nhan={t('Sắp tới')} tren={dk(s.tren)} phu={dk(s.phu, s.phuK)} title={t('Mở đợt Test sắp tới ở bảng Học thuật')}
-        onClick={s.attemptId ? () => onDot(s.attemptId) : undefined}>
-        <span className="text-[15px] tabular-nums">{dk(s.gt, s.gtK)}</span>
-      </O>
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 rounded-[10px] border border-l-4 bg-[color:var(--surface)] px-3 py-2.5"
+      style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
+      <span className="min-w-0 truncate text-[14px] text-slate-100" title={chuViec(x)}><ChuViec chu={chuViec(x)} /></span>
+      {x.mo
+        ? <button type="button" className={`btn btn-sm row-span-2 max-sm:min-h-[44px] ${chinh ? 'btn-primary' : ''}`} onClick={() => onLam(x)}>{nutViec(x)}</button>
+        : <span className="row-span-2" />}
+      <span className="min-w-0 text-[13px] text-slate-400">{x.han ? <HanViec x={x} homNay={homNay} /> : t('không hạn')}</span>
     </div>
   );
 }
