@@ -3,6 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -234,6 +235,14 @@ type DsBai = { bai: Bai[]; lop: { classId: number; code: string; kyNang: string[
 const kyNangBai = (chon: ChonKn) => (chon === 'writing1' || chon === 'writing2' ? 'writing' : chon);
 const so = (d: number) => (Number.isInteger(d) ? String(d) : String(Math.round(d * 100) / 100));
 const TOI_DA = 3;
+/** Cột bảng Tiến độ trên lớp (khu c `.bang-td`): Tuần · (Kỹ năng khi xem Overall) · Kết quả · Nhận xét · GV. */
+const cotTienDo = (coKn: boolean): CotBang[] => [
+  { key: 'tuan', nhan: t('Tuần'), kieu: 'tuan' },
+  ...(coKn ? [{ key: 'kn', nhan: t('Kỹ năng'), kieu: 'so' as const, rong: 72 }] : []),
+  { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 300 },
+  { key: 'nx', nhan: t('Nhận xét'), kieu: 'chu' },
+  { key: 'gv', nhan: 'GV', kieu: 'chu', rong: 180 },
+];
 
 /**
  * TIẾN ĐỘ TRÊN LỚP (khu c, `10` mục 5): bảng dưới biểu đồ — 3 dòng mới nhất + "Xem thêm n dòng", ghi NGUYÊN VĂN GV nhập (tên bài · điểm / thang của bài),
@@ -262,34 +271,22 @@ export function TienDoTrenLop({ studentId, hocVien, lopNay, chon, ct, homNay }: 
         : !data ? <div className="px-4 pb-3"><Skeleton rows={2} /></div>
         : !ds.length ? <p className="m-0 px-4 pb-4 text-[13px] text-slate-400">{t('Chưa có ghi nhận nào.')}</p>
         : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] table-fixed text-sm">
-              <colgroup><col className="w-[12%]" />{!kn && <col className="w-[8%]" />}<col className="w-[28%]" /><col /><col className="w-[18%]" /></colgroup>
-              <thead><tr><th className="th tabular-nums">{t('Tuần')}</th>{!kn && <th className="th">{t('Kỹ năng')}</th>}<th className="th">{t('Kết quả')}</th><th className="th">{t('Nhận xét')}</th><th className="th">GV</th></tr></thead>
-              <tbody>
-                {hien.map((b) => (
-                  <tr key={b.id} className={b.sua ? 'bam cursor-pointer' : ''} onClick={b.sua ? () => setMo(b) : undefined}>
-                    <td className="td whitespace-nowrap tabular-nums">{b.tuanMa}</td>
-                    {!kn && <td className="td">{tenMonNgan(ct, b.skill)}</td>}
-                    <td className="td">
-                      {b.sua
-                        ? <button type="button" className="appearance-none rounded-md border-0 bg-[color:var(--accent-soft)] px-2 py-0.5 text-left text-[14px] font-bold text-slate-100 hover:underline" title={t('Sửa')}>{b.tenBai} · <span className="tabular-nums">{so(b.diem)}/{so(b.thang)}</span></button>
-                        : <span className="rounded-md bg-[color:var(--accent-soft)] px-2 py-0.5 text-[14px] font-bold text-slate-100">{b.tenBai} · <span className="tabular-nums">{so(b.diem)}/{so(b.thang)}</span></span>}
-                    </td>
-                    <td className="td break-words text-slate-300">{b.nhanXet ?? <span className="text-faint">—</span>}</td>
-                    <td className="td text-slate-300">{b.suaBoi ?? b.ghiBoi ?? '—'}</td>
-                  </tr>
-                ))}
-                {ds.length > TOI_DA && (
-                  <tr><td className="td" colSpan={kn ? 4 : 5}>
-                    <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" aria-expanded={du} onClick={() => setDu(!du)}>
-                      {du ? t('Thu gọn ▴') : t('Xem thêm {n} dòng ▾', { n: ds.length - TOI_DA })}
-                    </button>
-                  </td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <Bang ten={t('Tiến độ trên lớp')} khung={false} cot={cotTienDo(!kn)} hang={hien} khoa={(b) => b.id}
+              onHang={ds.some((b) => b.sua) ? (b) => { if (b.sua) setMo(b); } : undefined}
+              oCua={(b, c) => c.key === 'tuan' ? <span className="tabular-nums">{b.tuanMa}</span>
+                : c.key === 'kn' ? tenMonNgan(ct, b.skill)
+                : c.key === 'kq' ? <span className="rounded-md bg-[color:var(--accent-soft)] px-2 py-0.5 text-[14px] font-bold text-slate-100" title={b.sua ? t('Sửa') : undefined}>{b.tenBai} · <span className="tabular-nums">{so(b.diem)}/{so(b.thang)}</span></span>
+                : c.key === 'nx' ? (b.nhanXet ? <span className="break-words text-slate-300">{b.nhanXet}</span> : <span className="text-faint">—</span>)
+                : <span className="text-slate-300">{b.suaBoi ?? b.ghiBoi ?? '—'}</span>} />
+            {ds.length > TOI_DA && (
+              <div className="border-t px-4 py-2" style={{ borderColor: 'var(--line)' }}>
+                <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" aria-expanded={du} onClick={() => setDu(!du)}>
+                  {du ? t('Thu gọn ▴') : t('Xem thêm {n} dòng ▾', { n: ds.length - TOI_DA })}
+                </button>
+              </div>
+            )}
+          </>
         )}
       {mo && data && (
         <PanelTienDo duong={duong} bai={mo === 'moi' ? null : mo} lop={data.lop} lopNay={lopNay} knDau={kn} hocVien={hocVien} ct={ct} homNay={homNay}
