@@ -35,4 +35,5 @@ export const EN_UI_HO_SO_LOP = {
   'Đánh giá đầu ra lớp {lop}': 'End-of-course review of {lop}',
   'Đã đánh giá {n} / {tong}': 'Reviewed {n} / {tong}',
   'Đề xuất bước tiếp': 'Proposed next step',
+  'Đã có người sửa lúc {luc} ({ai}) — chữ của bạn vẫn giữ; bấm Lưu lần nữa để ghi đè.': 'Someone saved this at {luc} ({ai}) — your text is kept; press Save again to overwrite.',
 } satisfies Record<string, Dich>;

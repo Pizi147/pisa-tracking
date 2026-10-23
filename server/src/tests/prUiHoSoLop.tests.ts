@@ -71,6 +71,18 @@ export async function runPrUiHoSoLopTests(t: any) {
       const d = xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!;
       assert(d.nhanXet === 'Đọc hiểu tiến bộ rõ; cần luyện viết.' && d.deXuat === 'fast_track' && !!d.boi && !!d.luc, JSON.stringify(d));
       assert(d.lichSu.length === 2 && d.lichSu[0].deXuat === 'fast_track' && d.lichSu[1].deXuat === 'len_lop', `lịch sử: ${JSON.stringify(d.lichSu)}`);
+      /* T15: hai người cùng mở bản d.luc — người sau gửi bản cũ → 409, không đè im lặng; gửi lại với bản mới → ghi đè có chủ ý. */
+      const moi = ghiDanhGiaDauRa(P.mbManager, FOU, emFou, { nhanXet: 'QL sửa', deXuat: 'hoc_lai', luc: d.luc });
+      assert(moi.luc && moi.luc !== d.luc, 'phải trả luc mới');
+      let e409: any = null;
+      try { ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'GVCN đè', deXuat: 'len_lop', luc: d.luc }); } catch (e) { e409 = e; }
+      assert(e409?.status === 409 && e409.details?.luc === moi.luc && /Đã có người sửa lúc/.test(e409.message), `409: ${e409?.status} ${e409?.message}`);
+      assert(xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === 'QL sửa', 'bản QL giữ nguyên sau 409');
+      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'GVCN đè', deXuat: 'len_lop', luc: moi.luc });
+      assert(xemDanhGiaDauRa(gv, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === 'GVCN đè', 'ghi đè có chủ ý');
+      let e2: any = null;
+      try { ghiDanhGiaDauRa(gv, FOU, (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 1 OFFSET 1`).get(FOU) as any).student_id, { nhanXet: 'x', luc: '2026-01-01T00:00:00Z' }); } catch (e) { e2 = e; }
+      assert(e2?.status === 409, 'em chưa có bản mà gửi luc → 409');
       ghiDanhGiaDauRa(P.mbManager, FOU, emFou, { nhanXet: null, deXuat: null });   // QL của lớp cũng ghi được, xoá được
       assert(xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === null, 'QL xoá nhận xét');
     } finally { conn.exec('ROLLBACK'); xoaNho(); }

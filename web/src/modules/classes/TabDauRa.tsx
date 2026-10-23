@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { Bang } from '../../ui/Bang.tsx';
 import { NhanKq } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -121,13 +121,18 @@ function PanelDauRa({ classId, maLop, chuongTrinh, em, viTri, cua, onDong, onTie
   const xoaNhap = useXoaNhap();
   const [tt, setTt] = useState<TtLuu | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
+  /* T15: bản người này đã thấy khi mở panel — máy chủ trả 409 nếu ai đó lưu sau đó; lấy bản mới để lần Lưu kế ghi đè có chủ ý. */
+  const [luc, setLuc] = useState<string | null>(d?.luc ?? null);
   const daSua = (nhanXet.trim() || null) !== (d?.nhanXet ?? null) || deXuat !== (d?.deXuat ?? null);
   const luu = async (): Promise<boolean> => {
     setTt('dang'); setLoi(null);
     try {
-      await api.put(`${duongDauRa(classId)}/${e.id}`, { nhanXet: nhanXet.trim() || null, deXuat });
-      xoaNhap(); setTt('da'); onDaLuu(); return true;
-    } catch (x) { setTt('loi'); setLoi(x instanceof Error ? x.message : null); return false; }
+      const r = await api.put<{ luc: string }>(`${duongDauRa(classId)}/${e.id}`, { nhanXet: nhanXet.trim() || null, deXuat, luc });
+      setLuc(r.luc); xoaNhap(); setTt('da'); onDaLuu(); return true;
+    } catch (x) {
+      if (x instanceof ApiError && x.status === 409) { setLuc(x.details?.luc ?? null); onDaLuu(); }   // chữ đang gõ giữ nguyên; lịch sử có bản của người kia
+      setTt('loi'); setLoi(x instanceof Error ? x.message : null); return false;
+    }
   };
   const mon = (e.skills ?? ['listening', 'reading', 'writing', 'speaking']);
   const p = luot(e, 'progress')?.ratios; const f = luot(e, 'final')?.ratios;
@@ -164,7 +169,8 @@ function PanelDauRa({ classId, maLop, chuongTrinh, em, viTri, cua, onDong, onTie
             {DE_XUAT.map(([v, chu]) => (
               <label key={v} className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border px-3.5 text-sm max-sm:min-h-[44px] ${deXuat === v ? 'font-semibold text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`}
                 style={deXuat === v ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : { borderColor: 'var(--o-nhap-vien)' }}>
-                <input type="radio" name={`de-xuat-${e.id}`} checked={deXuat === v} onChange={() => { setDeXuat(v); setTt(null); }} className="accent-[color:var(--accent)]" />{chu}
+                <input type="radio" name={`de-xuat-${e.id}`} checked={deXuat === v} onChange={() => { setDeXuat(v); setTt(null); }}
+                  onClick={() => { if (deXuat === v) { setDeXuat(null); setTt(null); } }} className="accent-[color:var(--accent)]" />{chu}
               </label>
             ))}
           </div>
