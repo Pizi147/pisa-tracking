@@ -21,6 +21,14 @@ Số trên web là dữ liệu seed (khác số demo mockup) — so khung, thứ
 | 7.4 | Tách Hành chính / Học thuật rõ hơn | đầu nhóm có nền màu (xanh / hồng) + vạch trên; vạch dọc đậm chạy suốt bảng giữa hai nhóm |
 | — | (tự quyết) | Đầy đủ bỏ "Ghi KQ PA" — trùng hẳn "Việc đúng hạn" (cùng một tập việc); "In" lên cuối hàng lọc (ẩn ở 375) |
 
+## Vòng 3 — chủ SP 24/10 (đã áp)
+
+| # | Chủ SP | Đã làm |
+|---|---|---|
+| 1 | Bỏ chữ "Tuần bắt đầu / Tuần kết thúc" | bộ lọc chỉ **[ô tuần] → [ô tuần]** (tên đọc màn giữ ở aria) |
+| 2 | Số Chấm Test đúng hạn và quá hạn lệch nhau; bỏ hẳn quá hạn | Lệch vì hai tập khác nhau: "Chấm Test đúng hạn" = bài Test **tới hạn trong kỳ đang chọn**; "quá hạn" = mọi bài **đang** trễ tới hôm nay (cả kỳ trước). Đã **bỏ hẳn** dòng quá hạn khỏi bảng GV (máy chủ bỏ trường `quaHan`) — hàng không dày thêm |
+| 3 | XM-5: tách thi thật khỏi kết quả Test như hồ sơ GV (#557) | gộp `origin/main`; cột **Đạt kỳ vọng Test** (lớp thường **Đạt Test**) = chỉ lượt Test, đơn vị "lượt Test"; cột **Pass Target** (gợi ý "Kết quả thi thật") = theo **lần thi**, CHÍNH `thiThatCuaGv` / `oThi` của hồ sơ GV, bấm → panel thi thật của hồ sơ GV; "bài Test" (HSGV-5); Tổng quan › GV cần chú ý đổi cùng chữ |
+
 ## Không hàm đếm thứ hai (số = Tổng quan #551)
 
 | Số | Nguồn (một hàm) | Tổng quan dùng |
