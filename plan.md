@@ -572,6 +572,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 22/10 | #547 UI-HO-SO-LOP · Opus 5.5 | Hồ sơ lớp V5 nâng cấp trên V4: thanh Việc cần làm, bảng FT (W1·W2, popover, Case + PA dưới hàng), tab Đánh giá đầu ra + bảng `danh_gia_dau_ra` (C17); `/roster` bỏ `viecTiepTheo`. Chờ duyệt ảnh; [XM] tab Ý thức, Cách xem. |
 | 22/10/2026 | #545 NEN-SUA · Opus 5.5 | SOS 3 đỏ đậm hơn (tối thêm viền `--sos3-vien`); logo chữ "PISA" hồng + "TRACKING" (trắng cả sáng — [XM] chữ đen trên thanh xanh 2,1 : 1); nợ #544: "vắng W3 SEP" cả ô có điểm (`tuanVangCu`), chú thích luật mới, `nenCoNhanXetMt`, EN "pick a cause group" |
 | 22/10/2026 | LUAT-NX-MT (Opus 5.5) · `claude/pta-phan-hoi-cuoi-laws-b0e2p1` | `10` mục 7: ô xong = có band (`oXongCua`, `O_FT_XONG_SQL`), thiếu nhận xét / nhóm chỉ nhắc vàng (không 400, không việc / nợ, dán Excel không lỗi); giữa các MT không chặn thứ tự (ô Kế hoạch Test nhắc "W sau MT3"), giữ MT0 trước MT1 + số MT liền mạch; "vắng W3 SEP" (`chuDoiVang`); S Ex cạnh S ở Hành trình. Gỡ `dem-thieu-nhan-xet` |
 | 22/10/2026 | UI-CV-TVV (Opus 5.5) · `claude/beautiful-cray-zbzvi6` | TVV có menu **Công việc** (03 "CẦN QUYỀN" 1: `/my-work` chỉ việc TVV của mình) theo `thiet-ke/v5/tvv.html`: nhóm Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ, dòng từng em + badge; panel Báo PH (bối cảnh GVCN, SĐT gọi, lần thử, ⋯ Bỏ việc), Sau thi hai bước, Chốt ngày thi. |

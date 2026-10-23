@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, viecTiepCuaEm, danhGiaDauRa,
+  oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
   coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong,
 } from '../../../shared/domain/index.ts';
@@ -15,20 +15,19 @@ import {
   type Principal,
 } from '../permissions.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
-import { CON_O_SQL, loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
+import { CON_O_SQL, loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells, tuanVangCu } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop, programmeOfClass } from '../normal/regular.ts';
-import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { tomTatLuotCuaLop } from '../cham/diemTheoLuot.ts';
 import { classProgressMany, lichMtCua, missingForClasses, missingForStudent, mocKetKhoa, type TienDoMoc } from './schedule.ts';
-import { canhBaoTheoHocVien, caseViecTheoHocVien, nhapDiemTheoEm, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
+import { canhBaoTheoHocVien, nhapDiemTheoEm, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { emChuaCoLenh, emChoDuyetChuyenLop } from './lenhChuyen.ts';
 import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
-import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { duocSuaCaLop } from './suaCaLop.ts';
@@ -389,6 +388,14 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
     )
     .all(...sids) as any[];
   const bundle = loadBundle(attempts.map((a) => a.id));
+  /* UI-HO-SO-LOP (luật LUAT-NX-MT / NEN-SUA): tuần cũ của kỹ năng đã dời do vắng — ô điểm bảng lớp ghi "vắng W3 SEP". MỘT câu cho cả lớp, chỉ lớp FT. */
+  const vangCu = new Map<number, Record<string, string>>();
+  if (programmeOfClass(classId)?.scoringMode !== 'ratio') {
+    for (const [k, v] of tuanVangCu(attempts.map((a) => a.id))) {
+      const [id, kn] = k.split(':');
+      vangCu.set(Number(id), { ...(vangCu.get(Number(id)) ?? {}), [kn]: v });
+    }
+  }
   const today = demoToday();
   const sauThi = sauThiTheoEm(sids, today);
   const byStudent = new Map<number, any[]>();
@@ -454,11 +461,8 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
    */
   const standing = standingFor(sids);
 
-  /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) và Case đang mở cho "Việc tiếp theo" — mỗi thứ MỘT lần cho cả lớp. */
+  /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) — MỘT lần cho cả lớp. UI-HO-SO-LOP: "Việc tiếp theo" (`viecTiepCuaEm`) bỏ khỏi /roster — việc của em đọc `/classes/:id/viec-theo-em`. */
   const canhBao = canhBaoTheoHocVien(p, classId);
-  const caseViec = caseViecTheoHocVien(p, classId);
-  const miniTestEm = emConMiniTest(sids);   // PR-LT2b: Mini Test chưa ghi — MỘT câu cho cả lớp
-  const baoPhEm = emCoBaoPhChuaLam(sids);   // PR-LT2a: Báo phụ huynh qua TVV (GVCN) — MỘT câu cho cả lớp
   /* PR-LT: Lộ trình tiếp theo của cả lớp — một câu, cột Khoá dùng ngay, không hỏi lại theo từng em. */
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
   /* PR-Dọn (Câu 2 = B): cờ dòng = em chưa có quyết định chuyển lớp chờ (cùng `emChuaCoLenh` của badge lớp; badge chỉ bật từ tuần Cuối khoá). */
@@ -469,8 +473,6 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
   const cuoiKhoaLop = isRatio ? cuoiKhoaTheoHocVien(classId, undefined, { daRoi: finished }) : null;
   /* PR-OV3a: cột "Lộ trình tiếp theo" của Tổng hợp — chỉ hướng Quản lý ĐÃ CHỐT (lệnh chuyển lớp từ lớp này; hoặc quyết khi chuyển tiếp). */
   const loTrinhChot = isRatio ? loTrinhDaChot(classId, maChuongTrinhHienTai, cuoiKhoaLop!) : null;
-  /* PR-UXF-a VN29: nhập điểm của người xem — CÙNG hàm với chip Cần làm / badge quá hạn (Học viên & Lớp, đầu hồ sơ lớp). */
-  const nhapDiemEm = nhapDiemTheoEm(p, [classId], today, () => classId);
 
   const dauTuanNay = mondayOf(demoToday());   // MỘT lần — không tính lại theo từng em (N+1)
   return students.map((s) => {
@@ -625,6 +627,8 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
         expectation: t.expectation, writing: t.writing,
         bands: (t as any).bands ?? null,
         ratios: (t as any).ratios ?? null,
+        /** Kỹ năng đã dời do vắng → mã tuần cũ (`chuDoiVang` ở web). */
+        vangCu: vangCu.get(t.id) ?? null,
       }));
 
     return {
@@ -710,16 +714,6 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
       timeline,
       myPending: [...new Set(timeline.flatMap((t) => t.myPending))],
       canhBaoYThuc: canhBao.get(s.id) ?? null,
-      /* Cột "Việc tiếp theo" (Q13): nhập điểm của CHÍNH người xem ở đợt đang chờ + việc của từng Case chưa xong. */
-      viecTiepTheo: viecTiepCuaEm({
-        nhapDiem: nhapDiemEm.get(s.id) ?? null,
-        cases: caseViec.get(s.id) ?? [],
-        yThuc: canhBao.get(s.id) ?? null,
-        homNay: today,
-        chuongTrinh: prog?.code ?? null,
-        baoPh: baoPhEm.has(s.id) && isCoreTeacherOf(p, classId),
-        miniTest: nguoiGhiMiniTest(p, classId, miniTestEm.get(s.id)),
-      }),
       /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
       chuaLoTrinh: isRatio && chuaCoLenh.has(s.id),

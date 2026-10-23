@@ -883,7 +883,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/r\.kieu === 'dang-thi' && <span aria-hidden/.test(o) && /r\.doc/.test(o), 'chấm đang thi + aria-label từ doc');
     assert(!/#[0-9a-fA-F]{3,8}\b/.test(o), 'OMt.tsx có mã hex');
     assert(/MT\{v\.so\}/.test(o), 'mẫu `MT2 · tuần` (có chữ MT)');
-    for (const f of ['web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/MotKyNang.tsx', 'web/src/modules/students/ClassRoster.tsx', 'web/src/modules/students/StudentDetailPage.tsx']) {
+    for (const f of ['web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/MotKyNang.tsx', 'web/src/modules/classes/BangHoSoLop.tsx', 'web/src/modules/students/StudentDetailPage.tsx']) {
       assert(/NhanCu/.test(nguon(f)), `${f}: nhãn "cũ" ngoài ô MT phải giữ (C7)`);
     }
   });

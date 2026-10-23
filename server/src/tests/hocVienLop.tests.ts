@@ -8,6 +8,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runHocVienLopTests(t: YThucTestKit) {
+  const { viecTiepLop: vtl } = await import('./viecTiepLop.ts');   // UI-HO-SO-LOP
   const { check, assert, assertThrows, conn, TODAY, P, addDays, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const { loadPrincipal } = await import('../permissions.ts');
@@ -389,11 +390,11 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const at = themLuot({ ...b, cid: LOP_THUONG, no: 1, kind: 'progress', weekStart: '2026-08-31' });
     diemThuong(at, { listening: [30, 40], reading: [32, 40], speaking: [8, 10] });
     /* PR-UXF-a VN29: việc nhập điểm = ô được PHÂN CÔNG (cùng luật hàng đợi Công việc) — Quản trị không phải người nhập; kiểm bằng GVBM môn W. */
-    assert(!classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid).viecTiepTheo.some((v: any) => v.dich.loai === 'nhap-diem'), 'Quản trị không nhận việc nhập điểm');
+    assert(!(vtl(P.admin, LOP_THUONG).get(b.sid) ?? []).some((v: any) => v.dich.loai === 'nhap-diem'), 'Quản trị không nhận việc nhập điểm');
     const gvW = (conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ? ORDER BY u.id LIMIT 1`).get(MB) as any).id as number;
     const pcW = Number(conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'writing', 0, 'active', '2026-08-03', ?)`)
       .run(LOP_THUONG, gvW, NOW).lastInsertRowid);
-    const row = classes.classRoster(loadPrincipal(gvW), LOP_THUONG).find((s: any) => s.id === b.sid);
+    const row = { ...classes.classRoster(loadPrincipal(gvW), LOP_THUONG).find((s: any) => s.id === b.sid), viecTiepTheo: vtl(loadPrincipal(gvW), LOP_THUONG).get(b.sid) ?? [] };
     conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(pcW);
     /* PR-N1 A6: máy chủ truyền hạn nhập điểm → việc trễ nói đủ "quá hạn n ngày". */
     // PR-MON (MH2): lớp FOU — ô W hiện G+V.
@@ -498,8 +499,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const thuong = doc('web/src/modules/classes/BangDiemLopThuong.tsx');
     assert(!/MT\d|MT\$\{|kỳ vọng|Progress(?! Test)|Final(?! Test)|Normal/.test(thuong), 'BangDiemLopThuong.tsx có chữ FT/tiếng Anh');
     assert(!/case SOS/.test(doc('web/src/modules/students/StudentsPage.tsx')), 'Q2: còn nhãn "case SOS"');
-    const roster = doc('web/src/modules/students/ClassRoster.tsx');
-    assert(!/Lớp Normal|isRatio|REGULAR_SKILL_LABEL/.test(roster), 'ClassRoster.tsx còn nhánh lớp thường');
+    const roster = doc('web/src/modules/classes/BangHoSoLop.tsx');   // UI-HO-SO-LOP: bảng FT mới
+    assert(!/Lớp Normal|isRatio|REGULAR_SKILL_LABEL/.test(roster), 'BangHoSoLop.tsx còn nhánh lớp thường');
     assert(!/ENTRY_SKILL_SHORT\[k as EntrySkill\] \?\? k/.test(roster), 'Chữ thô `writing` (§6)');
     for (const p of ['web/src/modules/classes/DauTrangLop.tsx', 'web/src/modules/classes/BangCanHoTro.tsx', 'web/src/modules/students/BangHocVienLop.tsx']) {
       assert(!/SectionNote|\d{4}-\d{2}-\d{2}/.test(doc(p)), `${p}: khối chữ cho dev (G-5) / ngày ISO (G-6)`);
