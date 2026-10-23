@@ -47,24 +47,24 @@ export function DauTrangTq({ phamVi, ben }: { phamVi: ReactNode; ben?: ReactNode
 }
 
 /** Ô chỉ số V5: tên (+ "?") · giá trị · mẫu số · kỳ xem. */
-function ChiSo({ ten, giaTri, mau, ky, luat }: { ten: string; giaTri: ReactNode; mau?: ReactNode; ky?: string; luat?: ReactNode }) {
+export function ChiSo({ ten, giaTri, mau, ky, luat }: { ten: string; giaTri: ReactNode; mau?: ReactNode; ky?: string; luat?: ReactNode }) {
   return (
     <OChiSo ten={<span className="inline-flex items-center gap-1.5">{ten}{luat && <NutLuat label={ten}>{luat}</NutLuat>}</span>} giaTri={giaTri} mau={mau}>
       {ky && <div className="text-xs text-slate-500">{ky}</div>}
     </OChiSo>
   );
 }
-const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">{children}</div>;
+export const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">{children}</div>;
 
 /** % to gạch chân bấm mở panel đúng tập; mẫu 0 → "Chưa có dữ liệu" (T19), không "0 %". */
-function PhanTram({ x, nguon, tieuDe, gon }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean }) {
+export function PhanTram({ x, nguon, tieuDe, gon }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean }) {
   if (!x) return <span className="text-slate-500">—</span>;
   const v = rateView(x.dat, x.mau);
   if (v.kind !== 'value') return gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')} aria-label={t('Chưa có dữ liệu')}>—</span>
     : <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>;
   return <OSo giaTri={x.mau} nhan={`${v.percent} %`} nguon={nguon} tieuDe={tieuDe} />;
 }
-const tuMau = (x: TyLeV5 | null, donVi: string) => (x && x.mau ? `${x.dat}/${x.mau} ${donVi}` : null);
+export const tuMau = (x: TyLeV5 | null, donVi: string) => (x && x.mau ? `${x.dat}/${x.mau} ${donVi}` : null);
 
 /** Bố cục B: trái (tình hình) · phải 360 (Chờ duyệt / Điều hướng); < 1100 một cột, cột phải lên trước. */
 function BoCuc({ trai, phai }: { trai: ReactNode; phai: ReactNode }) {
@@ -108,8 +108,9 @@ function CongTac<K extends string>({ value, onChange, muc }: { value: K; onChang
   );
 }
 
-const kyChu = (k: { tu: string; den: string }) => `${tuanLich(k.tu)} – ${tuanLich(k.den)}`;
-const qBc = (d: TongQuanV5Data, them = '') => `/phan-tich/bao-cao/o?${thamSoTq(d.branchId, d.ct)}${them}`;
+export const kyChu = (k: { tu: string; den: string }) => `${tuanLich(k.tu)} – ${tuanLich(k.den)}`;
+const kyQ = (d: TongQuanV5Data) => `&kieu=tuy-chon&tu=${d.ky.tu}&den=${d.ky.den}`;
+const qBc = (d: TongQuanV5Data, them = '') => `/phan-tich/bao-cao/o?${thamSoTq(d.branchId, d.ct)}${kyQ(d)}${them}`;
 const qCn = (d: TongQuanV5Data, cot: string, khoa: string) => `/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${khoa}&chuY=1&${thamSoTq(d.branchId, d.ct)}`;
 
 /* ───────────── Chờ bạn duyệt (dòng gọn → panel duyệt, C04) ───────────── */
@@ -201,13 +202,24 @@ const COT_GV_HT: readonly CotBang[] = [
   { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'kq', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 },
   { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 120 }, { key: 'pa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 120 },
 ];
-const tyLeGv = (o: OPtGv | undefined): TyLeV5 | null => (!o || o.k === 'na' ? null : o.k === 'rong' ? { dat: 0, mau: 0 } : { dat: o.dung, mau: o.tong });
-const gopKq = (kq: Record<string, OPtGv>): TyLeV5 | null => {
+export const tyLeGv = (o: OPtGv | undefined): TyLeV5 | null => (!o || o.k === 'na' ? null : o.k === 'rong' ? { dat: 0, mau: 0 } : { dat: o.dung, mau: o.tong });
+export const gopKq = (kq: Record<string, OPtGv>): TyLeV5 | null => {
   const so = Object.values(kq).filter((o): o is Extract<OPtGv, { k: 'so' }> => o.k === 'so');
   if (!so.length) return Object.values(kq).some((o) => o.k === 'rong') ? { dat: 0, mau: 0 } : null;
   return so.reduce((a, o) => ({ dat: a.dat + o.dung, mau: a.mau + o.tong }), { dat: 0, mau: 0 });
 };
 type HangGv = PhanTichGvKq['hang'][number];
+/** Chủ SP 23/10: môn dạy (chữ thường) và lớp chủ nhiệm (thẻ viền "GVCN") khác kiểu, không gộp một chuỗi. Tổng quan + Phân tích GV dùng chung. */
+export const phuGv = (h: Pick<HangGv, 'mon' | 'lopCn'>) => (!h.mon && !h.lopCn.length ? null : (
+  <span className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-0.5">
+    {h.mon && <span>{h.mon}</span>}
+    {h.lopCn.length > 0 && (
+      <span className="truncate rounded border px-1.5 text-xs leading-[18px] text-slate-300" style={{ borderColor: 'var(--line-strong)' }} title={`GVCN ${h.lopCn.join(', ')}`}>
+        <b className="font-semibold">GVCN</b> {h.lopCn.join(', ')}
+      </span>
+    )}
+  </span>
+));
 
 /** GV cần chú ý — bảng Phân tích GV của chi nhánh (4 tuần tới tuần này), không xếp hạng, không ngưỡng màu (C08). Quá hạn = Trễ chấm V4. */
 function GvCanChuY({ d }: { d: TongQuanV5Data }) {
@@ -217,12 +229,12 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const pt = useApi<PhanTichGvKq>(d.branchId ? `/phan-tich/giao-vien?${q}` : null, [q]);
   const tre = new Map(d.tre.map((x) => [x.khoa, x.bai]));
   const ht = loai === 'ht';
-  const COT: Record<string, string> = { viec: 'viec-dung-han', diem: 'cham-diem', kq: 'ket-qua', tb: 'tien-bo' };
+  const COT: Record<string, string> = { viec: 'viec-dung-han', diem: 'cham-diem', kq: d.ct === 'ft' ? 'dat-mt' : 'ket-qua', tb: 'tien-bo' };
   const DV: Record<string, string> = { viec: t('việc'), diem: t('bài'), kq: t('lượt'), tb: t('lượt'), pa: 'Case' };
   /* XM-2: Case có PA theo người phụ trách — mẫu = Case đang mở của GV, panel = cùng danh sách ở hồ sơ GV (`case-mo`). */
   const casePa = (h: HangGv): TyLeV5 => { const x = d.caseGv[h.id]; return x ? { dat: x.coPa, mau: x.mo } : { dat: 0, mau: 0 }; };
   const giaTri = (h: HangGv, c: CotBang): TyLeV5 | null => (c.key === 'viec' ? tyLeGv(h.viecDungHan) : c.key === 'diem' ? tyLeGv(h.chamDiem)
-    : c.key === 'kq' ? gopKq(h.ketQua) : c.key === 'tb' ? tyLeGv(h.tienBo) : c.key === 'pa' ? casePa(h) : null);
+    : c.key === 'kq' ? (h.datMt ? tyLeGv(h.datMt) : gopKq(h.ketQua)) : c.key === 'tb' ? tyLeGv(h.tienBo) : c.key === 'pa' ? casePa(h) : null);
   const oCua = (h: HangGv, c: CotBang): ReactNode => {
     if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
     if (c.key === 'tre') {
@@ -233,17 +245,6 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
     const nguon = c.key === 'pa' ? `/giao-vien/${h.id}/o?cot=case-mo&cn=${d.branchId}&ct=${d.ct}` : `/phan-tich/giao-vien/o?gv=${h.id}&cot=${COT[c.key]}&${q}`;
     return <PhanTram gon x={giaTri(h, c)} nguon={nguon} tieuDe={c.key === 'pa' ? `${t('Case đang mở')} · ${h.ten}` : `${c.nhan} · ${h.ten}`} />;
   };
-  /* Chủ SP 23/10: môn dạy (chữ thường) và lớp chủ nhiệm (thẻ viền "GVCN") khác kiểu, không gộp một chuỗi. */
-  const phuGv = (h: HangGv) => (!h.mon && !h.lopCn.length ? null : (
-    <span className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-0.5">
-      {h.mon && <span>{h.mon}</span>}
-      {h.lopCn.length > 0 && (
-        <span className="truncate rounded border px-1.5 text-xs leading-[18px] text-slate-300" style={{ borderColor: 'var(--line-strong)' }} title={`GVCN ${h.lopCn.join(', ')}`}>
-          <b className="font-semibold">GVCN</b> {h.lopCn.join(', ')}
-        </span>
-      )}
-    </span>
-  ));
   const phuCua = (h: HangGv, c: CotBang) => (c.key === 'gv' ? phuGv(h) : c.key === 'tre' ? ((tre.get(h.id) ?? 0) ? t('bài') : null) : tuMau(giaTri(h, c), DV[c.key]));
   return (
     <Card bodyClass="p-0" title={<>{t('GV cần chú ý')} <span className="font-normal text-slate-500">· {tuanLich(tu)} – {tuanLich(den)}</span></>}
@@ -304,16 +305,16 @@ const COT_CN_CX: readonly CotBang[] = [
   { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten' }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 }, { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 },
   { key: 'sos', nhan: t('SOS 2–3'), kieu: 'so', rong: 100 }, { key: 'case', nhan: t('Case chưa PA'), kieu: 'so', rong: 120 },
 ];
-const ptChu = (x: TyLeV5 | null, gon = false) => (!x ? <span className="text-slate-500">—</span>
+export const ptChu = (x: TyLeV5 | null, gon = false) => (!x ? <span className="text-slate-500">—</span>
   : x.mau ? <span className="font-semibold tabular-nums">{Math.round((100 * x.dat) / x.mau)} %</span>
     : gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span> : <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>);
 
-function TheoChiNhanh({ d, cx, onChiNhanh }: { d: TongQuanV5Data; cx?: boolean; onChiNhanh: (id: number) => void }) {
+export function TheoChiNhanh({ d, cx, onChiNhanh }: { d: TongQuanV5Data; cx?: boolean; onChiNhanh: (id: number) => void }) {
   type H = DongCn & { tong?: boolean };
   const hang: H[] = [...(d.chiNhanh ?? []), ...(cx ? [] : [{
     id: 0, khoa: 'tong', ten: t('Toàn hệ thống'), datMt: d.datMt, casePa: d.casePa, thiThat: d.thiThat, thiThangNay: d.thiThangNay, sos23: 0, caseChuaPa: d.casePa.chuaPa, tong: true,
   }])];
-  const bc = (h: H, o: string) => `/phan-tich/bao-cao/o?o=${o}${h.tong ? '' : `&branchId=${h.id}`}${thamSoCt(d.ct)}`;
+  const bc = (h: H, o: string) => `/phan-tich/bao-cao/o?o=${o}${h.tong ? '' : `&branchId=${h.id}`}${thamSoCt(d.ct)}${kyQ(d)}`;
   const oCua = (h: H, c: CotBang): ReactNode => {
     if (c.key === 'cn') return <b className="text-slate-100">{h.ten}</b>;
     if (c.key === 'dat') return <PhanTram gon x={h.datMt} nguon={bc(h, 'dat-mt')} tieuDe={`${t('Đạt MT')} · ${h.ten}`} />;
