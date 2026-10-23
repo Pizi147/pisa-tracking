@@ -102,10 +102,15 @@ export function HoSoGiaoVienPage() {
             {soGvcn > 0 && <NhanDau nhan="GVCN">{t('{n} lớp', { n: soGvcn })}</NhanDau>}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[13px] text-slate-400">{t('Từ tuần')}</span>
-            <span className="w-[8.75rem]"><ONgay kieu="tuan" gon value={tu} ariaLabel={t('Từ tuần')} onChange={(v) => v && setTu(mondayOfDate(v))} invalid={!!kyLoi} /></span>
-            <span className="text-[13px] text-slate-400">{t('đến')}</span>
-            <span className="w-[8.75rem]"><ONgay kieu="tuan" gon value={den} ariaLabel={t('Đến tuần')} onChange={(v) => v && setDen(mondayOfDate(v))} invalid={!!kyLoi} /></span>
+            {/* Mỗi cặp nhãn + ô giữ liền nhau — 375 xuống dòng giữa hai cặp, không tách "đến" khỏi ô. */}
+            <span className="inline-flex items-center gap-2">
+              <span className="text-[13px] text-slate-400">{t('Từ tuần')}</span>
+              <span className="w-[8.75rem]"><ONgay kieu="tuan" gon value={tu} ariaLabel={t('Từ tuần')} onChange={(v) => v && setTu(mondayOfDate(v))} invalid={!!kyLoi} /></span>
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="text-[13px] text-slate-400">{t('đến')}</span>
+              <span className="w-[8.75rem]"><ONgay kieu="tuan" gon value={den} ariaLabel={t('Đến tuần')} onChange={(v) => v && setDen(mondayOfDate(v))} invalid={!!kyLoi} /></span>
+            </span>
             <NutLuat label={t('Kỳ xem')} phai>
               {t('Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. Số theo kỳ: Việc đúng hạn, Điểm đúng hạn, Đạt kỳ vọng, Tiến bộ, bảng Học thuật.')}
               {!gv.laChinhMinh && data.phamVi.chiNhanh && <> {t('Quản lý đang xem · chỉ tính lớp, Case, yêu cầu ở {cn}', { cn: data.phamVi.chiNhanh.join(', ') })}.</>}
@@ -170,7 +175,7 @@ function DaiChiSo({ data, cs, viec, ky }: { data: HoSo; cs: ApiCs; viec: NhomSo[
       {cs.error && <div className="border-b p-3" style={{ borderColor: 'var(--line)' }}><ErrorState message={cs.error.message} hint={cs.error.hint} onRetry={cs.reload} /></div>}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7">
         {ds.map((x) => (
-          <div key={x.ten} className="flex min-w-0 flex-col gap-0.5 border-b border-r px-4 py-3.5" style={{ borderColor: 'var(--line)' }}>
+          <div key={x.ten} className="flex min-w-0 flex-col gap-0.5 border-b border-r px-4 py-3.5 max-sm:last:col-span-2" style={{ borderColor: 'var(--line)' }}>
             <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-400">{x.ten}{x.luat && <NutLuat label={x.ten}>{x.luat}</NutLuat>}</span>
             <span className="text-2xl font-bold tabular-nums text-slate-100">{x.giaTri}</span>
             {x.mau && <span className="text-xs text-slate-500">{x.mau}</span>}
