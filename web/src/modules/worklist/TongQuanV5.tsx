@@ -54,7 +54,7 @@ function ChiSo({ ten, giaTri, mau, ky, luat }: { ten: string; giaTri: ReactNode;
     </OChiSo>
   );
 }
-const DaiChiSo = ({ children }: { children: ReactNode }) => <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">{children}</div>;
+const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">{children}</div>;
 
 /** % to gạch chân bấm mở panel đúng tập; mẫu 0 → "Chưa có dữ liệu" (T19), không "0 %". */
 function PhanTram({ x, nguon, tieuDe, gon }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean }) {
@@ -83,7 +83,7 @@ export function DiTiep({ dong, tieuDe = t('Đi tiếp') }: { dong: { to: string;
       <ul className="m-0 list-none p-0">
         {dong.map((d, i) => (
           <li key={i} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-            <Link to={d.to} className="grid min-h-[44px] grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-slate-100 no-underline hover:bg-white/5">
+            <Link to={d.to} className="bam grid min-h-[44px] grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-slate-100 no-underline">
               <span className="text-sm font-medium">{d.t1}</span>
               <span aria-hidden className="row-span-2 self-center font-bold text-[color:var(--accent)]">›</span>
               <span className="text-xs text-slate-500">{d.t2}</span>
@@ -125,11 +125,11 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
   };
   return (
     <Card title={<>{t('Chờ bạn duyệt')} <span className="font-normal text-slate-500">· {hop.the.length}</span></>} bodyClass="p-0">
-      <ul className="m-0 list-none p-0">
+      <ul data-hd="tq-can-xu-ly" className="m-0 list-none p-0">
         {hop.the.slice(0, 5).map((y) => (
           <li key={y.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
             <button type="button" onClick={() => setMo(y)}
-              className={`grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-left hover:bg-white/5 ${mo?.id === y.id ? 'dang-mo' : ''}`}>
+              className={`bam grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-left ${mo?.id === y.id ? 'dang-mo' : ''}`}>
               <span className="truncate text-sm font-semibold text-slate-100">{y.nhanLoai}{y.hocVien && ` · ${y.hocVien}`}</span>
               <span className="whitespace-nowrap text-xs text-slate-400">{cho(y)}</span>
               <span className="col-span-2 truncate text-xs text-slate-500">{[y.lop, y.phu, y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>

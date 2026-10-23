@@ -717,6 +717,7 @@ export async function runPrDonATests(t: YThucTestKit) {
    * `TAI_TRANG` cũng không có ở đây → phép (9e) đỏ, buộc người sửa đo lại trần tải trang.
    */
   const GOI_KHI_BAM: Record<string, string> = {
+    '/giao-vien/': 'UI-TONG-QUAN: chỉ số của chính GV — đo ở TAI_TRANG GV `/giao-vien/{gv}/chi-so`',
     '/cases': 'UI-HO-SO-LOP: bảng hồ sơ lớp (Case + PA) — không gọi ở Tổng quan',
     '/ref/periods': 'Filters.tsx — bộ lọc tuần, Tổng quan không vẽ', '/ref/current-period': 'Filters.tsx — như trên', '/ref/period-window': 'Filters.tsx — như trên',
     '/phan-tich/hieu-qua-pa': 'tab Phân tích — khi bấm tab', '/phan-tich/giao-vien': 'tab Phân tích', '/phan-tich/giao-vien/cham-diem': 'tab Phân tích',

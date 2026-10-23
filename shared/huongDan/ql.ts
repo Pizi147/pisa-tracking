@@ -14,10 +14,10 @@ export const HD_QL: HuongDan = {
   viec: [
     {
       id: 'ql-sang', ten: 'Tổng quan + Chờ duyệt mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Mở <b>Tổng quan</b>: dải <b>HV cần chú ý</b> — bấm số mở danh sách.',
-        'Khối <b>Cần bạn quyết</b>: <b>Chờ duyệt</b> (Duyệt / Từ chối ngay trên thẻ), Case chưa chốt PA quá hạn, Chọn bước tiếp, Chốt lộ trình.',
+      buoc: ['Mở <b>Tổng quan</b>: dải chỉ số — bấm số mở danh sách chỉ đọc.',
+        '<b>Chờ bạn duyệt</b> (cột phải): bấm dòng mở panel <b>Duyệt / Từ chối</b>; <b>Hộp duyệt ›</b> xem hết.',
         'Menu <b>Công việc</b>: một danh sách, <b>Chờ bạn duyệt</b> ở đầu; số trên menu = thẻ cần bạn quyết.'],
-      chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc cần bạn quyết — quá hạn ở đầu.' },
+      chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' },
     },
     {
       id: 'ql-lich-test', ten: 'Xếp / dời lịch Test', khi: 'mỗi tuần',
@@ -44,22 +44,22 @@ export const HD_QL: HuongDan = {
     },
     {
       id: 'ql-lo-trinh', ten: 'Hết khoá / Lộ trình tiếp theo', khi: 'khi lớp sắp hết khoá',
-      buoc: ['Lớp thường: Tổng quan › <b>Cần bạn quyết</b> › <b>Chốt lộ trình</b> (hạn trong 7 ngày; có thông báo) → nút <b>Chốt lộ trình</b> mở bảng lộ trình cả lớp ngay tại chỗ.',
+      buoc: ['Lớp thường: <b>Công việc</b> › <b>Chốt lộ trình</b> (hạn trong 7 ngày; có thông báo) → mở bảng lộ trình cả lớp ngay tại chỗ.',
         'Hồ sơ lớp › <b>Chốt lộ trình</b>: chọn hướng từng em (Lên lớp, Học lại, Lên FT…); lớp cũ có phiếu bàn giao.',
         'Em FT có kết quả thi thật: <b>Chọn bước tiếp ›</b> — <b>Lộ trình mới</b> · <b>Tạm dừng</b> · <b>Thôi học</b> (QL hoặc TVV chọn).',
         'Một em đổi lớp khi đang học: hồ sơ em › <b>⋯ › Chuyển lớp…</b>.'],
-      chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Dòng "Chốt lộ trình" nằm trong khối này khi tới hạn.' },
+      chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Việc "Chốt lộ trình" nằm trong danh sách khi tới hạn.' },
     },
   ],
   man: [
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'ql-tq-cho-duyet', ten: 'HV cần chú ý', buoc: ['Dải đầu trang: <b>chưa điểm</b> · <b>HV · Case chưa chốt PA</b> (⚠ quá hạn) · <b>bài trễ chấm · n GV</b>.', 'Bấm số mở danh sách tại chỗ; thống kê theo kỳ ở <b>Phân tích</b>; <b>Báo cáo ›</b> mở trang Báo cáo.'],
+        { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Đạt MT</b> · <b>Case có PA</b> · <b>Chờ duyệt</b> · <b>Thi tháng này</b>.', 'Bấm số mở danh sách chỉ đọc; thống kê theo kỳ ở <b>Phân tích</b>.'],
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
-        { id: 'ql-tq-can-xu-ly', ten: 'Cần bạn quyết', buoc: ['<b>Chờ duyệt</b>: thẻ "Nếu duyệt: …", <b>Duyệt · Từ chối…</b> tại chỗ; <b>Mở hộp duyệt ›</b> xem hết.', '<b>Case chưa chốt PA</b> quá hạn → <b>Mở Case</b>; <b>Chọn bước tiếp</b> sau thi; <b>Chốt lộ trình</b> khi tới hạn.', 'Không có Nhắc: GV tự nhận thông báo khi quá hạn.'],
-          chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Việc cần bạn quyết — quá hạn ở đầu.' } },
-        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Tuần này', buoc: ['<b>Lớp cần chú ý</b>: Chưa điểm, SOS 1 · 2 · 3, <b>Case chưa chốt PA</b> (HV / Case; <b>?</b> chia theo trạng thái), Đã thi · chờ KQ; mặc định <b>Chỉ lớp có vấn đề</b>.', '<b>Tuần này</b>: lịch Test sắp tới + <b>Trễ chấm</b> theo GV (bấm số bài để nhập thay).'],
+        { id: 'ql-tq-can-xu-ly', ten: 'Chờ bạn duyệt · Đi tiếp', buoc: ['<b>Chờ bạn duyệt</b>: bấm dòng mở panel duyệt; <b>Hộp duyệt ›</b> xem hết.', '<b>Đi tiếp</b>: link sang danh sách đã lọc, Công việc, Báo cáo.'],
+          chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' } },
+        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · GV cần chú ý', buoc: ['<b>Lớp cần chú ý</b>: Đạt MT, SOS 1 · 2 · 3, Case chưa PA, Thi tháng này; mặc định <b>Chỉ lớp có vấn đề</b>.', '<b>GV cần chú ý</b>: Hành chính / Học thuật; cột <b>Quá hạn nay</b> bấm số bài để nhập thay.'],
           chi: { hd: 'tq-lop-chu-y', duong: '/', chu: 'Mỗi lớp một hàng; bấm số để xử lý.' } },
       ],
     },
