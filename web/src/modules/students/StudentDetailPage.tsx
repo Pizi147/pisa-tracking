@@ -328,7 +328,7 @@ export default function StudentDetailPage() {
             <DauHanhTrinh tenKn={tenChon} />
             {board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
               : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
-              : !cy.ratio && homNay && <BieuDoHanhTrinh row={hangChon} attempts={data.attempts} sEx={data.sEx ?? []} homNay={homNay} tenKn={tenChon} />}
+              : !cy.ratio && homNay && <BieuDoHanhTrinh studentId={data.id} row={hangChon} attempts={data.attempts} homNay={homNay} tenKn={tenChon} />}
             {homNay && <TienDoTrenLop studentId={data.id} hocVien={data.fullName} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} />}
           </section>
 

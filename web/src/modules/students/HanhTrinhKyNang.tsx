@@ -98,9 +98,11 @@ type Moc = { id: number; ten: string; tuan: string; v: number | null; kv: number
  * "MT3 chưa có điểm" (không nối qua — khoảng thiếu để trống). Lượt sắp tới: vạch mờ + tên. Không line chart nhiều đường (W1, W2 là hai ô riêng).
  * Speaking: S Expert hồng cạnh điểm S (LUAT-NX-MT 7.1, không tính).
  */
-export function BieuDoHanhTrinh({ row, attempts, sEx, homNay, tenKn }: {
-  row: SkillBoardRow | null; attempts: Luot[]; sEx: SEx[]; homNay: string; tenKn: string;
+export function BieuDoHanhTrinh({ studentId, row, attempts, homNay, tenKn }: {
+  studentId: number; row: SkillBoardRow | null; attempts: Luot[]; homNay: string; tenKn: string;
 }) {
+  const sExApi = useApi<SEx[]>(row?.category === 'speaking' ? `/students/${studentId}/s-expert` : null, [studentId, row?.category]);
+  const sEx = sExApi.data ?? [];
   const hep = useDienThoai();
   /* viewBox = bề rộng thật của khung → chữ trục giữ 12 px ở mọi cỡ màn (không phóng to theo SVG). */
   const khung = useRef<HTMLDivElement>(null);

@@ -13,7 +13,6 @@ import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { diemCuaLuot, entryBandsOf, kckCuaLuot, routeCuaLuot, scoresOf, skipsOf, tuanVangCu } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
-import { sExCuaHv } from '../cham/sExpert.ts';
 import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
@@ -1016,8 +1015,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     },
     trajectory,
     attempts,
-    /* UI-HO-SO-HV (LUAT-NX-MT 7.1): S Expert đã chấm — chỉ hiện cạnh điểm S ở Hành trình, không vào Overall / SOS / Case / KPI. */
-    sEx: isRatioCycle(selected ?? {}) ? [] : (sExCuaHv(p, [studentId], today).get(studentId) ?? []).filter((x) => x.diem !== null).map((x) => ({ diem: x.diem!, tuan: x.tuan, tuanMa: x.tuanMa })),
     progress: progressOf(attempts, isRatioCycle(selected ?? {}), cases.map((c: any) => c.id),
       selected ? selected.programme_code ?? programmeCodeOfCycle(selected.id) : null),
     cases,
