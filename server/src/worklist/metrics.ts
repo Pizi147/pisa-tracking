@@ -139,6 +139,8 @@ export type MetricRow = {
   diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua';
   /** `%`: điểm lớp thường (tỉ lệ) — panel ghi "72 %", chênh theo điểm %. Vắng = band. */
   donVi?: '%';
+  /** Thi thật vượt Target (tập con của Đạt) — tab "Vượt" của panel. */
+  vuot?: boolean;
 };
 
 /** Ngữ cảnh quyền sửa một Case (cùng `sosEditCtx` ở cases.ts): lớp hiện tại của em trước, lớp của lượt sau. */

@@ -30,11 +30,15 @@ export async function runPrUiHoSoGvTests(t: any) {
     let loi = '';
     try { pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', loc: 'x' }); } catch (e: any) { loi = e.message; }
     assert(/Lọc phải/.test(loi), 'loc lạ → 400');
+    /* Vượt Target: Overall > Target, tập con của Đạt; ô = panel `loc=vuot`. */
+    const vuot = pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', loc: 'vuot' });
+    assert(vuot.n === cs.thiThatVuot && vuot.rows.every((r: any) => r.ketQua === 'dat' && r.overall > r.soVoi.v), JSON.stringify({ n: vuot.n, o: cs.thiThatVuot }));
     /* Theo kỹ năng: mỗi kỹ năng = panel `thi-that-ky:<kỹ năng>` (số đạt / số dòng). */
     assert(cs.thiThatTheoKyNang.length >= 1, 'có ít nhất một kỹ năng thi thật');
     for (const k of cs.thiThatTheoKyNang) {
       const q = pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: `thi-that-ky:${k.skill}` });
       assert(q.n === k.o.tong && q.rows.filter((r: any) => r.ketQua === 'dat').length === k.o.dung, `${k.skill}: ${q.n} ≠ ${JSON.stringify(k.o)}`);
+      assert(q.rows.filter((r: any) => r.vuot).length === k.vuot && k.vuot <= k.o.dung, `${k.skill}: vượt ${k.vuot}`);
     }
     /* Hàng lớp bảng Học thuật: cột Thi thật = panel `thi-that-lop:<lớp>`; Σ các lớp = ô. */
     let tong = 0;

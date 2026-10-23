@@ -20,7 +20,8 @@ Số trên web là seed (khác số demo của mockup) — so khung, thứ tự,
 
 Ảnh (`docs/anh/ui-ho-so-gv/`): `cap-gv8-1440-toi.png` · `cap-gv8-1440-sang.png` · `cap-gv8-1280.png` · `cap-gv8-375.png` (nhiều lớp + GVCN) · `cap-gv17-1440-toi.png` · `cap-gv17-375.png` (ít dữ liệu, so `ho-so-gv.html?tt=rong`) · `cap-gv8-tu-xem-1440-toi.png` (GV tự xem) · `cap-gv16-thi-that-1440-toi.png` · `cap-gv16-thi-that-375.png` (GV 16 Dương Tuấn Kiên, kỳ W2 AUG – W3 SEP — seed chỉ có thi thật ở lớp UB FT 401; Quản trị xem) · panel: `panel-lop-co-diem-1440.png` · `panel-thi-that-ky-nang-1440.png` · `panel-lop-thuong-1440.png`.
 
-**Phản hồi chủ SP 23/10 (đã áp):** bỏ ô "Phản hồi vấn đề HV" · thêm **Đạt Target thi thật** (ô dải số + cột bảng theo lớp + bảng **Theo kỹ năng**) · panel kết quả có **điểm từng kỹ năng**, kỹ năng GV phụ trách nổi bật + ▲/▼ chênh so với Target / kỳ vọng (lớp thường: % so ngưỡng đạt), Overall, tab **Chưa đạt · Đạt**, một em một dòng · khối **Case đang phụ trách gọn** (đếm theo trạng thái, 5 Case cần làm trước, "Xem cả n Case" → panel phân trang).
+**Phản hồi chủ SP 23/10 (đã áp, lượt 2):** dải số còn **5 ô** · thi thật có **Vượt Target** (Overall / band kỹ năng cao hơn Target): ô dải số, cột Thi thật bảng Theo kỹ năng (★ Vượt n), tab "★ Vượt Target" trong panel · thi thật (IELTS) **tách** khỏi kết quả Test ở hồ sơ GV.
+**Phản hồi chủ SP 23/10 (đã áp, lượt 1):** bỏ ô "Phản hồi vấn đề HV" · thêm **Đạt Target thi thật** (ô dải số + cột bảng theo lớp + bảng **Theo kỹ năng**) · panel kết quả có **điểm từng kỹ năng**, kỹ năng GV phụ trách nổi bật + ▲/▼ chênh so với Target / kỳ vọng (lớp thường: % so ngưỡng đạt), Overall, tab **Chưa đạt · Đạt**, một em một dòng · khối **Case đang phụ trách gọn** (đếm theo trạng thái, 5 Case cần làm trước, "Xem cả n Case" → panel phân trang).
 
 ## Truy vết khung → thành phần
 
@@ -28,7 +29,7 @@ Số trên web là seed (khác số demo của mockup) — so khung, thứ tự,
 |---|---|---|---|
 | 1 | Khu e: đầu một hàng — tên · **Vai** (GV · chi nhánh) · **Kỹ năng** (chip) · **GVCN** n lớp; bỏ chuỗi "4 lớp: …" | `HoSoGiaoVienPage` đầu (`NhanDau`: nhãn nhỏ xám / giá trị đậm — P2) | KHỚP |
 | 2 | Khu e: Từ tuần [ô] đến [ô] ? (P9, mặc định 4 tuần tới tuần này) | hai `ONgay kieu="tuan"` (gõ được + nút lịch) + `NutLuat`; giá trị ghi `?tu=&den=` (mặc định không ghi); tuần đầu > tuần cuối → báo ⚠, không gọi API | KHỚP |
-| 3 | Khu e: dải 6 chỉ số trong MỘT thẻ, ô ngăn vạch (Việc đúng hạn · Điểm đúng hạn · Quá hạn · Đạt kỳ vọng · Tiến bộ · Case có PA) | `DaiChiSo` — % gạch chân = panel chỉ đọc (`/giao-vien/:id/chi-so/o`), cùng hàm số (SV-SO2) | KHỚP |
+| 3 | Khu e: dải 6 chỉ số trong MỘT thẻ, ô ngăn vạch (Việc đúng hạn · Điểm đúng hạn · Quá hạn · Đạt kỳ vọng · Tiến bộ · Case có PA) | `DaiChiSo` **5 ô** (chủ SP 23/10: "chỉ 5, gộp được thì gộp, giữ % Test đạt và % Pass Target"): **Đúng hạn** (số to = điểm, dòng phụ "Việc n %") · **Quá hạn** · **Đạt kỳ vọng** (dòng phụ "Tiến bộ n %") · **Đạt Target thi thật** (dòng phụ "Vượt n") · **Case có PA** (dòng phụ PA cải thiện); mọi % gạch chân = panel chỉ đọc | KHÁC — theo chủ SP |
 | 4 | Mốc "phản hồi vấn đề HV" (C, R3c) | **BỎ** theo chủ SP 23/10 ("không cần thiết"); chỗ đó là ô **Đạt Target thi thật** (n/N HV, bấm → panel có điểm) | KHÁC — theo chủ SP |
 | 5 | Mẫu 0 → "– Chưa có dữ liệu", không "0 %" (T19) | `PhanTram` (dùng lại của Tổng quan V5) | KHỚP |
 | 6 | Khu e: khối **Lớp đang dạy** thẻ: mã lớp + chip GVCN · chip kỹ năng · n HV · "GVCN cô …" | `KhoiLop` (thẻ, 4 cột ≥ 1280, 2 cột ≥ 640, 1 cột 375); tiêu đề "n lớp · n HV" (HV bấm được — V4) | KHỚP |
@@ -48,7 +49,7 @@ Số trên web là seed (khác số demo của mockup) — so khung, thứ tự,
 | — | BỎ: hộp chữ "Quy tắc Overall…", "Bấm số gạch chân…", "Phạm vi QL" dòng chữ (P1) | về "?" (phạm vi QL nằm trong "?" của kỳ) | BỎ |
 | — | GIỮ (mockup không vẽ): Việc đang có · Case đang phụ trách · Yêu cầu đã gửi (V4) | giữ thao tác, đặt sau Học thuật; **Case đang phụ trách gọn** (chủ SP 23/10): tổng Case + đếm theo trạng thái (Quá hạn · Cần làm · Chờ duyệt · Đang làm, bấm → panel đúng nhóm `tt=`) · tối đa 5 Case "Cần làm trước" (quá hạn, hạn gần) · "Xem cả n Case" → panel phân trang 10/20/50, dòng mở rộng làm việc tại chỗ | GIỮ — [XM-4] |
 
-**Đếm:** 14 KHỚP + 3 KHÁC (dòng 4 theo chủ SP, XM-2, XM-3) trên 17 dòng khung (12b mới, không tính) → 14 / 17 = **82 %**; dòng 4 là lời chủ SP → 15 / 17 = **88 %**; XM-2, XM-3 cần chủ SP đồng ý lý do để qua cổng 90 % (Q-5).
+**Đếm:** 13 KHỚP + 4 KHÁC (dòng 3, 4 theo chủ SP; XM-2, XM-3) trên 17 dòng khung (12b mới, không tính) → 13 / 17 = 76 %; hai dòng theo lời chủ SP → 15 / 17 = **88 %**; XM-2, XM-3 cần chủ SP đồng ý lý do để qua cổng 90 % (Q-5).
 
 ## [XM] — cần PTA Plan / chủ SP
 

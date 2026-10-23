@@ -159,23 +159,30 @@ function DaiChiSo({ data, cs, viec, ky }: { data: HoSo; cs: ApiCs; viec: NhomSo[
   const pa: TyLeV5 = { dat: data.caseMo.filter((c) => c.coPa).length, mau: data.caseMo.length };
   const paCt = d && d.paHieuQua.k === 'so' ? d.paHieuQua : null;
   const o1 = (ten: string, giaTri: ReactNode, mau: ReactNode, luat?: string) => ({ ten, giaTri, mau, luat });
+  /* Số phụ trong ô (dòng nhỏ): % gạch chân bấm → panel; mẫu 0 → "—". */
+  const nho = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram gon x={tyLeGv(x)} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&${ky}`} tieuDe={ten} /> : '…');
+  const vuot = d && d.thiThat.k === 'so' ? d.thiThatVuot : 0;
+  /* Chủ SP 23/10: dải còn 5 ô — gộp Việc + Điểm đúng hạn, Tiến bộ vào Đạt kỳ vọng; GIỮ riêng % Test đạt và % Pass Target (thi thật). */
   const ds = [
-    o1(t('Việc đúng hạn'), o(d?.viecDungHan, 'viec-dung-han', t('Việc đúng hạn')), tuMau(tyLeGv(d?.viecDungHan), t('việc')), t('Việc có hạn trong kỳ (ghi kết quả PA) xong trước hạn / việc có hạn trong kỳ.')),
-    o1(t('Điểm đúng hạn'), o(d?.diemDungHan, 'cham-diem', t('Điểm đúng hạn')), tuMau(tyLeGv(d?.diemDungHan), t('bài')), t('Bài nhập điểm trước hạn / bài tới hạn nhập trong kỳ — theo người được phân công ở hạn nhập.')),
+    o1(t('Đúng hạn'), o(d?.diemDungHan, 'cham-diem', t('Điểm đúng hạn')),
+      <>{tuMau(tyLeGv(d?.diemDungHan), t('bài'))}{d && <> · {t('Việc')} {nho(d.viecDungHan, 'viec-dung-han', t('Việc đúng hạn'))}</>}</>,
+      t('Số to: bài nhập điểm trước hạn / bài tới hạn nhập trong kỳ (theo người được phân công ở hạn nhập). Việc: việc có hạn trong kỳ (ghi kết quả PA) xong trước hạn.')),
     o1(t('Quá hạn'), quaHan === null ? '…' : <span className={quaHan > 0 ? 'text-bad' : 'text-slate-500'}>{quaHan > 0 && '⚠ '}{quaHan}</span>, t('việc · hiện tại')),
-    o1(t('Đạt kỳ vọng'), o(d?.ketQua, 'ket-qua', t('Kết quả')), tuMau(tyLeGv(d?.ketQua), t('lượt kỹ năng')),
-      t('Theo quy tắc Overall: MT so Overall với kỳ vọng của lượt, thi thật so với Target. Một lượt = một lượt MT của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi.')),
-    o1(t('Tiến bộ'), o(d?.tienBo, 'tien-bo', t('HV tiến bộ')), tuMau(tyLeGv(d?.tienBo), t('lượt kỹ năng')), t('Lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (chỉ Fast Track).')),
-    /* Chủ SP 23/10: kết quả thi thật RẤT quan trọng — Đạt Target thi thật trong kỳ (bấm → danh sách HV thi, chưa đạt trước). */
-    o1(t('Đạt Target thi thật'), o(d?.thiThat, 'thi-that', t('Đạt Target thi thật')), tuMau(tyLeGv(d?.thiThat), 'HV') ?? (d?.thiThat.k === 'rong' ? t('Thi thật trong kỳ') : null),
-      t('HV có ngày thi thật trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi; Đạt = Overall đạt Target.')),
+    o1(t('Đạt kỳ vọng'), o(d?.ketQua, 'ket-qua', t('Kết quả')),
+      <>{tuMau(tyLeGv(d?.ketQua), t('lượt'))}{d && d.tienBo.k !== 'na' && <> · {t('Tiến bộ')} {nho(d.tienBo, 'tien-bo', t('HV tiến bộ'))}</>}</>,
+      t('Test (MT, Progress, Final — không gồm thi thật): theo quy tắc Overall, một lượt = một lượt Test của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi. Tiến bộ: lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (Fast Track).')),
+    /* Chủ SP 23/10: thi thật (IELTS) RẤT quan trọng — Pass Target + số vượt Target (bấm → danh sách có điểm). */
+    o1(t('Đạt Target thi thật'), o(d?.thiThat, 'thi-that', t('Đạt Target thi thật')),
+      <>{tuMau(tyLeGv(d?.thiThat), 'HV') ?? (d?.thiThat.k === 'rong' ? t('Thi thật trong kỳ') : null)}
+        {vuot > 0 && <> · {t('Vượt')} <OSo giaTri={vuot} tieuDe={t('Vượt Target thi thật')} nguon={`/giao-vien/${id}/chi-so/o?cot=thi-that&loc=vuot&${ky}`} className={`${vung} font-semibold text-slate-200`} /></>}</>,
+      t('HV có ngày thi thật (IELTS) trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi; Đạt = Overall đạt Target, Vượt = Overall cao hơn Target.')),
     o1(t('Case có PA'), <PhanTram x={pa} nguon={nguon(id, 'cot=case-mo')} tieuDe={t('Case đang phụ trách')} />,
       paCt ? <>{t('PA cải thiện')} <OSo giaTri={paCt.tong} nhan={`${paCt.dung}/${paCt.tong}`} nguon={`/giao-vien/${id}/chi-so/o?cot=pa-hieu-qua&${ky}`} tieuDe={t('PA hiệu quả')} className={vung} /></> : t('Case đang phụ trách')),
   ];
   return (
     <section aria-label={t('Chỉ số')} className="card overflow-clip">
       {cs.error && <div className="border-b p-3" style={{ borderColor: 'var(--line)' }}><ErrorState message={cs.error.message} hint={cs.error.hint} onRetry={cs.reload} /></div>}
-      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         {ds.map((x) => (
           <div key={x.ten} className="flex min-w-0 flex-col gap-0.5 border-b border-r px-4 py-3.5 max-sm:last:col-span-2" style={{ borderColor: 'var(--line)' }}>
             <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-400">{x.ten}{x.luat && <NutLuat label={x.ten}>{x.luat}</NutLuat>}</span>
@@ -333,7 +340,7 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
  * THEO KỸ NĂNG (chủ SP 23/10 — "dạy kỹ năng này đạt nhiều hay trượt nhiều"): mỗi kỹ năng GV phụ trách một hàng — Đạt kỳ vọng (MT + thi thật, như dải số)
  * · số chưa đạt · Thi thật đạt / chưa đạt. Mỗi số mở panel đúng nhóm (`loc=dat|chua`): điểm cả lượt, kỹ năng GV phụ trách nổi bật, chênh với Target / kỳ vọng.
  */
-type HangKn = { khoa: string; nhan: string; kq: Extract<OPtGv, { k: 'so' }> | null; cotKq: string; thi: Extract<OPtGv, { k: 'so' }> | null; skill: string };
+type HangKn = { khoa: string; nhan: string; kq: Extract<OPtGv, { k: 'so' }> | null; cotKq: string; thi: Extract<OPtGv, { k: 'so' }> | null; vuot: number; skill: string };
 function TheoKyNang({ id, d, ky }: { id: number; d: ChiSoHoSoGv; ky: string }) {
   const dienThoai = useDienThoai();
   const haiKhung = new Set(d.ketQuaTheoKyNang.map((x) => x.khung)).size > 1;
@@ -341,17 +348,18 @@ function TheoKyNang({ id, d, ky }: { id: number; d: ChiSoHoSoGv; ky: string }) {
   const hang: HangKn[] = d.ketQuaTheoKyNang.map((x) => ({
     khoa: `${x.khung}:${x.skill}`, skill: x.skill, nhan: haiKhung ? `${x.nhan} · ${x.khung === 'ft' ? 'FT' : t('Lớp thường')}` : x.nhan,
     kq: so(x.o), cotKq: `ket-qua:${x.khung}:${x.skill}`, thi: x.khung === 'ft' ? so(d.thiThatTheoKyNang.find((y) => y.skill === x.skill)?.o) : null,
+    vuot: x.khung === 'ft' ? d.thiThatTheoKyNang.find((y) => y.skill === x.skill)?.vuot ?? 0 : 0,
   }));
   if (!hang.length) return null;
   const coThi = hang.some((h) => h.thi);
-  const mo = (cot: string, loc: 'dat' | 'chua', n: number, tieuDe: string, lop = '') => (
+  const mo = (cot: string, loc: 'dat' | 'chua' | 'vuot', n: number, tieuDe: string, lop = '') => (
     <OSo giaTri={n} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}&loc=${loc}&${ky}`} tieuDe={tieuDe} className={`${vung} ${lop}`} />
   );
   const COT: CotBang[] = [
     { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chip', rong: 170 },
     { key: 'kq', nhan: t('Đạt kỳ vọng'), kieu: 'chu' },
     { key: 'chua', nhan: t('Chưa đạt'), kieu: 'so', rong: 110 },
-    ...(coThi ? [{ key: 'thi', nhan: t('Thi thật'), kieu: 'chu', rong: 220, goiY: t('Đạt Target thi thật') } as CotBang] : []),
+    ...(coThi ? [{ key: 'thi', nhan: t('Thi thật'), kieu: 'chu', rong: 330, goiY: t('Đạt Target thi thật') } as CotBang] : []),
   ];
   const oCua = (h: HangKn, c: CotBang): ReactNode => {
     if (c.key === 'kn') return <ChipKy k={h.nhan} />;
@@ -374,6 +382,7 @@ function TheoKyNang({ id, d, ky }: { id: number; d: ChiSoHoSoGv; ky: string }) {
       <span className="inline-flex items-baseline gap-3 whitespace-nowrap text-[13px]">
         <span className="text-slate-400">▲ {t('Đạt')} {mo(cot, 'dat', h.thi.dung, `${t('Thi thật')} ${h.nhan} · ${t('Đạt')}`, 'font-semibold text-slate-100')}</span>
         <span className="text-slate-400">▼ {t('Chưa đạt')} {mo(cot, 'chua', h.thi.tong - h.thi.dung, `${t('Thi thật')} ${h.nhan} · ${t('Chưa đạt')}`, 'font-semibold text-slate-100')}</span>
+        <span className="text-slate-400">★ {t('Vượt')} {mo(cot, 'vuot', h.vuot, `${t('Thi thật')} ${h.nhan} · ${t('Vượt Target')}`, 'font-semibold text-slate-100')}</span>
       </span>
     );
   };

@@ -670,6 +670,11 @@ function thiThatCuaGv(c: NguCanhPtGv, muc: readonly MucKq[], t: Map<string, TapK
     }
   }
 }
+/** Chủ SP 23/10: VƯỢT Target — Overall (cả lần thi) / band kỹ năng (theo kỹ năng) CAO HƠN Target; là tập con của Đạt. */
+const vuotThi = (x: ThiGv, skill?: string) => {
+  const v = skill ? x.band.get(skill) ?? null : x.ovr;
+  return v !== null && x.kv !== null && v > x.kv;
+};
 const oThi = (ds: ThiGv[]): OPtGv => (!ds.length ? { k: 'rong' } : { k: 'so', dung: ds.filter((x) => x.dat).length, tong: ds.length });
 
 export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null }): ChiSoHoSoGv {
@@ -724,9 +729,10 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
     tienBo: oTuTap(coFt, gopTap(...tb)),
     paHieuQua: oTuTap(coFt, gopTap(...pa)),
     thiThat: coFt ? oThi([...thi.values()]) : { k: 'na' },
+    thiThatVuot: [...thi.values()].filter((x) => vuotThi(x)).length,
     thiThatTheoKyNang: coFt ? COT_KET_QUA_GV.ft.map((skill) => {
       const ds = [...thi.values()].filter((x) => x.datKn.has(skill));
-      return { skill, nhan: tenMonNgan(null, skill), o: { k: 'so', dung: ds.filter((x) => x.datKn.get(skill)).length, tong: ds.length } as OPtGv };
+      return { skill, nhan: tenMonNgan(null, skill), o: { k: 'so', dung: ds.filter((x) => x.datKn.get(skill)).length, tong: ds.length } as OPtGv, vuot: ds.filter((x) => vuotThi(x, skill)).length };
     }).filter((x) => x.o.k === 'so' && x.o.tong > 0) : [],
     hocThuatTheoLop: [...hang].map(([classId, h]) => {
       const bai = new Map<string, number>();
@@ -744,7 +750,7 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
 
 /** Panel chỉ đọc của một số ở hồ sơ GV theo kỳ — CÙNG `oChiSoCua` qua mọi ngữ cảnh của `chiSoHoSoGv` (số = số dòng). `cot` thêm `ket-qua:<khung>:<kỹ năng>[:<lớp>]`. */
 export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string; loc?: string | null }): { n: number; tieuDe: string; rows: MetricRow[] } {
-  if (q.loc != null && q.loc !== 'dat' && q.loc !== 'chua') throw badRequest('Lọc phải là "dat" hoặc "chua".');
+  if (q.loc != null && q.loc !== 'dat' && q.loc !== 'chua' && q.loc !== 'vuot') throw badRequest('Lọc phải là "dat", "chua" hoặc "vuot".');
   const r = oChiSoHoSoGvDu(p, gvId, q);
   /*
    * Chủ SP 23/10: panel kết quả không lặp một em nhiều dòng — các mục của CÙNG một lượt (một em, một bài, cùng điểm) gộp một dòng: kỹ năng GV phụ trách
@@ -759,7 +765,7 @@ export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null
     else if (x.ketQua === 'chua') cu.ketQua = 'chua';
   }
   /* UI-HO-SO-GV: bấm "Đạt" / "Chưa đạt" → chỉ dòng có kết luận đó (cùng tập). */
-  const rows = [...gop.values()].filter((x) => !q.loc || x.ketQua === q.loc);
+  const rows = [...gop.values()].filter((x) => !q.loc || (q.loc === 'vuot' ? x.vuot : x.ketQua === q.loc));
   return { n: rows.length, tieuDe: r.tieuDe, rows };
 }
 
@@ -776,7 +782,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
     const ds = [...thi.values()].filter((x) => (!mt[1] || x.classId === Number(mt[1])) && (!mt[2] || x.datKn.has(mt[2])))
       .sort((a, b) => Number(datCua(a)) - Number(datCua(b)) || a.ngay.localeCompare(b.ngay) || a.ten.localeCompare(b.ten, 'vi'));
     const rows: MetricRow[] = ds.map((x, i) => ({
-      ketQua: datCua(x) ? 'dat' : 'chua', overall: x.ovr, ngCanh: `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, soVoi: x.kv !== null ? { nhan: 'Target', v: x.kv } : null,
+      ketQua: datCua(x) ? 'dat' : 'chua', vuot: vuotThi(x, mt[2]), overall: x.ovr, ngCanh: `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, soVoi: x.kv !== null ? { nhan: 'Target', v: x.kv } : null,
       diem: (['listening', 'reading', 'writing1', 'speaking'] as const).map((k) => ({ k: k === 'writing1' ? 'W' : tenMonNgan(null, k), v: x.band.get(k) ?? null, cua: x.cua.has(k) })),
       /* một em có thể thi hai lần trong kỳ — id theo dòng */ id: i + 1, title: x.ten, href: `/hoc-vien/${x.sid}`, lop: x.ma,
       sub: [x.ma, `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, x.ovr !== null ? `Overall ${x.ovr.toFixed(1)}` : null,

@@ -46,7 +46,7 @@ export type DongSoLieu = {
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
   /** UI-HO-SO-GV: dòng kết quả — điểm từng kỹ năng (`cua` = kỹ năng GV phụ trách), Overall, mốc so, kết luận (tab Chưa đạt · Đạt). */
-  diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%';
+  diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%'; vuot?: boolean;
 };
 
 /**
@@ -160,9 +160,11 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const soTre = xep.filter(tre).length;
   /* UI-HO-SO-GV (chủ SP 23/10): dòng có kết luận → hai tab Chưa đạt · Đạt (mặc định Chưa đạt nếu có); chỉ một loại thì không tab. */
   const soChua = hien.filter((r) => r.ketQua === 'chua').length, soDat = hien.filter((r) => r.ketQua === 'dat').length;
-  const coTab = soChua > 0 && soDat > 0;
-  const [tab, setTab] = useState<'chua' | 'dat'>('chua');
-  const hienTab = coTab ? hien.filter((r) => r.ketQua === tab) : hien;
+  const soVuot = hien.filter((r) => r.vuot).length;
+  /* Thi thật: tab thứ ba "Vượt" (Overall / kỹ năng cao hơn Target — tập con của Đạt). */
+  const coTab = (soChua > 0 && soDat > 0) || (soVuot > 0 && soVuot < hien.length);
+  const [tab, setTab] = useState<'chua' | 'dat' | 'vuot'>(soChua > 0 ? 'chua' : 'dat');
+  const hienTab = coTab ? hien.filter((r) => (tab === 'vuot' ? r.vuot : r.ketQua === tab)) : hien;
   /* OV-15e: panel số liệu phân trang 10 / 20 / 50 (thanh đầu + cuối); dòng đang mở (`?dong=`) ở trang sau vẫn mở được khi lật tới. */
   const pt = usePhanTrang(hienTab.length, tieuDe, dv ?? t('mục'));
   /* Dòng đang mở (về từ hồ sơ) nằm ở trang sau → lật tới trang đó. */
@@ -280,10 +282,10 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           <>
             {coTab && (
               <div role="tablist" aria-label={t('Kết quả')} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
-                {([['chua', t('Chưa đạt'), soChua], ['dat', t('Đạt'), soDat]] as const).map(([k, nhan, n]) => (
+                {([['chua', t('Chưa đạt'), soChua, '▼ '], ['dat', t('Đạt'), soDat, '▲ '], ...(soVuot ? [['vuot', t('Vượt Target'), soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
                   <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
                     className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm font-semibold ${tab === k ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
-                    {k === 'chua' ? '▼ ' : '▲ '}{nhan} <span className="tabular-nums">{n}</span>
+                    {dau}{nhan} <span className="tabular-nums">{n}</span>
                   </button>
                 ))}
               </div>

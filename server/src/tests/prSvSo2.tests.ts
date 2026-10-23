@@ -70,7 +70,9 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const ky = pt.chiSoHoSoGv(P.mbManager, h.id, { tu: tuanNay, den: tuanNay });
     const o = ky.ketQuaTheoKyNang.find((x: any) => x.khung === 'ft' && x.skill === 'reading')?.o;
     const soCn = get(`SELECT COUNT(DISTINCT c.branch_id) AS n FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE ta.user_id = ?`, h.id).n;
-    if (soCn === 1) assert(JSON.stringify(o) === JSON.stringify({ k: 'so', dung: h.ketQua.reading.dung, tong: h.ketQua.reading.tong }), JSON.stringify({ o, bang: h.ketQua.reading }));
+    /* UI-HO-SO-GV (chủ SP 23/10): hồ sơ GV tách thi thật khỏi kết quả Test; bảng Phân tích GV còn gộp (XM-5) → bảng = hồ sơ Test + thi thật R. */
+    const thiR = ky.thiThatTheoKyNang.find((x: any) => x.skill === 'reading')?.o ?? { dung: 0, tong: 0 };
+    if (soCn === 1) assert((o?.tong ?? 0) + thiR.tong === h.ketQua.reading.tong && (o?.dung ?? 0) + thiR.dung === h.ketQua.reading.dung, JSON.stringify({ o, thiR, bang: h.ketQua.reading }));
     const p = pt.oChiSoHoSoGv(P.mbManager, h.id, { tu: tuanNay, den: tuanNay, cot: 'ket-qua:ft:reading' });
     const dong = p.rows.find((r: any) => r.href === `/hoc-vien/${e.sid}`);
     assert(dong?.sub.endsWith('Đạt') && dong.sub.includes('R 5.0') && p.tieuDe.includes('lượt kỹ năng') && p.n === o.tong, JSON.stringify({ dong, t: p.tieuDe, n: p.n }));
