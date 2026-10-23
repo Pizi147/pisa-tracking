@@ -113,7 +113,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
               className={`min-h-[44px] px-3 text-sm sm:min-h-[34px] ${boCot === k ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
           ))}
         </span>
-        <input type="search" className="field w-56 max-sm:min-h-[44px] max-sm:w-full" placeholder={t('Tìm GV…')} aria-label={t('Tìm GV')} value={tim} onChange={(e) => setTim(e.target.value)} />
+        <input type="search" name="tim-gv" autoComplete="off" className="field w-56 max-sm:min-h-[44px] max-sm:w-full" placeholder={t('Tìm GV…')} aria-label={t('Tìm GV')} value={tim} onChange={(e) => setTim(e.target.value)} />
         {data && (
           <span className="text-xs text-slate-400 sm:ml-auto">
             {t('{n} GV {cn} · {ky} · xếp theo tên', { n: data.hang.length, cn: data.tenChiNhanh, ky: nhanKhoang(khoang).chinh })}
