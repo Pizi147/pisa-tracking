@@ -47,7 +47,9 @@ export default function ClassOverviewPage() {
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
   const [xetLai, setXetLai] = useState(false);
   /** PR-DL → PR-OV3a: khối "Điểm Test của lớp" cuối trang — mở sẵn, vẫn thu gọn được. UI-HO-SO-LOP: GIỮ vị trí V4 ([XM] truy vết V5 ghi "gập, chỉ tab Học viên"). */
-  const [moDiem, setMoDiem] = useState(true);
+  /* UI-HO-SO-LOP (chủ SP 23/10, [XM] T6): khối điểm GẬP sẵn, nhớ lần mở / gập (máy này). */
+  const [moDiem, setMoDiem] = useState(() => { try { return localStorage.getItem('pisa.khoiDiemLop') === '1'; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem('pisa.khoiDiemLop', moDiem ? '1' : '0'); } catch { /* chế độ riêng tư */ } }, [moDiem]);
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
   const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
   const [caseFor, setCaseFor] = useState(0);
@@ -185,7 +187,7 @@ export default function ClassOverviewPage() {
 }
 
 /**
- * KHỐI "ĐIỂM MOCK TEST CỦA LỚP" (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-lop) — cuối hồ sơ lớp, MỞ SẴN (PR-OV3a, M2 §1):
+ * KHỐI "ĐIỂM MOCK TEST CỦA LỚP" (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-lop) — cuối hồ sơ lớp, GẬP SẴN + nhớ trạng thái (chủ SP 23/10; trước: mở sẵn PR-OV3a):
  * hàng tiêu đề + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`); bấm hàng tiêu đề thu gọn (CA2-10: không ghi chữ "bấm để…"). Bảng `DiemTheoLop gon` tải khi khối mở.
  */
 function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: boolean; mo: boolean; onDoi: () => void }) {
