@@ -356,12 +356,12 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(fou.viec === 'vắng G+V', JSON.stringify(fou));
   });
 
-  check('MTb (T2) · oMt: tooltip một dòng mỗi kỹ năng, "· cũ" khi MT cũ', () => {
+  check('MTb (T2) · oMt: tooltip một dòng mỗi kỹ năng; MT cũ không ghi chữ "cũ" (SV-NX-CASE N8)', () => {
     const r = d.oMt(luot(xongKn('2026-09-14', { speaking: { trangThai: 'chua-xep', tuan: null, tuanKetThuc: null } })), H);
     const dong = r.title.split('\n');
     assert(dong.length === 4 && dong[0] === 'Listening: W3 SEP · xong' && dong[3] === 'Speaking: chưa xếp', JSON.stringify(dong));
     const cu = d.oMt(luot(xongKn(), { cu: true }), H).title.split('\n');
-    assert(cu.every((x: string) => / · cũ$/.test(x)), JSON.stringify(cu));
+    assert(cu.every((x: string) => !/cũ/.test(x)), JSON.stringify(cu));
     assert(d.oMt(luot({}, { attemptId: null }), H).title === 'Chưa có đợt', 'chưa có đợt có tooltip');
   });
 
@@ -389,7 +389,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     }
     const o = nguon('web/src/ui/OMt.tsx');
     assert(!/#[0-9a-fA-F]{3,8}\b/.test(o), 'OMt.tsx có mã hex');
-    assert(/export function OMt\b/.test(o) && /export function NhanCu\b/.test(o), 'OMt.tsx thiếu OMt / NhanCu');
+    assert(/export function OMt\b/.test(o) && !/NhanCu/.test(o), 'OMt.tsx thiếu OMt / còn NhanCu (SV-NX-CASE N8 bỏ)');
     for (const f of ['web/src/modules/students/HangLichMt.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx']) assert(/import \{[^}]*\bOMt\b[^}]*\} from '[^']*ui\/OMt\.tsx'/.test(nguon(f)), `${f} chưa import OMt`);
     assert(/<OMt\b/.test(nguon('web/src/modules/students/HangLichMt.tsx')) && /<OMt\b/.test(nguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'chưa vẽ <OMt');
     assert(!/>MT\{h\.attemptNo\}</.test(nguon('web/src/modules/students/HangLichMt.tsx')), 'HangLichMt còn chữ MT{n} thuần');
@@ -876,15 +876,15 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(g({}).length === 0, 'không kỹ năng → không nhóm');
   });
 
-  check('PR-OMT (C2, C3) · quét nguồn: OMt.tsx cỡ chip vuông 20px / 11,5px, không nhãn "cũ" trong ô, không hex, chấm đang thi; NhanCu còn cho nơi khác', () => {
+  check('PR-OMT (C2, C3) · quét nguồn: OMt.tsx cỡ chip vuông 20px / 11,5px, không nhãn "cũ" (SV-NX-CASE N8: cả nơi khác), không hex, chấm đang thi', () => {
     const o = nguon('web/src/ui/OMt.tsx');
     assert(/h-5 /.test(o) && /text-\[12px\]/.test(o) && /rounded-md/.test(o), 'cỡ chip 20 / 12 (NEN-TYPO-MAU: tối thiểu 12) / góc 6');
-    assert(!/\{v\.cu && <NhanCu/.test(o) && /export function NhanCu\b/.test(o), 'ô MT không còn nhãn cũ; NhanCu còn xuất');
+    assert(!/NhanCu/.test(o), 'ô MT không còn nhãn cũ');
     assert(/r\.kieu === 'dang-thi' && <span aria-hidden/.test(o) && /r\.doc/.test(o), 'chấm đang thi + aria-label từ doc');
     assert(!/#[0-9a-fA-F]{3,8}\b/.test(o), 'OMt.tsx có mã hex');
     assert(/MT\{v\.so\}/.test(o), 'mẫu `MT2 · tuần` (có chữ MT)');
     for (const f of ['web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/MotKyNang.tsx', 'web/src/modules/students/ClassRoster.tsx', 'web/src/modules/students/StudentDetailPage.tsx']) {
-      assert(/NhanCu/.test(nguon(f)), `${f}: nhãn "cũ" ngoài ô MT phải giữ (C7)`);
+      assert(!/NhanCu/.test(nguon(f)), `${f}: SV-NX-CASE (N8) bỏ nhãn "cũ"`);
     }
   });
 

@@ -166,14 +166,19 @@ function docTheoLo<T extends { attempt_id: number }>(ids: number[], sql: (ph: st
  * Không đổi luật "-" của MT cũ (N4 — `lich_su`). Trả tập id lượt (trong `attemptIds`) là MT mới nhất; nhớ theo lượt trong request GET (`loadBundle` nạp trước).
  */
 export function laMtMoiNhatCuaEm(attemptIds: number[]): Set<number> {
-  const m = nhoTheoId('mt-moi-nhat:', attemptIds, (ids) => docTheoLo<{ attempt_id: number }>(ids,
+  /* Lượt `loadBundle` đã nạp trong request mà chưa hỏi: gộp vào câu đầu tiên có người hỏi (một câu cả trang; trang không hỏi — xuất Excel, Tổng hợp — không tốn câu). */
+  const cho = nho(MT_MOI_NHAT_CHO, () => new Set<number>());
+  const hoi = cho.size ? [...new Set([...attemptIds, ...cho])] : attemptIds;
+  cho.clear();
+  const m = nhoTheoId('mt-moi-nhat:', hoi, (ids) => docTheoLo<{ attempt_id: number }>(ids,
     (ph) => `SELECT a.id AS attempt_id FROM assessment_attempts a
               WHERE a.id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled'
                 AND NOT EXISTS (SELECT 1 FROM assessment_attempts b WHERE b.student_id = a.student_id AND b.kind = 'mock' AND b.status != 'cancelled'
                       AND (COALESCE(b.cycle_id, 0) > COALESCE(a.cycle_id, 0) OR (COALESCE(b.cycle_id, 0) = COALESCE(a.cycle_id, 0) AND b.attempt_no > a.attempt_no))
                       AND EXISTS (SELECT 1 FROM assessment_scores sb WHERE sb.attempt_id = b.id AND sb.band IS NOT NULL))`));
-  return new Set(m.keys());
+  return new Set(attemptIds.filter((id) => m.has(id)));
 }
+const MT_MOI_NHAT_CHO = 'mt-moi-nhat-cho';
 
 /** TD7: `boCase` — người gọi không đọc `bundle.cases` (đánh giá lượt mới nhất) thì bỏ câu Case theo lượt. */
 export function loadBundle(attemptIds: number[], o: { boCase?: boolean } = {}): AttemptBundle {
@@ -181,7 +186,7 @@ export function loadBundle(attemptIds: number[], o: { boCase?: boolean } = {}): 
   if (!attemptIds.length) return bundle;
   bundle.skillRows = loadSkillRows(attemptIds);
   bundle.scores = diemCuaLuot(attemptIds);
-  laMtMoiNhatCuaEm(attemptIds);   // SV-NX-CASE: nạp trước một câu cho cả trang — `oXongCua` của từng lượt đọc từ bộ nhớ request
+  for (const id of attemptIds) nho(MT_MOI_NHAT_CHO, () => new Set<number>()).add(id);   // SV-NX-CASE: `laMtMoiNhatCuaEm` hỏi cả trang một câu khi cần
   for (const id of attemptIds) {
     const rows = bundle.skillRows.get(id);
     if (rows?.length) bundle.skips.set(id, skippedSkillsOf(rows));
