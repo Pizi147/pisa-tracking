@@ -45,4 +45,6 @@ export const EN_UI_HV_LOP = {
   'Đến tháng': 'To month',
   'Ghi chú {ten}': 'Note {ten}',
   'Xếp: Lớp · tên': 'Sort: class · name',
+  'Việc quá hạn của mọi người trong chi nhánh': 'Overdue tasks of everyone in this branch',
+  'Chỉ việc của bạn': 'Your tasks only',
 } as const;

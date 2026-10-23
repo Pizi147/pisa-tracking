@@ -550,13 +550,14 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /classes/3/roster?chiId=1': 22,
   'QT /classes/3/roster?chiId=1': 20,
   'QL /hoc-vien-lop/ids': 20,
-  /* OV-15f: góc Lịch thi — đo 15–16 câu; quyền sửa tính theo LỚP (không theo em: 102 câu → 16). Trần = đo + 6. */
-  'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 22,
-  'QT /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 23,
-  'TVV /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 23,
-  'CX /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 22,
-  'GVCN /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 21,   // OV-15f: đo 15 → đo + 6
-  'GVBM /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 21,   // OV-15f: đo 15 → đo + 6
+  /* OV-15f: góc Lịch thi — đo 15–16 câu; quyền sửa tính theo LỚP (không theo em: 102 câu → 16). Trần = đo + 6.
+     UI-HV-LOP: + chi tiết dưới hàng (lượt sắp tới, 2 câu nhật ký, điểm, Case mở qua `listCases` — cùng nguồn "Case mở" hàng HV) → đo 23–25, trần = đo + 4. */
+  'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 28,
+  'QT /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 28,
+  'TVV /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 29,
+  'CX /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 27,
+  'GVCN /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 28,   // OV-15f: đo 15 → đo + 6
+  'GVBM /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 28,   // OV-15f: đo 15 → đo + 6
   'GVCN /hoc-vien-lop/ids': 19,
   'GVBM /hoc-vien-lop/ids': 19,
   'GVCN_THUONG /hoc-vien-lop/ids': 19,
@@ -866,7 +867,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /lich-su?loai=o&id=5': 86, 'QT /lich-su?loai=o&id=5': 54, 'GVCN /lich-su?loai=o&id=5': 87, 'GVBM /lich-su?loai=o&id=5': 87,
   /* TU-b: trang Tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 65, 'QT /tutors': 66, 'QL /tutors/1': 58, 'QT /tutors/1': 59, 'QT /tutors/dem': 51, 'QT /tutors/go-tay': 52,   // đo 15 · 16 · 8 · 9 · 1 · 2
-  'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 876,   // OV-15f: đo 593 (FT + lớp thường; ×3 → 1 659); trần = max(đo + 50, ⌈đo × 1,3⌉). UI-HV-LOP: + chi tiết dưới hàng (lượt sắp tới, Case mở, nhật ký, điểm) đo 826 (×3 → 2 354) → đo + 50
+  'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 1154,   // OV-15f: đo 593 (FT + lớp thường; ×3 → 1 659); trần = max(đo + 50, ⌈đo × 1,3⌉). UI-HV-LOP: + chi tiết dưới hàng (lượt sắp tới, nhật ký, điểm, Case mở qua `listCases`) đo 1 104 (×3 → 2 936) → đo + 50
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1': 3661,   // OV-15h2: đo 2816 (×3 → 7094; trang không them ~2545) → max(đo + 50, ⌈đo × 1,3⌉)
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,

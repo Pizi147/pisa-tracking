@@ -11,6 +11,9 @@ export async function runPrUiHvLopTests(t: Kit) {
   const d: any = await import('../../../shared/domain/index.ts');
   const hvl: any = await import('../classes/hocVienLop.ts');
   const lt: any = await import('../classes/lichThi.ts');
+  const sos: any = await import('../classes/hocVienSos.ts');
+  const standing: any = await import('../students/standing.ts');
+  const dhv: any = await import('../classes/dongHocVien.ts');
   console.log('\nV5 · UI-HV-LOP — danh sách gọn: TVV + lịch thi trên hàng, chi tiết dưới hàng Lịch thi');
 
   check('UHL-1 · thangTrongKhoang: gồm hai đầu, qua năm, ngược → rỗng, trần 12', () => {
@@ -52,5 +55,35 @@ export async function runPrUiHvLopTests(t: Kit) {
     } finally {
       conn.exec('ROLLBACK TO uhl3'); conn.exec('RELEASE uhl3');
     }
+  });
+
+  check('UHL-4 · hàng HV: nhapDiem chỉ khi người xem còn ô chờ nhập (lượt sớm nhất của nhapDiemTheoEm); ke = lượt kế + kỳ vọng của standingFor', () => {
+    const dh: any = dhv;
+    const r = hvl.danhSachHocVienLop(P.coreTeacher, {});
+    const co = r.hocVien.filter((h: any) => h.nhapDiem);
+    assert(co.length > 0, 'seed: GVCN MB FT 101 phải có em còn ô chờ nhập');
+    /* Cùng đầu vào máy chủ: mọi lớp của trang, lớp của em = dòng ghi danh SAU (Map — em còn hai lớp đang học). */
+    const lopCua = new Map(r.hocVien.filter((h: any) => !h.ketThuc).map((h: any) => [h.id, h.classId]));
+    const nd = dh.nhapDiemTheoEm(P.coreTeacher, r.rows.map((c: any) => c.id), TODAY, (sid: number) => lopCua.get(sid));
+    for (const h of r.hocVien.filter((x: any) => !x.ketThuc)) {
+      const x = nd.get(h.id);
+      assert(!!h.nhapDiem === !!x?.thuTu, `${h.ten}: nhapDiem ${JSON.stringify(h.nhapDiem)} ≠ ${JSON.stringify(x)}`);
+      if (h.nhapDiem) assert(h.nhapDiem.kind === x.thuTu.kind && h.nhapDiem.attemptNo === x.thuTu.attempt_no, `${h.ten}: lượt`);
+    }
+    const st: any = standing.standingFor(r.hocVien.filter((h: any) => h.hang).map((h: any) => h.id));
+    let coKe = 0;
+    for (const h of r.hocVien.filter((x: any) => x.hang)) {
+      const s0 = st.get(h.id);
+      assert((h.hang.ke?.luot ?? null) === (s0?.nextAttemptLabel ?? null) && (h.hang.ke?.kyVong ?? null) === (s0?.nextAttemptLabel ? s0.nextKyVong ?? null : null), `${h.ten}: ke`);
+      if (h.hang.ke) coKe += 1;
+    }
+    assert(coKe > 0, 'seed: phải có em có lượt kế');
+  });
+
+  check('UHL-5 · Đang SOS: việc tiếp mang người làm (PA của việc đó, không thì người giữ Case)', () => {
+    const r = sos.dangSos(P.mbManager, { phamVi: 'tat-ca' });
+    const vt = r.rows.flatMap((x: any) => x.cases).filter((c: any) => c.viecTiep);
+    assert(vt.length > 0 && vt.every((c: any) => 'nguoi' in c.viecTiep), 'thiếu trường nguoi');
+    assert(vt.some((c: any) => c.viecTiep.nguoi), 'seed: phải có việc tiếp có người làm');
   });
 }

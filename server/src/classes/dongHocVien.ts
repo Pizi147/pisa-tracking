@@ -55,7 +55,8 @@ export function caseViecTheoHocVien(p: Principal, classId: number): Map<number, 
   return out;
 }
 
-export type NhapDiemViec = { kyNang: string[]; dot: string | null; quaHan: boolean; han: string | null };
+/** `thuTu`: lượt còn nợ SỚM NHẤT (kind + số) — ⋯ dòng em mở panel Nhập điểm lớp đúng lượt (UI-HV-LOP). */
+export type NhapDiemViec = { kyNang: string[]; dot: string | null; quaHan: boolean; han: string | null; thuTu: { kind: string; attempt_no: number } | null };
 
 /**
  * PR-UXF-a VN29: việc NHẬP ĐIỂM của CHÍNH người xem theo em — MỘT luật cho cột "Việc tiếp theo" của bảng lớp, chip Cần làm / Quá hạn
@@ -66,7 +67,7 @@ export function nhapDiemTheoEm(p: Principal, classIds: readonly number[], homNay
   /* Lớp người xem có VIỆC nhập điểm: đang được phân công, hoặc vai không phải giáo viên có SCORE_EDIT ở lớp (Quản trị) — như `mySkills`. */
   const day = new Set(p.assignments.filter((a) => activeAt(a, homNay)).map((a) => a.classId));
   const lop = [...new Set(classIds)].filter((id) => day.has(id) || can(p, PERMISSIONS.SCORE_EDIT, { classId: id }));
-  const out = new Map<number, NhapDiemViec & { thuTu: { kind: string; attempt_no: number } | null; hanQua?: string | null }>();
+  const out = new Map<number, NhapDiemViec & { hanQua?: string | null }>();
   if (!lop.length) return out;
   for (const a of listAttempts(p, { classIds: lop, chiDangHoc: true, chiConO: true }).rows as any[]) {
     const cho = (a.myPendingDetail ?? []) as { skill: string; deadline: string | null; overdue: boolean }[];

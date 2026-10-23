@@ -301,7 +301,9 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
             <button type="button" className="nut-loc" aria-pressed={locThiThang} onClick={() => setParam({ thi: locThiThang ? null : '1' })}>
               {t('Thi tháng này')} · <span className="tabular-nums">{demThi}</span>
             </button>
+            {/* Đếm theo `/my-work` của người xem: GV = việc của mình; QL / Admin = việc mọi người trong chi nhánh đang xem (như Công việc "Tất cả"). */}
             <button type="button" className="nut-loc" aria-pressed={locQuaHan} disabled={!work.data && !work.error}
+              title={laQl || admin ? t('Việc quá hạn của mọi người trong chi nhánh') : t('Chỉ việc của bạn')}
               onClick={() => { if (work.error) work.reload(); setParam({ qh: locQuaHan ? null : '1', view: null, loc: null }); }}>
               {t('Có việc quá hạn')} · <span className="tabular-nums">{work.error ? '!' : work.data ? demQh : '…'}</span>
             </button>

@@ -8,7 +8,7 @@ import { ODiem } from '../../ui/ODiem.tsx';
 import { TargetText } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillShort } from '../../lib/format.ts';
-import { useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
+import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import { ChipLichThi, MiniKn, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { shortDate, tuanLich, type HangHv, type LichThi, type NguCanhDs } from '@shared/domain/index.ts';
@@ -19,6 +19,8 @@ import type { WorkItem } from '../worklist/WorkList.tsx';
 export type HvGon = {
   id: number; classId: number; ten: string; khung: 'ft' | 'thuong'; ketThuc?: true;
   hang?: HangHv; tvv?: string | null; lich?: LichThi;
+  /** Lượt sớm nhất người xem còn ô chờ nhập của em (máy chủ `nhapDiemTheoEm`) — có thì ⋯ có "Nhập điểm". */
+  nhapDiem?: { kind: string; attemptNo: number; dot: string | null };
 };
 /** Việc của em (cùng nguồn Công việc `/my-work`) — gấp nhất trước; `it` để bấm làm tại chỗ. */
 export type ViecEm = { chu: string; han: string | null; quaHan: boolean; it: WorkItem };
@@ -28,12 +30,13 @@ export type LopGon = { id: number; code: string; programmeName: string | null; s
 const chuSo = (n: number | null | undefined) => (n == null ? null : n.toFixed(1));
 const trong = <span className="text-faint">—</span>;
 
-/** ⋯ CUỐI DÒNG HỌC VIÊN — cùng menu / panel với hồ sơ lớp (`useThaoTacDongHocVien`, quyền theo lớp của em). Nhập điểm theo em ở panel Nhập điểm của lớp. */
+/** ⋯ CUỐI DÒNG HỌC VIÊN — cùng menu / panel với hồ sơ lớp (`useThaoTacDongHocVien`, quyền theo lớp của em); "Nhập điểm" mở panel lớp đúng lượt còn nợ. */
 function MenuEm({ h, lop, onDoi }: { h: HvGon; lop: LopGon | undefined; onDoi: () => void }) {
   const thuong = lop?.scoringMode === 'ratio';
   const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: lop?.viewer ?? { coTheSuaHocVien: false, coTheBaoCase: false, coTheGhiViPham: false, coTheNhapDiem: false },
     maLop: lop?.code ?? null, classId: lop?.id ?? null, onDone: onDoi });
-  const muc = tt.mucCua({ id: h.id, ten: h.ten, dangHoc: !h.ketThuc, nhapDiem: null, status: h.ketThuc ? 'finished' : 'active', ft: !thuong, maLop: lop?.code ?? null });
+  const nd = h.nhapDiem && lop ? nhapDiemCua(lop.id, thuong, [{ kind: h.nhapDiem.kind, kindLabel: h.nhapDiem.dot ?? h.nhapDiem.kind, myPending: ['*'], attemptNo: h.nhapDiem.attemptNo }]) : null;
+  const muc = tt.mucCua({ id: h.id, ten: h.ten, dangHoc: !h.ketThuc, nhapDiem: nd, status: h.ketThuc ? 'finished' : 'active', ft: !thuong, maLop: lop?.code ?? null });
   return <>{muc.length > 0 && <MenuDong muc={muc} nhan={t('Thao tác khác')} />}{createPortal(tt.panels, document.body)}</>;
 }
 
@@ -201,7 +204,12 @@ export function BangSosGon({ rows, hang, nguCanh, onMo }: { rows: DongSos[]; han
       case 'tu': return <span className="tabular-nums">{tuanLich(r.tuan, homNay)}</span>;
       case 'ovr': {
         const m = hang.get(r.studentId)?.mtGan;
-        return m ? <span className="inline-flex items-baseline gap-1"><ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} nhan="Overall" /><span className="text-slate-400">/ {chuSo(m.kyVong) ?? '—'}</span></span> : trong;
+        const ke = hang.get(r.studentId)?.ke;
+        return m ? (
+          <span className="inline-flex flex-wrap items-baseline gap-1">
+            <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} nhan="Overall" /><span className="text-slate-400">/ {chuSo(m.kyVong) ?? '—'}</span>
+            {ke && <span className="text-xs text-slate-400">→ {ke.luot}{ke.kyVong != null ? ` ${chuSo(ke.kyVong)}` : ''}</span>}
+          </span>) : trong;
       }
       case 'case': {
         const tt = trangThaiCase(r);

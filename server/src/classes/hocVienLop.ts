@@ -48,7 +48,8 @@ export type TrangHocVienLop = {
   /** `khung`: Fast Track hay lớp thường của em — công tắc `Tất cả · Fast Track · Lớp thường` đếm chip bằng `demLoc(hocVien, khung)`. */
   hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true; them?: ThemEm; hang?: HangHv;
     /** UI-HV-LOP (khu d): TVV của em + lịch thi thật (`trangThaiLichThi`, cùng hàm góc Lịch thi) — cột Học viên / Lịch thi, chip "Thi tháng này". */
-    tvv?: string | null; lich?: LichThi }[];
+    tvv?: string | null; lich?: LichThi;
+    nhapDiem?: { kind: string; attemptNo: number; dot: string | null } }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** HL-14: "+ Học viên" đầu trang — có lớp trong phạm vi thêm được học viên, KHÔNG phụ thuộc ô tìm (tìm không ra em là lúc cần thêm). */
@@ -197,9 +198,10 @@ export function danhSachHocVienLop(
   /* PR-CT: lớp rỗng (em đã chuyển đi hết, GVCN còn phải xác nhận bàn giao) vẫn có thẻ Báo QL theo lớp → cũng nằm trong tập lớp để đếm. */
   for (const id of ids) emTheoLop.set(id, []);
   for (const h of hv) emTheoLop.set(h.class_id, [...(emTheoLop.get(h.class_id) ?? []), h.id as number]);
+  const ndEm = nhapDiemTheoEm(p, ids, today, (sid) => lopCuaHv.get(sid));
   const vl = viecHocVienTheoLop(p, {
     emTheoLop, cases: allCases, homNay: today, chuongTrinhTheoLop: new Map(lops.map((r) => [r.id, r.programmeCode ?? null])),
-    nhapDiemTheoEm: nhapDiemTheoEm(p, ids, today, (sid) => lopCuaHv.get(sid)),
+    nhapDiemTheoEm: ndEm,
   });
 
   /*
@@ -283,10 +285,13 @@ export function danhSachHocVienLop(
     if (thieu.length) loc.push('thieu_tt');
     if (daThi.has(h.id)) loc.push('da-thi');
     /* OV-12f: tên + mã + ô thiếu — dòng "Thiếu thông tin" / "Chờ duyệt" của góc Cần làm (em không có việc ở Công việc vẫn có tên). */
+    const nd = ndEm.get(h.id);
     return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const,
       ten: h.full_name as string, ma: (h.student_code ?? '') as string, ...(thieu.length ? { thieu: thieu.map((m) => m.label) } : {}),
       ...(them ? { them: them.get(h.id as number) } : {}), ...(ft && hang.has(h.id) ? { hang: hang.get(h.id) } : {}),
-      tvv: h.tvv ?? null, lich: trangThaiLichThi(h, examPlanOf(h), today) };
+      tvv: h.tvv ?? null, lich: trangThaiLichThi(h, examPlanOf(h), today),
+      /* UI-HV-LOP (XM-2): ⋯ dòng em có "Nhập điểm" chỉ khi người xem còn ô chờ nhập của em — lượt sớm nhất còn nợ (`nhapDiemTheoEm`, cùng nguồn Công việc). */
+      ...(nd?.thuTu ? { nhapDiem: { kind: nd.thuTu.kind, attemptNo: nd.thuTu.attempt_no, dot: nd.dot } } : {}) };
   });
   /*
    * OV-11g (HL-19, Q11): em Kết thúc học chưa Lưu trữ — hiện mờ ở lớp CUỐI (cùng điều kiện `classRoster(…, kemKetThuc)`), chỉ trong "Tất cả":
@@ -337,6 +342,7 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
       mtGan: coLuot ? { mt: st!.attemptNo!, tuan: st!.periodCode ? tuanCua.get(st!.periodCode) ?? null : null, ovr: st!.overall, kyVong: st!.expectation,
         kn: { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') } } : null,
       xuHuong: truoc ? { lech: st!.overall! - truoc.ovr, soMt: truoc.mt } : null,
+      ke: st?.nextAttemptLabel ? { luot: st.nextAttemptLabel, kyVong: st.nextKyVong ?? null } : null,
       hoTro: { sos, kyNang: sos ? (st?.belowSkills ?? []).map((b) => b.skill) : [], soCase: soCase.get(h.id) ?? 0,
         soPa: vl.hoTro.get(h.id)?.soPa ?? 0, quaHan: vl.hoTro.get(h.id)?.quaHan ?? false },
       yThuc: vl.bacYThuc.get(h.id) ?? null,

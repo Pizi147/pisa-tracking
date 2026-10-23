@@ -23,12 +23,12 @@
 | 14 | Ý thức: chấm + bậc | `Nhan tone="doing"` | KHỚP |
 | 15 | Lịch thi chip: Thi dd/mm · Chưa có lịch · Chưa chốt · mm/yyyy · Dự kiến mm/yyyy | `ChipLichThi` (máy chủ thêm `lich` = `trangThaiLichThi`) | KHỚP |
 | 16 | Việc: việc + hạn dd/mm, ⚠ đỏ khi quá hạn | `OViec` (+ "+n việc") | KHỚP |
-| 17 | Hộp Xuất: "Theo bộ lọc: … · n HV" · Phạm vi Bộ lọc hiện tại / Cả chi nhánh · Cột · "Ghi vào nhật ký xuất" · Xuất n HV | `NganXuatDs` | KHÁC — panel phải chuẩn NEN-PANEL (không hộp neo); 18 cột thật của tệp xuất thay 8 cột gộp của mockup ("Việc đang mở", "SĐT phụ huynh" chưa có ở máy chủ) |
+| 17 | Hộp Xuất: "Theo bộ lọc: … · n HV" · Phạm vi Bộ lọc hiện tại / Cả chi nhánh · Cột · "Ghi vào nhật ký xuất" · Xuất n HV | `NganXuatDs` | KHÁC **chấp nhận (chủ SP 23/10)** — panel phải chuẩn NEN-PANEL; 18 cột thật của tệp xuất |
 | 18 | 375: thẻ em (tên · lớp · chip) + dòng việc / Target · Overall | `TheHvGon` | KHỚP |
 | 19 | Đang SOS: chip Tất cả · SOS 3 · SOS 2 · SOS 1 · PA quá hạn | `?muc=` | KHỚP |
 | 20 | Đang SOS: Học viên · Mức · kỹ năng · Từ · Overall / kỳ vọng · Case · PA (+ trạng thái) · Việc tiếp | `BangSosGon` | KHỚP |
-| 21 | Overall "→ MT3 6.0" (kỳ vọng MT kế) | — | KHÁC — chưa có số kỳ vọng MT kế trên dòng SOS (xem [XM-3]) |
-| 22 | Việc tiếp "· cô Hà" (người làm) | `ViecTiepDong` (chữ + hạn) | KHÁC — dòng SOS máy chủ chưa gửi người làm việc tiếp |
+| 21 | Overall "→ MT3 6.0" (kỳ vọng MT kế) | `hang.ke` (`standingFor` lượt kế + kỳ vọng) | KHỚP (sửa theo XM-3) |
+| 22 | Việc tiếp "· cô Hà" (người làm) | `ViecTiepDong` + `viecTiep.nguoi` (người của PA việc đó, không thì người giữ Case) | KHỚP (sửa theo XM-3) |
 | 23 | Lịch thi: Tháng dự kiến [từ] → [đến] + chi nhánh + đếm "n chưa chốt · n đã chốt · n dự kiến" | `GocLichThi` (`ONgay kieu="thang"`) | KHỚP |
 | 24 | Nhóm: Chưa chốt ngày — đã tới tháng · Đã chốt ngày · Dự kiến · ▸ Chưa có tháng thi (gập) | `NHOM` | KHỚP |
 | 25 | Hàng: Học viên · MT gần nhất · Target · Lịch thi · Ghi chú (ai · ngày) · Chốt ngày / Dời tháng (B nhấn) · Sửa ngày (A) · ▸ | `DongLichThi` | KHỚP |
@@ -37,7 +37,7 @@
 | 28 | Ghi chú "Chưa kết luận" khi trống | ô ghi chú (placeholder) | KHỚP |
 | — | BỎ | "Cần làm" (chủ SP 22/10), cột tick + "Xuất các HV đã chọn", 4 nút Kết luận / "Giữ tháng" / "Cần xác nhận" / 12 nút tháng / "Gồm HV chưa có dự kiến" (V4 Q-C3 ①), hàng lớp gập + bảng điểm theo lớp | BỎ |
 
-**Đếm:** 25 KHỚP · 3 KHÁC (#17 panel chuẩn + cột thật; #21, #22 dữ liệu máy chủ chưa có) → 25 / 28 = **89 %** (KHÁC chờ chủ SP / PTA đồng ý lý do; #21–#22 có thể thêm ở máy chủ nếu cần → 96 %).
+**Đếm (sau rà PTA 23/10):** 27 KHỚP · 1 KHÁC chấp nhận (#17) → 27 / 28 = **96 %**, 28 / 28 đạt cổng. `cap-sos-1440-toi` chụp lại (→ MT kế · kỳ vọng, người làm việc tiếp).
 
 ## Thao tác TRƯỚC → SAU (luật 8b, `10` mục 8)
 
@@ -47,8 +47,8 @@
 | + Lớp mới (đầu trang) | **GIỮ** trong ⋯ đầu trang | V4 / mockup đầu trang chỉ Xuất + Thêm HV |
 | ⋯ Lưu trữ | **GIỮ** | |
 | Xuất Excel · n HV | **GIỮ** "Xuất" (theo bộ lọc + chọn cột, phạm vi rộng "Cả chi nhánh") | Lịch thi: nút Xuất riêng → nút đầu trang (TVV / CX cũng vậy) |
-| Hàng lớp: mở / gập, ⋯ Hồ sơ lớp · Nhập điểm · + Học viên, badge (bài chờ chấm → Lịch Test, chờ duyệt, quá hạn, xếp lớp, lộ trình…) | **GIỮ** qua ô chọn "Lớp" → **dải lớp** (badge cùng `badgeLop`, cùng đích bấm; ⋯ Hồ sơ lớp · Nhập điểm (panel) · + Học viên); mã lớp dưới tên em mở Hồ sơ lớp | [XM-1] vị trí |
-| ⋯ cuối dòng em (Báo Case, Ghi vi phạm, Xử lý Ý thức, Sửa thông tin, Chuyển lớp / đề xuất, Lưu trữ / Học lại, Mở hồ sơ) | **GIỮ** cột ⋯ (cùng `useThaoTacDongHocVien`, quyền theo lớp của em) | "Nhập điểm" theo từng em → dùng Nhập điểm của lớp (dải lớp) — [XM-2] |
+| Hàng lớp: mở / gập, ⋯ Hồ sơ lớp · Nhập điểm · + Học viên, badge (bài chờ chấm → Lịch Test, chờ duyệt, quá hạn, xếp lớp, lộ trình…) | **GIỮ** qua ô chọn "Lớp" → **dải lớp** (badge cùng `badgeLop`, cùng đích bấm; ⋯ Hồ sơ lớp · Nhập điểm (panel) · + Học viên); mã lớp dưới tên em mở Hồ sơ lớp | chủ SP đồng ý (XM-1) |
+| ⋯ cuối dòng em (Báo Case, Ghi vi phạm, Xử lý Ý thức, Sửa thông tin, Chuyển lớp / đề xuất, Lưu trữ / Học lại, Mở hồ sơ) | **GIỮ** cột ⋯ (cùng `useThaoTacDongHocVien`, quyền theo lớp của em), có "Nhập điểm MTn" khi người xem còn ô chờ nhập của em (`nhapDiemTheoEm`, lượt sớm nhất) | XM-2 |
 | Việc tiếp theo (bấm → đích) | **GIỮ** ô Việc bấm = làm tại chỗ (Case → panel một em; việc làm được trong panel → PanelViec; còn lại → trang việc) | |
 | Góc "Cần làm" + lọc phụ Quá hạn / Chờ duyệt / Thiếu thông tin | Quá hạn → chip "Có việc quá hạn"; Chờ duyệt → badge dải lớp + Công việc; Thiếu thông tin → ⋯ Sửa thông tin + Công việc | Bỏ góc theo chủ SP 22/10; link cũ `view=can-lam / qua-han` mở Tất cả + chip quá hạn |
 | Chip "Đã thi · chờ kết quả" | **GIỮ** | |
@@ -60,10 +60,12 @@
 | Ô tick + thanh "Xuất các HV đã chọn" | **BỎ** (chủ SP: Xuất theo bộ lọc) | |
 | Đang SOS: Mở (panel một em), Nguyên nhân / Phương án / Kết quả / Trạng thái | Panel một em: bấm "n Case · m PA"; cột theo khu d (Case · PA + trạng thái, Việc tiếp) | nguyên nhân / PA chi tiết ở panel |
 | Lịch thi: Chốt ngày, Chuyển tháng, ghi chú tại hàng | **GIỮ** Chốt ngày · Dời tháng · ghi chú sửa tại chỗ · Sửa ngày (đã chốt) | Giữ tháng / Cần xác nhận bỏ theo V4 Q-C3 ① |
-| Admin: cột Lượt MT gần nhất · Ô chưa nhập | Danh sách chung (MT gần nhất, Lịch thi) | [XM-4] |
+| Admin: cột Lượt MT gần nhất · Ô chưa nhập | Danh sách chung (MT gần nhất, Lịch thi) | chủ SP đồng ý (XM-4) |
 
-## [XM] — hỏi PTA Plan trước khi chốt
-1. **Thao tác lớp**: thay hàng lớp bằng ô "Lớp" + dải lớp (badge + ⋯). Đồng ý vị trí này, hay muốn thêm ⋯ lớp ngay trên dòng em?
-2. **Nhập điểm theo em** trong ⋯ dòng em (trước có khi em có ô chờ nhập của người xem): nay vào Nhập điểm của lớp. Cần thêm lại (máy chủ gửi `nhapDiem` theo em)?
-3. Đang SOS: thêm "→ MT kế · kỳ vọng" và người làm việc tiếp như mockup (cần máy chủ gửi thêm 2 trường)?
-4. Admin MT: giữ cột "Ô chưa nhập" riêng như trước hay dùng danh sách chung?
+## [XM] — chủ SP trả lời 23/10 (đã áp)
+1. Ô Lớp + dải lớp — đồng ý.
+2. "Nhập điểm" trong ⋯ em — thêm lại, chỉ hiện khi em có ô chờ nhập của người xem.
+3. Đang SOS "→ MT kế · kỳ vọng" + người làm việc tiếp — thêm (máy chủ `hang.ke`, `viecTiep.nguoi`).
+4. Admin MT dùng danh sách chung.
+
+Chip "Có việc quá hạn" đếm theo `/my-work` của người xem: GV = việc của mình; QL / Admin = việc mọi người trong chi nhánh đang xem (ghi ở `title` của chip).

@@ -22,6 +22,7 @@ import { cycleById, examPlanOf, updateCycle } from '../fasttrack/cycles.ts';
 import { chanLuuTru } from '../students/students.ts';
 import { standingFor } from '../students/standing.ts';
 import { diemCuaLuot } from '../fasttrack/attempts.ts';
+import { listCases, type MappedCase } from '../cases/cases.ts';
 
 const GHI_CHU_TOI_DA = 300;
 
@@ -145,7 +146,7 @@ export function danhSachLichThi(
   const suaDuoc = new Map<number, boolean>();
   const suaLop = (classId: number) => { if (!suaDuoc.has(classId)) suaDuoc.set(classId, can(p, PERMISSIONS.STUDENT_EDIT, { classId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId })); return suaDuoc.get(classId)!; };
   const chot = chotNgayCua(chon.filter((x) => x.r.cycle_id).map((x) => ({ id: x.r.cycle_id as number, exam_date: x.r.exam_date ?? null })));
-  const chiTiet = chiTietLichThi(chon.map((x) => x.r), standing, hom);
+  const chiTiet = chiTietLichThi(p, chon.map((x) => x.r), standing, hom);
   const rows: HangLichThi[] = chon.map(({ r }) => {
     const l = lop.get(r.class_id);
     return {
@@ -165,7 +166,7 @@ export function danhSachLichThi(
  * Phần mở dưới hàng Lịch thi (V4 `mockup-v4-hoc-vien-lop.html` khung 3) — đọc THEO LÔ cho cả trang: điểm lượt của `standing` (`diemCuaLuot`, nhớ theo request),
  * một câu lượt kế hoạch sắp tới, một câu Case đang mở, hai câu nhật ký lịch thi (`lich_thi.luu` · `cycle.update` có đổi ngày / tháng thi) — mỗi lô ≤ 900.
  */
-function chiTietLichThi(ds: readonly any[], standing: ReturnType<typeof standingFor>, hom: string): (r: any) => HangLichThi['chiTiet'] {
+function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<typeof standingFor>, hom: string): (r: any) => HangLichThi['chiTiet'] {
   const luotSt = [...new Set(ds.map((r) => standing.get(r.id)?.attemptId).filter((x): x is number => !!x))];
   const diem = diemCuaLuot(luotSt);
   const cyc = [...new Set(ds.map((r) => r.cycle_id).filter((x): x is number => !!x))];
@@ -198,12 +199,15 @@ function chiTietLichThi(ds: readonly any[], standing: ReturnType<typeof standing
       lichSu.set(x.entity_id, ls);
     }
   });
+  /* "Case mở" CÙNG nguồn với hàng HV / `chiTietCaseMo` (`listCases` của người xem, status ≠ done, không Case tạm) — không câu SQL riêng. */
   const caseMo = new Map<number, string[]>();
-  theoLo([...new Set(ds.map((r) => r.id as number))], (lo, ph) => {
-    for (const c of db().prepare(`SELECT student_id, topic FROM sos_cases WHERE student_id IN (${ph}) AND status != 'done' AND tam = 0 ORDER BY id`).all(...lo) as any[]) {
-      if (c.topic) caseMo.set(c.student_id, [...new Set([...(caseMo.get(c.student_id) ?? []), c.topic as string])]);
-    }
-  });
+  const ids = [...new Set(ds.map((r) => r.id as number))];
+  const mo: MappedCase[] = [];
+  for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500) }).rows);   // lô 500 như `xuatDanhSach` (trần tham số Turso)
+  for (const c of mo) {
+    if (c.status === 'done' || c.studentId === null || !c.topic) continue;
+    caseMo.set(c.studentId, [...new Set([...(caseMo.get(c.studentId) ?? []), c.topic])]);
+  }
   return (r) => {
     const st = standing.get(r.id);
     const band = (k: string) => diem.get(st?.attemptId as number)?.find((x) => x.skill === k)?.band ?? null;
