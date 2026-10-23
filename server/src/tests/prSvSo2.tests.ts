@@ -14,7 +14,6 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
   const d: any = await import('../../../shared/domain/index.ts');
   const pt: any = await import('../phanTich/giaoVien.ts');
   const lop: any = await import('../classes/phanTichLop.ts');
-  const hs: any = await import('../giaoVien/hoSo.ts');
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
   const svc: any = await import('../fasttrack/attempts.ts');
@@ -76,8 +75,10 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const dong = p.rows.find((r: any) => r.href === `/hoc-vien/${e.sid}`);
     assert(dong?.sub.endsWith('Đạt') && dong.sub.includes('R 5.0') && p.tieuDe.includes('lượt kỹ năng') && p.n === o.tong, JSON.stringify({ dong, t: p.tieuDe, n: p.n }));
     assert(p.rows.every((r: any) => !('viec' in r)), 'panel có khối việc');
-    /* Khối "Kết quả lớp" của hồ sơ GV (`ketQuaHoSoGv`) đọc `phanTichNhieuLop` — cùng `tinhMotLop` với tab Phân tích lớp (phép kiểm T06–T08 trên). */
-    assert(hs.ketQuaHoSoGv && lop.phanTichNhieuLop([MB_FT]).get(MB_FT).ds['reading|mt1'].dat.includes(e.sid), 'hồ sơ GV chưa theo Overall');
+    /* UI-HO-SO-GV: hàng lớp bảng Học thuật (`hocThuatTheoLop`) — cùng tập với ô kỹ năng (Σ các kỹ năng của lớp). */
+    const hl = ky.hocThuatTheoLop.find((x: any) => x.classId === MB_FT);
+    const cong = ky.ketQuaTheoLop.filter((x: any) => x.classId === MB_FT && x.o.k === 'so').reduce((a: number, x: any) => a + x.o.tong, 0);
+    assert(hl && hl.luot > 0 && (hl.ketQua.k === 'so' ? hl.ketQua.tong : 0) === cong, JSON.stringify({ hl, cong }));
   }));
 
   check('SVSO2 (05 #8, #9, 10) · Việc đúng hạn = Kết quả PA (đơn vị việc; Xử lý vi phạm đã bỏ khỏi bảng), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {

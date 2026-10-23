@@ -112,7 +112,7 @@ import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { NHOM_VIEC_TVV, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
-import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
+import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
@@ -2010,10 +2010,6 @@ api.get('/giao-vien/:id/viec', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return viecHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
 }));
-api.get('/giao-vien/:id/ket-qua', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return ketQuaHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'));
-}));
 /* V5 SV-SO2: số hồ sơ GV theo kỳ (`tu`, `den` = Thứ Hai, ≤ 13 tuần; vắng = 4 tuần tới tuần này) + panel chỉ đọc của một số (`cot`). */
 api.get('/giao-vien/:id/chi-so', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2027,7 +2023,7 @@ api.get('/giao-vien/:id/chi-so/o', requireAuth, wrap((req) => {
 api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return oHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'), {
-    cot: qStr(req, 'cot') ?? '', lop: soDuong(req.query.lop, 'lop'), dong: qStr(req, 'dong') ?? null, moc: qStr(req, 'moc') ?? null,
+    cot: qStr(req, 'cot') ?? '', lop: soDuong(req.query.lop, 'lop'),
     cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null,
   });
 }));

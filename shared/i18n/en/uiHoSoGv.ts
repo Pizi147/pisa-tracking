@@ -1,0 +1,23 @@
+/** UI-HO-SO-GV (V5 Hồ sơ GV — khu e + phương án C). */
+export const EN_UI_HO_SO_GV = {
+  'Bài nhập điểm trước hạn / bài tới hạn nhập trong kỳ — theo người được phân công ở hạn nhập.': 'Scores entered by the deadline / scores due in the period — by the teacher assigned at the deadline.',
+  'Bài quá hạn chưa nhập điểm (hiện tại) — lớp đang dạy': 'Overdue scores not yet entered (now) — current classes',
+  'Chưa có mốc ghi nhận lúc GV phản hồi vấn đề của HV — số sẽ hiện khi có dữ liệu.': 'No timestamp yet for when the teacher responds to a student issue — the figure appears once data exists.',
+  'Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. Số theo kỳ: Việc đúng hạn, Điểm đúng hạn, Đạt kỳ vọng, Tiến bộ, bảng Học thuật.': 'Pick any two weeks; default is the 4 weeks to this week. Period figures: Tasks on time, Scores on time, Met expectation, Progress, Academic table.',
+  'Cộng': 'Total',
+  'Không có lượt nào có tuần thi trong kỳ này.': 'No attempts with a test week in this period.',
+  'Kỳ xem': 'Period',
+  'Lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (chỉ Fast Track).': "Attempts scoring higher than the student's previous MT in the same skill (Fast Track only).",
+  'Lượt trong kỳ': 'Attempts in period',
+  'PA cải thiện': 'Plans improved',
+  'Phản hồi vấn đề HV': 'Student issue response',
+  'Theo quy tắc Overall: MT so Overall với kỳ vọng của lượt, thi thật so với Target. Một lượt = một lượt MT của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi.': 'Overall rule: an MT compares Overall with the attempt expectation, a real exam with the Target. One attempt = one student MT × a skill the teacher teaches, credited to the teacher in the test week.',
+  'Tuần đầu phải trước tuần cuối.': 'The first week must be before the last week.',
+  'Vai': 'Role',
+  'Việc có hạn trong kỳ (ghi kết quả PA) xong trước hạn / việc có hạn trong kỳ.': 'Tasks due in the period (plan results) done by the deadline / tasks due in the period.',
+  'lượt của từng HV có tuần thi trong kỳ': 'attempts of each student with a test week in the period',
+  'lượt kỹ năng': 'skill attempts',
+  'việc · hiện tại': 'tasks · now',
+  'Đạt kỳ vọng theo quy tắc Overall; lượt = một lượt MT của một HV × kỹ năng GV dạy, gán theo lớp em học lúc thi. Case có PA, Quá hạn: hiện tại.': 'Met expectation by the Overall rule; attempt = one student MT × a skill the teacher teaches, by the class the student was in at the test. Cases with plan, Overdue: now.',
+  'đến': 'to',
+} as const;

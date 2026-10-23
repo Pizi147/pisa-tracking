@@ -43,6 +43,11 @@ export type ChiSoHoSoGv = {
   ketQuaTheoLop: { classId: number; ma: string; khung: KhungPtGv; skill: string; nhan: string; o: OPtGv }[];
   /** `na` khi GV không dạy lớp Fast Track trong kỳ. */
   tienBo: OPtGv; paHieuQua: OPtGv;
+  /**
+   * UI-HO-SO-GV (bảng Học thuật): một hàng một LỚP EM HỌC LÚC THI (P8). `luot` = lượt khác nhau (một MT / một lần thi thật của một HV) có mục ở kỹ năng GV dạy,
+   * `theoBai` tách theo bài (MT3 10 · MT2 2). `ketQua` = Σ các kỹ năng (lượt kỹ năng, cùng `ketQuaTheoLop`) · `tienBo` chỉ FT. Panel `ket-qua-lop:<lớp>` · `tien-bo-lop:<lớp>`.
+   */
+  hocThuatTheoLop: { classId: number; ma: string; khung: KhungPtGv; kyNang: string[]; luot: number; theoBai: { bai: string; n: number }[]; ketQua: OPtGv; tienBo: OPtGv }[];
 };
 export type PhanTichGvKq = { cn: number; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; thang: string | null; homNay: string; hang: HangPtGv[] };
 

@@ -6,7 +6,7 @@ import { DUONG_TAB_CONG_VIEC } from './dieuHuong.ts';
 import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
 
 /** Ô bấm được ở hồ sơ GV / bảng GV chi nhánh (Q2, Q11). Mỗi ô một hàm tập ở server/src/giaoVien/hoSo.ts. */
-export const COT_O_GV = ['lop', 'hoc-vien', 'chua-nhap', 'qua-han', 'case-mo', 'case-qua-han', 'yc-cho', 'yc-tu-choi', 'ket-qua'] as const;
+export const COT_O_GV = ['lop', 'hoc-vien', 'chua-nhap', 'qua-han', 'case-mo', 'case-qua-han', 'yc-cho', 'yc-tu-choi'] as const;
 export type CotOGv = (typeof COT_O_GV)[number];
 export const laCotOGv = (s: unknown): s is CotOGv => (COT_O_GV as readonly unknown[]).includes(s);
 

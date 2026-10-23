@@ -7,7 +7,9 @@ import { COT_O_GV, demViecTheoNhom, duongViecCuaGv, laCotOGv } from '../../../sh
 export async function runPrGvTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, classId, TODAY, addDays } = t;
   const { phamViHoSoGv } = await import('../giaoVien/phamVi.ts');
-  const { viecCuaGv, hoSoGiaoVien, ketQuaHoSoGv, viecHoSoGv, oHoSoGv, bangGvChiNhanh } = await import('../giaoVien/hoSo.ts');
+  const { viecCuaGv, hoSoGiaoVien, viecHoSoGv, oHoSoGv, bangGvChiNhanh } = await import('../giaoVien/hoSo.ts');
+  const { chiSoHoSoGv, oChiSoHoSoGv } = await import('../phanTich/giaoVien.ts');
+  const { mondayOfDate: mondayOf } = await import('../../../shared/domain/index.ts');
   const { createApp } = await import('../app.ts');
   const { viecCuaNguoi, myWork } = await import('../worklist/mywork.ts');
   const { loadPrincipal } = await import('../permissions.ts');
@@ -114,13 +116,11 @@ export async function runPrGvTests(t: YThucTestKit) {
     assertThrows(() => vaoO(P.subjectTeacher, gv, { cot: 'case-mo' }), /chính mình/, 'GVBM gọi ô của GVCN');
     assertThrows(() => hoSoGiaoVien(P.subjectTeacher, gv), /chính mình/, 'GVBM xem hồ sơ GVCN');
     assertThrows(() => viecHoSoGv(P.subjectTeacher, gv), /chính mình/, 'GVBM xem việc của GVCN');
-    assertThrows(() => ketQuaHoSoGv(P.subjectTeacher, gv), /chính mình/, 'GVBM xem kết quả của GVCN');
     assert(viecHoSoGv(P.mbManager, gv).viec.length === 4, 'QL MB xem việc → đủ 4 nhóm');
     const chiMb = dungGv('TMP-GV-O', 'MB', { lop: 'MB FT 101', den: null });
     try { assertThrows(() => vaoO(P.cpManager, chiMb, { cot: 'case-mo' }), /chi nhánh bạn quản lý/, 'QL CP gọi ô của GV chỉ ở MB'); } finally { don(chiMb); }
     assertThrows(() => vaoO(P.mbManager, gv, { cot: 'kpi-bai' }), /Cột không hợp lệ/, 'cột KPI đã bỏ → 400');
-    assertThrows(() => vaoO(P.mbManager, gv, { cot: 'ket-qua', lop: classId('MB FT 101'), dong: 'kpi', moc: 'mt1' }), /không có trong bảng/, 'dòng lạ → 400');
-    assertThrows(() => vaoO(P.mbManager, gv, { cot: 'ket-qua', dong: 'listening', moc: 'mt1' }), /Thiếu lớp/, 'thiếu lớp → 400');
+    assertThrows(() => vaoO(P.mbManager, gv, { cot: 'ket-qua' }), /Cột không hợp lệ/, 'UI-HO-SO-GV: ô "mốc gần nhất của lớp" đã bỏ (P8) → 400');
     assertThrows(() => vaoO(P.mbManager, gv, { cot: 'chua-nhap', lop: 99999999 }), /không nằm trong danh sách lớp/, 'lớp ngoài hồ sơ → 403');
     assertThrows(() => vaoO(P.mbManager, gv, { cot: 'case-mo', cn: 999999 }), /ngoài phạm vi/, 'cn ngoài phạm vi → 403');
   });
@@ -162,34 +162,18 @@ export async function runPrGvTests(t: YThucTestKit) {
       assert(vaoO(nguoiXem, gv, { cot: 'case-qua-han' }).n === h.caseMo.filter((c) => c.quaHan).length, 'Case quá hạn');
       assert(vaoO(nguoiXem, gv, { cot: 'yc-cho' }).n === h.yeuCau.cho, 'yêu cầu chờ duyệt');
       assert(vaoO(nguoiXem, gv, { cot: 'yc-tu-choi' }).n === h.yeuCau.tuChoi, 'yêu cầu bị từ chối');
-      for (const k of ketQuaHoSoGv(nguoiXem, gv).ketQua) {
-        for (const o of k.o.filter((x) => x.tong > 0)) {
-          const r = vaoO(nguoiXem, gv, { cot: 'ket-qua', lop: k.classId, dong: o.dong, moc: k.moc!.key });
-          assert(r.rows.length === o.tong, `${k.ma} ${o.dong}: ${r.rows.length} dòng ≠ ${o.tong}`);
-          assert(r.rows.filter((x: any) => nhanDat.test(x.sub)).length === o.dat, `${k.ma} ${o.dong}: số "Đạt" = ${o.dat}`);
+      /* UI-HO-SO-GV (P8): kết quả theo lượt từng HV trong kỳ — `hocThuatTheoLop`, ô lớp = panel `ket-qua-lop:<lớp>` / `tien-bo-lop:<lớp>`. */
+      const ky = { tu: addDays(mondayOf(TODAY), -7 * 12), den: mondayOf(TODAY) };
+      for (const h2 of chiSoHoSoGv(nguoiXem, gv, ky).hocThuatTheoLop) {
+        for (const [cot, o] of [['ket-qua-lop', h2.ketQua], ['tien-bo-lop', h2.tienBo]] as const) {
+          if (o.k !== 'so') continue;
+          const r = oChiSoHoSoGv(nguoiXem, gv, { ...ky, cot: `${cot}:${h2.classId}` });
+          assert(r.n === o.tong, `${h2.ma} ${cot}: ${r.n} dòng ≠ ${o.tong}`);
           coKetQua += 1;
         }
       }
     }
     assert(coKetQua > 0, 'phép kiểm không rỗng: có ít nhất một ô kết quả có điểm');
-  });
-
-  await t.checkAsync('PR-GV (3) · kết quả gần nhất khớp tab Phân tích lớp; không cột "Cả bài"; ô môn mình dạy theo phân công; lớp thường không có SOS', async () => {
-    const { phanTichLop } = await import('../classes/phanTichLop.ts');
-    for (const nguoi of [gvcn('MB FT 101'), gvcn('MB FOU 12'), P.subjectTeacher.userId]) {
-      for (const k of ketQuaHoSoGv(P.admin, nguoi).ketQua) {
-        const pt = phanTichLop(P.admin, k.classId);
-        assert(k.o.every((o) => o.dong !== 'ca-bai'), `${k.ma}: bỏ dòng Cả bài`);
-        const day = (conn.prepare(`SELECT skill FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND status = 'active' AND skill IS NOT NULL`).all(nguoi, k.classId) as any[]).map((r) => r.skill);
-        for (const o of k.o) {
-          const x = pt.o[`${o.dong}|${k.moc!.key}`] ?? { dat: 0, tong: 0 };
-          assert(o.dat === x.dat && o.tong === x.tong, `${k.ma} ${o.dong}: khớp phanTichLop`);
-          assert(o.cuaMinh === day.includes(o.dong), `${k.ma} ${o.dong}: cuaMinh theo phân công`);
-        }
-        if (k.khung === 'thuong') assert(!JSON.stringify(k).toLowerCase().includes('sos'), `${k.ma}: lớp thường không có chữ SOS`);
-        if (k.moc && k.khung === 'ft') assert(/^mt\d+$/.test(k.moc.key), 'FT: mốc là MT');
-      }
-    }
   });
 
   check('PR-GV (3) · kyNang chỉ mã trong ENTRY_SKILLS (L R W1 W2 S), đúng thứ tự', () => {
@@ -220,7 +204,7 @@ export async function runPrGvTests(t: YThucTestKit) {
       assert(await goi(P.subjectTeacher.userId, `/giao-vien/${gv}`) === 403, 'GVBM xem GVCN → 403');
       assert(await goi(gv, `/giao-vien/${gv}`) === 200, 'GVCN xem mình → 200');
       assert(await goi(ql, `/giao-vien/${gv}`) === 200, 'QL MB xem GV chi nhánh mình → 200');
-      for (const khoi of ['viec', 'ket-qua']) {
+      for (const khoi of ['viec', 'chi-so']) {
         assert(await goi(gv, `/giao-vien/${gv}/${khoi}`) === 200 && await goi(ql, `/giao-vien/${gv}/${khoi}`) === 200, `${khoi}: chính mình / QL → 200`);
         assert(await goi(P.subjectTeacher.userId, `/giao-vien/${gv}/${khoi}`) === 403 && await goi(ql, `/giao-vien/999999/${khoi}`) === 404, `${khoi}: GVBM → 403, id lạ → 404`);
       }

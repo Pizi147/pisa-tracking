@@ -314,9 +314,11 @@ function tapKetQua(c: NguCanhPtGv, muc: readonly MucKq[]): Map<string, TapKq> {
 }
 
 /** Q21 (FT): mục = ô có điểm mà em ĐÃ có điểm kỹ năng đó ở lượt MT gần nhất trước đó (bất kỳ lớp); tiến bộ ⇔ band cao hơn. W1, W2 riêng. KCK vẫn tính. */
-function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<number>> } {
+function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<number>>; theoLop?: Map<number, Tap> } {
   const tap: Tap = new Map();
   const lop = new Map<number, Set<number>>();
+  /* UI-HO-SO-GV: cùng mục tách theo LỚP EM HỌC LÚC THI (P8) — hàng lớp của bảng Học thuật hồ sơ GV. */
+  const theoLop = new Map<number, Tap>();
   const coBand = nap.o.filter((x) => x.band !== null && (nap.attempts.get(x.attemptId)?.kind ?? 'mock') === 'mock');
   const em = [...new Set(coBand.map((x) => x.studentId))];
   const truoc = new Map<string, { tuan: string; id: number; band: number }[]>();
@@ -340,8 +342,9 @@ function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<n
     if (gv == null) continue;
     them(tap, gv, x.id, x.band! > cu.band);
     lop.set(gv, (lop.get(gv) ?? new Set<number>()).add(x.classId));
+    them(theoLop.get(gv) ?? theoLop.set(gv, new Map()).get(gv)!, x.classId, x.id, x.band! > cu.band);
   }
-  return Object.assign(tap, { lop });
+  return Object.assign(tap, { lop, theoLop });
 }
 
 // ------------------------------------------------------------------ cột 2 · Ghi kết quả PA (mục = nghĩa vụ cập nhật)
@@ -612,19 +615,34 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
   const cham: ({ dung: number[]; tong: number[] } | undefined)[] = [], ghi: ({ dung: number[]; tong: number[] } | undefined)[] = [], tb: ({ dung: number[]; tong: number[] } | undefined)[] = [], pa: ({ dung: number[]; tong: number[] } | undefined)[] = [];
   const kq = new Map<string, { khung: KhungPtGv; skill: string; tap: ({ dung: number[]; tong: number[] } | undefined)[] }>();
   const theoLop: ChiSoHoSoGv['ketQuaTheoLop'] = [];
+  const hang = new Map<number, { ma: string; khung: KhungPtGv; ct: string | null; skill: Set<string>; kq: { dung: number[]; tong: number[] }[]; tb?: { dung: number[]; tong: number[] }; luot: Map<string, string> }>();
+  const hangCua = (c: NguCanhPtGv, classId: number) => hang.get(classId)
+    ?? hang.set(classId, { ma: c.lop.get(classId)!.ma, khung: c.khung, ct: c.lop.get(classId)!.ct, skill: new Set(), kq: [], luot: new Map() }).get(classId)!;
   for (const c of g.ds) {
     const nap = napBai(p, c);
     cham.push(tapChamDiem(c, nap).tap.get(gvId));
     ghi.push(tapGhiKetQuaPa(xemChiNhanh(c.cn), c).tap.get(gvId));
-    const t = tapKetQua(c, mucKetQua(c, nap));
+    const muc = mucKetQua(c, nap);
+    const theoId = new Map(muc.map((m) => [m.x.id, m.x]));
+    const t = tapKetQua(c, muc);
     for (const skill of COT_KET_QUA_GV[c.khung]) {
       const khoa = `${c.khung}:${skill}`;
       (kq.get(khoa) ?? kq.set(khoa, { khung: c.khung, skill, tap: [] }).get(khoa)!).tap.push(t.get(skill)?.get(gvId));
       for (const [classId, o] of t.get(skill)?.theoLop?.get(gvId) ?? []) {
         theoLop.push({ classId, ma: c.lop.get(classId)!.ma, khung: c.khung, skill, nhan: tenMonNgan(c.lop.get(classId)!.ct, skill), o: oTuTap(true, o) });
+        const h = hangCua(c, classId);
+        h.skill.add(skill);
+        h.kq.push(o);
+        /* Lượt = một lượt MT (hoặc một lần thi thật) của một HV — đếm khác nhau qua các kỹ năng GV dạy. */
+        for (const id of o.tong) { const x = theoId.get(id)!; h.luot.set(x.kind === 'thi-that' ? `t${x.studentId}:${x.tuan}` : `a${x.attemptId}`, x.bai); }
       }
     }
-    if (c.khung === 'ft') { tb.push(tapTienBo(c, nap).get(gvId)); pa.push(tapPaHieuQua(c).get(gvId)); }
+    if (c.khung === 'ft') {
+      const tbc = tapTienBo(c, nap);
+      tb.push(tbc.get(gvId));
+      for (const [classId, o] of tbc.theoLop?.get(gvId) ?? []) hangCua(c, classId).tb = o;
+      pa.push(tapPaHieuQua(c).get(gvId));
+    }
   }
   const coFt = g.ds.some((c) => c.khung === 'ft');
   const theoKyNang = [...kq.values()].map((x) => ({ khung: x.khung, skill: x.skill, nhan: tenMonNgan(null, x.skill), o: oTuTap(true, gopTap(...x.tap)) }))
@@ -639,6 +657,16 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
     ketQuaTheoLop: theoLop.sort((a, b) => a.ma.localeCompare(b.ma, 'vi', { numeric: true }) || COT_KET_QUA_GV[a.khung].indexOf(a.skill) - COT_KET_QUA_GV[b.khung].indexOf(b.skill)),
     tienBo: oTuTap(coFt, gopTap(...tb)),
     paHieuQua: oTuTap(coFt, gopTap(...pa)),
+    hocThuatTheoLop: [...hang].map(([classId, h]) => {
+      const bai = new Map<string, number>();
+      for (const b of h.luot.values()) bai.set(b, (bai.get(b) ?? 0) + 1);
+      return {
+        classId, ma: h.ma, khung: h.khung,
+        kyNang: COT_KET_QUA_GV[h.khung].filter((k) => h.skill.has(k)).map((k) => tenMonNgan(h.ct, k)),
+        luot: h.luot.size, theoBai: [...bai].map(([ten, n]) => ({ bai: ten, n })).sort((a, b) => b.n - a.n || b.bai.localeCompare(a.bai, 'vi', { numeric: true })),
+        ketQua: oTuTap(true, gopTap(...h.kq)), tienBo: oTuTap(h.khung === 'ft', h.tb),
+      };
+    }).sort((a, b) => (a.khung === b.khung ? a.ma.localeCompare(b.ma, 'vi', { numeric: true }) : a.khung === 'ft' ? -1 : 1)),
   };
 }
 
@@ -646,12 +674,15 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
 export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string }): { n: number; tieuDe: string; rows: MetricRow[] } {
   const g = nguCanhCuaGv(p, gvId, q);
   const m = /^ket-qua:(ft|thuong):(\w+)(?::(\d+))?$/.exec(q.cot);
-  if (!m && !['cham-diem', 'viec-dung-han', 'ghi-pa', 'ket-qua', 'tien-bo', 'pa-hieu-qua'].includes(q.cot)) throw badRequest(`Cột "${q.cot}" không có ở hồ sơ.`);
-  const ds = g.ds.filter((c) => (m ? c.khung === m[1] : ['tien-bo', 'pa-hieu-qua'].includes(q.cot) ? c.khung === 'ft' : true));
-  const phan = ds.map((c) => oChiSoCua(p, c, gvId, m ? `ket-qua:${m[2]}` : q.cot, xemChiNhanh(c.cn)));
+  /* UI-HO-SO-GV: `ket-qua-lop:<lớp>` · `tien-bo-lop:<lớp>` = ô một hàng bảng Học thuật (`hocThuatTheoLop`) — mọi kỹ năng GV dạy ở lớp đó. */
+  const ml = /^(ket-qua|tien-bo)-lop:(\d+)$/.exec(q.cot);
+  if (!m && !ml && !['cham-diem', 'viec-dung-han', 'ghi-pa', 'ket-qua', 'tien-bo', 'pa-hieu-qua'].includes(q.cot)) throw badRequest(`Cột "${q.cot}" không có ở hồ sơ.`);
+  const lopId = m?.[3] ? Number(m[3]) : ml ? Number(ml[2]) : null;
+  const ds = g.ds.filter((c) => (m ? c.khung === m[1] : lopId !== null ? c.lop.has(lopId) : ['tien-bo', 'pa-hieu-qua'].includes(q.cot) ? c.khung === 'ft' : true));
+  const phan = ds.map((c) => oChiSoCua(p, c, gvId, m ? `ket-qua:${m[2]}` : ml ? ml[1] : q.cot, xemChiNhanh(c.cn)));
   /* P8: `ket-qua:<khung>:<kỹ năng>:<lớp>` = ô một lớp của `ketQuaTheoLop` — dòng của chính các mục em học lớp đó lúc thi. */
-  const maLop = m?.[3] ? ds.find((c) => c.lop.has(Number(m[3])))?.lop.get(Number(m[3]))?.ma : null;
-  if (m?.[3] && !maLop) throw badRequest('Lớp này không có trong kỳ của giáo viên.');
+  const maLop = lopId !== null ? ds.find((c) => c.lop.has(lopId))?.lop.get(lopId)?.ma : null;
+  if (lopId !== null && !maLop) throw badRequest('Lớp này không có trong kỳ của giáo viên.');
   const dong = phan.flatMap((x) => x.dong).filter((d) => !maLop || d.row.lop === maLop).sort((a, b) => Number(a.dung) - Number(b.dung));
   const dau = phan[0] ?? { nhan: q.cot === 'cham-diem' ? t('Điểm đúng hạn') : q.cot === 'viec-dung-han' ? t('Việc đúng hạn') : t('Kết quả'), donVi: '' };
   const dung = dong.filter((d) => d.dung).length;
