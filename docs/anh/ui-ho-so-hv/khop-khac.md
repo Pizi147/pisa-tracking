@@ -71,7 +71,8 @@ Không mất thao tác nào.
 
 ## Máy chủ (số liệu một nguồn)
 
-- `GET /students/:id` thêm `attempts[].vangCu` (`tuanVangCu`, một câu) và `sEx` (`sExCuaHv`, chỉ lượt đã chấm) — chỉ để hiện, không vào tính toán.
+- `GET /students/:id` thêm `attempts[].vangCu` (`tuanVangCu`, một câu; chỉ hỏi lượt có kỹ năng từng dời) — hồ sơ giữ trần 90 câu.
+- `GET /students/:id/s-expert` (`sExCuaHv`, chỉ lượt đã chấm) — web gọi khi chọn ô S. Chỉ để hiện, không vào tính toán.
 - Nợ #515: việc "Chọn bước tiếp" ở đầu hồ sơ nay là "Chọn bước tiếp · OVR 6.5 · Đạt Target" (động từ trước); bỏ miễn ở `hoSoHocVien.tests.ts`.
 
 ## Đo số bước (GVCN, kịch bản thật)
@@ -81,3 +82,15 @@ Không mất thao tác nào.
 | Xem điểm Reading qua các lượt | 1 bấm hàng Reading (bảng kỹ năng) → đọc dãy số | 1 bấm ô R → biểu đồ + Case R |
 | Ghi KQ PA Listening | 1 bấm hàng L + 1 Kết quả → ngăn Case | 1 bấm ô việc "Kết quả" (hoặc 1 bấm ô L + 1 Kết quả) |
 | Ghi một bài trên lớp | không có trên web | 1 bấm "+ Ghi tiến độ" · gõ tên + điểm · 1 Lưu |
+| Xoá một dòng tiến độ | — | 1 bấm dòng · 1 Xoá · 1 Xoá (hộp "Xoá dòng tiến độ này?" nêu tuần · tên bài · điểm) |
+
+## Audit (bước 10: impeccable `audit` + web-design-guidelines, 23/10)
+
+| # | Mức | Phát hiện | Xử lý |
+|---|---|---|---|
+| A1 | P2 | Panel Tiến độ trên lớp: Xoá chạy ngay, không hỏi — dòng xoá không khôi phục được | SỬA: hộp "Xoá dòng tiến độ này?" (cùng mẫu "Xoá Case này?"), lỗi xoá giữ panel + báo lỗi |
+| A2 | — | Detector `side-tab` (`border-l-4` ô việc) | GIỮ: vạch trái theo hạn là mẫu ô việc Hồ sơ lớp đã duyệt (`ThanhViecLop`, #547) |
+| A3 | — | Detector cỡ chữ 22 px ở tên HV | GIỮ: 22 nằm trong thang G13 (DESIGN.md), cùng `h1` Hồ sơ lớp / Công việc |
+| A4 | P3 | Màu chấm biểu đồ theo kỳ vọng | Đủ: nhãn "MT2 6.0" cạnh chấm + vạch kỳ vọng + `aria-label` đọc điểm và kỳ vọng — không chỉ bằng màu |
+| A5 | ✓ | Nút ô điểm `aria-pressed`, nhóm có nhãn; vòng focus chung (`:focus-visible`); vùng bấm 44 px ở < 640; `tabular-nums` cho số; chữ ≥ 12 px; sáng / tối theo token | — |
+| A6 | P3 | S Ex lỗi tải thì biểu đồ im lặng không có thoi | GIỮ: dữ liệu phụ (không tính), biểu đồ chính vẫn đúng |

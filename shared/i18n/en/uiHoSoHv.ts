@@ -31,6 +31,7 @@ export const EN_UI_HO_SO_HV = {
   'thang của bài · không quy đổi band': 'task scale · not converted to band',
   '{mt} chưa có điểm': '{mt} not scored yet',
   'Đã xoá': 'Deleted',
+  'Xoá dòng tiến độ này?': 'Delete this progress entry?',
   'Khoá học': 'Course',
   'Lộ trình & lớp': 'Pathways & classes',
 };

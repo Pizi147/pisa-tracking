@@ -317,6 +317,8 @@ function PanelTienDo({ duong, bai, lop, lopNay, knDau, hocVien, ct, homNay, onDo
   const [nhanXet, setNhanXet] = useState(bai?.nhanXet ?? '');
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  /* Xoá dòng: hỏi lại (cùng mẫu "Xoá Case này?") — dòng xoá không khôi phục được. */
+  const [hoiXoa, setHoiXoa] = useState(false);
   const soDiem = Number(diem.replace(',', '.')), soThang = Number(thang.replace(',', '.'));
   const loiO = [
     ...(!skill ? [{ khoa: 'kn', nhan: t('Kỹ năng'), lyDo: t('Chưa chọn') }] : []),
@@ -336,14 +338,15 @@ function PanelTienDo({ duong, bai, lop, lopNay, knDau, hocVien, ct, homNay, onDo
       else await api.post(duong, { classId, ...than });
       toast.push('ok', xoa ? t('Đã xoá') : t('Đã lưu'));
       onXong();
-    } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+    } catch (e: any) { setHoiXoa(false); setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
   const lopCode = lop.find((l) => l.classId === classId)?.code ?? null;
   return (
+    <>
     <KhungPanel tieuDe={t('Tiến độ trên lớp')} loai={t('GHI NHẬN · TUỲ CHỌN')} hocVien={hocVien} lop={lopCode} onDong={() => !busy && onDong()}
       chan={{
         daSua, huy: { onClick: onDong, disabled: busy }, conThieu: lf.conThieu(loiO),
-        xoa: bai ? { onClick: () => void gui(true) } : undefined,
+        xoa: bai ? { onClick: () => setHoiXoa(true) } : undefined,
         dongTren: loi ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loi}</p> : undefined,
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !classId} onClick={() => void gui()}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
       }}>
@@ -376,6 +379,16 @@ function PanelTienDo({ duong, bai, lop, lopNay, knDau, hocVien, ct, homNay, onDo
         </Truong>
       </div>
     </KhungPanel>
+    {hoiXoa && bai && (
+      <KhungPanel tieuDe={t('Xoá dòng tiến độ này?')} longTrong z="z-[60]" onDong={() => !busy && setHoiXoa(false)}
+        chan={{
+          huy: { onClick: () => setHoiXoa(false), disabled: busy },
+          chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui(true)}>{busy ? t('Đang xoá…') : t('Xoá')}</button>,
+        }}>
+        <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">{bai.tuanMa} · {bai.tenBai} · <span className="tabular-nums">{so(bai.diem)}/{so(bai.thang)}</span></p>
+      </KhungPanel>
+    )}
+    </>
   );
 }
 
