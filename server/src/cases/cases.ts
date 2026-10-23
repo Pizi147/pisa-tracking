@@ -1377,13 +1377,21 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
     throw loi(400, 'Mô tả Case cần ít nhất {n} ký tự — vấn đề học thuật của kỹ năng.', { n: NHAN_XET_MT_TOI_THIEU });
   }
   return tx(() => {
+    /* Đọc lại cờ TRONG giao dịch: hai người bấm cùng lúc → người sau 400, không ghi đè mô tả người trước vừa chọn. */
+    if (!(conn.prepare('SELECT cho_phu_trach_xem c FROM assessment_scores WHERE id = ?').get(o.id) as any)?.c) throw badRequest('Nhận xét Speaking chấm chéo đã được xác nhận.');
     const luc = nowIso();
     const ls = conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)`);
+    /* Nhóm chính + nhóm phụ TRƯỚC (lịch sử + nhật ký): "dùng nhận xét" thay cả nhóm theo ô — khôi phục được từ đây. */
+    const nhomCu = (conn.prepare(`SELECT role, taxonomy_code FROM case_issues WHERE case_id = ? ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`).all(caseId) as any[])
+      .map((x) => x.taxonomy_code as string);
     if (cach === 'dung') {
       conn.prepare('UPDATE sos_cases SET mo_ta_attempt_id = NULL WHERE id = ?').run(caseId);   // ép ghi lại (kể cả Case đang có mô tả / đã sửa riêng)
       ganMoTaTuO(conn, caseId, 'speaking', c.attempt_id, nx, o.nhom_nguyen_nhan);
       if ((chinh?.observation ?? null) !== nx) ls.run(caseId, 'observation', chinh?.observation ?? null, nx, p.userId, luc);
       if (chinh?.created_by != null) ls.run(caseId, 'mo_ta_nguon', 'sua_rieng', 'nhan_xet', p.userId, luc);
+      const nhomMoi = (conn.prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`).all(caseId) as any[])
+        .map((x) => x.taxonomy_code as string);
+      if (nhomMoi.join() !== nhomCu.join()) ls.run(caseId, 'nhom_nguyen_nhan', nhomCu.length ? JSON.stringify(nhomCu) : null, JSON.stringify(nhomMoi), p.userId, luc);
     } else if (cach === 'viet') {
       const boNhom = issuesForTopic('speaking');
       const code = chinh?.taxonomy_code ?? docNhomNguyenNhan(o.nhom_nguyen_nhan).find((x) => boNhom.some((i) => i.code === x))
@@ -1398,7 +1406,9 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
     conn.prepare('UPDATE sos_cases SET updated_at = ? WHERE id = ?').run(luc, caseId);
     dongBoTrangThaiCase(caseId);
     writeAudit({ actorUserId: p.userId, action: 'case.xac_nhan_s', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
-      before: { moTa: chinh?.observation ?? null }, after: { cach, moTa: cach === 'dung' ? nx : cach === 'viet' ? moTa : chinh?.observation ?? null } });
+      before: { moTa: chinh?.observation ?? null, nhom: nhomCu },
+      after: { cach, moTa: cach === 'dung' ? nx : cach === 'viet' ? moTa : chinh?.observation ?? null,
+        nhom: (conn.prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`).all(caseId) as any[]).map((x) => x.taxonomy_code) } });
     return caseDetail(p, caseId);
   });
 }

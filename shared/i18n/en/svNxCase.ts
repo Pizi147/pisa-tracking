@@ -19,4 +19,7 @@ export const EN_SV_NX_CASE = {
   'Chọn: dùng nhận xét chấm chéo, giữ mô tả, hoặc viết mô tả khác.': "Choose: use the cross-marker comment, keep the description, or write another one.",
   'Bài chưa có nhận xét chấm chéo — viết mô tả khác.': "The test has no cross-marker comment — write another description.",
   'Case chưa có mô tả — dùng nhận xét chấm chéo hoặc viết mô tả khác.': "The Case has no description yet — use the cross-marker comment or write another one.",
+  'Dùng làm mô tả (thay mô tả đang có)': 'Use as description (replaces the current one)',
+  'Mô tả đang có — sẽ thay bằng nhận xét chấm chéo (cả nhóm nguyên nhân theo bài)': 'Current description — will be replaced by the cross-marker comment (cause groups from the test too)',
+  'Mô tả đang có': 'Current description',
 } satisfies Record<string, Dich>;

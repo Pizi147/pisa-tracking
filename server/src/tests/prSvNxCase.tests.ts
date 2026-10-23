@@ -210,6 +210,11 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     xoaNho();
     assert(moTa(c.id)?.observation === NX.speaking && moTa(c.id)?.created_by === null, JSON.stringify(moTa(c.id)));
     assert(!viec(gvPT, 'xem_nx_s', c.id).length && !cases.caseDetail(gvPT, c.id).choXacNhanS, 'việc phải hết');
+    const nk = one(`SELECT before_json b, after_json a FROM audit_logs WHERE action = 'case.xac_nhan_s' AND entity_id = ? ORDER BY id DESC LIMIT 1`, c.id);
+    assert(nk && Array.isArray(JSON.parse(nk.b).nhom) && JSON.parse(nk.a).nhom.length >= 1, `nhật ký phải ghi nhóm trước / sau: ${JSON.stringify(nk)}`);
+    let lan2: any = null;
+    try { cases.xacNhanCaseS(gvPT, c.id, { cach: 'viet', moTa: 'Bấm lần hai sau khi đã xác nhận.' }); } catch (e) { lan2 = e; }
+    assert(lan2?.status === 400 && moTa(c.id)?.observation === NX.speaking, 'xác nhận lần hai phải 400, không đè');
   }));
 
   check('NX11 · S chấm chéo khác người → người chấm chéo 403; Nhận xét GV phụ trách KHÔNG làm hết việc; viết mô tả khác → tách khỏi nhận xét', () => thu(() => {

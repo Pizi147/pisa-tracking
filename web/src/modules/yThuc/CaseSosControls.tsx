@@ -373,11 +373,16 @@ export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: C
             <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-200">{x.nhanXet ?? t('Chưa có nhận xét')}</p>
           </div>
           <div className="flex flex-wrap gap-2" role="group" aria-label={t('Mô tả Case')}>
-            {x.nhanXet && lua('dung', t('Dùng làm mô tả'))}
+            {x.nhanXet && lua('dung', moTaCu ? t('Dùng làm mô tả (thay mô tả đang có)') : t('Dùng làm mô tả'))}
             {moTaCu && lua('giu', t('Giữ mô tả đang có'))}
             {lua('viet', t('Viết mô tả khác'))}
           </div>
-          {cach === 'giu' && moTaCu && <p className="m-0 whitespace-pre-wrap break-words text-sm text-slate-300">{moTaCu}</p>}
+          {cach !== 'viet' && moTaCu && (
+            <div className="text-sm">
+              <span className="block text-[13px] font-semibold text-slate-300">{cach === 'dung' ? t('Mô tả đang có — sẽ thay bằng nhận xét chấm chéo (cả nhóm nguyên nhân theo bài)') : t('Mô tả đang có')}</span>
+              <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-300">{moTaCu}</p>
+            </div>
+          )}
           {cach === 'viet' && (
             <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
               <textarea className="field w-full" rows={3} maxLength={NHAN_XET_TOI_DA} {...lf.o(loi, 'mo-ta')} value={moTa} disabled={busy} onChange={(e) => setMoTa(e.target.value)}
