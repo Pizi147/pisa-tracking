@@ -16,7 +16,7 @@ import { phanTichLop, phanTichNhieuLop, type PhanTichLop } from '../classes/phan
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo, type CaseChiTiet } from '../cases/caseLop.ts';
 import { trongPhamVi, yeuCauCuaToi } from '../duyet/yeuCau.ts';
-import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import { metricSet, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { scoreDebtCells, type DebtCell } from '../worklist/scoreDebt.ts';
@@ -119,6 +119,14 @@ export function caseMoTheoChu(p: Principal, cn: number, ct: ChuongTrinh | null):
   const m = new Map<number, number[]>();
   for (const c of caseGvTuRows(listCases(p, { branchId: cn }).rows.filter((c) => c.ownerUserId !== null), [cn], ct)) (m.get(c.chu) ?? m.set(c.chu, []).get(c.chu)!).push(c.id);
   return m;
+}
+/**
+ * "Case có PA" theo người phụ trách (UI-TONG-QUAN XM-2; UI-PHAN-TICH dùng lại): mẫu = Case đang mở của GV (`caseMoTheoChu`),
+ * tử = mẫu trừ Case chưa chốt PA (cùng tập "Case chưa chốt PA" của bảng lớp). Tổng quan và Phân tích GV gọi chung hàm này.
+ */
+export function caseCoPaTheoGv(p: Principal, cn: number, ct: ChuongTrinh): Map<number, { coPa: number; mo: number }> {
+  const chua = new Set(metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', { branchId: cn, program: ct }).ids);
+  return new Map([...caseMoTheoChu(p, cn, ct)].map(([gv, ids]) => [gv, { mo: ids.length, coPa: ids.filter((id) => !chua.has(id)).length }]));
 }
 /** Cùng luật lọc cho hồ sơ một GV và bảng chi nhánh (số ở bảng = số ở hồ sơ): Case chưa xong, chi nhánh gốc ∈ `branchIds`, khung `ct`. */
 function caseGvTuRows(mapped: readonly MappedCase[], branchIds: number[] | null, ct: ChuongTrinh | null): (CaseGv & { chu: number })[] {

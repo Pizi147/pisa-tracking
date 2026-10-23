@@ -23,6 +23,14 @@ export type HangPtGv = {
   viecDungHan: OPtGv;
   /** Chỉ Fast Track. */
   paHieuQua?: OPtGv;
+  /** UI-PHAN-TICH (FT): `ketQua` tách theo loại mục — lượt MT (`datMt`) · kết quả thi thật (`thiThat`), đơn vị lượt kỹ năng; panel `cot=dat-mt` / `thi-that`. */
+  datMt?: OPtGv; thiThat?: OPtGv;
+  /** Bài trễ chấm hiện tại — CHÍNH "Trễ chấm" Tổng quan (`treCham`); panel `/tong-quan/ql/tre?gv=`. */
+  quaHan: number;
+  /** HV đang SOS (hiện tại) ở lớp GV đang dạy; panel `cot=hv-chu-y`. */
+  hvChuY: number;
+  /** Case có PA theo người phụ trách (hiện tại) — cùng `caseCoPaTheoGv` của Tổng quan; panel hồ sơ GV `cot=case-mo`. */
+  casePa: OPtGv;
   /** FT: listening reading writing1 writing2 speaking · thường: listening reading writing speaking. `lop` = lớp có mục (bấm số). */
   ketQua: Record<string, OPtGv & { lop?: number[] }>;
   /** Chỉ Fast Track. */

@@ -900,13 +900,18 @@ function metricSetGoc(
       return done(r.ids, { numeratorIds: r.numeratorIds });
     }
     case 'pa-co-ket-qua': {
-      const ids = new Set<number>();
+      const ids = new Set<number>(), cai = new Set<number>();
       /* SL1 (A7-02): "trong kỳ" — theo ngày kết quả cuối của PA (luật `planOutcomes`, cùng tập Hiệu quả PA); không khoảng = mọi lúc. */
       for (const s of effectivenessScopes(p, scope.branchId)) {
         const ratio = f.program ? f.program === 'thuong' : null;
-        for (const r of planOutcomes({ ...s, ratio, fromDate: f.from ?? null, toDate: f.to ?? null })) if (r.group !== 'undetermined') ids.add(r.id);
+        for (const r of planOutcomes({ ...s, ratio, fromDate: f.from ?? null, toDate: f.to ?? null })) {
+          if (r.group === 'undetermined') continue;
+          ids.add(r.id);
+          if (r.group === 'success') cai.add(r.id);
+        }
       }
-      return done([...ids]);
+      /* UI-PHAN-TICH: tử = PA "cải thiện" (gồm "một phần" — nhóm `success`, cùng luật Hiệu quả PA) — Báo cáo HV ô "PA cải thiện", mẫu = chính tập này. */
+      return done([...ids], { numeratorIds: [...cai] });
     }
     case 'ty-le-co-cai-thien': {
       const den = new Set<number>(), num = new Set<number>();

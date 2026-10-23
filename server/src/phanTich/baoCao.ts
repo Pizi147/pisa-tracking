@@ -19,6 +19,7 @@ import { luotTrongKhoang } from './tongHop.ts';
 import { ketQuaThiThatKq, mockTrongKhoang } from './ketQuaThi.ts';
 import { kckCuaLuot } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
+import { tienBoTheoKyNang } from './giaoVien.ts';
 
 /** `classId` (UI-TONG-QUAN): chỉ panel Đạt MT / Thi tháng này của MỘT lớp (Tổng quan › Lớp cần chú ý) — tập em theo lớp của lượt / lớp đang học. */
 export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string; classId?: number | null };
@@ -82,6 +83,8 @@ function tinh(p: Principal, f: LocBaoCao) {
 
   return { homNay, luot, cua, daCham, coDiem, hvDaThi, luotLop, quaHan, theoGv, mk, sos, truoc };
 }
+
+const THU_TU_KN = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
 
 /** K9: nhìn lùi tối đa ngần này tuần tìm lượt thi trước kỳ mà CHỐT (nhập xong) trong kỳ. */
 const LUI_TUAN_CHOT = 12;
@@ -282,10 +285,12 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
     },
     casePa: {
       caseMo: metricSet(p, 'case-mo', loc).n,
-      paKetQua: metricSet(p, 'pa-co-ket-qua', { ...loc, from: f.tu, to: f.den }).n,
+      ...(({ n, numeratorIds }) => ({ paKetQua: n, paCaiThien: numeratorIds?.length ?? 0 }))(metricSet(p, 'pa-co-ket-qua', { ...loc, from: f.tu, to: f.den })),
       quaHanChotPa: metricSet(p, 'case-xac-dinh-nguyen-nhan-qua-han', loc).n,
       quaHanKetQuaPa: metricSet(p, 'pa-can-cap-nhat', loc).n,
     },
+    tienBo: ft && f.branchId ? [...tienBoTheoKyNang(p, f.branchId, f)].map(([skill, x]) => ({ skill, dung: x.dung.length, tong: x.tong.length, ngoai: x.ngoai.length }))
+      .sort((a, b) => THU_TU_KN.indexOf(a.skill) - THU_TU_KN.indexOf(b.skill)) : null,
   };
 }
 
@@ -335,6 +340,17 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const ids = [...tap.keys()].sort((a, b) => tap.get(a)!.localeCompare(tap.get(b)!) || a - b);
     const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, t('thi {ngay}', { ngay: `${tap.get(row.id)!.slice(8, 10)}/${tap.get(row.id)!.slice(5, 7)}` })].filter(Boolean).join(' · ') }));
     return { n: ids.length, tieuDe: t('{n} HV — thi tháng này', { n: ids.length }), rows };
+  }
+  const tb = /^tien-bo:(\w+)$/.exec(f.o);
+  if (tb) {
+    /* Panel chỉ đọc Tiến bộ theo kỹ năng: mục của kỹ năng (bài), chưa tăng trước — cùng tập với số. */
+    if (f.ct !== 'ft' || !f.branchId) throw badRequest('Tiến bộ theo kỹ năng cần Fast Track và một chi nhánh.');
+    phamViPhanTich(p, f.branchId, null);
+    const x = tienBoTheoKyNang(p, f.branchId, f).get(tb[1]);
+    const dung = new Set(x?.dung ?? []);
+    const ids = [...(x?.tong ?? [])].sort((a, b) => Number(dung.has(a)) - Number(dung.has(b)) || a - b);
+    const rows = rowsFor('bai', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, dung.has(row.id) ? t('Tăng') : t('Không tăng')].filter(Boolean).join(' · ') }));
+    return { n: ids.length, tieuDe: t('Tiến bộ {kn} · {dung}/{tong}', { kn: tenMonNgan(null, tb[1]), dung: dung.size, tong: ids.length }), rows };
   }
   if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã làm bài');
   if (f.o === 'bai-da-cham') return ra('bai', r.daCham, 'đã chấm');

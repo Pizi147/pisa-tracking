@@ -20,7 +20,10 @@ export type BaoCaoKq = {
   /** `sosHienTai` (SL2): chỉ số `hv-sos-hien-tai` — cùng số Tổng quan · Đang SOS, số hôm nay. */
   /** `thiThangNay` (P4): HV có ngày thi thật trong tháng hiện tại — số hôm nay, panel `o=thi-thang-nay`. */
   chuY: { chuaDiemHv: number; chuaDiemBai: number; caseChuaChotHv: number; caseChuaChot: number; sosHienTai: number; thiThangNay: number };
-  casePa: { caseMo: number; paKetQua: number; quaHanChotPa: number; quaHanKetQuaPa: number };
+  /** `paCaiThien` (UI-PHAN-TICH): PA "cải thiện" (nhóm success) trong chính tập `pa-co-ket-qua` của kỳ — mẫu = `paKetQua`. */
+  casePa: { caseMo: number; paKetQua: number; paCaiThien: number; quaHanChotPa: number; quaHanKetQuaPa: number };
+  /** UI-PHAN-TICH · Tiến bộ theo kỹ năng (FT, một chi nhánh): mục "HV tiến bộ" của Phân tích GV gom theo kỹ năng; `ngoai` = chưa có mốc trước. Panel `o=tien-bo:<kỹ năng>`. */
+  tienBo: { skill: string; dung: number; tong: number; ngoai: number }[] | null;
 };
 
 /**

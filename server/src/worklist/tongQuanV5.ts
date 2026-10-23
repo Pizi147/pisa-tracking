@@ -7,8 +7,8 @@ import { demoToday } from '../demoConfig.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
 import { treCham } from './tongQuanQl.ts';
 import { tapDatMt, tapKqMt, tapThiThangNayLop } from '../phanTich/baoCao.ts';
-import { metricSet, type MetricRow } from './metrics.ts';
-import { caseMoTheoChu } from '../giaoVien/hoSo.ts';
+import type { MetricRow } from './metrics.ts';
+import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 
 /**
  * TỔNG QUAN V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B) — MỘT GET cho QL / QT / CX. KHÔNG ĐẾM LẠI: mọi số gọi CHÍNH hàm tập của Báo cáo
@@ -38,9 +38,10 @@ export type TongQuanV5 = {
 
 const tang = (m: Map<number, number>, k: number | undefined) => { if (k !== undefined) m.set(k, (m.get(k) ?? 0) + 1); };
 
-export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): TongQuanV5 {
+export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; ky?: { tu: string; den: string } | null }): TongQuanV5 {
   const homNay = demoToday();
-  const ky = khoangMacDinh(homNay);
+  /* UI-PHAN-TICH: Báo cáo HV gọi CHÍNH hàm này với khoảng đang chọn — số Báo cáo = số Tổng quan khi cùng kỳ. */
+  const ky = f.ky ?? khoangMacDinh(homNay);
   const bang = bangChiNhanh(p, { branchId: f.branchId ?? null, ct: f.ct, chuY: true });
   const ft = f.ct === 'ft';
   const loc = { branchId: bang.branchId, ct: f.ct, tu: ky.tu, den: ky.den };
@@ -70,10 +71,7 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
       id: h.id, khoa: h.khoa, ma: h.nhan, hv: h.o.hocVien.n, gvcn: h.gvcn ?? null,
       datMt: s.datMt(h.id), sos: [h.o.sos1.n, h.o.sos2.n, h.o.sos3.n], caseChuaPa: h.o.caseChuaChot.n, thiThangNay: s.thi(h.id),
     }));
-    if (bang.branchId) {
-      const chua = new Set(metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', { branchId: bang.branchId, program: f.ct }).ids);
-      for (const [gv, ids] of caseMoTheoChu(p, bang.branchId, f.ct)) caseGv[gv] = { mo: ids.length, coPa: ids.filter((id) => !chua.has(id)).length };
-    }
+    if (bang.branchId) for (const [gv, x] of caseCoPaTheoGv(p, bang.branchId, f.ct)) caseGv[gv] = x;
   } else {
     const s = theo((l) => cnCua.get(l));
     const ttMau = new Map<number, number>(), ttDat = new Map<number, number>();

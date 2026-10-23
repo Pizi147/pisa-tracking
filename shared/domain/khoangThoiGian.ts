@@ -7,15 +7,15 @@ import { addDaysIso } from './sos.ts';
 import { MONTH_CODE, mondayOfDate, owningMonthOf, weekNumberInMonthOf } from './week.ts';
 import { t } from '../i18n/index.ts';
 
-export const KIEU_KHOANG = ['2-tuan', 'tuan', 'thang', 'tuy-chon'] as const;
+export const KIEU_KHOANG = ['2-tuan', 'tuan', 'thang', 'tuy-chon', 'toan-bo'] as const;
 export type KieuKhoang = (typeof KIEU_KHOANG)[number];
 export const NHAN_KIEU_KHOANG: Record<KieuKhoang, string> = {
-  '2-tuan': t('2 tuần vừa qua'), tuan: t('Theo tuần'), thang: t('Theo tháng'), 'tuy-chon': t('Tùy chọn'),
+  '2-tuan': t('2 tuần vừa qua'), tuan: t('Theo tuần'), thang: t('Theo tháng'), 'tuy-chon': t('Tùy chọn'), 'toan-bo': t('Toàn bộ'),
 };
 /** `tu`, `den` là NGÀY (gồm cả hai đầu). Theo tuần / tháng / 2 tuần: `tu` Thứ Hai, `den` Chủ nhật. */
 export type KhoangNgay = { kieu: KieuKhoang; tu: string; den: string };
-/** 52 tuần — bảng mở nhanh, Turso đọc vừa phải; cùng trần với Hiệu quả PA (`HQ_PA_TOI_DA_TUAN`). */
-export const TOI_DA_NGAY_KHOANG = 364;
+/** P9 (UI-PHAN-TICH, chủ SP 22/10): "Toàn bộ" = từ tuần đầu dữ liệu có thể có tới hết tuần này; khoảng tự do không khoá trần. */
+export const TU_TOAN_BO = '2020-01-06';
 
 const NGAY = /^\d{4}-\d{2}-\d{2}$/;
 const laNgay = (s: string | null | undefined): s is string =>
@@ -44,7 +44,6 @@ export function khoangThang(thang: string): { tu: string; den: string } | null {
 export function loiKhoang(k: { tu: string; den: string }): string | null {
   if (!laNgay(k.tu) || !laNgay(k.den)) return t('Ngày không hợp lệ (YYYY-MM-DD).');
   if (k.tu > k.den) return t('Ngày đầu phải trước ngày cuối.');
-  if (soNgay(k.tu, k.den) > TOI_DA_NGAY_KHOANG) return t('Khoảng tối đa 52 tuần.');
   return null;
 }
 
@@ -56,6 +55,7 @@ export function khoangTuUrl(q: { get(k: string): string | null }, homNay: string
   const kieu = q.get('kieu') as KieuKhoang | null;
   const tu = q.get('tu'), den = q.get('den');
   const thang = q.get('thang');
+  if (kieu === 'toan-bo') return { kieu, tu: TU_TOAN_BO, den: addDaysIso(mondayOfDate(homNay), 6) };
   if (kieu === 'thang' || (!kieu && thang)) {
     /* SL1 (A5-01): `tu` của kiểu tháng là Thứ Hai tuần đầu — thường rơi vào tháng trước; tháng = tháng chứa thứ Năm của tuần đó. */
     const thangTu = laNgay(tu) ? (({ year, month }) => `${year}-${String(month).padStart(2, '0')}`)(owningMonthOf(mondayOfDate(tu))) : '';
@@ -83,6 +83,7 @@ export function khoangVeTuan(k: { tu: string; den: string }, homNay: string): Kh
 
 /** Tham số URL của một khoảng — 2 tuần vừa qua (mặc định) không ghi gì. */
 export function thamSoKhoang(k: KhoangNgay, homNay: string): Record<string, string> {
+  if (k.kieu === 'toan-bo') return { kieu: 'toan-bo' };
   const md = khoangMacDinh(homNay);
   if (k.kieu === '2-tuan' && k.tu === md.tu && k.den === md.den) return {};
   return { kieu: k.kieu, tu: k.tu, den: k.den };
@@ -108,6 +109,7 @@ const ngayNgan = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
  * dòng phụ `28/09 – 11/10/2026 · 2 tuần` (Tùy chọn: `· 41 ngày`).
  */
 export function nhanKhoang(k: KhoangNgay): { chinh: string; phu: string } {
+  if (k.kieu === 'toan-bo') return { chinh: t('Toàn bộ'), phu: t('đến {ngay}', { ngay: `${ngayNgan(k.den)}/${k.den.slice(0, 4)}` }) };
   const a = maTuan(k.tu), b = maTuan(k.den);
   const soTuan = Math.round((Date.parse(`${mondayOfDate(k.den)}T00:00:00Z`) - Date.parse(`${mondayOfDate(k.tu)}T00:00:00Z`)) / (7 * 86_400_000)) + 1;
   let chinh: string;

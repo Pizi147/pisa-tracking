@@ -396,7 +396,7 @@ function hieuQuaTheoLoaiCua(all: PlanRow[], category: string | null) {
         improved: c.improved, partial: c.partial,
         decided,
         rate: decided > 0 ? Math.round((success / decided) * 100) : null,
-        /* Mẫu dưới năm thì KHÔNG xếp hạng — chỉ bày con số và nói rõ là mẫu nhỏ. */
+        /* Mẫu dưới năm thì KHÔNG xếp hạng — chỉ bày con số (cờ `smallSample`; web không ghi chữ, chủ SP 22/10). */
         smallSample: decided > 0 && decided < 5,
       };
     })

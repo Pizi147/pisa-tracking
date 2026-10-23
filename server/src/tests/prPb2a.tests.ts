@@ -299,7 +299,7 @@ export async function runPrPb2aTests(t: YThucTestKit) {
     check('Pb2-a (3) · tuanTrungVi([7, 14, 70]) = 2; ([]) = null; loiKhoangTuan', () => {
       assert(d.tuanTrungVi([7, 14, 70]) === 2 && d.tuanTrungVi([]) === null, 'trung vị');
       assert(d.loiKhoangTuan('2026-08-31', '2026-09-14') === null && d.loiKhoangTuan('2026-09-01', null) !== null
-        && d.loiKhoangTuan('2026-09-14', '2026-08-31') !== null && d.loiKhoangTuan('2025-01-06', '2026-09-14') !== null, 'loiKhoangTuan');
+        && d.loiKhoangTuan('2026-09-14', '2026-08-31') !== null && d.loiKhoangTuan('2025-01-06', '2026-09-14') === null, 'loiKhoangTuan (P9: không trần)');
     });
 
     check('Pb2-a (3) · lọc gv: mọi PA thuộc Case do X phụ trách; GV thêm với gv=X = PA preset=0 (đã phân loại) của Case của X; tên GV từ máy chủ', () => {
@@ -320,7 +320,7 @@ export async function runPrPb2aTests(t: YThucTestKit) {
       assert(k.gvThem.tomTat.paCoKetQua === 0 && k.quyChe.tomTat.paCoKetQua === 0 && k.chuaGhiKetQua === 0 && k.loc.gv === null, JSON.stringify(k.loc));
     });
 
-    check('Pb2-a (3) · tu/den → đúng tập planOutcomes({ fromDate, toDate = Chủ nhật tuần den }); tu > den, > 52 tuần, không phải Thứ Hai, thiếu tu → 400', () => {
+    check('Pb2-a (3) · tu/den → đúng tập planOutcomes({ fromDate, toDate = Chủ nhật tuần den }); tu > den, không phải Thứ Hai, thiếu tu → 400', () => {
       const tu = d.mondayOfDate(addDays(TODAY, -21)), den = d.mondayOfDate(TODAY);
       const a = (hq.paCoKetQua(L({ tu, den })) as any[]).map((x) => x.id);
       const b = (eff.planOutcomes({ branchIds: null, ratio: false, classId: null, fromDate: tu, toDate: addDays(den, 6) }) as any[])
@@ -328,7 +328,7 @@ export async function runPrPb2aTests(t: YThucTestKit) {
       assert(sx(a) === sx(b) && a.includes(A), 'cùng tập planOutcomes');
       const k = hq.hieuQuaPa(P.admin, F({ tu, den, soTuan: 4 }));
       assert(k.loc.theoKhoang && k.loc.tu === tu && k.loc.den === den, 'tu/den thắng tg');
-      for (const [x, y] of [[den, tu], ['2025-01-06', den], ['2026-09-01', den]] as const) assert(boi(() => hq.hieuQuaPa(P.admin, F({ tu: x, den: y }))) === 400, `${x}…${y} → 400`);
+      for (const [x, y] of [[den, tu], ['2026-09-01', den]] as const) assert(boi(() => hq.hieuQuaPa(P.admin, F({ tu: x, den: y }))) === 400, `${x}…${y} → 400`);
       assert(boi(() => hq.hieuQuaPa(P.admin, F({ den }))) === 400, 'thiếu tu → 400');
     });
 

@@ -2094,7 +2094,8 @@ api.get('/tong-quan/ql', requireAuth, wrap((req) => {
 /** UI-TONG-QUAN: Tổng quan V5 QL / QT / CX MỘT GET — chỉ số + Lớp cần chú ý (chế độ lớp) / Theo chi nhánh + Trễ chấm, gọi lại hàm tập của Phân tích. */
 api.get('/tong-quan/v5', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
+  /* UI-PHAN-TICH: Báo cáo HV gửi khoảng đang chọn (`kieu`/`tu`/`den`) — vắng = kỳ mặc định của Tổng quan. */
+  return tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req) });
 }));
 /** UI-TONG-QUAN: Tổng quan TVV (Báo PH đúng hạn · Thi tháng này) + panel `o=bao-ph`. */
 api.get('/tong-quan/tvv', requireAuth, wrap((req) => {

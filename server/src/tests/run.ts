@@ -9563,6 +9563,9 @@ await runPrUiHvLopTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== V5 UI-TONG-QUAN (Tổng quan mọi vai — số = Báo cáo, Σ tử / Σ mẫu, quyền)
 const { runPrUiTongQuanTests } = await import('./prUiTongQuan.tests.ts');
 await runPrUiTongQuanTests({ check, assert, conn, P } as any);
+// ==================================================================== V5 UI-PHAN-TICH (Báo cáo HV = Tổng quan, Phân tích GV cột mới = panel, Toàn bộ)
+const { runPrUiPhanTichTests } = await import('./prUiPhanTich.tests.ts');
+await runPrUiPhanTichTests({ check, assert, conn, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
