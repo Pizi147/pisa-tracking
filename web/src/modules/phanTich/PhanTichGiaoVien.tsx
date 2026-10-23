@@ -25,20 +25,20 @@ type TyLe = { dat: number; mau: number };
 const HC = t('HÀNH CHÍNH'), HT = t('HỌC THUẬT');
 const COT_GON: readonly CotBang[] = [
   { key: 'gv', nhan: t('GV · kỹ năng · lớp'), kieu: 'ten' },
-  { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 128, nhom: HC },
-  { key: 'diem', nhan: t('Điểm đúng hạn'), kieu: 'phan-tram', rong: 128, nhom: HC },
-  { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 104, nhom: HC },
-  { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120, nhom: HT },
-  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 120, nhom: HT },
-  { key: 'chuY', nhan: t('HV cần chú ý'), kieu: 'so', rong: 120, nhom: HT },
+  { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 150, nhom: HC },
+  { key: 'diem', nhan: t('Điểm đúng hạn'), kieu: 'phan-tram', rong: 150, nhom: HC },
+  { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 150, nhom: HC },
+  { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 150, nhom: HT },
+  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 150, nhom: HT },
+  { key: 'chuY', nhan: t('HV cần chú ý'), kieu: 'so', rong: 150, nhom: HT },
 ];
 const COT_DAY: readonly CotBang[] = [
-  COT_GON[0], ...COT_GON.slice(1, 4).map((c) => ({ ...c, rong: 108 })),
+  COT_GON[0], ...COT_GON.slice(1, 4).map((c) => ({ ...c, rong: 100 })),
   { key: 'ghiPa', nhan: t('Ghi KQ PA'), kieu: 'phan-tram', rong: 100, nhom: HC },
-  ...COT_GON.slice(4).map((c) => ({ ...c, rong: 104 })),
-  { key: 'casePa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 104, nhom: HT },
-  { key: 'pa', nhan: t('PA cải thiện'), kieu: 'phan-tram', rong: 104, nhom: HT },
-  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 120, nhom: HT },
+  ...COT_GON.slice(4).map((c) => ({ ...c, rong: 100 })),
+  { key: 'casePa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 100, nhom: HT },
+  { key: 'pa', nhan: t('PA cải thiện'), kieu: 'phan-tram', rong: 100, nhom: HT },
+  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 128, nhom: HT },
 ];
 /** Cột chỉ Fast Track (lớp thường không có MT / tiến bộ band / PA cải thiện / thi thật) — "Đạt MT" lớp thường đổi thành "Kết quả" (đạt ≥ 70 %). */
 const CHI_FT = new Set(['tb', 'pa', 'tt']);
@@ -125,8 +125,10 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
         : (
           <>
             <PhanTrang {...pt.thanh} />
+            <div className="bang-gv">
             <Bang ten={t('Phân tích GV — Hành chính và Học thuật')} cot={cot} hang={pt.cat(hang)} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua}
               rong={{ tieuDe: tim.trim() ? t('Không GV nào khớp "{q}"', { q: tim.trim() }) : t('Không có giáo viên nào có {khung} trong khoảng này.', { khung: ft ? t('lớp Fast Track') : t('lớp thường') }) }} />
+            </div>
             <PhanTrang {...pt.thanh} duoi />
             {chamDiem && <PanelChamDiem kq={data} h={chamDiem} onDong={() => setChamDiem(null)} />}
           </>

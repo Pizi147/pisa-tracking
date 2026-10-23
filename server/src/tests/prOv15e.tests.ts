@@ -61,7 +61,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(tc.tu === '2026-09-03' && tc.den === '2026-10-13' && d.nhanKhoang(tc).phu.endsWith('41 ngày'), JSON.stringify(tc));
     assert(d.nhanKhoang({ kieu: 'tuan', tu: '2026-08-24', den: '2026-10-18' }).chinh === 'W4 AUG – W3 OCT/2026', 'nhiều tuần');
     assert(d.nhanKhoang({ kieu: 'tuan', tu: '2026-12-28', den: '2027-01-10' }).chinh.includes('/2027'), 'vắt năm có năm');
-    assert(d.loiKhoang({ tu: '2026-10-10', den: '2026-10-01' }) && d.loiKhoang({ tu: '2025-01-01', den: '2026-10-01' }) && d.loiKhoang({ tu: 'x', den: '2026-10-01' }), 'khoảng sai phải có lỗi');
+    assert(d.loiKhoang({ tu: '2026-10-10', den: '2026-10-01' }) && d.loiKhoang({ tu: 'x', den: '2026-10-01' }) && !d.loiKhoang({ tu: '2025-01-01', den: '2026-10-01' }), 'khoảng sai phải có lỗi; > 52 tuần hợp lệ (P9, UI-PHAN-TICH)');
     assert(d.loiKhoang(md) === null, 'khoảng đúng không lỗi');
     const tr = d.khoangTruoc(md);
     assert(tr.tu === '2026-09-14' && tr.den === '2026-09-27', `kỳ trước: ${JSON.stringify(tr)}`);
@@ -238,7 +238,8 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     const doc = (p: string) => fs.readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
     assert(/PhanTichPage/.test(doc('web/src/App.tsx')), 'App gắn PhanTichPage');
     assert(!/<PhanTich \/>/.test(doc('web/src/modules/worklist/OverviewPage.tsx')), 'Tổng quan không còn tab Phân tích');
-    for (const f of ['BaoCao.tsx', 'KetQuaThi.tsx', 'TongHopTestSos.tsx', 'HieuQuaPa.tsx', 'PhanTichGiaoVien.tsx', 'YThucPhoiHop.tsx']) {
+    /* UI-PHAN-TICH: Báo cáo HV không còn danh sách dài (bảng 5 hàng cố định) — bỏ khỏi danh sách phân trang. */
+    for (const f of ['KetQuaThi.tsx', 'TongHopTestSos.tsx', 'HieuQuaPa.tsx', 'PhanTichGiaoVien.tsx', 'YThucPhoiHop.tsx']) {
       assert(/PhanTrang|usePhanTrang/.test(doc(`web/src/modules/phanTich/${f}`)), `${f} chưa phân trang`);
     }
     assert(/usePhanTrang/.test(doc('web/src/ui/SoLieu.tsx')), 'panel số liệu chưa phân trang');

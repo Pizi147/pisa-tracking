@@ -5,6 +5,7 @@ import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { ChiSo, DaiChiSo, PhanTram, TheoChiNhanh, kyChu, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
 import { thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -122,6 +123,7 @@ function OHoTro({ ten, so, phu }: { ten: string; so: ReactNode; phu: ReactNode }
 
 /** Kết quả MT (`10` mục 5): hàng MT0 → MT3+ + Thi thật, theo lượt của từng HV trong kỳ; Overall so Target đầu ra của em. Số bấm → panel em của ô. */
 function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; error: any; reload: () => void }; nguon: (o: string) => string; phamVi: string }) {
+  const dienThoai = useDienThoai();
   const luat = t('So điểm Overall của lượt với Target đầu ra của chính em (không phải kỳ vọng MT). Mỗi HV tính ở lượt MT của mình trong kỳ. Bấm số để xem danh sách HV.');
   const oCua = (h: DongKqMt, c: CotBang): ReactNode => {
     if (c.key === 'luot') return <b className="text-slate-100">{NHAN_LUOT_KQ_MT[h.luot]}</b>;
@@ -144,7 +146,7 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
     <Khoi tieuDe={t('Kết quả MT')} phu={t('{pv} · lượt của từng HV trong kỳ', { pv: phamVi })} luat={luat}>
       {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} onRetry={api.reload} />
         : !api.data ? <Skeleton rows={5} className="p-4" />
-          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={api.data.rows} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} />}
+          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={dienThoai ? api.data.rows.filter((h) => h.hv || h.luot === 'thi') : api.data.rows} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} />}
     </Khoi>
   );
 }
@@ -161,7 +163,7 @@ function TienBo({ hang, nguon }: { hang: NonNullable<BaoCaoKq['tienBo']>; nguon:
   };
   return (
     <Khoi tieuDe={t('Tiến bộ theo kỹ năng')} phu={t('lượt có mốc MT trước')}>
-      <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua}
+      <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false}
         phuCua={(h, c) => (c.key === 'tang' && h.tong ? `${h.dung}/${h.tong}` : null)} khung={false} rong={{ tieuDe: t('Chưa có lượt nào có mốc MT trước trong kỳ') }} />
     </Khoi>
   );

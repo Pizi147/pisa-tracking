@@ -38,14 +38,14 @@ export function BoChonThoiGian({ khoang, onChange }: { khoang: KhoangNgay; onCha
   const apDung = () => { if (!loi) { onChange(laTb ? nhap : khoangVeTuan(nhap, homNay)); setMo(false); } };
   /* ‹ › : dời cả khoảng một tuần (khoảng tuần); "Toàn bộ" không dời. */
   const doi = (n: number) => onChange(khoangVeTuan({ tu: addDaysIso(khoang.tu, 7 * n), den: addDaysIso(khoang.den, 7 * n) }, homNay));
-  const nutDoi = 'field min-h-[44px] min-w-[44px] cursor-pointer px-2 text-slate-300 disabled:cursor-default disabled:opacity-40 sm:min-h-[34px] sm:min-w-[34px]';
+  const nutDoi = 'btn btn-sm min-h-[44px] w-11 shrink-0 justify-center px-0 disabled:cursor-default disabled:opacity-40 sm:min-h-[34px] sm:w-9';
 
   return (
     <div ref={hop} className="relative flex items-stretch gap-1" data-hd="pt-thoi-gian" {...bamNgoai}>
       <button type="button" className={nutDoi} aria-label={t('Lùi 1 tuần')} disabled={khoang.kieu === 'toan-bo'} onClick={() => doi(-1)}>‹</button>
       <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
-        className="field flex min-h-[44px] cursor-pointer items-baseline gap-2 text-left sm:min-h-[34px]">
-        <span className="text-xs text-slate-400">{t('Khoảng thời gian')}</span>
+        className="field flex min-h-[44px] w-auto cursor-pointer items-baseline gap-2 whitespace-nowrap text-left sm:min-h-[34px]">
+        <span className="text-xs text-slate-400 max-sm:sr-only">{t('Khoảng thời gian')}</span>
         <b className="font-semibold tabular-nums text-slate-100">{nhan.chinh}</b>
         <span className="hidden text-xs tabular-nums text-slate-400 lg:inline">{nhan.phu}</span>
         <span aria-hidden className="text-slate-500">▾</span>
