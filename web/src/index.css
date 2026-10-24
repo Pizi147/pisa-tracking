@@ -202,6 +202,22 @@
     border-radius: 0.75rem;
   }
   .surface-2 { background: var(--surface-2); }
+  /*
+   * MENU ⋯ RÕ NHÓM (P3 UI-CHUNG, chủ SP 24/10 — `Menu` + `MenuDong` dùng chung): nhãn nhóm 12 / 600 + vạch trên mỗi nhóm trừ nhóm đầu
+   * (nhóm không chỉ phân biệt bằng màu); mục 14 / 500 cao ≥ 36 px (≥ 44 px ở 375); mục nguy hiểm có vạch đỏ ngay trên. Sáng: hộp menu
+   * nền trắng để tách khỏi nền trang (surface-2 sáng gần trùng --bg).
+   */
+  :root[data-theme="light"] .menu-hop { background: var(--surface); }
+  .menu-nhom { padding: 6px 12px; font-size: 12px; font-weight: 600; line-height: 1.4; color: var(--text-dim); }
+  .menu-nhom:not(:first-child) { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .menu-muc { display: block; width: 100%; min-height: 36px; padding: 8px 12px; border: 0; border-radius: 6px; background: transparent;
+    text-align: left; font-size: 14px; font-weight: 500; line-height: 1.4; }
+  .menu-muc:not([aria-disabled="true"]):is(:hover, :focus-visible) { background: var(--accent-soft); }
+  .menu-muc:focus-visible { outline-offset: -2px; }
+  .menu-muc-goi { display: block; font-size: 12px; font-weight: 400; color: var(--text-faint); }
+  .menu-muc-ke { margin-top: 4px; border-top: 1px solid var(--line); border-top-left-radius: 0; border-top-right-radius: 0; }
+  .menu-muc-nguy { margin-top: 4px; border-top: 1px solid rgb(var(--bad-rgb)); border-top-left-radius: 0; border-top-right-radius: 0; }
+  @media (max-width: 639px) { .menu-muc { min-height: 44px; } }
   /* V5 UI-CONG-VIEC (`v5-nen.css .bao-chi-xem`): dải chế độ theo dõi — xem việc người khác. */
   .bao-chi-xem { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 6px; background: var(--surface-2); color: var(--text-dim); font-size: 13px; }
 

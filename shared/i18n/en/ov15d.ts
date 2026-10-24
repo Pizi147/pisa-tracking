@@ -75,7 +75,6 @@ export const EN_OV15D = {
   'Vì sao việc quá hạn': 'Why a task is overdue',
   'Yêu cầu bị từ chối': 'Rejected requests',
   'Đăng nhập là vào <b>Công việc</b>: một danh sách theo nhóm, quá hạn ở đầu, có ⚠.': 'Signing in opens <b>Tasks</b>: one list by group, overdue first, with ⚠.',
-  'Bấm tên lớp → tab <b>Học viên</b> › Cách xem <b>Góp ý hàng tuần</b>.': 'Click the class name → <b>Students</b> tab › View <b>Weekly feedback</b>.',
   'Chỉ nhóm Chấm điểm của chi nhánh: bài GV chưa nhập.': 'Only the branch Marking group: tests teachers have not entered.',
   'Chỉ lớp có vấn đề': 'Only classes with issues',
 } satisfies Record<string, Dich>;

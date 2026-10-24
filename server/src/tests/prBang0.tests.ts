@@ -24,7 +24,6 @@ const MIEN_TABLE: string[] = [
   'web/src/modules/cases/SkillBoard.tsx',
   'web/src/modules/cham/DanExcel.tsx',
   'web/src/modules/classes/BangDiemLopThuong.tsx',
-  'web/src/modules/classes/BangGopYTuan.tsx',
   'web/src/modules/classes/BangKqdrLopFt.tsx',
   'web/src/modules/classes/BangLoTrinhTiep.tsx',
   'web/src/modules/classes/ClassIssueBoard.tsx',

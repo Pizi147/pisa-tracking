@@ -608,6 +608,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 25/10/2026 | P3 UI-CHUNG (Opus 5.5) · `claude/p3-ui-chung-4c93d8` | Bỏ cách xem Góp ý hàng tuần (dữ liệu + route giữ, xem cũ ở ⋯ › Lịch sử góp ý tuần); menu ⋯ rõ nhóm (`.menu-nhom` / `.menu-muc`); đầu cột dính hồ sơ lớp FT, Kết quả Test, Ý thức; "Mới dùng PISA TRACKING?"; phép kiểm UIC-1–4 |
 | 24/10/2026 | TL-V5 (PTA Plan, Opus 5.5) · `claude/tl-v5` | `DESIGN.md` mục "Luật V5" V1–V16 + token / thang chữ / badge theo mã; Hướng dẫn 7 vai theo màn V5 (Tổng quan GV / TVV / CX / Admin, Lịch Test tuần, hồ sơ HV / lớp / GV, tìm `/` Ctrl K, Phân tích, nhận xét chỉ nhắc) + EN `tlV5.ts`; TVV / CX "Chỉ cho tôi" sang `tq-tom-tat`; truy vết mockup → PR; `plan.md` N9–N10, mục 4 |
 | 24/10/2026 | #561 SV-TQ-GV (Opus 5.5) | Tổng quan GV hai khối: `GET /tong-quan/lop-toi-day/hai-khoi` (Kỹ năng tôi dạy · Lớp tôi chủ nhiệm, số = hồ sơ GV / Phân tích), ô SOS theo mức + Thi tháng này bấm ra panel; XM-SV-1, 3 |
 | 24/10/2026 | #560 UI-CON-LAI (Opus 5.5) | Tìm `/` Ctrl K (+ nhóm GV `GET /tim/giao-vien`), chọn tuần `‹ › Tuần này`, Hộp duyệt panel tại chỗ (bối cảnh thu hồi T22), chuông khác badge, nợ #528 (badge chỉ việc `mine`, `knsQuaHan`), "Còn n ô cần sửa", `KhoiXungDot`, dải mất kết nối, 403 / 404, Xuất · n HV, in nền sáng, ô MT thiếu nhận xét viền vàng, nợ #544 |

@@ -55,7 +55,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
     const rong = 216;
     /* Mục cao 44px trên điện thoại (ô bấm), ~36px từ sm. */
     /* Menu dài (⋯ hồ sơ lớp có tiêu đề nhóm, PR-OV3a): không cao quá màn — phần thừa cuộn trong menu. */
-    const cao = Math.min(muc.length * (window.innerWidth < 640 ? 46 : 38) + 8, window.innerHeight - 80);
+    const cao = Math.min(muc.length * (window.innerWidth < 640 ? 50 : 42) + 8, window.innerHeight - 80);   // P3: mục ≥ 36 / 44 px + vạch nhóm
     /* Chừa 64px dưới đáy cho thanh 4 nút trên điện thoại. */
     const moXuong = r.bottom + 4 + cao <= window.innerHeight - 64;
     setViTri({
@@ -112,18 +112,17 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
             if (k !== null) { e.preventDefault(); tro(k); }
             else if (e.key === 'Tab') { e.preventDefault(); dongVeNut(); }
           }}
-          className="fixed z-[60] w-[216px] overflow-y-auto overscroll-contain rounded-lg border p-1 shadow-xl surface-2"
+          className="menu-hop fixed z-[60] w-[216px] overflow-y-auto overscroll-contain rounded-lg border p-1 shadow-xl surface-2"
           style={{ borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, maxHeight: viTri?.cao, visibility: viTri ? 'visible' : 'hidden' }}>
-          {muc.map((m) => m.tieuDe ? (
-            <div key={m.key} role="presentation" className="px-3 pb-1 pt-2 text-xs text-slate-400">{m.nhan}</div>
+          {muc.map((m, i) => m.tieuDe ? (
+            <div key={m.key} role="presentation" className="menu-nhom">{m.nhan}</div>
           ) : (
             <button key={m.key} type="button" role={m.chon === undefined ? 'menuitem' : 'menuitemcheckbox'} aria-checked={m.chon} tabIndex={-1}
               onFocus={() => setDang(chiSo.get(m.key) ?? 0)}
               title={m.title} aria-disabled={m.tat ? 'true' : undefined}
-              className={`block min-h-[44px] w-full rounded-md px-3 py-2 text-left text-sm sm:min-h-0 bg-transparent border-0 focus-visible:bg-white/5 ${
-                m.tat ? 'text-slate-500 cursor-not-allowed' : `${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} bam cursor-pointer`} ${
-                m.keTruoc ? 'mt-1 rounded-t-none pt-2.5' : ''}`}
-              style={m.keTruoc ? { borderTop: '1px solid var(--line)' } : undefined}
+              /* P3 UI-CHUNG: `.menu-muc` chung với `Menu`; việc nguy hiểm có vạch đỏ ngay trên (không chỉ màu chữ). */
+              className={`menu-muc ${m.tat ? 'text-slate-500 cursor-not-allowed' : `${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} bam`} ${
+                i === 0 || muc[i - 1]?.tieuDe ? '' : m.nguyHiem && !muc[i - 1]?.nguyHiem ? 'menu-muc-nguy' : m.keTruoc ? 'menu-muc-ke' : ''}`}
               onClick={(e) => { if (m.tat) { e.stopPropagation(); return; } if (m.chon === undefined) dongVeNut(); m.onChon(); }}>
               {m.chon !== undefined && <span aria-hidden>{m.chon ? '☑' : '☐'} </span>}{m.nhan}
             </button>

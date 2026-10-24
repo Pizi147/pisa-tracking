@@ -135,7 +135,7 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
                 ))}
               </div>
             ) : (
-              <div className="table-scroll">
+              <div className="table-scroll bang-dinh">   {/* P3 UI-CHUNG: danh sách cả chi nhánh dài — đầu cột dính (1180 px vừa khung từ 1280) */}
                 <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 1180 }}>
                   <colgroup>
                     <col style={{ width: 170 }} /><col style={{ width: 104 }} /><col style={{ width: 118 }} /><col style={{ width: 56 }} />
@@ -228,7 +228,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                 ))}
               </div>
             ) : (
-              <div className="table-scroll">
+              <div className="table-scroll bang-dinh">
                 <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 1100 }}>
                   <colgroup>
                     <col style={{ width: 170 }} /><col style={{ width: 104 }} /><col style={{ width: 100 }} /><col style={{ width: 60 }} />
