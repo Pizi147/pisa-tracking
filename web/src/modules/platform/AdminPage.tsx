@@ -45,7 +45,7 @@ export default function AdminPage() {
   return (
     <div className="page space-y-4">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100">Quản trị hệ thống</h1>
+        <h1 className="text-xl font-bold text-slate-100">Quản trị hệ thống</h1>
         <p className="text-xs text-slate-500 mt-0.5">
           Tài khoản, danh mục và cấu hình quyền của phần mềm.
         </p>

@@ -34,7 +34,7 @@ export default function CongViecPage() {
     <div className="page space-y-4">
       <div className="flex flex-col gap-1">
         {tabs.includes('ho-tro') && <Link to={`/cong-viec${cn ? `?cn=${cn}` : ''}`} className="link w-fit text-[13px] max-sm:py-2">{t('‹ Công việc')}</Link>}
-        <h1 className="m-0 text-lg font-semibold text-slate-100">{nhanTabCongViec(tab, session?.nav ?? NAV_RONG)}</h1>
+        <h1 className="m-0 text-xl font-bold text-slate-100">{nhanTabCongViec(tab, session?.nav ?? NAV_RONG)}</h1>
       </div>
       {tab === 'cho-duyet' && <HopChoDuyet />}
       {tab === 'yeu-cau' && <YeuCauCuaToi />}

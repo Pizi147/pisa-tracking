@@ -42,7 +42,7 @@ export default function TestPage() {
 
   return (
     <div className="page space-y-4">
-      <h1 className="text-lg font-semibold text-slate-100 m-0">{t('Test')}</h1>
+      <h1 className="text-xl font-bold text-slate-100 m-0">{t('Test')}</h1>
       {tabs.length > 1 && (
         <HangTab ariaLabel={t('Test')} value={lopCu ? 'lich' : tab} onChange={go}
           tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k], ...(k === 'cham' && viec.data ? { so: viecChamCuaToi(viec.data.dong).length, donVi: t('nhóm') } : {}) }))} />

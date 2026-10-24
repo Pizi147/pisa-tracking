@@ -272,7 +272,7 @@ export default function MockDetailPage() {
         <div className="min-w-0">
           <DuongVe cha={trangCha('mt', { studentId: d.student.id, tenHv: d.student.name })} ten={`MT${d.attemptNo} · ${d.student.name}`} chiTiet={d.classCode} />
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="text-lg font-semibold text-slate-100 min-w-0 break-words">
+            <h1 className="text-xl font-bold text-slate-100 min-w-0 break-words">
               <span className="mr-2 text-sm font-medium text-slate-400">{t('Hồ sơ Mock Test ·')}</span>{d.student.name}
               <span className="ml-2 align-middle"><OMt v={omtDau} homNay={homNay} /></span>
             </h1>

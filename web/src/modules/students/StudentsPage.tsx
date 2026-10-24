@@ -270,7 +270,7 @@ function TrangTheoLop({ admin }: { admin: boolean }) {
   return (
     <div className="page space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Học viên & Lớp')}</h1>
+        <h1 className="m-0 text-xl font-bold text-slate-100">{t('Học viên & Lớp')}</h1>
         <div className="ml-auto flex items-center gap-2">
           <button type="button" className="btn btn-sm max-sm:min-h-[44px]" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>
           {data?.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(true)}>{t('+ Thêm học viên')}</button>}

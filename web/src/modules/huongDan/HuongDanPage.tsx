@@ -71,7 +71,7 @@ export default function HuongDanPage() {
         </nav>
         <div className="flex min-w-0 max-w-[760px] flex-col gap-4 print:max-w-none">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="m-0 flex-1 text-lg font-semibold text-slate-100">{t('Hướng dẫn')}</h1>
+            <h1 className="m-0 flex-1 text-xl font-bold text-slate-100">{t('Hướng dẫn')}</h1>
             {xemKhac && VAI_CO_NOI_DUNG.length > 1 && (
               <label className="flex items-center gap-2 text-[13px] text-slate-400 print:hidden">
                 {t('Xem vai')}

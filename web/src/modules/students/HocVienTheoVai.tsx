@@ -250,7 +250,7 @@ export function HocVienTheoVai({ vai }: { vai: 'tvv' | 'cx' }) {
   return (
     <div className="page space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="m-0 text-lg font-semibold text-slate-100">{t('Học viên & Lớp')}</h1>
+        <h1 className="m-0 text-xl font-bold text-slate-100">{t('Học viên & Lớp')}</h1>
         {/* OV-13p: nút như trang Quản lý (StudentsPage) — điện thoại gom vào ⋯. */}
         {((data?.coTheTaoLop || data?.coTheThemHocVien) || idsXuat.length > 0) && (
           <div className="ml-auto flex items-center gap-2">

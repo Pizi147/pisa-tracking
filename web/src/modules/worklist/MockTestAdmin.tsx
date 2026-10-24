@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { nhanQuaHan, tuanLich } from '@shared/domain/index.ts';
-import { ODem } from './HocVienCuaToi.tsx';
 
 /** Trả lời của `GET /tong-quan/mock-test` (server/src/worklist/tongQuanMt.ts). */
 type GvQuaHan = { key: string; ownerId: number; gv: string; kyNang: string; lop: string | null; luot: string | null; soBai: number; han: string | null };
@@ -10,6 +11,18 @@ type TongQuanMt = {
   tuan: string; luotTuanNay: { so: number; soLop: number }; oChuaNhap: { so: number; quaHan: number };
   chuaXepLich: number; gvQuaHan: GvQuaHan[];
 };
+
+/** Ô đếm bấm được của Tổng quan theo vai (OV-10c): cả ô là link mở đúng danh sách đã lọc sẵn. Số 0 vẫn bấm được (danh sách trống nói rõ). */
+function ODem({ to, so, nhan, phu }: { to: string; so: number; nhan: string; phu?: ReactNode }) {
+  return (
+    <Link to={to} className="card block h-full p-4 no-underline hover:brightness-125 focus-visible:outline focus-visible:outline-2"
+      aria-label={`${so} — ${nhan}. Mở danh sách`}>
+      <span className={`block text-2xl font-semibold tabular-nums ${so ? 'text-slate-100' : 'text-slate-500'}`}>{so}</span>
+      <span className="mt-1 block text-sm font-medium text-slate-200">{nhan}</span>
+      {phu && <span className="mt-0.5 block text-xs text-slate-500">{phu}</span>}
+    </Link>
+  );
+}
 
 /**
  * TỔNG QUAN ADMIN — tab "Mock Test" (OV-10c, mockup vai mục 4): ba ô bấm được (UI-TONG-QUAN, chủ SP 23/10: bỏ "Đề nghị dời chờ") (mở đúng chỗ ở Test / Công việc, số cùng hàm với màn đó)

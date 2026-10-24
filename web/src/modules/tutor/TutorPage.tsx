@@ -88,7 +88,7 @@ export default function TutorPage() {
   return (
     <div className="page space-y-3" data-hd="tutor-trang">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="m-0 mr-2 text-lg font-semibold text-slate-100">{t('Tutor')}</h1>
+        <h1 className="m-0 mr-2 text-xl font-bold text-slate-100">{t('Tutor')}</h1>
         <BoChonThoiGian khoang={khoang} onChange={setKhoang} />
         {data?.chiNhanh && <span className="text-sm text-slate-400">{data.chiNhanh}</span>}
         <span className="flex-1" />

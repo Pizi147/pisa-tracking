@@ -93,7 +93,7 @@ export default function LuuTruPage() {
       <div>
         <button className="btn btn-sm btn-ghost" onClick={() => navigate('/hoc-vien')}>‹ Học viên &amp; Lớp</button>
       </div>
-      <h1 className="text-lg font-semibold text-slate-100 m-0">Lưu trữ</h1>
+      <h1 className="text-xl font-bold text-slate-100 m-0">Lưu trữ</h1>
 
       <div className="flex flex-wrap items-center gap-2">
         <input className="field w-full sm:w-72" aria-label="Tìm" placeholder="Tìm tên, mã học viên hoặc mã lớp…"
