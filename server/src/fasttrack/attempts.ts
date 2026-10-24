@@ -453,7 +453,7 @@ export function skillCells(
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
-  const batBuocNx = editable.length > 0 && nhacNhanXetCua(attempt);
+  const nhacNx = editable.length > 0 && nhacNhanXetCua(attempt);   // LUAT-NX-MT: chỉ nhắc, không bắt buộc
   const kyVong = kyVongCuaLuot(attempt);
 
   const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
@@ -592,7 +592,7 @@ export function skillCells(
       ...(doiTu ? { doiTu } : {}),
       nhanXet: row?.comment ?? null,
       nhomNguyenNhan: docNhomNguyenNhan(row?.nhom_nguyen_nhan),
-      nenCoNhanXet: batBuocNx,
+      nenCoNhanXet: nhacNx,
       coNhom: nenCoNhanXetMt({ kind: attempt.kind, lichSu: false }),
       kyVong,
       /* LUAT-NX-MT: chỉ NHẮC (ô vàng "Nên có nhận xét") ở ô người xem sửa được — không chặn, không thành việc. */
@@ -1158,7 +1158,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       row, mode,
       attemptOverride: a.deadline_override ?? null,
       attemptCancelled: a.status === 'cancelled',
-      scored: entrySkillsOf(skill).every(oXongCua(a, scores).xong),   // V5 SV-SO1: cùng luật "xong" với ô (band + đủ nhận xét bắt buộc)
+      scored: entrySkillsOf(skill).every(oXongCua(a, scores).xong),   // cùng luật "xong" với ô (LUAT-NX-MT: có band; thiếu nhận xét chỉ nhắc)
       pendingMove: pendingView(a.id, skill),
       lichSu: !!a.lich_su,
       mt0: laMt0(a),

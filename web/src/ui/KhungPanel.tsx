@@ -83,7 +83,13 @@ function useBanPhim(bat: boolean) {
     const bo = () => { delete goc.dataset.banPhim; goc.style.removeProperty('--ban-phim'); };
     const doi = () => {
       const che = Math.round(window.innerHeight - vv.height - vv.offsetTop);
-      if (che > 80) { goc.dataset.banPhim = ''; goc.style.setProperty('--ban-phim', `${che}px`); } else bo();   // < 80 px: thanh công cụ trình duyệt, không phải bàn phím
+      if (che > 80) {
+        const moi = goc.dataset.banPhim === undefined;
+        goc.dataset.banPhim = ''; goc.style.setProperty('--ban-phim', `${che}px`);
+        /* UI-CON-LAI k8: bàn phím vừa mở → ô đang gõ cuộn vào giữa phần màn còn thấy (không bị chân Lưu / bàn phím che). */
+        const o = document.activeElement as HTMLElement | null;
+        if (moi && o?.matches('input, textarea, select')) requestAnimationFrame(() => o.scrollIntoView({ block: 'center' }));
+      } else bo();   // < 80 px: thanh công cụ trình duyệt, không phải bàn phím
     };
     doi();
     vv.addEventListener('resize', doi); vv.addEventListener('scroll', doi);
