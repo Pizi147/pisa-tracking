@@ -9,6 +9,7 @@ import { emailThu } from '../seed/emailThu.ts';
 export async function runPrSuaNoRaTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId } = t;
   const classes: any = await import('../classes/classes.ts');
+  const gopDm: any = await import('../../../shared/domain/phanCong.ts');
   const { migratePrCvLoi, KHOA_PR_CV_LOI, NGUON_PR_CV_LOI }: any = await import('../migrate/prCvLoi.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nSUA-NO-RA · phân công có phiên bản · migrate gán chủ một lần');
@@ -50,6 +51,18 @@ export async function runPrSuaNoRaTests(t: YThucTestKit) {
     try { classes.setClassTeachers(P.mbManager, LOP, { slots: tranh(moi), phienBan: moi.phienBan }); } catch (e) { loi = e; }
     assert(loi === null, `phiên bản mới lưu được: ${loi?.status} ${loi?.message}`);
   }));
+
+  check('S1b gộp sau 409 (gopChonSau409): ô đã sửa giữ lựa chọn; ô chưa sửa theo bản mới (không ghi đè người kia); cả hai cùng đổi → báo', () => {
+    const cu = { gvcn: 1, reading: 2, listening: 3, speaking: 4 };
+    const moi = { gvcn: 1, reading: 9, listening: 3, speaking: 8 };            // người kia đổi R → 9, S → 8
+    const dang = { gvcn: 1, reading: 2, listening: 5, speaking: 7 };           // mình đổi L → 5, S → 7 (R chưa đụng)
+    const g = gopDm.gopChonSau409(cu, moi, dang);
+    assert(g.chon.reading === 9, 'ô chưa sửa lấy bản mới (giữ thay đổi của người kia)');
+    assert(g.chon.listening === 5 && g.chon.speaking === 7 && g.chon.gvcn === 1, `ô đã sửa giữ lựa chọn: ${JSON.stringify(g.chon)}`);
+    assert(JSON.stringify(g.xung) === '["speaking"]', `xung: ${JSON.stringify(g.xung)}`);
+    const xoa = gopDm.gopChonSau409({ writing1: 6 }, { writing1: 6, writing2: 7 }, { writing1: '' });
+    assert(xoa.chon.writing1 === '' && xoa.chon.writing2 === 7 && !xoa.xung.length, `bỏ trống ô + ô người kia thêm: ${JSON.stringify(xoa)}`);
+  });
 
   check('S2 migrate prCvLoi: chạy một lần (khoá demo_config); Case trống chủ sau đó không bị migrate gán; lần gán có nhật ký nguồn', () => thu(() => {
     assert(one('SELECT 1 x FROM demo_config WHERE key = ?', KHOA_PR_CV_LOI), 'migrate lúc dựng CSDL phải để lại khoá');

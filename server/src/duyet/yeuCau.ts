@@ -584,10 +584,12 @@ function lyDoKhongHuy(yc: YeuCauRow & { xu_ly_luc?: string | null }): string | n
 function theHuyDuoc(conn: any, rows: any[]): Set<number> {
   const ung0 = rows.filter((r) => lyDoKhongHuy(r) === null);
   /* SUA-NO-RA (LUAT-5-a): đã có thẻ MỚI đang chờ cùng (loại, đối tượng) — huỷ đưa thẻ cũ về `cho` sẽ vướng `ux_ycd_dang_cho` → không hiện nút. */
-  const coCho = ung0.length ? new Set((conn.prepare(
-    `SELECT y.id FROM yeu_cau_duyet y WHERE y.id IN (${ung0.map(() => '?').join(',')}) AND EXISTS (SELECT 1 FROM yeu_cau_duyet k
-       WHERE k.loai = y.loai AND k.doi_tuong_loai = y.doi_tuong_loai AND k.doi_tuong_id = y.doi_tuong_id AND k.trang_thai = 'cho' AND k.id != y.id)`,
-  ).all(...ung0.map((r) => r.id)) as any[]).map((r) => r.id as number)) : new Set<number>();
+  const coCho = new Set<number>();
+  theoLo(ung0.map((r) => r.id as number), (lo, ph) => {
+    for (const r of conn.prepare(`SELECT y.id FROM yeu_cau_duyet y WHERE y.id IN (${ph}) AND EXISTS (SELECT 1 FROM yeu_cau_duyet k
+        WHERE k.loai = y.loai AND k.doi_tuong_loai = y.doi_tuong_loai AND k.doi_tuong_id = y.doi_tuong_id AND k.trang_thai = 'cho' AND k.id != y.id)`)
+      .all(...lo) as any[]) coCho.add(r.id);
+  }, 500);
   const ung = ung0.filter((r) => !coCho.has(r.id));
   const kq = new Set<number>();
   for (const d of DINH_NGHIA_LOAI) {

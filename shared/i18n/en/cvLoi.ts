@@ -4,6 +4,8 @@ import type { Dich } from '../en.ts';
 export const EN_CV_LOI = {
   'GV {mon}': '{mon} teacher',
   'Đã phân công {nhan}': 'Assigned {nhan}',
+  'Môn này vừa được giao cho {ten}.': 'This subject was just assigned to {ten}.',
+  'Lớp vừa có GVCN: {ten}.': 'The class now has a homeroom teacher: {ten}.',
   '{nhan}: chọn giáo viên': '{nhan}: pick a teacher',
   '— Chưa chọn —': '— Not chosen —',
   'Giao': 'Assign',

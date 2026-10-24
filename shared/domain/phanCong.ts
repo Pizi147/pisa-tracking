@@ -68,6 +68,22 @@ export function chonKhiDoiTach(chon: Record<string, number | ''>, gop: readonly 
   return c;
 }
 
+/**
+ * SUA-NO-RA: lưu phân công bị 409 (người khác vừa đổi) → gộp ba bản: ô người dùng ĐÃ SỬA (khác bản lúc mở) giữ lựa chọn của họ; ô chưa sửa lấy theo
+ * bản mới tải lại — bấm Lưu lần hai không ghi đè thay đổi của người kia. `xung`: ô cả hai cùng đổi mà khác nhau — báo người dùng nhìn lại.
+ */
+export function gopChonSau409(cu: Record<string, number | ''>, moi: Record<string, number | ''>, dangChon: Record<string, number | ''>):
+  { chon: Record<string, number | ''>; xung: string[] } {
+  const chon: Record<string, number | ''> = {};
+  const xung: string[] = [];
+  for (const k of new Set([...Object.keys(cu), ...Object.keys(moi), ...Object.keys(dangChon)])) {
+    const a = cu[k] ?? ''; const m = moi[k] ?? ''; const d = dangChon[k] ?? '';
+    chon[k] = d !== a ? d : m;
+    if (d !== a && m !== a && m !== d) xung.push(k);
+  }
+  return { chon, xung };
+}
+
 /** Máy chủ gọi TRƯỚC khi kiểm + ghi: Pre FOU → GVCN tự nhận ô môn duy nhất (`tong_hop`), để quyền nhập điểm / xử lý Case
  *  đi theo phân công môn như mọi lớp (M-09) — không cần nhánh quyền riêng. Lớp khác: trả nguyên. */
 export function moRongPhanCong(chuongTrinh: string | null, kyNangLop: readonly string[], slots: readonly SlotPhanCong[]): SlotPhanCong[] {

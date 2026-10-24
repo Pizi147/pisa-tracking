@@ -7,7 +7,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
-import { chonKhiDoiTach, kiemPhanCong, nenTachFou, nhomGiaoVienBoMon, slotsTuO, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { chonKhiDoiTach, gopChonSau409, kiemPhanCong, nenTachFou, nhomGiaoVienBoMon, slotsTuO, tenMon, tuanLich } from '@shared/domain/index.ts';
 import { LuoiPhanCong, NutTachFou, loiTaiO, useTachFou } from './ClassCreatePanel.tsx';
 import { DongXem, PhanThongTin } from './ThongTinLopPanel.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
@@ -44,8 +44,10 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
   const { homNay } = useNgayNghiepVu();
   const [dangSua, setDangSua] = useState(moSua && suaDuoc);
   const { data, loading, error, reload } = useApi<Teachers>(dangSua ? `/classes/${lop.id}/teachers` : null, [dangSua]);
-  /** 409 → tải lại bức tranh mới mà GIỮ các ô đang chọn (không mất lựa chọn đang sửa). */
+  /** 409 → tải lại bức tranh mới, gộp với lựa chọn đang sửa (`gopChonSau409`): giữ ô đã sửa, ô chưa sửa theo bản mới. */
   const giuChon = useRef(false);
+  /** Bức tranh (theo môn, chưa gộp FOU) lúc mở / lần tải gần nhất — gốc để biết ô nào người dùng đã sửa. */
+  const banDau = useRef<Record<string, number | ''>>({});
   const [chon, setChon] = useState<Record<string, number | ''>>({});
   /** Ô dữ liệu cũ đang có từ 2 người: khoá ô → tên. */
   const [nhieuNguoi, setNhieuNguoi] = useState<Record<string, string[]>>({});
@@ -64,8 +66,20 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
     }
     const ds = [...theoO];
     setNhieuNguoi(Object.fromEntries(ds.filter(([, a]) => a.length > 1).map(([k, a]) => [k, a.map((x) => x.name)])));
-    if (giuChon.current) { giuChon.current = false; return; }
     const c: Record<string, number | ''> = Object.fromEntries(ds.filter(([, a]) => a.length === 1).map(([k, a]) => [k, a[0].userId]));
+    if (giuChon.current) {
+      giuChon.current = false;
+      const theoLuoi = (x: Record<string, number | ''>) => (fou.gop && !fou.tach ? chonKhiDoiTach(x, fou.gop, false) : x);
+      const g = gopChonSau409(theoLuoi(banDau.current), theoLuoi(c), chon);
+      banDau.current = c;
+      setChon(g.chon);
+      if (g.xung.length) {
+        const nhan = g.xung.map((k) => fou.oList.find((o) => o.khoa === k)?.nhan ?? k).join(', ');
+        setLoiLuu(`${nhan}: người khác vừa đổi ô này — kiểm lại rồi lưu.`);
+      }
+      return;
+    }
+    banDau.current = c;
     /* Q31-5: FOU mà L, R, G+V cùng người (hoặc trống) → 2 ô; khác người → mở sẵn tách. */
     const tach = nenTachFou(data.programmeCode, data.bySkill);
     fou.setTach(tach);
