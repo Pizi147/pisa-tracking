@@ -63,4 +63,10 @@ export async function runPrUiConLaiTests(t: any) {
     assert(!/ChuThieu/.test(hop) && /cell\.thieuNhanXet \? VIEN_THIEU_NX/.test(hop) && /CHU_O_THIEU\[cell\.thieuNhanXet\]/.test(hop), 'lưới: viền vàng + tooltip, không chữ');
     assert(!/text-soon/.test(lon) && /--soon-rgb/.test(lon) && /aria-description=\{thieu/.test(lon), 'ô lớn: viền vàng + aria, không chữ');
   });
+
+  check('UICL-7 (k3, chủ SP 24/10) · Hộp duyệt đầy đủ = danh sách dòng gọn + panel duyệt TẠI CHỖ (`?the=`, mẫu Chấm Test); bản gọn giữ thẻ; hàng loạt giữ', () => {
+    const h = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/HopChoDuyet.tsx'), 'utf8');
+    assert(/<DongYeuCau /.test(h) && /<KhungTaiCho\.Provider value>/.test(h) && /<TheYeuCau yc=\{theMo\} panel /.test(h), 'danh sách + panel');
+    assert(/next\.set\('the', String\(id\)\)/.test(h) && /ds\.length > 0 && gon &&/.test(h) && /chonMot\(ds, s, y\.id, v\)/.test(h), '?the= · bản gọn · hàng loạt');
+  });
 }

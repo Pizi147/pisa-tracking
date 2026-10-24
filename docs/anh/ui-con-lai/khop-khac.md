@@ -20,7 +20,8 @@ Số trên web là dữ liệu seed (khác số demo mockup) — so khung, thứ
 | 10 | k2 khoảng tuần Phân tích "tối đa 13" | **không sửa** — P9 (mới hơn) đã làm ở #558: Toàn bộ / tự do, không trần | — | BỎ (P9 thắng) |
 | 11 | k3 thẻ thu hồi: lý do · xử lý đã duyệt (ngày) · TVV báo PH · hậu quả trước khi duyệt | thẻ Hộp duyệt (V4) + máy chủ `loaiYeuCau.ts` `thu_hoi_y_thuc.nap`: "Đã thực hiện 07/08", "TVV đã báo PH dd/mm · tên — giữ trong lịch sử" / "TVV chưa báo PH — duyệt thì việc Báo PH thành Đã bỏ"; "Nếu duyệt" thêm nhắc báo lại PH | `cap-k3-hop-duyet-*` | KHỚP |
 | 12 | k3 **Hoàn tác 5 s chỉ thao tác của chính mình**, không vòng qua duyệt | toast Hoàn tác chung (`toast.hoanTac`, `HOAN_TAC_MS`) sau Duyệt / Từ chối — chỉ loại máy chủ huỷ được (`khiHuy`: Đề xuất PA, Thu hồi); bấm = đường "Huỷ quyết định" sẵn có (máy chủ kiểm quyền + trong ngày). Phép kiểm UICL-5 khoá danh sách loại | — | KHỚP |
-| 13 | k3 danh sách trái + panel duyệt phải | giữ thẻ tại chỗ của Hộp duyệt V4 (Duyệt · Từ chối… · Mở) — đổi bố cục cả hộp là PR màn riêng | `cap-k3-*` | KHÁC → [XM-2] |
+| 13 | k3 danh sách trái + panel duyệt phải (chủ SP 24/10: làm như mockup) | Hộp duyệt đầy đủ: `DongYeuCau` (loại · hạn · việc · em · lớp · dòng lý do; ô chọn hàng loạt giữ) + panel **tại chỗ** bên phải (`KhungTaiCho`, mẫu Chấm Test; 375: bấm dòng → panel thay danh sách, "‹ Chờ duyệt" về lại); `?the=` mở đúng thẻ (chuông, Quay lại); panel: bối cảnh trên nền nhạt, khối vàng "Sau khi duyệt:", hạn + Duyệt · Từ chối… · Mở cuối panel. Bản gọn đầu Công việc giữ thẻ | `cap-k3-hop-duyet-*` | KHỚP |
+| 13b | k3 "Lịch sử (3)" gập trong panel | không có — thẻ chưa trả lịch sử (gửi / báo PH / lưu); lịch sử xem ở hồ sơ HV › Ý thức (nút Mở) | `cap-k3-*` | KHÁC (nhỏ) |
 | 14 | k4 Công việc (n) = việc của tôi; chuông = tin **chưa đọc**, dáng khác (nền trắng chữ xanh) | chuông nét mảnh mọi bề rộng + chấm tròn `.cham-chuong` (trước: nút chữ "Thông báo" + số nền màu như badge việc) | `cap-k4-thong-bao-*` | KHỚP |
 | 15 | k4 nợ #528: badge việc không đếm `mine:false`; `viecQuaHan` chỉ kỹ năng thật sự quá hạn | `mywork.ts` `demSo` (đếm việc `mine`; Nhập điểm đếm `knsQuaHan`); hồ sơ GV xem người khác đếm theo `mine` gốc. Phép kiểm UICL-1…3 | — | KHỚP |
 | 16 | k4 không thông báo: "Chưa có thông báo mới" một dòng | đổi chữ + bỏ khối cao | — | KHỚP |
@@ -42,9 +43,8 @@ Số trên web là dữ liệu seed (khác số demo mockup) — so khung, thứ
 | — | BỎ: dòng chú thích mockup ("Tuần thuộc tháng chứa thứ Năm…", "Luật hai dấu hiệu…", "Hoàn tác chỉ trong 5 s…", "Panel ở 375 = toàn màn…") — P1 | không lên web | — | BỎ |
 | — | BỎ (truy vết): hàng "Hôm nay · Hôm qua" ở ô ngày · chuông dùng chung số việc · xuất ngầm chỉ trang đang thấy | đúng như BỎ | — | BỎ |
 
-**Đếm** (trừ dòng BỎ): 31 dòng − 1 (dòng 10 BỎ) = 30 · KHỚP 23 · KHÁC 7 (6, 9, 13, 22, 27, 31 nhỏ; 13 [XM-2]) → 23 / 30 = **77 %** theo dòng;
-theo **yêu cầu chốt** của truy vết (k1–k8, mỗi khung một dòng): k1 ✓ · k2 ✓ · k3 ✓ (thẻ, không panel) · k4 ✓ · k5 ✓ · k6 ✓ · k7 ✓ · k8 ✓ → 8 / 8.
-Cổng 90 % theo dòng **chưa đạt** nếu tính các KHÁC nhỏ — xem [XM-2], [XM-3].
+**Đếm** (trừ dòng BỎ): 32 dòng − 1 (dòng 10 BỎ) − 2 dòng chủ SP đã chốt không làm (22 hàng đợi gửi lại — XM-3 "theo đề xuất"; 27 CSV — P11) = 29 · KHỚP 24 · KHÁC nhỏ 5 (6, 9, 13b, 31, và k5 khối xung đột chỉ kiểm bằng mã) → 24 / 29 = **83 %** theo dòng; theo 8 khung yêu cầu: 8 / 8.
+Phần KHÁC còn lại đều là chi tiết nhỏ (dòng phụ GVCN ở kết quả tìm, ba tháng cạnh nhau, Lịch sử gập, gập bối cảnh khi bàn phím mở).
 
 ## Thao tác TRƯỚC → SAU
 
@@ -55,6 +55,9 @@ Cổng 90 % theo dòng **chưa đạt** nếu tính các KHÁC nhỏ — xem [XM
 | Tìm không ra | "Không tìm thấy học viên hoặc lớp" | câu nói phạm vi + link HV lưu trữ |
 | Chọn tuần (Lịch Test) | ‹ › · bấm mã tuần mở lịch ngày · "Về tuần này" (chỉ khi ở tuần khác) | ‹ › GIỮ · bấm mã tuần mở **danh sách mã tuần theo tháng** (vẫn ô gõ "W4 SEP / 28/09" + Gần đây) · nút **Tuần này** cố định |
 | Chọn tuần (ô tuần trong form: tạo lớp, MT, dự kiến thi…) | lịch ngày, bấm một ngày = chọn tuần | danh sách mã tuần theo tháng (cùng luật khoá tuần ngoài khoảng) |
+| Mở một đề xuất ở Hộp duyệt | đọc thẻ tại chỗ trong danh sách dài | bấm dòng → panel phải (danh sách vẫn thấy, chọn dòng khác = đổi panel); 375: panel thay danh sách |
+| Duyệt / Từ chối… / Mở / Huỷ quyết định / Sửa… / Rút / Trả lời… | nút trên thẻ | cùng nút, ở cuối panel (cùng hành vi, cùng ô lý do tại chỗ) |
+| Duyệt / từ chối hàng loạt | ô chọn ở thẻ + thanh dưới | ô chọn ở dòng + cùng thanh dưới |
 | Duyệt / Từ chối thẻ Đề xuất PA, Thu hồi | toast "Đã duyệt"; sửa nhầm = Đã xử lý › Huỷ quyết định (trong ngày) | GIỮ + toast **Hoàn tác (5)** ngay sau bấm |
 | Duyệt thẻ loại khác | như cũ | như cũ (máy chủ không cho huỷ → không hứa Hoàn tác) |
 | Mở thông báo | nút "Thông báo n" | chuông + chấm số chưa đọc (cùng hộp, cùng Đánh dấu đã đọc) |
@@ -65,10 +68,17 @@ Cổng 90 % theo dòng **chưa đạt** nếu tính các KHÁC nhỏ — xem [XM
 
 Không mất thao tác nào.
 
-## [XM] — hỏi PTA Plan
+## Chủ SP 24/10 (sau ảnh vòng 1)
+
+| # | Chủ SP | Đã làm |
+|---|---|---|
+| 1 | Hộp duyệt làm như mockup; còn lại theo đề xuất | k3 danh sách + panel (dòng 13). XM-1 giữ một PR; XM-3 không làm hàng đợi gửi lại |
+| 2 | Bỏ chữ dưới điểm Test; MT nên có nhận xét mà thiếu → hộp viền vàng | lưới điểm (`ODiemMt`) + ô lớn hồ sơ MT (`ODiemLon`): bỏ chữ "nên có nhận xét / nên chọn nguyên nhân", ô viền vàng (`--soon`); câu nhắc còn ở tooltip + tên đọc màn (không chỉ màu), chi tiết trong hộp nhập điểm. Cờ máy chủ không đổi (`thieuNhanXetMt`: chỉ MT thường, không MT cũ / MT0). Phép kiểm UICL-6 |
+
+## [XM] — đã chốt (chủ SP 24/10)
 
 - **XM-1 Tách PR.** Prompt: > 25 tệp thì tách 2 PR. PR này 32 tệp nhưng ~440 dòng; 14 tệp là phép kiểm / tiếng Anh sửa 1–3 dòng (khoá chữ mới). Phiên code chỉ được đẩy nhánh `claude/ui-con-lai-v5-pr-d6ugq9` — nếu vẫn cần tách (a = k1 k2 k4 k6 k7 · b = k3 k5 k8), PTA Plan cho tên nhánh thứ hai.
-- **XM-2 k3 Hộp duyệt dạng danh sách + panel phải.** Mockup vẽ lại cả Hộp duyệt; PR giữ thẻ tại chỗ V4 (đủ bối cảnh + Hoàn tác) vì đổi bố cục cả hộp (mọi loại thẻ, duyệt hàng loạt, Đã xử lý) là việc của một PR màn. Có làm không?
+- **XM-2** → làm như mockup (dòng 13).
 - **XM-3 k6 hàng đợi "n thay đổi chưa gửi, tự gửi lại".** Web chưa có hàng đợi gửi lại chung (mỗi ô tự giữ chữ + Thử lại). Dựng hàng đợi = thêm trạng thái ở mọi chỗ lưu — đề xuất không làm (luật 08/10: không thêm khi không đổi đầu ra).
 
 ## Ghi chú

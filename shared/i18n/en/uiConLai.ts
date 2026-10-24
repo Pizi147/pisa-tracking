@@ -17,4 +17,8 @@ export const EN_UI_CON_LAI = {
   'Không thấy': 'Not found',
   'Đường dẫn có thể cũ.': 'The link may be out of date.',
   'Hồ sơ của tôi ›': 'My profile ›',
+  '{n} đề xuất · quá hạn trước → hạn gần nhất': '{n} requests · overdue first → nearest deadline',
+  'Sau khi duyệt:': 'After approval:',
+  'VIỆC · DUYỆT': 'TASK · APPROVE',
+  'Chọn một đề xuất bên trái để xem và quyết': 'Pick a request on the left to review and decide',
 } as const;
