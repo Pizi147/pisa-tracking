@@ -1,5 +1,7 @@
 # Truy vết — `test.html` (Chấm Test · Lịch tuần · Kế hoạch Test)
 
+> **Đã vào mã → PR #534 UI-CHAM-TEST (Chấm Test, Kế hoạch Test) · #539 UI-LICH-TUAN (Lịch Test tuần)** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 > V5-B2, dựa trên nền V5-A (`v5-nen.css`, `du-lieu-demo.md`). **ĐỀ XUẤT THIẾT KẾ** — chờ chủ SP duyệt. Dữ liệu demo, hôm nay T2 14/09/2026 · W3 SEP.
 > Rà mã: [`../../docs/superpowers/specs/2026-10-22-overhaul-v5/b2-ra-soat.md`](../../docs/superpowers/specs/2026-10-22-overhaul-v5/b2-ra-soat.md) mục 1.
 > Mở khung bằng thanh "Khung demo" đầu trang hoặc tham số `?vai=…&tab=…&nhom=…&khung=…&tuan=…&theme=dark`.

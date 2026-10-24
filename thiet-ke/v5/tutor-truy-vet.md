@@ -1,5 +1,7 @@
 # Truy vết — `tutor.html` (V5-B3 · Tutor)
 
+> **HOÃN** (P10, chủ SP 22/10): không PR Tutor đợt này — xem lại tuần sau (~28/10).
+
 V5-B3 · 22/10/2026 · dựa trên nền V5-A. Trạng thái: **ĐỀ XUẤT THIẾT KẾ**. Tutor / buổi là dữ liệu **[V5]** (seed `tuSeed.ts` ít dòng). Ảnh: `anh/tutor-*.png`.
 URL mockup: `?vai=ql`, `?tt=tai|loi|rong`, `?mo=<i>`, `?luu=nhap|dang|da|loi`, `?hoi=1`, `?theme=dark`.
 

@@ -1,5 +1,7 @@
 # Truy vết — `ho-so-gv.html` (V5-B3 · Hồ sơ GV)
 
+> **Đã vào mã → PR #557 UI-HO-SO-GV** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 V5-B3 · 22/10/2026 · dựa trên nền V5-A (`v5-nen.css`, `du-lieu-demo.md` mục 3, 8b; `07-huong-thiet-ke.md` mục 3 — phương án C).
 Trạng thái: **ĐỀ XUẤT THIẾT KẾ** — chờ chủ SP duyệt. Dữ liệu demo, không phải số thật. Ảnh: `anh/ho-so-gv-*.png`.
 Điều khiển mockup (thanh nét đứt trên cùng, không có trên web): Phương án C / B · Người xem QL / GV tự xem · Trạng thái. URL: `?pa=b`, `?vai=gv`, `?tt=tai|loi|rong`, `?tab=ht`, `?mo=<số>`, `?theme=dark`.
