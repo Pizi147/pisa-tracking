@@ -86,8 +86,9 @@ export async function runPrMtDemTests(t: { check: any; assert: any; conn: any; P
   }));
 
   check('MTD-5 · lớp RF (lịch 2): đang làm MT2 → KHÔNG gợi ý "MT3 chưa xếp"; QL tạo MT3 cho một em → có "MT3 chưa xếp"', () => thu(() => {
-    /* Mọi MT1 của lớp coi như xong, mọi em đều có MT2 đã xếp tuần → MT đang làm = 2, MT kế = 3. */
+    /* Mọi MT1 của lớp coi như xong, chưa em nào có MT3 (seed D16 có — huỷ) → MT đang làm = 2, MT kế = 3. */
     conn.prepare("UPDATE assessment_attempts SET status = 'done' WHERE class_id = ? AND kind = 'mock' AND attempt_no = 1 AND status = 'planned'").run(RF);
+    conn.prepare("UPDATE assessment_attempts SET status = 'cancelled' WHERE class_id = ? AND kind = 'mock' AND attempt_no > 2").run(RF);
     const a = em(RF);
     a.luot(1, { xong: true, tuan: t.addDays(tuanNay, -14) });
     a.luot(2, { tuan: tuanNay });

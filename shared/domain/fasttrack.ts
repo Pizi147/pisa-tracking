@@ -19,15 +19,6 @@ export function expectationDelta(attemptNo: number, route?: string | null): numb
 }
 
 /**
- * LỚP FT CHỈ ĐỀ XUẤT SẴN BA LƯỢT.
- *
- * Đa số học viên chỉ thi ba lượt MT; MT4 và MT5 là dự phòng cho em cần kéo dài. Đề xuất
- * sẵn cả năm lượt thì lịch của mọi em dài gấp rưỡi sự thật, và Quản lý phải đi xoá bớt —
- * việc không ai muốn làm nên sẽ không ai làm.
- */
-export const MOCK_FT_DEFAULT_ATTEMPTS = 3;
-
-/**
  * BẬC THANG LỚP NORMAL — học xong một lớp thì em đi đâu tiếp.
  *
  *     Pre FOU  →  FOU  →  BE  →  ELE  →  (hết bậc Normal)
