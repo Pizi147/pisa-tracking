@@ -1,9 +1,13 @@
-import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ChiSo, DaiChiSo } from './TongQuanV5.tsx';
 import { nhanQuaHan, tuanLich } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
+
+/** Số của ô = link đổi trang tới đúng danh sách (G6: không phải panel); 0 vẫn mở được — danh sách trống nói rõ. */
+const So = ({ to, n }: { to: string; n: number }) => <Link to={to} className={`link tabular-nums ${n ? '' : 'text-slate-500'}`}>{n}</Link>;
 
 /** Trả lời của `GET /tong-quan/mock-test` (server/src/worklist/tongQuanMt.ts). */
 type GvQuaHan = { key: string; ownerId: number; gv: string; kyNang: string; lop: string | null; luot: string | null; soBai: number; han: string | null };
@@ -12,20 +16,8 @@ type TongQuanMt = {
   chuaXepLich: number; gvQuaHan: GvQuaHan[];
 };
 
-/** Ô đếm bấm được của Tổng quan theo vai (OV-10c): cả ô là link mở đúng danh sách đã lọc sẵn. Số 0 vẫn bấm được (danh sách trống nói rõ). */
-function ODem({ to, so, nhan, phu }: { to: string; so: number; nhan: string; phu?: ReactNode }) {
-  return (
-    <Link to={to} className="card block h-full p-4 no-underline hover:brightness-125 focus-visible:outline focus-visible:outline-2"
-      aria-label={`${so} — ${nhan}. Mở danh sách`}>
-      <span className={`block text-2xl font-semibold tabular-nums ${so ? 'text-slate-100' : 'text-slate-500'}`}>{so}</span>
-      <span className="mt-1 block text-sm font-medium text-slate-200">{nhan}</span>
-      {phu && <span className="mt-0.5 block text-xs text-slate-500">{phu}</span>}
-    </Link>
-  );
-}
-
 /**
- * TỔNG QUAN ADMIN — tab "Mock Test" (OV-10c, mockup vai mục 4): ba ô bấm được (UI-TONG-QUAN, chủ SP 23/10: bỏ "Đề nghị dời chờ") (mở đúng chỗ ở Test / Công việc, số cùng hàm với màn đó)
+ * TỔNG QUAN ADMIN — tab "Mock Test" (OV-10c, mockup vai mục 4): ba ô chỉ số V5 (số bấm đổi trang) (UI-TONG-QUAN, chủ SP 23/10: bỏ "Đề nghị dời chờ") (mở đúng chỗ ở Test / Công việc, số cùng hàm với màn đó)
  * + danh sách GV chấm quá hạn (OV-12h: chỉ xem, bỏ Nhắc).
  */
 export function MockTestAdmin({ branchId }: { branchId: number | null }) {
@@ -37,17 +29,19 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
   const cn = branchId ? `&cn=${branchId}` : '';
   const soNgay = (han: string | null) => (han ? Math.max(1, Math.round((Date.parse(homNay) - Date.parse(han.slice(0, 10))) / 86_400_000)) : null);
   const khoa = (g: GvQuaHan) => `${g.ownerId}|${g.key}`;
-  const soGv = new Set(data.gvQuaHan.map((g) => g.ownerId)).size;
+  const soGv = new Set(data.gvQuaHan.filter((g) => g.ownerId > 0).map((g) => g.ownerId)).size;
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3" data-hd="tq-mock-test" aria-label="Số liệu Mock Test">
-        <ODem to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} so={data.luotTuanNay.so} nhan="Lượt MT tuần này"
-          phu={`${tuanLich(data.tuan, homNay)} · ${data.luotTuanNay.soLop} lớp`} />
-        <ODem to={`/cong-viec?nhom=cham-diem&khung=tat-ca${cn}`} so={data.oChuaNhap.so} nhan="Ô điểm chưa nhập"
-          phu={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">⚠ {data.oChuaNhap.quaHan} quá hạn</span> : 'không ô nào quá hạn'} />
-        <ODem to={`/test/ke-hoach?loai=ft${cn}`} so={data.chuaXepLich} nhan="HV chưa có MT tiếp theo" phu="đã thi hết lượt MT đã xếp · xem có cần thêm lượt" />
-      </div>
+      {/* SUA-CHAM-LAI L8: ô chỉ số V5 (tên · số · mẫu · kỳ) như mọi vai; số = link đổi trang (mở đúng danh sách đã lọc). Đơn vị "bài" như Lịch Test. */}
+      <DaiChiSo>
+        <ChiSo ten={t('Lượt MT tuần này')} ky={tuanLich(data.tuan, homNay)} giaTri={<So to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} n={data.luotTuanNay.so} />}
+          mau={t('{n} lớp', { n: data.luotTuanNay.soLop })} />
+        <ChiSo ten={t('Bài chưa nhập điểm')} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
+          mau={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">⚠ {t('{n} quá hạn', { n: data.oChuaNhap.quaHan })}</span> : t('không bài nào quá hạn')} />
+        <ChiSo ten={t('HV chưa có MT tiếp theo')} ky={t('hiện tại')} giaTri={<So to={`/test/ke-hoach?loai=ft${cn}`} n={data.chuaXepLich} />}
+          mau={t('đã thi hết lượt MT đã xếp')} />
+      </DaiChiSo>
       <section className="card" aria-labelledby="gv-qua-han">
         <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">
           <h2 id="gv-qua-han" className="m-0 text-[15px] font-semibold text-slate-100">GV chấm quá hạn</h2>
@@ -61,15 +55,15 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
                 const n = soNgay(g.han);
                 return (
                   <li key={khoa(g)}
-                    className="grid items-center gap-x-3 gap-y-0.5 border-t px-4 py-2.5 text-sm grid-cols-[minmax(0,1fr)] md:grid-cols-[180px_minmax(0,1fr)_64px_130px]"
+                    className="grid items-center gap-x-3 gap-y-0.5 border-t px-4 py-2.5 text-sm grid-cols-[minmax(0,1fr)] md:grid-cols-[180px_minmax(0,1fr)_72px_max-content]"
                     style={{ borderColor: 'var(--line)' }}>
                     <span className="min-w-0 truncate font-medium text-slate-100">{g.gv}</span>
                     <span className="min-w-0 text-slate-400 max-md:text-xs">
                       {[g.kyNang, g.lop, g.luot].filter(Boolean).join(' · ')}
-                      <span className="md:hidden"> · {g.soBai} ô{n !== null && <> · <span className="whitespace-nowrap font-semibold text-late">⚠ {nhanQuaHan(n)}</span></>}</span>
+                      <span className="md:hidden"> · {t('{n} bài', { n: g.soBai })}{n !== null && <> · <span className="whitespace-nowrap font-semibold text-late">⚠ {nhanQuaHan(n)}</span></>}</span>
                     </span>
-                    <span className="tabular-nums text-slate-300 max-md:hidden">{g.soBai} ô</span>
-                    <span className="tabular-nums font-semibold text-late max-md:hidden">⚠ {n !== null ? nhanQuaHan(n) : 'quá hạn'}</span>
+                    <span className="tabular-nums text-slate-300 max-md:hidden">{t('{n} bài', { n: g.soBai })}</span>
+                    <span className="whitespace-nowrap tabular-nums font-semibold text-late max-md:hidden">⚠ {n !== null ? nhanQuaHan(n) : t('quá hạn')}</span>
                   </li>
                 );
               })}
