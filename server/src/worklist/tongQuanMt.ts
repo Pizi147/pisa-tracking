@@ -4,10 +4,12 @@
  *  · Ô điểm chưa nhập (n quá hạn) — `myWork` nhóm Chấm điểm, đếm bằng `demPhamVi` như dòng phạm vi Công việc ("m bài cần chấm"; lọc Quá hạn = `khopLocNhanh`).
  *  · HV chưa có MT tiếp theo — `danhSachLop` của Kế hoạch Test, `chuaCoLichTiep` các lớp FT (em đang học không còn lượt MT nào đã xếp tuần: đã thi hết
  *    lượt đã xếp, hoặc chưa có lượt) — để QL / Admin xem có cần thêm lượt MT. UI-TONG-QUAN (chủ SP 23/10): bỏ ô "Đề nghị dời chờ" (đề nghị ở Test › Lịch).
- *  · GV chấm quá hạn — dòng Chấm điểm quá hạn của `myWork` có người phụ trách (OV-12h: chỉ xem, bỏ Nhắc).
+ *  · GV chấm quá hạn — dòng Chấm điểm quá hạn của `myWork` có người phụ trách (OV-12h: chỉ xem, bỏ Nhắc); bài chưa có người giữ (S chấm chéo chưa ai nhận)
+ *    gộp MỘT dòng "Chưa có GV" (`ownerId` 0) cuối bảng — SUA-CHAM-LAI L9: Σ bài của bảng = "n quá hạn" của ô.
  */
 import { demPhamVi, khopLocNhanh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
+import { t } from '../../../shared/i18n/index.ts';
 import { forbidden } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -37,12 +39,20 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
   const dong = (w.dong ?? []) as any[];
   const keHoach = danhSachLop(p, { branchId });
 
-  const gvQuaHan: GvQuaHan[] = ((w.items ?? []) as any[])
-    .filter((it) => it.group === 'score' && it.urgency === 'overdue' && it.ownerId !== null)
+  const quaHan = ((w.items ?? []) as any[]).filter((it) => it.group === 'score' && it.urgency === 'overdue');
+  const gvQuaHan: GvQuaHan[] = quaHan.filter((it) => it.ownerId !== null)
     .map((it) => ({
       key: it.key, ownerId: it.ownerId, gv: it.owner ?? '', kyNang: it.reason, lop: it.classCode ?? null, luot: it.contextLabel ?? null,
       soBai: it.soBai ?? 0, han: it.due ?? null,
     }));
+  const khongGv = quaHan.filter((it) => it.ownerId === null);
+  if (khongGv.length) {
+    const deu = (k: string) => [...new Set(khongGv.map((it) => it[k]).filter(Boolean))].join(', ') || null;
+    gvQuaHan.push({
+      key: 'chua-co-gv', ownerId: 0, gv: t('Chưa có GV'), kyNang: deu('reason') ?? '', lop: deu('classCode'), luot: null,
+      soBai: khongGv.reduce((n, it) => n + (it.soBai ?? 0), 0), han: khongGv.map((it) => it.due).filter(Boolean).sort()[0] ?? null,
+    });
+  }
 
   return {
     tuan: tuanDau?.weekStart ?? mondayOf(today),

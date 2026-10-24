@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
-import { Card, DaiChiXem, ErrorState, OChiSo, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, OChiSo, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
@@ -12,7 +12,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
-import { addDaysIso, mondayOfDate, rateView, thamSoCt, tuanLich, type ChuongTrinh, type PhanTichGvKq, type OPtGv, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { rateView, thamSoCt, tuanLich, type ChuongTrinh, type PhanTichGvKq, type OPtGv, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -34,13 +34,14 @@ export const thamSoTq = (branchId: number | null, ct: ChuongTrinh) => `${branchI
 
 /* ───────────── khung chung ───────────── */
 
-/** Đầu trang một hàng: "Tổng quan" · phạm vi · mã tuần — bộ chọn (chi nhánh, khung) bên phải. */
-export function DauTrangTq({ phamVi, ben }: { phamVi: ReactNode; ben?: ReactNode }) {
+/** Đầu trang một hàng: "Tổng quan" · phạm vi · mã tuần (· kỳ số liệu — SUA-CHAM-LAI L6: ghi MỘT lần cho cả trang) — bộ chọn (chi nhánh, khung) bên phải. */
+export function DauTrangTq({ phamVi, ben, ky }: { phamVi: ReactNode; ben?: ReactNode; ky?: { tu: string; den: string } | null }) {
   const { homNay } = useNgayNghiepVu();
   return (
     <header className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-2">
       <h1 className="m-0 text-xl font-bold text-slate-100">{t('Tổng quan')}</h1>
-      <span className="text-sm text-slate-400">{phamVi}{homNay && <> · <b className="font-bold text-[color:var(--accent)]">{tuanLich(homNay)}</b></>}</span>
+      <span className="text-sm text-slate-400">{phamVi}{homNay && <> · <b className="font-bold text-[color:var(--accent)]">{tuanLich(homNay)}</b></>}
+        {ky && <> · {t('kỳ {ky}', { ky: kyChu(ky) })}</>}</span>
       {ben && <span className="flex flex-wrap items-center gap-2 max-sm:w-full sm:ml-auto">{ben}</span>}
     </header>
   );
@@ -185,7 +186,7 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
   const phuCua = (l: DongLop, c: CotBang) => (c.key === 'lop' ? [t('{n} HV', { n: l.hv }), l.gvcn].filter(Boolean).join(' · ')
     : c.key === 'dat' ? tuMau(l.datMt, t('HV')) : null);
   return (
-    <Card bodyClass="p-0" title={<>{t('Lớp cần chú ý')} <span className="font-normal text-slate-500">· {kyChu(d.ky)}</span></>}>
+    <Card bodyClass="p-0" title={t('Lớp cần chú ý')}>
       <div data-hd="tq-lop-chu-y">
         <Bang ten={t('Lớp cần chú ý')} cot={COT_LOP} hang={ds} khoa={(l) => l.id} oCua={oCua} phuCua={phuCua} khung={false}
           rong={{ tieuDe: t('Không lớp nào cần chú ý'), goiY: t('Không SOS, không Case chưa PA, không HV thi tháng này.'), nut: <Link to="/hoc-vien" className="link">{t('Học viên & Lớp ›')}</Link> }} />
@@ -212,11 +213,13 @@ type HangGv = PhanTichGvKq['hang'][number];
 /** Dòng phụ tên GV = môn dạy ("L · R · W2"). Chủ SP 23/10 (vòng 2): bỏ hẳn dòng "GVCN + danh sách lớp" (xấu, dài) — Tổng quan + Phân tích GV dùng chung. */
 export const phuGv = (h: Pick<HangGv, 'mon'>) => h.mon || null;
 
-/** GV cần chú ý — bảng Phân tích GV của chi nhánh (4 tuần tới tuần này), không xếp hạng, không ngưỡng màu (C08). Quá hạn = Trễ chấm V4. */
+/**
+ * GV cần chú ý — bảng Phân tích GV của chi nhánh, CÙNG kỳ với cả trang (`d.ky` = kỳ mặc định Tổng quan — SUA-CHAM-LAI L6, chủ SP 20/10 "một phạm vi số
+ * cho cả trang"), nên số = Phân tích GV khi chọn cùng kỳ. Không xếp hạng, không ngưỡng màu (C08). Quá hạn = Trễ chấm V4.
+ */
 function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const [loai, setLoai] = useThamSoUrl('gv', 'hc');
-  const den = mondayOfDate(d.homNay), tu = addDaysIso(den, -21);
-  const q = `cn=${d.branchId}${thamSoCt(d.ct)}&tu=${tu}&den=${den}`;
+  const q = `cn=${d.branchId}${thamSoCt(d.ct)}${kyQ(d)}`;
   const pt = useApi<PhanTichGvKq>(d.branchId ? `/phan-tich/giao-vien?${q}` : null, [q]);
   const tre = new Map(d.tre.map((x) => [x.khoa, x.bai]));
   const ht = loai === 'ht';
@@ -238,7 +241,7 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   };
   const phuCua = (h: HangGv, c: CotBang) => (c.key === 'gv' ? phuGv(h) : c.key === 'tre' ? ((tre.get(h.id) ?? 0) ? t('bài') : null) : tuMau(giaTri(h, c), DV[c.key]));
   return (
-    <Card bodyClass="p-0" title={<>{t('GV cần chú ý')} <span className="font-normal text-slate-500">· {tuanLich(tu)} – {tuanLich(den)}</span></>}
+    <Card bodyClass="p-0" title={t('GV cần chú ý')}
       action={<CongTac value={ht ? 'ht' : 'hc'} onChange={(k) => setLoai(k)} muc={[['hc', t('Hành chính')], ['ht', t('Học thuật')]]} />}>
       {pt.error ? <ErrorState message={pt.error.message} hint={pt.error.hint} onRetry={pt.reload} />
         : !pt.data ? <Skeleton rows={3} className="p-4" />
@@ -259,7 +262,7 @@ export function TongQuanQlV5({ d }: { d: TongQuanV5Data }) {
   return (
     <>
       <DaiChiSo>
-        <ChiSo ten={t('Đạt MT')} ky={kyChu(d.ky)} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. Ngoài mẫu: HV chưa đủ dữ liệu.')}
+        <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. Ngoài mẫu: HV chưa đủ dữ liệu.')}
           giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} /> : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.datMt, t('HV đủ dữ liệu')) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Case có PA')} ky={t('hiện tại')}
@@ -336,11 +339,11 @@ export function TongQuanQtV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
   return (
     <>
       <DaiChiSo>
-        <ChiSo ten={t('Đạt MT')} ky={kyChu(d.ky)} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} /> : <span className="text-slate-500">—</span>}
+        <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} /> : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.datMt, t('HV')) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Case có PA')} ky={t('hiện tại')} giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} />}
           mau={d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null} />
-        <ChiSo ten={t('Đạt Target thi thật')} ky={kyChu(d.ky)} giaTri={ptChu(d.thiThat)} mau={tuMau(d.thiThat, t('HV'))} />
+        <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ptChu(d.thiThat)} mau={tuMau(d.thiThat, t('HV'))} />
         <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi tháng này')} nguon={qBc(d, '&o=thi-thang-nay')} />} mau={t('HV có ngày thi đã chốt')} />
       </DaiChiSo>
       <BoCuc trai={<TheoChiNhanh d={d} onChiNhanh={onChiNhanh} />}
@@ -365,16 +368,15 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
     <>
       {/* Chủ SP 23/10: CX xem điểm và tình trạng HV — kết quả trước, việc phối hợp sau. */}
       <DaiChiSo>
-        <ChiSo ten={t('Đạt MT')} ky={kyChu(d.ky)} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} /> : <span className="text-slate-500">—</span>}
+        <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} /> : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.datMt, t('HV đủ dữ liệu')) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('Đạt Target thi thật')} ky={kyChu(d.ky)} giaTri={ft ? ptChu(d.thiThat) : <span className="text-slate-500">—</span>}
+        <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ft ? ptChu(d.thiThat) : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.thiThat, t('HV')) : t('chỉ Fast Track')} />
         <ChiSo ten={t('HV SOS 2–3')} ky={t('hiện tại')} giaTri={<b className="tabular-nums">{sos23}</b>} />
         <ChiSo ten={t('Chờ KQ · bước tiếp')} ky={t('hiện tại')}
           giaTri={hv.data ? <span className="inline-flex gap-1.5"><Link to={den('da-thi')} className="link">{hv.data.dem['da-thi']}</Link>·<Link to={den('cho-buoc-tiep')} className="link">{hv.data.dem['cho-buoc-tiep']}</Link></span> : '…'}
           mau={t('HV chờ KQ · chưa chốt bước tiếp')} />
       </DaiChiSo>
-      <DaiChiXem>👁 {t('CX xem số liệu để phối hợp — không có việc trên trang này.')}</DaiChiXem>
       <BoCuc trai={d.chiNhanh ? <TheoChiNhanh d={d} cx onChiNhanh={onChiNhanh} /> : <LopCanChuY d={d} />}
         phai={<DiTiep dong={[
           { to: `/phan-tich?goc=bao-cao${cn}`, t1: t('Báo cáo HV'), t2: t('kết quả + hỗ trợ') },

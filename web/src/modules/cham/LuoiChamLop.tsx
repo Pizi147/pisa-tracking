@@ -70,11 +70,11 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anDan = false, sEx,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, sEx,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
-  /** Chữ nhỏ ở hàng trên lưới, cùng hàng với nút "Xem dạng bảng" (Lịch Test: "Mở lưới đầy đủ ↗"). */
+  /** Chữ nhỏ ở hàng trên lưới, cùng hàng với nút "Xem dạng bảng" (Lịch Test: "Mở lưới đầy đủ ›"). */
   thanhTren?: ReactNode;
   /** Tổng số ô lưu hỏng của cả lưới (mọi dòng) — đầu trang / hàng lớp nói "n ô chưa lưu" cho tới khi hết. */
   onSoOChuaLuu?: (n: number) => void;
@@ -86,8 +86,6 @@ export function LuoiChamLop({
   chiCot?: readonly string[] | null;
   /** Nơi gọi có bộ chọn môn riêng (panel Nhập điểm lớp) — không vẽ nút "Cả lớp". */
   nutCaLop?: boolean;
-  /** CV-LOI (12.3, V4A-07): panel việc ở Công việc không có Dán từ Excel (chỉ lưới theo lượt của lớp). */
-  anDan?: boolean;
   /** UI-LICH-TUAN: lượt S Ex của tuần (Lịch tuần) — cột S Ex của lưới FT. */
   sEx?: SExTuan;
 }) {
@@ -112,7 +110,7 @@ export function LuoiChamLop({
    */
   const [dan, setDan] = useState<null | { hoi: boolean }>(null);
   const luotMo = 'luot' in data ? (data as BangTheoLuot).luot : null;
-  const coDan = !anDan && (laFt ? !!data.ft?.rows.some((r) => r.cells.some((c) => c.canEdit))
+  const coDan = (laFt ? !!data.ft?.rows.some((r) => r.cells.some((c) => c.canEdit))
     : !!data.thuong?.rows.some((r) => (kind === null || r.kind === kind) && r.skillSchedule.some((s) => s.canEdit)));
   const tenLuot = luotMo ? luotMo.nhan : laFt ? data.ft?.period?.code ?? tenDotFt(data.ft) : kind ? nhanBai(kind) : t('Lớp thường');
 

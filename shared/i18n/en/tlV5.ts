@@ -1,8 +1,8 @@
 /** TL-V5 — Hướng dẫn trên web theo màn V5 (`shared/huongDan/*`). Khoá = chữ Việt trên web; `<b>` giữ nguyên chỗ. */
 export const EN_TL_V5 = {
   // ---------------------------------------------------------------- Admin
-  'Ba ô: <b>Lượt MT tuần này</b> · <b>Ô điểm chưa nhập</b> · <b>HV chưa có MT tiếp theo</b>; bấm ô mở đúng chỗ. Đề nghị dời: ở <b>Test › Kế hoạch Test</b>.':
-    'Three tiles: <b>MT sittings this week</b> · <b>Scores not entered</b> · <b>Students without a next MT</b>; click a tile to open the right place. Reschedule requests: <b>Test › Test plan</b>.',
+  'Ba ô: <b>Lượt MT tuần này</b> · <b>Bài chưa nhập điểm</b> · <b>HV chưa có MT tiếp theo</b>; bấm số mở đúng chỗ. Đề nghị dời: ở <b>Test › Kế hoạch Test</b>.':
+    'Three tiles: <b>MT sittings this week</b> · <b>Scores not entered</b> · <b>Students without a next MT</b>; click a number to open the right place. Reschedule requests: <b>Test › Test plan</b>.',
   'Ba số Mock Test của chi nhánh — bấm để mở.': 'Three Mock Test numbers for the branch — click to open.',
   '<b>Test › Lịch Test tuần</b>: <b>Quá hạn chấm</b> · <b>Test tuần này</b> (hạn dd/mm trên từng lớp).':
     '<b>Test › Weekly tests</b>: <b>Overdue</b> · <b>Tests this week</b> (dd/mm due date on each class).',

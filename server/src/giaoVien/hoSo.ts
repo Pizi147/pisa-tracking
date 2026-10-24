@@ -5,7 +5,7 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, TRANG_THAI, baiId, canChamCheo, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, mondayOfDate, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, TRANG_THAI, baiId, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
   type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -99,16 +99,12 @@ export function lopCuaGv(gvId: number, homNay: string, branchIds: number[] | nul
 
 /**
  * Ô điểm chưa nhập của GV ở các lớp `lop` — `scoreDebtCells` (cùng luật bảng chấm), chỉ tính lớp đang hiện ở "Lớp đang dạy".
- * OV-13o: `lopCheo` (lớp GV Speaking chấm chéo — Tổng quan "Lớp tôi dạy") thêm bài S chấm chéo đã tới lượt chấm, cùng luật `canChamCheo` với Công việc.
- * Hồ sơ GV không truyền: chấm chéo không là việc của GV (T18).
+ * SUA-CHAM-LAI L4: bài S chấm chéo không là nợ của GV nào (T02–T03, T18) — cả hồ sơ GV lẫn Tổng quan "Kỹ năng tôi dạy" không đếm.
  */
-export function noDiemCuaGv(p: Principal, gvId: number, homNay: string, lop: readonly Pick<LopGv, 'id' | 'branchId'>[],
-  lopCheo: ReadonlySet<number> = new Set()): DebtCell[] {
+export function noDiemCuaGv(p: Principal, gvId: number, homNay: string, lop: readonly Pick<LopGv, 'id' | 'branchId'>[]): DebtCell[] {
   const lopIds = new Set(lop.map((l) => l.id));
   const chiNhanh = [...new Set(lop.map((l) => l.branchId).filter((b): b is number => b !== null))];
-  const tuan = mondayOfDate(homNay);
-  return scoreDebtCells(p, homNay, chiNhanh).filter((d) => lopIds.has(d.classId)
-    && (d.userId === gvId || (lopCheo.has(d.classId) && canChamCheo(!!d.chamCheo, d.tuanThi, tuan))));
+  return scoreDebtCells(p, homNay, chiNhanh).filter((d) => lopIds.has(d.classId) && d.userId === gvId);
 }
 
 export type CaseGv = CaseChiTiet & { hocVien: string; maLop: string | null };

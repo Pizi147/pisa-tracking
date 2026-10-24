@@ -23,7 +23,7 @@ import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDon
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import type { CaseDetail, ViewCase } from '../cases/CasePanel.tsx';
 import {
-  chipSosTuKetQua, chuDoiVang, ketQuaGanNhat, type KetQuaVao, duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
+  chipSosTuKetQua, chuDoiVang, ketQuaGanNhat, lyDoChuaDu, type KetQuaVao, duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -209,14 +209,18 @@ function TenEm({ s, ds }: { s: Hang; ds: NguCanhDs }) {
 function OKetQua({ r, h, kq }: { r: Hang; h: Moc | null; kq: ReturnType<typeof ketQua> }) {
   if (kq === 'sos') return <ChipSos {...chipSosTuKetQua(r.standing ?? null)!} ten={r.fullName} />;
   if (kq === 'dat') return <NhanKq kq="dat">{t('Đạt')}</NhanKq>;
-  if (kq === 'thieu') return <NhanKq kq="thieu">{t('Chưa đủ dữ liệu')}</NhanKq>;
+  if (kq === 'thieu') {
+    /* Đ4: lý do ngắn ở tooltip + tên đọc màn (không thêm chữ trên màn — P1). */
+    const ly = lyDoChuaDu(r.standing ?? null);
+    return <NhanKq kq="thieu" title={ly ?? undefined}>{t('Chưa đủ dữ liệu')}{ly && <span className="sr-only"> · {ly}</span>}</NhanKq>;
+  }
   if (r.kckDuoi) return <ChipDuoiKck />;
   return <KetLuan row={r} cotMocTrong={!h} />;
 }
 
-/** Ngày thi — chip nhỏ (`NhanLich`): Thi dd/mm (đã chốt) · Đã thi · Dự kiến MM/YYYY (P5) · Chưa có lịch. */
+/** Ngày thi — chip nhỏ (`NhanLich`) chỉ khi có lịch: Thi dd/mm (đã chốt) · Đã thi · Dự kiến MM/YYYY (P5); chưa có lịch → "—" nhạt (Đ6, V7 không lạm dụng badge). */
 function OLichThi({ l, homNay }: { l?: LichThi; homNay: string }) {
-  if (!l || l.trangThai === 'chua-co') return <NhanLich loai="chua">{t('Chưa có lịch')}</NhanLich>;
+  if (!l || l.trangThai === 'chua-co') return <span className="text-slate-500" title={t('Chưa có lịch')}><span aria-hidden>—</span><span className="sr-only">{t('Chưa có lịch')}</span></span>;
   if (l.trangThai === 'da-chot-ngay' && l.ngay) return <NhanLich loai="co">{t('Thi {ngay}', { ngay: `${l.ngay.slice(8, 10)}/${l.ngay.slice(5, 7)}` })}</NhanLich>;
   if (l.trangThai === 'da-thi') return <NhanLich loai="da-thi">{t('Đã thi')}</NhanLich>;
   return <NhanLich loai="du-kien" title={l.tuan ? tuanLich(l.tuan, homNay) : undefined}>{nhanThangDuKien(l.thang!)}</NhanLich>;

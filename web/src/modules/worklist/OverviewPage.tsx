@@ -40,9 +40,9 @@ export default function OverviewPage() {
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
   const congTac = <CongTacKhung trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />;
   const chiNhanh = <BranchFilter branchId={branchId} onBranch={setBranchId} />;
-  const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode) => (
+  const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode, ky?: { tu: string; den: string } | null) => (
     <div className="page space-y-4">
-      <DauTrangTq phamVi={phamVi} ben={ben} />
+      <DauTrangTq phamVi={phamVi} ben={ben} ky={ky} />
       <DaiMoiDung />
       {than}
     </div>
@@ -60,5 +60,5 @@ export default function OverviewPage() {
       : vai === 'cx' ? <TongQuanCxV5 d={d} onChiNhanh={setBranchId} />
         : d.lop ? <TongQuanQlV5 d={d} />
           : <TongQuanQtV5 d={d} onChiNhanh={setBranchId} />;
-  return trang(vai === 'cx' ? `${phamVi} · ${t('chỉ xem')}` : phamVi, than, <>{congTac}{chiNhanh}</>);
+  return trang(vai === 'cx' ? `${phamVi} · ${t('chỉ xem')}` : phamVi, than, <>{congTac}{chiNhanh}</>, d?.ky);
 }

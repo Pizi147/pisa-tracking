@@ -31,8 +31,8 @@ export function DanhSachViec({ nhom, dem, homNay, soHien, moHet, gapSan, cuoiNho
   /** Số đầu nhóm theo khoá nhóm, chỉ từ việc máy chủ trả (dòng giữ chỗ vừa xong không đếm). */
   dem: ReadonlyMap<string, readonly WorkItem[]>;
   homNay: string; soHien: number; moHet: boolean;
-  /** OV-15d: nhóm gập sẵn (QL: Việc quản lý). */
-  gapSan?: (key: string) => boolean;
+  /** OV-15d: nhóm gập sẵn (QL: Việc quản lý) — `viTri` = thứ tự thẻ nhóm trên màn (0 = đầu). */
+  gapSan?: (key: string, viTri: number) => boolean;
   cuoiNhom?: (key: string) => ReactNode;
   /** UI-CV-TVV (P1): luật của nhóm (vd hạn Báo PH) — nút ⓘ cạnh số đầu nhóm, không thành câu trên màn. */
   luatNhom?: (key: string) => ReactNode;
@@ -52,9 +52,9 @@ export function DanhSachViec({ nhom, dem, homNay, soHien, moHet, gapSan, cuoiNho
   });
   return (
     <div className="flex flex-col gap-3">
-      {ds.map((g) => {
+      {ds.map((g, viTri) => {
         const k = g.key as string;
-        const dangMo = moHet || (mo[k] ?? !gapSan?.(k));
+        const dangMo = moHet || (mo[k] ?? !gapSan?.(k, viTri));
         const goc = (k === 'cham-cheo' ? dem.get('cham-diem')?.filter(laViecChamCheo) : k === 'cham-diem' ? dem.get(k)?.filter((x) => !laViecChamCheo(x)) : dem.get(k)) ?? [];
         const so = demViec(viecThat(goc));
         /* Cùng đơn vị với vạch hạn: việc (không phải dòng). */

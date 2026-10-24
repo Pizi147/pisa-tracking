@@ -274,7 +274,7 @@ const EN_B_WEB = {
   'còn': 'left',
   'GV chấm:': 'Marker:',
   'Mở lưới đầy đủ của lớp này ở trang riêng': 'Open this class’s full grid on its own page',
-  'Mở lưới đầy đủ ↗': 'Open full grid ↗',
+  'Mở lưới đầy đủ ›': 'Open full grid ›',
 
   /* Nhập điểm — trang, lưới FT, lưới lớp thường, một kỹ năng */
   'Nhập điểm {classCode}': 'Enter scores {classCode}',

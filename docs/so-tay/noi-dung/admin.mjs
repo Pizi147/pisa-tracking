@@ -16,7 +16,7 @@ export const ADMIN = {
   viec: [
     {
       ten: '1. Tổng quan › Mock Test mỗi sáng', ai: 'Admin chi nhánh', han: 'Mỗi ngày', o: '<kbd>Tổng quan</kbd> › <b>Mock Test</b>',
-      anh: { id: 'ad-tong-quan', chu: ['Bốn ô: Lượt MT tuần này · Ô điểm chưa nhập · Đề nghị dời chờ · MT chưa xếp lịch.'] },
+      anh: { id: 'ad-tong-quan', chu: ['Bốn ô: Lượt MT tuần này · Bài chưa nhập điểm · Đề nghị dời chờ · MT chưa xếp lịch.'] },
       buoc: ['Đọc bốn ô; bấm một ô mở Kế hoạch Test / Lịch Test đúng chỗ.', 'Khối <b>GV chấm quá hạn</b>: ai còn nợ điểm.', '<b>Lịch sắp tới</b>: <kbd>Xem toàn bộ lịch ›</kbd> mở Kế hoạch Test.'],
       xong: 'Số giảm khi GV nhập đủ / lịch đã xếp.', sua: 'Chỉ xem.', chan: '—', loi: [],
     },
@@ -35,7 +35,7 @@ export const ADMIN = {
       anh: { id: 'ad-lich-test', cap: '' },
       anhThem: [{ id: 'ad-cong-viec', cap: 'Công việc: chỉ nhóm Chấm điểm', chu: ['<kbd>Lọc thêm</kbd> › Của một GV.'] }],
       buoc: ['<kbd>Lịch Test / Chấm Test</kbd>: <b>Test quá hạn chấm</b> · <b>Test chấm tuần này</b> (hạn Thứ Tư).', '<kbd>Công việc</kbd>: chỉ nhóm Chấm điểm của chi nhánh; <kbd>Lọc thêm</kbd> › Của một GV.', 'Nhắc GV trực tiếp; việc tự hết khi GV nhập đủ điểm (có nhận xét).'],
-      xong: 'Khối quá hạn trống; số "Ô điểm chưa nhập" về 0.', sua: '—', chan: '—', loi: [],
+      xong: 'Khối quá hạn trống; số "Bài chưa nhập điểm" về 0.', sua: '—', chan: '—', loi: [],
     },
     {
       ten: '4. Nhập bù / sửa điểm', ai: 'Admin chi nhánh, Quản lý', han: 'Khi GV vắng · nhập nhầm', o: 'Lưới điểm (bấm dòng lớp ở Lịch Test, hoặc <kbd>Điểm theo lớp</kbd>)',

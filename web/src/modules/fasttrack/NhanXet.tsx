@@ -35,7 +35,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
   nhan: string; phu?: string | null; giaTri: string | null; onLuu: (v: string | null) => Promise<boolean>;
   /** OV-14b: kỹ năng của ô — chữ gợi ý đúng kỹ năng (`viDuNhanXet`). */
   kyNang?: string | null;
-  /** LUAT-NX-MT: ô MT đã có điểm — xoá / dưới 10 ký tự vẫn lưu, viền vàng + "Nên có nhận xét …" (chỉ nhắc). */
+  /** LUAT-NX-MT: ô MT đã có điểm — xoá / dưới 10 ký tự vẫn lưu, chỉ nhắc: viền vàng + tooltip / tên đọc màn, không chữ dưới ô (V15, SUA-CHAM-LAI L7). */
   nenCo?: boolean;
 }) {
   const [nhap, setNhap] = useState(giaTri ?? '');
@@ -67,7 +67,6 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
           <Dem n={nhap.length} />
           {tt === 'dang' && <span className="text-slate-500">{t('Đang lưu…')}</span>}
           {tt === 'xong' && <span className="text-slate-500">{t('Đã lưu')}</span>}
-          {nhacNx && tt !== 'dang' && tt !== 'loi' && <span className="font-semibold text-soon">{CAU_THIEU_NHAN_XET['ghi-nhan-xet']}</span>}
           {tt === 'loi' && (
             <button type="button" className="appearance-none border-0 bg-transparent p-0 text-xs font-semibold text-bad underline"
               onMouseDown={(e) => e.preventDefault()} onClick={() => void luu()}>{t('Chưa lưu — thử lại')}</button>
@@ -76,6 +75,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
       </span>
       <textarea ref={o} className="field mt-1 w-full resize-none text-sm leading-relaxed" rows={2} maxLength={NHAN_XET_TOI_DA}
         style={nhacNx ? { borderColor: 'rgb(var(--soon-rgb))' } : undefined}
+        title={nhacNx ? CAU_THIEU_NHAN_XET['ghi-nhan-xet'] : undefined} aria-description={nhacNx ? CAU_THIEU_NHAN_XET['ghi-nhan-xet'] : undefined}
         value={nhap} placeholder={viDuNhanXet(kyNang)}
         onChange={(e) => { sua.current = true; setNhap(e.target.value); if (tt !== 'dang') setTt('idle'); }}
         onBlur={() => void luu()}
@@ -85,13 +85,14 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
 }
 
 /** Hàng chip nhóm nguyên nhân — `value` theo thứ tự chọn; bỏ chip thì các chip sau lên một bậc (chip 1 = nguyên nhân chính). */
-export function ChonNhom({ skill, ct = null, value, onChange, disabled, nhanId }: {
+export function ChonNhom({ skill, ct = null, value, onChange, disabled, nhanId, moTa }: {
   skill: string; value: string[]; onChange: (v: string[]) => void; disabled?: boolean; nhanId?: string;
+  /** Nhắc cho trình đọc màn (V15: không chữ trên màn). */ moTa?: string;
   /** OV-12c: chương trình lớp thường (FOU "G+V") — bộ nhóm theo chương trình, như Xác nhận Case. */
   ct?: string | null;
 }) {
   return (
-    <div role="group" aria-labelledby={nhanId} data-chip-nhom className="flex flex-wrap gap-1.5">
+    <div role="group" aria-labelledby={nhanId} aria-description={moTa} data-chip-nhom className="flex flex-wrap gap-1.5">
       {issuesForTopic(skill, ct).map((i) => {
         const th = value.indexOf(i.code);
         return (
@@ -127,6 +128,7 @@ export function NhomTaiCho({ skill, giaTri, onLuu }: { skill: string; giaTri: st
     setTt((await onLuu(moi)) ? 'xong' : 'loi');
   };
   const id = `nhom-${skill}`;
+  const nhac = !v.length && tt !== 'dang' && tt !== 'loi';
   return (
     <div>
       <span className="mb-1.5 flex items-baseline gap-2 text-xs">
@@ -134,7 +136,6 @@ export function NhomTaiCho({ skill, giaTri, onLuu }: { skill: string; giaTri: st
         <span className="ml-auto">
           {tt === 'dang' && <span className="text-slate-500">{t('Đang lưu…')}</span>}
           {tt === 'xong' && <span className="text-slate-500">{t('Đã lưu')}</span>}
-          {!v.length && tt !== 'dang' && tt !== 'loi' && <span className="font-semibold text-soon">{CAU_THIEU_NHAN_XET['chon-nhom']}</span>}
           {tt === 'loi' && (
             <button type="button" className="appearance-none border-0 bg-transparent p-0 text-xs font-semibold text-bad underline" onClick={() => void luu(v)}>
               {t('Chưa lưu — thử lại')}
@@ -142,7 +143,11 @@ export function NhomTaiCho({ skill, giaTri, onLuu }: { skill: string; giaTri: st
           )}
         </span>
       </span>
-      <ChonNhom skill={skill} value={v} onChange={(x) => void luu(x)} disabled={tt === 'dang'} nhanId={id} />
+      {/* V15: thiếu nhóm → viền vàng quanh hàng chip + tooltip / tên đọc màn, không chữ. */}
+      <div className="rounded-md" title={nhac ? CAU_THIEU_NHAN_XET['chon-nhom'] : undefined}
+        style={nhac ? { outline: '1px solid rgb(var(--soon-rgb))', outlineOffset: 3 } : undefined}>
+        <ChonNhom skill={skill} value={v} onChange={(x) => void luu(x)} disabled={tt === 'dang'} nhanId={id} moTa={nhac ? CAU_THIEU_NHAN_XET['chon-nhom'] : undefined} />
+      </div>
     </div>
   );
 }

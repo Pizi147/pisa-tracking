@@ -7,6 +7,9 @@ export async function runPrSvTqGvTests(t: any) {
   const tq: any = await import('../worklist/tongQuan.ts');
   const pt: any = await import('../phanTich/giaoVien.ts');
   const bc: any = await import('../phanTich/baoCao.ts');
+  const hoSo: any = await import('../giaoVien/hoSo.ts');
+  const perm: any = await import('../permissions.ts');
+  const { demoToday }: any = await import('../demoConfig.ts');
   console.log('\nSV-TQ-GV · Tổng quan GV hai khối');
   const ma = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
 
@@ -29,6 +32,18 @@ export async function runPrSvTqGvTests(t: any) {
         assert(o && (o.kyNang.length || o.baiCho) && o.baiCho === d.baiCho && o.baiQuaHan === d.baiQuaHan, `${d.code}: dạy ≠ V4`);
         assert(!d.hanCham || d.baiCho > 0, `${d.code}: có hạn chấm ${d.hanCham} mà 0 bài`);
       }
+    }
+  });
+
+  check('SV-TQ-GV · GV Speaking: "Kỹ năng tôi dạy" · Chờ chấm = bài của chính GV, KHÔNG bài S chấm chéo (SUA-CHAM-LAI L4, T02–T03)', () => {
+    const p = perm.loadPrincipal(P.sTeacher.userId);
+    const r = tq.lopToiDayHaiKhoi(p);
+    assert(r.day.length > 0, 'dữ liệu demo: GV S phải có lớp dạy');
+    for (const d of r.day) {
+      const cn = conn.prepare('SELECT branch_id b FROM classes WHERE id = ?').get(d.classId).b;
+      const minh = hoSo.noDiemCuaGv(p, p.userId, demoToday(), [{ id: d.classId, branchId: cn }]);
+      assert(minh.every((x: any) => !x.chamCheo && x.userId === p.userId), `${d.code}: còn bài không phải của GV`);
+      assert(d.baiCho === minh.length, `${d.code}: Chờ chấm ${d.baiCho} ≠ bài của GV ${minh.length}`);
     }
   });
 

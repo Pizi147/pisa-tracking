@@ -115,17 +115,25 @@ export async function runPrOv10cTests(t: YThucTestKit) {
     assert(r.chuaXepLich === kh.lop.filter((l: any) => l.loai === 'ft').reduce((n: number, l: any) => n + l.chuaCoLichTiep, 0), 'Chưa xếp lịch ≠ Kế hoạch Test');
   });
 
-  check('OV10c-6 · GV chấm quá hạn: đúng dòng Chấm điểm quá hạn có người của Công việc; tổng ô ≤ số quá hạn', () => {
+  check('OV10c-6 · GV chấm quá hạn: đúng dòng Chấm điểm quá hạn có người của Công việc + MỘT dòng "Chưa có GV"; Σ bài = số quá hạn (SUA-CHAM-LAI L9)', () => {
     const ad = loadPrincipal(idAdmin);
-    const r = tongQuanMt(ad, { branchId: mb });
-    const w = myWork(ad, { branchId: mb, nguoi: 'tat-ca' }) as any;
-    const mong = w.items.filter((it: any) => it.urgency === 'overdue' && it.ownerId !== null);
-    assert(r.gvQuaHan.length === mong.length, `số dòng ${r.gvQuaHan.length} ≠ ${mong.length}`);
-    for (const g of r.gvQuaHan) {
-      const it = mong.find((x: any) => x.key === g.key && x.ownerId === g.ownerId);
-      assert(it && g.gv && g.soBai === it.soBai && g.han === it.due && g.kyNang === it.reason, `dòng lệch: ${JSON.stringify(g)}`);
+    for (const cn of [mb, null]) {
+      const r = tongQuanMt(ad, { branchId: cn });
+      const w = myWork(ad, { branchId: cn, nguoi: 'tat-ca' }) as any;
+      const qh = w.items.filter((it: any) => it.group === 'score' && it.urgency === 'overdue');
+      const mong = qh.filter((it: any) => it.ownerId !== null);
+      const khong = qh.filter((it: any) => it.ownerId === null).reduce((n: number, it: any) => n + it.soBai, 0);
+      const coGv = r.gvQuaHan.filter((g) => g.ownerId > 0);
+      assert(coGv.length === mong.length, `số dòng ${coGv.length} ≠ ${mong.length}`);
+      for (const g of coGv) {
+        const it = mong.find((x: any) => x.key === g.key && x.ownerId === g.ownerId);
+        assert(it && g.gv && g.soBai === it.soBai && g.han === it.due && g.kyNang === it.reason, `dòng lệch: ${JSON.stringify(g)}`);
+      }
+      const cg = r.gvQuaHan.filter((g) => g.ownerId === 0);
+      assert(khong ? cg.length === 1 && cg[0].soBai === khong && cg[0] === r.gvQuaHan.at(-1) : cg.length === 0, `dòng Chưa có GV: ${JSON.stringify(cg)} ≠ ${khong} bài`);
+      const tong = r.gvQuaHan.reduce((n, g) => n + g.soBai, 0);
+      assert(tong === r.oChuaNhap.quaHan, `cn ${cn}: Σ bảng ${tong} ≠ ô "${r.oChuaNhap.quaHan} quá hạn"`);
     }
-    assert(r.gvQuaHan.reduce((n, g) => n + g.soBai, 0) <= r.oChuaNhap.quaHan, 'ô của GV quá hạn vượt số quá hạn');
   });
 
   check('OV10c-8 · Khối Mock Test chỉ Admin: QL, TVV, CX gọi → 403 (QL giữ Tổng quan cũ)', () => {

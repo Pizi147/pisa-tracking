@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -41,10 +41,15 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: 
     return [...(data?.rows ?? []), ...[...giu.values()].filter((r) => !co.has(r.attemptId))].sort(sap);
   }, [data, giu]);
   const dsLop = useMemo(() => [...new Map(rows.map((r) => [r.classId, r.classCode])).entries()], [rows]);
+  /* SUA-CHAM-LAI Đ9: bài chờ chấm trước, bài đã có điểm (xem lại) thành nhóm riêng sau — số đầu panel = nhóm đầu. Dòng vừa lưu ở phiên này (`giu`)
+     đứng nguyên trong nhóm đầu, không nhảy xuống. */
   const ds = useMemo(() => {
     const k = chuan(q);
-    return rows.filter((r) => (lop === null || r.classId === lop) && (!k || chuan(r.studentName).includes(k) || chuan(r.studentEmail ?? '').includes(k)));
-  }, [rows, q, lop]);
+    const loc = rows.filter((r) => (lop === null || r.classId === lop) && (!k || chuan(r.studentName).includes(k) || chuan(r.studentEmail ?? '').includes(k)));
+    const dau = (r: Dong) => r.cho || giu.has(r.attemptId);
+    return [...loc.filter(dau), ...loc.filter((r) => !dau(r))];
+  }, [rows, q, lop, giu]);
+  const soDau = ds.filter((r) => r.cho || giu.has(r.attemptId)).length;
   /* Lớp đang lọc không còn bài nào (đã chấm hết, rời hàng đợi) → bỏ lọc. */
   useEffect(() => { if (lop !== null && !dsLop.some(([id]) => id === lop)) setLop(null); }, [dsLop, lop]);
 
@@ -70,9 +75,16 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: 
                 {!ds.length ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có học viên khớp')}</p> : (
                   <ul className="m-0 list-none p-0">
                     {ds.map((r, i) => (
-                      <DongSpeaking key={r.attemptId} r={r} mo={mo === r.attemptId} onMo={(m) => setMo(m ? r.attemptId : null)}
-                        onTiep={() => setMo(ds.slice(i + 1).find((x) => x.cho && suaDuoc(x.cell))?.attemptId ?? null)}
-                        onDaLuu={() => { setGiu((m) => new Map(m).set(r.attemptId, r)); reload(); onDaLam(); }} />
+                      <Fragment key={r.attemptId}>
+                        {i === soDau && (
+                          <li className="border-t px-4 pt-3 pb-1.5 text-[13px] font-semibold text-slate-400" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+                            {t('Đã có điểm · {n} bài', { n: ds.length - soDau })}
+                          </li>
+                        )}
+                        <DongSpeaking r={r} mo={mo === r.attemptId} onMo={(m) => setMo(m ? r.attemptId : null)}
+                          onTiep={() => setMo(ds.slice(i + 1).find((x) => x.cho && suaDuoc(x.cell))?.attemptId ?? null)}
+                          onDaLuu={() => { setGiu((m) => new Map(m).set(r.attemptId, r)); reload(); onDaLam(); }} />
+                      </Fragment>
                     ))}
                   </ul>
                 )}
