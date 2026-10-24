@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { LopToiDay } from './LopToiDay.tsx';
+import { HaiKhoiGv } from './LopToiDay.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
@@ -49,7 +49,7 @@ export default function OverviewPage() {
   );
 
   if (vai === 'tvv') return trang(t('HV của tôi'), <TongQuanTvvV5 />);
-  if (vai === 'gv' || vai === 'ht') return trang(session?.user?.fullName ?? '', <TongQuanGvV5 lopToiDay={<LopToiDay />} />);
+  if (vai === 'gv' || vai === 'ht') return trang(session?.user?.fullName ?? '', <TongQuanGvV5 lopToiDay={<HaiKhoiGv />} />);
   if (vai === 'admin') {
     return trang(t('Mock Test'), <TongQuanAdminV5 cn={branchId} mockTest={<MockTestAdmin branchId={branchId} />} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
   }

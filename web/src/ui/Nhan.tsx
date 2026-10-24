@@ -133,3 +133,8 @@ export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null 
     </span>
   );
 }
+
+/** Chip kỹ năng (R · W1 …) — cùng kiểu chip ô nhỏ của khung V5 (`.ky`); hồ sơ GV + Tổng quan GV. */
+export const ChipKy = ({ k }: { k: string }) => (
+  <span className="inline-flex h-5 min-w-6 items-center justify-center rounded bg-[color:var(--accent-soft)] px-1.5 text-xs font-bold tabular-nums text-[color:var(--accent)]">{k}</span>
+);

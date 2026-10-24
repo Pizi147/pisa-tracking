@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { useSession } from '../../lib/session.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
+import { ChipKy } from '../../ui/Nhan.tsx';
+import { kyChu, PhanTram, tuMau, tyLeGv } from './TongQuanV5.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { GOI_Y_DUOI_KY_VONG, khungLopToiDay } from '@shared/domain/index.ts';
+import { GOI_Y_DUOI_KY_VONG, khungLopToiDay, type OPtGv } from '@shared/domain/index.ts';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -121,5 +125,99 @@ export function LopToiDay() {
         </div>
       )}
     </section>
+  );
+}
+
+/* ───────────── SV-TQ-GV (XM-5): Tổng quan GV hai khối ───────────── */
+
+type DongDay = {
+  classId: number; code: string; khung: 'ft' | 'thuong'; route: string | null; ct: string | null; kyNang: string[]; tuanHoc: string | null;
+  testKeTiep: string | null; testTuanNay: boolean; baiCho: number; baiQuaHan: number; ketQua: OPtGv | null; tienBo: OPtGv | null;
+};
+type DongCn = {
+  classId: number; code: string; khung: 'ft' | 'thuong'; route: string | null; ct: string | null; hocVien: number;
+  duoiKyVong: number; sos: number | null; caseMo: number; thiThangNay: number;
+};
+type HaiKhoi = { ky: { tu: string; den: string } | null; day: DongDay[]; chuNhiem: DongCn[] };
+
+const COT_DAY: readonly CotBang[] = [
+  /* `deu`: thẻ nửa bề rộng (~500 px ở 1440) — tổng 462 px, phần dư chia đều mọi cột. */
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 72 },
+  { key: 'dat', nhan: t('Đạt Test'), kieu: 'phan-tram', rong: 80, goiY: t('Lớp FT: Đạt kỳ vọng Test · lớp thường: Đạt Test') },
+  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 76 }, { key: 'bai', nhan: t('Chờ chấm'), kieu: 'so', rong: 84 },
+];
+const COT_CN: readonly CotBang[] = [
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'so', rong: 112, goiY: t('Lớp thường: HV chưa đạt') },
+  { key: 'sos', nhan: 'SOS', kieu: 'so', rong: 60 }, { key: 'case', nhan: 'Case', kieu: 'so', rong: 60 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'so', rong: 112 },
+];
+
+/**
+ * KỸ NĂNG TÔI DẠY · LỚP TÔI CHỦ NHIỆM — tầng trái Tổng quan GV (mockup `tong-quan.html?k=gv`). Một GET `/tong-quan/lop-toi-day/hai-khoi`, cả hai khung
+ * (không công tắc FT / Thường — mỗi hàng ghi khung của lớp). Số giữ ô bấm V4 (`/tong-quan/lop-toi-day/o`); Đạt / Tiến bộ = ô bảng Học thuật hồ sơ GV
+ * (`/giao-vien/:id/chi-so/o?cot=ket-qua-lop|tien-bo-lop:<lớp>`). Khối không có lớp thì không dựng; không lớp nào → một thẻ rỗng (trừ vai không dạy).
+ */
+export function HaiKhoiGv() {
+  const { session } = useSession();
+  const id = session?.user?.id;
+  const { data, error, reload } = useApi<HaiKhoi>('/tong-quan/lop-toi-day/hai-khoi', []);
+  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (!data) return <Card title={t('Kỹ năng tôi dạy')} bodyClass="p-4"><Skeleton rows={3} /></Card>;
+  if (!data.day.length && !data.chuNhiem.length) {
+    if (!session?.nav?.workSupport) return null;
+    return <Card title={t('Lớp của tôi')} bodyClass="p-0"><Empty title={t('Bạn chưa được phân công lớp nào đang mở')} hint={t('Khi QL phân công lớp, kỹ năng bạn dạy và lớp chủ nhiệm hiện ở đây.')} /></Card>;
+  }
+  const o = (khung: string, classId: number, cot: string, n: number, tieuDe: string, className?: string) => (
+    <OSo giaTri={n} nguon={`/tong-quan/lop-toi-day/o?ct=${khung}&classId=${classId}&cot=${cot}`} tieuDe={tieuDe} className={className} />
+  );
+  const coTb = data.day.some((d) => d.khung === 'ft');
+  const lopLink = (classId: number, code: string) => <Link to={`/hoc-vien/lop/${classId}`} className="ten-ho-so font-semibold">{code}</Link>;
+
+  const oDay = (d: DongDay, c: CotBang): ReactNode => {
+    if (c.key === 'lop') return lopLink(d.classId, d.code);
+    if (c.key === 'ky') return <span className="flex gap-1">{d.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
+    if (c.key === 'dat') return <PhanTram gon x={tyLeGv(d.ketQua ?? undefined)} nguon={`/giao-vien/${id}/chi-so/o?cot=ket-qua-lop:${d.classId}`} tieuDe={`${d.khung === 'ft' ? t('Đạt kỳ vọng Test') : t('Đạt Test')} · ${d.code}`} />;
+    if (c.key === 'tb') return d.khung === 'ft' ? <PhanTram gon x={tyLeGv(d.tienBo ?? undefined)} nguon={`/giao-vien/${id}/chi-so/o?cot=tien-bo-lop:${d.classId}`} tieuDe={`${t('Tiến bộ')} · ${d.code}`} /> : <span className="text-slate-500">—</span>;
+    /* V4 (D10): có bài quá hạn thì hiện phần quá hạn (đỏ), không thì số bài chờ chấm — bấm ra đúng các bài đó. */
+    return d.baiQuaHan > 0 ? o(d.khung, d.classId, 'bai-qua-han', d.baiQuaHan, `${d.code} · ${t('bài quá hạn chưa nhập điểm')}`, 'font-semibold text-late')
+      : o(d.khung, d.classId, 'bai-cho', d.baiCho, `${d.code} · ${t('bài chờ chấm')}`, 'font-semibold');
+  };
+  const phuDay = (d: DongDay, c: CotBang): ReactNode => {
+    if (c.key === 'lop') {
+      const ben = d.khung === 'ft' ? [d.route, d.testKeTiep] : [d.tuanHoc, d.testKeTiep];
+      return <>{dich(ben.filter(Boolean).join(' · ')) || null}{d.testTuanNay && <> · {t('tuần này')}</>}</>;
+    }
+    if (c.key === 'dat') return tuMau(tyLeGv(d.ketQua ?? undefined), t('lượt'));
+    if (c.key === 'tb') return d.khung === 'ft' ? tuMau(tyLeGv(d.tienBo ?? undefined), t('lượt')) : null;
+    if (c.key === 'bai') return d.baiQuaHan > 0 ? <span className="font-semibold text-late">⚠ {t('quá hạn')}</span> : d.baiCho ? t('bài') : null;
+    return null;
+  };
+  const oCn = (l: DongCn, c: CotBang): ReactNode => {
+    if (c.key === 'lop') return lopLink(l.classId, l.code);
+    const nhanDuoi = l.khung === 'thuong' ? t('học viên chưa đạt') : t('học viên dưới kỳ vọng');
+    if (c.key === 'duoi') return o(l.khung, l.classId, 'duoiKyVong', l.duoiKyVong, `${l.code} · ${nhanDuoi}`);
+    if (c.key === 'sos') return l.sos === null ? <span className="text-slate-500">—</span> : o(l.khung, l.classId, 'sos', l.sos, `${l.code} · ${t('học viên có SOS')}`);
+    if (c.key === 'case') return o(l.khung, l.classId, 'caseMo', l.caseMo, `${l.code} · ${t('Case đang mở')}`);
+    return o(l.khung, l.classId, 'thi-thang-nay', l.thiThangNay, `${l.code} · ${t('HV thi tháng này')}`);
+  };
+  const phuCn = (l: DongCn, c: CotBang): ReactNode => (c.key === 'lop' ? [t('{n} HV', { n: l.hocVien }), l.khung === 'ft' ? l.route : null].filter(Boolean).join(' · ') : null);
+
+  const hai = data.day.length > 0 && data.chuNhiem.length > 0;
+  return (
+    <div data-hd="tq-lop-toi-day" className={`grid items-start gap-4 ${hai ? 'min-[1440px]:grid-cols-2' : ''}`}>
+      {data.day.length > 0 && (
+        <Card bodyClass="p-0" title={<>{t('Kỹ năng tôi dạy')}{data.ky && <span className="font-normal text-slate-500"> · {kyChu(data.ky)}</span>}</>}>
+          <Bang ten={t('Kỹ năng tôi dạy')} cot={coTb ? COT_DAY : COT_DAY.filter((c) => c.key !== 'tb')} hang={data.day} khoa={(d) => d.classId} oCua={oDay} phuCua={phuDay} khung={false} deu />
+          <p className="m-0 border-t px-4 py-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
+            {t('Chỉ bài của tôi. Đạt = lượt Test có Overall đạt kỳ vọng, hoặc Overall chưa đạt nhưng kỹ năng của tôi không dưới kỳ vọng; lớp thường: đạt ngưỡng của lớp.')}
+          </p>
+        </Card>
+      )}
+      {data.chuNhiem.length > 0 && (
+        <Card bodyClass="p-0" title={<>{t('Lớp tôi chủ nhiệm')} <span className="font-normal text-slate-500">· {t('{n} lớp', { n: data.chuNhiem.length })} · {t('hiện tại')}</span></>}>
+          <Bang ten={t('Lớp tôi chủ nhiệm')} cot={data.chuNhiem.some((l) => l.khung === 'ft') ? COT_CN : COT_CN.filter((c) => c.key !== 'sos')} hang={data.chuNhiem} khoa={(l) => l.classId} oCua={oCn} phuCua={phuCn} khung={false} deu />
+          <p className="m-0 border-t px-4 py-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>{t('Số chủ nhiệm tách riêng, không cộng vào việc kỹ năng.')}</p>
+        </Card>
+      )}
+    </div>
   );
 }
