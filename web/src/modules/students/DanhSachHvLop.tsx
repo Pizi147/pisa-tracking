@@ -150,7 +150,7 @@ export function BangHvGon({ ds, lop, viec, nguCanh, onMoViec, onDoi, vai }: {
     switch (c.key) {
       case 'ten': return <TenEm h={h} lop={lop.get(h.classId)} ev={ev} ds={nguCanh} />;
       case 'lo': return g
-        ? <span className="block"><b className="block tabular-nums text-slate-100">MT{g.loTrinh.mt}/{g.loTrinh.soMt}</b>
+        ? <span className="block"><b className="block tabular-nums text-slate-100">{g.loTrinh.soMt ? `MT${g.loTrinh.mt}/${g.loTrinh.soMt}` : '—'}</b>
             <span className="block text-xs text-slate-400">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
         : <span className="block truncate text-xs text-slate-400">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
       case 'mt': return g ? <OMtGan g={g} /> : trong;
