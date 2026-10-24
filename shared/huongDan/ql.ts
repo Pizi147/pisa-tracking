@@ -84,7 +84,7 @@ export const HD_QL: HuongDan = {
       { id: 'ql-hv-menu', ten: 'Thao tác với em', buoc: ['<b>⋯</b> trên đầu hồ sơ: <b>Sửa thông tin</b> · <b>Chuyển lớp…</b> · <b>Tạm dừng / Thôi học</b> · <b>Kết quả thi thật</b> · <b>Lịch sử</b>.', 'Em đã học xong: <b>Lưu trữ</b> (có Hoàn tác).'] },
       { id: 'ql-hv-chuyen', ten: 'Chuyển lớp', buoc: ['<b>Lớp chuyển đến</b>, <b>Tuần bắt đầu</b>, <b>Lý do</b>.', 'Chọn <b>Ngay hôm nay</b> → nút <b>Chuyển ngay</b> (không hoàn tác); tuần khác → <b>Quyết định chuyển lớp</b>.', 'GVCN lớp cũ bàn giao, hạn ghi ở chân panel.'] },
       { id: 'ql-hv-ket-thuc-pa', ten: 'Kết thúc PA sớm', buoc: ['Mở Case, <b>⋯</b> ở dòng PA quy chế đang chạy → <b>Kết thúc PA</b>.', '<b>Lý do</b> bắt buộc, từ 10 ký tự.'] },
-      { id: 'ql-hv-lich-su', ten: 'Xem lịch sử', buoc: ['<b>⋯ › Lịch sử</b> ở hồ sơ em, hồ sơ lớp; nút <b>Lịch sử</b> ở hồ sơ MT, Kết quả thi thật, Góp ý hàng tuần, kết quả Thêm học viên.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.'] },
+      { id: 'ql-hv-lich-su', ten: 'Xem lịch sử', buoc: ['<b>⋯ › Lịch sử</b> ở hồ sơ em, hồ sơ lớp; <b>⋯ › Lịch sử góp ý tuần</b> ở hồ sơ lớp; nút <b>Lịch sử</b> ở hồ sơ MT, Kết quả thi thật, kết quả Thêm học viên.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.'] },
     ),
     {
       id: 'luu-tru', ten: 'Lưu trữ', duong: ['/hoc-vien/luu-tru'],

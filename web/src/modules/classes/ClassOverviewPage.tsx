@@ -41,7 +41,7 @@ export default function ClassOverviewPage() {
   const { homNay } = useNgayNghiepVu();
   const [params, setParams] = useSearchParams();
   const cheDoUrl = params.get('che-do');
-  const cheDo: CheDoHocVien = cheDoUrl === 'gop-y' || cheDoUrl === 'can-ho-tro' || cheDoUrl === 'lo-trinh' || cheDoUrl === 'ket-qua' || cheDoUrl === 'thong-tin' ? cheDoUrl : 'diem';
+  const cheDo: CheDoHocVien = cheDoUrl === 'can-ho-tro' || cheDoUrl === 'lo-trinh' || cheDoUrl === 'ket-qua' || cheDoUrl === 'thong-tin' ? cheDoUrl : 'diem';
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
@@ -142,7 +142,6 @@ export default function ClassOverviewPage() {
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
         <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null, tuan: null })}
-          tuan={params.get('tuan')} onTuan={(w) => doiThamSo({ tuan: w })}
           emMo={Number(params.get('em')) || null} onDaMoEm={() => doiThamSo({ em: null })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}
           onSuaThongTin={data.viewer.coTheSuaCaLop && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />
@@ -156,6 +155,7 @@ export default function ClassOverviewPage() {
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
       {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}
       {viec === 'lich-su' && <LichSuThayDoi loai="lop" id={data.id} dong2={[data.code]} onClose={dong} />}
+      {viec === 'lich-su-gop-y' && <LichSuThayDoi loai="gop-y" id={data.id} dong2={[t('Góp ý hàng tuần'), data.code]} onClose={dong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
       {(viec === 'thong-tin' || viec === 'phan-cong') && (
         <ThongTinLopPanel lop={data} phan={viec === 'phan-cong' ? 'phan-cong' : null} onClose={dong} onDone={xong}

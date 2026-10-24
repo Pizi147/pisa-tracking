@@ -44,6 +44,8 @@ export type HoSoLop = {
   /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác). */
   cuoiKhoa: { du: number; tong: number; canQl?: number } | null;
   canhBaoYThuc: number;
+  /** P3: lớp có góp ý hàng tuần cũ → ⋯ › Lịch sử góp ý tuần. */
+  coGopY?: boolean;
   /** PR-CT: dữ liệu dải Kết thúc khoá / Bàn giao / Sắp nhận (mockup 20 — A, H); null khi lớp đã kết thúc. */
   dai: DaiLop | null;
   status?: string; finishedAt?: string | null;
@@ -68,7 +70,8 @@ export type HoSoLop = {
   };
 };
 /** `phan-cong`: panel Thông tin lớp mở sẵn phần Phân công (badge "Thiếu GV", `?viec=phan-cong`). */
-export type ViecDauTrang = ViecMenuLop | 'ban-giao' | 'phan-cong' | 'case';
+/** `lich-su-gop-y`: Góp ý hàng tuần gỡ khỏi giao diện 24/10 (chủ SP) — dữ liệu cũ chỉ còn xem ở Lịch sử góp ý tuần. */
+export type ViecDauTrang = ViecMenuLop | 'ban-giao' | 'phan-cong' | 'case' | 'lich-su-gop-y';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
@@ -145,7 +148,9 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const menu: MucMenu[] = mucLop.flatMap((m, i) => {
     const truoc = mucLop[i - 1];
     const dau = m.nhom && m.nhom !== truoc?.nhom ? [{ key: `nhom-${m.nhom}`, nhan: t(m.nhom), tieuDe: true, keTruoc: false, onChon: () => undefined }] : [];
-    return [...dau, { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) }];
+    const muc = { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) };
+    /* Góp ý hàng tuần gỡ 24/10 — giữ đường xem dữ liệu cũ ngay dưới Lịch sử (cùng nhóm Công cụ), chỉ khi lớp có góp ý (PTA Plan 25/10). */
+    return m.key === 'lich-su' && data.coGopY ? [...dau, muc, { key: 'lich-su-gop-y', nhan: t('Lịch sử góp ý tuần'), onChon: () => onViec('lich-su-gop-y') }] : [...dau, muc];
   });
 
   /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8 — nâng cấp, không chép mockup): GIỮ nút Nhập điểm · + Case · ⋯ và mọi badge ở vị trí V4; màu / chữ V5. */

@@ -366,7 +366,7 @@ const FILE_DA_DICH = [
   ...['StudentsPage', 'StudentDetailPage', 'DauHoSo', 'HanhTrinh', 'ChuongLop', 'CacLoTrinh', 'NganCase', 'NganTongKet', 'KetLuanKhoa', 'KetQuaThiThatPanel',
     'ClassRoster', 'BangHocVienLop', 'MissingBadge'].map((f) => `web/src/modules/students/${f}.tsx`),
   ...['ClassOverviewPage', 'DauTrangLop', 'TabHocVienLop', 'BangDiemLopThuong', 'BangCanHoTro', 'ClassIssueBoard', 'CanhBaoYThuc', 'PhanTichLopTab',
-    'TabTongKetLop', 'DaiChuyenLop', 'BangGopYTuan', 'BangKqdrLopFt', 'thaoTacDongHocVien'].map((f) => `web/src/modules/classes/${f}.tsx`),
+    'TabTongKetLop', 'DaiChuyenLop', 'BangKqdrLopFt', 'thaoTacDongHocVien'].map((f) => `web/src/modules/classes/${f}.tsx`),
 ];
 
 /** Chuỗi so khớp dữ liệu (không hiện ra) — giữ Việt có chủ đích. */
