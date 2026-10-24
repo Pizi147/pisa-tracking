@@ -39,4 +39,18 @@ export async function runPrUiChungTests(t: any) {
     const route = doc('server/src/routes/index.ts');
     assert(route.includes("api.get('/classes/:id/gop-y'") && route.includes("api.put('/classes/:id/gop-y'"), 'route Góp ý phải giữ (Lịch sử, dữ liệu)');
   });
+
+  check('UIC-3 · menu ⋯ (Menu, MenuDong): nhãn nhóm không bấm được + vạch; mục ≥ 44 px ở 375; mục nguy hiểm có vạch đỏ (không chỉ màu chữ)', () => {
+    const css = doc('web/src/index.css');
+    const luat = (ten: string) => css.match(new RegExp(`\\.${ten}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+    assert(/font-weight:\s*600/.test(luat('menu-nhom')) && /var\(--text-dim\)/.test(luat('menu-nhom')), '.menu-nhom 12 / 600 text-dim');
+    assert(/\.menu-nhom:not\(:first-child\)\s*\{[^}]*border-top:\s*1px solid var\(--line\)/.test(css), 'vạch trên mỗi nhóm trừ nhóm đầu');
+    assert(/min-height:\s*36px/.test(luat('menu-muc')) && /@media \(max-width: 639px\)\s*\{\s*\.menu-muc\s*\{\s*min-height:\s*44px/.test(css), 'mục ≥ 36 px, ≥ 44 px ở 375');
+    assert(/\.menu-muc-nguy\s*\{[^}]*border-top:\s*1px solid rgb\(var\(--bad-rgb\)\)/.test(css), 'mục nguy hiểm có vạch đỏ');
+    for (const f of ['web/src/ui/Menu.tsx', 'web/src/ui/MenuDong.tsx']) {
+      const s = doc(f);
+      assert(/role="presentation" className="menu-nhom/.test(s), `${f}: nhãn nhóm role=presentation + .menu-nhom`);
+      assert(s.includes('menu-muc ') && s.includes('menu-muc-nguy'), `${f}: mục dùng .menu-muc + .menu-muc-nguy`);
+    }
+  });
 }
