@@ -121,27 +121,24 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
           </span>
         </span>
         <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>
-        {/* OV-12b: bài có điểm còn thiếu nhận xét / nhóm (dữ liệu trước luật) — chữ, không chỉ màu. Writing ghi task. */}
-        {bai.filter((c) => c.thieuNhanXet).map((c) => (
-          <span key={c.skill} className="mt-0.5 block text-xs font-semibold leading-tight text-soon">
-            {laW ? `${c.skill === 'writing1' ? 'W1' : 'W2'} ` : ''}{CHU_O_THIEU[c.thieuNhanXet!]}
-          </span>
-        ))}
       </>
     );
     /* PR-S4F #10: flex-col cho cả nút và ô chỉ đọc — nút căn giữa nội dung theo chiều dọc nên lệch ~3 px so với ô bên cạnh. */
     const dangMo = mo !== null && bai.some((c) => c.skill === mo);
+    /* UI-CON-LAI (chủ SP 24/10): thiếu nhận xét MT → viền vàng, không chữ dưới điểm; câu nhắc ở tooltip (Writing ghi task). */
+    const thieu = bai.filter((c) => c.thieuNhanXet).map((c) => `${laW ? `${c.skill === 'writing1' ? 'W1' : 'W2'} ` : ''}${CHU_O_THIEU[c.thieuNhanXet!]}`);
     const vo = `flex min-w-0 flex-col rounded-lg border px-3 py-2.5 text-left ${dangMo ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
     return sua ? (
       <button key={k} type="button" aria-expanded={dangMo} aria-haspopup="dialog" ref={(el) => { neo.current[bai[0].skill] = el; }}
-        title={[nhapBoi, t('Bấm để nhập / sửa điểm tại chỗ.')].filter(Boolean).join('\n')}
+        title={[...thieu, nhapBoi, t('Bấm để nhập / sửa điểm tại chỗ.')].filter(Boolean).join('\n')}
+        aria-description={thieu.join(', ') || undefined}
         className={`${vo} bam focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-strong)]`}
-        style={dangMo ? undefined : { borderColor: 'var(--line)' }}
+        style={dangMo ? undefined : { borderColor: thieu.length ? 'rgb(var(--soon-rgb))' : 'var(--line)' }}
         onClick={() => onMo(dangMo ? null : bai[0].skill)}>
         {noiDung}
       </button>
     ) : (
-      <div key={k} className={vo} style={{ borderColor: 'var(--line)' }} title={nhapBoi || undefined}>{noiDung}</div>
+      <div key={k} className={vo} style={{ borderColor: thieu.length ? 'rgb(var(--soon-rgb))' : 'var(--line)' }} title={[...thieu, nhapBoi].filter(Boolean).join('\n') || undefined}>{noiDung}</div>
     );
   };
 

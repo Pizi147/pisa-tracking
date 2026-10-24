@@ -56,4 +56,11 @@ export async function runPrUiConLaiTests(t: any) {
     const ds = [...web.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
     assert(JSON.stringify(coHuy) === JSON.stringify(ds), `máy chủ ${coHuy} ≠ web ${ds}`);
   });
+
+  check('UICL-6 (chủ SP 24/10) · ô điểm thiếu nhận xét MT: viền vàng, KHÔNG chữ dưới điểm (lưới + ô lớn hồ sơ MT); câu nhắc còn ở tooltip / tên đọc màn', () => {
+    const hop = fs.readFileSync(path.join(REPO, 'web/src/modules/fasttrack/HopNhapDiem.tsx'), 'utf8');
+    const lon = fs.readFileSync(path.join(REPO, 'web/src/modules/fasttrack/ODiemLon.tsx'), 'utf8');
+    assert(!/ChuThieu/.test(hop) && /cell\.thieuNhanXet \? VIEN_THIEU_NX/.test(hop) && /CHU_O_THIEU\[cell\.thieuNhanXet\]/.test(hop), 'lưới: viền vàng + tooltip, không chữ');
+    assert(!/text-soon/.test(lon) && /--soon-rgb/.test(lon) && /aria-description=\{thieu/.test(lon), 'ô lớn: viền vàng + aria, không chữ');
+  });
 }
