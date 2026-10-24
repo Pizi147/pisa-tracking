@@ -19,8 +19,8 @@ export const HD_CX: HuongDan = {
     },
     {
       id: 'cx-can-chu-y', ten: 'Theo dõi em Cần chú ý', khi: 'mỗi ngày',
-      buoc: ['<b>Học viên & Lớp</b> mở sẵn <b>Cần chú ý</b>, phạm vi <b>Tất cả chi nhánh</b>.',
-        'Bấm dòng em mở panel một em, không rời trang.', 'Cần xem sâu: mở hồ sơ em.'],
+      buoc: ['<b>Học viên & Lớp</b> mở ở <b>Tất cả</b>, phạm vi <b>Tất cả</b> chi nhánh; bấm lọc <b>Cần chú ý</b>.',
+        'Bấm tên em mở hồ sơ.', 'Cần xem sâu: mở hồ sơ em.'],
       chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Góc nhìn và lọc phụ ở hàng này.' },
     },
     {
@@ -56,7 +56,7 @@ export const HD_CX: HuongDan = {
       muc: [
         hvTim,
         hvLichThi,
-        { id: 'cx-hvl-goc', ten: 'Góc nhìn và phạm vi', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> · <b>Cần chú ý</b> (mặc định); lọc phụ <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Đã thi · chờ kết quả</b>, <b>Thiếu thông tin</b>.', 'Phạm vi <b>Tất cả chi nhánh</b> hoặc một chi nhánh.', 'Bấm dòng em mở panel một em.'],
+        { id: 'cx-hvl-goc', ten: 'Góc nhìn và phạm vi', buoc: ['<b>Tất cả</b> (mặc định) · <b>Đang SOS</b> · <b>Lịch thi</b>; lọc <b>Cần chú ý</b>, <b>Tạm dừng</b>, <b>Sắp thi</b>, <b>Thi tháng này</b>, <b>Đã thi · chờ kết quả</b>, <b>Thiếu thông tin</b>.', 'Phạm vi <b>Tất cả</b> chi nhánh hoặc một chi nhánh.', '<b>⋯</b> cuối dòng: <b>Sửa thông tin</b> · <b>Tạm dừng / Thôi học</b> · <b>Kết quả thi thật</b> (FT) · <b>Mở hồ sơ</b>.'],
           chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Góc nhìn và lọc phụ ở hàng này.' } },
         { id: 'cx-hvl-them', ten: 'Tạo lớp, thêm học viên', buoc: ['<b>+ Lớp mới</b> · <b>+ Học viên</b> (một em hoặc dán danh sách): mọi chi nhánh. Phân công giáo viên do QL làm.'] },
       ],
