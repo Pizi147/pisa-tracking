@@ -9569,6 +9569,9 @@ await runPrUiHoSoGvTests({ check, assert, conn, P } as any);
 // ==================================================================== V5 UI-PHAN-TICH (Báo cáo HV = Tổng quan, Phân tích GV cột mới = panel, Toàn bộ)
 const { runPrUiPhanTichTests } = await import('./prUiPhanTich.tests.ts');
 await runPrUiPhanTichTests({ check, assert, conn, P } as any);
+// ==================================================================== V5 UI-CON-LAI (nợ #528: badge việc của tôi chỉ việc mine, quá hạn theo kỹ năng)
+const { runPrUiConLaiTests } = await import('./prUiConLai.tests.ts');
+await runPrUiConLaiTests({ check, assert, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

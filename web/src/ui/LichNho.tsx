@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent as PhimReact, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  buocLich, chotTuan, docONgay, goiYGanDay, hienONgay, loiKhoangNgay, luoiThang, mondayOfDate, THU_NGAN,
+  addDaysIso, buocLich, chotTuan, docONgay, goiYGanDay, hienONgay, loiKhoangNgay, luoiThang, mondayOfDate, ngay, owningMonthOf, THU_NGAN, tuanLich,
   type KieuONgay, type LuatONgay,
 } from '@shared/domain/index.ts';
 import { useGiuFocus } from './giuFocus.ts';
@@ -172,6 +172,49 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
     );
   };
 
+  /*
+   * UI-CON-LAI k2 (con-lai.html): kiểu `tuan` = danh sách MÃ TUẦN của tháng đang xem (tuần thuộc tháng chứa thứ Năm — `owningMonthOf`),
+   * mỗi dòng "W1 SEP · 31/08"; tuần này chữ hồng nhận diện (không phải cảnh báo). ↑ ↓ đi từng tuần, qua tháng tự đổi tháng xem.
+   */
+  const thanTuan = () => {
+    const tuan = luoiThang(xem.nam, xem.thang).map((h) => h[0]).filter((m) => owningMonthOf(m).month === xem.thang);
+    const tuanNay = mondayOfDate(homNay);
+    const oTab = tuan.includes(mondayOfDate(tro)) ? mondayOfDate(tro) : tuan[0];
+    const phim = (e: PhimReact<HTMLButtonElement>, m: string) => {
+      const n = e.key === 'ArrowDown' ? 7 : e.key === 'ArrowUp' ? -7 : 0;
+      if (!n) return;
+      e.preventDefault();
+      const moi = addDaysIso(m, n);
+      const th = owningMonthOf(moi);
+      dangGo.current = true;
+      setTro(moi);
+      setXem({ nam: th.year, thang: th.month });
+    };
+    return (
+      <div role="group" aria-label={t('Tháng {thang}/{nam}', { thang: xem.thang, nam: xem.nam })} className="flex flex-col gap-0.5">
+        {tuan.map((m) => {
+          const gt = giaTriO(m);
+          const tat = ngoaiLuat(gt);
+          const dangChon = tuanDangChon === m;
+          const nay = m === tuanNay;
+          return (
+            <button key={m} type="button" data-o={m} tabIndex={m === oTab ? 0 : -1} aria-disabled={tat || undefined} aria-pressed={dangChon}
+              aria-current={nay ? 'date' : undefined}
+              className={[
+                'flex min-h-[44px] items-center justify-between gap-2 rounded-md border px-2.5 text-left text-[13px] tabular-nums sm:min-h-[34px]',
+                dangChon ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-slate-100' : 'border-transparent text-slate-200',
+                tat ? 'cursor-not-allowed line-through opacity-40' : 'bam',
+              ].join(' ')}
+              onClick={() => chon(gt)} onKeyDown={(e) => phim(e, m)}>
+              <span>{tuanLich(m, homNay)}{nay && <span className="font-semibold text-[color:var(--hong-chu)]"> · {t('tuần này')}</span>}</span>
+              <span className="text-xs text-slate-500">{ngay(m, homNay)}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   const thanThang = () => {
     const thangNay = homNay.slice(0, 7);
     const troTrongNam = tro.slice(0, 4) === String(xem.nam);
@@ -236,7 +279,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
         <button type="button" className={NUT_DAU} onClick={() => doiThangXem(1)} aria-label={laThang ? t('Năm sau') : t('Tháng sau')}><MuiTen /></button>
       </div>
 
-      {laThang ? thanThang() : thanNgay()}
+      {laThang ? thanThang() : kieu === 'tuan' ? thanTuan() : thanNgay()}
 
       <div className="mt-2 flex flex-wrap items-center gap-1 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
         <span className="mb-0.5 w-full text-xs font-semibold text-slate-500">{t('Gần đây')}</span>

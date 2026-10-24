@@ -210,6 +210,29 @@ export default function App() {
   /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
   const [dangThu, setDangThu] = useState(false);
   const thuLai = async () => { setDangThu(true); try { await reload(); } finally { setDangThu(false); } };
+  /* UI-CON-LAI k6: trình duyệt báo mất mạng → cùng dải "Mất kết nối" (không đợi tới lần tải sau mới biết); có mạng lại thì tự hỏi lại phiên. */
+  const [matMang, setMatMang] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
+  useEffect(() => {
+    const tat = () => setMatMang(true);
+    const bat = () => { setMatMang(false); void reload(); };
+    window.addEventListener('offline', tat);
+    window.addEventListener('online', bat);
+    return () => { window.removeEventListener('offline', tat); window.removeEventListener('online', bat); };
+  }, [reload]);
+  /* k7: in / chiếu luôn nền sáng (kể cả đang tối) + dòng đầu trang in "PISA · tên trang · in lúc · người in"; in xong trả giao diện cũ. */
+  const [inLuc, setInLuc] = useState<string | null>(null);
+  useEffect(() => {
+    let cu: string | undefined;
+    const truoc = () => {
+      cu = document.documentElement.dataset.theme;
+      document.documentElement.dataset.theme = 'light';
+      setInLuc(new Date().toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }));
+    };
+    const sau = () => { if (cu === undefined) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = cu; };
+    window.addEventListener('beforeprint', truoc);
+    window.addEventListener('afterprint', sau);
+    return () => { window.removeEventListener('beforeprint', truoc); window.removeEventListener('afterprint', sau); };
+  }, []);
   /*
    * Chỉ người duyệt được (Q10). PR-TD2-c (chủ sản phẩm 07/10): đổi trang chỉ hỏi lại khi lần trước đã quá 60 s — huy hiệu trễ tối đa 60 s
    * khi NGƯỜI KHÁC gửi yêu cầu; việc của chính mình gọi `invalidate('/yeu-cau')` nên cập nhật ngay. Không hỏi lặp theo giờ.
@@ -253,10 +276,10 @@ export default function App() {
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">{t('Bỏ qua tới nội dung')}</a>
       {!banChinh && <div className="contents print:hidden"><DemoBar /></div>}
       {/* PR-PH: mất kết nối khi tải lại phiên KHÔNG phải đăng xuất — giữ nguyên màn, chỉ báo và cho thử lại. */}
-      {session.loiKetNoi && (
+      {(session.loiKetNoi || matMang) && (
         <div role="status" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"
           style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))', color: 'rgb(var(--soon-rgb))' }}>
-          <span>{t('Mất kết nối tới máy chủ — dữ liệu trên màn có thể chưa mới. Bạn vẫn đang đăng nhập.')}</span>
+          <span>{matMang ? t('⚠ Đang mất kết nối. Chữ chưa lưu vẫn giữ trên màn — lưu lại khi có mạng.') : t('Mất kết nối tới máy chủ — dữ liệu trên màn có thể chưa mới. Bạn vẫn đang đăng nhập.')}</span>
           <button type="button" className="btn btn-sm" disabled={dangThu} onClick={() => { void thuLai(); }}>{dangThu ? t('Đang thử…') : t('Thử lại')}</button>
         </div>
       )}
@@ -293,6 +316,7 @@ export default function App() {
       })()}
 
       <main id="noi-dung" tabIndex={-1} className="relative flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 max-md:scroll-pb-20 outline-none print:overflow-visible print:p-0" key={location.pathname.split('/')[1]}>
+        {inLuc && <p className="m-0 mb-2 hidden text-[12px] print:block">PISA · {document.title} · {t('in {luc}', { luc: inLuc })} · {session.user?.fullName}</p>}
         <BatLoiTrang duong={location.pathname}>
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>

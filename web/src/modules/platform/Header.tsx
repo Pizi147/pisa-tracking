@@ -15,8 +15,29 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
+import { boDau } from '@shared/huongDan/index.ts';
 
-type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null };
+type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null; openCase?: { sos_level: number } | null };
+type GvHit = { id: number; fullName: string };
+
+/** UI-CON-LAI k1: tô chữ khớp (không dấu, không hoa thường) bằng màu hồng nhận diện — chuỗi dựng sẵn NFC nên mỗi ký tự bỏ dấu vẫn là một ký tự. */
+function ToKhop({ chu, q }: { chu: string; q: string }) {
+  const kim = boDau(q.trim()).toLowerCase();
+  const rom = [...chu].map((c) => boDau(c).toLowerCase());
+  const i = kim && rom.length === [...chu].length ? rom.join('').indexOf(kim) : -1;
+  if (i < 0) return <>{chu}</>;
+  const ky = [...chu];
+  return <>{ky.slice(0, i).join('')}<mark className="tim-khop">{ky.slice(i, i + kim.length).join('')}</mark>{ky.slice(i + kim.length).join('')}</>;
+}
+
+/** Phím mở ô tìm: "/" (ngoài ô nhập) hoặc Ctrl / ⌘ K. */
+const laPhimTim = (e: KeyboardEvent) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') return true;
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return false;
+  const el = e.target as HTMLElement | null;
+  return !(el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)));
+};
 
 type LopRef = { id: number; code: string; student_count: number };
 
@@ -30,6 +51,8 @@ export function Header() {
   /** OV-15a (C11): panel Hướng dẫn của màn đang đứng — mở từ menu Tài khoản, sống ngoài menu (menu đóng khi bấm). */
   const [moHd, setMoHd] = useState(false);
   const [hits, setHits] = useState<SearchHit[]>([]);
+  /** UI-CON-LAI k1: nhóm Giáo viên — chỉ vai xem được hồ sơ GV người khác (máy chủ lọc lại theo `phamViHoSoGv`). */
+  const [gvs, setGvs] = useState<GvHit[]>([]);
   /** Lượt tìm cuối đã trả về (để "Không tìm thấy…" không hiện khi đang chờ). */
   const [daTim, setDaTim] = useState(false);
   /** Danh sách kết quả đang hiện (bấm ra ngoài / Esc thì ẩn, gõ hoặc vào lại ô thì hiện). */
@@ -50,6 +73,7 @@ export function Header() {
   const { homNay, nhan } = useNgayNghiepVu();
   /* Danh sách lớp trong phạm vi: đọc một lần (useApi nhớ sẵn), lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
   const lopRef = useApi<LopRef[]>('/ref/classes');
+  const timGv = !!session?.nav?.analysis;
   const timDu = q.trim().length >= 2;
   const khoaLop = chuanHoaMaLop(q);
   const lops = timDu && khoaLop
@@ -58,19 +82,37 @@ export function Header() {
 
   useEffect(() => {
     setDaTim(false);                                   // lượt mới: chưa trả về thì không báo "Không tìm thấy", Enter không mở kết quả cũ
-    if (!timDu) { setHits([]); setDong(-1); return; }
+    if (!timDu) { setHits([]); setGvs([]); setDong(-1); return; }
     const t = setTimeout(() => {
-      api.get<{ rows: SearchHit[] }>(`/students?q=${encodeURIComponent(q)}`)
-        .then((d) => { setHits((d.rows ?? []).slice(0, 6)); setDaTim(true); setDong(-1); })
-        .catch(() => { setHits([]); setDaTim(false); setDong(-1); });
+      const k = encodeURIComponent(q);
+      Promise.all([
+        api.get<{ rows: SearchHit[] }>(`/students?q=${k}`),
+        timGv ? api.get<GvHit[]>(`/tim/giao-vien?q=${k}`).catch(() => [] as GvHit[]) : Promise.resolve([] as GvHit[]),
+      ])
+        .then(([d, g]) => { setHits((d.rows ?? []).slice(0, 6)); setGvs(g); setDaTim(true); setDong(-1); })
+        .catch(() => { setHits([]); setGvs([]); setDaTim(false); setDong(-1); });
     }, 250);
     return () => clearTimeout(t);
-  }, [q, timDu]);
+  }, [q, timDu, timGv]);
+
+  /* k1: "/" hoặc Ctrl K mở ô tìm từ mọi màn (màn hẹp: mở ô neo dưới thanh trên). */
+  useEffect(() => {
+    if (!session?.nav?.students) return undefined;
+    const phim = (e: KeyboardEvent) => {
+      if (!laPhimTim(e)) return;
+      e.preventDefault();
+      setOpenMenu(null);
+      if (timGon) setMoTimDt(true);
+      else { oTim.current?.focus(); oTim.current?.select(); setMoTim(true); }
+    };
+    document.addEventListener('keydown', phim);
+    return () => document.removeEventListener('keydown', phim);
+  }, [timGon, session?.nav?.students]);
 
   useBamNgoai(true, () => { setMoTim(false); setOpenMenu(null); setMoTimDt(false); }, boxRef);
 
   /* Một danh sách cho bàn phím: học viên trước, lớp sau. */
-  const den = [...hits.map((h) => `/hoc-vien/${h.id}`), ...lops.map((l) => `/hoc-vien/lop/${l.id}`)];
+  const den = [...hits.map((h) => `/hoc-vien/${h.id}`), ...lops.map((l) => `/hoc-vien/lop/${l.id}`), ...gvs.map((g) => `/giao-vien/${g.id}`)];
   const coDs = moTim && timDu && den.length > 0;
   const khongThay = moTim && timDu && daTim && den.length === 0;
   const dangMo = coDs || khongThay || openMenu !== null || moTimDt;
@@ -91,7 +133,7 @@ export function Header() {
     return () => document.removeEventListener('keydown', phim, true);
   }, [dangMo, openMenu, moTimDt]);
 
-  const moMuc = (i: number) => { navigate(den[i]); setQ(''); setHits([]); setDaTim(false); setMoTim(false); setMoTimDt(false); setDong(-1); };
+  const moMuc = (i: number) => { navigate(den[i]); setQ(''); setHits([]); setGvs([]); setDaTim(false); setMoTim(false); setMoTimDt(false); setDong(-1); };
   /** Thuộc tính chung của một dòng kết quả (học viên hay lớp) — `i` đếm chung cả hai nhóm. */
   const nutMuc = (i: number) => ({
     id: `${idDs}-${i}`,
@@ -125,15 +167,44 @@ export function Header() {
   const hoTen = session?.user?.fullName ?? '';
   const chuCaiDau = [...(hoTen.trim().split(/\s+/).pop() ?? '')][0]?.toUpperCase() ?? '';
   /** Danh sách kết quả: máy tính thả dưới ô; điện thoại nằm trong khung ô tìm đã neo hai mép. */
-  const lopDs = timGon ? 'mt-1 w-full' : 'absolute z-40 mt-1 w-[min(18rem,calc(100vw-2rem))] right-0 shadow-2xl';
+  const lopDs = timGon ? 'mt-1 w-full' : 'absolute z-40 mt-1 w-[min(28rem,calc(100vw-2rem))] right-0 shadow-2xl';
+
+  const nhomTim = [
+    { key: 'hv', ten: t('Học viên'), so: hits.length, dong: hits.map((h, i) => (
+      <li key={`hv${h.id}`} role="none">
+        <button {...nutMuc(i)}>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 truncate font-semibold text-slate-100"><ToKhop chu={h.fullName} q={q} /></span>
+            {h.openCase?.sos_level ? <ChipSos muc={h.openCase.sos_level} hienKyNang={false} tinh /> : null}
+            {h.classCode && <span className="ml-auto shrink-0 text-xs text-slate-500">{h.classCode}</span>}
+          </span>
+        </button>
+      </li>
+    )) },
+    { key: 'lop', ten: t('Lớp'), so: lops.length, dong: lops.map((l, j) => (
+      <li key={`lop${l.id}`} role="none">
+        <button {...nutMuc(hits.length + j)}>
+          <span className="font-semibold text-slate-100">{l.code}</span>
+          <span className="text-slate-500 text-xs ml-2 tabular-nums">· {t('{n} HV', { n: l.student_count })}</span>
+        </button>
+      </li>
+    )) },
+    ...(timGv ? [{ key: 'gv', ten: t('Giáo viên'), so: gvs.length, dong: gvs.map((g, k) => (
+      <li key={`gv${g.id}`} role="none">
+        <button {...nutMuc(hits.length + lops.length + k)}>
+          <span className="font-semibold text-slate-100"><ToKhop chu={g.fullName} q={q} /></span>
+        </button>
+      </li>
+    )) }] : []),
+  ];
 
   const oTimVaKetQua = (
     <>
       <input
         ref={oTim}
         autoFocus={timGon}
-        className="field"
-        placeholder={t('Tìm học viên, lớp…')}
+        className={`field ${timGon ? '' : 'pr-14'}`}
+        placeholder={timGv ? t('Tìm học viên, lớp, GV…') : t('Tìm học viên, lớp…')}
         value={q}
         onChange={(e) => { setQ(e.target.value); setMoTim(true); }}
         onFocus={() => setMoTim(true)}
@@ -157,34 +228,36 @@ export function Header() {
         aria-autocomplete="list"
         autoComplete="off"
         aria-label={t('Tìm học viên, lớp trong phạm vi được cấp quyền')}
+        aria-keyshortcuts="Control+K /"
       />
+      {!timGon && !q && <kbd aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500">Ctrl K</kbd>}
       {coDs && (
         <ul id={idDs} role="listbox" aria-label={t('Kết quả tìm học viên, lớp')}
           className={`${lopDs} card overflow-hidden list-none p-0 m-0`}>
-          {hits.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[12px] text-slate-500">{t('Học viên')}</li>}
-          {hits.map((h, i) => (
-            <li key={`hv${h.id}`} role="none">
-              <button {...nutMuc(i)}>
-                <span className="text-slate-100">{h.fullName}</span>
-                {h.email && <span className="text-slate-500 text-xs ml-2">{h.email}</span>}
-                {h.classCode && <span className="text-slate-500 text-xs ml-2">{h.classCode}</span>}
-              </button>
+          {/* k1: đầu nhóm có số; nhóm rỗng gom một dòng ("Lớp · 0 · Giáo viên · 0"). */}
+          {nhomTim.filter((n) => n.so > 0).map((n) => (
+            <li key={n.key} role="none" className="contents">
+              <span aria-hidden className="block px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{n.ten} · <span className="tabular-nums">{n.so}</span></span>
+              <ul role="none" className="list-none m-0 p-0">{n.dong}</ul>
             </li>
           ))}
-          {lops.length > 0 && <li role="none" aria-hidden className="px-3 pt-2 pb-1 text-[12px] text-slate-500">{t('Lớp')}</li>}
-          {lops.map((l, j) => (
-            <li key={`lop${l.id}`} role="none">
-              <button {...nutMuc(hits.length + j)}>
-                <span className="text-slate-100">{l.code}</span>
-                <span className="text-slate-500 text-xs ml-2 tabular-nums">· {t('{n} HV', { n: l.student_count })}</span>
-              </button>
+          {nhomTim.some((n) => n.so === 0) && (
+            <li role="none" aria-hidden className="px-3 pt-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              {nhomTim.filter((n) => n.so === 0).map((n) => `${n.ten} · 0`).join(' · ')}
             </li>
-          ))}
+          )}
+          {!timGon && (
+            <li role="none" aria-hidden className="flex flex-wrap justify-between gap-x-3 border-t px-3 py-1.5 text-[11px] text-slate-500" style={{ borderColor: 'var(--line)' }}>
+              <span>{t('↑ ↓ chọn · Enter mở · Esc đóng')}</span><span>{t('Trong phạm vi bạn xem được')}</span>
+            </li>
+          )}
         </ul>
       )}
       {khongThay && (
         <div role="status" className={`${lopDs} card px-3 py-2 text-[13px] text-slate-400`}>
-          {t('Không tìm thấy học viên hoặc lớp')}
+          {t('Không thấy “{q}” trong phạm vi của bạn.', { q: q.trim() })}{' '}
+          <Link to={`/hoc-vien/luu-tru?q=${encodeURIComponent(q.trim())}`} className="link"
+            onMouseDown={(e) => e.preventDefault()} onClick={() => { setQ(''); setMoTim(false); setMoTimDt(false); }}>{t('Tìm trong HV lưu trữ ›')}</Link>
         </div>
       )}
     </>
@@ -207,14 +280,13 @@ export function Header() {
       )}
 
       <div className="sm:relative">
-        <button ref={nutThongBao} className="btn btn-sm relative max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent"
+        <button ref={nutThongBao} className="btn btn-sm relative min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent sm:min-h-[36px] sm:min-w-[36px]"
           onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
           aria-label={t('Thông báo') + (chuong.soNut ? t(', {n} tin chưa đọc', { n: chuong.soNut }) : '')} aria-expanded={openMenu === 'notif'}>
-          <span className="hidden sm:inline">{t('Thông báo')}</span>
-          {/* Chuông nét mảnh 20 px thay emoji (luật "dấu nhỏ gọn", 23C). Số chưa đọc đè góc trên phải trên điện thoại. */}
-          <svg className="sm:hidden" aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          {/* UI-CON-LAI k4: chuông nét mảnh mọi bề rộng; số = tin CHƯA ĐỌC, chấm tròn nền trắng chữ xanh — khác dáng badge việc ở mục Công việc. */}
+          <svg aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
-          {chuong.soNut > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[12px] tabular-nums max-sm:absolute max-sm:right-px max-sm:top-[3px] max-sm:ml-0 max-sm:min-w-[18px] max-sm:rounded-[9px] max-sm:text-center max-sm:leading-[18px]">{chuong.soNut}</span>}
+          {chuong.soNut > 0 && <span aria-hidden className="cham-chuong">{chuong.soNut > 99 ? '99+' : chuong.soNut}</span>}
         </button>
         {openMenu === 'notif' && (
           /*
@@ -240,7 +312,7 @@ export function Header() {
                   catch (e: any) { toast.push('error', e?.message || t('Chưa đánh dấu đã đọc được — thử lại.')); }
                 }}>{t('Đánh dấu đã đọc')}</button>
             </div>
-            {dsThongBao.length === 0 && <div className="p-4 text-sm text-slate-500">{t('Không có thông báo nào.')}</div>}
+            {dsThongBao.length === 0 && <div className="px-3.5 py-2.5 text-[13px] text-slate-500">{t('Chưa có thông báo mới')}</div>}
             {(['can-lam', 'de-biet'] as const).map((nhom) => {
               const ds = nhom === 'can-lam' ? chuong.canLam : chuong.deBiet;
               if (!ds.length) return null;
