@@ -9581,6 +9581,9 @@ await runPrSvTqGvTests({ check, assert, conn, P } as any);
 // ==================================================================== SUA-CHAM-LAI (Đ4 lý do Chưa đủ dữ liệu)
 const { runPrSuaChamLaiTests } = await import('./prSuaChamLai.tests.ts');
 await runPrSuaChamLaiTests({ check, assert } as any);
+// ==================================================================== P2 MT-DEM (bộ đếm MT đã xong / đã tạo, thôi nhắc xếp thêm)
+const { runPrMtDemTests } = await import('./prMtDem.tests.ts');
+await runPrMtDemTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== P3 UI-CHUNG (Mới dùng PISA TRACKING? · bỏ Góp ý hàng tuần · menu ⋯ · đầu bảng dính)
 const { runPrUiChungTests } = await import('./prUiChung.tests.ts');
 await runPrUiChungTests({ check, assert, P } as any);
