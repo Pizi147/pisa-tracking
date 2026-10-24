@@ -26,7 +26,7 @@ export async function runPrDhTests(t: YThucTestKit) {
     const c = (o: object) => d.chuSapToi({ ...goc, ...o });
     const l = (trangThai: string, x: object = {}) => ({ lichThi: { trangThai, ngay: null, thang: null, tuan: null, ...x } });
     assert(c({ conLuotChuaXep: 'MT2' }) === 'MT2 · chưa xếp', 'chưa xếp');
-    assert(c(l('du-kien', { thang: '2026-12', tuan: '2026-12-07' })) === `Dự kiến thi ${d.tuanLich('2026-12-07', '2026-10-03')}`, 'tuần');
+    assert(c(l('du-kien', { thang: '2026-12', tuan: '2026-12-07' })) === 'Dự kiến thi 12/2026', 'tuần → tháng (P5)');
     assert(c(l('du-kien', { thang: '2026-12' })) === 'Dự kiến thi 12/2026', 'tháng');
     assert(c(l('chua-chot-ngay', { thang: '2026-10' })) === 'Chưa chốt ngày thi 10/2026', 'đã tới tháng, chưa ngày');
     assert(c(l('chua-co')) === 'Chưa có tháng thi', 'chưa có');

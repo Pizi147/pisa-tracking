@@ -68,6 +68,8 @@ export function LopToiDay() {
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center gap-3">
           <h2 id="lop-toi-day" className="m-0 text-sm font-semibold text-slate-200">{t('Lớp tôi dạy')}</h2>
+          {/* G9: không nút trong tiêu đề bảng — "?" của cột Dưới kỳ vọng / Chưa đạt nằm cạnh tiêu đề thẻ. */}
+          <NutLuat label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat>
           {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} donVi={t('lớp')} onChange={(k) => { daBam.current = true; setKhung(k === 'thuong' ? 'thuong' : 'ft'); }} />}
         </div>
       </header>
@@ -98,7 +100,7 @@ export function LopToiDay() {
               <tr className="text-left text-[12px] font-semibold text-slate-400">
                 <th className="px-4 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tôi dạy')}</th>
                 {laThuong && <th className="px-3 py-2 font-semibold">{t('Tuần học')}</th>}
-                <th className="px-3 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi} <NutLuat phai label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat></th>
+                <th className="px-3 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi}</th>
                 {!laThuong && <th className="px-3 py-2 text-right font-semibold">SOS</th>}
                 <th className="px-3 py-2 text-right font-semibold">{t('Case đang mở')}</th><th className="px-3 py-2 text-right font-semibold">{t('Bài chờ chấm')}</th>
                 <th className="px-4 py-2 font-semibold">{t('Test sắp tới')}</th>
@@ -224,17 +226,13 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
   return luoi(
     <>
       {data.day.length > 0 && (
-        <Card className={hai ? 'min-w-0 min-[1100px]:col-start-1 min-[1100px]:row-start-1' : O_MOT} bodyClass="p-0" title={<>{t('Kỹ năng tôi dạy')}{data.ky && <span className="font-normal text-slate-500"> · {kyChu(data.ky)}</span>}</>}>
+        <Card className={hai ? 'min-w-0 min-[1100px]:col-start-1 min-[1100px]:row-start-1' : O_MOT} bodyClass="p-0" title={<>{t('Kỹ năng tôi dạy')}{data.ky && <span className="font-normal text-slate-500"> · {kyChu(data.ky)}</span>} <NutLuat label={t('Kỹ năng tôi dạy')}>{t('Chỉ bài của tôi. Đạt = lượt Test có Overall đạt kỳ vọng, hoặc Overall chưa đạt nhưng kỹ năng của tôi không dưới kỳ vọng; lớp thường: đạt ngưỡng của lớp.')}</NutLuat></>}>
           <Bang ten={t('Kỹ năng tôi dạy')} cot={coTb ? COT_DAY : COT_DAY.filter((c) => c.key !== 'tb')} hang={data.day} khoa={(d) => d.classId} oCua={oDay} phuCua={phuDay} khung={false} deu />
-          <p className="m-0 border-t px-4 py-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
-            {t('Chỉ bài của tôi. Đạt = lượt Test có Overall đạt kỳ vọng, hoặc Overall chưa đạt nhưng kỹ năng của tôi không dưới kỳ vọng; lớp thường: đạt ngưỡng của lớp.')}
-          </p>
         </Card>
       )}
       {data.chuNhiem.length > 0 && (
-        <Card className={hai ? 'min-w-0 min-[1100px]:col-span-2 min-[1440px]:col-span-1 min-[1440px]:col-start-2 min-[1440px]:row-start-1' : O_MOT} bodyClass="p-0" title={<>{t('Lớp tôi chủ nhiệm')} <span className="font-normal text-slate-500">· {t('{n} lớp', { n: data.chuNhiem.length })} · {t('hiện tại')}</span></>}>
+        <Card className={hai ? 'min-w-0 min-[1100px]:col-span-2 min-[1440px]:col-span-1 min-[1440px]:col-start-2 min-[1440px]:row-start-1' : O_MOT} bodyClass="p-0" title={<>{t('Lớp tôi chủ nhiệm')} <span className="font-normal text-slate-500">· {t('{n} lớp', { n: data.chuNhiem.length })} · {t('hiện tại')}</span> <NutLuat label={t('Lớp tôi chủ nhiệm')}>{t('Số chủ nhiệm tách riêng, không cộng vào việc kỹ năng.')}</NutLuat></>}>
           <Bang ten={t('Lớp tôi chủ nhiệm')} cot={data.chuNhiem.some((l) => l.khung === 'ft') ? COT_CN : COT_CN.filter((c) => c.key !== 'sos')} hang={data.chuNhiem} khoa={(l) => l.classId} oCua={oCn} phuCua={phuCn} khung={false} deu />
-          <p className="m-0 border-t px-4 py-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>{t('Số chủ nhiệm tách riêng, không cộng vào việc kỹ năng.')}</p>
         </Card>
       )}
     </>,
