@@ -46,12 +46,13 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
   const { session } = useSession();
   if (measureId === null) return null;
   const the = d?.the;
-  const laNguoiGui = !!the && the.trangThai === 'cho' && the.nguoiXinId === session?.user?.id;
+  /* SUA-NO-RA (LUAT-5-c): người gửi đã rời lớp (máy chủ: hết quyền sửa lần xử lý) → không còn Sửa / Rút; QL xử lý thẻ. */
+  const laNguoiGui = !!the && the.trangThai === 'cho' && the.nguoiXinId === session?.user?.id && !!d?.coTheSua;
   const rutDuoc = d?.status === 'cho_duyet' && laNguoiGui;
   /* LUAT-5: QL thu hồi thẳng (cờ máy chủ theo quyền duyệt của em); người khác gửi QL. */
   const ql = !!d?.thuHoiThang;
   const th = d?.thuHoi ?? null;
-  const rutThuHoi = th?.trangThai === 'cho' && th.nguoiXinId === session?.user?.id;
+  const rutThuHoi = th?.trangThai === 'cho' && th.nguoiXinId === session?.user?.id && !!d?.coTheSua;
   const dongThuHoi = !th || !d ? null
     : th.trangThai === 'cho' ? t('Chờ QL duyệt thu hồi · gửi {ngay}: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), lyDo: th.lyDo ?? '' })
     : th.trangThai === 'tu_choi' ? t('{x} từ chối thu hồi {ngay}: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDoTuChoi ?? '' })

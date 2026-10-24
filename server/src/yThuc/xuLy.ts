@@ -649,6 +649,34 @@ function bacSauThuHoi(em: EmYThuc, id: number): number {
   return bacHienTai(em.xuLy.filter((x) => x.id !== id && x.status === 'done' && (!em.chuoi.length || (x.cycleId != null && em.chuoi.includes(x.cycleId)))), em.khai?.bac ?? null);
 }
 
+/**
+ * SUA-NO-RA (LUAT-5-b): số của thẻ thu hồi TÍNH SỐNG (bậc về · số vi phạm) — GVCN sửa vi phạm / bậc khai lúc thẻ còn chờ thì QL vẫn đọc và duyệt đúng số
+ * hiện tại. Một lần đọc trạng thái Ý thức cho cả lô + một câu đếm vi phạm.
+ */
+export function soLieuThuHoi(ds: { measureId: number; studentId: number }[]): Map<number, { bacVe: number; soViPham: number }> {
+  if (!ds.length) return new Map();
+  const em = trangThaiYThuc([...new Set(ds.map((d) => d.studentId))], demoToday());
+  const ids = ds.map((d) => d.measureId);
+  const dem = new Map((db().prepare(`SELECT measure_id AS id, COUNT(*) AS n FROM measure_violations WHERE measure_id IN (${ids.map(() => '?').join(',')}) GROUP BY measure_id`)
+    .all(...ids) as any[]).map((r) => [r.id as number, r.n as number]));
+  return new Map(ds.flatMap((d) => {
+    const e = em.get(d.studentId);
+    return e ? [[d.measureId, { bacVe: bacSauThuHoi(e, d.measureId), soViPham: dem.get(d.measureId) ?? 0 }] as const] : [];
+  }));
+}
+
+/**
+ * SUA-NO-RA (LUAT-5-c): người gửi Sửa / Rút thẻ Ý thức của mình (Gửi QL, Thu hồi) — vẫn phải còn quyền với em theo phân công HIỆN TẠI. Rời lớp → 403;
+ * QL vẫn duyệt / từ chối thẻ trong hộp (quyền duyệt theo phạm vi thẻ).
+ */
+export function kiemNguoiGuiYThuc(p: Principal, measureId: number): void {
+  const m = db().prepare('SELECT student_id FROM discipline_measures WHERE id = ?').get(measureId) as any;
+  if (!m) return;   // lần xử lý không còn — luật của loại báo lỗi riêng
+  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }) && !canManageDiscipline(p, m.student_id)) {
+    throw forbidden('Bạn không còn phụ trách lớp của em — không sửa hoặc rút được yêu cầu này. Quản lý chi nhánh xử lý yêu cầu trong Chờ duyệt.');
+  }
+}
+
 /** Chỉ lần MỚI NHẤT của chuỗi (giữ thứ tự thang) — kiểm lúc gửi, lúc QL duyệt và lúc huỷ quyết định (có thể đã có lần mới). */
 function chanLanSau(m: any, viec: (ten: string) => string): void {
   const sau = lanSauCua(m, emCua(m.student_id));
