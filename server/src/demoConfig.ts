@@ -51,6 +51,15 @@ export function demoToday(): string {
   return isIsoDate(v) ? v : todayInBusinessTz();
 }
 
+/**
+ * Thời điểm nghiệp vụ cho mốc TÍNH HẠN (vd `created_at` của việc Phối hợp — hạn Meeting CX = ngày tạo + 5): ngày demo trùng hôm nay (bản chính, chưa đặt) →
+ * giờ thật; có ngày demo khác → 10:00 giờ VN của ngày demo. Trước (TD4-a đỏ 24/10): ghi giờ thật nên hạn trôi theo ngày chạy dù ngày demo cố định.
+ */
+export function nowNghiepVu(): string {
+  const d = demoToday();
+  return d === todayInBusinessTz() ? nowIso() : `${d}T03:00:00.000Z`;
+}
+
 export function scenarioMode(): ScenarioMode {
   /* Bản chính không có kịch bản giả lập lỗi — và trả sớm để khỏi tốn một lượt mạng tới Turso mỗi lần gọi. */
   if (laBanChinh()) return 'normal';
