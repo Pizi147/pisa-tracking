@@ -1,5 +1,7 @@
 # Truy vết — `con-lai.html` (V5-B3 · trang còn lại)
 
+> **Đã vào mã → PR #560 UI-CON-LAI** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 V5-B3 · 22/10/2026 · dựa trên nền V5-A. Trạng thái: **ĐỀ XUẤT THIẾT KẾ**. Dữ liệu demo. Ảnh toàn trang `anh/con-lai-{1440-sang,1440-toi,1280,375}.png`, từng khung `anh/con-lai-k1…k8-*.png`.
 Tệp này gồm 8 khung tĩnh (một trang dài, mục lục ở thanh mockup). Tương tác chỉ minh hoạ bằng trạng thái vẽ sẵn — không phải bằng chứng workflow chạy được (brief 19 B).
 

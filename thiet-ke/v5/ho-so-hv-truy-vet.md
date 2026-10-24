@@ -1,5 +1,7 @@
 # Truy vết — `ho-so-hv.html` (Hồ sơ học viên)
 
+> **Đã vào mã → PR #550 UI-HO-SO-HV** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 > V5-B2, dựa trên nền V5-A. **ĐỀ XUẤT THIẾT KẾ** — chờ chủ SP duyệt. Dữ liệu demo. Rà mã: `b2-ra-soat.md` mục 4–5.
 > Tham số: `?hv=huy|lam|moi&kn=L|R|W|S&vai=ha|tam&khung=…&theme=dark`.
 

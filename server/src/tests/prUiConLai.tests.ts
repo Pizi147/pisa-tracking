@@ -50,7 +50,7 @@ export async function runPrUiConLaiTests(t: any) {
   });
 
   check('UICL-5 (k3) · Hoàn tác 5 s ở thẻ duyệt chỉ cho đúng các loại máy chủ huỷ được (`khiHuy`) — web không hứa điều máy chủ từ chối', () => {
-    const may = fs.readFileSync(path.join(REPO, 'server/src/duyet/loaiYeuCau.ts'), 'utf8');
+    const may = fs.readFileSync(path.join(REPO, 'server/src/duyet/loaiYeuCau.ts'), 'utf8').replace(/\r\n/g, '\n');   // TL-V5: checkout Windows (autocrlf) — regex dưới tách mục theo "\n"
     const coHuy = [...may.matchAll(/loai: '([a-z_]+)',[\s\S]*?(?=\n  \{\n    loai:|\n\];)/g)].filter((m) => /khiHuy:/.test(m[0])).map((m) => m[1]).sort();
     const web = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/TheYeuCau.tsx'), 'utf8').match(/HUY_DUOC = new Set<string>\(\[([^\]]*)\]/)?.[1] ?? '';
     const ds = [...web.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();

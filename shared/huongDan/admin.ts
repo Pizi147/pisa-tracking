@@ -14,9 +14,9 @@ export const HD_ADMIN: HuongDan = {
   viec: [
     {
       id: 'ad-sang', ten: 'Mở Tổng quan › Mock Test mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Bốn ô: <b>Lượt MT tuần này</b> · <b>Ô điểm chưa nhập</b> · <b>Đề nghị dời chờ</b> · <b>MT chưa xếp lịch</b>; bấm ô mở đúng chỗ.',
+      buoc: ['Ba ô: <b>Lượt MT tuần này</b> · <b>Ô điểm chưa nhập</b> · <b>HV chưa có MT tiếp theo</b>; bấm ô mở đúng chỗ. Đề nghị dời: ở <b>Test › Kế hoạch Test</b>.',
         'Khối <b>GV chấm quá hạn</b>: ai còn nợ điểm.', '<b>Lịch sắp tới</b>: <b>Xem toàn bộ lịch ›</b> mở Kế hoạch Test.'],
-      chi: { hd: 'tq-mock-test', duong: '/', chu: 'Bốn số Mock Test của chi nhánh — bấm để mở.' },
+      chi: { hd: 'tq-mock-test', duong: '/', chu: 'Ba số Mock Test của chi nhánh — bấm để mở.' },
     },
     {
       id: 'ad-xep-lich', ten: 'Xếp / dời lịch MT', khi: 'mỗi tuần',
@@ -27,7 +27,7 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'ad-cham', ten: 'Theo dõi chấm điểm', khi: 'sau mỗi tuần Test',
-      buoc: ['<b>Test › Lịch Test</b>: <b>Test quá hạn chấm</b> · <b>Test chấm tuần này</b> (hạn <b>Thứ Tư</b>).',
+      buoc: ['<b>Test › Lịch Test tuần</b>: <b>Quá hạn chấm</b> · <b>Test tuần này</b> (hạn dd/mm trên từng lớp).',
         '<b>Công việc</b>: chỉ nhóm Chấm điểm của chi nhánh; ô <b>▾</b> chọn một GV.', 'GV quá hạn tự nhận thông báo; việc tự hết khi GV nhập đủ điểm.'],
       chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Lọc việc chấm theo một GV ở đây.' },
     },
@@ -53,7 +53,7 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      muc: [{ id: 'ad-pt', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.', 'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
+      muc: [{ id: 'ad-pt', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo HV</b> · <b>Phân tích GV</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', '<b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.'],
         chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }],
     },
     {
@@ -68,9 +68,9 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'ho-so-hv', ten: 'Hồ sơ học viên', duong: ['/hoc-vien/'],
-      muc: [{ id: 'ad-hv', ten: 'Hồ sơ em', buoc: ['<b>Sửa thông tin</b> (Target chỉ xem) · <b>Lịch sử</b>.', 'Ba tab <b>Học thuật</b> · <b>Ý thức & Phối hợp</b> · <b>Hành trình</b>: chỉ xem.'] }],
+      muc: [{ id: 'ad-hv', ten: 'Hồ sơ em', buoc: ['<b>Sửa thông tin</b> (Target chỉ xem) · <b>Lịch sử</b>.', 'Ba tab <b>Học thuật</b> · <b>Ý thức & Phối hợp</b> · <b>Lộ trình & lớp</b>: chỉ xem.'] }],
     },
-    /* Khối "Test chấm tuần này" chỉ có khi tuần có Test — chi nhánh nhỏ thường trống, nên mục này không "Chỉ cho tôi". */
+    /* Khối "Test tuần này" chỉ có khi tuần có Test — chi nhánh nhỏ thường trống, nên mục này không "Chỉ cho tôi". */
     { ...manGv('lich-test'), muc: manGv('lich-test').muc.map(({ chi: _, ...m }) => m) },
     manGv('diem-lop'),
     {

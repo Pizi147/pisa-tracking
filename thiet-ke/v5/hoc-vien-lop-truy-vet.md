@@ -1,5 +1,7 @@
 # Truy vết — `hoc-vien-lop.html` (Học viên & Lớp)
 
+> **Đã vào mã → PR #548 UI-HV-LOP** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 > V5-B2, dựa trên nền V5-A. **ĐỀ XUẤT THIẾT KẾ** — chờ chủ SP duyệt. Dữ liệu demo. Rà mã: `b2-ra-soat.md` mục 3.
 > Tham số: `?vai=ha|khoa|vy&goc=tat-ca|can-lam|sos|lich-thi&lt=ngay|du-kien|chua&khung=…&theme=dark`.
 

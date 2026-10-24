@@ -574,3 +574,20 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/petSeed.ts`). Quản trị �
 | Hồ sơ lớp **MB PET 01** (GVCN Trần Ngọc Hà · L+S Hà · R+W Lê Minh Khoa) | "PET · tuần 6"; không có Lộ trình tiếp theo / Chuyển tiếp lớp; 3 em |
 | Test › Điểm theo lớp › MB PET 01 · **Checkpoint 1** (W3 SEP) | Lâm Bảo Ngọc 48/60 · 61/80 → **Đạt**; Hồ Minh Quân 35/60 · 58/80 → **SOS · L+S** (không Case); Tạ Khánh Vy chưa có điểm — GVBM nhập thử |
 | Test › Kế hoạch Test › MB PET 01 | cột Checkpoint 1 (tuần 6) · Checkpoint 2 (tuần 12) — Checkpoint 2 chỉ có ở 2 em đã đủ điểm |
+
+## Dữ liệu thêm cho mockup V5 (SEED-UX, 22/10/2026)
+
+`server/src/seed/uxSeed.ts` (`buildUxDemo`, chạy sau `buildHeadTutor` — id người dùng cũ không đổi) thêm đúng phần các màn V5 cần để có ảnh đủ trạng thái
+(`thiet-ke/v5/du-lieu-demo.md`). Tên, SĐT đều giả.
+
+| Mã | Thêm gì | Xem ở đâu |
+|---|---|---|
+| U1 | GV **Đỗ Thu Hương** (MB, dạy L R; hồ sơ có S, không dạy lớp S — chấm chéo S, N7) · Admin VP Monbay · TVV MB (**Phan Mai**, **Lê Thu**) và TVV BC / HD / UB | Chấm Test (S chéo), Công việc TVV, Tổng quan theo vai |
+| U2 | Gán TVV + SĐT phụ huynh cho đa số em đang học; mỗi chi nhánh chừa em đầu tiên **không có TVV** (việc TVV về QL chi nhánh, N6) | Công việc TVV (Báo PH, Chốt ngày thi), Công việc QL |
+| U3 | MT2 MB FT 101 của Bùi Thảo Vy · Tạ Minh Quân · Lương Bảo Anh | Lịch Test tuần, hồ sơ lớp MB FT 101, Hành trình hồ sơ HV |
+| U4 | Thi thật: UB FT 401 **Dương Minh Quân** (Đạt, chưa chốt bước tiếp), **Lý Thanh Trúc** (Chưa đạt, đã chốt) có KQ 15/08 · CP FT 110 **Đinh Ngọc Quyên** thi 12/09, KQ 14/09, chưa chọn bước tiếp · UB FT 401 **Phan Hải Anh** thi 05/09 "Đã thi · chờ KQ" | Công việc TVV › Sau thi, Lịch thi, Phân tích › Kết quả Test › Thi thật |
+| U5 | Lớp **HD FT 306** (GV Mạc Thùy Linh, TVV Vũ Hồng Nhung): MT1 cũ có "-" ở S; 3 em PA Tutor (12 buổi 17/08–13/09); 2 em có lần xử lý vi phạm | Hồ sơ lớp, Ý thức & Phối hợp (Tutor đang ẩn — P10) |
+| U6 | Lớp thường **HD FOU 06**: Progress Test W2 SEP — 4 em đạt mọi môn, 1 em "17/25" trượt một môn (Báo PH chưa làm), 1 em trượt đã Báo PH | Hồ sơ lớp thường, Đánh giá đầu ra, Công việc TVV |
+| U7 | Kẹp `notifications.created_at` về ≤ ngày demo | Chuông |
+
+Việc Phối hợp SOS tạo khi dựng bộ demo ghi ngày tạo theo **ngày demo** (`nowNghiepVu`, #559) — hạn Meeting CX không trôi theo ngày chạy máy.
