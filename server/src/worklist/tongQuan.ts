@@ -8,7 +8,7 @@ import {
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
-import { activeAt, can, lopFtChoGvSpeaking, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, can, scopeFor, type Principal } from '../permissions.ts';
 import { latestAttempts } from './danhGia.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -288,15 +288,14 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
       }
     }
     chia('case-mo', 'caseMo');
-    /* OV-13o: GV Speaking — bài S chấm chéo ở lớp mình dạy cũng là "bài chờ chấm" (cùng số với Công việc); chấm chéo không quá hạn (T18). */
-    const lopCheo = new Set(ct === 'ft' ? lopFtChoGvSpeaking(p, today) : []);
-    for (const o of noDiemCuaGv(p, p.userId, today, trong.map((l) => ({ id: l.id as number, branchId: (l.branch_id ?? null) as number | null })), lopCheo)) {
+    /* SUA-CHAM-LAI L4: chỉ bài của chính GV — S chấm chéo không là nợ (T02–T03), cùng luật Công việc / Chấm Test "Của tôi". */
+    for (const o of noDiemCuaGv(p, p.userId, today, trong.map((l) => ({ id: l.id as number, branchId: (l.branch_id ?? null) as number | null })))) {
       const x = tap.get(o.classId)!;
       const id = baiId(o.attemptId, o.skill);
       x.baiCho.push(id);
-      /* SV-TQ-GV (mockup "hạn 23/09"): hạn gần nhất của bài chờ chấm (chấm chéo không hạn — T18). */
-      if (o.han && !o.chamCheo && (!x.han || o.han < x.han)) x.han = o.han;
-      if (o.overdue && !o.chamCheo) x.baiQuaHan.push(id);
+      /* SV-TQ-GV (mockup "hạn 23/09"): hạn gần nhất của bài chờ chấm. */
+      if (o.han && (!x.han || o.han < x.han)) x.han = o.han;
+      if (o.overdue) x.baiQuaHan.push(id);
     }
   }
   return { cua, trong, tap, coFt, coThuong, soFt, soThuong, today };
