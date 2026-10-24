@@ -118,7 +118,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   /* Link cũ: `view=can-lam` / `qua-han` (Cần làm đã bỏ) → Tất cả + chip "Có việc quá hạn"; `cho-duyet` / `thieu_tt` → Tất cả. */
   const gocUrl = docGoc(params.get('view'), params.get('loc'));
   const goc: Goc = gocUrl.goc === 'lich-thi' ? 'lich-thi' : gocUrl.goc === 'sos' && !admin ? 'sos' : 'tat-ca';
-  const locQuaHan = params.get('qh') === '1' || (gocUrl.goc === 'can-lam' && (gocUrl.loc === 'qua-han' || gocUrl.loc === null));
+  const locQuaHan = vai !== 'cx' && (params.get('qh') === '1' || (gocUrl.goc === 'can-lam' && (gocUrl.loc === 'qua-han' || gocUrl.loc === null)));   // CX không có Công việc → không có lọc này
   const locThiThang = params.get('thi') === '1';
   const locDaThi = params.get('loc') === 'da-thi' || params.get('view') === 'da-thi';   // OV-14b: "Đã thi · chờ kết quả" (cùng chip TVV / CX) — giữ; Tổng quan TVV / CX gửi `view=`
   /* Chip của vai TVV / CX: `loc=` (bấm chip) hoặc `view=` (link Tổng quan, Công việc TVV, link cũ của bảng V4). */
