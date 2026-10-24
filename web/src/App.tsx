@@ -1,4 +1,5 @@
 import { Component, Suspense, useEffect, useLayoutEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
@@ -226,7 +227,9 @@ export default function App() {
     const truoc = () => {
       cu = document.documentElement.dataset.theme;
       document.documentElement.dataset.theme = 'light';
-      setInLuc(new Date().toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }));
+      /* Trình duyệt chụp trang ngay sau `beforeprint` — vẽ dòng đầu trang in đồng bộ. */
+      const d = new Date(), h = (n: number) => String(n).padStart(2, '0');
+      flushSync(() => setInLuc(`${h(d.getDate())}/${h(d.getMonth() + 1)} ${h(d.getHours())}:${h(d.getMinutes())}`));
     };
     const sau = () => { if (cu === undefined) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = cu; };
     window.addEventListener('beforeprint', truoc);
@@ -316,7 +319,7 @@ export default function App() {
       })()}
 
       <main id="noi-dung" tabIndex={-1} className="relative flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 max-md:scroll-pb-20 outline-none print:overflow-visible print:p-0" key={location.pathname.split('/')[1]}>
-        {inLuc && <p className="m-0 mb-2 hidden text-[12px] print:block">PISA · {document.title} · {t('in {luc}', { luc: inLuc })} · {session.user?.fullName}</p>}
+        {inLuc && <p className="m-0 mb-2 hidden text-[12px] print:block">PISA · {document.title.replace(/ · PISA Tracking$/, '')} · {t('in {luc}', { luc: inLuc })} · {session.user?.fullName}</p>}
         <BatLoiTrang duong={location.pathname}>
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>
