@@ -9,7 +9,6 @@ import { BangDiemLopThuong } from './BangDiemLopThuong.tsx';
 import { BangCanHoTro } from './BangCanHoTro.tsx';
 import { BangLoTrinhTiep } from './BangLoTrinhTiep.tsx';
 import { BangKqdrLopFt } from './BangKqdrLopFt.tsx';
-import { BangGopYTuan } from './BangGopYTuan.tsx';
 import { ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from '../students/XemTruocHangLoatPanel.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
@@ -23,22 +22,20 @@ import { t } from '@shared/i18n/index.ts';
  *   Tổng hợp   (PR-OV3a: tên mới của "Điểm"; khoá URL vẫn `diem`) FT: bảng đợt MT như hiện có · lớp thường: Progress | Final × L R W S,
  *              ô đúng/tổng (10b phương án A) + cột Lộ trình tiếp theo (hướng Quản lý đã chốt)
  *   Lộ trình tiếp theo (OV-3b, lớp thường; `?che-do=lo-trinh`) mỗi hướng một bảng: Lộ trình (nháp / chốt) · Kết quả đầu ra · Bàn giao
- *   Góp ý hàng tuần (OV-12g; `?che-do=gop-y&tuan=`) hàng = em, cột = kỹ năng của lớp, chọn tuần ‹ › — mọi vai (ghi theo quyền máy chủ)
+ *   (Góp ý hàng tuần OV-12g gỡ 24/10 — chủ SP; link cũ `?che-do=gop-y` mở Tổng hợp; dữ liệu cũ: ⋯ › Lịch sử góp ý tuần.)
  *   Cần hỗ trợ học viên có Case mở: vấn đề chính · PA đang chạy · bước tiếp theo + hạn (mockup 06, cho GVCN họp nhanh)
  *   Kết quả đầu ra (OV-3c, lớp FT; `?che-do=ket-qua`) KQĐR lớp trước của em vào từ FOU/BE/ELE, chỉ khi còn đợt trong 4 tuần (`dai.kqdrDot`);
  *              hết đợt mà mở URL cũ → cách xem mặc định
  * PR-LUI-b (06/10): Quản lý / Quản trị có nút "Chọn nhiều học viên" ở cách xem Tổng hợp — ô chọn hiện ngay trên danh sách, thanh thao tác dính đáy
  * (Lưu trữ · Kết thúc học · Huỷ chuyển lớp · Bỏ chọn), bấm một việc ra panel xem trước rồi xác nhận.
  */
-export type CheDoHocVien = 'diem' | 'gop-y' | 'lo-trinh' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
+export type CheDoHocVien = 'diem' | 'lo-trinh' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
 /** Tên cách xem — cũng là chi tiết của nút "‹ Hồ sơ lớp …" khi đi từ hồ sơ lớp sang hồ sơ khác (PR-OV5b). */
 export const CHE_DO_NHAN: Record<CheDoHocVien, string> = {
-  diem: t('Tổng hợp'), 'gop-y': t('Góp ý hàng tuần'), 'lo-trinh': t('Lộ trình tiếp theo'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
+  diem: t('Tổng hợp'), 'lo-trinh': t('Lộ trình tiếp theo'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
 };
-export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin, emMo = null, onDaMoEm, tuan = null, onTuan }: {
+export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin, emMo = null, onDaMoEm }: {
   lop: HoSoLop; cheDo: CheDoHocVien; onCheDo: (m: CheDoHocVien) => void;
-  /** OV-12g: tuần đang xem của Góp ý hàng tuần (`&tuan=` thứ Hai; null = tuần này). */
-  tuan?: string | null; onTuan?: (w: string | null) => void;
   /** OV-3b: `&em={id}` — mở sẵn hộp Lộ trình của em đó (cách xem Lộ trình tiếp theo). */
   emMo?: number | null; onDaMoEm?: () => void;
   onDoi: () => void; onThemHocVien: () => void;
@@ -56,7 +53,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
    */
   const vai = vaiXemHocVien(session?.roles);
   const cacCheDo: CheDoHocVien[] = [
-    'diem', 'gop-y', ...(coLoTrinh && vai !== 'admin' ? ['lo-trinh' as const] : []), ...(vai !== 'admin' ? ['can-ho-tro' as const] : []),
+    'diem', ...(coLoTrinh && vai !== 'admin' ? ['lo-trinh' as const] : []), ...(vai !== 'admin' ? ['can-ho-tro' as const] : []),
     ...(soDot && vai !== 'admin' ? ['ket-qua' as const] : []), ...(vai ? ['thong-tin' as const] : []),
   ];
   const cheDo: CheDoHocVien = cacCheDo.includes(cheDoUrl) ? cheDoUrl : 'diem';
@@ -92,8 +89,6 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
             {vai === 'tvv' && <EmCuaToiOLop lop={lop} />}
           </div>
         )
-        : cheDo === 'gop-y'
-        ? <BangGopYTuan classId={lop.id} maLop={lop.code} laFt={!thuong} tuan={tuan} onTuan={(w) => onTuan?.(w)} />
         : cheDo === 'lo-trinh' && coLoTrinh
         ? <BangLoTrinhTiep classId={lop.id} quyen={quyen} onDoi={onDoi} emMo={emMo} onDaMoEm={() => onDaMoEm?.()} />
         : cheDo === 'ket-qua'

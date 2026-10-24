@@ -111,7 +111,7 @@ export async function runPrHdTests(t: any) {
     assert(hd.locHd(gv, 'han', chu).luat.length > 0, 'tìm "han"');
     const ten = (h: any) => hd.moiMuc(h).map((m: any) => m.id);
     assert(!ten(hd.locHd(gv, 'han', chu)).includes('nhan-xet'), '"han" không khớp giữa từ ("nhận xét")');
-    assert(ten(hd.locHd(gv, 'hạn', chu)).includes('han-xac-nhan') && !ten(hd.locHd(gv, 'hạn', chu)).includes('lop-gop-y'), 'gõ có dấu so đúng dấu ("hạn" ≠ "hàng")');
+    assert(ten(hd.locHd(gv, 'hạn', chu)).includes('han-xac-nhan') && !ten(hd.locHd(gv, 'hạn', chu)).includes('lop-hoc-vien'), 'gõ có dấu so đúng dấu ("hạn" ≠ "hàng")');
     assert(ten(hd.locHd(gv, 'ket qua pa', chu)).includes('ket-qua-pa'), 'nhiều từ không dấu');
     assert(hd.locHd(gv, 'zzqq', chu).viec.length === 0, 'chữ lạ');
     assert(hd.locHd(gv, '', chu).viec.length === 5, 'rỗng = đủ');
