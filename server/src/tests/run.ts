@@ -9585,6 +9585,9 @@ await runPrSuaChamLaiTests({ check, assert } as any);
 // ==================================================================== P1 DIEM-TIEU-CHI (tiêu chí W / S số nguyên)
 const { runPrDiemTieuChiTests } = await import('./prDiemTieuChi.tests.ts');
 await runPrDiemTieuChiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== P3 UI-CHUNG (Mới dùng PISA TRACKING? · bỏ Góp ý hàng tuần · menu ⋯ · đầu bảng dính)
+const { runPrUiChungTests } = await import('./prUiChung.tests.ts');
+await runPrUiChungTests({ check, assert, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

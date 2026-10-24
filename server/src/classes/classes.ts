@@ -870,6 +870,8 @@ function classOverviewThat(p: Principal, classId: number) {
     dai: finished ? null : daiLop(p, classId, { pr: summary as TienDoMoc, ft: cls.is_fast_track === 1, ct: cls.programme_code ?? null }),
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
+    /** P3 (PTA Plan 25/10): Góp ý hàng tuần gỡ khỏi giao diện — ⋯ › Lịch sử góp ý tuần chỉ hiện khi lớp có góp ý cũ. */
+    coGopY: !!db().prepare('SELECT 1 FROM gop_y_tuan WHERE class_id = ? LIMIT 1').get(classId),
     /*
      * LỚP ĐÃ KẾT THÚC → CHẾ ĐỘ CHỈ XEM (Q22): mọi cờ thao tác `false`, không nút nào hiện,
      * không nhánh nào ở web đoán riêng — kể cả với Quản trị hệ thống (QT). Lớp đã đóng thì

@@ -32,9 +32,10 @@ export const HD_GV: HuongDan = {
       chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Việc Case, PA nằm ở nhóm <b>Case học thuật</b>.' },
     },
     {
-      id: 'vi-pham-gop-y', ten: 'Ghi vi phạm + Góp ý hàng tuần', khi: 'khi có · mỗi tuần',
-      buoc: ['Vi phạm: ở dòng em bấm <b>⋯ › + Ghi vi phạm</b>; hạn xử lý <b>5 ngày</b>.', 'Góp ý: mở hồ sơ lớp › tab <b>Học viên</b> › Cách xem <b>Góp ý hàng tuần</b>.', 'Mỗi ô = một em × một kỹ năng; bạn ghi ở kỹ năng mình dạy.'],
-      chi: { hd: 'tq-lop-toi-day', duong: '/cong-viec', chu: 'Bấm tên lớp → tab <b>Học viên</b> › Cách xem <b>Góp ý hàng tuần</b>.' },
+      /* Góp ý hàng tuần gỡ 24/10 (chủ SP) — việc chỉ còn Ghi vi phạm. */
+      id: 'vi-pham', ten: 'Ghi vi phạm', khi: 'khi có',
+      buoc: ['Mở hồ sơ lớp › tab <b>Học viên</b>; ở dòng em bấm <b>⋯ › + Ghi vi phạm</b>.', 'Hạn xử lý <b>5 ngày</b>.'],
+      chi: { hd: 'tq-lop-toi-day', duong: '/cong-viec', chu: 'Bấm tên lớp → tab <b>Học viên</b> › <b>⋯</b> ở dòng em.' },
     },
   ],
   man: [
@@ -62,8 +63,7 @@ export const HD_GV: HuongDan = {
       id: 'ho-so-lop', ten: 'Hồ sơ lớp', duong: ['/hoc-vien/lop'],
       muc: [
         { id: 'lop-hoc-vien', ten: 'Học viên của lớp', buoc: ['Đầu trang: thanh <b>Việc cần làm</b> của lớp — bấm việc làm ngay tại trang.', 'Bảng em: W1 · W2 riêng, bấm điểm W / S xem điểm thành phần; Case + PA mở dưới hàng; <b>⋯</b> ở dòng em: + Ghi vi phạm, + Case, Nhập điểm.', 'Cuối trang: <b>Điểm Mock Test của lớp</b> (lớp thường: <b>Điểm Test của lớp</b>). Lớp thường có thêm tab <b>Đánh giá đầu ra</b>.'] },
-        { id: 'lop-gop-y', ten: 'Góp ý hàng tuần', buoc: ['Tab <b>Học viên</b> › Cách xem <b>Góp ý hàng tuần</b>: hàng = em, cột = kỹ năng, chọn tuần ‹ ›.', 'Bạn ghi / sửa ô ở kỹ năng mình dạy.'] },
-        { id: 'lop-lich-su', ten: 'Xem lịch sử', buoc: ['Hồ sơ lớp › <b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công. Góp ý hàng tuần, hồ sơ MT: nút <b>Lịch sử</b>.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.'] },
+        { id: 'lop-lich-su', ten: 'Xem lịch sử', buoc: ['Hồ sơ lớp › <b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công; <b>⋯ › Lịch sử góp ý tuần</b>: góp ý cũ. Hồ sơ MT: nút <b>Lịch sử</b>.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.'] },
       ],
     },
     {
@@ -145,7 +145,6 @@ export const HD_GV: HuongDan = {
     { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['Hạn bàn giao = muộn hơn của (ngày quyết định chuyển lớp + 7 ngày) và mốc cũ.'] },
     { id: 'sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['Ô còn trống: nhập được cả sau hoàn tất.', 'Sửa hoặc xoá một điểm đã có: nhờ QL sửa.', 'Gỡ "-" lúc nào cũng được.'] },
     { id: 'nhan-xet', ten: 'Nhận xét MT', buoc: ['Ô có điểm nên có nhận xét từ <b>10</b> ký tự — chỉ MT mới nhất của em (chỉ nhắc, không chặn).', 'Ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.', 'Nhận xét + nhóm là nguyên nhân của Case.'] },
-    { id: 'gop-y', ten: 'Góp ý hàng tuần', buoc: ['Mỗi ô = một em × một kỹ năng × một tuần; tối đa <b>500</b> ký tự.', 'Chỉ ghi ở kỹ năng mình dạy.'] },
   ],
   tu: [
     { ten: 'MT (Mock Test)', nghia: 'Mock Test 4 kỹ năng L R W S của lớp Fast Track; MT0 là mốc đầu vào.' },

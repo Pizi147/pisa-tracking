@@ -1592,6 +1592,7 @@ api.get('/classes/:id/gop-y', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return gopYSvc.gopYTuan(principalOf(req), pInt(req, 'id'), qStr(req, 'tuan'));
 }));
+// Góp ý hàng tuần gỡ khỏi giao diện 24/10 — giữ để Lịch sử đọc
 api.put('/classes/:id/gop-y', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return gopYSvc.ghiGopYTuan(principalOf(req), pInt(req, 'id'), req.body ?? {});
