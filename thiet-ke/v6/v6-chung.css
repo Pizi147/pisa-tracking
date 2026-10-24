@@ -65,13 +65,13 @@
 .tich input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--nhan); flex: none; }
 .tich .phu { display: block; }
 /* Khối "Khi lưu, web sẽ" — tóm tắt tác động (GPT 3) */
-.tom-tat { border: 1px solid var(--vien); border-left: 3px solid var(--nhan); border-radius: 8px; padding: 10px 12px; background: var(--be-mat-2); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.tom-tat { border: 1px solid var(--nhan-vien); border-radius: 8px; padding: 10px 12px; background: var(--be-mat-2); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
 .tom-tat .tieu { font-size: 12px; font-weight: 700; color: var(--chu-3); }
 .tom-tat ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
-.tom-tat.vang { border-left-color: var(--canh-bao-vien); }
+.tom-tat.vang { border-color: var(--canh-bao-vien); background: var(--canh-bao-nen); }
 /* Dải trạng thái nhỏ trong màn */
 .dai { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 8px; font-size: 14px; background: var(--be-mat-2); border: 1px solid var(--vien); }
-.dai.luu-tru { border-left: 3px solid var(--chu-3); }
+
 .dai.vang { background: var(--canh-bao-nen); border-color: var(--canh-bao-vien); }
 .dai .phai { margin-left: auto; display: flex; gap: 8px; }
 .loi-o { font-size: 13px; color: var(--loi); display: flex; gap: 6px; }
