@@ -111,6 +111,9 @@ export const DUONG_DO: MucDo[] = [
   /* PR-S6F-b (D10): cột Bài chờ chấm / quá hạn bấm ra danh sách bài (cùng `noDiemCuaGv`). */
   { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/tong-quan/lop-toi-day/o?ct=ft&classId={lopFT}&cot=bai-qua-han' },
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/highlights' },
+  /* SV-TQ-GV: Tổng quan GV hai khối (cả hai khung + hồ sơ GV theo kỳ + Thi tháng này) và ô Thi tháng này của lớp chủ nhiệm. */
+  { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/lop-toi-day/hai-khoi' },
+  { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/tong-quan/lop-toi-day/o?ct=ft&classId={lopFT}&cot=thi-thang-nay' },
 
   // ---------------------------------------------------------------- Học viên & Lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/classes' },
@@ -399,6 +402,9 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /tong-quan/lop-toi-day?ct=thuong': 47,
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=duoiKyVong': 47,   // {lopFT} = MB FT 101
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=bai-qua-han': 54,   // PR-S6F-b D10 — đo 46 (01/10)
+  /* SV-TQ-GV: trần = max(đo+10, ⌈đo×1,3⌉), đo 24/10 — hai khối = `lopToiDay` FT (34) + Lớp thường (36) + hồ sơ GV theo kỳ (đã nhớ) + Thi tháng này. */
+  'GVCN /tong-quan/lop-toi-day/hai-khoi': 91, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 91, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 91,
+  'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=thi-thang-nay': 45,   // đo 34
   'QL /signals': 41,   // PR-S6F-b: đo 38 (một metricSet mỗi chỉ số)
   'QT /signals': 38,   // đo 35
   'QL /tong-quan/quan-ly': 92,   // OV-15d: + "Cần bạn quyết" (Case quá hạn · Bước tiếp · Chốt lộ trình) — đo 73; trang Tổng quan QL bỏ 6 ô số + Điểm đáng chú ý nên tổng trang giảm
@@ -1003,8 +1009,8 @@ export const TRAN_GHI_LO = {
 /* ponytail: danh sách viết tay, phép quét (prDonA 9e) bắt route mới; chuyển sang hằng dùng chung với web khi Tổng quan ổn định. */
 export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number }> = {
   'GV trang Tổng quan': {
-    vai: 'GVCN', tran: 205,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289)
-    urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day?ct=ft', '/yeu-cau/dem', '/giao-vien/{gv}/chi-so'],   // UI-TONG-QUAN: + chỉ số GV
+    vai: 'GVCN', tran: 271,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289) · SV-TQ-GV: đo 208 — `/hai-khoi` đọc CẢ hai khung (Lớp thường +36 câu) thay `?ct=ft`; max(208 + 10, ⌈208 × 1,3⌉)
+    urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day/hai-khoi', '/yeu-cau/dem', '/giao-vien/{gv}/chi-so'],   // UI-TONG-QUAN: + chỉ số GV · SV-TQ-GV: hai khối thay Lớp tôi dạy
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
   'TVV trang Tổng quan': {

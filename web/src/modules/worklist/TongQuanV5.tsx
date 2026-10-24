@@ -390,7 +390,8 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
 
 type ChiSoGv = { tu: string; den: string; ketQua: OPtGv; tienBo: OPtGv };
 /** GV (chủ SP 23/10; Head tutor tạm dùng chung): Việc của tôi (+ quá hạn) · Case đang xử lý · Đạt MT kỹ năng tôi dạy · Tiến bộ. */
-export function TongQuanGvV5({ lopToiDay }: { lopToiDay: ReactNode }) {
+/** `lopToiDay(phai)`: khối trái tự đặt cột Điều hướng (SV-TQ-GV — khối chủ nhiệm trải cả bề ngang dưới khi 1100–1439). */
+export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => ReactNode }) {
   const { session } = useSession();
   const id = session?.user?.id;
   const cs = useApi<ChiSoGv>(id ? `/giao-vien/${id}/chi-so` : null, [id]);
@@ -410,11 +411,10 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: ReactNode }) {
         <ChiSo ten={t('Đạt MT · kỹ năng tôi dạy')} ky={ky} giaTri={o(cs.data?.ketQua, 'ket-qua', t('Kết quả'))} mau={tuMau(tyLeGv(cs.data?.ketQua), t('lượt'))} />
         <ChiSo ten={t('Tiến bộ')} ky={ky} giaTri={o(cs.data?.tienBo, 'tien-bo', t('HV tiến bộ'))} mau={tuMau(tyLeGv(cs.data?.tienBo), t('lượt'))} />
       </DaiChiSo>
-      <BoCuc trai={lopToiDay}
-        phai={<DiTiep dong={[
+      {lopToiDay(<DiTiep dong={[
           ...(session?.nav?.work ? [{ to: '/cong-viec', t1: <><So n={viec?.viec ?? 0} /> {t('việc của tôi')}</>, t2: t('Công việc') }] : []),
           ...(id ? [{ to: `/giao-vien/${id}`, t1: t('Hồ sơ GV của tôi'), t2: t('Hành chính · Học thuật') }] : []),
-        ]} />} />
+        ]} />)}
     </>
   );
 }

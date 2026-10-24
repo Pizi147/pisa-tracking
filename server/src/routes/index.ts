@@ -2077,6 +2077,11 @@ api.get('/tong-quan/lop-toi-day', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanSvc.lopToiDay(principalOf(req), { ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });
 }));
+/** SV-TQ-GV: Tổng quan GV hai khối — Kỹ năng tôi dạy · Lớp tôi chủ nhiệm (chỉ lớp của chính người gọi). */
+api.get('/tong-quan/lop-toi-day/hai-khoi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongQuanSvc.lopToiDayHaiKhoi(principalOf(req));
+}));
 /** Một ô số của Lớp tôi dạy → danh sách tạo nên nó (G-10). Lớp không dạy → 403. */
 api.get('/tong-quan/lop-toi-day/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
