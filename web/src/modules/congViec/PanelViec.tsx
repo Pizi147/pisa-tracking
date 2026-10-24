@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
@@ -274,8 +274,10 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam }: { it: WorkItem; tuMo: 
 
 type GvLop = {
   programmeCode: string | null;
-  core: { userId: number }[]; bySkill: { skill: string; userId: number }[];
+  core: { userId: number; name: string }[]; bySkill: { skill: string; userId: number; name: string }[];
   candidates: { id: number; name: string; classCount: number; skills?: string[] }[];
+  /** SUA-NO-RA: phiên bản phân công lúc đọc — gửi kèm khi lưu, người khác vừa đổi → 409. */
+  phienBan?: string;
 };
 
 /**
@@ -292,9 +294,11 @@ function PanelPhanCongMon({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =>
   const [loi, setLoi] = useState<string | null>(null);
   const nhan = mon ? t('GV {mon}', { mon: tenMon(data?.programmeCode ?? null, mon) }) : t('GVCN');
   /* GV dạy được môn thiếu lên đầu (hồ sơ GV có kỹ năng đó). */
+  /* SUA-NO-RA: người khác vừa giao ô này (409 → tải lại) → việc đã xong, không cho giao đè. */
+  const daGiao = mon ? data?.bySkill.find((b) => b.skill === mon) : data?.core[0];
   const nguoi = [...(data?.candidates ?? [])].sort((a, b) => Number(!!mon && !!b.skills?.includes(mon)) - Number(!!mon && !!a.skills?.includes(mon)));
   const giao = async () => {
-    if (!data) return;
+    if (!data || daGiao) return;
     if (chon === '') { setLoi(t('Chọn giáo viên')); return; }
     setBusy(true); setLoi(null);
     try {
@@ -303,11 +307,15 @@ function PanelPhanCongMon({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =>
         ...data.bySkill.map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
         mon ? { userId: chon, skill: mon, isCore: false } : { userId: chon, skill: null, isCore: true },
       ];
-      await api.put(`/classes/${it.classId}/teachers`, { slots });
+      await api.put(`/classes/${it.classId}/teachers`, { slots, phienBan: data.phienBan });
       invalidate('/classes'); invalidate('/cases');
       toast.push('ok', t('Đã phân công {nhan}', { nhan }));
       onDaLam();
-    } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+    } catch (e: any) {
+      setLoi(e?.message ?? t('Không lưu được'));
+      /* SUA-NO-RA (CV-LOI-a): người khác vừa đổi phân công lớp → tải lại bức tranh mới, GIỮ người đang chọn để bấm Giao lại. */
+      if (e instanceof ApiError && e.status === 409) reload();
+    } finally { setBusy(false); }
   };
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong}
@@ -316,13 +324,14 @@ function PanelPhanCongMon({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =>
         : !data ? <div className="pt-3"><Skeleton rows={3} /></div>
           : (
             <div className="flex flex-col gap-3 pt-3">
-              <Truong nhan={nhan} batBuoc loi={loi} as="div">
+              {daGiao && <p className="m-0 text-sm text-slate-300" role="status">{mon ? t('Môn này vừa được giao cho {ten}.', { ten: daGiao.name }) : t('Lớp vừa có GVCN: {ten}.', { ten: daGiao.name })}</p>}
+              <Truong nhan={nhan} batBuoc loi={daGiao ? null : loi} as="div">
                 <ChonNguoi nhom="giao_vien" choToi={false} choNgoai={false} ariaLabel={t('{nhan}: chọn giáo viên', { nhan })} choTrong={t('— Chưa chọn —')}
                   ds={nguoi.map((g) => ({ id: g.id, ten: g.name, phu: phuGv(g) }))} value={chonNguoi(chon, nguoi, (g) => phuGv(g))}
                   onChange={(v) => { setChon(v?.kieu === 'tai_khoan' ? v.id : ''); setLoi(null); }} />
               </Truong>
               <div>
-                <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void giao()}>{busy ? t('Đang lưu…') : t('Giao')}</button>
+                <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!daGiao} onClick={() => void giao()}>{busy ? t('Đang lưu…') : t('Giao')}</button>
               </div>
             </div>
           )}

@@ -8,7 +8,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
-import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import {
   can, classScopeSql, coTheXemLuotCham, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
@@ -1047,8 +1047,13 @@ export function classTeachers(p: Principal, classId: number) {
       from: a.effective_from, to: a.effective_to,
     })),
     viewer: { canAssign, canAssignSubject },
+    /** SUA-NO-RA (CV-LOI-a): phiên bản = các dòng phân công đang chạy — gửi kèm khi lưu; người khác vừa đổi thì máy chủ trả 409. */
+    phienBan: phienBanPhanCong(active),
   };
 }
+
+/** Phiên bản phân công của lớp: id các dòng `active` (mọi lần đổi kết thúc / thêm dòng → id khác). */
+const phienBanPhanCong = (ds: { id: number }[]) => ds.map((a) => a.id).sort((a, b) => a - b).join(',');
 
 /**
  * Đọc danh sách ô phân công gửi lên (dữ liệu từ ngoài) thành `SlotPhanCong` sạch. GVCN không mang kỹ năng; GV bộ môn phải có kỹ năng.
@@ -1140,7 +1145,7 @@ function oCore(slots: readonly { userId: number; skill: string | null; isCore: b
  * PR-QU (A): Quản lý (`class.assign`) đổi mọi ô; GVCN của lớp (`class.assign_subject`, suy ra) chỉ đổi ô GV BỘ MÔN — chạm ô GVCN thì 403,
  * không ghi gì. GVCN đổi thì nhật ký ghi `via:'gvcn'` kèm trước/sau, và Quản lý chi nhánh nhận thông báo (để biết, không duyệt — G3).
  */
-export function setClassTeachers(p: Principal, classId: number, input: { slots?: TeacherSlot[] }) {
+export function setClassTeachers(p: Principal, classId: number, input: { slots?: TeacherSlot[]; phienBan?: unknown }) {
   const conn = db();
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
@@ -1155,13 +1160,23 @@ export function setClassTeachers(p: Principal, classId: number, input: { slots?:
   const classSkills: string[] = prog?.skills ?? [...ENTRY_SKILLS];
   /* Pre FOU: GVCN tự nhận ô môn duy nhất — đổi GVCN thì ô đó đổi theo, dòng cũ kết thúc như mọi ô (T56). */
   const slots = moRongPhanCong(ct, classSkills, docSlots(input.slots));
-  const cu = (conn.prepare(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(classId) as any[])
-    .map((a) => ({ userId: a.user_id as number, skill: a.skill as string | null, isCore: a.is_core === 1 }));
+  const docCu = () => conn.prepare(`SELECT id, user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(classId) as any[];
+  /* SUA-NO-RA (CV-LOI-a): bức tranh gửi lên đọc từ phiên bản cũ → không ghi đè phân công người khác vừa đổi (kiểm lại trong giao dịch).
+     Không gửi phiên bản = đường cũ (phép kiểm, công cụ). */
+  const kiemPhienBan = (ds: any[]) => {
+    if (input.phienBan !== undefined && String(input.phienBan) !== phienBanPhanCong(ds)) {
+      throw conflict('Phân công lớp vừa đổi bởi người khác. Đã tải lại — chọn lại rồi lưu.');
+    }
+  };
+  const dongCu = docCu();
+  kiemPhienBan(dongCu);
+  const cu = dongCu.map((a) => ({ userId: a.user_id as number, skill: a.skill as string | null, isCore: a.is_core === 1 }));
   if (!full && oCore(cu) !== oCore(slots)) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Quản lý chi nhánh.');
   kiemTruocPhanCong(classId, cls.branch_id, ct, classSkills, slots);
 
   const tom = (ds: typeof cu) => ds.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort();
   return tx(() => {
+    kiemPhienBan(docCu());
     const r = ghiPhanCong(p, classId, slots, demoToday(), { via: full ? 'quan_ly' : 'gvcn', truoc: tom(cu), sau: tom(slots) });
     if (!full && (r.added || r.ended)) {
       for (const id of quanLyCuaChiNhanh(cls.branch_id)) {

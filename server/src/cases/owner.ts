@@ -2,6 +2,7 @@ import { db } from '../db.ts';
 import { CASE_CATEGORY_SKILL, PERMISSIONS, categoryOf } from '../../../shared/domain/index.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { writeAudit } from '../platform/audit.ts';
 
 /**
  * GỢI Ý NGƯỜI PHỤ TRÁCH CHÍNH cho một Case mới (mục 2.3).
@@ -51,7 +52,11 @@ export function chuCaseTheoKyNang(classId: number | null, topics: readonly strin
  * `actorId` null = hệ thống). Lớp vẫn chưa có ai (không GV môn, không GVCN) thì Case để trống — Công việc của QL hiện "Phân công GV {môn}".
  * Trả số Case đã gán.
  */
-export function ganChuCaseThieu(o: { classId?: number; studentIds?: readonly number[]; actorId: number | null; luc: string }): number {
+export function ganChuCaseThieu(o: {
+  classId?: number; studentIds?: readonly number[]; actorId: number | null; luc: string;
+  /** SUA-NO-RA (CV-LOI-b): người gán không phải một tài khoản (migrate) → nhật ký mỗi Case một dòng ghi nguồn này. */
+  nguon?: string;
+}): number {
   const conn = db();
   /* Em đang học (không Tạm dừng / Lưu trữ), Case không tạm (Case tạm chưa là việc — OV-13a). `studentIds`: chỉ các em vừa xếp / chuyển lớp. */
   const theoEm = o.studentIds?.length ? `AND s.id IN (${o.studentIds.map(() => '?').join(',')})` : '';
@@ -71,6 +76,7 @@ export function ganChuCaseThieu(o: { classId?: number; studentIds?: readonly num
     if (conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ? AND owner_user_id IS NULL').run(chu, r.id).changes !== 1) continue;
     conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', NULL, ?, ?, ?)`)
       .run(r.id, String(chu), o.actorId, o.luc);
+    if (o.nguon) writeAudit({ actorUserId: o.actorId, action: 'case.owner_assign', entityType: 'case', entityId: r.id, after: { ownerUserId: chu, _nguon: o.nguon } });
     n += 1;
   }
   return n;

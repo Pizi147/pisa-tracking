@@ -10,7 +10,7 @@ import {
   TUTOR_REPORT_CATEGORIES, programmeOf,
 } from '../../../shared/domain/index.ts';
 import { addDays, nowIso, padCode } from '../util.ts';
-import { setConfig } from '../demoConfig.ts';
+import { nowNghiepVu, setConfig } from '../demoConfig.ts';
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../platform/accounts.ts';
 import { ensurePeriod, mondayOf, weekInfo } from '../platform/week.ts';
 import { BRANCHES } from './data.ts';
@@ -36,7 +36,7 @@ import { migratePrOv1c } from '../migrate/prOv1c.ts';
 import { migratePrOv11e } from '../migrate/prOv11e.ts';
 import { migratePrOv12c } from '../migrate/prOv12c.ts';
 import { migratePrOv12a } from '../migrate/prOv12a.ts';
-import { migratePrCvLoi } from '../migrate/prCvLoi.ts';
+import { ganChuCaseThieu } from '../cases/owner.ts';
 import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
 
 const NOW = nowIso();
@@ -312,8 +312,9 @@ export function runSeed() {
     migratePrOv12a(conn, []);
     /* OV-12c: Case dựng bằng SQL thẳng theo luật cũ → nguyên nhân MT từ nhận xét, nhãn SOS Progress (cùng hàm với migrate). */
     migratePrOv12c(conn, []);
-    /* CV-LOI: Case dựng thẳng SQL không khai người phụ trách → gán theo luật tạo Case (cùng hàm với migrate). */
-    migratePrCvLoi(conn, []);
+    /* CV-LOI: Case dựng thẳng SQL không khai người phụ trách → gán theo luật tạo Case (cùng hàm với migrate; migrate chạy một lần — khoá
+       `napDuLieuNen` đã đặt — nên seed gọi thẳng bước gán). */
+    ganChuCaseThieu({ actorId: null, luc: nowNghiepVu() });   // mốc nghiệp vụ, không giờ thật (bẫy 11 plan.md, #559)
 
     capNhatConOChoTatCa();   // TD7b: dữ liệu mẫu ghi thẳng SQL — tính cờ "còn ô chờ điểm" một lần cho mọi lượt
     conn.prepare('UPDATE demo_config SET value = ?, updated_at = ? WHERE key = ?').run(nowIso(), nowIso(), MOC_LICH_SU);   // OV-15g: bộ demo dựng thẳng SQL không có lịch sử — mốc SAU mọi dữ liệu mẫu

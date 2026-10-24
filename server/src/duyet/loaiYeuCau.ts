@@ -30,7 +30,7 @@ import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.t
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, demChuaCoLenh, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
-import { duyetThuHoiYThuc, huyThuHoiYThuc, rutDeXuatYThuc, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
+import { duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 
 /**
@@ -414,11 +414,12 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
     },
     /* OV-7a: GVCN sửa ghi chú (bằng chứng thêm / bỏ ở panel lần xử lý — thẻ đếm lại) hoặc Rút (lần xử lý chờ duyệt xoá như Xoá lần xử lý). */
-    khiSua: (_p, yc, v) => {
+    khiSua: (p, yc, v) => {
+      kiemNguoiGuiYThuc(p, yc.doi_tuong_id);   // SUA-NO-RA: người gửi đã rời lớp → 403
       const m = suaDeXuatYThuc(yc.doi_tuong_id, v.note);
       return { lyDo: m.lyDo, duLieu: { ...JSON.parse(yc.du_lieu ?? '{}'), soTep: m.soTep }, bangChung: m.bangChung };
     },
-    khiRut: (p, yc, khoaTep) => rutDeXuatYThuc(p, yc.doi_tuong_id, khoaTep),
+    khiRut: (p, yc, khoaTep) => { kiemNguoiGuiYThuc(p, yc.doi_tuong_id); rutDeXuatYThuc(p, yc.doi_tuong_id, khoaTep); },
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM discipline_measures m WHERE m.id = y.doi_tuong_id AND m.status = 'cho_duyet')
          OR EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND s.archived_at IS NOT NULL)`,
@@ -693,14 +694,20 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ LUAT-5 · Thu hồi lần xử lý Ý thức (luật 5, 21/10 — thay Xoá lần xử lý) */
   {
     loai: 'thu_hoi_y_thuc',
-    khiDuyet: (p, yc) => duyetThuHoiYThuc(p, yc.doi_tuong_id, yc.ly_do ?? ''),
+    khiDuyet: (p, yc) => {
+      /* SUA-NO-RA (LUAT-5-b): thẻ lưu lại đúng số QL vừa duyệt (bậc về / số vi phạm lúc duyệt), không phải số lúc gửi. */
+      const sl = yc.hoc_vien_id ? soLieuThuHoi([{ measureId: yc.doi_tuong_id, studentId: yc.hoc_vien_id }]).get(yc.doi_tuong_id) : undefined;
+      if (sl) db().prepare('UPDATE yeu_cau_duyet SET du_lieu = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(yc.du_lieu ?? '{}'), ...sl }), yc.id);
+      duyetThuHoiYThuc(p, yc.doi_tuong_id, yc.ly_do ?? '');
+    },
     /* Từ chối: lần xử lý giữ nguyên — lý do nằm ở thẻ, GVCN đọc ở panel lần xử lý. Rút: chưa đổi gì ở bảng nguồn. */
-    khiSua: (_p, yc, v) => {
+    khiSua: (p, yc, v) => {
+      kiemNguoiGuiYThuc(p, yc.doi_tuong_id);   // SUA-NO-RA: người gửi đã rời lớp → 403
       const lyDo = chuTuDo(v.lyDo ?? v.note, 'Lý do', 2000);
       if (!lyDo) throw badRequest('Ghi lý do thu hồi.');
       return { lyDo, duLieu: JSON.parse(yc.du_lieu ?? '{}') };
     },
-    khiRut: () => {},
+    khiRut: (p, yc) => kiemNguoiGuiYThuc(p, yc.doi_tuong_id),
     khiHuy: (p, yc) => { if (yc.trang_thai === 'duyet') huyThuHoiYThuc(p, yc.doi_tuong_id); },
     huyDuoc: (conn, ds) => {
       const st = napTheoDoiTuong(conn, ds, `SELECT m.id, m.status FROM discipline_measures m WHERE m.id IN (?)`);
@@ -714,15 +721,22 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
          OR EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND s.archived_at IS NOT NULL)`,
       lyDo: 'Lần xử lý không còn để thu hồi',
     },
-    /* UI-CON-LAI k3 (T22): bối cảnh đủ để quyết — ngày thực hiện lần xử lý + việc Báo PH của TVV (lần "Đã báo PH" mới nhất). Một câu cho cả lô. */
-    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
-      `SELECT m.id, m.performed_on, v.trang_thai AS bao_tt,
-              (SELECT l.ngay || '|' || COALESCE(u.full_name, '') FROM viec_bao_ph_lan l LEFT JOIN users u ON u.id = l.ghi_boi
-                WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao' ORDER BY l.ghi_luc DESC LIMIT 1) AS da_bao
-         FROM discipline_measures m LEFT JOIN viec_bao_ph v ON v.measure_id = m.id WHERE m.id IN (?)`),
-    /* Loại, bậc sau thu hồi, số vi phạm lưu ở `du_lieu` lúc gửi (thuHoiXuLy) — thẻ nói đúng điều QL được xin. */
+    /* UI-CON-LAI k3 (T22): bối cảnh đủ để quyết — ngày thực hiện lần xử lý + việc Báo PH của TVV (lần "Đã báo PH" mới nhất). Một câu cho cả lô.
+       SUA-NO-RA (LUAT-5-b): thẻ còn chờ → thêm `song` = bậc về / số vi phạm tính sống (GVCN có thể sửa vi phạm của lần xử lý sau khi gửi). */
+    nap: (conn, ds) => {
+      const nen = napTheoDoiTuong(conn, ds,
+        `SELECT m.id, m.performed_on, v.trang_thai AS bao_tt,
+                (SELECT l.ngay || '|' || COALESCE(u.full_name, '') FROM viec_bao_ph_lan l LEFT JOIN users u ON u.id = l.ghi_boi
+                  WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao' ORDER BY l.ghi_luc DESC LIMIT 1) AS da_bao
+           FROM discipline_measures m LEFT JOIN viec_bao_ph v ON v.measure_id = m.id WHERE m.id IN (?)`);
+      const cho = ds.filter((y) => y.trang_thai === 'cho' && y.hoc_vien_id != null);
+      const sl = soLieuThuHoi(cho.map((y) => ({ measureId: y.doi_tuong_id, studentId: y.hoc_vien_id! })));
+      for (const y of cho) nen.set(y.id, { ...nen.get(y.id), song: sl.get(y.doi_tuong_id) });
+      return nen;
+    },
+    /* Loại lưu ở `du_lieu` lúc gửi (thuHoiXuLy); bậc về, số vi phạm: thẻ chờ lấy số sống (`nap`), thẻ đã quyết giữ số lúc duyệt. */
     moTa: (yc, ngu) => {
-      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
+      const d = { ...(() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })(), ...(ngu.them.get(yc.id)?.song ?? {}) } as
         { kind?: string; customName?: string | null; bacVe?: number; soViPham?: number };
       const bacVe = d.bacVe ? nhanLoaiXuLy(kindCuaBac(d.bacVe)) : 'chưa có bậc';
       const x = ngu.them.get(yc.id) as { performed_on?: string | null; bao_tt?: string | null; da_bao?: string | null } | undefined;
@@ -737,6 +751,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           ...(x?.performed_on ? [`Đã thực hiện ${ngay(x.performed_on, ngu)}`] : []), ...(tvv ? [tvv] : [])],
         neuDuyet: `Lần xử lý thành "Đã thu hồi" — bậc về ${bacVe}, ${d.soViPham ?? 0} vi phạm về chưa xử lý.${x?.bao_tt === 'xong' ? ' Cần thì nhờ TVV báo lại PH — hệ thống không tự tạo việc.' : ''}`,
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
+        duLieu: { bacVe: d.bacVe ?? 0, soViPham: d.soViPham ?? 0 },
       };
     },
   },
