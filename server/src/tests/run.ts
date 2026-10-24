@@ -9581,6 +9581,9 @@ await runPrSvTqGvTests({ check, assert, conn, P } as any);
 // ==================================================================== SUA-CHAM-LAI (Đ4 lý do Chưa đủ dữ liệu)
 const { runPrSuaChamLaiTests } = await import('./prSuaChamLai.tests.ts');
 await runPrSuaChamLaiTests({ check, assert } as any);
+// ==================================================================== P2 MT-DEM (bộ đếm MT đã xong / đã tạo, thôi nhắc xếp thêm)
+const { runPrMtDemTests } = await import('./prMtDem.tests.ts');
+await runPrMtDemTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
