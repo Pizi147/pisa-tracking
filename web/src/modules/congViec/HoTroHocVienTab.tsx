@@ -20,6 +20,7 @@ import { DauViecCongViec, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx'
 import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { useManHinh } from '../../ui/TheDong.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
   LOC_NHANH, viecKeTiep, type LocNhanh, type NhomViec as MaNhomViec, demViec, laViecChamCheo, shortDate, chiaVachHan,
@@ -70,6 +71,8 @@ export function HoTroHocVienTab() {
   /* PR-OV2a: Admin (`nav.workChamDiem`) xem việc Chấm điểm của GV như Quản lý, chỉ nhóm đó (OV-12h bỏ Nhắc). */
   const chiChamDiem = !!session?.nav?.workChamDiem;
   const laQuanLy = !!session?.nav?.workOps || chiChamDiem;
+  /* SUA-CHAM-LAI Đ1: 375 — QL / QT danh sách dài, nhóm thứ 3 trở đi gập sẵn (bấm đầu nhóm để mở; số đầu nhóm vẫn đủ). */
+  const hep = useManHinh('(max-width: 767px)');
   const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi')) : 'tat-ca';
   /* UI-CV-TVV (mockup `tvv.html`): TVV — chỉ việc của mình, chia nhóm theo việc TVV (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ). */
   const laTvv = !laQuanLy && !!session?.nav?.hvCuaToi;
@@ -358,7 +361,7 @@ export function HoTroHocVienTab() {
               action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : laTvv ? <Link className="link" to="/hoc-vien">{t('HV của tôi ›')}</Link> : undefined} /></Card>
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
-            <DanhSachViec nhom={dsNhomXem} dem={demNhom} homNay={homNay} soHien={10} moHet={moHet} gapSan={(k) => k === 'van-hanh' && laQuanLy && !chiChamDiem}
+            <DanhSachViec nhom={dsNhomXem} dem={demNhom} homNay={homNay} soHien={10} moHet={moHet} gapSan={(k, viTri) => (k === 'van-hanh' && laQuanLy && !chiChamDiem) || (hep && laQuanLy && viTri >= 2)}
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} cuoiNhom={cuoiNhom} chiDemViec={laTvv} luatNhom={laTvv ? luatNhomTvv : undefined}
               nutPhu={(x) => (!x.con && x.cycleId && (x.group === 'thi_that' || x.group === 'buoc_tiep') && !xong.has(x.key) && !theoDoi(x)

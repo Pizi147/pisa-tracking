@@ -90,7 +90,7 @@ export function HoSoGiaoVienPage() {
         <DuongVe cha={trangCha('gv', { nav: session?.nav })} ten={t('Hồ sơ {ten}', { ten: gv.ten })} />
         <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-2">
-            <h1 className="m-0 text-2xl font-bold text-slate-100">{gv.ten}</h1>
+            <h1 className="m-0 text-xl font-bold text-slate-100">{gv.ten}</h1>
             <NhanDau nhan={t('Vai')}>{[gv.vai.map((v) => dich(v)).join(' · '), gv.chiNhanh.join(', ')].filter(Boolean).join(' · ') || '—'}</NhanDau>
             <NhanDau nhan={t('Kỹ năng')}>
               {gv.kyNang.length ? <span className="flex flex-wrap gap-1">{gv.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span> : <span className="font-normal text-slate-500">{t('chưa khai')}</span>}

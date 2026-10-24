@@ -14,9 +14,9 @@ export const HD_ADMIN: HuongDan = {
   viec: [
     {
       id: 'ad-sang', ten: 'Mở Tổng quan › Mock Test mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Ba ô: <b>Lượt MT tuần này</b> · <b>Ô điểm chưa nhập</b> · <b>HV chưa có MT tiếp theo</b>; bấm ô mở đúng chỗ. Đề nghị dời: ở <b>Test › Kế hoạch Test</b>.',
+      buoc: ['Ba ô: <b>Lượt MT tuần này</b> · <b>Bài chưa nhập điểm</b> · <b>HV chưa có MT tiếp theo</b>; bấm số mở đúng chỗ. Đề nghị dời: ở <b>Test › Kế hoạch Test</b>.',
         'Khối <b>GV chấm quá hạn</b>: ai còn nợ điểm.', '<b>Lịch sắp tới</b>: <b>Xem toàn bộ lịch ›</b> mở Kế hoạch Test.'],
-      chi: { hd: 'tq-mock-test', duong: '/', chu: 'Ba số Mock Test của chi nhánh — bấm để mở.' },
+      chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Ba số Mock Test của chi nhánh — bấm để mở.' },
     },
     {
       id: 'ad-xep-lich', ten: 'Xếp / dời lịch MT', khi: 'mỗi tuần',
@@ -46,8 +46,8 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'ad-tq-o', ten: 'Số liệu Mock Test', buoc: ['<b>Lượt MT tuần này</b> · <b>Ô điểm chưa nhập</b> · <b>Đề nghị dời chờ</b> · <b>MT chưa xếp lịch</b>.', 'Bấm ô mở Kế hoạch Test / Lịch Test đúng chỗ.'],
-          chi: { hd: 'tq-mock-test', duong: '/', chu: 'Bốn số Mock Test của chi nhánh.' } },
+        { id: 'ad-tq-o', ten: 'Số liệu Mock Test', buoc: ['<b>Lượt MT tuần này</b> · <b>Bài chưa nhập điểm</b> · <b>Đề nghị dời chờ</b> · <b>MT chưa xếp lịch</b>.', 'Bấm ô mở Kế hoạch Test / Lịch Test đúng chỗ.'],
+          chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bốn số Mock Test của chi nhánh.' } },
         { id: 'ad-tq-gv', ten: 'GV chấm quá hạn', buoc: ['Giáo viên còn bài quá hạn chấm; chỉ xem.'] },
       ],
     },

@@ -12,9 +12,10 @@ export const ANH_TVV = [
   {
     id: 'tvv-tong-quan', user: 23, url: '/', cao: 420,
     marks: [
-      { n: 1, loc: (p) => p.locator('[data-hd="tq-hv-so"] a').first() },
-      { n: 2, loc: (p) => p.locator('[data-hd="tq-hv-so"] a').nth(4) },
-      { n: 3, loc: (p) => p.locator('[data-hd="tq-hv-so"] a').nth(5) },
+      /* SUA-CHAM-LAI L12: ba ô chỉ số V5 (Báo PH đúng hạn · Thi tháng này · Chờ KQ · Lộ trình tiếp). */
+      { n: 1, loc: (p) => p.locator('[data-hd="tq-tom-tat"] > *').nth(0) },
+      { n: 2, loc: (p) => p.locator('[data-hd="tq-tom-tat"] > *').nth(1) },
+      { n: 3, loc: (p) => p.locator('[data-hd="tq-tom-tat"] > *').nth(2) },
     ],
   },
   {
@@ -50,7 +51,7 @@ export const ANH_TVV = [
     id: 'cx-tong-quan', user: 24, url: '/', cao: 900,
     marks: [
       { n: 1, loc: (p) => p.locator('label', { hasText: /Chi nhánh|Branch/ }).first() , phai: true },
-      { n: 2, loc: HD('tq-hv-so') },
+      { n: 2, loc: HD('tq-tom-tat') },
     ],
   },
   {
@@ -63,7 +64,7 @@ export const ANH_TVV = [
 export const ANH_ADMIN = [
   {
     id: 'ad-tong-quan', user: 22, url: '/', cao: 760,
-    marks: [{ n: 1, loc: HD('tq-mock-test') }],
+    marks: [{ n: 1, loc: HD('tq-tom-tat') }],
   },
   {
     id: 'ad-ke-hoach', user: 22, url: '/test/ke-hoach', cao: 760,

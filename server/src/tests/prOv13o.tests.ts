@@ -2,7 +2,7 @@
  * PHÉP KIỂM OV-13o — gom việc nhỏ sau rà OV-13 (chủ SP 16/10). Mỗi ca cuộn lại (`thu`).
  *  1 (13i) CX đổi KCK cả lớp: lỗi báo ở XEM TRƯỚC, đúng dòng, cùng câu với lúc lưu (`loiDoiTarget`).
  *  2 (13j) Lịch sử sửa: hai lần sửa cùng người ≤ 5 s → một khối; chuyển lớp mở lộ trình mới đổi Target → dòng Target.
- *  4 (13g) Tổng quan "Lớp tôi dạy" · Bài chờ chấm của GV Speaking tính bài S chấm chéo (cùng luật `canChamCheo` với Công việc).
+ *  4 (13g → SUA-CHAM-LAI L4) Tổng quan "Kỹ năng tôi dạy" · Bài chờ chấm của GV Speaking KHÔNG tính bài S chấm chéo (T02–T03).
  *  5 (13h) Báo cáo tuần: dòng lịch sử "nháp" ghi sau một lần nộp (dữ liệu trước rà #410) hiện là "sửa".
  *  7 (13k) Hồ sơ MT › Lịch sử: một lần lưu đổi cả nhận xét lẫn nhóm nguyên nhân → hai dòng.
  */
@@ -75,18 +75,17 @@ export async function runPrOv13oTests(t: YThucTestKit) {
     assert(tg && tg.moi === moi.toFixed(1) && tg.cu === (em.tg == null ? null : Number(em.tg).toFixed(1)), `khối chuyển lớp: ${JSON.stringify(k)}`);
   }));
 
-  check('OV13o-4 · GV Speaking: "Lớp tôi dạy" · Bài chờ chấm = bài của mình + bài S chấm chéo ở lớp đó (cùng số với Công việc)', () => {
+  check('OV13o-4 · GV Speaking: "Kỹ năng tôi dạy" · Bài chờ chấm = CHỈ bài của mình, không bài S chấm chéo (SUA-CHAM-LAI L4)', () => {
     const p = perm.loadPrincipal(P.sTeacher.userId);
     const cc = new Map<number, number>();
-    /* OV-14c: Công việc có MỘT việc Chấm Speaking — số theo lớp đọc từ hàng đợi của việc đó (cùng tập bài). */
     for (const r of (attempts.baiChamSpeaking(p, TODAY).rows as any[]).filter((x) => x.cho)) cc.set(r.classId, (cc.get(r.classId) ?? 0) + 1);
     const rows = tongQuan.lopToiDay(p, { ct: 'ft' }).rows as any[];
-    const co = rows.filter((r) => cc.has(r.classId));
-    assert(co.length > 0, `dữ liệu demo: GV S phải dạy ít nhất một lớp có bài chấm chéo (${[...cc.keys()]})`);
-    for (const r of co) {
+    assert(rows.some((r) => cc.has(r.classId)), `dữ liệu demo: GV S phải dạy ít nhất một lớp có bài chấm chéo (${[...cc.keys()]})`);
+    for (const r of rows) {
       const cua = get('SELECT branch_id b FROM classes WHERE id = ?', r.classId).b;
-      const minh = hoSo.noDiemCuaGv(p, p.userId, TODAY, [{ id: r.classId, branchId: cua }]).filter((x: any) => !x.chamCheo).length;
-      assert(r.baiCho === minh + cc.get(r.classId)!, `${r.code}: Bài chờ chấm ${r.baiCho} ≠ của mình ${minh} + chấm chéo ${cc.get(r.classId)}`);
+      const minh = hoSo.noDiemCuaGv(p, p.userId, TODAY, [{ id: r.classId, branchId: cua }]);
+      assert(minh.every((x: any) => !x.chamCheo), `${r.code}: noDiemCuaGv còn bài chấm chéo`);
+      assert(r.baiCho === minh.length, `${r.code}: Bài chờ chấm ${r.baiCho} ≠ của mình ${minh.length} (chấm chéo ${cc.get(r.classId) ?? 0} không đếm)`);
       const o = tongQuan.oLopToiDay(p, { ct: 'ft', classId: r.classId, cot: 'bai-cho' });
       assert(o.n === r.baiCho, `bấm số ra ${o.n} ≠ ${r.baiCho}`);
     }

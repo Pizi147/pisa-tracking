@@ -6,7 +6,6 @@ export const EN_UI_TONG_QUAN = {
   "Bài trễ chấm · {ten}": "Late marking · {ten}",
   "Báo PH đúng hạn": "Parent call on time",
   "Báo cáo HV": "Student report",
-  "CX xem số liệu để phối hợp — không có việc trên trang này.": "CX views figures to coordinate — no tasks on this page.",
   "Case chưa chốt PA · {lop}": "Cases without plan · {lop}",
   "Case có PA": "Cases with plan",
   "Chi nhánh chưa có GV nào trong kỳ": "No teachers in this branch for the period",
