@@ -245,6 +245,19 @@ export type KetQuaHien = {
 const band1 = (n: number) => n.toFixed(1);
 const noiDong = (...p: (string | null | false)[]) => p.filter(Boolean).join(' · ');
 
+/**
+ * SUA-CHAM-LAI Đ4 (T08): lý do NGẮN của "Chưa đủ dữ liệu" (tooltip ô Kết quả) — người xem thấy đủ điểm mà chưa có kết luận thì biết vì sao.
+ * Theo đúng các cờ máy chủ đã trả (`standingFor`), không tự so điểm. null = không có lý do riêng để nói.
+ */
+export function lyDoChuaDu(k: KetQuaVao | null): string | null {
+  if (!k || !k.attemptLabel) return t('chưa có lượt Test có điểm');
+  if (k.scored < k.required) return t('thiếu điểm {n} kỹ năng', { n: k.required - k.scored });
+  if (k.mode === 'ielts_band' && k.expectation === null) return t('chưa có kỳ vọng (thiếu Target)');
+  if (k.mode === 'ielts_band' && k.overall === null) return t('chưa tính được Overall');
+  if (k.provisional) return t('kết quả tạm, lượt chưa đủ điểm');
+  return null;
+}
+
 export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
   if (!k || !k.attemptLabel) return { chinh: '—', lech: null, dat: false, sos: null, dong1: t('Chưa có kết quả'), dong2: null };
   const ct = k.chuongTrinh ?? null;
