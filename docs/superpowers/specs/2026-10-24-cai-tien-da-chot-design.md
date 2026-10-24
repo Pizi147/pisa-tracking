@@ -165,6 +165,8 @@
 
 ## 6. Câu hỏi cho chủ SP (chỉ điều đổi kết quả; khuyến nghị đứng đầu)
 
+> **Chủ SP 25/10: chọn khuyến nghị cho cả 12 câu** → luật `plan.md` 1.6 N11–N19. Các khuyến nghị dưới đây giờ là quyết định.
+
 1. **Q1 — Tạm dừng vào Lưu trữ:** em tạm dừng (có thể quay lại) vẫn **giữ chỗ lớp + lộ trình đứng yên + Case dừng hạn** như hiện nay, chỉ thêm vào Lưu trữ cho khỏi rối danh sách? *(khuyến nghị: có — quay lại học về đúng lớp, không mất gì; em đang tạm dừng hiện có cũng vào Lưu trữ khi deploy)*
 2. **Q2 — PA đang chạy khi mở lộ trình mới:** kết thúc PA với kết quả "Dừng — kết thúc lộ trình" (không tính hiệu quả PA), Case đóng lý do "Kết thúc lộ trình"? *(khuyến nghị: có)*
 3. **Q3 — Lộ trình "Khác":** có Target và thi thật như LT / RF không? *(khuyến nghị: Target tuỳ chọn, thi thật như LT; 0 MT)*
