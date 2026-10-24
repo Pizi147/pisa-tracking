@@ -53,4 +53,19 @@ export async function runPrUiChungTests(t: any) {
       assert(s.includes('menu-muc ') && s.includes('menu-muc-nguy'), `${f}: mục dùng .menu-muc + .menu-muc-nguy`);
     }
   });
+
+  check('UIC-4 · bảng dài có đầu cột dính; không bảng `bang-dinh` nào rộng hơn khung 1280 (1238 px)', () => {
+    assert(/khung=\{false\} dinh /.test(doc('web/src/modules/classes/BangHoSoLop.tsx')), 'hồ sơ lớp FT: bảng học viên `dinh`');
+    assert((doc('web/src/modules/phanTich/KetQuaThi.tsx').match(/table-scroll bang-dinh"/g) ?? []).length === 2, 'Kết quả Test: Mock + Thi thật');
+    assert(doc('web/src/modules/phanTich/YThucPhoiHop.tsx').includes('table-scroll bang-dinh"'), 'Ý thức: danh sách HV');
+    /* `.bang-dinh` bỏ khung cuộn từ 1280 — bảng rộng hơn khung thì làm <main> trượt ngang (luật index.css). */
+    const quet = (thu: string): string[] => fs.readdirSync(path.join(REPO, thu), { withFileTypes: true })
+      .flatMap((f) => (f.isDirectory() ? quet(`${thu}/${f.name}`) : f.name.endsWith('.tsx') ? [`${thu}/${f.name}`] : []));
+    for (const f of quet('web/src')) {
+      const s = doc(f);
+      for (const m of s.matchAll(/bang-dinh(?!-1440)[^>]*>\s*(?:\{\/\*[^]*?\*\/\}\s*)?<table[^>]*minWidth: '?(\d+)/g)) {
+        assert(Number(m[1]) <= 1238, `${f}: bảng bang-dinh minWidth ${m[1]} > 1238`);
+      }
+    }
+  });
 }

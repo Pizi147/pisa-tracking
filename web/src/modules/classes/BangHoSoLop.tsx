@@ -190,7 +190,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
         )}
       </div>
       <Bang ten={t('Học viên lớp {lop}', { lop: maLop })} cot={COT} hang={ds} khoa={(r) => r.id} oCua={oCua} phuCua={phuCua} hangRieng={hangCua}
-        the375={false} khung={false} rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca' && onThemHocVien ? <button type="button" className="btn btn-sm" onClick={onThemHocVien}>{t('Thêm học viên')}</button> : undefined }} />
+        the375={false} khung={false} dinh rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca' && onThemHocVien ? <button type="button" className="btn btn-sm" onClick={onThemHocVien}>{t('Thêm học viên')}</button> : undefined }} />
       {pop && (() => { const r = tatCa.find((x) => x.id === pop.sid); const h = r && mocCua(r); return h ? <PopThanhPhan attemptId={h.id} kn={pop.kn} nut={pop.nut} tong={h.writing ?? null} onDong={() => setPop(null)} /> : null; })()}
       {tt.panels}
       {ngan2 && (
