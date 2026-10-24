@@ -6,7 +6,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, loi, isIsoDate, notFound, nowIso } from '../util.ts';
-import { demoToday } from '../demoConfig.ts';
+import { demoToday, nowNghiepVu } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { kckCuaLuot, loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
@@ -63,7 +63,7 @@ export function syncSosCoordination(attempt: { id: number; student_id: number; a
           `INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at)
            VALUES (?,?,?, NULL, 1, 'pending', ?)`,
         )
-        .run(attempt.id, attempt.student_id, kind, now);
+        .run(attempt.id, attempt.student_id, kind, nowNghiepVu());   // mốc hạn Meeting CX theo ngày nghiệp vụ
       added += 1;
     } else if (row.status === 'removed' && COORDINATION_SYNC_REVIVE_REASONS.includes(row.remove_reason_code)) {
       conn
@@ -456,7 +456,7 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
         `INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at)
          VALUES (?,?,?,?, 0, 'pending', ?)`,
       )
-      .run(attemptId, a.student_id, kind, name || null, nowIso());
+      .run(attemptId, a.student_id, kind, name || null, nowNghiepVu());
     const newId = Number(info.lastInsertRowid);
     writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.add', entityType: 'sos_coordination_action', entityId: newId,

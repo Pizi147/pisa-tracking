@@ -1045,14 +1045,17 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
   const ANH: Record<string, string> = {
+    /* SUA-TD4A (24/10): main đỏ vì `sos_coordination_actions.created_at` ghi GIỜ THẬT → hạn Meeting CX (tạo + 5) trôi theo ngày chạy (23/10 → 28/10, 24/10 → 29/10).
+       Nay ghi theo ngày nghiệp vụ (`nowNghiepVu`). So JSON 23/10 ↔ sau sửa: lệch CHỈ `due` của "Phối hợp SOS · MB FT 101" 2026-10-28 → 2026-09-19 (+ vị trí dòng
+       theo hạn); băm 24/10 = 26/10 (đồng hồ giả). Trước: GVCN toi 54c27b39ee9b881f, QL tat-ca 420043d1c928ba28, QT tat-ca 3e43c0b2dc0ade75, QT tat-ca cn 200388dc93d64b79, QL gvcn f66534617b5b28a0 */
     /* SV-NX-CASE (N8 ③, 23/10): "Xem nhận xét Speaking" → "Xác nhận Case" chỉ khi có Case S thật (hạn SOS) — so JSON ×1 gốc df72ee4 ↔ nhánh: lệch CHỈ 3 việc xem_nx_s (bài không Case) ở GV S / QL tất cả; ×3 thêm Case S chấm chéo chờ xác nhận (chưa mô tả → Ghi nhận xét / Xác nhận Case). Trước: GVCN toi 80841402855460fc, GVCN_THUONG toi 80841402855460fc, QL tat-ca 308a1cd5cdf610d4, QT tat-ca d99e66a82939f985, QT tat-ca cn b3b9eb54c28af290, QL gvcn 2bfa98682602b48b, GVS toi 97693a60d0ace310 */
     /* LUAT-NX-MT (chủ SP 22/10): ô có band thiếu nhận xét không còn là việc Nhập điểm → GV / QL "tất cả" đổi CÓ CHỦ Ý; QL / QT "của tôi", ADMIN giữ. */
     /* MAIN-DO: chụp lại theo dữ liệu SEED-UX cuối (BU_MT2, 32504e72 → 9a078719) — so JSON 58a2d268 ↔ 9a078719: việc lệch CHỈ ở 4 em MT2 chưa đạt
        (Ngô Bảo Châu, Lý Thanh Tâm, Phạm Khánh Linh, Kiều Thảo Nhi: việc Case MT2; Case cũ của Kiều Thảo Nhi đổi) và dòng lớp MB FT 101 (MT2 dời W3 AUG); id Case dời. ADMIN giữ.
        SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
-    'QL toi': '3ea67fbf71f97f26', 'QT toi': 'ae31cc97e115aae1', 'GVCN toi': '54c27b39ee9b881f', 'GVBM toi': 'f0e52756d39e2508',
-    'GVCN_THUONG toi': '54c27b39ee9b881f', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '420043d1c928ba28', 'QT tat-ca': '3e43c0b2dc0ade75',
-    'QT tat-ca cn': '200388dc93d64b79', 'QL gvcn': 'f66534617b5b28a0', 'GVS toi': 'bde6ca74489b52be',
+    'QL toi': '3ea67fbf71f97f26', 'QT toi': 'ae31cc97e115aae1', 'GVCN toi': '76b13509ead6c605', 'GVBM toi': 'f0e52756d39e2508',
+    'GVCN_THUONG toi': '76b13509ead6c605', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '2f708e34199a5b09', 'QT tat-ca': 'fd4a0025509b3b4c',
+    'QT tat-ca cn': '9bc50bbc012634a2', 'QL gvcn': '658f91bcc1ae947f', 'GVS toi': 'bde6ca74489b52be',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
