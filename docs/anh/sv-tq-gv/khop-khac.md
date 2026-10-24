@@ -30,7 +30,7 @@ Quyền: chỉ lớp của chính người gọi (phân công hiệu lực hôm 
 | # | Khung mockup | Thành phần web | Kết quả |
 |---|---|---|---|
 | 1 | Hai thẻ cạnh nhau "Kỹ năng tôi dạy" · "Lớp tôi chủ nhiệm" trong cột trái, cột "Đi tiếp" phải | `HaiKhoiGv` (`Card` × 2) trong `BoCuc` trái; cột phải giữ "Điều hướng" #551 | KHỚP |
-| 2 | Cạnh nhau tới 1100 px | cạnh nhau **≥ 1440**; 1100–1439 xếp dọc (ở 1280 mỗi thẻ ~400 px, bảng 5 cột phải cuộn ngang trong thẻ) | KHÁC — [XM-SV-3] |
+| 2 | Cạnh nhau tới 1100 px | cạnh nhau **≥ 1440** (ba cột: dạy · chủ nhiệm · Điều hướng); 1100–1439: Kỹ năng tôi dạy | Điều hướng, **Lớp tôi chủ nhiệm trải cả bề ngang dưới** (chủ SP 24/10 — không để thừa khoảng trống dưới Điều hướng); ở 1280 hai thẻ cạnh nhau chỉ ~400 px, bảng phải cuộn ngang | KHÁC — [XM-SV-3] |
 | 3 | Tiêu đề phụ "R · W1 · W (lớp thường)" | tiêu đề phụ = **kỳ** "W4 AUG – W3 SEP" (Đạt / Tiến bộ là số theo kỳ); kỹ năng nằm ở chip từng hàng | KHÁC nhỏ (chỉnh cho hợp lý) |
 | 4 | Cột Lớp + dòng phụ mốc Test ("MT2", "Progress") | mã lớp → hồ sơ lớp; dòng phụ: lộ trình · Test sắp tới (FT) / tuần học · Test sắp tới (thường) · "tuần này" (V4 "Test sắp tới") | KHỚP |
 | 5 | Cột Kỹ năng (chip) | `ChipKy` (chung với hồ sơ GV, chuyển sang `ui/Nhan.tsx`) | KHỚP |
@@ -55,7 +55,7 @@ Quyền: chỉ lớp của chính người gọi (phân công hiệu lực hôm 
 ## [XM] — cần PTA Plan
 
 - **XM-SV-1** cột "Ý thức chờ xử lý" (mockup) ↔ "Case" (`plan.md` SV-TQ-GV + prompt PR). Chọn **Case** (giữ ô V4 bấm được). Thêm cột Ý thức cần một tập "việc Ý thức chờ xử lý theo lớp" — chưa có hàm theo lớp cho GVCN (Công việc nhóm Ý thức là theo việc). **Khuyến nghị:** giữ Case; nếu chủ SP muốn Ý thức, thêm cột thứ 6 ở PR sau (dùng tập nhóm `y-thuc` của `myWork` chia theo lớp).
-- **XM-SV-3** hai khối cạnh nhau chỉ từ 1440 (mockup từ 1100). Ở 1280 mỗi thẻ ~400 px < bảng 462–500 px → hoặc cuộn ngang trong thẻ, hoặc bỏ cột. **Khuyến nghị:** giữ xếp dọc < 1440 (không mất cột, không cuộn ngang).
+- **XM-SV-3** hai khối cạnh nhau chỉ từ 1440 (mockup từ 1100). Ở 1280 mỗi thẻ ~400 px < bảng 462–500 px. Chủ SP 24/10 xem ảnh 1280: khối chủ nhiệm **trải cả bề ngang** dưới (đã làm). **Khuyến nghị:** giữ.
 - (không phải XM — ghi lại) Mockup "Đi tiếp" có dòng "2 việc Phan Gia Hân" (bàn giao): ngoài phạm vi PR này, cột phải giữ đúng #551.
 
 ## Thao tác TRƯỚC → SAU

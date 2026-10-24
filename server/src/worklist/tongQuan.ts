@@ -359,7 +359,9 @@ function thiThangNayCuaGv(p: Principal, ct: 'ft' | 'thuong') {
  * Mỗi số bấm được: cột V4 + Thi tháng này → `/tong-quan/lop-toi-day/o`; Đạt / Tiến bộ → `/giao-vien/:id/chi-so/o?cot=ket-qua-lop|tien-bo-lop:<lớp>`.
  */
 export function lopToiDayHaiKhoi(p: Principal) {
-  const hang = (['ft', 'thuong'] as const).flatMap((khung) => lopToiDay(p, { ct: khung }).rows.map((r) => ({ ...r, khung })));
+  /* Lớp thường chỉ đọc khi GV có lớp thường (`coThuong` của lần đọc FT) — GV chỉ dạy FT không tốn thêm câu. */
+  const ft = lopToiDay(p, { ct: 'ft' });
+  const hang = [...ft.rows.map((r) => ({ ...r, khung: 'ft' as const })), ...(ft.coThuong ? lopToiDay(p, { ct: 'thuong' }).rows.map((r) => ({ ...r, khung: 'thuong' as const })) : [])];
   /* Lớp chỉ GVCN (không kỹ năng) mà còn bài chờ chấm của tôi vẫn vào khối dạy — không giấu bài. */
   const day = hang.filter((r) => r.kyNang.length || r.baiCho);
   const cs = day.length ? chiSoHoSoGv(p, p.userId, {}) : null;

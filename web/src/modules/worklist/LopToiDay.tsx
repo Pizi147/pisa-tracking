@@ -155,16 +155,21 @@ const COT_CN: readonly CotBang[] = [
  * KỸ NĂNG TÔI DẠY · LỚP TÔI CHỦ NHIỆM — tầng trái Tổng quan GV (mockup `tong-quan.html?k=gv`). Một GET `/tong-quan/lop-toi-day/hai-khoi`, cả hai khung
  * (không công tắc FT / Thường — mỗi hàng ghi khung của lớp). Số giữ ô bấm V4 (`/tong-quan/lop-toi-day/o`); Đạt / Tiến bộ = ô bảng Học thuật hồ sơ GV
  * (`/giao-vien/:id/chi-so/o?cot=ket-qua-lop|tien-bo-lop:<lớp>`). Khối không có lớp thì không dựng; không lớp nào → một thẻ rỗng (trừ vai không dạy).
+ * Lưới tự đặt cột Điều hướng (`phai`, 360): ≥ 1440 ba cột (dạy · chủ nhiệm · Điều hướng); 1100–1439 dạy | Điều hướng, chủ nhiệm trải cả hàng dưới; < 1100 một cột, Điều hướng trước.
  */
-export function HaiKhoiGv() {
+const LUOI_GV = 'grid items-start gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_360px] min-[1440px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_360px]';
+const O_MOT = 'min-w-0 min-[1100px]:col-start-1 min-[1100px]:row-start-1 min-[1440px]:col-span-2';
+export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
   const { session } = useSession();
   const id = session?.user?.id;
   const { data, error, reload } = useApi<HaiKhoi>('/tong-quan/lop-toi-day/hai-khoi', []);
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (!data) return <Card title={t('Kỹ năng tôi dạy')} bodyClass="p-4"><Skeleton rows={3} /></Card>;
+  const cotPhai = <div className="flex min-w-0 flex-col gap-4 max-[1099px]:order-first min-[1100px]:col-start-2 min-[1100px]:row-start-1 min-[1440px]:col-start-3">{phai}</div>;
+  const luoi = (trai: ReactNode) => <div data-hd="tq-lop-toi-day" className={LUOI_GV}>{trai}{cotPhai}</div>;
+  if (error) return luoi(<div className={O_MOT}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>);
+  if (!data) return luoi(<Card className={O_MOT} title={t('Kỹ năng tôi dạy')} bodyClass="p-4"><Skeleton rows={3} /></Card>);
   if (!data.day.length && !data.chuNhiem.length) {
-    if (!session?.roles?.includes('teacher')) return null;   // Head tutor (góc nhìn GV, không dạy lớp): không thẻ rỗng
-    return <Card title={t('Lớp của tôi')} bodyClass="p-0"><Empty title={t('Bạn chưa được phân công lớp nào đang mở')} hint={t('Khi QL phân công lớp, kỹ năng bạn dạy và lớp chủ nhiệm hiện ở đây.')} /></Card>;
+    if (!session?.roles?.includes('teacher')) return luoi(null);   // Head tutor (góc nhìn GV, không dạy lớp): không thẻ rỗng
+    return luoi(<Card className={O_MOT} title={t('Lớp của tôi')} bodyClass="p-0"><Empty title={t('Bạn chưa được phân công lớp nào đang mở')} hint={t('Khi QL phân công lớp, kỹ năng bạn dạy và lớp chủ nhiệm hiện ở đây.')} /></Card>);
   }
   const o = (khung: string, classId: number, cot: string, n: number, tieuDe: string, className?: string) => (
     <OSo giaTri={n} nguon={`/tong-quan/lop-toi-day/o?ct=${khung}&classId=${classId}&cot=${cot}`} tieuDe={tieuDe} className={className} />
@@ -216,10 +221,10 @@ export function HaiKhoiGv() {
   const phuCn = (l: DongCn, c: CotBang): ReactNode => (c.key === 'lop' ? [t('{n} HV', { n: l.hocVien }), l.khung === 'ft' ? l.route : null].filter(Boolean).join(' · ') : null);
 
   const hai = data.day.length > 0 && data.chuNhiem.length > 0;
-  return (
-    <div data-hd="tq-lop-toi-day" className={`grid items-start gap-4 ${hai ? 'min-[1440px]:grid-cols-2' : ''}`}>
+  return luoi(
+    <>
       {data.day.length > 0 && (
-        <Card bodyClass="p-0" title={<>{t('Kỹ năng tôi dạy')}{data.ky && <span className="font-normal text-slate-500"> · {kyChu(data.ky)}</span>}</>}>
+        <Card className={hai ? 'min-w-0 min-[1100px]:col-start-1 min-[1100px]:row-start-1' : O_MOT} bodyClass="p-0" title={<>{t('Kỹ năng tôi dạy')}{data.ky && <span className="font-normal text-slate-500"> · {kyChu(data.ky)}</span>}</>}>
           <Bang ten={t('Kỹ năng tôi dạy')} cot={coTb ? COT_DAY : COT_DAY.filter((c) => c.key !== 'tb')} hang={data.day} khoa={(d) => d.classId} oCua={oDay} phuCua={phuDay} khung={false} deu />
           <p className="m-0 border-t px-4 py-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
             {t('Chỉ bài của tôi. Đạt = lượt Test có Overall đạt kỳ vọng, hoặc Overall chưa đạt nhưng kỹ năng của tôi không dưới kỳ vọng; lớp thường: đạt ngưỡng của lớp.')}
@@ -227,11 +232,11 @@ export function HaiKhoiGv() {
         </Card>
       )}
       {data.chuNhiem.length > 0 && (
-        <Card bodyClass="p-0" title={<>{t('Lớp tôi chủ nhiệm')} <span className="font-normal text-slate-500">· {t('{n} lớp', { n: data.chuNhiem.length })} · {t('hiện tại')}</span></>}>
+        <Card className={hai ? 'min-w-0 min-[1100px]:col-span-2 min-[1440px]:col-span-1 min-[1440px]:col-start-2 min-[1440px]:row-start-1' : O_MOT} bodyClass="p-0" title={<>{t('Lớp tôi chủ nhiệm')} <span className="font-normal text-slate-500">· {t('{n} lớp', { n: data.chuNhiem.length })} · {t('hiện tại')}</span></>}>
           <Bang ten={t('Lớp tôi chủ nhiệm')} cot={data.chuNhiem.some((l) => l.khung === 'ft') ? COT_CN : COT_CN.filter((c) => c.key !== 'sos')} hang={data.chuNhiem} khoa={(l) => l.classId} oCua={oCn} phuCua={phuCn} khung={false} deu />
           <p className="m-0 border-t px-4 py-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>{t('Số chủ nhiệm tách riêng, không cộng vào việc kỹ năng.')}</p>
         </Card>
       )}
-    </div>
+    </>,
   );
 }
