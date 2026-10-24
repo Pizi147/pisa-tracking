@@ -16,6 +16,9 @@ export class ApiError extends Error {
  */
 const cauLoi403 = new Set<string>();
 export const laCauLoi403 = (cau: string) => cauLoi403.has(cau);
+/** UI-CON-LAI k6: cùng cách cho 404 — "Thử lại" vô ích, khung lỗi đưa đường khác. */
+const cauLoi404 = new Set<string>();
+export const laCauLoi404 = (cau: string) => cauLoi404.has(cau);
 
 const cache = new Map<string, unknown>();
 /*
@@ -90,6 +93,7 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
     const cau = typeof payload?.khoa === 'string' ? dich(payload.khoa, payload.bien) : typeof payload?.error === 'string' ? dich(payload.error) : t('Lỗi {status} — thử lại', { status: res.status });
     const loi = new ApiError(res.status, cau, payload?.details);
     if (loi.status === 403) cauLoi403.add(loi.message);
+    if (loi.status === 404) cauLoi404.add(loi.message);
     throw loi;
   }
   return payload as T;

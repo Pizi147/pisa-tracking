@@ -40,10 +40,10 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
     for (const p of [P.lrTeacher, P.w1Teacher, P.sTeacher, P.coreTeacher]) {
       xoaNho();
       const w = mw.myWork(p, {});
-      const dem = d.demViec(w.items);
+      const dem = d.demViec(w.items.filter((i: any) => i.mine));   // UI-CON-LAI (nợ #528): chỉ việc của chính GV
       for (const k of ['viec', 'bai', 'nhom', 'hv'] as const) assert(w.summary[k] === dem[k], `${k}: ${w.summary[k]} ≠ ${dem[k]}`);
       assert(w.summary.total === w.dong.length, 'total = số dòng hiển thị');
-      assert(w.summary.viecQuaHan === d.demViec(w.items.filter((i: any) => i.urgency === 'overdue')).viec, 'viecQuaHan');
+      assert(w.summary.viecQuaHan === mw.demSo(w.dong, w.items).viecQuaHan, 'viecQuaHan');
       const cuaNguoiKhac = w.items.filter((i: any) => i.group === 'score' && !d.laViecChamCheo(i) && i.ownerId !== p.userId);
       assert(!cuaNguoiKhac.length, `GV thấy bài của người khác: ${cuaNguoiKhac.map((i: any) => i.key)}`);
     }

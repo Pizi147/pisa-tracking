@@ -1,0 +1,72 @@
+/**
+ * PHÉP KIỂM V5 · UI-CON-LAI (nợ #528 — `08` bảng nợ): badge "việc của tôi" (`/my-work` → `summary.viec`) không đếm việc `mine:false`
+ * (vd "Thêm PA" Case người khác phụ trách); `viecQuaHan` chỉ đếm kỹ năng THẬT SỰ quá hạn của dòng Nhập điểm (`knsQuaHan`).
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+
+export async function runPrUiConLaiTests(t: any) {
+  const { check, assert, P } = t;
+  const mw: any = await import('../worklist/mywork.ts');
+  const pv: any = await import('../giaoVien/phamVi.ts');
+  console.log('\nV5 · UI-CON-LAI — badge việc của tôi (nợ #528)');
+
+  const viec = (o: any) => ({ key: o.key, group: o.group ?? 'cause', urgency: o.urgency ?? 'normal', studentId: o.studentId ?? 1, mine: o.mine ?? true,
+    kns: o.kns, knsQuaHan: o.knsQuaHan, soBai: o.soBai });
+
+  check('UICL-1 (#528) · demSo: việc mine:false (Thêm PA Case người khác) không vào viec / viecQuaHan', () => {
+    const ds = [viec({ key: 'cause:1' }), viec({ key: 'support:2', group: 'no_plan', mine: false, urgency: 'overdue' })];
+    const s = mw.demSo(ds, ds);
+    assert(s.viec === 1 && s.viecQuaHan === 0, JSON.stringify(s));
+  });
+
+  check('UICL-2 (#528) · demSo: dòng Nhập điểm L + R quá hạn chỉ ở L → viec 2, viecQuaHan 1 (không đếm R chưa quá hạn)', () => {
+    const ds = [viec({ key: 'score:1', group: 'score', studentId: null, urgency: 'overdue', kns: ['listening', 'reading'], knsQuaHan: ['listening'], soBai: 4 })];
+    const s = mw.demSo(ds, ds);
+    assert(s.viec === 2 && s.viecQuaHan === 1, JSON.stringify(s));
+  });
+
+  check('UICL-3 (#528) · /my-work GV seed: summary.viec = số việc mine; mọi dòng Nhập điểm quá hạn có knsQuaHan ⊆ kns, không rỗng', () => {
+    for (const p of [P.lrTeacher, P.w1Teacher, P.sTeacher, P.coreTeacher]) {
+      const w = mw.myWork(p, {});
+      const s = mw.demSo([], w.items.filter((i: any) => i.mine), () => true);
+      assert(w.summary.viec === s.viec, `${p.userId}: ${w.summary.viec} ≠ ${s.viec}`);
+      for (const i of w.items.filter((x: any) => x.group === 'score' && x.urgency === 'overdue')) {
+        assert(i.knsQuaHan?.length && i.knsQuaHan.every((k: string) => i.kns.includes(k)), `${i.key}: ${JSON.stringify(i.knsQuaHan)}`);
+      }
+    }
+  });
+
+  check('UICL-4 (k1) · tìm GV ở thanh trên: QL chỉ GV mở được hồ sơ (phamViHoSoGv không ném); GV / TVV rỗng; < 2 ký tự rỗng', () => {
+    const ql = P.mbManager;
+    const ds = pv.timGiaoVien(ql, 'ng');
+    assert(ds.length > 0, 'QL Monbay phải thấy GV có chữ "ng"');
+    for (const g of ds) pv.phamViHoSoGv(ql, g.id);   // ném 403 / 404 nếu lọt ngoài phạm vi
+    assert(!pv.timGiaoVien(P.coreTeacher, 'ng').length, 'GV không có nhóm Giáo viên');
+    assert(!pv.timGiaoVien(ql, 'n').length, '1 ký tự → rỗng');
+  });
+
+  check('UICL-5 (k3) · Hoàn tác 5 s ở thẻ duyệt chỉ cho đúng các loại máy chủ huỷ được (`khiHuy`) — web không hứa điều máy chủ từ chối', () => {
+    const may = fs.readFileSync(path.join(REPO, 'server/src/duyet/loaiYeuCau.ts'), 'utf8');
+    const coHuy = [...may.matchAll(/loai: '([a-z_]+)',[\s\S]*?(?=\n  \{\n    loai:|\n\];)/g)].filter((m) => /khiHuy:/.test(m[0])).map((m) => m[1]).sort();
+    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/TheYeuCau.tsx'), 'utf8').match(/HUY_DUOC = new Set<string>\(\[([^\]]*)\]/)?.[1] ?? '';
+    const ds = [...web.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
+    assert(JSON.stringify(coHuy) === JSON.stringify(ds), `máy chủ ${coHuy} ≠ web ${ds}`);
+  });
+
+  check('UICL-6 (chủ SP 24/10) · ô điểm thiếu nhận xét MT: viền vàng, KHÔNG chữ dưới điểm (lưới + ô lớn hồ sơ MT); câu nhắc còn ở tooltip / tên đọc màn', () => {
+    const hop = fs.readFileSync(path.join(REPO, 'web/src/modules/fasttrack/HopNhapDiem.tsx'), 'utf8');
+    const lon = fs.readFileSync(path.join(REPO, 'web/src/modules/fasttrack/ODiemLon.tsx'), 'utf8');
+    assert(!/ChuThieu/.test(hop) && /cell\.thieuNhanXet \? VIEN_THIEU_NX/.test(hop) && /CHU_O_THIEU\[cell\.thieuNhanXet\]/.test(hop), 'lưới: viền vàng + tooltip, không chữ');
+    assert(!/text-soon/.test(lon) && /--soon-rgb/.test(lon) && /aria-description=\{thieu/.test(lon), 'ô lớn: viền vàng + aria, không chữ');
+  });
+
+  check('UICL-7 (k3, chủ SP 24/10) · Hộp duyệt đầy đủ = danh sách dòng gọn + panel duyệt TẠI CHỖ (`?the=`, mẫu Chấm Test); bản gọn giữ thẻ; hàng loạt giữ', () => {
+    const h = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/HopChoDuyet.tsx'), 'utf8');
+    assert(/<DongYeuCau /.test(h) && /<KhungTaiCho\.Provider value>/.test(h) && /<TheYeuCau yc=\{theMo\} panel /.test(h), 'danh sách + panel');
+    assert(/next\.set\('the', String\(id\)\)/.test(h) && /ds\.length > 0 && gon &&/.test(h) && /chonMot\(ds, s, y\.id, v\)/.test(h), '?the= · bản gọn · hàng loạt');
+  });
+}

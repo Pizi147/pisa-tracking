@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -48,16 +48,6 @@ export function BaoCao(pv: PhamViPhanTich) {
   const bc = useApi<BaoCaoKq>(`/phan-tich/bao-cao?${q}`, [q]);
   const motCn = !!tq.data && !tq.data.chiNhanh;
   const kq = useApi<KetQuaMtKq>(ft && motCn ? `/phan-tich/bao-cao/ket-qua-mt?${q}` : null, [q, motCn]);
-
-  /* In / chiếu: nền sáng (kể cả khi đang chế độ tối) — đổi giao diện lúc in rồi trả lại. */
-  useEffect(() => {
-    let cu: string | undefined;
-    const truoc = () => { cu = document.documentElement.dataset.theme; document.documentElement.dataset.theme = 'light'; };
-    const sau = () => { if (cu === undefined) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = cu; };
-    window.addEventListener('beforeprint', truoc);
-    window.addEventListener('afterprint', sau);
-    return () => { window.removeEventListener('beforeprint', truoc); window.removeEventListener('afterprint', sau); };
-  }, []);
 
   const loi = tq.error ?? bc.error;
   if (loi) return <ErrorState message={loi.message} hint={loi.hint} onRetry={() => { tq.reload(); bc.reload(); }} />;

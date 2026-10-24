@@ -232,7 +232,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const sai = tepNguon('web/src').filter((f) => /<Drawer\b/.test(doc(f)));
     assert(sai.length === 0, sai.join(', '));
     const h = doc('web/src/modules/platform/Header.tsx');
-    assert(/Không tìm thấy học viên/.test(h) && /buocDanhSach\(/.test(h) && /'Escape'/.test(h) && /role="combobox"/.test(h), 'Header');
+    assert(/Không thấy “\{q\}” trong phạm vi/.test(h) && /buocDanhSach\(/.test(h) && /'Escape'/.test(h) && /role="combobox"/.test(h), 'Header');
     const a = doc('web/src/App.tsx');
     assert(/Bỏ qua tới nội dung/.test(a) && /id="noi-dung"/.test(a) && /tabIndex=\{-1\}/.test(a), 'App');
   });

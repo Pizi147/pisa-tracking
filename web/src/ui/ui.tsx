@@ -2,7 +2,8 @@ import { Fragment, useId, useState, type MouseEvent, type ReactNode } from 'reac
 import { Link, useLocation } from 'react-router-dom';
 import { GIAI_THICH_KCK, KCK, chuTrangThai, loaiHoSo, trangCha, type TrangThai } from '@shared/domain/index.ts';
 import { fmtBand } from '../lib/format.ts';
-import { laCauLoi403 } from '../lib/api.ts';
+import { laCauLoi403, laCauLoi404 } from '../lib/api.ts';
+import { useSession } from '../lib/session.tsx';
 import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
@@ -268,12 +269,21 @@ export function Empty({ title, hint, action }: { title: string; hint?: string; a
 }
 
 export function ErrorState({ message, hint, onRetry }: { message: string; hint?: string; onRetry?: () => void }) {
+  const { pathname } = useLocation();
+  const session = useSession()?.session;   // khung lỗi có thể vẽ ngoài SessionProvider
+  const k403 = laCauLoi403(message), k404 = !k403 && laCauLoi404(message);
+  /* UI-CON-LAI k6: nói loại lỗi + đường khác. 404 hồ sơ HV → tìm trong lưu trữ; 403 hồ sơ GV người khác → hồ sơ của chính mình (nếu là GV). */
+  const hsHv = k404 && /^\/hoc-vien\/\d+$/.test(pathname);
+  const hsGvToi = k403 && /^\/giao-vien\/\d+$/.test(pathname) && session?.user && session.roles?.includes('teacher') ? `/giao-vien/${session.user.id}` : null;
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
-      <div className="text-bad font-medium">{message}</div>
+      {(k403 || k404) && <span className="text-[12px] font-semibold text-slate-500">{k403 ? t('Không có quyền') : t('Không thấy')}</span>}
+      <div className={`${k403 || k404 ? 'text-slate-100' : 'text-bad'} font-medium`}>{message}</div>
       {hint && <p className="text-slate-400 text-xs max-w-md">{hint}</p>}
-      {/* OV-11i (HL-15 · PT-11 · TQ-16): 403 thử lại vẫn 403 — nút về nguồn / trang cha thay "Thử lại". */}
-      {laCauLoi403(message) ? <NutVeCha /> : onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>{t('Thử lại')}</button>}
+      {hsHv && <p className="m-0 text-xs text-slate-400">{t('Đường dẫn có thể cũ.')} <Link className="link" to="/hoc-vien/luu-tru">{t('Tìm trong HV lưu trữ ›')}</Link></p>}
+      {hsGvToi && <Link className="link text-sm" to={hsGvToi}>{t('Hồ sơ của tôi ›')}</Link>}
+      {/* OV-11i (HL-15 · PT-11 · TQ-16): 403 / 404 thử lại vẫn vậy — nút về nguồn / trang cha thay "Thử lại". */}
+      {k403 || k404 ? <NutVeCha /> : onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>{t('Thử lại')}</button>}
     </div>
   );
 }

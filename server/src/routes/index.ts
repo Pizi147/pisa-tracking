@@ -113,6 +113,7 @@ import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { NHOM_VIEC_TVV, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
+import { timGiaoVien } from '../giaoVien/phamVi.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
@@ -1998,6 +1999,8 @@ const soDuong = (v: unknown, ten: string): number | null => {
   return n;
 };
 /** Bảng giáo viên của một chi nhánh (đặt TRƯỚC `/giao-vien/:id`). Không xếp hạng: sắp theo tên. */
+/* UI-CON-LAI k1: nhóm Giáo viên của ô tìm thanh trên — chỉ GV người xem mở được hồ sơ (`phamViHoSoGv`). */
+api.get('/tim/giao-vien', requireAuth, wrap((req) => timGiaoVien(principalOf(req), qStr(req, 'q'))));
 api.get('/giao-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return bangGvChiNhanh(principalOf(req), { cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null });

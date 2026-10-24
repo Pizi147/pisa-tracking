@@ -7,6 +7,7 @@ import { NhanKq } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel, NhapViec, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
+import { KhoiXungDot } from '../../ui/SaveState.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { luuRoiTiep, tenMonNgan, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -124,14 +125,18 @@ function PanelDauRa({ classId, maLop, chuongTrinh, em, viTri, cua, onDong, onTie
   const [loi, setLoi] = useState<string | null>(null);
   /* T15: bản người này đã thấy khi mở panel — máy chủ trả 409 nếu ai đó lưu sau đó; lấy bản mới để lần Lưu kế ghi đè có chủ ý. */
   const [luc, setLuc] = useState<string | null>(d?.luc ?? null);
+  /* k5: 409 → khối "Bản đã lưu / Bạn đang sửa" (bản đã lưu = `d` sau khi tải lại) — chọn một, không ghi đè im lặng. */
+  const [xungDot, setXungDot] = useState<string | null>(null);
   const daSua = (nhanXet.trim() || null) !== (d?.nhanXet ?? null) || deXuat !== (d?.deXuat ?? null);
   const luu = async (): Promise<boolean> => {
     setTt('dang'); setLoi(null);
     try {
       const r = await api.put<{ luc: string }>(`${duongDauRa(classId)}/${e.id}`, { nhanXet: nhanXet.trim() || null, deXuat, luc });
-      setLuc(r.luc); xoaNhap(); setTt('da'); onDaLuu(); return true;
+      setLuc(r.luc); xoaNhap(); setTt('da'); setXungDot(null); onDaLuu(); return true;
     } catch (x) {
-      if (x instanceof ApiError && x.status === 409) { setLuc(x.details?.luc ?? null); onDaLuu(); }   // chữ đang gõ giữ nguyên; lịch sử có bản của người kia
+      if (x instanceof ApiError && x.status === 409) {   // chữ đang gõ giữ nguyên; lịch sử có bản của người kia
+        setLuc(x.details?.luc ?? null); onDaLuu(); setXungDot(x.message); setTt(null); return false;
+      }
       setTt('loi'); setLoi(x instanceof Error ? x.message : null); return false;
     }
   };
@@ -162,6 +167,12 @@ function PanelDauRa({ classId, maLop, chuongTrinh, em, viTri, cua, onDong, onTie
           <span className="text-[13px] text-slate-400">Final</span>{mon.map((k) => <span key={k} className={`text-center tabular-nums ${o(f, k) ? '' : 'text-slate-500'}`}>{o(f, k) ?? t('chưa nhập')}</span>)}
         </div>
         <Truong nhan={t('Kết quả')} as="div"><span><KetQuaDauRa e={e} /></span></Truong>
+        {xungDot && (
+          <KhoiXungDot cau={xungDot} ban={tt === 'dang'}
+            dong={[[t('Nhận xét GVCN'), d?.nhanXet ?? null, nhanXet.trim() || null], [t('Đề xuất bước tiếp'), nhanDeXuat(d?.deXuat ?? null), nhanDeXuat(deXuat)]]}
+            onDungBanLuu={() => { setNhanXet(d?.nhanXet ?? ''); setDeXuat(d?.deXuat ?? null); xoaNhap(); setXungDot(null); }}
+            onLuuBanToi={() => void luu()} />
+        )}
         <Truong nhan={t('Nhận xét GVCN')}>
           <textarea className="field w-full" rows={3} maxLength={2000} value={nhanXet} onChange={(x) => { setNhanXet(x.target.value); setTt(null); }} />
         </Truong>

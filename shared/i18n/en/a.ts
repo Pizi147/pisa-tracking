@@ -82,7 +82,7 @@ export const EN_A = {
   'Cần ít nhất {toiThieu} ký tự (đang có {n})': 'At least {toiThieu} characters (now {n})',
   'Chưa chọn': 'Not selected',
   'Chưa điền': 'Required',
-  '{n} ô cần sửa ↑': (b) => `${b.n} ${Number(b.n) === 1 ? 'field needs' : 'fields need'} fixing ↑`,
+  'Còn {n} ô cần sửa ↑': (b) => `${b.n} ${Number(b.n) === 1 ? 'field needs' : 'fields need'} fixing ↑`,
 
   /* shared/domain/chonNgay, oNgay — ô ngày */
   'Chủ nhật': 'Sunday',

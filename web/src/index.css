@@ -433,6 +433,12 @@
   .o-sua:focus, .o-sua:focus-within { border-color: var(--o-sua-focus); box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
   .o-doc { border: 1px solid transparent; background: transparent; }
 
+  /* UI-CON-LAI k1: chữ khớp trong kết quả tìm — hồng nhận diện, không phải cảnh báo. */
+  .tim-khop { background: var(--hong-nen); color: var(--hong-chu); border-radius: 3px; padding: 0 1px; }
+  /* k4: số tin CHƯA ĐỌC trên chuông — chấm tròn nền trắng chữ xanh, khác dáng badge việc (chữ nhật, nền màu) ở mục Công việc. */
+  .cham-chuong { position: absolute; top: 4px; right: 3px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--dieu-huong-chu-mo);
+    color: var(--dieu-huong-nen); font-size: 12px; font-weight: 800; line-height: 17px; text-align: center; font-variant-numeric: tabular-nums;
+    box-shadow: 0 0 0 2px var(--dieu-huong-nen); }
   .link { color: var(--accent); text-decoration: none; }
   .link:hover { text-decoration: underline; }
 

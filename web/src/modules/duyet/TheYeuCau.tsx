@@ -15,6 +15,9 @@ import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { DeXuatSuaPanel } from './DeXuatSuaPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
+/** Loại thẻ máy chủ cho "Huỷ quyết định" (`khiHuy` ở `server/src/duyet/loaiYeuCau.ts`) — chỉ những loại này có Hoàn tác 5 s. */
+const HUY_DUOC = new Set<string>(['de_xuat_pa', 'thu_hoi_y_thuc']);
+
 /**
  * MỘT THẺ YÊU CẦU (PR-DUYET, mockup M8, đặc tả §7.6) — MỘT khuôn cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`) và hồ sơ HV
  * (PR-VAI). Hàng 1: nhãn phân loại (cùng bề rộng) · việc · học viên · lớp. Hàng 2–3: ai xin, lý do (tối đa 2 dòng, "Xem thêm").
@@ -27,7 +30,7 @@ import { dich, t } from '@shared/i18n/index.ts';
  */
 type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' | 'sua' | 'sua-tra-loi' | 'rut' } | null;
 
-export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa }: {
+export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel }: {
   yc: TheYeuCauDto;
   /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. */
   onXong: (id: number) => void;
@@ -41,6 +44,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   nhanManh?: boolean;
   /** Xin ý kiến: "+ Thêm PA cho em" mở Thêm PA của Ngăn Case. */
   onThemPa?: (caseId: number) => void;
+  /** UI-CON-LAI k3: nằm trong panel duyệt của Hộp duyệt — một cột, tiêu đề ở đầu panel, lý do đọc hết, "Nếu duyệt" thành khối hậu quả, nút ở cuối. */
+  panel?: boolean;
 }) {
   const toast = useToast();
   const { homNay, ngan } = useNgayNghiepVu();
@@ -51,7 +56,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [daBam, setDaBam] = useState(false);
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [moHet, setMoHet] = useState(false);
+  const [moHet, setMoHet] = useState(!!panel);
   /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và quyết định`). */
   const [moChuyenLop, setMoChuyenLop] = useState(false);
   const nutMo = useRef<HTMLButtonElement | null>(null);
@@ -103,7 +108,10 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       if (put) await api.put(duongDan, than);
       else await api.post(duongDan, than);
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
-      toast.push('ok', xongChu);
+      /* UI-CON-LAI k3: quyết định CỦA CHÍNH MÌNH vừa bấm → Hoàn tác 5 s (đường "Huỷ quyết định" sẵn có — máy chủ kiểm lại quyền + trong ngày);
+         chỉ loại máy chủ cho huỷ. Sau 5 s muốn đổi thì qua "Huỷ quyết định" ở Đã xử lý / Thu hồi có duyệt — không vòng qua bước duyệt. */
+      if (HUY_DUOC.has(yc.loai) && /\/(duyet|tu-choi)$/.test(duongDan)) toast.hoanTac(xongChu, () => { void huy(); }, { key: `yc-${yc.id}` });
+      else toast.push('ok', xongChu);
       setO(null);
       onXong(yc.id);
     } catch (e: any) {
@@ -142,8 +150,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (e.key === 'Enter' && !e.shiftKey && o?.loai !== 'tuan' && (e.target as HTMLElement).tagName !== 'BUTTON') { e.preventDefault(); guiO(); }
   };
   /* PR-LUI-a2: Huỷ quyết định bấm nhầm (Đề xuất PA quyết hôm nay, PA chưa ghi kết quả) — thẻ về Chờ duyệt, PA về như lúc gửi. */
-  const huy = async () => {
-    if (busy) return;
+  /* Gọi từ nút ở thẻ hoặc từ toast Hoàn tác (thẻ có thể đã rời danh sách) — lỗi thì báo ở thẻ và qua toast. */
+  async function huy() {
     setBusy(true); setLoiMay(null);
     try {
       await api.post(`/yeu-cau/${yc.id}/huy-quyet-dinh`);
@@ -151,9 +159,10 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       toast.push('ok', t('Đã huỷ quyết định · thẻ về Chờ duyệt'));
       onXong(yc.id);
     } catch (e: any) {
-      setLoiMay(e instanceof ApiError ? e.message : t('Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.'));
+      const loi = e instanceof ApiError ? e.message : t('Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.');
+      setLoiMay(loi); toast.push('error', loi);
     } finally { setBusy(false); }
-  };
+  }
 
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
   const tang1 = !hanV ? null : hanV.tone === 'overdue' ? t('Quá hạn · {daysOverdue} ngày', { daysOverdue: hanV.daysOverdue }) : hanV.homNay ? t('Hạn hôm nay') : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
@@ -173,11 +182,11 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
 
   return (
     <article id={`the-${yc.id}`} data-the-id={yc.id} aria-label={`${dich(yc.nhanPhanLoai)}: ${dich(yc.tieuDe)}`}
-      className={`rounded-lg border p-3 transition-shadow ${nhanManh ? 'shadow-[0_0_0_2px_var(--accent-strong)]' : ''}`}
-      style={{ borderColor: hanV?.tone === 'overdue' && cho ? 'rgb(var(--late-line-rgb))' : 'var(--line)', background: 'var(--surface)' }}>
-      <div className="grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+      className={panel ? 'pt-3' : `rounded-lg border p-3 transition-shadow ${nhanManh ? 'shadow-[0_0_0_2px_var(--accent-strong)]' : ''}`}
+      style={panel ? undefined : { borderColor: hanV?.tone === 'overdue' && cho ? 'rgb(var(--late-line-rgb))' : 'var(--line)', background: 'var(--surface)' }}>
+      <div className={panel ? 'flex flex-col gap-3' : 'grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto]'}>
         <div className="min-w-0">
-          <div className="flex items-start gap-2">
+          {!panel && <div className="flex items-start gap-2">
             {chon && (
               /* OV-11i (P2-3): bọc <label> — vùng chạm 44 × 44 ở điện thoại (`after:`, mẫu MenuDong), ô tích giữ 16 px. */
               <label className="relative mt-1 inline-flex shrink-0 cursor-pointer max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']">
@@ -193,21 +202,27 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               <b className="font-semibold text-slate-100">{dich(yc.tieuDe)}</b>
               {moTaPhu && <span className="text-slate-400"> · {dich(moTaPhu)}</span>}
             </p>
-          </div>
-          <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${gon ? '' : 'sm:pl-[6.5rem]'}`}>
-            <div ref={khungDong} className={moHet ? '' : 'line-clamp-2'}>
+          </div>}
+          <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${gon || panel ? '' : 'sm:pl-[6.5rem]'}`}>
+            <div ref={khungDong} className={panel ? 'rounded-lg bg-[color:var(--surface-2)] px-3 py-2.5' : moHet ? '' : 'line-clamp-2'}>
               {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{dich(d)}</p>)}
             </div>
-            {(biCat || moHet) && (
+            {(biCat || moHet) && !panel && (
               <button type="button" className="mt-0.5 min-h-[44px] text-[12px] text-[color:var(--accent-strong)] hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
                 aria-expanded={moHet}>{moHet ? t('Thu gọn') : t('Xem thêm')}</button>
             )}
-            {yc.neuDuyet && cho && <p className="m-0 mt-1 text-[12px] text-slate-400">{t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) })}</p>}
+            {yc.neuDuyet && cho && (panel ? (
+              /* k3: hậu quả nêu TRƯỚC khi bấm — khối vàng như mockup. */
+              <div className="mt-3 rounded-lg border px-3 py-2.5 text-[13px]" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
+                <b className="block font-semibold" style={{ color: 'rgb(var(--soon-rgb))' }}>{t('Sau khi duyệt:')}</b>
+                <span className="text-slate-200">{dich(yc.neuDuyet)}</span>
+              </div>
+            ) : <p className="m-0 mt-1 text-[12px] text-slate-400">{t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) })}</p>)}
             {!cho && <KetQua yc={yc} ngan={ngan} />}
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5 sm:items-end sm:text-right">
+        <div className={`flex flex-col gap-1.5 ${panel ? 'items-end border-t pt-3 text-right' : 'sm:items-end sm:text-right'}`} style={panel ? { borderColor: 'var(--line)' } : undefined}>
           {cho ? (
             tang1 && (
               <div className="tabular-nums">
