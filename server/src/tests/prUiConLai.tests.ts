@@ -2,6 +2,12 @@
  * PHÉP KIỂM V5 · UI-CON-LAI (nợ #528 — `08` bảng nợ): badge "việc của tôi" (`/my-work` → `summary.viec`) không đếm việc `mine:false`
  * (vd "Thêm PA" Case người khác phụ trách); `viecQuaHan` chỉ đếm kỹ năng THẬT SỰ quá hạn của dòng Nhập điểm (`knsQuaHan`).
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+
 export async function runPrUiConLaiTests(t: any) {
   const { check, assert, P } = t;
   const mw: any = await import('../worklist/mywork.ts');
@@ -41,5 +47,13 @@ export async function runPrUiConLaiTests(t: any) {
     for (const g of ds) pv.phamViHoSoGv(ql, g.id);   // ném 403 / 404 nếu lọt ngoài phạm vi
     assert(!pv.timGiaoVien(P.coreTeacher, 'ng').length, 'GV không có nhóm Giáo viên');
     assert(!pv.timGiaoVien(ql, 'n').length, '1 ký tự → rỗng');
+  });
+
+  check('UICL-5 (k3) · Hoàn tác 5 s ở thẻ duyệt chỉ cho đúng các loại máy chủ huỷ được (`khiHuy`) — web không hứa điều máy chủ từ chối', () => {
+    const may = fs.readFileSync(path.join(REPO, 'server/src/duyet/loaiYeuCau.ts'), 'utf8');
+    const coHuy = [...may.matchAll(/loai: '([a-z_]+)',[\s\S]*?(?=\n  \{\n    loai:|\n\];)/g)].filter((m) => /khiHuy:/.test(m[0])).map((m) => m[1]).sort();
+    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/TheYeuCau.tsx'), 'utf8').match(/HUY_DUOC = new Set<string>\(\[([^\]]*)\]/)?.[1] ?? '';
+    const ds = [...web.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
+    assert(JSON.stringify(coHuy) === JSON.stringify(ds), `máy chủ ${coHuy} ≠ web ${ds}`);
   });
 }

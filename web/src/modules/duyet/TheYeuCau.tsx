@@ -15,6 +15,9 @@ import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { DeXuatSuaPanel } from './DeXuatSuaPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
+/** Loại thẻ máy chủ cho "Huỷ quyết định" (`khiHuy` ở `server/src/duyet/loaiYeuCau.ts`) — chỉ những loại này có Hoàn tác 5 s. */
+const HUY_DUOC = new Set<string>(['de_xuat_pa', 'thu_hoi_y_thuc']);
+
 /**
  * MỘT THẺ YÊU CẦU (PR-DUYET, mockup M8, đặc tả §7.6) — MỘT khuôn cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`) và hồ sơ HV
  * (PR-VAI). Hàng 1: nhãn phân loại (cùng bề rộng) · việc · học viên · lớp. Hàng 2–3: ai xin, lý do (tối đa 2 dòng, "Xem thêm").
@@ -103,7 +106,10 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       if (put) await api.put(duongDan, than);
       else await api.post(duongDan, than);
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
-      toast.push('ok', xongChu);
+      /* UI-CON-LAI k3: quyết định CỦA CHÍNH MÌNH vừa bấm → Hoàn tác 5 s (đường "Huỷ quyết định" sẵn có — máy chủ kiểm lại quyền + trong ngày);
+         chỉ loại máy chủ cho huỷ. Sau 5 s muốn đổi thì qua "Huỷ quyết định" ở Đã xử lý / Thu hồi có duyệt — không vòng qua bước duyệt. */
+      if (HUY_DUOC.has(yc.loai) && /\/(duyet|tu-choi)$/.test(duongDan)) toast.hoanTac(xongChu, () => { void huy(); }, { key: `yc-${yc.id}` });
+      else toast.push('ok', xongChu);
       setO(null);
       onXong(yc.id);
     } catch (e: any) {
@@ -142,8 +148,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (e.key === 'Enter' && !e.shiftKey && o?.loai !== 'tuan' && (e.target as HTMLElement).tagName !== 'BUTTON') { e.preventDefault(); guiO(); }
   };
   /* PR-LUI-a2: Huỷ quyết định bấm nhầm (Đề xuất PA quyết hôm nay, PA chưa ghi kết quả) — thẻ về Chờ duyệt, PA về như lúc gửi. */
-  const huy = async () => {
-    if (busy) return;
+  /* Gọi từ nút ở thẻ hoặc từ toast Hoàn tác (thẻ có thể đã rời danh sách) — lỗi thì báo ở thẻ và qua toast. */
+  async function huy() {
     setBusy(true); setLoiMay(null);
     try {
       await api.post(`/yeu-cau/${yc.id}/huy-quyet-dinh`);
@@ -151,9 +157,10 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       toast.push('ok', t('Đã huỷ quyết định · thẻ về Chờ duyệt'));
       onXong(yc.id);
     } catch (e: any) {
-      setLoiMay(e instanceof ApiError ? e.message : t('Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.'));
+      const loi = e instanceof ApiError ? e.message : t('Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.');
+      setLoiMay(loi); toast.push('error', loi);
     } finally { setBusy(false); }
-  };
+  }
 
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
   const tang1 = !hanV ? null : hanV.tone === 'overdue' ? t('Quá hạn · {daysOverdue} ngày', { daysOverdue: hanV.daysOverdue }) : hanV.homNay ? t('Hạn hôm nay') : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
