@@ -18,10 +18,16 @@ export async function runPrSvTqGvTests(t: any) {
       for (const c of r.chuNhiem.filter((x: any) => x.khung === khung)) {
         const o: any = v4.get(c.classId);
         assert(o?.gvcn && o.duoiKyVong === c.duoiKyVong && o.sos === c.sos && o.caseMo === c.caseMo, `${c.code}: chủ nhiệm ≠ V4`);
+        if (khung === 'ft') {
+          /* SOS theo mức: Σ mức = SOS V4, mỗi mức = số dòng panel `sos<n>`. */
+          assert(c.sosMuc.reduce((x: number, y: number) => x + y, 0) === c.sos, `${c.code}: Σ mức SOS ${c.sosMuc} ≠ ${c.sos}`);
+          c.sosMuc.forEach((n: number, i: number) => assert(tq.oLopToiDay(P.coreTeacher, { ct: 'ft', classId: c.classId, cot: `sos${i + 1}` }).n === n, `${c.code}: panel SOS ${i + 1} ≠ ${n}`));
+        } else assert(c.sosMuc === null, 'lớp thường không SOS');
       }
       for (const d of r.day.filter((x: any) => x.khung === khung)) {
         const o: any = v4.get(d.classId);
         assert(o && (o.kyNang.length || o.baiCho) && o.baiCho === d.baiCho && o.baiQuaHan === d.baiQuaHan, `${d.code}: dạy ≠ V4`);
+        assert(!d.hanCham || d.baiCho > 0, `${d.code}: có hạn chấm ${d.hanCham} mà 0 bài`);
       }
     }
   });

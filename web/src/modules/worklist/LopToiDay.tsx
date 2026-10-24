@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
-import { ChipKy } from '../../ui/Nhan.tsx';
+import { CHIP_SOS, ChipKy, lopSos } from '../../ui/Nhan.tsx';
 import { kyChu, PhanTram, tuMau, tyLeGv } from './TongQuanV5.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -132,23 +132,23 @@ export function LopToiDay() {
 
 type DongDay = {
   classId: number; code: string; khung: 'ft' | 'thuong'; route: string | null; ct: string | null; kyNang: string[]; tuanHoc: string | null;
-  testKeTiep: string | null; testTuanNay: boolean; baiCho: number; baiQuaHan: number; ketQua: OPtGv | null; tienBo: OPtGv | null;
+  testKeTiep: string | null; testTuanNay: boolean; baiCho: number; baiQuaHan: number; hanCham: string | null; ketQua: OPtGv | null; tienBo: OPtGv | null;
 };
 type DongCn = {
   classId: number; code: string; khung: 'ft' | 'thuong'; route: string | null; ct: string | null; hocVien: number;
-  duoiKyVong: number; sos: number | null; caseMo: number; thiThangNay: number;
+  duoiKyVong: number; sos: number | null; sosMuc: [number, number, number] | null; caseMo: number; thiThangNay: number;
 };
 type HaiKhoi = { ky: { tu: string; den: string } | null; day: DongDay[]; chuNhiem: DongCn[] };
 
 const COT_DAY: readonly CotBang[] = [
-  /* Cột số kiểu `diem`: thẻ 375 xếp lưới nhãn · số (không mỗi số một dòng). `deu`: thẻ nửa bề rộng (~500 px ở 1440) — tổng 462 px, phần dư chia đều mọi cột. */
+  /* Cột số kiểu `diem`: thẻ 375 xếp lưới nhãn · số (không mỗi số một dòng). `deu`: thẻ nửa bề rộng (~500 px ở 1440) — tổng 462 px (chủ nhiệm 504), phần dư chia đều mọi cột. */
   { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 72 },
   { key: 'dat', nhan: t('Đạt Test'), kieu: 'phan-tram', rong: 80, goiY: t('Lớp FT: Đạt kỳ vọng Test · lớp thường: Đạt Test') },
   { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 76 }, { key: 'bai', nhan: t('Chờ chấm'), kieu: 'diem', rong: 84 },
 ];
 const COT_CN: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'diem', rong: 112, goiY: t('Lớp thường: HV chưa đạt') },
-  { key: 'sos', nhan: 'SOS', kieu: 'diem', rong: 60 }, { key: 'case', nhan: 'Case', kieu: 'diem', rong: 60 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'diem', rong: 112 },
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'diem', rong: 104, goiY: t('Lớp thường: HV chưa đạt') },
+  { key: 'sos', nhan: t('SOS hiện tại'), kieu: 'diem', rong: 104 }, { key: 'case', nhan: 'Case', kieu: 'diem', rong: 60 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'diem', rong: 104 },
 ];
 
 /**
@@ -188,14 +188,28 @@ export function HaiKhoiGv() {
     }
     if (c.key === 'dat') return tuMau(tyLeGv(d.ketQua ?? undefined), t('lượt'));
     if (c.key === 'tb') return d.khung === 'ft' ? tuMau(tyLeGv(d.tienBo ?? undefined), t('lượt')) : null;
-    if (c.key === 'bai') return d.baiQuaHan > 0 ? <span className="font-semibold text-late">{t('quá hạn')}</span> : d.baiCho ? t('bài') : null;
+    if (c.key === 'bai') return d.baiQuaHan > 0 ? <span className="font-semibold text-late">{t('quá hạn')}</span>
+      : d.baiCho ? (d.hanCham ? t('hạn {ngay}', { ngay: `${d.hanCham.slice(8, 10)}/${d.hanCham.slice(5, 7)}` }) : t('bài')) : null;
     return null;
   };
   const oCn = (l: DongCn, c: CotBang): ReactNode => {
     if (c.key === 'lop') return lopLink(l.classId, l.code);
     const nhanDuoi = l.khung === 'thuong' ? t('học viên chưa đạt') : t('học viên dưới kỳ vọng');
     if (c.key === 'duoi') return o(l.khung, l.classId, 'duoiKyVong', l.duoiKyVong, `${l.code} · ${nhanDuoi}`);
-    if (c.key === 'sos') return l.sos === null ? <span className="text-slate-500">—</span> : o(l.khung, l.classId, 'sos', l.sos, `${l.code} · ${t('học viên có SOS')}`);
+    if (c.key === 'sos') {
+      if (!l.sosMuc) return <span className="text-slate-500">—</span>;
+      if (!l.sosMuc.some((n) => n > 0)) return <span className="tabular-nums text-slate-500">0</span>;
+      /* Mockup "SOS 2 · 1": chip mức + số HV ngoài chip (như Lớp cần chú ý QL) — bấm số → em của mức đó. */
+      return (
+        <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          {l.sosMuc.map((n, i) => n > 0 && (
+            <span key={i} className="inline-flex items-center gap-1 whitespace-nowrap">
+              <span className={`${CHIP_SOS} ${lopSos(i + 1)}`}>SOS {i + 1}</span>{o(l.khung, l.classId, `sos${i + 1}`, n, `${l.code} · SOS ${i + 1}`)}
+            </span>
+          ))}
+        </span>
+      );
+    }
     if (c.key === 'case') return o(l.khung, l.classId, 'caseMo', l.caseMo, `${l.code} · ${t('Case đang mở')}`);
     return o(l.khung, l.classId, 'thi-thang-nay', l.thiThangNay, `${l.code} · ${t('HV thi tháng này')}`);
   };
