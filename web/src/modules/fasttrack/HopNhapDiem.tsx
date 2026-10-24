@@ -158,16 +158,8 @@ const KIEU_O = {
   chot: 'text-[13px] text-slate-400',
 } as const;
 
-/** OV-12b: chữ thiếu ngay dưới ô (nút giữ cỡ cũ — hàng lưới không cao thêm). */
-function ChuThieu({ cell }: { cell: Cell }) {
-  if (!cell.thieuNhanXet) return null;
-  /* "thiếu nhận xét" vừa cột 104 px một dòng; "thiếu nhóm nguyên nhân" dài hơn → xuống dòng. */
-  return (
-    <span className={`block text-xs font-semibold leading-4 text-soon ${cell.thieuNhanXet === 'chon-nhom' ? '' : 'whitespace-nowrap'}`} data-phu-odiem="">
-      {CHU_O_THIEU[cell.thieuNhanXet]}
-    </span>
-  );
-}
+/** UI-CON-LAI (chủ SP 24/10): MT nên có nhận xét mà còn thiếu → viền ô vàng, KHÔNG chữ dưới điểm; câu nhắc ở tooltip + tên đọc màn, chi tiết trong hộp. */
+export const VIEN_THIEU_NX = '!border-[color:rgb(var(--soon-rgb))]';
 
 /**
  * Ô ĐIỂM MT: nút mở hộp; ô không mở được là chữ (E5: không viền, không mờ) có câu "vì sao" ở tooltip.
@@ -193,11 +185,10 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, ...hop }: O
   /* BANG-0 (`ODiem`): chỗ ký hiệu giữ khi ô có số mà không ký hiệu (số thẳng cột). */
   const kyHieu = cell.band !== null && !h.kieu ? <span className="inline-block w-[14px] shrink-0 text-center" aria-hidden>{kq && <DauKetQua kq={kq} />}</span> : null;
   const so = <span className={`${h.kieu ? '' : `text-[15px] font-bold ${lopKq(kq)}`}`}>{h.chu}</span>;
-  /* MỘT dòng phụ (04 mục 7): thiếu nhận xét > vắng lần n / đếm ngược "-" > chữ thứ hai của ô > n câu. */
+  /* MỘT dòng phụ (04 mục 7): vắng lần n / đếm ngược "-" > chữ thứ hai của ô > n câu (thiếu nhận xét = viền vàng, không chữ). */
   const thiBu = !!cell.daChot?.doiSang && !vangGoc;
   const coDongDau = (thiBu && !!cell.daChot) || (cell.noShow?.state === 'khong-co-bai' && !cell.daChot);
-  const phu = cell.thieuNhanXet ? <ChuThieu cell={cell} />
-    : coDongDau ? <DongDau cell={cell} thiBu={thiBu} />
+  const phu = coDongDau ? <DongDau cell={cell} thiBu={thiBu} />
     /* NEN-SUA (nợ #544): ô đã có điểm ở tuần thi bù giữ "vắng W3 SEP" (thay "n câu"). */
     : cell.doiTu ? <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDoiVang(cell.doiTu)}</span>
     : h.phu ? <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{h.phu}</span>
@@ -219,8 +210,8 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, ...hop }: O
     <span className="inline-flex max-w-full flex-col items-center">
       <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog"
         aria-label={`${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`}
-        className={`o-sua inline-flex max-w-full items-center justify-center gap-1 tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] text-base font-semibold' : 'h-8 min-w-16 px-1.5'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)]' : ''}`}
-        title={cell.noShow?.text ?? t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) })}
+        className={`o-sua inline-flex max-w-full items-center justify-center gap-1 tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] text-base font-semibold' : 'h-8 min-w-16 px-1.5'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}
+        title={cell.noShow?.text ?? (cell.thieuNhanXet ? CHU_O_THIEU[cell.thieuNhanXet] : t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) }))}
         onClick={() => onMo(!mo)}>
         {kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span> : so}
       </button>

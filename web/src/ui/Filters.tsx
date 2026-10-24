@@ -182,9 +182,10 @@ export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, cle
         </button>
         <button type="button" className="btn btn-sm h-9 w-9 flex-none justify-center !px-0 max-sm:h-11 max-sm:w-11" disabled={busy}
           onClick={() => goAdjacent(1)} aria-label={toi} title={toi}>›</button>
-        {/* C13 (test.html): "Về tuần này" chỉ khi đang xem tuần khác. */}
-        {shown && todayWeekStart && shown.weekStart !== todayWeekStart && (
-          <button type="button" className="link min-h-[44px] whitespace-nowrap text-xs sm:min-h-0" disabled={busy} onClick={() => void pick(todayWeekStart)}>{t('Về tuần này')}</button>
+        {/* UI-CON-LAI k2: MỘT kiểu chọn tuần "‹ W3 SEP › Tuần này" — nút luôn ở chỗ cũ, khoá khi đang xem tuần này (không nhảy bố cục). */}
+        {todayWeekStart && (
+          <button type="button" className="btn btn-sm h-9 flex-none whitespace-nowrap max-sm:h-11" disabled={busy || shown?.weekStart === todayWeekStart}
+            onClick={() => void pick(todayWeekStart)}>{t('Tuần này')}</button>
         )}
         {lich}
       </div>

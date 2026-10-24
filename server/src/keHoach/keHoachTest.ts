@@ -177,7 +177,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
 type CheDo = 'ft' | 'thuong';
 
 /**
- * Một kỹ năng đã có ĐỦ điểm chưa: FT cần mọi ô nhập XONG (Writing = W1 + W2; V5 SV-SO1: band + đủ nhận xét bắt buộc — `oXongCua` của lượt `a`, cùng hàm
+ * Một kỹ năng đã có ĐỦ điểm chưa: FT cần mọi ô nhập XONG (Writing = W1 + W2; LUAT-NX-MT: có band, thiếu nhận xét chỉ nhắc — `oXongCua` của lượt `a`, cùng hàm
  * với `skillCells`); lớp thường có `raw_score`. Không dự thi tính là xong.
  */
 function xongKyNang(cheDo: CheDo, skill: string, scores: any[], periodId: number | null, a: any): boolean {

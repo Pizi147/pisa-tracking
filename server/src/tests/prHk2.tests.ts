@@ -245,8 +245,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       assert(/border-0/.test(n) && /bg-transparent/.test(n), `${moc}: nút điện thoại phải không viền, nền trong`);
       assert(/min-h-\[44px\]/.test(n) && /min-w-\[44px\]/.test(n), `${moc}: nút < 44 px`);
     }
-    assert(/width="20" height="20"/.test(nut('ref={nutTim}')) && /sm:hidden" aria-hidden width="20" height="20"/.test(nut('ref={nutThongBao}')), 'biểu tượng Tìm / chuông phải 20 px');
-    assert(/max-sm:absolute/.test(nut('{chuong.soNut > 0 &&')), 'số trên chuông phải max-sm:absolute đè góc chuông');   // SL1: số = việc Cần làm còn mở
+    assert(/width="20" height="20"/.test(nut('ref={nutTim}')) && /aria-hidden width="20" height="20"/.test(nut('ref={nutThongBao}')), 'biểu tượng Tìm / chuông phải 20 px');
+    /* UI-CON-LAI k4: chuông mọi bề rộng; số = `.cham-chuong` (absolute, đè góc) — khác dáng badge việc. */
+    assert(/className="cham-chuong"/.test(nut('{chuong.soNut > 0 &&')) && /\.cham-chuong \{ position: absolute/.test(doc('web/src/index.css')), 'số trên chuông phải đè góc chuông');
   });
 
   /* OV-15a (C11): mọi kích thước — Giao diện nằm trong menu Tài khoản (phép kiểm thanh trên ở prOv15a). */
@@ -507,7 +508,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C31 · App: dải Mất kết nối role="status"; "Thử lại" khoá khi đang thử, chữ "Đang thử…"', () => {
     const s = doc('web/src/App.tsx');
-    const i = s.indexOf('session.loiKetNoi &&');
+    const i = s.indexOf('(session.loiKetNoi || matMang) &&');   // UI-CON-LAI k6: cả khi trình duyệt báo mất mạng
     assert(i >= 0, 'không thấy dải mất kết nối');
     const khoi = s.slice(i, s.indexOf('</header>', i));
     const dai = khoi.slice(0, khoi.indexOf('Thử lại') + 20);

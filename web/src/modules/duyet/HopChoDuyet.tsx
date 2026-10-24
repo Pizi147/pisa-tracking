@@ -3,12 +3,15 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Empty, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
+import { KhungPanel, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
-  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, tomTatKetQuaHangLoat,
+  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, deadlineView, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
@@ -64,6 +67,12 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
     next.delete('the');
     setParams(next, { replace: true });
   };
+  /* UI-CON-LAI k3: mở / đóng panel duyệt = `?the=` (giữ mọi bộ lọc). */
+  const moThe = (id: number | null) => {
+    const next = new URLSearchParams(params);
+    if (id) next.set('the', String(id)); else next.delete('the');
+    setParams(next, { replace: true });
+  };
   /* PR-GVb (J5b): link cũ `?phan=bao-len` (thông báo, Tổng quan cũ) → tab Báo QL, không gãy. */
   useEffect(() => {
     if (params.get('phan') !== 'bao-len') return;
@@ -83,6 +92,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
   /* Mở từ chuông mà thẻ không còn trong danh sách đang xem (đã có người xử lý / tự đóng / khác chi nhánh đang lọc). */
   const theTuLink = Number(params.get('the')) || null;
   const theLac = !!data && !!theTuLink && !data.the.some((x) => x.id === theTuLink);
+  const theMo = theTuLink ? data?.the.find((x) => x.id === theTuLink) ?? null : null;
 
   /* Hàng loạt: một loại một lúc (luật ở `chonMot` / `chonHet`). */
   const [chon, setChon] = useState<Set<number>>(new Set());
@@ -181,7 +191,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
           </button>
         )}
       </div>
-      {xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
+      {xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">{t('{n} đề xuất · quá hạn trước → hạn gần nhất', { n: ds.length })}</p>}
       {coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.</p>}
       {theLac && (
         <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-300"
@@ -201,7 +211,38 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
         <Card><Empty title={xem === 'cho' ? 'Không có yêu cầu nào đang chờ' : xem === 'de-biet' ? 'Không có thẻ Báo QL'
           : 'Chưa có yêu cầu nào được xử lý trong 30 ngày'} /></Card>
       )}
-      {ds.length > 0 && (
+      {/* UI-CON-LAI k3 (con-lai.html, chủ SP 24/10): hộp đầy đủ = DANH SÁCH dòng gọn (quá hạn / cũ trước) + PANEL duyệt bên phải (375: toàn màn).
+          Bấm dòng = `?the=` (chuông / Quay lại mở đúng thẻ); quyết xong panel đóng, danh sách làm mới. Bản gọn đầu Công việc giữ thẻ tại chỗ. */}
+      {ds.length > 0 && !gon && (
+        /* Cùng mẫu Chấm Test: ≥ 1024 hai cột, panel TẠI CHỖ (không phủ, danh sách vẫn bấm được); < 1024 bấm dòng → panel thay danh sách. */
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <ul className={`card m-0 list-none overflow-hidden p-0 ${theMo ? 'max-lg:hidden' : ''}`} aria-label="Danh sách yêu cầu">
+            {ds.map((y) => (
+              <DongYeuCau key={y.id} yc={y} dang={theTuLink === y.id} onMo={() => { if (theTuLink !== y.id) boChuRoi(() => moThe(y.id)); }}
+                chon={choHangLoat && y.hangLoat && y.trangThai === 'cho' ? {
+                  checked: chon.has(y.id),
+                  onChange: (v) => setChon((s) => chonMot(ds, s, y.id, v)),
+                } : null} />
+            ))}
+          </ul>
+          <div className={`lg:sticky lg:top-3 ${theMo ? 'space-y-2' : 'max-lg:hidden'}`}>
+            {theMo ? (
+              <>
+                <button type="button" className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden"
+                  onClick={() => boChuRoi(() => moThe(null))}>‹ Chờ duyệt</button>
+                <KhungTaiCho.Provider value>
+                  <KhungPanel key={theMo.id} tieuDe={dich(theMo.tieuDe)} loai={`${t('VIỆC · DUYỆT')} · ${dich(theMo.nhanPhanLoai).toLocaleUpperCase('vi')}`}
+                    dau={{ dong2: [theMo.hocVien, theMo.lop, theMo.phu].filter(Boolean).map((x) => dich(x as string)) }}
+                    onDong={() => moThe(null)}>
+                    <TheYeuCau yc={theMo} panel onXong={() => { moThe(null); xong(); }} onThemPa={setNgan} />
+                  </KhungPanel>
+                </KhungTaiCho.Provider>
+              </>
+            ) : <Card><Empty title={t('Chọn một đề xuất bên trái để xem và quyết')} /></Card>}
+          </div>
+        </div>
+      )}
+      {ds.length > 0 && gon && (
         <div className="space-y-2">
           {dsHien.map((y) => (
             <TheYeuCau key={y.id} yc={y} nhanManh={nhan === y.id} onXong={xong} onThemPa={setNgan}
@@ -270,5 +311,38 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
 
       {ngan && <NganCase caseId={ngan} viec="them-pa" onClose={() => setNgan(null)} onChanged={xong} />}
     </div>
+  );
+}
+
+/** UI-CON-LAI k3: MỘT dòng gọn của Hộp duyệt — loại · hạn (chữ, không chỉ màu) / việc · em · lớp / dòng đầu của lý do. Bấm = mở panel duyệt. */
+function DongYeuCau({ yc, dang, onMo, chon }: {
+  yc: TheYeuCauDto; dang: boolean; onMo: () => void; chon: { checked: boolean; onChange: (v: boolean) => void } | null;
+}) {
+  const { homNay, ngan } = useNgayNghiepVu();
+  const cho = yc.trangThai === 'cho';
+  const hanV = cho && yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
+  const han = !hanV ? null : hanV.tone === 'overdue' ? `⚠ ${t('Quá hạn · {daysOverdue} ngày', { daysOverdue: hanV.daysOverdue })}` : hanV.homNay ? t('Hạn hôm nay') : hanV.han;
+  const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
+  return (
+    <li className={`flex items-start gap-2 border-b px-3 py-2.5 last:border-b-0 ${dang ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : 'bam'}`}
+      style={{ borderColor: 'var(--line)' }}>
+      {chon && (
+        <label className="relative mt-1 inline-flex shrink-0 cursor-pointer max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']">
+          <input type="checkbox" className="h-4 w-4 accent-[color:var(--accent)]" checked={chon.checked}
+            onChange={(e) => chon.onChange(e.target.checked)} aria-label={t('Chọn: {tieuDe}', { tieuDe: dich(yc.tieuDe) })} />
+        </label>
+      )}
+      <button type="button" className="min-h-[44px] min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left sm:min-h-0" aria-current={dang || undefined} onClick={onMo}>
+        <span className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-[12px] font-semibold text-slate-400">{dich(yc.nhanPhanLoai)}</span>
+          {cho ? han && <span className={`shrink-0 text-[12px] font-semibold tabular-nums ${hanV!.tone === 'overdue' ? 'text-late' : hanV!.ganHan ? 'text-soon' : 'text-slate-400'}`}>{han}</span>
+            : <span className="flex shrink-0 items-center gap-1.5"><NhanTrangThai t={tt.t} />{yc.xuLyLuc && <span className="text-[12px] text-slate-400">{ngan(yc.xuLyLuc)}</span>}</span>}
+        </span>
+        <b className="block truncate text-sm font-semibold text-slate-100">
+          {dich(yc.tieuDe)}{[yc.hocVien, yc.lop].filter(Boolean).length ? <span className="font-normal text-slate-300"> · {[yc.hocVien, yc.lop].filter(Boolean).join(' · ')}</span> : null}
+        </b>
+        {yc.dong[0] && <span className="block truncate text-[12px] text-slate-400">{dich(yc.dong[0])}</span>}
+      </button>
+    </li>
   );
 }
