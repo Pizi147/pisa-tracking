@@ -232,12 +232,14 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Đã merge hết PR màn V5:** #533 Công việc · #534 Chấm Test · #539 Lịch Test tuần · #540 Công việc TVV · #547 Hồ sơ lớp · #548 HV & Lớp · #550 Hồ sơ HV ·
   #551 Tổng quan · #557 Hồ sơ GV · #558 Phân tích · #560 Còn lại (tìm, chọn tuần, duyệt thu hồi, thông báo, biểu mẫu, rỗng / lỗi, in / xuất, 375) · #561 Tổng quan GV hai khối;
   máy chủ #544 LUAT-NX-MT · #545 NEN-SUA · #549 SV-NX-CASE · #559 SUA-TD4A. Tài liệu: TL-V5 (`DESIGN.md` mục "Luật V5", Hướng dẫn theo màn V5, truy vết `thiet-ke/v5/*-truy-vet.md` → PR).
-- **Còn, theo thứ tự:** **SUA-NO-RA** (hai dòng CV-LOI / LUAT-5 dưới; prompt đã đưa 24/10; rà sâu `/security-review` + `/code-review high`) → **CHAM-LAI** (chấm lại toàn web
-  theo brief 20 + T01–T22 trên ảnh mọi vai; rà lại PR màn đã merge theo luật 8b; việc dưới) → **deploy** (dưới) → Tutor (tuần sau ~28/10, hỏi chủ SP).
-- **Việc của CHAM-LAI (TL-V5 thấy, chưa sửa):** ① tiêu đề trang 17 px (`text-lg`) ở 11 trang — Công việc, Test, Phân tích, HV & Lớp (`StudentsPage`, `HocVienTheoVai`), Lưu trữ,
-  hồ sơ MT (`MockDetailPage`), Quản trị, Hồ sơ cá nhân, Hướng dẫn, Tutor — mockup `.h-trang` 22 / 700 (`DESIGN.md` V16) · ② `HocVienCuaToi` không còn hiện ở trang nào (chỉ `ODem`
-  dùng lại) — gỡ phần chết; phép kiểm HD-CHI chỉ quét nguồn nên không bắt được "Chỉ cho tôi" trỏ khối đã gỡ (TL-V5 đã chuyển TVV / CX sang `tq-tom-tat`) — cân nhắc kiểm bằng `do-khung` ·
-  ③ đầu Case dạng lưới (Từ · Nguyên nhân · Phụ trách · Mở · Mục tiêu, khu c) cho cả hồ sơ HV + hồ sơ lớp — PR riêng nếu chủ SP muốn (#550 C11).
+- **Còn, theo thứ tự:** **SUA-NO-RA** (hai dòng CV-LOI / LUAT-5 dưới; prompt đã đưa 24/10; rà sâu `/security-review` + `/code-review high`) → **CHAM-LAI** (PR nháp 24/10, dòng dưới) → **deploy** (dưới) → Tutor (tuần sau ~28/10, hỏi chủ SP).
+- **CHAM-LAI (24/10, PR nháp) — chấm 29/40** (20/10: 23/40; chưa ≥ 35), báo cáo `docs/superpowers/specs/2026-10-24-cham-lai-v5.md`. Đã sửa: ① tiêu đề 22 / 700 ở 11 trang ·
+  ② gỡ `HocVienCuaToi` (`ODem` vào `MockTestAdmin`) · hồ sơ GV "Việc đang tồn" đếm việc như Công việc · Công việc đếm quá hạn trên việc thật · `Dự kiến 02/2027` (P5) · ✓ / ✗ bảng Mock hồ sơ HV (G12) ·
+  chú thích Tổng quan GV → "?" (P1) · "?" ra khỏi tiêu đề cột (G9). ③ đầu Case dạng lưới (#550 C11) — vẫn chờ chủ SP.
+- **Còn từ CHAM-LAI (PTA Plan chia PR; mã L / Đ ở báo cáo mục 4, 6):** **L1** HV & Lớp TVV / CX còn V4 (`HocVienTheoVai`, chip "Cần làm" đã bỏ) → PR UI-HV-LOP-TVV ·
+  **L2** Head tutor thấy Tổng quan GV → cùng PR Tutor · **L3 + Đ5** một tên mỗi chỉ số (Đạt MT / Đạt kỳ vọng / Đạt kỳ vọng Test / Đạt Test / Đạt Target; thi thật 3 tên) → PR chữ TEN-CHI-SO ·
+  **L4** "Chờ chấm" Tổng quan GV còn đếm bài S chấm chéo (`tongQuan.ts:291`) · **L5** HV & Lớp 99 ↔ 100 HV (em đã kết thúc) — cần chốt tập · **L6** Tổng quan QL hai kỳ trên một trang ·
+  **L7** [XM] chữ "Nên có nhận xét…" ở hồ sơ Mock: N8 ① (chữ dưới ô) ↔ V15 (không chữ) · **L8** ô chỉ số Admin dáng cũ · L9–L12 nhẹ (báo cáo).
 - **[XM] đã chấp nhận (Q-8 — tự quyết / lệch, PTA Plan + chủ SP 23–24/10):** #550 C11 giữ hàng Case V4 · B2 giữ lưới tuần trong tab "Lộ trình & lớp" · C8 / C12 / T6 (theo dữ liệu
   máy chủ) — #551 XM-1 công tắc FT / Thường ở đầu trang · XM-4 giữ "Đạt Target thi thật", không ngưỡng (C08) — #558 XM-1 bỏ khối Báo cáo V4 (số còn ở Test + SOS, Kết quả Test,
   Phân tích GV) · XM-2 không nút Xuất đầu trang (Xuất Excel ở Test + SOS) · XM-3 giữ tên tab "Kết quả Test" · XM-4 "HV cần chú ý" = HV SOS hiện tại ở lớp GV dạy · shortcut Pass Target
