@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
@@ -276,6 +276,8 @@ type GvLop = {
   programmeCode: string | null;
   core: { userId: number }[]; bySkill: { skill: string; userId: number }[];
   candidates: { id: number; name: string; classCount: number; skills?: string[] }[];
+  /** SUA-NO-RA: phiên bản phân công lúc đọc — gửi kèm khi lưu, người khác vừa đổi → 409. */
+  phienBan?: string;
 };
 
 /**
@@ -303,11 +305,15 @@ function PanelPhanCongMon({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =>
         ...data.bySkill.map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
         mon ? { userId: chon, skill: mon, isCore: false } : { userId: chon, skill: null, isCore: true },
       ];
-      await api.put(`/classes/${it.classId}/teachers`, { slots });
+      await api.put(`/classes/${it.classId}/teachers`, { slots, phienBan: data.phienBan });
       invalidate('/classes'); invalidate('/cases');
       toast.push('ok', t('Đã phân công {nhan}', { nhan }));
       onDaLam();
-    } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+    } catch (e: any) {
+      setLoi(e?.message ?? t('Không lưu được'));
+      /* SUA-NO-RA (CV-LOI-a): người khác vừa đổi phân công lớp → tải lại bức tranh mới, GIỮ người đang chọn để bấm Giao lại. */
+      if (e instanceof ApiError && e.status === 409) reload();
+    } finally { setBusy(false); }
   };
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong}

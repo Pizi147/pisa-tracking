@@ -13,7 +13,9 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
   const cases: any = await import('../cases/cases.ts');
   const lich: any = await import('../fasttrack/skillSchedule.ts');
   const perm: any = await import('../permissions.ts');
-  const { migratePrCvLoi } = await import('../migrate/prCvLoi.ts');
+  const { migratePrCvLoi: chayMot, KHOA_PR_CV_LOI } = await import('../migrate/prCvLoi.ts');
+  /* SUA-NO-RA: migrate chạy MỘT lần (khoá demo_config) — phép kiểm gỡ khoá để chạy lại bước gán trên dữ liệu dựng (trong `thu`, cuộn lại). */
+  const migratePrCvLoi = (c: unknown, a: string[]) => { conn.prepare('DELETE FROM demo_config WHERE key = ?').run(KHOA_PR_CV_LOI); chayMot(c, a); };
   const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const require_luat = await import('../classes/luatLoTrinh.ts');
@@ -54,7 +56,7 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
     assert(ls.length === 1 && ls[0].old_value === null && ls[0].new_value === String(gv) && ls[0].actor_user_id === null, `lịch sử gán: ${JSON.stringify(ls)}`);
     assert(a1.some((x) => x.startsWith('CV-LOI')), 'migrate báo đã gán');
     const a2: string[] = [];
-    migratePrCvLoi(conn, a2);
+    chayMot(conn, a2);
     assert(!a2.length && all(`SELECT 1 FROM sos_case_history WHERE case_id = ? AND field = 'owner_user_id'`, c.id).length === 1, 'lần hai không ghi gì');
   }));
 

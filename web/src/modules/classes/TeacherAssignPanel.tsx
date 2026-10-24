@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -33,6 +33,8 @@ type Teachers = {
   past: { name: string; skill: string | null; isCore: boolean; from: string; to: string | null }[];
   /** PR-QU (A): `canAssignSubject` = GVCN lớp này — đổi được ô GV bộ môn, ô GVCN chỉ đọc. Quản lý có cả hai. */
   viewer: { canAssign: boolean; canAssignSubject?: boolean };
+  /** SUA-NO-RA: phiên bản phân công lúc đọc — gửi kèm khi lưu, người khác vừa đổi → 409. */
+  phienBan?: string;
 };
 
 export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
@@ -41,7 +43,9 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const [dangSua, setDangSua] = useState(moSua && suaDuoc);
-  const { data, loading, error } = useApi<Teachers>(dangSua ? `/classes/${lop.id}/teachers` : null, [dangSua]);
+  const { data, loading, error, reload } = useApi<Teachers>(dangSua ? `/classes/${lop.id}/teachers` : null, [dangSua]);
+  /** 409 → tải lại bức tranh mới mà GIỮ các ô đang chọn (không mất lựa chọn đang sửa). */
+  const giuChon = useRef(false);
   const [chon, setChon] = useState<Record<string, number | ''>>({});
   /** Ô dữ liệu cũ đang có từ 2 người: khoá ô → tên. */
   const [nhieuNguoi, setNhieuNguoi] = useState<Record<string, string[]>>({});
@@ -59,12 +63,13 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
       theoO.set(khoa, [...(theoO.get(khoa) ?? []), a]);
     }
     const ds = [...theoO];
+    setNhieuNguoi(Object.fromEntries(ds.filter(([, a]) => a.length > 1).map(([k, a]) => [k, a.map((x) => x.name)])));
+    if (giuChon.current) { giuChon.current = false; return; }
     const c: Record<string, number | ''> = Object.fromEntries(ds.filter(([, a]) => a.length === 1).map(([k, a]) => [k, a[0].userId]));
     /* Q31-5: FOU mà L, R, G+V cùng người (hoặc trống) → 2 ô; khác người → mở sẵn tách. */
     const tach = nenTachFou(data.programmeCode, data.bySkill);
     fou.setTach(tach);
     setChon(fou.gop && !tach ? chonKhiDoiTach(c, fou.gop, false) : c);
-    setNhieuNguoi(Object.fromEntries(ds.filter(([, a]) => a.length > 1).map(([k, a]) => [k, a.map((x) => x.name)])));
   }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const oList = data ? fou.oList : [];
@@ -91,12 +96,15 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
     if (!data || oLoi.length) { lf.bam(); setLoiLuu(oLoi[0] ? `${oLoi[0].nhan}: ${loiO(oLoi[0].khoa)}` : null); return; }
     setBusy(true); setLoiLuu(null);
     try {
-      await api.put(`/classes/${lop.id}/teachers`, { slots });
+      await api.put(`/classes/${lop.id}/teachers`, { slots, phienBan: data.phienBan });
       invalidate('/classes'); invalidate('/my-work');
       toast.push('ok', 'Đã lưu phân công');
       setDangSua(false);
       onDone();
-    } catch (e: any) { setLoiLuu(e.message); toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) {
+      setLoiLuu(e.message); toast.push('error', e.message);
+      if (e instanceof ApiError && e.status === 409) { giuChon.current = true; reload(); }
+    } finally { setBusy(false); }
   };
   const gvcn = lop.coreTeachers[0] ?? null;
   const nhom = nhomGiaoVienBoMon(lop.skills.map((x) => x.skill), lop.skillTeachers, lop.programme?.code ?? null);
