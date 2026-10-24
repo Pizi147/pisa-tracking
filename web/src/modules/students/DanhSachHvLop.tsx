@@ -118,9 +118,10 @@ const COT_HV: CotBang[] = [
   { key: 'viec', nhan: t('Việc'), kieu: 'viec' },
   { key: 'nut', nhan: '', kieu: 'nut' },
 ];
-/** TVV / CX: + Phụ huynh (SĐT bấm gọi) trước ⋯; CX không có Công việc nên bỏ cột Việc. */
-const cotHv = (vai?: VaiBang): CotBang[] => (!vai ? COT_HV : COT_HV.flatMap((c) => (c.key === 'viec' && !vai.coViec ? []
-  : c.key === 'nut' ? [{ key: 'ph', nhan: t('Phụ huynh'), kieu: 'chu', rong: 150 }, c] : [c])));
+/** TVV / CX: + Phụ huynh (SĐT bấm gọi) trước ⋯; CX không có Công việc nên bỏ cột Việc (Phụ huynh thành cột giãn — `cotLinhHoat`). Vài cột hẹp lại để cả bảng vừa khung 1440 (⋯ không khuất). */
+const RONG_VAI: Record<string, number> = { ten: 190, lo: 96, mt: 200, y: 96 };
+const cotHv = (vai?: VaiBang): CotBang[] => (!vai ? COT_HV : COT_HV.flatMap((c): CotBang[] => (c.key === 'viec' && !vai.coViec ? []
+  : c.key === 'nut' ? [vai.coViec ? { key: 'ph', nhan: t('Phụ huynh'), kieu: 'chu', rong: 120 } : { key: 'ph', nhan: t('Phụ huynh'), kieu: 'viec' }, c] : [vai.coViec && RONG_VAI[c.key] ? { ...c, rong: RONG_VAI[c.key] } : c])));
 
 /** Ô Lịch thi: chip lịch; TVV / CX thêm nhãn sau thi (bấm = panel một em: nhập KQ / chọn bước tiếp / gia hạn tại chỗ). Em ngoài danh sách lớp (Tạm dừng…) chưa có `lich` → dự kiến thi. */
 function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) => void }) {
@@ -196,7 +197,11 @@ export function TheHvGon({ ds, lop, viec, nguCanh, onMoViec, onDoi, vai }: {
                     <ODiem so={chuSo(g.mtGan.ovr)} kq={kqOverall(g.mtGan.ovr, g.mtGan.kyVong)} kck={g.loTrinh.kck} nhan="Overall" /> MT{g.mtGan.mt}</span>
                 : '—'}
             </div>
-            {ev?.sauThi && <OLich h={h} ev={ev} onMoEm={vai?.onMoEm} />}
+            {ev?.sauThi && vai && (
+              <button type="button" className="block min-h-[44px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left" onClick={() => vai.onMoEm(h.id)}>
+                <NhanSauThi s={ev.sauThi} gon />
+              </button>
+            )}
             {ev && (ph || ev.lienHe.parentPhone) && (
               <div className="flex min-w-0 items-baseline gap-1.5 text-xs text-slate-400">
                 <span className="shrink-0">{t('Phụ huynh')}</span>

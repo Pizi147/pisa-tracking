@@ -3,10 +3,18 @@
 Khung: **bảng V5 của #548** (`thiet-ke/v5/dieu-chinh-cuoi.html` khu d, truy vết `docs/anh/ui-hv-lop/khop-khac.md`) — TVV / CX không có mockup riêng;
 PR này đưa hai vai vào CÙNG `TrangTheoLop` (QL / GV / Admin) + phần của vai (phạm vi, chip, cột Phụ huynh, ⋯ theo vai). Không đổi máy chủ, không đổi quyền.
 
-Ảnh (DB demo cục bộ `npm run seed`, không commit; vai 23 TVV · 24 CX):
-- `tvv-1440-toi` · `tvv-1440-sang` · `tvv-375` — TVV "HV của tôi" · Tất cả.
-- `cx-1440-toi` · `cx-1440-sang` · `cx-375` — CX mọi chi nhánh · Tất cả.
-- `tvv-375-truoc` / `cx-375-truoc` — chiều cao trang 375 trước PR (Đ1).
+Ảnh cặp mockup khu d | web (`scripts/anh-cap.mjs`, DB demo cục bộ `npm run seed` — không commit; vai 23 TVV Nguyễn Thu Hương · 24 CX Vũ Thanh Tâm):
+- `tvv-1440-toi` · `tvv-1440-sang` · `tvv-375` — TVV "HV của tôi" · Tất cả (4 em; Đinh Ngọc Quyên có nhãn "Có KQ · chờ bước tiếp").
+- `cx-1440-toi` · `cx-1440-sang` · `cx-375` — CX mọi chi nhánh · Tất cả (140 em, phân trang 10).
+
+**Đ1 — 375:** chiều cao `main` TVV **1 268 px** (trước 9 040), CX **2 190 px** (trước 8 712); không cuộn ngang (scrollWidth 375).
+**1440:** bảng vừa khung (1 398 / 1 398 px, ⋯ không khuất) — TVV hẹp bớt Học viên / Lộ trình / MT / Ý thức để có chỗ cột Phụ huynh; CX không có cột Việc nên Phụ huynh là cột giãn.
+1280 cuộn ngang như bảng QL (#548, 1 342 px) — không đổi.
+
+**Bấm thử (Playwright, 1440):** link Tổng quan TVV `phamVi=cua-toi&view=cho-buoc-tiep` → chip bật, 1 HV, Xuất · 1 HV; `thi=1` → 1; `view=da-thi` / `thieu_tt` → chip bật, 0. CX `view=da-thi` → 1, `view=cho-buoc-tiep` → 2,
+`view=can-chu-y` → 72, `cn=2` → 8, `view=sos` → Đang SOS 57. ⋯ TVV / CX: Sửa thông tin · Tạm dừng / Thôi học · Kết quả thi thật · Mở hồ sơ. QL: tab Tất cả 100 = dải 100 HV = Xuất · 100 HV (L5).
+
+**Rà:** `impeccable detect` 0 phát hiện; web-design-guidelines: nút / link có nhãn, SĐT `<a href="tel:">`, số `tabular-nums`, lọc trên URL, chữ dài `truncate`, vùng bấm 375 ≥ 44 px.
 
 ## Truy vết khung → thành phần
 
