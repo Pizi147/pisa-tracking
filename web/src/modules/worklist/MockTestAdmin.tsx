@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ChiSo, DaiChiSo } from './TongQuanV5.tsx';
+import { ChiSo } from './TongQuanV5.tsx';
 import { nhanQuaHan, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -33,15 +33,15 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
 
   return (
     <div className="space-y-3">
-      {/* SUA-CHAM-LAI L8: ô chỉ số V5 (tên · số · mẫu · kỳ) như mọi vai; số = link đổi trang (mở đúng danh sách đã lọc). Đơn vị "bài" như Lịch Test. */}
-      <DaiChiSo>
+      {/* SUA-CHAM-LAI L8: ô chỉ số V5 (tên · số · mẫu · kỳ) như mọi vai, 3 cột như Tổng quan TVV; số = link đổi trang (mở đúng danh sách đã lọc). Đơn vị "bài" như Lịch Test. */}
+      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
         <ChiSo ten={t('Lượt MT tuần này')} ky={tuanLich(data.tuan, homNay)} giaTri={<So to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} n={data.luotTuanNay.so} />}
           mau={t('{n} lớp', { n: data.luotTuanNay.soLop })} />
         <ChiSo ten={t('Bài chưa nhập điểm')} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
           mau={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">⚠ {t('{n} quá hạn', { n: data.oChuaNhap.quaHan })}</span> : t('không bài nào quá hạn')} />
         <ChiSo ten={t('HV chưa có MT tiếp theo')} ky={t('hiện tại')} giaTri={<So to={`/test/ke-hoach?loai=ft${cn}`} n={data.chuaXepLich} />}
           mau={t('đã thi hết lượt MT đã xếp')} />
-      </DaiChiSo>
+      </div>
       <section className="card" aria-labelledby="gv-qua-han">
         <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">
           <h2 id="gv-qua-han" className="m-0 text-[15px] font-semibold text-slate-100">GV chấm quá hạn</h2>
