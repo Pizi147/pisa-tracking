@@ -9,7 +9,7 @@ export const HD_HT: HuongDan = {
   viec: [],
   man: [
     { id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      muc: [{ id: 'ht-tong-quan', ten: 'Trang đầu', buoc: ['Trang đầu tạm dùng góc nhìn GV (Việc của tôi, Case đang xử lý, Lớp tôi dạy); trang Tutor tạm ẩn, dữ liệu tutor vẫn giữ nguyên.'] }] },
+      muc: [{ id: 'ht-tong-quan', ten: 'Trang đầu', buoc: ['Trang đầu tạm dùng góc nhìn GV (Case đang xử lý; khối lớp khi bạn có lớp dạy); trang Tutor tạm ẩn, dữ liệu tutor vẫn giữ nguyên.'] }] },
     ...MAN_HO_SO_TVV.filter((m) => m.id === 'ho-so-ca-nhan' || m.id === 'huong-dan'),
   ],
   luat: [],

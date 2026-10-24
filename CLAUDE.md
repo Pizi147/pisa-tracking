@@ -15,7 +15,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Luật nghiệp vụ: 5 luật (luật 4 bản sửa 21/10) + việc TVV + S chéo theo kỹ năng hồ sơ GV — mỗi luật một dòng ở `plan.md` 1.6; không đổi luật nào khác.
 - PR đổi bố cục: **một màn một PR** · bảng truy vết khung → thành phần → ảnh (có dòng BỎ / GIỮ) · ảnh cặp toàn trang mockup | web · cổng **≥ 90 % KHỚP** ·
   **chủ SP duyệt ảnh cặp trước merge, không merge qua đêm** (`plan.md` 1.6, 06 mục 5.4).
-- Luật giao diện (chi tiết `DESIGN.md` mục "Luật 21/10"): Thi = thi thật, Test = MT / Progress / Final… · việc của tôi ở trang đầu vai · một danh sách một kiểu mở ·
+- Luật giao diện (chi tiết `DESIGN.md` mục "Luật V5" — mới nhất, thắng khi khác — rồi "Luật 21/10"): Thi = thi thật, Test = MT / Progress / Final… · việc của tôi ở trang đầu vai · một danh sách một kiểu mở ·
   thang làm tại chỗ 0–5 · ô số = mở tại chỗ, chữ "›" = đổi trang, ⓘ = giải thích · báo cáo thuần · cấm điều khiển trong tiêu đề bảng · "Toàn bộ" chỉ ở Phân tích.
 
 ## PR giao diện V5 = NÂNG CẤP, không chép mockup (chủ SP 22/10 — `docs/superpowers/specs/2026-10-22-overhaul-v5/10-pta-ap-phan-hoi-cuoi.md` mục 8)

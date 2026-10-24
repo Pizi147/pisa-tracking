@@ -8,12 +8,12 @@ export const HD_GV: HuongDan = {
   viec: [
     {
       id: 'cong-viec', ten: 'Mở Công việc mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Đăng nhập là vào <b>Công việc</b>: một danh sách theo nhóm, quá hạn ở đầu, có ⚠.', 'Việc đầu tự mở bên phải; dòng gộp nhiều em mở một panel.', 'Lưu xong việc tự sang việc kế; <b>‹ việc vừa xong</b> mở lại. Hết việc: <b>Xong hết hôm nay ✓</b>.'],
+      buoc: ['Mở <b>Công việc</b> trên thanh trên (số cạnh tên = việc của bạn): một danh sách theo nhóm, quá hạn ở đầu, có ⚠.', 'Bấm dòng để làm ngay bên phải; dòng gộp nhiều em mở một panel.', 'Việc lưu xong rời danh sách.'],
       chi: { hd: 'nav-cong-viec', chu: 'Bấm <b>Công việc</b> — mọi việc của bạn ở đây.' },
     },
     {
       id: 'nhap-diem', ten: 'Nhập điểm MT + Speaking chấm chéo', khi: 'sau mỗi tuần Test',
-      buoc: ['Mở <b>Test › Chấm Test</b>: nhóm theo hạn chấm, bấm một nhóm để chấm ngay bên phải.', 'Bấm lớp, gõ điểm; mọi ô MT có điểm cần <b>nhận xét</b>, ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.',
+      buoc: ['Mở <b>Test › Chấm Test</b>: nhóm theo hạn chấm, bấm một nhóm để chấm ngay bên phải.', 'Bấm lớp, gõ điểm; MT mới nhất của em: ô thiếu <b>nhận xét</b> viền vàng — nên ghi, không chặn lưu.',
         'Em vắng: gõ <b>-</b>.', 'Chấm Speaking: <b>Công việc</b>, dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b> — không tính quá hạn.'],
       chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' },
     },
@@ -39,17 +39,19 @@ export const HD_GV: HuongDan = {
   ],
   man: [
     {
-      /* OV-15d: GV không còn Tổng quan — trang đầu ("/") mở thẳng Công việc. */
-      id: 'tong-quan', ten: 'Trang đầu', duong: ['/'],
+      /* NEN-V5 K10 + SV-TQ-GV #561: GV có Tổng quan — 4 số + hai khối lớp. */
+      id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'tq-viec', ten: 'Vào thẳng Công việc', buoc: ['Trang đầu của GV là <b>Công việc</b>: việc của bạn theo nhóm, quá hạn ở đầu.'],
-          chi: { hd: 'nav-cong-viec', chu: 'Bấm <b>Công việc</b> — mọi việc của bạn ở đây.' } },
+        { id: 'tq-viec', ten: 'Bốn số của bạn', buoc: ['<b>Việc của tôi</b> · <b>Case đang xử lý</b> · <b>Đạt MT · kỹ năng tôi dạy</b> · <b>Tiến bộ</b>; bấm số mở danh sách.'],
+          chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } },
+        { id: 'tq-hai-khoi', ten: 'Kỹ năng tôi dạy · Lớp tôi chủ nhiệm', buoc: ['<b>Kỹ năng tôi dạy</b>: mỗi lớp một dòng — Đạt Test, Tiến bộ, bài chờ chấm, Test sắp tới.', '<b>Lớp tôi chủ nhiệm</b>: Dưới kỳ vọng, SOS, Case, Thi tháng này; bấm số mở danh sách em.'],
+          chi: { hd: 'tq-lop-toi-day', duong: '/', chu: 'Hai khối lớp của bạn ở đây.' } },
       ],
     },
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],
       muc: [
-        { id: 'hv-tim', ten: 'Tìm em hoặc lớp', buoc: ['Gõ ít nhất 2 chữ ở ô <b>Tìm học viên, lớp…</b> trên thanh trên.', 'Gõ "ft101" ra lớp MB FT 101.'],
+        { id: 'hv-tim', ten: 'Tìm em, lớp, GV', buoc: ['Bấm <b>/</b> hoặc <b>Ctrl K</b> (hoặc ô tìm trên thanh trên), gõ ít nhất 2 chữ.', 'Kết quả chia <b>Học viên · Lớp · GV</b>, chỉ người bạn được xem; ↑ ↓ Enter để mở. Gõ "ft101" ra lớp MB FT 101.'],
           chi: { hd: 'tim-hv', chu: 'Gõ tên, email em hoặc mã lớp.' } },
         { id: 'hv-goc', ten: 'Ba góc nhìn', buoc: ['<b>Tất cả</b> (lọc <b>Đã thi · chờ kết quả</b>) · <b>Đang SOS</b> (SOS hiện tại, mỗi em một dòng) · <b>Cần làm</b>.', 'Bấm dòng em mở panel một em, không rời trang.'] },
         { id: 'hv-lich-thi', ten: 'Lịch thi và xuất Excel', buoc: ['Góc <b>Lịch thi</b>: chọn tháng ở <b>Dự kiến thi</b> → bấm <b>Kết luận</b> ngay trên hàng (<b>Giữ tháng</b> · <b>Chốt ngày</b> · <b>Chuyển tháng</b> · <b>Chưa kết luận</b>); lưu ngay vào lịch thi của em, không bước duyệt (em đã chốt ngày mà bấm <b>Giữ tháng</b>: hàng hỏi lại “Bỏ ngày …?”).', '<b>Xuất Excel · n HV</b>: xuất đúng danh sách đang lọc; chọn mẫu <b>Danh sách cơ bản</b> · <b>Theo dõi SOS</b> · <b>Kết quả Test</b> hoặc <b>Chọn cột</b>.', '<b>Bộ lọc thêm</b> (góc Tất cả): Case / PA · kỹ năng · kết quả · thời gian — trong nhóm là "hoặc", giữa nhóm là "và". Tích ô trước tên em → <b>Xuất các HV đã chọn</b>.', 'Danh sách dài: 10 dòng một trang, chọn 20 / 50 ở đầu và cuối bảng.'],
@@ -59,7 +61,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'ho-so-lop', ten: 'Hồ sơ lớp', duong: ['/hoc-vien/lop'],
       muc: [
-        { id: 'lop-hoc-vien', ten: 'Học viên của lớp', buoc: ['Bảng em của lớp; <b>⋯</b> ở dòng em: + Ghi vi phạm, + Case, Nhập điểm.', 'Cuối trang: <b>Điểm Mock Test của lớp</b> (lớp thường: <b>Điểm Test của lớp</b>).'] },
+        { id: 'lop-hoc-vien', ten: 'Học viên của lớp', buoc: ['Đầu trang: thanh <b>Việc cần làm</b> của lớp — bấm việc làm ngay tại trang.', 'Bảng em: W1 · W2 riêng, bấm điểm W / S xem điểm thành phần; Case + PA mở dưới hàng; <b>⋯</b> ở dòng em: + Ghi vi phạm, + Case, Nhập điểm.', 'Cuối trang: <b>Điểm Mock Test của lớp</b> (lớp thường: <b>Điểm Test của lớp</b>). Lớp thường có thêm tab <b>Đánh giá đầu ra</b>.'] },
         { id: 'lop-gop-y', ten: 'Góp ý hàng tuần', buoc: ['Tab <b>Học viên</b> › Cách xem <b>Góp ý hàng tuần</b>: hàng = em, cột = kỹ năng, chọn tuần ‹ ›.', 'Bạn ghi / sửa ô ở kỹ năng mình dạy.'] },
         { id: 'lop-lich-su', ten: 'Xem lịch sử', buoc: ['Hồ sơ lớp › <b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công. Góp ý hàng tuần, hồ sơ MT: nút <b>Lịch sử</b>.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.'] },
       ],
@@ -67,15 +69,17 @@ export const HD_GV: HuongDan = {
     {
       id: 'ho-so-hv', ten: 'Hồ sơ học viên', duong: ['/hoc-vien/'],
       muc: [
-        { id: 'hv-hoc-thuat', ten: 'Học thuật', buoc: ['Bảng kỹ năng: ô điểm bốn màu, Case và PA của em.', 'Bấm Case mở ngăn Case ngay trên trang.', 'PA chưa tới kỳ: <b>Cập nhật trước hạn</b> trong ngăn Case.'] },
+        { id: 'hv-viec', ten: 'Việc cần làm', buoc: ['Thanh <b>Việc cần làm</b> dưới đầu trang: việc của bạn với em, bấm là mở chỗ làm ngay trên trang.'] },
+        { id: 'hv-hoc-thuat', ten: 'Học thuật', buoc: ['Ô điểm to <b>Overall · L · R · W1 · W2 · S</b>: bấm một ô đổi kỹ năng cho cả phần dưới.', '<b>Hành trình</b>: điểm từng MT của kỹ năng, kỳ vọng dạng bậc thang mờ; ô thiếu ghi lý do ("vắng W3 SEP"); S Ex hiện cạnh S, không tính.',
+          '<b>Tiến độ trên lớp</b>: ghi / sửa / xoá bài trên lớp (không vào MT). <b>Case & PA</b> của kỹ năng đang chọn — bấm Case mở ngăn Case; PA chưa tới kỳ: <b>Cập nhật trước hạn</b>.'] },
         { id: 'hv-y-thuc', ten: 'Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý và Phối hợp SOS của em.'] },
-        { id: 'hv-hanh-trinh', ten: 'Hành trình', buoc: ['Mọi lượt Test của em trên một lưới.'] },
+        { id: 'hv-hanh-trinh', ten: 'Lộ trình & lớp', buoc: ['Lưới tuần theo lớp: chương đang học, mọi lượt Test, Case / PA theo tuần.'] },
       ],
     },
     {
       id: 'lich-test', ten: 'Lịch Test', duong: ['/test', '/test/lich'],
       muc: [
-        { id: 'lt-ba-khoi', ten: 'Ba khối của Lịch Test', buoc: ['<b>Test quá hạn chấm</b> · <b>Test chấm tuần này</b> (hạn Thứ Tư) · <b>Lịch Test</b> tuần đang xem.', 'Bấm dòng lớp, lưới nhập điểm mở ngay dưới.'],
+        { id: 'lt-ba-khoi', ten: 'Lịch Test tuần', buoc: ['Một tuần (<b>‹ W3 SEP ›</b>, <b>Tuần này</b>): <b>Quá hạn chấm</b> (theo hôm nay, không đổi theo tuần) · <b>Test tuần này</b> — mỗi lớp một dòng, hạn dd/mm.', 'Bấm dòng lớp: lưới từng em mở ngay dưới, gõ điểm tại chỗ; S Ex là dòng phụ của em.'],
           chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' } },
       ],
     },
@@ -92,12 +96,12 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'nhap-diem', ten: 'Nhập điểm', duong: ['/nhap-diem', '/bang-diem-thuong', '/mock-test'],
-      muc: [{ id: 'nd-go', ten: 'Gõ điểm', buoc: ['Gõ điểm, Enter sang ô dưới; mỗi ô tự lưu.', 'Em vắng: gõ <b>-</b>.', 'Ô MT có điểm: ghi <b>nhận xét</b>; dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.'] }],
+      muc: [{ id: 'nd-go', ten: 'Gõ điểm', buoc: ['Gõ điểm, Enter sang ô dưới; mỗi ô tự lưu.', 'Em vắng: gõ <b>-</b>; ô đã dời ghi "vắng W3 SEP".', 'MT mới nhất của em: ô thiếu <b>nhận xét</b> (dưới kỳ vọng: thêm <b>nhóm nguyên nhân</b>) viền vàng — nên ghi, dùng làm mô tả Case; không chặn lưu.'] }],
     },
     {
       id: 'cong-viec', ten: 'Công việc', duong: ['/cong-viec'],
       muc: [
-        { id: 'cv-tai-cho', ten: 'Làm việc ngay trên dòng', buoc: ['Bấm dòng → ô cần điền mở ngay bên.', 'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác" rồi tự sang việc kế; panel: <b>Việc tiếp ›</b>.'],
+        { id: 'cv-tai-cho', ten: 'Làm việc ngay trên dòng', buoc: ['Bấm dòng → ô cần điền mở ngay bên; Case mở rộng tại chỗ.', 'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác".'],
           chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Bấm một dòng để làm việc đó.' } },
         { id: 'cd-cheo', ten: 'Speaking chấm chéo', buoc: ['Dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b>: bài Speaking Mock mọi lớp FT chi nhánh bạn, từ Thứ Hai tuần Test.', 'Bấm dòng: tìm em (tên, email), lọc lớp, bấm ô S để chấm; <b>Enter</b> sang em kế.', 'Có số bài chờ, không tính quá hạn.'] },
         { id: 'cv-gop', ten: 'Dòng gộp nhiều em', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
@@ -119,7 +123,7 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
-      muc: [{ id: 'hsgv-so', ten: 'Số của bạn', buoc: ['Lớp đang dạy, học viên, Case đang phụ trách, việc quá hạn; bấm số mở Công việc.', 'Khối <b>Kết quả gần nhất của lớp đang dạy</b>.', 'Khối <b>Yêu cầu đã gửi</b>.'] }],
+      muc: [{ id: 'hsgv-so', ten: 'Số của bạn', buoc: ['Khối <b>Lớp đang dạy</b>: lớp · kỹ năng · số HV · GVCN.', 'Chọn <b>Từ tuần → Đến tuần</b> (mặc định 4 tuần): <b>Chỉ số</b> (Việc đúng hạn, bài Test) và bảng <b>Học thuật</b> theo lớp / theo kỹ năng — Đạt Test, Tiến bộ, Kết quả thi thật; bấm số mở danh sách.', 'Khối <b>Case đang phụ trách</b> và <b>Yêu cầu đã gửi</b>.'] }],
     },
     {
       id: 'huong-dan', ten: 'Hướng dẫn', duong: ['/huong-dan'],
@@ -147,7 +151,7 @@ export const HD_GV: HuongDan = {
     { ten: 'MT (Mock Test)', nghia: 'Mock Test 4 kỹ năng L R W S của lớp Fast Track; MT0 là mốc đầu vào.' },
     { ten: 'Lớp thường (không phải FT)', nghia: 'Pre FOU, FOU, BE, ELE — làm Progress Test và Final Test, đếm theo môn.' },
     { ten: 'Kỳ vọng', nghia: 'Band em cần đạt ở mỗi MT theo lộ trình.' },
-    { ten: 'SOS 1 · 2 · 3', nghia: 'Theo số kỹ năng dưới kỳ vọng: 1, 2, hoặc 3–4. Chip chỉ có viền vàng / cam / đỏ, dày dần; SOS tạm viền đứt.' },
+    { ten: 'SOS 1 · 2 · 3', nghia: 'Theo số kỹ năng dưới kỳ vọng: 1, 2, hoặc 3–4. SOS 1 viền mảnh · SOS 2 viền dày nền cam nhạt · SOS 3 nền đỏ đậm chữ trắng; SOS tạm viền đứt.' },
     { ten: '✓ / ✗ cạnh điểm', nghia: '✓ xanh lá vượt kỳ vọng · ✓ xanh dương bằng · ✗ đỏ dưới. Hộp nhập điểm: ▲ / ▼ so kỳ vọng.' },
     { ten: 'Case (hồ sơ vấn đề)', nghia: 'Hồ sơ một vấn đề học thuật của em: nguyên nhân, PA, kết quả.' },
     { ten: 'Case tạm / SOS tạm', nghia: 'Lượt MT chưa chốt: SOS và Case chỉ tạm ("Chờ chốt SOS") — chưa hạn, chưa việc, chưa vào số đếm; chốt lượt mới thành thật.' },

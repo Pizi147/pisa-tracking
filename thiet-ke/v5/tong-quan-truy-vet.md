@@ -1,5 +1,7 @@
 # Truy vết — `tong-quan.html` (V5-B1 · Tổng quan theo vai)
 
+> **Đã vào mã → PR #551 UI-TONG-QUAN · #561 SV-TQ-GV (vai GV)** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 > V5-B1, 22/10/2026. Trạng thái: **ĐỀ XUẤT THIẾT KẾ**, chờ chủ SP duyệt. Dựa trên V5-A: `v5-nen.css`, `du-lieu-demo.md`, `07-huong-thiet-ke.md` mục 2 (**phương án B "Tình hình trái · Đi tiếp phải"** đã chọn).
 > Rà soát mã: [`b1-ra-soat.md`](../../docs/superpowers/specs/2026-10-22-overhaul-v5/b1-ra-soat.md). Mở tệp: `tong-quan.html?k=<ql|qt|gv|tvv|admin|cx|ht>&tt=<tai|loi|rong>&p=<bc|bc2|duyet>&theme=dark`.
 > Ảnh: `anh/tong-quan-*.png` (1440 sáng chính, 1440 tối, 1280, 375). Dữ liệu demo, không phải số liệu thật.

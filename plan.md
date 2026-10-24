@@ -1,6 +1,6 @@
 # PISA Progress — Kế hoạch duy nhất
 
-Cập nhật: **22/10/2026 trưa** (**đã deploy 22/10 12:10** — DB `pisatracking-261022`, mục "Việc còn lại" dòng deploy). Trước đó: **21/10/2026 đêm** (chủ SP duyệt kế hoạch overhaul #486 → GĐ0 / GĐ1 chạy đêm 21/10 — mục 4 "ĐÁNH GIÁ LẠI UX/UI 20/10", 9.5). Trước đó: **18/10/2026 trưa** (**đã deploy 18/10 12:57** — DB `pisatracking-261018`; việc còn lại ở mục "Việc còn lại", phần OV-13).
+Cập nhật: **24/10/2026 trưa** (**V5 đã merge hết PR màn #533–#561** + SUA-TD4A #559 + TL-V5; còn SUA-NO-RA, CHAM-LAI rồi deploy — mục 4 đầu). Trước đó: **22/10/2026 trưa** (**đã deploy 22/10 12:10** — DB `pisatracking-261022`, mục "Việc còn lại" dòng deploy). Trước đó: **21/10/2026 đêm** (chủ SP duyệt kế hoạch overhaul #486 → GĐ0 / GĐ1 chạy đêm 21/10 — mục 4 "ĐÁNH GIÁ LẠI UX/UI 20/10", 9.5). Trước đó: **18/10/2026 trưa** (**đã deploy 18/10 12:57** — DB `pisatracking-261018`; việc còn lại ở mục "Việc còn lại", phần OV-13).
 File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, `PROMPT_BAN_GIAO_PLANNING.md`,
 `docs/superpowers/plans/2026-10-03-lo-trinh-tong-hop-viec-chua-lam.md`. Bản cũ còn trong git: `git show 575e898d:plan.md`.
 
@@ -118,9 +118,10 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 8. Chủ sản phẩm có thể merge trước khi rà → nhắc "chờ planning nói merge được"; lỡ merge thì rà sau merge.
 9. Tên skill đúng là `superpowers:<tên>` (một số kế hoạch cũ ghi nhầm `anthropic-skills:`).
 10. Merge nhầm rồi revert (#271, 08/10) → merge lại nhánh cũ KHÔNG đưa code vào. Phải tạo nhánh mới từ main, `git revert <commit revert>`, mở PR mới (đã làm #272).
+11. **Giờ thật lọt vào dữ liệu demo** (#559, 24/10): mốc tính hạn ghi `nowIso()` (giờ thật) trong khi `demoToday()` cố định 14/09 → hạn trôi theo ngày chạy, phép kiểm băm (TD4-a) xanh hôm trước đỏ hôm sau dù không ai sửa mã. Mốc tính hạn dùng `nowNghiepVu()` (`demoConfig.ts`); nghi phép kiểm đỏ theo ngày → chạy lại với đồng hồ giả (`Date` bọc qua `--require`) để xác nhận trước khi sửa.
 
 ### 1.6. Luật overhaul 21/10 — chủ SP duyệt #486 (mỗi luật một dòng; nguồn trong `docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/`)
-Không đổi luật nghiệp vụ nào ngoài các dòng N1–N7. Luật giao diện: `DESIGN.md` mục "Luật 21/10".
+Không đổi luật nghiệp vụ nào ngoài các dòng N1–N10. Luật giao diện: `DESIGN.md` mục "Luật V5" (mới nhất) rồi "Luật 21/10".
 
 | # | Luật | Nguồn |
 |---|---|---|
@@ -141,6 +142,8 @@ Không đổi luật nghiệp vụ nào ngoài các dòng N1–N7. Luật giao d
 | N6 | **Việc TVV (21/10):** TVV của em giữ Chốt ngày thi · Chọn bước tiếp sau thi (**hạn 1 tuần** từ khi có KQ thi thật) · Bổ sung hồ sơ thiếu · Cập nhật KQ thi thật (chuyển từ GVCN) — không hạn; em không có TVV → QL chi nhánh; "Báo PH kết quả Test lớp thường" giữ GVCN | 02 mục 2.9 21/10-TVV, Q-D3 ① |
 | N7 | **S chéo:** GV có kỹ năng Speaking trong hồ sơ GV (`user_skills`), kể cả không dạy lớp nào, được chấm chéo Speaking trong chi nhánh của mình (mã đã đúng từ OV-14c) | 02 mục 2.9 21/10-SCHEO |
 | N8 | **Nhận xét MT ↔ mô tả Case (chủ SP 23/10):** ① chỉ **MT mới nhất của mỗi em** nhắc vàng + "thiếu nhận xét" dưới ô (kể cả ≥ 2 tuần); MT trước đó không nhắc nhận xét / nhóm, **không ghi chữ "cũ"** · ② Case là **của kỹ năng** (trạng thái SOS của MT / HV); nhận xét kỹ năng → mô tả Case kỹ năng đó **chỉ khi Case chưa có mô tả**; mô tả **đi theo nhận xét tới khi có người sửa riêng mô tả**, từ đó tách hẳn; GV sửa mô tả lúc nào cũng được · ③ S chấm chéo: người nhập = GV phụ trách S của em → thành mô tả ngay; khác người → GV phụ trách S **bắt buộc "Xác nhận Case"** (thay việc "Xem nhận xét Speaking"), hiện sẵn nhận xét chấm chéo, họ chọn dùng hay viết khác; hạn = hạn SOS · ④ SOS tạm: không Case, không hạn, không việc; Overall đạt kỳ vọng → SOS chưa xử lý tự mất · ⑤ quá hạn SOS mà Case chưa mô tả → GV vẫn phải ghi mô tả + nguyên nhân | chủ SP 23/10 (PTA Plan) |
+| N9 | **Nhận xét MT + xếp MT (chủ SP 22/10, LUAT-NX-MT #544):** ô **xong = có band**; thiếu nhận xét / nhóm nguyên nhân → **chỉ nhắc** (ô viền vàng, chỉ MT mới nhất — N8 ①), không 400, không chặn Lưu, không thành việc / nợ / trễ chấm, dán Excel không lỗi dòng · xếp MT **nới lỏng**: không chặn thứ tự giữa các MT (chỉ nhắc "MT2 W sau MT3"), giữ MT0 trước MT1, số MT liền mạch, luật vắng "-", không xếp tuần đã qua · ô đã dời do vắng ghi "vắng W3 SEP" ở mọi ô điểm (`chuDoiVang`) | `10` mục 7 |
+| N10 | **S Ex (Speaking với chuyên gia):** lượt riêng của từng HV (nhiều lần, trùng tuần MT hay không), thêm qua nút **"+ MT"** cuối hàng HV ở Kế hoạch Test (chỉ QL / Admin / QT; cùng nút thêm MT4, MT5…); chấm = GV Speaking cùng chi nhánh (N7) hoặc QL, QL nhập hộ không cần lý do · **chỉ lưu điểm + nhận xét, KHÔNG vào Overall / SOS / Case / KPI / Phân tích**; hiện cạnh điểm S (kết quả, Hành trình) và dòng phụ ở Lịch Test | `10` mục 6, 7.1; SV-S-EXPERT |
 
 ## 2. Đã làm (đã merge vào `main`, kiểm bằng danh sách PR GitHub 12/10)
 
@@ -225,9 +228,24 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
-- **SV-TQ-GV — Tổng quan GV sau UI-TONG-QUAN #551 (chủ SP 23/10, XM-5; Opus 5.5, `/ponytail lite`, impeccable `layout`):** tách "Lớp tôi dạy" thành hai khối như mockup:
-  **Kỹ năng tôi dạy** (theo môn: Đạt MT, Tiến bộ, bài chờ chấm) · **Lớp tôi chủ nhiệm** (SOS, Case, Thi tháng này) — cần `GET /tong-quan/lop-toi-day` trả hai phần
-  (môn / chủ nhiệm) thay một bảng; GIỮ mọi số bấm được → danh sách em / bài như V4. Mockup: `thiet-ke/v5/tong-quan.html?k=gv`.
+### V5 — trạng thái 24/10 (TL-V5)
+- **Đã merge hết PR màn V5:** #533 Công việc · #534 Chấm Test · #539 Lịch Test tuần · #540 Công việc TVV · #547 Hồ sơ lớp · #548 HV & Lớp · #550 Hồ sơ HV ·
+  #551 Tổng quan · #557 Hồ sơ GV · #558 Phân tích · #560 Còn lại (tìm, chọn tuần, duyệt thu hồi, thông báo, biểu mẫu, rỗng / lỗi, in / xuất, 375) · #561 Tổng quan GV hai khối;
+  máy chủ #544 LUAT-NX-MT · #545 NEN-SUA · #549 SV-NX-CASE · #559 SUA-TD4A. Tài liệu: TL-V5 (`DESIGN.md` mục "Luật V5", Hướng dẫn theo màn V5, truy vết `thiet-ke/v5/*-truy-vet.md` → PR).
+- **Còn, theo thứ tự:** **SUA-NO-RA** (hai dòng CV-LOI / LUAT-5 dưới; prompt đã đưa 24/10; rà sâu `/security-review` + `/code-review high`) → **CHAM-LAI** (chấm lại toàn web
+  theo brief 20 + T01–T22 trên ảnh mọi vai; rà lại PR màn đã merge theo luật 8b; việc dưới) → **deploy** (dưới) → Tutor (tuần sau ~28/10, hỏi chủ SP).
+- **Việc của CHAM-LAI (TL-V5 thấy, chưa sửa):** ① tiêu đề trang 17 px (`text-lg`) ở 11 trang — Công việc, Test, Phân tích, HV & Lớp (`StudentsPage`, `HocVienTheoVai`), Lưu trữ,
+  hồ sơ MT (`MockDetailPage`), Quản trị, Hồ sơ cá nhân, Hướng dẫn, Tutor — mockup `.h-trang` 22 / 700 (`DESIGN.md` V16) · ② `HocVienCuaToi` không còn hiện ở trang nào (chỉ `ODem`
+  dùng lại) — gỡ phần chết; phép kiểm HD-CHI chỉ quét nguồn nên không bắt được "Chỉ cho tôi" trỏ khối đã gỡ (TL-V5 đã chuyển TVV / CX sang `tq-tom-tat`) — cân nhắc kiểm bằng `do-khung` ·
+  ③ đầu Case dạng lưới (Từ · Nguyên nhân · Phụ trách · Mở · Mục tiêu, khu c) cho cả hồ sơ HV + hồ sơ lớp — PR riêng nếu chủ SP muốn (#550 C11).
+- **[XM] đã chấp nhận (Q-8 — tự quyết / lệch, PTA Plan + chủ SP 23–24/10):** #550 C11 giữ hàng Case V4 · B2 giữ lưới tuần trong tab "Lộ trình & lớp" · C8 / C12 / T6 (theo dữ liệu
+  máy chủ) — #551 XM-1 công tắc FT / Thường ở đầu trang · XM-4 giữ "Đạt Target thi thật", không ngưỡng (C08) — #558 XM-1 bỏ khối Báo cáo V4 (số còn ở Test + SOS, Kết quả Test,
+  Phân tích GV) · XM-2 không nút Xuất đầu trang (Xuất Excel ở Test + SOS) · XM-3 giữ tên tab "Kết quả Test" · XM-4 "HV cần chú ý" = HV SOS hiện tại ở lớp GV dạy · shortcut Pass Target
+  của Phân tích GV gộp mọi chi nhánh GV dạy — #560 cổng 83 % (5 KHÁC nhỏ, chủ SP duyệt ảnh) · không hàng đợi gửi lại khi mất mạng — #561 XM-SV-1 cột Case (không "Ý thức chờ xử lý")
+  · XM-SV-3 hai khối cạnh nhau từ 1440. Chi tiết: `docs/anh/<pr>/khop-khac.md`.
+- **Deploy V5 (chủ SP, khi xong SUA-NO-RA + CHAM-LAI):** migrate mới từ deploy 22/10: `prUiHoSoLop` (bảng `danh_gia_dau_ra`), `prSvNxCase` (+ migrate SUA-NO-RA nếu có).
+  Trước migrate chạy chỉ đọc `npm run kiem-truoc-sv-nx-case` trên bản sao, gửi số cho planning. Cách làm: memory "cách deploy" (migrate cục bộ → `khoi-phuc` sang DB mới → đổi
+  biến Netlify). Sau deploy thử ngay Phân tích **Toàn bộ** trên bản chính (#558 bỏ trần 52 tuần — tốc độ Turso).
 - **CV-LOI #499 — rà sâu 21/10 để lại (PTA bỏ qua, làm sau):** `PanelPhanCongMon` gửi nguyên bức tranh phân công đọc lúc mở → người khác vừa
   đổi phân công lớp đó thì bị ghi đè (cần khoá phiên bản / gửi một ô) · bước gán chủ Case (`migratePrCvLoi`) chạy mỗi lần migrate, người gán ghi
   "hệ thống" (actor NULL) · dòng dự phòng "Chọn người phụ trách" mở hồ sơ em nhưng chưa có ô đổi người phụ trách (cần API đổi chủ Case, có lịch sử).
@@ -575,6 +593,14 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 24/10/2026 | TL-V5 (PTA Plan, Opus 5.5) · `claude/tl-v5` | `DESIGN.md` mục "Luật V5" V1–V16 + token / thang chữ / badge theo mã; Hướng dẫn 7 vai theo màn V5 (Tổng quan GV / TVV / CX / Admin, Lịch Test tuần, hồ sơ HV / lớp / GV, tìm `/` Ctrl K, Phân tích, nhận xét chỉ nhắc) + EN `tlV5.ts`; TVV / CX "Chỉ cho tôi" sang `tq-tom-tat`; truy vết mockup → PR; `plan.md` N9–N10, mục 4 |
+| 24/10/2026 | #561 SV-TQ-GV (Opus 5.5) | Tổng quan GV hai khối: `GET /tong-quan/lop-toi-day/hai-khoi` (Kỹ năng tôi dạy · Lớp tôi chủ nhiệm, số = hồ sơ GV / Phân tích), ô SOS theo mức + Thi tháng này bấm ra panel; XM-SV-1, 3 |
+| 24/10/2026 | #560 UI-CON-LAI (Opus 5.5) | Tìm `/` Ctrl K (+ nhóm GV `GET /tim/giao-vien`), chọn tuần `‹ › Tuần này`, Hộp duyệt panel tại chỗ (bối cảnh thu hồi T22), chuông khác badge, nợ #528 (badge chỉ việc `mine`, `knsQuaHan`), "Còn n ô cần sửa", `KhoiXungDot`, dải mất kết nối, 403 / 404, Xuất · n HV, in nền sáng, ô MT thiếu nhận xét viền vàng, nợ #544 |
+| 24/10/2026 | #559 SUA-TD4A (PTA Plan) | TD4-a đỏ vì `sos_coordination_actions.created_at` giờ thật → `nowNghiepVu()`; chụp lại 6 băm (lệch chỉ hạn Phối hợp SOS MB FT 101) |
+| 24/10/2026 | #558 UI-PHAN-TICH (Opus 5.5) | (dòng chi tiết 23/10 dưới) — merge 24/10 sau khi gộp #559, check xanh |
+| 23/10/2026 | #557 UI-HO-SO-GV (Opus 5.5) | Hồ sơ GV khu e + phương án C: Lớp đang dạy, kỳ tự do 4 tuần, bảng Học thuật theo lớp / kỹ năng (`hocThuatTheoLop`, thi thật tách khỏi Test — XM-5), panel kết quả có điểm từng kỹ năng; xoá `/giao-vien/:id/ket-qua` + `ketQuaHoSoGv` (nợ #521) |
+| 23/10/2026 | #551 UI-TONG-QUAN (Opus 5.5) | Tổng quan V5 mọi vai: `GET /tong-quan/v5` (QL / QT / CX — gọi lại hàm tập Phân tích) + `/tong-quan/tvv`; gỡ `KhoiCanQuyet`, `KhoiCanXuLy`, `BranchPulse`, `MetricTiles`, `TongQuanQl`; cổng 96 % |
+| 23/10/2026 | #550 UI-HO-SO-HV (Opus 5.5) | Hồ sơ HV: đầu 2 dòng + ô điểm to bấm đổi kỹ năng, Hành trình theo kỹ năng (SVG, kỳ vọng bậc thang, "vắng W3 SEP", S Ex cạnh S — `GET /students/:id/s-expert`), Tiến độ trên lớp, Case & PA theo kỹ năng; tab "Lộ trình & lớp"; nợ #515 |
 | 23/10/2026 | UI-PHAN-TICH (Opus 5.5) · `claude/serene-ramanujan-3l7my1` #558 | Báo cáo HV (4 chỉ số = Tổng quan, Kết quả MT MT0→MT3+ · Thi thật, Tiến bộ theo kỹ năng, Hỗ trợ) + Phân tích GV một bảng Gọn (vừa 1280) / Đầy đủ; Toàn bộ / khoảng tự do (P9); Kết quả thi chỉ đọc (C16); [XM-1…5] trong khop-khac |
 | 23/10/2026 | SV-NX-CASE (Opus 5.5) · `claude/kind-bell-2ieu1u` | N8: một hàm `laMtMoiNhatCuaEm` — chỉ MT mới nhất nhắc nhận xét / nhóm (kể cả MT cũ), bỏ chữ "cũ"; mô tả Case MT theo nhận xét chỉ khi chưa có (`sos_cases.mo_ta_attempt_id`), sửa riêng ở Case → tách hẳn (lịch sử `mo_ta_nguon`); S chấm chéo khác GV phụ trách → việc "Xác nhận Case" (hạn SOS, `POST /cases/:id/xac-nhan-s`) thay Xem nhận xét Speaking. Migrate `prSvNxCase` + `kiem-truoc-sv-nx-case`; `prSvNxCase.tests` NX1…14 |
 | 22/10/2026 | UI-HV-LOP (Opus 5.5) · `claude/serene-euler-fpkxv4` | `/hoc-vien` danh sách gọn theo khu d (8 cột, Việc làm tại chỗ, ⋯ em), Đang SOS mới, Lịch thi V4 A / B + mở dưới hàng, Xuất theo bộ lọc; giữ thao tác cũ (dải lớp, Bộ lọc thêm, Đã thi, Xếp) — [XM] 1–4 trong `docs/anh/ui-hv-lop/khop-khac.md` |

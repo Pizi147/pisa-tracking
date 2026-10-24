@@ -1,5 +1,7 @@
 # Truy vết — `ho-so-lop.html` (Hồ sơ lớp)
 
+> **Đã vào mã → PR #547 UI-HO-SO-LOP** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 > V5-B2, dựa trên nền V5-A. **ĐỀ XUẤT THIẾT KẾ** — chờ chủ SP duyệt. Dữ liệu demo (MB FT 101 22 HV: 6 HV nền + 16 HV [B2] để khớp 15/20 đạt).
 > Rà mã: `b2-ra-soat.md` mục 2. Tham số: `?lop=ft101|fou12|cp110&vai=ha|khoa|vy&tab=hoc-vien|dau-ra|y-thuc&viec=…&luot=MT2|MT3&khung=…&theme=dark`.
 

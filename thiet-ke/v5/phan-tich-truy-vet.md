@@ -1,5 +1,7 @@
 # Truy vết — `phan-tich.html` (V5-B3 · Báo cáo HV + Phân tích GV)
 
+> **Đã vào mã → PR #558 UI-PHAN-TICH** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 V5-B3 · 22/10/2026 · dựa trên nền V5-A (`v5-nen.css`, `du-lieu-demo.md` mục 5, 8, 8b; `05-tu-dien-chi-so.md`).
 Trạng thái: **ĐỀ XUẤT THIẾT KẾ**. Dữ liệu demo. Ảnh: `anh/phan-tich-*.png`.
 URL mockup: `?tab=gv`, `?cot=day`, `?pv=qt`, `?tt=tai|loi|rong`, `?mo=datmt|datmt-qt|thithat|case|…`, `&trang=2`, `?theme=dark`.

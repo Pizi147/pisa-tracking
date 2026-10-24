@@ -1,5 +1,5 @@
 /**
- * HD-b — Hướng dẫn TƯ VẤN VIÊN. TVV không có Test; Công việc (UI-CV-TVV) chỉ việc của mình. Việc khác ở Tổng quan "Học viên của tôi" và Học viên & Lớp › Cần làm
+ * HD-b — Hướng dẫn TƯ VẤN VIÊN. TVV không có Test; Công việc (UI-CV-TVV) chỉ việc của mình. Việc khác ở Tổng quan (3 số + Điều hướng) và Học viên & Lớp › Cần làm
  * (panel mở tại chỗ). Học thuật (điểm, Case, PA) chỉ xem; thông tin em, Target, Tạm dừng / Thôi học, kết quả thi thật, Bước tiếp sửa được.
  */
 import { HD_GV } from './gv.ts';
@@ -40,10 +40,10 @@ export const LUAT_TVV: MucHd[] = [
 export const HD_TVV: HuongDan = {
   viec: [
     {
-      id: 'tvv-sang', ten: 'Mở Học viên của tôi mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['<b>Tổng quan › Học viên của tôi</b>: ô <b>Cần chú ý</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.',
-        'Bấm một ô: Học viên & Lớp mở sẵn đúng nhóm em.', 'Chưa được gán em nào: <b>Xem cả chi nhánh</b>.'],
-      chi: { hd: 'tq-hv-so', duong: '/', chu: 'Bấm một ô để xem đúng nhóm em.' },
+      id: 'tvv-sang', ten: 'Mở Tổng quan mỗi sáng', khi: 'mỗi ngày',
+      buoc: ['<b>Tổng quan</b>: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ · Lộ trình tiếp</b>; bấm số mở danh sách.',
+        '<b>Điều hướng</b>: n việc của tôi (Công việc) · HV của tôi · Thi tháng này · Chờ KQ thi thật · Chưa chốt lộ trình tiếp — mở Học viên & Lớp đúng nhóm em.'],
+      chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' },
     },
     {
       id: 'tvv-can-lam', ten: 'Làm việc ở Cần làm', khi: 'mỗi ngày',
@@ -80,12 +80,12 @@ export const HD_TVV: HuongDan = {
     },
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      muc: [{ id: 'tvv-tq-o', ten: 'Học viên của tôi', buoc: ['Em được gán cho bạn: <b>Cần chú ý</b> (SOS · Case mới · Ý thức) · <b>Tạm dừng</b> · <b>Sắp thi</b> (6 tuần tới) · <b>Đã thi · chờ kết quả</b> · <b>Thiếu thông tin</b>.', 'Có em chờ bạn: thêm ô <b>Chờ chọn bước tiếp</b>.'],
-        chi: { hd: 'tq-hv-so', duong: '/', chu: 'Bấm một ô để xem đúng nhóm em.' } }],
+      muc: [{ id: 'tvv-tq-o', ten: 'Ba số của TVV', buoc: ['Chỉ HV của bạn: <b>Báo PH đúng hạn</b> (việc Báo PH phát sinh trong kỳ, báo trước hạn) · <b>Thi tháng này</b> · <b>Chờ KQ · Lộ trình tiếp</b>.', 'Mẫu 0: "Chưa có dữ liệu".'],
+        chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } }],
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.'],
+      muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo HV</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', '<b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.'],
         chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }],
     },
     {

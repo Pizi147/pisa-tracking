@@ -1,5 +1,7 @@
 # Truy vết — `cong-viec.html` (V5-B1 · Công việc GV / QL)
 
+> **Đã vào mã → PR #533 UI-CONG-VIEC** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 > V5-B1, 22/10/2026. **ĐỀ XUẤT THIẾT KẾ**, chờ chủ SP duyệt. Dựa trên V5-A (`v5-nen.css`, `du-lieu-demo.md` mục 7, `07` mục 4).
 > Mở: `cong-viec.html?k=<gv|gvs|ql>&tt=<tai|loi|rong>&p=<nhap|go|dang|da|loi|xungdot>&mo=<an|huy|ghR|ghW|c1|c2>&han=1&tin=1&hoi=1&theme=dark`.
 > Ảnh: `anh/cong-viec-*.png`. Người xem: GV Lê Minh Khoa (R, W1 — 6 việc · 4 HV · 36 bài), GV Đỗ Thu Hương (có S, không dạy S), QL Nguyễn Khánh Vy.

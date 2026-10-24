@@ -1,5 +1,7 @@
 # Truy vết — `tvv.html` (V5-B1 · Công việc TVV: Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ)
 
+> **Đã vào mã → PR #540 UI-CV-TVV** (TL-V5, 24/10). Mockup đã duyệt (`10` đầu tệp: phần chủ SP không góp ý = duyệt); chỗ web khác khung + lý do: `docs/anh/<pr>/khop-khac.md` của PR đó.
+
 > V5-B1, 22/10/2026. **ĐỀ XUẤT THIẾT KẾ**, chờ chủ SP duyệt. Dựa trên V5-A (`v5-nen.css`, `du-lieu-demo.md` mục 6–7).
 > Mở: `tvv.html?mo=<yen|binh|quyen|tung|bs|none>&tt=<nhap|go|dang|chua|da|loi|thuhoi|tai|loitai|rong>&kq=0&kb=1&hoi=1&theme=dark`.
 > Ảnh: `anh/tvv-*.png`. Người xem: TVV Nguyễn Thu Hương (Cẩm Phả) — 3 việc: Báo PH Ngô Hải Yến, Báo PH Lý Tuấn Bình, Sau thi Đinh Ngọc Quyên.
