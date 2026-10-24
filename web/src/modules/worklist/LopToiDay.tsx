@@ -141,14 +141,14 @@ type DongCn = {
 type HaiKhoi = { ky: { tu: string; den: string } | null; day: DongDay[]; chuNhiem: DongCn[] };
 
 const COT_DAY: readonly CotBang[] = [
-  /* `deu`: thẻ nửa bề rộng (~500 px ở 1440) — tổng 462 px, phần dư chia đều mọi cột. */
+  /* Cột số kiểu `diem`: thẻ 375 xếp lưới nhãn · số (không mỗi số một dòng). `deu`: thẻ nửa bề rộng (~500 px ở 1440) — tổng 462 px, phần dư chia đều mọi cột. */
   { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 72 },
   { key: 'dat', nhan: t('Đạt Test'), kieu: 'phan-tram', rong: 80, goiY: t('Lớp FT: Đạt kỳ vọng Test · lớp thường: Đạt Test') },
-  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 76 }, { key: 'bai', nhan: t('Chờ chấm'), kieu: 'so', rong: 84 },
+  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 76 }, { key: 'bai', nhan: t('Chờ chấm'), kieu: 'diem', rong: 84 },
 ];
 const COT_CN: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'so', rong: 112, goiY: t('Lớp thường: HV chưa đạt') },
-  { key: 'sos', nhan: 'SOS', kieu: 'so', rong: 60 }, { key: 'case', nhan: 'Case', kieu: 'so', rong: 60 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'so', rong: 112 },
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'diem', rong: 112, goiY: t('Lớp thường: HV chưa đạt') },
+  { key: 'sos', nhan: 'SOS', kieu: 'diem', rong: 60 }, { key: 'case', nhan: 'Case', kieu: 'diem', rong: 60 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'diem', rong: 112 },
 ];
 
 /**
@@ -163,7 +163,7 @@ export function HaiKhoiGv() {
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (!data) return <Card title={t('Kỹ năng tôi dạy')} bodyClass="p-4"><Skeleton rows={3} /></Card>;
   if (!data.day.length && !data.chuNhiem.length) {
-    if (!session?.nav?.workSupport) return null;
+    if (!session?.roles?.includes('teacher')) return null;   // Head tutor (góc nhìn GV, không dạy lớp): không thẻ rỗng
     return <Card title={t('Lớp của tôi')} bodyClass="p-0"><Empty title={t('Bạn chưa được phân công lớp nào đang mở')} hint={t('Khi QL phân công lớp, kỹ năng bạn dạy và lớp chủ nhiệm hiện ở đây.')} /></Card>;
   }
   const o = (khung: string, classId: number, cot: string, n: number, tieuDe: string, className?: string) => (
@@ -178,7 +178,7 @@ export function HaiKhoiGv() {
     if (c.key === 'dat') return <PhanTram gon x={tyLeGv(d.ketQua ?? undefined)} nguon={`/giao-vien/${id}/chi-so/o?cot=ket-qua-lop:${d.classId}`} tieuDe={`${d.khung === 'ft' ? t('Đạt kỳ vọng Test') : t('Đạt Test')} · ${d.code}`} />;
     if (c.key === 'tb') return d.khung === 'ft' ? <PhanTram gon x={tyLeGv(d.tienBo ?? undefined)} nguon={`/giao-vien/${id}/chi-so/o?cot=tien-bo-lop:${d.classId}`} tieuDe={`${t('Tiến bộ')} · ${d.code}`} /> : <span className="text-slate-500">—</span>;
     /* V4 (D10): có bài quá hạn thì hiện phần quá hạn (đỏ), không thì số bài chờ chấm — bấm ra đúng các bài đó. */
-    return d.baiQuaHan > 0 ? o(d.khung, d.classId, 'bai-qua-han', d.baiQuaHan, `${d.code} · ${t('bài quá hạn chưa nhập điểm')}`, 'font-semibold text-late')
+    return d.baiQuaHan > 0 ? <span className="whitespace-nowrap font-semibold text-late">⚠ {o(d.khung, d.classId, 'bai-qua-han', d.baiQuaHan, `${d.code} · ${t('bài quá hạn chưa nhập điểm')}`, 'font-semibold text-late')}</span>
       : o(d.khung, d.classId, 'bai-cho', d.baiCho, `${d.code} · ${t('bài chờ chấm')}`, 'font-semibold');
   };
   const phuDay = (d: DongDay, c: CotBang): ReactNode => {
@@ -188,7 +188,7 @@ export function HaiKhoiGv() {
     }
     if (c.key === 'dat') return tuMau(tyLeGv(d.ketQua ?? undefined), t('lượt'));
     if (c.key === 'tb') return d.khung === 'ft' ? tuMau(tyLeGv(d.tienBo ?? undefined), t('lượt')) : null;
-    if (c.key === 'bai') return d.baiQuaHan > 0 ? <span className="font-semibold text-late">⚠ {t('quá hạn')}</span> : d.baiCho ? t('bài') : null;
+    if (c.key === 'bai') return d.baiQuaHan > 0 ? <span className="font-semibold text-late">{t('quá hạn')}</span> : d.baiCho ? t('bài') : null;
     return null;
   };
   const oCn = (l: DongCn, c: CotBang): ReactNode => {
