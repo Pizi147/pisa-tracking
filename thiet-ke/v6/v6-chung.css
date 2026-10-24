@@ -132,7 +132,7 @@
 .chan-dinh .tom b { color: var(--chu); }
 
 /* Khung điện thoại 375 */
-.dt-khung { width: 375px; max-width: 100%; border: 1px solid var(--vien-dam); border-radius: 24px; overflow: hidden; background: var(--nen); }
+.dt-khung { width: 100%; max-width: 375px; border: 1px solid var(--vien-dam); border-radius: 24px; overflow: hidden; background: var(--nen); }
 .dt-khung .dh { height: 48px; padding: 0 12px; } .dt-khung .dh a { height: 48px; padding: 0 8px; }
 .dt-than { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 .the-em { border-bottom: 1px solid var(--vien); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
@@ -170,3 +170,5 @@
 .tabs button[aria-selected="true"] { color: var(--nhan); border-bottom-color: var(--nhan); }
 .tabs button .dem { font-family: var(--phong-so); font-size: 12px; margin-left: 6px; color: var(--chu-3); font-weight: 600; }
 @media (max-width: 640px) { .dh { overflow-x: auto; } .tabs { overflow-x: auto; } .tabs button { padding: 10px; } }
+.chip { font: inherit; font-size: 13px; font-weight: 600; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--vien-o); background: var(--be-mat); color: var(--chu-2); cursor: pointer; white-space: nowrap; }
+.chip[aria-pressed="true"] { border-color: var(--nhan); background: var(--nhan-nen); color: var(--nhan); }

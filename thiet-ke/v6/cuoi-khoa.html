@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V6 · Cuối khoá lớp thường</title>
+<link rel="stylesheet" href="../v5/v5-nen.css">
+<link rel="stylesheet" href="v6-chung.css">
+<script>try { var q = new URLSearchParams(location.search).get('theme'); if (q) document.documentElement.dataset.theme = q; } catch (e) {}</script>
+<style>
+  .ck .bang td { vertical-align: top; padding-top: 12px; padding-bottom: 12px; }
+  .ck .bang td.chon-o { padding-top: 14px; }
+  .pt { font-family: var(--phong-so); font-weight: 700; }
+  .pt.duoi { color: var(--kq-duoi); } .pt.duoi::before { content: "✗ "; }
+  .pt.dat { color: var(--kq-vuot); } .pt.dat::before { content: "✓ "; }
+  .mini { font-size: 12px; color: var(--chu-3); font-family: var(--phong-so); white-space: nowrap; display: block; margin-top: 2px; }
+  .gvcn-khac { color: var(--canh-bao); font-weight: 600; }
+  .kq-o { display: flex; flex-direction: column; gap: 6px; }
+  .kq-o .dong-phu { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--chu-2); }
+  .bat.nho .chon-do { border-color: var(--loi); background: var(--loi-nen); color: var(--loi); box-shadow: inset 0 0 0 1px var(--loi); }
+  .bat.nho .chon-xanh { border-color: var(--dat-vien); background: var(--dat-nen); color: var(--dat); box-shadow: inset 0 0 0 1px var(--dat); }
+  .huong { font-weight: 600; font-size: 14px; }
+  .goi-y-nhom { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .dau-ck { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--vien); }
+  .dau-ck h3 { font-size: var(--c-17); }
+  .loi-dong { display: block; font-size: 12px; color: var(--loi); margin-top: 4px; font-weight: 600; }
+  .loi-dong::before { content: "⚠ "; }
+  .viec-dong { display: grid; grid-template-columns: 1fr auto auto; gap: 4px 14px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--vien); font-size: 14px; }
+  .viec-dong:last-child { border-bottom: 0; }
+  .viec-dong .phu { grid-column: 1; }
+  .ba-loi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 1100px) { .ba-loi { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="mk" role="region" aria-label="Điều khiển mockup (không có trên web)">
+  <b>MOCKUP V6 · Cuối khoá lớp thường</b><span class="nhan-tt">CHỜ CHỦ SP DUYỆT</span>
+  <a href="#k1">1 Ba lối vào</a><a href="#k2">2 Bảng QL · áp chung</a><a href="#k3">3 Ngoại lệ trên dòng</a><a href="#k4">4 Mở lớp mới giữa chừng</a><a href="#k5">5 Lỗi một phần</a><a href="#k6">6 GVCN xem</a><a href="#k7">7 Lớp FT</a><a href="#k8">8 375</a>
+  <a href="trang-thai-hv.html">← Trạng thái HV</a><a href="khoa-lich.html">→ Khoá lịch</a>
+  <button type="button" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Sáng / Tối</button>
+  <span>Dữ liệu demo · T5 24/09/2026 · W4 SEP · MB FOU 12 Final 21/09 đã chấm</span>
+</div>
+
+<main class="trang">
+
+  <!-- 1. BA LỐI VÀO -->
+  <section class="khung" id="k1" aria-labelledby="h1">
+    <h2 id="h1"><span class="so-muc">1</span> Ba lối vào — cùng một không gian "Cuối khoá" <span class="t">GPT 1 · khác phạm vi: cả lớp / một em</span></h2>
+    <div class="ba">
+      <div><div class="nhan-khung">a · Công việc của QL Nguyễn Khánh Vy</div>
+        <div class="the"><div class="viec-dong"><b>Chốt lộ trình · MB FOU 12</b><span class="bd bd-td qua">Quá hạn 4 ngày</span><a class="nut nut-nho nut-chinh" href="#k2" style="text-decoration:none">Cuối khoá ›</a><span class="phu">12 em · 1 em chưa có hướng · GVCN đã đề xuất 11</span></div>
+          <div class="viec-dong"><b>Chốt lộ trình · MB BE 03</b><span class="bd bd-td cho">hạn 04/10</span><a class="nut nut-nho" href="#k2" style="text-decoration:none">Cuối khoá ›</a><span class="phu">9 em · đủ hướng, chưa chốt</span></div></div></div>
+      <div><div class="nhan-khung">b · Hồ sơ lớp MB FOU 12 › ⋯</div>
+        <div style="position:relative"><div class="menu tinh" role="menu" style="max-width:300px"><div class="nhom">Lớp</div><button class="muc">Sửa lớp</button><button class="muc">Sửa cả lớp</button><div class="ke"></div><div class="nhom">Cuối khoá</div><button class="muc dang">Cuối khoá…</button><button class="muc">Kết thúc lớp</button></div></div></div>
+      <div><div class="nhan-khung">c · Hồ sơ HV Bạch Tuệ Nhi (lớp thường, tuần Final)</div>
+        <div class="dai"><span class="ng"><span class="n">Cuối khoá</span><span class="g">Lên BE · MB BE 05 · W1 OCT</span></span><span class="bd bd-td xong">Đã chốt</span><a class="phai" href="#k2">Cuối khoá ›</a></div>
+        <div class="dai" style="margin-top:8px"><span class="ng"><span class="n">Cuối khoá</span><span class="g">Chưa có hướng</span></span><a class="phai" href="#k2">Cuối khoá ›</a></div></div>
+    </div>
+    <div class="ghi">Một trang con của hồ sơ lớp <code>/hoc-vien/lop/:id?xem=cuoi-khoa</code> (G5 bậc 5: bảng rộng nhiều cột). Mọi lối đều mở trang này; từ hồ sơ HV thì em đó được chọn sẵn + cuộn tới dòng; "‹ Quay lại" về đúng nguồn. Thay: tab "Lộ trình tiếp theo" (BangLoTrinhTiep) + tab "Đánh giá đầu ra" (TabDauRa) + hộp "Kết quả đầu ra" (HopKetQua) + hộp "Lộ trình · em". Việc QL vẫn một dòng "Chốt lộ trình · lớp" (§20.6).</div>
+  </section>
+
+  <!-- 2. BẢNG QL -->
+  <section class="khung" id="k2" aria-labelledby="h2">
+    <h2 id="h2"><span class="so-muc">2</span> Bảng Cuối khoá của QL — chọn nhóm, áp chung, tóm tắt ở chân <span class="t">QL Nguyễn Khánh Vy · đã chọn nhóm "Lên BE" rồi bỏ 4 em đã chốt</span></h2>
+    <div class="the ck" style="overflow:hidden" id="bang-ql"></div>
+    <div class="ghi"><ul>
+      <li>Hàng công cụ (ngoài bảng, G9): "Chọn tất cả · 12" + chọn nhóm theo hướng gợi ý (đếm em). Bấm nhóm = chọn đúng các em đó; lựa chọn giữ khi lọc / cuộn.</li>
+      <li>Thanh "Áp cho n em" có hai cụm: <b>Kết quả đầu ra</b> (Đạt / Không đạt → Nguyên nhân Trung tâm / Học viên + kỹ năng, chung cho nhóm) và <b>Hướng · Lớp · Tuần</b>. Ô lớp gõ-tìm (P4), chỉ lớp <b>cùng chi nhánh MB</b> (chủ SP 24/10 thắng Rulebook §20.6–20.7 cũ), cuối danh sách "+ Mở lớp mới…".</li>
+      <li>[Q9 — khuyến nghị đã chọn] một cột Kết quả đầu ra: máy gợi ý theo Final (≥ 70 % Đạt), GVCN đề xuất, QL chốt tại chỗ; em Lên FT thêm "Kỳ vọng MT0" → Trung tâm = Case + Tutor 10 buổi. Bỏ tab "Đánh giá đầu ra".</li>
+      <li>Một bước (không "1 Soạn › 2 Xác nhận"): chân dính tóm tắt tác động (GPT 3) do máy chủ tính, đổi ngay khi áp. "Lưu nháp" = chỉ QL thấy, chưa ra lệnh (giữ như hiện có).</li></ul></div>
+  </section>
+
+  <!-- 3. NGOẠI LỆ -->
+  <section class="khung" id="k3" aria-labelledby="h3">
+    <h2 id="h3"><span class="so-muc">3</span> Ngoại lệ sửa ngay trên dòng <span class="t">Đinh Bảo Anh đổi sang Lên FT · Cao Minh Trí Học lại</span></h2>
+    <div class="the ck" style="overflow:hidden" id="bang-ngoai-le"></div>
+    <div class="ghi">Ô Hướng, Lớp, Kết quả đầu ra của từng dòng là ô sửa được (không mở hộp). Dòng đổi khác lần lưu trước có chấm "đã sửa". Em Lên FT: ô Target chỉ hiện khi em chưa có Target (§20.7), dòng phụ "MT0 · kỳ vọng" bấm Đạt / Không đạt. Lớp chuyển đến lọc theo hướng: Lên FT → lớp FT MB; Học lại → lớp FOU MB.</div>
+  </section>
+
+  <!-- 4. MỞ LỚP MỚI -->
+  <section class="khung" id="k4" aria-labelledby="h4">
+    <h2 id="h4"><span class="so-muc">4</span> Tạo lớp mới giữa chừng — quay lại đúng nhóm em đang chọn <span class="t">Review Focus 2</span></h2>
+    <div class="hai">
+      <div>
+        <div class="nhan-khung">a · Bấm "+ Mở lớp mới…" trong ô lớp → hộp nhỏ (bảng phía sau giữ nguyên)</div>
+        <div class="hop" role="dialog" aria-labelledby="hop-lop">
+          <div class="hop-dau"><div style="flex:1"><h3 id="hop-lop">Mở lớp mới</h3><div class="ngu-canh">cho 3 em Lên BE · MB FOU 12</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+          <div class="hop-than">
+            <div class="truong"><label for="ma-lop">Mã lớp</label><input class="o" id="ma-lop" value="MB BE 06"></div>
+            <div class="hai" style="gap:10px"><div class="truong"><span class="nhan-truong">Chương trình</span><input class="o" value="BE" disabled></div><div class="truong"><span class="nhan-truong">Chi nhánh</span><input class="o" value="MB Monbay" disabled></div></div>
+            <div class="truong"><label for="ng-lop">Ngày bắt đầu</label><div class="ngay"><input class="o" id="ng-lop" value="28/09/2026"><button class="nut" type="button" aria-label="Mở lịch">📅</button></div></div>
+            <div class="truong"><label for="gvcn-lop">GVCN <span class="phu">(không bắt buộc)</span></label><input class="o" id="gvcn-lop" value="Trần Ngọc Hà"></div>
+          </div>
+          <div class="hop-chan"><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Mở lớp</button></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="nhan-khung">b · Sau khi mở lớp — lớp mới đã điền vào thanh, 3 em vẫn được chọn</div>
+        <div class="toast" role="status"><span>✓ Đã mở MB BE 06</span></div>
+        <div class="the" style="overflow:hidden">
+          <div class="thanh-ap"><span class="so-chon">3 em đã chọn</span><span class="ke-doc"></span>
+            <span class="nhom-ap"><span class="n">Hướng</span><select class="o"><option>Lên BE</option></select></span>
+            <span class="nhom-ap"><span class="n">Lớp</span><span class="lop-chon"><b>MB BE 06</b><span class="phu">BE · MB · 0 em · mới</span><button class="x" type="button" aria-label="Bỏ chọn lớp">✕</button></span></span>
+            <span class="nhom-ap"><span class="n">Tuần</span><select class="o"><option>W1 OCT</option></select></span>
+            <button class="nut nut-nho nut-chinh" type="button">Áp cho 3 em</button></div>
+          <div style="padding:10px 16px;font-size:14px" class="mo">Giang Thảo My · La Minh Hằng · Nông Gia Phúc</div>
+        </div>
+        <div class="nhan-khung">c · Lỗi mở lớp — hộp ở lại, giữ chữ</div>
+        <div class="truong" style="max-width:360px"><label for="ma-lop2">Mã lớp</label><input class="o o-loi" id="ma-lop2" value="MB BE 05" aria-invalid="true"><span class="loi-o">Mã MB BE 05 đã có</span></div>
+      </div>
+    </div>
+    <div class="ghi">Mẫu sẵn có ở <code>TransitionPanel</code> ("+ Mở lớp mới…", giữ lựa chọn) nay dùng cho lớp thường. Chương trình suy từ hướng (Lên BE → BE; Học lại → FOU; Lên FT → FT + lộ trình), chi nhánh khoá theo lớp nguồn. Không chuyển trang, không mất em đã chọn / ngoại lệ đang sửa.</div>
+  </section>
+
+  <!-- 5. LỖI MỘT PHẦN -->
+  <section class="khung" id="k5" aria-labelledby="h5">
+    <h2 id="h5"><span class="so-muc">5</span> Chốt nhiều em, 2 em lỗi — dòng lỗi giữ dữ liệu + lý do <span class="t">Review Focus 3</span></h2>
+    <div class="the ck" style="overflow:hidden" id="bang-loi"></div>
+    <div class="ghi">Gửi theo lô (<code>guiTheoLo</code>): em xong đổi "Đã chốt", em lỗi giữ nguyên hướng / lớp / kết quả đã chọn + lý do dưới tên; bộ lọc "Lỗi 2" bật sẵn để thấy ngay. "Thử lại 2 em" chỉ gửi em lỗi. Lý do do máy chủ trả (ví dụ).</div>
+  </section>
+
+  <!-- 6. GVCN -->
+  <section class="khung" id="k6" aria-labelledby="h6">
+    <h2 id="h6"><span class="so-muc">6</span> GVCN Trần Ngọc Hà — đề xuất; em đã chốt thì khoá <span class="t">§20.6: GVCN đề xuất, QL ra lệnh</span></h2>
+    <div class="the ck" style="overflow:hidden" id="bang-gvcn"></div>
+    <div class="ghi">GVCN không có cột Lớp / Tuần / Bàn giao của QL, không chọn lớp đích. Em đã chốt: hướng thành chữ + 🔒, "Bạn đề xuất: …" khi khác; vẫn sửa Ghi chú. Em chưa chốt: GVCN đề xuất Hướng + Kết quả đầu ra (ghi vào <code>huong_gvcn</code>, không ghi đè quyết định QL). Không thẻ duyệt.</div>
+  </section>
+
+  <!-- 7. LỚP FT -->
+  <section class="khung" id="k7" aria-labelledby="h7">
+    <h2 id="h7"><span class="so-muc">7</span> Lớp FT — bỏ "Chuyển tiếp lớp", giữ chuyển từng em <span class="t">R5.3 · hồ sơ lớp MB FT 101 › ⋯</span></h2>
+    <div class="ba">
+      <div><div class="nhan-khung">TRƯỚC</div><div class="menu tinh" style="max-width:300px"><div class="nhom">Lớp</div><button class="muc">Sửa lớp</button><button class="muc">Sửa cả lớp</button><div class="ke"></div><button class="muc" style="text-decoration:line-through">Chuyển tiếp lớp…</button><button class="muc">Kết thúc lớp</button></div></div>
+      <div><div class="nhan-khung">SAU</div><div class="menu tinh" style="max-width:300px"><div class="nhom">Lớp</div><button class="muc">Sửa lớp</button><button class="muc">Sửa cả lớp</button><div class="ke"></div><button class="muc">Kết thúc lớp</button></div></div>
+      <div><div class="nhan-khung">Chuyển nhiều em FT vẫn có — chọn em → Chuyển lớp…</div><div class="the" style="overflow:hidden"><div class="thanh-ap"><span class="so-chon">4 em đã chọn</span><button class="nut nut-nho" type="button">Chuyển lớp…</button><button class="nut nut-nho" type="button">Tạm dừng/ Kết thúc học</button></div></div></div>
+    </div>
+    <div class="ghi">Gỡ ⋯ "Chuyển tiếp lớp…" (<code>hocVienLop.ts:684</code>), dải "Chưa chuyển được" (<code>DaiChuyenLop</code>), nhánh "Kết thúc lớp › đi tiếp". Em FT đổi lớp dùng Chuyển lớp (một em hoặc chọn nhiều — đã có). Kết thúc lộ trình FT đi qua Bước tiếp sau thi (trang-thai-hv k4).</div>
+  </section>
+
+  <!-- 8. 375 -->
+  <section class="khung" id="k8" aria-labelledby="h8">
+    <h2 id="h8"><span class="so-muc">8</span> 375 — mỗi em một thẻ, thanh áp thành tấm dưới</h2>
+    <div class="ba">
+      <div class="dt-khung"><nav class="dh"><span class="logo">PISA</span><a href="#" aria-current="page">HV &amp; Lớp</a></nav>
+        <div class="dt-than"><a href="#" class="phu" style="text-decoration:none">‹ MB FOU 12</a><b style="font-size:17px">Cuối khoá · MB FOU 12</b>
+          <div class="goi-y-nhom"><button class="chip" type="button">Tất cả 12</button><button class="chip" type="button" aria-pressed="true">Lên BE 7</button><button class="chip" type="button">Lên FT 2</button><button class="chip" type="button">Học lại 2</button></div>
+          <div class="the" id="the-375"></div></div></div>
+      <div class="dt-khung"><nav class="dh"><span class="logo">PISA</span><a href="#" aria-current="page">HV &amp; Lớp</a></nav>
+        <div class="dt-than" style="min-height:520px;justify-content:flex-end">
+          <div class="hop" style="border-radius:16px 16px 0 0"><div class="hop-dau"><h3>Áp cho 3 em</h3><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+            <div class="hop-than">
+              <div class="truong"><span class="nhan-truong">Kết quả đầu ra</span><div class="bat"><button type="button">Đạt</button><button type="button" class="chon">Không đạt</button></div></div>
+              <div class="truong"><span class="nhan-truong">Nguyên nhân</span><div class="bat"><button type="button">Trung tâm</button><button type="button" class="chon">Học viên</button></div></div>
+              <div class="truong"><span class="nhan-truong">Hướng</span><select class="o"><option>Lên BE</option></select></div>
+              <div class="truong"><span class="nhan-truong">Lớp</span><input class="o" value="MB BE 05"></div>
+            </div>
+            <div class="hop-chan"><button class="nut nut-chinh" type="button">Áp cho 3 em</button></div></div></div></div>
+      <div class="dt-khung"><nav class="dh"><span class="logo">PISA</span><a href="#" aria-current="page">HV &amp; Lớp</a></nav>
+        <div class="dt-than" style="min-height:520px;justify-content:flex-end"><div class="the"><div class="chan-dinh" style="border-top:0"><div class="tom"><span><b>Khi chốt:</b> 7 em · 3 → MB BE 05 · 2 → MB FT 106 · 2 → MB FOU 14 · W1 OCT</span><span>Tạo 6 Case · 1 em chưa có hướng</span></div><button class="nut" type="button">Lưu nháp</button><button class="nut nut-chinh" type="button">Chốt · 7 em</button></div></div></div></div>
+    </div>
+    <div class="ghi">Ở 375 trang thật hiện thẻ (ảnh <code>cuoi-khoa-375.png</code> cho thấy bảng chuyển thành thẻ); ba khung điện thoại trên: danh sách thẻ, tấm "Áp cho n em", chân tóm tắt dính đáy.</div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  /* MB FOU 12 · 12 em [V6]: Final % (Σ đúng / Σ câu), 4 môn; gợi ý theo dải §20.6; GVCN đề xuất. */
+  var EM = [
+    { ten: 'Bạch Tuệ Nhi', f: 76, mon: 'L 80 · R 76 · G+V 72 · P 75', goiY: 'Lên BE', gv: 'Lên BE', kq: 'dat', huong: 'Lên BE', lop: 'MB BE 05', chot: true, bg: 'cho' },
+    { ten: 'Cao Minh Trí', f: 54, mon: 'L 56 · R 48 · G+V 52 · P 60', goiY: 'QL cân nhắc', gv: 'Học lại', kq: 'khong', nn: 'Học viên · R', huong: 'Học lại', lop: 'MB FOU 14' },
+    { ten: 'Đinh Bảo Anh', f: 84, mon: 'L 86 · R 84 · G+V 80 · P 85', goiY: 'Lên BE', gv: 'Lên FT', kq: 'dat', huong: 'Lên BE', lop: 'MB BE 05', mt0: '4.5' },
+    { ten: 'Giang Thảo My', f: 66, mon: 'L 68 · R 72 · G+V 64 · P 58', goiY: 'Lên + bổ trợ', gv: 'Lên BE', kq: 'khong', nn: 'Học viên · G+V, P', huong: 'Lên BE', lop: '' },
+    { ten: 'Hứa Đức Anh', f: 46, mon: 'L 48 · R 52 · G+V 44 · P 40', goiY: 'Học lại', gv: 'Học lại', kq: 'khong', nn: 'Học viên · L, G+V, P', huong: 'Học lại', lop: 'MB FOU 14' },
+    { ten: 'Khúc Thu Thủy', f: 80, mon: 'L 80 · R 76 · G+V 72 · P 76', goiY: 'Lên BE', gv: 'Lên BE', kq: 'dat', huong: 'Lên BE', lop: 'MB BE 05', chot: true, bg: 'xong' },
+    { ten: 'La Minh Hằng', f: 63, mon: 'L 64 · R 60 · G+V 56 · P 64', goiY: 'Lên + bổ trợ', gv: 'Lên BE', kq: 'khong', nn: 'Học viên · G+V', huong: 'Lên BE', lop: '' },
+    { ten: 'Mẫn Quốc Bảo', f: 72, mon: 'L 72 · R 64 · G+V 60 · P 68', goiY: 'Lên BE', gv: 'Lên BE', kq: 'dat', huong: 'Lên BE', lop: 'MB BE 05', chot: true, bg: 'cho' },
+    { ten: 'Nông Gia Phúc', f: 61, mon: 'L 60 · R 68 · G+V 56 · P 52', goiY: 'Lên + bổ trợ', gv: 'Lên BE', kq: 'khong', nn: 'Học viên · G+V, P', huong: 'Lên BE', lop: '' },
+    { ten: 'Phí Ngọc Diệp', f: 88, mon: 'L 88 · R 84 · G+V 76 · P 80', goiY: 'Lên BE', gv: 'Lên FT', kq: 'dat', huong: 'Lên FT', lop: 'MB FT 106', mt0: '5.0', mt0kq: 'dat' },
+    { ten: 'Thân Đức Minh', f: null, mon: 'L 52 · R 56 · G+V 48 · P vắng', goiY: 'Chưa đủ điểm', gv: '—', kq: null, huong: '', lop: '' },
+    { ten: 'Viên Khánh Hòa', f: 71, mon: 'L 72 · R 76 · G+V 64 · P 60', goiY: 'Lên BE', gv: 'Lên BE', kq: 'dat', huong: 'Lên BE', lop: 'MB BE 05', chot: true, bg: 'cho' }
+  ];
+  var CHON = ['Giang Thảo My', 'La Minh Hằng', 'Nông Gia Phúc'];
+
+  function oFinal(e) { return e.f == null ? '<span class="bd bd-kq thieu">– Chưa đủ điểm</span><span class="mini">' + e.mon + '</span>' : '<span class="pt ' + (e.f >= 70 ? 'dat' : 'duoi') + '">' + e.f + ' %</span><span class="mini">' + e.mon + '</span>'; }
+  function oGoiY(e, gvcnLaBan) { var khac = e.gv !== '—' && e.gv !== e.huong && e.huong; return e.goiY + '<span class="mini' + (khac ? ' gvcn-khac' : '') + '">' + (gvcnLaBan ? 'Bạn: ' : 'GVCN: ') + e.gv + '</span>'; }
+  function oKq(e, sua) {
+    if (!e.kq) return '<span class="phu">Chờ Final</span>';
+    var h = '<div class="kq-o"><span class="bat nho"><button type="button"' + (e.kq === 'dat' ? ' class="chon-xanh" aria-pressed="true"' : '') + (sua ? '' : ' disabled') + '>Đạt</button><button type="button"' + (e.kq === 'khong' ? ' class="chon-do" aria-pressed="true"' : '') + (sua ? '' : ' disabled') + '>Không đạt</button></span>';
+    if (e.kq === 'khong') h += '<span class="dong-phu">' + e.nn + '</span>';
+    if (e.mt0 && e.huong === 'Lên FT') h += '<span class="dong-phu">MT0 <b class="so">' + e.mt0 + '</b> · kỳ vọng <span class="bat nho"><button type="button"' + (e.mt0kq === 'dat' ? ' class="chon-xanh"' : '') + '>Đạt</button><button type="button"' + (e.mt0kq === 'khong' ? ' class="chon-do"' : '') + '>Không đạt</button></span></span>';
+    if (e.mt0kq === 'khong') h += '<span class="dong-phu">Trung tâm · W → Case + Tutor 10 buổi</span>';
+    return h + '</div>';
+  }
+  function oHuong(e, sua) {
+    if (e.chot && !sua) return '<span class="huong khoa">' + e.huong + '</span>';
+    return '<select class="o" aria-label="Hướng ' + e.ten + '">' + ['', 'Lên BE', 'Lên FT', 'Học lại', 'Tạm dừng/ Kết thúc học', 'Chưa quyết'].map(function (x) { return '<option' + (x === e.huong ? ' selected' : '') + '>' + (x || 'Chọn hướng') + '</option>'; }).join('') + '</select>';
+  }
+  function oLop(e) {
+    if (!e.huong || e.huong === 'Chưa quyết') return '<span class="phu">—</span>';
+    if (e.chot) return '<span class="khoa">' + e.lop + '</span><span class="mini">W1 OCT</span>';
+    return e.lop ? '<span class="lop-chon" style="height:34px"><b>' + e.lop + '</b><button class="x" type="button" aria-label="Bỏ chọn lớp">✕</button></span><span class="mini">W1 OCT</span>' : '<input class="o" placeholder="Gõ tên lớp…" aria-label="Lớp ' + e.ten + '">';
+  }
+  function oBg(e) { return e.bg === 'xong' ? '<span class="bd bd-td xong">Đã bàn giao</span>' : e.bg === 'cho' ? '<span class="bd bd-td cho">Chờ bàn giao</span><span class="mini">hạn 01/10</span>' : '<span class="phu">—</span>'; }
+
+  function bang(o) {
+    var ql = !o.gvcn, cot = ql
+      ? [['', 44], ['Học viên', 200], ['Final', 170], ['Gợi ý · GVCN', 140], ['Kết quả đầu ra', 230], ['Hướng', 170], ['Lớp chuyển đến', 170], ['Bàn giao', 130]]
+      : [['Học viên', 210], ['Final', 170], ['Gợi ý · Bạn', 150], ['Kết quả đầu ra', 230], ['Hướng', 220], ['Ghi chú', 0]];
+    var h = '<div class="dau-ck"><h3>Cuối khoá · MB FOU 12</h3><span class="phu">FOU · 12 em · Final 21/09 · GVCN Trần Ngọc Hà</span>' +
+      (ql ? '<span class="bd bd-td qua">Quá hạn 4 ngày · hạn chốt 20/09</span><span class="phu" style="margin-left:auto"><b class="so" style="color:var(--chu)">' + (o.daChot || 4) + '/12</b> em đã chốt</span>' : '') + '</div>';
+    if (o.dai) h += '<div class="dai" style="margin:12px 16px 0">' + o.dai + '</div>';
+    h += '<div class="cong-cu"><span class="goi-y-nhom"><button class="chip" type="button">Chọn tất cả · 12</button>' + (ql ? '<span class="phu">Chọn nhóm:</span>' + ['Lên BE 7', 'Lên FT 2', 'Học lại 2', 'Chưa đủ điểm 1'].map(function (x, i) { return '<button class="chip" type="button"' + (i === 0 && o.chonNhom ? ' aria-pressed="true"' : '') + '>' + x + '</button>'; }).join('') : '') + '</span>' +
+      '<span class="phai"><span class="phu">Lọc</span>' + (o.loc || '<button class="chip" type="button">Chưa chốt 8</button><button class="chip" type="button">Chưa có hướng 1</button>') + '</span></div>';
+    if (o.thanh) h += o.thanh;
+    h += '<div class="cuon-bang an-375"><table class="bang"><colgroup>' + cot.map(function (c) { return '<col' + (c[1] ? ' style="width:' + c[1] + 'px"' : '') + '>'; }).join('') + '</colgroup><thead><tr>' +
+      cot.map(function (c, i) { return i === 0 && ql ? '<th class="chon-o"><input type="checkbox" aria-label="Chọn tất cả"></th>' : '<th>' + c[0] + '</th>'; }).join('') + '</tr></thead><tbody>';
+    (o.em || EM).forEach(function (e) {
+      var chon = (o.chon || []).indexOf(e.ten) >= 0, loi = o.loi && o.loi[e.ten], sua = o.sua && o.sua.indexOf(e.ten) >= 0;
+      h += '<tr class="' + (loi ? 'loi' : chon ? 'da-chon' : '') + '">';
+      if (ql) h += '<td class="chon-o"><input type="checkbox"' + (chon || loi ? ' checked' : '') + (e.chot && !o.daChotHet ? ' disabled' : '') + ' aria-label="Chọn ' + e.ten + '"></td>';
+      h += '<td><a class="ten-ho-so" href="#">' + e.ten + '</a>' + (sua ? ' <span class="bd bd-td dang">đã sửa</span>' : '') + (e.chot && !o.gvcn ? '<span class="mini" style="color:var(--dat)">✓ Đã chốt</span>' : '') + (loi ? '<span class="loi-dong">' + loi + '</span>' : '') + '</td>';
+      h += '<td>' + oFinal(e) + '</td><td>' + oGoiY(e, o.gvcn) + '</td><td>' + oKq(e, !(e.chot && o.gvcn)) + '</td>';
+      if (ql) h += '<td>' + oHuong(e, false) + '</td><td>' + oLop(e) + '</td><td>' + oBg(e) + '</td>';
+      else h += '<td>' + (e.chot ? '<span class="huong khoa">' + e.huong + ' · ' + e.lop + '</span>' + (e.gv !== e.huong ? '<span class="mini gvcn-khac">Bạn đề xuất: ' + e.gv + '</span>' : '<span class="mini">W1 OCT</span>') : oHuong(Object.assign({}, e, { huong: e.gv === '—' ? '' : e.gv }), true)) + '</td><td>' + (e.ghi ? '<input class="o" value="' + e.ghi + '" aria-label="Ghi chú">' : '<input class="o" placeholder="Ghi chú" aria-label="Ghi chú">') + '</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    h += '<div class="chi-375">' + (o.em || EM).slice(0, 4).map(function (e) { var chon = (o.chon || []).indexOf(e.ten) >= 0, loi = o.loi && o.loi[e.ten]; return '<article class="the-em' + (loi ? ' loi' : chon ? ' da-chon' : '') + '"><div class="hang">' + (ql ? '<input type="checkbox"' + (chon || loi ? ' checked' : '') + ' aria-label="Chọn ' + e.ten + '">' : '') + '<b>' + e.ten + '</b>' + (e.f == null ? '<span class="bd bd-kq thieu">– Chưa đủ điểm</span>' : '<span class="pt ' + (e.f >= 70 ? 'dat' : 'duoi') + '">' + e.f + ' %</span>') + '</div>' + (loi ? '<span class="loi-dong">' + loi + '</span>' : '') + '<div class="hang"><span class="phu">' + oGoiY(e, o.gvcn).replace('<span class="mini', ' · <span class="mini').replace('display:block', '') + '</span></div><div class="hang">' + oKq(e, true) + '</div><div class="hang"><span class="huong' + (e.chot ? ' khoa' : '') + '">' + (e.huong || 'Chưa có hướng') + (e.lop ? ' · ' + e.lop : '') + '</span></div></article>'; }).join('') + '</div>';
+    if (o.chan) h += '<div class="chan-dinh">' + o.chan + '</div>';
+    return h;
+  }
+
+  var thanhQl = '<div class="thanh-ap chi-375"><span class="so-chon">3 em đã chọn</span><button class="nut nut-nho nut-chinh" type="button" style="margin-left:auto">Áp cho 3 em…</button></div><div class="thanh-ap an-375"><span class="so-chon">3 em đã chọn</span><span class="ke-doc"></span>' +
+    '<span class="nhom-ap"><span class="n">Kết quả đầu ra</span><span class="bat nho"><button type="button">Đạt</button><button type="button" class="chon-do">Không đạt</button></span><span class="n">Nguyên nhân</span><span class="bat nho"><button type="button">Trung tâm</button><button type="button" class="chon">Học viên</button></span><span class="n">Kỹ năng</span><span class="bat nho"><button type="button" class="chon">Theo Final</button></span></span><span class="ke-doc"></span>' +
+    '<span class="nhom-ap"><span class="n">Hướng</span><select class="o"><option>Lên BE</option></select><span class="n">Lớp</span><span class="chon-lop" style="width:230px"><input class="o" value="BE" style="width:100%"><span class="ds" role="listbox"><span class="dong dang" role="option"><b>MB BE 05</b><span class="phu">BE · MB · 9 em</span></span><span class="dong" role="option"><b>MB BE 07</b><span class="phu">BE · MB · 4 em</span></span><span class="dong" role="option" style="color:var(--nhan);font-weight:600">+ Mở lớp mới…</span><span class="dong phu" style="cursor:default">Chỉ lớp chi nhánh MB</span></span></span><span class="n">Tuần</span><select class="o"><option>W1 OCT</option></select></span>' +
+    '<button class="nut nut-nho nut-chinh" type="button">Áp cho 3 em</button><button class="nut nut-nho nut-ma" type="button">Bỏ chọn</button></div>';
+  var chanQl = '<div class="tom"><span><b>Khi chốt:</b> 4 em sẵn sàng · 1 → MB BE 05 · 1 → MB FT 106 (MT0 đã có) · 2 → MB FOU 14 · bắt đầu W1 OCT</span><span>3 em chờ chọn lớp: Giang Thảo My, La Minh Hằng, Nông Gia Phúc · 1 em chưa có hướng: Thân Đức Minh</span></div><button class="nut" type="button">Lưu nháp</button><button class="nut nut-chinh" type="button">Chốt · 4 em</button>';
+  document.getElementById('bang-ql').innerHTML = bang({ chon: CHON, chonNhom: true, thanh: thanhQl, chan: chanQl });
+
+  var NL = EM.map(function (e) { return e.ten === 'Đinh Bảo Anh' ? Object.assign({}, e, { huong: 'Lên FT', lop: 'MB FT 106', mt0kq: 'khong' }) : CHON.indexOf(e.ten) >= 0 ? Object.assign({}, e, { lop: 'MB BE 05' }) : e; });
+  document.getElementById('bang-ngoai-le').innerHTML = bang({ em: NL, sua: ['Đinh Bảo Anh', 'Cao Minh Trí'],
+    chan: '<div class="tom"><span><b>Khi chốt:</b> 7 em sẵn sàng · 3 → MB BE 05 · 2 → MB FT 106 · 2 → MB FOU 14 · bắt đầu W1 OCT</span><span>Tạo 5 Case bổ trợ Final (My, Hằng, Phúc) · 1 Case W + Tutor 10 buổi (Đinh Bảo Anh) · 1 em chưa có hướng</span></div><button class="nut" type="button">Lưu nháp</button><button class="nut nut-chinh" type="button">Chốt · 7 em</button>' });
+
+  var LOI = { 'Cao Minh Trí': 'Em có quyết định chuyển lớp khác đang chờ (MB FOU 15 · W1 OCT) — huỷ quyết định đó rồi Thử lại', 'Nông Gia Phúc': 'Mất kết nối — chưa gửi' };
+  var SAU = NL.map(function (e) { return LOI[e.ten] || e.ten === 'Thân Đức Minh' ? e : Object.assign({}, e, { chot: true, bg: e.bg || 'cho' }); });
+  document.getElementById('bang-loi').innerHTML = bang({ em: SAU, loi: LOI, daChot: 9, daChotHet: true,
+    dai: '<span class="tt-luu da">✓ Đã chốt 5 em</span><span class="tt-luu loi">⚠ 2 em chưa lưu — xem lý do ở dòng</span>',
+    loc: '<button class="chip" type="button" aria-pressed="true">Lỗi 2</button><button class="chip" type="button">Chưa chốt 3</button>',
+    chan: '<div class="tom"><span><b>2 em chưa lưu</b> · Cao Minh Trí, Nông Gia Phúc — hướng, lớp, kết quả đã chọn vẫn giữ</span></div><button class="nut" type="button">Đóng</button><button class="nut nut-chinh" type="button">Thử lại 2 em</button>' });
+
+  var GV = EM.map(function (e) { return e.ten === 'Đinh Bảo Anh' ? Object.assign({}, e, { chot: true, huong: 'Lên BE', ghi: 'Mạnh Speaking, muốn lên FT' }) : e; });
+  document.getElementById('bang-gvcn').innerHTML = bang({ gvcn: true, em: GV,
+    dai: '<span class="khoa">QL đã chốt 23/09 · 5 em · Hướng khoá</span>',
+    chan: '<div class="tom"><span><b>2 em đã sửa đề xuất</b> · QL Nguyễn Khánh Vy thấy ở cột "Gợi ý · GVCN"</span></div><button class="nut nut-ma" type="button">Đóng</button><button class="nut nut-chinh" type="button">Lưu đề xuất · 2 em</button>' });
+
+  document.getElementById('the-375').innerHTML = EM.filter(function (e) { return ['Bạch Tuệ Nhi', 'Giang Thảo My', 'La Minh Hằng', 'Nông Gia Phúc'].indexOf(e.ten) >= 0; }).map(function (e) {
+    var chon = CHON.indexOf(e.ten) >= 0;
+    return '<article class="the-em' + (chon ? ' da-chon' : '') + '"><div class="hang"><input type="checkbox"' + (chon ? ' checked' : '') + (e.chot ? ' disabled' : '') + ' aria-label="Chọn ' + e.ten + '"><b>' + e.ten + '</b><span class="pt ' + (e.f >= 70 ? 'dat' : 'duoi') + '">' + e.f + ' %</span></div><div class="hang phu">' + e.goiY + ' · GVCN: ' + e.gv + '</div><div class="hang"><span class="huong' + (e.chot ? ' khoa' : '') + '">' + e.huong + (e.lop ? ' · ' + e.lop : ' · chưa chọn lớp') + '</span></div></article>';
+  }).join('') + '<div class="thanh-ap" style="border:0;border-top:1px solid var(--nhan-vien)"><span class="so-chon">3 em đã chọn</span><button class="nut nut-nho nut-chinh" type="button" style="margin-left:auto">Áp cho 3 em…</button></div>';
+})();
+</script>
+</body>
+</html>
