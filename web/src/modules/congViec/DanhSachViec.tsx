@@ -58,8 +58,9 @@ export function DanhSachViec({ nhom, dem, homNay, soHien, moHet, gapSan, cuoiNho
         const goc = (k === 'cham-cheo' ? dem.get('cham-diem')?.filter(laViecChamCheo) : k === 'cham-diem' ? dem.get(k)?.filter((x) => !laViecChamCheo(x)) : dem.get(k)) ?? [];
         const so = demViec(viecThat(goc));
         /* Cùng đơn vị với vạch hạn: việc (không phải dòng). */
-        const quaHan = demViec(viecThat(goc.filter((x) => x.urgency === 'overdue'))).viec;
-        const homNayN = demViec(viecThat(goc.filter((x) => x.urgency === 'today'))).viec;
+        /* CHAM-LAI: lọc hạn trên việc thật (sau khi mở `con`) — dòng gộp "3 em · 1 em quá hạn" là 1 việc quá hạn, không phải 3. */
+        const quaHan = demViec(viecThat(goc).filter((x) => x.urgency === 'overdue')).viec;
+        const homNayN = demViec(viecThat(goc).filter((x) => x.urgency === 'today')).viec;
         const baiCc = viecThat(goc).reduce((n, x) => n + (x.soBai ?? 0), 0);
         const vach = k === 'cham-diem' ? chiaVachHan(g.items, homNay) : null;
         /* Mỗi vạch / nhóm 10 dòng đầu + "Xem thêm" (danh sách QL "Tất cả" có thể hàng trăm dòng). */
