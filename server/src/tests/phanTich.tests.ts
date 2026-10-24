@@ -54,7 +54,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(g('goc=van-de').goc, 'tong-hop', 'van-de (đã bỏ) → Test + SOS');
     eq(g('goc=danh-sach&hang-doi=can-ho-tro-2-lan').goc, 'tong-hop', 'danh-sach đã bỏ (PR-Pb2-a)');
     /* OV-15e (C28, plan §7): sáu tab, Báo cáo đầu. */
-    eq([...d.GOC_NHIN], ['bao-cao', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'giao-vien', 'y-thuc'], 'đúng thứ tự chủ sản phẩm chốt (OV-15e)');
+    eq([...d.GOC_NHIN], ['bao-cao', 'giao-vien', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'y-thuc'], 'đúng thứ tự mockup V5 (UI-PHAN-TICH: Báo cáo HV · Phân tích GV đầu)');
     eq(d.GOC_NHIN_LABEL['tong-hop'], 'Test + SOS', 'nhãn');
     eq(d.GOC_NHIN_LABEL['hieu-qua-pa'], 'Hiệu quả PA', 'nhãn');
   });

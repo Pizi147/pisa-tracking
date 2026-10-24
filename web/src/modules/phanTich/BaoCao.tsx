@@ -1,50 +1,53 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { SoO as OSo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
-import { BangMock } from './KetQuaThi.tsx';
-import { dich, t } from '@shared/i18n/index.ts';
+import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { OSo } from '../../ui/OSo.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
+import { ChiSo, PhanTram, TheoChiNhanh, kyChu, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
+import { thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
-  CHUONG_TRINH_LABEL, NHAN_KET_QUA_MOCK, chuSoTruoc, ngay, nhanKhoang, tyLeDatMock,
-  type BaoCaoKq, type KetQuaMock,
+  COT_KQ_MT, NHAN_COT_KQ_MT, NHAN_LUOT_KQ_MT, rateView, tenMonNgan,
+  type BaoCaoKq, type DongKqMt, type KetQuaMtKq,
 } from '@shared/domain/index.ts';
 
 /**
- * BÁO CÁO (OV-15e, C24–C26, mockup 3 mục 3) — tab đầu của Phân tích, mặc định 2 tuần hoàn chỉnh vừa qua (bộ chọn chung). Năm khối: Test · SOS theo lớp ·
- * Kết quả Mock Test · HV cần chú ý (tại lúc xem) · Case / PA. Mỗi số bấm → panel kết quả cụ thể (C26): số trong kỳ đọc `/phan-tich/bao-cao/o`, số tại lúc
- * xem đọc chỉ số trong sổ (cùng Tổng quan), Kết quả Mock mở chính bảng Kết quả thi đã lọc. "In" = giấy sáng, một trang A4 ngang (C24). Không khung
- * Đã thi – Chờ KQ (C25).
+ * BÁO CÁO HV (UI-PHAN-TICH, `thiet-ke/v5/phan-tich.html`; `10` mục 5; chủ SP 23/10 vòng 2 — sắp lại cả trang) — chỉ kết quả + hỗ trợ của HỌC VIÊN (việc GV ở tab
+ * Phân tích GV). KHÔNG đếm lại: dải số + Theo chi nhánh = CHÍNH `/tong-quan/v5` (cùng hàm Tổng quan, gửi kỳ đang chọn); Kết quả MT = `tapKqMt` (SV-SO3);
+ * Tiến bộ theo kỹ năng + PA cải thiện = `/phan-tich/bao-cao`. Mọi số gạch chân mở panel CHỈ ĐỌC đúng tập (C22). "Thi đợt này" = ngày thi trong kỳ đang chọn.
+ * Bố cục: một dải 5 số → hai bảng cạnh nhau cùng chiều cao (Kết quả MT · Tiến bộ theo kỹ năng); QT chưa chọn chi nhánh → Theo chi nhánh. "In" (V4) giữ.
  */
-function Khoi({ tieuDe, phu, children, className = '' }: { tieuDe: string; phu?: string; children: ReactNode; className?: string }) {
+const COT_KQ: readonly CotBang[] = [
+  { key: 'luot', nhan: t('Lượt'), kieu: 'ten', rong: 120 },
+  ...COT_KQ_MT.map((c): CotBang => ({ key: c, nhan: NHAN_COT_KQ_MT[c], kieu: 'so', rong: 100 })),
+  { key: 'truoc', nhan: t('So lượt trước'), kieu: 'chu', rong: 160 },
+];
+const COT_TB: readonly CotBang[] = [
+  { key: 'kn', nhan: t('Kỹ năng'), kieu: 'ten', rong: 64 },
+  { key: 'tang', nhan: t('Tăng'), kieu: 'so', rong: 80 }, { key: 'giu', nhan: t('Giữ nguyên'), kieu: 'so', rong: 92 }, { key: 'giam', nhan: t('Giảm'), kieu: 'so', rong: 80 },
+];
+const pt = (n: number, mau: number) => (mau ? `${Math.round((100 * n) / mau)} %` : null);
+
+function Khoi({ tieuDe, phu, luat, children }: { tieuDe: string; phu?: ReactNode; luat?: ReactNode; children: ReactNode }) {
   return (
-    <section className={`card flex min-w-0 flex-col gap-3 p-4 break-inside-avoid ${className}`}>
-      <h2 className="m-0 text-sm font-semibold text-slate-100">{tieuDe}{phu && <span className="font-normal text-slate-400"> · {phu}</span>}</h2>
+    <Card className="h-full" bodyClass="p-0" title={<span className="inline-flex flex-wrap items-center gap-x-2">{tieuDe}{phu && <span className="text-xs font-normal text-slate-500">{phu}</span>}{luat && <NutLuat label={tieuDe}>{luat}</NutLuat>}</span>}>
       {children}
-    </section>
-  );
-}
-function So({ so, nhan, phu, canhBao }: { so: ReactNode; nhan: string; phu?: ReactNode; canhBao?: boolean }) {
-  return (
-    <div className="flex min-w-0 flex-col">
-      <span className={`text-[22px] font-bold leading-tight tabular-nums ${canhBao ? 'text-late' : 'text-slate-100'}`}>{canhBao && <span aria-hidden>⚠ </span>}{so}</span>
-      <span className="text-xs text-slate-300">{nhan}</span>
-      {phu && <span className="text-xs text-slate-400">{phu}</span>}
-    </div>
+    </Card>
   );
 }
 
 export function BaoCao(pv: PhamViPhanTich) {
-  const { homNay } = useNgayNghiepVu();
+  const [params, setParams] = useSearchParams();
   const ct = pv.ct ?? 'ft';
-  const query = thamSoLoc({ ...pv, classId: null });
-  const { data, loading, error, reload } = useApi<BaoCaoKq>(`/phan-tich/bao-cao?${query}`, [query]);
-  const branches = useApi<any[]>('/ref/branches');
-  const [moMock, setMoMock] = useState<KetQuaMock | null>(null);
-  const ptGv = usePhanTrang(data?.test.gvQuaHan.length ?? 0, query, 'GV');
-  const ptSos = usePhanTrang(data?.sos?.hang.length ?? 0, query, 'lớp');
+  const ft = ct === 'ft';
+  const q = thamSoLoc({ ...pv, ct, classId: null });
+  const tq = useApi<TongQuanV5Data>(`/tong-quan/v5?${q}`, [q]);
+  const bc = useApi<BaoCaoKq>(`/phan-tich/bao-cao?${q}`, [q]);
+  const motCn = !!tq.data && !tq.data.chiNhanh;
+  const kq = useApi<KetQuaMtKq>(ft && motCn ? `/phan-tich/bao-cao/ket-qua-mt?${q}` : null, [q, motCn]);
 
   /* In / chiếu: nền sáng (kể cả khi đang chế độ tối) — đổi giao diện lúc in rồi trả lại. */
   useEffect(() => {
@@ -56,126 +59,87 @@ export function BaoCao(pv: PhamViPhanTich) {
     return () => { window.removeEventListener('beforeprint', truoc); window.removeEventListener('afterprint', sau); };
   }, []);
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (loading || !data) return <Skeleton rows={8} />;
-  const nhan = nhanKhoang(pv.khoang);
-  const tenCn = pv.branchId ? branches.data?.find((b) => b.id === pv.branchId)?.name ?? '' : t('Tất cả chi nhánh');
-  const nguon = (o: string) => `/phan-tich/bao-cao/o?${query}&o=${encodeURIComponent(o)}`;
-  const soO = (giaTri: number, o: string, tieuDe: string) => <OSo giaTri={giaTri} nguon={nguon(o)} tieuDe={tieuDe} />;
-  const loc = { branchId: pv.branchId, chuongTrinh: ct };
-  const tyLe = data.test.baiTong ? Math.round((100 * data.test.baiDaCham) / data.test.baiTong) : null;
-  const mk = data.mock;
-  const tl = mk ? tyLeDatMock(mk) : null;
-  const soTuanTruoc = nhan.phu.match(/(\d+) tuần/)?.[1];
-  const tai = ngay(homNay, homNay);
+  const loi = tq.error ?? bc.error;
+  if (loi) return <ErrorState message={loi.message} hint={loi.hint} onRetry={() => { tq.reload(); bc.reload(); }} />;
+  if (!tq.data || !bc.data) return <Skeleton rows={8} />;
+  const d = tq.data, b = bc.data;
+  const ky = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : kyChu(d.ky);
+  const nguon = (o: string) => `/phan-tich/bao-cao/o?${q}&o=${encodeURIComponent(o)}`;
+  const nguonCase = `/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong&chuY=1&${q}`;
+  const chonCn = (id: number) => { const n = new URLSearchParams(params); n.set('cn', String(id)); setParams(n); };
+  const chiFt = <span className="text-slate-500">—</span>;
+  const pa = { dat: b.casePa.paCaiThien, mau: b.casePa.paKetQua };
 
   return (
-    <div className="bao-cao space-y-3">
+    <div className="bao-cao space-y-4">
       <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } }'}</style>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="m-0 text-base font-semibold text-slate-100">{t('Báo cáo')} <span className="tabular-nums">{nhan.chinh}</span></h2>
-        <span className="text-xs tabular-nums text-slate-400">{nhan.phu} · {tenCn} · {CHUONG_TRINH_LABEL[ct]}</span>
-        <span className="flex-1" />
-        <button type="button" className="btn btn-sm min-h-[44px] print:hidden sm:min-h-0" onClick={() => window.print()}>{t('In')}</button>
+      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
+        <ChiSo ten={t('Đạt MT')} ky={ky} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}
+          giaTri={ft ? <PhanTram x={d.datMt} nguon={nguon('dat-mt')} tieuDe={t('Đạt MT')} /> : chiFt} mau={ft ? tuMau(d.datMt, t('HV')) : t('chỉ Fast Track')} />
+        <ChiSo ten={t('Đạt Target thi thật')} ky={ky} giaTri={ft ? ptChu(d.thiThat) : chiFt}
+          mau={ft ? (d.thiThat?.mau ? tuMau(d.thiThat, t('HV có KQ')) : t('chưa HV nào có KQ')) : t('chỉ Fast Track')} />
+        <ChiSo ten={t('Thi đợt này')} ky={ky} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi đợt này')} nguon={nguon('thi-dot-nay')} />} mau={t('HV có ngày thi trong kỳ')} />
+        <ChiSo ten={t('Case có PA')} ky={t('hiện tại')} giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={nguonCase} tieuDe={t('Case đang mở')} />}
+          mau={d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null} />
+        <ChiSo ten={t('PA cải thiện')} ky={ky} luat={t('PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).')}
+          giaTri={<PhanTram x={pa} nguon={nguon('pa-co-ket-qua')} tieuDe={t('PA có kết quả trong kỳ')} />} mau={tuMau(pa, t('PA có kết quả'))} />
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-12 print:grid-cols-12">
-        <Khoi tieuDe={`Test ${nhan.chinh}`} className={data.sos ? 'lg:col-span-7 print:col-span-7' : 'lg:col-span-12 print:col-span-12'}>
-          <div className="grid grid-cols-3 gap-3">
-            <So so={soO(data.test.hvDaThi, 'hv-da-thi', t('HV đã làm bài'))} nhan={t('HV đã làm bài')} phu={t('{n} lượt lớp', { n: data.test.luotLop })} />
-            <So so={<>{soO(data.test.baiDaCham, 'bai-da-cham', t('Bài đã chấm'))}<span className="text-slate-400">/{data.test.baiTong}</span></>} nhan={t('bài đã chấm')} phu={tyLe !== null ? `${tyLe}%` : undefined} />
-            <So so={soO(data.test.quaHan, 'bai-qua-han', t('Bài quá hạn'))} nhan={t('bài quá hạn')} phu={`${data.test.gvQuaHan.filter((g) => g.gvId).length} GV`} canhBao={data.test.quaHan > 0} />
-          </div>
-          {data.test.gvQuaHan.length > 0 && (
-            <div>
-              <PhanTrang {...ptGv.thanh} />
-              {/* 375: đầu cột + tên GV + kỹ năng xuống dòng; còn rộng hơn khung thì cuộn ngang TRONG khung bảng, trang không trượt. */}
-              <div className="table-scroll">
-              <table className="w-full text-sm">
-                <thead><tr><th className="th max-sm:whitespace-normal">{t('Quá hạn theo GV')}</th><th className="th max-sm:whitespace-normal">{t('Kỹ năng')}</th><th className="th text-center">{t('Bài')}</th><th className="th max-sm:hidden">{t('Lớp')}</th></tr></thead>
-                <tbody>
-                  {ptGv.cat(data.test.gvQuaHan).map((g) => (
-                    <tr key={g.khoa}>
-                      <td className="td break-words">{dich(g.ten)}</td>
-                      <td className="td sm:whitespace-nowrap">{g.kyNang.join(' · ')}</td>
-                      <td className="td text-center">{soO(g.bai, `gv:${g.khoa}`, `${t('Quá hạn')} · ${dich(g.ten)}`)}</td>
-                      <td className="td text-xs text-slate-300 max-sm:hidden" title={g.lop.join(' · ')}>{g.lop.join(' · ')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-              <PhanTrang {...ptGv.thanh} duoi />
-            </div>
-          )}
-        </Khoi>
-
-        {data.sos && (
-          /* SL2 (9.1-4, X-23): số TRONG KỲ mang tên khác "SOS hiện tại" (khối HV cần chú ý); cùng luật tab Kết quả thi — gồm SOS tạm, ghi riêng. */
-          <Khoi tieuDe={t('SOS trong kỳ')} phu={data.sos.tong.tam ? `HV · ${t('trong đó {n} tạm', { n: data.sos.tong.tam })}` : 'HV'} className="lg:col-span-5 print:col-span-5">
-            {!data.sos.hang.length ? <Empty title={t('Không có SOS trong kỳ này')} /> : (
-              <div>
-                <PhanTrang {...ptSos.thanh} />
-                <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
-                  <colgroup><col style={{ width: '32%' }} /><col /><col /><col /><col style={{ width: '30%' }} /></colgroup>
-                  <thead><tr>
-                    <th className="th">{t('Lớp')}</th><th className="th whitespace-normal text-center">SOS 1</th><th className="th whitespace-normal text-center">SOS 2</th><th className="th whitespace-normal text-center">SOS 3</th>
-                    {/* OV-15h2 (ý 8): 375 — đầu cột xuống dòng trong cột (SOS 1–3, So … tuần trước), không cắt chữ / tràn sát mép bảng. */}
-                    <th className="th whitespace-normal">{soTuanTruoc ? t('So {n} tuần trước', { n: soTuanTruoc }) : t('So kỳ trước')}</th>
-                  </tr></thead>
-                  <tbody>
-                    {[...ptSos.cat(data.sos.hang), { ...data.sos.tong, lop: pv.branchId ? t('Cả {cn}', { cn: tenCn }) : t('Tổng') }].map((h) => (
-                      <tr key={h.classId} className={h.classId ? '' : 'border-t font-semibold'} style={h.classId ? undefined : { borderColor: 'var(--line-strong)' }}>
-                        <td className="td truncate">{h.lop}</td>
-                        {([1, 2, 3] as const).map((m) => (
-                          <td key={m} className="td text-center">{soO(h[`sos${m}`], `sos:${h.classId || 'tong'}:${m}`, `SOS ${m} · ${h.lop}`)}</td>
-                        ))}
-                        <td className="td text-xs text-slate-300">{chuSoTruoc(h.nay, h.truoc)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <PhanTrang {...ptSos.thanh} duoi />
-              </div>
-            )}
-          </Khoi>
-        )}
-
-        {mk && (
-          <Khoi tieuDe={t('Kết quả Mock Test')} className="lg:col-span-4 print:col-span-4">
-            {(['dat', 'chua-dat', 'chua-du'] as const).map((k) => {
-              const n = k === 'dat' ? mk.dat : k === 'chua-dat' ? mk.chuaDat : mk.chuaDu;
-              const phu = k === 'dat' ? (tl !== null ? t('tỷ lệ đạt {p}% ({a}/{b})', { p: tl, a: mk.dat, b: mk.dat + mk.chuaDat }) : undefined) : k === 'chua-du' ? t('không tính vào tỷ lệ') : undefined;
-              return (
-                <So key={k} nhan={NHAN_KET_QUA_MOCK[k]} phu={phu}
-                  so={n > 0 ? <button type="button" onClick={() => setMoMock(k)} aria-label={`${n} — ${NHAN_KET_QUA_MOCK[k]}`}
-                    className="cursor-pointer appearance-none border-0 bg-transparent p-0 font-bold tabular-nums underline decoration-dotted underline-offset-4 max-sm:-mx-2 max-sm:-my-3 max-sm:px-2 max-sm:py-3">{n}</button> : <span className="text-slate-500">0</span>} />
-              );
-            })}
-          </Khoi>
-        )}
-
-        <Khoi tieuDe={t('HV cần chú ý')} phu={t('tại {ngay}', { ngay: tai })} className={mk ? 'lg:col-span-4 print:col-span-4' : 'lg:col-span-6 print:col-span-6'}>
-          <So so={<OSo id="hv-sos-hien-tai" giaTri={data.chuY.sosHienTai} phamVi={loc} ten={t('SOS hiện tại')} />} nhan={t('SOS hiện tại')} />
-          <So so={data.chuY.chuaDiemHv} nhan={t('chưa điểm')} phu={<><OSo id="bai-qua-han-nhap-diem" giaTri={data.chuY.chuaDiemBai} phamVi={loc} ten={t('Bài chưa điểm')} /> {t('bài')}</>} />
-          <So so={data.chuY.caseChuaChotHv} nhan={t('Case chưa chốt PA')} phu={<><OSo id="case-cho-xac-dinh-nguyen-nhan" giaTri={data.chuY.caseChuaChot} phamVi={loc} ten={t('Case chưa chốt PA')} /> Case</>} />
-        </Khoi>
-
-        <Khoi tieuDe={t('Case / PA')} className={mk ? 'lg:col-span-4 print:col-span-4' : 'lg:col-span-6 print:col-span-6'}>
-          <So so={<OSo id="case-mo" giaTri={data.casePa.caseMo} phamVi={loc} ten={t('Case đang mở')} />} nhan={t('Case đang mở')} phu={t('tại {ngay}', { ngay: tai })} />
-          <So so={<OSo id="pa-co-ket-qua" giaTri={data.casePa.paKetQua} phamVi={loc} extra={{ from: pv.khoang.tu, to: pv.khoang.den }} ten={t('PA có kết quả trong kỳ')} />} nhan={t('PA có kết quả trong kỳ')} />
-          <So canhBao={data.casePa.quaHanChotPa + data.casePa.quaHanKetQuaPa > 0} so={data.casePa.quaHanChotPa + data.casePa.quaHanKetQuaPa} nhan={t('quá hạn')}
-            phu={<><OSo id="case-xac-dinh-nguyen-nhan-qua-han" giaTri={data.casePa.quaHanChotPa} phamVi={loc} ten={t('Chốt PA quá hạn')} /> {t('chốt PA')} · <OSo id="pa-can-cap-nhat" giaTri={data.casePa.quaHanKetQuaPa} phamVi={loc} ten={t('Kết quả PA quá hạn')} /> {t('Kết quả PA')}</>} />
-        </Khoi>
-      </div>
-
-      {moMock && (
-        <KhungPanel tieuDe={`${NHAN_KET_QUA_MOCK[moMock]} · Mock Test · ${nhan.chinh}`} rong="rong" onDong={() => setMoMock(null)}
-          ngCanh={<span className="text-xs text-slate-400">{tenCn} · Fast Track · {t('Đạt khi OVR ≥ kỳ vọng của đợt')}</span>}
-          chan={{ huy: { nhan: t('Đóng'), onClick: () => setMoMock(null) } }}>
-          <div className="pt-3"><BangMock pv={{ ...pv, classId: null }} kqMacDinh={moMock} trongPanel /></div>
-        </KhungPanel>
+      {d.chiNhanh ? <TheoChiNhanh d={d} baoCao onChiNhanh={chonCn} /> : ft && (
+        <div className="grid items-stretch gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_440px] print:grid-cols-[minmax(0,1fr)_440px]">
+          <KetQuaMt api={kq} nguon={nguon} phamVi={`FT ${d.tenChiNhanh ?? ''}`.trim()} />
+          {b.tienBo && <TienBo hang={b.tienBo} nguon={nguon} />}
+        </div>
       )}
     </div>
+  );
+}
+
+/** Kết quả MT (`10` mục 5): hàng MT0 → MT3+ + Thi thật, theo lượt của từng HV trong kỳ; Overall so Target đầu ra của em. Số bấm → panel em của ô. */
+function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; error: any; reload: () => void }; nguon: (o: string) => string; phamVi: string }) {
+  const dienThoai = useDienThoai();
+  const luat = t('So điểm Overall của lượt với Target đầu ra của chính em (không phải kỳ vọng MT). Mỗi HV tính ở lượt MT của mình trong kỳ. Bấm số để xem danh sách HV.');
+  const oCua = (h: DongKqMt, c: CotBang): ReactNode => {
+    if (c.key === 'luot') return <b className="text-slate-100">{NHAN_LUOT_KQ_MT[h.luot]}</b>;
+    if (c.key === 'truoc') {
+      const s = h.soTruoc;
+      if (!s.tang && !s.bang && !s.giam) return <span className="text-slate-500">—</span>;
+      return (
+        <span className="whitespace-nowrap tabular-nums" aria-label={t('Tăng {a} · giữ {b} · giảm {c}', { a: s.tang, b: s.bang, c: s.giam })}>
+          <span className="text-ok">↑ {s.tang}</span> · <span className="text-slate-300">= {s.bang}</span> · <span className="text-bad">↓ {s.giam}</span>
+        </span>
+      );
+    }
+    if (!h.hv || (c.key !== 'chua-du' && !h.mau)) return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
+    const n = h.dem[c.key as keyof DongKqMt['dem']];
+    return <OSo giaTri={n} tieuDe={`${NHAN_LUOT_KQ_MT[h.luot]} · ${c.nhan}`} nguon={nguon(`kq-mt:${h.luot}:${c.key}`)} />;
+  };
+  const phuCua = (h: DongKqMt, c: CotBang) => (c.key === 'luot' ? (h.luot === 'thi' ? t('{n} HV có KQ', { n: h.hv }) : t('{n} HV', { n: h.hv }))
+    : c.key === 'truoc' || c.key === 'chua-du' ? null : pt(h.dem[c.key as keyof DongKqMt['dem']], h.mau));
+  return (
+    <Khoi tieuDe={t('Kết quả MT')} phu={t('{pv} · lượt của từng HV trong kỳ', { pv: phamVi })} luat={luat}>
+      {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} onRetry={api.reload} />
+        : !api.data ? <Skeleton rows={5} className="p-4" />
+          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={dienThoai ? api.data.rows.filter((h) => h.hv || h.luot === 'thi') : api.data.rows} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu />}
+    </Khoi>
+  );
+}
+
+/** Tiến bộ theo kỹ năng: lượt có mốc MT trước của em, band kỹ năng tăng · giữ nguyên · giảm so mốc đó (cùng mục "HV tiến bộ" của Phân tích GV). */
+function TienBo({ hang, nguon }: { hang: NonNullable<BaoCaoKq['tienBo']>; nguon: (o: string) => string }) {
+  type H = (typeof hang)[number];
+  const so = (h: H, k: string) => (k === 'tang' ? h.tang : k === 'giam' ? h.giam : h.tong - h.tang - h.giam);
+  const oCua = (h: H, c: CotBang): ReactNode => {
+    if (c.key === 'kn') return <span className="inline-block min-w-[32px] rounded border px-1.5 text-center text-xs font-bold text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>{tenMonNgan(null, h.skill)}</span>;
+    if (rateView(so(h, c.key), h.tong).kind !== 'value') return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
+    return <OSo giaTri={h.tong} nhan={String(so(h, c.key))} tieuDe={t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} nguon={nguon(`tien-bo:${h.skill}`)}
+      className={c.key === 'tang' ? 'text-ok' : c.key === 'giam' ? 'text-bad' : ''} />;
+  };
+  return (
+    <Khoi tieuDe={t('Tiến bộ theo kỹ năng')} phu={t('so mốc MT trước')}>
+      <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu
+        phuCua={(h, c) => (c.key === 'kn' ? t('{n} lượt', { n: h.tong }) : h.tong ? pt(so(h, c.key), h.tong) : null)} khung={false}
+        rong={{ tieuDe: t('Chưa có lượt nào có mốc MT trước trong kỳ') }} />
+    </Khoi>
   );
 }

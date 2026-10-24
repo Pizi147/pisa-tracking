@@ -22,10 +22,11 @@ import { t } from '../i18n/index.ts';
  * OV-15e (C28, plan §7): Phân tích là mục thanh trên; sáu tab — Báo cáo (đầu, mặc định) · Test + SOS · Kết quả thi · Hiệu quả PA · Phân tích GV · Ý thức.
  * "Tổng hợp vấn đề HV" (`van-de`) đã bỏ khỏi tab: link cũ về Test + SOS (máy chủ `/phan-tich/van-de-hv` bỏ ở OV-15h2).
  */
-export const GOC_NHIN = ['bao-cao', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'giao-vien', 'y-thuc'] as const;
+/** UI-PHAN-TICH (`phan-tich.html`): Báo cáo HV · Phân tích GV đứng đầu (C22 — tách báo cáo HV / GV), các tab cũ giữ sau. */
+export const GOC_NHIN = ['bao-cao', 'giao-vien', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'y-thuc'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
-  'bao-cao': 'Báo cáo',
+  'bao-cao': 'Báo cáo HV',
   'tong-hop': 'Test + SOS',
   'ket-qua-thi': 'Kết quả Test',
   'hieu-qua-pa': 'Hiệu quả PA',
@@ -380,15 +381,13 @@ export function tuanTrungVi(soNgay: readonly number[]): number | null {
   return Math.max(1, Math.round(tv / 7));
 }
 
-/** Tham số URL của Hiệu quả PA (Hợp đồng a↔b): `tu`/`den` = Thứ Hai tuần đầu / tuần cuối (gồm cả tuần `den`), tối đa 52 tuần. */
-const HQ_PA_TOI_DA_TUAN = 52;
+/** Tham số URL của Hiệu quả PA (Hợp đồng a↔b): `tu`/`den` = Thứ Hai tuần đầu / tuần cuối (gồm cả tuần `den`); không trần (P9, 22/10). */
 /** Kiểm `tu`/`den`: trả lỗi (chuỗi) hoặc null. `den` vắng = tới hôm nay. */
 export function loiKhoangTuan(tu: string, den: string | null): string | null {
   const laThuHai = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).getUTCDay() === 1
     && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
   if (!laThuHai(tu) || (den !== null && !laThuHai(den))) return 'Khoảng tuần phải bắt đầu bằng ngày Thứ Hai (YYYY-MM-DD).';
   if (den !== null && tu > den) return 'Tuần đầu phải trước hoặc bằng tuần cuối.';
-  if (den !== null && (Date.parse(den) - Date.parse(tu)) / 604800000 + 1 > HQ_PA_TOI_DA_TUAN) return `Khoảng tối đa ${HQ_PA_TOI_DA_TUAN} tuần.`;
   return null;
 }
 

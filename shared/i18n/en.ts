@@ -58,6 +58,7 @@ import { EN_UI_HV_LOP } from './en/uiHvLop.ts';
 import { EN_UI_HO_SO_HV } from './en/uiHoSoHv.ts';
 import { EN_UI_TONG_QUAN } from './en/uiTongQuan.ts';
 import { EN_UI_HO_SO_GV } from './en/uiHoSoGv.ts';
+import { EN_UI_PHAN_TICH } from './en/uiPhanTich.ts';
 import { EN_UI_CHAM_TEST } from './en/uiChamTest.ts';
 import { EN_UI_LICH_TUAN } from './en/uiLichTuan.ts';
 
@@ -69,4 +70,4 @@ export type ChuKhoa = { chu: string; khoa?: string; bien?: Bien };
 /** Chữ thường, hoặc hàm khi cần số ít / số nhiều. */
 export type Dich = string | ((b: Bien) => string);
 
-export const EN = { ...EN_A, ...EN_B, ...EN_C, ...EN_F, ...EN_D, ...EN_OV12E, ...EN_HD, ...EN_HDB, ...EN_OV13B, ...EN_OV13C, ...EN_OV13D, ...EN_OV13G, ...EN_OV13J, ...EN_OV13L, ...EN_OV13K, ...EN_OV13M , ...EN_OV13O, ...EN_UX1, ...EN_UX2, ...EN_OV13Q, ...EN_ENE, ...EN_OV14A, ...EN_OV14C, ...EN_OV15A, ...EN_OV15C, ...EN_OV15D, ...EN_OV15E, ...EN_OV15F, ...EN_OV15B, ...EN_TU, ...EN_TUB, ...EN_OV15H2, ...EN_OV15G, ...EN_OV15H1, ...EN_LUAT5, ...EN_KHUNG_LOI, ...EN_CV_LOI, ...EN_CASE_NHIEU, ...EN_SL1, ...EN_LUAT34, ...EN_SL2, ...EN_NEN_V5, ...EN_SV_SO2, ...EN_SV_SO3, ...EN_CHU_THI, ...EN_NEN_PANEL, ...EN_UI_CONG_VIEC, ...EN_UI_CHAM_TEST, ...EN_UI_LICH_TUAN, ...EN_UI_CV_TVV, ...EN_LUAT_NX_MT, ...EN_UI_HO_SO_LOP, ...EN_SV_NX_CASE, ...EN_UI_HV_LOP, ...EN_UI_HO_SO_HV, ...EN_UI_TONG_QUAN, ...EN_UI_HO_SO_GV };
+export const EN = { ...EN_A, ...EN_B, ...EN_C, ...EN_F, ...EN_D, ...EN_OV12E, ...EN_HD, ...EN_HDB, ...EN_OV13B, ...EN_OV13C, ...EN_OV13D, ...EN_OV13G, ...EN_OV13J, ...EN_OV13L, ...EN_OV13K, ...EN_OV13M , ...EN_OV13O, ...EN_UX1, ...EN_UX2, ...EN_OV13Q, ...EN_ENE, ...EN_OV14A, ...EN_OV14C, ...EN_OV15A, ...EN_OV15C, ...EN_OV15D, ...EN_OV15E, ...EN_OV15F, ...EN_OV15B, ...EN_TU, ...EN_TUB, ...EN_OV15H2, ...EN_OV15G, ...EN_OV15H1, ...EN_LUAT5, ...EN_KHUNG_LOI, ...EN_CV_LOI, ...EN_CASE_NHIEU, ...EN_SL1, ...EN_LUAT34, ...EN_SL2, ...EN_NEN_V5, ...EN_SV_SO2, ...EN_SV_SO3, ...EN_CHU_THI, ...EN_NEN_PANEL, ...EN_UI_CONG_VIEC, ...EN_UI_CHAM_TEST, ...EN_UI_LICH_TUAN, ...EN_UI_CV_TVV, ...EN_LUAT_NX_MT, ...EN_UI_HO_SO_LOP, ...EN_SV_NX_CASE, ...EN_UI_HV_LOP, ...EN_UI_HO_SO_HV, ...EN_UI_TONG_QUAN, ...EN_UI_HO_SO_GV, ...EN_UI_PHAN_TICH };

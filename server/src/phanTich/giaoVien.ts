@@ -7,7 +7,7 @@
  * Ghi kết quả PA, PA hiệu quả → người phụ trách Case. Phân công hiệu lực ở ngày d: `effective_from ≤ d ≤ effective_to` (ngày đổi: dòng mới thắng).
  */
 import {
-  COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, kyNangPhuTrach, laChamCheo, nhanDotNgan, oTuTap, tenMonNgan, boMonLich,
+  COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, mondayOfDate, kyNangPhuTrach, laChamCheo, nhanDotNgan, oTuTap, tenMonNgan, boMonLich,
   type ChiSoHoSoGv, type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq,
 } from '../../../shared/domain/index.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
@@ -24,6 +24,7 @@ import { tuanLich as tuanLichNgan } from '../../../shared/domain/hienThiNgay.ts'
 import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 import { t } from '../../../shared/i18n/index.ts';
 
 const LO = 400;
@@ -318,11 +319,15 @@ function tapKetQua(c: NguCanhPtGv, muc: readonly MucKq[]): Map<string, TapKq> {
 }
 
 /** Q21 (FT): mục = ô có điểm mà em ĐÃ có điểm kỹ năng đó ở lượt MT gần nhất trước đó (bất kỳ lớp); tiến bộ ⇔ band cao hơn. W1, W2 riêng. KCK vẫn tính. */
-function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<number>>; theoLop?: Map<number, Tap> } {
+type TapKn = Map<string, { dung: number[]; giam: number[]; tong: number[] }>;
+function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<number>>; theoLop?: Map<number, Tap>; theoKyNang: TapKn } {
   const tap: Tap = new Map();
   const lop = new Map<number, Set<number>>();
   /* UI-HO-SO-GV: cùng mục tách theo LỚP EM HỌC LÚC THI (P8) — hàng lớp của bảng Học thuật hồ sơ GV. */
   const theoLop = new Map<number, Tap>();
+  /* UI-PHAN-TICH (Báo cáo HV · Tiến bộ theo kỹ năng): CÙNG mục, gom theo kỹ năng cho cả chi nhánh (không cần người dạy): tăng (`dung`) · giảm · còn lại giữ nguyên. */
+  const theoKyNang: TapKn = new Map();
+  const kn = (skill: string) => theoKyNang.get(skill) ?? theoKyNang.set(skill, { dung: [], giam: [], tong: [] }).get(skill)!;
   const coBand = nap.o.filter((x) => x.band !== null && (nap.attempts.get(x.attemptId)?.kind ?? 'mock') === 'mock');
   const em = [...new Set(coBand.map((x) => x.studentId))];
   const truoc = new Map<string, { tuan: string; id: number; band: number }[]>();
@@ -342,13 +347,25 @@ function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<n
       .filter((t) => t.id !== x.attemptId && (t.tuan < tuanBai || (t.tuan === tuanBai && t.id < x.attemptId)))
       .sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id).pop();
     if (!cu) continue;
+    kn(x.skill).tong.push(x.id);
+    if (x.band! > cu.band) kn(x.skill).dung.push(x.id);
+    else if (x.band! < cu.band) kn(x.skill).giam.push(x.id);
     const gv = c.nguoiLuc(x.classId, x.skill, x.tuan);
     if (gv == null) continue;
     them(tap, gv, x.id, x.band! > cu.band);
     lop.set(gv, (lop.get(gv) ?? new Set<number>()).add(x.classId));
     them(theoLop.get(gv) ?? theoLop.set(gv, new Map()).get(gv)!, x.classId, x.id, x.band! > cu.band);
   }
-  return Object.assign(tap, { lop, theoLop });
+  return Object.assign(tap, { lop, theoLop, theoKyNang });
+}
+
+/**
+ * Báo cáo HV · Tiến bộ theo kỹ năng (UI-PHAN-TICH, khung `phan-tich.html`): CHÍNH mục "HV tiến bộ" của Phân tích GV (`tapTienBo`) cho MỘT chi nhánh FT,
+ * gom theo kỹ năng. KHÔNG kiểm quyền — nơi gọi (`baoCao`) đã kiểm phạm vi Phân tích. Mục = id bài (`baiId`) → panel `rowsFor('bai')`.
+ */
+export function tienBoTheoKyNang(p: Principal, cn: number, k: { tu: string; den: string }): TapKn {
+  const c = nguCanhCn(cn, { ct: 'ft', tu: mondayOfDate(k.tu), den: mondayOfDate(k.den) });
+  return tapTienBo(c, napBai(p, c)).theoKyNang;
 }
 
 // ------------------------------------------------------------------ cột 2 · Ghi kết quả PA (mục = nghĩa vụ cập nhật)
@@ -390,6 +407,29 @@ export function tapPaHieuQua(c: NguCanhPtGv): Tap {
 
 // ------------------------------------------------------------------ bảng
 
+/** Đang dạy (Q17): phân công hiệu lực ở min(cuối khoảng, hôm nay) → GV → lớp; lớp → HV đang học — một câu theo lô. Bảng + panel "HV cần chú ý" gọi chung. */
+function dangDay(c: NguCanhPtGv): { lopDay: Map<number, Set<number>>; hvLop: Map<number, Set<number>> } {
+  const ngayDay = c.cuoi < c.homNay ? c.cuoi : c.homNay;
+  const lopDay = new Map<number, Set<number>>();
+  for (const a of c.pc) if (!c.lop.get(a.lop)!.xong && a.tu <= ngayDay && (!a.den || a.den >= ngayDay)) lopDay.set(a.gv, (lopDay.get(a.gv) ?? new Set<number>()).add(a.lop));
+  const hvLop = new Map<number, Set<number>>();
+  for (const lo of theoLo([...new Set([...lopDay.values()].flatMap((s) => [...s]))])) {
+    for (const r of db().prepare(
+      `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
+        WHERE e.class_id IN (${cho(lo.length)}) AND e.status = 'active' AND s.archived_at IS NULL`).all(...lo) as any[]) {
+      hvLop.set(r.class_id, (hvLop.get(r.class_id) ?? new Set<number>()).add(r.student_id));
+    }
+  }
+  return { lopDay, hvLop };
+}
+const hvCuaGv = (d: ReturnType<typeof dangDay>, gv: number) => new Set([...(d.lopDay.get(gv) ?? [])].flatMap((l) => [...(d.hvLop.get(l) ?? [])]));
+
+/**
+ * UI-PHAN-TICH "HV cần chú ý" (tự quyết, ghi khop-khac): HV ĐANG SOS (chỉ số `hv-sos-hien-tai` — cùng số "Đang SOS" của Tổng quan) ở lớp GV đang dạy.
+ * Số hiện tại, không theo kỳ. Bảng + panel gọi chung.
+ */
+const sosHienTai = (p: Principal, c: NguCanhPtGv) => new Set(metricSet(p, 'hv-sos-hien-tai', { branchId: c.cn, program: c.khung }).ids);
+
 export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   const c = nguCanhPtGv(p, f);
   const conn = db();
@@ -401,23 +441,20 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   for (const a of trongKhoang) nguoi.set(a.gv, a.ten);
   const cham = tapChamDiem(c, nap).tap;
   const ghi = tapGhiKetQuaPa(p, c).tap;
-  const kq = tapKetQua(c, mucKetQua(c, nap));
   const ft = c.khung === 'ft';
+  const muc = mucKetQua(c, nap);
+  const kq = tapKetQua(c, muc);
+  /* UI-PHAN-TICH: "Đạt MT" và "Đạt Target thi thật" của GV = CHÍNH tập Kết quả tách theo loại mục (MT / thi thật) — không đếm lại; Tổng quan dùng cùng trường. */
+  const kqMt = ft ? tapKetQua(c, muc.filter((m) => m.x.kind !== 'thi-that')) : null;
+  const mucThi = muc.filter((m) => m.x.kind === 'thi-that');
+  const kqThi = ft ? tapKetQua(c, mucThi) : null;
+  const gopKn = (m: Map<string, TapKq>, gv: number) => gopTap(...[...m.values()].map((t) => t.get(gv)));
   const tb = ft ? tapTienBo(c, nap) : null;
   const pa = ft ? tapPaHieuQua(c) : null;
-
-  /* Đang dạy (Q17): phân công hiệu lực ở min(cuối khoảng, hôm nay) + học viên đang học của các lớp đó — một câu theo lô. */
-  const ngayDay = c.cuoi < c.homNay ? c.cuoi : c.homNay;
-  const lopDay = new Map<number, Set<number>>();
-  for (const a of c.pc) if (!c.lop.get(a.lop)!.xong && a.tu <= ngayDay && (!a.den || a.den >= ngayDay)) lopDay.set(a.gv, (lopDay.get(a.gv) ?? new Set<number>()).add(a.lop));
-  const hvLop = new Map<number, Set<number>>();
-  for (const lo of theoLo([...new Set([...lopDay.values()].flatMap((s) => [...s]))])) {
-    for (const r of conn.prepare(
-      `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-        WHERE e.class_id IN (${cho(lo.length)}) AND e.status = 'active' AND s.archived_at IS NULL`).all(...lo) as any[]) {
-      hvLop.set(r.class_id, (hvLop.get(r.class_id) ?? new Set<number>()).add(r.student_id));
-    }
-  }
+  /* Case có PA = CHÍNH `caseCoPaTheoGv` của Tổng quan. */
+  const casePa = caseCoPaTheoGv(p, c.cn, c.khung);
+  const day = dangDay(c);
+  const sos = sosHienTai(p, c);
 
   const hang: HangPtGv[] = [];
   for (const [id, ten] of nguoi) {
@@ -426,7 +463,9 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
     const lopCn = [...new Set(cua.filter((a) => a.core).map((a) => c.lop.get(a.lop)!.ma))].sort((x, y) => x.localeCompare(y, 'vi'));
     const nhanMon = [...new Set(mon.sort((x, y) => THU_TU.indexOf(x) - THU_TU.indexOf(y))
       .map((k) => tenMonNgan(c.lop.get(cua.find((a) => a.skill === k)!.lop)!.ct, k)))];
-    const day = lopDay.get(id) ?? new Set<number>();
+    const lopGv = day.lopDay.get(id) ?? new Set<number>();
+    const hvGv = hvCuaGv(day, id);
+    const cp = casePa.get(id);
     const coMon = mon.length > 0;
     const ketQua: HangPtGv['ketQua'] = {};
     for (const k of COT_KET_QUA_GV[c.khung]) {
@@ -439,7 +478,9 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
       id, ten,
       phu: [...nhanMon, ...(lopCn.length ? [`GVCN ${lopCn.join(', ')}`] : [])].join(' · '),
       mon: nhanMon.join(' · '), lopCn,
-      dangDay: { lop: day.size, hv: new Set([...day].flatMap((l) => [...(hvLop.get(l) ?? [])])).size },
+      dangDay: { lop: lopGv.size, hv: hvGv.size },
+      hvChuY: [...hvGv].filter((s) => sos.has(s)).length,
+      casePa: cp?.mo ? { k: 'so', dung: cp.coPa, tong: cp.mo } : { k: 'rong' },
       chamDiem: oTuTap(coMon, cham.get(id)),
       ghiKetQuaPa: oTuTap(true, ghi.get(id)),
       /* 10 (22/10): "Xử lý vi phạm" bỏ khỏi Phân tích GV — không vào Việc đúng hạn. shortcut: chưa có việc Báo PH (SV-TVV) — PR đó thêm tập vào `gopTap` ở đây và ở `chiSoHoSoGv`. */
@@ -448,6 +489,11 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
     };
     if (ft) {
       h.paHieuQua = oTuTap(true, pa!.get(id));
+      h.datMt = oTuTap(coMon, gopKn(kqMt!, id));
+      /* XM-5 (chủ SP 24/10): Pass Target theo LẦN THI — CHÍNH `thiThatCuaGv` / `oThi` của hồ sơ GV (#557), không đếm lại. */
+      const thi = new Map<string, ThiGv>();
+      thiThatCuaGv(c, mucThi, kqThi!, id, thi);
+      h.thiThat = coMon ? oThi([...thi.values()]) : { k: 'na' };
       const t = oTuTap(coMon, tb!.get(id));
       h.tienBo = t.k === 'so' ? { ...t, lop: [...(tb!.lop?.get(id) ?? [])] } : t;
     }
@@ -526,7 +572,8 @@ export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string })
   const ten = c.pc.find((a) => a.gv === f.gv)?.ten;
   if (!ten) throw notFound('Giáo viên không có lớp ở chi nhánh này.');
   const r = oChiSoCua(p, c, f.gv, f.cot);
-  return { n: r.dong.length, tieuDe: tieuDeChiSo(r.nhan, ten, r.dung, r.dong.length, r.donVi), rows: r.dong.map((d) => d.row) };
+  const tieuDe = f.cot === 'hv-chu-y' ? t('HV cần chú ý · {ai} · {n} HV', { ai: ten, n: r.dong.length }) : tieuDeChiSo(r.nhan, ten, r.dung, r.dong.length, r.donVi);
+  return { n: r.dong.length, tieuDe, rows: r.dong.map((d) => d.row) };
 }
 
 /**
@@ -546,13 +593,14 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
       };
     });
   };
-  const kq = /^ket-qua(?::(\w+))?$/.exec(cot);
+  /* `dat-mt` / `thi-that` (UI-PHAN-TICH): CHÍNH tập Kết quả, chỉ mục MT / chỉ mục thi thật — cùng cách tách với ô bảng. */
+  const kq = /^(ket-qua|dat-mt|thi-that)(?::(\w+))?$/.exec(cot);
   if (kq || cot === 'tien-bo') {
     const nap = napBai(p, c);
-    /* `boThi` (hồ sơ GV, chủ SP 23/10): kết quả Test không gộp thi thật — thi thật có panel riêng `thi-that*`. Bảng Phân tích GV giữ cách cũ ([XM-5]). */
-    const muc = kq ? mucKetQua(c, nap).filter((m) => !boThi || m.x.kind !== 'thi-that') : [];
+    /* `boThi` (hồ sơ GV) / `dat-mt` (Phân tích GV): kết quả Test không gộp thi thật; `thi-that`: chỉ mục thi thật; `ket-qua`: tất cả (giữ link cũ). */
+    const muc = kq ? mucKetQua(c, nap).filter((m) => (kq[1] === 'thi-that' ? m.x.kind === 'thi-that' : !(boThi || kq[1] === 'dat-mt') || m.x.kind !== 'thi-that')) : [];
     const tapKq = kq ? tapKetQua(c, muc) : null;
-    const tap = !kq ? tapTienBo(c, nap).get(gv) : kq[1] ? tapKq!.get(kq[1])?.get(gv) : gopTap(...[...tapKq!.values()].map((t) => t.get(gv)));
+    const tap = !kq ? tapTienBo(c, nap).get(gv) : kq[2] ? tapKq!.get(kq[2])?.get(gv) : gopTap(...[...tapKq!.values()].map((t) => t.get(gv)));
     const theoMuc = new Map(muc.map((m) => [m.x.id, m]));
     const diem = (x: OBai) => (x.band !== null ? `${tenMonNgan(c.lop.get(x.classId)?.ct ?? null, x.skill)} ${x.band.toFixed(1)}` : null);
     /* V5 C09: dòng phụ ghi Overall + kỳ vọng / Target — đọc được vì sao kỹ năng dưới kỳ vọng vẫn tính Đạt. */
@@ -590,7 +638,8 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
       const m = theoMuc.get(x.id);
       return { ngCanh: `${x.bai} · ${tuanLichNgan(x.tuan)}`, diem: ds, overall: m?.ovr ?? null, soVoi: m?.kv != null ? { nhan: thi ? 'Target' : t('kỳ vọng'), v: m.kv } : null };
     };
-    const nhan = !kq ? t('HV tiến bộ') : kq[1] ? t('Kết quả {mon}', { mon: tenMonNgan(null, kq[1]) }) : t('Kết quả');
+    const nhan = !kq ? t('HV tiến bộ') : kq[1] === 'dat-mt' ? t('Đạt kỳ vọng Test') : kq[1] === 'thi-that' ? t('Kết quả thi thật')
+      : kq[2] ? t('Kết quả {mon}', { mon: tenMonNgan(null, kq[2]) }) : t('Kết quả');
     return ra(nhan, 'lượt kỹ năng', dongTheoTap(tap, theoBai(o, new Set(tap?.dung ?? []), ky, kq ? diemLuot : undefined)));
   }
   if (cot === 'cham-diem') {
@@ -611,6 +660,11 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
     ].sort((a, b) => Number(a.dung) - Number(b.dung)));
   }
   if (cot === 'ghi-pa') return ra(t('Kết quả PA đúng hạn'), '', dongTheoTap(tapGhiKetQuaPa(pTap, c).tap.get(gv), (ids) => rowsFor('nghia-vu', ids, 'dung-han-cap-nhat', p)));
+  if (cot === 'hv-chu-y') {
+    const sos = sosHienTai(p, c);
+    const ids = [...hvCuaGv(dangDay(c), gv)].filter((s) => sos.has(s)).sort((a, b) => a - b);
+    return ra(t('HV cần chú ý'), '', rowsFor('hoc-vien', ids, undefined, p).map((row) => ({ dung: true, row })));
+  }
   if (cot === 'pa-hieu-qua') return ra(t('PA hiệu quả'), '', dongTheoTap(tapPaHieuQua(c).get(gv), (ids) => rowsFor('phuong-an', ids, undefined, p)));
   throw badRequest(`Cột "${cot}" không có trong bảng.`);
 }

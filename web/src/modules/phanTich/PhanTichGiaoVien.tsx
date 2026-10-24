@@ -1,223 +1,137 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  cotKetQuaGv, chuOPtGv, ngay, nhanKhoang, tuanLich,
+  ngay, nhanKhoang, rateView, tuanLich,
   type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type OPtGv, type PhanTichGvKq,
 } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { DanhSachNguon } from '../../ui/OSo.tsx';
+import { OSo } from '../../ui/OSo.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { BoLocDoan, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { gopKq, phuGv, tyLeGv } from '../worklist/TongQuanV5.tsx';
 
 /**
- * PHÂN TÍCH GIÁO VIÊN (PR-Pb2-b, mockup 25 màn A–D) — góc nhìn cuối hàng ở Tổng quan › Phân tích, Quản lý + Quản trị. Một hàng một giáo viên,
- * sắp theo tên; KHÔNG KPI, KHÔNG xếp hạng, KHÔNG hàng tổng, KHÔNG nút sắp (Q30-5). Ô ghi `n/m` trước, % 12 px dưới (chủ SP 22/10: không ghi "mẫu nhỏ").
- * Chỉ % ô KẾT QUẢ có màu (không thanh — Q27). OV-15e: khung + khoảng = hàng lọc chung của Phân tích (C29); chi nhánh lấy ô chi nhánh đầu trang.
- * Bấm số (C30): Chấm điểm mở panel (màn C), ô khác mở panel ĐÚNG GV + khoảng (`/phan-tich/giao-vien/o`) — `0/20` vẫn mở 20 mục.
- * Điện thoại: mỗi GV một thẻ, dòng không áp dụng ẩn (màn D).
+ * PHÂN TÍCH GV (UI-PHAN-TICH, `thiet-ke/v5/phan-tich.html` tab "Phân tích GV"; `10` mục 1 + dòng UI-PHAN-TICH): MỘT bảng, hai nhóm cột Hành chính / Học thuật.
+ * Bộ cột Gọn (mặc định, vừa 1280 không cuộn) / Đầy đủ (`?cot=day`). Không KPI, không xếp hạng, không màu ngưỡng (C08) — xếp theo tên. Mỗi số mở panel
+ * CHỈ ĐỌC đúng tập (C22): `/phan-tich/giao-vien/o` (cùng hàm ô), Quá hạn = Trễ chấm Tổng quan, Case có PA = hồ sơ GV — cùng nguồn Tổng quan › GV cần chú ý.
+ * Chấm Test đúng hạn giữ panel Chấm điểm V4 (lọc Trễ). "Xử lý vi phạm" bỏ (10, 22/10). < 640 px: thẻ (Bang).
  */
+type TyLe = { dat: number; mau: number };
+const HC = t('HÀNH CHÍNH'), HT = t('HỌC THUẬT');
+/*
+ * Chủ SP 23/10 (vòng 2): cột tên cố định (các cột số trải đều cả bề rộng, không dồn phải); bỏ cột "Quá hạn" — bài trễ chấm hiếm, hiện "⚠ n quá hạn" ngay dưới
+ * ô "Chấm Test đúng hạn"; Hành chính | Học thuật tách bằng vạch dọc + nền đầu nhóm. Đầy đủ không còn "Ghi KQ PA" (trùng hẳn "Việc đúng hạn" — một tập việc).
+ */
+const COT_GON: readonly CotBang[] = [
+  { key: 'gv', nhan: t('Giáo viên'), kieu: 'ten', rong: 240 },
+  { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 160, nhom: HC, tach: true },
+  { key: 'diem', nhan: t('Chấm Test đúng hạn'), kieu: 'phan-tram', rong: 170, nhom: HC },
+  { key: 'dat', nhan: t('Đạt kỳ vọng Test'), kieu: 'phan-tram', rong: 150, nhom: HT, tach: true },
+  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 150, nhom: HT },
+  { key: 'chuY', nhan: t('HV cần chú ý'), kieu: 'so', rong: 150, nhom: HT },
+];
+const COT_DAY: readonly CotBang[] = [
+  { ...COT_GON[0], rong: 220 }, ...COT_GON.slice(1, 3).map((c) => ({ ...c, rong: 124 })),
+  ...COT_GON.slice(3).map((c) => ({ ...c, rong: 108 })),
+  { key: 'casePa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 108, nhom: HT },
+  { key: 'pa', nhan: t('PA cải thiện'), kieu: 'phan-tram', rong: 108, nhom: HT },
+  { key: 'tt', nhan: 'Pass Target', kieu: 'phan-tram', rong: 124, nhom: HT, goiY: t('Kết quả thi thật') },
+];
+/** Cột chỉ Fast Track (lớp thường không có MT / tiến bộ band / PA cải thiện / thi thật) — lớp thường: "Đạt Test" (≥ ngưỡng đạt của lớp; HSGV-1). */
+const CHI_FT = new Set(['tb', 'pa', 'tt']);
+const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
-/** Chú thích nổi từng cột — chữ theo "Định nghĩa từng cột" của mockup 25 (Một mục là · Tử số). */
-const GIAI: Record<string, (ft: boolean) => string> = {
-  'dang-day': (ft) => `Ngữ cảnh, không phải chỉ số. Số ${ft ? 'lớp Fast Track' : 'lớp thường'} giáo viên có phân công (GVCN hoặc một môn) ở chi nhánh này, và số học viên các lớp đó, tính ở ngày cuối của khoảng.`,
-  'cham-diem': () => 'Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công lúc tới hạn, tuần Test trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn chấm; sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", học viên tạm dừng, ô chưa tới hạn.',
-  'ghi-pa': (ft) => `${ft ? '' : 'Lớp thường ngắn nên Case, PA ít; cột để mờ. '}Một mục là một lần Kết quả PA (mỗi kỳ hai tuần) ở Case giáo viên phụ trách, hạn ghi trong khoảng. Đúng hạn khi ghi trước hạn; quá hạn mà chưa ghi là trễ.`,
-  'pa-hieu-qua': () => 'PA giáo viên tự thêm vào Case (không tính PA theo quy chế, PA bổ trợ) đã có kết quả cuối trong khoảng. Số trên: PA có tiến bộ (cùng luật góc nhìn Hiệu quả PA) / PA đã có kết quả cuối.',
-  'ket-qua': (ft) => ft
-    ? 'Một mục là một học viên × một kỹ năng ở bài MT hoặc kỳ thi thật trong khoảng, gán người dạy kỹ năng đó lúc thi (thi thật: lớp cuối trước ngày thi). Overall đạt kỳ vọng (thi thật: đạt Target) thì kỹ năng thấp hơn vẫn tính đạt; Overall chưa đạt thì xét từng kỹ năng (W1, W2 so từng bài). Chưa đủ 4 kỹ năng: chưa đủ dữ liệu, không tính.'
-    : 'Đạt từ 70%. Một mục là một học viên × một bài (Progress Test, Final Test) có tuần Test trong khoảng. Bốn cột cố định; môn giáo viên không dạy ghi —.',
-  'tien-bo': () => 'Một mục là một học viên × một kỹ năng giáo viên dạy, ở bài có tuần Test trong khoảng, mà em đã có điểm kỹ năng đó ở bài trước. Tiến bộ khi điểm cao hơn bài trước; bằng hoặc thấp hơn thì không.',
-  'w-gv': () => 'BE, ELE: Writing. FOU: Grammar + Vocabulary (G+V).',
-  's-p': () => 'BE, ELE: Speaking. FOU: Pronunciation (P).',
-};
-const NHAN_KQ: Record<string, [string, string | null]> = {
-  listening: ['L', null], reading: ['R', null], writing1: ['W1', null], writing2: ['W2', null], speaking: ['S', null],
-};
-const NHAN_KQ_THUONG: Record<string, [string, string | null]> = {
-  listening: ['L', null], reading: ['R', null], writing: ['W', '(G+V)'], speaking: ['S', '(P)'], listening_speaking: ['L+S', null], reading_writing: ['R+W', null],
-};
-
-/** Tên cột 2–3 chữ + chú thích nổi hiện khi rê chuột HOẶC Tab tới (không dựa vào `title` một mình). */
-function DauCot({ nhan, giai, trai, children }: { nhan?: ReactNode; giai: string; trai?: boolean; children?: ReactNode }) {
-  const id = useId();
-  return (
-    <span className="group relative inline-block">
-      <span tabIndex={0} aria-describedby={id} className="cursor-help border-b border-dotted border-slate-500 outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]">
-        {nhan}{children}
-      </span>
-      <span id={id} role="tooltip"
-        className={`pointer-events-none absolute top-[calc(100%+6px)] z-20 hidden w-64 whitespace-normal rounded-lg border px-2.5 py-2 text-left text-xs font-normal normal-case leading-normal tracking-normal text-slate-200 shadow-lg group-hover:block group-focus-within:block ${trai ? 'left-0' : 'right-0'}`}
-        style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
-        {giai}
-      </span>
-    </span>
-  );
+/** % to bấm được + "n/m" dòng phụ (Bang `phuCua`); mẫu 0 → "—" (title "Chưa có dữ liệu"), không 0 % (T19). */
+function OPt({ x, nguon, tieuDe, onBam }: { x: TyLe | null; nguon?: string; tieuDe: string; onBam?: () => void }) {
+  if (!x) return <span className="text-slate-500">—</span>;
+  const v = rateView(x.dat, x.mau);
+  if (v.kind !== 'value') return <span className="text-slate-500" title={t('Chưa có dữ liệu')} aria-label={t('Chưa có dữ liệu')}>—</span>;
+  if (onBam) {
+    return (
+      <button type="button" onClick={onBam} aria-label={t('{gt} — {ten}. Bấm để xem danh sách', { gt: `${v.percent} %`, ten: tieuDe })}
+        className="cursor-pointer appearance-none border-0 bg-transparent p-0 font-semibold tabular-nums text-[color:var(--link,var(--accent))] underline decoration-dotted underline-offset-4 max-sm:-m-3 max-sm:p-3">{v.percent} %</button>
+    );
+  }
+  return <OSo giaTri={x.mau} nhan={`${v.percent} %`} nguon={nguon!} tieuDe={tieuDe} />;
 }
-
-/** Một ô số: `n/m` bấm được (panel) + dòng phụ 12 px; "—" / "Chưa có dữ liệu" mờ. Không màu ngưỡng (V5 C08). */
-function OSo({ o, onBam, mo }: { o: OPtGv | undefined; onBam?: () => void; mo?: boolean }) {
-  if (!o) return <span className="text-faint">—</span>;
-  const c = chuOPtGv(o);
-  if (c.so === null) return <span className={`text-faint ${o.k === 'rong' ? 'text-xs' : 'tabular-nums'}`}>{c.phu}</span>;
-  const so = 'font-semibold tabular-nums underline decoration-dotted underline-offset-4 py-2 -my-2 inline-block';
-  const soMau = mo ? 'text-slate-400' : 'text-slate-100';
-  /* OV-15e (C02, C30): "0/20" vẫn mở 20 mục — chỉ ô không có mục nào (—, "Chưa có dữ liệu") là không bấm. */
-  return (
-    <span className="inline-flex flex-col items-end">
-      {onBam
-        ? <button type="button" onClick={onBam} className={`cursor-pointer appearance-none border-0 bg-transparent p-0 ${so} ${soMau}`}>{c.so}</button>
-        : <span className={`${so} no-underline ${soMau}`}>{c.so}</span>}
-      <span className="text-xs leading-tight tabular-nums text-slate-400">{c.phu}</span>
-    </span>
-  );
-}
-
-/** Panel một chỉ số (C30): đúng GV + khoảng + khung — cùng hàm tập với ô (`oChiSoGv`). */
-type MoO = { nguon: string; tieuDe: string };
-type BamO = (h: HangPtGv, cot: string, nhan: string) => () => void;
 
 export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | null; ct: ChuongTrinh; khoang: KhoangNgay }) {
-  const { homNay } = useNgayNghiepVu();
-  const dienThoai = useDienThoai();
   const khung: KhungPtGv = ct;
+  const [boCot, setBoCot] = useThamSoUrl('cot', 'gon');
+  const [tim, setTim] = useState('');
   const [chamDiem, setChamDiem] = useState<HangPtGv | null>(null);
-  const [moO, setMoO] = useState<MoO | null>(null);
   const q = new URLSearchParams({ ct: khung, ...(branchId ? { cn: String(branchId) } : {}), kieu: khoang.kieu, tu: khoang.tu, den: khoang.den });
   const { data, loading, error, reload } = useApi<PhanTichGvKq>(branchId ? `/phan-tich/giao-vien?${q}` : null, [q.toString()]);
-  const pt = usePhanTrang(data?.hang.length ?? 0, q.toString(), 'giáo viên');
-  const bamO: BamO = (h, cot, nhan) => () => setMoO({ nguon: `/phan-tich/giao-vien/o?${q}&gv=${h.id}&cot=${encodeURIComponent(cot)}`, tieuDe: `${nhan} · ${h.ten}` });
+  const hang = (data?.hang ?? []).filter((h) => !tim.trim() || boDau(h.ten).includes(boDau(tim.trim())));
+  const pt = usePhanTrang(hang.length, `${q}|${tim}`, 'giáo viên');
 
-  if (!branchId) return <Empty title="Chọn một chi nhánh" hint="Bảng giáo viên luôn là một chi nhánh — chọn ở ô chi nhánh đầu trang." />;
+  if (!branchId) return <Empty title={t('Chọn một chi nhánh')} hint={t('Bảng giáo viên luôn là một chi nhánh — chọn ở ô chi nhánh đầu trang.')} />;
+  const ft = khung === 'ft';
+  const day = boCot === 'day';
+  const cot = (day ? COT_DAY : COT_GON).filter((c) => ft || !CHI_FT.has(c.key)).map((c) => (!ft && c.key === 'dat' ? { ...c, nhan: t('Đạt Test') } : c));
+  const nguonO = (h: HangPtGv, c: string) => `/phan-tich/giao-vien/o?${q}&gv=${h.id}&cot=${encodeURIComponent(c)}`;
+  const ctQ = `cn=${branchId}&ct=${khung}`;
+  /* Mỗi cột: tỷ lệ (`TyLe`) + nguồn panel — cùng nguồn với Tổng quan › GV cần chú ý. */
+  const tyLe = (h: HangPtGv, k: string): TyLe | null => ({
+    viec: tyLeGv(h.viecDungHan), diem: tyLeGv(h.chamDiem),
+    dat: h.datMt ? tyLeGv(h.datMt) : gopKq(h.ketQua), tb: tyLeGv(h.tienBo), casePa: tyLeGv(h.casePa), pa: tyLeGv(h.paHieuQua), tt: tyLeGv(h.thiThat),
+  } as Record<string, TyLe | null>)[k] ?? null;
+  const NGUON: Record<string, (h: HangPtGv) => string> = {
+    viec: (h) => nguonO(h, 'viec-dung-han'), dat: (h) => nguonO(h, ft ? 'dat-mt' : 'ket-qua'), tb: (h) => nguonO(h, 'tien-bo'),
+    casePa: (h) => `/giao-vien/${h.id}/o?cot=case-mo&${ctQ}`, pa: (h) => nguonO(h, 'pa-hieu-qua'),
+    /* Pass Target: panel của hồ sơ GV (cùng `thiThatCuaGv`, một dòng một lần thi). shortcut: hồ sơ gộp mọi chi nhánh GV dạy — GV dạy hai chi nhánh thì panel có thể dài hơn ô. */
+    tt: (h) => `/giao-vien/${h.id}/chi-so/o?cot=thi-that&tu=${data?.tu ?? ''}&den=${data?.den ?? ''}`,
+  };
+  const DV: Record<string, string> = { viec: t('việc'), diem: t('bài Test'), dat: t('lượt Test'), tb: t('lượt Test'), casePa: 'Case', pa: 'PA', tt: t('lần thi') };
+  const oCua = (h: HangPtGv, c: CotBang): ReactNode => {
+    if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
+    if (c.key === 'chuY') return <OSo giaTri={h.hvChuY} tieuDe={`${t('HV cần chú ý')} · ${h.ten}`} nguon={nguonO(h, 'hv-chu-y')} />;
+    const tieuDe = `${c.nhan} · ${h.ten}`;
+    if (c.key === 'diem') return <OPt x={tyLe(h, 'diem')} tieuDe={tieuDe} onBam={() => setChamDiem(h)} />;
+    return <OPt x={tyLe(h, c.key)} nguon={NGUON[c.key](h)} tieuDe={tieuDe} />;
+  };
+  const phuCua = (h: HangPtGv, c: CotBang): ReactNode => {
+    if (c.key === 'gv') return phuGv(h);
+    if (c.key === 'chuY') return null;
+    const x = tyLe(h, c.key);
+    return x && x.mau ? `${x.dat}/${x.mau} ${DV[c.key] ?? ''}`.trim() : null;
+  };
+
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 print:hidden">
+        <span className="text-sm text-slate-400">{t('Bộ cột')}</span>
+        <span role="group" aria-label={t('Bộ cột')} className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
+          {([['gon', t('Gọn')], ['day', t('Đầy đủ')]] as const).map(([k, nhan]) => (
+            <button key={k} type="button" aria-pressed={boCot === k} onClick={() => setBoCot(k)}
+              className={`min-h-[44px] px-3 text-sm sm:min-h-[34px] ${boCot === k ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
+          ))}
+        </span>
+        <input type="search" name="tim-gv" autoComplete="off" className="field w-56 max-sm:min-h-[44px] max-sm:w-full" placeholder={t('Tìm GV…')} aria-label={t('Tìm GV')} value={tim} onChange={(e) => setTim(e.target.value)} />
+        {data && (
+          <span className="text-xs text-slate-400 sm:ml-auto">
+            {t('{n} GV {cn} · {ky} · xếp theo tên', { n: data.hang.length, cn: data.tenChiNhanh, ky: nhanKhoang(khoang).chinh })}
+          </span>
+        )}
+      </div>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
         : (
           <>
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs text-slate-400">
-              <span>
-                <span className="tabular-nums">{data.hang.length}</span> giáo viên có {data.khung === 'ft' ? 'lớp Fast Track' : 'lớp thường'} ở {data.tenChiNhanh} trong{' '}
-                <b className="font-semibold tabular-nums text-slate-200">{nhanKhoang(khoang).chinh}</b>
-                {' '}· sắp theo tên
-              </span>
+            <PhanTrang {...pt.thanh} />
+            <div className="bang-gv">
+            <Bang ten={t('Phân tích GV — Hành chính và Học thuật')} cot={cot} hang={pt.cat(hang)} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua} deu
+              rong={{ tieuDe: tim.trim() ? t('Không GV nào khớp "{q}"', { q: tim.trim() }) : t('Không có giáo viên nào có {khung} trong khoảng này.', { khung: ft ? t('lớp Fast Track') : t('lớp thường') }) }} />
             </div>
-            {!data.hang.length
-              ? <Empty title={`Không có giáo viên nào có ${data.khung === 'ft' ? 'lớp Fast Track' : 'lớp thường'} trong khoảng này.`} />
-              : (
-                <>
-                  <PhanTrang {...pt.thanh} />
-                  {dienThoai ? <TheGv kq={data} hang={pt.cat(data.hang)} onChamDiem={setChamDiem} bamO={bamO} /> : <BangGv kq={data} hang={pt.cat(data.hang)} onChamDiem={setChamDiem} bamO={bamO} />}
-                  <PhanTrang {...pt.thanh} duoi />
-                </>
-              )}
+            <PhanTrang {...pt.thanh} duoi />
             {chamDiem && <PanelChamDiem kq={data} h={chamDiem} onDong={() => setChamDiem(null)} />}
-            {moO && <DanhSachNguon nguon={moO.nguon} tieuDe={moO.tieuDe} open onClose={() => setMoO(null)} />}
           </>
         )}
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------ bảng 1440 (màn A, B)
-
-function BangGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPtGv[]; onChamDiem: (h: HangPtGv) => void; bamO: BamO }) {
-  const ft = kq.khung === 'ft';
-  const cotKq = cotKetQuaGv(kq);
-  const nhanKq = ft ? NHAN_KQ : NHAN_KQ_THUONG;
-  const th = 'th whitespace-normal align-bottom leading-snug';
-  const bl = 'border-l border-[color:var(--line)]';
-  const rongKq = ft ? 60 : 72;
-  return (
-    <div className="table-scroll min-h-[13rem] rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label="Bảng Phân tích giáo viên, cuộn ngang" tabIndex={0}>
-      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: ft || cotKq.length > 4 ? '1000px' : '820px' }}>
-        <colgroup>
-          <col style={{ width: 176 }} /><col style={{ width: 80 }} /><col style={{ width: 88 }} /><col style={{ width: 112 }} />
-          {ft && <col style={{ width: 88 }} />}
-          {cotKq.map((k) => <col key={k} style={{ width: rongKq }} />)}
-          {ft && <col style={{ width: 88 }} />}
-        </colgroup>
-        <thead>
-          <tr>
-            <th rowSpan={2} className={`${th} sticky left-0 z-10`} style={{ background: 'var(--surface-2, var(--surface))' }}>Giáo viên</th>
-            <th rowSpan={2} className={`${th} text-right`}><DauCot nhan="Đang dạy" giai={GIAI['dang-day'](ft)} trai /></th>
-            <th colSpan={2} className={`${th} ${bl} text-center align-middle text-slate-200`}>Đúng hạn</th>
-            {ft && <th rowSpan={2} className={`${th} ${bl} text-right`}><DauCot nhan="PA hiệu quả" giai={GIAI['pa-hieu-qua'](ft)} /></th>}
-            <th colSpan={cotKq.length} className={`${th} ${bl} text-center align-middle text-slate-200`}><DauCot nhan="Kết quả môn mình dạy" giai={GIAI['ket-qua'](ft)} /></th>
-            {ft && <th rowSpan={2} className={`${th} ${bl} text-right`}><DauCot nhan="HV tiến bộ" giai={GIAI['tien-bo'](ft)} /></th>}
-          </tr>
-          <tr>
-            <th className={`${th} ${bl} text-right`}><DauCot nhan="Chấm điểm" giai={GIAI['cham-diem'](ft)} trai /></th>
-            <th className={`${th} text-right ${ft ? '' : 'font-medium'}`}><DauCot nhan="Kết quả PA" giai={GIAI['ghi-pa'](ft)} /></th>
-            {cotKq.map((k, i) => {
-              const [nhan, phu] = nhanKq[k];
-              return (
-                <th key={k} className={`${th} text-right ${i === 0 ? bl : ''}`}>
-                  {phu ? <DauCot giai={GIAI[k === 'writing' ? 'w-gv' : 's-p'](ft)}>{nhan} <span className="font-medium">{phu}</span></DauCot> : nhan}
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {hang.map((h) => {
-            const d = { gv: `/giao-vien/${h.id}` };
-            return (
-              <tr key={h.id} className="row-hover">
-                <td className="td sticky left-0 z-[1] align-top" style={{ background: 'var(--bg)' }}>
-                  <Link to={d.gv} className="link font-semibold">{h.ten}</Link>
-                  {h.phu && <div className="text-xs text-slate-400">{h.phu}</div>}
-                </td>
-                <td className="td text-right align-top tabular-nums">
-                  <Link to={d.gv} className="font-semibold text-slate-100 underline decoration-dotted underline-offset-4">{h.dangDay.lop}</Link> <span className="text-xs text-slate-400">lớp</span>
-                  <span className="block text-xs text-slate-400"><span className="tabular-nums">{h.dangDay.hv}</span> HV</span>
-                </td>
-                <td className={`td text-right align-top ${bl}`}><OSo o={h.chamDiem} onBam={() => onChamDiem(h)} /></td>
-                <td className="td text-right align-top"><OSo o={h.ghiKetQuaPa} onBam={bamO(h, 'ghi-pa', 'Kết quả PA đúng hạn')} mo={!ft} /></td>
-                {ft && <td className={`td text-right align-top ${bl}`}><OSo o={h.paHieuQua} onBam={bamO(h, 'pa-hieu-qua', 'PA hiệu quả')} /></td>}
-                {cotKq.map((k, i) => <td key={k} className={`td text-right align-top ${i === 0 ? bl : ''}`}><OSo o={h.ketQua[k]} onBam={bamO(h, `ket-qua:${k}`, `Kết quả ${nhanKq[k][0]}`)} /></td>)}
-                {ft && <td className={`td text-right align-top ${bl}`}><OSo o={h.tienBo} onBam={bamO(h, 'tien-bo', 'HV tiến bộ')} /></td>}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------ 375 px (màn D): mỗi GV một thẻ, dòng không áp dụng ẩn
-
-function TheGv({ kq, hang, onChamDiem, bamO }: { kq: PhanTichGvKq; hang: HangPtGv[]; onChamDiem: (h: HangPtGv) => void; bamO: BamO }) {
-  const ft = kq.khung === 'ft';
-  const nhanKq = ft ? NHAN_KQ : NHAN_KQ_THUONG;
-  return (
-    <div className="card p-0">
-      {hang.map((h) => {
-        const d = { gv: `/giao-vien/${h.id}` };
-        const dong: { nhan: string; noiDung: ReactNode; o: OPtGv | undefined }[] = [
-          { nhan: 'Chấm đúng hạn', o: h.chamDiem, noiDung: <OSo o={h.chamDiem} onBam={() => onChamDiem(h)} /> },
-          { nhan: 'Kết quả PA đúng hạn', o: h.ghiKetQuaPa, noiDung: <OSo o={h.ghiKetQuaPa} onBam={bamO(h, 'ghi-pa', 'Kết quả PA đúng hạn')} mo={!ft} /> },
-          ...(ft ? [{ nhan: 'PA hiệu quả', o: h.paHieuQua, noiDung: <OSo o={h.paHieuQua} onBam={bamO(h, 'pa-hieu-qua', 'PA hiệu quả')} /> }] : []),
-          ...cotKetQuaGv(kq).map((k) => ({
-            nhan: `Kết quả ${nhanKq[k][0]}${nhanKq[k][1] ? ` ${nhanKq[k][1]}` : ''} · ${ft ? 'đạt kỳ vọng' : 'đạt'}`, o: h.ketQua[k],
-            noiDung: <OSo o={h.ketQua[k]} onBam={bamO(h, `ket-qua:${k}`, `Kết quả ${nhanKq[k][0]}`)} />,
-          })),
-          ...(ft ? [{ nhan: 'HV tiến bộ', o: h.tienBo, noiDung: <OSo o={h.tienBo} onBam={bamO(h, 'tien-bo', 'HV tiến bộ')} /> }] : []),
-        ];
-        return (
-          <TheDong key={h.id}
-            dau={(
-              <span className="block min-w-0">
-                <Link to={d.gv} className="link font-semibold">{h.ten}</Link>
-                <span className="block text-xs text-slate-400">{[h.phu, `${h.dangDay.lop} lớp · ${h.dangDay.hv} HV`].filter(Boolean).join(' · ')}</span>
-              </span>
-            )}
-            dong={dong.filter((x) => x.o && x.o.k !== 'na').map(({ nhan, noiDung }) => ({ nhan, noiDung: <span className="flex justify-end">{noiDung}</span> }))} />
-        );
-      })}
     </div>
   );
 }
@@ -249,7 +163,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
   const pt = usePhanTrang(rows.length, `${q}|${chiTre}`, 'ô');
   const khoang = `${tuanLich(kq.tu, homNay)} – ${tuanLich(kq.den, homNay)}`;
   return (
-    <KhungPanel tieuDe={`Chấm đúng hạn · ${h.ten}`} rong="rong" onDong={onDong}
+    <KhungPanel tieuDe={`${t('Chấm Test đúng hạn')} · ${h.ten}`} rong="rong" onDong={onDong}
       ngCanh={data ? (
         <span className="text-xs text-slate-400">
           {kq.khung === 'ft' ? 'Fast Track' : 'Lớp thường'} · {data.tenChiNhanh} · tuần Test <span className="tabular-nums">{khoang}</span> ·{' '}

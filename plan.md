@@ -575,6 +575,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 23/10/2026 | UI-PHAN-TICH (Opus 5.5) · `claude/serene-ramanujan-3l7my1` #558 | Báo cáo HV (4 chỉ số = Tổng quan, Kết quả MT MT0→MT3+ · Thi thật, Tiến bộ theo kỹ năng, Hỗ trợ) + Phân tích GV một bảng Gọn (vừa 1280) / Đầy đủ; Toàn bộ / khoảng tự do (P9); Kết quả thi chỉ đọc (C16); [XM-1…5] trong khop-khac |
 | 23/10/2026 | SV-NX-CASE (Opus 5.5) · `claude/kind-bell-2ieu1u` | N8: một hàm `laMtMoiNhatCuaEm` — chỉ MT mới nhất nhắc nhận xét / nhóm (kể cả MT cũ), bỏ chữ "cũ"; mô tả Case MT theo nhận xét chỉ khi chưa có (`sos_cases.mo_ta_attempt_id`), sửa riêng ở Case → tách hẳn (lịch sử `mo_ta_nguon`); S chấm chéo khác GV phụ trách → việc "Xác nhận Case" (hạn SOS, `POST /cases/:id/xac-nhan-s`) thay Xem nhận xét Speaking. Migrate `prSvNxCase` + `kiem-truoc-sv-nx-case`; `prSvNxCase.tests` NX1…14 |
 | 22/10/2026 | UI-HV-LOP (Opus 5.5) · `claude/serene-euler-fpkxv4` | `/hoc-vien` danh sách gọn theo khu d (8 cột, Việc làm tại chỗ, ⋯ em), Đang SOS mới, Lịch thi V4 A / B + mở dưới hàng, Xuất theo bộ lọc; giữ thao tác cũ (dải lớp, Bộ lọc thêm, Đã thi, Xếp) — [XM] 1–4 trong `docs/anh/ui-hv-lop/khop-khac.md` |
 | 22/10 | #547 UI-HO-SO-LOP · Opus 5.5 | Hồ sơ lớp V5 nâng cấp trên V4: thanh Việc cần làm, bảng FT (W1·W2, popover, Case + PA dưới hàng), tab Đánh giá đầu ra + bảng `danh_gia_dau_ra` (C17); `/roster` bỏ `viecTiepTheo`. Chờ duyệt ảnh; [XM] tab Ý thức, Cách xem. |

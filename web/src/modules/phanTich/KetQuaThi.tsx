@@ -2,17 +2,13 @@ import { Fragment, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
-import { api, invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, Skeleton, BoLocDoan } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DauKetQua } from '../../ui/BieuTuong.tsx';
-import { MenuDong } from '../../ui/MenuDong.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
-import { useToast } from '../../ui/Toast.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { PanelBuocTiep } from '../students/PanelBuocTiep.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { duongDotTest } from '@shared/domain/index.ts';
@@ -24,7 +20,7 @@ import {
 /**
  * KẾT QUẢ THI (OV-15e, C27 + thiết kế OV-14 mục 6, mockup 6 khung 6) — tab con Mock Test / Thi thật (tầng 2), đếm theo LƯỢT ("34 lượt · 31 HV").
  * Mock: xếp theo Lớp hoặc Mức SOS (nặng trước); L · R · W · S ✓ / ✗ so kỳ vọng của đợt; "MT · tuần" mở hồ sơ MT, "Việc tiếp" mở Case.
- * Thi thật: nhóm theo lớp; Bước tiếp chọn ngay trên hàng (Tạm dừng / Thôi học / Chưa chọn lưu ngay; Lộ trình mới… mở panel Bước tiếp sẵn có).
+ * Thi thật: nhóm theo lớp; Bước tiếp CHỈ ĐỌC (UI-PHAN-TICH, C16 — chọn ở tuyến Sau thi: Công việc TVV / hồ sơ HV).
  */
 const ALL = 'tat-ca' as const;
 type LocKq = KetQuaMock | typeof ALL;
@@ -181,50 +177,21 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
 
 // ------------------------------------------------------------------ Thi thật
 
-const LUA_CHON_HANG = [['tam_dung', t('Tạm dừng')], ['ket_thuc', t('Thôi học')]] as const;
-
 function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
   const { homNay } = useNgayNghiepVu();
   const dienThoai = useDienThoai();
-  const toast = useToast();
   const query = thamSoLoc(pv, { loai: 'thi-that' });
   const { data, loading, error, reload } = useApi<KetQuaThiThatKq>(`/phan-tich/ket-qua-thi?${query}`, [query]);
   const rows = data?.rows ?? [];
   const pt = usePhanTrang(rows.length, query, 'lượt');
-  const [dang, setDang] = useState<number | null>(null);
-  const [moPanel, setMoPanel] = useState<DongThiThat | null>(null);
-
-  const xong = () => { for (const k of ['/phan-tich', '/students', '/my-work', '/cycles', '/tong-quan']) invalidate(k); reload(); };
-  const chon = async (r: DongThiThat, v: string | null) => {
-    setDang(r.cycleId);
-    try {
-      const ghi = (x: string | null) => (x === null ? api.del(`/cycles/${r.cycleId}/buoc-tiep`) : api.post(`/cycles/${r.cycleId}/buoc-tiep`, { chon: x }));
-      await ghi(v);
-      const chu = v === null ? t('Đã bỏ chọn bước tiếp · {ten}', { ten: r.ten }) : t('Đã lưu · {ten}', { ten: r.ten });
-      /* CV-LOI (A5-08): lưu ngay trên hàng → Hoàn tác về lựa chọn cũ (chưa chọn / Tạm dừng / Thôi học). Lựa chọn cũ là "Học tiếp lộ trình" (cần panel) → không Hoàn tác. */
-      const cu = r.buocTiep ?? null;
-      if (cu === null || LUA_CHON_HANG.some(([k]) => k === cu)) {
-        toast.hoanTac(chu, () => { ghi(cu).then(xong, (e: any) => toast.push('error', e?.message ?? t('Không lưu được'))); });
-      } else toast.push('ok', chu);
-      xong();
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setDang(null); }
-  };
-  const buocTiep = (r: DongThiThat) => {
-    const chu = r.buocTiepChu ? dich(r.buocTiepChu) : t('Chưa chọn');
-    if (!r.coTheChon) return <span className={r.buocTiep ? 'text-slate-200' : 'text-faint'}>{chu}{r.buocTiepPhu && <span className="block text-xs text-slate-400">{r.buocTiepPhu}</span>}</span>;
-    return (
-      <span className="inline-flex flex-col items-start">
-        {dang === r.cycleId ? <span className="text-xs text-slate-400">{t('Đang lưu…')}</span> : (
-          <MenuDong nhan={`${t('Bước tiếp')} · ${r.ten}`} bieuTuong={`${chu} ▾`} muc={[
-            { key: 'moi', nhan: t('Học tiếp lộ trình…'), onChon: () => setMoPanel(r) },
-            ...LUA_CHON_HANG.map(([k, n]) => ({ key: k, nhan: n, onChon: () => void chon(r, k), ...(k === 'ket_thuc' ? { keTruoc: true, nguyHiem: true } : {}) })),
-            { key: 'bo', nhan: t('Chưa chọn'), keTruoc: true, tat: !r.buocTiep, onChon: () => void chon(r, null) },
-          ]} />
-        )}
-        {r.buocTiepPhu && <span className="text-xs text-slate-400">{r.buocTiepPhu}</span>}
-      </span>
-    );
-  };
+  /* UI-PHAN-TICH (C16): Phân tích chỉ ĐỌC — Bước tiếp chọn ở tuyến Sau thi (Công việc TVV / hồ sơ HV); hàng chưa chọn có link sang hồ sơ. */
+  const buocTiep = (r: DongThiThat) => (
+    <span className={r.buocTiep ? 'text-slate-200' : 'text-faint'}>
+      {r.buocTiepChu ? dich(r.buocTiepChu) : t('Chưa chọn')}
+      {!r.buocTiep && r.coTheChon && <> · <Link to={`/hoc-vien/${r.studentId}`} className="link text-xs">{t('Hồ sơ HV ›')}</Link></>}
+      {r.buocTiepPhu && <span className="block text-xs text-slate-400">{r.buocTiepPhu}</span>}
+    </span>
+  );
   const datTarget = (r: DongThiThat) => (r.khongThi ? <span className="text-xs text-muted">{t('Không thi')}</span>
     : r.dat === null ? <span className="text-faint">—</span>
     : <span className={`text-xs font-semibold ${r.dat ? 'text-ok' : 'text-bad'}`}>{r.dat ? t('Đạt') : t('Chưa đạt')}</span>);
@@ -307,10 +274,6 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
             <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>
           </>
         )}
-      {moPanel && (
-        <PanelBuocTiep cycleId={moPanel.cycleId} hocVien={{ id: moPanel.studentId, ten: moPanel.ten }} lop={moPanel.lop} chonSan="lo_trinh_moi"
-          onClose={() => setMoPanel(null)} onDone={() => { setMoPanel(null); xong(); }} />
-      )}
     </Card>
   );
 }

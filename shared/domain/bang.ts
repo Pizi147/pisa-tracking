@@ -37,6 +37,8 @@ export type DinhNghiaCot = {
   sang?: boolean;
   /** Cột máy tính sẵn (W tổng) — nền xám cả tiêu đề lẫn ô (04 mục 6.3). */
   tinh?: boolean;
+  /** Cột đầu của một nhóm cần tách rõ (vạch dọc đậm cả tiêu đề lẫn ô — UI-PHAN-TICH: Hành chính | Học thuật). */
+  tach?: boolean;
 };
 
 /** Key của MỘT cột linh hoạt: việc › chữ › tên; không có cột chữ → null. */

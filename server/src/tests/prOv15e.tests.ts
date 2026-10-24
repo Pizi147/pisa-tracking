@@ -61,7 +61,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(tc.tu === '2026-09-03' && tc.den === '2026-10-13' && d.nhanKhoang(tc).phu.endsWith('41 ngày'), JSON.stringify(tc));
     assert(d.nhanKhoang({ kieu: 'tuan', tu: '2026-08-24', den: '2026-10-18' }).chinh === 'W4 AUG – W3 OCT/2026', 'nhiều tuần');
     assert(d.nhanKhoang({ kieu: 'tuan', tu: '2026-12-28', den: '2027-01-10' }).chinh.includes('/2027'), 'vắt năm có năm');
-    assert(d.loiKhoang({ tu: '2026-10-10', den: '2026-10-01' }) && d.loiKhoang({ tu: '2025-01-01', den: '2026-10-01' }) && d.loiKhoang({ tu: 'x', den: '2026-10-01' }), 'khoảng sai phải có lỗi');
+    assert(d.loiKhoang({ tu: '2026-10-10', den: '2026-10-01' }) && d.loiKhoang({ tu: 'x', den: '2026-10-01' }) && !d.loiKhoang({ tu: '2025-01-01', den: '2026-10-01' }), 'khoảng sai phải có lỗi; > 52 tuần hợp lệ (P9, UI-PHAN-TICH)');
     assert(d.loiKhoang(md) === null, 'khoảng đúng không lỗi');
     const tr = d.khoangTruoc(md);
     assert(tr.tu === '2026-09-14' && tr.den === '2026-09-27', `kỳ trước: ${JSON.stringify(tr)}`);
@@ -84,8 +84,8 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(d.khuVucHienThi(n).map((k: any) => k.key).join(',') === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', d.khuVucHienThi(n).map((k: any) => k.key).join(','));
     assert(!d.khuVucHienThi(navOf(P.w1Teacher)).some((k: any) => k.key === 'phan-tich'), 'GV không có mục Phân tích');
     assert(d.khuVucCuaDuong('/phan-tich') === 'phan-tich', 'tô sáng mục Phân tích');
-    assert([...d.GOC_NHIN].join(',') === 'bao-cao,tong-hop,ket-qua-thi,hieu-qua-pa,giao-vien,y-thuc', [...d.GOC_NHIN].join(','));
-    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo · Test + SOS · Kết quả Test · Hiệu quả PA · Phân tích GV · Ý thức', 'tên tab');
+    assert([...d.GOC_NHIN].join(',') === 'bao-cao,giao-vien,tong-hop,ket-qua-thi,hieu-qua-pa,y-thuc', [...d.GOC_NHIN].join(','));   // UI-PHAN-TICH: thứ tự mockup V5
+    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo HV · Phân tích GV · Test + SOS · Kết quả Test · Hiệu quả PA · Ý thức', 'tên tab');
     const g = (s: string) => d.gocNhinTuThamSo(new URLSearchParams(s));
     assert(g('').goc === 'bao-cao', 'không tham số → Báo cáo');
     assert(g('goc=van-de').goc === 'tong-hop' && g('goc=van-de').gocMoi === 'tong-hop', 'van-de cũ → Test + SOS');
@@ -238,7 +238,8 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     const doc = (p: string) => fs.readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
     assert(/PhanTichPage/.test(doc('web/src/App.tsx')), 'App gắn PhanTichPage');
     assert(!/<PhanTich \/>/.test(doc('web/src/modules/worklist/OverviewPage.tsx')), 'Tổng quan không còn tab Phân tích');
-    for (const f of ['BaoCao.tsx', 'KetQuaThi.tsx', 'TongHopTestSos.tsx', 'HieuQuaPa.tsx', 'PhanTichGiaoVien.tsx', 'YThucPhoiHop.tsx']) {
+    /* UI-PHAN-TICH: Báo cáo HV không còn danh sách dài (bảng 5 hàng cố định) — bỏ khỏi danh sách phân trang. */
+    for (const f of ['KetQuaThi.tsx', 'TongHopTestSos.tsx', 'HieuQuaPa.tsx', 'PhanTichGiaoVien.tsx', 'YThucPhoiHop.tsx']) {
       assert(/PhanTrang|usePhanTrang/.test(doc(`web/src/modules/phanTich/${f}`)), `${f} chưa phân trang`);
     }
     assert(/usePhanTrang/.test(doc('web/src/ui/SoLieu.tsx')), 'panel số liệu chưa phân trang');
