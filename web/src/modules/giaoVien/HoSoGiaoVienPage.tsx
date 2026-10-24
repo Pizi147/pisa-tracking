@@ -8,7 +8,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, Empty, ErrorState, LOP_NHAN, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
-import { CHIP_TRON } from '../../ui/Nhan.tsx';
+import { CHIP_TRON, ChipKy } from '../../ui/Nhan.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -62,10 +62,6 @@ function Goi({ chu }: { chu: string }) {
   );
 }
 
-/** Chip kỹ năng (R · W1 …) — cùng kiểu chip ô nhỏ của khung V5 (`.ky`). */
-const ChipKy = ({ k }: { k: string }) => (
-  <span className="inline-flex h-5 min-w-6 items-center justify-center rounded bg-[color:var(--accent-soft)] px-1.5 text-xs font-bold tabular-nums text-[color:var(--accent)]">{k}</span>
-);
 const ChipGvcn = () => <span className={`${CHIP_TRON} bg-ok-bg font-semibold text-ok`}>GVCN</span>;
 
 export function HoSoGiaoVienPage() {

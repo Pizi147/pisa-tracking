@@ -17,6 +17,8 @@ import { xuLyCaseMany } from '../cases/sosState.ts';
 import { lopCuaTap, tachTheoLop } from './chuongTrinh.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { noDiemCuaGv } from '../giaoVien/hoSo.ts';
+import { chiSoHoSoGv } from '../phanTich/giaoVien.ts';
+import { tapThiThangNayLop } from '../phanTich/baoCao.ts';
 import { phamViXemViec } from './xemViec.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { toiHan } from '../platform/thongBaoTuDong.ts';
@@ -248,7 +250,7 @@ export function diemChuY(p: Principal, f: { branchId?: number | null; ct: Chuong
  * FT: không cột tuần khoá (FT không giới hạn tuần); lớp thường: không SOS. PR-S6F-b (D10): "Bài chờ chấm / bài quá hạn" đếm BÀI (`baiId`) của
  * chính người xem ở lớp đó — `noDiemCuaGv` (cùng hàm cột "Chưa nhập / Bài quá hạn" hồ sơ GV), bấm số ra cùng tập.
  */
-type TapLop = { duoiKyVong: number[]; sos: number[]; caseMo: number[]; baiCho: number[]; baiQuaHan: number[] };
+type TapLop = { duoiKyVong: number[]; sos: number[]; sos1: number[]; sos2: number[]; sos3: number[]; caseMo: number[]; baiCho: number[]; baiQuaHan: number[]; han: string | null };
 function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
   const today = demoToday();
   const conn = db();
@@ -270,14 +272,21 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
   const soFt = lop.filter((l) => !!l.ft).length, soThuong = lop.length - soFt;
   const coFt = soFt > 0, coThuong = soThuong > 0;
   const trong = lop.filter((l) => !!l.ft === (ct === 'ft')).sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }));
-  const tap = new Map<number, TapLop>(trong.map((l) => [l.id as number, { duoiKyVong: [], sos: [], caseMo: [], baiCho: [], baiQuaHan: [] }]));
-  const chia = (metricId: string, cot: keyof TapLop) => {
+  const tap = new Map<number, TapLop>(trong.map((l) => [l.id as number, { duoiKyVong: [], sos: [], sos1: [], sos2: [], sos3: [], caseMo: [], baiCho: [], baiQuaHan: [], han: null }]));
+  const chia = (metricId: string, cot: 'duoiKyVong' | 'sos' | 'caseMo') => {
     const r = metricSet(p, metricId, { program: ct });
     for (const [id, l] of lopCuaTap(r.unit, r.ids)) if (l.classId && tap.has(l.classId)) tap.get(l.classId)![cot].push(id);
   };
   if (trong.length) {
     chia('hv-duoi-ky-vong-mon', 'duoiKyVong');
-    if (ct === 'ft') chia('hv-sos-hien-tai', 'sos');
+    if (ct === 'ft') {
+      chia('hv-sos-hien-tai', 'sos');
+      /* SV-TQ-GV (mockup "SOS 2 · 1"): tách tập SOS theo mức — CHÍNH lượt mới nhất `hvSosHienTai` đọc (`latestAttempts` nhớ theo tập). */
+      const muc = latestAttempts([...tap.values()].flatMap((x) => x.sos), 'valid', today);
+      for (const x of tap.values()) {
+        for (const id of x.sos) { const m = muc.get(id)?.sosLevel ?? 0; if (m >= 1 && m <= 3) x[`sos${m as 1 | 2 | 3}`].push(id); }
+      }
+    }
     chia('case-mo', 'caseMo');
     /* OV-13o: GV Speaking — bài S chấm chéo ở lớp mình dạy cũng là "bài chờ chấm" (cùng số với Công việc); chấm chéo không quá hạn (T18). */
     const lopCheo = new Set(ct === 'ft' ? lopFtChoGvSpeaking(p, today) : []);
@@ -285,6 +294,8 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
       const x = tap.get(o.classId)!;
       const id = baiId(o.attemptId, o.skill);
       x.baiCho.push(id);
+      /* SV-TQ-GV (mockup "hạn 23/09"): hạn gần nhất của bài chờ chấm (chấm chéo không hạn — T18). */
+      if (o.han && !o.chamCheo && (!x.han || o.han < x.han)) x.han = o.han;
       if (o.overdue && !o.chamCheo) x.baiQuaHan.push(id);
     }
   }
@@ -318,11 +329,13 @@ export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }) {
       const t = tap.get(l.id)!;
       return {
         classId: l.id as number, code: l.code as string, route: l.route ?? null, ct: l.ct ?? null,
+        gvcn: c.core, kyNang: c.skills.map((k) => tenMonNgan(l.ct, k)),
         toiDay: [c.core ? 'GVCN' : null, c.skills.map(ten).join(', ') || null].filter(Boolean).join(' · '),
         tuanHoc: f.ct === 'thuong' && pr?.currentWeek && pr.totalWeeks ? `tuần ${Math.min(pr.currentWeek, pr.totalWeeks)}/${pr.totalWeeks}` : null,
         hocVien: l.so_hv as number,
         duoiKyVong: t.duoiKyVong.length, sos: f.ct === 'ft' ? t.sos.length : null, caseMo: t.caseMo.length,
-        baiCho: t.baiCho.length, baiQuaHan: t.baiQuaHan.length,
+        sosMuc: f.ct === 'ft' ? [t.sos1.length, t.sos2.length, t.sos3.length] as [number, number, number] : null,
+        baiCho: t.baiCho.length, baiQuaHan: t.baiQuaHan.length, hanCham: t.han,
         testKeTiep: f.ct === 'ft' ? keTiep.get(l.id) ?? null : moc,
         testTuanNay: (f.ct === 'ft' ? keTiep.get(l.id) : moc)?.endsWith(tuanLich(thu2, today)) ?? false,
       };
@@ -330,17 +343,70 @@ export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }) {
   };
 }
 
+/**
+ * "Thi tháng này" theo lớp của GV — CHÍNH `tapThiThangNayLop` (Tổng quan QL / Báo cáo), phạm vi = lớp GV có phân công hôm nay. GV không có `analysis.view`,
+ * nên gọi qua một người xem chỉ mang grant vai giáo viên (`scopeFor` → lớp của `p.assignments`) — không mở thêm dữ liệu ngoài lớp của mình.
+ */
+function thiThangNayCuaGv(p: Principal, ct: 'ft' | 'thuong') {
+  const xem: Principal = { ...p, grants: [{ id: 0, roleKey: 'teacher', roleName: '', branchId: null, branchName: null, permissions: new Set([PERMISSIONS.ANALYSIS_VIEW]) }] };
+  return tapThiThangNayLop(xem, { ct });
+}
+
+/**
+ * SV-TQ-GV (XM-5, mockup `tong-quan.html?k=gv`): Tổng quan GV HAI khối — **Kỹ năng tôi dạy** (lớp có phân công kỹ năng: Đạt kỳ vọng Test · Tiến bộ ·
+ * bài chờ chấm · Test sắp tới) và **Lớp tôi chủ nhiệm** (lớp GVCN: Dưới kỳ vọng · SOS · Case đang mở · Thi tháng này). Không đếm lại: hàng lớp = `lopToiDay`
+ * (V4, cả hai khung), Đạt / Tiến bộ = `chiSoHoSoGv(...).hocThuatTheoLop` (cùng số hồ sơ GV, kỳ mặc định), Thi tháng này = `tapThiThangNayLop`.
+ * Mỗi số bấm được: cột V4 + Thi tháng này → `/tong-quan/lop-toi-day/o`; Đạt / Tiến bộ → `/giao-vien/:id/chi-so/o?cot=ket-qua-lop|tien-bo-lop:<lớp>`.
+ */
+export function lopToiDayHaiKhoi(p: Principal) {
+  /* Lớp thường chỉ đọc khi GV có lớp thường (`coThuong` của lần đọc FT) — GV chỉ dạy FT không tốn thêm câu. */
+  const ft = lopToiDay(p, { ct: 'ft' });
+  const hang = [...ft.rows.map((r) => ({ ...r, khung: 'ft' as const })), ...(ft.coThuong ? lopToiDay(p, { ct: 'thuong' }).rows.map((r) => ({ ...r, khung: 'thuong' as const })) : [])];
+  /* Lớp chỉ GVCN (không kỹ năng) mà còn bài chờ chấm của tôi vẫn vào khối dạy — không giấu bài. */
+  const day = hang.filter((r) => r.kyNang.length || r.baiCho);
+  const cs = day.length ? chiSoHoSoGv(p, p.userId, {}) : null;
+  const ht = new Map(cs?.hocThuatTheoLop.map((h) => [h.classId, h]) ?? []);
+  const cn = hang.filter((r) => r.gvcn);
+  const thi = new Map<number, number>();
+  for (const khung of ['ft', 'thuong'] as const) {
+    if (!cn.some((r) => r.khung === khung)) continue;
+    for (const x of thiThangNayCuaGv(p, khung).values()) thi.set(x.lop, (thi.get(x.lop) ?? 0) + 1);
+  }
+  return {
+    ky: cs ? { tu: cs.tu, den: cs.den } : null,
+    day: day.map((r) => {
+      const h = ht.get(r.classId);
+      return {
+        classId: r.classId, code: r.code, khung: r.khung, route: r.route, ct: r.ct, kyNang: r.kyNang, tuanHoc: r.tuanHoc,
+        testKeTiep: r.testKeTiep, testTuanNay: r.testTuanNay, baiCho: r.baiCho, baiQuaHan: r.baiQuaHan, hanCham: r.hanCham,
+        ketQua: h?.ketQua ?? null, tienBo: r.khung === 'ft' ? h?.tienBo ?? null : null,
+      };
+    }),
+    chuNhiem: cn.map((r) => ({
+      classId: r.classId, code: r.code, khung: r.khung, route: r.route, ct: r.ct, hocVien: r.hocVien,
+      duoiKyVong: r.duoiKyVong, sos: r.sos, sosMuc: r.sosMuc, caseMo: r.caseMo, thiThangNay: thi.get(r.classId) ?? 0,
+    })),
+  };
+}
+
 /** Một ô của "Lớp tôi dạy" → đúng những em/Case tạo nên số đó (cùng `tinhLopToiDay`). Lớp không dạy → 403. */
 export function oLopToiDay(p: Principal, f: { ct: 'ft' | 'thuong'; classId: number; cot: string }) {
-  const COT: Record<string, keyof TapLop> = { duoiKyVong: 'duoiKyVong', sos: 'sos', caseMo: 'caseMo', 'bai-cho': 'baiCho', 'bai-qua-han': 'baiQuaHan' };
+  const COT: Record<string, Exclude<keyof TapLop, 'han'>> = {
+    duoiKyVong: 'duoiKyVong', sos: 'sos', sos1: 'sos1', sos2: 'sos2', sos3: 'sos3', caseMo: 'caseMo', 'bai-cho': 'baiCho', 'bai-qua-han': 'baiQuaHan',
+  };
   const cot = COT[f.cot];
-  if (!cot) throw badRequest('Cột không hợp lệ.');
+  if (!cot && f.cot !== 'thi-thang-nay') throw badRequest('Cột không hợp lệ.');
   const { trong, tap } = tinhLopToiDay(p, f.ct);
   const l = trong.find((x) => x.id === f.classId);
   if (!l) throw forbidden('Bạn không dạy lớp này.');
+  if (!cot) {
+    /* SV-TQ-GV: "Thi tháng này" của lớp chủ nhiệm — cùng `thiThangNayCuaGv` với số. */
+    const ids = [...thiThangNayCuaGv(p, f.ct)].filter(([, x]) => x.lop === f.classId).map(([s]) => s).sort((a, b) => a - b);
+    return { n: ids.length, tieuDe: `${l.code} · ${ids.length} HV thi tháng này`, rows: rowsFor('hoc-vien', ids, undefined, p) };
+  }
   const ids = tap.get(f.classId)![cot];
   const unit = cot === 'caseMo' ? 'case' : cot === 'baiCho' || cot === 'baiQuaHan' ? 'bai' : 'hoc-vien';
-  const nhan = cot === 'caseMo' ? 'Case đang mở' : cot === 'sos' ? 'học viên có SOS' : cot === 'baiCho' ? 'bài chờ chấm' : cot === 'baiQuaHan' ? 'bài quá hạn chưa nhập điểm'
+  const nhan = cot === 'caseMo' ? 'Case đang mở' : cot === 'sos' ? 'học viên có SOS' : /^sos\d$/.test(cot) ? `học viên SOS ${cot.slice(3)}` : cot === 'baiCho' ? 'bài chờ chấm' : cot === 'baiQuaHan' ? 'bài quá hạn chưa nhập điểm'
     : f.ct === 'thuong' ? 'học viên chưa đạt' : 'học viên dưới kỳ vọng';
   return { n: ids.length, tieuDe: `${l.code} · ${ids.length} ${nhan}`, rows: rowsFor(unit, ids, undefined, p) };
 }

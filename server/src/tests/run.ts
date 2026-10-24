@@ -9569,6 +9569,9 @@ await runPrUiHoSoGvTests({ check, assert, conn, P } as any);
 // ==================================================================== V5 UI-PHAN-TICH (Báo cáo HV = Tổng quan, Phân tích GV cột mới = panel, Toàn bộ)
 const { runPrUiPhanTichTests } = await import('./prUiPhanTich.tests.ts');
 await runPrUiPhanTichTests({ check, assert, conn, P } as any);
+// ==================================================================== V5 SV-TQ-GV (Tổng quan GV hai khối — số = hồ sơ GV / Phân tích, quyền)
+const { runPrSvTqGvTests } = await import('./prSvTqGv.tests.ts');
+await runPrSvTqGvTests({ check, assert, conn, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
