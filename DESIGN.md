@@ -67,7 +67,10 @@ typography:
     fontSize: "12px"
     fontWeight: 600
     lineHeight: "22px"
+  scale:
+    note: "Thang chữ V5 (G13, tailwind fontSize): 12 · 13 · 14 · 15 · 17 · 22 · 28 px — 14 lưới dày, 17 tiêu đề khối / panel, 28 số lớn đều trong thang"
 rounded:
+  note: "Bán kính trong thang: 2 px badge lịch thi · 3–4 px chip / ô sửa · 6 px ô nhập nhỏ · 8 px nút / ô · 9–12 px thẻ / panel · pill; vạch trái 3–4 px = đang chọn / hàng nhóm (G14), không phải side-tab trang trí"
   chip-square: "0.25rem"
   field: "0.5rem"
   card: "0.75rem"
