@@ -188,7 +188,7 @@ export function TheHvGon({ ds, lop, viec, nguCanh, onMoViec, onDoi, vai }: {
             <div className="flex items-center gap-2">
               <Link className="link min-w-0 truncate font-semibold" to={`/hoc-vien/${h.id}`} state={{ ds: nguCanh }}>{h.ten}</Link>
               <span className="shrink-0 text-xs text-slate-400">{lop.get(h.classId)?.code}{ev?.status === 'inactive' ? ` · ${t('Tạm dừng')}` : ''}</span>
-              <span className="ml-auto shrink-0">{g?.hoTro.sos ? <ChipSos muc={g.hoTro.sos} kyNang={g.hoTro.kyNang.map((k) => skillShort(k))} /> : <ChipLichThi l={h.lich} />}</span>
+              <span className="ml-auto shrink-0">{g?.hoTro.sos ? <ChipSos muc={g.hoTro.sos} kyNang={g.hoTro.kyNang.map((k) => skillShort(k))} /> : !h.lich && ev ? <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span> : <ChipLichThi l={h.lich} />}</span>
               <span className="shrink-0"><MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} /></span>
             </div>
             <div className="text-xs text-slate-400">

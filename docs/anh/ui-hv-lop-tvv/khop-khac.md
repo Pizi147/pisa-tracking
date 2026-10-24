@@ -14,6 +14,10 @@ PR này đưa hai vai vào CÙNG `TrangTheoLop` (QL / GV / Admin) + phần của
 **Bấm thử (Playwright, 1440):** link Tổng quan TVV `phamVi=cua-toi&view=cho-buoc-tiep` → chip bật, 1 HV, Xuất · 1 HV; `thi=1` → 1; `view=da-thi` / `thieu_tt` → chip bật, 0. CX `view=da-thi` → 1, `view=cho-buoc-tiep` → 2,
 `view=can-chu-y` → 72, `cn=2` → 8, `view=sos` → Đang SOS 57. ⋯ TVV / CX: Sửa thông tin · Tạm dừng / Thôi học · Kết quả thi thật · Mở hồ sơ. QL: tab Tất cả 100 = dải 100 HV = Xuất · 100 HV (L5).
 
+**Em Tạm dừng (thử 24/10 trên DB demo, TVV Tạm dừng Hồ Thanh Tùng qua `POST /students/:id/status` rồi Hoàn tác):** dòng vẫn ở bảng (ghép từ `theo-vai`), dòng phụ "· Tạm dừng",
+Lịch thi = dự kiến "W3 DEC 2026" (1440 và 375), Phụ huynh có SĐT; Tất cả vẫn 4 HV, chip "Tạm dừng · 1" → 1 dòng, Xuất · 1 HV; tìm "Tùng" ra đúng em;
+⋯ = Sửa thông tin · Thôi học · Kết quả thi thật · **Quay lại học** · Mở hồ sơ. Ảnh `tvv-tam-dung-1440-toi`. Em chưa xếp lớp đi cùng đường ghép (lớp trống) — demo không có em như vậy nên chưa thấy trên màn.
+
 **Rà:** `impeccable detect` 0 phát hiện; web-design-guidelines: nút / link có nhãn, SĐT `<a href="tel:">`, số `tabular-nums`, lọc trên URL, chữ dài `truncate`, vùng bấm 375 ≥ 44 px.
 
 ## Truy vết khung → thành phần
