@@ -40,7 +40,7 @@ export function useVaiHd() {
   return { cuaToi, coNoiDung: !!HUONG_DAN[cuaToi], macDinh: vaiCoNoiDung(cuaToi) };
 }
 
-/** Ghi "đã mở Hướng dẫn" một lần cho tài khoản (dải Mới dùng PISA? không hiện lại). Trả false khi lưu lỗi. */
+/** Ghi "đã mở Hướng dẫn" một lần cho tài khoản (dải Mới dùng PISA TRACKING? không hiện lại). Trả false khi lưu lỗi. */
 export function useDaXemHd() {
   const { session, reload } = useSession();
   const chuaXem = !!session?.authenticated && session.daXemHuongDan === false;
