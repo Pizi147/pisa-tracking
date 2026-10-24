@@ -270,14 +270,14 @@ export function Empty({ title, hint, action }: { title: string; hint?: string; a
 
 export function ErrorState({ message, hint, onRetry }: { message: string; hint?: string; onRetry?: () => void }) {
   const { pathname } = useLocation();
-  const { session } = useSession();
+  const session = useSession()?.session;   // khung lỗi có thể vẽ ngoài SessionProvider
   const k403 = laCauLoi403(message), k404 = !k403 && laCauLoi404(message);
   /* UI-CON-LAI k6: nói loại lỗi + đường khác. 404 hồ sơ HV → tìm trong lưu trữ; 403 hồ sơ GV người khác → hồ sơ của chính mình (nếu là GV). */
   const hsHv = k404 && /^\/hoc-vien\/\d+$/.test(pathname);
   const hsGvToi = k403 && /^\/giao-vien\/\d+$/.test(pathname) && session?.user && session.roles?.includes('teacher') ? `/giao-vien/${session.user.id}` : null;
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
-      {(k403 || k404) && <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{k403 ? t('Không có quyền') : t('Không thấy')}</span>}
+      {(k403 || k404) && <span className="text-[12px] font-semibold text-slate-500">{k403 ? t('Không có quyền') : t('Không thấy')}</span>}
       <div className={`${k403 || k404 ? 'text-slate-100' : 'text-bad'} font-medium`}>{message}</div>
       {hint && <p className="text-slate-400 text-xs max-w-md">{hint}</p>}
       {hsHv && <p className="m-0 text-xs text-slate-400">{t('Đường dẫn có thể cũ.')} <Link className="link" to="/hoc-vien/luu-tru">{t('Tìm trong HV lưu trữ ›')}</Link></p>}

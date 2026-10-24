@@ -24,15 +24,17 @@ type GvHit = { id: number; fullName: string };
 /** UI-CON-LAI k1: tô chữ khớp (không dấu, không hoa thường) bằng màu hồng nhận diện — chuỗi dựng sẵn NFC nên mỗi ký tự bỏ dấu vẫn là một ký tự. */
 function ToKhop({ chu, q }: { chu: string; q: string }) {
   const kim = boDau(q.trim()).toLowerCase();
-  const rom = [...chu].map((c) => boDau(c).toLowerCase());
-  const i = kim && rom.length === [...chu].length ? rom.join('').indexOf(kim) : -1;
-  if (i < 0) return <>{chu}</>;
   const ky = [...chu];
+  const rom = ky.map((c) => boDau(c).toLowerCase()).join('');
+  /* Chuỗi NFD (dấu tách rời) làm lệch vị trí → không tô, vẫn hiện tên. */
+  const i = kim && rom.length === ky.length ? rom.indexOf(kim) : -1;
+  if (i < 0) return <>{chu}</>;
   return <>{ky.slice(0, i).join('')}<mark className="tim-khop">{ky.slice(i, i + kim.length).join('')}</mark>{ky.slice(i + kim.length).join('')}</>;
 }
 
 /** Phím mở ô tìm: "/" (ngoài ô nhập) hoặc Ctrl / ⌘ K. */
 const laPhimTim = (e: KeyboardEvent) => {
+  if (document.querySelector('[aria-modal="true"]')) return false;   // hộp / panel phủ đang mở: không mở ô tìm sau lưng nó
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') return true;
   if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return false;
   const el = e.target as HTMLElement | null;
@@ -230,24 +232,24 @@ export function Header() {
         aria-label={t('Tìm học viên, lớp trong phạm vi được cấp quyền')}
         aria-keyshortcuts="Control+K /"
       />
-      {!timGon && !q && <kbd aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500">Ctrl K</kbd>}
+      {!timGon && !q && <kbd aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-slate-500">Ctrl&nbsp;K</kbd>}
       {coDs && (
         <ul id={idDs} role="listbox" aria-label={t('Kết quả tìm học viên, lớp')}
           className={`${lopDs} card overflow-hidden list-none p-0 m-0`}>
           {/* k1: đầu nhóm có số; nhóm rỗng gom một dòng ("Lớp · 0 · Giáo viên · 0"). */}
           {nhomTim.filter((n) => n.so > 0).map((n) => (
             <li key={n.key} role="none" className="contents">
-              <span aria-hidden className="block px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{n.ten} · <span className="tabular-nums">{n.so}</span></span>
+              <span aria-hidden className="block px-3 pt-2 pb-1 text-[12px] font-semibold text-slate-500">{n.ten} · <span className="tabular-nums">{n.so}</span></span>
               <ul role="none" className="list-none m-0 p-0">{n.dong}</ul>
             </li>
           ))}
           {nhomTim.some((n) => n.so === 0) && (
-            <li role="none" aria-hidden className="px-3 pt-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <li role="none" aria-hidden className="px-3 pt-2 pb-2 text-[12px] font-semibold text-slate-500">
               {nhomTim.filter((n) => n.so === 0).map((n) => `${n.ten} · 0`).join(' · ')}
             </li>
           )}
           {!timGon && (
-            <li role="none" aria-hidden className="flex flex-wrap justify-between gap-x-3 border-t px-3 py-1.5 text-[11px] text-slate-500" style={{ borderColor: 'var(--line)' }}>
+            <li role="none" aria-hidden className="flex flex-wrap justify-between gap-x-3 border-t px-3 py-1.5 text-[12px] text-slate-500" style={{ borderColor: 'var(--line)' }}>
               <span>{t('↑ ↓ chọn · Enter mở · Esc đóng')}</span><span>{t('Trong phạm vi bạn xem được')}</span>
             </li>
           )}
