@@ -111,7 +111,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
 
   return (
     <PhanThongTin tieuDe="Phân công" suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} nhanLuu="Lưu phân công" loi={loiLuu}
-      cuonToi={moSua} onSua={() => setDangSua(true)} onHuy={() => { setDangSua(false); setLoiLuu(null); }} onLuu={luu}>
+      cuonToi={moSua} onSua={() => setDangSua(true)} onHuy={() => { setDangSua(false); setLoiLuu(null); giuChon.current = false; }} onLuu={luu}>
       {!dangSua && (
         <DongXem dong={[
           ['GVCN', gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">Chưa có GVCN</span>],

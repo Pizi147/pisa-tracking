@@ -21,10 +21,16 @@ export async function runPrSuaNoRaTests(t: YThucTestKit) {
   const one = (sql: string, ...a: unknown[]) => all(sql, ...a)[0];
   const ma = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
   const LOP = classId('MB FOU 12');
-  const tranh = (d: any) => [
-    ...d.core.map((c: any) => ({ userId: c.userId, skill: null, isCore: true })),
-    ...d.bySkill.map((b: any) => ({ userId: b.userId, skill: b.skill, isCore: false })),
-  ];
+  /* Bức tranh mỗi ô một người (phép kiểm trước có thể để lại 2 dòng một ô — mẫu prCvLoi `lopThieu`): ô trùng giữ dòng của GVCN. */
+  const tranh = (d: any) => {
+    const gvcn = new Set(d.core.map((c: any) => c.userId));
+    const moiO = new Map<string, any>();
+    for (const c of d.core.slice(0, 1)) moiO.set('gvcn', { userId: c.userId, skill: null, isCore: true });
+    for (const b of [...d.bySkill].sort((x: any, y: any) => Number(gvcn.has(y.userId)) - Number(gvcn.has(x.userId)))) {
+      if (!moiO.has(b.skill)) moiO.set(b.skill, { userId: b.userId, skill: b.skill, isCore: false });
+    }
+    return [...moiO.values()];
+  };
 
   check('S1 phân công: lưu bằng phiên bản đọc trước khi người khác đổi → 409, phân công người kia giữ nguyên; tải lại rồi lưu → được', () => thu(() => {
     const doc = classes.classTeachers(P.mbManager, LOP);
@@ -40,7 +46,9 @@ export async function runPrSuaNoRaTests(t: YThucTestKit) {
     assert(truoc === sau, 'không ghi gì khi 409');
     const moi = classes.classTeachers(P.mbManager, LOP);
     assert(moi.phienBan !== doc.phienBan, 'phiên bản mới khác');
-    assert(ma(() => classes.setClassTeachers(P.mbManager, LOP, { slots: tranh(moi), phienBan: moi.phienBan })) === null, 'phiên bản mới lưu được');
+    let loi: any = null;
+    try { classes.setClassTeachers(P.mbManager, LOP, { slots: tranh(moi), phienBan: moi.phienBan }); } catch (e) { loi = e; }
+    assert(loi === null, `phiên bản mới lưu được: ${loi?.status} ${loi?.message}`);
   }));
 
   check('S2 migrate prCvLoi: chạy một lần (khoá demo_config); Case trống chủ sau đó không bị migrate gán; lần gán có nhật ký nguồn', () => thu(() => {
