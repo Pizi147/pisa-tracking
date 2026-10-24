@@ -489,9 +489,9 @@ function KhoiViec({ gvId, nguoiXem, homNay, ngan, viec }: {
                   style={{ borderColor: 'var(--line)' }}>
                   <span className="text-xs text-slate-400">{dich(NHOM_VIEC_LABEL[x.nhom])}</span>
                   {trong
-                    ? <span className="text-2xl font-bold leading-tight tabular-nums text-slate-500">0</span>
+                    ? <span className="text-2xl font-bold leading-tight tabular-nums text-slate-500">0<span className="ml-1 text-xs font-normal">{t('việc')}</span></span>
                     : <Link to={link(false)} className="text-2xl font-bold leading-tight tabular-nums text-slate-100 no-underline after:absolute after:inset-0 after:rounded-lg"
-                        aria-label={t('{n} việc {nhom}. Bấm để mở Công việc', { n: x.n, nhom: dich(NHOM_VIEC_LABEL[x.nhom]) })}>{x.n}</Link>}
+                        aria-label={t('{n} việc {nhom}. Bấm để mở Công việc', { n: x.n, nhom: dich(NHOM_VIEC_LABEL[x.nhom]) })}>{x.n}<span className="ml-1 text-xs font-normal text-slate-400">{t('việc')}</span></Link>}
                   {x.quaHan > 0
                     ? <Link to={link(true)} className={`relative z-10 w-fit py-2 -my-2 text-xs text-bad no-underline hover:underline ${soDam}`}>{t('{n} quá hạn', { n: x.quaHan })}</Link>
                     : <span className="text-xs text-slate-500">{trong ? '—' : t('không quá hạn')}</span>}

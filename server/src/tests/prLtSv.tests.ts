@@ -28,7 +28,7 @@ export async function runPrLtSvTests(t: YThucTestKit) {
       ['tháng sau, chưa ngày', { exam_month: '2026-12' }, 'du-kien', 'Dự kiến thi 12/2026', null, 'chua_thi'],
       ['tuần tháng trước, chưa ngày', { exam_month: '2026-10', ...W('2026-10-19') }, 'chua-chot-ngay', `Chưa chốt ngày thi ${d.tuanLich('2026-10-19', h)}`, null, 'chua_thi'],
       ['tuần tháng này, chưa ngày', W('2026-11-16'), 'chua-chot-ngay', `Chưa chốt ngày thi ${d.tuanLich('2026-11-16', h)}`, null, 'chua_thi'],
-      ['tuần tháng sau, chưa ngày', W('2026-12-07'), 'du-kien', `Dự kiến thi ${d.tuanLich('2026-12-07', h)}`, null, 'chua_thi'],
+      ['tuần tháng sau, chưa ngày', W('2026-12-07'), 'du-kien', 'Dự kiến thi 12/2026', null, 'chua_thi'],
       ['ngày tháng sau', { exam_month: '2026-12', exam_date: '2026-12-05' }, 'da-chot-ngay', 'Thi 05/12', '2026-12-05', 'chua_thi'],
       ['ngày tháng này, còn 3 ngày', { exam_month: '2026-11', exam_date: '2026-11-18' }, 'da-chot-ngay', 'Thi 18/11 · còn 3 ngày', '2026-11-18', 'chua_thi'],
       ['ngày hôm nay', { exam_date: '2026-11-15' }, 'da-chot-ngay', 'Thi 15/11 · hôm nay', '2026-11-15', 'chua_thi'],

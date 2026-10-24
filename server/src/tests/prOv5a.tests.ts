@@ -111,11 +111,12 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     assert(c.nhom === 2 && c.so === 13 && c.donVi === 'bài cần chấm', JSON.stringify(c));
   });
 
-  check('OV5a-8 · Hồ sơ GV › Việc đang có đếm = badge Công việc (cùng `dong`): GV tự xem, QL xem GV', () => thu(() => {
+  check('OV5a-8 · Hồ sơ GV › Việc đang tồn = số "việc" đầu trang Công việc (`demViec` trên việc thật — CHAM-LAI): GV tự xem, QL xem GV', () => thu(() => {
     bonEm();
     const tong = (v: any[]) => v.reduce((n, x) => n + x.n, 0);
-    assert(tong(hoSo.viecCuaGv(GV_R, GV_R.userId)) === mywork.myWork(GV_R).summary.total, 'GV tự xem');
-    assert(tong(hoSo.viecCuaGv(P.mbManager, GV_R.userId)) === mywork.viecCuaNguoi(P.mbManager, GV_R.userId).summary.total, 'QL xem GV');
+    const viec = (w: any) => d.demViec((w.dong ?? []).flatMap((x: any) => (x.con?.length ? x.con : [x]))).viec;
+    assert(tong(hoSo.viecCuaGv(GV_R, GV_R.userId)) === viec(mywork.myWork(GV_R)), 'GV tự xem');
+    assert(tong(hoSo.viecCuaGv(P.mbManager, GV_R.userId)) === viec(mywork.viecCuaNguoi(P.mbManager, GV_R.userId)), 'QL xem GV');
   }));
 
   check('OV5a-9 · việc mang đủ dữ liệu cho panel: Nhập điểm có mã lượt + kỹ năng; Kết quả PA có paId; nhóm "Kết quả đầu ra" đổi tên, gợi ý có FOU', () => {

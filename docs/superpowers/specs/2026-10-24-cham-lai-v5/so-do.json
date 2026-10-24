@@ -1,0 +1,4458 @@
+[
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-tvv-1440.png",
+  "h": 901,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 4,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-admin-1440.png",
+  "h": 1541,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 10,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-gvbm-1440.png",
+  "h": 901,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 18,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-qt-1440.png",
+  "h": 901,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 13,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-ht-1440.png",
+  "h": 901,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-ql-1440.png",
+  "h": 1301,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 35,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-cx-1440.png",
+  "h": 901,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 7,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-gvs-1440.png",
+  "h": 901,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 5,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-gvcn-1440.png",
+  "h": 1178,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 50,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-tvv-1440.png",
+  "h": 901,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 4,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-admin-1440.png",
+  "h": 1974,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 18,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-gvbm-1440.png",
+  "h": 1882,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 18,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-qt-1440.png",
+  "h": 4312,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 35,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-gvcn-1440.png",
+  "h": 3132,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 23,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-gvs-1440.png",
+  "h": 901,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 6,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-ql-1440.png",
+  "h": 3872,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 30,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-tvv-1440.png",
+  "h": 3295,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 142,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-admin-1440.png",
+  "h": 1001,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 26,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-gvbm-1440.png",
+  "h": 965,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 27,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-ht-1440.png",
+  "h": 901,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-qt-1440.png",
+  "h": 1005,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 29,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-gvs-1440.png",
+  "h": 901,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 19,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-gvcn-1440.png",
+  "h": 1005,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 28,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-cx-1440.png",
+  "h": 2861,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 119,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-ql-1440.png",
+  "h": 1005,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 29,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-tvv-1440.png",
+  "h": 2576,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 105,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-admin-1440.png",
+  "h": 2533,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 110,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-gvbm-1440.png",
+  "h": 2644,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 74,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-ht-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-qt-1440.png",
+  "h": 2533,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 77,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-gvs-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-cx-1440.png",
+  "h": 2493,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 105,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-gvcn-1440.png",
+  "h": 2532,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 74,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-ql-1440.png",
+  "h": 2533,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 77,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-tvv-1440.png",
+  "h": 1534,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-gvbm-1440.png",
+  "h": 1435,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-admin-1440.png",
+  "h": 1534,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-ht-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-qt-1440.png",
+  "h": 1453,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-gvs-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-cx-1440.png",
+  "h": 1534,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-gvcn-1440.png",
+  "h": 1535,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-ql-1440.png",
+  "h": 1453,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-admin-1440.png",
+  "h": 1245,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 22,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-gvbm-1440.png",
+  "h": 1011,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 13,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-qt-1440.png",
+  "h": 1178,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 18,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-gvs-1440.png",
+  "h": 901,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 2,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-gvcn-1440.png",
+  "h": 1228,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 19,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-ql-1440.png",
+  "h": 1245,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 22,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/lich",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/cham",
+  "file": "test-cham-gvbm-1440.png",
+  "h": 901,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 4,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/lich",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/cham",
+  "file": "test-cham-gvs-1440.png",
+  "h": 1011,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/cham",
+  "file": "test-cham-gvcn-1440.png",
+  "h": 901,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 4,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/lich",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/ke-hoach",
+  "file": "test-ke-hoach-admin-1440.png",
+  "h": 901,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 7,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/cham",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/ke-hoach",
+  "file": "test-ke-hoach-qt-1440.png",
+  "h": 901,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 12,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/cham",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/cham",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/ke-hoach",
+  "file": "test-ke-hoach-ql-1440.png",
+  "h": 901,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 7,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-tvv-1440.png",
+  "h": 945,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-ht-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-admin-1440.png",
+  "h": 1481,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 3,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-gvbm-1440.png",
+  "h": 1165,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 1,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-qt-1440.png",
+  "h": 1481,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 3,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-gvs-1440.png",
+  "h": 1152,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 1,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-cx-1440.png",
+  "h": 945,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-gvcn-1440.png",
+  "h": 1169,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-ql-1440.png",
+  "h": 1481,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 3,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-tvv-1440.png",
+  "h": 901,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 28,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-admin-1440.png",
+  "h": 901,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 28,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-qt-1440.png",
+  "h": 924,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 15,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-cx-1440.png",
+  "h": 924,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 15,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-ql-1440.png",
+  "h": 901,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 28,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-gvbm-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 1,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-ht-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-tvv-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-admin-1440.png",
+  "h": 1688,
+  "h1": "Trần Ngọc Hà",
+  "h1Size": "28px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 53,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-gvs-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 1,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-qt-1440.png",
+  "h": 1688,
+  "h1": "Trần Ngọc Hà",
+  "h1Size": "28px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 56,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-cx-1440.png",
+  "h": 901,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-gvcn-1440.png",
+  "h": 1688,
+  "h1": "Trần Ngọc Hà",
+  "h1Size": "28px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 56,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-ql-1440.png",
+  "h": 1688,
+  "h1": "Trần Ngọc Hà",
+  "h1Size": "28px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 56,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/quan-tri",
+  "file": "quan-tri-qt-1440.png",
+  "h": 2489,
+  "h1": "Quản trị hệ thống",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-gvbm-1440.png",
+  "h": 1034,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-ht-1440.png",
+  "h": 948,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-tvv-1440.png",
+  "h": 948,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-admin-1440.png",
+  "h": 948,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-gvs-1440.png",
+  "h": 1034,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-cx-1440.png",
+  "h": 948,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-qt-1440.png",
+  "h": 948,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-admin-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-gvs-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-gvcn-1440.png",
+  "h": 1034,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-tvv-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-ql-1440.png",
+  "h": 948,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-gvbm-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-ht-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-cx-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-qt-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-gvcn-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-gvs-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-admin-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 2,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-ql-1440.png",
+  "h": 901,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-tvv-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 2,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-qt-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 2,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-gvbm-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-ht-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-cx-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 2,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-gvcn-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 2,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 1440,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-ql-1440.png",
+  "h": 901,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 2,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-admin-375.png",
+  "h": 2347,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 3,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-gvs-375.png",
+  "h": 1095,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 5,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-qt-375.png",
+  "h": 1882,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 13,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-tvv-375.png",
+  "h": 1104,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 3,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-gvbm-375.png",
+  "h": 2002,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 18,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-ht-375.png",
+  "h": 900,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-cx-375.png",
+  "h": 1887,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 7,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-gvcn-375.png",
+  "h": 3156,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 50,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-gvs-375.png",
+  "h": 900,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 5,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-admin-375.png",
+  "h": 2494,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 15,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "tong-quan",
+  "url": "/",
+  "cuoi": "/",
+  "file": "tong-quan-ql-375.png",
+  "h": 3337,
+  "h1": "Tổng quan",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 34,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-qt-375.png",
+  "h": 5891,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 22,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-tvv-375.png",
+  "h": 900,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 3,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-gvcn-375.png",
+  "h": 3965,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 14,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-gvbm-375.png",
+  "h": 2323,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 18,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-gvs-375.png",
+  "h": 1092,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 12,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-admin-375.png",
+  "h": 1566,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 16,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "cong-viec",
+  "url": "/cong-viec",
+  "cuoi": "/cong-viec",
+  "file": "cong-viec-ql-375.png",
+  "h": 5300,
+  "h1": "Công việc",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 19,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-qt-375.png",
+  "h": 1762,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 19,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-cx-375.png",
+  "h": 8712,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 54,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-tvv-375.png",
+  "h": 9040,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 68,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-ht-375.png",
+  "h": 900,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-gvcn-375.png",
+  "h": 1591,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 18,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-gvbm-375.png",
+  "h": 1577,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 17,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-gvs-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "hv-lop",
+  "url": "/hoc-vien",
+  "cuoi": "/hoc-vien",
+  "file": "hv-lop-ql-375.png",
+  "h": 1658,
+  "h1": "Học viên & Lớp",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 19,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-admin-375.png",
+  "h": 3124,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 106,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-qt-375.png",
+  "h": 3218,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 73,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-cx-375.png",
+  "h": 3148,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 106,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-ht-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-tvv-375.png",
+  "h": 3230,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 106,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-gvs-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-ql-375.png",
+  "h": 3218,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 73,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-gvbm-375.png",
+  "h": 3525,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 74,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "ho-so-lop",
+  "url": "/hoc-vien/lop/3",
+  "cuoi": "/hoc-vien/lop/3",
+  "file": "ho-so-lop-gvcn-375.png",
+  "h": 3541,
+  "h1": "MB FT 101",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 74,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-admin-375.png",
+  "h": 2461,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 10,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-qt-375.png",
+  "h": 2347,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 10,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-ht-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-cx-375.png",
+  "h": 2513,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 10,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-gvs-375.png",
+  "h": 900,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 1,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-tvv-375.png",
+  "h": 2513,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 10,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-ql-375.png",
+  "h": 2347,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 10,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-admin-375.png",
+  "h": 2107,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 11,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-gvcn-375.png",
+  "h": 2506,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 10,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "ho-so-hv",
+  "url": "/hoc-vien/1",
+  "cuoi": "/hoc-vien/1",
+  "file": "ho-so-hv-gvbm-375.png",
+  "h": 2299,
+  "h1": "Nguyễn Minh AnThiếu 1 thông tin",
+  "h1Size": "22px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 10,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-qt-375.png",
+  "h": 1610,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 12,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/cham",
+  "file": "test-cham-gvs-375.png",
+  "h": 1067,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-ql-375.png",
+  "h": 2107,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 11,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/lich",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-gvcn-375.png",
+  "h": 2024,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 9,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "test-lich",
+  "url": "/test/lich",
+  "cuoi": "/test/lich",
+  "file": "test-lich-gvbm-375.png",
+  "h": 1733,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 5,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/lich",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/cham",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/lich",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/ke-hoach",
+  "file": "test-ke-hoach-admin-375.png",
+  "h": 904,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 6,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/cham",
+  "file": "test-cham-gvcn-375.png",
+  "h": 915,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "test-cham",
+  "url": "/test/cham",
+  "cuoi": "/test/cham",
+  "file": "test-cham-gvbm-375.png",
+  "h": 985,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/ke-hoach",
+  "file": "test-ke-hoach-qt-375.png",
+  "h": 1194,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 11,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-gvs-375.png",
+  "h": 2306,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/ke-hoach",
+  "file": "test-ke-hoach-ql-375.png",
+  "h": 904,
+  "h1": "Test",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 6,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-admin-375.png",
+  "h": 3370,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/cham",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "test-ke-hoach",
+  "url": "/test/ke-hoach",
+  "cuoi": "/test/cham",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-qt-375.png",
+  "h": 3370,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-ht-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-cx-375.png",
+  "h": 2070,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-ql-375.png",
+  "h": 3370,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-tvv-375.png",
+  "h": 2070,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-gvbm-375.png",
+  "h": 2355,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-admin-375.png",
+  "h": 2242,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 25,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "mock",
+  "url": "/mock-test/6",
+  "cuoi": "/mock-test/6",
+  "file": "mock-gvcn-375.png",
+  "h": 2562,
+  "h1": "Hồ sơ Mock Test ·Nguyễn Minh AnMT2·W3 AUG✓",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-qt-375.png",
+  "h": 1976,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 13,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-gvs-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 1,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-cx-375.png",
+  "h": 1976,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 13,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-ql-375.png",
+  "h": 2242,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 25,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/phan-tich",
+  "file": "phan-tich-tvv-375.png",
+  "h": 2242,
+  "h1": "Phân tích",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 25,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "phan-tich",
+  "url": "/phan-tich",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-admin-375.png",
+  "h": 3334,
+  "h1": "Trần Ngọc Hà",
+  "h1Size": "28px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 48,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-qt-375.png",
+  "h": 3437,
+  "h1": "Trần Ngọc Hà",
+  "h1Size": "28px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 51,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-ht-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-cx-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-ql-375.png",
+  "h": 3437,
+  "h1": "Trần Ngọc Hà",
+  "h1Size": "28px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 51,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-tvv-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-gvbm-375.png",
+  "h": 900,
+  "nho": 0,
+  "tran": false,
+  "btnNho": 1,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/quan-tri",
+  "file": "quan-tri-qt-375.png",
+  "h": 3280,
+  "h1": "Quản trị hệ thống",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "ho-so-gv",
+  "url": "/giao-vien/7",
+  "cuoi": "/giao-vien/7",
+  "file": "ho-so-gv-gvcn-375.png",
+  "h": 3437,
+  "h1": "Trần Ngọc Hà",
+  "h1Size": "28px",
+  "h1W": "700",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 51,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-gvs-375.png",
+  "h": 1534,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-admin-375.png",
+  "h": 1413,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-qt-375.png",
+  "h": 1413,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-gvs-375.png",
+  "h": 1035,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-qt-375.png",
+  "h": 1077,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-admin-375.png",
+  "h": 1056,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-ht-375.png",
+  "h": 1413,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "quan-tri",
+  "url": "/quan-tri",
+  "cuoi": "/",
+  "bo": "chuyen"
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-cx-375.png",
+  "h": 1413,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-tvv-375.png",
+  "h": 1413,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-ql-375.png",
+  "h": 1413,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-gvbm-375.png",
+  "h": 1534,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-ht-375.png",
+  "h": 900,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "ca-nhan",
+  "url": "/ho-so-ca-nhan",
+  "cuoi": "/ho-so-ca-nhan",
+  "file": "ca-nhan-gvcn-375.png",
+  "h": 1534,
+  "h1": "Hồ sơ cá nhân",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvs",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-gvs-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-cx-375.png",
+  "h": 1077,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "admin",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-admin-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "qt",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-qt-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-tvv-375.png",
+  "h": 1051,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-ql-375.png",
+  "h": 1078,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-gvbm-375.png",
+  "h": 1035,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "huong-dan",
+  "url": "/huong-dan",
+  "cuoi": "/huong-dan",
+  "file": "huong-dan-gvcn-375.png",
+  "h": 1035,
+  "h1": "Hướng dẫn",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ht",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-ht-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "cx",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-cx-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "tvv",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-tvv-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvbm",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-gvbm-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "ql",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-ql-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ },
+ {
+  "vai": "gvcn",
+  "w": 375,
+  "ten": "luu-tru",
+  "url": "/hoc-vien/luu-tru",
+  "cuoi": "/hoc-vien/luu-tru",
+  "file": "luu-tru-gvcn-375.png",
+  "h": 900,
+  "h1": "Lưu trữ",
+  "h1Size": "17px",
+  "h1W": "600",
+  "nho": 0,
+  "tran": false,
+  "btnNho": 0,
+  "loiTrang": false,
+  "loi": [
+   "Failed to load resource: net::ERR_FAILED"
+  ]
+ }
+]

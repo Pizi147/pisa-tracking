@@ -62,11 +62,12 @@ export function tachNhanLichThi(l: LichThi, homNay: string, tep = false): { nhan
       return { nhan: t('Thi'), gt: `${shortDate(l.ngay, homNay)}${sau}` };
     }
     case 'chua-chot-ngay': return { nhan: t('Chưa chốt ngày thi'), gt: moc };
-    case 'du-kien': return { nhan: t('Dự kiến thi'), gt: moc };
+    /* P5 (chủ SP 22/10): tháng thi dự kiến một cách viết cho cả web — '02/2027', không mã tuần (như `nhanThangDuKien`). */
+    case 'du-kien': return { nhan: t('Dự kiến thi'), gt: l.thang ? nhanThang(l.thang) : moc };
     default: return { nhan: t('Chưa có tháng thi'), gt: '' };
   }
 }
-/** MỘT hàm nhãn: "Thi 21/11 · còn 9 ngày" · "Đã thi 28/11" · "Chưa chốt ngày thi 11/2026" · "Dự kiến thi W2 DEC" · "Chưa có tháng thi". */
+/** MỘT hàm nhãn: "Thi 21/11 · còn 9 ngày" · "Đã thi 28/11" · "Chưa chốt ngày thi 11/2026" · "Dự kiến thi 12/2026" · "Chưa có tháng thi". */
 export function nhanLichThi(l: LichThi, homNay: string, tep = false): string {
   const { nhan, gt } = tachNhanLichThi(l, homNay, tep);
   return gt ? `${nhan} ${gt}` : nhan;

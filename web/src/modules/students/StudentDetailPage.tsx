@@ -36,6 +36,7 @@ import {
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { DiemKq } from '../../ui/KhuonViec.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -498,10 +499,10 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
   attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
 }) {
   const dienThoai = useDienThoai();
-  /* G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
+  /* G12: số điểm tô ✓ / ✗ theo kỳ vọng của lượt (như lưới lớp), không màu link. G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
   const diemKyNang = (a: any, k: 'listening' | 'reading' | 'writing' | 'speaking') => (
     a.bands?.[k] != null
-      ? <Link to={duongDotTest(a, k)} className="link" title={`${t('Mở Hồ sơ Mock Test')} · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
+      ? <Link to={duongDotTest(a, k)} className="no-underline hover:underline" title={`${t('Mở Hồ sơ Mock Test')} · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}><DiemKq diem={a.bands[k]} kyVong={a.expectation} /></Link>
       : fmtBand(a.bands?.[k])
   );
   /*
@@ -532,7 +533,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
                   <Fragment key={k}>{i > 0 && ' · '}<span className="text-slate-500">{CHU_KY_NANG[k]}</span> {diemKyNang(a, k)}</Fragment>
                 )),
               },
-              { nhan: 'Overall', noiDung: fmtBand(a.overall) },
+              { nhan: 'Overall', noiDung: a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall) },
               { nhan: t('Kỳ vọng'), noiDung: fmtBand(a.expectation) },
               { nhan: t('Lớp'), noiDung: a.classCode ?? '—' },
             ]} />
@@ -572,7 +573,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
                 {(['listening', 'reading', 'writing', 'speaking'] as const).map((k) => (
                   <td key={k} className={so}>{diemKyNang(a, k)}</td>
                 ))}
-                <td className={`${so} text-slate-100`}>{fmtBand(a.overall)}</td>
+                <td className={`${so} text-slate-100`}>{a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall)}</td>
                 <td className={so}>{fmtBand(a.expectation)}</td>
                 <td className="td">
                   <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} chot={a.chot} kckDuoi={a.kckDuoi} />

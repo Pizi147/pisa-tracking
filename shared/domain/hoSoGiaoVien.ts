@@ -3,7 +3,7 @@
  * Không tính số mới: số luôn đến từ hàm có sẵn ở máy chủ (`myWork`, `scoreDebtCells`, `listCases`, `phanTichLop`).
  */
 import { DUONG_TAB_CONG_VIEC } from './dieuHuong.ts';
-import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
+import { NHOM_VIEC, demViec, nhomViecCua, type NhomViec } from './tongQuan.ts';
 
 /** Ô bấm được ở hồ sơ GV / bảng GV chi nhánh (Q2, Q11). Mỗi ô một hàm tập ở server/src/giaoVien/hoSo.ts. */
 export const COT_O_GV = ['lop', 'hoc-vien', 'chua-nhap', 'qua-han', 'case-mo', 'case-qua-han', 'yc-cho', 'yc-tu-choi'] as const;
@@ -18,13 +18,17 @@ export function nhanVaiLop(v: { gvcn: boolean; mon: readonly string[] }): string
 /** O6: chip "Bàn giao n/m em" cạnh mã lớp — từ `viecBanGiao` (cùng nguồn việc Bàn giao ở Công việc). `mon` = tên môn ngắn (GVBM); `maMon` = mã môn đầu còn thiếu (link `&mon=`). */
 export type ChipBanGiao = { loai: 'gvcn' | 'gvbm'; mon: string | null; maMon: string | null; da: number; n: number };
 
-/** Đếm việc theo 4 nhóm (Q3) — cùng `nhomViecCua` với Công việc, nên số = số dòng ở Công việc đã lọc nhóm. */
-export function demViecTheoNhom(items: readonly { group: string; urgency: string }[]): { nhom: NhomViec; n: number; quaHan: number }[] {
+/**
+ * Đếm việc theo 4 nhóm (Q3) — cùng `nhomViecCua` và CÙNG ĐƠN VỊ "việc" với Công việc (`demViec`, V5 SV-SO1): truyền việc THẬT (dòng gộp đã mở `con`),
+ * Nhập điểm một lớp · một tuần = số kỹ năng của nó; S chấm chéo không là việc. CHAM-LAI: trước đây đếm dòng gộp nên hồ sơ GV ≠ Công việc (27 ≠ 55).
+ */
+export function demViecTheoNhom(items: readonly ViecDem[]): { nhom: NhomViec; n: number; quaHan: number }[] {
   return NHOM_VIEC.map((nhom) => {
     const ds = items.filter((i) => nhomViecCua(i.group) === nhom);
-    return { nhom, n: ds.length, quaHan: ds.filter((i) => i.urgency === 'overdue').length };
+    return { nhom, n: demViec(ds).viec, quaHan: demViec(ds.filter((i) => i.urgency === 'overdue')).viec };
   });
 }
+type ViecDem = Parameters<typeof demViec>[0][number] & { urgency: string };
 
 /**
  * Đường tới Công việc đã lọc đúng người + nhóm (Q4). `khung=tat-ca` để lựa chọn khung đã nhớ không làm lệch số.

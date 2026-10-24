@@ -106,7 +106,7 @@ export default function ProfilePage() {
   return (
     <div className="page space-y-4 max-w-3xl">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100 m-0">{t('Hồ sơ cá nhân')}</h1>
+        <h1 className="text-xl font-bold text-slate-100 m-0">{t('Hồ sơ cá nhân')}</h1>
         <p className="text-xs text-slate-500 mt-0.5 mb-0">
           {data.fullName} · {data.code}{data.title ? ` · ${dich(data.title)}` : ''}
         </p>
