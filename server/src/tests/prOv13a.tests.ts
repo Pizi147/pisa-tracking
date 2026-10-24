@@ -9,6 +9,7 @@
  * Mỗi ca dựng trong một giao dịch rồi cuộn lại (`thu`) — cùng cách dựng lượt sạch như prOv12c.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { duXacNhan } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -81,7 +82,7 @@ export async function runPrOv13aTests(t: YThucTestKit) {
   const nhom = (s: string, n = 2) => dm.issuesForTopic(s).filter((i: any) => !dm.laKhac(i.code)).slice(0, n).map((i: any) => i.code) as string[];
   const diem = (aid: number, s: string, band: number | null, o: { nx?: string | null; today?: string } = {}) => {
     const so = band === null ? (s === 'listening' || s === 'reading' ? { band: null } : { criteria: [null, null, null, null] })
-      : s === 'listening' || s === 'reading' ? { band } : { criteria: [band, band, band, band] };
+      : s === 'listening' || s === 'reading' ? { band } : { criteria: tieuChiThu(band) };
     const nx = o.nx === undefined ? NX(s) : o.nx;
     return attempts.saveScore(QL, aid, s, { ...so, ...(nx !== null && band !== null ? { nhanXet: nx } : {}),
       ...(band !== null && band < 6.5 && nx !== null ? { nhomNguyenNhan: nhom(s) } : {}) }, o.today ?? TRONG);

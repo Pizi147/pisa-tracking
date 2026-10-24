@@ -5,6 +5,7 @@
  * Dựng cùng cách prOv12c (lượt sạch, chốt SOS 2) trên một em riêng — KHÔNG bọc giao dịch: mỗi lần gọi API tự cuộn lại giao dịch dở.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 
 export async function runPrHfTests(t: YThucTestKit) {
   const { checkAsync, assert, conn, P, classId } = t;
@@ -46,7 +47,7 @@ export async function runPrHfTests(t: YThucTestKit) {
   };
   const nhom = (s: string) => dm.issuesForTopic(s).filter((i: any) => !dm.laKhac(i.code)).slice(0, 2).map((i: any) => i.code) as string[];
   const diem = (s: string, band: number) => attempts.saveScore(QL, luot, s,
-    { ...(s === 'listening' || s === 'reading' ? { band } : { criteria: [band, band, band, band] }), nhanXet: `Nhận xét ${s}: làm chậm, sai dạng bài quen thuộc.`,
+    { ...(s === 'listening' || s === 'reading' ? { band } : { criteria: tieuChiThu(band) }), nhanXet: `Nhận xét ${s}: làm chậm, sai dạng bài quen thuộc.`,
       ...(band < 6.5 ? { nhomNguyenNhan: nhom(s) } : {}) }, TRONG);
   /** L 5 + S 5.5 dưới kỳ vọng → chốt SOS 2: Case L + Case S, nguyên nhân từ ô. */
   const chot = () => { diem('listening', 5); diem('reading', 7); diem('writing1', 7); diem('writing2', 7); diem('speaking', 5.5); };

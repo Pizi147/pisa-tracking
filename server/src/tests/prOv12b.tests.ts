@@ -4,6 +4,7 @@
  * Miễn: MT cũ / nhập bù (`lich_su`), MT0, Vắng / "-", xoá điểm. Lưới: ô cũ thiếu → cờ `thieuNhanXet`. Excel: cột Nhận xét L…S + Nhóm.
  * Mỗi ca cuộn lại (`thu`).
  */
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 export async function runPrOv12bTests(t: any) {
   const { check, checkAsync, assert, conn, P, classId } = t;
   const attempts: any = await import('../fasttrack/attempts.ts');
@@ -124,12 +125,12 @@ export async function runPrOv12bTests(t: any) {
     const k = kv();
     const thapW = Math.floor(k) - 1;   // bốn tiêu chí bằng nhau → band = giá trị đó
     const caoW = Math.ceil(k) + 1;
-    luu('writing1', { criteria: [thapW, thapW, thapW, thapW], nhanXet: 'Thiếu overview, chọn số liệu chưa đúng.' });
+    luu('writing1', { criteria: tieuChiThu(thapW), nhanXet: 'Thiếu overview, chọn số liệu chưa đúng.' });
     xoaNho();
     const w1 = attempts.classScoreSheet(P.admin, lop, W, TRONG).rows.find((x: any) => x.attemptId === luot).cells.find((c: any) => c.skill === 'writing1');
     assert(w1.thieuNhanXet === 'chon-nhom' && w1.xong, `W1 thấp thiếu nhóm: lưu + nhắc (${w1.thieuNhanXet})`);
-    luu('writing1', { criteria: [thapW, thapW, thapW, thapW], nhanXet: 'Thiếu overview, chọn số liệu chưa đúng.', nhomNguyenNhan: [Wc[0]] });
-    luu('writing2', { criteria: [caoW, caoW, caoW, caoW], nhanXet: 'Lập luận rõ, ví dụ sát đề.' });
+    luu('writing1', { criteria: tieuChiThu(thapW), nhanXet: 'Thiếu overview, chọn số liệu chưa đúng.', nhomNguyenNhan: [Wc[0]] });
+    luu('writing2', { criteria: tieuChiThu(caoW), nhanXet: 'Lập luận rõ, ví dụ sát đề.' });
     assert(dong('writing2').band >= k && dong('writing2').nhom_nguyen_nhan === null, 'W2 đạt');
   }));
 

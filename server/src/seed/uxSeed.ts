@@ -13,6 +13,7 @@
  * Đi qua hàm dịch vụ; SQL thẳng chỉ để lùi ngày nghiệp vụ / gán TVV. Dựng SAU `buildHeadTutor` (id người dùng cũ không đổi). Tên, SĐT GIẢ.
  */
 import crypto from 'node:crypto';
+import { tieuChiThu } from './tieuChiThu.ts';
 import { DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../platform/accounts.ts';
 import { padCode, addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
@@ -79,9 +80,9 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     if (!id) return;
     saveScore(admin, id, 'listening', { rawScore: l, resultDate: ngayMt2 });
     saveScore(admin, id, 'reading', { rawScore: r, resultDate: ngayMt2 });
-    if (w1 !== null) saveScore(admin, id, 'writing1', { criteria: [w1, w1, w1, w1], resultDate: ngayMt2 });
-    if (w2 !== null) saveScore(admin, id, 'writing2', { criteria: [w2, w2, w2, w2], resultDate: ngayMt2 });
-    if (s !== null) saveScore(admin, id, 'speaking', { criteria: [s, s, s, s], resultDate: ngayMt2 });
+    if (w1 !== null) saveScore(admin, id, 'writing1', { criteria: tieuChiThu(w1), resultDate: ngayMt2 });
+    if (w2 !== null) saveScore(admin, id, 'writing2', { criteria: tieuChiThu(w2), resultDate: ngayMt2 });
+    if (s !== null) saveScore(admin, id, 'speaking', { criteria: tieuChiThu(s), resultDate: ngayMt2 });
   };
   nhapMt2('Bùi Thảo Vy', 30, 28, 6.0, 6.5, 6.0);
   nhapMt2('Tạ Minh Quân', 27, 28, 6.5, 6.5, 6.5);
@@ -103,7 +104,7 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     const b = a.t - 0.5 - (dat ? 0 : 0.5);
     saveScore(admin, a.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(b), resultDate: '2026-08-21' });
     saveScore(admin, a.id, 'reading', { rawScore: READING_BY_RAW.indexOf(b), resultDate: '2026-08-21' });
-    for (const k of ['writing1', 'writing2', 'speaking']) saveScore(admin, a.id, k, { criteria: [b, b, b, b], resultDate: '2026-08-22' });
+    for (const k of ['writing1', 'writing2', 'speaking']) saveScore(admin, a.id, k, { criteria: tieuChiThu(b), resultDate: '2026-08-22' });
   }
 
   // ---------------------------------------------------------------- U5 · HD FT 306 (lớp mới, GV mới)
@@ -130,11 +131,11 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     const b = [6.0, 6.0, 6.5, 6.0, 6.5, 6.0][i];   // ≥ kỳ vọng MT1 → không Case SOS tự tạo (Case Tutor là Case tay dưới)
     saveScore(admin, a, 'listening', { rawScore: LR(b), resultDate: '2026-07-24' });
     saveScore(admin, a, 'reading', { rawScore: LR(b), resultDate: '2026-07-24' });
-    saveScore(admin, a, 'writing1', { criteria: [b, b, b, b], resultDate: '2026-07-25' });
-    saveScore(admin, a, 'writing2', { criteria: [b, b, b, b], resultDate: '2026-07-25' });
+    saveScore(admin, a, 'writing1', { criteria: tieuChiThu(b), resultDate: '2026-07-25' });
+    saveScore(admin, a, 'writing2', { criteria: tieuChiThu(b), resultDate: '2026-07-25' });
     /* Em cuối: MT1 nhập bù sau khi tuần thi đã qua (MT cũ) có "-" S → LUAT-34 "Đã huỷ · vắng MT cũ", không vào luồng vắng. */
     if (i === 5) conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(a);
-    saveScore(admin, a, 'speaking', i === 5 ? { noShow: true } : { criteria: [b, b, b, b], resultDate: '2026-07-25' });
+    saveScore(admin, a, 'speaking', i === 5 ? { noShow: true } : { criteria: tieuChiThu(b), resultDate: '2026-07-25' });
   });
   const tvvAll = conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?');
   for (const sid of emFt) tvvAll.run(tvvCn.HD[0], sid);

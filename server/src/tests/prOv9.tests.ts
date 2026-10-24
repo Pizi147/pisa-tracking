@@ -4,6 +4,7 @@
  * Em thử ở MB FT 101, MT1 rơi 2 tuần trước ngày demo (mẫu `prKck`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { chotSan, nhanXetCaseThu } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -45,7 +46,7 @@ export async function runPrOv9Tests(t: YThucTestKit) {
   const cham = (attemptId: number, band: number) => {
     attempts.saveScore(P.admin, attemptId, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(band) });
     attempts.saveScore(P.admin, attemptId, 'reading', { rawScore: READING_BY_RAW.indexOf(band) });
-    attempts.saveScore(P.admin, attemptId, 'speaking', { criteria: [band, band, band, band] });
+    attempts.saveScore(P.admin, attemptId, 'speaking', { criteria: tieuChiThu(band) });
   };
   const caseCua = (sid: number) => all(`SELECT * FROM sos_cases WHERE student_id = ? ORDER BY id`, sid);
   const ketQua = (aid: number) => { xoaNho(); return attempts.resultOf(one('SELECT * FROM assessment_attempts WHERE id = ?', aid)); };

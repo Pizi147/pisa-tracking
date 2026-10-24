@@ -5,6 +5,7 @@
  * Mỗi ca dựng trong một giao dịch rồi cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { duXacNhan } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -71,7 +72,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
   const nhom = (s: string, n = 2) => dm.issuesForTopic(s).filter((i: any) => !dm.laKhac(i.code)).slice(0, n).map((i: any) => i.code) as string[];
   /** Ghi điểm qua ĐƯỜNG NGƯỜI DÙNG (luật OV-12b): nhận xét + nhóm khi dưới kỳ vọng 6.5. */
   const diem = (aid: number, s: string, band: number, o: { nx?: string; nhom?: string[]; today?: string; who?: any } = {}) => {
-    const so = s === 'listening' || s === 'reading' ? { band } : { criteria: [band, band, band, band] };
+    const so = s === 'listening' || s === 'reading' ? { band } : { criteria: tieuChiThu(band) };
     return attempts.saveScore(o.who ?? QL, aid, s, { ...so, nhanXet: o.nx ?? NX(s), ...(band < 6.5 ? { nhomNguyenNhan: o.nhom ?? nhom(s) } : {}) },
       o.today ?? TRONG);
   };
