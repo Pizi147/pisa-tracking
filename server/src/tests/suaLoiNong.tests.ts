@@ -230,7 +230,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(d.kiemTruong({ khoa: 'kn', nhan: 'Kỹ năng', chon: true }, '') === 'Chưa chọn' && d.kiemTruong({ khoa: 'kn', nhan: 'Kỹ năng', chon: true }, 'reading') === null, 'chọn');
     const l = d.dsLoi([{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }, { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 }], { 'mo-ta': 'Nghe kém!', ten: 'Nghe kém phần 3' });
     assert(l.length === 1 && l[0].lyDo === 'Cần ít nhất 15 ký tự (đang có 9)', JSON.stringify(l));
-    assert(d.nhanCanSua(2) === '2 ô cần sửa ↑' && d.nhanCanSua(1) === '1 ô cần sửa ↑' && d.nhanCanSua(0) === '', 'nhanCanSua');
+    assert(d.nhanCanSua(2) === 'Còn 2 ô cần sửa ↑' && d.nhanCanSua(1) === 'Còn 1 ô cần sửa ↑' && d.nhanCanSua(0) === '', 'nhanCanSua');
     const kp = docSach('web/src/ui/KhungPanel.tsx') + docSach('web/src/ui/loiForm.tsx');
     assert(!/Còn thiếu|text-soon/.test(kp.slice(kp.indexOf('DongCanSua'))), 'chân form còn chữ vàng / liệt kê luật');
   });

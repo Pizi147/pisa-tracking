@@ -8,4 +8,13 @@ export const EN_UI_CON_LAI = {
   'Chưa có thông báo mới': 'No new notifications',
   '⚠ Đang mất kết nối. Chữ chưa lưu vẫn giữ trên màn — lưu lại khi có mạng.': '⚠ Offline. Unsaved text stays on screen — save again when back online.',
   'in {luc}': 'printed {luc}',
+  'Bản đã lưu': 'Saved version',
+  'Bạn đang sửa': 'Your edit',
+  'Chưa có gì bị ghi đè. Chữ bạn gõ vẫn giữ.': 'Nothing was overwritten. Your text is kept.',
+  'Dùng bản đã lưu': 'Use saved version',
+  'Lưu bản của tôi': 'Save my version',
+  'Không có quyền': 'No access',
+  'Không thấy': 'Not found',
+  'Đường dẫn có thể cũ.': 'The link may be out of date.',
+  'Hồ sơ của tôi ›': 'My profile ›',
 } as const;

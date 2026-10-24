@@ -20,5 +20,5 @@ export function dsLoi(luat: readonly LuatTruong[], giaTri: Record<string, unknow
 
 /** Chân form: trung tính, không lặp luật. '' khi không còn ô lỗi. */
 export function nhanCanSua(soO: number): string {
-  return soO > 0 ? t('{n} ô cần sửa ↑', { n: soO }) : '';
+  return soO > 0 ? t('Còn {n} ô cần sửa ↑', { n: soO }) : '';
 }
