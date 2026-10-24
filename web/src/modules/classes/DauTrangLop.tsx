@@ -44,6 +44,8 @@ export type HoSoLop = {
   /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác). */
   cuoiKhoa: { du: number; tong: number; canQl?: number } | null;
   canhBaoYThuc: number;
+  /** P3: lớp có góp ý hàng tuần cũ → ⋯ › Lịch sử góp ý tuần. */
+  coGopY?: boolean;
   /** PR-CT: dữ liệu dải Kết thúc khoá / Bàn giao / Sắp nhận (mockup 20 — A, H); null khi lớp đã kết thúc. */
   dai: DaiLop | null;
   status?: string; finishedAt?: string | null;
@@ -147,8 +149,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
     const truoc = mucLop[i - 1];
     const dau = m.nhom && m.nhom !== truoc?.nhom ? [{ key: `nhom-${m.nhom}`, nhan: t(m.nhom), tieuDe: true, keTruoc: false, onChon: () => undefined }] : [];
     const muc = { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) };
-    /* Góp ý hàng tuần gỡ 24/10 — giữ đường xem dữ liệu cũ ngay dưới Lịch sử (cùng nhóm Công cụ). */
-    return m.key === 'lich-su' ? [...dau, muc, { key: 'lich-su-gop-y', nhan: t('Lịch sử góp ý tuần'), onChon: () => onViec('lich-su-gop-y') }] : [...dau, muc];
+    /* Góp ý hàng tuần gỡ 24/10 — giữ đường xem dữ liệu cũ ngay dưới Lịch sử (cùng nhóm Công cụ), chỉ khi lớp có góp ý (PTA Plan 25/10). */
+    return m.key === 'lich-su' && data.coGopY ? [...dau, muc, { key: 'lich-su-gop-y', nhan: t('Lịch sử góp ý tuần'), onChon: () => onViec('lich-su-gop-y') }] : [...dau, muc];
   });
 
   /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8 — nâng cấp, không chép mockup): GIỮ nút Nhập điểm · + Case · ⋯ và mọi badge ở vị trí V4; màu / chữ V5. */

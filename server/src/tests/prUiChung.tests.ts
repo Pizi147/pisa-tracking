@@ -13,6 +13,9 @@ const doc = (p: string) => fs.readFileSync(path.join(REPO, p), 'utf8').replace(/
 export async function runPrUiChungTests(t: any) {
   const { check, assert } = t;
   const hd: any = await import('../../../shared/huongDan/index.ts');
+  const classes: any = await import('../classes/classes.ts');
+  const dbMod: any = await import('../db.ts');
+  const { P } = t;
   console.log('\nP3 UI-CHUNG');
   check('UIC-1 · dải Tổng quan ghi "Mới dùng PISA TRACKING?", khoá EN "New to PISA TRACKING?"', () => {
     const dai = doc('web/src/modules/huongDan/DaiMoiDung.tsx');
@@ -38,6 +41,20 @@ export async function runPrUiChungTests(t: any) {
     assert(!chu.includes('Cách xem <b>Góp ý hàng tuần</b>'), 'Hướng dẫn còn chỉ tới cách xem Góp ý');
     const route = doc('server/src/routes/index.ts');
     assert(route.includes("api.get('/classes/:id/gop-y'") && route.includes("api.put('/classes/:id/gop-y'"), 'route Góp ý phải giữ (Lịch sử, dữ liệu)');
+  });
+
+  check('UIC-2b · hồ sơ lớp `coGopY` = lớp có góp ý cũ (⋯ › Lịch sử góp ý tuần chỉ hiện khi có)', () => {
+    const { db } = dbMod;
+    const lop = (db().prepare('SELECT id FROM classes WHERE id NOT IN (SELECT class_id FROM gop_y_tuan) ORDER BY id LIMIT 1').get() as { id: number }).id;
+    assert(classes.classOverview(P.admin, lop).coGopY === false, 'lớp chưa có góp ý → false');
+    const hv = db().prepare('SELECT student_id FROM enrollments WHERE class_id = ? LIMIT 1').get(lop) as { student_id: number } | undefined;
+    const ky = db().prepare('SELECT id FROM report_periods ORDER BY id LIMIT 1').get() as { id: number };
+    const sid = hv?.student_id ?? (db().prepare('SELECT id FROM students LIMIT 1').get() as { id: number }).id;
+    const r = db().prepare(`INSERT INTO gop_y_tuan (student_id, class_id, period_id, skill, noi_dung, ghi_luc) VALUES (?, ?, ?, 'listening', 'UIC-2b', '2026-09-01T00:00:00Z')`).run(sid, lop, ky.id);
+    try {
+      assert(classes.classOverview(P.admin, lop).coGopY === true, 'có góp ý → true');
+      assert(/data\.coGopY \?/.test(doc('web/src/modules/classes/DauTrangLop.tsx')), 'menu ⋯ dựa cờ coGopY');
+    } finally { db().prepare('DELETE FROM gop_y_tuan WHERE id = ?').run(r.lastInsertRowid); }
   });
 
   check('UIC-3 · menu ⋯ (Menu, MenuDong): nhãn nhóm không bấm được + vạch; mục ≥ 44 px ở 375; mục nguy hiểm có vạch đỏ (không chỉ màu chữ)', () => {

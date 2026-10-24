@@ -9,7 +9,7 @@ Không đổi bố cục trang, luật, quyền.
 |---|---|---|---|
 | Hồ sơ lớp › Học viên › Cách xem | Tổng hợp · **Góp ý hàng tuần** · Cần hỗ trợ · … | Tổng hợp · Cần hỗ trợ · … | chủ SP bỏ Góp ý 24/10 (R6.2) |
 | Ghi / sửa góp ý tuần | ô chữ trong cách xem Góp ý | **mất** | như trên; bảng `gop_y_tuan` + route GET/PUT giữ |
-| Lịch sử góp ý của lớp | nút Lịch sử trong cách xem Góp ý | **⋯ › Lịch sử góp ý tuần** (ngay dưới Lịch sử, nhóm Công cụ) | giữ đường xem dữ liệu cũ — [XM] đã hỏi PTA Plan |
+| Lịch sử góp ý của lớp | nút Lịch sử trong cách xem Góp ý | **⋯ › Lịch sử góp ý tuần** (ngay dưới Lịch sử, nhóm Công cụ), **chỉ khi lớp có góp ý** (cờ máy chủ `coGopY`), panel cũ chỉ đọc | GIỮ đường xem dữ liệu cũ — PTA Plan duyệt 25/10 |
 | Link cũ `?che-do=gop-y` | mở Góp ý | mở Tổng hợp (không lỗi) | |
 | Menu ⋯ (hồ sơ lớp, hồ sơ HV, mọi `Menu` / `MenuDong`) | nhãn nhóm 11–12 px mờ, mục sát | nhãn 12 / 600 + vạch trên mỗi nhóm, mục ≥ 36 px (≥ 44 px ở 375), vạch đỏ trước việc nguy hiểm, sáng: nền trắng | R6.3a; thứ tự mục giữ nguyên |
 | Dải Tổng quan | "Mới dùng PISA?" | "Mới dùng PISA TRACKING?" (EN "New to PISA TRACKING?") | R6.4b |
