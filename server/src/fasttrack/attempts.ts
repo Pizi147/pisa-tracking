@@ -25,7 +25,7 @@ import {
   checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
-  chanCuoiTuan,
+  chanCuoiTuan, tuanCacKyNang,
 } from './skillSchedule.ts';
 import {
   baoHuyVangCu, canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
@@ -1665,7 +1665,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
   const lyDo = String(input.lyDo ?? '').trim() || `Huỷ MT${a.attempt_no}`;   // rà #282: lý do tuỳ chọn
   const hq = heQuaHuyLuot(attemptId);
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');
-  chanCuoiTuan(p, a, ensureSkillRows(attemptId).filter((r) => r.required).map((r) => r.week_start));
+  chanCuoiTuan(p, a, tuanCacKyNang(a));
   const conn = db();
   return tx(() => {
     /* Hai người huỷ cùng lúc: kiểm lại TRONG giao dịch — lần sau không được cất một bản rỗng đè lên bản có điểm. */
@@ -1739,7 +1739,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Quản lý khôi phục được lượt đã huỷ.');
   const nhan = `MT${truoc.attempt_no}`;
   const lyDo = `Khôi phục ${nhan}`;
-  chanCuoiTuan(p, truoc, ensureSkillRows(attemptId).filter((r) => r.required).map((r) => r.week_start));
+  chanCuoiTuan(p, truoc, tuanCacKyNang(truoc));
   return tx(() => {
     const conn = db();
     const a = loadAttempt(attemptId);   // đọc lại trong giao dịch: hai người khôi phục cùng lúc thì lần sau thấy đã khôi phục

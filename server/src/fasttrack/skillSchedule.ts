@@ -48,6 +48,13 @@ export function chanCuoiTuan(p: Principal, a: { kind: string }, tuan: readonly (
   if (cau) throw badRequest(cau);
 }
 
+/** P6: tuần các kỹ năng bắt buộc của lượt — CHỈ ĐỌC (`ensureSkillRows` tự tạo dòng, làm sai bản khôi phục); chưa có dòng → tuần chung của lượt. */
+export function tuanCacKyNang(a: { id: number; planned_period_id?: number | null }): (string | null)[] {
+  const rows = loadSkillRows([a.id]).get(a.id);
+  if (rows?.length) return rows.filter((r) => r.required).map((r) => r.week_start);
+  return [a.planned_period_id ? (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(a.planned_period_id) as any)?.week_start ?? null : null];
+}
+
 function requireMoveSkillSchedule(
   p: Principal, ctx: { classId: number; studentId: number; skill?: string }, message: string,
 ) {
