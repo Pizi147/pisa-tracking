@@ -9597,6 +9597,9 @@ await runPrChonLopTests({ check, assert } as any);
 // ==================================================================== P6 KHOA-LICH (T6 → CN khoá đổi lịch MT 3 tuần, trừ Quản trị hệ thống)
 const { runPrKhoaLichTests } = await import('./prKhoaLich.tests.ts');
 await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== P14 DICH (nút Dịch chữ GV nhập — fetch giả)
+const { runPrDichTests } = await import('./prDich.tests.ts');
+await runPrDichTests({ check, checkAsync, assert, conn, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

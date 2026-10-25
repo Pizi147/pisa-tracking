@@ -314,6 +314,8 @@ export type PhieuMon = {
   gvbm: string[];
   /** OV-3b: QL đổi hướng / lớp chuyển đến sau khi chốt — `noiDung` là chữ cũ điền sẵn, chưa tính là đã ghi. */
   lamLai: boolean;
+  /** P14 DICH: id dòng `ban_giao_mon` (null = môn chưa ghi) — nút Dịch câu GVBM. */
+  id: number | null;
 };
 export type PhieuEm = {
   lenhId: number; studentId: number; ten: string; maHv: string; huong: string; trangThaiLenh: string;

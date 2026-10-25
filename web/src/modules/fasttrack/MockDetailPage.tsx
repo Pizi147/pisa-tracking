@@ -44,6 +44,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
+import { ChuDich } from '../../ui/ChuDich.tsx';
 
 type Detail = {
   id: number;
@@ -323,7 +324,7 @@ export default function MockDetailPage() {
       </div>
 
       {/* C. NHẬN XÉT 4 kỹ năng (YC-13.5, OV-4b) — không bắt buộc, không phải điểm. */}
-      <KhoiNhanXet cells={d.cells} save={save} phuTrach={d.phuTrachS ? luuPhuTrach : null} />
+      <KhoiNhanXet attemptId={d.id} cells={d.cells} save={save} phuTrach={d.phuTrachS ? luuPhuTrach : null} />
 
       <details className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         <summary className="cursor-pointer text-sm text-slate-300 max-sm:py-2.5 max-sm:-my-2.5">{t('Thông tin đợt Mock Test')}</summary>
@@ -469,8 +470,8 @@ function knHop(d: Detail): KnO {
  * OV-12b (mockup ov12-1 §4): ô MT có điểm → "*", xoá / dưới 10 ký tự không lưu; ô dưới kỳ vọng → chip "Nhóm nguyên nhân *" ngay dưới
  * nhận xét (bấm là lưu, chip cuối không bỏ được); người không sửa được thấy chip tĩnh.
  */
-function KhoiNhanXet({ cells, save, phuTrach }: {
-  cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean>;
+function KhoiNhanXet({ attemptId, cells, save, phuTrach }: {
+  attemptId: number; cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean>;
   /** OV-13k: người xem là GV phụ trách S / GVCN / QL — ghi "Nhận xét GV phụ trách", sửa nhóm ô S (đường riêng). */
   phuTrach: ((body: { nhanXetPhuTrach?: string | null; nhomNguyenNhan?: string[] }) => Promise<boolean>) | null;
 }) {
@@ -498,7 +499,7 @@ function KhoiNhanXet({ cells, save, phuTrach }: {
           <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{nhan}</span>{phu(c) && <span className="truncate text-slate-500">{phu(c)}</span>}
         </div>
         {nhomSua && canNhom(c) ? null : !!c.nhomNguyenNhan?.length && <div className="mt-1.5"><NhomTinh value={c.nhomNguyenNhan} /></div>}
-        {c.nhanXet && <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{c.nhanXet}</p>}
+        {c.nhanXet && <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200"><ChuDich chu={c.nhanXet} nguon={{ bang: 'assessment_scores', id: attemptId, cot: 'comment', kyNang: c.skill }} /></p>}
         {nhomSua && canNhom(c) && <div className="mt-2.5"><NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={nhomSua} /></div>}
       </div>
     );
@@ -519,7 +520,7 @@ function KhoiNhanXet({ cells, save, phuTrach }: {
       <div className="flex items-baseline gap-2 text-xs text-slate-400">
         <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{t('Nhận xét GV phụ trách')}</span>{pt.ten && <span className="truncate text-slate-500">{pt.ten}</span>}
       </div>
-      <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200">{pt.chu}</p>
+      <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200"><ChuDich chu={pt.chu} nguon={{ bang: 'assessment_scores', id: attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' }} /></p>
     </div>
   ) : null;
   const coS = !!s && (sua(s) || !!s.nhanXet || !!s.gvCham);
