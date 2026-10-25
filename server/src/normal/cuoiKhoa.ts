@@ -1,13 +1,11 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
+  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
   type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
 import { addMilestone } from '../cases/sos.ts';
@@ -89,56 +87,6 @@ export function chuCuoiKhoaLo(classId: number, sids: readonly number[]): Map<num
     });
     out.set(sid, h.phu ? `${h.chinh} (${h.phu})` : h.chinh);
   }
-  return out;
-}
-
-export type EmXetLai = { studentId: number; ten: string; huong: string; tyLe: number; lopHienTai: { id: number; code: string } };
-/** Gom theo lớp HIỆN TẠI của em (`lopId` = lớp em đang học). */
-export type LopXetLai = { lopId: number; code: string; em: EmXetLai[] };
-
-/**
- * PR-CL (B5): việc QL "Xét lại lộ trình" — em đã thi hành quyết định CUỐI KHOÁ từ lớp thường (lên lớp / Lên FT / học lại) mà Final mới nhất ở lớp nguồn
- * "không phù hợp lộ trình" (`khongPhuHopLoTrinh`). Tự hết: em có quyết định mới (chưa huỷ), thôi học, rời lớp chuyển đến, điểm hết lệch, hoặc qua Chủ nhật
- * tuần 2 ở lớp mới. Việc của QL chi nhánh lớp em ĐANG học (chủ sản phẩm 08/10): quyền `class.edit` ở lớp đó; `branchId` = chi nhánh lớp đó. Gom theo lớp hiện tại. 4 câu cho cả phạm vi (lệnh · Final · 2 câu %),
- * nhớ trong request (việc + GET panel cùng một tập).
- */
-export function emXetLaiLoTrinh(p: Principal, branchId: number | null, today: string): LopXetLai[] {
-  return nho(`xet-lai-lo-trinh:${p.userId}:${branchId ?? ''}:${today}`, () => tinhEmXetLai(p, branchId, today));
-}
-
-function tinhEmXetLai(p: Principal, branchId: number | null, today: string): LopXetLai[] {
-  const conn = db();
-  const lenh = (conn.prepare(
-    `SELECT l.student_id, l.huong, l.lop_nguon_id, l.lop_dich_id, cd.code AS dich_code, s.full_name
-       FROM lenh_chuyen_lop l
-       JOIN classes cn ON cn.id = l.lop_nguon_id AND cn.is_fast_track = 0
-       JOIN classes cd ON cd.id = l.lop_dich_id
-       JOIN students s ON s.id = l.student_id AND ${HV_DANG_HOC_SQL('s')}
-       JOIN enrollments e ON e.student_id = l.student_id AND e.class_id = l.lop_dich_id AND e.status = 'active'
-      WHERE l.boi_canh = 'cuoi-khoa' AND l.trang_thai = 'da_chuyen' AND l.huong IN ('len_lop', 'fast_track', 'hoc_lai')
-        AND ? <= date(l.tuan_bat_dau, '+13 day')${branchId ? ' AND cd.branch_id = ?' : ''}
-        AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop k WHERE k.student_id = l.student_id AND k.id > l.id AND k.trang_thai != 'huy')`,
-  ).all(today, ...(branchId ? [branchId] : [])) as any[]).filter((l) => can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_dich_id }));
-  if (!lenh.length) return [];
-  /* Final mới nhất của em ở LỚP NGUỒN (id lớn nhất). */
-  const nguonCua = new Map(lenh.map((l) => [l.student_id as number, l.lop_nguon_id as number]));
-  const finalCua = new Map<number, number>();
-  theoLo([...nguonCua.keys()], (lo, ph) => {
-    for (const r of conn.prepare(
-      `SELECT student_id, class_id, MAX(id) AS id FROM assessment_attempts
-        WHERE kind = 'final' AND status != 'cancelled' AND student_id IN (${ph}) GROUP BY student_id, class_id`,
-    ).all(...lo) as any[]) if (nguonCua.get(r.student_id) === r.class_id) finalCua.set(r.student_id, r.id);
-  });
-  const tyLe = tyLeTongLo([...finalCua.values()]);
-  const theoLop = new Map<number, LopXetLai>();
-  for (const l of lenh) {
-    const t = tyLe.get(finalCua.get(l.student_id) ?? -1);
-    if (!t?.du || t.tyLe === null || !khongPhuHopLoTrinh(l.huong, t.tyLe, t.nguong)) continue;
-    if (!theoLop.has(l.lop_dich_id)) theoLop.set(l.lop_dich_id, { lopId: l.lop_dich_id, code: l.dich_code, em: [] });
-    theoLop.get(l.lop_dich_id)!.em.push({ studentId: l.student_id, ten: l.full_name, huong: l.huong, tyLe: t.tyLe, lopHienTai: { id: l.lop_dich_id, code: l.dich_code } });
-  }
-  const out = [...theoLop.values()].sort((a, b) => a.code.localeCompare(b.code, 'vi'));
-  for (const g of out) g.em.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
   return out;
 }
 
@@ -657,7 +605,7 @@ function hoanThanhCaseMiniTest(conn: any, caseId: number, p: Principal, ghiChu: 
 
 /**
  * GHI MINI TEST — MỘT hàm cho mọi đường (K1-41). Chạy TRONG tx của nơi gọi (`updateResult` lần ghi cuối, hoặc `ghiMiniTest`).
- * ≥ 70% → mọi Case của nhóm tự Hoàn thành (Q5). < 70% → Case để mở + thẻ Báo QL cho Quản lý (thông báo do `taoYeuCau`). Trả `dat`.
+ * ≥ 70% → mọi Case của nhóm tự Hoàn thành (Q5) + thẻ Báo QL cũ (trước P9a) tự đóng. < 70% → Case để mở; em vào việc Xét lại lộ trình (d). Trả `dat`.
  */
 export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: number; ngay: string }, mucPa?: string | null): { dat: boolean } {
   conn.prepare('UPDATE mini_test SET ty_le = ?, ngay_lam = ?, ghi_boi = ?, ghi_luc = ? WHERE id = ?').run(x.tyLe, x.ngay, p.userId, nowIso(), mt.id);
@@ -669,21 +617,8 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
   if (dat) {
     for (const id of cases) hoanThanhCaseMiniTest(conn, id, p, `Mini Test ${phanTram}% ≥ 70%`, x.ngay, mucPa);
     chotYeuCau(conn, { loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id }, 'tu_dong', { lyDo: 'Mini Test đã đạt' });
-  } else if (cases.length) {
-    const lopId = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
-    /* PR-CT2 (§8): thẻ về người giữ việc Ghi Mini Test (GVCN lớp đang học; không có → chủ Case), không về Người dạy (GV cũ). */
-    const chu = nguoiGiuMotMiniTest(conn, mt, lopId);
-    const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ 70%) — Quản lý xử lý từng trường hợp`;
-    const duLieu = { viecKey: `minitest:${mt.id}`, ownerId: chu, lyDo, tyLe: x.tyLe };
-    const moi = taoYeuCau(conn, {
-      loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id, hocVienId: mt.student_id, lopId, nguoiXin: null, hanDuyet: null, lyDo, duLieu,
-    });
-    /* OV-7a: sửa từ < 70% sang < 70% khác — thẻ đang chờ đổi chữ, không báo QL lần hai. */
-    if (moi === null) {
-      conn.prepare(`UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ? WHERE loai = 'bao_len_mini_test' AND doi_tuong_loai = 'mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
-        .run(lyDo, JSON.stringify(duLieu), mt.id);
-    }
   }
+  /* P9a (N21): < 70 % → Case để mở; QL quyết ở việc "Xét lại lộ trình" (dòng (d), tính khi đọc) — không còn thẻ Báo QL "Mini Test chưa đạt". */
   writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.mini_test', entityType: 'student', entityId: mt.student_id, after: { miniTestId: mt.id, tyLe: x.tyLe, ngay: x.ngay, dat } });
   return { dat };
 }

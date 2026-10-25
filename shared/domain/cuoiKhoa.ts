@@ -14,6 +14,7 @@ import { NORMAL_LADDER } from './fasttrack.ts';
 import type { ProgrammeCode } from './normal.ts';
 import { kyHieuLop } from './tenLop.ts';
 import { ngay } from './hienThiNgay.ts';
+import { mondayOfDate } from './week.ts';
 import { dich as dichChuoi, dichChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
 
 export type DaiCuoiKhoa = 'duoi_50' | '50_59' | '60_69' | 'dat';
@@ -39,13 +40,44 @@ export function danhGiaDauRa(e: { du: boolean; tyLe: number | null; scored: numb
   return { trangThai: e.tyLe >= (e.nguong ?? RATIO_PASS_THRESHOLD) ? 'dat' : 'chua-dat', tyLe: e.tyLe, scored: e.scored, required: e.required };
 }
 
+/** "46 %" cho Xét lại — làm tròn XUỐNG (tỷ lệ chưa làm tròn 0.4996 vẫn là "dưới 50 %", đúng luật `lyDoXetLai`). */
+export const chuTyLeXetLai = (tyLe: number): string => `${Math.floor(tyLe * 100 + 1e-9)} %`;
+
+export type MaXetLai = 'a' | 'b' | 'c' | 'd';
+export type LyDoXetLai = { ma: MaXetLai; chu: string; moc: string };
 /**
- * PR-CL (B5, §7): "Kết quả không phù hợp lộ trình" — đã chốt lên (lên lớp / Lên FT) mà Final < 50%, hoặc học lại mà Final ≥ 70%.
- * Tỷ lệ CHƯA làm tròn; `null` (chưa đủ môn) hoặc hướng khác → false.
+ * P9a (N21): vì sao em có dòng "Xét lại lộ trình" — Final lớp nguồn đủ điểm (tỷ lệ CHƯA làm tròn) và hướng đã chốt: (a) lên (Lên lớp / Lên FT) mà
+ * < 50 % · (b) lên mà 50–59 % và chốt TRƯỚC ngày Final đủ điểm (`ngayFinal`, ngày nghiệp vụ) · (c) học lại mà ≥ 60 % · (d) Mini Test bổ trợ Final
+ * < 70 %. `moc` = lúc gây ra dòng (giờ thật: điểm Final nhập / sửa cuối, ghi Mini Test); QL đã quyết Xét lại SAU mốc (`quyetLuc`) → null. (d) xét
+ * trước: Mini Test là mốc mới hơn.
  */
-export function khongPhuHopLoTrinh(huong: string, tyLe: number | null, nguong: number = RATIO_PASS_THRESHOLD): boolean {
-  if (tyLe === null) return false;
-  return ((huong === 'len_lop' || huong === 'fast_track') && tyLe < NGUONG_HOC_LAI) || (huong === 'hoc_lai' && tyLe >= nguong);
+export function lyDoXetLai(x: {
+  huong: string; tyLe: number | null; du: boolean; ngayRaLenh: string; mocFinal: string | null; ngayFinal: string | null;
+  miniTest: { tyLe: number; luc: string } | null; quyetLuc: string | null;
+}): LyDoXetLai | null {
+  const daQuyet = (moc: string) => !!x.quyetLuc && x.quyetLuc > moc;
+  if (x.miniTest && x.miniTest.tyLe < NGUONG_MINI_TEST && !daQuyet(x.miniTest.luc)) {
+    return { ma: 'd', chu: t('Mini Test {pt} · cần ≥ 70 %', { pt: chuTyLeXetLai(x.miniTest.tyLe) }), moc: x.miniTest.luc };
+  }
+  if (!x.du || x.tyLe === null || !x.mocFinal || daQuyet(x.mocFinal)) return null;
+  const len = x.huong === 'len_lop' || x.huong === 'fast_track';
+  const pt = chuTyLeXetLai(x.tyLe);
+  if (len && x.tyLe < NGUONG_HOC_LAI) return { ma: 'a', chu: t('Final {pt} · đã cho lên', { pt }), moc: x.mocFinal };
+  if (len && x.tyLe < NGUONG_LEN && !!x.ngayFinal && x.ngayRaLenh < x.ngayFinal) return { ma: 'b', chu: t('Final {pt} · chốt trước Final', { pt }), moc: x.mocFinal };
+  if (x.huong === 'hoc_lai' && x.tyLe >= NGUONG_LEN) return { ma: 'c', chu: t('Final {pt} · đang học lại', { pt }), moc: x.mocFinal };
+  return null;
+}
+
+/**
+ * P9a (N21): hạn Xét lại. (a)(b)(c) hết CN tuần 2 kể từ tuần bắt đầu lớp mới — lệnh chưa thi hành cùng công thức (= CN tuần thi hành + 1); Final đủ
+ * điểm muộn hơn thì ít nhất hết CN tuần có Final (không hết hạn ngay khi dòng vừa hiện). (d) CN tuần sau ngày làm Mini Test. `moc` = ngày nghiệp vụ.
+ */
+export function hanXetLai(x: { ma: MaXetLai; tuanBatDau: string; moc: string }): string {
+  const cong = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+  const cnMoc = cong(mondayOfDate(x.moc.slice(0, 10)), 6);
+  if (x.ma === 'd') return cong(cnMoc, 7);
+  const cnTuan2 = cong(mondayOfDate(x.tuanBatDau.slice(0, 10)), 13);
+  return cnTuan2 > cnMoc ? cnTuan2 : cnMoc;
 }
 
 export type BoTroMienPhi = { soBuoi: number; soTuan: 1 | 2; theoMon: boolean; mon: string[] /* ô chuẩn của lớp CŨ */ };

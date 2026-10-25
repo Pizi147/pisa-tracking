@@ -334,14 +334,14 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { sid, ma, ten, y1, y2, a1, a2, c1, i1, f1, g1, v1, m1, x1, r1, task, tep };
   }
 
-  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (46 bảng — UI-HO-SO-LOP thêm danh_gia_dau_ra, SV-S-EXPERT thêm s_expert, SV-YT-TVV thêm viec_bao_ph, viec_bao_ph_lan, SV-BAI-LOP thêm bai_tren_lop, OV-15c thêm ghi_chu_lich_thi, OV-12g thêm gop_y_tuan, OV-12h thêm case_followup_buoi, OV-3b thêm lo_trinh_nhap, PR-YT4 thêm y_thuc_khai_bac, PR-LT2b thêm mini_test, PR-CT thêm lenh_chuyen_lop, ban_giao_mon, PR-MTa thêm ket_qua_huy, PR-TK thêm ban_chup_lo_trinh, ban_chup_luot)', () => {
+  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (47 bảng — P9a XET-LAI thêm xet_lai_lo_trinh, UI-HO-SO-LOP thêm danh_gia_dau_ra, SV-S-EXPERT thêm s_expert, SV-YT-TVV thêm viec_bao_ph, viec_bao_ph_lan, SV-BAI-LOP thêm bai_tren_lop, OV-15c thêm ghi_chu_lich_thi, OV-12g thêm gop_y_tuan, OV-12h thêm case_followup_buoi, OV-3b thêm lo_trinh_nhap, PR-YT4 thêm y_thuc_khai_bac, PR-LT2b thêm mini_test, PR-CT thêm lenh_chuyen_lop, ban_giao_mon, PR-MTa thêm ket_qua_huy, PR-TK thêm ban_chup_lo_trinh, ban_chup_luot)', () => {
     const tap = baoDongLuocDo();
     const coDinh = new Set(xoaHV.BANG_CUA_HOC_VIEN);
     const thieu = [...tap].filter((b) => !coDinh.has(b));
     const thua = [...coDinh].filter((b) => !tap.has(b));
     assert(!thieu.length, thieu.map((b) => `Bảng ${b} trỏ tới học viên mà xoaHocVien chưa xoá`).join('; '));
     assert(!thua.length, `BANG_CUA_HOC_VIEN có bảng không trỏ tới học viên: ${thua.join(', ')}`);
-    assert(tap.size === 46, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
+    assert(tap.size === 47, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
   });
 
   check('PR-XOA X2 · Mỗi cạnh FK vào bao đóng có câu trong CAU_XOA_HOC_VIEN (DELETE theo cột, hoặc UPDATE … = NULL cho CANH_NULL); đủ owner_type tệp', () => {

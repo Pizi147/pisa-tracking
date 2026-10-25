@@ -25,6 +25,7 @@ import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
+import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
@@ -1847,16 +1848,25 @@ api.get('/classes/:id/transition', requireAuth, wrap((req) => {
 }));
 
 /**
- * PR-CL (B6): em của việc "Xét lại lộ trình" ở lớp HIỆN TẠI `:id` (lớp em đang học) — CÙNG hàm với dòng Công việc (cùng tập em). Không 403:
- * quyền lọc theo `class.edit` lớp đó (GVCN/GVBM → `em: []`). Ghi: web gọi `POST /students/:id/transfer` từng em.
+ * P9a (N21): panel Xét lại lộ trình ở lớp em ĐANG học — CÙNG tập với dòng Công việc (`tapXetLai`). QL lớp đó: đủ dòng + lớp Học lại; GVCN: chỉ xem
+ * (`chiXem`); người khác: `em: []`. `?studentId=` — lối vào từ hồ sơ HV (một em). Ghi: lô ≤ 10 em, lỗi từng em giữ dòng; Hoàn tác; nhận xét GVCN mới.
  */
-api.get('/classes/:id/xet-lai-lo-trinh', requireAuth, wrap((req) => {
+api.get('/classes/:id/xet-lai', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   lenhSvc.quetLenhDenHan();
-  const lop = db().prepare('SELECT id, code FROM classes WHERE id = ?').get(pInt(req, 'id')) as { id: number; code: string } | undefined;
-  if (!lop) throw notFound('Không tìm thấy lớp');
-  const em = cuoiKhoaSvc.emXetLaiLoTrinh(principalOf(req), null, demoToday()).find((x) => x.lopId === lop.id)?.em ?? [];
-  return { lop: { id: lop.id, code: lop.code }, em };
+  return xetLaiSvc.xemXetLai(principalOf(req), pInt(req, 'id'), qInt(req, 'studentId') ?? null);
+}));
+api.post('/classes/:id/xet-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xetLaiSvc.luuXetLai(principalOf(req), pInt(req, 'id'), req.body?.items);
+}));
+api.post('/classes/:id/xet-lai/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xetLaiSvc.hoanTacXetLai(principalOf(req), pInt(req, 'id'), req.body?.ids);
+}));
+api.put('/classes/:id/xet-lai/:sid/nhan-xet', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xetLaiSvc.ghiNhanXetGvcnMoi(principalOf(req), pInt(req, 'id'), pInt(req, 'sid'), req.body?.nhanXet);
 }));
 
 /**

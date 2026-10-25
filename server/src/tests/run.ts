@@ -9597,6 +9597,9 @@ await runPrChonLopTests({ check, assert } as any);
 // ==================================================================== P6 KHOA-LICH (T6 → CN khoá đổi lịch MT 3 tuần, trừ Quản trị hệ thống)
 const { runPrKhoaLichTests } = await import('./prKhoaLich.tests.ts');
 await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== P9a XET-LAI (Xét lại lộ trình N21: 4 trường hợp, hạn, panel, lô, Hoàn tác, tự giữ)
+const { runPrXetLaiTests } = await import('./prXetLai.tests.ts');
+await runPrXetLaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

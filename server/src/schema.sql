@@ -2013,6 +2013,26 @@ CREATE UNIQUE INDEX ux_lenh_cho_hv ON lenh_chuyen_lop (student_id) WHERE trang_t
 CREATE INDEX ix_lenh_den_han ON lenh_chuyen_lop (trang_thai, tuan_bat_dau);
 CREATE INDEX ix_lenh_nguon ON lenh_chuyen_lop (lop_nguon_id, trang_thai);
 CREATE INDEX ix_lenh_dich ON lenh_chuyen_lop (lop_dich_id, trang_thai);
+-- P9a XET-LAI (N21): quyết định Xét lại lộ trình (QL; tu_dong = 1 khi hết hạn tự ghi "Tiếp tục") + nhận xét GVCN lớp mới (quyet_dinh NULL).
+-- lenh_id = lệnh Cuối khoá gây ra dòng; lenh_moi_id = lệnh Học lại (mới, hoặc chính lệnh đó đã sửa khi chưa thi hành — lenh_cu giữ bản trước để Hoàn tác).
+-- moc = lúc gây ra dòng (Final đủ điểm / ghi Mini Test). Migrate `prXetLai` chép y câu này.
+CREATE TABLE xet_lai_lo_trinh (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  lenh_id INTEGER NOT NULL REFERENCES lenh_chuyen_lop(id),
+  ly_do_ma TEXT,
+  moc TEXT,
+  quyet_dinh TEXT,
+  lenh_moi_id INTEGER REFERENCES lenh_chuyen_lop(id),
+  lenh_cu TEXT,
+  ly_do_text TEXT,
+  tu_dong INTEGER NOT NULL DEFAULT 0,
+  nhan_xet_gvcn_moi TEXT,
+  nguoi_id INTEGER REFERENCES users(id),
+  luc TEXT NOT NULL
+);
+CREATE INDEX ix_xet_lai_hv ON xet_lai_lo_trinh (student_id, lenh_id);
+CREATE UNIQUE INDEX ux_xet_lai_tu_dong ON xet_lai_lo_trinh (student_id, lenh_id, moc) WHERE tu_dong = 1;
 CREATE TABLE ban_giao_mon (
   id INTEGER PRIMARY KEY,
   lenh_id INTEGER NOT NULL REFERENCES lenh_chuyen_lop(id),

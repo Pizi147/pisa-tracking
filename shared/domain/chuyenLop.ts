@@ -492,9 +492,6 @@ export function chonGuiNhieuEm<T extends { chon: boolean; lop: number | null; xo
   return { gui: conLai.filter((r) => r.lop !== null), boQua: conLai.filter((r) => r.lop === null).length };
 }
 
-/** "46%" cho Xét lại — làm tròn XUỐNG (tỷ lệ chưa làm tròn 0.4996 vẫn là "dưới 50%" đúng luật `khongPhuHopLoTrinh`). */
-export const chuTyLeXetLai = (tyLe: number): string => `${Math.floor(tyLe * 100 + 1e-9)}%`;
-
 /** §7: hỏi Target CHỈ khi Lên FT từ lớp thường mà em chưa có Target nào (`targetSan` của xem trước = null). Dùng cho panel một em và nhiều em. */
 export const canHoiTarget = (nguonFt: boolean, dichFt: boolean, targetSan: MucTieuLenh | null | undefined): boolean =>
   !nguonFt && dichFt && targetSan === null;

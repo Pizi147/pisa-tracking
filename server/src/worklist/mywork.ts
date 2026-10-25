@@ -20,7 +20,8 @@ import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
 import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
-import { boKetQuaChoMiniTest, emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
+import { boKetQuaChoMiniTest, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
+import { emXetLaiLoTrinh } from '../normal/xetLai.ts';
 import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
@@ -280,7 +281,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   xet_lai_lo_trinh: {
     label: 'Xét lại lộ trình',
-    hint: 'Em đã chuyển lớp mà Final Test không phù hợp lộ trình đã chốt (lên mà dưới 50%, học lại mà từ 70%). Chỉ gợi ý xét lại, không bắt buộc đổi.',
+    hint: 'Final chưa khớp hướng đã chốt (lên mà dưới 50 %, chốt trước Final mà 50–59 %, học lại mà từ 60 %) hoặc Mini Test dưới 70 %. Hết hạn: em ở lại lớp đang học.',
   },
   missing_data: {
     label: 'Thiếu dữ liệu đánh giá',
@@ -719,18 +720,18 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------------------- 2d'. PR-CL (B5): Xét lại lộ trình — một việc mỗi lớp HIỆN TẠI của em (QL chi nhánh lớp đó), không hạn, tự mất (cùng hàm với GET /classes/:id/xet-lai-lo-trinh)
+  // ------------------------------------------------- 2d'. P9a (N21): Xét lại lộ trình — một việc mỗi lớp em ĐANG học (QL chi nhánh lớp đó), hạn sớm nhất, hết hạn tự giữ (cùng hàm với GET /classes/:id/xet-lai)
   for (const x of co('xet_lai_lo_trinh') ? emXetLaiLoTrinh(p, f.branchId ?? null, today) : []) {
-    const ten = x.em.map((e) => `${e.ten} ${chuTyLeXetLai(e.tyLe)}`);
+    const ten = x.em.map((e) => (e.lyDo.ma === 'd' ? `${e.ten} · ${e.lyDo.chu}` : e.final.tyLe !== null ? `${e.ten} ${chuTyLeXetLai(e.final.tyLe)}` : e.ten));
     items.push({
-      key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: 'normal',
+      key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: urgencyOf(x.han, today),
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.lopId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: ten.length > 3 ? `${ten.slice(0, 3).join(' · ')} · +${ten.length - 3}` : ten.join(' · '), count: x.em.length, emIds: x.em.map((e) => e.studentId),
-      reason: 'Kết quả không phù hợp lộ trình',
-      tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Chuyển lớp…',
+      reason: 'Final chưa khớp hướng đã chốt',
+      tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Xét lại ›',
       href: `/hoc-vien/lop/${x.lopId}?viec=xet-lai`,
-      ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
+      ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa quyết',
     });
   }
 
