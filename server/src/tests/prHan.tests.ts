@@ -3,6 +3,7 @@
  * Gấp hoặc SOS 3 = 3 ngày. Một hàm quyết số ngày (`soNgayHanXacNhan`) — `hanXacNhan` (Case từ SOS) và `planDueDate` (Case tạo tay) đều gọi qua đó.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrHanTests(t: YThucTestKit) {
@@ -45,7 +46,7 @@ export async function runPrHanTests(t: YThucTestKit) {
   const enter = (a: any, skill: string, band: number) => attemptsSvc.saveScore(P.admin, a.id, skill,
     skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
       : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
-      : { criteria: [band, band, band, band] });
+      : { criteria: tieuChiThu(band) });
   const han = (sid: number, cat: string) => get('SELECT han_xac_nhan h FROM sos_cases WHERE student_id = ? AND category = ? ORDER BY id DESC LIMIT 1', sid, cat).h;
   const nam = addDays(TODAY, 4);
   const ba = addDays(TODAY, 2);

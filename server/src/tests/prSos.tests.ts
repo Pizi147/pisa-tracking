@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-SOS — SOS v4: PA quy chế chờ xác nhận, Xác nhận Case → Xác nhận PA, Không cần theo dõi qua Quản lý. Harness do `run.ts` truyền vào. */
 import fs from 'node:fs';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -144,7 +145,7 @@ export async function runPrSosTests(t: YThucTestKit) {
   const enter = (a: any, skill: string, band: number) => attemptsSvc.saveScore(P.admin, a.id, skill, {
     ...(skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
       : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
-      : { criteria: [band, band, band, band] }),
+      : { criteria: tieuChiThu(band) }),
     lyDo: 'Phép kiểm: sửa điểm nguồn',
   });
   const caseOf = (sid: number, category: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND category = ? ORDER BY id DESC LIMIT 1', sid, category);

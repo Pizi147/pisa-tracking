@@ -47,7 +47,7 @@ export function boDanFt(data: FtSheet, cot: readonly string[], homNay: string): 
   return {
     classId: data.classId, classCode: data.classCode, hang: data.rows, cot, tenCot: COT_FT, duong: '/attempts/scores/lo',
     coLR: cot.includes('listening') || cot.includes('reading'),
-    luuY: t('Một kỹ năng: Tên · điểm · nhận xét. Ô trống được bỏ qua, không thành 0. W1, W2, S: bốn tiêu chí (5.5 6 6 5.5).'),
+    luuY: t('Một kỹ năng: Tên · điểm · nhận xét. Ô trống được bỏ qua, không thành 0. W1, W2, S: bốn tiêu chí số nguyên (6 7 6 7).'),
     xet: (h, k, raw, cheDo) => {
       const cell = oCua(h, k);
       if (!cell) return { loai: 'loi', loi: t('Lượt này không có kỹ năng này') };

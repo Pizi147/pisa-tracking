@@ -1,4 +1,5 @@
 import { loadPrincipal, type Principal } from '../permissions.ts';
+import { tieuChiThu } from './tieuChiThu.ts';
 import { addDays, nowIso } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
@@ -51,8 +52,8 @@ export function buildPrMtDemo(ctx: BuildCtx): { students: number } {
   const nhap = (p: Principal, a: any, b: { l: number; r: number; w: number; s: number }) => {
     saveScore(p, a.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(b.l) });
     saveScore(p, a.id, 'reading', { rawScore: READING_BY_RAW.indexOf(b.r) });
-    for (const k of ['writing1', 'writing2']) saveScore(p, a.id, k, { criteria: [b.w, b.w, b.w, b.w] });
-    saveScore(p, a.id, 'speaking', { criteria: [b.s, b.s, b.s, b.s] });
+    for (const k of ['writing1', 'writing2']) saveScore(p, a.id, k, { criteria: tieuChiThu(b.w) });
+    saveScore(p, a.id, 'speaking', { criteria: tieuChiThu(b.s) });
   };
   /* "Lần 1 đã dời do vắng" từ tuần trước nữa — ghi thẳng như các bộ dựng khác ghi mốc theo ngày demo (không có máy chạy lùi thời gian). */
   const daDoiLan1 = (a: any, skill: string, tu: string, sang: string) => {

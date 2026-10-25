@@ -8,6 +8,7 @@
  * không làm sập cả bộ.
  */
 import { migratePrPhh } from '../migrate/prPhh.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { boLichTuTao, luotThu, nhanXetCaseThu } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { duXacNhan } from './luotThu.ts';
@@ -313,7 +314,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const enter = (who: any, a: any, skill: string, band: number) => attemptsSvc.saveScore(who, a.id, skill, {
     ...(skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
       : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
-      : { criteria: [band, band, band, band] }),
+      : { criteria: tieuChiThu(band) }),
     lyDo: 'Phép kiểm: sửa điểm nguồn',
   });
   /** GVBM đang dạy đúng kỹ năng; chưa phân công ai thì GVCN (đúng luật `suggestCaseOwner`). */

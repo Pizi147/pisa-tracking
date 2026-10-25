@@ -5,6 +5,7 @@
  * Mỗi phép kiểm dựng ca của nó trong một giao dịch rồi cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { chotSan } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -52,7 +53,7 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     chotSan(conn, m1);
     /* Quản trị nhập điểm: không phụ thuộc phân công môn của lớp (phép kiểm chạy trước có thể đã đổi GV L / S của MB FT 101). */
     /* OV-4c: W1 / W2 / S ở lượt thường chỉ nhận 4 tiêu chí. */
-    for (const [k, band] of Object.entries(diem)) attempts.saveScore(P.admin, m1, k, k === 'listening' || k === 'reading' ? { band } : { criteria: [band, band, band, band] });
+    for (const [k, band] of Object.entries(diem)) attempts.saveScore(P.admin, m1, k, k === 'listening' || k === 'reading' ? { band } : { criteria: tieuChiThu(band) });
     const caseCua = (k: string) => one(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = ? AND status != 'done'`, sid, k)?.id as number;
     return { sid, ten: `OV5a Em ${dem}`, m1, r: caseCua('reading'), l: caseCua('listening') };
   };

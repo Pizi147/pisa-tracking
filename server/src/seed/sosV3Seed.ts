@@ -1,4 +1,5 @@
 import { loadPrincipal, type Principal } from '../permissions.ts';
+import { tieuChiThu } from './tieuChiThu.ts';
 import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
@@ -82,7 +83,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const score = (a: any, skill: string, band: number, nx = true) => saveScore(admin, a.id, skill, {
     ...(skill === 'listening' ? { rawScore: LISTENING_BY_RAW.indexOf(band) }
       : skill === 'reading' ? { rawScore: READING_BY_RAW.indexOf(band) }
-      : { criteria: [band, band, band, band] }),
+      : { criteria: tieuChiThu(band) }),
     ...(nx ? { nhanXet: NHAN_XET_DEMO[skill], nhomNguyenNhan: [issuesForTopic(skill)[0].code] } : {}),
     /* SV-NX-CASE (N8 ③): Admin nhập hộ S, người chấm = GV phụ trách S của lớp → nhận xét thành mô tả Case ngay (không chờ Xác nhận Case). */
     ...(skill === 'speaking' && gvPhuTrachS(classId) ? { gvCham: { performerUserId: gvPhuTrachS(classId) } } : {}),

@@ -222,7 +222,11 @@ export function rawPatchFrom(text: string, cell: OCoDau): PatchDiem | null {
  * `patch: null` = có ô không hợp lệ (không phải số, không phải đúng một "-", ví dụ "--"): KHÔNG gửi gì — trước đây ô
  * đó thành NaN rồi thành `null` trên máy chủ, tức là xoá tiêu chí mà không ai định xoá. `loi` = câu nói vì sao.
  */
-export const LOI_TIEU_CHI = t('Mỗi tiêu chí là một số như 6.5, hoặc "-" nếu học viên không làm bài.');
+export const LOI_TIEU_CHI = t('Mỗi tiêu chí là số nguyên 0–9, hoặc "-" nếu học viên không làm bài.');
+/** P1 (chủ SP 24/10): tiêu chí W1 / W2 / S chỉ số nguyên 0–9 — band kỹ năng / Overall vẫn x.5. Một hàm cho hộp nhập, Dán Excel, `saveScore`. */
+export const LOI_TIEU_CHI_NGUYEN = t('Tiêu chí là số nguyên 0–9 (ví dụ 6 7 6 7).');
+export const kiemTieuChi = (v: number | null): string | null =>
+  v === null || (Number.isInteger(v) && v >= 0 && v <= 9) ? null : LOI_TIEU_CHI_NGUYEN;
 export const LOI_BAND_HOAC_TIEU_CHI = t('Điền band hoặc tiêu chí');
 /** OV-4c: Band W1 / W2 / S ở lượt thường tự tính từ bốn tiêu chí; nhập thẳng chỉ MT cũ + MT0 (một ô Band). Một hàm cho web và máy chủ. */
 export const duocNhapBandThang = (a: { lichSu: boolean; mt0?: boolean }): boolean => a.lichSu || !!a.mt0;
@@ -246,6 +250,8 @@ export function criteriaPatchFrom(vals: string[], cell: OCoDau, bandText = '', b
   const nums = vals.map((v) => (v.trim() === '' || v.trim() === '-' ? null : Number(v)));
   const filled = nums.filter((v) => v !== null) as number[];
   const preview = !dash && filled.length === 4 ? Math.round((filled.reduce((a, b) => a + b, 0) / 4) * 2 + 1e-9) / 2 : null;
+  /* P1: ô cũ có tiêu chí lẻ vẫn xem trước được; chỉ không thành lệnh (web chỉ gửi khi người dùng sửa ô). */
+  if (filled.some((v) => kiemTieuChi(v))) return { dash, preview, patch: null, loi: LOI_TIEU_CHI_NGUYEN };
   const patch: PatchDiem = dash ? { noShow: true }
     : allEmpty && (cell.noShow || cell.daChot) ? { noShow: false }
     : { criteria: nums };

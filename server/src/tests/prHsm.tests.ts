@@ -71,7 +71,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
   const emMoi = (ten: string) => emMoiLop('MB FT 101', ten);
   const dong = (aid: number, skill: string) => get('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', aid, skill);
   const oCua = (aid: number, skill: string, p = QL) => svc.attemptDetail(p, aid).cells.find((c: any) => c.skill === skill);
-  const S4 = [6, 6.5, 6, 7];
+  const S4 = [6, 7, 6, 7];   // P1: tiêu chí số nguyên — band 6.5 như cũ
 
   const e1 = emMoi('Nhận Xét');
   check('HSM (2a) · GVBM Speaking lưu S + GV chấm tài khoản → dòng có examiner_user_id, ô có gvCham.ten', () => {

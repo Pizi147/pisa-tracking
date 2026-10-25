@@ -19,6 +19,7 @@
  *  NX15 migrate: Case đã trượt sang MT2 mà mô tả là nhận xét MT1 → nguồn MT1 (nhận xét MT2 không đè); mô tả không trùng nhận xét nào → NULL, không bị đè
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrSvNxCaseTests(t: YThucTestKit) {
@@ -85,7 +86,7 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
   const o = (attemptId: number, skill: string) => svc.attemptDetail(QL, attemptId).cells.find((c: any) => c.skill === skill);
   const NX = { listening: 'Nghe Part 3 còn chậm, sai chính tả tên riêng.', reading: 'Bỏ trống 6 câu cuối Passage 3, hết giờ.', writing1: 'Task 1 thiếu so sánh số liệu chính.',
     writing2: 'Task 2 lập luận chưa rõ, ví dụ chung chung.', speaking: 'Part 2 dừng sau 1 phút, ít từ nối, phát âm đuôi -ed chưa rõ.' } as Record<string, string>;
-  const diem = (skill: string, band: number) => (skill === 'listening' || skill === 'reading' ? { band } : { criteria: [band, band, band, band] });
+  const diem = (skill: string, band: number) => (skill === 'listening' || skill === 'reading' ? { band } : { criteria: tieuChiThu(band) });
   /** Lượt chốt: L R W1 W2 đúng kỳ vọng (6.5) có nhận xét, S `bandS` (ai lưu S: `nguoiS`, có / không nhận xét). Trả Case S (nếu có). */
   const chot = (aid: number, o2: { bandS: number; nxS?: string | null; nguoiLuuS?: any; gvCham?: any }) => {
     for (const k of ['listening', 'reading', 'writing1', 'writing2']) svc.saveScore(QL, aid, k, { ...diem(k, 6.5), nhanXet: NX[k] }, TODAY);

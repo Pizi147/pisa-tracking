@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-S4F — sửa sau rà cuối đợt 4 (mỗi mục một phép kiểm tái hiện đúng tình huống rà; quyền: gọi API bằng vai sai → 403). */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { duXacNhan } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -221,7 +222,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   };
   const nhapBand = (aid: number, skill: string, band: number) => attemptsSvc.saveScore(P.admin, aid, skill, {
     ...(skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) } : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
-      : { criteria: [band, band, band, band] }), lyDo: 'Phép kiểm S4F' });
+      : { criteria: tieuChiThu(band) }), lyDo: 'Phép kiểm S4F' });
 
   await checkAsync('S4F (9) · Xác nhận PA quy chế: body thiếu description (API) → 400, không lấy mô tả máy gán; gửi mô tả → 200', async () => {
     const e = emFt('Xác nhận PA');
@@ -241,16 +242,16 @@ export async function runPrS4fTests(t: YThucTestKit) {
     });
   });
 
-  check('S4F (10) · gvCham false/0/"" → 400 (xoá phải null); tiêu chí "abc" / 6.3 / 9.5 → 400, 6.5 → lưu; web: khoá nhớ GV chấm có userId, ô điểm cùng chiều cao, chip "Dưới kỳ vọng: …"', () => {
+  check('S4F (10) · gvCham false/0/"" → 400 (xoá phải null); tiêu chí "abc" / 6.3 / 6.5 / 9.5 → 400 (P1: số nguyên), 6 7 6 7 → lưu; web: khoá nhớ GV chấm có userId, ô điểm cùng chiều cao, chip "Dưới kỳ vọng: …"', () => {
     const e = emFt('HSM nhập');
     for (const g of [false, 0, '', 'Trang', [1]]) {
       assert(maLoi(() => attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { gvCham: g }, t.TODAY)) === 400, `gvCham ${JSON.stringify(g)}`);
     }
-    for (const c of [['abc', 6, 6, 6], [6.3, 6, 6, 6], [9.5, 6, 6, 6], [-0.5, 6, 6, 6]]) {
+    for (const c of [['abc', 6, 6, 6], [6.3, 6, 6, 6], [6.5, 6, 6, 6], [9.5, 6, 6, 6], [-0.5, 6, 6, 6]]) {
       assert(maLoi(() => attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: c }, t.TODAY)) === 400, `tiêu chí ${JSON.stringify(c)}`);
     }
     assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid)?.band == null, 'không được lưu band từ tiêu chí hỏng');
-    attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: [6.5, 6, 6, 7], gvCham: { performerSelf: true } }, t.TODAY);
+    attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: [6, 7, 6, 7], gvCham: { performerSelf: true } }, t.TODAY);
     assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid).band === 6.5, 'tiêu chí hợp lệ phải lưu');
     attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { gvCham: null }, t.TODAY);
     assert(get(`SELECT examiner_user_id u FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid).u === null, 'null = xoá GV chấm');

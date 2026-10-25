@@ -1,5 +1,5 @@
 import { ENTRY_SKILLS, ENTRY_SKILL_SHORT, type EntrySkill } from './skills.ts';
-import { bandTuSoCau, criteriaPatchFrom, kiemBand, type PatchDiem } from './chamDiem.ts';
+import { LOI_TIEU_CHI_NGUYEN, bandTuSoCau, criteriaPatchFrom, kiemBand, type PatchDiem } from './chamDiem.ts';
 import { canNhomNguyenNhan, kiemNhanXet } from './nhanXet.ts';
 import { chuanTieuDe } from './nhapHocVien.ts';
 import { t } from '../i18n/index.ts';
@@ -206,12 +206,15 @@ export function xetODan(raw: { diem: string; nhanXet: string }, cell: ODanHienCo
       patch = r.patch; band = r.preview;
     } else if (tok.length === 4) {
       const r = criteriaPatchFrom(tok, {});
-      if (r.loi || r.dash || r.preview === null || tok.some((x) => kiemBand(Number(x)))) {
-        return { loai: 'loi', loi: t('Bốn tiêu chí, mỗi tiêu chí 0–9 bậc 0.5 (ví dụ 5.5 6 6 5.5)') };
+      /* P1: dán lại y nguyên ô cũ có tiêu chí lẻ (6.5) không phải sửa điểm → như ô không đổi, không lỗi oan. */
+      if (r.loi === LOI_TIEU_CHI_NGUYEN && tok.every((x, i) => Number(x) === cell.criteria[i])) {
+        band = cell.band;
+      } else {
+        if (r.loi || r.dash || r.preview === null) return { loai: 'loi', loi: LOI_TIEU_CHI_NGUYEN };
+        patch = r.patch; band = r.preview;
       }
-      patch = r.patch; band = r.preview;
-    } else return { loai: 'loi', loi: t('Bốn tiêu chí, mỗi tiêu chí 0–9 bậc 0.5 (ví dụ 5.5 6 6 5.5)') };
-    sau = chuBand(band!);
+    } else return { loai: 'loi', loi: LOI_TIEU_CHI_NGUYEN };
+    sau = band === null ? truoc ?? '' : chuBand(band);
   }
   const doiNx = !!nx && nx !== (cell.nhanXet ?? '');
   /* Giống hệt điểm + nhận xét đang có → không gửi gì (dán lại cả bảng không ghi đè lịch sử). */

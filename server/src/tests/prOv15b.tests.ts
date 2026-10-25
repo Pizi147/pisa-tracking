@@ -126,8 +126,8 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     const lb = x('6,5', NX, o('reading'), 'band');
     assert(lb.loai === 'ghi' && lb.patch.band === 6.5 && lb.patch.rawScore === undefined, 'Band cho cả lô, dấu phẩy thập phân');
     assert(x('9.5', NX, o('reading'), 'band').loai === 'loi', 'band ngoài 0–9');
-    const w = x('5.5 6 6 5.5', 'Thiếu số liệu chính', o('writing1'));
-    assert(w.loai === 'ghi' && JSON.stringify(w.patch.criteria) === '[5.5,6,6,5.5]' && w.band === 6 && !w.canNhom, `W 4 tiêu chí: ${JSON.stringify(w)}`);
+    const w = x('5 6 6 6', 'Thiếu số liệu chính', o('writing1'));
+    assert(w.loai === 'ghi' && JSON.stringify(w.patch.criteria) === '[5,6,6,6]' && w.band === 6 && !w.canNhom, `W 4 tiêu chí: ${JSON.stringify(w)}`);
     const wb = x('6.5', 'Thiếu số liệu chính', o('writing1'));
     assert(wb.loai === 'loi' && wb.loi === d.LOI_DAN_BAND, 'MT thường: một band ở W/S → lỗi (Band tự tính từ 4 tiêu chí)');
     const cu = x('6.5', '', o('speaking', { bandThang: true, nenCoNhanXet: false }));

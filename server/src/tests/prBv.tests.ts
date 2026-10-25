@@ -4,6 +4,7 @@
  * V (xoá "-" đã chốt ở Mock) · L (xoá "-" lớp thường). Mỗi rủi ro (1)–(5) của chủ sản phẩm một phép kiểm (V5, V6, V8, V9, V10, L2).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { chotSan } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -55,7 +56,7 @@ export async function runPrBvTests(t: YThucTestKit) {
     band === null ? (skill === 'listening' || skill === 'reading' ? { rawScore: null } : { criteria: [null, null, null, null] })
       : skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
         : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
-          : { criteria: [band, band, band, band] }, ...(today ? [today] : []));
+          : { criteria: tieuChiThu(band) }, ...(today ? [today] : []));
   /** Bài Giữa khoá lớp thường (MB FOU 12) ở tuần `n`, đủ bốn môn. */
   const baiThuong = (n: number) => {
     const tag = `PRBV-T${++dem}`;
