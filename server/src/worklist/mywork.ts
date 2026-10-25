@@ -593,12 +593,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     for (const a of attempts as any[]) {
       for (const c of (a.pendingDetail ?? []) as any[]) {
         /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
-        const ownerId = a.classId && !laChamCheo(a.kind, c.skill) ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
+        const cheo = laChamCheo(a.kind, c.skill);
+        const ownerId = a.classId && !cheo ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
         if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null,
+          /* P12 Q12 (T18): S chấm chéo chưa ai nhận không là nợ của ai — không quá hạn (vẫn là bài chờ chấm). */
+          skill: c.skill, deadline: c.deadline, ownerId, overdue: !cheo && !!c.overdue, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null,
         });
       }
     }
