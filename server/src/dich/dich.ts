@@ -13,6 +13,7 @@ import { requireXemLuotCham, type Principal } from '../permissions.ts';
 import { kiemXemCase } from '../cases/cases.ts';
 import { phieuBanGiao } from '../classes/banGiao.ts';
 import { HttpError, badRequest, notFound, nowIso } from '../util.ts';
+import { ENTRY_SKILLS } from '../../../shared/domain/index.ts';
 
 type Dong = { chu: string | null; studentId: number | null };
 type Nguon = { cot: readonly string[]; doc: (p: Principal, id: number, cot: string, kyNang: string | null) => Dong };
@@ -156,7 +157,10 @@ export async function dich(p: Principal, body: any): Promise<{ banDich: string; 
   if (den !== 'vi' && den !== 'en') throw badRequest('Chỗ này không dịch được.');
   const id = Number(body?.id);
   if (!Number.isInteger(id) || id <= 0) throw badRequest('Chỗ này không dịch được.');
-  const kyNang = typeof body?.kyNang === 'string' && /^[a-z0-9_]{1,30}$/.test(body.kyNang) ? body.kyNang : null;
+  /* Ô điểm: kỹ năng phải là một trong 5 ô FT hoặc kỹ năng của một chương trình lớp thường — lạ / thiếu → 400. */
+  const kyNang = bang === 'assessment_scores' ? String(body?.kyNang ?? '') : null;
+  if (kyNang !== null && !(ENTRY_SKILLS as readonly string[]).includes(kyNang)
+    && !db().prepare('SELECT 1 AS c FROM programme_skills WHERE skill = ? LIMIT 1').get(kyNang)) throw badRequest('Chỗ này không dịch được.');
 
   const cfg = cauHinhDich();
   if (!cfg.bat) throw new HttpError(503, 'Dịch đang tắt.');

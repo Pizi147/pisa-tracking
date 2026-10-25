@@ -100,7 +100,8 @@ export async function runPrDichTests(t: any) {
     assert(c && gvKhac, `seed thiếu Case MB FT 101 / GV ngoài lớp (${!!c}, ${!!gvKhac})`);
 
     await checkAsync('DICH-3 · (bang, cot) ngoài danh sách / den lạ / id lạ → 400; không gọi OpenAI', async () => {
-      for (const b of [yc({ bang: 'users', cot: 'full_name' }), yc({ cot: 'title' }), yc({ bang: 'toString' }), yc({ den: 'fr' }), yc({ id: 'x' })]) {
+      for (const b of [yc({ bang: 'users', cot: 'full_name' }), yc({ cot: 'title' }), yc({ bang: 'toString' }), yc({ den: 'fr' }), yc({ id: 'x' }),
+        { bang: 'assessment_scores', id: 1, cot: 'comment', den: 'en', kyNang: 'hacking' }, { bang: 'assessment_scores', id: 1, cot: 'comment', den: 'en' }]) {
         const e = await loiCua(() => svc.dich(P.admin, b));
         assert(e?.status === 400, `${JSON.stringify(b)} → ${e?.status}`);
       }
@@ -128,6 +129,7 @@ export async function runPrDichTests(t: any) {
       assert(than.includes('[[P1]]') && than.includes('luyện đọc'), `thiếu chỗ giữ: ${than}`);
       assert(gui[0].headers.Authorization === 'Bearer sk-test-KHOA-BI-MAT', 'khoá phải ở header');
       assert(gui[0].than.model === 'gpt-5.4-mini' && gui[0].than.reasoning_effort === 'none', `model / suy luận: ${gui[0].than.model} ${gui[0].than.reasoning_effort}`);
+      assert(svc.traLai('[[P1]] và [[P9]] [[x]]', ['An']) === 'An và [[P9]] [[x]]', 'chỗ giữ lạ phải giữ nguyên chữ');
       assert(r.banDich.startsWith('EN: ') && r.banDich.includes(c.hv) && r.banDich.includes('0912 345 678'), `chưa thay lại: ${r.banDich}`);
       const nho = conn.prepare('SELECT ban_dich FROM ban_dich').all().map((x: any) => x.ban_dich).join('\n');
       assert(!nho.includes(c.hv) && !nho.includes('0912 345 678'), 'bộ nhớ lưu tên / SĐT thật');
