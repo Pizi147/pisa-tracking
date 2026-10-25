@@ -216,16 +216,21 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     ...(d.status === 'finished' ? { ketThuc: true as const } : {}),
   }))], [data, vaiTrang]);
   const vaiBang: VaiBang | undefined = vaiTrang ? { em: vaiTrang.em, coViec, onMoEm: (id) => setPanelEm({ id, caseMo: null }) } : undefined;
-  /* Việc theo em, gấp nhất trước (quá hạn → hạn sớm). Việc nhiều em (`emIds`) tính cho từng em. */
+  /*
+   * Việc theo em, gấp nhất trước (quá hạn → hạn sớm). Việc nhiều em (`emIds`) tính cho từng em.
+   * P11 VIEC-DUNG-VAI: GV chỉ việc CỦA MÌNH (`mine`) — ô Việc, chip "Có việc quá hạn", "Cần chú ý trước" cùng nguồn này; QL / Admin đủ việc, ô Việc gộp theo môn.
+   */
+  const chiCuaToi = !laQl && !admin && !laVai;
   const viec = useMemo(() => {
     const m = new Map<number, ViecEm[]>();
     for (const it of (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))) {
+      if (chiCuaToi && !it.mine) continue;
       const v: ViecEm = { chu: it.tieuDe, han: it.due, quaHan: it.urgency === 'overdue', it };
       for (const id of it.studentId !== null ? [it.studentId] : it.emIds ?? []) m.set(id, [...(m.get(id) ?? []), v]);
     }
     for (const ds of m.values()) ds.sort((a, b) => Number(b.quaHan) - Number(a.quaHan) || (a.han ?? '9').localeCompare(b.han ?? '9'));
     return m;
-  }, [work.data]);
+  }, [work.data, chiCuaToi]);
 
   /* Chương trình (Fast Track · Lớp thường) chỉ có nghĩa khi phạm vi có cả hai loại lớp. */
   const soLopTheoKhung = { ft: 0, thuong: 0 };
@@ -418,8 +423,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           ) : (
             <>
               {hvLoc.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
-              {dienThoai ? <TheHvGon ds={pt.cat(hvLoc)} lop={lop} viec={viec} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} />
-                : <BangHvGon ds={pt.cat(hvLoc)} lop={lop} viec={viec} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} />}
+              {dienThoai ? <TheHvGon ds={pt.cat(hvLoc)} lop={lop} viec={viec} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} />
+                : <BangHvGon ds={pt.cat(hvLoc)} lop={lop} viec={viec} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} />}
               {hvLoc.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
             </>
           )}
