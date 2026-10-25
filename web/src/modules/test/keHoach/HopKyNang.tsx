@@ -443,7 +443,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
               {busy ? 'Đang lưu…' : nutLuu}
             </button>
           </div>
-          {lyDoXoa && lyDoXoa !== t('Chưa xếp lịch') && <p className="m-0 mt-1 text-xs text-slate-400">{lyDoXoa}</p>}
+          {lyDoXoa && lyDoXoa !== t('Chưa xếp lịch') && !cauChan.includes(lyDoXoa) && <p className="m-0 mt-1 text-xs text-slate-400">{lyDoXoa}</p>}
         </div>
       )}
       {thaoTac && attemptId !== null && (
