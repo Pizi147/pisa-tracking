@@ -1,7 +1,7 @@
 /**
  * PHÉP KIỂM P4 CHON-LOP (chủ SP 24/10 — đặc tả `2026-10-24-cai-tien-da-chot-design.md` mục 3.8, R6.3b). Đọc nguồn.
  *   CL-1  component `ChonLop` dùng `ChonNguoi ds` (gõ → tìm không dấu → chọn); ChuyenLopPanel dùng nó, gỡ `OLopDich`
- *   CL-2  9 ô chọn lớp không còn `<select>` có option lớp; dùng `ChonLop`
+ *   CL-2  10 ô chọn lớp (+ Giao GV theo lớp) không còn `<select>` có option lớp; dùng `ChonLop`
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,7 +15,7 @@ const SELECT_LOP = /<select(?:(?!<\/select>)[\s\S])*?\.code\b(?:(?!<\/select>)[\
 const CHO_CHON_LOP = [
   'students/StudentManagePanel.tsx', 'students/XemTruocHangLoatPanel.tsx', 'students/PanelBuocTiep.tsx', 'congViec/PanelSauThi.tsx',
   'students/IntakePanel.tsx', 'test/keHoach/NganXepHangLoat.tsx', 'test/keHoach/NganXepLichMt.tsx', 'test/keHoach/XepTheoHocVien.tsx',
-  'test/keHoach/NganXuatDiem.tsx', 'students/ChuyenLopPanel.tsx',
+  'test/keHoach/NganXuatDiem.tsx', 'students/ChuyenLopPanel.tsx', 'worklist/MgmtTasksPage.tsx',
 ];
 
 export async function runPrChonLopTests(t: any) {
@@ -34,7 +34,7 @@ export async function runPrChonLopTests(t: any) {
     const s = doc('web/src/modules/students/ChuyenLopPanel.tsx');
     assert(!/OLopDich/.test(s) && /<ChonLop/.test(s) && !/<select/.test(s), 'ChuyenLopPanel còn OLopDich / select');
   });
-  check('CL-2 · 9 ô chọn lớp (Sửa HV, Xem trước hàng loạt, Bước tiếp, Sau thi, Thêm HV, 4 ngăn Kế hoạch Test) dùng ChonLop, không <select> lớp', () => {
+  check('CL-2 · 10 ô chọn lớp (Sửa HV, Xem trước hàng loạt, Bước tiếp, Sau thi, Thêm HV, 4 ngăn Kế hoạch Test, Giao GV theo lớp) dùng ChonLop, không <select> lớp', () => {
     for (const f of CHO_CHON_LOP) {
       const s = doc(`web/src/modules/${f}`);
       assert(!SELECT_LOP.test(s), `${f}: còn <select> lớp`);

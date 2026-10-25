@@ -10,6 +10,7 @@ import { BranchFilter, resolveWeek, useChiNhanhMacDinh } from '../../ui/Filters.
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -749,12 +750,8 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
         {giaoGv ? (
           <>
             <Field label="Lớp" required loi={lf.loiCua(loi, 'lop')}>
-              <select className="field" {...lf.o(loi, 'lop')} value={classId} onChange={(e) => setClassId(e.target.value)}>
-                <option value="">Chọn lớp</option>
-                {(classes.data?.rows ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>{c.code} · {c.studentCount} em</option>
-                ))}
-              </select>
+              <ChonLop ariaLabel="Lớp" placeholder="Chọn lớp" {...lf.o(loi, 'lop')} value={classId ? Number(classId) : null} onChange={(id) => setClassId(id ? String(id) : '')}
+                khongKhop={classes.data ? undefined : 'Đang tải…'} ds={(classes.data?.rows ?? []).map((c) => ({ id: c.id, ma: c.code, phu: `${c.studentCount} em` }))} />
             </Field>
             <Field label="Kỹ năng" required as="div" loi={lf.loiCua(loi, 'ky-nang')}>
               <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'ky-nang')}>
