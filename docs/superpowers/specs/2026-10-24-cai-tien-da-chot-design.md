@@ -187,19 +187,19 @@ dữ liệu Góp ý hàng tuần giữ trong DB + Lịch sử, chỉ gỡ khỏi
 
 | PR | Phạm vi | Phụ thuộc | Duyệt | Trạng thái |
 |---|---|---|---|---|
-| **P1 DIEM-TIEU-CHI** | 3.6 | — | PTA rà + merge | plan `docs/superpowers/plans/2026-10-24-p1-diem-tieu-chi.md` · prompt 25/10 |
-| **P2 MT-DEM** | 3.7, E4, E5 | — (chỉ máy chủ; web nhãn `DanhSachHvLop` là tệp #566 — không chạm) | PTA rà + merge | plan `…/2026-10-24-p2-mt-dem.md` · prompt 25/10 |
-| **P3 UI-CHUNG** | 6.2, 6.3a, 6.4a, 6.4b | — | PTA rà ảnh + merge | plan `…/2026-10-24-p3-ui-chung.md` · prompt 25/10 |
-| P4 CHON-LOP | 3.8 (9 ô) | — | PTA rà ảnh | plan `…/2026-10-24-p4-chon-lop.md` · chạy khi có chỗ |
-| **P5 MOCKUP-V6** | mockup 3.1–3.4, 3.9 + hồ sơ lưu trữ | — | **chủ SP duyệt** | plan `…/2026-10-24-p5-mockup-v6.md` · prompt 25/10 |
-| P6 KHOA-LICH | 3.5 | Q6–Q8 (làm theo khuyến nghị, nháp tới khi trả lời) | PTA + rà sâu `/code-review high` | sau P2 (chung `keHoachTest.ts`) |
-| P7 SV-LO-TRINH + UI | 3.1–3.3, E1–E3, E9, E10 | Q1–Q3, mockup P5 | chủ SP duyệt ảnh; rà sâu (dữ liệu) | đợi |
+| **P1 DIEM-TIEU-CHI** | 3.6 | — | PTA rà + merge | đã merge #574 |
+| **P2 MT-DEM** | 3.7, E4, E5 | — (chỉ máy chủ; web nhãn `DanhSachHvLop` là tệp #566 — không chạm) | PTA rà + merge | đã merge #572 |
+| **P3 UI-CHUNG** | 6.2, 6.3a, 6.4a, 6.4b | — | PTA rà ảnh + merge | đã merge #573 |
+| P4 CHON-LOP | 3.8 (9 ô) | — | PTA rà ảnh | đã merge #575 |
+| **P5 MOCKUP-V6** | mockup 3.1–3.4, 3.9 + hồ sơ lưu trữ | — | **chủ SP duyệt** | đã merge #571 |
+| P6 KHOA-LICH | 3.5 | Q6–Q8 (làm theo khuyến nghị, nháp tới khi trả lời) | PTA + rà sâu `/code-review high` | đã merge #576 |
+| P7 SV-LO-TRINH + UI | 3.1–3.3, E1–E3, E9, E10 | Q1–Q3, mockup P5 | chủ SP duyệt ảnh; rà sâu (dữ liệu) | plan `…/2026-10-26-p7-sv-lo-trinh.md` (bước Môn học của panel để P8) |
 | P8 MON-DANG-KY | 3.4 | Q4–Q5, mockup P5 | rà sâu | đợi |
-| P9a XET-LAI · P9b CUOI-KHOA | 3.9, R5.3, N20–N22 | mockup V6 cuoi-khoa + xet-lai đã duyệt 25/10, P4 đã merge | chủ SP duyệt ảnh | plan `…/2026-10-25-p9a-xet-lai.md`, `…/2026-10-25-p9b-cuoi-khoa.md` · song song |
-| P11 VIEC-DUNG-VAI | R6.1 | #566 merge | PTA rà ảnh | đợi |
-| P12 BAO-CAO-LICH-SU | E6–E8 + `thi_that_target` | sau SUA-CHAM-LAI (chung Tổng quan / Phân tích GV) | rà sâu (migrate) | đợi |
+| P9a XET-LAI · P9b CUOI-KHOA | 3.9, R5.3, N20–N22 | mockup V6 cuoi-khoa + xet-lai đã duyệt 25/10, P4 đã merge | chủ SP duyệt ảnh | plan `…/2026-10-25-p9a-xet-lai.md`, `…/2026-10-25-p9b-cuoi-khoa.md` · song song · đang chạy (cloud, 26/10) |
+| P11 VIEC-DUNG-VAI | R6.1 | #566 merge | PTA rà ảnh | đã merge #578 |
+| P12 BAO-CAO-LICH-SU | E6–E8 + `thi_that_target` | sau SUA-CHAM-LAI (chung Tổng quan / Phân tích GV) | rà sâu (migrate) | đã merge #577 |
 | P13 KET-PET | 3.10 | Q10 | — | đợi |
-| P14 DICH | 3.11 | Q11 + khoá OpenAI | rà bảo mật `/security-review` | đợi |
+| P14 DICH | 3.11 | Q11 + khoá OpenAI | rà bảo mật `/security-review` | đã merge #580 |
 
 Cách làm dịch (chủ SP tự làm khi đồng ý Q11): (1) platform.openai.com → Billing nạp $5–10, Limits đặt ngân sách tháng + email cảnh báo; (2) Project "PISA" → API keys → Create secret key, chép ngay;
 (3) Netlify › Site configuration › Environment variables: `OPENAI_API_KEY` (chỉ Functions, không tiền tố `VITE_`), `DICH_MODEL=gpt-5.4-mini`, `DICH_TRAN_NGAY`, `DICH_TRAN_NGUOI`;
