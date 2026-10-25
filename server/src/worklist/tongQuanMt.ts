@@ -6,8 +6,8 @@
  *    lượt đã xếp, hoặc chưa có lượt) — để QL / Admin xem có cần thêm lượt MT. UI-TONG-QUAN (chủ SP 23/10): bỏ ô "Đề nghị dời chờ" (đề nghị ở Test › Lịch).
  *  · GV chấm quá hạn — dòng Chấm điểm quá hạn của `myWork` có người phụ trách (OV-12h: chỉ xem, bỏ Nhắc); bài quá hạn chưa có người giữ (lớp thiếu GV môn)
  *    gộp MỘT dòng "Chưa có GV" (`ownerId` 0) cuối bảng — SUA-CHAM-LAI L9: Σ bài của bảng = "n quá hạn" của ô.
- *    P12 Q12 (T18): bài S chấm chéo chưa ai nhận KHÔNG quá hạn (`myWork`) — một dòng "Chưa có GV · n bài chờ chấm" (`choCham`, không hạn) cuối bảng,
- *    ngoài Σ quá hạn. Bài không người giữ vì lớp thiếu GV môn (không chấm chéo) vẫn quá hạn ở dòng "Chưa có GV" trên.
+ *    P12 Q12 (T18): bài S chấm chéo chưa ai nhận KHÔNG quá hạn ở mọi nơi (`cheoChuaNhan`: nợ điểm, `pendingDetail`) — một dòng "Chưa có GV · n bài
+ *    chờ chấm" (`choCham`, không hạn) cuối bảng, ngoài Σ quá hạn. Bài không người giữ vì lớp thiếu GV môn vẫn quá hạn ở dòng "Chưa có GV" trên.
  */
 import { demPhamVi, khopLocNhanh, laChamCheo } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -59,7 +59,7 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
     });
   };
   chuaCoGv(quaHan.filter((it) => it.ownerId === null), 'chua-co-gv', false);
-  chuaCoGv(((w.items ?? []) as any[]).filter((it) => it.group === 'score' && it.ownerId === null && laChamCheo(it.kind, it.kn)), 'cham-cheo-chua-nhan', true);
+  chuaCoGv(((w.items ?? []) as any[]).filter((it) => it.group === 'score' && it.ownerId === null && it.urgency !== 'overdue' && laChamCheo(it.kind, it.kn)), 'cham-cheo-chua-nhan', true);
 
   return {
     tuan: tuanDau?.weekStart ?? mondayOf(today),

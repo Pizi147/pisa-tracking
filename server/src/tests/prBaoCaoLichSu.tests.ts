@@ -16,6 +16,7 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
   const mg: any = await import('../migrate/prBaoCaoLichSu.ts');
   const tq: any = await import('../worklist/tongQuanMt.ts');
   const { myWork } = await import('../worklist/mywork.ts');
+  const sd: any = await import('../worklist/scoreDebt.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nP12 BAO-CAO-LICH-SU — báo cáo quá khứ không đổi theo Target / lớp / trạng thái hiện tại');
@@ -29,8 +30,8 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
   const den = d.mondayOfDate(TODAY);
   const ky = { cn: MB, ct: 'ft', tu: d.addDaysIso(den, -7 * 26), den };
   const ptGv = () => { xoaNho(); return JSON.stringify(pt.phanTichGiaoVien(QL, ky)); };
-  const gvCoBai = () => get(`SELECT ta.user_id AS gv FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
-     WHERE c.branch_id = ? AND c.is_fast_track = 1 AND ta.skill IS NOT NULL ORDER BY ta.user_id LIMIT 1`, MB).gv as number;
+  /* GV có hàng trong bảng kỳ này (các phép kiểm trước có thể đã xoá mềm tài khoản). */
+  const gvCoBai = () => { xoaNho(); return pt.phanTichGiaoVien(QL, ky).hang[0].id as number; };
   const hsGv = (gv: number) => { xoaNho(); return JSON.stringify(pt.chiSoHoSoGv(P.admin, gv, { tu: ky.tu, den: ky.den })); };
 
   check('PBC-1 · đổi Target lộ trình sau lượt MT → Phân tích GV + hồ sơ GV kỳ đó không đổi (so Target lúc lượt)', () => {
@@ -66,7 +67,7 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
   const thiCo = () => {
     const c = get(`SELECT cy.id, cy.student_id, cy.thi_that_ngay AS ngay, cy.thi_that_l AS l, cy.thi_that_r AS r, cy.thi_that_w AS w, cy.thi_that_s AS s,
          (SELECT k.branch_id FROM enrollments e JOIN classes k ON k.id = e.class_id WHERE e.student_id = cy.student_id AND k.is_fast_track = 1 ORDER BY e.id DESC LIMIT 1) AS cn
-       FROM learning_cycles cy WHERE cy.outcome IN ('reached', 'not_reached') AND cy.target_score IS NOT NULL AND COALESCE(cy.khong_cam_ket, 0) = 0
+       FROM learning_cycles cy WHERE cy.thi_that_ngay IS NOT NULL AND cy.outcome IN ('reached', 'not_reached') AND cy.target_score IS NOT NULL AND COALESCE(cy.khong_cam_ket, 0) = 0
          AND cy.thi_that_l IS NOT NULL AND cy.thi_that_r IS NOT NULL AND cy.thi_that_w IS NOT NULL AND cy.thi_that_s IS NOT NULL
        ORDER BY cy.thi_that_ngay LIMIT 1`);
     assert(c?.cn, 'seed có thi thật đã kết luận của em lớp FT');
@@ -84,7 +85,8 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     thiThat.datKetQuaThiThat(P.admin, c.id, { ngayThi: c.ngay, l: c.l, r: c.r, w: c.w, s: c.s });
     const cy = get('SELECT target_score, thi_that_target FROM learning_cycles WHERE id = ?', c.id);
     assert(cy.thi_that_target === cy.target_score, JSON.stringify(cy));
-    const gv = get(`SELECT ta.user_id AS gv FROM teacher_assignments ta JOIN classes x ON x.id = ta.class_id WHERE x.branch_id = ? AND x.is_fast_track = 1 AND ta.skill = 'listening' ORDER BY ta.id LIMIT 1`, k.cn).gv;
+    xoaNho();
+    const gv = pt.phanTichGiaoVien(P.admin, k).hang[0].id;
     const hs = () => { xoaNho(); return JSON.stringify(pt.chiSoHoSoGv(P.admin, gv, { tu: k.tu, den: k.den })); };
     const truoc = [so.kqThi(), so.kqMt(), so.ptGv(), hs()];
     conn.prepare('UPDATE learning_cycles SET target_score = target_score + 1.0 WHERE thi_that_ngay IS NOT NULL').run();
@@ -121,10 +123,13 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     const cham = () => { xoaNho(); return JSON.stringify(pt.phanTichGiaoVien(QL, kyTruoc).hang.map((h: any) => [h.id, h.chamDiem])); };
     const truoc = cham();
     const lop = classId('MB FT 101');
+    /* Lưu trữ SAU mọi hạn của kỳ (phép kiểm trước có thể đã dời hạn vài ô qua hôm nay — ô đó em lưu trữ hôm nay đúng là không tính). */
+    const hanMax = get(`SELECT MAX(COALESCE(deadline_override, '')) AS h FROM assessment_attempts WHERE class_id = ?`, lop)?.h ?? '';
+    const sauHan = [TODAY, d.addDaysIso(hanMax.slice(0, 10) || TODAY, 1)].sort().at(-1);
     thu(() => {
-      conn.prepare(`UPDATE students SET status = 'finished', finished_at = ?, archived_at = ? WHERE id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(TODAY, TODAY, lop);
+      conn.prepare(`UPDATE students SET status = 'finished', finished_at = ?, archived_at = ? WHERE status = 'active' AND id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(sauHan, sauHan, lop);
       assert(cham() === truoc, 'lưu trữ hôm nay làm đổi Chấm điểm kỳ trước');
-      conn.prepare(`UPDATE students SET finished_at = ?, archived_at = ? WHERE id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(kyTruoc.tu, kyTruoc.tu, lop);
+      conn.prepare(`UPDATE students SET finished_at = ?, archived_at = ? WHERE finished_at = ? AND id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(kyTruoc.tu, kyTruoc.tu, sauHan, lop);
       assert(cham() !== truoc, 'em thôi học trước hạn vẫn phải bỏ khỏi Chấm điểm');
     });
   });
@@ -135,7 +140,8 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     const ad = loadPrincipal(id);
     xoaNho();
     const w = myWork(ad, { nguoi: 'tat-ca' }) as any;
-    const cc = w.items.filter((it: any) => it.group === 'score' && d.laChamCheo(it.kind, it.kn));
+    /* seed: 12 bài S chấm chéo quá hạn nhập (MB FT 101 / 105) đều chưa ghi GV chấm → không còn quá hạn ở Công việc lẫn nợ điểm. */
+    const cc = w.items.filter((it: any) => it.group === 'score' && d.laChamCheo(it.kind, it.kn) && it.ownerId === null);
     assert(cc.length > 0 && cc.every((it: any) => it.urgency !== 'overdue'), `S chấm chéo còn quá hạn: ${cc.filter((it: any) => it.urgency === 'overdue').map((it: any) => it.key)}`);
     const r = tq.tongQuanMt(ad);
     const quaHan = r.gvQuaHan.filter((g: any) => !g.choCham);
@@ -144,4 +150,14 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     assert(cho.length === 1 && cho[0].ownerId === 0 && cho[0].soBai === cc.reduce((n: number, it: any) => n + it.soBai, 0) && cho[0].han === null && cho[0] === r.gvQuaHan.at(-1),
       `dòng chờ chấm: ${JSON.stringify(cho)}`);
   });
+
+  check('PBC-7 · Q12 (PTA 25/10): S chấm chéo ĐÃ có người nhận (ghi GV chấm) mà quá hạn → vẫn quá hạn ở nợ điểm', () => thu(() => {
+    const no: any = sd.scoreDebtCells(P.admin, TODAY, [MB]);
+    const x = no.find((c: any) => c.chamCheo && !c.overdue && c.han && c.han < d.addDaysIso(TODAY, -14));
+    assert(x, 'seed có bài S chấm chéo chưa ai nhận đã qua hạn');
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, examiner_name) VALUES (?, 'speaking', 'GV ngoài')`).run(x.attemptId);
+    xoaNho();
+    const y = sd.scoreDebtCells(P.admin, TODAY, [MB]).find((c: any) => c.attemptId === x.attemptId && c.skill === 'speaking');
+    assert(y?.overdue === true, `đã có người nhận phải quá hạn: ${JSON.stringify(y)}`);
+  }));
 }
