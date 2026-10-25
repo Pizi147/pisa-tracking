@@ -77,12 +77,12 @@ function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it: WorkIt
   const dong = gopMon ? gopViecTheoMon(v, (x) => monCuaViec(x.it)) : [{ mon: null, dau: v[0], them: v.length - 1 }];
   const hien = mo ? dong : dong.slice(0, SO_DONG_VIEC_MAC_DINH);
   return (
-    <span className="block min-w-0 space-y-1 text-xs">
+    <span className="block min-w-0 space-y-1 text-xs max-sm:space-y-0">
       {hien.map(({ dau: x, them }) => (
-        <span key={x.it.key} className="block min-w-0">
-          <button type="button" className="link block max-w-full truncate appearance-none border-0 bg-transparent p-0 text-left text-xs max-sm:min-h-[44px] max-sm:leading-[44px]"
+        <span key={x.it.key} className="block min-w-0 max-sm:flex max-sm:items-center max-sm:gap-2">
+          <button type="button" className="link block max-w-full min-w-0 truncate appearance-none border-0 bg-transparent p-0 text-left text-xs max-sm:min-h-[44px] max-sm:flex-1 max-sm:leading-[44px]"
             title={dich(x.chu)} onClick={() => onMo(x.it)}>{dich(x.chu)}</button>
-          <span className="block tabular-nums">
+          <span className="block tabular-nums max-sm:shrink-0">
             {x.han && <span className={x.quaHan ? 'font-semibold text-bad' : 'text-slate-400'}>{x.quaHan ? '⚠ ' : ''}{shortDate(x.han, homNay)}</span>}
             {them > 0 && <span className="text-slate-500">{x.han ? ' · ' : ''}{t('+{n} việc', { n: them })}</span>}
           </span>
