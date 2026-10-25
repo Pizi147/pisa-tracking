@@ -10,10 +10,12 @@
 import { chuanTieuDe } from './nhapHocVien.ts';
 import { t } from '../i18n/index.ts';
 
-/** Lọc danh sách người CÓ SẴN của ô `ChonNguoi` kiểu `ds` (phân công GV, học viên của lớp) theo chữ gõ — không dấu, giữ thứ tự. */
+/** Lọc danh sách CÓ SẴN của ô `ChonNguoi` kiểu `ds` (phân công GV, học viên của lớp, lớp — `ChonLop`) theo chữ gõ — không dấu,
+ *  bỏ khoảng trắng ("ft101" ra "MB FT 101"), giữ thứ tự. */
 export function locNguoiChon<T extends { ten: string }>(ds: readonly T[], go: string): T[] {
-  const q = chuanTieuDe(go);
-  return q ? ds.filter((x) => chuanTieuDe(x.ten).includes(q)) : [...ds];
+  const gon = (s: string) => chuanTieuDe(s).replace(/ /g, '');
+  const q = gon(go);
+  return q ? ds.filter((x) => gon(x.ten).includes(q)) : [...ds];
 }
 
 /** Rời ô gõ mà chưa chọn: chữ gõ khớp ĐÚNG MỘT người → người đó; còn lại → null (xoá chữ gõ, không chọn bừa). */
