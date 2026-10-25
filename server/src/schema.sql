@@ -2209,7 +2209,7 @@ CREATE TABLE IF NOT EXISTS ban_dich (
 );
 CREATE TABLE IF NOT EXISTS dich_luot (
   id INTEGER PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id),
+  user_id INTEGER NOT NULL,   -- bộ đếm lượt, cố ý KHÔNG khoá ngoại (không là dấu vết khi xoá tài khoản)
   ngay TEXT NOT NULL,
   luc TEXT NOT NULL
 );
