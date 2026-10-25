@@ -4,10 +4,9 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
-import { StudentManagePanel, SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
+import { HocLaiPanel, SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
-import { api, invalidate } from '../../lib/api.ts';
-import { useToast } from '../../ui/Toast.tsx';
+import { invalidate } from '../../lib/api.ts';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
 import {
   DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type ViecQuanLy, type ViecTiepTheo,
@@ -78,27 +77,14 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
   maLop?: string | null;
 }): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode } {
   const navigate = useNavigate();
-  const toast = useToast();
   const [mo, setMo] = useState<{
     viec: 'case' | 'vi-pham' | 'xu-ly-y-thuc' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai' | 'nhap-diem'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
     nhap?: { classId: number; luot: string | null };
   } | null>(null);
   const daDoi = (id: number) => { invalidate('/hoc-vien-lop'); invalidate(`/students/${id}`); onDone(); };
-  /* OV-11g (Q11, Q12): Lưu trữ một chạm + Hoàn tác (bỏ lưu trữ) — như Lưu trữ / Bỏ lưu trữ ở trang Lưu trữ. */
-  const luuTru = async (d: DongChoMenu) => {
-    try {
-      await api.post(`/students/${d.id}/archive`, {});
-      daDoi(d.id);
-      toast.hoanTac(t('Đã lưu trữ {ten}', { ten: d.ten }), async () => {
-        try { await api.post(`/students/${d.id}/unarchive`, {}); daDoi(d.id); } catch (e: any) { toast.push('error', e.message); }
-      }, { key: `luu-tru:${d.id}` });
-    } catch (e: any) { toast.push('error', e.message); }
-  };
-
   const mucCua = (d: DongChoMenu): MucMenu[] => d.status === 'finished' && !quyen.theoVai && quyen.coTheChuyenTiep ? [
-    /* OV-11g (HL-19): em Kết thúc học chưa Lưu trữ (dòng mờ cuối lớp) — việc của Quản lý (máy chủ kiểm `cycle.edit`). */
-    { key: 'luu-tru', nhan: t('Lưu trữ'), onChon: () => { void luuTru(d); } },
-    { key: 'hoc-lai', nhan: t('Học lại'), onChon: () => setMo({ viec: 'hoc-lai', id: d.id, ten: d.ten }) },
+    /* OV-11g (HL-19) → P7: em Kết thúc học chưa Lưu trữ (dòng mờ cuối lớp, FT chờ KQ thi thật) — Quay lại học (đường Học lại, Quản lý). Lưu trữ tay bỏ: Bước tiếp lưu trữ. */
+    { key: 'quay-lai', nhan: t('Quay lại học'), onChon: () => setMo({ viec: 'hoc-lai', id: d.id, ten: d.ten }) },
   ] : quyen.theoVai ? [
     ...mucDongTheoVai({
       suaThongTin: d.suaThongTin ?? !!quyen.coTheSuaThongTin, suaThem: d.suaThem ?? !!quyen.coTheSuaThem,
@@ -134,10 +120,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
       {mo?.viec === 'xu-ly-y-thuc' && <XacNhanXuLyPanel studentId={mo.id} lop={maLop} onClose={() => setMo(null)} onDone={onDone} />}
       <ChuyenLopPanel open={mo?.viec === 'chuyen-lop' || mo?.viec === 'de-xuat-chuyen-lop'} cheDo={mo?.viec === 'de-xuat-chuyen-lop' ? 'de-xuat' : 'lenh'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
-      {mo?.viec === 'hoc-lai' && (
-        <StudentManagePanel viec="hoc-lai" onClose={() => setMo(null)} student={{ id: mo.id, name: mo.ten, classId: null }}
-          lop={maLop} cycle={null} attempts={[]} onDone={() => daDoi(mo.id)} quyen={{ canEdit: false }} />
-      )}
+      {mo?.viec === 'hoc-lai' && <HocLaiPanel studentId={mo.id} studentName={mo.ten} lop={maLop} onClose={() => setMo(null)} onDone={() => daDoi(mo.id)} />}
       {mo?.viec === 'nhap-diem' && mo.nhap && (
         <PanelNhapDiemLop classId={mo.nhap.classId} classCode={mo.lop ?? maLop} luot={mo.nhap.luot} onDong={xong} />
       )}

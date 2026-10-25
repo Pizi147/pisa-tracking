@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
-  NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, cacTabTrangThai, type LopHocQuyen, type ViecQuanLy, type TabTrangThai, dsLoi, docEmail,
+  NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, coTheTamDungKetThuc, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
   cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop,
   LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, duocDoiKck,
 } from '@shared/domain/index.ts';
@@ -16,6 +16,8 @@ import { useSession } from '../../lib/session.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
+import { HopTamDungKetThuc } from './HopTamDungKetThuc.tsx';
+import { QuayLaiTuMenu } from './QuayLaiHoc.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
@@ -23,7 +25,6 @@ import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
 import { laBand } from './StudentPlanPanel.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { ErrorState, NutChon, OKck, Skeleton, TargetText } from '../../ui/ui.tsx';
-import { HangTab } from '../../ui/HangTab.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 
 /**
@@ -37,7 +38,7 @@ import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 export { mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy };
 const NHAN_VIEC = NHAN_VIEC_QUAN_LY;
 
-export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, soViPhamMo = 0, quyen, lopHoc, onDeXuatSua }: {
+export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, quyen, lopHoc, onDeXuatSua, onDoiViec }: {
   /** Việc đang mở; `null` = không mở gì. `lo-trinh` do nơi gọi mở (StudentPlanPanel), không qua đây. */
   viec: ViecQuanLy | null; onClose: () => void;
   student: ThongTinEm;
@@ -50,9 +51,11 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   soViPhamMo?: number;
   /** Quyền người xem (từ `viewer` của hồ sơ) — Sửa thông tin khoá / mở từng ô theo đó; máy chủ kiểm lại. */
   quyen: QuyenSua;
-  /** PR-OV2b: quyền theo lớp — panel Tạm dừng / Thôi học chỉ mở tab được phép. */
+  /** P7: quyền theo lớp — hộp Tạm dừng/ Kết thúc học: ô "Có thể quay lại học" bật được khi em đang học (`coTheTamDungKetThuc`). */
   lopHoc?: { quyen: LopHocQuyen } | null;
   onDeXuatSua?: () => void;
+  /** P7: hộp bị chặn vì quyết định chuyển lớp chờ → "Chuyển lớp…" mở đúng việc đó (nơi gọi đổi việc). */
+  onDoiViec?: (v: ViecQuanLy) => void;
 }) {
   if (!viec || viec === 'lo-trinh') return null;
   const xong = () => { onDone(); onClose(); };
@@ -62,9 +65,12 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'lo-trinh-tiep': return student.classId ? <Navigate to={duongLoTrinhLop(student.classId, student.id)} /> : null;
     case 'chuyen-lop': return <ChuyenLopPanel open cheDo="lenh" {...chung} />;
     case 'de-xuat-chuyen-lop': return <ChuyenLopPanel open cheDo="de-xuat" {...chung} />;
-    case 'tam-dung-thoi-hoc': return <TamDungThoiHocPanel {...chung} tabs={cacTabTrangThai(lopHoc?.quyen, student.status)} soViPhamMo={soViPhamMo} />;
-    case 'quay-lai': return <TrangThaiPanel {...chung} status="active" soViPhamMo={soViPhamMo} />;
-    case 'hoc-lai': return <HocLaiPanel {...chung} />;
+    case 'tam-dung-ket-thuc': return (
+      <HopTamDungKetThuc em={[{ id: student.id, ten: student.name }]} lop={lop} tamDungDuoc={coTheTamDungKetThuc(lopHoc?.quyen, student.status).tamDung}
+        onClose={onClose} onDone={onDone} onChuyenLop={lopHoc?.quyen.chuyenLop && onDoiViec ? () => onDoiViec('chuyen-lop') : undefined} />
+    );
+    /* P7: Quay lại học — máy chủ chọn hướng (lớp cũ · chọn lớp · Lộ trình mới · Học lại), cùng đường nút ở Lưu trữ. */
+    case 'quay-lai': return <QuayLaiTuMenu em={{ id: student.id, ten: student.name, lop }} onClose={onClose} onDone={onDone} />;
     case 'outcome': return cycle && <KetQuaThiThatPanel cycleId={cycle.id} studentName={chung.studentName} lop={chung.lop} onClose={chung.onClose} onDone={chung.onDone} />;
     case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} quyen={quyen} onDeXuatSua={onDeXuatSua} />;
     case 'lich-su-sua': return <LichSuThayDoi loai="hv" id={student.id} dong2={[student.name, lop]} onClose={onClose} />;
@@ -126,122 +132,6 @@ export function thongTinEmCua(d: any): ThongTinEm {
 
 type ChungViec = { studentId: number; studentName: string; lop?: string | null; onClose: () => void; onDone: () => void };
 
-/**
- * PR-OV2b (mockup overhaul-2 §6): MỘT mục "Tạm dừng / Thôi học", panel nhỏ hai tab — Tạm dừng (= Tạm dừng học, inactive) · Thôi học
- * (= Kết thúc học, finished, có Hoàn tác). Luật mỗi tab giữ nguyên `TrangThaiPanel`; tab không được phép thì không có.
- */
-function TamDungThoiHocPanel({ tabs, soViPhamMo, ...chung }: ChungViec & { tabs: TabTrangThai[]; soViPhamMo?: number }) {
-  const [tab, setTab] = useState<TabTrangThai>(tabs[0] ?? 'thoi-hoc');
-  return (
-    <TrangThaiPanel {...chung} status={tab === 'tam-dung' ? 'inactive' : 'finished'} soViPhamMo={soViPhamMo} tieuDeKhung={tabs.length > 1 ? NHAN_VIEC['tam-dung-thoi-hoc'] : undefined}
-      dau={tabs.length > 1 ? (
-        <HangTab cap="con" ariaLabel="Tạm dừng hoặc thôi học" value={tab} onChange={setTab}
-          tabs={tabs.map((k) => ({ key: k, label: k === 'tam-dung' ? 'Tạm dừng' : 'Thôi học' }))} />
-      ) : null} />
-  );
-}
-
-/**
- * TẠM DỪNG HỌC / QUAY LẠI HỌC / KẾT THÚC HỌC (PR-LT, §3.9.4, Q9). Cùng một panel, ba trạng thái — lý do bắt buộc khi dừng/kết thúc; ngày hiệu
- * lực tuỳ chọn (mặc định hôm nay ở máy chủ).
- */
-function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status, soViPhamMo = 0, tieuDeKhung, dau }: ChungViec & {
-  status: 'active' | 'inactive' | 'finished'; soViPhamMo?: number; tieuDeKhung?: string; dau?: ReactNode;
-}) {
-  const toast = useToast();
-  const [lyDo, setLyDo] = useState('');
-  const [ngayHl, setNgayHl] = useState('');
-  const lf = useLoiForm();
-  const [busy, setBusy] = useState(false);
-  const canDoLuon = status === 'active';
-  const tieuDe = status === 'active' ? NHAN_VIEC['quay-lai'] : status === 'inactive' ? 'Tạm dừng học' : 'Thôi học';
-  /* PR-SOS (K3-41): hệ quả Tạm dừng / Quay lại với Case — đếm từ bảng kỹ năng (cùng đường hồ sơ đã nạp). */
-  const bang = useApi<{ rows: { cases: { status: string; trangThaiV4?: { k: string }; plans: { status: string }[] }[] }[] }>(
-    status !== 'finished' ? `/students/${studentId}/skill-board` : null);
-  const caseMo = (bang.data?.rows ?? []).flatMap((r) => r.cases).filter((c) => c.status !== 'done');
-  const soCho = caseMo.filter((c) => c.trangThaiV4?.k === 'cho-nguyen-nhan' || c.trangThaiV4?.k === 'cho-nhan-xet' || c.trangThaiV4?.k === 'cho-xac-nhan-pa').length;
-  const soPa = caseMo.flatMap((c) => c.plans).filter((pl) => pl.status === 'started').length;
-  const heQuaCase = soCho + soPa > 0
-    ? `${soCho} Case chờ xác nhận · ${soPa} PA đang chạy — ${status === 'inactive' ? 'tạm dừng hạn; Quay lại thì hạn tính lại từ ngày quay lại' : 'hạn tính lại từ ngày quay lại'}.`
-    : null;
-  /* O2 (Q14): vi phạm Ý thức còn mở cũng dừng hạn khi Tạm dừng, và tính lại từ ngày Quay lại. */
-  const heQuaYThuc = status !== 'finished' && soViPhamMo > 0
-    ? `${soViPhamMo} vi phạm Ý thức đang chờ xử lý — ${status === 'inactive' ? 'tạm dừng hạn; Quay lại thì hạn tính lại từ ngày quay lại' : 'hạn tính lại từ ngày quay lại'}.`
-    : null;
-  const loi = dsLoi(canDoLuon ? [] : [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }], { 'ly-do': lyDo });
-
-  const luu = async () => {
-    lf.bam();
-    if (loi.length > 0) return;
-    setBusy(true);
-    try {
-      await api.post(`/students/${studentId}/status`, { status, date: ngayHl || undefined, reason: lyDo || undefined });
-      invalidate('/students'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/cases');
-      /* PR-LUI-b (06/10): Kết thúc học có Hoàn tác — mở lại đúng ghi danh / lộ trình / Case / PA lần này đóng (máy chủ: `hoan-tac-ket-thuc`). */
-      if (status === 'finished') {
-        toast.hoanTac(`Đã cho ${studentName} thôi học`, async () => {
-          const r = await hoanTacHangLoat('ket-thuc', [studentId]);
-          for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
-          if (r.failed.length) { toast.push('error', r.failed[0].message); return; }
-          toast.push('ok', 'Đã hoàn tác');
-          onDone();
-        }, { key: `ket-thuc:${studentId}` });
-      } else if (status === 'inactive') {
-        /* OV-11d (HV-21): Tạm dừng có Hoàn tác — trả nguyên trạng, không tính lại hạn (máy chủ: `hoan-tac-tam-dung`). */
-        toast.hoanTac(`Đã cho ${studentName} tạm dừng`, async () => {
-          try { await api.post(`/students/${studentId}/hoan-tac-tam-dung`, {}); } catch (e: any) { toast.push('error', e.message); return; }
-          for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
-          toast.push('ok', 'Đã hoàn tác');
-          onDone();
-        }, { key: `tam-dung:${studentId}` });
-      } else toast.push('ok', 'Đã lưu');
-      onDone();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-
-  return (
-    <KhungPanel tieuDe={tieuDeKhung ?? tieuDe} hocVien={studentName} lop={lop} onDong={onClose}
-      chan={{
-        conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{tieuDe}</button>,
-      }}>
-      {dau}
-      <Khoi tieuDe={tieuDe}
-        luat={status === 'finished' ? 'Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”. Hồ sơ vào khu Lưu trữ (chỉ xem).'
-          : status === 'inactive' ? ['Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.', heQuaCase, heQuaYThuc].filter(Boolean).join(' ')
-          : [heQuaCase, heQuaYThuc].filter(Boolean).join(' ') || undefined}>
-        {!canDoLuon && (
-          <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
-            <input className="field w-full" {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
-          </Truong>
-        )}
-        <Truong nhan="Có hiệu lực từ">
-          <ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon="Mặc định: hôm nay" />
-        </Truong>
-      </Khoi>
-    </KhungPanel>
-  );
-}
-
-/**
- * LƯU TRỮ / BỎ LƯU TRỮ (RB-9; OV-11d Q12) — MỘT bấm từ ⋯, không ô tích xác nhận (việc đảo được): thông báo có Hoàn tác = việc ngược
- * (`archive` ↔ `unarchive`, như Thôi học). Máy chủ kiểm quyền / trạng thái như cũ.
- */
-export function useLuuTru(onDone: () => void) {
-  const toast = useToast();
-  const goi = (id: number, bo: boolean) => api.post(`/students/${id}/${bo ? 'unarchive' : 'archive'}`, {});
-  const lamMoi = () => { for (const k of ['/students', '/hoc-vien-lop', '/classes']) invalidate(k); onDone(); };
-  return async (id: number, ten: string, bo: boolean) => {
-    try { await goi(id, bo); } catch (e: any) { toast.push('error', e.message); return; }
-    lamMoi();
-    toast.hoanTac(bo ? `Đã bỏ lưu trữ ${ten}` : `Đã lưu trữ ${ten}`, async () => {
-      try { await goi(id, !bo); } catch (e: any) { toast.push('error', e.message); return; }
-      lamMoi();
-      toast.push('ok', 'Đã hoàn tác');
-    }, { key: `luu-tru:${id}` });
-  };
-}
-
 type LopDich = { id: number; code: string; ft: boolean; ma: string | null; route: string | null; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number };
 type DuLieuHocLai = { conHoc?: boolean; lopCu: { id: number; code: string; daKetThuc: boolean; ft: boolean } | null; loTrinh: { chayTiep: boolean; ten: string | null; target: string }; chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
 
@@ -255,7 +145,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
   const toast = useToast();
   const lf = useLoiForm();
   const { data, error, reload } = useApi<DuLieuHocLai>(`/students/${studentId}/hoc-lai/lop-dich`, [studentId]);
-  const tieuDe = NHAN_VIEC['hoc-lai'];
+  const tieuDe = NHAN_VIEC['quay-lai'];   // P7: Học lại cũ = "Quay lại học" (một tên mọi nơi)
   const [dich, setDich] = useState<'cu' | 'moi'>('cu');
   const [lopMoiId, setLopMoiId] = useState<number | ''>('');
   const [targetGo, setTargetGo] = useState<string | null>(null);   // null = chưa gõ → dùng Target cũ khi FT → FT
@@ -289,7 +179,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
       };
       await api.post(`/students/${studentId}/hoc-lai`, than);
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
-      toast.hoanTac(`Đã cho ${studentName} học lại${lopMoi ? ` · ${lopMoi.code}` : ''}`, async () => {
+      toast.hoanTac(`Đã cho ${studentName} quay lại học${lopMoi ? ` · ${lopMoi.code}` : ''}`, async () => {
         const r = await hoanTacHangLoat('hoc-lai', [studentId]);
         for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
         if (r.failed.length) { toast.push('error', r.failed[0].message); return; }
@@ -305,7 +195,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
       chan={{
         daSua: !!lyDo.trim() || !!ngayHl || dich === 'moi' || lopMoiId !== '',
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data || !!chan}>Học lại</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data || !!chan}>{tieuDe}</button>,
       }}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <Skeleton rows={4} /> : (

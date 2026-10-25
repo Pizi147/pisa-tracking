@@ -11,6 +11,7 @@ import { BangLoTrinhTiep } from './BangLoTrinhTiep.tsx';
 import { BangKqdrLopFt } from './BangKqdrLopFt.tsx';
 import { ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from '../students/XemTruocHangLoatPanel.tsx';
+import { HopTamDungKetThuc } from '../students/HopTamDungKetThuc.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
 import type { QuyenDong } from './thaoTacDongHocVien.tsx';
 import { PERMISSIONS, vaiXemHocVien, type ViecHangLoat } from '@shared/domain/index.ts';
@@ -64,6 +65,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
   };
   const chon = useChonNhieu();
   const [viecChon, setViecChon] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);
+  const [hopTd, setHopTd] = useState<number[] | null>(null);   // P7: hộp Tạm dừng/ Kết thúc học · n em
   /* Chỉ Quản lý / Quản trị (`plan.week` của lớp), chỉ cách xem Tổng hợp; lớp đã kết thúc thì mọi cờ viewer tắt nên không có nút. */
   /* OV-10a: Admin có `plan.week` nhưng hàng loạt (Lưu trữ / Kết thúc / Huỷ chuyển lớp) máy chủ đòi `cycle.edit`. */
   const coTheChon = lop.viewer.canPlanWeek && can(PERMISSIONS.CYCLE_EDIT) && cheDo === 'diem';
@@ -102,8 +104,12 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
               onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
-          viec={[{ key: 'luu-tru', nhan: t('Lưu trữ') }, { key: 'ket-thuc', nhan: t('Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}
-          onViec={(k) => setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] })} />
+          viec={[{ key: 'tam-dung-ket-thuc', nhan: t('Tạm dừng/ Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}
+          onViec={(k) => (k === 'tam-dung-ket-thuc' ? setHopTd([...chon.chon]) : setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] }))} />
+      )}
+      {/* P7 (N11, k3): một mục "Tạm dừng/ Kết thúc học" thay Lưu trữ + Kết thúc học — cùng hộp một em, thêm số em; lỗi một phần giữ em lỗi trong hộp. */}
+      {hopTd && (
+        <HopTamDungKetThuc em={hopTd.map((id) => ({ id }))} lop={lop.code} tamDungDuoc onClose={() => setHopTd(null)} onDone={() => { chon.bo(); onDoi(); }} />
       )}
       {viecChon && (
         <XemTruocHangLoatPanel viec={viecChon.viec} ids={viecChon.ids} maLop={lop.code}
