@@ -25,6 +25,7 @@ import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
+import { lopLucThiThat } from './lopLucThi.ts';
 import { t } from '../../../shared/i18n/index.ts';
 
 const LO = 400;
@@ -256,31 +257,25 @@ function mucKetQua(c: NguCanhPtGv, nap: NapBai): MucKq[] {
 
 /**
  * V5 C10: kết quả thi thật (đủ 4 kỹ năng, ngày thi trong khoảng, đã kết luận Đạt / Chưa đạt Target) — mỗi kỹ năng một mục, gán người dạy kỹ năng đó
- * ở LỚP CUỐI TRƯỚC NGÀY THI (ghi danh bắt đầu muộn nhất ≤ ngày thi), ngày thi. W thi thật tính cho cả cột W1 và W2. Id âm: không trùng `baiId` của MT.
+ * ở LỚP LÚC THI (`lopLucThiThat`, cùng luật Kết quả thi — P12), ngày thi. Target = Target lúc nhập KQ (`thi_that_target`; NULL → Target hiện tại). W thi thật tính cho cả cột W1 và W2. Id âm: không trùng `baiId` của MT.
  * Overall đạt Target (`outcome`, máy tính lúc nhập) → mọi kỹ năng Đạt; chưa đạt → kỹ năng ≥ Target mới Đạt. Em KCK / "Không thi" không tính.
  */
 function mucThiThat(c: NguCanhPtGv): MucKq[] {
   const conn = db();
   const ds = conn.prepare(
     `SELECT cy.id, cy.student_id, s.full_name, cy.thi_that_ngay AS ngay, cy.thi_that_l, cy.thi_that_r, cy.thi_that_w, cy.thi_that_s,
-            cy.outcome, cy.outcome_score, cy.target_score
+            cy.outcome, cy.outcome_score, COALESCE(cy.thi_that_target, cy.target_score) AS target_score
        FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
       WHERE cy.thi_that_ngay IS NOT NULL AND cy.thi_that_ngay BETWEEN ? AND ? AND COALESCE(cy.thi_that_khong_thi, 0) = 0 AND COALESCE(cy.khong_cam_ket, 0) = 0
-        AND cy.outcome IN ('reached', 'not_reached') AND cy.target_score IS NOT NULL
+        AND cy.outcome IN ('reached', 'not_reached') AND COALESCE(cy.thi_that_target, cy.target_score) IS NOT NULL
         AND cy.thi_that_l IS NOT NULL AND cy.thi_that_r IS NOT NULL AND cy.thi_that_w IS NOT NULL AND cy.thi_that_s IS NOT NULL
         -- P9 (khoảng tự do): chỉ em từng học lớp FT của chi nhánh ngữ cảnh — không đọc thi thật toàn hệ thống rồi bỏ
         AND EXISTS (SELECT 1 FROM enrollments e JOIN classes k ON k.id = e.class_id WHERE e.student_id = cy.student_id AND k.branch_id = ? AND k.is_fast_track = 1)`,
   ).all(c.tu, c.cuoi, c.cn) as any[];
-  const ghiDanh = new Map<number, { lop: number; tu: string; id: number }[]>();
-  for (const lo of theoLo([...new Set(ds.map((r) => r.student_id as number))])) {
-    for (const e of conn.prepare(`SELECT id, student_id, class_id, substr(started_at, 1, 10) AS tu FROM enrollments WHERE student_id IN (${cho(lo.length)})`).all(...lo) as any[]) {
-      (ghiDanh.get(e.student_id) ?? ghiDanh.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, id: e.id });
-    }
-  }
+  const lopThi = lopLucThiThat(ds);
   const out: MucKq[] = [];
   for (const r of ds) {
-    const truoc = (ghiDanh.get(r.student_id) ?? []).filter((e) => e.tu && e.tu <= r.ngay);
-    const lop = truoc.length ? truoc.reduce((x, y) => (y.tu > x.tu || (y.tu === x.tu && y.id > x.id) ? y : x)).lop : null;
+    const lop = lopThi.get(r.id);
     if (lop == null || !c.lop.has(lop)) continue;
     const kv = Number(r.target_score);
     for (const [skill, band] of [['listening', r.thi_that_l], ['reading', r.thi_that_r], ['writing1', r.thi_that_w], ['writing2', r.thi_that_w], ['speaking', r.thi_that_s]] as const) {

@@ -17,6 +17,7 @@ import { diemCuaLuot, loadBundle, resultOf } from '../fasttrack/attempts.ts';
 import { listCases } from '../cases/cases.ts';
 import { tomTatCase } from '../classes/hocVienSos.ts';
 import { luotTrongKhoang } from './tongHop.ts';
+import { lopLucThiThat } from './lopLucThi.ts';
 
 export type LocKetQuaThi = { branchId?: number | null; classId?: number | null; tu: string; den: string };
 
@@ -101,32 +102,23 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
  * (`thi_that_ngay` NULL) → ngày thi dự kiến (`exam_date`). Hai vế OR, mỗi vế một chỉ mục một phần (`idx_cycle_thi_that_ngay`, `idx_cycle_khong_thi`).
  */
 export const SQL_THI_THAT = `SELECT c.id, c.student_id, s.full_name AS ten, COALESCE(c.thi_that_ngay, c.exam_date) AS ngay_thi, c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s,
-            c.thi_that_khong_thi, c.outcome, c.outcome_score, c.target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
+            c.thi_that_khong_thi, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN users u ON u.id = c.buoc_tiep_boi
       WHERE c.route IS NOT NULL
         AND ((c.thi_that_ngay BETWEEN ? AND ? AND c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
           OR (c.thi_that_khong_thi = 1 AND c.exam_date BETWEEN ? AND ?))`;
 
 /**
- * Thi thật: lộ trình FT có kết quả (đủ 4 kỹ năng / Không thi) với ngày thi trong khoảng; lớp = lớp của lượt MT cuối của lộ trình (một câu theo lô),
- * không có lượt → ghi danh cuối. Phạm vi: lớp trong `classScopeSql` của quyền Phân tích.
+ * Thi thật: lộ trình FT có kết quả (đủ 4 kỹ năng / Không thi) với ngày thi trong khoảng; lớp = lớp LÚC THI (`lopLucThiThat`, P12); Target = Target lúc
+ * nhập KQ (`thi_that_target`, NULL → hiện tại). Phạm vi: lớp trong `classScopeSql` của quyền Phân tích.
  * ponytail: `coQuyenBuocTiep` hỏi quyền theo từng em — bảng thi thật một khoảng chỉ vài chục hàng. `boQuyen` (Kết quả MT chỉ đếm): không hỏi, `coTheChon` false.
  */
 export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi, o: { boQuyen?: boolean } = {}): KetQuaThiThatKq {
   const scope = phamVi(p);
   const conn = db();
   const ds = conn.prepare(SQL_THI_THAT).all(f.tu, f.den, f.tu, f.den) as any[];
-  /* Lớp: lượt cuối của lộ trình, không có thì ghi danh cuối của em — hai câu theo lô. */
-  const lopCua = new Map<number, number>();
-  theoLo(ds.map((c) => c.id as number), (lo, ph) => {
-    for (const r of conn.prepare(`SELECT cycle_id, class_id FROM assessment_attempts WHERE id IN (SELECT MAX(id) FROM assessment_attempts WHERE cycle_id IN (${ph}) GROUP BY cycle_id)`).all(...lo) as any[]) lopCua.set(r.cycle_id, r.class_id);
-  });
-  const thieu = ds.filter((c) => !lopCua.has(c.id));
-  theoLo([...new Set(thieu.map((c) => c.student_id as number))], (lo, ph) => {
-    const cuoi = new Map<number, number>();
-    for (const r of conn.prepare(`SELECT student_id, class_id FROM enrollments WHERE id IN (SELECT MAX(id) FROM enrollments WHERE student_id IN (${ph}) GROUP BY student_id)`).all(...lo) as any[]) cuoi.set(r.student_id, r.class_id);
-    for (const c of thieu) if (cuoi.has(c.student_id)) lopCua.set(c.id, cuoi.get(c.student_id)!);
-  });
+  /* P12 (E7): lớp LÚC THI — cùng luật Phân tích GV (`lopLucThiThat`). */
+  const lopCua = lopLucThiThat(ds.map((c) => ({ id: c.id, student_id: c.student_id, ngay: c.ngay_thi ?? null })));
   const lop = new Map<number, { code: string; branch: number }>();
   theoLo([...new Set(lopCua.values())], (lo, ph) => {
     for (const r of conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) lop.set(r.id, { code: r.code, branch: r.branch_id });

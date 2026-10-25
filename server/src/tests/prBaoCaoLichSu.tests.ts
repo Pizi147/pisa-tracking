@@ -96,8 +96,8 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     const { c, k } = thiCo();
     const cu = lt.lopLucThiThat([{ id: c.id, student_id: c.student_id, ngay: c.ngay }]).get(c.id);
     assert(cu, 'có lớp lúc thi');
-    const moi = get(`SELECT id FROM classes WHERE branch_id = ? AND is_fast_track = 1 AND id != ? ORDER BY id LIMIT 1`, k.cn, cu)?.id as number;
-    assert(moi, 'chi nhánh có lớp FT thứ hai');
+    const moi = get(`SELECT id FROM classes WHERE is_fast_track = 1 AND id != ? ORDER BY id LIMIT 1`, cu)?.id as number;
+    assert(moi, 'có lớp FT thứ hai');
     const sau = d.addDaysIso(c.ngay, 3);
     conn.prepare(`UPDATE enrollments SET ended_at = ?, status = 'transferred' WHERE student_id = ? AND class_id = ?`).run(`${sau}T00:00:00.000Z`, c.student_id, cu);
     conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)`).run(c.student_id, moi, `${sau}T00:00:00.000Z`, `${sau}T00:00:00.000Z`);
