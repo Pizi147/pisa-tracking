@@ -560,19 +560,7 @@ export async function runPrClTests(t: YThucTestKit) {
   });
 
   // ---------------------------------------------------------------- T3 · web (C1, C2)
-  check('CL-w1 · nhiều em (bảng thuần): tomTatChuyenEm chữ thường đầu, giữ MT0; chonGuiNhieuEm đếm Chuyển / Bỏ qua; chuTyLeXetLai làm tròn xuống', () => {
-    const cases: [string, boolean, boolean, string[], string][] = [
-      ['Trần Gia Huy', true, false, ['Đóng lộ trình FT LT1', 'MT0 → “MT0 · không dùng”', 'Huỷ 2 bài Mock chưa có điểm (MT1, MT2)', 'Giữ điểm đã có (MT0 L, R)'],
-        'Trần Gia Huy · FT → Thường: đóng lộ trình FT LT1 · MT0 → “MT0 · không dùng” · huỷ 2 bài Mock chưa có điểm (MT1, MT2) · giữ điểm đã có (MT0 L, R)'],
-      ['Vũ Thu Hà', false, true, ['Đóng lộ trình ELE, mở lộ trình FT LT1', 'Target 6.0 (GVCN ghi)'], 'Vũ Thu Hà · Thường → FT: đóng lộ trình ELE, mở lộ trình FT LT1 · target 6.0 (GVCN ghi)'],
-      ['A', true, true, ['Giữ lộ trình FT LT1', '2 Case FT tự đóng'], 'A · FT → FT: giữ lộ trình FT LT1 · 2 Case FT tự đóng'],
-      ['B', false, false, [], 'B · Thường → Thường: '],
-    ];
-    for (const [ten, nf, df, kc, mong] of cases) { const r = d.tomTatChuyenEm(ten, nf, df, kc); assert(r === mong, `${ten}: ${r}`); }
-    const rows = [{ chon: true, lop: 5 }, { chon: true, lop: null }, { chon: false, lop: 7 }, { chon: true, lop: 9, xong: true }, { chon: false, lop: null }];
-    const k = d.chonGuiNhieuEm(rows);
-    assert(k.gui.length === 1 && k.gui[0] === rows[0] && k.boQua === 1, JSON.stringify(k));
-    assert(d.chonGuiNhieuEm([]).gui.length === 0 && d.TOI_DA_NHIEU_EM === 50, 'rỗng / trần');
+  check('CL-w1 · bảng thuần: canHoiTarget; chuTyLeXetLai làm tròn xuống (panel nhiều em gỡ ở P9a)', () => {
     for (const [nf, df, t, mong] of [[false, true, null, true], [false, true, 6, false], [false, true, 'KCK', false], [true, true, null, false], [false, false, null, false], [false, true, undefined, false]] as const) {
       assert(d.canHoiTarget(nf, df, t) === mong, `canHoiTarget(${nf}, ${df}, ${t})`);
     }

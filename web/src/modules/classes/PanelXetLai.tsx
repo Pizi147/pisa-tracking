@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -12,24 +12,27 @@ import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OTuanBatDau } from '../students/ChuyenLopPanel.tsx';
 import { KHOI_VANG } from './TransitionPanel.tsx';
-import { chuTyLeXetLai, kyHieuLop, laChuyenNgay, ngay, tuanChonDuoc, tuanLich } from '@shared/domain/index.ts';
+import { chuTyLeXetLai, kyHieuLop, laChuyenNgay, ngay, tenBacKe, tuanChonDuoc, tuanLich, type ProgrammeCode } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
-type Quyet = 'tiep_tuc' | 'hoc_lai' | 'dung';
+type Quyet = 'tiep_tuc' | 'hoc_lai' | 'len' | 'dung';
+const laChuyen = (q: Quyet | null | undefined) => q === 'hoc_lai' || q === 'len';
 export type EmXetLai = {
   studentId: number; ten: string; lenhId: number; lyDo: { ma: 'a' | 'b' | 'c' | 'd'; chu: string }; han: string;
   lopHienTai: { id: number; code: string; ft: boolean; ct: string | null }; lopNguon: { id: number; code: string; ct: string | null }; daThiHanh: boolean; tuanBatDau: string;
   final: { tyLe: number | null; mon: { mon: string; pt: number | null; dat: boolean }[] };
-  daChot: { huong: string; chu: string; lopDich: string | null; luc: string; nguoi: string | null; lyDo: string | null };
+  daChot: { huong: string; chu: string; lopDich: string | null; lopDichId: number | null; luc: string; nguoi: string | null; lyDo: string | null };
   goiY: string | null;
   phuHuynh: { tvv: string | null; luc: string | null; ketQua: string | null } | null;
   banGiaoGvcnCu: string | null;
   boTro: { mon: string[]; daHoc: number; tong: number; miniTest: { tyLe: number | null; ngayDuKien: string; ngayLam: string | null } } | null;
   nhanXetGvcnMoi: string | null;
-  xetLaiTruoc: { quyetDinh: Quyet; tuDong: boolean; luc: string; nguoi: string | null } | null;
+  xetLaiTruoc: { quyetDinh: Quyet; chu: string | null; tuDong: boolean; luc: string; nguoi: string | null } | null;
+  coTheNhanXet?: boolean;
   quyetDinh: { id: number; quyetDinh: Quyet; lopDich: string | null; tuan: string | null; luc: string; nguoi: string | null } | null;
 };
-type DuLieu = { lop: { id: number; code: string; ft: boolean }; chiXem: boolean; han: string | null; nguon: { code: string } | null; em: EmXetLai[]; lopHocLai: Record<string, { id: number; code: string; phu: string }[]> };
+type DuLieu = { lop: { id: number; code: string; ft: boolean }; chiXem: boolean; han: string | null; nguon: { code: string } | null; em: EmXetLai[]; lopHocLai: Record<string, LopMo[]>; lopLen: Record<string, LopMo[]> };
+type LopMo = { id: number; code: string; phu: string };
 /** Lựa chọn đang soạn của một em (chưa lưu). */
 type Chon = { quyet: Quyet; lop: number | null; tuan: string; lyDo: string; trangThai: 'inactive' | 'finished' };
 /** Kết quả đã lưu trong lần mở panel này (Hoàn tác / Sửa). */
@@ -42,10 +45,14 @@ const lamMoi = () => { for (const k of ['/classes', '/students', '/my-work', '/h
 const bac = (ct: string | null) => kyHieuLop(ct, null) ?? ct ?? '';
 const tiepTucChu = (e: EmXetLai) => (e.lopHienTai.ft ? t('Tiếp tục FT') : t('Tiếp tục {lop}', { lop: bac(e.lopHienTai.ct) || e.lopHienTai.code }));
 const hocLaiChu = (e: EmXetLai) => (e.lopHienTai.ft ? t('Về lớp thường') : t('Học lại {ct}', { ct: bac(e.lopNguon.ct) }));
+/** Nút chuyển của thẻ: dòng (c) (đang học lại mà Final ≥ 60 %) → "Lên {bậc kế}" (lớp bậc kế / FT); còn lại → Học lại chương trình cũ. */
+const chuyenCua = (e: EmXetLai): Quyet => (e.lyDo.ma === 'c' ? 'len' : 'hoc_lai');
+const chuyenChu = (e: EmXetLai) => (e.lyDo.ma === 'c' ? t('Lên {lop}', { lop: e.lopNguon.ct ? tenBacKe(e.lopNguon.ct as ProgrammeCode) : '' }) : hocLaiChu(e));
+const lopCua = (d: Pick<DuLieu, 'lopHocLai' | 'lopLen'>, e: EmXetLai): LopMo[] => (e.lyDo.ma === 'c' ? d.lopLen : d.lopHocLai)[e.lopNguon.ct ?? ''] ?? [];
 const doLyDo = (e: EmXetLai) => e.lyDo.ma === 'a' || e.lyDo.ma === 'd';
 const canLyDo = (e: EmXetLai, c: Chon) => c.quyet === 'dung' || (c.quyet === 'tiep_tuc' && e.lyDo.ma === 'a');
 const loiChon = (e: EmXetLai, c: Chon): string | null =>
-  (c.quyet === 'hoc_lai' && !c.lop ? t('Chọn lớp học lại') : c.quyet === 'hoc_lai' && !c.tuan ? t('Chọn tuần bắt đầu.') : canLyDo(e, c) && !c.lyDo.trim() ? t('Ghi lý do ngắn') : null);
+  (laChuyen(c.quyet) && !c.lop ? t('Chọn lớp học lại') : laChuyen(c.quyet) && !c.tuan ? t('Chọn tuần bắt đầu.') : canLyDo(e, c) && !c.lyDo.trim() ? t('Ghi lý do ngắn') : null);
 
 /**
  * XÉT LẠI LỘ TRÌNH (P9a, N21 — mockup V6 `thiet-ke/v6/xet-lai-lo-trinh.html` khung 2–7) — MỘT panel, mở tại chỗ ở hồ sơ lớp em đang học (việc QL ·
@@ -70,6 +77,9 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
   /* Danh sách em CHỐT lúc mở: lưu xong em không biến khỏi panel (đọc lại chỉ khi Hoàn tác / đóng). */
   const [ds, setDs] = useState<EmXetLai[] | null>(null);
   if (data && ds === null) setDs(data.em);
+  /* Sau Hoàn tác: thẻ đọc lại từ máy chủ (dòng mở lại, quyết định cũ còn sửa được…) khi bản tải mới về. */
+  const [napLai, setNapLai] = useState(false);
+  useEffect(() => { if (napLai && data) { setDs(data.em); setNapLai(false); } }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
   const em = ds ?? [];
   const xong = (e: EmXetLai) => !!daLuu[e.studentId] || (!!e.quyetDinh && !suaId[e.studentId]);
   const soan = em.filter((e) => chon[e.studentId] && !xong(e));
@@ -79,14 +89,14 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
     setChon((m) => { const { [sid]: _, ...con } = m; return c ? { ...con, [sid]: c } : con; });
     setLoi((m) => { const { [sid]: _, ...con } = m; return con; });
   };
-  const bamNut = (e: EmXetLai, q: Quyet) => datChon(e.studentId, chon[e.studentId]?.quyet === q ? null : { ...(chon[e.studentId] ?? moi(e, q)), quyet: q });
-  const apCho = (q: Quyet) => { for (const sid of tick) { const e = em.find((x) => x.studentId === sid); if (e && !xong(e)) datChon(sid, { ...(chon[sid] ?? moi(e, q)), quyet: q }); } };
+  const bamNut = (e: EmXetLai, q0: Quyet) => { const q = laChuyen(q0) ? chuyenCua(e) : q0; return  datChon(e.studentId, chon[e.studentId]?.quyet === q ? null : { ...(chon[e.studentId] ?? moi(e, q)), quyet: q }); };
+  const apCho = (q: Quyet) => { for (const sid of tick) { const e = em.find((x) => x.studentId === sid); if (e && !xong(e)) { const q2 = laChuyen(q) ? chuyenCua(e) : q; datChon(sid, { ...(chon[sid] ?? moi(e, q2)), quyet: q2 }); } } };
 
   const gui = async (xacNhan = false) => {
     setDaBam(true);
     const sai = soan.filter((e) => loiChon(e, chon[e.studentId]));
     if (sai.length || !soan.length) return;
-    const ngayNay = soan.filter((e) => chon[e.studentId].quyet === 'hoc_lai' && homNay && laChuyenNgay(chon[e.studentId].tuan, homNay));
+    const ngayNay = soan.filter((e) => laChuyen(chon[e.studentId].quyet) && homNay && laChuyenNgay(chon[e.studentId].tuan, homNay));
     if (ngayNay.length && !xacNhan) { setHoiNgay(ngayNay.map((e) => e.ten)); return; }
     setHoiNgay(null);
     setBusy(true);
@@ -98,7 +108,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
         const r = await api.post<{ ok: typeof ok; failed: { studentId: number; message: string }[] }>(`/classes/${classId}/xet-lai`, {
           items: lo.map((e) => {
             const c = chon[e.studentId];
-            return { studentId: e.studentId, quyetDinh: c.quyet, toClassId: c.quyet === 'hoc_lai' ? c.lop : null, tuan: c.quyet === 'hoc_lai' ? c.tuan : null,
+            return { studentId: e.studentId, quyetDinh: c.quyet, toClassId: laChuyen(c.quyet) ? c.lop : null, tuan: laChuyen(c.quyet) ? c.tuan : null,
               lyDo: c.lyDo.trim() || null, trangThai: c.trangThai, suaId: suaId[e.studentId] ?? e.quyetDinh?.id ?? null };
           }),
         });
@@ -131,7 +141,10 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
     try {
       const r = await api.post<{ ok: number[]; failed: { id: number; message: string }[] }>(`/classes/${classId}/xet-lai/hoan-tac`, { ids: ds2.map((x) => x.id) });
       setDaLuu((m) => { const n = { ...m }; for (const x of ds2) if (r.ok.includes(x.id)) delete n[x.studentId]; return n; });
+      setSuaId((m) => { const n = { ...m }; for (const x of ds2) delete n[x.studentId]; return n; });
       lamMoi();
+      setNapLai(true);
+      reload();
       onDone?.();
       if (r.failed.length) toast.push('error', r.failed[0].message);
       else toast.push('ok', t('Đã hoàn tác'));
@@ -150,7 +163,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
   if (error) return <KhungPanel tieuDe={tieuDe} rong="rong" onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (!data || ds === null) return <KhungPanel tieuDe={tieuDe} rong="rong" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
 
-  const tomTat = tomTatLuu(soan.map((e) => ({ e, c: chon[e.studentId] })), data.lopHocLai, homNay);
+  const tomTat = tomTatLuu(soan.map((e) => ({ e, c: chon[e.studentId] })), data, homNay);
   const conThieu = daBam ? soan.filter((e) => loiChon(e, chon[e.studentId])).map((e) => ({ nhan: e.ten, lyDo: loiChon(e, chon[e.studentId])! })) : [];
   const e0 = em[0];
   const nguCanh = [data.nguon && t('Từ {lop}', { lop: data.nguon.code }),
@@ -182,7 +195,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
           {em.map((e) => (
             <TheEm key={e.studentId} e={e} chiXem={data.chiXem} classId={classId} homNay={homNay} toi={toi} tuanChon={tuanChon}
               chon={chon[e.studentId] ?? null} daLuu={daLuu[e.studentId] ?? null} xong={xong(e)} loi={loi[e.studentId] ?? (daBam && chon[e.studentId] ? loiChon(e, chon[e.studentId]) : null)}
-              tick={tick.has(e.studentId)} busy={busy} lopHocLai={data.lopHocLai[e.lopNguon.ct ?? ''] ?? []}
+              tick={tick.has(e.studentId)} busy={busy} lopHocLai={lopCua(data, e)}
               onTick={(v) => setTick((s) => { const n = new Set(s); if (v) n.add(e.studentId); else n.delete(e.studentId); return n; })}
               onNut={(q) => bamNut(e, q)} onChon={(c) => datChon(e.studentId, c)} onSua={() => sua(e)} />
           ))}
@@ -200,12 +213,12 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
 const chungCua = (ds: (Quyet | null)[]): Quyet | null => (ds.length && ds.every((x) => x === ds[0]) ? ds[0] : null);
 
 /** "2 em Tiếp tục BE · 1 em Học lại → MB FOU 14 từ W2 OCT" — dòng chân "Khi lưu:" (mockup khung 3). */
-function tomTatLuu(ds: { e: EmXetLai; c: Chon }[], lopHocLai: DuLieu['lopHocLai'], homNay: string | null): string {
+function tomTatLuu(ds: { e: EmXetLai; c: Chon }[], d: Pick<DuLieu, 'lopHocLai' | 'lopLen'>, homNay: string | null): string {
   const nhom = new Map<string, number>();
   for (const { e, c } of ds) {
     const k = c.quyet === 'tiep_tuc' ? tiepTucChu(e)
       : c.quyet === 'dung' ? (c.trangThai === 'finished' ? t('Kết thúc học') : t('Tạm dừng'))
-        : `${hocLaiChu(e)}${c.lop ? ` → ${(lopHocLai[e.lopNguon.ct ?? ''] ?? []).find((l) => l.id === c.lop)?.code ?? ''}` : ''}${c.tuan ? ` ${homNay && laChuyenNgay(c.tuan, homNay) ? t('ngay hôm nay') : t('từ {tuan}', { tuan: tuanLich(c.tuan, homNay) })}` : ''}`;
+        : `${chuyenChu(e)}${c.lop ? ` → ${lopCua(d, e).find((l) => l.id === c.lop)?.code ?? ''}` : ''}${c.tuan ? ` ${homNay && laChuyenNgay(c.tuan, homNay) ? t('ngay hôm nay') : t('từ {tuan}', { tuan: tuanLich(c.tuan, homNay) })}` : ''}`;
     nhom.set(k, (nhom.get(k) ?? 0) + 1);
   }
   return [...nhom].map(([k, n]) => t('{n} em {viec}', { n, viec: k })).join(' · ');
@@ -218,7 +231,7 @@ function ThanhAp({ n, mau, chonChung, onAp, onBo }: { n: number; mau: EmXetLai; 
       <b className="text-sm text-slate-100">{t('{n} em đã chọn', { n })}</b>
       <span className="flex flex-wrap gap-1.5">
         <NutChon nho chon={q === 'tiep_tuc'} onClick={() => setQ('tiep_tuc')}>{tiepTucChu(mau)}</NutChon>
-        <NutChon nho chon={q === 'hoc_lai'} onClick={() => setQ('hoc_lai')}>{hocLaiChu(mau)}</NutChon>
+        <NutChon nho chon={q === 'hoc_lai'} onClick={() => setQ('hoc_lai')}>{chuyenChu(mau)}</NutChon>
         <NutChon nho chon={q === 'dung'} onClick={() => setQ('dung')}>{t('Tạm dừng/ Kết thúc học')}</NutChon>
       </span>
       <span className="ml-auto flex gap-1.5">
@@ -247,7 +260,7 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
   const ct = bac(e.lopNguon.ct);
   const nguoiChot = e.daChot.nguoi ? `QL ${tenGoi(e.daChot.nguoi)}` : null;
   const chuDaLuu = daLuu ? `✓ ${daLuu.chu} · ${toi ? `QL ${tenGoi(toi)}` : ''} ${homNay ? ngay(homNay, homNay) : ''}`.trim()
-    : e.quyetDinh ? `${hocLaiChu(e)} → ${e.quyetDinh.lopDich ?? ''}${e.quyetDinh.tuan ? ` · ${t('từ {tuan}', { tuan: tuanLich(e.quyetDinh.tuan, homNay) })}` : ''}` : null;
+    : e.quyetDinh ? `${chuyenChu(e)} → ${e.quyetDinh.lopDich ?? ''}${e.quyetDinh.tuan ? ` · ${t('từ {tuan}', { tuan: tuanLich(e.quyetDinh.tuan, homNay) })}` : ''}` : null;
   const vien = tick ? { borderColor: 'var(--accent)', boxShadow: 'inset 3px 0 0 var(--accent)' } : loi ? { borderColor: 'rgb(var(--late-line-rgb))' } : { borderColor: 'var(--line)' };
   return (
     <article className={`flex flex-col rounded-[10px] border bg-[color:var(--surface)] ${xong ? 'opacity-75' : ''}`} style={vien} aria-label={e.ten}>
@@ -270,7 +283,7 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
                 <span key={m.mon} className={m.dat ? '' : 'text-bad'}>{i > 0 && ' · '}{!m.dat && '✗ '}{m.mon} {m.pt ?? '—'}</span>))}</span>
             </Dong>
           )}
-          {e.xetLaiTruoc && <Dong n={t('Đã xét lại')}>{t('Tiếp tục {lop}', { lop: e.lopHienTai.ft ? 'FT' : bac(e.lopHienTai.ct) })} · {e.xetLaiTruoc.tuDong ? t('tự giữ') : e.xetLaiTruoc.nguoi ? `QL ${tenGoi(e.xetLaiTruoc.nguoi)}` : ''} {ngay(e.xetLaiTruoc.luc.slice(0, 10), homNay)}</Dong>}
+          {e.xetLaiTruoc && <Dong n={t('Đã xét lại')}>{e.xetLaiTruoc.chu ?? '—'} · {e.xetLaiTruoc.tuDong ? t('tự giữ') : e.xetLaiTruoc.nguoi ? `QL ${tenGoi(e.xetLaiTruoc.nguoi)}` : ''} {ngay(e.xetLaiTruoc.luc.slice(0, 10), homNay)}</Dong>}
           <Dong n={t('Đã chốt')}>{[e.daChot.chu, nguoiChot && `${nguoiChot} ${ngay(e.daChot.luc, homNay)}`].filter(Boolean).join(' · ')}{e.lyDo.ma === 'b' ? ` ${t('(chưa có Final)')}` : ''}{!chiXem && e.daChot.lyDo && <> · <span className="text-slate-300">“{e.daChot.lyDo}”</span></>}</Dong>
           {!chiXem && e.goiY && <Dong n={t('Gợi ý')}>{e.goiY}</Dong>}
           {!chiXem && e.phuHuynh && <Dong n={t('Phụ huynh')}>{[e.phuHuynh.tvv && `TVV ${tenGoi(e.phuHuynh.tvv)}`, e.phuHuynh.luc && ngay(e.phuHuynh.luc, homNay)].filter(Boolean).join(' ')}{e.phuHuynh.ketQua && <> · “{e.phuHuynh.ketQua}”</>}</Dong>}
@@ -283,7 +296,7 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
           {!chiXem && e.nhanXetGvcnMoi && <Dong n={t('GVCN mới')}>“{e.nhanXetGvcnMoi}”</Dong>}
         </dl>
       )}
-      {chiXem ? <NhanXetGvcn e={e} classId={classId} />
+      {chiXem ? (e.coTheNhanXet ? <NhanXetGvcn e={e} classId={classId} /> : null)
         : !xong && <HangLam e={e} ct={ct} chon={chon} loi={loi} busy={busy} homNay={homNay} tuanChon={tuanChon} lopHocLai={lopHocLai} onNut={onNut} onChon={onChon} />}
     </article>
   );
@@ -299,20 +312,22 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
   const ds = useMemo(() => lopHocLai.map((l) => ({ id: l.id, ma: l.code, phu: l.phu })), [lopHocLai]);
   const lopChu = lopHocLai.find((l) => l.id === chon?.lop)?.code ?? null;
   const ngayNay = !!chon && !!homNay && laChuyenNgay(chon.tuan, homNay);
+  const len = e.lyDo.ma === 'c';
+  const ke = e.lopNguon.ct ? tenBacKe(e.lopNguon.ct as ProgrammeCode) : '';
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-t border-dashed px-3.5 pb-3 pt-2.5 pl-[42px] max-sm:flex-col max-sm:items-stretch max-sm:pl-3.5" style={{ borderColor: 'var(--line)' }}>
       <span className="flex flex-wrap gap-1.5 max-sm:flex-col">
         <NutChon chon={chon?.quyet === 'tiep_tuc'} disabled={busy} onClick={() => onNut('tiep_tuc')}>{tiepTucChu(e)}</NutChon>
-        <NutChon chon={chon?.quyet === 'hoc_lai'} disabled={busy} onClick={() => onNut('hoc_lai')}>{hocLaiChu(e)}</NutChon>
+        <NutChon chon={laChuyen(chon?.quyet)} disabled={busy} onClick={() => onNut(chuyenCua(e))}>{chuyenChu(e)}</NutChon>
         <NutChon chon={chon?.quyet === 'dung'} disabled={busy} onClick={() => onNut('dung')}>{t('Tạm dừng/ Kết thúc học')}</NutChon>
       </span>
-      {chon?.quyet === 'hoc_lai' && (
+      {laChuyen(chon?.quyet) && chon && (
         <div className="flex basis-full flex-col gap-2">
           <div className="flex flex-wrap items-start gap-x-2.5 gap-y-1.5">
             <span className="text-xs font-bold leading-[34px] text-slate-300">{t('Lớp')}</span>
             <span className="w-[300px] max-w-full">
-              <ChonLop ds={ds} value={chon.lop} onChange={(id) => onChon({ ...chon, lop: id })} ariaLabel={t('Lớp học lại của {ten}', { ten: e.ten })} tat={busy}
-                invalid={loi === t('Chọn lớp học lại')} khongKhop={t('Chưa có lớp {ct} đang học ở chi nhánh này', { ct })} placeholder={ct} />
+              <ChonLop ds={ds} value={chon.lop} onChange={(id) => onChon({ ...chon, lop: id })} ariaLabel={t('Lớp của {ten}', { ten: e.ten })} tat={busy}
+                invalid={loi === t('Chọn lớp học lại')} khongKhop={t('Chưa có lớp {ct} đang học ở chi nhánh này', { ct: len ? ke : ct })} placeholder={len ? ke : ct} />
             </span>
           </div>
           <div className="flex flex-wrap items-start gap-x-2.5 gap-y-1.5">
@@ -326,10 +341,10 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
                 {e.daThiHanh
                   ? <li>{ngayNay ? t('Chuyển {tu} → {den} ngay hôm nay — không hoàn tác', { tu: e.lopHienTai.code, den: lopChu ?? '' })
                     : t('Ra lệnh chuyển {tu} → {den} từ {tuan} (sửa / huỷ được tới {ngay})', { tu: e.lopHienTai.code, den: lopChu ?? '', tuan: tuanLich(chon.tuan, homNay), ngay: ngay(chon.tuan, homNay) })}</li>
-                  : <li>{t('Sửa quyết định ở {lop}: Học lại → {den} từ {tuan}', { lop: e.lopNguon.code, den: lopChu ?? '', tuan: tuanLich(chon.tuan, homNay) })}</li>}
-                {e.daThiHanh && <li>{t('Đóng khoá {cu}, mở khoá {moi} mới · điểm {cu} (nếu có) ở lại khoá {cu}', { cu: bac(e.lopHienTai.ct) || e.lopHienTai.code, moi: ct })}</li>}
+                  : <li>{t('Sửa quyết định ở {lop}: {viec} → {den} từ {tuan}', { lop: e.lopNguon.code, viec: chuyenChu(e), den: lopChu ?? '', tuan: tuanLich(chon.tuan, homNay) })}</li>}
+                {e.daThiHanh && <li>{t('Đóng khoá {cu}, mở khoá {moi} mới · điểm {cu} (nếu có) ở lại khoá {cu}', { cu: bac(e.lopHienTai.ct) || e.lopHienTai.code, moi: len ? ke : ct })}</li>}
                 {e.daThiHanh && <li>{t('Phiếu bàn giao GVCN {lop}', { lop: e.lopHienTai.code })}</li>}
-                <li>{t('Hành trình: “QL xét lại: Học lại {ct}”', { ct })}</li>
+                <li>{t('Hành trình: “QL xét lại: {viec}”', { viec: chuyenChu(e) })}</li>
               </ul>
             </div>
           )}

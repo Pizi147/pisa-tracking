@@ -125,17 +125,19 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
   });
 
   // ---------------------------------------------------------------- XL-2 · migrate
-  check('XL-2 · migrate: thẻ "Mini Test chưa đạt" đang chờ → đóng (tu_dong), bảng có sẵn; chạy hai lần không đổi gì thêm', () => {
+  const theMini = (sid: number, mtId: number) => Number(conn.prepare(
+    `INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, trang_thai, tao_luc) VALUES ('bao_len_mini_test', 'bao-len', 'mini_test', ?, ?, 'cho', ?)`,
+  ).run(mtId, sid, NOW).lastInsertRowid);
+  check('XL-2 · migrate: thẻ "Mini Test chưa đạt" của em KHÔNG có dòng (d) giữ nguyên; ghi mốc tự giữ một lần; chạy hai lần không đổi gì thêm', () => {
     const sid = get('SELECT id FROM students ORDER BY id LIMIT 1').id;
-    const id = Number(conn.prepare(`INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, trang_thai, tao_luc) VALUES ('bao_len_mini_test', 'bao-len', 'mini_test', 999001, ?, 'cho', ?)`)
-      .run(sid, NOW).lastInsertRowid);
+    const id = theMini(sid, 999001);
     const a1: string[] = [], a2: string[] = [];
     mig.migratePrXetLai(conn, a1);
-    const y = get('SELECT trang_thai, ly_do_dong FROM yeu_cau_duyet WHERE id = ?', id);
-    assert(y.trang_thai === 'tu_dong' && /Xét lại/.test(y.ly_do_dong), JSON.stringify(y));
-    assert(a1.some((x) => /thẻ "Mini Test chưa đạt"/.test(x)) && !a1.some((x) => /bảng/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
+    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', 'thẻ không có dòng (d) phải giữ');
+    assert(get(`SELECT value FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU)?.value === TODAY && a1.some((x) => /mốc tự giữ/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
     mig.migratePrXetLai(conn, a2);
     assert(!a2.length, `lần 2: ${JSON.stringify(a2)}`);
+    conn.prepare('DELETE FROM yeu_cau_duyet WHERE id = ?').run(id);
   });
 
   // ---------------------------------------------------------------- XL-3 · tập em = việc = GET
@@ -166,6 +168,11 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(!viec(P.cpManager, BE_D.id) && !viec(GVCN_BE, BE_D.id) && !viec(GVBM_BE, BE_D.id) && viec(P.admin, BE_D.id), 'QL CP / GVCN / GVBM không việc, QT có');
     const gv = trongBoNho(() => xl.xemXetLai(GVCN_BE, BE_D.id, null));
     assert(gv.chiXem && gv.em.length === g.em.length && !Object.keys(gv.lopHocLai).length, 'GVCN lớp mới: chỉ xem');
+    assert(gv.em.every((x: any) => x.goiY === null && x.phuHuynh === null && x.banGiaoGvcnCu === null && x.daChot.lyDo === null && x.coTheNhanXet), `GVCN: bỏ gợi ý / PH / lý do: ${JSON.stringify(gv.em[0])}`);
+    const gvCu = ganGv(CHO.fou.id, 5, true);
+    assert(!trongBoNho(() => xl.xemXetLai(gvCu, CHO.fou.id, null)).em.length, 'GVCN lớp CŨ (lệnh chưa thi hành): không thấy');
+    let m = 0; try { trongBoNho(() => xl.ghiNhanXetGvcnMoi(gvCu, CHO.fou.id, CHO.sid, 'x')); } catch (e: any) { m = e.status; }
+    assert(m === 403, `GVCN lớp cũ ghi nhận xét: ${m}`);
     assert(!trongBoNho(() => xl.xemXetLai(GVBM_BE, BE_D.id, null)).em.length && !trongBoNho(() => xl.xemXetLai(P.cpManager, BE_D.id, null)).em.length, 'GVBM / QL CP: em []');
     assert(trongBoNho(() => xl.xemXetLai(QL, BE_D.id, A.sid)).em.length === 1, '?studentId: một em');
   });
@@ -206,12 +213,36 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(e?.quyetDinh?.quyetDinh === 'hoc_lai' && e.quyetDinh.lopDich === FOU_D.code && !viec(QL, CHO.fou.id), `đã quyết còn sửa được: ${JSON.stringify(e?.quyetDinh)}`);
   });
 
-  check('XL-5 · Hoàn tác Học lại (lệnh chưa thi hành) → lệnh về Lên BE; Học lại em đã thi hành → lệnh giữa khoá mới, Sửa sang Tiếp tục → lệnh mới huỷ; Tạm dừng + Hoàn tác', () => {
-    const id = get(`SELECT id FROM xet_lai_lo_trinh WHERE student_id = ? AND quyet_dinh = 'hoc_lai'`, CHO.sid).id;
-    const h = xl.hoanTacXetLai(QL, CHO.fou.id, [id]);
-    const l = lenhCua(CHO.sid);
-    assert(!h.failed.length && l.huong === 'len_lop' && l.lop_dich_id === BE_D.id && l.trang_thai === 'cho' && dong(CHO.sid)?.lyDo.ma === 'a', `hoàn tác: ${JSON.stringify(h)} ${JSON.stringify(l)}`);
-    assert(!get(`SELECT 1 FROM journey_events WHERE dedup_key = ?`, `xet_lai:${id}`), 'Hành trình xoá');
+  check('XL-5 · Hoàn tác Học lại (lệnh chưa thi hành) → NGUYÊN dòng lệnh (xác nhận bàn giao GVCN, lam_lai, Target, hạn), LTT, không chuông / Hành trình còn lại; Học lại em đã thi hành → lệnh giữa khoá mới, Sửa sang Tiếp tục → lệnh mới huỷ; Tạm dừng + Hoàn tác', () => {
+    /* Lệnh của CHO đang sửa (XL-4) — đưa về Lên BE trước, rồi dựng bàn giao đã xác nhận để soi Hoàn tác. */
+    const id0 = get(`SELECT id FROM xet_lai_lo_trinh WHERE student_id = ? AND quyet_dinh = 'hoc_lai'`, CHO.sid).id;
+    assert(!xl.hoanTacXetLai(QL, CHO.fou.id, [id0]).failed.length, 'hoàn tác XL-4');
+    const lId = lenhCua(CHO.sid).id;
+    conn.prepare(`UPDATE lenh_chuyen_lop SET xac_nhan_boi = ?, xac_nhan_luc = ?, nhan_xet_chung = 'Em chăm', han_gvcn = '2026-09-30' WHERE id = ?`).run(GVCN_BE.userId, NOW, lId);
+    conn.prepare(`INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, ghi_luc, lam_lai) VALUES (?, 'reading', 'Đọc chậm', ?, ?, 0)`).run(lId, GVCN_BE.userId, NOW);
+    const truoc = { l: get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lId), bg: all('SELECT * FROM ban_giao_mon WHERE lenh_id = ?', lId),
+      ltt: get('SELECT * FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?', CHO.sid, CHO.fou.id),
+      nt: get('SELECT COUNT(*) n FROM notifications').n, je: get('SELECT COUNT(*) n FROM journey_events WHERE student_id = ?', CHO.sid).n };
+    const r0 = xl.luuXetLai(QL, CHO.fou.id, [{ studentId: CHO.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: THU_HAI }]);
+    assert(!r0.failed.length, JSON.stringify(r0));
+    const giua = get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lId);
+    assert(giua.huong === 'hoc_lai' && giua.xac_nhan_boi === null && get('SELECT lam_lai FROM ban_giao_mon WHERE lenh_id = ?', lId).lam_lai === 1, `tiền đề — sửa lệnh làm lại phiếu: ${JSON.stringify(giua)}`);
+    const nChuong = get('SELECT COUNT(*) n FROM notifications').n;
+    const h = xl.hoanTacXetLai(QL, CHO.fou.id, [r0.ok[0].id]);
+    assert(!h.failed.length, JSON.stringify(h));
+    assert(JSON.stringify(get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lId)) === JSON.stringify(truoc.l), `lệnh: ${JSON.stringify(get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lId))} ≠ ${JSON.stringify(truoc.l)}`);
+    assert(JSON.stringify(all('SELECT * FROM ban_giao_mon WHERE lenh_id = ?', lId)) === JSON.stringify(truoc.bg), 'phiếu môn: lam_lai về 0');
+    assert(JSON.stringify(get('SELECT * FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?', CHO.sid, CHO.fou.id)) === JSON.stringify(truoc.ltt), 'Lộ trình tiếp theo về như cũ');
+    assert(get('SELECT COUNT(*) n FROM notifications').n === truoc.nt && nChuong >= truoc.nt, `chuông: ${truoc.nt} → ${nChuong} → ${get('SELECT COUNT(*) n FROM notifications').n}`);
+    assert(get('SELECT COUNT(*) n FROM journey_events WHERE student_id = ?', CHO.sid).n === truoc.je, 'Hành trình về như cũ');
+    assert(dong(CHO.sid)?.lyDo.ma === 'a', 'dòng mở lại');
+    /* Sửa: Học lại lớp này → Học lại lớp khác — đảo về nguyên trạng rồi sửa lại, vẫn MỘT lệnh. */
+    const r1 = xl.luuXetLai(QL, CHO.fou.id, [{ studentId: CHO.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: THU_HAI }]);
+    const FOU_D2 = lop('FOU', 1);
+    const rs = xl.luuXetLai(QL, CHO.fou.id, [{ studentId: CHO.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D2.id, tuan: THU_HAI, suaId: r1.ok[0].id }]);
+    assert(!rs.failed.length && lenhCua(CHO.sid).id === lId && lenhCua(CHO.sid).lop_dich_id === FOU_D2.id, `Sửa: ${JSON.stringify(rs)}`);
+    const h2b = xl.hoanTacXetLai(QL, CHO.fou.id, [rs.ok[0].id]);
+    assert(!h2b.failed.length && JSON.stringify(get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lId)) === JSON.stringify(truoc.l), 'Hoàn tác sau Sửa: về đúng lệnh gốc');
     /* A đã ở BE_D: Học lại → lệnh giữa khoá mới (chuyen_lop), dòng còn (sửa được). */
     const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: A.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: THU_HAI }]);
     assert(!r.failed.length, JSON.stringify(r));
@@ -257,6 +288,12 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const e = dong(B.sid);
     assert(e?.lyDo.ma === 'd' && e.lyDo.chu === 'Mini Test 55 % · cần ≥ 70 %' && e.han === addDays(week.mondayOf(TODAY), 13), `d: ${JSON.stringify(e?.lyDo)} ${e?.han}`);
     assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`, mt.id), 'không còn thẻ Báo lên');
+    /* Thẻ cũ (trước deploy) của em đã có dòng (d) → migrate đóng; "Đã xét lại" đúng quyết định trước. */
+    const the = theMini(B.sid, mt.id);
+    mig.migratePrXetLai(conn, []);
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
+    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', the).trang_thai === 'tu_dong', 'thẻ có dòng (d): đóng');
+    assert(e.xetLaiTruoc?.quyetDinh === 'tiep_tuc' && e.xetLaiTruoc.chu === 'Tiếp tục BE' && !e.xetLaiTruoc.tuDong, `Đã xét lại: ${JSON.stringify(e.xetLaiTruoc)}`);
     const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: B.sid, quyetDinh: 'tiep_tuc' }]);
     assert(!r.failed.length && !dong(B.sid), `Tiếp tục lần hai: ${JSON.stringify(r)}`);
   });
@@ -267,6 +304,42 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(!r.failed.length && r.ok[0].daChuyen && get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, N.sid).class_id === FOU_D.id, JSON.stringify(r));
     const h = xl.hoanTacXetLai(QL, BE_D.id, [r.ok[0].id]);
     assert(h.failed.length === 1 && /đã chuyển lớp/.test(h.failed[0].message), JSON.stringify(h));
+  });
+
+  check('XL-5d · mốc deploy: mục hết hạn TRƯỚC mốc không tự ghi "Tiếp tục", chỉ rời tập; mục hạn sau mốc vẫn tự ghi', () => {
+    const E = kb(41, 'len_lop', { thiHanh: true });
+    const han = dong(E.sid).han;
+    const sau = addDays(han, 1);
+    const cu = getConfig('demo_date');
+    conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(xl.MOC_TU_GIU, addDays(han, 1), NOW);
+    setConfig('demo_date', sau);
+    try {
+      assert(!dong(E.sid, sau), 'hết hạn trước mốc: rời tập');
+      assert(!get('SELECT 1 FROM xet_lai_lo_trinh WHERE student_id = ?', E.sid), 'không tự ghi');
+      conn.prepare('UPDATE demo_config SET value = ? WHERE key = ?').run(han, xl.MOC_TU_GIU);
+      dong(E.sid, sau);
+      assert(get('SELECT tu_dong FROM xet_lai_lo_trinh WHERE student_id = ?', E.sid)?.tu_dong === 1, 'hạn từ mốc: tự ghi');
+    } finally { setConfig('demo_date', cu); conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU); }
+  });
+
+  check('XL-5e · quyền Hoàn tác theo lớp LÚC QUYẾT (lop_id): QL CP không hoàn tác được quyết định ở lớp MB; tuan / toClassId sai kiểu → 400; Lên (dòng (c)) → lệnh sang BE, (a) không dùng được Lên', () => {
+    const F = kb(43, 'len_lop', { thiHanh: true });
+    const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: F.sid, quyetDinh: 'tiep_tuc', lyDo: 'Thử 2 tuần' }]);
+    assert(!r.failed.length && get('SELECT lop_id, chu FROM xet_lai_lo_trinh WHERE id = ?', r.ok[0].id).lop_id === BE_D.id, JSON.stringify(r));
+    const h = xl.hoanTacXetLai(P.cpManager, FOU_CP.id, [r.ok[0].id]);
+    assert(h.failed.length === 1 && /Quản lý chi nhánh/.test(h.failed[0].message) && get('SELECT 1 FROM xet_lai_lo_trinh WHERE id = ?', r.ok[0].id), `QL CP: ${JSON.stringify(h)}`);
+    const ma400 = (b: any) => { try { xl.luuXetLai(QL, BE_D.id, [b]); } catch (e: any) { return e.status; } return 200; };
+    assert(ma400({ studentId: F.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: 123 }) === 400 && ma400({ studentId: F.sid, quyetDinh: 'hoc_lai', toClassId: 'x', tuan: THU_HAI }) === 400
+      && ma400({ studentId: F.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: { a: 1 } }) === 400, 'sai kiểu → 400');
+    const C2 = kb(65, 'hoc_lai', { thiHanh: true });
+    assert(dong(C2.sid)?.lyDo.ma === 'c', 'tiền đề (c)');
+    const g = trongBoNho(() => xl.xemXetLai(QL, FOU_D.id, C2.sid));
+    assert(g.lopLen.FOU?.some((l: any) => l.id === BE_D.id) && !g.lopLen.FOU.some((l: any) => l.id === FOU_D.id), `lopLen: ${JSON.stringify(g.lopLen)}`);
+    const sai = xl.luuXetLai(QL, BE_D.id, [{ studentId: F.sid, quyetDinh: 'len', toClassId: BE_D.id, tuan: THU_HAI }]);
+    assert(sai.failed.length === 1, `(a) Lên: ${JSON.stringify(sai)}`);
+    const len = xl.luuXetLai(QL, FOU_D.id, [{ studentId: C2.sid, quyetDinh: 'len', toClassId: BE_D.id, tuan: THU_HAI }]);
+    assert(!len.failed.length && lenhCua(C2.sid).lop_dich_id === BE_D.id && len.ok[0].chu === `Lên BE → ${BE_D.code}`, JSON.stringify(len));
+    assert(get(`SELECT title FROM journey_events WHERE student_id = ? AND event_type = 'xet_lai'`, C2.sid)?.title === `QL xét lại: Lên BE → ${BE_D.code}`, 'Hành trình Lên');
   });
 
   check('XL-6 · tốc độ: tapXetLai cùng số câu SQL khi 3 hay 12 em (≤ 14)', () => {

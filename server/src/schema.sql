@@ -2021,9 +2021,11 @@ CREATE TABLE xet_lai_lo_trinh (
   id INTEGER PRIMARY KEY,
   student_id INTEGER NOT NULL REFERENCES students(id),
   lenh_id INTEGER NOT NULL REFERENCES lenh_chuyen_lop(id),
+  lop_id INTEGER REFERENCES classes(id),       -- lớp em đang học LÚC QUYẾT (quyền Hoàn tác / Sửa)
   ly_do_ma TEXT,
   moc TEXT,
-  quyet_dinh TEXT,
+  quyet_dinh TEXT,                             -- tiep_tuc | hoc_lai | len | dung · NULL = dòng nhận xét GVCN lớp mới
+  chu TEXT,                                    -- chữ quyết định ("Tiếp tục BE", "Học lại FOU → MB FOU 14") — dòng "Đã xét lại"
   lenh_moi_id INTEGER REFERENCES lenh_chuyen_lop(id),
   lenh_cu TEXT,
   ly_do_text TEXT,

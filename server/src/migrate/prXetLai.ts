@@ -1,16 +1,22 @@
+import { demoToday } from '../demoConfig.ts';
+import { MOC_TU_GIU, tapXetLai } from '../normal/xetLai.ts';
+
 /**
  * P9a XET-LAI (N21): bảng `xet_lai_lo_trinh` — quyết định Xét lại lộ trình của QL (Tiếp tục · Học lại · Tạm dừng/ Kết thúc học, cả dòng tự ghi
  * khi hết hạn) và nhận xét của GVCN lớp mới (dòng `quyet_dinh` NULL). Cùng định nghĩa trong `schema.sql`.
- * Thẻ "Mini Test chưa đạt" (`bao_len_mini_test`) đang chờ → tự đóng: Mini Test < 70 % giờ là dòng (d) của Xét lại (tính khi đọc, không cần sinh).
+ * Thẻ "Mini Test chưa đạt" (`bao_len_mini_test`) đang chờ → tự đóng khi em đã có dòng (d) của Xét lại (tính khi đọc, không cần sinh); ghi mốc deploy
+ * cho luật tự giữ.
  * Chạy lại không làm gì.
  */
 export const XET_LAI_SQL = `CREATE TABLE xet_lai_lo_trinh (
   id INTEGER PRIMARY KEY,
   student_id INTEGER NOT NULL REFERENCES students(id),
   lenh_id INTEGER NOT NULL REFERENCES lenh_chuyen_lop(id),
+  lop_id INTEGER REFERENCES classes(id),
   ly_do_ma TEXT,
   moc TEXT,
   quyet_dinh TEXT,
+  chu TEXT,
   lenh_moi_id INTEGER REFERENCES lenh_chuyen_lop(id),
   lenh_cu TEXT,
   ly_do_text TEXT,
@@ -27,8 +33,15 @@ export function migratePrXetLai(conn: any, applied: string[]) {
     conn.exec(XET_LAI_SQL);
     applied.push('P9a XET-LAI: bảng xet_lai_lo_trinh (quyết định Xét lại lộ trình + nhận xét GVCN lớp mới).');
   }
-  const n = conn.prepare(
-    `UPDATE yeu_cau_duyet SET trang_thai = 'tu_dong', ly_do_dong = 'Chuyển sang Xét lại lộ trình', xu_ly_luc = ? WHERE loai = 'bao_len_mini_test' AND trang_thai = 'cho'`,
-  ).run(new Date().toISOString()).changes as number;
-  if (n) applied.push(`P9a XET-LAI: ${n} thẻ "Mini Test chưa đạt" đang chờ → đóng, em hiện ở việc Xét lại lộ trình.`);
+  /* Mốc deploy (một lần): mục Xét lại hết hạn TRƯỚC mốc không tự ghi "Tiếp tục" — chỉ mục có hạn từ mốc trở đi. */
+  if (!conn.prepare(`SELECT 1 FROM demo_config WHERE key = ?`).get(MOC_TU_GIU)) {
+    conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(MOC_TU_GIU, demoToday(), new Date().toISOString());
+    applied.push(`P9a XET-LAI: mốc tự giữ Xét lại từ ${demoToday()}.`);
+  }
+  /* Thẻ "Mini Test chưa đạt" đang chờ → đóng CHỈ khi em đã có dòng (d) ở Xét lại (cùng Mini Test); thẻ khác giữ nguyên. */
+  const coD = new Set(tapXetLai(demoToday(), null).filter((e) => e.lyDo.ma === 'd').map((e) => e.studentId));
+  const the = (conn.prepare(`SELECT id, hoc_vien_id FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND trang_thai = 'cho'`).all() as any[]).filter((y) => coD.has(y.hoc_vien_id));
+  const dong = conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'tu_dong', ly_do_dong = 'Chuyển sang Xét lại lộ trình', xu_ly_luc = ? WHERE id = ? AND trang_thai = 'cho'`);
+  for (const y of the) dong.run(new Date().toISOString(), y.id);
+  if (the.length) applied.push(`P9a XET-LAI: ${the.length} thẻ "Mini Test chưa đạt" đang chờ → đóng, em hiện ở việc Xét lại lộ trình (dòng (d)).`);
 }

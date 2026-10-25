@@ -12,8 +12,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KHOI_VANG, NutHomNay, OTuan } from '../classes/TransitionPanel.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
-  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
-  mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
+  CHU_CHUYEN_LOP, canHoiTarget, chuTargetKck, tachKck, docOTarget, chuTuanHoc, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
+  mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
 } from '@shared/domain/index.ts';
 
 type LopDich = {

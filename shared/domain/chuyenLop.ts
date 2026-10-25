@@ -477,24 +477,7 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
   return { khiChuyen: dong, canhBao: x.nguonFt && !x.dichFt };
 }
 
-// ---------------------------------------------------------------- Chuyển lớp nhiều em (PR-CL C1, mở từ "Xét lại lộ trình")
-
-/** Tối đa em một lần ở panel nhiều em (mỗi em một lời gọi `/transfer`). */
-export const TOI_DA_NHIEU_EM = 50;
-
-/** Một dòng khối "Khi chuyển, web sẽ" nhiều em: "{Tên} · FT → Thường: đóng lộ trình FT LT1 · …" — dòng `dongKhiChuyen` nối " · ", chữ thường đầu (trừ chữ viết tắt MT0, FT…). */
-export function tomTatChuyenEm(ten: string, nguonFt: boolean, dichFt: boolean, khiChuyen: readonly string[]): string {
-  const thuong = (s: string) => (/^\p{Lu}\p{Ll}/u.test(s) ? s[0].toLowerCase() + s.slice(1) : s);
-  return `${ten} · ${nguonFt ? 'FT' : 'Thường'} → ${dichFt ? 'FT' : 'Thường'}: ${khiChuyen.map(thuong).join(' · ')}`;
-}
-
-/** Em sẽ gửi = đánh dấu, đã chọn lớp, chưa chuyển xong; bỏ qua = đánh dấu mà chưa chọn lớp (chân "Chuyển n · Bỏ qua k (chưa chọn lớp)"). */
-export function chonGuiNhieuEm<T extends { chon: boolean; lop: number | null; xong?: boolean }>(rows: readonly T[]): { gui: T[]; boQua: number } {
-  const conLai = rows.filter((r) => r.chon && !r.xong);
-  return { gui: conLai.filter((r) => r.lop !== null), boQua: conLai.filter((r) => r.lop === null).length };
-}
-
-/** §7: hỏi Target CHỈ khi Lên FT từ lớp thường mà em chưa có Target nào (`targetSan` của xem trước = null). Dùng cho panel một em và nhiều em. */
+/** §7: hỏi Target CHỈ khi Lên FT từ lớp thường mà em chưa có Target nào (`targetSan` của xem trước = null). Dùng cho panel một em. */
 export const canHoiTarget = (nguonFt: boolean, dichFt: boolean, targetSan: MucTieuLenh | null | undefined): boolean =>
   !nguonFt && dichFt && targetSan === null;
 
