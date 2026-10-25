@@ -5,6 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { ChonLop } from '../../ui/ChonLop.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, cacTabTrangThai, type LopHocQuyen, type ViecQuanLy, type TabTrangThai, dsLoi, docEmail,
@@ -322,10 +323,8 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
             ) : (
               <>
                 <Truong nhan="Lớp" batBuoc loi={lf.loiCua(loi, 'lop')}>
-                  <select className="field w-full" {...lf.o(loi, 'lop')} value={lopMoiId} onChange={(e) => setLopMoiId(e.target.value ? Number(e.target.value) : '')}>
-                    <option value="">Chọn lớp</option>
-                    {data.lop.filter((l) => l.id !== data.lopCu?.id).map((l) => <option key={l.id} value={l.id}>{[l.code, l.ft ? 'Fast Track' : l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null, l.siSo != null ? `${l.siSo} em` : null].filter(Boolean).join(' · ')}</option>)}
-                  </select>
+                  <ChonLop ariaLabel="Lớp" {...lf.o(loi, 'lop')} value={lopMoiId || null} onChange={(id) => setLopMoiId(id ?? '')}
+                    ds={data.lop.filter((l) => l.id !== data.lopCu?.id).map((l) => ({ id: l.id, ma: l.code, phu: [l.ft ? 'Fast Track' : l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null, l.siSo != null ? `${l.siSo} em` : null].filter(Boolean).join(' · ') }))} />
                 </Truong>
                 {canTarget && (
                   <>

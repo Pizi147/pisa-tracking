@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V6 · Khoá lịch MT cuối tuần</title>
+<link rel="stylesheet" href="../v5/v5-nen.css">
+<link rel="stylesheet" href="v6-chung.css">
+<script>try { var q = new URLSearchParams(location.search).get('theme'); if (q) document.documentElement.dataset.theme = q; } catch (e) {}</script>
+<style>
+  .o-mt { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; font-size: 13px; font-family: var(--phong-so); }
+  .o-mt .tt { font-family: var(--phong); font-size: 12px; color: var(--chu-3); }
+  .o-mt.xong { color: var(--dat); font-weight: 600; }
+  .o-mt button { font: inherit; font-family: var(--phong-so); border: 1px solid var(--vien-o); background: var(--be-mat); color: var(--nhan); border-radius: 6px; height: 28px; padding: 0 8px; cursor: pointer; font-weight: 600; }
+  .o-mt button[disabled] { color: var(--chu-3); border-style: dashed; cursor: not-allowed; }
+  .tuan-ds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .tuan-ds button { font: inherit; font-size: 13px; font-family: var(--phong-so); height: 36px; border: 1px solid var(--vien-o); border-radius: 6px; background: var(--be-mat); color: var(--chu); cursor: pointer; }
+  .tuan-ds button[disabled] { color: var(--chu-3); border-style: dashed; cursor: not-allowed; background: var(--be-mat-2); }
+  .tuan-ds button.chon { border-color: var(--nhan); background: var(--nhan-nen); color: var(--nhan); font-weight: 700; box-shadow: inset 0 0 0 1px var(--nhan); }
+  .tuan-ds button.nay { color: var(--hong-chu); }
+  .vang-o { font-weight: 700; font-family: var(--phong-so); }
+  @media (max-width: 640px) { .tuan-ds { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<div class="mk" role="region" aria-label="Điều khiển mockup (không có trên web)">
+  <b>MOCKUP V6 · Khoá lịch MT cuối tuần</b><span class="nhan-tt">CHỜ CHỦ SP DUYỆT</span>
+  <a href="#k1">1 Kế hoạch Test thứ Sáu</a><a href="#k2">2 Hộp kỹ năng</a><a href="#k3">3 Hàng loạt</a><a href="#k4">4 Quản trị</a><a href="#k5">5 Vẫn mở</a>
+  <a href="trang-thai-hv.html">← Trạng thái HV</a><a href="cuoi-khoa.html">← Cuối khoá</a>
+  <button type="button" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Sáng / Tối</button>
+  <span>Dữ liệu demo · <b>T6 18/09/2026 · W3 SEP</b> · khoá W2 SEP · W3 SEP · W4 SEP</span>
+</div>
+
+<main class="trang">
+
+  <!-- 1 -->
+  <section class="khung" id="k1" aria-labelledby="h1">
+    <h2 id="h1"><span class="so-muc">1</span> Kế hoạch Test thứ Sáu — ô MT trong 3 tuần khoá tắt, kèm lý do <span class="t">QL Nguyễn Khánh Vy · MB FT 101</span></h2>
+    <div class="the" style="overflow:hidden">
+      <div class="cong-cu"><b style="font-size:17px">MB FT 101</b><span class="phu">FT LT1 · 22 HV · GVCN Trần Ngọc Hà</span><span class="phai"><button class="nut nut-nho" type="button">+ Thêm lượt MT</button></span></div>
+      <div class="dai vang" style="margin:12px 16px 0" role="note"><span class="khoa">Thứ Sáu – Chủ nhật không đổi lịch MT của tuần trước / này / sau (mở lại thứ Hai 21/09)</span></div>
+      <div class="cuon-bang" style="margin-top:8px"><table class="bang"><colgroup><col style="width:44px"><col style="width:230px"><col><col><col><col></colgroup>
+        <thead><tr><th class="chon-o"><input type="checkbox" aria-label="Chọn tất cả"></th><th>Học viên</th><th data-kieu="so">MT1</th><th data-kieu="so">MT2</th><th data-kieu="so">MT3</th><th data-kieu="so">MT4</th></tr></thead>
+        <tbody>
+          <tr><td class="chon-o"><input type="checkbox" aria-label="Chọn Nguyễn Minh An"></td><td>Nguyễn Minh An</td><td data-kieu="so"><span class="o-mt xong">✓ Xong</span></td><td data-kieu="so"><span class="o-mt xong">✓ Xong</span></td><td data-kieu="so"><span class="o-mt"><button type="button" disabled title="Thứ Sáu – Chủ nhật không đổi lịch MT của tuần trước / này / sau (mở lại thứ Hai 21/09)">🔒 W3 SEP</button><span class="tt">đang thi</span></span></td><td data-kieu="so"><span class="phu">—</span></td></tr>
+          <tr><td class="chon-o"><input type="checkbox" aria-label="Chọn Trần Thu Hà"></td><td>Trần Thu Hà</td><td data-kieu="so"><span class="o-mt xong">✓ Xong</span></td><td data-kieu="so"><span class="o-mt xong">✓ Xong</span></td><td data-kieu="so"><span class="o-mt"><button type="button" disabled title="Thứ Sáu – Chủ nhật không đổi lịch MT…">🔒 W4 SEP</button><span class="tt">S dời · đã duyệt</span></span></td><td data-kieu="so"><span class="phu">—</span></td></tr>
+          <tr><td class="chon-o"><input type="checkbox" aria-label="Chọn Phạm Bảo Ngọc"></td><td>Phạm Bảo Ngọc</td><td data-kieu="so"><span class="o-mt xong">✓ Xong</span></td><td data-kieu="so"><span class="o-mt xong">✓ Xong</span></td><td data-kieu="so"><span class="o-mt xong">✓ Xong</span></td><td data-kieu="so"><span class="o-mt"><button type="button">W2 OCT</button><span class="tt">QL thêm tay</span></span></td></tr>
+        </tbody></table></div>
+      <div class="phu" style="padding:10px 16px">Đang thấy 3 / 22 HV</div>
+    </div>
+    <div class="ghi">Ô tuần đã khoá: viền đứt + 🔒 + chữ xám, lý do ở <code>title</code> / tên đọc màn (dùng lại dáng chip "Tuần đã qua"). Ô ngoài 3 tuần (MT4 W2 OCT) vẫn sửa. "+ Thêm lượt MT" mở; hộp chọn tuần tắt 3 tuần khoá (khung 2). Dải vàng chỉ hiện T6–CN với người bị khoá. [Q6 — khuyến nghị đã chọn] áp cho MT (gồm MT0, S Ex), không áp Progress / Final / Checkpoint lớp thường.</div>
+  </section>
+
+  <!-- 2 -->
+  <section class="khung" id="k2" aria-labelledby="h2">
+    <h2 id="h2"><span class="so-muc">2</span> Hộp kỹ năng — tuần khoá không chọn được, nút lưu tắt kèm lý do</h2>
+    <div class="hai">
+      <div><div class="nhan-khung">a · Lượt đang ở tuần khoá</div>
+        <div class="hop" role="dialog" aria-labelledby="hk-a"><div class="hop-dau"><div style="flex:1"><h3 id="hk-a">MT3 · S · Trần Thu Hà</h3><div class="ngu-canh">MB FT 101 · W4 SEP</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+          <div class="hop-than"><div class="bao-loi"><span aria-hidden="true">🔒</span><div><b>Không đổi lịch được tới thứ Hai 21/09.</b> W4 SEP là tuần sau; thứ Sáu – Chủ nhật khoá.</div></div></div>
+          <div class="hop-chan"><button class="nut nut-chinh" type="button">Đóng</button></div></div></div>
+      <div><div class="nhan-khung">b · Lượt ở tuần mở — chọn tuần đích</div>
+        <div class="hop" role="dialog" aria-labelledby="hk-b"><div class="hop-dau"><div style="flex:1"><h3 id="hk-b">MT4 · Phạm Bảo Ngọc</h3><div class="ngu-canh">MB FT 101 · W2 OCT</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+          <div class="hop-than"><div class="truong"><span class="nhan-truong">Tuần Test mới</span>
+            <div class="tuan-ds"><button type="button" disabled>🔒 W3 SEP</button><button type="button" disabled>🔒 W4 SEP</button><button type="button">W1 OCT</button><button type="button" class="chon">W2 OCT</button></div>
+            <span class="phu">W2 SEP · W3 SEP · W4 SEP khoá tới thứ Hai 21/09</span></div></div>
+          <div class="hop-chan"><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Lưu</button></div></div></div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="khung" id="k3" aria-labelledby="h3">
+    <h2 id="h3"><span class="so-muc">3</span> Hàng loạt — em nào chạm tuần khoá thì báo lỗi từng em</h2>
+    <div class="hop" style="max-width:640px">
+      <div class="hop-dau"><div style="flex:1"><h3>Xếp MT4 · 6 em → W1 OCT</h3><div class="ngu-canh">MB FT 101</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+      <div class="hop-than">
+        <div class="tt-luu da">✓ Đã xếp 4 em</div>
+        <div class="bao-loi"><span aria-hidden="true">⚠</span><div><b>2 em chưa xếp.</b><div>Trần Thu Hà — MT3 S đang ở W4 SEP (tuần khoá), mở lại thứ Hai 21/09</div><div>Mai Anh Thư — MT4 đã ở W3 SEP (tuần khoá), mở lại thứ Hai 21/09</div></div></div>
+      </div>
+      <div class="hop-chan"><button class="nut nut-chinh" type="button">Đóng</button></div>
+    </div>
+    <div class="ghi">Dùng lại <code>dong.loi</code> của thao tác hàng loạt; không nút "Thử lại" vì thứ Hai mới mở — câu lỗi nói ngày mở. Máy chủ chặn ở một luật <code>khoaCuoiTuan</code> (spec 3.5), web chỉ hiển thị.</div>
+  </section>
+
+  <!-- 4 -->
+  <section class="khung" id="k4" aria-labelledby="h4">
+    <h2 id="h4"><span class="so-muc">4</span> Quản trị hệ thống — không bị khoá <span class="t">QT Đỗ Vũ Tuấn Phong</span></h2>
+    <div class="hop" role="dialog" aria-labelledby="hk-qt"><div class="hop-dau"><div style="flex:1"><h3 id="hk-qt">MT3 · S · Trần Thu Hà</h3><div class="ngu-canh">MB FT 101 · W4 SEP</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+      <div class="hop-than"><div class="truong"><span class="nhan-truong">Tuần Test mới</span><div class="tuan-ds"><button type="button" class="nay">W3 SEP</button><button type="button" class="chon">W4 SEP</button><button type="button">W1 OCT</button><button type="button">W2 OCT</button></div></div></div>
+      <div class="hop-chan"><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Lưu</button></div></div>
+    <div class="ghi">Không dải vàng, không 🔒 với vai gốc <code>system_admin</code> (không theo quyền). QL muốn đổi gấp cuối tuần → nhờ Quản trị; nhật ký ghi như thường.</div>
+  </section>
+
+  <!-- 5 -->
+  <section class="khung" id="k5" aria-labelledby="h5">
+    <h2 id="h5"><span class="so-muc">5</span> Vẫn mở cuối tuần — nhập điểm, "-", duyệt, lớp thường <span class="t">[Q6–Q8]</span></h2>
+    <div class="ba">
+      <div><div class="nhan-khung">Nhập điểm MT3 — gõ "-" vẫn được</div>
+        <div class="the" style="overflow:hidden"><table class="bang"><thead><tr><th>Học viên</th><th data-kieu="diem">S</th></tr></thead><tbody>
+          <tr><td>Nguyễn Minh An</td><td data-kieu="diem"><span class="vang-o">-</span> <span class="tt-luu da">✓ Đã lưu</span></td></tr>
+          <tr><td>Phạm Bảo Ngọc</td><td data-kieu="diem"><span class="diem bang-kv">6.5</span></td></tr></tbody></table></div></div>
+      <div><div class="nhan-khung">Duyệt thẻ "Dời lịch Test" (QL)</div>
+        <div class="the" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:14px"><b>Dời MT3 S · Trần Thu Hà → W4 SEP</b><span class="phu">GVCN Trần Ngọc Hà gửi 18/09 09:10</span><span style="display:flex;gap:8px"><button class="nut nut-nho" type="button">Từ chối</button><button class="nut nut-nho nut-chinh" type="button">Duyệt</button></span></div></div>
+      <div><div class="nhan-khung">Lớp thường — Progress / Final không khoá</div>
+        <div class="the" style="padding:12px 14px;display:flex;gap:10px;align-items:center;font-size:14px;flex-wrap:wrap"><b>MB FOU 12 · Final L</b><span class="o-mt"><button type="button">W3 SEP</button></span><span class="phu">QL dời được</span></div></div>
+    </div>
+    <div class="ghi">[Q7 — khuyến nghị đã chọn] cuối tuần QL vẫn duyệt / từ chối "Dời lịch Test", Khôi phục phần thi vắng, "Không mock lại" (cơ chế vắng, thẻ có hạn). [Q8] Đường gián tiếp (chuyển lớp, đổi mốc lớp, mở lộ trình mới, áp lịch mặc định) vẫn chạy cuối tuần, nhật ký như cũ — không vẽ vì không đổi giao diện.</div>
+  </section>
+</main>
+</body>
+</html>

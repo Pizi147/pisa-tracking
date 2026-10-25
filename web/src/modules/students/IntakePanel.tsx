@@ -8,6 +8,7 @@ import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { ChonLop } from '../../ui/ChonLop.tsx';
 import {
   chuanOTarget, cotLuoiNhap, dsLoi, duongDotTest, nhanCotNhap, tuanBatDauMacDinh, type CachDoc, type CotNhap, type VanDeNhap,
 } from '@shared/domain/index.ts';
@@ -186,13 +187,9 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         {/* LỚP VÀ TUẦN BẮT ĐẦU — hai quyết định của CẢ LÔ, đặt ở trên cùng: lớp quyết định lưới có những cột nào. */}
         <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
           <Field label="Thêm vào lớp" required loi={lf.loiCua(loiLo, 'lop')}>
-            <select className="field w-full" {...lf.o(loiLo, 'lop')} value={classId ?? ''}
-              onChange={(e) => { setClassId(Number(e.target.value) || null); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}>
-              <option value="">Chọn lớp…</option>
-              {(classes.data ?? []).map((c: any) => (
-                <option key={c.id} value={c.id}>{c.code}{c.programme_name ? ` · ${c.programme_name}` : ''}</option>
-              ))}
-            </select>
+            <ChonLop ariaLabel="Thêm vào lớp" {...lf.o(loiLo, 'lop')} value={classId} khongKhop={classes.data ? undefined : 'Đang tải…'}
+              onChange={(id) => { setClassId(id); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}
+              ds={(classes.data ?? []).map((c: any) => ({ id: c.id, ma: c.code, phu: c.programme_name ?? undefined }))} />
           </Field>
           <Field label="Tuần bắt đầu học (mặc định cho mọi dòng)" hint={goiYTuan ?? undefined}>
             <ONgay kieu="tuan" value={tuanChung} onChange={(v) => { setStartWeek(v); setPreview(null); }} />

@@ -175,7 +175,7 @@
 6. **Q6 — Khoá lịch cuối tuần áp cho:** MT (gồm MT0 và S Ex), **không** áp Progress / Final / Checkpoint lớp thường? *(khuyến nghị: có)*
 7. **Q7 — Cuối tuần QL vẫn duyệt / từ chối thẻ "Dời lịch Test", Khôi phục phần thi vắng, "Không mock lại"** (thuộc cơ chế vắng, thẻ có hạn)? *(khuyến nghị: được)*
 8. **Q8 — Đường gián tiếp** (chuyển lớp, đổi mốc lớp, mở lộ trình mới, áp lịch mặc định) làm lịch MT trong 3 tuần đổi theo: cho chạy cuối tuần? *(khuyến nghị: cho — chặn sẽ kẹt cả luồng; ghi nhật ký như cũ)*
-9. **Q9 — Kết quả đầu ra lớp thường:** gộp thành MỘT cột trong không gian cuối khoá: Đạt / Không đạt theo Final (máy gợi ý, GVCN / QL chốt tại chỗ), riêng em lên FT thêm kỳ vọng MT0 → Case + Tutor 10 buổi khi lý do Trung tâm (Rulebook §20.6); bỏ tab "Đánh giá đầu ra" riêng? *(khuyến nghị: có)*
+9. **Q9 — Kết quả đầu ra lớp thường:** gộp thành MỘT cột trong không gian cuối khoá: Đạt / Không đạt theo Final (máy gợi ý, GVCN / QL chốt tại chỗ), riêng em lên FT thêm kỳ vọng MT0 → Case + Tutor 10 buổi khi lý do Trung tâm (Rulebook §20.6); bỏ tab "Đánh giá đầu ra" riêng? *(khuyến nghị: có)* → **Sửa 25/10 (chủ SP, theo quy chế lớp thường):** Kết quả đầu ra máy tự ghi theo Final; chỉ em Lên FT đánh dấu kỳ vọng (QL).
 10. **Q10 — KET / PET:** (a) có Target + kết quả thi thật (theo điểm Cambridge 100–150 / 120–170, hay theo mức Grade)? (b) Checkpoint giữ 2 môn gộp hay tách 4 môn như kỳ thi thật? (c) B2 First / TOEFL đã mở lớp chưa? *(khuyến nghị: Target theo điểm Cambridge; tách R W L S; chưa làm B2 / TOEFL)*
 12. **Q12 — Bài Speaking chấm chéo chưa ai nhận** (12 bài MT1 W1 JUL ở MB FT 101 / 105): Tổng quan Admin đang tính là "quá hạn 68 ngày" (dòng "Chưa có GV", #567) trong khi luật T18 nói chấm chéo không tính quá hạn. Ô quá hạn của Admin có nên bỏ bài chấm chéo ra (chỉ đếm "chờ chấm")? *(khuyến nghị: bỏ ra khỏi quá hạn, vẫn hiện "Chưa có GV · 12 bài chờ chấm")*
 11. **Q11 — Dịch:** đồng ý gửi chữ GV (đã che tên) sang OpenAI; dịch nhận xét Test, Case, PA, bàn giao; trần 300 lần / ngày toàn trung tâm? *(khuyến nghị: có — chủ SP tự tạo khoá theo 5 bước mục 7)*
@@ -195,7 +195,7 @@ dữ liệu Góp ý hàng tuần giữ trong DB + Lịch sử, chỉ gỡ khỏi
 | P6 KHOA-LICH | 3.5 | Q6–Q8 (làm theo khuyến nghị, nháp tới khi trả lời) | PTA + rà sâu `/code-review high` | sau P2 (chung `keHoachTest.ts`) |
 | P7 SV-LO-TRINH + UI | 3.1–3.3, E1–E3, E9, E10 | Q1–Q3, mockup P5 | chủ SP duyệt ảnh; rà sâu (dữ liệu) | đợi |
 | P8 MON-DANG-KY | 3.4 | Q4–Q5, mockup P5 | rà sâu | đợi |
-| P9 CUOI-KHOA | 3.9, R5.3 | Q9, mockup P5, P4 | chủ SP duyệt ảnh | đợi |
+| P9a XET-LAI · P9b CUOI-KHOA | 3.9, R5.3, N20–N22 | mockup V6 cuoi-khoa + xet-lai đã duyệt 25/10, P4 đã merge | chủ SP duyệt ảnh | plan `…/2026-10-25-p9a-xet-lai.md`, `…/2026-10-25-p9b-cuoi-khoa.md` · song song |
 | P11 VIEC-DUNG-VAI | R6.1 | #566 merge | PTA rà ảnh | đợi |
 | P12 BAO-CAO-LICH-SU | E6–E8 + `thi_that_target` | sau SUA-CHAM-LAI (chung Tổng quan / Phân tích GV) | rà sâu (migrate) | đợi |
 | P13 KET-PET | 3.10 | Q10 | — | đợi |

@@ -9,6 +9,7 @@ import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { ChonLop } from '../../ui/ChonLop.tsx';
 import { laBand } from '../students/StudentPlanPanel.tsx';
 import type { TrangThaiBuocTiep } from '../students/PanelBuocTiep.tsx';
 import { LUA_CHON_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, shortDate, tuanChonDuoc, tuanLich, type LuaChonSauThi } from '@shared/domain/index.ts';
@@ -187,10 +188,9 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
                 <LuaChonRadio ten={`bt-lop-${cycleId}`} nhan={t('Lớp')} value={lopKhac ? 'khac' : 'nay'} onChange={(k) => setLopKhac(k === 'khac')}
                   muc={[['nay', `${t('Lớp này')}${b.lopNay ? ` · ${b.lopNay.code}` : ''}`], ['khac', t('Lớp khác')]]} />
                 {lopKhac && (
-                  <select className="field mt-2 w-full" aria-label={t('Lớp khác')} {...lf.o(loiB, 'lop')} value={lopMoiId} onChange={(e) => setLopMoiId(e.target.value ? Number(e.target.value) : '')}>
-                    <option value="">{dsLop.data ? t('Chọn lớp') : t('Đang tải…')}</option>
-                    {dsLop.data?.lop.map((l) => <option key={l.id} value={l.id}>{[l.code, l.ft ? `FT ${l.route ?? ''}`.trim() : l.tenChuongTrinh, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ')}</option>)}
-                  </select>
+                  <ChonLop className="mt-2" ariaLabel={t('Lớp khác')} {...lf.o(loiB, 'lop')} value={lopMoiId || null} onChange={(id) => setLopMoiId(id ?? '')}
+                    khongKhop={dsLop.data ? undefined : t('Đang tải…')}
+                    ds={(dsLop.data?.lop ?? []).map((l) => ({ id: l.id, ma: l.code, phu: [l.ft ? `FT ${l.route ?? ''}`.trim() : l.tenChuongTrinh, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ') }))} />
                 )}
               </Truong>
               <Truong nhan={t('Bắt đầu')}>
