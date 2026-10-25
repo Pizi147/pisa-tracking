@@ -40,6 +40,7 @@ import {
 } from './ScoreEntry.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
 
 /** Ngữ cảnh đầu hộp + dòng phụ: em · lớp · lượt ("MT2" / "MT0"), kỳ vọng (L/R), MT0 = một ô Band. */
 export type NguCanhHop = {
@@ -453,7 +454,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
       {laS && cell.nhanXetPhuTrach && (
         <div className="text-[13px]">
           <span className="block text-xs font-medium text-slate-300">{t('Nhận xét GV phụ trách')}{cell.nhanXetPhuTrach.ten ? ` · ${cell.nhanXetPhuTrach.ten}` : ''}</span>
-          <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-200">{cell.nhanXetPhuTrach.chu}</p>
+          <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-200"><ChuDich chu={cell.nhanXetPhuTrach.chu} nguon={ctx.attemptId ? { bang: 'assessment_scores', id: ctx.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' } : null} /></p>
         </div>
       )}
       {canNhom && nhapDuoc && (
@@ -629,8 +630,10 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
  * NÚT "NHẬN XÉT" CỦA LỚP THƯỜNG (OV-4b, chốt HD2): ô điểm lớp thường giữ gõ thẳng đúng/tổng; nút nhỏ cạnh ô mở hộp chỉ có ô Nhận xét,
  * lưu riêng (`PUT /regular/attempts/:id/scores/:skill { nhanXet }`, cùng quyền nhập điểm môn đó). Đã có nhận xét → chữ màu nhấn.
  */
-export function NutNhanXet({ tenMon, phu, giaTri, lon = false, onLuu }: {
+export function NutNhanXet({ tenMon, phu, giaTri, lon = false, onLuu, nguon = null }: {
   tenMon: string; phu: string; giaTri: string | null; lon?: boolean;
+  /** P14 DICH: ô của nhận xét (lượt × môn) — hộp có nút "Dịch" cho nhận xét đã lưu. */
+  nguon?: NguonDich | null;
   /** Ném lỗi khi máy chủ từ chối — hộp hiện câu lỗi, giữ chữ đã gõ. */
   onLuu: (v: string | null) => Promise<boolean>;
 }) {
@@ -642,13 +645,13 @@ export function NutNhanXet({ tenMon, phu, giaTri, lon = false, onLuu }: {
         aria-label={t('Nhận xét · {tenMon} · {phu}', { tenMon, phu })}
         className={`btn btn-sm btn-ghost shrink-0 px-1.5 text-xs ${lon ? 'min-h-[44px]' : ''} ${giaTri ? 'text-[color:var(--accent-strong)]' : 'text-slate-400'}`}
         onClick={() => setMo((m) => !m)}>{t('Nhận xét')}</button>
-      {mo && neo && <HopNhanXetThuong anchor={neo} tenMon={tenMon} phu={phu} giaTri={giaTri} onLuu={onLuu} onDong={() => setMo(false)} />}
+      {mo && neo && <HopNhanXetThuong anchor={neo} tenMon={tenMon} phu={phu} giaTri={giaTri} nguon={nguon} onLuu={onLuu} onDong={() => setMo(false)} />}
     </>
   );
 }
 
-function HopNhanXetThuong({ anchor, tenMon, phu, giaTri, onLuu, onDong }: {
-  anchor: HTMLElement; tenMon: string; phu: string; giaTri: string | null;
+function HopNhanXetThuong({ anchor, tenMon, phu, giaTri, nguon, onLuu, onDong }: {
+  anchor: HTMLElement; tenMon: string; phu: string; giaTri: string | null; nguon: NguonDich | null;
   onLuu: (v: string | null) => Promise<boolean>; onDong: () => void;
 }) {
   const [nx, setNx] = useState(giaTri ?? '');
@@ -677,6 +680,8 @@ function HopNhanXetThuong({ anchor, tenMon, phu, giaTri, onLuu, onDong }: {
         <span className="sr-only">{t('Nhận xét')}</span>
         <textarea className="field w-full text-sm" rows={3} maxLength={NHAN_XET_TOI_DA} value={nx} disabled={busy} onChange={(e) => setNx(e.target.value)} />
       </label>
+      {/* P14 DICH: dịch nhận xét ĐÃ LƯU (chưa gõ đổi) — bản dịch chỉ hiện ở đây, không vào ô. */}
+      {!daGo && giaTri && <p className="m-0 whitespace-pre-wrap break-words text-[13px] text-slate-300"><ChuDich chu={giaTri} nguon={nguon} anGoc /></p>}
       {nx.length > 800 && <span className={`self-end text-xs tabular-nums ${nx.length >= NHAN_XET_TOI_DA ? 'text-bad' : 'text-slate-500'}`}>{nx.length}/{NHAN_XET_TOI_DA}</span>}
       {loi && (
         <div role="alert" className="rounded-lg border border-bad-line bg-bad-bg px-3 py-2.5 text-[13px] text-slate-200">

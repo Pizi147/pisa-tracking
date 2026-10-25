@@ -1,7 +1,7 @@
 import { Router, type Request } from 'express';
 import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
-import { laBanChinh } from '../moiTruong.ts';
+import { cauHinhDich, laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, THEO_DONG, ghepMucTieu, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
   PERMISSIONS, ROLE_LABEL, coTheDoiGocNhin, tenMon, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
@@ -62,6 +62,7 @@ import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as lenhSvc from '../classes/lenhChuyen.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
+import * as dichSvc from '../dich/dich.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
 import * as kyVongSvc from '../normal/kyVong.ts';
@@ -213,6 +214,8 @@ api.get('/demo/session', wrap((req) => {
     ngonNgu: p.ngonNgu ?? null,
     /* HD-a: dải "Mới dùng PISA?" ở Tổng quan chỉ hiện khi false. */
     daXemHuongDan: !!p.daXemHuongDan,
+    /* P14 DICH (N19): nút "Dịch" chỉ hiện khi máy chủ có khoá và không tắt — cờ đi theo phiên, không thêm lời gọi. */
+    dichBat: cauHinhDich().bat,
     roles: p.roleKeys,
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),
@@ -1135,7 +1138,7 @@ api.get('/classes', requireAuth, wrap((req) => {
 /** SV-LOP (C19): việc theo em của hồ sơ lớp — từng việc của `/my-work`, việc của người xem trước (`viecTheoEm.ts`). */
 api.get('/classes/:id/viec-theo-em', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'), { chiCuaToi: qStr(req, 'chi') === 'toi' });
+  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'));
 }));
 
 /** UI-HO-SO-LOP (C17): nhận xét + đề xuất bước tiếp của GVCN khi đánh giá đầu ra lớp thường (`danhGiaDauRa.ts`). */
@@ -2136,6 +2139,8 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   });
 }));
 
+/** P14 DICH (N19): dịch chữ GV nhập — máy chủ tự đọc chữ theo (bang, cot) cố định, quyền như đường đọc; không ghi đè chữ gốc. */
+api.post('/dich', requireAuth, wrap((req) => dichSvc.dich(principalOf(req), req.body ?? {})));
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
 
 /** Ghi một tác động. Một Case có nhiều tác động. */

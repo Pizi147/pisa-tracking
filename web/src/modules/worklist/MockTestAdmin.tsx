@@ -10,7 +10,7 @@ import { t } from '@shared/i18n/index.ts';
 const So = ({ to, n }: { to: string; n: number }) => <Link to={to} className={`link tabular-nums ${n ? '' : 'text-slate-500'}`}>{n}</Link>;
 
 /** Trả lời của `GET /tong-quan/mock-test` (server/src/worklist/tongQuanMt.ts). */
-type GvQuaHan = { key: string; ownerId: number; gv: string; kyNang: string; lop: string | null; luot: string | null; soBai: number; han: string | null };
+type GvQuaHan = { key: string; ownerId: number; gv: string; kyNang: string; lop: string | null; luot: string | null; soBai: number; han: string | null; choCham?: true };
 type TongQuanMt = {
   tuan: string; luotTuanNay: { so: number; soLop: number }; oChuaNhap: { so: number; quaHan: number };
   chuaXepLich: number; gvQuaHan: GvQuaHan[];
@@ -53,6 +53,8 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
             <ul className="list-none m-0 p-0">
               {data.gvQuaHan.map((g) => {
                 const n = soNgay(g.han);
+                /* Q12: S chấm chéo chưa ai nhận — chờ chấm, không quá hạn (T18). */
+                const nhan = g.choCham ? <span className="text-slate-400">{t('chờ chấm')}</span> : <span className="font-semibold text-late">⚠ {n !== null ? nhanQuaHan(n) : t('quá hạn')}</span>;
                 return (
                   <li key={khoa(g)}
                     className="grid items-center gap-x-3 gap-y-0.5 border-t px-4 py-2.5 text-sm grid-cols-[minmax(0,1fr)] md:grid-cols-[180px_minmax(0,1fr)_72px_max-content]"
@@ -60,10 +62,10 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
                     <span className="min-w-0 truncate font-medium text-slate-100">{g.gv}</span>
                     <span className="min-w-0 text-slate-400 max-md:text-xs">
                       {[g.kyNang, g.lop, g.luot].filter(Boolean).join(' · ')}
-                      <span className="md:hidden"> · {t('{n} bài', { n: g.soBai })}{n !== null && <> · <span className="whitespace-nowrap font-semibold text-late">⚠ {nhanQuaHan(n)}</span></>}</span>
+                      <span className="md:hidden"> · {t('{n} bài', { n: g.soBai })}{(g.choCham || n !== null) && <> · <span className="whitespace-nowrap">{nhan}</span></>}</span>
                     </span>
                     <span className="tabular-nums text-slate-300 max-md:hidden">{t('{n} bài', { n: g.soBai })}</span>
-                    <span className="whitespace-nowrap tabular-nums font-semibold text-late max-md:hidden">⚠ {n !== null ? nhanQuaHan(n) : t('quá hạn')}</span>
+                    <span className="whitespace-nowrap tabular-nums max-md:hidden">{nhan}</span>
                   </li>
                 );
               })}

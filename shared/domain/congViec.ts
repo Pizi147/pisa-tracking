@@ -342,3 +342,32 @@ export function chiaVachHan<T extends MucLocNhanh>(ds: readonly T[], homNay: str
   const denHetTuan = ds.filter((x) => x.urgency !== 'overdue' && trongKhoiHomNay(x, homNay));
   return { quaHan, denHetTuan, sau: ds.filter((x) => !trongKhoiHomNay(x, homNay)), cuoiTuan: addDaysIso(mondayOfDate(homNay), 6) };
 }
+
+/**
+ * P11 VIEC-DUNG-VAI (chủ SP 24/10 mục 6.1): MÔN của một việc ở cột Việc theo em (QL / Admin gộp theo môn). Nhóm gắn kỹ năng đọc nhãn `phu` có sẵn
+ * của `/my-work` — mọi mẫu đều qua `tenMon` (nhãn môn / ô chuẩn của lớp: "Reading", "Writing Task 1", "Grammar + Vocabulary"); Nhập điểm nhiều môn
+ * ("Listening, Reading") lấy môn đầu. "Kết quả cuối · {PA}", "Kỹ năng" (Case chưa có môn), nhóm khác, `phu` rỗng → null ("Khác") — không bao giờ mất việc.
+ * ponytail: khoá theo chữ `phu` — đổi chữ `phu` ở `mywork.ts` có thể làm việc rơi vào "Khác" (VDV-5 bắt); nâng cấp = thêm trường môn có cấu trúc vào
+ * WorkItem (đổi băm TD4-a).
+ */
+const NHOM_CO_MON = new Set(['score', 'ghi_nhan_xet', 'cause', 'no_plan', 'ghi_ket_qua_pa', 'xac_nhan_pa', 'xem_nx_s']);
+export function monCuaViec(it: { group: string; phu?: string | null }): string | null {
+  const m = NHOM_CO_MON.has(it.group) && it.phu ? it.phu.split(', ')[0].trim() : '';
+  return m && m !== 'Kỹ năng' && !m.includes(' · ') ? m : null;
+}
+
+/** Một dòng của ô Việc QL: việc gấp nhất của môn (`dau`) + số việc còn lại cùng môn (`them`). `mon` null = dòng "Khác". */
+export type DongViecMon<T> = { mon: string | null; dau: T; them: number };
+/** Số dòng mặc định của ô Việc QL ("Xem thêm" mở hết — ≤ 5 môn + 1 Khác). */
+export const SO_DONG_VIEC_MAC_DINH = 3;
+
+/** Gộp việc theo môn, GIỮ thứ tự đầu vào (đã sắp gấp nhất trước): dòng đứng theo việc gấp nhất của môn. Σ (1 + them) = số việc vào. */
+export function gopViecTheoMon<T>(ds: readonly T[], monCua: (x: T) => string | null): DongViecMon<T>[] {
+  const m = new Map<string | null, DongViecMon<T>>();
+  for (const x of ds) {
+    const k = monCua(x);
+    const d = m.get(k);
+    if (d) d.them += 1; else m.set(k, { mon: k, dau: x, them: 0 });
+  }
+  return [...m.values()];
+}
