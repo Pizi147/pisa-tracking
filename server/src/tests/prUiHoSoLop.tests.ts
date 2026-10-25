@@ -74,41 +74,45 @@ export async function runPrUiHoSoLopTests(t: any) {
   const emFou = (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 1`).get(FOU) as any).student_id as number;
   const gvbmFou = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 0 AND status = 'active' AND user_id != ? LIMIT 1`).get(FOU, gvcnFou) as any)?.user_id as number | undefined;
 
-  check('HSL-3 (C17, T12) · Đánh giá đầu ra: GVCN ghi nhận xét + đề xuất, đọc lại đúng, lịch sử mỗi lần đổi (lưu nguyên giá trị không thêm mục)', () => {
+  check('HSL-3 (C17, T12) · Đánh giá đầu ra: GVCN ghi nhận xét (P9b: không đề xuất), đọc lại đúng, lịch sử mỗi lần đổi (lưu nguyên giá trị không thêm mục)', () => {
     conn.exec('BEGIN IMMEDIATE');
     try {
       xoaNho();
       const gv = loadPrincipal(gvcnFou);
       assert(xemDanhGiaDauRa(gv, FOU).coTheGhi, 'GVCN phải ghi được');
-      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: '  Đọc hiểu tiến bộ rõ.  ', deXuat: 'len_lop' });
-      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'Đọc hiểu tiến bộ rõ.', deXuat: 'len_lop' });   // không đổi
-      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'Đọc hiểu tiến bộ rõ; cần luyện viết.', deXuat: 'fast_track' });
+      /* P9b N22 ①: GVCN chỉ ghi Nhận xét — gửi đề xuất hướng → 403; đề xuất cũ trong DB giữ để đọc. */
+      assert(maLoi(() => ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'x', deXuat: 'len_lop' })) === 403, 'GVCN không còn đề xuất hướng');
+      conn.prepare(`INSERT INTO danh_gia_dau_ra (student_id, class_id, nhan_xet, de_xuat, sua_boi, sua_luc) VALUES (?,?,NULL,'len_lop',?,'2026-01-01T00:00:00.000Z')`).run(emFou, FOU, gvcnFou);
+      const cu = xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!;
+      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: '  Đọc hiểu tiến bộ rõ.  ', luc: cu.luc });
+      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'Đọc hiểu tiến bộ rõ.' });   // không đổi
+      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'Đọc hiểu tiến bộ rõ; cần luyện viết.' });
       const d = xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!;
-      assert(d.nhanXet === 'Đọc hiểu tiến bộ rõ; cần luyện viết.' && d.deXuat === 'fast_track' && !!d.boi && !!d.luc, JSON.stringify(d));
-      assert(d.lichSu.length === 2 && d.lichSu[0].deXuat === 'fast_track' && d.lichSu[1].deXuat === 'len_lop', `lịch sử: ${JSON.stringify(d.lichSu)}`);
+      assert(d.nhanXet === 'Đọc hiểu tiến bộ rõ; cần luyện viết.' && d.deXuat === 'len_lop' && !!d.boi && !!d.luc, JSON.stringify(d));
+      assert(d.lichSu.length === 2 && d.lichSu[0].nhanXet === 'Đọc hiểu tiến bộ rõ; cần luyện viết.' && d.lichSu[1].nhanXet === 'Đọc hiểu tiến bộ rõ.', `lịch sử: ${JSON.stringify(d.lichSu)}`);
       /* T15: hai người cùng mở bản d.luc — người sau gửi bản cũ → 409, không đè im lặng; gửi lại với bản mới → ghi đè có chủ ý. */
-      const moi = ghiDanhGiaDauRa(P.mbManager, FOU, emFou, { nhanXet: 'QL sửa', deXuat: 'hoc_lai', luc: d.luc });
+      const moi = ghiDanhGiaDauRa(P.mbManager, FOU, emFou, { nhanXet: 'QL sửa', luc: d.luc });
       assert(moi.luc && moi.luc !== d.luc, 'phải trả luc mới');
       let e409: any = null;
-      try { ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'GVCN đè', deXuat: 'len_lop', luc: d.luc }); } catch (e) { e409 = e; }
+      try { ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'GVCN đè', luc: d.luc }); } catch (e) { e409 = e; }
       assert(e409?.status === 409 && e409.details?.luc === moi.luc && /Đã có người sửa lúc/.test(e409.message), `409: ${e409?.status} ${e409?.message}`);
       assert(xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === 'QL sửa', 'bản QL giữ nguyên sau 409');
-      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'GVCN đè', deXuat: 'len_lop', luc: moi.luc });
+      ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'GVCN đè', luc: moi.luc });
       assert(xemDanhGiaDauRa(gv, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === 'GVCN đè', 'ghi đè có chủ ý');
       let e2: any = null;
       try { ghiDanhGiaDauRa(gv, FOU, (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 1 OFFSET 1`).get(FOU) as any).student_id, { nhanXet: 'x', luc: '2026-01-01T00:00:00Z' }); } catch (e) { e2 = e; }
       assert(e2?.status === 409, 'em chưa có bản mà gửi luc → 409');
-      ghiDanhGiaDauRa(P.mbManager, FOU, emFou, { nhanXet: null, deXuat: null });   // QL của lớp cũng ghi được, xoá được
+      ghiDanhGiaDauRa(P.mbManager, FOU, emFou, { nhanXet: null });   // QL của lớp cũng ghi được, xoá được
       assert(xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === null, 'QL xoá nhận xét');
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
 
-  check('HSL-4 (quyền, dữ liệu) · GVBM không GVCN → 403; QL chi nhánh khác → 403 (đọc + ghi); đề xuất sai / nhận xét > 2000 → 400; lớp FT → 400; em không học lớp → 400', () => {
+  check('HSL-4 (quyền, dữ liệu) · GVBM không GVCN → 403; QL chi nhánh khác → 403 (đọc + ghi); đề xuất → 403 / nhận xét > 2000 → 400; lớp FT → 400; em không học lớp → 400', () => {
     if (gvbmFou) assert(maLoi(() => ghiDanhGiaDauRa(loadPrincipal(gvbmFou), FOU, emFou, { nhanXet: 'x' })) === 403, 'GVBM ghi được');
     assert(maLoi(() => xemDanhGiaDauRa(P.cpManager, FOU)) === 403, 'QL CP đọc được');
     assert(maLoi(() => ghiDanhGiaDauRa(P.cpManager, FOU, emFou, { nhanXet: 'x' })) === 403, 'QL CP ghi được');
     const gv = loadPrincipal(gvcnFou);
-    assert(maLoi(() => ghiDanhGiaDauRa(gv, FOU, emFou, { deXuat: 'len_troi' })) === 400, 'đề xuất sai');
+    assert(maLoi(() => ghiDanhGiaDauRa(gv, FOU, emFou, { deXuat: 'len_troi' })) === 403, 'đề xuất (mọi giá trị) → 403');   // P9b N22
     assert(maLoi(() => ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'a'.repeat(2001) })) === 400, 'nhận xét quá dài');
     assert(maLoi(() => ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 5 })) === 400, 'nhận xét không phải chữ');
     assert(maLoi(() => xemDanhGiaDauRa(P.admin, LOP)) === 400, 'lớp FT có Đánh giá đầu ra');
