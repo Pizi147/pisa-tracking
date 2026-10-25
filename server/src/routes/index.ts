@@ -1138,7 +1138,7 @@ api.get('/classes', requireAuth, wrap((req) => {
 /** SV-LOP (C19): việc theo em của hồ sơ lớp — từng việc của `/my-work`, việc của người xem trước (`viecTheoEm.ts`). */
 api.get('/classes/:id/viec-theo-em', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'), { chiCuaToi: qStr(req, 'chi') === 'toi' });
+  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'));
 }));
 
 /** UI-HO-SO-LOP (C17): nhận xét + đề xuất bước tiếp của GVCN khi đánh giá đầu ra lớp thường (`danhGiaDauRa.ts`). */

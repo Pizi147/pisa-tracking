@@ -385,6 +385,7 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
   { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
   { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },
+  { file: 'shared/domain/congViec.ts', text: /^Kỹ năng$/ },   // P11: so với nhãn máy chủ gửi khi Case chưa có môn (`monCuaViec`) — không hiện ra
 ];
 
 /**

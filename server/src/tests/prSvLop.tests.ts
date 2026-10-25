@@ -66,12 +66,12 @@ export async function runPrSvLopTests(t: any) {
     assert(Object.values(theoEm).some((ds) => ds.length >= 2), 'seed MB FT 101 cần một em ≥ 2 việc (hiện đủ từng việc, C19)');
   });
 
-  check('SVLOP-4 (C19) · GV: việc của mình (= /my-work của GV) đứng trước + việc của GV khác dạy lớp (có tên người giữ)', () => {
+  check('SVLOP-4 (C19 → P11 VIEC-DUNG-VAI) · GV: chỉ việc của mình (= dòng mine của /my-work GV), không việc GV khác', () => {
     const cn = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(LOP).branch_id;
     for (const gv of [P.coreTeacher, P.sTeacher, P.w1Teacher]) {
       const { theoEm } = viecTheoEmCuaLop(gv, LOP);
       const tatCa = new Set(Object.values(theoEm).flat().map((v: any) => v.key));
-      const goc = mywork.myWork(gv, { branchId: cn }).items.filter((it: any) => it.studentId !== null && emLop.has(it.studentId) && (it.classId === null || it.classId === LOP));
+      const goc = mywork.myWork(gv, { branchId: cn }).items.filter((it: any) => it.mine && it.studentId !== null && emLop.has(it.studentId) && (it.classId === null || it.classId === LOP));
       assert(goc.every((it: any) => tatCa.has(it.key)), `${gv.fullName}: thiếu việc của /my-work`);
       assert(Object.values(theoEm).flat().filter((v: any) => v.mine).every((v: any) => goc.some((it: any) => it.key === v.key)), `${gv.fullName}: việc "của tôi" không từ /my-work của GV`);
       for (const [sid, ds] of Object.entries(theoEm)) {
