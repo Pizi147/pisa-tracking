@@ -87,3 +87,6 @@ Không mất thao tác: mọi thao tác cũ còn đường (bảng mục 2).
 
 - `do-khung` + `do-bang` kịch bản `cuoi-khoa`, `cuoi-khoa-ap`, `cuoi-khoa-gvcn` × 1440 / 1280 / 375 × tối / sáng: **không lỗi**; miễn P9b (`scripts/mien-do.json`) g1 cột ô chọn / ô nhập (máy đo không có chữ để so mép) + g3 hàng cao có ô nhập (như mockup k3).
 - Bấm thử QL lớp thường: chọn nhóm → Lớp → Áp → Chốt · 7 em (bàn giao + hạn 20/09 hiện ngay); GVCN: chỉ Nhận xét; QL lớp FT: ⋯ không Chuyển tiếp lớp, Chọn nhiều → Chuyển lớp · MB FT 101 · 2 em.
+- Bấm thử vòng 2: rời trang còn thay đổi → hỏi "Bỏ thay đổi chưa lưu của n em?" (cả đóng tab); "Ngay hôm nay" → hộp xác nhận nêu tên em.
+- `/impeccable audit`: 0 mẫu cấm; 2 cỡ chữ 14 / 17 ngoài thang do-bang (chỉ báo, giữ như mockup). `/web-design-guidelines`: đã sửa — ô bấm link 44 px ở 375, `aria-label` ô Target / Nhận xét theo tên em, cảnh báo rời trang khi còn thay đổi.
+- `/ponytail-review`: Ship (1 gợi ý nhỏ: lỗi bước Kỳ vọng báo cả em đã có lệnh — dữ liệu đúng, bấm Chốt lại là xong).
