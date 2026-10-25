@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { emailThu } from '../seed/emailThu.ts';
+import { CUOI_KHOA_TRANG } from './prTen.tests.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const boChuThich = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1');
@@ -555,7 +556,6 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   const nguonTs = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? (e.name === 'tests' || e.name === 'node_modules' ? [] : nguonTs(`${dir}/${e.name}`)) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
   /** P9b: chữ tên trang Cuối khoá (mockup V6 `cuoi-khoa.html`) — không phải tên bài cũ. */
-  const CUOI_KHOA_TRANG = ['Cuối khoá…', 'Cuối khoá ›', 'Cuối khoá · {lop}', "'Cuối khoá'", 'trang Cuối khoá', 'Trang Cuối khoá', 'TRANG CUỐI KHOÁ', 'Cuối khoá lớp', 'Cuối khoá (', 'Cuối khoá:', 'Cuối khoá —', 'CuoiKhoaLop', 'trang con Cuối khoá', 'nhóm Cuối khoá', 'End of course'];
   const dongCu = (dirs: string[], choPhep: readonly string[]) => {
     const sai: string[] = [];
     for (const dir of dirs) for (const f of nguonTs(dir)) {

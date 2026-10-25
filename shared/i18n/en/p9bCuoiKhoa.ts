@@ -53,7 +53,7 @@ export const EN_P9B_CUOI_KHOA = {
   "Quay lại": "Back",
   "Quá hạn bàn giao": "Handover overdue",
   "Quá hạn {n} ngày · hạn {ngay}": "Overdue {n} days · due {ngay}",
-  "Target · {ten}": "Target · {ten}",
+  "Target · {ten}": "Target for {ten}",
   "Thử lại {n} em": "Retry {n} students",
   "Tuần xem lại · {ten}": "Review week · {ten}",
   "Tạm dừng/ Kết thúc học": "Pause / End study",
@@ -95,4 +95,5 @@ export const EN_P9B_CUOI_KHOA = {
   'Phương án': 'Plan',
   'chưa chọn lớp': 'no class yet',
   '{n} em cần sửa': '{n} need fixing',
+  'Bỏ thay đổi chưa lưu của {n} em?': 'Discard unsaved changes for {n} students?',
 };

@@ -105,7 +105,19 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     onDaMoEm();
   }, [d, emMo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const quayLai = () => (location.key !== 'default' ? navigate(-1) : navigate(`/hoc-vien/lop/${classId}`));
+  /* Không mất phần đang sửa: số em có thay đổi chưa lưu (hướng / lớp / Kỳ vọng / nhận xét) — hỏi trước khi rời trang. */
+  const soDoi = new Set([...Object.keys(sua).filter((k) => Object.keys(sua[Number(k)]).some((x) => x !== 'mo')), ...Object.keys(nhanXet)]).size;
+  useEffect(() => {
+    if (!soDoi) return;
+    const chan = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', chan);
+    return () => window.removeEventListener('beforeunload', chan);
+  }, [soDoi]);
+  const quayLai = () => {
+    // shortcut: hộp hỏi của trình duyệt; đổi sang ConfirmDialog nếu cần cùng kiểu chữ với hộp khác.
+    if (soDoi && !window.confirm(t('Bỏ thay đổi chưa lưu của {n} em?', { n: soDoi }))) return;
+    if (location.key !== 'default') navigate(-1); else navigate(`/hoc-vien/lop/${classId}`);
+  };
   if (kh.error) return <ErrorState message={kh.error.message} hint={kh.error.hint} onRetry={kh.reload} />;
   if (kh.loading || !d) return <div className="page"><Skeleton rows={8} /></div>;
 
@@ -388,7 +400,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       return (
         <span className="block">
           <span className="font-semibold text-slate-100">🔒 {chuHuong(e)}</span>
-          {laQl && e.lenh!.huong !== 'chuyen_lop' && <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-[12px]" onClick={() => doi(e.id, { mo: true })}>{t('Sửa')}</button>}
+          {laQl && e.lenh!.huong !== 'chuyen_lop' && <button type="button" className="link ml-2 min-h-[44px] border-0 bg-transparent p-0 sm:min-h-0 text-[12px]" onClick={() => doi(e.id, { mo: true })}>{t('Sửa')}</button>}
           {e.lenh!.huong === 'chuyen_lop' && <span className="block text-[12px] text-slate-500">{t('sửa ở ⋯ Chuyển lớp… của em')}</span>}
         </span>
       );
@@ -423,12 +435,12 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
             {canLyDo && !x.lyDo.trim() && <span className="mt-0.5 block text-[12px] font-semibold text-late">⚠ {t('Ghi lý do ngắn')}</span>}
             {canLyDo && x.lyDo.trim() && khacGoiY(hl, e.cuoiKhoa?.goiY) && <span className="mt-0.5 block text-[12px] text-slate-500">{t('khác gợi ý · cần lý do')}</span>}
           </span>
-        ) : hl && <button type="button" className="link border-0 bg-transparent p-0 text-[12px]" onClick={() => doi(e.id, { lyDo: '' })}>{t('+ Ghi chú')}</button>}
+        ) : hl && <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 sm:min-h-0 text-[12px]" onClick={() => doi(e.id, { lyDo: '' })}>{t('+ Ghi chú')}</button>}
         {canSua.get(e.id) && canSua.get(e.id) !== 'Ghi lý do ngắn' && <span role="alert" className="block text-[12px] font-semibold text-late">⚠ {dich(canSua.get(e.id)!)}</span>}
         {e.lenh && (
           <span className="flex gap-3 text-[12px]">
-            <button type="button" className="link border-0 bg-transparent p-0" onClick={() => setSua((m) => { const { [e.id]: _, ...con } = m; return con; })}>{t('Bỏ sửa')}</button>
-            <button type="button" className="link border-0 bg-transparent p-0 text-late" onClick={() => setHuy({ em: e, lyDo: '' })}>{t('Huỷ quyết định')}</button>
+            <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 sm:min-h-0" onClick={() => setSua((m) => { const { [e.id]: _, ...con } = m; return con; })}>{t('Bỏ sửa')}</button>
+            <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 sm:min-h-0 text-late" onClick={() => setHuy({ em: e, lyDo: '' })}>{t('Huỷ quyết định')}</button>
           </span>
         )}
       </span>
@@ -596,7 +608,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
 
   return (
     <div className="page space-y-3">
-      <button type="button" className="link border-0 bg-transparent p-0 text-sm" onClick={quayLai}>‹ {d.from.code}</button>
+      <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 sm:min-h-0 text-sm" onClick={quayLai}>‹ {d.from.code}</button>
       <section className="card overflow-clip" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })}>
         <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b px-4 py-3.5" style={{ borderColor: 'var(--line)' }}>
           <h1 className="m-0 text-[17px] font-bold text-slate-100">{t('Cuối khoá · {lop}', { lop: d.from.code })}</h1>

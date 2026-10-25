@@ -129,7 +129,7 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     const kq = (ql.items as any[]).find((x) => x.group === 'ghi_ket_qua_pa');
     if (kq) assert(kq.paId === Number(kq.key.split(':')[1]), `paId: ${kq.paId} / ${kq.key}`);
     const g = (ql.groups as any[]).find((x) => x.key === 'ky_vong_dau_ra');
-    if (g) assert(g.label === 'Kết quả đầu ra' && /FOU/.test(g.hint), `${g.label} / ${g.hint}`);
-    assert(mywork.nhanNhomViec('ky_vong_dau_ra') === 'Kết quả đầu ra', `nhãn nhóm: ${mywork.nhanNhomViec('ky_vong_dau_ra')}`);
+    if (g) assert(g.label === 'Kỳ vọng' && /FOU/.test(g.hint), `${g.label} / ${g.hint}`);   // P9b: "Kết quả đầu ra" là cột máy ghi; việc QL là Kỳ vọng
+    assert(mywork.nhanNhomViec('ky_vong_dau_ra') === 'Kỳ vọng', `nhãn nhóm: ${mywork.nhanNhomViec('ky_vong_dau_ra')}`);
   });
 }

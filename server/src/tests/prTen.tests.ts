@@ -13,7 +13,9 @@ const nguonTs = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), 
   e.isDirectory() ? (e.name === 'tests' || e.name === 'node_modules' ? [] : nguonTs(`${dir}/${e.name}`)) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
 
 /** Chữ THỜI ĐIỂM khoá được giữ "Cuối khoá" (kế hoạch PR-TEN, chủ sản phẩm 10/10). */
-const CHO_PHEP = ['đến Cuối khoá'];
+/** Tên TRANG Cuối khoá của lớp (P9b — chủ SP duyệt mockup v6 cuoi-khoa): không phải tên bài. */
+export const CUOI_KHOA_TRANG = ['Cuối khoá…', 'Cuối khoá ›', 'Cuối khoá · {lop}', "'Cuối khoá'", 'trang Cuối khoá', 'Trang Cuối khoá', 'TRANG CUỐI KHOÁ', 'Cuối khoá lớp', 'Cuối khoá (', 'Cuối khoá:', 'Cuối khoá —', 'CuoiKhoaLop', 'trang con Cuối khoá', 'nhóm Cuối khoá', 'End of course'];
+const CHO_PHEP = ['đến Cuối khoá', ...CUOI_KHOA_TRANG];
 
 export async function runPrTenTests(t: YThucTestKit) {
   const { check, assert, TODAY, addDays } = t;
