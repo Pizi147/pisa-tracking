@@ -1788,6 +1788,17 @@ api.get('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   lenhSvc.quetLenhDenHan();   // hẹn bắt đầu tới tuần → bắt đầu trước khi đọc
   return buocTiepSvc.trangThaiBuocTiep(p, c.id);
 }));
+/** P7 (N12, k1–k3): "Khi lưu, web sẽ" của panel Lộ trình mới — cùng hàm lúc thi hành; lỗi chọn (lớp sai loại, thiếu tên) ở `loi`. Ai xem được em thì đọc được. */
+api.get('/cycles/:id/lo-trinh-moi/xem-truoc', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  const c = cycleSvc.cycleById(pInt(req, 'id'));
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return buocTiepSvc.xemTruocLoTrinhMoi(p, c.id, {
+    route: qStr(req, 'route') || undefined, routeTen: qStr(req, 'routeTen') ?? undefined, boTarget: qStr(req, 'boTarget') === '1',
+    lopMoiId: qStr(req, 'lopMoiId') || undefined, batDau: qStr(req, 'batDau') || undefined, mucTieu: qStr(req, 'mucTieu') || undefined,
+  });
+}));
 /** OV-8a: Bước tiếp sau thi thật — Quản lý / Quản trị (`cycle.edit` của em) và OV-12a: TVV cùng chi nhánh (`coQuyenBuocTiep`). Chọn / đổi = một giao dịch; DELETE = hoàn tác lựa chọn. */
 api.post('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

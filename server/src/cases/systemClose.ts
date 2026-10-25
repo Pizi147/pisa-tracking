@@ -89,12 +89,13 @@ export function closeCasesBySystem(input: {
     });
     for (const c of open) {
       const truocPa = paTheoCase.get(c.id) ?? [];
+      /* P7 (N12, Q2): PA dừng vì mở Lộ trình mới → nhãn "Dừng — kết thúc lộ trình" (`ket_thuc_lo_trinh`); vẫn `cancelled` nên không vào Hiệu quả PA. */
       const cancelled = conn
         .prepare(
-          `UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', updated_at = ?
+          `UPDATE case_interventions SET status = 'cancelled', closed_reason = ?, updated_at = ?
             WHERE case_id = ? AND status IN ('planned', 'started')`,
         )
-        .run(nowIso(), c.id).changes;
+        .run(input.reason === 'ket_thuc_lo_trinh' ? 'ket_thuc_lo_trinh' : 'system_closed', nowIso(), c.id).changes;
       const changed = conn
         .prepare(
           `UPDATE sos_cases SET status = 'done', closed_at = ?, closed_by = NULL, system_close_reason = ?,
@@ -207,7 +208,7 @@ export function moLaiCaseHeThongDong(input: {
               dedup_key = ?, updated_at = ? WHERE id = ?`,
     ).run(c.status, c.closed_at, c.closed_by, c.disposition, c.disposition_note, c.outcome_note, c.dedup_key, nowIso(), c.id);
     for (const pa of c.pa) {
-      conn.prepare(`UPDATE case_interventions SET status = ?, closed_reason = NULL, updated_at = ? WHERE id = ? AND status = 'cancelled' AND closed_reason = 'system_closed'`)
+      conn.prepare(`UPDATE case_interventions SET status = ?, closed_reason = NULL, updated_at = ? WHERE id = ? AND status = 'cancelled' AND closed_reason IN ('system_closed', 'ket_thuc_lo_trinh')`)
         .run(pa.status, nowIso(), pa.id);
     }
     conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'status', 'done', ?, ?, ?)`)

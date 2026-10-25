@@ -19,7 +19,7 @@ import { evaluateAttempt, roundToHalf } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, docDuKienThi, docTarget, examPlanOf } from '../fasttrack/cycles.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import {
-  apDungMotDong, danhSachLopDich, doiTg, dongLopNeuHet, lopDichHopLe, lopHienTaiCua, moLoTrinhMoi, thongBaoChuyenVao,
+  apDungMotDong, danhSachLopDich, doiTg, dongLopNeuHet, lopDichHopLe, lopHienTaiCua, moLoTrinhMoi, thongBaoChuyenVao, type LoTrinhMoiSauThi,
 } from '../classes/luatLoTrinh.ts';
 import { moLaiLop } from '../classes/xoaKetThucLop.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
@@ -394,6 +394,8 @@ const tenLoTrinh = (c: { route?: string | null; programme_code?: string | null }
  */
 export function hocLai(p: Principal, studentId: number, o: {
   date?: string; lyDo?: unknown; moLaiLop?: boolean; lopMoiId?: number | null; mucTieu?: number | string | null; thangThi?: string | null;
+  /** P7 (N12): Học lại do Bước tiếp › Lộ trình mới gọi — lộ trình mới theo lựa chọn ở panel (`moLoTrinhMoi.sauThi`). */
+  sauThi?: LoTrinhMoiSauThi | null;
 } = {}) {
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
   const conn = db();
@@ -451,7 +453,7 @@ export function hocLai(p: Principal, studentId: number, o: {
         .run(studentId, lopMoi.id, date, nowIso());
       moi.ghiDanhId = Number(ins.lastInsertRowid);
       conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(lopMoi.branch_id, studentId);
-      moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopMoi, tuLop, denLop, cuCycle, target: tg?.target ?? null, kck: !!tg?.kck, thangThi }).moiId;
+      moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopMoi, tuLop, denLop, cuCycle, target: tg?.target ?? null, kck: !!tg?.kck, thangThi, sauThi: o.sauThi }).moiId;
       tgDoi = doiTg(cuCycle, conn.prepare('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?').get(moi.loTrinhId) as any);
       thongBaoChuyenVao({
         sid: studentId, tenHocVien: s.full_name, enrollmentMoiId: moi.ghiDanhId, actorUserId: p.userId,
@@ -472,7 +474,7 @@ export function hocLai(p: Principal, studentId: number, o: {
         const lopCu = conn.prepare('SELECT * FROM classes WHERE id = ?').get(enr.class_id) as any;
         const gan = conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(studentId) as any;
         /* OV-13m: Target gửi kèm (Bước tiếp "Target · Sửa") → lộ trình mới mang Target đó; không gửi → giữ Target cũ như trước. */
-        moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopCu, tuLop, denLop: tuLop, cuCycle: gan ?? null, target: tg?.target ?? null, kck: !!tg?.kck }).moiId;
+        moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopCu, tuLop, denLop: tuLop, cuCycle: gan ?? null, target: tg?.target ?? null, kck: !!tg?.kck, sauThi: o.sauThi }).moiId;
       }
     }
     datLaiHanCase(studentId, date);

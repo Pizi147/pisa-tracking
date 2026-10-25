@@ -186,6 +186,15 @@ const PA_TUTOR = (conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos
 assert(PA_TUTOR, 'Seed thiếu PA Tutor đang chạy ở MB FT 101');
 assert(KASE, `Seed thiếu Case cho HV mẫu (id ${HV}) ở lớp MB FT 101 — DUONG_DO cần một Case thật`);
 
+/** P7: một em Tạm dừng (Lưu trữ, giữ chỗ ở lớp mẫu) — đường Quay lại học `/students/{hvTamDung}/quay-lai`. Ghi danh `paused`: không đổi sĩ số lớp mẫu. */
+const HV_TAM_DUNG = (() => {
+  const now = new Date().toISOString();
+  const id = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, archived_at, created_at) VALUES ('PISA-DO-TD', 'Đo Tạm Dừng', 'do tam dung', ?, 'inactive', ?, ?)`)
+    .run(CN, now.slice(0, 10), now).lastInsertRowid);
+  conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, end_kind, started_at, created_at) VALUES (?, ?, 'paused', 'bao_luu', ?, ?)`).run(id, LOP_FT, now.slice(0, 10), now);
+  return id;
+})();
+
 const USER: Record<Vai, number> = {
   QL: userByRole('manager', 'MB'),
   GVCN: coreTeacherOf('MB FT 101'),
@@ -214,6 +223,7 @@ function urlFor(mau: string): string {
     .replace('{lopThuong}', String(LOP_THUONG))
     .replace('{lopBe}', String(LOP_BE))
     .replace('{lopPet}', String(LOP_PET))
+    .replace('{hvTamDung}', String(HV_TAM_DUNG))
     .replace('{hv}', String(HV))
     .replace('{loTrinhDong}', String(LO_TRINH_DONG))
     .replace('{loTrinhHv}', String(LO_TRINH_HV))

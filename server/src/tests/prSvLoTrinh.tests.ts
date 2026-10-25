@@ -91,6 +91,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
   const profile: any = await import('../students/profile.ts');
   const luuTru: any = await import('../classes/luuTru.ts');
   const bt: any = await import('../loTrinh/buocTiep.ts');
+  const schedule: any = await import('../classes/schedule.ts');
   const { ngungHocCua } = await import('../fasttrack/attempts.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
@@ -229,5 +230,90 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     const ra = r.hocVien.find((x: any) => x.id === a.sid); const rb = r.hocVien.find((x: any) => x.id === b.sid);
     assert(ra?.trangThai === 'tam-dung' && /^MB P7-\d+$/.test(ra.lopCuoi) && ra.coTheQuayLai, JSON.stringify(ra ?? r.hocVien.length));
     assert(rb?.trangThai === 'ket-thuc' && rb.coTheQuayLai, JSON.stringify(rb ?? 'không có em kết thúc'));
+  }));
+
+  // ------------------------------------------------------------------ Task 3: máy chủ — Bước tiếp + Lộ trình mới
+  /** Em có KQ thi thật (L 7 R 7 W 6.5 S 6.5 → OVR 7.0), một Case S mở + PA đang chạy của lộ trình đó. */
+  const emThiXong = (classId: number, o: { khongThi?: boolean } = {}) => {
+    const x = em(classId);
+    if (o.khongThi) conn.prepare(`UPDATE learning_cycles SET thi_that_khong_thi = 1 WHERE id = ?`).run(x.cy);
+    else conn.prepare(`UPDATE learning_cycles SET thi_that_l = 7, thi_that_r = 7, thi_that_w = 6.5, thi_that_s = 6.5, thi_that_ngay = ? WHERE id = ?`).run(t.addDays(TODAY, -3), x.cy);
+    const caseId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, title, status, created_at, updated_at) VALUES (?,?,'speaking','speaking','Case S P7','open',?,?)`)
+      .run(x.sid, x.cy, NOW, NOW).lastInsertRowid);
+    const paId = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, status, created_at, updated_at) VALUES (?, 'tutor', 'started', ?, ?)`).run(caseId, NOW, NOW).lastInsertRowid);
+    return { ...x, caseId, paId };
+  };
+  const cyMoi = (sid: number) => get(`SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1`, sid);
+  const soMt = (cy: number) => get(`SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' AND status != 'cancelled'`, cy).n as number;
+
+  check('SV-7a · Lộ trình mới LT2 (Giữ lớp, LT1 xong → LT2 chọn sẵn): MT1–MT3, không ngày thi cũ (E1), đầu vào = KQ thi thật (E3), Case / PA cũ đóng "Kết thúc lộ trình"; Hoàn tác mở lại', () => thu(() => {
+    const L = lop(); const a = emThiXong(L);
+    const xem = bt.xemTruocLoTrinhMoi(QL, a.cy, {});
+    assert(xem.routeGoiY === 'LT2' && xem.loi === null, JSON.stringify(xem));
+    assert(xem.dong.some((x: string) => /^Tạo MT1–MT3: W\d [A-Z]{3} · W\d [A-Z]{3} · W\d [A-Z]{3}$/.test(x)), `tóm tắt MT: ${xem.dong.join(' | ')}`);
+    assert(xem.dong.some((x: string) => /^Đầu vào = KQ thi \d\d\/\d\d: L 7\.0 · R 7\.0 · W 6\.5 · S 6\.5$/.test(x)), `tóm tắt đầu vào: ${xem.dong.join(' | ')}`);
+    assert(xem.dong.some((x: string) => /^Kết thúc LT1 · đóng 1 Case \(S\) — Kết thúc lộ trình$/.test(x)) && xem.dong.some((x: string) => x === 'Dừng 1 PA — Dừng · kết thúc lộ trình'), `tóm tắt Case: ${xem.dong.join(' | ')}`);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi' });
+    const m = cyMoi(a.sid);
+    assert(m.seq === 2 && m.route === 'LT2' && m.status === 'active', `lộ trình mới: ${JSON.stringify(m)}`);
+    assert(m.exam_month === null && m.exam_date === null && m.exam_period_id === null, 'E1: không chép ngày thi');
+    assert(m.baseline_listening === 7 && m.baseline_reading === 7 && m.baseline_writing === 6.5 && m.baseline_speaking === 6.5 && m.baseline_score === 7 && /KQ thi thật/.test(m.baseline_note ?? ''), `E3 đầu vào: ${JSON.stringify(m)}`);
+    assert(soMt(m.id) === 3 && get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', a.mt1).cycle_id === a.cy, 'MT1–MT3 mới, điểm cũ ở lại');
+    const c = get('SELECT status, system_close_reason FROM sos_cases WHERE id = ?', a.caseId);
+    const pa = get('SELECT status, closed_reason FROM case_interventions WHERE id = ?', a.paId);
+    assert(c.status === 'done' && c.system_close_reason === 'ket_thuc_lo_trinh' && pa.status === 'cancelled' && pa.closed_reason === 'ket_thuc_lo_trinh', `Case / PA: ${JSON.stringify({ c, pa })}`);
+    bt.boChonBuocTiep(QL, a.cy);
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', a.caseId).status !== 'done' && get('SELECT status FROM case_interventions WHERE id = ?', a.paId).status === 'started', 'Hoàn tác mở lại Case + PA');
+  }));
+
+  check('SV-7b · Lộ trình mới RF ở lớp RF (em đang học → đường Chuyển lớp "Ngay bây giờ"): MT1–MT2, không ngày thi cũ, đầu vào thi thật, Case đóng "Kết thúc lộ trình"', () => thu(() => {
+    const L = lop(); const RF = lop('RF'); const a = emThiXong(L);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'RF', lopMoiId: RF });
+    const m = cyMoi(a.sid);
+    assert(m.route === 'RF' && soMt(m.id) === 2 && m.exam_month === null && m.baseline_score === 7, `RF: ${JSON.stringify(m)} · MT ${soMt(m.id)}`);
+    assert(get('SELECT system_close_reason FROM sos_cases WHERE id = ?', a.caseId).system_close_reason === 'ket_thuc_lo_trinh', 'Case cũ đóng Kết thúc lộ trình');
+  }));
+
+  check('SV-7c · Lộ trình "Khác": ô Tên bắt buộc (400 tại ô), Bỏ Target → không Target, 0 MT (không nhắc xếp MT), tên hiện ở lộ trình', () => thu(() => {
+    const L = lop(); const a = emThiXong(L);
+    assert(/tên lộ trình/i.test(loi(() => bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'KHAC', routeTen: '  ' }))?.message ?? ''), 'thiếu tên → 400');
+    bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'KHAC', routeTen: 'Luyện Speaking 1–1', boTarget: true });
+    const m = cyMoi(a.sid);
+    assert(m.route === 'KHAC' && m.route_ten === 'Luyện Speaking 1–1' && m.target_score === null && !m.khong_cam_ket && soMt(m.id) === 0, `Khác: ${JSON.stringify(m)}`);
+    assert(schedule.lichMtCua({ route: 'LT1', lich_mt: '[6,12,16]' }, 'KHAC').length === 0, 'lịch MT của lộ trình Khác rỗng → không nhắc xếp MT');
+  }));
+
+  check('SV-7d · không có KQ thi thật (Không thi) → đầu vào = MT có Overall gần nhất, ghi nguồn; không ghép điểm nhiều lần thi', () => thu(() => {
+    const L = lop(); const a = emThiXong(L, { khongThi: true });
+    for (const [k, b] of [['reading', 6.5], ['writing1', 6], ['writing2', 6], ['speaking', 6]] as const) {
+      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?,?,?,?)`).run(a.mt1, k, b, NOW);
+    }
+    bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'LT1' });
+    const m = cyMoi(a.sid);
+    assert(m.baseline_attempt_id === a.mt1 && /MT1/.test(m.baseline_note ?? '') && m.baseline_listening === null, `đầu vào MT: ${JSON.stringify(m)}`);
+  }));
+
+  check('SV-8 · lớp sai loại → 400 nói rõ (RF khi giữ lớp LT; LT2 vào lớp RF); Giữ lớp đã kết thúc → máy chủ tự mở lại lớp (E2)', () => thu(() => {
+    const L = lop(); const RF = lop('RF'); const a = emThiXong(L);
+    const loiRf = bt.xemTruocLoTrinhMoi(QL, a.cy, { route: 'RF' }).loi as string;
+    assert(/là lớp LT — lộ trình RF cần lớp RF/.test(loiRf), loiRf);
+    assert(loi(() => bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'RF' }))?.message === loiRf, 'chọn → 400 cùng câu');
+    assert(/là lớp RF — lộ trình LT2 cần lớp LT/.test(loi(() => bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'LT2', lopMoiId: RF }))?.message ?? ''), 'LT2 vào lớp RF → 400');
+    /* E2: tạm dừng sau thi → lớp kết thúc → Lộ trình mới "Giữ lớp" */
+    bt.chonBuocTiep(QL, a.cy, { chon: 'tam_dung' });
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(TODAY, L);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'LT2' });
+    assert(get('SELECT status FROM classes WHERE id = ?', L).status === 'active' && cyMoi(a.sid).route === 'LT2' && hs(a.sid).status === 'active', 'E2: mở lại lớp, không 400');
+  }));
+
+  check('SV-9 · Bước tiếp "Tạm dừng/ Kết thúc học" trong panel: ô tắt → ket_thuc + Lưu trữ, ô bật → tam_dung + Lưu trữ; ngày + lý do của hộp được ghi; Hoàn tác', () => thu(() => {
+    const L = lop(); const a = emThiXong(L); const b = emThiXong(L);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'ket_thuc', lyDo: 'Đi du học' });
+    assert(hs(a.sid).status === 'finished' && !!hs(a.sid).archived_at, 'Kết thúc học + Lưu trữ');
+    assert(get(`SELECT detail FROM journey_events WHERE student_id = ? AND event_type = 'finish' ORDER BY id DESC LIMIT 1`, a.sid)?.detail === 'Đi du học', 'lý do của hộp');
+    bt.chonBuocTiep(QL, b.cy, { chon: 'tam_dung' });
+    assert(hs(b.sid).status === 'inactive' && !!hs(b.sid).archived_at, 'Tạm dừng + Lưu trữ');
+    bt.boChonBuocTiep(QL, b.cy);
+    assert(hs(b.sid).status === 'active' && !hs(b.sid).archived_at, 'Hoàn tác');
   }));
 }

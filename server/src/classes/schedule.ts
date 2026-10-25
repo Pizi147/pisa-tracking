@@ -2,7 +2,7 @@ import { capNhatConOCho, capNhatConOChoLop } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, docLichMt, kiemSoMtMoi, laMtCu, lichMtGoc, tuanHocCuaMt, tuanLich,
+  CHUONG_TRINH_KHONG_CHIA_MON, ROUTE_KHAC, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, docLichMt, kiemSoMtMoi, laMtCu, lichMtGoc, tuanHocCuaMt, tuanLich,
   NHAN_THIEU_EMAIL, PROGRAMME_TEMPLATES, kyHieuLop, laLienTuc, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -40,7 +40,7 @@ const lichMtTheoRoute = () => nho('lich-mt-route', () => new Map(
  * dùng của lộ trình em (như luật cũ theo lộ trình). Không lộ trình (lớp thường) → rỗng.
  */
 export function lichMtCua(lop: { lich_mt?: string | null; route?: string | null } | null | undefined, route: string | null | undefined): number[] {
-  if (!route) return [];
+  if (!route || route === ROUTE_KHAC) return [];   // P7 (N12): lộ trình "Khác" = 0 MT — không tạo / không nhắc xếp MT mặc định ("+ MT" ở Kế hoạch Test vẫn dùng được)
   return (lop?.route === route ? docLichMt(lop.lich_mt) : null) ?? lichMtTheoRoute().get(route) ?? lichMtGoc(route);
 }
 
