@@ -2198,3 +2198,19 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph_lan (
   ghi_luc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_lan ON viec_bao_ph_lan(viec_id);
+
+-- P14 DICH (N19): bộ nhớ bản dịch — khoá sha256(ngôn ngữ đích + chữ ĐÃ CHE tên / email / SĐT); `ban_dich` cũng là bản đã che (không lưu tên thật).
+-- Sửa chữ gốc → khoá khác → bản cũ tự hết dùng. `dich_luot`: mỗi lần gọi OpenAI thật một dòng (trần DICH_TRAN_NGAY / DICH_TRAN_NGUOI). Migrate `prDich` chép y.
+CREATE TABLE IF NOT EXISTS ban_dich (
+  khoa TEXT PRIMARY KEY,
+  den TEXT NOT NULL,
+  ban_dich TEXT NOT NULL,
+  tao_luc TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS dich_luot (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  ngay TEXT NOT NULL,
+  luc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_dich_luot_ngay ON dich_luot(ngay, user_id);

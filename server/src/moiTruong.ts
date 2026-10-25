@@ -80,3 +80,23 @@ export function choPhepMigrateTurso(url: string, choPhep: string | undefined): b
   const ten = tenMayChuDb(url);
   return !!ten && !!choPhep && ten === choPhep.trim().toLowerCase();
 }
+
+/**
+ * P14 DICH (N19): cấu hình nút "Dịch". Khoá OpenAI chỉ đọc ở đây, KHÔNG in ra log / phản hồi. Không khoá hoặc `DICH_TAT=1` → tắt.
+ * `DICH_GIA` (`1` = bản dịch giả, `loi` = luôn lỗi) chỉ cho dev / ảnh chụp — bản chính bỏ qua.
+ */
+export type CauHinhDich = { bat: boolean; khoa: string; model: string; tranNgay: number; tranNguoi: number; gia: '' | '1' | 'loi' };
+
+export function cauHinhDich(env: NodeJS.ProcessEnv = process.env): CauHinhDich {
+  const so = (v: string | undefined, macDinh: number) => { const n = Number(v); return Number.isInteger(n) && n >= 0 && v?.trim() ? n : macDinh; };
+  const gia = !laBanChinh(env) && (env.DICH_GIA === '1' || env.DICH_GIA === 'loi') ? env.DICH_GIA : '';
+  const khoa = env.OPENAI_API_KEY?.trim() ?? '';
+  return {
+    bat: env.DICH_TAT !== '1' && (!!khoa || !!gia),
+    khoa,
+    model: env.DICH_MODEL?.trim() || 'gpt-5.4-mini',
+    tranNgay: so(env.DICH_TRAN_NGAY, 300),
+    tranNguoi: so(env.DICH_TRAN_NGUOI, 50),
+    gia,
+  };
+}
