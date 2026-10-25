@@ -164,6 +164,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const ds = d.students;
   const dongs = ds.map((e) => { const x = dongCua(e); return { e, x, sai: kiem(e, x) ?? (doiKv(e, x) ? kvLoi(x) : null), lenh: doiLenh(e, x), kv: doiKv(e, x) }; });
   const guiDuoc = dongs.filter((r) => (r.lenh || r.kv) && !r.sai);
+  /* Dòng QL đã sửa mà chưa gửi được: lý do hiện ngay dưới ô Hướng (trừ "chọn lớp" — đếm riêng "chờ chọn lớp"; "Ghi lý do ngắn" đã hiện ở ô Lý do). */
+  const canSua = new Map(dongs.filter((r) => (r.lenh || r.kv) && r.sai && r.sai !== 'Chọn lớp chuyển đến' && sua[r.e.id]).map((r) => [r.e.id, r.sai!]));
   const choLop = dongs.filter((r) => !khoa(r.e) && r.x.huong && r.x.huong !== 'dung' && !r.x.lop).length;
   const chuaHuong = dongs.filter((r) => !r.e.lenh && !r.x.huong).length;
   const daChot = ds.filter((e) => e.lenh).length;
@@ -422,6 +424,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
             {canLyDo && x.lyDo.trim() && khacGoiY(hl, e.cuoiKhoa?.goiY) && <span className="mt-0.5 block text-[12px] text-slate-500">{t('khác gợi ý · cần lý do')}</span>}
           </span>
         ) : hl && <button type="button" className="link border-0 bg-transparent p-0 text-[12px]" onClick={() => doi(e.id, { lyDo: '' })}>{t('+ Ghi chú')}</button>}
+        {canSua.get(e.id) && canSua.get(e.id) !== 'Ghi lý do ngắn' && <span role="alert" className="block text-[12px] font-semibold text-late">⚠ {dich(canSua.get(e.id)!)}</span>}
         {e.lenh && (
           <span className="flex gap-3 text-[12px]">
             <button type="button" className="link border-0 bg-transparent p-0" onClick={() => setSua((m) => { const { [e.id]: _, ...con } = m; return con; })}>{t('Bỏ sửa')}</button>
@@ -509,6 +512,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       ...(td.baoPh ? [`${t('{n} việc Báo PH qua TVV', { n: td.baoPh })}${baoPh.length ? ` (${baoPh.join(', ')})` : ''}`] : []),
       ...(td.caseTutor ? [t('{n} Case Tutor FT', { n: td.caseTutor })] : []),
       ...(choLop ? [t('{n} em chờ chọn lớp', { n: choLop })] : []),
+      ...(canSua.size ? [t('{n} em cần sửa', { n: canSua.size })] : []),
       ...(chuaHuong ? [t('{n} em chưa có hướng', { n: chuaHuong })] : []),
     ].join(' · ');
     return { dong1, dong2 };
@@ -580,9 +584,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
 
   /* Mockup V6 k3 / k7: QL 7 cột, GVCN 5 cột; Kết quả đầu ra là cột linh hoạt. */
   const cot: CotBang[] = laQl
-    ? [{ key: 'chon', nhan: '', kieu: 'nut', rong: 44 }, { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 190 }, { key: 'kq', nhan: t('Kết quả đầu ra'), kieu: 'chu' },
-      { key: 'goiY', nhan: t('Gợi ý'), kieu: 'chu', rong: 150 }, { key: 'huong', nhan: t('Hướng'), kieu: 'chu', rong: 230 },
-      { key: 'lop', nhan: t('Lớp chuyển đến'), kieu: 'chu', rong: 190 }, { key: 'bg', nhan: t('Bàn giao'), kieu: 'chip', rong: 130 }]
+    ? [{ key: 'chon', nhan: '', kieu: 'nut', rong: 44 }, { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 170 }, { key: 'kq', nhan: t('Kết quả đầu ra'), kieu: 'chu' },
+      { key: 'goiY', nhan: t('Gợi ý'), kieu: 'chu', rong: 130 }, { key: 'huong', nhan: t('Hướng'), kieu: 'chu', rong: 200 },
+      { key: 'lop', nhan: t('Lớp chuyển đến'), kieu: 'chu', rong: 170 }, { key: 'bg', nhan: t('Bàn giao'), kieu: 'chu', rong: 130 }]
     : [{ key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 200 }, { key: 'kq', nhan: t('Kết quả đầu ra'), kieu: 'chu', rong: 260 },
       { key: 'goiY', nhan: t('Gợi ý'), kieu: 'chu', rong: 160 }, { key: 'huong', nhan: t('Hướng · QL chốt'), kieu: 'chu', rong: 230 }, { key: 'nx', nhan: t('Nhận xét'), kieu: 'chu' }];
   const chip = (nhan: ReactNode, bat: boolean, onClick: () => void, key?: string) => (

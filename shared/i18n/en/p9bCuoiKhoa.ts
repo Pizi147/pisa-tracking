@@ -94,4 +94,5 @@ export const EN_P9B_CUOI_KHOA = {
   'Ghi phương án, không Case.': 'Write a plan, no Case.',
   'Phương án': 'Plan',
   'chưa chọn lớp': 'no class yet',
+  '{n} em cần sửa': '{n} need fixing',
 };

@@ -10,6 +10,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
 import { kyHieuLop, tuanLich, type LoiTruong } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 import { DongXem, PhanThongTin } from './ThongTinLopPanel.tsx';
 
 type Progress = {

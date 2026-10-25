@@ -611,6 +611,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 25/10/2026 | P9b CUOI-KHOA (Opus 5.5) · `claude/p9b-cuoi-khoa-ftiuyd` | Trang Cuối khoá lớp thường `?xem=cuoi-khoa` thay tab Lộ trình tiếp theo + Đánh giá đầu ra + hộp KQĐR; N20 hạn T5 tuần trước Final + chuông 3 mốc; N17 cùng chi nhánh, Học viên không Case; N22 GVCN chỉ nhận xét, Kỳ vọng mở khi MT0 quá hạn; R5.3 gỡ TransitionPanel; phép kiểm CK-1…CK-5 |
 | 25/10/2026 | P3 UI-CHUNG (Opus 5.5) · `claude/p3-ui-chung-4c93d8` | Bỏ cách xem Góp ý hàng tuần (dữ liệu + route giữ, xem cũ ở ⋯ › Lịch sử góp ý tuần); menu ⋯ rõ nhóm (`.menu-nhom` / `.menu-muc`); đầu cột dính hồ sơ lớp FT, Kết quả Test, Ý thức; "Mới dùng PISA TRACKING?"; phép kiểm UIC-1–4 |
 | 24/10/2026 | TL-V5 (PTA Plan, Opus 5.5) · `claude/tl-v5` | `DESIGN.md` mục "Luật V5" V1–V16 + token / thang chữ / badge theo mã; Hướng dẫn 7 vai theo màn V5 (Tổng quan GV / TVV / CX / Admin, Lịch Test tuần, hồ sơ HV / lớp / GV, tìm `/` Ctrl K, Phân tích, nhận xét chỉ nhắc) + EN `tlV5.ts`; TVV / CX "Chỉ cho tôi" sang `tq-tom-tat`; truy vết mockup → PR; `plan.md` N9–N10, mục 4 |
 | 24/10/2026 | #561 SV-TQ-GV (Opus 5.5) | Tổng quan GV hai khối: `GET /tong-quan/lop-toi-day/hai-khoi` (Kỹ năng tôi dạy · Lớp tôi chủ nhiệm, số = hồ sơ GV / Phân tích), ô SOS theo mức + Thi tháng này bấm ra panel; XM-SV-1, 3 |
