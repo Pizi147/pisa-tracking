@@ -92,6 +92,21 @@ export function kiemTuanXep(o: { ketThuc: string[]; homNay: string; quanLy: bool
 /** Tooltip chip vàng "Tuần đã qua" (T4) — panel Xếp lịch, hộp một đợt: Quản lý xếp MT chưa thi về tuần đã qua. */
 export const CAU_TUAN_DA_QUA = t('MT chưa làm bài xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.');
 
+/** P6 N15: câu lỗi một chỗ cho máy chủ, nút web, xem trước hàng loạt. */
+export const LOI_KHOA_CUOI_TUAN = t('Thứ Sáu – Chủ nhật không đổi lịch MT của tuần trước, tuần này và tuần sau — mở lại thứ Hai. Quản trị hệ thống đổi được.');
+
+/**
+ * P6 N15 (chủ SP 24–25/10): thứ Sáu → Chủ nhật của tuần chứa `homNay`, lịch MT có tuần gốc / đích (`tuan` = Thứ Hai; null bỏ qua) thuộc
+ * tuần trước / này / sau → câu lỗi; `quanTri` = vai gốc system_admin → null. Nơi gọi tự lọc MT / MT0 / S Ex (lớp thường không gọi).
+ */
+export function khoaCuoiTuan(o: { tuan: readonly (string | null)[]; homNay: string; quanTri: boolean }): string | null {
+  if (o.quanTri) return null;
+  const t2 = mondayOfDate(o.homNay);
+  if (addDaysIso(t2, 4) > o.homNay) return null;
+  const ba = [addDaysIso(t2, -7), t2, addDaysIso(t2, 7)];
+  return o.tuan.some((w) => !!w && ba.includes(mondayOfDate(w.slice(0, 10)))) ? LOI_KHOA_CUOI_TUAN : null;
+}
+
 /** Rà #120: "Đã thi tới MT" = d mà MT1…MT(d) có MT rơi vào tuần chưa qua → số các MT đó (để nhắc lùi Tuần bắt đầu). */
 export function mtDaThiChuaQua(lich: readonly number[], tuanBatDau: string, daThiToiMt: number, homNay: string): number[] {
   return Array.from({ length: daThiToiMt }, (_, i) => i + 1)
