@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ChonNguoi } from './PeoplePicker.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /** Một lớp trong ô: `ma` = mã lớp, `phu` = dòng phụ (`phuLopDich`: chương trình · chi nhánh · sĩ số). */
 export type LopChon = { id: number; ma: string; phu?: string };
@@ -25,25 +26,24 @@ export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKh
   const chon = value === null ? null : ds.find((l) => l.id === value) ?? null;
   /* Bỏ chọn bằng ✕ / vừa thêm một lớp → ô gõ vẽ lại, focus + mở danh sách (không rơi focus về <body>). */
   const [lan, setLan] = useState(0);
-  const dsNguoi = useMemo(() => ds.map((l) => ({ id: l.id, ten: l.ma, phu: l.phu })), [ds]);
   if (value !== null) {
     const ma = chon?.ma ?? maCu ?? '—';
     return (
       <div className={`field flex items-center justify-between gap-2${invalid ? ' border-late' : ''} ${className ?? ''}`} onBlur={onBlur}>
         <span className="min-w-0 truncate"><span className="text-slate-100">{ma}</span>{chon?.phu && <span className="text-xs text-slate-500"> · {chon.phu}</span>}</span>
         {!tat && <button id={id} type="button" className="btn btn-sm btn-ghost -my-1 h-7 shrink-0 justify-center !py-0 max-sm:-my-2 max-sm:h-11 max-sm:min-h-0 max-sm:w-11"
-          aria-label={`Bỏ chọn ${ma} · ${ariaLabel}`} onClick={() => { setLan((n) => n + 1); onChange(null); }}>✕</button>}
+          aria-label={t('Bỏ chọn {ma} · {o}', { ma, o: ariaLabel })} onClick={() => { setLan((n) => n + 1); onChange(null); }}>✕</button>}
       </div>
     );
   }
   if (!ds.length) {
-    return <div id={id} tabIndex={-1} className={`field text-sm text-slate-500${invalid ? ' border-late' : ''} ${className ?? ''}`} title={ariaLabel}>{khongKhop ?? 'Không có lớp để chọn'}</div>;
+    return <div id={id} tabIndex={-1} className={`field text-sm text-slate-500${invalid ? ' border-late' : ''} ${className ?? ''}`} title={ariaLabel}>{khongKhop ?? t('Không có lớp để chọn')}</div>;
   }
   return (
     <div className={`${noi ? 'relative [&_[role=listbox]]:absolute [&_[role=listbox]]:inset-x-0 [&_[role=listbox]]:z-30 [&_[role=listbox]]:shadow-lg ' : ''}${className ?? ''}`}>
-      <ChonNguoi key={lan} value={null} nhom="nhan_vien" choToi={false} choNgoai={false} ds={dsNguoi}
-        placeholder={placeholder ?? 'Gõ tên lớp…'} ariaLabel={ariaLabel} disabled={tat} tuMo={lan > 0} choTrong={choTrong}
-        id={id} invalid={invalid} onBlur={onBlur} khongKhop={(go) => `Không có lớp khớp “${go}”`}
+      <ChonNguoi key={lan} value={null} nhom="nhan_vien" choToi={false} choNgoai={false} ds={ds.map((l) => ({ id: l.id, ten: l.ma, phu: l.phu }))}
+        placeholder={placeholder ?? t('Gõ tên lớp…')} ariaLabel={ariaLabel} disabled={tat} tuMo={lan > 0} choTrong={choTrong}
+        id={id} invalid={invalid} onBlur={onBlur} khongKhop={(q) => t('Không có lớp khớp “{q}”', { q })}
         onChange={(v) => { if (v === null) onChange(null); else if (v.kieu === 'tai_khoan') { setLan((n) => n + 1); onChange(v.id); } }} />
     </div>
   );
