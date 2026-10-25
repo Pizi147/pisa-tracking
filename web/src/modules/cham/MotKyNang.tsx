@@ -360,7 +360,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
         {s && (s.nhanXetDuoc ?? canEdit) && !dung && (
           <NutNhanXet lon tenMon={tenMonO} giaTri={s.nhanXet ?? null}
             phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart) : null].filter(Boolean).join(' · ')}
-            onLuu={(v) => nhanXet(k, v)} />
+            nguon={{ bang: 'assessment_scores', id: row.attemptId, cot: 'comment', kyNang: k }} onLuu={(v) => nhanXet(k, v)} />
         )}
       </div>
     </DongHv>

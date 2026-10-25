@@ -22,6 +22,11 @@ import {
   type CaseDismissReason,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
+
+/** P14 DICH: ô nhận xét của lượt theo kỹ năng Case — Writing có hai ô (Task 1 / 2) nên không có nút ở dòng gộp. */
+const oDich = (attemptId: number, topic: string | null | undefined): NguonDich | null =>
+  topic === 'listening' || topic === 'reading' || topic === 'speaking' ? { bang: 'assessment_scores', id: attemptId, cot: 'comment', kyNang: topic } : null;
 
 /**
  * CASE TỰ TẠO TỪ SOS (SOS v4, PR-SOS — M7, YC-12.1, 12.3, 12.4, Q28-3; OV-12c khuôn panel v3):
@@ -61,15 +66,16 @@ export function dauCase(data: CaseDetail, lop: string | null | undefined, ngCanh
   };
 }
 /** Nguyên nhân Case (chính trước) + nhận xét: "1 Kỹ năng làm bài · 2 Quản lý thời gian — "…"". */
-export function DongNguyenNhan({ issues }: { issues: any[] }) {
+/** `attemptId`: lượt của Case MT — nút Dịch cho nhận xét GV phụ trách (P14). */
+export function DongNguyenNhan({ issues, attemptId = null }: { issues: any[]; attemptId?: number | null }) {
   const ds = [...issues].sort((a, b) => (a.role === 'primary' ? -1 : 0) - (b.role === 'primary' ? -1 : 0));
   if (!ds.length) return null;
   const nx = ds[0]?.observation;
   const pt = ds[0]?.nhanXetPhuTrach;   // OV-13k: Case MT Speaking — nhận xét GV phụ trách (lưu riêng)
   return (
     <>
-      <NhomCoSo ds={ds.map((x) => ({ code: x.code, label: x.label }))} />{nx ? <> — “{nx}”</> : null}
-      {pt ? <span className="mt-1 block text-slate-300"><span className="text-slate-400">{t('Nhận xét GV phụ trách')}:</span> “{pt}”</span> : null}
+      <NhomCoSo ds={ds.map((x) => ({ code: x.code, label: x.label }))} />{nx ? <> — “<ChuDich chu={nx} nguon={{ bang: 'case_issues', id: ds[0].id, cot: 'observation' }} />”</> : null}
+      {pt ? <span className="mt-1 block text-slate-300"><span className="text-slate-400">{t('Nhận xét GV phụ trách')}:</span> “<ChuDich chu={pt} nguon={attemptId ? { bang: 'assessment_scores', id: attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' } : null} />”</span> : null}
     </>
   );
 }
@@ -271,10 +277,10 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
           )}
         </CanLam>
         <BoiCanh
-          dong={[[t('Nguyên nhân'), <DongNguyenNhan issues={data.issues ?? []} />], [t('Kết quả gần nhất'), ketQuaGanNhat(data)]]}
+          dong={[[t('Nguyên nhân'), <DongNguyenNhan issues={data.issues ?? []} attemptId={data.attemptId} />], [t('Kết quả gần nhất'), ketQuaGanNhat(data)]]}
           them={theoLuot.length > 1 ? (
             <ul className="m-0 list-none space-y-1 p-0">
-              {theoLuot.map((x) => <li key={x.attemptId}><b className="font-semibold text-slate-300">{x.luot}</b>: {x.nhom.map((g) => g.label).join(' · ') || '—'}{x.nhanXet ? ` — “${x.nhanXet}”` : ''}{x.nhanXetPhuTrach ? ` · ${t('Nhận xét GV phụ trách')}: “${x.nhanXetPhuTrach}”` : ''}</li>)}
+              {theoLuot.map((x) => <li key={x.attemptId}><b className="font-semibold text-slate-300">{x.luot}</b>: {x.nhom.map((g) => g.label).join(' · ') || '—'}{x.nhanXet ? <> — “<ChuDich chu={x.nhanXet} nguon={oDich(x.attemptId, data.topic)} />”</> : ''}{x.nhanXetPhuTrach ? <> · {t('Nhận xét GV phụ trách')}: “<ChuDich chu={x.nhanXetPhuTrach} nguon={{ bang: 'assessment_scores', id: x.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' }} />”</> : ''}</li>)}
             </ul>
           ) : undefined} />
       </div>
@@ -341,7 +347,9 @@ export function GhiNhanXetPanel({ data, onXong, ...chung }: ChungPanel & { data:
 export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void }) {
   const toast = useToast();
   const x = data.choXacNhanS!;
-  const moTaCu = (data.issues ?? []).find((i: any) => i.role === 'primary')?.observation ?? null;
+  const chinh = (data.issues ?? []).find((i: any) => i.role === 'primary');
+  const moTaCu = chinh?.observation ?? null;
+  const idMoTa = (chinh?.id ?? null) as number | null;
   const [cach, setCach] = useState<'dung' | 'giu' | 'viet'>(x.nhanXet ? 'dung' : 'viet');
   const [moTa, setMoTa] = useNhap(`xac-nhan-s-${data.id}`, '');
   const xoaNhap = useXoaNhap();
@@ -370,7 +378,7 @@ export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: C
         <CanLam>
           <div className="text-sm">
             <span className="block text-[13px] font-semibold text-slate-300">{t('Nhận xét chấm chéo')}{x.nguoiCham ? ` · ${x.nguoiCham}` : ''}</span>
-            <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-200">{x.nhanXet ?? t('Chưa có nhận xét')}</p>
+            <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-200">{x.nhanXet ? <ChuDich chu={x.nhanXet} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'comment', kyNang: 'speaking' } : null} /> : t('Chưa có nhận xét')}</p>
           </div>
           <div className="flex flex-wrap gap-2" role="group" aria-label={t('Mô tả Case')}>
             {x.nhanXet && lua('dung', moTaCu ? t('Dùng làm mô tả (thay mô tả đang có)') : t('Dùng làm mô tả'))}
@@ -380,7 +388,7 @@ export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: C
           {cach !== 'viet' && moTaCu && (
             <div className="text-sm">
               <span className="block text-[13px] font-semibold text-slate-300">{cach === 'dung' ? t('Mô tả đang có — sẽ thay bằng nhận xét chấm chéo (cả nhóm nguyên nhân theo bài)') : t('Mô tả đang có')}</span>
-              <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-300">{moTaCu}</p>
+              <p className="m-0 mt-1 whitespace-pre-wrap break-words text-slate-300"><ChuDich chu={moTaCu} nguon={idMoTa ? { bang: 'case_issues', id: idMoTa, cot: 'observation' } : null} /></p>
             </div>
           )}
           {cach === 'viet' && (

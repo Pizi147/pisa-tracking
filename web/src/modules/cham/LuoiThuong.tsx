@@ -505,7 +505,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             {(s?.nhanXetDuoc ?? canEdit) && s && (
               <NutNhanXet tenMon={tenMon(sheet.programme.code, k)} giaTri={s.nhanXet ?? null}
                 phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart, homNay) : null].filter(Boolean).join(' · ')}
-                onLuu={(v) => nhanXet(k, v)} />
+                nguon={{ bang: 'assessment_scores', id: row.attemptId, cot: 'comment', kyNang: k }} onLuu={(v) => nhanXet(k, v)} />
             )}
             <ODiemThuong
               /* PR-BV (L2): đang xem đúng tuần có dấu "-" mà tuần mới đã có điểm — ô hiện "-" để gỡ được. */
