@@ -250,7 +250,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
                 );
               })}
               {lopConLai.length > 0 && (
-                <ChonLop className="w-44 max-sm:w-full" ariaLabel="Thêm lớp" value={null} placeholder={lopChon.length ? '+ lớp' : 'Gõ tên lớp…'}
+                <ChonLop noi className="w-44 max-sm:w-full" ariaLabel="Thêm lớp" value={null} placeholder={lopChon.length ? '+ lớp' : 'Gõ tên lớp…'}
                   onChange={(id) => { if (id) { setLopChon((s) => [...s, id]); setGiuLoi(null); } }}
                   ds={lopConLai.map((l) => ({ id: l.id, ma: l.code, phu: `${l.soHv} em` }))} />
               )}

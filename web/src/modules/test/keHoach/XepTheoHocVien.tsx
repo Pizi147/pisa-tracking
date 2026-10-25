@@ -302,7 +302,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
               );
             })}
             {lopFT.some((l) => !lopChon.includes(l.id)) && (
-              <ChonLop className="w-44 max-sm:w-full" ariaLabel="Thêm lớp" value={null} placeholder={lopChon.length ? '+ lớp' : 'Gõ tên lớp…'}
+              <ChonLop noi className="w-44 max-sm:w-full" ariaLabel="Thêm lớp" value={null} placeholder={lopChon.length ? '+ lớp' : 'Gõ tên lớp…'}
                 onChange={(id) => { if (id) setLopChon((s) => [...s, id]); }}
                 ds={lopFT.filter((l) => !lopChon.includes(l.id)).map((l) => ({ id: l.id, ma: l.code, phu: `${l.soHv} em` }))} />
             )}

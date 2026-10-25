@@ -10,12 +10,14 @@ export type LopChon = { id: number; ma: string; phu?: string };
  * `maCu`: lớp đang chọn không còn trong `ds` (lớp đã kết thúc) → vẫn hiện mã cũ, không tự đổi lớp.
  * Ô "thêm lớp" (value luôn null, nơi gọi thêm vào danh sách chip): sau mỗi lần chọn, ô gõ trống lại và mở tiếp danh sách.
  */
-export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKhop, placeholder, maCu, id, invalid: invalidP, 'aria-invalid': ariaInvalid, onBlur, className }: {
+export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKhop, placeholder, maCu, noi, id, invalid: invalidP, 'aria-invalid': ariaInvalid, onBlur, className }: {
   ds: LopChon[]; value: number | null; onChange: (id: number | null) => void; ariaLabel: string;
   choTrong?: string; tat?: boolean;
   /** Chữ khi danh sách rỗng (không có lớp nào để chọn). */
   khongKhop?: string;
   placeholder?: string; maCu?: string;
+  /** Danh sách nổi trên nội dung (ô "Thêm lớp" nằm trong dòng chip — không đẩy chip xuống). */
+  noi?: boolean;
   /** Như `<select>` cũ dưới `useLoiForm` (`{...lf.o(loi, khoa)}` gắn thẳng được): id cho nhãn / "n ô cần sửa ↑", viền lỗi, rời ô. */
   id?: string; invalid?: boolean; 'aria-invalid'?: boolean; onBlur?: () => void; className?: string;
 }) {
@@ -38,7 +40,7 @@ export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKh
     return <div id={id} tabIndex={-1} className={`field text-sm text-slate-500${invalid ? ' border-late' : ''} ${className ?? ''}`} title={ariaLabel}>{khongKhop ?? 'Không có lớp để chọn'}</div>;
   }
   return (
-    <div className={className}>
+    <div className={`${noi ? 'relative [&_[role=listbox]]:absolute [&_[role=listbox]]:inset-x-0 [&_[role=listbox]]:z-30 [&_[role=listbox]]:shadow-lg ' : ''}${className ?? ''}`}>
       <ChonNguoi key={lan} value={null} nhom="nhan_vien" choToi={false} choNgoai={false} ds={dsNguoi}
         placeholder={placeholder ?? 'Gõ tên lớp…'} ariaLabel={ariaLabel} disabled={tat} tuMo={lan > 0} choTrong={choTrong}
         id={id} invalid={invalid} onBlur={onBlur} khongKhop={(go) => `Không có lớp khớp “${go}”`}
