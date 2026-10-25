@@ -340,7 +340,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C24 · OV-13f (Q8, thay J2): không màn nào in mã học viên (giữ ở DB, nhật ký, đường dẫn, tìm kiếm); Excel không cột Mã', () => {
     const CAC_FILE = ['web/src/modules/students/StudentDetailPage.tsx', 'web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/cham/MotKyNang.tsx',
-      'web/src/modules/cham/DiemTheoLop.tsx', 'web/src/modules/students/LuuTruPage.tsx', 'web/src/modules/classes/TransitionPanel.tsx', 'web/src/modules/platform/Header.tsx',
+      'web/src/modules/cham/DiemTheoLop.tsx', 'web/src/modules/students/LuuTruPage.tsx', 'web/src/modules/classes/CuoiKhoaLop.tsx', 'web/src/modules/platform/Header.tsx',
       'web/src/modules/classes/BangHoSoLop.tsx', 'web/src/modules/students/BangHocVienLop.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx',
       'web/src/modules/cases/QuickReport.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/students/XoaHocVienPanel.tsx'];
     for (const f of CAC_FILE) {
@@ -554,6 +554,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   const CHU_CU = /(giữa|cuối)\s+kh[oóô]?[aáàảãạ]/i;
   const nguonTs = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? (e.name === 'tests' || e.name === 'node_modules' ? [] : nguonTs(`${dir}/${e.name}`)) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
+  /** P9b: chữ tên trang Cuối khoá (mockup V6 `cuoi-khoa.html`) — không phải tên bài cũ. */
+  const CUOI_KHOA_TRANG = ['Cuối khoá…', 'Cuối khoá ›', 'Cuối khoá · {lop}', "'Cuối khoá'", 'trang Cuối khoá', 'Trang Cuối khoá', 'TRANG CUỐI KHOÁ', 'Cuối khoá lớp', 'Cuối khoá (', 'Cuối khoá:', 'Cuối khoá —', 'CuoiKhoaLop', 'trang con Cuối khoá', 'nhóm Cuối khoá', 'End of course'];
   const dongCu = (dirs: string[], choPhep: readonly string[]) => {
     const sai: string[] = [];
     for (const dir of dirs) for (const f of nguonTs(dir)) {
@@ -569,7 +571,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(d.ATTEMPT_KIND_LABEL.progress === 'Progress Test' && d.ATTEMPT_KIND_LABEL.final === 'Final Test', JSON.stringify(d.ATTEMPT_KIND_LABEL));
     assert(d.ATTEMPT_KIND_SHORT.progress === 'Progress Test' && d.ATTEMPT_KIND_SHORT.final === 'Final Test', JSON.stringify(d.ATTEMPT_KIND_SHORT));
     assert(d.ATTEMPT_KIND_LABEL.mock === 'Mock Test' && d.ATTEMPT_KIND_SHORT.mock === 'MT' && d.ATTEMPT_KIND_SHORT.mt0 === 'MT0', 'mock / mt0 giữ nguyên');
-    const CHO_PHEP_WEB: readonly string[] = ['đến Cuối khoá'];   // mốc PA bổ trợ (PR-TEN): chữ thời điểm khoá, không phải tên bài
+    /* P9b (mockup V6 đã duyệt 25/10): "Cuối khoá" là tên TRANG / không gian (Cuối khoá · lớp, ⋯ Cuối khoá…, Cuối khoá ›), không phải tên bài — tên bài vẫn Final Test. */
+    const CHO_PHEP_WEB: readonly string[] = ['đến Cuối khoá', ...CUOI_KHOA_TRANG];   // mốc PA bổ trợ (PR-TEN): chữ thời điểm khoá, không phải tên bài
     const sai = dongCu(['web/src'], CHO_PHEP_WEB);
     assert(sai.length === 0, `${sai.length} chỗ web còn chữ cũ:\n${sai.slice(0, 40).join('\n')}`);
   });
@@ -610,7 +613,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   check('C39 · shared + server/src (chữ hiện ra, trừ tests) không còn Giữa khoá / Cuối khoá', () => {
-    const CHO_PHEP_MAY: readonly string[] = ['đến Cuối khoá'];   // như trên (PR-TEN)
+    const CHO_PHEP_MAY: readonly string[] = ['đến Cuối khoá', ...CUOI_KHOA_TRANG];   // như trên (PR-TEN, P9b)
     const sai = dongCu(['shared', 'server/src'], CHO_PHEP_MAY);
     assert(sai.length === 0, `${sai.length} chỗ còn chữ cũ:\n${sai.slice(0, 80).join('\n')}`);
   });

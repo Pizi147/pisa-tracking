@@ -892,7 +892,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   check('CT (7a) · OV-3b: thanh nhắc "Lộ trình tiếp theo" (chỉ QL, từ thứ Hai tuần Final − 2): 0/7 em đã chốt, quá hạn chốt; GVCN / GVBM không có thanh', () => {
     const q = daiCua(P.mbManager, n7);
     assert(q.loTrinh && q.loTrinh.tong === 7 && q.loTrinh.daChot === 0 && q.loTrinh.do === true && q.loTrinh.hanChot === d.mocLoTrinh(schedule.classProgress(n7).finalWeekStart).hanChot, JSON.stringify(q.loTrinh));
-    assert(q.viewer.coTheRaLenh === true && q.viewer.coTheChuyenNhieuEm === false, JSON.stringify(q.viewer));
+    assert(q.viewer.coTheRaLenh === true && !('coTheChuyenNhieuEm' in q.viewer), JSON.stringify(q.viewer));   // R5.3: bỏ cờ Chuyển tiếp lớp FT
     assert(q.banGiao === null && q.sapNhan === null && q.banGiaoMon.length === 0, 'chưa lệnh → chưa có dải bàn giao');
     const g = daiCua(g7, n7);
     assert(g.loTrinh === null && g.viewer.coTheRaLenh === false && g.viewer.laGvcn === true, 'GVCN không có thanh nhắc (việc của QL)');
@@ -917,9 +917,9 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(daiCua(P.mbManager, d7).sapNhan?.n === 7, 'QL cũng thấy');
     assert(daiCua(g7, n7).sapNhan === null, 'lớp nguồn không có "sắp nhận"');
   });
-  check('CT (7d) · lớp FT: coTheChuyenNhieuEm chỉ QL; lớp đã kết thúc không có dải', () => {
+  check('CT (7d) · lớp FT (R5.3): không dải chưa lệnh / "Chưa chuyển được"; lớp đã kết thúc không có dải', () => {
     const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 3 });
-    assert(daiCua(P.mbManager, ft).viewer.coTheChuyenNhieuEm === true && daiCua(P.mbManager, ft).loTrinh === null, 'QL FT: chuyển nhiều em, không dải chưa lệnh');
+    assert(daiCua(P.mbManager, ft).loTrinh === null && daiCua(P.mbManager, ft).chuaChuyenDuoc === null, 'QL FT: không dải chưa lệnh');
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(ft);
     assert(classesSvc.classOverview(P.admin, ft).dai === null, 'lớp đã kết thúc: dai null');
   });

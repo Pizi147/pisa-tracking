@@ -45,7 +45,7 @@ type Progress = {
  */
 export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }: {
   classId: number; tieuDe: string; suaDuoc: boolean; onDone?: () => void;
-  /** Lớp hết khoá: nút "Lộ trình tiếp theo" ngay trong phần (chỉ khi người xem chuyển tiếp được). */
+  /** Lớp hết khoá: nút "Cuối khoá ›" ngay trong phần (chỉ khi người xem chuyển tiếp được — P9b). */
   onChuyenTiep?: () => void;
 }) {
   const toast = useToast();
@@ -113,7 +113,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
       </p>
       <p className="m-0 mt-1.5 text-xs text-slate-500">Hệ thống không tự chuyển em nào.</p>
       {onChuyenTiep && (
-        <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Lộ trình tiếp theo</button>
+        <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{t('Cuối khoá ›')}</button>
       )}
     </div>
   );

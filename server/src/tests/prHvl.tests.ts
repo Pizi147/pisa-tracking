@@ -567,12 +567,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
     /* UI-HO-SO-LOP (Q-7): bảng FT mới `BangHoSoLop` — bỏ vế cột Theo dõi (việc ở thanh Việc cần làm); MT lịch sử không so kỳ vọng. */
     const r = web('modules/classes/BangHoSoLop.tsx');
     assert(!/Gọn|Đầy đủ/.test(r) && /h\.lichSu \? null/.test(r), 'BangHoSoLop');  // PR-MTb T2 thay ChipLichSu → NhanCu
-    /* OV-3b: LoTrinhTiepPanel đã xoá — Lộ trình tiếp theo một em nay là hộp Lộ trình ở bảng lớp (BangLoTrinhTiep). */
-    const tp = web('modules/classes/TransitionPanel.tsx');
-    assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: lớp FT cột Kết quả gần nhất dùng ketQuaGanNhat)');
-    /* OV-3b: PanelCuoiKhoa đã xoá — cột Final của lớp thường nay ở cách xem "Lộ trình tiếp theo". */
-    assert(/'Final'/.test(web('modules/classes/BangLoTrinhTiep.tsx')), 'BangLoTrinhTiep: cột Final');
-    assert(!/disabled=\{coLoi \|\| !data\?\.canEdit\}/.test(tp), 'nút Tiếp tục không được khoá vì lỗi (phải bấm được để hiện lỗi)');
+    /* P9b: TransitionPanel (FT) và BangLoTrinhTiep đã gỡ — trang Cuối khoá: cột "Kết quả đầu ra" theo Final, lỗi giữ tại dòng (R5.3). */
+    const ck = web('modules/classes/CuoiKhoaLop.tsx');
+    assert(/t\('Kết quả đầu ra'\)/.test(ck) && /loi\[e\.id\]/.test(ck), 'CuoiKhoaLop: cột Kết quả đầu ra + lỗi tại dòng');
   });
 
   // ------------------------------------------------------------------ Task 9 · điện thoại: bảng → thẻ (D2)

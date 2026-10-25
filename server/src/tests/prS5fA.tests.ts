@@ -230,7 +230,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
   check('S5F-a (8) · panel Chuyển lớp đọc kỳ vọng đầu ra bằng chuHopKetLuan (không trường ketLuanFt.nhan không tồn tại)', () => {
     /* PR-CL C3: kỳ vọng đầu ra chỉ lớp thường → không còn ở TransitionPanel (lớp FT); hộp Kết luận khoá ở hồ sơ HV vẫn đọc bằng chuHopKetLuan. */
     const doc = (f: string) => fs.readFileSync(new URL(`../../../../web/src/modules/${f}`, import.meta.url), 'utf8');
-    assert(!/ketLuanFt\.nhan/.test(doc('classes/TransitionPanel.tsx')), 'TransitionPanel');
+    assert(!/ketLuanFt\.nhan/.test(doc('classes/CuoiKhoaLop.tsx')), 'CuoiKhoaLop');
     const kl = doc('students/KetLuanKhoa.tsx');
     assert(!/ketLuanFt\.nhan/.test(kl) && /chuHopKetLuan\(/.test(kl), 'KetLuanKhoa');
   });
@@ -269,7 +269,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const h = (tyLe: number, truot: string[] = []) => d.goiYCuoiKhoa({ ct: 'FOU', tyLe, monTruot: truot }).nhanHuong;
     assert(h(0.8) === 'Lên BE' && h(0.65, ['reading']) === 'Lên BE + bổ trợ' && h(0.55, ['reading']) === 'Quản lý cân nhắc' && h(0.4) === 'Học lại FOU',
       [h(0.8), h(0.65, ['reading']), h(0.55, ['reading']), h(0.4)].join(' | '));
-    assert(!/goiY\.nhanNgan/.test(src('web/src/modules/classes/TransitionPanel.tsx')), 'TransitionPanel không còn nhanNgan (→ Pass)');
+    assert(!/goiY\.nhanNgan/.test(src('web/src/modules/classes/CuoiKhoaLop.tsx')) && /goiY\.nhanHuong/.test(src('web/src/modules/classes/CuoiKhoaLop.tsx')), 'Cuối khoá: cột Gợi ý ghi hướng (nhanHuong), không nhanNgan');
     assert(/loTrinh \? ds\.filter\(\(x\) => x\.key !== 'xep-lop'\)/.test(src('web/src/modules/classes/DauTrangLop.tsx')), 'DauTrangLop bỏ chip xep-lop khi có dải');
   });
 

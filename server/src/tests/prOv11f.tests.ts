@@ -34,10 +34,10 @@ export async function runPrOv11fTests(t: YThucTestKit) {
     assert(maLoi(() => tongQuan.diemChuY(vai('cx'), { ct: 'ft' })) === 0, 'CX vẫn xem Điểm đáng chú ý');
   }));
 
-  check('OV11f-2 · dòng "lớp cần Chốt lộ trình" mở Lộ trình tiếp theo (?viec=lo-trinh-ca-lop), dòng phụ "n em …" không chữ "thiếu"', () => thu(() => {
+  check('OV11f-2 · dòng "lớp cần Chốt lộ trình" mở trang Cuối khoá (?xem=cuoi-khoa, P9b), dòng phụ "n em …" không chữ "thiếu"', () => thu(() => {
     const r = metrics.metricResponse(metrics.metricSet(P.mbManager, 'lop-chua-chot-len-ft', {}), true);
     assert(r.rows.length > 0, 'demo phải có lớp cần Chốt lộ trình');
-    for (const x of r.rows) assert(x.href === `/hoc-vien/lop/${x.id}?viec=lo-trinh-ca-lop` && /em/.test(x.sub) && !/thiếu/.test(x.sub), JSON.stringify(x));
+    for (const x of r.rows) assert(x.href === `/hoc-vien/lop/${x.id}?xem=cuoi-khoa` && /em/.test(x.sub) && !/thiếu/.test(x.sub), JSON.stringify(x));
     /* "Lớp thiếu GV môn" giữ dòng cũ (Sửa phân công). */
     const t2 = metrics.metricResponse(metrics.metricSet(P.mbManager, 'lop-thieu-gv-mon', {}), true);
     assert(t2.rows.every((x: any) => x.href.endsWith('?viec=phan-cong')), JSON.stringify(t2.rows));
