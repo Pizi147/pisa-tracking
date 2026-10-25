@@ -2,7 +2,7 @@ import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
-  kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
+  khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
@@ -32,6 +32,27 @@ export function canMoveSkillSchedule(
   p: Principal, ctx: { classId: number; studentId: number; skill?: string },
 ): boolean {
   return can(p, PERMISSIONS.PLAN_WEEK, ctx) || can(p, PERMISSIONS.SCHEDULE_MOVE, ctx);
+}
+
+/** P6 N15: vai GỐC Quản trị hệ thống (không theo quyền — quyền sửa được; đang "xem như" vai khác vẫn miễn). */
+export const laQuanTriGoc = (p: Principal) => (p.vaiGoc ?? p.roleKeys).includes('system_admin');
+
+/**
+ * P6 N15 (chủ SP 24–25/10): T6 → CN chặn thêm / huỷ / dời lịch MT, MT0, S Ex có tuần gốc / đích thuộc tuần trước / này / sau — trừ
+ * Quản trị hệ thống. Gọi ở từng đường ghi lịch THỦ CÔNG (không có phễu chung); ngoại lệ ("-", vắng, duyệt thẻ dời, khôi phục, Không mock
+ * lại) và đường gián tiếp (chuyển lớp, đổi mốc, áp lịch mặc định) không gọi. Lớp thường (`kind` khác) bỏ qua.
+ */
+export function chanCuoiTuan(p: Principal, a: { kind: string }, tuan: readonly (string | null | undefined)[]): void {
+  if (a.kind !== 'mock' && a.kind !== 'mt0' && a.kind !== 's_expert') return;
+  const cau = khoaCuoiTuan({ tuan: tuan.map((w) => w ?? null), homNay: demoToday(), quanTri: laQuanTriGoc(p) });
+  if (cau) throw badRequest(cau);
+}
+
+/** P6: tuần các kỹ năng bắt buộc của lượt — CHỈ ĐỌC (`ensureSkillRows` tự tạo dòng, làm sai bản khôi phục); chưa có dòng → tuần chung của lượt. */
+export function tuanCacKyNang(a: { id: number; planned_period_id?: number | null }): (string | null)[] {
+  const rows = loadSkillRows([a.id]).get(a.id);
+  if (rows?.length) return rows.filter((r) => r.required).map((r) => r.week_start);
+  return [a.planned_period_id ? (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(a.planned_period_id) as any)?.week_start ?? null : null];
 }
 
 function requireMoveSkillSchedule(
@@ -686,6 +707,7 @@ export function boTuanLuot(p: Principal, attemptId: number, o: { lyDo?: string |
   if (cho) throw badRequest(`${nhan} đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước.`);
   const bo = rows.filter((r) => r.required && r.sit_status === 'scheduled' && r.planned_period_id);
   if (!bo.length) throw badRequest(`${nhan} chưa xếp lịch — không có gì để huỷ.`);
+  chanCuoiTuan(p, a, bo.map((r) => r.week_start));
   const lyDo = o.lyDo?.trim() || 'Huỷ lịch';
 
   return tx(() => {
@@ -793,6 +815,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần');
   if (periodId === row.planned_period_id) throw badRequest('Tuần mới trùng tuần hiện tại.');
+  if (!opts.ghiBuDau) chanCuoiTuan(p, attempt, [row.week_start, period.week_start]);
 
   /*
    * D3 (PR-LM): MT CŨ đổi tuần được — kể cả kỹ năng đã có điểm — như SỬA HỒ SƠ: nhật ký, điểm giữ nguyên (T7: lý do tuỳ chọn).
@@ -968,6 +991,7 @@ export function setSkillScope(
     'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
   const duaLaiHuy = required && row.sit_status === 'cancelled';
   if (!!row.required === required && !duaLaiHuy) return { ok: true, unchanged: true };
+  if (!_opts.khongMockLai) chanCuoiTuan(p, attempt, [row.week_start]);   // "Không mock lại" là ngoại lệ N15
 
   if (!required) {
     if (scoringModeOf(attempt) === 'ratio') {

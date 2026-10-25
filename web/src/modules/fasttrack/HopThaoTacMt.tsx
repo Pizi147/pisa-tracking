@@ -6,7 +6,7 @@ import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TuanNho, type Tuan } from '../test/keHoach/TuanNho.tsx';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useKhoaCuoiTuan, useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { Nhan } from '../../ui/Nhan.tsx';
 import {
@@ -74,6 +74,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   const toast = useToast();
   const lf = useLoiForm();
   const { homNay } = useNgayNghiepVu();
+  const khoaCt = useKhoaCuoiTuan();
   const [tuan, setTuan] = useState<Tuan | null>(row.periodId && row.weekStart ? { periodId: row.periodId, weekStart: row.weekStart } : null);
   const [han, setHan] = useState('');
   const [lyDo, setLyDo] = useState('');
@@ -96,6 +97,9 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   const quaTuan = quanLy && coTuan && tt !== 'khoi-phuc' && !!tuan && tuan.periodId !== row.periodId && !!homNay
     && kiemTuanXep({ ketThuc: [addDaysStr(tuan.weekStart.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
   const chonW = tt === 'huy-diem' && !laThuong && oCoDiem.length > 1;
+  /* P6 N15: MT / MT0 thứ Sáu → CN — đặt / xếp lại / dời / bỏ / đưa lại khi tuần gốc hoặc đích thuộc 3 tuần khoá (Khôi phục, Vắng là ngoại lệ). */
+  const khoa = !laThuong && (['dat-lich', 'xep-lai', 'doi-lich', 'bo-ky-nang', 'dua-lai'] as ThaoTac[]).includes(tt)
+    ? khoaCt(row.weekStart, coTuan && tuan?.periodId !== row.periodId ? tuan?.weekStart : null) : null;
 
   const loi: LoiTruong[] = [
     ...(kiemLyDoThaoTac(tt, lyDo) ? [{ khoa: 'ly-do', nhan: t('Lý do'), lyDo: t('Chưa điền') }] : []),
@@ -194,7 +198,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
         daSua: daSua, huy: { onClick: dong, disabled: busy },
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: (
-          <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${nguyHiem ? 'btn-danger' : 'btn-primary'}`} disabled={busy} onClick={() => void luu()}>
+          <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${nguyHiem ? 'btn-danger' : 'btn-primary'}`} disabled={busy || !!khoa} title={khoa ?? undefined} onClick={() => void luu()}>
             {busy ? t('Đang lưu…') : canhBao ? t('Vẫn dời vào tuần này') : xoaDiem ? t('Xoá điểm và bỏ khỏi đợt') : ten}
           </button>
         ),
@@ -236,11 +240,13 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
         )}
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}
         {xoaDiem && <p className="m-0 text-xs text-amber-200" role="status">{t('{mon} đã có điểm. Xoá điểm và bỏ khỏi đợt?', { mon })}</p>}
-        {quaTuan && (
+        {(quaTuan || khoa) && (
           <div className="flex flex-wrap gap-1.5">
-            <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>{t('Tuần đã qua')}</Nhan>
+            {quaTuan && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>{t('Tuần đã qua')}</Nhan>}
+            {khoa && <Nhan tone="soon" title={khoa}>{t('Khoá đổi lịch T6 – CN')}</Nhan>}
           </div>
         )}
+        {khoa && <p className="m-0 text-xs text-slate-400" role="status">{khoa}</p>}
       </div>
     </KhungPanel>
   );

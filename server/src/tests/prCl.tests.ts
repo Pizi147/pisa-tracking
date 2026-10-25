@@ -604,7 +604,7 @@ export async function runPrClTests(t: YThucTestKit) {
     const doc = (f: string) => fs.readFileSync(path.join(ROOT, f), 'utf8');
     const s = doc('web/src/modules/students/ChuyenLopPanel.tsx');
     assert(!/<select/.test(s) && !/ChonThang/.test(s) && !/api\.patch\(`\/lenh-chuyen/.test(s) && !/ngayThi/.test(s), 'còn select / ChonThang / PATCH / ngayThi');
-    assert(/<ChonNguoi[\s\S]{0,200}ds=\{/.test(s) && /phuLopDich\(/.test(s) && /\.khiChuyen/.test(s) && /canhBao/.test(s), 'thiếu ô gõ tên lớp / khối Khi chuyển máy chủ');
+    assert(/<ChonLop[\s\S]{0,200}ds=\{/.test(s) && /phuLopDich\(/.test(s) && /\.khiChuyen/.test(s) && /canhBao/.test(s), 'thiếu ô gõ tên lớp / khối Khi chuyển máy chủ');
     assert(/export function ChuyenLopNhieuEm/.test(s) && /xet-lai-lo-trinh/.test(s) && /chonGuiNhieuEm\(/.test(s) && /TOI_DA_NHIEU_EM/.test(s), 'thiếu panel nhiều em');
     assert(/ponytail:/.test(s), 'nhiều em: chú thích ponytail (mỗi em một lời gọi)');
     assert(/v === 'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở ?viec=xet-lai');

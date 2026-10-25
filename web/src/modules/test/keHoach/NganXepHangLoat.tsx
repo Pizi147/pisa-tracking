@@ -4,6 +4,7 @@ import { useApi } from '../../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
+import { ChonLop } from '../../../ui/ChonLop.tsx';
 import { Nhan, type ToneNhan } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { NutChon } from '../../../ui/ui.tsx';
@@ -206,11 +207,8 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
             ))}
           </div>
         )}
-        <select className="field w-full sm:w-64" value={classId ?? ''} aria-label="Lớp"
-          onChange={(e) => setClassId(Number(e.target.value) || null)}>
-          {!classId && <option value="">Chọn lớp…</option>}
-          {lopTheoCt.map((l) => <option key={l.id} value={l.id}>{l.code}{l.chiNhanh ? ` · ${l.chiNhanh}` : ''}</option>)}
-        </select>
+        <ChonLop className="w-full sm:w-64" ariaLabel="Lớp" value={classId} onChange={setClassId}
+          ds={lopTheoCt.map((l) => ({ id: l.id, ma: l.code, phu: [l.chiNhanh, `${l.soHv} em`].filter(Boolean).join(' · ') }))} />
       </Khoi>
       {!classId ? <div className="py-6 text-sm text-slate-500">Chọn một lớp để xếp lịch.</div> : !sanSang ? <div className="py-6 text-sm text-slate-500">Đang tải lớp…</div> : (
         <>

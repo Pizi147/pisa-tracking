@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V6 · Trạng thái học viên · Bước tiếp · Lưu trữ</title>
+<link rel="stylesheet" href="../v5/v5-nen.css">
+<link rel="stylesheet" href="v6-chung.css">
+<script>try { var q = new URLSearchParams(location.search).get('theme'); if (q) document.documentElement.dataset.theme = q; } catch (e) {}</script>
+<style>
+  .bt-kq { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--vien); border-radius: 8px; font-size: 14px; }
+  .bt-kq .so { font-weight: 600; }
+  .hai-nut { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .nut-lon { font: inherit; text-align: left; border: 1px solid var(--vien-o); border-radius: 10px; background: var(--be-mat); color: var(--chu); padding: 12px 14px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; font-size: 15px; font-weight: 700; }
+  .nut-lon .phu { font-weight: 400; }
+  .nut-lon.chon { border-color: var(--nhan); background: var(--nhan-nen); box-shadow: inset 0 0 0 1px var(--nhan); color: var(--nhan); }
+  .ds-lt .dong-lt { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--vien); font-size: 14px; }
+  .ds-lt .dong-lt:last-child { border-bottom: 0; }
+  .ds-lt .dong-lt .ten { font-weight: 600; }
+  .ds-lt .dong-lt .gian { flex: 1; }
+  .ds-lt .dong-lt.da-chon { background: var(--nhan-nen); box-shadow: inset 3px 0 0 var(--nhan); }
+  .tom-hanh-trinh { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; padding: 12px 16px; font-size: 14px; }
+  .lo-trinh-lop .dong-lt { display: grid; grid-template-columns: 9rem 10rem 1fr auto; gap: 4px 14px; padding: 12px 16px; border-bottom: 1px solid var(--vien); font-size: 14px; align-items: center; }
+  .lo-trinh-lop .dong-lt:last-child { border-bottom: 0; }
+  .panel-tinh { max-width: 480px; }
+  @media (max-width: 640px) {
+    .hai-nut { grid-template-columns: 1fr; }
+    .lo-trinh-lop .dong-lt { grid-template-columns: 1fr; }
+    .panel-tinh { max-width: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="mk" role="region" aria-label="Điều khiển mockup (không có trên web)">
+  <b>MOCKUP V6 · Trạng thái học viên</b><span class="nhan-tt">CHỜ CHỦ SP DUYỆT</span>
+  <a href="#k1">1 Menu ⋯</a><a href="#k2">2 Hộp Tạm dừng/ Kết thúc học</a><a href="#k3">3 Hàng loạt lớp</a><a href="#k4">4 Bước tiếp sau thi</a><a href="#k5">5 Trang Lưu trữ</a><a href="#k6">6 Hồ sơ lưu trữ</a>
+  <a href="lo-trinh-moi.html">→ Lộ trình mới</a><a href="cuoi-khoa.html">→ Cuối khoá</a><a href="khoa-lich.html">→ Khoá lịch</a>
+  <button type="button" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Sáng / Tối</button>
+  <span>Dữ liệu demo · T2 14/09/2026 · W3 SEP</span>
+</div>
+
+<main class="trang">
+
+  <!-- 1. MENU ⋯ -->
+  <section class="khung" id="k1" aria-labelledby="h1">
+    <h2 id="h1"><span class="so-muc">1</span> Menu ⋯ hồ sơ học viên — một mục "Tạm dừng/ Kết thúc học" <span class="t">QL Nguyễn Khánh Vy · MB</span></h2>
+    <div class="man">
+      <nav class="dh" aria-label="Điều hướng chính (mẫu)"><span class="logo">PISA <small>TRACKING</small></span><a href="#">Tổng quan</a><a href="#" aria-current="page">HV &amp; Lớp</a><a href="#" class="an-dt">Test</a><a href="#" class="an-dt">Công việc<span class="dem">5</span></a><a href="#" class="an-dt">Phân tích</a><a href="#" class="an-dt">Tutor</a></nav>
+      <div class="man-than" style="min-height:540px">
+        <a href="#" class="phu" style="text-decoration:none">‹ MB FT 101</a>
+        <div class="dau-hs">
+          <h1>Lê Quang Huy</h1><span class="bd bd-kq chua-dat">✗ Chưa đạt MT2</span><span class="bd bd-sos m2">SOS 2 · R, W</span>
+          <span class="hanh-dong"><button class="nut nut-nho" type="button">+ Case</button><button class="nut nut-nho" type="button" aria-label="Thao tác khác" aria-expanded="true">⋯</button>
+            <div class="menu" role="menu" aria-label="Thao tác khác">
+              <div class="nhom">Hồ sơ</div>
+              <button class="muc" role="menuitem">Sửa thông tin</button>
+              <button class="muc" role="menuitem">Lịch sử</button>
+              <div class="ke"></div><div class="nhom">Lớp &amp; lộ trình</div>
+              <button class="muc" role="menuitem">Chuyển lớp…</button>
+              <button class="muc" role="menuitem">Lộ trình</button>
+              <button class="muc" role="menuitem">Kết quả thi thật</button>
+              <div class="ke"></div><div class="nhom">Trạng thái</div>
+              <button class="muc dang" role="menuitem">Tạm dừng/ Kết thúc học</button>
+            </div>
+          </span>
+        </div>
+        <div class="meta"><a class="ten-ho-so" href="#">MB FT 101</a><span>FT LT1</span><span class="ng"><span class="n">Target</span><span class="g so">6.5</span></span><span class="bd bd-lich chua">Chưa có lịch thi</span><span class="ng"><span class="n">GVCN</span><span class="g">Trần Ngọc Hà</span></span></div>
+      </div>
+    </div>
+    <div class="ghi">TRƯỚC: "Tạm dừng / Thôi học" (panel hai tab) + mục "Lưu trữ" riêng + "Quay lại học", "Học lại", "Bỏ lưu trữ" rải trong menu.
+      SAU: một mục <b>Tạm dừng/ Kết thúc học</b> (đúng chữ chủ SP); lưu xong em tự vào Lưu trữ nên bỏ mục "Lưu trữ" riêng. "Quay lại học" chuyển ra đầu hồ sơ lưu trữ (khung 6) — không nằm ở menu nữa.
+      Menu chia nhóm có tên (theo P3 UI-CHUNG). GVCN thấy cùng mục (Rulebook §20.7: GVCN làm được, hiệu lực ngay); GVBM / CX không thấy. "Xoá học viên" chỉ Quản trị, cuối menu, chữ đỏ (không vẽ).</div>
+  </section>
+
+  <!-- 2. HỘP -->
+  <section class="khung" id="k2" aria-labelledby="h2">
+    <h2 id="h2"><span class="so-muc">2</span> Hộp nhỏ "Tạm dừng/ Kết thúc học" <span class="t">một hộp · một ô "Có thể quay lại học" · tóm tắt trước khi lưu</span></h2>
+    <div class="ba">
+      <div>
+        <div class="nhan-khung">a · Giữa khoá — ô bật sẵn</div>
+        <div class="hop" role="dialog" aria-labelledby="hop-a">
+          <div class="hop-dau"><div style="flex:1"><h3 id="hop-a">Tạm dừng/ Kết thúc học</h3><div class="ngu-canh">Lê Quang Huy · MB FT 101 · FT LT1</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+          <div class="hop-than">
+            <div class="truong"><label for="ng-a">Từ ngày</label><div class="ngay"><input class="o" id="ng-a" value="14/09/2026"><button class="nut" type="button" aria-label="Mở lịch">📅</button></div></div>
+            <div class="truong"><label for="ld-a">Lý do <span class="phu">(không bắt buộc)</span></label><textarea class="o" id="ld-a" rows="2">Gia đình đi công tác 1 tháng</textarea></div>
+            <label class="tich"><input type="checkbox" checked><span><b>Có thể quay lại học</b></span></label>
+            <div class="tom-tat"><span class="tieu">Khi lưu, web sẽ</span><ul>
+              <li>Đưa em vào Lưu trữ · Tạm dừng</li>
+              <li>Giữ chỗ ở MB FT 101 · lộ trình FT LT1 đứng yên</li>
+              <li>2 Case dừng hạn (R, W1) · 3 việc rời Công việc</li></ul></div>
+          </div>
+          <div class="hop-chan"><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Tạm dừng</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="nhan-khung">b · Tắt ô = Kết thúc học</div>
+        <div class="hop" role="dialog" aria-labelledby="hop-b">
+          <div class="hop-dau"><div style="flex:1"><h3 id="hop-b">Tạm dừng/ Kết thúc học</h3><div class="ngu-canh">Lê Quang Huy · MB FT 101 · FT LT1</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+          <div class="hop-than">
+            <div class="truong"><label for="ng-b">Từ ngày</label><div class="ngay"><input class="o" id="ng-b" value="14/09/2026"><button class="nut" type="button" aria-label="Mở lịch">📅</button></div></div>
+            <div class="truong"><label for="ld-b">Lý do <span class="phu">(không bắt buộc)</span></label><textarea class="o" id="ld-b" rows="2">Chuyển sang học trung tâm khác</textarea></div>
+            <label class="tich"><input type="checkbox"><span><b>Có thể quay lại học</b></span></label>
+            <div class="tom-tat vang"><span class="tieu">Khi lưu, web sẽ</span><ul>
+              <li>Đưa em vào Lưu trữ · Kết thúc học</li>
+              <li>Rời MB FT 101 · kết thúc lộ trình FT LT1</li>
+              <li>Đóng 2 Case (R, W1) · 3 việc rời Công việc</li>
+              <li>Huỷ MT3 chưa có điểm · điểm đã có giữ</li></ul></div>
+          </div>
+          <div class="hop-chan"><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Kết thúc học</button></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div class="nhan-khung">c · Đang lưu</div>
+          <div class="hop"><div class="hop-chan"><span class="trai"><span class="tt-luu dang"><span class="xoay"></span>Đang lưu…</span></span><button class="nut nut-ma" type="button" disabled>Huỷ</button><button class="nut nut-chinh" type="button" disabled>Tạm dừng</button></div></div>
+        </div>
+        <div>
+          <div class="nhan-khung">d · Lỗi — giữ chữ đã gõ</div>
+          <div class="hop"><div class="hop-than"><div class="bao-loi" role="alert"><span aria-hidden="true">⚠</span><div><b>Chưa lưu được.</b> Mất kết nối — lý do đã gõ vẫn giữ.</div></div></div>
+            <div class="hop-chan"><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Thử lại</button></div></div>
+        </div>
+        <div>
+          <div class="nhan-khung">e · Đã lưu — hồ sơ ở lại, Hoàn tác 10 s</div>
+          <div class="toast" role="status"><span>✓ Lê Quang Huy đã vào Lưu trữ · Tạm dừng</span><button type="button">Hoàn tác</button><span class="dem">10 s</span></div>
+        </div>
+        <div>
+          <div class="nhan-khung">f · Em không còn ở trạng thái đổi được</div>
+          <div class="hop"><div class="hop-than"><div class="bao-loi"><span aria-hidden="true">⚠</span><div><b>Em đang có quyết định chuyển lớp chờ W1 OCT.</b> Huỷ quyết định ở Chuyển lớp… rồi làm lại.</div></div></div>
+            <div class="hop-chan"><button class="nut nut-ma" type="button">Đóng</button><button class="nut" type="button">Chuyển lớp…</button></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="ghi"><ul>
+      <li>[Q1 — khuyến nghị đã chọn] Tạm dừng: giữ chỗ lớp + lộ trình đứng yên + Case dừng hạn, chỉ thêm vào Lưu trữ. Em đang tạm dừng hiện có cũng vào Lưu trữ khi deploy.</li>
+      <li>Ô "Có thể quay lại học" <b>bật sẵn khi đang giữa khoá</b>, <b>tắt sẵn khi vừa có KQ thi thật</b> (khung 4). Nút chính đổi chữ theo ô: "Tạm dừng" / "Kết thúc học".</li>
+      <li>Ngày mặc định hôm nay, gõ được + nút lịch (ONgay). Không xác nhận lần hai: hộp đã nêu đúng hậu quả, có Hoàn tác 10 s + Quay lại học sau đó.</li>
+      <li>Tóm tắt do máy chủ tính (cùng hàm lúc lưu). "Huỷ MT3 chưa có điểm" chỉ hiện khi có lượt chưa điểm.</li></ul></div>
+  </section>
+
+  <!-- 3. HÀNG LOẠT -->
+  <section class="khung" id="k3" aria-labelledby="h3">
+    <h2 id="h3"><span class="so-muc">3</span> Thao tác hàng loạt ở lớp — chọn n em → cùng hộp <span class="t">Hồ sơ lớp MB FT 101 · tab Học viên</span></h2>
+    <div class="hai-mot">
+      <div class="the" style="overflow:hidden">
+        <div class="thanh-ap"><span class="so-chon">3 em đã chọn</span><button class="nut nut-nho" type="button">Tạm dừng/ Kết thúc học</button><button class="nut nut-nho" type="button">Chuyển lớp…</button><button class="nut nut-nho" type="button">Xuất</button><button class="nut nut-nho nut-ma" type="button" style="margin-left:auto">Bỏ chọn</button></div>
+        <div class="cuon-bang an-375"><table class="bang"><colgroup><col style="width:44px"><col style="width:220px"><col style="width:140px"><col style="width:140px"><col></colgroup>
+          <thead><tr><th class="chon-o"><input type="checkbox" aria-label="Chọn tất cả" checked style="opacity:.6"></th><th>Học viên</th><th>Kết quả MT2</th><th>Lịch thi</th><th>Việc</th></tr></thead>
+          <tbody>
+            <tr class="da-chon"><td class="chon-o"><input type="checkbox" checked aria-label="Chọn Lê Quang Huy"></td><td><a class="ten-ho-so" href="#">Lê Quang Huy</a></td><td><span class="bd bd-kq chua-dat">✗ Chưa đạt</span></td><td><span class="bd bd-lich chua">Chưa có lịch thi</span></td><td class="phu">3 việc</td></tr>
+            <tr class="da-chon"><td class="chon-o"><input type="checkbox" checked aria-label="Chọn Tô Ngọc Hân"></td><td><a class="ten-ho-so" href="#">Tô Ngọc Hân</a></td><td><span class="bd bd-kq thieu">– Chưa đủ dữ liệu</span></td><td><span class="bd bd-lich chua">Chưa có lịch thi</span></td><td class="phu">—</td></tr>
+            <tr class="da-chon"><td class="chon-o"><input type="checkbox" checked aria-label="Chọn Phạm Bảo Ngọc"></td><td><a class="ten-ho-so" href="#">Phạm Bảo Ngọc</a></td><td><span class="bd bd-kq dat">✓ Đạt</span></td><td><span class="bd bd-lich du-kien">Dự kiến 03/2027</span></td><td class="phu">2 việc</td></tr>
+            <tr><td class="chon-o"><input type="checkbox" aria-label="Chọn Nguyễn Minh An"></td><td><a class="ten-ho-so" href="#">Nguyễn Minh An</a></td><td><span class="bd bd-kq chua-dat">✗ Chưa đạt</span></td><td><span class="bd bd-lich du-kien">Dự kiến 02/2027</span></td><td class="phu">1 việc</td></tr>
+            <tr><td class="chon-o"><input type="checkbox" aria-label="Chọn Vũ Hải Đăng"></td><td><a class="ten-ho-so" href="#">Vũ Hải Đăng</a></td><td><span class="bd bd-kq dat">✓ Đạt</span></td><td><span class="bd bd-lich chua">Chưa có lịch thi</span></td><td class="phu">—</td></tr>
+          </tbody></table></div>
+        <div class="chi-375">
+          <div class="the-em da-chon"><div class="hang"><input type="checkbox" checked aria-label="Chọn Lê Quang Huy"><b>Lê Quang Huy</b><span class="bd bd-kq chua-dat">✗ Chưa đạt</span></div></div>
+          <div class="the-em da-chon"><div class="hang"><input type="checkbox" checked aria-label="Chọn Tô Ngọc Hân"><b>Tô Ngọc Hân</b><span class="bd bd-kq thieu">– Chưa đủ dữ liệu</span></div></div>
+          <div class="the-em da-chon"><div class="hang"><input type="checkbox" checked aria-label="Chọn Phạm Bảo Ngọc"><b>Phạm Bảo Ngọc</b><span class="bd bd-kq dat">✓ Đạt</span></div></div>
+        </div>
+        <div class="phu" style="padding:10px 16px">Đang thấy 5 / 22 HV</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="hop" role="dialog" aria-labelledby="hop-n">
+          <div class="hop-dau"><div style="flex:1"><h3 id="hop-n">Tạm dừng/ Kết thúc học · 3 em</h3><div class="ngu-canh">MB FT 101 · Lê Quang Huy, Tô Ngọc Hân, Phạm Bảo Ngọc</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+          <div class="hop-than">
+            <div class="truong"><label for="ng-n">Từ ngày</label><div class="ngay"><input class="o" id="ng-n" value="14/09/2026"><button class="nut" type="button" aria-label="Mở lịch">📅</button></div></div>
+            <div class="truong"><label for="ld-n">Lý do <span class="phu">(không bắt buộc)</span></label><input class="o" id="ld-n" value="Nghỉ hè theo trường"></div>
+            <label class="tich"><input type="checkbox" checked><span><b>Có thể quay lại học</b></span></label>
+            <div class="tom-tat"><span class="tieu">Khi lưu, web sẽ</span><ul><li>Đưa 3 em vào Lưu trữ · Tạm dừng</li><li>Giữ chỗ ở MB FT 101 · lộ trình đứng yên</li><li>4 Case dừng hạn · 5 việc rời Công việc</li></ul></div>
+          </div>
+          <div class="hop-chan"><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Tạm dừng · 3 em</button></div>
+        </div>
+        <div>
+          <div class="nhan-khung">Lỗi một phần — em lỗi ở lại trong hộp</div>
+          <div class="hop">
+            <div class="hop-than">
+              <div class="tt-luu da">✓ Đã lưu 2 em: Lê Quang Huy, Tô Ngọc Hân</div>
+              <div class="bao-loi"><span aria-hidden="true">⚠</span><div><b>Phạm Bảo Ngọc chưa lưu.</b> Em có quyết định chuyển lớp chờ W1 OCT — huỷ quyết định rồi Thử lại.</div></div>
+            </div>
+            <div class="hop-chan"><button class="nut nut-ma" type="button">Đóng</button><button class="nut nut-chinh" type="button">Thử lại 1 em</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ghi">Cùng hộp với khung 2, chỉ thêm số em. Ô "Có thể quay lại học" áp chung cả nhóm — em cần khác thì bỏ chọn em đó và làm riêng. Gửi theo lô (<code>guiTheoLo</code> đã có), em lưu xong rời bảng, em lỗi giữ lý do + bước tiếp; bảng giữ bộ lọc, vị trí cuộn. TRƯỚC: thanh chọn nhiều có "Tạm dừng", "Kết thúc học", "Lưu trữ" (ba mục) → SAU: một mục.</div>
+  </section>
+
+  <!-- 4. BƯỚC TIẾP -->
+  <section class="khung" id="k4" aria-labelledby="h4">
+    <h2 id="h4"><span class="so-muc">4</span> Bước tiếp sau thi — hai hướng <span class="t">TVV Nguyễn Thu Hương · CP · em Đinh Ngọc Quyên</span></h2>
+    <div class="ba">
+      <div>
+        <div class="nhan-khung">a · Chưa chọn (TVV / QL)</div>
+        <aside class="panel panel-tinh" aria-label="Panel Bước tiếp">
+          <div class="panel-dau"><div class="panel-loai"><span class="vach"></span>VIỆC · BƯỚC TIẾP</div>
+            <div class="tieu-de"><h2>Bước tiếp · Đinh Ngọc Quyên</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+            <div class="ngu-canh">CP FT 110 · FT LT1 · <span class="bd bd-td cho">hạn 21/09</span></div></div>
+          <div class="panel-than">
+            <div class="bt-kq"><span class="tt-luu da">✓ Thi 12/09</span><span class="so">L 7.5 · R 7.0 · W 6.5 · S 6.5</span><span class="ng"><span class="n">Overall</span><span class="g so">7.0</span></span><span class="bd bd-kq dat">✓ Đạt Target 6.5</span><button class="nut nut-nho nut-ma" type="button" style="margin-left:auto">Sửa</button></div>
+            <div class="hai-nut">
+              <button class="nut-lon" type="button">Tạm dừng/ Kết thúc học<span class="phu">Em vào Lưu trữ</span></button>
+              <button class="nut-lon" type="button">Lộ trình mới<span class="phu">LT1 · LT2 · RF · Khác</span></button>
+            </div>
+          </div>
+          <div class="panel-chan"><span class="trai"><button class="nut nut-nho nut-ma" type="button">Gia hạn 1 tuần</button></span><button class="nut nut-ma" type="button">Lịch sử</button></div>
+        </aside>
+      </div>
+      <div>
+        <div class="nhan-khung">b · Chọn "Tạm dừng/ Kết thúc học" — ô tắt sẵn</div>
+        <aside class="panel panel-tinh" aria-label="Panel Bước tiếp — Tạm dừng/ Kết thúc học">
+          <div class="panel-dau"><div class="panel-loai"><span class="vach"></span>VIỆC · BƯỚC TIẾP</div>
+            <div class="tieu-de"><h2>Bước tiếp · Đinh Ngọc Quyên</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+            <div class="ngu-canh">CP FT 110 · FT LT1 · <span class="bd bd-td cho">hạn 21/09</span></div></div>
+          <div class="panel-than">
+            <div class="bt-kq"><span class="tt-luu da">✓ Thi 12/09</span><span class="ng"><span class="n">Overall</span><span class="g so">7.0</span></span><span class="bd bd-kq dat">✓ Đạt Target 6.5</span></div>
+            <div class="hai-nut"><button class="nut-lon chon" type="button" aria-pressed="true">Tạm dừng/ Kết thúc học</button><button class="nut-lon" type="button">Lộ trình mới</button></div>
+            <div class="truong"><label for="ng-bt">Từ ngày</label><div class="ngay"><input class="o" id="ng-bt" value="14/09/2026"><button class="nut" type="button" aria-label="Mở lịch">📅</button></div></div>
+            <div class="truong"><label for="ld-bt">Lý do <span class="phu">(không bắt buộc)</span></label><input class="o" id="ld-bt" value="Đã đạt Target, đi du học"></div>
+            <label class="tich"><input type="checkbox"><span><b>Có thể quay lại học</b></span></label>
+            <div class="tom-tat vang"><span class="tieu">Khi lưu, web sẽ</span><ul><li>Đưa em vào Lưu trữ · Kết thúc học</li><li>Kết thúc lộ trình FT LT1 · KQ thi giữ ở hồ sơ</li><li>Việc Bước tiếp xong</li></ul></div>
+          </div>
+          <div class="panel-chan"><span class="trai"><span class="tt-luu nhap">● Chưa lưu</span></span><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Kết thúc học</button></div>
+        </aside>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div class="nhan-khung">c · Chọn "Lộ trình mới" → panel một luồng</div>
+          <div class="dai"><span>Panel đổi tại chỗ thành "Lộ trình mới · Đinh Ngọc Quyên"</span><a href="lo-trinh-moi.html#k1" class="phai">Xem khung ›</a></div>
+        </div>
+        <div>
+          <div class="nhan-khung">d · GVCN Ngô Bảo Nam — chỉ xem</div>
+          <aside class="panel panel-tinh" aria-label="Panel Bước tiếp — chỉ xem">
+            <div class="panel-dau"><div class="tieu-de"><h2>Bước tiếp · Đinh Ngọc Quyên</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div><div class="ngu-canh">CP FT 110 · FT LT1</div></div>
+            <div class="panel-than"><div class="bt-kq"><span class="tt-luu da">✓ Thi 12/09</span><span class="ng"><span class="n">Overall</span><span class="g so">7.0</span></span><span class="bd bd-kq dat">✓ Đạt Target 6.5</span></div>
+              <div class="bao-chi-xem">Chờ TVV Nguyễn Thu Hương chọn bước tiếp · hạn 21/09</div></div>
+          </aside>
+        </div>
+        <div>
+          <div class="nhan-khung">e · Đã chọn — Hoàn tác / Sửa</div>
+          <div class="dai"><span class="bd bd-td xong">Kết thúc học 14/09</span><span class="phu">Nguyễn Thu Hương</span><span class="phai"><button class="nut nut-nho" type="button">Hoàn tác</button></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ghi"><ul>
+      <li>TRƯỚC: ba lựa chọn "Lộ trình mới · Tạm dừng · Thôi học" → SAU: hai nút, không chọn sẵn. Chọn "Tạm dừng/ Kết thúc học" mở đúng nội dung hộp khung 2 ngay trong panel (không panel lồng panel).</li>
+      <li>Ô "Có thể quay lại học" tắt sẵn vì vừa có KQ thi thật; bật lên thì nút đổi "Tạm dừng" và tóm tắt đổi "lộ trình đứng yên".</li>
+      <li>Hạn 1 tuần + "Gia hạn 1 tuần" giữ như hiện có. KQ thi giữ khi chưa chọn. Hoàn tác (em chưa bị đụng sau đó) giữ. Dữ liệu cũ <code>tam_dung · ket_thuc · hoc_tiep · hoc_lai</code> đọc như cũ.</li></ul></div>
+  </section>
+
+  <!-- 5. TRANG LƯU TRỮ -->
+  <section class="khung" id="k5" aria-labelledby="h5">
+    <h2 id="h5"><span class="so-muc">5</span> Trang Lưu trữ — em tạm dừng cũng ở đây, Quay lại học tại chỗ <span class="t">QL Nguyễn Khánh Vy · MB</span></h2>
+    <div class="man">
+      <nav class="dh" aria-label="Điều hướng chính (mẫu)"><span class="logo">PISA <small>TRACKING</small></span><a href="#">Tổng quan</a><a href="#" aria-current="page">HV &amp; Lớp</a><a href="#" class="an-dt">Test</a><a href="#" class="an-dt">Công việc<span class="dem">5</span></a></nav>
+      <div class="man-than">
+        <div class="dau-hs"><h1>Lưu trữ</h1></div>
+        <div class="tabs" role="tablist"><button role="tab" type="button">Lớp đã kết thúc<span class="dem">4</span></button><button role="tab" type="button" aria-selected="true">Học viên đã lưu trữ<span class="dem">4</span></button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="o" style="max-width:320px" placeholder="Tìm tên, mã học viên hoặc mã lớp…" aria-label="Tìm"><select class="o" style="width:auto" aria-label="Chi nhánh"><option>MB Monbay</option></select><button class="nut nut-nho nut-ma" type="button" style="margin-left:auto">Chọn nhiều học viên</button></div>
+        <div class="the ds-lt">
+          <div class="dong-lt"><a class="ten-ho-so ten" href="#k6">Lê Quang Huy</a><span class="bd bd-td dang">Tạm dừng · Có thể quay lại</span><span class="phu gian">MB FT 101 · FT LT1 · từ 14/09</span><button class="nut nut-nho nut-chinh" type="button">Quay lại học</button></div>
+          <div class="dong-lt"><a class="ten-ho-so ten" href="#k6">Tô Ngọc Hân</a><span class="bd bd-td dang">Tạm dừng · Có thể quay lại</span><span class="phu gian">MB FT 101 · FT LT1 · từ 14/09</span><button class="nut nut-nho nut-chinh" type="button">Quay lại học</button></div>
+          <div class="dong-lt"><a class="ten-ho-so ten" href="#k6">Hoàng Gia Bảo</a><span class="bd bd-td dang">Tạm dừng · Có thể quay lại</span><span class="phu gian">MB FT 95 · FT LT1 · từ 10/07</span><button class="nut nut-nho nut-chinh" type="button">Quay lại học</button></div>
+          <div class="dong-lt"><a class="ten-ho-so ten" href="#k6">Bùi Thanh Tùng</a><span class="bd bd-td cho">Kết thúc học</span><span class="phu gian">MB FT 98 · FT LT2 · 22/08</span><button class="nut nut-nho" type="button">Tổng kết</button><button class="nut nut-nho" type="button">Quay lại học</button></div>
+        </div>
+        <div class="hai">
+          <div>
+            <div class="nhan-khung">Quay lại học · lớp cũ còn chạy → một bấm</div>
+            <div class="toast" role="status"><span>✓ Lê Quang Huy quay lại MB FT 101 · Case chạy hạn lại</span><button type="button">Hoàn tác</button><span class="dem">10 s</span></div>
+          </div>
+          <div>
+            <div class="nhan-khung">Quay lại học · lớp cũ đã kết thúc → hỏi lớp</div>
+            <div class="hop" role="dialog" aria-labelledby="hop-ql">
+              <div class="hop-dau"><div style="flex:1"><h3 id="hop-ql">Quay lại học · Hoàng Gia Bảo</h3><div class="ngu-canh">MB FT 95 đã kết thúc 31/08 · FT LT1 · Target 6.0</div></div><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+              <div class="hop-than">
+                <div class="truong"><label for="lop-ql">Lớp</label><div class="chon-lop"><input class="o" id="lop-ql" value="FT 1"><div class="ds tinh" role="listbox"><div class="dong dang" role="option"><b>MB FT 104</b><span class="phu">FT LT1 · MB · 12 em</span></div><div class="dong" role="option"><b>MB FT 107</b><span class="phu">FT LT1 · MB · 9 em</span></div></div></div></div>
+                <div class="truong"><span class="nhan-truong">Bắt đầu</span><div class="lua-chon"><label class="chon">Ngay bây giờ</label><label>Thứ Hai 21/09</label></div></div>
+                <div class="tom-tat"><span class="tieu">Khi lưu, web sẽ</span><ul><li>Bỏ lưu trữ · em đang học ở MB FT 104</li><li>Lộ trình FT LT1 chạy tiếp · Case chạy hạn lại</li></ul></div>
+              </div>
+              <div class="hop-chan"><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Quay lại học</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="the"><div class="rong"><div class="tieu">Chưa có học viên nào được lưu trữ</div></div></div>
+      </div>
+    </div>
+    <div class="ghi"><ul>
+      <li>TRƯỚC: tab chỉ có em Kết thúc học; nút "Bỏ lưu trữ" + "Học lại"; em lưu trữ bị chặn đổi trạng thái (<code>students.ts:276</code>). SAU: em tạm dừng cũng ở đây (nhãn "Tạm dừng · Có thể quay lại"), một nút <b>Quay lại học</b> cho cả hai loại.</li>
+      <li>Em Kết thúc học bấm Quay lại học → mở panel <a href="lo-trinh-moi.html#k1">Lộ trình mới</a> (lộ trình cũ đã đóng). "Tổng kết" giữ. Chọn nhiều → "Quay lại học · n em" (thay "Bỏ lưu trữ · Học lại").</li>
+      <li>Hàng cuối = trạng thái rỗng của tab (không cùng lúc với danh sách).</li></ul></div>
+  </section>
+
+  <!-- 6. HỒ SƠ LƯU TRỮ -->
+  <section class="khung" id="k6" aria-labelledby="h6">
+    <h2 id="h6"><span class="so-muc">6</span> Hồ sơ đã lưu trữ — tóm tắt hành trình + Quay lại học <span class="t">không là ngõ cụt</span></h2>
+    <div class="man">
+      <nav class="dh" aria-label="Điều hướng chính (mẫu)"><span class="logo">PISA <small>TRACKING</small></span><a href="#">Tổng quan</a><a href="#" aria-current="page">HV &amp; Lớp</a><a href="#" class="an-dt">Test</a></nav>
+      <div class="man-than">
+        <a href="#k5" class="phu" style="text-decoration:none">‹ Lưu trữ</a>
+        <div class="dau-hs"><h1>Bùi Thanh Tùng</h1><span class="bd bd-td cho">Kết thúc học 22/08</span><span class="hanh-dong"><button class="nut nut-chinh" type="button">Quay lại học</button><button class="nut nut-nho" type="button" aria-label="Thao tác khác">⋯</button></span></div>
+        <div class="the tom-hanh-trinh" aria-label="Tóm tắt hành trình">
+          <span class="ng"><span class="n">Lộ trình gần nhất</span><span class="g">FT LT2 · MB FT 98</span></span>
+          <span class="ng"><span class="n">Target</span><span class="g so">6.5</span></span>
+          <span class="ng"><span class="n">Thi thật</span><span class="g so">15/08 · L 6.5 · R 6.0 · W 5.5 · S 6.0 · Overall 6.0</span></span>
+          <span class="bd bd-kq chua-dat">✗ Chưa đạt Target</span>
+          <span class="ng"><span class="n">Kết thúc</span><span class="g so">22/08/2026</span></span>
+        </div>
+        <section class="the" aria-label="Lộ trình và lớp">
+          <div class="the-dau"><h3 class="h-khoi">Lộ trình &amp; lớp</h3><span class="phu">2 lộ trình</span></div>
+          <div class="lo-trinh-lop">
+            <div class="dong-lt"><b>FT LT2</b><span class="so">23/02 – 22/08/2026</span><span>MB FT 98 · MT1–MT4 · thi 15/08 · Overall 6.0</span><button class="nut nut-nho" type="button">Tổng kết</button></div>
+            <div class="dong-lt"><b>FT LT1</b><span class="so">08/09/2025 – 15/02/2026</span><span>MB FT 81 · MT1–MT3 · thi 07/02 · Overall 5.5</span><button class="nut nut-nho" type="button">Tổng kết</button></div>
+          </div>
+        </section>
+        <div>
+          <div class="nhan-khung">Biến thể · em Tạm dừng</div>
+          <div class="dau-hs"><h1 style="font-size:17px">Lê Quang Huy</h1><span class="bd bd-td dang">Tạm dừng 14/09 · Có thể quay lại</span><span class="ng"><span class="n">Giữ chỗ</span><span class="g">MB FT 101 · FT LT1</span></span><span class="hanh-dong"><button class="nut nut-chinh" type="button">Quay lại học</button></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ghi"><ul>
+      <li>GPT 7: một dòng tóm tắt (lộ trình gần nhất · Target · thi thật · kết quả · ngày kết thúc) ngay dưới tên; chi tiết "Lộ trình &amp; lớp" như cũ (bản chụp từng lộ trình).</li>
+      <li>Hồ sơ lưu trữ vẫn chỉ xem (không Sửa thông tin / Lộ trình / KQ thi — <code>CAU_LUU_TRU</code>); nút chính duy nhất là <b>Quay lại học</b>. ⋯ còn Lịch sử (+ Xoá học viên với Quản trị).</li>
+      <li>[Dữ liệu demo V6] Bùi Thanh Tùng, Hoàng Gia Bảo, MB FT 98 / 95 / 81 / 104 / 107 không có trong <code>du-lieu-demo.md</code>.</li></ul></div>
+  </section>
+</main>
+</body>
+</html>

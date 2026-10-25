@@ -4,6 +4,8 @@ import { Modal } from '../../../ui/Drawer.tsx';
 import { Truong } from '../../../ui/KhungPanel.tsx';
 import { ONgay } from '../../../ui/ONgay.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
+import { Nhan } from '../../../ui/Nhan.tsx';
+import { useKhoaCuoiTuan } from '../../../ui/ngayNghiepVu.ts';
 import { kiemBand, NHAN_XET_TOI_DA } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { DongSEx } from './kieu.ts';
@@ -26,6 +28,11 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
   const cham = !!dong?.cham;
   const band = diem.trim() === '' ? null : Number(diem.trim().replace(',', '.'));
   const loiBand = band === null ? null : kiemBand(band);
+  /* P6 N15: S Ex chung khoá T6 → CN với MT — thêm / đổi ngày / xoá khi tuần gốc hoặc đích thuộc 3 tuần khoá (chấm điểm vẫn được). */
+  const khoaCt = useKhoaCuoiTuan();
+  const doiLich = suaLich && !!ngay && (!dong || ngay !== (dong.ngay ?? dong.tuan));
+  const khoa = doiLich ? khoaCt(dong?.tuan, ngay) : null;
+  const khoaXoa = dong ? khoaCt(dong.tuan) : null;
 
   const lamMoi = () => { for (const k of ['/ke-hoach-test', '/cham', '/lich-su']) invalidate(k); onXong(); };
   const xong = (chu: string) => { toast.push('ok', chu); lamMoi(); onDong(); };
@@ -62,9 +69,9 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
     <Modal open onClose={busy ? () => {} : onDong} width="max-w-md" title={`${dong ? t('S Ex') : t('+ S Ex')} · ${ten}`}
       footer={(
         <>
-          {dong?.sua && <button type="button" className="btn btn-danger mr-auto min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{t('Xoá')}</button>}
+          {dong?.sua && <button type="button" className="btn btn-danger mr-auto min-h-[44px] sm:min-h-0" disabled={busy || !!khoaXoa} title={khoaXoa ?? undefined} onClick={() => void xoa()}>{t('Xoá')}</button>}
           <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onDong}>{t('Đóng')}</button>
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (!suaLich && !cham)} onClick={() => void luu()}>
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (!suaLich && !cham) || !!khoa} title={khoa ?? undefined} onClick={() => void luu()}>
             {busy ? t('Đang lưu…') : t('Lưu')}
           </button>
         </>
@@ -73,6 +80,12 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
         <Truong nhan={t('Ngày')}>
           <ONgay kieu="ngay" value={ngay} onChange={setNgay} disabled={!suaLich || busy} ariaLabel={t('Ngày')} />
         </Truong>
+        {(khoa || khoaXoa) && (
+          <div className="space-y-1" role="status">
+            <Nhan tone="soon" title={khoa ?? khoaXoa!}>{t('Khoá đổi lịch T6 – CN')}</Nhan>
+            <p className="m-0 text-xs text-slate-400">{khoa ?? khoaXoa}</p>
+          </div>
+        )}
         {cham && (
           <>
             <Truong nhan={t('Band')} tuyChon loi={loiBand ?? undefined}>

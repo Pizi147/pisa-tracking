@@ -4,6 +4,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { CHU_XAC_NHAN_XOA, NHAN_VIEC_HANG_LOAT, dsLoi, khopXacNhanXoa, type ViecHangLoat, type XemTruocHangLoat } from '@shared/domain/index.ts';
@@ -112,10 +113,8 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
                 </span>
                 {dich === 'moi' && (
                   <Truong nhan="Lớp" batBuoc loi={lf.loiCua(loi, 'lop')}>
-                    <select className="field w-full" {...lf.o(loi, 'lop')} value={lopMoiId} onChange={(e) => setLopMoiId(e.target.value ? Number(e.target.value) : '')}>
-                      <option value="">Chọn lớp</option>
-                      {(dsLop.data?.lop ?? []).filter((l) => !l.ft).map((l) => <option key={l.id} value={l.id}>{[l.code, l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null, l.siSo != null ? `${l.siSo} em` : null].filter(Boolean).join(' · ')}</option>)}
-                    </select>
+                    <ChonLop ariaLabel="Lớp" {...lf.o(loi, 'lop')} value={lopMoiId || null} onChange={(id) => setLopMoiId(id ?? '')} khongKhop={dsLop.data ? undefined : 'Đang tải…'}
+                      ds={(dsLop.data?.lop ?? []).filter((l) => !l.ft).map((l) => ({ id: l.id, ma: l.code, phu: [l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null, l.siSo != null ? `${l.siSo} em` : null].filter(Boolean).join(' · ') }))} />
                   </Truong>
                 )}
               </>
