@@ -155,24 +155,26 @@ function tinhTapXetLai(today: string, chiEm?: number): EmXetLai[] {
         : null,
     });
   }
-  /* Bổ trợ Final: môn (chủ đề Case của nhóm) + số buổi đã học — hai câu cho mọi nhóm. */
+  /* Bổ trợ Final: môn (chủ đề Case của nhóm) + số buổi đã học — một câu cho mọi nhóm. */
   const nhom = out.map((e) => (e.boTro as any)?.nhom).filter(Boolean) as string[];
   const monCua = new Map<string, Set<string>>(), hocCua = new Map<string, number>();
   theoLo([...new Set(nhom)], (lo, q) => {
-    for (const r of conn.prepare(`SELECT DISTINCT iv.nhom_bo_tro AS nhom, sc.topic FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro IN (${q})`).all(...lo) as any[]) {
+    for (const r of conn.prepare(
+      `SELECT iv.nhom_bo_tro AS nhom, sc.topic, (SELECT COALESCE(SUM(f.so_buoi), 0) FROM case_followups f WHERE f.intervention_id = iv.id) AS n
+         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro IN (${q})`,
+    ).all(...lo) as any[]) {
       if (!monCua.has(r.nhom)) monCua.set(r.nhom, new Set());
       if (r.topic) monCua.get(r.nhom)!.add(r.topic);
+      hocCua.set(r.nhom, (hocCua.get(r.nhom) ?? 0) + Number(r.n));
     }
-    for (const r of conn.prepare(
-      `SELECT iv.nhom_bo_tro AS nhom, COALESCE(SUM(f.so_buoi), 0) AS n FROM case_interventions iv JOIN case_followups f ON f.intervention_id = iv.id WHERE iv.nhom_bo_tro IN (${q}) GROUP BY iv.nhom_bo_tro`,
-    ).all(...lo) as any[]) hocCua.set(r.nhom, Number(r.n));
   });
   for (const e of out) {
     const b = e.boTro as any;
     if (!b) continue;
     e.boTro = { mon: [...(monCua.get(b.nhom) ?? [])].map((k) => (b.ct ? tenMonNgan(b.ct, k) : k)), daHoc: Math.min(hocCua.get(b.nhom) ?? 0, b.tong), tong: b.tong, miniTest: b.miniTest };
   }
-  return out.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+  const hang = (e: EmXetLai) => (e.lyDo.ma === 'a' || e.lyDo.ma === 'd' ? 0 : 1);   // đỏ (dưới 50 % / Mini Test) trước — mockup khung 2
+  return out.sort((a, b) => hang(a) - hang(b) || a.ten.localeCompare(b.ten, 'vi'));
 }
 
 /** Quyết được: QL / Quản trị chi nhánh lớp em ĐANG học (`class.edit` lớp đó — cùng quyền ra lệnh). */

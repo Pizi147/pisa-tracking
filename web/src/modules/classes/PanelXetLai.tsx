@@ -343,7 +343,7 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
       )}
       {chon && canLyDo(e, chon) && (
         <span className="flex basis-full flex-wrap items-center gap-2">
-          <input className={`field h-[34px] w-[360px] max-w-full text-sm ${loi === t('Ghi lý do ngắn') ? 'border-late-line' : ''}`} placeholder={t('Lý do')} aria-label={t('Lý do · {ten}', { ten: e.ten })}
+          <input className={`field h-[34px] w-[360px] max-w-full text-sm ${loi === t('Ghi lý do ngắn') ? 'border-late-line' : ''}`} autoComplete="off" name={`ly-do-${e.studentId}`} placeholder={t('Lý do')} aria-label={t('Lý do · {ten}', { ten: e.ten })}
             aria-invalid={loi === t('Ghi lý do ngắn')} maxLength={2000} value={chon.lyDo} disabled={busy} onChange={(ev) => onChon({ ...chon, lyDo: ev.target.value })} />
         </span>
       )}
@@ -366,7 +366,7 @@ function NhanXetGvcn({ e, classId }: { e: EmXetLai; classId: number }) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-dashed px-3.5 pb-3 pt-2.5 pl-[42px] max-sm:pl-3.5" style={{ borderColor: 'var(--line)' }}>
       <span className="text-[13px] text-slate-400">{t('Nhận xét 2 tuần đầu')}</span>
-      <input className="field h-[34px] w-[340px] max-w-full text-sm" aria-label={t('Nhận xét của GVCN lớp mới')} maxLength={1000} value={chu}
+      <input className="field h-[34px] w-[340px] max-w-full text-sm" autoComplete="off" name={`nhan-xet-${e.studentId}`} aria-label={t('Nhận xét của GVCN lớp mới')} maxLength={1000} value={chu}
         onChange={(ev) => { setChu(ev.target.value); if (luu !== 'dang') setLuu('cho'); }} onBlur={ghi} />
       <span role="status" className="text-[13px]">
         {luu === 'dang' ? <span className="text-slate-400">{t('Đang lưu…')}</span> : luu === 'da' && chu.trim() === cu.trim() && cu ? <span className="text-ok">✓ {t('Đã lưu')}</span>
@@ -378,7 +378,7 @@ function NhanXetGvcn({ e, classId }: { e: EmXetLai; classId: number }) {
 
 /** Chip vàng "Xét lại" (mockup `.chip-xl`). */
 export function ChipXetLai({ onClick }: { onClick?: () => void }) {
-  const cls = 'inline-flex h-[22px] items-center whitespace-nowrap rounded-full border px-2 text-xs font-bold text-soon';
+  const cls = 'inline-flex h-[22px] items-center whitespace-nowrap rounded-full border px-2 text-xs font-bold text-soon focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--accent)]';
   const st = { background: 'rgb(var(--soon-bg-rgb))', borderColor: 'rgb(var(--soon-line-rgb))' };
   return onClick ? <button type="button" className={`${cls} cursor-pointer`} style={st} onClick={onClick}>{t('Xét lại')}</button> : <span className={cls} style={st}>{t('Xét lại')}</span>;
 }

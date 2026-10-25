@@ -731,7 +731,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: 'Final chưa khớp hướng đã chốt',
       tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Xét lại ›',
       href: `/hoc-vien/lop/${x.lopId}?viec=xet-lai`,
-      ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa quyết',
+      /* P9a: việc của chính QL đang xem (chỉ người quyết được mới có dòng) — thanh Việc cần làm hồ sơ lớp lấy dòng `mine`. */
+      ownerId: null, owner: null, mine: true, due: x.han, statusLabel: 'Chưa quyết',
     });
   }
 
