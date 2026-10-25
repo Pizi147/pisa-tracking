@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
@@ -13,7 +14,7 @@ import { ChipLichThi, MiniKn, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
-import { chuPhuHuynh, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { SO_DONG_VIEC_MAC_DINH, chuPhuHuynh, gopViecTheoMon, monCuaViec, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
@@ -64,18 +65,35 @@ function TenEm({ h, lop, ev, ds }: { h: HvGon; lop?: LopGon; ev?: EmVai; ds: Ngu
   );
 }
 
-/** Ô Việc: việc gấp nhất (bấm = làm tại chỗ như Công việc) · hạn dd/mm (⚠ đỏ khi quá hạn) · "+n việc". */
-function OViec({ v, onMo }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void }) {
+/**
+ * Ô Việc: việc gấp nhất (bấm = làm tại chỗ như Công việc) · hạn dd/mm (⚠ đỏ khi quá hạn) · "+n việc".
+ * P11 VIEC-DUNG-VAI: GV / TVV một dòng (việc của mình). QL / Admin (`gopMon`): mỗi môn một dòng (việc gấp nhất của môn + "+n"), một dòng cho việc không
+ * gắn môn; 3 dòng gấp nhất, "Xem thêm (n)" mở hết tại chỗ — Σ dòng + "+n" = số việc thật.
+ */
+function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void; gopMon?: boolean }) {
   const { homNay } = useNgayNghiepVu();
+  const [mo, setMo] = useState(false);
   if (!v?.length) return trong;
-  const x = v[0];
+  const dong = gopMon ? gopViecTheoMon(v, (x) => monCuaViec(x.it)) : [{ mon: null, dau: v[0], them: v.length - 1 }];
+  const hien = mo ? dong : dong.slice(0, SO_DONG_VIEC_MAC_DINH);
   return (
-    <span className="block min-w-0 text-xs">
-      <button type="button" className="link block max-w-full truncate appearance-none border-0 bg-transparent p-0 text-left text-xs" title={dich(x.chu)} onClick={() => onMo(x.it)}>{dich(x.chu)}</button>
-      <span className="block tabular-nums">
-        {x.han && <span className={x.quaHan ? 'font-semibold text-bad' : 'text-slate-400'}>{x.quaHan ? '⚠ ' : ''}{shortDate(x.han, homNay)}</span>}
-        {v.length > 1 && <span className="text-slate-500">{x.han ? ' · ' : ''}{t('+{n} việc', { n: v.length - 1 })}</span>}
-      </span>
+    <span className="block min-w-0 space-y-1 text-xs max-sm:space-y-0">
+      {hien.map(({ dau: x, them }) => (
+        <span key={x.it.key} className="block min-w-0 max-sm:flex max-sm:items-center max-sm:gap-2">
+          <button type="button" className="link block max-w-full min-w-0 truncate appearance-none border-0 bg-transparent p-0 text-left text-xs max-sm:min-h-[44px] max-sm:flex-1 max-sm:leading-[44px]"
+            title={dich(x.chu)} onClick={() => onMo(x.it)}>{dich(x.chu)}</button>
+          <span className="block tabular-nums max-sm:shrink-0">
+            {x.han && <span className={x.quaHan ? 'font-semibold text-bad' : 'text-slate-400'}>{x.quaHan ? '⚠ ' : ''}{shortDate(x.han, homNay)}</span>}
+            {them > 0 && <span className="text-slate-500">{x.han ? ' · ' : ''}{t('+{n} việc', { n: them })}</span>}
+          </span>
+        </span>
+      ))}
+      {dong.length > SO_DONG_VIEC_MAC_DINH && (
+        <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
+          className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-semibold text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
+          {mo ? t('Thu gọn') : t('Xem thêm ({n})', { n: dong.length - SO_DONG_VIEC_MAC_DINH })}
+        </button>
+      )}
     </span>
   );
 }
@@ -141,8 +159,8 @@ function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) 
  * BẢNG "TẤT CẢ" (UI-HV-LOP, `dieu-chinh-cuoi.html` khu d + `10` mục 5): mỗi em một dòng — Học viên · Lộ trình · MT gần nhất (Overall / KV + 5 kỹ năng) ·
  * Xu hướng · Hỗ trợ · Ý thức · Lịch thi · Việc · ⋯ (thao tác của em, giữ từ bảng cũ — `10` mục 8). Em lớp thường: cột MT để "—" (không có lượt MT).
  */
-export function BangHvGon({ ds, lop, viec, nguCanh, onMoViec, onDoi, vai }: {
-  ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
+export function BangHvGon({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
+  ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
 }) {
   const o = (h: HvGon, c: CotBang) => {
     const g = h.hang;
@@ -165,7 +183,7 @@ export function BangHvGon({ ds, lop, viec, nguCanh, onMoViec, onDoi, vai }: {
       case 'ho': return g ? <OHoTro h={g.hoTro} /> : trong;
       case 'y': return g?.yThuc ? <Nhan tone="doing">{dich(g.yThuc)}</Nhan> : trong;
       case 'lich': return ev ? <OLich h={h} ev={ev} onMoEm={vai?.onMoEm} /> : <ChipLichThi l={h.lich} />;
-      case 'viec': return <OViec v={viec.get(h.id)} onMo={onMoViec} />;
+      case 'viec': return <OViec v={viec.get(h.id)} onMo={onMoViec} gopMon={gopMon} />;
       case 'ph': return ev ? <span className="block text-sm"><OPhuHuynh l={ev.lienHe} /></span> : trong;
       default: return <MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} />;
     }
@@ -174,8 +192,8 @@ export function BangHvGon({ ds, lop, viec, nguCanh, onMoViec, onDoi, vai }: {
 }
 
 /** Điện thoại (< 640 px, khu d 375): mỗi em một thẻ — tên · lớp · chip (SOS trước, không thì lịch thi) · ⋯; dòng 2 = việc gấp nhất, không việc thì Target · Overall. */
-export function TheHvGon({ ds, lop, viec, nguCanh, onMoViec, onDoi, vai }: {
-  ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
+export function TheHvGon({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
+  ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
 }) {
   return (
     <div>
@@ -193,7 +211,7 @@ export function TheHvGon({ ds, lop, viec, nguCanh, onMoViec, onDoi, vai }: {
               <span className="shrink-0"><MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} /></span>
             </div>
             <div className="text-xs text-slate-400">
-              {v?.length ? <OViec v={v} onMo={onMoViec} />
+              {v?.length ? <OViec v={v} onMo={onMoViec} gopMon={gopMon} />
                 : g?.mtGan ? <span className="inline-flex items-baseline gap-1">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /> · Overall
                     <ODiem so={chuSo(g.mtGan.ovr)} kq={kqOverall(g.mtGan.ovr, g.mtGan.kyVong)} kck={g.loTrinh.kck} nhan="Overall" /> MT{g.mtGan.mt}</span>
                 : '—'}

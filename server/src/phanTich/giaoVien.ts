@@ -23,8 +23,9 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { tuanLich as tuanLichNgan } from '../../../shared/domain/hienThiNgay.ts';
 import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { khoangTamDung } from '../students/tamDung.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
+import { lopLucThiThat } from './lopLucThi.ts';
 import { t } from '../../../shared/i18n/index.ts';
 
 const LO = 400;
@@ -106,7 +107,7 @@ function nguCanhCn(cn: number, f: LocPtGv): NguCanhPtGv {
 type OBai = {
   id: number; attemptId: number; classId: number; studentId: number; hocVien: string; skill: string; tuan: string; han: string | null;
   nhapDau: string | null; band: number | null; coDiem: boolean; tienDo: string; noShow: boolean;
-  /** Q2: em đang học — chỉ tập Chấm điểm lọc theo cờ này; Kết quả / Tiến bộ giữ bài đã có điểm của em đã thôi học. */
+  /** Q2 + P12: em đang học TẠI HẠN NHẬP — chỉ tập Chấm điểm lọc theo cờ này; Kết quả / Tiến bộ giữ bài đã có điểm của em đã thôi học. */
   dangHoc: boolean; kck: boolean; bai: string;
   /** T18 (PR-LT3): loại lượt + GV chấm Speaking đã ghi (`examiner_user_id`) — ô Speaking Mock tính cho người chấm, không cho GVBM S. */
   kind: string; examinerUserId: number | null;
@@ -126,7 +127,8 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
   for (const lo of theoLo([...c.lop.keys()])) {
     rows.push(...conn.prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
-              cy.target_score, cy.khong_cam_ket, cy.route, s.full_name AS hv_ten, (${HV_DANG_HOC_SQL('s')}) AS dang_hoc
+              -- P12 (E6): Target + KCK LÚC LƯỢT (như resultOf) — đổi Target / KCK lộ trình sau đó không viết lại kỳ đã qua
+              a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, cy.route, s.full_name AS hv_ten, s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
          JOIN students s ON s.id = a.student_id
@@ -153,6 +155,20 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
     const ds = (ghiDanh.get(sid) ?? []).filter((e) => e.tu && e.tu <= cuoi && (!e.den || e.den > tuan));
     return ds.length ? ds.reduce((x, y) => (y.tu > x.tu ? y : x)).lop : lopLuot;
   };
+  /*
+   * P12 (E8): em ĐANG HỌC TẠI NGÀY d (hạn nhập) — Q2 cùng nghĩa với `HV_DANG_HOC_SQL` nhưng theo ngày: chưa Kết thúc học / Lưu trữ trước d, không trong
+   * khoảng Tạm dừng ở d. Lưu trữ hôm nay không xoá ô kỳ trước. Trạng thái không có ngày (Tạm dừng thiếu nhật ký, Kết thúc thiếu ngày) → không đang học như cũ.
+   */
+  const tamDung = khoangTamDung([...new Set(rows.map((r) => r.student_id as number))]);
+  const dangHocLuc = (a: any, d: string) => {
+    const fin = a.hv_finished ? String(a.hv_finished).slice(0, 10) : null;
+    const arc = a.hv_archived ? String(a.hv_archived).slice(0, 10) : null;
+    if ((fin && fin <= d) || (arc && arc <= d)) return false;
+    const kd = tamDung[a.student_id] ?? [];
+    if (kd.some((k) => k.tu.slice(0, 10) <= d && (!k.den || k.den.slice(0, 10) > d))) return false;
+    if (a.hv_status === 'inactive' && !kd.some((k) => !k.den)) return false;
+    return !(a.hv_status === 'finished' && !fin);
+  };
   const o: OBai[] = [];
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
@@ -165,7 +181,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
         id: baiId(a.id, skill), attemptId: a.id, classId: lop, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
         nhapDau: row?.nhap_dau_ngay ?? null, band: row?.band ?? null,
         coDiem: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null, tienDo: v.progress, noShow: v.noShow,
-        dangHoc: !!a.dang_hoc, kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
+        dangHoc: dangHocLuc(a, v.deadline ?? c.homNay), kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
         kind: a.kind, examinerUserId: row?.examiner_user_id ?? null,
       });
     };
@@ -194,7 +210,7 @@ export type DongChamDiem = {
 /**
  * Q13, Q20: ô có tuần thi trong khoảng, gán cho người được phân công ở HẠN NHẬP. Đúng hạn ⇔ `nhap_dau_ngay ≤ mốc trễ` (sửa sau không tính);
  * chưa nhập mà đã quá hạn = trễ. PR-S6F-a Q6: mốc trễ = `mocTreNhapDiem` (max(hạn, Chủ nhật tuần thi)), quá hạn = `quaHanNhapDiem` — một luật
- * với Nợ điểm / Việc / Lịch Test; số ngày trễ đếm từ mốc. Panel vẫn hiện HẠN (mốc chỉ để tính). Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em không đang học (Q2) / ô chưa tới hạn chưa nhập.
+ * với Nợ điểm / Việc / Lịch Test; số ngày trễ đếm từ mốc. Panel vẫn hiện HẠN (mốc chỉ để tính). Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em không đang học (Q2) / ô chưa tới hạn chưa nhập. Em đang học xét TẠI HẠN NHẬP (P12): lưu trữ / thôi học sau hạn không đổi kỳ đã qua.
  */
 export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<number, DongChamDiem & { gv: number }>; khongTinh: Map<number, number> } {
   const tap: Tap = new Map();
@@ -255,31 +271,25 @@ function mucKetQua(c: NguCanhPtGv, nap: NapBai): MucKq[] {
 
 /**
  * V5 C10: kết quả thi thật (đủ 4 kỹ năng, ngày thi trong khoảng, đã kết luận Đạt / Chưa đạt Target) — mỗi kỹ năng một mục, gán người dạy kỹ năng đó
- * ở LỚP CUỐI TRƯỚC NGÀY THI (ghi danh bắt đầu muộn nhất ≤ ngày thi), ngày thi. W thi thật tính cho cả cột W1 và W2. Id âm: không trùng `baiId` của MT.
+ * ở LỚP LÚC THI (`lopLucThiThat`, cùng luật Kết quả thi — P12), ngày thi. Target = Target lúc nhập KQ (`thi_that_target`; NULL → Target hiện tại). W thi thật tính cho cả cột W1 và W2. Id âm: không trùng `baiId` của MT.
  * Overall đạt Target (`outcome`, máy tính lúc nhập) → mọi kỹ năng Đạt; chưa đạt → kỹ năng ≥ Target mới Đạt. Em KCK / "Không thi" không tính.
  */
 function mucThiThat(c: NguCanhPtGv): MucKq[] {
   const conn = db();
   const ds = conn.prepare(
     `SELECT cy.id, cy.student_id, s.full_name, cy.thi_that_ngay AS ngay, cy.thi_that_l, cy.thi_that_r, cy.thi_that_w, cy.thi_that_s,
-            cy.outcome, cy.outcome_score, cy.target_score
+            cy.outcome, cy.outcome_score, COALESCE(cy.thi_that_target, cy.target_score) AS target_score
        FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
       WHERE cy.thi_that_ngay IS NOT NULL AND cy.thi_that_ngay BETWEEN ? AND ? AND COALESCE(cy.thi_that_khong_thi, 0) = 0 AND COALESCE(cy.khong_cam_ket, 0) = 0
-        AND cy.outcome IN ('reached', 'not_reached') AND cy.target_score IS NOT NULL
+        AND cy.outcome IN ('reached', 'not_reached') AND COALESCE(cy.thi_that_target, cy.target_score) IS NOT NULL
         AND cy.thi_that_l IS NOT NULL AND cy.thi_that_r IS NOT NULL AND cy.thi_that_w IS NOT NULL AND cy.thi_that_s IS NOT NULL
         -- P9 (khoảng tự do): chỉ em từng học lớp FT của chi nhánh ngữ cảnh — không đọc thi thật toàn hệ thống rồi bỏ
         AND EXISTS (SELECT 1 FROM enrollments e JOIN classes k ON k.id = e.class_id WHERE e.student_id = cy.student_id AND k.branch_id = ? AND k.is_fast_track = 1)`,
   ).all(c.tu, c.cuoi, c.cn) as any[];
-  const ghiDanh = new Map<number, { lop: number; tu: string; id: number }[]>();
-  for (const lo of theoLo([...new Set(ds.map((r) => r.student_id as number))])) {
-    for (const e of conn.prepare(`SELECT id, student_id, class_id, substr(started_at, 1, 10) AS tu FROM enrollments WHERE student_id IN (${cho(lo.length)})`).all(...lo) as any[]) {
-      (ghiDanh.get(e.student_id) ?? ghiDanh.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, id: e.id });
-    }
-  }
+  const lopThi = lopLucThiThat(ds);
   const out: MucKq[] = [];
   for (const r of ds) {
-    const truoc = (ghiDanh.get(r.student_id) ?? []).filter((e) => e.tu && e.tu <= r.ngay);
-    const lop = truoc.length ? truoc.reduce((x, y) => (y.tu > x.tu || (y.tu === x.tu && y.id > x.id) ? y : x)).lop : null;
+    const lop = lopThi.get(r.id);
     if (lop == null || !c.lop.has(lop)) continue;
     const kv = Number(r.target_score);
     for (const [skill, band] of [['listening', r.thi_that_l], ['reading', r.thi_that_r], ['writing1', r.thi_that_w], ['writing2', r.thi_that_w], ['speaking', r.thi_that_s]] as const) {

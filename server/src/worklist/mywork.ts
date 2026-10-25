@@ -591,15 +591,27 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     /* Người phụ trách môn — PR-Dọn (Q13): CÙNG luật với Nợ điểm và Lịch Test (`phanCongDangHieuLuc`). */
     const ownerOf = new Map([...phanCongDangHieuLuc(classIds, today)].map(([k, v]) => [k, v.userId]));
     const khacDongs: BaiChuaCham[] = [];
+    /*
+     * P12 Q12 (chủ SP 25/10, PTA): CHỈ góc nhìn Admin (`cham-diem`) — S chấm chéo CHƯA AI NHẬN (ô chưa ghi GV chấm) không quá hạn, vẫn là bài chờ chấm;
+     * Tổng quan Admin đọc cùng tập. QL / GV giữ luật LT3 (S Mock quá hạn vẫn quá hạn, có chuông). Một câu theo lô: lượt có ô S đã ghi GV chấm.
+     */
+    const daNhanCheo = new Set<number>();
+    if (xemViec === 'cham-diem') {
+      theoLo([...new Set((attempts as any[]).filter((a) => laChamCheo(a.kind, 'speaking')).map((a) => a.id as number))], (lo, ph) => {
+        for (const r of conn.prepare(`SELECT attempt_id FROM assessment_scores WHERE skill = 'speaking' AND attempt_id IN (${ph})
+            AND (examiner_user_id IS NOT NULL OR examiner_name IS NOT NULL)`).all(...lo) as any[]) daNhanCheo.add(r.attempt_id);
+      });
+    }
     for (const a of attempts as any[]) {
       for (const c of (a.pendingDetail ?? []) as any[]) {
         /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
-        const ownerId = a.classId && !laChamCheo(a.kind, c.skill) ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
+        const cheo = laChamCheo(a.kind, c.skill);
+        const ownerId = a.classId && !cheo ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
         if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null,
+          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue && !(xemViec === 'cham-diem' && cheo && !daNhanCheo.has(a.id)), periodId: c.periodId ?? null, weekStart: c.weekStart ?? null,
         });
       }
     }

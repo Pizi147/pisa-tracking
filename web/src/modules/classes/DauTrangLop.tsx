@@ -99,7 +99,9 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   /* OV-13b: badge "n việc quá hạn" = cùng danh sách việc với Học viên & Lớp › Cần làm (`/my-work`, `demQuaHan`) — bấm ra đúng số dòng. */
   const laQl = laVaiQuanLy(session?.roles);
   const viec = useApi<{ dong: WorkItem[] }>(laQl ? `/my-work?nguoi=tat-ca&branchId=${data.branchId}` : '/my-work', [data.branchId, laQl]);
-  const soViecQuaHan = demQuaHan((viec.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
+  /* P11 VIEC-DUNG-VAI: GV đếm việc CỦA MÌNH (`mine`) — cùng tập với cột Việc / chip quá hạn ở Học viên & Lớp. */
+  const chiCuaToi = !laQl && vaiXemHocVien(session?.roles) === null;
+  const soViecQuaHan = demQuaHan((viec.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).filter((it) => !chiCuaToi || it.mine)
     .map((it) => ({ quaHan: it.urgency === 'overdue', studentId: it.studentId, classId: it.classId })), data.id).viec;
   const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
