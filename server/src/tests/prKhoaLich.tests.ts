@@ -8,7 +8,7 @@ export async function runPrKhoaLichTests(t: any) {
   const d: any = await import('../../../shared/domain/index.ts');
   console.log('\nP6 KHOA-LICH — khoá đổi lịch MT thứ Sáu → Chủ nhật');
 
-  check('KL-1 · khoaCuoiTuan: T5 được; T6–CN khoá 3 tuần; tuần ngoài được; Quản trị miễn; T2 mở lại', () => {
+  check('KHL-1 · khoaCuoiTuan: T5 được; T6–CN khoá 3 tuần; tuần ngoài được; Quản trị miễn; T2 mở lại', () => {
     const k = (tuan: (string | null)[], homNay: string, quanTri = false) => d.khoaCuoiTuan({ tuan, homNay, quanTri });
     assert(k(['2026-09-14'], '2026-09-17') === null, 'T5 tuần này được');
     assert(k(['2026-09-14'], '2026-09-18') === d.LOI_KHOA_CUOI_TUAN, 'T6 tuần này khoá');
@@ -63,7 +63,7 @@ export async function runPrKhoaLichTests(t: any) {
   const QL = P.mbManager;
   const L = d.LOI_KHOA_CUOI_TUAN;
 
-  check('KL-2a · T6: QL dời MT tuần này → khoá; Quản trị được; Quản trị "xem như" QL vẫn được (vai gốc)', () => thu((doiNgay) => {
+  check('KHL-2a · T6: QL dời MT tuần này → khoá; Quản trị được; Quản trị "xem như" QL vẫn được (vai gốc)', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.nay);
     doiNgay();
     assert(loi(() => ss.setSkillWeek(QL, m1, 'listening', pid(W.c3), {})) === L, 'QL phải bị khoá');
@@ -73,7 +73,7 @@ export async function runPrKhoaLichTests(t: any) {
     assert(e === null, `Quản trị: ${e}`);
   }));
 
-  check('KL-2b · T6: +3 → tuần sau khoá; +2 → +3 được; Thứ Năm được', () => thu((doiNgay) => {
+  check('KHL-2b · T6: +3 → tuần sau khoá; +2 → +3 được; Thứ Năm được', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.c3);
     const b = em(); const n1 = b.luot(1, W.c2);
     const c = em(); const k1 = c.luot(1, W.nay);
@@ -86,10 +86,17 @@ export async function runPrKhoaLichTests(t: any) {
     assert(e === null, `+2 → +3: ${e}`);
   }));
 
-  check('KL-2c · T6: tạo MT vào tuần sau, huỷ lịch / huỷ lượt / bỏ kỹ năng MT tuần này, S Ex tuần này → khoá', () => thu((doiNgay) => {
+  check('KHL-2c · T6: tạo MT vào tuần sau, huỷ lịch / huỷ lượt / bỏ kỹ năng MT tuần này, S Ex tuần này → khoá', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.nay);
     const b = em(); b.luot(1, W.truoc);
+    const c = em(); const h1 = c.luot(1, W.nay); svc.huyLuot(P.admin, h1, {});
+    const sx = sEx.themSEx(P.admin, { studentId: c.sid, tuan: W.nay }).id;
     doiNgay();
+    assert(loi(() => svc.reopenAttempt(QL, h1)) === L, 'reopenAttempt');
+    assert(loi(() => sEx.suaSEx(QL, sx, { tuan: W.c3 })) === L, 'suaSEx');
+    assert(loi(() => sEx.xoaSEx(QL, sx)) === L, 'xoaSEx');
+    const e0 = loi(() => sEx.suaSEx(QL, sx, { diem: 6.5 }));
+    assert(e0 === null, `chấm S Ex vẫn được: ${e0}`);
     assert(loi(() => svc.createAttempt(QL, { studentId: b.sid, cycleId: b.cy, attemptNo: 2, periodId: pid(W.sau) })) === L, 'createAttempt');
     assert(loi(() => ss.boTuanLuot(QL, m1, {})) === L, 'boTuanLuot');
     assert(loi(() => svc.huyLuot(QL, m1, {})) === L, 'huyLuot');
@@ -99,7 +106,7 @@ export async function runPrKhoaLichTests(t: any) {
     assert(e === null, `MT vào +3 được: ${e}`);
   }));
 
-  check('KL-2d · Hàng loạt T6: em MT1 tuần này lỗi đúng dòng; em MT1 tuần +4 → +3 vẫn xếp', () => thu((doiNgay) => {
+  check('KHL-2d · Hàng loạt T6: em MT1 tuần này lỗi đúng dòng; em MT1 tuần +4 → +3 vẫn xếp', () => thu((doiNgay) => {
     const a = em(); a.luot(1, W.nay);
     const b = em(); b.luot(1, W.c4);
     doiNgay();
@@ -114,7 +121,7 @@ export async function runPrKhoaLichTests(t: any) {
       JSON.stringify(r.dong.map((x: any) => [x.hanhDong, x.loi])));
   }));
 
-  check('KL-3 · T6 ngoại lệ: "-" ở MT tuần này dời theo luật vắng; duyệt thẻ dời; khôi phục phần thi vắng; Không mock lại; lớp thường', () => thu((doiNgay) => {
+  check('KHL-3 · T6 ngoại lệ: "-" ở MT tuần này dời theo luật vắng; duyệt thẻ dời; khôi phục phần thi vắng; Không mock lại; lớp thường', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.nay);
     doiNgay();
     const e1 = loi(() => svc.saveScore(P.lrTeacher, m1, 'listening', { noShow: true }, T6));
@@ -136,10 +143,10 @@ export async function runPrKhoaLichTests(t: any) {
     assert(loi(() => ss.chanCuoiTuan(QL, { kind: 'mt0' }, [W.nay])) === L, 'MT0 khoá');
   }));
 
-  check('KL-4 · T6 đường gián tiếp cho chạy: đổi tuần bắt đầu lớp FT có MT tuần này', () => thu((doiNgay) => {
+  check('KHL-4 · T6 đường gián tiếp cho chạy: đổi tuần bắt đầu lớp FT có MT tuần này', () => thu((doiNgay) => {
     const a = em(); a.luot(1, W.nay);
     doiNgay();
     const e = loi(() => sch.setClassProgress(QL, MB_FT, { startPeriodId: pid(W.sau) }));
-    assert(e !== L, `setClassProgress bị khoá: ${e}`);
+    assert(e === null, `setClassProgress: ${e}`);
   }));
 }
