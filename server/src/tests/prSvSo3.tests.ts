@@ -123,10 +123,12 @@ export async function runPrSvSo3Tests(t: YThucTestKit) {
 
   check('SVSO3 · hàng HV (khu d): Lộ trình MT2/n + Target · MT gần nhất CỦA EM (Overall / KV, tuần, L R W1 W2 S) · Xu hướng +0.5 so MT1 · Hỗ trợ · Ý thức', () => thu(() => {
     const truoc = t.addDays(tuanNay, -7);
-    const a = em(); a.luot(1, truoc, DU(5.5)); a.luot(2, tuanNay, { ...DU(6.0), writing1: 5.5, writing2: 6.5 });
+    const a = em(); const l1 = a.luot(1, truoc, DU(5.5)); a.luot(2, tuanNay, { ...DU(6.0), writing1: 5.5, writing2: 6.5 });
+    /* P2 MT-DEM: Lộ trình = lượt đã xong / đã tạo — điểm ghi thẳng SQL không qua `refreshOutcome`, nên chốt MT1 bằng tay → 1/2. */
+    conn.prepare("UPDATE assessment_attempts SET status = 'done' WHERE id = ?").run(l1);
     xoaNho();
     const h = hvl.danhSachHocVienLop(P.mbManager, {}).hocVien.find((x: any) => x.id === a.sid)?.hang;
-    assert(h && h.loTrinh.mt === 2 && h.loTrinh.soMt >= 2 && h.loTrinh.target === 6.5 && !h.loTrinh.kck, JSON.stringify(h?.loTrinh));
+    assert(h && h.loTrinh.mt === 1 && h.loTrinh.soMt === 2 && h.loTrinh.target === 6.5 && !h.loTrinh.kck, JSON.stringify(h?.loTrinh));
     assert(h.mtGan?.mt === 2 && h.mtGan.tuan === tuanNay && h.mtGan.ovr === 6.0 && h.mtGan.kyVong === 6.0
       && h.mtGan.kn.W1 === 5.5 && h.mtGan.kn.W2 === 6.5 && h.mtGan.kn.L === 6.0, JSON.stringify(h.mtGan));
     assert(h.xuHuong?.lech === 0.5 && h.xuHuong.soMt === 1, JSON.stringify(h.xuHuong));

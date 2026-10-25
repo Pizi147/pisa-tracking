@@ -9582,6 +9582,9 @@ await runPrSvTqGvTests({ check, assert, conn, P } as any);
 // ==================================================================== SUA-CHAM-LAI (Đ4 lý do Chưa đủ dữ liệu)
 const { runPrSuaChamLaiTests } = await import('./prSuaChamLai.tests.ts');
 await runPrSuaChamLaiTests({ check, assert } as any);
+// ==================================================================== P2 MT-DEM (bộ đếm MT đã xong / đã tạo, thôi nhắc xếp thêm)
+const { runPrMtDemTests } = await import('./prMtDem.tests.ts');
+await runPrMtDemTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== P1 DIEM-TIEU-CHI (tiêu chí W / S số nguyên)
 const { runPrDiemTieuChiTests } = await import('./prDiemTieuChi.tests.ts');
 await runPrDiemTieuChiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
