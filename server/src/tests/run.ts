@@ -9591,6 +9591,9 @@ await runPrDiemTieuChiTests({ check, checkAsync, assert, assertThrows, conn, TOD
 // ==================================================================== P3 UI-CHUNG (Mới dùng PISA TRACKING? · bỏ Góp ý hàng tuần · menu ⋯ · đầu bảng dính)
 const { runPrUiChungTests } = await import('./prUiChung.tests.ts');
 await runPrUiChungTests({ check, assert, P } as any);
+// ==================================================================== P14 DICH (nút Dịch chữ GV nhập — fetch giả)
+const { runPrDichTests } = await import('./prDich.tests.ts');
+await runPrDichTests({ check, checkAsync, assert, conn, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
