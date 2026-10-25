@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, tenMonNgan, hanKyGhiKetQua,
+  NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, tenMonNgan, hanKyGhiKetQua, tuanMuonNhatMt0,
   type GoiYKyVong, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
@@ -15,6 +15,7 @@ import { chenPa, type DongPa } from '../cases/taoPa.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { assessedBands } from '../fasttrack/scoring.ts';
 import { tyLeTongLo } from './cuoiKhoa.ts';
+import { classProgressMany } from '../classes/schedule.ts';
 
 /**
  * KỲ VỌNG ĐẦU RA CẢ LỚP (PR-KV, đặc tả 08/10 §3, mockup cuối khoá 2 phần 3) — em BE/ELE có quyết định Lên FT. Đạt = Overall MT0 ≥ ngưỡng
@@ -28,16 +29,18 @@ type EmKyVong = {
   /** Band MT0 (kỹ năng chưa thi = null) + Overall; null = MT0 chưa đủ 3 kỹ năng có band ("Chờ MT0"). */
   mt0: (Record<RegularSkill, number | null> & { overall: number }) | null;
   goiY: GoiYKyVong | null; ketLuan: KetLuan | null;
+  /** N22 ② (P9b): MT0 đã qua tuần muộn nhất (tuần 2 FT — `tuanMuonNhatMt0`) mà vẫn < 3 kỹ năng có band → QL tự đánh Đạt / Không đạt. */
+  moTay: boolean;
 };
 
 const jsonMang = (s: string | null): string[] => { try { const v = JSON.parse(s ?? '[]'); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
 
 /** Em có lệnh Lên FT (chờ / đã chuyển) từ lớp BE/ELE trong phạm vi `sc` (hoặc đúng lớp `classId`) + MT0 + kết luận — 3 câu mỗi lô. */
-function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number }): EmKyVong[] {
+export function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number }): EmKyVong[] {
   const conn = db();
   const cs = o.sc ? classScopeSql(o.sc) : { sql: '1=1', params: [] };
   const rows = conn.prepare(
-    `SELECT l.student_id, s.full_name, s.student_code, l.lop_nguon_id, c.code, c.programme_code, cd.id AS dich_id, cd.code AS dich_code, l.trang_thai,
+    `SELECT l.student_id, s.full_name, s.student_code, l.lop_nguon_id, c.code, c.programme_code, cd.id AS dich_id, cd.code AS dich_code, l.trang_thai, l.tuan_bat_dau,
             lt.ky_vong_dat, lt.ky_vong_nguyen_nhan, lt.ky_vong_mon, lt.ky_vong_ghi_chu, MAX(l.id) AS lenh
        FROM lenh_chuyen_lop l
        JOIN classes c ON c.id = l.lop_nguon_id JOIN students s ON s.id = l.student_id
@@ -50,12 +53,15 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
       GROUP BY l.student_id`,
   ).all(...cs.params, ...(o.branchId ? [o.branchId] : []), ...(o.classId ? [o.classId] : [])) as any[];
   const mt0 = mt0TheoLop(rows.map((r) => ({ sid: r.student_id, lop: r.lop_nguon_id, ct: r.programme_code })));
+  const tienDo = classProgressMany([...new Set(rows.map((r) => r.lop_nguon_id as number))]);
+  const homNay = demoToday();
   return rows.map((r) => {
     const { bands, goiY } = mt0.get(r.student_id)!;
+    const muonNhat = tuanMuonNhatMt0({ tuanBatDauFt: r.tuan_bat_dau ?? null, tuanCuoiKhoa: tienDo.get(r.lop_nguon_id)?.finalWeekStart ?? null });
     return {
       id: r.student_id, ma: r.student_code, ten: r.full_name, lopId: r.lop_nguon_id, lopCode: r.code, ct: r.programme_code,
       daChuyen: r.trang_thai === 'da_chuyen', lopFtId: r.dich_id, lopFt: r.dich_code,
-      mt0: goiY ? { ...bands, overall: goiY.overall } : null, goiY,
+      mt0: goiY ? { ...bands, overall: goiY.overall } : null, goiY, moTay: !goiY && !!muonNhat && homNay > addDays(muonNhat, 6),
       ketLuan: r.ky_vong_dat === null ? null
         : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null },
     };
@@ -101,7 +107,7 @@ export function lopKyVong(p: Principal, branchId: number | null): LopKyVong[] {
     for (const e of emKyVong({ sc, branchId })) theoLop.set(e.lopId, [...(theoLop.get(e.lopId) ?? []), e]);
     return [...theoLop.values()].flatMap((ds) => {
       const chua = ds.filter((e) => !e.ketLuan);
-      if (!chua.length || !ds.some((e) => e.mt0)) return [];
+      if (!chua.length || !ds.some((e) => e.mt0 || e.moTay)) return [];
       return [{ classId: ds[0].lopId, code: ds[0].lopCode, chua: chua.map((e) => e.id), choMt0: chua.filter((e) => !e.mt0).length }];
     }).sort((a, b) => a.code.localeCompare(b.code, 'vi'));
   });
@@ -110,11 +116,11 @@ export function lopKyVong(p: Principal, branchId: number | null): LopKyVong[] {
 /** Lớp nguồn BE/ELE + quyền Quản lý (`request.approve` ở lớp đó). */
 function lopNguon(p: Principal, classId: number): { id: number; code: string; ct: string } {
   /* PR-DON: quyền trước — người không quyền nhận 403 dù lớp có hay không (không dò được lớp tồn tại). */
-  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { classId })) throw forbidden('Chỉ Quản lý mới chốt được Kết quả đầu ra.');
+  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { classId })) throw forbidden('Chỉ Quản lý mới đánh được Kỳ vọng.');
   const c = db().prepare('SELECT id, code, programme_code FROM classes WHERE id = ?').get(classId) as any;
   if (!c) throw notFound('Không tìm thấy lớp.');
   const ct = programmeOf(c.programme_code);
-  if (!ct || NGUONG_KY_VONG[ct] === undefined) throw badRequest('Chỉ lớp FOU/BE/ELE mới có Kết quả đầu ra.');
+  if (!ct || NGUONG_KY_VONG[ct] === undefined) throw badRequest('Chỉ lớp FOU/BE/ELE mới có Kỳ vọng.');
   return { id: c.id, code: c.code, ct };
 }
 
@@ -159,9 +165,9 @@ export function luuKyVong(p: Principal, classId: number, body: any): { luu: numb
   const dong = [...new Map(vao.map((x) => {
     const e = em.get(Number(x?.sid));
     if (!e) throw badRequest('Học viên không có quyết định Lên FT ở lớp này.');
-    if (!e.mt0) throw badRequest(`${e.ten}: MT0 cần ít nhất 3 kỹ năng có điểm.`);
+    if (!e.mt0 && !e.moTay) throw badRequest(`${e.ten}: MT0 cần ít nhất 3 kỹ năng có điểm.`);
     /* Học viên không gửi kỹ năng → kỹ năng CÓ band MT0 dưới ngưỡng (kỹ năng chưa thi không tính); vẫn rỗng → 400 "chọn kỹ năng". */
-    const thieu = x?.nguyenNhan === 'hoc_sinh' && !(Array.isArray(x.mon) && x.mon.length);
+    const thieu = x?.nguyenNhan === 'hoc_sinh' && !(Array.isArray(x.mon) && x.mon.length) && !!e.goiY;
     return [e.id, kiemDongKyVong(thieu ? { ...x, mon: e.goiY!.monTruot } : x, e.ten)] as const;
   })).values()];
   return tx(() => {
@@ -195,29 +201,27 @@ const MO_TA_TUTOR = 'Tutor 10 buổi/kỹ năng · tính vào buổi Free, có l
 
 /**
  * Case "Kỳ vọng đầu ra chưa đạt…" ở lộ trình FT (T49, §3) — THEO LÔ, trong tx nơi gọi. Trung tâm: mỗi kỹ năng một Case + PA Tutor 10 buổi
- * (`chenPa`; Người dạy = GV cũ dạy kỹ năng đó ở lớp BE/ELE, hết phân công → trống; việc Kết quả theo `nguoiGiuKetQua` = GVBM Case). Học viên: MỘT Case,
- * không PA (Quản lý thêm sau). Chủ Case = GVBM kỹ năng đó ở lớp FT (`suggestCaseOwner`). Một lần cho mỗi (lộ trình, kỹ năng) — đã có Case "Kỳ vọng
+ * (`chenPa`; Người dạy = GV cũ dạy kỹ năng đó ở lớp BE/ELE, hết phân công → trống; việc Kết quả theo `nguoiGiuKetQua` = GVBM Case). Học viên: không Case
+ * (N17 — phương án ghi ở `ky_vong_ghi_chu`). Chủ Case = GVBM kỹ năng đó ở lớp FT (`suggestCaseOwner`). Một lần cho mỗi (lộ trình, kỹ năng) — đã có Case "Kỳ vọng
  * đầu ra…" bất kỳ trạng thái thì không tạo lại; Case đang mở cùng khoá (vd Case Mock) thì giữ, không gắn PA. Trả số Case mới + số em bị bỏ qua vì vậy (`boQua`).
  */
-export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): { tao: number; boQua: number } {
+export function taoCaseKyVong(p: Principal, tatCa: readonly DongCaseKyVong[]): { tao: number; boQua: number } {
+  /* N17 (chủ SP 25/10, quy chế lớp thường mục IV): Học viên = ghi phương án, KHÔNG Case — chỉ Trung tâm có Case + Tutor. */
+  const ds = tatCa.filter((d) => d.nguyenNhan === 'trung_tam');
   if (!ds.length) return { tao: 0, boQua: 0 };
   const conn = db();
-  const daCo = new Set<string>(), emDaCo = new Set<string>();
+  const daCo = new Set<string>();
   theoLo([...new Set(ds.map((d) => d.sid))], (lo, ph) => {
     for (const r of conn.prepare(`SELECT student_id, cycle_id, category FROM sos_cases WHERE origin_kind = 'chuyen_cap' AND title LIKE 'Kỳ vọng đầu ra%' AND student_id IN (${ph})`)
-      .all(...lo) as any[]) { daCo.add(`${r.student_id}:${r.cycle_id}:${r.category}`); emDaCo.add(`${r.student_id}:${r.cycle_id}`); }
+      .all(...lo) as any[]) daCo.add(`${r.student_id}:${r.cycle_id}:${r.category}`);
   });
   type O = { d: DongCaseKyVong; mon: RegularSkill; skill: string; category: string; khoa: string; title: string };
   const o: O[] = ds.flatMap((d) => {
     /* Mọi đường ghi đều bắt ít nhất một kỹ năng (`kiemDongKyVong`); dòng ghi trước PR-KV có thể rỗng → không có kỹ năng để mở Case. */
-    const mon = d.nguyenNhan === 'hoc_sinh' ? d.mon.slice(0, 1) : d.mon;
-    if (d.nguyenNhan === 'hoc_sinh' && emDaCo.has(`${d.sid}:${d.ftCycleId}`)) return [];
-    return mon.flatMap((m) => {
+    return d.mon.flatMap((m) => {
       const skill = kyNangLopDich(m, true), category = categoryOf(skill) ?? skill;
       if (daCo.has(`${d.sid}:${d.ftCycleId}:${category}`)) return [];
-      const title = d.nguyenNhan === 'hoc_sinh'
-        ? `Kỳ vọng đầu ra chưa đạt · Học viên · ${d.mon.map((x) => tenMonNgan(null, x)).join(', ')}`
-        : `Kỳ vọng đầu ra chưa đạt · ${tenMon(null, skill)}`;
+      const title = `Kỳ vọng đầu ra chưa đạt · ${tenMon(null, skill)}`;
       return [{ d, mon: m, skill, category, khoa: caseDedupKey({ category: category as any, studentId: d.sid, cycleId: d.ftCycleId })!, title }];
     });
   });
@@ -251,16 +255,13 @@ export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): { ta
   for (const ng of new Set(moi.map((y) => y.d.ngay))) gvCu.set(ng, phanCongDangHieuLuc([...new Set(moi.map((y) => y.d.fromClassId))], ng));
   const pa: DongPa[] = [], moc: unknown[][] = [];
   for (const y of moi) {
-    const caseId = caseCua.get(y.khoa)!, tt = y.d.nguyenNhan === 'trung_tam';
-    if (tt) {
-      pa.push({
-        caseId, kind: 'tutor', description: MO_TA_TUTOR, soBuoi: 10, performerUserId: gvCu.get(y.d.ngay)?.get(`${y.d.fromClassId}|${y.mon}`)?.userId ?? null,
-        recordedBy: p.userId, status: 'started', startedDate: y.d.ngay, confirmedBy: p.userId, confirmedAt: nowIso(),
-        cycleStartedOn: y.d.ngay, actionDue: hanKyGhiKetQua(y.d.ngay),
-      });
-    }
-    moc.push([caseId, 'opened', y.d.ngay, tt ? 'Kỳ vọng đầu ra chưa đạt (Trung tâm) — Tutor 10 buổi' : `Kỳ vọng đầu ra chưa đạt (Học viên) — ${y.d.lyDo ?? ''}`,
-      p.userId, nowIso(), `ky-vong:${caseId}`]);
+    const caseId = caseCua.get(y.khoa)!;
+    pa.push({
+      caseId, kind: 'tutor', description: MO_TA_TUTOR, soBuoi: 10, performerUserId: gvCu.get(y.d.ngay)?.get(`${y.d.fromClassId}|${y.mon}`)?.userId ?? null,
+      recordedBy: p.userId, status: 'started', startedDate: y.d.ngay, confirmedBy: p.userId, confirmedAt: nowIso(),
+      cycleStartedOn: y.d.ngay, actionDue: hanKyGhiKetQua(y.d.ngay),
+    });
+    moc.push([caseId, 'opened', y.d.ngay, 'Kỳ vọng đầu ra chưa đạt (Trung tâm) — Tutor 10 buổi', p.userId, nowIso(), `ky-vong:${caseId}`]);
   }
   chenPa(conn, pa);
   chenNhieuDong('INSERT OR IGNORE INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)', moc);

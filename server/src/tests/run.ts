@@ -9597,6 +9597,9 @@ await runPrChonLopTests({ check, assert } as any);
 // ==================================================================== P6 KHOA-LICH (T6 → CN khoá đổi lịch MT 3 tuần, trừ Quản trị hệ thống)
 const { runPrKhoaLichTests } = await import('./prKhoaLich.tests.ts');
 await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== P9b CUOI-KHOA (trang Cuối khoá lớp thường, hạn chốt N20, N17, N22)
+const { runPrCuoiKhoaTests } = await import('./prCuoiKhoa.tests.ts');
+await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

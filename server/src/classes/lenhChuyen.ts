@@ -20,6 +20,7 @@ import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { dongBoTuLenh } from './loTrinhTiep.ts';
 import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
+import { dongBoMt0 } from '../fasttrack/mt0.ts';
 
 /**
  * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp chuyển đến nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi — hoặc
@@ -40,6 +41,7 @@ const HUONG_THEO_BOI_CANH: Record<BoiCanhLenh, readonly HuongLenh[]> = {
 };
 
 const CUNG_LOP_CHI_NHANH = 'Chỉ Quản lý chi nhánh của lớp này mới ra quyết định chuyển lớp.';
+export const LOI_KHAC_CHI_NHANH = 'Lớp chuyển đến phải cùng chi nhánh với lớp này.';
 
 /** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Tối đa ba câu cho cả lô lớp (không hỏi lại theo lớp). */
 export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly number[] = []): Map<number, Set<number>> {
@@ -147,6 +149,8 @@ export function raLenh(p: Principal, v: {
       const canDich = canLopDich(d.huong);
       const lopDich = canDich && d.toClassId ? dich.get(d.toClassId) ?? null : null;
       if (canDich && d.toClassId && !lopDich) { loi('Lớp chuyển đến không hợp lệ.'); continue; }
+      /* N17 (chủ SP 24/10, thay Rulebook §20.6–20.7): luồng Cuối khoá cả lớp chỉ sang lớp cùng chi nhánh; chuyển MỘT em (giữa khoá) vẫn được. */
+      if (v.boiCanh === 'cuoi-khoa' && lopDich && lopDich.branch_id !== nguon.branch_id) { loi(LOI_KHAC_CHI_NHANH); continue; }
       const tuan = d.tuan ?? v.tuanChung;
       const cu = daCo.get(d.studentId);
       /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới: hôm nay hoặc từ tuần sau (`kiemDongLenh`). */
@@ -361,6 +365,11 @@ function huyMotLenh(p: Principal, l: any, why: string): void {
       before: { buocTiep: 'lo_trinh_moi', buocTiepHen: bt.buoc_tiep_hen ?? null }, after: { buocTiep: null, buocTiepHen: null, _nguon: 'Huỷ quyết định chuyển lớp' } });
   }
   if (l.boi_canh === 'cuoi-khoa') dongBoCheTaiFinal(p, l.lop_nguon_id, [l.student_id]);   // PR-CT2 (§8): không còn quyết định → huỷ bổ trợ Final chưa ai đụng
+  /* N20: huỷ Lên FT Cuối khoá (cả T6–CN — không qua khoá cuối tuần) → MT0 chưa điểm huỷ theo, như khi sửa sang hướng khác (`dongBoMt0`). */
+  if (l.boi_canh === 'cuoi-khoa' && l.huong === 'fast_track') {
+    const ma = (conn.prepare('SELECT programme_code FROM classes WHERE id = ? AND is_fast_track = 0').get(l.lop_nguon_id) as any)?.programme_code;
+    if (ma) dongBoMt0(p.userId, [{ studentId: l.student_id, classId: l.lop_nguon_id, ma, huong: 'chua_quyet', mucTieu: null }]);
+  }
   const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
   writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.huy', entityType: 'student', entityId: l.student_id, entityLabel: hv?.full_name ?? null, before: { huong: l.huong, tuan: l.tuan_bat_dau }, after: { lyDo: why } });
 }
@@ -801,7 +810,7 @@ export function demChuaCoLenh(classIds: readonly number[]): Map<number, number> 
 /**
  * VIỆC QUẢN LÝ "Chốt lộ trình · {lớp}" (PR-LCb, đặc tả 08/10 §1 — thay "Chốt lên FT" + "Chuyển tiếp lớp"). MỘT luật cho việc của `myWork`,
  * chỉ số `lop-chua-chot-len-ft` và dòng Cần xử lý. Mọi lớp thường đang mở (Pre FOU, FOU, BE, ELE) người xem sửa được (`class.edit`);
- * OV-3b: hiện từ thứ Hai tuần Final − 2, hạn = Chủ nhật tuần Final − 2 (`mocLoTrinh`, theo `final_week_override`); KHÔNG hết hạn — quá hạn đỏ,
+ * N20: hiện từ thứ Hai tuần trước Final, hạn = thứ Năm tuần đó (`mocLoTrinh`, theo `final_week_override`); KHÔNG hết hạn — quá hạn đỏ,
  * không chặn gì. Lớp không có tuần Final mà đã hết khoá → vẫn có việc, `han = null`. Xong khi MỌI em đang học có quyết định chuyển lớp đang chờ
  * (Chốt = ra lệnh); em chỉ có đề xuất GVCN chờ duyệt vẫn là chưa xong (đếm riêng); `deXuat` = em có nháp. Một câu lớp + tiến độ lớp + một câu em theo lô.
  * `lopId`: chỉ một lớp (thanh nhắc ở hồ sơ lớp).

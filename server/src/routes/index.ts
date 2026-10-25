@@ -2569,11 +2569,7 @@ api.delete('/classes/:id/lo-trinh-nhap/:studentId', requireAuth, wrap((req) => {
   return loTrinhTiepSvc.xoaNhap(principalOf(req), pInt(req, 'id'), pInt(req, 'studentId'));
 }));
 
-/** OV-3b: GVCN lớp nguồn đề xuất Kết quả đầu ra (không chạy gì); Quản lý chốt ở `PUT /students/:id/ket-luan-ft`. */
-api.put('/students/:id/ket-qua-de-xuat', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return cuoiKhoaSvc.deXuatKetQua(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
+/* N22 ② (P9b): bỏ `PUT /students/:id/ket-qua-de-xuat` — Kỳ vọng FT chỉ QL đánh (`ket-luan-ft`, `classes/:id/ky-vong`); đề xuất cũ `kq_de_xuat_*` chỉ đọc. */
 
 /** PR-KV (§3): panel "Kỳ vọng đầu ra · lớp" — em Lên FT của lớp BE/ELE + MT0 + gợi ý; Lưu một lần cả lớp (một tx). Chỉ Quản lý (`request.approve`). */
 api.get('/classes/:id/ky-vong', requireAuth, wrap((req) => {

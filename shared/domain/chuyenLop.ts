@@ -85,12 +85,12 @@ export function hanBanGiao(ngayRaLenh: string): { gvbm: string; gvcn: string } {
 }
 
 /**
- * OV-3b (đặc tả §3.1): mốc Lộ trình tiếp theo của lớp thường theo tuần Final (thứ Hai). Nhắc từ thứ Hai tuần Final − 2 · QL chốt trước hết
- * Chủ nhật tuần Final − 2 · GV bàn giao trước hết Chủ nhật tuần Final. Final tuần 10 → nhắc từ tuần 8, chốt hết tuần 8, bàn giao hết tuần 10.
+ * N20 (chủ SP 25/10, thay OV-3b "Final − 2"): mốc Chốt lộ trình lớp thường theo tuần Final (thứ Hai). Nhắc từ thứ Hai tuần trước Final · QL chốt
+ * hạn thứ Năm tuần đó (quá hạn đỏ, không chặn) · GV bàn giao trước hết Chủ nhật tuần Final. Final T2 21/09 → nhắc 14/09, hạn 17/09, bàn giao 27/09.
  */
 export function mocLoTrinh(tuanFinal: string): { nhacTu: string; hanChot: string; hanBanGiao: string } {
   const t2 = mondayOfDate(tuanFinal.slice(0, 10));
-  return { nhacTu: congNgay(t2, -14), hanChot: congNgay(t2, -8), hanBanGiao: congNgay(t2, 6) };
+  return { nhacTu: congNgay(t2, -7), hanChot: congNgay(t2, -4), hanBanGiao: congNgay(t2, 6) };
 }
 
 /**
@@ -275,17 +275,17 @@ export function trangThaiPhieu(x: { soMonDaGhi: number; soMon: number; daXacNhan
 // ---------------------------------------------------------------- dữ liệu các dải (máy chủ trả, web vẽ — mockup 20: A, E, H)
 
 export type DaiLop = {
-  /** Phía lớp NGUỒN (A). OV-3b `loTrinh`: lớp thường từ thứ Hai tuần Final − 2 còn em chưa chốt (chỉ Quản lý) — `do` = quá hạn chốt. */
+  /** Phía lớp NGUỒN (A). OV-3b `loTrinh`: lớp thường từ thứ Hai tuần trước Final (N20) còn em chưa chốt (chỉ Quản lý) — `do` = quá hạn chốt. */
   loTrinh: { hanChot: string | null; tong: number; daChot: number; do: boolean } | null;
   banGiao: { daXacNhan: number; tong: number; hanGvcn: string | null } | null;
   banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
   /** Phía lớp ĐÍCH (H). */
   sapNhan: { n: number; tuLop: { id: number; code: string }[]; tuan: string; daXacNhan: number } | null;
-  /** PR-S5F-a: lệnh của lớp (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, để sửa tuần/lớp chuyển đến hoặc huỷ. */
+  /** PR-S5F-a: lệnh của lớp thường (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, sửa ở trang Cuối khoá. */
   chuaChuyenDuoc: { n: number; loi: string } | null;
   /** OV-3c: lớp FT — số đợt em vào từ FOU/BE/ELE còn trong 4 tuần (cách xem "Kết quả đầu ra"); 0 = ẩn. */
   kqdrDot: number;
-  viewer: { coTheRaLenh: boolean; coTheChuyenNhieuEm: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
+  viewer: { coTheRaLenh: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
 };
 
 export type DaiHocVien = {

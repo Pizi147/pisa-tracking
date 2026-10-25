@@ -120,6 +120,30 @@ export function nhanGoiY(g: { nhan: string; nhanK?: ChuKhoa }): string {
 /** PR-CT2 (§8): BE/ELE sang FT thì không bổ trợ Final (FT có lộ trình riêng); còn lại theo `goiYCuoiKhoa`. */
 export const coBoTroFinal = (ct: string | null, toFt: boolean): boolean => !(toFt && (ct === 'BE' || ct === 'ELE'));
 
+/** Lúc thi hành lệnh Cuối khoá: lên (lớp kế / FT) + bổ trợ (60–69 %, hoặc 50–59 % QL cho lên) → mỗi môn trượt một Case bổ trợ; BE/ELE → FT không (PR-CT2). */
+export const coBoTroKhiChot = (huong: string | null, goiY: GoiYCuoiKhoa | null, ct: string | null, toFt: boolean): boolean =>
+  (huong === 'len_lop' || huong === 'fast_track') && !!goiY?.boTroNeuLen && coBoTroFinal(ct, toFt);
+/** Báo PH qua TVV: Final < 50 % LUÔN (kể cả QL cho lên — PTA Plan 25/10), 50–59 % mà QL chọn học lại (Q6). Tạm dừng / Dừng học không qua đây. */
+export const coBaoPhKhiChot = (huong: string | null, goiY: GoiYCuoiKhoa | null): boolean =>
+  !!goiY && (huong === 'len_lop' || huong === 'fast_track' || huong === 'hoc_lai') && (goiY.baoPhTvv || (huong === 'hoc_lai' && goiY.dai === '50_59'));
+
+/**
+ * TÓM TẮT CHÂN trang Cuối khoá (GPT 3, N17) — CÙNG luật máy chủ chạy lúc thi hành (`sauChuyenCuoiKhoa`: `coBoTroKhiChot`, `coBaoPhKhiChot`, Case Kỳ vọng).
+ * Case Tutor = mỗi kỹ năng Không đạt Kỳ vọng do Trung tâm; Học viên = ghi phương án, không Case (N17).
+ */
+export type DongTacDong = { huong: string | null; goiY: GoiYCuoiKhoa | null; ct: string | null; toFt: boolean;
+  kyVong: { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: readonly string[] } | null };
+export function tacDongChot(ds: readonly DongTacDong[]): { caseBoTro: number; baoPh: number; caseTutor: number; chuaHuong: number } {
+  let caseBoTro = 0, baoPh = 0, caseTutor = 0, chuaHuong = 0;
+  for (const d of ds) {
+    if (!d.huong) { chuaHuong += 1; continue; }
+    if (coBoTroKhiChot(d.huong, d.goiY, d.ct, d.toFt)) caseBoTro += d.goiY!.boTroNeuLen!.mon.length;
+    if (coBaoPhKhiChot(d.huong, d.goiY)) baoPh += 1;
+    if (d.huong === 'fast_track' && d.kyVong && !d.kyVong.dat && d.kyVong.nguyenNhan === 'trung_tam') caseTutor += d.kyVong.mon.length;
+  }
+  return { caseBoTro, baoPh, caseTutor, chuaHuong };
+}
+
 /** M-05, Q4: buổi cuối = Chủ nhật của tuần cuối PA (`batDau` là thứ Hai); Mini Test hạn +2 ngày LỊCH (không phải `hanTheoNgay`). */
 export function lichBoTro(x: { batDau: string; soTuan: 1 | 2 }): { ngayMiniTest: string; hanMiniTest: string } {
   const cong = (d: string, n: number) => new Date(Date.parse(`${d.slice(0, 10)}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
@@ -145,8 +169,18 @@ export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<
   return { overall, dat: overall >= nguong, monTruot: co.filter((k) => bands[k]! < nguong) };
 }
 
-/** FOU IELTS > 3.5 · BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4, OV-3b) — chỉ nhắc chữ, không lưu Placement. */
-const KY_VONG_DAU_RA: Record<string, string> = { FOU: 'FOU IELTS > 3.5', BE: 'BE IELTS 4.0', ELE: 'ELE IELTS 4.5–5.0' };
+/** FOU IELTS > 3.5 · BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4, OV-3b, quy chế lớp thường) — chỉ nhắc chữ, không lưu Placement. */
+export const KY_VONG_DAU_RA: Readonly<Record<string, string>> = { FOU: 'FOU IELTS > 3.5', BE: 'BE IELTS 4.0', ELE: 'ELE IELTS 4.5–5.0' };
+
+/**
+ * P9b (N17): chữ cột "Kết quả đầu ra" máy ghi ở trang Cuối khoá — Pass · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU · Quản lý báo phụ huynh qua TVV.
+ * Không nút, không nguyên nhân; cùng dải `goiYCuoiKhoa`.
+ */
+export function chuDaiKetQua(g: GoiYCuoiKhoa): string {
+  if (g.dai === 'dat') return 'Pass';
+  if (g.dai === 'duoi_50') return t('{nhan} · Quản lý báo phụ huynh qua TVV', { nhan: dichChuoi(g.nhanHuong) });
+  return dichChuoi(g.nhanHuong);
+}
 
 export type HopKetLuanVao = {
   ct: string | null; tyLe: number | null; scored: number; required: number;
@@ -155,7 +189,7 @@ export type HopKetLuanVao = {
   quyetDinh: { huong: string; luc: string } | null;
   ketLuanFt: { dat: boolean | null; nguyenNhan: string | null; mon: readonly string[] } | null;
   homNay?: string | null;
-  /** OV-11d (HV-17): em có lệnh / lộ trình Lên FT từ lớp này — chỉ khi đó có dòng Kết quả đầu ra. */
+  /** OV-11d (HV-17): em có lệnh / lộ trình Lên FT từ lớp này — chỉ khi đó có dòng Kỳ vọng. */
   lenFt?: boolean;
 };
 export type HopKetLuan = {
@@ -166,7 +200,7 @@ export type HopKetLuan = {
   /** Dòng 2: MỘT nhãn trạng thái/hướng; null khi chưa đủ điểm. */
   nhan: string | null;
   tone: 'ok' | 'warn' | 'bad' | 'muted';
-  /** FOU/BE/ELE: dòng Kết quả đầu ra (T49, OV-3b) — null với chương trình khác. */
+  /** FOU/BE/ELE lên FT: dòng Kỳ vọng (T49, N22 ②) — null với chương trình khác. */
   kyVong: { nhan: string; trangThai: string; daDanhDau: boolean } | null;
 };
 
@@ -175,7 +209,7 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
   const ct = programmeOf(x.ct) as ProgrammeCode | null;   // có gợi ý (`x.goiY`) chỉ khi là chương trình gốc — xem `goiYCuoiKhoa`
   const kyVong = ct && KY_VONG_DAU_RA[ct] && x.lenFt
     ? {
-      nhan: t('Kết quả đầu ra ({kv})', { kv: KY_VONG_DAU_RA[ct] }),
+      nhan: t('Kỳ vọng {kv}', { kv: KY_VONG_DAU_RA[ct] }),
       daDanhDau: x.ketLuanFt?.dat !== null && x.ketLuanFt?.dat !== undefined,
       trangThai: x.ketLuanFt?.dat === true ? t('Đạt')
         : x.ketLuanFt?.dat === false

@@ -47,7 +47,7 @@ export function KetLuanKhoa({ studentId, studentName, lop, classId, ct, cuoiKhoa
   const danhDauDat = async () => {
     try {
       await api.put(`/students/${studentId}/ket-luan-ft`, { dat: true });
-      invalidate('/students'); toast.push('ok', t('Đã chốt: đạt Kết quả đầu ra')); onDoi();
+      invalidate('/students'); toast.push('ok', t('Đã ghi: đạt Kỳ vọng')); onDoi();
     } catch (e: any) { toast.push('error', e.message); }
   };
   return (
@@ -73,7 +73,7 @@ export function KetLuanKhoa({ studentId, studentName, lop, classId, ct, cuoiKhoa
       )}
       {!cuoiKhoa.daChuyen && classId && (
         <div>
-          <Link className="btn btn-sm min-h-[44px] sm:min-h-0" to={duongLoTrinhLop(classId, studentId)}>{t('Lộ trình tiếp theo')}</Link>
+          <Link className="btn btn-sm min-h-[44px] sm:min-h-0" to={duongLoTrinhLop(classId, studentId)}>{t('Cuối khoá ›')}</Link>
         </div>
       )}
       {moKhongDat && (
@@ -84,7 +84,7 @@ export function KetLuanKhoa({ studentId, studentName, lop, classId, ct, cuoiKhoa
   );
 }
 
-/** Ô "Không đạt Kết quả đầu ra": nguyên nhân Trung tâm / Học viên · kỹ năng · lý do (Học viên, bắt buộc) — cùng luật panel cả lớp (PR-KV). */
+/** Ô "Không đạt Kỳ vọng": nguyên nhân Trung tâm / Học viên · kỹ năng · phương án (Học viên, bắt buộc, không Case — N17) — cùng luật trang Cuối khoá. */
 function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong, onXong }: {
   studentId: number; studentName: string; lop: string | null; ct: string | null; monTruot: string[];
   ban: CuoiKhoaEm['ketLuanFt']; onDong: () => void; onXong: () => void;
@@ -97,7 +97,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
   const [busy, setBusy] = useState(false);
   const loi = dsLoi([
     { khoa: 'nguyen-nhan', nhan: t('Nguyên nhân'), chon: true },
-    ...(nn === 'hoc_sinh' ? [{ khoa: 'ghi-chu', nhan: t('Lý do') }] : []),
+    ...(nn === 'hoc_sinh' ? [{ khoa: 'ghi-chu', nhan: t('Phương án') }] : []),
   ], { 'nguyen-nhan': nn, 'ghi-chu': ghiChu });
   if (nn !== '' && mon.length === 0) loi.push({ khoa: 'mon', nhan: t('Kỹ năng'), lyDo: t('Chọn ít nhất một kỹ năng chưa đạt') });
   const luu = async () => {
@@ -109,13 +109,13 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         dat: false, nguyenNhan: nn, mon, ...(nn === 'hoc_sinh' ? { ghiChu: ghiChu.trim() } : {}),
       });
       invalidate('/students'); invalidate('/cases'); invalidate('/my-work');
-      toast.push('ok', r?.taoCaseTutor ? t('Đã ghi — tạo {n} Case', { n: r.taoCaseTutor }) : t('Đã ghi Kết quả đầu ra'));
+      toast.push('ok', r?.taoCaseTutor ? t('Đã ghi — tạo {n} Case', { n: r.taoCaseTutor }) : t('Đã ghi Kỳ vọng'));
       if (r?.luuY) toast.push('info', dich(r.luuY));
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
   return (
-    <KhungPanel tieuDe={t('Không đạt Kết quả đầu ra')} hocVien={studentName} lop={lop} onDong={onDong}
+    <KhungPanel tieuDe={t('Không đạt Kỳ vọng')} hocVien={studentName} lop={lop} onDong={onDong}
       chan={{ conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{t('Lưu')}</button> }}>
       <Khoi tieuDe={t('Nguyên nhân')}>
         <div {...lf.o(loi, 'nguyen-nhan')} tabIndex={-1} role="radiogroup" aria-label={t('Nguyên nhân')} className="grid grid-cols-2 gap-2 outline-none">
@@ -125,7 +125,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         {lf.loiCua(loi, 'nguyen-nhan') && <span className="mt-1 block text-xs text-late">{lf.loiCua(loi, 'nguyen-nhan')}</span>}
         <p className="m-0 mt-1 text-xs text-slate-500">
           {nn === 'trung_tam' ? t('Sau khi em sang Fast Track: mỗi kỹ năng một Case + PA Tutor 10 buổi.')
-            : nn === 'hoc_sinh' ? t('Sau khi em sang Fast Track: 1 Case, chưa có PA.') : t('Trung tâm chưa dạy đủ hay học viên chưa theo kịp?')}
+            : nn === 'hoc_sinh' ? t('Ghi phương án, không Case.') : t('Trung tâm chưa dạy đủ hay học viên chưa theo kịp?')}
         </p>
       </Khoi>
       {nn !== '' && (
@@ -141,8 +141,8 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         </Khoi>
       )}
       {nn === 'hoc_sinh' && (
-        <Khoi tieuDe={t('Lý do')}>
-          <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(loi, 'ghi-chu')}>
+        <Khoi tieuDe={t('Phương án')}>
+          <Truong nhan={t('Phương án')} batBuoc loi={lf.loiCua(loi, 'ghi-chu')}>
             <textarea className="field w-full" rows={3} {...lf.o(loi, 'ghi-chu')} value={ghiChu} maxLength={500} onChange={(e) => setGhiChu(e.target.value)}
               placeholder={t('Ví dụ: Nghỉ 5 buổi trước Final Test')} />
           </Truong>

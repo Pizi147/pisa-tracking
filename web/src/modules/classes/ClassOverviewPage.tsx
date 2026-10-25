@@ -11,7 +11,6 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
 import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
-import { TransitionPanel } from './TransitionPanel.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
@@ -27,7 +26,7 @@ import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, 
 import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
 import { ThanhViecLop } from './ThanhViecLop.tsx';
-import { TabDauRa } from './TabDauRa.tsx';
+import { CuoiKhoaLop } from './CuoiKhoaLop.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -41,7 +40,8 @@ export default function ClassOverviewPage() {
   const { homNay } = useNgayNghiepVu();
   const [params, setParams] = useSearchParams();
   const cheDoUrl = params.get('che-do');
-  const cheDo: CheDoHocVien = cheDoUrl === 'can-ho-tro' || cheDoUrl === 'lo-trinh' || cheDoUrl === 'ket-qua' || cheDoUrl === 'thong-tin' ? cheDoUrl : 'diem';
+  const cheDo: CheDoHocVien = cheDoUrl === 'can-ho-tro' || cheDoUrl === 'ket-qua' || cheDoUrl === 'thong-tin' ? cheDoUrl : 'diem';
+  const vai = vaiXemHocVien(useSession().session?.roles);
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
@@ -81,12 +81,14 @@ export default function ClassOverviewPage() {
    */
   useEffect(() => {
     const v = params.get('viec');
-    /* OV-3b: lớp thường — `?viec=lo-trinh-ca-lop` (việc QL "Chốt lộ trình · lớp"), `?viec=chuyen-tiep` (badge, Lịch Test, thẻ duyệt), `?viec=ky-vong`
-       (việc QL "Kết quả đầu ra") → tab Học viên › cách xem "Lộ trình tiếp theo"; lớp FT `chuyen-tiep` vẫn panel Chuyển lớp (chỉ Quản lý). */
+    /* P9b: lớp thường — link cũ `?viec=lo-trinh-ca-lop | chuyen-tiep | ky-vong`, `?che-do=lo-trinh`, `?tab=dau-ra` → trang con Cuối khoá (`?xem=cuoi-khoa`,
+       giữ `&em=`). R5.3: lớp FT không còn panel "Chuyển tiếp lớp" — `?viec=chuyen-tiep` cũ chỉ bị xoá khỏi URL. */
     const thuongV = data?.programme?.scoringMode === 'ratio';
-    if (data && thuongV && (v === 'chuyen-tiep' || v === 'lo-trinh-ca-lop' || v === 'ky-vong')) {
-      doiThamSo({ viec: null, tab: null, 'che-do': 'lo-trinh' });
-    } else if (data && ((v === 'chuyen-tiep' && !thuongV && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
+    if (data && thuongV && (v === 'chuyen-tiep' || v === 'lo-trinh-ca-lop' || v === 'ky-vong' || params.get('che-do') === 'lo-trinh' || params.get('tab') === 'dau-ra')) {
+      doiThamSo({ viec: null, tab: null, 'che-do': null, xem: 'cuoi-khoa' });
+    } else if (data && v === 'chuyen-tiep') {
+      doiThamSo({ viec: null });
+    } else if (data && v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)) {
       setViec(v);
       doiThamSo({ viec: null });
     } else if (data && v === 'xet-lai') {
@@ -115,18 +117,19 @@ export default function ClassOverviewPage() {
   /* PR-TK: lớp đã kết thúc có thêm tab "Tổng kết" — đứng đầu và là tab mở mặc định (tab khác phải ghi rõ trên URL). */
   const daKetThuc = data.status === 'finished';
   const thuong = data.programme?.scoringMode === 'ratio';
-  /* UI-HO-SO-LOP (khung T12): lớp thường (không liên tục) có tab "Đánh giá đầu ra" ngay sau Học viên. */
-  const coDauRa = thuong && !data.lienTuc;
-  const tab: TabHoSoLop | 'dau-ra' = coDauRa && params.get('tab') === 'dau-ra' ? 'dau-ra' : tabMacDinhLop(params.get('tab'), daKetThuc);
+  const tab: TabHoSoLop = tabMacDinhLop(params.get('tab'), daKetThuc);
   const tabMacDinh = tabMacDinhLop(null, daKetThuc);
-  const dsTab = tabHienCuaLop(daKetThuc).flatMap((k) => (k === 'hoc-vien' && coDauRa ? [k, 'dau-ra' as const] : [k]));
+  const dsTab = tabHienCuaLop(daKetThuc);
   const dong = () => setViec(null);
-  /* OV-3b: lớp thường — ⋯ Lộ trình tiếp theo / dải nhắc / Chuyển tiếp mở cách xem "Lộ trình tiếp theo" ở tab Học viên, không panel. */
+  /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */
   const moViec = (v: ViecDauTrang) => {
-    if (thuong && (v === 'lo-trinh-ca-lop' || v === 'chuyen-tiep')) doiThamSo({ tab: null, 'che-do': 'lo-trinh' });
+    if (v === 'lo-trinh-ca-lop' || v === 'chuyen-tiep') { if (thuong) doiThamSo({ tab: null, 'che-do': null, xem: 'cuoi-khoa' }); }
     else setViec(v);
   };
   const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); };
+  if (params.get('xem') === 'cuoi-khoa' && thuong && !data.lienTuc) {
+    return <CuoiKhoaLop key={data.id} classId={data.id} theoVai={!!vai} emMo={Number(params.get('em')) || null} onDaMoEm={() => doiThamSo({ em: null })} />;
+  }
 
   return (
     <div className="page space-y-4">
@@ -136,30 +139,27 @@ export default function ClassOverviewPage() {
       {!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
 
       <HangTab ariaLabel={t('Hồ sơ lớp')} value={tab}
-        onChange={(k: TabHoSoLop | 'dau-ra') => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null })}
-        tabs={dsTab.map((k) => ({ key: k, label: k === 'dau-ra' ? t('Đánh giá đầu ra') : TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
+        onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null })}
+        tabs={dsTab.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
 
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
         <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null, tuan: null })}
-          emMo={Number(params.get('em')) || null} onDaMoEm={() => doiThamSo({ em: null })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}
           onSuaThongTin={data.viewer.coTheSuaCaLop && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />
       )}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
-      {tab === 'dau-ra' && <TabDauRa classId={data.id} maLop={data.code} chuongTrinh={data.programme?.code ?? null} />}
 
       {data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
-      <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
       {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}
       {viec === 'lich-su' && <LichSuThayDoi loai="lop" id={data.id} dong2={[data.code]} onClose={dong} />}
       {viec === 'lich-su-gop-y' && <LichSuThayDoi loai="gop-y" id={data.id} dong2={[t('Góp ý hàng tuần'), data.code]} onClose={dong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
       {(viec === 'thong-tin' || viec === 'phan-cong') && (
         <ThongTinLopPanel lop={data} phan={viec === 'phan-cong' ? 'phan-cong' : null} onClose={dong} onDone={xong}
-          onChuyenTiep={data.viewer.coTheChuyenTiep ? () => moViec('chuyen-tiep') : undefined} />
+          onChuyenTiep={thuong && data.viewer.coTheChuyenTiep ? () => moViec('chuyen-tiep') : undefined} />
       )}
       {viec === 'xuat-mt' && (
         <NganXuatMt khung={thuong ? 'thuong' : 'ft'} lop={{ id: data.id, ma: data.code }} chiNhanh={data.branchId}
@@ -168,7 +168,7 @@ export default function ClassOverviewPage() {
       {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}
       {viec === 'ket-thuc-lop' && (
         <KetThucLopPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong}
-          diTiep={data.viewer.coTheChuyenTiep ? { nhan: thuong ? t('Lộ trình tiếp theo') : t('Chuyển tiếp lớp'), onChon: () => { dong(); moViec('chuyen-tiep'); } } : undefined} />
+          diTiep={thuong && data.viewer.coTheChuyenTiep ? { nhan: t('Cuối khoá…'), onChon: () => { dong(); moViec('chuyen-tiep'); } } : undefined} />
       )}
       {viec === 'mo-lai-lop' && (
         /* HL-17: bỏ `tab=tong-ket` trước khi tải lại — lớp mở lại không còn tab Tổng kết (hết 404 nền). */

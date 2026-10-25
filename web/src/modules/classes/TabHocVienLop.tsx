@@ -7,10 +7,10 @@ import { NoiDungThongTinLop } from './ThongTinLopPanel.tsx';
 import { BangHoSoLop } from './BangHoSoLop.tsx';
 import { BangDiemLopThuong } from './BangDiemLopThuong.tsx';
 import { BangCanHoTro } from './BangCanHoTro.tsx';
-import { BangLoTrinhTiep } from './BangLoTrinhTiep.tsx';
 import { BangKqdrLopFt } from './BangKqdrLopFt.tsx';
 import { ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from '../students/XemTruocHangLoatPanel.tsx';
+import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
 import type { QuyenDong } from './thaoTacDongHocVien.tsx';
 import { PERMISSIONS, vaiXemHocVien, type ViecHangLoat } from '@shared/domain/index.ts';
@@ -21,7 +21,7 @@ import { t } from '@shared/i18n/index.ts';
  * TAB HỌC VIÊN CỦA HỒ SƠ LỚP (đặc tả §3.7): hai chế độ.
  *   Tổng hợp   (PR-OV3a: tên mới của "Điểm"; khoá URL vẫn `diem`) FT: bảng đợt MT như hiện có · lớp thường: Progress | Final × L R W S,
  *              ô đúng/tổng (10b phương án A) + cột Lộ trình tiếp theo (hướng Quản lý đã chốt)
- *   Lộ trình tiếp theo (OV-3b, lớp thường; `?che-do=lo-trinh`) mỗi hướng một bảng: Lộ trình (nháp / chốt) · Kết quả đầu ra · Bàn giao
+ *   (P9b: "Lộ trình tiếp theo" thành trang con Cuối khoá `?xem=cuoi-khoa` của hồ sơ lớp — `?che-do=lo-trinh` cũ chuyển sang đó.)
  *   (Góp ý hàng tuần OV-12g gỡ 24/10 — chủ SP; link cũ `?che-do=gop-y` mở Tổng hợp; dữ liệu cũ: ⋯ › Lịch sử góp ý tuần.)
  *   Cần hỗ trợ học viên có Case mở: vấn đề chính · PA đang chạy · bước tiếp theo + hạn (mockup 06, cho GVCN họp nhanh)
  *   Kết quả đầu ra (OV-3c, lớp FT; `?che-do=ket-qua`) KQĐR lớp trước của em vào từ FOU/BE/ELE, chỉ khi còn đợt trong 4 tuần (`dai.kqdrDot`);
@@ -29,22 +29,19 @@ import { t } from '@shared/i18n/index.ts';
  * PR-LUI-b (06/10): Quản lý / Quản trị có nút "Chọn nhiều học viên" ở cách xem Tổng hợp — ô chọn hiện ngay trên danh sách, thanh thao tác dính đáy
  * (Lưu trữ · Kết thúc học · Huỷ chuyển lớp · Bỏ chọn), bấm một việc ra panel xem trước rồi xác nhận.
  */
-export type CheDoHocVien = 'diem' | 'lo-trinh' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
+export type CheDoHocVien = 'diem' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
 /** Tên cách xem — cũng là chi tiết của nút "‹ Hồ sơ lớp …" khi đi từ hồ sơ lớp sang hồ sơ khác (PR-OV5b). */
 export const CHE_DO_NHAN: Record<CheDoHocVien, string> = {
-  diem: t('Tổng hợp'), 'lo-trinh': t('Lộ trình tiếp theo'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
+  diem: t('Tổng hợp'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
 };
-export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin, emMo = null, onDaMoEm }: {
+export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin }: {
   lop: HoSoLop; cheDo: CheDoHocVien; onCheDo: (m: CheDoHocVien) => void;
-  /** OV-3b: `&em={id}` — mở sẵn hộp Lộ trình của em đó (cách xem Lộ trình tiếp theo). */
-  emMo?: number | null; onDaMoEm?: () => void;
   onDoi: () => void; onThemHocVien: () => void;
   /** PR-SL: mở panel Sửa thông tin học viên (cả lớp) — chỉ truyền khi người xem sửa được học viên của lớp. */
   onSuaThongTin?: () => void;
 }) {
   /* OV-6b2: lớp liên tục (PET, KET…) — không cách xem Lộ trình tiếp theo. */
   const thuong = lop.programme?.scoringMode === 'ratio';
-  const coLoTrinh = thuong && !lop.lienTuc;
   const soDot = lop.dai?.kqdrDot ?? 0;
   const { can, session } = useSession();
   /*
@@ -53,7 +50,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
    */
   const vai = vaiXemHocVien(session?.roles);
   const cacCheDo: CheDoHocVien[] = [
-    'diem', ...(coLoTrinh && vai !== 'admin' ? ['lo-trinh' as const] : []), ...(vai !== 'admin' ? ['can-ho-tro' as const] : []),
+    'diem', ...(vai !== 'admin' ? ['can-ho-tro' as const] : []),
     ...(soDot && vai !== 'admin' ? ['ket-qua' as const] : []), ...(vai ? ['thong-tin' as const] : []),
   ];
   const cheDo: CheDoHocVien = cacCheDo.includes(cheDoUrl) ? cheDoUrl : 'diem';
@@ -64,6 +61,8 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
   };
   const chon = useChonNhieu();
   const [viecChon, setViecChon] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);
+  /* R5.3: lớp FT bỏ "Chuyển tiếp lớp" — chọn nhiều em → "Chuyển lớp…" (cùng panel Chuyển lớp nhiều em, ô lớp có "+ Mở lớp mới…"). */
+  const [chuyenNhieu, setChuyenNhieu] = useState<number[] | null>(null);
   /* Chỉ Quản lý / Quản trị (`plan.week` của lớp), chỉ cách xem Tổng hợp; lớp đã kết thúc thì mọi cờ viewer tắt nên không có nút. */
   /* OV-10a: Admin có `plan.week` nhưng hàng loạt (Lưu trữ / Kết thúc / Huỷ chuyển lớp) máy chủ đòi `cycle.edit`. */
   const coTheChon = lop.viewer.canPlanWeek && can(PERMISSIONS.CYCLE_EDIT) && cheDo === 'diem';
@@ -89,8 +88,6 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
             {vai === 'tvv' && <EmCuaToiOLop lop={lop} />}
           </div>
         )
-        : cheDo === 'lo-trinh' && coLoTrinh
-        ? <BangLoTrinhTiep classId={lop.id} quyen={quyen} onDoi={onDoi} emMo={emMo} onDaMoEm={() => onDaMoEm?.()} />
         : cheDo === 'ket-qua'
         ? <BangKqdrLopFt classId={lop.id} />
         : cheDo === 'can-ho-tro'
@@ -102,9 +99,11 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
               onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
-          viec={[{ key: 'luu-tru', nhan: t('Lưu trữ') }, { key: 'ket-thuc', nhan: t('Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}
-          onViec={(k) => setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] })} />
+          viec={[...(!thuong && lop.viewer.coTheChuyenTiep ? [{ key: 'chuyen-lop', nhan: t('Chuyển lớp…') }] : []),
+            { key: 'luu-tru', nhan: t('Lưu trữ') }, { key: 'ket-thuc', nhan: t('Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}
+          onViec={(k) => (k === 'chuyen-lop' ? setChuyenNhieu([...chon.chon]) : setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] }))} />
       )}
+      {chuyenNhieu && <ChuyenLopNhieuEm classId={lop.id} emIds={chuyenNhieu} lop={{ code: lop.code, branchId: lop.branchId }} onClose={() => setChuyenNhieu(null)} onDone={() => { chon.bo(); setChuyenNhieu(null); onDoi(); }} />}
       {viecChon && (
         <XemTruocHangLoatPanel viec={viecChon.viec} ids={viecChon.ids} maLop={lop.code}
           onClose={() => setViecChon(null)} onDone={() => { chon.bo(); setViecChon(null); onDoi(); }} />

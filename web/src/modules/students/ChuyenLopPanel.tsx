@@ -9,7 +9,8 @@ import { ErrorState, NutChon, OKck, Skeleton } from '../../ui/ui.tsx';
 import { ChonLop, type LopChon } from '../../ui/ChonLop.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { KHOI_VANG, NutHomNay, OTuan } from '../classes/TransitionPanel.tsx';
+import { KHOI_VANG, NutHomNay, OTuan } from '../classes/chuyenLopChung.tsx';
+import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
   CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
@@ -309,9 +310,10 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
 
 // ---------------------------------------------------------------- Chuyển lớp NHIỀU em (PR-CL C1 — mở từ Công việc "Xét lại lộ trình")
 
-type EmXetLai = { studentId: number; ten: string; huong: 'len_lop' | 'fast_track' | 'hoc_lai'; tyLe: number; lopHienTai: { id: number; code: string } };
+/** `huong`, `tyLe` null = em chọn ở lớp FT (R5.3 "Chuyển lớp…" khi chọn nhiều em), không phải dòng Xét lại. */
+type EmXetLai = { studentId: number; ten: string; huong: 'len_lop' | 'fast_track' | 'hoc_lai' | null; tyLe: number | null; lopHienTai: { id: number; code: string } };
 type XemEm = { nap: true } | { loi: string } | { nguonFt: boolean; dichFt: boolean; khiChuyen: string[]; canhBao: boolean; hoiTarget: boolean };
-const DA_CHOT: Record<EmXetLai['huong'], string> = { len_lop: 'Lên lớp', fast_track: 'Lên FT', hoc_lai: 'Học lại' };
+const DA_CHOT: Record<NonNullable<EmXetLai['huong']>, string> = { len_lop: 'Lên lớp', fast_track: 'Lên FT', hoc_lai: 'Học lại' };
 /** 1440: ☑ · Học viên · Final Test · Đang ở · Lớp chuyển đến (mockup phần 2 ④). */
 const LUOI_NHIEU = 'grid grid-cols-[28px_minmax(11rem,1.2fr)_5.5rem_8rem_minmax(16rem,1.6fr)] items-start gap-x-3';
 
@@ -321,11 +323,21 @@ const LUOI_NHIEU = 'grid grid-cols-[28px_minmax(11rem,1.2fr)_5.5rem_8rem_minmax(
  * Gửi tuần tự từng em `POST /students/:id/transfer` — em lỗi giữ hàng đỏ + chữ lỗi, em đã chuyển không gửi lại.
  * ponytail: mỗi em một lời gọi (≤ TOI_DA_NHIEU_EM em/lần); cần một lời gọi gộp khi Xét lại > 50 em.
  */
-export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number; onClose: () => void; onDone?: () => void }) {
+export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguon }: {
+  classId: number; onClose: () => void; onDone?: () => void;
+  /** R5.3: em đã chọn ở lớp FT (thay "Chuyển tiếp lớp") — không đọc danh sách Xét lại. `lop` = lớp đang xem (mã + chi nhánh cho "+ Mở lớp mới…"). */
+  emIds?: number[]; lop?: { code: string; branchId: number };
+}) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const dt = useDienThoai();
-  const { data, loading, error, reload } = useApi<{ lop: { id: number; code: string }; em: EmXetLai[] }>(`/classes/${classId}/xet-lai-lo-trinh`, [classId]);
+  const xl = useApi<{ lop: { id: number; code: string }; em: EmXetLai[] }>(emIds ? null : `/classes/${classId}/xet-lai-lo-trinh`, [classId]);
+  const ro = useApi<{ id: number; fullName: string }[]>(emIds ? `/classes/${classId}/roster` : null, [classId]);
+  const data = emIds ? (ro.data ? { lop: { id: classId, code: lopNguon?.code ?? '' }, em: ro.data.filter((r) => emIds.includes(r.id))
+    .map((r) => ({ studentId: r.id, ten: r.fullName, huong: null, tyLe: null, lopHienTai: { id: classId, code: lopNguon?.code ?? '' } })) } : null) : xl.data;
+  const { loading, error, reload } = emIds ? ro : xl;
+  const [moLop, setMoLop] = useState<number | null>(null);
+  const [lopMoi, setLopMoi] = useState(0);
   const [boChon, setBoChon] = useState<ReadonlySet<number>>(new Set());
   const [lop, setLop] = useState<Record<number, number | null>>({});
   const [xem, setXem] = useState<Record<number, XemEm>>({});
@@ -415,7 +427,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
         chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !canGui.length || choXem}>
           {busy ? 'Đang lưu…' : homNay && laChuyenNgay(tuan, homNay) ? t('Chuyển ngay · {n} em', { n: canGui.length }) : `${CHU_CHUYEN_LOP.quyetDinh} · ${canGui.length} em`}</button>,
       }}>
-      <p className="mb-0 mt-3 text-xs text-slate-400">Kết quả không phù hợp lộ trình — xét lại, không bắt buộc đổi.</p>
+      {!emIds && <p className="mb-0 mt-3 text-xs text-slate-400">Kết quả không phù hợp lộ trình — xét lại, không bắt buộc đổi.</p>}
       {data.em.length > TOI_DA_NHIEU_EM && <p className="mb-0 mt-1 text-xs text-slate-400">Hiện {TOI_DA_NHIEU_EM}/{data.em.length} em — chuyển xong sẽ hiện tiếp.</p>}
 
       <div role={dt ? 'list' : 'table'} aria-label={`Chuyển lớp · ${data.lop.code}`} className={dt ? 'mt-3 space-y-2' : 'surface-2 mt-3 overflow-x-auto rounded-lg'}>
@@ -423,7 +435,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
           <div role="row" className={`${LUOI_NHIEU} min-w-max border-b px-3 py-2 text-[12px] font-extrabold  text-slate-500 lg:min-w-0`} style={{ borderColor: 'var(--line)' }}>
             <span role="columnheader"><span className="sr-only">Chọn</span></span>
             <span role="columnheader">Học viên</span>
-            <span role="columnheader">Final Test</span>
+            <span role="columnheader">{emIds ? '' : 'Final Test'}</span>
             <span role="columnheader">Đang ở</span>
             <span role="columnheader">Lớp chuyển đến</span>
           </div>
@@ -434,7 +446,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
               hoiTarget={hoiTarget(r.e.studentId)} mucTieu={mucTieu[r.e.studentId] ?? ''} onMucTieu={(v) => setMucTieu((m) => ({ ...m, [r.e.studentId]: v }))}
               loiTarget={lf.daBam ? loi.find((l) => l.khoa === `muc-tieu-${r.e.studentId}`)?.lyDo ?? null : null}
               onChon={(v) => setBoChon((s) => { const n = new Set(s); if (v) n.delete(r.e.studentId); else n.add(r.e.studentId); return n; })}
-              onLop={(id, ft) => chonLop(r.e.studentId, id, ft)} />
+              onLop={(id, ft) => chonLop(r.e.studentId, id, ft)} lopMoi={lopMoi} moLopMoi={lopNguon ? () => setMoLop(r.e.studentId) : undefined} />
           ))}
         </div>
       </div>
@@ -445,7 +457,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
         </Truong>
         <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
           <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-            placeholder="Ví dụ: Xét lại lộ trình sau Final" />
+            placeholder={emIds ? 'Ví dụ: Gộp lớp' : 'Ví dụ: Xét lại lộ trình sau Final'} />
         </Truong>
       </div>
 
@@ -458,26 +470,32 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
           </div>
         </Khoi>
       )}
+      {moLop !== null && lopNguon && (
+        <ClassCreatePanel moHoSo={false} khoa={`Chuyển lớp · ${lopNguon.code}`} macDinh={{ branchId: lopNguon.branchId, chuongTrinh: 'FT', loTrinh: 'LT1', previousClassId: classId }}
+          onClose={() => setMoLop(null)} onDone={(l) => { setLopMoi((n) => n + 1); chonLop(moLop, l.id, true); setMoLop(null); }} />
+      )}
     </KhungPanel>
   );
 }
 
 /** Một em ở panel nhiều em — 1440 một hàng bảng, 375 một thẻ. Danh sách lớp của TỪNG em (`lop-dich?studentId=`: lọc hợp lệ theo lớp em đang học). */
-function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarget, mucTieu, onMucTieu, loiTarget }: {
+function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarget, mucTieu, onMucTieu, loiTarget, lopMoi = 0, moLopMoi }: {
   e: EmXetLai; dt: boolean; chon: boolean; xong: boolean; lop: number | null; loi: string | null; busy: boolean;
+  /** Tăng khi vừa mở lớp mới — nạp lại danh sách lớp chuyển đến. */ lopMoi?: number; moLopMoi?: () => void;
   hoiTarget: boolean; mucTieu: string; onMucTieu: (v: string) => void; loiTarget: string | null;
   onChon: (v: boolean) => void; onLop: (id: number | null, dichFt: boolean) => void;
 }) {
-  const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${e.studentId}`, [e.studentId]);
+  const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${e.studentId}`, [e.studentId, lopMoi]);
   const dsLop = lopDich.data?.lop ?? [];
   const khoa = busy || xong || !chon;
-  const final = <b className={`tabular-nums ${e.tyLe < 0.5 ? 'text-bad' : 'text-slate-100'}`}>{chuTyLeXetLai(e.tyLe)}</b>;
+  const final = e.tyLe === null ? null : <b className={`tabular-nums ${e.tyLe < 0.5 ? 'text-bad' : 'text-slate-100'}`}>{chuTyLeXetLai(e.tyLe)}</b>;
   const oLop = xong ? <span className="text-sm text-ok">Đã quyết định chuyển lớp</span>
     : lopDich.error ? <span className="text-xs text-late">{lopDich.error.message} <button type="button" className="link border-0 bg-transparent p-0" onClick={lopDich.reload}>Thử lại</button></span>
       : lopDich.loading ? <span className="text-xs text-slate-500">Đang tải lớp…</span>
-        : <ChonLop ds={dsLopDich(dsLop)} value={lop} onChange={(id) => onLop(id, !!dsLop.find((l) => l.id === id)?.ft)} ariaLabel={`Lớp chuyển đến của ${e.ten}`} tat={khoa} invalid={!!loi} />;
+        : <ChonLop ds={dsLopDich(dsLop)} value={lop} onChange={(id) => onLop(id, !!dsLop.find((l) => l.id === id)?.ft)} ariaLabel={`Lớp chuyển đến của ${e.ten}`} tat={khoa} invalid={!!loi}
+            moLopMoi={khoa ? undefined : moLopMoi} />;
   const oChon = <input type="checkbox" className="mt-1 h-4 w-4" aria-label={`Chọn ${e.ten}`} checked={chon && !xong} disabled={busy || xong} onChange={(ev) => onChon(ev.target.checked)} />;
-  const ten = <span className="block min-w-0"><span className="font-semibold text-slate-100">{e.ten}</span><span className="block text-xs text-slate-400">Đã chốt: {DA_CHOT[e.huong]}</span></span>;
+  const ten = <span className="block min-w-0"><span className="font-semibold text-slate-100">{e.ten}</span>{e.huong && <span className="block text-xs text-slate-400">Đã chốt: {DA_CHOT[e.huong]}</span>}</span>;
   /* I1: Target gọn dưới ô lớp, chỉ khi em chưa có Target nào (§7). */
   const oTarget = hoiTarget && !xong && (
     <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">

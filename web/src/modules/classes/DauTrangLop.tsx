@@ -71,7 +71,8 @@ export type HoSoLop = {
 };
 /** `phan-cong`: panel Thông tin lớp mở sẵn phần Phân công (badge "Thiếu GV", `?viec=phan-cong`). */
 /** `lich-su-gop-y`: Góp ý hàng tuần gỡ khỏi giao diện 24/10 (chủ SP) — dữ liệu cũ chỉ còn xem ở Lịch sử góp ý tuần. */
-export type ViecDauTrang = ViecMenuLop | 'ban-giao' | 'phan-cong' | 'case' | 'lich-su-gop-y';
+/** `chuyen-tiep`: dải nhắc / badge lớp thường → trang Cuối khoá (lớp FT không còn Chuyển tiếp lớp — R5.3). */
+export type ViecDauTrang = ViecMenuLop | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' | 'case' | 'lich-su-gop-y';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
@@ -139,7 +140,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const mucLop = menuHoSoLop({
     thuong, lienTuc: !!data.lienTuc, chuongTrinh: data.programme?.code ?? null, soHocVien: s?.studentCount ?? 0,
     canEditProgress: data.viewer.canEditProgress, canAssign: data.viewer.canAssign, canAssignSubject: !!data.viewer.canAssignSubject,
-    canAddStudents: data.viewer.canAddStudents, coTheSuaHocVien: !!data.viewer.coTheSuaHocVien, coTheSuaCaLop: !!data.viewer.coTheSuaCaLop, coTheChuyenTiep: data.viewer.coTheChuyenTiep, coTheChuyenNhieuEm: !!data.dai?.viewer.coTheChuyenNhieuEm,
+    canAddStudents: data.viewer.canAddStudents, coTheSuaHocVien: !!data.viewer.coTheSuaHocVien, coTheSuaCaLop: !!data.viewer.coTheSuaCaLop, coTheChuyenTiep: data.viewer.coTheChuyenTiep,
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
     coTheXuatExcel: !!session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek),
     coTheMoLaiLop: !!data.viewer.coTheMoLaiLop, coTheXoa: !!xk.data?.coTheXoa, coTheKetThuc: !!xk.data && xk.data.coDuLieu && !xk.data.daKetThuc,
@@ -215,7 +216,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
         </div>
       )}
 
-      <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} anLoTrinh={sp.get('che-do') === 'lo-trinh'} />
+      <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} />
     </header>
   );
 }

@@ -2,22 +2,22 @@
  * THÔNG BÁO TỰ ĐỘNG THAY NHẮC (OV-15d, C03; thiết kế OV-14 mục 3.4). Ba sự kiện, mỗi thông báo trỏ MỘT đối tượng nghiệp vụ:
  *  · bài quá hạn chấm của CHÍNH GV — một thông báo mỗi lớp · đợt (cùng tập việc Nhập điểm quá hạn của `/my-work`);
  *  · Case chưa chốt PA quá hạn — người phụ trách Case (GVCN), cùng luật ⚠ cột Chờ duyệt (`xuLyCaseMany`, như chỉ số `case-xac-dinh-nguyen-nhan-qua-han`);
- *  · Chốt lộ trình tới hạn — QL (việc `chot_len_ft` có hạn trong `CHOT_TOI_HAN_NGAY` ngày tới, hoặc đã qua).
+ *  · Chốt lộ trình — QL, ba mốc N20 (T2 nhắc · T5 hạn · từ T6 quá hạn), một dòng mỗi lớp mỗi mốc.
  *  · SV-YT-TVV: việc Báo PH sau lưu xử lý — người giữ HIỆN TẠI (TVV / QL khi em chưa có TVV), MỘT thông báo mỗi người (1 việc: tên em; nhiều: "· n em"),
  *    hạn sớm nhất, "Quá hạn · …" khi có việc quá hạn — không tràn chuông (50 dòng) khi QL giữ nhiều việc.
  * ĐỒNG BỘ, không chỉ thêm: thông báo của việc đã xong tự hết (xoá), thông báo còn việc thì cập nhật chữ; dedup theo (người, đối tượng).
  * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người. Không email / push.
  */
 import { chenNhieuDong, db, theoLo } from '../db.ts';
-import { tenMon } from '../../../shared/domain/index.ts';
+import { tenMon, thuNgay } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { addDays, nowIso } from '../util.ts';
 
-/** "Tới hạn" Chốt lộ trình = hạn trong 7 ngày tới (hoặc đã qua). */
+/** "Tới hạn" = hạn trong 7 ngày tới (hoặc đã qua). */
 export const CHOT_TOI_HAN_NGAY = 7;
-/** OV-15h1: một luật "tới hạn" cho thông báo Chốt lộ trình và "Cần bạn quyết" ở Tổng quan QL. Không có hạn → chưa tới hạn. */
+/** OV-15h1: luật "tới hạn" của "Cần bạn quyết" ở Tổng quan QL (chuông Chốt lộ trình theo ba mốc N20 — `viecMuon`). Không có hạn → chưa tới hạn. */
 export const toiHan = (han: string | null | undefined, homNay: string) => !!han && han <= addDays(homNay, CHOT_TOI_HAN_NGAY);
 const KIND = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly'] as const;
 type Muon = { kind: (typeof KIND)[number]; title: string; body: string; entityType: string; entityId: number | null; duong: string;
@@ -55,12 +55,18 @@ function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
     });
   }
 
-  /* 2. Chốt lộ trình tới hạn — QL (việc của cả lớp, không gán người: chỉ người có việc này trong `/my-work` mới nhận). */
+  /*
+   * 2. Chốt lộ trình — QL (việc của cả lớp, không gán người: chỉ người có việc này trong `/my-work` mới nhận). N20: ba mốc — T2 (việc hiện, "hạn T5"),
+   * T5 (hôm nay hạn), từ T6 (quá hạn); mỗi lớp mỗi mốc MỘT dòng (khoá lớp + mốc — mở lại không lặp; sang mốc mới thì dòng mốc cũ thay bằng dòng mới).
+   */
   for (const x of items) {
-    if (x.group !== 'chot_len_ft' || !toiHan(x.due, homNay) || !x.due) continue;
-    muon.set(`tudong:chot:${x.classId}`, {
-      kind: 'chot_lo_trinh', title: x.tieuDe, body: '',
-      entityType: 'class', entityId: x.classId, duong: `/cong-viec?viec=${encodeURIComponent(x.key)}`, han: x.due,
+    if (x.group !== 'chot_len_ft' || !x.due) continue;
+    const moc = homNay > x.due ? 'qua' : homNay === x.due ? 'han' : 'nhac';
+    const lop = x.classCode ?? '';
+    muon.set(`tudong:chot:${x.classId}:${moc}`, {
+      kind: 'chot_lo_trinh',
+      title: moc === 'qua' ? `Quá hạn · Chốt lộ trình · ${lop}` : moc === 'han' ? `Hôm nay hạn · Chốt lộ trình · ${lop}` : `Chốt lộ trình · ${lop} · hạn ${thuNgay(x.due, homNay)}`,
+      body: '', entityType: 'class', entityId: x.classId, duong: x.href ?? `/cong-viec?viec=${encodeURIComponent(x.key)}`, han: x.due,
     });
   }
 
