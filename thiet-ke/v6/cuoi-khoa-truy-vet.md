@@ -1,6 +1,6 @@
 # Truy vết — `cuoi-khoa.html` (V6 · Cuối khoá lớp thường)
 
-> **MOCKUP-V6 · CHỜ CHỦ SP DUYỆT**. Mở khoá P9. Nguồn: spec 24/10 mục 3.9, R5.1–R5.3, GPT 1–4, 9; Rulebook §20.6–20.9; tham chiếu `thiet-ke/mockup-cuoi-khoa-2-2026-10-08.html` phần 1–4.
+> **MOCKUP-V6 · ĐÃ DUYỆT 25/10 (N20 hạn chốt T5 tuần trước Final · N22 ① chỉ QL chốt hướng — GVCN chỉ nhận xét)**. Mở khoá P9. Nguồn: spec 24/10 mục 3.9, R5.1–R5.3, GPT 1–4, 9; Rulebook §20.6–20.9; tham chiếu `thiet-ke/mockup-cuoi-khoa-2-2026-10-08.html` phần 1–4.
 > **Q9 sửa 25/10 theo quy chế lớp thường** (chủ SP, "Quy định và Chế tài lớp thường" — P. Học thuật): Kết quả đầu ra **máy tự ghi** theo Final; **chỉ em Lên FT** có Đạt / Không đạt **kỳ vọng** (chỉ QL). Mã đối chiếu: `shared/domain/cuoiKhoa.ts` (`chuHopKetLuan`, `goiYCuoiKhoa`, `NGUONG_KY_VONG`, `goiYKyVong`), `shared/domain/chuyenLop.ts` (`khacGoiY`, `kiemDongLenh`).
 > Ảnh: `anh/cuoi-khoa-{1440-toi,375}.png`, từng khung `anh/cuoi-khoa-k1…k9-*.png` (+ `-375`). Dữ liệu demo: khung 2 **T5 17/09 · W3 SEP** (trước Final); khung 3–9 **T5 24/09 · W4 SEP**, MB FOU 12 Final 21/09 đã chấm đủ (lệch `du-lieu-demo.md` có Final rải 14–28/09).
 
@@ -9,7 +9,7 @@
 | Yêu cầu | Khung (ảnh) | Thành phần |
 |---|---|---|
 | GPT 1 một không gian, ba lối vào | k1 `-k1-loi-vao` | Công việc QL "Chốt lộ trình · MB FOU 12" · hồ sơ lớp ⋯ "Cuối khoá…" · hồ sơ HV "Cuối khoá … ›" → cùng trang con hồ sơ lớp |
-| Trước Final (tình huống thường gặp nhất, §20.6 hạn hết CN trước tuần Final) | k2 `-k2-truoc-final` | Kết quả đầu ra "Chờ Final · 0/4 môn" + "Progress 24/08 · 3/4 môn đạt · Không đạt: P"; Gợi ý = đề xuất GVCN; QL chốt được; em Lên FT "Kỳ vọng · Chờ MT0" (nút tắt); chân "Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final" |
+| Trước Final (tình huống thường gặp nhất, N20 hạn T5 tuần trước Final) | k2 `-k2-truoc-final` | Kết quả đầu ra "Chờ Final · 0/4 môn" + "Progress 24/08 · 3/4 môn đạt · Không đạt: P"; Gợi ý = đề xuất GVCN; QL chốt được; em Lên FT "Kỳ vọng · Chờ MT0" (nút tắt); chân "Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final" |
 | Q9 Kết quả đầu ra máy ghi | k3 `-k3-bang-ql` | MỘT cột: dòng 1 % Final + ✓/✗ + dải (Pass · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU · Quản lý báo phụ huynh qua TVV) — không nút; dòng 2 % từng môn, môn < 70 % có ✗; thiếu → "Chờ Final · 3/4 môn". Giữ cột "Gợi ý · GVCN" |
 | R5.1 chọn nhóm, áp chung, ô gõ lớp cùng chi nhánh, mở lớp tại chỗ | k3 | Chọn tất cả · 12 + chọn nhóm theo Hướng (đếm em); thanh "Áp cho n em": Hướng · Lớp (gõ-tìm, chỉ MB, "+ Mở lớp mới…") · Tuần — không còn cụm Kết quả đầu ra chung |
 | Kỳ vọng FT chỉ em Lên FT | k4 `-k4-ngoai-le-ky-vong` | khối "Kỳ vọng IELTS 4.0 · MT0 x" + band 4 kỹ năng + Đạt / Không đạt (máy gợi ý, chỉ QL); Không đạt → Nguyên nhân Trung tâm (kỹ năng điền sẵn = kỹ năng MT0 dưới ngưỡng, sửa được, "→ Case + Tutor 10 buổi/kỹ năng") / Học viên (ô Phương án, không Case — biến thể dưới bảng); chọn nhóm "Lên FT" → thanh có cụm Kỳ vọng FT |
@@ -33,7 +33,7 @@ Nguồn TRƯỚC: `BangLoTrinhTiep.tsx` (hộp "Lộ trình · em", `<select>` l
 | Tạo lớp ngay khi chọn lớp đích | không có ở lớp thường (rời bảng, mất lựa chọn) | "+ Mở lớp mới…" › điền › Mở lớp (3), em vẫn chọn |
 | Chốt trước Final | được (thiếu điểm vẫn chuyển) | giữ; Bổ trợ Final / Xét lại lộ trình tự sinh khi có Final |
 | Chốt nhiều em, một số em lỗi | toast "n em chưa lưu" | giữ + lọc "Lỗi n" + "Thử lại n em" |
-| GIỮ | Lưu nháp, Huỷ quyết định, Hoàn tác, bàn giao + hạn, `huong_gvcn`, việc "Chốt lộ trình · lớp", "Ngay hôm nay", Xét lại lộ trình, Lý do khi khác gợi ý | như cũ |
+| GIỮ | Lưu nháp, Huỷ quyết định, Hoàn tác, bàn giao + hạn, việc "Chốt lộ trình · lớp", "Ngay hôm nay", Xét lại lộ trình, Lý do khi khác gợi ý | như cũ |
 | BỎ | tab "Đánh giá đầu ra", nút Đạt / Không đạt theo Final, hộp KQĐR riêng, bước "2 Xác nhận", ⋯ "Chuyển tiếp lớp…" lớp FT, dải "Chưa chuyển được" | Q9 sửa 25/10, R5.3 |
 
 ## 3. Giả định · cần xác minh
@@ -46,3 +46,5 @@ Nguồn TRƯỚC: `BangLoTrinhTiep.tsx` (hộp "Lộ trình · em", `<select>` l
 - Lý do khi khác gợi ý theo `khacGoiY`: gợi ý "lên" khớp Lên BE + Lên FT; "học lại" khớp Học lại; 50–59 % không gợi ý → không bắt lý do.
 - Hướng "Tạm dừng/ Kết thúc học" thay "Tạm dừng học" + "Dừng học hẳn" (cùng luật trang-thai-hv).
 - Dữ liệu demo V6: Final % từng môn, MT0 4.5 (Đinh Bảo Anh) / 3.5 (Phí Ngọc Diệp, R W S < 4.0), lớp MB BE 05 / 06 / 07, MB FT 106, MB FOU 14 / 15.
+
+- **25/10 (PTA Plan, chủ SP duyệt):** ảnh khung k1 / k2 / k7 (`anh/cuoi-khoa-k*.png`) chụp TRƯỚC khi sửa N20 / N22 — ảnh toàn trang `cuoi-khoa-{1440-toi,375}.png` là bản đúng. Xét lại lộ trình: `xet-lai-lo-trinh.html` (N21).

@@ -195,7 +195,7 @@ dữ liệu Góp ý hàng tuần giữ trong DB + Lịch sử, chỉ gỡ khỏi
 | P6 KHOA-LICH | 3.5 | Q6–Q8 (làm theo khuyến nghị, nháp tới khi trả lời) | PTA + rà sâu `/code-review high` | sau P2 (chung `keHoachTest.ts`) |
 | P7 SV-LO-TRINH + UI | 3.1–3.3, E1–E3, E9, E10 | Q1–Q3, mockup P5 | chủ SP duyệt ảnh; rà sâu (dữ liệu) | đợi |
 | P8 MON-DANG-KY | 3.4 | Q4–Q5, mockup P5 | rà sâu | đợi |
-| P9 CUOI-KHOA | 3.9, R5.3 | Q9, mockup P5, P4 | chủ SP duyệt ảnh | đợi |
+| P9a XET-LAI · P9b CUOI-KHOA | 3.9, R5.3, N20–N22 | mockup V6 cuoi-khoa + xet-lai đã duyệt 25/10, P4 đã merge | chủ SP duyệt ảnh | plan `…/2026-10-25-p9a-xet-lai.md`, `…/2026-10-25-p9b-cuoi-khoa.md` · song song |
 | P11 VIEC-DUNG-VAI | R6.1 | #566 merge | PTA rà ảnh | đợi |
 | P12 BAO-CAO-LICH-SU | E6–E8 + `thi_that_target` | sau SUA-CHAM-LAI (chung Tổng quan / Phân tích GV) | rà sâu (migrate) | đợi |
 | P13 KET-PET | 3.10 | Q10 | — | đợi |
