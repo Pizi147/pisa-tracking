@@ -85,4 +85,8 @@ export const EN_OV15C = {
   "Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.": "<b>Schedule note</b> field in the box; <b>+ Class note</b> below the table.",
   "Ô <b>Ghi chú lịch Test</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).": "<b>Schedule note</b> field in the box; the note shows as one line under the chip, click to edit (Enter saves · Esc cancels).",
   "Đã có điểm / đã làm bài: nút mờ. Kỹ năng huỷ vì vắng 2 lần: <b>Khôi phục → Chưa xếp</b> hoặc <b>Giữ huỷ</b>.": "Scored / taken: dimmed. Skill cancelled after 2 absences: <b>Restore → Not scheduled</b> or <b>Keep cancelled</b>.",
+  // P4 CHON-LOP — ô chọn lớp dùng chung
+  'Bỏ chọn {ma} · {o}': 'Clear {ma} · {o}',
+  'Không có lớp để chọn': 'No classes to choose',
+  'Gõ tên lớp…': 'Type a class name…',
 };

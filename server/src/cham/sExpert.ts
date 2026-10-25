@@ -15,6 +15,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt } from '../util.ts';
 import { can, coTheXemLuotCham, grantGvNhapDiem, laGvSpeaking, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { chanCuoiTuan } from '../fasttrack/skillSchedule.ts';
 import { mondayOf } from '../platform/week.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -27,6 +28,8 @@ export type DongSEx = {
   sua: boolean; cham: boolean;
 };
 
+/** P6 N15: S Ex chung khoá đổi lịch T6 → CN với MT. */
+const SEX = { kind: 's_expert' };
 const QL_MSG = 'Chỉ Quản lý / Admin thêm, dời, xoá hoặc khôi phục lượt S Expert.';
 const CHAM_MSG = 'Chỉ GV Speaking cùng chi nhánh hoặc Quản lý / Admin chấm được S Expert của học viên này.';
 const laQl = (p: Principal, studentId: number) => can(p, PERMISSIONS.PLAN_WEEK, { studentId });
@@ -126,6 +129,7 @@ export function themSEx(p: Principal, body: Record<string, unknown>) {
   require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, QL_MSG);
   if (!lopDangHoc(studentId).length) throw badRequest('Học viên không có lớp đang học (hoặc đang tạm dừng) — xếp em vào lớp / cho em học lại trước khi thêm lượt S Expert.');
   const t = docThan(body, null, today);
+  chanCuoiTuan(p, SEX, [t.tuan]);
   const luc = nowIso();
   const chamBoi = t.diem !== null || t.nhanXet ? p.userId : null;
   return tx(() => {
@@ -165,6 +169,7 @@ export function suaSEx(p: Principal, id: number, body: Record<string, unknown>) 
     const doiDiem = t.diem !== cu.diem || t.nhanXet !== cu.nhanXet;
     if (!doiLich && !doiDiem) return { id, doi: false };
     if (doiLich) require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, QL_MSG);
+    if (doiLich) chanCuoiTuan(p, SEX, [cu.tuan, t.tuan]);
     if (doiDiem && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
     const luc = nowIso();
     motDong(db().prepare(`UPDATE s_expert SET tuan = ?, ngay = ?, diem = ?, nhan_xet = ?, sua_boi = ?, sua_luc = ?
@@ -194,6 +199,7 @@ function doiXoa(p: Principal, id: number, xoa: boolean) {
   return tx(() => {
     const { studentId, t } = docLuot(id, !xoa);
     require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, QL_MSG);
+    chanCuoiTuan(p, SEX, [t.tuan]);
     motDong(db().prepare(`UPDATE s_expert SET xoa_luc = ?, xoa_boi = ? WHERE id = ? AND xoa_luc IS ${xoa ? '' : 'NOT '}NULL`)
       .run(xoa ? nowIso() : null, xoa ? p.userId : null, id));
     writeAudit({
