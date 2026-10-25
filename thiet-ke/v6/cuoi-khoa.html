@@ -68,7 +68,7 @@
     <h2 id="h2"><span class="so-muc">2</span> Trước Final — tình huống thường gặp nhất <span class="t">T5 17/09 · W3 SEP · hạn chốt hết CN 20/09 (trước tuần Final)</span></h2>
     <div class="the ck" style="overflow:hidden" id="bang-truoc-final"></div>
     <div class="ghi"><ul>
-      <li>Hạn "Chốt lộ trình" là hết Chủ nhật trước tuần Final (§20.6) nên QL thường chốt khi chưa có Final: cột Kết quả đầu ra ghi "Chờ Final · 0/4 môn" + kết quả Progress Test; cột Gợi ý = đề xuất GVCN.</li>
+      <li>Hạn "Chốt lộ trình" là hết Chủ nhật trước tuần Final (§20.6) nên QL thường chốt khi chưa có Final: cột Kết quả đầu ra ghi "Chờ Final · 0/4 môn" + Progress giữa khoá theo môn ("Progress 24/08 · 3/4 môn đạt · Không đạt: P", như <code>nhanKetQuaThuong</code>); cột Gợi ý = đề xuất GVCN.</li>
       <li>QL vẫn chốt được (em thiếu điểm Cuối khoá vẫn chuyển — §20.7). Bổ trợ Final và việc "Xét lại lộ trình" tự sinh khi có Final, không thêm bước.</li>
       <li>Em Lên FT: khối Kỳ vọng hiện "Chờ MT0", nút tắt tới khi MT0 (tuần Cuối khoá) có điểm.</li></ul></div>
   </section>
@@ -203,6 +203,8 @@
     { ten: 'Viên Khánh Hòa', f: 71, mon: [72, 76, 64, 60], pg: 68, gv: 'Lên BE', huong: 'Lên BE', lop: 'MB BE 05', chot: true, bg: 'cho' }
   ];
   var MON = ['L', 'R', 'G+V', 'P'];
+  /* Progress giữa khoá (tuần 4, 24/08) — hiện theo môn như nhanKetQuaThuong (T58): "3/4 môn đạt · Không đạt: P" */
+  var PG_TRUOT = { 'Bạch Tuệ Nhi': ['P'], 'Cao Minh Trí': ['R', 'G+V', 'P'], 'Giang Thảo My': ['G+V', 'P'], 'Hứa Đức Anh': ['L', 'R', 'G+V', 'P'], 'La Minh Hằng': ['R', 'G+V'], 'Mẫn Quốc Bảo': ['G+V'], 'Nông Gia Phúc': ['G+V', 'P'], 'Thân Đức Minh': ['L', 'G+V', 'P'], 'Viên Khánh Hòa': ['P'] };
   var CHON = ['Giang Thảo My', 'La Minh Hằng', 'Nông Gia Phúc'];
   var gan = function (e, x) { return Object.assign({}, e, x); };
 
@@ -219,7 +221,7 @@
 
   function oKetQua(e, truocFinal) {
     var d = dai(e), mon = MON.map(function (m, i) { var v = e.mon[i]; return v == null ? m + ' —' : (v < 70 ? '✗ ' : '') + m + ' ' + v; }).join(' · ');
-    if (truocFinal) return '<span class="phu">Chờ Final · 0/4 môn</span><span class="mini">Progress 17/08: ' + e.pg + ' %</span>';
+    if (truocFinal) { var tr = PG_TRUOT[e.ten] || []; return '<span class="phu">Chờ Final · 0/4 môn</span><span class="mini" style="white-space:normal">Progress 24/08 · ' + (4 - tr.length) + '/4 môn đạt' + (tr.length ? ' · Không đạt: ' + tr.join(' ') : '') + '</span>'; }
     if (!d) return '<span class="bd bd-kq thieu">– Chờ Final · ' + e.mon.filter(function (v) { return v != null; }).length + '/4 môn</span><span class="mini">' + mon + '</span>';
     return '<span class="pt ' + (d.ok ? 'dat' : 'duoi') + '">' + e.f + ' %</span> <span class="kq-chu">' + d.chu + '</span><span class="mini">' + mon + '</span>';
   }
