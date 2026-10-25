@@ -16,7 +16,7 @@ import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
 import { refreshOutcome, saveScore } from './attempts.ts';
-import { checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu } from './skillSchedule.ts';
+import { chanCuoiTuan, checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu } from './skillSchedule.ts';
 import { saveRegularScore } from '../normal/regular.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
@@ -117,6 +117,8 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
     const diem = diemHuy.filter((d) => !kyNangBoQua.has(assessedSkillOf(d.skill)));
     const lich = lichHuy.filter((l) => !kyNangBoQua.has(l.skill));
     const rows = ensureSkillRows(attemptId);
+    chanCuoiTuan(p, a, [...rows.filter((r) => lich.some((l) => l.skill === r.skill)).map((r) => r.week_start),
+      ...lich.map((l) => l.planned_period_id ? (conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any)?.week_start : null)]);
     for (const l of lich) {
       const r = rows.find((x) => x.skill === l.skill);
       if (r?.sit_status === 'cancelled') throw badRequest(`${tenMon(null, l.skill)} của ${nhan} đã huỷ — không khôi phục được.`);
