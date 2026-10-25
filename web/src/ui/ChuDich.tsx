@@ -47,19 +47,13 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
   return (
     <>
       {(!anGoc || hienDich) && <span lang={hienDich ? NGON_NGU : undefined} title={hienDich ? t('Bản dịch tự động') : undefined}>{hienDich ? ban : goc}</span>}
-      <span aria-live="polite" className="whitespace-nowrap">
-        {hienDich ? (
-          <button type="button" className={NUT} onClick={() => setXemDich(false)}>{t('Xem bản gốc')}</button>
-        ) : dang ? (
-          <button type="button" className={NUT} disabled aria-busy="true">{t('Đang dịch…')}</button>
-        ) : loi ? (
-          <span className="mt-1 block whitespace-normal text-xs">
-            <span role="alert" className="text-bad">{loi}</span>
-            <button type="button" className={NUT} onClick={goi}>{t('Thử lại')}</button>
-          </span>
-        ) : (
-          <button type="button" className={NUT} onClick={goi}>{t('Dịch')}</button>
-        )}
+      {/* MỘT nút đổi nhãn qua các trạng thái — người dùng bàn phím không mất chỗ đứng (focus) khi bấm. */}
+      <span aria-live="polite" className={loi && !dang ? 'mt-1 block text-xs' : 'whitespace-nowrap'}>
+        {loi && !dang && !hienDich && <span role="alert" className="text-bad">{loi}</span>}
+        <button type="button" className={NUT} aria-disabled={dang || undefined} aria-busy={dang || undefined}
+          onClick={dang ? undefined : hienDich ? () => setXemDich(false) : goi}>
+          {hienDich ? t('Xem bản gốc') : dang ? t('Đang dịch…') : loi ? t('Thử lại') : t('Dịch')}
+        </button>
       </span>
     </>
   );
