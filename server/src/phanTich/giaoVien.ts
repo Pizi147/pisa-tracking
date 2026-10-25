@@ -126,7 +126,8 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
   for (const lo of theoLo([...c.lop.keys()])) {
     rows.push(...conn.prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
-              cy.target_score, cy.khong_cam_ket, cy.route, s.full_name AS hv_ten, (${HV_DANG_HOC_SQL('s')}) AS dang_hoc
+              -- P12 (E6): Target + KCK LÚC LƯỢT (như resultOf) — đổi Target / KCK lộ trình sau đó không viết lại kỳ đã qua
+              a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, cy.route, s.full_name AS hv_ten, (${HV_DANG_HOC_SQL('s')}) AS dang_hoc
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
          JOIN students s ON s.id = a.student_id
