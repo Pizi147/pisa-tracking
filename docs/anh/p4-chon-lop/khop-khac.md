@@ -24,6 +24,7 @@ Không đổi bố cục trang, luật, quyền, API. Mỗi nơi giữ ĐÚNG t�
 | Kế hoạch Test › Xếp lịch Test (lớp thường) | `<select>` | `ChonLop`, dòng phụ chi nhánh · sĩ số | nút chương trình lọc lớp giữ |
 | Kế hoạch Test › Xếp nhiều MT › Thêm lớp | `<select>` "+ lớp" | `ChonLop` "+ lớp", thêm liên tiếp | chip ✕ giữ |
 | Kế hoạch Test › Xếp theo học viên › Thêm lớp | `<select>` "+ lớp" | như trên | |
+| Công việc › Vận hành › Giao việc › Giao GV theo lớp + kỹ năng › Lớp | `<select>` "Chọn lớp" | `ChonLop` "Chọn lớp", dòng phụ "{n} em" | PTA Plan gộp vào P4 (25/10) |
 | Kế hoạch Test › Xuất điểm Test › Lớp | `<select>` (luôn có lớp) | `ChonLop`; bỏ chọn được → "Chọn lớp." + nút Xuất tắt (luật cũ) | |
 
 Không mất thao tác nào. Không chạm: `BangLoTrinhTiep`, `TransitionPanel` (P9), bộ lọc "Mọi lớp" (Học viên, Phân tích, Chấm Speaking).
@@ -33,5 +34,21 @@ Không mất thao tác nào. Không chạm: `BangLoTrinhTiep`, `TransitionPanel`
 - `xep-nhieu-mt-1440-toi-them-lop.jpg` · `xep-nhieu-mt-375-sang-them-lop.jpg`
 - `xuat-diem-1440-toi-da-chon.jpg` · `xuat-diem-375-sang-bo-chon.jpg`
 
-## Còn lại (ngoài phạm vi plan)
-- `worklist/MgmtTasksPage.tsx:752` còn `<select>` lớp (form việc quản lý) — plan P4 không liệt kê; hỏi PTA Plan có gộp vào P4 / PR sau.
+## Bấm thử (seed demo, 1440 tối, QL Monbay; Sau thi bằng TVV Monbay)
+Mỗi nơi: gõ → ra lớp, chọn, ✕ bỏ chọn (focus về ô gõ, danh sách mở), gửi form khi ô trống → viền đỏ + "Còn n ô cần sửa ↑" đưa focus vào ô.
+Seed không có lớp "be05" → dùng "be03".
+
+| Nơi | Gõ / chọn / ✕ | Lỗi khi gửi | Ghi chú |
+|---|---|---|---|
+| Sửa thông tin HV › Học lại › Sang lớp mới | đạt ("fou" → MB FOU 12) | đạt | |
+| Xem trước hàng loạt › Học lại | đạt | đạt | "ft101" → "Không có lớp khớp" (chỉ lớp thường — như cũ) |
+| Bước tiếp sau thi (hồ sơ HV › KQ thi thật) › Lớp khác | đạt ("ft102", "be03") | đạt | lớp hiện tại của em không trong danh sách (đã có "Lớp này") |
+| Công việc › Sau thi (TVV) › Lớp khác | đạt | đạt | |
+| Chuyển lớp (một em) | đạt ("ft101", "be03") | viền đỏ + "Chưa chọn" | chân panel này vốn ghi "Còn thiếu: …", không có nút nhảy ô — như trước P4 |
+| Chuyển lớp (nhiều em, `?viec=xet-lai`) | **chưa thử được** | — | seed không có em cần xét lại ở lớp nào (`/xet-lai-lo-trinh` rỗng); cùng component, CL-1 đọc nguồn |
+| Xếp nhiều MT › Xếp theo tuần › Thêm lớp | đạt (thêm liên tiếp, ô trống lại, lớp đã thêm không hiện lại) | — (không có lỗi ô) | |
+| Xếp nhiều MT › Xếp theo học viên › Thêm lớp | đạt (chỉ lớp FT) | — | |
+| Xếp lịch Test (lớp thường) | đạt; mở từ dòng MB FOU 12 → ô hiện "MB FOU 12 · Monbay · 7 em" | — | danh sách theo chương trình đang chọn (như cũ); ✕ → "Chọn một lớp để xếp lịch." |
+| Giao GV theo lớp + kỹ năng | đạt ("ft101", "be03") | đạt (sau khi điền Nội dung, focus vào ô Lớp) | |
+| Thêm học viên, Xuất điểm Test | đạt (lần trước, có ảnh) | — | |
+
