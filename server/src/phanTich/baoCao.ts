@@ -166,7 +166,7 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
   const conn = db();
   const loTrinh = new Map<number, { target: number | null; kck: boolean }>();
   theoLo([...thi.values()].map((r) => r.cycleId), (lo, ph) => {
-    for (const c of conn.prepare(`SELECT id, target_score, khong_cam_ket FROM learning_cycles WHERE id IN (${ph})`).all(...lo) as any[]) {
+    for (const c of conn.prepare(`SELECT id, COALESCE(thi_that_target, target_score) AS target_score, khong_cam_ket FROM learning_cycles WHERE id IN (${ph})`).all(...lo) as any[]) {
       loTrinh.set(c.id, { target: c.target_score ?? null, kck: !!c.khong_cam_ket });
     }
   });

@@ -129,9 +129,11 @@ export async function runPrOv10cTests(t: YThucTestKit) {
         const it = mong.find((x: any) => x.key === g.key && x.ownerId === g.ownerId);
         assert(it && g.gv && g.soBai === it.soBai && g.han === it.due && g.kyNang === it.reason, `dòng lệch: ${JSON.stringify(g)}`);
       }
-      const cg = r.gvQuaHan.filter((g) => g.ownerId === 0);
-      assert(khong ? cg.length === 1 && cg[0].soBai === khong && cg[0] === r.gvQuaHan.at(-1) : cg.length === 0, `dòng Chưa có GV: ${JSON.stringify(cg)} ≠ ${khong} bài`);
-      const tong = r.gvQuaHan.reduce((n, g) => n + g.soBai, 0);
+      /* P12 Q12: dòng S chấm chéo "chờ chấm" (`choCham`) nằm ngoài Σ quá hạn — PBC-6. */
+      const qh2 = r.gvQuaHan.filter((g) => !g.choCham);
+      const cg = qh2.filter((g) => g.ownerId === 0);
+      assert(khong ? cg.length === 1 && cg[0].soBai === khong && cg[0] === qh2.at(-1) : cg.length === 0, `dòng Chưa có GV: ${JSON.stringify(cg)} ≠ ${khong} bài`);
+      const tong = qh2.reduce((n, g) => n + g.soBai, 0);
       assert(tong === r.oChuaNhap.quaHan, `cn ${cn}: Σ bảng ${tong} ≠ ô "${r.oChuaNhap.quaHan} quá hạn"`);
     }
   });
