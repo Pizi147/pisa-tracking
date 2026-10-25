@@ -249,7 +249,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(thuong.includes('lo-trinh-tiep') && thuong.includes('chuyen-lop') && !thuong.includes('outcome') && !thuong.includes('lo-trinh'), thuong.join());
     const quyenQl = { ...quyenGvcn, ghiLoTrinhTiep: false, luuTru: true };
     const ft = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: quyenQl }, cycle: { ratio: false }, status: 'active' }).map((x: any) => x.key);
-    assert(ft.includes('outcome') && ft.includes('lo-trinh') && ft.includes('chuyen-lop') && ft.includes('luu-tru'), ft.join());
+    assert(ft.includes('outcome') && ft.includes('lo-trinh') && ft.includes('chuyen-lop') && ft.includes('tam-dung-ket-thuc'), ft.join());   // P7: không còn mục Lưu trữ riêng
     const gvbm = d.mucQuanLyHocVien({ canEdit: false, lopHoc: null, cycle: { ratio: false }, status: 'active' });
     assert(gvbm.length === 0, `GVBM có mục: ${JSON.stringify(gvbm)}`);
     assert(d.mucQuanLyHocVien({ canEdit: false, lopHoc: { quyen: { ...quyenQl, quayLai: true } }, cycle: null, status: 'inactive' }).some((x: any) => x.key === 'quay-lai'), 'HV tạm dừng phải có Quay lại học');
@@ -355,13 +355,13 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(d.duongHoSoHocVien(7) === '/hoc-vien/7', 'hồ sơ trơn');
   });
 
-  check('UX3 (6) · mucQuanLyHocVien: thứ tự OV-2b (Sửa thông tin · Chuyển lớp · Tạm dừng / Thôi học · Lưu trữ, rồi mục khác); HV đã kết thúc học không còn Tạm dừng / Thôi học', () => {
+  check('UX3 (6) · mucQuanLyHocVien: thứ tự OV-2b → P7 (Sửa thông tin · Chuyển lớp · Tạm dừng/ Kết thúc học, rồi mục khác); HV đã kết thúc học không còn Tạm dừng/ Kết thúc học', () => {
     const q = { ghiLoTrinhTiep: true, chuyenLop: true, tamDung: true, quayLai: false, ketThuc: true, luuTru: true, boLuuTru: false };
     const ds = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: { ratio: false }, status: 'active' }).map((x: any) => x.key);
     /* PR-OV2b (mockup overhaul-2 §6): bốn mục chính trước, mục khác (Lộ trình tiếp theo, Lộ trình, Kết quả thi thật…) sau, giữ thứ tự cũ. */
-    assert(ds.slice(0, 4).join() === 'info,chuyen-lop,tam-dung-thoi-hoc,luu-tru' && ds.indexOf('lo-trinh-tiep') < ds.indexOf('outcome'), ds.join());
+    assert(ds.slice(0, 3).join() === 'info,chuyen-lop,tam-dung-ket-thuc' && ds.indexOf('lo-trinh-tiep') < ds.indexOf('outcome'), ds.join());
     const xong = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: null, status: 'finished' }).map((x: any) => x.key);
-    assert(!xong.includes('tam-dung-thoi-hoc'), xong.join());
+    assert(!xong.includes('tam-dung-ket-thuc'), xong.join());
     assert(d.mucQuanLyHocVien({ canEdit: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.nhan).join() === 'Sửa thông tin,Lịch sử', 'chỉ có Sửa thông tin + Lịch sử (OV-13j → OV-15g một tên, A-043)');
   });
 

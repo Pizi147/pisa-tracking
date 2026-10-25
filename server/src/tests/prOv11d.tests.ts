@@ -168,7 +168,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(la400(loi(() => cases.reportIssue(ql, { studentId: sid, topic: 'listening', title: 'Thử Case hồ sơ lưu trữ', summary: 'Em nghe sót số và tên riêng ở Part 1.', urgency: 'attention' }))), '+ Case phải 400');
     assert(la400(loi(() => cases.backfillCase(ql, { studentId: sid, topic: 'listening', primaryCode: 'x', summary: 'Thử ghi bù hồ sơ lưu trữ', fromDate: '2026-08-03', toDate: '2026-08-10', actions: [] }))), 'ghi bù phải 400');
     const muc = d.mucQuanLyHocVien({ canEdit: true, suaThongTin: true, suaThem: true, lopHoc: { chiXem: true, quyen: { boLuuTru: true, hocLai: true } }, cycle: { ratio: false }, status: 'finished' }).map((m: any) => m.key);
-    assert(!muc.some((k: string) => ['info', 'lo-trinh', 'outcome'].includes(k)) && muc.includes('bo-luu-tru') && muc.includes('hoc-lai'), JSON.stringify(muc));
+    assert(!muc.some((k: string) => ['info', 'lo-trinh', 'outcome'].includes(k)) && muc.includes('quay-lai'), JSON.stringify(muc));   // P7: Quay lại học thay Bỏ lưu trữ + Học lại
     students.unarchiveStudent(ql, sid);
     students.updateStudent(ql, sid, { phone: '0912345678' });
     assert(one('SELECT phone FROM students WHERE id = ?', sid).phone === '0912345678', 'Bỏ lưu trữ rồi sửa phải lưu');

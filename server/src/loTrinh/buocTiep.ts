@@ -12,7 +12,7 @@
 import { db, tx } from '../db.ts';
 import {
   LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ghepMucTieu, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, trangThaiSauThi, tuanHopLe, tuanLich,
-  type DongSauThi, type LuaChonSauThi,
+  type DongSauThi, type HuongSauThi, type LuaChonSauThi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso, chuTuDo } from '../util.ts';
@@ -51,7 +51,7 @@ const ketLuanCua = (c: any): string | null => (c.status !== 'active' ? c.bc_ket_
 const daXongCua = (c: any) => nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: ketLuanCua(c) });
 
 export type TrangThaiBuocTiep = {
-  chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: LuaChonSauThi | null; coTheChon: boolean;
+  chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: HuongSauThi | null; coTheChon: boolean;
   /** OV-13m: "Đã xong · OVR 6.5 · Đạt Target" · hạn chọn (ngày có kết quả + 7) · Thứ Hai hẹn bắt đầu + lớp hẹn · lớp đang giữ ("Lớp này") · Target giữ. */
   daXong: string; han: string; hen: string | null; henLop: string | null; lopNay: { id: number; code: string } | null; target: string; ngayThi: string | null;
   studentId: number; cycleId: number;

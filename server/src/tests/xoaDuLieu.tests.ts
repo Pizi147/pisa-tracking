@@ -566,7 +566,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     /* Em đã lưu trữ (chỉ xem) vẫn xoá được — QT dọn dữ liệu thử. */
     const chiXem = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: { ...quyenDu, ghiLoTrinhTiep: false, chuyenLop: false, tamDung: false, ketThuc: false, boLuuTru: true } },
       cycle: null, status: 'finished', coTheXoa: true }).map((m) => m.key);
-    assert(chiXem.join() === 'info,bo-luu-tru,lich-su-sua,xoa-hoc-vien', chiXem.join());   // OV-13j: Lịch sử sửa cả khi chỉ xem
+    assert(chiXem.join() === 'info,lich-su-sua,xoa-hoc-vien', chiXem.join());   // OV-13j: Lịch sử sửa cả khi chỉ xem; P7: không còn Bỏ lưu trữ
   });
 
   check('PR-XOA (3) · XoaHocVienPanel theo khuôn: KhungPanel, nút đỏ tắt tới khi gõ đúng mã, dòng sao lưu nguyên văn; không SectionNote/fmtDate/Modal', () => {

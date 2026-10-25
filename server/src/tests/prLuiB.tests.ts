@@ -12,13 +12,13 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   const d: any = await import('../../../shared/domain/index.ts');
   console.log('\nPR-LUI-b · Đường lui Học viên & Lớp');
 
-  check('LUIb-1 · menu ⋮: "Học lại" hiện đúng khi có quyền hocLai và em đã kết thúc; GVCN không có', () => {
+  check('LUIb-1 · menu ⋮: "Quay lại học" (P7 — đường Học lại cũ) hiện đúng khi có quyền hocLai và em đã kết thúc; GVCN không có', () => {
     const quyen = (o: Record<string, boolean>) => ({ lopHoc: { quyen: { ghiLoTrinhTiep: false, chuyenLop: false, tamDung: false, quayLai: false, ketThuc: false, luuTru: false, boLuuTru: false, ...o } } });
     const keys = (o: Record<string, boolean>, status: string) => d.mucQuanLyHocVien({ canEdit: false, cycle: null, status, ...quyen(o) }).map((m: any) => m.key);
-    assert(keys({ hocLai: true, boLuuTru: true }, 'finished').join() === 'hoc-lai,bo-luu-tru', keys({ hocLai: true, boLuuTru: true }, 'finished').join());
-    assert(!keys({}, 'finished').includes('hoc-lai'), 'không quyền thì không có Học lại');
+    assert(keys({ hocLai: true, boLuuTru: true }, 'finished').join() === 'quay-lai', keys({ hocLai: true, boLuuTru: true }, 'finished').join());
+    assert(!keys({}, 'finished').includes('quay-lai'), 'không quyền thì không có Quay lại học');
     const m = d.mucQuanLyHocVien({ canEdit: false, cycle: null, status: 'finished', ...quyen({ hocLai: true }) })[0];
-    assert(m.nhan === 'Học lại' && m.phu === 'về lớp cũ · lộ trình chạy tiếp', JSON.stringify(m));
+    assert(m.nhan === 'Quay lại học' && m.phu === 'hạn tính lại từ ngày quay lại', JSON.stringify(m));
   });
 
   check('LUIb-2 · hằng làm nhiều học viên: việc ngược đối xứng, nhãn đủ, lô 8, trần xem trước 200', () => {
