@@ -90,7 +90,7 @@ function HopChonLopQuayLai({ em, tt, onClose, onDone }: { em: Em; tt: ThongTin; 
       footer={(
         <>
           {busy && <span className="mr-auto text-[13px] font-semibold text-[color:var(--accent)]" role="status">{t('Đang lưu…')}</span>}
-          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>{t('Huỷ')}</button>
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={busy || !lopId}>{loi ? t('Thử lại') : t('Quay lại học')}</button>
         </>
       )}>
@@ -102,7 +102,7 @@ function HopChonLopQuayLai({ em, tt, onClose, onDone }: { em: Em; tt: ThongTin; 
         <KhoiKhiLuu dong={lop ? [t('Bỏ lưu trữ · em đang học ở {lop}', { lop: lop.code }), t('Chuyển lớp theo luật Chuyển lớp · Case chạy hạn lại')] : []} />
         {loi && (
           <p role="alert" className="m-0 flex gap-2 rounded-lg border border-late/50 bg-late/10 px-3 py-2 text-sm text-slate-100">
-            <span aria-hidden className="text-late">⚠</span><span><b className="text-late">{t('Chưa lưu được.')}</b> {loi}</span>
+            <span aria-hidden className="text-late">⚠</span><span><b className="text-late">{t('Không lưu được')}.</b> {loi}</span>
           </p>
         )}
       </div>

@@ -105,9 +105,9 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(s.includes('Sửa quyền') && s.includes('thay đổi') && /'Lưu'|>Lưu</.test(s) && s.includes("'Huỷ thay đổi'") && s.includes('disabled={!dangSua'), 'AdminPage');
     assert(s.includes('thayDoi'), 'Lưu gửi thayDoi');
   });
-  check('Dọn-b (13c/13e) · Lưu trữ: Bỏ lưu trữ có Hoàn tác (lưu trữ lại em); dòng không mờ opacity-70', () => {
+  check('Dọn-b (13c/13e) → P7 · Lưu trữ: Quay lại học có Hoàn tác (về Lưu trữ); dòng không mờ opacity-70', () => {
     const s = doc('web/src/modules/students/LuuTruPage.tsx');
-    assert(s.includes('hoanTac(') && s.includes('/archive`') && !s.includes('opacity-70'), 'LuuTruPage');
+    assert(s.includes('hoanTac(') && s.includes('/hoan-tac-quay-lai`') && doc('web/src/modules/students/QuayLaiHoc.tsx').includes('/hoan-tac-quay-lai`') && !s.includes('opacity-70'), 'LuuTruPage');
     const em = get(`SELECT id FROM students WHERE status = 'finished' ORDER BY id LIMIT 1`);
     assert(em, 'seed thiếu em đã kết thúc');
     students.archiveStudent(P.admin, em.id);

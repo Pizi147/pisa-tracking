@@ -30,7 +30,7 @@ export function KhoiKhiLuu({ dong, vang }: { dong: string[]; vang?: boolean }) {
  * · "Khi lưu, web sẽ" do máy chủ tính. Bật → Tạm dừng + Lưu trữ; tắt → Kết thúc học (+ Lưu trữ). Đang lưu… · lỗi giữ chữ + Thử lại · Hoàn tác 10 s ·
  * bị chặn: đúng câu máy chủ + nút đi tiếp (Chuyển lớp…). Nhiều em: lỗi một phần → "Đã lưu n em" + em lỗi giữ lý do + "Thử lại n em".
  */
-export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChuyenLop }: {
+export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChuyenLop, dongTamDung = [] }: {
   /** Tên trống (thanh chọn nhiều chỉ có id) → lấy tên từ xem trước của máy chủ. */
   em: { id: number; ten?: string }[];
   /** Mã lớp ở dòng ngữ cảnh. */
@@ -40,6 +40,8 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
   onClose: () => void; onDone: () => void;
   /** Bị chặn vì quyết định chuyển lớp chờ → nút "Chuyển lớp…" (chỉ một em). */
   onChuyenLop?: () => void;
+  /** Dòng thêm của nơi gọi khi Tạm dừng (O2: vi phạm Ý thức còn mở dừng hạn — số đã có ở hồ sơ). */
+  dongTamDung?: string[];
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -65,7 +67,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
       .then((x) => { if (con) setNhieuXem(x); }, (e: any) => { if (con) setLoi(e?.message ?? null); });
     return () => { con = false; };
   }, [mot, viec, idsKhoa]);
-  const dongKhiLuu = mot ? motXem.data?.dong ?? [] : nhieuXem?.tong.tomTat ?? [];
+  const dongKhiLuu = [...(mot ? motXem.data?.dong ?? [] : nhieuXem?.tong.tomTat ?? []), ...(ketThuc ? [] : dongTamDung)];
   const boQua = mot ? [] : (nhieuXem?.rows ?? []).filter((r) => r.lyDoBo);
   const chan = mot ? motXem.data?.chan ?? null : null;
   const nhanNut = (ketThuc ? t('Kết thúc học') : t('Tạm dừng')) + (mot ? '' : ` · ${t('{n} em', { n: ds.length - boQua.length })}`);
@@ -114,7 +116,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
       footer={(
         <>
           {busy && <span className="mr-auto inline-flex items-center gap-1.5 text-[13px] font-semibold text-[color:var(--accent)]" role="status">{t('Đang lưu…')}</span>}
-          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>{chan || daLuu.length ? t('Đóng') : t('Huỷ')}</button>
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
           {nutPhu}
           {!chan && (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={busy || (!mot && ds.length === boQua.length)}>
@@ -124,7 +126,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
         </>
       )}>
       <div className="space-y-3">
-        {daLuu.length > 0 && <p className="m-0 text-[13px] font-semibold text-ok" role="status">✓ {t('Đã lưu {n} em: {ten}', { n: daLuu.length, ten: daLuu.join(', ') })}</p>}
+        {daLuu.length > 0 && <p className="m-0 text-[13px] font-semibold text-slate-300" role="status">✓ {t('Đã lưu {n} em: {ten}', { n: daLuu.length, ten: daLuu.join(', ') })}</p>}
         {loiEm.map((e) => (
           <p key={e.id} role="alert" className="m-0 flex gap-2 rounded-lg border border-late/50 bg-late/10 px-3 py-2 text-sm text-slate-100">
             <span aria-hidden className="text-late">⚠</span><span><b className="text-late">{t('{ten} chưa lưu.', { ten: e.ten })}</b> {e.message}</span>
@@ -153,7 +155,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
         )}
         {loi && (
           <p role="alert" className="m-0 flex gap-2 rounded-lg border border-late/50 bg-late/10 px-3 py-2 text-sm text-slate-100">
-            <span aria-hidden className="text-late">⚠</span><span><b className="text-late">{t('Chưa lưu được.')}</b> {loi} — {t('chữ đã gõ vẫn giữ.')}</span>
+            <span aria-hidden className="text-late">⚠</span><span><b className="text-late">{t('Không lưu được')}.</b> {loi} — {t('chữ đã gõ vẫn giữ.')}</span>
           </p>
         )}
       </div>

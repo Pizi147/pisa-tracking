@@ -486,7 +486,9 @@ export async function runPrLuiBTests(t: YThucTestKit) {
 
   check('LUIb-28 · web sau rà #213: Học lại nói tên lộ trình + sĩ số lớp + "Lên FT cần Target"; Kết thúc học một em có Hoàn tác; Hoàn tác đi qua việc hoan-tac-*; lỗi mạng tiếng Việt', () => {
     const sm = doc('web/src/modules/students/StudentManagePanel.tsx');
-    for (const chu of ['Lên FT cần Target', 'Lộ trình chạy tiếp', 'Lộ trình mới', 'siSo', "hoanTacHangLoat('ket-thuc'"]) assert(sm.includes(chu), `StudentManagePanel thiếu "${chu}"`);
+    for (const chu of ['Lên FT cần Target', 'Lộ trình chạy tiếp', 'Lộ trình mới', 'siSo']) assert(sm.includes(chu), `StudentManagePanel thiếu "${chu}"`);
+    /* P7: Kết thúc học một em ở hộp Tạm dừng/ Kết thúc học — Hoàn tác đi qua hoan-tac-* (`VIEC_NGUOC`). */
+    assert(doc('web/src/modules/students/HopTamDungKetThuc.tsx').includes('hoanTacHangLoat(viec'), 'Hộp Tạm dừng/ Kết thúc học thiếu Hoàn tác hàng loạt');
     const hl = doc('web/src/modules/students/hangLoatEm.ts');
     assert(hl.includes('VIEC_NGUOC[viec]') && !hl.includes("'Hoàn tác học lại'"), 'Hoàn tác phải đi qua việc ngược, không làm Kết thúc học lại');
     const xt = doc('web/src/modules/students/XemTruocHangLoatPanel.tsx');

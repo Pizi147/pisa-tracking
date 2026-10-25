@@ -57,4 +57,5 @@ export const EN_P7_SV_LO_TRINH = {
   'Đóng lộ trình {lt} · KQ thi giữ ở hồ sơ': 'Close route {lt} · exam result stays on profile',
   'Đưa em vào Lưu trữ · Kết thúc học': 'Move to Archive · End study',
   'Đưa em vào Lưu trữ · Tạm dừng': 'Move to Archive · Pause',
+  '{n} vi phạm Ý thức đang chờ xử lý — dừng hạn, Quay lại học thì tính lại': '{n} pending Conduct incidents — deadlines pause, recalculated on Return to study',
 };

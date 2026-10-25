@@ -13,7 +13,7 @@ const doc = (p: string) => fs.readFileSync(path.join(REPO, p), 'utf8').replace(/
 const SELECT_LOP = /<select(?:(?!<\/select>)[\s\S])*?\.code\b(?:(?!<\/select>)[\s\S])*?<\/select>/;
 
 const CHO_CHON_LOP = [
-  'students/StudentManagePanel.tsx', 'students/XemTruocHangLoatPanel.tsx', 'students/PanelBuocTiep.tsx', 'congViec/PanelSauThi.tsx',
+  'students/StudentManagePanel.tsx', 'students/XemTruocHangLoatPanel.tsx', 'students/PanelLoTrinhMoi.tsx',   /* P7: Bước tiếp / Sau thi › Lộ trình mới — ô Lớp khác ở panel chung */
   'students/IntakePanel.tsx', 'test/keHoach/NganXepHangLoat.tsx', 'test/keHoach/NganXepLichMt.tsx', 'test/keHoach/XepTheoHocVien.tsx',
   'test/keHoach/NganXuatDiem.tsx', 'students/ChuyenLopPanel.tsx', 'worklist/MgmtTasksPage.tsx',
 ];

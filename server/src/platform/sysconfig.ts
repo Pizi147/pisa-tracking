@@ -280,17 +280,18 @@ function taoChuongTrinh(p: Principal, code: string, input: Parameters<typeof sav
  * Nạp bảng `routes` lần đầu từ danh sách viết cứng, nếu bảng còn trống.
  *
  * Gọi khi seed và khi nâng cấp, nên một database đã chạy vẫn có đủ LT1/LT2 sau khi cập nhật.
- * Bảng trống → nạp đủ LT1, LT2, RF (+ KHAC ở trạng thái ngừng — P7: chỉ mã của lộ trình "Khác", không mở lớp, 0 MT).
+ * Bảng trống → nạp đủ LT1, LT2, RF.
  */
 export function seedRoutes(conn: any) {
   const n = (conn.prepare('SELECT COUNT(*) n FROM routes').get() as any).n;
   if (n > 0) return 0;
-  BUILTIN_ROUTES.forEach((code, i) => {
-    const khac = code === 'KHAC';
-    conn.prepare('INSERT INTO routes (code, name, note, seq, status, created_at, lich_mt) VALUES (?,?,?,?,?,?,?)')
-      .run(code, ROUTE_NAME[code], null, i + 1, khac ? 'inactive' : 'active', nowIso(), khac ? '[]' : null);
+  /* P7: KHAC không nạp ở đây (bảng cũ chưa có cột `lich_mt`) — migrate `prSvLoTrinh` thêm ở trạng thái ngừng. */
+  const ds = BUILTIN_ROUTES.filter((code) => code !== 'KHAC');
+  ds.forEach((code, i) => {
+    conn.prepare('INSERT INTO routes (code, name, note, seq, status, created_at) VALUES (?,?,?,?,?,?)')
+      .run(code, ROUTE_NAME[code], null, i + 1, 'active', nowIso());
   });
-  return BUILTIN_ROUTES.length;
+  return ds.length;
 }
 
 /** Mã lộ trình đang dùng được — thay cho hằng số `ROUTES` ở những chỗ cần danh sách sống. */

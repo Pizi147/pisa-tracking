@@ -26,6 +26,7 @@ import { laBand } from './StudentPlanPanel.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { ErrorState, NutChon, OKck, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`Menu`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
@@ -38,7 +39,7 @@ import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 export { mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy };
 const NHAN_VIEC = NHAN_VIEC_QUAN_LY;
 
-export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, quyen, lopHoc, onDeXuatSua, onDoiViec }: {
+export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, soViPhamMo = 0, quyen, lopHoc, onDeXuatSua, onDoiViec }: {
   /** Việc đang mở; `null` = không mở gì. `lo-trinh` do nơi gọi mở (StudentPlanPanel), không qua đây. */
   viec: ViecQuanLy | null; onClose: () => void;
   student: ThongTinEm;
@@ -67,7 +68,8 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'de-xuat-chuyen-lop': return <ChuyenLopPanel open cheDo="de-xuat" {...chung} />;
     case 'tam-dung-ket-thuc': return (
       <HopTamDungKetThuc em={[{ id: student.id, ten: student.name }]} lop={lop} tamDungDuoc={coTheTamDungKetThuc(lopHoc?.quyen, student.status).tamDung}
-        onClose={onClose} onDone={onDone} onChuyenLop={lopHoc?.quyen.chuyenLop && onDoiViec ? () => onDoiViec('chuyen-lop') : undefined} />
+        onClose={onClose} onDone={onDone} onChuyenLop={lopHoc?.quyen.chuyenLop && onDoiViec ? () => onDoiViec('chuyen-lop') : undefined}
+        dongTamDung={soViPhamMo > 0 ? [t('{n} vi phạm Ý thức đang chờ xử lý — dừng hạn, Quay lại học thì tính lại', { n: soViPhamMo })] : []} />
     );
     /* P7: Quay lại học — máy chủ chọn hướng (lớp cũ · chọn lớp · Lộ trình mới · Học lại), cùng đường nút ở Lưu trữ. */
     case 'quay-lai': return <QuayLaiTuMenu em={{ id: student.id, ten: student.name, lop }} onClose={onClose} onDone={onDone} />;

@@ -6,6 +6,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { TrangThaiLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { NutChon } from '../../ui/ui.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, thuNgay, tuanChonDuoc, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -68,6 +69,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const [tt, setTt] = useState<'dang' | 'loi' | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [bamLuu, setBamLuu] = useState(false);
+  const lf = useLoiForm();
   const tenCham = useChamLai(ten.trim());
   const tgMoi = suaTg && tg.trim() ? tg.trim().replace(',', '.') : null;
   const khac = route === ROUTE_KHAC;
@@ -87,8 +89,9 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const tenLt = khac ? ten.trim() || t('Khác') : r ?? '';
   const nutChinh = hen ? t('Hẹn bắt đầu {tuan}', { tuan: tuanLich(hen, hn) }) : khac ? t('Mở lộ trình') : t('Mở lộ trình {lt}', { lt: r ?? '' });
 
+  const loiO = [...(loiTen ? [{ khoa: 'ten', nhan: t('Tên lộ trình'), lyDo: loiTen }] : []), ...(lopKhac && !lopMoiId ? [{ khoa: 'lop', nhan: t('Lớp'), lyDo: t('Chọn lớp') }] : [])];
   const luu = async () => {
-    setBamLuu(true);
+    setBamLuu(true); lf.bam();
     if (lyDoTat || !r) return;
     setTt('dang'); setLoi(null);
     try {
@@ -117,7 +120,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   return (
     <KhungPanel tieuDe={t('Lộ trình mới')} dau={dau} quayLai={quayLai} onDong={onClose}
       chan={{
-        daSua: true, chinh: nut,
+        daSua: true, chinh: nut, conThieu: lf.conThieu(loiO),
         trai: tat && lyDoTat ? <span className="text-[13px] text-slate-400">{lyDoTat}</span> : <TrangThaiLuu tt={tt ?? 'nhap'} loi={loi} onThuLai={() => void luu()} />,
       }}>
       <div className="flex flex-col gap-3.5 pt-3">
@@ -127,8 +130,8 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
               {ROUTE_LO_TRINH_MOI.map((k) => <NutChon key={k} chon={r === k} className="max-sm:flex-1" onClick={() => { setRoute(k); setLopMoiId(null); }}>{k === ROUTE_KHAC ? ROUTE_NAME.KHAC : k}</NutChon>)}
             </div>
             {khac && (
-              <Truong nhan={t('Tên lộ trình')} batBuoc loi={bamLuu ? loiTen : null}>
-                <input className="field w-full" maxLength={80} autoComplete="off" value={ten} placeholder={t('Ví dụ: Luyện Speaking 1–1')} aria-invalid={bamLuu && !!loiTen} onChange={(e) => setTen(e.target.value)} />
+              <Truong nhan={t('Tên lộ trình')} batBuoc loi={lf.loiCua(loiO, 'ten')}>
+                <input className="field w-full" maxLength={80} autoComplete="off" {...lf.o(loiO, 'ten')} value={ten} placeholder={t('Ví dụ: Luyện Speaking 1–1')} onChange={(e) => setTen(e.target.value)} />
               </Truong>
             )}
           </>

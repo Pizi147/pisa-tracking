@@ -170,7 +170,7 @@ export default function LuuTruPage() {
                       <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">Tổng kết</Link>
                     )}
                     {!chon.bat && s.coTheQuayLai && (
-                      <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${dung ? 'btn-primary' : ''}`} disabled={quayLai.dangMo === s.id}
+                      <button type="button" className={dung ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={quayLai.dangMo === s.id}
                         onClick={() => void quayLai.mo({ id: s.id, ten: s.fullName, lop: s.lopCuoi })}>{t('Quay lại học')}</button>
                     )}
                   </div>
