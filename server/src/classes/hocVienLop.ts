@@ -7,7 +7,7 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  ENTRY_SKILLS, MOC_KE_TIEP_SQL, PERMISSIONS, chiNhanhMacDinh, chuanHoaMaLop, coMocTiepTheo, coMocTiepTheoThuong, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
+  ENTRY_SKILLS, LUOT_MT_TINH_SQL, LUOT_MT_XONG_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, chiNhanhMacDinh, chuanHoaMaLop, coMocTiepTheo, coMocTiepTheoThuong, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
   laVaiQuanLy, kyNangLoc, ketQuaLoc, nhomCaseEm, trangThaiLichThi, type HangHv, type LichThi, type LocHocVien, type PhamVi, type ThemEm, type KetQuaVao,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -161,7 +161,10 @@ export function danhSachHocVienLop(
             (SELECT COUNT(*) FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
               WHERE a.cycle_id = cy.id AND a.kind != 'mt0' AND ${MOC_KE_TIEP_SQL('a', 'rp')}) AS so_moc_ke_tiep,
             (SELECT COALESCE(MAX(a.attempt_no), 0) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status != 'cancelled' AND a.kind != 'mt0'
-              AND (a.status != 'planned' OR a.planned_period_id IS NOT NULL)) AS mt_cuoi   /* PR-LM: lượt đã huỷ lịch không phải "đã tới MT" */
+              AND (a.status != 'planned' OR a.planned_period_id IS NOT NULL)) AS mt_cuoi,   /* PR-LM: lượt đã huỷ lịch không phải "đã tới MT" */
+            /* P2 MT-DEM: bộ đếm Lộ trình = lượt MT đã xong / đã tạo (lichMt.ts). */
+            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_XONG_SQL('a')}) AS so_mt_xong,
+            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_TINH_SQL('a')}) AS so_mt_tong
        FROM enrollments e
        JOIN classes c ON c.id = e.class_id
        JOIN students s ON s.id = e.student_id
@@ -337,7 +340,7 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
     const band = (k: string) => (coLuot ? diem.get(st!.attemptId!)?.find((r) => r.skill === k)?.band ?? null : null);
     const sos = st?.sosLevel && st.sosLevel > 0 ? st.sosLevel : null;
     out.set(h.id, {
-      loTrinh: { mt: h.mt_cuoi ?? 0, soMt: lichMtCua({ lich_mt: h.lop_lich_mt, route: h.lop_route }, h.route).length,
+      loTrinh: { mt: h.so_mt_xong ?? 0, soMt: h.so_mt_tong ?? 0,
         target: h.target_score ?? null, kck: !!h.khong_cam_ket },
       mtGan: coLuot ? { mt: st!.attemptNo!, tuan: st!.periodCode ? tuanCua.get(st!.periodCode) ?? null : null, ovr: st!.overall, kyVong: st!.expectation,
         kn: { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') } } : null,

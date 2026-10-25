@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 import { batBuocTu, hanTheoNgay, HAN_Y_THUC_NGAY, type ViPhamVao } from '../../../shared/domain/index.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { DEMO_DATE } from './journeys.ts';
-import { criteriaFor, rawFor, type BuildCtx } from './build.ts';
+import { rawFor, type BuildCtx } from './build.ts';
+import { tieuChiThu } from './tieuChiThu.ts';
 import { loadPrincipal } from '../permissions.ts';
 import { padCode } from '../util.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -125,7 +126,7 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
   const luu = (aid: number, skill: string, band: number, ngay: string, lyDo?: string) => (
     skill === 'listening' || skill === 'reading'
       ? saveScore(admin, aid, skill, { rawScore: rawFor(skill, band), ...(lyDo ? { lyDo } : {}) }, ngay)
-      : saveScore(admin, aid, skill, { criteria: criteriaFor(band), ...(lyDo ? { lyDo } : {}) }, ngay));
+      : saveScore(admin, aid, skill, { criteria: tieuChiThu(band), ...(lyDo ? { lyDo } : {}) }, ngay));
   em.forEach((e, i) => {
     /* Lịch MT tự tạo của em mới không theo kịch bản này — dọn rồi xếp MT1 W4 AUG, MT2 W1 SEP qua `createAttempt`. */
     const q = 'SELECT id FROM assessment_attempts WHERE cycle_id = ?';

@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-MT — lịch MT tự tạo, MT lịch sử, đánh số liền mạch, RF, dời do vắng. Harness do `run.ts` truyền vào. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { chotSan } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -229,8 +230,8 @@ export async function runPrMtTests(t: YThucTestKit) {
     if (b.w === null) chotSan(conn, a.id);
     attemptsSvc.saveScore(P.admin, a.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(b.l) });
     attemptsSvc.saveScore(P.admin, a.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(b.r) });
-    for (const k of b.w === null ? [] : ['writing1', 'writing2']) attemptsSvc.saveScore(P.admin, a.id, k, { criteria: [b.w, b.w, b.w, b.w] });
-    attemptsSvc.saveScore(P.admin, a.id, 'speaking', { criteria: [b.s, b.s, b.s, b.s] });
+    for (const k of b.w === null ? [] : ['writing1', 'writing2']) attemptsSvc.saveScore(P.admin, a.id, k, { criteria: tieuChiThu(b.w) });
+    attemptsSvc.saveScore(P.admin, a.id, 'speaking', { criteria: tieuChiThu(b.s) });
     return attemptsSvc.attemptDetail(P.admin, a.id).result;
   };
   const rf1 = emMt1TuanNay('MB FT RF 12', 'PRMT RF D1', 'RF');
@@ -330,7 +331,7 @@ export async function runPrMtTests(t: YThucTestKit) {
   const GVCN = P.coreTeacher;
   const monKhongDay = d.ENTRY_SKILLS.find((k: string) => !perm.mySkills(GVCN, MB101, [k]).length && k === 'speaking') ?? 'speaking';
   const mt2H1 = luotCua(sH1b)[1];
-  const tieuChi = (b: number) => ({ criteria: [b, b, b, b] });
+  const tieuChi = (b: number) => ({ criteria: tieuChiThu(b) });
   /* PR-MTa T22 thay "GVCN chỉ ô trống": GVCN sửa / xoá được cả ô đã có điểm của MT cũ. */
   check('PR-MT (6) · GVCN nhập ô môn mình không dạy của MT cũ → được (nhật ký score.lich_su); sửa lại → được (T22); QL sửa → được (K5-31, Q8, T34)', () => {
     assert(!perm.mySkills(GVCN, MB101, [monKhongDay]).length, `tiền đề: GVCN không dạy ${monKhongDay}`);

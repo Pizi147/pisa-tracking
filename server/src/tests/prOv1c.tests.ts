@@ -3,6 +3,7 @@
  * Ca dựng ở lượt MT cuối của em đang học MB FT 101, tuần W1 NOV 2026, kỳ vọng ép về 6.5.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { nhanXetCaseThu } from './luotThu.ts';
 import { duXacNhan } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
@@ -69,7 +70,7 @@ export async function runPrOv1cTests(t: YThucTestKit) {
   };
   /* OV-4c: W1 / W2 / S ở lượt thường chỉ nhận 4 tiêu chí — bốn tiêu chí bằng nhau cho đúng band cần dựng. */
   const diem = (aid: number, s: string, band: number, today = TRONG) =>
-    attempts.saveScore(QL, aid, s, s === 'listening' || s === 'reading' ? { band } : { criteria: [band, band, band, band] }, today);
+    attempts.saveScore(QL, aid, s, s === 'listening' || s === 'reading' ? { band } : { criteria: tieuChiThu(band) }, today);
   const vang = (aid: number, s: string, today = TRONG) => attempts.saveScore(QL, aid, s, { noShow: true }, today);
   const kq = (aid: number) => { xoaNho(); return attempts.resultOf(one('SELECT * FROM assessment_attempts WHERE id = ?', aid)); };
   const caseCua = (aid: number) => all(

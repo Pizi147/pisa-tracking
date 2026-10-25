@@ -11,7 +11,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, MOCK_FT_DEFAULT_ATTEMPTS, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT,
   bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam,
@@ -80,22 +80,28 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
   const hvCuaLop = new Map<number, number[]>();
   const luotCuaLop = new Map<number, Array<{ hv: number; no: number; status: string; coTuan: boolean }>>();
   const chuaCoLichTiep = new Map<number, number>();
+  /** Số MT mặc định của lịch lớp (`lichMtCua`) — gợi ý "MT{b} chưa xếp" tới đó (P2 MT-DEM, thay hằng 3). */
+  const soMacDinh = new Map<number, number>();
   if (ftClassIds.length) {
     for (const r of conn
       .prepare(
-        `SELECT e.class_id AS class_id, s.id AS student_id,
+        `SELECT e.class_id AS class_id, s.id AS student_id, c.lich_mt, c.route AS lop_route, cy.route,
                 CASE WHEN cy.id IS NOT NULL AND NOT EXISTS (
                   SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned'
-                    AND a.planned_period_id IS NOT NULL) THEN 1 ELSE 0 END AS chua_co_lich   -- PR-LM: lượt đã huỷ lịch (tuần NULL) không phải "có lịch"
+                    AND a.planned_period_id IS NOT NULL) THEN 1 ELSE 0 END AS chua_co_lich,   -- PR-LM: lượt đã huỷ lịch (tuần NULL) không phải "có lịch"
+                (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_XONG_SQL('a')}) AS so_mt_xong
            FROM students s
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+           JOIN classes c ON c.id = e.class_id
            LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
           WHERE e.class_id IN (${phOf(ftClassIds.length)}) AND ${HV_DANG_HOC_SQL('s')}`,
       )
       .all(...ftClassIds) as any[]) {
       if (!hvCuaLop.has(r.class_id)) hvCuaLop.set(r.class_id, []);
       hvCuaLop.get(r.class_id)!.push(r.student_id);
-      if (r.chua_co_lich) chuaCoLichTiep.set(r.class_id, (chuaCoLichTiep.get(r.class_id) ?? 0) + 1);
+      if (!soMacDinh.has(r.class_id)) soMacDinh.set(r.class_id, lichMtCua({ lich_mt: r.lich_mt, route: r.lop_route }, r.lop_route).length);
+      /* P2 MT-DEM: em đã xong đủ MT mặc định của lớp thì thôi nhắc xếp thêm (lượt đã tạo vẫn nhắc thi / chấm như cũ). */
+      if (r.chua_co_lich && !daDuMtMacDinh(r.so_mt_xong, lichMtCua({ lich_mt: r.lich_mt, route: r.lop_route }, r.route).length)) chuaCoLichTiep.set(r.class_id, (chuaCoLichTiep.get(r.class_id) ?? 0) + 1);
     }
     for (const r of conn
       .prepare(
@@ -122,8 +128,8 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     const b = a !== null ? a + 1 : (luot.length ? Math.max(...luot.map((l) => l.no)) : 0) + 1;
     const coB = new Set(luot.filter((l) => l.no === b && (l.status !== 'planned' || l.coTuan)).map((l) => l.hv));
     const soEm = hv.filter((id) => !coB.has(id)).length;
-    /* V5 C20 (T04): sau MT3 không tự gợi ý MT kế — "MT{b} chưa xếp k em" chỉ khi QL đã tạo lượt số b cho lớp (có em có lượt b). */
-    const goiY = b <= MOCK_FT_DEFAULT_ATTEMPTS || luot.some((l) => l.no === b);
+    /* V5 C20 (T04) + P2 MT-DEM: quá số MT mặc định của lịch lớp (LT 3, RF 2) không tự gợi ý MT kế — "MT{b} chưa xếp k em" chỉ khi QL đã tạo lượt số b. */
+    const goiY = b <= (soMacDinh.get(classId) ?? 0) || luot.some((l) => l.no === b);
     return tomTatLopFT({ dangThi: a, chuaXep: goiY ? { dot: b, soEm } : null, canXepLai: canXepLai.get(classId) ?? 0 });
   };
 

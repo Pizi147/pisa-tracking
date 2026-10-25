@@ -96,7 +96,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   );
 
   const bang1 = (rows: DongHvCanChuY[]) => (
-    <div className="table-scroll">
+    <div className="table-scroll bang-dinh">   {/* P3 UI-CHUNG: danh sách HV cần chú ý cả chi nhánh — đầu cột dính */}
       <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 860 }}>
         <colgroup><col style={{ width: '20%' }} /><col style={{ width: 100 }} /><col style={{ width: 130 }} /><col style={{ width: 110 }} /><col style={{ width: 150 }} /><col style={{ width: 70 }} /><col style={{ width: 90 }} /><col style={{ width: '16%' }} /></colgroup>
         <thead>

@@ -156,6 +156,27 @@ export function coMocTiepTheo(o: { coMoc: boolean; soMt: number; mtCuoi: number;
   return o.coMoc || (o.soMt > 0 && o.mtCuoi >= o.soMt && o.coNgayThi);
 }
 
+/**
+ * P2 MT-DEM (chủ SP 24/10, R4.1): bộ đếm MT của em = lượt ĐÃ XONG / lượt ĐÃ TẠO. Lượt tính: `kind = 'mock'` (MT0 không), không huỷ, không
+ * phải lượt mọi phần đã huỷ; lượt chưa xếp tuần vẫn tính (đã tạo). Đã xong = cùng luật nhãn `nhanLuot` (done, hoặc đủ điểm mọi kỹ năng bắt buộc).
+ */
+export type LuotDem = { kind: string; status: string; huyHet: boolean; coDiem: number; yeuCau: number };
+export function demMtHocVien(ds: readonly LuotDem[]): { xong: number; tong: number } {
+  const tinh = ds.filter((l) => l.kind === 'mock' && l.status !== 'cancelled' && !l.huyHet);
+  return { xong: tinh.filter((l) => l.status === 'done' || (l.yeuCau > 0 && l.coDiem >= l.yeuCau)).length, tong: tinh.length };
+}
+/** Em đã xong đủ số MT mặc định của lớp (`lichMtCua(...).length`) → thôi nhắc QL xếp thêm MT. Lớp không có lịch MT → false. */
+export function daDuMtMacDinh(xong: number, soMacDinh: number): boolean {
+  return soMacDinh > 0 && xong >= soMacDinh;
+}
+/** Bản SQL của lượt tính trong `demMtHocVien` (alias `a` = assessment_attempts). */
+export const LUOT_MT_TINH_SQL = (a: string) => `(${a}.kind = 'mock' AND ${a}.status != 'cancelled' AND NOT ${LUOT_HUY_HET_SQL(a)})`;
+/**
+ * Bản SQL của lượt đã xong. `refreshOutcome` đặt `status = 'done'` mỗi lần lượt đủ điểm (mọi đường ghi điểm đi qua nó), nên ở máy chủ
+ * "đủ điểm" ≡ `status = 'done'` — không tính lại điểm từng kỹ năng trong SQL.
+ */
+export const LUOT_MT_XONG_SQL = (a: string) => `(${LUOT_MT_TINH_SQL(a)} AND ${a}.status = 'done')`;
+
 /** Một lượt khác trong cùng lộ trình, đủ để biết lượt đang dời có VƯỢT nó không (PR-LM, chủ sản phẩm 03/10). */
 export type LuotLanCan = { attemptId: number; attemptNo: number; kind: string; tuanDau: string | null; coDiem: boolean; daThi: boolean; huy: boolean };
 

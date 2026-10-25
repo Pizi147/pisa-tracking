@@ -3,6 +3,7 @@
  * Chạy trên database riêng (data/test.sqlite) để không đụng dữ liệu bạn đang thử.
  */
 import path from 'node:path';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -1033,8 +1034,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   /* Nhập thêm môn khác: thêm tín hiệu, vẫn không case nào, và hạn cũ KHÔNG bị đặt lại. */
   const dueBefore = sig.verify_due;
   attempts.saveScore(t('reading'), attempt.id, 'reading', { rawScore: scoring.READING_BY_RAW.indexOf(low) }, chuNhatCuoiOf(attempt.id));
-  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [low, low, low, low] }, chuNhatCuoiOf(attempt.id));
-  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [low, low, low, low] }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: tieuChiThu(low) }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: tieuChiThu(low) }, chuNhatCuoiOf(attempt.id));
   const three = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(three.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải lên SOS 3, đang là ${three.result.sosLevel}`);
   const want = newCasesExpected(['listening', 'reading', 'writing1', 'writing2']);
@@ -1070,8 +1071,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
     kind: 'teaching_adjust', description: 'GVCN điều chỉnh cách chữa bài cho em',
     performerSelf: true, status: 'completed', completedDate: TODAY,
   });
-  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
-  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: tieuChiThu(exp), lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: tieuChiThu(exp), lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
   const reread = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(reread.result.sosLevel === 2, `Sau khi sửa Writing phải còn SOS 2, đang là ${reread.result.sosLevel}`);
 
@@ -1134,7 +1135,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   const exp = s.target_score;
   const t = (skill: string) => loadPrincipal(teacherOfSkill('UB FT 401', skill));
 
-  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp - 0.5, exp - 0.5, exp - 0.5, exp - 0.5] }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: tieuChiThu(exp - 0.5) }, chuNhatCuoiOf(attempt.id));
   const sig = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'speaking'`)
     .get(attempt.id) as any;
@@ -1144,7 +1145,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   const made = { id: sig.case_id } as any;
 
   /* Hoá ra điểm nhập sai: sửa lại thành đạt. */
-  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: tieuChiThu(exp), lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
   const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(made.id) as any;
   assert(after.status === 'done', 'Case chỉ dựa trên điểm sai vẫn nằm trong danh sách đang xử lý');
   assert(/sửa điểm/i.test(after.outcome_note ?? ''),
@@ -8457,7 +8458,7 @@ const prnScore = (attemptId: number, skill: 'listening' | 'reading', band: numbe
   attempts.saveScore(P.admin, attemptId, skill, { rawScore: prnRaw(skill, band) });
 const prnFull = (attemptId: number, band: number) => {
   prnScore(attemptId, 'listening', band); prnScore(attemptId, 'reading', band);
-  for (const k of ['writing1', 'writing2', 'speaking'] as const) attempts.saveScore(P.admin, attemptId, k, { criteria: [band, band, band, band] });
+  for (const k of ['writing1', 'writing2', 'speaking'] as const) attempts.saveScore(P.admin, attemptId, k, { criteria: tieuChiThu(band) });
 };
 const prnIds = (who: any, id: string, f: Record<string, unknown> = {}) => (metricsSvc.metricSet(who, id, f as any) as any);
 
@@ -9581,6 +9582,15 @@ await runPrSvTqGvTests({ check, assert, conn, P } as any);
 // ==================================================================== SUA-CHAM-LAI (Đ4 lý do Chưa đủ dữ liệu)
 const { runPrSuaChamLaiTests } = await import('./prSuaChamLai.tests.ts');
 await runPrSuaChamLaiTests({ check, assert } as any);
+// ==================================================================== P2 MT-DEM (bộ đếm MT đã xong / đã tạo, thôi nhắc xếp thêm)
+const { runPrMtDemTests } = await import('./prMtDem.tests.ts');
+await runPrMtDemTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== P1 DIEM-TIEU-CHI (tiêu chí W / S số nguyên)
+const { runPrDiemTieuChiTests } = await import('./prDiemTieuChi.tests.ts');
+await runPrDiemTieuChiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== P3 UI-CHUNG (Mới dùng PISA TRACKING? · bỏ Góp ý hàng tuần · menu ⋯ · đầu bảng dính)
+const { runPrUiChungTests } = await import('./prUiChung.tests.ts');
+await runPrUiChungTests({ check, assert, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

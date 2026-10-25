@@ -2,7 +2,7 @@ import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -2279,11 +2279,10 @@ export function saveScore(
       } else if (isCriteriaSkill(skill)) {
         if (patch.criteria !== undefined) {
           if (!Array.isArray(patch.criteria) || patch.criteria.length !== 4) throw badRequest('Cần đủ bốn ô tiêu chí.');
+          const cu = crit;
           crit = patch.criteria.map((v) => (v === null || v === undefined || v === ('' as any) ? null : Number(v)));
-          /* PR-S4F #10: "abc" (NaN) hay 6.3 không được thành band — tiêu chí chỉ nhận 0–9, bậc 0.5. */
-          if (crit.some((v) => v !== null && (!Number.isFinite(v) || v < 0 || v > 9 || !Number.isInteger(v * 2)))) {
-            throw badRequest('Điểm tiêu chí phải là số từ 0 đến 9, bậc 0.5 (ví dụ 6 hoặc 6.5).');
-          }
+          /* P1 (chủ SP 24/10): tiêu chí chỉ số nguyên 0–9 ("abc", 6.5 → 400). Ô cũ có tiêu chí lẻ gửi lại y nguyên (dán lại cả bảng) không lỗi oan. */
+          if (crit.some((v) => kiemTieuChi(v)) && !crit.every((v, i) => v === cu[i])) throw badRequest(LOI_TIEU_CHI_NGUYEN);
         }
         if (patch.criteria !== undefined || crit.some((v) => v !== null)) band = bandFromCriteria(crit);
         raw = null;

@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-S3F — sửa sau rà cuối đợt 3 (mỗi mục một phép kiểm tái hiện đúng tình huống rà). Harness do `run.ts` truyền vào. */
 import fs from 'node:fs';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -36,7 +37,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   const enter = (a: any, skill: string, band: number) => attemptsSvc.saveScore(P.admin, a.id, skill, {
     ...(skill === 'listening' ? { rawScore: scoring.LISTENING_BY_RAW.indexOf(band) }
       : skill === 'reading' ? { rawScore: scoring.READING_BY_RAW.indexOf(band) }
-      : { criteria: [band, band, band, band] }),
+      : { criteria: tieuChiThu(band) }),
     lyDo: 'Phép kiểm: nhập điểm',
   });
   const caseOf = (sid: number, category: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND category = ? ORDER BY id DESC LIMIT 1', sid, category);

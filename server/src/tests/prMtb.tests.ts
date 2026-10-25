@@ -605,7 +605,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(b.patch === null && b.loi === 'Điền band hoặc tiêu chí', JSON.stringify(b));
     assert(d.criteriaPatchFrom(['-', '', '', ''], o, '6.5', true).patch === null, '"-" cùng band');
     for (const x of ['6.3', '10', 'abc', '-1']) assert(d.criteriaPatchFrom(['', '', '', ''], o, x, true).patch === null, `band ${x}`);
-    const c = d.criteriaPatchFrom(['6', '6', '6.5', '7'], o);
+    const c = d.criteriaPatchFrom(['6', '6', '6', '7'], o);
     assert(c.patch?.criteria?.length === 4 && c.preview === 6.5 && c.loi === null, JSON.stringify(c));
     assert(d.criteriaPatchFrom(['', '', '', ''], { noShow: { state: 'khong-co-bai' } }).patch?.noShow === false, 'gỡ dấu');
     assert(d.criteriaPatchFrom(['6', 'x', '', ''], o).patch === null, 'tiêu chí hỏng');

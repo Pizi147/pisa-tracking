@@ -1,4 +1,5 @@
 import { loadPrincipal, type Principal } from '../permissions.ts';
+import { tieuChiThu } from './tieuChiThu.ts';
 import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
@@ -48,8 +49,8 @@ export function buildXlmtDemo(ctx: BuildCtx): { students: number } {
   const nhap = (a: any, ks: Array<'l' | 'r' | 'w' | 's'>, band = 6.5) => {
     if (ks.includes('l')) saveScore(admin, a.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(band) });
     if (ks.includes('r')) saveScore(admin, a.id, 'reading', { rawScore: READING_BY_RAW.indexOf(band) });
-    if (ks.includes('w')) for (const k of ['writing1', 'writing2']) saveScore(admin, a.id, k, { criteria: [band, band, band, band] });
-    if (ks.includes('s')) saveScore(admin, a.id, 'speaking', { criteria: [band, band, band, band] });
+    if (ks.includes('w')) for (const k of ['writing1', 'writing2']) saveScore(admin, a.id, k, { criteria: tieuChiThu(band) });
+    if (ks.includes('s')) saveScore(admin, a.id, 'speaking', { criteria: tieuChiThu(band) });
   };
 
   // ---------------------------------------------------------------- X1 · MB FT 101, đợt MT3

@@ -83,7 +83,7 @@ export async function runPrOv4bTests(t: YThucTestKit) {
 
   check('OV4b-3 · W1 lưu một mình → W chưa có; W2 lưu sau → W = (W1 + W2 × 2) / 3', () => thu(() => {
     dung(luot);
-    attempts.saveScore(P.w1Teacher, luot, 'writing1', { criteria: [5, 5.5, 5, 5], nhanXet: 'Thiếu overview' }, TRONG);
+    attempts.saveScore(P.w1Teacher, luot, 'writing1', { criteria: [5, 5, 5, 5], nhanXet: 'Thiếu overview' }, TRONG);
     let r = attempts.resultOf(one('SELECT * FROM assessment_attempts WHERE id = ?', luot));
     assert(r.bands.writing === null, `W khi mới có W1: ${r.bands.writing}`);
     attempts.saveScore(P.w2Teacher, luot, 'writing2', { criteria: [6, 6, 6, 6] }, TRONG);

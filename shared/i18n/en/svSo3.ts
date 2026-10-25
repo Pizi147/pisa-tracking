@@ -6,4 +6,5 @@ export const EN_SV_SO3 = {
   'Chưa đủ': 'Incomplete',
   'chưa đủ điểm': 'incomplete scores',
   'so lượt trước {d}': 'vs previous {d}',
+  'MT đã xong / đã tạo': 'Mock tests done / created',
 } as const;

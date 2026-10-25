@@ -11,7 +11,6 @@ export const EN_OV15B = {
   'Ô đã có điểm — "-" không xoá được điểm': 'This cell has a score — "-" cannot remove it',
   'Ngoài 0–40 câu': 'Outside 0–40 answers',
   'Dán 4 tiêu chí — Band tự tính': 'Paste 4 criteria — band is calculated',
-  'Bốn tiêu chí, mỗi tiêu chí 0–9 bậc 0.5 (ví dụ 5.5 6 6 5.5)': 'Four criteria, each 0–9 in steps of 0.5 (e.g. 5.5 6 6 5.5)',
   /* Dán từ Excel — panel xem trước (web/src/modules/cham/DanExcel.tsx) */
   'Dán từ Excel': 'Paste from Excel',
   'Dán từ Excel · {luot}': 'Paste from Excel · {luot}',
@@ -65,7 +64,7 @@ export const EN_OV15B = {
   'Chọn vùng dữ liệu trong Excel (có hoặc không hàng tiêu đề), Ctrl C rồi Ctrl V vào khung.': 'Select the data in Excel (with or without the header row), Ctrl C, then Ctrl V into the box.',
   'Kiểm bảng: em khớp, ô mới, ô ghi đè, dòng lỗi; trùng tên thì chọn em.': 'Check the table: matched students, new cells, overwrites, error rows; pick the student for same names.',
   'Bấm Lưu: dòng hợp lệ được lưu, dòng chưa đủ còn là nháp.': 'Press Save: valid rows are saved, incomplete rows stay as drafts.',
-  'Một kỹ năng: Tên · điểm · nhận xét. Ô trống được bỏ qua, không thành 0. W1, W2, S: bốn tiêu chí (5.5 6 6 5.5).': 'One skill: Name · score · comment. Empty cells are skipped, never 0. W1, W2, S: four criteria (5.5 6 6 5.5).',
+  'Một kỹ năng: Tên · điểm · nhận xét. Ô trống được bỏ qua, không thành 0. W1, W2, S: bốn tiêu chí số nguyên (6 7 6 7).': 'One skill: Name · score · comment. Empty cells are skipped, never 0. W1, W2, S: four whole-number criteria (6 7 6 7).',
   /* Hướng dẫn — màn "Nhập điểm một lớp" (shared/huongDan/gv.ts), admin / qt bước mở lưới */
   'Nhập điểm một lớp': 'Enter scores for a class',
   'Mở panel Nhập điểm': 'Open the Enter scores panel',
@@ -73,7 +72,7 @@ export const EN_OV15B = {
   'Trong panel: chọn lượt (MT1, MT2…) và môn (<b>Tất cả · L · R · W1 · W2 · S</b>); <b>Chỉ ô còn trống</b> để nhập nốt.': 'In the panel: pick the test (MT1, MT2…) and skill (<b>All · L · R · W1 · W2 · S</b>); <b>Empty cells only</b> to finish entering.',
   'Bấm <b>Dán từ Excel</b> (nút <b>?</b>: 6 bước + Sao chép mẫu): mỗi em một dòng, <b>Tên | điểm | nhận xét</b> từng kỹ năng.': 'Press <b>Paste from Excel</b> (the <b>?</b> button: 6 steps + Copy template): one row per student, <b>Name | score | comment</b> per skill.',
   'Kiểm bảng xem trước: ô mới, ghi đè, lỗi; trùng tên thì chọn em; dưới kỳ vọng chọn nhóm nguyên nhân.': 'Check the preview: new cells, overwrites, errors; pick the student for same names; below expectation pick the cause groups.',
-  'W1, W2, S: bốn tiêu chí cách nhau dấu cách. <b>Lưu n dòng</b>: dòng chưa đủ còn là nháp; <b>Hoàn tác</b> trả lại như trước.': 'W1, W2, S: four criteria separated by spaces. <b>Save n rows</b>: incomplete rows stay as drafts; <b>Undo</b> restores the previous values.',
+  'W1, W2, S: bốn tiêu chí số nguyên cách nhau dấu cách. <b>Lưu n dòng</b>: dòng chưa đủ còn là nháp; <b>Hoàn tác</b> trả lại như trước.': 'W1, W2, S: four whole-number criteria separated by spaces. <b>Save n rows</b>: incomplete rows stay as drafts; <b>Undo</b> restores the previous values.',
   'Mở lưới điểm (bấm dòng lớp ở Lịch Test, hoặc <b>⋯</b> hàng lớp › <b>Nhập điểm</b>).': 'Open the score grid (click a class row in Schedule / Marking, or <b>⋯</b> on the class row › <b>Enter scores</b>).',
   'Mở lưới điểm của lớp (Test › Lịch Test, hoặc ⋯ hàng lớp › Nhập điểm).': 'Open the class score grid (Tests › Test schedule, or ⋯ on the class row › Enter scores).',
   /* Máy chủ — POST /attempts/scores/lo */

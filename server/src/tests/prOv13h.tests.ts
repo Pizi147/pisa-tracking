@@ -6,6 +6,7 @@
  * Không bọc giao dịch (mỗi lần gọi API tự mở giao dịch) — trạng thái dùng chung (lớp, em) trả lại trong `finally`; chạy cuối `run.ts`.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 
 export async function runPrOv13hTests(t: YThucTestKit) {
   const { checkAsync, assert, conn, TODAY, P, addDays, classId } = t;
@@ -127,7 +128,7 @@ export async function runPrOv13hTests(t: YThucTestKit) {
       await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [8, 8, 8, 8], nhanXet: nx })), 200, 'GV W1 nhập ô trống lớp kết thúc');
       assert(nk('score.edit', gvW, x.aid) === truoc + 1, 'thiếu nhật ký');
       await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [7, 7, 7, 7], nhanXet: nx })), 403, 'GV W1 sửa điểm đã có');
-      await ma(await goi(QL.userId, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [7.5, 7.5, 7.5, 7.5], nhanXet: nx, lyDo: 'Chấm lại' })), 200, 'QL sửa');
+      await ma(await goi(QL.userId, `/attempts/${x.aid}/scores/writing1`, put({ criteria: tieuChiThu(7.5), nhanXet: nx, lyDo: 'Chấm lại' })), 200, 'QL sửa');
     })));
     await checkAsync('OV13h-1d · lớp thường đã kết thúc: GV đúng môn nhập ô trống → 200 + nhật ký regular.score; sửa lại → 403; GV khác môn → 403; rà #410: ô đã khoá điểm vẫn ghi nhận xét (200 + nhật ký), "-" → 400 đúng câu, cờ nhanXetDuoc / khongVang', lopTam(FOU12, () => voiMayChu(TODAY, async (goi) => {
       const a = one(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'

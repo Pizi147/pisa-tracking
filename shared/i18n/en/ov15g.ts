@@ -27,12 +27,12 @@ export const EN_OV15G = {
   'Tháng thi': 'Exam month',
   'Người dùng đã xoá': 'Deleted user',
   'Học viên đã xoá': 'Deleted student',
-  '<b>⋯ › Lịch sử</b> ở hồ sơ em, hồ sơ lớp; nút <b>Lịch sử</b> ở hồ sơ MT, Kết quả thi thật, Góp ý hàng tuần, kết quả Thêm học viên.':
-    '<b>⋯ › History</b> on the student and class profiles; a <b>History</b> button on the MT profile, Real exam result, Weekly feedback and the Add students result.',
+  '<b>⋯ › Lịch sử</b> ở hồ sơ em, hồ sơ lớp; <b>⋯ › Lịch sử góp ý tuần</b> ở hồ sơ lớp; nút <b>Lịch sử</b> ở hồ sơ MT, Kết quả thi thật, kết quả Thêm học viên.':
+    '<b>⋯ › History</b> on the student and class profiles; <b>⋯ › Weekly feedback history</b> on the class profile; a <b>History</b> button on the MT profile, Real exam result and the Add students result.',
   'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau. Lô / Excel: một mục, bấm <b>Xem</b> mở từng em.':
     'One entry per save: who · when · source · reason · before → after. Batch / Excel: one entry, tap <b>View</b> to open each student.',
-  'Hồ sơ lớp › <b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công. Góp ý hàng tuần, hồ sơ MT: nút <b>Lịch sử</b>.':
-    'Class profile › <b>⋯ › History</b>: class info, schedule, assignment. Weekly feedback, MT profile: the <b>History</b> button.',
+  'Hồ sơ lớp › <b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công; <b>⋯ › Lịch sử góp ý tuần</b>: góp ý cũ. Hồ sơ MT: nút <b>Lịch sử</b>.':
+    'Class profile › <b>⋯ › History</b>: class info, schedule, assignment; <b>⋯ › Weekly feedback history</b>: past feedback. MT profile: the <b>History</b> button.',
   /* OV-15i1: chữ máy chủ ghép động (nguồn, tên trường) — mẫu có biến; đoạn " · " còn lại dịch từng phần. */
   'Lịch · {mon}': (b) => `Schedule · ${b.mon}`,
   '{mon} · Điểm': (b) => `${b.mon} · Score`,

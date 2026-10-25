@@ -53,9 +53,9 @@ export async function runPrOv4cTests(t: YThucTestKit) {
       assert(e?.status === 400 && e.message === CAU, `${k}: ${e?.status} ${e?.message}`);
       assert(!diem(k), `${k}: không được ghi dòng điểm`);
     }
-    attempts.saveScore(QL, aid, 'writing1', { criteria: [6, 6.5, 7, 6.5] });
+    attempts.saveScore(QL, aid, 'writing1', { criteria: [6, 7, 7, 6] });
     const r = diem('writing1');
-    assert(r.band === 6.5 && r.c1 === 6 && r.c4 === 6.5, JSON.stringify(r));
+    assert(r.band === 6.5 && r.c1 === 6 && r.c4 === 6, JSON.stringify(r));
     attempts.saveScore(QL, aid, 'speaking', { criteria: [7, 7, 7, 6] });
     assert(diem('speaking').band === 7, JSON.stringify(diem('speaking')));
   }));
@@ -103,7 +103,7 @@ export async function runPrOv4cTests(t: YThucTestKit) {
     assert(a.patch === null && a.loi === d.LOI_BAND_TU_TINH, JSON.stringify(a));
     const b = d.criteriaPatchFrom(['', '', '', ''], o, '6.5', true);
     assert(b.patch?.band === 6.5 && b.preview === 6.5, JSON.stringify(b));
-    const c = d.criteriaPatchFrom(['6', '6', '6.5', '7'], o, '', false);
+    const c = d.criteriaPatchFrom(['6', '6', '6', '7'], o, '', false);
     assert(c.patch?.criteria?.length === 4 && c.preview === 6.5 && !('band' in (c.patch ?? {})), JSON.stringify(c));
     assert(d.criteriaPatchFrom(['', '', '', ''], { daChot: true }, '', false).patch?.noShow === false, 'gỡ dấu vẫn được');
   });

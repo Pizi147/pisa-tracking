@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-KCK (Q29-1) — Target "không cam kết": nhập, không SOS, không việc Điền target, đổi target ↔ KCK, quyền. Harness do `run.ts` truyền vào. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { chotSan } from './luotThu.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -38,7 +39,7 @@ export async function runPrKckTests(t: YThucTestKit) {
   const cham = (attemptId: number, band: number) => {
     saveScore(P.admin, attemptId, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(band) });
     saveScore(P.admin, attemptId, 'reading', { rawScore: READING_BY_RAW.indexOf(band) });
-    saveScore(P.admin, attemptId, 'speaking', { criteria: [band, band, band, band] });
+    saveScore(P.admin, attemptId, 'speaking', { criteria: tieuChiThu(band) });
   };
   const n = (sql: string, ...a: unknown[]) => (conn.prepare(sql).get(...a) as any).n as number;
 

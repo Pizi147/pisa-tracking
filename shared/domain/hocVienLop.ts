@@ -49,7 +49,7 @@ export function laVaiQuanLy(roles: readonly string[] | null | undefined): boolea
 }
 
 /**
- * SV-SO3 (`thiet-ke/v5/dieu-chinh-cuoi.html` khu d, `10` mục 5) — trường hàng HV của Học viên & Lớp, chỉ em Fast Track. Lộ trình `mt`/`soMt` (MT3/3) + Target;
+ * SV-SO3 (`thiet-ke/v5/dieu-chinh-cuoi.html` khu d, `10` mục 5) — trường hàng HV của Học viên & Lớp, chỉ em Fast Track. Lộ trình `mt`/`soMt` = lượt MT đã xong / đã tạo (P2 MT-DEM, `demMtHocVien`) + Target;
  * MT gần nhất CỦA EM (lượt của `standingFor` — cùng nguồn cột Kết quả các màn): Overall / kỳ vọng · tuần · 5 ô L R W1 W2 S; Xu hướng = Overall so lượt
  * có Overall gần nhất trước đó cùng lộ trình (`soMt` = số MT của lượt đó); Hỗ trợ = SOS + kỹ năng dưới kỳ vọng + Case / PA đang mở; Ý thức = bậc hiện tại.
  */
@@ -81,7 +81,7 @@ export const coONhapLienHe = (roles: readonly string[] | null | undefined): bool
 /** OV-10b: chip Học viên & Lớp của TVV / CX — số = `chipHocVien` (OV-10c, cùng ô Tổng quan). "Chờ chọn bước tiếp" chỉ hiện khi có em. */
 export const CHIP_VAI = ['tat-ca', 'can-chu-y', 'tam-dung', 'sap-thi', 'thieu_tt', 'da-thi', 'cho-buoc-tiep'] as const;   // OV-13q: + Đã thi · chờ kết quả
 export type ChipVai = (typeof CHIP_VAI)[number];
-/** CX mở ở chip `can-chu-y` (không phải 1 000+ em), TVV ở `tat-ca` của HV mình. Nhãn chip ở web (`HocVienTheoVai.tsx`). */
+/** CX mở ở chip `can-chu-y` (không phải 1 000+ em), TVV ở `tat-ca` của HV mình. Nhãn chip ở web (`StudentsPage.tsx`); UI-HV-LOP-TVV: trang mở ở Tất cả (bảng V5 có phân trang), chip này còn cho link. */
 export const chipMacDinhVai = (vai: 'tvv' | 'cx'): ChipVai => (vai === 'cx' ? 'can-chu-y' : 'tat-ca');
 export const docChipVai = (s: string | null | undefined, vai: 'tvv' | 'cx'): ChipVai =>
   (CHIP_VAI as readonly string[]).includes(s ?? '') ? (s as ChipVai) : chipMacDinhVai(vai);

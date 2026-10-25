@@ -21,7 +21,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom,
+  CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi,
   chuDoiVang, demNguocSuaDau, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -278,7 +278,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
     }
     const doi = vals.some((v, i) => v.trim() !== vals0[i].trim()) || bandText.trim() !== band0.trim();
     const r = criteriaPatchFrom(vals, cell, bandText, cell.bandThang);
-    const sai = vals.findIndex((v) => { const s = v.trim(); return s !== '' && s !== '-' && !Number.isFinite(Number(s)); });
+    const sai = vals.findIndex((v) => { const s = v.trim(); return s !== '' && s !== '-' && kiemTieuChi(Number(s)) !== null; });
     return { doi, patch: r.patch as SavePatch | null, loi: r.loi, o: r.patch ? null : sai >= 0 ? sai : 4, preview: r.preview };
   })();
   /* Ô vắng: xoá trắng ô "Em có làm bài?" không phải lệnh gì — Bỏ vắng là nút riêng; gõ "-" ở đó báo ngay (không nuốt, không đóng hộp). */
@@ -409,7 +409,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, gvMacDi
             {tc.map((n) => <span key={n} className="text-center text-xs font-semibold text-slate-400">{n}</span>)}
             <span className="text-center text-xs font-semibold text-slate-400">Band</span>
             {tc.map((n, i) => (
-              <input key={n} className={oSo('w-full px-1 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === i)} inputMode="decimal"
+              <input key={n} className={oSo('w-full px-1 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === i)} inputMode="numeric"
                 value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${n}`} aria-invalid={loi?.o === i || undefined} disabled={busy}
                 onChange={(e) => { setVals((v) => v.map((x, j) => (j === i ? e.target.value : x))); setLoi(null); }} />
             ))}

@@ -3,5 +3,4 @@ import type { Dich } from '../en.ts';
 
 export const EN_OV14A = {
   'Máy chủ trả dữ liệu lạ — thử lại.': 'The server sent an unexpected reply — try again.',
-  'Góp ý chưa lưu được — chữ vẫn giữ.': 'Comment not saved yet — your text is kept.',
 } satisfies Record<string, Dich>;

@@ -62,9 +62,9 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(r && !r.dung && r.nhapDau === '2026-09-28', `dòng Chấm điểm: ${JSON.stringify(r)}`);
   });
   check('S6F-a (1b) · bỏ bớt tiêu chí làm band về NULL → nhap_dau_ngay NULL; sửa điểm (band vẫn có) giữ ngày đầu', () => {
-    svc.saveScore(P.admin, a1.id, 'writing1', { criteria: [6.5, 6, 6, 6], lyDo: 'Chấm lại tiêu chí 1' }, '2026-09-29');
+    svc.saveScore(P.admin, a1.id, 'writing1', { criteria: [7, 6, 6, 6], lyDo: 'Chấm lại tiêu chí 1' }, '2026-09-29');
     assert(o(a1.id, 'writing1').nhap_dau_ngay === '2026-09-28', 'sửa sau phải giữ ngày đầu');
-    svc.saveScore(P.admin, a1.id, 'writing1', { criteria: [6.5, 6, null, null], lyDo: 'Nhập nhầm hai tiêu chí cuối' }, '2026-09-29');
+    svc.saveScore(P.admin, a1.id, 'writing1', { criteria: [7, 6, null, null], lyDo: 'Nhập nhầm hai tiêu chí cuối' }, '2026-09-29');
     assert(o(a1.id, 'writing1').band === null && o(a1.id, 'writing1').nhap_dau_ngay === null, JSON.stringify(o(a1.id, 'writing1')));
   });
   check('S6F-a (1c) · lớp thường (khoá lại): lưu điểm ngày D → D; xoá điểm → NULL', () => {
