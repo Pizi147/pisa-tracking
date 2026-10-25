@@ -251,8 +251,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hoc-lai/lop-dich', maChuDich: { GVCN: 403, GVBM: 403 } },
   /* P7 SV-LO-TRINH: "Khi lưu, web sẽ" hộp Tạm dừng/ Kết thúc học · panel Lộ trình mới · Quay lại học (em Tạm dừng ở Lưu trữ). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/trang-thai/xem-truoc?ketThuc=1' },
-  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cycles/{loTrinhDong}/lo-trinh-moi/xem-truoc' },
-  { trang: 'Lưu trữ', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hvTamDung}/quay-lai' },
+  /* Panel Lộ trình mới + Quay lại học cần em đã thi / tạm dừng — bộ demo đo không có; trần đo ở phép kiểm SV-9b (`prSvLoTrinh.tests.ts`). */
   /* PR-LT: {hv} là em lớp FT nên `lop.laLopThuong=false`, nhưng đường vẫn 200 với mọi vai xem được hồ sơ. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lo-trinh-tiep' },
   /* PR-LT, Q3 → PR-CT (Q30-1): quyền chuyển lớp kiểm Ở LỚP NGUỒN và chỉ Quản lý có (`class.edit`); GVCN, GVBM bị 403. */
@@ -382,6 +381,8 @@ export const TRAN: Record<string, number> = {
   'QT /demo/session': 16,
   'QL /ref/branches': 14,
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
+  /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng/ Kết thúc học. */
+  'QL /students/1/trang-thai/xem-truoc?ketThuc=1': 19, 'QT /students/1/trang-thai/xem-truoc?ketThuc=1': 17, 'GVCN /students/1/trang-thai/xem-truoc?ketThuc=1': 21, 'GVBM /students/1/trang-thai/xem-truoc?ketThuc=1': 21,
   'QL /students/1/hoc-lai/lop-dich': 28,
   'QT /students/1/hoc-lai/lop-dich': 26,
   /* PR-TK (TK-7): ba đường đọc bản chụp — trần = max(đo+10, ⌈đo×1,3⌉), đo 07/10. */

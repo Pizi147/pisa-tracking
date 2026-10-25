@@ -9,7 +9,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
   const { check, assert, conn, P, TODAY, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const { migratePrSvLoTrinh } = await import('../migrate/prSvLoTrinh.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, soCauSql, chayTrongRequest } = await import('../platform/nguCanhRequest.ts');
   console.log('\nP7 SV-LO-TRINH — một nút Tạm dừng/ Kết thúc học, Quay lại học, Bước tiếp 2 hướng, Lộ trình mới');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   /** Chạy trong giao dịch rồi cuộn lại — phép kiểm không để dấu trên DB chung. */
@@ -315,5 +315,20 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(hs(b.sid).status === 'inactive' && !!hs(b.sid).archived_at, 'Tạm dừng + Lưu trữ');
     bt.boChonBuocTiep(QL, b.cy);
     assert(hs(b.sid).status === 'active' && !hs(b.sid).archived_at, 'Hoàn tác');
+  }));
+
+  check('SV-9b · trần câu SQL đường mới (không theo số học viên): xem trước Lộ trình mới ≤ 20 · Quay lại học (Lộ trình mới ≤ 20 / chọn lớp ≤ 26) · xem trước Tạm dừng ≤ 12', () => thu(() => {
+    const L = lop(); const a = emThiXong(L); const b = em(L);
+    /* Như một GET thật (`chayTrongRequest`: nhớ trong request, nạp trước phạm vi) — cùng cách đo `tocDo.run.ts`. */
+    const do_ = (fn: () => unknown) => { xoaNho(); const s0 = soCauSql(); chayTrongRequest('GET', fn); return soCauSql() - s0; };
+    const ltm = do_(() => bt.xemTruocLoTrinhMoi(QL, a.cy, { route: 'RF' }));
+    bt.chonBuocTiep(QL, a.cy, { chon: 'tam_dung' });
+    const qlLtm = do_(() => thv.thongTinQuayLai(QL, a.sid));
+    students.setStudentStatus(QL, b.sid, 'inactive', t.addDays(TODAY, -7));
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(L);
+    const qlLop = do_(() => thv.thongTinQuayLai(QL, b.sid));
+    const td = do_(() => thv.xemTruocTrangThai(QL, a.sid, true));
+    console.log(`      (đo: xem trước Lộ trình mới ${ltm} · Quay lại học → Lộ trình mới ${qlLtm} · → chọn lớp ${qlLop} · xem trước Tạm dừng ${td} câu)`);
+    assert(ltm <= 20 && qlLtm <= 20 && qlLop <= 26 && td <= 12, `vượt trần: ${ltm} / ${qlLtm} / ${qlLop} / ${td}`);
   }));
 }
