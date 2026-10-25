@@ -1,5 +1,5 @@
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
-import { LUOT_TINH_NO_SQL, boMonLich, cheoChuaNhan, laChamCheo } from '../../../shared/domain/index.ts';
+import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
@@ -112,7 +112,7 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
         if (!c.required || c.xong || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
         const chamCheo = laChamCheo(a.kind, c.skill);
         out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf.get(`${a.class_id}|${c.skill}`) ?? null,
-          overdue: c.overdue && !cheoChuaNhan(a.kind, c.skill, scores.find((s) => s.skill === c.skill)), han: c.deadline ?? null, ...(chamCheo ? { chamCheo, tuanThi: c.weekStart } : {}) });
+          overdue: c.overdue, han: c.deadline ?? null, ...(chamCheo ? { chamCheo, tuanThi: c.weekStart } : {}) });
       }
     }
   }

@@ -44,12 +44,6 @@ export function khoiCham(i: { tuanThi: string; tuanHomNay: string; quaHan: boole
 /** T18: Speaking của Mock Test không có GV mặc định — ai dạy Speaking cùng chi nhánh cũng chấm được. MT0 / lớp thường không áp. */
 export const laChamCheo = (kind: string | null | undefined, skill: string): boolean => kind === 'mock' && skill === 'speaking';
 /**
- * P12 Q12 (T18, PTA 25/10): bài S chấm chéo CHƯA AI NHẬN (ô chưa ghi GV chấm) không là nợ của ai → KHÔNG quá hạn ở mọi nơi (nợ điểm, chỉ số,
- * Công việc, Tổng quan, Báo cáo) — vẫn là bài chờ chấm. Đã có người nhận (`examiner_user_id` / `examiner_name`) mà quá hạn → vẫn quá hạn.
- */
-export const cheoChuaNhan = (kind: string | null | undefined, skill: string, o: { examiner_user_id?: number | null; examiner_name?: string | null } | null | undefined): boolean =>
-  laChamCheo(kind, skill) && !o?.examiner_user_id && !o?.examiner_name;
-/**
  * OV-13g / OV-13o; OV-14c (chủ SP 18/10): bài chấm chéo CẦN CHẤM từ **thứ Hai tuần thi** (không chờ hết tuần), chưa chấm thì còn tới khi chấm.
  * Một luật cho Công việc, Tổng quan "Lớp tôi dạy". Hạn chấm không đổi (cờ quá hạn của ô).
  */

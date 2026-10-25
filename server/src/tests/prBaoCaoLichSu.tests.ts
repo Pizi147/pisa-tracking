@@ -151,13 +151,17 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
       `dòng chờ chấm: ${JSON.stringify(cho)}`);
   });
 
-  check('PBC-7 · Q12 (PTA 25/10): S chấm chéo ĐÃ có người nhận (ghi GV chấm) mà quá hạn → vẫn quá hạn ở nợ điểm', () => thu(() => {
-    const no: any = sd.scoreDebtCells(P.admin, TODAY, [MB]);
-    const x = no.find((c: any) => c.chamCheo && !c.overdue && c.han && c.han < d.addDaysIso(TODAY, -14));
-    assert(x, 'seed có bài S chấm chéo chưa ai nhận đã qua hạn');
+  check('PBC-7 · Q12 chỉ Admin: QL vẫn thấy S chấm chéo quá hạn (LT3); Admin — ô S đã ghi GV chấm (đã có người nhận) mà quá hạn → quá hạn', () => thu(() => {
+    const id = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id
+      WHERE r.key = 'office_admin' AND b.code = 'MB' ORDER BY ur.user_id LIMIT 1`)?.id;
+    const ad = loadPrincipal(id);
+    const ccQuaHan = (p: any) => { xoaNho(); return ((myWork(p, { nguoi: 'tat-ca' }) as any).items as any[])
+      .filter((it) => it.group === 'score' && it.ownerId === null && d.laChamCheo(it.kind, it.kn) && it.urgency === 'overdue'); };
+    assert(ccQuaHan(QL).length > 0, 'QL: S chấm chéo quá hạn vẫn quá hạn (LT3)');
+    assert(ccQuaHan(ad).length === 0, 'Admin: S chấm chéo chưa ai nhận không quá hạn');
+    const x = sd.scoreDebtCells(P.admin, TODAY, [MB]).find((c: any) => c.chamCheo && c.overdue);
+    assert(x, 'seed có S chấm chéo quá hạn');
     conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, examiner_name) VALUES (?, 'speaking', 'GV ngoài')`).run(x.attemptId);
-    xoaNho();
-    const y = sd.scoreDebtCells(P.admin, TODAY, [MB]).find((c: any) => c.attemptId === x.attemptId && c.skill === 'speaking');
-    assert(y?.overdue === true, `đã có người nhận phải quá hạn: ${JSON.stringify(y)}`);
+    assert(ccQuaHan(ad).length > 0, `Admin: đã có người nhận phải quá hạn`);
   }));
 }
