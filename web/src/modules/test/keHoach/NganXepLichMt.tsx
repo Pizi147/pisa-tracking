@@ -3,6 +3,7 @@ import { api, invalidate } from '../../../lib/api.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
+import { ChonLop } from '../../../ui/ChonLop.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { BoLocDoan, NutChon } from '../../../ui/ui.tsx';
 import { BranchFilter } from '../../../ui/Filters.tsx';
@@ -84,7 +85,6 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
     const dau = lopMoSan ?? (lopFT.length === 1 ? lopFT[0].id : undefined);
     return dau ? [dau] : [];
   });
-  const [themLop, setThemLop] = useState('');
   const [tim, setTim] = useState('');
 
   /* Lưới từng lớp đã chọn — route GET có sẵn (Q4), không route mới. */
@@ -250,11 +250,9 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
                 );
               })}
               {lopConLai.length > 0 && (
-                <select className="field h-7 w-auto min-w-28 py-0 text-xs" value={themLop} aria-label="Thêm lớp"
-                  onChange={(e) => { const id = Number(e.target.value); if (id) { setLopChon((s) => [...s, id]); setGiuLoi(null); } setThemLop(''); }}>
-                  <option value="">{lopChon.length ? '+ lớp' : 'Chọn lớp…'}</option>
-                  {lopConLai.map((l) => <option key={l.id} value={l.id}>{l.code}</option>)}
-                </select>
+                <ChonLop className="w-44 max-sm:w-full" ariaLabel="Thêm lớp" value={null} placeholder={lopChon.length ? '+ lớp' : 'Gõ tên lớp…'}
+                  onChange={(id) => { if (id) { setLopChon((s) => [...s, id]); setGiuLoi(null); } }}
+                  ds={lopConLai.map((l) => ({ id: l.id, ma: l.code, phu: `${l.soHv} em` }))} />
               )}
             </div>
           </div>

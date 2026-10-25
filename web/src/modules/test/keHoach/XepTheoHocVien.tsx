@@ -7,6 +7,7 @@ import { LichNho } from '../../../ui/LichNho.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
+import { ChonLop } from '../../../ui/ChonLop.tsx';
 import {
   KY_NANG_KE_HOACH, MT_TOI_DA, mondayOfDate, tenMon, tenMonNgan, thuTuLuuLuot, tuanLich,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type LoiTruong, type OKyNang,
@@ -301,11 +302,9 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
               );
             })}
             {lopFT.some((l) => !lopChon.includes(l.id)) && (
-              <select className="field h-7 w-auto min-w-28 py-0 text-xs max-sm:h-11" value="" aria-label="Thêm lớp"
-                onChange={(e) => { const id = Number(e.target.value); if (id) setLopChon((s) => [...s, id]); }}>
-                <option value="">{lopChon.length ? '+ lớp' : 'Chọn lớp…'}</option>
-                {lopFT.filter((l) => !lopChon.includes(l.id)).map((l) => <option key={l.id} value={l.id}>{l.code}</option>)}
-              </select>
+              <ChonLop className="w-44 max-sm:w-full" ariaLabel="Thêm lớp" value={null} placeholder={lopChon.length ? '+ lớp' : 'Gõ tên lớp…'}
+                onChange={(id) => { if (id) setLopChon((s) => [...s, id]); }}
+                ds={lopFT.filter((l) => !lopChon.includes(l.id)).map((l) => ({ id: l.id, ma: l.code, phu: `${l.soHv} em` }))} />
             )}
           </div>
           {!lopChon.length ? (
