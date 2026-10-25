@@ -15,7 +15,8 @@ export type NguonDich = { bang: string; id: number; cot: string; kyNang?: string
 const daDich = new Map<string, string>();
 const khoaCua = (n: NguonDich, chu: string) => JSON.stringify([n.bang, n.id, n.cot, n.kyNang ?? '', NGON_NGU, chu]);
 
-const NUT = 'link ml-1.5 inline-flex min-h-[44px] appearance-none items-center border-0 bg-transparent p-0 align-baseline text-xs sm:min-h-0';
+/* Vùng bấm ~44 px bằng `::after` (mẫu `DauTrangLop`) — không giãn dòng chữ đang đọc. */
+const NUT = "link relative ml-1.5 appearance-none border-0 bg-transparent p-0 text-xs after:absolute after:-inset-x-2 after:-inset-y-3.5 after:content-['']";
 
 /** `anGoc`: chỗ đã có chữ gốc ngay cạnh (ô nhập) — chỉ in nút, và bản dịch khi đã dịch. */
 export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | undefined; nguon: NguonDich | null | undefined; anGoc?: boolean }) {
@@ -52,10 +53,10 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
         ) : dang ? (
           <button type="button" className={NUT} disabled aria-busy="true">{t('Đang dịch…')}</button>
         ) : loi ? (
-          <>
-            <span role="alert" className="ml-1.5 whitespace-normal text-xs text-bad">{loi}</span>
+          <span className="mt-1 block whitespace-normal text-xs">
+            <span role="alert" className="text-bad">{loi}</span>
             <button type="button" className={NUT} onClick={goi}>{t('Thử lại')}</button>
-          </>
+          </span>
         ) : (
           <button type="button" className={NUT} onClick={goi}>{t('Dịch')}</button>
         )}
