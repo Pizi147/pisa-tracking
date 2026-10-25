@@ -8,6 +8,8 @@ export async function runPrViecDungVaiTests(t: any) {
   const { gopViecTheoMon, monCuaViec, SO_DONG_VIEC_MAC_DINH } = await import('../../../shared/domain/index.ts');
   const { viecTheoEmCuaLop } = await import('../classes/viecTheoEm.ts');
   const { myWork }: any = await import('../worklist/mywork.ts');
+  const shared: any = await import('../../../shared/domain/index.ts');
+  const normal: any = await import('../normal/regular.ts');
   console.log('\nP11 VIEC-DUNG-VAI · cột Việc đúng vai (GV việc của mình, QL gộp theo môn)');
 
   check('VDV-1 · gopViecTheoMon: 7 việc / 3 môn + 1 không môn → 4 dòng, mặc định 3, tổng 7, dòng đầu = việc gấp nhất của môn', () => {
@@ -20,11 +22,35 @@ export async function runPrViecDungVaiTests(t: any) {
     assert(gopViecTheoMon([], () => null).length === 0, 'rỗng');
   });
 
-  check('VDV-2 · monCuaViec: nhãn môn có sẵn (Nhập điểm nhiều môn → môn đầu; lớp thường giữ nhãn ô), nhóm không môn → null', () => {
-    assert(monCuaViec({ group: 'score', phu: 'Listening, Reading' }) === 'Listening', 'score');
-    assert(monCuaViec({ group: 'no_plan', phu: 'Reading' }) === 'Reading', 'no_plan');
-    assert(monCuaViec({ group: 'cause', phu: 'Grammar + Vocabulary' }) === 'Grammar + Vocabulary', 'lớp thường');
-    assert(monCuaViec({ group: 'yt_xu_ly', phu: '3 vi phạm' }) === null && monCuaViec({ group: 'chot_len_ft' }) === null && monCuaViec({ group: 'cause', phu: null }) === null, 'không môn');
+  check('VDV-2 · monCuaViec: từng mẫu `phu` của mywork.ts ra đúng môn; mẫu lạ / rỗng → null ("Khác")', () => {
+    const m = (group: string, phu?: string | null) => monCuaViec({ group, phu });
+    assert(m('score', 'Listening, Reading') === 'Listening' && m('score', 'Writing Task 1') === 'Writing Task 1', 'Nhập điểm (skills)');
+    assert(m('no_plan', 'Reading') === 'Reading', 'Thêm PA học thuật · môn (duoiKyNang)');
+    assert(m('ghi_ket_qua_pa', 'Speaking') === 'Speaking' && m('ghi_ket_qua_pa', 'Kết quả cuối · PA học thuật') === null, 'Kết quả PA / Kết quả cuối');
+    assert(m('xac_nhan_pa', 'Listening') === 'Listening' && m('ghi_nhan_xet', 'Writing Task 2') === 'Writing Task 2', 'Xác nhận PA · Ghi nhận xét');
+    assert(m('cause', 'Grammar + Vocabulary') === 'Grammar + Vocabulary' && m('cause', 'Pronunciation') === 'Pronunciation', 'lớp thường (ô chuẩn)');
+    assert(m('cause', 'Kỹ năng') === null, 'Case chưa có môn');
+    assert(m('xem_nx_s', 'Speaking') === 'Speaking', 'Xác nhận Case Speaking (chấm chéo)');
+    assert(m('yt_xu_ly', '3 vi phạm') === null && m('chot_len_ft') === null && m('cause', null) === null && m('cause', '') === null && m('la_moi', 'Reading') === null, 'không môn / lạ');
+  });
+
+  check('VDV-5 · trên seed (Admin, mọi chi nhánh): môn của Nhập điểm / Ghi nhận xét = tenMon(chương trình, kn); gộp theo em không mất việc kể cả phu rỗng / lạ', () => {
+    const { tenMon } = shared;
+    const { programmeOfClass } = normal;
+    const items = myWork(P.admin, { nguoi: 'tat-ca' }).items as any[];
+    let so = 0;
+    for (const it of items.filter((x) => (x.group === 'score' || x.group === 'ghi_nhan_xet') && x.kn && x.studentId !== null)) {
+      so += 1;
+      const mong = tenMon(it.classId ? programmeOfClass(it.classId)?.code ?? null : null, it.kn);
+      assert(monCuaViec(it) === mong, `${it.key}: ${monCuaViec(it)} ≠ ${mong}`);
+    }
+    assert(so > 0, 'seed cần việc Nhập điểm / Ghi nhận xét theo em');
+    const theoEm = new Map<number, any[]>();
+    for (const it of items) if (it.studentId !== null) theoEm.set(it.studentId, [...(theoEm.get(it.studentId) ?? []), it]);
+    for (const [id, ds] of theoEm) {
+      const lech = ds.map((x, i) => (i % 3 === 0 ? { ...x, phu: '' } : i % 3 === 1 ? { ...x, phu: 'chữ lạ · đổi' } : x));
+      for (const d of [ds, lech]) assert(gopViecTheoMon(d, monCuaViec).reduce((s, r) => s + 1 + r.them, 0) === d.length, `em ${id}: mất việc khi gộp`);
+    }
   });
 
   const LOP = classId('MB FT 101');
