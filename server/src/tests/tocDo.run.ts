@@ -1053,9 +1053,14 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* MAIN-DO: chụp lại theo dữ liệu SEED-UX cuối (BU_MT2, 32504e72 → 9a078719) — so JSON 58a2d268 ↔ 9a078719: việc lệch CHỈ ở 4 em MT2 chưa đạt
        (Ngô Bảo Châu, Lý Thanh Tâm, Phạm Khánh Linh, Kiều Thảo Nhi: việc Case MT2; Case cũ của Kiều Thảo Nhi đổi) và dòng lớp MB FT 101 (MT2 dời W3 AUG); id Case dời. ADMIN giữ.
        SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
-    'QL toi': '3ea67fbf71f97f26', 'QT toi': 'ae31cc97e115aae1', 'GVCN toi': '76b13509ead6c605', 'GVBM toi': 'f0e52756d39e2508',
-    'GVCN_THUONG toi': '76b13509ead6c605', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '2f708e34199a5b09', 'QT tat-ca': 'fd4a0025509b3b4c',
-    'QT tat-ca cn': '9bc50bbc012634a2', 'QL gvcn': '658f91bcc1ae947f', 'GVS toi': 'bde6ca74489b52be',
+    /* P9b CUOI-KHOA (25/10): chụp lại 10 băm (ADMIN giữ) — so JSON ×3 main 186e73a ↔ nhánh, chuẩn hoá id Case / PA: lệch CÓ CHỦ Ý chỉ ở (1) việc "Chốt lộ trình"
+       (N20 hạn CN → T5, nút "Cuối khoá ›", đường `?xem=cuoi-khoa`, hint); (2) N17 Kỳ vọng · Học viên không Case → seed bớt Case của Kiều Thảo Nhi (id Case / PA
+       dời 1) và Case S MT2 của em không còn gộp vào Case Kỳ vọng: 3 dòng "Thêm PA học thuật Speaking" → "Ghi nhận xét Speaking · MT2" (GV S, QL / QT tất cả).
+       Số việc mọi góc không đổi. Trước: QL toi 3ea67fbf71f97f26, QT toi ae31cc97e115aae1, GVCN toi 76b13509ead6c605, GVBM toi f0e52756d39e2508, QL tat-ca 2f708e34199a5b09,
+       QT tat-ca fd4a0025509b3b4c, QT tat-ca cn 9bc50bbc012634a2, QL gvcn 658f91bcc1ae947f, GVS toi bde6ca74489b52be */
+    'QL toi': '53d8168836891e39', 'QT toi': '3111c55ff8027ff3', 'GVCN toi': '48d4fd7f1dc1645a', 'GVBM toi': 'bbfbcccdcf9d71b4',
+    'GVCN_THUONG toi': '48d4fd7f1dc1645a', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'dd8a7166b581b998', 'QT tat-ca': '364be4cb77b9f362',
+    'QT tat-ca cn': '7166c9b66b3098c4', 'QL gvcn': '5afa68eea7a17883', 'GVS toi': '8b6b85a70a44d3dd',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
