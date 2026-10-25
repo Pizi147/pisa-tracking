@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ErrorState, NutChon, OKck, Skeleton } from '../../ui/ui.tsx';
-import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
+import { ChonLop, type LopChon } from '../../ui/ChonLop.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KHOI_VANG, NutHomNay, OTuan } from '../classes/TransitionPanel.tsx';
@@ -35,35 +35,12 @@ type XemChuyenLopData = {
 export type DuyetDeXuat = { id: number; lopDichId: number | null; tuan: string | null; lyDo: string | null };
 
 /** Ô gõ tên lớp: gợi ý "mã lớp · FT LT1 · CP · 9 em" (GVCN đề xuất: không sĩ số — máy chủ không trả `siSo`). */
-const dsLopDich = (lop: readonly LopDich[]): NguoiTrongDs[] => lop.map((l) => ({ id: l.id, ten: l.code, phu: phuLopDich(l, 'siSo' in l) }));
+const dsLopDich = (lop: readonly LopDich[]): LopChon[] => lop.map((l) => ({ id: l.id, ma: l.code, phu: phuLopDich(l, 'siSo' in l) }));
 /** Mockup phần 2: "Còn thiếu: Lý do" ở chân (lý do từng ô vẫn nằm dưới ô); có ô ghi sai (Target 12) → "Cần sửa: …". */
 const conThieuChu = (daBam: boolean, loi: readonly LoiTruong[]) => (daBam && loi.length
   ? [{ nhan: 'Còn thiếu', lyDo: `${loi.every((l) => l.lyDo.startsWith('Chưa')) ? 'Còn thiếu' : 'Cần sửa'}: ${loi.map((l) => l.nhan).join(', ')}` }] : undefined);
 const loiMayChu = (e: any) => e?.message ?? 'Không lưu được — thử lại.';
 const khoiVang = KHOI_VANG;
-
-/** Ô "Lớp chuyển đến": chưa chọn → gõ tên lớp; đã chọn → "mã · dòng phụ" + ✕ (mockup phần 2, như hàng nhóm của Lộ trình tiếp theo). */
-function OLopDich({ ds, value, onChange, ariaLabel, id, invalid, onBlur, disabled }: {
-  ds: NguoiTrongDs[]; value: number | null; onChange: (id: number | null) => void; ariaLabel: string; id?: string; invalid?: boolean; onBlur?: () => void; disabled?: boolean;
-}) {
-  const chon = value === null ? null : ds.find((l) => l.id === value) ?? null;
-  /* Bỏ chọn bằng ✕ → nút biến mất: đưa focus về ô gõ (mở danh sách) thay vì rơi về <body>. */
-  const [vuaBo, setVuaBo] = useState(false);
-  if (chon || (value !== null && disabled)) {
-    return (
-      <div className="field flex items-center justify-between gap-2">
-        <span className="min-w-0 truncate"><span className="text-slate-100">{chon?.ten ?? '—'}</span>{chon?.phu && <span className="text-xs text-slate-500"> · {chon.phu}</span>}</span>
-        {!disabled && <button id={id} type="button" className="btn btn-sm btn-ghost -my-1 h-7 shrink-0 justify-center !py-0 max-sm:-my-2 max-sm:h-11 max-sm:min-h-0 max-sm:w-11"
-          aria-label={`Bỏ chọn ${chon?.ten ?? ''} · ${ariaLabel}`} onClick={() => { setVuaBo(true); onChange(null); }}>✕</button>}
-      </div>
-    );
-  }
-  return (
-    <ChonNguoi value={null} nhom="nhan_vien" choToi={false} choNgoai={false} ds={ds} placeholder="Gõ tên lớp…" ariaLabel={ariaLabel} disabled={disabled} tuMo={vuaBo}
-      id={id} invalid={invalid} onBlur={onBlur} khongKhop={(go) => `Không có lớp khớp “${go}”`}
-      onChange={(v) => v?.kieu === 'tai_khoan' && onChange(v.id)} />
-  );
-}
 
 /** Target + ô tích KCK (§7: chỉ khi em chưa có Target nào) — panel một em và hàng nhiều em. OV-9: giá trị chữ "6.5" · "6.5 KCK" · "KCK". */
 function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
@@ -287,8 +264,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
 
           <Khoi tieuDe={dx ? 'Đề xuất' : 'Lớp chuyển đến'}>
             <Truong nhan="Lớp chuyển đến" batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'lop')}>
-              <OLopDich ds={ds} value={toClassId} onChange={setToClassId} ariaLabel="Lớp chuyển đến"
-                id={lf.oId('lop')} onBlur={lf.roi('lop')} invalid={!!lf.loiCua(loi, 'lop')} disabled={busy} />
+              <ChonLop ds={ds} value={toClassId} onChange={setToClassId} ariaLabel="Lớp chuyển đến"
+                id={lf.oId('lop')} onBlur={lf.roi('lop')} invalid={!!lf.loiCua(loi, 'lop')} tat={busy} />
               {dich && (
                 <span className="mt-1 block text-xs text-slate-500">{[`GVCN ${dich.gvcn ?? 'chưa có'}`, dich.tuan ? `tuần học ${dich.tuan.replace(/^W/, '')}` : null].filter(Boolean).join(' · ')}</span>
               )}
@@ -498,7 +475,7 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
   const oLop = xong ? <span className="text-sm text-ok">Đã quyết định chuyển lớp</span>
     : lopDich.error ? <span className="text-xs text-late">{lopDich.error.message} <button type="button" className="link border-0 bg-transparent p-0" onClick={lopDich.reload}>Thử lại</button></span>
       : lopDich.loading ? <span className="text-xs text-slate-500">Đang tải lớp…</span>
-        : <OLopDich ds={dsLopDich(dsLop)} value={lop} onChange={(id) => onLop(id, !!dsLop.find((l) => l.id === id)?.ft)} ariaLabel={`Lớp chuyển đến của ${e.ten}`} disabled={khoa} invalid={!!loi} />;
+        : <ChonLop ds={dsLopDich(dsLop)} value={lop} onChange={(id) => onLop(id, !!dsLop.find((l) => l.id === id)?.ft)} ariaLabel={`Lớp chuyển đến của ${e.ten}`} tat={khoa} invalid={!!loi} />;
   const oChon = <input type="checkbox" className="mt-1 h-4 w-4" aria-label={`Chọn ${e.ten}`} checked={chon && !xong} disabled={busy || xong} onChange={(ev) => onChon(ev.target.checked)} />;
   const ten = <span className="block min-w-0"><span className="font-semibold text-slate-100">{e.ten}</span><span className="block text-xs text-slate-400">Đã chốt: {DA_CHOT[e.huong]}</span></span>;
   /* I1: Target gọn dưới ô lớp, chỉ khi em chưa có Target nào (§7). */

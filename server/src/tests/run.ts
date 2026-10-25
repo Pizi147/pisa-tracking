@@ -9591,6 +9591,9 @@ await runPrDiemTieuChiTests({ check, checkAsync, assert, assertThrows, conn, TOD
 // ==================================================================== P3 UI-CHUNG (Mới dùng PISA TRACKING? · bỏ Góp ý hàng tuần · menu ⋯ · đầu bảng dính)
 const { runPrUiChungTests } = await import('./prUiChung.tests.ts');
 await runPrUiChungTests({ check, assert, P } as any);
+// ==================================================================== P4 CHON-LOP (một ô chọn lớp gõ → tìm → chọn)
+const { runPrChonLopTests } = await import('./prChonLop.tests.ts');
+await runPrChonLopTests({ check, assert } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
