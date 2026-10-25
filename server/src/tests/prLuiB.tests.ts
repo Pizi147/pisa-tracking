@@ -315,10 +315,11 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   check('LUIb-14 · web Học lại (hồ sơ em): chọn đích Về lớp cũ / Sang lớp mới, Target khi sang Fast Track, Hoàn tác = hoan-tac-hoc-lai, lý do tuỳ chọn', () => {
     const s = doc('web/src/modules/students/StudentManagePanel.tsx');
     const hl = s.slice(s.indexOf('function HocLaiPanel'));
-    assert(s.includes("case 'hoc-lai'") && hl.length > 100, 'thiếu panel Học lại');
+    /* P7: panel Học lại cũ mở từ "Quay lại học" (QuayLaiHoc.tsx, hướng `hoc-lai` của máy chủ). */
+    assert(doc('web/src/modules/students/QuayLaiHoc.tsx').includes('<HocLaiPanel') && hl.length > 100, 'thiếu panel Học lại');
     for (const chu of ['Về lớp cũ', 'Sang lớp mới', 'Lộ trình cũ giữ ở Hành trình', 'Chưa có lớp để học lại']) assert(hl.includes(chu), `thiếu chữ "${chu}"`);
     assert(hl.includes('/hoc-lai`') && hl.includes('/hoc-lai/lop-dich') && hl.includes('moLaiLop: true'), 'phải gọi /hoc-lai và /hoc-lai/lop-dich');
-    assert(/toast\.hoanTac\(`Đã cho \$\{studentName\} học lại/.test(hl) && hl.includes("hoanTacHangLoat('hoc-lai'"), 'Hoàn tác phải đi qua hoan-tac-hoc-lai');
+    assert(/toast\.hoanTac\(`Đã cho \$\{studentName\} quay lại học/.test(hl) && hl.includes("hoanTacHangLoat('hoc-lai'"), 'Hoàn tác phải đi qua hoan-tac-hoc-lai');
     assert(/<Truong nhan="Lý do" tuyChon/.test(hl) && hl.includes('canTarget'), 'Lý do tuỳ chọn + Target khi sang FT');
   });
   check('LUIb-16 · web: chia lô bằng LO_HANG_LOAT_EM, gom ok/failed, dừng khi một lô ném lỗi và ghi "chưa lưu" cho phần còn lại; Hoàn tác gọi việc ngược', () => {
@@ -329,7 +330,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   check('LUIb-17 · web: thanh dính đáy, panel xem trước, ô chọn ở cả bảng FT và bảng lớp thường; đủ chữ đã duyệt; Học viên & Lớp chỉ có ô chọn để Xuất (OV-15h2)', () => {
     const t = doc('web/src/modules/classes/TabHocVienLop.tsx');
     assert(t.includes('Chọn nhiều học viên') && t.includes('useChonNhieu') && t.includes('ThanhChonNhieu') && t.includes("cheDo === 'diem'") && t.includes('canPlanWeek'), 'nút + thanh ở tab Học viên, chỉ Quản lý, chỉ cách xem Điểm');
-    for (const chu of ["'Lưu trữ'", "'Kết thúc học'", "'Huỷ chuyển lớp'"]) assert(t.includes(chu), `thiếu việc ${chu}`);
+    for (const chu of ["'Tạm dừng/ Kết thúc học'", "'Huỷ chuyển lớp'", '<HopTamDungKetThuc']) assert(t.includes(chu), `thiếu việc ${chu}`);   // P7: một mục thay Lưu trữ + Kết thúc học
     const b = doc('web/src/modules/students/chonNhieuHocVien.tsx');
     for (const chu of ['đã chọn', 'Bỏ chọn']) assert(b.includes(chu), `thiếu chữ "${chu}"`);
     assert(b.includes('sticky') && b.includes('bottom-0'), 'thanh phải dính đáy');
@@ -340,9 +341,9 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     /* UI-HV-LOP (khu d, `10` mục 4): Học viên & Lớp bỏ cột tick — "Xuất" lấy đúng phạm vi bộ lọc (không thanh chọn). */
     assert(!/<ThanhChonNhieu/.test(doc('web/src/modules/students/StudentsPage.tsx')), 'Học viên & Lớp không còn thanh chọn');
   });
-  check('LUIb-18 · web Lưu trữ › Học viên: nút Chọn nhiều học viên, thanh dính đáy (Bỏ lưu trữ · Học lại), nút Học lại mỗi dòng mở panel có chọn đích', () => {
+  check('LUIb-18 → P7 · web Lưu trữ › Học viên: nút Chọn nhiều học viên, thanh dính đáy "Quay lại học", nút Quay lại học mỗi dòng đi đúng hướng máy chủ', () => {
     const l = doc('web/src/modules/students/LuuTruPage.tsx');
-    for (const chu of ['Chọn nhiều học viên', "nhan: 'Bỏ lưu trữ'", "nhan: 'Học lại'", 'ThanhChonNhieu', 'XemTruocHangLoatPanel', 'coTheHocLai', 'viec="hoc-lai"']) assert(l.includes(chu), `thiếu "${chu}"`);
+    for (const chu of ['Chọn nhiều học viên', "nhan: t('Quay lại học')", 'ThanhChonNhieu', 'coTheQuayLai', 'useQuayLaiHoc']) assert(l.includes(chu), `thiếu "${chu}"`);
   });
   check('LUIb-19 · web Chuyển tiếp lớp: nút "Huỷ quyết định" trong ô chọn nhiều, xem trước theo hướng, lý do bắt buộc, đi qua chayHangLoat("huy-lenh"), Hoàn tác', () => {
     const t = doc('web/src/modules/classes/TransitionPanel.tsx');

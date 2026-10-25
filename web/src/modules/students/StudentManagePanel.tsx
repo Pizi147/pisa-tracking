@@ -90,6 +90,8 @@ export type ThongTinEm = {
   tvv?: { id: number; ten: string } | null; tvvChon?: NguoiTrongDs[] | null;
   /** OV-10b: liên hệ (SĐT em, phụ huynh). */
   lienHe?: LienHe | null;
+  /** P7: hồ sơ đã ở Lưu trữ (em Tạm dừng → Sửa thông tin chỉ còn liên hệ). */
+  archived?: boolean;
   /** OV-11d (HV-1): đề xuất sửa Target đang chờ Quản lý duyệt (`cuaToi`: người xem đã gửi — Sửa đề xuất). */
   deXuatTarget?: { id: number; moi: string; lyDo: string; cuaToi: boolean } | null;
 };
@@ -124,7 +126,7 @@ export function thongTinEmCua(d: any): ThongTinEm {
   return {
     id: d.id, name: d.fullName, classId: d.currentClass?.id ?? null, dob: d.dob ?? null, email: d.email ?? null,
     consultantName: d.consultantName ?? null, note: d.note ?? null, status: d.status, tvv: d.tvv ?? null, tvvChon: d.tvvChon ?? null,
-    lienHe: d.lienHe ?? null, deXuatTarget: d.deXuatTarget ?? null,
+    lienHe: d.lienHe ?? null, deXuatTarget: d.deXuatTarget ?? null, archived: !!d.archivedAt,
   };
 }
 
@@ -253,8 +255,10 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const quanLy = quyen.canEdit;                                   // QL, GVCN: thêm Tuần bắt đầu, Ghi chú
-  const ghiChu = quanLy || !!quyen.coTheSuaThem;                  // OV-8b: TVV / CX sửa Ghi chú
+  /* P7 [ĐX]: em Tạm dừng ở Lưu trữ — chỉ Email + Liên hệ (TVV gọi mời học lại); máy chủ chặn mọi trường khác (`CAU_LUU_TRU`). */
+  const chiLienHe = student.status === 'inactive' && !!student.archived;
+  const quanLy = quyen.canEdit && !chiLienHe;                     // QL, GVCN: thêm Tuần bắt đầu, Ghi chú
+  const ghiChu = !chiLienHe && (quanLy || !!quyen.coTheSuaThem);   // OV-8b: TVV / CX sửa Ghi chú
   const targetThang = !!quyen.canEditCycle || !!quyen.coTheSuaThem;   // QL / Quản trị · OV-8b: TVV / CX
   const targetDeXuat = quanLy && !targetThang;                    // GVCN
   /* OV-11e → OV-11d (Q8 chủ SP chốt): ô tích KCK chỉ QL / Quản trị / TVV; GVCN, CX, Admin chỉ đọc (máy chủ `reviseTarget` + đề xuất cũng chặn). */
@@ -330,6 +334,16 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         : duKn ? { listening: Number(dv.l), reading: Number(dv.r), writing: Number(dv.w), speaking: Number(dv.s) }
         : { overall: Number(dv.o), listening: kn[0] || null, reading: kn[1] || null, writing: kn[2] || null, speaking: kn[3] || null };
       const tvvId = tvv?.kieu === 'tai_khoan' ? tvv.id : null;
+      if (chiLienHe) {
+        await api.patch(`/students/${student.id}`, {
+          ...(email.trim() !== (student.email ?? '') ? { email: email.trim() } : {}),
+          ...(nhapLienHe ? Object.fromEntries(lhDoi.map((k) => [k, lh[k].trim() || null])) : {}),
+        });
+        for (const k of ['/students', '/hoc-vien-lop']) invalidate(k);
+        toast.push('ok', 'Đã lưu');
+        onDone();
+        return;
+      }
       await api.patch(`/students/${student.id}`, {
         fullName, dob, email: email.trim(),
         ...(tvvId !== (student.tvv?.id ?? null) ? { consultantUserId: tvvId } : {}),
@@ -382,6 +396,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
       }}>
       <Khoi tieuDe="Học viên">
+        {!chiLienHe && <>
         <Truong nhan="Họ tên" batBuoc loi={lf.loiCua(loi, 'ho-ten')}>
           <input className="field w-full" {...lf.o(loi, 'ho-ten')} value={fullName} onChange={(e) => sua(setFullName)(e.target.value)} />
         </Truong>
@@ -389,17 +404,18 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           <ONgay kieu="ngay" toiDa={homNay} id={lf.oId('ngay-sinh')} onBlur={lf.roi('ngay-sinh')} invalid={!!lf.loiCua(loi, 'ngay-sinh')}
             value={dob} onChange={sua(setDob)} />
         </Truong>
+        </>}
         <Truong nhan="Email" batBuoc thieu={!email.trim()} loi={lf.loiCua(loi, 'email')}>
           <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
             value={email} onChange={(e) => sua(setEmail)(e.target.value)} placeholder="Ví dụ: an.nguyen@gmail.com" />
         </Truong>
-        <Truong nhan="TVV" tuyChon loi={lf.loiCua(loi, 'tvv')}
+        {!chiLienHe && <Truong nhan="TVV" tuyChon loi={lf.loiCua(loi, 'tvv')}
           phu={[student.consultantName ? `Ghi cũ: “${student.consultantName}”` : null,
             !(student.tvvChon ?? []).length ? 'Chưa có tài khoản Tư vấn viên — Quản trị tạo ở Tài khoản' : null].filter(Boolean).join(' · ') || undefined}>
           <ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={student.tvvChon ?? []} choTrong="— Chưa chọn —"
             placeholder="Chọn tư vấn viên" ariaLabel="TVV" id={lf.oId('tvv')} invalid={!!lf.loiCua(loi, 'tvv')}
             value={tvv} onChange={sua(setTvv)} khongKhop={(go) => `Không có tư vấn viên khớp “${go}”`} />
-        </Truong>
+        </Truong>}
         {ghiChu && (
           <Truong nhan="Ghi chú" tuyChon>
             <textarea className="field w-full" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -429,7 +445,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           </Truong>
         </Khoi>
       )}
-      {cycle ? (
+      {cycle && !chiLienHe ? (
         <Khoi tieuDe="Lộ trình đang học"
           luat={cycle.ratio
             ? 'Lớp thường: Target và Dự kiến thi chỉ để theo dõi — không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.'

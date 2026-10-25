@@ -111,18 +111,20 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
       {con}
     </section>
   );
-  const nut = <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={tt === 'dang' || (bamLuu && !!lyDoTat)}>{nutChinh}</button>;
+  /* Lớp đang giữ sai loại (máy chủ báo) → nút tắt NGAY kèm lý do (k2); thiếu tên / chưa chọn lớp → báo sau khi bấm. */
+  const tat = !!(xem.data?.loi && !loiTen && !lopKhac) || (bamLuu && !!lyDoTat);
+  const nut = <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={tt === 'dang' || tat}>{nutChinh}</button>;
   return (
     <KhungPanel tieuDe={t('Lộ trình mới')} dau={dau} quayLai={quayLai} onDong={onClose}
       chan={{
-        v3: true, daSua: true, chinh: nut,
-        dongTren: bamLuu && lyDoTat ? <span className="text-[13px] text-slate-400">{lyDoTat}</span> : <TrangThaiLuu tt={tt ?? 'nhap'} loi={loi} onThuLai={() => void luu()} />,
+        daSua: true, chinh: nut,
+        trai: tat && lyDoTat ? <span className="text-[13px] text-slate-400">{lyDoTat}</span> : <TrangThaiLuu tt={tt ?? 'nhap'} loi={loi} onThuLai={() => void luu()} />,
       }}>
       <div className="flex flex-col gap-3.5 pt-3">
         {buoc(1, t('Lộ trình'), (
           <>
             <div role="radiogroup" aria-label={t('Lộ trình')} className="flex flex-wrap gap-1.5">
-              {ROUTE_LO_TRINH_MOI.map((k) => <NutChon key={k} chon={r === k} className="max-sm:flex-1" onClick={() => setRoute(k)}>{k === ROUTE_KHAC ? ROUTE_NAME.KHAC : k}</NutChon>)}
+              {ROUTE_LO_TRINH_MOI.map((k) => <NutChon key={k} chon={r === k} className="max-sm:flex-1" onClick={() => { setRoute(k); setLopMoiId(null); }}>{k === ROUTE_KHAC ? ROUTE_NAME.KHAC : k}</NutChon>)}
             </div>
             {khac && (
               <Truong nhan={t('Tên lộ trình')} batBuoc loi={bamLuu ? loiTen : null}>

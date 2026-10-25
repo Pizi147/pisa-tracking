@@ -280,7 +280,7 @@ export default function StudentDetailPage() {
 
       {/* PR-VAI-b (T65, mockup 24 D1): dải vàng Tạm dừng — đọc TRƯỚC bốn ô vì nó đổi nghĩa mọi con số bên dưới. */}
       <DaiTamDung tamDung={data.dauHoSo.thongTin.tamDung}
-        onQuayLai={data.status !== 'inactive' ? undefined : tamDungSauThi ? () => setQuayLaiBt(true)
+        onQuayLai={data.status !== 'inactive' || data.lopHoc?.chiXem ? undefined : tamDungSauThi ? () => setQuayLaiBt(true)
           : data.lopHoc?.quyen?.quayLai ? () => setViecQuanLy('quay-lai') : undefined} />
 
       {/* PR-CT (mockup 20 — E): dải Sắp chuyển / Đã chuyển ngay dưới dòng thông tin đầu trang; nút theo vai do máy chủ quyết. */}
