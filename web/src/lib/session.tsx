@@ -47,6 +47,8 @@ export type Session = {
   gocNhin?: GocNhin | null;
   /** UX-2 (5): khung có lớp trong phạm vi người xem — công tắc Fast Track / Lớp thường. */
   khungPhamVi?: { ft: boolean; thuong: boolean };
+  /** P14 DICH (N19): máy chủ có khoá dịch và không tắt — hiện nút "Dịch" cạnh chữ GV nhập. */
+  dichBat?: boolean;
 };
 
 export type GocNhin = {

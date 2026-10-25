@@ -197,7 +197,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       const x = dong.get(m.ma);
       return {
         ...m, noiDung: x?.noi_dung ?? null, nguoiGhi: x?.ten_ghi ?? null, ghiLuc: x?.ghi_luc ?? null, dienThay: !!x?.dien_thay, gvbm: gvbmCua(m.ma),
-        lamLai: !!x?.lam_lai,
+        lamLai: !!x?.lam_lai, id: (x?.id ?? null) as number | null,
       };
     });
     const daGhi = mon.filter((m) => m.noiDung && !m.lamLai).length;

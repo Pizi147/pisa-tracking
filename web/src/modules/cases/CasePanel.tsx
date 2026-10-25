@@ -32,6 +32,7 @@ import { NganCase } from '../students/NganCase.tsx';
 import { DongNguyenNhan } from '../yThuc/CaseSosControls.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { ChuDich } from '../../ui/ChuDich.tsx';
 
 /**
  * MỘT VẤN ĐỀ HỌC VỤ (PR-UX3, N-4, mockup 15 §3) — kể theo hai câu người đọc cần: VẤN ĐỀ gì, và ĐÃ LÀM GÌ (các PA, mỗi PA một
@@ -217,14 +218,14 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
         <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-100">
           <TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} />
         </div>
-        {data.summary && <p className="m-0 text-[14px] text-slate-300">{data.summary}</p>}
-        {data.note && <p className="m-0 text-xs text-slate-400">{data.note}</p>}
+        {data.summary && <p className="m-0 text-[14px] text-slate-300"><ChuDich chu={data.summary} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} /></p>}
+        {data.note && <p className="m-0 text-xs text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></p>}
         {(primary || secondary.length > 0 || context.length > 0) && (
           <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-[13px]">
             {(primary || secondary.length > 0) && <>
               <dt className="text-slate-400">{t('Nhóm nguyên nhân')}</dt>
               {/* Hotfix 15/10 (L2): đủ nhóm có số thứ tự + nhận xét (Case MT không có Mô tả — nhận xét của bài là nội dung). */}
-              <dd className="m-0 text-slate-200"><DongNguyenNhan issues={[...(primary ? [primary] : []), ...secondary]} /></dd>
+              <dd className="m-0 text-slate-200"><DongNguyenNhan issues={[...(primary ? [primary] : []), ...secondary]} attemptId={data.attemptId} /></dd>
             </>}
             {context.length > 0 && <>
               <dt className="text-slate-400">{t('Bối cảnh')}</dt>
@@ -369,7 +370,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
           soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
       </div>}
       {!anDau && <DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={onDoi} />}
-      {iv.description && <p className="m-0 text-[14px] text-slate-300">{iv.description}</p>}
+      {iv.description && <p className="m-0 text-[14px] text-slate-300"><ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /></p>}
       {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (
         <p className="m-0 text-xs text-slate-400">{t('PA chung · {x}', { x: bt.mon.map((m) => m.tenMon).join(', ') })}</p>
       )}
@@ -714,7 +715,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
               {f.observerName && t('{ten} ghi', { ten: f.observerName })}
             </span>
           )}
-          {f.note && <span className="block text-slate-300">{f.note}</span>}
+          {f.note && <span className="block text-slate-300"><ChuDich chu={f.note} nguon={{ bang: 'case_followups', id: f.id, cot: 'note' }} /></span>}
           {f.nguoiDay && <span className="block text-xs text-slate-400">{t('Người dạy: {nguoiDay}', { nguoiDay: f.nguoiDay })}</span>}
           {/* OV-12h: Kết quả PA Tutor theo buổi. */}
           {f.buoi?.length > 0 && (
@@ -723,9 +724,9 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
               {f.buoi.map((b: BuoiTutor, i: number) => <DongBuoiTutor key={i} b={b} i={i} />)}
             </ol>
           )}
-          {f.remainingIssue && <span className="block text-xs text-slate-400">{t('Còn tồn / Ghi chú: {remainingIssue}', { remainingIssue: f.remainingIssue })}</span>}
+          {f.remainingIssue && <span className="block text-xs text-slate-400">{t('Còn tồn / Ghi chú')}: <ChuDich chu={f.remainingIssue} nguon={{ bang: 'case_followups', id: f.id, cot: 'remaining_issue' }} /></span>}
           {f.decisionNote && (
-            <span className="block text-xs text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? t('Lý do') : t('Ghi chú')}: {f.decisionNote}</span>
+            <span className="block text-xs text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? t('Lý do') : t('Ghi chú')}: <ChuDich chu={f.decisionNote} nguon={{ bang: 'case_followups', id: f.id, cot: 'decision_note' }} /></span>
           )}
           <MetricPills metrics={f.metrics} ct={data.chuongTrinh ?? null} />
         </>

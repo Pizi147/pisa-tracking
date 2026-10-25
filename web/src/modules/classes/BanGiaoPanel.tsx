@@ -7,6 +7,7 @@ import { Han } from '../../ui/Han.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ChuDich } from '../../ui/ChuDich.tsx';
 import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, ngay, tuanLich, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 
 /**
@@ -186,7 +187,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
                     <abbr title={m.ten} className="font-bold text-slate-300 no-underline">{m.ngan}</abbr>
                     <div className="min-w-0">
                       {m.noiDung ? (
-                        <span className="text-slate-200">{m.noiDung} <span className="text-slate-500">— {m.nguoiGhi}, {ngay(m.ghiLuc, homNay)}{m.dienThay ? ' (điền thay)' : ''}{m.lamLai ? '' : ' ✓'}</span>
+                        <span className="text-slate-200"><ChuDich chu={m.noiDung} nguon={m.id ? { bang: 'ban_giao_mon', id: m.id, cot: 'noi_dung' } : null} /> <span className="text-slate-500">— {m.nguoiGhi}, {ngay(m.ghiLuc, homNay)}{m.dienThay ? ' (điền thay)' : ''}{m.lamLai ? '' : ' ✓'}</span>
                           {m.lamLai && <> <Nhan tone="soon">Cần làm lại</Nhan></>}</span>
                       ) : em.xacNhan ? (
                         <span className="text-slate-500">GVBM chưa bàn giao</span>
@@ -222,6 +223,10 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
                 value={nhap} placeholder={docThoi ? undefined : 'Ví dụ: Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo.'}
                 onChange={(e) => setNhanXet((m) => ({ ...m, [em.lenhId]: e.target.value }))} />
             </Truong>
+            {/* P14 DICH: dịch nhận xét ĐÃ LƯU (chưa gõ đổi) — bản dịch hiện dưới ô, không vào ô; ngoài <label> để nút không bấm nhầm vào ô. */}
+            {em.nhanXetChung && nhap === em.nhanXetChung && (
+              <p className="m-0 -mt-2 whitespace-pre-wrap break-words text-[13px] text-slate-300"><ChuDich chu={em.nhanXetChung} nguon={{ bang: 'lenh_chuyen_lop', id: em.lenhId, cot: 'nhan_xet_chung' }} anGoc /></p>
+            )}
             {em.xacNhan && (
               <p className="m-0 text-xs text-slate-400">
                 Xác nhận bởi {em.xacNhan.boi ?? 'GVCN'}{em.xacNhan.thay ? ' (Quản lý xác nhận thay)' : ''} · {ngay(em.xacNhan.luc, homNay)}

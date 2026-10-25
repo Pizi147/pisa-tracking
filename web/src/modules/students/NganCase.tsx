@@ -124,7 +124,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const chung = { hocVien: hv, lop, quayLai: veNguon ?? { nhan: ten, onClick: veCase }, onClose };
   /* OV-12e: đầu + Bối cảnh panel v3 cho các việc của Case (Ghi kết quả · Thêm PA). */
   const em = data.student ? { id: data.student.id, ten: data.student.name } : null;
-  const nguyenNhan: [string, ReactNode] = [t('Nguyên nhân'), (data.issues ?? []).length ? <DongNguyenNhan issues={data.issues ?? []} /> : null];
+  const nguyenNhan: [string, ReactNode] = [t('Nguyên nhân'), (data.issues ?? []).length ? <DongNguyenNhan issues={data.issues ?? []} attemptId={data.attemptId} /> : null];
 
   if (view.loai === 'ghi-ket-qua') {
     const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);

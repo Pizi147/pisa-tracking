@@ -1907,7 +1907,8 @@ function tamDungTuCua(student: { id: number; status: string } | null | undefined
   return khoangTamDung([student.id])[student.id]?.find((k) => k.den === null)?.tu ?? null;
 }
 
-export function caseDetail(p: Principal, caseId: number) {
+/** Quyền XEM một Case (đường `GET /cases/:id`) — P14 DICH dùng lại đúng hàm này cho chữ của Case / PA / kết quả PA. */
+export function kiemXemCase(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
   /* PR-PA (§8): người giữ việc Kết quả của một PA trong Case xem được Case (vd. chủ Case khi lớp mới chưa phân công môn). */
@@ -1917,6 +1918,12 @@ export function caseDetail(p: Principal, caseId: number) {
   if (!ivCuaCase.some((iv) => (iv.status === 'planned' || iv.status === 'started') && giu.get(iv.id) === p.userId)) {
     require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, 'Case này nằm ngoài phạm vi bạn được xem.');
   }
+  return { c, ivCuaCase, giu };
+}
+
+export function caseDetail(p: Principal, caseId: number) {
+  const conn = db();
+  const { c, ivCuaCase, giu } = kiemXemCase(p, caseId);
   dienMocQuyChe({ caseIds: [caseId] });   // PR-SOS K3-14: mốc quy chế còn trống — có lịch rồi thì điền
 
   const student = conn
