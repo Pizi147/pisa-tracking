@@ -25,7 +25,7 @@ export type QuyetXetLai = 'tiep_tuc' | 'hoc_lai' | 'dung';
 export type EmXetLai = {
   studentId: number; ten: string; lenhId: number; lyDo: { ma: LyDoXetLai['ma']; chu: string; moc: string }; han: string;
   lopHienTai: { id: number; code: string; ft: boolean; ct: string | null; chiNhanhId: number };
-  lopNguon: { id: number; code: string; ct: string | null }; daThiHanh: boolean;
+  lopNguon: { id: number; code: string; ct: string | null }; daThiHanh: boolean; tuanBatDau: string;
   final: { tyLe: number | null; mon: { mon: string; pt: number | null; dat: boolean }[] };
   daChot: { huong: string; chu: string; lopDich: string | null; luc: string; nguoi: string | null; lyDo: string | null };
   goiY: string | null;
@@ -33,6 +33,8 @@ export type EmXetLai = {
   banGiaoGvcnCu: string | null;
   boTro: { mon: string[]; daHoc: number; tong: number; miniTest: { tyLe: number | null; ngayDuKien: string; ngayLam: string | null } } | null;
   nhanXetGvcnMoi: string | null;
+  /** Lần xét lại trước (dòng (d) sau Tiếp tục): chữ + người + ngày. */
+  xetLaiTruoc: { quyetDinh: QuyetXetLai; tuDong: boolean; luc: string; nguoi: string | null } | null;
   /** Quyết định còn sửa được (Học lại mà lệnh mới chưa thi hành) — dòng vẫn hiện để Sửa / Hoàn tác. */
   quyetDinh: { id: number; quyetDinh: QuyetXetLai; lopDich: string | null; tuan: string | null; luc: string; nguoi: string | null } | null;
 };
@@ -133,7 +135,7 @@ function tinhTapXetLai(today: string, chiEm?: number): EmXetLai[] {
       studentId: l.student_id, ten: l.ten, lenhId: l.id, lyDo: { ma: lyDo.ma, chu: ly?.chu ?? '', moc: lyDo.moc ?? '' },
       han: hanXetLai({ ma: lyDo.ma, tuanBatDau: l.tuan_bat_dau, moc: ngayMoc }),
       lopHienTai: { id: l.ht_id, code: l.ht_code, ft: !!l.ht_ft, ct: l.ht_ct ?? null, chiNhanhId: l.ht_cn },
-      lopNguon: { id: l.lop_nguon_id, code: l.nguon_code, ct }, daThiHanh: l.trang_thai === 'da_chuyen',
+      lopNguon: { id: l.lop_nguon_id, code: l.nguon_code, ct }, daThiHanh: l.trang_thai === 'da_chuyen', tuanBatDau: l.tuan_bat_dau,
       final: {
         tyLe: t?.tyLe ?? null,
         mon: (t?.mon ?? []).map((x) => ({ mon: ct ? tenMonNgan(ct, x.skill) : x.skill, pt: x.ratio === null ? null : Math.round(x.ratio * 100), dat: x.ratio !== null && x.ratio >= (t?.nguong ?? 0.7) })),
@@ -147,6 +149,7 @@ function tinhTapXetLai(today: string, chiEm?: number): EmXetLai[] {
       banGiaoGvcnCu: l.nhan_xet_chung ?? null,
       boTro: mt ? { mon: [], daHoc: 0, tong: mt.so_buoi, miniTest: { tyLe: mt.ty_le ?? null, ngayDuKien: mt.ngay_du_kien, ngayLam: mt.ngay_lam ?? null }, nhom: mt.nhom_bo_tro, ct } as any : null,
       nhanXetGvcnMoi: ds.find((x) => x.nhan_xet_gvcn_moi)?.nhan_xet_gvcn_moi ?? null,
+      xetLaiTruoc: ly && quyet[0] ? { quyetDinh: quyet[0].quyet_dinh, tuDong: !!quyet[0].tu_dong, luc: quyet[0].luc, nguoi: quyet[0].nguoi ?? null } : null,
       quyetDinh: suaDuoc && !ly
         ? { id: suaDuoc.id, quyetDinh: 'hoc_lai', lopDich: suaDuoc.lm_code ?? null, tuan: suaDuoc.lm_tuan ?? null, luc: suaDuoc.luc, nguoi: suaDuoc.nguoi ?? null }
         : null,

@@ -39,6 +39,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { DiemKq } from '../../ui/KhuonViec.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
+import { DaiXetLai } from '../classes/PanelXetLai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' } | null;
@@ -281,6 +282,9 @@ export default function StudentDetailPage() {
           const d = data.dai;
           navigate(`/hoc-vien/lop/${d.lopNguon.id}?viec=ban-giao&lenh=${d.lenhId}${k === 'ban-giao-mon' && d.mon ? `&mon=${d.mon.ma}` : ''}`);
         }} />
+
+      {/* P9a: dải vàng Xét lại lộ trình (QL quyết · GVCN lớp đang học xem) — panel một em tại trang. */}
+      {data.currentClass && <DaiXetLai classId={data.currentClass.id} studentId={data.id} />}
 
       {/* UI-HO-SO-HV: ô điểm to Overall · L · R · W1 · W2 · S — bấm đổi kỹ năng của Hành trình + Case & PA (khu c `.diem-dau`). */}
       {cy && skillRows && <DiemDau rows={skillRows} attempts={data.attempts} ketQuaId={data.dauHoSo?.o?.ketQua?.kq?.attemptId ?? null} chon={chon} onChon={chonKn} homNay={homNay} />}

@@ -30,6 +30,7 @@ import { dienBanChupLop } from '../migrate/prOv6b1.ts';
 import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
 import { buildDuyetDemo } from './duyetSeed.ts';
 import { buildCtDemo } from './ctSeed.ts';
+import { buildXetLaiDemo } from './xetLaiSeed.ts';
 import { buNgayPb2b, buildPb2bDemo } from './pb2bSeed.ts';
 import { dienNguocBanChup } from '../migrate/prTk.ts';
 import { migratePrOv1c } from '../migrate/prOv1c.ts';
@@ -289,6 +290,8 @@ export function runSeed() {
     const duyet = buildDuyetDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* PR-CT: lệnh chuyển lớp + bàn giao (6 kịch bản + 1 lệnh đã chuyển) — SAU bộ demo Chờ duyệt, tự quét Báo lên ở cuối. */
     const ct = buildCtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /* P9a XET-LAI: MB FOU 25 → MB BE 05 (3 em Final chưa khớp hướng) + 1 lệnh chưa thi hành — SAU bộ PR-CT. */
+    buildXetLaiDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* PR-Pb2-b (D18): bảng Phân tích giáo viên — 5 GV mới, MB FT 105, MB FOU 14 / 16 hai giáo viên. SAU bộ PR-CT, TRƯỚC phần bù ngày. */
     buildPb2bDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* PR-TK: bộ demo dựng lộ trình đã đóng bằng SQL thẳng — điền ngược bản chụp (cùng hàm với migrate). Đứng SAU mọi bộ demo. */

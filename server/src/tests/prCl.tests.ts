@@ -589,7 +589,7 @@ export async function runPrClTests(t: YThucTestKit) {
     }
   });
 
-  await checkAsync('CL-w2 · web: ChuyenLopPanel một ô gõ tên lớp (ChonNguoi ds + phuLopDich), không <select / ChonThang / PATCH, khối Khi chuyển từ máy chủ; nhiều em qua /transfer; ClassOverviewPage ?viec=xet-lai', async () => {
+  await checkAsync('CL-w2 · web: ChuyenLopPanel một ô gõ tên lớp (ChonNguoi ds + phuLopDich), không <select / ChonThang / PATCH, khối Khi chuyển từ máy chủ; ClassOverviewPage ?viec=xet-lai → PanelXetLai', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const { fileURLToPath } = await import('node:url');
@@ -598,9 +598,9 @@ export async function runPrClTests(t: YThucTestKit) {
     const s = doc('web/src/modules/students/ChuyenLopPanel.tsx');
     assert(!/<select/.test(s) && !/ChonThang/.test(s) && !/api\.patch\(`\/lenh-chuyen/.test(s) && !/ngayThi/.test(s), 'còn select / ChonThang / PATCH / ngayThi');
     assert(/<ChonLop[\s\S]{0,200}ds=\{/.test(s) && /phuLopDich\(/.test(s) && /\.khiChuyen/.test(s) && /canhBao/.test(s), 'thiếu ô gõ tên lớp / khối Khi chuyển máy chủ');
-    assert(/export function ChuyenLopNhieuEm/.test(s) && /xet-lai-lo-trinh/.test(s) && /chonGuiNhieuEm\(/.test(s) && /TOI_DA_NHIEU_EM/.test(s), 'thiếu panel nhiều em');
-    assert(/ponytail:/.test(s), 'nhiều em: chú thích ponytail (mỗi em một lời gọi)');
-    assert(/v === 'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở ?viec=xet-lai');
+    /* P9a: panel nhiều em cũ gỡ — `?viec=xet-lai` mở PanelXetLai (prXetLai XL-w). */
+    assert(!/export function ChuyenLopNhieuEm/.test(s), 'ChuyenLopNhieuEm phải gỡ (P9a)');
+    assert(/PanelXetLai/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')) && /v === 'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở PanelXetLai ở ?viec=xet-lai');
     /* OV-3b: PanelCuoiKhoa đã xoá (lớp thường dùng cách xem "Lộ trình tiếp theo"); TransitionPanel chỉ còn lớp FT; OTuan, OMt0 vẫn export cho BangLoTrinhTiep / ChuyenLopPanel. */
     const tp = doc('web/src/modules/classes/TransitionPanel.tsx');
     assert(!/cheDo|LUOI_THUONG|NORMAL_LADDER|deXuatGvcn|loTrinhTiep|Hệ thống gợi ý|Dự kiến thi|kieu="thang"|chuHopKetLuan|'Lên FT'|ATTEMPT_KIND_SHORT|[^.\w]ft \?|!ft\b/.test(tp), 'TransitionPanel còn nhánh lớp thường');

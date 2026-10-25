@@ -13,7 +13,7 @@ import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
 import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
-import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
+import { PanelXetLai, XetLaiCtx, duongXetLai, type EmXetLai } from './PanelXetLai.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { ThongTinLopPanel } from './ThongTinLopPanel.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
@@ -45,7 +45,8 @@ export default function ClassOverviewPage() {
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
-  const [xetLai, setXetLai] = useState(false);
+  /** P9a: panel Xét lại lộ trình — `studentId` null = cả lớp (việc), số = một em (chip trên dòng). */
+  const [xetLai, setXetLai] = useState<{ studentId: number | null } | null>(null);
   /** PR-DL → PR-OV3a: khối "Điểm Test của lớp" cuối trang — mở sẵn, vẫn thu gọn được. UI-HO-SO-LOP: GIỮ vị trí V4 ([XM] truy vết V5 ghi "gập, chỉ tab Học viên"). */
   /* UI-HO-SO-LOP (chủ SP 23/10, [XM] T6): khối điểm GẬP sẵn, nhớ lần mở / gập (máy này). */
   const [moDiem, setMoDiem] = useState(() => { try { return localStorage.getItem('pisa.khoiDiemLop') === '1'; } catch { return false; } });
@@ -66,6 +67,9 @@ export default function ClassOverviewPage() {
   const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
   /* Danh sách em cho ô chọn học viên của "+ Case" — chỉ nạp khi mở. */
   const roster = useApi<any[]>(classId && viec === 'case' ? `/classes/${classId}/roster` : null, [classId, viec]);
+  /* P9a: em có dòng Xét lại → chip "Xét lại" trên dòng em (QL + GVCN lớp này; người khác nhận em: []). */
+  const xl = useApi<{ em: EmXetLai[] }>(classId ? duongXetLai(Number(classId)) : null, [classId]);
+  const coXetLai = new Set((xl.data?.em ?? []).filter((e) => !e.quyetDinh).map((e) => e.studentId));
 
   useEffect(() => {
     if (periodId === null && periods.data?.length && homNay) {
@@ -90,9 +94,9 @@ export default function ClassOverviewPage() {
       setViec(v);
       doiThamSo({ viec: null });
     } else if (data && v === 'xet-lai') {
-      /* PR-CL: việc QL "Xét lại lộ trình · {lớp} · n em" → Chuyển lớp NHIỀU em, chọn sẵn các em. Trang này là lớp HIỆN TẠI của em
-         (QL chi nhánh lớp này); máy chủ lọc theo quyền sửa lớp, người không có quyền thấy "Không còn em cần xét lại." */
-      setXetLai(true);
+      /* P9a: việc QL "Xét lại lộ trình · {lớp} · n em" → panel Xét lại cả lớp. Trang này là lớp em ĐANG học (QL chi nhánh lớp này);
+         máy chủ lọc theo quyền, người không có quyền thấy "Không còn em cần xét lại." */
+      setXetLai({ studentId: null });
       doiThamSo({ viec: null });
     } else if (data && v === 'ban-giao') {
       /* PR-CT: việc Bàn giao (Công việc) và nút ở hồ sơ HV — `?viec=ban-giao[&mon=][&lenh=]`. Máy chủ chặn người không có quyền đọc phiếu. */
@@ -126,9 +130,10 @@ export default function ClassOverviewPage() {
     if (thuong && (v === 'lo-trinh-ca-lop' || v === 'chuyen-tiep')) doiThamSo({ tab: null, 'che-do': 'lo-trinh' });
     else setViec(v);
   };
-  const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); };
+  const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); xl.reload(); };
 
   return (
+    <XetLaiCtx.Provider value={{ co: coXetLai, mo: (sid) => setXetLai({ studentId: sid }) }}>
     <div className="page space-y-4">
       <DauTrangLop data={data} onViec={moViec}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
@@ -153,7 +158,7 @@ export default function ClassOverviewPage() {
       {data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
-      {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}
+      {xetLai && <PanelXetLai classId={data.id} studentId={xetLai.studentId} onClose={() => setXetLai(null)} onDone={xong} />}
       {viec === 'lich-su' && <LichSuThayDoi loai="lop" id={data.id} dong2={[data.code]} onClose={dong} />}
       {viec === 'lich-su-gop-y' && <LichSuThayDoi loai="gop-y" id={data.id} dong2={[t('Góp ý hàng tuần'), data.code]} onClose={dong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
@@ -183,6 +188,7 @@ export default function ClassOverviewPage() {
         students={(roster.data ?? []).filter((r: any) => !r.archived).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null }))}
         onPickStudent={setCaseFor} onDone={() => { dong(); setCaseFor(0); xong(); }} />
     </div>
+    </XetLaiCtx.Provider>
   );
 }
 

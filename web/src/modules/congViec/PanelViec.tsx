@@ -1,3 +1,4 @@
+import { PanelXetLai } from '../classes/PanelXetLai.tsx';
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
@@ -153,6 +154,9 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
           onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
       }
       return <SuaThongTinMotEm key={it.key} studentId={it.studentId!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
+    /* P9a: thanh Việc cần làm ở hồ sơ lớp — panel Xét lại tại chỗ (ở Công việc: "Xét lại ›" đổi trang, `lamTaiCho` = false). */
+    case 'xet_lai_lo_trinh':
+      return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;
     case 'no_owner':
       return <PanelPhanCongMon key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     default:
