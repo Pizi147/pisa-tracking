@@ -49,6 +49,32 @@ export async function runPrDichTests(t: any) {
     } finally { conn.exec('ROLLBACK TO dich2; RELEASE dich2'); }
   });
 
+  check('DICH-9 · web: mọi nơi đọc chữ GV nhập dùng ChuDich với (bảng, cột) trong danh sách; ChuDich không gửi chữ; cờ phiên dichBat', () => {
+    const cd = doc('web/src/ui/ChuDich.tsx');
+    assert(/api\.post<[^>]+>\('\/dich', \{ \.\.\.nguon, den: NGON_NGU \}\)/.test(cd), 'ChuDich phải chỉ gửi nguồn + đích');
+    assert(cd.includes('session?.dichBat') && cd.includes('canDich(goc, NGON_NGU)'), 'ChuDich thiếu điều kiện hiện nút');
+    for (const k of ["t('Dịch')", "t('Xem bản gốc')", "t('Thử lại')", "t('Đang dịch…')"]) assert(cd.includes(k), `ChuDich thiếu ${k}`);
+    const en = doc('shared/i18n/en/p14Dich.ts');
+    for (const k of ['Dịch', 'Xem bản gốc', 'Dịch đang tắt.', 'Bạn đã hết lượt dịch hôm nay.', 'Đã hết lượt dịch hôm nay của trung tâm.', 'Chưa dịch được. Bản gốc vẫn giữ — thử lại sau.', 'Chỗ này không dịch được.', 'Không có chữ để dịch.']) {
+      assert(en.includes(`'${k}':`), `thiếu khoá EN "${k}"`);
+    }
+    const noi: [string, string[]][] = [
+      ['web/src/modules/fasttrack/MockDetailPage.tsx', ['assessment_scores.comment', 'assessment_scores.nhan_xet_phu_trach']],
+      ['web/src/modules/fasttrack/HopNhapDiem.tsx', ['assessment_scores.nhan_xet_phu_trach']],
+      ['web/src/modules/cham/LuoiThuong.tsx', ['assessment_scores.comment']],
+      ['web/src/modules/cham/MotKyNang.tsx', ['assessment_scores.comment']],
+      ['web/src/modules/cases/CasePanel.tsx', ['sos_cases.summary', 'sos_cases.note', 'case_interventions.description', 'case_followups.note', 'case_followups.remaining_issue', 'case_followups.decision_note']],
+      ['web/src/modules/yThuc/CaseSosControls.tsx', ['case_issues.observation', 'assessment_scores.comment', 'assessment_scores.nhan_xet_phu_trach']],
+      ['web/src/modules/classes/BanGiaoPanel.tsx', ['ban_giao_mon.noi_dung', 'lenh_chuyen_lop.nhan_xet_chung']],
+    ];
+    for (const [tep, can] of noi) {
+      const s = doc(tep);
+      const co = new Set([...s.matchAll(/bang: '(\w+)', id: [^,]+, cot: '(\w+)'/g)].map((m) => `${m[1]}.${m[2]}`));
+      for (const x of can) assert(co.has(x), `${tep} thiếu nút Dịch cho ${x}`);
+      for (const x of co) { const [b, c] = x.split('.'); assert(svc.NGUON_DICH[b]?.cot.includes(c), `${tep}: ${x} ngoài danh sách máy chủ`); }
+    }
+  });
+
   /* ---------- dựng: một Case lớp MB FT 101, GV ngoài lớp, fetch giả ghi lại thân gửi ---------- */
   const env0 = { ...process.env };
   const datEnv = (o: Record<string, string | undefined>) => { for (const [k, v] of Object.entries(o)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; } };
