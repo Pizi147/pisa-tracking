@@ -57,18 +57,19 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     v: all('SELECT * FROM violations WHERE student_id = ? ORDER BY id', sid),
   });
 
-  check('OV11d-1 · HV-10: GVCN Tạm dừng em lớp mình → vẫn sửa hồ sơ, xử lý Ý thức, Quay lại học (GVCN lớp khác 403); ⋯ ghi "Thôi học"', () => thu(() => {
+  check('OV11d-1 → P7 · HV-10: GVCN Tạm dừng em lớp mình → em vào Lưu trữ: chỉ sửa thông tin liên hệ ([ĐX]), xử lý Ý thức, Quay lại học (GVCN lớp khác 403); ⋯ một mục "Tạm dừng/ Kết thúc học"', () => thu(() => {
     const sid = emFt();
     students.setStudentStatus(GVCN, sid, 'inactive', TODAY, 'Thử Tạm dừng OV11d');
     xoaNho();
     assert(one('SELECT status FROM students WHERE id = ?', sid).status === 'inactive', 'chưa Tạm dừng');
-    students.updateStudent(GVCN, sid, { note: 'Ghi chú sau Tạm dừng' });
-    assert(one('SELECT note FROM students WHERE id = ?', sid).note === 'Ghi chú sau Tạm dừng', 'GVCN phải sửa được hồ sơ em Tạm dừng');
+    assert(loi(() => students.updateStudent(GVCN, sid, { note: 'Ghi chú sau Tạm dừng' }))?.message === d.CAU_LUU_TRU, 'P7: hồ sơ em Tạm dừng (Lưu trữ) chỉ xem');
+    students.updateStudent(GVCN, sid, { parentPhone: '0912345678' });
+    assert(one('SELECT parent_phone FROM students WHERE id = ?', sid).parent_phone === '0912345678', 'P7 [ĐX]: sửa được thông tin liên hệ em Tạm dừng');
     assert(yThuc.canManageDiscipline(GVCN, sid), 'GVCN phải xử lý được Ý thức em Tạm dừng');
     const hs = profile.studentProfile(GVCN, sid);
     assert(hs.viewer.canEdit && hs.lopHoc.quyen.quayLai && hs.lopHoc.quyen.ketThuc, `cờ quyền: ${JSON.stringify({ e: hs.viewer.canEdit, q: hs.lopHoc.quyen })}`);
     const muc = d.mucQuanLyHocVien({ canEdit: true, lopHoc: hs.lopHoc, cycle: hs.cycle, status: hs.status });
-    assert(muc.find((m: any) => m.key === 'tam-dung-thoi-hoc')?.nhan === 'Thôi học' && muc.some((m: any) => m.key === 'quay-lai'), JSON.stringify(muc.map((m: any) => m.nhan)));
+    assert(muc.find((m: any) => m.key === 'tam-dung-ket-thuc')?.nhan === 'Tạm dừng/ Kết thúc học' && muc.some((m: any) => m.key === 'quay-lai'), JSON.stringify(muc.map((m: any) => m.nhan)));
     assert(loi(() => students.updateStudent(GVCN_KHAC, sid, { note: 'x' }))?.status === 403, 'GVCN lớp khác phải 403');
     assert(!yThuc.canManageDiscipline(GVCN_KHAC, sid), 'GVCN lớp khác không xử lý Ý thức');
     /* rà bảo mật: em Tạm dừng không đi nhánh "xếp lớp lần đầu" — GVCN gọi thẳng API chuyển em sang lớp khác mình chủ nhiệm → 403 */

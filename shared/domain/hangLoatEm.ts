@@ -1,12 +1,14 @@
 /**
- * LÀM NHIỀU HỌC VIÊN MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại · Huỷ chuyển lớp · Khôi phục chuyển lớp · Xoá (OV-12a).
+ * LÀM NHIỀU HỌC VIÊN MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Tạm dừng (P7) · Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại · Huỷ chuyển lớp · Khôi phục chuyển lớp · Xoá (OV-12a).
+ * P7 (N11): web chỉ bày "Tạm dừng/ Kết thúc học" (`tam-dung` / `ket-thuc` theo ô "Có thể quay lại học"); Lưu trữ / Bỏ lưu trữ / Học lại giữ cho API cũ.
  * Chỉ Quản lý / Quản trị.
  * MỘT nguồn cho máy chủ (`students/hangLoat.ts`) và web (`XemTruocHangLoatPanel.tsx`): tên việc, nhãn, việc ngược của nút Hoàn tác, trần.
  */
-export const VIEC_HANG_LOAT = ['ket-thuc', 'luu-tru', 'bo-luu-tru', 'hoc-lai', 'huy-lenh', 'khoi-phuc-lenh', 'hoan-tac-ket-thuc', 'hoan-tac-hoc-lai', 'xoa'] as const;
+export const VIEC_HANG_LOAT = ['tam-dung', 'ket-thuc', 'luu-tru', 'bo-luu-tru', 'hoc-lai', 'huy-lenh', 'khoi-phuc-lenh', 'hoan-tac-tam-dung', 'hoan-tac-ket-thuc', 'hoan-tac-hoc-lai', 'xoa'] as const;
 export type ViecHangLoat = (typeof VIEC_HANG_LOAT)[number];
 
 export const NHAN_VIEC_HANG_LOAT: Record<ViecHangLoat, string> = {
+  'tam-dung': 'Tạm dừng', 'hoan-tac-tam-dung': 'Hoàn tác Tạm dừng',
   'ket-thuc': 'Kết thúc học', 'luu-tru': 'Lưu trữ', 'bo-luu-tru': 'Bỏ lưu trữ', 'hoc-lai': 'Học lại',
   'huy-lenh': 'Huỷ chuyển lớp', 'khoi-phuc-lenh': 'Khôi phục chuyển lớp',
   'hoan-tac-ket-thuc': 'Hoàn tác Kết thúc học', 'hoan-tac-hoc-lai': 'Hoàn tác Học lại', xoa: 'Xoá',
@@ -17,6 +19,7 @@ export const NHAN_VIEC_HANG_LOAT: Record<ViecHangLoat, string> = {
  * gỡ đúng ghi danh / lộ trình mới — khác với bấm Học lại (chấp nhận Case đã đóng) hay Kết thúc học lần nữa.
  */
 export const VIEC_NGUOC: Record<Exclude<ViecHangLoat, 'xoa'>, ViecHangLoat> = {
+  'tam-dung': 'hoan-tac-tam-dung', 'hoan-tac-tam-dung': 'tam-dung',
   'ket-thuc': 'hoan-tac-ket-thuc', 'hoc-lai': 'hoan-tac-hoc-lai', 'luu-tru': 'bo-luu-tru', 'bo-luu-tru': 'luu-tru', 'huy-lenh': 'khoi-phuc-lenh', 'khoi-phuc-lenh': 'huy-lenh',
   'hoan-tac-ket-thuc': 'ket-thuc', 'hoan-tac-hoc-lai': 'hoc-lai',
 };
@@ -44,6 +47,8 @@ export type XemTruocHangLoat = {
   viec: ViecHangLoat; rows: DongXemTruoc[];
   tong: { duoc: number; boQua: number; caseDong: number; paHuy: number; lenhHuy: number; lopMoLai: string[]; theoHuong: Record<string, number>;
     /** OV-12a, chỉ Xoá: dữ liệu sẽ mất của cả lô ("Lượt Test 12", "Điểm đã nhập 40"…). */
-    mat?: { nhan: string; so: number }[] };
+    mat?: { nhan: string; so: number }[];
+    /** P7, chỉ Tạm dừng / Kết thúc học: khối "Khi lưu, web sẽ" của cả lô (`tomTatTrangThai` — cùng hàm hộp một em). */
+    tomTat?: string[] };
 };
 export type KetQuaHangLoat = { ok: number[]; failed: { studentId: number; message: string }[] };

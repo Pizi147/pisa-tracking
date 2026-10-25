@@ -194,7 +194,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(maLoi(() => hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: Array.from({ length: 9 }, (_, i) => i + 1), lyDo: 'x' })) === 400, '9 học viên một lần ghi');
     assert(maLoi(() => hl.xemTruoc(P.mbManager, { viec: 'ket-thuc', studentIds: Array.from({ length: 201 }, (_, i) => i + 1) })) === 400, '201 học viên xem trước');
     assert(maLoi(() => hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [] })) === 400 && maLoi(() => hl.chay(P.mbManager, { viec: 'xoa', studentIds: [1] })) === 400, 'rỗng / việc lạ');
-    assert(maLoi(() => hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: dangHocTrong('MB FOU 12', 1) })) === 400, 'Kết thúc học không lý do → 400');
+    /* P7 (k2): lý do không bắt buộc ở hộp "Tạm dừng/ Kết thúc học" — hàng loạt cùng luật một em. */
   }));
 
   /** OV-8a: Kết thúc học em FT chưa Lưu trữ (chờ QL chọn Bước tiếp) — phép kiểm Lưu trữ dùng nút Lưu trữ tay của QL (đã có từ RB-9). */
@@ -269,7 +269,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   }));
 
   // ---------------------------------------------------------------- Task 5 · cờ ở Lưu trữ, Quản lý kết thúc lớp
-  await checkAsync('LUIb-12 · Lưu trữ: cờ coTheMoLai (lớp, QL đúng chi nhánh / QT) và coTheHocLai (học viên); GVCN false', () => thu(async () => {
+  await checkAsync('LUIb-12 · Lưu trữ: cờ coTheMoLai (lớp, QL đúng chi nhánh / QT) và coTheQuayLai (P7 — học viên); GVCN false', () => thu(async () => {
     const lt: any = await import('../classes/luuTru.ts');
     const lop = classId('MB FOU 12');
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(TODAY, lop);
@@ -281,7 +281,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     svc.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Nghỉ học');
     luuTruTay(sid);
     const hv = (p: any) => lt.danhSachLuuTru(p, {}).hocVien.find((x: any) => x.id === sid);
-    assert(hv(P.mbManager).coTheHocLai === true && hv(P.admin).coTheHocLai === true, 'QL / QT thấy nút Học lại');
+    assert(hv(P.mbManager).coTheQuayLai === true && hv(P.admin).coTheQuayLai === true, 'QL / QT thấy nút Quay lại học');
   }));
 
   await checkAsync('LUIb-13 · Quản lý kết thúc lớp không còn học viên được, mở lại được; GVCN 403; Xoá lớp có dữ liệu 400 (OV-12a: QL xoá được lớp trống); viewer.coTheMoLaiLop theo quyền', () => thu(async () => {

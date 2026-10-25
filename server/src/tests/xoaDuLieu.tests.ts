@@ -68,12 +68,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(JSON.parse(audit.after_json).archivedAt === ngay, `audit student.status thiếu archivedAt: ${audit.after_json}`);
   });
 
-  check('PR-XOA L2 · Tạm dừng (inactive) KHÔNG lưu trữ; Quay lại học cũng không', () => {
+  check('PR-XOA L2 → P7 (N11) · Tạm dừng (inactive) VÀO Lưu trữ; Quay lại học ra khỏi Lưu trữ', () => {
     const sid = taoHV(taoLop(3));
     studentsSvc.setStudentStatus(P.mbManager, sid, 'inactive', TODAY, 'Ốm');
-    assert(hv(sid).archived_at === null, `Tạm dừng không được lưu trữ: ${JSON.stringify(hv(sid))}`);
+    assert(hv(sid).archived_at === TODAY, `Tạm dừng phải vào Lưu trữ: ${JSON.stringify(hv(sid))}`);
     studentsSvc.setStudentStatus(P.mbManager, sid, 'active', TODAY);
-    assert(hv(sid).archived_at === null, 'Quay lại học không được lưu trữ');
+    assert(hv(sid).archived_at === null, 'Quay lại học ra khỏi Lưu trữ');
   });
 
   check('PR-XOA L3 · Chuyển tiếp lớp › Dừng học hẳn → em thôi học và đã ở Lưu trữ', () => {

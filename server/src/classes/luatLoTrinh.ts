@@ -313,7 +313,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
       const giu = (conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status = 'paused'`).all(d.sid) as any[]).map((r) => r.id as number);
       for (const id of giu) conn.prepare(`UPDATE enrollments SET status = 'completed', ended_at = ?, end_reason = ?, end_kind = NULL WHERE id = ?`).run(d.ngay, d.lyDo ?? null, id);
       const cnCu = (conn.prepare('SELECT branch_id b FROM students WHERE id = ?').get(d.sid) as any)?.b ?? null;
-      const quayLai = giu.length > 0 && conn.prepare(`UPDATE students SET status = 'active' WHERE id = ? AND status = 'inactive'`).run(d.sid).changes > 0;
+      const quayLai = giu.length > 0 && conn.prepare(`UPDATE students SET status = 'active', archived_at = NULL WHERE id = ? AND status = 'inactive'`).run(d.sid).changes > 0;   // P7: tạm dừng ở Lưu trữ
       const insEnr = conn
         .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
         .run(d.sid, d.toClassId, d.ngay, nowIso());

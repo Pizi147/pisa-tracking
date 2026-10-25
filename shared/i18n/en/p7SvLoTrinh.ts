@@ -3,4 +3,6 @@ export const EN_P7_SV_LO_TRINH = {
   'Tạm dừng/ Kết thúc học': 'Pause / End study',
   'em vào Lưu trữ · tạm dừng giữ lớp': 'student goes to Archive · pausing keeps the class seat',
   'Kết thúc lộ trình': 'Route ended',
+  'Em đã lưu trữ — Quay lại học trước khi nhập điểm.': 'The student is archived — use Back to study before entering scores.',
+  'Đã lưu trữ — Quay lại học trước rồi sửa.': 'Archived — use Back to study first, then edit.',
 };

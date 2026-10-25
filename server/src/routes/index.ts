@@ -87,6 +87,7 @@ import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
 import * as hangLoatSvc from '../students/hangLoat.ts';
+import * as trangThaiHvSvc from '../students/trangThaiHv.ts';
 import * as lichSuSuaSvc from '../students/lichSuSua.ts';
 import * as lichSuSvc from '../platform/lichSu.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
@@ -2621,8 +2622,20 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const status = req.body?.status;
   if (!['active', 'inactive', 'finished'].includes(status)) throw badRequest('Trạng thái không hợp lệ.');
-  return studentSvc.setStudentStatus(principalOf(req), pInt(req, 'id'), status,
-    req.body?.date ?? demoToday(), req.body?.reason, req.body?.endKind ?? null);
+  /* P7: em có quyết định chuyển lớp chờ → không Tạm dừng / Kết thúc học (câu chặn + bước tiếp). */
+  return trangThaiHvSvc.doiTrangThai(principalOf(req), pInt(req, 'id'), { status, date: req.body?.date ?? demoToday(), reason: req.body?.reason, endKind: req.body?.endKind ?? null });
+}));
+/** P7 (N11, k2): "Khi lưu, web sẽ" của hộp Tạm dừng/ Kết thúc học (`ketThuc=1` = ô "Có thể quay lại học" tắt) + câu chặn nếu có. */
+api.get('/students/:id/trang-thai/xem-truoc', requireAuth, wrap((req) => trangThaiHvSvc.xemTruocTrangThai(principalOf(req), pInt(req, 'id'), qStr(req, 'ketThuc') === '1')));
+/** P7 (N11, N22 ⑤, k5): Quay lại học từ Lưu trữ — hướng (lớp cũ · chọn lớp · Lộ trình mới · Học lại) + lớp gợi ý; làm; Hoàn tác (lớp cũ). */
+api.get('/students/:id/quay-lai', requireAuth, wrap((req) => trangThaiHvSvc.thongTinQuayLai(principalOf(req), pInt(req, 'id'))));
+api.post('/students/:id/quay-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return trangThaiHvSvc.quayLaiHoc(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.post('/students/:id/hoan-tac-quay-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return trangThaiHvSvc.hoanTacQuayLai(principalOf(req), pInt(req, 'id'));
 }));
 
 /** OV-11d (HV-21): Hoàn tác Tạm dừng — trả nguyên trạng, không tính lại hạn (ai Tạm dừng được thì hoàn tác được). */

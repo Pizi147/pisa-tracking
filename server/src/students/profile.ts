@@ -20,6 +20,13 @@ import { standingFor, standingLine } from './standing.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { lichMtCua, missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
+/** P7 (N11): `lopHocCua` (tệp của P9, không sửa ở đây) coi Lưu trữ = đã kết thúc; em Tạm dừng nay cũng ở Lưu trữ → Quay lại học + Kết thúc học theo quyền đổi trạng thái (máy chủ vẫn kiểm). */
+function lopHocP7(p: Principal, studentId: number, current: any, status: string) {
+  const l = lopHocCua(p, studentId, current);
+  if (!l.chiXem || status !== 'inactive') return l;
+  const sua = can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
+  return { ...l, quyen: { ...l.quyen, quayLai: sua, ketThuc: sua, hocLai: false, boLuuTru: false } };
+}
 import { daiHocVien } from '../classes/daiChuyenLop.ts';
 import { cuoiKhoaTheoHocVien, emConMiniTest, emLenFtTu, miniTestCuaHocVien, quyenGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
@@ -1057,7 +1064,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       /** Kỹ năng dưới kỳ vọng ở đợt gần nhất (tên ngắn) — dựng từ CÙNG bảng kỹ năng bên dưới, hai chỗ không nói ngược nhau (mục 4.1). */
       duoi: board.rows.filter((r) => r.missed === true).map((r) => (r.short ?? r.label) as string),
     },
-    lopHoc: lopHocCua(p, studentId, current),
+    lopHoc: lopHocP7(p, studentId, current, s.status),
     /** OV-11d (HV-1): đề xuất sửa Target đang chờ Quản lý duyệt — Sửa thông tin hiện "Đang chờ duyệt: 7.0", người gửi Sửa đề xuất (không gửi trùng). */
     deXuatTarget: (() => {
       const r = conn.prepare(`SELECT id, nguoi_xin, ly_do, du_lieu FROM yeu_cau_duyet
