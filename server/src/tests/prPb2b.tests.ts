@@ -427,9 +427,17 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const sau = hangCua(pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }), P.lrTeacher.userId);
     assert((sau.tienBo.k === 'so' ? sau.tienBo.tong : 0) === tb1 - 1, `bỏ bài trước → bớt một mục: ${tb1} → ${JSON.stringify(sau.tienBo)}`);
     const kq1 = hL.ketQua.listening.tong;
+    /* P12 (E6): bỏ KCK + đặt Target ở LỘ TRÌNH sau lượt không viết lại lượt đã có điểm; Target / KCK LÚC LƯỢT mới quyết định. */
     conn.prepare(`UPDATE learning_cycles SET khong_cam_ket = 0, target_score = 6.5 WHERE id = ?`).run(e4.cy);
+    const chup = conn.prepare(`SELECT kck_at_attempt AS k, target_at_attempt AS t FROM assessment_attempts WHERE id = ?`).get(kck.id) as any;
+    conn.prepare(`UPDATE assessment_attempts SET kck_at_attempt = 1 WHERE id = ?`).run(kck.id);
+    const kqLt = hangCua(pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }), P.lrTeacher.userId).ketQua.listening.tong;
+    assert(kqLt === kq1, `đổi lộ trình sau lượt không đổi kỳ đó: ${kq1} → ${kqLt}`);
+    conn.prepare(`UPDATE assessment_attempts SET kck_at_attempt = 0, target_at_attempt = 6.5 WHERE id = ?`).run(kck.id);
     const kq2 = hangCua(pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }), P.lrTeacher.userId).ketQua.listening.tong;
-    assert(kq2 === kq1 + 1, `em KCK không tính, có Target thì tính: ${kq1} → ${kq2}`);
+    assert(kq2 === kq1 + 1, `lượt KCK không tính, lượt có Target thì tính: ${kq1} → ${kq2}`);
+    /* Ghi thật (không rollback) — trả cột chụp của lượt như cũ: ảnh chụp DL-2 đọc lớp này. */
+    conn.prepare(`UPDATE assessment_attempts SET kck_at_attempt = ?, target_at_attempt = ? WHERE id = ?`).run(chup.k, chup.t, kck.id);
   });
   check('Pb2b (4j) · Lớp thường: không PA hiệu quả, không HV tiến bộ; Kết quả đúng 4 khoá; FOU người P chỉ có cột S (P); sắp theo tên; GV không phân công trong khung → không hàng', () => {
     const b = pt.phanTichGiaoVien(P.mbManager, { ct: 'thuong', thang: '2026-09' });

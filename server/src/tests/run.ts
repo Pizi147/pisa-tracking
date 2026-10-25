@@ -9600,6 +9600,9 @@ await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as 
 // ==================================================================== P14 DICH (nút Dịch chữ GV nhập — fetch giả)
 const { runPrDichTests } = await import('./prDich.tests.ts');
 await runPrDichTests({ check, checkAsync, assert, conn, P } as any);
+// ==================================================================== P12 BAO-CAO-LICH-SU (báo cáo quá khứ theo Target / lớp / trạng thái lúc đó; Q12)
+const { runPrBaoCaoLichSuTests } = await import('./prBaoCaoLichSu.tests.ts');
+await runPrBaoCaoLichSuTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== P11 VIEC-DUNG-VAI (cột Việc đúng vai: GV việc của mình, QL gộp theo môn)
 const { runPrViecDungVaiTests } = await import('./prViecDungVai.tests.ts');
 await runPrViecDungVaiTests({ check, assert, conn, P, classId } as any);
