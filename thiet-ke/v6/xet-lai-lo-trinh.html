@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V6 · Xét lại lộ trình</title>
+<link rel="stylesheet" href="../v5/v5-nen.css">
+<link rel="stylesheet" href="v6-chung.css">
+<script>try { var q = new URLSearchParams(location.search).get('theme'); if (q) document.documentElement.dataset.theme = q; } catch (e) {}</script>
+<style>
+  .moc { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 1px solid var(--vien); border-radius: 10px; overflow: hidden; }
+  .moc > div { padding: 12px 14px; border-right: 1px solid var(--vien); display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--chu-2); background: var(--be-mat); }
+  .moc > div:last-child { border-right: 0; }
+  .moc .tuan { font-family: var(--phong-so); font-size: 12px; font-weight: 700; color: var(--chu-3); }
+  .moc .viec { font-size: 14px; font-weight: 700; color: var(--chu); }
+  .moc .noi { background: var(--canh-bao-nen); }
+  .viec-dong { display: grid; grid-template-columns: 1fr auto auto; gap: 4px 14px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--vien); font-size: 14px; }
+  .viec-dong:last-child { border-bottom: 0; }
+  .viec-dong .phu { grid-column: 1; }
+  .canh-trang { display: grid; grid-template-columns: minmax(0, 1fr) 760px; min-height: 640px; }
+  .canh-trang .mo { opacity: .38; pointer-events: none; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .canh-trang > .panel { border-radius: 0; border-width: 0 0 0 1px; box-shadow: var(--bong-noi); }
+  .em-xl { border: 1px solid var(--vien); border-radius: 10px; background: var(--be-mat); display: flex; flex-direction: column; }
+  .em-xl.da-chon { border-color: var(--nhan); box-shadow: inset 3px 0 0 var(--nhan); }
+  .em-xl.xong { opacity: .75; }
+  .em-dau { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 14px 8px; }
+  .em-dau input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--nhan); }
+  .em-dau b { font-size: 15px; }
+  .ly-do { font-size: 13px; font-weight: 700; color: var(--canh-bao); }
+  .ly-do.do { color: var(--loi); }
+  .luoi-tt { display: grid; grid-template-columns: 7.5rem 1fr; gap: 4px 12px; padding: 0 14px 10px 42px; font-size: 13px; }
+  .luoi-tt .n { color: var(--chu-3); font-size: 12px; font-weight: 600; padding-top: 1px; }
+  .luoi-tt .g { color: var(--chu); }
+  .so { font-family: var(--phong-so); }
+  .pt { font-family: var(--phong-so); font-weight: 700; }
+  .pt.duoi { color: var(--kq-duoi); } .pt.duoi::before { content: "✗ "; }
+  .mon-x { color: var(--kq-duoi); }
+  .em-lam { display: flex; gap: 8px 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px 12px 42px; border-top: 1px dashed var(--vien); }
+  .em-lam .bat button { height: 34px; }
+  .em-lam .mo-rong { flex-basis: 100%; display: flex; gap: 8px 10px; align-items: flex-start; flex-wrap: wrap; }
+  .em-lam .mo-rong .n { font-size: 12px; font-weight: 700; color: var(--chu-2); line-height: 34px; }
+  .em-lam .chon-lop .ds.tinh { width: 300px; max-width: 100%; }
+  .em-lam .o, .em-lam .chon-lop { max-width: 100%; }
+  .em-lam .o { height: 34px; font-size: 14px; width: auto; }
+  .chip-xl { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--canh-bao-nen); color: var(--canh-bao); border: 1px solid var(--canh-bao-vien); white-space: nowrap; }
+  .ds-hv .dong-hv { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--vien); font-size: 14px; align-items: center; }
+  .ds-hv .dong-hv.dau { font-size: 12px; font-weight: 700; color: var(--chu-3); }
+  .loi-dong { display: block; font-size: 12px; color: var(--loi); margin-top: 4px; font-weight: 600; }
+  .loi-dong::before { content: "⚠ "; }
+  @media (max-width: 1280px) { .canh-trang { grid-template-columns: minmax(0, 1fr) 680px; } }
+  @media (max-width: 1100px) { .canh-trang { grid-template-columns: 1fr; } .canh-trang .mo { display: none; } .moc { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) {
+    .moc { grid-template-columns: 1fr; } .moc > div { border-right: 0; border-bottom: 1px solid var(--vien); }
+    .luoi-tt { grid-template-columns: 1fr; padding-left: 14px; } .luoi-tt .n { padding-top: 6px; }
+    .em-lam { padding-left: 14px; }
+    .ds-hv .dong-hv { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="mk" role="region" aria-label="Điều khiển mockup (không có trên web)">
+  <b>MOCKUP V6 · Xét lại lộ trình</b><span class="nhan-tt">ĐÃ DUYỆT 25/10</span>
+  <a href="#k0">0 Mốc thời gian</a><a href="#k1">1 Hiện ở đâu</a><a href="#k2">2 Panel Xét lại</a><a href="#k3">3 Học lại · chọn nhiều</a><a href="#k4">4 Sau khi lưu</a><a href="#k5">5 Biến thể</a><a href="#k6">6 GVCN lớp mới</a><a href="#k7">7 375</a>
+  <a href="cuoi-khoa.html">← Cuối khoá</a>
+  <button type="button" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Sáng / Tối</button>
+  <span>Dữ liệu demo · MB FOU 12 (FOU 8 tuần) · Final W4 SEP · lớp mới từ W1 OCT · khung 1–4: T5 01/10</span>
+</div>
+
+<main class="trang">
+
+  <!-- 0. MỐC -->
+  <section class="khung" id="k0" aria-labelledby="h0">
+    <h2 id="h0"><span class="so-muc">0</span> Mốc thời gian — chốt lộ trình tuần trước Final, xét lại ở 2 tuần đầu lớp mới <span class="t">ví dụ FOU 8 tuần · BE / ELE: tuần 9 → 10 → 11</span></h2>
+    <div class="moc">
+      <div><span class="tuan">Tuần 7 · W3 SEP</span><span class="viec">Chốt lộ trình</span><span>Việc QL hiện từ T2 14/09 · <b>hạn T5 17/09</b> · T6–CN đỏ, vẫn chốt được</span><span>Chốt Lên FT → MT0 tự xếp tuần Final (kể cả T6–CN)</span></div>
+      <div><span class="tuan">Tuần 8 · W4 SEP</span><span class="viec">Final + MT0</span><span>GV chấm, hạn T4 30/09</span><span>Bàn giao hạn CN 27/09</span></div>
+      <div><span class="tuan">T2 28/09 · W1 OCT</span><span class="viec">Vào lớp mới</span><span>Lệnh tự thi hành · bổ trợ Final chạy ở lớp mới</span></div>
+      <div class="noi"><span class="tuan">Khi Final đủ điểm</span><span class="viec">Xét lại lộ trình</span><span>Em có Final không khớp hướng đã chốt → việc QL ở lớp em đang học</span></div>
+      <div><span class="tuan">CN 11/10 · W2 OCT</span><span class="viec">Hết hạn xét lại</span><span>Chưa quyết → em ở lại lớp mới (tự ghi "Tiếp tục")</span><span>Mini Test không đạt → mở lại dòng</span></div>
+    </div>
+    <div class="ba">
+      <div><div class="nhan-khung">a · Công việc QL · T2 14/09</div>
+        <div class="the"><div class="viec-dong"><b>Chốt lộ trình · MB FOU 12</b><span class="bd bd-td cho">hạn T5 17/09</span><a class="nut nut-nho" href="#" style="text-decoration:none">Cuối khoá ›</a><span class="phu">12 em · 12 em chưa có hướng</span></div></div></div>
+      <div><div class="nhan-khung">b · T5 17/09 — hôm nay hạn</div>
+        <div class="the"><div class="viec-dong"><b>Chốt lộ trình · MB FOU 12</b><span class="bd bd-td sap">Hạn hôm nay</span><a class="nut nut-nho nut-chinh" href="#" style="text-decoration:none">Cuối khoá ›</a><span class="phu">12 em · 3 em chưa có hướng</span></div></div></div>
+      <div><div class="nhan-khung">c · T6 18/09 — quá hạn</div>
+        <div class="the"><div class="viec-dong"><b>Chốt lộ trình · MB FOU 12</b><span class="bd bd-td qua">Quá hạn 1 ngày</span><a class="nut nut-nho nut-chinh" href="#" style="text-decoration:none">Cuối khoá ›</a><span class="phu">12 em · 3 em chưa có hướng · MT0 vẫn xếp W4 SEP</span></div></div></div>
+    </div>
+    <div class="ghi"><ul>
+      <li><b>Luật hạn chốt (chủ SP 25/10, thay "Final − 2" của OV-3b và "CN trước tuần Final" của §20.6):</b> hạn = <b>T5 tuần trước tuần Final</b> (BE / ELE tuần 9, FOU tuần 7, Pre FOU tuần 4). Việc hiện từ T2 tuần đó. Chuông QL: T2 (hạn T5) · T5 sáng (hôm nay hạn) · T6 (quá hạn). Quá hạn chỉ đỏ, không chặn; sau CN vẫn chốt được.</li>
+      <li><b>MT0 thắng khoá lịch cuối tuần (N15):</b> chốt / sửa / huỷ quyết định Lên FT vào T6–CN vẫn tạo / huỷ MT0 ở tuần Final. QL dời MT0 bằng tay vào T6–CN vẫn khoá như MT khác (trừ Quản trị).</li>
+      <li>Hạn bàn giao giữ: muộn hơn của (ngày ra lệnh + 7 ngày) và CN tuần Final.</li></ul></div>
+  </section>
+
+  <!-- 1. HIỆN Ở ĐÂU -->
+  <section class="khung" id="k1" aria-labelledby="h1">
+    <h2 id="h1"><span class="so-muc">1</span> Hiện ở đâu — ba chỗ, cùng mở một panel <span class="t">QL Nguyễn Khánh Vy · T5 01/10 · W1 OCT</span></h2>
+    <div class="ba">
+      <div><div class="nhan-khung">a · Công việc QL</div>
+        <div class="the">
+          <div class="viec-dong"><b>Xét lại lộ trình · MB BE 05 · 3 em</b><span class="bd bd-td cho">hạn CN 11/10</span><a class="nut nut-nho nut-chinh" href="#k2" style="text-decoration:none">Xét lại ›</a><span class="phu">Hứa Đức Anh 46 % · Giang Thảo My 55 % · Nông Gia Phúc 57 %</span></div>
+          <div class="viec-dong"><b>Xét lại lộ trình · MB FOU 14 · 1 em</b><span class="bd bd-td cho">hạn CN 11/10</span><a class="nut nut-nho" href="#k2" style="text-decoration:none">Xét lại ›</a><span class="phu">Cao Minh Trí 64 % · đang học lại</span></div>
+        </div></div>
+      <div><div class="nhan-khung">b · Hồ sơ lớp MB BE 05 — thanh Việc cần làm + chip trên dòng</div>
+        <div class="the">
+          <div class="dai vang" style="border-radius:0;border-width:0 0 1px"><b>Xét lại lộ trình · 3 em</b><span class="phu">Final lớp cũ chưa khớp hướng · hạn CN 11/10</span><span class="phai"><a class="nut nut-nho nut-chinh" href="#k2" style="text-decoration:none">Xét lại</a></span></div>
+          <div class="ds-hv">
+            <div class="dong-hv dau"><span>Học viên</span><span>Từ lớp</span><span>Bổ trợ Final</span><span>Bàn giao</span></div>
+            <div class="dong-hv"><span><a class="ten-ho-so" href="#">Hứa Đức Anh</a> <span class="chip-xl">Xét lại</span></span><span>MB FOU 12</span><span class="phu">—</span><span><span class="bd bd-td xong">Đã nhận</span></span></div>
+            <div class="dong-hv"><span><a class="ten-ho-so" href="#">Giang Thảo My</a> <span class="chip-xl">Xét lại</span></span><span>MB FOU 12</span><span>1/4 buổi</span><span><span class="bd bd-td xong">Đã nhận</span></span></div>
+            <div class="dong-hv"><span><a class="ten-ho-so" href="#">Bạch Tuệ Nhi</a></span><span>MB FOU 12</span><span class="phu">—</span><span><span class="bd bd-td xong">Đã nhận</span></span></div>
+          </div>
+        </div></div>
+      <div><div class="nhan-khung">c · Hồ sơ HV Hứa Đức Anh</div>
+        <div class="dai vang"><span class="ng"><span class="n">Xét lại lộ trình</span><span class="g">Final FOU 46 % · đã lên BE</span></span><span class="bd bd-td cho">hạn CN 11/10</span><a class="phai" href="#k2">Xét lại ›</a></div>
+        <div class="ghi" style="margin-top:10px">Bấm từ hồ sơ HV → panel mở với đúng em đó (chỉ một dòng). Bấm từ Công việc / hồ sơ lớp → cả lớp.</div></div>
+    </div>
+    <div class="ghi"><ul>
+      <li><b>Khi nào có dòng:</b> Final lớp cũ đủ điểm và (a) đã cho lên (Lên lớp / Lên FT) mà Final &lt; 50 % · (b) <b>chốt trước Final</b> cho lên mà Final 50–59 % (quy chế: Head + GV phải xét) · (c) đã cho Học lại mà Final ≥ 60 % (quy chế cho lên) · (d) Mini Test bổ trợ &lt; 70 % (khung 5b).</li>
+      <li>Việc thuộc <b>QL chi nhánh lớp em đang học</b>, một dòng mỗi lớp. Không ai khác có việc; GVCN lớp mới chỉ thấy chip "Xét lại" (khung 6).</li>
+      <li>TRƯỚC (mã hiện tại): chỉ (a) và Học lại ≥ 70 %; không hạn; nút "Chuyển lớp…" mở bảng chuyển nhiều em; không có cách "giữ" — dòng tự mất sau 2 tuần.</li></ul></div>
+  </section>
+
+  <!-- 2. PANEL -->
+  <section class="khung" id="k2" aria-labelledby="h2">
+    <h2 id="h2"><span class="so-muc">2</span> Panel Xét lại — đủ thông tin để quyết ngay, mỗi em một nút <span class="t">mở tại chỗ trên hồ sơ lớp MB BE 05</span></h2>
+    <div class="man">
+      <nav class="dh" aria-label="Điều hướng chính (mẫu)"><span class="logo">PISA <small>TRACKING</small></span><a href="#">Tổng quan</a><a href="#" aria-current="page">HV &amp; Lớp</a><a href="#" class="an-dt">Test</a><a href="#" class="an-dt">Công việc<span class="dem">6</span></a><a href="#" class="an-dt">Phân tích</a></nav>
+      <div class="canh-trang">
+        <div class="mo"><span class="phu">‹ HV &amp; Lớp</span><div class="dau-hs"><h1>MB BE 05</h1><span class="phu">BE · tuần 1/10 · 11 em</span></div><div class="dai vang"><b>Xét lại lộ trình · 3 em</b></div><div class="the" style="height:380px"></div></div>
+        <aside class="panel" aria-label="Panel Xét lại lộ trình">
+          <div class="panel-dau"><div class="panel-loai"><span class="vach"></span>VIỆC · XÉT LẠI LỘ TRÌNH</div>
+            <div class="tieu-de"><h2>Xét lại lộ trình · MB BE 05 · 3 em</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+            <div class="ngu-canh">Từ MB FOU 12 · Final 21/09 · vào lớp W1 OCT · <span class="bd bd-td cho">hạn CN 11/10</span></div></div>
+          <div class="panel-than">
+            <div class="cong-cu" style="padding:0;border:0"><button class="chip" type="button">Chọn tất cả · 3</button><span class="phai"><span class="phu">Chưa quyết 3</span></span></div>
+
+            <article class="em-xl">
+              <div class="em-dau"><input type="checkbox" aria-label="Chọn Hứa Đức Anh"><b><a class="ten-ho-so" href="#">Hứa Đức Anh</a></b><span class="ly-do do">Final 46 % · đã cho lên</span></div>
+              <div class="luoi-tt">
+                <span class="n">Final FOU</span><span class="g"><span class="pt duoi">46 %</span> · <span class="so"><span class="mon-x">✗ L 48</span> · <span class="mon-x">✗ R 52</span> · <span class="mon-x">✗ G+V 44</span> · <span class="mon-x">✗ P 40</span></span></span>
+                <span class="n">Đã chốt</span><span class="g">Lên BE · QL Vy 17/09 · "Gia đình xin lên, học bổ trợ ngoài giờ"</span>
+                <span class="n">Gợi ý</span><span class="g">Học lại FOU</span>
+                <span class="n">Phụ huynh</span><span class="g">TVV Lan 29/09 · "Muốn thử BE 2 tuần rồi quyết"</span>
+                <span class="n">GVCN cũ</span><span class="g">"Mất gốc ngữ pháp"</span>
+              </div>
+              <div class="em-lam"><span class="bat"><button type="button">Tiếp tục BE</button><button type="button">Học lại FOU</button><button type="button">Tạm dừng/ Kết thúc học</button></span></div>
+            </article>
+
+            <article class="em-xl">
+              <div class="em-dau"><input type="checkbox" aria-label="Chọn Giang Thảo My"><b><a class="ten-ho-so" href="#">Giang Thảo My</a></b><span class="ly-do">Final 55 % · chốt trước Final</span></div>
+              <div class="luoi-tt">
+                <span class="n">Final FOU</span><span class="g"><span class="pt duoi">55 %</span> · <span class="so">L 68 · R 72 · <span class="mon-x">✗ G+V 44</span> · <span class="mon-x">✗ P 38</span></span></span>
+                <span class="n">Đã chốt</span><span class="g">Lên BE · QL Vy 16/09 (chưa có Final)</span>
+                <span class="n">Gợi ý</span><span class="g">Quản lý cân nhắc</span>
+                <span class="n">Bổ trợ Final</span><span class="g">G+V, P · 1/4 buổi · Mini Test dự kiến 09/10</span>
+              </div>
+              <div class="em-lam"><span class="bat"><button type="button">Tiếp tục BE</button><button type="button">Học lại FOU</button><button type="button">Tạm dừng/ Kết thúc học</button></span></div>
+            </article>
+
+            <article class="em-xl">
+              <div class="em-dau"><input type="checkbox" aria-label="Chọn Nông Gia Phúc"><b><a class="ten-ho-so" href="#">Nông Gia Phúc</a></b><span class="ly-do">Final 57 % · chốt trước Final</span></div>
+              <div class="luoi-tt">
+                <span class="n">Final FOU</span><span class="g"><span class="pt duoi">57 %</span> · <span class="so">L 62 · R 68 · <span class="mon-x">✗ G+V 50</span> · <span class="mon-x">✗ P 48</span></span></span>
+                <span class="n">Đã chốt</span><span class="g">Lên BE · QL Vy 16/09 (chưa có Final)</span>
+                <span class="n">Gợi ý</span><span class="g">Quản lý cân nhắc</span>
+                <span class="n">Bổ trợ Final</span><span class="g">G+V, P · 1/4 buổi · Mini Test dự kiến 09/10</span>
+              </div>
+              <div class="em-lam"><span class="bat"><button type="button">Tiếp tục BE</button><button type="button">Học lại FOU</button><button type="button">Tạm dừng/ Kết thúc học</button></span></div>
+            </article>
+          </div>
+          <div class="panel-chan"><span class="trai phu">0/3 em đã quyết</span><button class="nut nut-ma" type="button">Đóng</button><button class="nut nut-chinh" type="button" disabled>Lưu</button></div>
+        </aside>
+      </div>
+    </div>
+    <div class="ghi"><ul>
+      <li>Mỗi em một thẻ: lý do có dòng (đỏ: dưới 50 %, vàng: cần cân nhắc) · Final từng môn · ai chốt, lúc nào, lý do lúc chốt · gợi ý theo Final · kết quả gọi phụ huynh của TVV · nhận xét bàn giao · bổ trợ đang chạy. QL quyết ngay trên panel, không phải mở hồ sơ.</li>
+      <li>Ba nút theo đúng lớp em đang học: <b>Tiếp tục {lớp}</b> · <b>Học lại {chương trình cũ}</b> · <b>Tạm dừng/ Kết thúc học</b> (hộp V6 trang-thai-hv). Em đang ở FT (Lên FT, Final &lt; 50 %): "Tiếp tục FT" · "Về lớp thường".</li>
+      <li>Panel là bậc "panel" (≤ 3 em thường gặp); &gt; 8 em vẫn cuộn trong panel, không đổi trang.</li></ul></div>
+  </section>
+
+  <!-- 3. HỌC LẠI + CHỌN NHIỀU -->
+  <section class="khung" id="k3" aria-labelledby="h3">
+    <h2 id="h3"><span class="so-muc">3</span> Bấm "Học lại" → lớp + tuần mở ngay trên thẻ · chọn nhiều em → một nút <span class="t">không chuyển trang, không hộp thứ hai</span></h2>
+    <div class="hai">
+      <div><div class="nhan-khung">a · Hứa Đức Anh — Học lại FOU</div>
+        <article class="em-xl">
+          <div class="em-dau"><input type="checkbox" aria-label="Chọn Hứa Đức Anh"><b>Hứa Đức Anh</b><span class="ly-do do">Final 46 % · đã cho lên</span><span class="bd bd-td dang" style="margin-left:auto">đã sửa</span></div>
+          <div class="em-lam"><span class="bat"><button type="button">Tiếp tục BE</button><button type="button" class="chon" aria-pressed="true">Học lại FOU</button><button type="button">Tạm dừng/ Kết thúc học</button></span>
+            <div class="mo-rong"><span class="n">Lớp</span>
+              <span class="chon-lop" style="width:300px"><input class="o" value="FOU" style="width:100%" aria-label="Lớp học lại"><span class="ds tinh" role="listbox"><span class="dong dang" role="option"><b>MB FOU 14</b><span class="phu">FOU · MB · tuần 1 · 6 em</span></span><span class="dong" role="option"><b>MB FOU 15</b><span class="phu">FOU · MB · khai giảng W2 OCT · 2 em</span></span><span class="dong" role="option" style="color:var(--nhan);font-weight:600">+ Mở lớp mới…</span></span></span>
+              <span class="n">Từ</span><select class="o" aria-label="Tuần bắt đầu"><option>W2 OCT (T2 05/10)</option><option>Ngay hôm nay</option></select>
+            </div>
+            <div class="tom-tat vang" style="flex-basis:100%"><span class="tieu">Khi lưu, web sẽ</span><ul><li>Ra lệnh chuyển MB BE 05 → MB FOU 14 từ W2 OCT (sửa / huỷ được tới T2 05/10)</li><li>Đóng khoá BE, mở khoá FOU mới · điểm BE (nếu có) ở lại khoá BE</li><li>Phiếu bàn giao GVCN MB BE 05 · hạn 07/10</li><li>Hành trình: "QL xét lại: Học lại FOU (đã lên BE 17/09)"</li></ul></div>
+          </div>
+        </article></div>
+      <div><div class="nhan-khung">b · Chọn 2 em → "Tiếp tục BE cho 2 em"</div>
+        <div class="thanh-ap" style="border-radius:10px;border:1px solid var(--nhan-vien)"><span class="so-chon">2 em đã chọn</span><span class="ke-doc"></span><span class="bat"><button type="button" class="chon" aria-pressed="true">Tiếp tục BE</button><button type="button">Học lại FOU</button><button type="button">Tạm dừng/ Kết thúc học</button></span><button class="nut nut-nho nut-chinh" type="button">Áp cho 2 em</button><button class="nut nut-nho nut-ma" type="button">Bỏ chọn</button></div>
+        <article class="em-xl da-chon" style="margin-top:10px"><div class="em-dau"><input type="checkbox" checked aria-label="Chọn Giang Thảo My"><b>Giang Thảo My</b><span class="ly-do">Final 55 % · chốt trước Final</span></div></article>
+        <article class="em-xl da-chon" style="margin-top:8px"><div class="em-dau"><input type="checkbox" checked aria-label="Chọn Nông Gia Phúc"><b>Nông Gia Phúc</b><span class="ly-do">Final 57 % · chốt trước Final</span></div></article>
+        <div class="nhan-khung" style="margin-top:14px">c · Tiếp tục mà Final &lt; 50 % → bắt lý do ngắn</div>
+        <article class="em-xl"><div class="em-dau"><b>Hứa Đức Anh</b><span class="ly-do do">Final 46 % · đã cho lên</span></div>
+          <div class="em-lam"><span class="bat"><button type="button" class="chon" aria-pressed="true">Tiếp tục BE</button><button type="button">Học lại FOU</button><button type="button">Tạm dừng/ Kết thúc học</button></span>
+            <div class="mo-rong"><input class="o o-loi" placeholder="Lý do" aria-label="Lý do" style="width:360px"><span class="loi-dong" style="margin:0">Ghi lý do ngắn</span></div></div></article>
+      </div>
+    </div>
+    <div class="panel" style="max-width:760px">
+      <div class="panel-chan"><span class="trai" style="font-size:13px;color:var(--chu-2)"><b style="color:var(--chu)">Khi lưu:</b> 2 em Tiếp tục BE · 1 em Học lại → MB FOU 14 từ W2 OCT</span><button class="nut nut-ma" type="button">Đóng</button><button class="nut nut-chinh" type="button">Lưu · 3 em</button></div>
+    </div>
+    <div class="ghi"><ul>
+      <li>"Tiếp tục" chỉ ghi quyết định (Hành trình "QL xét lại: Tiếp tục BE", nhật ký) và đóng dòng — bổ trợ Final đang chạy giữ nguyên. Không lý do, trừ khi khác gợi ý (Final &lt; 50 %, luật <code>khacGoiY</code> có sẵn).</li>
+      <li>"Học lại" = đúng đường Chuyển lớp (lệnh, bàn giao ≥ 7 ngày, ô lớp gõ-tìm chỉ chương trình cũ + cùng chi nhánh, "+ Mở lớp mới…"). Bổ trợ Final chưa ai đụng → huỷ; đã học buổi → PA kết thúc "Dừng — học lại", giữ lịch sử.</li>
+      <li>"Ngay hôm nay" chuyển ngay, không hoàn tác → chỉ trường hợp này hỏi xác nhận (nêu tên em).</li></ul></div>
+  </section>
+
+  <!-- 4. SAU KHI LƯU -->
+  <section class="khung" id="k4" aria-labelledby="h4">
+    <h2 id="h4"><span class="so-muc">4</span> Sau khi lưu — dòng xong ngay, Hoàn tác 10 s, vẫn sửa được tới khi lệnh thi hành</h2>
+    <div class="hai">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="toast">Đã lưu 3 em · việc Xét lại xong<button type="button">Hoàn tác</button><span class="dem">10 s</span></div>
+        <article class="em-xl xong"><div class="em-dau"><b>Giang Thảo My</b><span class="tt-luu da">✓ Tiếp tục BE · QL Vy 01/10</span><button class="nut nut-nho nut-ma" type="button" style="margin-left:auto">Sửa</button></div></article>
+        <article class="em-xl xong"><div class="em-dau"><b>Nông Gia Phúc</b><span class="tt-luu da">✓ Tiếp tục BE · QL Vy 01/10</span><button class="nut nut-nho nut-ma" type="button" style="margin-left:auto">Sửa</button></div></article>
+        <article class="em-xl xong"><div class="em-dau"><b>Hứa Đức Anh</b><span class="bd bd-td cho">Học lại → MB FOU 14 · từ W2 OCT</span><button class="nut nut-nho nut-ma" type="button" style="margin-left:auto">Sửa</button></div></article>
+      </div>
+      <div><div class="nhan-khung">Hồ sơ HV Hứa Đức Anh › Hành trình</div>
+        <div class="the"><div class="ds-hv">
+          <div class="dong-hv" style="grid-template-columns:7rem 1fr"><span class="so phu">01/10</span><span><b>QL xét lại: Học lại FOU</b> <span class="phu">(đã lên BE 17/09 · Final 46 %)</span></span></div>
+          <div class="dong-hv" style="grid-template-columns:7rem 1fr"><span class="so phu">28/09</span><span>Vào MB BE 05</span></div>
+          <div class="dong-hv" style="grid-template-columns:7rem 1fr"><span class="so phu">17/09</span><span>QL quyết: Lên BE · "Gia đình xin lên, học bổ trợ ngoài giờ"</span></div>
+        </div></div></div>
+    </div>
+  </section>
+
+  <!-- 5. BIẾN THỂ -->
+  <section class="khung" id="k5" aria-labelledby="h5">
+    <h2 id="h5"><span class="so-muc">5</span> Biến thể — Final có trước khi vào lớp mới · Mini Test không đạt · hết hạn</h2>
+    <div class="ba">
+      <div><div class="nhan-khung">a · Final chấm xong T5 24/09, lệnh chưa thi hành</div>
+        <div class="the">
+          <div class="dai vang" style="border-radius:0;border-width:0 0 1px"><b>Cuối khoá · MB FOU 12</b><span class="phu">2 em Final khác hướng đã chốt</span><span class="phai"><button class="chip" type="button" aria-pressed="true">Xét lại 2</button></span></div>
+          <div class="em-dau" style="padding:12px 16px"><b>Hứa Đức Anh</b><span class="ly-do do">Final 46 % · đã cho lên</span></div>
+          <div class="em-lam" style="padding-left:16px"><span class="phu">Hướng</span><select class="o" aria-label="Hướng"><option>Lên BE</option><option selected>Học lại</option></select><span class="lop-chon" style="height:34px"><b>MB FOU 14</b><button class="x" type="button" aria-label="Bỏ chọn lớp">✕</button></span><button class="nut nut-nho" type="button">Giữ Lên BE</button></div>
+        </div>
+        <div class="ghi" style="margin-top:8px">Em còn ở lớp cũ → việc nằm ở <b>Cuối khoá lớp cũ</b> (chip "Xét lại n", dòng vàng), sửa hướng ngay trên dòng = sửa lệnh đang chờ. Công việc: "Xét lại lộ trình · MB FOU 12 · 2 em". Cùng một việc, khác chỗ mở.</div></div>
+      <div><div class="nhan-khung">b · W3 OCT: Mini Test bổ trợ không đạt</div>
+        <div class="the"><div class="viec-dong"><b>Xét lại lộ trình · MB BE 05 · 1 em</b><span class="bd bd-td cho">hạn CN 18/10</span><a class="nut nut-nho nut-chinh" href="#" style="text-decoration:none">Xét lại ›</a><span class="phu">Giang Thảo My · Mini Test 55 %</span></div></div>
+        <article class="em-xl" style="margin-top:8px"><div class="em-dau"><b>Giang Thảo My</b><span class="ly-do do">Mini Test 55 % · cần ≥ 70 %</span></div>
+          <div class="luoi-tt"><span class="n">Đã xét lại</span><span class="g">Tiếp tục BE · QL Vy 01/10</span><span class="n">Bổ trợ Final</span><span class="g">G+V, P · 4/4 buổi · Mini Test 09/10</span></div>
+          <div class="em-lam"><span class="bat"><button type="button">Tiếp tục BE</button><button type="button">Học lại FOU</button><button type="button">Tạm dừng/ Kết thúc học</button></span></div></article>
+        <div class="ghi" style="margin-top:8px">Thay thẻ "Báo lên QL" hiện có của Mini Test không đạt — một chỗ quyết. Hạn = CN tuần sau ngày ghi Mini Test. Case bổ trợ vẫn mở như luật cũ.</div></div>
+      <div><div class="nhan-khung">c · Hết CN 11/10 chưa quyết</div>
+        <article class="em-xl xong"><div class="em-dau"><b>Nông Gia Phúc</b><span class="tt-luu da">✓ Tiếp tục BE · tự ghi 12/10</span></div>
+          <div class="luoi-tt"><span class="n">Lý do</span><span class="g">Hết hạn xét lại — em ở lại lớp đang học</span></div></article>
+        <div class="ghi" style="margin-top:8px">Mặc định hiển nhiên: em đang học lớp mới thì ở lại. Không kẹt, không chặn; QL vẫn đổi được bằng Chuyển lớp. Từ T6 trước hạn, dòng việc chuyển vàng "Hạn CN 11/10".</div></div>
+    </div>
+  </section>
+
+  <!-- 6. GVCN LỚP MỚI -->
+  <section class="khung" id="k6" aria-labelledby="h6">
+    <h2 id="h6"><span class="so-muc">6</span> GVCN lớp mới — chỉ xem, có thể ghi một nhận xét (không phải việc) <span class="t">GVCN MB BE 05 Phạm Minh Thư</span></h2>
+    <div class="hai">
+      <article class="em-xl"><div class="em-dau"><b>Hứa Đức Anh</b><span class="chip-xl">Xét lại</span><span class="phu" style="margin-left:auto">QL Nguyễn Khánh Vy quyết · hạn CN 11/10</span></div>
+        <div class="luoi-tt"><span class="n">Final FOU</span><span class="g"><span class="pt duoi">46 %</span></span><span class="n">Đã chốt</span><span class="g">Lên BE · QL Vy 17/09</span></div>
+        <div class="em-lam"><span class="phu">Nhận xét 2 tuần đầu</span><input class="o" style="width:340px" value="Theo được bài nghe, viết còn chậm" aria-label="Nhận xét của GVCN lớp mới"><span class="tt-luu da">✓ Đã lưu</span></div></article>
+      <div class="ghi">GVCN lớp mới thấy chip "Xét lại" trên dòng em và thẻ chỉ xem; ô nhận xét không bắt buộc, không có hạn, không thành việc — QL thấy ngay dòng "GVCN mới" trong thẻ khung 2. Không có nút quyết (quyết định học lại / lên lớp là của QL).</div>
+    </div>
+  </section>
+
+  <!-- 7. 375 -->
+  <section class="khung" id="k7" aria-labelledby="h7">
+    <h2 id="h7"><span class="so-muc">7</span> 375 — panel thành màn đầy đủ, mỗi em một thẻ, nút xếp dọc</h2>
+    <div class="dt-khung">
+      <nav class="dh" aria-label="Điều hướng chính (mẫu)"><span class="logo">PISA</span><a href="#">HV &amp; Lớp</a></nav>
+      <div class="dt-than">
+        <span class="phu">‹ MB BE 05</span>
+        <div><b style="font-size:17px">Xét lại lộ trình · 3 em</b><div class="phu" style="font-size:13px">Từ MB FOU 12 · <span class="bd bd-td cho">hạn CN 11/10</span></div></div>
+        <article class="em-xl">
+          <div class="em-dau"><b>Hứa Đức Anh</b><span class="ly-do do">Final 46 % · đã cho lên</span></div>
+          <div class="luoi-tt"><span class="n">Final FOU</span><span class="g so"><span class="pt duoi">46 %</span> · ✗ L 48 · ✗ R 52 · ✗ G+V 44 · ✗ P 40</span><span class="n">Đã chốt</span><span class="g">Lên BE · QL Vy 17/09</span><span class="n">Phụ huynh</span><span class="g">"Muốn thử BE 2 tuần rồi quyết"</span></div>
+          <div class="em-lam" style="flex-direction:column;align-items:stretch"><button class="nut" type="button">Tiếp tục BE</button><button class="nut" type="button">Học lại FOU</button><button class="nut" type="button">Tạm dừng/ Kết thúc học</button></div>
+        </article>
+        <article class="em-xl"><div class="em-dau"><b>Giang Thảo My</b><span class="ly-do">Final 55 % · chốt trước Final</span></div></article>
+        <div class="chan-dinh" style="margin:0 -12px -12px;border-radius:0"><span class="tom"><b>0 / 3 em đã quyết</b></span><button class="nut nut-chinh" type="button" disabled>Lưu</button></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V6 · Lộ trình mới · Môn học</title>
+<link rel="stylesheet" href="../v5/v5-nen.css">
+<link rel="stylesheet" href="v6-chung.css">
+<script>try { var q = new URLSearchParams(location.search).get('theme'); if (q) document.documentElement.dataset.theme = q; } catch (e) {}</script>
+<style>
+  .panel-tinh { max-width: 520px; }
+  .buoc { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--vien); }
+  .buoc:last-of-type { border-bottom: 0; padding-bottom: 0; }
+  .buoc > .nhan-truong { font-size: 13px; font-weight: 600; color: var(--chu-2); display: flex; gap: 8px; align-items: baseline; }
+  .buoc > .nhan-truong .so-buoc { font-family: var(--phong-so); color: var(--chu-3); }
+  .hang-gt { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+  .hang-gt b { font-family: var(--phong-so); }
+  .bang-diem td[data-kieu="diem"] { font-size: 14px; }
+  .khong-hoc-o { color: var(--chu-3); font-size: 12px; font-style: italic; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--be-mat-2) 6px 8px); }
+  .vang-o { color: var(--chu); font-weight: 700; font-family: var(--phong-so); }
+  .chu-giai { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--chu-3); align-items: center; }
+  .tab-kn { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--vien); align-items: center; }
+  .tab-kn button { font: inherit; font-size: 14px; font-weight: 700; min-width: 44px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--vien-o); background: var(--be-mat); color: var(--chu-2); }
+  .tab-kn button[aria-selected="true"] { background: var(--nhan); border-color: var(--nhan); color: #fff; }
+  :root[data-theme="dark"] .tab-kn button[aria-selected="true"] { color: #0b1026; }
+  @media (min-width: 1101px) { .hai-mot.trai-rong { grid-template-columns: 520px minmax(0, 1fr); } }
+  @media (max-width: 640px) { .panel-tinh { max-width: none; } }
+</style>
+</head>
+<body>
+
+<div class="mk" role="region" aria-label="Điều khiển mockup (không có trên web)">
+  <b>MOCKUP V6 · Lộ trình mới · Môn học</b><span class="nhan-tt">CHỜ CHỦ SP DUYỆT</span>
+  <a href="#k1">1 Lộ trình mới</a><a href="#k2">2 RF · lớp sai loại</a><a href="#k3">3 Khác</a><a href="#k4">4 Sửa thông tin · đổi môn</a><a href="#k5">5 Sửa cả lớp</a><a href="#k6">6 Bảng lớp "Không học"</a><a href="#k7">7 Hồ sơ HV</a>
+  <a href="trang-thai-hv.html">← Trạng thái HV</a><a href="cuoi-khoa.html">→ Cuối khoá</a>
+  <button type="button" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Sáng / Tối</button>
+  <span>Dữ liệu demo · T2 14/09/2026 · W3 SEP</span>
+</div>
+
+<main class="trang">
+
+  <!-- 1. LỘ TRÌNH MỚI -->
+  <section class="khung" id="k1" aria-labelledby="h1">
+    <h2 id="h1"><span class="so-muc">1</span> Panel "Lộ trình mới" — một luồng, tóm tắt ở cuối <span class="t">TVV Nguyễn Thu Hương · CP · từ Bước tiếp (trang-thai-hv k4)</span></h2>
+    <div class="hai-mot trai-rong">
+      <aside class="panel panel-tinh" aria-label="Panel Lộ trình mới">
+        <div class="panel-dau"><div class="panel-loai"><span class="vach"></span>VIỆC · BƯỚC TIẾP</div>
+          <div class="tieu-de"><button class="nut nut-nho nut-ma" type="button">‹ Bước tiếp</button><h2>Lộ trình mới · Đinh Ngọc Quyên</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div>
+          <div class="ngu-canh">CP FT 110 · đang FT LT1 · thi 12/09 Overall 7.0</div></div>
+        <div class="panel-than">
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">1</span>Lộ trình</span>
+            <div class="bat" role="radiogroup"><button type="button">LT1</button><button type="button" class="chon" aria-checked="true">LT2</button><button type="button">RF</button><button type="button">Khác</button></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">2</span>Môn học</span>
+            <div class="bat"><button type="button" aria-pressed="true">L</button><button type="button" aria-pressed="true">R</button><button type="button" aria-pressed="true">W1</button><button type="button" aria-pressed="true">W2</button><button type="button" aria-pressed="true">S</button></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">3</span>Target</span>
+            <div class="hang-gt"><b>6.5</b><span class="phu">giữ từ FT LT1</span><button class="nut nut-nho nut-ma" type="button">Sửa</button></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">4</span>Bắt đầu</span>
+            <div class="lua-chon"><label class="chon">Ngay bây giờ</label><label>Thứ Hai 21/09</label></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">5</span>Lớp</span>
+            <div class="lua-chon"><label class="chon">Giữ CP FT 110</label><label>Lớp khác</label></div></div>
+          <div class="tom-tat"><span class="tieu">Khi lưu, web sẽ</span><ul>
+            <li>Mở FT LT2 ở CP FT 110 từ 14/09 · đủ 5 môn · Target 6.5</li>
+            <li>Tạo MT1–MT3: W4 OCT · W1 DEC · W5 DEC</li>
+            <li>Đầu vào = KQ thi 12/09: L 7.5 · R 7.0 · W 6.5 · S 6.5</li>
+            <li>Kết thúc FT LT1 · đóng 1 Case (S) — Kết thúc lộ trình</li>
+            <li>Dừng 1 PA (S) — Dừng · kết thúc lộ trình</li></ul></div>
+        </div>
+        <div class="panel-chan"><span class="trai"><span class="tt-luu nhap">● Chưa lưu</span></span><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Mở lộ trình LT2</button></div>
+      </aside>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><div class="nhan-khung">Sau khi lưu</div><div class="toast" role="status"><span>✓ Đã mở FT LT2 · Đinh Ngọc Quyên</span><button type="button">Hoàn tác</button><span class="dem">10 s</span></div></div>
+        <div><div class="nhan-khung">Lỗi lưu — giữ mọi lựa chọn</div><div class="bao-loi"><span aria-hidden="true">⚠</span><div><b>Chưa lưu được.</b> Mất kết nối — lựa chọn vẫn giữ. <button class="nut nut-nho" type="button" style="margin-left:6px">Thử lại</button></div></div></div>
+        <div><div class="nhan-khung">Lớp khác → ô gõ lớp (chỉ lớp đúng loại, gợi ý mã · chương trình · chi nhánh · sĩ số)</div>
+          <div class="chon-lop" style="max-width:420px"><input class="o" value="CP FT" aria-label="Lớp"><div class="ds tinh" role="listbox">
+            <div class="dong dang" role="option"><b>CP FT 112</b><span class="phu">FT LT2 · CP · 8 em</span></div>
+            <div class="dong" role="option"><b>CP FT 115</b><span class="phu">FT LT1 · CP · 11 em</span></div>
+            <div class="dong tat" role="option" aria-disabled="true"><b>CP FT RF 05</b><span class="phu">FT RF · lớp RF</span></div></div></div></div>
+        <div class="ghi"><ul>
+          <li>Thứ tự đúng plan: Lộ trình → Môn học (mặc định theo lộ trình cũ) → Target (giữ, Sửa) → Bắt đầu → Lớp → tóm tắt. Không chọn sẵn ở Bước tiếp; vào đây thì LT kế tiếp được chọn sẵn (LT1 → LT2), đổi một bấm.</li>
+          <li>Số MT = lịch MT của lớp đích (LT 3, RF 2, Khác 0). Ngày thi KHÔNG chép từ lộ trình cũ (sửa E1). "Giữ CP FT 110" hợp lệ cả khi lớp đã kết thúc → web gửi mở lại lớp (sửa E2). Đầu vào = KQ thi thật gần nhất (sửa E3).</li>
+          <li>[Q2 — khuyến nghị đã chọn] PA đang chạy → "Dừng · kết thúc lộ trình" (không tính Hiệu quả PA); Case đóng lý do "Kết thúc lộ trình".</li>
+          <li>Lớp sai loại hiện mờ trong danh sách, không chọn được (khung 2 cho trường hợp lớp đang giữ sai loại).</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. RF + LỚP SAI LOẠI -->
+  <section class="khung" id="k2" aria-labelledby="h2">
+    <h2 id="h2"><span class="so-muc">2</span> Chọn RF khi lớp đang giữ là lớp LT — giải thích ngay, nút lưu tắt kèm lý do</h2>
+    <div class="hai">
+      <aside class="panel panel-tinh" aria-label="Lộ trình mới — lớp sai loại">
+        <div class="panel-dau"><div class="tieu-de"><h2>Lộ trình mới · Đinh Ngọc Quyên</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div><div class="ngu-canh">CP FT 110 · đang FT LT1</div></div>
+        <div class="panel-than">
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">1</span>Lộ trình</span><div class="bat"><button type="button">LT1</button><button type="button">LT2</button><button type="button" class="chon">RF</button><button type="button">Khác</button></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">2</span>Môn học</span><div class="bat"><button type="button" aria-pressed="true">L</button><button type="button" aria-pressed="true">R</button><button type="button" aria-pressed="true">W1</button><button type="button" aria-pressed="true">W2</button><button type="button" aria-pressed="true">S</button></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">5</span>Lớp</span>
+            <div class="lua-chon"><label class="chon">Giữ CP FT 110</label><label>Lớp khác</label></div>
+            <div class="loi-o">CP FT 110 là lớp LT — lộ trình RF cần lớp RF. Chọn "Lớp khác".</div></div>
+        </div>
+        <div class="panel-chan"><span class="trai phu">Chọn lớp RF để lưu</span><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button" disabled>Mở lộ trình RF</button></div>
+      </aside>
+      <aside class="panel panel-tinh" aria-label="Lộ trình mới — đã chọn lớp RF">
+        <div class="panel-dau"><div class="tieu-de"><h2>Lộ trình mới · Đinh Ngọc Quyên</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div><div class="ngu-canh">CP FT 110 · đang FT LT1</div></div>
+        <div class="panel-than">
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">1</span>Lộ trình</span><div class="bat"><button type="button">LT1</button><button type="button">LT2</button><button type="button" class="chon">RF</button><button type="button">Khác</button></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">5</span>Lớp</span>
+            <div class="lua-chon"><label>Giữ CP FT 110</label><label class="chon">Lớp khác</label></div>
+            <span class="lop-chon"><b>CP FT RF 05</b><span class="phu">FT RF · CP · 7 em</span><button class="x" type="button" aria-label="Bỏ chọn lớp">✕</button></span></div>
+          <div class="tom-tat"><span class="tieu">Khi lưu, web sẽ</span><ul>
+            <li>Mở FT RF ở CP FT RF 05 từ 14/09 · đủ 5 môn · Target 6.5</li>
+            <li>Tạo MT1–MT2: W2 OCT · W1 NOV</li>
+            <li>Đầu vào = KQ thi 12/09 · rời CP FT 110</li>
+            <li>Kết thúc FT LT1 · đóng 1 Case (S) — Kết thúc lộ trình</li></ul></div>
+        </div>
+        <div class="panel-chan"><span class="trai"><span class="tt-luu nhap">● Chưa lưu</span></span><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Mở lộ trình RF</button></div>
+      </aside>
+    </div>
+    <div class="ghi">Review Focus 4: lỗi nói tại ô Lớp + lý do ở chân cạnh nút tắt. Cùng luật cho LT1 / LT2 vào lớp RF, hoặc lớp thường (lớp thường không bao giờ hiện trong ô gõ). Chuyển lớp đổi chi nhánh vẫn được ở luồng một em (ô gõ lớp mọi chi nhánh như Chuyển lớp).</div>
+  </section>
+
+  <!-- 3. KHÁC -->
+  <section class="khung" id="k3" aria-labelledby="h3">
+    <h2 id="h3"><span class="so-muc">3</span> Lộ trình "Khác" — ghi tên, không MT <span class="t">[Q3] Target tuỳ chọn · thi thật như LT</span></h2>
+    <div class="hai">
+      <aside class="panel panel-tinh" aria-label="Lộ trình mới — Khác">
+        <div class="panel-dau"><div class="tieu-de"><h2>Lộ trình mới · Đinh Ngọc Quyên</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div><div class="ngu-canh">CP FT 110 · đang FT LT1</div></div>
+        <div class="panel-than">
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">1</span>Lộ trình</span><div class="bat"><button type="button">LT1</button><button type="button">LT2</button><button type="button">RF</button><button type="button" class="chon">Khác</button></div>
+            <div class="truong"><label for="ten-khac">Tên lộ trình</label><input class="o" id="ten-khac" value="Luyện Speaking 1–1"></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">2</span>Môn học</span><div class="bat"><button type="button" aria-pressed="false">L</button><button type="button" aria-pressed="false">R</button><button type="button" aria-pressed="false">W1</button><button type="button" aria-pressed="false">W2</button><button type="button" aria-pressed="true">S</button></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">3</span>Target <span class="phu">(không bắt buộc)</span></span><div class="hang-gt"><b>6.5</b><button class="nut nut-nho nut-ma" type="button">Sửa</button><button class="nut nut-nho nut-ma" type="button">Bỏ Target</button></div></div>
+          <div class="buoc"><span class="nhan-truong"><span class="so-buoc">5</span>Lớp</span><div class="lua-chon"><label class="chon">Giữ CP FT 110</label><label>Lớp khác</label></div></div>
+          <div class="tom-tat"><span class="tieu">Khi lưu, web sẽ</span><ul>
+            <li>Mở "Luyện Speaking 1–1" ở CP FT 110 từ 14/09 · chỉ S</li>
+            <li>Không tạo MT · thêm "+ MT" ở Kế hoạch Test khi cần</li>
+            <li>Kết thúc FT LT1 · đóng 1 Case (S) — Kết thúc lộ trình</li></ul></div>
+        </div>
+        <div class="panel-chan"><span class="trai"><span class="tt-luu nhap">● Chưa lưu</span></span><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Mở lộ trình</button></div>
+      </aside>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="nhan-khung">Thiếu tên — lỗi tại ô</div>
+        <div class="truong" style="max-width:420px"><label for="ten-k2">Tên lộ trình</label><input class="o o-loi" id="ten-k2" aria-invalid="true"><span class="loi-o">Ghi tên lộ trình</span></div>
+        <div class="ghi">Lộ trình Khác: 0 MT, không gợi ý / nhắc xếp MT (P2 dùng độ dài lịch = 0). Có KQ thi thật + Bước tiếp như LT khi có ngày thi. Không Target → không kỳ vọng MT, không SOS tự động (như KCK). Tên hiện ở mọi chỗ ghi lộ trình (vd "Khác · Luyện Speaking 1–1").</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SỬA THÔNG TIN + ĐỔI MÔN GIỮA LỘ TRÌNH -->
+  <section class="khung" id="k4" aria-labelledby="h4">
+    <h2 id="h4"><span class="so-muc">4</span> Sửa thông tin học viên — hàng "Môn học"; bỏ môn giữa lộ trình <span class="t">QL Nguyễn Khánh Vy · [Q5]</span></h2>
+    <div class="hai">
+      <aside class="panel panel-tinh" aria-label="Sửa thông tin">
+        <div class="panel-dau"><div class="panel-loai"><span class="vach"></span>SỬA THÔNG TIN</div><div class="tieu-de"><h2>Lê Quang Huy</h2><button class="dong" type="button" aria-label="Đóng">✕</button></div><div class="ngu-canh">MB FT 101 · FT LT1</div></div>
+        <div class="panel-than">
+          <div class="truong"><label for="ht">Họ tên</label><input class="o" id="ht" value="Lê Quang Huy"></div>
+          <div class="truong"><label for="tg">Target</label><input class="o o-so" id="tg" value="6.5" style="max-width:120px"></div>
+          <div class="truong"><span class="nhan-truong">Môn học · FT LT1</span>
+            <div class="bat"><button type="button" aria-pressed="true">L</button><button type="button" aria-pressed="true">R</button><button type="button" aria-pressed="false">W1</button><button type="button" aria-pressed="true">W2</button><button type="button" aria-pressed="true">S</button></div></div>
+          <div class="tom-tat vang"><span class="tieu">Khi lưu, web sẽ</span><ul>
+            <li>Bỏ W1 khỏi MT3 (14/09, chưa có điểm) · lịch sử giữ</li>
+            <li>MT1, MT2 W1 đã chấm giữ nguyên</li>
+            <li>Đóng Case W1 — Không còn học môn</li>
+            <li>Writing = W2 · Overall: Không đủ bộ môn</li></ul></div>
+          <details class="lich-su"><summary>Lịch sử (1)</summary><div class="dong-ls"><span class="so">01/06 09:12</span><span>Nguyễn Khánh Vy · Môn học: đủ 5 môn (lúc vào lớp)</span></div></details>
+        </div>
+        <div class="panel-chan"><span class="trai"><span class="tt-luu nhap">● Chưa lưu</span></span><button class="nut nut-ma" type="button">Huỷ</button><button class="nut nut-chinh" type="button">Lưu</button></div>
+      </aside>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="nhan-khung">Bật lại W1 sau đó</div>
+        <div class="tom-tat"><span class="tieu">Khi lưu, web sẽ</span><ul><li>Thêm W1 vào các lượt MT chưa thi (MT4 W1 OCT)</li><li>Case W1 đã đóng không tự mở lại</li></ul></div>
+        <div class="nhan-khung">Lịch sử sau hai lần đổi</div>
+        <div class="the" style="padding:4px 14px"><div class="dong-ls"><span class="so">14/09 10:20</span><span>Nguyễn Khánh Vy · Môn học: bỏ W1 (L R W1 W2 S → L R W2 S)</span></div><div class="dong-ls"><span class="so">01/06 09:12</span><span>Nguyễn Khánh Vy · Môn học: đủ 5 môn</span></div></div>
+        <div class="ghi"><ul>
+          <li>Môn học thuộc <b>lộ trình đang chạy</b> (nhãn "Môn học · FT LT1"); mở lộ trình mới thì chọn lại. Sửa ở: Sửa thông tin, Sửa cả lớp, Lộ trình mới. Không ở Thêm HV / Dán Excel (mặc định đủ môn).</li>
+          <li>[Q5 — khuyến nghị đã chọn] bài môn bỏ đã xếp chưa thi → bỏ khỏi đợt (giữ lịch sử); bài đã chấm giữ; Case đang mở của môn đó đóng "Không còn học môn".</li>
+          <li>[Q4 — khuyến nghị đã chọn] chỉ học W2 (hoặc W1): Writing = điểm task đã học, Overall "Không đủ bộ môn".</li>
+          <li>Quyền: như Sửa thông tin hiện có (GVCN, QL). Nhật ký trước → sau ở Lịch sử.</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. SỬA CẢ LỚP -->
+  <section class="khung" id="k5" aria-labelledby="h5">
+    <h2 id="h5"><span class="so-muc">5</span> Sửa cả lớp — cột "Môn học", áp cho em đã chọn <span class="t">MB FT 101 · QL Nguyễn Khánh Vy</span></h2>
+    <div class="the" style="overflow:hidden">
+      <div class="the-dau"><h3 class="h-khoi">Sửa cả lớp · MB FT 101</h3><span class="phu">22 em</span></div>
+      <div class="thanh-ap"><span class="so-chon">2 em đã chọn</span><span class="nhom-ap"><span class="n">Môn học</span><span class="bat nho"><button type="button" aria-pressed="true">L</button><button type="button" aria-pressed="true">R</button><button type="button" aria-pressed="true">W1</button><button type="button" aria-pressed="true">W2</button><button type="button" aria-pressed="false">S</button></span></span><button class="nut nut-nho nut-chinh" type="button">Áp cho 2 em</button><button class="nut nut-nho nut-ma" type="button" style="margin-left:auto">Bỏ chọn</button></div>
+      <div class="cuon-bang"><table class="bang"><colgroup><col style="width:44px"><col style="width:220px"><col style="width:110px"><col style="width:230px"><col></colgroup>
+        <thead><tr><th class="chon-o"><input type="checkbox" aria-label="Chọn tất cả"></th><th>Học viên</th><th data-kieu="diem">Target</th><th>Môn học</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td class="chon-o"><input type="checkbox" aria-label="Chọn Nguyễn Minh An"></td><td>Nguyễn Minh An</td><td data-kieu="diem"><input class="o o-so" value="6.5" style="width:70px;text-align:center" aria-label="Target"></td><td><span class="bat nho"><button type="button" aria-pressed="true">L</button><button type="button" aria-pressed="true">R</button><button type="button" aria-pressed="true">W1</button><button type="button" aria-pressed="true">W2</button><button type="button" aria-pressed="true">S</button></span></td><td class="phu">—</td></tr>
+          <tr><td class="chon-o"><input type="checkbox" aria-label="Chọn Lê Quang Huy"></td><td>Lê Quang Huy <span class="bd bd-td dang">đã sửa</span></td><td data-kieu="diem"><input class="o o-so" value="6.5" style="width:70px;text-align:center" aria-label="Target"></td><td><span class="bat nho"><button type="button" aria-pressed="true">L</button><button type="button" aria-pressed="true">R</button><button type="button" aria-pressed="false">W1</button><button type="button" aria-pressed="true">W2</button><button type="button" aria-pressed="true">S</button></span></td><td class="phu">—</td></tr>
+          <tr class="da-chon"><td class="chon-o"><input type="checkbox" checked aria-label="Chọn Mai Anh Thư"></td><td>Mai Anh Thư</td><td data-kieu="diem"><input class="o o-so" value="6.5" style="width:70px;text-align:center" aria-label="Target"></td><td><span class="bat nho"><button type="button" aria-pressed="true">L</button><button type="button" aria-pressed="true">R</button><button type="button" aria-pressed="true">W1</button><button type="button" aria-pressed="true">W2</button><button type="button" aria-pressed="true">S</button></span></td><td class="phu">—</td></tr>
+          <tr class="da-chon"><td class="chon-o"><input type="checkbox" checked aria-label="Chọn Phạm Bảo Ngọc"></td><td>Phạm Bảo Ngọc</td><td data-kieu="diem"><input class="o o-so" value="7.0" style="width:70px;text-align:center" aria-label="Target"></td><td><span class="bat nho"><button type="button" aria-pressed="true">L</button><button type="button" aria-pressed="true">R</button><button type="button" aria-pressed="true">W1</button><button type="button" aria-pressed="true">W2</button><button type="button" aria-pressed="true">S</button></span></td><td class="phu">—</td></tr>
+        </tbody></table></div>
+      <div class="chan-dinh"><div class="tom"><span><b>1 em đã sửa</b> · Lê Quang Huy bỏ W1: bỏ W1 khỏi MT3 chưa có điểm, đóng Case W1</span></div><button class="nut nut-ma" type="button">Đóng</button><button class="nut nut-chinh" type="button">Lưu 1 em</button></div>
+    </div>
+    <div class="ghi">Cột mới trong panel "Sửa cả lớp" sẵn có; điều khiển nằm trong ô, không trong tiêu đề (G9). "Áp cho n em" ở thanh chọn (như Target hàng loạt). Lưu chỉ dòng đã đổi; lỗi một em giữ dòng đỏ + lý do như hiện có. Ở 375 mỗi em một thẻ, hàng môn xuống dòng dưới tên (bảng cuộn ngang trong ảnh 375).</div>
+  </section>
+
+  <!-- 6. BẢNG LỚP -->
+  <section class="khung" id="k6" aria-labelledby="h6">
+    <h2 id="h6"><span class="so-muc">6</span> Bảng điểm lớp — ô "Không học" khác "-" vắng <span class="t">Nhập điểm · MB FT 101 · MT3</span></h2>
+    <div class="the" style="overflow:hidden">
+      <div class="cong-cu"><b>MT3 · W3 SEP</b><span class="chu-giai"><span><b class="vang-o">-</b> vắng</span><span><span class="o-khong-hoc">Không học</span> em không học môn này</span><span><span class="diem trong">—</span> chưa có điểm</span></span></div>
+      <div class="cuon-bang"><table class="bang bang-diem"><colgroup><col style="width:220px"><col><col><col><col><col><col style="width:190px"></colgroup>
+        <thead><tr><th>Học viên</th><th data-kieu="diem">L</th><th data-kieu="diem">R</th><th data-kieu="diem">W1</th><th data-kieu="diem">W2</th><th data-kieu="diem">S</th><th data-kieu="diem">Overall</th></tr></thead>
+        <tbody>
+          <tr><td>Nguyễn Minh An</td><td data-kieu="diem"><span class="diem bang-kv">6.0</span></td><td data-kieu="diem"><span class="diem vuot">6.5</span></td><td data-kieu="diem"><span class="diem duoi">5.5</span></td><td data-kieu="diem"><span class="diem bang-kv">6.0</span></td><td data-kieu="diem"><span class="vang-o">-</span></td><td data-kieu="diem"><span class="bd bd-kq thieu">– Chưa đủ dữ liệu</span></td></tr>
+          <tr><td>Lê Quang Huy</td><td data-kieu="diem"><span class="diem bang-kv">6.0</span></td><td data-kieu="diem"><span class="diem duoi">5.5</span></td><td data-kieu="diem" class="khong-hoc-o">Không học</td><td data-kieu="diem"><span class="diem bang-kv">6.0</span></td><td data-kieu="diem"><span class="diem bang-kv">6.0</span></td><td data-kieu="diem"><span class="bd bd-kq thieu">– Không đủ bộ môn</span></td></tr>
+          <tr><td>Phạm Bảo Ngọc</td><td data-kieu="diem"><span class="diem bang-kv">6.5</span></td><td data-kieu="diem"><span class="diem vuot">7.0</span></td><td data-kieu="diem"><span class="diem trong">—</span></td><td data-kieu="diem"><span class="diem trong">—</span></td><td data-kieu="diem"><span class="diem trong">—</span></td><td data-kieu="diem"><span class="diem trong">—</span></td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="ghi">Ô "Không học": chữ nghiêng nhạt + nền sọc, không nhận gõ, không là nợ chấm / "thiếu" / việc / nhắc. "-" vắng giữ như cũ (gõ "-", xoá "-" = hết vắng). Overall "Không đủ bộ môn" (cùng nhóm badge kết quả, viền đứt như "Chưa đủ dữ liệu", khác chữ). Cột giữ đủ 5 môn trên bảng lớp.</div>
+  </section>
+
+  <!-- 7. HỒ SƠ HV -->
+  <section class="khung" id="k7" aria-labelledby="h7">
+    <h2 id="h7"><span class="so-muc">7</span> Hồ sơ học viên — chỉ hiện môn học <span class="t">[Q4] Overall "Không đủ bộ môn"</span></h2>
+    <div class="man">
+      <nav class="dh" aria-label="Điều hướng chính (mẫu)"><span class="logo">PISA <small>TRACKING</small></span><a href="#">Tổng quan</a><a href="#" aria-current="page">HV &amp; Lớp</a><a href="#" class="an-dt">Test</a></nav>
+      <div class="man-than">
+        <div class="dau-hs"><h1>Lê Quang Huy</h1><span class="bd bd-kq thieu">– MT3 · Không đủ bộ môn</span><span class="hanh-dong"><button class="nut nut-nho" type="button">+ Case</button><button class="nut nut-nho" type="button" aria-label="Thao tác khác">⋯</button></span></div>
+        <div class="meta"><a class="ten-ho-so" href="#">MB FT 101</a><span>FT LT1</span><span class="ng"><span class="n">Target</span><span class="g so">6.5</span></span><span class="ng"><span class="n">Môn học</span><span class="g">L · R · W2 · S</span></span><span class="ng"><span class="n">GVCN</span><span class="g">Trần Ngọc Hà</span></span></div>
+        <section class="the" style="overflow:hidden">
+          <div class="tab-kn" role="tablist"><b style="font-size:15px;margin-right:6px">Hành trình</b><button type="button" role="tab">L</button><button type="button" role="tab">R</button><button type="button" role="tab" aria-selected="true">W <span style="font-weight:500;font-size:12px">W2</span></button><button type="button" role="tab">S</button></div>
+          <div class="cuon-bang"><table class="bang"><colgroup><col style="width:90px"><col style="width:110px"><col style="width:110px"><col style="width:110px"><col style="width:120px"><col></colgroup>
+            <thead><tr><th>Lượt</th><th>Thi</th><th data-kieu="diem">W2</th><th data-kieu="diem">W</th><th data-kieu="diem">KV lúc thi</th><th>So với lượt trước</th></tr></thead>
+            <tbody>
+              <tr><td><b>MT1</b></td><td class="so">06/07</td><td data-kieu="diem"><span class="diem duoi">5.0</span></td><td data-kieu="diem"><span class="diem duoi">5.0</span></td><td data-kieu="diem" class="so">5.5</td><td><span class="phu">Lượt đầu</span></td></tr>
+              <tr><td><b>MT2</b></td><td class="so">17/08</td><td data-kieu="diem"><span class="diem duoi">5.5</span></td><td data-kieu="diem"><span class="diem duoi">5.5</span></td><td data-kieu="diem" class="so">6.0</td><td>Tăng 0.5</td></tr>
+              <tr><td><b>MT3</b></td><td class="so">14/09</td><td data-kieu="diem"><span class="diem bang-kv">6.0</span></td><td data-kieu="diem"><span class="diem bang-kv">6.0</span></td><td data-kieu="diem" class="so">6.0</td><td>Tăng 0.5</td></tr>
+            </tbody></table></div>
+        </section>
+      </div>
+    </div>
+    <div class="ghi">Hồ sơ cá nhân chỉ vẽ môn em học: Writing chỉ đường W2, cột W1 ẩn; W = W2 (Q4). MT1, MT2 đã có W1 trước khi bỏ — vẫn xem được ở Lịch sử / bản chụp (không xoá điểm cũ). Dòng "Môn học" ở đầu hồ sơ chỉ hiện khi em không học đủ 5 môn.</div>
+  </section>
+</main>
+</body>
+</html>

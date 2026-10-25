@@ -3,6 +3,7 @@ import { api } from '../../../lib/api.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
+import { ChonLop } from '../../../ui/ChonLop.tsx';
 import { ONgay } from '../../../ui/ONgay.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { BoLocDoan } from '../../../ui/ui.tsx';
@@ -78,9 +79,7 @@ export function NganXuatDiem({ branchId, lopFt, lopDau, onDong }: { branchId: nu
   };
   const chonLop = (
     <Truong nhan={t('Lớp')}>
-      <select className="field w-full" value={lop ?? ''} onChange={(e) => setLop(Number(e.target.value) || null)}>
-        {lopFt.map((l) => <option key={l.id} value={l.id}>{l.code}</option>)}
-      </select>
+      <ChonLop ariaLabel={t('Lớp')} value={lop} onChange={setLop} ds={lopFt.map((l) => ({ id: l.id, ma: l.code, phu: `${l.chiNhanh} · ${l.soHv} em` }))} />
     </Truong>
   );
   const chonMt = (i: 0 | 1, nhan: string) => (

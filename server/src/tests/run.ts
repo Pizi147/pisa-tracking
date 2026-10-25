@@ -9591,12 +9591,15 @@ await runPrDiemTieuChiTests({ check, checkAsync, assert, assertThrows, conn, TOD
 // ==================================================================== P3 UI-CHUNG (Mới dùng PISA TRACKING? · bỏ Góp ý hàng tuần · menu ⋯ · đầu bảng dính)
 const { runPrUiChungTests } = await import('./prUiChung.tests.ts');
 await runPrUiChungTests({ check, assert, P } as any);
-// ==================================================================== P12 BAO-CAO-LICH-SU (báo cáo quá khứ theo Target / lớp / trạng thái lúc đó; Q12)
-const { runPrBaoCaoLichSuTests } = await import('./prBaoCaoLichSu.tests.ts');
-await runPrBaoCaoLichSuTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== P4 CHON-LOP (một ô chọn lớp gõ → tìm → chọn)
+const { runPrChonLopTests } = await import('./prChonLop.tests.ts');
+await runPrChonLopTests({ check, assert } as any);
 // ==================================================================== P6 KHOA-LICH (T6 → CN khoá đổi lịch MT 3 tuần, trừ Quản trị hệ thống)
 const { runPrKhoaLichTests } = await import('./prKhoaLich.tests.ts');
 await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== P12 BAO-CAO-LICH-SU (báo cáo quá khứ theo Target / lớp / trạng thái lúc đó; Q12)
+const { runPrBaoCaoLichSuTests } = await import('./prBaoCaoLichSu.tests.ts');
+await runPrBaoCaoLichSuTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
