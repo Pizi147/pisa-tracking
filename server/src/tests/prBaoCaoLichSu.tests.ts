@@ -55,7 +55,7 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     mg.migratePrBaoCaoLichSu(conn, a1);
     assert(a1.length === 1, JSON.stringify(a1));
     const lech = get(`SELECT COUNT(*) n FROM learning_cycles WHERE route IS NOT NULL AND target_score IS NOT NULL
-       AND (thi_that_khong_thi = 1 OR thi_that_l IS NOT NULL OR outcome_score IS NOT NULL) AND thi_that_target IS NOT target_score`).n;
+       AND (thi_that_khong_thi = 1 OR thi_that_l IS NOT NULL) AND thi_that_target IS NOT target_score`).n;
     const co = get(`SELECT COUNT(*) n FROM learning_cycles WHERE thi_that_target IS NOT NULL`).n;
     assert(lech === 0 && co > 0, `lệch ${lech}, có ${co}`);
     const a2: string[] = [];
@@ -115,6 +115,11 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     const ma = get('SELECT code FROM classes WHERE id = ?', cu).code;
     const p = pt.oChiSoGv(P.admin, { ...k, gv, cot: 'thi-that' });
     assert(p.rows.some((r: any) => r.lop === ma), `Phân tích GV: thi thật không ở lớp cũ ${ma}: ${JSON.stringify(p.rows.map((r: any) => r.lop))}`);
+    /* Kết thúc lớp cũ TRƯỚC ngày thi, vào lớp mới SAU ngày thi, lộ trình không có MT → lớp cũ (ghi danh muộn nhất trước ngày thi). */
+    const truoc = d.addDaysIso(c.ngay, -2);
+    conn.prepare(`UPDATE enrollments SET ended_at = ? WHERE student_id = ? AND class_id = ?`).run(`${truoc}T00:00:00.000Z`, c.student_id, cu);
+    const khongMt = { id: -1, student_id: c.student_id, ngay: c.ngay };   // id -1: lộ trình không có lượt MT
+    assert(lt.lopLucThiThat([khongMt]).get(-1) === cu, `khoảng trống quanh ngày thi, không MT → lớp cũ ${cu}: ${lt.lopLucThiThat([khongMt]).get(-1)}`);
   }));
 
   check('PBC-5 · em lưu trữ hôm nay → Chấm điểm GV kỳ trước giữ nguyên; em thôi học TRƯỚC hạn vẫn bỏ', () => {

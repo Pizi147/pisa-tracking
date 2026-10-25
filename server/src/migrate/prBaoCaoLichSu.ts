@@ -9,7 +9,7 @@ export function migratePrBaoCaoLichSu(conn: any, applied: string[]) {
   const r = conn.prepare(
     `UPDATE learning_cycles SET thi_that_target = target_score
       WHERE thi_that_target IS NULL AND target_score IS NOT NULL AND route IS NOT NULL
-        AND (thi_that_khong_thi = 1 OR thi_that_l IS NOT NULL OR outcome_score IS NOT NULL)`,
+        AND (thi_that_khong_thi = 1 OR thi_that_l IS NOT NULL)`,
   ).run();
   if (!coCot || r.changes) applied.push(`P12: cột learning_cycles.thi_that_target (Target lúc nhập KQ thi thật)${r.changes ? `, điền ${r.changes} lộ trình đã có KQ bằng Target hiện tại (ước lượng)` : ''}.`);
 }

@@ -1,7 +1,8 @@
 /**
  * LỚP EM HỌC LÚC THI THẬT (P12, E7) — MỘT luật cho Phân tích GV (`giaoVien.ts` mucThiThat) và Kết quả thi (`ketQuaThi.ts`):
  *   ghi danh hiệu lực ở ngày thi (bắt đầu ≤ ngày ≤ kết thúc / chưa kết thúc), nhiều dòng → bắt đầu muộn nhất (cùng ngày: dòng mới hơn);
- *   không có → lớp của lượt MT cuối của lộ trình (không MT0); không có nữa → ghi danh cuối của em (giữ hàng Kết quả thi như trước).
+ *   không có → ghi danh bắt đầu muộn nhất TRƯỚC / BẰNG ngày thi (luật cũ Phân tích GV) → lớp của lượt MT cuối của lộ trình (không MT0) →
+ *   ghi danh mới nhất của em (giữ hàng Kết quả thi như trước).
  * Theo lô (`theoLo`, hai câu mỗi lô), trả Map<cycleId, classId>. Bản chụp lộ trình đã đóng (`banChup.ts`) giữ lớp đóng băng của nó.
  */
 import { db, theoLo } from '../db.ts';
@@ -23,8 +24,10 @@ export function lopLucThiThat(ds: readonly { id: number; student_id: number; nga
     const moiHon = <T extends { tu: string; id: number }>(x: T, y: T): T => (y.tu > x.tu || (y.tu === x.tu && y.id > x.id) ? y : x);
     for (const c of lo) {
       const cua = ghiDanh.get(c.student_id) ?? [];
-      const hl = c.ngay ? cua.filter((e) => e.tu && e.tu <= c.ngay! && (!e.den || e.den >= c.ngay!)) : [];
-      const lop = hl.length ? hl.reduce(moiHon).lop : mtCuoi.get(c.id) ?? (cua.length ? cua.reduce((x, y) => (y.id > x.id ? y : x)).lop : null);
+      const truoc = c.ngay ? cua.filter((e) => e.tu && e.tu <= c.ngay!) : [];
+      const hl = truoc.filter((e) => !e.den || e.den >= c.ngay!);
+      const lop = hl.length ? hl.reduce(moiHon).lop : truoc.length ? truoc.reduce(moiHon).lop
+        : mtCuoi.get(c.id) ?? (cua.length ? cua.reduce((x, y) => (y.id > x.id ? y : x)).lop : null);
       if (lop != null) out.set(c.id, lop);
     }
   });

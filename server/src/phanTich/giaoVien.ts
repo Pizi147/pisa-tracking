@@ -159,7 +159,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
    * P12 (E8): em ĐANG HỌC TẠI NGÀY d (hạn nhập) — Q2 cùng nghĩa với `HV_DANG_HOC_SQL` nhưng theo ngày: chưa Kết thúc học / Lưu trữ trước d, không trong
    * khoảng Tạm dừng ở d. Lưu trữ hôm nay không xoá ô kỳ trước. Trạng thái không có ngày (Tạm dừng thiếu nhật ký, Kết thúc thiếu ngày) → không đang học như cũ.
    */
-  const tamDung = khoangTamDung(rows.map((r) => r.student_id as number));
+  const tamDung = khoangTamDung([...new Set(rows.map((r) => r.student_id as number))]);
   const dangHocLuc = (a: any, d: string) => {
     const fin = a.hv_finished ? String(a.hv_finished).slice(0, 10) : null;
     const arc = a.hv_archived ? String(a.hv_archived).slice(0, 10) : null;
