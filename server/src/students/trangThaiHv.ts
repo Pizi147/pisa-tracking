@@ -10,7 +10,7 @@ import { PERMISSIONS, tenRoute, tuanLich } from '../../../shared/domain/index.ts
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { choThiThatKhiKetThuc, setStudentStatus, transferStudent } from './students.ts';
+import { setStudentStatus, transferStudent } from './students.ts';
 import { danhSachLopDich } from '../classes/luatLoTrinh.ts';
 import { trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
 
@@ -33,10 +33,12 @@ export function tomTatTrangThai(ids: readonly number[], ketThuc: boolean): strin
       `SELECT s.id, s.status,
               (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1) AS lop,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.seq DESC LIMIT 1) AS route,
-              (SELECT cy.route_ten FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.seq DESC LIMIT 1) AS route_ten
+              (SELECT cy.route_ten FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.seq DESC LIMIT 1) AS route_ten,
+              -- cùng điều kiện choThiThatKhiKetThuc, đọc trong câu của cả lô
+              EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' AND cy.route IS NOT NULL) AS cho_thi
          FROM students s WHERE s.id IN (${ph}) AND s.status != 'finished'`,
     ).all(...lo) as any[]) {
-      em.push({ id: r.id, status: r.status, lop: r.lop ?? null, loTrinh: tenRoute(r), choThi: ketThuc && r.status === 'active' && choThiThatKhiKetThuc(conn, r.id) });
+      em.push({ id: r.id, status: r.status, lop: r.lop ?? null, loTrinh: tenRoute(r), choThi: ketThuc && r.status === 'active' && !!r.cho_thi });
     }
     soCase += (conn.prepare(`SELECT COUNT(*) n FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
       WHERE COALESCE(sc.student_id, a.student_id) IN (${ph}) AND sc.status != 'done'`).get(...lo) as any).n;
@@ -105,7 +107,8 @@ export function thongTinQuayLai(p: Principal, studentId: number) {
   const dangChay = conn.prepare(`SELECT 1 FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(studentId);
   if (!dangChay) { const cycleId = cycleLoTrinhMoi(p, studentId); if (cycleId) return ra('lo-trinh-moi', { cycleId }); }
   if (lopCu && !lopCu.daKetThuc) return ra('lop-cu');
-  const ds = danhSachLopDich(lopCu?.id ?? -1, true).lop;
+  /* Sĩ số lớp chỉ cho người xếp được lớp (Quản lý — như panel Học lại); GV xem được em không thấy sĩ số lớp khác. */
+  const ds = danhSachLopDich(lopCu?.id ?? -1, !!lopCu && can(p, PERMISSIONS.CLASS_EDIT, { classId: lopCu.id })).lop;
   const cung = ds.filter((l) => enr && l.chiNhanhId === enr.branch_id && l.ma === (enr.programme_code ?? null) && l.ft === !!enr.is_fast_track);
   const goiY = cung.find((l) => l.route === enr?.route) ?? cung[0] ?? null;
   return ra('chon-lop', { lop: ds, goiYId: goiY?.id ?? null });

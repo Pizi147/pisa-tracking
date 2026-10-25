@@ -154,7 +154,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
           <div role="group" aria-label={tieuDe} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {HUONG_SAU_THI.map((k) => (
               <button key={k} type="button" aria-pressed={chon === k} onClick={() => setChon(k)}
-                className={`flex min-h-[44px] flex-col gap-0.5 rounded-[10px] border px-3.5 py-3 text-left text-[15px] font-bold ${chon === k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'border-[color:var(--line)] text-slate-100'}`}>
+                className={`flex min-h-[44px] flex-col gap-0.5 rounded-[10px] border px-3.5 py-3 text-left text-[15px] font-bold ${chon === k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'border-[color:var(--line)] text-slate-100 hover:border-[color:var(--accent)]'}`}>
                 {NHAN_HUONG_SAU_THI[k]}
                 <span className="text-[13px] font-normal text-slate-400">
                   {k === 'dung' ? t('Em vào Lưu trữ') : t('LT1 · LT2 · RF · Khác')}{bt.goiY === k ? ` · ${t('gợi ý')}` : ''}

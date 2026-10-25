@@ -136,7 +136,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
           <>
             <Truong nhan={t('Từ ngày')}><ONgay kieu="ngay" value={ngay || null} onChange={setNgay} toiDa={homNay ?? undefined} /></Truong>
             <Truong nhan={t('Lý do')} tuyChon>
-              <textarea className="field w-full" rows={2} value={lyDo} maxLength={2000} onChange={(e) => setLyDo(e.target.value)} />
+              <textarea className="field w-full" rows={2} autoComplete="off" value={lyDo} maxLength={2000} onChange={(e) => setLyDo(e.target.value)} />
             </Truong>
             <label className={`flex min-h-[44px] items-center gap-2 text-sm sm:min-h-0 ${tamDungDuoc ? 'cursor-pointer' : 'opacity-60'}`}>
               <input type="checkbox" className="h-4 w-4" checked={quayLai} disabled={!tamDungDuoc || busy} onChange={(e) => setQuayLai(e.target.checked)} />

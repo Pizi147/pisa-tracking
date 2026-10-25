@@ -33,7 +33,7 @@ export function KhoiDung({ v, onChange, loTrinh, disabled }: { v: GiaTriDung; on
     <div className="flex flex-col gap-3">
       <Truong nhan={t('Từ ngày')}><div className="max-w-[220px]"><ONgay kieu="ngay" value={v.ngay || null} onChange={(ngay) => onChange({ ...v, ngay })} toiDa={homNay ?? undefined} disabled={disabled} /></div></Truong>
       <Truong nhan={t('Lý do')} tuyChon>
-        <input className="field w-full" maxLength={2000} value={v.lyDo} disabled={disabled} onChange={(e) => onChange({ ...v, lyDo: e.target.value })} />
+        <input className="field w-full" maxLength={2000} autoComplete="off" value={v.lyDo} disabled={disabled} onChange={(e) => onChange({ ...v, lyDo: e.target.value })} />
       </Truong>
       <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-sm sm:min-h-0">
         <input type="checkbox" className="h-4 w-4" checked={v.quayLai} disabled={disabled} onChange={(e) => onChange({ ...v, quayLai: e.target.checked })} />
@@ -128,7 +128,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
             </div>
             {khac && (
               <Truong nhan={t('Tên lộ trình')} batBuoc loi={bamLuu ? loiTen : null}>
-                <input className="field w-full" maxLength={80} value={ten} placeholder={t('Ví dụ: Luyện Speaking 1–1')} aria-invalid={bamLuu && !!loiTen} onChange={(e) => setTen(e.target.value)} />
+                <input className="field w-full" maxLength={80} autoComplete="off" value={ten} placeholder={t('Ví dụ: Luyện Speaking 1–1')} aria-invalid={bamLuu && !!loiTen} onChange={(e) => setTen(e.target.value)} />
               </Truong>
             )}
           </>
@@ -136,7 +136,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
         {buoc(3, <>Target{khac && <span className="font-normal text-slate-500">{t('(không bắt buộc)')}</span>}</>, (
           <div className="flex flex-wrap items-center gap-2.5 text-[15px]">
             {suaTg
-              ? <input className="field w-24 tabular-nums" inputMode="decimal" aria-label="Target" placeholder={bt.target || t('Ví dụ: 6.5')} value={tg} onChange={(e) => setTg(e.target.value)} />
+              ? <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={bt.target || t('Ví dụ: 6.5')} value={tg} onChange={(e) => setTg(e.target.value)} />
               : <b className="tabular-nums text-slate-100">{boTarget ? '—' : bt.target || '—'}</b>}
             {!suaTg && !boTarget && bt.target && <span className="text-sm text-slate-500">{t('giữ')}</span>}
             {!suaTg && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => { setSuaTg(true); setBoTarget(false); setTg(bt.target); }}>{t('Sửa')}</button>}

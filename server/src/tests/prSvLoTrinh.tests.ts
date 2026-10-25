@@ -189,6 +189,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(goiY.chiNhanhId === MB && goiY.ft && !tt.lop.some((l: any) => l.id === L), 'gợi ý cùng chi nhánh, FT, không lớp cũ');
     const TVV = nguoi('consultant', ['MB']);
     assert(loi(() => thv.quayLaiHoc(TVV, sid, { lopMoiId: L2 }))?.status === 403, 'TVV không xếp lớp mới');
+    assert(tt.lop.every((l: any) => l.siSo !== undefined) && thv.thongTinQuayLai(TVV, sid).lop.every((l: any) => l.siSo === undefined), 'sĩ số chỉ cho Quản lý');
     thv.quayLaiHoc(QL, sid, { lopMoiId: L2 });
     assert(hs(sid).status === 'active' && hs(sid).archived_at === null && get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, sid).class_id === L2, 'đang học lớp mới');
   }));
