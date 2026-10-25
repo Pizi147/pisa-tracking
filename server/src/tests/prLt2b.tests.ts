@@ -553,8 +553,8 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const hl = dung('FOU', 0.45, [40, 45, 50, 45], ['listening']);
     assert(hl.nhan === 'Học lại FOU · Quản lý báo phụ huynh qua TVV' && hl.tone === 'bad', JSON.stringify(hl));
     const kv = dung('BE', 0.78, [80, 75, 78, 79], [], null, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
-    assert(kv.kyVong!.nhan === 'Kết quả đầu ra (BE IELTS 4.0)' && kv.kyVong!.trangThai === 'Không đạt · Trung tâm · R, W' && kv.kyVong!.daDanhDau, JSON.stringify(kv.kyVong));
-    assert(dung('BE', 0.78, [80, 75, 78, 79], []).kyVong!.trangThai === 'Chưa đánh dấu' && dung('FOU', 0.78, [80, 75, 78, 79], []).kyVong?.nhan === 'Kết quả đầu ra (FOU IELTS > 3.5)', 'chưa đánh dấu · OV-3b: FOU có Kết quả đầu ra');
+    assert(kv.kyVong!.nhan === 'Kỳ vọng BE IELTS 4.0' && kv.kyVong!.trangThai === 'Không đạt · Trung tâm · R, W' && kv.kyVong!.daDanhDau, JSON.stringify(kv.kyVong));
+    assert(dung('BE', 0.78, [80, 75, 78, 79], []).kyVong!.trangThai === 'Chưa đánh dấu' && dung('FOU', 0.78, [80, 75, 78, 79], []).kyVong?.nhan === 'Kỳ vọng FOU IELTS > 3.5', 'chưa đánh dấu · P9b: FOU có Kỳ vọng');
   });
   check('LT2b (9) · viecTiepCuaEm: việc "Ghi Mini Test" có hạn, xếp trước Case, bấm mở đúng Case/PA; cột Việc tiếp theo của lớp có việc cho GVCN', () => {
     const v = d.viecTiepCuaEm({ nhapDiem: null, cases: [], yThuc: null, homNay: TODAY, miniTest: { han: addDays(TODAY, 2), caseId: 5, paId: 9 } });
@@ -594,7 +594,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(mtVy.id), 'thẻ Báo QL Mini Test');
     assert(JSON.stringify(duyetMod.hopChoDuyet(ql, { xem: 'de-biet' })).includes('Mini Test chưa đạt'), 'hộp Chờ duyệt của QL có thẻ Mini Test');   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
   });
-  check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học viên → một Case không PA, có lý do (PR-KV)', () => {
+  check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học viên → không Case, có phương án (N17, P9b)', () => {
     const bao = hv('Ninh Gia Bảo');
     const c = caseChuyenCap(bao);
     assert(lopHienTai(bao).code === 'MB FOU 15' && c.length === 1 && c[0].title === 'Final Test Pre FOU · Tổng hợp không đạt', JSON.stringify(c.map((x) => x.title)));
@@ -604,7 +604,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(lopHienTai(minh).code === 'MB FT 101' && cm.length === 1 && cm[0].title === 'Kỳ vọng đầu ra chưa đạt · Reading', JSON.stringify(cm.map((x) => x.title)));
     assert((conn.prepare(`SELECT kind, preset FROM case_interventions WHERE case_id = ?`).get(cm[0].id) as any).kind === 'tutor', 'PA Tutor');
     const cn = caseChuyenCap(nhi);
-    assert(cn.length === 1 && /^Kỳ vọng đầu ra chưa đạt · Học viên/.test(cn[0].title) && !conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ?').get(cn[0].id), JSON.stringify(cn.map((x) => x.title)));
+    assert(!cn.some((x) => /^Kỳ vọng đầu ra/.test(x.title)), JSON.stringify(cn.map((x) => x.title)));
     const lt = conn.prepare(`SELECT ky_vong_nguyen_nhan, ky_vong_ghi_chu FROM lo_trinh_tiep_theo WHERE student_id = ? AND ky_vong_dat = 0`).get(nhi) as any;
     assert(lt.ky_vong_nguyen_nhan === 'hoc_sinh' && lt.ky_vong_ghi_chu.length >= 15, 'ghi chú case-by-case');
   });

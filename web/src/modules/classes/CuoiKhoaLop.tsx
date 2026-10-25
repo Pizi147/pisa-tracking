@@ -7,6 +7,7 @@ import { Modal } from '../../ui/Drawer.tsx';
 import { Empty, ErrorState, OKck, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
@@ -89,6 +90,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const [huy, setHuy] = useState<{ em: Em; lyDo: string } | null>(null);
   const [banGiao, setBanGiao] = useState<number | null>(null);
   const [nhanXet, setNhanXet] = useState<Record<number, string>>({});
+  /* 375 (mockup k9): thẻ gọn "hướng · lớp"; "Sửa" mở ô của em đó tại thẻ. */
+  const [moThe, setMoThe] = useState<ReadonlySet<number>>(new Set());
   const [ap, setAp] = useState<{ huong: ChonHuong; quayLai: boolean; lop: number | null; tuan: string; kv: { dat: boolean; nn: 'trung_tam' | 'hoc_sinh' | null } | null }>(
     { huong: '', quayLai: true, lop: null, tuan: '', kv: null });
 
@@ -394,7 +397,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const canTarget = x.huong === 'fast_track' && e.target == null && !e.kck;
     return (
       <span className="block space-y-1.5">
-        <select className="field w-full" aria-label={t('Hướng · {ten}', { ten: e.fullName })} value={x.huong}
+        <select className="field h-9 w-full text-[14px]" aria-label={t('Hướng · {ten}', { ten: e.fullName })} value={x.huong}
           onChange={(ev) => doi(e.id, { huong: ev.target.value as ChonHuong, lop: null })}>
           <option value="">{t('Chọn hướng')}</option>
           {NHOM.filter((n) => n.k).map((n) => <option key={n.k} value={n.k}>{n.nhan}</option>)}
@@ -575,12 +578,15 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     </>
   );
 
-  const cot = laQl
-    ? ['', t('Học viên'), t('Kết quả đầu ra'), t('Gợi ý'), t('Hướng'), t('Lớp chuyển đến'), t('Bàn giao')]
-    : [t('Học viên'), t('Kết quả đầu ra'), t('Gợi ý'), t('Hướng · QL chốt'), t('Nhận xét')];
-  const rongCot = laQl ? ['w-11', 'w-[17%]', 'w-[22%]', 'w-[13%]', 'w-[20%]', 'w-[15%]', 'w-[11%]'] : ['w-[18%]', 'w-[24%]', 'w-[15%]', 'w-[20%]', ''];
-  const chip = (nhan: ReactNode, bat: boolean, onClick: () => void) => (
-    <button type="button" aria-pressed={bat} onClick={onClick}
+  /* Mockup V6 k3 / k7: QL 7 cột, GVCN 5 cột; Kết quả đầu ra là cột linh hoạt. */
+  const cot: CotBang[] = laQl
+    ? [{ key: 'chon', nhan: '', kieu: 'nut', rong: 44 }, { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 190 }, { key: 'kq', nhan: t('Kết quả đầu ra'), kieu: 'chu' },
+      { key: 'goiY', nhan: t('Gợi ý'), kieu: 'chu', rong: 150 }, { key: 'huong', nhan: t('Hướng'), kieu: 'chu', rong: 230 },
+      { key: 'lop', nhan: t('Lớp chuyển đến'), kieu: 'chu', rong: 190 }, { key: 'bg', nhan: t('Bàn giao'), kieu: 'chip', rong: 130 }]
+    : [{ key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 200 }, { key: 'kq', nhan: t('Kết quả đầu ra'), kieu: 'chu', rong: 260 },
+      { key: 'goiY', nhan: t('Gợi ý'), kieu: 'chu', rong: 160 }, { key: 'huong', nhan: t('Hướng · QL chốt'), kieu: 'chu', rong: 230 }, { key: 'nx', nhan: t('Nhận xét'), kieu: 'chu' }];
+  const chip = (nhan: ReactNode, bat: boolean, onClick: () => void, key?: string) => (
+    <button key={key} type="button" aria-pressed={bat} onClick={onClick}
       className={`btn btn-sm min-h-[44px] rounded-full sm:min-h-0 ${bat ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{nhan}</button>
   );
 
@@ -607,9 +613,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
             <div className="flex flex-wrap items-center gap-2 px-4 py-3">
               {laQl && (
                 <span className="flex flex-wrap items-center gap-1.5">
-                  {chip(<>{t('Chọn tất cả')} · <span className="tabular-nums">{ds.filter(chonDuoc).length}</span></>, false, () => setChon(new Set(ds.filter(chonDuoc).map((e) => e.id))))}
+                  {chip(<>{t('Chọn tất cả')}&nbsp;·&nbsp;<span className="tabular-nums">{ds.filter(chonDuoc).length}</span></>, false, () => setChon(new Set(ds.filter(chonDuoc).map((e) => e.id))))}
                   <span className="text-[12px] text-slate-500">{t('Chọn nhóm:')}</span>
-                  {demNhom.map((n) => chip(<>{n.nhan} <span className="tabular-nums">{n.so}</span></>, false, () => chonNhom(n.k)))}
+                  {demNhom.map((n) => chip(<>{n.nhan} <span className="tabular-nums">{n.so}</span></>, false, () => chonNhom(n.k), n.k || 'chua'))}
                 </span>
               )}
               <span className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
@@ -644,37 +650,37 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
                     <div className="mt-2">{oKetQua(e)}</div>
                     {e.nhanXet && !laGvcn && <div className="mt-1 text-[12px] text-slate-400">GVCN: {e.nhanXet}</div>}
                     <div className="mt-2 space-y-2">
-                      {laQl ? <>{oHuong(e, x)}{oLop(e, x)}{oKyVong(e, x)}{e.lenh && <div>{oBanGiao(e)}</div>}</> : <>{oChiDoc(e)}{oKyVong(e, x)}{laGvcn && oNhanXet(e)}</>}
+                      {laQl && (moThe.has(e.id) || loi[e.id] || sua[e.id]?.mo) ? <>{oHuong(e, x)}{oLop(e, x)}{oKyVong(e, x)}{e.lenh && <div>{oBanGiao(e)}</div>}</>
+                        : laQl ? (
+                          <div className="flex items-center gap-2">
+                            <span className="min-w-0 flex-1 text-sm font-semibold text-slate-100">{khoa(e) ? '🔒 ' : ''}{x.huong ? [NHOM.find((n) => n.k === x.huong)?.nhan, x.lop ? lopCua.get(x.lop)?.code ?? e.lenh?.lopDichMa : x.huong !== 'dung' ? t('chưa chọn lớp') : null].filter(Boolean).join(' · ') : t('Chưa có hướng')}</span>
+                            <button type="button" className="btn btn-sm min-h-[44px]" onClick={() => (khoa(e) ? doi(e.id, { mo: true }) : setMoThe((m) => new Set(m).add(e.id)))}>{t('Sửa')}</button>
+                          </div>
+                        ) : <>{oChiDoc(e)}{oKyVong(e, x)}{laGvcn && oNhanXet(e)}</>}
                     </div>
                   </article>
                 ))}
               </div>
             ) : hien.length > 0 && (
-              <div className="table-scroll">
-                <table className="w-full min-w-[1080px] table-fixed text-sm">
-                  <colgroup>{rongCot.map((c, i) => <col key={i} className={c} />)}</colgroup>
-                  <thead><tr>{cot.map((c, i) => (
-                    <th key={i} className="th">{i === 0 && laQl ? <span className="sr-only">{t('Chọn')}</span> : c}</th>
-                  ))}</tr></thead>
-                  <tbody>
-                    {hien.map(({ e, x }) => (
-                      <tr key={e.id} id={`ck-em-${e.id}`} className={`row-hover align-top ${loi[e.id] ? 'bg-late-bg' : chon.has(e.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
-                        {laQl && <td className="td pt-3.5">{oChon(e)}</td>}
-                        <td className="td py-3">{oTen(e)}</td>
-                        <td className="td py-3">{oKetQua(e)}{oKyVong(e, x)}</td>
-                        <td className="td py-3">{oGoiY(e)}</td>
-                        {laQl ? <><td className="td py-3">{oHuong(e, x)}</td><td className="td py-3">{oLop(e, x)}</td><td className="td py-3">{oBanGiao(e)}</td></>
-                          : <><td className="td py-3">{oChiDoc(e)}</td><td className="td py-3">{oNhanXet(e)}</td></>}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Bang ten={t('Cuối khoá · {lop}', { lop: d.from.code })} cot={cot} hang={hien} khoa={(r) => r.e.id} the375={false} khung={false}
+                dangMo={(r) => chon.has(r.e.id) || !!loi[r.e.id]} oCua={({ e, x }, c) => <div className="whitespace-normal">{(() => {
+                  /* Ô nhiều dòng (ô nhập, lý do, Kỳ vọng) — bỏ `nowrap` của kiểu cột chữ. */
+                  switch (c.key) {
+                    case 'chon': return oChon(e);
+                    case 'ten': return <span id={`ck-em-${e.id}`}>{oTen(e)}</span>;
+                    case 'kq': return <>{oKetQua(e)}{oKyVong(e, x)}</>;
+                    case 'goiY': return oGoiY(e);
+                    case 'huong': return laQl ? oHuong(e, x) : oChiDoc(e);
+                    case 'lop': return oLop(e, x);
+                    case 'bg': return oBanGiao(e);
+                    default: return oNhanXet(e);
+                  }
+                })()}</div>} />
             )}
           </>
         )}
         {chan && ds.length > 0 && (
-          <div className="sticky bottom-0 z-20 flex flex-wrap items-center gap-2.5 border-t px-4 py-3 shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>{chan}</div>
+          <div className="sticky bottom-0 z-20 flex flex-wrap items-center gap-2.5 border-t px-4 py-3 shadow-xl max-sm:[&>span:first-child]:basis-full max-sm:[&>button]:flex-1" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>{chan}</div>
         )}
       </section>
 

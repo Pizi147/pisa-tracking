@@ -93,4 +93,5 @@ export const EN_P9B_CUOI_KHOA = {
   'Không đạt Kỳ vọng': 'Expectation not met',
   'Ghi phương án, không Case.': 'Write a plan, no Case.',
   'Phương án': 'Plan',
+  'chưa chọn lớp': 'no class yet',
 };

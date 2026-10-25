@@ -808,7 +808,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     ganGv(cuoi, GV[3].userId, null, true);
     const ds = [hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid];
     const pl = () => (myWork(P.mbManager) as any).items.find((i: any) => i.group === 'chot_len_ft' && i.classId === cuoi);
-    assert(pl().reason === '3 em chưa chọn' && /^Chốt lộ trình · \S/.test(pl().tieuDe) && pl().count === 3 && pl().href === `/hoc-vien/lop/${cuoi}?viec=lo-trinh-ca-lop`, JSON.stringify(pl()));
+    assert(pl().reason === '3 em chưa chọn' && /^Chốt lộ trình · \S/.test(pl().tieuDe) && pl().count === 3 && pl().href === `/hoc-vien/lop/${cuoi}?xem=cuoi-khoa`, JSON.stringify(pl()));
     ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[0], 'len_lop', d6)]);
     assert(pl().reason === '2 em chưa chọn', pl().reason);   // R-B4: đã có em xác nhận → bỏ tiền tố tổng
     /* PR-VAI-a (Q27): GVCN không còn việc "Ghi lộ trình tiếp theo" — việc của Quản lý ("Chốt lộ trình", PR-LCb) đã phủ. */
