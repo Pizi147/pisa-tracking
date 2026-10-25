@@ -9594,6 +9594,9 @@ await runPrUiChungTests({ check, assert, P } as any);
 // ==================================================================== P11 VIEC-DUNG-VAI (cột Việc đúng vai: GV việc của mình, QL gộp theo môn)
 const { runPrViecDungVaiTests } = await import('./prViecDungVai.tests.ts');
 await runPrViecDungVaiTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== P6 KHOA-LICH (T6 → CN khoá đổi lịch MT 3 tuần, trừ Quản trị hệ thống)
+const { runPrKhoaLichTests } = await import('./prKhoaLich.tests.ts');
+await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
