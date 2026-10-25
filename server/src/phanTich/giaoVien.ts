@@ -23,7 +23,7 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { tuanLich as tuanLichNgan } from '../../../shared/domain/hienThiNgay.ts';
 import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { khoangTamDung } from '../students/tamDung.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 import { lopLucThiThat } from './lopLucThi.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -107,7 +107,7 @@ function nguCanhCn(cn: number, f: LocPtGv): NguCanhPtGv {
 type OBai = {
   id: number; attemptId: number; classId: number; studentId: number; hocVien: string; skill: string; tuan: string; han: string | null;
   nhapDau: string | null; band: number | null; coDiem: boolean; tienDo: string; noShow: boolean;
-  /** Q2: em đang học — chỉ tập Chấm điểm lọc theo cờ này; Kết quả / Tiến bộ giữ bài đã có điểm của em đã thôi học. */
+  /** Q2 + P12: em đang học TẠI HẠN NHẬP — chỉ tập Chấm điểm lọc theo cờ này; Kết quả / Tiến bộ giữ bài đã có điểm của em đã thôi học. */
   dangHoc: boolean; kck: boolean; bai: string;
   /** T18 (PR-LT3): loại lượt + GV chấm Speaking đã ghi (`examiner_user_id`) — ô Speaking Mock tính cho người chấm, không cho GVBM S. */
   kind: string; examinerUserId: number | null;
@@ -128,7 +128,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
     rows.push(...conn.prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
               -- P12 (E6): Target + KCK LÚC LƯỢT (như resultOf) — đổi Target / KCK lộ trình sau đó không viết lại kỳ đã qua
-              a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, cy.route, s.full_name AS hv_ten, (${HV_DANG_HOC_SQL('s')}) AS dang_hoc
+              a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, cy.route, s.full_name AS hv_ten, s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
          JOIN students s ON s.id = a.student_id
@@ -155,6 +155,20 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
     const ds = (ghiDanh.get(sid) ?? []).filter((e) => e.tu && e.tu <= cuoi && (!e.den || e.den > tuan));
     return ds.length ? ds.reduce((x, y) => (y.tu > x.tu ? y : x)).lop : lopLuot;
   };
+  /*
+   * P12 (E8): em ĐANG HỌC TẠI NGÀY d (hạn nhập) — Q2 cùng nghĩa với `HV_DANG_HOC_SQL` nhưng theo ngày: chưa Kết thúc học / Lưu trữ trước d, không trong
+   * khoảng Tạm dừng ở d. Lưu trữ hôm nay không xoá ô kỳ trước. Trạng thái không có ngày (Tạm dừng thiếu nhật ký, Kết thúc thiếu ngày) → không đang học như cũ.
+   */
+  const tamDung = khoangTamDung(rows.map((r) => r.student_id as number));
+  const dangHocLuc = (a: any, d: string) => {
+    const fin = a.hv_finished ? String(a.hv_finished).slice(0, 10) : null;
+    const arc = a.hv_archived ? String(a.hv_archived).slice(0, 10) : null;
+    if ((fin && fin <= d) || (arc && arc <= d)) return false;
+    const kd = tamDung[a.student_id] ?? [];
+    if (kd.some((k) => k.tu.slice(0, 10) <= d && (!k.den || k.den.slice(0, 10) > d))) return false;
+    if (a.hv_status === 'inactive' && !kd.some((k) => !k.den)) return false;
+    return !(a.hv_status === 'finished' && !fin);
+  };
   const o: OBai[] = [];
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
@@ -167,7 +181,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
         id: baiId(a.id, skill), attemptId: a.id, classId: lop, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
         nhapDau: row?.nhap_dau_ngay ?? null, band: row?.band ?? null,
         coDiem: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null, tienDo: v.progress, noShow: v.noShow,
-        dangHoc: !!a.dang_hoc, kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
+        dangHoc: dangHocLuc(a, v.deadline ?? c.homNay), kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
         kind: a.kind, examinerUserId: row?.examiner_user_id ?? null,
       });
     };
@@ -196,7 +210,7 @@ export type DongChamDiem = {
 /**
  * Q13, Q20: ô có tuần thi trong khoảng, gán cho người được phân công ở HẠN NHẬP. Đúng hạn ⇔ `nhap_dau_ngay ≤ mốc trễ` (sửa sau không tính);
  * chưa nhập mà đã quá hạn = trễ. PR-S6F-a Q6: mốc trễ = `mocTreNhapDiem` (max(hạn, Chủ nhật tuần thi)), quá hạn = `quaHanNhapDiem` — một luật
- * với Nợ điểm / Việc / Lịch Test; số ngày trễ đếm từ mốc. Panel vẫn hiện HẠN (mốc chỉ để tính). Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em không đang học (Q2) / ô chưa tới hạn chưa nhập.
+ * với Nợ điểm / Việc / Lịch Test; số ngày trễ đếm từ mốc. Panel vẫn hiện HẠN (mốc chỉ để tính). Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em không đang học (Q2) / ô chưa tới hạn chưa nhập. Em đang học xét TẠI HẠN NHẬP (P12): lưu trữ / thôi học sau hạn không đổi kỳ đã qua.
  */
 export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<number, DongChamDiem & { gv: number }>; khongTinh: Map<number, number> } {
   const tap: Tap = new Map();

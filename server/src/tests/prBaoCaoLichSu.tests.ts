@@ -116,13 +116,15 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
   }));
 
   check('PBC-5 · em lưu trữ hôm nay → Chấm điểm GV kỳ trước giữ nguyên; em thôi học TRƯỚC hạn vẫn bỏ', () => {
-    const cham = () => { xoaNho(); return JSON.stringify(pt.phanTichGiaoVien(QL, ky).hang.map((h: any) => [h.id, h.chamDiem])); };
+    /* Kỳ trước: hết 2 tuần trước hôm nay — mọi hạn nhập đã qua (ô hạn từ hôm nay trở đi thì em lưu trữ hôm nay đúng là không còn học). */
+    const kyTruoc = { ...ky, den: d.addDaysIso(den, -14) };
+    const cham = () => { xoaNho(); return JSON.stringify(pt.phanTichGiaoVien(QL, kyTruoc).hang.map((h: any) => [h.id, h.chamDiem])); };
     const truoc = cham();
     const lop = classId('MB FT 101');
     thu(() => {
       conn.prepare(`UPDATE students SET status = 'finished', finished_at = ?, archived_at = ? WHERE id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(TODAY, TODAY, lop);
       assert(cham() === truoc, 'lưu trữ hôm nay làm đổi Chấm điểm kỳ trước');
-      conn.prepare(`UPDATE students SET finished_at = ?, archived_at = ? WHERE id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(ky.tu, ky.tu, lop);
+      conn.prepare(`UPDATE students SET finished_at = ?, archived_at = ? WHERE id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(kyTruoc.tu, kyTruoc.tu, lop);
       assert(cham() !== truoc, 'em thôi học trước hạn vẫn phải bỏ khỏi Chấm điểm');
     });
   });
