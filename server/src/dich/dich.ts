@@ -27,9 +27,6 @@ const theoCase = (bang: string) => (p: Principal, id: number, cot: string): Dong
   return { chu: r.chu, studentId: c.eff_student_id ?? c.student_id ?? null };
 };
 
-/** Bàn giao: kiểm bằng chính `phieuBanGiao` (ném 403 khi không đọc được lệnh này). */
-const theoLenh = (p: Principal, lenhId: number) => { phieuBanGiao(p, { lenhId }); };
-
 export const NGUON_DICH: Record<string, Nguon> = {
   /* Nhận xét Test: MT, lớp thường, S chấm chéo + nhận xét GV phụ trách — `id` = lượt, `kyNang` = ô. Quyền như `GET /attempts/:id`. */
   assessment_scores: {
@@ -57,7 +54,7 @@ export const NGUON_DICH: Record<string, Nguon> = {
     doc: (p, id) => {
       const r = mot('SELECT b.lenh_id, b.noi_dung AS chu, l.student_id FROM ban_giao_mon b JOIN lenh_chuyen_lop l ON l.id = b.lenh_id WHERE b.id = ?', id);
       if (!r) throw notFound();
-      theoLenh(p, r.lenh_id);
+      phieuBanGiao(p, { lenhId: r.lenh_id });   // quyền = đường đọc phiếu (403 khi không đọc được lệnh này)
       return { chu: r.chu, studentId: r.student_id };
     },
   },
@@ -66,7 +63,7 @@ export const NGUON_DICH: Record<string, Nguon> = {
     doc: (p, id) => {
       const r = mot('SELECT nhan_xet_chung AS chu, student_id FROM lenh_chuyen_lop WHERE id = ?', id);
       if (!r) throw notFound();
-      theoLenh(p, id);
+      phieuBanGiao(p, { lenhId: id });
       return { chu: r.chu, studentId: r.student_id };
     },
   },

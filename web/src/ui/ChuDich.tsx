@@ -26,7 +26,6 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
   const [xemDich, setXemDich] = useState(false);
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
-  const [, veLai] = useState(0);
 
   if (!nguon || !session?.dichBat || !canDich(goc, NGON_NGU)) return anGoc ? null : <>{goc}</>;
   const ban = daDich.get(khoa);
@@ -37,7 +36,7 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
     try {
       const r = await api.post<{ banDich: string }>('/dich', { ...nguon, den: NGON_NGU });
       daDich.set(khoa, r.banDich);
-      setXemDich(true); veLai((x) => x + 1);
+      setXemDich(true);
     } catch (e) {
       setLoi((e as Error).message || t('Chưa dịch được. Bản gốc vẫn giữ — thử lại sau.'));
     } finally { setDang(false); }
