@@ -11,7 +11,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, khoaCuoiTuan, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT,
   bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam,
@@ -23,7 +23,7 @@ import { entrySkillsOf, expectationFor } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, nextAttemptNo } from '../fasttrack/cycles.ts';
 import {
-  baoGvcnDoiLichThuongLop, checkWeekVsNeighbours, kiemVuot, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
+  baoGvcnDoiLichThuongLop, checkWeekVsNeighbours, kiemVuot, laQuanTriGoc, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
 } from '../fasttrack/skillSchedule.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
@@ -508,6 +508,8 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     rows?: any[]; scores?: any[]; periods?: Map<number, any>; homNay?: string; choHuyLich?: boolean; theoLo?: boolean;
     /** PR-MT0: tuần muộn nhất của MT0 cùng lộ trình (đường theo lô — `theoLo`) — MT1 phải sau tuần này. */
     tuanMt0?: string | null;
+    /** P6 N15: vai gốc Quản trị hệ thống — miễn khoá đổi lịch MT T6 → CN. */
+    quanTri?: boolean;
   } = {},
 ): { bai: BaiXemTruoc[]; canLyDo: boolean } {
   const conn = db();
@@ -548,8 +550,11 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     : chanMt0 ? { chan: chanMt0 }
     : pre.theoLo ? { chan: null } : kiemVuot(a.id, tuanCuoi, tuanDau);
   const checks = new Map<string, { blockers: string[]; warnings: string[] }>();
+  const homNay = pre.homNay ?? demoToday();
   for (const d of doi) {
     const b = bai[d.i];
+    const khoa = cheDo === 'ft' || a.kind === 'mt0' ? khoaCuoiTuan({ tuan: [d.row.week_start, d.pr.week_start], homNay, quanTri: !!pre.quanTri }) : null;
+    if (khoa) { b.ghiChu = 'chan'; b.cau = khoa; continue; }
     if (vuot.chan) { b.ghiChu = 'chan'; b.cau = vuot.chan; continue; }
     let c = checks.get(d.pr.week_start);
     if (!c) {
@@ -572,7 +577,7 @@ export function kiemDot(p: Principal, i: { attemptId: number; kyNang: YeuCauKyNa
   const a = docDot(i.attemptId);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }, PLAN_MSG);
   for (const k of i.kyNang) chonKyNang(k.skill);
-  return kiemDotNoi(a, i.kyNang, new Set(), { choHuyLich: true });
+  return kiemDotNoi(a, i.kyNang, new Set(), { choHuyLich: true, quanTri: laQuanTriGoc(p) });
 }
 
 /** Lưu MỘT ĐỢT (hộp chip bấm Lưu một lần): kiểm hết rồi mới ghi, một `tx` — chặn một kỹ năng thì cả lần lưu không đổi gì. */
@@ -590,7 +595,7 @@ export function luuDot(p: Principal, i: {
 
   const duaLai = new Set(i.kyNang.filter((k) => k.bo === false).map((k) => k.skill));
   const datTuan = i.kyNang.filter((k) => k.periodId && !k.bo) as YeuCauKyNang[];
-  const kiem = kiemDotNoi(a, datTuan, duaLai, { choHuyLich: !i.khiTao });
+  const kiem = kiemDotNoi(a, datTuan, duaLai, { choHuyLich: !i.khiTao, quanTri: laQuanTriGoc(p) });
   const chan = kiem.bai.filter((b) => b.ghiChu === 'chan');
   if (chan.length) {
     const ct = (db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(a.class_id) as any)?.programme_code ?? null;
@@ -1019,7 +1024,7 @@ const coDiemO = (scores: any[], skill: string) => scores.some((s) => (entrySkill
 function xetMotEmFT(i: {
   studentId: number; ten: string; chon: number | 'moi'; ep: boolean; thiLai?: KyNangKH[];
   tuan: Partial<Record<KyNangKH, number>>; periods: Map<number, any>; homNay: string;
-  lo: ReturnType<typeof docFtTheoLo>; kyChon?: readonly KyNangKH[];
+  lo: ReturnType<typeof docFtTheoLo>; kyChon?: readonly KyNangKH[]; quanTri: boolean;
 }): { dong: DongHangLoat; attemptId: number | null } {
   const dong = (x: Partial<DongHangLoat>): DongHangLoat => ({ studentId: i.studentId, ten: i.ten, hanhDong: 'loi', bai: [], loi: null, ...x });
   const cycle = i.lo.cycleCua.get(i.studentId);
@@ -1054,6 +1059,8 @@ function xetMotEmFT(i: {
     const qua = kiemTuanXep({ ketThuc: co.map((k) => i.periods.get(i.tuan[k]!).week_end), homNay: i.homNay, quanLy: true });
     const kiem = kiemTuanMoi(cycle.id, attemptNo, co.map((k) => i.periods.get(i.tuan[k]!).week_start), 'mock');   // LUAT-NX-MT
     const bai = baiMoi(co, i.tuan, i.periods, kiem);
+    const khoa = khoaCuoiTuan({ tuan: co.map((k) => i.periods.get(i.tuan[k]!).week_start), homNay: i.homNay, quanTri: i.quanTri });
+    if (khoa) return { dong: dong({ loi: khoa, bai, viec: 'tao', attemptNo }), attemptId: null };
     if (kiem.blockers.length) return { dong: dong({ loi: kiem.blockers.join(' '), bai, viec: 'tao', attemptNo }), attemptId: null };
     return { dong: dong({ hanhDong: 'tao', bai, viec: 'tao', attemptNo, lichSu: qua.mtCu }), attemptId: null };
   }
@@ -1067,7 +1074,9 @@ function xetMotEmFT(i: {
     const bai: BaiXemTruoc[] = thi.map((k) => {
       const pr = i.periods.get(i.tuan[k]!);
       const tu = rowsCua(a).find((r) => r.skill === k)?.week_start ?? null;
-      return laLichSu(pr.week_end, i.homNay)
+      const khoa = khoaCuoiTuan({ tuan: [tu, pr.week_start], homNay: i.homNay, quanTri: i.quanTri });
+      return khoa ? { skill: k, tu, den: pr.week_start, ghiChu: 'chan', cau: khoa }
+        : laLichSu(pr.week_end, i.homNay)
         ? { skill: k, tu, den: pr.week_start, ghiChu: 'chan', cau: CAU_THI_LAI_TUAN_QUA }
         : { skill: k, tu, den: pr.week_start, ghiChu: 'doi', cau: 'Thi lại — điểm cũ giữ trong Lịch sử.' };
     });
@@ -1083,7 +1092,7 @@ function xetMotEmFT(i: {
   const duaLai = new Set<KyNangKH>(rowsCua(a).some((r) => r.required && (KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)) ? [] : ks);
   const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), duaLai,
     {
-      rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay, theoLo: true,
+      rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay, theoLo: true, quanTri: i.quanTri,
       tuanMt0: cuaEm.filter((x) => x.kind === 'mt0' && x.status !== 'cancelled')
         .flatMap((x) => rowsCua(x).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start).map((r) => String(r.week_start))).sort().pop() ?? null,
     });
@@ -1150,7 +1159,7 @@ export function xepHangLoat(p: Principal, i: {
     const rieng = Number(i.dotTheoEm?.[studentId]) || 0;
     return xetMotEmFT({
       studentId, ten, chon: rieng || i.attemptNo!, ep: !!rieng, thiLai: (i.thiLai?.[studentId] ?? []).map(chonKyNang),
-      tuan, periods, homNay: today, lo: lo!, kyChon,
+      tuan, periods, homNay: today, lo: lo!, kyChon, quanTri: laQuanTriGoc(p),
     });
   });
   if (i.xemTruoc) return { dong: xet.map((x) => x.dong), daLuu: 0 };

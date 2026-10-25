@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, invalidate } from '../../../lib/api.ts';
-import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
+import { useKhoaCuoiTuan, useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import { useSession } from '../../../lib/session.tsx';
@@ -62,6 +62,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   const toast = useToast();
   const moi = attemptId === null;
   const nghiepVu = useNgayNghiepVu().homNay;
+  const khoaCt = useKhoaCuoiTuan();
   const homNay = nghiepVu ? mondayOfDate(nghiepVu) : null;
   const ngayNghiepVu = nghiepVu || null;
   const [thaoTac, setThaoTac] = useState<{ t: ThaoTac; k: KyNangKH } | null>(null);
@@ -189,10 +190,13 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
 
   const chan = (bai ?? []).filter((b) => b.ghiChu === 'chan');
   const canhBao = !chan.length ? (bai ?? []).filter((b) => b.ghiChu === 'canh-bao') : [];
-  const cauChan = chan.length ? `Chặn: ${[...new Set(chan.map((b) => b.cau))].join(' ')}` : '';
+  /* P6 N15: FT T6 → CN — tuần đợt thuộc 3 tuần khoá → chip; bỏ kỹ năng khỏi đợt (huỷ lịch) chặn ngay (dời: máy chủ báo qua xem trước). */
+  const khoaDotNay = loai === 'ft' && !moi ? khoaCt(...ky.map((k) => kn[k]?.tuan)) : null;
+  const khoaBo = loai === 'ft' ? khoaCt(...bo.map((k) => kn[k]?.tuan)) : null;
+  const cauChan = chan.length ? `Chặn: ${[...new Set(chan.map((b) => b.cau))].join(' ')}` : khoaBo ? `Chặn: ${khoaBo}` : '';
   const cauCanhBao = canhBao.length ? [...new Set(canhBao.map((b) => b.cau))].join(' ') : '';
 
-  const luuLich = !chan.length && (moi ? !thieuTuan && dungKy.length > 0 && !!bai : coDoi);
+  const luuLich = !chan.length && !khoaBo && (moi ? !thieuTuan && dungKy.length > 0 && !!bai : coDoi);
   const luuDuoc = !busy && (luuLich || (doiGhi && !coDoi && !(moi && daChinh)));
   /* T4: Quản lý chọn tuần đã qua cho kỹ năng chưa thi → chip vàng (không chặn). Chỉ tính dòng vừa đổi — tuần cũ giữ nguyên không phải "chọn". */
   const quaTuan = !!nghiepVu && coTuan.some((k) => daDoi(k) && !!rows[k].weekStart && (moi || kn[k]?.khoa == null)
@@ -251,7 +255,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   };
 
   /* Xóa (mục 6): bỏ tuần mọi kỹ năng chưa thi — máy chủ chặn có điểm / đã thi / đề nghị dời chờ duyệt. Hoàn tác = đặt lại đúng tuần cũ. */
-  const lyDoXoa = attemptId === null ? null : lyDoKhongXoa(kn);
+  const lyDoXoa = attemptId === null ? null : lyDoKhongXoa(kn)
+    ?? (loai === 'ft' ? khoaCt(...ky.map((k) => (kn[k]?.batBuoc && kn[k]?.sit === 'scheduled' ? kn[k]?.tuan : null))) : null);
   const xoa = async () => {
     if (attemptId === null || busy) return;
     setBusy(true); setLoiXoa(null);
@@ -340,7 +345,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   ];
   const nutLuu = canhBao.length && !force ? 'Vẫn xếp vào tuần này' : 'Lưu';
   const nhanChung = loai === 'thuong' && chung?.weekStart ? nhanTuanKhoa(chung.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
-  const coDongDuoi = !!cauChan || !!cauCanhBao || quaTuan;
+  const coDongDuoi = !!cauChan || !!cauCanhBao || quaTuan || !!khoaDotNay;
   return createPortal(
     <div ref={box} role="dialog" aria-label={`Lịch ${tieuDe}`} tabIndex={-1}
       className={`surface-2 z-[60] border shadow-2xl outline-none ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[min(520px,calc(100vw-32px))] rounded-lg'}`}
@@ -403,9 +408,10 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
           <div className="space-y-1.5" role="status">
             {cauChan && <div className="text-xs leading-relaxed text-bad">{cauChan}</div>}
             {cauCanhBao && <div className="text-xs leading-relaxed text-soon">{cauCanhBao}</div>}
-            {quaTuan && (
+            {(quaTuan || khoaDotNay) && (
               <div className="flex flex-wrap gap-1.5">
-                <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>
+                {quaTuan && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
+                {khoaDotNay && <Nhan tone="soon" title={khoaDotNay}>{t('Khoá đổi lịch T6 – CN')}</Nhan>}
               </div>
             )}
           </div>
