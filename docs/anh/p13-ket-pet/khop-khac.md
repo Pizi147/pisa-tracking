@@ -108,7 +108,7 @@ GV T_HA (dạy L, S) mở Checkpoint 1: ô L, S nhập được, R, W chỉ đ�
 | gốc | Dữ liệu môn gộp cũ rải rác | MỘT luật `boMonTheoLuot` (shared) / `boMonCuaLuot` (máy chủ): lượt có dòng điểm môn gộp → bộ gộp, còn lại → bộ chương trình; thang theo khoá `kyThiCuaChuongTrinh`. Bỏ fallback `evaluateRegular`, `monGopCu`, quyền `MON_GOP`, lịch sử "> 9" | KP-2a |
 | 1 | Phân công môn gộp | Không đổi tên: giữ dòng gộp + thêm môn tách; `ownerOf` / Nợ điểm / Phân tích GV tìm được GV ô gộp cũ | KP-2a, KP-2e |
 | 2 | Chép Target khác thang | `cungThangTarget` cho `moLoTrinhMoi`, `apDungMotDong`, `apDungCaLop`, `xemChuyenLop` | KP-3c, KP-3d, KP-3e |
-| 3 | Bảng khoá (lượt, môn) | Mọi bảng có `attempt_id` + `skill` (trừ điểm) — `attempt_skills`, `attempt_skill_skips`, `skill_move_requests`, `case_signals` — tách theo lượt; cột duy nhất (khoá chống trùng) để trống ở bản chép | KP-2f |
+| 3 | Bảng khoá (lượt, môn) | Mọi bảng có `attempt_id` + `skill` (trừ điểm) — `attempt_skills`, `attempt_skill_skips`, `skill_move_requests` — tách theo lượt (`case_signals` không đụng — vòng 2); cột duy nhất (khoá chống trùng) để trống ở bản chép | KP-2f |
 | 4 | Phân tích lớp | Dòng = bộ môn các lượt (lượt cũ thêm L+S, R+W) | KP-2g |
 | 5 | Đề xuất sửa (panel) | Kiểm theo thang khoá, không KCK, "đang là" số nguyên; thẻ nhớ thang cho Sửa đề xuất | (web) |
 | 6 | KQ khoá đã đóng | Các lộ trình + Tổng kết lộ trình hiện KQ Cambridge; Đạt theo `thi_that_target`. **Không ghi bản chụp:** Báo cáo lịch sử (P12 — `ketQuaThi.ts`, `giaoVien.ts`, `baoCao.ts`) đọc `learning_cycles`, không đọc `ban_chup_lo_trinh`; bản chụp có cột band (`thi_that_ovr`, `ket_luan`) — ghi Cambridge vào đó mới là trộn thang | KP-4d |
@@ -118,3 +118,21 @@ GV T_HA (dạy L, S) mở Checkpoint 1: ô L, S nhập được, R, W chỉ đ�
 
 Còn lại (ghi để PTA quyết): lưới **Nhập điểm** một Checkpoint cũ trộn hai bộ môn (lượt đã chấm L+S / R+W + lượt chưa ghi 4 môn) có 6 cột, rộng hơn 1440 → cuộn ngang trong bảng
 (chỉ dữ liệu cũ, hết khi đợt cũ xong). Màn ít dùng đọc bộ môn của **lớp** (Kế hoạch Test, phân công) vẫn 4 môn.
+
+## Vòng 2 — PTA Plan rà (26/10), sau khi gộp origin/main (P9a #584)
+
+| # | Việc | Cách sửa | Phép kiểm |
+|---|---|---|---|
+| 1 | Nơi tính kết quả còn duyệt bộ môn chương trình | `boMonTheoLuot` ở `standing.ts`, `yThuc/phoiHop.ts`, `normal/cuoiKhoa.ts` (`tyLeTongLo`), `loTrinh/banChup.ts`, `worklist/scoreDebt.ts`, `phanTich/giaoVien.ts`; `cham/canCham.ts` đếm môn của dòng. Kèm: `standingFor` đọc `scoringMode` từ bảng `programmes` (KET / PET chỉ có ở bảng → trước đây rơi vào nhánh IELTS) | KP-5a |
+| 2 | Gửi lại bức tranh phân công có dòng môn gộp → 400 | `setClassTeachers` coi môn gộp đang có dòng phân công là môn hợp lệ | KP-5b |
+| 3 | Lưu phân công kết thúc dòng môn gộp còn việc | **Chọn: giữ dòng.** `ghiPhanCong` không kết thúc dòng môn gộp (GV bộ môn) khi lớp còn ô môn gộp chưa có điểm / "-" ở lượt chưa huỷ, hoặc Case mở theo môn gộp (`monGopConCan`); hết việc thì kết thúc như mọi dòng. Không khôi phục fallback quyền ở `permissions.ts` | KP-5b |
+| 4 | Thẻ đề xuất không nhớ thang | `guiDeXuatSua` lưu `kyThi` trong dữ liệu thẻ | — |
+| 5 | Điền sẵn Lên FT lấy Target khoá | `dienSanChuyenTiep` chỉ nhận Target khoá khi `cungThangTarget` (khoá KET / PET → không) | (luật chung KP-3c/d) |
+| 6 | Target ngoài thang sau migrate | Target khoá KET / PET ngoài thang → NULL, ghi applied; `kiem-truoc-ket-pet` in số | KP-5c |
+| 7 | Tách lượt đã huỷ / `case_signals` | Bỏ lượt `cancelled` và lượt có `ket_qua_huy` chưa khôi phục (khôi phục lại khớp lịch cũ); `case_signals` không tách (khoá chống trùng giữ nguyên) | KP-5d |
+| 8 | `ensureSkillRows` chèn trùng | Bộ môn theo dòng lịch có sẵn của lượt, không theo điểm | KP-5e |
+| 9 | Lịch sử sửa không tra được khoá | Nhật ký `cycle.target.revise`, `cycle.thi_that` ghi `kyThi`; `lichSuSua` dùng khi không tra được lộ trình | — |
+| 10 | Cột tính trong vòng lặp | Danh sách bảng + cột tính một lần trước vòng lặp | KP-2b |
+
+Mỗi phép kiểm KP-5a…e đã chạy ĐỎ khi gỡ đúng phần sửa của nó, XANH khi có.
+
