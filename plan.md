@@ -240,6 +240,13 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### ĐÊM 27/10 — chủ SP duyệt thiết kế `docs/superpowers/specs/2026-10-27-dem-27-10-design.md` (D12–D17); **CHỜ chủ SP bảo "chạy"**
+- **Chủ SP 27/10 ~03:00:** Tutor chưa đụng (D12) · lớp thường có trang lượt riêng cùng khung FT (D13) · góp ý tuần **chỉ đọc, khoá API ghi** (D14) · chạy máy này (D15) · mockup chỉ là gợi ý (D16) · đổi người phụ trách Case: QL / QT + GVCN đổi, chọn GV dạy đúng kỹ năng ở lớp + GVCN (D17) · **không tập dượt deploy** — khi cần deploy chủ SP bảo.
+- **PTA làm ngay (đã được phép từ trước):** merge #601 BO-DAN-EXCEL (check gộp main) → EN-2 #599 (sau khi session gộp P8 + check) · rà lại #600 PHAN-CAP-TEST (chủ SP duyệt ảnh, không merge qua đêm).
+- **Khi chủ SP bảo "chạy" — đợt 1 song song (session local, worktree, nhắn PTA Plan):** **R1-NO-NHO** (medium, `docs/superpowers/plans/2026-10-27-r1-no-nho.md`) ∥ **R1-NO-CU** (high, `…-r1-no-cu.md`, rà `/security-review`) ∥ **M4** (high, `…-m4-ho-so-luot.md`) ∥ **M5 + M5b** (high, `…-m5-ho-so-hv.md`) ∥ **6a + M6** (high, `…-m6-panel.md`). Merge NO-NHO trước NO-CU (chung `routes/index.ts`, `en.ts`).
+- **Đợt 2:** **TEN-CHI-SO** (medium, `…-ten-chi-so.md`) sau khi #599 EN-2 merge · **EN-2b** (4 tệp Lịch Test) sau khi #600 merge.
+- Mockup: PR mở, KHÔNG merge; PTA đăng artifact để chủ SP duyệt.
+
 ### DEPLOY-UX R1 — 26/10 (chủ SP duyệt thiết kế `docs/superpowers/specs/2026-10-26-deploy-ux-design.md`; prompt chép `…/2026-10-26-deploy-ux/prompt-chu-sp.md`)
 - **Bản chính = `fa7e1811`** (22/10 12:10, DB `pisatracking-261022`); `main` hơn 364 commit (#533–#587). R1 = 5 PR + P8 + P13 (chủ SP Q1: **chờ P8, P13**) → đóng băng RC → deploy (chủ SP bấm).
 - **Trạng thái 26/10 23:20:** đã merge **EN-1** #590 · **SUA-NHO** #591 · **P13** #586 · **LUU-TIEP** #592 · **DICH-2** #593 (check gộp 4407 + 58 xanh, `main` = bản đã check). Còn: **P8** (cloud, chưa PR) · **EN-2** (thẻ đề xuất, chờ chủ SP bấm) · **PHAN-CAP-TEST** sẵn sàng giao (chủ SP duyệt M2 **A2 vòng 2** 26/10 đêm: màu thanh từng cấp, S Ex ở cột MT, bỏ HẾT Dán Excel điểm + ? ở mọi nơi — PR riêng **R1-BO-DAN-EXCEL** `docs/superpowers/plans/2026-10-27-r1-bo-dan-excel.md`, merge trước PHAN-CAP-TEST) · rồi đóng băng RC + deploy.
