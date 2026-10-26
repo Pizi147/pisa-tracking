@@ -341,7 +341,7 @@ const EN_B_WEB = {
   'SOS tạm · {scoredRequired}/{length}': 'SOS prov. · {scoredRequired}/{length}',
   'Chưa tới tuần Test': 'Test week not reached',
   'Không lưu được: {error}': 'Not saved: {error}',
-  'Lưu lại': 'Save again',
+  'Lưu lại': 'Retry save',
   'Không lưu được{x}. Bấm để lưu lại.': 'Not saved{x}. Click to save again.',
   'Đang lưu': 'Saving',
   'Đã vắng · chờ xếp lại': 'Absent · awaiting reschedule',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
@@ -6,7 +6,7 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PanelViec } from '../congViec/PanelViec.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { LOAI_HAN_CUA_VIEC, shortDate } from '@shared/domain/index.ts';
+import { LOAI_HAN_CUA_VIEC, shortDate, viecKeTiep } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp. */
@@ -24,13 +24,17 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
   const [mo, setMo] = useState<WorkItem | null>(null);
   const ds = data?.cuaToi ?? [];
   const daLam = () => { invalidate('/my-work'); reload(); onDoi(); };
-  const keTiep = mo ? ds[ds.findIndex((x) => x.key === mo.key) + 1] ?? null : null;
+  /* R1-LUU-TIEP [KIỂM]: thứ tự chụp lúc mở việc từ thanh — việc vừa xong rời danh sách vẫn tìm được việc kế (không về việc đầu). */
+  const anhChup = useRef<WorkItem[]>([]);
+  const moTuThanh = (it: WorkItem) => { anhChup.current = ds; setMo(it); };
+  const conKhoa = new Set(ds.map((x) => x.key));
+  const keTiep = mo ? viecKeTiep((anhChup.current.length ? anhChup.current : ds).map((x) => ({ ...x, nhom: '' })), mo.key, (x) => conKhoa.has(x.key)) : null;
   return (
     <>
       {ds.length > 0 && (
         <section aria-label={t('Việc cần làm')} className="flex flex-col gap-1.5">
           <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-            {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => setMo(it)} />)}
+            {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => moTuThanh(it)} />)}
           </div>
           {ds.length > TOI_DA && (
             <Link to="/cong-viec" className="link self-end text-[13px]">{t('+{n} việc khác ở Công việc ›', { n: ds.length - TOI_DA })}</Link>

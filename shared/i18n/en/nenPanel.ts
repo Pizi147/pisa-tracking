@@ -10,5 +10,4 @@ export const EN_NEN_PANEL = {
   'Bỏ chữ, quay lại': 'Discard and go back',
   '{viec} chưa lưu — chữ đang gõ sẽ mất.': '{viec} is not saved — what you typed will be lost.',
   'Chữ đang gõ vẫn giữ.': 'Your text is kept.',
-  'Lưu và tiếp': 'Save and next',
 } satisfies Record<string, Dich>;

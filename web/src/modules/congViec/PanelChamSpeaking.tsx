@@ -29,7 +29,9 @@ const sap = (a: Dong, b: Dong) => soSanhLop({ code: a.classCode }, { code: b.cla
  * ảnh chụp thứ tự lúc mở hộp, vòng lên; hết → "Đã xong phần của bạn").
  * Dòng vừa lưu đứng nguyên chỗ (bài còn tồn cũ rời hàng đợi máy chủ sau khi chấm — vẫn giữ để thấy đã lưu).
  */
-export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: () => void; onDaLam: () => void;
+export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = null }: { onDong: () => void; onDaLam: () => void;
+  /** R1-LUU-TIEP: việc kế (Công việc) — "Việc tiếp ›" ở chân panel và khi hết bài. */
+  onTiep?: (() => void) | null;
   /** UI-CHAM-TEST: mở từ một lớp ở Chấm Test — lọc sẵn lớp đó (đổi được). */
   lopDau?: number | null;
 }) {
@@ -63,10 +65,11 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: 
   const keMo = mo !== null && !phien.het ? phien.ke({ khoa: mo, kyNang: 'speaking' }, conThieu, [], dsAid) : null;
   const hop: PhienO = {
     nhanTiep: keMo ? ds.find((r) => r.attemptId === keMo.khoa)?.studentName ?? null : null,
-    ketThuc: phien.het ? { phamVi: t('Chấm Speaking'), daLuu: phien.soDaLuu(), nut: null } : null,
+    ketThuc: phien.het ? { phamVi: t('Chấm Speaking'), daLuu: phien.soDaLuu(), nut: onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null } : null,
   };
   return (
-    <KhungPanel tieuDe={t('Chấm Speaking')} dau={dau} onDong={onDong}>
+    <KhungPanel tieuDe={t('Chấm Speaking')} dau={dau} onDong={onDong}
+      chan={onTiep ? { huy: null, chinh: <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${data?.soBai === 0 ? 'btn-primary' : ''}`} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : !rows.length ? <div className="pt-3"><Empty title={t('Không có bài Speaking chờ chấm')} /></div>

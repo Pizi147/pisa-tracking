@@ -25,7 +25,7 @@ const lamMoi = () => { for (const k of ['/cases', '/my-work', '/students', '/ton
  */
 export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, trongDong = false }: {
   paId: number; batBuoc?: boolean;
-  /** NEN-PANEL: có việc kế (hàng đợi Công việc) → thêm "Lưu và tiếp" — chỉ sang việc kế sau khi lưu xong. */
+  /** NEN-PANEL: có việc kế (hàng đợi Công việc) → thêm "Lưu · việc tiếp ›" (R1-LUU-TIEP) — chỉ sang việc kế sau khi lưu xong. */
   onTiep?: (() => void) | null;
   onDaLuu: (kq: DaLuuNhanh) => void;
   /** Mở panel lớn (Điều chỉnh / Kết thúc) — chữ đã gõ nằm ở `nhapKetQua`. */
@@ -84,7 +84,7 @@ export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, tr
         </button>
         {onTiep && (
           <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold max-sm:w-full max-sm:justify-center sm:min-h-[40px]" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>
-            {t('Lưu và tiếp')}
+            {t('Lưu · việc tiếp ›')}
           </button>
         )}
         {!loi && <span className="text-[13px] text-slate-400">{daBam && soThieu ? <span className="font-semibold text-late">⚠ {t('Còn thiếu {n} ô', { n: soThieu })}</span> : t('Giữ nguyên PA')}</span>}

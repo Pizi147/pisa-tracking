@@ -453,7 +453,7 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
             <span title={chan ?? undefined}>
               <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!chan}
                 title={chan ?? undefined} onClick={() => void luu()}>
-                {busy ? t('Đang lưu…') : t('Lưu')}
+                {busy ? t('Đang lưu…') : t('Lưu · đóng')}
               </button>
             </span>
           </div>

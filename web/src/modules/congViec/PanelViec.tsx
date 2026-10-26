@@ -22,8 +22,10 @@ import { KhaiBacPanel } from '../yThuc/KhaiBacPanel.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { LuoiChamLop, duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
+import { khopKn } from '../cham/LuoiFT.tsx';
+import { oThuong } from '../cham/LuoiThuong.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
-import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, shortDate, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, outcomeLabelFor, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, conThieuFt, shortDate, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, outcomeLabelFor, tenMon, tuanLich } from '@shared/domain/index.ts';
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
@@ -114,9 +116,10 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     case 'no_plan':
       return <NganCase key={it.key} caseId={it.caseId!} viec="them-pa" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     case 'score':
-      if (it.key === KHOA_CHAM_SPEAKING) return <PanelChamSpeaking key={it.key} onDong={onDong} onDaLam={doi} />;
-      if (!laViecChamCheo(it) && (it.con || it.periodId)) return <PanelNhapDiemTuan key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} />;
-      return <PanelNhapDiem key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} />;
+      /* R1-LUU-TIEP: mọi việc chấm có "Việc tiếp ›" ở chân panel + trong hộp nhập điểm khi hết phần người xem. */
+      if (it.key === KHOA_CHAM_SPEAKING) return <PanelChamSpeaking key={it.key} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
+      if (!laViecChamCheo(it) && (it.con || it.periodId)) return <PanelNhapDiemTuan key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
+      return <PanelNhapDiem key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'ban_giao':
       return <BanGiaoPanel key={it.key} classId={it.classId!} mon={it.key.startsWith('ban_giao_mon:') ? it.key.split(':')[2] ?? null : null} onClose={onDong} onDone={doi} />;
     case 'yt_xu_ly': case 'yt_xem':
@@ -168,14 +171,33 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
  * NHẬP ĐIỂM TẠI CHỖ (mockup M1 §2; OV-15b mockup 2 khung 1a): bảng điểm của lớp · lượt (`/classes/:id/diem-theo-luot/:luot`), lưới chung
  * `LuoiChamLop` chỉ cột của việc (`kns`) + "Cả lớp"; màn hẹp một kỹ năng một lúc (`MotKyNang`). Không đường ghi mới.
  */
-export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false }: {
+/** R1-LUU-TIEP: bài còn thiếu của người xem trong lưới của việc (em + cột của việc) — 0 thì "Việc tiếp ›" nổi bật. */
+const conBaiLuoi = (d: BangTheoLuot, chiAttempt: ReadonlySet<number> | null, kns: readonly string[] | null, homNay: string) => {
+  const cuaViec = (a: number) => !chiAttempt?.size || chiAttempt.has(a);
+  const cot = (k: string) => !kns || kns.some((x) => khopKn(k, x));
+  if (d.ft) return d.ft.rows.filter((r) => cuaViec(r.attemptId) && !r.ngungHoc).flatMap((r) => r.cells).filter((c) => cot(c.skill) && conThieuFt(c)).length;
+  return (d.thuong?.rows ?? []).filter((r) => cuaViec(r.attemptId))
+    .flatMap((r) => r.skillSchedule.filter((x) => cot(x.skill) && oThuong(r, x.skill, homNay).trong)).length;
+};
+
+/** Chân panel việc chấm: "Việc tiếp ›" (nổi bật khi đã đủ phần người xem); không có việc kế → không chân. */
+const chanViecTiep = (onTiep: (() => void) | null | undefined, xong: boolean) => (onTiep ? {
+  huy: null,
+  chinh: <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${xong ? 'btn-primary' : ''}`} onClick={onTiep}>{t('Việc tiếp ›')}</button>,
+} : undefined);
+const hetViec = (onTiep: (() => void) | null | undefined) => () => (onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null);
+
+export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTiep = null }: {
   it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'> & Partial<Pick<WorkItem, 'key' | 'phu' | 'kns'>>;
   onDong: () => void; onDaLam: () => void;
   /** OV-12e: mở từ panel số liệu — "← Danh sách". */
   quayLai?: { nhan: string; onClick: () => void };
   /** CV-LOI: trang tự mở (không con trỏ, không cuộn — CV-09). SUA-CHAM-LAI Đ2: panel việc có lại "Dán từ Excel" cạnh "Cả lớp" (V1 — thao tác V4). */
   tuMo?: boolean;
+  /** R1-LUU-TIEP: việc kế của danh sách (Công việc, Chấm Test, thanh việc lớp). */
+  onTiep?: (() => void) | null;
 }) {
+  const { homNay } = useNgayNghiepVu();
   const { data, error, reload } = useApi<BangTheoLuot>(duongDiemTheoLuot(it.classId!, it.luot!), [it.classId, it.luot]);
   const daLuu = () => { reload(); onDaLam(); };
   /* OV-15b: "lớp · lượt ↗" đổi panel này sang Nhập điểm cả lớp (cùng chỗ, không panel lồng panel); "‹ Việc" quay về việc. */
@@ -201,13 +223,14 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false }: {
     return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('‹ Việc'), onClick: () => setCaLop(false) }} />;
   }
   return (
-    <KhungPanel tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}>
+    <KhungPanel tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}
+      chan={chanViecTiep(onTiep, !!data && !!homNay && conBaiLuoi(data, chiAttempt, kns, homNay) === 0)}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
             <div className="luoi-trong-panel -mx-4 px-2">
               <LuoiChamLop data={data} kind={null} kn={kn} onReload={daLuu} gon anNutTao chiCot={kns} datConTro={!tuMo}
-                chiAttempt={chiAttempt?.size ? chiAttempt : null} />
+                chiAttempt={chiAttempt?.size ? chiAttempt : null} onHet={hetViec(onTiep)} />
             </div>
           )}
     </KhungPanel>
@@ -232,8 +255,16 @@ function PanelBaoPh({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void;
  * tuần đó từng lớp (`LuoiNhung`, cùng lưới Lịch Test — luật chấm không đổi), lớp đầu mở sẵn. Danh sách lớp giữ như lúc mở: lớp vừa nhập xong
  * không biến khỏi panel khi Công việc tải lại.
  */
-function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam }: { it: WorkItem; tuMo: boolean; onDong: () => void; onDaLam: () => void }) {
+function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem; tuMo: boolean; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null }) {
   const [lop] = useState(() => (it.con?.length ? it.con : [it]));
+  /* R1-LUU-TIEP: hết bài của người xem ở một lớp → "Lớp tiếp: {mã} ›" (lớp kế của việc, theo thứ tự) mở lớp đó tại panel, con trỏ ô trống đầu;
+     lớp cuối → "Việc tiếp ›". ponytail: lớp kế theo thứ tự, không đếm bài còn thiếu (dữ liệu từng lớp nằm trong `LuoiNhung`) — lớp kế đã xong thì hộp báo hết ngay. */
+  const [conTro, setConTro] = useState<string | null>(null);
+  const hetLop = (x: WorkItem) => () => {
+    const ke = lop[lop.indexOf(x) + 1];
+    if (!ke) return hetViec(onTiep)();
+    return { nhan: t('Lớp tiếp: {lop} ›', { lop: ke.classCode ?? '' }), onClick: () => { setMo(new Set([ke.key])); setConTro(ke.key); } };
+  };
   const [tieuDe] = useState(() => t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' }));
   const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set([lop[0].key]));
   const periodId = lop[0].periodId ?? null;
@@ -246,7 +277,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam }: { it: WorkItem; tuMo: 
     ),
   });
   return (
-    <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}>
+    <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)}>
       <ul className="-mx-4 m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
         {lop.map((x) => {
           const dangMo = mo.has(x.key);
@@ -265,7 +296,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam }: { it: WorkItem; tuMo: 
                   <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
                     hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
                     /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
-                    datConTro={!tuMo && !!x.kn && x.key === lop[0].key} />
+                    datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
                 </div>
               )}
             </li>

@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PanelViec } from '../congViec/PanelViec.tsx';
 import { PanelChamSpeaking } from '../congViec/PanelChamSpeaking.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, addDaysIso, mondayOfDate, soSanhLop, tuanLich } from '@shared/domain/index.ts';
+import { KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, addDaysIso, mondayOfDate, soSanhLop, tuanLich, viecKeTiep } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /my-work/cham-speaking` — chỉ trường cần để gom theo lớp × lượt × tuần (`PanelChamSpeaking` đọc đủ). */
@@ -77,7 +77,10 @@ export function ChamTestTab() {
     const x = [...nhom.qua, ...nhom.nay, ...nhom.sau, ...nhom.cheo].find((y) => y.key === khoa);
     if (x) setChon(x);
   }, [khoa, nhom]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const mo = (x: WorkItem | NhomS | null) => {
+  /* R1-LUU-TIEP [KIỂM]: thứ tự việc CHỤP lúc mở từ danh sách — việc vừa xong rời `/my-work` vẫn tìm được vị trí (findIndex + 1 cũ về việc đầu). */
+  const anhChup = useRef<(WorkItem | NhomS)[]>([]);
+  const mo = (x: WorkItem | NhomS | null, giuAnh = false) => {
+    if (!giuAnh) anhChup.current = [...nhom.qua, ...nhom.nay, ...nhom.cheo, ...nhom.sau];
     const next = new URLSearchParams(params);
     if (x) next.set('nhom', x.key); else next.delete('nhom');
     setParams(next, { replace: true });
@@ -92,7 +95,8 @@ export function ChamTestTab() {
   const cua = [...nhom.qua, ...nhom.nay, ...nhom.sau];
   const baiCheo = tongBai(nhom.cheo);
   const rong = !cua.length && !nhom.cheo.length;
-  const keTiep = chon ? thuTu[thuTu.findIndex((x) => x.key === chon.key) + 1] ?? null : null;
+  const anh = chon && anhChup.current.some((x) => x.key === chon.key) ? anhChup.current : thuTu;   // mở từ đường dẫn: chưa có ảnh chụp
+  const keTiep = chon ? viecKeTiep(anh.map((x) => ({ ...x, nhom: '', mine: true })), chon.key, (x) => conTrenMayChu.has(x.key)) : null;
   const dong = (x: WorkItem | NhomS) => (
     <DongCham key={x.key} x={x} homNay={homNay} chon={chon?.key === x.key} xong={!conTrenMayChu.has(x.key)}
       onMo={() => { if (chon?.key === x.key) return; boChuRoi(() => mo(x)); }} />
@@ -144,7 +148,7 @@ export function ChamTestTab() {
             <KhungTaiCho.Provider value>
               {laCheo(chon)
                 ? <PanelChamSpeaking key={chon.key} lopDau={chon.classId} onDong={() => mo(null)} onDaLam={() => { sp.reload(); reload(); }} />
-                : <PanelViec key={chon.key} it={chon} tuMo={tuMo === chon.key} onDong={() => mo(null)} onDaLam={reload} onTiep={keTiep ? () => mo(keTiep) : null} />}
+                : <PanelViec key={chon.key} it={chon} tuMo={tuMo === chon.key} onDong={() => mo(null)} onDaLam={reload} onTiep={keTiep ? () => mo(keTiep, true) : null} />}
             </KhungTaiCho.Provider>
           </>
         ) : !rong ? <Card><Empty title={t('Chọn một nhóm bên trái để chấm')} /></Card> : null}
