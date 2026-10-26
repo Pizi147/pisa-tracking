@@ -1,4 +1,4 @@
-/** PR-EN đợt c — Học viên & Lớp, hồ sơ lớp, hồ sơ học viên (xem). Khoá = chữ Việt trên web / máy chủ gửi. Chữ theo `thiet-ke/THUAT_NGU_EN_2026-10-07.md`. */
+/** PR-EN đợt c — Học viên & Lớp, hồ sơ lớp, hồ sơ học viên (xem). Khoá = chữ Việt trên web / máy chủ gửi. Chữ theo `thiet-ke/THUAT_NGU_EN.md`. */
 import type { Dich } from '../en.ts';
 
 const soNhieu = (n: unknown, mot: string, nhieu: string) => `${n} ${Number(n) === 1 ? mot : nhieu}`;

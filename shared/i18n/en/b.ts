@@ -1,6 +1,6 @@
 /**
  * PR-EN đợt b — Tổng quan GV, Công việc, Yêu cầu của tôi, chuông, Lịch Test, Điểm theo lớp, nhập điểm (FT + lớp thường), hộp chấm MT,
- * hồ sơ Mock Test, Ghi kết quả PA; câu lỗi máy chủ trên các đường đó. Khoá = chữ Việt trên web. Chữ theo `thiet-ke/THUAT_NGU_EN_2026-10-07.md`.
+ * hồ sơ Mock Test, Ghi kết quả PA; câu lỗi máy chủ trên các đường đó. Khoá = chữ Việt trên web. Chữ theo `thiet-ke/THUAT_NGU_EN.md`.
  */
 import type { Dich } from '../en.ts';
 

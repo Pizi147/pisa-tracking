@@ -1,6 +1,6 @@
 /**
  * PR-EN đợt d — Case – PA (ngăn Case, tạo Case, thao tác Case / PA, Xác nhận Case / PA, Ghi nhận xét), Ghi vi phạm, Ý thức phần GV;
- * câu lỗi máy chủ trên các đường đó. Khoá = chữ Việt trên web. Chữ theo `thiet-ke/THUAT_NGU_EN_2026-10-07.md` (Case, PA, Report, WL giữ;
+ * câu lỗi máy chủ trên các đường đó. Khoá = chữ Việt trên web. Chữ theo `thiet-ke/THUAT_NGU_EN.md` (Case, PA, Report, WL giữ;
  * Vi phạm = Incident, Ý thức = Conduct, Bổ trợ = Extra class, GĐCN = BD).
  */
 import type { Dich } from '../en.ts';
