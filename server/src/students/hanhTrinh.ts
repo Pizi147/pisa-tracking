@@ -11,6 +11,7 @@ import { khoangTamDung } from './tamDung.ts';
 import { addDays } from '../util.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds, sosCaseStateMany } from '../cases/sosState.ts';
 import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
+import { boTaskCuaDong } from '../fasttrack/skillSchedule.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
 
@@ -108,10 +109,10 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     for (const r of conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
       scoresByAttempt.set(r.attempt_id, [...(scoresByAttempt.get(r.attempt_id) ?? []), r]);
     }
-    for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count FROM attempt_skills WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
+    for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count, bo_task, scope_reason FROM attempt_skills WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
       coDongKyNang.add(r.attempt_id);
       kyNangByAttempt.set(r.attempt_id, [...(kyNangByAttempt.get(r.attempt_id) ?? []), r]);
-      if (!r.required) skipsByAttempt.set(r.attempt_id, [...(skipsByAttempt.get(r.attempt_id) ?? []), r.skill]);
+      if (!r.required || r.bo_task) skipsByAttempt.set(r.attempt_id, [...(skipsByAttempt.get(r.attempt_id) ?? []), ...(r.required ? [] : [r.skill]), ...boTaskCuaDong([r])] as AssessedSkill[]);   // P8: + task Writing bỏ
     }
   });
   /* Lượt cũ chưa có dòng `attempt_skills` → bảng cũ `attempt_skill_skips` (như `skipsOf`), một câu theo lô thay vì một câu mỗi lượt. */

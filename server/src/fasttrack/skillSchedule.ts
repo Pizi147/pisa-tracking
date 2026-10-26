@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
+  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
   khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
@@ -96,6 +96,8 @@ export type SkillRow = {
   absent_from_no_show: number;
   /** T3 (PR-MTa): 1 = phần thi huỷ vì vắng lần 2 (`sit_status = 'cancelled'`). */
   huy_vang: number;
+  /** P8 (N13): task Writing không học ('writing1' | 'writing2') — Writing = task còn lại; NULL = đủ hai task. */
+  bo_task?: string | null;
   /** Ghép sẵn từ bảng tuần để không phải hỏi lại theo từng dòng. */
   week_start: string | null;
   week_end: string | null;
@@ -108,7 +110,7 @@ export type SkillRow = {
  */
 const SELECT_SKILLS = `
   SELECT ask.id, ask.attempt_id, ask.skill, ask.required, ask.scope_reason, ask.planned_period_id, ask.plan_source, ask.sit_status,
-         ask.sit_note, ask.deadline_override, ask.deadline_override_reason, ask.absence_move_count, ask.absent_from_no_show, ask.huy_vang,
+         ask.sit_note, ask.deadline_override, ask.deadline_override_reason, ask.absence_move_count, ask.absent_from_no_show, ask.huy_vang, ask.bo_task,
          pr.week_start, pr.week_end, pr.code AS period_code
     FROM attempt_skills ask
     LEFT JOIN report_periods pr ON pr.id = ask.planned_period_id`;
@@ -209,6 +211,7 @@ export function ensureSkillRows(attemptId: number): SkillRow[] {
       )
       .run(attemptId, skill, legacySkips.has(skill) ? 0 : 1, a.planned_period_id ?? null, nowIso());
   }
+  apMonChoLuotMoi([attemptId]);   // P8: lượt mới theo môn đăng ký
   capNhatConOCho([attemptId]);   // TD7b: dòng lịch mới (kể cả phạm vi "không mock" cũ) có thể đổi ô chờ
   return sortRows(conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[], bo);
 }
@@ -261,7 +264,7 @@ export function skillScheduleOf(
       id: 0, attempt_id: attempt.id, skill, required: 1, scope_reason: null,
       planned_period_id: attempt.planned_period_id ?? null, plan_source: 'auto',
       sit_status: 'scheduled', sit_note: null,
-      deadline_override: null, deadline_override_reason: null, absence_move_count: 0, absent_from_no_show: 0, huy_vang: 0,
+      deadline_override: null, deadline_override_reason: null, absence_move_count: 0, absent_from_no_show: 0, huy_vang: 0, bo_task: null,
       week_start: attempt.period_start ?? null, week_end: attempt.period_end ?? null,
       period_code: attempt.period_code ?? null,
     };
@@ -278,7 +281,36 @@ export function skippedSkillsOf(rows: SkillRow[] | undefined, attempt?: { id: nu
           .filter((s) => (ASSESSED_SKILLS as readonly string[]).includes(s))
       : [];
   }
-  return rows.filter((r) => !r.required).map((r) => r.skill as AssessedSkill);   // FT: lớp thường không dùng phạm vi
+  return [...rows.filter((r) => !r.required).map((r) => r.skill), ...boTaskCuaDong(rows)] as AssessedSkill[];   // FT: lớp thường không dùng phạm vi
+}
+
+/**
+ * P8 (N13): task Writing không học của lượt đi CÙNG danh sách kỹ năng bỏ ('writing1' | 'writing2' bên cạnh kỹ năng đánh giá) — mọi nơi đã truyền
+ * `skips` vào `evaluateAttempt` / `failingEntrySkills` / `skillCells` đọc được mà không thêm tham số. Lọc theo `ASSESSED_SKILLS` vẫn ra đúng kỹ năng bỏ.
+ */
+export const boTaskCuaDong = (rows: readonly { skill: string; required: number | boolean; bo_task?: string | null; scope_reason?: string | null }[]): string[] => [
+  ...rows.filter((r) => r.skill === 'writing' && r.required && r.bo_task).map((r) => r.bo_task!),
+  ...(rows.some((r) => !r.required && r.scope_reason === LY_DO_KHONG_HOC) ? [DAU_KHONG_HOC] : []),
+];
+
+/** Môn đăng ký của lộ trình của lượt `k.attempt_id` (alias `k` = `attempt_skills`). */
+const MON_LUOT_SQL = "(SELECT cy.mon_dang_ky FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE a.id = k.attempt_id AND a.kind != 'mt0')";   // ledger: MT0 không áp môn
+const KHONG_HOC_SQL = `(CASE k.skill WHEN 'writing' THEN NOT EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value IN ('writing1', 'writing2'))
+  ELSE NOT EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value = k.skill) END)`;
+const BO_TASK_SQL = `(CASE WHEN k.skill = 'writing' AND (SELECT COUNT(*) FROM json_each(${MON_LUOT_SQL}) j WHERE j.value IN ('writing1', 'writing2')) = 1
+  THEN CASE WHEN EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value = 'writing1') THEN 'writing2' ELSE 'writing1' END END)`;
+
+/**
+ * P8 (N13): dòng lịch VỪA TẠO của các lượt theo môn đăng ký của lộ trình — môn không học `required = 0` lý do "Không học", chỉ học một task Writing
+ * → `bo_task`. Một câu cho cả lô; lộ trình đủ môn (NULL) không chạm. Gọi ngay sau khi chèn dòng, trước `capNhatConOCho`.
+ */
+export function apMonChoLuotMoi(attemptIds: readonly number[]): void {
+  theoLo([...new Set(attemptIds)], (lo, ph) => db().prepare(
+    `UPDATE attempt_skills AS k SET required = CASE WHEN ${KHONG_HOC_SQL} THEN 0 ELSE 1 END,
+            scope_reason = CASE WHEN ${KHONG_HOC_SQL} THEN '${LY_DO_KHONG_HOC}' ELSE scope_reason END, bo_task = ${BO_TASK_SQL}
+      WHERE k.attempt_id IN (${ph}) AND k.required = 1 AND ${MON_LUOT_SQL} IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = k.attempt_id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)
+                         AND sc.skill IN (k.skill, CASE k.skill WHEN 'writing' THEN 'writing1' END, CASE k.skill WHEN 'writing' THEN 'writing2' END))`).run(...lo));   // như `tat`: dòng đã có điểm không tắt
 }
 
 // ---------------------------------------------------------------- tiến độ và hạn
@@ -1002,11 +1034,11 @@ export function baoGvcnDoiLichThuongLop(p: Principal, classId: number, kind: str
  */
 export function setSkillScope(
   p: Principal, attemptId: number, skill: string, required: boolean, reason?: string | null,
-  /** `khiTao`, `khongMockLai`: nơi gọi cũ — không còn chặn gì riêng. */
-  _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string } = {},
+  /** `khiTao`, `khongMockLai`: nơi gọi cũ — không còn chặn gì riêng. `monDangKy`: P8 đổi môn — nơi gọi đã kiểm quyền Sửa thông tin (`apMonDangKy`). */
+  _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string; monDangKy?: boolean } = {},
 ) {
   const { attempt, row } = loadOne(attemptId, skill);
-  require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
+  if (!_opts.monDangKy) require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
     'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
   const duaLaiHuy = required && row.sit_status === 'cancelled';
   if (!!row.required === required && !duaLaiHuy) return { ok: true, unchanged: true };

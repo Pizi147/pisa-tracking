@@ -219,6 +219,9 @@
   .menu-muc-nguy { margin-top: 4px; border-top: 1px solid rgb(var(--bad-rgb)); border-top-left-radius: 0; border-top-right-radius: 0; }
   @media (max-width: 639px) { .menu-muc { min-height: 44px; } }
   /* V5 UI-CONG-VIEC (`v5-nen.css .bao-chi-xem`): dải chế độ theo dõi — xem việc người khác. */
+  /* P8 (mockup V6 `lo-trinh-moi.html` k6 `.khong-hoc-o`): ô "Không học" — nghiêng, nhạt, nền sọc; khác "-" vắng, "—" chưa điểm. */
+  .o-khong-hoc { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-style: italic; color: var(--text-faint); white-space: nowrap;
+    background: repeating-linear-gradient(135deg, transparent 0 6px, var(--surface-2) 6px 8px); }
   .bao-chi-xem { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 6px; background: var(--surface-2); color: var(--text-dim); font-size: 13px; }
 
   /*

@@ -49,7 +49,7 @@ function lapKeHoach(conn: any): KeHoach[] {
       continue;
     }
     if (result.sosLevel !== 0) continue;
-    const failing = failingEntrySkills(result.expectation, entryBandsOf(scoresOf(a.id)), result.skipped) as string[];
+    const failing = failingEntrySkills(result.expectation, entryBandsOf(scoresOf(a.id)), result.boQua) as string[];
     if (!failing.length) continue;
     const { dong, giu } = caseXoaSos(a.id, failing, CASE_CHUA_DUNG_OV1C);
     const giuMoi = giu.filter((id) => !conn.prepare('SELECT 1 FROM case_milestones WHERE dedup_key = ?').get(`mt:${a.id}:${id}:overall_dat`));

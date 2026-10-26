@@ -16,7 +16,7 @@ import { scoreDebtCells } from '../worklist/scoreDebt.ts';
 import {
   O_FT_XONG_SQL, docMaLuot, luotMacDinh, mondayOfDate, nhanMaLuot, soSanhLop, vietMaLuot, type AssessedSkill, type MaLuot, type TomTatLuot,
 } from '../../../shared/domain/index.ts';
-import { entrySkillsOf } from '../fasttrack/scoring.ts';
+import { oNhapHoc } from '../fasttrack/scoring.ts';
 import { cheDoCua, type CheDo } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { chamSheet } from './canCham.ts';
@@ -78,7 +78,7 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
          JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
     ).all(...lo) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
     for (const k of conn.prepare(
-      `SELECT k.attempt_id, k.skill, k.planned_period_id, rp.week_start FROM attempt_skills k
+      `SELECT k.attempt_id, k.skill, k.planned_period_id, k.bo_task, rp.week_start FROM attempt_skills k
          JOIN assessment_attempts a ON a.id = k.attempt_id
          LEFT JOIN report_periods rp ON rp.id = k.planned_period_id
         WHERE a.class_id IN (${ph}) AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`,
@@ -87,7 +87,7 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
       if (!l) continue;
       /* OV-11e (T19): ô chưa tới tuần thi / chưa xếp tuần không là ô TRỐNG — nhưng vẫn là chưa đủ điểm (`thieu`). */
       const daToi = !!k.week_start && String(k.week_start).slice(0, 10) <= thuHai;
-      for (const nhap of l.ft ? entrySkillsOf(k.skill as AssessedSkill) : [k.skill as string]) {
+      for (const nhap of l.ft ? oNhapHoc(k.skill as AssessedSkill, k.bo_task) : [k.skill as string]) {   // P8: task Writing không học không là ô trống
         const sc = diem.get(`${k.attempt_id}|${nhap}`);
         const coDiem = sc && (sc.band !== null || sc.raw_score !== null
           || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));

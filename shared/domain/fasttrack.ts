@@ -215,14 +215,14 @@ export function awaitingScore(progress: SkillProgress): boolean {
  * `evaluateAttempt` ghép kết quả này với band → cờ `chot` — MỘT luật cho mọi màn, Case và migrate.
  */
 export function kyNangXongThieu(
-  kyNang: readonly { skill: string; required: number | boolean; sit_status: string; absence_move_count: number }[],
+  kyNang: readonly { skill: string; required: number | boolean; sit_status: string; absence_move_count: number; bo_task?: string | null }[],
   diem: readonly { skill: string; band: number | null; no_show_cu?: number | null }[],
 ): string[] {
   const o = (k: string) => diem.find((d) => d.skill === k);
   return kyNang.filter((k) => {
     if (!k.required) return false;
     if (k.sit_status === 'cancelled' || k.sit_status === 'absent' || (k.sit_status === 'scheduled' && k.absence_move_count > 0)) return true;
-    const buoi = (k.skill === 'writing' ? ['writing1', 'writing2'] : [k.skill]).map(o);
+    const buoi = (k.skill === 'writing' ? ['writing1', 'writing2'].filter((t) => t !== k.bo_task) : [k.skill]).map(o);   // P8: task Writing không học
     return buoi.some((d) => d?.no_show_cu) && buoi.every((d) => d && (d.no_show_cu || d.band !== null));
   }).map((k) => k.skill);
 }

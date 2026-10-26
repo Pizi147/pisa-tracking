@@ -1,5 +1,5 @@
 import {
-  ASSESSED_SKILLS, CRITERIA_SKILLS, ENTRY_SKILLS, RAW_SCORE_SKILLS, expectationDelta, roundToHalf,
+  ASSESSED_SKILLS, CRITERIA_SKILLS, DAU_KHONG_HOC, ENTRY_SKILLS, RAW_SCORE_SKILLS, expectationDelta, roundToHalf,
   type AssessedSkill, type EntrySkill, type SosLevel,
 } from '../../../shared/domain/index.ts';
 
@@ -40,8 +40,11 @@ export function bandFromCriteria(c: (number | null)[]): number | null {
 /**
  * Band Writing = (W1 + W2 × 2) / 3, làm tròn về 0.5.
  * W1 và W2 là hai kỹ năng riêng vì có giáo viên chỉ dạy một trong hai.
+ * P8 (N13, Q4): em chỉ học một task (`boTask` = task bỏ) → Writing = task đã học.
  */
-export function writingBand(w1: number | null, w2: number | null): number | null {
+export function writingBand(w1: number | null, w2: number | null, boTask: string | null = null): number | null {
+  if (boTask === 'writing1') return w2;
+  if (boTask === 'writing2') return w1;
   if (w1 === null || w2 === null) return null;
   return roundToHalf((w1 + w2 * 2) / 3);
 }
@@ -49,11 +52,11 @@ export function writingBand(w1: number | null, w2: number | null): number | null
 export type EntryBands = Partial<Record<EntrySkill, number | null>>;
 
 /** Gộp 5 ô nhập thành 4 band đánh giá. Trả về null cho kỹ năng chưa đủ dữ liệu. */
-export function assessedBands(entry: EntryBands): Record<AssessedSkill, number | null> {
+export function assessedBands(entry: EntryBands, boTask: string | null = null): Record<AssessedSkill, number | null> {
   return {
     listening: entry.listening ?? null,
     reading: entry.reading ?? null,
-    writing: writingBand(entry.writing1 ?? null, entry.writing2 ?? null),
+    writing: writingBand(entry.writing1 ?? null, entry.writing2 ?? null, boTask),
     speaking: entry.speaking ?? null,
   };
 }
@@ -86,9 +89,10 @@ export function failingEntrySkills(
 ): EntrySkill[] {
   if (expectation === null) return [];
   const writingSkipped = skippedSkills.includes('writing');
-  const w1 = entry.writing1 ?? null;
-  const w2 = entry.writing2 ?? null;
-  const wBand = writingBand(w1, w2);
+  const boTask = boTaskTrong(skippedSkills);
+  const w1 = boTask === 'writing1' ? null : entry.writing1 ?? null;   // P8: task không học không sinh Case
+  const w2 = boTask === 'writing2' ? null : entry.writing2 ?? null;
+  const wBand = writingBand(w1, w2, boTask);
   /* Cổng tầng một: band Writing tổng hợp có trượt không. */
   const writingFails = !writingSkipped && wBand !== null && wBand < expectation;
 
@@ -103,6 +107,9 @@ export function failingEntrySkills(
     return band !== null && band !== undefined && band < expectation;
   });
 }
+
+/** P8: task Writing bỏ nằm trong danh sách kỹ năng bỏ của lượt (`skippedSkillsOf`). */
+export const boTaskTrong = (skipped: readonly string[]): string | null => skipped.find((k) => k === 'writing1' || k === 'writing2') ?? null;
 
 /** `route` = lộ trình CỦA LƯỢT (K5-49): RF mọi MT kỳ vọng = target (M2). */
 export function expectationFor(target: number | null, attemptNo: number, route?: string | null): number | null {
@@ -125,6 +132,8 @@ export type AttemptResult = {
   /** Các kỹ năng phải mock ở lượt này (đã trừ kỹ năng được đánh dấu không mock). */
   required: AssessedSkill[];
   skipped: AssessedSkill[];
+  /** P8: danh sách bỏ GỐC truyền vào (kỹ năng bỏ + task Writing không học) — đưa nguyên vào `failingEntrySkills` để Writing = task đã học. */
+  boQua: string[];
   /** Đã nhập điểm bao nhiêu trên tổng số kỹ năng BẮT BUỘC. */
   scoredRequired: number;
   /** Đủ điểm mọi kỹ năng bắt buộc — đây là "hoàn thành", chưa nói gì về SOS. */
@@ -148,6 +157,8 @@ export type AttemptResult = {
   kckDuoi: boolean;
   /** Chỉ có khi đủ CẢ BỐN kỹ năng — không dựng Overall từ hai/ba kỹ năng. */
   overall: number | null;
+  /** P8 (N13): lượt không đánh giá đủ bộ môn (kỹ năng ngoài phạm vi hoặc chỉ một task Writing) — Overall ghi "Không đủ bộ môn", khác "Chưa đủ dữ liệu". */
+  khongDuBoMon: boolean;
   /** Nhãn cho biết đang đánh giá trên mấy kỹ năng, ví dụ "Đánh giá trên 3 kỹ năng". */
   scopeNote: string | null;
   scopeDetail: string | null;
@@ -174,7 +185,8 @@ export function evaluateAttempt(
   kck = false,
 ): AttemptResult {
   const expectation = expectationFor(target, attemptNo, route);
-  const bands = assessedBands(entry);
+  const boTask = boTaskTrong(skippedSkills);
+  const bands = assessedBands(entry, boTask);
   const skipped = ASSESSED_SKILLS.filter((s) => skippedSkills.includes(s));
   const required = ASSESSED_SKILLS.filter((s) => !skippedSkills.includes(s));
 
@@ -227,7 +239,9 @@ export function evaluateAttempt(
    * nên không dựng Overall — kể cả khi điểm cũ của kỹ năng đó vẫn còn để tra lại.
    */
   const all = ASSESSED_SKILLS.map((s) => bands[s]);
-  const overall = skipped.length === 0 && all.every((b) => b !== null)
+  /* P8 (Q4, mockup k4/k7): chỉ học một task Writing → Writing = task đó nhưng Overall vẫn "Không đủ bộ môn". */
+  const khongDuBoMon = boTask !== null || skippedSkills.includes(DAU_KHONG_HOC);   // chỉ khi bỏ VÌ môn đăng ký (QL "Huỷ kỹ năng" cũ giữ "—")
+  const overall = !khongDuBoMon && all.every((b) => b !== null)
     ? roundToHalf((all as number[]).reduce((a, b) => a + b, 0) / 4)
     : null;
   /* OV-1c (đặc tả 3.2): Overall tính được và ≥ kỳ vọng → không SOS, kể cả có kỹ năng dưới kỳ vọng (`failedCount` vẫn đếm để tra lại). */
@@ -238,8 +252,8 @@ export function evaluateAttempt(
   const sosLevel = kckDuoi ? null : mucSos;
 
   return {
-    expectation, bands, verdicts, required, skipped,
-    scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall,
+    expectation, bands, verdicts, required, skipped, boQua: [...skipped, ...(boTask ? [boTask] : [])],
+    scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall, khongDuBoMon,
     chot, provisional,
     /*
      * Ở danh sách chỉ cần con số. "Đánh giá trên 3 kỹ năng" là một câu giải thích, và giải
@@ -266,6 +280,9 @@ export function entrySkillsOf(assessed: AssessedSkill): EntrySkill[] {
 }
 
 /** Kỹ năng đánh giá tương ứng với một ô nhập điểm. */
+/** P8 (N13): ô nhập em HỌC của một kỹ năng — Writing bỏ task không học (`bo_task` của dòng lịch). */
+export const oNhapHoc = (assessed: AssessedSkill, boTask?: string | null): EntrySkill[] => entrySkillsOf(assessed).filter((k) => k !== boTask);
+
 export function assessedSkillOf(entry: string): AssessedSkill {
   return entry === 'writing1' || entry === 'writing2' ? 'writing' : (entry as AssessedSkill);
 }
