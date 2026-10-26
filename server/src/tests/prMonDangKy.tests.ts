@@ -69,6 +69,12 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
     assert(a.length === 0, 'schema.sql đã có cột');
   });
 
+  check('MDK-5 · seed theo mockup: Lê Quang Huy chỉ W2 (MT3 bỏ task W1), Vũ Hải Đăng không học S (MT3 S "Không học")', () => {
+    const huy = em('Lê Quang Huy'), dang = em('Vũ Hải Đăng');
+    assert(get('SELECT mon_dang_ky m FROM learning_cycles WHERE id = ?', huy.id).m === JSON.stringify(CHI_W2) && dong(huy.mt(3).id, 'writing').bo_task === 'writing1', 'Huy');
+    assert(get('SELECT mon_dang_ky m FROM learning_cycles WHERE id = ?', dang.id).m === JSON.stringify(KHONG_S) && dong(dang.mt(3).id, 'speaking').scope_reason === 'Không học', 'Đăng');
+  });
+
   // ------------------------------------------------------------------ Task 2: áp môn vào lượt + chấm + nợ
   check('MDK-3a · không học S: MT chưa thi S → required 0 "Không học"; MT đã có điểm S giữ; ô S không chờ / không nợ; Overall null + "Không đủ bộ môn"; SOS không xét S', () => {
     thu(() => {
@@ -96,6 +102,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   check('MDK-3b · chỉ W2: MT chưa thi bo_task = W1, Writing = W2, Overall Không đủ bộ môn; MT đã chấm giữ công thức cũ; ô W1 không là thiếu, nhập W1 bị chặn', () => {
     thu(() => {
       const huy = em('Lê Quang Huy');
+      mdk.apMonDangKy(P.mbManager, huy.id, null);   // seed đã cho Huy chỉ học W2 — về đủ môn rồi đổi lại
       const mt1 = huy.mt(1), mt3 = huy.mt(3);
       const kq = mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
       assert(kq.writing === 'W2' && kq.khongDuBoMon, `tóm tắt ${JSON.stringify(kq)}`);   // mockup k4: Writing = W2 · Overall Không đủ bộ môn
@@ -135,6 +142,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
         assert(pa.status === 'cancelled' && pa.closed_reason === 'khong_con_hoc_mon', `PA ${pa.status} ${pa.closed_reason}`);
       }
       const huy = em('Lê Quang Huy');
+      mdk.apMonDangKy(P.mbManager, huy.id, null);
       const caseW2 = get(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'writing2' AND status != 'done'`, huy.sid);
       mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
       assert(get('SELECT status FROM sos_cases WHERE id = ?', caseW2.id).status !== 'done', 'Case W2 của em chỉ học W2: giữ mở');
@@ -199,6 +207,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   check('MDK-4a · Sửa thông tin HV: xem trước trả tóm tắt đúng số; lưu ghi nhật ký trước → sau; Lịch sử hiện "Môn học: Đủ môn → L · R · W2 · S"', () => {
     thu(() => {
       const huy = em('Lê Quang Huy');
+      mdk.apMonDangKy(P.mbManager, huy.id, null);
       const xem = mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2, { xemTruoc: true });
       const chuaThiW = get(`SELECT COUNT(*) n FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND k.skill = 'writing'
         AND NOT EXISTS (SELECT 1 FROM assessment_scores x WHERE x.attempt_id = a.id AND x.skill IN ('writing1','writing2') AND x.band IS NOT NULL) AND k.sit_status IN ('scheduled','absent')`, huy.id).n;
