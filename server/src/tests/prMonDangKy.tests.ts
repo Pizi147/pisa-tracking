@@ -482,4 +482,23 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       for (const id of ds) assert(soTH(id) + soCase(id) >= 1 && soCase(id) <= 1, `Sửa cả lớp lượt ${id}: ${soTH(id)} / ${soCase(id)}`);
     });
   });
+  check('MDK-15 · bỏ S (lượt có S dưới kỳ vọng, giữ vì đã chấm) cùng task W1 chưa chấm → lượt vừa đủ điểm KHÔNG mở lại Case / tín hiệu S; Case S cũ giữ đóng "Không còn học môn"', () => {
+    thu(() => {
+      const x = emDu({ caseS: true });
+      const mt3 = x.mt(3);
+      attempts.saveScore(P.admin, mt3.id, 'listening', { rawScore: 40 }, TODAY);
+      attempts.saveScore(P.admin, mt3.id, 'reading', { rawScore: 40 }, TODAY);
+      attempts.saveScore(P.admin, mt3.id, 'writing2', { criteria: [9, 9, 9, 9] }, TODAY);
+      attempts.saveScore(P.admin, mt3.id, 'speaking', { criteria: [4, 4, 4, 4] }, TODAY);
+      const cu = get(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'speaking' AND status != 'done'`, x.sid);
+      assert(cu, 'seed: Case S mở');
+      mdk.apMonDangKy(P.mbManager, x.id, ['listening', 'reading', 'writing2']);
+      const moS = all(`SELECT id, status FROM sos_cases WHERE student_id = ? AND topic = 'speaking' AND status != 'done'`, x.sid);
+      const thS = all(`SELECT id FROM case_signals WHERE student_id = ? AND skill = 'speaking' AND status = 'pending'`, x.sid);
+      assert(!moS.length && !thS.length, `môn S đã bỏ còn Case / tín hiệu mở: ${JSON.stringify({ moS, thS })}`);
+      const dong = get('SELECT status, system_close_reason r FROM sos_cases WHERE id = ?', cu.id);
+      assert(dong.status === 'done' && dong.r === 'khong_con_hoc_mon', `Case S cũ: ${JSON.stringify(dong)}`);
+      assert(get('SELECT status FROM assessment_attempts WHERE id = ?', mt3.id).status === 'done', 'MT3 vừa đủ điểm (L R W2 S, W1 bỏ) → done');
+    });
+  });
 }
