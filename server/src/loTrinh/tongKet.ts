@@ -5,13 +5,12 @@
  */
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, chuKetQuaKyThi, ketQuaKyThi, ketQuaThiThat, type KetQuaKyThi, kyThiCuaChuongTrinh, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
+  ASSESSED_SKILLS, MON_GOP, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, chuKetQuaKyThi, ketQuaKyThi, ketQuaThiThat, type KetQuaKyThi, kyThiCuaChuongTrinh, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
   type HuongTiepTk, type LyDoDong, ATTEMPT_KIND_LABEL, tenRoute } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { tinhLuot, type NguCanhLuot } from './banChup.ts';
-import { lichGopCua } from '../fasttrack/skillSchedule.ts';
 import { coTheNhapThiThat } from './thiThat.ts';
 import { trangThaiBuocTiep, type TrangThaiBuocTiep } from './buocTiep.ts';
 import { nguongDatLop, programmeByCode } from '../normal/regular.ts';
@@ -92,14 +91,17 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
     `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.target_at_attempt, a.class_id FROM assessment_attempts a WHERE a.kind != 'mt0' AND a.cycle_id IN (${dangChay.map(() => '?').join(',')}) ORDER BY a.cycle_id, a.attempt_no, a.id`,
   ).all(...dangChay.map((c) => c.id)) as any[] : [];
   const diem = new Map<number, any[]>();
+  const lichGop = new Map<number, { skill: string }[]>();   // P13: dòng lịch MÔN GỘP cũ — bộ môn theo lượt (`daGhiLuot`), cùng câu với điểm
+  const gop = Object.keys(MON_GOP);
   theoLo(luot.map((a) => a.id as number), (lo, ph) => {
-    for (const r of conn.prepare(`SELECT attempt_id, skill, band, raw_score, raw_total FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
-      diem.set(r.attempt_id, [...(diem.get(r.attempt_id) ?? []), r]);
+    for (const r of conn.prepare(`SELECT attempt_id, skill, band, raw_score, raw_total, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${gop.map(() => '?').join(',')})`).all(...lo, ...lo, ...gop) as any[]) {
+      const m: Map<number, any[]> = r.la_lich ? lichGop : diem;
+      m.set(r.attempt_id, [...(m.get(r.attempt_id) ?? []), r]);
     }
-  });
+  }, Math.floor((THAM_SO_TOI_DA - gop.length) / 2));
   const lopDang = dangChay.length ? (conn.prepare(
     `SELECT e.class_id, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1`).get(studentId) as any) : null;
-  const lichGop = lichGopCua(luot.map((a: any) => a.id));   // P13: bộ môn theo lượt (`daGhiLuot`)
   const bt = cycles[0].route ? trangThaiBuocTiep(p, cycles[0].id) : null;   // `cycles` xếp seq giảm: [0] = mới nhất
   return cycles.map((c): DongCacLoTrinh => {
     const b = bc.get(c.id);
