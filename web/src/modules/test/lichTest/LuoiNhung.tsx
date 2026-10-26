@@ -14,7 +14,7 @@ import { t } from '@shared/i18n/index.ts';
  *
  * Lưu một ô → tải lại lưới NÀY và báo `onDaLuu` (Lịch Test gộp 1,5 s rồi mới tải lại dải số — Q14).
  * "Mở lưới đầy đủ ›" (G6: "›" = đổi trang; → Lịch tuần lọc lớp): chỉ khi lưới nằm ngoài Lịch tuần (panel việc); trong Lịch (`coLinkRieng`) không lặp.
- * R1-PHAN-CAP-TEST (chủ SP 26/10): trong Lịch (`coLinkRieng`) bỏ "Dán từ Excel" + "?" — Dán còn ở panel Nhập điểm (Công việc) và Điểm theo lớp.
+ * R1-BO-DAN-EXCEL (#601): Dán từ Excel điểm đã bỏ ở mọi nơi.
  */
 export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, sEx, onHet, nhanTrai }: {
   classId: number; periodId: number | null; kind: string | null; tuanDangXem: string | null;
