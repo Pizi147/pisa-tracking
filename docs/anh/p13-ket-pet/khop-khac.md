@@ -46,8 +46,12 @@ Lộ trình KET / PET có `route IS NULL`.
 | `classes/intake.ts` | **đã rẽ** | cột Target KET / PET theo thang · KP-3, KP-3b |
 | `students/profile.ts` | **đã rẽ** | `kyThi`, `thiThat` (Overall · Grade · CEFR) chỉ cho KET / PET |
 | `students/lichSuSua.ts` | **đã rẽ** | số > 9 không định dạng band |
-| `classes/hocVienLop.ts`, `classes.ts`, `lichThi.ts`, `hocVienTheoVai.ts`, `xuatDanhSach.ts`, `transition.ts`, `students.ts`, `hanhTrinh.ts`, `cases.ts` | không ảnh hưởng | chỉ HIỆN Target của lộ trình em (lớp liên tục ẩn cột Target / Lộ trình tiếp theo, Hành trình chỉ ghi Target lớp FT); không tính trung bình / tỷ lệ |
+| `classes/hocVienLop.ts`, `classes.ts`, `lichThi.ts`, `hocVienTheoVai.ts`, `xuatDanhSach.ts`, `students.ts`, `hanhTrinh.ts`, `cases.ts` | không ảnh hưởng | chỉ HIỆN Target của lộ trình em (lớp liên tục ẩn cột Target / Lộ trình tiếp theo, Hành trình chỉ ghi Target lớp FT); không tính trung bình / tỷ lệ |
 | `classes/phanTichLop.ts`, `students/standing.ts`, `fasttrack/attempts.ts`, `mt0.ts`, `schedule.ts` | không ảnh hưởng | kỳ vọng / MT chỉ FT (`ratio` → null) |
+| `classes/luatLoTrinh.ts` chuyển FT → lớp thường giữ Target | **đã rẽ** (sửa sau rà) | FT → KET / PET không mang band sang · KP-3d |
+| `classes/luatLoTrinh.ts` `xemChuyenLop`, `lenhChuyen.ts` khoá Target lên FT | **đã rẽ** (sửa sau rà) | Target Cambridge không điền sẵn làm Target FT · KP-3d |
+| `classes/transition.ts` `dienSanChuyenTiep` | không ảnh hưởng | lớp liên tục bị chặn ở đầu hàm (`CAU_LIEN_TUC.loTrinhTiep`) |
+| `platform/lichSu.ts` (Lịch sử thi thật) | **đã rẽ** | số > 9 không định dạng band |
 | `classes/lenhChuyen.ts` KCK lệnh | không ảnh hưởng (như cũ) | lệnh KCK tới lộ trình liên tục trước đã 400, nay 400 thang Cambridge |
 | `duyet/loaiYeuCau.ts`, migrate cũ, `ops/kiemTruocLtSv.ts` | không ảnh hưởng | so Target đề xuất / lộ trình FT |
 
@@ -84,3 +88,11 @@ bộ môn L · R · W · S, đợt giữ 1 (Checkpoint 1 đã có điểm, ảnh
 
 Bấm thử: QL lưu KQ thi thật qua giao diện (S 150 → 152) → "Đã lưu", panel đóng, đầu hồ sơ cập nhật, `outcome` / `outcome_score` vẫn NULL;
 GV T_HA (dạy L, S) mở Checkpoint 1: ô L, S nhập được, R, W chỉ đọc.
+
+## Phép kiểm đổi / ảnh chụp đo
+
+- Sửa theo luật mới: OV6b2-3 (PET 4 môn, chip "SOS · L S"), OV6b2-4 (PET có Target Cambridge — 400 "B1 Preliminary: 120–170" thay "không có Target"),
+  OV6b2-5 (KET 4 môn), OV6b2-6 (PET / KET mặc định 4 môn), OV11h-1 (Phân tích lớp / GV theo L · R · W · S), OV11h-2 (hạng mục Case PET / KET = 4 môn).
+- TD4-a (×3): chụp lại 7 băm — so JSON Công việc main ↔ nhánh (32 tài khoản × Của tôi / Tất cả): lệch CHỈ 2 việc "Nhập điểm Checkpoint · MB PET 01"
+  (L+S → L, S; R+W → R, W; 1 → 2 bài). Trần câu `QL /my-work?nguoi=7` 68 → 69: do dữ liệu (mã P13 chạy trên dữ liệu main vẫn 68).
+- `npm run check`: sqld bỏ qua (máy cloud không có sqld) như các PR trước.
