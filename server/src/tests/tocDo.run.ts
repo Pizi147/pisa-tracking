@@ -1058,9 +1058,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        dời 1) và Case S MT2 của em không còn gộp vào Case Kỳ vọng: 3 dòng "Thêm PA học thuật Speaking" → "Ghi nhận xét Speaking · MT2" (GV S, QL / QT tất cả).
        Số việc mọi góc không đổi. Trước: QL toi 3ea67fbf71f97f26, QT toi ae31cc97e115aae1, GVCN toi 76b13509ead6c605, GVBM toi f0e52756d39e2508, QL tat-ca 2f708e34199a5b09,
        QT tat-ca fd4a0025509b3b4c, QT tat-ca cn 9bc50bbc012634a2, QL gvcn 658f91bcc1ae947f, GVS toi bde6ca74489b52be */
-    'QL toi': '53d8168836891e39', 'QT toi': '3111c55ff8027ff3', 'GVCN toi': '48d4fd7f1dc1645a', 'GVBM toi': 'bbfbcccdcf9d71b4',
-    'GVCN_THUONG toi': '48d4fd7f1dc1645a', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'dd8a7166b581b998', 'QT tat-ca': '364be4cb77b9f362',
-    'QT tat-ca cn': '7166c9b66b3098c4', 'QL gvcn': '5afa68eea7a17883', 'GVS toi': '8b6b85a70a44d3dd',
+    /* P13 KET-PET (26/10): chụp lại 7 băm (QL / QT toi, ADMIN, GVS giữ) — đổi CÓ CHỦ Ý: seed MB PET 01 tách Checkpoint thành L · R · W · S. So JSON items ×1
+       main 87a3bc3 ↔ nhánh, 32 tài khoản × Của tôi / Tất cả: lệch CHỈ 2 việc "Nhập điểm Checkpoint · MB PET 01" (GV 7: Listening + Speaking → Listening, Speaking;
+       GV 8: Reading + Writing → Reading, Writing; mỗi việc 1 → 2 bài, `kns` / `kn` / đường mở theo môn tách). Trước: GVCN toi 48d4fd7f1dc1645a,
+       GVBM toi bbfbcccdcf9d71b4, GVCN_THUONG toi 48d4fd7f1dc1645a, QL tat-ca dd8a7166b581b998, QT tat-ca 364be4cb77b9f362, QT tat-ca cn 7166c9b66b3098c4, QL gvcn 5afa68eea7a17883 */
+    'QL toi': '53d8168836891e39', 'QT toi': '3111c55ff8027ff3', 'GVCN toi': 'd5d294978a698149', 'GVBM toi': 'bf2d2139d0e729a7',
+    'GVCN_THUONG toi': 'd5d294978a698149', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'e28eed82f807c628', 'QT tat-ca': 'd3d40d5cd2e58e2d',
+    'QT tat-ca cn': 'ecac87a8cdf05426', 'QL gvcn': '1a4c454c37cbd56a', 'GVS toi': '8b6b85a70a44d3dd',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
