@@ -6,7 +6,7 @@ import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
 import { can, require_, type Ctx, type Principal } from '../permissions.ts';
-import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, forbidden, kiemKieuO, loi, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
   docDiemXuatPhat, docDuKienThi, docTargetCua, docTuanBatDau, duocDoiTarget, loiDoiTarget, reviseTarget, setBaseline, updateCycle,
@@ -155,7 +155,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
       if (r.startWeek !== undefined) throw forbidden(CHI_SUA_THONG_TIN);
     }
     /* P8 (chủ SP 26/10 đêm): Môn học — QL, Quản trị, GVCN, TVV đúng phạm vi (`duocDoiMon`); CX, GV bộ môn không. */
-    if (r.monDangKy !== undefined && !duocDoiMon(p, { studentId: s.id })) throw forbidden(`Bạn không có quyền đổi môn học của ${s.full_name}.`);
+    if (r.monDangKy !== undefined && !duocDoiMon(p, { studentId: s.id })) throw loi(403, 'Bạn không có quyền đổi môn học của {ten}.', { ten: s.full_name });
     let doiTarget = false;
     if (r.target !== undefined) {
       const t = thu('target', () => docTargetCua(c, r.target));   // P13: KET / PET theo thang Cambridge

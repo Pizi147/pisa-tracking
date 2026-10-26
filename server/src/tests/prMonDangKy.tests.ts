@@ -44,7 +44,8 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   /** Chạy trong giao dịch rồi cuộn lại — phép kiểm không để dấu trên DB chung. */
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
-    try { xoaNho(); return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
+    /* Lớp thử tạo trong giao dịch cuộn lại → id lớp dùng lại; bỏ cách chấm đã nhớ theo id lớp của bộ kiểm trước. */
+    try { xoaNho(); skillSchedule.clearScoringModeCache(); return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); skillSchedule.clearScoringModeCache(); }
   };
 
   const suaCaLop: any = await import('../classes/suaCaLop.ts');

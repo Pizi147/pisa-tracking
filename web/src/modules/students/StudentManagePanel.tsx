@@ -391,7 +391,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       if (doiMon) {
         phan = t('Môn học');
         await api.post(`/cycles/${cycle.id}/mon-dang-ky`, { monDangKy: mon });
-        xong.push('môn học');
+        xong.push(t('môn học'));
       }
       for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop', '/tong-quan']) invalidate(k);
       toast.push('ok', targetDeXuat && doiTarget ? 'Đã lưu · Target gửi Quản lý duyệt' : 'Đã lưu');

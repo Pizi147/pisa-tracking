@@ -8,7 +8,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
-import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
@@ -2120,7 +2120,7 @@ export function saveScore(
   if (!scheduleRow.required) {
     throw badRequest(`Kỹ năng ${tenMon(null, assessed)} không nằm trong phạm vi yêu cầu của đợt này.`);
   }
-  if (scheduleRow.bo_task === skill) throw badRequest(`Em không học ${ENTRY_SKILL_SHORT[skill as EntrySkill]} — ô này không nhập điểm (Writing = task em học).`);   // P8 (N13)
+  if (scheduleRow.bo_task === skill) throw loi(400, 'Em không học {o} — ô này không nhập điểm (Writing = task em học).', { o: ENTRY_SKILL_SHORT[skill as EntrySkill] });   // P8 (N13)
   /*
    * KHÔNG NHẬP ĐIỂM VÀO PHẦN ĐÃ HUỶ hoặc ĐÃ XÁC NHẬN VẮNG (mục 10.6).
    *

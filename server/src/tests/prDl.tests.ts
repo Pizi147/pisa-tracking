@@ -93,7 +93,7 @@ export async function runPrDlTests(t: YThucTestKit) {
    * làm lệch băm thì chụp lại bằng mã trước refactor (`git show 666dcfbf:server/src/fasttrack/attempts.ts`), không sửa cho khớp.
    */
   /* LUAT-34: `diemHuy` (cờ "Khôi phục điểm" mới của ô) ngoài băm như các cờ OV-12b. */
-  const OV12B = new Set(['nhomNguyenNhan', 'nenCoNhanXet', 'kyVong', 'thieuNhanXet', 'diemHuy', 'khongDuBoMon', 'khongHoc']);   // P8: hai cờ môn đăng ký (phép kiểm riêng prMonDangKy) ngoài băm
+  const OV12B = new Set(['nhomNguyenNhan', 'nenCoNhanXet', 'kyVong', 'thieuNhanXet', 'diemHuy', 'khongDuBoMon', 'khongHoc', 'boQua']);   // P8: hai cờ môn đăng ký (phép kiểm riêng prMonDangKy) ngoài băm
   const bam = (x: unknown) => createHash('sha256')
     /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
        OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. OV-9: `kckDuoi` (phép kiểm riêng prOv9) — cũng vậy. OV-4c: ô thêm `bandThang` (phép kiểm riêng prOv4c) — cũng vậy.

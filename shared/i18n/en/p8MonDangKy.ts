@@ -15,4 +15,12 @@ export const EN_P8_MON_DANG_KY = {
   'Chú giải ô điểm': 'Score cell legend',
   'em không học môn này': 'student does not study this subject',
   'Chỉ Quản lý, GVCN hoặc TVV đổi Môn học': 'Only Managers, homeroom teachers or consultants change Subjects',
+  'môn học': 'subjects',
+  'Em không học {o} — ô này không nhập điểm (Writing = task em học).': 'The student does not study {o} — this cell takes no score (Writing = the task studied).',
+  'Bạn không có quyền đổi môn học của học viên này.': 'You do not have permission to change this student\'s subjects.',
+  'Môn học chỉ áp cho lộ trình Fast Track.': 'Subjects apply to Fast Track routes only.',
+  'Bạn không có quyền đổi môn học của {ten}.': 'You do not have permission to change the subjects of {ten}.',
+  'Lộ trình đã kết thúc — không đổi môn học.': 'The route has ended — subjects cannot be changed.',
+  'Thiếu môn học — gửi danh sách môn (null = đủ môn).': 'Subjects missing — send the subject list (null = all subjects).',
+  'Môn học không hợp lệ.': 'Invalid subjects.',
 };
