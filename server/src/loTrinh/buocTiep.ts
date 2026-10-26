@@ -14,7 +14,7 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ghepMucTieu, kiemLopLoTrinhMoi, routeGoiYLoTrinhMoi, tenRoute, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, trangThaiSauThi, tuanHopLe, tuanLich,
+  LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ghepMucTieu, kiemLopLoTrinhMoi, routeGoiYLoTrinhMoi, tenRoute, tenMonNgan, ngay, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, trangThaiSauThi, tuanHopLe, tuanLich,
   type DongSauThi, type HuongSauThi, type LuaChonSauThi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -25,6 +25,7 @@ import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { dauVaoTuLoTrinh, type LoTrinhMoiSauThi } from '../classes/luatLoTrinh.ts';
 import { lichMtCua } from '../classes/schedule.ts';
 import { mondayOf } from '../platform/week.ts';
+import { thongBaoTrangThai } from '../students/trangThaiHv.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong, type ChupCaseDong } from '../cases/systemClose.ts';
 import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
@@ -129,8 +130,6 @@ function docLoTrinhMoi(c: any, input: ChonBuocTiepVao, lopMoiId: number | null, 
   return { route: raw, routeTen, boTarget: khac && input.boTarget === true, lopDich, loi };
 }
 
-const NHAN_MON_CASE: Record<string, string> = { listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', writing: 'W', speaking: 'S' };
-const dmy = (d: string | null | undefined) => (d ? String(d).slice(0, 10).split('-').reverse().slice(0, 2).join('/') : '—');
 
 /**
  * GET /cycles/:id/lo-trinh-moi/xem-truoc — khối "Khi lưu, web sẽ" của panel Lộ trình mới (k1–k3), đọc CÙNG hàm lúc thi hành: lộ trình gợi ý, lớp đích + kiểm loại
@@ -143,8 +142,12 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
   const conn = db();
   const homNay = demoToday();
   const lopMoiId = input.lopMoiId ? Number(input.lopMoiId) : null;
+  if (lopMoiId !== null && (!Number.isInteger(lopMoiId) || lopMoiId <= 0)) throw badRequest('Lớp không hợp lệ.');
+  /* Lớp khác chỉ trong phạm vi người xem — không lộ mã / lịch của lớp ngoài phạm vi. */
+  if (lopMoiId !== null && !can(p, PERMISSIONS.STUDENT_VIEW, { classId: lopMoiId })) throw forbidden('Lớp này nằm ngoài phạm vi bạn được xem.');
   const lt = docLoTrinhMoi(c, input, lopMoiId, true);
   const batDau = input.batDau === undefined || input.batDau === null || input.batDau === '' || input.batDau === 'ngay' ? homNay : String(input.batDau);
+  if (!tuanHopLe(batDau, homNay)) throw badRequest(LOI_TUAN_BAT_DAU);
   const mucTieu = input.mucTieu === undefined || input.mucTieu === null || input.mucTieu === '' ? null : input.mucTieu;
   const tg = lt.boTarget ? '' : mucTieu !== null ? String(mucTieu) : chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket);
   const ten = lt.route === ROUTE_KHAC ? `"${lt.routeTen ?? 'Khác'}"` : `FT ${lt.route}`;
@@ -155,18 +158,19 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
     WHERE COALESCE(sc.student_id, a.student_id) = ? AND sc.status != 'done' AND COALESCE(sc.cycle_id, a.cycle_id) = ?`).all(c.student_id, cycleId) as any[]);
   const soPa = caseMo.length ? (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE status IN ('planned', 'started') AND case_id IN (${caseMo.map(() => '?').join(',')})`)
     .get(...caseMo.map((x) => x.id)) as any).n as number : 0;
-  const mon = [...new Set(caseMo.map((x) => NHAN_MON_CASE[x.category] ?? null).filter(Boolean))].join(', ');
+  const mon = [...new Set(caseMo.filter((x) => x.category).map((x) => tenMonNgan(null, x.category)))].join(', ');
   const tenCu = tenRoute(c) ?? 'lộ trình cũ';
   const dong = [
-    `Mở ${ten} ở ${lt.lopDich?.code ?? '—'} từ ${batDau === homNay ? dmy(batDau) : `Thứ Hai ${dmy(batDau)}`}${tg ? ` · Target ${tg}` : ''}`,
+    `Mở ${ten} ở ${lt.lopDich?.code ?? '—'} từ ${batDau === homNay ? ngay(batDau, homNay) : `Thứ Hai ${ngay(batDau, homNay)}`}${tg ? ` · Target ${tg}` : ''}`,
     lich.length ? `Tạo MT1–MT${lich.length}: ${lich.map((w) => tuanLich(addDays(t2, 7 * (w - 1)), homNay)).join(' · ')}` : 'Không tạo MT · thêm "+ MT" ở Kế hoạch Test khi cần',
     ...(dv ? [dv.attemptId ? `Đầu vào = ${dv.nguon.split(' ')[0]} (Overall ${dv.score?.toFixed(1)}) — chưa có KQ thi thật`
-      : `Đầu vào = KQ thi ${dmy(c.thi_that_ngay)}: L ${dv.l?.toFixed(1)} · R ${dv.r?.toFixed(1)} · W ${dv.w?.toFixed(1)} · S ${dv.s?.toFixed(1)}`] : []),
+      : `Đầu vào = KQ thi ${ngay(c.thi_that_ngay, homNay)}: L ${dv.l?.toFixed(1)} · R ${dv.r?.toFixed(1)} · W ${dv.w?.toFixed(1)} · S ${dv.s?.toFixed(1)}`] : []),
     ...(lopMoiId && c.lop_id && lopMoiId !== c.lop_id ? [`Rời ${c.lop_code}`] : []),
     caseMo.length ? `Kết thúc ${tenCu} · đóng ${caseMo.length} Case${mon ? ` (${mon})` : ''} — Kết thúc lộ trình` : `Kết thúc ${tenCu}`,
     ...(soPa ? [`Dừng ${soPa} PA — Dừng · kết thúc lộ trình`] : []),
   ];
-  return { routeGoiY: routeGoiYLoTrinhMoi(c.route), route: lt.route, loi: lt.loi, dong, lopGiu: lopGiuCua(c) ? { id: lopGiuCua(c).id as number, code: lopGiuCua(c).code as string } : null };
+  const giu = lopMoiId ? lopGiuCua(c) : lt.lopDich;   // không chọn lớp khác → lớp đích chính là lớp giữ (đã đọc một lần)
+  return { routeGoiY: routeGoiYLoTrinhMoi(c.route), route: lt.route, loi: lt.loi, dong, lopGiu: giu ? { id: giu.id as number, code: giu.code as string } : null };
 }
 
 /**
@@ -191,6 +195,8 @@ type GhiBuocTiep = {
   lenhId?: number; lopMoiId?: number | null; lopMoiCode?: string | null; mucTieu?: number | string | null; tuTamDung?: boolean;
   /** Lựa chọn Tạm dừng trước đó (dữ liệu hoàn tác + ngày + người) — hoàn tác Lộ trình mới trả đúng về nó. */
   tamDungCu?: { json: string | null; luc: string | null; boi: number | null };
+  /** P7: ngày Tạm dừng (ngày vào Lưu trữ) trước Lộ trình mới — hoàn tác Tạm dừng lại đúng ngày đó. */
+  tamDungNgay?: string | null;
   /** Tham số lần chọn (lớp · bắt đầu · Target) — lưu lại đúng lựa chọn này thì không làm lại (bấm đúp). */
   thamSo?: string;
   /** P7 (N12): lựa chọn panel Lộ trình mới (đường hẹn / lệnh chuyển lớp đọc lại) · Case lộ trình cũ đóng "Kết thúc lộ trình" lần này (Hoàn tác mở lại đúng chúng). */
@@ -227,7 +233,8 @@ function hoanTac(p: Principal, c: any) {
     }
     /* Lộ trình mới chọn lúc em Tạm dừng (Quay lại học) → hoàn tác = Tạm dừng lại, lựa chọn về "Tạm dừng". */
     if (g.tuTamDung && (conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any)?.status === 'active') {
-      setStudentStatus(p, c.student_id, 'inactive', demoToday(), 'Hoàn tác Lộ trình mới');
+      setStudentStatus(p, c.student_id, 'inactive', demoToday(), 'Hoàn tác Lộ trình mới');   // mốc hôm nay (không được trước lần Quay lại học)
+      if (g.tamDungNgay) conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(g.tamDungNgay, c.student_id);   // P7: Lưu trữ đúng ngày Tạm dừng cũ
     }
   } catch (e) {
     if (e instanceof HttpError && e.status === 409) {
@@ -267,12 +274,12 @@ function batDauBangHocLai(q: Principal, c: any, o: { date: string; lopMoiId: num
 }
 
 /** "Hướng tiếp" của bản chụp mới nhất theo lựa chọn (một nguồn cho Tổng kết, Các lộ trình, Tổng kết lớp); nhớ hướng cũ để hoàn tác. Chưa có bản chụp (hẹn chưa bắt đầu) → không làm gì. */
-function datHuong(cycleId: number, chon: LuaChonSauThi, lopMoi: { route: string | null } | null, ghi: GhiBuocTiep) {
+function datHuong(cycleId: number, chon: LuaChonSauThi, routeMoi: string | null, ghi: GhiBuocTiep) {
   const conn = db();
   const bc = conn.prepare(`SELECT huong_tiep FROM ban_chup_lo_trinh WHERE ${BAN_CHUP_MOI}`).get(cycleId, cycleId) as any;
   if (!bc) return;
   ghi.huongCu = bc.huong_tiep ?? null;
-  const huong = chon === 'hoc_tiep' || chon === 'lo_trinh_moi' ? (lopMoi ? huongTiep('lo_trinh_moi', lopMoi.route) : 'lo_trinh_moi') : chon;
+  const huong = chon === 'hoc_tiep' || chon === 'lo_trinh_moi' ? huongTiep('lo_trinh_moi', routeMoi) : chon;
   conn.prepare(`UPDATE ban_chup_lo_trinh SET huong_tiep = ? WHERE ${BAN_CHUP_MOI}`).run(huong, cycleId, cycleId);
 }
 
@@ -315,6 +322,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     if (cu.buoc_tiep === 'tam_dung' && chon === 'lo_trinh_moi') {
       if (cu.em_status === 'inactive') setStudentStatus(q, cu.student_id, 'active', homNay, 'Quay lại học', null, { lopKetThucDuoc: true });   // P7 (E2): lớp giữ đã kết thúc → mở lại ở dưới
       ghi.tuTamDung = true;
+      ghi.tamDungNgay = cu.em_archived ?? null;
       ghi.tamDungCu = { json: cu.buoc_tiep_json ?? null, luc: cu.buoc_tiep_luc ?? null, boi: cu.buoc_tiep_boi ?? null };
     } else if (cu.buoc_tiep) hoanTac(q, cu);
     const c = docLoTrinh(cycleId);
@@ -350,7 +358,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     const lopMoi = lopMoiId ? conn.prepare('SELECT code, route FROM classes WHERE id = ?').get(lopMoiId) as any : null;
     if (lopMoi) ghi.lopMoiCode = lopMoi.code;
     const lop = lopMoi?.code ?? null;
-    datHuong(cycleId, chon, lopMoi, ghi);
+    datHuong(cycleId, chon, lt?.route ?? lopMoi?.route ?? null, ghi);   // P7: hướng theo lộ trình đã chọn (LT2 ở lớp LT1 vẫn "Lên LT2")
     conn.prepare('UPDATE learning_cycles SET buoc_tiep_json = ? WHERE id = ?').run(JSON.stringify(ghi), cycleId);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: homNay, title: `Sau thi: ${NHAN_SAU_THI[chon]}`,
@@ -361,7 +369,10 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     /* OV-13j: nhật ký theo trường (Lịch sử sửa đọc `buoc_tiep` / `buoc_tiep_hen`). */
     writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId,
       before: { buocTiep: cu.buoc_tiep ?? null, buocTiepHen: cu.buoc_tiep_hen ?? null }, after: { buocTiep: chon, buocTiepHen: hen, lopMoiId, ...ghi } });
-    return trangThaiBuocTiep(p, cycleId);
+    const kq = trangThaiBuocTiep(p, cycleId);
+    /* P7: "Tạm dừng/ Kết thúc học" — câu báo theo trạng thái thật của em (cùng hàm hộp hồ sơ). */
+    return chon === 'tam_dung' || chon === 'ket_thuc'
+      ? { ...kq, thongBao: thongBaoTrangThai(conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(c.student_id) as any) } : kq;
   });
 }
 
@@ -400,7 +411,7 @@ export function batDauHenDenHan(homNay = demoToday()): number {
         const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
         if (!g.lenhId) {
           batDauBangHocLai(nguoiLam(loadPrincipal(c.buoc_tiep_boi), c.student_id), c, { date: c.buoc_tiep_hen, lopMoiId: g.lopMoiId ?? null, mucTieu: g.mucTieu ?? null }, g);   // P7: `g.loTrinhMoi` đi theo
-          datHuong(id, 'lo_trinh_moi', g.lopMoiId ? db().prepare('SELECT route FROM classes WHERE id = ?').get(g.lopMoiId) as any : null, g);
+          datHuong(id, 'lo_trinh_moi', g.loTrinhMoi?.route ?? (g.lopMoiId ? (db().prepare('SELECT route FROM classes WHERE id = ?').get(g.lopMoiId) as any)?.route ?? null : null), g);
           n++;
         }
         db().prepare('UPDATE learning_cycles SET buoc_tiep_hen = NULL, buoc_tiep_json = ? WHERE id = ?').run(JSON.stringify(g), id);
@@ -455,7 +466,7 @@ export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten,
        COALESCE(b.class_id, e.class_id) AS class_id, COALESCE(b.class_code, l.code) AS class_code, COALESCE(b.branch_id, l.branch_id) AS branch_id
   FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
   LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id
- WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND s.archived_at IS NULL
+ WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND (s.archived_at IS NULL OR s.status != 'finished')   -- P7: em Tạm dừng (Lưu trữ) vẫn có việc
    AND (c.status = 'active' OR COALESCE(b.ly_do, '') != 'chuyen_lop') AND ${CO_KET_QUA}
    AND c.seq = (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id)`;
 /** TD7: cả hệ thống nhớ trong request GET (Công việc, Học viên & Lớp gọi nhiều lần). Người gọi không sửa kết quả. */

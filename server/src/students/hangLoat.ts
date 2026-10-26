@@ -10,7 +10,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { huyNhieuLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
 import { archiveStudent, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, setStudentStatus, unarchiveStudent } from './students.ts';
-import { chanLenhCho, tomTatTrangThai } from './trangThaiHv.ts';
+import { cauLenhCho, tomTatTrangThai } from './trangThaiHv.ts';
 import { matNhieuEm, xoaHocVien } from './xoaHocVien.ts';
 
 /**
@@ -46,8 +46,8 @@ function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em): string | null {
   if (!coQuyenViec(p, viec, s.id)) return 'Ngoài phạm vi của bạn.';
   switch (viec) {
     /* P7 (N11): em có quyết định chuyển lớp chờ → không Tạm dừng / Kết thúc học (cùng câu hộp một em). */
-    case 'tam-dung': return s.status !== 'active' ? (s.status === 'inactive' ? 'Đang tạm dừng' : 'Đã kết thúc học') : chanLenhCho(s.id);
-    case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : chanLenhCho(s.id);
+    case 'tam-dung': return s.status !== 'active' ? (s.status === 'inactive' ? 'Đang tạm dừng' : 'Đã kết thúc học') : e.lenhCho ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null;
+    case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : e.lenhCho ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null;
     case 'hoan-tac-tam-dung': return s.status === 'inactive' ? null : 'Không còn ở trạng thái tạm dừng';
     case 'luu-tru': return s.status !== 'finished' ? 'Chưa kết thúc học' : s.archived_at ? 'Đã lưu trữ' : null;
     case 'bo-luu-tru': return s.archived_at ? null : 'Chưa lưu trữ';
@@ -72,7 +72,7 @@ function docEm(ids: number[]): Map<number, Em> {
       `SELECT e.student_id, e.status, e.class_id, c.code, c.status AS class_status FROM enrollments e JOIN classes c ON c.id = e.class_id
         WHERE e.student_id IN (${ph}) ORDER BY e.id`,
     ).all(...lo) as any[]) { const e = kq.get(r.student_id); if (e) e.lopCuoi = r; }
-    for (const l of conn.prepare(`SELECT id, student_id, huong, lop_nguon_id FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`).all(...lo) as any[]) {
+    for (const l of conn.prepare(`SELECT id, student_id, huong, lop_nguon_id, tuan_bat_dau FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`).all(...lo) as any[]) {
       const e = kq.get(l.student_id); if (e) e.lenhCho = l;
     }
     /* Quyết định huỷ GẦN NHẤT của em (lệnh nào cũng được — `khoiPhucLenh` kiểm người huỷ, giờ, tuần, em còn ở lớp nguồn). */
@@ -105,22 +105,11 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
   });
   const duoc = rows.filter((r) => !r.lyDoBo);
   const tong = { duoc: duoc.length, boQua: rows.length - duoc.length, caseDong: 0, paHuy: 0, lenhHuy: 0, lopMoLai: [] as string[], theoHuong: {} as Record<string, number>, tomTat: undefined as string[] | undefined };
-  if ((viec === 'tam-dung' || viec === 'ket-thuc') && duoc.length) tong.tomTat = tomTatTrangThai(duoc.map((r) => r.studentId), viec === 'ket-thuc');
-  if (viec === 'ket-thuc' && duoc.length) {
-    const conn = db();
-    theoLo(duoc.map((r) => r.studentId), (lo, ph) => {
-      /* Cùng cách chọn Case của `closeCasesBySystem` (`systemClose.ts:67-73`): em của Case = `student_id` hoặc em của lượt Test gắn Case. */
-      tong.caseDong += (conn.prepare(
-        `SELECT COUNT(*) n FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE COALESCE(sc.student_id, a.student_id) IN (${ph}) AND sc.status != 'done'`,
-      ).get(...lo) as any).n;
-      tong.paHuy += (conn.prepare(
-        `SELECT COUNT(*) n FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE COALESCE(sc.student_id, a.student_id) IN (${ph}) AND sc.status != 'done' AND iv.status IN ('planned', 'started')`,
-      ).get(...lo) as any).n;
-      /* Lệnh còn chờ của em đã rời lớp nguồn sẽ bị máy tự huỷ lúc thi hành (`lenhChuyen.ts` — "Em không còn học lớp nguồn"). */
-      tong.lenhHuy += (conn.prepare(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`).get(...lo) as any).n;
-    });
+  /* P7: tóm tắt + số Case / PA của Kết thúc học — cùng một hàm với hộp một em. Em có lệnh chờ đã bị bỏ ở `lyDoBo`, nên không còn lệnh nào bị huỷ (`lenhHuy` = 0). */
+  if ((viec === 'tam-dung' || viec === 'ket-thuc') && duoc.length) {
+    const tt = tomTatTrangThai(duoc.map((r) => r.studentId), viec === 'ket-thuc');
+    tong.tomTat = tt.dong;
+    if (viec === 'ket-thuc') { tong.caseDong = tt.soCase; tong.paHuy = tt.soPa; }
   }
   if (viec === 'hoc-lai') {
     tong.lopMoLai = [...new Set(duoc.map((r) => em.get(r.studentId)!.lopCuoi).filter((l) => l?.class_status === 'finished').map((l) => l.code as string))];

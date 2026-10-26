@@ -7,7 +7,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NHAN_VIEC_QUAN_LY, type XemTruocHangLoat } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { chayHangLoat, hoanTacHangLoat } from './hangLoatEm.ts';
 
 const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/cases', '/my-work', '/tong-quan', '/hoc-vien-lop/luu-tru'];
@@ -75,12 +75,21 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
   const tenCua = (id: number) => ds.find((e) => e.id === id)?.ten ?? nhieuXem?.rows.find((r) => r.studentId === id)?.ten ?? `#${id}`;
   const nguCanh = [lop, ds.map((e) => tenCua(e.id)).join(', ')].filter(Boolean).join(' · ');
 
-  const hoanTac = (ids: number[], ten: string) => toast.hoanTac(
-    ketThuc ? t('{ten} đã vào Lưu trữ · Kết thúc học', { ten }) : t('{ten} đã vào Lưu trữ · Tạm dừng', { ten }),
+  /* Câu báo do máy chủ trả (`thongBao`, một em) — em FT còn lộ trình chạy kết thúc học thì CHƯA vào Lưu trữ. Hàng loạt: câu theo "Khi lưu, web sẽ" của máy chủ. */
+  const coChoThi = (nhieuXem?.tong.tomTat ?? []).some((d) => d.includes('chờ KQ thi thật'));
+  const hoanTac = (ids: number[], ten: string, thongBao?: string | null) => toast.hoanTac(
+    thongBao ? `${ten}: ${dich(thongBao)}`
+      : ketThuc ? (coChoThi ? t('{ten} đã kết thúc học — em FT chờ KQ thi thật rồi vào Lưu trữ', { ten }) : t('{ten} đã vào Lưu trữ · Kết thúc học', { ten }))
+        : t('{ten} đã vào Lưu trữ · Tạm dừng', { ten }),
     async () => {
-      const r = await hoanTacHangLoat(viec, ids);
+      /* Một em Tạm dừng: đường riêng (TVV / CX có `student.edit_more` hoàn tác được); hàng loạt giữ quyền `cycle.edit`. */
+      if (mot && !ketThuc) {
+        try { await api.post(`/students/${ids[0]}/hoan-tac-tam-dung`); } catch (e: any) { lamMoi(); toast.push('error', e?.message ?? t('Mất kết nối')); return; }
+      } else {
+        const r = await hoanTacHangLoat(viec, ids);
+        if (r.failed.length) { lamMoi(); toast.push('error', r.failed[0].message); return; }
+      }
       lamMoi();
-      if (r.failed.length) { toast.push('error', r.failed[0].message); return; }
       toast.push('ok', t('Đã hoàn tác'));
       onDone();
     }, { key: `${viec}:${ids.join(',')}` });
@@ -90,8 +99,8 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
     setBusy(true); setLoi(null);
     try {
       if (mot) {
-        await api.post(`/students/${mot.id}/status`, { status: ketThuc ? 'finished' : 'inactive', date: ngay || undefined, reason: lyDo.trim() || undefined });
-        lamMoi(); hoanTac([mot.id], tenCua(mot.id)); onDone(); onClose();
+        const r = await api.post<{ thongBao?: string | null }>(`/students/${mot.id}/status`, { status: ketThuc ? 'finished' : 'inactive', date: ngay || undefined, reason: lyDo.trim() || undefined });
+        lamMoi(); hoanTac([mot.id], tenCua(mot.id), r?.thongBao); onDone(); onClose();
         return;
       }
       const r = await chayHangLoat(viec, ds.map((e) => e.id).filter((id) => !boQua.some((b) => b.studentId === id)), { lyDo: lyDo.trim() || undefined, date: ngay || undefined });

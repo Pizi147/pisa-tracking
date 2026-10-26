@@ -17,17 +17,19 @@ import { trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
 /** Em có quyết định chuyển lớp đang chờ → câu chặn (chữ = không làm được). Một nguồn cho hộp một em và hàng loạt. */
 export function chanLenhCho(studentId: number): string | null {
   const l = db().prepare(`SELECT tuan_bat_dau FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' LIMIT 1`).get(studentId) as any;
-  return l ? `Em đang có quyết định chuyển lớp chờ ${tuanLich(l.tuan_bat_dau, demoToday())} — huỷ quyết định ở Chuyển lớp… rồi làm lại.` : null;
+  return l ? cauLenhCho(l.tuan_bat_dau) : null;
 }
+/** Câu chặn từ dòng lệnh chờ đã nạp (hàng loạt nạp cả lô một lần). */
+export const cauLenhCho = (tuanBatDau: string): string =>
+  `Em đang có quyết định chuyển lớp chờ ${tuanLich(tuanBatDau, demoToday())} — huỷ quyết định ở Chuyển lớp… rồi làm lại.`;
 
 /**
  * "Khi lưu, web sẽ" của hộp Tạm dừng/ Kết thúc học (k2, k3). `ketThuc` = ô "Có thể quay lại học" tắt. Em đã kết thúc / không tìm thấy không tính.
  * Số Case = Case chưa xong của em (cùng cách chọn của `closeCasesBySystem`); tạm dừng thì Case dừng hạn (`HV_DANG_HOC_SQL`), kết thúc thì đóng + PA đang chạy huỷ.
  */
-export function tomTatTrangThai(ids: readonly number[], ketThuc: boolean): string[] {
+export function tomTatTrangThai(ids: readonly number[], ketThuc: boolean): { dong: string[]; soCase: number; soPa: number } {
   const conn = db();
   const em: { id: number; status: string; lop: string | null; loTrinh: string | null; choThi: boolean }[] = [];
-  let soCase = 0, soPa = 0;
   theoLo([...ids], (lo, ph) => {
     for (const r of conn.prepare(
       `SELECT s.id, s.status,
@@ -40,11 +42,20 @@ export function tomTatTrangThai(ids: readonly number[], ketThuc: boolean): strin
     ).all(...lo) as any[]) {
       em.push({ id: r.id, status: r.status, lop: r.lop ?? null, loTrinh: tenRoute(r), choThi: ketThuc && r.status === 'active' && !!r.cho_thi });
     }
+  });
+  /* Chỉ em thực sự đổi: tạm dừng = em đang học; kết thúc = em chưa kết thúc. */
+  const tinh = (ketThuc ? em : em.filter((e) => e.status === 'active')).map((e) => e.id);
+  let soCase = 0, soPa = 0;
+  theoLo(tinh, (lo, ph) => {
     soCase += (conn.prepare(`SELECT COUNT(*) n FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
       WHERE COALESCE(sc.student_id, a.student_id) IN (${ph}) AND sc.status != 'done'`).get(...lo) as any).n;
-    soPa += (conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+    if (ketThuc) soPa += (conn.prepare(`SELECT COUNT(*) n FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
       WHERE COALESCE(sc.student_id, a.student_id) IN (${ph}) AND sc.status != 'done' AND iv.status IN ('planned', 'started')`).get(...lo) as any).n;
   });
+  return { dong: dongTomTat(em, ketThuc, soCase, soPa), soCase, soPa };
+}
+
+function dongTomTat(em: { status: string; lop: string | null; loTrinh: string | null; choThi: boolean }[], ketThuc: boolean, soCase: number, soPa: number): string[] {
   if (!em.length) return [];
   const ten = (n: number) => (n === 1 && em.length === 1 ? 'em' : `${n} em`);
   const mot = em.length === 1 ? em[0] : null;
@@ -69,13 +80,22 @@ export function tomTatTrangThai(ids: readonly number[], ketThuc: boolean): strin
 /** GET /students/:id/trang-thai/xem-truoc — hộp một em: tóm tắt + câu chặn (nếu có). Ai xem được em thì đọc được; quyền làm do máy chủ kiểm lúc lưu. */
 export function xemTruocTrangThai(p: Principal, studentId: number, ketThuc: boolean): { dong: string[]; chan: string | null } {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
-  return { dong: tomTatTrangThai([studentId], ketThuc), chan: chanLenhCho(studentId) };
+  return { dong: tomTatTrangThai([studentId], ketThuc).dong, chan: chanLenhCho(studentId) };
+}
+
+/** Câu báo sau khi lưu, đọc trạng thái THẬT của em (em FT còn lộ trình chạy kết thúc học thì chưa vào Lưu trữ — TK-L). Web hiện đúng câu này. */
+export function thongBaoTrangThai(s: { status: string; archived_at: string | null } | null | undefined): string | null {
+  if (!s) return null;
+  if (s.status === 'inactive') return 'Đã vào Lưu trữ · Tạm dừng';
+  if (s.status === 'finished') return s.archived_at ? 'Đã vào Lưu trữ · Kết thúc học' : 'Đã kết thúc học — chờ KQ thi thật rồi chọn Bước tiếp, vào Lưu trữ sau';
+  return null;
 }
 
 /** POST /students/:id/status — như `setStudentStatus`, thêm chặn quyết định chuyển lớp chờ khi Tạm dừng / Kết thúc học. */
 export function doiTrangThai(p: Principal, studentId: number, b: { status: 'active' | 'inactive' | 'finished'; date?: string; reason?: string; endKind?: any }) {
   if (b.status !== 'active') { const chan = chanLenhCho(studentId); if (chan) throw badRequest(chan); }
-  return setStudentStatus(p, studentId, b.status, b.date ?? demoToday(), b.reason, b.endKind ?? null);
+  const s = setStudentStatus(p, studentId, b.status, b.date ?? demoToday(), b.reason, b.endKind ?? null) as any;
+  return { ...s, thongBao: thongBaoTrangThai(s) };
 }
 
 export type HuongQuayLai = 'lop-cu' | 'chon-lop' | 'lo-trinh-moi' | 'hoc-lai';

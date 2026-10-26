@@ -332,4 +332,87 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     console.log(`      (đo: xem trước Lộ trình mới ${ltm} · Quay lại học → Lộ trình mới ${qlLtm} · → chọn lớp ${qlLop} · xem trước Tạm dừng ${td} câu)`);
     assert(ltm <= 20 && qlLtm <= 20 && qlLop <= 26 && td <= 12, `vượt trần: ${ltm} / ${qlLtm} / ${qlLop} / ${td}`);
   }));
+
+  // ------------------------------------------------------------------ Rà sâu PTA Plan #582
+  const fs = await import('node:fs');
+  check('SV-10 · (rà 1) Hoàn tác Tạm dừng MỘT em: TVV (student.edit_more) hoàn tác được qua /hoan-tac-tam-dung; hàng loạt giữ cycle.edit (TVV 403); web một em gọi đường riêng', () => thu(() => {
+    const L = lop(); const { sid } = em(L); const b = em(L);
+    const TVV = nguoi('consultant', ['MB']);
+    students.setStudentStatus(TVV, sid, 'inactive', TODAY);
+    students.hoanTacTamDung(TVV, sid);
+    assert(hs(sid).status === 'active' && hs(sid).archived_at === null, 'TVV hoàn tác một em');
+    students.setStudentStatus(QL, b.sid, 'inactive', TODAY);
+    assert(loi(() => hangLoat.chay(TVV, { viec: 'hoan-tac-tam-dung', studentIds: [b.sid] }))?.status === 403 && hs(b.sid).status === 'inactive', 'hàng loạt: TVV 403');
+    const web = fs.readFileSync('web/src/modules/students/HopTamDungKetThuc.tsx', 'utf8');
+    assert(/mot && !ketThuc[\s\S]{0,200}\/hoan-tac-tam-dung`/.test(web), 'web một em Tạm dừng → POST /students/:id/hoan-tac-tam-dung');
+  }));
+
+  check('SV-11 · (rà 2) Hoàn tác Kết thúc học của em đang Tạm dừng → về Tạm dừng, giữ ngày Lưu trữ cũ (không NULL); em đang học → hết Lưu trữ', () => thu(() => {
+    const L = lop(); const { sid } = em(L);
+    const ngayDung = t.addDays(TODAY, -9);
+    students.setStudentStatus(QL, sid, 'inactive', ngayDung);
+    students.setStudentStatus(QL, sid, 'finished', TODAY, 'Thôi hẳn');
+    students.hoanTacKetThuc(QL, sid);
+    assert(hs(sid).status === 'inactive' && hs(sid).archived_at === ngayDung, `về Tạm dừng, Lưu trữ ${ngayDung}: ${JSON.stringify(hs(sid))}`);
+    const b = em(lop());
+    conn.prepare(`UPDATE learning_cycles SET status = 'completed' WHERE id = ?`).run(b.cy);
+    students.setStudentStatus(QL, b.sid, 'finished', TODAY, 'Thôi');
+    students.hoanTacKetThuc(QL, b.sid);
+    assert(hs(b.sid).status === 'active' && hs(b.sid).archived_at === null, 'đang học → ra khỏi Lưu trữ');
+  }));
+
+  check('SV-12 · (rà 3) em Tạm dừng (Lưu trữ) có KQ thi thật vẫn có việc "Chọn bước tiếp"; migrate không làm mất việc; em Kết thúc học đã lưu trữ thì không', () => thu(() => {
+    const L = lop(); const a = emThiXong(L); const b = emThiXong(L); const c = emThiXong(L);
+    students.setStudentStatus(QL, a.sid, 'inactive', TODAY);
+    xoaNho();
+    assert(hs(a.sid).archived_at && bt.choBuocTiep(a.sid).length === 1, 'tạm dừng (Lưu trữ) → còn việc');
+    /* em tạm dừng TRƯỚC P7 (chưa lưu trữ) → migrate lưu trữ → việc còn */
+    conn.prepare(`UPDATE students SET status = 'inactive', archived_at = NULL WHERE id = ?`).run(b.sid);
+    xoaNho();
+    assert(bt.choBuocTiep(b.sid).length === 1, 'trước migrate có việc');
+    migratePrSvLoTrinh(conn, []);
+    xoaNho();
+    assert(hs(b.sid).archived_at && bt.choBuocTiep(b.sid).length === 1, 'sau migrate vẫn có việc');
+    conn.prepare(`UPDATE students SET status = 'finished', archived_at = ? WHERE id = ?`).run(TODAY, c.sid);
+    xoaNho();
+    assert(bt.choBuocTiep(c.sid).length === 0, 'kết thúc + lưu trữ → không việc');
+  }));
+
+  check('SV-13 · (rà 4) hướng tiếp theo lộ trình đã chọn: LT2 Giữ lớp (lớp LT) → "Lên LT2" ở Tổng kết', () => thu(() => {
+    const L = lop(); const a = emThiXong(L);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'LT2' });
+    const h = get(`SELECT huong_tiep FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1`, a.cy)?.huong_tiep;
+    assert(h === 'len_lt2', `hướng: ${h}`);
+  }));
+
+  check('SV-14 · (rà 5) Lộ trình mới khi em Tạm dừng → Hoàn tác trả Tạm dừng đúng ngày cũ (không hôm nay)', () => thu(() => {
+    const L = lop(); const a = emThiXong(L);
+    const ngayDung = t.addDays(TODAY, -5);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'tam_dung', date: ngayDung });
+    assert(hs(a.sid).archived_at === ngayDung, `tạm dừng ${ngayDung}: ${hs(a.sid).archived_at}`);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi' });
+    assert(hs(a.sid).status === 'active' && !hs(a.sid).archived_at, 'Lộ trình mới: đang học');
+    bt.boChonBuocTiep(QL, a.cy);
+    assert(hs(a.sid).status === 'inactive' && hs(a.sid).archived_at === ngayDung, `Hoàn tác: ${JSON.stringify({ s: hs(a.sid).status, a: hs(a.sid).archived_at })}`);
+  }));
+
+  check('SV-15 · (rà 6, 7, 8) câu báo theo trạng thái thật (em FT còn lộ trình chạy → chưa Lưu trữ); xem trước Lộ trình mới: lớp ngoài phạm vi 403, tuần sai 400; xem trước Tạm dừng chỉ đếm Case của em được tính', () => thu(() => {
+    const L = lop(); const a = em(L);
+    const r = thv.doiTrangThai(QL, a.sid, { status: 'finished', date: TODAY, reason: 'Thôi' });
+    assert(!r.archived_at && /chờ KQ thi thật/.test(r.thongBao), `TK-L: ${r.thongBao}`);
+    const b = em(L);
+    assert(thv.doiTrangThai(QL, b.sid, { status: 'inactive', date: TODAY }).thongBao === 'Đã vào Lưu trữ · Tạm dừng', 'tạm dừng');
+    const x = emThiXong(lop());
+    const cnKhac = get(`SELECT id, code FROM branches WHERE code != 'MB' ORDER BY id LIMIT 1`);
+    const start = t.addDays(T2, -70);
+    const lopHn = intake.createClass(P.admin, { code: `${cnKhac.code} P7-${++seq}`, branchId: cnKhac.id, kind: 'FT', isFastTrack: true, route: 'LT1', startDate: start, startPeriodId: week.ensurePeriod(start).id }).id;
+    assert(loi(() => bt.xemTruocLoTrinhMoi(QL, x.cy, { lopMoiId: lopHn }))?.status === 403, 'lớp chi nhánh khác → 403');
+    assert(loi(() => bt.xemTruocLoTrinhMoi(QL, x.cy, { batDau: 'abc' }))?.status === 400, 'tuần sai → 400');
+    /* Case của em đã tạm dừng không tính vào "n Case dừng hạn" khi tạm dừng cả lô */
+    const c = emThiXong(lop());
+    students.setStudentStatus(QL, c.sid, 'inactive', TODAY);
+    const d2 = emThiXong(lop());
+    const tt = thv.tomTatTrangThai([c.sid, d2.sid], false);
+    assert(tt.soCase === 1 && tt.dong.includes('1 Case dừng hạn'), JSON.stringify(tt));
+  }));
 }

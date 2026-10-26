@@ -70,8 +70,10 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const gui = async (fn: () => Promise<unknown>, x: DaLuuPanel) => {
     setTt('dang'); setLoi(null);
     try {
-      await fn();
-      lamMoi(); setTt(null); setDaLuu({ x, luc: gio() }); setDoi(false); reload(); onDone?.();
+      const r = await fn() as { thongBao?: string | null } | undefined;
+      /* P7: câu phụ theo trạng thái thật máy chủ trả (không tự nói "đã vào Lưu trữ"). */
+      const phu = r?.thongBao ? dich(r.thongBao) : x.phu;
+      lamMoi(); setTt(null); setDaLuu({ x: { ...x, phu }, luc: gio() }); setDoi(false); reload(); onDone?.();
     } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); }
   };
   const boChon = () => api.del(`/cycles/${cycleId}/buoc-tiep`).then(() => { lamMoi(); reload(); onDone?.(); });
@@ -79,7 +81,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const luuDung = () => {
     const chonMay: LuaChonSauThi = dung.quayLai ? 'tam_dung' : 'ket_thuc';
     void gui(() => api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: chonMay, date: dung.ngay || undefined, lyDo: dung.lyDo.trim() || undefined }),
-      { chu: t('Đã chọn {chon}', { chon: NHAN_SAU_THI[chonMay] }), phu: t('em đã vào Lưu trữ'), hoanTac: boChon });
+      { chu: t('Đã chọn {chon}', { chon: NHAN_SAU_THI[chonMay] }), hoanTac: boChon });
   };
   const viecTiep = onTiep
     ? <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>

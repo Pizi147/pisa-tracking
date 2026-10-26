@@ -358,7 +358,7 @@ export function setStudentStatus(
 
 /** Nhật ký lần Kết thúc học GẦN NHẤT của em (`student.status` → finished): đúng id ghi danh / lộ trình / Case đã đóng. Em kết thúc từ trước PR-LUI-b thì không có → `null`. */
 type NhatKyKetThuc = {
-  ghiDanhDong: { id: number; truoc: string }[]; loTrinhDong: number[]; dongCase: ChupCaseDong[]; rutTinHieu: number[]; truocStatus: string;
+  ghiDanhDong: { id: number; truoc: string }[]; loTrinhDong: number[]; dongCase: ChupCaseDong[]; rutTinHieu: number[]; truocStatus: string; truocArchivedAt: string | null;
 };
 function nhatKyKetThucGanNhat(studentId: number): NhatKyKetThuc | null {
   const r = db().prepare(`SELECT before_json, after_json FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.status' ORDER BY id DESC LIMIT 1`).get(studentId) as any;
@@ -368,6 +368,7 @@ function nhatKyKetThucGanNhat(studentId: number): NhatKyKetThuc | null {
     return {
       ghiDanhDong: a.ghiDanhDong.map((x: any) => (typeof x === 'number' ? { id: x, truoc: 'active' } : x)), loTrinhDong: a.loTrinhDong ?? [],
       dongCase: a.dongCase ?? [], rutTinHieu: a.rutTinHieu ?? [], truocStatus: JSON.parse(r.before_json ?? '{}')?.status ?? 'active',
+      truocArchivedAt: JSON.parse(r.before_json ?? '{}')?.archivedAt ?? null,
     };
   } catch { return null; }
 }
@@ -582,7 +583,10 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
   if (s.status !== 'finished' || (cuoi?.action !== 'student.status' && cuoi?.action !== 'student.rejoin_undo') || !nk) throw conflict('Không còn hoàn tác được — học viên đã đổi trạng thái hoặc chuyển lớp sau lần Kết thúc học.');
   return tx(() => {
     const date = demoToday();
-    conn.prepare('UPDATE students SET status = ?, finished_at = NULL, archived_at = NULL WHERE id = ?').run(nk.truocStatus === 'inactive' ? 'inactive' : 'active', studentId);
+    /* P7 (N11): về Tạm dừng → em vẫn ở Lưu trữ đúng ngày cũ (dữ liệu trước P7 chưa ghi → hôm nay); về đang học → ra khỏi Lưu trữ. */
+    const veTamDung = nk.truocStatus === 'inactive';
+    conn.prepare('UPDATE students SET status = ?, finished_at = NULL, archived_at = ? WHERE id = ?')
+      .run(veTamDung ? 'inactive' : 'active', veTamDung ? nk.truocArchivedAt ?? date : null, studentId);
     for (const e of nk.ghiDanhDong) {
       conn.prepare('UPDATE enrollments SET status = ?, end_kind = ? WHERE id = ?').run(e.truoc, e.truoc === 'paused' ? 'bao_luu' : null, e.id);
       const l = conn.prepare(`SELECT c.id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.id = ? AND c.status = 'finished'`).get(e.id) as any;
@@ -593,7 +597,7 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
     if (cs.moLai.length) datLaiHanCase(studentId, date);
     addJourney({ studentId, eventType: 'resume', eventDate: date, title: 'Hoàn tác Kết thúc học', detail: null, createdBy: p.userId });
     writeAudit({ actorUserId: p.userId, action: 'student.finish_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
-      before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at }, after: { status: nk.truocStatus, caseMoLai: cs.moLai, caseBoQua: cs.boQua } });
+      before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at }, after: { status: nk.truocStatus, archivedAt: veTamDung ? nk.truocArchivedAt ?? date : null, caseMoLai: cs.moLai, caseBoQua: cs.boQua } });
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }
