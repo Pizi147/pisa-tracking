@@ -11,7 +11,9 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   const mdk = await import('../fasttrack/monDangKy.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
-  const { demLuotLechCo, capNhatConOCho } = await import('../fasttrack/conOCho.ts');
+  const { O_CHO_TU_SQL, capNhatConOCho } = await import('../fasttrack/conOCho.ts');
+  /** Cờ "còn ô chờ" đang lưu khớp cách tính lại — chỉ các lượt của em này (bộ kiểm khác ghi SQL thẳng có thể để lệch lượt của chúng). */
+  const coLech = (cycleId: number) => (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts a WHERE a.cycle_id = ? AND a.o_cho_tu IS NOT ${O_CHO_TU_SQL}`).get(cycleId) as any).n as number;
   const { scoreDebtCells } = await import('../worklist/scoreDebt.ts');
   const hoanTat: any = await import('../fasttrack/hoanTat.ts');
   const cls: any = await import('../classes/classes.ts');
@@ -138,7 +140,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assert(dong(mt1.id, 'speaking').required === 1, 'MT1 đã có điểm S: giữ');
       assert(get(`SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking' AND band IS NOT NULL`, mt1.id).n === 1, 'điểm S cũ còn');
       assert(kq.boKhoiDot >= 1 && kq.giuDaCham >= 1, `tóm tắt: ${JSON.stringify(kq)}`);
-      assert(demLuotLechCo() === 0, 'cờ ô chờ khớp');
+      assert(coLech(ha.id) === 0, 'cờ ô chờ khớp');
       const cells = attempts.skillCells(P.admin, mt3, [], [], TODAY, skillSchedule.ensureSkillRows(mt3.id));
       assert(cells.find((c: any) => c.skill === 'speaking').progress === 'skipped' && cells.find((c: any) => c.skill === 'speaking').khongHoc, 'ô S MT3: Không học');
       const no = scoreDebtCells(P.admin, addDays(TODAY, 200), null).filter((c) => c.attemptId === mt3.id);
@@ -161,7 +163,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       const cells = attempts.skillCells(P.admin, mt3, [], attempts.skipsOf(mt3.id), TODAY, skillSchedule.ensureSkillRows(mt3.id));
       assert(cells.find((c: any) => c.skill === 'writing1').progress === 'skipped' && cells.find((c: any) => c.skill === 'writing1').khongHoc && cells.find((c: any) => c.skill === 'writing2').required, 'ô W1 Không học, W2 bắt buộc');
       assertThrows(() => attempts.saveScore(P.admin, mt3.id, 'writing1', { band: 6 }, addDays(TODAY, 200)), /không học/, 'nhập W1 bị chặn');
-      assert(demLuotLechCo() === 0, 'cờ ô chờ khớp');
+      assert(coLech(huy.id) === 0, 'cờ ô chờ khớp');
       diem(mt3.id, { listening: 6, reading: 6, writing2: 7, speaking: 6 });
       capNhatConOCho([mt3.id]);
       assert(get('SELECT o_cho_tu FROM assessment_attempts WHERE id = ?', mt3.id).o_cho_tu === null, 'đủ L R W2 S → không còn ô chờ (W1 không chờ)');
@@ -229,7 +231,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       const s = dong(moi.id, 'speaking'), w = dong(moi.id, 'writing');
       assert(s.required === 0 && s.scope_reason === 'Không học', `MT4 S: ${s.required}`);
       assert(w.required === 1 && w.bo_task === 'writing2', `MT4 W: ${w.required} ${w.bo_task}`);
-      assert(demLuotLechCo() === 0, 'cờ ô chờ khớp');
+      assert(coLech(ha.id) === 0, 'cờ ô chờ khớp');
       /* Lượt đã huỷ rồi tạo lại cùng số (hồi sinh) cũng theo môn đăng ký hiện tại. */
       conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(moi.id);
       mdk.apMonDangKy(P.mbManager, ha.id, ['listening', 'reading', 'writing1', 'writing2']);
