@@ -1,7 +1,7 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
-  type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, boMonTheoLuot, daGhiLuot,
+  type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
@@ -18,7 +18,6 @@ import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { phanCongO } from '../classes/quyenChuyenLop.ts';
-import { lichGopCua } from '../fasttrack/skillSchedule.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 import { allProgrammes, evaluateRegular } from './regular.ts';
 import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
@@ -39,23 +38,29 @@ export type TyLeLuot = {
 };
 
 /** % tổng của nhiều lượt lớp thường — 2 câu cho cả lô (lượt + điểm), mỗi lượt qua `evaluateRegular`. Lượt không phải lớp thường → không có trong kết quả. */
+const GOP = Object.keys(MON_GOP);
+const GOP_PH = GOP.map(() => '?').join(',');
+
 export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
   const out = new Map<number, TyLeLuot>();
   if (!attemptIds.length) return out;
   const conn = db();
   const luot = new Map<number, { kind: string; ct: string | null; nguong: number | null }>();
   const diem = new Map<number, any[]>();
+  const lichGop = new Map<number, any[]>();
   theoLo([...new Set(attemptIds)], (lo, ph) => {
     for (const r of conn.prepare(
       `SELECT a.id, a.kind, c.programme_code, c.nguong_dat FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
     ).all(...lo) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, nguong: r.nguong_dat ?? null });
-    for (const r of conn.prepare(`SELECT attempt_id, skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
-      if (!diem.has(r.attempt_id)) diem.set(r.attempt_id, []);
-      diem.get(r.attempt_id)!.push(r);
+    /* P13: cùng câu đọc dòng lịch MÔN GỘP cũ (`la_lich` = 1) — bộ môn theo lượt (`daGhiLuot`), vẫn 2 câu cho cả lô. */
+    for (const r of conn.prepare(`SELECT attempt_id, skill, raw_score, raw_total, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(...lo, ...lo, ...GOP) as any[]) {
+      const m = r.la_lich ? lichGop : diem;
+      if (!m.has(r.attempt_id)) m.set(r.attempt_id, []);
+      m.get(r.attempt_id)!.push(r);
     }
-  });
+  }, Math.floor((THAM_SO_TOI_DA - GOP.length) / 2));
   const chuongTrinh = allProgrammes();
-  const lichGop = lichGopCua([...luot.keys()]);   // P13: bộ môn theo lượt (`daGhiLuot`)
   for (const [id, l] of luot) {
     const prog = l.ct ? chuongTrinh.get(l.ct) : null;
     if (!prog || prog.scoringMode !== 'ratio') continue;
