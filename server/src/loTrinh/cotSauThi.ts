@@ -19,7 +19,7 @@ export const COT_SAU_THI = cotSauThi();
  * Lộ trình MỚI NHẤT của em chưa Lưu trữ (P7: em Tạm dừng ở Lưu trữ vẫn tính — chỉ loại em Kết thúc học đã lưu trữ) — cùng lọc với việc Chọn bước tiếp. Rà #436: em đã Kết thúc học / lộ trình bỏ dở (`abandoned`) mà CHƯA có kết quả
  * thi → không nhắc "chờ kết quả" (em nghỉ, không đi thi); đã có kết quả thì vẫn chờ chọn bước tiếp như OV-8a / OV-13m. Một chỗ cho việc, nhãn, migrate, kiểm trước.
  */
-export const LO_TRINH_MOI_NHAT = `c.seq = (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = c.student_id) AND (s.archived_at IS NULL OR s.status != 'finished')
+export const LO_TRINH_MOI_NHAT = `c.seq = (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = c.student_id) AND (s.archived_at IS NULL OR s.status = 'inactive')
   AND (c.thi_that_khong_thi = 1 OR (c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
        OR c.outcome_score IS NOT NULL OR COALESCE(c.outcome, 'unknown') != 'unknown' OR (s.status != 'finished' AND c.status != 'abandoned'))`;
 

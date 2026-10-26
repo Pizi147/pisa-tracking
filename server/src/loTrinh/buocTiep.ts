@@ -466,7 +466,7 @@ export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten,
        COALESCE(b.class_id, e.class_id) AS class_id, COALESCE(b.class_code, l.code) AS class_code, COALESCE(b.branch_id, l.branch_id) AS branch_id
   FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
   LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id
- WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND (s.archived_at IS NULL OR s.status != 'finished')   -- P7: em Tạm dừng (Lưu trữ) vẫn có việc
+ WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND (s.archived_at IS NULL OR s.status = 'inactive')   -- P7: em Tạm dừng (Lưu trữ) vẫn có việc
    AND (c.status = 'active' OR COALESCE(b.ly_do, '') != 'chuyen_lop') AND ${CO_KET_QUA}
    AND c.seq = (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id)`;
 /** TD7: cả hệ thống nhớ trong request GET (Công việc, Học viên & Lớp gọi nhiều lần). Người gọi không sửa kết quả. */
