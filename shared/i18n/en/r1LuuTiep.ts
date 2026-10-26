@@ -9,9 +9,9 @@ export const EN_R1_LUU_TIEP = {
   'Bài tiếp ›': 'Next ›',
   'Em tiếp ›': 'Next student ›',
   'Lớp tiếp: {lop} ›': 'Next class: {lop} ›',
-  'Việc tiếp ›': 'Next task ›',
   '✓ Đã lưu': '✓ Saved',
   'Đã xong phần của bạn · {phamVi}: đã lưu {n} bài': 'Your part is done · {phamVi}: {n} saved',
   'Tiếp: {x}': 'Next: {x}',
   'Ô còn trống — nhập điểm hoặc Vắng': 'Empty — enter a score or mark Absent',
+  '‹ Về {x}': '‹ Back to {x}',
 } satisfies Record<string, Dich>;

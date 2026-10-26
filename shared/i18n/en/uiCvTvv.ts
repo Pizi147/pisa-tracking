@@ -5,7 +5,7 @@ export const EN_UI_CV_TVV = {
   '<b>Báo PH</b> · <b>Sau thi</b> · <b>Chốt ngày thi</b> · <b>Bổ sung hồ sơ</b> — bấm dòng, làm ngay ở panel bên phải.':
     '<b>Parent call</b> · <b>After exam</b> · <b>Confirm exam date</b> · <b>Complete profile</b> — click a row and work in the panel on the right.',
   '<b>Báo PH</b>: chọn <b>Đã báo PH</b> hoặc <b>Chưa liên hệ được</b>, ghi chú, <b>Lưu · việc tiếp ›</b>. Chưa liên hệ được: việc vẫn mở, giữ hạn.':
-    '<b>Parent call</b>: choose <b>Parent informed</b> or <b>Could not reach</b>, add a note, <b>Save and next</b>. Could not reach: the task stays open, same due date.',
+    '<b>Parent call</b>: choose <b>Parent informed</b> or <b>Could not reach</b>, add a note, <b>Save &amp; next task ›</b>. Could not reach: the task stays open, same due date.',
   '<b>Sau thi</b>: lưu điểm thi thật trước, chốt bước tiếp sau.': '<b>After exam</b>: save the real exam scores first, confirm the next step later.',
   'Báo PH · {ten}': 'Parent call · {ten}',
   'Báo PH': 'Parent call',

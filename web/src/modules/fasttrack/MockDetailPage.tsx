@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useChongVe, useVe } from '../../lib/quayLai.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -30,7 +31,7 @@ import {
 import {
   ATTEMPT_KIND_SHORT, canNhomNguyenNhan, CHU_THAO_TAC, chipSosMt0, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
-  docKnMock, hangCanHoTro, vaiXemHocVien, KY_NANG_KE_HOACH, type HangKyNang, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
+  docKnMock, docNguCanhDs, duongDotTest, keBen, hangCanHoTro, vaiXemHocVien, KY_NANG_KE_HOACH, type HangKyNang, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
 } from '@shared/domain/index.ts';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -136,6 +137,12 @@ export default function MockDetailPage() {
   const toast = useToast();
   const { data, loading, error, reload } = useApi<Detail>(id ? `/attempts/${id}` : null);
   const { save } = useSaveScore(Number(id), reload, data?.student.name);
+  /* R1-LUU-TIEP: mở từ lưới (tên em) — danh sách lượt nguồn ở `location.state.ds` → "Lưu · em tiếp ›"; không có → "‹ Về {nguồn}". */
+  const location = useLocation();
+  const dsLuot = docNguCanhDs((location.state as { ds?: unknown } | null)?.ds, 'luot', Number(id));
+  const emSau = dsLuot ? keBen(dsLuot.ids, Number(id))?.sau ?? null : null;
+  const chongVe = useChongVe();
+  const veNguon = useVe();
   const { homNay } = useNgayNghiepVu();
   /* R15 — các đợt của CHÍNH học viên này, để chuyển đợt ngay trên trang (không phải quay lại hồ sơ). */
   const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.student.id}` : null);
@@ -320,7 +327,9 @@ export default function MockDetailPage() {
       {/* B. NĂM Ô ĐIỂM LỚN — tầng 1 của màn; bấm ô là sửa tại chỗ (YC-13.7, YC-13.8). */}
       <div id="dai-diem" className="scroll-mt-4">
         <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
-          mo={moO} onMo={setMoO} save={save} nguCanh={nguCanhChiTiet(d)} />
+          mo={moO} onMo={setMoO} save={save} nguCanh={nguCanhChiTiet(d)}
+          emTiep={emSau !== null ? (k) => navigate(duongDotTest({ id: emSau }, k), { state: { ds: dsLuot }, replace: true }) : null}
+          ve={(() => { const v = chongVe[0] ?? trangCha('mt', { studentId: d.student.id, tenHv: d.student.name }); return { nhan: t('‹ Về {x}', { x: v.ten }), onClick: () => veNguon(v.url, !chongVe.length) }; })()} />
       </div>
 
       {/* C. NHẬN XÉT 4 kỹ năng (YC-13.5, OV-4b) — không bắt buộc, không phải điểm. */}

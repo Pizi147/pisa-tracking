@@ -15,7 +15,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   ENTRY_SKILLS, nhanBai, ngay, tenMon, tenMonNgan, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
-import { conThieuFt, dotGvCham, duongDotTest } from '@shared/domain/index.ts';
+import { conThieuFt, dotGvCham, duongDotTest, type NguCanhDs } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { Info, Level } from '../../ui/ui.tsx';
 import {
@@ -107,8 +107,10 @@ function useDiChuyen() {
 }
 
 /** Một dòng học viên: tên + TỐI ĐA một dòng phụ ngắn bên trái (G-3), một ô to bên phải. */
-function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children, nhan, thi, mo = false }: {
+function DongHv({ studentId, active, ten, href, ds, phu, phuTitle, phuDo = false, luu, children, nhan, thi, mo = false }: {
   studentId: number; active: boolean; ten: string; href: string;
+  /** R1-LUU-TIEP: danh sách lượt nguồn cho hồ sơ MT ("Lưu · em tiếp ›"). */
+  ds?: NguCanhDs;
   /** OV-1d: em đã Kết thúc học / Lưu trữ — dòng mờ. */
   mo?: boolean;
   phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
@@ -124,7 +126,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
       {/* OV-14b: tên giữ ≥ 8rem (375: không vỡ từng chữ cái) — cụm ô chật thì xuống dòng dưới tên. */}
       <div className="min-w-[8rem] flex-1">
         <div className="min-w-0">
-          <Link className="link block break-words max-sm:flex max-sm:min-h-[44px] max-sm:items-center" to={href} title={ten}>{ten}</Link>
+          <Link className="link block break-words max-sm:flex max-sm:min-h-[44px] max-sm:items-center" to={href} state={ds ? { ds } : undefined} title={ten}>{ten}</Link>
           {nhan && <div className="mt-0.5">{nhan}</div>}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0 tabular-nums">
@@ -211,7 +213,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem, onHet }: {
         {rows.map((r) => (
           <DongFt key={r.attemptId} row={r} k={chon} nhieuMt={nhieuMt} lop={data.classCode} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
             active={hv !== null && r.studentId === hv} onReload={onReload} gvMacDinh={gvCot}
-            mo={mo === r.attemptId && moChon === chon} hop={mo === r.attemptId && moChon === chon ? hop : null}
+            mo={mo === r.attemptId && moChon === chon} hop={mo === r.attemptId && moChon === chon ? hop : null} dsLuot={{ loai: 'luot', ids: rows.filter((x) => !x.ngungHoc).map((x) => x.attemptId), nhan: data.classCode }}
             onMo={(m) => { if (m) phien.mo(dsAid); else phien.dong(); setMo(m ? r.attemptId : null); setMoChon(chon); }}
             onTiep={(d) => tiep(r.attemptId, d)} />
         ))}
@@ -228,10 +230,10 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem, onHet }: {
   );
 }
 
-function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, hop, onMo, onTiep, tuanDangXem, tuanXem }: {
+function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, hop, dsLuot, onMo, onTiep, tuanDangXem, tuanXem }: {
   row: FtSheet['rows'][number]; k: string; nhieuMt: boolean; lop: string; active: boolean; onReload: () => void;
   gvMacDinh: NguoiChon | null; tuanDangXem: string | null; tuanXem: string | null;
-  mo: boolean; hop: PhienO | null; onMo: (mo: boolean) => void; onTiep: (daLuu: boolean) => void;
+  mo: boolean; hop: PhienO | null; dsLuot: NguCanhDs; onMo: (mo: boolean) => void; onTiep: (daLuu: boolean) => void;
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(row.attemptId, onReload, row.studentName);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- bảng tải lại (dòng mới) thì bỏ điểm tạm
@@ -242,7 +244,7 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, hop, on
   const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? t('KV {x}', { x: fmtBand(kv) }) : null]
     .filter(Boolean).join(' · ');
   return (
-    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
+    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)} ds={dsLuot}
       phu={phu} phuTitle={kv !== null ? t('Kỳ vọng (KV) của lượt này: {fmtBand}', { fmtBand: fmtBand(kv) }) : undefined}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       mo={!!row.ngungHoc}
