@@ -29,13 +29,15 @@ type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaT
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[]; monHoc?: { studentId: number; dong: string[] }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
-  { key: 'fullName', nhan: 'Họ và tên', rong: 210 }, { key: 'dob', nhan: 'Ngày sinh', rong: 190 },
+  { key: 'fullName', nhan: 'Họ và tên', rong: 210 },
+  /* P8 (mockup k5): Môn học ngay sau tên — thấy được không cần cuộn ngang. */
+  { key: 'monDangKy', nhan: 'Môn học', rong: 240 },
+  { key: 'dob', nhan: 'Ngày sinh', rong: 190 },
   { key: 'email', nhan: 'Email', rong: 250 }, { key: 'consultantUserId', nhan: 'TVV', rong: 210 },
   { key: 'phone', nhan: NHAN_LIEN_HE.phone, rong: 150 }, { key: 'parentName', nhan: NHAN_LIEN_HE.parentName, rong: 190 },
   { key: 'parentRelation', nhan: NHAN_LIEN_HE.parentRelation, rong: 110 }, { key: 'parentPhone', nhan: NHAN_LIEN_HE.parentPhone, rong: 150 },
   { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
   { key: 'examDate', nhan: 'Dự kiến thi', rong: 190 }, { key: 'target', nhan: 'Target', rong: 100, so: true },
-  { key: 'monDangKy', nhan: 'Môn học', rong: 290 },
   { key: 'baseline', nhan: 'Điểm đầu vào', rong: 112, so: true },
 ];
 /* Mockup 05/10: cột đủ cho ô đã sửa có ↺ (không cắt chữ). PR-OV2b thêm cột TVV → bảng rộng hơn panel 1440 thì cuộn ngang trong khung bảng. */
@@ -188,7 +190,12 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
         daSua: soEm > 0, tuHoi: true, huy: { onClick: dong, disabled: busy },
         conThieu: lf.conThieu(loiForm),
         phu: soLoi > 0 ? <span className="text-xs text-late tabular-nums">{soLoi} ô cần sửa</span>
-          : luuDo && soEm ? <span className="text-xs text-late tabular-nums" title={luuDo.lyDo}>{luuDo.cau}</span> : null,
+          : luuDo && soEm ? <span className="text-xs text-late tabular-nums" title={luuDo.lyDo}>{luuDo.cau}</span>
+          /* P8 (mockup k5 chân): tóm tắt đổi môn của em đầu tiên + số em còn lại (đủ từng em ở cột Lưu ý). */
+          : xem?.monHoc?.length ? (() => {
+            const m = xem.monHoc[0], ten = goc.get(m.studentId)?.fullName ?? '';
+            return <span className="text-xs text-slate-300">{`${ten}: ${m.dong.join(' · ')}`}{xem.monHoc.length > 1 ? ` · +${xem.monHoc.length - 1} em` : ''}</span>;
+          })() : null,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}
             disabled={busy || !soEm || soLoi > 0 || !xem}>
@@ -220,6 +227,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                 <span className="flex flex-wrap items-center gap-2"><span className="text-xs text-slate-400">{t('Môn học')}</span><NutMon nho ariaLabel={t('Môn học áp cho em đã chọn')} value={apMon} onChange={setApMon} /></span>
                 <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!chon.size || apMon?.length === 0}
                   onClick={() => { for (const sid of chon) datO(sid, 'monDangKy', chuMonO(apMon)); }}>{t('Áp cho {n} em', { n: chon.size })}</button>
+                {chon.size > 0 && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setChon(new Set())}>{t('Bỏ chọn')}</button>}
               </div>
             )}
             {d.nhapLienHe && <datalist id="quan-he-goi-y-lop">{QUAN_HE_GOI_Y.map((x) => <option key={x} value={x} />)}</datalist>}

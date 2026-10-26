@@ -516,7 +516,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             <button type="button" className="btn btn-sm btn-ghost self-start min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}>Đề xuất sửa lộ trình / thông tin khác…</button>
           )}
           {coMon && (
-            <Truong as="div" nhan={`${t('Môn học')} · ${cycle.label}`} loi={lf.loiCua(loi, 'mon')}>
+            <Truong as="div" nhan={`${t('Môn học')} · FT ${cycle.label}`} loi={lf.loiCua(loi, 'mon')}>
               <NutMon ariaLabel={t('Môn học')} value={mon} onChange={sua(setMon)} />
             </Truong>
           )}

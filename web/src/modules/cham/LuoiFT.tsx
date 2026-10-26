@@ -135,6 +135,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ovr: !chiCot,
   };
   const rawCot = RAW_SKILLS.filter(hien), wCot = W_SKILLS.filter(hien);
+  /* P8 (mockup k6): chú giải ở hàng công cụ + cột Overall đủ chỗ cho "Không đủ bộ môn" chỉ khi lưới có ô "Không học". */
+  const coKhongHoc = data.rows.some((r) => r.cells.some((c) => c.khongHoc));
   /* UI-LICH-TUAN (mockup khu a): ở Lịch tuần (có `sEx`) Kỳ vọng / Overall là cột thường (không dải nổi bật), tên em chữ đậm + ↗. */
   const lich = sEx !== undefined;
   /* Cột theo đúng những cột đang hiện (BANG-1: định nghĩa cột của `Bang`). */
@@ -151,7 +153,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...(cot.w ? [{ key: 'w', nhan: 'W', kieu: 'diem', rong: 64, tinh: true, sang: khopKn('writing', kn), goiY: W_HINT } as const] : []),
     ...(hien('speaking') ? [oKn('speaking')] : []),
     ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich ? 'diem' : 'noi-bat', rong: lich ? 80 : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
-    ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
+    ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
     { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') },
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
@@ -168,8 +170,6 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     );
   }
   const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem));
-  /* P8 (mockup k6): chú giải ở hàng công cụ chỉ khi lưới có ô "Không học". */
-  const coKhongHoc = rows.some((r) => r.cells.some((c) => c.khongHoc));
   /* UI-LICH-TUAN (#31, như Kế hoạch Test #534): lớp dài ở Lịch tuần hiện 10 em đầu + "Hiện tất cả n"; mở từ việc / em (kn, hv) thì hiện hết. */
   const gonHv = lich && !hetHv && hv === null && !kn && rows.length > 12;
   const rowsHien = gonHv ? rows.slice(0, 10) : rows;
@@ -202,6 +202,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   if (the) {
     return (
       <div>
+        {coKhongHoc && <div className="flex justify-end px-3 py-1"><ChuGiaiKhongHoc /></div>}
         {suaS && dot && <div className="flex justify-end px-3 py-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
         {rowsHien.map((r) => (
           <TheHv key={r.attemptId} row={r} lop={data.classCode} active={hv !== null && r.studentId === hv} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
@@ -427,7 +428,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
         <OBang c={cc.ovr}>
           {/* NEN (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
           {/* P8 (mockup k6): thiếu bộ môn vì môn đăng ký → nhãn kết quả viền đứt "Không đủ bộ môn" (khác "—" chưa điểm). */}
-          {row.result.overall == null && row.result.khongDuBoMon ? <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>
+          {row.result.overall == null && row.result.khongDuBoMon && row.result.complete ? <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>
             : <ODiem so={row.result.overall != null ? fmtBand(row.result.overall) : null} kq={soKyVong(row.result.overall, row.result.expectation)}
               nhan="Overall" kyVong={row.result.expectation != null ? fmtBand(row.result.expectation) : undefined} />}
         </OBang>

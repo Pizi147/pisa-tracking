@@ -1,5 +1,5 @@
 import { ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT } from '@shared/domain/index.ts';
-import { NutChon } from './ui.tsx';
+import { CHON, NutChon } from './ui.tsx';
 
 /**
  * MÔN HỌC — 5 nút bật L · R · W1 · W2 · S (P8, mockup V6 `lo-trinh-moi.html` k1, k4, k5). `value` null = đủ môn; tắt hết → [] (nơi gọi báo lỗi tại ô,
@@ -14,12 +14,16 @@ export function NutMon({ value, onChange, ariaLabel, nho, disabled }: {
     onChange(moi.length === ENTRY_SKILLS.length ? null : moi);
   };
   return (
-    <div role="group" aria-label={ariaLabel} className="flex flex-wrap gap-1.5">
-      {ENTRY_SKILLS.map((k) => (
-        <NutChon key={k} nho={nho} chon={co.has(k)} disabled={disabled} title={ENTRY_SKILL_LABEL[k]} className="min-w-[44px] tabular-nums" onClick={() => bat(k)}>
-          {ENTRY_SKILL_SHORT[k]}
-        </NutChon>
-      ))}
+    <div role="group" aria-label={ariaLabel} className={`flex flex-wrap ${nho ? 'gap-1' : 'gap-1.5'}`}>
+      {ENTRY_SKILLS.map((k) => nho
+        /* Trong ô bảng: không dấu ✓ góc (5 nút sát nhau) — môn tắt gạch ngang, không chỉ khác màu. */
+        ? <button key={k} type="button" aria-pressed={co.has(k)} disabled={disabled} title={ENTRY_SKILL_LABEL[k]} onClick={() => bat(k)}
+            className={`btn btn-sm min-h-[44px] min-w-[40px] justify-center px-1.5 tabular-nums sm:min-h-[28px] ${co.has(k) ? CHON : 'text-slate-500 line-through'}`}>{ENTRY_SKILL_SHORT[k]}</button>
+        : (
+          <NutChon key={k} chon={co.has(k)} disabled={disabled} title={ENTRY_SKILL_LABEL[k]} className={`min-w-[44px] tabular-nums ${co.has(k) ? '' : 'text-slate-500 line-through'}`} onClick={() => bat(k)}>
+            {ENTRY_SKILL_SHORT[k]}
+          </NutChon>
+        ))}
     </div>
   );
 }

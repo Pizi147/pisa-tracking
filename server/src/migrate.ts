@@ -145,6 +145,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* SV-NX-CASE: cột sos_cases.mo_ta_attempt_id (nguồn mô tả Case MT) — TRƯỚC mọi bước có thể đồng bộ mô tả Case (`dongBoNguyenNhanMt` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrSvNxCase(conn, applied));
     /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));
     /* OV-13q: cột hạn sau thi (learning_cycles.han_sau_thi…) — TRƯỚC mọi bước có thể đọc việc thi thật / bước tiếp (COT_SAU_THI). Chỉ thêm cột. */ buoc(() => themCotPrOv13q(conn, applied));
+    /* P8 MON-DANG-KY (N13): cột learning_cycles.mon_dang_ky + attempt_skills.bo_task — TRƯỚC mọi bước đọc dòng lịch / cờ ô chờ (`SELECT_SKILLS`, `O_CHO_TU_SQL` đọc `bo_task`). Chỉ thêm cột. */ buoc(() => migratePrMonDangKy(conn, applied));
     /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
@@ -301,6 +302,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     buoc(() => migrateDropBranchAdmin(conn, applied));
     buoc(() => migrateNormalPassThreshold(conn, applied));
     buoc(() => migrateSkillSchedule(conn, applied)); 
+    /* P8: DB cũ vừa dựng `attempt_skills` ở bước trên — thêm `bo_task` ngay (gọi lại, chạy lặp không đổi). */ buoc(() => migratePrMonDangKy(conn, applied));
     buoc(() => migrateNoShowMarks(conn, applied));
     buoc(() => migrateAttachments(conn, applied));
     buoc(() => migrateYThuc(conn, applied));
@@ -404,7 +406,6 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* P9a XET-LAI: bảng xet_lai_lo_trinh + thẻ "Mini Test chưa đạt" đang chờ → đóng (dòng (d) của Xét lại tính khi đọc; chạy lặp được). */ buoc(() => migratePrXetLai(conn, applied));
     /* P12 BAO-CAO-LICH-SU: cột learning_cycles.thi_that_target + điền Target hiện tại cho lộ trình đã có KQ (chạy lặp được). */ buoc(() => migratePrBaoCaoLichSu(conn, applied));
     /* P7 SV-LO-TRINH (N11, N12): em Tạm dừng cũ vào Lưu trữ (ngày pause gần nhất) · cột learning_cycles.route_ten · route KHAC ngừng (chạy lặp không đổi). */ buoc(() => migratePrSvLoTrinh(conn, applied));
-    /* P8 MON-DANG-KY (N13): cột learning_cycles.mon_dang_ky + attempt_skills.bo_task (chỉ thêm cột, NULL = đủ môn; chạy lặp được). */ buoc(() => migratePrMonDangKy(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

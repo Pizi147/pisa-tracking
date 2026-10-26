@@ -530,7 +530,7 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
 /** ĐANG CHỌN (UX-B B3, HE §2 "Đang chọn"): viền nhấn + nền nhấn nhạt + ✓ nhỏ (OV-15a, bỏ teal) + aria-pressed — KHÁC nút chính (xanh đặc = Lưu).
  * PR-KHUNG G2: nút CHỌN được xuống dòng (`.btn` nowrap chỉ cho nút thao tác); ✓ chỉ vẽ ở nút đang chọn — không chừa chỗ trống làm chữ tràn viền. */
 /* `!`: `.btn:hover:not(:disabled)` (index.css) mạnh hơn lớp Tailwind thường — không có `!` thì rê chuột là mất kiểu đang chọn. */
-const CHON = '!border-[color:var(--accent)] !bg-[color:var(--accent-soft)] text-slate-100';
+export const CHON = '!border-[color:var(--accent)] !bg-[color:var(--accent-soft)] text-slate-100';
 type NutChonProps = {
   chon: boolean; onClick: () => void; children: ReactNode; nho?: boolean; className?: string; disabled?: boolean; title?: string;
   /** Dấu góc khi đang chọn — mặc định ✓; OV-12b: số thứ tự chọn (chip nhóm nguyên nhân, 1 = chính). */

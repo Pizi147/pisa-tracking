@@ -69,10 +69,10 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
     assert(a.length === 0, 'schema.sql đã có cột');
   });
 
-  check('MDK-5 · seed theo mockup: Lê Quang Huy chỉ W2 (MT3 bỏ task W1), Vũ Hải Đăng không học S (MT3 S "Không học")', () => {
-    const huy = em('Lê Quang Huy'), dang = em('Vũ Hải Đăng');
-    assert(get('SELECT mon_dang_ky m FROM learning_cycles WHERE id = ?', huy.id).m === JSON.stringify(CHI_W2) && dong(huy.mt(3).id, 'writing').bo_task === 'writing1', 'Huy');
-    assert(get('SELECT mon_dang_ky m FROM learning_cycles WHERE id = ?', dang.id).m === JSON.stringify(KHONG_S) && dong(dang.mt(3).id, 'speaking').scope_reason === 'Không học', 'Đăng');
+  check('MDK-5 · seed theo mockup: Lý Tuấn Bình chỉ W2 (MT4 bỏ task W1), Bùi Thu Ninh không học S (MT4 S "Không học") — CP FT 110', () => {
+    const binh = em('Lý Tuấn Bình'), ninh = em('Bùi Thu Ninh');
+    assert(get('SELECT mon_dang_ky m FROM learning_cycles WHERE id = ?', binh.id).m === JSON.stringify(CHI_W2) && dong(binh.mt(4).id, 'writing').bo_task === 'writing1', 'Bình');
+    assert(get('SELECT mon_dang_ky m FROM learning_cycles WHERE id = ?', ninh.id).m === JSON.stringify(KHONG_S) && dong(ninh.mt(4).id, 'speaking').scope_reason === 'Không học', 'Ninh');
   });
 
   // ------------------------------------------------------------------ Task 2: áp môn vào lượt + chấm + nợ
@@ -102,7 +102,6 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   check('MDK-3b · chỉ W2: MT chưa thi bo_task = W1, Writing = W2, Overall Không đủ bộ môn; MT đã chấm giữ công thức cũ; ô W1 không là thiếu, nhập W1 bị chặn', () => {
     thu(() => {
       const huy = em('Lê Quang Huy');
-      mdk.apMonDangKy(P.mbManager, huy.id, null);   // seed đã cho Huy chỉ học W2 — về đủ môn rồi đổi lại
       const mt1 = huy.mt(1), mt3 = huy.mt(3);
       const kq = mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
       assert(kq.writing === 'W2' && kq.khongDuBoMon, `tóm tắt ${JSON.stringify(kq)}`);   // mockup k4: Writing = W2 · Overall Không đủ bộ môn
@@ -142,7 +141,6 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
         assert(pa.status === 'cancelled' && pa.closed_reason === 'khong_con_hoc_mon', `PA ${pa.status} ${pa.closed_reason}`);
       }
       const huy = em('Lê Quang Huy');
-      mdk.apMonDangKy(P.mbManager, huy.id, null);
       const caseW2 = get(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'writing2' AND status != 'done'`, huy.sid);
       mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
       assert(get('SELECT status FROM sos_cases WHERE id = ?', caseW2.id).status !== 'done', 'Case W2 của em chỉ học W2: giữ mở');
@@ -207,7 +205,6 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   check('MDK-4a · Sửa thông tin HV: xem trước trả tóm tắt đúng số; lưu ghi nhật ký trước → sau; Lịch sử hiện "Môn học: Đủ môn → L · R · W2 · S"', () => {
     thu(() => {
       const huy = em('Lê Quang Huy');
-      mdk.apMonDangKy(P.mbManager, huy.id, null);
       const xem = mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2, { xemTruoc: true });
       const chuaThiW = get(`SELECT COUNT(*) n FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND k.skill = 'writing'
         AND NOT EXISTS (SELECT 1 FROM assessment_scores x WHERE x.attempt_id = a.id AND x.skill IN ('writing1','writing2') AND x.band IS NOT NULL) AND k.sit_status IN ('scheduled','absent')`, huy.id).n;
@@ -250,7 +247,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       conn.prepare(`UPDATE learning_cycles SET mon_dang_ky = ?, thi_that_l = 7, thi_that_r = 7, thi_that_w = 6.5, thi_that_s = 6.5, thi_that_ngay = ? WHERE id = ?`)
         .run(JSON.stringify(KHONG_S), addDays(TODAY, -3), a.cy);
       const xem = bt.xemTruocLoTrinhMoi(P.mbManager, a.cy, {});
-      assert(JSON.stringify(xem.monDangKy) === JSON.stringify(KHONG_S) && xem.dong.some((x: string) => x === 'Môn học L · R · W1 · W2'), `mặc định LT1: ${JSON.stringify(xem)}`);
+      assert(JSON.stringify(xem.monDangKy) === JSON.stringify(KHONG_S) && / · L · R · W1 · W2 · Target /.test(xem.dong[0]), `mặc định LT1: ${JSON.stringify(xem)}`);
       const xem2 = bt.xemTruocLoTrinhMoi(P.mbManager, a.cy, { monDangKy: [] });
       assert(/ít nhất một môn/.test(xem2.loi ?? ''), 'rỗng → lỗi ở xem trước');
       bt.chonBuocTiep(P.mbManager, a.cy, { chon: 'lo_trinh_moi', monDangKy: CHI_W2 });
