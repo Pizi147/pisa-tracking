@@ -9627,6 +9627,9 @@ await runR1SuaNhoTests({ check, assert });
 // ==================================================================== P8 MON-DANG-KY (môn đăng ký L · R · W1 · W2 · S theo lộ trình FT — N13, N22 ④)
 const { runPrMonDangKyTests } = await import('./prMonDangKy.tests.ts');
 await runPrMonDangKyTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== R1-NO-CU (đổi người phụ trách Case — D17)
+const { runR1NoCuTests } = await import('./r1NoCu.tests.ts');
+await runR1NoCuTests({ check, assert, conn, P, classId } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
