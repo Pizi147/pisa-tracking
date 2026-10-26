@@ -9624,6 +9624,9 @@ await runR1LuuTiepTests({ check, assert });
 // ==================================================================== R1-SUA-NHO (trục tuần Hành trình, đường lượt lớp thường không vòng)
 const { runR1SuaNhoTests } = await import('./r1SuaNho.tests.ts');
 await runR1SuaNhoTests({ check, assert });
+// ==================================================================== P8 MON-DANG-KY (môn đăng ký L · R · W1 · W2 · S theo lộ trình FT — N13, N22 ④)
+const { runPrMonDangKyTests } = await import('./prMonDangKy.tests.ts');
+await runPrMonDangKyTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== R1-PHAN-CAP-TEST (Dán Excel chỉ bỏ ở Lịch Test, token màu cấp)
 const { runR1PhanCapTestTests } = await import('./r1PhanCapTest.tests.ts');
 await runR1PhanCapTestTests({ check, assert });

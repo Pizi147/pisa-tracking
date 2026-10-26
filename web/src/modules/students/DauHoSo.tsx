@@ -36,7 +36,8 @@ const tenNguoi = (x: Viec) => (x.nguoi.id ? x.nguoi.ten : dich(x.nguoi.ten));
  *   FT          Lớp MB FT 101 · Lộ trình LT1 · Target 6.5 · Tuần học 9 · Ngày thi (Dự kiến 02/2027 | Thi 21/11 | Chưa có lịch) · GVCN · TVV
  *   lớp thường  Lớp MB FOU 15 · Chương trình FOU · Tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS 06/2027 · GVCN · TVV
  */
-export function DongThongTin({ tt, tvv }: { tt: any; tvv?: string | null }) {
+/** P8 (mockup k7): `mon` = "L · R · W2 · S" — chỉ khi em không học đủ 5 môn (null = đủ, không hiện). */
+export function DongThongTin({ tt, tvv, mon }: { tt: any; tvv?: string | null; mon?: string | null }) {
   if (!tt?.lop) return <p className="m-0 text-[13px] text-slate-400">{t('Chưa xếp lớp')}</p>;
   const target = ((tt.target !== null && tt.target !== undefined) || (tt.kck && !tt.kyThi))   // OV-9: "6.5 · KCK" · "— · KCK"; P13: KET / PET số nguyên
     && <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} kyThi={tt.kyThi} /></span>} />;
@@ -50,6 +51,7 @@ export function DongThongTin({ tt, tvv }: { tt: any; tvv?: string | null }) {
     <NhanGt key="lop" n={t('Lớp')} g={tt.lopId ? <Link to={`/hoc-vien/lop/${tt.lopId}`} className="text-slate-100 no-underline hover:underline">{tt.lop}</Link> : tt.lop} />,
     tt.loTrinh && <NhanGt key="lt" n={tt.lopThuong ? t('Chương trình') : t('Lộ trình')} g={dich(tt.loTrinh)} />,
     !tt.lopThuong && target,
+    !tt.lopThuong && mon && <NhanGt key="mon" n={t('Môn học')} g={mon} />,
     tt.tuanHoc && <NhanGt key="tuan" n={t('Khoá học')} g={<span className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</span>} />,
     thi,
     tt.lopThuong && target,

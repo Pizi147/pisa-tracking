@@ -14,7 +14,7 @@ import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { Nhan, NhanKq } from '../../ui/Nhan.tsx';
 import { CHU_DA_XONG } from '@shared/domain/index.ts';
 import { DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -236,6 +236,11 @@ export default function StudentDetailPage() {
             <h1 className="m-0 flex flex-wrap items-center gap-2 text-[22px] font-bold leading-tight text-slate-100">
               {data.fullName}
               <MissingBadge items={data.missing} />
+              {/* P8 (mockup V6 k7): em thiếu môn, lượt kết quả gần nhất không có Overall → "– MT3 · Không đủ bộ môn" cạnh tên. */}
+              {(() => {
+                const a = cy?.monHoc ? (data.attempts as any[]).find((x) => x.id === data.dauHoSo?.o?.ketQua?.kq?.attemptId) : null;
+                return a?.khongDuBoMon && a.overall == null ? <NhanKq kq="thieu">{`${a.kind === 'mt0' ? 'MT0' : `MT${a.attemptNo}`} · ${t('Không đủ bộ môn')}`}</NhanKq> : null;
+              })()}
               {/* P7 (k6): em Tạm dừng ở Lưu trữ — "Tạm dừng 14/09 · Có thể quay lại"; em Kết thúc học — "Kết thúc học 22/08". */}
               {data.status === 'inactive' && data.archivedAt ? <Info>{t('Tạm dừng {ngay} · Có thể quay lại', { ngay: ngay(data.archivedAt, homNay) })}</Info>
                 : data.status === 'finished' && data.finishedAt ? <Info>{t('Kết thúc học {ngay}', { ngay: ngay(data.finishedAt, homNay) })}</Info>
@@ -274,7 +279,7 @@ export default function StudentDetailPage() {
             </div>
           </div>
           {data.archivedAt ? <TomTatLuuTru studentId={data.id} target={cy?.target ?? null} kck={!!cy?.khongCamKet} ketThuc={data.finishedAt ?? null} />
-            : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} />}
+            : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} mon={cy?.monHoc ?? null} />}
           <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} />
         </header>
       </div>
@@ -296,7 +301,7 @@ export default function StudentDetailPage() {
       {data.currentClass && <DaiXetLai classId={data.currentClass.id} studentId={data.id} />}
 
       {/* UI-HO-SO-HV: ô điểm to Overall · L · R · W1 · W2 · S — bấm đổi kỹ năng của Hành trình + Case & PA (khu c `.diem-dau`). */}
-      {cy && skillRows && <DiemDau rows={skillRows} attempts={data.attempts} ketQuaId={data.dauHoSo?.o?.ketQua?.kq?.attemptId ?? null} chon={chon} onChon={chonKn} homNay={homNay} />}
+      {cy && skillRows && <DiemDau rows={skillRows} attempts={data.attempts} ketQuaId={data.dauHoSo?.o?.ketQua?.kq?.attemptId ?? null} chon={chon} onChon={chonKn} homNay={homNay} mon={cy.monDangKy ?? null} />}
 
       {/* UI-HO-SO-HV: thanh Việc cần làm — chỗ DUY NHẤT có việc; bấm = mở đúng chỗ làm ngay tại trang. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />

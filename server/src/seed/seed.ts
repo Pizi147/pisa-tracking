@@ -40,6 +40,8 @@ import { migratePrOv12c } from '../migrate/prOv12c.ts';
 import { migratePrOv12a } from '../migrate/prOv12a.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
+import { apMonDangKy } from '../fasttrack/monDangKy.ts';
+import { loadPrincipal } from '../permissions.ts';
 
 const NOW = nowIso();
 
@@ -310,6 +312,14 @@ export function runSeed() {
     buNgayPb2b(conn);   // ô điểm / vi phạm bộ UX: bù ngày nhập đầu + hạn xử lý (chỉ điền ô NULL)
     /* P9a XET-LAI: MB FOU 25 → MB BE 05 (3 em Final chưa khớp hướng) + 1 lệnh chưa thi hành — sau SEED-UX để id học viên / lớp cũ không đổi. */
     buildXetLaiDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
+    /*
+     * P8 MON-DANG-KY (mockup V6 `lo-trinh-moi.html` k4–k7): một em chỉ học W2, một em không học S — qua đúng hàm đổi môn; id cũ không đổi.
+     * Ở CP FT 110 (MT4 chưa thi), không ở MB FT 101 như mockup (Lê Quang Huy): lượt W3 SEP của MB FT 101 là lượt "sạch" mà nhiều phép kiểm cũ dựng tình huống trên đó.
+     */
+    for (const [ten, mon] of [['Lý Tuấn Bình', ['listening', 'reading', 'writing2', 'speaking']], ['Bùi Thu Ninh', ['listening', 'reading', 'writing1', 'writing2']]] as const) {
+      const cy = conn.prepare(`SELECT c.id FROM learning_cycles c JOIN students s ON s.id = c.student_id WHERE s.full_name = ? AND c.route IS NOT NULL AND c.status = 'active' ORDER BY c.id DESC LIMIT 1`).get(ten) as any;
+      if (cy) apMonDangKy(loadPrincipal(adminId), cy.id, mon);
+    }
     /* OV-11e (Q8): lượt MT đã chốt dựng bằng SQL thẳng chưa có dấu KCK theo lượt — chụp theo cờ hiện tại (cùng hàm với migrate). Sau mọi bộ demo. */
     migratePrOv11e(conn, []);
     /* OV-12a: PA dựng bằng SQL thẳng với hạn kiểu cũ (Thứ Hai hằng tuần) → lịch kỳ hai tuần, hết Thứ Ba (cùng hàm với migrate; seed → migrate không đổi gì). */

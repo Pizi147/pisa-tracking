@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { Bang, OBang } from '../../ui/Bang.tsx';
-import { ODiem } from '../../ui/ODiem.tsx';
+import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
+import { NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DeadlinePill, KHOA_HOAN_TAT_HINT, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
@@ -141,6 +142,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ovr: !chiCot,
   };
   const rawCot = RAW_SKILLS.filter(hien), wCot = W_SKILLS.filter(hien);
+  /* P8 (mockup k6): chú giải ở hàng công cụ + cột Overall đủ chỗ cho "Không đủ bộ môn" chỉ khi lưới có ô "Không học". */
+  const coKhongHoc = data.rows.some((r) => r.cells.some((c) => c.khongHoc));
   /* UI-LICH-TUAN (mockup khu a): ở Lịch tuần (có `sEx`) Kỳ vọng / Overall là cột thường (không dải nổi bật), tên em chữ đậm + ↗. */
   const lich = sEx !== undefined;
   /* Cột theo đúng những cột đang hiện (BANG-1: định nghĩa cột của `Bang`). */
@@ -157,7 +160,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...(cot.w ? [{ key: 'w', nhan: 'W', kieu: 'diem', rong: 64, tinh: true, sang: khopKn('writing', kn), goiY: W_HINT } as const] : []),
     ...(hien('speaking') ? [oKn('speaking')] : []),
     ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich ? 'diem' : 'noi-bat', rong: lich ? 80 : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
-    ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
+    ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
     { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') },
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
@@ -221,6 +224,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   if (the) {
     return (
       <div>
+        {coKhongHoc && <div className="flex justify-end px-3 py-1"><ChuGiaiKhongHoc /></div>}
         {suaS && dot && <div className="flex justify-end px-3 py-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
         {rowsHien.map((r) => (
           <TheHv key={r.attemptId} row={r} lop={data.classCode} active={hv !== null && r.studentId === hv} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
@@ -242,9 +246,10 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng (công cụ ngoài khung — BANG-1). */}
     {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
-    {((suaS && dot && hien('speaking')) || nhanTrai) && (
-      <div className={`flex items-center justify-end gap-3 px-3 ${nhanTrai ? 'min-h-[40px] py-1' : 'pb-1'}`}>
+    {(coKhongHoc || (suaS && dot && hien('speaking')) || nhanTrai) && (
+      <div className={`flex flex-wrap items-center justify-end gap-x-4 gap-y-1 px-3 ${nhanTrai ? 'min-h-[40px] py-1' : 'pb-1'}`}>
         {nhanTrai && <span className="mr-auto pl-8 text-[13px] text-slate-400">{nhanTrai}</span>}
+        {coKhongHoc && <ChuGiaiKhongHoc />}
         {suaS && dot && hien('speaking') && <NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
       </div>
     )}
@@ -448,8 +453,10 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
       {cot.ovr && (
         <OBang c={cc.ovr}>
           {/* NEN (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
-          <ODiem so={row.result.overall != null ? fmtBand(row.result.overall) : null} kq={soKyVong(row.result.overall, row.result.expectation)}
-            nhan="Overall" kyVong={row.result.expectation != null ? fmtBand(row.result.expectation) : undefined} />
+          {/* P8 (mockup k6): thiếu bộ môn vì môn đăng ký → nhãn kết quả viền đứt "Không đủ bộ môn" (khác "—" chưa điểm). */}
+          {row.result.overall == null && row.result.khongDuBoMon && row.result.complete ? <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>
+            : <ODiem so={row.result.overall != null ? fmtBand(row.result.overall) : null} kq={soKyVong(row.result.overall, row.result.expectation)}
+              nhan="Overall" kyVong={row.result.expectation != null ? fmtBand(row.result.expectation) : undefined} />}
         </OBang>
       )}
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
@@ -670,4 +677,15 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
   if (tt === 'dang-luu') return <span className={`${cho} text-[12px] text-slate-500`} title={t('Đang lưu')}>…</span>;
   if (tt === 'da-luu') return <span className={`${cho} text-[12px] text-done`} title={t('Đã lưu')}>✓</span>;
   return null;
+}
+
+/** P8 (mockup k6 `.chu-giai`): ba trạng thái ô đọc theo chữ, không chỉ màu — "-" vắng · "Không học" · "—" chưa có điểm. */
+function ChuGiaiKhongHoc() {
+  return (
+    <span className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs text-slate-400" aria-label={t('Chú giải ô điểm')}>
+      <span><b className="font-bold tabular-nums text-slate-200">-</b> {t('vắng')}</span>
+      <span><OKhongHoc /> {t('em không học môn này')}</span>
+      <span><span className="text-faint">—</span> {t('chưa có điểm')}</span>
+    </span>
+  );
 }

@@ -85,6 +85,7 @@ import { migratePrXetLai } from './migrate/prXetLai.ts';
 import { migratePrTd7b } from './migrate/prTd7b.ts';
 import { migratePrCvLoi } from './migrate/prCvLoi.ts';
 import { migratePrSvLoTrinh } from './migrate/prSvLoTrinh.ts';
+import { migratePrMonDangKy } from './migrate/prMonDangKy.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -145,6 +146,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* SV-NX-CASE: cột sos_cases.mo_ta_attempt_id (nguồn mô tả Case MT) — TRƯỚC mọi bước có thể đồng bộ mô tả Case (`dongBoNguyenNhanMt` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrSvNxCase(conn, applied));
     /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));
     /* OV-13q: cột hạn sau thi (learning_cycles.han_sau_thi…) — TRƯỚC mọi bước có thể đọc việc thi thật / bước tiếp (COT_SAU_THI). Chỉ thêm cột. */ buoc(() => themCotPrOv13q(conn, applied));
+    /* P8 MON-DANG-KY (N13): cột learning_cycles.mon_dang_ky + attempt_skills.bo_task — TRƯỚC mọi bước đọc dòng lịch / cờ ô chờ (`SELECT_SKILLS`, `O_CHO_TU_SQL` đọc `bo_task`). Chỉ thêm cột. */ buoc(() => migratePrMonDangKy(conn, applied));
     /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
@@ -301,6 +303,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     buoc(() => migrateDropBranchAdmin(conn, applied));
     buoc(() => migrateNormalPassThreshold(conn, applied));
     buoc(() => migrateSkillSchedule(conn, applied)); 
+    /* P8: DB cũ vừa dựng `attempt_skills` ở bước trên — thêm `bo_task` ngay (gọi lại, chạy lặp không đổi). */ buoc(() => migratePrMonDangKy(conn, applied));
     buoc(() => migrateNoShowMarks(conn, applied));
     buoc(() => migrateAttachments(conn, applied));
     buoc(() => migrateYThuc(conn, applied));

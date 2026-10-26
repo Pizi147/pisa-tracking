@@ -11,7 +11,7 @@ import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
-import { recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
+import { apMonChoLuotMoi, recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
@@ -275,6 +275,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
               WHERE a.id IN (${ph}) ORDER BY a.id, k.thu`).run(now, ...bo, ...lo);   // thứ tự `?` trong câu: now, tên môn, lô
         }, THAM_SO_TOI_DA - bo.length - 1);   // tham số cố định: tên môn + `now`
       }
+      apMonChoLuotMoi(ids);   // P8: lượt mới theo môn đăng ký của lộ trình
       capNhatConOCho(ids);   // TD7b: lượt mới + dòng lịch vừa chèn bằng SQL lô
       chenNhieuDong(
         'INSERT INTO attempt_schedule_history (attempt_id, action, field, old_value, new_value, reason, actor_user_id, created_at)',

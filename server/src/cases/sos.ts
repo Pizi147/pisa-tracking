@@ -350,7 +350,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     .all(attempt.id) as any[];
   const entry: EntryBands = {};
   for (const r of rows) entry[r.skill as EntrySkill] = r.band;
-  const failing = failingEntrySkills(result.expectation, entry, result.skipped);
+  const failing = failingEntrySkills(result.expectation, entry, result.boQua);
 
   /*
    * NGÀY PHÁT HIỆN = thứ Hai của TUẦN THI. Đây là ngày NGHIỆP VỤ của kết quả.
@@ -769,7 +769,7 @@ function luotCaseTam(attemptId: number): { attempt: any; result: AttemptResult; 
   }
   const entry: EntryBands = {};
   for (const r of conn.prepare('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?').all(attempt.id) as any[]) entry[r.skill as EntrySkill] = r.band;
-  const failing = failingEntrySkills(result.expectation, entry, result.skipped) as string[];
+  const failing = failingEntrySkills(result.expectation, entry, result.boQua) as string[];
   return { attempt, result, failing, entry, detectedAt: attempt.lich_su ? demoToday() : weekStartOf(attempt) ?? demoToday() };
 }
 /** Migrate `prOv13a` (e) / `kiem-truoc-ov13a`: Case tạm còn thiếu của một lượt (`ghi` = sinh luôn). Trả khoá `lượt:kỹ năng`. */

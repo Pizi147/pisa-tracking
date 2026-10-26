@@ -305,6 +305,7 @@ CREATE TABLE learning_cycles (
   seq INTEGER NOT NULL,               -- thứ tự lộ trình của học viên: 1, 2, ...
   route TEXT,                         -- LT1 | LT2 với FT; NULL với lớp thường
   route_ten TEXT,                     -- P7: tên lộ trình "Khác" (route = 'KHAC') do người dùng ghi
+  mon_dang_ky TEXT,                   -- P8 (N13): JSON môn đã học ⊂ L R W1 W2 S (chỉ FT); NULL = đủ môn
   programme_code TEXT REFERENCES programmes(code),
   target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
   khong_cam_ket INTEGER NOT NULL DEFAULT 0,  -- Q29-1 (PR-KCK) + OV-9: 1 = dấu KCK — Target giữ (có thể trống); dưới kỳ vọng không SOS, chỉ Case nhẹ
@@ -680,6 +681,8 @@ CREATE TABLE attempt_skills (
   absent_from_no_show INTEGER NOT NULL DEFAULT 0,
   -- PR-MTa (T3): 1 = phần thi huỷ vì VẮNG LẦN 2 (sit_status = 'cancelled'). GVCN "Xin dời" / Quản lý "Không mock lại".
   huy_vang INTEGER NOT NULL DEFAULT 0,
+  -- P8 (N13): Writing chỉ học một task → task bỏ ('writing1' | 'writing2'); Writing = task đã học. NULL = đủ hai task.
+  bo_task TEXT,
 
   created_at TEXT NOT NULL,
   updated_at TEXT,
