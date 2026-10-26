@@ -314,8 +314,8 @@ button { font: inherit; color: inherit; }
       <dt>Dữ liệu FT (thiếu)</dt><dd><b>S Ex</b>: bảng riêng <code>s_expert</code> (<code>cham/sExpert.ts</code>), không gắn lượt — trang lượt hiện không hiện. Cần trả kèm S Ex cùng HV trong các tuần của lượt (chỉ đọc, ngoài Overall). <b>Lớp hiện tại</b> của em (khi đã chuyển lớp) — chưa trả, cần một trường</dd>
       <dt>Dữ liệu lớp thường (có)</dt><dd><code>GET /regular/classes/:id/sheet?kind=</code> — <b>cả lớp</b>: mỗi dòng lượt có <code>skillSchedule</code> theo môn (tuần, hạn, <code>noShow</code>, <code>movedFrom</code>, nhận xét, <code>canEdit</code>, khoá), <code>result</code> (<code>evaluateRegular</code>: điểm / tổng, tỉ lệ, đạt từ ngưỡng lớp, SOS tạm), Case của lượt</dd>
       <dt>Lớp thường (thiếu → PR máy chủ)</dt><dd>① API <b>một lượt</b> (đề xuất <code>GET /regular/attempts/:id</code>, cùng hàm dòng của <code>regularSheet</code>; <code>GET /attempts/:id</code> chỉ dựng L/R/W/S theo band, bỏ G+V, P) · ② lịch sử lịch + điểm của lượt (cần kiểm <code>attempt_schedule_history</code> / lịch sử điểm có ghi cho lượt thường) · ③ người nhập điểm từng môn · ④ quyền người xem (đã có ở mức lớp) · ⑤ route trang (đề xuất ở Khuyến nghị)</dd>
-      <dt>Dữ liệu chung (giả, theo seed demo)</dt><dd><b>FT:</b> Nguyễn Hoàng Minh An · MB FT 101 · MT2 W2 SEP · Target 6.5, kỳ vọng MT2 6.0 — L 6.0 · R 5.5 (QL dời W2 SEP → W3 SEP, chưa nhận xét) · W1 7.0 / W2 Không học → W 7.0 · S vắng lần 1 · S Ex 6.5 GV Anna Lee (W3 SEP) · Case W từ MT1, PA đang làm · Case R mới (R dưới kỳ vọng → SOS 1 tạm). <b>Lớp thường:</b> Đỗ Khánh Vy · MB FOU 12 · Progress Test W3 SEP — L 24/30 · R 17/40 (dưới 70 %) · G+V chưa điểm · P vắng (tự dời W4 SEP). Hôm nay 17/09 (W3 SEP). Người xem: Trần Ngọc Hà — GVCN MB FT 101, dạy L, R</dd>
-      <dt>Lệch kế hoạch (đã xử lý)</dt><dd>Kế hoạch ghi "W2 không học" kèm Overall "Không đủ bộ môn" — trái luật P8 (<code>monDangKy.ts</code>: chỉ học W1 → Writing = W1; "Không đủ bộ môn" khi bỏ <b>cả</b> kỹ năng). Mockup giữ đúng luật: mặc định W = 7.0; trạng thái "Không học cả S" ở khu A vẽ Overall "Không đủ bộ môn"</dd>
+      <dt>Dữ liệu chung (giả, theo seed demo)</dt><dd><b>FT:</b> Nguyễn Hoàng Minh An · MB FT 101 · MT2 W2 SEP · Target 6.5, kỳ vọng MT2 6.0 — L 6.0 · R 5.5 (QL dời W2 SEP → W3 SEP, chưa nhận xét) · W1 7.0 / W2 Không học → W 7.0, Overall Không đủ bộ môn · S vắng lần 1 · S Ex 6.5 GV Anna Lee (W3 SEP) · Case W từ MT1, PA đang làm · Case R mới (R dưới kỳ vọng → SOS 1 tạm). <b>Lớp thường:</b> Đỗ Khánh Vy · MB FOU 12 · Progress Test W3 SEP — L 24/30 · R 17/40 (dưới 70 %) · G+V chưa điểm · P vắng (tự dời W4 SEP). Hôm nay 17/09 (W3 SEP). Người xem: Trần Ngọc Hà — GVCN MB FT 101, dạy L, R</dd>
+      <dt>Luật P8 (Q4)</dt><dd>Chỉ học một task Writing → W = task đã học, <b>Overall "– Không đủ bộ môn"</b> (<code>scoring.ts</code> <code>khongDuBoMon = boTask !== null || …</code>; <code>monDangKy.ts</code>, mockup k4 đã duyệt). SOS không xét theo Overall: đếm kỹ năng dưới kỳ vọng (R → SOS 1, tạm vì S chưa có điểm). Web hiện chỉ hiện nhãn khi lượt đủ điểm (<code>LuoiFT</code> <code>complete</code>); mockup đề xuất hiện ngay vì Overall sẽ không có kể cả khi S có điểm</dd>
     </dl>
   </section>
 
@@ -471,7 +471,7 @@ button { font: inherit; color: inherit; }
     var d = {
       loai: 'ft', ten: 'Nguyễn Hoàng Minh An', luot: 'MT2', luotTuan: 'W2 SEP', ve: 'Lịch Test W3 SEP',
       lop: 'MB FT 101', lopNay: null, target: '6.5', kv: '6.0',
-      ketQua: { chu: 'SOS 1 tạm · R', loai: 'sos1 tam' }, ovr: null, ovrPhu: 'chờ S', soKn: '3/4 kỹ năng có điểm',
+      ketQua: { chu: 'SOS 1 tạm · R', loai: 'sos1 tam' }, ovr: null, ovrKhongDu: true, soKn: '3/4 kỹ năng có điểm',
       kn: [
         { k: 'L', ten: 'Listening', lich: ['W2 SEP'], diem: '6.0', kq: 'dat', phu: '23 câu', tt: ['xong', 'Đã có điểm'],
           nx: { co: true, ai: 'Trần Ngọc Hà', chu: 'Part 1–2 chắc. Part 4 mất ý khi người nói tăng tốc — luyện nghe ghi chú từ khoá.' }, cs: null, nut: null, menu: true, sua: true,
@@ -500,19 +500,18 @@ button { font: inherit; color: inherit; }
       s.tt = ['chu-y', 'Chờ QL duyệt dời lần 2 · hạn 20/09']; s.nut = null; s.menu = false; s.choQl = true;
       s.ls = [['08/09', 'Báo vắng lần 1 · Trần Ngọc Hà'], ['09/09', 'Xếp lại W2 SEP → W3 SEP · Trần Ngọc Hà'], ['16/09', 'Vắng lần 2 · đề nghị dời sang W4 SEP · chờ Nguyễn Thị Mai']];
       d.conLai = [['S', 'Duyệt dời lần 2 · Nguyễn Thị Mai', false], ['R', 'Viết nhận xét', true], ['Case R', 'Thêm PA', true]];
-      d.ovrPhu = 'chờ S';
     }
     if (tt === 'khong-hoc') {
       var s2 = d.kn[3];
       s2.vang = null; s2.khongHoc = true; s2.tt = ['tat', 'Ngoài phạm vi']; s2.nut = null; s2.menu = false; s2.lich = []; s2.ls = [];
-      d.ovr = null; d.ovrPhu = null; d.ovrKhongDu = true; d.soKn = '3/3 kỹ năng có điểm'; d.ketQua = { chu: 'SOS 1 · R', loai: 'sos1' };
+      d.soKn = '3/3 kỹ năng có điểm'; d.ketQua = { chu: 'SOS 1 · R', loai: 'sos1' };
       d.conLai = [['R', 'Viết nhận xét', true], ['Case R', 'Thêm PA', true]];
     }
     if (tt === 'chuyen-lop') d.lopNay = 'MB FT 104';
     if (tt === 'huy') {
       d.huy = 'Em bảo lưu 3 tuần · Nguyễn Thị Mai · 15/09'; d.conLai = []; d.vai = 'huy';
       d.kn.forEach(function (k) { if (!k.diem) { k.tt = ['tat', 'Đã huỷ']; k.vang = null; k.huy = true; } k.nut = null; k.menu = false; k.sua = false; });
-      d.ketQua = { chu: '– Đã huỷ', loai: 'kq thieu' }; d.ovrPhu = '';
+      d.ketQua = { chu: '– Đã huỷ', loai: 'kq thieu' };
     }
     return d;
   }
@@ -667,7 +666,7 @@ button { font: inherit; color: inherit; }
       return '<button type="button" role="tab" class="muc-kn" data-k="' + x.k + '" aria-selected="' + (x.k === chon) + '"><b>' + e(x.ten) + '</b>' + so + '<small>' + e(x.tt[1]) + (x.thieuNx ? ' · chưa nhận xét' : '') + (x.cs ? ' · ' + e(x.cs.ten) : '') + '</small></button>';
     };
     var trai = '<div class="the ds-kn" role="tablist" aria-label="Kỹ năng">'
-      + '<div class="muc-kn" style="cursor:default"><b>Overall</b><span class="so-kn rong">chờ S</span><small><span class="sos1 tam">SOS 1 tạm · R</span></small></div><div class="ngan"></div>'
+      + '<div class="muc-kn" style="cursor:default"><b>Overall</b><span class="so-kn rong">–</span><small style="display:flex;gap:6px;flex-wrap:wrap"><span class="kq thieu">Không đủ bộ môn</span><span class="sos1 tam">SOS 1 tạm · R</span></small></div><div class="ngan"></div>'
       + d.kn.map(muc).join('')
       + '<div class="ngan"></div><div class="muc-kn" style="cursor:default"><b><span class="chip-ex">S Ex</span></b><span class="so-kn">6.5</span><small>Anna Lee · W3 SEP · ngoài Overall</small></div>'
       + '<div class="ngan"></div><div style="padding:6px 10px 8px;display:grid;gap:6px"><small class="nhan-nho">Còn lại</small>'
@@ -696,7 +695,7 @@ button { font: inherit; color: inherit; }
     var h = '';
     if (coTiep) {
       h += '<div class="tuan-tl tiep-nhom"><h3>Tiếp theo</h3><ol>'
-        + [['', 'S', 'Xếp lại bài vắng — Overall đang chờ S', 'bạn · GVCN', '<button type="button" class="btn nho chinh">Xếp lại bài vắng</button>'],
+        + [['', 'S', 'Xếp lại bài vắng', 'bạn · GVCN', '<button type="button" class="btn nho chinh">Xếp lại bài vắng</button>'],
            ['', 'R', 'Viết nhận xét + nhóm nguyên nhân', 'bạn', '<button type="button" class="btn nho">Viết nhận xét</button>'],
            ['', 'Case R', 'Thêm PA', 'bạn · phụ trách', '<button type="button" class="btn nho">+ Thêm PA</button>'],
            ['24/09', 'Case W', 'Hạn PA "2 bài Task 2 / tuần"', 'Lê Minh Thu', '']].map(function (x) { return su(x, true); }).join('') + '</ol></div>';
@@ -707,7 +706,7 @@ button { font: inherit; color: inherit; }
   function trangC(d) {
     var o5 = d.kn.map(function (k) {
       return '<span class="o5"><small>' + e(k.k) + '</small>' + (k.vang ? '<b class="rong">' + e(k.vang) + '</b>' : '<b class="so ' + k.kq + '">' + (k.kq === 'dat' ? '✓ ' : '✗ ') + e(k.diem) + '</b>') + '</span>';
-    }).join('') + '<span class="o5"><small>Overall</small><b class="rong">chờ S</b></span><span class="sos1 tam">SOS 1 tạm · R</span>'
+    }).join('') + '<span class="kq thieu">– Không đủ bộ môn</span><span class="sos1 tam">SOS 1 tạm · R</span>'
       + '<span class="ngan-ex"><span class="chip-ex">S Ex</span><b class="so">6.5</b> Anna Lee</span>';
     return '<div class="pg">' + dauHoSo(d) + '<div class="the day5">' + o5 + '</div><div class="the tl">' + dongThoiGian(d, true) + '</div></div>';
   }
