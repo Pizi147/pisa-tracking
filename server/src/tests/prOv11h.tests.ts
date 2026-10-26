@@ -33,27 +33,27 @@ export async function runPrOv11hTests(t: YThucTestKit) {
   const cp = all(`SELECT a.* FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'checkpoint' AND a.status != 'cancelled'
                    AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.raw_score IS NOT NULL) ORDER BY a.id`, pet?.id ?? 0);
 
-  check('OV11h-1 · lớp PET: Phân tích lớp cột "Checkpoint 1" (2 bài), hồ sơ GV + Phân tích GV có kết quả L+S, xuất từng lượt có lượt, Tổng hợp không xếp dưới Progress', () => thu(() => {
+  check('OV11h-1 · lớp PET: Phân tích lớp cột "Checkpoint 1" (2 bài), hồ sơ GV + Phân tích GV có kết quả L (P13: 4 môn), xuất từng lượt có lượt, Tổng hợp không xếp dưới Progress', () => thu(() => {
     assert(pet && cp.length === 2, `demo phải có MB PET 01 với 2 bài Checkpoint đã chấm (có ${cp.length})`);
     const prog = d.CHUONG_TRINH_LIEN_TUC_CO_SAN.find((x: any) => x.code === 'PET');
     const ev = ptLop.danhGiaMon(cp[0], conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(cp[0].id), { ...prog, scoringMode: 'ratio', checkpoints: [] }, null);
-    assert(ev && ev.mon.length === 2, `danhGiaMon checkpoint phải chấm 2 môn: ${JSON.stringify(ev)}`);
+    assert(ev && ev.mon.length === 4, `danhGiaMon checkpoint phải chấm 4 môn (P13): ${JSON.stringify(ev)}`);
 
     const lop = ptLop.phanTichLop(P.mbManager, pet.id);
     /* Cột theo số Checkpoint đã có (Checkpoint 2 vừa tự sinh khi Checkpoint 1 đủ điểm) — không Progress / Final. */
     assert(lop.cot[0]?.key === 'checkpoint:1' && lop.cot[0].nhan === 'Checkpoint 1' && lop.cot.every((c: any) => /^checkpoint:\d+$/.test(c.key)), `cột: ${JSON.stringify(lop.cot)}`);
-    assert(lop.o['listening_speaking|checkpoint:1']?.tong === 2 && lop.o['reading_writing|checkpoint:1']?.tong === 2, JSON.stringify(lop.o));
+    assert(['listening', 'reading', 'writing', 'speaking'].every((k) => lop.o[`${k}|checkpoint:1`]?.tong === 2), JSON.stringify(lop.o));
     assert(lop.dong.every((x: any) => !/_/.test(x.nhan)), `nhãn dòng: ${lop.dong.map((x: any) => x.nhan)}`);
 
-    const gvId = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening_speaking' AND status = 'active' LIMIT 1`, pet.id)?.user_id;
-    assert(gvId, 'lớp PET phải có GV môn L+S');
+    const gvId = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening' AND status = 'active' LIMIT 1`, pet.id)?.user_id;
+    assert(gvId, 'lớp PET phải có GV môn L');
     const tuan = one(`SELECT rp.week_start FROM report_periods rp WHERE rp.id = ?`, cp[0].planned_period_id).week_start;
     /* UI-HO-SO-GV: hồ sơ GV theo kỳ — hàng lớp PET ở bảng Học thuật (thay "Kết quả gần nhất"). */
     const kq = ptGv.chiSoHoSoGv(P.mbManager, gvId, { tu: d.mondayOfDate(d.addDaysIso(tuan, -14)), den: d.mondayOfDate(d.addDaysIso(tuan, 14)) }).hocThuatTheoLop.find((x: any) => x.classId === pet.id);
     assert(kq?.ketQua.k === 'so' && kq.theoBai.some((b: any) => b.bai === 'Checkpoint 1'), `hồ sơ GV Học thuật: ${JSON.stringify(kq)}`);
     const gv = ptGv.phanTichGiaoVien(P.mbManager, { ct: 'thuong', cn: pet.branch_id, tu: d.mondayOfDate(d.addDaysIso(tuan, -14)), den: d.mondayOfDate(d.addDaysIso(tuan, 14)) })
       .hang.find((h: any) => h.id === gvId);
-    assert(gv?.ketQua?.listening_speaking?.k === 'so', `Phân tích GV cột L+S: ${JSON.stringify(gv?.ketQua)}`);
+    assert(gv?.ketQua?.listening?.k === 'so', `Phân tích GV cột L: ${JSON.stringify(gv?.ketQua)}`);
 
     const x = xuatMt.xemTruoc(P.mbManager, { khung: 'thuong', chiNhanh: [], lop: [pet.id], thoiGian: { kieu: 'tuan', tu: '2026-01-05', den: '2026-12-28' }, chiDuDiem: false, cot: 'gon' });
     assert(x.dem.luot >= 2 && x.dauDong.some((s: string) => /Checkpoint 1/.test(s)), `xuất từng lượt lớp PET: ${JSON.stringify(x.dem)} ${x.dauDong}`);
@@ -68,16 +68,16 @@ export async function runPrOv11hTests(t: YThucTestKit) {
     assert(ds.rows.length === 2 && ds.rows.every((r: any) => /^Checkpoint 1 · /.test(r.title)), `danh sách: ${ds.rows.map((r: any) => r.title)}`);
   }));
 
-  check('OV11h-2 · PET / KET: hạng mục = 2 môn (L+S, R+W), bảng kỹ năng hồ sơ HV có điểm Checkpoint; id bài cũ không đổi', () => thu(() => {
-    for (const ct of ['PET', 'KET']) assert(JSON.stringify(d.caseCategoriesFor('ratio', ct)) === '["listening_speaking","reading_writing"]', `${ct}: ${d.caseCategoriesFor('ratio', ct)}`);
+  check('OV11h-2 · PET / KET: hạng mục = 4 môn L · R · W · S (P13), bảng kỹ năng hồ sơ HV có điểm Checkpoint; id bài cũ không đổi', () => thu(() => {
+    for (const ct of ['PET', 'KET']) assert(JSON.stringify(d.caseCategoriesFor('ratio', ct)) === '["listening","reading","writing","speaking"]', `${ct}: ${d.caseCategoriesFor('ratio', ct)}`);
     assert(JSON.stringify(d.caseCategoriesFor('ratio', 'FOU')) === '["listening","reading","writing","speaking"]', 'FOU đổi bộ');
     assert(d.caseCategoryLabel('listening_speaking') === 'L+S' && d.caseCategoryLabel('reading_writing') === 'R+W', d.caseCategoryLabel('listening_speaking'));
     /* `baiId` đã phát ra (Tổng quan, Phân tích GV, hồ sơ GV) giữ nguyên chỉ số kỹ năng. */
     assert(d.baiId(5, 'tong_hop') === 56 && d.baiId(5, 'listening_speaking') === 57 && d.baiId(5, 'reading_writing') === 58, 'baiId lệch');
     const b = cases.skillSupportBoard(P.mbManager, cp[0].student_id);
     const ds = b.rows as any[];
-    assert(JSON.stringify(ds.map((r: any) => r.category)) === '["listening_speaking","reading_writing"]', `bảng kỹ năng: ${ds.map((r: any) => r.category)}`);
-    assert(ds.every((r: any) => r.points.some((p: any) => p.attemptKind === 'checkpoint')) && ds[0].short === 'L+S', JSON.stringify(ds.map((r: any) => [r.short, r.points])));
+    assert(JSON.stringify(ds.map((r: any) => r.category)) === '["listening","reading","writing","speaking"]', `bảng kỹ năng: ${ds.map((r: any) => r.category)}`);
+    assert(ds.every((r: any) => r.points.some((p: any) => p.attemptKind === 'checkpoint')) && ds[0].short === 'L', JSON.stringify(ds.map((r: any) => [r.short, r.points])));
   }));
 
   check('OV11h-4 · chữ: đơn vị "lượt MT" / "bài" / "Case" (không "đợt Test"), Thiếu điểm gồm SOS tạm, hồ sơ GV với CX / TVV "dành cho Quản lý"', () => thu(() => {

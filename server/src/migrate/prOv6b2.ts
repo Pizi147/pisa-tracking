@@ -1,7 +1,7 @@
 /**
  * OV-6b2 (kế hoạch `2026-10-12-pr-ov6b2-pet-ket.md`, chạy lặp được): chương trình liên tục + PET / KET.
  * (a) cột `programmes.lap_moi_tuan` (Checkpoint mỗi n tuần) và bản chụp `classes.moc_lap` — chỉ thêm.
- * (b) chèn PET, KET nếu chưa có (`chenPetKet`, dùng chung với seed): L+S · R+W · đúng/tổng · đạt từ 70 % · liên tục · Checkpoint mỗi 6 tuần.
+ * (b) chèn PET, KET nếu chưa có (`chenPetKet`, dùng chung với seed): môn theo `CHUONG_TRINH_LIEN_TUC_CO_SAN` (P13: L · R · W · S) · đúng/tổng · đạt từ 70 % · liên tục · Checkpoint mỗi 6 tuần.
  * Mã đã có (Quản trị đã sửa) thì không đụng.
  */
 import { tx } from '../db.ts';
@@ -29,6 +29,6 @@ export function migratePrOv6b2(conn: any, applied: string[]) {
     for (const [b, c] of them) conn.exec(`ALTER TABLE ${b} ADD COLUMN ${c} INTEGER`);
     if (them.length) applied.push('OV-6b2: thêm cột Checkpoint mỗi n tuần (programmes.lap_moi_tuan, classes.moc_lap).');
     const moi = chenPetKet(conn);
-    if (moi.length) applied.push(`OV-6b2: thêm chương trình ${moi.join(', ')} (L+S, R+W · liên tục · Checkpoint mỗi 6 tuần).`);
+    if (moi.length) applied.push(`OV-6b2: thêm chương trình ${moi.join(', ')} (L · R · W · S · liên tục · Checkpoint mỗi 6 tuần).`);
   });
 }

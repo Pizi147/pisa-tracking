@@ -233,12 +233,13 @@ export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
 };
 
 /**
- * OV-6b2: PET, KET — chủ SP 11/10: môn L+S, R+W · đúng/tổng · đạt từ 70 % · liên tục · Checkpoint mỗi 6 tuần. Migrate `prOv6b2` + seed chèn
+ * OV-6b2: PET, KET — chủ SP 11/10: đúng/tổng · đạt từ 70 % · liên tục · Checkpoint mỗi 6 tuần. Migrate `prOv6b2` + seed chèn
+ * P13 KET-PET (N18): môn L · R · W · S như thi thật (bỏ L+S, R+W — lượt cũ đã chấm gộp giữ bộ gộp: `boMonCuaLuot`, migrate `prKetPet`).
  * khi chưa có; sau đó là DỮ LIỆU (Quản trị sửa ở Quản trị › Chương trình), không phải mẫu cố định như `PROGRAMME_TEMPLATES`.
  */
 export const CHUONG_TRINH_LIEN_TUC_CO_SAN: readonly { code: string; name: string; skills: readonly string[]; nguongDat: number; lapMoiTuan: number }[] = [
-  { code: 'PET', name: 'Preliminary English Test', skills: ['listening_speaking', 'reading_writing'], nguongDat: 0.7, lapMoiTuan: 6 },
-  { code: 'KET', name: 'Key English Test', skills: ['listening_speaking', 'reading_writing'], nguongDat: 0.7, lapMoiTuan: 6 },
+  { code: 'PET', name: 'Preliminary English Test', skills: ['listening', 'reading', 'writing', 'speaking'], nguongDat: 0.7, lapMoiTuan: 6 },
+  { code: 'KET', name: 'Key English Test', skills: ['listening', 'reading', 'writing', 'speaking'], nguongDat: 0.7, lapMoiTuan: 6 },
 ];
 
 /**

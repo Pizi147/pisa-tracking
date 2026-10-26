@@ -5,7 +5,7 @@ import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter,
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
+  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, MON_GOP, PERMISSIONS, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
   caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
@@ -16,7 +16,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, monCuaLuotThuong, monGopCu, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { catDiemO, diemHuyMo, dongBanCat } from '../fasttrack/ketQuaHuy.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
@@ -206,6 +206,9 @@ export function evaluateRegular(
   skills: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null }[], ct?: string | null,
   nguong: number = RATIO_PASS_THRESHOLD,   // OV-6b1: ngưỡng đạt của LỚP — `nguongDatLop(classId)`
 ): RegularResult {
+  /* P13 KET-PET: lượt PET / KET đã chấm môn gộp (L+S, R+W) trước khi chương trình tách 4 môn → chấm theo bộ gộp của chính lượt (không chia điểm). */
+  const gop = Object.keys(MON_GOP);
+  if (!skills.some((k) => gop.includes(k)) && rows.some((r) => gop.includes(r.skill))) skills = gop;
   const results: RegularSkillResult[] = skills.map((skill) => {
     const row = rows.find((r) => r.skill === skill);
     const { outcome, ratio } = ratioResult(row?.raw_score ?? null, row?.raw_total ?? null, nguong);
@@ -268,7 +271,7 @@ export function regularResultOf(attemptId: number): RegularResult {
   const prog = a?.class_id ? programmeOfClass(a.class_id) : null;
   const rows = conn.prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
-  return evaluateRegular(prog?.skills ?? [], rows, prog?.code, nguongDatLop(a?.class_id));
+  return evaluateRegular(prog ? monCuaLuotThuong(prog, attemptId) : [], rows, prog?.code, nguongDatLop(a?.class_id));
 }
 
 /** Lớp có ngưỡng đạt khác 70 % — MỘT câu, nhớ trong request GET (thường rỗng: chỉ lớp mở sau khi Quản trị đổi "Đạt từ"). */
@@ -603,7 +606,7 @@ export function saveRegularScore(
 
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
-  if (!prog.skills.includes(skill)) {
+  if (!monCuaLuotThuong(prog, attemptId).includes(skill)) {   // P13: lượt gộp cũ (L+S, R+W) nhận đúng môn của lượt
     throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
   }
   /*
@@ -760,7 +763,7 @@ export function reportRegularNoShow(
 
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
-  if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
+  if (!monCuaLuotThuong(prog, attemptId).includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
   chanVangLopKetThuc(a.class_id);
 
   /*
@@ -1076,8 +1079,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được cấp quyền.');
 
-  const prog = programmeOfClass(classId);
-  if (!prog || prog.scoringMode !== 'ratio') {
+  const progLop = programmeOfClass(classId);
+  if (!progLop || progLop.scoringMode !== 'ratio') {
     throw badRequest('Lớp này không phải lớp thường. Dùng bảng điểm Mock Test.');
   }
 
@@ -1101,6 +1104,11 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
     )
     .all(...params) as any[];
 
+  /* P13 KET-PET: lượt PET / KET đã chấm môn gộp (L+S, R+W) trước khi tách — dòng đó giữ môn của nó; cột bảng = các môn của những dòng đang xem. */
+  const gopCu = monGopCu(attempts.map((a) => a.id), progLop);
+  const monDong = (id: number): readonly string[] => gopCu.get(id) ?? progLop.skills;
+  const prog = { ...progLop, skills: !attempts.length || !gopCu.size ? progLop.skills
+    : gopCu.size === attempts.length ? monDong(attempts[0].id) : [...new Set(attempts.flatMap((a) => monDong(a.id)))] };
   const byAttempt = new Map<number, any[]>();
   if (attempts.length) {
     const ids = attempts.map((a) => a.id);
@@ -1194,17 +1202,18 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
     passThreshold: nguongDatLop(classId),
     rows: attempts.map((a) => {
       const rows = byAttempt.get(a.id) ?? [];
-      const result = evaluateRegular(prog.skills, rows, prog.code, nguongDatLop(classId));
+      const mon = monDong(a.id);
+      const result = evaluateRegular(mon, rows, prog.code, nguongDatLop(classId));
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
       const dongCases = casesOf(a.student_id, a.cycle_id ?? null, failing);
       const c = dongCases[0] ?? null;
-      const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday(), prog.skills);
+      const views = regularSkillViews({ ...a, period_start: a.week_start }, skillRows.get(a.id), rows as any, demoToday(), mon);
       /*
        * HẠN CỦA CẢ BÀI chỉ còn là hạn MUỘN NHẤT trong các môn còn phải chấm — một con số
        * để xếp thứ tự, không phải một luật riêng. Luật nằm ở từng môn, và cột "Hạn từng
        * môn" bên dưới mới là thứ giáo viên đọc.
        */
-      const pending = prog.skills
+      const pending = mon
         .map((k) => ({ k, v: views.get(k) }))
         .filter((x) => {
           const row = rows.find((r: any) => r.skill === x.k);
@@ -1223,7 +1232,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         hoanTat: hoanTat.hoanTat,
         chuNhatCuoi: hoanTat.chuNhatCuoi,
         /** Hạn chấm CỦA TỪNG MÔN, kèm tuần thi và trạng thái — mục 10.5. */
-        skillSchedule: prog.skills.map((k) => {
+        skillSchedule: mon.map((k) => {
           const v = views.get(k)!;
           const row = rows.find((r: any) => r.skill === k);
           const scored = row?.raw_score !== null && row?.raw_score !== undefined;
@@ -1265,7 +1274,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
           };
         }),
         // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.
-        overdue: prog.skills.some((k) => {
+        overdue: mon.some((k) => {
           const row = rows.find((r: any) => r.skill === k);
           const scored = row?.raw_score !== null && row?.raw_score !== undefined;
           return !scored && !!views.get(k)?.overdue;
