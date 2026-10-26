@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { chuanHoaMaLop } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 import type { LopKH } from './kieu.ts';
 import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
 
@@ -29,19 +30,19 @@ export function TimLop({ lop, value, onChange, onChon, className = '' }: {
 
   return (
     <div ref={goc} className={`relative ${className}`}>
-      <span className="label">Lớp</span>
+      <span className="label">{t('Lớp')}</span>
       <div className="relative">
-        <input className="field w-full pr-8" value={value} placeholder="Tìm lớp…" aria-label="Tìm lớp" role="combobox" aria-expanded={mo && goiY.length > 0}
+        <input className="field w-full pr-8" value={value} placeholder={t('Tìm lớp…')} aria-label={t('Tìm lớp')} role="combobox" aria-expanded={mo && goiY.length > 0}
           aria-controls="tim-lop-goi-y" aria-autocomplete="list"
           onChange={(e) => { onChange(e.target.value); setMo(true); }} onFocus={() => setMo(true)} onKeyDown={onKey} />
         {value && (
-          <button type="button" aria-label="Xoá chữ tìm" title="Xoá"
+          <button type="button" aria-label={t('Xoá chữ tìm')} title={t('Xoá chữ tìm')}
             className="absolute right-1 top-1/2 min-h-[32px] min-w-[32px] -translate-y-1/2 appearance-none border-0 bg-transparent text-slate-500 hover:text-slate-200"
             onClick={() => { onChange(''); setMo(false); }}>✕</button>
         )}
       </div>
       {mo && goiY.length > 0 && (
-        <ul id="tim-lop-goi-y" role="listbox" aria-label="Lớp gợi ý"
+        <ul id="tim-lop-goi-y" role="listbox" aria-label={t('Lớp gợi ý')}
           className="surface-2 absolute left-0 top-full z-30 mt-1 max-h-72 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border p-1 shadow-xl"
           style={{ borderColor: 'var(--line-strong)' }}>
           {goiY.map((l, i) => (
