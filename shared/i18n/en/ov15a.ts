@@ -2,7 +2,7 @@
 import type { Dich } from '../en.ts';
 
 export const EN_OV15A = {
-  'SOS {n} tạm': 'SOS {n} provisional',
+  'SOS {n} tạm': 'SOS {n} prov.',   // R1-EN-2b: chip ngắn (375: tên em không bị cắt); chữ đủ ở 'Vì sao SOS {n} tạm'
   'Vì sao SOS {n}': 'Why SOS {n}',
   'Vì sao SOS {n} tạm': 'Why SOS {n} provisional',
   '{n} môn chưa đạt ở {dot}': '{n} subjects not passed in {dot}',

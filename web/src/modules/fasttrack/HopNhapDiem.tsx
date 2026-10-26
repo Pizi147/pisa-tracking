@@ -148,9 +148,9 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; phu?: string; doc: 
  */
 function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
   const { homNay } = useNgayNghiepVu();
-  /* LUAT-NX-MT: ô tuần thi bù — "vắng W3 SEP" (tuần cũ, `chuDoiVang` chung mọi ô điểm); lần vắng ở tooltip. */
+  /* LUAT-NX-MT: ô tuần thi bù — "vắng W3 SEP" (tuần cũ, `chuDoiVang` chung mọi ô điểm); lần vắng ở tooltip. R1-EN-2b: một dòng, mượn đệm ô ("absent W2 SEP" dài hơn 72 px). */
   if (thiBu && cell.daChot) {
-    return <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="" title={`${t('vắng lần')} ${Math.max(1, cell.daChot.lan)}`}>{chuDoiVang(cell.daChot.tuTuan, homNay)}</span>;
+    return <span className="-mx-2 block whitespace-nowrap text-xs leading-4 text-slate-400" data-phu-odiem="" title={`${t('vắng lần')} ${Math.max(1, cell.daChot.lan)}`}>{chuDoiVang(cell.daChot.tuTuan, homNay)}</span>;
   }
   if (cell.noShow?.state !== 'khong-co-bai' || cell.daChot) return null;
   const dem = demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay);
@@ -206,7 +206,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, ...hop }: O
   const coDongDau = (thiBu && !!cell.daChot) || (cell.noShow?.state === 'khong-co-bai' && !cell.daChot);
   const phu = coDongDau ? <DongDau cell={cell} thiBu={thiBu} />
     /* NEN-SUA (nợ #544): ô đã có điểm ở tuần thi bù giữ "vắng W3 SEP" (thay "n câu"). */
-    : cell.doiTu ? <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDoiVang(cell.doiTu)}</span>
+    : cell.doiTu ? <span className="-mx-2 block whitespace-nowrap text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDoiVang(cell.doiTu)}</span>
     : h.phu ? <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{h.phu}</span>
     : <SoCau cell={cell} />;
   if (!suaDuoc(cell)) {
