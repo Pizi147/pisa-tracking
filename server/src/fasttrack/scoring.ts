@@ -40,8 +40,11 @@ export function bandFromCriteria(c: (number | null)[]): number | null {
 /**
  * Band Writing = (W1 + W2 × 2) / 3, làm tròn về 0.5.
  * W1 và W2 là hai kỹ năng riêng vì có giáo viên chỉ dạy một trong hai.
+ * P8 (N13, Q4): em chỉ học một task (`boTask` = task bỏ) → Writing = task đã học.
  */
-export function writingBand(w1: number | null, w2: number | null): number | null {
+export function writingBand(w1: number | null, w2: number | null, boTask: string | null = null): number | null {
+  if (boTask === 'writing1') return w2;
+  if (boTask === 'writing2') return w1;
   if (w1 === null || w2 === null) return null;
   return roundToHalf((w1 + w2 * 2) / 3);
 }
@@ -49,11 +52,11 @@ export function writingBand(w1: number | null, w2: number | null): number | null
 export type EntryBands = Partial<Record<EntrySkill, number | null>>;
 
 /** Gộp 5 ô nhập thành 4 band đánh giá. Trả về null cho kỹ năng chưa đủ dữ liệu. */
-export function assessedBands(entry: EntryBands): Record<AssessedSkill, number | null> {
+export function assessedBands(entry: EntryBands, boTask: string | null = null): Record<AssessedSkill, number | null> {
   return {
     listening: entry.listening ?? null,
     reading: entry.reading ?? null,
-    writing: writingBand(entry.writing1 ?? null, entry.writing2 ?? null),
+    writing: writingBand(entry.writing1 ?? null, entry.writing2 ?? null, boTask),
     speaking: entry.speaking ?? null,
   };
 }
@@ -86,9 +89,10 @@ export function failingEntrySkills(
 ): EntrySkill[] {
   if (expectation === null) return [];
   const writingSkipped = skippedSkills.includes('writing');
-  const w1 = entry.writing1 ?? null;
-  const w2 = entry.writing2 ?? null;
-  const wBand = writingBand(w1, w2);
+  const boTask = boTaskTrong(skippedSkills);
+  const w1 = boTask === 'writing1' ? null : entry.writing1 ?? null;   // P8: task không học không sinh Case
+  const w2 = boTask === 'writing2' ? null : entry.writing2 ?? null;
+  const wBand = writingBand(w1, w2, boTask);
   /* Cổng tầng một: band Writing tổng hợp có trượt không. */
   const writingFails = !writingSkipped && wBand !== null && wBand < expectation;
 
@@ -103,6 +107,9 @@ export function failingEntrySkills(
     return band !== null && band !== undefined && band < expectation;
   });
 }
+
+/** P8: task Writing bỏ nằm trong danh sách kỹ năng bỏ của lượt (`skippedSkillsOf`). */
+export const boTaskTrong = (skipped: readonly string[]): string | null => skipped.find((k) => k === 'writing1' || k === 'writing2') ?? null;
 
 /** `route` = lộ trình CỦA LƯỢT (K5-49): RF mọi MT kỳ vọng = target (M2). */
 export function expectationFor(target: number | null, attemptNo: number, route?: string | null): number | null {
@@ -148,6 +155,8 @@ export type AttemptResult = {
   kckDuoi: boolean;
   /** Chỉ có khi đủ CẢ BỐN kỹ năng — không dựng Overall từ hai/ba kỹ năng. */
   overall: number | null;
+  /** P8 (N13): lượt không đánh giá đủ bốn kỹ năng (kỹ năng ngoài phạm vi) — Overall ghi "Không đủ bộ môn", khác "Chưa đủ dữ liệu". */
+  khongDuBoMon: boolean;
   /** Nhãn cho biết đang đánh giá trên mấy kỹ năng, ví dụ "Đánh giá trên 3 kỹ năng". */
   scopeNote: string | null;
   scopeDetail: string | null;
@@ -174,7 +183,7 @@ export function evaluateAttempt(
   kck = false,
 ): AttemptResult {
   const expectation = expectationFor(target, attemptNo, route);
-  const bands = assessedBands(entry);
+  const bands = assessedBands(entry, boTaskTrong(skippedSkills));
   const skipped = ASSESSED_SKILLS.filter((s) => skippedSkills.includes(s));
   const required = ASSESSED_SKILLS.filter((s) => !skippedSkills.includes(s));
 
@@ -239,7 +248,7 @@ export function evaluateAttempt(
 
   return {
     expectation, bands, verdicts, required, skipped,
-    scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall,
+    scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall, khongDuBoMon: skipped.length > 0,
     chot, provisional,
     /*
      * Ở danh sách chỉ cần con số. "Đánh giá trên 3 kỹ năng" là một câu giải thích, và giải

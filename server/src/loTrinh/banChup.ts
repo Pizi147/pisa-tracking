@@ -10,6 +10,7 @@ import {
   ASSESSED_SKILLS, daiCuoiKhoa, huongTiep, ketQuaThiThat, type AssessedSkill, type LyDoDong,
 } from '../../../shared/domain/index.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
+import { boTaskCuaDong } from '../fasttrack/skillSchedule.ts';
 import { evaluateRegular, nguongDatKhacMacDinh, nguongDatLop, programmeByCode } from '../normal/regular.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { nowIso } from '../util.ts';
@@ -131,12 +132,12 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
   const baseIds = cycles.map((c) => c.baseline_attempt_id as number | null).filter((x): x is number => !!x);
   const idLuot = attempts.map((a) => a.id as number);
   const diemCua = gom(hoi<any>((ph) => `SELECT * FROM assessment_scores WHERE attempt_id IN (${ph})`, [...new Set([...idLuot, ...baseIds])]), 'attempt_id');
-  const batBuocCua = gom(hoi<any>((ph) => `SELECT attempt_id, skill, required FROM attempt_skills WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
+  const batBuocCua = gom(hoi<any>((ph) => `SELECT attempt_id, skill, required, bo_task FROM attempt_skills WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
   const boCu = gom(hoi<any>((ph) => `SELECT attempt_id, skill FROM attempt_skill_skips WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
   /** Cùng luật `skipsOf`: có dòng `attempt_skills` thì lấy dòng không bắt buộc; không có thì bảng cũ. */
   const boQuaCua = (id: number): string[] => {
     const rows = batBuocCua.get(id);
-    if (rows?.length) return rows.filter((r) => !r.required).map((r) => r.skill);
+    if (rows?.length) return [...rows.filter((r) => !r.required).map((r) => r.skill), ...boTaskCuaDong(rows)];   // P8: + task Writing bỏ
     return (boCu.get(id) ?? []).map((r) => r.skill).filter((s) => (ASSESSED_SKILLS as readonly string[]).includes(s));
   };
   const caseCua = new Map<string, number>();

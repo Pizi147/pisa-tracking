@@ -12,7 +12,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { diemCuaLuot, entryBandsOf, kckCuaLuot, routeCuaLuot, scoresOf, skipsOf, tuanVangCu } from '../fasttrack/attempts.ts';
-import { assessedBands, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
+import { assessedBands, boTaskTrong, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
@@ -110,7 +110,7 @@ function currentBands(attempts: any[]) {
   const per: Partial<Record<AssessedSkill, { band: number; attemptNo: number; week: string | null }>> = {};
   for (const a of attempts) {
     if (a.status === 'cancelled') continue;
-    const bands = assessedBands(entryBandsOf(scoresOf(a.id)));
+    const bands = assessedBands(entryBandsOf(scoresOf(a.id)), boTaskTrong(skipsOf(a.id)));   // P8: chỉ học một task → Writing = task đó
     for (const s of ASSESSED_SKILLS) {
       if (per[s]) continue;                              // đã có lượt mới hơn
       const b = bands[s];
@@ -707,7 +707,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     for (const a of [...attemptRows].sort((x, y) => x.attempt_no - y.attempt_no)) {
       if (a.status === 'cancelled') continue;
       if (a.id === baseline?.attemptId) continue;   // PR-MT0: MT0 đã là điểm đầu vào — không lặp thành điểm MT0
-      const b = assessedBands(entryBandsOf(scoresOf(a.id)))[skill];
+      const b = assessedBands(entryBandsOf(scoresOf(a.id)), boTaskTrong(skipsOf(a.id)))[skill];
       if (b === null || b === undefined) continue;
       points.push({
         kind: 'official', label: `MT${a.attempt_no}`,

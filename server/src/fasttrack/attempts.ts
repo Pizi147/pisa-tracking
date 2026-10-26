@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, NO_SHOW_OVERRIDDEN_NOTE,
   CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
@@ -17,13 +17,13 @@ import {
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
-  expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
+  boTaskTrong, expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
   checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
-  setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
+  setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong,
   type SkillRow, type SkillScheduleView,
   chanCuoiTuan, tuanCacKyNang,
 } from './skillSchedule.ts';
@@ -124,8 +124,8 @@ export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
  */
 export function skipsOf(attemptId: number): AssessedSkill[] {
   return nho(`bo-mon:${attemptId}`, () => {
-    const rows = db().prepare('SELECT skill, required FROM attempt_skills WHERE attempt_id = ?').all(attemptId) as any[];
-    if (rows.length) return rows.filter((r) => !r.required).map((r) => r.skill as AssessedSkill);
+    const rows = db().prepare('SELECT skill, required, bo_task FROM attempt_skills WHERE attempt_id = ?').all(attemptId) as any[];
+    if (rows.length) return [...rows.filter((r) => !r.required).map((r) => r.skill), ...boTaskCuaDong(rows)] as AssessedSkill[];   // P8: + task Writing bỏ
     return (db().prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(attemptId) as any[])
       .map((r) => r.skill as AssessedSkill)
       .filter((s) => (ASSESSED_SKILLS as readonly string[]).includes(s));
@@ -458,8 +458,9 @@ export function skillCells(
   const kyVong = kyVongCuaLuot(attempt);
 
   const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
-  /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã xong (W cần cả W1 và W2). */
-  const scoredAssessed = (assessed: AssessedSkill): boolean => entrySkillsOf(assessed).every(xongO);
+  /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã xong (W cần cả W1 và W2; P8: trừ task không học). */
+  const boTask = skillRows?.length ? schedule.writing?.bo_task ?? null : boTaskTrong(skips);
+  const scoredAssessed = (assessed: AssessedSkill): boolean => entrySkillsOf(assessed).filter((k) => k !== boTask).every(xongO);
 
   return ENTRY_SKILLS.map((skill) => {
     const assessed = assessedSkillOf(skill);
@@ -468,7 +469,7 @@ export function skillCells(
      * Phạm vi đọc từ chính dòng lịch khi có; `skips` là đường dự phòng cho đợt chưa di trú.
      * Hai nguồn phải cho cùng kết luận, nên nơi nào cũng hỏi qua đây chứ không tự so.
      */
-    const required = skillRows?.length ? !!scheduleRow.required : !skips.includes(assessed);
+    const required = (skillRows?.length ? !!scheduleRow.required : !skips.includes(assessed)) && skill !== boTask;
     const view = viewSkill({
       row: { ...scheduleRow, required: required ? 1 : 0 },
       mode,
@@ -2113,6 +2114,7 @@ export function saveScore(
   if (!scheduleRow.required) {
     throw badRequest(`Kỹ năng ${tenMon(null, assessed)} không nằm trong phạm vi yêu cầu của đợt này.`);
   }
+  if (scheduleRow.bo_task === skill) throw badRequest(`Em không học ${ENTRY_SKILL_SHORT[skill as EntrySkill]} — ô này không nhập điểm (Writing = task em học).`);   // P8 (N13)
   /*
    * KHÔNG NHẬP ĐIỂM VÀO PHẦN ĐÃ HUỶ hoặc ĐÃ XÁC NHẬN VẮNG (mục 10.6).
    *
