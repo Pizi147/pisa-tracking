@@ -155,4 +155,6 @@ và tổng bài nhóm W3 SEP (+3); 4 góc trùng hẳn. Trần dòng Học viên
 
 Ghi chú KP-6a: lớp thường Huỷ cả lượt XOÁ điểm (PR-VN4) — Khôi phục trả lượt về "planned", lịch gộp giữ; nhập lại L+S / R+W được (trước: 400 ngay khi huỷ).
 Mỗi phép kiểm KP-6a…g đã chạy ĐỎ khi gỡ đúng phần sửa của nó, XANH khi có.
+Kèm theo (do bộ kiểm chung bắt): DB mới (init / seed, `duLieuNen`) ghi sẵn khoá `pr_ket_pet_at` như `pr_cv_loi_gan_chu_case_at` (DEPLOY-1c / 2a / 2g, SO-4b);
+`tyLeTongLo` và Các lộ trình đọc dòng lịch môn gộp TRONG câu điểm sẵn có (UNION ALL, đặt tên mọi cột — DTL1) nên số câu SQL không đổi (LT2b (3), TK-7).
 
