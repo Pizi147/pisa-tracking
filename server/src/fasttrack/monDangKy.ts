@@ -13,6 +13,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { capNhatConOCho } from './conOCho.ts';
 import { setSkillScope } from './skillSchedule.ts';
+import { refreshOutcome } from './attempts.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
   ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, PERMISSIONS, boTaskCua, chuMon, kyNangKhongHoc, luuMon, monThieu, type MonVao,
@@ -120,6 +121,8 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
     for (const r of doiTask) conn.prepare(`UPDATE attempt_skills SET bo_task = ? WHERE attempt_id = ? AND skill = 'writing'`).run(boTask, r.attempt_id);
     capNhatConOCho(doiTask.map((r) => r.attempt_id));
     if (caseIds.length) closeCasesBySystem({ actorUserId: p.userId, studentId: cy.student_id, reason: 'khong_con_hoc_mon', on: o.ngay ?? demoToday(), caseIds });
+    /* R1-NO-NHO: lượt vừa đổi bài (bỏ task W1 khi W2 đã chấm…) có thể vừa đủ điểm → kết quả + tín hiệu / Case ngay, như khi lưu điểm. */
+    for (const id of new Set([...tat, ...bat, ...doiTask].map((r) => r.attempt_id as number))) refreshOutcome(p, id);
     writeAudit({
       actorUserId: p.userId, action: 'cycle.mon_dang_ky', entityType: 'learning_cycle', entityId: cycleId, entityLabel: 'Môn học',
       before: { monDangKy: tom.truoc }, after: { monDangKy: tom.sau, boKhoiDot: tom.boKhoiDot, giuDaCham: tom.giuDaCham, batLai: tom.batLai, caseDong: tom.caseDong },

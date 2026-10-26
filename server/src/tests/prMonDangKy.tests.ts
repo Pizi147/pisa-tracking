@@ -451,4 +451,35 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assert(o.join() === 'writing2', `ô "-": ${o.join()}`);
     });
   });
+  check('MDK-14 · đổi môn bỏ task W1 khi W2 đã có điểm dưới kỳ vọng → tín hiệu / Case W2 ngay; xem trước không sinh; lưu lại không thêm; Sửa cả lớp 2 em mỗi em một', () => {
+    thu(() => {
+      /* Lượt MT3 đủ L R S + W2 thấp, W1 chưa chấm → chưa có tín hiệu W2 (lượt chưa đủ điểm). */
+      const chuanBi = (x: any) => {
+        const mt3 = x.mt(3);
+        attempts.saveScore(P.admin, mt3.id, 'listening', { rawScore: 40 }, TODAY);
+        attempts.saveScore(P.admin, mt3.id, 'reading', { rawScore: 40 }, TODAY);
+        attempts.saveScore(P.admin, mt3.id, 'speaking', { criteria: [9, 9, 9, 9] }, TODAY);
+        attempts.saveScore(P.admin, mt3.id, 'writing2', { criteria: [4, 4, 4, 4] }, TODAY);
+        return mt3.id as number;
+      };
+      const soTH = (a: number) => get(`SELECT COUNT(*) n FROM case_signals WHERE attempt_id = ? AND skill = 'writing2' AND status != 'withdrawn'`, a).n as number;
+      const soCase = (a: number) => get(`SELECT COUNT(*) n FROM sos_cases WHERE attempt_id = ? AND topic = 'writing2' AND status != 'done'`, a).n as number;
+      const x = emDu();
+      const a = chuanBi(x);
+      assert(soTH(a) + soCase(a) === 0, `trước đổi môn chưa có tín hiệu W2: ${soTH(a)} / ${soCase(a)}`);
+      mdk.apMonDangKy(P.mbManager, x.id, CHI_W2, { xemTruoc: true });
+      assert(soTH(a) + soCase(a) === 0, 'xem trước không sinh tín hiệu / Case');
+      mdk.apMonDangKy(P.mbManager, x.id, CHI_W2);
+      const th = soTH(a), ca = soCase(a);
+      assert(th + ca >= 1 && ca <= 1, `sau đổi môn phải có tín hiệu / Case W2: ${th} / ${ca}`);
+      attempts.saveScore(P.admin, a, 'writing2', { criteria: [4, 4, 4, 4] }, TODAY);
+      assert(soTH(a) === th && soCase(a) === ca, `lưu lại W2 không thêm: ${soTH(a)} / ${soCase(a)}`);
+      /* Sửa cả lớp: hai em cùng lô. */
+      const L = lop();
+      const e1 = emDu({ lop: L }), e2 = emDu({ lop: L });
+      const ds = [e1, e2].map(chuanBi);
+      suaCaLop.luuSuaCaLop(P.mbManager, L, { rows: [e1, e2].map((e) => ({ studentId: e.sid, monDangKy: CHI_W2 })) });
+      for (const id of ds) assert(soTH(id) + soCase(id) >= 1 && soCase(id) <= 1, `Sửa cả lớp lượt ${id}: ${soTH(id)} / ${soCase(id)}`);
+    });
+  });
 }
