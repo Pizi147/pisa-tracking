@@ -3,7 +3,7 @@
  *   DICH-1 đoán ngôn ngữ · DICH-2 migrate lặp · DICH-3 (bang, cot) lạ → 400 · DICH-4 GV ngoài phạm vi Case → 403
  *   DICH-5 che PII · DICH-6 bộ nhớ · DICH-7 trần ngày / người + cùng lúc · DICH-8 tắt / lỗi gọi · DICH-W web dùng ChuDich
  *   R1-DICH-2: DICH-9 prompt coi nhận xét là dữ liệu · DICH-10 kiểm [[Pn]] đầu ra · DICH-11 chữ gốc có sẵn [[P · DICH-12 gocBam + khoá có phiên bản
- *   DICH-13 web bỏ phản hồi muộn / reset · DICH-14 trần độ dài
+ *   DICH-13 web bỏ phản hồi muộn / reset · DICH-14 trần độ dài · DICH-15 tên trong [ ] vẫn che
  */
 import fs from 'node:fs';
 import path from 'node:path';
