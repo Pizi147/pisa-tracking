@@ -499,9 +499,12 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
          * Bài kiểm tra lớp thường: không có band, không có Overall, không có kỳ vọng theo
          * target. Chỉ có đạt/trượt theo tỷ lệ điểm đạt/tổng điểm, và số môn trượt ra mức SOS.
          */
-        const r = evaluateRegular(prog!.skills, scores, prog!.code, nguongDatLop(a.class_id));
+        /* P13: bộ môn theo lượt (`boMonTheoLuot`) — lượt đã ghi môn gộp cũ giữ L+S / R+W. */
+        const mon = boMonTheoLuot(prog!.skills, scores.map((x) => x.skill));
+        const myLuot = mon === prog!.skills ? myRegularSkills : editableSkills(p, classId, mon, undefined, true);
+        const r = evaluateRegular(mon, scores, prog!.code, nguongDatLop(a.class_id));
         /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */
-        const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, prog!.skills);
+        const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, mon);
         return {
           id: a.id, attemptNo: a.attempt_no, cycleSeq: a.cycle_seq, route: null,
           kind: a.kind, kindLabel: ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind,
@@ -527,19 +530,19 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
           nguong: r.passThreshold,   // OV-6b1: ngưỡng đạt của lớp lượt này
           bands: null,
           caseStatus: c?.status ?? null,
-          myPending: myRegularSkills.filter((k) => {
+          myPending: myLuot.filter((k) => {
             const row = scores.find((x) => x.skill === k);
             const scored = row?.raw_score !== null && row?.raw_score !== undefined;
             const v = regViews.get(k);
             return !scored && !!v && awaitingScore(v.progress);
           }),
-          overdueSkills: myRegularSkills.filter((k) => {
+          overdueSkills: myLuot.filter((k) => {
             const row = scores.find((x) => x.skill === k);
             const scored = row?.raw_score !== null && row?.raw_score !== undefined;
             return !scored && !!regViews.get(k)?.overdue;
           }).length,
           /* Tuần thi của TỪNG môn (thứ Hai) — ô chưa có điểm ở bảng lớp thường ghi tuần này (đặc tả §3.7, 10b A). */
-          tuanMon: Object.fromEntries(prog!.skills.map((k) => [k, regViews.get(k)?.weekStart ?? null])),
+          tuanMon: Object.fromEntries(mon.map((k) => [k, regViews.get(k)?.weekStart ?? null])),
         };
       }
 
