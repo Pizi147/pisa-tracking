@@ -84,6 +84,7 @@ import { canHoTroLop } from '../classes/canHoTro.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
 import * as suaCaLopSvc from '../classes/suaCaLop.ts';
+import * as monDangKySvc from '../fasttrack/monDangKy.ts';
 import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
@@ -1751,6 +1752,14 @@ api.patch('/cycles/:id', requireAuth, wrap((req) => {
   return cycleSvc.updateCycle(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** P8 MON-DANG-KY (N13): đổi môn đăng ký lộ trình FT { monDangKy: string[] | null, xemTruoc? } — xem trước = cùng hàm, không ghi. */
+api.post('/cycles/:id/mon-dang-ky', requireAuth, wrap((req) => {
+  const b = (req.body ?? {}) as Record<string, any>;
+  if (!b.xemTruoc) maybeSimulateSaveFailure();
+  studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d: hồ sơ Lưu trữ khoá
+  return monDangKySvc.apMonDangKy(principalOf(req), pInt(req, 'id'), b.monDangKy, { xemTruoc: b.xemTruoc === true });
+}));
+
 /** Điểm xuất phát của lộ trình — phải ghi rõ NGUỒN, không lấy MT1 làm điểm đầu vào. */
 api.put('/cycles/:id/baseline', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1798,6 +1807,8 @@ api.get('/cycles/:id/lo-trinh-moi/xem-truoc', requireAuth, wrap((req) => {
   return buocTiepSvc.xemTruocLoTrinhMoi(p, c.id, {
     route: qStr(req, 'route') || undefined, routeTen: qStr(req, 'routeTen') ?? undefined, boTarget: qStr(req, 'boTarget') === '1',
     lopMoiId: qStr(req, 'lopMoiId') || undefined, batDau: qStr(req, 'batDau') || undefined, mucTieu: qStr(req, 'mucTieu') || undefined,
+    /* P8: `mon=listening,reading,…` (trống = chọn rỗng → lỗi ở `loi`); không gửi = môn lộ trình cũ. */
+    monDangKy: qStr(req, 'mon') == null ? undefined : qStr(req, 'mon')!.split(',').filter(Boolean),
   });
 }));
 /** OV-8a: Bước tiếp sau thi thật — Quản lý / Quản trị (`cycle.edit` của em) và OV-12a: TVV cùng chi nhánh (`coQuyenBuocTiep`). Chọn / đổi = một giao dịch; DELETE = hoàn tác lựa chọn. */

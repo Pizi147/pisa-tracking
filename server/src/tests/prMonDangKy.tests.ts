@@ -168,4 +168,86 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assertThrows(() => skillSchedule.setSkillScope(P.admin, luotThuong.id, k, false, 'x', { khongMockLai: true }), /Lớp thường/, 'setSkillScope lớp thường 400');
     });
   });
+
+  // ------------------------------------------------------------------ Task 3: API 3 nơi sửa + xem trước
+  const suaCaLop: any = await import('../classes/suaCaLop.ts');
+  const bt: any = await import('../loTrinh/buocTiep.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const week: any = await import('../platform/week.ts');
+  const lichSu: any = await import('../students/lichSuSua.ts');
+  const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
+  const NOW = new Date().toISOString();
+  const T2 = week.mondayOf(TODAY) as string;
+  let seq = 0;
+  const lop = () => {
+    seq += 1;
+    const start = addDays(T2, -70);
+    return intake.createClass(P.admin, { code: `MB P8-${seq}`, branchId: MB, kind: 'FT', isFastTrack: true, route: 'LT1', startDate: start, startPeriodId: week.ensurePeriod(start).id }).id as number;
+  };
+  /** Em đang học lớp `classId`, lộ trình `route` (null = lớp thường) bắt đầu 10 tuần trước. */
+  const emMoi = (classId: number, route: string | null = 'LT1') => {
+    seq += 1;
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-P8-${seq}`, `Học viên P8 ${seq}`, `hoc vien p8 ${seq}`, MB, NOW).lastInsertRowid);
+    const bd = addDays(T2, -70);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, classId, bd, NOW);
+    const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, start_period_id, started_at, status, created_at) VALUES (?,1,?,?,6.5,?,?, 'active', ?)`)
+      .run(sid, route, route ? 'FT' : 'FOU', week.ensurePeriod(bd).id, bd, NOW).lastInsertRowid);
+    return { sid, cy };
+  };
+
+  check('MDK-4a · Sửa thông tin HV: xem trước trả tóm tắt đúng số; lưu ghi nhật ký trước → sau; Lịch sử hiện "Môn học: Đủ môn → L · R · W2 · S"', () => {
+    thu(() => {
+      const huy = em('Lê Quang Huy');
+      const xem = mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2, { xemTruoc: true });
+      const chuaThiW = get(`SELECT COUNT(*) n FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND k.skill = 'writing'
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores x WHERE x.attempt_id = a.id AND x.skill IN ('writing1','writing2') AND x.band IS NOT NULL) AND k.sit_status IN ('scheduled','absent')`, huy.id).n;
+      assert(xem.truoc === 'Đủ môn' && xem.sau === 'L · R · W2 · S' && xem.writing === 'W2' && xem.boKhoiDot === 0 && xem.giuDaCham === 0 && chuaThiW >= 1, `xem trước: ${JSON.stringify(xem)}`);
+      mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
+      const ls = JSON.stringify(lichSu.lichSuSua(P.mbManager, huy.sid, {}));
+      assert(/Môn học/.test(ls) && ls.includes('Đủ môn') && ls.includes('L · R · W2 · S'), `Lịch sử: ${ls.slice(0, 400)}`);
+    });
+  });
+
+  check('MDK-4b · Sửa cả lớp: 3 em, 1 em lộ trình không phải FT → lỗi tại dòng, 2 em lưu; rỗng môn → lỗi tại ô', () => {
+    thu(() => {
+      const L = lop();
+      const a = emMoi(L), b = emMoi(L), c = emMoi(L, null);
+      const du = suaCaLop.duLieuSuaCaLop(P.mbManager, L);
+      const ra = du.rows.find((r: any) => r.studentId === a.sid), rc = du.rows.find((r: any) => r.studentId === c.sid);
+      assert(du.coMonHoc && ra.monDangKy === null && ra.laFt && !rc.laFt, `dữ liệu panel: ${JSON.stringify({ coMonHoc: du.coMonHoc, ra, rc })}`);
+      const rows = [a, b, c].map((x) => ({ studentId: x.sid, monDangKy: KHONG_S }));
+      const xem = suaCaLop.xemTruocSuaCaLop(P.mbManager, L, { rows });
+      const loi = xem.rows.filter((r: any) => r.issues.length);
+      assert(loi.length === 1 && loi[0].studentId === c.sid && loi[0].issues[0].field === 'monDangKy' && /Fast Track/.test(loi[0].issues[0].message), `xem trước: ${JSON.stringify(xem.rows)}`);
+      assert(xem.monHoc?.length === 2 && xem.monHoc.every((m: any) => m.sau === 'L · R · W1 · W2'), `tóm tắt môn: ${JSON.stringify(xem.monHoc)}`);
+      const r = suaCaLop.luuSuaCaLop(P.mbManager, L, { rows: rows.slice(0, 2) });
+      assert(r.daSua === 2, `lưu: ${JSON.stringify(r)}`);
+      assert([a, b].every((x) => get('SELECT mon_dang_ky m FROM learning_cycles WHERE id = ?', x.cy).m === JSON.stringify(KHONG_S)), 'đã lưu 2 em');
+      const rong = suaCaLop.xemTruocSuaCaLop(P.mbManager, L, { rows: [{ studentId: a.sid, monDangKy: [] }] });
+      assert(/ít nhất một môn/.test(rong.rows[0].issues[0]?.message ?? ''), 'rỗng → lỗi tại ô');
+    });
+  });
+
+  check('MDK-4c · Lộ trình mới: LT2 mặc định môn LT1; đổi môn → lộ trình mới có môn đó, MT1–MT3 theo môn; Hoàn tác không để lại dòng thừa', () => {
+    thu(() => {
+      const L = lop();
+      const a = emMoi(L);
+      conn.prepare(`UPDATE learning_cycles SET mon_dang_ky = ?, thi_that_l = 7, thi_that_r = 7, thi_that_w = 6.5, thi_that_s = 6.5, thi_that_ngay = ? WHERE id = ?`)
+        .run(JSON.stringify(KHONG_S), addDays(TODAY, -3), a.cy);
+      const xem = bt.xemTruocLoTrinhMoi(P.mbManager, a.cy, {});
+      assert(JSON.stringify(xem.monDangKy) === JSON.stringify(KHONG_S) && xem.dong.some((x: string) => x === 'Môn học L · R · W1 · W2'), `mặc định LT1: ${JSON.stringify(xem)}`);
+      const xem2 = bt.xemTruocLoTrinhMoi(P.mbManager, a.cy, { monDangKy: [] });
+      assert(/ít nhất một môn/.test(xem2.loi ?? ''), 'rỗng → lỗi ở xem trước');
+      bt.chonBuocTiep(P.mbManager, a.cy, { chon: 'lo_trinh_moi', monDangKy: CHI_W2 });
+      const m = get(`SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1`, a.sid);
+      assert(m.seq === 2 && m.mon_dang_ky === JSON.stringify(CHI_W2), `lộ trình mới: ${m.mon_dang_ky}`);
+      const w = all(`SELECT k.bo_task, k.required FROM attempt_skills k JOIN assessment_attempts x ON x.id = k.attempt_id WHERE x.cycle_id = ? AND k.skill = 'writing'`, m.id);
+      assert(w.length === 3 && w.every((x) => x.bo_task === 'writing1' && x.required === 1), `MT1–MT3 theo môn: ${JSON.stringify(w)}`);
+      bt.boChonBuocTiep(P.mbManager, a.cy);
+      const thua = get(`SELECT COUNT(*) n FROM attempt_skills k JOIN assessment_attempts x ON x.id = k.attempt_id WHERE x.cycle_id = ? AND x.status != 'cancelled' AND (k.required = 0 OR k.bo_task IS NOT NULL)`, m.id).n;
+      assert(thua === 0, `Hoàn tác còn ${thua} dòng thừa`);
+      assert(get('SELECT mon_dang_ky m FROM learning_cycles WHERE id = ?', a.cy).m === JSON.stringify(KHONG_S), 'lộ trình cũ giữ môn');
+    });
+  });
 }
