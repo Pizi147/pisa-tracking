@@ -1,7 +1,7 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_KHAC, coMt0, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
+  PERMISSIONS, ROUTE_KHAC, coMt0, kyThiCuaChuongTrinh, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -287,7 +287,9 @@ export function moLoTrinhMoi(p: Principal, o: {
    * Q7: FT → FT giữ target cũ. Chủ sản phẩm 04/10 (PR-NT): lớp thường → lớp thường giữ cả Target lẫn Dự kiến thi.
    * PR-LCb (§7 "Dự kiến thi giữ như cũ"): Dự kiến thi giữ ở MỌI chiều khi không gửi tháng thi mới.
    */
-  const giuTarget = (o.tuLop.ft && o.denLop.ft) || (!o.tuLop.ft && !o.denLop.ft);
+  /* P13 KET-PET: Target chỉ giữ khi cùng thang — KET / PET (điểm Cambridge) ↔ lớp thường khác (band) không mang Target sang. */
+  const giuTarget = ((o.tuLop.ft && o.denLop.ft) || (!o.tuLop.ft && !o.denLop.ft))
+    && kyThiCuaChuongTrinh(o.tuLop.ma)?.ma === kyThiCuaChuongTrinh(o.denLop.ma)?.ma;
   const giuThi = !o.thangThi && !st;   // P7 (E1): Lộ trình mới sau thi không chép ngày thi của lộ trình đã thi
   const cu = o.cuCycle;
   const boTg = !!st?.boTarget;

@@ -212,7 +212,7 @@ function hien(c: string, v: unknown, ten: BangTen): string | null {
   switch (kieu) {
     case 'ngay': return /^\d{4}-\d{2}-\d{2}/.test(s) ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : s;
     case 'thang': return /^\d{4}-\d{2}$/.test(s) ? `${s.slice(5, 7)}/${s.slice(0, 4)}` : s;
-    case 'band': return Number.isFinite(Number(v)) ? Number(v).toFixed(1) : s;
+    case 'band': return Number.isFinite(Number(v)) ? (Number(v) > 9 ? String(Number(v)) : Number(v).toFixed(1)) : s;   // P13: điểm Cambridge (> 9) giữ số nguyên
     case 'trangThai': return STUDENT_STATUS_LABEL[s as keyof typeof STUDENT_STATUS_LABEL] ?? s;
     case 'buocTiep': return NHAN_SAU_THI[s as LuaChonSauThi] ?? s;
     case 'ketLuan': return KET_LUAN[s] ?? s;

@@ -19,6 +19,7 @@ export async function runPrKetPetTests(t: any) {
   const pt: any = await import('../phanTich/giaoVien.ts');
   const bc: any = await import('../phanTich/baoCao.ts');
   const buocTiep: any = await import('../loTrinh/buocTiep.ts');
+  const luat: any = await import('../classes/luatLoTrinh.ts');
   const loi = (fn: () => unknown): any => { try { fn(); } catch (e: any) { return e; } return null; };
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const thu = <T>(fn: () => T): T => {
@@ -239,5 +240,19 @@ export async function runPrKetPetTests(t: any) {
     const sau = so();
     assert(sau === truoc, 'báo cáo đổi sau khi nhập KQ PET');
     assert(!sau.includes('"cycleId":' + c.id + ','), 'em PET lọt vào báo cáo');
+  }));
+
+  check('KP-3c · mở lộ trình mới: PET → PET giữ Target Cambridge; PET → FOU / FOU → PET không mang Target sang (khác thang); FOU → FOU giữ như cũ', () => thu(() => {
+    const c = emPet();
+    cycles.reviseTarget(P.mbManager, c.id, { newTarget: 150, reason: 'thử' });
+    const cu = one('SELECT * FROM learning_cycles WHERE id = ?', c.id);
+    const lopFou = one(`SELECT * FROM classes WHERE code = 'MB FOU 12'`); const lopPet = one(`SELECT * FROM classes WHERE code = 'MB PET 01'`);
+    const loai = (l: any) => ({ ma: l.programme_code, ft: !!l.is_fast_track, lt: l.route });
+    const mo = (tu: any, den: any, cy: any) => one('SELECT target_score FROM learning_cycles WHERE id = ?',
+      luat.moLoTrinhMoi(P.admin, { sid: c.student_id, ngay: TODAY, toClass: den, tuLop: loai(tu), denLop: loai(den), cuCycle: cy }).moiId).target_score;
+    assert(mo(lopPet, lopPet, cu) === 150, 'PET → PET phải giữ Target');
+    assert(mo(lopPet, lopFou, cu) === null, 'PET → FOU mang Target Cambridge sang lớp band');
+    assert(mo(lopFou, lopPet, { ...cu, target_score: 6.5 }) === null, 'FOU → PET mang band sang');
+    assert(mo(lopFou, lopFou, { ...cu, target_score: 6.5 }) === 6.5, 'FOU → FOU phải giữ như cũ');
   }));
 }
