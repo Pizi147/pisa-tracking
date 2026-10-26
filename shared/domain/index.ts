@@ -95,7 +95,6 @@ export * from './gopYTuan.ts';
 export * from './baiTrenLop.ts';
 export * from './chipSos.ts';
 export * from './khungLichTest.ts';
-export * from './danExcel.ts';
 export * from './khoangThoiGian.ts';
 export * from './phanTrang.ts';
 export * from './ketQuaThi.ts';

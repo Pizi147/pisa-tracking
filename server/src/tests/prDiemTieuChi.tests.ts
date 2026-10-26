@@ -1,5 +1,5 @@
 /**
- * PHÉP KIỂM P1 DIEM-TIEU-CHI (chủ SP 24/10, R4.4): tiêu chí W1 / W2 / S chỉ số nguyên 0–9 ở mọi đường nhập (hộp, Dán Excel, `saveScore`, lô);
+ * PHÉP KIỂM P1 DIEM-TIEU-CHI (chủ SP 24/10, R4.4): tiêu chí W1 / W2 / S chỉ số nguyên 0–9 ở mọi đường nhập (hộp, `saveScore`, lô);
  * band kỹ năng / Overall vẫn x.5; ô cũ có tiêu chí lẻ đọc được, gửi lại y nguyên không lỗi oan; lệnh chỉ đọc đếm ô cũ.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -8,7 +8,6 @@ import { emailThu } from '../seed/emailThu.ts';
 export async function runPrDiemTieuChiTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId } = t;
   const d = await import('../../../shared/domain/chamDiem.ts');
-  const dx = await import('../../../shared/domain/danExcel.ts');
   const attemptsSvc: any = await import('../fasttrack/attempts.ts');
   const intake: any = await import('../classes/intake.ts');
   const weekSvc: any = await import('../platform/week.ts');
@@ -35,22 +34,6 @@ export async function runPrDiemTieuChiTests(t: YThucTestKit) {
     assert(/số nguyên/.test(d.LOI_TIEU_CHI), `LOI_TIEU_CHI nói số nguyên: ${d.LOI_TIEU_CHI}`);
     assert(JSON.stringify(d.criteriaPatchFrom(['-', '', '', ''], {}).patch) === '{"noShow":true}', '"-" vẫn là vắng');
     assert(JSON.stringify(d.criteriaPatchFrom(['', '', '', ''], {}).patch) === '{"criteria":[null,null,null,null]}', 'trống vẫn là xoá');
-  });
-
-  check('DTC-3 · xetODan: "6 6.5 6 6" → lỗi số nguyên; "6 7 6 7" → band 6.5; dán lại y nguyên ô cũ lẻ → bỏ qua', () => {
-    const o = (criteria: (number | null)[], band: number | null): any => ({
-      skill: 'writing1', required: true, canEdit: true, rawScore: null, band, criteria, bandThang: false,
-    });
-    const le = dx.xetODan({ diem: '6 6.5 6 6', nhanXet: '' }, o([null, null, null, null], null), 'cau');
-    assert(le.loai === 'loi' && (le as any).loi === L, JSON.stringify(le));
-    const phay = dx.xetODan({ diem: '6,5 6 6 6', nhanXet: '' }, o([null, null, null, null], null), 'cau');
-    assert(phay.loai === 'loi' && (phay as any).loi === L, JSON.stringify(phay));
-    const ok = dx.xetODan({ diem: '6 7 6 7', nhanXet: '' }, o([null, null, null, null], null), 'cau');
-    assert(ok.loai === 'ghi' && ok.band === 6.5, JSON.stringify(ok));
-    const cu = dx.xetODan({ diem: '6 6.5 6 6', nhanXet: '' }, o([6, 6.5, 6, 6], 6), 'cau');
-    assert(cu.loai === 'bo', `ô cũ dán lại y nguyên: ${JSON.stringify(cu)}`);
-    const cuNx = dx.xetODan({ diem: '6 6.5 6 6', nhanXet: 'Bố cục rõ, đủ ý' }, o([6, 6.5, 6, 6], 6), 'cau');
-    assert(cuNx.loai === 'ghi' && JSON.stringify(cuNx.patch) === '{"nhanXet":"Bố cục rõ, đủ ý"}', `ô cũ + nhận xét mới chỉ gửi nhận xét: ${JSON.stringify(cuNx)}`);
   });
 
   const FT = classId('MB FT 101');

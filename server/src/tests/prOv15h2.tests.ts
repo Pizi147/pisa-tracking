@@ -146,34 +146,6 @@ export async function runPrOv15h2Tests(t: YThucTestKit) {
   const o = (attemptId: number, skill: string) => one(`SELECT raw_score, raw_total, comment FROM assessment_scores WHERE attempt_id = ? AND skill = ?`, attemptId, skill) ?? null;
   const soMucDan = (l: number) => one(`SELECT COUNT(*) AS n FROM audit_logs WHERE entity_type = 'class' AND entity_id = ? AND action = 'score.dan_excel'`, l).n as number;
 
-  await checkAsync('H2-10a · Dán Excel lớp thường (hàm thuần): cột theo môn FOU / BE / Pre FOU, có / không tiêu đề; số câu đúng (tổng của ô / cột / "a/b"); "-"; trống ≠ 0; Hoàn tác', async () => {
-    const fou = d.cotThuong(['listening', 'reading', 'writing', 'speaking'], { ngan: (k: string) => d.tenMonNgan('FOU', k), ten: (k: string) => d.tenMon('FOU', k) });
-    const b1 = d.docBangDan('Tên\tL\tNhận xét L\tG+V\tP\nAn\t24\tTốt\t-\t\n', ['listening', 'reading', 'writing', 'speaking'], fou);
-    assert(b1.coTieuDe && b1.dong.length === 1, JSON.stringify(b1));
-    const x1 = Object.fromEntries(b1.dong[0].o.map((x: any) => [x.skill, x]));
-    assert(x1.listening.diem === '24' && x1.listening.nhanXet === 'Tốt' && x1.writing.diem === '-' && x1.speaking.diem === '' && !x1.reading, `FOU G+V / P theo tên môn: ${JSON.stringify(x1)}`);
-    const be = d.cotThuong(['listening', 'reading', 'writing', 'speaking'], { ngan: (k: string) => d.tenMonNgan('BE', k), ten: (k: string) => d.tenMon('BE', k) });
-    const b2 = d.docBangDan('Bình\t30\t\t31\t\t5\tViết ổn\t7\t', ['listening', 'reading', 'writing', 'speaking'], be);
-    assert(!b2.coTieuDe && b2.dong[0].o.map((x: any) => `${x.skill}:${x.diem}:${x.nhanXet}`).join('|') === 'listening:30:|reading:31:|writing:5:Viết ổn|speaking:7:', JSON.stringify(b2.dong[0]));
-    const pre = d.cotThuong(['tong_hop'], { ngan: (k: string) => d.tenMonNgan('PREFOU', k), ten: (k: string) => d.tenMon('PREFOU', k) });
-    const b3 = d.docBangDan('Họ tên\tTổng hợp\nChi\t45/50\n', ['tong_hop'], pre);
-    assert(b3.coTieuDe && b3.dong[0].o[0].skill === 'tong_hop' && b3.dong[0].o[0].diem === '45/50', JSON.stringify(b3));
-    const c0 = { skill: 'listening', canEdit: true, diem: null, tong: null, tongCot: 40, dau: false, nhanXet: null };
-    const x = (raw: string, nx = '', c: any = c0) => d.xetOThuong({ diem: raw, nhanXet: nx }, c);
-    assert(x('').loai === 'bo' && x('0').loai === 'ghi' && JSON.stringify(x('0').lenh) === JSON.stringify([{ score: 0, total: 40 }]), 'trống bỏ qua, 0 là điểm (tổng của cột)');
-    assert(JSON.stringify(x('12/20').lenh) === JSON.stringify([{ score: 12, total: 20 }]), '"a/b" thắng tổng cột');
-    assert(x('41').loai === 'loi' && x('abc').loai === 'loi' && x('5', '', { ...c0, tongCot: null }).loai === 'loi', 'quá tổng / chữ lạ / không có tổng → lỗi');
-    assert(JSON.stringify(x('-').lenh) === JSON.stringify([{ noShow: true }]), '"-" = noShow');
-    assert(x('-', '', { ...c0, diem: 20, tong: 40 }).loai === 'loi', '"-" không xoá điểm đã có');
-    assert(x('20', '', { ...c0, diem: 20, tong: 40 }).loai === 'bo', 'dán lại đúng giá trị → không gửi');
-    assert(x('20', '', { ...c0, canEdit: false }).loai === 'loi', 'ô không sửa được → lỗi');
-    const g = x('25', 'Khá', { ...c0, diem: 20, tong: 40, nhanXet: 'cũ' });
-    assert(g.loai === 'ghi' && g.truoc === '20/40' && g.sau === '25/40' && g.lenh.length === 2, JSON.stringify(g));
-    assert(JSON.stringify(d.patchTruocThuong({ diem: 20, tong: 40, nhanXet: 'cũ' }, g.lenh)) === JSON.stringify([{ score: 20, total: 40 }, { nhanXet: 'cũ' }]), 'Hoàn tác về đúng trước');
-    assert(JSON.stringify(d.patchTruocThuong({ diem: null, tong: null, nhanXet: null }, [{ score: 3, total: 40 }, { noShow: true }])) === JSON.stringify([{ score: null, total: null }, { noShow: false }]), 'ô trống → xoá; "-" → gỡ');
-    assert(d.oConNhuDanThuong({ diem: 25, tong: 40, nhanXet: 'Khá', dau: false }, { score: 25, total: 40 }) && !d.oConNhuDanThuong({ diem: 26, tong: 40, nhanXet: null, dau: false }, { score: 25, total: 40 }), 'còn như dán');
-  });
-
   await checkAsync('H2-10b · POST /regular/scores/lo: FOU (điểm + nhận xét, "-" dời môn), BE, Pre FOU qua saveRegularScore; GVBM sai môn → dòng lỗi; sai lớp / bài → 400 cả lô; nhiều request cùng loId = MỘT mục; Hoàn tác trả đúng', async () => {
     const fou = lopThuong('FOU', 3), be = lopThuong('BE', 7, 1), pre = lopThuong('PREFOU', 6, 1);
     seq += 1;

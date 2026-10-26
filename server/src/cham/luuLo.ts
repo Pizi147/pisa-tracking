@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { DAN_TOI_DA_DONG, ENTRY_SKILLS, docMaLuot } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, docMaLuot } from '../../../shared/domain/index.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { saveRegularScore } from '../normal/regular.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
@@ -16,6 +16,9 @@ type DongLo = { attemptId: number; o: ODan[] };
 export type KetQuaDong = { attemptId: number; ok: true } | { attemptId: number; ok: false; skill: string | null; loi: string; status: number };
 /** Tổng các request TRƯỚC của cùng một lần dán (web cộng từ kết quả máy chủ trả) — chỉ để ghi vào mục lịch sử tổng. */
 type TongTruoc = { soDong: number; soDaLuu: number; soO: number };
+
+/** Mỗi ô một `saveScore` (~30 câu SQL, prOv15b-2d) — 5 dòng 5 ô ~750 câu; Netlify cắt 10 s. R1-BO-DAN-EXCEL: web không còn gọi (API giữ). */
+export const DAN_TOI_DA_DONG = 5;
 
 const soDem = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 10_000;
 
