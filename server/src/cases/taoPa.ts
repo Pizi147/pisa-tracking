@@ -1,5 +1,5 @@
 import { THAM_SO_TOI_DA, theoLo } from '../db.ts';
-import { badRequest, nowIso } from '../util.ts';
+import { badRequest, nowIso, loi as loiHttp } from '../util.ts';
 import { coNguoiDay, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
 
 /**
@@ -28,7 +28,7 @@ function giaTri(x: DongPa, luc: string): unknown[] {
   const ten = (x.performerName ?? '').trim() || null;
   if (x.performerUserId && ten) throw badRequest('Người dạy: chọn tài khoản hoặc ghi tên, không cả hai.');
   const loi = coSoBuoi(x.kind) ? kiemSoBuoiPa(x.soBuoi) : null;
-  if (loi) throw badRequest(`Số buổi: ${loi}.`);
+  if (loi) throw loiHttp(400, 'Số buổi: {loi}.', { loi });
   const nguoi = coNguoiDay(x.kind);
   return [x.caseId, x.kind, x.description, coSoBuoi(x.kind) ? soBuoiTu(x.soBuoi) : null,
     nguoi ? x.performerUserId ?? null : null, nguoi ? ten : null, x.recordedBy ?? null, x.status,

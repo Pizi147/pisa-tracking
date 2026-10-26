@@ -7,6 +7,7 @@ import { Empty, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { HangLichMt, type BangLichMt } from './HangLichMt.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /** Band 0–9, bước 0.5 — cùng luật máy chủ (máy chủ vẫn kiểm lại). */
 export const laBand = (s: string) => s.trim() !== '' && Number.isFinite(Number(s)) && Number(s) >= 0 && Number(s) <= 9 && Number(s) * 2 === Math.round(Number(s) * 2);
@@ -41,8 +42,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
       );
       invalidate('/attempts'); invalidate('/classes'); invalidate('/students');
       toast.push('ok',
-        `Đã lên lịch: thêm ${r.created} lượt, dời ${r.moved} lượt`
-        + (r.kept ? `, giữ nguyên ${r.kept} lượt đã chốt tay` : ''));
+        t('Đã lên lịch: thêm {them} lượt, dời {doi} lượt', { them: r.created, doi: r.moved })
+        + (r.kept ? t(', giữ nguyên {n} lượt đã chốt tay', { n: r.kept }) : ''));
       sugg.reload(); onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -57,27 +58,27 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
   ).length;
 
   return (
-    <KhungPanel tieuDe="Lộ trình" hocVien={studentName} rong="rong" onDong={hopMo ? () => { /* Esc đóng hộp xếp lịch trước */ } : onClose}
-      chan={{ huy: { nhan: 'Đóng', onClick: onClose, disabled: busy } }}>
+    <KhungPanel tieuDe={t('Lộ trình')} hocVien={studentName} rong="rong" onDong={hopMo ? () => { /* Esc đóng hộp xếp lịch trước */ } : onClose}
+      chan={{ huy: { nhan: t('Đóng'), onClick: onClose, disabled: busy } }}>
       {cycle.loading ? <div className="pt-3"><Skeleton rows={6} /></div> : (
         <div className="space-y-4 pt-3">
           {ratio ? (
             <SectionNote>
-              Đây là lớp thường nên không có lịch MT riêng từng em — cả lớp làm bài Progress Test và Final Test cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.
+              {t('Đây là lớp thường nên không có lịch MT riêng từng em — cả lớp làm bài Progress Test và Final Test cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.')}
             </SectionNote>
           ) : (
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                <span className="label">Lịch MT hệ thống đề xuất</span>
+                <span className="label">{t('Lịch MT hệ thống đề xuất')}</span>
                 {/* OV-11d (HV-22): không áp được thì nói lý do bằng chữ (không nút mờ). */}
-                {!bang?.coTheXep ? <span className="text-xs text-slate-400">Quản lý xếp lịch MT</span>
-                  : actionable ? <button className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={applyPlan}>Áp lịch cho {actionable} lượt</button>
-                  : <span className="text-xs text-slate-400">Lịch đã đúng</span>}
+                {!bang?.coTheXep ? <span className="text-xs text-slate-400">{t('Quản lý xếp lịch MT')}</span>
+                  : actionable ? <button className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={applyPlan}>{t('Áp lịch cho {n} lượt', { n: actionable })}</button>
+                  : <span className="text-xs text-slate-400">{t('Lịch đã đúng')}</span>}
               </div>
 
               {!startPeriodId ? (
-                <Empty title="Chưa có Tuần bắt đầu" hint="Điền Tuần bắt đầu ở Sửa thông tin — lịch MT đề xuất hiện ngay ở đây."
-                  action={onSuaThongTin ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>Sửa thông tin</button> : undefined} />
+                <Empty title={t('Chưa có Tuần bắt đầu')} hint={t('Điền Tuần bắt đầu ở Sửa thông tin — lịch MT đề xuất hiện ngay ở đây.')}
+                  action={onSuaThongTin ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>{t('Sửa thông tin')}</button> : undefined} />
               ) : rows.length === 0 ? (
                 <Skeleton rows={3} />
               ) : (
@@ -85,11 +86,11 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
                   <table className="w-full text-sm">
                     <thead>
                       <tr>
-                        <Th hint="Số thứ tự lượt Mock Test trong lộ trình này, kèm kỳ vọng của lượt. Sang lộ trình mới thì đánh lại từ 1.">Lượt</Th>
-                        <Th hint="Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.">Tuần học</Th>
-                        <Th hint="Tuần hệ thống tính ra từ tuần bắt đầu học. Chỉ là đề xuất — bấm Áp lịch mới thật sự đổi.">Tuần đề xuất</Th>
-                        <Th hint="Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt Quản lý đã chốt tay và lượt đã làm xong thì đứng yên.">Hiện tại</Th>
-                        <Th align="right">Thao tác</Th>
+                        <Th hint={t('Số thứ tự lượt Mock Test trong lộ trình này, kèm kỳ vọng của lượt. Sang lộ trình mới thì đánh lại từ 1.')}>{t('Lượt')}</Th>
+                        <Th hint={t('Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.')}>{t('Tuần học')}</Th>
+                        <Th hint={t('Tuần hệ thống tính ra từ tuần bắt đầu học. Chỉ là đề xuất — bấm Áp lịch mới thật sự đổi.')}>{t('Tuần đề xuất')}</Th>
+                        <Th hint={t('Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt Quản lý đã chốt tay và lượt đã làm xong thì đứng yên.')}>{t('Hiện tại')}</Th>
+                        <Th align="right">{t('Thao tác')}</Th>
                       </tr>
                     </thead>
                     <tbody>
@@ -106,7 +107,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
               {bang?.coTheXep && bang.classId !== null && startPeriodId && (
                 <div className="mt-2">
                   <button type="button" className="btn btn-sm min-h-[40px] sm:min-h-0" onClick={(e) => setThemMt(e.currentTarget)}>
-                    + Thêm MT{bang.soKeTiep}
+                    {t('+ Thêm MT{n}', { n: bang.soKeTiep })}
                   </button>
                 </div>
               )}
@@ -117,9 +118,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
               )}
 
               <SectionNote>
-                Hệ thống chỉ đề xuất ba lượt đầu — đa số em chỉ làm ba lượt, MT4 và MT5 là dự
-                phòng, thêm bằng "+ Thêm MT" (tuần cách ≥ 2 tuần = MT cũ). Lượt nào Quản lý đã chốt
-                tay hoặc em đã làm xong thì đứng yên, kể cả khi đổi lại tuần bắt đầu học.
+                {t('Hệ thống chỉ đề xuất ba lượt đầu — đa số em chỉ làm ba lượt, MT4 và MT5 là dự phòng, thêm bằng "+ Thêm MT" (tuần cách ≥ 2 tuần = MT cũ). Lượt nào Quản lý đã chốt tay hoặc em đã làm xong thì đứng yên, kể cả khi đổi lại tuần bắt đầu học.')}
               </SectionNote>
             </div>
           )}

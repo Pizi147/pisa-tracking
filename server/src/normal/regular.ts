@@ -9,7 +9,7 @@ import {
   caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -315,7 +315,7 @@ export function planRegularTests(p: Principal, classId: number, opts: {
   if (!progress.progressWeekStart && !progress.finalWeekStart) {
     throw badRequest('Lớp chưa có ngày khai giảng nên chưa tính được mốc tuần học.');
   }
-  if (!prog.checkpoints.length) throw badRequest(`Chương trình ${prog.name} chưa khai báo mốc kiểm tra nào.`);
+  if (!prog.checkpoints.length) throw loi(400, 'Chương trình {name} chưa khai báo mốc kiểm tra nào.', { name: prog.name });
 
   const chonEm = opts.studentIds?.length ? opts.studentIds : null;
   const students = conn
@@ -604,7 +604,7 @@ export function saveRegularScore(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!boMonCuaLuot(conn, attemptId).includes(skill)) {   // P13: lượt đã ghi môn gộp cũ (L+S, R+W) nhận đúng môn của lượt
-    throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
+    throw loi(400, 'Lớp {name} không có kỹ năng {x}.', { name: prog.name, x: tenMon(prog.code, skill) });
   }
   /*
    * OV-13h (chủ SP 15/10): GV đúng môn (kiểm `path` bên dưới) NHẬP điểm vào ô chưa có điểm, hoặc ghi NHẬN XÉT (lệnh chỉ nhận xét — không đổi
@@ -672,7 +672,7 @@ export function saveRegularScore(
   if (score !== null && score !== undefined) {
     if (!Number.isInteger(score) || score < 0) throw badRequest('Điểm đạt phải là số nguyên không âm.');
     if (total === null || total === undefined) throw badRequest('Nhập điểm đạt thì phải nhập cả tổng điểm.');
-    if (score > total) throw badRequest(`Điểm đạt (${score}) không thể lớn hơn tổng điểm (${total}).`);
+    if (score > total) throw loi(400, 'Điểm đạt ({score}) không thể lớn hơn tổng điểm ({total}).', { score, total });
   }
 
   /*
@@ -760,7 +760,7 @@ export function reportRegularNoShow(
 
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
-  if (!boMonCuaLuot(conn, attemptId).includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
+  if (!boMonCuaLuot(conn, attemptId).includes(skill)) throw loi(400, 'Lớp {name} không có kỹ năng {x}.', { name: prog.name, x: tenMon(prog.code, skill) });
   chanVangLopKetThuc(a.class_id);
 
   /*
@@ -784,8 +784,8 @@ export function reportRegularNoShow(
 
   return tx(() => {
     const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-    if (!row) throw badRequest(`Bài này chưa có dòng lịch cho ${skill}.`);
-    if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của bài này.`);
+    if (!row) throw loi(400, 'Bài này chưa có dòng lịch cho {skill}.', { skill });
+    if (!row.required) throw loi(400, 'Kỹ năng {x} không nằm trong phạm vi yêu cầu của bài này.', { x: tenMon(null, skill) });
 
     const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as any;
@@ -802,7 +802,7 @@ export function reportRegularNoShow(
 
     if (bat) {
       if (!row.planned_period_id || !row.week_start) {
-        throw badRequest(`${skill} chưa có tuần Test nên chưa ghi dấu "-" được.`);
+        throw loi(400, '{skill} chưa có tuần Test nên chưa ghi dấu "-" được.', { skill });
       }
       /*
        * Đã ghi dấu và đã dời rồi: tuần mới CHƯA TỚI thì gọi lại là vô hại, không dời lần hai. Tuần mới ĐÃ TỚI thì đây là
@@ -820,7 +820,7 @@ export function reportRegularNoShow(
        * (không có năm nếu cùng năm), không hiện ngày ISO.
        */
       if (String(row.week_start) > today) {
-        throw badRequest(`Chưa tới tuần Test ${tuanLich(row.week_start, today)} — chưa ghi "-" được.`);
+        throw loi(400, 'Chưa tới tuần Test {x} — chưa ghi "-" được.', { x: tuanLich(row.week_start, today) });
       }
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
       const luat = luatVangThuong(cu.weekStart, today);
@@ -859,7 +859,7 @@ export function reportRegularNoShow(
       const hoaVaoFinal = final?.id && final.tuan === moi.weekStart ? final.id as number : undefined;
       const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: moi.weekStart, boQua: hoaVaoFinal ? [hoaVaoFinal] : undefined });
       if (check.blockers.length) {
-        throw badRequest(`${check.blockers.join(' ')} Nhờ Quản lý dời lịch ở Kế hoạch Test.`);
+        throw loi(400, '{x} Nhờ Quản lý dời lịch ở Kế hoạch Test.', { x: check.blockers.join(' ') });
       }
       if (existing) {
         conn.prepare(

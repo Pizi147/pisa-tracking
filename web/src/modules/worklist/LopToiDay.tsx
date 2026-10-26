@@ -149,8 +149,9 @@ const COT_DAY: readonly CotBang[] = [
   { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 76 }, { key: 'bai', nhan: t('Chờ chấm'), kieu: 'diem', rong: 84 },
 ];
 const COT_CN: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'diem', rong: 104, goiY: t('Lớp thường: HV chưa đạt') },
-  { key: 'sos', nhan: t('SOS hiện tại'), kieu: 'diem', rong: 104 }, { key: 'case', nhan: 'Case', kieu: 'diem', rong: 60 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'diem', rong: 104 },
+  /* R1-EN-2 (PTA #599): "Below expected" / "Exam this month" cần ~120 px — bớt Lớp / SOS / Case, tổng vẫn 500 px. */
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 108 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'diem', rong: 120, goiY: t('Lớp thường: HV chưa đạt') },
+  { key: 'sos', nhan: t('SOS hiện tại'), kieu: 'diem', rong: 100 }, { key: 'case', nhan: 'Case', kieu: 'diem', rong: 52 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'diem', rong: 120 },
 ];
 
 /**
@@ -181,7 +182,7 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
 
   const oDay = (d: DongDay, c: CotBang): ReactNode => {
     if (c.key === 'lop') return lopLink(d.classId, d.code);
-    if (c.key === 'ky') return <span className="flex gap-1">{d.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
+    if (c.key === 'ky') return <span className="flex gap-1">{d.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />)}</span>;
     if (c.key === 'dat') return <PhanTram gon x={tyLeGv(d.ketQua ?? undefined)} nguon={`/giao-vien/${id}/chi-so/o?cot=ket-qua-lop:${d.classId}`} tieuDe={`${d.khung === 'ft' ? t('Đạt kỳ vọng Test') : t('Đạt Test')} · ${d.code}`} />;
     if (c.key === 'tb') return d.khung === 'ft' ? <PhanTram gon x={tyLeGv(d.tienBo ?? undefined)} nguon={`/giao-vien/${id}/chi-so/o?cot=tien-bo-lop:${d.classId}`} tieuDe={`${t('Tiến bộ')} · ${d.code}`} /> : <span className="text-slate-500">—</span>;
     /* V4 (D10): có bài quá hạn thì hiện phần quá hạn (đỏ), không thì số bài chờ chấm — bấm ra đúng các bài đó. */

@@ -2,7 +2,7 @@ import { db, theoLo } from '../db.ts';
 import {
   COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, soSanhLop, tachBaiId, type ChuongTrinh, type CotBang,
 } from '../../../shared/domain/index.ts';
-import { forbidden, badRequest } from '../util.ts';
+import { forbidden, badRequest, loi } from '../util.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { latestAttempts, studentsInScope } from './danhGia.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
@@ -182,7 +182,7 @@ export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: Ch
 export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; cot: string; khoa: string;
   /** OV-15h1: ô của bảng "Lớp cần chú ý" (`chuY=1`) — cùng chế độ bảng đã vẽ, số = số dòng ở cả hai bảng. */ chuY?: boolean }):
   { n: number; unit: string; tieuDe: string; rows: MetricRow[] } {
-  if (!(COT_BANG as readonly string[]).includes(f.cot)) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
+  if (!(COT_BANG as readonly string[]).includes(f.cot)) throw loi(400, 'Cột "{cot}" không có trong bảng.', { cot: f.cot });
   const cot = f.cot as CotBang;
   const r = tinh(p, f);
   let tap: Tap | null = null; let noi = '';

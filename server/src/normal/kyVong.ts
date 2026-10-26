@@ -3,7 +3,7 @@ import {
   NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, tenMonNgan, hanKyGhiKetQua, tuanMuonNhatMt0,
   type GoiYKyVong, type RegularSkill,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -141,15 +141,15 @@ export type DongKyVong = { sid: number; dat: boolean; nguyenNhan: 'trung_tam' | 
 
 /** Kiểm một dòng thân yêu cầu — lỗi nói tên em. */
 export function kiemDongKyVong(x: any, ten: string): DongKyVong {
-  if (typeof x?.dat !== 'boolean') throw badRequest(`${ten}: chọn Đạt hoặc Không đạt.`);
+  if (typeof x?.dat !== 'boolean') throw loi(400, '{ten}: chọn Đạt hoặc Không đạt.', { ten });
   if (x.dat) return { sid: Number(x.sid), dat: true, nguyenNhan: null, mon: [], lyDo: null };
-  if (x.nguyenNhan !== 'trung_tam' && x.nguyenNhan !== 'hoc_sinh') throw badRequest(`${ten}: chọn Trung tâm hoặc Học viên.`);
+  if (x.nguyenNhan !== 'trung_tam' && x.nguyenNhan !== 'hoc_sinh') throw loi(400, '{ten}: chọn Trung tâm hoặc Học viên.', { ten });
   const mon = Array.isArray(x.mon) ? [...new Set((x.mon as unknown[]).map(String))] : [];
-  if (mon.some((m) => !(REGULAR_SKILLS as readonly string[]).includes(m))) throw badRequest(`${ten}: kỹ năng không hợp lệ.`);
+  if (mon.some((m) => !(REGULAR_SKILLS as readonly string[]).includes(m))) throw loi(400, '{ten}: kỹ năng không hợp lệ.', { ten });
   /* N17 (mockup cuoi-khoa khung 4): Học viên = ghi phương án, không Case → không bắt kỹ năng; Trung tâm cần kỹ năng để mở Case + Tutor. */
-  if (!mon.length && x.nguyenNhan === 'trung_tam') throw badRequest(`${ten}: chọn kỹ năng chưa đạt.`);
+  if (!mon.length && x.nguyenNhan === 'trung_tam') throw loi(400, '{ten}: chọn kỹ năng chưa đạt.', { ten });
   const lyDo = chuTuDo(x.lyDo ?? null, `${ten} · Lý do`, 2000);
-  if (x.nguyenNhan === 'hoc_sinh' && !lyDo) throw badRequest(`${ten}: ghi lý do.`);
+  if (x.nguyenNhan === 'hoc_sinh' && !lyDo) throw loi(400, '{ten}: ghi lý do.', { ten });
   return { sid: Number(x.sid), dat: false, nguyenNhan: x.nguyenNhan, mon: mon as RegularSkill[], lyDo: x.nguyenNhan === 'hoc_sinh' ? lyDo : null };
 }
 
@@ -166,7 +166,7 @@ export function luuKyVong(p: Principal, classId: number, body: any): { luu: numb
   const dong = [...new Map(vao.map((x) => {
     const e = em.get(Number(x?.sid));
     if (!e) throw badRequest('Học viên không có quyết định Lên FT ở lớp này.');
-    if (!e.mt0 && !e.moTay) throw badRequest(`${e.ten}: MT0 cần ít nhất 3 kỹ năng có điểm.`);
+    if (!e.mt0 && !e.moTay) throw loi(400, '{ten}: MT0 cần ít nhất 3 kỹ năng có điểm.', { ten: e.ten });
     /* Học viên không gửi kỹ năng → kỹ năng CÓ band MT0 dưới ngưỡng (kỹ năng chưa thi không tính); vẫn rỗng → 400 "chọn kỹ năng". */
     const thieu = x?.nguyenNhan === 'hoc_sinh' && !(Array.isArray(x.mon) && x.mon.length) && !!e.goiY;
     return [e.id, kiemDongKyVong(thieu ? { ...x, mon: e.goiY!.monTruot } : x, e.ten)] as const;

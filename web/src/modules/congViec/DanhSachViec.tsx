@@ -182,7 +182,7 @@ function Dong({ it, trongEm = false, onOpen, chon, xong, moTrang, moCaDong, nutP
   const tvv = laViecTvvTheoEm(it);
   const doiTuong = tvv ? [trongEm ? null : it.studentName, it.classCode].filter(Boolean).join(' · ') : [
     gomLop || trongEm ? null : it.studentName,
-    !trongEm && it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,
+    !trongEm && it.classCode && it.studentName !== 'Lớp ' + it.classCode ? it.classCode : null,   // so với nhãn việc cả lớp máy chủ gửi (chữ Việt), không hiện ra
     it.contextLabel ?? (trongEm ? it.phu : null),
     !gomLop && it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : !gomLop && it.count !== null && it.count > 1 ? t('{n} HV', { n: it.count }) : null,
   ].filter(Boolean).join(' · ');

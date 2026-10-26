@@ -10,7 +10,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
 import { kyHieuLop, tuanLich, type LoiTruong } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { DongXem, PhanThongTin } from './ThongTinLopPanel.tsx';
 
 type Progress = {
@@ -73,9 +73,9 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
   /* Báo sớm dưới ô — máy chủ vẫn kiểm (tuần trong khoá, Giữa khoá trước Cuối khoá). */
   const ngoaiKhoa = (v: string) => v.trim() !== '' && (!Number.isInteger(Number(v)) || Number(v) < 1 || Number(v) > (data?.totalWeeks ?? 0));
   const loi: LoiTruong[] = !data ? [] : [
-    ...(laLopThuong && !startPeriodId ? [{ khoa: 'khai-giang', nhan: 'Tuần khai giảng', lyDo: 'Chưa chọn' }] : []),
-    ...(laLopThuong && data.coGiuaKhoa && ngoaiKhoa(progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần Progress Test', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
-    ...(laLopThuong && ngoaiKhoa(finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần Final Test', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
+    ...(laLopThuong && !startPeriodId ? [{ khoa: 'khai-giang', nhan: t('Tuần khai giảng'), lyDo: t('Chưa chọn') }] : []),
+    ...(laLopThuong && data.coGiuaKhoa && ngoaiKhoa(progressWeek) ? [{ khoa: 'giua-khoa', nhan: t('Tuần Progress Test'), lyDo: t('Từ 1 đến {n}', { n: data.totalWeeks }) }] : []),
+    ...(laLopThuong && ngoaiKhoa(finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: t('Tuần Final Test'), lyDo: t('Từ 1 đến {n}', { n: data.totalWeeks }) }] : []),
   ];
 
   /* Huỷ: về giá trị đã lưu (nạp lại một lần ở lượt vẽ sau). */
@@ -95,7 +95,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
         finalWeek: finalWeek.trim() === '' ? null : Number(finalWeek),
       });
       invalidate('/classes');
-      toast.push('ok', `Đã lưu ${tieuDe.toLowerCase()}`);
+      toast.push('ok', t('Đã lưu {ten}', { ten: tieuDe.toLowerCase() }));
       setDangSua(false); setTouched(false);
       reload(); onDone?.();
     } catch (e: any) { setLoiLuu(e.message); toast.push('error', e.message); } finally { setBusy(false); }
@@ -105,21 +105,20 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
     /* LỚP ĐÃ HỌC XONG → MỖI EM PHẢI ĐƯỢC XẾP LỚP TIẾP. Hệ thống KHÔNG tự chuyển ai: chỉ nói "đến lúc rồi" và bày sẵn hai đường. */
     <div className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
       <p className="text-sm text-slate-100 m-0">
-        Lớp đã học hết {data.totalWeeks} tuần. <strong>{data.activeStudents} học viên</strong> cần
-        được xếp lớp tiếp theo.
+        {t('Lớp đã học hết {n} tuần.', { n: data.totalWeeks })} <strong>{t('{n} học viên', { n: data.activeStudents })}</strong> {t('cần được xếp lớp tiếp theo.')}
       </p>
       <p className="text-xs text-slate-300 mt-1.5 mb-0">
-        Hai đường đi:
-        {' '}{data.placementOptions.map((o) => `${o.name} (${o.code})`).join(' — hoặc — ')}
+        {t('Hai đường đi:')}
+        {' '}{data.placementOptions.map((o) => `${o.name} (${o.code})`).join(` — ${t('hoặc')} — `)}
       </p>
-      <p className="m-0 mt-1.5 text-xs text-slate-500">Hệ thống không tự chuyển em nào.</p>
+      <p className="m-0 mt-1.5 text-xs text-slate-500">{t('Hệ thống không tự chuyển em nào.')}</p>
       {onChuyenTiep && (
         <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{t('Cuối khoá ›')}</button>
       )}
     </div>
   );
   const tuanMoc = (tuan: number | null, ws: string | null, xepLai: boolean) => (
-    <span className="tabular-nums">{tuan ? `tuần ${tuan}` : '—'}{ws ? ` · ${tuanLich(ws, homNay)}` : ''}{xepLai ? ' · đã xếp lại' : ''}</span>
+    <span className="tabular-nums">{tuan ? t('tuần {n}', { n: tuan }) : '—'}{ws ? ` · ${tuanLich(ws, homNay)}` : ''}{xepLai ? ` · ${t('đã xếp lại')}` : ''}</span>
   );
 
   return (
@@ -128,7 +127,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
       {error ? <p className="m-0 text-xs text-rose-200">{error.message}</p> : loading || !data ? <Skeleton rows={3} /> : !dangSua ? (
         <>
           <DongXem dong={[
-            ['Khai giảng', data.startWeekStart ? <span className="tabular-nums">{tuanLich(data.startWeekStart, homNay)}</span> : <span className="text-amber-200">Chưa chọn</span>],
+            [t('Khai giảng'), data.startWeekStart ? <span className="tabular-nums">{tuanLich(data.startWeekStart, homNay)}</span> : <span className="text-amber-200">{t('Chưa chọn')}</span>],
             ...(laLopThuong ? [
               ...(data.coGiuaKhoa ? [['Progress Test', tuanMoc(data.progressWeek, data.progressWeekStart, data.progressOverridden)] as [string, ReactNode]] : []),
               ['Final Test', tuanMoc(data.finalWeek, data.finalWeekStart, data.finalOverridden)] as [string, ReactNode],
@@ -136,17 +135,17 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
           ]} />
           {!laLopThuong && data.tomTatMt && (
             <p className="m-0 mt-2 text-sm tabular-nums text-slate-200">
-              {data.tomTatMt.soEm} em · {data.tomTatMt.coMocSapToi} em có MT sắp tới · {data.tomTatMt.daXongMtCuoi} em đã xong MT cuối
-              {session?.nav?.testPlan && <>{' '}<Link to={`/test/ke-hoach?loai=ft&classId=${classId}`} className="link">Xem ở Kế hoạch Test →</Link></>}
+              {t('{n} em', { n: data.tomTatMt.soEm })} · {t('{n} em có MT sắp tới', { n: data.tomTatMt.coMocSapToi })} · {t('{n} em đã xong MT cuối', { n: data.tomTatMt.daXongMtCuoi })}
+              {session?.nav?.testPlan && <>{' '}<Link to={`/test/ke-hoach?loai=ft&classId=${classId}`} className="link">{t('Xem ở Kế hoạch Test →')}</Link></>}
             </p>
           )}
           {laLopThuong && hetKhoa}
         </>
       ) : (
         <div className="space-y-4">
-          <p className="m-0 text-xs text-slate-400">{data.label ?? 'Chưa tính được tiến độ'}</p>
-          <Field as="div" label="Tuần khai giảng" required={laLopThuong} loi={lf.loiCua(loi, 'khai-giang')}
-            hint={laLopThuong ? `Tuần khai giảng = tuần học 1. ${MOC_KIEM_TRA_NORMAL}` : 'Tuần bắt đầu mặc định khi thêm học viên vào lớp.'}>
+          <p className="m-0 text-xs text-slate-400">{data.label ? dich(data.label) : t('Chưa tính được tiến độ')}</p>
+          <Field as="div" label={t('Tuần khai giảng')} required={laLopThuong} loi={lf.loiCua(loi, 'khai-giang')}
+            hint={laLopThuong ? `${t('Tuần khai giảng = tuần học 1.')} ${dich(MOC_KIEM_TRA_NORMAL)}` : t('Tuần bắt đầu mặc định khi thêm học viên vào lớp.')}>
             <div {...lf.o(loi, 'khai-giang')}>
               <WeekPicker periodId={startPeriodId} label={null} scope="planning"
                 onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
@@ -157,15 +156,15 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
             <div className={`grid gap-3 ${data.coGiuaKhoa ? 'sm:grid-cols-2' : ''}`}>
               {/* K2-23: Pre FOU chỉ có Cuối khoá — không vẽ ô Giữa khoá. */}
               {data.coGiuaKhoa && (
-                <Field label="Tuần Progress Test (tuần học)" loi={lf.loiCua(loi, 'giua-khoa')}
-                  hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
+                <Field label={t('Tuần Progress Test (tuần học)')} loi={lf.loiCua(loi, 'giua-khoa')}
+                  hint={t('Mặc định của {ct}: tuần {tuan}. Để trống là dùng mặc định.', { ct: kyHieuLop(data.programmeCode, null) ?? data.programmeCode, tuan: data.progressOverridden ? '—' : data.progressWeek ?? '—' })}>
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                     {...lf.o(loi, 'giua-khoa')} value={progressWeek} placeholder={String(data.progressWeek ?? '')}
                     onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
                 </Field>
               )}
-              <Field label="Tuần Final Test (tuần học)" loi={lf.loiCua(loi, 'cuoi-khoa')}
-                hint="Để trống là dùng mốc mặc định của chương trình.">
+              <Field label={t('Tuần Final Test (tuần học)')} loi={lf.loiCua(loi, 'cuoi-khoa')}
+                hint={t('Để trống là dùng mốc mặc định của chương trình.')}>
                 <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
                   {...lf.o(loi, 'cuoi-khoa')} value={finalWeek} placeholder={String(data.finalWeek ?? '')}
                   onChange={(e) => { setTouched(true); setFinalWeek(e.target.value); }} />
@@ -173,9 +172,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
             </div>
           ) : (
             <SectionNote>
-              Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em
-              (MT ở tuần học {data.lichMt.join(' · ')}) — xem ở Test › Kế hoạch Test.
-              Đổi tuần khai giảng không dời lịch MT của em đã có.
+              {t('Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em (MT ở tuần học {ds}) — xem ở Test › Kế hoạch Test. Đổi tuần khai giảng không dời lịch MT của em đã có.', { ds: data.lichMt.join(' · ') })}
             </SectionNote>
           )}
         </div>
