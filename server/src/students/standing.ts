@@ -223,10 +223,9 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const homNay = demoToday();
   for (const [studentId, cycle] of cycleOf) {
     const s = out.get(studentId)!;
-    /* P13: chương trình chỉ có ở bảng (KET / PET liên tục…) cũng chấm theo tỷ lệ — đọc bảng trước, hằng số dự phòng. */
-    const ratio = !!cycle.programme_code && ((programmes ??= allProgrammes()).get(cycle.programme_code)?.scoringMode ?? PROGRAMME_TEMPLATES[
-      cycle.programme_code as keyof typeof PROGRAMME_TEMPLATES
-    ]?.scoringMode) === 'ratio';
+    /* P13: chương trình chỉ có ở bảng (KET / PET liên tục…) cũng chấm theo tỷ lệ — hằng số trước, mã không có hằng số mới đọc bảng (FT không đọc thêm). */
+    const ratio = !!cycle.programme_code && (PROGRAMME_TEMPLATES[cycle.programme_code as keyof typeof PROGRAMME_TEMPLATES]?.scoringMode
+      ?? (programmes ??= allProgrammes()).get(cycle.programme_code)?.scoringMode) === 'ratio';
     s.mode = ratio ? 'ratio' : 'ielts_band';
     s.chuongTrinh = cycle.programme_code ?? null;
     const list = byStudent.get(studentId) ?? [];
