@@ -1,4 +1,6 @@
 /** PHÉP KIỂM R1-LUU-TIEP — chọn bài còn thiếu kế tiếp (`baiKeTiep`, `conThieuFt`), ngữ cảnh danh sách 'luot'. Harness do `run.ts` truyền vào. */
+import fs from 'node:fs';
+
 type Kit = { check: (n: string, fn: () => void) => void; assert: (c: unknown, m: string) => void };
 
 export async function runR1LuuTiepTests({ check, assert }: Kit) {
@@ -71,5 +73,11 @@ export async function runR1LuuTiepTests({ check, assert }: Kit) {
     const ds = d.docNguCanhDs({ loai: 'luot', ids: [5, 6], nhan: 'MB FT 101' }, 'luot', 6);
     assert(ds?.loai === 'luot' && ds.ids.join() === '5,6', JSON.stringify(ds));
     assert(d.docNguCanhDs({ loai: 'luot', ids: [5, 6], nhan: 'x' }, 'hoc-vien', 6) === null, 'khác loại → null');
+  });
+  check('HOP · nút tiếp mặc định "Lưu · bài tiếp ›"; "Lưu · em tiếp ›" chỉ ở trang một em (tiepEm)', () => {
+    const src = fs.readFileSync('web/src/modules/fasttrack/HopNhapDiem.tsx', 'utf8');
+    const em = src.split("t('Lưu · em tiếp ›')").length - 1;
+    assert(em === src.split("tiepEm ? t('Lưu · em tiếp ›')").length - 1, 'còn "Lưu · em tiếp ›" ngoài nhánh tiepEm');
+    assert(src.includes("t('Lưu · bài tiếp ›')"), 'thiếu "Lưu · bài tiếp ›"');
   });
 }

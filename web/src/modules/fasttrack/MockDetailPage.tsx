@@ -471,7 +471,7 @@ function knHop(d: Detail): KnO {
  * nhận xét (bấm là lưu, chip cuối không bỏ được); người không sửa được thấy chip tĩnh.
  */
 function KhoiNhanXet({ attemptId, cells, save, phuTrach }: {
-  attemptId: number; cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean>;
+  attemptId: number; cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean | 'trung'>;
   /** OV-13k: người xem là GV phụ trách S / GVCN / QL — ghi "Nhận xét GV phụ trách", sửa nhóm ô S (đường riêng). */
   phuTrach: ((body: { nhanXetPhuTrach?: string | null; nhomNguyenNhan?: string[] }) => Promise<boolean>) | null;
 }) {
@@ -487,8 +487,8 @@ function KhoiNhanXet({ attemptId, cells, save, phuTrach }: {
     if (sua(c) && !nhomSua) {
       return (
         <div key={c.skill} className="min-w-0 space-y-2.5">
-          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} giaTri={c.nhanXet ?? null} nenCo={nenCo(c)} onLuu={(v) => save(c.skill, { nhanXet: v })} />
-          {canNhom(c) && <NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={(v) => save(c.skill, { nhomNguyenNhan: v })} />}
+          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} giaTri={c.nhanXet ?? null} nenCo={nenCo(c)} onLuu={(v) => save(c.skill, { nhanXet: v }).then((r) => r === true)} />
+          {canNhom(c) && <NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={(v) => save(c.skill, { nhomNguyenNhan: v }).then((r) => r === true)} />}
         </div>
       );
     }

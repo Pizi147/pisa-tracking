@@ -61,7 +61,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
   ketLuanOverall?: ReactNode;
   /** Bài nhập đang mở hộp (lifted — nút chính "Nhập điểm" của bảng dưới cũng mở đúng bài). */
   mo: string | null; onMo: (k: string | null) => void;
-  save: (skill: string, patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
+  save: (skill: string, patch: SavePatch, opts?: SaveOpts) => Promise<boolean | 'trung'>;
   /** Đầu hộp: em · lớp · lượt; kỳ vọng; MT0. */
   nguCanh: Omit<NguCanhHop, 'bandTaskKia'>;
 }) {

@@ -472,7 +472,6 @@ const EN_B_WEB = {
   'Ví dụ: chấm lại bài, nhập nhầm cột': 'E.g. re-marked, typed in the wrong column',
   'Chưa lưu:': 'Not saved:',
   'Lưu điểm': 'Save score',
-  'Lưu · em tiếp ›': 'Save · next ›',
   'Bỏ điểm {skillLabel} · {tenHv}?': 'Discard {skillLabel} score · {tenHv}?',
   'Kỳ vọng {luot}:': 'Expected {luot}:',
   'dưới': 'below by',
