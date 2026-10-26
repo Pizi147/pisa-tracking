@@ -231,7 +231,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             sEx={sEx?.filter((x) => x.studentId === r.studentId)} />
         ))}
         {chiSEx.map((d) => (
-          <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] px-3.5 py-3">
+          <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] py-3 pl-6 pr-3.5">
             <span className="font-semibold">{d.ten}</span><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
           </article>
         ))}
@@ -510,7 +510,7 @@ function ChipSEx({ d, ten, studentId }: { d: SExTuan[number]; ten: string; stude
 
 /**
  * THẺ MỘT EM (điện thoại, Lịch tuần — mockup 375 khu a): tên ↗ · "MT3 · kỳ vọng 6.0" · kết quả bên phải; 5 ô L R W1 W2 S (ô `ODiemMt` cỡ lớn,
- * cùng hộp nhập / "Lưu · em tiếp ›" / lưu của bảng — không luật thứ hai); dòng dưới: dấu lưu + chip S Ex.
+ * cùng hộp nhập / "Lưu · em tiếp ›" / lưu của bảng — không luật thứ hai); dòng dưới: dấu lưu. Thụt 32 px dưới thanh lớp; S Ex là dòng phụ dưới thẻ (M2 A2-375).
  */
 function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean; tuanDangXem: string | null; tuanXem: string | null;
@@ -528,10 +528,14 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     : row.result.provisional && (row.result.sosLevel ?? 0) > 0 ? <SosLuot row={row} tam />
     : <span className="text-xs text-slate-400">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</span>;
   return (
-    <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
-      <div className="flex min-w-0 items-center gap-x-2">
-        <Link className="link inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
-        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
+    <>
+    <article className={`flex flex-col gap-1.5 border-b border-[color:var(--line)] pb-2.5 pl-6 pr-3 pt-1 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
+      <div className="flex min-w-0 items-center gap-x-1">
+        <Link className="link inline-flex min-h-[44px] min-w-0 items-center truncate text-sm font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
+        {/* M2 A2-375: "MT3 · KV 6.5" — dòng đầu một dòng (tên cắt "…" khi dài, tên đủ ở title). */}
+        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400" title={kyVong != null ? t('kỳ vọng {kv}', { kv: fmtBand(kyVong) }) : undefined}>
+          MT{row.attemptNo}{kyVong != null ? ` · ${t('KV {kv}', { kv: fmtBand(kyVong) })}` : ''}
+        </span>
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
       <div className="grid grid-cols-5 gap-1.5 text-center">
@@ -556,19 +560,26 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
           );
         })}
       </div>
-      {(status !== 'idle' || soLoi > 0 || !!sEx?.length) && (
+      {(status !== 'idle' || soLoi > 0) && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
-          {sEx?.map((d) => <ChipSEx key={d.id} d={d} ten={row.studentName} studentId={row.studentId} />)}
         </div>
       )}
     </article>
+    {/* M2 A2-375: S Ex là dòng phụ DƯỚI thẻ em (không phải một em khác). */}
+    {sEx?.map((d) => (
+      <div key={d.id} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] py-1.5 pl-6 pr-3.5 text-[13px] text-slate-400">
+        <ChipSEx d={d} ten={row.studentName} studentId={row.studentId} />{d.nguoiCham}
+      </div>
+    ))}
+    </>
   );
 }
 
 /**
- * DÒNG PHỤ S EX của một em trong tuần (UI-LICH-TUAN; 10 mục 6): chip "S Ex · dd/mm" dưới tên · GV chấm · ô điểm thẳng cột S · "không vào Overall".
- * Bấm ô (QL / Admin đổi ngày · GV S chấm) mở hộp S Ex sẵn có (`HopSEx`); máy chủ kiểm quyền, giữ lịch sử.
+ * DÒNG PHỤ S EX của một em trong tuần (UI-LICH-TUAN; 10 mục 6) — R1-PHAN-CAP-TEST (M2 A2, chủ SP 26/10): dòng phụ cao 36, chữ 13, nền thẻ; cột tên TRỐNG
+ * (không trông như một em khác), chip "S Ex" ở CỘT MT · nhận xét · ô điểm thẳng cột S · "không vào Overall" · Kết quả = "GV · tuần". Lưới không có cột MT
+ * hoặc em chỉ có S Ex (`rieng`) → tên + chip ở ô tên như cũ. Bấm ô (QL / Admin đổi ngày · GV S chấm) mở hộp S Ex sẵn có (`HopSEx`); máy chủ kiểm quyền.
  */
 function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   d: SExTuan[number]; ten: string; studentId: number; cotDs: DinhNghiaCot[]; cc: Record<string, DinhNghiaCot>;
@@ -578,25 +589,36 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   const [mo, setMo] = useState(false);
   const { homNay } = useNgayNghiepVu();
   const iS = cotDs.findIndex((c) => c.key === 'speaking');
+  const iMt = cotDs.findIndex((c) => c.key === 'mt');
   const sua = d.sua || d.cham;
   const chip = (
-    <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border border-[color:var(--hong)] bg-[color:var(--hong-nen)] px-1.5 text-xs font-bold text-[color:var(--hong-chu)]">
-      S Ex{d.ngay ? ` · ${ngay(d.ngay, homNay)}` : ''}
+    <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border border-[color:var(--hong)] bg-[color:var(--hong-nen)] px-1.5 text-xs font-bold text-[color:var(--hong-chu)]"
+      title={d.ngay ? t('S Expert ngày {ngay}', { ngay: ngay(d.ngay, homNay) }) : undefined}>
+      S Ex
     </span>
   );
+  const chipCotMt = iMt === 1 && !rieng;
+  /* Cột giữa (MT/tên … S) và cột sau S (… Kết quả): đếm theo định nghĩa cột đang hiện. */
+  const dau = chipCotMt ? 2 : 1, iKq = cotDs.length - 1;   // Kết quả luôn là cột cuối
+  const giua = (iS > 0 ? iS : iKq) - dau;   // không có cột S (mở từ việc): ô giữa trải tới Kết quả
+  const sau = iS > 0 ? iKq - iS - 1 : 0;
+  const ketQua = [d.nguoiCham, tuanLich(d.tuan, homNay)].filter(Boolean).join(' · ');
   return (
-    <tr className="do-hang" data-hv={studentId} data-sex={d.id}>
+    <tr className="do-hang dong-sex" data-hv={studentId} data-sex={d.id}>
       <OBang c={cc.hv}>
-        {rieng ? <span className="inline-flex max-w-full items-center gap-1.5"><span className="truncate font-semibold" title={ten}>{ten}</span>{chip}</span> : <span className="pl-3">{chip}</span>}
+        {rieng ? <span className="inline-flex max-w-full items-center gap-1.5"><span className="truncate font-semibold" title={ten}>{ten}</span>{chip}</span>
+          : chipCotMt ? <span className="sr-only">{t('S Expert của {ten}', { ten })}</span> : <span className="pl-3">{chip}</span>}
       </OBang>
-      <td className="td text-xs text-slate-400" colSpan={Math.max(iS - 1, 1)}>{d.nguoiCham ?? ''}{d.nhanXet ? <span className="block truncate" title={d.nhanXet}>{d.nhanXet}</span> : null}</td>
+      {chipCotMt && <OBang c={cc.mt}>{chip}</OBang>}
+      {giua > 0 && <td className="td text-xs text-slate-400" colSpan={giua}>{d.nhanXet ? <span className="block truncate" title={d.nhanXet}>{d.nhanXet}</span> : null}</td>}
       {iS > 0 && (
         <OBang c={cc.speaking}>
           <ODiem kieu={sua ? 'sua' : 'doc'} so={d.diem != null ? fmtBand(d.diem) : null} nhan="S Ex" onBam={() => setMo(true)} />
           {mo && <HopSEx studentId={studentId} ten={ten} dong={d} onDong={() => setMo(false)} onXong={() => undefined} />}
         </OBang>
       )}
-      <td className="td text-xs text-slate-500" colSpan={Math.max(cotDs.length - iS - 1, 1)}>{d.diem != null ? t('không vào Overall') : ''}</td>
+      {sau > 0 && <td className="td text-xs text-slate-500" colSpan={sau}>{d.diem != null ? t('không vào Overall') : ''}</td>}
+      <td className="td truncate text-xs text-slate-400" title={ketQua}>{ketQua}</td>
     </tr>
   );
 }
