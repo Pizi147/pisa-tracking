@@ -296,6 +296,26 @@ export async function runPrDichTests(t: any) {
       assert((await svc.dich(P.admin, yc())).banDich.length > 0, '4000 ký tự phải dịch được');
       assert(doc('shared/i18n/en/p14Dich.ts').includes("'Đoạn chữ quá dài để dịch.':"), 'thiếu khoá EN');
     });
+
+    await checkAsync('DICH-12 · máy chủ trả gocBam = sha256(chữ gốc đã đọc, trước khi che) 16 ký tự hex — cả khi trúng nhớ', async () => {
+      const crypto = await import('node:crypto');
+      const goc = `${c.hv} đọc chậm, cần luyện đọc lướt — điểm 6.5.`;
+      datMoTa(`  ${goc}\n`);
+      const bam = crypto.createHash('sha256').update(goc).digest('hex').slice(0, 16);
+      const r1 = await svc.dich(P.admin, yc());
+      const r2 = await svc.dich(P.admin, yc());
+      assert(r1.gocBam === bam && r2.gocBam === bam && r2.nho === true, `gocBam: ${r1.gocBam} ${r2.gocBam} ≠ ${bam}`);
+    });
+
+    check('DICH-13 · web ChuDich: băm chữ đang thấy cùng cách; lệch → không nhớ, "Nội dung vừa đổi"; đổi khoá → đặt lại; phản hồi muộn bị bỏ', () => {
+      const cd = doc('web/src/ui/ChuDich.tsx');
+      assert(/subtle\.digest\('SHA-256'/.test(cd) && cd.includes('.slice(0, 16)') && cd.includes('goc.trim()'), 'ChuDich không băm chữ như máy chủ');
+      assert(/useEffect\(\(\) => \{[^}]*setXemDich\(false\);[^}]*setDang\(false\);[^}]*setLoi\(null\);[^}]*\}, \[khoa\]\)/.test(cd), 'đổi khoá chưa đặt lại trạng thái');
+      assert(/khoaHienTai\.current !== k/.test(cd), 'chưa bỏ phản hồi về muộn');
+      assert(cd.includes("t('Nội dung vừa đổi.')") && cd.includes("t('Dịch lại')"), 'thiếu câu lệch chữ');
+      const en = doc('shared/i18n/en/p14Dich.ts');
+      for (const k of ['Nội dung vừa đổi.', 'Dịch lại']) assert(en.includes(`'${k}':`), `thiếu khoá EN "${k}"`);
+    });
   } finally {
     datMoTa(c?.summary ?? null);
     svc.datFetchDich(null);

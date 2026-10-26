@@ -172,7 +172,8 @@ async function goiOpenAi(che: string, den: 'vi' | 'en'): Promise<string> {
 
 // ==================================================================== đường chính
 
-export async function dich(p: Principal, body: any): Promise<{ banDich: string; nho: boolean }> {
+/** `gocBam` = 16 ký tự hex đầu của sha256(chữ gốc đã đọc, trước khi che) — web so với chữ đang thấy, lệch thì không gắn bản dịch. */
+export async function dich(p: Principal, body: any): Promise<{ banDich: string; nho: boolean; gocBam: string }> {
   const bang = String(body?.bang ?? ''), cot = String(body?.cot ?? '');
   const nguon = Object.hasOwn(NGUON_DICH, bang) ? NGUON_DICH[bang] : null;
   if (!nguon || !nguon.cot.includes(cot)) throw badRequest('Chỗ này không dịch được.');
@@ -193,12 +194,13 @@ export async function dich(p: Principal, body: any): Promise<{ banDich: string; 
   const chu = (dong.chu ?? '').trim();
   if (!chu) throw notFound('Không có chữ để dịch.');
   if (chu.length > TRAN_CHU_DICH) throw badRequest('Đoạn chữ quá dài để dịch.');
+  const gocBam = crypto.createHash('sha256').update(chu).digest('hex').slice(0, 16);
 
   const { che, bang: giuCho } = cheChu(chu, tenCanChe(dong.studentId));
   const khoa = crypto.createHash('sha256').update(`${PHIEN_BAN}\n${cfg.model}\n${den}\n${che}`).digest('hex');
   const conn = db();
   const nho = conn.prepare('SELECT ban_dich FROM ban_dich WHERE khoa = ?').get(khoa) as any;
-  if (nho) return { banDich: traLai(nho.ban_dich, giuCho), nho: true };
+  if (nho) return { banDich: traLai(nho.ban_dich, giuCho), nho: true, gocBam };
 
   const ngay = demoToday();
   tx(() => {
@@ -211,5 +213,5 @@ export async function dich(p: Principal, body: any): Promise<{ banDich: string; 
 
   const ra = await goiOpenAi(che, den);
   conn.prepare('INSERT OR IGNORE INTO ban_dich (khoa, den, ban_dich, tao_luc) VALUES (?,?,?,?)').run(khoa, den, ra, nowIso());
-  return { banDich: traLai(ra, giuCho), nho: false };
+  return { banDich: traLai(ra, giuCho), nho: false, gocBam };
 }
