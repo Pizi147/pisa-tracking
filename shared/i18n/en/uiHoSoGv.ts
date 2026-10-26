@@ -23,7 +23,6 @@ export const EN_UI_HO_SO_GV = {
   'Test (MT, Progress, Final — không gồm thi thật): theo quy tắc Overall, một lượt = một lượt Test của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi. Tiến bộ: lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (Fast Track).': "Tests (MT, Progress, Final — not real exams): Overall rule, one attempt = one student test × a skill the teacher teaches, credited at the test week. Progress: attempts scoring higher than the student's previous MT in the same skill (Fast Track).",
   'Vượt Target': 'Above Target',
   'Vượt': 'Above',
-  'kỳ vọng': 'expectation',
   'Đạt từ': 'Pass from',
   'Cần làm trước': 'Do first',
   'Theo kỹ năng': 'By skill',

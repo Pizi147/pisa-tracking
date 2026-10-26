@@ -1,8 +1,6 @@
 /** OV-13o — menu ⋯ hồ sơ học viên, Hồ sơ giáo viên. Khoá = chữ Việt trên web. */
 export const EN_OV13O = {
   /* menu ⋯ hồ sơ HV */
-  'Tạm dừng / Thôi học': 'Pause / Withdraw',
-  'Thôi học': 'Withdraw',
   'Bỏ lưu trữ': 'Unarchive',
   'Xoá học viên': 'Delete student',
   'Đề xuất sửa thông tin…': 'Propose info change…',
@@ -16,7 +14,6 @@ export const EN_OV13O = {
   'chỉ Quản trị hệ thống thấy dòng này': 'only system admins see this',
   /* Hồ sơ giáo viên */
   'Kỳ vọng đầu ra': 'Expected outcome',   // tiêu đề Case Chuyển cấp "Kỳ vọng đầu ra chưa đạt · …" (biến của mẫu '{x} chưa đạt')
-  'Kỹ năng phụ trách được': 'Can teach',
   'chưa khai': 'not set',
   'Quản lý đang xem · chỉ tính lớp, Case, yêu cầu ở {cn}': 'Manager view · only classes, cases and requests in {cn}',
   'Mở Công việc ›': 'Open Tasks ›',

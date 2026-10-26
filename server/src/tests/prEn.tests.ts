@@ -47,6 +47,27 @@ export async function runPrEnTests(t: any) {
     assert(i18n.dichSang('en', 'Chữ chưa có bản Anh {x}', { x: 1 }) === 'Chữ chưa có bản Anh 1', 'chưa có bản Anh → chữ Việt, vẫn thay biến');
   });
 
+  /* R1-EN-1 (26/10): `en.ts` trải các mô-đun nối nhau — khoá trùng mà khác giá trị thì mô-đun sau đè ngầm (vd hàm `{n} HV` bị "{n} students" đè → "1 students"). */
+  await checkAsync('EN-TRUNG · khoá có ở nhiều mô-đun shared/i18n/en/* phải cùng bản Anh (hàm so kết quả với n = 1 và n = 2)', async () => {
+    const thuMuc = fileURLToPath(new URL('../../../shared/i18n/en/', import.meta.url));   // bản dựng (dist-server) cạnh phép kiểm
+    const noi = new Map<string, { mod: string; v: unknown }[]>();
+    for (const f of fs.readdirSync(thuMuc).filter((f) => /\.[jt]s$/.test(f) && !f.endsWith('.d.ts')).sort()) {
+      const m = await import(pathToFileURL(path.join(thuMuc, f)).href);
+      for (const o of Object.values(m)) {
+        if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) noi.set(k, [...(noi.get(k) ?? []), { mod: f, v }]);
+      }
+    }
+    const ra = (k: string, v: unknown) => {
+      if (typeof v !== 'function') return String(v);
+      const b = (n: number) => Object.fromEntries(bienCua(k).split(',').filter(Boolean).map((x) => [x, x === 'n' ? n : `‹${x}›`]));
+      return `${v({ ...b(1), n: 1 })} | ${v({ ...b(2), n: 2 })}`;
+    };
+    const lech = [...noi].filter(([k, ds]) => new Set(ds.map((d) => ra(k, d.v))).size > 1)
+      .map(([k, ds]) => `"${k}": ` + ds.map((d) => `${d.mod}=${JSON.stringify(ra(k, d.v))}`).join(' / '));
+    assert(lech.length === 0, `${lech.length} khoá trùng khác giá trị: ` + lech.slice(0, 8).join(' · '));
+    assert(i18n.dichSang('en', '{n} HV', { n: 1 }) === '1 student' && i18n.dichSang('en', '{n} HV', { n: 3 }) === '3 students', `{n} HV: ${i18n.dichSang('en', '{n} HV', { n: 1 })}`);
+  });
+
   check('EN-KHOA · số ít / số nhiều ở EN ("1 day overdue" / "3 days overdue"), VI giữ chữ cũ; biến là chữ Việt có trong từ điển cũng dịch', () => {
     assert(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 1 }) === '1 day overdue', String(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 1 })));
     assert(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 3 }) === '3 days overdue', String(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 3 })));
