@@ -87,6 +87,7 @@ Sau migrate: giữ 2 lượt (Checkpoint 1 của 2 em đã chấm), tách 0, ph�
 | `sau-migrate-checkpoint1-giu-gop-1440-toi.png`, `sau-migrate-checkpoint2-4-mon-1440-toi.png`, `sau-migrate-ho-so-lop-tong-hop-1440-toi.png` | DB cũ sau migrate (lượt — không còn theo đợt): lượt đã chấm giữ L+S / R+W, đợt chưa có điểm 4 môn |
 | `sau-ho-so-pet-1440-toi.png`, `sau-ho-so-pet-375-sang.png` | đầu hồ sơ: Target 145 · Thi thật B1 Preliminary 159 · Grade B · B1 · Đạt Target |
 | `sau-kq-thi-that-pet-1440-toi.png`, `sau-kq-thi-that-pet-375-sang.png` | hộp Kết quả thi thật thang Cambridge |
+| `sau-de-xuat-sua-target-375-sang.png` | Đề xuất sửa Target (GV): "đang là 150", gõ 6.5 → "Số nguyên 120–170" tại ô |
 | `sau-sua-thong-tin-target-1440-toi.png`, `sau-sua-thong-tin-target-loi-375-sang.png` | ô Target (B1 Preliminary 120–170); gõ 99 → lỗi tại ô |
 
 Bấm thử: QL lưu KQ thi thật qua giao diện (S 150 → 152) → "Đã lưu", panel đóng, đầu hồ sơ cập nhật, `outcome` / `outcome_score` vẫn NULL;
