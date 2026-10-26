@@ -317,6 +317,8 @@ async function mayChu(t: YThucTestKit) {
         const iTt = dau.indexOf('Attempt status');
         assert(iTt >= 0 && than.every((h) => !VIET.test(String(h[iTt] ?? ''))), `Trạng thái lượt: ${than.map((h) => h[iTt]).slice(0, 5).join(' | ')}`);
         assert(JSON.stringify(than.map((h) => h[0])) === JSON.stringify(vi.sheets[i].aoa.slice(1).map((h) => h[0])), 'tên em giữ nguyên');
+        const iN = dau.indexOf('Cause groups');   // PTA #599 (4): giá trị máy dựng của cột Nhóm nguyên nhân
+        assert(iN < 0 || than.every((h) => !VIET.test(String(h[iN] ?? ''))), `Nhóm nguyên nhân: ${than.map((h) => h[iN]).filter(Boolean).slice(0, 3).join(' | ')}`);
       }
     }
     const goc = xm.xuatExcel(P.mbManager, loc({ chiNhanh: String(mb.id) }));

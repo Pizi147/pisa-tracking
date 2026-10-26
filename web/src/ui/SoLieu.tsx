@@ -211,7 +211,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     const moRong = mo === r.id && !r.xong;
     /* UI-HO-SO-GV: dòng chỉ có `lop` (không em / ngữ cảnh) trước đây mất cả câu `sub` — nay chỉ dùng đầu dòng v3 khi có em hoặc ngữ cảnh. */
     const dong2 = r.em || r.ngCanh
-      ? [r.em?.ten, r.lop, r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh && dich(r.ngCanh), r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
+      ? [r.em?.ten, r.lop, r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh, r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
       : [r.sub];
     const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
     return (

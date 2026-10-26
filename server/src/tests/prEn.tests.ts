@@ -97,8 +97,27 @@ export async function runPrEnTests(t: any) {
     assert(en === 'Test week W2 OCT has not started — scores cannot be entered yet.', en);
     assert(i18n.dichMau('en', 'Tối đa 500 em một lần lưu.') === 'Save at most 500 students at a time.', 'câu không biến');
     assert(i18n.dichSang('en', 'Thi thật {ngay}', { ngay: '12/10' }) === 'Real exam 12/10', 'Thi thật {ngay}');
-    assert(i18n.dichSang('en', 'Thi thật {kq}', { kq: '7.5' }) === 'Exam 7.5', 'Thi thật {kq}');
+    assert(i18n.dichSang('en', 'Thi thật {kq}', { kq: '7.5' }) === 'Real exam 7.5', 'Thi thật {kq}');
     assert(i18n.dichMau('en', 'tuần 5/5 · Final Test') === 'week 5/5 · Final Test', i18n.dichMau('en', 'tuần 5/5 · Final Test'));   // không "Tests Final"
+  });
+
+  /* PTA #599 (1): khoá R1-EN chỉ dùng qua t() không làm mẫu cho dich() — chữ tự do không bị dịch nửa câu. */
+  check('EN-MAU · chữ tự do không bị khoá ngắn có biến dịch nửa câu; mẫu chữ máy chủ vẫn dịch', () => {
+    for (const s of ['Đã lưu ý kiến phụ huynh', 'Lịch học bù cuối tuần', 'Đang học bổ trợ', 'Hoàn tác bước cuối']) {
+      assert(i18n.dichMau('en', s) === s, `"${s}" → "${i18n.dichMau('en', s)}"`);
+    }
+    assert(i18n.dichSang('en', 'Hoàn tác {nhan}', { nhan: 'Target' }) === 'Undo Target', 't() vẫn dịch khoá đủ');
+    assert(i18n.dichMau('en', 'Dời S · MT3 · lần 2 · Duyệt = S làm bài W4 SEP') === 'Move S · MT3 · time 2 · Approve = S sits W4 SEP', 'mẫu thẻ dời MT');
+  });
+
+  /* PTA #599 (5): lỗi máy chủ mở đầu bằng tên ô — bản Anh mở đầu bằng đúng nhãn ô (StudentManagePanel `oCuaLoi` gắn lỗi vào ô ở EN). */
+  check('EN-O · câu lỗi mở đầu bằng tên ô: bản Anh mở đầu bằng nhãn ô tiếng Anh', () => {
+    const mau: [string, string][] = [['Dự kiến thi', 'Dự kiến thi: {x}'], ['Dự kiến thi', 'Dự kiến thi không hợp lệ.'], ['Dự kiến thi', 'Dự kiến thi phải có dạng MM/YYYY.'],
+      ['Điểm đầu vào', 'Điểm đầu vào phải nằm trong khoảng 0–9.'], ['Điểm đầu vào', 'Điểm đầu vào {ten}: band 0–9, bước 0.5.'], ['Họ tên', 'Họ tên không được trống.']];
+    for (const [o, k] of mau) {
+      const en = i18n.dichSang('en', k, { x: 'a', ten: 'L' });
+      assert(en.startsWith(i18n.dichSang('en', o)), `"${en}" phải mở đầu bằng "${i18n.dichSang('en', o)}"`);
+    }
   });
 
   check('EN-KHOA · số ít / số nhiều ở EN ("1 day overdue" / "3 days overdue"), VI giữ chữ cũ; biến là chữ Việt có trong từ điển cũng dịch', () => {
@@ -483,12 +502,16 @@ export async function demChuVietGv(ds: string[], en: Record<string, unknown>): P
 
 /** R1-EN-1 EN-LOI-GV: thư mục máy chủ của đường GV (spec 4.3 (c)); câu lỗi chữ Việt (literal / template → `{x}`) mà dichMau EN trả nguyên. */
 const THU_MUC_LOI_GV = ['cham', 'fasttrack', 'normal', 'cases', 'students', 'worklist', 'congViec', 'dich', 'classes'];
+const TEP_LOI_GV = ['server/src/routes/index.ts', 'server/src/phanTich/xuatMt.ts'];
 export function loiMayChuGv(dichEn: (s: string) => string): { noi: string; chu: string }[] {
   const ts = require_ts();
   const con: { noi: string; chu: string }[] = [];
-  for (const d of THU_MUC_LOI_GV.filter((d) => fs.existsSync(path.join(GOC_REPO, 'server/src', d)))) {
-    for (const f of (fs.readdirSync(path.join(GOC_REPO, 'server/src', d), { recursive: true }) as string[]).filter((f) => /\.ts$/.test(f)).sort()) {
-      const rel = `server/src/${d}/${f}`.replace(/\\/g, '/');
+  /* PTA #599 (3): thêm tệp đường GV ngoài các thư mục trên — routes (tham số), Xuất kết quả Test (GVCN). */
+  const tep = [...THU_MUC_LOI_GV.filter((d) => fs.existsSync(path.join(GOC_REPO, 'server/src', d)))
+    .flatMap((d) => (fs.readdirSync(path.join(GOC_REPO, 'server/src', d), { recursive: true }) as string[]).filter((f) => /\.ts$/.test(f)).sort()
+      .map((f) => `server/src/${d}/${f}`.replace(/\\/g, '/'))), ...TEP_LOI_GV];
+  {
+    for (const rel of tep) {
       const sf = ts.createSourceFile(rel, fs.readFileSync(path.join(GOC_REPO, rel), 'utf8'), ts.ScriptTarget.Latest, true);
       (function duyet(n: any) {
         if ((ts.isCallExpression(n) || ts.isNewExpression(n)) && /^(badRequest|forbidden|notFound|conflict|HttpError)$/.test(n.expression.getText())) {

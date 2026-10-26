@@ -7,7 +7,7 @@ import {
 import { dichMau, type NgonNgu } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, type Principal } from '../permissions.ts';
-import { badRequest, forbidden, nowIso } from '../util.ts';
+import { forbidden, loi, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { demHienTai } from '../platform/nguCanhRequest.ts';
 import { loadBundle, resultOf, type AttemptBundle, type ScoreRow } from '../fasttrack/attempts.ts';
@@ -203,7 +203,7 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
       ORDER BY b.name, c.code, st.full_name, a.kind, a.attempt_no
       LIMIT ?`,
   ).all(...params, toiDa + 1) as any[];
-  if (luot.length > toiDa) throw badRequest(`Quá ${String(toiDa).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} lượt — thu hẹp chi nhánh hoặc thời gian.`);
+  if (luot.length > toiDa) throw loi(400, 'Quá {n} lượt — thu hẹp chi nhánh hoặc thời gian.', { n: String(toiDa).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') });
   /* PR-S4F #12: trong mỗi chi nhánh × lớp, xếp theo TÊN rồi họ (SQL chỉ xếp được theo chuỗi họ tên đầy đủ). */
   const thuTuKind = (k: string) => (k === 'progress' ? 0 : k === 'final' ? 1 : 2);
   luot.sort((a, b) => String(a.branch_name ?? '').localeCompare(String(b.branch_name ?? ''), 'vi') || soSanhLop({ code: String(a.class_code ?? '') }, { code: String(b.class_code ?? '') })
@@ -277,8 +277,14 @@ export function dichSheetXuat(sheets: { ten: string; aoa: Cell[][] }[], nn: Ngon
     const [dau = [], ...than] = s.aoa;
     const boLoc = s.ten === 'Bộ lọc đã dùng';
     const cot = new Set(['Trạng thái lượt', 'Hướng gợi ý'].map((k) => dau.indexOf(k)).filter((i) => i >= 0));
+    const iNhom = dau.indexOf('Nhóm nguyên nhân');
+    /* "R: Kỹ năng làm bài, Quản lý thời gian · W1: …" (chuNhomNguyenNhan) — giữ mã ô, dịch từng nhãn nhóm. */
+    const nhom = (c: Cell): Cell => (typeof c !== 'string' ? c : c.split(' · ').map((p) => {
+      const i = p.indexOf(': ');
+      return i < 0 ? dichMau('en', p) : `${p.slice(0, i)}: ${p.slice(i + 2).split(', ').map((x) => dichMau('en', x)).join(', ')}`;
+    }).join(' · '));
     /* Bộ lọc: cột Mục + giá trị chữ máy dựng; riêng tên người xuất giữ. */
-    const o = (h: Cell[]) => h.map((c, i) => (boLoc ? (i === 0 || h[0] !== 'Người xuất' ? d(c) : c) : cot.has(i) ? d(c) : c));
+    const o = (h: Cell[]) => h.map((c, i) => (boLoc ? (i === 0 || h[0] !== 'Người xuất' ? d(c) : c) : i === iNhom ? nhom(c) : cot.has(i) ? d(c) : c));
     return { ten: dichMau('en', s.ten), aoa: [dau.map(boLoc ? d : dau1), ...than.map(o)] };
   });
 }
@@ -289,7 +295,10 @@ export function xuatExcel(p: Principal, f: BoLocXuatMt, tranByte = XUAT_TOI_DA_B
   /* PR-S4F #12: cột Đầy đủ (có nhận xét) dễ vượt trần phản hồi 6 MB của Netlify — đo trước, báo rõ cách thu hẹp. */
   const co = Buffer.byteLength(JSON.stringify(d.sheets));
   if (co > tranByte) {
-    throw badRequest(`Tệp quá lớn (~${(co / 1e6).toFixed(1)} MB) — Thu hẹp phạm vi: chọn ít chi nhánh/lớp, khoảng thời gian ngắn hơn${f.cot === 'day-du' ? ', hoặc chọn cột Gọn' : ''}.`);
+    const mb = (co / 1e6).toFixed(1);
+    throw f.cot === 'day-du'
+      ? loi(400, 'Tệp quá lớn (~{mb} MB) — Thu hẹp phạm vi: chọn ít chi nhánh/lớp, khoảng thời gian ngắn hơn, hoặc chọn cột Gọn.', { mb })
+      : loi(400, 'Tệp quá lớn (~{mb} MB) — Thu hẹp phạm vi: chọn ít chi nhánh/lớp, khoảng thời gian ngắn hơn.', { mb });
   }
   writeAudit({
     actorUserId: p.userId, action: 'mt.xuat_excel', entityType: 'xuat_mt', after: f,

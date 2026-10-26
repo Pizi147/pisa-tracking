@@ -3,13 +3,17 @@ import type { Dich } from '../en.ts';
 
 const so = (n: unknown, mot: string, nhieu: string) => `${n} ${Number(n) === 1 ? mot : nhieu}`;
 
+/**
+ * Khoá CHỈ dùng qua t() (khoá + biến tường minh). KHÔNG làm mẫu cho dich() — khoá ngắn có biến tự do ('Đã lưu {ten}', 'Hoàn tác {nhan}')
+ * sẽ nuốt chữ tự do và dịch nửa câu ("Đã lưu ý kiến phụ huynh" → "Saved ý kiến…"). Chữ máy chủ cần dịch theo mẫu: `EN_R1_EN_MAU`.
+ */
 export const EN_R1_EN = {
   /* Tổng quan › Lịch sắp tới */
   'Hết khoá': 'Course ends',
   'Lịch sắp tới': 'Upcoming schedule',
   'Xem toàn bộ lịch ›': 'See full schedule ›',
   'Không có đợt Test nào trong tuần này.': 'No Test rounds this week.',
-  'Dự kiến thi IELTS': 'Expected IELTS exam',
+  'Dự kiến thi IELTS': 'Planned IELTS exam',
   'Chưa xác định tuần': 'Week not set',
   'tháng {m}/{y}': '{m}/{y}',
   /* Test › tìm lớp, chọn tuần */
@@ -26,7 +30,6 @@ export const EN_R1_EN = {
   'Ghi phương án': 'Write the plan',
   'Chọn lớp chuyển đến': 'Pick the target class',
   'chờ KQ thi thật': 'awaiting real exam result',
-  'Buổi {n}: {x}': 'Session {n}: {x}',
   /* Hồ sơ HV › Lộ trình (lịch MT) */
   'Mở hồ sơ MT': 'Open MT profile',
   'kỳ vọng {band}': 'expected {band}',
@@ -451,7 +454,7 @@ export const EN_R1_EN = {
   'Ví dụ: 0912 345 678': 'E.g. 0912 345 678',
   'Lộ trình đang học': 'Current pathway',
   'Lớp thường: Target và Dự kiến thi chỉ để theo dõi — không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.':
-    'Normal class: Target and Expected exam are for tracking only — no expected bands or SOS from Target. Record plans after this class under Next pathway.',
+    'Normal class: Target and Planned exam are for tracking only — no expected bands or SOS from Target. Record plans after this class under Next pathway.',
   'Lịch MT sửa ở mục Lộ trình. Đổi Target ở đâu cũng bắt ghi lý do.': 'Edit the MT schedule under Pathway. Changing the Target anywhere needs a reason.',
   'Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.': 'Saved as a change request — the Target changes once a manager approves.',
   'Band 0–9, bước 0,5.': 'Band 0–9, step 0.5.',
@@ -464,13 +467,12 @@ export const EN_R1_EN = {
   'Đề xuất sửa lộ trình / thông tin khác…': 'Request a pathway / other change…',
   'Đang lấy từ MT{n} · gõ tay thì thay': 'Taken from MT{n} · typing replaces it',
   'Đủ L R W S thì Overall tự tính': 'Overall is calculated when L R W S are all filled in',
-  'Em chưa có lộ trình — Dự kiến thi, Target, Điểm đầu vào sửa được sau khi em vào lớp.': 'No pathway yet — Expected exam, Target and Entry band can be edited once the student joins a class.',
+  'Em chưa có lộ trình — Dự kiến thi, Target, Điểm đầu vào sửa được sau khi em vào lớp.': 'No pathway yet — Planned exam, Target and Entry score can be edited once the student joins a class.',
   'Tên phụ huynh': 'Parent name',
   'Thi thật {ngay}': 'Real exam {ngay}',
   /* Tệp Xuất kết quả Test theo tiếng người bấm (Task 6) */
   'Người nhập': 'Entered by',
   'Hướng gợi ý': 'Suggested next step',
-  'Thiếu điểm {a}/{b}': 'Missing scores {a}/{b}',
   'đã huỷ phần còn lại': 'rest cancelled',
   'SOS tạm thời': 'provisional SOS',
   'không cam kết': 'no commitment',
@@ -490,12 +492,18 @@ export const EN_R1_EN = {
   'SOS: 0 = đạt kỳ vọng, 1–3 = số kỹ năng dưới kỳ vọng; trống = chưa tính được hoặc học viên không cam kết.': 'SOS: 0 = expected met, 1–3 = number of skills below expected; empty = not available yet or no commitment.',
   'Overall chỉ có khi đủ 4 kỹ năng.': 'Overall only appears with all 4 skills.',
   '% = điểm đạt / tổng điểm của từng môn; % tổng chỉ có khi đủ điểm mọi môn.': '% = score / total per subject; % total only appears when every subject is scored.',
-  'Theo tuần: {tu} – {den}': 'By week: {tu} – {den}',
-  'Theo tháng: {tu} – {den}': 'By month: {tu} – {den}',
-  'Theo đợt: {ds}': 'By round: {ds}',
   /* Tên bài giữ nguyên (mẫu 'Final {ct}' khớp nhầm 'Final Test' → 'Tests Final') */
   'Final Test': 'Final Test',
   'Progress Test': 'Progress Test',
+} satisfies Record<string, Dich>;
+
+/** Mẫu dịch chữ máy chủ / dữ liệu dựng sẵn qua dich() (câu đủ dài, biến là số / mã / danh sách). */
+export const EN_R1_EN_MAU = {
+  'Buổi {n}: {x}': 'Session {n}: {x}',
+  'Thiếu điểm {a}/{b}': 'Missing scores {a}/{b}',
+  'Theo tuần: {tu} – {den}': 'By week: {tu} – {den}',
+  'Theo tháng: {tu} – {den}': 'By month: {tu} – {den}',
+  'Theo đợt: {ds}': 'By round: {ds}',
   /* Thẻ dời MT lần 2 — câu máy chủ đổi "thi" → "làm bài" (absence.ts chuTheDoiLan2) */
   'Dời {k} · MT{x} · lần {moveNo} · Duyệt = {k2} làm bài {x2}': 'Move {k} · MT{x} · time {moveNo} · Approve = {k2} sits {x2}',
 } satisfies Record<string, Dich>;
