@@ -26,6 +26,14 @@ export async function runPrOv15i1Tests(t: YThucTestKit) {
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const QL = P.mbManager.userId as number;
   const lop = one(`SELECT id FROM classes WHERE code = 'MB FT 101'`).id as number;
+  /** Nhật ký góp ý tuần cũ (ghi đã khoá — R1-NO-NHO, D14): cùng dạng `gop_y_tuan.ghi` đường ghi cũ để Lịch sử đọc. */
+  const { writeAudit } = await import('../platform/audit.ts');
+  const { tuanLich } = await import('../../../shared/domain/index.ts');
+  const { mondayOf } = await import('../platform/week.ts');
+  const gopYCu = (sid: number, nhan: string, cu: string | null, moi: string) => writeAudit({
+    actorUserId: QL, action: 'gop_y_tuan.ghi', entityType: 'student', entityId: sid,
+    entityLabel: `MB FT 101 · ${tuanLich(mondayOf(TODAY), TODAY)} · ${nhan}`, before: cu === null ? null : { noiDung: cu }, after: { noiDung: moi },
+  });
   const maLop = 'MB FT 101';
 
   const may = createApp().listen(0);
@@ -196,7 +204,7 @@ export async function runPrOv15i1Tests(t: YThucTestKit) {
     });
 
     await checkAsync('OV15i1-6 · Chữ máy chủ ghép động có bản EN: "Góp ý · {tuần} · {môn}", "Lịch · {môn}", "{môn} · Nhận xét"', async () => {
-      await ghi(QL, `/classes/${lop}/gop-y`, 'PUT', { studentId: a, tuan: TODAY, skill: 'listening', noiDung: 'OV15i1 góp ý' });
+      gopYCu(a, 'Listening', null, 'OV15i1 góp ý');
       const g = (await ls('gop-y', lop)).dong[0].truong[0].ten;
       const luot = one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY id LIMIT 1`, a).id as number;
       const o = (await ls('o', luot)).dong[0].truong[0].ten;

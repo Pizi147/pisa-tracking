@@ -318,8 +318,9 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                           );
                         })}
                         <td className="td px-2 py-1.5 align-top text-xs">
-                          {monTom.length ? <span className="text-soon">{monTom.map((x) => dich(x)).join(' · ')}</span>
-                            : mt ? <span className="text-soon">{dich(mt.cau)}</span>
+                          {/* R1-NO-NHO: một dòng (cắt + title) — câu dài làm dòng đã chọn cao gấp đôi; đủ câu ở chân panel. */}
+                          {monTom.length ? <span className="block truncate pt-1.5 text-soon" title={monTom.map((x) => dich(x)).join(' · ')}>{monTom.map((x) => dich(x)).join(' · ')}</span>
+                            : mt ? <span className="block truncate pt-1.5 text-soon" title={dich(mt.cau)}>{dich(mt.cau)}</span>
                             : Object.keys(doi).length ? <span className="inline-flex items-center gap-1.5 text-slate-300"><span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: 'rgb(var(--soon-rgb))' }} />{t('đã sửa')}</span>
                             : <span className="text-slate-500">—</span>}
                         </td>
