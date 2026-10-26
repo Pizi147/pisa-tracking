@@ -1054,12 +1054,14 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* MAIN-DO: chụp lại theo dữ liệu SEED-UX cuối (BU_MT2, 32504e72 → 9a078719) — so JSON 58a2d268 ↔ 9a078719: việc lệch CHỈ ở 4 em MT2 chưa đạt
        (Ngô Bảo Châu, Lý Thanh Tâm, Phạm Khánh Linh, Kiều Thảo Nhi: việc Case MT2; Case cũ của Kiều Thảo Nhi đổi) và dòng lớp MB FT 101 (MT2 dời W3 AUG); id Case dời. ADMIN giữ.
        SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
+    /* P8 MON-DANG-KY: chụp lại 'QT tat-ca' — so JSON origin/main 10cbbad ↔ nhánh (seed mới, QT "Tất cả"): lệch CHỈ việc "Thêm PA học thuật Speaking · Bùi Thu Ninh"
+       (seed cho em không học S → Case S đóng "Không còn học môn", N13 Q5) + tổng / quá hạn −1. 10 băm khác giữ. Trước: QT tat-ca 50944d5f2d8af799 */
     /* P9a XET-LAI (sau gộp P9b / P7): so JSON origin/main 87a3bc3 ↔ nhánh (GVCN / GVBM MB FT 101, QL, QL tất cả, QT): lệch CHỈ do bộ demo Xét lại (4 em
        MB FOU 25 → MB BE 05): "Bàn giao 4 em · MB FOU 25" (GVCN, QL tất cả), "Xét lại lộ trình · MB BE 05 / MB FOU 25" (QL / QT), "Báo phụ huynh qua TVV ·
        Hứa Đức Anh 46%", "Ghi Mini Test" 2 em bổ trợ (55 / 57 %). ADMIN giữ. Trước (P9b): QL toi 53d8168836891e39, QT toi 3111c55ff8027ff3, GVCN toi 48d4fd7f1dc1645a,
        GVBM toi bbfbcccdcf9d71b4, QL tat-ca dd8a7166b581b998, QT tat-ca 364be4cb77b9f362, QT tat-ca cn 7166c9b66b3098c4, QL gvcn 5afa68eea7a17883, GVS toi 8b6b85a70a44d3dd */
     'QL toi': 'e1049bc984a18aca', 'QT toi': '7de7b28ab5fe8b93', 'GVCN toi': 'a298f2a5bc0f779f', 'GVBM toi': 'd2ae222a70a8ab15',
-    'GVCN_THUONG toi': 'a298f2a5bc0f779f', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '0674f0c5032b5a23', 'QT tat-ca': '50944d5f2d8af799',
+    'GVCN_THUONG toi': 'a298f2a5bc0f779f', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '0674f0c5032b5a23', 'QT tat-ca': '29589ca377874d07',
     'QT tat-ca cn': 'de4df8179b21e493', 'QL gvcn': 'cab96ce5168b2724', 'GVS toi': '1f37a0df4f07d06d',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
