@@ -128,6 +128,10 @@ const LOI_GOI = 'Chưa dịch được. Bản gốc vẫn giữ — thử lại 
 /* Tham số theo developers.openai.com (đọc 26/10/2026): Chat Completions `max_completion_tokens` (`max_tokens` đã deprecated);
    `reasoning_effort` 'none' có ở gpt-6-luna và gpt-5.4-mini (5.4-mini không có 'minimal'). 2000 token ra > bản dịch của 4000 ký tự vào. */
 const TRAN_TOKEN_RA = 2000;
+/* Trần chữ vào. Cột có giới hạn nhập dài nhất là mô tả Case / PA (2000, `sosAuto.ts`); nhận xét Test chưa có trần nhập ở máy chủ → 4000 đủ rộng. */
+export const TRAN_CHU_DICH = 4000;
+/** Đổi prompt → tăng; cùng model + đích + chữ đã che mới dùng lại bản nhớ. */
+const PHIEN_BAN = 'p2';
 
 async function goiOpenAi(che: string, den: 'vi' | 'en'): Promise<string> {
   const cfg = cauHinhDich();
@@ -188,9 +192,10 @@ export async function dich(p: Principal, body: any): Promise<{ banDich: string; 
   const dong = nguon.doc(p, id, cot, kyNang);
   const chu = (dong.chu ?? '').trim();
   if (!chu) throw notFound('Không có chữ để dịch.');
+  if (chu.length > TRAN_CHU_DICH) throw badRequest('Đoạn chữ quá dài để dịch.');
 
   const { che, bang: giuCho } = cheChu(chu, tenCanChe(dong.studentId));
-  const khoa = crypto.createHash('sha256').update(`${den}\n${che}`).digest('hex');
+  const khoa = crypto.createHash('sha256').update(`${PHIEN_BAN}\n${cfg.model}\n${den}\n${che}`).digest('hex');
   const conn = db();
   const nho = conn.prepare('SELECT ban_dich FROM ban_dich WHERE khoa = ?').get(khoa) as any;
   if (nho) return { banDich: traLai(nho.ban_dich, giuCho), nho: true };

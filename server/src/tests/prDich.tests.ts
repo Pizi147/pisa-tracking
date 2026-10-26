@@ -273,6 +273,29 @@ export async function runPrDichTests(t: any) {
       traVe = traMacDinh;
       assert(e?.status === 502, `rơi dấu thoát mà vẫn nhận: ${e?.status}`);
     });
+
+    await checkAsync('DICH-12a · khoá nhớ có phiên bản: đổi DICH_MODEL → cùng chữ gọi lại; cùng model → trúng nhớ', async () => {
+      datMoTa('Em cần luyện nghe chép chính tả.');
+      await svc.dich(P.admin, yc());
+      const n = gui.length;
+      assert((await svc.dich(P.admin, yc())).nho === true && gui.length === n, 'cùng model không trúng nhớ');
+      datEnv({ DICH_MODEL: 'gpt-5.4-mini' });
+      try {
+        const r = await svc.dich(P.admin, yc());
+        assert(r.nho === false && gui.length === n + 1 && gui[gui.length - 1].than.model === 'gpt-5.4-mini', 'đổi model vẫn dùng bản cũ');
+      } finally { datEnv({ DICH_MODEL: undefined }); }
+    });
+
+    await checkAsync('DICH-14 · chữ > 4000 ký tự → 400 "Đoạn chữ quá dài để dịch.", không gọi, không tính lượt; đúng 4000 vẫn dịch', async () => {
+      datMoTa('a'.repeat(4001));
+      const n = gui.length, luot = demLuot();
+      const e = await loiCua(() => svc.dich(P.admin, yc()));
+      assert(e?.status === 400 && e.message === 'Đoạn chữ quá dài để dịch.', `quá dài: ${e?.status} ${e?.message}`);
+      assert(gui.length === n && demLuot() === luot, 'quá dài mà vẫn gọi / tính lượt');
+      datMoTa('Em ' + 'a'.repeat(3997));
+      assert((await svc.dich(P.admin, yc())).banDich.length > 0, '4000 ký tự phải dịch được');
+      assert(doc('shared/i18n/en/p14Dich.ts').includes("'Đoạn chữ quá dài để dịch.':"), 'thiếu khoá EN');
+    });
   } finally {
     datMoTa(c?.summary ?? null);
     svc.datFetchDich(null);
