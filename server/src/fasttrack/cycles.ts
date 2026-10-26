@@ -536,6 +536,12 @@ export function loiDoiTarget(p: Principal, c: any, t: { kck: boolean }): HttpErr
   return null;
 }
 
+/** P13: dòng nhật ký nhớ thang Target (KET / PET) — Lịch sử thay đổi vẫn định dạng đúng khi không tra được lộ trình (`lichSuSua`). */
+export const kyThiAudit = (c: { route?: string | null; programme_code?: string | null }) => {
+  const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+  return kt ? { kyThi: kt.ma } : {};
+};
+
 export function reviseTarget(p: Principal, cycleId: number, input: {
   /** Số, `null`/'' (chưa có), "6.5 KCK" hoặc KCK / '-' / "không cam kết" (Q29-1, OV-9: KCK là dấu riêng). */
   newTarget: number | string | null; effectiveFrom?: string; reason?: string | null;
@@ -574,7 +580,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
       createdBy: p.userId, dedupKey: `target-rev:${Number(info.lastInsertRowid)}`,
     });
     writeAudit({ actorUserId: p.userId, action: 'cycle.target.revise', entityType: 'learning_cycle',
-      entityId: cycleId, before: { target: c.target_score, khongCamKet: !!c.khong_cam_ket }, after: { target, khongCamKet: kck, effectiveFrom, reason } });
+      entityId: cycleId, before: { target: c.target_score, khongCamKet: !!c.khong_cam_ket }, after: { target, khongCamKet: kck, effectiveFrom, reason, ...kyThiAudit(c) } });
     return { cycle: cycleById(cycleId), revision: conn.prepare('SELECT * FROM cycle_target_revisions WHERE id = ?')
       .get(Number(info.lastInsertRowid)) };
   });

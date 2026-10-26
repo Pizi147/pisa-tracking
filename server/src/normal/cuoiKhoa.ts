@@ -1,7 +1,7 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
-  type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill,
+  type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, boMonTheoLuot,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
@@ -57,7 +57,7 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
   for (const [id, l] of luot) {
     const prog = l.ct ? chuongTrinh.get(l.ct) : null;
     if (!prog || prog.scoringMode !== 'ratio') continue;
-    const kq = evaluateRegular(prog.skills, diem.get(id) ?? [], prog.code, l.nguong ?? undefined);   // OV-6b1: ngưỡng lớp đọc cùng câu
+    const kq = evaluateRegular(boMonTheoLuot(prog.skills, (diem.get(id) ?? []).map((x: any) => x.skill)), diem.get(id) ?? [], prog.code, l.nguong ?? undefined);   // P13: bộ môn theo lượt   // OV-6b1: ngưỡng lớp đọc cùng câu
     out.set(id, {
       tyLe: kq.tyLeTong, du: kq.complete, nguong: kq.passThreshold, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
       monTruot: kq.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill),

@@ -114,7 +114,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
     const sauNk = { ...ghi, ngayThi: ngayLuu, khongThi, ghiChu };
     if (Object.keys(sauNk).some((k) => (sauNk as any)[k] !== (truocNk as any)[k])) {   // ovr / kết luận suy từ điểm — không tự thành lần đổi
       writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
-        before: truocNk, after: { ...sauNk, ovr: kq.ovr, ketLuan: kq.ketLuan } });
+        before: truocNk, after: { ...sauNk, ovr: kq.ovr, ketLuan: kq.ketLuan, ...(kt ? { kyThi: kt.ma } : {}) } });
     }
     return cycleById(cycleId);
   });

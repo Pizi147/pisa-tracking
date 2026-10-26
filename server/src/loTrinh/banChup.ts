@@ -199,7 +199,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     });
     const plan = laFt ? examPlanOf(c) : null;
     const luotCuoiKhoa = luot.filter((a) => a.kind === 'final' && a.status !== 'cancelled').at(-1);
-    const tyLe = !laFt && luotCuoiKhoa ? evaluateRegular(mon, diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong).tyLeTong : null;
+    const tyLe = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, (diemCua.get(luotCuoiKhoa.id) ?? []).map((x: any) => x.skill)), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong).tyLeTong : null;
     const routeMoi = o.routeMoi !== undefined ? o.routeMoi : (cungEm.get(c.student_id) ?? []).find((x) => x.seq > c.seq)?.route ?? null;
     const lan = (lanCuoi.get(c.id) ?? 0) + 1;
 

@@ -52,11 +52,11 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   if (truong === 'lich-mt') throw badRequest('Lịch Test do Quản lý xử lý — không gửi đề xuất.');   // luật 09/10; thẻ cũ vẫn hiện để đóng
   if (!(TRUONG_DE_XUAT as readonly string[]).includes(String(truong))) throw badRequest('Chọn thông tin cần sửa.');
   const lyDo = lyDoDeXuat(body.lyDo);
-  const { cu, moi } = kiemGiaTriDeXuat(conn, studentId, truong, body.moi);
+  const { cu, moi, kyThi } = kiemGiaTriDeXuat(conn, studentId, truong, body.moi);   // P13: thẻ nhớ thang (KET / PET)
   return tx(() => {
     const id = taoYeuCau(conn, {
       loai: 'sua_thong_tin', doiTuongLoai: `student:${truong}`, doiTuongId: studentId, hocVienId: studentId,
-      nguoiXin: p.userId, lyDo, duLieu: { truong, cu, moi },
+      nguoiXin: p.userId, lyDo, duLieu: { truong, cu, moi, ...(kyThi ? { kyThi } : {}) },
     });
     if (id === null) throw badRequest(`Đã có một đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} của em đang chờ Quản lý duyệt — sửa ở Công việc › Yêu cầu của tôi.`);
     writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id,

@@ -359,4 +359,71 @@ export async function runPrKetPetTests(t: any) {
     assert(sau.target_score === 140 && sau.khong_cam_ket === 0 && applied.some((x) => /KCK/.test(x)), `${JSON.stringify(sau)} ${applied}`);
   }));
 
+  /* ===== Vòng 2 (PTA Plan 26/10) ===== */
+  const cuoiKhoaSvc: any = await import('../normal/cuoiKhoa.ts');
+  const standingSvc: any = await import('../students/standing.ts');
+  const classSvc: any = await import('../classes/classes.ts');
+
+  check('KP-5a · lượt đã ghi môn gộp cũ: tỷ lệ cuối khoá (tyLeTongLo) + hiện trạng hồ sơ (standingFor) theo bộ môn của lượt (L+S / R+W), không 0/4', () => thu(() => {
+    const { a } = dungCu();
+    const [cp1a] = cps(a);
+    mig.migratePrKetPet(conn, []); xoaNho();
+    const tl = cuoiKhoaSvc.tyLeTongLo([cp1a.id]).get(cp1a.id);
+    assert(tl?.du === true && tl.required === 2 && tl.scored === 2 && tl.tyLe != null, `tyLeTongLo: ${JSON.stringify(tl)}`);
+    const st = standingSvc.standingFor([a]).get(a);
+    assert(st?.attemptId === cp1a.id && st.required === 2 && st.scored === 2, `standing: ${JSON.stringify({ id: st?.attemptId, r: st?.required, s: st?.scored })}`);
+  }));
+
+  check('KP-5b · phân công sau migrate: gửi lại bức tranh có dòng môn gộp → không 400; bỏ dòng gộp khi ô gộp còn trống → GIỮ, ô đã đủ → kết thúc', () => thu(() => {
+    const { lop, c } = dungCu();
+    mig.migratePrKetPet(conn, []); xoaNho();
+    const dang = () => all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, lop.id);
+    const slots = dang().map((x) => ({ userId: x.user_id, skill: x.skill, isCore: x.is_core === 1 }));
+    const e = loi(() => classSvc.setClassTeachers(P.admin, lop.id, { slots }));
+    assert(e === null, `gửi lại bức tranh có môn gộp: ${e?.status} ${e?.message}`);
+    xoaNho();
+    /* Bỏ hai dòng gộp: R+W của em C còn trống → giữ dòng R+W. */
+    const khongGop = slots.filter((x) => x.skill !== 'listening_speaking' && x.skill !== 'reading_writing');
+    classSvc.setClassTeachers(P.admin, lop.id, { slots: khongGop }); xoaNho();
+    assert(dang().some((x) => x.skill === 'reading_writing' && x.user_id === GV_RW), 'dòng R+W bị kết thúc khi ô còn cần');
+    /* Nhập nốt ô R+W → hết việc → kết thúc như mọi dòng. */
+    nhap(cps(c)[0].id, { reading_writing: [60, 80] });
+    assert(!classSvc.monGopConCan(lop.id).has('reading_writing'), 'R+W hết việc vẫn còn cần');
+    classSvc.setClassTeachers(P.admin, lop.id, { slots: khongGop }); xoaNho();
+    assert(!dang().some((x) => x.skill === 'reading_writing'), 'R+W hết việc mà không kết thúc');
+  }));
+
+  check('KP-5c · migrate: Target khoá KET / PET ngoài thang (band cũ) → NULL, ghi applied; kiểm trước đếm targetSai', () => thu(() => {
+    const c = emPet();
+    conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE id = ?').run(c.id); xoaNho();
+    assert(mig.kiemTruocKetPet(conn).targetSai >= 1, 'kiemTruoc không đếm Target ngoài thang');
+    const applied: string[] = [];
+    mig.migratePrKetPet(conn, applied); xoaNho();
+    assert(one('SELECT target_score FROM learning_cycles WHERE id = ?', c.id).target_score === null, 'Target 6.5 còn ở khoá PET');
+    assert(applied.some((x) => /Target/.test(x)) && mig.kiemTruocKetPet(conn).targetSai === 0, applied.join(' | '));
+  }));
+
+  check('KP-5d · migrate: lượt đã huỷ / đang có kết quả huỷ (ket_qua_huy) không tách; case_signals không đụng', () => thu(() => {
+    const { a, b } = dungCu();
+    const [, cp2a] = cps(a); const cp1b = cps(b)[0].id;
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(cp1b);
+    conn.prepare(`INSERT INTO ket_qua_huy (attempt_id, diem_json, lich_json, so_diem, ly_do, huy_luc) VALUES (?, '[]', '[]', 0, 'thử', ?)`).run(cp2a.id, TODAY);
+    conn.prepare(`INSERT INTO case_signals (student_id, attempt_id, class_id, skill, category, detected_on, raised_on, verify_due, status, dedup_key, created_at)
+      VALUES (?, ?, NULL, 'listening_speaking', 'listening_speaking', ?, ?, ?, 'pending', 'kp5d', ?)`).run(b, cp1b, TODAY, TODAY, TODAY, TODAY);
+    const sigTruoc = JSON.stringify(all('SELECT * FROM case_signals ORDER BY id'));
+    mig.migratePrKetPet(conn, []); xoaNho();
+    assert(monLuot(cp1b) === 'listening_speaking,reading_writing', `lượt huỷ bị tách: ${monLuot(cp1b)}`);
+    assert(monLuot(cp2a.id) === 'listening_speaking,reading_writing', `lượt có kết quả huỷ bị tách: ${monLuot(cp2a.id)}`);
+    assert(JSON.stringify(all('SELECT * FROM case_signals ORDER BY id')) === sigTruoc, 'case_signals đổi');
+  }));
+
+  check('KP-5e · ensureSkillRows: lượt có dòng lịch môn gộp, chưa có điểm → không chèn thêm 4 môn tách', () => thu(() => {
+    const { b } = dungCu();
+    const cp1b = cps(b)[0].id;
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(cp1b);   // lượt huỷ giữ dòng gộp (KP-5d)
+    mig.migratePrKetPet(conn, []); xoaNho();
+    schedSvc.ensureSkillRows(cp1b); xoaNho();
+    assert(monLuot(cp1b) === 'listening_speaking,reading_writing', `chèn trùng: ${monLuot(cp1b)}`);
+  }));
+
 }

@@ -20,6 +20,7 @@ if (process.argv[1] && /kiemTruocKetPet\.[jt]s$/.test(process.argv[1])) {
     console.log(`  Phân công GV môn gộp sẽ thêm dòng môn tách (dòng gộp giữ): ${r.phanCongThem}`);
     console.log(`  Case mở theo môn gộp (giữ nguyên): ${r.caseMoGop}`);
     console.log(`  Lộ trình KET / PET có dấu KCK (sẽ bỏ dấu, Target giữ): ${r.kck}`);
+    console.log(`  Lộ trình KET / PET có Target ngoài thang Cambridge (sẽ để trống): ${r.targetSai}`);
   } catch (e) {
     console.error(`[kiem-truoc-ket-pet] ${(e as Error).message}`);
     process.exitCode = 1;

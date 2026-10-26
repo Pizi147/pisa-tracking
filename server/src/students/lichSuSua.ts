@@ -109,8 +109,8 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
       if (tr && tr.uid === r.uid && tr.nguon === nguon && Math.abs(Date.parse(tr.luc) - Date.parse(r.luc)) <= 5000
         && GOP.has(r.action) && [...tr.hd].every((x) => GOP.has(x))) {
         for (const [c, [cu, moi]] of doi) tr.doi.set(c, [cu, tr.doi.get(c)?.[1] ?? moi]);
-        tr.id = r.id; tr.hd.add(r.action); tr.ct ??= r.ct ?? null;
-      } else khoi.push({ id: r.id, luc: r.luc, uid: r.uid, nguoi: r.ten ?? 'Hệ thống', nguon, hd: new Set([r.action]), doi, ct: r.ct ?? null });
+        tr.id = r.id; tr.hd.add(r.action); tr.ct ??= ctCua(r, f);
+      } else khoi.push({ id: r.id, luc: r.luc, uid: r.uid, nguoi: r.ten ?? 'Hệ thống', nguon, hd: new Set([r.action]), doi, ct: ctCua(r, f) });
     }
   }
   /* Còn dòng chưa đọc → khối cuối có thể nối tiếp ở trang sau: bỏ, đọc lại từ đó (con trỏ = id nhỏ nhất đã giữ). */
@@ -169,7 +169,7 @@ export function truongSuaCaLop(tu: number, den: number): { ten: string; cu: stri
     const sid: number | null = r.sid ?? (r.et === 'student' ? r.eid : null);
     const khoa = sid !== null ? `s${sid}` : `${r.et}:${r.eid}`;
     const em = theoEm.get(khoa) ?? { hv: r.hv ?? null, sid, doi: new Map(), ct: null };
-    em.ct ??= r.ct ?? null;
+    em.ct ??= ctCua(r, docJson(r.f));
     theoEm.set(khoa, em);
     for (const [c, [cu, moi]] of doiCuaDong(r, docJson(r.f), null)) em.doi.set(c, [em.doi.has(c) ? em.doi.get(c)![0] : cu, moi]);
   }
@@ -205,6 +205,11 @@ function tenTheoLo(ds: { doi: Map<string, [unknown, unknown]> }[]): BangTen {
     out[k] = new Map(ids.length ? (db().prepare(`${SQL[k]} WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((r) => [r.id, r.t]) : []);
   }
   return out;
+}
+
+/** P13: thang Target của dòng — tra theo lộ trình; không tra được (lộ trình đã xoá…) thì theo `kyThi` dòng nhật ký ghi (`kyThiAudit`). */
+function ctCua(r: { ct?: string | null; b: string | null }, f: Record<string, any>): string | null {
+  return r.ct ?? (typeof f.kyThi === 'string' ? f.kyThi : null) ?? (typeof docJson(r.b).kyThi === 'string' ? docJson(r.b).kyThi : null);
 }
 
 /** `ct`: mã chương trình của lộ trình (lộ trình lớp thường) — KET / PET hiện Target theo thang Cambridge (số nguyên), không định dạng band. */

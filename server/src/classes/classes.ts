@@ -4,7 +4,7 @@ import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
-  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot,
+  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, MON_GOP,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -1114,9 +1114,12 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
     .all(classId) as any[];
 
   let added = 0; let ended = 0;
+  const gopCan = monGopConCan(classId);
   for (const a of active) {
     const k = keyOf(a.user_id, a.skill, a.is_core);
     if (wanted.has(k)) { wanted.delete(k); continue; }
+    /* P13 KET-PET: dòng môn gộp cũ (L+S, R+W) còn ô chưa chấm / Case mở → GIỮ (người phụ trách ô cũ); hết việc thì kết thúc như mọi dòng. */
+    if (a.skill && !a.is_core && gopCan.has(a.skill)) continue;
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`).run(ngay, a.id);
     ended += 1;
   }
@@ -1140,6 +1143,22 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
     });
   }
   return { added, ended };
+}
+
+/**
+ * P13 KET-PET: môn gộp cũ (L+S, R+W) lớp CÒN cần người phụ trách — lượt chưa huỷ còn ô môn gộp chưa có điểm / dấu "-", hoặc Case đang mở theo môn gộp
+ * của lượt thuộc lớp. Phân công giữ dòng môn gộp của các môn này (không ai mất việc nhập điểm / xử lý Case cũ).
+ */
+export function monGopConCan(classId: number): Set<string> {
+  const gop = Object.keys(MON_GOP);
+  const ph = gop.map(() => '?').join(',');
+  return new Set((db().prepare(
+    `SELECT DISTINCT k.skill AS m FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+      WHERE a.class_id = ? AND a.status != 'cancelled' AND k.skill IN (${ph})
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = k.skill AND (s.raw_score IS NOT NULL OR s.no_show_period_id IS NOT NULL))
+     UNION SELECT DISTINCT COALESCE(sc.topic, sc.category) FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE a.class_id = ? AND sc.status != 'done' AND COALESCE(sc.topic, sc.category) IN (${ph})`,
+  ).all(classId, ...gop, classId, ...gop) as any[]).map((r) => r.m as string));
 }
 
 /** Ô GVCN của một bức tranh phân công: dòng `isCore` + ô Tổng hợp Pre FOU (GVCN tự nhận, G2/T56) — GVCN không tự đổi ô này. */
@@ -1179,7 +1198,9 @@ export function setClassTeachers(p: Principal, classId: number, input: { slots?:
   kiemPhienBan(dongCu);
   const cu = dongCu.map((a) => ({ userId: a.user_id as number, skill: a.skill as string | null, isCore: a.is_core === 1 }));
   if (!full && oCore(cu) !== oCore(slots)) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Quản lý chi nhánh.');
-  kiemTruocPhanCong(classId, cls.branch_id, ct, classSkills, slots);
+  /* P13: môn gộp cũ đang có dòng phân công (giữ cho ô / Case cũ) là môn hợp lệ khi bức tranh gửi lại — không 400 "Lớp không có môn này". */
+  const monGopCo = [...new Set(cu.map((x) => x.skill).filter((k): k is string => !!k && Object.hasOwn(MON_GOP, k) && !classSkills.includes(k)))];
+  kiemTruocPhanCong(classId, cls.branch_id, ct, [...classSkills, ...monGopCo], slots);
 
   const tom = (ds: typeof cu) => ds.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort();
   return tx(() => {

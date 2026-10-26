@@ -8,7 +8,7 @@
  */
 import {
   COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, mondayOfDate, kyNangPhuTrach, laChamCheo, nhanDotNgan, oTuTap, tenMonNgan, boMonLich,
-  type ChiSoHoSoGv, type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq,
+  type ChiSoHoSoGv, type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq, boMonTheoLuot,
 } from '../../../shared/domain/index.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { db } from '../db.ts';
@@ -186,7 +186,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
       });
     };
     if (a.scoring_mode === 'ratio') {
-      const bo = boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills);
+      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), scores.map((x: any) => x.skill));   // P13: bộ môn theo lượt
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, c.homNay, bo);
       for (const skill of bo) {
         const v = views.get(skill);
