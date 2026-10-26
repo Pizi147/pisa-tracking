@@ -31,12 +31,10 @@ CREATE UNIQUE INDEX ux_xet_lai_tu_dong ON xet_lai_lo_trinh (student_id, lenh_id,
 export function migratePrXetLai(conn: any, applied: string[]) {
   if (!conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'xet_lai_lo_trinh'").get()) {
     conn.exec(XET_LAI_SQL);
-    applied.push('P9a XET-LAI: bảng xet_lai_lo_trinh (quyết định Xét lại lộ trình + nhận xét GVCN lớp mới).');
-  }
-  /* Mốc deploy (một lần): mục Xét lại hết hạn TRƯỚC mốc không tự ghi "Tiếp tục" — chỉ mục có hạn từ mốc trở đi. */
-  if (!conn.prepare(`SELECT 1 FROM demo_config WHERE key = ?`).get(MOC_TU_GIU)) {
-    conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(MOC_TU_GIU, demoToday(), new Date().toISOString());
-    applied.push(`P9a XET-LAI: mốc tự giữ Xét lại từ ${demoToday()}.`);
+    /* Mốc deploy (cùng lần tạo bảng): mục Xét lại hết hạn TRƯỚC mốc không tự ghi "Tiếp tục" — chỉ mục có hạn từ mốc trở đi. DB dựng bằng mã
+       hiện hành (schema.sql) không có mốc = không giới hạn. */
+    conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(MOC_TU_GIU, demoToday(), new Date().toISOString());
+    applied.push(`P9a XET-LAI: bảng xet_lai_lo_trinh (quyết định Xét lại lộ trình + nhận xét GVCN lớp mới); mốc tự giữ từ ${demoToday()}.`);
   }
   /* Thẻ "Mini Test chưa đạt" đang chờ → đóng CHỈ khi em đã có dòng (d) ở Xét lại (cùng Mini Test); thẻ khác giữ nguyên. */
   const coD = new Set(tapXetLai(demoToday(), null).filter((e) => e.lyDo.ma === 'd').map((e) => e.studentId));

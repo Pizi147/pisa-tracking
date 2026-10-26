@@ -300,7 +300,7 @@ function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId:
   const cot = { lenhMoi: null as number | null, lenhCu: null as string | null, chu: '', daChuyen: false };
   if (it.quyetDinh === 'tiep_tuc') {
     if (e.lyDo.ma === 'a' && !it.lyDo) throw badRequest('Ghi lý do ngắn');   // khác gợi ý (Final < 50 %) — `khacGoiY`
-    cot.chu = `Tiếp tục ${e.lopHienTai.ft ? 'FT' : kyHieuLop(e.lopHienTai.ct, null) ?? e.lopHienTai.code}`;
+    cot.chu = e.daThiHanh ? `Tiếp tục ${e.lopHienTai.ft ? 'FT' : kyHieuLop(e.lopHienTai.ct, null) ?? e.lopHienTai.code}` : `Giữ ${e.daChot.chu}`;
   } else if (it.quyetDinh === 'hoc_lai' || it.quyetDinh === 'len') {
     const len = it.quyetDinh === 'len';
     if (len && e.lyDo.ma !== 'c') throw badRequest('Lên lớp chỉ dùng cho em đang học lại mà Final từ 60 %.');
@@ -439,7 +439,7 @@ function tuGiu(het: readonly EmXetLai[], today: string): number {
     const conn = db();
     let n = 0;
     for (const e of het) {
-      const chu = `Tiếp tục ${e.lopHienTai.ft ? 'FT' : kyHieuLop(e.lopHienTai.ct, null) ?? e.lopHienTai.code}`;
+      const chu = e.daThiHanh ? `Tiếp tục ${e.lopHienTai.ft ? 'FT' : kyHieuLop(e.lopHienTai.ct, null) ?? e.lopHienTai.code}` : `Giữ ${e.daChot.chu}`;
       const r = conn.prepare(
         `INSERT INTO xet_lai_lo_trinh (student_id, lenh_id, lop_id, ly_do_ma, moc, quyet_dinh, chu, tu_dong, ly_do_text, luc) VALUES (?,?,?,?,?, 'tiep_tuc', ?, 1, 'Tự giữ · hết hạn xét lại', ?)
          ON CONFLICT (student_id, lenh_id, moc) WHERE tu_dong = 1 DO NOTHING`,

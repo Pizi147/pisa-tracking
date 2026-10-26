@@ -5,7 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { ChipHan } from '../../ui/Nhan.tsx';
+import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
@@ -43,7 +43,9 @@ const LO = 10;   // = LO_XET_LAI máy chủ
 const HOAN_TAC_XET_LAI_MS = 10_000;   // mockup khung 4: Hoàn tác 10 s
 const lamMoi = () => { for (const k of ['/classes', '/students', '/my-work', '/hoc-vien-lop', '/lenh-chuyen', '/cases']) invalidate(k); };
 const bac = (ct: string | null) => kyHieuLop(ct, null) ?? ct ?? '';
-const tiepTucChu = (e: EmXetLai) => (e.lopHienTai.ft ? t('Tiếp tục FT') : t('Tiếp tục {lop}', { lop: bac(e.lopHienTai.ct) || e.lopHienTai.code }));
+/** Em đã vào lớp mới → "Tiếp tục {lớp}"; lệnh chưa thi hành (em còn ở lớp cũ) → "Giữ {hướng đã chốt}" (mockup khung 5a). */
+const tiepTucChu = (e: EmXetLai) => (!e.daThiHanh ? t('Giữ {huong}', { huong: e.daChot.chu })
+  : e.lopHienTai.ft ? t('Tiếp tục FT') : t('Tiếp tục {lop}', { lop: bac(e.lopHienTai.ct) || e.lopHienTai.code }));
 const hocLaiChu = (e: EmXetLai) => (e.lopHienTai.ft ? t('Về lớp thường') : t('Học lại {ct}', { ct: bac(e.lopNguon.ct) }));
 /** Nút chuyển của thẻ: dòng (c) (đang học lại mà Final ≥ 60 %) → "Lên {bậc kế}" (lớp bậc kế / FT); còn lại → Học lại chương trình cũ. */
 const chuyenCua = (e: EmXetLai): Quyet => (e.lyDo.ma === 'c' ? 'len' : 'hoc_lai');
@@ -116,7 +118,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
         for (const f of r.failed) hong[f.studentId] = f.message;
       }
     } catch (e: any) {
-      for (const x of soan) if (!ok.some((o) => o.studentId === x.studentId)) hong[x.studentId] ??= e?.message ?? t('Chưa lưu được — thử lại.');
+      for (const x of soan) if (!ok.some((o) => o.studentId === x.studentId)) hong[x.studentId] ??= e?.message ?? t('Không lưu được');
     }
     setBusy(false);
     if (ok.length) {
@@ -180,7 +182,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
       }}>
       {!em.length ? <p className="mt-3 text-sm text-slate-400">{t('Không còn em cần xét lại.')}</p> : (
         <div className="mt-3 flex flex-col gap-2.5">
-          {!data.chiXem && em.length > 1 && (
+          {!data.chiXem && em.filter((e) => !xong(e)).length > 1 && (
             <div className="flex flex-wrap items-center gap-2">
               <NutChon nho chon={tick.size > 0 && tick.size === em.filter((e) => !xong(e)).length}
                 onClick={() => setTick(tick.size ? new Set() : new Set(em.filter((e) => !xong(e)).map((e) => e.studentId)))}>
@@ -202,7 +204,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
         </div>
       )}
       <Modal open={!!hoiNgay} onClose={() => setHoiNgay(null)} title={t('Chuyển ngay hôm nay?')}
-        footer={<div className="flex justify-end gap-2 px-5 py-3"><button type="button" className="btn" onClick={() => setHoiNgay(null)}>{t('Huỷ')}</button>
+        footer={<div className="flex justify-end gap-2 px-5 py-3"><button type="button" className="btn" onClick={() => setHoiNgay(null)}>{t('Đóng')}</button>
           <button type="button" className="btn btn-primary" onClick={() => gui(true)}>{t('Chuyển ngay · {n} em', { n: hoiNgay?.length ?? 0 })}</button></div>}>
         <p className="m-0 px-5 py-4 text-sm text-slate-200">{t('{ten} vào lớp mới ngay khi lưu — không hoàn tác được.', { ten: (hoiNgay ?? []).join(', ') })}</p>
       </Modal>
@@ -270,7 +272,7 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
         {chiXem && <ChipXetLai />}
         {!xong && e.lyDo.chu && <span className={`text-[13px] font-bold ${doLyDo(e) ? 'text-bad' : 'text-soon'}`}>{e.lyDo.chu}</span>}
         {chuDaLuu && (daLuu && !daLuu.chu.startsWith('Học lại') ? <span className="text-[13px] font-semibold text-ok">{chuDaLuu}</span>
-          : <span className="rounded-full bg-[color:var(--accent-soft)] px-2 py-0.5 text-xs font-semibold text-[color:var(--accent)]">{daLuu ? chuDaLuu.replace(/^✓ /, '') : chuDaLuu}</span>)}
+          : <Nhan tone="doing">{daLuu ? chuDaLuu.replace(/^✓ /, '') : chuDaLuu}</Nhan>)}
         {chiXem && <span className="ml-auto flex items-center gap-1.5 text-[13px] text-slate-400">{t('QL quyết')} · <ChipHan loai="viec-van-hanh" han={e.han} /></span>}
         {!chiXem && xong && !daLuu?.daChuyen && <button type="button" className="btn btn-sm btn-ghost ml-auto min-h-[44px] sm:min-h-0" onClick={onSua} disabled={busy}>{t('Sửa')}</button>}
       </div>
@@ -340,7 +342,7 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
               <ul className="m-0 list-disc space-y-0.5 pl-5 text-[13px] text-slate-200">
                 {e.daThiHanh
                   ? <li>{ngayNay ? t('Chuyển {tu} → {den} ngay hôm nay — không hoàn tác', { tu: e.lopHienTai.code, den: lopChu ?? '' })
-                    : t('Ra lệnh chuyển {tu} → {den} từ {tuan} (sửa / huỷ được tới {ngay})', { tu: e.lopHienTai.code, den: lopChu ?? '', tuan: tuanLich(chon.tuan, homNay), ngay: ngay(chon.tuan, homNay) })}</li>
+                    : t('Quyết định chuyển {tu} → {den} từ {tuan} (sửa / huỷ được tới {ngay})', { tu: e.lopHienTai.code, den: lopChu ?? '', tuan: tuanLich(chon.tuan, homNay), ngay: ngay(chon.tuan, homNay) })}</li>
                   : <li>{t('Sửa quyết định ở {lop}: {viec} → {den} từ {tuan}', { lop: e.lopNguon.code, viec: chuyenChu(e), den: lopChu ?? '', tuan: tuanLich(chon.tuan, homNay) })}</li>}
                 {e.daThiHanh && <li>{t('Đóng khoá {cu}, mở khoá {moi} mới · điểm {cu} (nếu có) ở lại khoá {cu}', { cu: bac(e.lopHienTai.ct) || e.lopHienTai.code, moi: len ? ke : ct })}</li>}
                 {e.daThiHanh && <li>{t('Phiếu bàn giao GVCN {lop}', { lop: e.lopHienTai.code })}</li>}
@@ -376,7 +378,7 @@ function NhanXetGvcn({ e, classId }: { e: EmXetLai; classId: number }) {
     if (chu.trim() === cu.trim()) return;
     setLuu('dang');
     try { await api.put(`/classes/${classId}/xet-lai/${e.studentId}/nhan-xet`, { nhanXet: chu.trim() || null }); setCu(chu); setLuu('da'); }
-    catch (err: any) { setLuu({ loi: err?.message ?? t('Chưa lưu được — thử lại.') }); }
+    catch (err: any) { setLuu({ loi: err?.message ?? t('Không lưu được') }); }
   };
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-dashed px-3.5 pb-3 pt-2.5 pl-[42px] max-sm:pl-3.5" style={{ borderColor: 'var(--line)' }}>
@@ -384,18 +386,16 @@ function NhanXetGvcn({ e, classId }: { e: EmXetLai; classId: number }) {
       <input className="field h-[34px] w-[340px] max-w-full text-sm" autoComplete="off" name={`nhan-xet-${e.studentId}`} aria-label={t('Nhận xét của GVCN lớp mới')} maxLength={1000} value={chu}
         onChange={(ev) => { setChu(ev.target.value); if (luu !== 'dang') setLuu('cho'); }} onBlur={ghi} />
       <span role="status" className="text-[13px]">
-        {luu === 'dang' ? <span className="text-slate-400">{t('Đang lưu…')}</span> : luu === 'da' && chu.trim() === cu.trim() && cu ? <span className="text-ok">✓ {t('Đã lưu')}</span>
+        {luu === 'dang' ? <span className="text-slate-400">{t('Đang lưu…')}</span> : luu === 'da' && chu.trim() === cu.trim() && cu ? <span className="text-slate-400">✓ {t('Đã lưu')}</span>
           : typeof luu === 'object' ? <span className="text-late">{luu.loi} <button type="button" className="link border-0 bg-transparent p-0" onClick={ghi}>{t('Thử lại')}</button></span> : null}
       </span>
     </div>
   );
 }
 
-/** Chip vàng "Xét lại" (mockup `.chip-xl`). */
+/** Chip vàng "Xét lại" (mockup `.chip-xl`) — chip nhà `Nhan`. */
 export function ChipXetLai({ onClick }: { onClick?: () => void }) {
-  const cls = 'inline-flex h-[22px] items-center whitespace-nowrap rounded-full border px-2 text-xs font-bold text-soon focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--accent)]';
-  const st = { background: 'rgb(var(--soon-bg-rgb))', borderColor: 'rgb(var(--soon-line-rgb))' };
-  return onClick ? <button type="button" className={`${cls} cursor-pointer`} style={st} onClick={onClick}>{t('Xét lại')}</button> : <span className={cls} style={st}>{t('Xét lại')}</span>;
+  return <Nhan tone="soon" onClick={onClick}>{t('Xét lại')}</Nhan>;
 }
 
 /** Hồ sơ lớp: em nào đang có dòng Xét lại (chip trên dòng em) — cùng dữ liệu panel; bấm chip mở panel một em. */

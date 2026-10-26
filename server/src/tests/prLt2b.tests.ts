@@ -441,17 +441,11 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`).get(x.mt.id), 'đạt thì không thẻ');
     assertThrows(() => ghiCuoi(P.mbManager, x.pa[1].id, { tyLe: 72, ngay: TODAY }), /đã kết thúc/, 'PA đã khép không ghi lại');
   });
-  check('LT2b (6) · Mini Test 58%: Case còn mở + MỘT thẻ Báo QL cho Quản lý; Hoàn thành Case bằng tay → thẻ tự đóng', () => {
+  check('LT2b (6) · Mini Test 58%: Case còn mở, KHÔNG thẻ Báo QL (P9a N21: Quản lý quyết ở việc Xét lại lộ trình — dòng (d))', () => {
     const x = dungMiniTest();
     ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 58, ngay: TODAY });
     assert(x.cases.every((c) => (conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(c.id) as any).status !== 'done'), 'Case phải còn mở');
-    const the = conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`).all(x.mt.id) as any[];
-    assert(the.length === 1 && the[0].trang_thai === 'cho' && the[0].hoc_vien_id === x.s, JSON.stringify(the));
-    const hop = (duyetMod.hopChoDuyet(P.mbManager, { xem: 'de-biet' }) as any);   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
-    assert(JSON.stringify(hop).includes('Mini Test chưa đạt'), 'thẻ phải hiện ở hộp Chờ duyệt của Quản lý');
-    for (const c of x.cases) casesMod.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Đã trao đổi phụ huynh, em học thêm' });
-    duyetMod.quetYeuCau();
-    assert((conn.prepare('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?').get(the[0].id) as any).trang_thai === 'tu_dong', 'Case Hoàn thành tay → thẻ tự_dong');
+    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`).get(x.mt.id), 'không còn thẻ Báo QL Mini Test');
   });
   check('LT2b (6) · Mini Test: việc "Ghi Mini Test" hiện trước hạn cho người dạy, biến mất sau khi ghi; ô mini_test ở hồ sơ HV', () => {
     const x = dungMiniTest();
@@ -576,7 +570,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   const hv = (ten: string) => (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
   const lopHienTai = (sid: number) => conn.prepare(`SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active'`).get(sid) as any;
   const caseChuyenCap = (sid: number) => conn.prepare(`SELECT sc.* FROM sos_cases sc WHERE sc.student_id = ? AND sc.origin_kind = 'chuyen_cap' ORDER BY sc.id`).all(sid) as any[];
-  check('LT2b (10) · demo D10–D11: bốn dải ở MB BE 04; 64% lên ELE 02 có Case + PA + Mini Test chưa ghi; Mini Test 58% có thẻ Báo QL', () => {
+  check('LT2b (10) · demo D10–D11: bốn dải ở MB BE 04; 64% lên ELE 02 có Case + PA + Mini Test chưa ghi; Mini Test 58% Case còn mở, không thẻ Báo QL (P9a)', () => {
     const trang = hv('Hồ Thu Trang'), khoi = hv('Đặng Minh Khôi'), ngoc = hv('Vương Bảo Ngọc'), huy = hv('Tạ Đức Huy'), vy = hv('Lâm Khánh Vy');
     assert(lopHienTai(trang).code === 'MB BE 03' && lopHienTai(khoi).code === 'MB BE 04' && lopHienTai(ngoc).code === 'MB ELE 02' && lopHienTai(huy).code === 'MB BE 04', 'lớp hiện tại');
     const bao = conn.prepare(`SELECT status, preset FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`).all(trang) as any[];
@@ -591,8 +585,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(cn.length === 2 && cn.every((c) => c.status === 'in_progress') && mtNgoc.ty_le === null, JSON.stringify({ n: cn.length, mt: mtNgoc }));
     const mtVy = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(vy) as any;
     assert(mtVy.ty_le === 0.58 && caseChuyenCap(vy).every((c) => c.status !== 'done'), 'Mini Test 58%: Case còn mở');
-    assert(conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(mtVy.id), 'thẻ Báo QL Mini Test');
-    assert(JSON.stringify(duyetMod.hopChoDuyet(ql, { xem: 'de-biet' })).includes('Mini Test chưa đạt'), 'hộp Chờ duyệt của QL có thẻ Mini Test');   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
+    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(mtVy.id), 'P9a: không thẻ Báo QL Mini Test');
   });
   check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học viên → một Case không PA, có lý do (PR-KV)', () => {
     const bao = hv('Ninh Gia Bảo');

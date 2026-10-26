@@ -128,16 +128,21 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
   const theMini = (sid: number, mtId: number) => Number(conn.prepare(
     `INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, trang_thai, tao_luc) VALUES ('bao_len_mini_test', 'bao-len', 'mini_test', ?, ?, 'cho', ?)`,
   ).run(mtId, sid, NOW).lastInsertRowid);
-  check('XL-2 · migrate: thẻ "Mini Test chưa đạt" của em KHÔNG có dòng (d) giữ nguyên; ghi mốc tự giữ một lần; chạy hai lần không đổi gì thêm', () => {
+  check('XL-2 · migrate: DB cũ (chưa bảng) → tạo bảng + mốc tự giữ một lần; thẻ "Mini Test chưa đạt" của em KHÔNG có dòng (d) giữ nguyên; chạy hai lần không đổi gì; DB mã hiện hành không đổi', () => {
     const sid = get('SELECT id FROM students ORDER BY id LIMIT 1').id;
     const id = theMini(sid, 999001);
-    const a1: string[] = [], a2: string[] = [];
+    const a0: string[] = [], a1: string[] = [], a2: string[] = [];
+    mig.migratePrXetLai(conn, a0);
+    assert(!a0.length && !get(`SELECT 1 FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU), `DB mã hiện hành: ${JSON.stringify(a0)}`);
+    assert(!get('SELECT 1 FROM xet_lai_lo_trinh LIMIT 1'), 'tiền đề: bảng còn trống');
+    conn.exec('DROP TABLE xet_lai_lo_trinh');
     mig.migratePrXetLai(conn, a1);
     assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', 'thẻ không có dòng (d) phải giữ');
     assert(get(`SELECT value FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU)?.value === TODAY && a1.some((x) => /mốc tự giữ/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
     mig.migratePrXetLai(conn, a2);
     assert(!a2.length, `lần 2: ${JSON.stringify(a2)}`);
     conn.prepare('DELETE FROM yeu_cau_duyet WHERE id = ?').run(id);
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
   });
 
   // ---------------------------------------------------------------- XL-3 · tập em = việc = GET
@@ -291,7 +296,6 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     /* Thẻ cũ (trước deploy) của em đã có dòng (d) → migrate đóng; "Đã xét lại" đúng quyết định trước. */
     const the = theMini(B.sid, mt.id);
     mig.migratePrXetLai(conn, []);
-    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
     assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', the).trang_thai === 'tu_dong', 'thẻ có dòng (d): đóng');
     assert(e.xetLaiTruoc?.quyetDinh === 'tiep_tuc' && e.xetLaiTruoc.chu === 'Tiếp tục BE' && !e.xetLaiTruoc.tuDong, `Đã xét lại: ${JSON.stringify(e.xetLaiTruoc)}`);
     const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: B.sid, quyetDinh: 'tiep_tuc' }]);

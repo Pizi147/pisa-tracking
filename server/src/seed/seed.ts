@@ -290,8 +290,6 @@ export function runSeed() {
     const duyet = buildDuyetDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* PR-CT: lệnh chuyển lớp + bàn giao (6 kịch bản + 1 lệnh đã chuyển) — SAU bộ demo Chờ duyệt, tự quét Báo lên ở cuối. */
     const ct = buildCtDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
-    /* P9a XET-LAI: MB FOU 25 → MB BE 05 (3 em Final chưa khớp hướng) + 1 lệnh chưa thi hành — SAU bộ PR-CT. */
-    buildXetLaiDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* PR-Pb2-b (D18): bảng Phân tích giáo viên — 5 GV mới, MB FT 105, MB FOU 14 / 16 hai giáo viên. SAU bộ PR-CT, TRƯỚC phần bù ngày. */
     buildPb2bDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* PR-TK: bộ demo dựng lộ trình đã đóng bằng SQL thẳng — điền ngược bản chụp (cùng hàm với migrate). Đứng SAU mọi bộ demo. */
@@ -309,6 +307,8 @@ export function runSeed() {
     /* SEED-UX: TVV / Admin VP / GV S không lớp, gán TVV + SĐT PH, thi thật, buổi tutor, lớp HD FT 306 + HD FOU 06 — sau Head tutor để id cũ không đổi. */
     const ux = buildUxDemo(conn, adminId);
     buNgayPb2b(conn);   // ô điểm / vi phạm bộ UX: bù ngày nhập đầu + hạn xử lý (chỉ điền ô NULL)
+    /* P9a XET-LAI: MB FOU 25 → MB BE 05 (3 em Final chưa khớp hướng) + 1 lệnh chưa thi hành — sau SEED-UX để id học viên / lớp cũ không đổi. */
+    buildXetLaiDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* OV-11e (Q8): lượt MT đã chốt dựng bằng SQL thẳng chưa có dấu KCK theo lượt — chụp theo cờ hiện tại (cùng hàm với migrate). Sau mọi bộ demo. */
     migratePrOv11e(conn, []);
     /* OV-12a: PA dựng bằng SQL thẳng với hạn kiểu cũ (Thứ Hai hằng tuần) → lịch kỳ hai tuần, hết Thứ Ba (cùng hàm với migrate; seed → migrate không đổi gì). */
