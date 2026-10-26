@@ -42,9 +42,25 @@ export function transferReasonText(code: unknown, note?: unknown): string | null
  * Học tiếp / học lại TRONG cùng một lộ trình thì số MT tăng tiếp và target giữ nguyên.
  * Chỉ khi sang lộ trình mới (LT1 → LT2) mới đánh số lại từ MT1, vì lúc đó đã có target mới.
  */
-export const ROUTES = ['LT1', 'LT2', 'RF'] as const;
+export const ROUTES = ['LT1', 'LT2', 'RF', 'KHAC'] as const;
 export type Route = (typeof ROUTES)[number];
-export const ROUTE_NAME: Record<Route, string> = { LT1: t('Lộ trình 1'), LT2: t('Lộ trình 2'), RF: 'Refire' };
+export const ROUTE_NAME: Record<Route, string> = { LT1: t('Lộ trình 1'), LT2: t('Lộ trình 2'), RF: 'Refire', KHAC: t('Khác') };
+/** P7 (N12, Q3): lộ trình "Khác" — chỉ của lộ trình (`learning_cycles.route`), không mở lớp; tên do người dùng ghi (`route_ten`), 0 MT, Target tuỳ chọn. */
+export const ROUTE_KHAC = 'KHAC';
+/** Lộ trình mở được ở Bước tiếp › Lộ trình mới (thứ tự nút). */
+export const ROUTE_LO_TRINH_MOI = ['LT1', 'LT2', 'RF', 'KHAC'] as const;
+/** Lộ trình gợi ý ở panel Lộ trình mới: LT1 xong → LT2; còn lại giữ lộ trình cũ (không có → LT1). */
+export const routeGoiYLoTrinhMoi = (cu: string | null | undefined): string => (cu === 'LT1' ? 'LT2' : cu && (ROUTE_LO_TRINH_MOI as readonly string[]).includes(cu) ? cu : 'LT1');
+/** P7 (N12): lớp đích hợp loại lộ trình — LT1 / LT2 → lớp FT lộ trình LT; RF → lớp RF; Khác → lớp FT bất kỳ. Sai → câu lỗi (web báo sớm + làm mờ, máy chủ 400 cùng câu). */
+export function kiemLopLoTrinhMoi(route: string, lop: { code: string; ft: boolean; route?: string | null }): string | null {
+  const loai = !lop.ft ? 'thường' : lop.route === 'RF' ? 'RF' : 'LT';
+  if (route === ROUTE_KHAC) return lop.ft ? null : `${lop.code} là lớp thường — lộ trình Khác cần lớp FT. Chọn "Lớp khác".`;
+  const can = route === 'RF' ? 'RF' : 'LT';
+  return loai === can ? null : `${lop.code} là lớp ${loai} — lộ trình ${route} cần lớp ${can}. Chọn "Lớp khác".`;
+}
+/** Tên hiển thị của mã lộ trình: "Khác" → tên đã ghi (không có thì "Khác"); mã khác giữ nguyên ("LT2"). */
+export const tenRoute = (c: { route?: string | null; route_ten?: string | null; routeTen?: string | null }): string | null =>
+  c.route === ROUTE_KHAC ? (c.route_ten ?? c.routeTen ?? '').trim() || t('Khác') : c.route ?? null;
 
 export const CYCLE_STATUSES = ['active', 'completed', 'abandoned'] as const;
 export type CycleStatus = (typeof CYCLE_STATUSES)[number];

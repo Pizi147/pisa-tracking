@@ -87,7 +87,7 @@ export async function runPrOv1dTests(t: YThucTestKit) {
       `Lưu trữ: ô phải chỉ đọc: ${JSON.stringify(r.cells.map((c: any) => [c.skill, c.canEdit, c.viec, c.overdue, c.daChot?.goDuoc]))}`);
     for (const [k, patch] of [['listening', { rawScore: 30 }], ['reading', { noShow: false }], ['speaking', { nhanXet: 'x' }]] as const) {
       const e = loi(() => attempts.saveScore(QL, a, k, patch, THU6));
-      assert(e?.status === 400 && /Bỏ lưu trữ/.test(e.message), `Lưu trữ ghi ${k}: ${e?.status} ${e?.message}`);
+      assert(e?.status === 400 && /Quay lại học/.test(e.message), `Lưu trữ ghi ${k}: ${e?.status} ${e?.message}`);
     }
     /* Kết thúc học chưa lưu trữ (FT chờ thi thật / Bước tiếp): hàng mờ, không việc / quá hạn, nhưng ô vẫn mở — nhập bù vào bản chụp (PR-TK). */
     dat(`archived_at = NULL, status = 'finished'`);
@@ -97,11 +97,11 @@ export async function runPrOv1dTests(t: YThucTestKit) {
       `Kết thúc học: ${JSON.stringify(r?.ngungHoc)} ${JSON.stringify(r?.cells.map((c: any) => [c.skill, c.canEdit, c.viec, c.overdue, c.daChot?.goDuoc]))}`);
     attempts.saveScore(QL, a, 'speaking', { nhanXet: 'nhập bù sau Kết thúc học' }, THU6);
     dat(`status = 'active'`);
-    /* Em Tạm dừng (thi xong rồi mới dừng): hàng KHÔNG mờ, vẫn nhập điểm / Bỏ vắng như thường (chủ SP 13/10). */
+    /* Em Tạm dừng (thi xong rồi mới dừng): vẫn nhập điểm / Bỏ vắng như thường (chủ SP 13/10). P7 (N11): hàng mờ "Tạm dừng" (em ở Lưu trữ), ô không khoá. */
     conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(s);
     xoaNho();
     const td = hang(a, QL, W, THU6);
-    assert(!td.ngungHoc && td.cells.find((c: any) => c.skill === 'reading').daChot?.goDuoc === true, `em Tạm dừng: ${JSON.stringify(td.ngungHoc)}`);
+    assert(td.ngungHoc === 'Tạm dừng' && td.cells.find((c: any) => c.skill === 'reading').daChot?.goDuoc === true, `em Tạm dừng: ${JSON.stringify(td.ngungHoc)}`);
     attempts.saveScore(gvL, a, 'reading', { noShow: false }, THU6);
     attempts.saveScore(gvL, a, 'reading', { rawScore: 25 }, THU6);
     assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'reading'`, a).raw_score === 25, 'em Tạm dừng: ghi được');

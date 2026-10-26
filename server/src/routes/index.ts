@@ -87,6 +87,7 @@ import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
 import * as hangLoatSvc from '../students/hangLoat.ts';
+import * as trangThaiHvSvc from '../students/trangThaiHv.ts';
 import * as lichSuSuaSvc from '../students/lichSuSua.ts';
 import * as lichSuSvc from '../platform/lichSu.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
@@ -1787,6 +1788,17 @@ api.get('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   lenhSvc.quetLenhDenHan();   // hẹn bắt đầu tới tuần → bắt đầu trước khi đọc
   return buocTiepSvc.trangThaiBuocTiep(p, c.id);
 }));
+/** P7 (N12, k1–k3): "Khi lưu, web sẽ" của panel Lộ trình mới — cùng hàm lúc thi hành; lỗi chọn (lớp sai loại, thiếu tên) ở `loi`. Ai xem được em thì đọc được. */
+api.get('/cycles/:id/lo-trinh-moi/xem-truoc', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  const c = cycleSvc.cycleById(pInt(req, 'id'));
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return buocTiepSvc.xemTruocLoTrinhMoi(p, c.id, {
+    route: qStr(req, 'route') || undefined, routeTen: qStr(req, 'routeTen') ?? undefined, boTarget: qStr(req, 'boTarget') === '1',
+    lopMoiId: qStr(req, 'lopMoiId') || undefined, batDau: qStr(req, 'batDau') || undefined, mucTieu: qStr(req, 'mucTieu') || undefined,
+  });
+}));
 /** OV-8a: Bước tiếp sau thi thật — Quản lý / Quản trị (`cycle.edit` của em) và OV-12a: TVV cùng chi nhánh (`coQuyenBuocTiep`). Chọn / đổi = một giao dịch; DELETE = hoàn tác lựa chọn. */
 api.post('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2617,8 +2629,20 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const status = req.body?.status;
   if (!['active', 'inactive', 'finished'].includes(status)) throw badRequest('Trạng thái không hợp lệ.');
-  return studentSvc.setStudentStatus(principalOf(req), pInt(req, 'id'), status,
-    req.body?.date ?? demoToday(), req.body?.reason, req.body?.endKind ?? null);
+  /* P7: em có quyết định chuyển lớp chờ → không Tạm dừng / Kết thúc học (câu chặn + bước tiếp). */
+  return trangThaiHvSvc.doiTrangThai(principalOf(req), pInt(req, 'id'), { status, date: req.body?.date ?? demoToday(), reason: req.body?.reason, endKind: req.body?.endKind ?? null });
+}));
+/** P7 (N11, k2): "Khi lưu, web sẽ" của hộp Tạm dừng/ Kết thúc học (`ketThuc=1` = ô "Có thể quay lại học" tắt) + câu chặn nếu có. */
+api.get('/students/:id/trang-thai/xem-truoc', requireAuth, wrap((req) => trangThaiHvSvc.xemTruocTrangThai(principalOf(req), pInt(req, 'id'), qStr(req, 'ketThuc') === '1')));
+/** P7 (N11, N22 ⑤, k5): Quay lại học từ Lưu trữ — hướng (lớp cũ · chọn lớp · Lộ trình mới · Học lại) + lớp gợi ý; làm; Hoàn tác (lớp cũ). */
+api.get('/students/:id/quay-lai', requireAuth, wrap((req) => trangThaiHvSvc.thongTinQuayLai(principalOf(req), pInt(req, 'id'))));
+api.post('/students/:id/quay-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return trangThaiHvSvc.quayLaiHoc(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.post('/students/:id/hoan-tac-quay-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return trangThaiHvSvc.hoanTacQuayLai(principalOf(req), pInt(req, 'id'));
 }));
 
 /** OV-11d (HV-21): Hoàn tác Tạm dừng — trả nguyên trạng, không tính lại hạn (ai Tạm dừng được thì hoàn tác được). */

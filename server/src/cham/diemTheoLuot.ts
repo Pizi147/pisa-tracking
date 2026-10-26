@@ -45,7 +45,7 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
   const gom = new Map<string, Gom>();
   theoLo(classIds, (lo, ph) => {
     for (const a of conn.prepare(
-      `SELECT a.id, a.class_id, a.kind, a.attempt_no, a.lich_su, s.archived_at, rp.week_start, c.programme_code
+      `SELECT a.id, a.class_id, a.kind, a.attempt_no, a.lich_su, CASE WHEN s.status = 'inactive' THEN NULL ELSE s.archived_at END AS archived_at, rp.week_start, c.programme_code
          FROM assessment_attempts a
          JOIN classes c ON c.id = a.class_id
          JOIN students s ON s.id = a.student_id

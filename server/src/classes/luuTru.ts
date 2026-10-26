@@ -1,5 +1,5 @@
 import { db, theoLo } from '../db.ts';
-import { PERMISSIONS, chuanHoaMaLop, soSanhLop, type ProgrammeCode } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, chuanHoaMaLop, soSanhLop, tenRoute, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '../permissions.ts';
 
 /**
@@ -15,10 +15,13 @@ export type LopLuuTru = {
 };
 export type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null; archivedAt: string;
-  /** Nút "Bỏ lưu trữ" cuối dòng (chỉ Quản lý — cùng luật `archiveStudent`/`unarchiveStudent`, PLAN_WEEK). */
-  coTheBoLuuTru: boolean;
-  /** PR-LUI-b: nút "Học lại" (cùng luật `hocLai`: `cycle.edit` của học viên). */
-  coTheHocLai: boolean;
+  /** P7 (N11, k5): em Tạm dừng (giữ chỗ lớp, "Tạm dừng · Có thể quay lại") hay Kết thúc học — cả hai ở Lưu trữ. */
+  trangThai: 'tam-dung' | 'ket-thuc';
+  /** Lộ trình gần nhất ("LT1" · tên lộ trình Khác) — dòng phụ "MB FT 101 · FT LT1 · từ 14/09". */
+  loTrinh: string | null;
+  /** P7: một nút "Quay lại học" — em tạm dừng: người đổi trạng thái được (`student.edit` / `edit_more`); em kết thúc: Quản lý (`cycle.edit`, đường `hocLai`).
+   * Máy chủ vẫn kiểm lúc làm (lớp cũ đã kết thúc → chỉ Quản lý chọn lớp mới). */
+  coTheQuayLai: boolean;
   /** PR-TK: lộ trình đã đóng GẦN NHẤT của em (có bản chụp) — nút "Tổng kết" mở ngăn của lộ trình này; không có → không nút. */
   cycleIdCuoi: number | null;
 };
@@ -71,21 +74,24 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     paramsHv.push(`%${q}%`, `%${q.toLowerCase()}%`, `%${q.toUpperCase()}%`);
   }
   const archived = conn
-    .prepare(`SELECT s.id, s.student_code, s.full_name, s.archived_at FROM students s WHERE ${whereHv.join(' AND ')} ORDER BY s.archived_at DESC`)
+    .prepare(`SELECT s.id, s.student_code, s.full_name, s.archived_at, s.status,
+       (SELECT cy.route FROM learning_cycles cy WHERE cy.student_id = s.id ORDER BY cy.seq DESC LIMIT 1) AS route,
+       (SELECT cy.route_ten FROM learning_cycles cy WHERE cy.student_id = s.id ORDER BY cy.seq DESC LIMIT 1) AS route_ten
+       FROM students s WHERE ${whereHv.join(' AND ')} ORDER BY s.archived_at DESC`)
     .all(...paramsHv) as any[];
 
   let hocVien: HocVienLuuTru[] = [];
   if (archived.length) {
     const ids = archived.map((s) => s.id as number);
-    const ph = ids.map(() => '?').join(',');
-    // Lớp cuối (ghi danh mới nhất) của từng em — chỉ để HIỂN THỊ, không dùng để tính phạm vi.
-    const enrRows = conn
-      .prepare(
+    // Lớp cuối (ghi danh mới nhất) của từng em — chỉ để HIỂN THỊ, không dùng để tính phạm vi. P7: theo lô (Turso ≤ 900 tham số — em Tạm dừng cũng vào Lưu trữ).
+    const enrRows: any[] = [];
+    theoLo(ids, (lo, ph) => {
+      enrRows.push(...conn.prepare(
         `SELECT e.student_id, c.code AS class_code, b.name AS branch_name, e.started_at, e.id
            FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
           WHERE e.student_id IN (${ph}) ORDER BY e.student_id, e.started_at DESC, e.id DESC`,
-      )
-      .all(...ids) as any[];
+      ).all(...lo) as any[]);
+    });
     const lopCuoiCua = new Map<number, { code: string; branchName: string }>();
     for (const r of enrRows) if (!lopCuoiCua.has(r.student_id)) lopCuoiCua.set(r.student_id, { code: r.class_code, branchName: r.branch_name });
 
@@ -105,8 +111,11 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
         id: s.id, studentCode: s.student_code, fullName: s.full_name,
         lopCuoi: lopCuoiCua.get(s.id)?.code ?? null, chiNhanh: lopCuoiCua.get(s.id)?.branchName ?? null,
         archivedAt: s.archived_at,
-        coTheBoLuuTru: can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id }),
-        coTheHocLai: can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id }),
+        trangThai: s.status === 'inactive' ? 'tam-dung' as const : 'ket-thuc' as const,
+        loTrinh: tenRoute(s),
+        coTheQuayLai: s.status === 'inactive'
+          ? can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id }) || can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })
+          : can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id }),
         cycleIdCuoi: cycleCuoi.get(s.id) ?? null,
       }));
   }

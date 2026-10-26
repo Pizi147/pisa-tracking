@@ -10,6 +10,7 @@ import { BangCanHoTro } from './BangCanHoTro.tsx';
 import { BangKqdrLopFt } from './BangKqdrLopFt.tsx';
 import { ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from '../students/XemTruocHangLoatPanel.tsx';
+import { HopTamDungKetThuc } from '../students/HopTamDungKetThuc.tsx';
 import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
 import type { QuyenDong } from './thaoTacDongHocVien.tsx';
@@ -61,6 +62,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   };
   const chon = useChonNhieu();
   const [viecChon, setViecChon] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);
+  const [hopTd, setHopTd] = useState<number[] | null>(null);   // P7: hộp Tạm dừng/ Kết thúc học · n em
   /* R5.3: lớp FT bỏ "Chuyển tiếp lớp" — chọn nhiều em → "Chuyển lớp…" (cùng panel Chuyển lớp nhiều em, ô lớp có "+ Mở lớp mới…"). */
   const [chuyenNhieu, setChuyenNhieu] = useState<number[] | null>(null);
   /* Chỉ Quản lý / Quản trị (`plan.week` của lớp), chỉ cách xem Tổng hợp; lớp đã kết thúc thì mọi cờ viewer tắt nên không có nút. */
@@ -102,8 +104,12 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
           viec={[...(!thuong && lop.viewer.coTheChuyenTiep ? [{ key: 'chuyen-lop', nhan: t('Chuyển lớp…') }] : []),
-            { key: 'luu-tru', nhan: t('Lưu trữ') }, { key: 'ket-thuc', nhan: t('Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}
-          onViec={(k) => (k === 'chuyen-lop' ? setChuyenNhieu([...chon.chon]) : setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] }))} />
+            { key: 'tam-dung-ket-thuc', nhan: t('Tạm dừng/ Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}
+          onViec={(k) => (k === 'chuyen-lop' ? setChuyenNhieu([...chon.chon]) : k === 'tam-dung-ket-thuc' ? setHopTd([...chon.chon]) : setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] }))} />
+      )}
+      {/* P7 (N11, k3): một mục "Tạm dừng/ Kết thúc học" thay Lưu trữ + Kết thúc học — cùng hộp một em, thêm số em; lỗi một phần giữ em lỗi trong hộp. */}
+      {hopTd && (
+        <HopTamDungKetThuc em={hopTd.map((id) => ({ id }))} lop={lop.code} tamDungDuoc onClose={() => setHopTd(null)} onDone={() => { chon.bo(); onDoi(); }} />
       )}
       {chuyenNhieu && <ChuyenLopNhieuEm classId={lop.id} emIds={chuyenNhieu} lop={{ code: lop.code, branchId: lop.branchId }} onClose={() => setChuyenNhieu(null)} onDone={() => { chon.bo(); setChuyenNhieu(null); onDoi(); }} />}
       {viecChon && (

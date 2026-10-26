@@ -133,7 +133,7 @@ export async function runPrOv13mTests(t: YThucTestKit) {
       const r = await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, post({ chon: 'ket_thuc' })));
       assert(r.chon === 'ket_thuc' && hs(x.sid).status === 'finished' && !!hs(x.sid).archived_at && lt(x.cy).status !== 'active', JSON.stringify([r, hs(x.sid), lt(x.cy).status]));
       assert(!viecBt(await json(await goi(QL, '/my-work'))).some((i: any) => i.studentId === x.sid), 'hết việc');
-      assert(one(`SELECT title FROM journey_events WHERE cycle_id = ? AND event_type = 'buoc_tiep' ORDER BY id DESC LIMIT 1`, x.cy).title === 'Sau thi: Thôi học', 'mốc Hành trình');
+      assert(one(`SELECT title FROM journey_events WHERE cycle_id = ? AND event_type = 'buoc_tiep' ORDER BY id DESC LIMIT 1`, x.cy).title === 'Sau thi: Kết thúc học', 'mốc Hành trình');
       await json(await goi(QL, `/cycles/${x.cy}/buoc-tiep`, { method: 'DELETE' }));
       assert(hs(x.sid).status === 'active' && !hs(x.sid).archived_at && lt(x.cy).status === 'active' && !lt(x.cy).buoc_tiep, JSON.stringify([hs(x.sid), lt(x.cy).status]));
       assert(!one(`SELECT 1 x FROM ban_chup_lo_trinh WHERE cycle_id = ?`, x.cy), 'hoàn tác Thôi học gỡ bản chụp lúc đóng');

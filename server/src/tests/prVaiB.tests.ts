@@ -379,8 +379,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       const q = i.lopHoc?.quyen; const ratio = !!i.cycle?.ratio; const hoc = i.status === 'active'; const ds: string[] = [];
       if (i.canEdit) ds.push('info'); if (q?.ghiLoTrinhTiep) ds.push('lo-trinh-tiep'); if (i.canEdit && i.cycle && !ratio) ds.push('lo-trinh');
       if (i.deXuatSua && hoc && !i.canEdit) ds.push('de-xuat-sua'); /* OV-11d (HV-15): GVCN đề xuất Target ở Sửa thông tin */ if (q?.chuyenLop) ds.push('chuyen-lop'); if (q?.deXuatChuyenLop && hoc) ds.push('de-xuat-chuyen-lop');
-      if (i.canEdit && i.cycle && !ratio) ds.push('outcome'); if ((q?.tamDung && hoc) || (q?.ketThuc && i.status !== 'finished')) ds.push('tam-dung-thoi-hoc'); if (q?.quayLai && !hoc && i.status === 'inactive') ds.push('quay-lai');
-      if (q?.luuTru) ds.push('luu-tru'); if (q?.boLuuTru) ds.push('bo-luu-tru'); if (i.canEdit || i.suaThongTin) ds.push('lich-su-sua'); /* OV-13j */ if (i.coTheXoa) ds.push('xoa-hoc-vien');
+      if (i.canEdit && i.cycle && !ratio) ds.push('outcome'); if ((q?.tamDung && hoc) || (q?.ketThuc && i.status !== 'finished')) ds.push('tam-dung-ket-thuc');   /* P7: một mục */ if (q?.quayLai && !hoc && i.status === 'inactive') ds.push('quay-lai');
+      /* P7: không còn Lưu trữ / Bỏ lưu trữ riêng */ if (i.canEdit || i.suaThongTin) ds.push('lich-su-sua'); /* OV-13j */ if (i.coTheXoa) ds.push('xoa-hoc-vien');
       return ds;
     };
     const ql = { ghiLoTrinhTiep: false, chuyenLop: true, tamDung: true, quayLai: true, ketThuc: true, luuTru: false, boLuuTru: false };
@@ -397,7 +397,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     }
     const qt = d.mucQuanLyHocVien(vai[0]) as any[];
     const m = (k: string) => qt.find((x) => x.key === k);
-    assert(m('chuyen-lop').phu === 'chọn lớp chuyển đến và tuần bắt đầu' && m('tam-dung-thoi-hoc').phu === 'tạm dừng giữ lớp · thôi học đóng lộ trình'
+    assert(m('chuyen-lop').phu === 'chọn lớp chuyển đến và tuần bắt đầu' && m('tam-dung-ket-thuc').phu === 'em vào Lưu trữ · tạm dừng giữ lớp'
       && m('xoa-hoc-vien').phu === 'chỉ Quản trị hệ thống thấy dòng này', JSON.stringify(qt));
     assert(m('lo-trinh').keTruoc === 'dam' && qt.filter((x) => x.keTruoc === 'dam').length === 1 && m('xoa-hoc-vien').keTruoc === 'do' && m('xoa-hoc-vien').nguyHiem, 'vạch đậm / đỏ');
     assert(!/▾/.test(fs.readFileSync(path.join(REPO, 'web/src/ui/Menu.tsx'), 'utf8')), 'Menu còn ký tự ▾ (phải SVG)');

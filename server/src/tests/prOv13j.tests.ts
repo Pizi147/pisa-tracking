@@ -109,7 +109,7 @@ export async function runPrOv13jTests(t: YThucTestKit) {
       d = await moiNhat(b);
       assert(truong(d, 'Trạng thái')?.moi === 'Đang học', JSON.stringify(d.truong));
       const loc = await ls(b, '?loai=trang-thai');
-      assert(loc.dong.length === 2 && loc.dong.every((x) => x.truong.every((y) => y.ten === 'Trạng thái')), JSON.stringify(loc.dong));
+      assert(loc.dong.length === 2 && loc.dong.every((x) => x.truong.every((y) => y.ten === 'Trạng thái' || y.ten === 'Lưu trữ')), JSON.stringify(loc.dong));   // P7: tạm dừng vào / ra Lưu trữ cùng khối
       assert((await ls(b, '?loai=target')).dong.every((x) => x.truong.every((y) => y.ten !== 'Trạng thái')), 'lọc target không có trạng thái');
       assert((await goi(QL, `/students/${b}/lich-su-sua?loai=xyz`)).status === 400, 'loai lạ → 400');
     });

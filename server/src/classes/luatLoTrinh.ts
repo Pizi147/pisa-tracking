@@ -1,7 +1,7 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, coMt0, dongKhiChuyen, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
+  PERMISSIONS, ROUTE_KHAC, coMt0, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -20,6 +20,7 @@ import { chotHanXuLy, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { doiMt0KhiVeThuong, huyKhiVeThuong, keHoachVeThuong, noiMt0VaoFt } from '../fasttrack/mt0.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
+import { evaluateAttempt } from '../fasttrack/scoring.ts';
 
 /**
  * LUẬT LỘ TRÌNH — MỘT CHỖ (PR-LT, §3.9) dùng chung cho Chuyển lớp một em (`students.ts`) và
@@ -233,6 +234,36 @@ export function dongLopNeuHet(classIds: readonly number[], ngay: string, tuTuanF
   }
 }
 
+// ---------------------------------------------------------------- P7: Lộ trình mới sau thi (N12)
+
+/** Lựa chọn ở panel Lộ trình mới (P7, N12) — `cuoiId` = lộ trình vừa xong (có KQ thi thật / Không thi). Ghi ở `buoc_tiep_json.loTrinhMoi` để đường hẹn / lệnh chuyển lớp đọc lại. */
+export type LoTrinhMoiSauThi = { route: string; routeTen: string | null; boTarget: boolean; cuoiId: number };
+
+/** Điểm đầu vào của lộ trình mới (E3): KQ thi thật của lộ trình vừa xong (đủ 4 kỹ năng); không có → MT có Overall gần nhất của lộ trình đó, ghi nguồn. Không ghép điểm nhiều lần thi. */
+export type DauVaoLoTrinh = { score: number | null; l: number | null; r: number | null; w: number | null; s: number | null; attemptId: number | null; nguon: string };
+export function dauVaoTuLoTrinh(cuoi: any): DauVaoLoTrinh | null {
+  if (!cuoi) return null;
+  const tt = [cuoi.thi_that_l, cuoi.thi_that_r, cuoi.thi_that_w, cuoi.thi_that_s] as (number | null)[];
+  if (!cuoi.thi_that_khong_thi && tt.every((x) => x !== null && x !== undefined)) {
+    const ngay = cuoi.thi_that_ngay ? String(cuoi.thi_that_ngay).slice(0, 10).split('-').reverse().join('/') : null;
+    return { score: roundToHalf((tt as number[]).reduce((a, b) => a + b, 0) / 4), l: tt[0], r: tt[1], w: tt[2], s: tt[3], attemptId: null, nguon: ngay ? `KQ thi thật ${ngay}` : 'KQ thi thật' };
+  }
+  const conn = db();
+  const luot = conn.prepare(`SELECT id, attempt_no FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' AND status != 'cancelled' ORDER BY attempt_no DESC, id DESC`).all(cuoi.id) as any[];
+  if (!luot.length) return null;
+  const diem = new Map<number, Record<string, number | null>>();
+  theoLo(luot.map((a) => a.id as number), (lo, ph) => {
+    for (const r of conn.prepare(`SELECT attempt_id, skill, band FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
+      diem.set(r.attempt_id, { ...(diem.get(r.attempt_id) ?? {}), [r.skill]: r.band ?? null });
+    }
+  });
+  for (const a of luot) {
+    const ov = evaluateAttempt(null, 1, diem.get(a.id) ?? {}).overall;
+    if (ov !== null) return { score: ov, l: null, r: null, w: null, s: null, attemptId: a.id, nguon: `MT${a.attempt_no} gần nhất (chưa có KQ thi thật)` };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------- thi hành luật (Task 4, Task 5)
 
 /**
@@ -243,28 +274,37 @@ export function dongLopNeuHet(classIds: readonly number[], ngay: string, tuTuanF
 export function moLoTrinhMoi(p: Principal, o: {
   sid: number; ngay: string; toClass: any; tuLop: LoaiLop; denLop: LoaiLop; cuCycle: any | null;
   target?: number | null; kck?: boolean; thangThi?: string | null;
+  /** P7 (N12): Lộ trình mới sau thi — mã lộ trình chọn ở panel (có thể khác lớp: LT2 ở lớp LT1, Khác), tên "Khác", Bỏ Target; KHÔNG chép ngày thi (E1); đầu vào = KQ thi thật (E3). */
+  sauThi?: LoTrinhMoiSauThi | null;
 }): { moiId: number; route: string | null } {
   const conn = db();
   const seq = ((conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(o.sid) as any)?.n ?? 0) + 1;
-  const route = o.denLop.ft ? (o.toClass.route ?? o.cuCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp chuyển đến (M-20)
+  const st = o.sauThi ?? null;
+  const route = st && o.denLop.ft ? st.route : o.denLop.ft ? (o.toClass.route ?? o.cuCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp chuyển đến (M-20); P7: lộ trình đã chọn
+  const dv = st ? dauVaoTuLoTrinh(conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(st.cuoiId)) : null;
   const startPeriodId = o.denLop.ft ? ensurePeriod(mondayOf(o.ngay)).id : (o.toClass.start_period_id ?? null);
   /*
    * Q7: FT → FT giữ target cũ. Chủ sản phẩm 04/10 (PR-NT): lớp thường → lớp thường giữ cả Target lẫn Dự kiến thi.
    * PR-LCb (§7 "Dự kiến thi giữ như cũ"): Dự kiến thi giữ ở MỌI chiều khi không gửi tháng thi mới.
    */
   const giuTarget = (o.tuLop.ft && o.denLop.ft) || (!o.tuLop.ft && !o.denLop.ft);
-  const giuThi = !o.thangThi;
+  const giuThi = !o.thangThi && !st;   // P7 (E1): Lộ trình mới sau thi không chép ngày thi của lộ trình đã thi
   const cu = o.cuCycle;
+  const boTg = !!st?.boTarget;
   const moiId = Number(conn
     .prepare(
-      `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
+      `INSERT INTO learning_cycles (student_id, seq, route, route_ten, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
+                                    baseline_score, baseline_listening, baseline_reading, baseline_writing, baseline_speaking, baseline_attempt_id, baseline_source, baseline_note,
                                     start_period_id, started_at, status, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?, 'active', ?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?)`,
     )
-    .run(o.sid, seq, route, o.denLop.ma, o.target ?? (giuTarget ? cu?.target_score ?? null : null),
-      o.kck || (o.target == null && giuTarget && cu?.khong_cam_ket) ? 1 : 0,   // … kể cả KCK (Q29-1)
+    .run(o.sid, seq, route, route === ROUTE_KHAC ? st?.routeTen ?? null : null, o.denLop.ma,
+      boTg ? null : o.target ?? (giuTarget ? cu?.target_score ?? null : null),
+      !boTg && (o.kck || (o.target == null && giuTarget && cu?.khong_cam_ket)) ? 1 : 0,   // … kể cả KCK (Q29-1)
       giuThi ? cu?.exam_month ?? null : o.thangThi ?? null,
       giuThi ? cu?.exam_date ?? null : null, giuThi ? cu?.exam_period_id ?? null : null,
+      dv && !dv.attemptId ? dv.score : null, dv?.l ?? null, dv?.r ?? null, dv?.w ?? null, dv?.s ?? null, dv?.attemptId ?? null,
+      dv ? 'previous_cycle' : null, dv?.nguon ?? null,
       startPeriodId, o.ngay, nowIso()).lastInsertRowid);
   if (o.denLop.ft) taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
   else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Progress / Final Test (OV-13l: bài tuần này vẫn có)
@@ -313,7 +353,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
       const giu = (conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status = 'paused'`).all(d.sid) as any[]).map((r) => r.id as number);
       for (const id of giu) conn.prepare(`UPDATE enrollments SET status = 'completed', ended_at = ?, end_reason = ?, end_kind = NULL WHERE id = ?`).run(d.ngay, d.lyDo ?? null, id);
       const cnCu = (conn.prepare('SELECT branch_id b FROM students WHERE id = ?').get(d.sid) as any)?.b ?? null;
-      const quayLai = giu.length > 0 && conn.prepare(`UPDATE students SET status = 'active' WHERE id = ? AND status = 'inactive'`).run(d.sid).changes > 0;
+      const quayLai = giu.length > 0 && conn.prepare(`UPDATE students SET status = 'active', archived_at = NULL WHERE id = ? AND status = 'inactive'`).run(d.sid).changes > 0;   // P7: tạm dừng ở Lưu trữ
       const insEnr = conn
         .prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
         .run(d.sid, d.toClassId, d.ngay, nowIso());
@@ -371,6 +411,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
      đặt lúc chọn Bước tiếp. */
   const cuoiCycle = curCycle ?? (denLop.ft ? conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(d.sid) as any : null);
   const sauThi = !!cuoiCycle && cuoiCycle.buoc_tiep === 'lo_trinh_moi' && (!!curCycle || denLop.ft);
+  /* P7 (N12): lựa chọn ở panel Lộ trình mới (lộ trình · tên Khác · Bỏ Target) — ghi ở bước tiếp, đọc lại cả khi lệnh chuyển lớp thi hành tuần sau. */
+  const loTrinhMoi: LoTrinhMoiSauThi | null = sauThi ? (() => { try { return JSON.parse(cuoiCycle.buoc_tiep_json ?? '{}').loTrinhMoi ?? null; } catch { return null; } })() : null;
   if (luat.khoa === 'dong-mo' || sauThi) {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     /* PR-CL (B4.4, §7 "chuyển từ FT: Target giữ như cũ", Q1): FT → thường giữ Target / KCK của lộ trình FT — chỉ nhánh này (Lưu trữ "Học lại" không đổi). */
@@ -378,6 +420,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     const { moiId } = moLoTrinhMoi(p, {
       sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle ?? cuoiCycle, thangThi: d.thangThi,
       target: (sauThi ? d.mucTieu : mucTieu) ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mucTieu == null && !!curCycle.khong_cam_ket,
+      sauThi: loTrinhMoi,
     });
     tg = doiTg(curCycle ?? cuoiCycle, conn.prepare('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?').get(moiId) as any);
     /* PR-MT0 (T5b): từ lớp thường — sang FT thì MT0 thành mốc đầu vào lộ trình mới; hướng khác thì MT0 chưa điểm huỷ. */
@@ -406,7 +449,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
 
   if (luat.dongCase) closeCasesOnProgrammeSwitch(p.userId, d.sid, luat.dongCase, d.ngay);
   /* OV-13m (rà #422): lộ trình đã xong sang lớp khác = như "Lớp này" / Thôi học — Case còn mở của lộ trình cũ hệ thống đóng ("kết thúc khoá"), không bàn giao cho GV lớp mới. */
-  if (sauThi && cuoiCycle) closeCasesBySystem({ actorUserId: p.userId, studentId: d.sid, reason: 'course_ended', on: d.ngay, cycleIds: [cuoiCycle.id] });
+  /* P7 (N12, Q2): lý do riêng "Kết thúc lộ trình" (PA đang chạy "Dừng — kết thúc lộ trình", không vào Hiệu quả PA) — chỉ đường Lộ trình mới. */
+  if (sauThi && cuoiCycle) closeCasesBySystem({ actorUserId: p.userId, studentId: d.sid, reason: 'ket_thuc_lo_trinh', on: d.ngay, cycleIds: [cuoiCycle.id] });
   /* PR-LT2b: lên / học lại / sang FT từ lớp thường — Case đi theo + Cuối khoá (bổ trợ miễn phí, Báo PH, Tutor FT). Sau `closeCasesOnProgrammeSwitch`. */
   if (luat.khoa === 'dong-mo' && (luat.endKind === 'len_lop' || luat.endKind === 'hoc_lai' || luat.endKind === 'sang_ft') && !tuLop.ft) {
     sauChuyenCuoiKhoa(p, [{

@@ -197,20 +197,20 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-8 · ⋯ hồ sơ HV: Sửa thông tin · Chuyển lớp · Tạm dừng / Thôi học · Lưu trữ đầu, một mục Tạm dừng / Thôi học; Admin/TVV có Sửa thông tin', () => {
+  check('OV2b-8 → P7 · ⋯ hồ sơ HV: Sửa thông tin · Chuyển lớp · Tạm dừng/ Kết thúc học đầu, một mục; Admin/TVV có Sửa thông tin', () => {
     const q = { ghiLoTrinhTiep: true, chuyenLop: true, tamDung: true, quayLai: true, ketThuc: true, luuTru: false, boLuuTru: false, hocLai: false };
     const ds = dm.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: { ratio: false }, status: 'active' });
     const k = ds.map((x: any) => x.key);
-    assert(k.slice(0, 3).join() === 'info,chuyen-lop,tam-dung-thoi-hoc', `thứ tự: ${k.join()}`);
+    assert(k.slice(0, 3).join() === 'info,chuyen-lop,tam-dung-ket-thuc', `thứ tự: ${k.join()}`);
     assert(!k.includes('tam-dung') && !k.includes('ket-thuc'), 'còn hai mục Tạm dừng / Kết thúc riêng');
-    assert(ds[0].nhan === 'Sửa thông tin' && ds[2].nhan === 'Tạm dừng / Thôi học', `nhãn: ${ds.map((x: any) => x.nhan).join()}`);
+    assert(ds[0].nhan === 'Sửa thông tin' && ds[2].nhan === 'Tạm dừng/ Kết thúc học', `nhãn: ${ds.map((x: any) => x.nhan).join()}`);
     const xong = dm.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: { ...q, luuTru: true, tamDung: false, ketThuc: false } }, cycle: null, status: 'finished' }).map((x: any) => x.key);
-    assert(xong.slice(0, 3).join() === 'info,chuyen-lop,luu-tru' && !xong.includes('tam-dung-thoi-hoc'), `đã thôi học: ${xong.join()}`);
-    /* Đang tạm dừng: còn Thôi học → vẫn một mục (panel mở tab Thôi học); Quay lại học xếp sau. */
+    assert(xong.slice(0, 2).join() === 'info,chuyen-lop' && !xong.includes('tam-dung-ket-thuc') && !xong.includes('luu-tru'), `đã thôi học: ${xong.join()}`);
+    /* Đang tạm dừng: còn Kết thúc học → vẫn một mục (ô "Có thể quay lại học" tắt); Quay lại học xếp sau. */
     const dung = dm.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: null, status: 'inactive' }).map((x: any) => x.key);
-    assert(dung.includes('tam-dung-thoi-hoc') && dung.indexOf('quay-lai') > dung.indexOf('tam-dung-thoi-hoc'), `tạm dừng: ${dung.join()}`);
+    assert(dung.includes('tam-dung-ket-thuc') && dung.indexOf('quay-lai') > dung.indexOf('tam-dung-ket-thuc'), `tạm dừng: ${dung.join()}`);
     assert(dm.mucQuanLyHocVien({ canEdit: false, suaThongTin: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.key).join() === 'info,lich-su-sua', 'Admin/TVV/CX: chỉ Sửa thông tin + Lịch sử sửa (OV-13j)');
-    assert(dm.cacTabTrangThai({ tamDung: true, ketThuc: true }, 'active').join() === 'tam-dung,thoi-hoc', 'đang học: hai tab');
-    assert(dm.cacTabTrangThai({ tamDung: true, ketThuc: true }, 'inactive').join() === 'thoi-hoc', 'đang tạm dừng: chỉ tab Thôi học');
+    assert(JSON.stringify(dm.coTheTamDungKetThuc({ tamDung: true, ketThuc: true }, 'active')) === '{"tamDung":true,"ketThuc":true}', 'đang học: cả hai');
+    assert(JSON.stringify(dm.coTheTamDungKetThuc({ tamDung: true, ketThuc: true }, 'inactive')) === '{"tamDung":false,"ketThuc":true}', 'đang tạm dừng: chỉ Kết thúc học');
   });
 }
