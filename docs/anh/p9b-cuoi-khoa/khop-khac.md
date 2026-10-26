@@ -24,7 +24,7 @@ Dữ liệu demo web: ngày demo **T2 14/09** (`seed`), lớp **MB FOU 12** (7 e
 | k3 | Chân dính "Khi chốt: n em sẵn sàng · a → lớp · bắt đầu tuần" + dòng tác động + Lưu nháp · Chốt · n em | chân `tomTat` (`tacDongChot` — cùng luật máy chủ lúc thi hành) | web-1440-chon-nhom-ap | KHỚP |
 | k4 | Hướng khác gợi ý → ô Lý do + "Ghi lý do ngắn" | `oHuong` (`khacGoiY` + `kiemDongLenh`) | — | KHỚP |
 | k4 | "đã sửa" cạnh tên | `oTen` | web-1440-chon-nhom-ap | KHỚP |
-| k4 | Khối Kỳ vọng FT (chỉ Hướng = Lên FT): "Kỳ vọng {quy chế} · MT0", band, Đạt / Không đạt, "máy gợi ý", Nguyên nhân, Kỹ năng, "→ Case + Tutor 10 buổi/kỹ năng", Học viên → ô Phương án | `oKyVong` | — (demo không có em Lên FT có MT0) | KHỚP (phép kiểm CK-5) |
+| k4 | Khối Kỳ vọng FT (chỉ Hướng = Lên FT): "Kỳ vọng {quy chế} · MT0", band, Đạt / Không đạt, "máy gợi ý", Nguyên nhân, Kỹ năng, "→ Case + Tutor 10 buổi/kỹ năng", Học viên → ô Phương án | `oKyVong` | — (demo không có em Lên FT có MT0) | KHỚP (phép kiểm CK-5, CK-6) |
 | k4 | Thanh có cụm "Kỳ vọng FT" khi mọi em chọn là Lên FT | `thanhAp` (`tatCaFt`) | — | KHỚP |
 | k4 | Ô Target chỉ khi em Lên FT chưa có Target | `oHuong` (`canTarget`) | — | KHỚP |
 | k5 | "+ Mở lớp mới…" → hộp: Mã / Chương trình (khoá) / Chi nhánh (khoá) / tuần / GVCN; xong điền vào thanh, em vẫn chọn | `ClassCreatePanel khoa` | — | **KHÁC**: panel (dùng lại `ClassCreatePanel` có sẵn — Số lớp + Tuần khai giảng + Phân công), không hộp giữa màn; chữ "Mở lớp mới" / "Mở lớp" / "Đã mở {lớp}" đúng mockup |
@@ -66,11 +66,13 @@ Dữ liệu demo web: ngày demo **T2 14/09** (`seed`), lớp **MB FOU 12** (7 e
 |---|---|---|
 | 12 em, cả lớp Lên BE, 3 em khác | tab Lộ trình tiếp theo › chọn từng em › hộp Lộ trình › `<select>` lớp › Chốt; nhóm khác làm lại ≈ 25 bấm | Chọn nhóm (1) › Lớp gõ + chọn (2) › Áp (1) › sửa 3 dòng (6) › Chốt (1) = **11 bấm** |
 | Kết quả đầu ra cả lớp | tab Đánh giá đầu ra, ~3 bấm / em | **0** — máy ghi theo Final |
-| Kỳ vọng em Lên FT | hộp từng em sau khi chốt; GVCN đề xuất rồi QL chốt | Đạt / Không đạt trên dòng (hoặc thanh Áp cho nhóm Lên FT), lưu cùng "Chốt" |
+| Kỳ vọng em Lên FT | hộp từng em sau khi chốt; GVCN đề xuất rồi QL chốt | Đạt / Không đạt trên dòng (hoặc thanh Áp cho nhóm Lên FT — dòng đã chốt Lên FT vẫn chọn được, Áp chỉ đổi Kỳ vọng), lưu cùng "Chốt", từng em (em lỗi không làm hỏng em khác); Học viên chỉ ghi Phương án (không chọn kỹ năng); đổi Hướng khỏi Lên FT thì bỏ Kỳ vọng đang sửa |
 | Lớp đích chưa có | rời bảng, tạo lớp, quay lại chọn lại em | "+ Mở lớp mới…" › điền › Mở lớp (3), em vẫn chọn, lớp tự điền |
 | Lỗi một phần | toast "n em chưa lưu" | giữ + "Lỗi n" bật sẵn + "Thử lại n em" |
 | GVCN | ghi Đề xuất + Nhận xét ở tab Đánh giá đầu ra (panel lần lượt) | gõ Nhận xét ngay trên dòng › "Lưu nhận xét · n em" (409 khi người khác vừa sửa) |
 | Lớp FT đổi lớp nhiều em | ⋯ Chuyển tiếp lớp… › 1 Soạn › 2 Xác nhận | Chọn nhiều học viên › chọn em › Chuyển lớp… (ô lớp có "+ Mở lớp mới…") |
+| Link cũ `?viec=chuyen-tiep` lớp FT (badge Xếp lớp, Hết khoá, yêu cầu duyệt) | mở panel Chuyển tiếp lớp | mở tab Học viên, bật sẵn chọn nhiều (› Chuyển lớp…) |
+| ⋯ Cuối khoá… từ hồ sơ lớp | — | mở trang con (thêm lịch sử) — ‹ / Quay lại về đúng hồ sơ lớp |
 
 Không mất thao tác: mọi thao tác cũ còn đường (bảng mục 2).
 
@@ -90,3 +92,4 @@ Không mất thao tác: mọi thao tác cũ còn đường (bảng mục 2).
 - Bấm thử vòng 2: rời trang còn thay đổi → hỏi "Bỏ thay đổi chưa lưu của n em?" (cả đóng tab); "Ngay hôm nay" → hộp xác nhận nêu tên em.
 - `/impeccable audit`: 0 mẫu cấm; 2 cỡ chữ 14 / 17 ngoài thang do-bang (chỉ báo, giữ như mockup). `/web-design-guidelines`: đã sửa — ô bấm link 44 px ở 375, `aria-label` ô Target / Nhận xét theo tên em, cảnh báo rời trang khi còn thay đổi.
 - `/ponytail-review`: Ship (1 gợi ý nhỏ: lỗi bước Kỳ vọng báo cả em đã có lệnh — dữ liệu đúng, bấm Chốt lại là xong).
+- Rà sâu PTA 26/10 (9 mục): sửa hết; [XM-1…5] PTA đồng ý, XM-6 giữ (ai merge sau gộp với P9a). N17 chỉ chặn chuyển CẢ LỚP (`raLenh caLop`, route trang Cuối khoá); chuyển một em, `suaLenh`, lệnh cũ chỉ đổi tuần không chặn (CK-3a). Phép kiểm mới: CK-5 (Học viên không kỹ năng, một em quá hạn MT0), CK-6 (nguồn trang).

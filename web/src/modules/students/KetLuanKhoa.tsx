@@ -99,14 +99,15 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
     { khoa: 'nguyen-nhan', nhan: t('Nguyên nhân'), chon: true },
     ...(nn === 'hoc_sinh' ? [{ khoa: 'ghi-chu', nhan: t('Phương án') }] : []),
   ], { 'nguyen-nhan': nn, 'ghi-chu': ghiChu });
-  if (nn !== '' && mon.length === 0) loi.push({ khoa: 'mon', nhan: t('Kỹ năng'), lyDo: t('Chọn ít nhất một kỹ năng chưa đạt') });
+  /* N17: Học viên = ghi phương án, không Case → không bắt kỹ năng (cùng luật máy chủ `kiemDongKyVong`, trang Cuối khoá). */
+  if (nn === 'trung_tam' && mon.length === 0) loi.push({ khoa: 'mon', nhan: t('Kỹ năng'), lyDo: t('Chọn ít nhất một kỹ năng chưa đạt') });
   const luu = async () => {
     lf.bam();
     if (loi.length) return;
     setBusy(true);
     try {
       const r: any = await api.put(`/students/${studentId}/ket-luan-ft`, {
-        dat: false, nguyenNhan: nn, mon, ...(nn === 'hoc_sinh' ? { ghiChu: ghiChu.trim() } : {}),
+        dat: false, nguyenNhan: nn, mon: nn === 'trung_tam' ? mon : [], ...(nn === 'hoc_sinh' ? { ghiChu: ghiChu.trim() } : {}),
       });
       invalidate('/students'); invalidate('/cases'); invalidate('/my-work');
       toast.push('ok', r?.taoCaseTutor ? t('Đã ghi — tạo {n} Case', { n: r.taoCaseTutor }) : t('Đã ghi Kỳ vọng'));
@@ -128,7 +129,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
             : nn === 'hoc_sinh' ? t('Ghi phương án, không Case.') : t('Trung tâm chưa dạy đủ hay học viên chưa theo kịp?')}
         </p>
       </Khoi>
-      {nn !== '' && (
+      {nn === 'trung_tam' && (
         <Khoi tieuDe={t('Kỹ năng chưa đạt')}>
           <div {...lf.o(loi, 'mon')} tabIndex={-1} className="flex flex-wrap gap-2 outline-none">
             {REGULAR_SKILLS.map((k) => (

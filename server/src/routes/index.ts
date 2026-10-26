@@ -1871,7 +1871,7 @@ api.post('/classes/:id/transition', requireAuth, wrap((req) => {
   const id = pInt(req, 'id');
   const b = req.body ?? {};
   return lenhSvc.raLenh(principalOf(req), {
-    lopNguonId: id, boiCanh: lenhSvc.boiCanhTheoLop(id), tuanChung: b.tuanChung ?? null,
+    lopNguonId: id, boiCanh: lenhSvc.boiCanhTheoLop(id), tuanChung: b.tuanChung ?? null, caLop: true,
     dongs: Array.isArray(b.dongs) ? b.dongs.map(lenhSvc.dongTuBody) : [],
   });
 }));

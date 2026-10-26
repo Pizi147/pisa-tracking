@@ -4,6 +4,12 @@
  *  N17 luồng cả lớp chỉ lớp đích cùng chi nhánh; Kết quả đầu ra máy ghi; Kỳ vọng FT chỉ QL, Học viên không Case;
  *  N22 ① GVCN chỉ ghi nhận xét · ② Kỳ vọng mở khi MT0 quá tuần muộn nhất; tóm tắt chân = đúng việc lúc thi hành.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
+
 export async function runPrCuoiKhoaTests(t: any) {
   const { check, assert, conn, P } = t;
   const d: any = await import('../../../shared/domain/index.ts');
@@ -45,6 +51,7 @@ export async function runPrCuoiKhoaTests(t: any) {
   const tr: any = await import('../classes/transition.ts');
   const dg: any = await import('../classes/danhGiaDauRa.ts');
   const kv: any = await import('../normal/kyVong.ts');
+  const ck: any = await import('../normal/cuoiKhoa.ts');
   const ss: any = await import('../fasttrack/skillSchedule.ts');
   const tb: any = await import('../platform/thongBaoTuDong.ts');
   const { myWork } = await import('../worklist/mywork.ts');
@@ -158,17 +165,23 @@ export async function runPrCuoiKhoaTests(t: any) {
     assert(mt0(sid2).status === 'cancelled', 'MT0 chưa huỷ khi sửa sang Lên ELE thứ Sáu');
   }));
 
-  check('CK-3a · N17: lớp đích gợi ý chỉ cùng chi nhánh; cả lớp sang lớp khác chi nhánh → dòng lỗi, suaLenh 400; Chuyển lớp một em khác chi nhánh được', () => thu(() => {
+  check('CK-3a · N17: lớp đích gợi ý chỉ cùng chi nhánh; CẢ LỚP sang lớp khác chi nhánh → dòng lỗi; một em, lệnh cũ chỉ đổi tuần, suaLenh vẫn được', () => thu(() => {
     const be = lop('BE', '2026-07-20'), ele = lop('ELE', '2026-09-28'), eleKhac = lop('ELE', '2026-09-28', { cn: KHAC }), beKhac = lop('BE', '2026-08-24', { cn: KHAC });
     const [a, b] = [hocVien(be, 'BE'), hocVien(be, 'BE')];
     datNgay('2026-09-17');
     const ung = tr.transitionPlan(P.admin, be).candidates as any[];
     assert(ung.some((c) => c.id === ele) && ung.every((c) => c.branchId === MB), `ứng viên khác chi nhánh: ${JSON.stringify(ung.filter((c) => c.branchId !== MB).map((c) => c.code))}`);
-    const r = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: a, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-09-28' }] });
+    const r = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, caLop: true, dongs: [{ studentId: a, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-09-28' }] });
     assert(!r.ok.length && /cùng chi nhánh/.test(r.failed[0]?.message ?? ''), JSON.stringify(r));
-    lenh.raLenh(QL, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: b, huong: 'len_lop', toClassId: ele, tuan: '2026-09-28' }] });
+    /* Một em (hồ sơ HV / duyệt yêu cầu — không `caLop`) sang lớp khác chi nhánh: được. */
+    const motEm = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: b, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-09-28' }] });
+    assert(motEm.ok.includes(b), `một em khác chi nhánh: ${JSON.stringify(motEm)}`);
+    /* Lệnh cũ giữ lớp đến, chỉ đổi tuần — ở trang Cuối khoá (caLop) và qua suaLenh: không chặn. */
+    const doiTuan = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, caLop: true, dongs: [{ studentId: b, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-10-05' }] });
+    assert(doiTuan.ok.includes(b), `lệnh cũ đổi tuần: ${JSON.stringify(doiTuan)}`);
     const l = get(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`, b);
-    assert(loi(() => lenh.suaLenh(P.admin, l.id, { toClassId: eleKhac }))?.status === 400, 'suaLenh sang lớp khác chi nhánh phải 400');
+    assert(loi(() => lenh.suaLenh(P.admin, l.id, { tuan: '2026-09-28' })) === null, 'suaLenh đổi tuần lệnh cũ bị chặn');
+    assert(get(`SELECT tuan_bat_dau FROM lenh_chuyen_lop WHERE id = ?`, l.id).tuan_bat_dau === '2026-09-28', 'suaLenh không đổi tuần');
     const mot = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'giua-khoa', tuanChung: null, dongs: [{ studentId: a, huong: 'chuyen_lop', toClassId: beKhac, tuan: '2026-09-21', lyDo: 'gia đình chuyển nhà' }] });
     assert(mot.ok.includes(a), `Chuyển lớp một em khác chi nhánh: ${JSON.stringify(mot)}`);
   }));
@@ -219,18 +232,32 @@ export async function runPrCuoiKhoaTests(t: any) {
     assert(truoc.baoPh === 1 && baoPh === 1, `Báo PH dự kiến ${truoc.baoPh}, tạo ${baoPh}`);
   }));
 
-  check('CK-5 · N22 ②: MT0 quá tuần muộn nhất (tuần 2 FT) vẫn < 3 band → Kỳ vọng mở cho QL; trước đó 400 "Chờ MT0"; Học viên không tạo Case', () => thu(() => {
+  check('CK-5 · N22 ②: MT0 quá tuần muộn nhất (tuần 2 FT) vẫn < 3 band → Kỳ vọng mở cho QL (cả lớp + một em); trước đó 400 "Chờ MT0"; Học viên không bắt kỹ năng, không Case', () => thu(() => {
     const { be, ft, sid } = chotFtCuoiTuan();
     datNgay('2026-09-17');
     lenh.raLenh(QL, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: sid, huong: 'fast_track', toClassId: ft, tuan: '2026-09-28', mucTieu: 6 }] });
-    const dong = [{ sid, dat: false, nguyenNhan: 'hoc_sinh', mon: ['reading'], lyDo: 'Em nghỉ 5 buổi cuối khoá' }];
+    /* Học viên: chỉ phương án, không kỹ năng (mockup khung 4) — MT0 < 3 band không có kỹ năng gợi ý. */
+    const dong = [{ sid, dat: false, nguyenNhan: 'hoc_sinh', mon: [], lyDo: 'Em nghỉ 5 buổi cuối khoá' }];
+    const motEm = { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ 5 buổi cuối khoá' };
     datNgay('2026-10-04');   // CN tuần 1 FT: còn trong hạn MT0
     assert(loi(() => kv.luuKyVong(QL, be, { dong }))?.status === 400, 'trong hạn MT0 thiếu band mà lưu được');
+    assert(loi(() => ck.ghiKetLuanFt(QL, sid, motEm))?.status === 400, 'một em: trong hạn MT0 thiếu band mà lưu được');
     datNgay('2026-10-12');   // T2 tuần 3 FT: quá tuần muộn nhất
+    assert(/kỹ năng/.test(loi(() => kv.luuKyVong(QL, be, { dong: [{ sid, dat: false, nguyenNhan: 'trung_tam', mon: [] }] }))?.msg ?? ''), 'Trung tâm không kỹ năng phải 400');
+    assert(loi(() => ck.ghiKetLuanFt(QL, sid, motEm)) === null, 'một em (hồ sơ HV): quá hạn MT0 phải đánh được');
     const r = kv.luuKyVong(QL, be, { dong });
     assert(r.luu === 1 && r.taoCase === 0, JSON.stringify(r));
     assert(get(`SELECT ky_vong_dat, ky_vong_nguyen_nhan FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?`, sid, be).ky_vong_nguyen_nhan === 'hoc_sinh', 'chưa ghi Kỳ vọng');
     const viec = (myWork(QL, {}).items as any[]).filter((x) => x.group === 'ky_vong_dau_ra');
     assert(viec.every((x) => x.tieuDe.startsWith('Kỳ vọng · ') && x.href.endsWith('?xem=cuoi-khoa')), JSON.stringify(viec.map((x) => [x.tieuDe, x.href])));
   }));
+
+  /* Trang Cuối khoá (web): kiểm nguồn — hộp "Chuyển ngay hôm nay?" giữ lô đang chốt (Thử lại n em), Kỳ vọng gửi từng em, Học viên không bắt kỹ năng. */
+  check('CK-6 · CuoiKhoaLop: xác nhận Ngay hôm nay giữ chiEm; Kỳ vọng từng em; kvLoi giống máy chủ; chân chỉ tính dòng có lệnh', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
+    assert(/setHoiNgay\(\{ ten: [^}]*chiEm \}\)/.test(src) && src.includes('chot(hoiNgay.chiEm, true)'), 'hộp Ngay hôm nay không giữ chiEm');
+    assert(src.includes("dong: [{ sid: r.e.id"), 'Kỳ vọng phải gửi từng em');
+    assert(!/hoc_sinh' && !x\.kv\.mon/.test(src), 'kvLoi bắt kỹ năng cho Học viên');
+    assert(src.includes('coBaoPhKhiChot(huongLenh(r.x)!'), 'danh sách Báo PH phải dùng coBaoPhKhiChot');
+  });
 }

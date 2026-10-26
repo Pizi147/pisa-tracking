@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
+  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
   type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -19,8 +19,9 @@ import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { phanCongO } from '../classes/quyenChuyenLop.ts';
+import { classProgressMany } from '../classes/schedule.ts';
 import { allProgrammes, evaluateRegular } from './regular.ts';
-import { emDaSangFt, emKyVong, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
+import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
 /**
  * CUỐI KHOÁ LỚP THƯỜNG — MỘT CỬA phía máy chủ (T47, T49, §6.3). Luật thuần ở `shared/domain/cuoiKhoa.ts`; file này chỉ đọc dữ liệu
@@ -786,13 +787,13 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
    * của Lộ trình tiếp theo đã áp (em đang ở FT). OV-11d (HV-17): bỏ nhánh "lớp đang học" — em BE → ELE (không lên FT) không có Kết quả đầu ra.
    */
   const nguon = conn.prepare(
-    `SELECT x.class_id, x.programme_code, x.ft_class FROM (
-       SELECT l.lop_nguon_id AS class_id, c.programme_code, CASE WHEN l.trang_thai = 'da_chuyen' THEN l.lop_dich_id END AS ft_class, 0 AS uu, l.id AS k
+    `SELECT x.class_id, x.programme_code, x.ft_class, x.tuan FROM (
+       SELECT l.lop_nguon_id AS class_id, c.programme_code, CASE WHEN l.trang_thai = 'da_chuyen' THEN l.lop_dich_id END AS ft_class, 0 AS uu, l.id AS k, l.tuan_bat_dau AS tuan
          FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id
         WHERE l.student_id = ? AND l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('FOU', 'BE', 'ELE')
        UNION ALL
        SELECT lt.class_id, c.programme_code, (SELECT e.class_id FROM enrollments e JOIN classes f ON f.id = e.class_id
-                                                WHERE e.student_id = lt.student_id AND e.status = 'active' AND f.is_fast_track = 1 ORDER BY e.id DESC LIMIT 1), 2, lt.id
+                                                WHERE e.student_id = lt.student_id AND e.status = 'active' AND f.is_fast_track = 1 ORDER BY e.id DESC LIMIT 1), 2, lt.id, NULL
          FROM lo_trinh_tiep_theo lt JOIN classes c ON c.id = lt.class_id
         WHERE lt.student_id = ? AND lt.huong = 'fast_track' AND lt.da_ap_dung_luc IS NOT NULL AND c.programme_code IN ('FOU', 'BE', 'ELE')
      ) x ORDER BY x.uu, x.k DESC LIMIT 1`,
@@ -801,7 +802,11 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   const lopBeEle = nguon.class_id as number, ftClass = (nguon.ft_class ?? null) as number | null;
   const goiY = mt0TheoLop([{ sid, lop: lopBeEle, ct: nguon.programme_code }]).get(sid)?.goiY ?? null;
   /* N22 ② (P9b): MT0 quá tuần muộn nhất vẫn < 3 band → QL tự đánh (cùng luật trang Cuối khoá — `emKyVong.moTay`). */
-  if (!goiY && !emKyVong({ classId: lopBeEle }).find((e) => e.id === sid)?.moTay) throw badRequest(CHO_MT0);
+  if (!goiY) {
+    /* Một em: tuần muộn nhất theo lệnh Lên FT (em lên FT qua Lộ trình tiếp theo đã áp không có lệnh → theo tuần Final lớp BE/ELE). */
+    const muonNhat = tuanMuonNhatMt0({ tuanBatDauFt: nguon.tuan ?? null, tuanCuoiKhoa: classProgressMany([lopBeEle]).get(lopBeEle)?.finalWeekStart ?? null });
+    if (!muonNhat || demoToday() <= addDays(muonNhat, 6)) throw badRequest(CHO_MT0);
+  }
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt.');
   /* Cùng luật dòng với panel (`kiemDongKyVong`): không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng → 400. Học viên: lý do (phương án) bắt buộc, không Case (N17). */
   const coMon = Array.isArray(input.mon) && input.mon.length > 0;

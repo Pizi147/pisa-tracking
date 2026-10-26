@@ -74,6 +74,8 @@ export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly 
  */
 export function raLenh(p: Principal, v: {
   lopNguonId: number; boiCanh: BoiCanhLenh; tuanChung: string | null; dongs: DongLenhVao[]; tuYeuCauId?: number | null;
+  /** N17: chuyển CẢ LỚP ở trang Cuối khoá (POST /classes/:id/transition) — chỉ sang lớp cùng chi nhánh. */
+  caLop?: boolean;
 }): { ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[] } {
   const conn = db();
   const nguon = conn.prepare('SELECT * FROM classes WHERE id = ?').get(v.lopNguonId) as any;
@@ -149,10 +151,11 @@ export function raLenh(p: Principal, v: {
       const canDich = canLopDich(d.huong);
       const lopDich = canDich && d.toClassId ? dich.get(d.toClassId) ?? null : null;
       if (canDich && d.toClassId && !lopDich) { loi('Lớp chuyển đến không hợp lệ.'); continue; }
-      /* N17 (chủ SP 24/10, thay Rulebook §20.6–20.7): luồng Cuối khoá cả lớp chỉ sang lớp cùng chi nhánh; chuyển MỘT em (giữa khoá) vẫn được. */
-      if (v.boiCanh === 'cuoi-khoa' && lopDich && lopDich.branch_id !== nguon.branch_id) { loi(LOI_KHAC_CHI_NHANH); continue; }
       const tuan = d.tuan ?? v.tuanChung;
       const cu = daCo.get(d.studentId);
+      /* N17 (chủ SP 24/10, thay Rulebook §20.6–20.7): chuyển CẢ LỚP (trang Cuối khoá) chỉ sang lớp cùng chi nhánh; chuyển MỘT em, sửa lệnh (`suaLenh`)
+         và lệnh cũ giữ nguyên lớp đến (chỉ đổi tuần) vẫn được. */
+      if (v.caLop && lopDich && lopDich.branch_id !== nguon.branch_id && cu?.lop_dich_id !== lopDich.id) { loi(LOI_KHAC_CHI_NHANH); continue; }
       /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới: hôm nay hoặc từ tuần sau (`kiemDongLenh`). */
       if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có quyết định chuyển lớp ở lớp khác.'); continue; }
       const khac = khacGoiY(d.huong, ck?.get(d.studentId)?.goiY);

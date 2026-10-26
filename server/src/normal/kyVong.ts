@@ -36,7 +36,7 @@ type EmKyVong = {
 const jsonMang = (s: string | null): string[] => { try { const v = JSON.parse(s ?? '[]'); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
 
 /** Em có lệnh Lên FT (chờ / đã chuyển) từ lớp BE/ELE trong phạm vi `sc` (hoặc đúng lớp `classId`) + MT0 + kết luận — 3 câu mỗi lô. */
-export function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number }): EmKyVong[] {
+function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number }): EmKyVong[] {
   const conn = db();
   const cs = o.sc ? classScopeSql(o.sc) : { sql: '1=1', params: [] };
   const rows = conn.prepare(
@@ -146,7 +146,8 @@ export function kiemDongKyVong(x: any, ten: string): DongKyVong {
   if (x.nguyenNhan !== 'trung_tam' && x.nguyenNhan !== 'hoc_sinh') throw badRequest(`${ten}: chọn Trung tâm hoặc Học viên.`);
   const mon = Array.isArray(x.mon) ? [...new Set((x.mon as unknown[]).map(String))] : [];
   if (mon.some((m) => !(REGULAR_SKILLS as readonly string[]).includes(m))) throw badRequest(`${ten}: kỹ năng không hợp lệ.`);
-  if (!mon.length) throw badRequest(`${ten}: chọn kỹ năng chưa đạt.`);
+  /* N17 (mockup cuoi-khoa khung 4): Học viên = ghi phương án, không Case → không bắt kỹ năng; Trung tâm cần kỹ năng để mở Case + Tutor. */
+  if (!mon.length && x.nguyenNhan === 'trung_tam') throw badRequest(`${ten}: chọn kỹ năng chưa đạt.`);
   const lyDo = chuTuDo(x.lyDo ?? null, `${ten} · Lý do`, 2000);
   if (x.nguyenNhan === 'hoc_sinh' && !lyDo) throw badRequest(`${ten}: ghi lý do.`);
   return { sid: Number(x.sid), dat: false, nguyenNhan: x.nguyenNhan, mon: mon as RegularSkill[], lyDo: x.nguyenNhan === 'hoc_sinh' ? lyDo : null };

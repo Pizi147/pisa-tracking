@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BoLocDoan, Level } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -34,8 +34,8 @@ export type CheDoHocVien = 'diem' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
 export const CHE_DO_NHAN: Record<CheDoHocVien, string> = {
   diem: t('Tổng hợp'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
 };
-export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocVien, onSuaThongTin }: {
-  lop: HoSoLop; cheDo: CheDoHocVien; onCheDo: (m: CheDoHocVien) => void;
+export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, onThemHocVien, onSuaThongTin }: {
+  lop: HoSoLop; cheDo: CheDoHocVien; moChon?: boolean; onCheDo: (m: CheDoHocVien) => void;
   onDoi: () => void; onThemHocVien: () => void;
   /** PR-SL: mở panel Sửa thông tin học viên (cả lớp) — chỉ truyền khi người xem sửa được học viên của lớp. */
   onSuaThongTin?: () => void;
@@ -66,6 +66,8 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
   /* Chỉ Quản lý / Quản trị (`plan.week` của lớp), chỉ cách xem Tổng hợp; lớp đã kết thúc thì mọi cờ viewer tắt nên không có nút. */
   /* OV-10a: Admin có `plan.week` nhưng hàng loạt (Lưu trữ / Kết thúc / Huỷ chuyển lớp) máy chủ đòi `cycle.edit`. */
   const coTheChon = lop.viewer.canPlanWeek && can(PERMISSIONS.CYCLE_EDIT) && cheDo === 'diem';
+  /* `?viec=chuyen-tiep` (lớp FT): bật sẵn chọn nhiều — một lần. */
+  useEffect(() => { if (moChon && coTheChon && !chon.bat) chon.batTat(); }, [moChon]); // eslint-disable-line react-hooks/exhaustive-deps
   const doiCheDo = (m: CheDoHocVien) => { if (m !== 'diem') chon.bo(); onCheDo(m); };
   return (
     <div className="space-y-2">

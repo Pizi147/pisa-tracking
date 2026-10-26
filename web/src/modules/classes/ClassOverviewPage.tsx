@@ -46,6 +46,7 @@ export default function ClassOverviewPage() {
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
   const [xetLai, setXetLai] = useState(false);
+  const [moChon, setMoChon] = useState(false);
   /** PR-DL → PR-OV3a: khối "Điểm Test của lớp" cuối trang — mở sẵn, vẫn thu gọn được. UI-HO-SO-LOP: GIỮ vị trí V4 ([XM] truy vết V5 ghi "gập, chỉ tab Học viên"). */
   /* UI-HO-SO-LOP (chủ SP 23/10, [XM] T6): khối điểm GẬP sẵn, nhớ lần mở / gập (máy này). */
   const [moDiem, setMoDiem] = useState(() => { try { return localStorage.getItem('pisa.khoiDiemLop') === '1'; } catch { return false; } });
@@ -82,12 +83,13 @@ export default function ClassOverviewPage() {
   useEffect(() => {
     const v = params.get('viec');
     /* P9b: lớp thường — link cũ `?viec=lo-trinh-ca-lop | chuyen-tiep | ky-vong`, `?che-do=lo-trinh`, `?tab=dau-ra` → trang con Cuối khoá (`?xem=cuoi-khoa`,
-       giữ `&em=`). R5.3: lớp FT không còn panel "Chuyển tiếp lớp" — `?viec=chuyen-tiep` cũ chỉ bị xoá khỏi URL. */
+       giữ `&em=`). R5.3: lớp FT không còn panel "Chuyển tiếp lớp" — `?viec=chuyen-tiep` (badge Xếp lớp, Hết khoá, yêu cầu duyệt) mở tab Học viên, bật sẵn chọn nhiều (› Chuyển lớp…). */
     const thuongV = data?.programme?.scoringMode === 'ratio';
     if (data && thuongV && (v === 'chuyen-tiep' || v === 'lo-trinh-ca-lop' || v === 'ky-vong' || params.get('che-do') === 'lo-trinh' || params.get('tab') === 'dau-ra')) {
       doiThamSo({ viec: null, tab: null, 'che-do': null, xem: 'cuoi-khoa' });
     } else if (data && v === 'chuyen-tiep') {
-      doiThamSo({ viec: null });
+      doiThamSo({ viec: null, tab: null, 'che-do': null });
+      setMoChon(true);
     } else if (data && v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)) {
       setViec(v);
       doiThamSo({ viec: null });
@@ -105,10 +107,10 @@ export default function ClassOverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  const doiThamSo = (patch: Record<string, string | null>) => {
+  const doiThamSo = (patch: Record<string, string | null>, moi = false) => {
     const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(patch)) { if (v === null) next.delete(k); else next.set(k, v); }
-    setParams(next, { replace: true });
+    setParams(next, { replace: !moi });
   };
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
@@ -123,7 +125,7 @@ export default function ClassOverviewPage() {
   const dong = () => setViec(null);
   /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */
   const moViec = (v: ViecDauTrang) => {
-    if (v === 'lo-trinh-ca-lop' || v === 'chuyen-tiep') { if (thuong) doiThamSo({ tab: null, 'che-do': null, xem: 'cuoi-khoa' }); }
+    if (v === 'lo-trinh-ca-lop' || v === 'chuyen-tiep') { if (thuong) doiThamSo({ tab: null, 'che-do': null, xem: 'cuoi-khoa' }, true); }   // push: ‹ về đúng hồ sơ lớp
     else setViec(v);
   };
   const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); };
@@ -144,7 +146,7 @@ export default function ClassOverviewPage() {
 
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
-        <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null, tuan: null })}
+        <TabHocVienLop lop={data} cheDo={cheDo} moChon={moChon} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null, tuan: null })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}
           onSuaThongTin={data.viewer.coTheSuaCaLop && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />
       )}
