@@ -260,10 +260,11 @@ export async function runPrKetPetTests(t: any) {
   check('KP-3d · chuyển lớp: FT (Target 6.5) → PET không mang band sang; PET (Target 150) → FT không điền sẵn 150 làm Target FT', () => thu(() => {
     const pet = one(`SELECT id FROM classes WHERE code = 'MB PET 01'`).id;
     const ft = one(`SELECT c.id, c.student_id FROM learning_cycles c JOIN enrollments e ON e.student_id = c.student_id AND e.status = 'active' JOIN classes k ON k.id = e.class_id
-      WHERE k.code = 'MB FT 101' AND c.status = 'active' AND c.route IS NOT NULL ORDER BY c.id LIMIT 1`);
+      WHERE k.code = 'MB FT 101' AND c.status = 'active' AND c.route IS NOT NULL
+        AND (SELECT COUNT(*) FROM learning_cycles x WHERE x.student_id = c.student_id AND x.status = 'active') = 1 ORDER BY c.id LIMIT 1`);
     cycles.reviseTarget(P.admin, ft.id, { newTarget: 6.5, reason: 'thử' });
     studentsSvc.transferStudent(P.admin, ft.student_id, pet, TODAY, 'Xếp lại trình độ', { noNote: false, note: 'sang PET' });
-    const moi = one(`SELECT target_score, khong_cam_ket, programme_code FROM learning_cycles WHERE student_id = ? AND status = 'active'`, ft.student_id);
+    const moi = one(`SELECT target_score, khong_cam_ket, programme_code FROM learning_cycles WHERE student_id = ? ORDER BY id DESC LIMIT 1`, ft.student_id);
     assert(moi.programme_code === 'PET' && moi.target_score === null && !moi.khong_cam_ket, `FT → PET: ${JSON.stringify(moi)}`);
     const c = emPet();
     cycles.reviseTarget(P.admin, c.id, { newTarget: 150, reason: 'thử' });
