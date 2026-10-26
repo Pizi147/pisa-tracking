@@ -89,17 +89,17 @@ function HangChip({ ds, chon, onChon, ct = null }: {
   );
 }
 
-/** Enter/↓ xuống em kế tiếp CÓ Ô NHẬP, ↑ lên — cùng cách của lưới. */
+/** Enter/↓ xuống em kế tiếp CÓ Ô NHẬP, ↑ lên — cùng cách của lưới (Enter bỏ qua ô chỉ đọc — R1-LUU-TIEP). */
 function useDiChuyen() {
   const o = useRef<(HTMLInputElement | null)[]>([]);
-  const di = (i: number, d: number) => {
+  const di = (i: number, d: number, boChiDoc = false) => {
     for (let r = i + d; r >= 0 && r < o.current.length; r += d) {
       const el = o.current[r];
-      if (el) { el.focus(); el.select(); return; }
+      if (el && !(boChiDoc && el.readOnly)) { el.focus(); el.select(); return; }
     }
   };
   const phim = (i: number) => (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); di(i, 1); }
+    if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); di(i, 1, e.key === 'Enter'); }
     if (e.key === 'ArrowUp') { e.preventDefault(); di(i, -1); }
   };
   const dangKy = (i: number) => (el: HTMLInputElement | null) => { o.current[i] = el; };

@@ -338,10 +338,11 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     );
   }
 
-  const move = (row: number, col: number, dr: number) => {
+  /* R1-LUU-TIEP: Enter (`boChiDoc`) bỏ qua ô chỉ đọc (đã có điểm — gõ số ở đó mở hộp sửa có lý do), sang ô còn nhập được; ↑ / ↓ đi qua mọi ô. */
+  const move = (row: number, col: number, dr: number, boChiDoc = false) => {
     for (let r = row + dr; r >= 0 && r < grid.current.length; r += dr) {
       const el = grid.current[r]?.[col];
-      if (el) { el.focus(); el.select(); return; }
+      if (el && !(boChiDoc && el.readOnly)) { el.focus(); el.select(); return; }
     }
   };
   /* OV-6b2 (mockup §6): lưới Checkpoint có thêm cột "% tổng" trước Kết quả. */
@@ -404,7 +405,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
   dien: Record<string, { gt: number; lan: number }>;
   onReload: () => void;
   register: (col: number, el: HTMLInputElement | null) => void;
-  onMove: (row: number, col: number, dr: number) => void;
+  onMove: (row: number, col: number, dr: number, boChiDoc?: boolean) => void;
 }) {
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
@@ -523,7 +524,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
               onLoiNhap={(c) => loiNhap(k, c)}
               inputRef={(el) => register(ci, el)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); onMove(rowIndex, ci, 1); }
+                if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); onMove(rowIndex, ci, 1, e.key === 'Enter'); }
                 if (e.key === 'ArrowUp') { e.preventDefault(); onMove(rowIndex, ci, -1); }
               }}
             />
