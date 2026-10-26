@@ -11,7 +11,7 @@ export const EN_OV12E = {
   'Người dạy': 'Teacher',
   'Kỳ này chạm mốc quy chế{moc} — lưu là PA kết thúc.': 'This period reaches the required milestone{moc} — saving ends the PA.',
   'Buổi {n}': 'Session {n}',
-  'Tutor': 'Tutor name',
+  'Tutor': 'Tutor',   // tên PA (panel một em, Đang SOS, hồ sơ lớp) VÀ nhãn ô Ghi kết quả — giữ "Tutor" (luật thuật ngữ 3)
   'Nhận xét buổi': 'Session comment',
   'Ghi kết quả cuối': 'Record final result',
   'Bắt đầu': 'Start',

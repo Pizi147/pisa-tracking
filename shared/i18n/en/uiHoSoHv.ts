@@ -27,6 +27,8 @@ export const EN_UI_HO_SO_HV = {
   'Từ 0 tới thang điểm': 'From 0 up to the maximum',
   'Ví dụ: KT từ vựng, BTVN Unit 3': 'e.g. Vocab quiz, Unit 3 homework',
   'Xem thêm {n} dòng ▾': 'Show {n} more ▾',
+  '‹ Xem trước đó': '‹ Earlier',
+  'Về gần nhất ›': 'Back to latest ›',
   'kỳ vọng': 'expectation',
   'thang của bài · không quy đổi band': 'task scale · not converted to band',
   '{mt} chưa có điểm': '{mt} not scored yet',

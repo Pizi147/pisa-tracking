@@ -31,7 +31,7 @@ export const EN_OV15H2 = {
   'Xuất các HV đã chọn': 'Export selected students',
   'Có Case mở': 'Has open Case',
   'Không Case': 'No Case',
-  'Case trống PA': 'Case without plan',
+  'Case trống PA': 'Case without PA',
   'Chờ nhận xét': 'Awaiting comment',
   'PA chờ xác nhận / duyệt': 'Plan awaiting confirmation / approval',
   'PA đang chạy': 'Plan running',

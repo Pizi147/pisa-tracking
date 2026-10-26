@@ -39,7 +39,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | **Phân tích lớp** mở một kỹ năng: hai bảng nhỏ Vấn đề + Hiệu quả PA, số bấm được; dòng "Cả bài" lớp thường (PR-HVL M5) | `web/src/modules/classes/ClassIssueBoard.tsx` (`VanDeKyNang`) · `PhanTichLopTab.tsx` | `server/src/cases/effectiveness.ts` → `issueBoard` (`tong`, `plans[].ids`) · `GET /classes/:id/issue-board/o` → `phanTichLop.ts` → `oPhanTichLop` |
 | **Thẻ điện thoại** thay bảng < 640 px (D2; PR-UXD dùng lại cho Mock Test / Kết quả kiểm tra) | `web/src/ui/TheDong.tsx` (`TheDong`, `useDienThoai`) | — |
 | Bộ demo H1–H4 (PR-HVL) | `server/src/seed/hvlSeed.ts` | `buildHvlDemo` sau `buildXlmtDemo` ở `seed.ts` |
-| **Hồ sơ một học viên** (UI-HO-SO-HV #550: đầu hai dòng `DongThongTin`, ô điểm to `DiemDau` bấm đổi kỹ năng, thanh Việc cần làm `ThanhViec`, Hành trình theo kỹ năng `BieuDoHanhTrinh` (SVG), Tiến độ trên lớp `TienDoTrenLop`, Case & PA theo kỹ năng `CaseKyNang`; tab Học thuật · Ý thức & Phối hợp · Lộ trình & lớp) | `web/src/modules/students/StudentDetailPage.tsx` · `HanhTrinhKyNang.tsx` · `DauHoSo.tsx` · `cases/SkillBoard.tsx` (`CaseKyNang`) | `server/src/students/profile.ts` (`attempts[].vangCu`) · `GET /students/:id/s-expert` · `GET /students/:id/bai-tren-lop` |
+| **Hồ sơ một học viên** (UI-HO-SO-HV #550: đầu hai dòng `DongThongTin`, ô điểm to `DiemDau` bấm đổi kỹ năng, thanh Việc cần làm `ThanhViec`, Hành trình theo kỹ năng `BieuDoHanhTrinh` (SVG; trục tuần `shared/domain/trucTuan.ts` — trần 260 tuần, khung 80 tuần), Tiến độ trên lớp `TienDoTrenLop`, Case & PA theo kỹ năng `CaseKyNang`; tab Học thuật · Ý thức & Phối hợp · Lộ trình & lớp) | `web/src/modules/students/StudentDetailPage.tsx` · `HanhTrinhKyNang.tsx` · `DauHoSo.tsx` · `cases/SkillBoard.tsx` (`CaseKyNang`) | `server/src/students/profile.ts` (`attempts[].vangCu`) · `GET /students/:id/s-expert` · `GET /students/:id/bai-tren-lop` |
 | Bảng kỹ năng trong hồ sơ · **ô điểm bốn màu** | `web/src/modules/cases/SkillBoard.tsx` → `ScoreCell` | `server/src/cases/cases.ts` → `skillSupportBoard` |
 | **Thẻ case** và từng khối phương án ba phần trong hồ sơ (PR-HV Q8) | `web/src/modules/cases/SkillBoard.tsx` → `TheCase` · `KhoiPhuongAn` | `server/src/cases/cases.ts` → `caseCardOf` |
 | **Ghi kết quả PA** (cập nhật tuần 5 mục; Giữ nguyên / Điều chỉnh / Thay / Kết thúc) | `web/src/modules/cases/CapNhatTuan.tsx` → `CapNhatTuanForm` | `server/src/cases/cases.ts` → `updateResult` · PR-SO: PA đại diện nhóm Bổ trợ (Tổng quan `pa-can-cap-nhat` = Công việc) `shared/domain/daiDienBoTro.ts` → `daiDienNhomBoTro` |
@@ -68,7 +68,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | **Công việc của TVV** (UI-CV-TVV #540) — nhóm Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ, panel Báo PH / Sau thi hai bước | `web/src/modules/congViec/{PanelBaoPhTvv,PanelSauThi}.tsx` · `HoTroHocVienTab.tsx` | `server/src/worklist/viecTvv.ts` · `mywork.ts` (`NHOM_VIEC_TVV`) |
 | **Hộp duyệt + panel duyệt tại chỗ** (UI-CON-LAI #560 k3) — danh sách dòng gọn + panel phải `?the=`, bối cảnh thu hồi (ngày thực hiện, TVV đã / chưa báo PH), "Sau khi duyệt:", Hoàn tác 5 s | `web/src/modules/duyet/{HopChoDuyet,TheYeuCau}.tsx` | `server/src/duyet/loaiYeuCau.ts` (`nap` / `moTa` loại thu hồi) |
 | **Mốc thời gian nghiệp vụ** (#559) — `created_at` của việc Phối hợp SOS (mốc hạn Meeting CX) theo ngày demo, không giờ thật | — | `server/src/demoConfig.ts` (`nowNghiepVu`) · `server/src/yThuc/phoiHop.ts` |
-| Màn một case đầy đủ | `web/src/modules/cases/CasePanel.tsx` | `server/src/cases/cases.ts` → `caseDetail` |
+| Màn một case đầy đủ | `web/src/modules/cases/CasePanel.tsx` (`ThanCase`; component `CasePanel` đã xoá ở R1-SUA-NHO) | `server/src/cases/cases.ts` → `caseDetail` |
 | Trang đăng nhập và vào nhanh bằng tài khoản demo | `web/src/modules/platform/WelcomePage.tsx` | `server/src/platform/accounts.ts` |
 
 ## Tài liệu nào để làm gì
@@ -355,7 +355,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Cột `sos_cases.han_xac_nhan`, `case_interventions.moc_quy_che` | `server/src/migrate/prSos.ts` |
 | Hàng Case / hàng PA ở bảng kỹ năng · panel Xác nhận Case / PA / Không cần theo dõi | `web/src/modules/cases/SkillBoard.tsx` → `HangCase`, `HangPA` · `web/src/modules/yThuc/CaseSosControls.tsx` |
 | Vòng đời case, phương án, phê duyệt, kết quả | `server/src/cases/cases.ts` |
-| Màn một case | `web/src/modules/cases/CasePanel.tsx` |
+| Màn một case | `web/src/modules/cases/CasePanel.tsx` (`ThanCase`, `tenNganCase`) |
 | Bảng theo dõi năm hạng mục ở hồ sơ | `web/src/modules/cases/SkillBoard.tsx` |
 | Case của em ở hồ sơ — **nằm ngay dưới hàng kỹ năng**, không còn khối danh sách riêng | `web/src/modules/cases/SkillBoard.tsx` → `HangCase` / `HangPA` |
 | Luật hạn chu kỳ hai tuần / một tuần | `shared/domain/cases.ts` → `cycleDeadline` |
