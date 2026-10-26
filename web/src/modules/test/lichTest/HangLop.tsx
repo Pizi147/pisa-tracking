@@ -129,7 +129,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
   /* Lớp kế (sau lớp này, vòng lên) còn bài của người xem — cùng số "… của bạn: còn n bài" ở hàng lớp. */
   const onHet = (l: LopLichTest) => () => {
     const i = lop.indexOf(l);
-    const ke = [...lop.slice(i + 1), ...lop.slice(0, i)].find((x) => x.classId !== l.classId && (x.phan ? x.conBaiCuaToi : x.conBai) > 0);
+    const ke = [...lop.slice(i + 1), ...lop.slice(0, i)].find((x) => khoaHang(x) !== khoaHang(l) && (x.phan ? x.conBaiCuaToi : x.conBai) > 0);
     return ke ? { nhan: t('Lớp tiếp: {lop} ›', { lop: ke.classCode }), onClick: () => onLopTiep(l, ke) } : null;
   };
 

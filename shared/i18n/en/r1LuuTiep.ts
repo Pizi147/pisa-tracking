@@ -14,4 +14,6 @@ export const EN_R1_LUU_TIEP = {
   'Tiếp: {x}': 'Next: {x}',
   'Ô còn trống — nhập điểm hoặc Vắng': 'Empty — enter a score or mark Absent',
   '‹ Về {x}': '‹ Back to {x}',
+  'Lưu điểm · đóng': 'Save score & close',
+  'Ô này đang lưu — chờ một chút rồi bấm lại.': 'This cell is still saving — wait a moment and try again.',
 } satisfies Record<string, Dich>;

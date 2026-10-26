@@ -336,7 +336,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     try {
       for (const l of lenh) {
         const r = await onSave(l, { nem: true });
-        if (r === 'trung') return;   // lệnh cùng ô đang chạy — chờ nó, không báo lỗi
+        /* Lệnh cùng ô đang chạy (Lưu lại ở ô + Enter): không phải lỗi — nói rõ, chữ giữ, bấm lại sau. */
+        if (r === 'trung') { setLoi({ cau: t('Ô này đang lưu — chờ một chút rồi bấm lại.'), o: null }); return; }
         if (!r) throw new Error(t('Không lưu được — thử lại.'));
       }
     } catch (e: any) {
@@ -374,7 +375,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       else setLuuAnh(anh);
       return;
     }
-    /* Ô vắng (Lưu điểm): đóng sau lưu như cũ. V12: "Lưu" ở lại; "Lưu · bài tiếp ›" chỉ chuyển khi máy chủ đã nhận. */
+    /* Ô vắng ("Lưu điểm · đóng" — tên nói đúng hành vi, V12): đóng sau lưu như cũ. V12: "Lưu" ở lại; "Lưu · bài tiếp ›" chỉ chuyển khi máy chủ đã nhận. */
     if (vang) void gui(lenh, onDong, 'luu');
     else void gui(lenh, tiep && onTiep ? () => onTiep(true) : () => undefined, tiep ? 'tiep' : 'luu');
   };
@@ -541,7 +542,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong, 'khac')}>{t('Bỏ vắng')}</button>
       )}
       <LyDoThieu thieu={thieu} />
-      {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{busy ? dangLuuChu : t('Lưu điểm')}</button>}
+      {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{busy ? dangLuuChu : t('Lưu điểm · đóng')}</button>}
     </>
   ) : (
     <>

@@ -327,7 +327,8 @@ export default function MockDetailPage() {
 
       {/* B. NĂM Ô ĐIỂM LỚN — tầng 1 của màn; bấm ô là sửa tại chỗ (YC-13.7, YC-13.8). */}
       <div id="dai-diem" className="scroll-mt-4">
-        <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
+        {/* R1-LUU-TIEP: `key` lượt — "Lưu · em tiếp ›" đổi lượt không remount trang; phiên chấm (bài đã lưu, hết) phải là của lượt mới. */}
+        <DaiODiemLon key={d.id} cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
           mo={moO} onMo={setMoO} save={save} nguCanh={nguCanhChiTiet(d)}
           emTiep={emSau !== null ? (k) => navigate(duongDotTest({ id: emSau }, k), { state: { ds: dsLuot }, replace: true }) : null}
           ve={(() => { const v = chongVe[0] ?? trangCha('mt', { studentId: d.student.id, tenHv: d.student.name }); return { nhan: t('‹ Về {x}', { x: v.ten }), onClick: () => veNguon(v.url, !chongVe.length) }; })()} />

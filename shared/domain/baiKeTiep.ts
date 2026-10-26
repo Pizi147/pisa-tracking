@@ -6,9 +6,12 @@ import { awaitingScore, type SkillProgress } from './fasttrack.ts';
 
 export type ODiemConThieu = { required: boolean; canEdit: boolean; band: number | null; noShow?: unknown; progress: string };
 
-/** Ô FT người xem còn phải nhập: bắt buộc (môn đăng ký), sửa được, chưa band, không "-", đã tới tuần thi, không huỷ / vắng / chờ duyệt dời. */
+/**
+ * Ô FT người xem còn phải nhập: bắt buộc (môn đăng ký), sửa được, chưa band, không "-", đã tới tuần thi, không huỷ / vắng / chờ duyệt dời.
+ * MT lịch sử (`lich_su`, nhập bù) cũng là còn thiếu để nhập — không phải nợ (`awaitingScore` không tính), nhưng "bài tiếp" vẫn phải sang.
+ */
 export const conThieuFt = (c: ODiemConThieu) =>
-  c.required && c.canEdit && c.band === null && !c.noShow && awaitingScore(c.progress as SkillProgress);
+  c.required && c.canEdit && c.band === null && !c.noShow && (awaitingScore(c.progress as SkillProgress) || c.progress === 'lich_su');
 
 /** `khoa` = attemptId (lưới) hoặc id dòng (Speaking chéo). */
 export type ViTriO = { khoa: number; kyNang: string };

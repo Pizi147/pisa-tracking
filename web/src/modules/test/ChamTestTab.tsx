@@ -147,7 +147,7 @@ export function ChamTestTab() {
               onClick={() => boChuRoi(() => mo(null))}>{t('‹ Chấm Test')}</button>
             <KhungTaiCho.Provider value>
               {laCheo(chon)
-                ? <PanelChamSpeaking key={chon.key} lopDau={chon.classId} onDong={() => mo(null)} onDaLam={() => { sp.reload(); reload(); }} />
+                ? <PanelChamSpeaking key={chon.key} lopDau={chon.classId} onDong={() => mo(null)} onDaLam={() => { sp.reload(); reload(); }} onTiep={keTiep ? () => mo(keTiep, true) : null} />
                 : <PanelViec key={chon.key} it={chon} tuMo={tuMo === chon.key} onDong={() => mo(null)} onDaLam={reload} onTiep={keTiep ? () => mo(keTiep, true) : null} />}
             </KhungTaiCho.Provider>
           </>

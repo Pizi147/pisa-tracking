@@ -65,9 +65,15 @@ export async function runR1LuuTiepTests({ check, assert }: Kit) {
   });
   check('BT-10 · conThieuFt khớp oTrongFt + điều kiện tuần / chờ duyệt dời', () => {
     assert(d.conThieuFt(o()) && d.conThieuFt(o({ progress: 'sat' })), 'due / sat là thiếu');
-    for (const p of ['upcoming', 'not_scheduled', 'reschedule_pending', 'absent', 'cancelled', 'scored', 'lich_su']) {
+    for (const p of ['upcoming', 'not_scheduled', 'reschedule_pending', 'absent', 'cancelled', 'scored']) {
       assert(!d.conThieuFt(o({ progress: p })), p);
     }
+  });
+  check('BT-12 · MT lịch sử (nhập bù, chưa band, sửa được) là còn thiếu — "Lưu · bài tiếp" sang em kế, không báo hết sớm', () => {
+    assert(d.conThieuFt(o({ progress: 'lich_su' })), 'lich_su chưa band phải là thiếu');
+    assert(!d.conThieuFt(o({ progress: 'lich_su', band: 6 })), 'lich_su có band thì xong');
+    const r = ke(day([1, 2, 3], L, { progress: 'lich_su' }), 1, L);
+    assert(r?.khoa === 2, JSON.stringify(r));
   });
   check('BT-11 · docNguCanhDs nhận loại "luot"', () => {
     const ds = d.docNguCanhDs({ loai: 'luot', ids: [5, 6], nhan: 'MB FT 101' }, 'luot', 6);

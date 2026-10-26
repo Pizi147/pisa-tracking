@@ -23,6 +23,8 @@ Lớp thường gõ trực tiếp: Enter xuống hàng **bỏ qua ô đã có đ
 | Thao tác | Trước | Sau |
 |---|---|---|
 | Lưu ô điểm | đóng hộp | ở lại (✓ Đã lưu · Bài tiếp ›); X / Esc / bấm ngoài đóng |
+| Ô đang vắng: Lưu điểm | đóng hộp | giữ đóng, đổi chữ **Lưu điểm · đóng** (V12: tên nói đúng hành vi) |
+| MT lịch sử chưa nhập (nhập bù) | em tiếp | **bài tiếp** vẫn sang em trống kế (`lich_su` là còn thiếu, không là nợ) |
 | Lưu · em tiếp › | có | đổi chữ **Lưu · bài tiếp ›** (trang một em hết bài: **Lưu · em tiếp ›**) |
 | Vắng | ghi "-" rồi sang em kế, Hoàn tác | giữ (sang bài còn thiếu kế) |
 | Bỏ vắng · Khôi phục điểm · Lý do sửa · Lịch sử · Người chấm S · Nhóm nguyên nhân · Ctrl+Enter | có | giữ |
