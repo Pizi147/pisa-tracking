@@ -219,7 +219,7 @@ export function BangMauV5() {
       </Muc>
 
       <Muc so={7} ten="Panel việc · bối cảnh · form · lịch sử gập · trạng thái lưu"
-        ghi={<>Khung thật (<code>KhungPanel</code>, NEN-PANEL): dòng loại, bối cảnh nhãn / giá trị, chân lưu. <b>Lưu</b> ở lại panel; <b>Lưu và tiếp</b> chỉ sang việc kế sau khi lưu xong, lỗi thì ở lại và giữ chữ. Chữ đang gõ giữ ở máy theo khoá việc; ✕ khi còn chữ → hộp &quot;Bỏ chữ đang gõ?&quot;. Không tự chuyển theo giờ.</>}>
+        ghi={<>Khung thật (<code>KhungPanel</code>, NEN-PANEL): dòng loại, bối cảnh nhãn / giá trị, chân lưu. <b>Lưu</b> ở lại panel; <b>Lưu · việc tiếp ›</b> chỉ sang việc kế sau khi lưu xong, lỗi thì ở lại và giữ chữ. Chữ đang gõ giữ ở máy theo khoá việc; ✕ khi còn chữ → hộp &quot;Bỏ chữ đang gõ?&quot;. Không tự chuyển theo giờ.</>}>
         <div className="grid grid-cols-[480px_minmax(0,1fr)] items-start gap-4 max-[1100px]:grid-cols-1">
           <KhungTaiCho.Provider value>
             <NhapViec khoa="dev:bao-ph-yen"><PanelViecMau /></NhapViec>
@@ -227,8 +227,8 @@ export function BangMauV5() {
           <div className="card flex flex-col gap-2.5 px-4 py-3.5">
             <b className="text-sm">Trạng thái ở chân panel — cùng một chỗ, chữ + ký hiệu</b>
             {([
-              ['nhap', <><button type="button" className="btn btn-sm">Lưu</button><button type="button" className="btn btn-sm btn-primary">Lưu và tiếp</button></>],
-              ['dang', <><button type="button" className="btn btn-sm" disabled>Lưu</button><button type="button" className="btn btn-sm btn-primary" disabled>Lưu và tiếp</button></>],
+              ['nhap', <><button type="button" className="btn btn-sm">Lưu</button><button type="button" className="btn btn-sm btn-primary">Lưu · việc tiếp ›</button></>],
+              ['dang', <><button type="button" className="btn btn-sm" disabled>Lưu</button><button type="button" className="btn btn-sm btn-primary" disabled>Lưu · việc tiếp ›</button></>],
               ['da', <><button type="button" className="btn btn-sm">Đóng</button><button type="button" className="btn btn-sm btn-primary">Việc kế: Báo PH · Lý Tuấn Bình</button></>],
               ['loi', <button type="button" className="btn btn-sm btn-primary">Thử lại</button>],
             ] as const).map(([tt, nut]) => (
@@ -251,7 +251,7 @@ export function BangMauV5() {
   );
 }
 
-/** Mục 7: panel việc Báo PH (TVV Hương mở việc của em Yến) — khung thật, lưu giả lập 600 ms, "Lưu và tiếp" chỉ sau khi lưu xong. */
+/** Mục 7: panel việc Báo PH (TVV Hương mở việc của em Yến) — khung thật, lưu giả lập 600 ms, "Lưu · việc tiếp ›" chỉ sau khi lưu xong. */
 function PanelViecMau() {
   const [kq, setKq] = useNhap('kq', 'da-bao');
   const [ngay, setNgay] = useNhap('ngay', HOM_NAY);
@@ -277,7 +277,7 @@ function PanelViecMau() {
         phu: tt === 'loi' ? null : <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>Lưu</button>,
         chinh: tt === 'loi'
           ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}>Thử lại</button>
-          : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luuRoiTiep(luu, () => { setGhiChu(''); setKq('da-bao'); setNgay(HOM_NAY); setTt(null); })}>Lưu và tiếp</button>,
+          : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luuRoiTiep(luu, () => { setGhiChu(''); setKq('da-bao'); setNgay(HOM_NAY); setTt(null); })}>Lưu · việc tiếp ›</button>,
       }}>
       <div className="flex flex-col gap-4 pt-4">
         <BoiCanh dong={[

@@ -103,3 +103,4 @@ export * from './baoCaoPhanTich.ts';
 export * from './locThem.ts';
 export * from './doanNgonNgu.ts';
 export * from './kyThi.ts';
+export * from './baiKeTiep.ts';

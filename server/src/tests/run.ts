@@ -9618,6 +9618,9 @@ await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
 // ==================================================================== P13 KET-PET (thang Cambridge, Target + thi thật KET / PET, Checkpoint 4 môn)
 const { runPrKetPetTests } = await import('./prKetPet.tests.ts');
 await runPrKetPetTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== R1-LUU-TIEP (chọn bài còn thiếu kế tiếp)
+const { runR1LuuTiepTests } = await import('./r1LuuTiep.tests.ts');
+await runR1LuuTiepTests({ check, assert });
 // ==================================================================== R1-SUA-NHO (trục tuần Hành trình, đường lượt lớp thường không vòng)
 const { runR1SuaNhoTests } = await import('./r1SuaNho.tests.ts');
 await runR1SuaNhoTests({ check, assert });

@@ -96,14 +96,14 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'nhap-diem', ten: 'Nhập điểm', duong: ['/nhap-diem', '/bang-diem-thuong', '/mock-test'],
-      muc: [{ id: 'nd-go', ten: 'Gõ điểm', buoc: ['Gõ điểm, Enter sang ô dưới; mỗi ô tự lưu.', 'Em vắng: gõ <b>-</b>; ô đã dời ghi "vắng W3 SEP".', 'MT mới nhất của em: ô thiếu <b>nhận xét</b> (dưới kỳ vọng: thêm <b>nhóm nguyên nhân</b>) viền vàng — nên ghi, dùng làm mô tả Case; không chặn lưu.'] }],
+      muc: [{ id: 'nd-go', ten: 'Gõ điểm', buoc: ['Lớp thường: gõ điểm, Enter sang ô còn nhập ở dưới (bỏ qua ô đã có điểm); mỗi ô tự lưu.', 'Ô MT: <b>Lưu</b> ở lại (✓ Đã lưu · <b>Bài tiếp ›</b>); <b>Lưu · bài tiếp ›</b> (Enter) sang bài còn thiếu kế, hết cột thì sang kỹ năng kế. Xong phần của bạn: <b>Lớp tiếp</b> / <b>Việc tiếp</b>; hồ sơ MT mở từ lưới: <b>Lưu · em tiếp ›</b>.', 'Em vắng: gõ <b>-</b>; ô đã dời ghi "vắng W3 SEP".', 'MT mới nhất của em: ô thiếu <b>nhận xét</b> (dưới kỳ vọng: thêm <b>nhóm nguyên nhân</b>) viền vàng — nên ghi, dùng làm mô tả Case; không chặn lưu.'] }],
     },
     {
       id: 'cong-viec', ten: 'Công việc', duong: ['/cong-viec'],
       muc: [
         { id: 'cv-tai-cho', ten: 'Làm việc ngay trên dòng', buoc: ['Bấm dòng → ô cần điền mở ngay bên; Case mở rộng tại chỗ.', 'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác".'],
           chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Bấm một dòng để làm việc đó.' } },
-        { id: 'cd-cheo', ten: 'Speaking chấm chéo', buoc: ['Dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b>: bài Speaking Mock mọi lớp FT chi nhánh bạn, từ Thứ Hai tuần Test.', 'Bấm dòng: tìm em (tên, email), lọc lớp, bấm ô S để chấm; <b>Enter</b> sang em kế.', 'Có số bài chờ, không tính quá hạn.'] },
+        { id: 'cd-cheo', ten: 'Speaking chấm chéo', buoc: ['Dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b>: bài Speaking Mock mọi lớp FT chi nhánh bạn, từ Thứ Hai tuần Test.', 'Bấm dòng: tìm em (tên, email), lọc lớp, bấm ô S để chấm; <b>Enter</b> sang em chưa chấm kế.', 'Có số bài chờ, không tính quá hạn.'] },
         { id: 'cv-gop', ten: 'Dòng gộp nhiều em', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
         { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chữ cam + ⚠ ở cột hạn, nằm đầu nhóm.', 'Lưu xong là hết quá hạn ở mọi nơi.', 'Quá hạn chấm, Case chưa chốt PA quá hạn: <b>Thông báo</b> tự gửi, tự hết khi xong.'] },
         { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Chip <b>⚠ quá hạn</b> lọc mọi việc quá hạn; bấm lại để bỏ.', 'Nhóm việc gập / mở ở đầu nhóm.'],

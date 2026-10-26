@@ -1,5 +1,5 @@
 /** Hồ sơ trước / sau trong danh sách người dùng vừa mở (chủ sản phẩm 03/10, Q-0310-4). */
-export type NguCanhDs = { loai: 'hoc-vien' | 'lop'; ids: number[]; nhan: string };
+export type NguCanhDs = { loai: 'hoc-vien' | 'lop' | 'luot'; ids: number[]; nhan: string };
 
 export function keBen(ds: readonly number[], id: number): { truoc: number | null; sau: number | null; viTri: number; tong: number } | null {
   const i = ds.indexOf(id);

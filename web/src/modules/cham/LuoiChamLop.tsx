@@ -5,6 +5,7 @@ import { LuoiFT, tenDotFt, type FtSheet, type HangMo, type SExTuan } from './Luo
 import { DanExcel, boDanFt, boDanThuong } from './DanExcel.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
+import type { OnHet } from './phienCham.ts';
 import { ENTRY_SKILLS, nhanBai, type TomTatLuot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -70,7 +71,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, sEx,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, sEx, onHet,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -88,6 +89,8 @@ export function LuoiChamLop({
   nutCaLop?: boolean;
   /** UI-LICH-TUAN: lượt S Ex của tuần (Lịch tuần) — cột S Ex của lưới FT. */
   sEx?: SExTuan;
+  /** R1-LUU-TIEP: hết bài của người xem ở lưới FT → nút "Lớp tiếp" / "Việc tiếp" của nơi gọi. */
+  onHet?: OnHet;
 }) {
   const hep = useManHinhHep();
   /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
@@ -161,9 +164,9 @@ export function LuoiChamLop({
   const tungKyNang = hep && !xemBang && !theHv;
   const luoi = (
     <>
-      {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} />}
+      {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} onHet={onHet} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} tuanDangXem={tuanDangXem} />}
-      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} sEx={sEx} the={theHv} />}
+      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} sEx={sEx} the={theHv} onHet={onHet} />}
       {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} />}
     </>
   );
