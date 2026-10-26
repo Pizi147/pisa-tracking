@@ -74,7 +74,7 @@ export async function runPrOv15bTests(t: YThucTestKit) {
   /* ---------------------------------------------------------------- 2 · Dán từ Excel — R1-BO-DAN-EXCEL (chủ SP 26/10): web bỏ, API lô giữ */
   check('OV15b-2 · web không còn "Dán từ Excel" điểm (ngoài Tutor và Thêm học viên — nhập danh sách, không phải điểm)', () => {
     const goc = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../web/src');
-    const mien = /^modules[\/](tutor[\/]|students[\/]IntakePanel\.tsx$)/;
+    const mien = /^modules[\\/](tutor[\\/]|students[\\/]IntakePanel\.tsx$)/;   // Windows: readdirSync trả "\"
     const sai = (fs.readdirSync(goc, { recursive: true }) as string[])
       .filter((f) => /\.tsx?$/.test(f) && !mien.test(f) && /Dán từ Excel|DanExcel/.test(fs.readFileSync(path.join(goc, f), 'utf8')));
     assert(sai.length === 0, `còn Dán từ Excel điểm: ${sai.join(', ')}`);
