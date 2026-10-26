@@ -12,7 +12,7 @@ import {
 } from '@shared/domain/index.ts';
 import type { LopKH } from './keHoach/kieu.ts';
 import { TimLop } from './keHoach/TimLop.tsx';
-import { dich, t } from '@shared/i18n/index.ts';
+import { NGON_NGU, dich, t } from '@shared/i18n/index.ts';
 
 type PhamVi = {
   chiNhanh: { id: number; ten: string }[];
@@ -117,7 +117,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, on
     if (typeof f === 'string' || dangXuat) return;
     setDangXuat(true);
     try {
-      const r = await api.post<{ sheets: { ten: string; aoa: Cell[][] }[]; tenTep: string; dem: { luot: number } }>('/xuat-mt', bodyXuatMt(f));
+      const r = await api.post<{ sheets: { ten: string; aoa: Cell[][] }[]; tenTep: string; dem: { luot: number } }>('/xuat-mt', { ...bodyXuatMt(f), ngonNgu: NGON_NGU });
       const XLSX = await import('xlsx');
       const wb = XLSX.utils.book_new();
       r.sheets.forEach((s, i) => {

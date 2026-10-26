@@ -4,6 +4,7 @@ import {
   soSanhLop, tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
   type BoLocXuatMt, type Cell, type DongFT, type DongThuong, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
+import { dichMau, type NgonNgu } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, nowIso } from '../util.ts';
@@ -256,7 +257,33 @@ export function xemTruoc(p: Principal, f: BoLocXuatMt) {
 }
 
 /** POST — trả mảng hai chiều đã dựng + MỘT dòng nhật ký (`mt.xuat_excel`). */
-export function xuatExcel(p: Principal, f: BoLocXuatMt, tranByte = XUAT_TOI_DA_BYTE) {
+/**
+ * R1-EN-2 (spec 4.3): tệp theo tiếng người bấm Xuất — tiêu đề cột, tên sheet, chữ trạng thái / hướng gợi ý và sheet Bộ lọc dịch bằng `dichMau`;
+ * dữ liệu (tên em, chữ GV nhập, mã lớp) giữ nguyên. Tiếng Việt → trả nguyên.
+ */
+export function dichSheetXuat(sheets: { ten: string; aoa: Cell[][] }[], nn: NgonNgu): { ten: string; aoa: Cell[][] }[] {
+  if (nn !== 'en') return sheets;
+  const d = (c: Cell): Cell => (typeof c === 'string' ? dichMau('en', c) : c);
+  /* Tiêu đề ghép tên môn (lớp thường): "Tổng hợp %", "Listening điểm", "Tuần R" — dịch tên môn + phần đuôi riêng. */
+  const DUOI: Record<string, string> = { '%': '%', 'điểm': 'score', 'tổng': 'total' };
+  const dau1 = (c: Cell): Cell => {
+    if (typeof c !== 'string') return c;
+    const m = /^(.+) (%|điểm|tổng)$/.exec(c) ?? null;
+    if (m && m[1] !== '%') return `${dichMau('en', m[1])} ${DUOI[m[2]]}`;
+    const w = /^Tuần (.+)$/.exec(c);
+    return w ? `${dichMau('en', w[1])} week` : d(c);
+  };
+  return sheets.map((s) => {
+    const [dau = [], ...than] = s.aoa;
+    const boLoc = s.ten === 'Bộ lọc đã dùng';
+    const cot = new Set(['Trạng thái lượt', 'Hướng gợi ý'].map((k) => dau.indexOf(k)).filter((i) => i >= 0));
+    /* Bộ lọc: cột Mục + giá trị chữ máy dựng; riêng tên người xuất giữ. */
+    const o = (h: Cell[]) => h.map((c, i) => (boLoc ? (i === 0 || h[0] !== 'Người xuất' ? d(c) : c) : cot.has(i) ? d(c) : c));
+    return { ten: dichMau('en', s.ten), aoa: [dau.map(boLoc ? d : dau1), ...than.map(o)] };
+  });
+}
+
+export function xuatExcel(p: Principal, f: BoLocXuatMt, tranByte = XUAT_TOI_DA_BYTE, ngonNgu: NgonNgu = 'vi') {
   const t0 = performance.now(), n0 = demHienTai()?.n ?? 0;
   const d = duLieuXuatMt(p, f);
   /* PR-S4F #12: cột Đầy đủ (có nhận xét) dễ vượt trần phản hồi 6 MB của Netlify — đo trước, báo rõ cách thu hẹp. */
@@ -270,5 +297,5 @@ export function xuatExcel(p: Principal, f: BoLocXuatMt, tranByte = XUAT_TOI_DA_B
   });
   /* Chẩn đoán trên bản chính: chỉ số lượt · số câu · ms — không tên người, không dữ liệu học viên. */
   console.info(`[xuat-mt] ${d.dem.luot} lượt · ${(demHienTai()?.n ?? 0) - n0} câu SQL · ${Math.round(performance.now() - t0)} ms`);
-  return { sheets: d.sheets, tenTep: d.tenTep, dem: d.dem };
+  return { sheets: dichSheetXuat(d.sheets, ngonNgu), tenTep: d.tenTep, dem: d.dem };
 }

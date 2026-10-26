@@ -300,6 +300,29 @@ async function mayChu(t: YThucTestKit) {
     assert(r.tenTep === 'PISA-Tracking_Test-lop-thuong_Monbay_Progress-Test-Final-Test.xlsx', r.tenTep);
   });
 
+  /* R1-EN-2 Task 6 (spec 4.3): tệp theo ngôn ngữ người bấm — tiêu đề, tên sheet, chữ trạng thái EN; dữ liệu (tên em) giữ nguyên. */
+  check('R1-EN-2 · xuất ngonNgu=en: hàng tiêu đề, tên sheet, Trạng thái lượt, sheet Bộ lọc tiếng Anh; tên em giữ nguyên', () => {
+    const VIET = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+    for (const [p, f] of [[P.mbManager, loc({ chiNhanh: String(mb.id), cot: 'day-du' })], [P.normalCoreTeacher, locThuong({ cot: 'day-du' })]] as const) {
+      const vi = xm.xuatExcel(p, f);
+      const en = xm.xuatExcel(p, f, undefined, 'en');
+      assert(en.sheets.length === vi.sheets.length && en.tenTep === vi.tenTep, 'cùng số sheet, cùng tên tệp');
+      for (const [i, s] of en.sheets.entries()) {
+        const [dau, ...than] = s.aoa;
+        assert(!VIET.test(s.ten) && !dau.some((c) => VIET.test(String(c ?? ''))), `sheet "${s.ten}": ${dau.join(' | ')}`);
+        if (s.ten === 'Filters used') {
+          assert(than.every((h) => !VIET.test(String(h[0]))), `cột Mục: ${than.map((h) => h[0]).join(' | ')}`);
+          continue;
+        }
+        const iTt = dau.indexOf('Attempt status');
+        assert(iTt >= 0 && than.every((h) => !VIET.test(String(h[iTt] ?? ''))), `Trạng thái lượt: ${than.map((h) => h[iTt]).slice(0, 5).join(' | ')}`);
+        assert(JSON.stringify(than.map((h) => h[0])) === JSON.stringify(vi.sheets[i].aoa.slice(1).map((h) => h[0])), 'tên em giữ nguyên');
+      }
+    }
+    const goc = xm.xuatExcel(P.mbManager, loc({ chiNhanh: String(mb.id) }));
+    assert(goc.sheets[0].aoa[0][0] === 'Tên' && goc.sheets.at(-1)!.ten === 'Bộ lọc đã dùng', 'mặc định vẫn tiếng Việt');
+  });
+
   check('PR-XUAT (3) · khung thường + đợt MT → 400 câu tiếng Việt; GVCN lớp FT lọc lớp FT hỏi khung thường → 0 lượt, không lỗi; Pre FOU đúng một cột "Tổng hợp %"', () => {
     const sai = d.docBoLocXuatMt({ khung: 'thuong', tg: 'dot', dot: 'mt:1' });
     assert(typeof sai === 'string' && /Progress Test và Final Test/.test(sai), String(sai));

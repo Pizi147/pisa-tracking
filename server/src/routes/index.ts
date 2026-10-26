@@ -773,7 +773,8 @@ api.get('/xuat-mt/xem-truoc', requireAuth, wrap((req) => {
 api.post('/xuat-mt', requireAuth, wrap((req) => {
   const f = docBoLocXuatMt((req.body ?? {}) as Record<string, unknown>);
   if (typeof f === 'string') throw badRequest(f);
-  return xuatMtSvc.xuatExcel(principalOf(req), f);
+  const nn = (req.body ?? {}).ngonNgu;   // R1-EN-2: tiếng giao diện của người bấm (spec 4.3)
+  return xuatMtSvc.xuatExcel(principalOf(req), f, undefined, nn === 'en' ? 'en' : 'vi');
 }));
 /* Hiệu quả PA (PR-UX4; PR-Pb2-a): PA GV thêm / PA theo quy chế. `gv`, `tu`, `den` — tên CHỐT trong Hợp đồng a↔b; `tu`/`den` thắng `tg`. */
 const filterHieuQuaPaOf = (req: Request) => ({
