@@ -127,6 +127,42 @@ table.lop { width: 100%; table-layout: fixed; }
 .v-a .sex td.ten { background: var(--dong-sex-bg); padding-left: 38px; font-weight: 500; color: var(--text-dim); }
 .dinh-chu { font-size: 12px; color: var(--text-faint); font-weight: 500; margin-left: 8px; }
 
+/* ===== A2 — A RÕ HƠN (chủ SP 26/10 đêm: "nhóm → lớp → HV vẫn thiếu rõ"): mỗi cấp thụt một bậc + khối lớp có đầu / đáy ===== */
+.v-a2 .nhom td { background: var(--surface-2); border-top: 2px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); font-size: 16px; padding: 14px 16px; }
+.v-a2 .nhom.dau-tien td { border-top: 0; }
+.v-a2 .nhom small { font-weight: 500; font-size: 13px; }
+.v-a2 .khe td { height: 16px; padding: 0; background: var(--surface); }
+.v-a2 .khe-lop td { height: 8px; padding: 0; background: var(--surface); }
+.v-a2 .hl td:first-child { padding-left: 32px; }
+.v-a2 .hl.dong td { background: var(--surface); border-bottom: 1px solid var(--line); }
+.v-a2 .hl.dang-mo td { background: var(--accent-soft); border-top: 2px solid var(--accent-strong); position: sticky; top: 0; z-index: 2; height: 52px; }
+.v-a2 .hl.dang-mo .ten-lop { font-size: 16px; }
+.v-a2 .hl.dang-mo td:first-child { box-shadow: inset 4px 0 0 var(--accent-strong); }
+.v-a2 .hc > td { padding: 0; background: var(--surface); }
+.v-a2 .hc .vung { margin-left: 32px; border-left: 4px solid var(--accent-strong); }
+.v-a2 .luoi th { background: var(--dau-cot-luoi); border-bottom: 1px solid var(--line-strong); }
+.v-a2 .luoi th:first-child, .v-a2 .luoi td:first-child { padding-left: 20px; }
+.v-a2 .luoi td.ten { background: var(--surface); }
+.v-a2 .sex td { background: var(--dong-sex-bg); height: 36px; font-size: 13px; }
+.v-a2 .sex td.ten { background: var(--dong-sex-bg); padding-left: 44px; font-weight: 500; color: var(--text-dim); }
+.v-a2 .cuoi-lop td { padding: 0; }
+.v-a2 .day-khoi { margin-left: 32px; border-left: 4px solid var(--accent-strong); border-bottom: 2px solid var(--accent-strong); padding: 8px 20px; font-size: 13px; color: var(--text-dim); display: flex; gap: 16px; align-items: center; }
+.v-a2 .day-khoi b { color: var(--accent); font-weight: 600; }
+.v-a2 .cong-cu-luoi { justify-content: space-between; padding: 8px 12px 8px 20px; }
+.v-a2 .nhan-hv { font-size: 13px; color: var(--text-dim); }
+/* A2 ở 375 */
+.v-a2h .nhom-h { padding: 12px; font-weight: 700; font-size: 16px; background: var(--surface-2); border-bottom: 1px solid var(--line-strong); }
+.v-a2h .nhom-h small { font-weight: 500; font-size: 13px; color: var(--text-dim); margin-left: 6px; }
+.v-a2h .hl-the { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 10px 12px 10px 20px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.v-a2h .hl-the.mo { background: var(--accent-soft); border-top: 2px solid var(--accent-strong); box-shadow: inset 4px 0 0 var(--accent-strong); position: sticky; top: 0; z-index: 2; }
+.v-a2h .hl-the b { font-size: 15px; } .v-a2h .hl-the.mo b { font-size: 16px; } .v-a2h .hl-the .phu { font-size: 13px; color: var(--text-dim); grid-column: 1 / -1; }
+.v-a2h .vung { margin-left: 20px; border-left: 4px solid var(--accent-strong); }
+.v-a2h .hv { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+.v-a2h .hv .dong1 { display: flex; justify-content: space-between; gap: 8px; } .v-a2h .hv .dong1 b { font-weight: 600; }
+.v-a2h .hv .oo { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 13px; }
+.v-a2h .sex-the { padding: 6px 12px 8px 28px; background: var(--dong-sex-bg); font-size: 13px; color: var(--text-dim); border-bottom: 1px solid var(--line); }
+.v-a2h .day-khoi { margin-left: 20px; border-left: 4px solid var(--accent-strong); border-bottom: 2px solid var(--accent-strong); padding: 8px 12px; font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+
 /* ===== B — CHIA HỘP (mỗi lớp một hộp, như Kế hoạch Test) ===== */
 .v-b .nhom-b { display: flex; align-items: baseline; gap: 8px; padding: 14px 16px 6px; font-weight: 700; font-size: 14px; }
 .v-b .nhom-b small { font-weight: 500; font-size: 13px; color: var(--text-dim); }
@@ -154,10 +190,10 @@ table.lop { width: 100%; table-layout: fixed; }
 <div class="trang">
   <header class="dau">
     <h1>M2 — Lịch Test tuần: phân cấp nhóm → lớp → học viên</h1>
-    <p>Mockup chờ chủ SP duyệt (26/10). Cùng một bộ dữ liệu cho ba khu: <b>H</b> web hiện tại · <b>A</b> khuyến nghị · <b>B</b> chia hộp; thêm <b>A ở 375</b>.
+    <p>Mockup chờ chủ SP duyệt (26/10). Cùng một bộ dữ liệu cho ba khu: <b>H</b> web hiện tại · <b>A2</b> = A rõ hơn (theo góp ý 26/10 đêm) · <b>A</b> chủ SP chọn 26/10; thêm <b>A2 ở 375</b>. B đã bỏ (chủ SP chọn A).
       Phần nền vàng viền đứt là chú thích mockup, không lên web.</p>
     <nav class="muc" aria-label="Khu mockup">
-      <a href="#h">H · hiện tại</a><a href="#a">A · khuyến nghị</a><a href="#b">B · chia hộp</a><a href="#a375">A · 375</a>
+      <a href="#h">H · hiện tại</a><a href="#a2">A2 · rõ hơn</a><a href="#a">A · đã chọn</a><a href="#a2-375">A2 · 375</a>
       <span style="flex-basis:12px"></span>
       <button type="button" id="nut-sang" data-theme-chon="light" aria-pressed="false">Sáng</button>
       <button type="button" id="nut-toi" data-theme-chon="dark" aria-pressed="false">Tối</button>
@@ -175,8 +211,23 @@ table.lop { width: 100%; table-layout: fixed; }
     <div class="khung"><div class="web v-h" data-bien-the="h"></div></div>
   </section>
 
+  <section class="khu" id="a2">
+    <h2>A2 — A rõ hơn: mỗi cấp thụt một bậc, khối lớp có đầu và đáy</h2>
+    <dl class="ghi">
+      <dt>Mã</dt><dd>M2-A2 — Lịch Test tuần, cùng dữ liệu khu H</dd>
+      <dt>Route · vai</dt><dd><code>/test/lich</code> (+ nhóm trái <code>/test/cham</code> cùng dáng dải nhóm) · GV, QL</dd>
+      <dt>Hiện trạng đã kiểm</dt><dd>Web 26/10 có <b>2 nhóm</b>: Quá hạn chấm · Test tuần này (nhóm thứ ba đã gộp từ UI-LICH-TUAN #539). Vẫn có 3 chip Tất cả · Fast Track · Lớp thường và 3 ô số. <b>Dán từ Excel vẫn còn</b> (hàng công cụ trên lưới khi mở lớp, panel Nhập điểm) — A2 giữ.</dd>
+      <dt>Ba cấp</dt><dd>① <b>Nhóm</b>: chữ 16 / 700, viền trên 2 px đậm, khe 16 px giữa hai nhóm, sát lề trái (cấp 1) · ② <b>Lớp</b>: thụt 32 px (cấp 2); lớp mở = viền trên 2 px + vạch trái 4 px màu nhấn, chữ 16, cao 52, dính khi cuộn · ③ <b>HV</b>: lưới thụt theo tên lớp, vạch trái 4 px nối từ hàng lớp xuống tới <b>đáy khối</b> (viền dưới 2 px + "▴ Thu lớp · n/m bài") → thấy ngay lớp kết thúc ở đâu; khe 8 px trước lớp kế</dd>
+      <dt>Giữ</dt><dd>Một bảng, cột thẳng giữa các lớp; mọi thao tác: Nhập điểm (hộp), Dán từ Excel + ?, Xuất Excel, Lịch sử ô, ↗ hồ sơ lớp / HV, mở / thu dưới hàng, nháp ô, quay lại đúng tuần / lớp / dòng; cao hàng HV 44 / 64; S Ex là dòng phụ thụt</dd>
+      <dt>Thêm</dt><dd>"▴ Thu lớp" ở đáy khối = thao tác thu sẵn có (như bấm hàng lớp), đặt thêm ở cuối để lớp dài khỏi cuộn ngược; "n/m bài" cùng nguồn hàng lớp</dd>
+      <dt>Bấm</dt><dd>Hàng lớp / "Thu lớp" = mở / thu (không đổi trang) · ↗ = hồ sơ · ô điểm = hộp nhập điểm, "Lưu · bài tiếp ›"</dd>
+      <dt>Trạng thái</dt><dd>Đề xuất — chờ chủ SP duyệt</dd>
+    </dl>
+    <div class="khung"><div class="web v-a2" data-bien-the="a2"></div></div>
+  </section>
+
   <section class="khu" id="a">
-    <h2>A — Khuyến nghị: giữ bảng, tăng phân cấp</h2>
+    <h2>A — Chủ SP chọn 26/10 (giữ để so)</h2>
     <dl class="ghi">
       <dt>Mã</dt><dd>M2-A — Lịch Test tuần, cùng dữ liệu khu H</dd>
       <dt>Route · vai</dt><dd><code>/test/lich</code> (+ nhóm bên trái <code>/test/cham</code> theo cùng dáng dải nhóm) · GV, QL</dd>
@@ -186,32 +237,19 @@ table.lop { width: 100%; table-layout: fixed; }
       <dt>Giữ</dt><dd>Mọi thao tác: Nhập điểm (hộp), Dán từ Excel, Xuất Excel, Lịch sử ô, ↗ hồ sơ lớp, mở / thu dưới hàng, nháp ô, quay lại đúng tuần / lớp / dòng; cao hàng 44 / 64</dd>
       <dt>Bấm</dt><dd>Bấm hàng lớp = mở / thu (không đổi trang); ↗ = hồ sơ lớp; ô điểm = hộp nhập điểm (R1-LUU-TIEP); cuộn trong lớp mở → hàng lớp dính dưới thanh trên, không che hộp nhập điểm</dd>
       <dt>Lỗi / rỗng</dt><dd>Không đổi so với hiện tại (tải lỗi, tuần không có Test, mất kết nối)</dd>
-      <dt>Trạng thái</dt><dd>Đề xuất — chờ chủ SP duyệt</dd>
-      <dd class="khuyen">Khuyến nghị A: chỉ đổi màu nền / viền / khoảng cách / dính trên bảng đang có, giữ cột thẳng giữa các lớp, ít rủi ro nhất cho deploy sớm.</dd>
+      <dt>Trạng thái</dt><dd>Chủ SP chọn A (26/10 đêm) nhưng thấy ba cấp còn thiếu rõ → xem A2 ở trên</dd>
     </dl>
     <div class="khung"><div class="web v-a" data-bien-the="a"></div></div>
   </section>
 
-  <section class="khu" id="b">
-    <h2>B — Chia hộp: mỗi lớp một hộp</h2>
+  <section class="khu" id="a2-375">
+    <h2>A2 ở 375 px (điện thoại)</h2>
     <dl class="ghi">
-      <dt>Mã</dt><dd>M2-B — Lịch Test tuần, cùng dữ liệu</dd>
-      <dt>Thay</dt><dd>Dải nhóm thành tiêu đề chữ ngoài hộp; mỗi lớp là một hộp có viền (giống Kế hoạch Test hiện tại); lưới nằm trong hộp</dd>
-      <dt>Được</dt><dd>Ranh giới lớp rất rõ khi mở nhiều lớp</dd>
-      <dt>Mất</dt><dd>Tốn chiều cao (khe giữa hộp); cột không còn thẳng hàng giữa các lớp; phải tách bảng <code>bang-dinh</code> thành nhiều bảng → việc lớn hơn, ảnh hưởng phép đo <code>do-bang</code>, chậm deploy</dd>
-      <dt>Trạng thái</dt><dd>Phương án so sánh — không khuyến nghị</dd>
+      <dt>Mã</dt><dd>M2-A2-375 — thẻ từng em (web dùng <code>TheHv</code> ở màn hẹp)</dd>
+      <dt>Ba cấp</dt><dd>Nhóm sát lề · lớp thụt 20 px; lớp mở viền trên + vạch trái, dính · thẻ em nằm trong vạch · đáy khối "▴ Thu lớp"</dd>
+      <dt>Kiểm</dt><dd>Hàng lớp dính chiếm &lt; 30 % chiều cao; quá thì tắt dính dưới 640 px</dd>
     </dl>
-    <div class="khung"><div class="web v-b" data-bien-the="b"></div></div>
-  </section>
-
-  <section class="khu" id="a375">
-    <h2>A ở 375 px (điện thoại, sáng / tối)</h2>
-    <dl class="ghi">
-      <dt>Mã</dt><dd>M2-A375 — thẻ từng em (web hiện dùng <code>TheHv</code> ở màn hẹp)</dd>
-      <dt>Thay</dt><dd>Hàng lớp mở dính + vạch trái; thẻ em thụt có vạch nối; S Ex là dòng phụ thụt dưới thẻ em</dd>
-      <dt>Kiểm</dt><dd>Hàng lớp dính chiếm &lt; 30 % chiều cao; quá thì tắt dính dưới 640 px (kế hoạch R1-PHAN-CAP-TEST)</dd>
-    </dl>
-    <div class="khung hep"><div class="web v-a375" data-bien-the="a375"></div></div>
+    <div class="khung hep"><div class="web v-a2h" data-bien-the="a2h"></div></div>
   </section>
 </div>
 
@@ -275,7 +313,8 @@ table.lop { width: 100%; table-layout: fixed; }
       }
       return r;
     }).join('');
-    return '<div class="cong-cu-luoi"><span class="nut">Dán từ Excel</span><span class="nut" aria-label="Giải thích">?</span></div>'
+    var nutDan = '<span class="nut">Dán từ Excel</span><span class="nut" aria-label="Giải thích">?</span>';
+    return '<div class="cong-cu-luoi">' + (v === 'a2' ? '<span class="nhan-hv">' + l.hv.length + ' học viên · ' + (ft ? 'Fast Track' : 'Lớp thường') + '</span><span style="display:flex;gap:8px">' + nutDan + '</span>' : nutDan) + '</div>'
       + '<table class="luoi"><thead>' + dau + '</thead><tbody>' + than + '</tbody></table>';
   }
   function dauThe() {
@@ -288,12 +327,14 @@ table.lop { width: 100%; table-layout: fixed; }
   function bang(v) {
     var tr = '';
     var nhom = function (ten, phu, qua, dauTien) { return '<tr class="nhom' + (qua ? ' qua' : '') + (dauTien ? ' dau-tien' : '') + '"><td colspan="6"><span class="tam-giac">' + (qua ? '›' : '▾') + '</span><span class="ten-nhom">' + ten + '</span><small>' + phu + '</small></td></tr>'; };
+    var a2 = v === 'a2';
     tr += nhom('Quá hạn chấm', '2 lớp · 12 bài', true, true);
-    if (v === 'a') tr += '<tr class="khe"><td colspan="6"></td></tr>';
+    if (v === 'a' || a2) tr += '<tr class="khe"><td colspan="6"></td></tr>';
     tr += nhom('Test tuần này', '5 lớp · 15/39 bài đã chấm', false, false);
     lopMo.forEach(function (l, i) {
-      tr += hangLop(l, true, v === 'a' && i === 0);
+      tr += hangLop(l, true, (v === 'a' || a2) && i === 0);
       tr += '<tr class="hc"><td colspan="6"><div class="vung">' + luoi(l, v) + '</div></td></tr>';
+      if (a2) tr += '<tr class="cuoi-lop"><td colspan="6"><div class="day-khoi"><b>▴ Thu lớp ' + e(l.ten) + '</b><span class="so">' + e(l.bai) + ' bài · ' + l.hv.length + ' HV</span></div></td></tr><tr class="khe-lop"><td colspan="6"></td></tr>';
     });
     lopDong.forEach(function (l) { tr += hangLop(l, false, false); });
     return '<div class="the">' + dauThe() + '<table class="lop"><tbody>' + tr + '</tbody></table></div>';
@@ -324,10 +365,28 @@ table.lop { width: 100%; table-layout: fixed; }
     lopDong.slice(0, 2).forEach(function (d) { h += '<div class="hl-the"><b>› ' + e(d.ten) + '</b><span class="so">' + e(d.bai) + ' bài</span><span class="phu">' + e(d.toi) + '</span></div>'; });
     return h + '</div>';
   }
+  function hepA2() {
+    var l = lopMo[0];
+    var h = '<div class="the"><div class="cong-cu"><span class="tuan">‹ W3 SEP ›</span><span class="chip chon">Tất cả</span></div>';
+    h += '<div class="nhom-h">▾ Test tuần này<small>5 lớp · 15/39 bài</small></div>';
+    h += '<div class="hl-the mo"><b>▾ ' + e(l.ten) + '</b><span class="so">' + e(l.bai) + ' bài</span><span class="phu">' + e(l.phu) + ' · ' + e(l.toi) + '</span></div><div class="vung">';
+    l.hv.slice(1, 4).forEach(function (hv) {
+      var oo = ['L', 'R', 'W1', 'W2', 'S'].map(function (k) {
+        var v = hv.o[k];
+        var t = !v ? (k === 'L' || k === 'R' ? 'Nhập' : 'W3 SEP') : v[0] === 'vang' ? 'Vắng' : String(v[0]).indexOf('tuan:') === 0 ? v[0].slice(5) : v[0] || 'Nhập';
+        return '<span><b>' + k + '</b> <span class="so">' + e(t) + '</span></span>';
+      }).join('');
+      h += '<div class="hv"><div class="dong1"><b>' + e(hv.ten) + ' ↗</b><span class="chu-mt">' + e(hv.mt) + ' · KV ' + e(hv.kv) + '</span></div><div class="oo">' + oo + '</div></div>';
+      if (hv.sex) h += '<div class="sex-the"><span class="chip-ex">S Ex</span> 6.5 · GV Anna Lee</div>';
+    });
+    h += '</div><div class="day-khoi">▴ Thu lớp ' + e(l.ten) + '</div>';
+    lopDong.slice(0, 2).forEach(function (d) { h += '<div class="hl-the"><b>› ' + e(d.ten) + '</b><span class="so">' + e(d.bai) + ' bài</span><span class="phu">' + e(d.toi) + '</span></div>'; });
+    return h + '</div>';
+  }
   document.querySelector('[data-bien-the="h"]').innerHTML = bang('h');
+  document.querySelector('[data-bien-the="a2"]').innerHTML = bang('a2');
+  document.querySelector('[data-bien-the="a2h"]').innerHTML = hepA2();
   document.querySelector('[data-bien-the="a"]').innerHTML = bang('a');
-  document.querySelector('[data-bien-the="b"]').innerHTML = bangB();
-  document.querySelector('[data-bien-the="a375"]').innerHTML = hep();
 
   /* ---- chọn giao diện (chỉ cho người xem mockup) + ?theme= / ?khu= khi chụp ảnh ---- */
   var nut = document.querySelectorAll('[data-theme-chon]');
