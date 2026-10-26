@@ -194,11 +194,11 @@ dữ liệu Góp ý hàng tuần giữ trong DB + Lịch sử, chỉ gỡ khỏi
 | **P5 MOCKUP-V6** | mockup 3.1–3.4, 3.9 + hồ sơ lưu trữ | — | **chủ SP duyệt** | đã merge #571 |
 | P6 KHOA-LICH | 3.5 | Q6–Q8 (làm theo khuyến nghị, nháp tới khi trả lời) | PTA + rà sâu `/code-review high` | đã merge #576 |
 | P7 SV-LO-TRINH + UI | 3.1–3.3, E1–E3, E9, E10 | Q1–Q3, mockup P5 | chủ SP duyệt ảnh; rà sâu (dữ liệu) | đã merge #582 (26/10; bước Môn học của panel để P8) |
-| P8 MON-DANG-KY | 3.4 | Q4–Q5, mockup P5 | rà sâu | chạy được (P7 đã merge) — chưa có plan |
-| P9a XET-LAI · P9b CUOI-KHOA | 3.9, R5.3, N20–N22 | mockup V6 cuoi-khoa + xet-lai đã duyệt 25/10, P4 đã merge | chủ SP duyệt ảnh | P9b đã merge #583 (26/10) · P9a #584 đang sửa sau rà lại (plan `…/2026-10-25-p9a-xet-lai.md`) |
+| P8 MON-DANG-KY | 3.4 | Q4–Q5, mockup P5 | rà sâu | plan `…/2026-10-26-p8-mon-dang-ky.md` (chỉ FT — N22 ④) |
+| P9a XET-LAI · P9b CUOI-KHOA | 3.9, R5.3, N20–N22 | mockup V6 cuoi-khoa + xet-lai đã duyệt 25/10, P4 đã merge | chủ SP duyệt ảnh | P9b đã merge #583 · P9a đã merge #584 (26/10) |
 | P11 VIEC-DUNG-VAI | R6.1 | #566 merge | PTA rà ảnh | đã merge #578 |
 | P12 BAO-CAO-LICH-SU | E6–E8 + `thi_that_target` | sau SUA-CHAM-LAI (chung Tổng quan / Phân tích GV) | rà sâu (migrate) | đã merge #577 |
-| P13 KET-PET | 3.10, N18 | Q10 (đã chốt) | rà sâu (migrate tách môn, không trộn thang) | plan `…/2026-10-26-p13-ket-pet.md` |
+| P13 KET-PET | 3.10, N18 | Q10 (đã chốt) | rà sâu (migrate tách môn, không trộn thang) | PR #586 đang sửa sau rà vòng 2 (plan `…/2026-10-26-p13-ket-pet.md`) |
 | P14 DICH | 3.11 | Q11 + khoá OpenAI | rà bảo mật `/security-review` | đã merge #580 |
 
 Cách làm dịch (chủ SP tự làm khi đồng ý Q11): (1) platform.openai.com → Billing nạp $5–10, Limits đặt ngân sách tháng + email cảnh báo; (2) Project "PISA" → API keys → Create secret key, chép ngay;

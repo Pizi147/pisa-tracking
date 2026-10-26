@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
@@ -14,6 +14,7 @@ import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 import { KHOI_VANG, NutHomNay, OTuan, guiTheoLo } from './chuyenLopChung.tsx';
+import { ChipXetLaiDong, XetLaiCtx } from './PanelXetLai.tsx';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, KY_VONG_DAU_RA, LO_CHUYEN_NGAY_THUONG, NORMAL_LADDER, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, addDaysIso, canLopDich, chuDaiKetQua,
   daysBetween, ghepMucTieu, khacGoiY, kiemDongLenh, laChuyenNgay, maHocLai, mocLoTrinh, nhanKetQuaThuong, shortDate, tachMucTieu, tacDongChot, coBaoPhKhiChot, tenMonNgan,
@@ -79,7 +80,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const kh = useApi<KeHoach>(`/classes/${classId}/transition`, [classId]);
   const [sua, setSua] = useState<Record<number, Sua>>({});
   const [chon, setChon] = useState<ReadonlySet<number>>(new Set());
-  const [loc, setLoc] = useState<'' | 'chua-chot' | 'con-ban-giao' | 'loi'>('');
+  const [loc, setLoc] = useState<'' | 'chua-chot' | 'con-ban-giao' | 'loi' | 'xet-lai'>('');
+  /* P9a [XM]: em cần Xét lại lộ trình (lệnh chưa thi hành, em còn ở lớp này) — chip lọc + chip trên dòng mở panel tại trang. */
+  const xetLai = useContext(XetLaiCtx);
   const [loi, setLoi] = useState<Record<number, string>>({});
   const [ketQua, setKetQua] = useState<{ ok: number; loi: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -183,7 +186,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const chuaHuong = dongs.filter((r) => !r.e.lenh && !r.x.huong).length;
   const daChot = ds.filter((e) => e.lenh).length;
   const conBanGiao = (e: Em) => !!e.lenh && e.lenh.huong !== 'dung_hoc' && !e.lenh.banGiao.xacNhan;
-  const khop = (e: Em) => (loc === 'chua-chot' ? !e.lenh : loc === 'con-ban-giao' ? conBanGiao(e) : loc === 'loi' ? !!loi[e.id] : true);
+  const soXetLai = ds.filter((e) => xetLai?.co.has(e.id)).length;
+  const khop = (e: Em) => (loc === 'chua-chot' ? !e.lenh : loc === 'con-ban-giao' ? conBanGiao(e) : loc === 'loi' ? !!loi[e.id] : loc === 'xet-lai' ? !!xetLai?.co.has(e.id) : true);
   const hien = dongs.filter((r) => khop(r.e));
   /* Dòng đã chốt Lên FT vẫn chọn được để áp Kỳ vọng FT (thanh Áp chỉ đổi Kỳ vọng ở dòng khoá). */
   const chonDuoc = (e: Em) => laQl && (!khoa(e) || kvMo(e, dongCua(e)));
@@ -481,6 +485,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const oTen = (e: Em) => (
     <span className="block">
       <Link className="link font-semibold" to={`/hoc-vien/${e.id}`}>{e.fullName}</Link>
+      <span className="ml-1.5"><ChipXetLaiDong sid={e.id} /></span>
       {sua[e.id] && Object.keys(sua[e.id]).some((k) => k !== 'mo') && !loi[e.id] && <span className="ml-1.5"><Nhan tone="doing">{t('đã sửa')}</Nhan></span>}
       {e.lenh && laQl && <span className="mt-0.5 block text-[12px] text-ok">✓ {t('Đã chốt')}</span>}
       {!e.lenh && e.nhap && laQl && <span className="mt-0.5 block text-[12px] text-slate-500">{t('Nháp — chỉ QL thấy')}</span>}
@@ -644,6 +649,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
                 <span className="text-[12px] text-slate-500">{t('Lọc')}</span>
                 {soLoi > 0 && chip(<>{t('Lỗi')} <span className="tabular-nums">{soLoi}</span></>, loc === 'loi', () => setLoc(loc === 'loi' ? '' : 'loi'))}
                 {chip(<>{t('Chưa chốt')} <span className="tabular-nums">{ds.length - daChot}</span></>, loc === 'chua-chot', () => setLoc(loc === 'chua-chot' ? '' : 'chua-chot'))}
+                {soXetLai > 0 && chip(<>{t('Xét lại')} <span className="tabular-nums">{soXetLai}</span></>, loc === 'xet-lai', () => setLoc(loc === 'xet-lai' ? '' : 'xet-lai'))}
                 {ds.some(conBanGiao) && chip(<>{t('Còn bàn giao')} <span className="tabular-nums">{ds.filter(conBanGiao).length}</span></>, loc === 'con-ban-giao', () => setLoc(loc === 'con-ban-giao' ? '' : 'con-ban-giao'))}
               </span>
             </div>

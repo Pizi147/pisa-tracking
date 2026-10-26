@@ -83,6 +83,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('bai_tren_lop', 'ghi_boi', DV, 'tiến độ trên lớp'), c('bai_tren_lop', 'sua_boi', DV, 'tiến độ trên lớp'),   // SV-BAI-LOP
   c('s_expert', 'them_boi', DV, 'S Expert'), c('s_expert', 'sua_boi', DV, 'S Expert'), c('s_expert', 'cham_boi', DV, 'S Expert'), c('s_expert', 'xoa_boi', DV, 'S Expert'),   // SV-S-EXPERT · SV-LOP
   c('danh_gia_dau_ra', 'sua_boi', DV, 'đánh giá đầu ra'),   // UI-HO-SO-LOP
+  c('xet_lai_lo_trinh', 'nguoi_id', DV, 'xét lại lộ trình'),   // P9a XET-LAI
   c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch Test'),   // OV-15c
   c('tutors', 'created_by', DV, 'danh sách tutor'), c('tutors', 'updated_by', DV, 'danh sách tutor'),   // TU-a
   c('tutor_nhan_xet', 'nguoi_id', DV, 'nhận xét về tutor'),
