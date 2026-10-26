@@ -98,6 +98,7 @@ export async function runPrEnTests(t: any) {
     assert(i18n.dichMau('en', 'Tối đa 500 em một lần lưu.') === 'Save at most 500 students at a time.', 'câu không biến');
     assert(i18n.dichSang('en', 'Thi thật {ngay}', { ngay: '12/10' }) === 'Real exam 12/10', 'Thi thật {ngay}');
     assert(i18n.dichSang('en', 'Thi thật {kq}', { kq: '7.5' }) === 'Exam 7.5', 'Thi thật {kq}');
+    assert(i18n.dichMau('en', 'tuần 5/5 · Final Test') === 'week 5/5 · Final Test', i18n.dichMau('en', 'tuần 5/5 · Final Test'));   // không "Tests Final"
   });
 
   check('EN-KHOA · số ít / số nhiều ở EN ("1 day overdue" / "3 days overdue"), VI giữ chữ cũ; biến là chữ Việt có trong từ điển cũng dịch', () => {

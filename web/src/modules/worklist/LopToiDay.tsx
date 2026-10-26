@@ -181,7 +181,7 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
 
   const oDay = (d: DongDay, c: CotBang): ReactNode => {
     if (c.key === 'lop') return lopLink(d.classId, d.code);
-    if (c.key === 'ky') return <span className="flex gap-1">{d.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
+    if (c.key === 'ky') return <span className="flex gap-1">{d.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />)}</span>;
     if (c.key === 'dat') return <PhanTram gon x={tyLeGv(d.ketQua ?? undefined)} nguon={`/giao-vien/${id}/chi-so/o?cot=ket-qua-lop:${d.classId}`} tieuDe={`${d.khung === 'ft' ? t('Đạt kỳ vọng Test') : t('Đạt Test')} · ${d.code}`} />;
     if (c.key === 'tb') return d.khung === 'ft' ? <PhanTram gon x={tyLeGv(d.tienBo ?? undefined)} nguon={`/giao-vien/${id}/chi-so/o?cot=tien-bo-lop:${d.classId}`} tieuDe={`${t('Tiến bộ')} · ${d.code}`} /> : <span className="text-slate-500">—</span>;
     /* V4 (D10): có bài quá hạn thì hiện phần quá hạn (đỏ), không thì số bài chờ chấm — bấm ra đúng các bài đó. */

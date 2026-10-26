@@ -494,4 +494,9 @@ export const EN_R1_EN = {
   'Theo tuần: {tu} – {den}': 'By week: {tu} – {den}',
   'Theo tháng: {tu} – {den}': 'By month: {tu} – {den}',
   'Theo đợt: {ds}': 'By round: {ds}',
+  /* Tên bài giữ nguyên (mẫu 'Final {ct}' khớp nhầm 'Final Test' → 'Tests Final') */
+  'Final Test': 'Final Test',
+  'Progress Test': 'Progress Test',
+  /* Thẻ dời MT lần 2 — câu máy chủ đổi "thi" → "làm bài" (absence.ts chuTheDoiLan2) */
+  'Dời {k} · MT{x} · lần {moveNo} · Duyệt = {k2} làm bài {x2}': 'Move {k} · MT{x} · time {moveNo} · Approve = {k2} sits {x2}',
 } satisfies Record<string, Dich>;
