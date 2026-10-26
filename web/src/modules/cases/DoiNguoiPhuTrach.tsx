@@ -42,7 +42,7 @@ export function DoiNguoiPhuTrach({ caseId, ownerCu, ungVien, onXong, onTaiLai, o
       </Truong>
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu · đóng')}</button>
-        {onHuy && <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onHuy}>{t('Huỷ')}</button>}
+        {onHuy && <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onHuy}>{t('Đóng')}</button>}
       </div>
     </div>
   );
