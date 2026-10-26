@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { HangNhom } from '../../../ui/HangNhom.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
@@ -141,63 +142,62 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
         const k = khoaHang(l);
         const mo = moCua(l);
         return (
-          <table key={k} className={`lich-lop w-full text-sm bang-dinh ${mo ? 'mb-1.5' : ''}`} style={{ tableLayout: 'fixed' }}>
-            <colgroup>{cot.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>
-            <tbody>
-              <HangNhom mo={mo} onMo={() => onMo(l)} nhan={t('lớp {classCode}', { classCode: l.classCode })} className={mo ? 'dang-mo' : ''}
-                tieuDe={<span className="ten-lop block truncate text-[15px] font-bold text-slate-100" title={l.classCode}>{l.classCode}</span>}>
-                {hep ? (
-                  <>
-                    <td className="px-2 text-right"><TienDo l={l} /></td>
-                    <td className="whitespace-nowrap px-2 font-normal">{(chuaLuu[k] ?? 0) > 0 ? <NhanLop l={l} chuaLuu={chuaLuu[k]} /> : <HanHang l={l} />}</td>
-                  </>
-                ) : (
-                  <>
-                    <td className="px-3 py-2 font-normal"><LuotLop l={l} /></td>
-                    {coChiNhanh && <td className="truncate px-3 font-normal text-slate-400" title={l.branchName}>{l.branchName}</td>}
-                    <td className="px-3 font-normal"><TienDo l={l} /></td>
-                    <td className="whitespace-nowrap px-3 font-normal"><HanHang l={l} /></td>
-                    <td className="px-3 font-normal"><NhanLop l={l} chuaLuu={chuaLuu[k]} /></td>
-                    <td className="px-1 text-center">
-                      <Link to={`/hoc-vien/lop/${l.classId}`} title={t('Hồ sơ lớp')} aria-label={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}
-                        className="inline-flex h-8 w-8 items-center justify-center font-normal text-slate-400 no-underline hover:text-slate-100">↗</Link>
+          <Fragment key={k}>
+            <table className="lich-lop w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
+              <colgroup>{cot.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>
+              <tbody>
+                <HangNhom mo={mo} onMo={() => onMo(l)} nhan={t('lớp {classCode}', { classCode: l.classCode })} className={mo ? 'dang-mo' : ''}
+                  tieuDe={<span className="ten-lop block truncate text-[15px] font-bold text-slate-100" title={l.classCode}>{l.classCode}</span>}>
+                  {hep ? (
+                    <>
+                      <td className="px-2 text-right"><TienDo l={l} /></td>
+                      <td className="whitespace-nowrap px-2 font-normal">{(chuaLuu[k] ?? 0) > 0 ? <NhanLop l={l} chuaLuu={chuaLuu[k]} /> : <HanHang l={l} />}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-3 py-2 font-normal"><LuotLop l={l} /></td>
+                      {coChiNhanh && <td className="truncate px-3 font-normal text-slate-400" title={l.branchName}>{l.branchName}</td>}
+                      <td className="px-3 font-normal"><TienDo l={l} /></td>
+                      <td className="whitespace-nowrap px-3 font-normal"><HanHang l={l} /></td>
+                      <td className="px-3 font-normal"><NhanLop l={l} chuaLuu={chuaLuu[k]} /></td>
+                      <td className="px-1 text-center">
+                        <Link to={`/hoc-vien/lop/${l.classId}`} title={t('Hồ sơ lớp')} aria-label={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}
+                          className="inline-flex h-8 w-8 items-center justify-center font-normal text-slate-400 no-underline hover:text-slate-100">↗</Link>
+                      </td>
+                    </>
+                  )}
+                </HangNhom>
+                {(mo || (chuaLuu[k] ?? 0) > 0) && (
+                  /* Lưới nằm thẳng trên nền thẻ (bỏ nền hàng con); còn ô lưu hỏng mà lớp bị thu thì lưới giữ (ẩn), không mất giá trị đã gõ. */
+                  <tr className={mo ? '' : 'hidden'}>
+                    <td colSpan={soCot} className="lich-luoi p-0">
+                      <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? l.periodId : null} kind={l.kind}
+                        tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
+                        datConTro={conTro.has(k)} onDaLuu={onDaLuu} coLinkRieng sEx={l.mode === 'ielts_band' ? sEx.filter((x) => x.classId === l.classId) : undefined}
+                        onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)}
+                        nhanTrai={`${t('{n} học viên', { n: l.soHv })} · ${l.mode === 'ielts_band' && l.kind !== 'mt0' ? 'Fast Track' : t('Lớp thường')}`} />
                     </td>
-                  </>
+                  </tr>
                 )}
-              </HangNhom>
-              {(mo || (chuaLuu[k] ?? 0) > 0) && (
-                /* Lưới nằm thẳng trên nền thẻ (bỏ nền hàng con); còn ô lưu hỏng mà lớp bị thu thì lưới giữ (ẩn), không mất giá trị đã gõ. */
-                <tr className={mo ? '' : 'hidden'}>
-                  <td colSpan={soCot} className="lich-luoi p-0">
-                    <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? l.periodId : null} kind={l.kind}
-                      tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
-                      datConTro={conTro.has(k)} onDaLuu={onDaLuu} coLinkRieng sEx={l.mode === 'ielts_band' ? sEx.filter((x) => x.classId === l.classId) : undefined}
-                      onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)} 
-                      nhanTrai={`${t('{n} học viên', { n: l.soHv })} · ${l.mode === 'ielts_band' && l.kind !== 'mt0' ? 'Fast Track' : t('Lớp thường')}`} />
-                  </td>
-                </tr>
-              )}
-              {mo && (
-                /* ĐÁY KHỐI: "▴ Thu lớp" = chính thao tác thu của hàng lớp (lớp dài khỏi cuộn ngược) + số cùng nguồn hàng lớp. */
-                <tr>
-                  <td colSpan={soCot} className="p-0">
-                    <div className="day-khoi flex flex-wrap items-center gap-x-4 gap-y-1 py-1.5 pl-7 pr-4 text-[13px] text-slate-400">
-                      <button type="button" aria-expanded
-                        className="link inline-flex min-h-[32px] items-center appearance-none border-0 bg-transparent p-0 font-semibold no-underline max-sm:min-h-[44px]"
-                        onClick={(e) => {
-                          const bang = e.currentTarget.closest('table');
-                          onMo(l);
-                          requestAnimationFrame(() => bang?.scrollIntoView({ block: 'nearest' }));
-                        }}>
-                        ▴ {t('Thu lớp {classCode}', { classCode: l.classCode })}
-                      </button>
-                      <span className="tabular-nums">{t('{daCham}/{tong} bài · {n} HV', { daCham: l.daCham, tong: l.tong, n: l.soHv })}</span>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+            {mo && (
+              /* ĐÁY KHỐI (ngoài <table>: hàng lớp dính hết hành trình khi lưới hết, không đè thanh này): "▴ Thu lớp" = chính thao tác thu của hàng lớp
+                 (lớp dài khỏi cuộn ngược) + số cùng nguồn hàng lớp. */
+              <div className="day-khoi mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 py-1.5 pl-7 pr-4 text-[13px] text-slate-400 max-md:pl-5">
+                <button type="button" aria-expanded
+                  className="link inline-flex min-h-[32px] items-center appearance-none border-0 bg-transparent p-0 font-semibold no-underline max-sm:min-h-[44px]"
+                  onClick={(e) => {
+                    const bang = e.currentTarget.parentElement?.previousElementSibling;
+                    onMo(l);
+                    requestAnimationFrame(() => bang?.scrollIntoView({ block: 'nearest' }));
+                  }}>
+                  ▴ {t('Thu lớp {classCode}', { classCode: l.classCode })}
+                </button>
+                <span className="tabular-nums">{t('{daCham}/{tong} bài · {n} HV', { daCham: l.daCham, tong: l.tong, n: l.soHv })}</span>
+              </div>
+            )}
+          </Fragment>
         );
       })}
     </>

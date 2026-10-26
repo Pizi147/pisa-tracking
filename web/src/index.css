@@ -85,7 +85,7 @@
     --hang-lon-dong-bg: #101b33;  --hang-lon-dong-vach: #33496f;
     --hang-con-bg: #0a1325;       --hang-con-chu: #b8c4dc;
     /* R1-PHAN-CAP-TEST (M2 A2, chủ SP 26/10): Lịch Test — mỗi cấp một màu thanh: nhóm · lớp mở · lớp đóng + đáy khối · đầu cột lưới. */
-    --cap-nhom: #2a3654;  --cap-lop: #1d3b72;  --cap-lop-dong: #172b50;  --cap-dau-cot: #0a1224;
+    --cap-nhom: #283452;  --cap-lop: #1d3b72;  --cap-lop-dong: #172b50;  --cap-dau-cot: #0a1224;
     /* Ô sửa được / chỉ đọc (lưới chấm) */
     --o-sua-vien: #66789f;        --o-sua-nen: #0b1427;   --o-sua-focus: #94bdf2;
 
@@ -136,7 +136,7 @@
     --hang-lon-bg: #f2f4f9;       --hang-lon-vach: #8690ab;
     --hang-lon-dong-bg: #f8f9fc;  --hang-lon-dong-vach: #b0b8cd;
     --hang-con-bg: #fbfcfe;       --hang-con-chu: #353d54;
-    --cap-nhom: #d3dae8;  --cap-lop: #d4e1fb;  --cap-lop-dong: #edf2fd;  --cap-dau-cot: #eceff5;
+    --cap-nhom: #cfd6e4;  --cap-lop: #d4e1fb;  --cap-lop-dong: #edf2fd;  --cap-dau-cot: #eceff5;
     --o-sua-vien: #7f8aa6;        --o-sua-nen: #ffffff;   --o-sua-focus: #3a50a6;
 
     --chu-1-rgb: 20 26 43;  --chu-2-rgb: 35 42 63;  --chu-3-rgb: 53 61 84;
@@ -441,8 +441,9 @@
     position: sticky; top: -1rem; z-index: 11;   /* = đệm p-4 / md:p-5 của <main>; trên đầu cột (z 10) + cột tên dính của lưới, dưới hộp / menu (portal) */
   }
   @media (min-width: 768px) { .lich-lop > tbody > tr.hang-lon.dang-mo > td { top: -1.25rem; } }
-  .lich-lop > tbody > tr.hang-lon.dang-mo .ten-lop { font-size: 16px; }
-  .lich-lop .day-khoi { background: var(--cap-lop-dong); }
+  @media not all and (min-width: 768px) { .lich-lop > tbody > tr.hang-lon > td:first-child { padding-left: 20px; } }   /* M2 A2-375: thụt 20 */
+  .lich-lop > tbody > tr.hang-lon.dang-mo .ten-lop { font-size: 17px; }   /* mockup 16 → 17: bậc gần nhất của thang chữ (do-bang g5) */
+  .day-khoi { background: var(--cap-lop-dong); }
   /* Ô / thẻ em không trốn dưới hàng lớp dính khi con trỏ / "Lưu · bài tiếp" cuộn tới. */
   .lich-luoi :is(td, article) { scroll-margin-top: 64px; }
   .lich-luoi .bang th { background: var(--cap-dau-cot); border-bottom: 0; }
