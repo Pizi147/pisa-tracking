@@ -122,6 +122,7 @@ import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
 import * as caseSvc from '../cases/cases.ts';
+import * as ownerSvc from '../cases/owner.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
 import * as diemTheoLuotSvc from '../cham/diemTheoLuot.ts';
@@ -2362,6 +2363,11 @@ api.post('/cases/:id/mo-lai', requireAuth, wrap((req) => {
 api.patch('/cases/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.suaCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** R1-NO-CU (D17): đổi người phụ trách Case — QL / Quản trị + GVCN lớp em; `ownerCu` lệch → 409. */
+api.post('/cases/:id/nguoi-phu-trach', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return ownerSvc.doiChuCase(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 /** SV-NX-CASE (N8 ③): GV phụ trách S xác nhận Case Speaking sau khi người chấm chéo ghi nhận xét — `cach`: dung | giu | viet (+ `moTa`). */
 api.post('/cases/:id/xac-nhan-s', requireAuth, wrap((req) => {

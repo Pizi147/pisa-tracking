@@ -72,6 +72,7 @@ export const HD_GV: HuongDan = {
         { id: 'hv-viec', ten: 'Việc cần làm', buoc: ['Thanh <b>Việc cần làm</b> dưới đầu trang: việc của bạn với em, bấm là mở chỗ làm ngay trên trang.'] },
         { id: 'hv-hoc-thuat', ten: 'Học thuật', buoc: ['Ô điểm to <b>Overall · L · R · W1 · W2 · S</b>: bấm một ô đổi kỹ năng cho cả phần dưới.', '<b>Hành trình</b>: điểm từng MT của kỹ năng, kỳ vọng dạng bậc thang mờ; ô thiếu ghi lý do ("vắng W3 SEP"); S Ex hiện cạnh S, không tính.',
           '<b>Tiến độ trên lớp</b>: ghi / sửa / xoá bài trên lớp (không vào MT). <b>Case & PA</b> của kỹ năng đang chọn — bấm Case mở ngăn Case; PA chưa tới kỳ: <b>Cập nhật trước hạn</b>.'] },
+        { id: 'hv-doi-chu-case', ten: 'Đổi người phụ trách Case', buoc: ['GVCN lớp em: mở Case → <b>Đổi người…</b> ở dải đầu → chọn GV dạy kỹ năng của Case hoặc GVCN → <b>Lưu · đóng</b>.'] },
         { id: 'hv-y-thuc', ten: 'Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý và Phối hợp SOS của em.'] },
         { id: 'hv-hanh-trinh', ten: 'Lộ trình & lớp', buoc: ['Lưới tuần theo lớp: chương đang học, mọi lượt Test, Case / PA theo tuần.'] },
       ],

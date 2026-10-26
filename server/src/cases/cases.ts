@@ -31,7 +31,7 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regular.ts';
-import { chuCaseTheoKyNang, suggestCaseOwner } from './owner.ts';
+import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
 import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, xuLyCaseMany } from './sosState.ts';
@@ -2193,6 +2193,8 @@ export function caseDetail(p: Principal, caseId: number) {
     owner: c.owner_user_id
       ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.owner_user_id) as any)?.full_name ?? null)
       : null,
+    /** R1-NO-CU (D17): nút "Đổi người…" — quyền (QL / GVCN lớp em) + ứng viên (GV dạy kỹ năng của Case ở lớp + GVCN). */
+    doiChu: doiChuCua(p, caseId),
     /** Case mở song song có chủ ý với một Case khác cùng hạng mục. */
     parallel: !!c.parallel,
     /*

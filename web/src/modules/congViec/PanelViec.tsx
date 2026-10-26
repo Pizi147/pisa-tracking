@@ -14,7 +14,8 @@ import { chonNguoi, phuGv } from '../classes/ClassCreatePanel.tsx';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NganCase } from '../students/NganCase.tsx';
-import { ThanCase, tenNganCase, type ViewCase } from '../cases/CasePanel.tsx';
+import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
+import { DoiNguoiPhuTrach } from '../cases/DoiNguoiPhuTrach.tsx';
 import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
 import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { DaThucHienPanel } from '../yThuc/DaThucHienPanel.tsx';
@@ -63,7 +64,9 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'phoi_hop': return it.studentId !== null;
     case 'missing_data': return it.studentId !== null && (it.key.startsWith('target:') || it.key.startsWith('chot-ngay-thi:'));   // UI-CV-TVV: Chốt ngày thi
     case 'bao_ph_yt': return !!it.viecId && it.studentId !== null;   // UI-CV-TVV: Báo PH (TVV / QL khi em chưa có TVV)
-    case 'no_owner': return it.classId !== null && !!it.thieuNguoi;   // CV-LOI: Phân công GV môn / GVCN còn thiếu — tại chỗ
+    /* CV-LOI: Phân công GV môn / GVCN còn thiếu — tại chỗ · R1-NO-CU: "Chọn người phụ trách" (lớp đủ người) — hộp đổi người tại chỗ.
+       Em không có lớp → hồ sơ em như cũ (không có ai để chọn). */
+    case 'no_owner': return it.classId !== null && (!!it.thieuNguoi || it.caseId !== null);
     default: return false;
   }
 }
@@ -161,7 +164,7 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     case 'xet_lai_lo_trinh':
       return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;
     case 'no_owner':
-      return <PanelPhanCongMon key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
+      return it.thieuNguoi ? <PanelPhanCongMon key={it.key} it={it} onDong={onDong} onDaLam={doi} /> : <PanelChonPhuTrach key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     default:
       return null;
   }
@@ -369,6 +372,34 @@ function PanelPhanCongMon({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =>
               <div>
                 <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!daGiao} onClick={() => void giao()}>{busy ? t('Đang lưu…') : t('Giao')}</button>
               </div>
+            </div>
+          )}
+    </KhungPanel>
+  );
+}
+
+/**
+ * R1-NO-CU (D17): "Chọn người phụ trách" — lớp đủ người mà Case vẫn trống (dữ liệu cũ). Cùng hộp với "Đổi người…" ở Ngăn Case (`DoiNguoiPhuTrach`);
+ * lưu xong dòng việc hết (cùng nguồn `caseChuaCoNguoi`). Không đổi được (em đã rời lớp, không có ứng viên, không quyền) → nói lý do + hồ sơ em.
+ */
+function PanelChonPhuTrach({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void; onDaLam: () => void }) {
+  const { data, error, reload } = useApi<CaseDetail>(`/cases/${it.caseId}`, [it.caseId]);
+  return (
+    <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong}
+      dau={dauViec({ em: it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: it.contextLabel })}>
+      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        : !data ? <div className="pt-3"><Skeleton rows={3} /></div>
+          : (
+            <div className="flex flex-col gap-3 pt-3">
+              <p className="m-0 text-sm text-slate-300">{tenNganCase(data)} · {data.owner ? t('phụ trách: {ten}', { ten: data.owner }) : t('Chưa có người phụ trách')}</p>
+              {data.doiChu?.duoc
+                ? <DoiNguoiPhuTrach caseId={data.id} ownerCu={data.ownerUserId ?? null} ungVien={data.doiChu.ungVien} onXong={() => { onDaLam(); onDong(); }} onTaiLai={reload} />
+                : (
+                  <p className="m-0 text-sm text-slate-300" role="status">
+                    {t('Chưa chọn được người ở đây — mở hồ sơ em.')}{' '}
+                    <Link className="link" to={it.href}>{t('Hồ sơ em ›')}</Link>
+                  </p>
+                )}
             </div>
           )}
     </KhungPanel>
