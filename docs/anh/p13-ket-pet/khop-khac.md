@@ -136,3 +136,7 @@ Còn lại (ghi để PTA quyết): lưới **Nhập điểm** một Checkpoint 
 
 Mỗi phép kiểm KP-5a…e đã chạy ĐỎ khi gỡ đúng phần sửa của nó, XANH khi có.
 
+Phép kiểm tốc độ sau gộp P9a: TD4-a chụp lại 7 băm — so JSON ×3 origin/main ↔ nhánh, 11 góc: lệch CHỈ việc "Nhập điểm Checkpoint · MB PET 01" (môn tách, 3 → 6 bài)
+và tổng bài nhóm W3 SEP (+3); 4 góc trùng hẳn. Trần dòng Học viên & Lớp (×3): P13 trước gộp 7 313, main 7 507, bản gộp 7 543 (seed PET 4 môn gặp bộ demo Xét lại)
+→ trần 7 510 → 7 545, mã đường không đổi. `standingFor` chỉ đọc bảng chương trình cho mã không có hằng số (KET / PET) — FT không đọc thêm (TD2-a giữ trần).
+
