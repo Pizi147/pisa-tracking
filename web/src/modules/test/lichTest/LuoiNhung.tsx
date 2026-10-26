@@ -14,7 +14,6 @@ import { t } from '@shared/i18n/index.ts';
  *
  * Lưu một ô → tải lại lưới NÀY và báo `onDaLuu` (Lịch Test gộp 1,5 s rồi mới tải lại dải số — Q14).
  * "Mở lưới đầy đủ ›" (G6: "›" = đổi trang; → Lịch tuần lọc lớp): chỉ khi lưới nằm ngoài Lịch tuần (panel việc); trong Lịch (`coLinkRieng`) không lặp.
- * R1-BO-DAN-EXCEL (#601): Dán từ Excel điểm đã bỏ ở mọi nơi.
  */
 export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, sEx, onHet }: {
   classId: number; periodId: number | null; kind: string | null; tuanDangXem: string | null;
