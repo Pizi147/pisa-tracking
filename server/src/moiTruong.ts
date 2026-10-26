@@ -94,7 +94,7 @@ export function cauHinhDich(env: NodeJS.ProcessEnv = process.env): CauHinhDich {
   return {
     bat: env.DICH_TAT !== '1' && (!!khoa || !!gia),
     khoa,
-    model: env.DICH_MODEL?.trim() || 'gpt-5.4-mini',
+    model: env.DICH_MODEL?.trim() || 'gpt-6-luna',
     tranNgay: so(env.DICH_TRAN_NGAY, 300),
     tranNguoi: so(env.DICH_TRAN_NGUOI, 50),
     gia,
