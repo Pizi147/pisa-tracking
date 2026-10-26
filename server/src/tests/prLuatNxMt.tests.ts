@@ -93,12 +93,6 @@ export async function runPrLuatNxMtTests(t: YThucTestKit) {
     assert(co.n === 5, `5 ô có band phải xong: ${co.n}`);
   }));
 
-  check('LNM-2d · dán Excel: MT thường thiếu / ngắn nhận xét không là lỗi dòng', () => {
-    const cell = { skill: 'listening', required: true, canEdit: true, rawScore: null, band: null, criteria: [null, null, null, null],
-      bandThang: false, nenCoNhanXet: true, kyVong: 6, nhanXet: null, nhomNguyenNhan: [], progress: 'scheduled' };
-    assert(d.xetODan({ diem: '28', nhanXet: '' }, cell, 'cau').loai === 'ghi' && d.xetODan({ diem: '28', nhanXet: 'ngắn' }, cell, 'cau').loai === 'ghi', 'phải ghi');
-  });
-
   // ---------------------------------------------------------------- luật 3: xếp MT nới lỏng
   check('LNM-3a · dời một kỹ năng MT2 sang SAU tuần đầu MT3 → lưu được; MT3 giữ lịch; ô Kế hoạch Test MT2 nhắc sauMt = 3, kỹ năng khác không', () => thu(() => {
     const a = emMoi();

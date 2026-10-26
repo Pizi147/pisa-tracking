@@ -1,13 +1,16 @@
 /**
  * PHÉP KIỂM OV-15b — lưới điểm, hồ sơ lớp, dán Excel, đường Nhập điểm. Kế hoạch: docs/superpowers/plans/2026-10-19-ov15-overhaul-6-pr.md (OV-15b).
  *  · 7: "Nhập bởi …" chỉ khi ô ĐÃ có điểm — máy chủ không gửi người nhập cho ô chưa có điểm (ô chỉ nhận xét, ô đã xoá điểm, GV chấm chéo đã phân công);
- *  · 2: dán từ Excel — hàm thuần (tách bảng, khớp tên bỏ dấu, trống ≠ 0 ≠ "-") + endpoint lô dùng lại kiểm ô của `saveScore`.
+ *  · 2: dán từ Excel — R1-BO-DAN-EXCEL bỏ ở web (kiểm tĩnh); endpoint lô (API còn, web không gọi) dùng lại kiểm ô của `saveScore`.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrOv15bTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, TODAY } = t as any;
-  const { luuDiemLo } = await import('../cham/luuLo.ts');
+  const { luuDiemLo, DAN_TOI_DA_DONG } = await import('../cham/luuLo.ts');
   const svc: any = await import('../fasttrack/attempts.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const mywork: any = await import('../worklist/mywork.ts');
@@ -68,103 +71,13 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     assert(f({ theoLop: 'thuong', coBai: { ft: 3, thuong: 0 } }) === 'thuong', 'lớp trên đường dẫn → khung của lớp đó');
   });
 
-  /* ---------------------------------------------------------------- 2 · Dán từ Excel */
-  const NAM = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
-  check('OV15b-2a · dán Excel: tách TSV (ngoặc kép, xuống dòng trong ô, CRLF); có tiêu đề map theo tên cột; không tiêu đề theo vị trí; một kỹ năng', () => {
-    const tsv = 'Tên\tL\tNhận xét L\tR\tNhận xét R\r\nHồ Ngọc Diệp\t27\t"Nghe tốt\nPart 1–2"\t\t\r\n"Lê ""Huy"""\t28\tSót số Part 1\t31\tĐọc nhanh, sai T/F\r\n\r\n';
-    const b = d.docBangDan(tsv, NAM);
-    assert(b.coTieuDe, 'phải nhận hàng tiêu đề');
-    assert(JSON.stringify(b.cot) === JSON.stringify(['Tên', 'L', 'Nhận xét L', 'R', 'Nhận xét R']), `cột đã nhận: ${JSON.stringify(b.cot)}`);
-    assert(b.dong.length === 2, `bỏ dòng trống cuối: ${b.dong.length}`);
-    const [a1, a2] = b.dong;
-    const o = (r: any, k: string) => r.o.find((x: any) => x.skill === k);
-    assert(a1.ten === 'Hồ Ngọc Diệp' && o(a1, 'listening').diem === '27' && o(a1, 'listening').nhanXet === 'Nghe tốt\nPart 1–2', 'ô ngoặc kép có xuống dòng');
-    assert(o(a1, 'reading').diem === '' && !o(a1, 'writing1'), 'cột không dán → không có ô; ô trống giữ rỗng');
-    assert(a2.ten === 'Lê "Huy"' && o(a2, 'reading').diem === '31' && a2.so === 3, `ngoặc kép kép + số dòng Excel: ${a2.ten} ${a2.so}`);
-    /* Tiêu đề khác thứ tự + tên tiếng Anh: map theo tên, không theo vị trí. */
-    const b2 = d.docBangDan('Học viên\tSpeaking\tW2\tNhận xét\nAn\t6 6 6.5 6\t7 7 7 7\tLập luận chặt, ví dụ tốt', NAM);
-    assert(o(b2.dong[0], 'speaking').diem === '6 6 6.5 6' && o(b2.dong[0], 'writing2').nhanXet === 'Lập luận chặt, ví dụ tốt' && o(b2.dong[0], 'speaking').nhanXet === '',
-      '"Nhận xét" không tên kỹ năng gắn với cột điểm ngay trước');
-    /* Không tiêu đề: Tên | L | NX L | R | NX R … theo thứ tự cột đang mở. */
-    const b3 = d.docBangDan('An\t30\tNghe tốt lắm luôn\t31\tĐọc ổn định', ['listening', 'reading']);
-    assert(!b3.coTieuDe && o(b3.dong[0], 'reading').diem === '31' && o(b3.dong[0], 'listening').nhanXet === 'Nghe tốt lắm luôn', 'theo vị trí');
-    const b4 = d.docBangDan('An\t6 6 6 6\tĐủ ý, ví dụ tốt', ['writing2']);
-    assert(o(b4.dong[0], 'writing2').diem === '6 6 6 6' && o(b4.dong[0], 'writing2').nhanXet === 'Đủ ý, ví dụ tốt', 'một kỹ năng: Tên · điểm · nhận xét');
-    const b5 = d.docBangDan('An\t30\t31\t6 6 6 6\t7 7 7 7\t6 6 6 6', NAM);
-    assert(o(b5.dong[0], 'reading').diem === '31' && o(b5.dong[0], 'speaking').diem === '6 6 6 6' && o(b5.dong[0], 'listening').nhanXet === '', 'chỉ điểm, không cột nhận xét');
-    assert(d.docBangDan('  \n ', NAM).dong.length === 0, 'khung rỗng');
-  });
-
-  check('OV15b-2b · khớp tên bỏ dấu (đ→d, hoa thường, khoảng trắng); email trong ô tên khớp email; trùng tên → ứng viên; không có trong lớp', () => {
-    const ds = [
-      { attemptId: 1, ten: 'Vũ Hải Đăng', email: 'dang@x.vn' },
-      { attemptId: 2, ten: 'Nguyễn Minh An', email: 'an.nguyenminh@gmail.com' },
-      { attemptId: 3, ten: 'Nguyễn Minh An', email: 'minhan.ng@gmail.com' },
-    ];
-    assert(d.khopHocVien('  vu  hai dang ', ds).attemptId === 1, 'bỏ dấu + đ→d');
-    assert(JSON.stringify(d.khopHocVien('Nguyen Minh An', ds).trung) === '[2,3]', 'trùng tên → ứng viên, không đoán');
-    assert(d.khopHocVien('Nguyễn Minh An minhan.ng@gmail.com', ds).attemptId === 3, 'email trong ô tên');
-    assert(d.khopHocVien('MINHAN.NG@gmail.com', ds).attemptId === 3, 'chỉ email, hoa thường');
-    assert(d.khopHocVien('Trần Văn Nam', ds).khongCo === true, 'không có trong lớp');
-    assert(d.khopHocVien('', ds).khongCo === true, 'tên trống');
-  });
-
-  check('OV15b-2c · ô dán: trống bỏ qua ≠ 0 ≠ "-"; L/R Số câu / Band; W/S MT thường 4 tiêu chí (một band → lỗi, MT cũ nhận); nhận xét MT ngắn / thiếu vẫn ghi (LUAT-NX-MT); dưới kỳ vọng gợi ý nhóm', () => {
-    const o = (k: string, x: object = {}) => ({ skill: k, required: true, canEdit: true, rawScore: null, band: null, criteria: [null, null, null, null],
-      bandThang: false, nenCoNhanXet: true, kyVong: 6, nhanXet: null, nhomNguyenNhan: [], progress: 'scheduled', ...x });
-    const x = (diem: string, nx: string, cell: object, che = 'cau') => d.xetODan({ diem, nhanXet: nx }, cell, che);
-    const NX = 'Nghe tốt phần 1 và 2';
-    assert(x('', '', o('listening')).loai === 'bo', 'trống = bỏ qua');
-    const khong = x('0', NX, o('listening'));
-    assert(khong.loai === 'ghi' && khong.patch.rawScore === 0, '0 là điểm, không phải trống');
-    const vang = x('-', '', o('listening'));
-    assert(vang.loai === 'ghi' && vang.patch.noShow === true && vang.patch.rawScore === undefined, '"-" là vắng, không phải 0');
-    assert(x('-', '', o('listening', { rawScore: 30, band: 7 })).loai === 'loi', '"-" không xoá điểm đã có');
-    const l = x('28', NX, o('listening'));
-    assert(l.loai === 'ghi' && l.patch.rawScore === 28 && l.patch.nhanXet === NX && l.band === 6.5 && !l.canNhom && l.truoc === null, 'L số câu');
-    assert(x('43', NX, o('listening')).loai === 'loi' && x('6.5', NX, o('listening')).loai === 'loi', 'Số câu: ngoài 0–40 / số lẻ → lỗi');
-    const lb = x('6,5', NX, o('reading'), 'band');
-    assert(lb.loai === 'ghi' && lb.patch.band === 6.5 && lb.patch.rawScore === undefined, 'Band cho cả lô, dấu phẩy thập phân');
-    assert(x('9.5', NX, o('reading'), 'band').loai === 'loi', 'band ngoài 0–9');
-    const w = x('5 6 6 6', 'Thiếu số liệu chính', o('writing1'));
-    assert(w.loai === 'ghi' && JSON.stringify(w.patch.criteria) === '[5,6,6,6]' && w.band === 6 && !w.canNhom, `W 4 tiêu chí: ${JSON.stringify(w)}`);
-    const wb = x('6.5', 'Thiếu số liệu chính', o('writing1'));
-    assert(wb.loai === 'loi' && wb.loi === d.LOI_DAN_BAND, 'MT thường: một band ở W/S → lỗi (Band tự tính từ 4 tiêu chí)');
-    const cu = x('6.5', '', o('speaking', { bandThang: true, nenCoNhanXet: false }));
-    assert(cu.loai === 'ghi' && cu.patch.band === 6.5, 'MT cũ / MT0 nhận band thẳng');
-    assert(x('6 6 6', NX, o('speaking')).loai === 'loi', 'thiếu tiêu chí');
-    /* LUAT-NX-MT (chủ SP 22/10): thiếu / ngắn nhận xét không là lỗi dòng — chỉ nhắc ở ô sau khi lưu. */
-    assert(x('28', 'Ngắn', o('listening')).loai === 'ghi', 'nhận xét MT < 10 ký tự → vẫn ghi');
-    assert(x('28', '', o('listening')).loai === 'ghi', 'MT có điểm thiếu nhận xét → vẫn ghi');
-    assert(x('28', '', o('listening', { nhanXet: 'Đã có nhận xét đủ dài' })).loai === 'ghi', 'nhận xét cũ của ô vẫn tính');
-    const duoi = x('17', 'Hết giờ ở passage 3', o('listening'));
-    assert(duoi.loai === 'ghi' && duoi.canNhom, 'dưới kỳ vọng → cần nhóm nguyên nhân');
-    assert(!x('17', 'Hết giờ ở passage 3', o('listening', { nhomNguyenNhan: ['L1'] })).canNhom, 'ô đã có nhóm → không hỏi lại');
-    assert(!x('17', '', o('listening', { nenCoNhanXet: false })).canNhom, 'MT cũ / MT0: nhóm không bắt buộc (như máy chủ)');
-    const de = x('22', 'Part 2 tiến bộ rõ', o('listening', { rawScore: 17, band: 5 }));
-    assert(de.loai === 'ghi' && de.truoc === '17' && de.sau === '22', 'ghi đè trước → sau');
-    assert(x('17', '', o('listening', { rawScore: 17, band: 5, nhanXet: 'Nhận xét cũ đủ dài' })).loai === 'bo', 'giống hệt → bỏ qua');
-    assert(x('28', NX, o('listening', { canEdit: false })).loai === 'loi', 'ô không được sửa → lỗi');
-    /* "-" với ô đang "-": bỏ qua; điểm đè "-": "- → x"; "-" có nhận xét: báo bị bỏ. */
-    assert(x('-', '', o('listening', { noShow: { state: 'khong-co-bai' } })).loai === 'bo', '"-" lên ô đã "-" → bỏ qua');
-    const de2 = x('22', 'Part 2 tiến bộ rõ', o('listening', { daChot: { doiSang: null } }));
-    assert(de2.loai === 'ghi' && de2.truoc === '-' && de2.sau === '22' && de2.patch.rawScore === 22, `điểm đè "-": ${JSON.stringify(de2)}`);
-    const vnx = x('-', 'Ốm cả tuần thi', o('listening'));
-    assert(vnx.loai === 'ghi' && vnx.patch.nhanXet === undefined && !!vnx.canhBao, '"-" có nhận xét → nhận xét bị bỏ, có báo');
-    /* Hoàn tác: các lệnh trả lại như trước khi dán, theo thứ tự. */
-    const tr = (cell: object, p: object, k = 'listening') => JSON.stringify(d.patchTruoc(o(k, cell), p));
-    assert(tr({}, { rawScore: 28, nhanXet: NX }) === '[{"rawScore":null,"nhanXet":null}]', `ô trống → xoá: ${tr({}, { rawScore: 28, nhanXet: NX })}`);
-    assert(tr({ rawScore: 17, band: 5, nhanXet: 'Cũ đủ mười ký tự' }, { rawScore: 22, nhanXet: NX }) === '[{"rawScore":17,"nhanXet":"Cũ đủ mười ký tự"}]', 'L có số câu → trả số câu');
-    assert(tr({ rawScore: null, band: 6.5 }, { band: 7 }) === '[{"band":6.5}]', 'L chỉ band → trả band');
-    assert(tr({ criteria: [6, 6, 6, 5.5], band: 6 }, { criteria: [7, 7, 7, 7], nhomNguyenNhan: ['x'] }, 'writing1') === '[{"criteria":[6,6,6,5.5],"nhomNguyenNhan":[]}]', 'W có tiêu chí → trả tiêu chí; nhóm rỗng');
-    assert(tr({ rawScore: 17, band: 5, nhomNguyenNhan: ['L2'] }, { rawScore: 30 }) === '[{"rawScore":17,"nhomNguyenNhan":["L2"]}]', 'ô cũ có nhóm → luôn gửi lại nhóm cũ');
-    assert(tr({}, { noShow: true }) === '[{"noShow":false}]', 'vừa dán "-" → gỡ dấu');
-    assert(tr({ noShow: { state: 'khong-du-thi' } }, { rawScore: 22 }) === '[{"rawScore":null},{"noShow":true}]', 'điểm đè "-" → xoá điểm rồi đặt lại "-"');
-    assert(tr({ rawScore: 30, band: 7 }, { nhanXet: NX }) === '[{"nhanXet":null}]', 'chỉ nhận xét → không đụng điểm');
-    /* Trước Hoàn tác: ô còn đúng giá trị đã dán? */
-    assert(d.oConNhuDan(o('listening', { rawScore: 28, band: 6.5, nhanXet: NX }), { rawScore: 28, nhanXet: NX }), 'còn như dán');
-    assert(!d.oConNhuDan(o('listening', { rawScore: 29, band: 6.5, nhanXet: NX }), { rawScore: 28, nhanXet: NX }), 'đã có người sửa điểm');
-    assert(!d.oConNhuDan(o('listening'), { noShow: true }) && d.oConNhuDan(o('listening', { daChot: { doiSang: 'W4 SEP' } }), { noShow: true }), '"-" còn / mất');
+  /* ---------------------------------------------------------------- 2 · Dán từ Excel — R1-BO-DAN-EXCEL (chủ SP 26/10): web bỏ, API lô giữ */
+  check('OV15b-2 · web không còn "Dán từ Excel" điểm (ngoài Tutor và Thêm học viên — nhập danh sách, không phải điểm)', () => {
+    const goc = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../web/src');
+    const mien = /^modules[\\/](tutor[\\/]|students[\\/]IntakePanel\.tsx$)/;   // Windows: readdirSync trả "\"
+    const sai = (fs.readdirSync(goc, { recursive: true }) as string[])
+      .filter((f) => /\.tsx?$/.test(f) && !mien.test(f) && /Dán từ Excel|DanExcel/.test(fs.readFileSync(path.join(goc, f), 'utf8')));
+    assert(sai.length === 0, `còn Dán từ Excel điểm: ${sai.join(', ')}`);
   });
 
   check('OV15b-2d · lưu lô: ràng lớp / lượt; mỗi dòng một giao dịch — ô sai môn 403 làm cả dòng không lưu, dòng khác vẫn lưu; nhận xét MT ngắn vẫn lưu (LUAT-NX-MT); một lần dán = một mục lịch sử', () => thu(() => {
@@ -207,7 +120,7 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     assertThrows(() => lo(P.lrTeacher, [{ attemptId: 'x', o: [] }]), /Lượt/, 'lượt không hợp lệ');
     assertThrows(() => lo(P.lrTeacher, [{ attemptId: a3, o: [] }]), /Ô điểm/, 'dòng không có ô');
     assertThrows(() => lo(P.lrTeacher, [{ attemptId: a3, o: [{ skill: 'listening' }] }]), /Ô điểm/, 'ô không có trường nào');
-    assertThrows(() => lo(P.lrTeacher, Array.from({ length: d.DAN_TOI_DA_DONG + 1 }, () => ({ attemptId: a3, o: [{ skill: 'listening', rawScore: 1 }] }))), /tối đa/, 'lô quá lớn bị chặn ở cửa');
+    assertThrows(() => lo(P.lrTeacher, Array.from({ length: DAN_TOI_DA_DONG + 1 }, () => ({ attemptId: a3, o: [{ skill: 'listening', rawScore: 1 }] }))), /tối đa/, 'lô quá lớn bị chặn ở cửa');
     /* Đầu-cuối: dán "-" → Hoàn tác (noShow:false) → dấu về NULL; Hoàn tác ghi mục riêng. QL: "-" có thể làm đợt hoàn tất — sau đó GV không gỡ dấu
        được nữa (luật `saveScore`, web báo câu máy chủ ở dòng). */
     /* LUAT-NX-MT: L của a2 đã lưu ở trên (nhận xét ngắn không còn lỗi dòng) → kiểm "-" trên R (xoá trước cho trống). */

@@ -14,7 +14,6 @@
  "web/src/modules/cases/SkillBoard.tsx",
  "web/src/modules/cases/ThaoTacCase.tsx",
  "web/src/modules/cases/TheKyNang.tsx",
- "web/src/modules/cham/DanExcel.tsx",
  "web/src/modules/cham/DiemTheoLop.tsx",
  "web/src/modules/cham/DongThi.tsx",
  "web/src/modules/cham/GvCham.tsx",
