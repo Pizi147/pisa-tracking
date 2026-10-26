@@ -629,6 +629,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 27/10/2026 | R1-NO-CU (Opus 5.5) · `claude/r1-no-cu-063381` | Đổi người phụ trách Case (D17): API `POST /cases/:id/nguoi-phu-trach` (QL / GVCN lớp hiện tại, ứng viên theo kỹ năng + GVCN, lịch sử + nhật ký + thông báo, 409); nút "Đổi người…" đầu Case + việc "Chọn người phụ trách" làm tại chỗ. |
 | 27/10/2026 | R1-BO-DAN-EXCEL (Opus 5.5) · `claude/kind-dirac-afb708` | Bỏ hết "Dán từ Excel" + "?" điểm ở web (Lịch Test, panel Nhập điểm Công việc, Điểm theo lớp — một khối `LuoiChamLop`); xoá `DanExcel.tsx`, `shared/domain/danExcel.ts`, khoá EN thừa, HD `dl-dan`; API `/scores/lo` giữ (web không gọi); kiểm tĩnh OV15b-2 |
 | 26/10/2026 | R1-LUU-TIEP (Opus 5.5) · `claude/r1-luu-tiep-71b75a` | V12 bản 26/10: Lưu ở lại (✓ Đã lưu · Bài tiếp ›), Lưu · bài tiếp › sang bài còn thiếu (`baiKeTiep`, ảnh chụp, vòng, L → R), hết → Lớp tiếp / Việc tiếp; hồ sơ MT / Lộ trình có nút tiếp (Lưu · em tiếp ›); Việc tiếp dùng ảnh chụp; Lưu · việc tiếp › / Lưu · đóng; BT-1…11 + `cham-lien-mach` |
 | 26/10/2026 | #593 R1-DICH-2 (Opus 5.5 high) | Nút Dịch: nhận xét trong `<ghi_chu>` = dữ liệu, kiểm đa tập `[[Pn]]`, khoá nhớ có phiên bản + model, trần 4000 ký tự, che `[Tên]`; web bỏ phản hồi về muộn + `gocBam` (lệch → "tải lại trang để dịch"); `DICH_MODEL` mặc định `gpt-6-luna`; hướng dẫn `docs/huong-dan/bat-dich-ai.md` (khoá Restricted) |

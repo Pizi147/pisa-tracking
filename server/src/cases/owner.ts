@@ -1,8 +1,10 @@
-import { db } from '../db.ts';
-import { CASE_CATEGORY_SKILL, PERMISSIONS, categoryOf } from '../../../shared/domain/index.ts';
-import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { db, tx } from '../db.ts';
+import { CASE_CATEGORY_SKILL, MON_GOP, PERMISSIONS, caseTopicLabel, categoryOf } from '../../../shared/domain/index.ts';
+import { can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { writeAudit } from '../platform/audit.ts';
+import { notify, writeAudit } from '../platform/audit.ts';
+import { loi, notFound, nowIso } from '../util.ts';
+import { activeClassOf } from '../yThuc/access.ts';
 
 /**
  * GỢI Ý NGƯỜI PHỤ TRÁCH CHÍNH cho một Case mới (mục 2.3).
@@ -119,4 +121,90 @@ export function caseChuaCoNguoi(p: Principal, branchId?: number | null) {
       thieu: (c.eff_class_id && c.thieu_gv_mon ? 'gv-mon' : c.eff_class_id && c.thieu_gvcn ? 'gvcn' : 'chon') as 'gv-mon' | 'gvcn' | 'chon',
       mon: c.eff_class_id && c.thieu_gv_mon ? (CASE_CATEGORY_SKILL[c.category as keyof typeof CASE_CATEGORY_SKILL] ?? null) : null,
     }));
+}
+
+/* ================= R1-NO-CU (đặc tả 27/10 mục 4.5, D17) — ĐỔI NGƯỜI PHỤ TRÁCH CASE ================= */
+
+type CaseDoiChu = { id: number; status: string; tam: number; owner_user_id: number | null; category: string | null; topic: string | null;
+  goc_programme_code: string | null; student_id: number; full_name: string | null; class_id: number | null };
+/** Case + lớp HIỆN TẠI của em (`activeClassOf`: ghi danh đang học mới nhất — em chuyển lớp thì quyền theo lớp mới). */
+function caseDoiChu(caseId: number): CaseDoiChu | undefined {
+  const c = db().prepare(
+    `SELECT sc.id, sc.status, sc.tam, sc.owner_user_id, sc.category, sc.topic, sc.goc_programme_code, s.id AS student_id, s.full_name
+       FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+       JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+      WHERE sc.id = ?`,
+  ).get(caseId) as Omit<CaseDoiChu, 'class_id'> | undefined;
+  return c && { ...c, class_id: activeClassOf(c.student_id) };
+}
+
+/** Ứng viên (D17): GV đang dạy đúng kỹ năng của Case ở lớp em (môn gộp L+S / R+W: cả GV môn tách) + GVCN lớp đó; mỗi người một lần. */
+function ungVienCua(c: CaseDoiChu) {
+  if (!c.class_id) return [];
+  const skill = CASE_CATEGORY_SKILL[(c.category ?? categoryOf(c.topic)) as string] ?? null;
+  const kyNang = new Set(skill ? [skill, ...(MON_GOP[skill] ?? [])] : []);
+  const ds = new Map<number, { id: number; ten: string | null }>();
+  for (const r of phanCongLop(c.class_id)) if (r.is_core === 1 || kyNang.has(r.skill ?? '')) ds.set(r.user_id, { id: r.user_id, ten: r.ten });
+  return [...ds.values()];
+}
+
+/** Quyền (D17): QL / Quản trị của lớp (`class.assign` | `class.edit`) hoặc GVCN lớp hiện tại của em; em không có lớp → `case.approve`. */
+function duocDoi(p: Principal, c: CaseDoiChu) {
+  return c.class_id
+    ? can(p, PERMISSIONS.CLASS_ASSIGN, { classId: c.class_id }) || can(p, PERMISSIONS.CLASS_EDIT, { classId: c.class_id }) || isCoreTeacherOf(p, c.class_id)
+    : can(p, PERMISSIONS.CASE_APPROVE, { studentId: c.student_id });
+}
+
+export function ungVienChuCase(caseId: number) {
+  const c = caseDoiChu(caseId);
+  return c ? ungVienCua(c) : [];
+}
+export function duocDoiChuCase(p: Principal, caseId: number): boolean {
+  const c = caseDoiChu(caseId);
+  return !!c && duocDoi(p, c);
+}
+/**
+ * Chi tiết Case (`doiChu`): nút "Đổi người…" hiện khi có quyền, Case còn mở (không tạm) và có người KHÁC người đang phụ trách để chọn.
+ * Danh sách GV chỉ trả cho người đổi được.
+ */
+export function doiChuCua(p: Principal, caseId: number) {
+  const c = caseDoiChu(caseId);
+  const ungVien = c ? ungVienCua(c) : [];
+  const duoc = !!c && c.status !== 'done' && !c.tam && ungVien.some((u) => u.id !== c.owner_user_id) && duocDoi(p, c);
+  return { duoc, ungVien: duoc ? ungVien : [] };
+}
+
+/**
+ * Đổi người phụ trách (cả khi Case đã có người). `ownerCu` = người phụ trách lúc mở hộp — người khác vừa đổi thì 409, không ghi đè.
+ * Một dòng `sos_case_history` (người đổi) + nhật ký `case.owner_change` + thông báo giao Case cho người mới; người thực hiện PA giữ nguyên.
+ */
+export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unknown; ownerCu?: unknown }) {
+  const ownerId = Number(body?.ownerId);
+  if (!Number.isInteger(ownerId) || ownerId <= 0) throw loi(400, 'Chọn người phụ trách.');
+  if (body.ownerCu === undefined || (body.ownerCu !== null && !Number.isInteger(body.ownerCu))) throw loi(400, 'Thiếu người phụ trách hiện tại — tải lại.');
+  const ownerCu = body.ownerCu as number | null;
+  return tx(() => {
+    const c = caseDoiChu(caseId);
+    if (!c) throw notFound();
+    if (!duocDoi(p, c)) throw loi(403, 'Chỉ Quản lý hoặc GVCN của lớp em đổi được người phụ trách Case.');
+    if (c.status === 'done') throw loi(400, 'Case đã đóng.');
+    if (c.tam) throw loi(400, 'Case tạm chưa là việc — chưa đổi người được.');
+    if (c.owner_user_id !== ownerCu) throw loi(409, 'Người phụ trách vừa đổi — tải lại.');
+    if (ownerId === ownerCu) throw loi(400, 'Người này đang phụ trách Case.');
+    const moi = ungVienCua(c).find((u) => u.id === ownerId);
+    if (!moi) throw loi(400, 'Chỉ chọn GV dạy kỹ năng của Case ở lớp em hoặc GVCN.');
+    const conn = db();
+    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ? AND owner_user_id IS ?').run(ownerId, caseId, ownerCu).changes !== 1) {
+      throw loi(409, 'Người phụ trách vừa đổi — tải lại.');
+    }
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', ?, ?, ?, ?)`)
+      .run(caseId, ownerCu === null ? null : String(ownerCu), String(ownerId), p.userId, nowIso());
+    writeAudit({ actorUserId: p.userId, action: 'case.owner_change', entityType: 'sos_case', entityId: caseId,
+      entityLabel: `${c.full_name ?? ''} · ${moi.ten ?? ''}`, before: { ownerUserId: ownerCu }, after: { ownerUserId: ownerId } });
+    if (ownerId !== p.userId) {
+      notify({ userId: ownerId, kind: 'case_giao', title: `Phụ trách Case ${c.topic ? caseTopicLabel(c.topic, c.goc_programme_code) : ''} · ${c.full_name ?? ''}`,
+        entityType: 'sos_case', entityId: caseId, dedupKey: `case_giao:${caseId}` });
+    }
+    return { ownerUserId: ownerId };
+  });
 }

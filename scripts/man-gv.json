@@ -4,6 +4,7 @@
  "web/src/modules/cases/CaseBoardPage.tsx",
  "web/src/modules/cases/CasePanel.tsx",
  "web/src/modules/cases/ChiTietKyNang.tsx",
+ "web/src/modules/cases/DoiNguoiPhuTrach.tsx",
  "web/src/modules/cases/DoiPa.tsx",
  "web/src/modules/cases/DongXinYKien.tsx",
  "web/src/modules/cases/FormPa.tsx",
