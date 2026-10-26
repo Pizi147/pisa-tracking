@@ -65,6 +65,8 @@ export function tapXetLai(today = demoToday(), cn: readonly number[] | null = nu
   });
 }
 export const MOC_TU_GIU = 'xet_lai_tu_giu_tu';
+/** Chỉ đọc (không tự giữ, không nhớ) — migrate dùng để đóng thẻ Mini Test cũ mà không ghi gì khác. */
+export const tapXetLaiChiDoc = (today = demoToday()): EmXetLai[] => tinhTapXetLai(today);
 
 /** Chi nhánh QL / Quản trị được quyết (grant `class.edit`): null = mọi chi nhánh. */
 export function phamViQuyet(p: Principal): number[] | null {

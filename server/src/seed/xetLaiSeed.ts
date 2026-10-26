@@ -59,4 +59,6 @@ export function buildXetLaiDemo(ctx: BuildCtx): void {
     .run(ngayRa, nx, DEMO_DATE, ids[i]));
   conn.prepare(`UPDATE lenh_chuyen_lop SET ngay_ra_lenh = ? WHERE student_id = ? AND trang_thai = 'cho'`).run(addDays(DEMO_DATE, -1), khang);
   thiHanhLenhDenHan(DEMO_DATE);
+  /* Như SEED-UX U7: chuông do lệnh / thi hành sinh theo giờ thật → kẹp về ngày demo (không gì ở tương lai). */
+  conn.prepare('UPDATE notifications SET created_at = ? WHERE created_at > ?').run(`${DEMO_DATE}T03:00:00.000Z`, `${DEMO_DATE}T16:59:59.999Z`);
 }

@@ -1,5 +1,5 @@
 import { demoToday } from '../demoConfig.ts';
-import { MOC_TU_GIU, tapXetLai } from '../normal/xetLai.ts';
+import { MOC_TU_GIU, tapXetLaiChiDoc } from '../normal/xetLai.ts';
 
 /**
  * P9a XET-LAI (N21): bảng `xet_lai_lo_trinh` — quyết định Xét lại lộ trình của QL (Tiếp tục · Học lại · Tạm dừng/ Kết thúc học, cả dòng tự ghi
@@ -37,7 +37,7 @@ export function migratePrXetLai(conn: any, applied: string[]) {
     applied.push(`P9a XET-LAI: bảng xet_lai_lo_trinh (quyết định Xét lại lộ trình + nhận xét GVCN lớp mới); mốc tự giữ từ ${demoToday()}.`);
   }
   /* Thẻ "Mini Test chưa đạt" đang chờ → đóng CHỈ khi em đã có dòng (d) ở Xét lại (cùng Mini Test); thẻ khác giữ nguyên. */
-  const coD = new Set(tapXetLai(demoToday(), null).filter((e) => e.lyDo.ma === 'd').map((e) => e.studentId));
+  const coD = new Set(tapXetLaiChiDoc(demoToday()).filter((e) => e.lyDo.ma === 'd').map((e) => e.studentId));
   const the = (conn.prepare(`SELECT id, hoc_vien_id FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND trang_thai = 'cho'`).all() as any[]).filter((y) => coD.has(y.hoc_vien_id));
   const dong = conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'tu_dong', ly_do_dong = 'Chuyển sang Xét lại lộ trình', xu_ly_luc = ? WHERE id = ? AND trang_thai = 'cho'`);
   for (const y of the) dong.run(new Date().toISOString(), y.id);

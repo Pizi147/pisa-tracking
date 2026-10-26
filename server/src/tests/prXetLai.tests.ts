@@ -134,8 +134,8 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const a0: string[] = [], a1: string[] = [], a2: string[] = [];
     mig.migratePrXetLai(conn, a0);
     assert(!a0.length && !get(`SELECT 1 FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU), `DB mã hiện hành: ${JSON.stringify(a0)}`);
-    assert(!get('SELECT 1 FROM xet_lai_lo_trinh LIMIT 1'), 'tiền đề: bảng còn trống');
-    conn.exec('DROP TABLE xet_lai_lo_trinh');
+    /* Giả DB cũ: cất bảng hiện có sang tên khác, xong trả lại (các phép kiểm khác đã có dòng). */
+    conn.exec('ALTER TABLE xet_lai_lo_trinh RENAME TO xet_lai_cat; DROP INDEX IF EXISTS ix_xet_lai_hv; DROP INDEX IF EXISTS ux_xet_lai_tu_dong');
     mig.migratePrXetLai(conn, a1);
     assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', 'thẻ không có dòng (d) phải giữ');
     assert(get(`SELECT value FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU)?.value === TODAY && a1.some((x) => /mốc tự giữ/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
@@ -143,6 +143,9 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(!a2.length, `lần 2: ${JSON.stringify(a2)}`);
     conn.prepare('DELETE FROM yeu_cau_duyet WHERE id = ?').run(id);
     conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
+    conn.exec(`DROP TABLE xet_lai_lo_trinh; ALTER TABLE xet_lai_cat RENAME TO xet_lai_lo_trinh;
+      CREATE INDEX ix_xet_lai_hv ON xet_lai_lo_trinh (student_id, lenh_id);
+      CREATE UNIQUE INDEX ux_xet_lai_tu_dong ON xet_lai_lo_trinh (student_id, lenh_id, moc) WHERE tu_dong = 1;`);
   });
 
   // ---------------------------------------------------------------- XL-3 · tập em = việc = GET
