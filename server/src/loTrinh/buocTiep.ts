@@ -16,6 +16,7 @@ import { db, tx } from '../db.ts';
 import {
   LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ghepMucTieu, kiemLopLoTrinhMoi, routeGoiYLoTrinhMoi, tenRoute, tenMonNgan, ngay, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, trangThaiSauThi, tuanHopLe, tuanLich,
   type DongSauThi, type HuongSauThi, type LuaChonSauThi,
+  chuMon, luuMon, type MonVao,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso, chuTuDo } from '../util.ts';
@@ -97,6 +98,8 @@ export type ChonBuocTiepVao = {
   ghiChu?: unknown;
   /** P7 (N12): Lộ trình mới — LT1 · LT2 · RF · KHAC (trống = gợi ý: LT1 xong → LT2, còn lại giữ) · tên lộ trình Khác (bắt buộc) · Bỏ Target (chỉ Khác). */
   route?: unknown; routeTen?: unknown; boTarget?: unknown;
+  /** P8 (N13): môn đăng ký của lộ trình mới (mảng L R W1 W2 S; null = đủ) — không gửi = môn của lộ trình cũ. */
+  monDangKy?: unknown;
 };
 
 const CHI_QL = 'Chỉ Quản lý hoặc TVV của chi nhánh chọn được bước tiếp sau thi.';
@@ -118,16 +121,20 @@ const lopGiuCua = (c: any): any => {
 };
 
 /** P7 (N12): đọc + kiểm lựa chọn Lộ trình mới (lộ trình, tên Khác, Bỏ Target, lớp đích hợp loại). Một hàm cho chọn (400) và xem trước (câu `loi`). */
-function docLoTrinhMoi(c: any, input: ChonBuocTiepVao, lopMoiId: number | null, chiKiem = false): { route: string; routeTen: string | null; boTarget: boolean; lopDich: any; loi: string | null } {
+function docLoTrinhMoi(c: any, input: ChonBuocTiepVao, lopMoiId: number | null, chiKiem = false): { route: string; routeTen: string | null; boTarget: boolean; monDangKy: string | null; lopDich: any; loi: string | null } {
   const raw = input.route === undefined || input.route === null || input.route === '' ? routeGoiYLoTrinhMoi(c.route) : String(input.route);
   if (!(ROUTE_LO_TRINH_MOI as readonly string[]).includes(raw)) throw badRequest('Lộ trình không hợp lệ — chọn LT1, LT2, RF hoặc Khác.');
   const khac = raw === ROUTE_KHAC;
   const routeTen = khac ? chuTuDo(input.routeTen, 'Tên lộ trình', 80) : null;
   const lopDich = lopMoiId ? db().prepare('SELECT id, code, is_fast_track, route, status, lich_mt, branch_id FROM classes WHERE id = ?').get(lopMoiId) as any : lopGiuCua(c);
-  const loi = (khac && !routeTen ? 'Ghi tên lộ trình "Khác".' : null)
+  /* P8 (N13): mặc định môn của lộ trình cũ; gửi rỗng / lạ → lỗi (xem trước trả ở `loi`). */
+  let monDangKy: string | null = c.mon_dang_ky ?? null, loiMon: string | null = null;
+  if (input.monDangKy !== undefined) try { monDangKy = luuMon(input.monDangKy as MonVao); } catch (e: any) { loiMon = e.message; }
+  if (lopDich && !lopDich.is_fast_track) { monDangKy = null; if (input.monDangKy !== undefined) loiMon = 'Môn học chỉ áp cho lộ trình Fast Track.'; }   // N22 ④
+  const loi = (khac && !routeTen ? 'Ghi tên lộ trình "Khác".' : null) ?? loiMon
     ?? (lopDich ? kiemLopLoTrinhMoi(raw, { code: lopDich.code, ft: !!lopDich.is_fast_track, route: lopDich.route }) : 'Chọn lớp cho lộ trình mới.');
   if (loi && !chiKiem) throw badRequest(loi);
-  return { route: raw, routeTen, boTarget: khac && input.boTarget === true, lopDich, loi };
+  return { route: raw, routeTen, boTarget: khac && input.boTarget === true, monDangKy, lopDich, loi };
 }
 
 
@@ -161,7 +168,8 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
   const mon = [...new Set(caseMo.filter((x) => x.category).map((x) => tenMonNgan(null, x.category)))].join(', ');
   const tenCu = tenRoute(c) ?? 'lộ trình cũ';
   const dong = [
-    `Mở ${ten} ở ${lt.lopDich?.code ?? '—'} từ ${batDau === homNay ? ngay(batDau, homNay) : `Thứ Hai ${ngay(batDau, homNay)}`}${tg ? ` · Target ${tg}` : ''}`,
+    /* P8 (mockup k1, k3): môn học trong dòng đầu — "đủ 5 môn" · "chỉ S" · "L · R · W2 · S". */
+    `Mở ${ten} ở ${lt.lopDich?.code ?? '—'} từ ${batDau === homNay ? ngay(batDau, homNay) : `Thứ Hai ${ngay(batDau, homNay)}`}${!lt.lopDich?.is_fast_track ? '' : ` · ${!lt.monDangKy ? 'đủ 5 môn' : JSON.parse(lt.monDangKy).length === 1 ? `chỉ ${chuMon(lt.monDangKy)}` : chuMon(lt.monDangKy)}`}${tg ? ` · Target ${tg}` : ''}`,
     lich.length ? `Tạo MT1–MT${lich.length}: ${lich.map((w) => tuanLich(addDays(t2, 7 * (w - 1)), homNay)).join(' · ')}` : 'Không tạo MT · thêm "+ MT" ở Kế hoạch Test khi cần',
     ...(dv ? [dv.attemptId ? `Đầu vào = ${dv.nguon.split(' ')[0]} (Overall ${dv.score?.toFixed(1)}) — chưa có KQ thi thật`
       : `Đầu vào = KQ thi ${ngay(c.thi_that_ngay, homNay)}: L ${dv.l?.toFixed(1)} · R ${dv.r?.toFixed(1)} · W ${dv.w?.toFixed(1)} · S ${dv.s?.toFixed(1)}`] : []),
@@ -170,7 +178,11 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
     ...(soPa ? [`Dừng ${soPa} PA — Dừng · kết thúc lộ trình`] : []),
   ];
   const giu = lopMoiId ? lopGiuCua(c) : lt.lopDich;   // không chọn lớp khác → lớp đích chính là lớp giữ (đã đọc một lần)
-  return { routeGoiY: routeGoiYLoTrinhMoi(c.route), route: lt.route, loi: lt.loi, dong, lopGiu: giu ? { id: giu.id as number, code: giu.code as string } : null };
+  return {
+    routeGoiY: routeGoiYLoTrinhMoi(c.route), route: lt.route, loi: lt.loi, dong, lopGiu: giu ? { id: giu.id as number, code: giu.code as string } : null,
+    /** P8: môn đang chọn (mặc định của lộ trình cũ) — panel bật sẵn 5 nút theo đây; null = đủ môn. */
+    monDangKy: (lt.monDangKy ? JSON.parse(lt.monDangKy) : null) as string[] | null,
+  };
 }
 
 /**
@@ -311,13 +323,13 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   const lyDoDung = chon === 'tam_dung' || chon === 'ket_thuc' ? chuTuDo(input.lyDo, 'Lý do', 2000) : null;
   const ngayDung = chon === 'tam_dung' || chon === 'ket_thuc' ? docNgayDung(input.date, homNay) : homNay;
   /* Ghi chú vào khoá chỉ khi có — lựa chọn cũ (không ghi chú) gửi lại vẫn là "không làm lại gì". */
-  const thamSo = JSON.stringify([lopMoiId, hen, mucTieu === null ? null : String(mucTieu), ...(ghiChu ? [ghiChu] : []), ...(lt ? [lt.route, lt.routeTen, lt.boTarget] : [])]);
+  const thamSo = JSON.stringify([lopMoiId, hen, mucTieu === null ? null : String(mucTieu), ...(ghiChu ? [ghiChu] : []), ...(lt ? [lt.route, lt.routeTen, lt.boTarget, ...(lt.monDangKy ? [lt.monDangKy] : [])] : [])]);
   return tx(() => {
     /* Đọc lại TRONG giao dịch: hai người bấm cùng lúc thì người sau hoàn tác đúng lựa chọn người trước vừa ghi. */
     const cu = docLoTrinh(cycleId);
     /* Lưu lại ĐÚNG lựa chọn đang có (bấm đúp, gửi lại) → không làm lại gì. */
     if (cu.buoc_tiep === chon && (JSON.parse(cu.buoc_tiep_json ?? '{}') as GhiBuocTiep).thamSo === thamSo) return trangThaiBuocTiep(p, cycleId);
-    const ghi: GhiBuocTiep = { thamSo, ...(ghiChu ? { ghiChu } : {}), ...(lt ? { loTrinhMoi: { ...lt, cuoiId: cycleId } } : {}) };
+    const ghi: GhiBuocTiep = { thamSo, ...(ghiChu ? { ghiChu } : {}), ...(lt ? { loTrinhMoi: { route: lt.route, routeTen: lt.routeTen, boTarget: lt.boTarget, monDangKy: lt.monDangKy, cuoiId: cycleId } } : {}) };
     /* OV-13m: em Tạm dừng sau thi → Lộ trình mới = Quay lại học (hạn tính lại từ hôm nay), không gỡ Tạm dừng; hoàn tác thì Tạm dừng lại. */
     if (cu.buoc_tiep === 'tam_dung' && chon === 'lo_trinh_moi') {
       if (cu.em_status === 'inactive') setStudentStatus(q, cu.student_id, 'active', homNay, 'Quay lại học', null, { lopKetThucDuoc: true });   // P7 (E2): lớp giữ đã kết thúc → mở lại ở dưới

@@ -18,9 +18,10 @@ import { O_FT_XONG_SQL } from '../../../shared/domain/index.ts';
  * `DEFAULT ''` (= luôn được đọc, chưa tính) và MỌI đường ghi điểm / lịch / lớp gọi `capNhatConOCho*` ở cuối giao dịch của nó.
  */
 
-const TUAN_O = (mon: string) => `COALESCE(
+/* P8 (N13): `o` = ô nhập (FT) — task Writing không học (`bo_task`) không chờ điểm. */
+const TUAN_O = (mon: string, o?: string) => `COALESCE(
     (SELECT MIN(kp.week_start) FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
-      WHERE k.attempt_id = a.id AND k.skill = ${mon} AND k.required = 1 AND k.sit_status NOT IN ('cancelled', 'absent')),
+      WHERE k.attempt_id = a.id AND k.skill = ${mon} AND k.required = 1 AND k.sit_status NOT IN ('cancelled', 'absent')${o ? ` AND k.bo_task IS NOT ${o}` : ''}),
     CASE WHEN NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = ${mon})
          THEN (SELECT pr.week_start FROM report_periods pr WHERE pr.id = a.planned_period_id) END)`;
 
@@ -30,7 +31,7 @@ export const O_CHO_TU_SQL = `(CASE
   THEN (SELECT MIN(${TUAN_O('ps.skill')}) FROM programme_skills ps
          WHERE ps.programme_code = (SELECT c.programme_code FROM classes c WHERE c.id = a.class_id)
            AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = ps.skill AND sc.raw_score IS NOT NULL))
-  ELSE (SELECT MIN(${TUAN_O('e.kn')}) FROM (
+  ELSE (SELECT MIN(${TUAN_O('e.kn', 'e.o')}) FROM (
           SELECT 'listening' AS o, 'listening' AS kn UNION ALL SELECT 'reading', 'reading' UNION ALL SELECT 'writing1', 'writing'
           UNION ALL SELECT 'writing2', 'writing' UNION ALL SELECT 'speaking', 'speaking') e
          WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = e.o AND ${O_FT_XONG_SQL('sc', 'a')}))

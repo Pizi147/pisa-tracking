@@ -582,7 +582,7 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
  * không tính. PA đã xong có kết quả thật trước đó VẪN tính hiệu quả (planning review 22/09, Q7). Lịch sử giữ nguyên.
  * Chữ "lớp thường" thay "Normal" theo đặc tả §2 (không viết "Normal" trên màn).
  */
-export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh', 'overall_dat', 'cho_chot_sos', 'ket_thuc_lo_trinh'] as const;
+export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh', 'overall_dat', 'cho_chot_sos', 'ket_thuc_lo_trinh', 'khong_con_hoc_mon'] as const;
 export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
 export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   course_ended: t('Học viên kết thúc khoá'),
@@ -600,6 +600,8 @@ export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   cho_chot_sos: t('Chờ chốt SOS'),
   /* P7 (N12, Q2): mở Lộ trình mới sau thi — Case chưa xong của lộ trình cũ đóng; PA đang chạy "Dừng — kết thúc lộ trình", không vào Hiệu quả PA. */
   ket_thuc_lo_trinh: t('Kết thúc lộ trình'),
+  /* P8 (N13, Q5): bỏ môn giữa lộ trình — Case mở của môn đó đóng; PA đang chạy "Dừng — không còn học môn", không vào Hiệu quả PA. Bật lại môn không mở lại. */
+  khong_con_hoc_mon: t('Không còn học môn'),
 };
 
 /**

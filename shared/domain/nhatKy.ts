@@ -30,7 +30,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.progress.doi_bai': 'Dời bài theo mốc lớp', 'class.transition': 'Chuyển tiếp lớp',
   'class.sua_ca_lop': 'Sửa thông tin cả lớp',   // OV-15i1: một mục cho cả lô (Lịch sử lớp)
   'cycle.baseline.clear': 'Xoá điểm đầu vào', 'cycle.baseline.set': 'Ghi điểm đầu vào', 'cycle.create': 'Mở lộ trình',
-  'cycle.outcome': 'Kết luận lộ trình', 'cycle.thi_that': 'Kết quả thi thật', 'cycle.buoc_tiep': 'Bước tiếp sau thi', 'cycle.han_sau_thi': 'Gia hạn sau thi', 'cycle.target.revise': 'Đổi Target', 'cycle.update': 'Sửa lộ trình',
+  'cycle.outcome': 'Kết luận lộ trình', 'cycle.thi_that': 'Kết quả thi thật', 'cycle.buoc_tiep': 'Bước tiếp sau thi', 'cycle.han_sau_thi': 'Gia hạn sau thi', 'cycle.mon_dang_ky': 'Đổi môn học', 'cycle.target.revise': 'Đổi Target', 'cycle.update': 'Sửa lộ trình',
   'discipline.acknowledge': 'Ghi nhận vi phạm (đã xem)', 'discipline.handle': 'Xác nhận xử lý vi phạm', 'discipline.edit': 'Sửa vi phạm của lần xử lý', 'discipline.delete': 'Xoá lần xử lý',
   'discipline.propose': 'Đề xuất QL duyệt xử lý Ý thức', 'discipline.performed': 'Đã thực hiện xử lý Ý thức',
   'discipline.not_performed': 'Đưa lần xử lý về Chưa thực hiện', 'discipline.edit_info': 'Sửa ngày / người / mô tả lần xử lý', 'discipline.unacknowledge': 'Bỏ ghi nhận vi phạm',

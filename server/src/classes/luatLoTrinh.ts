@@ -237,7 +237,9 @@ export function dongLopNeuHet(classIds: readonly number[], ngay: string, tuTuanF
 // ---------------------------------------------------------------- P7: Lộ trình mới sau thi (N12)
 
 /** Lựa chọn ở panel Lộ trình mới (P7, N12) — `cuoiId` = lộ trình vừa xong (có KQ thi thật / Không thi). Ghi ở `buoc_tiep_json.loTrinhMoi` để đường hẹn / lệnh chuyển lớp đọc lại. */
-export type LoTrinhMoiSauThi = { route: string; routeTen: string | null; boTarget: boolean; cuoiId: number };
+export type LoTrinhMoiSauThi = { route: string; routeTen: string | null; boTarget: boolean; cuoiId: number;
+  /** P8 (N13): môn đăng ký đã chuẩn hoá (`luuMon`) — lượt MT mặc định tạo theo môn này. Dữ liệu hẹn cũ không có → đủ môn. */
+  monDangKy?: string | null };
 
 /** Điểm đầu vào của lộ trình mới (E3): KQ thi thật của lộ trình vừa xong (đủ 4 kỹ năng); không có → MT có Overall gần nhất của lộ trình đó, ghi nguồn. Không ghép điểm nhiều lần thi. */
 export type DauVaoLoTrinh = { score: number | null; l: number | null; r: number | null; w: number | null; s: number | null; attemptId: number | null; nguon: string };
@@ -296,8 +298,8 @@ export function moLoTrinhMoi(p: Principal, o: {
     .prepare(
       `INSERT INTO learning_cycles (student_id, seq, route, route_ten, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
                                     baseline_score, baseline_listening, baseline_reading, baseline_writing, baseline_speaking, baseline_attempt_id, baseline_source, baseline_note,
-                                    start_period_id, started_at, status, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?)`,
+                                    start_period_id, started_at, status, created_at, mon_dang_ky)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)`,
     )
     .run(o.sid, seq, route, route === ROUTE_KHAC ? st?.routeTen ?? null : null, o.denLop.ma,
       boTg ? null : o.target ?? (giuTarget ? cu?.target_score ?? null : null),
@@ -306,7 +308,7 @@ export function moLoTrinhMoi(p: Principal, o: {
       giuThi ? cu?.exam_date ?? null : null, giuThi ? cu?.exam_period_id ?? null : null,
       dv && !dv.attemptId ? dv.score : null, dv?.l ?? null, dv?.r ?? null, dv?.w ?? null, dv?.s ?? null, dv?.attemptId ?? null,
       dv ? 'previous_cycle' : null, dv?.nguon ?? null,
-      startPeriodId, o.ngay, nowIso()).lastInsertRowid);
+      startPeriodId, o.ngay, nowIso(), o.denLop.ft ? st?.monDangKy ?? null : null).lastInsertRowid);   // P8: chỉ FT
   if (o.denLop.ft) taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
   else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Progress / Final Test (OV-13l: bài tuần này vẫn có)
   return { moiId, route };

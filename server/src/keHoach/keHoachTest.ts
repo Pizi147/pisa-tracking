@@ -19,7 +19,7 @@ import {
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { entrySkillsOf, expectationFor } from '../fasttrack/scoring.ts';
+import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, nextAttemptNo } from '../fasttrack/cycles.ts';
 import {
@@ -186,11 +186,11 @@ type CheDo = 'ft' | 'thuong';
  * Một kỹ năng đã có ĐỦ điểm chưa: FT cần mọi ô nhập XONG (Writing = W1 + W2; LUAT-NX-MT: có band, thiếu nhận xét chỉ nhắc — `oXongCua` của lượt `a`, cùng hàm
  * với `skillCells`); lớp thường có `raw_score`. Không dự thi tính là xong.
  */
-function xongKyNang(cheDo: CheDo, skill: string, scores: any[], periodId: number | null, a: any): boolean {
+function xongKyNang(cheDo: CheDo, skill: string, scores: any[], periodId: number | null, a: any, boTask: string | null = null): boolean {
   if (cheDo === 'thuong') {
     return scores.some((s) => s.skill === skill && s.raw_score !== null && s.raw_score !== undefined) || khongDuThiCua(cheDo, skill, scores, periodId);
   }
-  return entrySkillsOf(skill as any).every(oXongCua(a, scores).xong) || khongDuThiCua(cheDo, skill, scores, periodId);
+  return oNhapHoc(skill as any, boTask).every(oXongCua(a, scores).xong) || khongDuThiCua(cheDo, skill, scores, periodId);   // P8: bỏ task Writing không học
 }
 
 /**
@@ -236,7 +236,7 @@ function diemChu(cheDo: CheDo, row: any, scores: any[]): string | undefined {
 function oKyNangCua(cheDo: CheDo, a: any, row: any, scores: any[], daDoi: boolean, doiTu: string | null,
   them?: { choDuyet: boolean; lichSu: boolean; homNay: string; attemptOverride?: string | null; mt0?: boolean; chiTre?: boolean }): OKyNang {
   const batBuoc = row.required === 1;
-  const xong = xongKyNang(cheDo, row.skill, scores, row.planned_period_id ?? null, a);
+  const xong = xongKyNang(cheDo, row.skill, scores, row.planned_period_id ?? null, a, row.bo_task ?? null);
   const choDuyet = !!them?.choDuyet;
   const tre = !!them && !xong && !them.lichSu && !!row.week_end && row.sit_status !== 'absent' && row.sit_status !== 'cancelled'
     && String(row.week_end).slice(0, 10) < them.homNay;

@@ -66,3 +66,11 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
     </span>
   );
 }
+
+/**
+ * Ô "KHÔNG HỌC" (P8 N13, mockup V6 `lo-trinh-moi.html` k6): em không đăng ký môn này — chữ nghiêng nhạt trên nền sọc, khác "-" vắng và "—" chưa điểm;
+ * không phải nút, không nhận gõ. `nhan` = tên ô cho trình đọc màn ("S").
+ */
+export function OKhongHoc({ nhan }: { nhan?: string }) {
+  return <span className="o-khong-hoc" title={t('Em không học môn này')}>{t('Không học')}{nhan && <span className="sr-only"> · {nhan}</span>}</span>;
+}

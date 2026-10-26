@@ -1027,7 +1027,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   return tx(() => {
     const ids: number[] = [];
     const now = nowIso();
-    for (const e of entrySkillsOf(skill as AssessedSkill)) {
+    for (const e of entrySkillsOf(skill as AssessedSkill).filter((k) => k !== row.bo_task)) {   // P8: task Writing không học không ghi "-"
       const s = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, e) as any;
       if (s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null)) throw badRequest(`${skillName(skill)} đã có điểm — không báo vắng.`);
       if (s) {

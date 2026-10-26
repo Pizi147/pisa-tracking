@@ -89,13 +89,14 @@ export function closeCasesBySystem(input: {
     });
     for (const c of open) {
       const truocPa = paTheoCase.get(c.id) ?? [];
-      /* P7 (N12, Q2): PA dừng vì mở Lộ trình mới → nhãn "Dừng — kết thúc lộ trình" (`ket_thuc_lo_trinh`); vẫn `cancelled` nên không vào Hiệu quả PA. */
+      /* P7 (N12, Q2): PA dừng vì mở Lộ trình mới → nhãn "Dừng — kết thúc lộ trình" (`ket_thuc_lo_trinh`); P8: bỏ môn → "Dừng — không còn học môn".
+         Vẫn `cancelled` nên không vào Hiệu quả PA. */
       const cancelled = conn
         .prepare(
           `UPDATE case_interventions SET status = 'cancelled', closed_reason = ?, updated_at = ?
             WHERE case_id = ? AND status IN ('planned', 'started')`,
         )
-        .run(input.reason === 'ket_thuc_lo_trinh' ? 'ket_thuc_lo_trinh' : 'system_closed', nowIso(), c.id).changes;
+        .run(input.reason === 'ket_thuc_lo_trinh' || input.reason === 'khong_con_hoc_mon' ? input.reason : 'system_closed', nowIso(), c.id).changes;
       const changed = conn
         .prepare(
           `UPDATE sos_cases SET status = 'done', closed_at = ?, closed_by = NULL, system_close_reason = ?,
