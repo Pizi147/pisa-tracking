@@ -258,10 +258,13 @@
     td .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
     /* OV-14b: lưới trong panel việc (Công việc / Tổng quan) rộng hơn panel — cuộn trong khung riêng, đầu panel không trôi ngang theo. */
     .luoi-trong-panel .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
+    /* R1-PHAN-CAP-TEST: lưới mở dưới hàng lớp Lịch Test (lớp 60 em) — đầu cột dính ngay dưới hàng lớp dính (cao 50), không khung cuộn riêng. 1280–1439 trả lại khung cuộn (dưới). */
+    .lich-luoi .bang-dinh { overflow: visible; --th-top: calc(50px - 1.25rem); }
   }
   /* Rà #235 I2: bảng RỘNG HƠN khung ở 1280–1439 px (Tổng hợp 1332–1393 px; lưới Điểm theo lớp 1108 px, khung 950 px) giữ khung cuộn riêng, chỉ dính đầu từ 1440. */
   @media (min-width: 1280px) and (max-width: 1439px) {
     .bang-dinh.bang-dinh-1440 { overflow-x: auto; overflow-y: hidden; }
+    .lich-luoi .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
   }
 
   /* VN17: có panel / hộp thoại mở thì toast lên trên (dưới đầu panel), không che nút ở chân panel. */
@@ -447,8 +450,6 @@
   /* Ô / thẻ em không trốn dưới hàng lớp dính khi con trỏ / "Lưu · bài tiếp" cuộn tới. */
   .lich-luoi :is(td, article) { scroll-margin-top: 64px; }
   .lich-luoi .bang th { background: var(--cap-dau-cot); border-bottom: 0; }
-  /* Lớp dài (60 em): từ 1440 (lưới vừa khung) đầu cột lưới dính ngay dưới hàng lớp dính — không làm khung cuộn riêng (`td .bang-dinh`). */
-  @media (min-width: 1440px) { .lich-luoi .bang-dinh { overflow: visible; --th-top: calc(50px - 1.25rem); } }
   .lich-luoi .bang-cong-cu { padding: 4px 12px 6px 44px; }   /* công cụ trên lưới lớp thường (Tổng số câu · Điền ô trống) thẳng cột Học viên */
   .lich-luoi .bang :is(th, td):first-child { padding-left: 44px; }
   .lich-luoi .bang > tbody > tr.dong-sex > td { height: 36px; padding-top: 4px; padding-bottom: 4px; font-size: 13px; vertical-align: middle; }

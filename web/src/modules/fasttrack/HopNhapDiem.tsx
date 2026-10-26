@@ -648,12 +648,14 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
   /* Hộp / menu / danh sách nổi khác (kể cả không phải con React của hộp) vẫn không tính là ngoài — giữ luật cũ. */
   useBamNgoai(true, (e) => {
     if ((e.target as HTMLElement).closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
-    if (!moi.current.daGo) { moi.current.onDong(); return; }
-    /* R1-PHAN-CAP-TEST: đã gõ → cú bấm ra ngoài không làm gì (vd thu lớp chứa ô — mất chữ); hỏi Bỏ · Gõ tiếp như Esc. */
-    const chan = (ev: Event) => { if (!box.current?.contains(ev.target as Node)) { ev.stopPropagation(); ev.preventDefault(); } };
-    document.addEventListener('click', chan, { capture: true, once: true });
-    setTimeout(() => document.removeEventListener('click', chan, true), 1000);   // kéo chuột ra ngoài không thành click → gỡ chặn
-    setHoi(true);
+    if (!moi.current.daGo) moi.current.onDong();
+    else {
+      /* R1-PHAN-CAP-TEST: đã gõ → cú bấm ra ngoài không làm gì (vd thu lớp chứa ô — mất chữ); hỏi Bỏ · Gõ tiếp như Esc. */
+      const chan = (ev: Event) => { if (!box.current?.contains(ev.target as Node)) { ev.stopPropagation(); ev.preventDefault(); } };
+      document.addEventListener('click', chan, { capture: true, once: true });
+      setTimeout(() => document.removeEventListener('click', chan, true), 1000);   // kéo chuột ra ngoài không thành click → gỡ chặn
+      setHoi(true);
+    }
   }, box, neo);
   useEffect(() => {
     /* Esc chỉ đóng lớp trên cùng: hộp chọn người mở trong hộp tự đóng trước (`defaultPrevented`). Đã gõ → hỏi ở chân hộp. */
