@@ -447,6 +447,7 @@
   /* Ô / thẻ em không trốn dưới hàng lớp dính khi con trỏ / "Lưu · bài tiếp" cuộn tới. */
   .lich-luoi :is(td, article) { scroll-margin-top: 64px; }
   .lich-luoi .bang th { background: var(--cap-dau-cot); border-bottom: 0; }
+  .lich-luoi .bang-cong-cu { padding: 4px 12px 6px 44px; }   /* công cụ trên lưới lớp thường (Tổng số câu · Điền ô trống) thẳng cột Học viên */
   .lich-luoi .bang :is(th, td):first-child { padding-left: 44px; }
   .lich-luoi .bang > tbody > tr.dong-sex > td { height: 36px; padding-top: 4px; padding-bottom: 4px; font-size: 13px; vertical-align: middle; }
   .hang-con > td { background: var(--hang-con-bg); font-size: 13px; color: var(--hang-con-chu); height: 32px; }

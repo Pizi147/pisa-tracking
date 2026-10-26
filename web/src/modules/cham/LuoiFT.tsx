@@ -506,7 +506,7 @@ function ChipSEx({ d, ten, studentId }: { d: SExTuan[number]; ten: string; stude
 
 /**
  * THẺ MỘT EM (điện thoại, Lịch tuần — mockup 375 khu a): tên ↗ · "MT3 · kỳ vọng 6.0" · kết quả bên phải; 5 ô L R W1 W2 S (ô `ODiemMt` cỡ lớn,
- * cùng hộp nhập / "Lưu · em tiếp ›" / lưu của bảng — không luật thứ hai); dòng dưới: dấu lưu + chip S Ex. Thụt 32 px dưới thanh lớp (M2 A2-375).
+ * cùng hộp nhập / "Lưu · em tiếp ›" / lưu của bảng — không luật thứ hai); dòng dưới: dấu lưu. Thụt 32 px dưới thanh lớp; S Ex là dòng phụ dưới thẻ (M2 A2-375).
  */
 function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean; tuanDangXem: string | null; tuanXem: string | null;
@@ -524,6 +524,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     : row.result.provisional && (row.result.sosLevel ?? 0) > 0 ? <SosLuot row={row} tam />
     : <span className="text-xs text-slate-400">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</span>;
   return (
+    <>
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] py-3 pl-8 pr-3.5 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2">
         <Link className="link inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
@@ -552,13 +553,19 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
           );
         })}
       </div>
-      {(status !== 'idle' || soLoi > 0 || !!sEx?.length) && (
+      {(status !== 'idle' || soLoi > 0) && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
-          {sEx?.map((d) => <ChipSEx key={d.id} d={d} ten={row.studentName} studentId={row.studentId} />)}
         </div>
       )}
     </article>
+    {/* M2 A2-375: S Ex là dòng phụ DƯỚI thẻ em (không phải một em khác). */}
+    {sEx?.map((d) => (
+      <div key={d.id} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] py-1.5 pl-8 pr-3.5 text-[13px] text-slate-400">
+        <ChipSEx d={d} ten={row.studentName} studentId={row.studentId} />{d.nguoiCham}
+      </div>
+    ))}
+    </>
   );
 }
 
