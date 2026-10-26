@@ -62,28 +62,28 @@
 
 ### Task 1: Dữ liệu nghiệm thu
 **Files:** `server/src/seed/*` (cờ môi trường `SEED_LON=1`, đọc ở `seed.ts`).
-- [ ] Cờ bật → thêm 1 lớp FT 60 HV có Test tuần W3 SEP + 6 lớp tuần W3 SEP (một lớp HV khác lượt MT, một lớp tên dài, một em có S Ex).
-- [ ] Cờ tắt → seed y nguyên: TD4-a, DL-2 không đổi băm.
-- [ ] Commit.
+- [x] Cờ bật → thêm 1 lớp FT 60 HV có Test tuần W3 SEP + 6 lớp tuần W3 SEP (một lớp HV khác lượt MT, một lớp tên dài, một em có S Ex).
+- [x] Cờ tắt → seed y nguyên: TD4-a, DL-2 không đổi băm.
+- [x] Commit.
 
 ### Task 2: Token + thành phần
 **Files:** `web/src/index.css`, `web/src/v5-nen.css`, `web/src/modules/test/lichTest/NhomDau.tsx`, `HangLop.tsx`, `HangCon` (nơi định nghĩa), `LuoiNhung.tsx`, `web/src/modules/cham/LuoiChamLop.tsx` (prop `anDan`), `web/src/modules/cham/LuoiFT.tsx` (cột tên dính, `DongSExHv`), thẻ 375 (`TheHv`), `web/src/modules/test/ChamTestTab.tsx` (nhóm trái).
-- [ ] Đọc mockup khu `#a2` + `#a2-375` (bản vòng 2) trước khi sửa.
-- [ ] Làm theo 9 dòng Global Constraints, mỗi cấp một commit nhỏ; mỗi cấp chụp 1440 tối kiểm nhanh.
-- [ ] `anDan`: phép kiểm nhỏ (hoặc kiểm tĩnh trong bộ kiểm web có sẵn) — `LuoiNhung` truyền `anDan`, hai nơi khác không.
-- [ ] Thử dính `.hang-lon-dinh` trên `tr` trong `table.bang-dinh` có `overflow-x:auto`; không ăn → dòng nhãn lớp lặp ở đầu lưới, ghi [XM] trong `khop-khac.md`.
-- [ ] Chấm Test: nhóm trái dùng thanh `--cap-nhom`, không đổi hành vi.
+- [x] Đọc mockup khu `#a2` + `#a2-375` (bản vòng 2) trước khi sửa.
+- [x] Làm theo 9 dòng Global Constraints, mỗi cấp một commit nhỏ; mỗi cấp chụp 1440 tối kiểm nhanh.
+- [x] `anDan`: phép kiểm nhỏ (hoặc kiểm tĩnh trong bộ kiểm web có sẵn) — `LuoiNhung` truyền `anDan`, hai nơi khác không.
+- [x] Thử dính `.hang-lon-dinh` trên `tr` trong `table.bang-dinh` có `overflow-x:auto`; không ăn → dòng nhãn lớp lặp ở đầu lưới, ghi [XM] trong `khop-khac.md`.
+- [x] Chấm Test: nhóm trái dùng thanh `--cap-nhom`, không đổi hành vi.
 
 ### Task 3: Đo + ảnh cặp
 **Files:** `scripts/do-khung.mjs` (phép đo "dính không che": mở lớp → cuộn 400 px → mở hộp nhập điểm hàng gần đỉnh → `elementFromPoint` tại tâm ô điểm phải là ô / hộp, không phải hàng lớp), `scripts/anh-cap.mjs`.
-- [ ] `do-khung` + `do-bang` xanh 1440 / 1280 / 375 (`test-lichTest`, `cham-test-gv`, `gvbm-test`).
-- [ ] Đo tương phản cấp liền kề sáng + tối, ghi số vào PR.
-- [ ] Ảnh cặp mockup M2-A2 | web toàn trang, cùng vai (QL + GV 7), cùng seed (`SEED_LON=1`), 1440 tối + 375 sáng + 125 %.
-- [ ] `docs/anh/r1-phan-cap-test/khop-khac.md`: bảng KHỚP / KHÁC theo từng dòng truy vết (mockup còn vẽ "Dán từ Excel" → ghi **BỎ theo chủ SP 26/10**, không tính KHÁC) + bảng thao tác TRƯỚC → SAU (dòng "Dán từ Excel ở Lịch Test: bỏ — còn ở panel Nhập điểm, Điểm theo lớp").
+- [x] `do-khung` + `do-bang` xanh 1440 / 1280 / 375 (`test-lichTest`, `cham-test-gv`, `gvbm-test`).
+- [x] Đo tương phản cấp liền kề sáng + tối, ghi số vào PR.
+- [x] Ảnh cặp mockup M2-A2 | web toàn trang, cùng vai (QL + GV 7), cùng seed (`SEED_LON=1`), 1440 tối + 375 sáng + 125 %.
+- [x] `docs/anh/r1-phan-cap-test/khop-khac.md`: bảng KHỚP / KHÁC theo từng dòng truy vết (mockup còn vẽ "Dán từ Excel" → ghi **BỎ theo chủ SP 26/10**, không tính KHÁC) + bảng thao tác TRƯỚC → SAU (dòng "Dán từ Excel ở Lịch Test: bỏ — còn ở panel Nhập điểm, Điểm theo lớp").
 
 ### Task 4: Tài liệu + PR
-- [ ] `DESIGN.md`: luật phân cấp Lịch Test (V17: mỗi cấp một màu thanh, S Ex ở cột MT) + 4 token mới.
-- [ ] Hướng dẫn GV / QL: bỏ câu nói Dán Excel ở Lịch Test (nếu có), chỉ sang panel Nhập điểm (HD-CHI xanh).
+- [x] `DESIGN.md`: luật phân cấp Lịch Test (V17: mỗi cấp một màu thanh, S Ex ở cột MT) + 4 token mới.
+- [x] Hướng dẫn GV / QL: bỏ câu nói Dán Excel ở Lịch Test (nếu có), chỉ sang panel Nhập điểm (HD-CHI xanh).
 - [ ] `npm run check` một lần → `/ponytail-review` → PR "R1-PHAN-CAP-TEST", nhắn PTA Plan.
 - [ ] PTA rà ảnh cặp → **chủ SP duyệt ảnh trước merge**.
 
