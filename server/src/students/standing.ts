@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot } from '../../../shared/domain/index.ts';
+  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { entryBandsOf, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
@@ -257,7 +257,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       const scores = bundle.scores.get(a.id) ?? [];
       if (!scores.length) continue;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
       /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
-      const rr = ratio ? evaluateRegular(boMonTheoLuot(boMonCua(cycle.programme_code), (scores as any[]).map((x) => x.skill)), scores as any, cycle.programme_code, nguongDatLop(a.class_id)) : null;
+      const rr = ratio ? evaluateRegular(boMonTheoLuot(boMonCua(cycle.programme_code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, cycle.programme_code, nguongDatLop(a.class_id)) : null;
       const skips = ratio ? [] : bundle.skips.get(a.id) ?? [];
       const ri = ratio ? null : evaluateAttempt(
         /* T9 (23/09): kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không phải Target hiện tại của lộ

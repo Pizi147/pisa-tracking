@@ -4,7 +4,7 @@ import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
-  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, MON_GOP,
+  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, daGhiLuot, MON_GOP,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -244,7 +244,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
       const rows = bundle.scores.get(a.id) ?? [];
       /* P13: bộ môn theo lượt — lượt đã ghi môn gộp cũ giữ L+S / R+W (`boMonTheoLuot`). */
       const boLop = skillsByClass.get(a.class_id) ?? [];
-      const editableOrAll = boMonTheoLuot(boLop, rows.map((r) => r.skill));
+      const editableOrAll = boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), rows));
       const mineSkills = editableOrAll === boLop ? mineByClass.get(a.class_id) ?? [] : mySkills(p, a.class_id, editableOrAll);
       /* Hỏi theo TỪNG MÔN: bốn môn của một bài có thể ở ba tuần khác nhau (mục 10.1). */
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), rows, today, editableOrAll);
@@ -500,7 +500,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
          * target. Chỉ có đạt/trượt theo tỷ lệ điểm đạt/tổng điểm, và số môn trượt ra mức SOS.
          */
         /* P13: bộ môn theo lượt (`boMonTheoLuot`) — lượt đã ghi môn gộp cũ giữ L+S / R+W. */
-        const mon = boMonTheoLuot(prog!.skills, scores.map((x) => x.skill));
+        const mon = boMonTheoLuot(prog!.skills, daGhiLuot(bundle.skillRows.get(a.id), scores));
         const myLuot = mon === prog!.skills ? myRegularSkills : editableSkills(p, classId, mon, undefined, true);
         const r = evaluateRegular(mon, scores, prog!.code, nguongDatLop(a.class_id));
         /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */

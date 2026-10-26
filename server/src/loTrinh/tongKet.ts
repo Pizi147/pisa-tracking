@@ -5,18 +5,20 @@
  */
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, chuKetQuaKyThi, ketQuaKyThi, ketQuaThiThat, kyThiCuaChuongTrinh, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
+  ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, chuKetQuaKyThi, ketQuaKyThi, ketQuaThiThat, type KetQuaKyThi, kyThiCuaChuongTrinh, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
   type HuongTiepTk, type LyDoDong, ATTEMPT_KIND_LABEL, tenRoute } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { tinhLuot, type NguCanhLuot } from './banChup.ts';
+import { lichGopCua } from '../fasttrack/skillSchedule.ts';
 import { coTheNhapThiThat } from './thiThat.ts';
 import { trangThaiBuocTiep, type TrangThaiBuocTiep } from './buocTiep.ts';
 import { nguongDatLop, programmeByCode } from '../normal/regular.ts';
 
 type Tone = 'ok' | 'soon' | 'late' | 'muted';
-export type KetQuaGon = { chinh: string; tone: Tone; phu?: string };
+/** P13: `kyThi` = số liệu KQ thi thật KET / PET — web ghép chữ bằng `t()` (EN); `chinh` / `phu` giữ cho nơi đọc cũ. */
+export type KetQuaGon = { chinh: string; tone: Tone; phu?: string; kyThi?: KetQuaKyThi };
 
 const phanTram = (x: number) => `${Math.round(x * 100)}%`;
 const nhanHuong = (h: string | null): string | null => (h && h !== 'khong_ro' ? HUONG_TIEP_TK_NHAN[h as HuongTiepTk] ?? null : null);
@@ -48,12 +50,12 @@ function ketQuaKyThiGon(c: any): KetQuaGon | null {
   const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
   const k = kt ? ketQuaKyThi(kt, { ...c, target_score: c.thi_that_target ?? c.target_score }) : null;
   if (!k) return null;
-  if (k.khongThi) return { chinh: 'Không thi', tone: 'muted' };
-  return { chinh: `Thi thật ${chuKetQuaKyThi(k)}`, tone: k.dat === null ? 'muted' : k.dat ? 'ok' : 'late', phu: k.dat === null ? undefined : k.dat ? 'Đạt Target' : 'Chưa đạt Target' };
+  if (k.khongThi) return { chinh: 'Không thi', tone: 'muted', kyThi: k };
+  return { chinh: `Thi thật ${chuKetQuaKyThi(k)}`, tone: k.dat === null ? 'muted' : k.dat ? 'ok' : 'late', phu: k.dat === null ? undefined : k.dat ? 'Đạt Target' : 'Chưa đạt Target', kyThi: k };
 }
 
 /** Lượt gần nhất CÓ ĐIỂM của lộ trình đang chạy — một câu cho cả em, tính bằng `tinhLuot` (cùng hàm với bản chụp). */
-function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>): KetQuaGon | null {
+function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>, lich: Map<number, { skill: string }[]>): KetQuaGon | null {
   const laFt = !!c.route;
   const ct = laFt ? null : programmeByCode(c.programme_code);
   const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon: laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])], maCt: ct?.code ?? c.programme_code ?? null, kck: !!c.khong_cam_ket };
@@ -61,7 +63,7 @@ function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>): KetQua
     const rows = scores.get(a.id) ?? [];
     if (a.status === 'cancelled' || !rows.some((r) => r.band !== null || r.raw_score !== null)) continue;
     const nguong = nguongDatLop(a.class_id);
-    const t = tinhLuot({ ...nc, nguong }, a, a.target_at_attempt ?? null, rows, [], false);
+    const t = tinhLuot({ ...nc, nguong }, a, a.target_at_attempt ?? null, rows, [], false, lich.get(a.id));
     if (laFt) {
       return { chinh: `MT${a.attempt_no} · ${t.overall !== null ? t.overall.toFixed(1) : '—'}`, tone: t.sos && t.sos > 0 ? 'soon' : 'ok', phu: t.sos && t.sos > 0 ? `SOS ${t.sos}` : undefined };
     }
@@ -97,6 +99,7 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
   });
   const lopDang = dangChay.length ? (conn.prepare(
     `SELECT e.class_id, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1`).get(studentId) as any) : null;
+  const lichGop = lichGopCua(luot.map((a: any) => a.id));   // P13: bộ môn theo lượt (`daGhiLuot`)
   const bt = cycles[0].route ? trangThaiBuocTiep(p, cycles[0].id) : null;   // `cycles` xếp seq giảm: [0] = mới nhất
   return cycles.map((c): DongCacLoTrinh => {
     const b = bc.get(c.id);
@@ -107,7 +110,7 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
       return {
         id: c.id, ten: c.route ? `Fast Track · ${tenRoute(c)}` : ct?.name ?? 'Lộ trình', lop: lopDang?.code ?? null, batDau: c.started_at, ketThuc: null,
         thoiGian: khoangTuan(c.started_at, null, homNay), dangHoc: c.status === 'active', lyDo: null,
-        ketQua: ketQuaKyThiGon(c) ?? ketQuaSong(c, lopCuaLoTrinh, diem), huong: null, buocTiep,
+        ketQua: ketQuaKyThiGon(c) ?? ketQuaSong(c, lopCuaLoTrinh, diem, lichGop), huong: null, buocTiep,
       };
     }
     return {

@@ -4,7 +4,7 @@
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
 import { db, theoLo, tx } from '../db.ts';
-import { PERMISSIONS, canNamGan, diemThiHopLe, kiemDiemKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, canNamGan, diemThiHopLe, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
@@ -51,13 +51,13 @@ export function coTheGiaHanSauThi(p: Principal, c: { id: number; student_id: num
 
 /** `kt` (P13 KET-PET): điểm Cambridge — số nguyên trong thang, lỗi gắn ô (`details.o` = l / r / w / s). Không có `kt` → band IELTS như cũ. */
 const docDiem = (v: unknown, nhan: string, kt: KyThi | null = null): number | null => {
+  if (kt) {   // cùng luật đọc với Target (`docTargetKyThi`): chỉ chữ số nguyên ("1e2", "150.0" → lỗi), trống → null
+    const d = docTargetKyThi(kt, v);
+    if ('loi' in d) throw badRequest(`${nhan}: ${d.loi}`, { o: nhan.toLowerCase() });
+    return d.so;
+  }
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
-  if (kt) {
-    const loi = kiemDiemKyThi(kt, n);
-    if (loi) throw badRequest(`${nhan}: ${loi}`, { o: nhan.toLowerCase() });
-    return n;
-  }
   if (!Number.isFinite(n) || !diemThiHopLe(n)) throw badRequest(`${nhan}: điểm từ 0 đến 9, bước 0.5.`);
   return n;
 };

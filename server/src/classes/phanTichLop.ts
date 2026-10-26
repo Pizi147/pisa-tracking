@@ -9,7 +9,7 @@
  */
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, type AttemptKind, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
-  caseCategoryLabel, khoaBai, nhanBai, boMonTheoLuot,
+  caseCategoryLabel, khoaBai, nhanBai, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -89,10 +89,10 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
   if (thuong) {
     /* P13: dòng = bộ môn của các lượt đang xét (`boMonTheoLuot`) — lượt đã ghi môn gộp cũ thêm dòng L+S / R+W. */
     const boCt = prog?.skills ?? REGULAR_SKILLS;
-    const mon = [...new Set([...boCt, ...attempts.flatMap((a) => boMonTheoLuot(boCt, (bundle.scores.get(a.id) ?? []).map((x: any) => x.skill)))])];
+    const mon = [...new Set([...boCt, ...attempts.flatMap((a) => boMonTheoLuot(boCt, daGhiLuot(bundle.skillRows.get(a.id), bundle.scores.get(a.id))))])];
     const khongChiaMon = prog?.code === 'PREFOU';
     for (const a of attempts) {
-      const r = danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, null);
+      const r = danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, null, [], bundle.skillRows.get(a.id));
       if (!r) continue;
       const k = khoaBai(a.kind, a.attempt_no);   // OV-11h (PT-1): Checkpoint mỗi số một cột (`checkpoint:2`)
       for (const x of r.mon) cong(`${x.skill}|${k}`, x.dat, a.student_id);
@@ -121,7 +121,7 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
   for (const a of attempts) {
     if ((a.kind ?? 'mock') !== 'mock') continue;
     soDot = Math.max(soDot, a.attempt_no);
-    for (const x of danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, mucTieu.get(a.cycle_id) ?? null, bundle.skips.get(a.id) ?? [])?.mon ?? []) {
+    for (const x of danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, mucTieu.get(a.cycle_id) ?? null, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id))?.mon ?? []) {
       cong(`${x.skill}|mt${a.attempt_no}`, x.dat, a.student_id);
     }
   }
@@ -141,12 +141,13 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
  *   Lớp thường           Giữa / Cuối khoá, Checkpoint (PET / KET — OV-11h): `evaluateRegular` (từ 70%) — chỉ môn đã đủ điểm (pass / fail); kèm % tổng cho dòng "Cả bài".
  * `null` = bài không chấm đạt ở đây (loại bài khác, không có kỳ vọng, hoặc FT chưa đủ Overall). `ovr`, `kv`: FT để panel ghi lý do.
  */
-export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo | null, mucTieu: number | null, skips: readonly string[] = []): {
+export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo | null, mucTieu: number | null, skips: readonly string[] = [],
+  /** P13: dòng lịch của lượt (`daGhiLuot`). */ lich?: readonly { skill: string }[]): {
   mon: { skill: string; dat: boolean }[]; tyLeTong: number | null; nguong: number; ovr: number | null; kv: number | null;
 } | null {
   if (prog?.scoringMode === 'ratio') {
     if (a.kind !== 'progress' && a.kind !== 'final' && a.kind !== 'checkpoint') return null;
-    const r = evaluateRegular(boMonTheoLuot(prog?.skills ?? REGULAR_SKILLS, scores.map((x: any) => x.skill)), scores as any, prog?.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(prog?.skills ?? REGULAR_SKILLS, daGhiLuot(lich, scores)), scores as any, prog?.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
     return {
       mon: r.skills.filter((x) => x.outcome === 'pass' || x.outcome === 'fail').map((x) => ({ skill: x.skill as string, dat: x.outcome === 'pass' })),
       tyLeTong: r.tyLeTong ?? null, nguong: r.passThreshold, ovr: null, kv: null,

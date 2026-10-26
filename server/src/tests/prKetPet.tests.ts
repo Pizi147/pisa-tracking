@@ -71,6 +71,8 @@ export async function runPrKetPetTests(t: any) {
     xoaNho();
     return { lop, a, b, c };
   };
+  /** Bộ kiểm đã chạy migrate lúc mở DB (khoá một lần đã có) — gỡ khoá để chạy lại bước 1–2 trên dữ liệu cũ dựng trong phép kiểm. */
+  const chayMig = (applied: string[]) => { conn.prepare('DELETE FROM demo_config WHERE key = ?').run(mig.KHOA_PR_KET_PET); mig.migratePrKetPet(conn, applied); };
   const chup = (lop: number) => JSON.stringify([
     all('SELECT programme_code, skill, seq FROM programme_skills ORDER BY 1, 2'),
     all('SELECT class_id, skill, sessions_per_week FROM class_skills WHERE class_id = ? ORDER BY skill', lop),
@@ -102,7 +104,7 @@ export async function runPrKetPetTests(t: any) {
     assert(cp2a?.so === 2 && monLuot(cp2a.id) === 'listening_speaking,reading_writing', `dữ liệu cũ: CP2 ${JSON.stringify(cps(a))}`);
     const diemTruoc = JSON.stringify(all('SELECT attempt_id, skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id IN (?, ?) ORDER BY 1, 2', cp1a.id, cp1c.id));
     const applied: string[] = [];
-    mig.migratePrKetPet(conn, applied); xoaNho();
+    chayMig(applied); xoaNho();
     assert(monCt('PET') === 'listening,reading,writing,speaking', monCt('PET'));
     assert(JSON.stringify(all('SELECT attempt_id, skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id IN (?, ?) ORDER BY 1, 2', cp1a.id, cp1c.id)) === diemTruoc, 'điểm đổi');
     assert(monLuot(cp1a.id) === 'listening_speaking,reading_writing' && monLuot(cp1c.id) === 'listening_speaking,reading_writing', 'lượt đã ghi môn gộp phải giữ');
@@ -130,7 +132,7 @@ export async function runPrKetPetTests(t: any) {
   check('KP-2f · migrate: lượt chưa ghi — đề nghị dời lịch môn gộp (`skill_move_requests`, mọi bảng khoá lượt + môn) đổi theo hai môn tách', () => thu(() => {
     const { b } = dungCu();
     const cp1b = cps(b)[0].id;
-    mig.migratePrKetPet(conn, []); xoaNho();
+    chayMig([]); xoaNho();
     const ds = all('SELECT skill, status, idempotency_key FROM skill_move_requests WHERE attempt_id = ? ORDER BY skill', cp1b);
     assert(ds.map((r) => r.skill).join() === 'listening,speaking' && ds.every((r) => r.status === 'pending'), `đề nghị dời: ${JSON.stringify(ds)}`);
     assert(ds.filter((r) => r.idempotency_key === 'kp2-doi').length === 1, 'khoá chống trùng chỉ ở một dòng');
@@ -139,7 +141,7 @@ export async function runPrKetPetTests(t: any) {
 
   check('KP-2g · Phân tích lớp: lượt đã ghi môn gộp cũ hiện dòng L+S / R+W (theo bộ môn của lượt)', () => thu(() => {
     const { lop } = dungCu();
-    mig.migratePrKetPet(conn, []); xoaNho();
+    chayMig([]); xoaNho();
     const kq = ptLop.phanTichLop(P.mbManager, lop.id);
     const keys = kq.dong.map((x: any) => x.key);
     assert(keys.includes('listening_speaking') && keys.includes('reading_writing') && keys.includes('listening'), `dòng: ${keys}`);
@@ -148,17 +150,17 @@ export async function runPrKetPetTests(t: any) {
 
   check('KP-2b · migrate chạy lần hai: applied rỗng, bảng giống hệt', () => thu(() => {
     const { lop } = dungCu();
-    mig.migratePrKetPet(conn, []); xoaNho();
+    chayMig([]); xoaNho();
     const truoc = chup(lop.id);
     const applied: string[] = [];
-    mig.migratePrKetPet(conn, applied); xoaNho();
+    mig.migratePrKetPet(conn, applied); xoaNho();   // khoá một lần đã ghi: bước 1–2 không chạy lại
     assert(applied.length === 0 && chup(lop.id) === truoc, `lần hai: ${applied.join(' | ')}`);
   }));
 
   check('KP-2c · Quản trị đã sửa môn KET khác mặc định → migrate không đụng', () => thu(() => {
     datMon('KET', ['listening_speaking', 'reading', 'writing']);
     const applied: string[] = [];
-    mig.migratePrKetPet(conn, applied); xoaNho();
+    chayMig(applied); xoaNho();
     assert(monCt('KET') === 'listening_speaking,reading,writing' && !applied.some((x) => /KET/.test(x)), `${monCt('KET')} · ${applied.join(' | ')}`);
   }));
 
@@ -311,7 +313,7 @@ export async function runPrKetPetTests(t: any) {
     const t0 = one(`SELECT * FROM teacher_assignments WHERE class_id = ? AND skill = 'listening_speaking' AND status = 'active'`, lop.id);
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,0,?, 'active', ?)`)
       .run(t0.user_id, lop.id, 'listening', t0.effective_from, t0.created_at);
-    mig.migratePrKetPet(conn, []); xoaNho();
+    chayMig([]); xoaNho();
     const ds = all(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active' AND skill IS NOT NULL ORDER BY skill`, lop.id, t0.user_id).map((r) => r.skill);
     assert(ds.join() === 'listening,listening_speaking,speaking', `phân công sau migrate: ${ds}`);
   }));
@@ -354,7 +356,7 @@ export async function runPrKetPetTests(t: any) {
     const gvcn = perm.loadPrincipal(one(`SELECT user_id FROM teacher_assignments t JOIN classes k ON k.id = t.class_id WHERE k.code = 'MB PET 01' AND t.is_core = 1 AND t.status = 'active' LIMIT 1`).user_id);
     assert(cycles.loiDoiTarget(gvcn, one('SELECT * FROM learning_cycles WHERE id = ?', c.id), { kck: false }) === null, 'loiDoiTarget chặn vì cờ KCK');
     const applied: string[] = [];
-    mig.migratePrKetPet(conn, applied); xoaNho();
+    chayMig(applied); xoaNho();
     const sau = one('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?', c.id);
     assert(sau.target_score === 140 && sau.khong_cam_ket === 0 && applied.some((x) => /KCK/.test(x)), `${JSON.stringify(sau)} ${applied}`);
   }));
@@ -367,7 +369,7 @@ export async function runPrKetPetTests(t: any) {
   check('KP-5a · lượt đã ghi môn gộp cũ: tỷ lệ cuối khoá (tyLeTongLo) + hiện trạng hồ sơ (standingFor) theo bộ môn của lượt (L+S / R+W), không 0/4', () => thu(() => {
     const { a } = dungCu();
     const [cp1a] = cps(a);
-    mig.migratePrKetPet(conn, []); xoaNho();
+    chayMig([]); xoaNho();
     const tl = cuoiKhoaSvc.tyLeTongLo([cp1a.id]).get(cp1a.id);
     assert(tl?.du === true && tl.required === 2 && tl.scored === 2 && tl.tyLe != null, `tyLeTongLo: ${JSON.stringify(tl)}`);
     const st = standingSvc.standingFor([a]).get(a);
@@ -376,7 +378,7 @@ export async function runPrKetPetTests(t: any) {
 
   check('KP-5b · phân công sau migrate: gửi lại bức tranh có dòng môn gộp → không 400; bỏ dòng gộp khi ô gộp còn trống → GIỮ, ô đã đủ → kết thúc', () => thu(() => {
     const { lop, c } = dungCu();
-    mig.migratePrKetPet(conn, []); xoaNho();
+    chayMig([]); xoaNho();
     const dang = () => all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, lop.id);
     const slots = dang().map((x) => ({ userId: x.user_id, skill: x.skill, isCore: x.is_core === 1 }));
     const e = loi(() => classSvc.setClassTeachers(P.admin, lop.id, { slots }));
@@ -398,7 +400,7 @@ export async function runPrKetPetTests(t: any) {
     conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE id = ?').run(c.id); xoaNho();
     assert(mig.kiemTruocKetPet(conn).targetSai >= 1, 'kiemTruoc không đếm Target ngoài thang');
     const applied: string[] = [];
-    mig.migratePrKetPet(conn, applied); xoaNho();
+    chayMig(applied); xoaNho();
     assert(one('SELECT target_score FROM learning_cycles WHERE id = ?', c.id).target_score === null, 'Target 6.5 còn ở khoá PET');
     assert(applied.some((x) => /Target/.test(x)) && mig.kiemTruocKetPet(conn).targetSai === 0, applied.join(' | '));
   }));
@@ -411,7 +413,7 @@ export async function runPrKetPetTests(t: any) {
     conn.prepare(`INSERT INTO case_signals (student_id, attempt_id, class_id, skill, category, detected_on, raised_on, verify_due, status, dedup_key, created_at)
       VALUES (?, ?, NULL, 'listening_speaking', 'listening_speaking', ?, ?, ?, 'pending', 'kp5d', ?)`).run(b, cp1b, TODAY, TODAY, TODAY, TODAY);
     const sigTruoc = JSON.stringify(all('SELECT * FROM case_signals ORDER BY id'));
-    mig.migratePrKetPet(conn, []); xoaNho();
+    chayMig([]); xoaNho();
     assert(monLuot(cp1b) === 'listening_speaking,reading_writing', `lượt huỷ bị tách: ${monLuot(cp1b)}`);
     assert(monLuot(cp2a.id) === 'listening_speaking,reading_writing', `lượt có kết quả huỷ bị tách: ${monLuot(cp2a.id)}`);
     assert(JSON.stringify(all('SELECT * FROM case_signals ORDER BY id')) === sigTruoc, 'case_signals đổi');
@@ -421,9 +423,114 @@ export async function runPrKetPetTests(t: any) {
     const { b } = dungCu();
     const cp1b = cps(b)[0].id;
     conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(cp1b);   // lượt huỷ giữ dòng gộp (KP-5d)
-    mig.migratePrKetPet(conn, []); xoaNho();
+    chayMig([]); xoaNho();
     schedSvc.ensureSkillRows(cp1b); xoaNho();
     assert(monLuot(cp1b) === 'listening_speaking,reading_writing', `chèn trùng: ${monLuot(cp1b)}`);
+  }));
+
+  /* ===== Vòng 3 (PTA Plan 26/10) ===== */
+  const attemptsSvc: any = await import('../fasttrack/attempts.ts');
+  const xuatSvc: any = await import('../phanTich/xuatMt.ts');
+
+  check('KP-6a · Huỷ cả lượt Checkpoint đã chấm L+S / R+W (môn theo lượt, không 400) + Khôi phục: lịch gộp giữ, nhập lại L+S / R+W đủ', () => thu(() => {
+    const { a } = dungCu();
+    const [cp1a] = cps(a);
+    chayMig([]); xoaNho();
+    const e = loi(() => attemptsSvc.huyLuot(P.admin, cp1a.id, { lyDo: 'thử huỷ' }));
+    assert(e === null, `huỷ lượt gộp: ${e?.status} ${e?.message}`);
+    xoaNho();
+    assert(one('SELECT status FROM assessment_attempts WHERE id = ?', cp1a.id).status === 'cancelled', 'chưa huỷ');
+    assert(all('SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND raw_score IS NOT NULL', cp1a.id).length === 0, 'lớp thường: huỷ lượt xoá điểm (PR-VN4)');
+    /* Khôi phục lớp thường: lượt về "planned", lịch gộp giữ, điểm trống (PR-VN4) — bộ môn theo lịch gộp, nhập lại L+S / R+W được. */
+    attemptsSvc.reopenAttempt(P.admin, cp1a.id); xoaNho();
+    assert(monLuot(cp1a.id) === 'listening_speaking,reading_writing' && schedSvc.boMonCuaLuot(conn, cp1a.id).join() === 'listening_speaking,reading_writing', `khôi phục: ${monLuot(cp1a.id)}`);
+    nhap(cp1a.id, { listening_speaking: [48, 60], reading_writing: [61, 80] });
+    assert(regular.regularResultOf(cp1a.id).complete, 'nhập lại sau khôi phục');
+  }));
+
+  check('KP-6b · Khôi phục lượt huỷ (lịch gộp, chưa điểm, migrate không tách): nhập L+S được, dòng Nhập điểm có, môn theo lịch', () => thu(() => {
+    const { lop, b } = dungCu();
+    const cp1b = cps(b)[0].id;
+    conn.prepare('DELETE FROM skill_move_requests WHERE attempt_id = ?').run(cp1b);
+    attemptsSvc.huyLuot(P.admin, cp1b, { lyDo: 'thử huỷ' }); xoaNho();   // huỷ khi còn môn gộp (trước migrate)
+    chayMig([]); xoaNho();
+    assert(monLuot(cp1b) === 'listening_speaking,reading_writing', `lượt huỷ bị tách: ${monLuot(cp1b)}`);
+    attemptsSvc.reopenAttempt(P.admin, cp1b); xoaNho();
+    assert(schedSvc.boMonCuaLuot(conn, cp1b).join() === 'listening_speaking,reading_writing', `boMonCuaLuot: ${schedSvc.boMonCuaLuot(conn, cp1b)}`);
+    const e = loi(() => regular.saveRegularScore(P.admin, cp1b, 'listening_speaking', { score: 45, total: 60 }, TODAY));
+    assert(e === null, `nhập L+S: ${e?.status} ${e?.message}`);
+    xoaNho();
+    const dong = regular.regularSheet(P.admin, lop.id, 'checkpoint:1', TODAY).rows.find((r: any) => r.studentId === b);
+    assert(dong?.skillSchedule.map((x: any) => x.skill).join() === 'listening_speaking,reading_writing', `dòng em B: ${dong?.skillSchedule?.map((x: any) => x.skill)}`);
+    assert(regular.regularResultOf(cp1b).required === 2, 'kết quả theo lịch gộp');
+  }));
+
+  check('KP-6c · Xuất Excel PET: CP1 gộp + CP2 4 môn — tiêu đề = hợp môn (chương trình trước), mỗi dòng đúng cột, thiếu để trống', () => thu(() => {
+    const { lop, a } = dungCu();
+    chayMig([]); xoaNho();
+    const [cp1a, cp2a] = cps(a);
+    const tu = week.mondayOf(addDays(khaiGiang, -7)); const den = week.mondayOf(addDays(TODAY, 84));   // CP2 sinh 6 tuần sau CP1
+    const kq = xuatSvc.duLieuXuatMt(P.admin, { khung: 'thuong', chiNhanh: [], lop: [lop.id], thoiGian: { kieu: 'tuan', tu, den }, chiDuDiem: false, cot: 'gon' });
+    const aoa = kq.sheets.find((x: any) => x.aoa[0].includes('% tổng')).aoa;
+    const ten = (k: string) => `${d.tenMon('PET', k)} %`;
+    const cot = ['listening', 'reading', 'writing', 'speaking', 'listening_speaking', 'reading_writing'].map(ten);
+    assert(JSON.stringify(aoa[0].slice(6, 12)) === JSON.stringify(cot), `tiêu đề: ${JSON.stringify(aoa[0])}`);
+    assert(aoa.every((h: any[]) => h.length === aoa[0].length), 'số ô lệch tiêu đề');
+    const hang = (bai: string) => aoa.find((h: any[]) => h[0] === 'KP2 Em A' && String(h[4]).includes(bai));
+    const h1 = hang('1'); const h2 = hang('2');
+    assert(h1 && h1[6] === null && h1[10] === 80 && h1[11] === 76.3, `CP1 gộp: ${JSON.stringify(h1)}`);
+    assert(h2 && h2.slice(6, 12).every((x: any) => x === null), `CP2 4 môn (chưa điểm): ${JSON.stringify(h2)}`);
+    const hc = aoa.find((h: any[]) => h[0] === 'KP2 Em C');
+    assert(hc && hc[6] === null && hc[10] === 66.7 && hc[11] === null, `CP1 em C: ${JSON.stringify(hc)}`);
+    void cp1a; void cp2a;
+  }));
+
+  check('KP-6d · migrate bước 3–4: mỗi lộ trình đổi KCK / Target một dòng nhật ký (trước → sau, nguồn migrate prKetPet), cả khoá đã đóng', () => thu(() => {
+    const c = emPet();
+    conn.prepare(`UPDATE learning_cycles SET target_score = 6.5, khong_cam_ket = 1, status = 'completed' WHERE id = ?`).run(c.id); xoaNho();
+    const truoc = one('SELECT MAX(id) AS m FROM audit_logs').m ?? 0;
+    chayMig([]); xoaNho();
+    const nk = all(`SELECT before_json b, after_json f FROM audit_logs WHERE id > ? AND action = 'cycle.update' AND entity_type = 'learning_cycle' AND entity_id = ? ORDER BY id`, truoc, c.id)
+      .map((r) => [JSON.parse(r.b), JSON.parse(r.f)]);
+    assert(nk.length === 2 && nk.every(([, f]) => f._nguon === 'migrate prKetPet' && f.kyThi === 'PET'), JSON.stringify(nk));
+    assert(nk[0][0].khong_cam_ket === 1 && nk[0][1].khong_cam_ket === 0 && nk[1][0].target_score === 6.5 && nk[1][1].target_score === null, JSON.stringify(nk));
+    const sau = one('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?', c.id);
+    assert(sau.target_score === null && sau.khong_cam_ket === 0, JSON.stringify(sau));
+  }));
+
+  check('KP-6e · migrate một lần: khoá pr_ket_pet_at; Quản trị đặt lại môn gộp sau đó → deploy sau không tách lại', () => thu(() => {
+    chayMig([]); xoaNho();
+    assert(one('SELECT 1 AS x FROM demo_config WHERE key = ?', mig.KHOA_PR_KET_PET)?.x === 1, 'không ghi khoá');
+    datMon('PET', ['listening_speaking', 'reading_writing']);
+    const applied: string[] = [];
+    mig.migratePrKetPet(conn, applied); xoaNho();
+    assert(monCt('PET') === 'listening_speaking,reading_writing' && !applied.length, `${monCt('PET')} · ${applied.join(' | ')}`);
+  }));
+
+  check('KP-6f · migrate bước 2a: lớp PET đã kết thúc — class_skills + phân công cũng tách (dòng gộp giữ), lượt không đụng', () => thu(() => {
+    const { lop, b } = dungCu();
+    const cp1b = cps(b)[0].id;
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(TODAY, lop.id);
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE class_id = ? AND is_core = 0`).run(TODAY, lop.id);
+    chayMig([]); xoaNho();
+    assert(all('SELECT skill FROM class_skills WHERE class_id = ? ORDER BY skill', lop.id).map((r) => r.skill).join() === 'listening,reading,speaking,writing', 'class_skills lớp đã kết thúc');
+    const pc = (u: number) => all(`SELECT skill, status, effective_to FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill IS NOT NULL ORDER BY skill`, lop.id, u);
+    const ls = pc(GV_LS);
+    assert(ls.map((r) => r.skill).join() === 'listening,listening_speaking,speaking' && ls.every((r) => r.status === 'ended' && r.effective_to === TODAY), JSON.stringify(ls));
+    assert(monLuot(cp1b) === 'listening_speaking,reading_writing', 'lượt lớp đã kết thúc bị tách');
+    chayMig([]); xoaNho();
+    assert(pc(GV_LS).length === 3, 'chạy lại thêm trùng');
+  }));
+
+  check('KP-6g · KQ thi thật KET / PET đọc số nguyên như Target ("150.0", "1e2" → 400); Các lộ trình trả số liệu kyThi cho web', () => thu(() => {
+    const c = emPet();
+    for (const v of ['160.0', '1.6e2']) {
+      const e = loi(() => thiThat.datKetQuaThiThat(P.mbManager, c.id, { ...PET_KQ, r: v }));
+      assert(e?.status === 400 && e.details?.o === 'r', `${v}: ${e?.status} ${e?.message}`);
+    }
+    thiThat.datKetQuaThiThat(P.mbManager, c.id, { ...PET_KQ, r: ' 160 ' }); xoaNho();
+    const dong = tongKet.cacLoTrinh(P.admin, c.student_id).find((x: any) => x.id === c.id);
+    assert(dong?.ketQua?.kyThi?.tong === 159 && dong.ketQua.kyThi.grade === 'B', JSON.stringify(dong?.ketQua));
   }));
 
 }

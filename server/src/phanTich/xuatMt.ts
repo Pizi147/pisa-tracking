@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   PERMISSIONS, ROUTE_NAME, chuTargetKck, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, chuNhomNguyenNhan, docNhomNguyenNhan, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
   soSanhLop, tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
-  type BoLocXuatMt, type Cell, type DongFT, type DongThuong, boMonTheoLuot,
+  type BoLocXuatMt, type Cell, type DongFT, type DongThuong, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, type Principal } from '../permissions.ts';
@@ -132,11 +132,11 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
 function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: string[] }): { d: DongThuong; du: boolean } {
   const scores = b.scores.get(a.id) ?? [];
   const skillRows = b.skillRows.get(a.id) ?? [];
-  const r = evaluateRegular(boMonTheoLuot(prog.skills, scores.map((x: any) => x.skill)), scores, prog.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
+  const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(skillRows, scores)), scores, prog.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
   const d: DongThuong = {
     ten: a.full_name, email: a.email ?? null, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, a.attempt_no), tuan: a.tuan_code, tuanBd: a.week_start,
     mon: r.skills.map((m) => ({
-      ten: tenMon(prog.code, m.skill), pct: phanTram(m.ratio), diem: m.score, tong: m.total,
+      k: m.skill, ten: tenMon(prog.code, m.skill), pct: phanTram(m.ratio), diem: m.score, tong: m.total,
       tuan: skillRows.find((x) => x.skill === m.skill)?.period_code ?? null,
     })),
     tyLeTong: phanTram(r.tyLeTong),
@@ -235,7 +235,7 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
       if (!theoCt.has(prog.code)) theoCt.set(prog.code, []);
       theoCt.get(prog.code)!.push(x.d); dem(a, dongXemTruocThuong(x.d, homNay));
     }
-    for (const ct of [...theoCt.keys()].sort()) sheets.push({ ten: tenSheetThuong(ct), aoa: bangThuong(theoCt.get(ct)!, f.cot) });
+    for (const ct of [...theoCt.keys()].sort()) sheets.push({ ten: tenSheetThuong(ct), aoa: bangThuong(theoCt.get(ct)!, f.cot, chuongTrinh.get(ct)?.skills ?? []) });
   }
 
   /* Không chọn chi nhánh mà phạm vi chỉ có MỘT chi nhánh (Quản lý, GVCN): tên chi nhánh đó vào tên tệp và bộ lọc — "Monbay", không "mọi chi nhánh". */

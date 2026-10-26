@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { db } from '../db.ts';
-import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, moiNhatTruoc, boMonTheoLuot } from '../../../shared/domain/index.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, moiNhatTruoc, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
@@ -67,7 +67,7 @@ export function evaluateAttemptRow(
   const scores = bundle.scores.get(a.id) ?? [];
   const prog = a.programme_code ? programmes.get(a.programme_code) : null;
   if (prog?.scoringMode === 'ratio') {
-    const r = evaluateRegular(boMonTheoLuot(prog.skills, scores.map((x) => x.skill)), scores, prog.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores)), scores, prog.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
     const skills: Record<string, SkillEval> = {};
     for (const s of r.skills) {
       skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail' };

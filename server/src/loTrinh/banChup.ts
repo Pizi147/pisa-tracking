@@ -7,7 +7,7 @@
  */
 import { theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, boMonTheoLuot, daiCuoiKhoa, huongTiep, ketQuaThiThat, type AssessedSkill, type LyDoDong,
+  ASSESSED_SKILLS, boMonTheoLuot, daGhiLuot, daiCuoiKhoa, huongTiep, ketQuaThiThat, type AssessedSkill, type LyDoDong,
 } from '../../../shared/domain/index.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, nguongDatKhacMacDinh, nguongDatLop, programmeByCode } from '../normal/regular.ts';
@@ -43,10 +43,11 @@ const ketQuaTu = (huy: boolean, sos: number | null): LuotTinh['ketQua'] => (huy 
  */
 export function tinhLuot(
   nc: NguCanhLuot, a: { attempt_no: number; kck_at_attempt?: number | null }, target: number | null, rows: any[], skips: readonly string[], huy: boolean,
+  /** P13: dòng lịch của lượt (`daGhiLuot`). */ lich?: readonly { skill: string }[],
 ): LuotTinh {
   const diemRows = huy ? [] : rows;
   if (!nc.laFt) {
-    const r = evaluateRegular(boMonTheoLuot(nc.mon, rows.map((x) => x.skill)), diemRows, nc.maCt, nc.nguong);   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(nc.mon, daGhiLuot(lich, rows)), diemRows, nc.maCt, nc.nguong);   // P13: bộ môn theo lượt
     const dong = r.skills.map((s) => ({
       kyNang: s.skill, batBuoc: 1, boQua: 0, diem: s.score, diemTho: null, diemTong: s.total,
       dat: s.outcome === 'missing' ? null : s.outcome === 'pass' ? 1 : 0,
@@ -199,7 +200,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     });
     const plan = laFt ? examPlanOf(c) : null;
     const luotCuoiKhoa = luot.filter((a) => a.kind === 'final' && a.status !== 'cancelled').at(-1);
-    const tyLe = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, (diemCua.get(luotCuoiKhoa.id) ?? []).map((x: any) => x.skill)), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong).tyLeTong : null;
+    const tyLe = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id))), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong).tyLeTong : null;
     const routeMoi = o.routeMoi !== undefined ? o.routeMoi : (cungEm.get(c.student_id) ?? []).find((x) => x.seq > c.seq)?.route ?? null;
     const lan = (lanCuoi.get(c.id) ?? 0) + 1;
 
@@ -218,7 +219,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     for (const a of luot) {
       const huy = a.status === 'cancelled';
       const rows = diemCua.get(a.id) ?? [];
-      const t = tinhLuot(nc, a, a.target_at_attempt ?? null, rows, boQuaCua(a.id), huy);
+      const t = tinhLuot(nc, a, a.target_at_attempt ?? null, rows, boQuaCua(a.id), huy, batBuocCua.get(a.id));
       const tuan = a.period_start ?? o.ngay;
       for (const d of t.dong) {
         /* Kỹ năng gộp (writing) lấy cả W1 + W2 để biết người nhập / lúc nhập / dấu vắng; dòng thô W1, W2 chỉ lấy đúng ô của nó. */
@@ -264,7 +265,8 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
     const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null, nguong: nguongDatLop(bc.class_id), kck: !!bc.khong_cam_ket };
     const rows = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[];
     const boQua = cu.filter((r) => r.bo_qua === 1 && (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang)).map((r) => r.ky_nang as string);
-    const t = tinhLuot(nc, a, cu[0].target_luc_thi ?? null, rows, boQua, false);
+    const t = tinhLuot(nc, a, cu[0].target_luc_thi ?? null, rows, boQua, false,
+      conn.prepare('SELECT skill FROM attempt_skills WHERE attempt_id = ?').all(a.id) as any[]);
     for (const d of t.dong) {
       const rieng = rows.filter((r) => (KY_NANG_THO.includes(d.kyNang) ? r.skill === d.kyNang : gocKyNang(r.skill) === d.kyNang));
       const nhap = rieng.filter((r) => r.entered_at).sort((x, y) => String(y.entered_at).localeCompare(String(x.entered_at)))[0];
