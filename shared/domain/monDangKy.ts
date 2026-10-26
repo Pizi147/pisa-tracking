@@ -8,7 +8,9 @@
 import { ENTRY_SKILLS, ENTRY_SKILL_SHORT, type AssessedSkill, type EntrySkill } from './skills.ts';
 
 /** Lý do phạm vi của dòng lịch do môn đăng ký tắt — nhận lại đúng dòng này khi bật lại môn. */
-export const LY_DO_KHONG_HOC = 'Không học';
+export const LY_DO_KHONG_HOC = 'Không học (môn đăng ký)';   // chữ riêng — không trùng lý do QL tự gõ khi "Huỷ kỹ năng"
+/** Dấu đi trong danh sách kỹ năng bỏ của lượt: có kỹ năng bỏ VÌ môn đăng ký → Overall "Không đủ bộ môn" (QL "Huỷ kỹ năng" cũ thì không). */
+export const DAU_KHONG_HOC = 'khong_hoc';
 /** Nhãn Overall khi lượt thiếu kỹ năng vì môn đăng ký (khác "Chưa đủ dữ liệu"). */
 export const NHAN_KHONG_DU_BO_MON = 'Không đủ bộ môn';
 
@@ -17,7 +19,8 @@ export type MonVao = string | readonly string[] | null | undefined;
 /** Tập môn đã học; NULL / trống chuỗi = đủ môn. Mảng rỗng hoặc giá trị lạ → lỗi (máy chủ trả 400 tại ô). */
 export function chuanMon(mon: MonVao): Set<EntrySkill> {
   if (mon == null || mon === '') return new Set(ENTRY_SKILLS);
-  const ds: unknown = typeof mon === 'string' ? JSON.parse(mon) : mon;
+  let ds: unknown = mon;
+  if (typeof mon === 'string') { try { ds = JSON.parse(mon); } catch { throw new Error('Môn học không hợp lệ.'); } }
   if (!Array.isArray(ds)) throw new Error('Môn học không hợp lệ.');
   if (!ds.length) throw new Error('Chọn ít nhất một môn.');
   for (const k of ds) if (!(ENTRY_SKILLS as readonly unknown[]).includes(k)) throw new Error(`Môn học không hợp lệ: ${String(k)}.`);

@@ -1755,6 +1755,7 @@ api.patch('/cycles/:id', requireAuth, wrap((req) => {
 /** P8 MON-DANG-KY (N13): đổi môn đăng ký lộ trình FT { monDangKy: string[] | null, xemTruoc? } — xem trước = cùng hàm, không ghi. */
 api.post('/cycles/:id/mon-dang-ky', requireAuth, wrap((req) => {
   const b = (req.body ?? {}) as Record<string, any>;
+  if (!('monDangKy' in b)) throw badRequest('Thiếu môn học — gửi danh sách môn (null = đủ môn).');
   if (!b.xemTruoc) maybeSimulateSaveFailure();
   studentSvc.chanLuuTru(principalOf(req), pInt(req, 'id'));   // OV-11d: hồ sơ Lưu trữ khoá
   return monDangKySvc.apMonDangKy(principalOf(req), pInt(req, 'id'), b.monDangKy, { xemTruoc: b.xemTruoc === true });

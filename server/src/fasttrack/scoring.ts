@@ -1,5 +1,5 @@
 import {
-  ASSESSED_SKILLS, CRITERIA_SKILLS, ENTRY_SKILLS, RAW_SCORE_SKILLS, expectationDelta, roundToHalf,
+  ASSESSED_SKILLS, CRITERIA_SKILLS, DAU_KHONG_HOC, ENTRY_SKILLS, RAW_SCORE_SKILLS, expectationDelta, roundToHalf,
   type AssessedSkill, type EntrySkill, type SosLevel,
 } from '../../../shared/domain/index.ts';
 
@@ -240,7 +240,7 @@ export function evaluateAttempt(
    */
   const all = ASSESSED_SKILLS.map((s) => bands[s]);
   /* P8 (Q4, mockup k4/k7): chỉ học một task Writing → Writing = task đó nhưng Overall vẫn "Không đủ bộ môn". */
-  const khongDuBoMon = skipped.length > 0 || boTask !== null;
+  const khongDuBoMon = boTask !== null || skippedSkills.includes(DAU_KHONG_HOC);   // chỉ khi bỏ VÌ môn đăng ký (QL "Huỷ kỹ năng" cũ giữ "—")
   const overall = !khongDuBoMon && all.every((b) => b !== null)
     ? roundToHalf((all as number[]).reduce((a, b) => a + b, 0) / 4)
     : null;

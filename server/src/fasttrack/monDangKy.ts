@@ -7,8 +7,8 @@
  * Xem trước và lưu cùng một hàm (`xemTruoc`) — web không tự suy tóm tắt.
  */
 import { db, tx } from '../db.ts';
-import { badRequest, notFound } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { badRequest, forbidden, notFound } from '../util.ts';
+import { can, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { capNhatConOCho } from './conOCho.ts';
@@ -42,34 +42,50 @@ export function docMon(mon: MonVao): string | null {
   try { return luuMon(mon); } catch (e: any) { throw badRequest(e.message); }
 }
 
+/**
+ * Ai đổi được môn (chủ SP 26/10 đêm): QL, Quản trị, GVCN (`student.edit` theo phạm vi) và TVV (vai `consultant`, `student.edit_more` đúng chi nhánh).
+ * CX (cũng `student.edit_more`) và GV bộ môn không đổi được.
+ */
+export function duocDoiMon(p: Principal, ctx: { studentId?: number; classId?: number }): boolean {
+  return can(p, PERMISSIONS.STUDENT_EDIT, ctx)
+    || p.grants.some((g) => g.roleKey === 'consultant' && can({ ...p, grants: [g] }, PERMISSIONS.STUDENT_EDIT_MORE, ctx));
+}
+
 export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { xemTruoc?: boolean; ngay?: string } = {}): TomTatMon {
   const conn = db();
-  const cy = conn.prepare('SELECT id, student_id, route, mon_dang_ky FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  const cy = conn.prepare('SELECT id, student_id, route, status, mon_dang_ky FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!cy) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: cy.student_id }, 'Bạn không có quyền đổi môn học của học viên này.');
+  if (!duocDoiMon(p, { studentId: cy.student_id })) throw forbidden('Bạn không có quyền đổi môn học của học viên này.');
   if (!cy.route) throw badRequest('Môn học chỉ áp cho lộ trình Fast Track.');
+  if (cy.status !== 'active') throw badRequest('Lộ trình đã kết thúc — không đổi môn học.');
   const luu = docMon(monVao);
   const khongHoc: string[] = kyNangKhongHoc(luu);
   const boTask = boTaskCua(luu);
-  /* Một câu: mọi dòng lịch của lượt MT còn hiệu lực + có điểm chưa (Writing: một trong hai task). */
+  /* Một câu: mọi dòng lịch của lượt MT (không MT0 — ledger: MT0 không áp môn) còn hiệu lực + có điểm chưa (Writing: từng task). */
+  const coDiemO = (o: string) => `EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = k.attempt_id AND sc.skill = ${o} AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL))`;
   const dong = conn.prepare(
-    `SELECT k.attempt_id, k.skill, k.required, k.scope_reason, k.sit_status, k.bo_task,
-            EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = k.attempt_id
-                     AND sc.skill IN (k.skill, CASE k.skill WHEN 'writing' THEN 'writing1' END, CASE k.skill WHEN 'writing' THEN 'writing2' END)
-                     AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)) AS co_diem
-       , a.attempt_no FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
-      WHERE a.cycle_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no, k.id`,
+    `SELECT k.attempt_id, k.skill, k.required, k.scope_reason, k.sit_status, k.bo_task, a.attempt_no,
+            CASE WHEN k.skill = 'writing' THEN ${coDiemO("'writing1'")} OR ${coDiemO("'writing2'")} ELSE ${coDiemO('k.skill')} END AS co_diem,
+            ${coDiemO("'writing1'")} AS co_w1, ${coDiemO("'writing2'")} AS co_w2
+       FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+      WHERE a.cycle_id = ? AND a.status != 'cancelled' AND a.kind != 'mt0' ORDER BY a.attempt_no, k.id`,
   ).all(cycleId) as any[];
   const chuaThi = (r: any) => !r.co_diem && CHUA_THI.has(r.sit_status);
   const tat = dong.filter((r) => r.required && khongHoc.includes(r.skill) && chuaThi(r));
   const giu = dong.filter((r) => khongHoc.includes(r.skill) && r.co_diem);
   const bat = dong.filter((r) => !r.required && r.scope_reason === LY_DO_KHONG_HOC && !khongHoc.includes(r.skill));
-  const doiTask = dong.filter((r) => r.skill === 'writing' && !khongHoc.includes('writing') && chuaThi(r) && (r.bo_task ?? null) !== boTask);
+  /*
+   * Task Writing: bỏ task → đánh dấu `bo_task` ở mọi lượt mà task bỏ CHƯA có điểm (kể cả lượt đã chấm task kia — không để nợ task bỏ mãi);
+   * đủ hai task lại / đổi task → chỉ lượt chưa thi gì (lượt đã chấm giữ như lúc chấm).
+   */
+  const doiTask = dong.filter((r) => r.skill === 'writing' && (r.required || bat.includes(r)) && !khongHoc.includes('writing') && (r.bo_task ?? null) !== boTask
+    && r.sit_status !== 'cancelled' && (boTask ? !r[boTask === 'writing1' ? 'co_w1' : 'co_w2'] : chuaThi(r)));
   /* Tóm tắt theo bài (lượt × môn): bỏ = tắt kỹ năng + đánh dấu task bỏ; thêm = bật lại + gỡ / đổi task bỏ; giữ = bài môn bỏ đã có điểm. */
   const boMoi = boTask ? doiTask : [], themTask = boTask ? [] : doiTask;
-  const giuW = boTask ? dong.filter((r) => r.skill === 'writing' && r.co_diem) : [];
-  /* Case mở của môn bỏ: ô nhập thiếu + "writing" khi bỏ cả Writing. */
-  const boChuDe: string[] = [...monThieu(luu), ...(khongHoc.includes('writing') ? ['writing'] : [])];
+  const giuW = boTask ? dong.filter((r) => r.skill === 'writing' && r[boTask === 'writing1' ? 'co_w1' : 'co_w2']) : [];
+  /* Case mở của môn VỪA bỏ (không đóng lại Case mở sau lần bỏ trước): ô nhập vừa thiếu + "writing" khi vừa bỏ cả Writing. */
+  const thieuCu = new Set<string>(monThieu(cy.mon_dang_ky)), khongHocCu = kyNangKhongHoc(cy.mon_dang_ky);
+  const boChuDe: string[] = [...monThieu(luu).filter((k) => !thieuCu.has(k)), ...(khongHoc.includes('writing') && !khongHocCu.includes('writing') ? ['writing'] : [])];
   const caseIds = boChuDe.length ? (conn.prepare(
     `SELECT sc.id FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
       WHERE COALESCE(sc.cycle_id, a.cycle_id) = ? AND sc.status != 'done' AND sc.topic IN (${boChuDe.map(() => '?').join(',')})`,

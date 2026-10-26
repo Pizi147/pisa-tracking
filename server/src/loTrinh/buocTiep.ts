@@ -130,6 +130,7 @@ function docLoTrinhMoi(c: any, input: ChonBuocTiepVao, lopMoiId: number | null, 
   /* P8 (N13): mặc định môn của lộ trình cũ; gửi rỗng / lạ → lỗi (xem trước trả ở `loi`). */
   let monDangKy: string | null = c.mon_dang_ky ?? null, loiMon: string | null = null;
   if (input.monDangKy !== undefined) try { monDangKy = luuMon(input.monDangKy as MonVao); } catch (e: any) { loiMon = e.message; }
+  if (lopDich && !lopDich.is_fast_track) { monDangKy = null; if (input.monDangKy !== undefined) loiMon = 'Môn học chỉ áp cho lộ trình Fast Track.'; }   // N22 ④
   const loi = (khac && !routeTen ? 'Ghi tên lộ trình "Khác".' : null) ?? loiMon
     ?? (lopDich ? kiemLopLoTrinhMoi(raw, { code: lopDich.code, ft: !!lopDich.is_fast_track, route: lopDich.route }) : 'Chọn lớp cho lộ trình mới.');
   if (loi && !chiKiem) throw badRequest(loi);
@@ -168,7 +169,7 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
   const tenCu = tenRoute(c) ?? 'lộ trình cũ';
   const dong = [
     /* P8 (mockup k1, k3): môn học trong dòng đầu — "đủ 5 môn" · "chỉ S" · "L · R · W2 · S". */
-    `Mở ${ten} ở ${lt.lopDich?.code ?? '—'} từ ${batDau === homNay ? ngay(batDau, homNay) : `Thứ Hai ${ngay(batDau, homNay)}`} · ${!lt.monDangKy ? 'đủ 5 môn' : JSON.parse(lt.monDangKy).length === 1 ? `chỉ ${chuMon(lt.monDangKy)}` : chuMon(lt.monDangKy)}${tg ? ` · Target ${tg}` : ''}`,
+    `Mở ${ten} ở ${lt.lopDich?.code ?? '—'} từ ${batDau === homNay ? ngay(batDau, homNay) : `Thứ Hai ${ngay(batDau, homNay)}`}${!lt.lopDich?.is_fast_track ? '' : ` · ${!lt.monDangKy ? 'đủ 5 môn' : JSON.parse(lt.monDangKy).length === 1 ? `chỉ ${chuMon(lt.monDangKy)}` : chuMon(lt.monDangKy)}`}${tg ? ` · Target ${tg}` : ''}`,
     lich.length ? `Tạo MT1–MT${lich.length}: ${lich.map((w) => tuanLich(addDays(t2, 7 * (w - 1)), homNay)).join(' · ')}` : 'Không tạo MT · thêm "+ MT" ở Kế hoạch Test khi cần',
     ...(dv ? [dv.attemptId ? `Đầu vào = ${dv.nguon.split(' ')[0]} (Overall ${dv.score?.toFixed(1)}) — chưa có KQ thi thật`
       : `Đầu vào = KQ thi ${ngay(c.thi_that_ngay, homNay)}: L ${dv.l?.toFixed(1)} · R ${dv.r?.toFixed(1)} · W ${dv.w?.toFixed(1)} · S ${dv.s?.toFixed(1)}`] : []),

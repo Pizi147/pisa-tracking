@@ -33,6 +33,7 @@ import { mt0TheoLop } from '../normal/kyVong.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { lichGopCua, loadSkillRows } from '../fasttrack/skillSchedule.ts';
+import { duocDoiMon } from '../fasttrack/monDangKy.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
@@ -648,7 +649,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` (band ≤ Target − 2.0) để nhìn. */
     const mt0 = a.kind === 'mt0';
     return {
-      ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null,
+      ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null, khongDuBoMon: r.khongDuBoMon,
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, chot: r.chot, provisional: r.provisional,
       sosLevel: r.sosLevel, kckDuoi: r.kckDuoi, scopeNote: r.scopeNote,
@@ -918,7 +919,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         id: selected.id, studentId, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
         /* P8 (N13, N22 ④): môn đăng ký — chỉ lộ trình FT (null = đủ môn); `monHoc` = "L · R · W2 · S" khi thiếu môn (dòng đầu hồ sơ, k7). */
-        ...(selected.route ? { monDangKy: selected.mon_dang_ky ? JSON.parse(selected.mon_dang_ky) as string[] : null, monHoc: selected.mon_dang_ky ? chuMon(selected.mon_dang_ky) : null } : {}),
+        ...(selected.route ? { monDangKy: selected.mon_dang_ky ? JSON.parse(selected.mon_dang_ky) as string[] : null, monHoc: selected.mon_dang_ky ? chuMon(selected.mon_dang_ky) : null,
+          coTheDoiMon: selected.status === 'active' && duocDoiMon(p, { studentId }) } : {}),
         /** P13 KET-PET: kỳ thi Cambridge của lộ trình (KET / PET) — Target + thi thật theo thang này; null = không kỳ thi. */
         kyThi: !selected.route ? kyThiCuaChuongTrinh(selected.programme_code) : null,
         /* OV-6b1: tuần MT của lớp em đang học — web báo trước "MT sẽ dời" bằng đúng lịch này (`cauMtSeDoi`). */

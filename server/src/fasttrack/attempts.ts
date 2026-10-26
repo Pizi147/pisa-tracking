@@ -124,7 +124,7 @@ export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
  */
 export function skipsOf(attemptId: number): AssessedSkill[] {
   return nho(`bo-mon:${attemptId}`, () => {
-    const rows = db().prepare('SELECT skill, required, bo_task FROM attempt_skills WHERE attempt_id = ?').all(attemptId) as any[];
+    const rows = db().prepare('SELECT skill, required, bo_task, scope_reason FROM attempt_skills WHERE attempt_id = ?').all(attemptId) as any[];
     if (rows.length) return [...rows.filter((r) => !r.required).map((r) => r.skill), ...boTaskCuaDong(rows)] as AssessedSkill[];   // P8: + task Writing bỏ
     return (db().prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(attemptId) as any[])
       .map((r) => r.skill as AssessedSkill)
@@ -461,7 +461,7 @@ export function skillCells(
 
   const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
   /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã xong (W cần cả W1 và W2; P8: trừ task không học). */
-  const boTask = skillRows?.length ? schedule.writing?.bo_task ?? null : boTaskTrong(skips);
+  const boTask = skillRows?.length ? (schedule.writing?.required ? schedule.writing.bo_task ?? null : null) : boTaskTrong(skips);   // cùng luật `boTaskCuaDong`
   const scoredAssessed = (assessed: AssessedSkill): boolean => entrySkillsOf(assessed).filter((k) => k !== boTask).every(xongO);
 
   return ENTRY_SKILLS.map((skill) => {

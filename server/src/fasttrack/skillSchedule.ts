@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, LY_DO_KHONG_HOC, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
+  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
   khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -288,11 +288,13 @@ export function skippedSkillsOf(rows: SkillRow[] | undefined, attempt?: { id: nu
  * P8 (N13): task Writing không học của lượt đi CÙNG danh sách kỹ năng bỏ ('writing1' | 'writing2' bên cạnh kỹ năng đánh giá) — mọi nơi đã truyền
  * `skips` vào `evaluateAttempt` / `failingEntrySkills` / `skillCells` đọc được mà không thêm tham số. Lọc theo `ASSESSED_SKILLS` vẫn ra đúng kỹ năng bỏ.
  */
-export const boTaskCuaDong = (rows: readonly { skill: string; required: number | boolean; bo_task?: string | null }[]): string[] =>
-  rows.filter((r) => r.skill === 'writing' && r.required && r.bo_task).map((r) => r.bo_task!);
+export const boTaskCuaDong = (rows: readonly { skill: string; required: number | boolean; bo_task?: string | null; scope_reason?: string | null }[]): string[] => [
+  ...rows.filter((r) => r.skill === 'writing' && r.required && r.bo_task).map((r) => r.bo_task!),
+  ...(rows.some((r) => !r.required && r.scope_reason === LY_DO_KHONG_HOC) ? [DAU_KHONG_HOC] : []),
+];
 
 /** Môn đăng ký của lộ trình của lượt `k.attempt_id` (alias `k` = `attempt_skills`). */
-const MON_LUOT_SQL = '(SELECT cy.mon_dang_ky FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE a.id = k.attempt_id)';
+const MON_LUOT_SQL = "(SELECT cy.mon_dang_ky FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE a.id = k.attempt_id AND a.kind != 'mt0')";   // ledger: MT0 không áp môn
 const KHONG_HOC_SQL = `(CASE k.skill WHEN 'writing' THEN NOT EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value IN ('writing1', 'writing2'))
   ELSE NOT EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value = k.skill) END)`;
 const BO_TASK_SQL = `(CASE WHEN k.skill = 'writing' AND (SELECT COUNT(*) FROM json_each(${MON_LUOT_SQL}) j WHERE j.value IN ('writing1', 'writing2')) = 1
@@ -306,7 +308,9 @@ export function apMonChoLuotMoi(attemptIds: readonly number[]): void {
   theoLo([...new Set(attemptIds)], (lo, ph) => db().prepare(
     `UPDATE attempt_skills AS k SET required = CASE WHEN ${KHONG_HOC_SQL} THEN 0 ELSE 1 END,
             scope_reason = CASE WHEN ${KHONG_HOC_SQL} THEN '${LY_DO_KHONG_HOC}' ELSE scope_reason END, bo_task = ${BO_TASK_SQL}
-      WHERE k.attempt_id IN (${ph}) AND k.required = 1 AND ${MON_LUOT_SQL} IS NOT NULL`).run(...lo));
+      WHERE k.attempt_id IN (${ph}) AND k.required = 1 AND ${MON_LUOT_SQL} IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = k.attempt_id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)
+                         AND sc.skill IN (k.skill, CASE k.skill WHEN 'writing' THEN 'writing1' END, CASE k.skill WHEN 'writing' THEN 'writing2' END))`).run(...lo));   // như `tat`: dòng đã có điểm không tắt
 }
 
 // ---------------------------------------------------------------- tiến độ và hạn

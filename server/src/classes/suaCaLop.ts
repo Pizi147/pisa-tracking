@@ -14,7 +14,7 @@ import {
 import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 import { lichMtCua } from './schedule.ts';
 import { cauEmailTrung, emailDangDung } from '../students/emailHocVien.ts';
-import { apMonDangKy, type TomTatMon } from '../fasttrack/monDangKy.ts';
+import { apMonDangKy, duocDoiMon, type TomTatMon } from '../fasttrack/monDangKy.ts';
 
 /**
  * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP — Họ tên, Ngày sinh, Email, Tuần bắt đầu, Dự kiến thi, Target, Điểm đầu vào (OV-10b: + liên hệ). Mỗi dòng chỉ gửi
@@ -103,6 +103,8 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
     coTheSuaTarget: duocDoiTarget(p, { classId: cls.id }), rows,
     /** P8 (N22 ④): cột Môn học chỉ ở lớp FT. */
     coMonHoc: !laLopThuong(cls.programme_code ?? null),
+    /** P8: người xem đổi được Môn học (cột + thanh "Áp cho n em") — QL, Quản trị, GVCN, TVV. */
+    coTheDoiMon: duocDoiMon(p, { classId: cls.id }),
     /** OV-13i: TVV / CX (không `student.edit`) — panel khoá cột Tuần bắt đầu (ngoài `CHI_SUA_THONG_TIN`). */
     chiThongTin: !can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }),
     /** OV-10b: cột Liên hệ — QL / Quản trị; GVCN không thấy ô nhập (chủ SP 13/10). */
@@ -147,11 +149,13 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     };
     /* QUYỀN THEO TRƯỜNG, trước mọi lần ghi: hồ sơ + lộ trình (trừ Target) cần `student.edit` — OV-13i: hoặc TVV / CX trong `CHI_SUA_THONG_TIN`;
        đổi Target THẬT cần `duocDoiTarget`. */
-    const coSua = [...HO_SO, ...LO_TRINH].some((k) => k !== 'target' && r[k] !== undefined);
+    const coSua = [...HO_SO, ...LO_TRINH].some((k) => k !== 'target' && k !== 'monDangKy' && r[k] !== undefined);
     if (coSua && !can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id })) {
       if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })) throw forbidden(`Bạn không có quyền sửa học viên ${s.full_name}.`);
-      if (r.startWeek !== undefined || r.monDangKy !== undefined) throw forbidden(CHI_SUA_THONG_TIN);
+      if (r.startWeek !== undefined) throw forbidden(CHI_SUA_THONG_TIN);
     }
+    /* P8 (chủ SP 26/10 đêm): Môn học — QL, Quản trị, GVCN, TVV đúng phạm vi (`duocDoiMon`); CX, GV bộ môn không. */
+    if (r.monDangKy !== undefined && !duocDoiMon(p, { studentId: s.id })) throw forbidden(`Bạn không có quyền đổi môn học của ${s.full_name}.`);
     let doiTarget = false;
     if (r.target !== undefined) {
       const t = thu('target', () => docTargetCua(c, r.target));   // P13: KET / PET theo thang Cambridge

@@ -133,7 +133,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
   const baseIds = cycles.map((c) => c.baseline_attempt_id as number | null).filter((x): x is number => !!x);
   const idLuot = attempts.map((a) => a.id as number);
   const diemCua = gom(hoi<any>((ph) => `SELECT * FROM assessment_scores WHERE attempt_id IN (${ph})`, [...new Set([...idLuot, ...baseIds])]), 'attempt_id');
-  const batBuocCua = gom(hoi<any>((ph) => `SELECT attempt_id, skill, required, bo_task FROM attempt_skills WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
+  const batBuocCua = gom(hoi<any>((ph) => `SELECT attempt_id, skill, required, bo_task, scope_reason FROM attempt_skills WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
   const boCu = gom(hoi<any>((ph) => `SELECT attempt_id, skill FROM attempt_skill_skips WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
   /** Cùng luật `skipsOf`: có dòng `attempt_skills` thì lấy dòng không bắt buộc; không có thì bảng cũ. */
   const boQuaCua = (id: number): string[] => {
