@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { attemptCuaEm } from '@shared/domain/index.ts';
 import { useApi } from '../../../lib/useApi.ts';
@@ -31,6 +31,21 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
   const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
   const chiAttempt = useMemo(() => chiAttemptVao ?? (chiHv && data ? attemptCuaEm(data.ft?.rows ?? data.thuong?.rows ?? [], chiHv) : null),
     [chiAttemptVao, chiHv, data]);
+  /* R1-PHAN-CAP-TEST: Lịch Test — lưới VỪA thẻ thì bỏ khung cuộn riêng để đầu cột dính dưới hàng lớp (CSS `.luoi-vua`); rộng hơn (lớp thường
+     4 môn) giữ cuộn ngang, không cắt cột. Đo lại khi thẻ / bảng đổi cỡ. */
+  const khung = useRef<HTMLDivElement>(null);
+  const [vua, setVua] = useState(false);
+  useEffect(() => {
+    const el = khung.current;
+    if (!coLinkRieng || !el || typeof ResizeObserver === 'undefined') return undefined;
+    const bang = el.querySelector('table');
+    const do_ = () => setVua(!!bang && bang.offsetWidth <= el.clientWidth + 1);
+    const ro = new ResizeObserver(do_);
+    ro.observe(el);
+    if (bang) ro.observe(bang);
+    do_();
+    return () => ro.disconnect();
+  }, [coLinkRieng, data]);
   /* UI-LICH-TUAN: Lịch tuần chính là lưới đầy đủ (`/nhap-diem/*` chuyển về đây) — không lặp link; panel việc vẫn có. */
   const link = coLinkRieng ? null : (
     <Link to={hrefDayDu} className="inline-flex min-h-[32px] max-sm:min-h-10 items-center px-2 text-xs text-slate-400 no-underline hover:text-slate-100"
@@ -39,7 +54,7 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
     </Link>
   );
   return (
-    <div className="py-1">
+    <div ref={khung} className={coLinkRieng ? (vua ? 'luoi-vua' : '') : 'py-1'}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <Skeleton rows={4} />
         : (

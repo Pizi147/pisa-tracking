@@ -607,7 +607,7 @@ function LyDoThieu({ thieu }: { thieu: ReturnType<typeof thieuNhanXetMt> }) {
 /**
  * KHUNG HỘP NHỎ NEO Ô (đầu · thân · chân) — dùng chung cho hộp nhập điểm MT và hộp nhận xét lớp thường. Neo dưới ô, kẹp trong màn,
  * hết chỗ thì lật lên (như `HopKyNang`); < 640 px → tấm trượt từ dưới. Mở: con trỏ vào ô nhập đầu; Tab vòng trong hộp; đóng trả focus
- * về ô. Esc / bấm ra ngoài → `onDong` (bấm ra ngoài khi đã gõ thì giữ hộp — không mất chữ). Esc khi đã gõ (CA3-8): chân hộp thành câu
+ * về ô. Esc / bấm ra ngoài → `onDong` (bấm ra ngoài khi đã gõ thì giữ hộp, chặn cú bấm đó, hỏi Bỏ · Gõ tiếp — không mất chữ). Esc khi đã gõ (CA3-8): chân hộp thành câu
  * `cauBo` + Bỏ · Gõ tiếp (không hộp thứ hai); Esc lần nữa = Gõ tiếp.
  */
 function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, chan, children }: {
@@ -651,6 +651,15 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
   useBamNgoai(true, (e) => {
     if ((e.target as HTMLElement).closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
     if (!moi.current.daGo) moi.current.onDong();
+    else {
+      /* R1-PHAN-CAP-TEST: đã gõ → cú bấm ra ngoài không làm gì (vd thu lớp chứa ô — mất chữ; focus không sang nút đó, <select> không mở);
+         hỏi Bỏ · Gõ tiếp như Esc. */
+      e.preventDefault();
+      const chan = (ev: Event) => { if (!box.current?.contains(ev.target as Node)) { ev.stopPropagation(); ev.preventDefault(); } };
+      document.addEventListener('click', chan, { capture: true, once: true });
+      setTimeout(() => document.removeEventListener('click', chan, true), 1000);   // kéo chuột ra ngoài không thành click → gỡ chặn
+      setHoi(true);
+    }
   }, box, neo);
   useEffect(() => {
     /* Esc chỉ đóng lớp trên cùng: hộp chọn người mở trong hộp tự đóng trước (`defaultPrevented`). Đã gõ → hỏi ở chân hộp. */
