@@ -22,7 +22,7 @@ import { conLaiMs } from '../platform/hanGio.ts';
 
 const CHI_QL = 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới xoá được học viên.';
 
-/** Bao đóng theo FK của `students` (41 bảng, PR-TK +2, PR-OV12g +1, OV-15c +1, SV-BAI-LOP +1, SV-YT-TVV +2, SV-S-EXPERT +1, UI-HO-SO-LOP +1) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
+/** Bao đóng theo FK của `students` (41 bảng, PR-TK +2, PR-OV12g +1, OV-15c +1, SV-BAI-LOP +1, SV-YT-TVV +2, SV-S-EXPERT +1, UI-HO-SO-LOP +1, P9a XET-LAI +1) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'students', 'enrollments', 'learning_cycles', 'lo_trinh_tiep_theo', 'lo_trinh_nhap', 'journey_events', 'teacher_estimates', 'cycle_target_revisions',
   'assessment_attempts', 'assessment_scores', 'attempt_skills', 'attempt_skill_skips', 'attempt_schedule_history', 'skill_move_requests',
@@ -30,7 +30,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
   'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test', 'lenh_chuyen_lop', 'ban_giao_mon', 'ket_qua_huy',
-  'ban_chup_lo_trinh', 'ban_chup_luot', 'case_followup_buoi', 'gop_y_tuan', 'ghi_chu_lich_thi', 'bai_tren_lop', 'viec_bao_ph', 'viec_bao_ph_lan', 's_expert', 'danh_gia_dau_ra',
+  'ban_chup_lo_trinh', 'ban_chup_luot', 'case_followup_buoi', 'gop_y_tuan', 'ghi_chu_lich_thi', 'bai_tren_lop', 'viec_bao_ph', 'viec_bao_ph_lan', 's_expert', 'danh_gia_dau_ra', 'xet_lai_lo_trinh',
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -84,6 +84,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'attachments', sql: `DELETE FROM attachments WHERE ${DK_TEP}` },
   { bang: 'notifications', sql: `DELETE FROM notifications WHERE ${DK_THONG_BAO}` },
   /* PR-CT: quyết định chuyển lớp + dòng bàn giao của em (lệnh trỏ thẻ Chờ duyệt nên xoá TRƯỚC thẻ) */
+  { bang: 'xet_lai_lo_trinh', sql: `DELETE FROM xet_lai_lo_trinh WHERE student_id = ?1 OR lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})) OR lenh_moi_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },   // P9a XET-LAI
   { bang: 'ban_giao_mon', sql: `DELETE FROM ban_giao_mon WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
   { bang: 'lenh_chuyen_lop', sql: `DELETE FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})` },
   /* PR-DUYET: thẻ Chờ duyệt của em (đối tượng là PA/đề nghị dời/lộ trình của em — xoá cùng em) */

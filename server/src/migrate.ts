@@ -80,6 +80,7 @@ import { migratePrDich } from './migrate/prDich.ts';
 import { migratePrSvYtTvv } from './migrate/prSvYtTvv.ts';
 import { migratePrOv15g } from './migrate/prOv15g.ts';
 import { migratePrOv15i1 } from './migrate/prOv15i1.ts';
+import { migratePrXetLai } from './migrate/prXetLai.ts';
 import { migratePrTd7b } from './migrate/prTd7b.ts';
 import { migratePrCvLoi } from './migrate/prCvLoi.ts';
 import { migratePrSvLoTrinh } from './migrate/prSvLoTrinh.ts';
@@ -399,6 +400,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* UI-HO-SO-LOP: bảng danh_gia_dau_ra — nhận xét + đề xuất của GVCN khi đánh giá đầu ra (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrUiHoSoLop(conn, applied));
     /* P14 DICH: bảng ban_dich + dich_luot — nút Dịch chữ GV nhập (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrDich(conn, applied));
     /* SV-NX-CASE (N8): Case MT mô tả từ nhận xét → gắn nguồn (nội dung giữ) · việc Xem nhận xét Speaking còn mở → Xác nhận Case (đổi dữ liệu, chạy lặp không đổi). */ buoc(() => { migratePrSvNxCase(conn, applied); });
+    /* P9a XET-LAI: bảng xet_lai_lo_trinh + thẻ "Mini Test chưa đạt" đang chờ → đóng (dòng (d) của Xét lại tính khi đọc; chạy lặp được). */ buoc(() => migratePrXetLai(conn, applied));
     /* P12 BAO-CAO-LICH-SU: cột learning_cycles.thi_that_target + điền Target hiện tại cho lộ trình đã có KQ (chạy lặp được). */ buoc(() => migratePrBaoCaoLichSu(conn, applied));
     /* P7 SV-LO-TRINH (N11, N12): em Tạm dừng cũ vào Lưu trữ (ngày pause gần nhất) · cột learning_cycles.route_ten · route KHAC ngừng (chạy lặp không đổi). */ buoc(() => migratePrSvLoTrinh(conn, applied));
 

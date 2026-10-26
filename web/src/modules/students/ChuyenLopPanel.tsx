@@ -23,7 +23,7 @@ type LopDich = {
 };
 type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean } };
 type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null; hanGvcn?: string | null };
-type XemChuyenLopData = {
+export type XemChuyenLopData = {
   hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null };
   lenh: LenhCho | null; tuanChon: string[]; today: string; tuanFinal?: string | null; boiCanh?: string | null;
   /** PR-CL (B3): null khi chưa chọn lớp. */
@@ -44,7 +44,7 @@ const loiMayChu = (e: any) => e?.message ?? 'Không lưu được — thử lạ
 const khoiVang = KHOI_VANG;
 
 /** Target + ô tích KCK (§7: chỉ khi em chưa có Target nào) — panel một em và hàng nhiều em. OV-9: giá trị chữ "6.5" · "6.5 KCK" · "KCK". */
-function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
+export function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
   value: string; onChange: (v: string) => void; ariaLabel: string; oProps?: Record<string, unknown>; disabled?: boolean;
 }) {
   const { so, kck } = tachKck(value);
@@ -59,7 +59,7 @@ function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
 }
 
 /** "Tuần bắt đầu": "Ngay hôm nay" (OV-13l) + 3 mã tuần + "Chọn tuần" → ô tuần (`OTuan`). */
-function OTuanBatDau({ tuanChon, tuan, setTuan, homNay, oProps }: {
+export function OTuanBatDau({ tuanChon, tuan, setTuan, homNay, oProps }: {
   tuanChon: string[]; tuan: string; setTuan: (t: string) => void; homNay: string | null; oProps: Record<string, unknown>;
 }) {
   const [khac, setKhac] = useState(false);
@@ -308,9 +308,9 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   );
 }
 
-// ---------------------------------------------------------------- Chuyển lớp NHIỀU em (PR-CL C1 — mở từ Công việc "Xét lại lộ trình")
+// ---------------------------------------------------------------- Chuyển lớp NHIỀU em (R5.3 — em đã chọn ở lớp FT)
 
-/** `huong`, `tyLe` null = em chọn ở lớp FT (R5.3 "Chuyển lớp…" khi chọn nhiều em), không phải dòng Xét lại. */
+/** `huong`, `tyLe` luôn null từ P9a (Xét lại lộ trình có panel riêng `PanelXetLai`) — giữ cột hàng như R5.3. */
 type EmXetLai = { studentId: number; ten: string; huong: 'len_lop' | 'fast_track' | 'hoc_lai' | null; tyLe: number | null; lopHienTai: { id: number; code: string } };
 type XemEm = { nap: true } | { loi: string } | { nguonFt: boolean; dichFt: boolean; khiChuyen: string[]; canhBao: boolean; hoiTarget: boolean };
 const DA_CHOT: Record<NonNullable<EmXetLai['huong']>, string> = { len_lop: 'Lên lớp', fast_track: 'Lên FT', hoc_lai: 'Học lại' };
@@ -318,24 +318,23 @@ const DA_CHOT: Record<NonNullable<EmXetLai['huong']>, string> = { len_lop: 'Lên
 const LUOI_NHIEU = 'grid grid-cols-[28px_minmax(11rem,1.2fr)_5.5rem_8rem_minmax(16rem,1.6fr)] items-start gap-x-3';
 
 /**
- * CHUYỂN LỚP NHIỀU EM — mở từ Công việc QL "Xét lại lộ trình · {lớp} · n em" (`?viec=xet-lai` ở hồ sơ lớp HIỆN TẠI của em), đã chọn sẵn các em
- * (`GET /classes/:id/xet-lai-lo-trinh`, cùng tập em với dòng việc). Tuần + Lý do chung, mỗi em một ô lớp; em chưa chọn lớp = bỏ qua.
+ * CHUYỂN LỚP NHIỀU EM (R5.3) — em đã chọn ở lớp FT ("Chuyển lớp…" khi chọn nhiều em). P9a: Xét lại lộ trình không còn mở panel này (`PanelXetLai`).
+ * Tuần + Lý do chung, mỗi em một ô lớp; em chưa chọn lớp = bỏ qua.
  * Gửi tuần tự từng em `POST /students/:id/transfer` — em lỗi giữ hàng đỏ + chữ lỗi, em đã chuyển không gửi lại.
- * ponytail: mỗi em một lời gọi (≤ TOI_DA_NHIEU_EM em/lần); cần một lời gọi gộp khi Xét lại > 50 em.
+ * ponytail: mỗi em một lời gọi (≤ TOI_DA_NHIEU_EM em/lần); cần một lời gọi gộp khi chuyển > 50 em.
  */
 export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguon }: {
   classId: number; onClose: () => void; onDone?: () => void;
-  /** R5.3: em đã chọn ở lớp FT (thay "Chuyển tiếp lớp") — không đọc danh sách Xét lại. `lop` = lớp đang xem (mã + chi nhánh cho "+ Mở lớp mới…"). */
-  emIds?: number[]; lop?: { code: string; branchId: number };
+  /** R5.3: em đã chọn ở lớp FT (thay "Chuyển tiếp lớp"). `lop` = lớp đang xem (mã + chi nhánh cho "+ Mở lớp mới…"). */
+  emIds: number[]; lop: { code: string; branchId: number };
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const dt = useDienThoai();
-  const xl = useApi<{ lop: { id: number; code: string }; em: EmXetLai[] }>(emIds ? null : `/classes/${classId}/xet-lai-lo-trinh`, [classId]);
-  const ro = useApi<{ id: number; fullName: string }[]>(emIds ? `/classes/${classId}/roster` : null, [classId]);
-  const data = emIds ? (ro.data ? { lop: { id: classId, code: lopNguon?.code ?? '' }, em: ro.data.filter((r) => emIds.includes(r.id))
-    .map((r) => ({ studentId: r.id, ten: r.fullName, huong: null, tyLe: null, lopHienTai: { id: classId, code: lopNguon?.code ?? '' } })) } : null) : xl.data;
-  const { loading, error, reload } = emIds ? ro : xl;
+  const ro = useApi<{ id: number; fullName: string }[]>(`/classes/${classId}/roster`, [classId]);
+  const data: { lop: { id: number; code: string }; em: EmXetLai[] } | null = ro.data ? { lop: { id: classId, code: lopNguon.code }, em: ro.data.filter((r) => emIds.includes(r.id))
+    .map((r) => ({ studentId: r.id, ten: r.fullName, huong: null, tyLe: null, lopHienTai: { id: classId, code: lopNguon.code } })) } : null;
+  const { loading, error, reload } = ro;
   const [moLop, setMoLop] = useState<number | null>(null);
   const [lopMoi, setLopMoi] = useState(0);
   const [boChon, setBoChon] = useState<ReadonlySet<number>>(new Set());
@@ -427,7 +426,6 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
         chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !canGui.length || choXem}>
           {busy ? 'Đang lưu…' : homNay && laChuyenNgay(tuan, homNay) ? t('Chuyển ngay · {n} em', { n: canGui.length }) : `${CHU_CHUYEN_LOP.quyetDinh} · ${canGui.length} em`}</button>,
       }}>
-      {!emIds && <p className="mb-0 mt-3 text-xs text-slate-400">Kết quả không phù hợp lộ trình — xét lại, không bắt buộc đổi.</p>}
       {data.em.length > TOI_DA_NHIEU_EM && <p className="mb-0 mt-1 text-xs text-slate-400">Hiện {TOI_DA_NHIEU_EM}/{data.em.length} em — chuyển xong sẽ hiện tiếp.</p>}
 
       <div role={dt ? 'list' : 'table'} aria-label={`Chuyển lớp · ${data.lop.code}`} className={dt ? 'mt-3 space-y-2' : 'surface-2 mt-3 overflow-x-auto rounded-lg'}>
@@ -435,7 +433,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
           <div role="row" className={`${LUOI_NHIEU} min-w-max border-b px-3 py-2 text-[12px] font-extrabold  text-slate-500 lg:min-w-0`} style={{ borderColor: 'var(--line)' }}>
             <span role="columnheader"><span className="sr-only">Chọn</span></span>
             <span role="columnheader">Học viên</span>
-            <span role="columnheader">{emIds ? '' : 'Final Test'}</span>
+            <span role="columnheader" />
             <span role="columnheader">Đang ở</span>
             <span role="columnheader">Lớp chuyển đến</span>
           </div>
@@ -457,7 +455,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
         </Truong>
         <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
           <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-            placeholder={emIds ? 'Ví dụ: Gộp lớp' : 'Ví dụ: Xét lại lộ trình sau Final'} />
+            placeholder="Ví dụ: Gộp lớp" />
         </Truong>
       </div>
 

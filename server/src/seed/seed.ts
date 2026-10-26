@@ -30,6 +30,7 @@ import { dienBanChupLop } from '../migrate/prOv6b1.ts';
 import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
 import { buildDuyetDemo } from './duyetSeed.ts';
 import { buildCtDemo } from './ctSeed.ts';
+import { buildXetLaiDemo } from './xetLaiSeed.ts';
 import { buNgayPb2b, buildPb2bDemo } from './pb2bSeed.ts';
 import { dienNguocBanChup } from '../migrate/prTk.ts';
 import { migratePrOv1c } from '../migrate/prOv1c.ts';
@@ -306,6 +307,8 @@ export function runSeed() {
     /* SEED-UX: TVV / Admin VP / GV S không lớp, gán TVV + SĐT PH, thi thật, buổi tutor, lớp HD FT 306 + HD FOU 06 — sau Head tutor để id cũ không đổi. */
     const ux = buildUxDemo(conn, adminId);
     buNgayPb2b(conn);   // ô điểm / vi phạm bộ UX: bù ngày nhập đầu + hạn xử lý (chỉ điền ô NULL)
+    /* P9a XET-LAI: MB FOU 25 → MB BE 05 (3 em Final chưa khớp hướng) + 1 lệnh chưa thi hành — sau SEED-UX để id học viên / lớp cũ không đổi. */
+    buildXetLaiDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* OV-11e (Q8): lượt MT đã chốt dựng bằng SQL thẳng chưa có dấu KCK theo lượt — chụp theo cờ hiện tại (cùng hàm với migrate). Sau mọi bộ demo. */
     migratePrOv11e(conn, []);
     /* OV-12a: PA dựng bằng SQL thẳng với hạn kiểu cũ (Thứ Hai hằng tuần) → lịch kỳ hai tuần, hết Thứ Ba (cùng hàm với migrate; seed → migrate không đổi gì). */

@@ -901,7 +901,8 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
      không đổi (SV-LOP riêng: 6 373). Trần Học viên & Lớp theo dữ liệu nay: 7 100 (thay ⌊8 417 × 80 %⌋ = 6 733) — chờ planning duyệt.
      SV-SO3: hàng HV khu d (Xu hướng) đọc thêm các lượt có điểm trước lượt gần nhất của em có Overall + tuần thi: 7 095 → 7 220 → trần 7 220.
      V5 SV-SO1: ô có band thiếu nhận xét bắt buộc là việc / bài chờ (seed 385 ô) → đọc thêm lượt còn ô chờ: đo trên main + SV-SO1 7 316 (main 7 220, +96) → trần 7 320; overview 2 904 vẫn ≤ 50 %. */
-  assert(ov <= Math.floor(5829 * 0.5) && hvl <= 7320, `overview ${ov} / hoc-vien-lop ${hvl}`);
+  /* P9a XET-LAI: bộ demo Xét lại thêm 4 em + 2 lớp (×3) → hoc-vien-lop 7 320 → 7 507 (sau gộp P7 / P9b) → trần 7 510; mã đường không đổi. */
+  assert(ov <= Math.floor(5829 * 0.5) && hvl <= 7510, `overview ${ov} / hoc-vien-lop ${hvl}`);
 });
 
 /*
@@ -1053,14 +1054,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* MAIN-DO: chụp lại theo dữ liệu SEED-UX cuối (BU_MT2, 32504e72 → 9a078719) — so JSON 58a2d268 ↔ 9a078719: việc lệch CHỈ ở 4 em MT2 chưa đạt
        (Ngô Bảo Châu, Lý Thanh Tâm, Phạm Khánh Linh, Kiều Thảo Nhi: việc Case MT2; Case cũ của Kiều Thảo Nhi đổi) và dòng lớp MB FT 101 (MT2 dời W3 AUG); id Case dời. ADMIN giữ.
        SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
-    /* P9b CUOI-KHOA (25/10): chụp lại 10 băm (ADMIN giữ) — so JSON ×3 main 186e73a ↔ nhánh, chuẩn hoá id Case / PA: lệch CÓ CHỦ Ý chỉ ở (1) việc "Chốt lộ trình"
-       (N20 hạn CN → T5, nút "Cuối khoá ›", đường `?xem=cuoi-khoa`, hint); (2) N17 Kỳ vọng · Học viên không Case → seed bớt Case của Kiều Thảo Nhi (id Case / PA
-       dời 1) và Case S MT2 của em không còn gộp vào Case Kỳ vọng: 3 dòng "Thêm PA học thuật Speaking" → "Ghi nhận xét Speaking · MT2" (GV S, QL / QT tất cả).
-       Số việc mọi góc không đổi. Trước: QL toi 3ea67fbf71f97f26, QT toi ae31cc97e115aae1, GVCN toi 76b13509ead6c605, GVBM toi f0e52756d39e2508, QL tat-ca 2f708e34199a5b09,
-       QT tat-ca fd4a0025509b3b4c, QT tat-ca cn 9bc50bbc012634a2, QL gvcn 658f91bcc1ae947f, GVS toi bde6ca74489b52be */
-    'QL toi': '53d8168836891e39', 'QT toi': '3111c55ff8027ff3', 'GVCN toi': '48d4fd7f1dc1645a', 'GVBM toi': 'bbfbcccdcf9d71b4',
-    'GVCN_THUONG toi': '48d4fd7f1dc1645a', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'dd8a7166b581b998', 'QT tat-ca': '364be4cb77b9f362',
-    'QT tat-ca cn': '7166c9b66b3098c4', 'QL gvcn': '5afa68eea7a17883', 'GVS toi': '8b6b85a70a44d3dd',
+    /* P9a XET-LAI (sau gộp P9b / P7): so JSON origin/main 87a3bc3 ↔ nhánh (GVCN / GVBM MB FT 101, QL, QL tất cả, QT): lệch CHỈ do bộ demo Xét lại (4 em
+       MB FOU 25 → MB BE 05): "Bàn giao 4 em · MB FOU 25" (GVCN, QL tất cả), "Xét lại lộ trình · MB BE 05 / MB FOU 25" (QL / QT), "Báo phụ huynh qua TVV ·
+       Hứa Đức Anh 46%", "Ghi Mini Test" 2 em bổ trợ (55 / 57 %). ADMIN giữ. Trước (P9b): QL toi 53d8168836891e39, QT toi 3111c55ff8027ff3, GVCN toi 48d4fd7f1dc1645a,
+       GVBM toi bbfbcccdcf9d71b4, QL tat-ca dd8a7166b581b998, QT tat-ca 364be4cb77b9f362, QT tat-ca cn 7166c9b66b3098c4, QL gvcn 5afa68eea7a17883, GVS toi 8b6b85a70a44d3dd */
+    'QL toi': 'e1049bc984a18aca', 'QT toi': '7de7b28ab5fe8b93', 'GVCN toi': 'a298f2a5bc0f779f', 'GVBM toi': 'd2ae222a70a8ab15',
+    'GVCN_THUONG toi': 'a298f2a5bc0f779f', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '0674f0c5032b5a23', 'QT tat-ca': '50944d5f2d8af799',
+    'QT tat-ca cn': 'de4df8179b21e493', 'QL gvcn': 'cab96ce5168b2724', 'GVS toi': '1f37a0df4f07d06d',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1207,9 +1207,9 @@ check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 70 % mốc trước TD4 (V5 
   const MOC: Record<string, [number, number]> = {
     /* SV-YT-TVV + SV-TVV-VIEC (21/10): QL / QT "Của tôi" +2 câu — việc Báo PH (một câu) + Chốt ngày thi / Bổ sung hồ sơ (một câu cho cả hai). */
     /* MAIN-DO (BU_MT2 SEED-UX): +1 câu QL / QT như trần TRAN; dòng ×3 mọi vai +~150 (58a2d268 → 9a078719, QL 2 202 → 2 352) — mốc dòng QL 5 647 → 5 880. */
-    'QL /my-work': [71, 5880], 'QT /my-work': [71, 7775],   /* SV-NX-CASE +1 (MT mới nhất của em: một câu / trang) */   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
+    'QL /my-work': [73, 5880], 'QT /my-work': [73, 7775],   /* P9a XET-LAI +2 câu (tập Xét lại) */   /* SV-NX-CASE +1 (MT mới nhất của em: một câu / trang) */   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
     'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
-    'QL /my-work?nguoi=tat-ca': [81, 6721], 'QT /my-work?nguoi=tat-ca': [81, 9176],   /* MAIN-DO +1 (BU_MT2); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay") */ [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
+    'QL /my-work?nguoi=tat-ca': [83, 6721], 'QT /my-work?nguoi=tat-ca': [83, 9176],   /* P9a XET-LAI +2 câu */   /* MAIN-DO +1 (BU_MT2); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay") */ [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
   };
   const sai: string[] = [];
   for (const [k, [cau, dong]] of Object.entries(MOC)) {

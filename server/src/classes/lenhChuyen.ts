@@ -291,7 +291,7 @@ function phieuLamLai(p: Principal, nguon: any, sids: number[], han: { gvbm: stri
  * Q18: MỘT thông báo mỗi lớp chuyển đến — GVCN lớp chuyển đến + Quản lý chi nhánh đích nếu khác chi nhánh. Đếm lại từ bảng nên ra lệnh thêm cùng
  * ngày chỉ cập nhật số. OV-13l: lệnh "Ngay hôm nay" đã thi hành → cùng chuông đổi thành "Đã nhận" (không còn "Sắp nhận" cho em đã vào lớp).
  */
-function thongBaoSapNhan(p: Principal, nguon: any, lopDichIds: number[], dich: Map<number, any>, homNay: string) {
+export function thongBaoSapNhan(p: Principal, nguon: any, lopDichIds: number[], dich: Map<number, any>, homNay: string) {
   if (!lopDichIds.length) return;
   const conn = db();
   const dem = new Map<number, { n: number; k: number; tuan: string | null }>();
@@ -532,7 +532,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
 // ---------------------------------------------------------------- ranh giới API
 
 /** Ô Target của lệnh: số · "KCK" · "6.5 KCK" (OV-9); sai → null (`kiemDongLenh` báo "Ghi Target"). */
-function soHoacKck(v: unknown): MucTieuLenh | null {
+export function soHoacKck(v: unknown): MucTieuLenh | null {
   if (v === null || v === undefined || v === '') return null;
   const t = tachMucTieu(typeof v === 'number' ? v : String(v));
   if (t.target !== null && !Number.isFinite(t.target)) return null;

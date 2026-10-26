@@ -49,11 +49,11 @@ export function chuTuDo(v: unknown, ten: string, toiDa: number): string | null {
 /** Ngày nghiệp vụ theo Asia/Ho_Chi_Minh, lưu dạng YYYY-MM-DD. */
 export const BUSINESS_TZ = 'Asia/Ho_Chi_Minh';
 
-export function todayInBusinessTz(): string {
+export function todayInBusinessTz(luc: Date = new Date()): string {
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
   });
-  return fmt.format(new Date());
+  return fmt.format(luc);
 }
 
 export function isIsoDate(v: unknown): v is string {

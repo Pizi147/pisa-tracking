@@ -416,19 +416,10 @@ export async function runPrClTests(t: YThucTestKit) {
     });
   });
   // ================================================================== T2 · Xét lại lộ trình (B5, B6)
-  const ck: any = await import('../normal/cuoiKhoa.ts');
+  const ck: any = await import('../normal/xetLai.ts');   // P9a: Xét lại lộ trình chuyển sang xetLai.ts (N21)
   const mywork: any = await import('../worklist/mywork.ts');
   const permissions: any = await import('../permissions.ts');
-  check('CL-h · khongPhuHopLoTrinh: Lên lớp / Lên FT < 0.5 → true, 0.5 → false; Học lại 0.6999 → false, 0.7 → true; hướng khác / null → false', () => {
-    const k = d.khongPhuHopLoTrinh;
-    const ca: [string, number | null, boolean][] = [
-      ['len_lop', 0.4999, true], ['fast_track', 0.4999, true], ['len_lop', 0.5, false], ['fast_track', 0.5, false],
-      ['hoc_lai', 0.6999, false], ['hoc_lai', 0.7, true], ['hoc_lai', 0.95, true], ['bao_luu', 0.1, false], ['chuyen_lop', 0.1, false],
-      ['len_lop', null, false], ['hoc_lai', null, false],
-    ];
-    for (const [h, t, mong] of ca) assert(k(h, t) === mong, `${h} ${t} → ${k(h, t)}`);
-  });
-
+  /* CL-h (khongPhuHopLoTrinh) bỏ ở P9a: luật Xét lại là `lyDoXetLai` — XL-1 (prXetLai.tests.ts). */
   /** Ghi Final lớp FOU: mọi môn `pct`/100; `null` = chỉ một môn (thiếu môn). */
   const tyLeFou = (attemptId: number, pct: number | null) => {
     const skills: string[] = regular.allProgrammes().get('FOU').skills;
@@ -463,14 +454,14 @@ export async function runPrClTests(t: YThucTestKit) {
   const XL_SID = new Set(XL.ds.map((x) => x.sid));
   const emCua = (homNay = TODAY, p: any = QL) => (ck.emXetLaiLoTrinh(p, null, homNay) as any[]).flatMap((g) => g.em).map((e: any) => e.studentId).filter((id: number) => XL_SID.has(id)).sort();
 
-  check('CL-i · Xét lại: một việc mỗi lớp HIỆN TẠI "Xét lại lộ trình · {lớp hiện tại} · n em" (46% Lên BE → BE2, 72% Học lại → FOU2; 55% Lên FT và thiếu môn không); +13 còn, +14 mất; lệnh mới → 1 em, huỷ → 2; thôi học / rời lớp mới / lệnh giữa khoá mới hơn / nguồn FT → mất; sửa Final 55% → mất; QL CP / GVCN / GVBM không có', () => {
+  check('CL-i · Xét lại (P9a N21): một việc mỗi lớp HIỆN TẠI "Xét lại lộ trình · {lớp hiện tại} · n em" (46% Lên BE → BE2, 72% Học lại → FOU2; 55% Lên FT chưa có ngày Final và thiếu môn không); hạn +13 còn, +14 tự giữ; lệnh mới → 1 em, huỷ → 2; thôi học / rời lớp mới / lệnh giữa khoá mới hơn / nguồn FT → mất; sửa Final 55% → mất; QL CP / GVCN / GVBM không có', () => {
     const [a, b, c] = XL.ds;
     const v = viecXetLai(QL);
     assert(!v.some((it) => it.key === `xetlai:${XL.fou.id}`), 'không còn dòng theo lớp nguồn');
-    for (const [lopHt, pct] of [[BE2, '46%'], [FOU2, '72%']] as const) {
+    for (const [lopHt, pct] of [[BE2, '46 %'], [FOU2, '72 %']] as const) {
       const it = v.find((x) => x.key === `xetlai:${lopHt.id}`);
-      assert(it && it.tieuDe === `Xét lại lộ trình · ${lopHt.code} · ${it.count} em` && it.reason === 'Kết quả không phù hợp lộ trình' && it.due === null && it.urgency === 'normal'
-        && it.classId === lopHt.id && it.actionLabel === 'Chuyển lớp…' && it.href === `/hoc-vien/lop/${lopHt.id}?viec=xet-lai` && it.ownerId === null, JSON.stringify(it));
+      assert(it && it.tieuDe === `Xét lại lộ trình · ${lopHt.code} · ${it.count} em` && it.reason === 'Final chưa khớp hướng đã chốt' && it.due === addDays(THU_HAI, 13)
+        && it.classId === lopHt.id && it.actionLabel === 'Xét lại ›' && it.href === `/hoc-vien/lop/${lopHt.id}?viec=xet-lai` && it.ownerId === null, JSON.stringify(it));
       assert(it.contextLabel.includes(pct), `contextLabel: ${it.contextLabel}`);
     }
     assert(v.filter((x) => x.key === `xetlai:${FOU2.id}`).length === 1, 'một việc mỗi lớp hiện tại');
@@ -478,6 +469,8 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(d.nhomViecCua('xet_lai_lo_trinh') === 'van-hanh', 'nhóm Vận hành');
     /* Hết Chủ nhật tuần 2 ở lớp mới. */
     assert(emCua(addDays(THU_HAI, 13)).length === 2 && emCua(addDays(THU_HAI, 14)).length === 0, `+13 / +14: ${emCua(addDays(THU_HAI, 13))} / ${emCua(addDays(THU_HAI, 14))}`);
+    /* +14 đã tự ghi "Tiếp tục" — gỡ để các bước sau đọc lại ở hôm nay. */
+    for (const x of XL.ds) { conn.prepare('DELETE FROM xet_lai_lo_trinh WHERE student_id = ?').run(x.sid); conn.prepare(`DELETE FROM journey_events WHERE student_id = ? AND event_type = 'xet_lai'`).run(x.sid); }
     /* Em có quyết định mới → bỏ; huỷ quyết định mới → lại có. */
     const r = lenh.raLenh(QL, { lopNguonId: BE2.id, boiCanh: 'giua-khoa', tuanChung: THU_HAI, dongs: [{ studentId: a.sid, huong: 'chuyen_lop', toClassId: FOU2.id, lyDo: 'Xét lại' }] });
     assert(!r.failed.length, JSON.stringify(r.failed));
@@ -506,7 +499,7 @@ export async function runPrClTests(t: YThucTestKit) {
     /* Sửa Final thành 55% → hết lệch. */
     tyLeFou(XL.fin[1], 55);
     assert(JSON.stringify(emCua()) === JSON.stringify([a.sid]), `sửa Final: ${JSON.stringify(emCua())}`);
-    assert(!viecXetLai(QL).some((x) => x.key === `xetlai:${FOU2.id}` && /72%/.test(x.contextLabel)), 'việc FOU2 không còn em 72%');
+    assert(!viecXetLai(QL).some((x) => x.key === `xetlai:${FOU2.id}` && /72 %/.test(x.contextLabel)), 'việc FOU2 không còn em 72 %');
     tyLeFou(XL.fin[1], 72);
     assert(c && !emCua().includes(c.sid), 'Lên FT 55% không');
     /* Người khác không có. */
@@ -518,33 +511,33 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(viecXetLai(P.admin, null).some((x) => x.key === `xetlai:${BE2.id}`), 'QT có');
   });
 
-  await checkAsync('CL-j · GET /classes/:id/xet-lai-lo-trinh (lớp HIỆN TẠI): cùng em với việc + huong, tyLe, lopHienTai; lớp nguồn finished vẫn trả; lớp nguồn → em: []; GVCN → em: []', async () => {
+  await checkAsync('CL-j · GET /classes/:id/xet-lai (lớp HIỆN TẠI, P9a): cùng em với việc + daChot.huong, final.tyLe, lopHienTai; lớp nguồn finished vẫn trả; lớp nguồn → em: []; GVCN → chỉ xem', async () => {
     const [a, b] = XL.ds;
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(XL.fou.id);
     const gvcn = ganGv(BE2.id, 8, null, true);
     try {
       await voiMayChu(async (goi) => {
-        const r = await goi(QL.userId, `/classes/${BE2.id}/xet-lai-lo-trinh`);
+        const r = await goi(QL.userId, `/classes/${BE2.id}/xet-lai`);
         const j: any = await thuong(r);
         assert(r.status === 200 && j.lop?.id === BE2.id && j.lop?.code === BE2.code, `${r.status} ${JSON.stringify(j)}`);
         const ea = j.em.find((e: any) => e.studentId === a.sid);
         assert(ea && !j.em.some((e: any) => e.studentId === b.sid), JSON.stringify(j.em));
-        assert(ea.huong === 'len_lop' && Math.abs(ea.tyLe - 0.46) < 1e-9 && ea.lopHienTai?.id === BE2.id && ea.lopHienTai?.code === BE2.code && typeof ea.ten === 'string', JSON.stringify(ea));
-        const jb: any = await thuong(await goi(QL.userId, `/classes/${FOU2.id}/xet-lai-lo-trinh`));
+        assert(ea.daChot.huong === 'len_lop' && Math.abs(ea.final.tyLe - 0.46) < 1e-9 && ea.lopHienTai?.id === BE2.id && ea.lopHienTai?.code === BE2.code && typeof ea.ten === 'string', JSON.stringify(ea));
+        const jb: any = await thuong(await goi(QL.userId, `/classes/${FOU2.id}/xet-lai`));
         const eb = jb.em.find((e: any) => e.studentId === b.sid);
-        assert(eb && eb.huong === 'hoc_lai' && Math.abs(eb.tyLe - 0.72) < 1e-9 && eb.lopHienTai?.id === FOU2.id, JSON.stringify(jb));
-        const jn: any = await thuong(await goi(QL.userId, `/classes/${XL.fou.id}/xet-lai-lo-trinh`));
+        assert(eb && eb.daChot.huong === 'hoc_lai' && Math.abs(eb.final.tyLe - 0.72) < 1e-9 && eb.lopHienTai?.id === FOU2.id, JSON.stringify(jb));
+        const jn: any = await thuong(await goi(QL.userId, `/classes/${XL.fou.id}/xet-lai`));
         assert(jn.em.length === 0, `lớp nguồn: ${JSON.stringify(jn)}`);
         const viec = viecXetLai(QL).find((x) => x.key === `xetlai:${BE2.id}`);
         assert(viec?.count === j.em.length, `việc ${viec?.count} ≠ GET ${j.em.length}`);
-        const g = await goi(gvcn.userId, `/classes/${BE2.id}/xet-lai-lo-trinh`);
+        const g = await goi(gvcn.userId, `/classes/${BE2.id}/xet-lai`);
         const jg: any = await thuong(g);
-        assert(g.status === 200 && Array.isArray(jg.em) && jg.em.length === 0, `GVCN: ${g.status} ${JSON.stringify(jg)}`);
+        assert(g.status === 200 && jg.chiXem === true && !Object.keys(jg.lopHocLai).length, `GVCN: ${g.status} ${JSON.stringify(jg)}`);
       });
     } finally { conn.prepare(`UPDATE classes SET status = 'active' WHERE id = ?`).run(XL.fou.id); }
   });
 
-  check('CL-k · emXetLaiLoTrinh: 3 và 12 lớp (nguồn + hiện tại) — cùng số câu SQL (≤ 4)', () => {
+  check('CL-k · emXetLaiLoTrinh: 3 và 12 lớp (nguồn + hiện tại) — cùng số câu SQL (≤ 14, P9a thêm mốc / Mini Test / quyết định / PH / bổ trợ)', () => {
     /* Thêm lớp nguồn có em lệch: chèn thẳng lệnh đã thi hành + Final (đủ để đếm câu, không lặp lại cả luồng thi hành). */
     const them = () => {
       const nguon = lop('FOU', 8);
@@ -563,27 +556,15 @@ export async function runPrClTests(t: YThucTestKit) {
     assert((ck.emXetLaiLoTrinh(QL, null, TODAY) as any[]).length >= 5, 'tiền đề: ≥ 5 lớp hiện tại');
     for (let i = 0; i < 9; i++) them();
     const n12 = dem();
-    assert(n3 === n12 && n12 <= 4, `3 lớp: ${n3} câu · 12 lớp: ${n12} câu`);
+    assert(n3 === n12 && n12 <= 14, `3 lớp: ${n3} câu · 12 lớp: ${n12} câu`);
   });
 
   // ---------------------------------------------------------------- T3 · web (C1, C2)
-  check('CL-w1 · nhiều em (bảng thuần): tomTatChuyenEm chữ thường đầu, giữ MT0; chonGuiNhieuEm đếm Chuyển / Bỏ qua; chuTyLeXetLai làm tròn xuống', () => {
-    const cases: [string, boolean, boolean, string[], string][] = [
-      ['Trần Gia Huy', true, false, ['Đóng lộ trình FT LT1', 'MT0 → “MT0 · không dùng”', 'Huỷ 2 bài Mock chưa có điểm (MT1, MT2)', 'Giữ điểm đã có (MT0 L, R)'],
-        'Trần Gia Huy · FT → Thường: đóng lộ trình FT LT1 · MT0 → “MT0 · không dùng” · huỷ 2 bài Mock chưa có điểm (MT1, MT2) · giữ điểm đã có (MT0 L, R)'],
-      ['Vũ Thu Hà', false, true, ['Đóng lộ trình ELE, mở lộ trình FT LT1', 'Target 6.0 (GVCN ghi)'], 'Vũ Thu Hà · Thường → FT: đóng lộ trình ELE, mở lộ trình FT LT1 · target 6.0 (GVCN ghi)'],
-      ['A', true, true, ['Giữ lộ trình FT LT1', '2 Case FT tự đóng'], 'A · FT → FT: giữ lộ trình FT LT1 · 2 Case FT tự đóng'],
-      ['B', false, false, [], 'B · Thường → Thường: '],
-    ];
-    for (const [ten, nf, df, kc, mong] of cases) { const r = d.tomTatChuyenEm(ten, nf, df, kc); assert(r === mong, `${ten}: ${r}`); }
-    const rows = [{ chon: true, lop: 5 }, { chon: true, lop: null }, { chon: false, lop: 7 }, { chon: true, lop: 9, xong: true }, { chon: false, lop: null }];
-    const k = d.chonGuiNhieuEm(rows);
-    assert(k.gui.length === 1 && k.gui[0] === rows[0] && k.boQua === 1, JSON.stringify(k));
-    assert(d.chonGuiNhieuEm([]).gui.length === 0 && d.TOI_DA_NHIEU_EM === 50, 'rỗng / trần');
+  check('CL-w1 · bảng thuần: canHoiTarget; chuTyLeXetLai làm tròn xuống (panel nhiều em gỡ ở P9a)', () => {
     for (const [nf, df, t, mong] of [[false, true, null, true], [false, true, 6, false], [false, true, 'KCK', false], [true, true, null, false], [false, false, null, false], [false, true, undefined, false]] as const) {
       assert(d.canHoiTarget(nf, df, t) === mong, `canHoiTarget(${nf}, ${df}, ${t})`);
     }
-    for (const [t, mong] of [[0.4996, '49%'], [0.46, '46%'], [0.57, '57%'], [0.7, '70%'], [0.72, '72%'], [1, '100%']] as const) {
+    for (const [t, mong] of [[0.4996, '49 %'], [0.46, '46 %'], [0.57, '57 %'], [0.7, '70 %'], [0.72, '72 %'], [1, '100 %']] as const) {
       assert(d.chuTyLeXetLai(t) === mong, `${t} → ${d.chuTyLeXetLai(t)}`);
     }
   });
@@ -596,7 +577,7 @@ export async function runPrClTests(t: YThucTestKit) {
     }
   });
 
-  await checkAsync('CL-w2 · web: ChuyenLopPanel một ô gõ tên lớp (ChonNguoi ds + phuLopDich), không <select / ChonThang / PATCH, khối Khi chuyển từ máy chủ; nhiều em qua /transfer; ClassOverviewPage ?viec=xet-lai', async () => {
+  await checkAsync('CL-w2 · web: ChuyenLopPanel một ô gõ tên lớp (ChonNguoi ds + phuLopDich), không <select / ChonThang / PATCH, khối Khi chuyển từ máy chủ; ClassOverviewPage ?viec=xet-lai → PanelXetLai', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const { fileURLToPath } = await import('node:url');
@@ -605,9 +586,11 @@ export async function runPrClTests(t: YThucTestKit) {
     const s = doc('web/src/modules/students/ChuyenLopPanel.tsx');
     assert(!/<select/.test(s) && !/ChonThang/.test(s) && !/api\.patch\(`\/lenh-chuyen/.test(s) && !/ngayThi/.test(s), 'còn select / ChonThang / PATCH / ngayThi');
     assert(/<ChonLop[\s\S]{0,200}ds=\{/.test(s) && /phuLopDich\(/.test(s) && /\.khiChuyen/.test(s) && /canhBao/.test(s), 'thiếu ô gõ tên lớp / khối Khi chuyển máy chủ');
-    assert(/export function ChuyenLopNhieuEm/.test(s) && /xet-lai-lo-trinh/.test(s) && /chonGuiNhieuEm\(/.test(s) && /TOI_DA_NHIEU_EM/.test(s), 'thiếu panel nhiều em');
+    assert(/export function ChuyenLopNhieuEm/.test(s) && /chonGuiNhieuEm\(/.test(s) && /TOI_DA_NHIEU_EM/.test(s), 'thiếu panel nhiều em');
     assert(/ponytail:/.test(s), 'nhiều em: chú thích ponytail (mỗi em một lời gọi)');
-    assert(/v === 'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở ?viec=xet-lai');
+    /* P9a: Xét lại lộ trình không còn mở panel nhiều em — `?viec=xet-lai` mở PanelXetLai (prXetLai); panel nhiều em chỉ còn cho em đã chọn ở lớp FT. */
+    assert(!/xet-lai-lo-trinh/.test(s), 'ChuyenLopNhieuEm còn gọi /xet-lai-lo-trinh (P9a)');
+    assert(/PanelXetLai/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')) && /v === 'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở PanelXetLai ở ?viec=xet-lai');
     /* R5.3 (P9b): TransitionPanel (Chuyển tiếp lớp FT) đã gỡ — OTuan, NutHomNay, KHOI_VANG, guiTheoLo ở tệp chung `chuyenLopChung.tsx`. */
     assert(!fs.existsSync(path.join(ROOT, 'web/src/modules/classes/TransitionPanel.tsx')), 'TransitionPanel còn');
     const tp = doc('web/src/modules/classes/chuyenLopChung.tsx');
@@ -651,10 +634,10 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(it?.tieuDe === `Xét lại lộ trình · ${dichCp.code} · 1 em` && it.href === `/hoc-vien/lop/${dichCp.id}?viec=xet-lai`, JSON.stringify(it));
     assert(!viecXetLai(QL, null).some((x) => x.key === `xetlai:${dichCp.id}`), 'QL MB: không dòng việc');
     await voiMayChu(async (goi) => {
-      const r = await goi(P.cpManager.userId, `/classes/${dichCp.id}/xet-lai-lo-trinh`);
+      const r = await goi(P.cpManager.userId, `/classes/${dichCp.id}/xet-lai`);
       const j: any = await thuong(r);
       assert(r.status === 200 && j.lop?.id === dichCp.id && j.em.some((e: any) => e.studentId === sid), `QL CP GET: ${r.status} ${JSON.stringify(j)}`);
-      const m: any = await thuong(await goi(QL.userId, `/classes/${dichCp.id}/xet-lai-lo-trinh`));
+      const m: any = await thuong(await goi(QL.userId, `/classes/${dichCp.id}/xet-lai`));
       assert(!(m.em ?? []).some((e: any) => e.studentId === sid), `QL MB GET: ${JSON.stringify(m)}`);
     });
   });
@@ -674,15 +657,15 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(vy.khiChuyen.includes('Target 6.5 (GVCN ghi)'), `LTT: ${JSON.stringify(vy.khiChuyen)}`);
   });
 
-  check('CL-q · M2: tỷ lệ 0.4996 → dòng việc "Xét lại" và panel cùng chữ (chuTyLeXetLai, 49%)', () => {
+  check('CL-q · M2: tỷ lệ 0.4996 → dòng việc "Xét lại" và panel cùng chữ (chuTyLeXetLai, 49 %)', () => {
     const [a] = XL.ds;
     conn.prepare('UPDATE assessment_scores SET raw_score = 49.96 WHERE attempt_id = ?').run(XL.fin[0]);
     try {
       const e = ((ck.emXetLaiLoTrinh(QL, null, TODAY) as any[]).find((g) => g.lopId === BE2.id)?.em ?? []).find((z: any) => z.studentId === a.sid);
-      const chu = d.chuTyLeXetLai(e.tyLe);
-      assert(chu === '49%', `panel: ${chu} (${e.tyLe})`);
+      const chu = d.chuTyLeXetLai(e.final.tyLe);
+      assert(chu === '49 %' && e.lyDo.chu === 'Final 49 % · đã cho lên', `panel: ${chu} (${e.final.tyLe})`);
       const it = viecXetLai(QL).find((z) => z.key === `xetlai:${BE2.id}`);
-      assert(it.contextLabel.includes(chu) && !it.contextLabel.includes('50%'), `việc: ${it.contextLabel}`);
+      assert(it.contextLabel.includes(chu) && !it.contextLabel.includes('50 %'), `việc: ${it.contextLabel}`);
     } finally { tyLeFou(XL.fin[0], 46); }
   });
 

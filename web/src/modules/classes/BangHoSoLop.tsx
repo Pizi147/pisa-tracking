@@ -1,3 +1,4 @@
+import { ChipXetLaiDong } from './PanelXetLai.tsx';
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
@@ -118,7 +119,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
           <span className="flex min-w-0 flex-col items-start">
             <TenEm s={r} ds={ngCanh} />
             {/* Nhãn cạnh tên (mới vào · thiếu thông tin · Ý thức) xuống dòng dưới tên — tên không bị cắt ở cột 205 px. */}
-            {(r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="flex flex-wrap items-center gap-1.5">{r.moiVao && <MoiVao />}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></span>}
+            <ChipXetLaiDong sid={r.id} />{(r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="flex flex-wrap items-center gap-1.5">{r.moiVao && <MoiVao />}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></span>}
           </span>
         </span>
       );

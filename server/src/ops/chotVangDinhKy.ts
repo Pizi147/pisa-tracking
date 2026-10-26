@@ -1,7 +1,9 @@
 import { isInitialised, tx } from '../db.ts';
 import { thiHanhLenhDenHan } from '../classes/lenhChuyen.ts';
+import { quetXetLaiHetHan } from '../normal/xetLai.ts';
 import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
 import { todayInBusinessTz } from '../util.ts';
+import { demoToday } from '../demoConfig.ts';
 import { baoChamCheoQuaHan } from '../cham/chamCheo.ts';
 import { sinhCheckpointKeTiep } from '../normal/regular.ts';
 
@@ -30,6 +32,8 @@ export function chotVangDinhKy(o: {
   try { daChuyen = (o.chuyen ?? ((n) => thiHanhLenhDenHan(n).daChuyen))(ngay); } catch (e) { console.error('[chot-vang] chuyển lớp', e); }
   /* OV-13m: Lộ trình mới sau thi "Hẹn bắt đầu" tới tuần (lỗi từng em đã bắt trong hàm). */
   if (!o.chuyen) daChuyen += batDauHenDenHan(ngay);
+  /* P9a (N21): Xét lại lộ trình hết hạn → tự ghi "Tiếp tục" (đường đọc chỉ ẩn dòng quá hạn). Ngày nghiệp vụ (`demoToday`), như hạn của dòng. */
+  if (!o.chuyen) try { quetXetLaiHetHan(o.ngay ?? demoToday()); } catch (e) { console.error('[chot-vang] xét lại', e); }
   /* PR-LT3 (T18, D3): chuông "Speaking quá hạn chấm" cho GVBM Speaking + GVCN — cùng lượt quét thứ Hai; lỗi không làm hỏng lượt quét. */
   try { baoChamCheoQuaHan(ngay); } catch (e) { console.error('[chot-vang] chuông chấm chéo', e); }
   /* OV-6b2: lớp liên tục — em đã qua tuần thi Checkpoint (chưa đủ điểm) có Checkpoint kế tiếp; lỗi không làm hỏng lượt quét. */
