@@ -138,7 +138,7 @@ export const EN_HD = {
   '<b>W2 OCT</b> = tuần thứ 2 của tháng 10; tuần thuộc tháng chứa Thứ Năm.': '<b>W2 OCT</b> = the 2nd week of October; a week belongs to the month of its Thursday.',
   'Quản lý chi nhánh — duyệt Case, PA, đề xuất, lịch Test.': 'Branch manager — approves Cases, PAs, proposals, Test schedules.',
   // ---------------------------------------------------------------- sửa sau rà planning #417
-  'Mở <b>Test › Chấm Test</b>: nhóm theo hạn chấm, bấm một nhóm để chấm ngay bên phải.': 'Open <b>Tests › Marking</b>: groups by marking deadline, click a group to mark it on the right.',
+  'Mở <b>Test › Chấm Test</b>: việc xếp theo hạn chấm, bấm một việc để chấm ngay bên phải.': 'Open <b>Tests › Marking</b>: tasks by marking deadline, click a task to mark it on the right.',
   'Bấm lớp, gõ điểm; mọi ô MT có điểm cần <b>nhận xét</b>, ô dưới kỳ vọng thêm <b>nhóm nguyên nhân</b>.': 'Click a class and type scores; every MT cell with a score needs a <b>comment</b>, a cell below expected also needs a <b>cause group</b>.',
   'Mỗi việc một dòng, quá hạn ở đầu — bấm dòng để làm.': 'One task per row, overdue on top — click a row to do it.',
   'Bấm một việc để làm ngay; điện thoại: <b>Xem hết</b> mở Công việc.': 'Click a task to do it now; on a phone, <b>See all</b> opens Tasks.',

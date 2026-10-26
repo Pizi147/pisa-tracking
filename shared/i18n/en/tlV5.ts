@@ -43,11 +43,11 @@ export const EN_TL_V5 = {
   'Bấm lớp, gõ điểm; MT mới nhất của em: ô thiếu <b>nhận xét</b> viền vàng — nên ghi, không chặn lưu.':
     'Click a class and type scores; on the student\'s latest MT a cell without a <b>comment</b> has a yellow border — please add one, saving is not blocked.',
   'Bốn số của bạn': 'Your four numbers',
-  '<b>Việc của tôi</b> · <b>Case đang xử lý</b> · <b>Đạt MT · kỹ năng tôi dạy</b> · <b>Tiến bộ</b>; bấm số mở danh sách.':
-    '<b>My tasks</b> · <b>Cases in progress</b> · <b>MT met · my skills</b> · <b>Progress</b>; click a number to open the list.',
+  '<b>Việc của tôi</b> · <b>Case đang xử lý</b> · <b>Đạt kỳ vọng Test</b> · <b>Tiến bộ</b>; bấm số mở danh sách.':
+    '<b>My tasks</b> · <b>Cases in progress</b> · <b>Test expectation met</b> · <b>Progress</b>; click a number to open the list.',
   'Kỹ năng tôi dạy · Lớp tôi chủ nhiệm': 'Skills I teach · My homeroom classes',
-  '<b>Kỹ năng tôi dạy</b>: mỗi lớp một dòng — Đạt Test, Tiến bộ, bài chờ chấm, Test sắp tới.':
-    '<b>Skills I teach</b>: one row per class — Test met, Progress, tests to mark, next Test.',
+  '<b>Kỹ năng tôi dạy</b>: mỗi lớp một dòng — Đạt kỳ vọng Test, Tiến bộ, bài chờ chấm, Test sắp tới.':
+    '<b>Skills I teach</b>: one row per class — Test expectation met, Progress, tests to mark, next Test.',
   '<b>Lớp tôi chủ nhiệm</b>: Dưới kỳ vọng, SOS, Case, Thi tháng này; bấm số mở danh sách em.':
     '<b>My homeroom classes</b>: Below expectation, SOS, Cases, Exam this month; click a number to open the student list.',
   'Hai khối lớp của bạn ở đây.': 'Your two class blocks are here.',
@@ -80,8 +80,8 @@ export const EN_TL_V5 = {
   'Bấm dòng → ô cần điền mở ngay bên; Case mở rộng tại chỗ.': 'Click a row → the fields open right beside it; a Case expands in place.',
   'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác".': 'Save on the row: "✓ Saved · … · Undo".',
   'Khối <b>Lớp đang dạy</b>: lớp · kỹ năng · số HV · GVCN.': 'The <b>Classes taught</b> block: class · skill · students · homeroom teacher.',
-  'Chọn <b>Từ tuần → Đến tuần</b> (mặc định 4 tuần): <b>Chỉ số</b> (Việc đúng hạn, bài Test) và bảng <b>Học thuật</b> theo lớp / theo kỹ năng — Đạt Test, Tiến bộ, Kết quả thi thật; bấm số mở danh sách.':
-    'Pick <b>From week → To week</b> (default 4 weeks): <b>Figures</b> (Tasks on time, Tests) and the <b>Academic</b> table by class / by skill — Test met, Progress, Real-exam results; click a number to open the list.',
+  'Chọn <b>Từ tuần → Đến tuần</b> (mặc định 4 tuần): <b>Chỉ số</b> (Việc đúng hạn, bài Test) và bảng <b>Học thuật</b> theo lớp / theo kỹ năng — Đạt kỳ vọng Test, Tiến bộ, Kết quả thi thật; bấm số mở danh sách.':
+    'Pick <b>From week → To week</b> (default 4 weeks): <b>Figures</b> (Tasks on time, Tests) and the <b>Academic</b> table by class / by skill — Test expectation met, Progress, Real-exam results; click a number to open the list.',
   'Khối <b>Case đang phụ trách</b> và <b>Yêu cầu đã gửi</b>.': 'The <b>Cases owned</b> and <b>Requests sent</b> blocks.',
   'Theo số kỹ năng dưới kỳ vọng: 1, 2, hoặc 3–4. SOS 1 viền mảnh · SOS 2 viền dày nền cam nhạt · SOS 3 nền đỏ đậm chữ trắng; SOS tạm viền đứt.':
     'By the number of skills below expectation: 1, 2, or 3–4. SOS 1 thin border · SOS 2 thick border on light orange · SOS 3 deep red with white text; provisional SOS has a dashed border.',
@@ -93,8 +93,8 @@ export const EN_TL_V5 = {
   'Mở Tổng quan mỗi sáng': 'Open Home every morning',
   '<b>Tổng quan</b>: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ · Lộ trình tiếp</b>; bấm số mở danh sách.':
     '<b>Home</b>: <b>Parent call on time</b> · <b>Exam this month</b> · <b>Awaiting result · Next path</b>; click a number to open the list.',
-  '<b>Điều hướng</b>: n việc của tôi (Công việc) · HV của tôi · Thi tháng này · Chờ KQ thi thật · Chưa chốt lộ trình tiếp — mở Học viên & Lớp đúng nhóm em.':
-    '<b>Navigate</b>: n of my tasks (Tasks) · My students · Exam this month · Awaiting real exam result · Next path not set — opens Students & Classes on the right group.',
+  '<b>Thi thật</b>: Thi tháng này · Chờ KQ thi thật · Chưa chốt lộ trình tiếp; <b>Điều hướng</b>: n việc của tôi (Công việc) · HV của tôi — mở Học viên & Lớp đúng nhóm em.':
+    '<b>Real exam</b>: Exam this month · Awaiting real exam result · Next path not set; <b>Navigate</b>: n of my tasks (Tasks) · My students — opens Students & Classes on the right group.',
   'Ba số của TVV': 'Three consultant figures',
   'Chỉ HV của bạn: <b>Báo PH đúng hạn</b> (việc Báo PH phát sinh trong kỳ, báo trước hạn) · <b>Thi tháng này</b> · <b>Chờ KQ · Lộ trình tiếp</b>.':
     'Your students only: <b>Parent call on time</b> (parent-report tasks raised in the period, reported before the due date) · <b>Exam this month</b> · <b>Awaiting result · Next path</b>.',

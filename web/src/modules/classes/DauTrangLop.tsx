@@ -247,7 +247,7 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   /* Kết luận máy chủ (`standing` → `ketQuaGanNhat`, cùng ô Kết quả của bảng): mẫu = em có lượt đủ điểm, đạt = `dat`. */
   const moi = em.map((r) => (r as { standing?: KetQuaVao | null }).standing).filter((k): k is KetQuaVao => !!k && k.scored >= k.required && !!k.attemptLabel);
   const nhanLuot = [...new Set(moi.map((k) => k.attemptLabel!))];
-  const dat = moi.length ? { nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : t('Đạt kỳ vọng'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length } : null;
+  const dat = moi.length ? { nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT') : t('Đạt Test'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length } : null;
   const homNayTuan = homNay ?? '9999';
   const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
   return { sos, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };

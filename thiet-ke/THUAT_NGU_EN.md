@@ -272,6 +272,8 @@ trong `shared/i18n/en/*` (giữ để một khái niệm một chữ). Spec: `do
 | Tạm dừng / Kết thúc học | **Paused** / **Finished** | Mục 3; có sẵn |
 | kỳ vọng ≠ Target | **Expected** ≠ **Target** | Mục 8; không dùng lẫn |
 | Đạt MT / Đạt Test / Đạt Target thi thật | **MT met** / **Test met** / **Target met (real exam)** | Spec 4.3: ba mức phải khác chữ; "Test met", "Target met" có sẵn |
+| Đạt kỳ vọng Test (mức GV, đơn vị lượt Test) · Kết quả thi thật (cột GV) · ô % Pass Target | **Test expectation met** · **Real exam result** · **% Pass Target** | TEN-CHI-SO 27/10 (L3): mức GV khác mức HV "MT met" |
+| Thi trong kỳ (Báo cáo HV) ≠ Thi tháng này | **Exams in period** ≠ **Exam this month** | TEN-CHI-SO (Đ5): theo đúng phạm vi thời gian của số |
 | Case / PA | **Case** / **PA** (giữ) | Luật 3 |
 | kết quả kỳ / kết quả cuối | **Period result** / **Final result** | Có sẵn (`d.ts`, `p9bCuoiKhoa.ts`) |
 | người phụ trách / người thực hiện | **Owner** / **Done by** | Mục 2 |

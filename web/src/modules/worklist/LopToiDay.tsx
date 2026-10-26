@@ -145,7 +145,7 @@ type HaiKhoi = { ky: { tu: string; den: string } | null; day: DongDay[]; chuNhie
 const COT_DAY: readonly CotBang[] = [
   /* Cột số kiểu `diem`: thẻ 375 xếp lưới nhãn · số (không mỗi số một dòng). `deu`: thẻ nửa bề rộng (~500 px ở 1440) — tổng 462 px (chủ nhiệm 504), phần dư chia đều mọi cột. */
   { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 72 },
-  { key: 'dat', nhan: t('Đạt Test'), kieu: 'phan-tram', rong: 80, goiY: t('Lớp FT: Đạt kỳ vọng Test · lớp thường: Đạt Test') },
+  { key: 'dat', nhan: t('Đạt kỳ vọng Test'), kieu: 'phan-tram', rong: 150, goiY: t('Lớp thường: Đạt Test (≥ ngưỡng đạt của lớp)') },
   { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 76 }, { key: 'bai', nhan: t('Chờ chấm'), kieu: 'diem', rong: 84 },
 ];
 const COT_CN: readonly CotBang[] = [

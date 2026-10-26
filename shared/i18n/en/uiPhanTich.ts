@@ -48,7 +48,6 @@ export const EN_UI_PHAN_TICH = {
   "HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.": "Students with an MT finalised in the period; Overall vs the attempt's expectation. Students without full scores are not counted.",
   "HV có ngày thi trong kỳ": "students with an exam date in the period",
   "PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).": "Plans with a result in the period that the teacher rated improved (incl. partly).",
-  "Thi đợt này": "Exams this period",
   "Tuần kết thúc": "End week",
   "Tăng {a} · giữ {b} · giảm {c}": "Up {a} · same {b} · down {c}",
   "chưa HV nào có KQ": "no student has a result yet",
@@ -56,5 +55,4 @@ export const EN_UI_PHAN_TICH = {
   "Chưa cải thiện": "Not improved",
   "Cải thiện": "Improved",
   "PA cải thiện · {a}/{b} PA": "Plans improved · {a}/{b} plans",
-  "{n} HV — thi đợt này": "{n} students — exams this period",
 };

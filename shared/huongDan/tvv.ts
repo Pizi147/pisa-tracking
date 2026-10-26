@@ -42,7 +42,7 @@ export const HD_TVV: HuongDan = {
     {
       id: 'tvv-sang', ten: 'Mở Tổng quan mỗi sáng', khi: 'mỗi ngày',
       buoc: ['<b>Tổng quan</b>: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ · Lộ trình tiếp</b>; bấm số mở danh sách.',
-        '<b>Điều hướng</b>: n việc của tôi (Công việc) · HV của tôi · Thi tháng này · Chờ KQ thi thật · Chưa chốt lộ trình tiếp — mở Học viên & Lớp đúng nhóm em.'],
+        '<b>Thi thật</b>: Thi tháng này · Chờ KQ thi thật · Chưa chốt lộ trình tiếp; <b>Điều hướng</b>: n việc của tôi (Công việc) · HV của tôi — mở Học viên & Lớp đúng nhóm em.'],
       chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' },
     },
     {
