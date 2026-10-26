@@ -100,27 +100,33 @@ function tinhTapXetLai(today: string, o: { chiEm?: number; cn?: readonly number[
   const sids = lenh.map((l) => l.student_id as number);
   /* Final mới nhất của em ở LỚP NGUỒN + mốc: điểm nhập / sửa cuối (giờ thật) và ngày nghiệp vụ ô cuối có điểm. */
   const nguonCua = new Map(lenh.map((l) => [l.student_id as number, l.lop_nguon_id as number]));
+  /* MỘT câu: Final mới nhất của em ở mọi lớp (lọc lớp nguồn ở JS) + mốc (giờ thật điểm nhập / sửa cuối, ngày nghiệp vụ ô cuối có điểm) + Mini Test + Báo PH của TVV. */
   const finalCua = new Map<number, number>();
-  theoLo(sids, (lo, ph) => {
-    for (const r of conn.prepare(
-      `SELECT student_id, class_id, MAX(id) AS id FROM assessment_attempts WHERE kind = 'final' AND status != 'cancelled' AND student_id IN (${ph}) GROUP BY student_id, class_id`,
-    ).all(...lo) as any[]) if (nguonCua.get(r.student_id) === r.class_id) finalCua.set(r.student_id, r.id);
-  });
-  const finals = [...finalCua.values()];
-  const tyLe = tyLeTongLo(finals);
   const moc = new Map<number, { luc: string | null; ngay: string | null }>();
   const mini = new Map<number, any>();
   const ph = new Map<number, any>();
-  theoLo(finals, (lo, q) => {
-    for (const r of conn.prepare(`SELECT attempt_id, MAX(entered_at) AS luc, MAX(nhap_dau_ngay) AS ngay FROM assessment_scores WHERE attempt_id IN (${q}) GROUP BY attempt_id`).all(...lo) as any[]) {
-      moc.set(r.attempt_id, { luc: r.luc ?? null, ngay: r.ngay ?? null });
-    }
-    for (const r of conn.prepare(`SELECT * FROM mini_test WHERE tu_attempt_id IN (${q})`).all(...lo) as any[]) mini.set(r.tu_attempt_id, r);
+  theoLo(sids, (lo, q) => {
     for (const r of conn.prepare(
-      `SELECT a.attempt_id, a.performed_on, a.note, COALESCE(u.full_name, a.performer_name) AS tvv FROM sos_coordination_actions a LEFT JOIN users u ON u.id = a.performed_by
-        WHERE a.kind = 'bao_ph_tvv' AND a.status = 'done' AND a.attempt_id IN (${q})`,
-    ).all(...lo) as any[]) ph.set(r.attempt_id, r);
+      `SELECT a.student_id, a.class_id, a.id,
+              (SELECT MAX(sc.entered_at) FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS moc_luc,
+              (SELECT MAX(sc.nhap_dau_ngay) FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS moc_ngay,
+              m.id AS mt_id, m.ty_le AS mt_ty_le, m.ngay_lam AS mt_ngay_lam, m.ghi_luc AS mt_ghi_luc, m.so_buoi AS mt_so_buoi, m.ngay_du_kien AS mt_ngay_du_kien, m.nhom_bo_tro AS mt_nhom,
+              b.performed_on AS ph_luc, b.note AS ph_note, COALESCE(u.full_name, b.performer_name) AS ph_tvv, b.id AS ph_id
+         FROM assessment_attempts a
+         LEFT JOIN mini_test m ON m.tu_attempt_id = a.id
+         LEFT JOIN sos_coordination_actions b ON b.attempt_id = a.id AND b.kind = 'bao_ph_tvv' AND b.status = 'done'
+         LEFT JOIN users u ON u.id = b.performed_by
+        WHERE a.kind = 'final' AND a.status != 'cancelled' AND a.student_id IN (${q})
+          AND a.id = (SELECT MAX(x.id) FROM assessment_attempts x WHERE x.student_id = a.student_id AND x.class_id = a.class_id AND x.kind = 'final' AND x.status != 'cancelled')`,
+    ).all(...lo) as any[]) {
+      if (nguonCua.get(r.student_id) !== r.class_id) continue;
+      finalCua.set(r.student_id, r.id);
+      moc.set(r.id, { luc: r.moc_luc ?? null, ngay: r.moc_ngay ?? null });
+      if (r.mt_id) mini.set(r.id, { id: r.mt_id, ty_le: r.mt_ty_le, ngay_lam: r.mt_ngay_lam, ghi_luc: r.mt_ghi_luc, so_buoi: r.mt_so_buoi, ngay_du_kien: r.mt_ngay_du_kien, nhom_bo_tro: r.mt_nhom });
+      if (r.ph_id) ph.set(r.id, { performed_on: r.ph_luc, note: r.ph_note, tvv: r.ph_tvv });
+    }
   });
+  const tyLe = tyLeTongLo([...finalCua.values()]);
   /* Quyết định Xét lại (mới nhất trước) + trạng thái lệnh mới. */
   const qd = new Map<number, any[]>();
   theoLo(lenh.map((l) => l.id as number), (lo, q) => {
