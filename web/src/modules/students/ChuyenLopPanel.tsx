@@ -11,7 +11,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KHOI_VANG, NutHomNay, OTuan } from '../classes/chuyenLopChung.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich as dichChu, t } from '@shared/i18n/index.ts';
 import {
   CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
   mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
@@ -39,8 +39,8 @@ export type DuyetDeXuat = { id: number; lopDichId: number | null; tuan: string |
 const dsLopDich = (lop: readonly LopDich[]): LopChon[] => lop.map((l) => ({ id: l.id, ma: l.code, phu: phuLopDich(l, 'siSo' in l) }));
 /** Mockup phần 2: "Còn thiếu: Lý do" ở chân (lý do từng ô vẫn nằm dưới ô); có ô ghi sai (Target 12) → "Cần sửa: …". */
 const conThieuChu = (daBam: boolean, loi: readonly LoiTruong[]) => (daBam && loi.length
-  ? [{ nhan: 'Còn thiếu', lyDo: `${loi.every((l) => l.lyDo.startsWith('Chưa')) ? 'Còn thiếu' : 'Cần sửa'}: ${loi.map((l) => l.nhan).join(', ')}` }] : undefined);
-const loiMayChu = (e: any) => e?.message ?? 'Không lưu được — thử lại.';
+  ? [{ nhan: t('Còn thiếu'), lyDo: `${loi.every((l) => l.lyDo === t('Chưa chọn') || l.lyDo === t('Chưa điền')) ? t('Còn thiếu') : t('Cần sửa')}: ${loi.map((l) => l.nhan).join(', ')}` }] : undefined);
+const loiMayChu = (e: any) => e?.message ?? t('Không lưu được — thử lại.');
 const khoiVang = KHOI_VANG;
 
 /** Target + ô tích KCK (§7: chỉ khi em chưa có Target nào) — panel một em và hàng nhiều em. OV-9: giá trị chữ "6.5" · "6.5 KCK" · "KCK". */
@@ -70,11 +70,11 @@ export function OTuanBatDau({ tuanChon, tuan, setTuan, homNay, oProps }: {
       <div {...oProps} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none">
         <NutHomNay homNay={homNay} chon={!!homNay && tuan === homNay && !khac} onClick={() => { if (homNay) setTuan(homNay); setKhac(false); }} />
         {nut.map((t) => <NutChon key={t} chon={tuan === t && !khac} onClick={() => { setTuan(t); setKhac(false); }}>{tuanLich(t, homNay)}</NutChon>)}
-        <NutChon chon={ngoai} onClick={() => setKhac(true)}>Chọn tuần</NutChon>
+        <NutChon chon={ngoai} onClick={() => setKhac(true)}>{t('Chọn tuần')}</NutChon>
       </div>
       {ngoai && (
         <div className="mt-2 max-w-[11rem]">
-          <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel="Tuần bắt đầu khác" chuaChon="Chọn tuần" />
+          <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel={t('Tuần bắt đầu khác')} chuaChon={t('Chọn tuần')} />
         </div>
       )}
     </>
@@ -166,15 +166,15 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const choXem = !dx && !!toClassId && !xemLop && !xem.error;
 
   const LUAT: LuatTruong[] = dx
-    ? [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }]   // T7 (PR-MTa): không tối thiểu ký tự
+    ? [{ khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }]   // T7 (PR-MTa): không tối thiểu ký tự
     : [
-      { khoa: 'lop', nhan: 'Lớp chuyển đến', chon: true },
-      { khoa: 'tuan', nhan: 'Tuần bắt đầu', chon: true },
-      { khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 },
+      { khoa: 'lop', nhan: t('Lớp chuyển đến'), chon: true },
+      { khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true },
+      { khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 },
     ];
   /* Target: trống "Chưa điền", sai "Gõ band 0–9…" ngay tại ô (cùng luật máy chủ; "6,5" đọc là 6.5). */
   const oT = docOTarget(mucTieu);
-  const loi = [...dsLoi(LUAT, { lop: toClassId, tuan, 'ly-do': lyDo }), ...(oTarget && oT.loi ? [{ khoa: 'muc-tieu', nhan: 'Target', lyDo: oT.loi }] : [])];
+  const loi = [...dsLoi(LUAT, { lop: toClassId, tuan, 'ly-do': lyDo }), ...(oTarget && oT.loi ? [{ khoa: 'muc-tieu', nhan: 'Target', lyDo: dichChu(oT.loi) }] : [])];
   /* Không hỏi Target → không gửi: máy chủ lấy Target LTT / khoá; sửa lệnh thì giữ Target + Dự kiến thi của lệnh (R-C3). */
   const mucTieuGui = oTarget ? oT.giaTri : undefined;
   const xong = (chu: string) => { xongChuyen(); toast.push('ok', chu); onDone?.(); onClose(); };
@@ -190,27 +190,27 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
       if (dx && duyet) {
         /* OV-7a: người gửi sửa thẻ Đề xuất còn chờ — cùng form, điền sẵn. */
         await api.put(`/yeu-cau/${duyet.id}`, { toClassId: toClassId ?? null, tuan: tuan || null, lyDo: lyDo.trim() });
-        xong('Đã lưu đề xuất');
+        xong(t('Đã lưu đề xuất'));
       } else if (dx) {
         await api.post(`/students/${studentId}/de-xuat-chuyen-lop`, { toClassId: toClassId ?? undefined, tuan: tuan || undefined, lyDo: lyDo.trim() });
-        xong('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt');
+        xong(t('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt'));
       } else if (duyet) {
         await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui } });
-        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong('Đã duyệt và quyết định chuyển lớp');
+        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã duyệt và quyết định chuyển lớp'));
       } else {
         /* PR-CL (B1, D15): ra mới hoặc sửa lệnh đang chờ — cùng một đường, máy chủ tính bối cảnh + hướng. */
         const r = await api.post<{ daChuyen?: number[] }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui });
-        if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong('Đã lưu quyết định chuyển lớp');
+        if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã lưu quyết định chuyển lớp'));
       }
     } catch (e: any) { toast.push('error', ngayNay ? `${t('Không lưu được — chưa chuyển')} · ${loiMayChu(e)}` : loiMayChu(e)); } finally { setBusy(false); }
   };
   const huyLenh = async () => {
     if (!lenh || !lyDoHuy.trim()) return;
     setBusy(true);
-    try { await api.post(`/lenh-chuyen/${lenh.id}/huy`, { lyDo: lyDoHuy.trim() }); xong('Đã huỷ quyết định chuyển lớp'); } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
+    try { await api.post(`/lenh-chuyen/${lenh.id}/huy`, { lyDo: lyDoHuy.trim() }); xong(t('Đã huỷ quyết định chuyển lớp')); } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
   };
 
-  const nhanChinh = dx ? (duyet ? 'Lưu' : 'Gửi đề xuất') : ngayNay ? t('Chuyển ngay') : duyet ? 'Duyệt và quyết định' : lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh;
+  const nhanChinh = dx ? (duyet ? t('Lưu') : t('Gửi đề xuất')) : ngayNay ? t('Chuyển ngay') : duyet ? t('Duyệt và quyết định') : dichChu(lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh);
   /* OV-13l: khối "Khi chuyển" của chuyển ngay — em sang lớp mới khi lưu; cùng chương trình (lộ trình giữ) thì bài Test đang dở (kể cả điểm đã nhập) đi theo em. */
   const dongNgay = ngayNay && dich && dangHoc ? [t('Em sang {lop} ngay khi lưu', { lop: dich.code }),
     ...(xemLop?.luat?.khoa === 'giu' ? [t('Bài Test đang dở đi theo em sang {moi}; bài đã làm xong ở lại {cu}', { moi: dich.code, cu: dangHoc.lop.code })] : [])] : [];
@@ -219,7 +219,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     /* Nơi gọi đóng panel trong `onDone` → chỉ báo xong khi người dùng rời trạng thái "Đã chuyển". */
     const dong = () => { onDone?.(); onClose(); };
     return (
-      <KhungPanel tieuDe="Chuyển lớp" hocVien={studentName} lop={dt ? null : lop} onDong={dong}
+      <KhungPanel tieuDe={t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={dong}
         chan={{ huy: { onClick: dong }, chinh: <Link className="btn min-h-[44px] max-sm:flex-1 sm:min-h-0" to={`/hoc-vien/lop/${daChuyen.lop.id}`} onClick={dong}>{t('Hồ sơ {lop}', { lop: daChuyen.lop.code })} ›</Link> }}>
         <p role="status" className="mb-0 mt-3 text-sm text-ok">
           ✓ {t('Đã chuyển sang {lop} từ hôm nay {ngay} · bàn giao hạn {han}', { lop: daChuyen.lop.code, ngay: thuNgay(homNayMay ?? '', homNayMay ?? ''), han: ngay(daChuyen.han, homNayMay ?? '') })}
@@ -231,14 +231,14 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const loiNap = lopDich.error ?? (dx || nen ? null : xem.error);
 
   return (
-    <KhungPanel tieuDe={dx ? (duyet ? 'Sửa đề xuất chuyển lớp' : 'Đề xuất chuyển lớp') : 'Chuyển lớp'} hocVien={studentName} lop={dt ? null : lop} onDong={onClose}
+    <KhungPanel tieuDe={dx ? (duyet ? t('Sửa đề xuất chuyển lớp') : t('Đề xuất chuyển lớp')) : t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={onClose}
       chan={{
         daSua, huy: { onClick: onClose, disabled: busy },
-        ...(!dx && lenh && !duyet ? { xoa: { nhan: CHU_CHUYEN_LOP.huy, onClick: () => setDangHuy((v) => !v) } } : {}),
+        ...(!dx && lenh && !duyet ? { xoa: { nhan: dichChu(CHU_CHUYEN_LOP.huy), onClick: () => setDangHuy((v) => !v) } } : {}),
         conThieu: conThieuChu(lf.daBam, loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !!loiNap || choXem}>{busy ? (ngayNay ? t('Đang chuyển…') : 'Đang lưu…') : nhanChinh}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !!loiNap || choXem}>{busy ? (ngayNay ? t('Đang chuyển…') : t('Đang lưu…')) : nhanChinh}</button>,
         dongTren: !dx && dangHoc ? (
-          <p className="m-0 px-4 pt-2 text-xs text-slate-400">GVCN {dangHoc.lop.code} bàn giao, hạn hết {ngay(hanGvcn, homNay)}.</p>
+          <p className="m-0 px-4 pt-2 text-xs text-slate-400">{t('GVCN {lop} bàn giao, hạn hết {han}.', { lop: dangHoc.lop.code, han: ngay(hanGvcn, homNay) })}</p>
         ) : undefined,
       }}>
       {loiNap ? <ErrorState message={loiNap.message} hint={loiNap.hint} onRetry={() => { lopDich.reload(); xem.reload(); }} />
@@ -246,44 +246,44 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         <>
           {!dx && dangHoc && (
             <p className="mb-0 mt-3 text-xs text-slate-400">
-              Đang học {[dangHoc.lop.code, dangHoc.ft ? `FT ${dangHoc.route ?? ''}`.trim() : kyHieuLop(dangHoc.ma, null),
+              {t('Đang học {ds}', { ds: [dangHoc.lop.code, dangHoc.ft ? `FT ${dangHoc.route ?? ''}`.trim() : kyHieuLop(dangHoc.ma, null),
                 dangHoc.tuanHoc ? chuTuanHoc(dangHoc.tuanHoc.tuan, dangHoc.tuanHoc.tong, dangHoc.tuanHoc.dangDung) : null,
-                nen?.tuLopThuong ? `từ ${nen.tuLopThuong}` : null].filter(Boolean).join(' · ')}
+                nen?.tuLopThuong ? t('từ {tuan}', { tuan: nen.tuLopThuong }) : null].filter(Boolean).join(' · ') })}
             </p>
           )}
-          {lenh?.loi && !duyet && <p role="alert" className="mb-0 mt-2 text-xs text-late">Chưa chuyển được: {lenh.loi}</p>}
-          {!dx && lenh && !duyet && !lenh.loi && <p className="mb-0 mt-2 text-xs text-slate-400">Em đã có quyết định chuyển lớp bắt đầu {nhanTuanBatDau(lenh.tuan, homNayMay ?? '')} — sửa hoặc huỷ trước tuần đó.</p>}
-          {!dx && lenh?.loi && !duyet && <p className="mb-0 mt-1 text-xs text-slate-400">Chọn tuần hoặc lớp chuyển đến mới rồi lưu, hoặc huỷ quyết định.</p>}
+          {lenh?.loi && !duyet && <p role="alert" className="mb-0 mt-2 text-xs text-late">{t('Chưa chuyển được: {loi}', { loi: dichChu(lenh.loi) })}</p>}
+          {!dx && lenh && !duyet && !lenh.loi && <p className="mb-0 mt-2 text-xs text-slate-400">{t('Em đã có quyết định chuyển lớp bắt đầu {tuan} — sửa hoặc huỷ trước tuần đó.', { tuan: nhanTuanBatDau(lenh.tuan, homNayMay ?? '') })}</p>}
+          {!dx && lenh?.loi && !duyet && <p className="mb-0 mt-1 text-xs text-slate-400">{t('Chọn tuần hoặc lớp chuyển đến mới rồi lưu, hoặc huỷ quyết định.')}</p>}
           {dangHuy && (
-            <Khoi tieuDe={CHU_CHUYEN_LOP.huy}>
-              <Truong nhan="Lý do huỷ" batBuoc>
+            <Khoi tieuDe={dichChu(CHU_CHUYEN_LOP.huy)}>
+              <Truong nhan={t('Lý do huỷ')} batBuoc>
                 <input className="field w-full" value={lyDoHuy} onChange={(e) => setLyDoHuy(e.target.value)} />
               </Truong>
-              <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !lyDoHuy.trim()} onClick={huyLenh}>Xác nhận huỷ quyết định</button>
+              <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !lyDoHuy.trim()} onClick={huyLenh}>{t('Xác nhận huỷ quyết định')}</button>
             </Khoi>
           )}
 
-          <Khoi tieuDe={dx ? 'Đề xuất' : 'Lớp chuyển đến'}>
-            <Truong nhan="Lớp chuyển đến" batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'lop')}>
-              <ChonLop ds={ds} value={toClassId} onChange={setToClassId} ariaLabel="Lớp chuyển đến"
+          <Khoi tieuDe={dx ? t('Đề xuất') : t('Lớp chuyển đến')}>
+            <Truong nhan={t('Lớp chuyển đến')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'lop')}>
+              <ChonLop ds={ds} value={toClassId} onChange={setToClassId} ariaLabel={t('Lớp chuyển đến')}
                 id={lf.oId('lop')} onBlur={lf.roi('lop')} invalid={!!lf.loiCua(loi, 'lop')} tat={busy} />
               {dich && (
-                <span className="mt-1 block text-xs text-slate-500">{[`GVCN ${dich.gvcn ?? 'chưa có'}`, dich.tuan ? `tuần học ${dich.tuan.replace(/^W/, '')}` : null].filter(Boolean).join(' · ')}</span>
+                <span className="mt-1 block text-xs text-slate-500">{[`${t('GVCN')} ${dich.gvcn ?? t('chưa có')}`, dich.tuan ? t('tuần học {n}', { n: dich.tuan.replace(/^W/, '') }) : null].filter(Boolean).join(' · ')}</span>
               )}
             </Truong>
             {!dx && dich && dangHoc && dich.chiNhanhId !== dangHoc.chiNhanhId && (
-              <p className="m-0 text-xs text-soon">Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo “Sắp nhận”.</p>
+              <p className="m-0 text-xs text-soon">{t('Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo “Sắp nhận”.')}</p>
             )}
-            <Truong nhan={dx ? 'Từ tuần' : 'Tuần bắt đầu'} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'tuan')}>
-              {dx ? <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel="Từ tuần" chuaChon="Chưa chọn" />
+            <Truong nhan={dx ? t('Từ tuần') : t('Tuần bắt đầu')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'tuan')}>
+              {dx ? <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel={t('Từ tuần')} chuaChon={t('Chưa chọn')} />
                 : <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />}
             </Truong>
-            <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
+            <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(loi, 'ly-do')}>
               <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-                placeholder={dx ? 'Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học' : 'Ghi lý do'} />
+                placeholder={dx ? t('Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học') : t('Ghi lý do')} />
             </Truong>
             {oTarget && (
-              <Truong nhan="Target" batBuoc as="div" loi={lf.loiCua(loi, 'muc-tieu')} phu="Em chưa có Target · band 0–9, hoặc tích KCK">
+              <Truong nhan="Target" batBuoc as="div" loi={lf.loiCua(loi, 'muc-tieu')} phu={t('Em chưa có Target · band 0–9, hoặc tích KCK')}>
                 <OTarget value={mucTieu} onChange={setMucTieu} ariaLabel="Target" oProps={lf.o(loi, 'muc-tieu')} />
               </Truong>
             )}
@@ -291,13 +291,13 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
 
           {dx ? (
             <p className="mb-0 mt-3 text-xs text-slate-400">
-              Gửi thành thẻ trong Chờ duyệt của Quản lý (loại Thông tin HV, hạn 5 ngày). Quản lý duyệt = ra quyết định chuyển lớp; Quản lý được sửa lớp và tuần trước khi duyệt.
+              {t('Gửi thành thẻ trong Chờ duyệt của Quản lý (loại Thông tin HV, hạn 5 ngày). Quản lý duyệt = ra quyết định chuyển lớp; Quản lý được sửa lớp và tuần trước khi duyệt.')}
             </p>
           ) : toClassId && (
-            <Khoi tieuDe={ngayNay ? `⚠ ${t('Khi chuyển, web sẽ — chuyển ngay, không hoàn tác')}` : 'Khi chuyển, web sẽ'}>
-              {!xemLop ? <p className="m-0 text-sm text-slate-400">{xem.error ? xem.error.message : 'Đang xem trước…'}</p> : (
+            <Khoi tieuDe={ngayNay ? `⚠ ${t('Khi chuyển, web sẽ — chuyển ngay, không hoàn tác')}` : t('Khi chuyển, web sẽ')}>
+              {!xemLop ? <p className="m-0 text-sm text-slate-400">{xem.error ? xem.error.message : t('Đang xem trước…')}</p> : (
                 <div className={xemLop.canhBao || ngayNay ? 'rounded-lg border p-3' : ''} style={xemLop.canhBao || ngayNay ? khoiVang : undefined} role={xemLop.canhBao || ngayNay ? 'note' : undefined}>
-                  <ul className="m-0 list-disc space-y-1 pl-5 text-sm text-slate-200">{[...dongNgay, ...xemLop.khiChuyen].map((c) => <li key={c}>{c}</li>)}</ul>
+                  <ul className="m-0 list-disc space-y-1 pl-5 text-sm text-slate-200">{[...dongNgay, ...xemLop.khiChuyen.map((c) => dichChu(c))].map((c) => <li key={c}>{c}</li>)}</ul>
                 </div>
               )}
             </Khoi>
@@ -313,7 +313,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
 /** `huong`, `tyLe` luôn null từ P9a (Xét lại lộ trình có panel riêng `PanelXetLai`) — giữ cột hàng như R5.3. */
 type EmXetLai = { studentId: number; ten: string; huong: 'len_lop' | 'fast_track' | 'hoc_lai' | null; tyLe: number | null; lopHienTai: { id: number; code: string } };
 type XemEm = { nap: true } | { loi: string } | { nguonFt: boolean; dichFt: boolean; khiChuyen: string[]; canhBao: boolean; hoiTarget: boolean };
-const DA_CHOT: Record<NonNullable<EmXetLai['huong']>, string> = { len_lop: 'Lên lớp', fast_track: 'Lên FT', hoc_lai: 'Học lại' };
+const DA_CHOT: Record<NonNullable<EmXetLai['huong']>, string> = { len_lop: t('Lên lớp'), fast_track: t('Lên FT'), hoc_lai: t('Học lại') };
 /** 1440: ☑ · Học viên · Final Test · Đang ở · Lớp chuyển đến (mockup phần 2 ④). */
 const LUOI_NHIEU = 'grid grid-cols-[28px_minmax(11rem,1.2fr)_5.5rem_8rem_minmax(16rem,1.6fr)] items-start gap-x-3';
 
@@ -354,12 +354,12 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
   const ds = (data?.em ?? []).slice(0, TOI_DA_NHIEU_EM);
   const rows = ds.map((e) => ({ e, chon: !boChon.has(e.studentId), lop: lop[e.studentId] ?? null, xong: daXong.has(e.studentId) }));
   const { gui: canGui, boQua } = chonGuiNhieuEm(rows);
-  const LUAT: LuatTruong[] = [{ khoa: 'tuan', nhan: 'Tuần bắt đầu', chon: true }, { khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }];
+  const LUAT: LuatTruong[] = [{ khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true }, { khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }];
   /* I1 (§7): em Lên FT từ lớp thường mà chưa có Target nào → ô Target ở hàng em; thiếu thì "Còn thiếu: Target · {tên}". */
   const hoiTarget = (sid: number) => { const x = xem[sid]; return !!x && 'hoiTarget' in x && x.hoiTarget; };
   const loi: LoiTruong[] = [...dsLoi(LUAT, { tuan, 'ly-do': lyDo }),
     ...canGui.flatMap((r) => { const l = hoiTarget(r.e.studentId) ? docOTarget(mucTieu[r.e.studentId] ?? '').loi : null;
-      return l ? [{ khoa: `muc-tieu-${r.e.studentId}`, nhan: `Target · ${r.e.ten}`, lyDo: l }] : []; })];
+      return l ? [{ khoa: `muc-tieu-${r.e.studentId}`, nhan: `Target · ${r.e.ten}`, lyDo: dichChu(l) }] : []; })];
   /* M1: còn em đang xem trước → chưa biết có cần Target → chưa cho gửi. */
   const choXem = canGui.some((r) => { const x = xem[r.e.studentId]; return !x || 'nap' in x; });
   const daSua = Object.values(lop).some((v) => v !== null) || !!lyDo.trim();
@@ -393,25 +393,25 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
     if (ok.length) { xongChuyen(); setDaXong((s) => new Set([...s, ...ok])); }
     setLoiEm((m) => ({ ...m, ...hong }));
     const k = Object.keys(hong).length;
-    if (!k) { toast.push('ok', `Đã quyết định chuyển lớp ${ok.length} em`); onDone?.(); onClose(); }
-    else toast.push('error', `${k} em chưa chuyển được — xem lỗi ở từng hàng`);
+    if (!k) { toast.push('ok', t('Đã quyết định chuyển lớp {n} em', { n: ok.length })); onDone?.(); onClose(); }
+    else toast.push('error', t('{n} em chưa chuyển được — xem lỗi ở từng hàng', { n: k }));
   };
 
-  const tieuDe = data ? `Chuyển lớp · ${data.lop.code} · ${ds.length} em` : 'Chuyển lớp';
+  const tieuDe = data ? `${t('Chuyển lớp')} · ${data.lop.code} · ${t('{n} em', { n: ds.length })}` : t('Chuyển lớp');
   const dong = () => { if (!busy) onClose(); };
   if (error) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (loading || !data) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
   if (!ds.length) {
-    return <KhungPanel tieuDe={tieuDe} onDong={onClose} chan={{}}><p className="mt-3 text-sm text-slate-400">Không còn em cần xét lại.</p></KhungPanel>;
+    return <KhungPanel tieuDe={tieuDe} onDong={onClose} chan={{}}><p className="mt-3 text-sm text-slate-400">{t('Không còn em cần xét lại.')}</p></KhungPanel>;
   }
 
   const tomTat = canGui.map((r) => {
     const x = xem[r.e.studentId];
-    return !x || 'nap' in x ? { k: r.e.studentId, chu: `${r.e.ten} · đang xem trước…`, vang: false, loi: false }
-      : 'loi' in x ? { k: r.e.studentId, chu: `${r.e.ten}: ${x.loi}`, vang: false, loi: true }
-        : { k: r.e.studentId, chu: tomTatChuyenEm(r.e.ten, x.nguonFt, x.dichFt, x.khiChuyen), vang: x.canhBao, loi: false };
+    return !x || 'nap' in x ? { k: r.e.studentId, chu: t('{ten} · đang xem trước…', { ten: r.e.ten }), vang: false, loi: false, cho: true }
+      : 'loi' in x ? { k: r.e.studentId, chu: `${r.e.ten}: ${x.loi}`, vang: false, loi: true, cho: false }
+        : { k: r.e.studentId, chu: dichChu(tomTatChuyenEm(r.e.ten, x.nguonFt, x.dichFt, x.khiChuyen)), vang: x.canhBao, loi: false, cho: false };
   });
-  const vang = tomTat.some((t) => t.vang);
+  const vang = tomTat.some((x) => x.vang);
 
   return (
     <KhungPanel rong="toan" tieuDe={tieuDe} onDong={dong}
@@ -420,22 +420,22 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
         conThieu: conThieuChu(lf.daBam, loi),
         dongTren: (
           <p className="m-0 px-4 pt-2 text-xs tabular-nums text-slate-400" role="status">
-            Chuyển <b className="text-slate-100">{canGui.length}</b> · Bỏ qua <b className="text-slate-100">{boQua}</b> (chưa chọn lớp)
+            {t('Chuyển')} <b className="text-slate-100">{canGui.length}</b> · {t('Bỏ qua')} <b className="text-slate-100">{boQua}</b> {t('(chưa chọn lớp)')}
           </p>
         ),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !canGui.length || choXem}>
-          {busy ? 'Đang lưu…' : homNay && laChuyenNgay(tuan, homNay) ? t('Chuyển ngay · {n} em', { n: canGui.length }) : `${CHU_CHUYEN_LOP.quyetDinh} · ${canGui.length} em`}</button>,
+          {busy ? t('Đang lưu…') : homNay && laChuyenNgay(tuan, homNay) ? t('Chuyển ngay · {n} em', { n: canGui.length }) : `${dichChu(CHU_CHUYEN_LOP.quyetDinh)} · ${t('{n} em', { n: canGui.length })}`}</button>,
       }}>
-      {data.em.length > TOI_DA_NHIEU_EM && <p className="mb-0 mt-1 text-xs text-slate-400">Hiện {TOI_DA_NHIEU_EM}/{data.em.length} em — chuyển xong sẽ hiện tiếp.</p>}
+      {data.em.length > TOI_DA_NHIEU_EM && <p className="mb-0 mt-1 text-xs text-slate-400">{t('Hiện {a}/{b} em — chuyển xong sẽ hiện tiếp.', { a: TOI_DA_NHIEU_EM, b: data.em.length })}</p>}
 
-      <div role={dt ? 'list' : 'table'} aria-label={`Chuyển lớp · ${data.lop.code}`} className={dt ? 'mt-3 space-y-2' : 'surface-2 mt-3 overflow-x-auto rounded-lg'}>
+      <div role={dt ? 'list' : 'table'} aria-label={`${t('Chuyển lớp')} · ${data.lop.code}`} className={dt ? 'mt-3 space-y-2' : 'surface-2 mt-3 overflow-x-auto rounded-lg'}>
         {!dt && (
           <div role="row" className={`${LUOI_NHIEU} min-w-max border-b px-3 py-2 text-[12px] font-extrabold  text-slate-500 lg:min-w-0`} style={{ borderColor: 'var(--line)' }}>
-            <span role="columnheader"><span className="sr-only">Chọn</span></span>
-            <span role="columnheader">Học viên</span>
+            <span role="columnheader"><span className="sr-only">{t('Chọn')}</span></span>
+            <span role="columnheader">{t('Học viên')}</span>
             <span role="columnheader" />
-            <span role="columnheader">Đang ở</span>
-            <span role="columnheader">Lớp chuyển đến</span>
+            <span role="columnheader">{t('Đang ở')}</span>
+            <span role="columnheader">{t('Lớp chuyển đến')}</span>
           </div>
         )}
         <div role={dt ? undefined : 'rowgroup'} className={dt ? 'space-y-2' : 'divide-y'} style={dt ? undefined : { borderColor: 'var(--line)' }}>
@@ -450,26 +450,26 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Truong nhan="Tuần bắt đầu" batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
+        <Truong nhan={t('Tuần bắt đầu')} batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
           <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />
         </Truong>
-        <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
+        <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(loi, 'ly-do')}>
           <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-            placeholder="Ví dụ: Gộp lớp" />
+            placeholder={t('Ví dụ: Gộp lớp')} />
         </Truong>
       </div>
 
       {tomTat.length > 0 && (
-        <Khoi tieuDe="Khi chuyển, web sẽ">
+        <Khoi tieuDe={t('Khi chuyển, web sẽ')}>
           <div className={vang ? 'rounded-lg border p-3' : ''} style={vang ? khoiVang : undefined} role={vang ? 'note' : undefined}>
             <ul className="m-0 list-disc space-y-1 pl-5 text-sm text-slate-200">
-              {tomTat.map((t) => <li key={t.k} className={t.loi ? 'text-late' : t.chu.includes('đang xem trước') ? 'text-slate-400' : ''}>{t.chu}</li>)}
+              {tomTat.map((x) => <li key={x.k} className={x.loi ? 'text-late' : x.cho ? 'text-slate-400' : ''}>{x.chu}</li>)}
             </ul>
           </div>
         </Khoi>
       )}
       {moLop !== null && lopNguon && (
-        <ClassCreatePanel moHoSo={false} khoa={`Chuyển lớp · ${lopNguon.code}`} macDinh={{ branchId: lopNguon.branchId, chuongTrinh: 'FT', loTrinh: 'LT1', previousClassId: classId }}
+        <ClassCreatePanel moHoSo={false} khoa={`${t('Chuyển lớp')} · ${lopNguon.code}`} macDinh={{ branchId: lopNguon.branchId, chuongTrinh: 'FT', loTrinh: 'LT1', previousClassId: classId }}
           onClose={() => setMoLop(null)} onDone={(l) => { setLopMoi((n) => n + 1); chonLop(moLop, l.id, true); setMoLop(null); }} />
       )}
     </KhungPanel>
@@ -487,22 +487,22 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
   const dsLop = lopDich.data?.lop ?? [];
   const khoa = busy || xong || !chon;
   const final = e.tyLe === null ? null : <b className={`tabular-nums ${e.tyLe < 0.5 ? 'text-bad' : 'text-slate-100'}`}>{chuTyLeXetLai(e.tyLe)}</b>;
-  const oLop = xong ? <span className="text-sm text-ok">Đã quyết định chuyển lớp</span>
-    : lopDich.error ? <span className="text-xs text-late">{lopDich.error.message} <button type="button" className="link border-0 bg-transparent p-0" onClick={lopDich.reload}>Thử lại</button></span>
-      : lopDich.loading ? <span className="text-xs text-slate-500">Đang tải lớp…</span>
-        : <ChonLop ds={dsLopDich(dsLop)} value={lop} onChange={(id) => onLop(id, !!dsLop.find((l) => l.id === id)?.ft)} ariaLabel={`Lớp chuyển đến của ${e.ten}`} tat={khoa} invalid={!!loi}
+  const oLop = xong ? <span className="text-sm text-ok">{t('Đã quyết định chuyển lớp')}</span>
+    : lopDich.error ? <span className="text-xs text-late">{lopDich.error.message} <button type="button" className="link border-0 bg-transparent p-0" onClick={lopDich.reload}>{t('Thử lại')}</button></span>
+      : lopDich.loading ? <span className="text-xs text-slate-500">{t('Đang tải lớp…')}</span>
+        : <ChonLop ds={dsLopDich(dsLop)} value={lop} onChange={(id) => onLop(id, !!dsLop.find((l) => l.id === id)?.ft)} ariaLabel={t('Lớp chuyển đến của {ten}', { ten: e.ten })} tat={khoa} invalid={!!loi}
             moLopMoi={khoa ? undefined : moLopMoi} />;
-  const oChon = <input type="checkbox" className="mt-1 h-4 w-4" aria-label={`Chọn ${e.ten}`} checked={chon && !xong} disabled={busy || xong} onChange={(ev) => onChon(ev.target.checked)} />;
-  const ten = <span className="block min-w-0"><span className="font-semibold text-slate-100">{e.ten}</span>{e.huong && <span className="block text-xs text-slate-400">Đã chốt: {DA_CHOT[e.huong]}</span>}</span>;
+  const oChon = <input type="checkbox" className="mt-1 h-4 w-4" aria-label={t('Chọn {ten}', { ten: e.ten })} checked={chon && !xong} disabled={busy || xong} onChange={(ev) => onChon(ev.target.checked)} />;
+  const ten = <span className="block min-w-0"><span className="font-semibold text-slate-100">{e.ten}</span>{e.huong && <span className="block text-xs text-slate-400">{t('Đã chốt: {x}', { x: DA_CHOT[e.huong] })}</span>}</span>;
   /* I1: Target gọn dưới ô lớp, chỉ khi em chưa có Target nào (§7). */
   const oTarget = hoiTarget && !xong && (
     <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className="text-xs font-bold text-slate-200">Target <span aria-hidden className="text-bad">*</span></span>
-      <OTarget value={mucTieu} onChange={onMucTieu} ariaLabel={`Target của ${e.ten}`} disabled={khoa} oProps={{ id: `o-muc-tieu-${e.studentId}`, 'aria-invalid': !!loiTarget }} />
-      {loiTarget && <span className="text-xs text-late">{loiTarget === 'Chưa điền' ? 'Em chưa có Target — ghi band hoặc tích KCK' : loiTarget}</span>}
+      <OTarget value={mucTieu} onChange={onMucTieu} ariaLabel={t('Target của {ten}', { ten: e.ten })} disabled={khoa} oProps={{ id: `o-muc-tieu-${e.studentId}`, 'aria-invalid': !!loiTarget }} />
+      {loiTarget && <span className="text-xs text-late">{loiTarget === t('Chưa điền') ? t('Em chưa có Target — ghi band hoặc tích KCK') : loiTarget}</span>}
     </span>
   );
-  const chuLoi = loi && <span role="alert" className="mt-1 block text-xs text-late">{loi}</span>;
+  const chuLoi = loi && <span role="alert" className="mt-1 block text-xs text-late">{dichChu(loi)}</span>;
   const vien = loi ? { background: 'rgb(var(--late-bg-rgb))' } : undefined;   // hàng lỗi máy chủ: nền đỏ nhạt + chữ lỗi (không vạch trái)
 
   if (dt) {
@@ -513,8 +513,8 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
           <span className="min-w-0 flex-1">{ten}</span>
           {final}
         </label>
-        <p className="mb-2 mt-1 text-xs text-slate-400">Đang ở {e.lopHienTai.code}</p>
-        <span className="mb-1 block text-[12px] font-bold text-slate-200">Lớp chuyển đến</span>
+        <p className="mb-2 mt-1 text-xs text-slate-400">{t('Đang ở {lop}', { lop: e.lopHienTai.code })}</p>
+        <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Lớp chuyển đến')}</span>
         {oLop}{oTarget}{chuLoi}
       </div>
     );
