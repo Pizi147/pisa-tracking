@@ -51,3 +51,11 @@ Thành phần mockup có so (bỏ GIỮ): 16 — **KHỚP 15 · KHÁC 1 bố c�
 | GIỮ — Huỷ kỹ năng / Đưa lại (QL) | ⋯ lượt | như cũ (đổi môn dùng lại `setSkillScope`) | — |
 
 Không có thao tác nào bị bỏ.
+
+## Sửa theo rà PTA Plan (#595, 26/10)
+
+- k1, k4, k5: nút Môn học ghi "✓ L" — dấu ✓ nằm TRONG nút như mockup (trước: huy hiệu tròn đè góc). Môn tắt gạch ngang.
+- k4: khối "Khi lưu, web sẽ" nền + viền cảnh báo vàng (`--soon-bg` / `--soon-line`, cùng `.tom-tat.vang` mockup).
+- k5: dòng đã chọn nền nhấn + vạch trái + ô tick (chụp lại với 2 em đầu bảng được chọn); cột Môn học rộng đủ 5 nút một hàng.
+- k7: ô kỹ năng đã có điểm của môn đã bỏ vẫn hiện (chỉ ẩn ô chưa có điểm); nhãn "Không đủ bộ môn" đọc cờ máy chủ.
+- Quyền (chủ SP 26/10 đêm): QL, Quản trị, GVCN, TVV đổi Môn học ở cả 3 nơi; CX, GV bộ môn không.

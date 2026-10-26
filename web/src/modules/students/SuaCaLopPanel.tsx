@@ -31,7 +31,7 @@ type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt:
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
   { key: 'fullName', nhan: 'Họ và tên', rong: 210 },
   /* P8 (mockup k5): Môn học ngay sau tên — thấy được không cần cuộn ngang. */
-  { key: 'monDangKy', nhan: 'Môn học', rong: 240 },
+  { key: 'monDangKy', nhan: 'Môn học', rong: 300 },
   { key: 'dob', nhan: 'Ngày sinh', rong: 190 },
   { key: 'email', nhan: 'Email', rong: 250 }, { key: 'consultantUserId', nhan: 'TVV', rong: 210 },
   { key: 'phone', nhan: NHAN_LIEN_HE.phone, rong: 150 }, { key: 'parentName', nhan: NHAN_LIEN_HE.parentName, rong: 190 },
