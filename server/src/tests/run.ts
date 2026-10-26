@@ -9612,6 +9612,9 @@ await runPrSvLoTrinhTests({ check, assert, conn, P, TODAY, classId, addDays } as
 // ==================================================================== P9b CUOI-KHOA (trang Cuối khoá lớp thường, hạn chốt N20, N17, N22)
 const { runPrCuoiKhoaTests } = await import('./prCuoiKhoa.tests.ts');
 await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
+// ==================================================================== P13 KET-PET (thang Cambridge, Target + thi thật KET / PET, Checkpoint 4 môn)
+const { runPrKetPetTests } = await import('./prKetPet.tests.ts');
+await runPrKetPetTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
