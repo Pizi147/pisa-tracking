@@ -2,7 +2,7 @@
 
 > Tra tài liệu chính thức ngày **26/10/2026**. Tên menu có thể đổi theo thời gian; thấy khác thì tìm mục cùng nghĩa.
 > - OpenAI: [model gpt-6-luna](https://developers.openai.com/api/docs/models/gpt-6-luna) · [danh sách model](https://developers.openai.com/api/docs/models) ·
->   [giới hạn chi tiêu](https://developers.openai.com/api/docs/guides/spend-limits) · [quyền của khoá](https://help.openai.com/en/articles/8867743-assign-api-key-permissions) ·
+>   [giới hạn chi tiêu](https://developers.openai.com/api/docs/guides/spend-limits) · [project, khoá và quyền khoá](https://help.openai.com/en/articles/9186755-managing-projects-in-the-api-platform) ·
 >   [ChatGPT và API tính tiền riêng](https://help.openai.com/en/articles/8156019)
 > - Netlify: [biến môi trường — tổng quan](https://docs.netlify.com/build/environment-variables/overview/) · [cách thêm biến](https://docs.netlify.com/build/environment-variables/get-started/)
 
@@ -26,7 +26,11 @@
 ## 2. Tạo project và khoá bí mật
 
 - **Vào đâu:** góc trên trái chọn project → **Create project**, đặt tên `PISA`.
-- **Bấm gì:** trong project PISA → **API keys** → **Create new secret key**. Tên: `pisa-netlify`. Quyền (Permissions): để mặc định **All**. Khoá nằm trong project PISA riêng nên chỉ tiêu tiền của project này.
+- **Bấm gì:** trong project PISA → **API keys** → **Create new secret key**. Tên: `pisa-netlify`. Quyền (Permissions): chọn **Restricted** (ít quyền nhất), rồi:
+  - dòng **Model capabilities** → **Request** (có nơi ghi Write) — đây là quyền gọi Chat Completions mà nút Dịch cần;
+  - mọi dòng khác → **None**.
+  Chỉ chọn riêng ô con "Chat completions" mà bấm Dịch vẫn lỗi (log Netlify ghi `OpenAI trả 401`, xem mục 6) → sửa khoá: đặt cả dòng Model capabilities = Request
+  ([diễn đàn OpenAI](https://community.openai.com/t/missing-scopes-model-request-on-restricted-api-key/1371602)). Đổi quyền có thể mất vài phút mới có hiệu lực.
 - **Điền gì:** không điền gì thêm. Bấm tạo.
 - **Thấy gì là đúng:** hiện một chuỗi bắt đầu `sk-…`. Bấm **Copy**. Chuỗi chỉ hiện **một lần**.
 - **Lỗi thì làm gì:** lỡ đóng mà chưa chép → xoá khoá đó, tạo khoá mới. Không gửi khoá cho ai, không lưu vào tệp trong máy chung.
@@ -80,7 +84,7 @@
   - Không thấy nút ở mọi nhận xét: khoá chưa đặt đúng **Production**, chưa deploy lại, hoặc chưa tải lại trang. Chỉ một nhận xét không có nút: chữ đó không rõ là khác ngôn ngữ.
   - "Dịch đang tắt.": trang được mở từ trước khi tắt / trước khi bật — tải lại trang.
   - "Chưa dịch được. Bản gốc vẫn giữ — thử lại sau.": xem nguyên nhân ở Netlify → site PISA → **Logs** → **Functions** → hàm `api` → tìm chữ `[dich]`:
-    - `OpenAI trả 401` → khoá sai / đã thu hồi → làm lại mục 2 và mục 4.
+    - `OpenAI trả 401` → khoá sai / đã thu hồi / thiếu quyền Model capabilities → xem lại quyền khoá (mục 2), hoặc tạo khoá mới và làm lại mục 4.
     - `OpenAI trả 404` hoặc `400` → tài khoản chưa dùng được model → đổi `DICH_MODEL` thành `gpt-5.4-mini`, deploy lại.
     - `OpenAI trả 429` → hết số dư hoặc chạm trần chi tiêu → nạp thêm (mục 1) hoặc nâng trần (mục 3).
     - `gọi OpenAI lỗi: TimeoutError` → OpenAI chậm; thử lại sau.

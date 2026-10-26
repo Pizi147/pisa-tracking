@@ -18,6 +18,7 @@ const khoaCua = (n: NguonDich, chu: string) => JSON.stringify([n.bang, n.id, n.c
 
 /** Băm như máy chủ (`dich.ts`, `gocBam`): sha256 của chữ đã cắt khoảng trắng hai đầu, 16 ký tự hex đầu. */
 async function bamChu(chu: string): Promise<string> {
+  if (!crypto.subtle) return '';   // http qua IP LAN (không phải HTTPS / localhost): không băm được → bỏ bước so
   const b = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(chu)));
   return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('').slice(0, 16);
 }
@@ -47,7 +48,7 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
     try {
       const [r, bam] = await Promise.all([api.post<{ banDich: string; gocBam: string }>('/dich', { ...nguon, den: NGON_NGU }), bamChu(goc.trim())]);
       if (khoaHienTai.current !== k) return;   // về muộn: chỗ này đã sang chữ khác
-      if (r.gocBam !== bam) { setLoi(t('Nội dung vừa đổi — tải lại trang để dịch.')); return; }
+      if (bam && r.gocBam !== bam) { setLoi(t('Nội dung vừa đổi — tải lại trang để dịch.')); return; }
       daDich.set(k, r.banDich);
       setXemDich(true);
     } catch (e) {

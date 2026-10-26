@@ -312,6 +312,8 @@ export async function runPrDichTests(t: any) {
       assert(/subtle\.digest\('SHA-256'/.test(cd) && cd.includes('.slice(0, 16)') && cd.includes('goc.trim()'), 'ChuDich không băm chữ như máy chủ');
       assert(/useEffect\(\(\) => \{[^}]*setXemDich\(false\);[^}]*setDang\(false\);[^}]*setLoi\(null\);[^}]*\}, \[khoa\]\)/.test(cd), 'đổi khoá chưa đặt lại trạng thái');
       assert(/khoaHienTai\.current !== k/.test(cd), 'chưa bỏ phản hồi về muộn');
+      /* http qua IP LAN không có crypto.subtle → bỏ bước so (coi như khớp), không hiện lỗi JS thô. */
+      assert(cd.includes("if (!crypto.subtle) return '';") && cd.includes('if (bam && r.gocBam !== bam)'), 'thiếu crypto.subtle chưa bỏ qua bước so');
       /* Lệch chữ: thử lại cùng nguồn vẫn lệch (web chưa có chữ mới) → nói bước tiếp (tải lại trang), không đưa nút lặp mãi. */
       assert(cd.includes("t('Nội dung vừa đổi — tải lại trang để dịch.')") && !cd.includes("t('Dịch lại')"), 'câu lệch chữ phải chỉ bước tiếp, không nút Dịch lại');
       assert(/\{!lech && <button/.test(cd), 'lệch chữ vẫn còn nút');
