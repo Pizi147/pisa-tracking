@@ -3,7 +3,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
   canNamGan, docNgayNhap, hienTargetKck, mondayOfDate, tachKck, ngay, type ExamPlan, type LuotSo, type Route,
-  CHI_SUA_THONG_TIN, CAU_LIEN_TUC, duocDoiKck, laBandLenh, nhanThang,
+  CHI_SUA_THONG_TIN, CAU_LIEN_TUC, duocDoiKck, laBandLenh, nhanThang, docTargetKyThi, kyThiCuaChuongTrinh,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
@@ -124,6 +124,14 @@ export function docTarget(v: unknown): { target: number | null; kck: boolean } {
   const n = Number(so);
   if (!laBandLenh(n)) throw badRequest('Target phải từ 0 đến 9, bước 0,5 (ví dụ 6.5) — thêm KCK nếu không cam kết.');
   return { target: n, kck };
+}
+/** P13 KET-PET: ô Target theo thang của lộ trình — KET / PET điểm Cambridge (số nguyên trong thang, không KCK; lỗi gắn ô `target`); còn lại band + KCK. */
+export function docTargetCua(c: { route?: string | null; programme_code?: string | null } | null | undefined, v: unknown): { target: number | null; kck: boolean } {
+  const kt = c && !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+  if (!kt) return docTarget(v);
+  const d = docTargetKyThi(kt, v);
+  if ('loi' in d) throw badRequest(d.loi, { o: 'target' });
+  return { target: d.so, kck: false };
 }
 const hienTarget = (target: number | null, kck: unknown) => hienTargetKck(target, !!kck);
 
@@ -519,11 +527,20 @@ export const duocDoiTarget = (p: Principal, ctx: Ctx) => coQuyen(p, PERMISSIONS.
  * OV-13o: đổi Target THEO CÁCH NÀY có bị chặn không — một luật cho lúc lưu (`reviseTarget`) và xem trước Sửa cả lớp (báo từng dòng).
  * Lộ trình chương trình liên tục không có Target (OV-6b2); đổi dấu KCK chỉ QL / Quản trị / TVV (OV-11e Q8 — CX sửa Target số được, KCK thì không).
  */
+/** P13 KET-PET: lộ trình chương trình liên tục KHÔNG có kỳ thi (mã Quản trị tạo) — không Target. KET / PET có Target theo điểm Cambridge. */
+const lienTucKhongKyThi = (c: any) => !c.route && !!programmeByCode(c.programme_code)?.lapMoiTuan && !kyThiCuaChuongTrinh(c.programme_code);
 export function loiDoiTarget(p: Principal, c: any, t: { kck: boolean }): HttpError | null {
-  if (!c.route && programmeByCode(c.programme_code)?.lapMoiTuan) return badRequest(CAU_LIEN_TUC.target);
-  if (t.kck !== !!c.khong_cam_ket && !duocDoiKck(p.roleKeys, coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) return forbidden(CHI_DOI_KCK);
+  if (lienTucKhongKyThi(c)) return badRequest(CAU_LIEN_TUC.target);
+  /* P13: khoá KET / PET không có KCK — bỏ qua cờ (Target Cambridge). */
+  if (!(!c.route && kyThiCuaChuongTrinh(c.programme_code)) && t.kck !== !!c.khong_cam_ket && !duocDoiKck(p.roleKeys, coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) return forbidden(CHI_DOI_KCK);
   return null;
 }
+
+/** P13: dòng nhật ký nhớ thang Target (KET / PET) — Lịch sử thay đổi vẫn định dạng đúng khi không tra được lộ trình (`lichSuSua`). */
+export const kyThiAudit = (c: { route?: string | null; programme_code?: string | null }) => {
+  const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+  return kt ? { kyThi: kt.ma } : {};
+};
 
 export function reviseTarget(p: Principal, cycleId: number, input: {
   /** Số, `null`/'' (chưa có), "6.5 KCK" hoặc KCK / '-' / "không cam kết" (Q29-1, OV-9: KCK là dấu riêng). */
@@ -534,9 +551,9 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   /* `daDuyet`: chỉ quyết định chuyển lớp lúc thi hành truyền — lệnh đã được kiểm quyền lúc ra (như `applyTransition`). */
   /* OV-8b: TVV / CX (`student.edit_more`) sửa thẳng như QL — cùng đường, cùng lý do bắt buộc, cùng nhật ký. */
   if (!o?.daDuyet && !duocDoiTarget(p, { studentId: c.student_id })) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
-  /* OV-6b2: lộ trình của chương trình liên tục (PET, KET…) không có Target. */
-  if (!c.route && programmeByCode(c.programme_code)?.lapMoiTuan) throw badRequest(CAU_LIEN_TUC.target);
-  const { target, kck } = docTarget(input.newTarget);
+  /* OV-6b2: lộ trình của chương trình liên tục không có Target — trừ KET / PET (P13: Target Cambridge, số nguyên trong thang, không KCK). */
+  if (lienTucKhongKyThi(c)) throw badRequest(CAU_LIEN_TUC.target);
+  const { target, kck } = docTargetCua(c, input.newTarget);
   if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
   const chan = o?.daDuyet ? null : loiDoiTarget(p, c, { kck });
   if (chan) throw chan;
@@ -563,7 +580,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
       createdBy: p.userId, dedupKey: `target-rev:${Number(info.lastInsertRowid)}`,
     });
     writeAudit({ actorUserId: p.userId, action: 'cycle.target.revise', entityType: 'learning_cycle',
-      entityId: cycleId, before: { target: c.target_score, khongCamKet: !!c.khong_cam_ket }, after: { target, khongCamKet: kck, effectiveFrom, reason } });
+      entityId: cycleId, before: { target: c.target_score, khongCamKet: !!c.khong_cam_ket }, after: { target, khongCamKet: kck, effectiveFrom, reason, ...kyThiAudit(c) } });
     return { cycle: cycleById(cycleId), revision: conn.prepare('SELECT * FROM cycle_target_revisions WHERE id = ?')
       .get(Number(info.lastInsertRowid)) };
   });

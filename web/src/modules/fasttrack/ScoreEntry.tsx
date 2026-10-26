@@ -167,8 +167,9 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
   /* HOTFIX-3: dòng điểm vừa lưu theo kỹ năng — nơi gọi xoá khi dữ liệu bảng đổi (`xoaVuaLuu`). */
   const [vuaLuu, setVuaLuu] = useState<Record<string, any>>({});
 
-  const save = async (skill: string, patch: SavePatch, opts: SaveOpts = {}): Promise<boolean> => {
-    if (inflight.current.has(skill)) return false;   // chặn gửi lặp cùng một ô
+  /** `'trung'` = cùng ô đang gửi (R1-LUU-TIEP: hộp nhập coi là "đang lưu", không báo lỗi). */
+  const save = async (skill: string, patch: SavePatch, opts: SaveOpts = {}): Promise<boolean | 'trung'> => {
+    if (inflight.current.has(skill)) return 'trung';   // chặn gửi lặp cùng một ô
     inflight.current.add(skill);
     setSaving(skill);
     tt.batDau(skill);
@@ -454,7 +455,7 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
             <span title={chan ?? undefined}>
               <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!chan}
                 title={chan ?? undefined} onClick={() => void luu()}>
-                {busy ? t('Đang lưu…') : t('Lưu')}
+                {busy ? t('Đang lưu…') : t('Lưu · đóng')}
               </button>
             </span>
           </div>

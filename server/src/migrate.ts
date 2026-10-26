@@ -75,6 +75,7 @@ import { migratePrTu } from './migrate/prTu.ts';
 import { migratePrTub } from './migrate/prTub.ts';
 import { migratePrUiHoSoLop } from './migrate/prUiHoSoLop.ts';
 import { migratePrBaoCaoLichSu } from './migrate/prBaoCaoLichSu.ts';
+import { migratePrKetPet } from './migrate/prKetPet.ts';
 import { migratePrSl1 } from './migrate/prSl1.ts';
 import { migratePrDich } from './migrate/prDich.ts';
 import { migratePrSvYtTvv } from './migrate/prSvYtTvv.ts';
@@ -406,6 +407,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* P9a XET-LAI: bảng xet_lai_lo_trinh + thẻ "Mini Test chưa đạt" đang chờ → đóng (dòng (d) của Xét lại tính khi đọc; chạy lặp được). */ buoc(() => migratePrXetLai(conn, applied));
     /* P12 BAO-CAO-LICH-SU: cột learning_cycles.thi_that_target + điền Target hiện tại cho lộ trình đã có KQ (chạy lặp được). */ buoc(() => migratePrBaoCaoLichSu(conn, applied));
     /* P7 SV-LO-TRINH (N11, N12): em Tạm dừng cũ vào Lưu trữ (ngày pause gần nhất) · cột learning_cycles.route_ten · route KHAC ngừng (chạy lặp không đổi). */ buoc(() => migratePrSvLoTrinh(conn, applied));
+    /* P13 KET-PET (N18): Checkpoint PET / KET tách L · R · W · S — bộ môn mặc định, lớp đang chạy, đợt chưa có điểm; đợt đã có điểm giữ L+S / R+W (chạy lặp không đổi). */ buoc(() => migratePrKetPet(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

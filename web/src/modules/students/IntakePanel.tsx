@@ -11,6 +11,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import {
   chuanOTarget, cotLuoiNhap, dsLoi, duongDotTest, nhanCotNhap, tuanBatDauMacDinh, type CachDoc, type CotNhap, type VanDeNhap,
+  kyThiCuaChuongTrinh,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -93,6 +94,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const pv = preview;
   const cls = (classes.data ?? []).find((c: any) => c.id === classId) ?? null;
   const lopThuong = cls?.scoring_mode === 'ratio';
+  const ktLop = kyThiCuaChuongTrinh(cls?.programme_code);   // P13: lớp KET / PET — Target theo thang Cambridge
   const cols = cotLuoiNhap(lopThuong);
   const macDinh = cls ? tuanBatDauMacDinh({ lopThuong, khaiGiang: cls.start_date ?? null }, homNay) : null;
   const tuanChung = startWeek || macDinh || '';
@@ -268,7 +270,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               <tr>
                 <th className="th">#</th>
                 {cols.map((c) => (
-                  <Th key={c.key} hint={GOI_Y_COT[c.key]} align={c.so ? 'right' : 'left'}>
+                  <Th key={c.key} hint={c.key === 'target' && ktLop ? t('{ten}: số nguyên {min}–{max}, không KCK. Bỏ trống = chưa có Target.', { ten: ktLop.ten, min: ktLop.min, max: ktLop.max }) : GOI_Y_COT[c.key]} align={c.so ? 'right' : 'left'}>
                     {c.nhan}{c.batBuoc && <span className="text-bad"> *</span>}
                   </Th>
                 ))}

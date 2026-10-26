@@ -2,13 +2,13 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { tuanLich } from '@shared/domain/index.ts';
+import { chuKetQuaKyThi, tuanLich, type KetQuaKyThi } from '@shared/domain/index.ts';
 import type { TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
-export type KetQuaGon = { chinh: string; tone: 'ok' | 'soon' | 'late' | 'muted'; phu?: string };
+export type KetQuaGon = { chinh: string; tone: 'ok' | 'soon' | 'late' | 'muted'; phu?: string; kyThi?: KetQuaKyThi };
 export type DongCacLoTrinh = {
   id: number; ten: string; lop: string | null; thoiGian: string; dangHoc: boolean; ketQua: KetQuaGon | null; huong: string | null;
   /** OV-13m: lộ trình FT mới nhất có kết quả thi thật — "Đã xong · OVR …" + Chọn bước tiếp / Hẹn bắt đầu / chờ QL · TVV. */
@@ -44,7 +44,8 @@ function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cyc
   }
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-      {k ? <Nhan tone={k.tone}>{dich(k.chinh)}</Nhan> : <span className="text-slate-500">—</span>}
+      {/* P13: KQ thi thật KET / PET — ghép từ số liệu (EN đúng), không dịch nguyên câu máy chủ. */}
+      {k ? <Nhan tone={k.tone}>{k.kyThi ? (k.kyThi.khongThi ? t('Không thi') : t('Thi thật {kq}', { kq: chuKetQuaKyThi(k.kyThi) })) : dich(k.chinh)}</Nhan> : <span className="text-slate-500">—</span>}
       {k?.phu && <span className="text-[12px] text-slate-500">{dich(k.phu)}</span>}
       {!d.dangHoc && d.huong && <Nhan tone={toneHuong(d.huong)}>{dich(d.huong)}</Nhan>}
     </span>

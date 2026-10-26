@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
-import { db, theoLo, tx } from '../db.ts';
+import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, CO_DIEM_SQL, LY_DO_KHONG_HOC, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
+  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, LY_DO_KHONG_HOC, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
   khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -162,16 +162,35 @@ export function scoringModeOf(
  * KHÔNG bịa trạng thái thi và KHÔNG bịa nguyên nhân vắng: mọi dòng mới đều là 'scheduled'.
  */
 /** K5-38, PF6: bộ môn xếp lịch của MỘT lượt — FT 4 kỹ năng đánh giá; lớp thường theo `programme_skills` (Pre FOU một ô). */
-export function boMonCuaLuot(conn: any, attemptId: number): readonly string[] {
+export function boMonCuaLuot(conn: any, attemptId: number, dongLich?: readonly { skill: string }[]): readonly string[] {
   const r = conn.prepare(`SELECT c.programme_code AS ct, a.kind FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
   if (r?.kind === 'mt0') return ASSESSED_SKILLS;   // PR-MT0: MT0 luôn bốn kỹ năng IELTS
-  return boMonLich(r?.ct ?? null, programmeByCode(r?.ct)?.skills);
+  const prog = programmeByCode(r?.ct);
+  const bo = boMonLich(r?.ct ?? null, prog?.skills);
+  if (!prog?.lapMoiTuan) return bo;
+  /* P13: MỘT luật — dòng lịch ∪ dòng điểm của lượt (`daGhiLuot`): còn dòng lịch / điểm môn gộp → bộ gộp (không chèn thêm 4 môn cạnh nó). */
+  const lich = dongLich ?? lichGopCua([attemptId]).get(attemptId);
+  return boMonTheoLuot(bo, daGhiLuot(lich, conn.prepare('SELECT skill FROM assessment_scores WHERE attempt_id = ?').all(attemptId) as any[]));
+}
+
+/** P13: dòng lịch MÔN GỘP cũ (L+S, R+W) của các lượt — nơi chưa nạp dòng lịch; chỉ trả dòng môn gộp (rất ít, không nâng số dòng đọc). */
+export function lichGopCua(ids: readonly number[]): Map<number, { skill: string }[]> {
+  const out = new Map<number, { skill: string }[]>();
+  const gop = Object.keys(MON_GOP);
+  theoLo([...new Set(ids)], (lo, ph) => {
+    for (const r of db().prepare(`SELECT attempt_id, skill FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${gop.map(() => '?').join(',')})`)
+      .all(...lo, ...gop) as any[]) {
+      if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
+      out.get(r.attempt_id)!.push({ skill: r.skill });
+    }
+  }, THAM_SO_TOI_DA - gop.length);
+  return out;
 }
 
 export function ensureSkillRows(attemptId: number): SkillRow[] {
   const conn = db();
   const existing = conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[];
-  const bo = boMonCuaLuot(conn, attemptId);
+  const bo = boMonCuaLuot(conn, attemptId, existing);
   if (bo.every((k) => existing.some((r) => r.skill === k))) return sortRows(existing, bo);
 
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;

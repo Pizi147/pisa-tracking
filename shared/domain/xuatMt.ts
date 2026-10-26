@@ -186,23 +186,31 @@ export function bangFT(dong: DongFT[], cot: 'gon' | 'day-du'): Cell[][] {
 
 export type DongThuong = {
   ten: string; email: string | null; chiNhanh: string; lop: string; bai: string; tuan: string; tuanBd: string;
-  /** Mỗi môn của chương trình: tên đã qua `tenMon(ct, k)`; % = số như `68.5`. */
-  mon: { ten: string; pct: number | null; diem: number | null; tong: number | null; tuan: string | null }[];
+  /** Mỗi môn của lượt: `k` = mã môn (P13: cột theo mã — sheet trộn lượt L+S / R+W cũ và lượt 4 môn), tên đã qua `tenMon(ct, k)`; % = số như `68.5`. */
+  mon: { k?: string; ten: string; pct: number | null; diem: number | null; tong: number | null; tuan: string | null }[];
   tyLeTong: number | null; trangThai: string; nguoiNhap: string | null;
   /** PR-LT2b: hướng gợi ý Cuối khoá — chỉ dòng Cuối khoá đủ điểm, còn lại `null` (ô trống). */
   huong: string | null;
 };
 
-/** Một chương trình một sheet — môn khác nhau giữa chương trình nên tiêu đề lấy từ `mon` của dòng đầu (cả sheet cùng chương trình). */
-export function bangThuong(dong: DongThuong[], cot: 'gon' | 'day-du'): Cell[][] {
+/**
+ * Một chương trình một sheet. P13: cột môn = HỢP môn mọi dòng (môn chương trình `monCt` trước, theo thứ tự chương trình; môn khác — L+S / R+W của lượt cũ —
+ * sau, theo lần gặp); mỗi dòng điền theo mã môn, môn dòng không có để trống.
+ */
+export function bangThuong(dong: DongThuong[], cot: 'gon' | 'day-du', monCt: readonly string[] = []): Cell[][] {
   const day = cot === 'day-du';
-  const mon = dong[0]?.mon ?? [];
-  const tieuDe: Cell[] = ['Tên', 'Email', 'Chi nhánh', 'Lớp', 'Bài', 'Tuần', ...mon.map((m) => `${m.ten} %`), '% tổng', 'Hướng gợi ý', 'Trạng thái lượt'];
-  if (day) tieuDe.push(...mon.flatMap((m) => [`${m.ten} điểm`, `${m.ten} tổng`, `Tuần ${m.ten}`]), 'Người nhập');
+  const khoa = (m: DongThuong['mon'][number]) => m.k ?? m.ten;
+  const ten = new Map<string, string>();
+  for (const d of dong) for (const m of d.mon) if (!ten.has(khoa(m))) ten.set(khoa(m), m.ten);
+  const thu = (k: string) => { const i = monCt.indexOf(k); return i < 0 ? monCt.length : i; };
+  const cotMon = [...ten.keys()].sort((a, b) => thu(a) - thu(b));   // sort ổn định: cùng hạng giữ thứ tự gặp
+  const tieuDe: Cell[] = ['Tên', 'Email', 'Chi nhánh', 'Lớp', 'Bài', 'Tuần', ...cotMon.map((k) => `${ten.get(k)} %`), '% tổng', 'Hướng gợi ý', 'Trạng thái lượt'];
+  if (day) tieuDe.push(...cotMon.flatMap((k) => [`${ten.get(k)} điểm`, `${ten.get(k)} tổng`, `Tuần ${ten.get(k)}`]), 'Người nhập');
   const out: Cell[][] = [tieuDe];
   for (const d of dong) {
-    const hang: Cell[] = [d.ten, d.email, d.chiNhanh, d.lop, d.bai, d.tuan, ...d.mon.map((m) => m.pct), d.tyLeTong, d.huong, d.trangThai];
-    if (day) hang.push(...d.mon.flatMap((m) => [m.diem, m.tong, m.tuan]), d.nguoiNhap);
+    const o = (k: string) => d.mon.find((m) => khoa(m) === k);
+    const hang: Cell[] = [d.ten, d.email, d.chiNhanh, d.lop, d.bai, d.tuan, ...cotMon.map((k) => o(k)?.pct ?? null), d.tyLeTong, d.huong, d.trangThai];
+    if (day) hang.push(...cotMon.flatMap((k) => { const m = o(k); return [m?.diem ?? null, m?.tong ?? null, m?.tuan ?? null]; }), d.nguoiNhap);
     out.push(hang);
   }
   return out;

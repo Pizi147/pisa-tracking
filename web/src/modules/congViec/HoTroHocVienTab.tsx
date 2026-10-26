@@ -215,7 +215,7 @@ export function HoTroHocVienTab() {
   const dangHien = (k: string) => !!document.querySelector(`[data-khoa="${CSS.escape(k)}"]`);
   const keTiep = viecKeTiep(thuTu, viec, (x) => !xong.has(x.key) && dangHien(x.key));
   const daLam = (it: WorkItem) => setGiu((m) => new Map(m).set(it.key, it));
-  /* V5 (truy vết mục 3 BỎ): không tự mở việc đầu, không tự sang việc kế sau lưu — chỉ "Lưu và tiếp" / "Việc tiếp ›" trong panel chuyển việc. */
+  /* V5 (truy vết mục 3 BỎ): không tự mở việc đầu, không tự sang việc kế sau lưu — chỉ "Lưu · việc tiếp ›" / "Việc tiếp ›" trong panel chuyển việc. */
 
   // ------------------------------------------------------------------ lọc người + chip đang lọc (OV-15d, mockup 2 mục 3: 11 lựa chọn → 3)
   const [tenGv, setTenGv] = useState<string | null>(null);

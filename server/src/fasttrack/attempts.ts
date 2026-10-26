@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE,
   CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
-  type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
+  type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
@@ -22,7 +22,7 @@ import {
 import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
-  checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
+  boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong,
   type SkillRow, type SkillScheduleView,
   chanCuoiTuan, tuanCacKyNang,
@@ -821,7 +821,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     const scores = bundle.scores.get(a.id) ?? [];
     const skips = bundle.skips.get(a.id) ?? [];
     /* HOTFIX-3: MT0 chấm band dù ở lớp thường (`scoringModeOf`) — không đi nhánh đúng/tổng, nếu không đủ band vẫn là việc "Nhập điểm MT0". */
-    const regularSkills = a.kind === 'mt0' ? null : skillsOfClass(a.class_id);
+    const boLop = a.kind === 'mt0' ? null : skillsOfClass(a.class_id);
+    const regularSkills = boLop && [...boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), scores))];   // P13: lượt đã ghi môn gộp cũ giữ L+S / R+W
 
     if (regularSkills) {
       const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id));
@@ -1501,7 +1502,9 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   /* PR-VN5: bài lớp thường nhận môn của chương trình (`writing`, `tong_hop`…) — cùng nguồn `saveRegularScore`; MT0 ở lớp thường vẫn chấm band. */
   const ct = a.class_id && scoringModeOf(a) === 'ratio' ? programmeOfClass(a.class_id) : null;
   const thuong = !!ct;
-  if (o.some((s) => !(thuong ? ct!.skills : ENTRY_SKILLS as readonly string[]).includes(s.skill))) throw badRequest('Kỹ năng không hợp lệ.');
+  /* P13: môn theo LƯỢT (`boMonCuaLuot`) — lượt đã chấm L+S / R+W cũ huỷ được như mọi lượt. */
+  const boMon: readonly string[] = thuong ? boMonCuaLuot(db(), a.id) : ENTRY_SKILLS;
+  if (o.some((s) => !boMon.includes(s.skill))) throw badRequest('Kỹ năng không hợp lệ.');
   /* LUAT-34 (L3): "Đủ điểm" không còn khoá — quyền huỷ lượt đã kiểm ở `huyLuot`; nhật ký vẫn ghi `sauHoanTat`. */
   const hoanTat = dotHoanTat(a.id, demoToday());
   if (thuong) return xoaDiemBaiThuong(p, a, o, lyDo, hoanTat.hoanTat, ct!.code);

@@ -121,6 +121,6 @@ export function caseTone(status: string | null): Tone {
  *
  * Một chỗ quyết định duy nhất. Màn nào tự ghép đường dẫn lấy thì sớm muộn lại ghép sai.
  */
-export function attemptHref(a: { id: number; kind?: string | null; classId?: number | null }): string {
+export function attemptHref(a: { id: number; kind?: string | null; classId?: number | null; studentId?: number | null }): string {
   return duongDotTest(a);   // PR-VAI-b (G5): một hàm đường dẫn ở shared — bản máy chủ (`fasttrack/attempts.ts`) chuyển ở PR-UXF-b
 }

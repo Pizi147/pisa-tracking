@@ -9,7 +9,6 @@ export const EN_CV_LOI = {
   '{nhan}: chọn giáo viên': '{nhan}: pick a teacher',
   '— Chưa chọn —': '— Not chosen —',
   'Giao': 'Assign',
-  'Phân công': 'Assign',
   'Phân công GV {tenMon}': 'Assign {tenMon} teacher',
   'Phân công GVCN': 'Assign homeroom teacher',
   '{head} — lớp chưa có {thieu}': '{head} — class has no {thieu}',

@@ -3,7 +3,6 @@ import type { Dich } from '../en.ts';
 
 export const EN_OV15E = {
   '2 tuần vừa qua': 'Last 2 weeks',
-  'Theo tuần': 'By week',
   'Theo tháng': 'By month',
   'Tùy chọn': 'Custom',
   'Ngày không hợp lệ (YYYY-MM-DD).': 'Invalid date (YYYY-MM-DD).',
@@ -16,7 +15,7 @@ export const EN_OV15E = {
   'HV đã làm bài': 'Students tested',
   '{n} lượt lớp': (b) => `${b.n} class sittings`,
   'Bài đã chấm': 'Papers marked',
-  'bài đã chấm': 'papers marked',
+  'bài đã chấm': 'scored',
   'Quá hạn theo GV': 'Overdue by teacher',
   'SOS theo lớp': 'SOS by class',
   'Không có SOS trong kỳ này': 'No SOS in this period',
@@ -26,7 +25,6 @@ export const EN_OV15E = {
   'Kết quả Mock Test': 'Mock Test results',
   'tỷ lệ đạt {p}% ({a}/{b})': (b) => `pass rate ${b.p}% (${b.a}/${b.b})`,
   'không tính vào tỷ lệ': 'not counted in the rate',
-  'HV cần chú ý': 'Students to watch',
   'tại {ngay}': (b) => `as of ${b.ngay}`,
   'Chưa lịch Test': 'No Test scheduled',
   'chưa điểm': 'missing scores',
@@ -47,7 +45,6 @@ export const EN_OV15E = {
   'Áp dụng': 'Apply',
   'Loại kết quả': 'Result type',
   'Xếp theo': 'Group by',
-  'Xuất Excel · {n} lượt': (b) => `Export Excel · ${b.n} sittings`,
   '{n} lượt · {hv} HV': (b) => `${b.n} sittings · ${b.hv} students`,
   '{a} Đạt · {b} Chưa đạt · {c} Chưa đủ điểm': (b) => `${b.a} Passed · ${b.b} Not passed · ${b.c} Missing scores`,
   'Không có lượt Mock Test nào trong {ky}': (b) => `No Mock Test sittings in ${b.ky}`,

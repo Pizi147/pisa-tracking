@@ -1,4 +1,5 @@
 /** OV-15c — Kế hoạch Test: Xóa, năm, tìm, ghi chú lịch thi, xuất. Khoá = chữ Việt trên web. */
+import type { Dich } from '../en.ts';
 export const EN_OV15C = {
   'Đã có điểm — không xóa được': 'Has scores — cannot delete',
   'Đã làm bài — không xóa được': 'Already taken — cannot delete',
@@ -65,7 +66,7 @@ export const EN_OV15C = {
   '“Chỉ điểm” bỏ 2 cột nhận xét.': '“Scores only” drops the 2 comment columns.',
   'Kèm sheet “Thông tin xuất”': 'Includes the “Export info” sheet',
   'Không có lượt nào khớp — đổi phạm vi.': 'No tests match — change the scope.',
-  'Xuất Excel · {n} lượt': 'Export Excel · {n} tests',
+  'Xuất Excel · {n} lượt': (b) => `Export Excel · ${b.n} ${Number(b.n) === 1 ? 'attempt' : 'attempts'}`,
   'Đang tính…': 'Counting…',
   'Tên file': 'File name',
   // Hướng dẫn (QL, Admin)
@@ -89,4 +90,4 @@ export const EN_OV15C = {
   'Bỏ chọn {ma} · {o}': 'Clear {ma} · {o}',
   'Không có lớp để chọn': 'No classes to choose',
   'Gõ tên lớp…': 'Type a class name…',
-};
+} satisfies Record<string, Dich>;

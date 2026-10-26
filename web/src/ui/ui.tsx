@@ -484,7 +484,10 @@ export function BandCell({ cell, target }: {
  * TARGET của lộ trình (Q29-1, PR-KCK; OV-9: KCK là DẤU RIÊNG, Target giữ): "6.5 · KCK" · "— · KCK" (KCK chưa có Target) · "6.5" · "—". Chữ KCK gạch
  * chấm mờ báo có giải thích khi rê chuột. Mọi màn hiện target dùng chung.
  */
-export function TargetText({ band, kck }: { band: number | null | undefined; kck?: boolean | null }) {
+export function TargetText({ band, kck, kyThi }: { band: number | null | undefined; kck?: boolean | null;
+  /** P13 KET-PET: khoá có kỳ thi Cambridge — Target là số nguyên trong thang, không KCK, không định dạng band. */
+  kyThi?: { ten: string; min: number; max: number } | null }) {
+  if (kyThi) return <span title={`${kyThi.ten} ${kyThi.min}–${kyThi.max}`}>{band == null ? '—' : String(band)}</span>;
   if (!kck) return <>{fmtBand(band)}</>;
   return (
     <>{fmtBand(band)} · <abbr title={GIAI_THICH_KCK} aria-label={`${KCK}: ${GIAI_THICH_KCK}`}

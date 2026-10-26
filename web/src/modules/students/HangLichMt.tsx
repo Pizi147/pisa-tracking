@@ -133,7 +133,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
       {moDiem && l && (
         <tr>
           <td className="td" colSpan={5}>
-            <DaiDiemMt attemptId={l.attemptId} homNay={homNay} onDoi={onDoi} onDong={() => onMoDiem(false)} />
+            <DaiDiemMt key={l.attemptId} attemptId={l.attemptId} homNay={homNay} onDoi={onDoi} onDong={() => onMoDiem(false)} />
           </td>
         </tr>
       )}

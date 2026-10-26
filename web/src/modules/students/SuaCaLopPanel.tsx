@@ -9,7 +9,7 @@ import { ErrorState, NutChon, Skeleton, Th } from '../../ui/ui.tsx';
 import { NutMon } from '../../ui/NutMon.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { KCK, chuMon, LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLoSuaCaLop, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
+import { KCK, chuMon, LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLoSuaCaLop, chuTargetKck, chuanOTarget, kyThiCuaChuongTrinh, tachKck, type KyThi, type VanDeNhap } from '@shared/domain/index.ts';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -25,7 +25,7 @@ type DongGoc = {
 };
 /** `nhapLienHe` (OV-10b): cột Liên hệ — QL / Quản trị; GVCN không thấy (chủ SP 13/10). */
 /** `chiThongTin` (OV-13i): TVV / CX — cột Tuần bắt đầu khoá (ngoài `CHI_SUA_THONG_TIN`). */
-type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[]; coMonHoc?: boolean };
+type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; kyThi?: KyThi | null; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[]; coMonHoc?: boolean };
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[]; monHoc?: { studentId: number; dong: string[] }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
@@ -244,7 +244,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                     {cot.map((c) => (
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
                         className={c.key === 'fullName' ? 'sticky-col' : ''}
-                        hint={khoaCot(c.key) ?? (c.key === 'target' ? `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm ${KCK} (ví dụ 6.5 ${KCK}).` : undefined)}>
+                        hint={khoaCot(c.key) ?? (c.key === 'target' ? (du.data?.kyThi ? t('{ten}: số nguyên {min}–{max}, không KCK. Bỏ trống = chưa có Target.', { ten: du.data.kyThi.ten, min: du.data.kyThi.min, max: du.data.kyThi.max }) : `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm ${KCK} (ví dụ 6.5 ${KCK}).`) : undefined)}>
                         {c.nhan}{c.key === 'email' && <span className="text-bad"> *</span>}
                       </Th>
                     ))}

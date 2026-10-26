@@ -5,8 +5,8 @@ import {
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
-  coONhapLienHe, chuMon, type LienHe } from '../../../shared/domain/index.ts';
+  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
+  coONhapLienHe, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -32,7 +32,7 @@ import { cuoiKhoaTheoHocVien, emConMiniTest, emLenFtTu, miniTestCuaHocVien, quye
 import { mt0TheoLop } from '../normal/kyVong.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { loadSkillRows } from '../fasttrack/skillSchedule.ts';
+import { lichGopCua, loadSkillRows } from '../fasttrack/skillSchedule.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
@@ -89,7 +89,7 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
   if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
-    const r = evaluateRegular(prog.skills, rows, prog.code, nguongDatLop(attempt.class_id));
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(kyNang ?? lichGopCua([attempt.id]).get(attempt.id), rows)), rows, prog.code, nguongDatLop(attempt.class_id));   // P13: bộ môn theo lượt
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const scores = pre?.scores ?? scoresOf(attempt.id);
@@ -521,6 +521,7 @@ function dongThongTin(i: {
     const lich = trangThaiLichThi(dangChay, i.keSel && i.keSel.cycleId === dangChay.id ? i.keSel.ke : examPlanOf(dangChay), today);
     if (lich.trangThai !== 'chua-co') thiDuKien = tachNhanLichThi(lich, today);
   }
+  const ktDang = dangChay && !dangChay.route ? kyThiCuaChuongTrinh(dangChay.programme_code) : null;
   return {
     lop: current.class_code as string, lopId: current.class_id as number,
     /* FT: lộ trình LT1/RF… · lớp thường: mã chương trình. */
@@ -528,6 +529,8 @@ function dongThongTin(i: {
     /* OV-9: Target và dấu KCK tách — "6.5 · KCK", KCK chưa có Target "— · KCK". */
     target: (dangChay?.target_score as number | null | undefined) ?? null, kck: !!dangChay?.khong_cam_ket,
     tuanHoc, thiDuKien, thiIelts, lopThuong: !!khoa, gvcn: i.gvcn, tamDung,
+    /* P13 KET-PET: Target điểm Cambridge (không định dạng band) + kết quả thi thật (Overall · Grade · CEFR, tính khi hiện). */
+    ...(ktDang ? { kyThi: { ten: ktDang.ten, min: ktDang.min, max: ktDang.max }, thiThat: ketQuaKyThi(ktDang, { ...dangChay, target_score: dangChay.thi_that_target ?? dangChay.target_score }) } : {}),
   };
 }
 
@@ -916,6 +919,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
         /* P8 (N13, N22 ④): môn đăng ký — chỉ lộ trình FT (null = đủ môn); `monHoc` = "L · R · W2 · S" khi thiếu môn (dòng đầu hồ sơ, k7). */
         ...(selected.route ? { monDangKy: selected.mon_dang_ky ? JSON.parse(selected.mon_dang_ky) as string[] : null, monHoc: selected.mon_dang_ky ? chuMon(selected.mon_dang_ky) : null } : {}),
+        /** P13 KET-PET: kỳ thi Cambridge của lộ trình (KET / PET) — Target + thi thật theo thang này; null = không kỳ thi. */
+        kyThi: !selected.route ? kyThiCuaChuongTrinh(selected.programme_code) : null,
         /* OV-6b1: tuần MT của lớp em đang học — web báo trước "MT sẽ dời" bằng đúng lịch này (`cauMtSeDoi`). */
         lichMt: lichMtCua(enrollments.find((e) => e.status === 'active'), selected.route),
         target, khongCamKet: !!selected.khong_cam_ket, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,

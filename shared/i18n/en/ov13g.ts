@@ -2,6 +2,5 @@
 import type { Dich } from '../en.ts';
 
 export const EN_OV13G = {
-  'Speaking chấm chéo': 'Speaking cross-marking',
   'còn tồn từ {tuan}': 'pending since {tuan}',
 } satisfies Record<string, Dich>;

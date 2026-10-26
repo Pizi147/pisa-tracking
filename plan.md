@@ -1,6 +1,6 @@
 # PISA Progress — Kế hoạch duy nhất
 
-Cập nhật: **24/10/2026 trưa** (**V5 đã merge hết PR màn #533–#561** + SUA-TD4A #559 + TL-V5; còn SUA-NO-RA, CHAM-LAI rồi deploy — mục 4 đầu). Trước đó: **22/10/2026 trưa** (**đã deploy 22/10 12:10** — DB `pisatracking-261022`, mục "Việc còn lại" dòng deploy). Trước đó: **21/10/2026 đêm** (chủ SP duyệt kế hoạch overhaul #486 → GĐ0 / GĐ1 chạy đêm 21/10 — mục 4 "ĐÁNH GIÁ LẠI UX/UI 20/10", 9.5). Trước đó: **18/10/2026 trưa** (**đã deploy 18/10 12:57** — DB `pisatracking-261018`; việc còn lại ở mục "Việc còn lại", phần OV-13).
+Cập nhật: **26/10/2026 đêm** (R1: đã merge EN-1, SUA-NHO, P13, LUU-TIEP, DICH-2 — mục 4 đầu). Trước đó: **26/10/2026 chiều** (**DEPLOY-UX R1** — mục 4 đầu: 5 PR + P8 + P13 rồi deploy; bản chính vẫn `fa7e1811` 22/10). Trước đó: **24/10/2026 trưa** (**V5 đã merge hết PR màn #533–#561** + SUA-TD4A #559 + TL-V5; còn SUA-NO-RA, CHAM-LAI rồi deploy — mục 4 đầu). Trước đó: **22/10/2026 trưa** (**đã deploy 22/10 12:10** — DB `pisatracking-261022`, mục "Việc còn lại" dòng deploy). Trước đó: **21/10/2026 đêm** (chủ SP duyệt kế hoạch overhaul #486 → GĐ0 / GĐ1 chạy đêm 21/10 — mục 4 "ĐÁNH GIÁ LẠI UX/UI 20/10", 9.5). Trước đó: **18/10/2026 trưa** (**đã deploy 18/10 12:57** — DB `pisatracking-261018`; việc còn lại ở mục "Việc còn lại", phần OV-13).
 File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, `PROMPT_BAN_GIAO_PLANNING.md`,
 `docs/superpowers/plans/2026-10-03-lo-trinh-tong-hop-viec-chua-lam.md`. Bản cũ còn trong git: `git show 575e898d:plan.md`.
 
@@ -239,6 +239,16 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 14/10 (chiều) | **OV-12 — chủ SP chốt:** hạn kết quả PA **2 tuần**, hết **Thứ Ba**, kỳ theo tuần từ tuần bắt đầu PA (17/09 → 29/09, 13/10…), hạn cố định (ghi sớm / muộn / ghi bù không dời lịch), PA đang chạy tính lại (không sớm hơn hạn cũ) · QL xoá lớp **trống**, xoá **nhiều** HV, lưu trữ (điều kiện giữ) · TVV nhập thi thật + chọn **Bước tiếp sau thi cả 3 hướng** (không phải PA học thuật) · MT **bắt buộc nhận xét** L/R/W1/W2/S trong hộp chấm + **nhóm nguyên nhân khi dưới kỳ vọng** = nguyên nhân Case SOS → **bỏ xác nhận nguyên nhân** (giữ xác nhận PA) · Case MT cũ chờ nguyên nhân → việc "Ghi nhận xét" · Tổng hợp Xử lý: HV - Case · Chờ duyệt (rộng) · Đang xử lý · "Đang SOS" theo **tuần thi** · hồ sơ MT có bảng Case (thay Rulebook 17.5). Planning tự quyết P1–P14: đặc tả OV-12 mục 2 | OV-12 |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
+
+### DEPLOY-UX R1 — 26/10 (chủ SP duyệt thiết kế `docs/superpowers/specs/2026-10-26-deploy-ux-design.md`; prompt chép `…/2026-10-26-deploy-ux/prompt-chu-sp.md`)
+- **Bản chính = `fa7e1811`** (22/10 12:10, DB `pisatracking-261022`); `main` hơn 364 commit (#533–#587). R1 = 5 PR + P8 + P13 (chủ SP Q1: **chờ P8, P13**) → đóng băng RC → deploy (chủ SP bấm).
+- **Trạng thái 26/10 23:20:** đã merge **EN-1** #590 · **SUA-NHO** #591 · **P13** #586 · **LUU-TIEP** #592 · **DICH-2** #593 (check gộp 4407 + 58 xanh, `main` = bản đã check). Còn: **P8** (cloud, chưa PR) · **EN-2** (thẻ đề xuất, chờ chủ SP bấm) · **PHAN-CAP-TEST** sẵn sàng giao (chủ SP duyệt M2 **A2 vòng 2** 26/10 đêm: màu thanh từng cấp, S Ex ở cột MT, bỏ Dán Excel + ? ở Lịch Test) · rồi đóng băng RC + deploy.
+- **PR R1 (kế hoạch `docs/superpowers/plans/2026-10-26-r1-*.md`, prompt cuối mỗi tệp):** **LUU-TIEP** (high) ∥ **EN-1** (medium) ∥ **DICH-2** (high) ∥ **SUA-NHO** (medium) chạy ngay 26/10 ·
+  **PHAN-CAP-TEST** chờ chủ SP duyệt mockup M2 `thiet-ke/v7/lich-test-phan-cap.html` + LUU-TIEP merge · **EN-2** sau LUU-TIEP (4 tệp Test sau PHAN-CAP) · KHO-TEP **bỏ** (tệp trên bản chính chỉ là tệp thử).
+- **Quyết định 26/10:** D1–D11 ở thiết kế mục 3 — V12 giữ ("Lưu" ở lại), nhãn "Lưu · bài tiếp ›" / "Lưu · việc tiếp ›" / "Lưu · đóng"; V11 thay khi pilot panel 6b duyệt; tiếng Anh **chỉ màn GV** (EN-3 bỏ);
+  sổ tay PDF không chặn. [BÁO] "đạt kỳ vọng chỉ còn Lưu" = trang hồ sơ MT / Lộ trình không có nút tiếp (PTA tái hiện 26/10).
+- **Sau R1:** mục 4 hồ sơ lượt Test (M4), mục 5 hồ sơ HV / chart / góp ý tuần (M5, M5b), mục 6 panel (inventory 6a → pilot 6b M6) — thiết kế mục 6.
+- **Deploy R1 (thay dòng "Deploy V5" dưới):** migrate + tiền kiểm từ `fa7e1811` ở thiết kế mục 5 (8 bước + P13 + P8); migrate đúng ngày deploy (P9a); không chép tệp bằng chứng; dịch AI bật SAU deploy theo `docs/huong-dan/bat-dich-ai.md`.
 
 ### V5 — trạng thái 24/10 (TL-V5)
 - **Đã merge hết PR màn V5:** #533 Công việc · #534 Chấm Test · #539 Lịch Test tuần · #540 Công việc TVV · #547 Hồ sơ lớp · #548 HV & Lớp · #550 Hồ sơ HV ·
@@ -611,6 +621,12 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 26/10/2026 | R1-LUU-TIEP (Opus 5.5) · `claude/r1-luu-tiep-71b75a` | V12 bản 26/10: Lưu ở lại (✓ Đã lưu · Bài tiếp ›), Lưu · bài tiếp › sang bài còn thiếu (`baiKeTiep`, ảnh chụp, vòng, L → R), hết → Lớp tiếp / Việc tiếp; hồ sơ MT / Lộ trình có nút tiếp (Lưu · em tiếp ›); Việc tiếp dùng ảnh chụp; Lưu · việc tiếp › / Lưu · đóng; BT-1…11 + `cham-lien-mach` |
+| 26/10/2026 | #593 R1-DICH-2 (Opus 5.5 high) | Nút Dịch: nhận xét trong `<ghi_chu>` = dữ liệu, kiểm đa tập `[[Pn]]`, khoá nhớ có phiên bản + model, trần 4000 ký tự, che `[Tên]`; web bỏ phản hồi về muộn + `gocBam` (lệch → "tải lại trang để dịch"); `DICH_MODEL` mặc định `gpt-6-luna`; hướng dẫn `docs/huong-dan/bat-dich-ai.md` (khoá Restricted) |
+| 26/10/2026 | #592 R1-LUU-TIEP (Opus 5.5 high) | V12: "Lưu" ở lại, "Lưu · bài tiếp ›" / "Lưu · em tiếp ›" / "Việc tiếp ›" / "Lưu điểm · đóng" (`baiKeTiep`, `usePhienCham`); sửa [BÁO] hồ sơ MT / Lộ trình chỉ còn Lưu; Lịch Test giữ lớp mở + "Lớp tiếp" |
+| 26/10/2026 | #586 P13 KET-PET (cloud) | Thang Cambridge, Target + thi thật KET / PET, Checkpoint 4 môn; bộ môn theo lượt một luật (`daGhiLuot`, `lichGopCua`); migrate `prKetPet` một lần (`pr_ket_pet_at`) + nhật ký từng lộ trình |
+| 26/10/2026 | #591 R1-SUA-NHO (Opus 5.5 medium) | Trục tuần Hành trình (`dungTrucTuan`, trần 260, khung 80 tuần + "Xem trước đó"), lượt lớp thường không vòng chuyển hướng, xoá component `CasePanel` chết (giữ `ThanCase`) |
+| 26/10/2026 | #590 R1-EN-1 (Opus 5.5 medium) | Glossary 26/10, danh sách tệp màn GV, sửa khoá EN trùng, ba phép kiểm EN có nền |
 | 25/10/2026 | P9b CUOI-KHOA (Opus 5.5) · `claude/p9b-cuoi-khoa-ftiuyd` | Trang Cuối khoá lớp thường `?xem=cuoi-khoa` thay tab Lộ trình tiếp theo + Đánh giá đầu ra + hộp KQĐR; N20 hạn T5 tuần trước Final + chuông 3 mốc; N17 cùng chi nhánh, Học viên không Case; N22 GVCN chỉ nhận xét, Kỳ vọng mở khi MT0 quá hạn; R5.3 gỡ TransitionPanel; phép kiểm CK-1…CK-5 |
 | 25/10/2026 | P3 UI-CHUNG (Opus 5.5) · `claude/p3-ui-chung-4c93d8` | Bỏ cách xem Góp ý hàng tuần (dữ liệu + route giữ, xem cũ ở ⋯ › Lịch sử góp ý tuần); menu ⋯ rõ nhóm (`.menu-nhom` / `.menu-muc`); đầu cột dính hồ sơ lớp FT, Kết quả Test, Ý thức; "Mới dùng PISA TRACKING?"; phép kiểm UIC-1–4 |
 | 24/10/2026 | TL-V5 (PTA Plan, Opus 5.5) · `claude/tl-v5` | `DESIGN.md` mục "Luật V5" V1–V16 + token / thang chữ / badge theo mã; Hướng dẫn 7 vai theo màn V5 (Tổng quan GV / TVV / CX / Admin, Lịch Test tuần, hồ sơ HV / lớp / GV, tìm `/` Ctrl K, Phân tích, nhận xét chỉ nhắc) + EN `tlV5.ts`; TVV / CX "Chỉ cho tôi" sang `tq-tom-tat`; truy vết mockup → PR; `plan.md` N9–N10, mục 4 |
