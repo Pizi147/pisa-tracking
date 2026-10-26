@@ -68,6 +68,27 @@ export async function runPrEnTests(t: any) {
     assert(i18n.dichSang('en', '{n} HV', { n: 1 }) === '1 student' && i18n.dichSang('en', '{n} HV', { n: 3 }) === '3 students', `{n} HV: ${i18n.dichSang('en', '{n} HV', { n: 1 })}`);
   });
 
+  /* R1-EN-1 (D11: chỉ màn GV có tiếng Anh): chữ Việt chưa dịch ở màn GV / lỗi máy chủ trên đường GV chỉ được GIẢM so với nền `scripts/chu-viet-cung.json`. */
+  const nen = JSON.parse(fs.readFileSync(path.join(GOC_REPO, 'scripts/chu-viet-cung.json'), 'utf8')) as { web: Record<string, number>; 'may-chu': string[] };
+  await checkAsync('EN-GV · tệp màn GV không thêm chữ Việt cứng ngoài từ điển (nền chu-viet-cung.json, chỉ giảm); man-gv.json khớp route GV', async () => {
+    const { tepManGv } = await import(pathToFileURL(path.join(GOC_REPO, 'scripts/man-gv.mjs')).href);
+    const ds = JSON.parse(fs.readFileSync(path.join(GOC_REPO, 'scripts/man-gv.json'), 'utf8')) as string[];
+    assert(JSON.stringify(ds) === JSON.stringify(tepManGv()), 'scripts/man-gv.json lệch route GV — chạy: node scripts/man-gv.mjs');
+    const dem = await demChuVietGv(ds, EN);
+    const tang = Object.entries(dem).filter(([f, n]) => n > (nen.web[f] ?? 0)).map(([f, n]) => `${f}: ${n} > nền ${nen.web[f] ?? 0}`);
+    const giam = Object.entries(nen.web).filter(([f, n]) => (dem[f] ?? 0) < n).map(([f, n]) => `${f} ${n}→${dem[f] ?? 0}`);
+    if (giam.length) console.log(`    ↳ EN-GV: hạ nền scripts/chu-viet-cung.json (web): ${giam.join(' · ')}`);
+    assert(tang.length === 0, `${tang.length} tệp thêm chữ Việt chưa dịch (bọc t() / thêm khoá EN): ` + tang.slice(0, 8).join(' · '));
+  });
+
+  check('EN-LOI-GV · câu lỗi máy chủ trên đường GV dịch được sang EN (dichMau), trừ nền chu-viet-cung.json "may-chu"', () => {
+    const con = loiMayChuGv((s) => i18n.dichMau('en', s));
+    const moi = con.filter((x) => !nen['may-chu'].includes(x.chu)).map((x) => `${x.noi} "${x.chu}"`);
+    const het = nen['may-chu'].filter((s) => !con.some((x) => x.chu === s));
+    if (het.length) console.log(`    ↳ EN-LOI-GV: hạ nền scripts/chu-viet-cung.json (may-chu), ${het.length} câu đã dịch / bỏ: ${het.slice(0, 3).join(' · ')}`);
+    assert(moi.length === 0, `${moi.length} câu lỗi mới chưa dịch (dùng loi() hoặc thêm khoá EN): ` + moi.slice(0, 8).join(' · '));
+  });
+
   check('EN-KHOA · số ít / số nhiều ở EN ("1 day overdue" / "3 days overdue"), VI giữ chữ cũ; biến là chữ Việt có trong từ điển cũng dịch', () => {
     assert(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 1 }) === '1 day overdue', String(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 1 })));
     assert(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 3 }) === '3 days overdue', String(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 3 })));
@@ -431,3 +452,40 @@ const CHO_PHEP_D: { file: string; text: RegExp }[] = [
 /** Câu lỗi máy chủ GV gặp trên đường Case / Ý thức (đợt d). */
 const LOI_D = ['cases/cases', 'cases/boTro', 'cases/nguoiThucHien', 'cases/sosAuto', 'yThuc/violations', 'yThuc/phoiHop', 'platform/attachments']
   .map((f) => `server/src/${f}.ts`);
+
+const VIET_GV = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+/** R1-EN-1 EN-GV: số chữ Việt cứng theo tệp màn GV — chữ hiện ra (luật quet-chu.mjs, đã bỏ chữ trong t / dich / loi / kem) không có khoá EN đúng chuỗi. */
+export async function demChuVietGv(ds: string[], en: Record<string, unknown>): Promise<Record<string, number>> {
+  const { quetFile } = await import(pathToFileURL(path.join(GOC_REPO, 'scripts/quet-chu.mjs')).href);
+  const dem: Record<string, number> = {};
+  for (const f of ds) {
+    const ra: any[] = [];
+    quetFile(path.join(GOC_REPO, f), f, 'web', ra);
+    const n = ra.filter((r) => VIET_GV.test(r.text.replace(/\{[^}]*\}/g, '')) && !(r.text in en)).length;
+    if (n) dem[f] = n;
+  }
+  return dem;
+}
+
+/** R1-EN-1 EN-LOI-GV: thư mục máy chủ của đường GV (spec 4.3 (c)); câu lỗi chữ Việt (literal / template → `{x}`) mà dichMau EN trả nguyên. */
+const THU_MUC_LOI_GV = ['cham', 'fasttrack', 'normal', 'cases', 'students', 'worklist', 'congViec', 'dich', 'classes'];
+export function loiMayChuGv(dichEn: (s: string) => string): { noi: string; chu: string }[] {
+  const ts = require_ts();
+  const con: { noi: string; chu: string }[] = [];
+  for (const d of THU_MUC_LOI_GV.filter((d) => fs.existsSync(path.join(GOC_REPO, 'server/src', d)))) {
+    for (const f of (fs.readdirSync(path.join(GOC_REPO, 'server/src', d), { recursive: true }) as string[]).filter((f) => /\.ts$/.test(f)).sort()) {
+      const rel = `server/src/${d}/${f}`.replace(/\\/g, '/');
+      const sf = ts.createSourceFile(rel, fs.readFileSync(path.join(GOC_REPO, rel), 'utf8'), ts.ScriptTarget.Latest, true);
+      (function duyet(n: any) {
+        if ((ts.isCallExpression(n) || ts.isNewExpression(n)) && /^(badRequest|forbidden|notFound|conflict|HttpError)$/.test(n.expression.getText())) {
+          const m = n.arguments?.[n.expression.getText() === 'HttpError' ? 1 : 0];
+          const chu = !m ? null : ts.isStringLiteral(m) || ts.isNoSubstitutionTemplateLiteral(m) ? m.text
+            : ts.isTemplateExpression(m) ? m.head.text + m.templateSpans.map((s: any) => '{x}' + s.literal.text).join('') : null;
+          if (chu && VIET_GV.test(chu) && (ts.isTemplateExpression(m) || dichEn(chu) === chu)) con.push({ noi: `${rel}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`, chu });
+        }
+        ts.forEachChild(n, duyet);
+      })(sf);
+    }
+  }
+  return con;
+}
