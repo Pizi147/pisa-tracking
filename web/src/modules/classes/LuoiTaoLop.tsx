@@ -289,7 +289,7 @@ function DongThe({ t: dong, i, soDong, busy, routes, dsCt, branches, gv, hienLoi
   gv: GiaoVien[] | 'loi' | undefined; hienLoi: (o: O) => string | null; idO: (o: string) => string;
   sua: (p: Partial<DongLuoi>, laSua?: boolean) => void; xoa: () => void;
 }) {
-  const { d } = t;
+  const { d } = dong;
   const o = (k: O) => ({ id: idO(k), 'aria-invalid': !!hienLoi(k) || undefined });
   const ft = d.chuongTrinh === 'FT';
   const dsGv = Array.isArray(gv) ? gv : [];

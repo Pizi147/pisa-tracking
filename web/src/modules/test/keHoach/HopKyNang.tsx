@@ -193,8 +193,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   /* P6 N15: FT T6 → CN — tuần đợt thuộc 3 tuần khoá → chip; bỏ kỹ năng khỏi đợt (huỷ lịch) chặn ngay (dời: máy chủ báo qua xem trước). */
   const khoaDotNay = loai === 'ft' && !moi ? khoaCt(...ky.map((k) => kn[k]?.tuan)) : null;
   const khoaBo = loai === 'ft' ? khoaCt(...bo.map((k) => kn[k]?.tuan)) : null;
-  const cauChan = chan.length ? t('Chặn: {cau}', { cau: [...new Set(chan.map((b) => dich(b.cau)))].join(' ') }) : khoaBo ? t('Chặn: {cau}', { cau: khoaBo }) : '';
-  const cauCanhBao = canhBao.length ? [...new Set(canhBao.map((b) => dich(b.cau)))].join(' ') : '';
+  const cauChan = chan.length ? t('Chặn: {cau}', { cau: [...new Set(chan.map((b) => (b.cau ? dich(b.cau) : '')))].join(' ') }) : khoaBo ? t('Chặn: {cau}', { cau: khoaBo }) : '';
+  const cauCanhBao = canhBao.length ? [...new Set(canhBao.map((b) => (b.cau ? dich(b.cau) : '')))].join(' ') : '';
 
   const luuLich = !chan.length && !khoaBo && (moi ? !thieuTuan && dungKy.length > 0 && !!bai : coDoi);
   const luuDuoc = !busy && (luuLich || (doiGhi && !coDoi && !(moi && daChinh)));
