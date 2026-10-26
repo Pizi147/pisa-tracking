@@ -57,5 +57,5 @@ export const EN_P9A_XET_LAI = {
   "Lên {lop}": "Move up to {lop}",
   "Giữ {huong}": "Keep {huong}",
   "Target của {ten}": "Target for {ten}",
-  "Em chưa có Target — ghi band hoặc tích KCK": "No Target yet — enter a band or tick KCK",
+  "Ghi Target (hoặc KCK)": "Enter a Target (or KCK)",
 };

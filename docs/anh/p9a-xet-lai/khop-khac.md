@@ -39,7 +39,9 @@ Sau gộp main (P9b #583, P7 #582): `TransitionPanel` / `BangLoTrinhTiep` / `Tab
 | Lọc em cần Xét lại ở Cuối khoá | Không | Chip "Xét lại n" + chip trên dòng em (trang Cuối khoá lớp cũ) | [XM] PTA Plan |
 | Lên FT (dòng (c)) mà em chưa có Target | — | Ô Target / KCK tại thẻ, gửi `mucTieu` | Không để QL kẹt |
 | Hoàn tác sau Sửa | — | Trả lại quyết định TRƯỚC Sửa (cùng người, giờ quyết); Hoàn tác tiếp → nguyên trạng | Rà PTA Plan |
-| Hoàn tác khi lệnh đã đổi ở Chuyển lớp | — | 409 "Quyết định đã đổi sau khi xét lại — dùng Chuyển lớp." (lệnh giữ bản đã đổi) | Không đè thay đổi người khác |
+| Hoàn tác khi lệnh đã đổi ở Chuyển lớp | — | 409 "Quyết định đã đổi ở Chuyển lớp — dùng Chuyển lớp." khi hướng / lớp / tuần / lý do / Target / trạng thái đổi; bàn giao, lỗi cron không chặn | Không đè thay đổi người khác |
+| Hoàn tác khi em đang có lệnh chờ của quyết định Xét lại trước | — | Trả lại đúng lệnh đó (không huỷ) | Không mất quyết định trước |
+| Hoàn tác Tạm dừng / Kết thúc học khi trạng thái em đã bị người khác đổi | — | 409 "Trạng thái học viên đã đổi sau quyết định — sửa ở hồ sơ học viên." | Không đảo việc của người khác |
 | Hoàn tác | Không | 10 s (trừ "Ngay hôm nay") + Sửa tới khi lệnh mới thi hành; lệnh chưa thi hành → trả NGUYÊN dòng lệnh (xác nhận bàn giao, phiếu môn, LTT) | N21, N22 ③ |
 | Em đang học lại mà Final ≥ 60 % (c) | "Chuyển lớp…" chọn lớp bậc kế | "Lên {bậc kế}" trên thẻ (lớp bậc kế / FT) — cùng `raLenh`, có ghi quyết định Xét lại + Hành trình; Chuyển lớp một em vẫn GIỮ | Không mất đường Lên |
 

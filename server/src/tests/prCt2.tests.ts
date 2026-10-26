@@ -302,7 +302,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const cu = getConfig('demo_date');
     setConfig('demo_date', m[0].ngay_du_kien);
     try { ck.ghiMiniTest(loadPrincipal(GV[3]), m[0].id, { tyLe: 58, ngay: m[0].ngay_du_kien }); } finally { setConfig('demo_date', cu); }
-    assert(xetLai.coXetLaiMiniTest(f.sid) && !get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`, m[0].id), 'dòng (d), không thẻ Báo QL');
+    assert(xetLai.coXetLaiMiniTest(f.sid, m[0].id) && !get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`, m[0].id), 'dòng (d), không thẻ Báo QL');
   });
 
   check('CT2-7 · BE/ELE → FT: không Case / PA / Mini Test theo Final, cả lúc đủ điểm lẫn lúc thi hành; BE 60% lên ELE → có', () => {

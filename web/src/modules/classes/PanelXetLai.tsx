@@ -55,7 +55,7 @@ const doLyDo = (e: EmXetLai) => e.lyDo.ma === 'a' || e.lyDo.ma === 'd';
 const canLyDo = (e: EmXetLai, c: Chon) => c.quyet === 'dung' || (c.quyet === 'tiep_tuc' && e.lyDo.ma === 'a');
 /** Cùng chữ máy chủ (`motEm`) để ô báo đúng chỗ dù lỗi từ web hay từ máy chủ. */
 const LOI_LOP = { len: 'Chọn lớp', hoc_lai: 'Chọn lớp học lại' } as const;
-const LOI_TARGET = 'Em chưa có Target — ghi band hoặc tích KCK';
+const LOI_TARGET = 'Ghi Target (hoặc KCK)';   // = `kiemDongLenh` máy chủ
 const laLoi = (loi: string | null, chu: typeof LOI_LOP[keyof typeof LOI_LOP] | typeof LOI_TARGET) => !!loi && (loi === chu || loi === t(chu));
 const loiChon = (e: EmXetLai, c: Chon): string | null =>
   (laChuyen(c.quyet) && !c.lop ? t(c.quyet === 'len' ? LOI_LOP.len : LOI_LOP.hoc_lai)
@@ -324,8 +324,10 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
   /* Lên FT từ lớp thường: xem trước như panel Chuyển lớp — em chưa có Target nào → ô Target / KCK ngay tại thẻ (`canHoiTarget`). */
   const dichFt = laChuyen(chon?.quyet) && !!lopHocLai.find((l) => l.id === chon?.lop)?.ft;
   const xem = useApi<XemChuyenLopData>(dichFt && !e.lopHienTai.ft ? `/students/${e.studentId}/chuyen-lop?toClassId=${chon!.lop}` : null, [e.studentId, chon?.lop, dichFt]);
-  const hoiTarget = dichFt && !!xem.data && canHoiTarget(xem.data.hienTai.ft, true, xem.data.targetSan);
-  useEffect(() => { if (chon && !!chon.hoiTarget !== hoiTarget) onChon({ ...chon, hoiTarget }); }, [hoiTarget, chon?.lop]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* Máy chủ báo thiếu Target (xem trước lỗi / chưa tải xong) cũng mở ô — ô ở lại tới khi đổi lớp. */
+  const canTarget = (dichFt && !!xem.data && canHoiTarget(xem.data.hienTai.ft, true, xem.data.targetSan)) || laLoi(loi, LOI_TARGET);
+  const hoiTarget = !!chon?.hoiTarget || canTarget;
+  useEffect(() => { if (chon && !chon.hoiTarget && canTarget) onChon({ ...chon, hoiTarget: true }); }, [canTarget]); // eslint-disable-line react-hooks/exhaustive-deps
   const ngayNay = !!chon && !!homNay && laChuyenNgay(chon.tuan, homNay);
   const len = e.lyDo.ma === 'c';
   const ke = e.lopNguon.ct ? tenBacKe(e.lopNguon.ct as ProgrammeCode) : '';
@@ -341,7 +343,7 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
           <div className="flex flex-wrap items-start gap-x-2.5 gap-y-1.5">
             <span className="text-xs font-bold leading-[34px] text-slate-300">{t('Lớp')}</span>
             <span className="w-[300px] max-w-full">
-              <ChonLop ds={ds} value={chon.lop} onChange={(id) => onChon({ ...chon, lop: id })} ariaLabel={t('Lớp của {ten}', { ten: e.ten })} tat={busy}
+              <ChonLop ds={ds} value={chon.lop} onChange={(id) => onChon({ ...chon, lop: id, hoiTarget: false })} ariaLabel={t('Lớp của {ten}', { ten: e.ten })} tat={busy}
                 invalid={laLoi(loi, LOI_LOP.len) || laLoi(loi, LOI_LOP.hoc_lai)} khongKhop={t('Chưa có lớp {ct} đang học ở chi nhánh này', { ct: len ? ke : ct })} placeholder={len ? ke : ct} />
             </span>
           </div>

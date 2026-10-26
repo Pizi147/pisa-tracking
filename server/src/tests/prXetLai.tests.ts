@@ -2,6 +2,8 @@
  * PHÉP KIỂM P9a XET-LAI — Xét lại lộ trình (plan.md 1.6 N21, kế hoạch `docs/superpowers/plans/2026-10-25-p9a-xet-lai.md`).
  * XL-1 luật thuần · XL-2 migrate thẻ Mini Test · XL-3 GET panel = việc · XL-4 POST lô · XL-5 tự giữ + Hoàn tác · XL-6 tốc độ.
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrXetLaiTests(t: YThucTestKit) {
@@ -129,24 +131,33 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
   const theMini = (sid: number, mtId: number) => Number(conn.prepare(
     `INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, trang_thai, tao_luc) VALUES ('bao_len_mini_test', 'bao-len', 'mini_test', ?, ?, 'cho', ?)`,
   ).run(mtId, sid, NOW).lastInsertRowid);
-  check('XL-2 · migrate: DB cũ (chưa bảng) → tạo bảng + mốc tự giữ một lần; thẻ "Mini Test chưa đạt" của em KHÔNG có dòng (d) giữ nguyên; chạy hai lần không đổi gì; DB mã hiện hành không đổi', () => {
+  /** Giả DB cũ (chưa bảng): cất bảng hiện có sang tên khác, chạy `fn`, xong trả lại (các phép kiểm khác đã có dòng). */
+  const voiDbCu = (fn: () => void) => {
+    conn.exec('ALTER TABLE xet_lai_lo_trinh RENAME TO xet_lai_cat; DROP INDEX IF EXISTS ix_xet_lai_hv; DROP INDEX IF EXISTS ux_xet_lai_tu_dong');
+    try { fn(); } finally {
+      conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
+      conn.exec(`DROP TABLE IF EXISTS xet_lai_lo_trinh; ALTER TABLE xet_lai_cat RENAME TO xet_lai_lo_trinh;
+        CREATE INDEX ix_xet_lai_hv ON xet_lai_lo_trinh (student_id, lenh_id);
+        CREATE UNIQUE INDEX ux_xet_lai_tu_dong ON xet_lai_lo_trinh (student_id, lenh_id, moc) WHERE tu_dong = 1;`);
+    }
+  };
+  check('XL-2 · migrate: DB cũ (chưa bảng) → tạo bảng + mốc tự giữ một lần; thẻ "Mini Test chưa đạt" của em KHÔNG có dòng (d) giữ nguyên; chạy hai lần không đổi gì, không tính tập; DB mã hiện hành không đổi', () => {
     const sid = get('SELECT id FROM students ORDER BY id LIMIT 1').id;
     const id = theMini(sid, 999001);
     const a0: string[] = [], a1: string[] = [], a2: string[] = [];
     mig.migratePrXetLai(conn, a0);
     assert(!a0.length && !get(`SELECT 1 FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU), `DB mã hiện hành: ${JSON.stringify(a0)}`);
-    /* Giả DB cũ: cất bảng hiện có sang tên khác, xong trả lại (các phép kiểm khác đã có dòng). */
-    conn.exec('ALTER TABLE xet_lai_lo_trinh RENAME TO xet_lai_cat; DROP INDEX IF EXISTS ix_xet_lai_hv; DROP INDEX IF EXISTS ux_xet_lai_tu_dong');
-    mig.migratePrXetLai(conn, a1);
-    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', 'thẻ không có dòng (d) phải giữ');
-    assert(get(`SELECT value FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU)?.value === TODAY && a1.some((x) => /mốc tự giữ/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
-    mig.migratePrXetLai(conn, a2);
-    assert(!a2.length, `lần 2: ${JSON.stringify(a2)}`);
+    voiDbCu(() => {
+      mig.migratePrXetLai(conn, a1);
+      assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', 'thẻ không có dòng (d) phải giữ');
+      assert(get(`SELECT value FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU)?.value === TODAY && a1.some((x) => /mốc tự giữ/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
+      /* Lần 2 (bảng đã có, thẻ chờ vẫn còn): không câu nào ngoài kiểm bảng — không tính tập Xét lại mỗi lần khởi động. */
+      let n = 0; const goc = conn.prepare.bind(conn);
+      (conn as any).prepare = (sql: string) => { n += 1; return goc(sql); };
+      try { mig.migratePrXetLai(conn, a2); } finally { (conn as any).prepare = goc; }
+      assert(!a2.length && n === 1, `lần 2: ${JSON.stringify(a2)} · ${n} câu`);
+    });
     conn.prepare('DELETE FROM yeu_cau_duyet WHERE id = ?').run(id);
-    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
-    conn.exec(`DROP TABLE xet_lai_lo_trinh; ALTER TABLE xet_lai_cat RENAME TO xet_lai_lo_trinh;
-      CREATE INDEX ix_xet_lai_hv ON xet_lai_lo_trinh (student_id, lenh_id);
-      CREATE UNIQUE INDEX ux_xet_lai_tu_dong ON xet_lai_lo_trinh (student_id, lenh_id, moc) WHERE tu_dong = 1;`);
   });
 
   // ---------------------------------------------------------------- XL-3 · tập em = việc = GET
@@ -306,9 +317,11 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(e?.lyDo.ma === 'd' && e.lyDo.chu === 'Mini Test 55 % · cần ≥ 70 %' && e.han === addDays(week.mondayOf(TODAY), 13), `d: ${JSON.stringify(e?.lyDo)} ${e?.han}`);
     assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`, mt.id), 'không còn thẻ Báo lên');
     /* Thẻ cũ (trước deploy) của em đã có dòng (d) → migrate đóng; "Đã xét lại" đúng quyết định trước. */
-    const the = theMini(B.sid, mt.id);
-    mig.migratePrXetLai(conn, []);
-    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', the).trang_thai === 'tu_dong', 'thẻ có dòng (d): đóng');
+    const the = theMini(B.sid, mt.id), theKhac = theMini(B.sid, mt.id + 900_000);
+    voiDbCu(() => mig.migratePrXetLai(conn, []));
+    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', the).trang_thai === 'tu_dong', 'thẻ có dòng (d) đúng Mini Test: đóng');
+    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', theKhac).trang_thai === 'cho', 'thẻ Mini Test khác: giữ');
+    conn.prepare('DELETE FROM yeu_cau_duyet WHERE id = ?').run(theKhac);
     assert(e.xetLaiTruoc?.quyetDinh === 'tiep_tuc' && e.xetLaiTruoc.chu === 'Tiếp tục BE' && !e.xetLaiTruoc.tuDong, `Đã xét lại: ${JSON.stringify(e.xetLaiTruoc)}`);
     const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: B.sid, quyetDinh: 'tiep_tuc' }]);
     assert(!r.failed.length && !dong(B.sid), `Tiếp tục lần hai: ${JSON.stringify(r)}`);
@@ -408,7 +421,7 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     lenh.suaLenh(QL, lenhCua(Y.sid).id, { tuan: tuan2 });
     const sau = JSON.stringify(lenhCua(Y.sid));
     const h = xl.hoanTacXetLai(QL, X.fou.id, [r.ok[0].id]);
-    assert(h.failed.length === 1 && h.failed[0].message === 'Quyết định đã đổi sau khi xét lại — dùng Chuyển lớp.', JSON.stringify(h));
+    assert(h.failed.length === 1 && h.failed[0].message === 'Quyết định đã đổi ở Chuyển lớp — dùng Chuyển lớp.', JSON.stringify(h));
     assert(JSON.stringify(lenhCua(Y.sid)) === sau && get('SELECT 1 FROM xet_lai_lo_trinh WHERE id = ?', r.ok[0].id), 'lệnh + quyết định giữ nguyên');
   });
 
@@ -444,6 +457,57 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     let ma = 0;
     try { xl.luuXetLai(QL, BE_D.id, [{ studentId: A.sid, quyetDinh: 'tiep_tuc', lyDo: 'x' }, { studentId: A.sid, quyetDinh: 'dung', lyDo: 'y' }]); } catch (e: any) { ma = e.status; }
     assert(ma === 400, `mã ${ma}`);
+  });
+
+  check('XL-12 · em ĐANG có lệnh chờ của quyết định Xét lại trước (dòng mở lại vì Final sửa): Học lại lần hai SỬA lệnh đó, Hoàn tác trả lệnh đó (không huỷ); bàn giao / cron đổi loi, thu_ngay, xác nhận không chặn Hoàn tác', () => {
+    const K = kb(45, 'len_lop', { thiHanh: true });
+    const r1 = xl.luuXetLai(QL, BE_D.id, [{ studentId: K.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: THU_HAI }]);
+    assert(!r1.failed.length, JSON.stringify(r1));
+    const lk = lenhCua(K.sid);
+    assert(lk.trang_thai === 'cho' && lk.lop_dich_id === FOU_D.id, `tiền đề lệnh chờ: ${JSON.stringify(lk)}`);
+    /* Final sửa sau quyết định → dòng (a) mở lại (mốc mới). */
+    conn.prepare('UPDATE assessment_scores SET raw_score = 44, entered_at = ? WHERE attempt_id = ?').run(new Date(Date.now() + 60_000).toISOString(), K.fid);
+    assert(dong(K.sid)?.lyDo.ma === 'a' && !dong(K.sid).quyetDinh, 'dòng mở lại');
+    const FOU_D3 = lop('FOU', 1);
+    const truoc = get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lk.id);
+    const r2 = xl.luuXetLai(QL, BE_D.id, [{ studentId: K.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D3.id, tuan: THU_HAI }]);
+    assert(!r2.failed.length && lenhCua(K.sid).id === lk.id && lenhCua(K.sid).lop_dich_id === FOU_D3.id, `Học lại lần hai sửa lệnh chờ: ${JSON.stringify(r2)}`);
+    assert(get('SELECT lenh_cu FROM xet_lai_lo_trinh WHERE id = ?', r2.ok[0].id).lenh_cu, 'đã chụp lệnh chờ');
+    /* Bàn giao + cron ghi vào dòng lệnh (không phải trường Xét lại đặt) — Hoàn tác vẫn được. */
+    conn.prepare(`UPDATE lenh_chuyen_lop SET loi = 'Lỗi thử', thu_ngay = ?, xac_nhan_boi = ?, xac_nhan_luc = ? WHERE id = ?`).run(TODAY, GVCN_BE.userId, NOW, lk.id);
+    const h = xl.hoanTacXetLai(QL, BE_D.id, [r2.ok[0].id]);
+    const sau = get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lk.id);
+    assert(!h.failed.length && sau.trang_thai === 'cho' && sau.lop_dich_id === FOU_D.id && JSON.stringify(sau) === JSON.stringify(truoc), `Hoàn tác trả lệnh của quyết định trước: ${JSON.stringify(h)} ${JSON.stringify(sau)}`);
+    assert(get('SELECT 1 FROM xet_lai_lo_trinh WHERE id = ?', r1.ok[0].id), 'quyết định trước còn');
+  });
+
+  check('XL-13 · Hoàn tác Tạm dừng khi trạng thái em đã bị người khác đổi (Kết thúc học) → 409, không đảo; còn đúng trạng thái đã quyết → đảo', () => {
+    const S = kb(45, 'len_lop', { thiHanh: true });
+    const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: S.sid, quyetDinh: 'dung', trangThai: 'inactive', lyDo: 'Nghỉ ốm' }]);
+    assert(!r.failed.length, JSON.stringify(r));
+    conn.prepare(`UPDATE students SET status = 'finished' WHERE id = ?`).run(S.sid);
+    const h = xl.hoanTacXetLai(QL, BE_D.id, [r.ok[0].id]);
+    assert(h.failed.length === 1 && /Trạng thái học viên đã đổi/.test(h.failed[0].message) && get('SELECT status FROM students WHERE id = ?', S.sid).status === 'finished'
+      && get('SELECT 1 FROM xet_lai_lo_trinh WHERE id = ?', r.ok[0].id), `đổi bởi người khác: ${JSON.stringify(h)}`);
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(S.sid);
+    const h2 = xl.hoanTacXetLai(QL, BE_D.id, [r.ok[0].id]);
+    assert(!h2.failed.length && get('SELECT status FROM students WHERE id = ?', S.sid).status === 'active', `đúng trạng thái: ${JSON.stringify(h2)}`);
+  });
+
+  check('XL-14 · coXetLaiMiniTest chỉ đúng Mini Test gây dòng (d)', () => {
+    const M = kb(55, 'len_lop', { thiHanh: true });
+    const mt = get('SELECT * FROM mini_test WHERE student_id = ?', M.sid);
+    ck.ghiMiniTest(QL, mt.id, { tyLe: 50, ngay: TODAY });
+    assert(dong(M.sid)?.lyDo.ma === 'd' && xl.coXetLaiMiniTest(M.sid, mt.id) && !xl.coXetLaiMiniTest(M.sid, mt.id + 900_000), 'đúng Mini Test');
+  });
+
+  check('XL-15 · hạn cố định: Final ghi bằng giờ thật sau ngày demo → mốc = hôm nay demo, hạn không đổi theo ngày tra; quét định kỳ dùng ngày nghiệp vụ', () => {
+    const G2 = kb(42, 'len_lop', { thiHanh: true });
+    conn.prepare('UPDATE assessment_scores SET entered_at = ? WHERE attempt_id = ?').run(new Date(Date.parse(`${addDays(TODAY, 30)}T03:00:00.000Z`)).toISOString(), G2.fid);
+    const h0 = dong(G2.sid)?.han;
+    assert(h0 && h0 === dong(G2.sid, addDays(TODAY, 3))?.han && h0 >= TODAY, `hạn: ${h0} / ${dong(G2.sid, addDays(TODAY, 3))?.han}`);
+    const src = fs.readFileSync(path.join(process.cwd(), 'server/src/ops/chotVangDinhKy.ts'), 'utf8');
+    assert(/quetXetLaiHetHan\(o\.ngay \?\? demoToday\(\)\)/.test(src), 'chotVangDinhKy: quét theo demoToday()');
   });
 
   check('XL-6 · tốc độ: tapXetLai cùng số câu SQL khi 3 hay 12 em (≤ 14)', () => {
