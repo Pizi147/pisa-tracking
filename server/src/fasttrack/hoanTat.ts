@@ -49,13 +49,13 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
     if (r.lich_su) nhapCuoiLichSu.set(r.id, r.nhap_cuoi ? addDays(mondayOfDate(addDays(String(r.nhap_cuoi), 7)), 6) : null);
   }
 
-  const skillsOf = new Map<number, Array<{ skill: string; batBuoc: boolean; huy: boolean; sitAbsent: boolean; weekEnd: string | null; periodId: number | null }>>();
+  const skillsOf = new Map<number, Array<{ skill: string; batBuoc: boolean; huy: boolean; sitAbsent: boolean; weekEnd: string | null; periodId: number | null; boTask?: string | null }>>();
   /* TD2-a: lịch kỹ năng qua `loadSkillRows` (nhớ theo lượt trong request) — bảng điểm lớp đã đọc đúng các lượt này ngay trước. */
   for (const r of [...loadSkillRows(attemptIds).values()].flat()) {
     if (!skillsOf.has(r.attempt_id)) skillsOf.set(r.attempt_id, []);
     skillsOf.get(r.attempt_id)!.push({
       skill: r.skill, batBuoc: r.required === 1, huy: r.sit_status === 'cancelled',
-      sitAbsent: r.sit_status === 'absent', weekEnd: r.week_end ?? null, periodId: r.planned_period_id ?? null,
+      sitAbsent: r.sit_status === 'absent', weekEnd: r.week_end ?? null, periodId: r.planned_period_id ?? null, boTask: r.bo_task ?? null,
     });
   }
 
@@ -76,10 +76,11 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
     const cheDo = modeOf.get(attemptId) ?? 'ielts_band';
     const skills = skillsOf.get(attemptId) ?? [];
     const scores = scoresOf.get(attemptId) ?? [];
-    const entryKeysOf = (skill: string) => (cheDo === 'ielts_band' && skill === 'writing' ? ['writing1', 'writing2'] : [skill]);
+    /* P8 (N13): task Writing em không học (`bo_task`) không cần điểm. */
+    const entryKeysOf = (skill: string, boTask?: string | null) => (cheDo === 'ielts_band' && skill === 'writing' ? ['writing1', 'writing2'].filter((k) => k !== boTask) : [skill]);
 
     const kn = skills.map((s) => {
-      const entryKeys = entryKeysOf(s.skill);
+      const entryKeys = entryKeysOf(s.skill, s.boTask);
       const entryRows = scores.filter((sc) => entryKeys.includes(sc.skill));
       const coDiem = entryKeys.length > 0 && entryKeys.every((k) => {
         const row = entryRows.find((sc) => sc.skill === k);

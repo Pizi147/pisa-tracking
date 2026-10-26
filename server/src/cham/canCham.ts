@@ -144,7 +144,7 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
       AND (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id
             AND (CASE WHEN sc.skill IN ('writing1', 'writing2') THEN 'writing' ELSE sc.skill END) = k.skill
             AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL OR sc.no_show_period_id IS NOT NULL))
-        < (CASE WHEN k.skill = 'writing' THEN 2 ELSE 1 END))`];
+        < (CASE WHEN k.skill = 'writing' THEN (CASE WHEN k.bo_task IS NULL THEN 2 ELSE 1 END) ELSE 1 END))`];   // P8: chỉ học một task Writing
   const params: unknown[] = [];
   if (o.classIds) { where.push(`a.class_id IN (${o.classIds.map(() => '?').join(',')})`); params.push(...o.classIds); }
   if (o.branchId) { where.push('c.branch_id = ?'); params.push(o.branchId); }
@@ -530,8 +530,9 @@ function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: 
 }
 
 /** Ô nhập của một dòng lịch: Writing FT là hai ô W1, W2; còn lại một ô cùng tên môn. */
-const oNhapCua = (r: { skill: string; programme_code: string | null; kind?: string }): string[] =>
-  ((r.kind === 'mt0' || cheDoCua(r.programme_code) === 'ielts_band') && r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill]);
+/* P8 (N13): task Writing em không học (`bo_task`) không phải bài chờ chấm. */
+const oNhapCua = (r: { skill: string; programme_code: string | null; kind?: string; bo_task?: string | null }): string[] =>
+  ((r.kind === 'mt0' || cheDoCua(r.programme_code) === 'ielts_band') && r.skill === 'writing' ? ['writing1', 'writing2'].filter((k) => k !== r.bo_task) : [r.skill]);
 
 const THU_TU_MON =
   `CASE ask.skill WHEN 'listening' THEN 1 WHEN 'reading' THEN 2 WHEN 'writing' THEN 3 WHEN 'speaking' THEN 4 WHEN 'tong_hop' THEN 5 ELSE 6 END`;
@@ -570,7 +571,7 @@ function hangLopTuan(
     .prepare(
       `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.student_id, a.deadline_override AS han_dot,
               c.code AS class_code, b.name AS branch_name, c.programme_code,
-              ask.skill, ask.sit_status, ask.deadline_override AS han_mon
+              ask.skill, ask.sit_status, ask.deadline_override AS han_mon, ask.bo_task
          FROM assessment_attempts a
          JOIN attempt_skills ask ON ask.attempt_id = a.id
          JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}   -- PR-S6F-a Q2: cùng tập khối Nợ / badge

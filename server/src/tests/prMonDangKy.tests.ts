@@ -13,6 +13,10 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const { demLuotLechCo, capNhatConOCho } = await import('../fasttrack/conOCho.ts');
   const { scoreDebtCells } = await import('../worklist/scoreDebt.ts');
+  const hoanTat: any = await import('../fasttrack/hoanTat.ts');
+  const cls: any = await import('../classes/classes.ts');
+  const cham: any = await import('../cham/canCham.ts');
+  const week: any = await import('../platform/week.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   /** Lộ trình FT đang học của em (theo tên trong bộ demo) + lượt MT theo số. */
@@ -116,10 +120,25 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assert(get('SELECT o_cho_tu FROM assessment_attempts WHERE id = ?', mt3.id).o_cho_tu === null, 'đủ L R W2 S → không còn ô chờ (W1 không chờ)');
       const r = attempts.resultOf(get('SELECT * FROM assessment_attempts WHERE id = ?', mt3.id));
       assert(r.bands.writing === 7 && r.overall === null && r.chot && r.khongDuBoMon, `Writing ${r.bands.writing}, Overall ${r.overall}`);
+      /* Lượt đủ L R W2 S là "đủ điểm" (không chờ W1) — cùng luật hoàn tất của bảng điểm. */
+      assert(hoanTat.dotHoanTatMany([mt3.id], addDays(TODAY, 200)).get(mt3.id)?.hoanTat, 'đủ L R W2 S → hoàn tất');
       const s1 = all('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?', mt1.id);
       const b = (k: string) => s1.find((x) => x.skill === k).band;
       const r1 = attempts.resultOf(get('SELECT * FROM assessment_attempts WHERE id = ?', mt1.id));
       assert(r1.bands.writing === Math.round(((b('writing1') + b('writing2') * 2) / 3) * 2) / 2, 'MT1 giữ công thức W1 + W2');
+    });
+  });
+
+  check('MDK-3e · badge "n bài chờ chấm" = ba khối Lịch Test khi lớp có em chỉ học W2 (ô W1 không là bài chờ chấm)', () => {
+    thu(() => {
+      const huy = em('Lê Quang Huy');
+      mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
+      const lop = t.classId('MB FT 101');
+      const tom = cls.listClassSummaries(P.mbManager, { scope: 'managed' });
+      const s = ((Array.isArray(tom) ? tom : tom.classes ?? tom.rows ?? []) as any[]).find((c: any) => c.id === lop);
+      const r = cham.lichTest(P.mbManager, week.ensurePeriod(week.mondayOf(TODAY)).id, null, TODAY, { classId: lop, phamVi: 'tat-ca' });
+      const k = r.no.reduce((n: number, x: any) => n + x.conBai, 0) + (r.chamTuanNay ?? []).reduce((n: number, l: any) => n + l.conBai, 0) + r.lop.reduce((n: number, l: any) => n + l.conBai, 0);
+      assert(k === s.needScores, `ba khối ${k} ≠ badge ${s.needScores}`);
     });
   });
 
@@ -164,6 +183,12 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assert(s.required === 0 && s.scope_reason === 'Không học', `MT4 S: ${s.required}`);
       assert(w.required === 1 && w.bo_task === 'writing2', `MT4 W: ${w.required} ${w.bo_task}`);
       assert(demLuotLechCo() === 0, 'cờ ô chờ khớp');
+      /* Lượt đã huỷ rồi tạo lại cùng số (hồi sinh) cũng theo môn đăng ký hiện tại. */
+      conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(moi.id);
+      mdk.apMonDangKy(P.mbManager, ha.id, ['listening', 'reading', 'writing1', 'writing2']);
+      conn.prepare(`UPDATE attempt_skills SET required = 1, scope_reason = NULL, bo_task = NULL WHERE attempt_id = ?`).run(moi.id);   // như lượt huỷ trước khi đổi môn
+      const lai = attempts.createAttempt(P.admin, { studentId: ha.sid, cycleId: ha.id, attemptNo: 4, periodId: mt3.planned_period_id });
+      assert(lai.id === moi.id && dong(moi.id, 'speaking').required === 0 && dong(moi.id, 'writing').bo_task === null, `hồi sinh: S ${dong(moi.id, 'speaking').required}`);
       const thuong = get(`SELECT id FROM learning_cycles WHERE route IS NULL AND status = 'active' LIMIT 1`);
       assertThrows(() => mdk.apMonDangKy(P.admin, thuong.id, KHONG_S), /Fast Track/, 'lớp thường → 400');
       assertThrows(() => mdk.apMonDangKy(P.mbManager, ha.id, []), /ít nhất một môn/, 'rỗng → 400');
@@ -179,7 +204,6 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   const suaCaLop: any = await import('../classes/suaCaLop.ts');
   const bt: any = await import('../loTrinh/buocTiep.ts');
   const intake: any = await import('../classes/intake.ts');
-  const week: any = await import('../platform/week.ts');
   const lichSu: any = await import('../students/lichSuSua.ts');
   const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
   const NOW = new Date().toISOString();
