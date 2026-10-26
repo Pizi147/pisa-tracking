@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
   khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
-import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nhoTheoId } from '../platform/nguCanhRequest.ts';
@@ -718,14 +718,14 @@ export function boTuanLuot(p: Principal, attemptId: number, o: { lyDo?: string |
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới huỷ lịch được một lượt.');
   const nhan = nhanDot(a.kind, a.attempt_no);
-  if (a.status === 'cancelled') throw badRequest(`${nhan} đã huỷ.`);
+  if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
   const rows = ensureSkillRows(attemptId);
-  if (a.co_diem) throw badRequest(`${nhan} đã có điểm — không huỷ lịch được.`);
-  if (rows.some((r) => r.required && r.sit_status === 'sat')) throw badRequest(`${nhan} đã làm bài — không huỷ lịch được.`);
+  if (a.co_diem) throw loi(400, '{nhan} đã có điểm — không huỷ lịch được.', { nhan });
+  if (rows.some((r) => r.required && r.sit_status === 'sat')) throw loi(400, '{nhan} đã làm bài — không huỷ lịch được.', { nhan });
   const cho = conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending' LIMIT 1`).get(attemptId);
-  if (cho) throw badRequest(`${nhan} đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước.`);
+  if (cho) throw loi(400, '{nhan} đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước.', { nhan });
   const bo = rows.filter((r) => r.required && r.sit_status === 'scheduled' && r.planned_period_id);
-  if (!bo.length) throw badRequest(`${nhan} chưa xếp lịch — không có gì để huỷ.`);
+  if (!bo.length) throw loi(400, '{nhan} chưa xếp lịch — không có gì để huỷ.', { nhan });
   chanCuoiTuan(p, a, bo.map((r) => r.week_start));
   const lyDo = o.lyDo?.trim() || 'Huỷ lịch';
 
@@ -829,7 +829,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
     'Bạn không có quyền đổi lịch Test của kỹ năng này.',
   );
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ. Mở lại trước khi đổi lịch.');
-  if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của đợt này.`);
+  if (!row.required) throw loi(400, 'Kỹ năng {x} không nằm trong phạm vi yêu cầu của đợt này.', { x: tenMon(null, skill) });
 
   const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần');
@@ -856,7 +856,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
       );
     }
     if (row.sit_status === 'sat') {
-      throw badRequest(`${skill} đã được xác nhận là đã làm bài. Việc còn lại là chấm, không phải dời lịch.`);
+      throw loi(400, '{skill} đã được xác nhận là đã làm bài. Việc còn lại là chấm, không phải dời lịch.', { skill });
     }
   }
 
@@ -869,7 +869,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start, boQua });
   if (check.blockers.length) throw badRequest(check.blockers.join(' '));
   if (check.warnings.length && !opts.force) {
-    throw badRequest(`${check.warnings.join(' ')} Xác nhận lại nếu vẫn muốn xếp vào tuần này.`);
+    throw loi(400, '{x} Xác nhận lại nếu vẫn muốn xếp vào tuần này.', { x: check.warnings.join(' ') });
   }
 
   /*
@@ -893,7 +893,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   }
 
   /* PR-MTGON (MTG-4c): kỹ năng đã huỷ không đổi tuần lặng lẽ — "Đưa lại vào đợt" (`setSkillScope`) trước. */
-  if (row.sit_status === 'cancelled') throw badRequest(`${tenMon(null, skill)} đã huỷ — "Đưa lại vào đợt" trước rồi mới đặt tuần.`);
+  if (row.sit_status === 'cancelled') throw loi(400, '{x} đã huỷ — "Đưa lại vào đợt" trước rồi mới đặt tuần.', { x: tenMon(null, skill) });
 
   return tx(() => {
     const conn = db();
@@ -949,7 +949,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
  */
 export function kiemDaToiTuanThi(row: { week_start: string | null }, today: string): void {
   if (!row.week_start) throw badRequest('Chưa xếp tuần Test — chưa nhập điểm được.');
-  if (row.week_start.slice(0, 10) > mondayOf(today)) throw badRequest(`Chưa tới tuần Test ${tuanLich(row.week_start, today)} — chưa nhập điểm được.`);
+  if (row.week_start.slice(0, 10) > mondayOf(today)) throw loi(400, 'Chưa tới tuần Test {x} — chưa nhập điểm được.', { x: tuanLich(row.week_start, today) });
 }
 
 /** GVCN đang hoạt động của một lớp. */
@@ -1078,12 +1078,12 @@ export function setSitStatus(p: Principal, attemptId: number, skill: string, sta
     p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
     'Bạn không có quyền xác nhận trạng thái làm bài của kỹ năng này.',
   );
-  if (!row.required) throw badRequest(`Kỹ năng ${tenMon(null, skill)} không nằm trong phạm vi yêu cầu của đợt này.`);
+  if (!row.required) throw loi(400, 'Kỹ năng {x} không nằm trong phạm vi yêu cầu của đợt này.', { x: tenMon(null, skill) });
   if (status === 'absent' && hasScore(attemptId, row.skill)) {
-    throw badRequest(`${skill} đã có điểm ở đợt này, không thể xác nhận là vắng.`);
+    throw loi(400, '{skill} đã có điểm ở đợt này, không thể xác nhận là vắng.', { skill });
   }
   if (status !== 'scheduled' && !row.planned_period_id) {
-    throw badRequest(`${skill} chưa có tuần Test, chưa xác nhận được em đã làm bài hay vắng.`);
+    throw loi(400, '{skill} chưa có tuần Test, chưa xác nhận được em đã làm bài hay vắng.', { skill });
   }
   if (row.sit_status === status) return { ok: true, unchanged: true };
 

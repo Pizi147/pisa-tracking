@@ -10,7 +10,7 @@
 import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, nhanDot, tenMon, type KetQuaHuy } from '../../../shared/domain/index.ts';
 import type { ChupCaseDong } from '../cases/systemClose.ts';
-import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -62,12 +62,12 @@ export function khoiPhucDiem(p: Principal, attemptId: number, skill: string, tod
   /* Quyền trước (rà #503 c): người không sửa được ô không được biết ô có điểm huỷ hay không. Lưu bên dưới vẫn kiểm đủ (lớp kết thúc, tuần thi…). */
   if (!a.class_id || !scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 })) throw forbidden('Bạn không sửa được ô điểm này.');
   const ban = banMoCuaO(conn, attemptId, thuong ? [skill] : entrySkillsOf(assessedSkillOf(skill)));
-  if (!ban.length) throw badRequest(`${tenMon(null, skill)} không có điểm đã huỷ để khôi phục.`);
+  if (!ban.length) throw loi(400, '{x} không có điểm đã huỷ để khôi phục.', { x: tenMon(null, skill) });
   const lyDo = 'Khôi phục điểm';
   return tx(() => {
     for (const { k, d } of ban) {
       const hien = conn.prepare('SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, d.skill) as any;
-      if (hien && (hien.band != null || hien.raw_score != null)) throw badRequest(`${tenMon(null, d.skill)} đã có điểm mới — không khôi phục điểm cũ.`);
+      if (hien && (hien.band != null || hien.raw_score != null)) throw loi(400, '{x} đã có điểm mới — không khôi phục điểm cũ.', { x: tenMon(null, d.skill) });
       if (thuong) saveRegularScore(p, attemptId, d.skill, { score: d.raw_score, total: d.raw_total, lyDo }, today);
       else {
         const tieuChi = [d.c1, d.c2, d.c3, d.c4];
@@ -106,12 +106,12 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
   const lyDo = o.lyDo?.trim() || null;
   return tx(() => {
     const kq = conn.prepare(`SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'doi_vuot' AND khoi_phuc_luc IS NULL ORDER BY id DESC LIMIT 1`).get(attemptId) as any;
-    if (!kq) throw badRequest(`${nhan} không có kết quả đã huỷ.`);
-    if (a.status === 'cancelled') throw badRequest(`${nhan} đã huỷ — mở lại lượt trước.`);
+    if (!kq) throw loi(400, '{nhan} không có kết quả đã huỷ.', { nhan });
+    if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ — mở lại lượt trước.', { nhan });
     const diemHuy = JSON.parse(kq.diem_json) as any[];
     const lichHuy = JSON.parse(kq.lich_json) as Array<{ skill: string; planned_period_id: number | null; sit_status: string; plan_source: string }>;
     const hienTai = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(attemptId) as any[];
-    if (diemHuy.some((d) => hienTai.some((h) => h.skill === d.skill && CO_DIEM(h)))) throw badRequest(`${nhan} đã có điểm mới — không khôi phục được.`);
+    if (diemHuy.some((d) => hienTai.some((h) => h.skill === d.skill && CO_DIEM(h)))) throw loi(400, '{nhan} đã có điểm mới — không khôi phục được.', { nhan });
     const boQua = diemHuy.filter((d) => hienTai.some((h) => h.skill === d.skill && h.no_show_period_id != null)).map((d) => d.skill as string);
     const kyNangBoQua = new Set(boQua.map((k) => assessedSkillOf(k) as string));
     const diem = diemHuy.filter((d) => !kyNangBoQua.has(assessedSkillOf(d.skill)));
@@ -121,11 +121,11 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
       ...lich.map((l) => l.planned_period_id ? (conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any)?.week_start : null)]);
     for (const l of lich) {
       const r = rows.find((x) => x.skill === l.skill);
-      if (r?.sit_status === 'cancelled') throw badRequest(`${tenMon(null, l.skill)} của ${nhan} đã huỷ — không khôi phục được.`);
+      if (r?.sit_status === 'cancelled') throw loi(400, '{x} của {nhan} đã huỷ — không khôi phục được.', { x: tenMon(null, l.skill), nhan });
       if (!l.planned_period_id) continue;
       const pr = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any;
       const c = checkSkillWeekMove({ attemptId, skill: l.skill, newWeekStart: pr.week_start });
-      if (c.blockers.length) throw badRequest(`${c.blockers[0]} Dời lượt trước về trước rồi khôi phục.`);
+      if (c.blockers.length) throw loi(400, '{x} Dời lượt trước về trước rồi khôi phục.', { x: c.blockers[0] });
     }
     const now = nowIso();
     for (const l of lich) {

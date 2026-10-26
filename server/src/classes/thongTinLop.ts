@@ -8,7 +8,7 @@ import {
   CHO_TAO_PRE_FOU, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop, kyHieuLop, programmeOf, tachSoLop,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound } from '../util.ts';
+import { badRequest, notFound, loi } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ghiPhanCong } from './classes.ts';
@@ -41,7 +41,7 @@ export function capNhatThongTinLop(
     const pc = programmeOf(String(input.programmeCode ?? ''));
     const prog = pc ? programmeByCode(pc) : null;   // OV-6b2: mã mới đọc bảng `programmes` (mã lạ không có trong bảng → không hợp lệ)
     if (!pc || !prog) throw badRequest('Chương trình không hợp lệ.');
-    if (!prog.active && pc !== cu) throw badRequest(`Chương trình ${pc} đã ngừng dùng — chọn chương trình khác.`);
+    if (!prog.active && pc !== cu) throw loi(400, 'Chương trình {pc} đã ngừng dùng — chọn chương trình khác.', { pc });
     if (pc === 'PREFOU' && !CHO_TAO_PRE_FOU && pc !== cu) throw badRequest('Lớp Pre FOU chưa mở — sẽ mở cùng đợt cập nhật hệ môn học.');
     chuongTrinh = pc;
   }
@@ -59,9 +59,9 @@ export function capNhatThongTinLop(
     /* Q6 (K2-18): lớp và từng em không được nói hai lộ trình — đổi thì chuyển em sang lớp khác, không đổi lớp. */
     const n = (conn.prepare('SELECT COUNT(DISTINCT student_id) n FROM enrollments WHERE class_id = ?').get(classId) as any).n as number;
     const viec = doiCt ? 'chương trình' : 'lộ trình';
-    if (n) throw badRequest(`Lớp đã có ${n} học viên — muốn đổi ${viec} thì chuyển các em sang lớp ${kyHieuLop(chuongTrinh, route)} khác.`);
+    if (n) throw loi(400, 'Lớp đã có {n} học viên — muốn đổi {viec} thì chuyển các em sang lớp {x} khác.', { n, viec, x: kyHieuLop(chuongTrinh, route) });
     if (conn.prepare('SELECT 1 FROM assessment_attempts WHERE class_id = ? LIMIT 1').get(classId)) {
-      throw badRequest(`Lớp đã có bài Test nên không đổi được ${viec}.`);
+      throw loi(400, 'Lớp đã có bài Test nên không đổi được {viec}.', { viec });
     }
   }
 
@@ -83,7 +83,7 @@ export function capNhatThongTinLop(
     const code = ghepMaLop(cn, chuongTrinh!, route, so);
     if (code !== c.code) {
       if (conn.prepare(`SELECT id FROM classes WHERE ${khoaMaLopSql()} = ? AND id != ?`).get(chuanHoaMaLop(code), classId)) {
-        throw badRequest(`Đã có lớp ${code}.`);   // so chuẩn hoá — khớp chỉ mục ux_classes_ma_chuan (Q3)
+        throw loi(400, 'Đã có lớp {code}.', { code });   // so chuẩn hoá — khớp chỉ mục ux_classes_ma_chuan (Q3)
       }
       moi.code = code;
     }

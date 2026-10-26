@@ -6,7 +6,7 @@ import {
   NHAN_THIEU_EMAIL, PROGRAMME_TEMPLATES, kyHieuLop, laLienTuc, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, notFound, nowIso, loi } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -664,8 +664,8 @@ export function setClassProgress(p: Principal, classId: number, input: {
   const weeks: number | null = c.so_tuan ?? (code ? allProgrammes().get(code)?.weeks ?? null : null);
   const checkWeek = (v: number | null | undefined, label: string) => {
     if (v === null || v === undefined) return null;
-    if (!Number.isInteger(v) || v < 1) throw badRequest(`${label} phải là số tuần từ 1 trở lên.`);
-    if (weeks && v > weeks) throw badRequest(`${label} không thể vượt quá ${weeks} tuần của chương trình.`);
+    if (!Number.isInteger(v) || v < 1) throw loi(400, '{label} phải là số tuần từ 1 trở lên.', { label });
+    if (weeks && v > weeks) throw loi(400, '{label} không thể vượt quá {weeks} tuần của chương trình.', { label, weeks });
     return v;
   };
   const progress = 'progressWeek' in input ? checkWeek(input.progressWeek, 'Tuần Progress Test') : undefined;

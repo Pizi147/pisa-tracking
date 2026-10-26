@@ -7,7 +7,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
-import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, kiemKieuO, notFound, nowIso, loi as loiHttp } from '../util.ts';
 import { can as coQuyen, require_, type Ctx, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
@@ -200,10 +200,10 @@ export function createCycle(p: Principal, input: {
 /** Ô Tuần bắt đầu của lộ trình `c` → Thứ Hai ISO; sai → 400. Cận năm chỉ khi ĐỔI (PR-TOC). Chung cho `updateCycle` và Sửa cả lớp (PR-SL). */
 export function docTuanBatDau(c: any, v: unknown): string {
   const w = docNgayNhap(v, demoToday());
-  if (!w.iso) throw badRequest(`Tuần bắt đầu: ${w.loi ?? 'bắt buộc'}`);
+  if (!w.iso) throw loiHttp(400, 'Tuần bắt đầu: {x}', { x: w.loi ?? 'bắt buộc' });
   const cu = c.start_period_id ? periodById(c.start_period_id)?.weekStart ?? null : null;
   const ngoai = mondayOf(w.iso) !== cu ? docNgayNhap(w.iso, demoToday(), canNamGan(demoToday())).loi : null;
-  if (ngoai) throw badRequest(`Tuần bắt đầu: ${ngoai}`);
+  if (ngoai) throw loiHttp(400, 'Tuần bắt đầu: {ngoai}', { ngoai });
   return mondayOf(w.iso);
 }
 
@@ -211,7 +211,7 @@ export function docTuanBatDau(c: any, v: unknown): string {
 export function docDuKienThi(c: any, v: unknown): string | null {
   const t = docNgayNhap(v, demoToday(), { choThang: true });
   const ngoai = t.iso && t.iso !== (c.exam_date ?? c.exam_month) ? docNgayNhap(t.iso, demoToday(), { choThang: true, ...canNamGan(demoToday()) }).loi : null;
-  if (t.loi || ngoai) throw badRequest(`Dự kiến thi: ${t.loi ?? ngoai}`);
+  if (t.loi || ngoai) throw loiHttp(400, 'Dự kiến thi: {x}', { x: t.loi ?? ngoai });
   return t.iso;
 }
 
@@ -263,7 +263,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const thang = patch.examMonth ? String(patch.examMonth).slice(0, 7) : null;
   if (thang && thang !== c.exam_month && /^\d{4}-\d{2}$/.test(thang)) {
     const loi = docNgayNhap(thang, demoToday(), { choThang: true, ...can }).loi;
-    if (loi) throw badRequest(`Dự kiến thi: ${loi}`);
+    if (loi) throw loiHttp(400, 'Dự kiến thi: {loi}', { loi });
   }
   /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Dự kiến thi giữ `student.edit` (Q7). */
   /* Q29-1: targetScore nhận cả KCK — `reviseTarget` ghi kèm `khong_cam_ket`. */

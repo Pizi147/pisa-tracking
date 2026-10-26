@@ -43,7 +43,7 @@ export type ViecDongSoLieu = {
 /** PR-VAI-a (Q26): dòng Case/PA có người phụ trách + hạn — panel ghi "người · quá hạn n ngày". OV-12e: đầu dòng v3 + việc của dòng. */
 export type DongSoLieu = {
   id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null;
-  em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
+  em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null; ngayThiThat?: string;
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
   /** UI-HO-SO-GV: dòng kết quả — điểm từng kỹ năng (`cua` = kỹ năng GV phụ trách), Overall, mốc so, kết luận (tab Chưa đạt · Đạt). */
   diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%'; vuot?: boolean;
@@ -211,7 +211,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     const moRong = mo === r.id && !r.xong;
     /* UI-HO-SO-GV: dòng chỉ có `lop` (không em / ngữ cảnh) trước đây mất cả câu `sub` — nay chỉ dùng đầu dòng v3 khi có em hoặc ngữ cảnh. */
     const dong2 = r.em || r.ngCanh
-      ? [r.em?.ten, r.lop, r.ngCanh, r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
+      ? [r.em?.ten, r.lop, r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh && dich(r.ngCanh), r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
       : [r.sub];
     const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
     return (

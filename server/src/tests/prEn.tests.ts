@@ -89,6 +89,17 @@ export async function runPrEnTests(t: any) {
     assert(moi.length === 0, `${moi.length} câu lỗi mới chưa dịch (dùng loi() hoặc thêm khoá EN): ` + moi.slice(0, 8).join(' · '));
   });
 
+  /* R1-EN-2 (Task 5): câu máy chủ có biến đi qua loi() (khoá + biến), câu ghép thi thật web ghép bằng t() từ số liệu. */
+  check('EN-GHEP · lỗi máy chủ có biến và chữ thi thật ra tiếng Anh', () => {
+    const e = util.loi(400, 'Chưa tới tuần Test {x} — chưa nhập điểm được.', { x: 'W2 OCT' });
+    assert(e.message === 'Chưa tới tuần Test W2 OCT — chưa nhập điểm được.' && e.khoa, 'loi() giữ câu Việt + khoá');
+    const en = i18n.dichSang('en', e.khoa, e.bien);
+    assert(en === 'Test week W2 OCT has not started — scores cannot be entered yet.', en);
+    assert(i18n.dichMau('en', 'Tối đa 500 em một lần lưu.') === 'Save at most 500 students at a time.', 'câu không biến');
+    assert(i18n.dichSang('en', 'Thi thật {ngay}', { ngay: '12/10' }) === 'Real exam 12/10', 'Thi thật {ngay}');
+    assert(i18n.dichSang('en', 'Thi thật {kq}', { kq: '7.5' }) === 'Exam 7.5', 'Thi thật {kq}');
+  });
+
   check('EN-KHOA · số ít / số nhiều ở EN ("1 day overdue" / "3 days overdue"), VI giữ chữ cũ; biến là chữ Việt có trong từ điển cũng dịch', () => {
     assert(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 1 }) === '1 day overdue', String(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 1 })));
     assert(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 3 }) === '3 days overdue', String(i18n.dichSang('en', 'quá hạn {n} ngày', { n: 3 })));

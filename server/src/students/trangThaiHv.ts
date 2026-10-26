@@ -8,7 +8,7 @@
 import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, tenRoute, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden, notFound } from '../util.ts';
+import { badRequest, forbidden, notFound, loi } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { setStudentStatus, transferStudent } from './students.ts';
 import { danhSachLopDich } from '../classes/luatLoTrinh.ts';
@@ -146,7 +146,7 @@ export function quayLaiHoc(p: Principal, studentId: number, o: { lopMoiId?: unkn
   const date = typeof o.date === 'string' && o.date ? o.date : demoToday();
   if (tt.huong === 'lop-cu') return setStudentStatus(p, studentId, 'active', date, 'Quay lại học');
   const lopMoiId = Number(o.lopMoiId);
-  if (!Number.isInteger(lopMoiId) || lopMoiId <= 0) throw badRequest(`Lớp ${tt.lopCu?.code ?? 'cũ'} đã kết thúc — chọn lớp để em quay lại học.`);
+  if (!Number.isInteger(lopMoiId) || lopMoiId <= 0) throw loi(400, 'Lớp {x} đã kết thúc — chọn lớp để em quay lại học.', { x: tt.lopCu?.code ?? 'cũ' });
   if (tt.lopCu && !can(p, PERMISSIONS.CLASS_EDIT, { classId: tt.lopCu.id })) throw forbidden('Lớp cũ đã kết thúc — chỉ Quản lý chọn lớp mới cho em quay lại học.');
   return tx(() => {
     setStudentStatus(p, studentId, 'active', date, 'Quay lại học', null, { lopKetThucDuoc: true });

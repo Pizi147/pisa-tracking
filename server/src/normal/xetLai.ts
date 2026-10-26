@@ -2,7 +2,7 @@ import { db, theoLo, tx } from '../db.ts';
 import {
   NORMAL_LADDER, PERMISSIONS, chuTyLeXetLai, ghepMucTieu, goiYCuoiKhoa, hanXetLai, kyHieuLop, lyDoXetLai, tenBacKe, tenMonNgan, tuanHopLe, type LyDoXetLai, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { HttpError, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso, todayInBusinessTz } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso, todayInBusinessTz, loi } from '../util.ts';
 import { isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -288,7 +288,7 @@ function docMuc(x: any): MucXetLai {
   if (!['tiep_tuc', 'hoc_lai', 'len', 'dung'].includes(x?.quyetDinh)) throw badRequest('Chọn Tiếp tục, Học lại hoặc Tạm dừng/ Kết thúc học.');
   const so = (v: unknown, ten: string) => {
     if (v == null) return null;
-    if (typeof v !== 'number' || !Number.isInteger(v) || v <= 0) throw badRequest(`${ten} không hợp lệ.`);
+    if (typeof v !== 'number' || !Number.isInteger(v) || v <= 0) throw loi(400, '{ten} không hợp lệ.', { ten });
     return v;
   };
   if (x.tuan != null && !isIsoDate(x.tuan)) throw badRequest('Tuần bắt đầu không hợp lệ.');
@@ -305,7 +305,7 @@ function docMuc(x: any): MucXetLai {
  */
 export function luuXetLai(p: Principal, classId: number, itemsVao: unknown) {
   if (!Array.isArray(itemsVao) || !itemsVao.length) throw badRequest('Chưa chọn học viên nào.');
-  if (itemsVao.length > LO_XET_LAI) throw badRequest(`Tối đa ${LO_XET_LAI} học viên một lần.`);
+  if (itemsVao.length > LO_XET_LAI) throw loi(400, 'Tối đa {LO_XET_LAI} học viên một lần.', { LO_XET_LAI });
   if (!quyetDuoc(p, classId)) throw forbidden(CHI_QL);
   const items = itemsVao.map(docMuc);
   if (new Set(items.map((x) => x.studentId)).size !== items.length) throw badRequest('Mỗi học viên chỉ một quyết định trong một lần lưu.');

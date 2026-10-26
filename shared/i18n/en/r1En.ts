@@ -467,4 +467,5 @@ export const EN_R1_EN = {
   'Đủ L R W S thì Overall tự tính': 'Overall is calculated when L R W S are all filled in',
   'Em chưa có lộ trình — Dự kiến thi, Target, Điểm đầu vào sửa được sau khi em vào lớp.': 'No pathway yet — Expected exam, Target and Entry band can be edited once the student joins a class.',
   'Tên phụ huynh': 'Parent name',
+  'Thi thật {ngay}': 'Real exam {ngay}',
 } satisfies Record<string, Dich>;

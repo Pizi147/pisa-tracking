@@ -5,7 +5,7 @@ import {
   type AssessedSkill,
 } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
-import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { chanVangLopKetThuc } from './hoanTat.ts';
 import { can, isCoreTeacherOf, scoreEditPath, teachesClass, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -209,7 +209,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
   if (!list.length) throw badRequest('Chưa chọn kỹ năng nào.');
   const boMon = boMonCuaLuot(db(), attemptId);
   for (const s of list) {
-    if (!boMon.includes(s)) throw badRequest(`Kỹ năng ${tenMon(null, s)} không có trong lượt này.`);
+    if (!boMon.includes(s)) throw loi(400, 'Kỹ năng {x} không có trong lượt này.', { x: tenMon(null, s) });
   }
 
   const today = opts.today ?? demoToday();
@@ -233,10 +233,10 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
         );
       }
       if (!row.planned_period_id || !row.week_start) {
-        throw badRequest(`${skillName(skill)} chưa có tuần Test để dời.`);
+        throw loi(400, '{skill} chưa có tuần Test để dời.', { skill: skillName(skill) });
       }
       if (pendingMove(attemptId, skill)) {
-        throw badRequest(`${skillName(skill)} đã có một đề nghị dời đang chờ Quản lý trả lời.`);
+        throw loi(400, '{skill} đã có một đề nghị dời đang chờ Quản lý trả lời.', { skill: skillName(skill) });
       }
       outcomes.push(xuLyVangMotKyNang(conn, p.userId, attempt, row, {
         lyDo: opts.reason ?? null, today, idem: opts.idempotencyKey ? `${opts.idempotencyKey}:${skill}` : null,
@@ -357,7 +357,7 @@ export function xinDoi(p: Principal, attemptId: number, skill: string, o: { lyDo
   if (attempt.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
   if (!row || row.sit_status !== 'cancelled' || !row.huy_vang) throw badRequest('Chỉ xin dời kỹ năng đã huỷ vì vắng 2 lần.');
-  if (pendingMove(attemptId, skill)) throw badRequest(`${skillName(skill)} đã có một đề nghị dời đang chờ Quản lý trả lời.`);
+  if (pendingMove(attemptId, skill)) throw loi(400, '{skill} đã có một đề nghị dời đang chờ Quản lý trả lời.', { skill: skillName(skill) });
   const today = o.today ?? demoToday();
   const dich = tuanDichMacDinh(attemptId, skill, today) ?? (() => { const w = ensurePeriod(addDays(mondayOf(today), 7)); return { id: w.id, code: w.code, week_start: w.weekStart }; })();
   const moveNo = row.absence_move_count + 1;
@@ -382,7 +382,7 @@ export function khongMockLai(p: Principal, attemptId: number, skill: string, lyD
   if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới chốt được "Không mock lại".');
   if (attempt.kind !== 'mock') throw badRequest('Chỉ áp cho Mock Test.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  if (!row?.required || (row.sit_status !== 'cancelled' && !oHuyCu(attempt, skill))) throw badRequest(`${skillName(skill)} chưa huỷ — dùng "Bỏ khỏi đợt".`);
+  if (!row?.required || (row.sit_status !== 'cancelled' && !oHuyCu(attempt, skill))) throw loi(400, '{skill} chưa huỷ — dùng "Bỏ khỏi đợt".', { skill: skillName(skill) });
   return tx(() => {
     khongMockLaiNoi(p, attemptId, skill, lyDo);
     return { ok: true as const };
@@ -563,9 +563,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
     }
     if (!target) throw notFound('Không tìm thấy tuần.');
     if (target.week_start <= today) {
-      throw badRequest(
-        `Tuần ${target.code} đã bắt đầu. Chọn một tuần chưa tới để lịch mới là một buổi Test có thật.`,
-      );
+      throw loi(400, 'Tuần {code} đã bắt đầu. Chọn một tuần chưa tới để lịch mới là một buổi Test có thật.', { code: target.code });
     }
     const check = checkSkillWeekMove({
       attemptId: req.attempt_id, skill: req.skill, newWeekStart: target.week_start,
@@ -695,14 +693,14 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
   const ratio = isRatio(attempt);
   const huyCu = !ratio && row.sit_status !== 'cancelled' && oHuyCu(attempt, skill);
   if (!ratio && row.sit_status !== 'cancelled' && !huyCu) {
-    throw badRequest(`${skillName(skill)} chưa bị huỷ — không có gì để khôi phục.`);
+    throw loi(400, '{skill} chưa bị huỷ — không có gì để khôi phục.', { skill: skillName(skill) });
   }
   if (ratio && row.planned_period_id) {
-    throw badRequest(`${skillName(skill)} đang có lịch hẹn — dùng thao tác đổi lịch thường.`);
+    throw loi(400, '{skill} đang có lịch hẹn — dùng thao tác đổi lịch thường.', { skill: skillName(skill) });
   }
 
   /* OV-15c (mục 6): `periodId = null` = "Khôi phục → Chưa xếp" — chỉ kỹ năng huỷ vì vắng; không tuần nên không kiểm trùng tuần. */
-  if (periodId === null && !row.huy_vang && !huyCu) throw badRequest(`${skillName(skill)} không huỷ vì vắng — không khôi phục về Chưa xếp được.`);
+  if (periodId === null && !row.huy_vang && !huyCu) throw loi(400, '{skill} không huỷ vì vắng — không khôi phục về Chưa xếp được.', { skill: skillName(skill) });
   const period = periodId === null ? null : db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (periodId !== null && !period) throw notFound('Không tìm thấy tuần.');
   /* PR-MTa T21: Quản lý khôi phục vào tuần này / tuần đã qua được (em đã thi thật) — rồi nhập điểm ngay (T19). */
@@ -1014,12 +1012,12 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
   if (a.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong lượt này.`);
+  if (!row?.required) throw loi(400, '{skill} không nằm trong lượt này.', { skill: skillName(skill) });
   if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
-    throw badRequest(`${skillName(skill)} không còn chờ làm bài (đã làm bài, đang vắng hoặc đã huỷ) — không báo vắng được.`);
+    throw loi(400, '{skill} không còn chờ làm bài (đã làm bài, đang vắng hoặc đã huỷ) — không báo vắng được.', { skill: skillName(skill) });
   }
   if (row.week_start.slice(0, 10) > mondayOf(today)) {
-    throw badRequest(`${skillName(skill)} chưa tới tuần Test — muốn đổi tuần thì "Dời lịch".`);
+    throw loi(400, '{skill} chưa tới tuần Test — muốn đổi tuần thì "Dời lịch".', { skill: skillName(skill) });
   }
   /* LUAT-34: MT cũ → Đã huỷ ngay (`chuyenVang` mtCu) — dấu `no_show_cu`, không dời, không đếm. Ghi muộn ở MT hiện tại → chốt như trong tuần. */
   const huyCu = !!a.lich_su;
@@ -1029,7 +1027,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
     const now = nowIso();
     for (const e of entrySkillsOf(skill as AssessedSkill)) {
       const s = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, e) as any;
-      if (s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null)) throw badRequest(`${skillName(skill)} đã có điểm — không báo vắng.`);
+      if (s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null)) throw loi(400, '{skill} đã có điểm — không báo vắng.', { skill: skillName(skill) });
       if (s) {
         conn.prepare(`UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = ?, no_show_settled_at = ?, no_show_cu = ? WHERE id = ?`)
           .run(row.planned_period_id, p.userId, now, late ? 1 : 0, huyCu ? now : null, huyCu ? 1 : 0, s.id);
