@@ -14,6 +14,7 @@ import {
   chonKhiDoiTach, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, nhanDayDuoc, oPhanCong, slotsTuO,
   type LoiPhanCong, type LoiTruong, type NguoiChon, type OPhanCong,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type Branch = { id: number; code: string; name: string; phanCong?: boolean };
 type Programme = {
@@ -90,11 +91,12 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
   const loiPcO = (khoa: string) => loiTaiO(loiPc, oList, khoa);
 
   /* Lỗi ô thường: hiện khi rời ô / sau khi bấm Tạo lớp; riêng số sai mẫu / trùng tên hiện ngay khi đã gõ. */
-  const loiSo = kiemSoLop(so) ?? (trung ? `Đã có lớp ${ma}` : null);
+  const kiemSo = kiemSoLop(so);
+  const loiSo = kiemSo ? dich(kiemSo) : trung ? t('Đã có lớp {ma}', { ma }) : null;
   const loi: LoiTruong[] = [
-    ...dsLoi([{ khoa: 'chi-nhanh', nhan: 'Chi nhánh', chon: true }], { 'chi-nhanh': branchId }),
-    ...(loiSo ? [{ khoa: 'so', nhan: 'Số lớp', lyDo: loiSo }] : []),
-    ...dsLoi(kieu === 'THUONG' ? [{ khoa: 'tuan', nhan: 'Tuần khai giảng', chon: true }] : [], { tuan: startPeriodId }),
+    ...dsLoi([{ khoa: 'chi-nhanh', nhan: t('Chi nhánh'), chon: true }], { 'chi-nhanh': branchId }),
+    ...(loiSo ? [{ khoa: 'so', nhan: t('Số lớp'), lyDo: loiSo }] : []),
+    ...dsLoi(kieu === 'THUONG' ? [{ khoa: 'tuan', nhan: t('Tuần khai giảng'), chon: true }] : [], { tuan: startPeriodId }),
   ];
   const loiHien = (khoa: string) => (khoa === 'so' && so !== '' ? loiSo : lf.loiCua(loi, khoa));
   const o = (khoa: string) => ({ ...lf.o(loi, khoa), 'aria-invalid': !!loiHien(khoa) });
@@ -105,9 +107,9 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
 
   const moc = (k: string) => mau?.checkpoints.find((c) => c.kind === k)?.studyWeek;
   const lopSeCo = ct === 'FT'
-    ? 'Lịch MT theo từng HV'
-    : prog?.lapMoiTuan ? `Liên tục · Checkpoint mỗi ${prog.lapMoiTuan} tuần`
-    : [mau?.weeks && `${mau.weeks} tuần`, moc('progress') && `Progress Test tuần ${moc('progress')}`, moc('final') && `Final Test tuần ${moc('final')}`]
+    ? t('Lịch MT theo từng HV')
+    : prog?.lapMoiTuan ? t('Liên tục · Checkpoint mỗi {n} tuần', { n: prog.lapMoiTuan })
+    : [mau?.weeks && t('{n} tuần', { n: mau.weeks }), moc('progress') && t('Progress Test tuần {n}', { n: moc('progress') }), moc('final') && t('Final Test tuần {n}', { n: moc('final') })]
       .filter(Boolean).join(' · ');
 
   const tao = async () => {
@@ -119,7 +121,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
         branchId, chuongTrinh: ct, loTrinh: lt, so, startPeriodId, slots, previousClassId: macDinh?.previousClassId,
       });
       invalidate('/classes'); invalidate('/ref/classes'); invalidate('/hoc-vien-lop'); invalidate('/my-work');
-      toast.push('ok', `Đã tạo lớp ${r.code}`);
+      toast.push('ok', t('Đã tạo lớp {code}', { code: r.code }));
       onDone?.(r);
       if (moHoSo !== false) navigate(`/hoc-vien/lop/${r.id}`); else onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -127,7 +129,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
 
 
   const nutCheDo = macDinh ? null : (
-    <PhanDoan nhan="Số lớp tạo" giaTri={cheDo} muc={[{ v: 'mot', nhan: 'Một lớp' }, { v: 'nhieu', nhan: 'Nhiều lớp' }]}
+    <PhanDoan nhan={t('Số lớp tạo')} giaTri={cheDo} muc={[{ v: 'mot', nhan: t('Một lớp') }, { v: 'nhieu', nhan: t('Nhiều lớp') }]}
       onChon={(v) => {
         /* Lần đầu sang Nhiều lớp: dòng 1 lấy theo form một lớp. */
         if (v === 'nhieu' && !luoi) {
@@ -143,14 +145,14 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
     );
   }
 
-  const loiPcDau = loiPc[0] ? `${oList.find((o) => o.khoa === loiPc[0].khoa || o.gop?.includes(loiPc[0].khoa))?.nhan ?? ''}: ${loiPc[0].lyDo}` : undefined;
+  const loiPcDau = loiPc[0] ? `${oList.find((o) => o.khoa === loiPc[0].khoa || o.gop?.includes(loiPc[0].khoa))?.nhan ?? ''}: ${dich(loiPc[0].lyDo)}` : undefined;
 
   return (
-    <KhungPanel tieuDe={khoa ? 'Mở lớp mới' : 'Tạo lớp mới'} ngCanh={khoa} longTrong={!!khoa} onDong={onClose}
+    <KhungPanel tieuDe={khoa ? t('Mở lớp mới') : t('Tạo lớp mới')} ngCanh={khoa} longTrong={!!khoa} onDong={onClose}
       chan={{
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tao}
-            disabled={busy || loiPc.length > 0} title={loiPcDau}>{khoa ? 'Mở lớp' : 'Tạo lớp'}</button>
+            disabled={busy || loiPc.length > 0} title={loiPcDau}>{khoa ? t('Mở lớp') : t('Tạo lớp')}</button>
         ),
         conThieu,
       }}>
@@ -158,70 +160,70 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
         {nutCheDo}
         {khoa ? (
           <div className="grid grid-cols-2 gap-2.5">
-            <Truong nhan="Chương trình"><input className="field w-full" value={kieu === 'FT' ? 'Fast Track' : kyHieuLop(ct, lt) ?? ct} disabled /></Truong>
-            <Truong nhan="Chi nhánh"><input className="field w-full" value={branch?.name ?? '…'} disabled /></Truong>
+            <Truong nhan={t('Chương trình')}><input className="field w-full" value={kieu === 'FT' ? 'Fast Track' : kyHieuLop(ct, lt) ?? ct} disabled /></Truong>
+            <Truong nhan={t('Chi nhánh')}><input className="field w-full" value={branch?.name ?? '…'} disabled /></Truong>
             {kieu === 'FT' && (
-              <div className="col-span-2"><Truong nhan="Lộ trình" as="div">
-                <PhanDoan nhan="Lộ trình" giaTri={loTrinh} onChon={setLoTrinh} muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
+              <div className="col-span-2"><Truong nhan={t('Lộ trình')} as="div">
+                <PhanDoan nhan={t('Lộ trình')} giaTri={loTrinh} onChon={setLoTrinh} muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
               </Truong></div>
             )}
           </div>
         ) : <>
-        <Truong nhan="Chi nhánh" batBuoc loi={loiHien('chi-nhanh')}>
+        <Truong nhan={t('Chi nhánh')} batBuoc loi={loiHien('chi-nhanh')}>
           <select className="field w-full" {...o('chi-nhanh')} value={branchId ?? ''}
             onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : null); setChon({}); }}>
-            <option value="">— Chọn chi nhánh —</option>
+            <option value="">{t('— Chọn chi nhánh —')}</option>
             {dsCn.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.code})</option>)}
           </select>
         </Truong>
 
-        <Truong nhan="Kiểu lớp" as="div">
-          <PhanDoan nhan="Kiểu lớp" giaTri={kieu} onChon={(v) => setKieu(v as Kieu)}
-            muc={[{ v: 'FT', nhan: 'Fast Track' }, { v: 'THUONG', nhan: 'Lớp thường' }]} />
+        <Truong nhan={t('Kiểu lớp')} as="div">
+          <PhanDoan nhan={t('Kiểu lớp')} giaTri={kieu} onChon={(v) => setKieu(v as Kieu)}
+            muc={[{ v: 'FT', nhan: 'Fast Track' }, { v: 'THUONG', nhan: t('Lớp thường') }]} />
         </Truong>
 
         {kieu === 'FT' ? (
-          <Truong nhan="Lộ trình" as="div">
-            <PhanDoan nhan="Lộ trình" giaTri={loTrinh} onChon={setLoTrinh}
+          <Truong nhan={t('Lộ trình')} as="div">
+            <PhanDoan nhan={t('Lộ trình')} giaTri={loTrinh} onChon={setLoTrinh}
               muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
           </Truong>
         ) : (
-          <Truong nhan="Chương trình" as="div" phu={CHO_TAO_PRE_FOU ? undefined : 'Mở cùng đợt cập nhật hệ môn học'}>
-            <PhanDoan nhan="Chương trình" giaTri={chuongTrinh} onChon={setChuongTrinh}
+          <Truong nhan={t('Chương trình')} as="div" phu={CHO_TAO_PRE_FOU ? undefined : t('Mở cùng đợt cập nhật hệ môn học')}>
+            <PhanDoan nhan={t('Chương trình')} giaTri={chuongTrinh} onChon={setChuongTrinh}
               muc={chuongTrinhThuong(programmes.data).map((c) => ({
                 v: c, nhan: kyHieuLop(c, null) ?? c, tat: c === 'PREFOU' && !CHO_TAO_PRE_FOU,
-                title: c === 'PREFOU' && !CHO_TAO_PRE_FOU ? 'Mở cùng đợt cập nhật hệ môn học' : undefined,
+                title: c === 'PREFOU' && !CHO_TAO_PRE_FOU ? t('Mở cùng đợt cập nhật hệ môn học') : undefined,
               }))} />
           </Truong>
         )}
         </>}
 
         <div>
-          <Truong nhan="Số lớp" batBuoc phu="1–4 chữ số, được thêm một chữ cái cuối (101A)" loi={loiHien('so')}>
+          <Truong nhan={t('Số lớp')} batBuoc phu={t('1–4 chữ số, được thêm một chữ cái cuối (101A)')} loi={loiHien('so')}>
             <input className="field w-28 tabular-nums" {...o('so')} inputMode="numeric" autoComplete="off"
               value={so} onChange={(e) => setSo(locSoLop(e.target.value))} />
           </Truong>
           <p className="m-0 mt-2 text-sm tabular-nums" aria-live="polite">
             {ma
-              ? <>Lớp sẽ là <strong className="text-slate-100">{ma}</strong></>
-              : <span className="text-slate-500">Lớp sẽ là {branch?.code ?? '…'} {kyHieuLop(ct, lt)} …</span>}
+              ? <>{t('Lớp sẽ là')} <strong className="text-slate-100">{ma}</strong></>
+              : <span className="text-slate-500">{t('Lớp sẽ là')} {branch?.code ?? '…'} {kyHieuLop(ct, lt)} …</span>}
           </p>
         </div>
 
-        <Truong nhan="Tuần khai giảng" as="div" batBuoc={kieu === 'THUONG'} loi={loiHien('tuan')}>
+        <Truong nhan={t('Tuần khai giảng')} as="div" batBuoc={kieu === 'THUONG'} loi={loiHien('tuan')}>
           <div {...o('tuan')}><WeekPicker periodId={startPeriodId} label={null} scope="planning" onPeriod={setStartPeriodId} /></div>
         </Truong>
-        {lopSeCo && <p className="m-0 text-xs text-slate-400 tabular-nums">Lớp này sẽ có: {lopSeCo}</p>}
+        {lopSeCo && <p className="m-0 text-xs text-slate-400 tabular-nums">{t('Lớp này sẽ có: {x}', { x: lopSeCo })}</p>}
       </div>
 
-      {ganDuoc && <Khoi tieuDe="Phân công">
+      {ganDuoc && <Khoi tieuDe={t('Phân công')}>
         <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId} chuongTrinh={ct}
           onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
         <NutTachFou fou={fou} />
         <p className="m-0 text-xs text-slate-500">
           {oList.length === 1
-            ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.'
-            : 'Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp.'}
+            ? t('Lớp Pre FOU không chia môn — GVCN dạy luôn.')
+            : t('Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp.')}
         </p>
       </Khoi>}
     </KhungPanel>
@@ -255,11 +257,11 @@ export function NutTachFou({ fou, chiXem }: { fou: ReturnType<typeof useTachFou>
   const tat = fou.tach && !fou.coTheGop;
   return (
     <div className="flex flex-wrap items-center gap-x-3 text-xs text-slate-400">
-      <span>Lớp FOU thường có hai giáo viên: một người L · R · G+V, một người P.</span>
+      <span>{t('Lớp FOU thường có hai giáo viên: một người L · R · G+V, một người P.')}</span>
       {!chiXem && (
         <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
-          disabled={tat} title={tat ? 'L, R, G+V đang do nhiều người dạy' : undefined} onClick={fou.doi}>
-          {fou.tach ? 'Gộp L · R · G+V' : 'Tách từng môn'}
+          disabled={tat} title={tat ? t('L, R, G+V đang do nhiều người dạy') : undefined} onClick={fou.doi}>
+          {fou.tach ? t('Gộp L · R · G+V') : t('Tách từng môn')}
         </button>
       )}
     </div>
@@ -293,11 +295,11 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
           <div key={o.khoa} className="contents">
             <label htmlFor={oId(o.khoa)} className="pt-3 text-xs font-bold text-slate-200 max-sm:pt-4">{o.nhan}</label>
             <ChonNguoi id={oId(o.khoa)} nhom="giao_vien" choToi={false} choNgoai={false} disabled={chiXem} invalid={!!l}
-              ariaLabel={`${o.nhan}: chọn giáo viên`} choTrong="— Chưa chọn —" macDinhTrong={nhanTrong?.(o.khoa)}
+              ariaLabel={t('{nhan}: chọn giáo viên', { nhan: o.nhan })} choTrong={t('— Chưa chọn —')} macDinhTrong={nhanTrong?.(o.khoa)}
               ds={xep(o).map((t) => ({ id: t.id, ten: t.name, phu: phuGv(t, nhanDayDuoc(chuongTrinh, o, t.skills ?? [])) }))}
               value={chonNguoi(chon[o.khoa], nguoi, (t) => phuGv(t, nhanDayDuoc(chuongTrinh, o, t.skills ?? [])))}
               onChange={(v) => onChon(o.khoa, v?.kieu === 'tai_khoan' ? v.id : '')} />
-            {l && <span className="col-start-2 -mt-0.5 text-xs text-late">{l}</span>}
+            {l && <span className="col-start-2 -mt-0.5 text-xs text-late">{dich(l)}</span>}
           </div>
         );
       })}
@@ -306,8 +308,8 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
 }
 
 /** Dòng phụ một GV trong ô phân công: `3 lớp · dạy được L, R` (PR-S6F-a: tên môn theo chương trình lớp, không mã FT). */
-export function phuGv(t: { classCount: number }, dayDuoc: string[] = []): string {
-  return [t.classCount ? `${t.classCount} lớp` : '', dayDuoc.length ? `dạy được ${dayDuoc.join(', ')}` : ''].filter(Boolean).join(' · ');
+export function phuGv(gv: { classCount: number }, dayDuoc: string[] = []): string {
+  return [gv.classCount ? t('{n} lớp', { n: gv.classCount }) : '', dayDuoc.length ? t('dạy được {ds}', { ds: dayDuoc.join(', ') }) : ''].filter(Boolean).join(' · ');
 }
 
 /** Giá trị ô `ChonNguoi` từ id đã chọn; id không có trong danh sách (đang tải) hiện "…". */
