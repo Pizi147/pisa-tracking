@@ -901,7 +901,8 @@ check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-
      không đổi (SV-LOP riêng: 6 373). Trần Học viên & Lớp theo dữ liệu nay: 7 100 (thay ⌊8 417 × 80 %⌋ = 6 733) — chờ planning duyệt.
      SV-SO3: hàng HV khu d (Xu hướng) đọc thêm các lượt có điểm trước lượt gần nhất của em có Overall + tuần thi: 7 095 → 7 220 → trần 7 220.
      V5 SV-SO1: ô có band thiếu nhận xét bắt buộc là việc / bài chờ (seed 385 ô) → đọc thêm lượt còn ô chờ: đo trên main + SV-SO1 7 316 (main 7 220, +96) → trần 7 320; overview 2 904 vẫn ≤ 50 %. */
-  assert(ov <= Math.floor(5829 * 0.5) && hvl <= 7320, `overview ${ov} / hoc-vien-lop ${hvl}`);
+  /* P9a XET-LAI: bộ demo Xét lại thêm 4 em + 2 lớp (×3) → hoc-vien-lop 7 320 → 7 500; mã đường không đổi. */
+  assert(ov <= Math.floor(5829 * 0.5) && hvl <= 7500, `overview ${ov} / hoc-vien-lop ${hvl}`);
 });
 
 /*
@@ -1053,9 +1054,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* MAIN-DO: chụp lại theo dữ liệu SEED-UX cuối (BU_MT2, 32504e72 → 9a078719) — so JSON 58a2d268 ↔ 9a078719: việc lệch CHỈ ở 4 em MT2 chưa đạt
        (Ngô Bảo Châu, Lý Thanh Tâm, Phạm Khánh Linh, Kiều Thảo Nhi: việc Case MT2; Case cũ của Kiều Thảo Nhi đổi) và dòng lớp MB FT 101 (MT2 dời W3 AUG); id Case dời. ADMIN giữ.
        SEED-UX: băm đổi theo dữ liệu thêm (TVV, thi thật, MT2 MB FT 101, Báo PH Yến / Bình, lớp HD) — ADMIN không đổi. */
-    'QL toi': '3ea67fbf71f97f26', 'QT toi': 'ae31cc97e115aae1', 'GVCN toi': '76b13509ead6c605', 'GVBM toi': 'f0e52756d39e2508',
-    'GVCN_THUONG toi': '76b13509ead6c605', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '2f708e34199a5b09', 'QT tat-ca': 'fd4a0025509b3b4c',
-    'QT tat-ca cn': '9bc50bbc012634a2', 'QL gvcn': '658f91bcc1ae947f', 'GVS toi': 'bde6ca74489b52be',
+    /* P9a XET-LAI (N21): so JSON ×1 origin/main ↔ nhánh: GVCN MB FT 101 (cũng là GVCN MB FOU 25 của bộ demo Xét lại) thêm việc "Bàn giao 4 em · MB FOU 25";
+       QL / QT thêm "Xét lại lộ trình · MB BE 05 / MB FOU 25" (có hạn, nút "Xét lại ›"); Mini Test < 70 % không còn thẻ Báo QL; ×3 id dời. ADMIN giữ.
+       Trước: QL toi 3ea67fbf71f97f26, QT toi ae31cc97e115aae1, GVCN toi 76b13509ead6c605, GVBM toi f0e52756d39e2508, QL tat-ca 2f708e34199a5b09,
+       QT tat-ca fd4a0025509b3b4c, QT tat-ca cn 9bc50bbc012634a2, QL gvcn 658f91bcc1ae947f, GVS toi bde6ca74489b52be */
+    'QL toi': '094cbf5e80786e08', 'QT toi': '94d661da235c7d35', 'GVCN toi': 'c77b7e0549598660', 'GVBM toi': 'f9f2c9efb6666cc5',
+    'GVCN_THUONG toi': 'c77b7e0549598660', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'c10cf0b06f9e03ee', 'QT tat-ca': '7242ec3a823ea4d7',
+    'QT tat-ca cn': '09bec4d4801898d3', 'QL gvcn': 'a2d11e7e620a27f2', 'GVS toi': '1fb793adea61a73b',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1202,9 +1207,9 @@ check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 70 % mốc trước TD4 (V5 
   const MOC: Record<string, [number, number]> = {
     /* SV-YT-TVV + SV-TVV-VIEC (21/10): QL / QT "Của tôi" +2 câu — việc Báo PH (một câu) + Chốt ngày thi / Bổ sung hồ sơ (một câu cho cả hai). */
     /* MAIN-DO (BU_MT2 SEED-UX): +1 câu QL / QT như trần TRAN; dòng ×3 mọi vai +~150 (58a2d268 → 9a078719, QL 2 202 → 2 352) — mốc dòng QL 5 647 → 5 880. */
-    'QL /my-work': [71, 5880], 'QT /my-work': [71, 7775],   /* SV-NX-CASE +1 (MT mới nhất của em: một câu / trang) */   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
+    'QL /my-work': [73, 5880], 'QT /my-work': [73, 7775],   /* P9a XET-LAI +2 câu (tập Xét lại) */   /* SV-NX-CASE +1 (MT mới nhất của em: một câu / trang) */   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
     'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
-    'QL /my-work?nguoi=tat-ca': [81, 6721], 'QT /my-work?nguoi=tat-ca': [81, 9176],   /* MAIN-DO +1 (BU_MT2); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay") */ [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
+    'QL /my-work?nguoi=tat-ca': [83, 6721], 'QT /my-work?nguoi=tat-ca': [83, 9176],   /* P9a XET-LAI +2 câu */   /* MAIN-DO +1 (BU_MT2); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay") */ [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
   };
   const sai: string[] = [];
   for (const [k, [cau, dong]] of Object.entries(MOC)) {
