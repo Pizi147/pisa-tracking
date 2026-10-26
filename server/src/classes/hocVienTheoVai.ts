@@ -5,7 +5,7 @@
  * QL / Quản trị / GV / Admin dùng bảng cũ (`danhSachHocVienLop`) — đường này 403.
  */
 import { db, theoLo } from '../db.ts';
-import { PERMISSIONS, trangThaiSauThi, vaiXemHocVien, type ExamPlan, type GiaiDoanSauThi, type LienHe } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, kyThiCuaChuongTrinh, trangThaiSauThi, vaiXemHocVien, type ExamPlan, type GiaiDoanSauThi, type LienHe } from '../../../shared/domain/index.ts';
 import { forbidden } from '../util.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { chipHocVien, type ChipHocVien, type LyDoChuY, type SoHocVien } from '../worklist/hvCuaToi.ts';
@@ -71,7 +71,7 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
       `SELECT s.id, s.full_name, s.student_code, s.status, s.phone, s.parent_name, s.parent_relation, s.parent_phone, u.full_name AS tvv,
               e.status AS enr_status, c.id AS lop_id, c.code AS lop_code, c.is_fast_track, b.name AS chi_nhanh,
               cy.target_score, cy.khong_cam_ket, cy.exam_period_id, cy.exam_month, cy.exam_date, rp.code AS exam_week_code, rp.week_start AS exam_week_start,
-              cy.id AS cy_id, cy.route AS cy_route, cy.seq AS cy_seq, cy.status AS cy_status, (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = s.id) AS seq_cuoi, ${cotSauThi('cy', 'rp')}
+              cy.id AS cy_id, cy.route AS cy_route, cy.programme_code AS cy_ct, cy.seq AS cy_seq, cy.status AS cy_status, (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = s.id) AS seq_cuoi, ${cotSauThi('cy', 'rp')}
          FROM students s
          LEFT JOIN users u ON u.id = s.consultant_user_id
          LEFT JOIN enrollments e ON e.id = (SELECT x.id FROM enrollments x WHERE x.student_id = s.id ORDER BY x.status IN ('active', 'paused') DESC, x.id DESC LIMIT 1)
@@ -104,6 +104,8 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
       } : null,
       chiNhanh: s.chi_nhanh ?? null, tvv: s.tvv ?? null,
       target: s.target_score ?? null, kck: !!s.khong_cam_ket, duKienThi: examPlanOf(s), sauThi,
+      /** P13: khoá KET / PET — ⋯ dòng có "Kết quả thi thật" (thang Cambridge) như hồ sơ. */
+      kyThi: !s.cy_route && !!kyThiCuaChuongTrinh(s.cy_ct),
       standing: chip.standing.get(id) ?? null,
       chuY: chip.lyDo.get(id) ?? null,
       lienHe: { phone: s.phone ?? null, parentName: s.parent_name ?? null, parentRelation: s.parent_relation ?? null, parentPhone: s.parent_phone ?? null },

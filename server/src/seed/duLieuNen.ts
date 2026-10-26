@@ -80,6 +80,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('lich_su_thay_doi_tu', now, now);   // OV-15g: DB mới = lịch sử ghi từ lúc khởi tạo (`MOC_LICH_SU`)
   /* SUA-NO-RA: DB mới không có Case cũ trống chủ — khoá trước để migrate không chạy bước gán chủ `prCvLoi` (chỉ một lần trên DB cũ). */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_cv_loi_gan_chu_case_at', now, now);
+  /* P13 KET-PET: DB mới đã có PET / KET 4 môn — khoá trước để migrate không chạy bước tách môn `prKetPet` (chỉ một lần trên DB cũ). */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ket_pet_at', now, now);
   /* HOTFIX-3: như trên cho `prOv1b` (dọn "-" cũ) — khoá trước, migrate chỉ ghi khoá trên DB cũ. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ov1b_da_chay', now, now);
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */

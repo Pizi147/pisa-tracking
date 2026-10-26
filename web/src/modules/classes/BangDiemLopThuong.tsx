@@ -76,6 +76,11 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   const BAI = lienTuc ? cp.map((n) => ({ kind: khoaBai('checkpoint', n), nhan: nhanBai(khoaBai('checkpoint', n)) }))
     : (moc?.length ? moc : MOC_MAC_DINH).map((kind) => ({ kind, nhan: ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind }));
   const luotCua = (s: DongThuong, kind: string) => s.timeline.find((x) => khoaBai(x.kind, x.attemptNo) === kind) ?? null;
+  /** P13 KET-PET: cột môn của một mốc = các môn thực có của các lượt mốc đó (lượt đã ghi môn gộp cũ giữ L+S / R+W) — thứ tự: môn lớp trước. */
+  const monCua = (kind: string): string[] => {
+    const co = new Set(rows.flatMap((s) => Object.keys(luotCua(s, kind)?.ratios ?? {})));
+    return co.size ? [...mon.filter((k) => co.has(k)), ...[...co].filter((k) => !mon.includes(k))] : mon;
+  };
   /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. K2-12: nhóm Cuối khoá mọi lớp thường có "% tổng"; Checkpoint cũng có. */
   const coPhanTram = CHUONG_TRINH_KHONG_CHIA_MON.includes(chuongTrinh ?? '');
   const cotPhu = (kind: string) => (coPhanTram || kind === 'final' || kind.startsWith('checkpoint') ? ['%'] : []);
@@ -83,8 +88,8 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   const phanTram = (s: DongThuong, kind: string, o: ODiem | null): number | null => {
     if (kind === 'final') return s.cuoiKhoa?.tyLe ?? null;
     if (kind.startsWith('checkpoint')) {
-      const ds = mon.map((k) => luotCua(s, kind)?.ratios?.[k] ?? null);
-      return ds.every((x) => x && x.score !== null && x.total) ? ds.reduce((a, x) => a + x!.score!, 0) / ds.reduce((a, x) => a + x!.total!, 0) : null;
+      const ds = Object.values(luotCua(s, kind)?.ratios ?? {});   // P13: môn của chính lượt
+      return ds.length > 0 && ds.every((x) => x && x.score !== null && x.total) ? ds.reduce((a, x) => a + x!.score!, 0) / ds.reduce((a, x) => a + x!.total!, 0) : null;
     }
     return o && o.score !== null && o.total ? o.score / o.total : null;
   };
@@ -116,7 +121,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 nhan: b.nhan,
                 noiDung: (
                   <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                    {mon.map((k) => (
+                    {(lu?.ratios ? Object.keys(lu.ratios) : mon).map((k) => (   /* P13: môn của chính lượt */
                       <span key={k} className="whitespace-nowrap">
                         <abbr className="text-slate-500 no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr>{' '}
                         <ODiemThuong o={lu?.ratios?.[k] ?? null} tuan={lu?.tuanMon?.[k] ?? null} homNay={homNay} />
@@ -141,7 +146,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
       <table className="w-full min-w-[1040px] table-fixed text-sm">
         <colgroup>
           <col className="w-[19%]" />{!lienTuc && <col className="w-[6%]" />}
-          {BAI.flatMap((b) => [...mon, ...cotPhu(b.kind)].map((k) => <col key={`${b.kind}-${k}`} />))}
+          {BAI.flatMap((b) => [...monCua(b.kind), ...cotPhu(b.kind)].map((k) => <col key={`${b.kind}-${k}`} />))}
           {!lienTuc && <col className="w-[11rem]" />}{quyen.theoVai && <col className="w-[10rem]" />}<col className="w-12" />
         </colgroup>
         <thead>
@@ -149,7 +154,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
             <th className="th sticky-col align-bottom" rowSpan={2}>{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={rows.map((s) => s.id)} /></span>}{t('Học viên')}</th>
             {!lienTuc && <th className="th text-right align-bottom" rowSpan={2} title={t('Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra. Lớp thường chỉ để theo dõi.')}>Target</th>}
             {BAI.map((b) => (
-              <th key={b.kind} className="th border-b text-center" colSpan={mon.length + cotPhu(b.kind).length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
+              <th key={b.kind} className="th border-b text-center" colSpan={monCua(b.kind).length + cotPhu(b.kind).length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
             {!lienTuc && <th className="th align-bottom" rowSpan={2} title={TIEU_DE_LO_TRINH}>{t('Lộ trình tiếp theo')}</th>}
             {quyen.theoVai && <th className="th align-bottom" rowSpan={2}>{t('Phụ huynh')}</th>}
@@ -157,7 +162,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
           </tr>
           <tr>
             {BAI.flatMap((b) => [
-              ...mon.map((k) => (
+              ...monCua(b.kind).map((k) => (
                 <th key={`${b.kind}-${k}`} className="th text-center"><abbr className="no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr></th>
               )),
               ...(cotPhu(b.kind).includes('%') ? [<th key={`${b.kind}-%`} className="th text-right" title={t('Điểm đạt / tổng điểm cả bài')}>{t('% tổng')}</th>] : []),
@@ -182,7 +187,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 const lu = luotCua(s, b.kind);
                 const o = lu?.ratios?.[mon[0]] ?? null;
                 return [
-                  ...mon.map((k) => (
+                  ...monCua(b.kind).map((k) => (
                     <td key={`${b.kind}-${k}`} className="td text-center tabular-nums">
                       <ODiemThuong o={lu?.ratios?.[k] ?? null} tuan={lu?.tuanMon?.[k] ?? null} homNay={homNay} />
                     </td>

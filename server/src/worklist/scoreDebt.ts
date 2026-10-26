@@ -1,5 +1,5 @@
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
-import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo } from '../../../shared/domain/index.ts';
+import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
@@ -99,7 +99,7 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
     const scores = bundle.scores.get(a.id) ?? [];
     const skillRows = bundle.skillRows.get(a.id);
     if (scoringModeOf(a) === 'ratio') {
-      const bo = boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills);
+      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), daGhiLuot(skillRows, scores));   // P13: bộ môn theo lượt
       const views = regularSkillViews(a, skillRows, scores, today, bo);
       for (const skill of bo) {
         const v = views.get(skill);

@@ -10,6 +10,7 @@ import { useSession } from '../../lib/session.tsx';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, LOAI_NGUOI_XIN_SUA, deadlineView, kiemGhiRoKhac, laVaiQuanLy, nhanTrangThaiYc, reasonNeedsText,
   type TheYeuCauDto, type TruongDeXuat,
+  kyThiCuaChuongTrinh,
 } from '@shared/domain/index.ts';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { DeXuatSuaPanel } from './DeXuatSuaPanel.tsx';
@@ -329,6 +330,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       {!o && loiMay && <p role="alert" className="m-0 mt-2 text-[12px] text-late">{loiMay}</p>}
       {moPanelSua && yc.hocVienId != null && yc.loai === 'sua_thong_tin' && (
         <DeXuatSuaPanel studentId={yc.hocVienId} studentName={yc.hocVien ?? ''} lop={yc.lop}
+          hienTai={{ kyThi: kyThiCuaChuongTrinh(yc.duLieu?.kyThi as string | undefined) }}
           sua={{ id: yc.id, truong: yc.duLieu?.truong as TruongDeXuat, moi: yc.duLieu?.moi == null ? '' : String(yc.duLieu.moi), lyDo: yc.lyDo ?? '' }}
           onClose={() => setMoPanelSua(false)} onDone={() => onXong(yc.id)} />
       )}

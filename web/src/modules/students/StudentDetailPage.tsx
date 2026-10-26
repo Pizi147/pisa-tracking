@@ -375,7 +375,7 @@ export default function StudentDetailPage() {
               {cy.targetRevisions.length > 0 && (
                 <p className="text-xs text-slate-500 mt-2 mb-0">
                   {t('Target đã đổi {n} lần — lần gần nhất {tuan}:', { n: cy.targetRevisions.length, tuan: tuanLich(cy.targetRevisions[0].effectiveFrom, homNay) })}
-                  {' '}<TargetText band={cy.targetRevisions[0].oldTarget} kck={cy.targetRevisions[0].oldKck} /> → <TargetText band={cy.targetRevisions[0].newTarget} kck={cy.targetRevisions[0].newKck} />
+                  {' '}<TargetText band={cy.targetRevisions[0].oldTarget} kck={cy.targetRevisions[0].oldKck} kyThi={cy.kyThi} /> → <TargetText band={cy.targetRevisions[0].newTarget} kck={cy.targetRevisions[0].newKck} kyThi={cy.kyThi} />
                   {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
                   {' '}{t('Các lượt đã chốt vẫn giữ kỳ vọng tính theo Target lúc đó.')}
                 </p>

@@ -31,7 +31,7 @@ export type ViecEm = { chu: string; han: string | null; quaHan: boolean; it: Wor
 export type LopGon = { id: number; code: string; programmeName: string | null; scoringMode: string | null; viewer: QuyenDong };
 /** TVV / CX (`GET /hoc-vien-lop/theo-vai`, một dòng một em): trạng thái, quyền sửa của chính em, phụ huynh, sau thi — ⋯ theo vai + cột Phụ huynh. */
 export type EmVai = {
-  status: string; ft: boolean; viewer: { suaThongTin: boolean; suaThem: boolean }; lienHe: LienHe; duKienThi: ExamPlan;
+  status: string; ft: boolean; kyThi?: boolean; viewer: { suaThongTin: boolean; suaThem: boolean }; lienHe: LienHe; duKienThi: ExamPlan;
   sauThi: { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean } | null;
 };
 /** Bảng ở góc nhìn TVV / CX: dữ liệu theo em · có cột Việc không (CX không có Công việc) · bấm nhãn sau thi mở panel một em. */
@@ -49,7 +49,7 @@ function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?:
     maLop: lop?.code ?? null, classId: lop?.id ?? null, onDone: onDoi });
   const nd = h.nhapDiem && lop ? nhapDiemCua(lop.id, thuong, [{ kind: h.nhapDiem.kind, kindLabel: h.nhapDiem.dot ?? h.nhapDiem.kind, myPending: ['*'], attemptNo: h.nhapDiem.attemptNo }]) : null;
   const muc = tt.mucCua({ id: h.id, ten: h.ten, dangHoc: !h.ketThuc, nhapDiem: nd, status: ev?.status ?? (h.ketThuc ? 'finished' : 'active'), ft: ev?.ft ?? !thuong, maLop: lop?.code ?? null,
-    ...(ev ? { suaThongTin: ev.viewer.suaThongTin, suaThem: ev.viewer.suaThem } : {}) });
+    ...(ev ? { suaThongTin: ev.viewer.suaThongTin, suaThem: ev.viewer.suaThem, kyThi: !!ev.kyThi } : {}) });
   return <>{muc.length > 0 && <MenuDong muc={muc} nhan={t('Thao tác khác')} />}{createPortal(tt.panels, document.body)}</>;
 }
 

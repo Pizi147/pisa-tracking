@@ -14,7 +14,7 @@
 import { db, theoLo } from '../db.ts';
 import { require_, requireXemLuotCham, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { CYCLE_OUTCOME_LABEL, docMaLuot, NHAN_SAU_THI, nhanMaLuot, PERMISSIONS, tenMon, tuanLich, type LuaChonSauThi } from '../../../shared/domain/index.ts';
+import { CYCLE_OUTCOME_LABEL, docMaLuot, kyThiCuaChuongTrinh, NHAN_SAU_THI, nhanMaLuot, PERMISSIONS, tenMon, tuanLich, type LuaChonSauThi } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { lichSuSua, truongSuaCaLop, xemLichSuHv } from '../students/lichSuSua.ts';
 import { scoreHistoryOf } from '../fasttrack/attempts.ts';
@@ -306,14 +306,16 @@ const TRUONG_THI: Record<string, [string, (v: unknown) => string | null, string?
 };
 
 function thiThat(p: Principal, cycleId: number, tiep: number | null): TrangLs {
-  const c = db().prepare('SELECT student_id, created_at FROM learning_cycles WHERE id = ?').get(cycleId) as { student_id: number; created_at: string } | undefined;
+  const c = db().prepare('SELECT student_id, created_at, route, programme_code FROM learning_cycles WHERE id = ?').get(cycleId) as { student_id: number; created_at: string; route: string | null; programme_code: string | null } | undefined;
   if (!c) throw notFound('Không tìm thấy lộ trình.');
   /* OV-15i1: cùng cổng với lịch sử hồ sơ em (`loai=hv`) — GVBM không xem. */
   if (!xemLichSuHv(p, c.student_id)) throw forbidden('Chỉ Quản lý, GVCN, Tư vấn viên và CX của em xem được lịch sử.');
+  const kt = !c.route && !!kyThiCuaChuongTrinh(c.programme_code);
   const r = docNhatKy(`a.entity_type = 'learning_cycle' AND a.entity_id = ? AND a.action IN (${VIEC_THI.map(() => '?').join(',')})`, [cycleId, ...VIEC_THI], tiep, null, (r) => ({
     nguon: null, lyDo: chu(r.f.lyDo),   // dòng hệ thống: người đã là "Hệ thống" — không lặp ở nguồn
     truong: Object.keys(r.f).filter((k) => TRUONG_THI[k]).map((k) => {
-      const [ten, hien, cuKhoa] = TRUONG_THI[k];
+      const [ten, hien0, cuKhoa] = TRUONG_THI[k];
+      const hien = kt && hien0 === band ? chu : hien0;   // P13: KET / PET — điểm Cambridge số nguyên, không định dạng band
       return { ten, cu: hien(r.b[cuKhoa ?? k] ?? (k === 'khongThi' ? false : null)), moi: hien(r.f[k]) };
     }),
   }));

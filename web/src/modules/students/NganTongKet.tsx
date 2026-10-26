@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { NHAN_SAU_THI, duongHoSoHocVien, hienTargetKck, ngay, tuanLich } from '@shared/domain/index.ts';
+import { NHAN_SAU_THI, chuGradeKyThi, duongHoSoHocVien, hienTargetKck, ngay, tuanLich, type KetQuaKyThi } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
@@ -19,6 +19,8 @@ type Luot = {
 type TongKet = {
   hocVien: { id: number; ten: string }; ten: string; loai: 'ft' | 'thuong'; lop: string | null; gvcn: string | null; dauVao: number | null; target: number | null;
   khongCamKet: boolean; thoiGian: string; dich: { target: number | null; thiDuKien: string | null };
+  /** P13: khoá KET / PET — thang + kết quả thi thật Cambridge (null = không kỳ thi / chưa đủ điểm). */
+  kyThi?: { ten: string; min: number; max: number } | null; thiThatKyThi?: KetQuaKyThi | null; ngayThiKyThi?: string | null;
   ketQua:
     | { loai: 'ft'; ovr: number | null; l: number | null; r: number | null; w: number | null; s: number | null; ngay: string | null; khongThi: boolean; khongCoThi: boolean; nhan: string; ketLuan: string | null; choNhap: boolean; coTheNhap: boolean }
     | { loai: 'thuong'; tyLe: number | null; dai: string | null; kyVongDat: boolean | null;
@@ -222,7 +224,16 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                 </>
               ) : (
                 <>
-                  {kq.tyLe === null
+                  {data.kyThi ? (
+                    /* P13 KET-PET: kết quả thi thật theo điểm Cambridge (Overall · Grade · CEFR) thay ô Final Test. */
+                    <O nho={`${t('Thi thật {ten}', { ten: data.kyThi.ten })}${data.ngayThiKyThi ? ` · ${ngay(data.ngayThiKyThi, homNay)}` : ''}`} cho={!data.thiThatKyThi}>
+                      {data.thiThatKyThi
+                        ? <><Lon>{data.thiThatKyThi.khongThi ? t('Không thi') : data.thiThatKyThi.tong}</Lon>
+                          {!data.thiThatKyThi.khongThi && <div className="mt-0.5 text-xs tabular-nums text-slate-400">{chuGradeKyThi(data.thiThatKyThi)}</div>}
+                          {!data.thiThatKyThi.khongThi && data.thiThatKyThi.dat !== null && <div className="mt-1.5"><Nhan tone={data.thiThatKyThi.dat ? 'ok' : 'bad'}>{data.thiThatKyThi.dat ? t('Đạt Target') : t('Chưa đạt Target')}</Nhan></div>}</>
+                        : <div className="text-sm font-semibold text-slate-400">{t('Chờ kết quả thi thật')}</div>}
+                    </O>
+                  ) : kq.tyLe === null
                     ? <O nho="Final Test" cho><div className="text-sm font-semibold text-slate-400">{t('Chưa có điểm')}</div></O>
                     : <O nho="Final Test"><Lon>{Math.round(kq.tyLe * 100)}%</Lon>{kq.dai && DAI[kq.dai] && <div className="mt-1.5"><Nhan tone={DAI[kq.dai].tone}>{DAI[kq.dai].nhan}</Nhan></div>}</O>}
                   {MUI}
@@ -237,7 +248,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
             {data.buocTiep && <MucBuocTiep bt={data.buocTiep} onMo={() => setView({ loai: 'buoc-tiep' })} />}
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-slate-400">
-              {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
+              {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.kyThi ? (data.target !== null ? String(data.target) : null) : data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
                 ...(kq.loai === 'thuong' && kq.kqdr ? [[t('Kết quả đầu ra'), chuKqdr(kq.kqdr)]] : [])]
                 .filter(([, v]) => v).map(([k, v]) => <span key={k as string}>{k} <b className="font-semibold text-slate-200">{v}</b></span>)}
             </div>

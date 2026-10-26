@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CHI_SUA_THONG_TIN, CO_DIEM_SQL, chuTargetKck, docEmail, PERMISSIONS, LO_LUU_SUA_CA_LOP, TOI_DA_LUU_SUA_CA_LOP, chiaLoSuaCaLop, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, type VanDeNhap,
+  CHI_SUA_THONG_TIN, CO_DIEM_SQL, chuTargetKck, docEmail, PERMISSIONS, LO_LUU_SUA_CA_LOP, TOI_DA_LUU_SUA_CA_LOP, chiaLoSuaCaLop, cauMtSeDoi, coONhapLienHe, cotLuoiNhap, NHAN_LIEN_HE, kyThiCuaChuongTrinh, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -9,7 +9,7 @@ import { can, require_, type Ctx, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
-  docDiemXuatPhat, docDuKienThi, docTarget, docTuanBatDau, duocDoiTarget, loiDoiTarget, reviseTarget, setBaseline, updateCycle,
+  docDiemXuatPhat, docDuKienThi, docTargetCua, docTuanBatDau, duocDoiTarget, loiDoiTarget, reviseTarget, setBaseline, updateCycle,
 } from '../fasttrack/cycles.ts';
 import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 import { lichMtCua } from './schedule.ts';
@@ -69,7 +69,7 @@ function emVaLoTrinh(classId: number, ids: number[] | null) {
  */
 export function duLieuSuaCaLop(p: Principal, classId: number) {
   const conn = db();
-  const cls = conn.prepare('SELECT id, code, programme_code, branch_id FROM classes WHERE id = ?').get(classId) as any;
+  const cls = conn.prepare('SELECT id, code, programme_code, branch_id, moc_lap FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   if (!duocSuaCaLop(p, { classId: cls.id })) require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
   const { em, loTrinh } = emVaLoTrinh(cls.id, null);
@@ -93,6 +93,8 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
   }).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
   return {
     lop: { id: cls.id as number, code: cls.code as string }, lopThuong: laLopThuong(cls.programme_code ?? null),
+    /** P13: lớp KET / PET — cột Target theo thang Cambridge (gợi ý tiêu đề cột). */
+    kyThi: cls.moc_lap != null ? kyThiCuaChuongTrinh(cls.programme_code) : null,
     coTheSuaTarget: duocDoiTarget(p, { classId: cls.id }), rows,
     /** OV-13i: TVV / CX (không `student.edit`) — panel khoá cột Tuần bắt đầu (ngoài `CHI_SUA_THONG_TIN`). */
     chiThongTin: !can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }),
@@ -145,7 +147,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     }
     let doiTarget = false;
     if (r.target !== undefined) {
-      const t = thu('target', () => docTarget(r.target));
+      const t = thu('target', () => docTargetCua(c, r.target));   // P13: KET / PET theo thang Cambridge
       doiTarget = !t || !c || t.target !== (c.target_score ?? null) || t.kck !== !!c.khong_cam_ket;
       if (doiTarget && !duocDoiTarget(p, { studentId: s.id })) throw new HttpError(403, CHI_QL_DOI_TARGET);
       /* OV-13o: luật lúc lưu (CX đổi KCK, chương trình liên tục) báo ngay ở xem trước, đúng dòng — cùng hàm với `reviseTarget`. */

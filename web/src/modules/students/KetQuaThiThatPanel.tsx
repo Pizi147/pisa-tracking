@@ -9,7 +9,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { MONTH_CODE, hienTargetKck, ketQuaThiThat, ngay } from '@shared/domain/index.ts';
+import { MONTH_CODE, chuGradeKyThi, hienTargetKck, ketQuaKyThi, ketQuaThiThat, kiemDiemKyThi, kyThiCuaChuongTrinh, ngay } from '@shared/domain/index.ts';
 import { laBand } from './StudentPlanPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
@@ -49,9 +49,12 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   const [lichSu, setLichSu] = useState(false);   // OV-15g: thay nội dung panel (← Kết quả thi thật), chữ đang gõ giữ nguyên
   const lf = useLoiForm();
 
+  /* P13 KET-PET: lộ trình KET / PET — điểm Cambridge (số nguyên trong thang), Overall · Grade · CEFR máy tính; không Bước tiếp. */
+  const kt = c && !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
   /* Nạp giá trị đang lưu MỘT LẦN — tải lại nền không được xoá điều người dùng đang gõ. */
   if (c && !form) {
-    const f = { ngay: c.thi_that_ngay ?? '', l: fmt(c.thi_that_l), r: fmt(c.thi_that_r), w: fmt(c.thi_that_w), s: fmt(c.thi_that_s), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '' };
+    const fm = kt ? (v: number | null | undefined) => (v == null ? '' : String(v)) : fmt;
+    const f = { ngay: c.thi_that_ngay ?? '', l: fm(c.thi_that_l), r: fm(c.thi_that_r), w: fm(c.thi_that_w), s: fm(c.thi_that_s), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '' };
     setForm(f); setGoc(JSON.stringify(f));
   }
   if (lichSu) {
@@ -67,15 +70,16 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   const st = sauThi.data;
   const target: number | null = c.target_score ?? null;   // OV-9: KCK giữ Target — so như máy chủ (`ketQuaThiThat`)
   const so = (s: string) => (s.trim() === '' ? null : Number(s));
-  const sai = (s: string) => s.trim() !== '' && !laBand(s);
+  const sai = (s: string) => s.trim() !== '' && (kt ? !/^\d+$/.test(s.trim()) || !!kiemDiemKyThi(kt, Number(s)) : !laBand(s));
   const diem = { l: so(form.l), r: so(form.r), w: so(form.w), s: so(form.s) };
   const loiDiem = KY_NANG.some((k) => sai(form[k]));
   const loiNgay = !form.khongThi && form.ngay !== '' && !!homNay && form.ngay > homNay;
   const loi = [
-    ...KY_NANG.filter((k) => sai(form[k])).map((k) => ({ khoa: `diem-${k}`, nhan: k.toUpperCase(), lyDo: t('0–9, bước 0.5') })),
+    ...KY_NANG.filter((k) => sai(form[k])).map((k) => ({ khoa: `diem-${k}`, nhan: k.toUpperCase(), lyDo: kt ? t('Số nguyên {min}–{max}', { min: kt.min, max: kt.max }) : t('0–9, bước 0.5') })),
     ...(loiNgay ? [{ khoa: 'ngay', nhan: t('Ngày thi'), lyDo: t('Không sau hôm nay') }] : []),
   ];
-  const kq = loiDiem ? null : ketQuaThiThat({ ...diem, khongThi: form.khongThi }, target);
+  const kq = loiDiem || kt ? null : ketQuaThiThat({ ...diem, khongThi: form.khongThi }, target);
+  const kqKt = !loiDiem && kt ? ketQuaKyThi(kt, { thi_that_l: diem.l, thi_that_r: diem.r, thi_that_w: diem.w, thi_that_s: diem.s, thi_that_khong_thi: form.khongThi, target_score: target }) : null;
   const dat = (k: keyof typeof form, v: string | boolean) => setForm({ ...form, [k]: v });
 
   const luu = async () => {
@@ -89,8 +93,8 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
       invalidate('/students'); invalidate('/lo-trinh'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/work'); invalidate('/my-work'); invalidate('/cycles');
       const kqMoi = form.khongThi || KY_NANG.every((k) => form[k].trim() !== '');
       setGoc(JSON.stringify(form));
-      /* Đủ kết quả (4 kỹ năng hoặc Không thi) → Bước tiếp tại chỗ; chưa đủ → lưu như cũ rồi đóng. */
-      if (kqMoi) setBuocTiep(true);
+      /* Đủ kết quả (4 kỹ năng hoặc Không thi) → Bước tiếp tại chỗ; chưa đủ → lưu như cũ rồi đóng. P13: KET / PET không có Bước tiếp. */
+      if (kqMoi && !kt) setBuocTiep(true);
       else { toast.push('ok', t('Đã lưu')); onDone(); onClose(); }
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -100,9 +104,10 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
       chan={{ huy: { onClick: onClose }, daSua: JSON.stringify(form) !== goc, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{t('Lưu')}</button> }}>
       <div className="max-w-[560px] space-y-3">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-400">
-          <span>Target <b className="tabular-nums text-slate-200">{hienTargetKck(target !== null ? target.toFixed(1) : null, !!c.khong_cam_ket)}</b></span>
-          <span>{t('Dự kiến thi')} <b className="tabular-nums text-slate-200">{nhanThi(c, homNay) ?? '—'}</b></span>
-          {st?.giaiDoan === 'da_thi_cho_kq' && st.han && (
+          <span>Target <b className="tabular-nums text-slate-200">{kt ? target ?? '—' : hienTargetKck(target !== null ? target.toFixed(1) : null, !!c.khong_cam_ket)}</b></span>
+          {kt ? <span>{t('Thang')} <b className="tabular-nums text-slate-200">{kt.ten} {kt.min}–{kt.max}</b></span>
+            : <span>{t('Dự kiến thi')} <b className="tabular-nums text-slate-200">{nhanThi(c, homNay) ?? '—'}</b></span>}
+          {!kt && st?.giaiDoan === 'da_thi_cho_kq' && st.han && (
             <span>{t('Hạn sau thi')} <b className="tabular-nums text-slate-200">{ngay(st.han, homNay)}</b>{st.daGiaHan ? ` · ${t('đã gia hạn')}` : ''}
               {st.coTheGiaHan && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button></>}
             </span>
@@ -127,17 +132,26 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
               {KY_NANG.map((k) => (
                 <Truong key={k} nhan={k.toUpperCase()} loi={lf.loiCua(loi, `diem-${k}`)}>
-                  <input className="field w-full tabular-nums" inputMode="decimal" {...lf.o(loi, `diem-${k}`)} value={form[k]}
+                  <input className="field w-full tabular-nums" inputMode={kt ? 'numeric' : 'decimal'} {...lf.o(loi, `diem-${k}`)} value={form[k]}
                     onChange={(e) => dat(k, e.target.value)} />
                 </Truong>
               ))}
               <div className="col-span-4 sm:col-span-1">
                 {/* OV-11d (HV-22): OVR máy tính — chữ, không trông như ô nhập (như "Overall tự tính" ở Sửa thông tin). */}
-                <span className="block text-xs text-slate-400">OVR</span>
-                <strong className="mt-1.5 block text-sm tabular-nums text-slate-100" aria-label={t('OVR tự tính')}>{kq?.ovr != null ? kq.ovr.toFixed(1) : '—'}</strong>
+                <span className="block text-xs text-slate-400">{kt ? 'Overall' : 'OVR'}</span>
+                <strong className="mt-1.5 block text-sm tabular-nums text-slate-100" aria-label={t('OVR tự tính')}>
+                  {kt ? (kqKt && !kqKt.khongThi ? kqKt.tong : '—') : kq?.ovr != null ? kq.ovr.toFixed(1) : '—'}
+                </strong>
               </div>
             </div>
             {kq && kq.nhan !== 'Chờ kết quả thi thật' && <div><Nhan tone={toneKq(kq.nhan)}>{dich(kq.nhan)}</Nhan></div>}
+            {kqKt && !kqKt.khongThi && (
+              <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-300">
+                {/* P13: Grade + CEFR tính từ Overall (không lưu) — "Grade B · B1". */}
+                <span className="tabular-nums">{chuGradeKyThi(kqKt)}</span>
+                {kqKt.dat !== null && <Nhan tone={kqKt.dat ? 'ok' : 'bad'}>{kqKt.dat ? t('Đạt Target') : t('Chưa đạt Target')}</Nhan>}
+              </div>
+            )}
           </>
         )}
       </div>

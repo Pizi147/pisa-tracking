@@ -54,7 +54,8 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   /** OV-8b: có `student.edit_more` (TVV / CX) — Kết quả thi thật. */
   suaThem?: boolean;
   lopHoc?: { quyen: LopHocQuyen; chiXem?: boolean } | null;
-  cycle: { ratio?: boolean } | null;
+  /** P13: `kyThi` (KET / PET) — lớp thường có Kết quả thi thật theo điểm Cambridge. */
+  cycle: { ratio?: boolean; kyThi?: unknown } | null;
   status?: string;
   /** PR-XOA: chỉ Quản trị hệ thống. */
   coTheXoa?: boolean;
@@ -79,7 +80,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   /* OV-11d (HV-15): GVCN (`canEdit`) gửi đề xuất Target ngay ở Sửa thông tin — không thêm cửa thứ hai; GVBM giữ mục này. */
   if (deXuatSua && dangHoc && !canEdit) sau.push('de-xuat-sua');
   if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');
-  if ((canEdit || suaThem) && cycle && !ratio && !chiXem) sau.push('outcome');
+  if ((canEdit || suaThem) && cycle && (!ratio || !!cycle.kyThi) && !chiXem) sau.push('outcome');
   /* P7: Quay lại học — em tạm dừng (`quayLai`) hoặc em đã kết thúc (`hocLai`, Quản lý). */
   if ((quyen?.quayLai && status === 'inactive') || (quyen?.hocLai && status === 'finished')) sau.push('quay-lai');
   /* OV-13j: ai sửa được thông tin em thì xem được lịch sử sửa (cả khi hồ sơ đã Lưu trữ — chỉ xem). */
@@ -96,9 +97,9 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
  * OV-10b (mockup vai 13/10 mục 1, 6): ⋯ dòng học viên của TVV / CX / Admin — cùng mục, cùng thứ tự ⋯ hồ sơ HV của vai đó (`mucQuanLyHocVien`), chỉ
  * việc thông tin / trạng thái: Sửa thông tin · Tạm dừng/ Kết thúc học · Quay lại học · Kết quả thi thật. Nơi gọi thêm "Mở hồ sơ".
  */
-export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: boolean; status: string }) {
+export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: boolean; status: string; /** P13: khoá KET / PET. */ kyThi?: boolean }) {
   const quyen: LopHocQuyen = { ghiLoTrinhTiep: false, chuyenLop: false, tamDung: i.suaThem, quayLai: i.suaThem, ketThuc: i.suaThem, luuTru: false, boLuuTru: false };
-  return mucQuanLyHocVien({ canEdit: false, suaThongTin: i.suaThongTin, suaThem: i.suaThem, lopHoc: { quyen }, cycle: { ratio: !i.ft }, status: i.status })
+  return mucQuanLyHocVien({ canEdit: false, suaThongTin: i.suaThongTin, suaThem: i.suaThem, lopHoc: { quyen }, cycle: { ratio: !i.ft, kyThi: !!i.kyThi }, status: i.status })
     .filter((m) => m.key === 'info' || m.key === 'tam-dung-ket-thuc' || m.key === 'quay-lai' || m.key === 'outcome');
 }
 

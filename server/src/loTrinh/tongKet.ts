@@ -5,7 +5,7 @@
  */
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, ketQuaThiThat, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
+  ASSESSED_SKILLS, MON_GOP, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, chuKetQuaKyThi, ketQuaKyThi, ketQuaThiThat, type KetQuaKyThi, kyThiCuaChuongTrinh, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
   type HuongTiepTk, type LyDoDong, ATTEMPT_KIND_LABEL, tenRoute } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
@@ -16,7 +16,8 @@ import { trangThaiBuocTiep, type TrangThaiBuocTiep } from './buocTiep.ts';
 import { nguongDatLop, programmeByCode } from '../normal/regular.ts';
 
 type Tone = 'ok' | 'soon' | 'late' | 'muted';
-export type KetQuaGon = { chinh: string; tone: Tone; phu?: string };
+/** P13: `kyThi` = số liệu KQ thi thật KET / PET — web ghép chữ bằng `t()` (EN); `chinh` / `phu` giữ cho nơi đọc cũ. */
+export type KetQuaGon = { chinh: string; tone: Tone; phu?: string; kyThi?: KetQuaKyThi };
 
 const phanTram = (x: number) => `${Math.round(x * 100)}%`;
 const nhanHuong = (h: string | null): string | null => (h && h !== 'khong_ro' ? HUONG_TIEP_TK_NHAN[h as HuongTiepTk] ?? null : null);
@@ -40,8 +41,20 @@ function ketQuaBanChup(b: any): KetQuaGon | null {
   return b.ty_le_cuoi_khoa === null || b.ty_le_cuoi_khoa === undefined ? null : { chinh: phanTram(b.ty_le_cuoi_khoa), tone: toneDai(b.dai_cuoi_khoa) };
 }
 
+/**
+ * P13 KET-PET: kết quả thi thật KET / PET (điểm Cambridge) — đọc thẳng lộ trình (không bản chụp; Báo cáo lịch sử không đọc bản chụp), cả khoá đã đóng.
+ * Đạt Target so với Target LÚC NHẬP (`thi_that_target`, NULL → Target hiện tại). Không kỳ thi / chưa đủ 4 điểm → null.
+ */
+function ketQuaKyThiGon(c: any): KetQuaGon | null {
+  const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+  const k = kt ? ketQuaKyThi(kt, { ...c, target_score: c.thi_that_target ?? c.target_score }) : null;
+  if (!k) return null;
+  if (k.khongThi) return { chinh: 'Không thi', tone: 'muted', kyThi: k };
+  return { chinh: `Thi thật ${chuKetQuaKyThi(k)}`, tone: k.dat === null ? 'muted' : k.dat ? 'ok' : 'late', phu: k.dat === null ? undefined : k.dat ? 'Đạt Target' : 'Chưa đạt Target', kyThi: k };
+}
+
 /** Lượt gần nhất CÓ ĐIỂM của lộ trình đang chạy — một câu cho cả em, tính bằng `tinhLuot` (cùng hàm với bản chụp). */
-function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>): KetQuaGon | null {
+function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>, lich: Map<number, { skill: string }[]>): KetQuaGon | null {
   const laFt = !!c.route;
   const ct = laFt ? null : programmeByCode(c.programme_code);
   const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon: laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])], maCt: ct?.code ?? c.programme_code ?? null, kck: !!c.khong_cam_ket };
@@ -49,7 +62,7 @@ function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>): KetQua
     const rows = scores.get(a.id) ?? [];
     if (a.status === 'cancelled' || !rows.some((r) => r.band !== null || r.raw_score !== null)) continue;
     const nguong = nguongDatLop(a.class_id);
-    const t = tinhLuot({ ...nc, nguong }, a, a.target_at_attempt ?? null, rows, [], false);
+    const t = tinhLuot({ ...nc, nguong }, a, a.target_at_attempt ?? null, rows, [], false, lich.get(a.id));
     if (laFt) {
       return { chinh: `MT${a.attempt_no} · ${t.overall !== null ? t.overall.toFixed(1) : '—'}`, tone: t.sos && t.sos > 0 ? 'soon' : 'ok', phu: t.sos && t.sos > 0 ? `SOS ${t.sos}` : undefined };
     }
@@ -78,11 +91,15 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
     `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.target_at_attempt, a.class_id FROM assessment_attempts a WHERE a.kind != 'mt0' AND a.cycle_id IN (${dangChay.map(() => '?').join(',')}) ORDER BY a.cycle_id, a.attempt_no, a.id`,
   ).all(...dangChay.map((c) => c.id)) as any[] : [];
   const diem = new Map<number, any[]>();
+  const lichGop = new Map<number, { skill: string }[]>();   // P13: dòng lịch MÔN GỘP cũ — bộ môn theo lượt (`daGhiLuot`), cùng câu với điểm
+  const gop = Object.keys(MON_GOP);
   theoLo(luot.map((a) => a.id as number), (lo, ph) => {
-    for (const r of conn.prepare(`SELECT attempt_id, skill, band, raw_score, raw_total FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
-      diem.set(r.attempt_id, [...(diem.get(r.attempt_id) ?? []), r]);
+    for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, band AS band, raw_score AS raw_score, raw_total AS raw_total, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${gop.map(() => '?').join(',')})`).all(...lo, ...lo, ...gop) as any[]) {
+      const m: Map<number, any[]> = r.la_lich ? lichGop : diem;
+      m.set(r.attempt_id, [...(m.get(r.attempt_id) ?? []), r]);
     }
-  });
+  }, Math.floor((THAM_SO_TOI_DA - gop.length) / 2));
   const lopDang = dangChay.length ? (conn.prepare(
     `SELECT e.class_id, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1`).get(studentId) as any) : null;
   const bt = cycles[0].route ? trangThaiBuocTiep(p, cycles[0].id) : null;   // `cycles` xếp seq giảm: [0] = mới nhất
@@ -95,12 +112,12 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
       return {
         id: c.id, ten: c.route ? `Fast Track · ${tenRoute(c)}` : ct?.name ?? 'Lộ trình', lop: lopDang?.code ?? null, batDau: c.started_at, ketThuc: null,
         thoiGian: khoangTuan(c.started_at, null, homNay), dangHoc: c.status === 'active', lyDo: null,
-        ketQua: ketQuaSong(c, lopCuaLoTrinh, diem), huong: null, buocTiep,
+        ketQua: ketQuaKyThiGon(c) ?? ketQuaSong(c, lopCuaLoTrinh, diem, lichGop), huong: null, buocTiep,
       };
     }
     return {
       id: c.id, ten: tenLoTrinh(b, c.route_ten), lop: b.class_code, batDau: b.bat_dau_ngay, ketThuc: b.dong_ngay, thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay),
-      dangHoc: false, lyDo: b.ly_do, ketQua: ketQuaBanChup(b), huong: nhanHuong(b.huong_tiep), buocTiep,
+      dangHoc: false, lyDo: b.ly_do, ketQua: ketQuaKyThiGon(c) ?? ketQuaBanChup(b), huong: nhanHuong(b.huong_tiep), buocTiep,
     };
   });
 }
@@ -133,7 +150,7 @@ const monKqdr = (x: string | null): string[] => { try { const v = JSON.parse(x ?
 
 export function tongKetLoTrinh(p: Principal, cycleId: number) {
   const conn = db();
-  const c = conn.prepare('SELECT id, student_id, status, route_ten FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  const c = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   if (c.status === 'active') throw notFound('Lộ trình chưa kết thúc');
@@ -159,6 +176,10 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
     target: b.target as number | null, khongCamKet: !!b.khong_cam_ket,
     thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay), lyDo: b.ly_do as LyDoDong, lyDoNhan: LY_DO_DONG_NHAN[b.ly_do as LyDoDong] ?? null,
     dich: { target: b.target as number | null, thiDuKien: b.thi_du_kien_nhan as string | null },
+    /* P13 KET-PET: thang + kết quả thi thật Cambridge của khoá (đọc lộ trình, Đạt so Target lúc nhập). */
+    ...(() => { const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+      return { kyThi: kt ? { ten: kt.ten, min: kt.min, max: kt.max } : null, thiThatKyThi: kt ? ketQuaKyThi(kt, { ...c, target_score: c.thi_that_target ?? c.target_score }) : null,
+        ngayThiKyThi: kt ? c.thi_that_ngay ?? null : null }; })(),
     ketQua: laFt
       ? { loai: 'ft' as const, ovr: b.thi_that_ovr as number | null, l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, ngay: b.thi_that_ngay as string | null,
           khongThi: !!b.thi_that_khong_thi, khongCoThi,

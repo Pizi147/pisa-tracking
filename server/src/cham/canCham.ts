@@ -644,6 +644,8 @@ function hangLopTuan(
       };
       byLop.set(khoa, lop);
     }
+    /* P13: bộ môn theo dòng lịch của lượt — lượt đã ghi môn gộp cũ thêm L+S / R+W vào hàng lớp. */
+    if (mode === 'ratio' && !mt0 && !lop.boMon.includes(r.skill)) lop.boMon.push(r.skill);
     const dot = dotLabelOf(r.kind, r.attempt_no ?? null);
     if (!lop._dot.includes(dot)) lop._dot.push(dot);
     lop._hv.add(r.student_id);
