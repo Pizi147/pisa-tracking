@@ -23,7 +23,7 @@ type LopDich = {
 };
 type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean } };
 type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null; hanGvcn?: string | null };
-type XemChuyenLopData = {
+export type XemChuyenLopData = {
   hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null };
   lenh: LenhCho | null; tuanChon: string[]; today: string; tuanFinal?: string | null; boiCanh?: string | null;
   /** PR-CL (B3): null khi chưa chọn lớp. */
@@ -44,7 +44,7 @@ const loiMayChu = (e: any) => e?.message ?? 'Không lưu được — thử lạ
 const khoiVang = KHOI_VANG;
 
 /** Target + ô tích KCK (§7: chỉ khi em chưa có Target nào) — panel một em và hàng nhiều em. OV-9: giá trị chữ "6.5" · "6.5 KCK" · "KCK". */
-function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
+export function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
   value: string; onChange: (v: string) => void; ariaLabel: string; oProps?: Record<string, unknown>; disabled?: boolean;
 }) {
   const { so, kck } = tachKck(value);

@@ -10,9 +10,9 @@ import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { OTuanBatDau } from '../students/ChuyenLopPanel.tsx';
+import { OTarget, OTuanBatDau, type XemChuyenLopData } from '../students/ChuyenLopPanel.tsx';
 import { KHOI_VANG } from './chuyenLopChung.tsx';
-import { chuTyLeXetLai, kyHieuLop, laChuyenNgay, ngay, tenBacKe, tuanChonDuoc, tuanLich, type ProgrammeCode } from '@shared/domain/index.ts';
+import { canHoiTarget, chuTyLeXetLai, docOTarget, kyHieuLop, laChuyenNgay, ngay, tenBacKe, tuanChonDuoc, tuanLich, type ProgrammeCode } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 type Quyet = 'tiep_tuc' | 'hoc_lai' | 'len' | 'dung';
@@ -32,9 +32,9 @@ export type EmXetLai = {
   quyetDinh: { id: number; quyetDinh: Quyet; lopDich: string | null; tuan: string | null; luc: string; nguoi: string | null } | null;
 };
 type DuLieu = { lop: { id: number; code: string; ft: boolean }; chiXem: boolean; han: string | null; nguon: { code: string } | null; em: EmXetLai[]; lopHocLai: Record<string, LopMo[]>; lopLen: Record<string, LopMo[]> };
-type LopMo = { id: number; code: string; phu: string };
-/** Lựa chọn đang soạn của một em (chưa lưu). */
-type Chon = { quyet: Quyet; lop: number | null; tuan: string; lyDo: string; trangThai: 'inactive' | 'finished' };
+type LopMo = { id: number; code: string; phu: string; ft?: boolean };
+/** Lựa chọn đang soạn của một em (chưa lưu). `hoiTarget`: Lên FT mà em chưa có Target (xem trước `/chuyen-lop`, như panel Chuyển lớp) → ô Target tại thẻ. */
+type Chon = { quyet: Quyet; lop: number | null; tuan: string; lyDo: string; trangThai: 'inactive' | 'finished'; hoiTarget?: boolean; mucTieu?: string };
 /** Kết quả đã lưu trong lần mở panel này (Hoàn tác / Sửa). */
 type DaLuu = { id: number; chu: string; daChuyen: boolean };
 
@@ -53,8 +53,15 @@ const chuyenChu = (e: EmXetLai) => (e.lyDo.ma === 'c' ? t('Lên {lop}', { lop: e
 const lopCua = (d: Pick<DuLieu, 'lopHocLai' | 'lopLen'>, e: EmXetLai): LopMo[] => (e.lyDo.ma === 'c' ? d.lopLen : d.lopHocLai)[e.lopNguon.ct ?? ''] ?? [];
 const doLyDo = (e: EmXetLai) => e.lyDo.ma === 'a' || e.lyDo.ma === 'd';
 const canLyDo = (e: EmXetLai, c: Chon) => c.quyet === 'dung' || (c.quyet === 'tiep_tuc' && e.lyDo.ma === 'a');
+/** Cùng chữ máy chủ (`motEm`) để ô báo đúng chỗ dù lỗi từ web hay từ máy chủ. */
+const LOI_LOP = { len: 'Chọn lớp', hoc_lai: 'Chọn lớp học lại' } as const;
+const LOI_TARGET = 'Em chưa có Target — ghi band hoặc tích KCK';
+const laLoi = (loi: string | null, chu: typeof LOI_LOP[keyof typeof LOI_LOP] | typeof LOI_TARGET) => !!loi && (loi === chu || loi === t(chu));
 const loiChon = (e: EmXetLai, c: Chon): string | null =>
-  (laChuyen(c.quyet) && !c.lop ? t('Chọn lớp học lại') : laChuyen(c.quyet) && !c.tuan ? t('Chọn tuần bắt đầu.') : canLyDo(e, c) && !c.lyDo.trim() ? t('Ghi lý do ngắn') : null);
+  (laChuyen(c.quyet) && !c.lop ? t(c.quyet === 'len' ? LOI_LOP.len : LOI_LOP.hoc_lai)
+    : laChuyen(c.quyet) && !c.tuan ? t('Chọn tuần bắt đầu.')
+      : laChuyen(c.quyet) && c.hoiTarget && docOTarget(c.mucTieu ?? '').loi ? t(LOI_TARGET)
+        : canLyDo(e, c) && !c.lyDo.trim() ? t('Ghi lý do ngắn') : null);
 
 /**
  * XÉT LẠI LỘ TRÌNH (P9a, N21 — mockup V6 `thiet-ke/v6/xet-lai-lo-trinh.html` khung 2–7) — MỘT panel, mở tại chỗ ở hồ sơ lớp em đang học (việc QL ·
@@ -111,7 +118,8 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
           items: lo.map((e) => {
             const c = chon[e.studentId];
             return { studentId: e.studentId, quyetDinh: c.quyet, toClassId: laChuyen(c.quyet) ? c.lop : null, tuan: laChuyen(c.quyet) ? c.tuan : null,
-              lyDo: c.lyDo.trim() || null, trangThai: c.trangThai, suaId: suaId[e.studentId] ?? e.quyetDinh?.id ?? null };
+              lyDo: c.lyDo.trim() || null, trangThai: c.trangThai, suaId: suaId[e.studentId] ?? e.quyetDinh?.id ?? null,
+              mucTieu: laChuyen(c.quyet) && c.hoiTarget ? docOTarget(c.mucTieu ?? '').giaTri : undefined };
           }),
         });
         ok.push(...r.ok);
@@ -256,7 +264,7 @@ function Dong({ n, children }: { n: string; children: ReactNode }) {
 /** Một em (mockup `.em-xl`): đầu thẻ · lưới thông tin · hàng làm (QL) hoặc nhận xét (GVCN lớp mới). */
 function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, loi, tick, busy, lopHocLai, onTick, onNut, onChon, onSua }: {
   e: EmXetLai; chiXem: boolean; classId: number; homNay: string | null; toi: string | null; tuanChon: string[];
-  chon: Chon | null; daLuu: DaLuu | null; xong: boolean; loi: string | null; tick: boolean; busy: boolean; lopHocLai: { id: number; code: string; phu: string }[];
+  chon: Chon | null; daLuu: DaLuu | null; xong: boolean; loi: string | null; tick: boolean; busy: boolean; lopHocLai: LopMo[];
   onTick: (v: boolean) => void; onNut: (q: Quyet) => void; onChon: (c: Chon) => void; onSua: () => void;
 }) {
   const ct = bac(e.lopNguon.ct);
@@ -309,10 +317,15 @@ const tenGoi = (ten: string) => ten.trim().split(/\s+/).pop() ?? ten;
 
 function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, onChon }: {
   e: EmXetLai; ct: string; chon: Chon | null; loi: string | null; busy: boolean; homNay: string | null; tuanChon: string[];
-  lopHocLai: { id: number; code: string; phu: string }[]; onNut: (q: Quyet) => void; onChon: (c: Chon) => void;
+  lopHocLai: LopMo[]; onNut: (q: Quyet) => void; onChon: (c: Chon) => void;
 }) {
   const ds = useMemo(() => lopHocLai.map((l) => ({ id: l.id, ma: l.code, phu: l.phu })), [lopHocLai]);
   const lopChu = lopHocLai.find((l) => l.id === chon?.lop)?.code ?? null;
+  /* Lên FT từ lớp thường: xem trước như panel Chuyển lớp — em chưa có Target nào → ô Target / KCK ngay tại thẻ (`canHoiTarget`). */
+  const dichFt = laChuyen(chon?.quyet) && !!lopHocLai.find((l) => l.id === chon?.lop)?.ft;
+  const xem = useApi<XemChuyenLopData>(dichFt && !e.lopHienTai.ft ? `/students/${e.studentId}/chuyen-lop?toClassId=${chon!.lop}` : null, [e.studentId, chon?.lop, dichFt]);
+  const hoiTarget = dichFt && !!xem.data && canHoiTarget(xem.data.hienTai.ft, true, xem.data.targetSan);
+  useEffect(() => { if (chon && !!chon.hoiTarget !== hoiTarget) onChon({ ...chon, hoiTarget }); }, [hoiTarget, chon?.lop]); // eslint-disable-line react-hooks/exhaustive-deps
   const ngayNay = !!chon && !!homNay && laChuyenNgay(chon.tuan, homNay);
   const len = e.lyDo.ma === 'c';
   const ke = e.lopNguon.ct ? tenBacKe(e.lopNguon.ct as ProgrammeCode) : '';
@@ -329,9 +342,16 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
             <span className="text-xs font-bold leading-[34px] text-slate-300">{t('Lớp')}</span>
             <span className="w-[300px] max-w-full">
               <ChonLop ds={ds} value={chon.lop} onChange={(id) => onChon({ ...chon, lop: id })} ariaLabel={t('Lớp của {ten}', { ten: e.ten })} tat={busy}
-                invalid={loi === t('Chọn lớp học lại')} khongKhop={t('Chưa có lớp {ct} đang học ở chi nhánh này', { ct: len ? ke : ct })} placeholder={len ? ke : ct} />
+                invalid={laLoi(loi, LOI_LOP.len) || laLoi(loi, LOI_LOP.hoc_lai)} khongKhop={t('Chưa có lớp {ct} đang học ở chi nhánh này', { ct: len ? ke : ct })} placeholder={len ? ke : ct} />
             </span>
           </div>
+          {hoiTarget && (
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+              <span className="text-xs font-bold text-slate-300">Target <span aria-hidden className="text-bad">*</span></span>
+              <OTarget value={chon.mucTieu ?? ''} onChange={(v) => onChon({ ...chon, mucTieu: v })} ariaLabel={t('Target của {ten}', { ten: e.ten })} disabled={busy}
+                oProps={{ 'aria-invalid': laLoi(loi, LOI_TARGET) }} />
+            </div>
+          )}
           <div className="flex flex-wrap items-start gap-x-2.5 gap-y-1.5">
             <span className="text-xs font-bold leading-[34px] text-slate-300">{t('Từ')}</span>
             <span className="min-w-0 flex-1"><OTuanBatDau tuanChon={tuanChon} tuan={chon.tuan} setTuan={(v) => onChon({ ...chon, tuan: v })} homNay={homNay} oProps={{ 'aria-label': t('Tuần bắt đầu') }} /></span>

@@ -2028,7 +2028,8 @@ CREATE TABLE xet_lai_lo_trinh (
   quyet_dinh TEXT,                             -- tiep_tuc | hoc_lai | len | dung · NULL = dòng nhận xét GVCN lớp mới
   chu TEXT,                                    -- chữ quyết định ("Tiếp tục BE", "Học lại FOU → MB FOU 14") — dòng "Đã xét lại"
   lenh_moi_id INTEGER REFERENCES lenh_chuyen_lop(id),
-  lenh_cu TEXT,
+  lenh_cu TEXT,                                -- ảnh lệnh chưa thi hành trước khi sửa + dòng sau sửa (Hoàn tác chỉ khi lệnh chưa đổi tiếp)
+  quyet_cu TEXT,                               -- Sửa: quyết định trước đó (Hoàn tác lần Sửa trả lại nó)
   ly_do_text TEXT,
   tu_dong INTEGER NOT NULL DEFAULT 0,
   nhan_xet_gvcn_moi TEXT,

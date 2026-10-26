@@ -1,8 +1,8 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  NORMAL_LADDER, PERMISSIONS, chuTyLeXetLai, goiYCuoiKhoa, hanXetLai, kyHieuLop, lyDoXetLai, tenBacKe, tenMonNgan, tuanHopLe, type LyDoXetLai, type ProgrammeCode,
+  NORMAL_LADDER, PERMISSIONS, chuTyLeXetLai, ghepMucTieu, goiYCuoiKhoa, hanXetLai, kyHieuLop, lyDoXetLai, tenBacKe, tenMonNgan, tuanHopLe, type LyDoXetLai, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { HttpError, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { HttpError, addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso, todayInBusinessTz } from '../util.ts';
 import { isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -10,7 +10,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { coTheRaLenh } from '../classes/quyenChuyenLop.ts';
 import { huongChuyenMotEm, lopDichHopLe, lopHienTaiCua, danhSachLopDich } from '../classes/luatLoTrinh.ts';
-import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
+import { huyLenh, raLenh, soHoacKck, thongBaoSapNhan } from '../classes/lenhChuyen.ts';
 import { hoanTacKetThuc, hoanTacTamDung, setStudentStatus } from '../students/students.ts';
 import { dongBoCheTaiFinal, tyLeTongLo } from './cuoiKhoa.ts';
 import { dongBoMt0 } from '../fasttrack/mt0.ts';
@@ -47,26 +47,44 @@ export type LopXetLai = { lopId: number; code: string; han: string; em: EmXetLai
 
 const CUA_SO_NGAY = 70;   // lệnh Cuối khoá có tuần bắt đầu trong 70 ngày gần nhất — đủ cho Mini Test (≤ 2 tuần bổ trợ + ghi muộn)
 const ngayNgan = (d: string | null | undefined) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '');
+/**
+ * Ngày nghiệp vụ (giờ VN) của mốc mở dòng. Mốc sau ngày demo = ghi bằng giờ thật trong lúc ngày demo đứng trước ngày thật → lùi đúng độ lệch
+ * (ghi "hôm nay thật" = hôm nay demo), không quá hôm nay demo. Bản chính: ngày demo = ngày thật, không đổi gì. Không phụ thuộc ngày đang tra → hạn cố định.
+ */
+function ngayCuaMoc(luc: string | null | undefined): string | null {
+  const t = luc ? Date.parse(luc) : NaN;
+  if (Number.isNaN(t)) return null;
+  const d = todayInBusinessTz(new Date(t));
+  const demo = demoToday();
+  if (d <= demo) return d;
+  const lui = addDays(demo, -Math.round((Date.parse(todayInBusinessTz()) - Date.parse(d)) / 86_400_000));
+  return lui < demo ? lui : demo;
+}
 
 /**
  * Tập em đang có dòng Xét lại (mọi chi nhánh, KHÔNG lọc quyền) + dòng đã quyết còn sửa được. Nhớ trong request; số câu cố định cho cả hệ thống.
- * Quét khi đọc: dòng quá hạn tự ghi "Tiếp tục" (`tuGiu`) rồi rời tập — việc, panel, chip cùng một tập. Lỗi ghi không làm hỏng trang đang đọc.
+ * Dòng quá hạn rời tập ở MỌI đường đọc (việc, panel, chip cùng một tập); chỉ quét định kỳ (`ghi`, `quetXetLaiHetHan`) mới ghi "Tiếp tục" tự giữ.
  */
-export function tapXetLai(today = demoToday(), cn: readonly number[] | null = null): EmXetLai[] {
+export function tapXetLai(today = demoToday(), cn: readonly number[] | null = null, ghi = false): EmXetLai[] {
   if (cn && !cn.length) return [];
-  return nho(`xet-lai:${today}:${cn ? [...cn].sort().join(',') : '*'}`, () => {
+  return nho(`xet-lai:${today}:${cn ? [...cn].sort().join(',') : '*'}:${ghi ? 'ghi' : 'doc'}`, () => {
     const ds = tinhTapXetLai(today, { cn });
     const het = ds.filter((e) => !e.quyetDinh && e.han < today);
     if (!het.length) return ds;
-    /* Mốc deploy (migrate `prXetLai`): mục hết hạn TRƯỚC mốc không tự ghi — chỉ rời tập như luật cũ (dòng tự mất). */
-    const moc = (db().prepare(`SELECT value FROM demo_config WHERE key = '${MOC_TU_GIU}'`).get() as any)?.value as string | undefined;
-    try { tuGiu(het.filter((e) => !moc || e.han >= moc), today); } catch (e) { console.error('[xet-lai] tự giữ khi hết hạn', e); return ds; }
+    if (ghi) {
+      /* Mốc deploy (migrate `prXetLai`): mục hết hạn TRƯỚC mốc không tự ghi — chỉ rời tập như luật cũ (dòng tự mất). */
+      const moc = (db().prepare(`SELECT value FROM demo_config WHERE key = '${MOC_TU_GIU}'`).get() as any)?.value as string | undefined;
+      try { tuGiu(het.filter((e) => !moc || e.han >= moc), today); } catch (e) { console.error('[xet-lai] tự giữ khi hết hạn', e); }
+    }
     return ds.filter((e) => !het.includes(e));
   });
 }
 export const MOC_TU_GIU = 'xet_lai_tu_giu_tu';
 /** Chỉ đọc (không tự giữ, không nhớ) — migrate dùng để đóng thẻ Mini Test cũ mà không ghi gì khác. */
 export const tapXetLaiChiDoc = (today = demoToday()): EmXetLai[] => tinhTapXetLai(today);
+/** Em có dòng (d) "Mini Test chưa đạt" ở Xét lại (ghi Mini Test < 70 % — `ghiMiniTestTrongTx`): QL quyết ở đó, không cần thẻ Báo QL. */
+export const coXetLaiMiniTest = (studentId: number, today = demoToday()): boolean =>
+  tinhTapXetLai(today, { chiEm: studentId }).some((e) => e.lyDo.ma === 'd');
 
 /** Chi nhánh QL / Quản trị được quyết (grant `class.edit`): null = mọi chi nhánh. */
 export function phamViQuyet(p: Principal): number[] | null {
@@ -155,7 +173,9 @@ function tinhTapXetLai(today: string, o: { chiEm?: number; cn?: readonly number[
     if (!lyDo) continue;
     const ct = t?.ct ?? l.nguon_ct ?? null;
     const goiY = t && t.tyLe !== null ? goiYCuoiKhoa({ ct, tyLe: t.tyLe, monTruot: t.monTruot, nguong: t.nguong }) : null;
-    const ngayMoc = lyDo.ma === 'd' ? (mt?.ngay_lam ?? l.ngay_ra_lenh) : (m?.ngay ?? l.ngay_ra_lenh);   // điểm cũ chưa có ngày nhập đầu → ngày chốt
+    /* Hạn tính từ NGÀY của mốc mở dòng (điểm Final nhập / sửa cuối, ghi Mini Test) — dòng mở lại sau hạn có hạn mới. */
+    const mo = ngayCuaMoc(lyDo.moc) ?? l.ngay_ra_lenh;
+    const ngayMoc = lyDo.ma === 'd' && mt?.ngay_lam && mt.ngay_lam > mo ? mt.ngay_lam : mo;
     out.push({
       studentId: l.student_id, ten: l.ten, lenhId: l.id, lyDo: { ma: lyDo.ma, chu: ly?.chu ?? '', moc: lyDo.moc ?? '' },
       han: hanXetLai({ ma: lyDo.ma, tuanBatDau: l.tuan_bat_dau, moc: ngayMoc }),
@@ -240,7 +260,7 @@ export function xemXetLai(p: Principal, classId: number, studentId: number | nul
   if (ql && ctCu.length) {
     const ds = danhSachLopDich(classId, true).lop.filter((x) => x.chiNhanhId === lop.branch_id);
     const chon = (f: (x: (typeof ds)[number]) => boolean) => ds.filter(f)
-      .map((x) => ({ id: x.id, code: x.code, phu: [x.ft ? `FT${x.route ? ` ${x.route}` : ''}` : x.ma, x.branchCode, x.tuan ? `tuần ${x.tuan.slice(1).split('/')[0]}` : null, `${(x as any).siSo ?? 0} em`].filter(Boolean).join(' · ') }));
+      .map((x) => ({ id: x.id, code: x.code, ft: !!x.ft, phu: [x.ft ? `FT${x.route ? ` ${x.route}` : ''}` : x.ma, x.branchCode, x.tuan ? `tuần ${x.tuan.slice(1).split('/')[0]}` : null, `${(x as any).siSo ?? 0} em`].filter(Boolean).join(' · ') }));
     for (const ct of ctCu) {
       lopHocLai[ct] = chon((x) => x.ma === ct && !x.ft);
       if (em.some((e) => e.lopNguon.ct === ct && e.lyDo.ma === 'c')) lopLen[ct] = chon((x) => x.ft || x.ma === NORMAL_LADDER[ct as ProgrammeCode]);
@@ -253,7 +273,10 @@ export function xemXetLai(p: Principal, classId: number, studentId: number | nul
   };
 }
 
-export type MucXetLai = { studentId: number; quyetDinh: QuyetXetLai; toClassId?: number | null; tuan?: string | null; lyDo?: string | null; trangThai?: 'inactive' | 'finished'; suaId?: number | null };
+export type MucXetLai = {
+  studentId: number; quyetDinh: QuyetXetLai; toClassId?: number | null; tuan?: string | null; lyDo?: string | null; trangThai?: 'inactive' | 'finished'; suaId?: number | null;
+  /** Lên FT (dòng (c)) mà em chưa có Target — ô Target / KCK tại thẻ (`canHoiTarget`). */ mucTieu?: MucTieuLenh | null;
+};
 export const LO_XET_LAI = 10;   // một lời gọi ≤ 10 em (web chia lô — Học lại một em ~70–125 câu khi "Ngay hôm nay")
 
 function docMuc(x: any): MucXetLai {
@@ -269,7 +292,7 @@ function docMuc(x: any): MucXetLai {
   return {
     studentId: sid, quyetDinh: x.quyetDinh, toClassId: so(x.toClassId, 'Lớp'), tuan: x.tuan ?? null,
     lyDo: chuTuDo(x.lyDo, 'Lý do', 2000) ?? null, trangThai: x.trangThai === 'finished' ? 'finished' : 'inactive',
-    suaId: so(x.suaId, 'Quyết định cần sửa'),
+    suaId: so(x.suaId, 'Quyết định cần sửa'), mucTieu: soHoacKck(x.mucTieu),
   };
 }
 
@@ -282,6 +305,7 @@ export function luuXetLai(p: Principal, classId: number, itemsVao: unknown) {
   if (itemsVao.length > LO_XET_LAI) throw badRequest(`Tối đa ${LO_XET_LAI} học viên một lần.`);
   if (!quyetDuoc(p, classId)) throw forbidden(CHI_QL);
   const items = itemsVao.map(docMuc);
+  if (new Set(items.map((x) => x.studentId)).size !== items.length) throw badRequest('Mỗi học viên chỉ một quyết định trong một lần lưu.');
   const today = demoToday();
   const cn = chiNhanhLop(classId);
   const tap = new Map(tapXetLai(today, cn === undefined ? [] : [cn]).filter((e) => e.lopHienTai.id === classId).map((e) => [e.studentId, e]));
@@ -290,10 +314,11 @@ export function luuXetLai(p: Principal, classId: number, itemsVao: unknown) {
   for (const it of items) {
     try {
       ok.push(tx(() => {
-        if (it.suaId) daoQuyet(p, it.suaId, it.studentId);
+        /* Sửa: quyết định cũ đảo lại, giữ trong dòng mới (`quyet_cu`) — Hoàn tác lần Sửa trả lại đúng nó. */
+        const cu = it.suaId ? daoQuyet(p, it.suaId, it.studentId) : null;
         const e = it.suaId ? tinhTapXetLai(today, { chiEm: it.studentId }).find((x) => x.lopHienTai.id === classId) : tap.get(it.studentId);
         if (!e || e.quyetDinh) throw new HttpError(409, 'Em không còn cần xét lại.');
-        return motEm(p, e, it, today, classId);
+        return motEm(p, e, it, today, classId, cu && JSON.stringify(cu));
       }));
     } catch (err) {
       if (!(err instanceof HttpError) || err.status >= 500) throw err;
@@ -303,7 +328,7 @@ export function luuXetLai(p: Principal, classId: number, itemsVao: unknown) {
   return { ok, failed };
 }
 
-function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId: number): { studentId: number; id: number; chu: string; daChuyen: boolean } {
+function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId: number, quyetCu: string | null = null): { studentId: number; id: number; chu: string; daChuyen: boolean } {
   const conn = db();
   const cot = { lenhMoi: null as number | null, lenhCu: null as string | null, chu: '', daChuyen: false };
   if (it.quyetDinh === 'tiep_tuc') {
@@ -325,9 +350,10 @@ function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId:
     const sua = !e.daThiHanh;   // lệnh chưa thi hành → `raLenh` SỬA chính lệnh đó: chụp nguyên trạng để Hoàn tác
     const anh = sua ? chupLenh(e) : null;
     const nhan = len ? `Lên ${dich.is_fast_track ? 'FT' : kyHieuLop(ke, null) ?? ke ?? ''}` : `Học lại ${kyHieuLop(e.lopNguon.ct, null) ?? e.lopNguon.ct ?? ''}`;
-    const r = raLenh(p, { lopNguonId: enr.class_id, boiCanh, tuanChung: null, dongs: [{ studentId: e.studentId, huong, toClassId: dich.id, tuan: it.tuan, lyDo: it.lyDo || `Xét lại lộ trình: ${nhan}` }] });
+    const r = raLenh(p, { lopNguonId: enr.class_id, boiCanh, tuanChung: null, dongs: [{ studentId: e.studentId, huong, toClassId: dich.id, tuan: it.tuan, mucTieu: it.mucTieu ?? null, lyDo: it.lyDo || `Xét lại lộ trình: ${nhan}` }] });
     if (r.failed.length) throw badRequest(r.failed[0].message);
-    if (anh) cot.lenhCu = JSON.stringify({ ...anh, jeSau: maxId('journey_events'), ntSau: maxId('notifications') });
+    /* `lenhSau` = dòng lệnh ngay sau lần sửa này: Hoàn tác chỉ khi lệnh chưa bị đổi tiếp (ở Chuyển lớp…). */
+    if (anh) cot.lenhCu = JSON.stringify({ ...anh, jeSau: maxId('journey_events'), lenhSau: conn.prepare('SELECT * FROM lenh_chuyen_lop WHERE id = ?').get(e.lenhId) });
     cot.daChuyen = r.daChuyen.includes(e.studentId);
     cot.lenhMoi = (conn.prepare(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai IN ('cho', 'da_chuyen') ORDER BY id DESC LIMIT 1`).get(e.studentId) as any).id;
     cot.chu = `${nhan} → ${dich.code}`;
@@ -337,37 +363,40 @@ function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId:
     cot.chu = it.trangThai === 'finished' ? 'Kết thúc học' : 'Tạm dừng';
   }
   const id = Number(conn.prepare(
-    `INSERT INTO xet_lai_lo_trinh (student_id, lenh_id, lop_id, ly_do_ma, moc, quyet_dinh, chu, lenh_moi_id, lenh_cu, ly_do_text, tu_dong, nguoi_id, luc) VALUES (?,?,?,?,?,?,?,?,?,?,0,?,?)`,
-  ).run(e.studentId, e.lenhId, classId, e.lyDo.ma, e.lyDo.moc, it.quyetDinh, cot.chu, cot.lenhMoi, cot.lenhCu, it.lyDo ?? null, p.userId, nowIso()).lastInsertRowid);
+    `INSERT INTO xet_lai_lo_trinh (student_id, lenh_id, lop_id, ly_do_ma, moc, quyet_dinh, chu, lenh_moi_id, lenh_cu, quyet_cu, ly_do_text, tu_dong, nguoi_id, luc) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
+  ).run(e.studentId, e.lenhId, classId, e.lyDo.ma, e.lyDo.moc, it.quyetDinh, cot.chu, cot.lenhMoi, cot.lenhCu, quyetCu, it.lyDo ?? null, p.userId, nowIso()).lastInsertRowid);
   ghiHanhTrinh(p.userId, e, id, `QL xét lại: ${cot.chu}`, today);
   writeAudit({ actorUserId: p.userId, action: 'xet_lai.quyet', entityType: 'student', entityId: e.studentId, entityLabel: e.ten,
     after: { quyetDinh: it.quyetDinh, lyDo: e.lyDo.ma, lenhId: e.lenhId, lenhMoiId: cot.lenhMoi, ghiChu: it.lyDo ?? null } });
   return { studentId: e.studentId, id, chu: cot.chu, daChuyen: cot.daChuyen };
 }
 
-const maxId = (bang: 'journey_events' | 'notifications') => Number((db().prepare(`SELECT COALESCE(MAX(id), 0) AS m FROM ${bang}`).get() as any).m);
+const maxId = (bang: 'journey_events') => Number((db().prepare(`SELECT COALESCE(MAX(id), 0) AS m FROM ${bang}`).get() as any).m);
 
-/** Ảnh nguyên trạng trước khi `raLenh` sửa lệnh chưa thi hành: dòng lệnh · phiếu bàn giao môn (`lam_lai`) · Lộ trình tiếp theo · mốc id Hành trình / chuông. */
+/** Ảnh nguyên trạng trước khi `raLenh` sửa lệnh chưa thi hành: dòng lệnh · phiếu bàn giao môn (`lam_lai`) · Lộ trình tiếp theo · mốc id Hành trình. */
 function chupLenh(e: EmXetLai) {
   const conn = db();
   return {
     lenh: conn.prepare('SELECT * FROM lenh_chuyen_lop WHERE id = ?').get(e.lenhId),
     bg: conn.prepare('SELECT id, lam_lai FROM ban_giao_mon WHERE lenh_id = ?').all(e.lenhId),
     ltt: conn.prepare('SELECT * FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(e.studentId, e.lopNguon.id) ?? null,
-    je: maxId('journey_events'), nt: maxId('notifications'),
+    je: maxId('journey_events'),
   };
 }
 
 /**
  * Hoàn tác / Sửa Học lại khi lệnh chưa thi hành: trả NGUYÊN dòng lệnh (hướng, lớp, tuần, Target, xác nhận bàn giao GVCN, hạn…), `lam_lai` của phiếu môn,
- * Lộ trình tiếp theo; xoá Hành trình + chuông do lần sửa sinh (khoảng id đã chụp) — không gửi chuông làm lại. MT0 và bổ trợ Final đồng bộ lại theo lệnh cũ.
+ * Lộ trình tiếp theo; xoá Hành trình của em do lần sửa sinh (khoảng id đã chụp). Chuông: bỏ "Cần làm lại bàn giao" của chính lần sửa (khoá theo giờ sửa),
+ * "Sắp nhận" của lớp chuyển đến cũ / mới đếm lại từ bảng lệnh (`thongBaoSapNhan`). Lệnh đã bị đổi tiếp sau quyết định (Chuyển lớp…) → 409.
  */
 function khoiPhucLenh(p: Principal, anh: any, ct: string | null): void {
   const conn = db();
   const { id, ...cot } = anh.lenh;
+  const hien = conn.prepare('SELECT * FROM lenh_chuyen_lop WHERE id = ?').get(id) as any;
+  if (!hien || hien.trang_thai !== 'cho') throw conflict('Quyết định chuyển lớp vừa được thi hành hoặc đã huỷ.');
+  if (anh.lenhSau && JSON.stringify(hien) !== JSON.stringify(anh.lenhSau)) throw conflict('Quyết định đã đổi sau khi xét lại — dùng Chuyển lớp.');
   const ten = Object.keys(cot);
-  const r = conn.prepare(`UPDATE lenh_chuyen_lop SET ${ten.map((k) => `${k} = ?`).join(', ')} WHERE id = ? AND trang_thai = 'cho'`).run(...ten.map((k) => cot[k]), id);
-  if (!r.changes) throw conflict('Quyết định chuyển lớp vừa được thi hành hoặc đã huỷ.');
+  conn.prepare(`UPDATE lenh_chuyen_lop SET ${ten.map((k) => `${k} = ?`).join(', ')} WHERE id = ? AND trang_thai = 'cho'`).run(...ten.map((k) => cot[k]), id);
   for (const b of anh.bg) conn.prepare('UPDATE ban_giao_mon SET lam_lai = ? WHERE id = ?').run(b.lam_lai, b.id);
   if (anh.ltt) {
     const { id: lid, ...l } = anh.ltt;
@@ -375,9 +404,31 @@ function khoiPhucLenh(p: Principal, anh: any, ct: string | null): void {
     conn.prepare(`UPDATE lo_trinh_tiep_theo SET ${k.map((x) => `${x} = ?`).join(', ')} WHERE id = ?`).run(...k.map((x) => l[x]), lid);
   } else conn.prepare('DELETE FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').run(cot.student_id, cot.lop_nguon_id);
   conn.prepare('DELETE FROM journey_events WHERE student_id = ? AND id > ? AND id <= ?').run(cot.student_id, anh.je, anh.jeSau);
-  conn.prepare('DELETE FROM notifications WHERE id > ? AND id <= ?').run(anh.nt, anh.ntSau);
+  if (hien.sua_luc) conn.prepare(`DELETE FROM notifications WHERE kind = 'lam_lai_ban_giao' AND dedup_key = ?`).run(`lam_lai_ban_giao:${cot.lop_nguon_id}:${hien.sua_luc}`);
+  tinhLaiSapNhan(p, cot.lop_nguon_id, [cot.lop_dich_id, hien.lop_dich_id]);
   dongBoMt0(p.userId, [{ studentId: cot.student_id, classId: cot.lop_nguon_id, ma: ct as ProgrammeCode | null, huong: cot.huong, mucTieu: cot.muc_tieu ?? null }]);
   dongBoCheTaiFinal(p, cot.lop_nguon_id, [cot.student_id]);
+}
+
+/**
+ * "Sắp nhận n em" hôm nay của từng lớp chuyển đến (của lớp nguồn này) theo bảng lệnh: còn em → cùng chuông cập nhật số; hết em → bỏ chuông hôm nay
+ * (chuông ngày trước giữ nguyên, như `raLenh`). Chuông dùng chung của em khác vẫn còn, chỉ đổi số.
+ */
+function tinhLaiSapNhan(p: Principal, nguonId: number, dichIds: readonly (number | null)[]): void {
+  const conn = db();
+  const homNay = demoToday();
+  const con: number[] = [];
+  const dich = new Map<number, any>();
+  for (const id of new Set(dichIds.filter((x): x is number => !!x))) {
+    const khoa = `sap_nhan:${id}:${nguonId}:${homNay}`;
+    const n = Number((conn.prepare(`SELECT COUNT(*) AS n FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND lop_dich_id = ? AND (trang_thai = 'cho' OR (trang_thai = 'da_chuyen' AND tuan_bat_dau = ?))`)
+      .get(nguonId, id, homNay) as any).n);
+    if (!n) { conn.prepare(`DELETE FROM notifications WHERE kind = 'sap_nhan' AND dedup_key = ?`).run(khoa); continue; }
+    if (!conn.prepare(`SELECT 1 FROM notifications WHERE kind = 'sap_nhan' AND dedup_key = ? LIMIT 1`).get(khoa)) continue;
+    con.push(id);
+    dich.set(id, conn.prepare('SELECT id, code, branch_id FROM classes WHERE id = ?').get(id));
+  }
+  if (con.length) thongBaoSapNhan(p, conn.prepare('SELECT * FROM classes WHERE id = ?').get(nguonId), con, dich, homNay);
 }
 
 /** Hành trình: "QL xét lại: Học lại FOU" · (đã lên BE 17/09 · Final 46 %). Hoàn tác xoá theo khoá. */
@@ -387,10 +438,14 @@ function ghiHanhTrinh(nguoi: number | null, e: EmXetLai, id: number, title: stri
   addJourney({ studentId: e.studentId, eventType: 'xet_lai', eventDate: today, title, detail, refTable: 'xet_lai_lo_trinh', refId: id, createdBy: nguoi, dedupKey: `xet_lai:${id}` });
 }
 
-/** Đảo MỘT quyết định (Hoàn tác / Sửa) trong tx nơi gọi. Học lại mà lệnh mới đã thi hành → 409 (đã chuyển, dùng Chuyển lớp). */
-function daoQuyet(p: Principal, id: number, studentId?: number): void {
+/** Quyết định đã đảo, đủ để ghi lại y như cũ (Hoàn tác một lần Sửa). */
+type QuyetCu = { lopId: number; nguoiId: number | null; luc: string; quyetCu: string | null; muc: MucXetLai };
+
+/** Đảo MỘT quyết định (Hoàn tác / Sửa) trong tx nơi gọi, trả quyết định đó. Học lại mà lệnh mới đã thi hành → 409 (đã chuyển, dùng Chuyển lớp). */
+function daoQuyet(p: Principal, id: number, studentId?: number): QuyetCu {
   const conn = db();
-  const x = conn.prepare(`SELECT x.*, lm.trang_thai AS lm_tt, cn.programme_code AS nguon_ct FROM xet_lai_lo_trinh x JOIN lenh_chuyen_lop l ON l.id = x.lenh_id
+  const x = conn.prepare(`SELECT x.*, lm.trang_thai AS lm_tt, lm.lop_dich_id AS lm_dich, lm.tuan_bat_dau AS lm_tuan, lm.muc_tieu AS lm_mt, lm.khong_cam_ket AS lm_kck,
+      cn.programme_code AS nguon_ct FROM xet_lai_lo_trinh x JOIN lenh_chuyen_lop l ON l.id = x.lenh_id
     JOIN classes cn ON cn.id = l.lop_nguon_id LEFT JOIN lenh_chuyen_lop lm ON lm.id = x.lenh_moi_id WHERE x.id = ? AND x.quyet_dinh IS NOT NULL AND x.tu_dong = 0`).get(id) as any;
   if (!x || (studentId !== undefined && x.student_id !== studentId)) throw notFound('Không tìm thấy quyết định xét lại.');
   if (!quyetDuoc(p, x.lop_id)) throw forbidden(CHI_QL);   // quyền theo lớp LÚC QUYẾT (em có thể đã đổi lớp)
@@ -406,6 +461,22 @@ function daoQuyet(p: Principal, id: number, studentId?: number): void {
   conn.prepare('DELETE FROM journey_events WHERE dedup_key = ?').run(`xet_lai:${id}`);
   conn.prepare('DELETE FROM xet_lai_lo_trinh WHERE id = ?').run(id);
   writeAudit({ actorUserId: p.userId, action: 'xet_lai.hoan_tac', entityType: 'student', entityId: x.student_id, before: { quyetDinh: x.quyet_dinh, lenhMoiId: x.lenh_moi_id } });
+  return {
+    lopId: x.lop_id, nguoiId: x.nguoi_id ?? null, luc: x.luc, quyetCu: x.quyet_cu ?? null,
+    muc: {
+      studentId: x.student_id, quyetDinh: x.quyet_dinh, toClassId: x.lm_dich ?? null, tuan: x.lm_tuan ?? null, lyDo: x.ly_do_text ?? null,
+      trangThai: x.chu === 'Kết thúc học' ? 'finished' : 'inactive', mucTieu: x.lm_dich ? ghepMucTieu(x.lm_mt ?? null, !!x.lm_kck) : null,
+    },
+  };
+}
+
+/** Hoàn tác một lần Sửa: ghi lại quyết định trước Sửa (cùng người, cùng giờ quyết) — trong tx nơi gọi. */
+function traLaiQuyetCu(p: Principal, cu: QuyetCu): void {
+  const today = demoToday();
+  const e = tinhTapXetLai(today, { chiEm: cu.muc.studentId }).find((x) => x.lopHienTai.id === cu.lopId);
+  if (!e || e.quyetDinh) throw conflict('Không trả lại được quyết định trước khi Sửa — em đã đổi lớp.');
+  const r = motEm(p, e, cu.muc, today, cu.lopId, cu.quyetCu);
+  db().prepare('UPDATE xet_lai_lo_trinh SET nguoi_id = ?, luc = ? WHERE id = ?').run(cu.nguoiId, cu.luc, r.id);
 }
 
 /** POST /classes/:id/xet-lai/hoan-tac `{ ids }` — Hoàn tác (10 s ở web). Mỗi quyết định một savepoint. */
@@ -417,7 +488,7 @@ export function hoanTacXetLai(p: Principal, classId: number, idsVao: unknown) {
   for (const id of [...new Set(idsVao.map(Number))]) {
     try {
       if (!Number.isInteger(id) || id <= 0) throw badRequest('Danh sách hoàn tác không hợp lệ.');
-      tx(() => daoQuyet(p, id)); ok.push(id);
+      tx(() => { const x = daoQuyet(p, id); if (x.quyetCu) traLaiQuyetCu(p, JSON.parse(x.quyetCu)); }); ok.push(id);
     } catch (err) { if (!(err instanceof HttpError) || err.status >= 500) throw err; failed.push({ id, message: err.message }); }
   }
   return { ok, failed };
@@ -461,4 +532,4 @@ function tuGiu(het: readonly EmXetLai[], today: string): number {
 }
 
 /** Cron (`chotVangDinhKy`): một lượt quét mọi chi nhánh — trả số em còn dòng sau quét. */
-export const quetXetLaiHetHan = (today = demoToday()): number => tapXetLai(today, null).length;
+export const quetXetLaiHetHan = (today = demoToday()): number => tapXetLai(today, null, true).length;

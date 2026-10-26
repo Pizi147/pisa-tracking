@@ -277,20 +277,22 @@ export async function runPrOv7aTests(t: YThucTestKit) {
   };
   const caseNhom = (nhom: string) => all(`SELECT DISTINCT sc.id, sc.status, sc.outcome_note FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = ?`, nhom);
   const theMt = (id: number) => all(`SELECT * FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? ORDER BY id`, id);
-  await checkAsync('OV7a-4 · Mini Test: người ghi (GVCN) sửa % và ngày như QL; < 70 → ≥ 70: Case Hoàn thành; ≥ 70 → < 70: Case mở lại (P9a: không thẻ Báo QL — dòng (d) Xét lại); PA giữ khép; người khác 403', () => thu(() => {
+  await checkAsync('OV7a-4 · Mini Test: người ghi (GVCN) sửa % và ngày như QL; < 70 → ≥ 70: Case Hoàn thành, thẻ Báo QL tự đóng; ≥ 70 → < 70: Case mở lại + thẻ Báo QL; PA giữ khép; người khác 403', () => thu(() => {
     const { mt, gv } = miniTestMo();
     ck.ghiMiniTest(gv, mt.id, { tyLe: 60, ngay: TODAY });
-    assert(caseNhom(mt.nhom_bo_tro).every((c) => c.status !== 'done') && !theMt(mt.id).length, '60%: Case mở, không thẻ Báo QL (P9a)');
+    assert(caseNhom(mt.nhom_bo_tro).every((c) => c.status !== 'done') && theMt(mt.id).filter((x) => x.trang_thai === 'cho').length === 1, '60%: Case mở + thẻ Báo QL');
     const chuongQl = demChuong(P.mbManager.userId);
     ck.ghiMiniTest(gv, mt.id, { tyLe: 55, ngay: TODAY });
-    assert(!theMt(mt.id).length && demChuong(P.mbManager.userId) === chuongQl, '60 → 55: không thẻ, không chuông');
+    const the1 = theMt(mt.id).filter((x) => x.trang_thai === 'cho');
+    assert(the1.length === 1 && the1[0].ly_do.includes('55%') && demChuong(P.mbManager.userId) === chuongQl, '60 → 55: thẻ cũ đổi chữ, không chuông trùng');
     ck.ghiMiniTest(gv, mt.id, { tyLe: 80, ngay: addDays(TODAY, -1) });
     const r = get('SELECT * FROM mini_test WHERE id = ?', mt.id);
     assert(r.ty_le === 0.8 && r.ngay_lam === addDays(TODAY, -1), 'GVCN sửa được % + ngày');
     assert(caseNhom(mt.nhom_bo_tro).every((c) => c.status === 'done' && c.outcome_note.startsWith('Mini Test 80%')), '≥ 70: Case Hoàn thành');
+    assert(theMt(mt.id).every((x) => x.trang_thai !== 'cho'), 'thẻ Báo QL tự đóng');
     ck.ghiMiniTest(gv, mt.id, { tyLe: 62, ngay: TODAY });
     assert(caseNhom(mt.nhom_bo_tro).every((c) => c.status !== 'done'), '≥ 70 → < 70: Case mở lại');
-    assert(!theMt(mt.id).length, 'P9a: không thẻ Báo QL mới');
+    assert(theMt(mt.id).filter((x) => x.trang_thai === 'cho').length === 1, 'thẻ Báo QL mới');
     assert(!get(`SELECT 1 FROM case_interventions WHERE nhom_bo_tro = ? AND status IN ('planned', 'started')`, mt.nhom_bo_tro), 'PA bổ trợ giữ khép (không mở lại)');
     const nk = all(`SELECT before_json, after_json FROM audit_logs WHERE action = 'cuoi_khoa.mini_test' AND entity_label = 'Sửa Mini Test' AND entity_id = ? ORDER BY id`, mt.student_id);
     assert(nk.length === 3 && JSON.parse(nk[2].before_json).tyLe === 0.8 && JSON.parse(nk[2].after_json).tyLe === 0.62, 'nhật ký trước → sau');

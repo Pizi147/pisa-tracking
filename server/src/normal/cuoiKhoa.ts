@@ -7,6 +7,7 @@ import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } 
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { coXetLaiMiniTest } from './xetLai.ts';
 import { mondayOf } from '../platform/week.ts';
 import { addMilestone } from '../cases/sos.ts';
 import { dongBoTrangThaiCaseLo } from '../cases/sosState.ts';
@@ -606,7 +607,8 @@ function hoanThanhCaseMiniTest(conn: any, caseId: number, p: Principal, ghiChu: 
 
 /**
  * GHI MINI TEST — MỘT hàm cho mọi đường (K1-41). Chạy TRONG tx của nơi gọi (`updateResult` lần ghi cuối, hoặc `ghiMiniTest`).
- * ≥ 70% → mọi Case của nhóm tự Hoàn thành (Q5) + thẻ Báo QL cũ (trước P9a) tự đóng. < 70% → Case để mở; em vào việc Xét lại lộ trình (d). Trả `dat`.
+ * ≥ 70% → mọi Case của nhóm tự Hoàn thành (Q5). < 70% → Case để mở; em có dòng (d) ở Xét lại lộ trình (P9a) → QL quyết ở đó (thẻ chờ tự đóng),
+ * không thì thẻ Báo QL cho Quản lý như trước (thông báo do `taoYeuCau`). Trả `dat`.
  */
 export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: number; ngay: string }, mucPa?: string | null): { dat: boolean } {
   conn.prepare('UPDATE mini_test SET ty_le = ?, ngay_lam = ?, ghi_boi = ?, ghi_luc = ? WHERE id = ?').run(x.tyLe, x.ngay, p.userId, nowIso(), mt.id);
@@ -618,8 +620,23 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
   if (dat) {
     for (const id of cases) hoanThanhCaseMiniTest(conn, id, p, `Mini Test ${phanTram}% ≥ 70%`, x.ngay, mucPa);
     chotYeuCau(conn, { loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id }, 'tu_dong', { lyDo: 'Mini Test đã đạt' });
+  } else if (coXetLaiMiniTest(mt.student_id)) {
+    chotYeuCau(conn, { loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id }, 'tu_dong', { lyDo: 'Chuyển sang Xét lại lộ trình' });
+  } else if (cases.length) {
+    const lopId = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
+    /* PR-CT2 (§8): thẻ về người giữ việc Ghi Mini Test (GVCN lớp đang học; không có → chủ Case), không về Người dạy (GV cũ). */
+    const chu = nguoiGiuMotMiniTest(conn, mt, lopId);
+    const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ 70%) — Quản lý xử lý từng trường hợp`;
+    const duLieu = { viecKey: `minitest:${mt.id}`, ownerId: chu, lyDo, tyLe: x.tyLe };
+    const moi = taoYeuCau(conn, {
+      loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id, hocVienId: mt.student_id, lopId, nguoiXin: null, hanDuyet: null, lyDo, duLieu,
+    });
+    /* OV-7a: sửa từ < 70% sang < 70% khác — thẻ đang chờ đổi chữ, không báo QL lần hai. */
+    if (moi === null) {
+      conn.prepare(`UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ? WHERE loai = 'bao_len_mini_test' AND doi_tuong_loai = 'mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
+        .run(lyDo, JSON.stringify(duLieu), mt.id);
+    }
   }
-  /* P9a (N21): < 70 % → Case để mở; QL quyết ở việc "Xét lại lộ trình" (dòng (d), tính khi đọc) — không còn thẻ Báo QL "Mini Test chưa đạt". */
   writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.mini_test', entityType: 'student', entityId: mt.student_id, after: { miniTestId: mt.id, tyLe: x.tyLe, ngay: x.ngay, dat } });
   return { dat };
 }

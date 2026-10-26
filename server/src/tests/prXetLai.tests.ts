@@ -26,9 +26,10 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
   const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
   const CP = get(`SELECT id FROM branches WHERE code = 'CP'`).id as number;
   const NOW = new Date().toISOString();
-  const TRUOC = new Date(Date.now() - 3_600_000).toISOString();   // điểm Final nhập trước mọi quyết định của phép kiểm
   const THU_HAI = (d.tuanChonDuoc(TODAY) as string[])[0];
   const NGAY_FINAL = addDays(TODAY, -5);
+  /* Điểm Final nhập trước mọi quyết định của phép kiểm, ngày (giờ VN) không quá NGAY_FINAL — mốc tính hạn cố định dù ngày demo khác ngày thật. */
+  const TRUOC = new Date(Math.min(Date.now() - 3_600_000, Date.parse(`${NGAY_FINAL}T03:00:00.000Z`))).toISOString();
 
   let seq = 0;
   const lop = (kind: 'FOU' | 'BE' | 'FT', tuan = 1, branchId = MB) => {
@@ -249,8 +250,16 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const FOU_D2 = lop('FOU', 1);
     const rs = xl.luuXetLai(QL, CHO.fou.id, [{ studentId: CHO.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D2.id, tuan: THU_HAI, suaId: r1.ok[0].id }]);
     assert(!rs.failed.length && lenhCua(CHO.sid).id === lId && lenhCua(CHO.sid).lop_dich_id === FOU_D2.id, `Sửa: ${JSON.stringify(rs)}`);
+    /* XL-5 (sửa 5): Hoàn tác lần Sửa → trả lại quyết định TRƯỚC Sửa (Học lại FOU_D, cùng người + giờ quyết); Hoàn tác tiếp → lệnh gốc. */
+    const cu1 = JSON.parse(get('SELECT quyet_cu FROM xet_lai_lo_trinh WHERE id = ?', rs.ok[0].id).quyet_cu ?? 'null');
+    assert(cu1?.muc.quyetDinh === 'hoc_lai' && cu1.muc.toClassId === FOU_D.id && get(`SELECT COUNT(*) n FROM xet_lai_lo_trinh WHERE student_id = ? AND quyet_dinh IS NOT NULL`, CHO.sid).n === 1, `Sửa: dòng cũ đảo, giữ trong quyet_cu ${JSON.stringify(cu1)}`);
     const h2b = xl.hoanTacXetLai(QL, CHO.fou.id, [rs.ok[0].id]);
-    assert(!h2b.failed.length && JSON.stringify(get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lId)) === JSON.stringify(truoc.l), 'Hoàn tác sau Sửa: về đúng lệnh gốc');
+    const traLai = get(`SELECT * FROM xet_lai_lo_trinh WHERE student_id = ? AND quyet_dinh IS NOT NULL ORDER BY id DESC LIMIT 1`, CHO.sid);
+    assert(!h2b.failed.length && lenhCua(CHO.sid).id === lId && lenhCua(CHO.sid).lop_dich_id === FOU_D.id && lenhCua(CHO.sid).huong === 'hoc_lai'
+      && traLai?.quyet_dinh === 'hoc_lai' && traLai.nguoi_id === QL.userId && traLai.luc === cu1.luc, `Hoàn tác sau Sửa: ${JSON.stringify(h2b)} ${JSON.stringify(traLai)}`);
+    assert(dong(CHO.sid)?.quyetDinh?.id === traLai.id && dong(CHO.sid).quyetDinh.lopDich === FOU_D.code, 'quyết định trước Sửa còn sửa được');
+    const h2c = xl.hoanTacXetLai(QL, CHO.fou.id, [traLai.id]);
+    assert(!h2c.failed.length && JSON.stringify(get('SELECT * FROM lenh_chuyen_lop WHERE id = ?', lId)) === JSON.stringify(truoc.l), 'Hoàn tác tiếp: về đúng lệnh gốc');
     /* A đã ở BE_D: Học lại → lệnh giữa khoá mới (chuyen_lop), dòng còn (sửa được). */
     const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: A.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: THU_HAI }]);
     assert(!r.failed.length, JSON.stringify(r));
@@ -324,7 +333,8 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
       assert(!dong(E.sid, sau), 'hết hạn trước mốc: rời tập');
       assert(!get('SELECT 1 FROM xet_lai_lo_trinh WHERE student_id = ?', E.sid), 'không tự ghi');
       conn.prepare('UPDATE demo_config SET value = ? WHERE key = ?').run(han, xl.MOC_TU_GIU);
-      dong(E.sid, sau);
+      assert(!dong(E.sid, sau) && !get('SELECT 1 FROM xet_lai_lo_trinh WHERE student_id = ?', E.sid), 'đường đọc không tự ghi (sửa 8)');
+      xl.quetXetLaiHetHan(sau);
       assert(get('SELECT tu_dong FROM xet_lai_lo_trinh WHERE student_id = ?', E.sid)?.tu_dong === 1, 'hạn từ mốc: tự ghi');
     } finally { setConfig('demo_date', cu); conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU); }
   });
@@ -347,6 +357,93 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const len = xl.luuXetLai(QL, FOU_D.id, [{ studentId: C2.sid, quyetDinh: 'len', toClassId: BE_D.id, tuan: THU_HAI }]);
     assert(!len.failed.length && lenhCua(C2.sid).lop_dich_id === BE_D.id && len.ok[0].chu === `Lên BE → ${BE_D.code}`, JSON.stringify(len));
     assert(get(`SELECT title FROM journey_events WHERE student_id = ? AND event_type = 'xet_lai'`, C2.sid)?.title === `QL xét lại: Lên BE → ${BE_D.code}`, 'Hành trình Lên');
+    /* Lên FT (dòng (c)) kèm Target ghi tại thẻ → lệnh mang Target đó. */
+    const C3 = kb(66, 'hoc_lai', { thiHanh: true });
+    const FT = lop('FT', 1);
+    const ft = xl.luuXetLai(QL, FOU_D.id, [{ studentId: C3.sid, quyetDinh: 'len', toClassId: FT.id, tuan: THU_HAI, mucTieu: '6.5' }]);
+    assert(!ft.failed.length && lenhCua(C3.sid).lop_dich_id === FT.id && lenhCua(C3.sid).muc_tieu === 6.5, `Lên FT + Target: ${JSON.stringify(ft)} ${JSON.stringify(lenhCua(C3.sid))}`);
+  });
+
+  /* Hai em cùng lớp nguồn: lệnh Cuối khoá chờ → BE_D; lớp FOU mới có GVCN (nhận chuông "Sắp nhận"). */
+  const FOU_N = lop('FOU', 1);
+  const GVCN_N = ganGv(FOU_N.id, 5, true);
+  const X = kb(45);
+  const Y = (() => {
+    seq += 1;
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-XL${seq}`, `Học viên XL${seq}`, `hoc vien xl${seq}`, MB, NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, X.fou.id, addDays(week.mondayOf(TODAY), -49), NOW);
+    regular.planRegularTests(P.admin, X.fou.id, { studentIds: [sid], kinds: ['final'] });
+    const fid = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'final' ORDER BY id DESC LIMIT 1`, sid).id as number;
+    for (const sk of regular.allProgrammes().get('FOU').skills as string[]) {
+      conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_at, nhap_dau_ngay) VALUES (?,?,?,100,?,?)').run(fid, sk, 44, TRUOC, NGAY_FINAL);
+    }
+    assert(!lenh.raLenh(QL, { lopNguonId: X.fou.id, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: sid, huong: 'len_lop', toClassId: BE_D.id, lyDo: 'XL' }] }).failed.length, 'raLenh Y');
+    conn.prepare('UPDATE lenh_chuyen_lop SET ngay_ra_lenh = ? WHERE student_id = ?').run(addDays(TODAY, -12), sid);
+    return { sid };
+  })();
+  const chuong = (uid: number, dich: number) => get(`SELECT * FROM notifications WHERE user_id = ? AND kind = 'sap_nhan' AND dedup_key = ?`, uid, `sap_nhan:${dich}:${X.fou.id}:${TODAY}`);
+
+  check('XL-7 · Hoàn tác Học lại (lệnh chưa thi hành): chuông "Sắp nhận" đếm lại từ bảng lệnh — chuông dùng chung với em khác giữ, chỉ đổi số; chuông khác không bị xoá', () => {
+    const r = xl.luuXetLai(QL, X.fou.id, [{ studentId: X.sid, quyetDinh: 'hoc_lai', toClassId: FOU_N.id, tuan: THU_HAI }, { studentId: Y.sid, quyetDinh: 'hoc_lai', toClassId: FOU_N.id, tuan: THU_HAI }]);
+    assert(!r.failed.length && r.ok.length === 2, JSON.stringify(r));
+    assert(chuong(GVCN_N.userId, FOU_N.id)?.title === `Sắp nhận 2 em vào lớp ${FOU_N.code}`, `tiền đề: ${JSON.stringify(chuong(GVCN_N.userId, FOU_N.id))}`);
+    /* Chuông của người khác sinh SAU quyết định (trong dải id cũ) — không được mất. */
+    conn.prepare(`INSERT INTO notifications (user_id, kind, title, dedup_key, created_at) VALUES (?, 'khac', 'Chuông khác', ?, ?)`).run(GVBM_BE.userId, `xl7:${NOW}`, NOW);
+    const idX = r.ok.find((o: any) => o.studentId === X.sid).id;
+    const h = xl.hoanTacXetLai(QL, X.fou.id, [idX]);
+    assert(!h.failed.length, JSON.stringify(h));
+    assert(chuong(GVCN_N.userId, FOU_N.id)?.title === `Sắp nhận 1 em vào lớp ${FOU_N.code}`, `chuông dùng chung đổi số: ${JSON.stringify(chuong(GVCN_N.userId, FOU_N.id))}`);
+    assert(get(`SELECT 1 FROM notifications WHERE dedup_key = ?`, `xl7:${NOW}`), 'chuông khác còn');
+    assert(lenhCua(X.sid).lop_dich_id === BE_D.id && lenhCua(Y.sid).lop_dich_id === FOU_N.id, 'X về BE_D, Y vẫn FOU_N');
+    /* Hoàn tác nốt Y → FOU_N không còn em: chuông hôm nay của lớp đó bỏ (không còn "Sắp nhận 0 em"). */
+    const idY = r.ok.find((o: any) => o.studentId === Y.sid).id;
+    assert(!xl.hoanTacXetLai(QL, X.fou.id, [idY]).failed.length && !chuong(GVCN_N.userId, FOU_N.id), 'hết em: bỏ chuông hôm nay');
+  });
+
+  check('XL-8 · lệnh đã đổi ở Chuyển lớp sau quyết định Xét lại → Hoàn tác 409 "dùng Chuyển lớp", lệnh giữ bản đã đổi', () => {
+    const r = xl.luuXetLai(QL, X.fou.id, [{ studentId: Y.sid, quyetDinh: 'hoc_lai', toClassId: FOU_N.id, tuan: THU_HAI }]);
+    assert(!r.failed.length, JSON.stringify(r));
+    const tuan2 = (d.tuanChonDuoc(TODAY) as string[])[1];
+    lenh.suaLenh(QL, lenhCua(Y.sid).id, { tuan: tuan2 });
+    const sau = JSON.stringify(lenhCua(Y.sid));
+    const h = xl.hoanTacXetLai(QL, X.fou.id, [r.ok[0].id]);
+    assert(h.failed.length === 1 && h.failed[0].message === 'Quyết định đã đổi sau khi xét lại — dùng Chuyển lớp.', JSON.stringify(h));
+    assert(JSON.stringify(lenhCua(Y.sid)) === sau && get('SELECT 1 FROM xet_lai_lo_trinh WHERE id = ?', r.ok[0].id), 'lệnh + quyết định giữ nguyên');
+  });
+
+  check('XL-9 · hạn tính từ ngày mốc mở dòng: dòng tự giữ khi hết hạn, Final sửa sau đó → dòng mở lại có hạn MỚI (không tự giữ ngay)', () => {
+    const G = kb(42, 'len_lop', { thiHanh: true });
+    const han = dong(G.sid).han;
+    const sau = addDays(han, 8);
+    const cu = getConfig('demo_date');
+    setConfig('demo_date', sau);
+    try {
+      xl.quetXetLaiHetHan(sau);
+      assert(get('SELECT COUNT(*) n FROM xet_lai_lo_trinh WHERE student_id = ? AND tu_dong = 1', G.sid).n === 1, 'tiền đề: tự giữ');
+      /* Sửa Final ngày `sau` (giờ thật ≥ lúc tự giữ để là mốc mới). */
+      const luc = new Date(Math.max(Date.now() + 60_000, Date.parse(`${sau}T03:00:00.000Z`))).toISOString();
+      conn.prepare('UPDATE assessment_scores SET raw_score = 41, entered_at = ? WHERE attempt_id = ?').run(luc, G.fid);
+      const e = dong(G.sid, sau);
+      assert(e?.lyDo.ma === 'a' && e.han >= sau, `mở lại, hạn mới: ${JSON.stringify(e && { han: e.han, ly: e.lyDo })} (sau ${sau})`);
+      xl.quetXetLaiHetHan(sau);
+      assert(get('SELECT COUNT(*) n FROM xet_lai_lo_trinh WHERE student_id = ? AND tu_dong = 1', G.sid).n === 1 && dong(G.sid, sau), 'không tự giữ ngay');
+    } finally { setConfig('demo_date', cu); }
+  });
+
+  check('XL-10 · Mini Test < 70 % mà em KHÔNG ở tập Xét lại → vẫn thẻ "Mini Test chưa đạt" như trước; có dòng (d) → không thẻ', () => {
+    const H = kb(55, 'len_lop', { thiHanh: true });
+    const mt = get('SELECT * FROM mini_test WHERE student_id = ?', H.sid);
+    assert(mt, 'tiền đề: H có Mini Test');
+    conn.prepare(`UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE student_id = ?`).run(addDays(TODAY, -90), H.sid);   // ngoài cửa sổ Xét lại
+    ck.ghiMiniTest(QL, mt.id, { tyLe: 50, ngay: TODAY });
+    assert(!dong(H.sid) && get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`, mt.id), 'ngoài tập: thẻ Báo QL');
+  });
+
+  check('XL-11 · luuXetLai: một em hai mục trong cùng lô → 400', () => {
+    let ma = 0;
+    try { xl.luuXetLai(QL, BE_D.id, [{ studentId: A.sid, quyetDinh: 'tiep_tuc', lyDo: 'x' }, { studentId: A.sid, quyetDinh: 'dung', lyDo: 'y' }]); } catch (e: any) { ma = e.status; }
+    assert(ma === 400, `mã ${ma}`);
   });
 
   check('XL-6 · tốc độ: tapXetLai cùng số câu SQL khi 3 hay 12 em (≤ 14)', () => {

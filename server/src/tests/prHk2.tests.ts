@@ -491,7 +491,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   /* PR-OV3a: ClassProgressPanel thành một phần của panel Thông tin lớp (nút Huỷ / Lưu riêng của phần) — không còn chân KhungPanel. */
   check('C29 · ChuyenLopPanel, CatalogAdmin: không còn nhan: \'Đóng\' ghi cứng — chân truyền daSua (KhungPanel tự chọn Đóng / Huỷ thay đổi)', () => {
-    for (const [rel, n] of [['web/src/modules/students/ChuyenLopPanel.tsx', 1], ['web/src/modules/platform/CatalogAdmin.tsx', 1]] as const) {   // OV-6b1: một panel sửa chung · P9a: panel nhiều em gỡ → ChuyenLopPanel còn 1
+    for (const [rel, n] of [['web/src/modules/students/ChuyenLopPanel.tsx', 2], ['web/src/modules/platform/CatalogAdmin.tsx', 1]] as const) {   // OV-6b1: một panel sửa chung
       const s = doc(rel);
       assert(!/nhan: 'Đóng'/.test(s), `${rel}: còn nhan: 'Đóng'`);
       assert((s.match(/chan=\{\{\s*daSua/g) ?? []).length === n, `${rel}: chan phải truyền daSua (${n} chỗ)`);

@@ -56,4 +56,6 @@ export const EN_P9A_XET_LAI = {
   "Hành trình: “QL xét lại: {viec}”": "Journey: “Manager review: {viec}”",
   "Lên {lop}": "Move up to {lop}",
   "Giữ {huong}": "Keep {huong}",
+  "Target của {ten}": "Target for {ten}",
+  "Em chưa có Target — ghi band hoặc tích KCK": "No Target yet — enter a band or tick KCK",
 };

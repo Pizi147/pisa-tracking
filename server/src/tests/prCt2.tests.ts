@@ -13,6 +13,7 @@ const REPO = path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url))
 export async function runPrCt2Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
+  const xetLai: any = await import('../normal/xetLai.ts');
   const cases: any = await import('../cases/cases.ts');
   const intake: any = await import('../classes/intake.ts');
   const profile: any = await import('../students/profile.ts');
@@ -297,11 +298,11 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(pa.every((x) => giu.get(x.id) === GV[3]), `người giữ Kết quả: ${JSON.stringify([...giu])}`);
     assert(ck.emConMiniTest([f.sid]).get(f.sid)?.gv === GV[3], `người giữ Ghi Mini Test: ${JSON.stringify(ck.emConMiniTest([f.sid]).get(f.sid))}`);
     assert(profile.studentProfile(P.admin, f.sid).miniTest?.gv === GV[3], `hồ sơ: người giữ Ghi Mini Test ${profile.studentProfile(P.admin, f.sid).miniTest?.gv}`);
-    /* Mini Test 58% → P9a: không thẻ Báo QL (QL quyết ở việc Xét lại lộ trình, dòng (d)). */
+    /* Mini Test 58% → P9a (sửa 6): em đang có lệnh Cuối khoá trong cửa sổ Xét lại → dòng (d) ở Xét lại, KHÔNG thẻ Báo QL (XL-10: em ngoài tập vẫn có thẻ). */
     const cu = getConfig('demo_date');
     setConfig('demo_date', m[0].ngay_du_kien);
     try { ck.ghiMiniTest(loadPrincipal(GV[3]), m[0].id, { tyLe: 58, ngay: m[0].ngay_du_kien }); } finally { setConfig('demo_date', cu); }
-    assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`, m[0].id), 'P9a: không thẻ Báo QL');
+    assert(xetLai.coXetLaiMiniTest(f.sid) && !get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`, m[0].id), 'dòng (d), không thẻ Báo QL');
   });
 
   check('CT2-7 · BE/ELE → FT: không Case / PA / Mini Test theo Final, cả lúc đủ điểm lẫn lúc thi hành; BE 60% lên ELE → có', () => {

@@ -19,6 +19,7 @@ export const XET_LAI_SQL = `CREATE TABLE xet_lai_lo_trinh (
   chu TEXT,
   lenh_moi_id INTEGER REFERENCES lenh_chuyen_lop(id),
   lenh_cu TEXT,
+  quyet_cu TEXT,
   ly_do_text TEXT,
   tu_dong INTEGER NOT NULL DEFAULT 0,
   nhan_xet_gvcn_moi TEXT,
@@ -36,9 +37,12 @@ export function migratePrXetLai(conn: any, applied: string[]) {
     conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(MOC_TU_GIU, demoToday(), new Date().toISOString());
     applied.push(`P9a XET-LAI: bảng xet_lai_lo_trinh (quyết định Xét lại lộ trình + nhận xét GVCN lớp mới); mốc tự giữ từ ${demoToday()}.`);
   }
-  /* Thẻ "Mini Test chưa đạt" đang chờ → đóng CHỈ khi em đã có dòng (d) ở Xét lại (cùng Mini Test); thẻ khác giữ nguyên. */
+  /* Thẻ "Mini Test chưa đạt" đang chờ → đóng CHỈ khi em đã có dòng (d) ở Xét lại (cùng Mini Test); thẻ khác giữ nguyên. Không còn thẻ chờ → thôi
+     (không tính tập Xét lại mỗi lần khởi động). */
+  const cho = conn.prepare(`SELECT id, hoc_vien_id FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND trang_thai = 'cho'`).all() as any[];
+  if (!cho.length) return;
   const coD = new Set(tapXetLaiChiDoc(demoToday()).filter((e) => e.lyDo.ma === 'd').map((e) => e.studentId));
-  const the = (conn.prepare(`SELECT id, hoc_vien_id FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND trang_thai = 'cho'`).all() as any[]).filter((y) => coD.has(y.hoc_vien_id));
+  const the = cho.filter((y) => coD.has(y.hoc_vien_id));
   const dong = conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'tu_dong', ly_do_dong = 'Chuyển sang Xét lại lộ trình', xu_ly_luc = ? WHERE id = ? AND trang_thai = 'cho'`);
   for (const y of the) dong.run(new Date().toISOString(), y.id);
   if (the.length) applied.push(`P9a XET-LAI: ${the.length} thẻ "Mini Test chưa đạt" đang chờ → đóng, em hiện ở việc Xét lại lộ trình (dòng (d)).`);
