@@ -143,7 +143,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
         const mo = moCua(l);
         return (
           <Fragment key={k}>
-            <table className="lich-lop w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
+            <table className="lich-lop w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }} aria-label={t('lớp {classCode}', { classCode: l.classCode })}>
               <colgroup>{cot.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>
               <tbody>
                 <HangNhom mo={mo} onMo={() => onMo(l)} nhan={t('lớp {classCode}', { classCode: l.classCode })} className={mo ? 'dang-mo' : ''}
@@ -190,7 +190,8 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
                   onClick={(e) => {
                     const bang = e.currentTarget.parentElement?.previousElementSibling;
                     onMo(l);
-                    requestAnimationFrame(() => bang?.scrollIntoView({ block: 'nearest' }));
+                    /* Nút này mất khi thu → con trỏ phím về ▸ của hàng lớp. */
+                    requestAnimationFrame(() => { bang?.scrollIntoView({ block: 'nearest' }); bang?.querySelector<HTMLElement>('button[aria-expanded]')?.focus({ preventScroll: true }); });
                   }}>
                   ▴ {t('Thu lớp {classCode}', { classCode: l.classCode })}
                 </button>

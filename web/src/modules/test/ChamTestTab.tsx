@@ -159,8 +159,10 @@ export function ChamTestTab() {
 
 const demNhom = (ds: readonly { soBai?: number }[]) => t('{n} nhóm · {bai} bài', { n: ds.length, bai: tongBai(ds) });
 
-/** Một nhóm theo hạn: tên + số ở đầu; `gap` (true/false) = nhóm gập được (`<details>`), mở sẵn khi false. Nhóm trống: MỘT dòng chữ. */
-/** Nhóm danh sách trái — thanh `--cap-nhom` cùng dáng thanh nhóm Lịch Test (R1-PHAN-CAP-TEST, M2 A2). */
+/**
+ * Một nhóm theo hạn: tên + số ở đầu; `gap` (true/false) = nhóm gập được (`<details>`), mở sẵn khi false. Nhóm trống: MỘT dòng chữ.
+ * Đầu nhóm = thanh `--cap-nhom`, cùng dáng thanh nhóm Lịch Test (R1-PHAN-CAP-TEST, M2 A2).
+ */
 function Nhom({ ten, dem, rong, gap, children }: { ten: string; dem: ReactNode; rong?: string; gap?: boolean; children: ReactNode[] }) {
   const dau = (
     <>

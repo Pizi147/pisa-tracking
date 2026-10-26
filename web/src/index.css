@@ -438,7 +438,7 @@
   .lich-lop > tbody > tr.hang-lon > td:first-child { box-shadow: none; padding-left: 28px; }
   .lich-lop > tbody > tr.hang-lon.dang-mo > td {
     background: var(--cap-lop); background-image: none; height: 50px; border-bottom: 0;
-    position: sticky; top: -1rem; z-index: 11;   /* = đệm p-4 / md:p-5 của <main>; trên đầu cột (z 10) + cột tên dính của lưới, dưới hộp / menu (portal) */
+    position: sticky; top: -1rem; z-index: 16;   /* = đệm p-4 / md:p-5 của <main>; trên đầu cột lưới (th dính z 10 / 15) + cột tên dính, dưới thanh dưới (20+) và hộp / menu */
   }
   @media (min-width: 768px) { .lich-lop > tbody > tr.hang-lon.dang-mo > td { top: -1.25rem; } }
   @media not all and (min-width: 768px) { .lich-lop > tbody > tr.hang-lon > td:first-child { padding-left: 20px; } }   /* M2 A2-375: thụt 20 */
@@ -447,6 +447,8 @@
   /* Ô / thẻ em không trốn dưới hàng lớp dính khi con trỏ / "Lưu · bài tiếp" cuộn tới. */
   .lich-luoi :is(td, article) { scroll-margin-top: 64px; }
   .lich-luoi .bang th { background: var(--cap-dau-cot); border-bottom: 0; }
+  /* Lớp dài (60 em): từ 1440 (lưới vừa khung) đầu cột lưới dính ngay dưới hàng lớp dính — không làm khung cuộn riêng (`td .bang-dinh`). */
+  @media (min-width: 1440px) { .lich-luoi .bang-dinh { overflow: visible; --th-top: calc(50px - 1.25rem); } }
   .lich-luoi .bang-cong-cu { padding: 4px 12px 6px 44px; }   /* công cụ trên lưới lớp thường (Tổng số câu · Điền ô trống) thẳng cột Học viên */
   .lich-luoi .bang :is(th, td):first-child { padding-left: 44px; }
   .lich-luoi .bang > tbody > tr.dong-sex > td { height: 36px; padding-top: 4px; padding-bottom: 4px; font-size: 13px; vertical-align: middle; }

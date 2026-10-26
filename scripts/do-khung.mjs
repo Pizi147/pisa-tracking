@@ -720,7 +720,7 @@ if (LOC === 'cham-lien-mach') {
  */
 if (!CHI_BANG && (!LOC || LOC === 'dinh-khong-che')) {
   const loi = [];
-  for (const [w, h, sang] of [[1440, 900, false], [375, 812, true]]) {
+  for (const [w, h, sang] of [[1440, 900, false], [1152, 900, false], [375, 812, true]]) {   // 1152 = 1440 ở zoom 125 %
     const ctx = await trinh.newContext({ viewport: { width: w, height: h } });
     await ctx.addInitScript((s) => { try { localStorage.setItem('pisa-giao-dien', s ? 'light' : 'dark'); localStorage.setItem('pisa-ngon-ngu', 'vi'); } catch {} }, sang);
     const p = await ctx.newPage();
@@ -752,6 +752,26 @@ if (!CHI_BANG && (!LOC || LOC === 'dinh-khong-che')) {
       });
       if (kq.loi) { loi.push(nhan(kq.loi)); await ctx.close(); continue; }
       if (Math.abs(kq.dinhTop - kq.mainTop) > 1) loi.push(nhan(`hàng lớp không dính mép trên <main> (hàng ${Math.round(kq.dinhTop)}, main ${Math.round(kq.mainTop)})`));
+      /* Đầu cột lưới: ≥ 1440 dính ngay dưới hàng lớp (lớp 60 em vẫn đọc được cột) · mọi bề rộng: đầu cột trượt dưới hàng lớp không đè ▾ / mã lớp. */
+      const dau = await p.evaluate(async (rong) => {
+        const m = document.getElementById('noi-dung');
+        const dinh = document.querySelector('.lich-lop tr.hang-lon.dang-mo > td');
+        const th = dinh.closest('table').querySelector('.lich-luoi thead th');
+        const ra = [];
+        if (th && rong >= 1440) {
+          const t = th.getBoundingClientRect().top, d = dinh.getBoundingClientRect().bottom;
+          if (t < d - 4 || t > d + 8) ra.push(`đầu cột lưới không dính dưới hàng lớp (đầu cột ${Math.round(t)}, đáy hàng ${Math.round(d)})`);
+        }
+        if (th) {
+          m.scrollTop += th.getBoundingClientRect().top - dinh.getBoundingClientRect().top;   // đầu cột nằm đúng dưới hàng dính
+          await new Promise((r) => requestAnimationFrame(r));
+          const nut = dinh.querySelector('button[aria-expanded]').getBoundingClientRect();
+          const tai = document.elementFromPoint(nut.left + nut.width / 2, nut.top + nut.height / 2);
+          if (!tai?.closest('tr.hang-lon.dang-mo')) ra.push(`đầu cột lưới đè nút ▾ của hàng lớp (${tai?.tagName.toLowerCase()}.${tai?.className})`);
+        }
+        return ra;
+      }, w);
+      loi.push(...dau.map(nhan));
       const o = p.locator('[data-thu-dinh]');
       await o.click(); await p.waitForTimeout(500);
       const che = await p.evaluate((dt) => {
@@ -780,6 +800,27 @@ if (!CHI_BANG && (!LOC || LOC === 'dinh-khong-che')) {
         return o.getBoundingClientRect().top < dinh.getBoundingClientRect().bottom - 1;
       });
       if (trongDinh) loi.push(nhan('ô điểm cuộn tới vẫn nằm dưới hàng lớp dính (thiếu scroll-margin)'));
+      /* Đang gõ dở trong hộp rồi bấm thu lớp (▾ hàng lớp / "▴ Thu lớp"): không được thu, chữ còn, hộp hỏi Bỏ · Gõ tiếp (luật "không mất chữ đang gõ"). */
+      if (w >= 768) {
+        for (const nutThu of ['tr.hang-lon.dang-mo button[aria-expanded]', '.day-khoi button']) {
+          const o2 = p.locator('#noi-dung .lich-luoi [data-kn][data-trong] button[aria-haspopup="dialog"]').first();
+          await o2.click(); await p.waitForTimeout(400);
+          await p.locator('[role=dialog] #hop-diem-o').fill('21');
+          await p.locator(`#noi-dung ${nutThu}`).first().click();
+          await p.waitForTimeout(500);
+          const con = await p.locator('[role=dialog] #hop-diem-o').inputValue().catch(() => null);
+          const mo = await p.locator('.lich-lop tr.hang-lon.dang-mo').count();
+          if (con !== '21' || !mo) loi.push(nhan(`gõ dở rồi bấm ${nutThu.includes('day-khoi') ? '"▴ Thu lớp"' : '▾ hàng lớp'}: ${mo ? '' : 'lớp bị thu, '}chữ ${con === '21' ? 'còn' : 'mất'}`));
+          /* Bỏ chữ để lần sau sạch: Esc hỏi → Bỏ. */
+          if (await p.locator('[role=dialog]').count()) {
+            const bo = p.locator('[role=dialog]').getByRole('button', { name: /^Bỏ/ });
+            if (!(await bo.count())) await p.keyboard.press('Escape');
+            await p.waitForTimeout(200);
+            if (await bo.count()) await bo.first().click();
+            await p.waitForTimeout(300);
+          }
+        }
+      }
       if (process.env.KHUNG_CHUP) await p.screenshot({ path: path.join(ANH, `dinh-khong-che-${w}.png`) });
     } catch (e) { loi.push(nhan(`kịch bản dừng: ${e.message.split('\n')[0]}`)); }
     await ctx.close();

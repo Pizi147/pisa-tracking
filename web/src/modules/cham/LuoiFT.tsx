@@ -229,7 +229,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             sEx={sEx?.filter((x) => x.studentId === r.studentId)} />
         ))}
         {chiSEx.map((d) => (
-          <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] px-3.5 py-3">
+          <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] py-3 pl-8 pr-3.5">
             <span className="font-semibold">{d.ten}</span><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
           </article>
         ))}
@@ -592,7 +592,7 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   );
   const chipCotMt = iMt === 1 && !rieng;
   /* Cột giữa (MT/tên … S) và cột sau S (… Kết quả): đếm theo định nghĩa cột đang hiện. */
-  const giua = Math.max(iS - (chipCotMt ? 2 : 1), 1);
+  const giua = Math.max(iS - (chipCotMt ? 2 : 1), 0);
   const sau = Math.max(cotDs.length - iS - 2, 0);
   const ketQua = [d.nguoiCham, tuanLich(d.tuan, homNay)].filter(Boolean).join(' · ');
   return (
@@ -602,7 +602,7 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
           : chipCotMt ? <span className="sr-only">{t('S Expert của {ten}', { ten })}</span> : <span className="pl-3">{chip}</span>}
       </OBang>
       {chipCotMt && <OBang c={cc.mt}>{chip}</OBang>}
-      <td className="td text-xs text-slate-400" colSpan={giua}>{d.nhanXet ? <span className="block truncate" title={d.nhanXet}>{d.nhanXet}</span> : null}</td>
+      {giua > 0 && <td className="td text-xs text-slate-400" colSpan={giua}>{d.nhanXet ? <span className="block truncate" title={d.nhanXet}>{d.nhanXet}</span> : null}</td>}
       {iS > 0 && (
         <OBang c={cc.speaking}>
           <ODiem kieu={sua ? 'sua' : 'doc'} so={d.diem != null ? fmtBand(d.diem) : null} nhan="S Ex" onBam={() => setMo(true)} />

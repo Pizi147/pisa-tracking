@@ -72,18 +72,19 @@ Chủ SP quyết theo ảnh cặp (cách đếm thứ hai cần chủ SP đồng
 |---|---|---|
 | Mở / thu lớp bằng hàng lớp (▸ / bấm hàng) | có | giữ |
 | Thu lớp khi đang ở cuối lớp dài | cuộn ngược lên hàng lớp | **thêm "▴ Thu lớp {mã}"** ở đáy khối (cùng thao tác, `aria-expanded`), sau thu cuộn về hàng lớp |
-| Biết đang ở lớp nào khi cuộn | không (hàng lớp trôi mất) | hàng lớp mở **dính** mép trên khi cuộn trong khối |
+| Biết đang ở lớp nào khi cuộn | không (hàng lớp trôi mất) | hàng lớp mở **dính** mép trên khi cuộn trong khối; từ 1440 **đầu cột lưới dính ngay dưới** (lớp 60 em vẫn đọc cột) |
 | Nhập điểm (hộp, "Lưu · bài tiếp ›"), Lịch sử ô, ↗ hồ sơ lớp / HV, GV chấm S, Lớp tiếp, Xuất Excel, Hiện tất cả n | có | giữ (không đụng) |
 | **Dán từ Excel + "?" ở lưới Lịch Test** (dưới hàng lớp và dòng Quá hạn chấm) | có | **bỏ** (chủ SP 26/10) — vẫn còn ở **panel Nhập điểm** (Công việc, Chấm Test) và **Điểm theo lớp**; phép kiểm `R1-PHAN-CAP-TEST · DAN` |
 | S Ex: bấm ô điểm S Ex mở hộp S Ex | có | giữ |
 | Ô lưu hỏng mà lớp bị thu | lưới giữ ẩn, không mất giá trị | giữ |
-| Đang gõ trong hộp nhập điểm rồi bấm thu lớp | hộp đóng, chữ đang gõ mất (không hỏi) | **như cũ** — đo trên main cùng kết quả; báo PTA (ngoài phạm vi PR) |
+| Đang gõ trong hộp nhập điểm rồi bấm ra ngoài (vd thu lớp) | hộp ở lại nhưng cú bấm vẫn chạy → lớp thu, chữ đang gõ mất (main cũng vậy) | **cú bấm bị chặn**, hộp hỏi **Bỏ · Gõ tiếp** (như Esc) — áp cho mọi hộp neo ô (`KhungHop`: điểm MT, nhận xét lớp thường) |
 
 ## Đo
 
-- `node scripts/do-khung.mjs dinh-khong-che` ✓ 1440 tối + 375 sáng: hàng lớp dính đúng mép trên `<main>`; mở hộp nhập điểm ở ô ngay dưới hàng dính → điểm giữa ô và giữa hộp là ô / hộp; ô ở mép trên được cuộn tới thì ra khỏi hàng dính (`scroll-margin-top`). RED khi bỏ `scroll-margin-top`.
+- `node scripts/do-khung.mjs dinh-khong-che` ✓ 1440 tối + 1152 (zoom 125 %) + 375 sáng: đầu cột lưới dính dưới hàng lớp (≥ 1440), đầu cột không đè ▾ (z-index — RED trước khi sửa ở 1152), gõ dở rồi bấm ▾ / "▴ Thu lớp" → lớp không thu, chữ còn (RED trước khi sửa); hàng lớp dính đúng mép trên `<main>`; mở hộp nhập điểm ở ô ngay dưới hàng dính → điểm giữa ô và giữa hộp là ô / hộp; ô ở mép trên được cuộn tới thì ra khỏi hàng dính (`scroll-margin-top`). RED khi bỏ `scroll-margin-top`.
+- `hd-chi` (GV, QL): 8 lỗi ở `vi-pham`, `cong-viec›tq-lop` — **y hệt trên main** cùng DB; Lịch Test không lỗi.
 - `do-khung` + `do-bang` (`KHUNG_RONG=1280`): `cham-test-gv` ✓ cả 6; `test-lichTest`, `gvbm-test` còn lỗi **có sẵn trên main** (đối chứng cùng DB, bản main cổng 5620): g3 hàng 77 px (Hồ Ngọc Diệp, ô "vắng W2 SEP" hai dòng), g1 "Kết quả −8" lưới MB FOU 12, cắt chữ mã lớp ở 375 («MB Pre FOU 03», tên lớp dài — main cũng cắt), g4 «Xem dạng bảng» × «GV chấm S» ở 375 sáng (main: «Dán từ Excel» × «GV chấm S», 3 cặp → nay 1). PR này hết lỗi «Ngô Thanh Tùng» bị cắt ở 375 (dòng đầu thẻ xuống dòng).
-- `do-bang` g4 bỏ qua cặp có hàng lớp dính (`.lich-lop tr.dang-mo`) — nội dung trượt dưới hàng dính là đúng ý; "không che" đo ở `dinh-khong-che`.
+- `do-bang` g4 bỏ qua cặp **vượt biên** hàng lớp dính (một phần tử trong `.lich-lop tr.dang-mo`, một ngoài) — nội dung trượt dưới hàng dính là đúng ý; "không che" đo ở `dinh-khong-che`.
 - Tương phản cấp liền kề — `python3 thiet-ke/v7/kiem-tuong-phan-cap.py` (trượt 0):
 
 | Cặp nền liền nhau | ΔL tối | ΔL sáng |
