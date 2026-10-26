@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
+  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
   type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -17,6 +17,7 @@ import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { phanCongO } from '../classes/quyenChuyenLop.ts';
+import { classProgressMany } from '../classes/schedule.ts';
 import { allProgrammes, evaluateRegular } from './regular.ts';
 import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
@@ -237,14 +238,14 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     const goiY = goiYCuoiKhoa({ ct: t.ct, tyLe: t.tyLe, monTruot: t.monTruot, nguong: t.nguong });
     if (!goiY) continue;
     /* (2) lên + có bổ trợ (60–69%, hoặc 50–59% Quản lý cho lên); BE/ELE sang FT thì không (PR-CT2, `coBoTroFinal`). */
-    if ((d.huong === 'len_lop' || d.huong === 'fast_track') && goiY.boTroNeuLen && coBoTroFinal(t.ct, d.toFt)) {
+    if (coBoTroKhiChot(d.huong, goiY, t.ct, d.toFt)) {
       boTro.push({
-        sid: d.sid, luot, ct: t.ct!, tyLe: t.tyLe, b: goiY.boTroNeuLen, fromClassId: d.fromClassId, toClassId: d.toClassId, toFt: d.toFt,
+        sid: d.sid, luot, ct: t.ct!, tyLe: t.tyLe, b: goiY.boTroNeuLen!, fromClassId: d.fromClassId, toClassId: d.toClassId, toFt: d.toFt,
         cycleId: toCycle, ownerClassId: d.toClassId, ngay: d.ngay,
       });
     }
-    /* (3) học lại → Quản lý báo PH qua TVV (< 50%, hoặc 50–59% Quản lý quyết học lại — Q6). */
-    if (d.huong === 'hoc_lai' && (goiY.baoPhTvv || goiY.dai === '50_59')) baoPh.set(luot.id, d.sid);
+    /* (3) Quản lý báo PH qua TVV: < 50 % luôn (kể cả cho lên — PTA Plan 25/10), 50–59 % Quản lý quyết học lại (Q6). Cùng luật tóm tắt chân (`tacDongChot`). */
+    if (coBaoPhKhiChot(d.huong, goiY)) baoPh.set(luot.id, d.sid);
   }
   /* (4) sang FT có kết luận Không đạt kỳ vọng (PR-KV): Trung tâm → Case + Tutor, Học viên → Case không PA. Không cần điểm Final — theo lô. */
   for (const d of dongs) {
@@ -714,32 +715,37 @@ export function miniTestCuaHocVien(sids: readonly number[]): Map<number, { id: n
 export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; nguyenNhan?: unknown; mon?: unknown; ghiChu?: unknown }) {
   const conn = db();
   if (!conn.prepare('SELECT 1 FROM students WHERE id = ?').get(sid)) throw notFound('Không tìm thấy học viên.');
-  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: sid })) throw forbidden('Chỉ Quản lý mới chốt được Kết quả đầu ra.');
+  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: sid })) throw forbidden('Chỉ Quản lý mới đánh được Kỳ vọng.');
   /*
    * PR-KV (§3): cùng điều kiện với panel cả lớp — em có điểm MT0 ở lớp BE/ELE, và có lệnh Lên FT (chờ / đã chuyển) từ lớp đó hoặc đã lên FT
    * từ lớp đó (Lộ trình tiếp theo đã áp). Không còn đòi bài Final Test. Lớp BE/ELE = lớp nguồn của lệnh Lên FT mới nhất, không có thì lớp BE/ELE
    * của Lộ trình tiếp theo đã áp (em đang ở FT). OV-11d (HV-17): bỏ nhánh "lớp đang học" — em BE → ELE (không lên FT) không có Kết quả đầu ra.
    */
   const nguon = conn.prepare(
-    `SELECT x.class_id, x.programme_code, x.ft_class FROM (
-       SELECT l.lop_nguon_id AS class_id, c.programme_code, CASE WHEN l.trang_thai = 'da_chuyen' THEN l.lop_dich_id END AS ft_class, 0 AS uu, l.id AS k
+    `SELECT x.class_id, x.programme_code, x.ft_class, x.tuan FROM (
+       SELECT l.lop_nguon_id AS class_id, c.programme_code, CASE WHEN l.trang_thai = 'da_chuyen' THEN l.lop_dich_id END AS ft_class, 0 AS uu, l.id AS k, l.tuan_bat_dau AS tuan
          FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id
         WHERE l.student_id = ? AND l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('FOU', 'BE', 'ELE')
        UNION ALL
        SELECT lt.class_id, c.programme_code, (SELECT e.class_id FROM enrollments e JOIN classes f ON f.id = e.class_id
-                                                WHERE e.student_id = lt.student_id AND e.status = 'active' AND f.is_fast_track = 1 ORDER BY e.id DESC LIMIT 1), 2, lt.id
+                                                WHERE e.student_id = lt.student_id AND e.status = 'active' AND f.is_fast_track = 1 ORDER BY e.id DESC LIMIT 1), 2, lt.id, NULL
          FROM lo_trinh_tiep_theo lt JOIN classes c ON c.id = lt.class_id
         WHERE lt.student_id = ? AND lt.huong = 'fast_track' AND lt.da_ap_dung_luc IS NOT NULL AND c.programme_code IN ('FOU', 'BE', 'ELE')
      ) x ORDER BY x.uu, x.k DESC LIMIT 1`,
   ).get(sid, sid) as any;
-  if (!nguon) throw badRequest('Chỉ em lên FT từ lớp FOU/BE/ELE mới có Kết quả đầu ra.');
+  if (!nguon) throw badRequest('Chỉ em lên FT từ lớp FOU/BE/ELE mới có Kỳ vọng.');
   const lopBeEle = nguon.class_id as number, ftClass = (nguon.ft_class ?? null) as number | null;
   const goiY = mt0TheoLop([{ sid, lop: lopBeEle, ct: nguon.programme_code }]).get(sid)?.goiY ?? null;
-  if (!goiY) throw badRequest(CHO_MT0);
+  /* N22 ② (P9b): MT0 quá tuần muộn nhất vẫn < 3 band → QL tự đánh (cùng luật trang Cuối khoá — `emKyVong.moTay`). */
+  if (!goiY) {
+    /* Một em: tuần muộn nhất theo lệnh Lên FT (em lên FT qua Lộ trình tiếp theo đã áp không có lệnh → theo tuần Final lớp BE/ELE). */
+    const muonNhat = tuanMuonNhatMt0({ tuanBatDauFt: nguon.tuan ?? null, tuanCuoiKhoa: classProgressMany([lopBeEle]).get(lopBeEle)?.finalWeekStart ?? null });
+    if (!muonNhat || demoToday() <= addDays(muonNhat, 6)) throw badRequest(CHO_MT0);
+  }
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt.');
-  /* Cùng luật dòng với panel (`kiemDongKyVong`): không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng → 400. Học viên: lý do bắt buộc, vẫn có Case. */
+  /* Cùng luật dòng với panel (`kiemDongKyVong`): không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng → 400. Học viên: lý do (phương án) bắt buộc, không Case (N17). */
   const coMon = Array.isArray(input.mon) && input.mon.length > 0;
-  const dong = kiemDongKyVong({ sid, dat: input.dat, nguyenNhan: input.nguyenNhan, mon: coMon ? input.mon : goiY.monTruot, lyDo: input.ghiChu }, 'Kết quả đầu ra');
+  const dong = kiemDongKyVong({ sid, dat: input.dat, nguyenNhan: input.nguyenNhan, mon: coMon ? input.mon : goiY?.monTruot ?? [], lyDo: input.ghiChu }, 'Kỳ vọng');
   const { dat, nguyenNhan, mon } = dong, ghiChu = dong.lyDo;
   return tx(() => {
     const now = nowIso();
@@ -755,7 +761,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
     writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.ket_luan_ft', entityType: 'student', entityId: sid, after: { dat, nguyenNhan, mon, taoMoi } });
     return {
       dat, nguyenNhan, mon, ghiChu, taoCaseTutor: taoMoi,
-      luuY: !taoMoi && daCo ? 'Case Kết quả đầu ra đã tạo trước đó được giữ nguyên — giáo viên tự xử lý.' : null,
+      luuY: !taoMoi && daCo ? 'Case Kỳ vọng đã tạo trước đó được giữ nguyên — giáo viên tự xử lý.' : null,
     };
   });
 }
@@ -769,37 +775,6 @@ export function emLenFtTu(sid: number, classId: number): boolean {
      UNION ALL
      SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ? AND huong = 'fast_track' AND da_ap_dung_luc IS NOT NULL`,
   ).get(sid, classId, sid, classId);
-}
-
-/**
- * OV-3b: GVCN lớp nguồn ĐỀ XUẤT Kết quả đầu ra của em có lệnh Lên FT đang chờ từ lớp FOU / BE / ELE (Đạt / Không đạt · Trung tâm / Học viên · kỹ năng ·
- * ghi chú). Chỉ lưu đề xuất (`kq_de_xuat_*`) — KHÔNG Case, không việc, không chuông; Quản lý chốt bằng `ghiKetLuanFt` (hộp điền sẵn đề xuất này).
- * Cùng luật dòng `kiemDongKyVong` (không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng). GVBM / người khác → 403; MT0 chưa đủ 3/4 kỹ năng → 400 "Chờ MT0".
- */
-export function deXuatKetQua(p: Principal, sid: number, input: { dat?: unknown; nguyenNhan?: unknown; mon?: unknown; ghiChu?: unknown }) {
-  const conn = db();
-  const enr = conn.prepare(`SELECT e.class_id, c.programme_code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active' LIMIT 1`).get(sid) as any;
-  if (!enr || !phanCongO(conn, p.userId, enr.class_id).gvcn) throw forbidden('Chỉ GVCN lớp em đang học đề xuất Kết quả đầu ra.');
-  if (!conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND lop_nguon_id = ? AND huong = 'fast_track' AND trang_thai = 'cho'`).get(sid, enr.class_id)
-    || NGUONG_KY_VONG[enr.programme_code ?? ''] === undefined) throw badRequest('Chỉ em đã chốt Lên FT từ lớp FOU/BE/ELE mới có Kết quả đầu ra.');
-  const goiY = mt0TheoLop([{ sid, lop: enr.class_id, ct: enr.programme_code }]).get(sid)?.goiY ?? null;
-  if (!goiY) throw badRequest(CHO_MT0);
-  const coMon = Array.isArray(input.mon) && input.mon.length > 0;
-  const d = kiemDongKyVong({ sid, dat: input.dat, nguyenNhan: input.nguyenNhan, mon: coMon ? input.mon : goiY.monTruot, lyDo: input.ghiChu }, 'Kết quả đầu ra');
-  /* Đề xuất giữ ghi chú cả khi "Trung tâm" — QL đọc lý do của GVCN trước khi chốt. */
-  const ghiChu = d.dat ? null : chuTuDo(input.ghiChu ?? null, 'Ghi chú', 2000);
-  return tx(() => {
-    const now = nowIso();
-    conn.prepare(
-      `INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, kq_de_xuat_dat, kq_de_xuat_nguyen_nhan, kq_de_xuat_mon, kq_de_xuat_ghi_chu, kq_de_xuat_boi, kq_de_xuat_luc, created_at, updated_at)
-       VALUES (?,?, 'fast_track', ?,?,?,?,?,?,?,?)
-       ON CONFLICT(student_id, class_id) DO UPDATE SET kq_de_xuat_dat = excluded.kq_de_xuat_dat, kq_de_xuat_nguyen_nhan = excluded.kq_de_xuat_nguyen_nhan,
-         kq_de_xuat_mon = excluded.kq_de_xuat_mon, kq_de_xuat_ghi_chu = excluded.kq_de_xuat_ghi_chu, kq_de_xuat_boi = excluded.kq_de_xuat_boi,
-         kq_de_xuat_luc = excluded.kq_de_xuat_luc`,
-    ).run(sid, enr.class_id, d.dat ? 1 : 0, d.nguyenNhan, d.mon.length ? JSON.stringify(d.mon) : null, ghiChu, p.userId, now, now, now);
-    writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.de_xuat_kq', entityType: 'student', entityId: sid, after: { dat: d.dat, nguyenNhan: d.nguyenNhan, mon: d.mon } });
-    return { dat: d.dat, nguyenNhan: d.nguyenNhan, mon: d.mon, ghiChu };
-  });
 }
 
 /** K4-23 vế 2: bài Cuối khoá bị dời quá tuần cuối khoá → MỘT thẻ Báo QL (không duyệt, QL nhắc GVCN). Chạy trong tx của `reportRegularNoShow`. */

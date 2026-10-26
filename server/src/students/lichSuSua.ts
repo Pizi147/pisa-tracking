@@ -58,10 +58,10 @@ const BIET_DANH: Record<string, string> = { target: 'target_score', targetScore:
 const cot = (k: string) => BIET_DANH[k] ?? k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 
 /** Việc được đọc. Nhật ký `learning_cycle` của lộ trình (cycle.status…) dùng `status` khác nghĩa — chỉ đọc trường của các việc dưới đây. */
-const HANH_DONG = ['student.create', 'student.update', 'student.status', 'student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo',
+const HANH_DONG = ['student.create', 'student.update', 'student.status', 'student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo', 'student.resume_undo',
   'student.archive', 'student.unarchive', 'student.transfer', 'cycle.create', 'cycle.update', 'cycle.target.revise', 'cycle.baseline.set', 'cycle.baseline.clear', 'cycle.buoc_tiep', 'cycle.han_sau_thi', 'lich_thi.luu'];
 /** Việc tự nói nguồn (chữ của Nhật ký Quản trị); sửa thường thì không ghi nguồn. */
-const CO_NGUON = new Set(['student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo', 'student.transfer', 'cycle.create']);
+const CO_NGUON = new Set(['student.rejoin', 'student.rejoin_undo', 'student.finish_undo', 'student.pause_undo', 'student.resume_undo', 'student.transfer', 'cycle.create']);
 const BO_QUA_CYCLE = new Set(['status']);   // trạng thái lộ trình ≠ trạng thái học của em
 const CUA_LICH_THI = new Set(['ket_luan', 'thang', 'ghi_chu']);   // chỉ đọc ở nhật ký `lich_thi` — việc khác có thể dùng cùng tên khoá
 /** Việc của MỘT lần lưu form (hồ sơ + lộ trình + Target + đầu vào) — chỉ những việc này gộp; Tạm dừng rồi Quay lại học là hai khối. */

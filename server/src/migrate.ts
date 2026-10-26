@@ -83,6 +83,7 @@ import { migratePrOv15i1 } from './migrate/prOv15i1.ts';
 import { migratePrXetLai } from './migrate/prXetLai.ts';
 import { migratePrTd7b } from './migrate/prTd7b.ts';
 import { migratePrCvLoi } from './migrate/prCvLoi.ts';
+import { migratePrSvLoTrinh } from './migrate/prSvLoTrinh.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -401,6 +402,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* SV-NX-CASE (N8): Case MT mô tả từ nhận xét → gắn nguồn (nội dung giữ) · việc Xem nhận xét Speaking còn mở → Xác nhận Case (đổi dữ liệu, chạy lặp không đổi). */ buoc(() => { migratePrSvNxCase(conn, applied); });
     /* P9a XET-LAI: bảng xet_lai_lo_trinh + thẻ "Mini Test chưa đạt" đang chờ → đóng (dòng (d) của Xét lại tính khi đọc; chạy lặp được). */ buoc(() => migratePrXetLai(conn, applied));
     /* P12 BAO-CAO-LICH-SU: cột learning_cycles.thi_that_target + điền Target hiện tại cho lộ trình đã có KQ (chạy lặp được). */ buoc(() => migratePrBaoCaoLichSu(conn, applied));
+    /* P7 SV-LO-TRINH (N11, N12): em Tạm dừng cũ vào Lưu trữ (ngày pause gần nhất) · cột learning_cycles.route_ten · route KHAC ngừng (chạy lặp không đổi). */ buoc(() => migratePrSvLoTrinh(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

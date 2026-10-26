@@ -285,11 +285,15 @@ function taoChuongTrinh(p: Principal, code: string, input: Parameters<typeof sav
 export function seedRoutes(conn: any) {
   const n = (conn.prepare('SELECT COUNT(*) n FROM routes').get() as any).n;
   if (n > 0) return 0;
-  BUILTIN_ROUTES.forEach((code, i) => {
+  /* P7: KHAC nạp ở trạng thái ngừng (không mở lớp; không ghi `lich_mt` vì bảng cũ chưa có cột — `lichMtCua` trả [] cho KHAC), cùng dòng migrate `prSvLoTrinh` thêm cho DB cũ. */
+  const ds = BUILTIN_ROUTES.filter((code) => code !== 'KHAC');
+  ds.forEach((code, i) => {
     conn.prepare('INSERT INTO routes (code, name, note, seq, status, created_at) VALUES (?,?,?,?,?,?)')
       .run(code, ROUTE_NAME[code], null, i + 1, 'active', nowIso());
   });
-  return BUILTIN_ROUTES.length;
+  conn.prepare('INSERT INTO routes (code, name, note, seq, status, created_at) VALUES (?,?,?,?,?,?)')
+    .run('KHAC', ROUTE_NAME.KHAC, 'Lộ trình "Khác" (Bước tiếp › Lộ trình mới) — không mở lớp, 0 MT', ds.length + 1, 'inactive', nowIso());
+  return ds.length + 1;
 }
 
 /** Mã lộ trình đang dùng được — thay cho hằng số `ROUTES` ở những chỗ cần danh sách sống. */

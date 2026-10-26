@@ -85,12 +85,12 @@ export function hanBanGiao(ngayRaLenh: string): { gvbm: string; gvcn: string } {
 }
 
 /**
- * OV-3b (đặc tả §3.1): mốc Lộ trình tiếp theo của lớp thường theo tuần Final (thứ Hai). Nhắc từ thứ Hai tuần Final − 2 · QL chốt trước hết
- * Chủ nhật tuần Final − 2 · GV bàn giao trước hết Chủ nhật tuần Final. Final tuần 10 → nhắc từ tuần 8, chốt hết tuần 8, bàn giao hết tuần 10.
+ * N20 (chủ SP 25/10, thay OV-3b "Final − 2"): mốc Chốt lộ trình lớp thường theo tuần Final (thứ Hai). Nhắc từ thứ Hai tuần trước Final · QL chốt
+ * hạn thứ Năm tuần đó (quá hạn đỏ, không chặn) · GV bàn giao trước hết Chủ nhật tuần Final. Final T2 21/09 → nhắc 14/09, hạn 17/09, bàn giao 27/09.
  */
 export function mocLoTrinh(tuanFinal: string): { nhacTu: string; hanChot: string; hanBanGiao: string } {
   const t2 = mondayOfDate(tuanFinal.slice(0, 10));
-  return { nhacTu: congNgay(t2, -14), hanChot: congNgay(t2, -8), hanBanGiao: congNgay(t2, 6) };
+  return { nhacTu: congNgay(t2, -7), hanChot: congNgay(t2, -4), hanBanGiao: congNgay(t2, 6) };
 }
 
 /**
@@ -275,17 +275,17 @@ export function trangThaiPhieu(x: { soMonDaGhi: number; soMon: number; daXacNhan
 // ---------------------------------------------------------------- dữ liệu các dải (máy chủ trả, web vẽ — mockup 20: A, E, H)
 
 export type DaiLop = {
-  /** Phía lớp NGUỒN (A). OV-3b `loTrinh`: lớp thường từ thứ Hai tuần Final − 2 còn em chưa chốt (chỉ Quản lý) — `do` = quá hạn chốt. */
+  /** Phía lớp NGUỒN (A). OV-3b `loTrinh`: lớp thường từ thứ Hai tuần trước Final (N20) còn em chưa chốt (chỉ Quản lý) — `do` = quá hạn chốt. */
   loTrinh: { hanChot: string | null; tong: number; daChot: number; do: boolean } | null;
   banGiao: { daXacNhan: number; tong: number; hanGvcn: string | null } | null;
   banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
   /** Phía lớp ĐÍCH (H). */
   sapNhan: { n: number; tuLop: { id: number; code: string }[]; tuan: string; daXacNhan: number } | null;
-  /** PR-S5F-a: lệnh của lớp (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, để sửa tuần/lớp chuyển đến hoặc huỷ. */
+  /** PR-S5F-a: lệnh của lớp thường (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, sửa ở trang Cuối khoá. */
   chuaChuyenDuoc: { n: number; loi: string } | null;
   /** OV-3c: lớp FT — số đợt em vào từ FOU/BE/ELE còn trong 4 tuần (cách xem "Kết quả đầu ra"); 0 = ẩn. */
   kqdrDot: number;
-  viewer: { coTheRaLenh: boolean; coTheChuyenNhieuEm: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
+  viewer: { coTheRaLenh: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
 };
 
 export type DaiHocVien = {
@@ -477,7 +477,24 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
   return { khiChuyen: dong, canhBao: x.nguonFt && !x.dichFt };
 }
 
-/** §7: hỏi Target CHỈ khi Lên FT từ lớp thường mà em chưa có Target nào (`targetSan` của xem trước = null). Dùng cho panel một em. */
+// ---------------------------------------------------------------- Chuyển lớp nhiều em (PR-CL C1)
+
+/** Tối đa em một lần ở panel nhiều em (mỗi em một lời gọi `/transfer`). */
+export const TOI_DA_NHIEU_EM = 50;
+
+/** Một dòng khối "Khi chuyển, web sẽ" nhiều em: "{Tên} · FT → Thường: đóng lộ trình FT LT1 · …" — dòng `dongKhiChuyen` nối " · ", chữ thường đầu (trừ chữ viết tắt MT0, FT…). */
+export function tomTatChuyenEm(ten: string, nguonFt: boolean, dichFt: boolean, khiChuyen: readonly string[]): string {
+  const thuong = (s: string) => (/^\p{Lu}\p{Ll}/u.test(s) ? s[0].toLowerCase() + s.slice(1) : s);
+  return `${ten} · ${nguonFt ? 'FT' : 'Thường'} → ${dichFt ? 'FT' : 'Thường'}: ${khiChuyen.map(thuong).join(' · ')}`;
+}
+
+/** Em sẽ gửi = đánh dấu, đã chọn lớp, chưa chuyển xong; bỏ qua = đánh dấu mà chưa chọn lớp (chân "Chuyển n · Bỏ qua k (chưa chọn lớp)"). */
+export function chonGuiNhieuEm<T extends { chon: boolean; lop: number | null; xong?: boolean }>(rows: readonly T[]): { gui: T[]; boQua: number } {
+  const conLai = rows.filter((r) => r.chon && !r.xong);
+  return { gui: conLai.filter((r) => r.lop !== null), boQua: conLai.filter((r) => r.lop === null).length };
+}
+
+/** §7: hỏi Target CHỈ khi Lên FT từ lớp thường mà em chưa có Target nào (`targetSan` của xem trước = null). Dùng cho panel một em và nhiều em. */
 export const canHoiTarget = (nguonFt: boolean, dichFt: boolean, targetSan: MucTieuLenh | null | undefined): boolean =>
   !nguonFt && dichFt && targetSan === null;
 

@@ -582,7 +582,7 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
  * không tính. PA đã xong có kết quả thật trước đó VẪN tính hiệu quả (planning review 22/09, Q7). Lịch sử giữ nguyên.
  * Chữ "lớp thường" thay "Normal" theo đặc tả §2 (không viết "Normal" trên màn).
  */
-export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh', 'overall_dat', 'cho_chot_sos'] as const;
+export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh', 'overall_dat', 'cho_chot_sos', 'ket_thuc_lo_trinh'] as const;
 export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
 export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   course_ended: t('Học viên kết thúc khoá'),
@@ -598,6 +598,8 @@ export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   overall_dat: t('Overall đạt'),
   /* OV-1c (migrate `prOv1c`): Case sinh từ điểm đầu tiên theo luật cũ, lượt chưa chốt, chưa ai đụng — tạo lại lúc lượt chốt. */
   cho_chot_sos: t('Chờ chốt SOS'),
+  /* P7 (N12, Q2): mở Lộ trình mới sau thi — Case chưa xong của lộ trình cũ đóng; PA đang chạy "Dừng — kết thúc lộ trình", không vào Hiệu quả PA. */
+  ket_thuc_lo_trinh: t('Kết thúc lộ trình'),
 };
 
 /**

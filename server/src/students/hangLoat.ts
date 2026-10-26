@@ -9,7 +9,8 @@ import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { huyNhieuLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
-import { archiveStudent, hoanTacHocLai, hoanTacKetThuc, hocLai, setStudentStatus, unarchiveStudent } from './students.ts';
+import { archiveStudent, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, setStudentStatus, unarchiveStudent } from './students.ts';
+import { cauLenhCho, tomTatTrangThai } from './trangThaiHv.ts';
 import { matNhieuEm, xoaHocVien } from './xoaHocVien.ts';
 
 /**
@@ -44,7 +45,10 @@ function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em): string | null {
   const { s, lopCuoi } = e;
   if (!coQuyenViec(p, viec, s.id)) return 'Ngoài phạm vi của bạn.';
   switch (viec) {
-    case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : null;
+    /* P7 (N11): em có quyết định chuyển lớp chờ → không Tạm dừng / Kết thúc học (cùng câu hộp một em). */
+    case 'tam-dung': return s.status !== 'active' ? (s.status === 'inactive' ? 'Đang tạm dừng' : 'Đã kết thúc học') : e.lenhCho ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null;
+    case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : e.lenhCho ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null;
+    case 'hoan-tac-tam-dung': return s.status === 'inactive' ? null : 'Không còn ở trạng thái tạm dừng';
     case 'luu-tru': return s.status !== 'finished' ? 'Chưa kết thúc học' : s.archived_at ? 'Đã lưu trữ' : null;
     case 'bo-luu-tru': return s.archived_at ? null : 'Chưa lưu trữ';
     case 'hoc-lai': return s.status !== 'finished' ? 'Đang học' : lopCuoi?.status !== 'completed' ? 'Chưa có lớp để học lại' : null;
@@ -68,7 +72,7 @@ function docEm(ids: number[]): Map<number, Em> {
       `SELECT e.student_id, e.status, e.class_id, c.code, c.status AS class_status FROM enrollments e JOIN classes c ON c.id = e.class_id
         WHERE e.student_id IN (${ph}) ORDER BY e.id`,
     ).all(...lo) as any[]) { const e = kq.get(r.student_id); if (e) e.lopCuoi = r; }
-    for (const l of conn.prepare(`SELECT id, student_id, huong, lop_nguon_id FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`).all(...lo) as any[]) {
+    for (const l of conn.prepare(`SELECT id, student_id, huong, lop_nguon_id, tuan_bat_dau FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`).all(...lo) as any[]) {
       const e = kq.get(l.student_id); if (e) e.lenhCho = l;
     }
     /* Quyết định huỷ GẦN NHẤT của em (lệnh nào cũng được — `khoiPhucLenh` kiểm người huỷ, giờ, tuần, em còn ở lớp nguồn). */
@@ -100,22 +104,12 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
     };
   });
   const duoc = rows.filter((r) => !r.lyDoBo);
-  const tong = { duoc: duoc.length, boQua: rows.length - duoc.length, caseDong: 0, paHuy: 0, lenhHuy: 0, lopMoLai: [] as string[], theoHuong: {} as Record<string, number> };
-  if (viec === 'ket-thuc' && duoc.length) {
-    const conn = db();
-    theoLo(duoc.map((r) => r.studentId), (lo, ph) => {
-      /* Cùng cách chọn Case của `closeCasesBySystem` (`systemClose.ts:67-73`): em của Case = `student_id` hoặc em của lượt Test gắn Case. */
-      tong.caseDong += (conn.prepare(
-        `SELECT COUNT(*) n FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE COALESCE(sc.student_id, a.student_id) IN (${ph}) AND sc.status != 'done'`,
-      ).get(...lo) as any).n;
-      tong.paHuy += (conn.prepare(
-        `SELECT COUNT(*) n FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE COALESCE(sc.student_id, a.student_id) IN (${ph}) AND sc.status != 'done' AND iv.status IN ('planned', 'started')`,
-      ).get(...lo) as any).n;
-      /* Lệnh còn chờ của em đã rời lớp nguồn sẽ bị máy tự huỷ lúc thi hành (`lenhChuyen.ts` — "Em không còn học lớp nguồn"). */
-      tong.lenhHuy += (conn.prepare(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`).get(...lo) as any).n;
-    });
+  const tong = { duoc: duoc.length, boQua: rows.length - duoc.length, caseDong: 0, paHuy: 0, lenhHuy: 0, lopMoLai: [] as string[], theoHuong: {} as Record<string, number>, tomTat: undefined as string[] | undefined };
+  /* P7: tóm tắt + số Case / PA của Kết thúc học — cùng một hàm với hộp một em. Em có lệnh chờ đã bị bỏ ở `lyDoBo`, nên không còn lệnh nào bị huỷ (`lenhHuy` = 0). */
+  if ((viec === 'tam-dung' || viec === 'ket-thuc') && duoc.length) {
+    const tt = tomTatTrangThai(duoc.map((r) => r.studentId), viec === 'ket-thuc');
+    tong.tomTat = tt.dong;
+    if (viec === 'ket-thuc') { tong.caseDong = tt.soCase; tong.paHuy = tt.soPa; }
   }
   if (viec === 'hoc-lai') {
     tong.lopMoLai = [...new Set(duoc.map((r) => em.get(r.studentId)!.lopCuoi).filter((l) => l?.class_status === 'finished').map((l) => l.code as string))];
@@ -137,7 +131,7 @@ export function chay(p: Principal, input: {
   const ids = docIds(input?.studentIds, LO_HANG_LOAT_EM);
   const lyDo = chuTuDo(input.lyDo, 'Lý do', 2000);
   const date = typeof input.date === 'string' && input.date ? input.date : undefined;
-  if (viec === 'ket-thuc' && !lyDo) throw badRequest('Ghi lý do kết thúc học.');
+  /* P7 (k2): lý do không bắt buộc ở hộp "Tạm dừng/ Kết thúc học" — một em hay nhiều em cùng luật. */
   if (viec === 'huy-lenh' && !lyDo) throw badRequest('Ghi lý do huỷ quyết định.');
   const lopMoiId = input.lopMoiId === undefined || input.lopMoiId === null ? null : Number(input.lopMoiId);
   if (lopMoiId !== null && (!Number.isInteger(lopMoiId) || lopMoiId <= 0)) throw badRequest('Lớp chuyển đến không hợp lệ.');
@@ -169,7 +163,9 @@ export function chay(p: Principal, input: {
         if (viec === 'xoa') { xoaHocVien(p, id, { maXacNhan: e.s.student_code }); kq.ok.push(id); continue; }
         tx(() => {
           chanGiaoDichNeuSapHetGio();   // sắp hết giờ → 503 "chưa lưu" cho em này (và các em sau)
-          if (viec === 'ket-thuc') setStudentStatus(p, id, 'finished', date ?? demoToday(), lyDo ?? undefined);
+          if (viec === 'tam-dung') setStudentStatus(p, id, 'inactive', date ?? demoToday(), lyDo ?? undefined);
+          else if (viec === 'ket-thuc') setStudentStatus(p, id, 'finished', date ?? demoToday(), lyDo ?? undefined);
+          else if (viec === 'hoan-tac-tam-dung') hoanTacTamDung(p, id);
           else if (viec === 'luu-tru') archiveStudent(p, id);
           else if (viec === 'bo-luu-tru') unarchiveStudent(p, id);
           else if (viec === 'hoc-lai') hocLai(p, id, { date, lyDo, moLaiLop: input.moLaiLop === true, lopMoiId });

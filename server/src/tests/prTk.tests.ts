@@ -551,7 +551,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ'); studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ');
     assert(hoSo(a.sid).archived_at === null && hoSo(b.sid).archived_at === null, 'kết thúc học: chờ QL chọn Bước tiếp');
     const bt = tongKetSvc.tongKetLoTrinh(P.admin, a.cy).buocTiep;
-    assert(bt?.goiY === 'ket_thuc' && tongKetSvc.tongKetLoTrinh(P.admin, b.cy).buocTiep?.goiY === 'hoc_lai', 'kết quả cũ cũng có mục Bước tiếp + gợi ý');
+    assert(bt?.goiY === 'dung' && tongKetSvc.tongKetLoTrinh(P.admin, b.cy).buocTiep?.goiY === 'lo_trinh_moi', 'kết quả cũ cũng có mục Bước tiếp + gợi ý (P7: 2 hướng)');
     const ra = tongKetSvc.tongKetLoTrinh(P.admin, a.cy).ketQua; const rb = tongKetSvc.tongKetLoTrinh(P.admin, b.cy).ketQua;
     assert(ra.choNhap === false && ra.ovr === 6.5 && rb.choNhap === false && rb.nhan === 'Chưa đạt Target', JSON.stringify([ra, rb]));
   }));

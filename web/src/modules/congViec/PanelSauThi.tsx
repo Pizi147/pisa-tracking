@@ -9,10 +9,10 @@ import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ChonLop } from '../../ui/ChonLop.tsx';
 import { laBand } from '../students/StudentPlanPanel.tsx';
 import type { TrangThaiBuocTiep } from '../students/PanelBuocTiep.tsx';
-import { LUA_CHON_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, shortDate, tuanChonDuoc, tuanLich, type LuaChonSauThi } from '@shared/domain/index.ts';
+import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, shortDate, type HuongSauThi } from '@shared/domain/index.ts';
+import { KhoiDung, PanelLoTrinhMoi, type GiaTriDung } from '../students/PanelLoTrinhMoi.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { LuaChonRadio, gioVnNay } from './PanelBaoPhTvv.tsx';
 
@@ -20,13 +20,13 @@ const KN = ['l', 'r', 'w', 's'] as const;
 type Diem = Record<(typeof KN)[number], string>;
 const so = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(1));
 const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/lo-trinh', '/my-work', '/cycles', '/tong-quan'];
-type LopDich = { id: number; code: string; ft: boolean; route: string | null; tenChuongTrinh: string | null; siSo?: number };
-type Chon = (typeof LUA_CHON_SAU_THI)[number];
+type Chon = HuongSauThi;
 
 /**
  * SAU THI (UI-CV-TVV, mockup `thiet-ke/v5/tvv.html` panelSau; C16, T09, N6) — MỘT panel hai bước cho việc "Cập nhật KQ thi thật" và "Chọn bước tiếp":
  *  ① Kết quả thi thật L R W S (Overall máy tính) LƯU RIÊNG — chưa cần chọn bước tiếp; "Không thi" vẫn có (đường sẵn có).
- *  ② Bước tiếp (Lộ trình mới · Tạm dừng · Thôi học) mở sau khi có điểm; hạn = ngày có KQ + 7 (máy chủ). Lộ trình mới: Lớp này / Lớp khác · Bắt đầu.
+ *  ② Bước tiếp mở sau khi có điểm; hạn = ngày có KQ + 7 (máy chủ). P7 (N12): hai hướng — Tạm dừng/ Kết thúc học (hộp N11 tại chỗ, ô "Có thể quay lại học" tắt sẵn) ·
+ *     Lộ trình mới (nội dung panel đổi thành `PanelLoTrinhMoi`, ‹ Sau thi).
  * Cùng API với `KetQuaThiThatPanel` / `PanelBuocTiep` (máy chủ kiểm quyền, luật); Lịch sử thay nội dung panel (← Sau thi).
  */
 export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep }: {
@@ -43,9 +43,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   const [ttDiem, setTtDiem] = useState<TtLuu | null>(null);
   const [loiDiem, setLoiDiem] = useState<string | null>(null);
   const [chon, setChon] = useState<Chon | null>(null);
-  const [lopKhac, setLopKhac] = useState(false);
-  const [lopMoiId, setLopMoiId] = useState<number | ''>('');
-  const [batDau, setBatDau] = useState('ngay');
+  const [dung, setDung] = useState<GiaTriDung>({ ngay: '', lyDo: '', quayLai: false });
   const [ghiChu, setGhiChu] = useState('');
   const lfD = useLoiForm();
   const lf = useLoiForm();
@@ -53,8 +51,6 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   const [loi, setLoi] = useState<string | null>(null);
   const [daChot, setDaChot] = useState<string | null>(null);
   const [lichSu, setLichSu] = useState(false);
-  const moLop = chon === 'lo_trinh_moi' && lopKhac;
-  const dsLop = useApi<{ lop: LopDich[] }>(moLop ? `/students/${em.id}/hoc-lai/lop-dich` : null, [moLop, em.id]);
 
   const tieuDe = t('Sau thi · {ten}', { ten: em.ten });
   const coKq = !!c && (!!c.thi_that_khong_thi || KN.every((k) => c[`thi_that_${k}`] !== null && c[`thi_that_${k}`] !== undefined));
@@ -100,18 +96,14 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   /* ② Bước tiếp */
   const daChonTruoc = !!b.chon;
   const khoaBuoc2 = !coKq || moDiem || !b.coTheChon || daChonTruoc || !!daChot;
-  const thieuLop = chon === 'lo_trinh_moi' && lopKhac && !lopMoiId;
-  const loiB = [
-    ...(!chon ? [{ khoa: 'chon', nhan: t('Bước tiếp'), lyDo: t('Chọn một bước') }] : []),
-    ...(thieuLop ? [{ khoa: 'lop', nhan: t('Lớp khác'), lyDo: t('Chọn lớp') }] : []),
-  ];
+  const loiB = !chon ? [{ khoa: 'chon', nhan: t('Bước tiếp'), lyDo: t('Chọn một bước') }] : [];
   const chot = async () => {
     lf.bam();
     if (loiB.length) return;
     setTt('dang'); setLoi(null);
     try {
-      const chung = { chon, ghiChu: ghiChu.trim() || null };
-      await api.post(`/cycles/${cycleId}/buoc-tiep`, chon === 'lo_trinh_moi' ? { ...chung, batDau, ...(lopKhac ? { lopMoiId } : {}) } : chung);
+      /* "Tạm dừng/ Kết thúc học": ô bật → `tam_dung`, tắt → `ket_thuc` (máy chủ ghi như cũ). */
+      await api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: dung.quayLai ? 'tam_dung' : 'ket_thuc', ghiChu: ghiChu.trim() || null, date: dung.ngay || undefined, lyDo: dung.lyDo.trim() || undefined });
       LAM_MOI.forEach((k) => invalidate(k));
       setTt(null); setDaChot(gioVnNay()); bt.reload(); onDaLam();
     } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); }
@@ -135,8 +127,14 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
     huy: null, daSua: !!chon || !!ghiChu.trim(), conThieu: lf.conThieu(loiB),
     trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : tt === 'dang' ? <ChuLuu tt="dang" />
       : <span className="inline-flex items-center gap-1.5 font-semibold text-soon"><span aria-hidden>●</span>{t('Bước tiếp chưa chốt')}</span>,
-    chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void chot()}>{t('Chốt bước tiếp')}</button>,
+    chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void chot()}>{chon === 'dung' ? (dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc) : t('Chốt bước tiếp')}</button>,
   };
+  if (chon === 'lo_trinh_moi' && !khoaBuoc2) {
+    return (
+      <PanelLoTrinhMoi bt={b} hocVien={em} lop={lop} dau={dau} onClose={onDong} quayLai={{ nhan: t('Sau thi'), onClick: () => setChon(null) }}
+        onSaved={() => { LAM_MOI.forEach((k) => invalidate(k)); setChon(null); setDaChot(gioVnNay()); bt.reload(); onDaLam(); }} />
+    );
+  }
 
   return (
     <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
@@ -178,29 +176,11 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
         <Buoc so="2" tieuDe={t('Bước tiếp')} mo={!khoaBuoc2 || daChonTruoc || !!daChot} phu={coKq && b.han ? t('hạn {ngay}', { ngay: shortDate(b.han, hn) }) : null}>
           {/* Tiêu đề bước đã là "Bước tiếp" — nhóm nút không nhãn riêng; lỗi (sau khi bấm Chốt) ngay dưới. */}
           <div {...lf.o(loiB, 'chon')} tabIndex={-1} className="outline-none">
-            <LuaChonRadio ten={`bt-${cycleId}`} nhan={t('Bước tiếp')} value={daChot || daChonTruoc ? (b.chon as Chon | null) : chon} disabled={khoaBuoc2}
-              muc={LUA_CHON_SAU_THI.map((k) => [k, NHAN_SAU_THI[k]] as const)} onChange={(k) => { setChon(k); if (tt === 'loi') setTt(null); }} />
+            <LuaChonRadio ten={`bt-${cycleId}`} nhan={t('Bước tiếp')} value={daChot || daChonTruoc ? (b.chon ? (b.chon === 'tam_dung' || b.chon === 'ket_thuc' ? 'dung' : 'lo_trinh_moi') : null) : chon} disabled={khoaBuoc2}
+              muc={HUONG_SAU_THI.map((k) => [k, NHAN_HUONG_SAU_THI[k]] as const)} onChange={(k) => { setChon(k); if (tt === 'loi') setTt(null); }} />
             {lf.loiCua(loiB, 'chon') && <p role="alert" className="m-0 mt-1.5 text-[13px] text-bad">{lf.loiCua(loiB, 'chon')}</p>}
           </div>
-          {chon === 'lo_trinh_moi' && !khoaBuoc2 && (
-            <div className="flex flex-col gap-3">
-              <Truong nhan={t('Lớp')} as="div" loi={lf.loiCua(loiB, 'lop')}>
-                <LuaChonRadio ten={`bt-lop-${cycleId}`} nhan={t('Lớp')} value={lopKhac ? 'khac' : 'nay'} onChange={(k) => setLopKhac(k === 'khac')}
-                  muc={[['nay', `${t('Lớp này')}${b.lopNay ? ` · ${b.lopNay.code}` : ''}`], ['khac', t('Lớp khác')]]} />
-                {lopKhac && (
-                  <ChonLop className="mt-2" ariaLabel={t('Lớp khác')} {...lf.o(loiB, 'lop')} value={lopMoiId || null} onChange={(id) => setLopMoiId(id ?? '')}
-                    khongKhop={dsLop.data ? undefined : t('Đang tải…')}
-                    ds={(dsLop.data?.lop ?? []).map((l) => ({ id: l.id, ma: l.code, phu: [l.ft ? `FT ${l.route ?? ''}`.trim() : l.tenChuongTrinh, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ') }))} />
-                )}
-              </Truong>
-              <Truong nhan={t('Bắt đầu')}>
-                <select className="field w-full sm:max-w-[16rem]" value={batDau} onChange={(e) => setBatDau(e.target.value)}>
-                  <option value="ngay">{t('Ngay bây giờ')} · {tuanLich(hn, hn)}</option>
-                  {tuanChonDuoc(hn, 4).map((m) => <option key={m} value={m}>{tuanLich(m, hn)}</option>)}
-                </select>
-              </Truong>
-            </div>
-          )}
+          {chon === 'dung' && !khoaBuoc2 && <KhoiDung v={dung} onChange={setDung} loTrinh={c.route ?? null} disabled={tt === 'dang'} />}
           <Truong nhan={t('Ghi chú')}>
             <textarea className="field w-full" rows={3} maxLength={2000} autoComplete="off" disabled={khoaBuoc2} value={ghiChu} placeholder={t('Trao đổi với HV / PH')}
               onChange={(e) => setGhiChu(e.target.value)} />

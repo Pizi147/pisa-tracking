@@ -54,10 +54,10 @@ export async function runPrOv8aTests(t: YThucTestKit) {
   const NHAP4 = { ngayThi: NGAY, l: 7, r: 6.5, w: 6, s: 6.5 };   // OVR 6.5
   const chon = (pr: any, cy: number, o: any) => buocTiepSvc.chonBuocTiep(pr, cy, o);
 
-  check('OV8a · gợi ý: Đạt Target → Kết thúc; chưa đạt / Không thi → Học lại; không có Target → không gợi ý', () => {
-    assert(d.goiYSauThi({ khongThi: false, ketLuan: 'reached' }) === 'ket_thuc', 'đạt');
-    assert(d.goiYSauThi({ khongThi: false, ketLuan: 'not_reached' }) === 'hoc_lai', 'chưa đạt');
-    assert(d.goiYSauThi({ khongThi: true, ketLuan: 'unknown' }) === 'hoc_lai', 'không thi');
+  check('OV8a → P7 · gợi ý: Đạt Target → Tạm dừng/ Kết thúc học; chưa đạt / Không thi → Lộ trình mới (E9); không có Target → không gợi ý', () => {
+    assert(d.goiYSauThi({ khongThi: false, ketLuan: 'reached' }) === 'dung', 'đạt');
+    assert(d.goiYSauThi({ khongThi: false, ketLuan: 'not_reached' }) === 'lo_trinh_moi', 'chưa đạt');
+    assert(d.goiYSauThi({ khongThi: true, ketLuan: 'unknown' }) === 'lo_trinh_moi', 'không thi');
     assert(d.goiYSauThi({ khongThi: false, ketLuan: 'unknown' }) === null, 'không Target');
     assert(d.LUA_CHON_SAU_THI.every((k: string) => typeof d.NHAN_SAU_THI[k] === 'string'), 'đủ nhãn');
   });
@@ -74,7 +74,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     assert(v[0].href.includes(`buoc-tiep=${a.cy}`) && d.nhomViecCua('buoc_tiep') === 'van-hanh', v[0].href);   // OV-13m: mở panel Bước tiếp
     assert(viecBt(gvcn, a.sid).length === 0, 'GVCN không có việc');
     const bt = tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep;
-    assert(bt && bt.chon === null && bt.goiY === 'ket_thuc' && bt.coTheChon === true, JSON.stringify(bt));
+    assert(bt && bt.chon === null && bt.goiY === 'dung' && bt.coTheChon === true, JSON.stringify(bt));
     assert(tongKetSvc.tongKetLoTrinh(gvcn, a.cy).buocTiep.coTheChon === false, 'GVCN chỉ xem');
     /* Việc quá hạn (đỏ, không chặn) khi qua 7 ngày: dời ngày nhập kết quả về trước. OV-13q: hạn tính từ ngày thi — dời cả ngày thi. */
     conn.prepare(`UPDATE journey_events SET event_date = ? WHERE cycle_id = ? AND event_type = 'cycle_outcome'`).run(addDays(NGAY, -10), a.cy);
@@ -89,7 +89,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     chon(QL, a.cy, { chon: 'ket_thuc' });
     assert(hoSo(a.sid).archived_at === NGAY && loTrinh(a.cy).status !== 'active' && loTrinh(a.cy).buoc_tiep === 'ket_thuc', JSON.stringify([hoSo(a.sid), loTrinh(a.cy).buoc_tiep]));
     assert(viecBt(QL, a.sid).length === 0, 'việc hết');
-    assert(get(`SELECT 1 x FROM journey_events WHERE cycle_id = ? AND title = 'Sau thi: Thôi học'`, a.cy), 'mốc Hành trình');
+    assert(get(`SELECT 1 x FROM journey_events WHERE cycle_id = ? AND title = 'Sau thi: Kết thúc học'`, a.cy), 'mốc Hành trình');
     const bt = tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep;
     assert(bt.chon === 'ket_thuc' && bt.luc === NGAY && bt.boi, JSON.stringify(bt));
     buocTiepSvc.boChonBuocTiep(QL, a.cy);
@@ -116,7 +116,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     const lop = taoLop();
     const a = emDaKetThuc(lop);
     thiThatSvc.datKetQuaThiThat(P.admin, a.cy, { ...NHAP4, l: 5, r: 5 });   // chưa đạt → gợi ý Học lại
-    assert(tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep.goiY === 'hoc_lai', 'gợi ý Học lại');
+    assert(tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep.goiY === 'lo_trinh_moi', 'gợi ý Lộ trình mới (P7, E9)');
     chon(QL, a.cy, { chon: 'hoc_lai', moLaiLop: true });
     const moi = dangChay(a.sid);
     assert(hoSo(a.sid).status === 'active' && ghiDanhDang(a.sid).join() === String(lop), JSON.stringify(ghiDanhDang(a.sid)));
@@ -169,7 +169,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     const lop = taoLop();
     const a = emDaKetThuc(lop);
     thiThatSvc.datKetQuaThiThat(P.admin, a.cy, { khongThi: true });
-    assert(hoSo(a.sid).archived_at === null && viecBt(QL, a.sid).length === 1 && tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep.goiY === 'hoc_lai', 'Không thi');
+    assert(hoSo(a.sid).archived_at === null && viecBt(QL, a.sid).length === 1 && tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep.goiY === 'lo_trinh_moi', 'Không thi');
     /* có kết quả khi em còn học → Kết thúc học: chưa Lưu trữ, việc hiện */
     seq += 1;
     const now = new Date().toISOString();

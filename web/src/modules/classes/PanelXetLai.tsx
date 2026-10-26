@@ -11,7 +11,7 @@ import { Modal } from '../../ui/Drawer.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OTuanBatDau } from '../students/ChuyenLopPanel.tsx';
-import { KHOI_VANG } from './TransitionPanel.tsx';
+import { KHOI_VANG } from './chuyenLopChung.tsx';
 import { chuTyLeXetLai, kyHieuLop, laChuyenNgay, ngay, tenBacKe, tuanChonDuoc, tuanLich, type ProgrammeCode } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 

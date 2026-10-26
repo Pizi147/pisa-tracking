@@ -30,15 +30,21 @@ export function huongTiep(lyDo: LyDoDong, routeMoi: string | null): HuongTiepTk 
 }
 
 /**
- * BƯỚC TIẾP SAU THI — OV-13m (chủ SP 15/10): ba lựa chọn Lộ trình mới · Tạm dừng · Thôi học (`ket_thuc` = Kết thúc học + Lưu trữ, giữ khoá cũ).
- * `hoc_tiep` / `hoc_lai` (OV-8a) còn trong dữ liệu cũ + API cũ — đọc, hoàn tác được, web không bày nữa.
+ * BƯỚC TIẾP SAU THI — OV-13m; P7 SV-LO-TRINH (N12): web còn HAI hướng (`HUONG_SAU_THI`): "Tạm dừng/ Kết thúc học" (hộp N11 ngay trong panel, ô "Có thể quay lại học"
+ * tắt sẵn → máy chủ ghi `tam_dung` hoặc `ket_thuc` theo ô) · "Lộ trình mới". `LUA_CHON_SAU_THI` = khoá máy chủ nhận. `hoc_tiep` / `hoc_lai` (OV-8a) còn trong
+ * dữ liệu cũ + API cũ — đọc, hoàn tác được, web không bày.
  */
 export const LUA_CHON_SAU_THI = ['lo_trinh_moi', 'tam_dung', 'ket_thuc'] as const;
 export const LUA_CHON_SAU_THI_CU = ['hoc_tiep', 'hoc_lai'] as const;
 export type LuaChonSauThi = (typeof LUA_CHON_SAU_THI)[number] | (typeof LUA_CHON_SAU_THI_CU)[number];
 export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = {
-  lo_trinh_moi: t('Lộ trình mới'), tam_dung: t('Tạm dừng'), ket_thuc: t('Thôi học'), hoc_tiep: t('Học tiếp lộ trình mới'), hoc_lai: t('Học lại'),
+  lo_trinh_moi: t('Lộ trình mới'), tam_dung: t('Tạm dừng'), ket_thuc: t('Kết thúc học'), hoc_tiep: t('Học tiếp lộ trình mới'), hoc_lai: t('Học lại'),
 };
+export const HUONG_SAU_THI = ['dung', 'lo_trinh_moi'] as const;
+export type HuongSauThi = (typeof HUONG_SAU_THI)[number];
+export const NHAN_HUONG_SAU_THI: Record<HuongSauThi, string> = { dung: t('Tạm dừng/ Kết thúc học'), lo_trinh_moi: t('Lộ trình mới') };
+/** Hướng của một lựa chọn đã ghi (dữ liệu cũ `hoc_tiep` / `hoc_lai` = Lộ trình mới). */
+export const huongCuaLuaChon = (c: LuaChonSauThi): HuongSauThi => (c === 'tam_dung' || c === 'ket_thuc' ? 'dung' : 'lo_trinh_moi');
 /** "Đã xong · OVR 6.5 · Đạt Target" — MỘT hàm nhãn cho Các lộ trình, đầu hồ sơ, panel Bước tiếp và dòng Công việc (OV-13m). */
 /* Mockup bước tiếp chủ SP duyệt 15/10 dùng đúng chữ "Đã xong" cho lộ trình có kết quả thi (khác trạng thái việc "Xong" của S3) — chỉ ở file này. */
 export const CHU_DA_XONG = t('Đã xong');
@@ -48,10 +54,10 @@ export function nhanDaXong(k: { khongThi: boolean; ovr: number | null; ketLuan: 
   const ds = k.khongThi ? [t('Không thi')] : [k.ovr !== null ? `OVR ${k.ovr.toFixed(1)}` : null, kl].filter((x): x is string => !!x);
   return (ngan ? ds : [CHU_DA_XONG, ...ds]).join(' · ');
 }
-/** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Kết thúc; chưa đạt / Không thi → Học lại; không có Target → không gợi ý. */
-export function goiYSauThi(o: { khongThi: boolean; ketLuan: string | null }): LuaChonSauThi | null {
-  if (o.khongThi || o.ketLuan === 'not_reached') return 'hoc_lai';
-  return o.ketLuan === 'reached' ? 'ket_thuc' : null;
+/** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Tạm dừng/ Kết thúc học; chưa đạt / Không thi → Lộ trình mới (P7, sửa E9 — không trả `hoc_lai`); không có Target → không gợi ý. */
+export function goiYSauThi(o: { khongThi: boolean; ketLuan: string | null }): HuongSauThi | null {
+  if (o.khongThi || o.ketLuan === 'not_reached') return 'lo_trinh_moi';
+  return o.ketLuan === 'reached' ? 'dung' : null;
 }
 
 /** Làm tròn về 0.5 gần nhất, .25 / .75 lên (như Excel). `server/src/fasttrack/scoring.ts` re-export hàm này. */

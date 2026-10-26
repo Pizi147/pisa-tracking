@@ -304,6 +304,7 @@ CREATE TABLE learning_cycles (
   student_id INTEGER NOT NULL REFERENCES students(id),
   seq INTEGER NOT NULL,               -- thứ tự lộ trình của học viên: 1, 2, ...
   route TEXT,                         -- LT1 | LT2 với FT; NULL với lớp thường
+  route_ten TEXT,                     -- P7: tên lộ trình "Khác" (route = 'KHAC') do người dùng ghi
   programme_code TEXT REFERENCES programmes(code),
   target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
   khong_cam_ket INTEGER NOT NULL DEFAULT 0,  -- Q29-1 (PR-KCK) + OV-9: 1 = dấu KCK — Target giữ (có thể trống); dưới kỳ vọng không SOS, chỉ Case nhẹ

@@ -1385,13 +1385,14 @@ function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period:
 
 /**
  * OV-1d (chủ SP 13/10): em ĐÃ KẾT THÚC HỌC hoặc LƯU TRỮ — lưới chấm FT làm mờ hàng (chữ ở cột Kết quả), ô không phải việc / quá hạn.
- * Chỉ Lưu trữ mới khoá ghi (`khoa`: ô chỉ đọc, `saveScore` 400 kèm câu chỉ đường). Kết thúc học chưa lưu trữ (FT chờ kết quả thi thật /
- * Bước tiếp, OV-8a) vẫn nhập bù / sửa — điểm vào bản chụp lộ trình (PR-TK). Em Tạm dừng: như đang học (thi xong rồi mới dừng); số đếm
- * vẫn theo `HV_DANG_HOC_SQL`. `null` = hàng bình thường.
+ * Chỉ em Kết thúc học + Lưu trữ mới khoá ghi (`khoa`: ô chỉ đọc, `saveScore` 400 kèm câu chỉ đường). Kết thúc học chưa lưu trữ (FT chờ kết quả thi thật /
+ * Bước tiếp, OV-8a) vẫn nhập bù / sửa — điểm vào bản chụp lộ trình (PR-TK). P7 (N11): em Tạm dừng (nay ở Lưu trữ) hàng mờ "Tạm dừng", VẪN nhập bù / sửa
+ * điểm lượt cũ (không mất dữ liệu); số đếm vẫn theo `HV_DANG_HOC_SQL`. `null` = hàng bình thường.
  */
 export function ngungHocCua(status: string | null | undefined, archivedAt: string | null | undefined): { nhan: string; khoa: string | null } | null {
-  if (archivedAt) return { nhan: 'Lưu trữ', khoa: 'Em đã lưu trữ — Bỏ lưu trữ trước khi nhập điểm.' };
-  if (status === 'active' || status === 'inactive') return null;
+  if (status === 'inactive') return { nhan: 'Tạm dừng', khoa: null };
+  if (archivedAt) return { nhan: 'Lưu trữ', khoa: 'Em đã lưu trữ — Quay lại học trước khi nhập điểm.' };
+  if (status === 'active') return null;
   return { nhan: 'Đã kết thúc học', khoa: null };
 }
 

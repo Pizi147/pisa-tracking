@@ -228,7 +228,6 @@ export async function runPrOv8bTests(t: YThucTestKit) {
         ['ghi Ý thức', 'POST', `/students/${em.id}/y-thuc/ghi-nhan`, { nhom: 'chuyen_can', ngay: '2026-10-12' }],
         ['xử lý Ý thức', 'POST', `/students/${em.id}/y-thuc/xu-ly`, {}],
         ['Lộ trình tiếp theo', 'PUT', `/students/${em.id}/lo-trinh-tiep`, { huong: 'len_lop' }],
-        ['KQĐR', 'PUT', `/students/${em.id}/ket-qua-de-xuat`, { ketQua: 'dat' }],
         ['kết luận FT', 'PUT', `/students/${em.id}/ket-luan-ft`, { ketLuan: 'dat' }],
         ['tuần bắt đầu / lộ trình', 'PATCH', `/cycles/${em.cycleId}`, { startWeek: '2026-10-05' }],
         ['Học lại', 'POST', `/students/${em.id}/hoc-lai`, {}],

@@ -68,12 +68,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(JSON.parse(audit.after_json).archivedAt === ngay, `audit student.status thiếu archivedAt: ${audit.after_json}`);
   });
 
-  check('PR-XOA L2 · Tạm dừng (inactive) KHÔNG lưu trữ; Quay lại học cũng không', () => {
+  check('PR-XOA L2 → P7 (N11) · Tạm dừng (inactive) VÀO Lưu trữ; Quay lại học ra khỏi Lưu trữ', () => {
     const sid = taoHV(taoLop(3));
     studentsSvc.setStudentStatus(P.mbManager, sid, 'inactive', TODAY, 'Ốm');
-    assert(hv(sid).archived_at === null, `Tạm dừng không được lưu trữ: ${JSON.stringify(hv(sid))}`);
+    assert(hv(sid).archived_at === TODAY, `Tạm dừng phải vào Lưu trữ: ${JSON.stringify(hv(sid))}`);
     studentsSvc.setStudentStatus(P.mbManager, sid, 'active', TODAY);
-    assert(hv(sid).archived_at === null, 'Quay lại học không được lưu trữ');
+    assert(hv(sid).archived_at === null, 'Quay lại học ra khỏi Lưu trữ');
   });
 
   check('PR-XOA L3 · Chuyển tiếp lớp › Dừng học hẳn → em thôi học và đã ở Lưu trữ', () => {
@@ -567,7 +567,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     /* Em đã lưu trữ (chỉ xem) vẫn xoá được — QT dọn dữ liệu thử. */
     const chiXem = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: { ...quyenDu, ghiLoTrinhTiep: false, chuyenLop: false, tamDung: false, ketThuc: false, boLuuTru: true } },
       cycle: null, status: 'finished', coTheXoa: true }).map((m) => m.key);
-    assert(chiXem.join() === 'info,bo-luu-tru,lich-su-sua,xoa-hoc-vien', chiXem.join());   // OV-13j: Lịch sử sửa cả khi chỉ xem
+    assert(chiXem.join() === 'info,lich-su-sua,xoa-hoc-vien', chiXem.join());   // OV-13j: Lịch sử sửa cả khi chỉ xem; P7: không còn Bỏ lưu trữ
   });
 
   check('PR-XOA (3) · XoaHocVienPanel theo khuôn: KhungPanel, nút đỏ tắt tới khi gõ đúng mã, dòng sao lưu nguyên văn; không SectionNote/fmtDate/Modal', () => {

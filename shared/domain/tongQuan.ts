@@ -149,7 +149,7 @@ export const CAN_XU_LY: readonly {
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
   { metricId: 'van-hanh-can-quyet-dinh', nhan: t('việc Vận hành cần quyết định'), nut: t('Mở Vận hành'), cuaNguoiXem: true },
   /* PR-LCb: MỘT dòng "lớp cần Chốt lộ trình" (thay "em chưa có quyết định chuyển lớp" + "lớp cần Chốt lên FT") — cùng hàm với việc "Chốt lộ trình · lớp". */
-  { metricId: 'lop-chua-chot-len-ft', nhan: t('lớp cần Chốt lộ trình'), nut: t('Lộ trình tiếp theo'), cuaNguoiXem: true },
+  { metricId: 'lop-chua-chot-len-ft', nhan: t('lớp cần Chốt lộ trình'), nut: t('Cuối khoá ›'), cuaNguoiXem: true },
   { metricId: 'lop-thieu-gv-mon', nhan: t('lớp thiếu GV môn'), nut: t('Sửa phân công'), cuaNguoiXem: true },
   { metricId: 'hv-len-ft-chua-ky-vong', nhan: t('học viên lên FT chưa chốt Kết quả đầu ra'), nut: t('Mở hồ sơ'), cuaNguoiXem: true },
 ];

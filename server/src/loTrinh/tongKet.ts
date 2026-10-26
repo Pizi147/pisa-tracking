@@ -6,7 +6,7 @@
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import {
   ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, ketQuaThiThat, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
-  type HuongTiepTk, type LyDoDong, ATTEMPT_KIND_LABEL } from '../../../shared/domain/index.ts';
+  type HuongTiepTk, type LyDoDong, ATTEMPT_KIND_LABEL, tenRoute } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -20,7 +20,8 @@ export type KetQuaGon = { chinh: string; tone: Tone; phu?: string };
 
 const phanTram = (x: number) => `${Math.round(x * 100)}%`;
 const nhanHuong = (h: string | null): string | null => (h && h !== 'khong_ro' ? HUONG_TIEP_TK_NHAN[h as HuongTiepTk] ?? null : null);
-const tenLoTrinh = (b: { route: string | null; programme_name: string | null }) => (b.route ? `Fast Track · ${b.route}` : b.programme_name ?? 'Lộ trình');
+/** P7: lộ trình "Khác" hiện tên đã ghi (`route_ten` ở lộ trình — bản chụp chỉ giữ mã). */
+const tenLoTrinh = (b: { route: string | null; programme_name: string | null }, routeTen?: string | null) => (b.route ? `Fast Track · ${tenRoute({ route: b.route, route_ten: routeTen })}` : b.programme_name ?? 'Lộ trình');
 const toneDai = (dai: string | null): Tone => (dai === 'dat' ? 'ok' : dai ? 'soon' : 'muted');
 
 /** Kết quả gọn của một bản chụp (FT: thi thật; lớp thường: % Cuối khoá). */
@@ -92,13 +93,13 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
       const ct = c.route ? null : programmeByCode(c.programme_code);
       const lopCuaLoTrinh = luot.filter((a) => a.cycle_id === c.id);
       return {
-        id: c.id, ten: c.route ? `Fast Track · ${c.route}` : ct?.name ?? 'Lộ trình', lop: lopDang?.code ?? null, batDau: c.started_at, ketThuc: null,
+        id: c.id, ten: c.route ? `Fast Track · ${tenRoute(c)}` : ct?.name ?? 'Lộ trình', lop: lopDang?.code ?? null, batDau: c.started_at, ketThuc: null,
         thoiGian: khoangTuan(c.started_at, null, homNay), dangHoc: c.status === 'active', lyDo: null,
         ketQua: ketQuaSong(c, lopCuaLoTrinh, diem), huong: null, buocTiep,
       };
     }
     return {
-      id: c.id, ten: tenLoTrinh(b), lop: b.class_code, batDau: b.bat_dau_ngay, ketThuc: b.dong_ngay, thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay),
+      id: c.id, ten: tenLoTrinh(b, c.route_ten), lop: b.class_code, batDau: b.bat_dau_ngay, ketThuc: b.dong_ngay, thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay),
       dangHoc: false, lyDo: b.ly_do, ketQua: ketQuaBanChup(b), huong: nhanHuong(b.huong_tiep), buocTiep,
     };
   });
@@ -132,7 +133,7 @@ const monKqdr = (x: string | null): string[] => { try { const v = JSON.parse(x ?
 
 export function tongKetLoTrinh(p: Principal, cycleId: number) {
   const conn = db();
-  const c = conn.prepare('SELECT id, student_id, status FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  const c = conn.prepare('SELECT id, student_id, status, route_ten FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   if (c.status === 'active') throw notFound('Lộ trình chưa kết thúc');
@@ -153,7 +154,7 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
   const kq = laFt ? ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.target) : null;
   return {
     hocVien: { id: hv.id as number, ten: hv.full_name as string },
-    loTrinhId: cycleId, ten: tenLoTrinh(b), loai: laFt ? 'ft' as const : 'thuong' as const, programmeCode: b.programme_code as string | null,
+    loTrinhId: cycleId, ten: tenLoTrinh(b, c.route_ten), loai: laFt ? 'ft' as const : 'thuong' as const, programmeCode: b.programme_code as string | null,
     lop: b.class_code as string | null, gvcn: b.gvcn_ten as string | null, dauVao: b.dau_vao as number | null,
     target: b.target as number | null, khongCamKet: !!b.khong_cam_ket,
     thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay), lyDo: b.ly_do as LyDoDong, lyDoNhan: LY_DO_DONG_NHAN[b.ly_do as LyDoDong] ?? null,

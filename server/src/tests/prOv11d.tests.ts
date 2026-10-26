@@ -57,18 +57,19 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     v: all('SELECT * FROM violations WHERE student_id = ? ORDER BY id', sid),
   });
 
-  check('OV11d-1 · HV-10: GVCN Tạm dừng em lớp mình → vẫn sửa hồ sơ, xử lý Ý thức, Quay lại học (GVCN lớp khác 403); ⋯ ghi "Thôi học"', () => thu(() => {
+  check('OV11d-1 → P7 · HV-10: GVCN Tạm dừng em lớp mình → em vào Lưu trữ: chỉ sửa thông tin liên hệ ([ĐX]), xử lý Ý thức, Quay lại học (GVCN lớp khác 403); ⋯ một mục "Tạm dừng/ Kết thúc học"', () => thu(() => {
     const sid = emFt();
     students.setStudentStatus(GVCN, sid, 'inactive', TODAY, 'Thử Tạm dừng OV11d');
     xoaNho();
     assert(one('SELECT status FROM students WHERE id = ?', sid).status === 'inactive', 'chưa Tạm dừng');
-    students.updateStudent(GVCN, sid, { note: 'Ghi chú sau Tạm dừng' });
-    assert(one('SELECT note FROM students WHERE id = ?', sid).note === 'Ghi chú sau Tạm dừng', 'GVCN phải sửa được hồ sơ em Tạm dừng');
+    assert(loi(() => students.updateStudent(GVCN, sid, { note: 'Ghi chú sau Tạm dừng' }))?.message === d.CAU_LUU_TRU, 'P7: hồ sơ em Tạm dừng (Lưu trữ) chỉ xem');
+    students.updateStudent(GVCN, sid, { parentPhone: '0912345678' });
+    assert(one('SELECT parent_phone FROM students WHERE id = ?', sid).parent_phone === '0912345678', 'P7 [ĐX]: sửa được thông tin liên hệ em Tạm dừng');
     assert(yThuc.canManageDiscipline(GVCN, sid), 'GVCN phải xử lý được Ý thức em Tạm dừng');
     const hs = profile.studentProfile(GVCN, sid);
     assert(hs.viewer.canEdit && hs.lopHoc.quyen.quayLai && hs.lopHoc.quyen.ketThuc, `cờ quyền: ${JSON.stringify({ e: hs.viewer.canEdit, q: hs.lopHoc.quyen })}`);
     const muc = d.mucQuanLyHocVien({ canEdit: true, lopHoc: hs.lopHoc, cycle: hs.cycle, status: hs.status });
-    assert(muc.find((m: any) => m.key === 'tam-dung-thoi-hoc')?.nhan === 'Thôi học' && muc.some((m: any) => m.key === 'quay-lai'), JSON.stringify(muc.map((m: any) => m.nhan)));
+    assert(muc.find((m: any) => m.key === 'tam-dung-ket-thuc')?.nhan === 'Tạm dừng/ Kết thúc học' && muc.some((m: any) => m.key === 'quay-lai'), JSON.stringify(muc.map((m: any) => m.nhan)));
     assert(loi(() => students.updateStudent(GVCN_KHAC, sid, { note: 'x' }))?.status === 403, 'GVCN lớp khác phải 403');
     assert(!yThuc.canManageDiscipline(GVCN_KHAC, sid), 'GVCN lớp khác không xử lý Ý thức');
     /* rà bảo mật: em Tạm dừng không đi nhánh "xếp lớp lần đầu" — GVCN gọi thẳng API chuyển em sang lớp khác mình chủ nhiệm → 403 */
@@ -168,7 +169,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(la400(loi(() => cases.reportIssue(ql, { studentId: sid, topic: 'listening', title: 'Thử Case hồ sơ lưu trữ', summary: 'Em nghe sót số và tên riêng ở Part 1.', urgency: 'attention' }))), '+ Case phải 400');
     assert(la400(loi(() => cases.backfillCase(ql, { studentId: sid, topic: 'listening', primaryCode: 'x', summary: 'Thử ghi bù hồ sơ lưu trữ', fromDate: '2026-08-03', toDate: '2026-08-10', actions: [] }))), 'ghi bù phải 400');
     const muc = d.mucQuanLyHocVien({ canEdit: true, suaThongTin: true, suaThem: true, lopHoc: { chiXem: true, quyen: { boLuuTru: true, hocLai: true } }, cycle: { ratio: false }, status: 'finished' }).map((m: any) => m.key);
-    assert(!muc.some((k: string) => ['info', 'lo-trinh', 'outcome'].includes(k)) && muc.includes('bo-luu-tru') && muc.includes('hoc-lai'), JSON.stringify(muc));
+    assert(!muc.some((k: string) => ['info', 'lo-trinh', 'outcome'].includes(k)) && muc.includes('quay-lai'), JSON.stringify(muc));   // P7: Quay lại học thay Bỏ lưu trữ + Học lại
     students.unarchiveStudent(ql, sid);
     students.updateStudent(ql, sid, { phone: '0912345678' });
     assert(one('SELECT phone FROM students WHERE id = ?', sid).phone === '0912345678', 'Bỏ lưu trữ rồi sửa phải lưu');

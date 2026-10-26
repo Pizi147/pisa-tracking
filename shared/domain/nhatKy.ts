@@ -70,7 +70,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'sos_coordination.add': 'Thêm việc phối hợp SOS', 'sos_coordination.confirm': 'Xác nhận việc phối hợp SOS',
   'sos_coordination.remove': 'Bỏ việc phối hợp SOS', 'sos_coordination.reopen': 'Đưa lại / khôi phục việc phối hợp', 'sos_coordination.sync': 'Cập nhật việc phối hợp SOS',
   'student.archive': 'Lưu trữ học viên', 'student.create': 'Thêm học viên', 'student.bulk_add': 'Thêm học viên hàng loạt', 'student.delete': 'Xoá học viên',
-  'student.hang_loat': 'Làm nhiều học viên một lần', 'student.next_step': 'Ghi lộ trình tiếp theo', 'student.rejoin': 'Học lại', 'student.rejoin_undo': 'Hoàn tác Học lại', 'student.finish_undo': 'Hoàn tác Kết thúc học', 'student.pause_undo': 'Hoàn tác Tạm dừng', 'student.status': 'Đổi trạng thái học', 'student.transfer': 'Chuyển lớp',
+  'student.hang_loat': 'Làm nhiều học viên một lần', 'student.next_step': 'Ghi lộ trình tiếp theo', 'student.rejoin': 'Học lại', 'student.rejoin_undo': 'Hoàn tác Học lại', 'student.finish_undo': 'Hoàn tác Kết thúc học', 'student.pause_undo': 'Hoàn tác Tạm dừng', 'student.resume_undo': 'Hoàn tác Quay lại học', 'student.status': 'Đổi trạng thái học', 'student.transfer': 'Chuyển lớp',
   'student.unarchive': 'Bỏ lưu trữ học viên', 'student.update': 'Sửa thông tin học viên',
   'task.create': 'Tạo công việc', 'task.update': 'Cập nhật công việc',
   'unit_report.link_task': 'Nối công việc vào báo cáo', 'unit_report.save': 'Lưu họp đơn vị', 'unit_report.unlink_task': 'Bỏ công việc khỏi báo cáo',

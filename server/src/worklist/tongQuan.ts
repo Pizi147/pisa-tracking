@@ -154,7 +154,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct?:
         const lop = lopChot;
         const han = lop.map((l) => l.han).filter((h): h is string => !!h).sort()[0];
         const h = han ? { ngay: han, loai: 'chot-len-ft' as const } : chuaCoHan;
-        if (lop.length === 1) return { ...x, ...chung, truoc: `Chốt lộ trình · ${lop[0].code}`, nhan: '', phu: '', han: h, den: `/hoc-vien/lop/${lop[0].classId}?viec=lo-trinh-ca-lop` };
+        if (lop.length === 1) return { ...x, ...chung, truoc: `Chốt lộ trình · ${lop[0].code}`, nhan: '', phu: '', han: h, den: `/hoc-vien/lop/${lop[0].classId}?xem=cuoi-khoa` };
         return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => l.code)), han: h, den: null };
       }
       case 'lop-thieu-gv-mon': {
@@ -188,7 +188,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct?:
     ...lopChotMoi.map((x) => ({
       key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: !x.han ? 'normal' : x.han < today ? 'overdue' : x.han === today ? 'today' : 'normal',
       classId: x.classId, classCode: x.code, studentName: `Lớp ${x.code}`, tieuDe: `Chốt lộ trình · ${x.code}`, contextLabel: chuViecChotLoTrinh(x),
-      due: x.han, href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
+      due: x.han, href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`,
     })),
   ].filter((x) => toiHan(x.due, today));
   const canQuyet = {

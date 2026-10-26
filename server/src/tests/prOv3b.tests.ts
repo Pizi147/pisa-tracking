@@ -69,10 +69,10 @@ export async function runPrOv3bTests(t: YThucTestKit) {
   const nhapCua = (sid: number) => get(`SELECT * FROM lo_trinh_nhap WHERE student_id = ?`, sid);
   const emPlan = (p: any, lop: number, sid: number) => (tr.transitionPlan(p, lop).students as any[]).find((s) => s.id === sid);
 
-  check('OV3b-1 · hạn: Final tuần 10 → nhắc từ thứ Hai tuần 8, chốt hết tuần 8, bàn giao hết tuần 10; OV-13l: mọi lệnh ≥ ra lệnh + 7 ngày, GVBM = GVCN', () => {
+  check('OV3b-1 · hạn (N20): Final tuần 10 → nhắc từ thứ Hai tuần 9, chốt hạn thứ Năm tuần 9, bàn giao hết tuần 10; OV-13l: mọi lệnh ≥ ra lệnh + 7 ngày, GVBM = GVCN', () => {
     const final = '2026-11-16';   // thứ Hai tuần 10
     const m = d.mocLoTrinh(final);
-    assert(m.nhacTu === '2026-11-02' && m.hanChot === '2026-11-08' && m.hanBanGiao === '2026-11-22', JSON.stringify(m));
+    assert(m.nhacTu === '2026-11-09' && m.hanChot === '2026-11-12' && m.hanBanGiao === '2026-11-22', JSON.stringify(m));
     const h = (ngay: string, o: any = {}) => d.hanBanGiaoLenh({ nguonFt: false, boiCanh: 'cuoi-khoa', tuanFinal: final, ngay, ...o });
     assert(JSON.stringify(h('2026-11-05')) === JSON.stringify({ gvbm: '2026-11-22', gvcn: '2026-11-22' }), JSON.stringify(h('2026-11-05')));
     assert(JSON.stringify(h('2026-11-22')) === JSON.stringify({ gvbm: '2026-11-28', gvcn: '2026-11-28' }), `chốt CN tuần 10 → + 7 ngày: ${JSON.stringify(h('2026-11-22'))}`);
@@ -90,13 +90,13 @@ export async function runPrOv3bTests(t: YThucTestKit) {
   const [A, B, C, D] = [hocVien(be, 'BE'), hocVien(be, 'BE'), hocVien(be, 'BE'), hocVien(be, 'BE')];
   const final = schedule.classProgress(be).finalWeekStart as string;
 
-  check('OV3b-2 · việc QL "Chốt lộ trình" hiện từ thứ Hai tuần Final − 2, không trước; hạn = Chủ nhật tuần Final − 2', () => {
+  check('OV3b-2 · việc QL "Chốt lộ trình" hiện từ thứ Hai tuần trước Final, không trước; hạn = thứ Năm tuần đó (N20)', () => {
     assert(final === t.addDays(d.mondayOfDate(TODAY), 14), `Final ${final}`);
     const m = d.mocLoTrinh(final);
     const cua = (ngay: string) => { xoaNho(); return (lenh.lopChoChotLoTrinh(QL, MB, ngay) as any[]).find((x) => x.classId === be); };
     const co = cua(m.nhacTu);
     assert(co && co.han === m.hanChot && co.tong === 4, JSON.stringify(co));
-    assert(!cua(t.addDays(m.nhacTu, -1)), 'hiện trước thứ Hai tuần Final − 2');
+    assert(!cua(t.addDays(m.nhacTu, -1)), 'hiện trước thứ Hai tuần trước Final');
   });
 
   check('OV3b-3 · nháp: QL lưu → không lệnh / MT0 / việc / chuông; GV không thấy; GVCN 403; sửa / xoá; lô 3 em 1 lỗi → 2 em lưu', () => {
@@ -198,14 +198,9 @@ export async function runPrOv3bTests(t: YThucTestKit) {
     assert(kC && kC.mt0?.overall === 3.5 && kC.goiY?.dat === false && kC.nguong === 4 && kC.deXuat === null && kC.chot === null, JSON.stringify(kC));
     const kD = emPlan(GVCN, be, D).kqdr;
     assert(kD && kD.mt0 === null, `D phải Chờ MT0: ${JSON.stringify(kD)}`);
-    assert(maLoi(() => ck.deXuatKetQua(GVCN, D, { dat: true }))?.status === 400, 'Chờ MT0 mà đề xuất được');
-    assert(maLoi(() => ck.deXuatKetQua(GVBM, C, { dat: true }))?.status === 403, 'GVBM đề xuất được');
-    const caseTruoc = get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?`, C).n;
-    ck.deXuatKetQua(GVCN, C, { dat: false, nguyenNhan: 'trung_tam', mon: ['listening'], ghiChu: 'Nghe chậm.' });
-    assert(get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?`, C).n === caseTruoc, 'đề xuất GVCN tạo Case');
-    const dx = emPlan(QL, be, C).kqdr.deXuat;
-    assert(dx && dx.dat === false && dx.nguyenNhan === 'trung_tam' && dx.mon.join() === 'listening' && dx.ghiChu === 'Nghe chậm.' && dx.boi, JSON.stringify(dx));
-    assert(get(`SELECT ky_vong_dat FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?`, C, be).ky_vong_dat === null, 'đề xuất ghi vào kết quả chốt');
+    /* N22 ② (P9b): GVCN không đề xuất Kỳ vọng nữa — chỉ QL đánh (`ghiKetLuanFt` / trang Cuối khoá). Đề xuất cũ `kq_de_xuat_*` chỉ đọc. */
+    assert(ck.deXuatKetQua === undefined, 'còn đường GVCN đề xuất Kỳ vọng');
+    assert(maLoi(() => ck.ghiKetLuanFt(GVCN, C, { dat: true }))?.status === 403, 'GVCN đánh được Kỳ vọng');
     ck.ghiKetLuanFt(QL, C, { dat: false, nguyenNhan: 'trung_tam', mon: ['listening'] });
     assert(emPlan(QL, be, C).kqdr.chot?.dat === false, 'QL chốt chưa hiện');
     /* Thi hành thứ Hai: em sang FT có kết luận "Trung tâm" → Case + PA Tutor 10 buổi. */

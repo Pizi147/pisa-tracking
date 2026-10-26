@@ -79,7 +79,7 @@ export async function runPrOv15dTests(t: YThucTestKit) {
       td.dongBoThongBaoTuDong(ql, TODAY);
       const a = cua(ql.userId, 'chot_lo_trinh');
       assert(a.length === items.length, `một thông báo mỗi lớp tới hạn: ${a.length} ≠ ${items.length}`);
-      assert(a.every((n) => decodeURIComponent(n.duong).startsWith('/cong-viec?viec=chotft:')), 'mở đúng việc');
+      assert(a.every((n) => /^\/hoc-vien\/lop\/\d+\?xem=cuoi-khoa/.test(n.duong)), `mở đúng trang Cuối khoá: ${a.map((n) => n.duong)}`);   // P9b N20: chuông mở thẳng trang Cuối khoá
     });
   });
 

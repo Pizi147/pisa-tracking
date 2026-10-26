@@ -11,7 +11,7 @@ export type LopChon = { id: number; ma: string; phu?: string };
  * `maCu`: lớp đang chọn không còn trong `ds` (lớp đã kết thúc) → vẫn hiện mã cũ, không tự đổi lớp.
  * Ô "thêm lớp" (value luôn null, nơi gọi thêm vào danh sách chip): sau mỗi lần chọn, ô gõ trống lại và mở tiếp danh sách.
  */
-export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKhop, placeholder, maCu, noi, id, invalid: invalidP, 'aria-invalid': ariaInvalid, onBlur, className }: {
+export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKhop, placeholder, maCu, noi, id, invalid: invalidP, 'aria-invalid': ariaInvalid, onBlur, className, moLopMoi, ghiChuDs }: {
   ds: LopChon[]; value: number | null; onChange: (id: number | null) => void; ariaLabel: string;
   choTrong?: string; tat?: boolean;
   /** Chữ khi danh sách rỗng (không có lớp nào để chọn). */
@@ -21,6 +21,10 @@ export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKh
   noi?: boolean;
   /** Như `<select>` cũ dưới `useLoiForm` (`{...lf.o(loi, khoa)}` gắn thẳng được): id cho nhãn / "n ô cần sửa ↑", viền lỗi, rời ô. */
   id?: string; invalid?: boolean; 'aria-invalid'?: boolean; onBlur?: () => void; className?: string;
+  /** P9b (R5.1): dòng "+ Mở lớp mới…" cuối danh sách — nơi gọi mở hộp tạo lớp tại chỗ, xong thì tự chọn lớp mới (giữ lựa chọn đang có). */
+  moLopMoi?: () => void;
+  /** Chữ nhỏ dưới "+ Mở lớp mới…" (mockup V6: "Chỉ lớp chi nhánh MB"). */
+  ghiChuDs?: string;
 }) {
   const invalid = invalidP || ariaInvalid;
   const chon = value === null ? null : ds.find((l) => l.id === value) ?? null;
@@ -36,7 +40,7 @@ export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKh
       </div>
     );
   }
-  if (!ds.length) {
+  if (!ds.length && !moLopMoi) {
     return <div id={id} tabIndex={-1} className={`field text-sm text-slate-500${invalid ? ' border-late' : ''} ${className ?? ''}`} title={ariaLabel}>{khongKhop ?? t('Không có lớp để chọn')}</div>;
   }
   return (
@@ -44,6 +48,7 @@ export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKh
       <ChonNguoi key={lan} value={null} nhom="nhan_vien" choToi={false} choNgoai={false} ds={ds.map((l) => ({ id: l.id, ten: l.ma, phu: l.phu }))}
         placeholder={placeholder ?? t('Gõ tên lớp…')} ariaLabel={ariaLabel} disabled={tat} tuMo={lan > 0} choTrong={choTrong}
         id={id} invalid={invalid} onBlur={onBlur} khongKhop={(q) => t('Không có lớp khớp “{q}”', { q })}
+        them={moLopMoi ? { nhan: t('+ Mở lớp mới…'), onChon: moLopMoi, phu: ghiChuDs } : undefined}
         onChange={(v) => { if (v === null) onChange(null); else if (v.kieu === 'tai_khoan') { setLan((n) => n + 1); onChange(v.id); } }} />
     </div>
   );

@@ -210,11 +210,11 @@ export async function runPrOv10bTests(t: YThucTestKit) {
       && dm.vaiXemHocVien(['cx']) === 'cx' && dm.vaiXemHocVien(['office_admin']) === 'admin' && dm.vaiXemHocVien(['manager', 'consultant']) === null, 'vaiXemHocVien');
   });
 
-  check('OV10b-14 · ⋯ dòng theo vai = mục ⋯ hồ sơ HV của vai (Sửa thông tin · Tạm dừng / Thôi học · Quay lại · Kết quả thi thật chỉ FT)', () => {
+  check('OV10b-14 · ⋯ dòng theo vai = mục ⋯ hồ sơ HV của vai (Sửa thông tin · Tạm dừng/ Kết thúc học · Quay lại · Kết quả thi thật chỉ FT)', () => {
     const k = (i: any) => dm.mucDongTheoVai(i).map((m: any) => m.key).join();
-    assert(k({ suaThongTin: true, suaThem: true, ft: true, status: 'active' }) === 'info,tam-dung-thoi-hoc,outcome', `TVV FT: ${k({ suaThongTin: true, suaThem: true, ft: true, status: 'active' })}`);
-    assert(k({ suaThongTin: true, suaThem: true, ft: false, status: 'active' }) === 'info,tam-dung-thoi-hoc', 'TVV lớp thường: không Kết quả thi thật');
-    assert(k({ suaThongTin: true, suaThem: true, ft: true, status: 'inactive' }) === 'info,tam-dung-thoi-hoc,outcome,quay-lai', 'em Tạm dừng: Thôi học + Quay lại');
+    assert(k({ suaThongTin: true, suaThem: true, ft: true, status: 'active' }) === 'info,tam-dung-ket-thuc,outcome', `TVV FT: ${k({ suaThongTin: true, suaThem: true, ft: true, status: 'active' })}`);
+    assert(k({ suaThongTin: true, suaThem: true, ft: false, status: 'active' }) === 'info,tam-dung-ket-thuc', 'TVV lớp thường: không Kết quả thi thật');
+    assert(k({ suaThongTin: true, suaThem: true, ft: true, status: 'inactive' }) === 'info,tam-dung-ket-thuc,outcome,quay-lai', 'em Tạm dừng (chưa lưu trữ — dữ liệu cũ): Kết thúc học + Quay lại');
     assert(k({ suaThongTin: true, suaThem: false, ft: true, status: 'active' }) === 'info', 'Admin: chỉ Sửa thông tin');
   });
 

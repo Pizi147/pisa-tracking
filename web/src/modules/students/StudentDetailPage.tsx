@@ -21,7 +21,8 @@ import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
-import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, useLuuTru, type ViecQuanLy } from './StudentManagePanel.tsx';
+import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, type ViecQuanLy } from './StudentManagePanel.tsx';
+import { TomTatLuuTru } from './TomTatLuuTru.tsx';
 import { Menu } from '../../ui/Menu.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
@@ -83,7 +84,6 @@ export default function StudentDetailPage() {
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
   const [giaHan, setGiaHan] = useState(false);   // OV-13q
   const [quayLaiBt, setQuayLaiBt] = useState(false);   // OV-13m: Quay lại học sau Tạm dừng sau thi = panel Bước tiếp mở sẵn Lộ trình mới
-  const luuTru = useLuuTru(reload);
   const dienThoai = useDienThoai();
   /* OV-10b (mockup vai mục 3): TVV / CX / Admin — nút việc của vai hiện thẳng (không ⋯), khối Đang xử lý. QL / GV không đổi. */
   const vaiXem = vaiXemHocVien(useSession().session?.roles);
@@ -222,7 +222,9 @@ export default function StudentDetailPage() {
             return { ids: ds.sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi')).map((x) => x.id), nhan: t('Lớp {lop}', { lop: lopTruocSau.code }) };
           } : undefined} />
         {data.lopHoc?.chiXem && (
-          <DaiChiXem>{t('Học viên đã lưu trữ{ngay} — chỉ xem', { ngay: data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : '' })}</DaiChiXem>
+          <DaiChiXem>{data.status === 'inactive'
+            ? t('Tạm dừng · ở Lưu trữ — chỉ xem, trừ Quay lại học, Kết thúc học và sửa liên hệ')
+            : t('Học viên đã lưu trữ{ngay} — chỉ xem', { ngay: data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : '' })}</DaiChiXem>
         )}
         {/*
           UI-HO-SO-HV (`dieu-chinh-cuoi.html` khu c + `ho-so-hv.html`): đầu HAI dòng, không khung — dòng 1 tên + nhãn trạng thái | + Case · ⋯ (GIỮ V4);
@@ -234,8 +236,11 @@ export default function StudentDetailPage() {
             <h1 className="m-0 flex flex-wrap items-center gap-2 text-[22px] font-bold leading-tight text-slate-100">
               {data.fullName}
               <MissingBadge items={data.missing} />
-              {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
-              {data.archivedAt && <Info>{t('Đã lưu trữ')}</Info>}
+              {/* P7 (k6): em Tạm dừng ở Lưu trữ — "Tạm dừng 14/09 · Có thể quay lại"; em Kết thúc học — "Kết thúc học 22/08". */}
+              {data.status === 'inactive' && data.archivedAt ? <Info>{t('Tạm dừng {ngay} · Có thể quay lại', { ngay: ngay(data.archivedAt, homNay) })}</Info>
+                : data.status === 'finished' && data.finishedAt ? <Info>{t('Kết thúc học {ngay}', { ngay: ngay(data.finishedAt, homNay) })}</Info>
+                  : data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
+              {data.archivedAt && data.status === 'active' && <Info>{t('Đã lưu trữ')}</Info>}
               {/* OV-13q: "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" thay nhãn "Đã xong" khi còn việc sau thi. */}
               {data.sauThi ? <NhanSauThi s={data.sauThi} /> : bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
               {data.sauThi?.coTheGiaHan && !data.lopHoc?.chiXem && (
@@ -253,26 +258,30 @@ export default function StudentDetailPage() {
                   canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                   deXuatSua: !!data.viewer.coTheDeXuatSua,
                 });
-                const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true)
-                  : k === 'luu-tru' || k === 'bo-luu-tru' ? void luuTru(data.id, data.fullName, k === 'bo-luu-tru') : setViecQuanLy(k));
-                return vaiXem ? muc.map((m) => (
+                const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(k));
+                /* P7 (k6): hồ sơ lưu trữ — "Quay lại học" là nút chính đầu hồ sơ, không nằm trong ⋯. */
+                const nutQuayLai = data.lopHoc?.chiXem && muc.some((m) => m.key === 'quay-lai')
+                  ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => mo('quay-lai')}>{t('Quay lại học')}</button> : null;
+                const conLai = nutQuayLai ? muc.filter((m) => m.key !== 'quay-lai') : muc;
+                return <>{nutQuayLai}{vaiXem ? conLai.map((m) => (
                   <button key={m.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
-                )) : (
-                  <Menu label="⋯" className="btn btn-sm min-h-[44px] sm:min-h-0" items={muc.map((m) => ({
+                )) : conLai.length > 0 && (
+                  <Menu label="⋯" className="btn btn-sm min-h-[44px] sm:min-h-0" items={conLai.map((m) => ({
                     label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, onClick: () => mo(m.key),
                   }))} />
-                );
+                )}</>;
               })()}
             </div>
           </div>
-          <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} />
+          {data.archivedAt ? <TomTatLuuTru studentId={data.id} target={cy?.target ?? null} kck={!!cy?.khongCamKet} ketThuc={data.finishedAt ?? null} />
+            : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} />}
           <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} />
         </header>
       </div>
 
       {/* PR-VAI-b (T65, mockup 24 D1): dải vàng Tạm dừng — đọc TRƯỚC bốn ô vì nó đổi nghĩa mọi con số bên dưới. */}
       <DaiTamDung tamDung={data.dauHoSo.thongTin.tamDung}
-        onQuayLai={data.status !== 'inactive' ? undefined : tamDungSauThi ? () => setQuayLaiBt(true)
+        onQuayLai={data.status !== 'inactive' || data.lopHoc?.chiXem ? undefined : tamDungSauThi ? () => setQuayLaiBt(true)
           : data.lopHoc?.quyen?.quayLai ? () => setViecQuanLy('quay-lai') : undefined} />
 
       {/* PR-CT (mockup 20 — E): dải Sắp chuyển / Đã chuyển ngay dưới dòng thông tin đầu trang; nút theo vai do máy chủ quyết. */}
@@ -446,7 +455,7 @@ export default function StudentDetailPage() {
         viec={viecQuanLy ?? (p.viec === 'thi-that' && cy?.route ? 'outcome' : null)} onClose={() => { setViecQuanLy(null); if (p.viec === 'thi-that') xoaThamSo('viec'); }} lop={data.currentClass?.code}
         student={thongTinEmCua(data)} quyen={data.viewer} lopHoc={data.lopHoc ?? null}
         cycle={cy} attempts={data.attempts} onDone={reload} soViPhamMo={data.dauHoSo?.soViPhamMo}
-        onDeXuatSua={data.viewer.coTheDeXuatSua ? () => setViecQuanLy('de-xuat-sua') : undefined}
+        onDeXuatSua={data.viewer.coTheDeXuatSua ? () => setViecQuanLy('de-xuat-sua') : undefined} onDoiViec={setViecQuanLy}
       />
     </div>
   );

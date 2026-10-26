@@ -13,7 +13,7 @@ const doc = (p: string) => fs.readFileSync(path.join(REPO, p), 'utf8').replace(/
 const SELECT_LOP = /<select(?:(?!<\/select>)[\s\S])*?\.code\b(?:(?!<\/select>)[\s\S])*?<\/select>/;
 
 const CHO_CHON_LOP = [
-  'students/StudentManagePanel.tsx', 'students/XemTruocHangLoatPanel.tsx', 'students/PanelBuocTiep.tsx', 'congViec/PanelSauThi.tsx',
+  'students/StudentManagePanel.tsx', 'students/XemTruocHangLoatPanel.tsx', 'students/PanelLoTrinhMoi.tsx',   /* P7: Bước tiếp / Sau thi › Lộ trình mới — ô Lớp khác ở panel chung */
   'students/IntakePanel.tsx', 'test/keHoach/NganXepHangLoat.tsx', 'test/keHoach/NganXepLichMt.tsx', 'test/keHoach/XepTheoHocVien.tsx',
   'test/keHoach/NganXuatDiem.tsx', 'students/ChuyenLopPanel.tsx', 'worklist/MgmtTasksPage.tsx',
 ];
@@ -40,7 +40,8 @@ export async function runPrChonLopTests(t: any) {
       assert(!SELECT_LOP.test(s), `${f}: còn <select> lớp`);
       assert(/<ChonLop\b/.test(s), `${f}: chưa dùng ChonLop`);
     }
-    /* P9 làm phần cuối khoá — P4 không chạm. */
-    assert(SELECT_LOP.test(doc('web/src/modules/classes/BangLoTrinhTiep.tsx')), 'BangLoTrinhTiep thuộc P9');
+    /* P9b: trang Cuối khoá — ô lớp ChonLop có "+ Mở lớp mới…", không <select> lớp. */
+    const ck = doc('web/src/modules/classes/CuoiKhoaLop.tsx');
+    assert(!SELECT_LOP.test(ck) && /<ChonLop\b/.test(ck) && /moLopMoi=\{\(\) => setMoLop/.test(ck), 'CuoiKhoaLop: ô lớp phải là ChonLop có moLopMoi');
   });
 }
