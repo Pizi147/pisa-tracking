@@ -84,7 +84,7 @@
 ### Task 4: Tài liệu + PR
 - [x] `DESIGN.md`: luật phân cấp Lịch Test (V17: mỗi cấp một màu thanh, S Ex ở cột MT) + 4 token mới.
 - [x] Hướng dẫn GV / QL: bỏ câu nói Dán Excel ở Lịch Test (nếu có), chỉ sang panel Nhập điểm (HD-CHI xanh).
-- [ ] `npm run check` một lần → `/ponytail-review` → PR "R1-PHAN-CAP-TEST", nhắn PTA Plan.
+- [x] `npm run check` một lần → `/ponytail-review` → PR "R1-PHAN-CAP-TEST", nhắn PTA Plan.
 - [ ] PTA rà ảnh cặp → **chủ SP duyệt ảnh trước merge**.
 
 ---
