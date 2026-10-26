@@ -27,6 +27,8 @@ type KetQua = {
 
 const ISO_NGAY = /^\d{4}-\d{2}-\d{2}$/;
 const moiKhoa = () => `intake-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+/** Nhãn cột đã là chữ Anh (Overall, L, Target…) giữ nguyên — từ điển nới "Overall" thành "Overall band", tràn cột 72 px. */
+const nhanCot = (n: string) => (/[^\x00-\x7F]/.test(n) ? dich(n) : n);
 const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').trim());
 
 /* Bề rộng cột theo M2 (px). Cột Tình trạng do panel vẽ, không nằm trong `cotLuoiNhap`. */
@@ -271,7 +273,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 <th className="th">#</th>
                 {cols.map((c) => (
                   <Th key={c.key} hint={c.key === 'target' && ktLop ? t('{ten}: số nguyên {min}–{max}, không KCK. Bỏ trống = chưa có Target.', { ten: ktLop.ten, min: ktLop.min, max: ktLop.max }) : GOI_Y_COT[c.key]} align={c.so ? 'right' : 'left'}>
-                    {dich(c.nhan)}{c.batBuoc && <span className="text-bad"> *</span>}
+                    {nhanCot(c.nhan)}{c.batBuoc && <span className="text-bad"> *</span>}
                   </Th>
                 ))}
                 <Th>{t('Trạng thái')}</Th>
@@ -293,7 +295,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                         const loiO = cua.some((x) => x.muc === 'loi');
                         const vien = loiO ? ' border-late' : cua.length ? ' border-soon' : '';
                         const title = cua.map((x) => dich(x.message)).join(' · ') || undefined;
-                        const nhan = t('{cot} dòng {n}', { cot: dich(c.nhan), n: i + 1 });
+                        const nhan = t('{cot} dòng {n}', { cot: nhanCot(c.nhan), n: i + 1 });
                         return (
                           <td key={c.key} className="td px-1.5 py-1.5">
                             {c.key === 'startWeek' && (!giaTriTuan || ISO_NGAY.test(giaTriTuan)) ? (
