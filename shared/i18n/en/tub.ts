@@ -45,7 +45,6 @@ export const EN_TUB = {
   'Bổ sung': 'Complete',
   'Cần chú ý vì': 'Needs attention because',
   'Buổi': 'Sessions',
-  'Kết luận': 'Conclusion',
   'Ví dụ: Đã gọi nhắc gửi feedback cho GV sau mỗi buổi.': 'Example: Called to remind them to send feedback to the teacher after each session.',
   'Bỏ sửa': 'Discard edit',
   'đã sửa': 'edited',

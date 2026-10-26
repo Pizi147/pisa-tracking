@@ -2,7 +2,6 @@
 export const EN_UI_PHAN_TICH = {
   'đến {ngay}': 'up to {ngay}',
   'HV cần chú ý · {ai} · {n} HV': 'Students to watch · {ai} · {n} students',
-  'Tăng': 'Up',
   'Không tăng': 'Not up',
   'Tiến bộ {kn} · {dung}/{tong}': 'Progress {kn} · {dung}/{tong}',
   '0 HV có KQ thi thật — không tính trượt': '0 students with a real exam result — not counted as fail',
@@ -14,7 +13,6 @@ export const EN_UI_PHAN_TICH = {
   'Lượt': 'Attempt',
   'Ngoài mẫu': 'Outside sample',
   'PA có kết quả': 'Plans with result',
-  'PA cải thiện': 'Plans improved',
   'PA · trong kỳ': 'plans · in period',
   'So lượt trước': 'vs previous attempt',
   "So điểm Overall của lượt với Target đầu ra của chính em (không phải kỳ vọng MT). Mỗi HV tính ở lượt MT của mình trong kỳ. Bấm số để xem danh sách HV.": "Compares the attempt's Overall with the student's own exit Target (not the MT expectation). Each student counts at their own MT attempt in the period. Click a number to see the students.",

@@ -1,4 +1,4 @@
-# Bảng thuật ngữ Việt → Anh (PR-EN) — 07/10/2026
+# Bảng thuật ngữ Việt → Anh (PR-EN) — 07/10/2026 · bổ sung 26/10 (R1-EN-1, mục 9)
 
 Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước khi merge PR-EN. Nguồn chữ Việt: `TU_DIEN_VA_CHU.md`, `THUAT_NGU_2026-10-01.md`,
 `THUAT_NGU_DA_CHOT.md`, `CHU_CAN_SUA_2026-10*.md` và chữ thật trên web `origin/main` f904d06d (đã đọc màn GV 07/10); **đối chiếu lại `main` 90fc7bcd sau HK2 #235 (07/10)**.
@@ -251,3 +251,35 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | Lớp thường | **Normal class** | Standard / Regular | Chủ sản phẩm chốt 07/10 |
 | GVCN | **Core teacher** | Homeroom teacher · Form teacher | Chủ sản phẩm chốt 07/10 |
 | Ý thức | **Conduct** | Discipline, Attitude | Bao trọn chuyên cần + BTVN + thái độ |
+
+## 9. Bổ sung 26/10 (R1-EN-1)
+
+Phạm vi: **chỉ màn GV dùng** (chủ SP 26/10, D11 — không QL / QT nào là người nước ngoài). Nguồn từng dòng ở cột cuối; "có sẵn" = chữ đang có
+trong `shared/i18n/en/*` (giữ để một khái niệm một chữ). Spec: `docs/superpowers/specs/2026-10-26-deploy-ux-design.md` mục 4.3.
+
+| Việt | Anh | Nguồn quyết định |
+|---|---|---|
+| KCK (không cam kết) | **KCK** · nhãn đầy đủ: KCK (no commitment) | Giữ mã như Case / PA (DICH-2, spec 4.4); nhãn có sẵn `ux2.ts` |
+| bài (bài có điểm, việc chấm) | **item** trong câu ("3 items left") · đầu cột Test "Bài" = **Paper** | Spec 4.3; "Paper" có sẵn ở Lịch Test |
+| lượt (lượt thi / làm) | **Attempt** | Có sẵn (`Lượt`) |
+| việc | **Task** | Mục 7; có sẵn (`Việc`) |
+| HV | **Student** · đếm "1 student / n students" (số ít / số nhiều) | Mục 2; EN-TRUNG 26/10 khôi phục hàm `{n} HV` |
+| S Ex | **Expert S** | Có sẵn (LUAT-NX-MT 22/10) |
+| Tiến độ trên lớp | **Class progress** | Có sẵn |
+| Xét lại · Xét lại lộ trình | **Review** · **Review pathway** | P9a XET-LAI (có sẵn) |
+| Cuối khoá | **End of course** · "đến Cuối khoá" = until end of course | P9b CUOI-KHOA; khác Final Test (mục 4) |
+| Lộ trình mới | **New pathway** | Mục 3 (Pathway); có sẵn |
+| Tạm dừng / Kết thúc học | **Paused** / **Finished** | Mục 3; có sẵn |
+| kỳ vọng ≠ Target | **Expected** ≠ **Target** | Mục 8; không dùng lẫn |
+| Đạt MT / Đạt Test / Đạt Target thi thật | **MT met** / **Test met** / **Target met (real exam)** | Spec 4.3: ba mức phải khác chữ; "Test met", "Target met" có sẵn |
+| Case / PA | **Case** / **PA** (giữ) | Luật 3 |
+| kết quả kỳ / kết quả cuối | **Period result** / **Final result** | Có sẵn (`d.ts`, `p9bCuoiKhoa.ts`) |
+| người phụ trách / người thực hiện | **Owner** / **Done by** | Mục 2 |
+| Chưa có dữ liệu / Ngoài phạm vi / Vắng / Không học | **No data yet** / **Out of scope** / **Absent** / **Not studying** | Spec 4.3: bốn trạng thái ô khác nhau, không gộp |
+| Lưu · bài tiếp | **Save & next** | R1-LUU-TIEP (spec 4.1, chủ SP 26/10) |
+| Lưu · việc tiếp | **Save & next task** | R1-LUU-TIEP |
+| Lưu · đóng | **Save & close** | R1-LUU-TIEP |
+| Lưu lại (sau lỗi lưu) | **Retry save** | R1-LUU-TIEP; "Save again" cũ đổi ở PR đó |
+
+**Luật khoá trùng (EN-TRUNG 26/10):** một khoá Việt chỉ một bản Anh. Khoá có ở nhiều mô-đun `shared/i18n/en/*` phải cùng giá trị (phép kiểm
+`EN-TRUNG` đỏ khi khác); cần chữ Anh khác theo ngữ cảnh thì đổi khoá Việt (thêm chữ ngữ cảnh), không đè.

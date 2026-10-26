@@ -203,7 +203,7 @@ export const EN_A = {
   'Progress Test lớp thường: nộp kế hoạch bổ trợ, Báo phụ huynh qua TVV (MB FOU 15)': 'Normal-class Progress Test: submit extra-class plan, inform parents via counsellor (MB FOU 15)',
 
   /* ProfilePage — Hồ sơ cá nhân */
-  'Kỹ năng phụ trách được': 'Skills you can teach',
+  'Kỹ năng phụ trách được': 'Can teach',
   'Đã lưu hồ sơ': 'Profile saved',
   'Đã đổi mật khẩu': 'Password changed',
   'Thông tin liên hệ': 'Contact details',
@@ -249,7 +249,7 @@ export const EN_A = {
   'Loại lớp': 'Class type',
   'Loại lớp: {loai}': 'Class type: {loai}',
   'Tất cả': 'All',
-  'Lớp thường': 'Normal',
+  'Lớp thường': 'Normal class',
   'Khung lớp': 'Class type',
   'Đóng': 'Close',
   'Xác nhận': 'Confirm',
@@ -340,7 +340,7 @@ export const EN_A = {
   'Hồ sơ lớp': 'Class profile',
   'Hồ sơ Mock Test': 'Mock Test profile',
   'Nhập điểm': 'Enter scores',
-  'Hồ sơ {ten}': '{ten}',
+  'Hồ sơ {ten}': '{ten} profile',
   'Quản trị': 'Admin',
   'Lịch Test': 'Test schedule',
   'Lưu trữ': 'Archive',
@@ -431,11 +431,11 @@ export const EN_A = {
   'Quá hạn {n} ngày': (b) => `Overdue ${soNhieu(b.n, 'day', 'days')}`,
   'Hạn hôm nay': 'Due today',
   'Hạn {thu} {ngay}': 'Due {thu} {ngay}',
-  'Xem thêm': 'Show more',
+  'Xem thêm': 'See more',
 
   /* OV-12d — Tổng hợp nhóm Xử lý 3 cột · ô Tổng quan "Case chờ duyệt" · hồ sơ MT khối Case & phương án */
   'Case chưa có PA': 'Cases without PA',
-  'Case chưa chốt PA': 'Cases with PA not confirmed',
+  'Case chưa chốt PA': 'Case without confirmed PA',
   'Chưa chốt PA': 'PA not confirmed',
   'Cách tính nhóm Xử lý': 'How the Handling columns are counted',
   'HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chưa chốt PA: Case chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ Quản lý duyệt, PA Bổ trợ chưa chạy, PA đã xong hết nhưng chưa Hoàn thành Case, "Không cần theo dõi" chờ Quản lý, Case Mock Test cũ chờ ghi nhận xét, Case Progress Test chờ Xác nhận Case; ⚠ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.':

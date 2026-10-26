@@ -22,7 +22,6 @@ export const EN_OV13D = {
   'Không đưa vào · {n}': 'Not included · {n}',
   'Mô tả chung': 'Shared description',
   'Sửa riêng': 'Edit for this student',
-  'Thử lại · {n} em': 'Retry · {n} students',
   'Xác nhận cấp bậc · {n} em': 'Confirm level · {n} students',
   'Xác nhận xử lý chung': 'Confirm action together',
   'Xác nhận xử lý · {n} em': 'Confirm action · {n} students',
