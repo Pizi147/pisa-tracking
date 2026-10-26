@@ -121,8 +121,10 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
     for (const r of doiTask) conn.prepare(`UPDATE attempt_skills SET bo_task = ? WHERE attempt_id = ? AND skill = 'writing'`).run(boTask, r.attempt_id);
     capNhatConOCho(doiTask.map((r) => r.attempt_id));
     if (caseIds.length) closeCasesBySystem({ actorUserId: p.userId, studentId: cy.student_id, reason: 'khong_con_hoc_mon', on: o.ngay ?? demoToday(), caseIds });
-    /* R1-NO-NHO: lượt vừa đổi bài (bỏ task W1 khi W2 đã chấm…) có thể vừa đủ điểm → kết quả + tín hiệu / Case ngay, như khi lưu điểm. */
-    for (const id of new Set([...tat, ...bat, ...doiTask].map((r) => r.attempt_id as number))) refreshOutcome(p, id);
+    /* R1-NO-NHO: lượt vừa đổi bài (bỏ task W1 khi W2 đã chấm…) có thể vừa đủ điểm → kết quả + tín hiệu / Case ngay, như khi lưu điểm.
+       Chỉ lượt đã có điểm — lượt rỗng không đổi trạng thái / tín hiệu (lô Sửa cả lớp không làm mới hàng chục lượt tương lai). */
+    const coDiem = new Set(dong.filter((r) => r.co_diem).map((r) => r.attempt_id as number));
+    for (const id of new Set([...tat, ...bat, ...doiTask].map((r) => r.attempt_id as number))) if (coDiem.has(id)) refreshOutcome(p, id);
     writeAudit({
       actorUserId: p.userId, action: 'cycle.mon_dang_ky', entityType: 'learning_cycle', entityId: cycleId, entityLabel: 'Môn học',
       before: { monDangKy: tom.truoc }, after: { monDangKy: tom.sau, boKhoiDot: tom.boKhoiDot, giuDaCham: tom.giuDaCham, batLai: tom.batLai, caseDong: tom.caseDong },

@@ -29,10 +29,12 @@ export async function runR1NoNhoTests(t: YThucTestKit) {
 
   try {
     await checkAsync('R1-NO-NHO · GOPY-KHOA: PUT góp ý tuần — QL, GVCN, GV dạy kỹ năng, Quản trị → 403 "chỉ đọc"; GET 200 dữ liệu cũ y nguyên; bảng không đổi', async () => {
-      const ky = week.ensurePeriod(TODAY).id as number;
-      const id = Number(conn.prepare(`INSERT INTO gop_y_tuan (student_id, class_id, period_id, skill, noi_dung, ghi_boi, ghi_luc) VALUES (?,?,?, 'listening', 'Góp ý cũ R1', ?, ?)`)
-        .run(em, lop, ky, P.coreTeacher.userId, '2026-10-01T00:00:00Z').lastInsertRowid);
+      /* Giao dịch cuộn lại: không đụng góp ý sẵn có của em (UNIQUE em × lớp × tuần × kỹ năng). */
+      conn.exec('BEGIN IMMEDIATE');
       try {
+        conn.prepare(`INSERT INTO gop_y_tuan (student_id, class_id, period_id, skill, noi_dung, ghi_boi, ghi_luc) VALUES (?,?,?, 'listening', 'Góp ý cũ R1', ?, ?)
+          ON CONFLICT(student_id, class_id, period_id, skill) DO UPDATE SET noi_dung = excluded.noi_dung, ghi_boi = excluded.ghi_boi`)
+          .run(em, lop, week.ensurePeriod(TODAY).id, P.coreTeacher.userId, '2026-10-01T00:00:00Z');
         const dem = () => one('SELECT COUNT(*) n FROM gop_y_tuan').n as number;
         const truoc = dem();
         for (const [ten, p, skill] of [['QL', P.mbManager, 'listening'], ['GVCN', P.coreTeacher, 'listening'], ['GV W1', P.w1Teacher, 'writing'], ['Quản trị', P.admin, 'reading']] as const) {
@@ -43,7 +45,7 @@ export async function runR1NoNhoTests(t: YThucTestKit) {
         const g = await goi(P.mbManager.userId, `/classes/${lop}/gop-y?tuan=${TODAY}`);
         const o = (g.json?.o ?? []).find((x: any) => x.studentId === em && x.skill === 'listening');
         assert(g.status === 200 && o?.noiDung === 'Góp ý cũ R1' && o.ghiBoi === P.coreTeacher.fullName, `GET: ${g.status} ${JSON.stringify(o)}`);
-      } finally { conn.prepare('DELETE FROM gop_y_tuan WHERE id = ?').run(id); }
+      } finally { conn.exec('ROLLBACK'); xoaNho(); }
     });
   } finally { may.close(); }
 }
