@@ -13,6 +13,4 @@ export const EN_SV_SO2 = {
   'Đạt MT · {pt} % = {dat}/{mau} HV': 'MT pass · {pt} % = {dat}/{mau} students',
   'chưa đủ dữ liệu (ngoài mẫu Đạt MT)': 'not enough data (outside the MT pass sample)',
   '{n} HV — thi tháng này': '{n} students — exam this month',
-  'thi {ngay}': 'exam {ngay}',
-  'kỳ vọng {kv}': 'expected {kv}',
 } as const;

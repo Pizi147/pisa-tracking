@@ -38,6 +38,7 @@ export * from './dieuHuongHoSo.ts';
 export * from './dieuHuong.ts';
 export * from './quayLai.ts';
 export * from './hocVienLop.ts';
+export * from './trucTuan.ts';
 export * from './tongQuan.ts';
 export * from './nguoiThucHien.ts';
 export * from './bangChung.ts';

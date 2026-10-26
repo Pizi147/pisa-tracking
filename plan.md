@@ -1,6 +1,6 @@
 # PISA Progress — Kế hoạch duy nhất
 
-Cập nhật: **24/10/2026 trưa** (**V5 đã merge hết PR màn #533–#561** + SUA-TD4A #559 + TL-V5; còn SUA-NO-RA, CHAM-LAI rồi deploy — mục 4 đầu). Trước đó: **22/10/2026 trưa** (**đã deploy 22/10 12:10** — DB `pisatracking-261022`, mục "Việc còn lại" dòng deploy). Trước đó: **21/10/2026 đêm** (chủ SP duyệt kế hoạch overhaul #486 → GĐ0 / GĐ1 chạy đêm 21/10 — mục 4 "ĐÁNH GIÁ LẠI UX/UI 20/10", 9.5). Trước đó: **18/10/2026 trưa** (**đã deploy 18/10 12:57** — DB `pisatracking-261018`; việc còn lại ở mục "Việc còn lại", phần OV-13).
+Cập nhật: **26/10/2026 chiều** (**DEPLOY-UX R1** — mục 4 đầu: 5 PR + P8 + P13 rồi deploy; bản chính vẫn `fa7e1811` 22/10). Trước đó: **24/10/2026 trưa** (**V5 đã merge hết PR màn #533–#561** + SUA-TD4A #559 + TL-V5; còn SUA-NO-RA, CHAM-LAI rồi deploy — mục 4 đầu). Trước đó: **22/10/2026 trưa** (**đã deploy 22/10 12:10** — DB `pisatracking-261022`, mục "Việc còn lại" dòng deploy). Trước đó: **21/10/2026 đêm** (chủ SP duyệt kế hoạch overhaul #486 → GĐ0 / GĐ1 chạy đêm 21/10 — mục 4 "ĐÁNH GIÁ LẠI UX/UI 20/10", 9.5). Trước đó: **18/10/2026 trưa** (**đã deploy 18/10 12:57** — DB `pisatracking-261018`; việc còn lại ở mục "Việc còn lại", phần OV-13).
 File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, `PROMPT_BAN_GIAO_PLANNING.md`,
 `docs/superpowers/plans/2026-10-03-lo-trinh-tong-hop-viec-chua-lam.md`. Bản cũ còn trong git: `git show 575e898d:plan.md`.
 
@@ -239,6 +239,15 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 14/10 (chiều) | **OV-12 — chủ SP chốt:** hạn kết quả PA **2 tuần**, hết **Thứ Ba**, kỳ theo tuần từ tuần bắt đầu PA (17/09 → 29/09, 13/10…), hạn cố định (ghi sớm / muộn / ghi bù không dời lịch), PA đang chạy tính lại (không sớm hơn hạn cũ) · QL xoá lớp **trống**, xoá **nhiều** HV, lưu trữ (điều kiện giữ) · TVV nhập thi thật + chọn **Bước tiếp sau thi cả 3 hướng** (không phải PA học thuật) · MT **bắt buộc nhận xét** L/R/W1/W2/S trong hộp chấm + **nhóm nguyên nhân khi dưới kỳ vọng** = nguyên nhân Case SOS → **bỏ xác nhận nguyên nhân** (giữ xác nhận PA) · Case MT cũ chờ nguyên nhân → việc "Ghi nhận xét" · Tổng hợp Xử lý: HV - Case · Chờ duyệt (rộng) · Đang xử lý · "Đang SOS" theo **tuần thi** · hồ sơ MT có bảng Case (thay Rulebook 17.5). Planning tự quyết P1–P14: đặc tả OV-12 mục 2 | OV-12 |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
+
+### DEPLOY-UX R1 — 26/10 (chủ SP duyệt thiết kế `docs/superpowers/specs/2026-10-26-deploy-ux-design.md`; prompt chép `…/2026-10-26-deploy-ux/prompt-chu-sp.md`)
+- **Bản chính = `fa7e1811`** (22/10 12:10, DB `pisatracking-261022`); `main` hơn 364 commit (#533–#587). R1 = 5 PR + P8 + P13 (chủ SP Q1: **chờ P8, P13**) → đóng băng RC → deploy (chủ SP bấm).
+- **PR R1 (kế hoạch `docs/superpowers/plans/2026-10-26-r1-*.md`, prompt cuối mỗi tệp):** **LUU-TIEP** (high) ∥ **EN-1** (medium) ∥ **DICH-2** (high) ∥ **SUA-NHO** (medium) chạy ngay 26/10 ·
+  **PHAN-CAP-TEST** chờ chủ SP duyệt mockup M2 `thiet-ke/v7/lich-test-phan-cap.html` + LUU-TIEP merge · **EN-2** sau LUU-TIEP (4 tệp Test sau PHAN-CAP) · KHO-TEP **bỏ** (tệp trên bản chính chỉ là tệp thử).
+- **Quyết định 26/10:** D1–D11 ở thiết kế mục 3 — V12 giữ ("Lưu" ở lại), nhãn "Lưu · bài tiếp ›" / "Lưu · việc tiếp ›" / "Lưu · đóng"; V11 thay khi pilot panel 6b duyệt; tiếng Anh **chỉ màn GV** (EN-3 bỏ);
+  sổ tay PDF không chặn. [BÁO] "đạt kỳ vọng chỉ còn Lưu" = trang hồ sơ MT / Lộ trình không có nút tiếp (PTA tái hiện 26/10).
+- **Sau R1:** mục 4 hồ sơ lượt Test (M4), mục 5 hồ sơ HV / chart / góp ý tuần (M5, M5b), mục 6 panel (inventory 6a → pilot 6b M6) — thiết kế mục 6.
+- **Deploy R1 (thay dòng "Deploy V5" dưới):** migrate + tiền kiểm từ `fa7e1811` ở thiết kế mục 5 (8 bước + P13 + P8); migrate đúng ngày deploy (P9a); không chép tệp bằng chứng; dịch AI bật SAU deploy theo `docs/huong-dan/bat-dich-ai.md`.
 
 ### V5 — trạng thái 24/10 (TL-V5)
 - **Đã merge hết PR màn V5:** #533 Công việc · #534 Chấm Test · #539 Lịch Test tuần · #540 Công việc TVV · #547 Hồ sơ lớp · #548 HV & Lớp · #550 Hồ sơ HV ·

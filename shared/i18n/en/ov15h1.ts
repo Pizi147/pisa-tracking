@@ -2,7 +2,6 @@
 import type { Dich } from '../en.ts';
 
 export const EN_OV15H1 = {
-  'Case trống PA': 'Case without PA',
   'Chờ nhận xét / nguyên nhân': 'Awaiting comment / cause',
   'PA chờ xác nhận': 'PA awaiting confirmation',
   'PA chờ duyệt': 'PA awaiting approval',

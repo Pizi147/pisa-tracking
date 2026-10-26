@@ -4,7 +4,6 @@ import type { Dich } from '../en.ts';
 export const EN_OV14C = {
   'Chấm Speaking': 'Speaking marking',
   'Chấm Speaking · {soBai} bài': 'Speaking marking · {soBai} tests',
-  '{n} bài chờ chấm': '{n} to mark',
   'Không có bài Speaking chờ chấm': 'No Speaking tests to mark',
   'Tìm học viên (tên, email)': 'Find student (name, email)',
   'Lọc lớp': 'Filter class',

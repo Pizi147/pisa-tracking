@@ -1,7 +1,6 @@
 /** P9b CUOI-KHOA (chủ SP 25/10, N17 · N20 · N22): trang Cuối khoá lớp thường, Kỳ vọng FT, hạn chốt T5 tuần trước Final. */
 export const EN_P9B_CUOI_KHOA = {
   'Cuối khoá…': 'End of course…',
-  'Kỳ vọng {kv}': 'Expectation {kv}',
   'Quản lý chốt hướng và lớp chuyển đến cho mọi em, hạn thứ Năm tuần trước tuần Final Test. Quá hạn vẫn làm được.':
     'A manager confirms the direction and next class for every student, due the Thursday of the week before Final Test week. Still possible after the due date.',
   "+ Ghi chú": "+ Note",
@@ -21,9 +20,8 @@ export const EN_P9B_CUOI_KHOA = {
   "Cuối khoá · {lop}": "End of course · {lop}",
   "Cuối khoá": "End of course",
   "Còn bàn giao": "Handover pending",
-  "Có thể quay lại học": "May return to study",
   "Ghi chú cho GV lớp mới": "Note for the new class teacher",
-  "Ghi lý do ngắn": "Write a short reason",
+  "Ghi lý do ngắn": "Add a short reason",
   "Giữ hướng": "Keep direction",
   "Huỷ quyết định · {ten}": "Cancel decision · {ten}",
   "Hướng cho các em đã chọn": "Direction for selected students",
@@ -54,9 +52,7 @@ export const EN_P9B_CUOI_KHOA = {
   "Quá hạn bàn giao": "Handover overdue",
   "Quá hạn {n} ngày · hạn {ngay}": "Overdue {n} days · due {ngay}",
   "Target · {ten}": "Target for {ten}",
-  "Thử lại {n} em": "Retry {n} students",
   "Tuần xem lại · {ten}": "Review week · {ten}",
-  "Tạm dừng/ Kết thúc học": "Pause / End study",
   "Tạo {n} Case bổ trợ Final": "Create {n} Final top-up Cases",
   "Xem lại…": "Review…",
   "cho {n} em · {lop}": "for {n} students · {lop}",
@@ -80,7 +76,7 @@ export const EN_P9B_CUOI_KHOA = {
   "Áp cho {n} em…": "Apply to {n} students…",
   "Đã bàn giao": "Handed over",
   "Đã chốt {n} em": "Confirmed {n} students",
-  "Đã chốt": "Confirmed",
+  "Đã chốt": "Decided",
   "Đã huỷ quyết định · {ten}": "Decision cancelled · {ten}",
   "Đã khôi phục quyết định": "Decision restored",
   "Đã lưu nháp": "Draft saved",
@@ -92,8 +88,6 @@ export const EN_P9B_CUOI_KHOA = {
   'Đã ghi Kỳ vọng': 'Expectation saved',
   'Không đạt Kỳ vọng': 'Expectation not met',
   'Ghi phương án, không Case.': 'Write a plan, no Case.',
-  'Phương án': 'Plan',
-  'chưa chọn lớp': 'no class yet',
   '{n} em cần sửa': '{n} need fixing',
   'Bỏ thay đổi chưa lưu của {n} em?': 'Discard unsaved changes for {n} students?',
 };
