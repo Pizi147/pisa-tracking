@@ -41,8 +41,9 @@ export async function runR1NoCuTests(t: YThucTestKit) {
       LOP, dm.CASE_CATEGORY_SKILL[c.category], gvcn()).user_id as number;
     return { id: c.id as number, gvMon, studentId: (c.student_id ?? one('SELECT student_id FROM assessment_attempts WHERE id = ?', c.attempt_id).student_id) as number };
   };
-  const nguoiTheoVai = (vai: string) => one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id
-      WHERE r.key = ? AND b.code = 'MB' ORDER BY ur.user_id`, vai).id as number;
+  /** Tài khoản đầu tiên của vai — ưu tiên chi nhánh MB (cùng chi nhánh lớp), không có thì chi nhánh khác. */
+  const nguoiTheoVai = (vai: string) => one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id LEFT JOIN branches b ON b.id = ur.branch_id
+      WHERE r.key = ? ORDER BY b.code = 'MB' DESC, ur.user_id`, vai).id as number;
   /** GV môn của MB FOU 12 không phải GVCN, không QL. */
   const gvMonThuan = () => perm.loadPrincipal(one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND is_core = 0
       AND user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1) ORDER BY id`, LOP, LOP).user_id);
@@ -153,5 +154,42 @@ export async function runR1NoCuTests(t: YThucTestKit) {
     owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: null });
     xoaNho();
     assert(!dong(), 'chọn xong → dòng việc hết');
+  }));
+
+  /* PTA security-review #606: chi nhánh khác / CX / Admin VP, Case không tồn tại, Case tạm, kiểu ô sai, ứng viên chỉ trả cho người đổi được, hai ghi danh. */
+  check('CHU-8 QL chi nhánh khác · CX · Admin VP → 403; Case không tồn tại → 404; ownerCu chuỗi / ownerId null → 400', () => thu(() => {
+    const c = caseCuaLop();
+    for (const [ten, p] of [['QL CP', P.cpManager], ['CX', perm.loadPrincipal(nguoiTheoVai('cx'))], ['Admin VP', perm.loadPrincipal(nguoiTheoVai('office_admin'))]] as const) {
+      assert(maLoi(() => owner.doiChuCase(p, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 403, `${ten} phải 403`);
+    }
+    assert(maLoi(() => owner.doiChuCase(P.mbManager, 99_999_999, { ownerId: c.gvMon, ownerCu: null })) === 404, 'Case không tồn tại → 404');
+    assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: String(gvcn()) })) === 400, 'ownerCu chuỗi → 400');
+    assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: null, ownerCu: gvcn() })) === 400, 'ownerId null → 400');
+    assert(chuCua(c.id) === gvcn(), 'không ghi');
+  }));
+
+  check('CHU-9 Case tạm (chờ chốt SOS) → 400, doiChu.duoc = false', () => thu(() => {
+    const c = caseCuaLop();
+    conn.prepare('UPDATE sos_cases SET tam = 1 WHERE id = ?').run(c.id);
+    assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 400, 'Case tạm → 400');
+    assert(cases.caseDetail(P.mbManager, c.id).doiChu.duoc === false, 'Case tạm: duoc = false');
+    assert(chuCua(c.id) === gvcn(), 'không ghi');
+  }));
+
+  check('CHU-10 người không đổi được (GV môn) thấy ungVien rỗng; QL thấy danh sách', () => thu(() => {
+    const c = caseCuaLop();
+    const d = cases.caseDetail(gvMonThuan(), c.id).doiChu;
+    assert(d.duoc === false && d.ungVien.length === 0, `GV môn: ${JSON.stringify(d)}`);
+    assert(cases.caseDetail(P.mbManager, c.id).doiChu.ungVien.length > 0, 'QL có danh sách');
+  }));
+
+  check('CHU-11 em có hai ghi danh đang học → lớp = ghi danh mới nhất (như activeClassOf): GVCN lớp cũ 403', () => thu(() => {
+    const c = caseCuaLop();
+    const pGvcn = perm.loadPrincipal(gvcn());
+    const lopMoi = one(`SELECT id FROM classes WHERE id != ? AND status = 'active' AND id NOT IN (SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active') ORDER BY id`, LOP, pGvcn.userId).id;
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', '2026-09-01', '2026-09-01')`).run(c.studentId, lopMoi);
+    xoaNho();
+    assert(maLoi(() => owner.doiChuCase(pGvcn, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 403, 'GVCN lớp cũ (ghi danh cũ hơn) → 403');
+    assert(!owner.ungVienChuCase(c.id).some((u: any) => u.id === c.gvMon) || one(`SELECT 1 x FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active'`, lopMoi, c.gvMon), 'ứng viên theo lớp mới');
   }));
 }

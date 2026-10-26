@@ -4,6 +4,7 @@ import { can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '../permiss
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { loi, notFound, nowIso } from '../util.ts';
+import { activeClassOf } from '../yThuc/access.ts';
 
 /**
  * GỢI Ý NGƯỜI PHỤ TRÁCH CHÍNH cho một Case mới (mục 2.3).
@@ -124,16 +125,18 @@ export function caseChuaCoNguoi(p: Principal, branchId?: number | null) {
 
 /* ================= R1-NO-CU (đặc tả 27/10 mục 4.5, D17) — ĐỔI NGƯỜI PHỤ TRÁCH CASE ================= */
 
-type CaseDoiChu = { id: number; status: string; owner_user_id: number | null; category: string | null; topic: string | null;
+type CaseDoiChu = { id: number; status: string; tam: number; owner_user_id: number | null; category: string | null; topic: string | null;
   goc_programme_code: string | null; student_id: number; full_name: string | null; class_id: number | null };
-/** Case + lớp HIỆN TẠI của em (`enrollments.status = 'active'` — em chuyển lớp thì quyền theo lớp mới). */
-const caseDoiChu = (caseId: number) => db().prepare(
-  `SELECT sc.id, sc.status, sc.owner_user_id, sc.category, sc.topic, sc.goc_programme_code, s.id AS student_id, s.full_name, cur.class_id
-     FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-     JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-     LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-    WHERE sc.id = ?`,
-).get(caseId) as CaseDoiChu | undefined;
+/** Case + lớp HIỆN TẠI của em (`activeClassOf`: ghi danh đang học mới nhất — em chuyển lớp thì quyền theo lớp mới). */
+function caseDoiChu(caseId: number): CaseDoiChu | undefined {
+  const c = db().prepare(
+    `SELECT sc.id, sc.status, sc.tam, sc.owner_user_id, sc.category, sc.topic, sc.goc_programme_code, s.id AS student_id, s.full_name
+       FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+       JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+      WHERE sc.id = ?`,
+  ).get(caseId) as Omit<CaseDoiChu, 'class_id'> | undefined;
+  return c && { ...c, class_id: activeClassOf(c.student_id) };
+}
 
 /** Ứng viên (D17): GV đang dạy đúng kỹ năng của Case ở lớp em (môn gộp L+S / R+W: cả GV môn tách) + GVCN lớp đó; mỗi người một lần. */
 function ungVienCua(c: CaseDoiChu) {
@@ -160,11 +163,15 @@ export function duocDoiChuCase(p: Principal, caseId: number): boolean {
   const c = caseDoiChu(caseId);
   return !!c && duocDoi(p, c);
 }
-/** Chi tiết Case (`doiChu`): nút "Đổi người…" hiện khi có quyền, Case còn mở và có người KHÁC người đang phụ trách để chọn. */
+/**
+ * Chi tiết Case (`doiChu`): nút "Đổi người…" hiện khi có quyền, Case còn mở (không tạm) và có người KHÁC người đang phụ trách để chọn.
+ * Danh sách GV chỉ trả cho người đổi được.
+ */
 export function doiChuCua(p: Principal, caseId: number) {
   const c = caseDoiChu(caseId);
   const ungVien = c ? ungVienCua(c) : [];
-  return { duoc: !!c && c.status !== 'done' && ungVien.some((u) => u.id !== c.owner_user_id) && duocDoi(p, c), ungVien };
+  const duoc = !!c && c.status !== 'done' && !c.tam && ungVien.some((u) => u.id !== c.owner_user_id) && duocDoi(p, c);
+  return { duoc, ungVien: duoc ? ungVien : [] };
 }
 
 /**
@@ -181,6 +188,7 @@ export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unkno
     if (!c) throw notFound();
     if (!duocDoi(p, c)) throw loi(403, 'Chỉ Quản lý hoặc GVCN của lớp em đổi được người phụ trách Case.');
     if (c.status === 'done') throw loi(400, 'Case đã đóng.');
+    if (c.tam) throw loi(400, 'Case tạm chưa là việc — chưa đổi người được.');
     if (c.owner_user_id !== ownerCu) throw loi(409, 'Người phụ trách vừa đổi — tải lại.');
     if (ownerId === ownerCu) throw loi(400, 'Người này đang phụ trách Case.');
     const moi = ungVienCua(c).find((u) => u.id === ownerId);
