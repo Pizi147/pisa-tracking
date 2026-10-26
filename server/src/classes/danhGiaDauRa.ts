@@ -1,6 +1,6 @@
 /**
- * UI-HO-SO-LOP (V5 `08` mục 6c, brief C17 · T12): NHẬN XÉT + ĐỀ XUẤT BƯỚC TIẾP của GVCN khi đánh giá đầu ra lớp thường (tab "Đánh giá đầu ra",
- * panel lần lượt từng em). Chỉ lưu đề xuất — không lệnh, không việc, không Case; Quản lý vẫn chốt ở Lộ trình tiếp theo (luật hiện hành).
+ * NHẬN XÉT CUỐI KHOÁ của GVCN, lớp thường (UI-HO-SO-LOP C17 · T12 → P9b: cột Nhận xét ở trang Cuối khoá; QL đọc dưới cột Gợi ý, dùng cho Báo PH qua TVV).
+ * N22 ①: GVCN không đề xuất hướng nữa (`de_xuat` cũ chỉ đọc) — không lệnh, không việc, không Case; Quản lý chốt ở trang Cuối khoá.
  * Kết quả Đạt / Chưa đạt KHÔNG lưu ở đây: máy tính từ bài Final (`danhGiaDauRa`, R3a "Chờ Final"). Mỗi lần lưu ghi `audit_logs` (`dau_ra.ghi`) = lịch sử.
  */
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
@@ -14,6 +14,7 @@ import { writeAudit } from '../platform/audit.ts';
 export const DE_XUAT_DAU_RA = ['len_lop', 'fast_track', 'hoc_lai', 'bao_luu', 'dung_hoc'] as const;
 export type DeXuatDauRa = (typeof DE_XUAT_DAU_RA)[number];
 export const NHAN_XET_DAU_RA_TOI_DA = 2000;
+export const CHI_QL_CHOT_HUONG = 'Chỉ Quản lý chốt hướng — GVCN ghi Nhận xét.';
 
 export type LuuDauRa = { luc: string; nguoi: string | null; nhanXet: string | null; deXuat: string | null };
 export type DongDauRa = { studentId: number; nhanXet: string | null; deXuat: DeXuatDauRa | null; boi: string | null; luc: string | null; lichSu: LuuDauRa[] };
@@ -63,9 +64,9 @@ export function xemDanhGiaDauRa(p: Principal, classId: number): { rows: DongDauR
 export function ghiDanhGiaDauRa(p: Principal, classId: number, studentId: number, input: { nhanXet?: unknown; deXuat?: unknown; luc?: unknown }) {
   const c = lopThuong(classId);
   if (!coTheGhi(p, c)) throw forbidden('Chỉ GVCN hoặc Quản lý của lớp ghi được Đánh giá đầu ra.');
+  /* N22 ① (chủ SP 25/10): chỉ QL chốt hướng — không ai ghi đề xuất hướng nữa; `de_xuat` cũ giữ để đọc. GVCN chỉ ghi Nhận xét (không bắt buộc). */
+  if (input.deXuat !== undefined && input.deXuat !== null && input.deXuat !== '') throw forbidden(CHI_QL_CHOT_HUONG);
   const nhanXet = chuTuDo(input.nhanXet ?? null, 'Nhận xét', NHAN_XET_DAU_RA_TOI_DA);
-  const deXuat = input.deXuat === undefined || input.deXuat === null || input.deXuat === '' ? null : input.deXuat;
-  if (deXuat !== null && !DE_XUAT_DAU_RA.includes(deXuat as DeXuatDauRa)) throw badRequest('Đề xuất bước tiếp không hợp lệ.');
   const conn = db();
   /* Em từng ghi danh lớp này (mọi trạng thái): cuối khoá em có thể đã chuyển lớp / lớp đã kết thúc mà GVCN vẫn ghi đánh giá. */
   if (!conn.prepare('SELECT 1 FROM enrollments WHERE class_id = ? AND student_id = ?').get(classId, studentId)) {
@@ -78,13 +79,14 @@ export function ghiDanhGiaDauRa(p: Principal, classId: number, studentId: number
     if (input.luc !== undefined && (input.luc ?? null) !== (cu?.sua_luc ?? null)) {
       throw loi(409, 'Đã có người sửa lúc {luc} ({ai}) — bấm Lưu lần nữa để ghi đè', { luc: gioNgay(cu?.sua_luc), ai: cu?.boi ?? '—' }, { luc: cu?.sua_luc ?? null });
     }
-    if (cu && cu.nhan_xet === nhanXet && cu.de_xuat === deXuat) return { nhanXet, deXuat, doi: false, luc: cu.sua_luc as string };
+    const deXuat = (cu?.de_xuat ?? null) as string | null;
+    if (cu && cu.nhan_xet === nhanXet) return { nhanXet, deXuat, doi: false, luc: cu.sua_luc as string };
     /* `sua_luc` là mốc phiên bản (409): luôn tăng, kể cả hai lần lưu trong cùng một mili-giây. */
     const now = cu?.sua_luc && nowIso() <= cu.sua_luc ? new Date(Date.parse(cu.sua_luc) + 1).toISOString() : nowIso();
     conn.prepare(
-      `INSERT INTO danh_gia_dau_ra (student_id, class_id, nhan_xet, de_xuat, sua_boi, sua_luc) VALUES (?,?,?,?,?,?)
-       ON CONFLICT(student_id, class_id) DO UPDATE SET nhan_xet = excluded.nhan_xet, de_xuat = excluded.de_xuat, sua_boi = excluded.sua_boi, sua_luc = excluded.sua_luc`,
-    ).run(studentId, classId, nhanXet, deXuat, p.userId, now);
+      `INSERT INTO danh_gia_dau_ra (student_id, class_id, nhan_xet, sua_boi, sua_luc) VALUES (?,?,?,?,?)
+       ON CONFLICT(student_id, class_id) DO UPDATE SET nhan_xet = excluded.nhan_xet, sua_boi = excluded.sua_boi, sua_luc = excluded.sua_luc`,
+    ).run(studentId, classId, nhanXet, p.userId, now);
     writeAudit({
       actorUserId: p.userId, action: 'dau_ra.ghi', entityType: 'student', entityId: studentId, entityLabel: `lop:${c.id}`,
       before: cu ? { nhanXet: cu.nhan_xet, deXuat: cu.de_xuat } : null, after: { nhanXet, deXuat, lop: c.code },

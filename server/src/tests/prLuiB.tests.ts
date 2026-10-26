@@ -345,10 +345,10 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const l = doc('web/src/modules/students/LuuTruPage.tsx');
     for (const chu of ['Chọn nhiều học viên', "nhan: t('Quay lại học')", 'ThanhChonNhieu', 'coTheQuayLai', 'useQuayLaiHoc']) assert(l.includes(chu), `thiếu "${chu}"`);
   });
-  check('LUIb-19 · web Chuyển tiếp lớp: nút "Huỷ quyết định" trong ô chọn nhiều, xem trước theo hướng, lý do bắt buộc, đi qua chayHangLoat("huy-lenh"), Hoàn tác', () => {
-    const t = doc('web/src/modules/classes/TransitionPanel.tsx');
-    for (const chu of ["chayHangLoat('huy-lenh'", "hoanTacHangLoat('huy-lenh'", 'Huỷ quyết định', 'Bỏ qua', 'chưa có quyết định']) assert(t.includes(chu), `thiếu "${chu}"`);
-    assert(!/length < 3/.test(t.slice(t.indexOf('huyNhieu.lyDo'))), 'không tối thiểu ký tự');
+  check('LUIb-19 · web Cuối khoá (P9b thay Chuyển tiếp lớp): "Huỷ quyết định" có lý do bắt buộc, đi qua chayHangLoat("huy-lenh"), Hoàn tác', () => {
+    const t = doc('web/src/modules/classes/CuoiKhoaLop.tsx');
+    for (const chu of ["chayHangLoat('huy-lenh'", "hoanTacHangLoat('huy-lenh'", 'Huỷ quyết định', 'Lý do huỷ']) assert(t.includes(chu), `thiếu "${chu}"`);
+    assert(!/length < 3/.test(t.slice(t.indexOf('huy?.lyDo'))), 'không tối thiểu ký tự');
   });
 
   // ---------------------------------------------------------------- Sau rà #213 (I1–I3, mục 4–5)

@@ -10,7 +10,7 @@ export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   info: t('Sửa thông tin'),
-  'lo-trinh-tiep': t('Lộ trình tiếp theo'),
+  'lo-trinh-tiep': t('Cuối khoá…'),
   'lo-trinh': t('Lộ trình'),
   'chuyen-lop': t('Chuyển lớp…'),
   'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),

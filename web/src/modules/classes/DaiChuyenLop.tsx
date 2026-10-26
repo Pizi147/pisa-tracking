@@ -20,10 +20,8 @@ function Dai({ nhan, do: doHan, children, nut }: { nhan: string; do?: boolean; c
 }
 
 /** Hồ sơ lớp, dải ngay dưới đầu trang: A (nguồn — Kết thúc khoá / Bàn giao) và H (đích — Sắp nhận). */
-export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, anLoTrinh = false }: {
+export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
   dai: DaiLop | null; homNay: string | null;
-  /** CA2-6: đang ở cách xem "Lộ trình tiếp theo" thì không nhắc lại dải mở chính chỗ đó. */
-  anLoTrinh?: boolean;
   onChuyenTiep: () => void;
   /** Mở panel Bàn giao: `lop` = lớp NGUỒN (mặc định lớp đang xem), `mon` = mở bảng GVBM của môn đó. */
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
@@ -36,14 +34,14 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, anLoTrinh =
     <div className="space-y-2">
       {dai.chuaChuyenDuoc && (
         <Dai nhan={t('Chưa chuyển được')} do
-          nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{dich(CHU_CHUYEN_LOP.sua)}</button>}>
+          nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{t('Cuối khoá ›')}</button>}>
           <b className="tabular-nums text-slate-100">{t('{n} em', { n: dai.chuaChuyenDuoc.n })}</b> · {dich(dai.chuaChuyenDuoc.loi.replace(/\.$/, ''))} · {t('chọn tuần hoặc lớp chuyển đến mới, hoặc huỷ quyết định')}
         </Dai>
       )}
-      {lt && !anLoTrinh && (
+      {lt && (
         /* HL-5 · CA2-6: hạn chốt bằng `<Han>` (quá hạn có ⚠ + chữ, không chỉ màu) như dải Bàn giao. */
-        <Dai nhan={t('Lộ trình tiếp theo')} do={lt.do}
-          nut={<button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{v.coTheRaLenh ? t('Chốt lộ trình') : t('Xem')}</button>}>
+        <Dai nhan={t('Chốt lộ trình')} do={lt.do}
+          nut={<button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{t('Cuối khoá ›')}</button>}>
           <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: lt.daChot, b: lt.tong })}</b> {t('đã chốt')}{lt.hanChot && <> · <Han loai="viec-van-hanh" han={lt.hanChot} /></>}
         </Dai>
       )}

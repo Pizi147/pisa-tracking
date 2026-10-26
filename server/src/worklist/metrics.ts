@@ -404,7 +404,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         const mon = (thieu.get(r.id)?.missingSkills ?? []).map((k) => tenMonNgan(r.ct ?? null, k)).join(', ');
         /* OV-11f (TQ-3): lớp cần Chốt lộ trình mở Lộ trình tiếp theo cả lớp (cùng việc "Chốt lộ trình · lớp" ở Công việc), không Sửa phân công. */
         byId.set(r.id, metricId === 'lop-chua-chot-len-ft'
-          ? { id: r.id, title: r.code, sub: '', href: `/hoc-vien/lop/${r.id}?viec=lo-trinh-ca-lop` }
+          ? { id: r.id, title: r.code, sub: '', href: `/hoc-vien/lop/${r.id}?xem=cuoi-khoa` }
           : { id: r.id, title: r.code, sub: mon ? `thiếu ${mon}` : '', href: `/hoc-vien/lop/${r.id}?viec=phan-cong` });
       }
     } else if (unit === 'luot-sos') {

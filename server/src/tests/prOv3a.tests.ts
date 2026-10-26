@@ -21,21 +21,22 @@ export async function runPrOv3aTests(t: YThucTestKit) {
   check('OV3a-1 · menu ⋯: lớp thường và FT cùng thứ tự nhóm Lớp → Lộ trình → Công cụ → kết thúc; mục theo quyền', () => {
     const du = {
       soHocVien: 5, canEditProgress: true, canAssign: true, canAssignSubject: true, canAddStudents: true, coTheChuyenTiep: true,
-      coTheChuyenNhieuEm: true, coTheXuatExcel: true, coTheMoLaiLop: false, coTheXoa: false, coTheKetThuc: true,
+      coTheXuatExcel: true, coTheMoLaiLop: false, coTheXoa: false, coTheKetThuc: true,
     };
     const thuong = d.menuHoSoLop({ ...du, thuong: true, chuongTrinh: 'BE' });
     const ft = d.menuHoSoLop({ ...du, thuong: false, chuongTrinh: 'FT' });
     const nhom = (m: any[]) => m.map((x) => x.nhom ?? '—').filter((x, i, a) => x !== a[i - 1]);
-    assert(JSON.stringify(nhom(thuong)) === JSON.stringify(['Lớp', 'Lộ trình', 'Công cụ', '—']), `thường ${nhom(thuong)}`);
-    assert(JSON.stringify(nhom(ft)) === JSON.stringify(nhom(thuong)), `FT ${nhom(ft)}`);
+    /* P9b: lớp thường nhóm "Cuối khoá" (Cuối khoá… + Kết thúc lớp); FT không còn Chuyển tiếp lớp (chuyển nhiều em ở thanh chọn). */
+    assert(JSON.stringify(nhom(thuong)) === JSON.stringify(['Lớp', 'Cuối khoá', 'Công cụ']), `thường ${nhom(thuong)}`);
+    assert(JSON.stringify(nhom(ft)) === JSON.stringify(['Lớp', 'Công cụ', '—']), `FT ${nhom(ft)}`);
     assert(JSON.stringify(thuong.map((x: any) => x.nhan)) === JSON.stringify(
-      ['Thông tin lớp', 'Sửa thông tin học viên', '+ Học viên', 'Lộ trình tiếp theo', 'Xuất Excel', 'Kết thúc lớp']), `thường ${thuong.map((x: any) => x.nhan)}`);   // OV-3b: bỏ mục Kỳ vọng đầu ra (vào bảng Lộ trình tiếp theo)
+      ['Thông tin lớp', 'Sửa thông tin học viên', '+ Học viên', 'Cuối khoá…', 'Kết thúc lớp', 'Xuất Excel']), `thường ${thuong.map((x: any) => x.nhan)}`);
     assert(JSON.stringify(ft.map((x: any) => x.nhan)) === JSON.stringify(
-      ['Thông tin lớp', 'Sửa thông tin học viên', '+ Học viên', 'Chuyển tiếp lớp', 'Xuất Excel', 'Kết thúc lớp']), `FT ${ft.map((x: any) => x.nhan)}`);
+      ['Thông tin lớp', 'Sửa thông tin học viên', '+ Học viên', 'Xuất Excel', 'Kết thúc lớp']), `FT ${ft.map((x: any) => x.nhan)}`);
     const bo = ['Điểm Test cả lớp', 'Điểm MT cả lớp', 'Sửa phân công', 'Lịch Test của lớp', 'Tuần khai giảng', 'Sửa thông tin lớp'];
-    assert(![...thuong, ...ft].some((x: any) => bo.includes(x.nhan) || x.nhan.endsWith('…')), 'mục cũ / dấu … còn sót');
+    assert(![...thuong, ...ft].some((x: any) => bo.includes(x.nhan) || (x.nhan.endsWith('…') && x.nhan !== 'Cuối khoá…')), 'mục cũ / dấu … còn sót');
     /* GVBM: không quyền gì của lớp → không mục nào; GVCN (chỉ đổi GV bộ môn) → chỉ Thông tin lớp. */
-    const khong = { ...du, canEditProgress: false, canAssign: false, canAssignSubject: false, canAddStudents: false, coTheChuyenTiep: false, coTheChuyenNhieuEm: false, coTheXuatExcel: false, coTheKetThuc: false };
+    const khong = { ...du, canEditProgress: false, canAssign: false, canAssignSubject: false, canAddStudents: false, coTheChuyenTiep: false, coTheXuatExcel: false, coTheKetThuc: false };
     assert(d.menuHoSoLop({ ...khong, thuong: true, chuongTrinh: 'BE' }).length === 0, 'GVBM không mục');
     assert(d.menuHoSoLop({ ...khong, canAssignSubject: true, thuong: false, chuongTrinh: 'FT' }).map((x: any) => x.key).join() === 'thong-tin', 'GVCN chỉ Thông tin lớp');
   });

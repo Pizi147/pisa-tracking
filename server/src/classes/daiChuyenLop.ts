@@ -61,16 +61,16 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
       tuan: min(dich.map((r) => r.d))!, daXacNhan: dich.filter((r) => !!r.e).length,
     } : null;
 
-  /* OV-3b: thanh nhắc "Lộ trình tiếp theo" (Quản lý, lớp thường) — CÙNG hàm với việc QL "Chốt lộ trình" (từ thứ Hai tuần Final − 2, còn em chưa chốt). */
+  /* OV-3b: thanh nhắc "Lộ trình tiếp theo" (Quản lý, lớp thường) — CÙNG hàm với việc QL "Chốt lộ trình" (N20: từ thứ Hai tuần trước Final, còn em chưa chốt). */
   const den = o.pr?.finalWeekStart ? homNay >= mocLoTrinh(o.pr.finalWeekStart).nhacTu : mocKetKhoa(o.pr, homNay).hetKhoa;   // lọc rẻ trước khi đếm
   const chot = !o.ft && ra && den ? lopChoChotLoTrinh(p, null, homNay, classId)[0] : undefined;
   const loTrinh: DaiLop['loTrinh'] = chot ? { hanChot: chot.han, tong: chot.tong, daChot: chot.tong - chot.chuaLenh, do: !!chot.han && homNay > chot.han } : null;
-  /* PR-S5F-a: lệnh lỗi (kể cả Dừng học hẳn) — Quản lý thấy ngay ở hồ sơ lớp để sửa, không phải mở từng hồ sơ em. */
-  const loi = ra ? rows.filter((r) => r.k === 'nguon' && r.c === 'cho' && r.h) : [];
+  /* PR-S5F-a: lệnh lỗi (kể cả Dừng học hẳn) — Quản lý thấy ngay ở hồ sơ lớp để sửa (trang Cuối khoá). R5.3: lớp FT không còn dải này (không còn Chuyển tiếp lớp). */
+  const loi = ra && !o.ft ? rows.filter((r) => r.k === 'nguon' && r.c === 'cho' && r.h) : [];
   const chuaChuyenDuoc = loi.length ? { n: loi.length, loi: loi[0].h as string } : null;
   /* OV-3c: số đợt "Kết quả đầu ra" lớp FT còn trong 4 tuần — 0 thì web ẩn cách xem (Admin luôn 0, máy chủ chặn đường đọc). */
   const kqdrDot = laChiAdmin(p) ? 0 : rows.find((r) => r.k === 'kqdr')?.a ?? 0;   // đường đọc kiểm `attempt.view`; ở đây không gọi `can()` (thêm câu tra chi nhánh)
-  return { loTrinh, banGiao, kqdrDot, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
+  return { loTrinh, banGiao, kqdrDot, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
 }
 
 /** Hồ sơ HV (E): lệnh đang chờ hoặc đã chuyển ≤ 14 ngày (Q17) — 2 câu. */

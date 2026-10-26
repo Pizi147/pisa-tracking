@@ -542,7 +542,7 @@ async function runTask6(t: YThucTestKit, d: any) {
   });
 
   check('S6F-b (6) · web: ba nơi hiện chữ qua chuTuanHoc(…, dangDung); Ngăn Case, hàng Case/PA bảng kỹ năng, thẻ PA Ngăn Case: em Tạm dừng → mọi hạn thành nhãn Tạm dừng', () => {
-    for (const f of ['web/src/modules/students/DauHoSo.tsx', 'web/src/modules/students/ChuyenLopPanel.tsx', 'web/src/modules/classes/TransitionPanel.tsx']) {
+    for (const f of ['web/src/modules/students/DauHoSo.tsx', 'web/src/modules/students/ChuyenLopPanel.tsx']) {   // P9b R5.3: TransitionPanel đã gỡ
       assert(/chuTuanHoc\([^)]*\.dangDung\)/.test(doc(f)), `${f}: chưa truyền dangDung`);
     }
     const ngan = doc('web/src/modules/students/NganCase.tsx');

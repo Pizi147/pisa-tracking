@@ -55,6 +55,8 @@ export async function runPrLcbTests(t: YThucTestKit) {
   };
   /** Hạn đúng luật: Chủ nhật trước tuần Final (tuần `final` tính từ tuần khai giảng `start`). */
   const hanTuan = (start: string, final: number) => addDays(start, 7 * (final - 1) - 1);
+  /** N20 (P9b): hạn Chốt lộ trình = thứ Năm tuần trước tuần Final (tuần `final` tính từ 1). */
+  const hanN20 = (start: string, final: number) => addDays(start, 7 * (final - 2) + 3);
   const ganGv = (classId: number, n: number, skill: string | null, core = false) => {
     const uid = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1 OFFSET ?`, MB, n).id as number;
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`)
@@ -72,15 +74,15 @@ export async function runPrLcbTests(t: YThucTestKit) {
   const BE_DICH = (intake.createClass(P.admin, { code: 'MB LCB BE DICH', branchId: MB, kind: 'BE', isFastTrack: false, startDate: thu2(1), startPeriodId: week.ensurePeriod(thu2(1)).id }) as any).id as number;
 
   // ------------------------------------------------------------------ (a) cửa sổ + hạn + vai
-  check('LCb-a · FOU tuần 6 (OV-3b: thứ Hai tuần Final − 2): QL có đúng MỘT việc "Chốt lộ trình · {lớp}", hạn = CN tuần 6, chưa quá hạn; tuần 5 → không; GVCN, GVBM → không', () => {
-    const l = taoLop('FOU', 6, 2);
+  check('LCb-a · FOU tuần 7 (N20: thứ Hai tuần trước Final): QL có đúng MỘT việc "Chốt lộ trình · {lớp}", hạn = T5 tuần 7, chưa quá hạn; tuần 6 → không; GVCN, GVBM → không', () => {
+    const l = taoLop('FOU', 7, 2);
     const v = viecChot(QL, l.classId);
-    const han = hanTuan(l.start, 7);
+    const han = hanN20(l.start, 8);
     assert(v.length === 1 && v[0].tieuDe === `Chốt lộ trình · ${l.code}` && v[0].due === han && v[0].urgency !== 'overdue', JSON.stringify(v));
     assert(han === d.mocLoTrinh(schedule.classProgress(l.classId).finalWeekStart).hanChot, `hạn ${han} ≠ mocLoTrinh().hanChot`);
-    assert(v[0].href === `/hoc-vien/lop/${l.classId}?viec=lo-trinh-ca-lop` && v[0].actionLabel === 'Lộ trình tiếp theo' && v[0].count === 2, JSON.stringify(v[0]));
-    const som = taoLop('FOU', 5, 1);
-    assert(!viecChot(QL, som.classId).length, 'tuần 5 (trước thứ Hai tuần Final − 2) chưa có việc');
+    assert(v[0].href === `/hoc-vien/lop/${l.classId}?xem=cuoi-khoa` && v[0].actionLabel === 'Cuối khoá ›' && v[0].count === 2, JSON.stringify(v[0]));
+    const som = taoLop('FOU', 6, 1);
+    assert(!viecChot(QL, som.classId).length, 'tuần 6 (trước thứ Hai tuần trước Final) chưa có việc');
     const gvcn = ganGv(l.classId, 7, null, true);
     const gvbm = ganGv(l.classId, 8, 'reading');
     assert(!viecChot(gvcn, l.classId, null).length && !viecChot(gvbm, l.classId, null).length, 'GVCN, GVBM không có việc');
@@ -107,16 +109,16 @@ export async function runPrLcbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ (c) mọi lớp thường; hạn theo tuần Final thật
-  check('LCb-c · OV-3b hạn = CN tuần Final − 2 — Pre FOU: CN tuần 3; BE: CN tuần 8; FOU Final dời tuần 6 → CN tuần 4; lớp FT → không', () => {
-    const pf = taoLop('PREFOU', 3, 1);
-    const be = taoLop('BE', 8, 1);
-    const fou = taoLop('FOU', 4, 1);
+  check('LCb-c · N20 hạn = T5 tuần trước Final — Pre FOU: T5 tuần 4; BE: T5 tuần 9; FOU Final dời tuần 6 → T5 tuần 5; lớp FT → không', () => {
+    const pf = taoLop('PREFOU', 4, 1);
+    const be = taoLop('BE', 9, 1);
+    const fou = taoLop('FOU', 5, 1);
     conn.prepare('UPDATE classes SET final_week_override = 6 WHERE id = ?').run(fou.classId);
     const ft = taoLop('FT', 3, 1);
     const due = (l: { classId: number }) => viecChot(QL, l.classId).map((i) => i.due);
-    assert(JSON.stringify(due(pf)) === JSON.stringify([hanTuan(pf.start, 4)]), `Pre FOU: ${due(pf)} · ${hanTuan(pf.start, 4)}`);
-    assert(JSON.stringify(due(be)) === JSON.stringify([hanTuan(be.start, 9)]), `BE: ${due(be)}`);
-    assert(JSON.stringify(due(fou)) === JSON.stringify([hanTuan(fou.start, 5)]), `FOU dời Final: ${due(fou)}`);
+    assert(JSON.stringify(due(pf)) === JSON.stringify([hanN20(pf.start, 5)]), `Pre FOU: ${due(pf)} · ${hanN20(pf.start, 5)}`);
+    assert(JSON.stringify(due(be)) === JSON.stringify([hanN20(be.start, 10)]), `BE: ${due(be)}`);
+    assert(JSON.stringify(due(fou)) === JSON.stringify([hanN20(fou.start, 6)]), `FOU dời Final: ${due(fou)}`);
     assert(!items(QL).some((i) => i.classId === ft.classId && i.group === 'chot_len_ft'), 'lớp FT không có');
   });
 
@@ -194,10 +196,10 @@ export async function runPrLcbTests(t: YThucTestKit) {
     const lop = [...new Set(items(QL).filter((i) => i.group === 'chot_len_ft').map((i) => i.classId as number))].sort((a, b) => a - b);
     assert(JSON.stringify(ids) === JSON.stringify(lop), `chỉ số ${ids} · việc ${lop}`);
     const cn = chiNhanh('LCBE');
-    const l = taoLop('FOU', 6, 1, cn);
+    const l = taoLop('FOU', 7, 1, cn);
     let dong = (tongQuan.tongQuanQuanLy(P.admin, { branchId: cn }).canXuLy as any[]).filter((x) => x.metricId === 'lop-chua-chot-len-ft');
-    assert(dong.length === 1 && dong[0].truoc === `Chốt lộ trình · ${l.code}` && dong[0].han?.ngay === hanTuan(l.start, 7) && dong[0].han?.loai === 'chot-len-ft'
-      && dong[0].trangThai !== 'qua-han' && dong[0].den === `/hoc-vien/lop/${l.classId}?viec=lo-trinh-ca-lop` && dong[0].nut === 'Lộ trình tiếp theo', JSON.stringify(dong));
+    assert(dong.length === 1 && dong[0].truoc === `Chốt lộ trình · ${l.code}` && dong[0].han?.ngay === hanN20(l.start, 8) && dong[0].han?.loai === 'chot-len-ft'
+      && dong[0].trangThai !== 'qua-han' && dong[0].den === `/hoc-vien/lop/${l.classId}?xem=cuoi-khoa` && dong[0].nut === 'Cuối khoá ›', JSON.stringify(dong));
     conn.prepare('UPDATE classes SET final_week_override = 6 WHERE id = ?').run(l.classId);   // Final = tuần này → hạn đã qua
     dong = (tongQuan.tongQuanQuanLy(P.admin, { branchId: cn }).canXuLy as any[]).filter((x) => x.metricId === 'lop-chua-chot-len-ft');
     assert(dong.length === 1 && dong[0].trangThai === 'qua-han', JSON.stringify(dong));
@@ -212,11 +214,11 @@ export async function runPrLcbTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ (m) số câu SQL không theo số lớp (phần Chốt)
   check('LCb-m · lopChoChotLoTrinh: 3 lớp và 12 lớp (cùng chi nhánh) — cùng số câu SQL', () => {
     const cn = chiNhanh('LCBM');
-    for (let i = 0; i < 3; i++) taoLop(i % 2 ? 'BE' : 'FOU', i % 2 ? 8 : 6, 2, cn);
+    for (let i = 0; i < 3; i++) taoLop(i % 2 ? 'BE' : 'FOU', i % 2 ? 9 : 7, 2, cn);
     let a3: any[] = [];
     /* Trong bộ nhớ request (như GET thật): `demoToday`, bảng lớp đọc một lần. */
     const a = demCau(() => trongBoNho(() => { a3 = lenh.lopChoChotLoTrinh(P.admin, cn, TODAY); }));
-    for (let i = 0; i < 9; i++) taoLop(i % 3 === 0 ? 'PREFOU' : 'FOU', i % 3 === 0 ? 3 : 7, 2, cn);
+    for (let i = 0; i < 9; i++) taoLop(i % 3 === 0 ? 'PREFOU' : 'FOU', i % 3 === 0 ? 4 : 7, 2, cn);
     let a12: any[] = [];
     const b = demCau(() => trongBoNho(() => { a12 = lenh.lopChoChotLoTrinh(P.admin, cn, TODAY); }));
     assert(a3.length === 3 && a12.length === 12, `số lớp ${a3.length} · ${a12.length}`);
@@ -250,33 +252,32 @@ export async function runPrLcbTests(t: YThucTestKit) {
   };
 
   // ------------------------------------------------------------------ (h) transitionPlan: lớp chuyển đến mọi chi nhánh, mã lớp + ngày ra lệnh
-  check('LCb-h · transitionPlan: lenh.lopDichMa + ngayRaLenh; candidates có lớp chi nhánh khác + branchCode; GVCN không candidates; dienSan ưu tiên lớp cùng chi nhánh', () => {
-    /* Lớp nguồn ở chi nhánh riêng có đúng MỘT lớp BE → điền sẵn lớp đó dù ứng viên BE mọi chi nhánh nhiều hơn một. */
+  check('LCb-h · transitionPlan: lenh.lopDichMa + ngayRaLenh; N17 (P9b): candidates CHỈ cùng chi nhánh, cả lớp sang chi nhánh khác → dòng lỗi; GVCN không candidates; dienSan lớp cùng chi nhánh', () => {
     const cn = chiNhanh('LCBH');
     const l = taoLop('FOU', 8, 1, cn);
     const BE_CN = lopMB('LCBH BE 01', 'BE', false, cn);
     loTrinh.ghiLoTrinhTiep(P.admin, l.sids[0], { huong: 'len_lop' });   // chưa lớp dự kiến
     const r = transition.transitionPlan(P.admin, l.classId);
     const cand = r.candidates as any[];
-    assert(cand.find((c) => c.id === BE_DICH)?.branchCode === 'MB', `ứng viên chi nhánh khác: ${JSON.stringify(cand.find((c) => c.id === BE_DICH))}`);
+    assert(!cand.some((c) => c.id === BE_DICH) && cand.every((c) => c.branchCode === 'LCBH'), `ứng viên chi nhánh khác: ${cand.map((c) => c.code).join()}`);
     assert(cand.find((c) => c.id === BE_CN)?.branchCode === 'LCBH', `ứng viên cùng chi nhánh: ${JSON.stringify(cand.find((c) => c.id === BE_CN))}`);
-    assert(cand.filter((c) => !c.ft && c.programmeCode === 'BE').length > 1, 'tiền đề: nhiều lớp BE (mọi chi nhánh)');
-    assert(r.students[0]?.dienSan?.lopDichId === BE_CN, `dienSan ưu tiên cùng chi nhánh: ${JSON.stringify(r.students[0]?.dienSan)}`);
+    assert(r.students[0]?.dienSan?.lopDichId === BE_CN, `dienSan cùng chi nhánh: ${JSON.stringify(r.students[0]?.dienSan)}`);
 
-    /* Lớp MB: QL ra lệnh sang lớp chi nhánh khác → GVCN (không ứng viên) vẫn đọc mã lớp chuyển đến + ngày ra lệnh. */
+    /* Lớp MB: cả lớp sang lớp chi nhánh khác → chặn (N17); sang lớp MB → GVCN (không ứng viên) vẫn đọc mã lớp chuyển đến + ngày ra lệnh. */
     const m = taoLop('FOU', 8, 1);
-    const r0 = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_CN }] });
-    assert(!r0.failed.length, `tiền đề: lệnh sang lớp chi nhánh khác — ${JSON.stringify(r0.failed)}`);
-    assert((transition.transitionPlan(QL, m.classId).candidates as any[]).some((c) => c.id === BE_CN), 'QL MB thấy ứng viên chi nhánh khác');
+    const khac = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, caLop: true, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_CN }] });
+    assert(!khac.ok.length && /cùng chi nhánh/.test(khac.failed[0]?.message ?? ''), `cả lớp sang chi nhánh khác phải lỗi: ${JSON.stringify(khac)}`);
+    const r0 = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_DICH }] });
+    assert(!r0.failed.length, `tiền đề: lệnh sang lớp MB — ${JSON.stringify(r0.failed)}`);
     const gvcn = ganGv(m.classId, 9, null, true);
     const rg = transition.transitionPlan(gvcn, m.classId);
     const lb = rg.students[0]?.lenh;
     assert(!(rg.candidates as any[]).length, `GVCN: ${rg.candidates.length} ứng viên`);
-    assert(lb?.lopDichMa === 'LCBH BE 01' && lb?.ngayRaLenh === TODAY, `lenh: ${JSON.stringify(lb)}`);
-    /* Lớp dự kiến LTT = lớp chi nhánh khác (từ lệnh): sửa ghi chú vẫn lưu được — giá trị đang lưu không bị kiểm "cùng chi nhánh" lại. OV-3b: chỉ Quản lý ghi. */
+    assert(lb?.lopDichMa === 'MB LCB BE DICH' && lb?.ngayRaLenh === TODAY, `lenh: ${JSON.stringify(lb)}`);
+    /* OV-3b: chỉ Quản lý ghi Lộ trình tiếp theo. */
     assert(loi(() => loTrinh.ghiLoTrinhTiepCaLop(gvcn, m.classId, { items: [{ studentId: m.sids[0], huong: 'len_lop', ghiChu: 'x' }] }))?.status === 403, 'GVCN → 403');
     const e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(QL, m.classId, { items: [{ studentId: m.sids[0], huong: 'len_lop', ghiChu: 'Ghi chú sau lệnh' }] }));
-    assert(!e && ltt(m.sids[0], m.classId)?.ghi_chu === 'Ghi chú sau lệnh' && ltt(m.sids[0], m.classId)?.lop_du_kien_id === BE_CN, `QL sửa ghi chú: ${e?.message}`);
+    assert(!e && ltt(m.sids[0], m.classId)?.ghi_chu === 'Ghi chú sau lệnh' && ltt(m.sids[0], m.classId)?.lop_du_kien_id === BE_DICH, `QL sửa ghi chú: ${e?.message}`);
     /* Lớp dự kiến MỚI ở chi nhánh khác vẫn bị chặn như cũ. */
     const e2 = loi(() => loTrinh.ghiLoTrinhTiep(P.admin, l.sids[0], { huong: 'len_lop', lopDuKienId: BE_DICH }));
     assert(e2 && /lớp dự kiến/.test(e2.message), `lớp dự kiến mới chi nhánh khác: ${e2?.message}`);
@@ -396,19 +397,19 @@ export async function runPrLcbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ (o) panel FT giữ lớp chuyển đến CÙNG chi nhánh — R-B3
-  check('LCb-o · transitionPlan lớp FT: ứng viên chỉ cùng chi nhánh (như cũ); lớp thường: mọi chi nhánh', () => {
+  check('LCb-o · transitionPlan lớp FT: ứng viên chỉ cùng chi nhánh (như cũ); lớp thường: cũng chỉ cùng chi nhánh (N17, P9b)', () => {
     const cn = chiNhanh('LCBO');
     const ftNguon = lopMB('LCBO FT 01', 'FT', true, cn);
     const ftCung = lopMB('LCBO FT 02', 'FT', true, cn);
     const c = transition.transitionPlan(P.admin, ftNguon).candidates as any[];
     assert(c.some((x) => x.id === ftCung) && c.every((x) => x.branchCode === 'LCBO'), `FT: ${c.map((x) => x.code).join()}`);
     const thuong = taoLop('FOU', 8, 1, cn);
-    assert((transition.transitionPlan(P.admin, thuong.classId).candidates as any[]).some((x) => x.id === FT_DICH), 'lớp thường thấy lớp FT chi nhánh khác');
+    assert(!(transition.transitionPlan(P.admin, thuong.classId).candidates as any[]).some((x) => x.id === FT_DICH), 'lớp thường thấy lớp FT chi nhánh khác');
   });
 
   // ------------------------------------------------------------------ (p) lớp cũ programme_code NULL (chương trình theo kind) vẫn có "Chốt lộ trình"
-  check('LCb-p · lớp FOU programme_code NULL (cũ, theo kind) tuần 6 → vẫn có việc "Chốt lộ trình" như việc placement cũ', () => {
-    const l = taoLop('FOU', 6, 1);
+  check('LCb-p · lớp FOU programme_code NULL (cũ, theo kind) tuần 7 → vẫn có việc "Chốt lộ trình" như việc placement cũ', () => {
+    const l = taoLop('FOU', 7, 1);
     conn.prepare('UPDATE classes SET programme_code = NULL WHERE id = ?').run(l.classId);
     assert(viecChot(QL, l.classId).length === 1, 'thiếu việc cho lớp programme_code NULL');
   });
@@ -416,18 +417,18 @@ export async function runPrLcbTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ (w) web: panel Lộ trình tiếp theo (lớp thường) + lối vào — đọc nguồn
   const web = (f: string) => fs.readFileSync(new URL(`../../../../web/src/${f}`, import.meta.url), 'utf8');
   const coTep = (f: string) => fs.existsSync(new URL(`../../../../web/src/${f}`, import.meta.url));
-  check('LCb-w · OV-3b: lớp thường — chuyen-tiep / lo-trinh-ca-lop / ky-vong mở cách xem "Lộ trình tiếp theo", FT chuyen-tiep mở TransitionPanel; ⋯ một mục; panel cũ đã xoá; bảng dùng OTuan, mocLoTrinh', () => {
+  check('LCb-w · P9b: lớp thường — chuyen-tiep / lo-trinh-ca-lop / ky-vong / che-do=lo-trinh mở trang Cuối khoá; FT không còn TransitionPanel (R5.3); ⋯ một mục; bảng dùng OTuan, mocLoTrinh', () => {
     const ov = web('modules/classes/ClassOverviewPage.tsx');
-    assert(/v === 'chuyen-tiep' \|\| v === 'lo-trinh-ca-lop' \|\| v === 'ky-vong'/.test(ov) && ov.includes("'che-do': 'lo-trinh'"), 'lớp thường: lối vào cũ mở cách xem mới');
-    assert(/open=\{viec === 'chuyen-tiep' && !thuong\}/.test(ov), 'lớp FT: TransitionPanel');
-    assert(!coTep('modules/classes/PanelCuoiKhoa.tsx') && !coTep('modules/classes/PanelKyVong.tsx') && !coTep('modules/classes/LoTrinhTiepCaLopPanel.tsx'), 'panel cũ đã gỡ');
+    assert(/v === 'chuyen-tiep' \|\| v === 'lo-trinh-ca-lop' \|\| v === 'ky-vong'/.test(ov) && ov.includes("xem: 'cuoi-khoa'"), 'lớp thường: lối vào cũ mở trang Cuối khoá');
+    assert(!/TransitionPanel/.test(ov) && !coTep('modules/classes/TransitionPanel.tsx'), 'lớp FT: TransitionPanel đã gỡ');
+    assert(!coTep('modules/classes/PanelCuoiKhoa.tsx') && !coTep('modules/classes/PanelKyVong.tsx') && !coTep('modules/classes/LoTrinhTiepCaLopPanel.tsx') && !coTep('modules/classes/BangLoTrinhTiep.tsx') && !coTep('modules/classes/TabDauRa.tsx'), 'panel cũ đã gỡ');
     const mn = fs.readFileSync(new URL('../../../../shared/domain/hocVienLop.ts', import.meta.url), 'utf8');
-    assert((mn.match(/'Lộ trình tiếp theo'\), 'Lộ trình'/g) ?? []).length === 1 && !mn.includes("'Kỳ vọng đầu ra'"), '⋯ lớp thường đúng một mục, bỏ Kỳ vọng đầu ra');
-    assert(mn.includes("m('chuyen-tiep', t('Chuyển tiếp lớp'), 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm)"), 'FT giữ Chuyển tiếp lớp');
-    assert(web('modules/classes/DaiChuyenLop.tsx').includes("nhan={t('Lộ trình tiếp theo')}"), 'thanh nhắc Lộ trình tiếp theo');
-    assert(web('modules/classes/ClassProgressPanel.tsx').includes('>Lộ trình tiếp theo</button>'), 'Lịch Test');
-    const pn = web('modules/classes/BangLoTrinhTiep.tsx');
-    for (const chu of ['<OTuan', 'mocLoTrinh(', 'Lưu nháp', 'Chốt', 'Chọn lộ trình', 'Chưa chốt', 'Kết quả đầu ra', 'Còn bàn giao']) assert(pn.includes(chu), `BangLoTrinhTiep thiếu: ${chu}`);
+    assert((mn.match(/'Cuối khoá…'\), 'Cuối khoá'/g) ?? []).length === 1 && !mn.includes("'Kỳ vọng đầu ra'"), '⋯ lớp thường đúng một mục Cuối khoá…');
+    assert(!mn.includes("m('chuyen-tiep'"), 'FT bỏ Chuyển tiếp lớp (R5.3)');
+    assert(web('modules/classes/DaiChuyenLop.tsx').includes("nhan={t('Chốt lộ trình')}"), 'thanh nhắc Chốt lộ trình');
+    assert(web('modules/classes/ClassProgressPanel.tsx').includes(">{t('Cuối khoá ›')}</button>"), 'Lịch Test');
+    const pn = web('modules/classes/CuoiKhoaLop.tsx');
+    for (const chu of ['<OTuan', 'mocLoTrinh(', 'Lưu nháp', 'Chốt', 'Chọn hướng', 'Chưa chốt', 'Kết quả đầu ra', 'Còn bàn giao']) assert(pn.includes(chu), `CuoiKhoaLop thiếu: ${chu}`);
     assert(!pn.includes('placeholder="6.0"') && !/Dự kiến thi/.test(pn), 'không ô Target mờ 6.0, không ô Dự kiến thi');
   });
   check('LCb-w2 · transitionPlan: em có cờ kck (Target khoá KCK) — panel biết em đã có Target, không hỏi lại', () => {
