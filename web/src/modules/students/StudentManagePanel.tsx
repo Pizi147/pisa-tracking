@@ -303,7 +303,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const doiDauVao = coDauVao && JSON.stringify(dv) !== JSON.stringify(dvCu);
   const doiTarget = !!cycle && (targetThang || targetDeXuat) && (target !== targetCu || kck !== kckCu);
   /* P8 (N13, mockup k4): môn đăng ký của lộ trình FT — QL / GVCN; tóm tắt "Khi lưu" do máy chủ tính (cùng hàm lúc lưu). */
-  const coMon = quanLy && !!cycle && cycle.monDangKy !== undefined;
+  const coMon = !chiLienHe && !!cycle?.coTheDoiMon;   // máy chủ: QL, Quản trị, GVCN, TVV — lộ trình FT đang chạy
   const monCu: string[] | null = cycle?.monDangKy ?? null;
   const [mon, setMon] = useState<string[] | null>(monCu);
   const doiMon = coMon && JSON.stringify(mon) !== JSON.stringify(monCu);

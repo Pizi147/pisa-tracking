@@ -25,7 +25,7 @@ type DongGoc = {
 };
 /** `nhapLienHe` (OV-10b): cột Liên hệ — QL / Quản trị; GVCN không thấy (chủ SP 13/10). */
 /** `chiThongTin` (OV-13i): TVV / CX — cột Tuần bắt đầu khoá (ngoài `CHI_SUA_THONG_TIN`). */
-type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; kyThi?: KyThi | null; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[]; coMonHoc?: boolean };
+type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; kyThi?: KyThi | null; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[]; coMonHoc?: boolean; coTheDoiMon?: boolean };
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[]; monHoc?: { studentId: number; dong: string[] }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
@@ -94,7 +94,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const goc = useMemo(() => new Map((d?.rows ?? []).map((r) => [r.studentId, r])), [d]);
   /** Cả cột khoá theo vai — máy chủ kiểm lại (`duocDoiTarget`, `CHI_SUA_THONG_TIN`). */
   const khoaCot = (k: Cot) => (k === 'target' && !d?.coTheSuaTarget ? t('Chỉ Quản lý, TVV hoặc CX đổi Target')
-    : (k === 'startWeek' || k === 'monDangKy') && d?.chiThongTin ? t('Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu, Môn học') : null);
+    : k === 'startWeek' && d?.chiThongTin ? t('Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu')
+    : k === 'monDangKy' && !d?.coTheDoiMon ? t('Chỉ Quản lý, GVCN hoặc TVV đổi Môn học') : null);
 
   /** Giá trị gốc của ô: đã lưu ở lô trước (lưu dở) thì lấy giá trị đó. */
   const nen = (g: DongGoc, k: Cot) => luuRoi[g.studentId]?.[k] ?? chuGoc(g, k);
@@ -217,7 +218,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                 </Truong>
               </div>
             )}
-            {d.coMonHoc && !d.chiThongTin && (
+            {d.coMonHoc && d.coTheDoiMon && (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }} role="group" aria-label={t('Áp môn học cho em đã chọn')}>
                 <span className="text-sm font-semibold tabular-nums text-slate-200">{t('{n} em đã chọn', { n: chon.size })}</span>
                 <NutChon nho chon={chon.size > 0 && chon.size === d.rows.filter((r) => r.laFt).length}
@@ -234,13 +235,13 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
             <div className="overflow-x-auto">
               <table className="w-full table-fixed text-sm" style={{ minWidth: cot.reduce((n, c) => n + c.rong, 0) + RONG_LUU_Y }}>
                 <colgroup>
-                  {d.coMonHoc && !d.chiThongTin && <col style={{ width: 44 }} />}
+                  {d.coMonHoc && d.coTheDoiMon && <col style={{ width: 44 }} />}
                   {cot.map((c) => <col key={c.key} style={{ width: c.rong }} />)}
                   <col style={{ width: RONG_LUU_Y }} />
                 </colgroup>
                 <thead>
                   <tr>
-                    {d.coMonHoc && !d.chiThongTin && <Th><span className="sr-only">{t('Chọn')}</span></Th>}
+                    {d.coMonHoc && d.coTheDoiMon && <Th><span className="sr-only">{t('Chọn')}</span></Th>}
                     {cot.map((c) => (
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
                         className={c.key === 'fullName' ? 'sticky-col' : ''}
@@ -257,8 +258,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                     const mt = xem?.canhBaoMt.find((x) => x.studentId === r.studentId);
                     const monTom = xem?.monHoc?.find((x) => x.studentId === r.studentId)?.dong ?? [];
                     return (
-                      <tr key={r.studentId}>
-                        {d.coMonHoc && !d.chiThongTin && (
+                      <tr key={r.studentId} style={chon.has(r.studentId) ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : undefined}>
+                        {d.coMonHoc && d.coTheDoiMon && (
                           <td className="td px-1.5 py-1.5 align-top">
                             <input type="checkbox" className="h-4 w-4 sm:mt-1.5" aria-label={t('Chọn {ten}', { ten: r.fullName })} disabled={!r.laFt} checked={chon.has(r.studentId)}
                               onChange={(e) => setChon((s) => { const n = new Set(s); if (e.target.checked) n.add(r.studentId); else n.delete(r.studentId); return n; })} />

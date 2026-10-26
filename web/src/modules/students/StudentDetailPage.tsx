@@ -239,7 +239,7 @@ export default function StudentDetailPage() {
               {/* P8 (mockup V6 k7): em thiếu môn, lượt kết quả gần nhất không có Overall → "– MT3 · Không đủ bộ môn" cạnh tên. */}
               {(() => {
                 const a = cy?.monHoc ? (data.attempts as any[]).find((x) => x.id === data.dauHoSo?.o?.ketQua?.kq?.attemptId) : null;
-                return a && a.overall == null ? <NhanKq kq="thieu">{`${a.kind === 'mt0' ? 'MT0' : `MT${a.attemptNo}`} · ${t('Không đủ bộ môn')}`}</NhanKq> : null;
+                return a?.khongDuBoMon && a.overall == null ? <NhanKq kq="thieu">{`${a.kind === 'mt0' ? 'MT0' : `MT${a.attemptNo}`} · ${t('Không đủ bộ môn')}`}</NhanKq> : null;
               })()}
               {/* P7 (k6): em Tạm dừng ở Lưu trữ — "Tạm dừng 14/09 · Có thể quay lại"; em Kết thúc học — "Kết thúc học 22/08". */}
               {data.status === 'inactive' && data.archivedAt ? <Info>{t('Tạm dừng {ngay} · Có thể quay lại', { ngay: ngay(data.archivedAt, homNay) })}</Info>

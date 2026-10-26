@@ -24,7 +24,7 @@ export const OVERALL = 'overall';
 
 /** Lượt của hồ sơ (`GET /students/:id` → `attempts`) — phần màn này đọc. */
 type Luot = {
-  id: number; attemptNo: number; kind: string; status: string; lichSu?: boolean; weekStart: string | null;
+  id: number; attemptNo: number; khongDuBoMon?: boolean; kind: string; status: string; lichSu?: boolean; weekStart: string | null;
   overall: number | null; expectation: number | null; vangCu?: Record<string, string> | null;
 };
 type SEx = { diem: number; tuan: string; tuanMa: string };
@@ -44,7 +44,7 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
   /** P8 (mockup k7): môn đăng ký của lộ trình (null = đủ) — hồ sơ chỉ vẽ ô môn em học; Overall thiếu bộ môn ghi "Không đủ bộ môn". */
   mon?: readonly string[] | null;
 }) {
-  const ds = rows.filter((r) => !r.tuLopTruoc && (!mon || r.ratio || mon.includes(r.category)));
+  const ds = rows.filter((r) => !r.tuLopTruoc && (!mon || r.ratio || mon.includes(r.category) || r.band !== null));   // môn đã bỏ vẫn hiện điểm cũ
   if (!ds.length) return null;
   const ratio = ds.some((r) => r.ratio);
   const a = attempts.find((x) => x.id === ketQuaId) ?? null;
@@ -55,9 +55,9 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
       className={`grid gap-2.5 ${ratio ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 min-[900px]:grid-cols-[1.2fr_repeat(5,1fr)] [&>*:first-child]:max-[899px]:col-span-3'}`}>
       {!ratio && (
         <ODiemTo nhan={a ? `Overall · ${tenLuot(a)}` : 'Overall'} chon={chon === OVERALL} onClick={() => onChon(OVERALL)}
-          phu={mon && a && a.overall == null ? null : a?.overall != null ? [a.expectation != null ? t('kỳ vọng {kv}', { kv: fmtBand(a.expectation) }) : null,
+          phu={a?.khongDuBoMon && a.overall == null ? null : a?.overall != null ? [a.expectation != null ? t('kỳ vọng {kv}', { kv: fmtBand(a.expectation) }) : null,
             truoc?.overall != null ? (truoc.overall === a.overall ? `= ${tenLuot(truoc)}` : `${tenLuot(truoc)} ${fmtBand(truoc.overall)}${lech(a.overall, truoc.overall)}`) : null].filter(Boolean).join(' · ') : t('chưa có điểm')}>
-          {mon && a && a.overall == null ? <span className="py-1.5"><NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq></span>
+          {a?.khongDuBoMon && a.overall == null ? <span className="py-1.5"><NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq></span>
             : <ODiem kieu="lon" so={a?.overall != null ? fmtBand(a.overall) : null} kq={soKyVong(a?.overall, a?.expectation)} nhan="Overall" kyVong={a?.expectation != null ? fmtBand(a.expectation) : undefined} />}
         </ODiemTo>
       )}

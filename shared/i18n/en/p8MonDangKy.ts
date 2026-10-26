@@ -14,4 +14,5 @@ export const EN_P8_MON_DANG_KY = {
   'Không đủ bộ môn': 'Incomplete subject set',
   'Chú giải ô điểm': 'Score cell legend',
   'em không học môn này': 'student does not study this subject',
+  'Chỉ Quản lý, GVCN hoặc TVV đổi Môn học': 'Only Managers, homeroom teachers or consultants change Subjects',
 };

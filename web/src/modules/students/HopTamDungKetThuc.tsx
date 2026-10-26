@@ -17,7 +17,8 @@ const lamMoi = () => LAM_MOI.forEach((k) => invalidate(k));
 export function KhoiKhiLuu({ dong, vang }: { dong: string[]; vang?: boolean }) {
   if (!dong.length) return null;
   return (
-    <div className={`rounded-lg border px-3 py-2.5 text-sm ${vang ? 'border-soon/60 bg-soon/10' : 'border-[color:var(--line)] bg-[color:var(--surface-2)]'}`}>
+    <div className={`rounded-lg border px-3 py-2.5 text-sm ${vang ? '' : 'border-[color:var(--line)] bg-[color:var(--surface-2)]'}`}
+      style={vang ? { borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' } : undefined}>   {/* mockup V6 `.tom-tat.vang`: nền + viền cảnh báo */}
       <div className="text-xs font-bold text-slate-400">{t('Khi lưu, web sẽ')}</div>
       <ul className="m-0 mt-1 list-disc space-y-0.5 pl-5 text-slate-200">{dong.map((x) => <li key={x}>{x}</li>)}</ul>
     </div>
