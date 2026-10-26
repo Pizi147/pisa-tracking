@@ -155,7 +155,7 @@ export type AttemptResult = {
   kckDuoi: boolean;
   /** Chỉ có khi đủ CẢ BỐN kỹ năng — không dựng Overall từ hai/ba kỹ năng. */
   overall: number | null;
-  /** P8 (N13): lượt không đánh giá đủ bốn kỹ năng (kỹ năng ngoài phạm vi) — Overall ghi "Không đủ bộ môn", khác "Chưa đủ dữ liệu". */
+  /** P8 (N13): lượt không đánh giá đủ bộ môn (kỹ năng ngoài phạm vi hoặc chỉ một task Writing) — Overall ghi "Không đủ bộ môn", khác "Chưa đủ dữ liệu". */
   khongDuBoMon: boolean;
   /** Nhãn cho biết đang đánh giá trên mấy kỹ năng, ví dụ "Đánh giá trên 3 kỹ năng". */
   scopeNote: string | null;
@@ -183,7 +183,8 @@ export function evaluateAttempt(
   kck = false,
 ): AttemptResult {
   const expectation = expectationFor(target, attemptNo, route);
-  const bands = assessedBands(entry, boTaskTrong(skippedSkills));
+  const boTask = boTaskTrong(skippedSkills);
+  const bands = assessedBands(entry, boTask);
   const skipped = ASSESSED_SKILLS.filter((s) => skippedSkills.includes(s));
   const required = ASSESSED_SKILLS.filter((s) => !skippedSkills.includes(s));
 
@@ -236,7 +237,9 @@ export function evaluateAttempt(
    * nên không dựng Overall — kể cả khi điểm cũ của kỹ năng đó vẫn còn để tra lại.
    */
   const all = ASSESSED_SKILLS.map((s) => bands[s]);
-  const overall = skipped.length === 0 && all.every((b) => b !== null)
+  /* P8 (Q4, mockup k4/k7): chỉ học một task Writing → Writing = task đó nhưng Overall vẫn "Không đủ bộ môn". */
+  const khongDuBoMon = skipped.length > 0 || boTask !== null;
+  const overall = !khongDuBoMon && all.every((b) => b !== null)
     ? roundToHalf((all as number[]).reduce((a, b) => a + b, 0) / 4)
     : null;
   /* OV-1c (đặc tả 3.2): Overall tính được và ≥ kỳ vọng → không SOS, kể cả có kỹ năng dưới kỳ vọng (`failedCount` vẫn đếm để tra lại). */
@@ -248,7 +251,7 @@ export function evaluateAttempt(
 
   return {
     expectation, bands, verdicts, required, skipped,
-    scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall, khongDuBoMon: skipped.length > 0,
+    scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall, khongDuBoMon,
     chot, provisional,
     /*
      * Ở danh sách chỉ cần con số. "Đánh giá trên 3 kỹ năng" là một câu giải thích, và giải

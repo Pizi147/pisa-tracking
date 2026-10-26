@@ -93,12 +93,12 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
     });
   });
 
-  check('MDK-3b · chỉ W2: MT chưa thi bo_task = W1, Writing = W2; MT đã chấm giữ công thức cũ; ô W1 không là thiếu, nhập W1 bị chặn', () => {
+  check('MDK-3b · chỉ W2: MT chưa thi bo_task = W1, Writing = W2, Overall Không đủ bộ môn; MT đã chấm giữ công thức cũ; ô W1 không là thiếu, nhập W1 bị chặn', () => {
     thu(() => {
       const huy = em('Lê Quang Huy');
       const mt1 = huy.mt(1), mt3 = huy.mt(3);
       const kq = mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
-      assert(kq.writing === 'W2' && !kq.khongDuBoMon, `tóm tắt ${JSON.stringify(kq)}`);
+      assert(kq.writing === 'W2' && kq.khongDuBoMon, `tóm tắt ${JSON.stringify(kq)}`);   // mockup k4: Writing = W2 · Overall Không đủ bộ môn
       assert(dong(mt3.id, 'writing').bo_task === 'writing1' && dong(mt3.id, 'writing').required === 1, 'MT3: bỏ task W1, Writing vẫn học');
       assert(dong(mt1.id, 'writing').bo_task === null, 'MT1 đã chấm: không đổi');
       const cells = attempts.skillCells(P.admin, mt3, [], attempts.skipsOf(mt3.id), TODAY, skillSchedule.ensureSkillRows(mt3.id));
@@ -109,7 +109,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       capNhatConOCho([mt3.id]);
       assert(get('SELECT o_cho_tu FROM assessment_attempts WHERE id = ?', mt3.id).o_cho_tu === null, 'đủ L R W2 S → không còn ô chờ (W1 không chờ)');
       const r = attempts.resultOf(get('SELECT * FROM assessment_attempts WHERE id = ?', mt3.id));
-      assert(r.bands.writing === 7 && r.overall === 6.5 && r.chot && !r.khongDuBoMon, `Writing ${r.bands.writing}, Overall ${r.overall}`);
+      assert(r.bands.writing === 7 && r.overall === null && r.chot && r.khongDuBoMon, `Writing ${r.bands.writing}, Overall ${r.overall}`);
       const s1 = all('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?', mt1.id);
       const b = (k: string) => s1.find((x) => x.skill === k).band;
       const r1 = attempts.resultOf(get('SELECT * FROM assessment_attempts WHERE id = ?', mt1.id));
@@ -203,6 +203,8 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       const chuaThiW = get(`SELECT COUNT(*) n FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND k.skill = 'writing'
         AND NOT EXISTS (SELECT 1 FROM assessment_scores x WHERE x.attempt_id = a.id AND x.skill IN ('writing1','writing2') AND x.band IS NOT NULL) AND k.sit_status IN ('scheduled','absent')`, huy.id).n;
       assert(xem.truoc === 'Đủ môn' && xem.sau === 'L · R · W2 · S' && xem.writing === 'W2' && xem.boKhoiDot === 0 && xem.giuDaCham === 0 && chuaThiW >= 1, `xem trước: ${JSON.stringify(xem)}`);
+      const huyMt3 = huy.mt(3).attempt_no;
+      assert(xem.dong.join(' | ') === `Bỏ W1 khỏi MT${huyMt3} (chưa có điểm) · lịch sử giữ | MT1, MT2 đã chấm giữ nguyên | Writing = W2 · Overall: Không đủ bộ môn`, `dòng: ${xem.dong.join(' | ')}`);
       mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
       const ls = JSON.stringify(lichSu.lichSuSua(P.mbManager, huy.sid, {}));
       assert(/Môn học/.test(ls) && ls.includes('Đủ môn') && ls.includes('L · R · W2 · S'), `Lịch sử: ${ls.slice(0, 400)}`);

@@ -29,8 +29,10 @@ export type TomTatMon = {
   caseDong: number;
   /** "W2" khi chỉ học W2 (Writing = W2), "W1" ngược lại; null = đủ hai task hoặc không học Writing. */
   writing: string | null;
-  /** Thiếu kỹ năng đánh giá → Overall "Không đủ bộ môn". */
+  /** Thiếu kỹ năng đánh giá hoặc một task Writing → Overall "Không đủ bộ môn". */
   khongDuBoMon: boolean;
+  /** Các dòng "Khi lưu, web sẽ" (mockup k4) — web hiện nguyên, không tự ghép. */
+  dong: string[];
 };
 
 const CHUA_THI = new Set(['scheduled', 'absent']);
@@ -55,7 +57,7 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
             EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = k.attempt_id
                      AND sc.skill IN (k.skill, CASE k.skill WHEN 'writing' THEN 'writing1' END, CASE k.skill WHEN 'writing' THEN 'writing2' END)
                      AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)) AS co_diem
-       FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+       , a.attempt_no FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
       WHERE a.cycle_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no, k.id`,
   ).all(cycleId) as any[];
   const chuaThi = (r: any) => !r.co_diem && CHUA_THI.has(r.sit_status);
@@ -63,6 +65,9 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
   const giu = dong.filter((r) => khongHoc.includes(r.skill) && r.co_diem);
   const bat = dong.filter((r) => !r.required && r.scope_reason === LY_DO_KHONG_HOC && !khongHoc.includes(r.skill));
   const doiTask = dong.filter((r) => r.skill === 'writing' && !khongHoc.includes('writing') && chuaThi(r) && (r.bo_task ?? null) !== boTask);
+  /* Tóm tắt theo bài (lượt × môn): bỏ = tắt kỹ năng + đánh dấu task bỏ; thêm = bật lại + gỡ / đổi task bỏ; giữ = bài môn bỏ đã có điểm. */
+  const boMoi = boTask ? doiTask : [], themTask = boTask ? [] : doiTask;
+  const giuW = boTask ? dong.filter((r) => r.skill === 'writing' && r.co_diem) : [];
   /* Case mở của môn bỏ: ô nhập thiếu + "writing" khi bỏ cả Writing. */
   const boChuDe: string[] = [...monThieu(luu), ...(khongHoc.includes('writing') ? ['writing'] : [])];
   const caseIds = boChuDe.length ? (conn.prepare(
@@ -73,8 +78,22 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
     truoc: chuMon(cy.mon_dang_ky), sau: chuMon(luu), doi: luu !== (cy.mon_dang_ky ?? null),
     boKhoiDot: tat.length, giuDaCham: giu.length, batLai: bat.length, caseDong: caseIds.length,
     writing: boTask ? ENTRY_SKILL_SHORT[boTask === 'writing1' ? 'writing2' : 'writing1'] : null,
-    khongDuBoMon: khongHoc.length > 0,
+    khongDuBoMon: khongHoc.length > 0 || !!boTask,   // mockup k4 (Q4): chỉ học một task Writing cũng Không đủ bộ môn
+    dong: [],
   };
+  if (tom.doi) {
+    const cu = new Set(monThieu(cy.mon_dang_ky)), moi = new Set(monThieu(luu));
+    const ten = (ds: string[]) => ds.map((k) => ENTRY_SKILL_SHORT[k as keyof typeof ENTRY_SKILL_SHORT]).join(' ');
+    const bo = ten([...moi].filter((k) => !cu.has(k))), them = ten([...cu].filter((k) => !moi.has(k)));
+    const mt = (rs: any[]) => [...new Set(rs.map((r) => `MT${r.attempt_no}`))].join(', ');
+    const dsBo = [...tat, ...boMoi], dsThem = [...bat, ...themTask], dsGiu = [...giu, ...giuW];
+    if (bo && dsBo.length) tom.dong.push(`Bỏ ${bo} khỏi ${mt(dsBo)} (chưa có điểm) · lịch sử giữ`);
+    if (bo && dsGiu.length) tom.dong.push(`${mt(dsGiu)} đã chấm giữ nguyên`);
+    if (caseIds.length) tom.dong.push(`Đóng ${caseIds.length} Case (${ten(boChuDe.filter((k) => k !== 'writing'))}) — Không còn học môn`);
+    if (them && dsThem.length) tom.dong.push(`Thêm ${them} vào ${mt(dsThem)} (chưa thi)`);
+    if (them) tom.dong.push('Case đã đóng không tự mở lại');
+    if (tom.writing || tom.khongDuBoMon) tom.dong.push([tom.writing && `Writing = ${tom.writing}`, tom.khongDuBoMon && 'Overall: Không đủ bộ môn'].filter(Boolean).join(' · '));
+  }
   if (o.xemTruoc || !tom.doi) return tom;
 
   return tx(() => {
