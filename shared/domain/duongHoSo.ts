@@ -88,9 +88,13 @@ const soNguyenDuong = (v: string | null): number | undefined => {
  * lớp thường → bảng điểm lớp thường như cũ (BỎ `kn` — bảng đó chưa có ô kỹ năng để cuộn). Không ai tự ghép `/mock-test/`.
  * Quyền không đổi: hồ sơ Mock tự kiểm quyền như cũ (`kn` chỉ là chỗ cuộn).
  */
-export function duongDotTest(d: { id: number; kind?: string | null; classId?: number | null }, kn?: string | null): string {
+export function duongDotTest(d: { id: number; kind?: string | null; classId?: number | null; studentId?: number | null }, kn?: string | null): string {
   /* PR-MT0: MT0 mở hồ sơ Mock (chấm band), không bảng điểm lớp thường. */
-  if (d.kind && d.kind !== 'mock' && d.kind !== 'mt0' && d.classId) return `/bang-diem-thuong/${d.classId}?kind=${d.kind}`;
+  if (d.kind && d.kind !== 'mock' && d.kind !== 'mt0') {
+    if (d.classId) return `/bang-diem-thuong/${d.classId}?kind=${d.kind}`;
+    /* R1-SUA-NHO: lượt lớp thường mất lớp — hồ sơ Mock sẽ chuyển về chính nó, nên về hồ sơ HV. */
+    if (d.studentId) return duongHoSoHocVien(d.studentId);
+  }
   const k = kn && KY_NANG_HOP_LE.includes(kn) ? kn : null;
   return `/mock-test/${d.id}${k ? `?kn=${k}` : ''}`;
 }

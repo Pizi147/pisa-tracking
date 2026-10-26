@@ -13,7 +13,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import type { SkillBoardRow } from '../cases/SkillBoard.tsx';
 import {
-  BAI_LOP_NHAN_XET_TOI_DA, BAI_LOP_TEN_TOI_DA, chuDoiVang, mondayOfDate, soKyVong, tenMonNgan, tuanLich,
+  BAI_LOP_NHAN_XET_TOI_DA, BAI_LOP_TEN_TOI_DA, chuDoiVang, dungTrucTuan, mondayOfDate, soKyVong, tenMonNgan, tuanLich, viTriTuan,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -107,6 +107,8 @@ export function BieuDoHanhTrinh({ studentId, row, attempts, homNay, tenKn }: {
   /* viewBox = bề rộng thật của khung → chữ trục giữ 12 px ở mọi cỡ màn (không phóng to theo SVG). */
   const khung = useRef<HTMLDivElement>(null);
   const [rong, setRong] = useState(0);
+  /* Số khung 80 tuần lùi từ gần nhất (chỉ khi trục quá trần 260 tuần). */
+  const [lui, setLui] = useState(0);
   useLayoutEffect(() => {
     const el = khung.current;
     if (!el) return undefined;
@@ -141,14 +143,12 @@ export function BieuDoHanhTrinh({ studentId, row, attempts, homNay, tenKn }: {
     );
   }
 
-  /* Trục tuần: từ lượt đầu tới max(tuần này, lượt cuối); mỗi cột một tuần. */
-  const tuanDau = [...moc.map((m) => m.tuan), ...sx.map((x) => x.tuan)].sort()[0];
-  const tuanCuoi = [nay, ...moc.map((m) => m.tuan), ...sx.map((x) => x.tuan)].sort().at(-1)!;
-  const tuan: string[] = [];
-  for (let d = Date.parse(tuanDau); d <= Date.parse(tuanCuoi) && tuan.length < 80; d += 7 * 86_400_000) tuan.push(new Date(d).toISOString().slice(0, 10));
-  if (tuan.length < 2) tuan.push(new Date(Date.parse(tuan[0]) + 7 * 86_400_000).toISOString().slice(0, 10));
+  /* Trục tuần (R1-SUA-NHO): từ lượt đầu tới max(tuần này, lượt cuối), mỗi cột một tuần; quá trần thì xem từng khung 80 tuần. Điểm ngoài khung không vẽ. */
+  const { tuan, coTruoc, coSau } = dungTrucTuan([...moc.map((m) => m.tuan), ...sx.map((x) => x.tuan)], nay, lui);
+  const xem = (iso: string) => viTriTuan(tuan, iso) !== null;
+  const mocXem = moc.filter((m) => xem(m.tuan)), sxXem = sx.filter((x) => xem(x.tuan));
   const W = Math.max(320, rong || (hep ? 343 : 1000)), H = hep ? 250 : 300, x0 = hep ? 40 : 56, x1 = W - (hep ? 24 : 40), y0 = 30, y1 = H - 64;
-  const X = (iso: string) => x0 + ((x1 - x0) * Math.max(0, tuan.indexOf(iso))) / (tuan.length - 1);
+  const X = (iso: string) => x0 + ((x1 - x0) * (viTriTuan(tuan, iso) ?? 0)) / (tuan.length - 1);   // chỉ gọi với tuần trong khung
   const so = [...moc.flatMap((m) => [m.v, m.kv]), ...sx.map((x) => x.diem)].filter((v): v is number => v !== null);
   let lo = Math.floor((Math.min(...so) - 0.5) * 2) / 2, hi = Math.ceil((Math.max(...so) + 0.5) * 2) / 2;
   if (hi - lo < 2) { lo = Math.max(0, lo - 0.5); hi = lo + 2; }
@@ -158,14 +158,16 @@ export function BieuDoHanhTrinh({ studentId, row, attempts, homNay, tenKn }: {
   for (let v = Math.ceil(lo / buoc) * buoc; v <= hi + 1e-9; v += buoc) vach.push(Math.round(v * 10) / 10);
 
   /* Kỳ vọng bậc thang: giữ mức của lượt trước tới tuần lượt sau. */
-  const kvMoc = moc.filter((m) => m.kv !== null);
+  /* Khung lùi: mức kỳ vọng trước khung giữ từ cột đầu. */
+  const kvTruoc = moc.filter((m) => m.kv !== null && m.tuan < tuan[0]).at(-1);
+  const kvMoc = [...(kvTruoc ? [{ ...kvTruoc, tuan: tuan[0] }] : []), ...mocXem.filter((m) => m.kv !== null)];
   let kvD = '';
   kvMoc.forEach((m, i) => { kvD += i === 0 ? `M${X(m.tuan)} ${Y(m.kv!)}` : ` H${X(m.tuan)} V${Y(m.kv!)}`; });
   if (kvMoc.length) kvD += ` H${X(tuan.at(-1)!)}`;
   /* Nối chấm liền nhau; lượt trống ở giữa thì không nối (khoảng thiếu để trống). */
   const noi: string[] = [];
   const thuTu = moc.filter((m) => m.loai !== 'sap');
-  thuTu.forEach((m, i) => { const p = thuTu[i - 1]; if (p && p.loai === 'diem' && m.loai === 'diem') noi.push(`M${X(p.tuan)} ${Y(p.v!)} L${X(m.tuan)} ${Y(m.v!)}`); });
+  thuTu.forEach((m, i) => { const p = thuTu[i - 1]; if (p && p.loai === 'diem' && m.loai === 'diem' && xem(p.tuan) && xem(m.tuan)) noi.push(`M${X(p.tuan)} ${Y(p.v!)} L${X(m.tuan)} ${Y(m.v!)}`); });
   const nhanTuan = (iso: string, i: number) => {
     const chu = tuanLich(iso, homNay);
     const dauThang = i === 0 || tuanLich(tuan[i - 1], homNay).split(' ')[1] !== chu.split(' ')[1];
@@ -174,8 +176,8 @@ export function BieuDoHanhTrinh({ studentId, row, attempts, homNay, tenKn }: {
   const thua = Math.ceil(tuan.length / Math.max(3, Math.floor((x1 - x0) / 64)));
   const mauCua = (m: Moc) => { const k = soKyVong(m.v, m.kv); return k ? `rgb(var(--kq-${k}-rgb))` : 'var(--text-dim)'; };
   const moTa = [
-    ...moc.filter((m) => m.loai === 'diem').map((m) => `${m.ten} ${tuanLich(m.tuan, homNay)} ${fmtBand(m.v)}${m.kv !== null ? ` (${t('kỳ vọng {kv}', { kv: fmtBand(m.kv) })})` : ''}`),
-    ...moc.filter((m) => m.loai === 'trong').map((m) => `${m.ten} ${t('chưa có điểm')}`),
+    ...mocXem.filter((m) => m.loai === 'diem').map((m) => `${m.ten} ${tuanLich(m.tuan, homNay)} ${fmtBand(m.v)}${m.kv !== null ? ` (${t('kỳ vọng {kv}', { kv: fmtBand(m.kv) })})` : ''}`),
+    ...mocXem.filter((m) => m.loai === 'trong').map((m) => `${m.ten} ${t('chưa có điểm')}`),
   ].join('; ');
   return (
     <div ref={khung} className="px-4 pb-1 pt-2">
@@ -190,7 +192,7 @@ export function BieuDoHanhTrinh({ studentId, row, attempts, homNay, tenKn }: {
         {kvD && <path d={kvD} fill="none" stroke="var(--text-dim)" strokeWidth="2" strokeDasharray="4 4" opacity=".7" />}
         {kvMoc.length > 0 && <text x={X(tuan.at(-1)!)} y={Y(kvMoc.at(-1)!.kv!) - 8} textAnchor="end" fontSize="12" fill="var(--text-dim)">{t('kỳ vọng')}</text>}
         {noi.map((d) => <path key={d} d={d} fill="none" stroke="var(--accent-line)" strokeWidth="1.5" />)}
-        {moc.map((m) => {
+        {mocXem.map((m) => {
           const x = X(m.tuan);
           if (m.loai === 'sap') return (
             <g key={m.id}>
@@ -215,7 +217,7 @@ export function BieuDoHanhTrinh({ studentId, row, attempts, homNay, tenKn }: {
             </g>
           );
         })}
-        {sx.map((s, i) => (
+        {sxXem.map((s, i) => (
           <g key={`sx-${i}`}>
             <rect x={X(s.tuan) - 5} y={Y(s.diem) - 5} width="10" height="10" transform={`rotate(45 ${X(s.tuan)} ${Y(s.diem)})`} fill="var(--hong-nen)" stroke="var(--hong)" />
             <text x={X(s.tuan) + 10} y={Y(s.diem) + 4} fontSize="12" fill="var(--hong-chu)">S Ex {fmtBand(s.diem)}</text>
@@ -226,6 +228,12 @@ export function BieuDoHanhTrinh({ studentId, row, attempts, homNay, tenKn }: {
         ))}
         {tuan.includes(nay) && <text x={X(nay)} y={y1 + 40} textAnchor={X(nay) > x1 - 30 ? 'end' : 'middle'} fontSize="12" fill="var(--hong-chu)">{t('tuần này')}</text>}
       </svg>
+      {(coTruoc || coSau) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
+          {coTruoc ? <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => setLui(lui + 1)}>{t('‹ Xem trước đó')}</button> : <span />}
+          {coSau && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => setLui(0)}>{t('Về gần nhất ›')}</button>}
+        </div>
+      )}
     </div>
   );
 }

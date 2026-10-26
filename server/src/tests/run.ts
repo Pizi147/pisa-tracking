@@ -9615,6 +9615,9 @@ await runPrSvLoTrinhTests({ check, assert, conn, P, TODAY, classId, addDays } as
 // ==================================================================== P9b CUOI-KHOA (trang Cuối khoá lớp thường, hạn chốt N20, N17, N22)
 const { runPrCuoiKhoaTests } = await import('./prCuoiKhoa.tests.ts');
 await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
+// ==================================================================== R1-SUA-NHO (trục tuần Hành trình, đường lượt lớp thường không vòng)
+const { runR1SuaNhoTests } = await import('./r1SuaNho.tests.ts');
+await runR1SuaNhoTests({ check, assert });
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
