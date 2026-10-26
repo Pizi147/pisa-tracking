@@ -308,7 +308,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(doc('shared/domain/hocVienLop.ts').includes("'Mở lại lớp'") && dt.includes('coTheMoLaiLop') && dt.includes('coTheKetThucLop'), 'mục ⋯ Mở lại lớp + Quản lý kết thúc lớp');
     assert(doc('web/src/modules/classes/ClassOverviewPage.tsx').includes('<MoLaiLopPanel'), 'trang hồ sơ lớp vẽ panel');
     const lt = doc('web/src/modules/students/LuuTruPage.tsx');
-    assert(lt.includes('coTheMoLai') && lt.includes('>Mở lại</button>') && lt.includes('<MoLaiLopPanel'), 'nút Mở lại ở Lưu trữ');
+    assert(lt.includes('coTheMoLai') && lt.includes(">{t('Mở lại')}</button>") && lt.includes('<MoLaiLopPanel'), 'nút Mở lại ở Lưu trữ');
   });
 
   // ---------------------------------------------------------------- Task 6, 8, 9, 10 · web (đọc nguồn)
@@ -320,7 +320,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     for (const chu of ['Về lớp cũ', 'Sang lớp mới', 'Lộ trình cũ giữ ở Hành trình', 'Chưa có lớp để học lại']) assert(hl.includes(chu), `thiếu chữ "${chu}"`);
     assert(hl.includes('/hoc-lai`') && hl.includes('/hoc-lai/lop-dich') && hl.includes('moLaiLop: true'), 'phải gọi /hoc-lai và /hoc-lai/lop-dich');
     assert(/toast\.hoanTac\(`\$\{t\('Đã cho \{ten\} quay lại học', \{ ten: studentName \}\)\}/.test(hl) && hl.includes("hoanTacHangLoat('hoc-lai'"), 'Hoàn tác phải đi qua hoan-tac-hoc-lai');
-    assert(/<Truong nhan="Lý do" tuyChon/.test(hl) && hl.includes('canTarget'), 'Lý do tuỳ chọn + Target khi sang FT');
+    assert(/<Truong nhan=\{t\('Lý do'\)\} tuyChon/.test(hl) && hl.includes('canTarget'), 'Lý do tuỳ chọn + Target khi sang FT');
   });
   check('LUIb-16 · web: chia lô bằng LO_HANG_LOAT_EM, gom ok/failed, dừng khi một lô ném lỗi và ghi "chưa lưu" cho phần còn lại; Hoàn tác gọi việc ngược', () => {
     const h = doc('web/src/modules/students/hangLoatEm.ts');
