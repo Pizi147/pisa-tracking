@@ -23,9 +23,6 @@ async function bamChu(chu: string): Promise<string> {
 }
 
 /* Vùng bấm ~44 px bằng `::after` (mẫu `DauTrangLop`) — không giãn dòng chữ đang đọc. */
-/* Lệch chữ: gọi lại cùng nguồn vẫn lệch tới khi trang có chữ mới → nói bước tiếp, không đưa nút lặp. */
-const LECH = 'Nội dung vừa đổi — tải lại trang để dịch.';
-
 const NUT = "link relative ml-1.5 appearance-none border-0 bg-transparent p-0 text-xs after:absolute after:-inset-x-2 after:-inset-y-3.5 after:content-['']";
 
 /** `anGoc`: chỗ đã có chữ gốc ngay cạnh (ô nhập) — chỉ in nút, và bản dịch khi đã dịch. */
@@ -59,7 +56,8 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
   };
 
   const hienDich = xemDich && !!ban;
-  const lech = loi === t(LECH);
+  /* Lệch chữ: gọi lại cùng nguồn vẫn lệch tới khi trang có chữ mới → nói bước tiếp, không đưa nút lặp. */
+  const lech = loi === t('Nội dung vừa đổi — tải lại trang để dịch.');
   return (
     <>
       {(!anGoc || hienDich) && <span lang={hienDich ? NGON_NGU : undefined} title={hienDich ? t('Bản dịch tự động') : undefined}>{hienDich ? ban : goc}</span>}
