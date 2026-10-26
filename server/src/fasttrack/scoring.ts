@@ -132,6 +132,8 @@ export type AttemptResult = {
   /** Các kỹ năng phải mock ở lượt này (đã trừ kỹ năng được đánh dấu không mock). */
   required: AssessedSkill[];
   skipped: AssessedSkill[];
+  /** P8: danh sách bỏ GỐC truyền vào (kỹ năng bỏ + task Writing không học) — đưa nguyên vào `failingEntrySkills` để Writing = task đã học. */
+  boQua: string[];
   /** Đã nhập điểm bao nhiêu trên tổng số kỹ năng BẮT BUỘC. */
   scoredRequired: number;
   /** Đủ điểm mọi kỹ năng bắt buộc — đây là "hoàn thành", chưa nói gì về SOS. */
@@ -250,7 +252,7 @@ export function evaluateAttempt(
   const sosLevel = kckDuoi ? null : mucSos;
 
   return {
-    expectation, bands, verdicts, required, skipped,
+    expectation, bands, verdicts, required, skipped, boQua: [...skipped, ...(boTask ? [boTask] : [])],
     scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall, khongDuBoMon,
     chot, provisional,
     /*
@@ -278,6 +280,9 @@ export function entrySkillsOf(assessed: AssessedSkill): EntrySkill[] {
 }
 
 /** Kỹ năng đánh giá tương ứng với một ô nhập điểm. */
+/** P8 (N13): ô nhập em HỌC của một kỹ năng — Writing bỏ task không học (`bo_task` của dòng lịch). */
+export const oNhapHoc = (assessed: AssessedSkill, boTask?: string | null): EntrySkill[] => entrySkillsOf(assessed).filter((k) => k !== boTask);
+
 export function assessedSkillOf(entry: string): AssessedSkill {
   return entry === 'writing1' || entry === 'writing2' ? 'writing' : (entry as AssessedSkill);
 }

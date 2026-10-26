@@ -17,7 +17,7 @@ import {
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
-  boTaskTrong, expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
+  boTaskTrong, oNhapHoc, expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
@@ -1164,7 +1164,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       row, mode,
       attemptOverride: a.deadline_override ?? null,
       attemptCancelled: a.status === 'cancelled',
-      scored: entrySkillsOf(skill).every(oXongCua(a, scores).xong),   // cùng luật "xong" với ô (LUAT-NX-MT: có band; thiếu nhận xét chỉ nhắc)
+      scored: oNhapHoc(skill, row.bo_task).every(oXongCua(a, scores).xong),   // cùng luật "xong" với ô (LUAT-NX-MT: có band; thiếu nhận xét chỉ nhắc; P8: bỏ task không học)
       pendingMove: pendingView(a.id, skill),
       lichSu: !!a.lich_su,
       mt0: laMt0(a),
@@ -1960,7 +1960,7 @@ export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) 
  */
 function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult, thiLai = false) {
   const entry = entryBandsOf(scoresOf(attemptId));
-  const failing = new Set(failingEntrySkills(result.expectation, entry, result.skipped));
+  const failing = new Set(failingEntrySkills(result.expectation, entry, result.boQua));
   /* Ô đã có điểm mà KHÔNG nằm trong danh sách dưới kỳ vọng = ô đang đạt. */
   const passing = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) !== null && !failing.has(k)) as string[];
   /* PR-S3F #1: ô nay TRỐNG và không bị bỏ (Huỷ điểm / Thi lại xoá điểm) — tín hiệu dựng trên điểm đó cũng hết căn cứ. */

@@ -9,6 +9,8 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   const { migratePrMonDangKy } = await import('../migrate/prMonDangKy.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const mdk = await import('../fasttrack/monDangKy.ts');
+  const dtlMod: any = await import('../cham/diemTheoLuot.ts');
+  const khMod: any = await import('../keHoach/keHoachTest.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const { O_CHO_TU_SQL, capNhatConOCho } = await import('../fasttrack/conOCho.ts');
@@ -188,6 +190,38 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       const r = cham.lichTest(P.mbManager, week.ensurePeriod(week.mondayOf(TODAY)).id, null, TODAY, { classId: lop, phamVi: 'tat-ca' });
       const k = r.no.reduce((n: number, x: any) => n + x.conBai, 0) + (r.chamTuanNay ?? []).reduce((n: number, l: any) => n + l.conBai, 0) + r.lop.reduce((n: number, l: any) => n + l.conBai, 0);
       assert(k === s.needScores, `ba khối ${k} ≠ badge ${s.needScores}`);
+    });
+  });
+
+  check('MDK-6 · chỉ học W2: W2 dưới kỳ vọng → có tín hiệu / Case W2 (dù W1 không có điểm); sửa điểm kỹ năng khác không rút tín hiệu W2', () => {
+    thu(() => {
+      const x = emDu();
+      mdk.apMonDangKy(P.mbManager, x.id, CHI_W2);
+      const mt3 = x.mt(3);
+      attempts.saveScore(P.admin, mt3.id, 'listening', { rawScore: 40 }, TODAY);
+      attempts.saveScore(P.admin, mt3.id, 'reading', { rawScore: 40 }, TODAY);
+      attempts.saveScore(P.admin, mt3.id, 'speaking', { criteria: [9, 9, 9, 9] }, TODAY);
+      attempts.saveScore(P.admin, mt3.id, 'writing2', { criteria: [4, 4, 4, 4] }, TODAY);
+      const coW2 = () => get(`SELECT (SELECT COUNT(*) FROM case_signals WHERE attempt_id = ? AND skill = 'writing2' AND status != 'withdrawn')
+        + (SELECT COUNT(*) FROM sos_cases WHERE attempt_id = ? AND topic = 'writing2' AND status != 'done') n`, mt3.id, mt3.id).n as number;
+      assert(coW2() >= 1, 'W2 4.0 dưới kỳ vọng phải có tín hiệu / Case W2');
+      attempts.saveScore(P.admin, mt3.id, 'listening', { rawScore: 39 }, TODAY);
+      assert(coW2() >= 1, 'sửa điểm L không rút tín hiệu W2');
+    });
+  });
+
+  check('MDK-7 · chỉ học W2, lượt đủ L R W2 S: Điểm theo lượt "đủ điểm" (không ô trống W1), Kế hoạch Test ô W xong, hồ sơ MT Writing đã có điểm', () => {
+    thu(() => {
+      const x = emDu();
+      mdk.apMonDangKy(P.mbManager, x.id, CHI_W2);
+      const mt3 = x.mt(3);
+      for (const [k, b] of [['listening', { rawScore: 40 }], ['reading', { rawScore: 40 }], ['speaking', { criteria: [9, 9, 9, 9] }], ['writing2', { criteria: [9, 9, 9, 9] }]] as const) attempts.saveScore(P.admin, mt3.id, k, b as any, TODAY);
+      const l3 = dtlMod.danhSachLuot(P.mbManager, x.L).luot.find((l: any) => l.ma === 'mt:3');
+      assert(l3.duDiem === 1 && l3.oTrong === 0, `Điểm theo lượt MT3: ${JSON.stringify(l3)}`);
+      const o = khMod.luoiFT(P.mbManager, x.L).hang.find((h: any) => h.studentId === x.sid).dot['3'].kn.writing;
+      assert(o.trangThai === 'xong', `Kế hoạch Test ô W: ${o.trangThai}`);
+      const w = attempts.attemptDetail(P.mbManager, mt3.id).skillSchedule.find((r: any) => r.skill === 'writing');
+      assert(w.progress === 'scored', `hồ sơ MT Writing: ${w.progress}`);
     });
   });
 
