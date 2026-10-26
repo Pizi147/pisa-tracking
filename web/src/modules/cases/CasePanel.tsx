@@ -82,6 +82,9 @@ export type CaseDetail = {
   category: string | null; categoryLabel: string | null;
   /** Mã chương trình lộ trình Case (MH2). */
   chuongTrinh?: string | null;
+  /** Người phụ trách chính (mục 2.3) · R1-NO-CU (D17): nút "Đổi người…" — quyền + ứng viên do máy chủ tính. */
+  ownerUserId?: number | null; owner?: string | null;
+  doiChu?: { duoc: boolean; ungVien: { id: number; ten: string | null }[] };
   /** Case mở song song có chủ ý với một Case khác cùng hạng mục. */
   parallel: boolean;
   /** Lớp chấm điểm đạt/tổng (Normal) hay band 0–9 (Fast Track). */

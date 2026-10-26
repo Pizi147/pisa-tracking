@@ -9,6 +9,7 @@ export async function runR1NoCuTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId } = t;
   const owner: any = await import('../cases/owner.ts');
   const cases: any = await import('../cases/cases.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
   const perm: any = await import('../permissions.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -130,5 +131,27 @@ export async function runR1NoCuTests(t: YThucTestKit) {
     assert(cases.caseDetail(P.mbManager, c.id).doiChu.duoc === false, 'QL: doiChu.duoc = false');
     assert(maLoi(() => owner.doiChuCase(perm.loadPrincipal(gvcn()), c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 403, 'GVCN cũ → 403');
     assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 400, 'QL (case.approve) → 400 ngoài ứng viên');
+  }));
+
+  check('CHU-6b ứng viên duy nhất là người đang phụ trách → doiChu.duoc = false (không mở hộp rỗng)', () => thu(() => {
+    const c = caseCuaLop();
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND status = 'active' AND is_core = 0 AND user_id != ?`).run(LOP, gvcn());
+    xoaNho();
+    assert(owner.ungVienChuCase(c.id).map((u: any) => u.id).join() === String(gvcn()), 'chỉ còn GVCN');
+    assert(cases.caseDetail(P.mbManager, c.id).doiChu.duoc === false, 'không có ai khác → duoc = false');
+  }));
+
+  check('CHU-7 dòng việc "Chọn người phụ trách" (lớp đủ người): có lớp + Case (web mở hộp tại chỗ), không thieuNguoi; QL chọn xong → dòng hết', () => thu(() => {
+    const c = caseCuaLop();
+    conn.prepare('UPDATE sos_cases SET owner_user_id = NULL WHERE id = ?').run(c.id);
+    xoaNho();
+    const dong = () => mywork.myWork(P.mbManager, { nguoi: 'tat-ca' }).items.find((it: any) => it.key === `owner:${c.id}`);
+    const d = dong();
+    assert(d && d.classId === LOP && d.caseId === c.id && !d.thieuNguoi && d.tieuDe === 'Chọn người phụ trách', `dòng: ${JSON.stringify(d)}`);
+    const ct = cases.caseDetail(P.mbManager, c.id);
+    assert(ct.doiChu.duoc && ct.ownerUserId === null, 'hộp mở được với Case chưa có người');
+    owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: null });
+    xoaNho();
+    assert(!dong(), 'chọn xong → dòng việc hết');
   }));
 }

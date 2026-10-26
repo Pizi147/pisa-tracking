@@ -160,11 +160,11 @@ export function duocDoiChuCase(p: Principal, caseId: number): boolean {
   const c = caseDoiChu(caseId);
   return !!c && duocDoi(p, c);
 }
-/** Chi tiết Case (`doiChu`): nút "Đổi người…" hiện khi có quyền, Case còn mở và có người để chọn. */
+/** Chi tiết Case (`doiChu`): nút "Đổi người…" hiện khi có quyền, Case còn mở và có người KHÁC người đang phụ trách để chọn. */
 export function doiChuCua(p: Principal, caseId: number) {
   const c = caseDoiChu(caseId);
   const ungVien = c ? ungVienCua(c) : [];
-  return { duoc: !!c && c.status !== 'done' && ungVien.length > 0 && duocDoi(p, c), ungVien };
+  return { duoc: !!c && c.status !== 'done' && ungVien.some((u) => u.id !== c.owner_user_id) && duocDoi(p, c), ungVien };
 }
 
 /**

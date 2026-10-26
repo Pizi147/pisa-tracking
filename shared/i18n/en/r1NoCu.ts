@@ -9,4 +9,15 @@ export const EN_R1_NO_CU = {
   'Người phụ trách vừa đổi — tải lại.': 'The owner was just changed — reload.',
   'Người này đang phụ trách Case.': 'This person already owns the case.',
   'Chỉ chọn GV dạy kỹ năng của Case ở lớp em hoặc GVCN.': 'Pick a teacher of this skill in the class, or the homeroom teacher.',
+  'phụ trách: {ten}': 'owner: {ten}',
+  'Đổi người…': 'Change owner…',
+  'Đã đổi người phụ trách: {ten}': 'Owner changed: {ten}',
+  'Chưa chọn được người ở đây — mở hồ sơ em.': 'No one to pick here — open the student profile.',
+  'Hồ sơ em ›': 'Student profile ›',
+  'Đổi người phụ trách Case': 'Change case owner',
+  'Mở Case → <b>Đổi người…</b> ở dải đầu → chọn GV dạy kỹ năng của Case hoặc GVCN → <b>Lưu · đóng</b>.':
+    'Open the case → <b>Change owner…</b> in the top strip → pick a teacher of the case’s skill or the homeroom teacher → <b>Save & close</b>.',
+  'Việc <b>Chọn người phụ trách</b> ở Công việc mở đúng hộp này.': 'The <b>Pick an owner</b> task in Tasks opens this same box.',
+  'GVCN lớp em: mở Case → <b>Đổi người…</b> ở dải đầu → chọn GV dạy kỹ năng của Case hoặc GVCN → <b>Lưu · đóng</b>.':
+    'Homeroom teacher of the student’s class: open the case → <b>Change owner…</b> in the top strip → pick a teacher of the case’s skill or the homeroom teacher → <b>Save & close</b>.',
 } satisfies Record<string, Dich>;

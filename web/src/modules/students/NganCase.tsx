@@ -19,6 +19,7 @@ import { BoiCanh, KhoiDaLuu, NutChu, dauViec, type DaLuuPanel } from '../../ui/K
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { KhoaNho } from '../cases/FormPa.tsx';
+import { DoiNguoiPhuTrach } from '../cases/DoiNguoiPhuTrach.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 export type { ViewCase };
@@ -52,6 +53,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const lf = useLoiForm();
   const toast = useToast();
   const [moLaiBusy, setMoLaiBusy] = useState(false);
+  /* R1-NO-CU: hộp Đổi người phụ trách đang mở ở dải đầu. */
+  const [doiNguoi, setDoiNguoi] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
   const veCase = () => { setView({ loai: 'case' }); lf.datLai(); };
@@ -329,10 +332,19 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
               {t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) })}{data.reportedBy ? ` · ${t('{ten} báo', { ten: data.reportedBy })}` : ''}
               {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
               {!data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
+              {` · ${data.owner ? t('phụ trách: {ten}', { ten: data.owner }) : t('Chưa có người phụ trách')}`}
             </span>
             <span className="flex-1" />
+            {/* R1-NO-CU (D17): QL / GVCN lớp em đổi người phụ trách tại chỗ — hộp một ô ngay dưới dải. */}
+            {canDong && data.doiChu?.duoc && !doiNguoi && (
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDoiNguoi(true)}>{t('Đổi người…')}</button>
+            )}
             {nutDau}
           </div>
+          {doiNguoi && canDong && data.doiChu?.duoc && (
+            <DoiNguoiPhuTrach caseId={caseId} ownerCu={data.ownerUserId ?? null} ungVien={data.doiChu.ungVien}
+              onXong={() => { setDoiNguoi(false); reload(); onChanged?.(); }} onTaiLai={reload} onHuy={() => setDoiNguoi(false)} />
+          )}
           {canDong && ht?.an && ht.dong && (
             <p className="m-0 flex items-center gap-1.5 text-[13px] text-slate-300">
               <span className="text-slate-400"><KhoaNho /></span>
