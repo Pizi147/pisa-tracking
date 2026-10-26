@@ -144,6 +144,8 @@ Mỗi PR có **impact note** đầu kế hoạch (PR26 mục 2.3), bảng thao t
 
 ### 4.2 R1-PHAN-CAP-TEST — phân cấp Lịch Test (ưu tiên 2)
 
+> **Chủ SP 26/10 đêm — CHỐT A2 vòng 2** (mockup khu `#a2`, thay A / B dưới): mỗi cấp **một màu thanh** (`--cap-nhom`, `--cap-lop`, `--cap-lop-dong`, `--cap-dau-cot`), không thêm viền / vạch; nhãn S Ex ở **cột MT**; **bỏ "Dán từ Excel" + "?"** ở lưới mở tại chỗ của Lịch Test (Dán Excel còn ở panel Nhập điểm, Điểm theo lớp). Chi tiết: `docs/superpowers/plans/2026-10-26-r1-phan-cap-test.md`.
+
 > **Impact:** người xem Lịch Test tuần, nhiều lớp mở → không biết đang ở nhóm / lớp / HV nào · đầu ra: nhìn là biết cấp · dữ liệu / quyền: không đổi · giữ: Nhập điểm, Dán Excel, Xuất, lịch sử, mở dưới hàng, nháp ô · sửa sai: chỉ CSS + cấu trúc nhỏ, quay lại được · test: ảnh cặp + `do-khung` / `do-bang` + kiểm tương phản cấp liền kề.
 
 **Mockup M2** `thiet-ke/v7/lich-test-phan-cap.html` (PTA làm ngay khi kế hoạch được duyệt; chú thích ngoài vùng UI theo PR26 mục 10).

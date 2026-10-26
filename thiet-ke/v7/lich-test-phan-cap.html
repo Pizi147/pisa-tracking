@@ -223,7 +223,7 @@ table.lop { width: 100%; table-layout: fixed; }
       <dt>Giữ</dt><dd>Một bảng, cột thẳng giữa các lớp; mọi thao tác: Nhập điểm (hộp), Dán từ Excel + ?, Xuất Excel, Lịch sử ô, ↗ hồ sơ lớp / HV, mở / thu dưới hàng, nháp ô, quay lại đúng tuần / lớp / dòng; cao hàng HV 44 / 64; S Ex là dòng phụ thụt</dd>
       <dt>Thêm</dt><dd>"▴ Thu lớp" ở đáy khối = thao tác thu sẵn có (như bấm hàng lớp), đặt thêm ở cuối để lớp dài khỏi cuộn ngược; "n/m bài" cùng nguồn hàng lớp</dd>
       <dt>Bấm</dt><dd>Hàng lớp / "Thu lớp" = mở / thu (không đổi trang) · ↗ = hồ sơ · ô điểm = hộp nhập điểm, "Lưu · bài tiếp ›"</dd>
-      <dt>Trạng thái</dt><dd>Đề xuất — chờ chủ SP duyệt</dd>
+      <dt>Trạng thái</dt><dd><b>Chủ SP DUYỆT A2 vòng 2 (26/10 đêm)</b> + bỏ "Dán từ Excel" và "?" ở lưới Lịch Test (Dán Excel còn ở panel Nhập điểm, Điểm theo lớp)</dd>
     </dl>
     <div class="khung"><div class="web v-a2" data-bien-the="a2"></div></div>
   </section>
@@ -318,7 +318,7 @@ table.lop { width: 100%; table-layout: fixed; }
       return r;
     }).join('');
     var nutDan = '<span class="nut">Dán từ Excel</span><span class="nut" aria-label="Giải thích">?</span>';
-    return '<div class="cong-cu-luoi">' + (v === 'a2' ? '<span class="nhan-hv">' + l.hv.length + ' học viên · ' + (ft ? 'Fast Track' : 'Lớp thường') + '</span><span style="display:flex;gap:8px">' + nutDan + '</span>' : nutDan) + '</div>'
+    return '<div class="cong-cu-luoi">' + (v === 'a2' ? '<span class="nhan-hv">' + l.hv.length + ' học viên · ' + (ft ? 'Fast Track' : 'Lớp thường') + '</span>' : nutDan) + '</div>'
       + '<table class="luoi"><thead>' + dau + '</thead><tbody>' + than + '</tbody></table>';
   }
   function dauThe() {
