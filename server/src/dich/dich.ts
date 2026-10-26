@@ -104,7 +104,7 @@ export function cheChu(chu: string, ten: readonly string[]): { che: string; bang
   const bang: string[] = [];
   const giu = (m: string) => { let i = bang.indexOf(m); if (i < 0) { bang.push(m); i = bang.length - 1; } return `[[P${i + 1}]]`; };
   let che = chu.replace(/\[\[P/g, `[[${THOAT}P`).replace(/<(\/?)ghi_chu/gi, `<$1${THOAT}ghi_chu`).replace(EMAIL, giu).replace(SDT, giu);
-  for (const t of ten) che = che.replace(new RegExp(`(?<![\\p{L}\\p{N}\\[])${thoat(t)}(?![\\p{L}\\p{N}])`, 'gu'), giu);
+  for (const t of ten) che = che.replace(new RegExp(`(?<![\\p{L}\\p{N}])${thoat(t)}(?![\\p{L}\\p{N}])`, 'gu'), giu);
   return { che, bang };
 }
 
@@ -126,10 +126,10 @@ export function datFetchDich(f: typeof fetch | null) { fetchDich = f ?? ((...a) 
 const TEN_NGON_NGU = { vi: 'Vietnamese', en: 'English' } as const;
 const LOI_GOI = 'Chưa dịch được. Bản gốc vẫn giữ — thử lại sau.';
 /* Tham số theo developers.openai.com (đọc 26/10/2026): Chat Completions `max_completion_tokens` (`max_tokens` đã deprecated);
-   `reasoning_effort` 'none' có ở gpt-6-luna và gpt-5.4-mini (5.4-mini không có 'minimal'). 2000 token ra > bản dịch của 4000 ký tự vào. */
-const TRAN_TOKEN_RA = 2000;
+   `reasoning_effort` 'none' có ở gpt-6-luna và gpt-5.4-mini (5.4-mini không có 'minimal'). 4000 token ra: bản tiếng Việt của 4000 ký tự vào vẫn không bị cắt (chỉ là trần, không thêm tiền). */
+const TRAN_TOKEN_RA = 4000;
 /* Trần chữ vào. Cột có giới hạn nhập dài nhất là mô tả Case / PA (2000, `sosAuto.ts`); nhận xét Test chưa có trần nhập ở máy chủ → 4000 đủ rộng. */
-export const TRAN_CHU_DICH = 4000;
+const TRAN_CHU_DICH = 4000;
 /** Đổi prompt → tăng; cùng model + đích + chữ đã che mới dùng lại bản nhớ. */
 const PHIEN_BAN = 'p2';
 

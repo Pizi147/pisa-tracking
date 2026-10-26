@@ -131,7 +131,7 @@ export async function runPrDichTests(t: any) {
       for (const x of [c.hv, goi, gvTen, 'ph.hoc-sinh@gmail.com', '0912 345 678', 'sk-test-KHOA-BI-MAT']) assert(!than.includes(x), `thân gửi còn "${x}": ${than}`);
       assert(than.includes('[[P1]]') && than.includes('luyện đọc'), `thiếu chỗ giữ: ${than}`);
       assert(gui[0].headers.Authorization === 'Bearer sk-test-KHOA-BI-MAT', 'khoá phải ở header');
-      assert(gui[0].than.model === 'gpt-6-luna' && gui[0].than.reasoning_effort === 'none' && gui[0].than.max_completion_tokens === 2000 && !('max_tokens' in gui[0].than),
+      assert(gui[0].than.model === 'gpt-6-luna' && gui[0].than.reasoning_effort === 'none' && gui[0].than.max_completion_tokens === 4000 && !('max_tokens' in gui[0].than),
         `model / suy luận / trần ra: ${gui[0].than.model} ${gui[0].than.reasoning_effort} ${gui[0].than.max_completion_tokens}`);
       assert(svc.traLai('[[P1]] và [[P9]] [[x]]', ['An']) === 'An và [[P9]] [[x]]', 'chỗ giữ lạ phải giữ nguyên chữ');
       assert(r.banDich.startsWith('EN: ') && r.banDich.includes(c.hv) && r.banDich.includes('0912 345 678'), `chưa thay lại: ${r.banDich}`);
@@ -312,9 +312,20 @@ export async function runPrDichTests(t: any) {
       assert(/subtle\.digest\('SHA-256'/.test(cd) && cd.includes('.slice(0, 16)') && cd.includes('goc.trim()'), 'ChuDich không băm chữ như máy chủ');
       assert(/useEffect\(\(\) => \{[^}]*setXemDich\(false\);[^}]*setDang\(false\);[^}]*setLoi\(null\);[^}]*\}, \[khoa\]\)/.test(cd), 'đổi khoá chưa đặt lại trạng thái');
       assert(/khoaHienTai\.current !== k/.test(cd), 'chưa bỏ phản hồi về muộn');
-      assert(cd.includes("t('Nội dung vừa đổi.')") && cd.includes("t('Dịch lại')"), 'thiếu câu lệch chữ');
+      /* Lệch chữ: thử lại cùng nguồn vẫn lệch (web chưa có chữ mới) → nói bước tiếp (tải lại trang), không đưa nút lặp mãi. */
+      assert(cd.includes("t('Nội dung vừa đổi — tải lại trang để dịch.')") && !cd.includes("t('Dịch lại')"), 'câu lệch chữ phải chỉ bước tiếp, không nút Dịch lại');
+      assert(/\{!lech && <button/.test(cd), 'lệch chữ vẫn còn nút');
       const en = doc('shared/i18n/en/p14Dich.ts');
-      for (const k of ['Nội dung vừa đổi.', 'Dịch lại']) assert(en.includes(`'${k}':`), `thiếu khoá EN "${k}"`);
+      assert(en.includes("'Nội dung vừa đổi — tải lại trang để dịch.':") && !en.includes("'Dịch lại':"), 'khoá EN câu lệch chữ');
+    });
+
+    await checkAsync('DICH-15 · tên trong ngoặc vuông "[Tên]" vẫn bị che trước khi gửi', async () => {
+      datMoTa(`Ghi chú [${c.hv}] và [${c.hv.trim().split(/\s+/).pop()}] cần ôn.`);
+      gui.length = 0;
+      const r = await svc.dich(P.admin, yc());
+      const than = gui[0].than.messages[1].content as string;
+      assert(!than.includes(c.hv) && !than.includes(c.hv.trim().split(/\s+/).pop()), `tên trong [ ] lọt sang OpenAI: ${than}`);
+      assert(r.banDich.includes(`[${c.hv}]`), `chưa thay lại: ${r.banDich}`);
     });
   } finally {
     datMoTa(c?.summary ?? null);

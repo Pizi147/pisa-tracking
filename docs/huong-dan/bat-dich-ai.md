@@ -59,7 +59,7 @@
   - **Deploy contexts:** chọn **Production** (bản chính). KHÔNG chọn Deploy Previews / Branch deploys — bản thử không cần khoá.
   - Nếu có ô **Contains secret values** → tick cho `OPENAI_API_KEY`.
   - KHÔNG tạo biến `DICH_GIA` (chế độ giả chỉ cho máy dev; bản chính bỏ qua).
-- **Thấy gì là đúng:** danh sách có 4 biến, giá trị khoá hiện dạng che (••••).
+- **Thấy gì là đúng:** danh sách có thêm đủ 4 biến mới (các biến cũ như `TURSO_*` giữ nguyên, không sửa), giá trị khoá hiện dạng che (••••).
 - **Lỗi thì làm gì:** đặt nhầm site / nhầm context → xoá biến ở chỗ nhầm, tạo lại đúng chỗ.
 
 ## 5. Deploy lại rồi tải lại trang
@@ -77,11 +77,15 @@
 3. Bấm **Xem bản gốc** → về chữ gốc. Chữ gốc trong hệ thống không bị sửa.
 - **Thấy gì là đúng:** bản dịch giữ nguyên tên học viên, số điểm, mã tuần (vd `W3 SEP`), chữ Case / PA / MT / Target.
 - **Lỗi thì làm gì:**
-  - Không thấy nút: đã tải lại trang chưa? Nhận xét có đúng là khác ngôn ngữ không? Deploy mới đã Published chưa?
-  - "Dịch đang tắt.": khoá chưa vào đúng Production / chưa deploy lại.
-  - "Chưa dịch được. Bản gốc vẫn giữ — thử lại sau.": khoá sai, hết số dư, chạm hard limit, hoặc model không dùng được với tài khoản →
-    xem mục 7 (Usage / Logs). Nếu OpenAI báo model không tồn tại: đổi `DICH_MODEL` thành `gpt-5.4-mini` rồi deploy lại.
-  - "Nội dung vừa đổi.": có người vừa sửa nhận xét — tải lại trang rồi bấm Dịch lại.
+  - Không thấy nút ở mọi nhận xét: khoá chưa đặt đúng **Production**, chưa deploy lại, hoặc chưa tải lại trang. Chỉ một nhận xét không có nút: chữ đó không rõ là khác ngôn ngữ.
+  - "Dịch đang tắt.": trang được mở từ trước khi tắt / trước khi bật — tải lại trang.
+  - "Chưa dịch được. Bản gốc vẫn giữ — thử lại sau.": xem nguyên nhân ở Netlify → site PISA → **Logs** → **Functions** → hàm `api` → tìm chữ `[dich]`:
+    - `OpenAI trả 401` → khoá sai / đã thu hồi → làm lại mục 2 và mục 4.
+    - `OpenAI trả 404` hoặc `400` → tài khoản chưa dùng được model → đổi `DICH_MODEL` thành `gpt-5.4-mini`, deploy lại.
+    - `OpenAI trả 429` → hết số dư hoặc chạm trần chi tiêu → nạp thêm (mục 1) hoặc nâng trần (mục 3).
+    - `gọi OpenAI lỗi: TimeoutError` → OpenAI chậm; thử lại sau.
+    - `OpenAI trả bản không hợp lệ` → bản dịch làm sai chỗ tên; hệ thống đã chặn, thử lại sau.
+  - "Nội dung vừa đổi — tải lại trang để dịch.": có người vừa sửa nhận xét — tải lại trang rồi bấm **Dịch**.
 
 ## 7. Theo dõi chi phí
 

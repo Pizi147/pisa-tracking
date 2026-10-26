@@ -23,6 +23,9 @@ async function bamChu(chu: string): Promise<string> {
 }
 
 /* Vùng bấm ~44 px bằng `::after` (mẫu `DauTrangLop`) — không giãn dòng chữ đang đọc. */
+/* Lệch chữ: gọi lại cùng nguồn vẫn lệch tới khi trang có chữ mới → nói bước tiếp, không đưa nút lặp. */
+const LECH = 'Nội dung vừa đổi — tải lại trang để dịch.';
+
 const NUT = "link relative ml-1.5 appearance-none border-0 bg-transparent p-0 text-xs after:absolute after:-inset-x-2 after:-inset-y-3.5 after:content-['']";
 
 /** `anGoc`: chỗ đã có chữ gốc ngay cạnh (ô nhập) — chỉ in nút, và bản dịch khi đã dịch. */
@@ -47,7 +50,7 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
     try {
       const [r, bam] = await Promise.all([api.post<{ banDich: string; gocBam: string }>('/dich', { ...nguon, den: NGON_NGU }), bamChu(goc.trim())]);
       if (khoaHienTai.current !== k) return;   // về muộn: chỗ này đã sang chữ khác
-      if (r.gocBam !== bam) { setLoi(t('Nội dung vừa đổi.')); return; }
+      if (r.gocBam !== bam) { setLoi(t('Nội dung vừa đổi — tải lại trang để dịch.')); return; }
       daDich.set(k, r.banDich);
       setXemDich(true);
     } catch (e) {
@@ -56,16 +59,17 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
   };
 
   const hienDich = xemDich && !!ban;
+  const lech = loi === t(LECH);
   return (
     <>
       {(!anGoc || hienDich) && <span lang={hienDich ? NGON_NGU : undefined} title={hienDich ? t('Bản dịch tự động') : undefined}>{hienDich ? ban : goc}</span>}
       {/* MỘT nút đổi nhãn qua các trạng thái — người dùng bàn phím không mất chỗ đứng (focus) khi bấm. */}
       <span aria-live="polite" className={loi && !dang ? 'mt-1 block text-xs' : 'whitespace-nowrap'}>
         {loi && !dang && !hienDich && <span role="alert" className="text-bad">{loi}</span>}
-        <button type="button" className={NUT} aria-disabled={dang || undefined} aria-busy={dang || undefined}
+        {!lech && <button type="button" className={NUT} aria-disabled={dang || undefined} aria-busy={dang || undefined}
           onClick={dang ? undefined : hienDich ? () => setXemDich(false) : goi}>
-          {hienDich ? t('Xem bản gốc') : dang ? t('Đang dịch…') : loi === t('Nội dung vừa đổi.') ? t('Dịch lại') : loi ? t('Thử lại') : t('Dịch')}
-        </button>
+          {hienDich ? t('Xem bản gốc') : dang ? t('Đang dịch…') : loi ? t('Thử lại') : t('Dịch')}
+        </button>}
       </span>
     </>
   );
