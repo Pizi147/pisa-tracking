@@ -19,7 +19,7 @@ export const EN_OV15F = {
   '{n} HV chưa có dự kiến thi.': (b) => `${b.n} students have no planned exam.`,
   'Xem {n} HV chưa có dự kiến': (b) => `Show ${b.n} students with no plan`,
   'Lịch hiện tại': 'Current schedule',
-  'Kết luận': 'Decision',
+  'Kết luận': 'Conclusion',
   'Ghi chú họp': 'Meeting note',
   'Chưa có dự kiến thi': 'No planned exam',
   'Chốt': 'Set',

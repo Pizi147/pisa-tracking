@@ -9618,6 +9618,9 @@ await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
 // ==================================================================== R1-LUU-TIEP (chọn bài còn thiếu kế tiếp)
 const { runR1LuuTiepTests } = await import('./r1LuuTiep.tests.ts');
 await runR1LuuTiepTests({ check, assert });
+// ==================================================================== R1-SUA-NHO (trục tuần Hành trình, đường lượt lớp thường không vòng)
+const { runR1SuaNhoTests } = await import('./r1SuaNho.tests.ts');
+await runR1SuaNhoTests({ check, assert });
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

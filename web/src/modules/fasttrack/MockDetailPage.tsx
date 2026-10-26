@@ -180,7 +180,8 @@ export default function MockDetailPage() {
    * ở đây thay vì tin rằng không ai vào được.
    */
   if (data.kind && data.kind !== 'mock' && data.kind !== 'mt0') {   // PR-MT0: MT0 chấm band, dùng màn này
-    return <Navigate to={attemptHref({ id: data.id, kind: data.kind, classId: data.classId })} replace />;
+    /* R1-SUA-NHO: có `studentId` nên lượt mất lớp về hồ sơ HV, không chuyển về chính trang này (vòng). */
+    return <Navigate to={attemptHref({ id: data.id, kind: data.kind, classId: data.classId, studentId: data.student.id })} replace />;
   }
 
   const d = data;
@@ -287,7 +288,7 @@ export default function MockDetailPage() {
             {cancelled && <Tag>{t('Đã huỷ')}</Tag>}
             {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>{t('Đủ điểm')}</Tag>}
             {laRf && <span className="text-xs text-slate-400" title={t('Lộ trình RF — kỳ vọng mọi MT bằng Target.')}>RF</span>}
-            <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r), { replace: true })} />
+            <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref({ ...r, studentId: d.student.id }), { replace: true })} />
           </div>
           <p className="text-xs text-slate-500 mt-0.5 m-0" title={d.branchName ? t('Lớp lúc đánh giá: {x} · {branchName}', { x: d.classCode ?? '—', branchName: d.branchName }) : undefined}>
             {dong2}

@@ -18,13 +18,10 @@ export const EN_ENE = {
   'Chưa có học viên nào của bạn': 'No students assigned to you yet',
   'Học viên có TVV là bạn sẽ hiện ở đây.': 'Students with you as counsellor show here.',
   'Xem cả chi nhánh': 'View whole branch',
-  'Không có học viên nào khớp': 'No matching students',
   'Đổi chip lọc, bỏ bớt từ khoá hoặc đổi phạm vi.': 'Change the filter chip, shorten the search or change scope.',
   'Target · thi': 'Target · exam',
   'Học viên theo lớp': 'Students by class',
   'nhóm chưa xếp lớp': 'group without class',
-  /* 'Tutor' là tên PA (panel một em, Đang SOS, hồ sơ lớp) VÀ nhãn ô Ghi kết quả — giữ "Tutor" (luật thuật ngữ 3). Đè 'Tutor name' của ov12e (file này nạp sau). */
-  'Tutor': 'Tutor',
   /* Tên việc thống nhất (EN-e): "Kết quả PA" ở Công việc, tiêu đề panel, Tổng quan. */
   'Kết quả PA · {ky}': 'PA result · {ky}',
   'Kết quả PA · {ky} (ghi bù {soKy} kỳ)': 'PA result · {ky} (catching up {soKy} periods)',
