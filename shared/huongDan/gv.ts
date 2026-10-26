@@ -79,7 +79,8 @@ export const HD_GV: HuongDan = {
     {
       id: 'lich-test', ten: 'Lịch Test', duong: ['/test', '/test/lich'],
       muc: [
-        { id: 'lt-ba-khoi', ten: 'Lịch Test tuần', buoc: ['Một tuần (<b>‹ W3 SEP ›</b>, <b>Tuần này</b>): <b>Quá hạn chấm</b> (theo hôm nay, không đổi theo tuần) · <b>Test tuần này</b> — mỗi lớp một dòng, hạn dd/mm.', 'Bấm dòng lớp: lưới từng em mở ngay dưới, gõ điểm tại chỗ; S Ex là dòng phụ của em.'],
+        { id: 'lt-ba-khoi', ten: 'Lịch Test tuần', buoc: ['Một tuần (<b>‹ W3 SEP ›</b>, <b>Tuần này</b>): <b>Quá hạn chấm</b> (theo hôm nay, không đổi theo tuần) · <b>Test tuần này</b> — mỗi lớp một dòng, hạn dd/mm.', 'Bấm dòng lớp: lưới từng em mở ngay dưới, gõ điểm tại chỗ; S Ex là dòng phụ của em.',
+          'Dán nhiều điểm từ Excel: dùng panel <b>Nhập điểm</b> (Học viên & Lớp › <b>⋯</b> › Nhập điểm) — lưới Lịch Test không có nút Dán.'],
           chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' } },
       ],
     },
