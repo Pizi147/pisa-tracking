@@ -107,10 +107,12 @@ export const COT_DAU_LICH_TEST = [190, 120, 110] as const;
  *   ▾ MB FT 101 · 22 HV · MT3 20 · MT2 1 · L R W S · 64/86 bài · hạn 23/09 · Đang chấm · ↗ (hồ sơ lớp)
  * Mở ra là bảng từng HV làm Test trong tuần (lưới chấm tại chỗ đúng tuần thi của hàng, kèm cột S Ex). Màn hẹp: ▾ mã · x/y · hạn.
  */
-export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, urlClassId, urlKn, conTro, onDaLuu, chuaLuu, baoChuaLuu, sEx }: {
+export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClassId, urlKn, conTro, onDaLuu, chuaLuu, baoChuaLuu, sEx }: {
   lop: LopLichTest[];
   moCua: (l: LopLichTest) => boolean;
   onMo: (l: LopLichTest) => void;
+  /** R1-LUU-TIEP: hết bài của người xem ở lớp đang chấm → "Lớp tiếp: {mã} ›" mở lớp kế trong tuần còn bài của người xem. */
+  onLopTiep: (cu: LopLichTest, ke: LopLichTest) => void;
   coChiNhanh: boolean; hep: boolean;
   urlClassId: number | null; urlKn: string | null;
   /** Hàng được đặt con trỏ khi mở (mở bằng tay, hoặc lớp trên đường dẫn) — hàng tự mở thì không, trang khỏi nhảy. Khoá `khoaHang`. */
@@ -124,6 +126,12 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, urlClassId, urlKn, 
 }) {
   const cot = hep ? [null, 92, 96] : [174, null, ...(coChiNhanh ? [110] : []), 110, 180, 140, 44];   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày"
   const soCot = cot.length;
+  /* Lớp kế (sau lớp này, vòng lên) còn bài của người xem — cùng số "… của bạn: còn n bài" ở hàng lớp. */
+  const onHet = (l: LopLichTest) => () => {
+    const i = lop.indexOf(l);
+    const ke = [...lop.slice(i + 1), ...lop.slice(0, i)].find((x) => x.classId !== l.classId && (x.phan ? x.conBaiCuaToi : x.conBai) > 0);
+    return ke ? { nhan: t('Lớp tiếp: {lop} ›', { lop: ke.classCode }), onClick: () => onLopTiep(l, ke) } : null;
+  };
 
   return (
     <table className="w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
@@ -160,7 +168,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, urlClassId, urlKn, 
                   <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? l.periodId : null} kind={l.kind}
                     tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
                     datConTro={conTro.has(k)} onDaLuu={onDaLuu} coLinkRieng sEx={l.mode === 'ielts_band' ? sEx.filter((x) => x.classId === l.classId) : undefined}
-                    onSoOChuaLuu={(n) => baoChuaLuu(k, n)} />
+                    onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)} />
                 </td>
               </HangCon>
             )}

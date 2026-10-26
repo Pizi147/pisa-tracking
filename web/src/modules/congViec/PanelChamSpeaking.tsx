@@ -6,7 +6,8 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { duongHoSoHocVien, soSanhLop, tuanLich } from '@shared/domain/index.ts';
 import { apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
-import { DauLuu, DauO, VIEN_LOI } from '../cham/LuoiFT.tsx';
+import { DauLuu, DauO, VIEN_LOI, type PhienO } from '../cham/LuoiFT.tsx';
+import { usePhienCham } from '../cham/phienCham.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** `GET /my-work/cham-speaking` (`baiChamSpeaking`, server/src/fasttrack/attempts.ts). */
@@ -24,7 +25,8 @@ const sap = (a: Dong, b: Dong) => soSanhLop({ code: a.classCode }, { code: b.cla
 /**
  * CHẤM SPEAKING (OV-14c, chủ SP 18/10) — panel của việc "Chấm Speaking · n bài" (GV Speaking chấm chéo S Mock lớp FT chi nhánh mình).
  * Tìm học viên (tên / email, có / không dấu) + lọc lớp; mỗi dòng một em: tên · lớp · MT · tuần · "Nhập bởi …" khi đã có điểm. Ô S = hộp chấm
- * sẵn có (`ODiemMt` → `HopNhapDiem`: 4 tiêu chí + nhận xét), Enter / "Lưu · em tiếp ›" sang em chưa chấm kế tiếp trong danh sách đang lọc.
+ * sẵn có (`ODiemMt` → `HopNhapDiem`: 4 tiêu chí + nhận xét), Enter / "Lưu · bài tiếp ›" sang em chưa chấm kế tiếp trong danh sách đang lọc (R1-LUU-TIEP:
+ * ảnh chụp thứ tự lúc mở hộp, vòng lên; hết → "Đã xong phần của bạn").
  * Dòng vừa lưu đứng nguyên chỗ (bài còn tồn cũ rời hàng đợi máy chủ sau khi chấm — vẫn giữ để thấy đã lưu).
  */
 export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: () => void; onDaLam: () => void;
@@ -35,6 +37,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: 
   const [q, setQ] = useState('');
   const [lop, setLop] = useState<number | null>(lopDau);
   const [mo, setMo] = useState<number | null>(null);
+  const phien = usePhienCham();
   const [giu, setGiu] = useState<ReadonlyMap<number, Dong>>(new Map());
   const rows = useMemo(() => {
     const co = new Set((data?.rows ?? []).map((r) => r.attemptId));
@@ -54,6 +57,14 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: 
   useEffect(() => { if (lop !== null && !dsLop.some(([id]) => id === lop)) setLop(null); }, [dsLop, lop]);
 
   const dau = { dong2: [data ? t('{n} bài chờ chấm', { n: data.soBai }) : null] };
+  /* R1-LUU-TIEP: khoá = lượt (một dòng một bài S); còn thiếu = máy chủ còn báo chờ (`cho`) và người xem sửa được. */
+  const dsAid = () => ds.map((r) => r.attemptId);
+  const conThieu = (v: { khoa: number }) => { const x = ds.find((r) => r.attemptId === v.khoa); return !!x && x.cho && suaDuoc(x.cell); };
+  const keMo = mo !== null && !phien.het ? phien.ke({ khoa: mo, kyNang: 'speaking' }, conThieu, [], dsAid) : null;
+  const hop: PhienO = {
+    nhanTiep: keMo ? ds.find((r) => r.attemptId === keMo.khoa)?.studentName ?? null : null,
+    ketThuc: phien.het ? { phamVi: t('Chấm Speaking'), daLuu: phien.soDaLuu(), nut: null } : null,
+  };
   return (
     <KhungPanel tieuDe={t('Chấm Speaking')} dau={dau} onDong={onDong}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
@@ -81,8 +92,9 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: 
                             {t('Đã có điểm · {n} bài', { n: ds.length - soDau })}
                           </li>
                         )}
-                        <DongSpeaking r={r} mo={mo === r.attemptId} onMo={(m) => setMo(m ? r.attemptId : null)}
-                          onTiep={() => setMo(ds.slice(i + 1).find((x) => x.cho && suaDuoc(x.cell))?.attemptId ?? null)}
+                        <DongSpeaking r={r} mo={mo === r.attemptId} hop={mo === r.attemptId ? hop : null}
+                          onMo={(m) => { if (m) phien.mo(dsAid); else phien.dong(); setMo(m ? r.attemptId : null); }}
+                          onTiep={(d) => { const k = phien.tiep({ khoa: r.attemptId, kyNang: 'speaking' }, d, conThieu, [], dsAid); if (k) setMo(k.khoa); }}
                           onDaLuu={() => { setGiu((m) => new Map(m).set(r.attemptId, r)); reload(); onDaLam(); }} />
                       </Fragment>
                     ))}
@@ -94,7 +106,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null }: { onDong: 
   );
 }
 
-function DongSpeaking({ r, mo, onMo, onTiep, onDaLuu }: { r: Dong; mo: boolean; onMo: (mo: boolean) => void; onTiep: () => void; onDaLuu: () => void }) {
+function DongSpeaking({ r, mo, hop, onMo, onTiep, onDaLuu }: { r: Dong; mo: boolean; hop: PhienO | null; onMo: (mo: boolean) => void; onTiep: (daLuu: boolean) => void; onDaLuu: () => void }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(r.attemptId, onDaLuu, r.studentName);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- dữ liệu mới của dòng thì bỏ điểm tạm
   useEffect(() => { xoaVuaLuu(); }, [r]);
@@ -111,7 +123,7 @@ function DongSpeaking({ r, mo, onMo, onTiep, onDaLuu }: { r: Dong; mo: boolean; 
       </div>
       <div className={`flex shrink-0 items-center justify-end gap-1 rounded-md ${o.speaking === 'loi' ? VIEN_LOI : ''}`} data-kn="speaking" data-luu={o.speaking}>
         <DauO lon tt={o.speaking} loi={loi.speaking} onLuuLai={() => luuLai('speaking')} />
-        <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save('speaking', p, x)} tuanXem={r.weekStart}
+        <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save('speaking', p, x)} tuanXem={r.weekStart} {...hop}
           ctx={{ tenHv: r.studentName, lop: r.classCode, luot: `MT${r.attemptNo}`, kyVong: r.kyVong }} />
       </div>
     </li>

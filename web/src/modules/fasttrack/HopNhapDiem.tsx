@@ -326,7 +326,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   useEffect(() => {
     if (loi) loiRef.current?.closest('[role="dialog"]')?.querySelector<HTMLElement>('[aria-invalid="true"], input:not([disabled]), textarea:not([disabled])')?.focus();
   }, [loi]);
-  useEffect(() => { if (ketThuc) nutHetRef.current?.focus(); }, [!!ketThuc]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* Vừa lưu / hết: nút chính nhận focus — Enter đi tiếp (nút cũ vừa biến mất, focus không rơi ra ngoài hộp). */
+  useEffect(() => { if (ketThuc || daLuu) nutHetRef.current?.focus(); }, [!!ketThuc, daLuu]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const gui = async (lenh: SavePatch[], sau: () => void, nut: 'luu' | 'tiep' | 'khac') => {
     if (dangGui.current) return;
@@ -559,8 +560,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         <>
           <span role="status" className="text-[13px] font-semibold text-done">{t('✓ Đã lưu')}</span>
           {onTiep
-            ? <button type="button" className={`${nut} btn-primary`} onClick={() => onTiep(true)}>{tiepEm ? t('Em tiếp ›') : t('Bài tiếp ›')}</button>
-            : <button type="button" className={nut} onClick={onDong}>{t('Đóng')}</button>}
+            ? <button ref={nutHetRef} type="button" className={`${nut} btn-primary`} onClick={() => onTiep(true)}>{tiepEm ? t('Em tiếp ›') : t('Bài tiếp ›')}</button>
+            : <button ref={nutHetRef} type="button" className={nut} onClick={onDong}>{t('Đóng')}</button>}
         </>
       ) : (
         <>
