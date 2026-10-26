@@ -88,10 +88,6 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'dl-luot', ten: 'Mở panel Nhập điểm', buoc: ['Học viên & Lớp: <b>⋯</b> ở hàng lớp › <b>Nhập điểm</b>; hoặc nút <b>Nhập điểm</b> ở hồ sơ lớp.',
           'Trong panel: chọn lượt (MT1, MT2…) và môn (<b>Tất cả · L · R · W1 · W2 · S</b>); <b>Chỉ ô còn trống</b> để nhập nốt.'] },
-        { id: 'dl-dan', ten: 'Dán từ Excel', buoc: ['Bấm <b>Dán từ Excel</b> (nút <b>?</b>: 6 bước + Sao chép mẫu): mỗi em một dòng, <b>Tên | điểm | nhận xét</b> từng kỹ năng.',
-          'Kiểm bảng xem trước: ô mới, ghi đè, lỗi; trùng tên thì chọn em; dưới kỳ vọng chọn nhóm nguyên nhân.',
-          'W1, W2, S: bốn tiêu chí số nguyên cách nhau dấu cách. <b>Lưu n dòng</b>: dòng chưa đủ còn là nháp; <b>Hoàn tác</b> trả lại như trước.',
-          'Lớp thường: cột theo môn của lớp; điểm = số câu đúng (tổng lấy từ cột) hoặc <b>24/40</b>; <b>-</b> = em không làm bài (môn dời sang tuần sau).'] },
       ],
     },
     {

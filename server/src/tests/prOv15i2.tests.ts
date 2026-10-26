@@ -9,14 +9,12 @@ export async function runPrOv15i2Tests(t: YThucTestKit) {
   const { check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays } = t as any;
   const { luuDiemLo } = await import('../cham/luuLo.ts');
   const svc: any = await import('../fasttrack/attempts.ts');
-  const lich: any = await import('../fasttrack/skillSchedule.ts');
   const regular: any = await import('../normal/regular.ts');
   const keHoach: any = await import('../keHoach/keHoachTest.ts');
   const chonSvc: any = await import('../tutors/chon.ts');
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
   const util: any = await import('../util.ts');
-  const d: any = await import('../../../shared/domain/index.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const { createApp } = await import('../app.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -70,11 +68,9 @@ export async function runPrOv15i2Tests(t: YThucTestKit) {
     xoaNho();
     const o = () => one(`SELECT raw_score, no_show_period_id AS dau FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a1) ?? {};
     assert(lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', noShow: true }] }], { cuoi: true }).dong[0].ok && o().dau != null, 'dán "-"');
-    const a = one('SELECT * FROM assessment_attempts WHERE id = ?', a1);
-    const cell = (svc.skillCells(QL, a, svc.scoresOf(a1), svc.skipsOf(a1), TODAY, lich.loadSkillRows([a1]).get(a1)) as any[]).find((c) => c.skill === 'listening');
     const patch = { rawScore: 30, nhanXet: NX };
-    const tra = d.patchTruoc(cell, patch) as object[];
-    assert(tra.length === 2, `"- → x" Hoàn tác phải là hai lệnh: ${JSON.stringify(tra)}`);
+    /* R1-BO-DAN-EXCEL: web (patchTruoc) đã bỏ — hai lệnh Hoàn tác "- → x" viết tay: xoá điểm rồi đặt lại "-". */
+    const tra: object[] = [{ rawScore: null, nhanXet: null }, { noShow: true }];
     assert(lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', ...patch }] }], { cuoi: true }).dong[0].ok && o().raw_score === 30, 'dán điểm đè "-"');
     const h = lo(QL, [{ attemptId: a1, o: tra.map((p) => ({ skill: 'listening', ...p })) }], { cuoi: true, hoanTac: true });
     assert(h.dong[0].ok, `Hoàn tác: ${JSON.stringify(h.dong[0])}`);

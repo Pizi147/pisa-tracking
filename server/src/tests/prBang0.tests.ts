@@ -22,7 +22,6 @@ const taiTsx = (dir: string, out: string[] = []): string[] => {
 /** BANG-3: tệp còn tự viết `<table>` (chưa vào `Bang`). Chỉ được GIẢM. */
 const MIEN_TABLE: string[] = [
   'web/src/modules/cases/SkillBoard.tsx',
-  'web/src/modules/cham/DanExcel.tsx',
   'web/src/modules/classes/BangDiemLopThuong.tsx',
   'web/src/modules/classes/BangKqdrLopFt.tsx',
   'web/src/modules/classes/ClassIssueBoard.tsx',
