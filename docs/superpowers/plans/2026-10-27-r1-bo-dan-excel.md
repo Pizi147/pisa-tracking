@@ -1,6 +1,6 @@
 # R1-BO-DAN-EXCEL — Bỏ hết "Dán từ Excel" của điểm — Implementation Plan
 
-> **For agentic workers:** chạy NGAY TRONG SESSION bằng superpowers:executing-plans (plan.md 1.2). Steps dùng `- [ ]`.
+> **For agentic workers:** chạy NGAY TRONG SESSION bằng superpowers:executing-plans (plan.md 1.2). Steps dùng `- [x]`.
 > Skill: `karpathy-guidelines`, `/ponytail lite` (chạm giao diện); cuối `audit` phần lưới; trước PR `/ponytail-review`. Loại PR: **bỏ tính năng, không đổi bố cục** → ảnh trước / sau 3 chỗ (1440 tối + 375 sáng), PTA rà + tự merge khi đạt.
 > **Quyết định chủ SP 26/10 đêm** (nhắc lại vòng 3 mục 12.3): bỏ HẾT "Dán từ Excel" + nút "?" của điểm ở MỌI nơi.
 
@@ -21,21 +21,21 @@ Cả ba đi qua một khối `coDan` / `khoiDan` trong `web/src/modules/cham/Luo
 
 ## Task 1: Gỡ giao diện + mã chỉ phục vụ Dán Excel
 **Files:** `web/src/modules/cham/LuoiChamLop.tsx`, `web/src/modules/cham/DanExcel.tsx` (xoá), `shared/domain/danExcel.ts` (+ export `shared/domain/index.ts`) nếu không còn nơi dùng, `shared/i18n/en/ov15b.ts` (khoá chỉ của Dán Excel), `web/src/modules/congViec/PanelViec.tsx:196` (chú thích), `CODE_MAP.md`.
-- [ ] `grep -rn "DanExcel\|danExcel\|boDanFt\|boDanThuong\|Dán từ Excel\|dan-excel" web/src shared server` → lập danh sách.
-- [ ] Xoá khối `coDan` / `khoiDan` / nút "?" / state `dan` trong `LuoiChamLop`; hàng công cụ còn lại giữ nguyên (link "Mở lưới đầy đủ ›", "Cả lớp", GV chấm S…). Hàng công cụ rỗng thì không vẽ.
-- [ ] Xoá `DanExcel.tsx`; xoá `danExcel.ts` + export nếu không còn ai import; khoá EN thừa (phép kiểm EN chỉ được giảm — xanh).
-- [ ] localStorage nháp `pisa.dan-excel.*` không còn đọc — không cần dọn (trình duyệt tự giữ, vô hại).
-- [ ] Typecheck xanh.
+- [x] `grep -rn "DanExcel\|danExcel\|boDanFt\|boDanThuong\|Dán từ Excel\|dan-excel" web/src shared server` → lập danh sách.
+- [x] Xoá khối `coDan` / `khoiDan` / nút "?" / state `dan` trong `LuoiChamLop`; hàng công cụ còn lại giữ nguyên (link "Mở lưới đầy đủ ›", "Cả lớp", GV chấm S…). Hàng công cụ rỗng thì không vẽ.
+- [x] Xoá `DanExcel.tsx`; xoá `danExcel.ts` + export nếu không còn ai import; khoá EN thừa (phép kiểm EN chỉ được giảm — xanh).
+- [x] localStorage nháp `pisa.dan-excel.*` không còn đọc — không cần dọn (trình duyệt tự giữ, vô hại).
+- [x] Typecheck xanh.
 
 ## Task 2: Phép kiểm
 **Files:** `server/src/tests/prBang0.tests.ts`, `prDiemTieuChi.tests.ts`, `tocDo.run.ts`, `tocDoDuong.ts` (đang dùng mã Dán Excel).
-- [ ] Bỏ ca CHỈ kiểm Dán Excel phía web / hàm `danExcel`; ca kiểm API `/scores/lo` máy chủ giữ nếu API còn.
-- [ ] Thêm một kiểm tĩnh: `web/src` không còn chuỗi "Dán từ Excel" ngoài `modules/tutor/`.
-- [ ] Hướng dẫn GV / QL (`shared/huongDan*` / tài liệu HD): bỏ mọi câu Dán Excel điểm (HD-CHI xanh).
+- [x] Bỏ ca CHỈ kiểm Dán Excel phía web / hàm `danExcel`; ca kiểm API `/scores/lo` máy chủ giữ nếu API còn.
+- [x] Thêm một kiểm tĩnh: `web/src` không còn chuỗi "Dán từ Excel" ngoài `modules/tutor/`.
+- [x] Hướng dẫn GV / QL (`shared/huongDan*` / tài liệu HD): bỏ mọi câu Dán Excel điểm (HD-CHI xanh).
 
 ## Task 3: Kiểm + PR
-- [ ] Ảnh trước / sau 3 chỗ (Lịch Test mở lớp, panel Nhập điểm từ Công việc, Điểm theo lớp) 1440 tối + 375 sáng.
-- [ ] `npm run check` một lần → `/ponytail-review` → PR "R1-BO-DAN-EXCEL" (bảng thao tác TRƯỚC → SAU: dòng "Dán từ Excel ×3: bỏ — chủ SP 26/10"), nhắn PTA Plan.
+- [x] Ảnh trước / sau 3 chỗ (Lịch Test mở lớp, panel Nhập điểm từ Công việc, Điểm theo lớp) 1440 tối + 375 sáng.
+- [x] `npm run check` một lần → `/ponytail-review` → PR "R1-BO-DAN-EXCEL" (bảng thao tác TRƯỚC → SAU: dòng "Dán từ Excel ×3: bỏ — chủ SP 26/10"), nhắn PTA Plan.
 
 ---
 

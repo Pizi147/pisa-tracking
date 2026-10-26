@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
-import { LuoiFT, tenDotFt, type FtSheet, type HangMo, type SExTuan } from './LuoiFT.tsx';
-import { DanExcel, boDanFt, boDanThuong } from './DanExcel.tsx';
+import { LuoiFT, type FtSheet, type HangMo, type SExTuan } from './LuoiFT.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
 import type { OnHet } from './phienCham.ts';
-import { ENTRY_SKILLS, nhanBai, type TomTatLuot } from '@shared/domain/index.ts';
+import type { TomTatLuot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
@@ -107,16 +106,6 @@ export function LuoiChamLop({
   const [caLop, setCaLop] = useState(false);
   const cotHien = chiCot?.length && !caLop ? chiCot : null;
   const laFt = data.mode === 'ielts_band';
-  /*
-   * OV-15b (mục 2, mockup 2 khung 1d): Dán từ Excel — người xem sửa được ít nhất một ô; cột dán = cột đang mở.
-   * OV-15h2 (ý 10): lớp thường cùng khối — cột theo môn của lớp, máy chủ ràng vào lớp + bài (`thuong:<bài>`).
-   */
-  const [dan, setDan] = useState<null | { hoi: boolean }>(null);
-  const luotMo = 'luot' in data ? (data as BangTheoLuot).luot : null;
-  const coDan = (laFt ? !!data.ft?.rows.some((r) => r.cells.some((c) => c.canEdit))
-    : !!data.thuong?.rows.some((r) => (kind === null || r.kind === kind) && r.skillSchedule.some((s) => s.canEdit)));
-  const tenLuot = luotMo ? luotMo.nhan : laFt ? data.ft?.period?.code ?? tenDotFt(data.ft) : kind ? nhanBai(kind) : t('Lớp thường');
-
   /* "Cả lớp" (chỉ có khi mở từ việc) mở cả mọi em của lượt, không chỉ em của việc. */
   const locLuot = caLop ? null : chiAttempt;
   const ft = useMemo<FtSheet | null>(
@@ -171,30 +160,14 @@ export function LuoiChamLop({
     </>
   );
 
-  const bo = useMemo(() => (!dan ? null
-    : laFt ? data.ft && boDanFt(data.ft, (cotHien ?? ENTRY_SKILLS).filter((k) => (ENTRY_SKILLS as readonly string[]).includes(k)), data.today)
-      : thuong && boDanThuong(thuong, thuong.programme.skills, data.today)), [dan, laFt, data.ft, data.today, cotHien, thuong]);
-  const khoiDan = dan && bo && (
-    <DanExcel bo={bo} tenLuot={tenLuot} luot={luotMo ? luotMo.ma : !laFt && kind ? `thuong:${kind}` : null} hep={hep} hoiBanDau={dan.hoi}
-      onDong={() => setDan(null)} onDaLuu={onReload} />
-  );
   const luoiKhung = gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>;
 
   return (
     <BaoLuuContext.Provider value={bao}>
     <div ref={khung}>
-      {(hep || thanhTren || coDan || (nutCaLop && !!chiCot?.length)) && !(hep && dan) && (
+      {(hep || thanhTren || (nutCaLop && !!chiCot?.length)) && (
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           {thanhTren}
-          {coDan && (
-            <span className="inline-flex items-center gap-1.5">
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={!!dan} onClick={() => setDan(dan ? null : { hoi: false })}>
-                {t('Dán từ Excel')}
-              </button>
-              <button type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0" aria-label={t('Cách dán từ Excel')}
-                onClick={() => setDan({ hoi: true })}>?</button>
-            </span>
-          )}
           {nutCaLop && !!chiCot?.length && !tungKyNang && (
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={caLop} onClick={() => setCaLop((v) => !v)}>
               {t('Cả lớp')}
@@ -209,13 +182,7 @@ export function LuoiChamLop({
           )}
         </div>
       )}
-      {!dan ? luoiKhung : hep ? khoiDan : (
-        /* 1440: lưới trái, khối dán phải (mockup 1d); dưới xl xếp chồng, khối dán trước. */
-        <div className="mt-2 flex flex-col gap-3 xl:flex-row-reverse xl:items-start">
-          <div className="xl:w-[56rem] xl:shrink-0">{khoiDan}</div>
-          <div className="min-w-0 flex-1 overflow-x-auto">{luoiKhung}</div>
-        </div>
-      )}
+      {luoiKhung}
     </div>
     </BaoLuuContext.Provider>
   );

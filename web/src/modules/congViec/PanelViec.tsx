@@ -193,7 +193,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
   onDong: () => void; onDaLam: () => void;
   /** OV-12e: mở từ panel số liệu — "← Danh sách". */
   quayLai?: { nhan: string; onClick: () => void };
-  /** CV-LOI: trang tự mở (không con trỏ, không cuộn — CV-09). SUA-CHAM-LAI Đ2: panel việc có lại "Dán từ Excel" cạnh "Cả lớp" (V1 — thao tác V4). */
+  /** CV-LOI: trang tự mở (không con trỏ, không cuộn — CV-09). R1-BO-DAN-EXCEL: bỏ dán điểm từ Excel (chủ SP 26/10). */
   tuMo?: boolean;
   /** R1-LUU-TIEP: việc kế của danh sách (Công việc, Chấm Test, thanh việc lớp). */
   onTiep?: (() => void) | null;
