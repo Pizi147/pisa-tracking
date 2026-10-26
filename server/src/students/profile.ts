@@ -6,13 +6,13 @@ import {
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
-  coONhapLienHe, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+  coONhapLienHe, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { diemCuaLuot, entryBandsOf, kckCuaLuot, routeCuaLuot, scoresOf, skipsOf, tuanVangCu } from '../fasttrack/attempts.ts';
-import { assessedBands, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
+import { assessedBands, boTaskTrong, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
@@ -33,6 +33,7 @@ import { mt0TheoLop } from '../normal/kyVong.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { lichGopCua, loadSkillRows } from '../fasttrack/skillSchedule.ts';
+import { duocDoiMon } from '../fasttrack/monDangKy.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
@@ -110,7 +111,7 @@ function currentBands(attempts: any[]) {
   const per: Partial<Record<AssessedSkill, { band: number; attemptNo: number; week: string | null }>> = {};
   for (const a of attempts) {
     if (a.status === 'cancelled') continue;
-    const bands = assessedBands(entryBandsOf(scoresOf(a.id)));
+    const bands = assessedBands(entryBandsOf(scoresOf(a.id)), boTaskTrong(skipsOf(a.id)));   // P8: chỉ học một task → Writing = task đó
     for (const s of ASSESSED_SKILLS) {
       if (per[s]) continue;                              // đã có lượt mới hơn
       const b = bands[s];
@@ -648,7 +649,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` (band ≤ Target − 2.0) để nhìn. */
     const mt0 = a.kind === 'mt0';
     return {
-      ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null,
+      ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null, khongDuBoMon: r.khongDuBoMon,
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, chot: r.chot, provisional: r.provisional,
       sosLevel: r.sosLevel, kckDuoi: r.kckDuoi, scopeNote: r.scopeNote,
@@ -710,7 +711,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     for (const a of [...attemptRows].sort((x, y) => x.attempt_no - y.attempt_no)) {
       if (a.status === 'cancelled') continue;
       if (a.id === baseline?.attemptId) continue;   // PR-MT0: MT0 đã là điểm đầu vào — không lặp thành điểm MT0
-      const b = assessedBands(entryBandsOf(scoresOf(a.id)))[skill];
+      const b = assessedBands(entryBandsOf(scoresOf(a.id)), boTaskTrong(skipsOf(a.id)))[skill];
       if (b === null || b === undefined) continue;
       points.push({
         kind: 'official', label: `MT${a.attempt_no}`,
@@ -917,6 +918,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       ? {
         id: selected.id, studentId, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
+        /* P8 (N13, N22 ④): môn đăng ký — chỉ lộ trình FT (null = đủ môn); `monHoc` = "L · R · W2 · S" khi thiếu môn (dòng đầu hồ sơ, k7). */
+        ...(selected.route ? { monDangKy: selected.mon_dang_ky ? JSON.parse(selected.mon_dang_ky) as string[] : null, monHoc: selected.mon_dang_ky ? chuMon(selected.mon_dang_ky) : null,
+          coTheDoiMon: selected.status === 'active' && duocDoiMon(p, { studentId }) } : {}),
         /** P13 KET-PET: kỳ thi Cambridge của lộ trình (KET / PET) — Target + thi thật theo thang này; null = không kỳ thi. */
         kyThi: !selected.route ? kyThiCuaChuongTrinh(selected.programme_code) : null,
         /* OV-6b1: tuần MT của lớp em đang học — web báo trước "MT sẽ dời" bằng đúng lịch này (`cauMtSeDoi`). */

@@ -6,7 +6,7 @@ import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
 import { can, require_, type Ctx, type Principal } from '../permissions.ts';
-import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, forbidden, kiemKieuO, loi, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
   docDiemXuatPhat, docDuKienThi, docTargetCua, docTuanBatDau, duocDoiTarget, loiDoiTarget, reviseTarget, setBaseline, updateCycle,
@@ -14,6 +14,7 @@ import {
 import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 import { lichMtCua } from './schedule.ts';
 import { cauEmailTrung, emailDangDung } from '../students/emailHocVien.ts';
+import { apMonDangKy, duocDoiMon, type TomTatMon } from '../fasttrack/monDangKy.ts';
 
 /**
  * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP — Họ tên, Ngày sinh, Email, Tuần bắt đầu, Dự kiến thi, Target, Điểm đầu vào (OV-10b: + liên hệ). Mỗi dòng chỉ gửi
@@ -26,6 +27,8 @@ export type DongSua = {
   studentId: number; fullName?: string; dob?: string | null; email?: string | null; consultantUserId?: number | null; startWeek?: string;
   examDate?: string | null; target?: number | string | null; baseline?: number | null;
   phone?: string | null; parentName?: string | null; parentRelation?: string | null; parentPhone?: string | null;
+  /** P8 (N13): môn đăng ký (mảng con L R W1 W2 S; null = đủ) — chỉ lộ trình FT. */
+  monDangKy?: string[] | null;
 };
 type DauVao = { rows: DongSua[]; lyDoTarget?: string };
 
@@ -38,8 +41,8 @@ export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý, TVV hoặc CX đổi đượ
  */
 export const duocSuaCaLop = (p: Principal, ctx: Ctx) => can(p, PERMISSIONS.STUDENT_EDIT, ctx) || can(p, PERMISSIONS.STUDENT_EDIT_MORE, ctx);
 const HO_SO = ['fullName', 'dob', 'email', 'consultantUserId', 'phone', 'parentName', 'parentRelation', 'parentPhone'] as const;
-const LO_TRINH = ['startWeek', 'examDate', 'target', 'baseline'] as const;
-const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantUserId: 'TVV', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào', ...NHAN_LIEN_HE };
+const LO_TRINH = ['startWeek', 'examDate', 'target', 'baseline', 'monDangKy'] as const;
+const NHAN: Record<string, string> = { monDangKy: 'Môn học', fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantUserId: 'TVV', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào', ...NHAN_LIEN_HE };
 
 /**
  * Em ĐANG HỌC lớp `classId` (`ids` = chỉ những em này; `null` = cả lớp) + lộ trình hiện tại (đang chạy, seq lớn nhất — như
@@ -87,6 +90,8 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
       examDate: (c ? c.exam_date ?? c.exam_month ?? null : null) as string | null,
       target: (c ? (c.khong_cam_ket ? chuTargetKck(c.target_score ?? null, true) : c.target_score ?? null) : null) as number | string | null,   // OV-9: "6.5 KCK"
       baseline: (c?.baseline_score ?? null) as number | null,
+      /* P8 (N13, N22 ④): ô Môn học chỉ ở lộ trình FT. */
+      laFt: !!c?.route, monDangKy: (c?.mon_dang_ky ? JSON.parse(c.mon_dang_ky) : null) as string[] | null,
       phone: (s.phone ?? null) as string | null, parentName: (s.parent_name ?? null) as string | null,
       parentRelation: (s.parent_relation ?? null) as string | null, parentPhone: (s.parent_phone ?? null) as string | null,
     };
@@ -96,6 +101,10 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
     /** P13: lớp KET / PET — cột Target theo thang Cambridge (gợi ý tiêu đề cột). */
     kyThi: cls.moc_lap != null ? kyThiCuaChuongTrinh(cls.programme_code) : null,
     coTheSuaTarget: duocDoiTarget(p, { classId: cls.id }), rows,
+    /** P8 (N22 ④): cột Môn học chỉ ở lớp FT. */
+    coMonHoc: !laLopThuong(cls.programme_code ?? null),
+    /** P8: người xem đổi được Môn học (cột + thanh "Áp cho n em") — QL, Quản trị, GVCN, TVV. */
+    coTheDoiMon: duocDoiMon(p, { classId: cls.id }),
     /** OV-13i: TVV / CX (không `student.edit`) — panel khoá cột Tuần bắt đầu (ngoài `CHI_SUA_THONG_TIN`). */
     chiThongTin: !can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }),
     /** OV-10b: cột Liên hệ — QL / Quản trị; GVCN không thấy ô nhập (chủ SP 13/10). */
@@ -140,11 +149,13 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     };
     /* QUYỀN THEO TRƯỜNG, trước mọi lần ghi: hồ sơ + lộ trình (trừ Target) cần `student.edit` — OV-13i: hoặc TVV / CX trong `CHI_SUA_THONG_TIN`;
        đổi Target THẬT cần `duocDoiTarget`. */
-    const coSua = [...HO_SO, ...LO_TRINH].some((k) => k !== 'target' && r[k] !== undefined);
+    const coSua = [...HO_SO, ...LO_TRINH].some((k) => k !== 'target' && k !== 'monDangKy' && r[k] !== undefined);
     if (coSua && !can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id })) {
       if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })) throw forbidden(`Bạn không có quyền sửa học viên ${s.full_name}.`);
       if (r.startWeek !== undefined) throw forbidden(CHI_SUA_THONG_TIN);
     }
+    /* P8 (chủ SP 26/10 đêm): Môn học — QL, Quản trị, GVCN, TVV đúng phạm vi (`duocDoiMon`); CX, GV bộ môn không. */
+    if (r.monDangKy !== undefined && !duocDoiMon(p, { studentId: s.id })) throw loi(403, 'Bạn không có quyền đổi môn học của {ten}.', { ten: s.full_name });
     let doiTarget = false;
     if (r.target !== undefined) {
       const t = thu('target', () => docTargetCua(c, r.target));   // P13: KET / PET theo thang Cambridge
@@ -164,12 +175,18 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     let tuanMoi: string | undefined;
     if (c && r.startWeek !== undefined) tuanMoi = thu('startWeek', () => docTuanBatDau(c, r.startWeek));
     if (c && r.examDate !== undefined) thu('examDate', () => docDuKienThi(c, r.examDate));
+    /* P8 (N13, N22 ④): môn học chỉ lộ trình FT; rỗng / lạ → lỗi tại ô. Tóm tắt "Khi lưu" cùng hàm lúc lưu (`apMonDangKy` xem trước). */
+    let monTom: TomTatMon | undefined;
+    if (c && r.monDangKy !== undefined) {
+      if (!c.route) issues.push({ row: i + 1, field: 'monDangKy', message: 'Môn học chỉ áp cho lộ trình Fast Track.', muc: 'loi' });
+      else monTom = thu('monDangKy', () => apMonDangKy(p, c.id, r.monDangKy, { xemTruoc: true }));
+    }
     if (r.baseline !== undefined) {
       if (!cot.has('baselineScore')) issues.push({ row: i + 1, field: 'baseline', message: 'Lớp thường không có điểm đầu vào.', muc: 'loi' });
       else if (r.baseline !== null) thu('baseline', () => docDiemXuatPhat(r.baseline));
     }
     const cuTuan = c?.start_period_id ?? null;
-    return { r, s, c, issues, hoSo, doiTarget, tuanMoi, cuTuan };
+    return { r, s, c, issues, hoSo, doiTarget, tuanMoi, cuTuan, monTom };
   });
 
   /*
@@ -223,7 +240,11 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
 
 export function xemTruocSuaCaLop(p: Principal, classId: number, input: DauVao) {
   const { dong, canhBaoMt } = kiemLo(p, classId, input);
-  return { rows: dong.map((x) => ({ studentId: x.s.id as number, issues: x.issues })), canhBaoMt };
+  return {
+    rows: dong.map((x) => ({ studentId: x.s.id as number, issues: x.issues })), canhBaoMt,
+    /** P8: tóm tắt đổi môn từng em (chỉ em đổi thật) — chân panel cộng lại. */
+    monHoc: dong.filter((x) => x.monTom?.doi).map((x) => ({ studentId: x.s.id as number, ...x.monTom! })),
+  };
 }
 
 export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { idempotencyKey?: string }): { daSua: number } {
@@ -252,7 +273,7 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
     if (vuaGhi) return JSON.parse(vuaGhi.value);
     let daSua = 0;
     const tu = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM audit_logs').get() as any).m as number;   // OV-15i1: dòng nhật ký của lô nằm sau id này
-    for (const { r, s, c, hoSo, doiTarget } of dong) {
+    for (const { r, s, c, hoSo, doiTarget, monTom } of dong) {
       /* Netlify cắt hàm sau 10 s, bị cắt giữa giao dịch là giữ khoá ghi Turso: sắp hết giờ thì dừng — cả lô cuộn lại, 503 "chưa lưu gì". */
       chanGiaoDichNeuSapHetGio();
       try {
@@ -261,8 +282,9 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
         if (Object.keys(ct).length) updateCycle(p, c.id, ct);
         if (r.baseline !== undefined) setBaseline(p, c.id, r.baseline === null ? { source: null } : { source: 'manual', score: r.baseline });
         if (doiTarget) reviseTarget(p, c.id, { newTarget: r.target ?? null, reason: lyDo });
+        if (monTom?.doi) apMonDangKy(p, c.id, r.monDangKy);
         /* Chỉ đếm em có ghi thật (Target gửi lại đúng giá trị cũ không tính). */
-        if (Object.keys(hoSo).length || Object.keys(ct).length || r.baseline !== undefined || doiTarget) daSua += 1;
+        if (Object.keys(hoSo).length || Object.keys(ct).length || r.baseline !== undefined || doiTarget || monTom?.doi) daSua += 1;
       } catch (e) {
         /* Cả lô cuộn lại (giao dịch ngoài); câu lỗi nói rõ em nào. */
         if (e instanceof HttpError) throw new HttpError(e.status, `${s.full_name}: ${e.message}`, { studentId: s.id });
