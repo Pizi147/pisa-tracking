@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { chuPhuHuynh, chuTamDung, chuTuanHoc, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { chuKetQuaKyThi, chuPhuHuynh, chuTamDung, chuTuanHoc, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
 import { NhanLich } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
@@ -38,8 +38,11 @@ const tenNguoi = (x: Viec) => (x.nguoi.id ? x.nguoi.ten : dich(x.nguoi.ten));
  */
 export function DongThongTin({ tt, tvv }: { tt: any; tvv?: string | null }) {
   if (!tt?.lop) return <p className="m-0 text-[13px] text-slate-400">{t('Chưa xếp lớp')}</p>;
-  const target = ((tt.target !== null && tt.target !== undefined) || tt.kck)   // OV-9: "6.5 · KCK" · "— · KCK"
-    && <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} /></span>} />;
+  const target = ((tt.target !== null && tt.target !== undefined) || (tt.kck && !tt.kyThi))   // OV-9: "6.5 · KCK" · "— · KCK"; P13: KET / PET số nguyên
+    && <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} kyThi={tt.kyThi} /></span>} />;
+  /* P13 KET-PET: kết quả thi thật "159 · Grade B · B1" (máy tính khi hiện) — chưa đủ 4 điểm thì không hiện. */
+  const thiThat = tt.kyThi && tt.thiThat
+    && <NhanGt key="tt" n={t('Thi thật {ten}', { ten: tt.kyThi.ten })} g={<span className="tabular-nums">{chuKetQuaKyThi(tt.thiThat)}{tt.thiThat.dat != null && ` · ${tt.thiThat.dat ? t('Đạt Target') : t('Chưa đạt Target')}`}</span>} />;
   const thi = tt.thiDuKien
     ? <NhanGt key="thi" n={tt.lopThuong ? dich(tt.thiDuKien.nhan) : t('Ngày thi')} g={<span className="tabular-nums">{tt.lopThuong ? tt.thiDuKien.gt : `${dich(tt.thiDuKien.nhan) === t('Dự kiến thi') ? t('Dự kiến') : dich(tt.thiDuKien.nhan)} ${tt.thiDuKien.gt}`.trim()}</span>} />
     : !tt.lopThuong && <NhanGt key="thi" n={t('Ngày thi')} g={<NhanLich loai="chua">{t('Chưa có lịch')}</NhanLich>} />;
@@ -50,6 +53,7 @@ export function DongThongTin({ tt, tvv }: { tt: any; tvv?: string | null }) {
     tt.tuanHoc && <NhanGt key="tuan" n={t('Khoá học')} g={<span className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</span>} />,
     thi,
     tt.lopThuong && target,
+    thiThat,
     tt.thiIelts && <NhanGt key="ielts" n={t('Thi IELTS dự kiến')} g={<span className="tabular-nums">{tt.thiIelts}</span>} />,
     tt.gvcn && <NhanGt key="gv" n={t('GVCN')} g={tt.gvcn} />,
     tvv && <NhanGt key="tvv" n={t('TVV')} g={tvv} />,

@@ -8,7 +8,7 @@
  */
 import {
   COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, mondayOfDate, kyNangPhuTrach, laChamCheo, nhanDotNgan, oTuTap, tenMonNgan, boMonLich,
-  type ChiSoHoSoGv, type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq,
+  type ChiSoHoSoGv, type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { db } from '../db.ts';
@@ -186,7 +186,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
       });
     };
     if (a.scoring_mode === 'ratio') {
-      const bo = boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills);
+      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), daGhiLuot(bundle.skillRows.get(a.id), scores));   // P13: bộ môn theo lượt
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, c.homNay, bo);
       for (const skill of bo) {
         const v = views.get(skill);
@@ -261,7 +261,7 @@ function mucKetQua(c: NguCanhPtGv, nap: NapBai): MucKq[] {
     if (a.khong_cam_ket && a.scoring_mode !== 'ratio') continue;
     const ratio = a.scoring_mode === 'ratio';
     const scores = nap.bundle.scores.get(a.id) ?? [];
-    const g = danhGiaMon(a, scores, ratio ? progs.get(a.programme_code) ?? null : null, a.target_score ?? null, nap.bundle.skips.get(a.id) ?? []);
+    const g = danhGiaMon(a, scores, ratio ? progs.get(a.programme_code) ?? null : null, a.target_score ?? null, nap.bundle.skips.get(a.id) ?? [], nap.bundle.skillRows.get(a.id));
     if (!g) continue;
     for (const m of g.mon) kl.set(baiId(a.id, m.skill), { dat: m.dat, ovr: g.ovr, kv: g.kv });
   }

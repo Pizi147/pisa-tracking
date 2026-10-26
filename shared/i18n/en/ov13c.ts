@@ -26,5 +26,4 @@ export const EN_OV13C = {
   'Máy chủ đang bận, chưa lưu gì. Thử lại sau ít phút.': 'The server is busy, nothing was saved. Try again in a few minutes.',
   'Mã PA không hợp lệ.': 'Invalid PA id.',
   'Không xác nhận được.': 'Could not confirm.',
-  '{n} lớp': (b) => `${b.n} ${Number(b.n) === 1 ? 'class' : 'classes'}`,
 } satisfies Record<string, Dich>;

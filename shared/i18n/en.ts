@@ -1,7 +1,7 @@
 /**
  * Từ điển tiếng Anh. KHOÁ = CHÍNH CHỮ VIỆT đang hiện trên web (kể cả `{biến}`): bản Việt không thể lệch khỏi khoá, `t()` có kiểu
  * `keyof typeof EN` nên tsc báo mọi chữ chưa có bản Anh. Mỗi đợt PR-EN một file vùng (`en/a.ts`…) — bốn PR nối tiếp không đè nhau.
- * Chữ theo `thiet-ke/THUAT_NGU_EN_2026-10-07.md`.
+ * Chữ theo `thiet-ke/THUAT_NGU_EN.md`.
  */
 import { EN_A } from './en/a.ts';
 import { EN_B } from './en/b.ts';
@@ -64,6 +64,7 @@ import { EN_P6_KHOA_LICH } from './en/p6KhoaLich.ts';
 import { EN_P9A_XET_LAI } from './en/p9aXetLai.ts';
 import { EN_P7_SV_LO_TRINH } from './en/p7SvLoTrinh.ts';
 import { EN_P14_DICH } from './en/p14Dich.ts';
+import { EN_P13_KET_PET } from './en/p13KetPet.ts';
 import { EN_P9B_CUOI_KHOA } from './en/p9bCuoiKhoa.ts';
 import { EN_TL_V5 } from './en/tlV5.ts';
 import { EN_SV_TQ_GV } from './en/svTqGv.ts';
@@ -72,6 +73,7 @@ import { EN_UI_PHAN_TICH } from './en/uiPhanTich.ts';
 import { EN_UI_CON_LAI } from './en/uiConLai.ts';
 import { EN_UI_CHAM_TEST } from './en/uiChamTest.ts';
 import { EN_UI_LICH_TUAN } from './en/uiLichTuan.ts';
+import { EN_R1_LUU_TIEP } from './en/r1LuuTiep.ts';
 
 /** Giá trị biến: chữ / số, hoặc một chữ máy chủ dựng có khoá riêng (`ChuKhoa`, lồng được) — PR-EN-c. null / undefined in ra như chuỗi
  *  ghép `${x}` cũ (giữ đúng chữ bản Việt) — PR-EN-b. */
@@ -81,4 +83,4 @@ export type ChuKhoa = { chu: string; khoa?: string; bien?: Bien };
 /** Chữ thường, hoặc hàm khi cần số ít / số nhiều. */
 export type Dich = string | ((b: Bien) => string);
 
-export const EN = { ...EN_A, ...EN_B, ...EN_C, ...EN_F, ...EN_D, ...EN_OV12E, ...EN_HD, ...EN_HDB, ...EN_OV13B, ...EN_OV13C, ...EN_OV13D, ...EN_OV13G, ...EN_OV13J, ...EN_OV13L, ...EN_OV13K, ...EN_OV13M , ...EN_OV13O, ...EN_UX1, ...EN_UX2, ...EN_OV13Q, ...EN_ENE, ...EN_OV14A, ...EN_OV14C, ...EN_OV15A, ...EN_OV15C, ...EN_OV15D, ...EN_OV15E, ...EN_OV15F, ...EN_OV15B, ...EN_TU, ...EN_TUB, ...EN_OV15H2, ...EN_OV15G, ...EN_OV15H1, ...EN_LUAT5, ...EN_KHUNG_LOI, ...EN_CV_LOI, ...EN_CASE_NHIEU, ...EN_SL1, ...EN_LUAT34, ...EN_SL2, ...EN_NEN_V5, ...EN_SV_SO2, ...EN_SV_SO3, ...EN_CHU_THI, ...EN_NEN_PANEL, ...EN_UI_CONG_VIEC, ...EN_UI_CHAM_TEST, ...EN_UI_LICH_TUAN, ...EN_UI_CV_TVV, ...EN_LUAT_NX_MT, ...EN_UI_HO_SO_LOP, ...EN_SV_NX_CASE, ...EN_UI_HV_LOP, ...EN_UI_HO_SO_HV, ...EN_UI_TONG_QUAN, ...EN_UI_HO_SO_GV, ...EN_UI_PHAN_TICH, ...EN_SV_TQ_GV, ...EN_UI_CON_LAI, ...EN_TL_V5, ...EN_SUA_CHAM_LAI, ...EN_P1_DIEM_TIEU_CHI, ...EN_P6_KHOA_LICH, ...EN_P7_SV_LO_TRINH, ...EN_P14_DICH, ...EN_P11_VIEC_DUNG_VAI, ...EN_P9B_CUOI_KHOA, ...EN_P9A_XET_LAI };
+export const EN = { ...EN_A, ...EN_B, ...EN_C, ...EN_F, ...EN_D, ...EN_OV12E, ...EN_HD, ...EN_HDB, ...EN_OV13B, ...EN_OV13C, ...EN_OV13D, ...EN_OV13G, ...EN_OV13J, ...EN_OV13L, ...EN_OV13K, ...EN_OV13M , ...EN_OV13O, ...EN_UX1, ...EN_UX2, ...EN_OV13Q, ...EN_ENE, ...EN_OV14A, ...EN_OV14C, ...EN_OV15A, ...EN_OV15C, ...EN_OV15D, ...EN_OV15E, ...EN_OV15F, ...EN_OV15B, ...EN_TU, ...EN_TUB, ...EN_OV15H2, ...EN_OV15G, ...EN_OV15H1, ...EN_LUAT5, ...EN_KHUNG_LOI, ...EN_CV_LOI, ...EN_CASE_NHIEU, ...EN_SL1, ...EN_LUAT34, ...EN_SL2, ...EN_NEN_V5, ...EN_SV_SO2, ...EN_SV_SO3, ...EN_CHU_THI, ...EN_NEN_PANEL, ...EN_UI_CONG_VIEC, ...EN_UI_CHAM_TEST, ...EN_UI_LICH_TUAN, ...EN_UI_CV_TVV, ...EN_LUAT_NX_MT, ...EN_UI_HO_SO_LOP, ...EN_SV_NX_CASE, ...EN_UI_HV_LOP, ...EN_UI_HO_SO_HV, ...EN_UI_TONG_QUAN, ...EN_UI_HO_SO_GV, ...EN_UI_PHAN_TICH, ...EN_SV_TQ_GV, ...EN_UI_CON_LAI, ...EN_TL_V5, ...EN_SUA_CHAM_LAI, ...EN_P1_DIEM_TIEU_CHI, ...EN_P6_KHOA_LICH, ...EN_P7_SV_LO_TRINH, ...EN_P14_DICH, ...EN_P11_VIEC_DUNG_VAI, ...EN_P9B_CUOI_KHOA, ...EN_P9A_XET_LAI, ...EN_P13_KET_PET, ...EN_R1_LUU_TIEP };

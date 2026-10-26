@@ -74,7 +74,7 @@ export const HD_TVV: HuongDan = {
       /* UI-CV-TVV (C05): TVV có Công việc — chỉ việc của mình. */
       id: 'cong-viec', ten: 'Công việc', duong: ['/cong-viec'],
       muc: [{ id: 'tvv-cv', ten: 'Việc cần làm', buoc: ['<b>Báo PH</b> · <b>Sau thi</b> · <b>Chốt ngày thi</b> · <b>Bổ sung hồ sơ</b> — bấm dòng, làm ngay ở panel bên phải.',
-        '<b>Báo PH</b>: chọn <b>Đã báo PH</b> hoặc <b>Chưa liên hệ được</b>, ghi chú, <b>Lưu và tiếp</b>. Chưa liên hệ được: việc vẫn mở, giữ hạn.',
+        '<b>Báo PH</b>: chọn <b>Đã báo PH</b> hoặc <b>Chưa liên hệ được</b>, ghi chú, <b>Lưu · việc tiếp ›</b>. Chưa liên hệ được: việc vẫn mở, giữ hạn.',
         '<b>Sau thi</b>: lưu điểm thi thật trước, chốt bước tiếp sau.'],
         chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Bấm dòng để làm việc.' } }],
     },

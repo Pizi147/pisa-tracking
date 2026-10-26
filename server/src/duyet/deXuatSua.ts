@@ -10,7 +10,7 @@ import { hasAssignment, type Principal } from '../permissions.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { CHI_DOI_KCK } from '../fasttrack/cycles.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { TRUONG_DE_XUAT, chuTargetKck, tachKck, type TruongDeXuat } from '../../../shared/domain/index.ts';
+import { TRUONG_DE_XUAT, chuTargetKck, docTargetKyThi, kyThiCuaChuongTrinh, tachKck, thangKyThi, type TruongDeXuat } from '../../../shared/domain/index.ts';
 import { taoYeuCau } from './yeuCau.ts';
 
 export const NHAN_TRUONG_DE_XUAT: Record<TruongDeXuat, string> = {
@@ -21,7 +21,7 @@ export const TRUONG_TU_AP: readonly TruongDeXuat[] = ['target', 'lo-trinh'];
 
 /** Lộ trình đang chạy + lớp đang học của em — giá trị "cũ" ghi vào thẻ. */
 export function hienTaiCua(conn: any, studentId: number) {
-  const cyc = conn.prepare(`SELECT id, target_score, khong_cam_ket, route FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY seq DESC LIMIT 1`)
+  const cyc = conn.prepare(`SELECT id, target_score, khong_cam_ket, route, programme_code FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY seq DESC LIMIT 1`)
     .get(studentId) as any;
   const lop = conn.prepare(`SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active'
                               ORDER BY e.id DESC LIMIT 1`).get(studentId) as any;
@@ -52,11 +52,11 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   if (truong === 'lich-mt') throw badRequest('Lịch Test do Quản lý xử lý — không gửi đề xuất.');   // luật 09/10; thẻ cũ vẫn hiện để đóng
   if (!(TRUONG_DE_XUAT as readonly string[]).includes(String(truong))) throw badRequest('Chọn thông tin cần sửa.');
   const lyDo = lyDoDeXuat(body.lyDo);
-  const { cu, moi } = kiemGiaTriDeXuat(conn, studentId, truong, body.moi);
+  const { cu, moi, kyThi } = kiemGiaTriDeXuat(conn, studentId, truong, body.moi);   // P13: thẻ nhớ thang (KET / PET)
   return tx(() => {
     const id = taoYeuCau(conn, {
       loai: 'sua_thong_tin', doiTuongLoai: `student:${truong}`, doiTuongId: studentId, hocVienId: studentId,
-      nguoiXin: p.userId, lyDo, duLieu: { truong, cu, moi },
+      nguoiXin: p.userId, lyDo, duLieu: { truong, cu, moi, ...(kyThi ? { kyThi } : {}) },
     });
     if (id === null) throw badRequest(`Đã có một đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} của em đang chờ Quản lý duyệt — sửa ở Công việc › Yêu cầu của tôi.`);
     writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id,
@@ -72,24 +72,29 @@ export function lyDoDeXuat(v: unknown): string {
 }
 
 /** Giá trị mới của một trường đề xuất + giá trị cũ ghi vào thẻ — dùng chung lúc gửi và lúc người gửi Sửa (OV-7a). */
-export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeXuat, moiVao: unknown): { cu: string | number | null; moi: string | number } {
+export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeXuat, moiVao: unknown): { cu: string | number | null; moi: string | number; kyThi?: string } {
   const ht = hienTaiCua(conn, studentId);
   let moi: string | number;
   let cu: string | number | null = null;
   if (truong === 'target') {
     /* Q29-1 + OV-9: KCK là dấu riêng, Target giữ — thẻ lưu "6.5 KCK" / "KCK" (chưa có Target) / số. */
-    const { so, kck } = tachKck(moiVao);
+    /* P13 KET-PET: lộ trình KET / PET — Target theo điểm Cambridge (số nguyên trong thang, không KCK). */
+    const kt = ht.cycle && !ht.cycle.route ? kyThiCuaChuongTrinh(ht.cycle.programme_code) : null;
+    const dkt = kt ? docTargetKyThi(kt, moiVao) : null;
+    if (dkt && ('loi' in dkt || dkt.so === null)) throw badRequest('loi' in dkt ? dkt.loi : `Target mới — ${thangKyThi(kt!)}.`, { o: 'target' });
+    const { so, kck } = dkt ? { so: dkt.so ?? '', kck: false } : tachKck(moiVao);
     const coSo = so !== '' && so != null;
     const n = Number(so);
-    if ((!kck || coSo) && (!coSo || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
+    if (!kt && (!kck || coSo) && (!coSo || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
       throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — thêm KCK nếu không cam kết.');
     }
     if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi Target.');
     /* OV-11d (Q8): đề xuất là đường của GV — dấu KCK chỉ QL / Quản trị / TVV đổi (`reviseTarget`), đề xuất giữ dấu đang có. */
-    if (kck !== !!ht.cycle.khong_cam_ket) throw forbidden(CHI_DOI_KCK);
+    if (!kt && kck !== !!ht.cycle.khong_cam_ket) throw forbidden(CHI_DOI_KCK);   // P13: khoá KET / PET không có KCK — bỏ qua cờ
     moi = kck ? chuTargetKck(coSo ? n : null, true) : n;
-    cu = ht.cycle.khong_cam_ket ? chuTargetKck(ht.cycle.target_score ?? null, true) : ht.cycle.target_score ?? null;
+    cu = !kt && ht.cycle.khong_cam_ket ? chuTargetKck(ht.cycle.target_score ?? null, true) : ht.cycle.target_score ?? null;
     if (cu === moi) throw badRequest('Target mới trùng Target hiện tại.');
+    if (kt) return { cu, moi, kyThi: kt.ma };   // P13: thẻ nhớ thang (KET / PET) — Sửa đề xuất kiểm cùng thang
   } else if (truong === 'lo-trinh') {
     const code = String(moiVao ?? '').trim();
     if (!conn.prepare(`SELECT 1 FROM routes WHERE code = ? AND status = 'active'`).get(code)) throw badRequest('Chọn một lộ trình còn dùng.');

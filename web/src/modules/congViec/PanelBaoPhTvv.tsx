@@ -38,7 +38,7 @@ const sdtDoc = (s: string) => s.replace(/\D/g, '').replace(/^(\d{4})(\d{3})(\d+)
 /**
  * BÁO PH (UI-CV-TVV, mockup `thiet-ke/v5/tvv.html` panelBph; C15, T10, T15, T16, T21, T22) — TVV ghi kết quả báo phụ huynh sau lần xử lý vi phạm.
  * Bối cảnh chỉ đọc (lần xử lý · nội dung GVCN · PH + SĐT bấm gọi) · form 3 trường (Kết quả · Ngày · Ghi chú, nháp theo việc) · Lịch sử mọi lần ghi.
- * "Chưa liên hệ được" = một lần thử: việc vẫn mở, hạn giữ. Kết thúc ngoại lệ = ⋯ › Bỏ việc (lý do sẵn có). Lưu / Lưu và tiếp — chỉ sang việc kế sau khi lưu xong.
+ * "Chưa liên hệ được" = một lần thử: việc vẫn mở, hạn giữ. Kết thúc ngoại lệ = ⋯ › Bỏ việc (lý do sẵn có). Lưu / Lưu · việc tiếp › — chỉ sang việc kế sau khi lưu xong.
  */
 export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
   it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null; tenTiep?: string | null;
@@ -102,7 +102,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
     phu: tt === 'loi' || !onTiep ? null : <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Lưu')}</button>,
     chinh: tt === 'loi'
       ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}>{t('Thử lại')}</button>
-      : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void (onTiep ? luuRoiTiep(luu, onTiep) : luu())}>{onTiep ? t('Lưu và tiếp') : t('Lưu')}</button>,
+      : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void (onTiep ? luuRoiTiep(luu, onTiep) : luu())}>{onTiep ? t('Lưu · việc tiếp ›') : t('Lưu')}</button>,
   } : {
     huy: null, trai: <span className="text-slate-400">{v.nhanXuLy ?? (v.trangThai === 'xong' ? t('Việc đã xong · lịch sử giữ khi thu hồi') : v.trangThai === 'bo' ? t('Đã bỏ') : null)}</span>,
     chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>,

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useChongVe, useVe } from '../../lib/quayLai.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -30,7 +31,7 @@ import {
 import {
   ATTEMPT_KIND_SHORT, canNhomNguyenNhan, CHU_THAO_TAC, chipSosMt0, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
-  docKnMock, hangCanHoTro, vaiXemHocVien, KY_NANG_KE_HOACH, type HangKyNang, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
+  docKnMock, docNguCanhDs, duongDotTest, keBen, hangCanHoTro, vaiXemHocVien, KY_NANG_KE_HOACH, type HangKyNang, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
 } from '@shared/domain/index.ts';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -136,6 +137,12 @@ export default function MockDetailPage() {
   const toast = useToast();
   const { data, loading, error, reload } = useApi<Detail>(id ? `/attempts/${id}` : null);
   const { save } = useSaveScore(Number(id), reload, data?.student.name);
+  /* R1-LUU-TIEP: mở từ lưới (tên em) — danh sách lượt nguồn ở `location.state.ds` → "Lưu · em tiếp ›"; không có → "‹ Về {nguồn}". */
+  const location = useLocation();
+  const dsLuot = docNguCanhDs((location.state as { ds?: unknown } | null)?.ds, 'luot', Number(id));
+  const emSau = dsLuot ? keBen(dsLuot.ids, Number(id))?.sau ?? null : null;
+  const chongVe = useChongVe();
+  const veNguon = useVe();
   const { homNay } = useNgayNghiepVu();
   /* R15 — các đợt của CHÍNH học viên này, để chuyển đợt ngay trên trang (không phải quay lại hồ sơ). */
   const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.student.id}` : null);
@@ -173,7 +180,8 @@ export default function MockDetailPage() {
    * ở đây thay vì tin rằng không ai vào được.
    */
   if (data.kind && data.kind !== 'mock' && data.kind !== 'mt0') {   // PR-MT0: MT0 chấm band, dùng màn này
-    return <Navigate to={attemptHref({ id: data.id, kind: data.kind, classId: data.classId })} replace />;
+    /* R1-SUA-NHO: có `studentId` nên lượt mất lớp về hồ sơ HV, không chuyển về chính trang này (vòng). */
+    return <Navigate to={attemptHref({ id: data.id, kind: data.kind, classId: data.classId, studentId: data.student.id })} replace />;
   }
 
   const d = data;
@@ -280,7 +288,7 @@ export default function MockDetailPage() {
             {cancelled && <Tag>{t('Đã huỷ')}</Tag>}
             {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>{t('Đủ điểm')}</Tag>}
             {laRf && <span className="text-xs text-slate-400" title={t('Lộ trình RF — kỳ vọng mọi MT bằng Target.')}>RF</span>}
-            <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r), { replace: true })} />
+            <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref({ ...r, studentId: d.student.id }), { replace: true })} />
           </div>
           <p className="text-xs text-slate-500 mt-0.5 m-0" title={d.branchName ? t('Lớp lúc đánh giá: {x} · {branchName}', { x: d.classCode ?? '—', branchName: d.branchName }) : undefined}>
             {dong2}
@@ -319,8 +327,11 @@ export default function MockDetailPage() {
 
       {/* B. NĂM Ô ĐIỂM LỚN — tầng 1 của màn; bấm ô là sửa tại chỗ (YC-13.7, YC-13.8). */}
       <div id="dai-diem" className="scroll-mt-4">
-        <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
-          mo={moO} onMo={setMoO} save={save} nguCanh={nguCanhChiTiet(d)} />
+        {/* R1-LUU-TIEP: `key` lượt — "Lưu · em tiếp ›" đổi lượt không remount trang; phiên chấm (bài đã lưu, hết) phải là của lượt mới. */}
+        <DaiODiemLon key={d.id} cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
+          mo={moO} onMo={setMoO} save={save} nguCanh={nguCanhChiTiet(d)}
+          emTiep={emSau !== null ? (k) => navigate(duongDotTest({ id: emSau }, k), { state: { ds: dsLuot }, replace: true }) : null}
+          ve={(() => { const v = chongVe[0] ?? trangCha('mt', { studentId: d.student.id, tenHv: d.student.name }); return { nhan: t('‹ Về {x}', { x: v.ten }), onClick: () => veNguon(v.url, !chongVe.length) }; })()} />
       </div>
 
       {/* C. NHẬN XÉT 4 kỹ năng (YC-13.5, OV-4b) — không bắt buộc, không phải điểm. */}
@@ -471,7 +482,7 @@ function knHop(d: Detail): KnO {
  * nhận xét (bấm là lưu, chip cuối không bỏ được); người không sửa được thấy chip tĩnh.
  */
 function KhoiNhanXet({ attemptId, cells, save, phuTrach }: {
-  attemptId: number; cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean>;
+  attemptId: number; cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean | 'trung'>;
   /** OV-13k: người xem là GV phụ trách S / GVCN / QL — ghi "Nhận xét GV phụ trách", sửa nhóm ô S (đường riêng). */
   phuTrach: ((body: { nhanXetPhuTrach?: string | null; nhomNguyenNhan?: string[] }) => Promise<boolean>) | null;
 }) {
@@ -487,8 +498,8 @@ function KhoiNhanXet({ attemptId, cells, save, phuTrach }: {
     if (sua(c) && !nhomSua) {
       return (
         <div key={c.skill} className="min-w-0 space-y-2.5">
-          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} giaTri={c.nhanXet ?? null} nenCo={nenCo(c)} onLuu={(v) => save(c.skill, { nhanXet: v })} />
-          {canNhom(c) && <NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={(v) => save(c.skill, { nhomNguyenNhan: v })} />}
+          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} giaTri={c.nhanXet ?? null} nenCo={nenCo(c)} onLuu={(v) => save(c.skill, { nhanXet: v }).then((r) => r === true)} />
+          {canNhom(c) && <NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={(v) => save(c.skill, { nhomNguyenNhan: v }).then((r) => r === true)} />}
         </div>
       );
     }

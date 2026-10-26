@@ -1,7 +1,7 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_KHAC, coMt0, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
+  PERMISSIONS, ROUTE_KHAC, coMt0, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -287,7 +287,8 @@ export function moLoTrinhMoi(p: Principal, o: {
    * Q7: FT → FT giữ target cũ. Chủ sản phẩm 04/10 (PR-NT): lớp thường → lớp thường giữ cả Target lẫn Dự kiến thi.
    * PR-LCb (§7 "Dự kiến thi giữ như cũ"): Dự kiến thi giữ ở MỌI chiều khi không gửi tháng thi mới.
    */
-  const giuTarget = (o.tuLop.ft && o.denLop.ft) || (!o.tuLop.ft && !o.denLop.ft);
+  /* P13 KET-PET: Target chỉ giữ khi cùng thang (`cungThangTarget`) — KET / PET (điểm Cambridge) ↔ lớp khác (band) không mang Target sang. */
+  const giuTarget = ((o.tuLop.ft && o.denLop.ft) || (!o.tuLop.ft && !o.denLop.ft)) && cungThangTarget(o.tuLop.ma, o.denLop.ma);
   const giuThi = !o.thangThi && !st;   // P7 (E1): Lộ trình mới sau thi không chép ngày thi của lộ trình đã thi
   const cu = o.cuCycle;
   const boTg = !!st?.boTarget;
@@ -416,10 +417,12 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   if (luat.khoa === 'dong-mo' || sauThi) {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     /* PR-CL (B4.4, §7 "chuyển từ FT: Target giữ như cũ", Q1): FT → thường giữ Target / KCK của lộ trình FT — chỉ nhánh này (Lưu trữ "Học lại" không đổi). */
-    const veThuong = tuLop.ft && !denLop.ft && !!curCycle;
+    /* P13: chỉ chép khi cùng thang (`cungThangTarget`) — Target FT (band) / mục tiêu lệnh (band) không sang KET / PET (điểm Cambridge). */
+    const veThuong = tuLop.ft && !denLop.ft && !!curCycle && cungThangTarget(curCycle.programme_code, denLop.ma);
+    const mtLenh = cungThangTarget(null, denLop.ma) ? (sauThi ? d.mucTieu : mucTieu) ?? null : null;
     const { moiId } = moLoTrinhMoi(p, {
       sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle ?? cuoiCycle, thangThi: d.thangThi,
-      target: (sauThi ? d.mucTieu : mucTieu) ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mucTieu == null && !!curCycle.khong_cam_ket,
+      target: mtLenh ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mtLenh == null && !!curCycle.khong_cam_ket,
       sauThi: loTrinhMoi,
     });
     tg = doiTg(curCycle ?? cuoiCycle, conn.prepare('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?').get(moiId) as any);
@@ -549,7 +552,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     if (!ft && denLop.ft) {
       /* Target như `raLenh` (LCa-2): Target GVCN ghi ở Lộ trình tiếp theo → khoá đang chạy (KCK giữ) → null (web hỏi). */
       const lt = conn.prepare('SELECT muc_tieu FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(sid, enr.class_id) as any;
-      const khoa = cyc && !cyc.route ? { target: cyc.target_score ?? null, kck: !!cyc.khong_cam_ket } : null;
+      const khoa = cyc && !cyc.route && cungThangTarget(cyc.programme_code, toClass.programme_code) ? { target: cyc.target_score ?? null, kck: !!cyc.khong_cam_ket } : null;   // P13: chỉ cùng thang
       targetSan = targetLenFt({ lt: lt ? { mucTieu: lt.muc_tieu ?? null } : null, khoa });
       nguonTarget = targetSan === null ? null : typeof lt?.muc_tieu === 'number' ? 'gvcn' : 'khoa';
       /* R-C6: lệnh `cho` mang Target → giữ Target đó (như R-C3), chữ "(đã quyết)". */
@@ -690,7 +693,7 @@ export function apDungCaLop(p: Principal, o: {
   /* PR-NT (chủ sản phẩm 04/10): lên lớp / học lại lớp thường giữ Target + Dự kiến thi — đọc khoá cũ MỘT câu trước khi đóng. */
   const khoaCu = new Map<number, any>();
   theoLo(o.dongs.map((d) => d.sid), (lo, ph) => {
-    for (const c of conn.prepare(`SELECT id, student_id, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id FROM learning_cycles
+    for (const c of conn.prepare(`SELECT id, student_id, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id, programme_code FROM learning_cycles
                                    WHERE status = 'active' AND student_id IN (${ph})`).all(...lo) as any[]) khoaCu.set(c.student_id, c);
   });
 
@@ -734,8 +737,10 @@ export function apDungCaLop(p: Principal, o: {
     const coSuaTarget = can(p, PERMISSIONS.CYCLE_EDIT, { classId: o.fromClass.id });
     /* FT→FT cũng nhận target: chỉ QL/QT gọi được (CYCLE_EDIT), vô hại — rà #117 (PR-Dọn VN03). */
     const params = o.dongs.map((d) => {
-      const mucTieu = d.toClass.ft || coSuaTarget ? d.mucTieu ?? null : null;
-      const cu = d.toClass.ft ? null : khoaCu.get(d.sid);   // lớp nguồn luôn là lớp thường → sang lớp thường thì giữ Target
+      /* P13: mục tiêu lệnh (band) và Target khoá cũ chỉ chép khi cùng thang (`cungThangTarget`). */
+      const mucTieu = (d.toClass.ft || coSuaTarget) && cungThangTarget(null, d.toClass.ma) ? d.mucTieu ?? null : null;
+      const cu0 = d.toClass.ft ? null : khoaCu.get(d.sid);   // lớp nguồn luôn là lớp thường → sang lớp thường thì giữ Target
+      const cu = cu0 && cungThangTarget(cu0.programme_code, d.toClass.ma) ? cu0 : null;
       /* PR-LCb (§7): Dự kiến thi giữ ở mọi chiều (cả Lên FT) khi lệnh không mang tháng thi. */
       const thiCu = khoaCu.get(d.sid);
       const giuThi = !!thiCu && !d.thangThi;

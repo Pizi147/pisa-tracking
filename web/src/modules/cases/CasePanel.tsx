@@ -5,14 +5,14 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, ErrorState, Level, NhanTrangThai, Outcome, Skeleton } from '../../ui/ui.tsx';
+import { Empty, NhanTrangThai, Outcome } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { NhanTamDung, TenCase } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
-import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
+import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
@@ -28,7 +28,6 @@ import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { NganCase } from '../students/NganCase.tsx';
 import { DongNguyenNhan } from '../yThuc/CaseSosControls.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -38,8 +37,8 @@ import { ChuDich } from '../../ui/ChuDich.tsx';
  * MỘT VẤN ĐỀ HỌC VỤ (PR-UX3, N-4, mockup 15 §3) — kể theo hai câu người đọc cần: VẤN ĐỀ gì, và ĐÃ LÀM GÌ (các PA, mỗi PA một
  * thẻ; kết quả các tuần trước ở "Lịch sử cập nhật" thu gọn).
  *
- * Phần THÂN (`ThanCase`) dùng chung cho mọi lối vào: ngăn Case (`NganCase`, một panel đổi nội dung theo `view`) và trang riêng
- * `/hoc-thuat/Case/:id` (`CasePanel`, có hàng nút mở ngăn Case). Các thao tác (Ghi kết quả · Thêm PA · Hoàn thành · Trả lời)
+ * Phần THÂN (`ThanCase`) dùng chung cho mọi lối vào: ngăn Case (`NganCase`, một panel đổi nội dung theo `view`) — cả trang riêng
+ * `/hoc-thuat/case/:id` (`CaseRoutePage`) cũng mở ngăn này. Các thao tác (Ghi kết quả · Thêm PA · Hoàn thành · Trả lời)
  * KHÔNG còn hộp thoại đè lên ngăn — ngăn Case đổi nội dung và có dòng "← Case Listening" để về.
  */
 
@@ -148,37 +147,6 @@ function soNgayGiua(tu: string | null | undefined, den: string | null | undefine
   const a = Date.parse(`${tu.slice(0, 10)}T00:00:00Z`);
   const b = Date.parse(`${den.slice(0, 10)}T00:00:00Z`);
   return Number.isNaN(a) || Number.isNaN(b) ? null : Math.round((b - a) / 86_400_000);
-}
-
-export function CasePanel({ caseId }: { caseId: number }) {
-  const { data, loading, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
-  const [ngan, setNgan] = useState<ViewCase | null>(null);
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (loading || !data) return <Skeleton rows={6} />;
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="m-0 text-base font-semibold text-slate-100">{data.title ?? data.headline}</h3>
-        <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>
-        {data.sosLevel !== null && data.status !== 'done' && (data.sosLevel > 0
-          ? <ChipSos muc={data.sosLevel} dot={data.attemptNo ? `MT${data.attemptNo}` : null} ten={data.student?.name} />
-          : <Level tone={sosTone(data.sosLevel)}>{sosLabel(data.sosLevel)}</Level>)}
-        {data.student && <Link className="link text-xs" to={`/hoc-vien/${data.student.id}`}>{data.student.name}</Link>}
-      </div>
-      <ThanCase data={data} onViec={setNgan} />
-      {data.viewer.canEdit && (
-        <div className="flex flex-wrap gap-2">
-          {data.trangThaiV4?.k !== 'tam' && <button type="button" className="btn btn-sm" onClick={() => setNgan({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>}
-          {data.status !== 'done' && data.viewer.canClose && (
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => setNgan({ loai: 'hoan-thanh' })}>{t('Hoàn thành Case')}</button>
-          )}
-        </div>
-      )}
-      {ngan && (
-        <NganCase caseId={caseId} viecBanDau={ngan} hocVien={data.student?.name} onClose={() => setNgan(null)} onChanged={reload} />
-      )}
-    </div>
-  );
 }
 
 /**

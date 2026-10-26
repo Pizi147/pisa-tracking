@@ -162,7 +162,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
     /** `null` = không vẽ nút trái (panel tự có nút Đóng ở `chinh`, ví dụ ngăn Tổng kết lộ trình). */
     huy?: { nhan?: string; onClick: () => void; disabled?: boolean } | null; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
-    /** NEN-PANEL (`.panel-chan .trai`): trạng thái lưu (`TrangThaiLuu` / `ChuLuu`) đầu hàng nút, trước Lưu / Lưu và tiếp. */
+    /** NEN-PANEL (`.panel-chan .trai`): trạng thái lưu (`TrangThaiLuu` / `ChuLuu`) đầu hàng nút, trước Lưu / Lưu · việc tiếp ›. */
     trai?: ReactNode;
     /** Luật S3 (I1): form đã sửa → nút trái mặc định "Huỷ thay đổi", chưa sửa → "Đóng". `huy.nhan` riêng (Xong, ‹ Sửa…) thắng. */
     daSua?: boolean;

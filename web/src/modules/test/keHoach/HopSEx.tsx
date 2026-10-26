@@ -72,7 +72,7 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
           {dong?.sua && <button type="button" className="btn btn-danger mr-auto min-h-[44px] sm:min-h-0" disabled={busy || !!khoaXoa} title={khoaXoa ?? undefined} onClick={() => void xoa()}>{t('Xoá')}</button>}
           <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onDong}>{t('Đóng')}</button>
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (!suaLich && !cham) || !!khoa} title={khoa ?? undefined} onClick={() => void luu()}>
-            {busy ? t('Đang lưu…') : t('Lưu')}
+            {busy ? t('Đang lưu…') : t('Lưu · đóng')}
           </button>
         </>
       )}>

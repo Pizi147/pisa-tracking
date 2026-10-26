@@ -27,7 +27,6 @@ export const EN_UI_CHAM_TEST = {
   "bài Speaking": "Speaking tests",
   "chấm chéo · không tính nợ": "cross-marking · not owed",
   "không có": "none",
-  "nhóm": "groups",
   "{luot} · làm bài {tuan}": "{luot} · taken {tuan}",
   "{n} nhóm · {bai} bài": "{n} groups · {bai} tests",
   "‹ Chấm Test": "‹ Marking",

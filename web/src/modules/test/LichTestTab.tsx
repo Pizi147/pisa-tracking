@@ -128,10 +128,25 @@ export function LichTestTab() {
     setEpMo(new Set(ep)); setConTro(new Set(ep));
   }, [data, urlClassId, urlKn, nguoiId]);
 
-  /* Mockup khu a: chỉ lớp ĐẦU TIÊN còn bài (của người xem — `moSan` máy chủ) tự mở; lớp khác thu, người dùng mở thì nhớ theo tuần. */
+  /* Mockup khu a: chỉ lớp ĐẦU TIÊN còn bài (của người xem — `moSan` máy chủ) tự mở; lớp khác thu, người dùng mở thì nhớ theo tuần.
+     R1-LUU-TIEP: lớp tự mở GIỮ mở khi vừa chấm xong (không tự nhảy lớp — hộp báo "Đã xong phần của bạn" + "Lớp tiếp: {mã} ›"). */
+  const dauGiu = useRef<{ tuan: number | null; key: string } | null>(null);
   const moCua = (l: LopLichTest) => {
-    const dau = lopTab.find((x) => x.moSan);   // gọi lúc vẽ — `lopTab` (theo khung đang xem) đã có
-    return dangMo({ key: khoaHang(l), moSan: !!dau && khoaHang(l) === khoaHang(dau) }, nho, epMo);
+    let dau = dauGiu.current?.tuan === tuanId && lopTab.some((x) => khoaHang(x) === dauGiu.current!.key) ? dauGiu.current.key : null;
+    if (dau === null) {
+      const x = lopTab.find((y) => y.moSan);   // gọi lúc vẽ — `lopTab` (theo khung đang xem) đã có
+      dau = x ? khoaHang(x) : null;
+      dauGiu.current = dau ? { tuan: tuanId, key: dau } : null;
+    }
+    return dangMo({ key: khoaHang(l), moSan: khoaHang(l) === dau }, nho, epMo);
+  };
+  /* "Lớp tiếp: {mã} ›" (hộp nhập điểm hết phần của người xem): thu lớp vừa xong, mở lớp kế, con trỏ vào ô trống đầu. */
+  const lopTiep = (cu: LopLichTest, ke: LopLichTest) => {
+    const moi = { ...nho, [khoaHang(cu)]: false, [khoaHang(ke)]: true };
+    setNho(moi);
+    if (tuanId) ghiMo(nguoiId, tuanId, moi);
+    setConTro((s) => new Set(s).add(khoaHang(ke)));
+    if (epMo.has(khoaHang(cu))) setEpMo((s) => { const n = new Set(s); n.delete(khoaHang(cu)); return n; });
   };
   const doiMo = (l: LopLichTest) => {
     const k = khoaHang(l);
@@ -296,7 +311,7 @@ export function LichTestTab() {
               <NhomDau id="lich-test-k3-than" rong={!lopTab.length} mo={moKhoi.k3 && lopTab.length > 0} onMo={() => thuKhoi('k3')}
                 tieuDe={data.laTuanNay ? t('Test tuần này') : t('Test {maTuan}', { maTuan })} phu={tomTatTuan}>
                 {/* shortcut: lượt S Ex của em ở lớp không có Test tuần đó không có hàng lớp để hiện (xem ở Kế hoạch Test) — thêm hàng riêng nếu chủ SP cần. */}
-                <HangLop lop={lopTab} moCua={moCua} onMo={doiMo} coChiNhanh={branchCount > 1 && !branchId} hep={hep}
+                <HangLop lop={lopTab} moCua={moCua} onMo={doiMo} onLopTiep={lopTiep} coChiNhanh={branchCount > 1 && !branchId} hep={hep}
                   urlClassId={urlClassId} urlKn={urlKn} conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} sEx={data.sEx} />
               </NhomDau>
             </div>

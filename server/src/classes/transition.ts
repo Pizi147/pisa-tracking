@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa, tuanMuonNhatMt0,
+  NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, cungThangTarget, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa, tuanMuonNhatMt0,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -69,7 +69,7 @@ export function transitionPlan(p: Principal, classId: number) {
   const students = conn
     .prepare(
       `SELECT s.id, s.student_code, s.full_name, s.status,
-              cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.route, sp.week_start AS start_week
+              cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.route, cy.programme_code AS cy_ct, sp.week_start AS start_week
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
@@ -260,8 +260,10 @@ export function transitionPlan(p: Principal, classId: number) {
       tuanHoc: ft && s.start_week ? (() => { const th = tuanHocTai(s.start_week, tuanNay, dungCua[s.id] ?? []); return th ? { tuan: th.tuan, tong: null, dangDung: th.dangDung } : null; })() : null,
       loTrinhTiep: loTrinhTiepMap.get(s.id) ?? null,
       /** PR-LCa (LCa-4): dòng điền sẵn từ Lộ trình tiếp theo (Hướng, Target Lên FT, lớp chuyển đến) — lớp thường; lớp FT null. */
+      /* P13: Target khoá chỉ mang sang Lên FT (band) khi cùng thang (`cungThangTarget`) — khoá KET / PET (điểm Cambridge) không. */
       dienSan: ft ? null : dienSanChuyenTiep(loTrinhTiepMap.get(s.id) ?? null,
-        { target: s.target_score ?? null, kck: !!s.khong_cam_ket }, candidates, { maTu: from, branchId: cls.branch_id }),
+        cungThangTarget(s.route ? null : s.cy_ct, null) ? { target: s.target_score ?? null, kck: !!s.khong_cam_ket } : null,
+        candidates, { maTu: from, branchId: cls.branch_id }),
       ketQua: ketQua.get(s.id) ?? null,
       cuoiKhoa: cuoiKhoa.get(s.id) ?? null,
       caseMo: { tong: caseByStudent.get(s.id) ?? 0, seDongNeuSangFt: caseByStudent.get(s.id) ?? 0 },
