@@ -7,7 +7,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
-import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
+import { badRequest, forbidden, HttpError, notFound, loi } from '../util.ts';
 import { ghiDuocPaMany, listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { NOT_UNCONFIRMED_PRESET, sosCaseStateMany, xuLyCaseMany } from '../cases/sosState.ts';
@@ -129,6 +129,8 @@ export type MetricRow = {
   nguoi?: string | null; han?: string | null;
   /** OV-12e: đầu dòng v3 — em (link hồ sơ) · lớp · ngữ cảnh; việc của dòng (null = không còn việc, ví dụ Case đã xong). */
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
+  /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
+  ngayThiThat?: string;
   viec?: ViecDong | null;
   /** Câu tình trạng khi không có việc để làm (Chờ Quản lý duyệt · không theo dõi…). */
   tinhTrang?: string | null;
@@ -768,14 +770,14 @@ function metricSetGoc(
     /** Chỉ `pa-co-ket-qua` (SL2) — các chỉ số khác lọc khung sau ở `locKhung`. */ program?: ChuongTrinh | null } = {},
 ): MetricResult {
   const metric = metricById(id);
-  if (!metric) throw notFound(`Không tìm thấy chỉ số "${id}".`);
+  if (!metric) throw loi(404, 'Không tìm thấy chỉ số "{id}".', { id });
   if (!LISTED_METRICS.includes(id)) {
-    throw new HttpError(501, `Chỉ số "${metric.ten}" đã được khai báo nhưng chưa có danh sách — chưa dùng được ở màn hình.`);
+    throw loi(501, 'Chỉ số "{ten}" đã được khai báo nhưng chưa có danh sách — chưa dùng được ở màn hình.', { ten: metric.ten });
   }
   /* Q19: chỉ Ý thức và Phối hợp SOS lọc theo lớp — chỉ số khác nhận `classId` thì từ chối thẳng, không âm thầm bỏ qua. */
   if (f.classId && !isYThucMetric(id) && !isPhoiHopMetric(id)) throw badRequest('Chỉ số này chưa lọc theo lớp.');
   if (f.ctLop && (id !== 'hv-duoi-ky-vong-mon' || !(CT_LOP as readonly string[]).includes(f.ctLop))) {
-    throw badRequest(`Chương trình "${f.ctLop}" không hợp lệ cho chỉ số này.`);
+    throw loi(400, 'Chương trình "{ctLop}" không hợp lệ cho chỉ số này.', { ctLop: f.ctLop });
   }
   const today = demoToday();
   const scope = resolveScope(p, f.branchId);
@@ -854,7 +856,7 @@ function metricSetGoc(
     case 'hv-duoi-ky-vong-mon': {
       const skill = f.skill ? String(f.skill) : null;
       if (skill && !(SKILLS_FOR_METRIC as readonly string[]).includes(skill)) {
-        throw badRequest(`Môn "${skill}" không hợp lệ — chọn một trong Listening, Reading, Writing, Speaking.`);
+        throw loi(400, 'Môn "{skill}" không hợp lệ — chọn một trong Listening, Reading, Writing, Speaking.', { skill });
       }
       const r = hvDuoiKyVongMon(p, branchId ?? null, today, skill);
       if (!f.ctLop) return done(r.ids, { denominatorIds: r.denominatorIds });
@@ -932,6 +934,6 @@ function metricSetGoc(
       return done([...den], { numeratorIds: [...num] });
     }
     default:
-      throw new HttpError(501, `Chỉ số "${metric.ten}" chưa có danh sách.`);
+      throw loi(501, 'Chỉ số "{ten}" chưa có danh sách.', { ten: metric.ten });
   }
 }

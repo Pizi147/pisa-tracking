@@ -15,7 +15,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { gioVn } from '../../../shared/domain/xuatMt.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden, nowIso } from '../util.ts';
+import { badRequest, forbidden, nowIso, loi } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { standingFor } from '../students/standing.ts';
@@ -39,7 +39,7 @@ export function xuatDanhSach(
   if (!mau) throw badRequest('Chọn mẫu cột.');
   const ids = [...new Set(i.ids)];
   if (!ids.length) throw badRequest('Không có học viên phù hợp để xuất.');
-  if (ids.length > TOI_DA) throw badRequest(`Xuất tối đa ${TOI_DA} học viên một lần — thu hẹp bộ lọc.`);
+  if (ids.length > TOI_DA) throw loi(400, 'Xuất tối đa {TOI_DA} học viên một lần — thu hẹp bộ lọc.', { TOI_DA });
   const pham: 'loc' | 'chon' = i.pham === 'chon' ? 'chon' : 'loc';
   const cot = cotXuatDs(mau as MauXuatDs, i.cot);
   const dieuKien = String(i.boLoc ?? '').trim().slice(0, 300) || 'Không lọc';

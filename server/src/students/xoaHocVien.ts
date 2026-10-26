@@ -14,7 +14,7 @@
  */
 import { db, tx } from '../db.ts';
 import { CHU_XAC_NHAN_XOA, PERMISSIONS, khopXacNhanXoa } from '../../../shared/domain/index.ts';
-import { HttpError, badRequest, notFound } from '../util.ts';
+import { HttpError, badRequest, notFound, loi } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
@@ -228,7 +228,7 @@ export function xoaHocVien(p: Principal, studentId: number, input: { maXacNhan?:
   const s = docEm(studentId);   // OV-12a: em đã bị xoá → 404 trước
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
   const go = String(input.maXacNhan ?? '').trim();
-  if (go !== s.student_code && !khopXacNhanXoa(go)) throw badRequest(`Gõ ${CHU_XAC_NHAN_XOA} để xác nhận xoá.`);
+  if (go !== s.student_code && !khopXacNhanXoa(go)) throw loi(400, 'Gõ {CHU_XAC_NHAN_XOA} để xác nhận xoá.', { CHU_XAC_NHAN_XOA });
   const khoaTep: string[] = [];
   const soDong = tx(() => {
     const con = conLaiMs();

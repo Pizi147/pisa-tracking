@@ -3,7 +3,7 @@
  * Ngôn ngữ của trang = `<html lang>`: script nội dòng ở `index.html` đặt nó từ `localStorage` (`NGON_NGU_KHOA`) TRƯỚC khi nạp mã,
  * nên hằng nhãn tính lúc nạp mô-đun đã đúng tiếng. Đổi tiếng = lưu + tải lại trang. Máy chủ không có `document` → luôn chữ Việt.
  */
-import { EN, type Bien, type ChuKhoa, type Dich } from './en.ts';
+import { EN, KHOA_CHI_T, type Bien, type ChuKhoa, type Dich } from './en.ts';
 
 export type { Bien, ChuKhoa };
 export type NgonNgu = 'vi' | 'en';
@@ -65,7 +65,7 @@ const chuCoDinh = (k: string) => k.replace(/\{\w+\}/g, '').replace(/[^\p{L}]/gu,
 /** Tên biến mang số / ngày / mã tuần / mã lớp — chỉ khớp chữ không dấu ("Ghi nhận {dm}" không nuốt "Ghi nhận từ buổi học…" người gõ). */
 const BIEN_SO = /^(n|size|length|count|ngay|ngan|dm|day|han|pt|tw2?|r|b|ma\w*|so[A-Z]\w*|tuan\w*|code\d?|classCode|lop|\w+No|lan\w*|phanTram|quaHan\w*|homNay|daCham|tong|fmtDate|shortDate|a|c|so|dat|co|can|required|scored|con|du|sos|kv|seq|toiDa)$/;
 function mau(): Mau[] {
-  return dsMau ??= Object.keys(BANG).filter((k) => k.includes('{') && !k.includes('}{') && chuCoDinh(k).length >= 2)
+  return dsMau ??= Object.keys(BANG).filter((k) => k.includes('{') && !k.includes('}{') && chuCoDinh(k).length >= 2 && !KHOA_CHI_T.has(k))
     .sort((a, b) => chuCoDinh(b).length - chuCoDinh(a).length)
     .map((khoa) => {
       const ten: string[] = [];

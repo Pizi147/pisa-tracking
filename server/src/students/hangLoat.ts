@@ -4,7 +4,7 @@ import {
   type DongXemTruoc, type KetQuaHangLoat, type ViecHangLoat, type XemTruocHangLoat,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { HttpError, badRequest, chuTuDo, forbidden, notFound } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, forbidden, notFound, loi } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -30,7 +30,7 @@ function docIds(v: unknown, toiDa: number): number[] {
   if (!Array.isArray(v) || !v.length) throw badRequest('Chưa chọn học viên nào.');
   const ids = [...new Set(v.map(Number))];
   if (ids.some((x) => !Number.isInteger(x) || x <= 0)) throw badRequest('Mã học viên không hợp lệ.');
-  if (ids.length > toiDa) throw badRequest(`Tối đa ${toiDa} học viên một lần.`);
+  if (ids.length > toiDa) throw loi(400, 'Tối đa {toiDa} học viên một lần.', { toiDa });
   return ids;
 }
 
@@ -127,7 +127,7 @@ export function chay(p: Principal, input: {
   viec?: unknown; studentIds?: unknown; lyDo?: unknown; date?: unknown; moLaiLop?: unknown; lopMoiId?: unknown; xacNhan?: unknown;
 }): KetQuaHangLoat {
   const viec = docViec(input?.viec);
-  if (viec === 'xoa' && !khopXacNhanXoa(input.xacNhan)) throw badRequest(`Gõ ${CHU_XAC_NHAN_XOA} để xác nhận xoá.`);
+  if (viec === 'xoa' && !khopXacNhanXoa(input.xacNhan)) throw loi(400, 'Gõ {CHU_XAC_NHAN_XOA} để xác nhận xoá.', { CHU_XAC_NHAN_XOA });
   const ids = docIds(input?.studentIds, LO_HANG_LOAT_EM);
   const lyDo = chuTuDo(input.lyDo, 'Lý do', 2000);
   const date = typeof input.date === 'string' && input.date ? input.date : undefined;

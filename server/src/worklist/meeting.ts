@@ -6,7 +6,7 @@ import {
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
@@ -530,7 +530,7 @@ function emCuaLop(conn: ReturnType<typeof db>, classId: number, can: readonly nu
 function docEmGiaoViec(conn: ReturnType<typeof db>, classId: number, raw: unknown): number[] | null {
   if (raw === undefined || raw === null) return null;
   if (!Array.isArray(raw)) throw badRequest('Danh sách học viên không hợp lệ.');
-  if (raw.length > TRAN_EM_GIAO_VIEC) throw badRequest(`Mỗi lần giao việc tối đa ${TRAN_EM_GIAO_VIEC} học viên.`);
+  if (raw.length > TRAN_EM_GIAO_VIEC) throw loi(400, 'Mỗi lần giao việc tối đa {TRAN_EM_GIAO_VIEC} học viên.', { TRAN_EM_GIAO_VIEC });
   const so = raw.map((x) => (typeof x === 'number' || (typeof x === 'string' && /^\d+$/.test(x)) ? Number(x) : NaN));
   if (so.some((n) => !Number.isSafeInteger(n) || n <= 0)) throw badRequest('Danh sách học viên có mã không hợp lệ.');
   const ids = [...new Set(so)];
@@ -725,7 +725,7 @@ function setFollowers(
     }
   }
   const tay = Array.isArray(manualIds) ? manualIds : [];
-  if (tay.length > TRAN_NGUOI_THEO_DOI) throw badRequest(`Tối đa ${TRAN_NGUOI_THEO_DOI} người theo dõi.`);
+  if (tay.length > TRAN_NGUOI_THEO_DOI) throw loi(400, 'Tối đa {TRAN_NGUOI_THEO_DOI} người theo dõi.', { TRAN_NGUOI_THEO_DOI });
   const ungVien = [...new Set(tay.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0))];
   /* PR-DEPLOY (0b-1): người theo dõi do tay chỉ nhận người ĐANG có vai trong phạm vi của việc (chi nhánh của việc hoặc toàn hệ thống); việc Toàn hệ thống → ai đang hoạt động cũng được. */
   theoLo(ungVien, (lo, ph) => {

@@ -17,7 +17,8 @@ import { nguongDatLop, programmeByCode } from '../normal/regular.ts';
 
 type Tone = 'ok' | 'soon' | 'late' | 'muted';
 /** P13: `kyThi` = số liệu KQ thi thật KET / PET — web ghép chữ bằng `t()` (EN); `chinh` / `phu` giữ cho nơi đọc cũ. */
-export type KetQuaGon = { chinh: string; tone: Tone; phu?: string; kyThi?: KetQuaKyThi };
+/** R1-EN-2: `ovr` = Overall thi thật FT — web ghép "Thi thật {ovr}" bằng t() (câu `chinh` giữ cho web cũ). */
+export type KetQuaGon = { chinh: string; tone: Tone; phu?: string; kyThi?: KetQuaKyThi; ovr?: number };
 
 const phanTram = (x: number) => `${Math.round(x * 100)}%`;
 const nhanHuong = (h: string | null): string | null => (h && h !== 'khong_ro' ? HUONG_TIEP_TK_NHAN[h as HuongTiepTk] ?? null : null);
@@ -32,7 +33,7 @@ function ketQuaBanChup(b: any): KetQuaGon | null {
     const k = ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.target);   // OV-9: KCK giữ Target
     if (b.thi_that_ovr !== null && b.thi_that_ovr !== undefined) {
       const phu = b.ket_luan === 'reached' ? 'Đạt Target' : b.ket_luan === 'not_reached' ? 'Chưa đạt Target' : undefined;
-      return { chinh: `Thi thật ${b.thi_that_ovr.toFixed(1)}`, tone: b.ket_luan === 'reached' ? 'ok' : b.ket_luan === 'not_reached' ? 'late' : 'muted', phu };
+      return { chinh: `Thi thật ${b.thi_that_ovr.toFixed(1)}`, ovr: b.thi_that_ovr, tone: b.ket_luan === 'reached' ? 'ok' : b.ket_luan === 'not_reached' ? 'late' : 'muted', phu };
     }
     /* Kết quả CŨ chỉ có kết luận chọn tay (không Overall): vẫn là đã có kết quả. */
     if (b.ket_luan === 'reached' || b.ket_luan === 'not_reached') return { chinh: b.ket_luan === 'reached' ? 'Đạt Target' : 'Chưa đạt Target', tone: b.ket_luan === 'reached' ? 'ok' : 'late' };

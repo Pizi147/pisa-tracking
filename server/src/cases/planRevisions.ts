@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { badRequest, chuTuDo, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, nowIso, loi as loiHttp } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { caseAccess } from './cases.ts';
@@ -39,7 +39,7 @@ export function soBuoiMoi(iv: any, v: unknown, daDay: number): number | null {
   const n = soBuoiTu(v);
   if (n !== null && !coSoBuoi(iv.kind)) throw badRequest('Loại PA này không có Số buổi.');
   const loi = kiemSoBuoiPa(v, daDay);
-  if (loi) throw badRequest(`Số buổi: ${loi}.`);
+  if (loi) throw loiHttp(400, 'Số buổi: {loi}.', { loi });
   return n;
 }
 

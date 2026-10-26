@@ -4,7 +4,7 @@ import {
   TASK_PROGRESS_NEEDS_REASON, chuanKhoaGui, facetVanHanh, locVanHanh,
   type DongVanHanh, type HangSo, type TaskGroup, type TaskProgress, type TrangThaiLoc,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
+import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -362,7 +362,7 @@ function nextCode(conn: any): string {
 
 /** ID gửi lên phải là một tài khoản nhân_vien (giáo viên/quản lý) đang hoạt động, nếu có gửi. */
 function kiemNguoi(label: string, userId: number | null | undefined) {
-  if (userId && !laNguoiHopLe(userId, 'nhan_vien')) throw badRequest(`${label} không hợp lệ.`);
+  if (userId && !laNguoiHopLe(userId, 'nhan_vien')) throw loi(400, '{label} không hợp lệ.', { label });
 }
 
 /**

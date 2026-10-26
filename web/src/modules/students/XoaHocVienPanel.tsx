@@ -7,6 +7,7 @@ import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { CHU_XAC_NHAN_XOA, khopXacNhanXoa } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /students/:id/xoa` (chỉ Quản trị hệ thống) — `server/src/students/xoaHocVien.ts`. */
 export type XemXoaHocVien = {
@@ -32,7 +33,7 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
   const khop = !!d && khopXacNhanXoa(go.trim());
   /* Nút Xoá chỉ sáng khi gõ khớp; rời ô mà còn lệch thì nói ngay dưới ô (YC-12.5.2). */
   const lf = useLoiForm();
-  const loi = go.trim() && !khop ? [{ khoa: 'go-lai', nhan: `Gõ ${CHU_XAC_NHAN_XOA}`, lyDo: 'Chưa khớp' }] : [];
+  const loi = go.trim() && !khop ? [{ khoa: 'go-lai', nhan: t('Gõ {chu}', { chu: CHU_XAC_NHAN_XOA }), lyDo: t('Chưa khớp') }] : [];
 
   const xoa = async () => {
     if (!d) return;
@@ -41,35 +42,35 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
       await api.post(`/students/${studentId}/xoa`, { maXacNhan: go.trim() });
       invalidate('/students'); invalidate('/hoc-vien-lop'); invalidate('/classes');
       invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/cases');
-      toast.push('ok', `Đã xoá học viên ${d.ten}`);
+      toast.push('ok', t('Đã xoá học viên {ten}', { ten: d.ten }));
       onClose();
       navigate('/hoc-vien', { replace: true });
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
-    <KhungPanel tieuDe="Xoá học viên" hocVien={studentName} lop={lop} onDong={onClose}
+    <KhungPanel tieuDe={t('Xoá học viên')} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !khop} onClick={xoa}>Xoá vĩnh viễn</button>,
+        chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !khop} onClick={xoa}>{t('Xoá vĩnh viễn')}</button>,
       }}>
       {xem.error ? <div className="pt-3"><ErrorState message={xem.error.message} hint={xem.error.hint} onRetry={xem.reload} /></div>
         : !d ? <div className="pt-3"><Skeleton rows={4} /></div> : (
           <>
-            <Khoi tieuDe="Học viên">
+            <Khoi tieuDe={t('Học viên')}>
               <p className="m-0 text-sm text-slate-200">
-                {d.ten} · {d.lop ?? 'Chưa xếp lớp'} · {d.email ?? 'Chưa có email'}
-                {d.dangHoc && <span className="text-soon"> · đang học</span>}
+                {d.ten} · {d.lop ?? t('Chưa xếp lớp')} · {d.email ?? t('Chưa có email')}
+                {d.dangHoc && <span className="text-soon"> · {t('đang học')}</span>}
               </p>
             </Khoi>
-            <Khoi tieuDe="Những gì sẽ mất">
+            <Khoi tieuDe={t('Những gì sẽ mất')}>
               {d.mat.length === 0 ? (
-                <p className="m-0 text-sm text-slate-400">Chưa có dữ liệu nào ngoài hồ sơ.</p>
+                <p className="m-0 text-sm text-slate-400">{t('Chưa có dữ liệu nào ngoài hồ sơ.')}</p>
               ) : (
                 <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
                   <tbody>
                     {d.mat.map((m) => (
                       <tr key={m.khoa} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-                        <td className="py-1 pr-3 text-slate-300">{m.nhan}</td>
+                        <td className="py-1 pr-3 text-slate-300">{dich(m.nhan)}</td>
                         <td className="w-20 py-1 text-right tabular-nums text-slate-100">{m.so}</td>
                       </tr>
                     ))}
@@ -77,13 +78,13 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
                 </table>
               )}
               {d.congViecGoLienKet > 0 && (
-                <p className="m-0 text-xs text-slate-400">{d.congViecGoLienKet} công việc giữ lại, bỏ liên kết với em.</p>
+                <p className="m-0 text-xs text-slate-400">{t('{n} công việc giữ lại, bỏ liên kết với em.', { n: d.congViecGoLienKet })}</p>
               )}
             </Khoi>
-            <Khoi tieuDe="Xác nhận">
-              <p className="m-0 text-sm text-soon">Không khôi phục được (trừ từ bản sao lưu).</p>
-              <p className="m-0 text-xs text-slate-400">Nên nhờ Quản trị sao lưu trước lần xoá đầu.</p>
-              <Truong nhan={`Gõ ${CHU_XAC_NHAN_XOA} để xác nhận`} batBuoc loi={lf.loiCua(loi, 'go-lai')}>
+            <Khoi tieuDe={t('Xác nhận')}>
+              <p className="m-0 text-sm text-soon">{t('Không khôi phục được (trừ từ bản sao lưu).')}</p>
+              <p className="m-0 text-xs text-slate-400">{t('Nên nhờ Quản trị sao lưu trước lần xoá đầu.')}</p>
+              <Truong nhan={t('Gõ {chu} để xác nhận', { chu: CHU_XAC_NHAN_XOA })} batBuoc loi={lf.loiCua(loi, 'go-lai')}>
                 <input className="field w-full" {...lf.o(loi, 'go-lai')} value={go} onChange={(e) => setGo(e.target.value)} autoComplete="off" spellCheck={false} />
               </Truong>
             </Khoi>

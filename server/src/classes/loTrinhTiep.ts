@@ -5,7 +5,7 @@ import {
   CAU_LIEN_TUC, NORMAL_LADDER, PERMISSIONS, canLopDich, laLienTuc, maHocLai, chuanHoaHuong, kiemDongChuyenTiep, nhanHuong, nhanTiepTheo, soSanhLop, tuanHopLe,
   type Huong, type HuongLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { badRequest, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, conflict, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -132,7 +132,7 @@ function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Ma
     throw badRequest('Target phải từ 0 đến 9, bước 0,5.');
   }
   const ghiChu = typeof input.ghiChu === 'string' ? input.ghiChu.trim() || null : null;
-  if (ghiChu && ghiChu.length > GHI_CHU_TOI_DA) throw badRequest(`Ghi chú tối đa ${GHI_CHU_TOI_DA} ký tự.`);
+  if (ghiChu && ghiChu.length > GHI_CHU_TOI_DA) throw loi(400, 'Ghi chú tối đa {GHI_CHU_TOI_DA} ký tự.', { GHI_CHU_TOI_DA });
 
   const lopDuKienId = input.lopDuKienId || null;
   if (lopDuKienId) {
@@ -226,7 +226,7 @@ function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: n
      */
     const doiTarget = l?.huong === 'fast_track' && (l.muc_tieu ?? null) !== d.mucTieu && (l.muc_tieu_ltt ?? null) !== d.mucTieu;   // OV-9: lệnh KCK giữ số
     if (l && (l.huong !== d.huong || doiTarget)) {
-      throw conflict(`${ten ? `${ten(d.studentId)}: ` : ''}Quản lý đã quyết.`, { studentId: d.studentId });
+      throw loi(409, '{x}Quản lý đã quyết.', { x: ten ? `${ten(d.studentId)}: ` : '' }, { studentId: d.studentId });
     }
   }
 }
@@ -300,7 +300,7 @@ export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items
   if (!coTheRaLenh(p, classId)) throw forbidden(CHI_QL);
   const items = body?.items;
   if (!Array.isArray(items) || !items.length) throw badRequest('Chưa có em nào để lưu.');
-  if (items.length > GHI_CA_LOP_TOI_DA) throw badRequest(`Mỗi lần lưu tối đa ${GHI_CA_LOP_TOI_DA} em.`);
+  if (items.length > GHI_CA_LOP_TOI_DA) throw loi(400, 'Mỗi lần lưu tối đa {GHI_CA_LOP_TOI_DA} em.', { GHI_CA_LOP_TOI_DA });
   const em = new Map((conn.prepare(
     `SELECT s.id, s.full_name, e.class_id, c.programme_code, c.branch_id FROM enrollments e
        JOIN students s ON s.id = e.student_id JOIN classes c ON c.id = e.class_id
@@ -311,7 +311,7 @@ export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items
   for (const it of items as any[]) {
     const sid = Number(it?.studentId);
     if (!Number.isInteger(sid) || !em.has(sid)) throw badRequest('Có học viên không đang học lớp này.', { studentId: Number.isInteger(sid) ? sid : null });
-    if (thay.has(sid)) throw badRequest(`${em.get(sid).full_name}: trùng dòng.`, { studentId: sid });
+    if (thay.has(sid)) throw loi(400, '{x}: trùng dòng.', { x: em.get(sid).full_name }, { studentId: sid });
     thay.add(sid);
     /* R5: Target trên bảng cả lớp ("Lưu hướng" của Quản lý) — chỉ người sửa được lộ trình học (cycle.edit). */
     if (it && 'mucTieu' in it && !can(p, PERMISSIONS.CYCLE_EDIT, { classId })) throw forbidden('Chỉ Quản lý sửa Target.', { studentId: sid });
@@ -434,7 +434,7 @@ export function luuNhap(p: Principal, classId: number, body: { items?: unknown }
   if (!coTheRaLenh(p, classId)) throw forbidden(CHI_QL_NHAP);
   const items = body?.items;
   if (!Array.isArray(items) || !items.length) throw badRequest('Chưa có em nào để lưu.');
-  if (items.length > GHI_CA_LOP_TOI_DA) throw badRequest(`Mỗi lần lưu tối đa ${GHI_CA_LOP_TOI_DA} em.`);
+  if (items.length > GHI_CA_LOP_TOI_DA) throw loi(400, 'Mỗi lần lưu tối đa {GHI_CA_LOP_TOI_DA} em.', { GHI_CA_LOP_TOI_DA });
   const em = new Set((conn.prepare(
     `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
   ).all(classId) as any[]).map((r) => r.id as number));

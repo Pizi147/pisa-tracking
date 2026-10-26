@@ -775,7 +775,8 @@ api.get('/xuat-mt/xem-truoc', requireAuth, wrap((req) => {
 api.post('/xuat-mt', requireAuth, wrap((req) => {
   const f = docBoLocXuatMt((req.body ?? {}) as Record<string, unknown>);
   if (typeof f === 'string') throw badRequest(f);
-  return xuatMtSvc.xuatExcel(principalOf(req), f);
+  const nn = (req.body ?? {}).ngonNgu;   // R1-EN-2: tiếng giao diện của người bấm (spec 4.3)
+  return xuatMtSvc.xuatExcel(principalOf(req), f, undefined, nn === 'en' ? 'en' : 'vi');
 }));
 /* Hiệu quả PA (PR-UX4; PR-Pb2-a): PA GV thêm / PA theo quy chế. `gv`, `tu`, `den` — tên CHỐT trong Hợp đồng a↔b; `tu`/`den` thắng `tg`. */
 const filterHieuQuaPaOf = (req: Request) => ({
@@ -2034,7 +2035,7 @@ api.get('/cases', requireAuth, wrap((req) => {
 const soDuong = (v: unknown, ten: string): number | null => {
   if (v === undefined || v === '') return null;
   const n = Number(v);
-  if (typeof v !== 'string' || !/^\d+$/.test(v) || !Number.isSafeInteger(n) || n < 1) throw badRequest(`Tham số "${ten}" không hợp lệ.`);
+  if (typeof v !== 'string' || !/^\d+$/.test(v) || !Number.isSafeInteger(n) || n < 1) throw loi(400, 'Tham số "{ten}" không hợp lệ.', { ten });
   return n;
 };
 /** Bảng giáo viên của một chi nhánh (đặt TRƯỚC `/giao-vien/:id`). Không xếp hạng: sắp theo tên. */
@@ -2530,8 +2531,8 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   if (req.body?.lyDo !== undefined && !lyDoTuDo) throw badRequest('Ghi lý do ngắn');   // PR-CL: cùng chữ `kiemDongLenh`
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
   if (!lyDoTuDo && laKhac(reasonCode)) {
-    const loi = kiemGhiRoKhac(reasonNote);
-    if (loi) throw badRequest(`Lý do "Khác": ${loi}.`);
+    const ghiRo = kiemGhiRoKhac(reasonNote);
+    if (ghiRo) throw loi(400, 'Lý do "Khác": {ghiRo}.', { ghiRo });
   }
   const reason = lyDoTuDo || transferReasonText(reasonCode, reasonNote);
   if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');

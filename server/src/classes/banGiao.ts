@@ -3,7 +3,7 @@ import { db, theoLo, tx } from '../db.ts';
 import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
-import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
+import { badRequest, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -290,7 +290,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
   if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
   if (l.xac_nhan_luc) throw conflict('Phiếu đã được xác nhận.');
   const nx = String(nhanXetChung ?? '').trim();
-  if (nx.length < NHAN_XET_TOI_THIEU) throw badRequest(`Nhận xét chung cần ít nhất ${NHAN_XET_TOI_THIEU} ký tự.`);
+  if (nx.length < NHAN_XET_TOI_THIEU) throw loi(400, 'Nhận xét chung cần ít nhất {NHAN_XET_TOI_THIEU} ký tự.', { NHAN_XET_TOI_THIEU });
   tx(() => {
     const conn = db();
     const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;
@@ -333,7 +333,7 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
   if (!q.xacNhan && !coTheRaLenh(p, l.lop_nguon_id)) throw forbidden('Chỉ GVCN lớp nguồn hoặc Quản lý sửa được nhận xét chung của bàn giao.');
   const nx = String(nhanXetChung ?? '').trim();
-  if (nx.length < NHAN_XET_TOI_THIEU) throw badRequest(`Nhận xét chung cần ít nhất ${NHAN_XET_TOI_THIEU} ký tự.`);
+  if (nx.length < NHAN_XET_TOI_THIEU) throw loi(400, 'Nhận xét chung cần ít nhất {NHAN_XET_TOI_THIEU} ký tự.', { NHAN_XET_TOI_THIEU });
   tx(() => {
     const conn = db();
     const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;

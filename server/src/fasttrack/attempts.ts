@@ -1330,7 +1330,7 @@ export function createAttempt(p: Principal, input: {
   return tx(() => {
     const cu = conn.prepare('SELECT * FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ?')
       .get(cycle.id, attemptNo) as any;
-    if (cu && cu.status !== 'cancelled') throw badRequest(`Lộ trình này đã có MT${attemptNo}. Đổi tuần thay vì tạo mới.`);
+    if (cu && cu.status !== 'cancelled') throw loi(400, 'Lộ trình này đã có MT{attemptNo}. Đổi tuần thay vì tạo mới.', { attemptNo });
     if (cu) return hoiSinhLuot(p, cu, { classId, period, targetScore: cycle.target_score, note: input.note ?? null, studentCode: student.student_code });
     const info = conn
       .prepare(
@@ -1548,7 +1548,7 @@ function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: Sc
 export function duaLaiCaLuot(p: Principal, attemptId: number) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới đưa lại kỹ năng vào đợt.');
-  if (a.status === 'cancelled') throw badRequest(`MT${a.attempt_no} đã huỷ — mở lại lượt trước.`);
+  if (a.status === 'cancelled') throw loi(400, 'MT{attempt_no} đã huỷ — mở lại lượt trước.', { attempt_no: a.attempt_no });
   const ds = ensureSkillRows(attemptId).filter((r) => !r.required || r.sit_status === 'cancelled');
   if (!ds.length) throw badRequest('Không có kỹ năng nào đã huỷ.');
   return tx(() => {
@@ -1668,7 +1668,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
   if (input.quaWeb && HUY_MT_DA_BO.includes(a.kind)) {
-    throw badRequest(`Không còn huỷ MT${a.attempt_no} — dùng Xóa ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.`);
+    throw loi(400, 'Không còn huỷ MT{attempt_no} — dùng Xóa ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.', { attempt_no: a.attempt_no });
   }
   const lyDo = String(input.lyDo ?? '').trim() || `Huỷ MT${a.attempt_no}`;   // rà #282: lý do tuỳ chọn
   const hq = heQuaHuyLuot(attemptId);
@@ -1683,7 +1683,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
       /* R11 như `saveScore`: đợt đã hoàn tất có điểm thì chỉ người sửa được sau hoàn tất mới ẩn được điểm (huỷ lượt) — kiểm trước khi ghi. */
       const hoanTat = dotHoanTat(a.id, demoToday());
       if (hq.diem.length && hoanTat.hoanTat && (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su))) {
-        throw forbidden(`Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). Chỉ Quản lý huỷ được lượt đã có điểm.`);
+        throw loi(403, 'Đợt này đã hoàn tất (hết Chủ nhật {chuNhatCuoi}). Chỉ Quản lý huỷ được lượt đã có điểm.', { chuNhatCuoi: ngay(hoanTat.chuNhatCuoi) });
       }
     }
     conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
@@ -2118,7 +2118,7 @@ export function saveScore(
   const assessed = assessedSkillOf(skill);
   const scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   if (!scheduleRow.required) {
-    throw badRequest(`Kỹ năng ${tenMon(null, assessed)} không nằm trong phạm vi yêu cầu của đợt này.`);
+    throw loi(400, 'Kỹ năng {x} không nằm trong phạm vi yêu cầu của đợt này.', { x: tenMon(null, assessed) });
   }
   if (scheduleRow.bo_task === skill) throw loi(400, 'Em không học {o} — ô này không nhập điểm (Writing = task em học).', { o: ENTRY_SKILL_SHORT[skill as EntrySkill] });   // P8 (N13)
   /*
@@ -2129,7 +2129,7 @@ export function saveScore(
    * trước — sửa xong mới nhập được điểm, và lịch sử giữ cả hai lần.
    */
   if (scheduleRow.sit_status === 'cancelled') {
-    throw badRequest(`Kỹ năng ${assessed} của đợt này đã bị huỷ. Khôi phục và đặt tuần mới trước khi nhập điểm.`);
+    throw loi(400, 'Kỹ năng {assessed} của đợt này đã bị huỷ. Khôi phục và đặt tuần mới trước khi nhập điểm.', { assessed });
   }
   if (scheduleRow.sit_status === 'absent') {
     throw badRequest(
@@ -2187,7 +2187,7 @@ export function saveScore(
           );
         }
         if (!scheduleRow.planned_period_id || !scheduleRow.week_end) {
-          throw badRequest(`${assessed} chưa có tuần Test nên chưa báo "không có bài" được.`);
+          throw loi(400, '{assessed} chưa có tuần Test nên chưa báo "không có bài" được.', { assessed });
         }
         /* Báo lại cùng một tuần là VÔ HẠI: không đổi gì, và không biến một dấu báo đúng hạn thành báo muộn. */
         if (existing?.no_show_period_id === scheduleRow.planned_period_id) return done();
@@ -2201,7 +2201,7 @@ export function saveScore(
          * Ô `sat` mà không ô nào của buổi có điểm (điểm đã xoá — ca thật 09/10) vẫn nhận "-" như ô chưa thi.
          */
         if (scheduleRow.week_start && scheduleRow.week_start.slice(0, 10) > mondayOf(today)) {
-          throw badRequest(`Chưa tới tuần Test ${tuanLich(scheduleRow.week_start, today)} — muốn đổi tuần thì "Dời lịch".`);
+          throw loi(400, 'Chưa tới tuần Test {x} — muốn đổi tuần thì "Dời lịch".', { x: tuanLich(scheduleRow.week_start, today) });
         }
         const late = today > scheduleRow.week_end.slice(0, 10);
         const cu = a.lich_su || (late && a.kind !== 'mock') ? 1 : 0;

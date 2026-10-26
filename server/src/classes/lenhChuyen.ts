@@ -4,7 +4,7 @@ import {
   KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
   type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, loadPrincipal, require_, type Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
@@ -254,7 +254,7 @@ function thiHanhNgay(lopNguonId: number, boiCanh: BoiCanhLenh, homNay: string): 
   const hong = [...r.mat.map((l) => ({ l, msg: 'Em không còn học lớp nguồn' })), ...r.loiDong.map((x) => ({ l: r.con.find((c) => c.id === x.id)!, msg: x.loi }))];
   if (hong.length) {
     const ten = (db().prepare('SELECT full_name FROM students WHERE id = ?').get(hong[0].l.student_id) as any)?.full_name ?? 'Học viên';
-    throw badRequest(`Chưa chuyển được ${ten}: ${hong[0].msg}`);
+    throw loi(400, 'Chưa chuyển được {ten}: {x}', { ten, x: hong[0].msg });
   }
   return r.con.map((l) => l.student_id as number);
 }
@@ -407,7 +407,7 @@ function docDanhSachLenh(v: unknown): number[] {
   if (!Array.isArray(v) || !v.length) throw badRequest('Chưa chọn quyết định nào.');
   const ds = [...new Set(v.map(Number))];
   if (ds.some((x) => !Number.isInteger(x) || x <= 0)) throw badRequest('Mã quyết định không hợp lệ.');
-  if (ds.length > LO_HANG_LOAT_EM) throw badRequest(`Tối đa ${LO_HANG_LOAT_EM} quyết định một lần.`);
+  if (ds.length > LO_HANG_LOAT_EM) throw loi(400, 'Tối đa {LO_HANG_LOAT_EM} quyết định một lần.', { LO_HANG_LOAT_EM });
   return ds;
 }
 
@@ -482,7 +482,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
       if (l.trang_thai === 'cho') throw conflict('Quyết định đã ở trạng thái chờ.');
       if (l.trang_thai !== 'huy') throw conflict('Quyết định đã thi hành — không khôi phục được.');
       if (!l.huy_boi) throw conflict('Quyết định do hệ thống huỷ — không khôi phục được.');
-      if (Date.now() - Date.parse(String(l.huy_luc)) > KHOI_PHUC_LENH_GIO * 3600_000) throw conflict(`Đã quá ${KHOI_PHUC_LENH_GIO} giờ — ra quyết định mới.`);
+      if (Date.now() - Date.parse(String(l.huy_luc)) > KHOI_PHUC_LENH_GIO * 3600_000) throw loi(409, 'Đã quá {KHOI_PHUC_LENH_GIO} giờ — ra quyết định mới.', { KHOI_PHUC_LENH_GIO });
       if (l.tuan_bat_dau <= homNay) throw conflict('Tuần bắt đầu đã tới — ra quyết định mới.');
       tx(() => {
         if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(l.student_id)) throw conflict('Học viên đã có quyết định chuyển lớp khác.');

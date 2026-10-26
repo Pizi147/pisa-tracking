@@ -12,6 +12,7 @@ import { LuoiPhanCong, NutTachFou, loiTaiO, useTachFou } from './ClassCreatePane
 import { DongXem, PhanThongTin } from './ThongTinLopPanel.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * PHẦN "PHÂN CÔNG" của panel Thông tin lớp (PR-OV3a; trước là panel "Sửa phân công" — PR-LOP, YC-4, mockup 21 mục 4), mỗi ô MỘT người.
@@ -75,7 +76,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
       setChon(g.chon);
       if (g.xung.length) {
         const nhan = g.xung.map((k) => fou.oList.find((o) => o.khoa === k)?.nhan ?? k).join(', ');
-        setLoiLuu(`${nhan}: người khác vừa đổi ô này — kiểm lại rồi lưu.`);
+        setLoiLuu(t('{nhan}: người khác vừa đổi ô này — kiểm lại rồi lưu.', { nhan }));
       }
       return;
     }
@@ -94,7 +95,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
   const oSua = chiBoMon ? oList.filter((o) => !o.laGvcn) : oList;
   const loiPc = data ? kiemPhanCong(data.programmeCode, data.skills, slots) : [];
   const loiO = (khoa: string) => (nhieuNguoi[khoa] && !chon[khoa]
-    ? `Ô này đang có ${nhieuNguoi[khoa].length} người — chọn lại một người`
+    ? t('Ô này đang có {n} người — chọn lại một người', { n: nhieuNguoi[khoa].length })
     : loiTaiO(loiPc, oList, khoa));
   const oLoi = oList.filter((o) => loiO(o.khoa));
 
@@ -112,7 +113,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
     try {
       await api.put(`/classes/${lop.id}/teachers`, { slots, phienBan: data.phienBan });
       invalidate('/classes'); invalidate('/my-work');
-      toast.push('ok', 'Đã lưu phân công');
+      toast.push('ok', t('Đã lưu phân công'));
       setDangSua(false);
       onDone();
     } catch (e: any) {
@@ -124,25 +125,25 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
   const nhom = nhomGiaoVienBoMon(lop.skills.map((x) => x.skill), lop.skillTeachers, lop.programme?.code ?? null);
 
   return (
-    <PhanThongTin tieuDe="Phân công" suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} nhanLuu="Lưu phân công" loi={loiLuu}
+    <PhanThongTin tieuDe={t('Phân công')} suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} nhanLuu={t('Lưu phân công')} loi={loiLuu}
       cuonToi={moSua} onSua={() => setDangSua(true)} onHuy={() => { setDangSua(false); setLoiLuu(null); giuChon.current = false; }} onLuu={luu}>
       {!dangSua && (
         <DongXem dong={[
-          ['GVCN', gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">Chưa có GVCN</span>],
+          [t('GVCN'), gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">{t('Chưa có GVCN')}</span>],
           ...nhom.map((g): [string, ReactNode] => [g.nhan, g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>]),
         ]} />
       )}
       {dangSua && loading && <Skeleton rows={5} />}
-      {dangSua && error && <Empty title="Không đọc được phân công" hint={error.message} />}
+      {dangSua && error && <Empty title={t('Không đọc được phân công')} hint={error.message} />}
       {dangSua && data && (
         <div className="space-y-3">
-          {!suaMay && <p className="m-0 text-xs text-slate-400">Chỉ xem: đổi phân công là việc của Quản lý chi nhánh.</p>}
+          {!suaMay && <p className="m-0 text-xs text-slate-400">{t('Chỉ xem: đổi phân công là việc của Quản lý chi nhánh.')}</p>}
           {chiBoMon && (
             <div className="grid grid-cols-[6rem_1fr] items-center gap-x-2.5" id={lf.oId('gvcn')}>
-              <span className="text-xs font-bold text-slate-200">GVCN</span>
+              <span className="text-xs font-bold text-slate-200">{t('GVCN')}</span>
               <span className="text-sm text-slate-300">
-                {data.core.map((c) => c.name).join(' · ') || 'Chưa có'}
-                <span className="block text-xs text-slate-500">Đổi GVCN: nhờ Quản lý chi nhánh.</span>
+                {data.core.map((c) => c.name).join(' · ') || t('Chưa có')}
+                <span className="block text-xs text-slate-500">{t('Đổi GVCN: nhờ Quản lý chi nhánh.')}</span>
                 {loiO('gvcn') && <span className="block text-xs text-late">{loiO('gvcn')}</span>}
               </span>
             </div>
@@ -154,21 +155,21 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
           )}
           <NutTachFou fou={fou} chiXem={!suaMay} />
           <p className="m-0 flex items-center gap-1 text-xs text-slate-500">
-            {oList.length === 1 ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.' : 'Mỗi ô một người. Một người nhận nhiều ô được.'}
-            <NutLuat>Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.</NutLuat>
+            {oList.length === 1 ? t('Lớp Pre FOU không chia môn — GVCN dạy luôn.') : t('Mỗi ô một người. Một người nhận nhiều ô được.')}
+            <NutLuat>{t('Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.')}</NutLuat>
           </p>
-          {slots.length === 0 && !Object.keys(nhieuNguoi).length && <p className="m-0"><Nhan tone="soon">Lớp đang không có giáo viên nào</Nhan></p>}
+          {slots.length === 0 && !Object.keys(nhieuNguoi).length && <p className="m-0"><Nhan tone="soon">{t('Lớp đang không có giáo viên nào')}</Nhan></p>}
           {data.past.length > 0 && (
             <div>
               <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" aria-expanded={moDaDay}
                 onClick={() => setMoDaDay((v) => !v)}>
-                {moDaDay ? '▾' : '▸'} Đã từng dạy lớp này ({data.past.length})
+                {moDaDay ? '▾' : '▸'} {t('Đã từng dạy lớp này ({n})', { n: data.past.length })}
               </button>
               {moDaDay && (
                 <ul className="m-0 mt-1.5 list-none space-y-1 p-0">
                   {data.past.map((h, i) => (
                     <li key={i} className="text-xs text-slate-500">
-                      {h.name} · {h.isCore ? 'GVCN' : tenMon(data?.programmeCode ?? null, h.skill ?? '')} · {tuanLich(h.from, homNay)}{h.to ? ` → ${tuanLich(h.to, homNay)}` : ''}
+                      {h.name} · {h.isCore ? t('GVCN') : tenMon(data?.programmeCode ?? null, h.skill ?? '')} · {tuanLich(h.from, homNay)}{h.to ? ` → ${tuanLich(h.to, homNay)}` : ''}
                     </li>
                   ))}
                 </ul>

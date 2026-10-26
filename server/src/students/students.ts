@@ -6,7 +6,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode, loi } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -223,7 +223,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
       + 'biết em đang vướng gì và đang làm dở đến đâu.',
     );
   }
-  if (!typed && !handover?.noNote) throw badRequest(`Ghi lưu ý bàn giao, hoặc chọn "${NO_HANDOVER_NOTE}".`);
+  if (!typed && !handover?.noNote) throw loi(400, 'Ghi lưu ý bàn giao, hoặc chọn "{NO_HANDOVER_NOTE}".', { NO_HANDOVER_NOTE });
   const handoverNote = typed || NO_HANDOVER_NOTE;
 
   if (handover?.mucTieu != null) docTarget(handover.mucTieu);   // VN-1: cùng luật band 0–9 bước 0,5
@@ -284,12 +284,12 @@ export function setStudentStatus(
   if (s.archived_at && s.status !== 'inactive') throw badRequest(CAU_LUU_TRU);   // OV-11d (Q4) → P7: em kết thúc đã lưu trữ chỉ qua Quay lại học (`hocLai`)
   if (status === 'active' && s.status === 'inactive') {
     const tamDung = (conn.prepare(`SELECT MAX(event_date) d FROM journey_events WHERE student_id = ? AND event_type = 'pause'`).get(studentId) as any)?.d as string | null;
-    if (tamDung && date < tamDung) throw badRequest(`Ngày quay lại không được trước ngày tạm dừng (${tamDung.split('-').reverse().join('/')}).`);
+    if (tamDung && date < tamDung) throw loi(400, 'Ngày quay lại không được trước ngày tạm dừng ({x}).', { x: tamDung.split('-').reverse().join('/') });
   }
   /* PR-S6F-b: ngày Tạm dừng không trước lần Quay lại gần nhất — `khoangTamDung` ghép cặp theo ngày, ghi lùi thì mất khoảng đang dừng. */
   if (status === 'inactive') {
     const quayLai = (conn.prepare(`SELECT MAX(event_date) d FROM journey_events WHERE student_id = ? AND event_type = 'resume'`).get(studentId) as any)?.d as string | null;
-    if (quayLai && date < quayLai) throw badRequest(`Ngày tạm dừng không được trước lần quay lại học gần nhất (${quayLai.slice(8, 10)}/${quayLai.slice(5, 7)}).`);
+    if (quayLai && date < quayLai) throw loi(400, 'Ngày tạm dừng không được trước lần quay lại học gần nhất ({x}/{x2}).', { x: quayLai.slice(8, 10), x2: quayLai.slice(5, 7) });
   }
 
   const curEnr = conn
@@ -300,7 +300,7 @@ export function setStudentStatus(
   if (status === 'active' && s.status === 'inactive' && curEnr && !o.lopKetThucDuoc) {
     const cls = conn.prepare('SELECT status, code FROM classes WHERE id = ?').get(curEnr.class_id) as any;
     if (cls?.status === 'finished') {
-      throw badRequest(`Lớp ${cls.code} đã kết thúc — Quay lại học ở Lưu trữ để chọn lớp đang học.`);
+      throw loi(400, 'Lớp {code} đã kết thúc — Quay lại học ở Lưu trữ để chọn lớp đang học.', { code: cls.code });
     }
   }
 
@@ -406,7 +406,7 @@ export function hocLai(p: Principal, studentId: number, o: {
   const date = o.date ?? demoToday();
   if (!isIsoDate(date)) throw badRequest('Ngày không hợp lệ.');
   if (date > demoToday()) throw badRequest('Ngày hiệu lực không được sau hôm nay.');
-  if (s.finished_at && date < s.finished_at) throw badRequest(`Ngày học lại không được trước ngày kết thúc học (${String(s.finished_at).split('-').reverse().join('/')}).`);
+  if (s.finished_at && date < s.finished_at) throw loi(400, 'Ngày học lại không được trước ngày kết thúc học ({x}).', { x: String(s.finished_at).split('-').reverse().join('/') });
   const lyDo = chuTuDo(o.lyDo, 'Lý do', 2000);
   /*
    * Ghi danh bị `setStudentStatus(…, 'finished')` đóng: nhật ký lần Kết thúc học ghi đúng id. Em kết thúc từ trước PR-LUI-b (không có id) thì dùng quy tắc cũ: mọi dòng `completed` chưa có
@@ -435,7 +435,7 @@ export function hocLai(p: Principal, studentId: number, o: {
   if (denLop?.ft && !tuLop.ft && !tg) throw badRequest('Lên FT cần Target.');
   /* Dự kiến thi của lộ trình MỚI: cùng cách kiểm với ô Dự kiến thi ở hồ sơ (`docDuKienThi`, cận năm, độ dài). */
   const thangThi = lopMoi && o.thangThi ? docDuKienThi({}, o.thangThi) : null;
-  if (!lopMoi && lopDaDong && !o.moLaiLop) throw badRequest(`Lớp ${lopDong[0].code} đã kết thúc — mở lại lớp để học viên học lại.`);
+  if (!lopMoi && lopDaDong && !o.moLaiLop) throw loi(400, 'Lớp {x} đã kết thúc — mở lại lớp để học viên học lại.', { x: lopDong[0].code });
 
   return tx(() => {
     conn.prepare(`UPDATE students SET status = 'active', finished_at = NULL, archived_at = NULL WHERE id = ?`).run(studentId);
@@ -513,7 +513,7 @@ export function hoanTacHocLai(p: Principal, studentId: number) {
     if (moi.loTrinhId) {
       /* Chỉ gỡ khi lộ trình mới còn "trắng": mọi lượt còn `planned`, không bảng nào khác tham chiếu lượt / lộ trình (trừ Hành trình, lịch từng kỹ năng). */
       const luot = (conn.prepare('SELECT id, status FROM assessment_attempts WHERE cycle_id = ?').all(moi.loTrinhId) as any[]);
-      const co = (n: string) => conflict(`Lộ trình mới đã có ${n} — không hoàn tác được.`);
+      const co = (n: string) => loi(409, 'Lộ trình mới đã có {n} — không hoàn tác được.', { n });
       if (luot.some((l) => l.status !== 'planned')) throw co('điểm / bài đã làm');
       const refs = (bang: string, cot: string, ids: number[]) => (ids.length
         ? (conn.prepare(`SELECT COUNT(*) n FROM ${bang} WHERE ${cot} IN (${ids.map(() => '?').join(',')})`).get(...ids) as any).n : 0) as number;
@@ -811,7 +811,7 @@ function docDauVao(v: any): { overall: number; bands: (number | null)[] } | null
   const band = (x: unknown, ten: string): number | null => {
     if (x === undefined || x === null || x === '') return null;
     const n = Number(x);
-    if (!Number.isFinite(n) || n < 0 || n > 9 || n * 2 !== Math.round(n * 2)) throw badRequest(`Điểm đầu vào ${ten}: band 0–9, bước 0.5.`);
+    if (!Number.isFinite(n) || n < 0 || n > 9 || n * 2 !== Math.round(n * 2)) throw loi(400, 'Điểm đầu vào {ten}: band 0–9, bước 0.5.', { ten });
     return n;
   };
   const bands = [band(v.listening, 'L'), band(v.reading, 'R'), band(v.writing, 'W'), band(v.speaking, 'S')];

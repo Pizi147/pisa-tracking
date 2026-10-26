@@ -9,6 +9,7 @@ import { PhanDoan } from './ClassCreatePanel.tsx';
 import { PhanPhanCong } from './TeacherAssignPanel.tsx';
 import { PhanLichTest } from './ClassProgressPanel.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * ⋯ › THÔNG TIN LỚP (PR-OV3a, M2 §2) — MỘT panel, ba phần theo thứ tự Lớp → Phân công → Lịch Test của lớp (FT: Tuần khai giảng).
@@ -22,7 +23,7 @@ export function ThongTinLopPanel({ lop, phan, onClose, onDone, onChuyenTiep }: {
   onChuyenTiep?: () => void;
 }) {
   return (
-    <KhungPanel tieuDe="Thông tin lớp" lop={lop.code} onDong={onClose}>
+    <KhungPanel tieuDe={t('Thông tin lớp')} lop={lop.code} onDong={onClose}>
       <NoiDungThongTinLop lop={lop} phan={phan} onDone={onDone} onChuyenTiep={onChuyenTiep} />
     </KhungPanel>
   );
@@ -39,7 +40,7 @@ export function NoiDungThongTinLop({ lop, phan, onDone, onChuyenTiep, chiDoc = f
         lop={{ id: lop.id, code: lop.code, branchCode: lop.branchCode, route: lop.route, programmeCode: lop.programme?.code ?? null,
           programmeName: lop.programme?.name ?? null, soHocVien: lop.summary?.studentCount ?? 0 }} />
       <PhanPhanCong lop={lop} suaDuoc={!chiDoc && (lop.viewer.canAssign || !!lop.viewer.canAssignSubject)} moSua={phan === 'phan-cong'} onDone={onDone} />
-      <PhanLichTest classId={lop.id} tieuDe={thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng'} suaDuoc={!chiDoc && lop.viewer.canEditProgress}
+      <PhanLichTest classId={lop.id} tieuDe={thuong ? t('Lịch Test của lớp') : t('Tuần khai giảng')} suaDuoc={!chiDoc && lop.viewer.canEditProgress}
         onDone={onDone} onChuyenTiep={chiDoc ? undefined : onChuyenTiep} />
     </>
   );
@@ -49,7 +50,7 @@ export function NoiDungThongTinLop({ lop, phan, onDone, onChuyenTiep, chiDoc = f
  * MỘT PHẦN của panel: tiêu đề · Sửa (xem) hoặc Huỷ + Lưu (đang sửa) ngay trên đầu phần; lỗi lưu hiện trong phần (chữ đã gõ giữ nguyên).
  * `moSua`: mở sẵn chế độ sửa + cuộn tới (lối cũ "Sửa phân công").
  */
-export function PhanThongTin({ tieuDe, suaDuoc, dangSua, busy, nhanLuu = 'Lưu', loi, onSua, onHuy, onLuu, cuonToi, children }: {
+export function PhanThongTin({ tieuDe, suaDuoc, dangSua, busy, nhanLuu = t('Lưu'), loi, onSua, onHuy, onLuu, cuonToi, children }: {
   tieuDe: string; suaDuoc: boolean; dangSua: boolean; busy: boolean; nhanLuu?: string; loi: string | null;
   onSua: () => void; onHuy: () => void; onLuu: () => void; cuonToi?: boolean; children: ReactNode;
 }) {
@@ -62,14 +63,14 @@ export function PhanThongTin({ tieuDe, suaDuoc, dangSua, busy, nhanLuu = 'Lưu',
         <span className="flex-1" />
         {dangSua ? (
           <>
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onHuy} disabled={busy}>Huỷ thay đổi</button>
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onLuu} disabled={busy}>{busy ? 'Đang lưu…' : nhanLuu}</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onHuy} disabled={busy}>{t('Huỷ thay đổi')}</button>
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onLuu} disabled={busy}>{busy ? t('Đang lưu…') : nhanLuu}</button>
           </>
         ) : suaDuoc && (
-          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onSua} aria-label={`Sửa ${tieuDe.toLowerCase()}`}>Sửa</button>
+          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onSua} aria-label={t('Sửa {ten}', { ten: tieuDe.toLowerCase() })}>{t('Sửa')}</button>
         )}
       </div>
-      {loi && <p role="alert" className="m-0 mb-2.5 rounded-md border px-3 py-2 text-xs text-rose-200" style={{ borderColor: 'var(--line)' }}>Không lưu được: {loi}</p>}
+      {loi && <p role="alert" className="m-0 mb-2.5 rounded-md border px-3 py-2 text-xs text-rose-200" style={{ borderColor: 'var(--line)' }}>{t('Không lưu được: {loi}', { loi })}</p>}
       {children}
     </section>
   );
@@ -112,9 +113,9 @@ function PhanLop({ lop, suaDuoc, onDone }: {
   const ft = chuongTrinh === 'FT';
 
   const loiSo = soCu === null ? null : kiemSoLop(so);
-  const loi: LoiTruong[] = loiSo ? [{ khoa: 'so', nhan: 'Số lớp', lyDo: loiSo }] : [];
+  const loi: LoiTruong[] = loiSo ? [{ khoa: 'so', nhan: t('Số lớp'), lyDo: dich(loiSo) }] : [];
   /* Số đã gõ mà sai mẫu → hiện ngay; ô trống → khi rời ô / sau khi bấm Lưu (YC-12.5.2). */
-  const loiSoHien = so !== '' ? loiSo : lf.loiCua(loi, 'so');
+  const loiSoHien = so !== '' ? loiSo && dich(loiSo) : lf.loiCua(loi, 'so');
   const kh = kyHieuLop(chuongTrinh, ft ? loTrinh : null);
   const ma = soCu !== null && !loiSo && kh ? ghepMaLop(lop.branchCode, chuongTrinh, ft ? loTrinh : null, so) : null;
 
@@ -133,41 +134,41 @@ function PhanLop({ lop, suaDuoc, onDone }: {
         ...(ft && loTrinh !== lop.route ? { loTrinh } : {}),   // lớp FT cũ chưa có lộ trình: không gửi thì không bị khoá Q6
       });
       invalidate('/classes'); invalidate('/ref/classes'); invalidate('/hoc-vien-lop');
-      toast.push('ok', 'Đã lưu thông tin lớp');
+      toast.push('ok', t('Đã lưu thông tin lớp'));
       setDangSua(false);
       onDone();
     } catch (e: any) { setLoiLuu(e.message); toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
-    <PhanThongTin tieuDe="Lớp" suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} loi={loiLuu}
+    <PhanThongTin tieuDe={t('Lớp')} suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} loi={loiLuu}
       onSua={() => setDangSua(true)} onHuy={huy} onLuu={luu}>
       {!dangSua ? (
         <DongXem dong={[
-          ['Số lớp', <span className="tabular-nums">{soCu ?? lop.code}</span>],
-          ['Chương trình', lop.programmeName ?? lop.programmeCode ?? '—'],
-          ...(lop.programmeCode === 'FT' ? [['Lộ trình', lop.route ?? '—'] as [string, ReactNode]] : []),
+          [t('Số lớp'), <span className="tabular-nums">{soCu ?? lop.code}</span>],
+          [t('Chương trình'), lop.programmeName ?? lop.programmeCode ?? '—'],
+          ...(lop.programmeCode === 'FT' ? [[t('Lộ trình'), lop.route ?? '—'] as [string, ReactNode]] : []),
         ]} />
       ) : (
         <div className="space-y-3">
           {soCu === null ? (
-            <Truong nhan="Tên lớp" phu="Tên lớp cũ chưa theo mẫu — Quản trị đổi lúc nâng cấp">
+            <Truong nhan={t('Tên lớp')} phu={t('Tên lớp cũ chưa theo mẫu — Quản trị đổi lúc nâng cấp')}>
               <input className="field w-full" value={lop.code} readOnly />
             </Truong>
           ) : (
             <div>
-              <Truong nhan="Số lớp" batBuoc phu="1–4 chữ số, được thêm một chữ cái cuối (101A)" loi={loiSoHien}>
+              <Truong nhan={t('Số lớp')} batBuoc phu={t('1–4 chữ số, được thêm một chữ cái cuối (101A)')} loi={loiSoHien}>
                 <input className="field w-28 tabular-nums" {...lf.o(loi, 'so')} aria-invalid={!!loiSoHien} inputMode="numeric" autoComplete="off"
                   value={so} onChange={(e) => setSo(locSoLop(e.target.value))} />
               </Truong>
               <p className="m-0 mt-2 text-sm tabular-nums" aria-live="polite">
                 {ma
-                  ? <>Lớp sẽ là <strong className="text-slate-100">{ma}</strong></>
-                  : <span className="text-slate-500">Lớp sẽ là {lop.branchCode} {kh ?? ''} …</span>}
+                  ? <>{t('Lớp sẽ là')} <strong className="text-slate-100">{ma}</strong></>
+                  : <span className="text-slate-500">{t('Lớp sẽ là')} {lop.branchCode} {kh ?? ''} …</span>}
               </p>
             </div>
           )}
-          <Truong nhan="Chương trình" phu={doiDuoc ? undefined : '🔒 Đổi chương trình khi lớp chưa có học viên / bài Test'}>
+          <Truong nhan={t('Chương trình')} phu={doiDuoc ? undefined : t('🔒 Đổi chương trình khi lớp chưa có học viên / bài Test')}>
             <select className="field w-full" value={chuongTrinh} disabled={!doiDuoc} onChange={(e) => setChuongTrinh(e.target.value)}>
               {(programmes.data ?? (lop.programmeCode ? [{ code: lop.programmeCode, name: lop.programmeName ?? lop.programmeCode }] : [])).map((p) => (
                 <option key={p.code} value={p.code} disabled={p.code === 'PREFOU' && !CHO_TAO_PRE_FOU && p.code !== lop.programmeCode}>
@@ -177,12 +178,12 @@ function PhanLop({ lop, suaDuoc, onDone }: {
             </select>
           </Truong>
           {ft && (
-            <Truong nhan="Lộ trình" as="div">
-              <PhanDoan nhan="Lộ trình" giaTri={loTrinh} onChon={setLoTrinh}
+            <Truong nhan={t('Lộ trình')} as="div">
+              <PhanDoan nhan={t('Lộ trình')} giaTri={loTrinh} onChon={setLoTrinh}
                 muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name, tat: !doiDuoc && r.code !== loTrinh }))} />
               {!doiDuoc && (
                 <span className="mt-1 block text-xs text-slate-400">
-                  Lớp đã có {lop.soHocVien} học viên — muốn đổi lộ trình thì chuyển các em sang lớp {kyHieuLop('FT', lop.route === 'RF' ? 'LT1' : 'RF')} khác
+                  {t('Lớp đã có {n} học viên — muốn đổi lộ trình thì chuyển các em sang lớp {kh} khác', { n: lop.soHocVien, kh: kyHieuLop('FT', lop.route === 'RF' ? 'LT1' : 'RF') })}
                 </span>
               )}
             </Truong>

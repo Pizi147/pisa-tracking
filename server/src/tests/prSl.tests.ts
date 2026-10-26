@@ -54,7 +54,7 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(!/font-mono/.test(s), 'ô dán còn font-mono');
     assert(s.indexOf('<textarea') < s.lastIndexOf('Đọc nội dung đã dán') && !s.includes('sm:grid-cols-3'), 'nút Đọc phải nằm dưới ô dán');
     assert(/dob: 170, email: 190, baselineScore: 72/.test(s), 'bề rộng cột (ô Ngày sinh = ONgay có nút lịch)');
-    assert(s.includes("fullName: 'Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.'") && !s.includes('</p>\n          </div>\n        </div>\n      </div>\n    </KhungPanel>'), 'lời nhắc ở ⓘ cột Họ tên, không câu dưới lưới');
+    assert(s.includes("fullName: t('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.')") && !s.includes('</p>\n          </div>\n        </div>\n      </div>\n    </KhungPanel>'), 'lời nhắc ở ⓘ cột Họ tên, không câu dưới lưới');
   });
 
   check('SL-7 · I4: GvCham, hộp 4 tiêu chí, Nhận xét, Xoá vi phạm dùng KhungPanel; StudentDetailPage hết import Modal', () => {
@@ -302,7 +302,7 @@ export async function runPrSlTests(t: YThucTestKit) {
       /* OV-14a (F05): panel chia lô bằng `chiaLoSuaCaLop` — không có em đổi email cho nhau thì vẫn (8, 8, 4). */
       const lo2 = d.chiaLoSuaCaLop(Array.from({ length: 20 }, (_, i) => ({ studentId: i })), () => null).lo;
       assert(JSON.stringify(lo2.map((x: unknown[]) => x.length)) === '[8,8,4]', JSON.stringify(lo2));
-      assert(pn.includes('chiaLoSuaCaLop(payload,') && pn.includes('em chưa lưu') && pn.includes('Đang lưu ${tienDo.xong}/${tienDo.tong}…'),
+      assert(pn.includes('chiaLoSuaCaLop(payload,') && pn.includes('em chưa lưu') && pn.includes("t('Đang lưu {xong}/{tong}…'"),
         'panel gửi theo lô, báo lưu dở ở chân panel, hiện tiến độ');
     });
 

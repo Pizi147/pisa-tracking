@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
 import { allProgrammes, mocChupVaoLop, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
-import { HttpError, addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { HttpError, addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode, loi as loiHttp } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
@@ -607,10 +607,10 @@ export function createClass(p: Principal, input: {
   if (!code) throw badRequest('Cần mã lớp.');
   // Mã lớp luôn bắt đầu bằng mã chi nhánh — nhận tên cũ `CN-` lẫn mới `CN ` (Q5).
   if (!new RegExp(`^${branch.code}[\\s-]`, 'i').test(code)) {
-    throw badRequest(`Mã lớp phải bắt đầu bằng "${branch.code} ", ví dụ ${branch.code} FT 101.`);
+    throw loiHttp(400, 'Mã lớp phải bắt đầu bằng "{code} ", ví dụ {code2} FT 101.', { code: branch.code, code2: branch.code });
   }
   // Trùng so bằng mã chuẩn hoá (bỏ "-", khoảng trắng, hoa/thường) — khớp chỉ mục ux_classes_ma_chuan (Q3, K5-68).
-  if (conn.prepare(`SELECT id FROM classes WHERE ${khoaMaLopSql()} = ?`).get(chuanHoaMaLop(code))) throw badRequest(`Đã có lớp ${code}.`);
+  if (conn.prepare(`SELECT id FROM classes WHERE ${khoaMaLopSql()} = ?`).get(chuanHoaMaLop(code))) throw loiHttp(400, 'Đã có lớp {code}.', { code });
   if (input.startDate && !isIsoDate(input.startDate)) throw badRequest('Ngày khai giảng không hợp lệ.');
   const ct = programmeOf(input.kind ?? 'FT');
 
@@ -728,7 +728,7 @@ export function taoLopHangLoat(p: Principal, input: { rows: unknown; idempotency
   sauMoiDong?: (i: number) => void): KetQuaTaoLopHangLoat {
   const raw = input.rows;
   if (!Array.isArray(raw) || raw.length === 0) throw badRequest('Chưa có dòng nào để tạo lớp.');
-  if (raw.length > TOI_DA_DONG_TAO_LOP) throw badRequest(`Tối đa ${TOI_DA_DONG_TAO_LOP} lớp một lần.`);
+  if (raw.length > TOI_DA_DONG_TAO_LOP) throw loiHttp(400, 'Tối đa {TOI_DA_DONG_TAO_LOP} lớp một lần.', { TOI_DA_DONG_TAO_LOP });
   const rows: DongTaoLop[] = raw.map((r: any, i) => ({
     ...(r && typeof r === 'object' ? r : {}), dong: i + 1, branchId: Number(r?.branchId),
     startPeriodId: r?.startPeriodId == null || r?.startPeriodId === '' ? null : Number(r.startPeriodId),

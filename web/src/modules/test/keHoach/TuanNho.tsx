@@ -3,6 +3,7 @@ import { api } from '../../../lib/api.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { LichNho } from '../../../ui/LichNho.tsx';
 import { ngay, tuanLich, tuanNamChu } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 
 export type Tuan = { periodId: number; weekStart: string };
@@ -40,15 +41,15 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null, gon 
   return (
     <div className="min-w-0">
       <div className="flex items-stretch gap-1.5">
-        <button type="button" className={nut} disabled={busy || !co || (!!toiThieu && co <= toiThieu)} onClick={() => co && chon(addDaysStr(co, -7))} aria-label="Tuần trước">‹</button>
+        <button type="button" className={nut} disabled={busy || !co || (!!toiThieu && co <= toiThieu)} onClick={() => co && chon(addDaysStr(co, -7))} aria-label={t('Tuần trước')}>‹</button>
         <button ref={giua} type="button"
           className="field flex min-h-[44px] min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-0 px-2 py-1 text-left text-xs sm:min-h-[32px]"
           aria-haspopup="dialog" aria-expanded={mo} onClick={() => setMo((v) => !v)}
-          title={d.weekStart ? `${khoang(d.weekStart)} · bấm để chọn tuần khác` : 'Chọn tuần khác'}>
-          <span className="whitespace-nowrap text-slate-100">{d.weekStart ? (nam ? tuanNamChu(d.weekStart) : tuanLich(d.weekStart, homNay)) : 'Chọn tuần'}</span>
+          title={d.weekStart ? t('{khoang} · bấm để chọn tuần khác', { khoang: khoang(d.weekStart) }) : t('Chọn tuần khác')}>
+          <span className="whitespace-nowrap text-slate-100">{d.weekStart ? (nam ? tuanNamChu(d.weekStart) : tuanLich(d.weekStart, homNay)) : t('Chọn tuần')}</span>
           {d.weekStart && !gon && <span className="text-xs tabular-nums text-slate-500">{khoang(d.weekStart)}</span>}
         </button>
-        <button type="button" className={nut} disabled={busy || !co} onClick={() => co && chon(addDaysStr(co, 7))} aria-label="Tuần sau">›</button>
+        <button type="button" className={nut} disabled={busy || !co} onClick={() => co && chon(addDaysStr(co, 7))} aria-label={t('Tuần sau')}>›</button>
       </div>
       {nhanKhoa && <div className="mt-0.5 text-xs text-slate-500">{nhanKhoa}</div>}
       {mo && homNay && (

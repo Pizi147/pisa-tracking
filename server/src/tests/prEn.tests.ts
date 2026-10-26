@@ -28,7 +28,7 @@ export async function runPrEnTests(t: any) {
 
   const bienCua = (s: string) => [...new Set([...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort().join();
   /* Chữ giữ nguyên ở EN (THUAT_NGU_EN luật 3): mã, tên riêng — chữ Việt mà bản Anh trùng y nguyên phải nằm đây. */
-  const GIU = new Set<string>(['Tutor']);   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
+  const GIU = new Set<string>(['Tutor', 'Final Test', 'Progress Test']);   // R1-EN-2: tên bài giữ (mẫu 'Final {ct}' khớp nhầm)   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
 
   check('EN-KHOA · mọi chữ có bản Anh không rỗng, cùng {biến}, không còn "{" sau khi thay; không chép nguyên chữ Việt', () => {
     const loi: string[] = [];
@@ -87,6 +87,37 @@ export async function runPrEnTests(t: any) {
     const het = nen['may-chu'].filter((s) => !con.some((x) => x.chu === s));
     if (het.length) console.log(`    ↳ EN-LOI-GV: hạ nền scripts/chu-viet-cung.json (may-chu), ${het.length} câu đã dịch / bỏ: ${het.slice(0, 3).join(' · ')}`);
     assert(moi.length === 0, `${moi.length} câu lỗi mới chưa dịch (dùng loi() hoặc thêm khoá EN): ` + moi.slice(0, 8).join(' · '));
+  });
+
+  /* R1-EN-2 (Task 5): câu máy chủ có biến đi qua loi() (khoá + biến), câu ghép thi thật web ghép bằng t() từ số liệu. */
+  check('EN-GHEP · lỗi máy chủ có biến và chữ thi thật ra tiếng Anh', () => {
+    const e = util.loi(400, 'Chưa tới tuần Test {x} — chưa nhập điểm được.', { x: 'W2 OCT' });
+    assert(e.message === 'Chưa tới tuần Test W2 OCT — chưa nhập điểm được.' && e.khoa, 'loi() giữ câu Việt + khoá');
+    const en = i18n.dichSang('en', e.khoa, e.bien);
+    assert(en === 'Test week W2 OCT has not started — scores cannot be entered yet.', en);
+    assert(i18n.dichMau('en', 'Tối đa 500 em một lần lưu.') === 'Save at most 500 students at a time.', 'câu không biến');
+    assert(i18n.dichSang('en', 'Thi thật {ngay}', { ngay: '12/10' }) === 'Real exam 12/10', 'Thi thật {ngay}');
+    assert(i18n.dichSang('en', 'Thi thật {kq}', { kq: '7.5' }) === 'Real exam 7.5', 'Thi thật {kq}');
+    assert(i18n.dichMau('en', 'tuần 5/5 · Final Test') === 'week 5/5 · Final Test', i18n.dichMau('en', 'tuần 5/5 · Final Test'));   // không "Tests Final"
+  });
+
+  /* PTA #599 (1): khoá R1-EN chỉ dùng qua t() không làm mẫu cho dich() — chữ tự do không bị dịch nửa câu. */
+  check('EN-MAU · chữ tự do không bị khoá ngắn có biến dịch nửa câu; mẫu chữ máy chủ vẫn dịch', () => {
+    for (const s of ['Đã lưu ý kiến phụ huynh', 'Lịch học bù cuối tuần', 'Đang học bổ trợ', 'Hoàn tác bước cuối']) {
+      assert(i18n.dichMau('en', s) === s, `"${s}" → "${i18n.dichMau('en', s)}"`);
+    }
+    assert(i18n.dichSang('en', 'Hoàn tác {nhan}', { nhan: 'Target' }) === 'Undo Target', 't() vẫn dịch khoá đủ');
+    assert(i18n.dichMau('en', 'Dời S · MT3 · lần 2 · Duyệt = S làm bài W4 SEP') === 'Move S · MT3 · time 2 · Approve = S sits W4 SEP', 'mẫu thẻ dời MT');
+  });
+
+  /* PTA #599 (5): lỗi máy chủ mở đầu bằng tên ô — bản Anh mở đầu bằng đúng nhãn ô (StudentManagePanel `oCuaLoi` gắn lỗi vào ô ở EN). */
+  check('EN-O · câu lỗi mở đầu bằng tên ô: bản Anh mở đầu bằng nhãn ô tiếng Anh', () => {
+    const mau: [string, string][] = [['Dự kiến thi', 'Dự kiến thi: {x}'], ['Dự kiến thi', 'Dự kiến thi không hợp lệ.'], ['Dự kiến thi', 'Dự kiến thi phải có dạng MM/YYYY.'],
+      ['Điểm đầu vào', 'Điểm đầu vào phải nằm trong khoảng 0–9.'], ['Điểm đầu vào', 'Điểm đầu vào {ten}: band 0–9, bước 0.5.'], ['Họ tên', 'Họ tên không được trống.']];
+    for (const [o, k] of mau) {
+      const en = i18n.dichSang('en', k, { x: 'a', ten: 'L' });
+      assert(en.startsWith(i18n.dichSang('en', o)), `"${en}" phải mở đầu bằng "${i18n.dichSang('en', o)}"`);
+    }
   });
 
   check('EN-KHOA · số ít / số nhiều ở EN ("1 day overdue" / "3 days overdue"), VI giữ chữ cũ; biến là chữ Việt có trong từ điển cũng dịch', () => {
@@ -413,6 +444,8 @@ const FILE_DA_DICH = [
 
 /** Chuỗi so khớp dữ liệu (không hiện ra) — giữ Việt có chủ đích. */
 const CHO_PHEP: { file: string; text: RegExp }[] = [
+  { file: 'web/src/modules/congViec/DanhSachViec.tsx', text: /^Lớp$/ },   // R1-EN-2: so với nhãn việc cả lớp máy chủ gửi, không hiện ra
+  { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{n\}: \{x\}$/ },   // R1-EN-2: ghi chú lưu máy chủ (dữ liệu), web hiện qua dich()
   { file: 'web/src/modules/platform/WelcomePage.tsx', text: /^(Hoàn tất|Nguyễn Khánh Vy|Trần Ngọc Hà)$/ },   // chữ in ra của lệnh seed; tên tài khoản demo (dữ liệu)
   { file: 'web/src/ui/NutNgonNgu.tsx', text: /^(Tiếng Việt|Ngôn ngữ \/ Language)$/ },                          // nút ghi bằng chính tiếng của nó
   { file: 'web/src/App.tsx', text: /^Thêm$/ },   // KHUNG-LOI: nút gom menu — EN "More" ngay cạnh (khoá 'Thêm' của từ điển là "Add")
@@ -469,12 +502,16 @@ export async function demChuVietGv(ds: string[], en: Record<string, unknown>): P
 
 /** R1-EN-1 EN-LOI-GV: thư mục máy chủ của đường GV (spec 4.3 (c)); câu lỗi chữ Việt (literal / template → `{x}`) mà dichMau EN trả nguyên. */
 const THU_MUC_LOI_GV = ['cham', 'fasttrack', 'normal', 'cases', 'students', 'worklist', 'congViec', 'dich', 'classes'];
+const TEP_LOI_GV = ['server/src/routes/index.ts', 'server/src/phanTich/xuatMt.ts'];
 export function loiMayChuGv(dichEn: (s: string) => string): { noi: string; chu: string }[] {
   const ts = require_ts();
   const con: { noi: string; chu: string }[] = [];
-  for (const d of THU_MUC_LOI_GV.filter((d) => fs.existsSync(path.join(GOC_REPO, 'server/src', d)))) {
-    for (const f of (fs.readdirSync(path.join(GOC_REPO, 'server/src', d), { recursive: true }) as string[]).filter((f) => /\.ts$/.test(f)).sort()) {
-      const rel = `server/src/${d}/${f}`.replace(/\\/g, '/');
+  /* PTA #599 (3): thêm tệp đường GV ngoài các thư mục trên — routes (tham số), Xuất kết quả Test (GVCN). */
+  const tep = [...THU_MUC_LOI_GV.filter((d) => fs.existsSync(path.join(GOC_REPO, 'server/src', d)))
+    .flatMap((d) => (fs.readdirSync(path.join(GOC_REPO, 'server/src', d), { recursive: true }) as string[]).filter((f) => /\.ts$/.test(f)).sort()
+      .map((f) => `server/src/${d}/${f}`.replace(/\\/g, '/'))), ...TEP_LOI_GV];
+  {
+    for (const rel of tep) {
       const sf = ts.createSourceFile(rel, fs.readFileSync(path.join(GOC_REPO, rel), 'utf8'), ts.ScriptTarget.Latest, true);
       (function duyet(n: any) {
         if ((ts.isCallExpression(n) || ts.isNewExpression(n)) && /^(badRequest|forbidden|notFound|conflict|HttpError)$/.test(n.expression.getText())) {

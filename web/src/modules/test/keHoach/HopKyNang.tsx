@@ -13,7 +13,7 @@ import {
 } from '@shared/domain/index.ts';
 import { KY, khoaBaiThuong, khoaDot, nhanDot, thanDot, type DotChon, type GhiChuLich, type KnO } from './kieu.ts';
 import { GHI_CHU_TOI_DA, chuTacGia, luuGhiChu } from './GhiChuLichThi.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { Truong } from '../../../ui/KhungPanel.tsx';
@@ -193,8 +193,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   /* P6 N15: FT T6 → CN — tuần đợt thuộc 3 tuần khoá → chip; bỏ kỹ năng khỏi đợt (huỷ lịch) chặn ngay (dời: máy chủ báo qua xem trước). */
   const khoaDotNay = loai === 'ft' && !moi ? khoaCt(...ky.map((k) => kn[k]?.tuan)) : null;
   const khoaBo = loai === 'ft' ? khoaCt(...bo.map((k) => kn[k]?.tuan)) : null;
-  const cauChan = chan.length ? `Chặn: ${[...new Set(chan.map((b) => b.cau))].join(' ')}` : khoaBo ? `Chặn: ${khoaBo}` : '';
-  const cauCanhBao = canhBao.length ? [...new Set(canhBao.map((b) => b.cau))].join(' ') : '';
+  const cauChan = chan.length ? t('Chặn: {cau}', { cau: [...new Set(chan.map((b) => (b.cau ? dich(b.cau) : '')))].join(' ') }) : khoaBo ? t('Chặn: {cau}', { cau: khoaBo }) : '';
+  const cauCanhBao = canhBao.length ? [...new Set(canhBao.map((b) => (b.cau ? dich(b.cau) : '')))].join(' ') : '';
 
   const luuLich = !chan.length && !khoaBo && (moi ? !thieuTuan && dungKy.length > 0 && !!bai : coDoi);
   const luuDuoc = !busy && (luuLich || (doiGhi && !coDoi && !(moi && daChinh)));
@@ -225,11 +225,11 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
         ));
         await api.post('/ke-hoach-test/dot', { attemptId, kyNang, lyDoBo: null, reason: lyDo.trim() || null, force: dungForce, ghiChu });
       }
-      toast.push('ok', luuLich ? 'Đã lưu lịch.' : t('Đã lưu ghi chú.'));
+      toast.push('ok', luuLich ? t('Đã lưu lịch.') : t('Đã lưu ghi chú.'));
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       onSaved(); onClose();
     } catch (e: any) {
-      toast.push('error', e.message ?? 'Không lưu được — thử lại.');
+      toast.push('error', e.message ?? t('Không lưu được — thử lại.'));
     } finally {
       setBusy(false);
     }
@@ -341,13 +341,13 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   const hoSo = attemptId !== null && dot.loai === 'ft' ? duongDotTest({ id: attemptId, kind: 'mock', classId }, null) : null;
   const mucDau = attemptId === null || dot.loai !== 'ft' ? [] : [
     { key: 'nhat-ky', nhan: CHU_MUC_HOP['nhat-ky'], onChon: () => setNhatKy('ca-luot') },
-    ...(hoSo && hoSo !== pathname ? [{ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: () => { onClose(); navigate(hoSo); } }] : []),
+    ...(hoSo && hoSo !== pathname ? [{ key: 'ho-so', nhan: t('Mở hồ sơ MT'), onChon: () => { onClose(); navigate(hoSo); } }] : []),
   ];
-  const nutLuu = canhBao.length && !force ? 'Vẫn xếp vào tuần này' : 'Lưu';
+  const nutLuu = canhBao.length && !force ? t('Vẫn xếp vào tuần này') : t('Lưu');
   const nhanChung = loai === 'thuong' && chung?.weekStart ? nhanTuanKhoa(chung.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
   const coDongDuoi = !!cauChan || !!cauCanhBao || quaTuan || !!khoaDotNay;
   return createPortal(
-    <div ref={box} role="dialog" aria-label={`Lịch ${tieuDe}`} tabIndex={-1}
+    <div ref={box} role="dialog" aria-label={t('Lịch {ten}', { ten: tieuDe })} tabIndex={-1}
       className={`surface-2 z-[60] border shadow-2xl outline-none ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[min(520px,calc(100vw-32px))] rounded-lg'}`}
       style={{ borderColor: 'var(--line-strong)' }}>
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
@@ -358,13 +358,13 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
                 className="link flex min-h-[44px] items-center sm:min-h-0"><span className="truncate">{tieuDe}</span></Link>
             : <span className="block truncate">{tieuDe}</span>}
         </div>
-        {mucDau.length > 0 && <MenuDong nhan={`Thao tác khác · ${tieuDe}`} muc={mucDau} />}
-        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={onClose} aria-label="Đóng">✕</button>
+        {mucDau.length > 0 && <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: tieuDe })} muc={mucDau} />}
+        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={onClose} aria-label={t('Đóng')}>✕</button>
       </div>
       <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
         {nhomChung.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-[12px] font-bold  text-slate-400">Tuần chung</span>
+            <span className="text-[12px] font-bold  text-slate-400">{t('Tuần chung')}</span>
             <div className="min-w-[220px] flex-1">
               <TuanNho nam d={{ periodId: chung?.periodId ?? null, weekStart: chung?.weekStart ?? null }} goc={homNay} onTuan={datChung} nhanKhoa={nhanChung} />
             </div>
@@ -380,8 +380,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
           ))}
         </div>
         {!moi && coDoi && (
-          <Truong nhan="Lý do" tuyChon>
-            <input className="field w-full" maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: trùng lịch phòng" />
+          <Truong nhan={t('Lý do')} tuyChon>
+            <input className="field w-full" maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder={t('Ví dụ: trùng lịch phòng')} />
           </Truong>
         )}
         {/* C21 (mockup 4): ghi chú lịch thi — chỉ là ghi chú, không dời lịch; lưu cùng nút Lưu. */}
@@ -410,7 +410,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
             {cauCanhBao && <div className="text-xs leading-relaxed text-soon">{cauCanhBao}</div>}
             {(quaTuan || khoaDotNay) && (
               <div className="flex flex-wrap gap-1.5">
-                {quaTuan && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
+                {quaTuan && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>{t('Tuần đã qua')}</Nhan>}
                 {khoaDotNay && <Nhan tone="soon" title={khoaDotNay}>{t('Khoá đổi lịch T6 – CN')}</Nhan>}
               </div>
             )}
@@ -432,7 +432,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
       ) : (
         <div className="border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
           <div className="flex items-center gap-2">
-            <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua || doiGhi ? huyDoi : onClose} disabled={busy}>{daSua || doiGhi ? 'Huỷ thay đổi' : t('Đóng')}</button>
+            <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua || doiGhi ? huyDoi : onClose} disabled={busy}>{daSua || doiGhi ? t('Huỷ thay đổi') : t('Đóng')}</button>
             {attemptId !== null && (
               /* Xóa ngay phải Đóng (mục 6): mờ khi có điểm / đã thi / chưa xếp, hoặc đang sửa dở (lưu / huỷ thay đổi trước). */
               <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || !!lyDoXoa || daSua || doiGhi}
@@ -440,7 +440,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
             )}
             <span className="flex-1" />
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { if (canhBao.length) setForce(true); void luu(); }} disabled={!luuDuoc}>
-              {busy ? 'Đang lưu…' : nutLuu}
+              {busy ? t('Đang lưu…') : nutLuu}
             </button>
           </div>
           {lyDoXoa && lyDoXoa !== t('Chưa xếp lịch') && !cauChan.includes(lyDoXoa) && <p className="m-0 mt-1 text-xs text-slate-400">{lyDoXoa}</p>}
@@ -491,28 +491,28 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
         /* Điện thoại: nhãn bọc ô tích mở vùng bấm 44px (ô tích gốc chỉ 13px). */
         <label className="relative grid place-items-center max-sm:min-h-[44px] max-sm:after:absolute max-sm:after:-inset-x-2.5 max-sm:after:inset-y-0 max-sm:after:content-['']">
           <input type="checkbox" className="accent-sky-400 disabled:opacity-60" checked={d.tick} disabled={!tickDuoc} onChange={(e) => onTick(e.target.checked)}
-            aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`}
-            title={!tickDuoc ? (o?.khoa ?? 'Đã tới tuần Test') : d.tick ? 'Bỏ khỏi đợt' : 'Đưa lại vào đợt'} />
+            aria-label={`${tenMon(ct, k)} — ${d.tick ? t('bỏ khỏi đợt') : t('đưa lại vào đợt')}`}
+            title={!tickDuoc ? (o?.khoa ? dich(o.khoa) : t('Đã tới tuần Test')) : d.tick ? t('Bỏ khỏi đợt') : t('Đưa lại vào đợt')} />
         </label>
       ) : <span />}
       <div className="text-xs text-slate-200">
         <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b>
         {tenMonNgan(ct, k) !== tenMon(ct, k) && <> <span className="text-slate-400">{tenMon(ct, k)}</span></>}
-        {loai === 'ft' && k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
+        {loai === 'ft' && k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title={t('W = chấm cả W1 và W2')}>ⓘ</span>}
       </div>
       <div className="min-w-0 text-xs">
         {bo ? (
-          <span className="text-slate-500">Bỏ khỏi đợt</span>
+          <span className="text-slate-500">{t('Bỏ khỏi đợt')}</span>
         ) : riengTuan ? (
           /* Rà #212 (T4/T20): hộp chỉ mở cho Quản lý / Quản trị (PLAN_WEEK) — chọn được cả tuần đã qua, máy chủ đã cho. */
           <TuanNho nam d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />
         ) : coDiem && (d.weekStart ?? o?.tuan) ? (
-          <span className="text-slate-400">{chuTuan((d.weekStart ?? o!.tuan)!)} · <b className="tabular-nums text-slate-100">{o.diem ?? 'có điểm'}</b></span>
+          <span className="text-slate-400">{chuTuan((d.weekStart ?? o!.tuan)!)} · <b className="tabular-nums text-slate-100">{o.diem ?? t('có điểm')}</b></span>
         ) : (
           <span className="flex flex-wrap items-center gap-1">
             {d.weekStart && <Nhan tone="doing">{chuTuan(d.weekStart)}</Nhan>}
-            {chip && !(chip.chu === 'chưa xếp' && d.weekStart) && <Nhan tone={chip.tone}>{chip.chu}</Nhan>}
-            {!d.weekStart && !chip && <span className="text-slate-500">chưa xếp</span>}
+            {chip && !(chip.chu === t('chưa xếp') && d.weekStart) && <Nhan tone={chip.tone}>{chip.chu}</Nhan>}
+            {!d.weekStart && !chip && <span className="text-slate-500">{t('chưa xếp')}</span>}
           </span>
         )}
         {huyVang && (
@@ -524,7 +524,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
           </span>
         )}
       </div>
-      <MenuDong luonHien nhan={`Thao tác khác · ${tenMon(ct, k)}`} muc={muc.map((m) => ({
+      <MenuDong luonHien nhan={t('Thao tác khác · {skillLabel}', { skillLabel: tenMon(ct, k) })} muc={muc.map((m) => ({
         key: m.muc, nhan: CHU_MUC_HOP[m.muc], nguyHiem: m.muc === 'huy-diem', tat: !m.duoc, title: m.viSao ?? undefined, onChon: () => onMuc(m.muc, m.thay),
       }))} />
     </div>
