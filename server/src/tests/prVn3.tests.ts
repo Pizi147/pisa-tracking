@@ -157,6 +157,6 @@ export async function runPrVn3Tests(t: YThucTestKit) {
     keHoach.luuDot(P.mbManager, { attemptId: a, kyNang: [{ skill: 'listening', periodId: tuan(7).id }], lyDoBo: null, reason: null, force: true });
     assert(tuanCua() === t.addDays(tuanNay, 49) && lyDoCua().length === 1, `không lý do: ${tuanCua()} · ${lyDoCua()}`);
     const web = fs.readFileSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..'), 'web/src/modules/test/keHoach/HopKyNang.tsx'), 'utf8');
-    assert(/reason: lyDo\.trim\(\) \|\| null/.test(web) && /nhan="Lý do" tuyChon/.test(web), 'HopKyNang thiếu ô Lý do tuỳ chọn gửi reason');
+    assert(/reason: lyDo\.trim\(\) \|\| null/.test(web) && /nhan=\{t\('Lý do'\)\} tuyChon/.test(web), 'HopKyNang thiếu ô Lý do tuỳ chọn gửi reason');
   });
 }

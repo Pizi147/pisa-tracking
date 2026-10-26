@@ -21,7 +21,6 @@ export const EN_R1_EN = {
   'đã có điểm': 'scored',
   'đã làm bài': 'sat',
   /* Cuối khoá lớp */
-  '{n} em chưa lưu — xem lý do ở dòng': (b) => `${so(b.n, 'student', 'students')} not saved — see the reason on the row`,
   'Chọn nguyên nhân': 'Pick a cause',
   'Chọn kỹ năng': 'Pick skills',
   'Ghi phương án': 'Write the plan',
@@ -447,7 +446,7 @@ export const EN_R1_EN = {
   'Chọn tư vấn viên': 'Pick a counsellor',
   'Không có tư vấn viên khớp “{go}”': 'No counsellor matches “{go}”',
   'Ví dụ: 0901 234 567': 'E.g. 0901 234 567',
-  'Ví dụ: Phạm Văn Long': 'E.g. Phạm Văn Long',
+  'Ví dụ: Phạm Văn Long': 'E.g. Pham Van Long',
   'Ví dụ: Bố': 'E.g. Father',
   'Ví dụ: 0912 345 678': 'E.g. 0912 345 678',
   'Lộ trình đang học': 'Current pathway',

@@ -28,7 +28,7 @@ export async function runPrEnTests(t: any) {
 
   const bienCua = (s: string) => [...new Set([...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort().join();
   /* Chữ giữ nguyên ở EN (THUAT_NGU_EN luật 3): mã, tên riêng — chữ Việt mà bản Anh trùng y nguyên phải nằm đây. */
-  const GIU = new Set<string>(['Tutor']);   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
+  const GIU = new Set<string>(['Tutor', 'Final Test', 'Progress Test']);   // R1-EN-2: tên bài giữ (mẫu 'Final {ct}' khớp nhầm)   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
 
   check('EN-KHOA · mọi chữ có bản Anh không rỗng, cùng {biến}, không còn "{" sau khi thay; không chép nguyên chữ Việt', () => {
     const loi: string[] = [];
@@ -425,6 +425,8 @@ const FILE_DA_DICH = [
 
 /** Chuỗi so khớp dữ liệu (không hiện ra) — giữ Việt có chủ đích. */
 const CHO_PHEP: { file: string; text: RegExp }[] = [
+  { file: 'web/src/modules/congViec/DanhSachViec.tsx', text: /^Lớp$/ },   // R1-EN-2: so với nhãn việc cả lớp máy chủ gửi, không hiện ra
+  { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{n\}: \{x\}$/ },   // R1-EN-2: ghi chú lưu máy chủ (dữ liệu), web hiện qua dich()
   { file: 'web/src/modules/platform/WelcomePage.tsx', text: /^(Hoàn tất|Nguyễn Khánh Vy|Trần Ngọc Hà)$/ },   // chữ in ra của lệnh seed; tên tài khoản demo (dữ liệu)
   { file: 'web/src/ui/NutNgonNgu.tsx', text: /^(Tiếng Việt|Ngôn ngữ \/ Language)$/ },                          // nút ghi bằng chính tiếng của nó
   { file: 'web/src/App.tsx', text: /^Thêm$/ },   // KHUNG-LOI: nút gom menu — EN "More" ngay cạnh (khoá 'Thêm' của từ điển là "Add")

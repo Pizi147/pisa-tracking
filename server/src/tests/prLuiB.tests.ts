@@ -302,7 +302,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   check('LUIb-15 · web Mở lại lớp: panel (lý do tuỳ chọn, Hoàn tác = Kết thúc lớp), mục ⋮ hồ sơ lớp đã kết thúc, nút Mở lại ở Lưu trữ; Quản lý cũng thấy Kết thúc lớp', () => {
     const p = doc('web/src/modules/classes/XoaKetThucLopPanel.tsx');
     assert(p.includes('export function MoLaiLopPanel') && p.includes('/mo-lai`') && p.includes('/ket-thuc`'), 'panel + Hoàn tác');
-    assert(/<Truong nhan="Lý do" tuyChon/.test(p.slice(p.indexOf('MoLaiLopPanel'))), 'Lý do tuỳ chọn');
+    assert(/<Truong nhan=\{t\('Lý do'\)\} tuyChon/.test(p.slice(p.indexOf('MoLaiLopPanel'))), 'Lý do tuỳ chọn');
     const dt = doc('web/src/modules/classes/DauTrangLop.tsx');
     /* PR-OV3a: nhãn mục ⋯ ở `menuHoSoLop` (shared). */
     assert(doc('shared/domain/hocVienLop.ts').includes("'Mở lại lớp'") && dt.includes('coTheMoLaiLop') && dt.includes('coTheKetThucLop'), 'mục ⋯ Mở lại lớp + Quản lý kết thúc lớp');
@@ -319,7 +319,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(doc('web/src/modules/students/QuayLaiHoc.tsx').includes('<HocLaiPanel') && hl.length > 100, 'thiếu panel Học lại');
     for (const chu of ['Về lớp cũ', 'Sang lớp mới', 'Lộ trình cũ giữ ở Hành trình', 'Chưa có lớp để học lại']) assert(hl.includes(chu), `thiếu chữ "${chu}"`);
     assert(hl.includes('/hoc-lai`') && hl.includes('/hoc-lai/lop-dich') && hl.includes('moLaiLop: true'), 'phải gọi /hoc-lai và /hoc-lai/lop-dich');
-    assert(/toast\.hoanTac\(`Đã cho \$\{studentName\} quay lại học/.test(hl) && hl.includes("hoanTacHangLoat('hoc-lai'"), 'Hoàn tác phải đi qua hoan-tac-hoc-lai');
+    assert(/toast\.hoanTac\(`\$\{t\('Đã cho \{ten\} quay lại học', \{ ten: studentName \}\)\}/.test(hl) && hl.includes("hoanTacHangLoat('hoc-lai'"), 'Hoàn tác phải đi qua hoan-tac-hoc-lai');
     assert(/<Truong nhan="Lý do" tuyChon/.test(hl) && hl.includes('canTarget'), 'Lý do tuỳ chọn + Target khi sang FT');
   });
   check('LUIb-16 · web: chia lô bằng LO_HANG_LOAT_EM, gom ok/failed, dừng khi một lô ném lỗi và ghi "chưa lưu" cho phần còn lại; Hoàn tác gọi việc ngược', () => {
@@ -492,7 +492,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const hl = doc('web/src/modules/students/hangLoatEm.ts');
     assert(hl.includes('VIEC_NGUOC[viec]') && !hl.includes("'Hoàn tác học lại'"), 'Hoàn tác phải đi qua việc ngược, không làm Kết thúc học lại');
     const xt = doc('web/src/modules/students/XemTruocHangLoatPanel.tsx');
-    assert(xt.indexOf('Có hiệu lực từ') < xt.indexOf('<Truong nhan="Lý do'), 'Ngày phải nằm trên Lý do ở panel hàng loạt');
+    assert(xt.indexOf('Có hiệu lực từ') < xt.indexOf("<Truong nhan={t('Lý do')}"), 'Ngày phải nằm trên Lý do ở panel hàng loạt');
     assert(doc('web/src/lib/api.ts').includes('Mất kết nối máy chủ'), 'lỗi mạng phải là tiếng Việt');
   });
 
