@@ -18,6 +18,7 @@
  * "Nhóm nguyên nhân" (số thứ tự, 1 = chính); thiếu → chỉ một dòng nhắc vàng trên nút, Lưu vẫn bấm được. "Kỳ vọng MT{n}" ở mọi kỹ năng.
  * Ô có điểm mà thiếu: chữ nhắc vàng "nên có nhận xét" / "nên chọn nguyên nhân" dưới số (không vẽ ✓ "đủ" — trùng dấu "đã lưu" của ô).
  */
+import { OKhongHoc } from '../../ui/ODiem.tsx';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -181,6 +182,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, ...hop }: O
 }) {
   const [neo, setNeo] = useState<HTMLButtonElement | null>(null);
   const vangGoc = oVangCua(cell, hop.tuanXem);
+  if (cell.khongHoc) return <OKhongHoc nhan={skillLabel(cell.skill)} />;   // P8: môn em không học — không phải nút
   const h = hienO(cell, vangGoc);
   const kq = dauKq && cell.band !== null && !h.kieu ? dauKq : null;
   /* BANG-0 (`ODiem`): chỗ ký hiệu giữ khi ô có số mà không ký hiệu (số thẳng cột). */

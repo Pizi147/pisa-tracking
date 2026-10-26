@@ -83,7 +83,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assert(kq.boKhoiDot >= 1 && kq.giuDaCham >= 1, `tóm tắt: ${JSON.stringify(kq)}`);
       assert(demLuotLechCo() === 0, 'cờ ô chờ khớp');
       const cells = attempts.skillCells(P.admin, mt3, [], [], TODAY, skillSchedule.ensureSkillRows(mt3.id));
-      assert(cells.find((c: any) => c.skill === 'speaking').progress === 'skipped', 'ô S MT3: ngoài phạm vi');
+      assert(cells.find((c: any) => c.skill === 'speaking').progress === 'skipped' && cells.find((c: any) => c.skill === 'speaking').khongHoc, 'ô S MT3: Không học');
       const no = scoreDebtCells(P.admin, addDays(TODAY, 200), null).filter((c) => c.attemptId === mt3.id);
       assert(!no.some((c) => c.skill === 'speaking'), 'không nợ S');
       diem(mt3.id, { listening: 6, reading: 6, writing1: 6, writing2: 6 });
@@ -102,7 +102,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assert(dong(mt3.id, 'writing').bo_task === 'writing1' && dong(mt3.id, 'writing').required === 1, 'MT3: bỏ task W1, Writing vẫn học');
       assert(dong(mt1.id, 'writing').bo_task === null, 'MT1 đã chấm: không đổi');
       const cells = attempts.skillCells(P.admin, mt3, [], attempts.skipsOf(mt3.id), TODAY, skillSchedule.ensureSkillRows(mt3.id));
-      assert(cells.find((c: any) => c.skill === 'writing1').progress === 'skipped' && cells.find((c: any) => c.skill === 'writing2').required, 'ô W1 ngoài phạm vi, W2 bắt buộc');
+      assert(cells.find((c: any) => c.skill === 'writing1').progress === 'skipped' && cells.find((c: any) => c.skill === 'writing1').khongHoc && cells.find((c: any) => c.skill === 'writing2').required, 'ô W1 Không học, W2 bắt buộc');
       assertThrows(() => attempts.saveScore(P.admin, mt3.id, 'writing1', { band: 6 }, addDays(TODAY, 200)), /không học/, 'nhập W1 bị chặn');
       assert(demLuotLechCo() === 0, 'cờ ô chờ khớp');
       diem(mt3.id, { listening: 6, reading: 6, writing2: 7, speaking: 6 });
@@ -208,6 +208,9 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       mdk.apMonDangKy(P.mbManager, huy.id, CHI_W2);
       const ls = JSON.stringify(lichSu.lichSuSua(P.mbManager, huy.sid, {}));
       assert(/Môn học/.test(ls) && ls.includes('Đủ môn') && ls.includes('L · R · W2 · S'), `Lịch sử: ${ls.slice(0, 400)}`);
+      /* Quyền như Sửa thông tin (mockup k4): GVCN lớp đổi được môn kể cả khi có bài chưa thi phải bỏ khỏi đợt. */
+      const ha = em('Trần Thu Hà');
+      assert(mdk.apMonDangKy(P.coreTeacher, ha.id, KHONG_S).boKhoiDot >= 1, 'GVCN đổi môn');
     });
   });
 

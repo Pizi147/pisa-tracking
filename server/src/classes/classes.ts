@@ -554,6 +554,8 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
         overall: result.overall,
         /* PR-N1 K2-10: kỳ vọng của ĐÚNG mốc này (không phải target) + Writing tổng (SOS xét cột này, §5.7). */
         expectation: result.expectation, writing: result.bands?.writing ?? null,
+        /* P8 (N13): ô em không học + Overall "Không đủ bộ môn" — bảng lớp vẽ theo cờ máy chủ. */
+        khongHoc: cells.filter((x) => x.khongHoc).map((x) => x.skill), khongDuBoMon: result.khongDuBoMon,
         /*
          * BAND CỦA TỪNG Ô NHẬP, để bảng lớp vẽ được sáu cột điểm.
          *
@@ -625,6 +627,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
         scoredRequired: t.scoredRequired, requiredCount: t.requiredCount,
         overall: t.overall,
         expectation: t.expectation, writing: t.writing,
+        khongHoc: ((t as any).khongHoc ?? []) as string[], khongDuBoMon: !!(t as any).khongDuBoMon,
         bands: (t as any).bands ?? null,
         ratios: (t as any).ratios ?? null,
         /** Kỹ năng đã dời do vắng → mã tuần cũ (`chuDoiVang` ở web). */

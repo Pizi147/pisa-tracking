@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -16,7 +16,8 @@ import { useSession } from '../../lib/session.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
-import { HopTamDungKetThuc } from './HopTamDungKetThuc.tsx';
+import { HopTamDungKetThuc, KhoiKhiLuu } from './HopTamDungKetThuc.tsx';
+import { NutMon } from '../../ui/NutMon.tsx';
 import { QuayLaiTuMenu } from './QuayLaiHoc.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
@@ -299,6 +300,22 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const overall = duKn ? String(roundToHalf(kn.reduce((a, x) => a + Number(x), 0) / 4)) : dv.o;
   const doiDauVao = coDauVao && JSON.stringify(dv) !== JSON.stringify(dvCu);
   const doiTarget = !!cycle && (targetThang || targetDeXuat) && (target !== targetCu || kck !== kckCu);
+  /* P8 (N13, mockup k4): môn đăng ký của lộ trình FT — QL / GVCN; tóm tắt "Khi lưu" do máy chủ tính (cùng hàm lúc lưu). */
+  const coMon = quanLy && !!cycle && cycle.monDangKy !== undefined;
+  const monCu: string[] | null = cycle?.monDangKy ?? null;
+  const [mon, setMon] = useState<string[] | null>(monCu);
+  const doiMon = coMon && JSON.stringify(mon) !== JSON.stringify(monCu);
+  const [monTom, setMonTom] = useState<{ dong: string[] } | null>(null);
+  useEffect(() => {
+    setMonTom(null);
+    if (!doiMon || mon?.length === 0) return;
+    let con = true;
+    const h = setTimeout(() => {
+      api.post<{ dong: string[] }>(`/cycles/${cycle.id}/mon-dang-ky`, { monDangKy: mon, xemTruoc: true })
+        .then((x) => { if (con) setMonTom(x); }).catch(() => { /* lỗi thật báo khi lưu */ });
+    }, 300);
+    return () => { con = false; clearTimeout(h); };
+  }, [doiMon, JSON.stringify(mon)]);   // eslint-disable-line react-hooks/exhaustive-deps
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   /* Lỗi máy chủ gắn đúng ô (câu lỗi mở đầu bằng tên ô); gõ lại thì bỏ. */
@@ -321,6 +338,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
     else if (!duKn && dv.o !== '' && !laBand(dv.o)) loi.push({ khoa: 'dau-vao', nhan: 'Điểm đầu vào', lyDo: 'Overall: band 0–9, bước 0.5' });
     else if (!duKn && dv.o === '' && kn.some((x) => x !== '')) loi.push({ khoa: 'dau-vao', nhan: 'Điểm đầu vào', lyDo: 'Nhập đủ L R W S hoặc nhập Overall' });
   }
+  if (doiMon && mon?.length === 0) loi.push({ khoa: 'mon', nhan: t('Môn học'), lyDo: t('Chọn ít nhất một môn.') });
   if (loiMay) loi.push(loiMay);
   const cauDoi = tuan !== tuanCu ? cauMtSeDoi(cycle?.lichMt ?? [], attempts, tuan, homNay) : undefined;   // OV-6b1: lịch MT của lớp (API)
 
@@ -367,6 +385,11 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         if (targetThang) { await api.post(`/cycles/${cycle.id}/target-revision`, { newTarget: moi, reason: lyDo.trim() }); xong.push('Target'); }
         else { await api.post(`/students/${student.id}/de-xuat-sua`, { truong: 'target', moi: moi ?? '', lyDo: lyDo.trim() }); invalidate('/yeu-cau'); xong.push('đề xuất Target'); }
       }
+      if (doiMon) {
+        phan = t('Môn học');
+        await api.post(`/cycles/${cycle.id}/mon-dang-ky`, { monDangKy: mon });
+        xong.push('môn học');
+      }
       for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop', '/tong-quan']) invalidate(k);
       toast.push('ok', targetDeXuat && doiTarget ? 'Đã lưu · Target gửi Quản lý duyệt' : 'Đã lưu');
       onDone();
@@ -380,7 +403,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 
   const daSua = fullName !== student.name || dob !== (student.dob ?? '') || email !== (student.email ?? '') || tvv?.kieu === 'tai_khoan' && tvv.id !== student.tvv?.id
     || (!tvv && !!student.tvv) || note !== (student.note ?? '') || tuan !== tuanCu || thi !== thiCu || target !== targetCu || kck !== kckCu || doiDauVao
-    || lhDoi.length > 0;
+    || lhDoi.length > 0 || doiMon;
 
   if (suaDx && dx) {
     return (
@@ -492,6 +515,12 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           {targetDeXuat && onDeXuatSua && (
             <button type="button" className="btn btn-sm btn-ghost self-start min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}>Đề xuất sửa lộ trình / thông tin khác…</button>
           )}
+          {coMon && (
+            <Truong as="div" nhan={`${t('Môn học')} · ${cycle.label}`} loi={lf.loiCua(loi, 'mon')}>
+              <NutMon ariaLabel={t('Môn học')} value={mon} onChange={sua(setMon)} />
+            </Truong>
+          )}
+          {doiMon && monTom && <KhoiKhiLuu dong={monTom.dong} vang />}
           {coDauVao && (
             <Truong as="div" nhan="Điểm đầu vào" tuyChon loi={lf.loiCua(loi, 'dau-vao')}
               phu={bl?.attemptId ? `Đang lấy từ MT${bl.attemptNo ?? ''} · gõ tay thì thay` : 'Đủ L R W S thì Overall tự tính'}>

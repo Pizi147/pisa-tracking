@@ -1011,11 +1011,11 @@ export function baoGvcnDoiLichThuongLop(p: Principal, classId: number, kind: str
  */
 export function setSkillScope(
   p: Principal, attemptId: number, skill: string, required: boolean, reason?: string | null,
-  /** `khiTao`, `khongMockLai`: nơi gọi cũ — không còn chặn gì riêng. */
-  _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string } = {},
+  /** `khiTao`, `khongMockLai`: nơi gọi cũ — không còn chặn gì riêng. `monDangKy`: P8 đổi môn — nơi gọi đã kiểm quyền Sửa thông tin (`apMonDangKy`). */
+  _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string; monDangKy?: boolean } = {},
 ) {
   const { attempt, row } = loadOne(attemptId, skill);
-  require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
+  if (!_opts.monDangKy) require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
     'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
   const duaLaiHuy = required && row.sit_status === 'cancelled';
   if (!!row.required === required && !duaLaiHuy) return { ok: true, unchanged: true };

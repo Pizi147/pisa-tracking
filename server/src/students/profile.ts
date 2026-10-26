@@ -6,7 +6,7 @@ import {
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
-  coONhapLienHe, type LienHe } from '../../../shared/domain/index.ts';
+  coONhapLienHe, chuMon, type LienHe } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -914,6 +914,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       ? {
         id: selected.id, studentId, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
+        /* P8 (N13, N22 ④): môn đăng ký — chỉ lộ trình FT (null = đủ môn); `monHoc` = "L · R · W2 · S" khi thiếu môn (dòng đầu hồ sơ, k7). */
+        ...(selected.route ? { monDangKy: selected.mon_dang_ky ? JSON.parse(selected.mon_dang_ky) as string[] : null, monHoc: selected.mon_dang_ky ? chuMon(selected.mon_dang_ky) : null } : {}),
         /* OV-6b1: tuần MT của lớp em đang học — web báo trước "MT sẽ dời" bằng đúng lịch này (`cauMtSeDoi`). */
         lichMt: lichMtCua(enrollments.find((e) => e.status === 'active'), selected.route),
         target, khongCamKet: !!selected.khong_cam_ket, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,

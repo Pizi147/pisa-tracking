@@ -6,15 +6,16 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { TrangThaiLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { NutChon } from '../../ui/ui.tsx';
+import { NutMon } from '../../ui/NutMon.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, thuNgay, tuanChonDuoc, tuanLich } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, thuNgay, tuanChonDuoc, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { KhoiKhiLuu } from './HopTamDungKetThuc.tsx';
 import type { TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
 
 type LopDich = { id: number; code: string; ft: boolean; route: string | null; tenChuongTrinh: string | null; branchCode: string; siSo?: number };
-type XemTruoc = { routeGoiY: string; route: string; loi: string | null; dong: string[]; lopGiu: { id: number; code: string } | null };
+type XemTruoc = { routeGoiY: string; route: string; loi: string | null; dong: string[]; lopGiu: { id: number; code: string } | null; monDangKy?: string[] | null };
 
 /** Giá trị sau `ms` mili giây không đổi — ô Tên lộ trình gõ từng chữ không gọi xem trước mỗi chữ. */
 function useChamLai<T>(v: T, ms = 400): T {
@@ -46,7 +47,7 @@ export function KhoiDung({ v, onChange, loTrinh, disabled }: { v: GiaTriDung; on
 }
 
 /**
- * LỘ TRÌNH MỚI (P7 SV-LO-TRINH, N12 — mockup V6 `lo-trinh-moi.html` k1–k3; bước "2 Môn học" là P8, chưa vẽ): một panel một luồng, thay nội dung panel Bước tiếp
+ * LỘ TRÌNH MỚI (P7 SV-LO-TRINH, N12 — mockup V6 `lo-trinh-moi.html` k1–k3; P8: bước "2 Môn học" mặc định môn lộ trình cũ): một panel một luồng, thay nội dung panel Bước tiếp
  * (‹ Bước tiếp, không panel lồng panel). 1 Lộ trình LT1 · LT2 · RF · Khác (Tên bắt buộc) — LT kế tiếp chọn sẵn (LT1 → LT2) · 3 Target giữ + Sửa (Khác: không bắt buộc,
  * "Bỏ Target") · 4 Bắt đầu Ngay / Thứ Hai · 5 Lớp Giữ / Lớp khác (chỉ lớp đúng loại; lớp đang giữ sai loại → lỗi tại ô + nút tắt kèm lý do) · "Khi lưu, web sẽ" do
  * máy chủ tính (cùng hàm lúc lưu). Lỗi lưu giữ mọi lựa chọn + Thử lại.
@@ -63,6 +64,8 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const [suaTg, setSuaTg] = useState(false);
   const [tg, setTg] = useState('');
   const [boTarget, setBoTarget] = useState(false);
+  /* P8: undefined = môn của lộ trình cũ (máy chủ trả ở xem trước); chỉ gửi khi người dùng đổi. */
+  const [mon, setMon] = useState<string[] | null | undefined>(undefined);
   const [batDau, setBatDau] = useState('ngay');
   const [lopKhac, setLopKhac] = useState(false);
   const [lopMoiId, setLopMoiId] = useState<number | null>(null);
@@ -76,6 +79,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const q = new URLSearchParams({
     ...(route ? { route } : {}), ...(khac && tenCham ? { routeTen: tenCham } : {}), ...(khac && boTarget ? { boTarget: '1' } : {}),
     ...(lopKhac && lopMoiId ? { lopMoiId: String(lopMoiId) } : {}), ...(batDau !== 'ngay' ? { batDau } : {}), ...(tgMoi ? { mucTieu: tgMoi } : {}),
+    ...(mon !== undefined ? { mon: (mon ?? ENTRY_SKILLS).join(',') } : {}),
   }).toString();
   const xem = useApi<XemTruoc>(`/cycles/${bt.cycleId}/lo-trinh-moi/xem-truoc${q ? `?${q}` : ''}`, [q]);
   const r = route ?? xem.data?.routeGoiY ?? null;
@@ -83,8 +87,9 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   /* Chỉ lớp đúng loại lộ trình (luật chung `kiemLopLoTrinhMoi`) — ô gõ lớp của P4 không có mục tắt, lớp sai loại không bày. */
   const lopDung = (dsLop.data?.lop ?? []).filter((l) => r && !kiemLopLoTrinhMoi(r, { code: l.code, ft: l.ft, route: l.route }));
   const loiTen = khac && !ten.trim() ? t('Ghi tên lộ trình "Khác".') : null;
-  const loiLop = lopKhac && !lopMoiId ? t('Chọn lớp') : xem.data?.loi && !loiTen ? xem.data.loi : null;
-  const lyDoTat = loiTen ?? (loiLop ? (lopKhac ? t('Chọn lớp để lưu') : r === 'RF' ? t('Chọn lớp RF để lưu') : t('Chọn lớp đúng loại để lưu')) : null);
+  const loiMon = mon?.length === 0 ? t('Chọn ít nhất một môn.') : null;
+  const loiLop = lopKhac && !lopMoiId ? t('Chọn lớp') : xem.data?.loi && !loiTen && !loiMon ? xem.data.loi : null;
+  const lyDoTat = loiTen ?? loiMon ?? (loiLop ? (lopKhac ? t('Chọn lớp để lưu') : r === 'RF' ? t('Chọn lớp RF để lưu') : t('Chọn lớp đúng loại để lưu')) : null);
   const hen = batDau !== 'ngay' ? batDau : null;
   const tenLt = khac ? ten.trim() || t('Khác') : r ?? '';
   const nutChinh = hen ? t('Hẹn bắt đầu {tuan}', { tuan: tuanLich(hen, hn) }) : khac ? t('Mở lộ trình') : t('Mở lộ trình {lt}', { lt: r ?? '' });
@@ -97,6 +102,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
     try {
       await api.post(`/cycles/${bt.cycleId}/buoc-tiep`, {
         chon: 'lo_trinh_moi', route: r, batDau, ...(khac ? { routeTen: ten.trim(), boTarget } : {}), ...(lopKhac && lopMoiId ? { lopMoiId } : {}), ...(tgMoi ? { mucTieu: tgMoi } : {}),
+        ...(mon !== undefined ? { monDangKy: mon } : {}),
       });
       setTt(null);
       const lopDich = lopKhac ? lopDung.find((l) => l.id === lopMoiId)?.code ?? null : xem.data?.lopGiu?.code ?? null;
@@ -115,7 +121,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
     </section>
   );
   /* Lớp đang giữ sai loại (máy chủ báo) → nút tắt NGAY kèm lý do (k2); thiếu tên / chưa chọn lớp → báo sau khi bấm. */
-  const tat = !!(xem.data?.loi && !loiTen && !lopKhac) || (bamLuu && !!lyDoTat);
+  const tat = !!(xem.data?.loi && !loiTen && !lopKhac) || !!loiMon || (bamLuu && !!lyDoTat);
   const nut = <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={tt === 'dang' || tat}>{nutChinh}</button>;
   return (
     <KhungPanel tieuDe={t('Lộ trình mới')} dau={dau} quayLai={quayLai} onDong={onClose}
@@ -134,6 +140,12 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
                 <input className="field w-full" maxLength={80} autoComplete="off" {...lf.o(loiO, 'ten')} value={ten} placeholder={t('Ví dụ: Luyện Speaking 1–1')} onChange={(e) => setTen(e.target.value)} />
               </Truong>
             )}
+          </>
+        ))}
+        {buoc(2, t('Môn học'), (
+          <>
+            <NutMon ariaLabel={t('Môn học')} value={mon !== undefined ? mon : xem.data?.monDangKy ?? null} onChange={setMon} />
+            {loiMon && <p role="alert" className="m-0 text-[13px] text-bad">{loiMon}</p>}
           </>
         ))}
         {buoc(3, <>Target{khac && <span className="font-normal text-slate-500">{t('(không bắt buộc)')}</span>}</>, (

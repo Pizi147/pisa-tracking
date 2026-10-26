@@ -99,8 +99,8 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
   return tx(() => {
     conn.prepare('UPDATE learning_cycles SET mon_dang_ky = ? WHERE id = ?').run(luu, cycleId);
     /* "Không mock lại" đổi lịch cuối tuần là ngoại lệ N15 — đổi môn cũng không phải dời lịch nên không qua khoá T6–CN. */
-    for (const r of tat) setSkillScope(p, r.attempt_id, r.skill, false, LY_DO_KHONG_HOC, { khongMockLai: true });
-    for (const r of bat) setSkillScope(p, r.attempt_id, r.skill, true, null, { khongMockLai: true });
+    for (const r of tat) setSkillScope(p, r.attempt_id, r.skill, false, LY_DO_KHONG_HOC, { khongMockLai: true, monDangKy: true });
+    for (const r of bat) setSkillScope(p, r.attempt_id, r.skill, true, null, { khongMockLai: true, monDangKy: true });
     for (const r of doiTask) conn.prepare(`UPDATE attempt_skills SET bo_task = ? WHERE attempt_id = ? AND skill = 'writing'`).run(boTask, r.attempt_id);
     capNhatConOCho(doiTask.map((r) => r.attempt_id));
     if (caseIds.length) closeCasesBySystem({ actorUserId: p.userId, studentId: cy.student_id, reason: 'khong_con_hoc_mon', on: o.ngay ?? demoToday(), caseIds });

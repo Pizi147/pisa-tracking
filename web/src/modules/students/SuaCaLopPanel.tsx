@@ -5,25 +5,28 @@ import { taoLuot } from '../../lib/luuChac.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
-import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { ErrorState, NutChon, Skeleton, Th } from '../../ui/ui.tsx';
+import { NutMon } from '../../ui/NutMon.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { KCK, LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLoSuaCaLop, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
+import { KCK, chuMon, LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLoSuaCaLop, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { t } from '@shared/i18n/index.ts';
 
-type Cot = 'fullName' | 'dob' | 'email' | 'consultantUserId' | 'phone' | 'parentName' | 'parentRelation' | 'parentPhone' | 'startWeek' | 'examDate' | 'target' | 'baseline';
+type Cot = 'fullName' | 'dob' | 'email' | 'consultantUserId' | 'phone' | 'parentName' | 'parentRelation' | 'parentPhone' | 'startWeek' | 'examDate' | 'target' | 'baseline' | 'monDangKy';
 type DongGoc = {
   studentId: number; fullName: string; dob: string | null; email: string | null; coLoTrinh: boolean;
   /** PR-OV2b: TVV = người; `consultantName` = chữ cũ, chỉ để đọc. */
   consultantUserId: number | null; consultantName: string | null;
   startWeek: string | null; examDate: string | null; target: number | string | null; baseline: number | null;
   phone: string | null; parentName: string | null; parentRelation: string | null; parentPhone: string | null;
+  /** P8 (N13, N22 ④): môn đăng ký — chỉ lộ trình FT (`laFt`); null = đủ môn. */
+  laFt?: boolean; monDangKy?: string[] | null;
 };
 /** `nhapLienHe` (OV-10b): cột Liên hệ — QL / Quản trị; GVCN không thấy (chủ SP 13/10). */
 /** `chiThongTin` (OV-13i): TVV / CX — cột Tuần bắt đầu khoá (ngoài `CHI_SUA_THONG_TIN`). */
-type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[] };
-type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[] };
+type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[]; coMonHoc?: boolean };
+type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[]; monHoc?: { studentId: number; dong: string[] }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
   { key: 'fullName', nhan: 'Họ và tên', rong: 210 }, { key: 'dob', nhan: 'Ngày sinh', rong: 190 },
@@ -32,14 +35,18 @@ const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
   { key: 'parentRelation', nhan: NHAN_LIEN_HE.parentRelation, rong: 110 }, { key: 'parentPhone', nhan: NHAN_LIEN_HE.parentPhone, rong: 150 },
   { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
   { key: 'examDate', nhan: 'Dự kiến thi', rong: 190 }, { key: 'target', nhan: 'Target', rong: 100, so: true },
+  { key: 'monDangKy', nhan: 'Môn học', rong: 290 },
   { key: 'baseline', nhan: 'Điểm đầu vào', rong: 112, so: true },
 ];
 /* Mockup 05/10: cột đủ cho ô đã sửa có ↺ (không cắt chữ). PR-OV2b thêm cột TVV → bảng rộng hơn panel 1440 thì cuộn ngang trong khung bảng. */
 const RONG_LUU_Y = 150;
 /* Ô lộ trình (tuần, dự kiến thi, Target, điểm đầu vào): em chưa có lộ trình thì không sửa được ở đây. */
-const O_LO_TRINH = new Set<Cot>(['startWeek', 'examDate', 'target', 'baseline']);
+const O_LO_TRINH = new Set<Cot>(['startWeek', 'examDate', 'target', 'baseline', 'monDangKy']);
+/* P8: ô Môn học giữ dạng chữ như mọi ô của lưới — '' = đủ môn, còn lại JSON mảng ('[]' = tắt hết → máy chủ báo lỗi tại ô). */
+const chuMonO = (v: readonly string[] | null) => (v === null ? '' : JSON.stringify(v));
+const monCuaO = (v: string): string[] | null => (v ? JSON.parse(v) : null);
 const moiKhoa = () => `suacalop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-const chuGoc = (d: DongGoc, k: Cot) => (d[k] === null || d[k] === undefined ? '' : String(d[k]));
+const chuGoc = (d: DongGoc, k: Cot) => (k === 'monDangKy' ? chuMonO(d.monDangKy ?? null) : d[k] === null || d[k] === undefined ? '' : String(d[k]));
 /** Ô số (Target, điểm đầu vào) nhận dấu phẩy; "6,50" = "6.5" (không tính là đã sửa). OV-9: Target "6,5 kck" = "6.5 KCK". */
 const chuan = (k: Cot, v: string) => {
   const t = v.trim();
@@ -73,16 +80,19 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const [luuRoi, setLuuRoi] = useState<Record<number, Partial<Record<Cot, string>>>>({});
   const [luuDo, setLuuDo] = useState<{ cau: string; lyDo: string } | null>(null);
   const [hoiDong, setHoiDong] = useState(false);
+  /* P8 (mockup k5): chọn em → "Áp cho n em" một bộ môn (chỉ em lộ trình FT); ô từng em vẫn bật / tắt riêng. */
+  const [chon, setChon] = useState<Set<number>>(new Set());
+  const [apMon, setApMon] = useState<string[] | null>(null);
   const lf = useLoiForm();
   const khoa = useRef(moiKhoa());
   const batLuotXem = useRef(taoLuot()).current;
 
   const d = du.data;
-  const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline') && (d?.nhapLienHe || !(TRUONG_LIEN_HE as readonly string[]).includes(c.key)));
+  const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline') && (d?.coMonHoc || c.key !== 'monDangKy') && (d?.nhapLienHe || !(TRUONG_LIEN_HE as readonly string[]).includes(c.key)));
   const goc = useMemo(() => new Map((d?.rows ?? []).map((r) => [r.studentId, r])), [d]);
   /** Cả cột khoá theo vai — máy chủ kiểm lại (`duocDoiTarget`, `CHI_SUA_THONG_TIN`). */
   const khoaCot = (k: Cot) => (k === 'target' && !d?.coTheSuaTarget ? t('Chỉ Quản lý, TVV hoặc CX đổi Target')
-    : k === 'startWeek' && d?.chiThongTin ? t('Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu') : null);
+    : (k === 'startWeek' || k === 'monDangKy') && d?.chiThongTin ? t('Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu, Môn học') : null);
 
   /** Giá trị gốc của ô: đã lưu ở lô trước (lưu dở) thì lấy giá trị đó. */
   const nen = (g: DongGoc, k: Cot) => luuRoi[g.studentId]?.[k] ?? chuGoc(g, k);
@@ -102,7 +112,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
     const r: Record<string, unknown> & { studentId: number } = { studentId: sid };
     for (const [k, v0] of Object.entries(doi)) {
       const v = chuan(k as Cot, v0!);
-      r[k] = k === 'fullName' ? v : v || null;
+      r[k] = k === 'fullName' ? v : k === 'monDangKy' ? monCuaO(v) : v || null;
     }
     return r;
   });
@@ -200,15 +210,29 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                 </Truong>
               </div>
             )}
+            {d.coMonHoc && !d.chiThongTin && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }} role="group" aria-label={t('Áp môn học cho em đã chọn')}>
+                <span className="text-sm font-semibold tabular-nums text-slate-200">{t('{n} em đã chọn', { n: chon.size })}</span>
+                <NutChon nho chon={chon.size > 0 && chon.size === d.rows.filter((r) => r.laFt).length}
+                  onClick={() => setChon(chon.size === d.rows.filter((r) => r.laFt).length ? new Set() : new Set(d.rows.filter((r) => r.laFt).map((r) => r.studentId)))}>
+                  {t('Chọn tất cả · {n}', { n: d.rows.filter((r) => r.laFt).length })}
+                </NutChon>
+                <span className="flex flex-wrap items-center gap-2"><span className="text-xs text-slate-400">{t('Môn học')}</span><NutMon nho ariaLabel={t('Môn học áp cho em đã chọn')} value={apMon} onChange={setApMon} /></span>
+                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!chon.size || apMon?.length === 0}
+                  onClick={() => { for (const sid of chon) datO(sid, 'monDangKy', chuMonO(apMon)); }}>{t('Áp cho {n} em', { n: chon.size })}</button>
+              </div>
+            )}
             {d.nhapLienHe && <datalist id="quan-he-goi-y-lop">{QUAN_HE_GOI_Y.map((x) => <option key={x} value={x} />)}</datalist>}
             <div className="overflow-x-auto">
               <table className="w-full table-fixed text-sm" style={{ minWidth: cot.reduce((n, c) => n + c.rong, 0) + RONG_LUU_Y }}>
                 <colgroup>
+                  {d.coMonHoc && !d.chiThongTin && <col style={{ width: 44 }} />}
                   {cot.map((c) => <col key={c.key} style={{ width: c.rong }} />)}
                   <col style={{ width: RONG_LUU_Y }} />
                 </colgroup>
                 <thead>
                   <tr>
+                    {d.coMonHoc && !d.chiThongTin && <Th><span className="sr-only">{t('Chọn')}</span></Th>}
                     {cot.map((c) => (
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
                         className={c.key === 'fullName' ? 'sticky-col' : ''}
@@ -223,14 +247,21 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                   {d.rows.map((r) => {
                     const doi = daDoi(r.studentId);
                     const mt = xem?.canhBaoMt.find((x) => x.studentId === r.studentId);
+                    const monTom = xem?.monHoc?.find((x) => x.studentId === r.studentId)?.dong ?? [];
                     return (
                       <tr key={r.studentId}>
+                        {d.coMonHoc && !d.chiThongTin && (
+                          <td className="td px-1.5 py-1.5 align-top">
+                            <input type="checkbox" className="h-4 w-4 sm:mt-1.5" aria-label={t('Chọn {ten}', { ten: r.fullName })} disabled={!r.laFt} checked={chon.has(r.studentId)}
+                              onChange={(e) => setChon((s) => { const n = new Set(s); if (e.target.checked) n.add(r.studentId); else n.delete(r.studentId); return n; })} />
+                          </td>
+                        )}
                         {cot.map((c) => {
                           const v = sua[r.studentId]?.[c.key] ?? nen(r, c.key);
                           const daSuaO = doi[c.key] !== undefined;
                           const loi = daSuaO
                             ? vanDe(r.studentId, c.key).find((i) => i.muc === 'loi')?.message ?? null : null;
-                          const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || !!khoaCot(c.key);
+                          const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || !!khoaCot(c.key) || (c.key === 'monDangKy' && !r.laFt);
                           const nhan = `${c.nhan} · ${r.fullName}`;
                           const idLoi = `loi-${r.studentId}-${c.key}`;
                           return (
@@ -246,6 +277,10 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                         onChange={(x) => datO(r.studentId, c.key, x?.kieu === 'tai_khoan' ? String(x.id) : '')} />
                                       {!v && r.consultantName && <span className="mt-0.5 block truncate text-xs text-slate-500" title={r.consultantName}>cũ: “{r.consultantName}”</span>}
                                     </>
+                                  ) : c.key === 'monDangKy' ? (
+                                    r.laFt
+                                      ? <NutMon nho ariaLabel={nhan} value={monCuaO(v)} disabled={khoaO} onChange={(x) => datO(r.studentId, c.key, chuMonO(x))} />
+                                      : <span className="block pt-1.5 text-xs text-slate-500">{t('Chỉ lộ trình FT')}</span>
                                   ) : c.key === 'dob' || c.key === 'startWeek' || c.key === 'examDate' ? (
                                     <ONgay gon kieu={c.key === 'dob' ? 'ngay' : c.key === 'startWeek' ? 'tuan' : 'ngay-hoac-thang'}
                                       value={v} ariaLabel={nhan} invalid={!!loi} moTa={loi ? idLoi : undefined} disabled={khoaO}
@@ -265,7 +300,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                 </span>
                                 {daSuaO && (
                                   <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[32px] justify-center px-0 sm:min-h-[28px] sm:min-w-[28px] sm:px-1"
-                                    title={`Hoàn tác — về "${nen(r, c.key) || 'trống'}"`} aria-label={`Hoàn tác ${nhan}`}
+                                    title={`Hoàn tác — về "${c.key === 'monDangKy' ? chuMon(monCuaO(nen(r, c.key))) : nen(r, c.key) || 'trống'}"`} aria-label={`Hoàn tác ${nhan}`}
                                     onClick={() => hoanTac(r.studentId, c.key)}>↺</button>
                                 )}
                               </div>
@@ -274,7 +309,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                           );
                         })}
                         <td className="td px-2 py-1.5 align-top text-xs">
-                          {mt ? <span className="text-soon">{mt.cau}</span>
+                          {monTom.length ? <span className="text-soon">{monTom.join(' · ')}</span>
+                            : mt ? <span className="text-soon">{mt.cau}</span>
                             : Object.keys(doi).length ? <span className="inline-flex items-center gap-1.5 text-slate-300"><span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: 'rgb(var(--soon-rgb))' }} />đã sửa</span>
                             : <span className="text-slate-500">—</span>}
                         </td>

@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, NO_SHOW_OVERRIDDEN_NOTE,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE,
   CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
@@ -302,6 +302,8 @@ export function weekStartOf(attempt: any): string | null {
 
 export type SkillCell = {
   skill: EntrySkill;
+  /** P8 (N13): em không học ô này (môn đăng ký) — web vẽ "Không học", không nhận gõ, không là nợ / việc. */
+  khongHoc?: boolean;
   /** PR-XLMT (rà #126): ô này là VIỆC nhập điểm của người xem (khác quyền sửa `canEdit`). */
   viec: boolean;
   assessedSkill: AssessedSkill;
@@ -550,6 +552,7 @@ export function skillCells(
 
     return {
       skill,
+      ...(!required && (skill === boTask || scheduleRow.scope_reason === LY_DO_KHONG_HOC) ? { khongHoc: true } : {}),
       assessedSkill: assessed,
       required,
       rawScore: row?.raw_score ?? null,

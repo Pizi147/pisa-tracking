@@ -274,7 +274,7 @@ export default function StudentDetailPage() {
             </div>
           </div>
           {data.archivedAt ? <TomTatLuuTru studentId={data.id} target={cy?.target ?? null} kck={!!cy?.khongCamKet} ketThuc={data.finishedAt ?? null} />
-            : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} />}
+            : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} mon={cy?.monHoc ?? null} />}
           <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} />
         </header>
       </div>
@@ -296,7 +296,7 @@ export default function StudentDetailPage() {
       {data.currentClass && <DaiXetLai classId={data.currentClass.id} studentId={data.id} />}
 
       {/* UI-HO-SO-HV: ô điểm to Overall · L · R · W1 · W2 · S — bấm đổi kỹ năng của Hành trình + Case & PA (khu c `.diem-dau`). */}
-      {cy && skillRows && <DiemDau rows={skillRows} attempts={data.attempts} ketQuaId={data.dauHoSo?.o?.ketQua?.kq?.attemptId ?? null} chon={chon} onChon={chonKn} homNay={homNay} />}
+      {cy && skillRows && <DiemDau rows={skillRows} attempts={data.attempts} ketQuaId={data.dauHoSo?.o?.ketQua?.kq?.attemptId ?? null} chon={chon} onChon={chonKn} homNay={homNay} mon={cy.monDangKy ?? null} />}
 
       {/* UI-HO-SO-HV: thanh Việc cần làm — chỗ DUY NHẤT có việc; bấm = mở đúng chỗ làm ngay tại trang. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />

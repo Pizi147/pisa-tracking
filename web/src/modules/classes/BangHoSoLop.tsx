@@ -6,7 +6,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { fmtBand, skillShort } from '../../lib/format.ts';
 import { Bang, OBang } from '../../ui/Bang.tsx';
-import { ODiem } from '../../ui/ODiem.tsx';
+import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
@@ -34,7 +34,7 @@ type CaseLop = {
   ownerName: string | null; detectedAt: string; interventionCount: number;
 };
 type Hang = RosterRow & { lichThi?: LichThi; standing?: KetQuaVao | null };
-type Moc = RosterRow['history'][number] & { writing?: number | null; expectation?: number | null };
+type Moc = RosterRow['history'][number] & { writing?: number | null; expectation?: number | null; khongHoc?: string[]; khongDuBoMon?: boolean };
 type Loc = 'tat-ca' | 'sos' | 'thieu';
 /* Chip lọc — cùng dáng chip của `CongTacKhung` (kieu chip). */
 const CHIP_CHON = 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]';
@@ -100,6 +100,10 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
 
   const oDiem = (r: Hang, h: Moc | null, k: 'l' | 'r' | 'w' | 's' | 'ovr') => {
     if (!h) return <span className="text-faint">—</span>;
+    /* P8 (mockup k6): môn em không học → "Không học"; Overall thiếu bộ môn → "Không đủ bộ môn" (khác "—" chưa điểm). */
+    const kh = h.khongHoc ?? [];
+    if (k === 'w' ? kh.includes('writing1') && kh.includes('writing2') : k !== 'ovr' && kh.includes(k === 'l' ? 'listening' : k === 'r' ? 'reading' : 'speaking')) return <OKhongHoc nhan={k.toUpperCase()} />;
+    if (k === 'ovr' && h.overall == null && h.khongDuBoMon) return <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>;
     const v = k === 'ovr' ? h.overall : k === 'w' ? h.writing ?? null : h.bands?.[k === 'l' ? 'listening' : k === 'r' ? 'reading' : 'speaking'] ?? null;
     const o = <ODiem kieu="to" so={v === null ? null : fmtBand(v)} kq={h.lichSu ? null : soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
     if ((k !== 'w' && k !== 's') || v === null) return o;

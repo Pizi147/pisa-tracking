@@ -3,6 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
+import { NhanKq } from '../../ui/Nhan.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
@@ -38,10 +39,12 @@ const luotTruc = (attempts: Luot[]) => attempts.filter((a) => a.status !== 'canc
  * Case & PA (`aria-pressed`). Số từ máy chủ: Overall = lượt "Kết quả gần nhất" (`dauHoSo.o.ketQua`), kỹ năng = hàng bảng kỹ năng (`band`, `trend`,
  * `expectation` của chính lượt). ✓ / ✗ so kỳ vọng của lượt (`soKyVong`, cùng ô điểm bảng lớp). Kỹ năng dời do vắng: dòng phụ "vắng W3 SEP" (7.4).
  */
-export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay }: {
+export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = null }: {
   rows: SkillBoardRow[]; attempts: Luot[]; ketQuaId: number | null; chon: ChonKn; onChon: (k: ChonKn) => void; homNay: string | null;
+  /** P8 (mockup k7): môn đăng ký của lộ trình (null = đủ) — hồ sơ chỉ vẽ ô môn em học; Overall thiếu bộ môn ghi "Không đủ bộ môn". */
+  mon?: readonly string[] | null;
 }) {
-  const ds = rows.filter((r) => !r.tuLopTruoc);
+  const ds = rows.filter((r) => !r.tuLopTruoc && (!mon || r.ratio || mon.includes(r.category)));
   if (!ds.length) return null;
   const ratio = ds.some((r) => r.ratio);
   const a = attempts.find((x) => x.id === ketQuaId) ?? null;
@@ -52,9 +55,10 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay }: {
       className={`grid gap-2.5 ${ratio ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 min-[900px]:grid-cols-[1.2fr_repeat(5,1fr)] [&>*:first-child]:max-[899px]:col-span-3'}`}>
       {!ratio && (
         <ODiemTo nhan={a ? `Overall · ${tenLuot(a)}` : 'Overall'} chon={chon === OVERALL} onClick={() => onChon(OVERALL)}
-          phu={a?.overall != null ? [a.expectation != null ? t('kỳ vọng {kv}', { kv: fmtBand(a.expectation) }) : null,
+          phu={mon && a && a.overall == null ? null : a?.overall != null ? [a.expectation != null ? t('kỳ vọng {kv}', { kv: fmtBand(a.expectation) }) : null,
             truoc?.overall != null ? (truoc.overall === a.overall ? `= ${tenLuot(truoc)}` : `${tenLuot(truoc)} ${fmtBand(truoc.overall)}${lech(a.overall, truoc.overall)}`) : null].filter(Boolean).join(' · ') : t('chưa có điểm')}>
-          <ODiem kieu="lon" so={a?.overall != null ? fmtBand(a.overall) : null} kq={soKyVong(a?.overall, a?.expectation)} nhan="Overall" kyVong={a?.expectation != null ? fmtBand(a.expectation) : undefined} />
+          {mon && a && a.overall == null ? <span className="py-1.5"><NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq></span>
+            : <ODiem kieu="lon" so={a?.overall != null ? fmtBand(a.overall) : null} kq={soKyVong(a?.overall, a?.expectation)} nhan="Overall" kyVong={a?.expectation != null ? fmtBand(a.expectation) : undefined} />}
         </ODiemTo>
       )}
       {ds.map((r) => {

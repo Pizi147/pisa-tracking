@@ -18,6 +18,8 @@ import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 
 export type Cell = {
   skill: EntrySkill;
+  /** P8 (N13): em không học ô này — "Không học", không nhận gõ. */
+  khongHoc?: boolean;
   /** OV-1d: em đã Lưu trữ — câu "vì sao chỉ đọc" của máy chủ (chỉ lưới chấm FT gửi). */
   lyDoKhoa?: string;
   /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ; vắng mặt / null = gõ "-" được. */

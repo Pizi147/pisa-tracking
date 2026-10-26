@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { Bang, OBang } from '../../ui/Bang.tsx';
-import { ODiem } from '../../ui/ODiem.tsx';
+import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
+import { NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DeadlinePill, KHOA_HOAN_TAT_HINT, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
@@ -167,6 +168,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     );
   }
   const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem));
+  /* P8 (mockup k6): chú giải ở hàng công cụ chỉ khi lưới có ô "Không học". */
+  const coKhongHoc = rows.some((r) => r.cells.some((c) => c.khongHoc));
   /* UI-LICH-TUAN (#31, như Kế hoạch Test #534): lớp dài ở Lịch tuần hiện 10 em đầu + "Hiện tất cả n"; mở từ việc / em (kn, hv) thì hiện hết. */
   const gonHv = lich && !hetHv && hv === null && !kn && rows.length > 12;
   const rowsHien = gonHv ? rows.slice(0, 10) : rows;
@@ -220,7 +223,12 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng (công cụ ngoài khung — BANG-1). */}
     {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
-    {suaS && dot && hien('speaking') && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
+    {(coKhongHoc || (suaS && dot && hien('speaking'))) && (
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 px-3 pb-1">
+        {coKhongHoc && <ChuGiaiKhongHoc />}
+        {suaS && dot && hien('speaking') && <NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
+      </div>
+    )}
     {/* gon (Điểm theo lớp / Lịch Test) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng hơn khung → cuộn ngang trong khung. */}
     <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={rowsHien} khoa={(r) => r.attemptId} day the375={false} khung={false} dinh={gon ? '1440' : false}
       hangRieng={(r) => (
@@ -418,8 +426,10 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
       {cot.ovr && (
         <OBang c={cc.ovr}>
           {/* NEN (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
-          <ODiem so={row.result.overall != null ? fmtBand(row.result.overall) : null} kq={soKyVong(row.result.overall, row.result.expectation)}
-            nhan="Overall" kyVong={row.result.expectation != null ? fmtBand(row.result.expectation) : undefined} />
+          {/* P8 (mockup k6): thiếu bộ môn vì môn đăng ký → nhãn kết quả viền đứt "Không đủ bộ môn" (khác "—" chưa điểm). */}
+          {row.result.overall == null && row.result.khongDuBoMon ? <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>
+            : <ODiem so={row.result.overall != null ? fmtBand(row.result.overall) : null} kq={soKyVong(row.result.overall, row.result.expectation)}
+              nhan="Overall" kyVong={row.result.expectation != null ? fmtBand(row.result.expectation) : undefined} />}
         </OBang>
       )}
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
@@ -618,4 +628,15 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
   if (tt === 'dang-luu') return <span className={`${cho} text-[12px] text-slate-500`} title={t('Đang lưu')}>…</span>;
   if (tt === 'da-luu') return <span className={`${cho} text-[12px] text-done`} title={t('Đã lưu')}>✓</span>;
   return null;
+}
+
+/** P8 (mockup k6 `.chu-giai`): ba trạng thái ô đọc theo chữ, không chỉ màu — "-" vắng · "Không học" · "—" chưa có điểm. */
+function ChuGiaiKhongHoc() {
+  return (
+    <span className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs text-slate-400" aria-label={t('Chú giải ô điểm')}>
+      <span><b className="font-bold tabular-nums text-slate-200">-</b> {t('vắng')}</span>
+      <span><OKhongHoc /> {t('em không học môn này')}</span>
+      <span><span className="text-faint">—</span> {t('chưa có điểm')}</span>
+    </span>
+  );
 }
