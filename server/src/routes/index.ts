@@ -1593,15 +1593,14 @@ api.get('/classes/:id/ket-qua-dau-ra', requireAuth, wrap((req) => {
   return kyVongSvc.kqdrLopFt(principalOf(req), pInt(req, 'id'));
 }));
 
-/** OV-12g: hồ sơ lớp › Học viên › Góp ý hàng tuần — tuần đang xem + 3 tuần trước; ghi một ô (chữ trống = xoá). Quyền kiểm ở máy chủ. */
+/** OV-12g: Góp ý hàng tuần (chỉ đọc từ 27/10) — tuần đang xem + 3 tuần trước. */
 api.get('/classes/:id/gop-y', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return gopYSvc.gopYTuan(principalOf(req), pInt(req, 'id'), qStr(req, 'tuan'));
 }));
-// Góp ý hàng tuần gỡ khỏi giao diện 24/10 — giữ để Lịch sử đọc
-api.put('/classes/:id/gop-y', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return gopYSvc.ghiGopYTuan(principalOf(req), pInt(req, 'id'), req.body ?? {});
+// R1-NO-NHO (D14, chủ SP 27/10): góp ý tuần chỉ đọc — ghi khoá với mọi vai, dữ liệu cũ + Lịch sử giữ.
+api.put('/classes/:id/gop-y', requireAuth, wrap(() => {
+  throw loi(403, 'Góp ý tuần đã chuyển sang chỉ đọc.');
 }));
 
 /** ⋮ Sửa thông tin lớp: mã lớp, LT (FT), ghi chú; chương trình chỉ khi lớp chưa có học viên và bài Test. */

@@ -24,6 +24,14 @@ export async function runPrOv15gTests(t: YThucTestKit) {
   const QL = P.mbManager.userId as number;
   const tenQl = one('SELECT full_name n FROM users WHERE id = ?', QL).n as string;
   const lop = one(`SELECT id FROM classes WHERE code = 'MB FT 101'`).id as number;
+  /** Nhật ký góp ý tuần cũ (ghi đã khoá — R1-NO-NHO, D14): cùng dạng `gop_y_tuan.ghi` đường ghi cũ để Lịch sử đọc. */
+  const { writeAudit } = await import('../platform/audit.ts');
+  const { tuanLich } = await import('../../../shared/domain/index.ts');
+  const { mondayOf } = await import('../platform/week.ts');
+  const gopYCu = (sid: number, nhan: string, cu: string | null, moi: string) => writeAudit({
+    actorUserId: QL, action: 'gop_y_tuan.ghi', entityType: 'student', entityId: sid,
+    entityLabel: `MB FT 101 · ${tuanLich(mondayOf(TODAY), TODAY)} · ${nhan}`, before: cu === null ? null : { noiDung: cu }, after: { noiDung: moi },
+  });
   const lopThuong = one(`SELECT id FROM classes WHERE code = 'MB FOU 12'`).id as number;
 
   const may = createApp().listen(0);
@@ -112,21 +120,18 @@ export async function runPrOv15gTests(t: YThucTestKit) {
       assert(d.truong.map((x) => x.doiTuong ?? x.ten).sort().join('|') === 'OV15g Em A|OV15g Em B', JSON.stringify(d.truong));
     });
 
-    await checkAsync('OV15g-5 · Góp ý tuần: ghi rồi sửa dài → mục mới nhất "cũ → mới" đủ chữ (không cắt), có tên HV; lưu lại nguyên → không thêm', async () => {
+    await checkAsync('OV15g-5 · Góp ý tuần (nhật ký cũ): ghi rồi sửa dài → mục mới nhất "cũ → mới" đủ chữ (không cắt), có tên HV', async () => {
       const dai = 'Em nghe tốt phần 1, cần luyện thêm dạng bản đồ và điền bảng; về nhà làm lại hai đề Cambridge 18 và ghi lại từ sai vào sổ từ vựng.';
       assert(dai.length > 120, 'chữ dài > 120');
-      await ghi(QL, `/classes/${lop}/gop-y`, 'PUT', { studentId: a, tuan: TODAY, skill: 'listening', noiDung: 'Ngắn' });
-      await ghi(QL, `/classes/${lop}/gop-y`, 'PUT', { studentId: a, tuan: TODAY, skill: 'listening', noiDung: dai });
+      gopYCu(a, 'Listening', null, 'Ngắn');
+      gopYCu(a, 'Listening', 'Ngắn', dai);
       const r = await ls('gop-y', lop);
       const f = r.dong[0]?.truong[0];
       assert(f && f.cu === 'Ngắn' && f.moi === dai && (f.doiTuong ?? f.ten).includes('OV15g Em A'), JSON.stringify(r.dong[0]));
-      const n = r.dong.length;
-      await ghi(QL, `/classes/${lop}/gop-y`, 'PUT', { studentId: a, tuan: TODAY, skill: 'listening', noiDung: dai });
-      assert((await ls('gop-y', lop)).dong.length === n, 'lưu lại nguyên không thêm mục');
     });
 
     await checkAsync('OV15g-6 · Phân trang: 22 lần sửa góp ý → trang 20 + "tiep"; trang sau nối tiếp, không trùng không sót', async () => {
-      for (let i = 0; i < 22; i += 1) await ghi(QL, `/classes/${lop}/gop-y`, 'PUT', { studentId: b, tuan: TODAY, skill: 'reading', noiDung: `Lần ${i}` });
+      for (let i = 0; i < 22; i += 1) gopYCu(b, 'Reading', i ? `Lần ${i - 1}` : null, `Lần ${i}`);
       const p1 = await ls('gop-y', lop);
       assert(p1.dong.length === 20 && p1.tiep !== null, `trang 1: ${p1.dong.length} · tiep ${p1.tiep}`);
       const p2 = await ls('gop-y', lop, `&tiep=${p1.tiep}`);

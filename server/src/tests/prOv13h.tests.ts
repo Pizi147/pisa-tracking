@@ -267,12 +267,14 @@ export async function runPrOv13hTests(t: YThucTestKit) {
   }));
 
   // ------------------------------------------------------------------ 6 · góp ý tuần lớp đã kết thúc
-  await checkAsync('OV13h-6 · lớp đã kết thúc: GV L ghi góp ý L → 200 + nhật ký gop_y_tuan.ghi; GV W1 ghi cột L → 403', lopTam(FT101, () => voiMayChu(TODAY, async (goi) => {
+  /* R1-NO-NHO (D14): góp ý tuần chỉ đọc — lớp đã kết thúc GV L cũng 403, không nhật ký mới. */
+  await checkAsync('OV13h-6 · lớp đã kết thúc: góp ý tuần chỉ đọc — GV L, GV W1 ghi → 403, không nhật ký gop_y_tuan.ghi', lopTam(FT101, () => voiMayChu(TODAY, async (goi) => {
     const em = one(`SELECT student_id FROM enrollments WHERE class_id = ? ORDER BY id LIMIT 1`, FT101).student_id as number;
     const than = (noiDung: string) => put({ tuan: TODAY, skill: 'listening', studentId: em, noiDung });
+    const truoc = nk('gop_y_tuan.ghi', gvL, em);
     await ma(await goi(gvW, `/classes/${FT101}/gop-y`, than('GV W1 ghi cột L')), 403, 'GV khác môn');
-    await ma(await goi(gvL, `/classes/${FT101}/gop-y`, than('Nghe sót số liệu, cần luyện Part 1.')), 200, 'GV L ghi góp ý lớp kết thúc');
-    assert(nk('gop_y_tuan.ghi', gvL, em) >= 1, 'thiếu nhật ký gop_y_tuan.ghi');
+    await ma(await goi(gvL, `/classes/${FT101}/gop-y`, than('Nghe sót số liệu, cần luyện Part 1.')), 403, 'GV L — chỉ đọc');
+    assert(nk('gop_y_tuan.ghi', gvL, em) === truoc, 'có nhật ký gop_y_tuan.ghi mới');
   })));
 
   // ------------------------------------------------------------------ 7 · thi thật em Lưu trữ · đề xuất sửa em Tạm dừng

@@ -1,18 +1,14 @@
 /**
- * GÓP Ý HÀNG TUẦN (PR-OV12g, đặc tả OV-12 mục 7 điểm 10, mockup 4 phương án A) — hồ sơ lớp › Học viên › cách xem "Góp ý hàng tuần".
- * Một ô chữ mỗi em × lớp × tuần × kỹ năng (bảng `gop_y_tuan`); không bắt buộc, không việc, không thông báo.
- *
- * QUYỀN (máy chủ, kiểm mỗi lần lưu): GV được phân công dạy kỹ năng ở lớp → ô kỹ năng đó (FT: W1 hoặc W2 → ô W); GVCN → mọi ô;
- * Quản lý / Quản trị (`class.edit` của lớp) → mọi ô; TVV / CX / Admin / GV khác → chỉ đọc (đọc theo quyền xem lớp như bảng học viên).
- * Lớp đã kết thúc: chỉ Quản lý / Quản trị ghi (như điểm — OV-11g).
+ * GÓP Ý HÀNG TUẦN (PR-OV12g) — một ô chữ mỗi em × lớp × tuần × kỹ năng (bảng `gop_y_tuan`).
+ * Chỉ đọc từ 27/10 (chủ SP, D14) — ghi đã khoá (`PUT /classes/:id/gop-y` → 403); dữ liệu cũ + Lịch sử `loai=gop-y` giữ.
+ * Quyền `cotCua` vẫn dùng cho Tiến độ trên lớp (`students/baiTrenLop.ts`): GV dạy kỹ năng → ô đó (FT: W1 / W2 → W); GVCN, Quản lý / Quản trị → mọi ô.
  */
-import { db, tx } from '../db.ts';
-import { GOP_Y_SO_TUAN, GOP_Y_TOI_DA, PERMISSIONS, tenMonNgan, tuanLich } from '../../../shared/domain/index.ts';
+import { db } from '../db.ts';
+import { GOP_Y_SO_TUAN, PERMISSIONS, tenMonNgan, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt } from '../util.ts';
+import { addDays, isIsoDate, notFound } from '../util.ts';
 import { activeAt, can, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
-import { writeAudit } from '../platform/audit.ts';
-import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { mondayOf } from '../platform/week.ts';
 import { boMonCt } from '../normal/regular.ts';
 
 type Lop = { id: number; code: string; programme_code: string | null; status: string };
@@ -24,7 +20,7 @@ export function docLop(classId: number): Lop {
   return c;
 }
 
-/** Cột của lớp (FT L R W S; lớp thường theo môn chương trình) + GV phân công + người xem ghi được không — một nguồn cho đọc và ghi. */
+/** Cột của lớp (FT L R W S; lớp thường theo môn chương trình) + GV phân công + người xem ghi được không (Tiến độ trên lớp dùng chung). */
 export function cotCua(p: Principal, c: Lop, today: string): CotGopY[] {
   const quanLy = can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id });
   const laGv = p.roleKeys.includes('teacher');   // OV-13h (chủ SP 15/10): lớp đã kết thúc GV / GVCN vẫn ghi góp ý
@@ -71,42 +67,4 @@ export function gopYTuan(p: Principal, classId: number, tuan?: string | null) {
     cot: cotCua(p, c, today), o,
     ganNhat: gan ? { weekStart: gan.week_start, code: tuanLich(gan.week_start, today), soEm: gan.so } : null,
   };
-}
-
-/** PUT /classes/:id/gop-y { studentId, tuan, skill, noiDung } — ghi / sửa; chữ trống = xoá ô. Ngoài quyền → 403. */
-export function ghiGopYTuan(p: Principal, classId: number, body: Record<string, unknown>) {
-  const c = docLop(classId);
-  const today = demoToday();
-  const tuan = body.tuan;
-  if (!isIsoDate(tuan)) throw badRequest('Tuần không hợp lệ.');
-  const w = mondayOf(tuan);
-  if (w > mondayOf(today)) throw badRequest('Chưa tới tuần này — chỉ ghi góp ý từ tuần này trở về trước.');
-  const cot = cotCua(p, c, today).find((k) => k.skill === body.skill);
-  if (!cot) throw badRequest('Kỹ năng không thuộc lớp này.');
-  if (!cot.ghiDuoc) throw forbidden(`Bạn không ghi được góp ý ${cot.nhan} của lớp ${c.code} — chỉ GV dạy ${cot.nhan}, GVCN hoặc Quản lý.`);
-  const noiDung = chuTuDo(body.noiDung ?? null, 'Góp ý', GOP_Y_TOI_DA);
-  const sid = toInt(body.studentId);
-  const conn = db();
-  if (!sid || !conn.prepare('SELECT 1 AS c FROM enrollments WHERE student_id = ? AND class_id = ? LIMIT 1').get(sid, c.id)) {
-    throw badRequest('Học viên không học lớp này.');
-  }
-  return tx(() => {
-    const pid = ensurePeriod(w).id;
-    const cu = conn.prepare('SELECT id, noi_dung, ghi_luc FROM gop_y_tuan WHERE student_id = ? AND class_id = ? AND period_id = ? AND skill = ?')
-      .get(sid, c.id, pid, cot.skill) as { id: number; noi_dung: string; ghi_luc: string } | undefined;
-    if ((cu?.noi_dung ?? null) === noiDung) return { noiDung, ghiBoi: p.fullName, ghiLuc: cu?.ghi_luc ?? null };
-    const luc = nowIso();
-    if (noiDung === null) conn.prepare('DELETE FROM gop_y_tuan WHERE id = ?').run(cu!.id);
-    else {
-      conn.prepare(
-        `INSERT INTO gop_y_tuan (student_id, class_id, period_id, skill, noi_dung, ghi_boi, ghi_luc) VALUES (?,?,?,?,?,?,?)
-         ON CONFLICT(student_id, class_id, period_id, skill) DO UPDATE SET noi_dung = excluded.noi_dung, ghi_boi = excluded.ghi_boi, ghi_luc = excluded.ghi_luc`,
-      ).run(sid, c.id, pid, cot.skill, noiDung, p.userId, luc);
-    }
-    writeAudit({
-      actorUserId: p.userId, action: noiDung === null ? 'gop_y_tuan.xoa' : 'gop_y_tuan.ghi', entityType: 'student', entityId: sid,
-      entityLabel: `${c.code} · ${tuanLich(w, today)} · ${cot.nhan}`, before: cu ? { noiDung: cu.noi_dung } : null, after: noiDung === null ? null : { noiDung },
-    });
-    return { noiDung, ghiBoi: p.fullName, ghiLuc: luc };
-  });
 }
