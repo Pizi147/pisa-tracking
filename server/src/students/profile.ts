@@ -5,7 +5,7 @@ import {
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
+  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
   coONhapLienHe, type LienHe } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -521,6 +521,7 @@ function dongThongTin(i: {
     const lich = trangThaiLichThi(dangChay, i.keSel && i.keSel.cycleId === dangChay.id ? i.keSel.ke : examPlanOf(dangChay), today);
     if (lich.trangThai !== 'chua-co') thiDuKien = tachNhanLichThi(lich, today);
   }
+  const ktDang = dangChay && !dangChay.route ? kyThiCuaChuongTrinh(dangChay.programme_code) : null;
   return {
     lop: current.class_code as string, lopId: current.class_id as number,
     /* FT: lộ trình LT1/RF… · lớp thường: mã chương trình. */
@@ -528,6 +529,8 @@ function dongThongTin(i: {
     /* OV-9: Target và dấu KCK tách — "6.5 · KCK", KCK chưa có Target "— · KCK". */
     target: (dangChay?.target_score as number | null | undefined) ?? null, kck: !!dangChay?.khong_cam_ket,
     tuanHoc, thiDuKien, thiIelts, lopThuong: !!khoa, gvcn: i.gvcn, tamDung,
+    /* P13 KET-PET: Target điểm Cambridge (không định dạng band) + kết quả thi thật (Overall · Grade · CEFR, tính khi hiện). */
+    ...(ktDang ? { kyThi: { ten: ktDang.ten, min: ktDang.min, max: ktDang.max }, thiThat: ketQuaKyThi(ktDang, dangChay) } : {}),
   };
 }
 
@@ -914,6 +917,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       ? {
         id: selected.id, studentId, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
+        /** P13 KET-PET: kỳ thi Cambridge của lộ trình (KET / PET) — Target + thi thật theo thang này; null = không kỳ thi. */
+        kyThi: !selected.route ? kyThiCuaChuongTrinh(selected.programme_code) : null,
         /* OV-6b1: tuần MT của lớp em đang học — web báo trước "MT sẽ dời" bằng đúng lịch này (`cauMtSeDoi`). */
         lichMt: lichMtCua(enrollments.find((e) => e.status === 'active'), selected.route),
         target, khongCamKet: !!selected.khong_cam_ket, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,

@@ -9,7 +9,7 @@ import { can, require_, type Ctx, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
-  docDiemXuatPhat, docDuKienThi, docTarget, docTuanBatDau, duocDoiTarget, loiDoiTarget, reviseTarget, setBaseline, updateCycle,
+  docDiemXuatPhat, docDuKienThi, docTargetCua, docTuanBatDau, duocDoiTarget, loiDoiTarget, reviseTarget, setBaseline, updateCycle,
 } from '../fasttrack/cycles.ts';
 import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 import { lichMtCua } from './schedule.ts';
@@ -145,7 +145,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     }
     let doiTarget = false;
     if (r.target !== undefined) {
-      const t = thu('target', () => docTarget(r.target));
+      const t = thu('target', () => docTargetCua(c, r.target));   // P13: KET / PET theo thang Cambridge
       doiTarget = !t || !c || t.target !== (c.target_score ?? null) || t.kck !== !!c.khong_cam_ket;
       if (doiTarget && !duocDoiTarget(p, { studentId: s.id })) throw new HttpError(403, CHI_QL_DOI_TARGET);
       /* OV-13o: luật lúc lưu (CX đổi KCK, chương trình liên tục) báo ngay ở xem trước, đúng dòng — cùng hàm với `reviseTarget`. */

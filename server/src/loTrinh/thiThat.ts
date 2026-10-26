@@ -4,7 +4,7 @@
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
 import { db, theoLo, tx } from '../db.ts';
-import { PERMISSIONS, canNamGan, diemThiHopLe, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, canNamGan, diemThiHopLe, kiemDiemKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
@@ -49,9 +49,15 @@ export function coTheGiaHanSauThi(p: Principal, c: { id: number; student_id: num
   return giaiDoan === 'cho_buoc_tiep' && coQuyenBuocTiep(p, c.student_id);
 }
 
-const docDiem = (v: unknown, nhan: string): number | null => {
+/** `kt` (P13 KET-PET): điểm Cambridge — số nguyên trong thang, lỗi gắn ô (`details.o` = l / r / w / s). Không có `kt` → band IELTS như cũ. */
+const docDiem = (v: unknown, nhan: string, kt: KyThi | null = null): number | null => {
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
+  if (kt) {
+    const loi = kiemDiemKyThi(kt, n);
+    if (loi) throw badRequest(`${nhan}: ${loi}`, { o: nhan.toLowerCase() });
+    return n;
+  }
   if (!Number.isFinite(n) || !diemThiHopLe(n)) throw badRequest(`${nhan}: điểm từ 0 đến 9, bước 0.5.`);
   return n;
 };
@@ -60,7 +66,10 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh nhập được kết quả thi thật.');
-  if (!c.route) throw badRequest('Chỉ lộ trình Fast Track có kết quả thi thật.');
+  /* P13 KET-PET: lộ trình KET / PET có kết quả thi thật theo điểm Cambridge — chỉ 4 cột + Target lúc nhập; KHÔNG kết luận / Overall band (`outcome*`),
+     không bản chụp, không Bước tiếp (luồng FT lọc `route IS NOT NULL`). Overall · Grade · CEFR tính khi hiện (`ketQuaKyThi`). */
+  const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+  if (!c.route && !kt) throw badRequest('Chỉ lộ trình Fast Track có kết quả thi thật.');
   if ((db().prepare(`SELECT ly_do FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1`).get(cycleId) as any)?.ly_do === 'chuyen_lop') throw badRequest('Lộ trình đóng vì chuyển lớp — em không đi thi.');
   const homNay = demoToday();
   const khongThi = input.khongThi === true;
@@ -72,11 +81,11 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
   }
   const cu: Diem = { l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null };
   const moi: Diem = { ...cu };
-  for (const k of DIEM) if ((input as any)[k] !== undefined) moi[k] = docDiem((input as any)[k], k.toUpperCase());
+  for (const k of DIEM) if ((input as any)[k] !== undefined) moi[k] = docDiem((input as any)[k], k.toUpperCase(), kt);
   const ghiChu = input.ghiChu === undefined ? c.outcome_note ?? null : chuTuDo(input.ghiChu, 'Ghi chú', 1000);
   /* "Không thi" bỏ qua điểm: không giữ điểm gõ dở cạnh một lộ trình không thi. */
   const ghi: Diem = khongThi ? { l: null, r: null, w: null, s: null } : moi;
-  const kq = thiThatCuaCycle({
+  const kq = kt ? { ketLuan: null, ovr: null } : thiThatCuaCycle({
     laFt: true, target: c.target_score ?? null, khongCamKet: !!c.khong_cam_ket, ...ghi, khongThi, outcome: null, outcomeScore: null,
   });
   const ngayLuu = khongThi ? null : ngayThi;
@@ -88,7 +97,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
       .run(ngayLuu, ghi.l, ghi.r, ghi.w, ghi.s, khongThi ? 1 : 0, p.userId, nowIso(), kq.ketLuan, kq.ovr, ghiChu, c.target_score ?? null, cycleId);
     /* Lộ trình đã đóng → bản chụp MỚI NHẤT theo kết quả mới; so với Target TRONG bản chụp (Target lúc đóng), không phải Target hiện tại. */
     const bc = conn.prepare('SELECT * FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1').get(cycleId) as any;
-    if (c.status !== 'active' && bc) {
+    if (!kt && c.status !== 'active' && bc) {
       const k2 = thiThatCuaCycle({ laFt: true, target: bc.target ?? null, khongCamKet: !!bc.khong_cam_ket, ...ghi, khongThi, outcome: null, outcomeScore: null });
       conn.prepare(`UPDATE ban_chup_lo_trinh SET thi_that_ngay = ?, thi_that_l = ?, thi_that_r = ?, thi_that_w = ?, thi_that_s = ?, thi_that_ovr = ?, thi_that_khong_thi = ?,
           thi_that_nhap_boi = ?, thi_that_nhap_luc = ?, ket_luan = ?, lam_moi_luc = ? WHERE id = ?`)

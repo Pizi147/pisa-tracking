@@ -54,7 +54,8 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   /** OV-8b: có `student.edit_more` (TVV / CX) — Kết quả thi thật. */
   suaThem?: boolean;
   lopHoc?: { quyen: LopHocQuyen; chiXem?: boolean } | null;
-  cycle: { ratio?: boolean } | null;
+  /** P13: `kyThi` (KET / PET) — lớp thường có Kết quả thi thật theo điểm Cambridge. */
+  cycle: { ratio?: boolean; kyThi?: unknown } | null;
   status?: string;
   /** PR-XOA: chỉ Quản trị hệ thống. */
   coTheXoa?: boolean;
@@ -79,7 +80,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   /* OV-11d (HV-15): GVCN (`canEdit`) gửi đề xuất Target ngay ở Sửa thông tin — không thêm cửa thứ hai; GVBM giữ mục này. */
   if (deXuatSua && dangHoc && !canEdit) sau.push('de-xuat-sua');
   if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');
-  if ((canEdit || suaThem) && cycle && !ratio && !chiXem) sau.push('outcome');
+  if ((canEdit || suaThem) && cycle && (!ratio || !!cycle.kyThi) && !chiXem) sau.push('outcome');
   /* P7: Quay lại học — em tạm dừng (`quayLai`) hoặc em đã kết thúc (`hocLai`, Quản lý). */
   if ((quyen?.quayLai && status === 'inactive') || (quyen?.hocLai && status === 'finished')) sau.push('quay-lai');
   /* OV-13j: ai sửa được thông tin em thì xem được lịch sử sửa (cả khi hồ sơ đã Lưu trữ — chỉ xem). */

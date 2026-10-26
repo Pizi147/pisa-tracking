@@ -10,7 +10,7 @@ import { hasAssignment, type Principal } from '../permissions.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { CHI_DOI_KCK } from '../fasttrack/cycles.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { TRUONG_DE_XUAT, chuTargetKck, tachKck, type TruongDeXuat } from '../../../shared/domain/index.ts';
+import { TRUONG_DE_XUAT, chuTargetKck, docTargetKyThi, kyThiCuaChuongTrinh, tachKck, thangKyThi, type TruongDeXuat } from '../../../shared/domain/index.ts';
 import { taoYeuCau } from './yeuCau.ts';
 
 export const NHAN_TRUONG_DE_XUAT: Record<TruongDeXuat, string> = {
@@ -21,7 +21,7 @@ export const TRUONG_TU_AP: readonly TruongDeXuat[] = ['target', 'lo-trinh'];
 
 /** Lộ trình đang chạy + lớp đang học của em — giá trị "cũ" ghi vào thẻ. */
 export function hienTaiCua(conn: any, studentId: number) {
-  const cyc = conn.prepare(`SELECT id, target_score, khong_cam_ket, route FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY seq DESC LIMIT 1`)
+  const cyc = conn.prepare(`SELECT id, target_score, khong_cam_ket, route, programme_code FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY seq DESC LIMIT 1`)
     .get(studentId) as any;
   const lop = conn.prepare(`SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active'
                               ORDER BY e.id DESC LIMIT 1`).get(studentId) as any;
@@ -78,10 +78,14 @@ export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeX
   let cu: string | number | null = null;
   if (truong === 'target') {
     /* Q29-1 + OV-9: KCK là dấu riêng, Target giữ — thẻ lưu "6.5 KCK" / "KCK" (chưa có Target) / số. */
-    const { so, kck } = tachKck(moiVao);
+    /* P13 KET-PET: lộ trình KET / PET — Target theo điểm Cambridge (số nguyên trong thang, không KCK). */
+    const kt = ht.cycle && !ht.cycle.route ? kyThiCuaChuongTrinh(ht.cycle.programme_code) : null;
+    const dkt = kt ? docTargetKyThi(kt, moiVao) : null;
+    if (dkt && ('loi' in dkt || dkt.so === null)) throw badRequest('loi' in dkt ? dkt.loi : `Target mới — ${thangKyThi(kt!)}.`, { o: 'target' });
+    const { so, kck } = dkt ? { so: dkt.so ?? '', kck: false } : tachKck(moiVao);
     const coSo = so !== '' && so != null;
     const n = Number(so);
-    if ((!kck || coSo) && (!coSo || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
+    if (!kt && (!kck || coSo) && (!coSo || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
       throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — thêm KCK nếu không cam kết.');
     }
     if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi Target.');

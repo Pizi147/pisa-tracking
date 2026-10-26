@@ -40,7 +40,8 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     branchId: MB, chuongTrinh: ct, so, startPeriodId: week.ensurePeriod(khaiGiang).id,
   }) as { id: number; code: string };
   const them = (lop: number, ten: string) => {
-    const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, startWeek: khaiGiang, email: emailThu(), dob: '2010-01-01' }] });
+    /* P13: lớp KET / PET nhận Target theo thang Cambridge (band 6.5 là lỗi) — thêm em không Target. */
+    const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, startWeek: khaiGiang, email: emailThu(), dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm ${ten}: ${JSON.stringify(r.failed)}`);
     return r.studentIds[0] as number;
   };
@@ -137,7 +138,7 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     assert(dem('SELECT COUNT(*) n FROM task_students WHERE student_id IN (?)') === 0, 'có việc');
   }));
 
-  check('OV6b2-4 · lớp PET: không Lộ trình tiếp theo / KQĐR / Cuối khoá / MT0 / Target; hồ sơ lớp "PET · tuần 6"; không tự kết thúc', () => thu(() => {
+  check('OV6b2-4 · lớp PET: không Lộ trình tiếp theo / KQĐR / Cuối khoá / MT0; Target theo thang Cambridge (P13); hồ sơ lớp "PET · tuần 6"; không tự kết thúc', () => thu(() => {
     const lop = taoLop('PET', '06');
     const sid = them(lop.id, 'OV6B2 PET Cổng');
     const lt = loTrinhTiep.layLoTrinhTiep(P.mbManager, sid);
@@ -153,7 +154,7 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     const cy = one(`SELECT id, target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid);
     assert(cy.target_score === null, `Target lúc thêm em: ${cy.target_score}`);
     const e = loi(() => cycles.reviseTarget(P.mbManager, cy.id, { newTarget: 6, reason: 'thử' }));
-    assert(e?.status === 400 && e.message === 'Chương trình liên tục không có Target.', `Target: ${e?.status} ${e?.message}`);
+    assert(e?.status === 400 && e.message === 'B1 Preliminary: 120–170', `Target: ${e?.status} ${e?.message}`);
     const ov = classes.classOverview(P.mbManager, lop.id);
     assert(ov.cuoiKhoa === null && ov.lienTuc === true, `overview cuoiKhoa ${JSON.stringify(ov.cuoiKhoa)} lienTuc ${ov.lienTuc}`);
     const pr = schedule.classProgress(lop.id);

@@ -6,6 +6,8 @@
  * Overall = trung bình 4 kỹ năng (làm tròn). Grade A / B / C; dưới C vẫn có chứng nhận một bậc CEFR thấp hơn.
  * Chừa chỗ: B2 First (140–190, 5 điểm) / TOEFL chưa mở lớp → chưa thêm mục (First cần bảng điểm riêng khi mở).
  */
+import { t } from '../i18n/index.ts';
+
 export type KyThi = {
   ma: 'KET' | 'PET'; ten: string; min: number; max: number;
   /** Mức Grade: điểm Overall ≥ `tu` (giảm dần). */
@@ -47,3 +49,24 @@ export function tongKyThi(_kt: KyThi, d: { l: number | null; r: number | null; w
 /** Grade theo Overall; dưới C → null. */
 export const gradeKyThi = (kt: KyThi, tong: number): 'A' | 'B' | 'C' | null => kt.grade.find((g) => tong >= g.tu)?.grade ?? null;
 export const cefrKyThi = (kt: KyThi, tong: number): string | null => kt.cefr.find((c) => tong >= c.tu)?.cefr ?? null;
+
+/** Ô Target của lộ trình có kỳ thi: trống → null (chưa cam kết); số nguyên trong thang → số; còn lại (số lẻ, chữ, "KCK") → câu lỗi thang. */
+export function docTargetKyThi(kt: KyThi, v: unknown): { so: number | null } | { loi: string } {
+  const s = v === null || v === undefined ? '' : String(v).trim();
+  if (s === '') return { so: null };
+  const n = /^\d+$/.test(s) ? Number(s) : NaN;
+  return kiemDiemKyThi(kt, n) ? { loi: thangKyThi(kt) } : { so: n };
+}
+
+/** Kết quả thi thật KET / PET để HIỆN (không lưu): Overall + Grade + CEFR + Đạt Target (Overall ≥ Target). Chưa đủ 4 điểm → null; "Không thi" → `khongThi`. */
+export type KetQuaKyThi = { khongThi: true } | { khongThi: false; tong: number; grade: 'A' | 'B' | 'C' | null; cefr: string | null; dat: boolean | null };
+export function ketQuaKyThi(kt: KyThi, c: { thi_that_l?: number | null; thi_that_r?: number | null; thi_that_w?: number | null; thi_that_s?: number | null;
+  thi_that_khong_thi?: number | boolean | null; target_score?: number | null }): KetQuaKyThi | null {
+  if (c.thi_that_khong_thi) return { khongThi: true };
+  const tong = tongKyThi(kt, { l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null });
+  if (tong === null) return null;
+  return { khongThi: false, tong, grade: gradeKyThi(kt, tong), cefr: cefrKyThi(kt, tong), dat: c.target_score == null ? null : tong >= c.target_score };
+}
+/** "159 · Grade B · B1" · "Không thi". Grade dưới C → "dưới Grade C". */
+export const chuKetQuaKyThi = (k: KetQuaKyThi): string =>
+  k.khongThi ? t('Không thi') : [String(k.tong), k.grade ? `Grade ${k.grade}` : t('dưới Grade C'), k.cefr].filter(Boolean).join(' · ');

@@ -3,6 +3,7 @@ import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, laLienTuc, type ProgrammeCode, TOI_DA_DONG_TAO_LOP, type LoiDong, type Route, type SlotPhanCong,
   NGAY_SINH_TOI_THIEU, canNamGan, chuTargetKck, chuanOTarget, hienTargetKck, tachKck, docDongDan, docEmail, docNgayNhap, laDongTieuDe, laMtCu, nhanCotNhap, mtDaThiChuaQua, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type CachDoc, type VanDeNhap,
+  docTargetKyThi, kyThiCuaChuongTrinh,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
@@ -199,7 +200,7 @@ export function previewIntake(
    */
   const classId = input.classId ?? input.defaultClassId ?? null;
   const cls = classId
-    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status, is_fast_track, lich_mt FROM classes WHERE id = ?")
+    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status, is_fast_track, lich_mt, moc_lap FROM classes WHERE id = ?")
         .get(classId) as any)
     : null;
   if (!cls) {
@@ -218,6 +219,8 @@ export function previewIntake(
 
   /* Chương trình quyết định bộ cột: Fast Track có band đầu vào từng kỹ năng, Normal không. */
   const ratio = laLopThuong(cls.programme_code ?? null);
+  /* P13 KET-PET: lớp liên tục có kỳ thi (KET, PET) — cột Target theo thang Cambridge; liên tục khác: bỏ qua Target như cũ. */
+  const kyThi = laLienTuc(cls) ? kyThiCuaChuongTrinh(cls.programme_code) : null;
 
   /*
    * TUẦN BẮT ĐẦU CẢ LÔ (YC-5.4, K2-19): gửi lên thì đọc; không gửi thì mặc định (lớp thường: tuần khai giảng; FT vào muộn: tuần này).
@@ -289,7 +292,11 @@ export function previewIntake(
 
     /* Q29-1 + OV-9: KCK là dấu riêng, Target giữ — "6.5 KCK" / "KCK" (/ '-') / "6.5"; trống = chưa có. Lưới giữ chữ "6.5 KCK". */
     let target: number | string | null = null;
-    {
+    if (kyThi) {   // P13 KET-PET: Target theo điểm Cambridge — số nguyên trong thang, không KCK
+      const d = docTargetKyThi(kyThi, r.target);
+      if ('loi' in d) loi('target', d.loi);
+      else target = d.so;
+    } else {
       const tk = tachKck(r.target);
       const t = bandOf(tk.so as any);
       if (t === 'invalid') loi('target', 'Gõ band 0–9, bước 0,5 (ví dụ 6.5), thêm KCK nếu em không cam kết (ví dụ 6.5 KCK)');
@@ -514,8 +521,8 @@ export function commitIntake(
           const thi = r.examDate ?? null;
           const examDate = examDateOf(r);
           /* TUẦN BẮT ĐẦU HỌC lấy từ ô của dòng, hoặc mặc định của cả lô (mục 12.1). */
-          /* OV-6b2: lớp liên tục không có Target (cột Target của file bỏ qua). */
-          const tg = laLienTuc(cls) ? null : targetCua(r.target);
+          /* OV-6b2: lớp liên tục không có Target (cột Target của file bỏ qua) — trừ KET / PET (P13: Target Cambridge, đã kiểm ở bước xem trước). */
+          const tg = laLienTuc(cls) && !kyThiCuaChuongTrinh(cls.programme_code) ? null : targetCua(r.target);
           return [sids[i], 1, route, cls.programme_code ?? null, tg?.so ?? null, tg?.kck ? 1 : 0,
             thi ? thi.slice(0, 7) : null,
             examDate, examDate ? tuan.get(mondayOf(examDate))!.id : null,
@@ -546,7 +553,7 @@ export function commitIntake(
       chenNhieuDong(
         'INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
         ok.map((r, i) => [sids[i], 'cycle_start', startWeek(r), route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
-          laLienTuc(cls) ? null : r.target ? `Target ${hienTargetKck(targetCua(r.target).so, targetCua(r.target).kck)}` : 'Chưa có Target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
+          laLienTuc(cls) && !kyThiCuaChuongTrinh(cls.programme_code) ? null : r.target ? `Target ${hienTargetKck(targetCua(r.target).so, targetCua(r.target).kck)}` : 'Chưa có Target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
 
       /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
       if (cls.is_fast_track && route) {

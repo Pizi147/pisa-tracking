@@ -11,6 +11,15 @@ export async function runPrKetPetTests(t: any) {
   const perm: any = await import('../permissions.ts');
   const mig: any = await import('../migrate/prKetPet.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
+  const cycles: any = await import('../fasttrack/cycles.ts');
+  const deXuat: any = await import('../duyet/deXuatSua.ts');
+  const thiThat: any = await import('../loTrinh/thiThat.ts');
+  const profile: any = await import('../students/profile.ts');
+  const kqt: any = await import('../phanTich/ketQuaThi.ts');
+  const pt: any = await import('../phanTich/giaoVien.ts');
+  const bc: any = await import('../phanTich/baoCao.ts');
+  const buocTiep: any = await import('../loTrinh/buocTiep.ts');
+  const loi = (fn: () => unknown): any => { try { fn(); } catch (e: any) { return e; } return null; };
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
@@ -129,5 +138,106 @@ export async function runPrKetPetTests(t: any) {
     const kq = Object.fromEntries(r.skills.map((x: any) => [x.skill, x.outcome]));
     assert(kq.listening === 'pass' && kq.reading === 'fail' && kq.writing === 'pass' && kq.speaking === 'fail' && r.sosLevel === 2, JSON.stringify(kq));
     for (const ct of ['PET', 'KET']) assert(d.caseTopicsFor(true, ct).join() === 'listening,reading,writing,speaking', `${ct}: ${d.caseTopicsFor(true, ct)}`);
+  }));
+
+  check('KP-3 · Target KET / PET theo điểm Cambridge: số nguyên trong thang, lỗi gắn ô target; liên tục không kỳ thi 400 như cũ; FT band như cũ; thêm em có Target', () => thu(() => {
+    const lop = intake.taoLopVaPhanCong(P.mbManager, { branchId: MB, chuongTrinh: 'KET', so: '07', startPeriodId: week.ensurePeriod(khaiGiang).id }) as { id: number };
+    const r = intake.commitIntake(P.admin, { classId: lop.id, rows: [
+      { fullName: 'KP3 Có Target', target: '130', startWeek: khaiGiang, email: emailThu(), dob: '2012-01-01' },
+    ] });
+    assert(r.added === 1, `thêm em KET có Target: ${JSON.stringify(r.failed)}`);
+    const cy = one(`SELECT id, target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`, r.studentIds[0]);
+    assert(cy.target_score === 130, `Target lúc thêm em: ${cy.target_score}`);
+    cycles.reviseTarget(P.mbManager, cy.id, { newTarget: 135, reason: 'Thi thử tốt' });
+    assert(one('SELECT target_score FROM learning_cycles WHERE id = ?', cy.id).target_score === 135, 'Target 135 không lưu');
+    for (const v of [99, 151, 120.5, 'abc', '135 KCK', 'KCK']) {
+      const e = loi(() => cycles.reviseTarget(P.mbManager, cy.id, { newTarget: v, reason: 'thử' }));
+      assert(e?.status === 400 && e.message === 'A2 Key: 100–150' && e.details?.o === 'target', `${v}: ${e?.status} ${e?.message} ${JSON.stringify(e?.details)}`);
+    }
+    assert(one('SELECT target_score FROM learning_cycles WHERE id = ?', cy.id).target_score === 135, 'lỗi mà vẫn ghi');
+    cycles.reviseTarget(P.mbManager, cy.id, { newTarget: '', reason: 'Bỏ cam kết' });
+    assert(one('SELECT target_score FROM learning_cycles WHERE id = ?', cy.id).target_score === null, 'Target trống không lưu');
+    /* Đề xuất sửa (GV) cùng thang. */
+    const dx: any = deXuat;
+    assert(dx.kiemGiaTriDeXuat(conn, r.studentIds[0], 'target', '140').moi === 140, 'đề xuất 140');
+    const e3 = loi(() => dx.kiemGiaTriDeXuat(conn, r.studentIds[0], 'target', '6.5'));
+    assert(e3?.status === 400 && e3.message === 'A2 Key: 100–150' && e3.details?.o === 'target', `đề xuất 6.5: ${e3?.message}`);
+    /* Chương trình liên tục KHÔNG có kỳ thi (Quản trị tạo) → như cũ. */
+    conn.prepare(`INSERT INTO programmes (code, name, weeks, scoring_mode, nguong_dat, lap_moi_tuan, status, created_at) VALUES ('KPX', 'Thử', NULL, 'ratio', 0.7, 6, 'active', ?)`).run(TODAY);
+    conn.prepare(`UPDATE learning_cycles SET programme_code = 'KPX' WHERE id = ?`).run(cy.id); xoaNho();
+    const e2 = loi(() => cycles.reviseTarget(P.mbManager, cy.id, { newTarget: 6, reason: 'thử' }));
+    assert(e2?.status === 400 && e2.message === 'Chương trình liên tục không có Target.', `liên tục không kỳ thi: ${e2?.status} ${e2?.message}`);
+    /* FT: band như cũ. */
+    const ft = one(`SELECT c.id FROM learning_cycles c JOIN enrollments e ON e.student_id = c.student_id JOIN classes k ON k.id = e.class_id
+      WHERE c.route IS NOT NULL AND c.status = 'active' AND k.code = 'MB FT 101' AND e.status = 'active' LIMIT 1`).id;
+    cycles.reviseTarget(P.mbManager, ft, { newTarget: 6.5, reason: 'thử' });
+    assert(one('SELECT target_score FROM learning_cycles WHERE id = ?', ft).target_score === 6.5, 'FT 6.5');
+    assert(loi(() => cycles.reviseTarget(P.mbManager, ft, { newTarget: 135, reason: 'thử' }))?.status === 400, 'FT nhận 135');
+  }));
+
+  check('KP-3b · thêm em KET: Target ngoài thang / KCK → lỗi tại ô target, không thêm', () => thu(() => {
+    const lop = intake.taoLopVaPhanCong(P.mbManager, { branchId: MB, chuongTrinh: 'KET', so: '06', startPeriodId: week.ensurePeriod(khaiGiang).id }) as { id: number };
+    const r = intake.commitIntake(P.admin, { classId: lop.id, rows: [{ fullName: 'KP3b Sai', target: '6.5', startWeek: khaiGiang, email: emailThu(), dob: '2012-01-01' }] });
+    assert(r.added === 0 && JSON.stringify(r.failed).includes('A2 Key: 100–150'), JSON.stringify(r));
+  }));
+
+  /* Em PET của demo (MB PET 01) + lộ trình đang chạy. */
+  const emPet = () => one(`SELECT cy.id, cy.student_id FROM learning_cycles cy JOIN enrollments e ON e.student_id = cy.student_id JOIN classes k ON k.id = e.class_id
+    WHERE k.code = 'MB PET 01' AND cy.status = 'active' AND e.status = 'active' ORDER BY cy.student_id LIMIT 1`);
+  const ngayThi = addDays(TODAY, -2);
+  const PET_KQ = { ngayThi, r: 160, w: 155, l: 170, s: 150 };
+
+  check('KP-4a · KQ thi thật PET: lưu 4 điểm + thi_that_target; Overall 159 · Grade B · B1 ở hồ sơ; Không thi xoá điểm; ngày sau hôm nay 400', () => thu(() => {
+    const c = emPet();
+    cycles.reviseTarget(P.mbManager, c.id, { newTarget: 150, reason: 'Target PET' });
+    thiThat.datKetQuaThiThat(P.mbManager, c.id, PET_KQ);
+    const cy = one('SELECT * FROM learning_cycles WHERE id = ?', c.id);
+    assert(cy.thi_that_l === 170 && cy.thi_that_r === 160 && cy.thi_that_w === 155 && cy.thi_that_s === 150 && cy.thi_that_ngay === ngayThi, JSON.stringify(cy));
+    assert(cy.thi_that_target === 150 && cy.thi_that_nhap_boi === P.mbManager.userId, `thi_that_target ${cy.thi_that_target}`);
+    assert(cy.outcome == null && cy.outcome_score == null, `không lưu kết luận / Overall band: ${cy.outcome} ${cy.outcome_score}`);
+    xoaNho();
+    const tt = profile.studentProfile(P.mbManager, c.student_id).dauHoSo.thongTin;
+    assert(tt.kyThi?.ten === 'B1 Preliminary' && tt.target === 150, JSON.stringify(tt));
+    assert(tt.thiThat?.tong === 159 && tt.thiThat.grade === 'B' && tt.thiThat.cefr === 'B1' && tt.thiThat.dat === true, JSON.stringify(tt.thiThat));
+    assert(d.chuKetQuaKyThi(tt.thiThat) === '159 · Grade B · B1', d.chuKetQuaKyThi(tt.thiThat));
+    assert(all(`SELECT 1 FROM audit_logs WHERE action = 'cycle.thi_that' AND entity_id = ?`, c.id).length === 1, 'nhật ký');
+    thiThat.datKetQuaThiThat(P.mbManager, c.id, { khongThi: true });
+    const k2 = one('SELECT * FROM learning_cycles WHERE id = ?', c.id);
+    assert(k2.thi_that_khong_thi === 1 && k2.thi_that_l === null && k2.thi_that_s === null, 'Không thi phải xoá điểm');
+    const e = loi(() => thiThat.datKetQuaThiThat(P.mbManager, c.id, { ...PET_KQ, ngayThi: addDays(TODAY, 1), khongThi: false }));
+    assert(e?.status === 400, `ngày sau hôm nay: ${e?.status}`);
+  }));
+
+  check('KP-4b · KQ thi thật PET ngoài thang / số lẻ / chữ → 400 đúng ô, không ghi; FT band như cũ', () => thu(() => {
+    const c = emPet();
+    for (const [k, v] of [['r', 119], ['w', 171], ['l', 160.5], ['s', 'abc']] as const) {
+      const e = loi(() => thiThat.datKetQuaThiThat(P.mbManager, c.id, { ...PET_KQ, [k]: v }));
+      assert(e?.status === 400 && e.details?.o === k && e.message.includes('B1 Preliminary: 120–170'), `${k}=${v}: ${e?.status} ${e?.message} ${JSON.stringify(e?.details)}`);
+    }
+    assert(one('SELECT thi_that_l FROM learning_cycles WHERE id = ?', c.id).thi_that_l === null, 'lỗi mà vẫn ghi');
+    const ft = one(`SELECT c.id, c.started_at FROM learning_cycles c WHERE c.route IS NOT NULL AND c.status = 'active' AND c.started_at <= ? ORDER BY c.id LIMIT 1`, ngayThi);
+    thiThat.datKetQuaThiThat(P.admin, ft.id, { ngayThi, l: 6.5, r: 7, w: 6, s: 6.5 });
+    assert(one('SELECT outcome_score FROM learning_cycles WHERE id = ?', ft.id).outcome_score === 6.5, 'FT OVR');
+    assert(loi(() => thiThat.datKetQuaThiThat(P.admin, ft.id, { l: 160 }))?.status === 400, 'FT nhận 160');
+  }));
+
+  check('KP-4c · sau khi nhập KQ PET: Kết quả thi, Phân tích GV, Báo cáo MT, việc chờ KQ, Bước tiếp KHÔNG đổi (không trộn thang)', () => thu(() => {
+    const c = emPet();
+    const tu = d.mondayOfDate(addDays(ngayThi, -28)); const den = d.mondayOfDate(addDays(ngayThi, 28));
+    const so = () => {
+      xoaNho();
+      return JSON.stringify([
+        kqt.ketQuaThiThatKq(P.admin, { branchId: MB, tu, den: addDays(den, 6) }), kqt.ketQuaThiThatKq(P.admin, { branchId: null, tu, den: addDays(den, 6) }),
+        pt.phanTichGiaoVien(P.admin, { cn: MB, ct: 'thuong', tu, den }), pt.phanTichGiaoVien(P.admin, { cn: MB, ct: 'ft', tu, den }),
+        bc.ketQuaMt(P.admin, { branchId: MB, ct: 'ft', tu, den }),
+        thiThat.loTrinhChoKetQuaThi(TODAY), buocTiep.choBuocTiep(), thiThat.sauThiCuaEm(P.admin, c.student_id),
+      ]);
+    };
+    const truoc = so();
+    cycles.reviseTarget(P.mbManager, c.id, { newTarget: 150, reason: 'Target PET' });
+    thiThat.datKetQuaThiThat(P.mbManager, c.id, PET_KQ);
+    const sau = so();
+    assert(sau === truoc, 'báo cáo đổi sau khi nhập KQ PET');
+    assert(!sau.includes('"cycleId":' + c.id + ','), 'em PET lọt vào báo cáo');
   }));
 }
