@@ -69,7 +69,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   };
   return (
     <KhungPanel tieuDe={t('Chấm Speaking')} dau={dau} onDong={onDong}
-      chan={onTiep ? { huy: null, chinh: <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${data?.soBai === 0 ? 'btn-primary' : ''}`} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
+      chan={onTiep ? { huy: null, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : !rows.length ? <div className="pt-3"><Empty title={t('Không có bài Speaking chờ chấm')} /></div>

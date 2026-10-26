@@ -183,7 +183,8 @@ const conBaiLuoi = (d: BangTheoLuot, chiAttempt: ReadonlySet<number> | null, kns
 /** Chân panel việc chấm: "Việc tiếp ›" (nổi bật khi đã đủ phần người xem); không có việc kế → không chân. */
 const chanViecTiep = (onTiep: (() => void) | null | undefined, xong: boolean) => (onTiep ? {
   huy: null,
-  chinh: <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${xong ? 'btn-primary' : ''}`} onClick={onTiep}>{t('Việc tiếp ›')}</button>,
+  /* Nút hành động kế (không phải nút lựa chọn — NEN B3): nổi bật khi đã đủ phần người xem. */
+  chinh: <button type="button" className={xong ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button>,
 } : undefined);
 const hetViec = (onTiep: (() => void) | null | undefined) => () => (onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null);
 
