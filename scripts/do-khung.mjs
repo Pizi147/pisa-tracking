@@ -81,6 +81,10 @@ const KICH_BAN = [
   ['lop-ft', 7, '/hoc-vien/lop/3?tab=hoc-vien'], ['lop-ft-phan-tich', 7, '/hoc-vien/lop/3?tab=phan-tich'],
   ['lop-ft-y-thuc', 7, '/hoc-vien/lop/3?tab=y-thuc'], ['lop-thuong', 2, '/hoc-vien/lop/6?tab=hoc-vien'],
   ['lop-thuong-phan-tich', 2, '/hoc-vien/lop/6?tab=phan-tich'],
+  /* P9b: trang Cuối khoá lớp thường — QL (chọn nhóm + thanh Áp), GVCN (Nhận xét). */
+  ['cuoi-khoa', 2, '/hoc-vien/lop/6?xem=cuoi-khoa', null, [1440, 1280, 375]],
+  ['cuoi-khoa-ap', 2, '/hoc-vien/lop/6?xem=cuoi-khoa', async (p) => { await p.getByRole('button', { name: /^Chọn tất cả/ }).click(); await p.waitForTimeout(300); }, [1440, 1280, 375]],
+  ['cuoi-khoa-gvcn', 7, '/hoc-vien/lop/6?xem=cuoi-khoa', null, [1440, 1280, 375]],
   ['hv-hoc-thuat', 7, '/hoc-vien/3'], ['hv-y-thuc', 7, '/hoc-vien/3?tab=y-thuc'], ['hv-hanh-trinh', 7, '/hoc-vien/3?tab=hanh-trinh'],
   ['hv-thuong', 2, '/hoc-vien/8'], ['hv-thuong-hanh-trinh', 2, '/hoc-vien/8?tab=hanh-trinh'], ['luu-tru', 2, '/hoc-vien/luu-tru'],
   ['test-lichTest', 2, '/test/lich'], ['test-diem-lop', 2, '/test/diem-lop'], ['test-ke-hoach', 2, '/test/ke-hoach'],

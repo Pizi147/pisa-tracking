@@ -228,9 +228,9 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Em đã học ở trung tâm trước khi có web — xác nhận cấp bậc vi phạm đã có để thang tính tiếp đúng. Không có hạn; qua 14 ngày thì thôi nhắc.',
   },
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
-  /* OV-5a: đổi tên việc "Kỳ vọng đầu ra" → "Kết quả đầu ra" (OV-3b gộp vào bảng Lộ trình tiếp theo, có FOU). Tiêu đề Case "Kỳ vọng đầu ra…" giữ (chống trùng `LIKE`). */
+  /* N22 ② (P9b): tên "Kỳ vọng" (Kết quả đầu ra lớp thường là cột máy ghi ở trang Cuối khoá). Tiêu đề Case "Kỳ vọng đầu ra…" giữ (chống trùng `LIKE`). */
   ky_vong_dau_ra: {
-    label: 'Kết quả đầu ra',
+    label: 'Kỳ vọng',
     hint: 'Lớp FOU/BE/ELE có em lên FT có MT0 đủ 3 kỹ năng có điểm — Đạt khi Overall MT0 > 3.5 (FOU) / ≥ 4.0 (BE) / ≥ 4.5 (ELE). Một lần lưu cho cả lớp.',
   },
 
@@ -276,7 +276,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-LCb: khoá `chot_len_ft` = "Chốt lộ trình" (giữ tên để không chạm drilldown, nhắc việc, phép kiểm cũ). */
   chot_len_ft: {
     label: 'Chốt lộ trình',
-    hint: 'Quản lý xác nhận hướng và lớp chuyển đến cho mọi em, hạn Chủ nhật trước tuần Final Test. Quá hạn vẫn làm được.',
+    hint: 'Quản lý chốt hướng và lớp chuyển đến cho mọi em, hạn thứ Năm tuần trước tuần Final Test. Quá hạn vẫn làm được.',
   },
   xet_lai_lo_trinh: {
     label: 'Xét lại lộ trình',
@@ -715,7 +715,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------------------- 2d. PR-LCb: Chốt lộ trình (một việc mỗi lớp thường, Quản lý) — cùng hàm với chỉ số `lop-chua-chot-len-ft`
   /*
-   * Thay hai việc "Chốt lên FT" (trước tuần Final) và "Chuyển tiếp lớp" (từ tuần Final): MỘT việc từ 13 ngày trước hạn tới khi mọi em đang học
+   * Thay hai việc "Chốt lên FT" (trước tuần Final) và "Chuyển tiếp lớp" (từ tuần Final): MỘT việc từ thứ Hai tuần trước Final (N20) tới khi mọi em đang học
    * có quyết định chuyển lớp; qua hạn vẫn còn, đỏ. Việc của cả lớp, không của riêng ai — không gán người phụ trách.
    */
   for (const x of co('chot_len_ft') ? lopChoChotLoTrinh(p, f.branchId ?? null, today) : []) {
@@ -725,8 +725,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: x.chuaLenh, emIds: x.emIds,
       reason: chu,
-      tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Lộ trình tiếp theo',
-      href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
+      tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Cuối khoá ›',
+      href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`,
       ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa chốt',
     });
   }
@@ -1353,8 +1353,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: n, emIds: x.chua,
       reason: chu,
-      tieuDe: `Kết quả đầu ra · ${x.code} · ${n} em`, actionLabel: 'Mở',
-      href: `/hoc-vien/lop/${x.classId}?viec=ky-vong`, ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
+      tieuDe: `Kỳ vọng · ${x.code} · ${n} em`, actionLabel: 'Cuối khoá ›',
+      href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`, ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
     });
   }
 

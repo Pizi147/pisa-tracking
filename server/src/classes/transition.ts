@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
+  NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa, tuanMuonNhatMt0,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -14,7 +14,7 @@ import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from '.
 import { nhapRowToView, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 import { standingFor } from '../students/standing.ts';
-import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
@@ -128,11 +128,17 @@ export function transitionPlan(p: Principal, classId: number) {
       WHERE t.class_id = ? AND t.student_id IN (${emKq.map(() => '?').join(',')})`,
   ).all(classId, ...emKq) as any[]).map((r) => [r.student_id as number, r]) : []);
   const mang = (x: string | null) => { try { const v = JSON.parse(x ?? '[]'); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
+  const homNayKq = demoToday();
   const kqdrCua = (sid: number) => {
     if (!emKq.includes(sid)) return null;
     const m = mt0Kq.get(sid), r = kqLtt.get(sid);
+    /* N22 ② (P9b): MT0 quá tuần muộn nhất (tuần 2 FT) vẫn < 3 band → QL tự đánh — cùng luật `emKyVong.moTay`. */
+    const muonNhat = tuanMuonNhatMt0({ tuanBatDauFt: lenhCho.get(sid)?.tuan ?? null, tuanCuoiKhoa: progress.finalWeekStart });
     return {
       nguong: nguong!, goiY: m?.goiY ?? null, mt0: m?.goiY ? { ...m.bands, overall: m.goiY.overall } : null,
+      moTay: !m?.goiY && !!muonNhat && homNayKq > addDays(muonNhat, 6),
+      /** Band từng kỹ năng (kể cả khi < 3 band) — ô "L 4.0 · R 3.5 · W — · S 3.5". */
+      bands: m?.bands ?? null,
       deXuat: r && r.kq_de_xuat_dat !== null ? {
         dat: !!r.kq_de_xuat_dat, nguyenNhan: r.kq_de_xuat_nguyen_nhan ?? null, mon: mang(r.kq_de_xuat_mon), ghiChu: r.kq_de_xuat_ghi_chu ?? null,
         boi: (r.de_xuat_ten ?? null) as string | null, luc: (r.kq_de_xuat_luc ?? null) as string | null,
@@ -142,6 +148,26 @@ export function transitionPlan(p: Principal, classId: number) {
       } : null,
     };
   };
+
+  /*
+   * P9b (trang Cuối khoá, một lời gọi): Progress giữa khoá theo môn (dòng phụ "Progress {ngày} · 3/4 môn đạt · Không đạt: P") + Nhận xét GVCN
+   * (`danh_gia_dau_ra.nhan_xet`, như `xemDanhGiaDauRa`: em ngoài phạm vi xem không lộ). Hai + hai câu + một câu cho cả lớp.
+   */
+  const luotPg = new Map<number, { id: number; tuan: string | null }>();
+  if (!ft && sids.length) {
+    for (const r of conn.prepare(
+      `SELECT a.id, a.student_id, rp.week_start FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.class_id = ? AND a.kind = 'progress' AND a.status != 'cancelled' ORDER BY a.id`,
+    ).all(classId) as any[]) luotPg.set(r.student_id, { id: r.id, tuan: r.week_start ?? null });
+  }
+  const tlPg = tyLeTongLo([...luotPg.values()].map((x) => x.id));
+  const progressCua = (sid: number) => {
+    const l = luotPg.get(sid), x = l ? tlPg.get(l.id) : undefined;
+    return l && x ? { tuan: l.tuan, scored: x.scored, required: x.required, monTruot: x.monTruot, tyLe: x.tyLe } : null;
+  };
+  const nhanXet = new Map(ft ? [] : (conn.prepare('SELECT student_id, nhan_xet, sua_luc FROM danh_gia_dau_ra WHERE class_id = ?').all(classId) as any[])
+    .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId, studentId: r.student_id }))
+    .map((r) => [r.student_id as number, { chu: (r.nhan_xet ?? null) as string | null, luc: r.sua_luc as string }]));
 
   /* Case đang mở + bài chưa làm — đọc theo lô, không hỏi lại theo từng em. */
   const caseRows = sids.length
@@ -160,8 +186,8 @@ export function transitionPlan(p: Principal, classId: number) {
   const baiChuaLamByCycle = new Map(baiChuaLamRows.map((r) => [r.cycle_id, r.n as number]));
 
   /*
-   * LỚP ĐÍCH GỢI Ý: lớp thường → lớp MỌI CHI NHÁNH (PR-LCb — `raLenh` nhận lớp chi nhánh khác, báo "Sắp nhận" QL chi nhánh đích); lớp FT (panel
-   * Chuyển lớp cũ) giữ CÙNG chi nhánh (R-B3), đúng MỘT TRONG các chương trình ở `options` (bậc kế,
+   * LỚP ĐÍCH GỢI Ý: CÙNG chi nhánh lớp nguồn — lớp thường N17 (chủ SP 24/10: Cuối khoá cả lớp chỉ cùng chi nhánh, `raLenh` chặn), lớp FT R-B3;
+   * đúng MỘT TRONG các chương trình ở `options` (bậc kế,
    * FT, hoặc cùng chương trình để học lại), còn đang chạy và chưa học quá nửa chương trình.
    * `classProgressMany` MỘT LẦN cho cả danh sách ứng viên — không classProgress trong vòng lặp (N+1).
    */
@@ -171,13 +197,12 @@ export function transitionPlan(p: Principal, classId: number) {
         `SELECT c.id, c.code, c.programme_code, c.is_fast_track, c.route, c.branch_id, b.code AS branch_code,
                 (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS n
            FROM classes c JOIN branches b ON b.id = c.branch_id
-          WHERE c.status = 'active' AND c.id != ?${ft ? ' AND c.branch_id = ?' : ''}
+          WHERE c.status = 'active' AND c.id != ? AND c.branch_id = ?
             AND c.programme_code IN (${optionCodes.map(() => '?').join(',')})
           ORDER BY c.code`,
       )
-      .all(classId, ...(ft ? [cls.branch_id] : []), ...optionCodes) as any[])
-      /* HL-12: lớp cùng chi nhánh lên đầu ô Lớp (QL một chi nhánh khỏi chọn nhầm lớp chi nhánh khác). */
-      .sort((a, b) => Number(b.branch_id === cls.branch_id) - Number(a.branch_id === cls.branch_id) || soSanhLop({ code: a.code }, { code: b.code }))
+      .all(classId, cls.branch_id, ...optionCodes) as any[])
+      .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }))
     : [];
   const candidateProgress = classProgressMany(candidateRows.map((c) => c.id));
   const candidates = candidateRows
@@ -246,6 +271,11 @@ export function transitionPlan(p: Principal, classId: number) {
       mt0: mt0Em.get(s.id) ?? null,
       ...(nhap ? { nhap: nhap.get(s.id) ?? null } : {}),
       kqdr: kqdrCua(s.id),
+      progress: progressCua(s.id),
+      /** Nhận xét cuối khoá của GVCN (không bắt buộc) — QL đọc dưới cột Gợi ý. */
+      nhanXet: nhanXet.get(s.id)?.chu ?? null,
+      /** `sua_luc` bản GVCN đang thấy — gửi lại khi Lưu nhận xét (409 nếu người khác vừa sửa, không đè im lặng). */
+      nhanXetLuc: nhanXet.get(s.id)?.luc ?? null,
     })),
     /** OV-3b: môn của phiếu bàn giao lớp nguồn (cột Bàn giao: CN + từng môn). */
     monBanGiao: ft ? [] : boMonLich(cls.programme_code ?? null).map((ma) => ({ ma, ngan: tenMonNgan(cls.programme_code ?? null, ma) })),

@@ -170,13 +170,13 @@ export async function runPrLopTests(t: YThucTestKit) {
     /* PR-OV3a: "Sửa thông tin lớp" thành phần Lớp của panel Thông tin lớp (`ThongTinLopPanel.tsx`), không ô Ghi chú. */
     const ttlSrc = docSach(lopDir + 'ThongTinLopPanel.tsx');
     assert(!/MB-FT|setCode\(|Ghi chú|note:/.test(ttlSrc) && /locSoLop\(/.test(ttlSrc) && /ghepMaLop\(/.test(ttlSrc), 'Phần Lớp của Thông tin lớp');
-    const tp = docSach(lopDir + 'TransitionPanel.tsx');
-    assert(!/newCode|suggestedCode|gvcnUserId|newClass:/.test(tp) && /<ClassCreatePanel/.test(tp), 'Chuyển tiếp');
+    const tp = docSach(lopDir + 'CuoiKhoaLop.tsx');   // P9b: Cuối khoá thay Chuyển tiếp lớp — "+ Mở lớp mới…" dùng ClassCreatePanel
+    assert(!/newCode|suggestedCode|gvcnUserId|newClass:/.test(tp) && /<ClassCreatePanel/.test(tp), 'Cuối khoá');
     for (const f of ['TeacherAssignPanel', 'ThongTinLopPanel', 'ClassCreatePanel']) {
       assert(/useLoiForm\(/.test(docSach(`${lopDir}${f}.tsx`)), `${f} chưa báo lỗi theo PR-N1 (useLoiForm)`);
     }
-    /* Chuyển tiếp (KhungPanel longTrong) báo lỗi theo từng dòng HV (không phải form ô bắt buộc) — giữ lỗi tại dòng. */
-    assert(/\bloi=/.test(tp), 'TransitionPanel chưa báo lỗi tại dòng');
+    /* Cuối khoá báo lỗi theo từng dòng HV (không phải form ô bắt buộc) — giữ lỗi tại dòng. */
+    assert(/loi\[e\.id\]/.test(tp), 'CuoiKhoaLop chưa báo lỗi tại dòng');
     assert(/'phan-cong'/.test(docSach(lopDir + 'ClassOverviewPage.tsx')), 'hồ sơ lớp chưa nhận ?viec=phan-cong');
     const lop = conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any;
     const ct = clsMod.classTeachers(P.admin, lop.id);

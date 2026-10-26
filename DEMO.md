@@ -530,7 +530,7 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2bSeed.ts`), sau bộ LT2a,
 | D11 · Mini Test 58% | **Lâm Khánh Vy** (MB ELE 02) | Ô `Mini Test 58% · Chưa đạt — đã báo QL`; Case còn mở; Chờ duyệt › Báo lên: thẻ **Mini Test chưa đạt** |
 | D12 · Pre FOU 52% lên FOU | **Ninh Gia Bảo** (MB FOU 15) | Case `Final Test Pre FOU · Tổng hợp không đạt`, PA `4 buổi miễn phí · 2 tuần`, Mini Test hạn W1 OCT — GVCN FOU ghi được, GVBM L không |
 | D13 · Trung tâm | **Chu Nhật Minh** (MB FT 101) | Case FT `Kỳ vọng đầu ra chưa đạt · Reading` + PA `Tutor 10 buổi` |
-| D13 · Học viên | **Kiều Thảo Nhi** (MB FT 101) | Case FT `Kỳ vọng đầu ra chưa đạt · Học viên · S`, chưa có PA (PR-KV); hộp Kết luận khoá ghi lý do |
+| D13 · Học viên | **Kiều Thảo Nhi** (MB FT 101) | Kỳ vọng Không đạt · Học viên: chỉ ghi phương án, KHÔNG Case (N17, P9b); hộp Kết luận khoá ghi phương án |
 
 ---
 

@@ -223,7 +223,8 @@ type ChonNguoiOption =
   | { kind: 'trong' }
   | { kind: 'toi' }
   | { kind: 'nguoi'; row: NguoiTrongDs }
-  | { kind: 'ngoai'; text: string };
+  | { kind: 'ngoai'; text: string }
+  | { kind: 'them' };
 
 /**
  * Ô chọn MỘT người thực hiện/phụ trách — dùng chung cho Case học thuật và Ý thức (PR-Form F-2, §22.5).
@@ -238,7 +239,7 @@ type ChonNguoiOption =
  */
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false,
-  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop, tutor,
+  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop, tutor, them,
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null, tutor?: TutorChon) => void;
@@ -269,6 +270,8 @@ export function ChonNguoi({
    * Đối số thứ hai của `onChange` là dòng tutor đã chọn (hình thức tự suy, điền sẵn buổi).
    */
   tutor?: ThamSoTutor;
+  /** P9b: dòng việc cuối danh sách, luôn hiện ("+ Mở lớp mới…" của `ChonLop`) — chọn chạy `onChon`, không đổi giá trị ô. */
+  them?: { nhan: string; onChon: () => void; phu?: string };
 }) {
   const { session } = useSession();
   const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
@@ -323,8 +326,9 @@ export function ChonNguoi({
     if (choToi) out.push({ kind: 'toi' });
     for (const r of rows) out.push({ kind: 'nguoi', row: r });
     if (choNgoai) out.push({ kind: 'ngoai', text: term.trim() });
+    if (them) out.push({ kind: 'them' });
     return out;
-  }, [choTrong, choToi, rows, choNgoai, term]);
+  }, [choTrong, choToi, rows, choNgoai, term, them]);
   /** Dòng "tên ngoài" chưa đủ 2 ký tự: hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
   const tat = (opt: ChonNguoiOption) => opt.kind === 'ngoai' && opt.text.length < 2;
   const chonDuoc = options.flatMap((o, i) => (tat(o) ? [] : [i]));
@@ -333,6 +337,7 @@ export function ChonNguoi({
 
   const chon = (opt: ChonNguoiOption) => {
     if (tat(opt)) return;
+    if (opt.kind === 'them') { setTerm(''); setOpen(false); them?.onChon(); return; }
     if (opt.kind === 'trong') onChange(null);
     else if (opt.kind === 'toi') onChange({ kieu: 'toi' });
     else if (opt.kind === 'nguoi' && opt.row.tutor && !chiTutor) onChange({ kieu: 'ngoai', ten: opt.row.ten, phu: t('Tutor') }, opt.row.tutor);
@@ -437,7 +442,7 @@ export function ChonNguoi({
         <div id={`${uid}-listbox`} role="listbox" onMouseDown={(e) => e.preventDefault()} className="mt-1 max-h-56 overflow-y-auto surface-2 rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
           {options.map((opt, i) => (
             <Fragment key={opt.kind === 'nguoi' ? `${opt.row.tutor ? 't' : 'u'}${opt.row.id}` : opt.kind}>
-              {opt.kind === 'ngoai' && trangThai}
+              {(opt.kind === 'ngoai' || (opt.kind === 'them' && !choNgoai)) && trangThai}
               {/* TU-a: tiêu đề nhóm trước dòng đầu của mỗi nhóm (không bấm, mũi tên bỏ qua). */}
               {opt.kind === 'nguoi' && opt.row.nhom && (options[i - 1]?.kind !== 'nguoi' || (options[i - 1] as { row: NguoiTrongDs }).row.nhom !== opt.row.nhom) && (
                 <div role="presentation" className="px-3 pt-2 pb-0.5 text-[12px] font-semibold text-slate-500">{opt.row.nhom}</div>
@@ -470,10 +475,12 @@ export function ChonNguoi({
                 {opt.kind === 'ngoai' && (tat(opt)
                   ? <div className="text-sm text-slate-500">{chiTutor ? t('Tutor khác: gõ tên ở ô trên') : t('Dùng tên ngoài hệ thống: gõ tên ở ô trên')}</div>
                   : <div className="text-sm text-slate-100">{chiTutor ? t('Tutor khác: «{ten}»', { ten: opt.text }) : t('Dùng tên ngoài hệ thống: «{ten}»', { ten: opt.text })}</div>)}
+                {opt.kind === 'them' && <div className="text-sm font-semibold text-[color:var(--accent)]">{them?.nhan}</div>}
+                {opt.kind === 'them' && them?.phu && <div className="text-xs text-slate-500">{them.phu}</div>}
               </button>
             </Fragment>
           ))}
-          {!choNgoai && trangThai}
+          {!choNgoai && !them && trangThai}
         </div>
       )}
     </div>

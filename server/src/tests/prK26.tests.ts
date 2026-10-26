@@ -166,8 +166,8 @@ export async function runPrK26Tests(t: YThucTestKit) {
   });
   check('K26-3b · OV-3b: panel một em (LoTrinhTiepPanel) thay bằng hộp Lộ trình ở bảng lớp — Lưu nháp · Chốt, không chữ cũ; nháp chỉ QL', () => {
     assert(!fs.existsSync(new URL('../../../../web/src/modules/students/LoTrinhTiepPanel.tsx', import.meta.url)), 'panel cũ còn');
-    const src = nguon('modules/classes/BangLoTrinhTiep.tsx');
-    for (const chu of ['Lưu nháp', 'Chốt', 'Xoá nháp', 'Huỷ quyết định', 'lo-trinh-nhap']) assert(src.includes(chu), `thiếu ${chu}`);
+    const src = nguon('modules/classes/CuoiKhoaLop.tsx');   // P9b: trang Cuối khoá thay hộp Lộ trình
+    for (const chu of ['Lưu nháp', 'Chốt', 'Huỷ quyết định', 'lo-trinh-nhap']) assert(src.includes(chu), `thiếu ${chu}`);
     assert(!/Chưa rõ|Xếp sau/.test(src), 'còn chữ cũ');
   });
 
@@ -236,11 +236,11 @@ export async function runPrK26Tests(t: YThucTestKit) {
     const coMuc = (q: Record<string, boolean>) => dm.menuHoSoLop({
       thuong: true, chuongTrinh: 'FOU', soHocVien: 3, canEditProgress: false, canAssign: false, canAssignSubject: false, canAddStudents: false,
       coTheChuyenTiep: false, coTheChuyenNhieuEm: false, coTheXuatExcel: false, coTheMoLaiLop: false, coTheXoa: false, coTheKetThuc: false, ...q,
-    }).some((m: any) => m.key === 'lo-trinh-ca-lop' && m.nhan === 'Lộ trình tiếp theo');
+    }).some((m: any) => m.key === 'lo-trinh-ca-lop' && m.nhan === 'Cuối khoá…');   // P9b
     assert(coMuc({ canAddStudents: true }) && coMuc({ coTheChuyenTiep: true }) && !coMuc({}), 'mục menu theo quyền ghi');
-    assert(/'che-do': 'lo-trinh'/.test(nguon('modules/classes/ClassOverviewPage.tsx')), 'lối vào cũ mở cách xem mới');
-    const pn = nguon('modules/classes/BangLoTrinhTiep.tsx');
-    assert(pn.includes('r.failed.map((f) => [f.studentId, f.message])') && pn.includes('Chốt {chon.size} em'), 'lỗi theo dòng, nút Chốt n em');
+    assert(/xem: 'cuoi-khoa'/.test(nguon('modules/classes/ClassOverviewPage.tsx')), 'lối vào cũ mở trang Cuối khoá');
+    const pn = nguon('modules/classes/CuoiKhoaLop.tsx');
+    assert(pn.includes('failed.map((f) => [f.studentId, f.message])') && pn.includes('Chốt · {n} em'), 'lỗi theo dòng, nút Chốt · n em');
   });
   /* Sau rà mã: Turso tính mỗi câu một lượt mạng — ghi cả lớp phải đọc + ghi theo lô, không N câu cho N em trong một giao dịch. */
   check('K26-4d · PUT cả lớp: số câu SQL như nhau với 3 em và 32 em; ngày xem lại đã qua, ghi chú quá dài → 400 có studentId', () => {

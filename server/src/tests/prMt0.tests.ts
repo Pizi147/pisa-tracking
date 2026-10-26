@@ -109,7 +109,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
   // ------------------------------------------------------------------ MT0-1 · luật thuần
   check('MT0-1 · hạn chấm, hạn chốt, tuần muộn nhất, kiểm tuần, SOS hiển thị, trạng thái, nhãn', () => {
     assert(dm.hanChamMt0('2026-10-19') === '2026-10-28', dm.hanChamMt0('2026-10-19'));
-    assert(dm.mocLoTrinh('2026-10-19').hanChot === '2026-10-11', JSON.stringify(dm.mocLoTrinh('2026-10-19')));   // OV-3b: CN tuần Final − 2 (thay hanChotLenFt)
+    assert(dm.mocLoTrinh('2026-10-19').hanChot === '2026-10-15', JSON.stringify(dm.mocLoTrinh('2026-10-19')));   // N20 (P9b): T5 tuần trước Final
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: '2026-10-26', tuanCuoiKhoa: '2026-10-19' }) === '2026-11-02', 'có FT');
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: null, tuanCuoiKhoa: '2026-10-19' }) === '2026-11-02', 'chưa FT');
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: null, tuanCuoiKhoa: null }) === null, 'không gì');
@@ -410,12 +410,12 @@ export async function runPrMt0Tests(t: YThucTestKit) {
   const lenhCho = (sid: number, lop: number, huong: string) => conn.prepare(
     `INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
      VALUES (?, ?, ?, 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(sid, lop, huong, addDays(week.mondayOf(TODAY), 7), QL.userId, TODAY, new Date().toISOString());
-  check('MT0-6a/c · QL: lớp BE tuần 8 → "Chốt lộ trình · {lớp}", hạn = CN tuần Final − 2 (OV-3b); nháp một em vẫn còn; mọi em có nháp → "đủ nháp, chưa chốt"; đủ quyết định → tự hết', () => {
-    const l = taoLop('BE', 8, 2);
+  check('MT0-6a/c · QL: lớp BE tuần 9 → "Chốt lộ trình · {lớp}", hạn = T5 tuần trước Final (N20); nháp một em vẫn còn; mọi em có nháp → "đủ nháp, chưa chốt"; đủ quyết định → tự hết', () => {
+    const l = taoLop('BE', 9, 2);
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     const code = get('SELECT code FROM classes WHERE id = ?', l.classId).code;
     let v = viecChot(QL).filter((i: any) => i.classId === l.classId);
-    assert(v.length === 1 && v[0].tieuDe === `Chốt lộ trình · ${code}` && v[0].due === addDays(tuanFinal, -8) && v[0].urgency !== 'overdue', JSON.stringify(v));
+    assert(v.length === 1 && v[0].tieuDe === `Chốt lộ trình · ${code}` && v[0].due === addDays(tuanFinal, -4) && v[0].urgency !== 'overdue', JSON.stringify(v));
     loTrinh.luuNhap(QL, l.classId, { items: [{ studentId: l.sids[0], huong: 'fast_track' }] });
     assert(viecChot(QL).some((i: any) => i.classId === l.classId), 'còn em chưa có nháp → chưa xong');
     loTrinh.luuNhap(QL, l.classId, { items: [{ studentId: l.sids[1], huong: 'len_lop' }] });
@@ -435,7 +435,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(mt0Cua(l.sids[0]).length === 1, 'ghi sau hạn vẫn tạo MT0');
   });
   check('MT0-6b/d/f · GVCN, GVBM không có; lớp còn xa hạn không có; PR-LCb: Pre FOU (đã qua hạn) GIỜ CÓ; chỉ số Tổng quan = số lớp của việc', () => {
-    const l = taoLop('FOU', 6, 1);   // FOU 8 tuần: Final tuần 8, hạn CN tuần 7 — tuần 6 trong 13 ngày
+    const l = taoLop('FOU', 7, 1);   // FOU 8 tuần: Final tuần 8, N20 nhắc từ T2 tuần 7, hạn T5 tuần 7
     const xa = taoLop('BE', 3, 1);
     const pf = taoLop('PREFOU', 9, 1);
     const gvcn = ganGv(l.classId, gvKhac(7), null, true);

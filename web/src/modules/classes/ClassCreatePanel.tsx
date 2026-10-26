@@ -30,8 +30,10 @@ type Kieu = 'FT' | 'THUONG';
  * Lỗi ô thường theo PR-N1 (YC-12.5.2, `useLoiForm`): hiện khi rời ô / sau khi bấm; chân một dòng xám `n ô cần sửa ↑`.
  * PR-QU (C): "Nhiều lớp" = lưới `LuoiTaoLop` (một lớp là trường hợp riêng); chỉ hiện khi mở từ "+ Lớp mới" (không `macDinh`).
  */
-export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
+export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
   onClose: () => void;
+  /** P9b (trang Cuối khoá, "+ Mở lớp mới…"): chương trình (suy từ hướng) + chi nhánh (lớp nguồn) khoá theo `macDinh`; `khoa` = ngữ cảnh dưới tiêu đề. */
+  khoa?: string;
   onDone?: (lop: { id: number; code: string }) => void;
   macDinh?: { branchId?: number; chuongTrinh?: string; loTrinh?: string | null; so?: string; startPeriodId?: number | null; previousClassId?: number };
   /** Mặc định true: tạo xong mở hồ sơ lớp. Chuyển tiếp truyền false. */
@@ -144,16 +146,27 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const loiPcDau = loiPc[0] ? `${oList.find((o) => o.khoa === loiPc[0].khoa || o.gop?.includes(loiPc[0].khoa))?.nhan ?? ''}: ${loiPc[0].lyDo}` : undefined;
 
   return (
-    <KhungPanel tieuDe="Tạo lớp mới" onDong={onClose}
+    <KhungPanel tieuDe={khoa ? 'Mở lớp mới' : 'Tạo lớp mới'} ngCanh={khoa} longTrong={!!khoa} onDong={onClose}
       chan={{
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tao}
-            disabled={busy || loiPc.length > 0} title={loiPcDau}>Tạo lớp</button>
+            disabled={busy || loiPc.length > 0} title={loiPcDau}>{khoa ? 'Mở lớp' : 'Tạo lớp'}</button>
         ),
         conThieu,
       }}>
       <div className="space-y-3 pt-3.5">
         {nutCheDo}
+        {khoa ? (
+          <div className="grid grid-cols-2 gap-2.5">
+            <Truong nhan="Chương trình"><input className="field w-full" value={kieu === 'FT' ? 'Fast Track' : kyHieuLop(ct, lt) ?? ct} disabled /></Truong>
+            <Truong nhan="Chi nhánh"><input className="field w-full" value={branch?.name ?? '…'} disabled /></Truong>
+            {kieu === 'FT' && (
+              <div className="col-span-2"><Truong nhan="Lộ trình" as="div">
+                <PhanDoan nhan="Lộ trình" giaTri={loTrinh} onChon={setLoTrinh} muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
+              </Truong></div>
+            )}
+          </div>
+        ) : <>
         <Truong nhan="Chi nhánh" batBuoc loi={loiHien('chi-nhanh')}>
           <select className="field w-full" {...o('chi-nhanh')} value={branchId ?? ''}
             onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : null); setChon({}); }}>
@@ -181,6 +194,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
               }))} />
           </Truong>
         )}
+        </>}
 
         <div>
           <Truong nhan="Số lớp" batBuoc phu="1–4 chữ số, được thêm một chữ cái cuối (101A)" loi={loiHien('so')}>

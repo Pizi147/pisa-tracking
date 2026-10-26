@@ -411,7 +411,7 @@ export function nhomGiaoVienBoMon(
 export type MucMenuDong = 'vi-pham' | 'xu-ly-y-thuc' | 'case' | 'nhap-diem' | 'sua-thong-tin' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
 export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
   'vi-pham': t('+ Ghi vi phạm'), 'xu-ly-y-thuc': t('Xác nhận xử lý'), case: '+ Case', 'nhap-diem': t('Nhập điểm'), 'sua-thong-tin': t('Sửa thông tin'),
-  'lo-trinh-tiep': t('Lộ trình tiếp theo'), 'chuyen-lop': t('Chuyển lớp…'), 'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
+  'lo-trinh-tiep': t('Cuối khoá…'), 'chuyen-lop': t('Chuyển lớp…'), 'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
 };
 /** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Ghi vi phạm · Case · Nhập điểm). */
 export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'];
@@ -669,10 +669,10 @@ export function sapEmCanHoTro<T extends { ten: string; cases: readonly { quaHan:
 
 // ---------------------------------------------------------------- menu ⋯ đầu hồ sơ lớp (PR-OV3a, M2 §1)
 
-export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'chuyen-tiep' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop' | 'lich-su';
-export type MucMenuLop = { key: ViecMenuLop; nhan: string; nhom: 'Lớp' | 'Lộ trình' | 'Công cụ' | null };
+export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop' | 'lich-su';
+export type MucMenuLop = { key: ViecMenuLop; nhan: string; nhom: 'Lớp' | 'Cuối khoá' | 'Công cụ' | null };
 /**
- * Menu ⋯ hồ sơ lớp — CÙNG thứ tự lớp thường và FT: Lớp → Lộ trình → Công cụ → (kẻ) Mở lại / Xoá / Kết thúc (`nhom` null). Mỗi mục giữ
+ * Menu ⋯ hồ sơ lớp: Lớp → Cuối khoá (lớp thường: Cuối khoá… · Kết thúc lớp) → Công cụ → (kẻ) Mở lại / Xoá / Kết thúc lớp FT (`nhom` null). Mỗi mục giữ
  * điều kiện quyền cũ; nhóm không còn mục thì không có tiêu đề. Nút cố định Nhập điểm · + Case nằm ngoài menu.
  */
 export function menuHoSoLop(i: {
@@ -680,7 +680,7 @@ export function menuHoSoLop(i: {
   /** OV-6b2: lớp liên tục (PET, KET…) — không có Lộ trình tiếp theo. */
   lienTuc?: boolean;
   canEditProgress: boolean; canAssign: boolean; canAssignSubject: boolean; canAddStudents: boolean; coTheChuyenTiep: boolean;
-  coTheChuyenNhieuEm: boolean; coTheXuatExcel: boolean; coTheMoLaiLop: boolean; coTheXoa: boolean; coTheKetThuc: boolean;
+  coTheXuatExcel: boolean; coTheMoLaiLop: boolean; coTheXoa: boolean; coTheKetThuc: boolean;
   /** OV-13i: cờ máy chủ `viewer.coTheSuaCaLop` (GVCN / QL / TVV / CX đúng phạm vi); không truyền → theo `canAddStudents`. */
   coTheSuaCaLop?: boolean;
   /** OV-13p: cờ máy chủ `viewer.coTheSuaHocVien` (`student.edit`) — Lộ trình tiếp theo; `canAddStudents` nay là `student.add` (TVV / CX có). Không truyền → theo `canAddStudents`. */
@@ -693,19 +693,21 @@ export function menuHoSoLop(i: {
     ...m('thong-tin', t('Thông tin lớp'), 'Lớp', i.canEditProgress || i.canAssign || i.canAssignSubject),
     ...m('sua-hoc-vien', t('Sửa thông tin học viên'), 'Lớp', (i.coTheSuaCaLop ?? i.canAddStudents) && i.soHocVien > 0),
     ...m('hoc-vien', t('+ Học viên'), 'Lớp', i.canAddStudents),
-    ...m('lo-trinh-ca-lop', t('Lộ trình tiếp theo'), 'Lộ trình', i.thuong && !i.lienTuc && (i.coTheChuyenTiep || (i.coTheSuaHocVien ?? i.canAddStudents))),
-    ...m('chuyen-tiep', t('Chuyển tiếp lớp'), 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm),
+    /* P9b: trang Cuối khoá (thay Lộ trình tiếp theo + Đánh giá đầu ra); R5.3: lớp FT bỏ "Chuyển tiếp lớp" — đổi lớp từng em / chọn nhiều em → Chuyển lớp…. */
+    ...m('lo-trinh-ca-lop', t('Cuối khoá…'), 'Cuối khoá', i.thuong && !i.lienTuc && (i.coTheChuyenTiep || (i.coTheSuaHocVien ?? i.canAddStudents))),
+    /* Mockup V6 k1b: lớp thường — Kết thúc lớp nằm trong nhóm Cuối khoá; lớp FT giữ cuối menu sau đường kẻ (k8). */
+    ...m('ket-thuc-lop', t('Kết thúc lớp'), 'Cuối khoá', i.thuong && i.coTheKetThuc),
     ...m('xuat-mt', t('Xuất Excel'), 'Công cụ', i.coTheXuatExcel),
     ...m('lich-su', t('Lịch sử'), 'Công cụ', !!i.coTheXemLichSu),
     ...m('mo-lai-lop', t('Mở lại lớp'), null, i.coTheMoLaiLop),
     ...m('xoa-lop', t('Xoá lớp'), null, i.coTheXoa),
-    ...m('ket-thuc-lop', t('Kết thúc lớp'), null, i.coTheKetThuc),
+    ...m('ket-thuc-lop', t('Kết thúc lớp'), null, !i.thuong && i.coTheKetThuc),
   ];
 }
 
-/** OV-3b: hồ sơ lớp › tab Học viên › "Lộ trình tiếp theo"; `em` → mở sẵn hộp Lộ trình của em đó (Quản lý). */
+/** P9b: trang con Cuối khoá của hồ sơ lớp; `em` → em đó chọn sẵn + cuộn tới dòng (lối vào từ hồ sơ HV). */
 export const duongLoTrinhLop = (classId: number, em?: number | null): string =>
-  `/hoc-vien/lop/${classId}?che-do=lo-trinh${em ? `&em=${em}` : ''}`;
+  `/hoc-vien/lop/${classId}?xem=cuoi-khoa${em ? `&em=${em}` : ''}`;
 
 // ---------------------------------------------------------------- hồ sơ giáo viên (§3.12, Q2)
 

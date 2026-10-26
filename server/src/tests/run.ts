@@ -9606,6 +9606,9 @@ await runPrBaoCaoLichSuTests({ check, assert, conn, P, TODAY, classId, addDays }
 // ==================================================================== P11 VIEC-DUNG-VAI (cột Việc đúng vai: GV việc của mình, QL gộp theo môn)
 const { runPrViecDungVaiTests } = await import('./prViecDungVai.tests.ts');
 await runPrViecDungVaiTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== P9b CUOI-KHOA (trang Cuối khoá lớp thường, hạn chốt N20, N17, N22)
+const { runPrCuoiKhoaTests } = await import('./prCuoiKhoa.tests.ts');
+await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
