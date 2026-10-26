@@ -175,8 +175,9 @@ export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, cle
           className="field inline-flex h-9 w-auto min-w-0 items-baseline gap-2.5 !px-3 tabular-nums max-sm:h-11">
           {shown ? (
             <>
-              <b className="font-bold text-slate-100">{tuanLich(shown.weekStart, today)}</b>
-              <span className="text-xs text-slate-500">{ngay(shown.weekStart, today)} – {ngay(addDaysStr(shown.weekStart, 6), today)}</span>
+              <b className="whitespace-nowrap font-bold text-slate-100">{tuanLich(shown.weekStart, today)}</b>
+              {/* 375: chỉ mã tuần (ô không xuống dòng); ngày trong lịch khi bấm. */}
+              <span className="whitespace-nowrap text-xs text-slate-500 max-sm:hidden">{ngay(shown.weekStart, today)} – {ngay(addDaysStr(shown.weekStart, 6), today)}</span>
             </>
           ) : <span className="text-slate-500">{t('Đang tải…')}</span>}
         </button>

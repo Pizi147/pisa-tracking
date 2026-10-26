@@ -229,7 +229,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             sEx={sEx?.filter((x) => x.studentId === r.studentId)} />
         ))}
         {chiSEx.map((d) => (
-          <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] py-3 pl-8 pr-3.5">
+          <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] py-3 pl-6 pr-3.5">
             <span className="font-semibold">{d.ten}</span><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
           </article>
         ))}
@@ -525,10 +525,13 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     : <span className="text-xs text-slate-400">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</span>;
   return (
     <>
-    <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] py-3 pl-8 pr-3.5 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2">
-        <Link className="link inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
-        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
+    <article className={`flex flex-col gap-1.5 border-b border-[color:var(--line)] pb-2.5 pl-6 pr-3 pt-1 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
+      <div className="flex min-w-0 items-center gap-x-1">
+        <Link className="link inline-flex min-h-[44px] min-w-0 items-center truncate text-sm font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
+        {/* M2 A2-375: "MT3 · KV 6.5" — dòng đầu một dòng (tên cắt "…" khi dài, tên đủ ở title). */}
+        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400" title={kyVong != null ? t('kỳ vọng {kv}', { kv: fmtBand(kyVong) }) : undefined}>
+          MT{row.attemptNo}{kyVong != null ? ` · ${t('KV {kv}', { kv: fmtBand(kyVong) })}` : ''}
+        </span>
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
       <div className="grid grid-cols-5 gap-1.5 text-center">
@@ -561,7 +564,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     </article>
     {/* M2 A2-375: S Ex là dòng phụ DƯỚI thẻ em (không phải một em khác). */}
     {sEx?.map((d) => (
-      <div key={d.id} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] py-1.5 pl-8 pr-3.5 text-[13px] text-slate-400">
+      <div key={d.id} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] py-1.5 pl-6 pr-3.5 text-[13px] text-slate-400">
         <ChipSEx d={d} ten={row.studentName} studentId={row.studentId} />{d.nguoiCham}
       </div>
     ))}
@@ -592,8 +595,9 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   );
   const chipCotMt = iMt === 1 && !rieng;
   /* Cột giữa (MT/tên … S) và cột sau S (… Kết quả): đếm theo định nghĩa cột đang hiện. */
-  const giua = Math.max(iS - (chipCotMt ? 2 : 1), 0);
-  const sau = Math.max(cotDs.length - iS - 2, 0);
+  const dau = chipCotMt ? 2 : 1, iKq = cotDs.length - 1;   // Kết quả luôn là cột cuối
+  const giua = (iS > 0 ? iS : iKq) - dau;   // không có cột S (mở từ việc): ô giữa trải tới Kết quả
+  const sau = iS > 0 ? iKq - iS - 1 : 0;
   const ketQua = [d.nguoiCham, tuanLich(d.tuan, homNay)].filter(Boolean).join(' · ');
   return (
     <tr className="do-hang dong-sex" data-hv={studentId} data-sex={d.id}>

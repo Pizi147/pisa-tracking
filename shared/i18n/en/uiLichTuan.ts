@@ -3,7 +3,7 @@ export const EN_UI_LICH_TUAN = {
   'bài còn chấm': 'to score',
   'Đang chấm': 'Scoring',
   'Chưa chấm': 'Not started',
-  '{n} lớp · {daCham}/{tong} bài đã chấm': '{n} classes · {daCham}/{tong} tests scored',
+  '{daCham}/{tong} bài đã chấm': '{daCham}/{tong} tests scored',
   'Không có Test': 'No tests',
   'Test tuần này': 'Tests this week',
   'Lịch Test tuần': 'Weekly tests',

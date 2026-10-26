@@ -214,8 +214,10 @@ export function LichTestTab() {
   const tenKhung = (k: Loai) => (k === 'ft' ? 'Fast Track' : t('Lớp thường'));
   /* R1-PHAN-CAP-TEST (M2 A2): "5 lớp · 15/39 bài đã chấm" — số bài cùng nguồn ô "bài đã chấm" của dải số (theo khung đang xem). */
   const tqKhung = loai ? data.tongQuanKhung[loai] : data.tongQuan;
+  /* 375: bỏ "n lớp ·" để tên nhóm + số một dòng. */
   const tomTatTuan = lopTab.length
-    ? t('{n} lớp · {daCham}/{tong} bài đã chấm', { n: new Set(lopTab.map((l) => l.classId)).size, daCham: tqKhung.daCham, tong: tqKhung.tong }) : t('Không có Test');
+    ? <><span className="max-sm:hidden">{t('{n} lớp · ', { n: new Set(lopTab.map((l) => l.classId)).size })}</span>{t('{daCham}/{tong} bài đã chấm', { daCham: tqKhung.daCham, tong: tqKhung.tong })}</>
+    : t('Không có Test');
 
   const tuanPicker = (
     <WeekPicker gon periodId={periodParam ?? data.tuan?.id ?? null} onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />

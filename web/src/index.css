@@ -258,13 +258,13 @@
     td .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
     /* OV-14b: lưới trong panel việc (Công việc / Tổng quan) rộng hơn panel — cuộn trong khung riêng, đầu panel không trôi ngang theo. */
     .luoi-trong-panel .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
-    /* R1-PHAN-CAP-TEST: lưới mở dưới hàng lớp Lịch Test (lớp 60 em) — đầu cột dính ngay dưới hàng lớp dính (cao 50), không khung cuộn riêng. 1280–1439 trả lại khung cuộn (dưới). */
-    .lich-luoi .bang-dinh { overflow: visible; --th-top: calc(50px - 1.25rem); }
+    /* R1-PHAN-CAP-TEST: lưới mở dưới hàng lớp Lịch Test VỪA thẻ (`.luoi-vua`, LuoiNhung đo) — đầu cột dính ngay dưới hàng lớp dính (cao 50),
+       không khung cuộn riêng. Lưới rộng hơn thẻ (lớp thường 4 môn) giữ khung cuộn ngang. */
+    .lich-luoi .luoi-vua .bang-dinh { overflow: visible; --th-top: calc(50px - 1.25rem); }
   }
   /* Rà #235 I2: bảng RỘNG HƠN khung ở 1280–1439 px (Tổng hợp 1332–1393 px; lưới Điểm theo lớp 1108 px, khung 950 px) giữ khung cuộn riêng, chỉ dính đầu từ 1440. */
   @media (min-width: 1280px) and (max-width: 1439px) {
     .bang-dinh.bang-dinh-1440 { overflow-x: auto; overflow-y: hidden; }
-    .lich-luoi .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
   }
 
   /* VN17: có panel / hộp thoại mở thì toast lên trên (dưới đầu panel), không che nút ở chân panel. */
@@ -447,8 +447,8 @@
   @media not all and (min-width: 768px) { .lich-lop > tbody > tr.hang-lon > td:first-child { padding-left: 20px; } }   /* M2 A2-375: thụt 20 */
   .lich-lop > tbody > tr.hang-lon.dang-mo .ten-lop { font-size: 17px; }   /* mockup 16 → 17: bậc gần nhất của thang chữ (do-bang g5) */
   .day-khoi { background: var(--cap-lop-dong); }
-  /* Ô / thẻ em không trốn dưới hàng lớp dính khi con trỏ / "Lưu · bài tiếp" cuộn tới. */
-  .lich-luoi :is(td, article) { scroll-margin-top: 64px; }
+  /* Ô / nút / ô nhập không trốn dưới hàng lớp dính (+ đầu cột lưới dính ≥ 1280) khi focus / con trỏ / "Lưu · bài tiếp" cuộn tới. */
+  #noi-dung:has(.lich-lop tr.dang-mo) { scroll-padding-top: 96px; }
   .lich-luoi .bang th { background: var(--cap-dau-cot); border-bottom: 0; }
   .lich-luoi .bang-cong-cu { padding: 4px 12px 6px 44px; }   /* công cụ trên lưới lớp thường (Tổng số câu · Điền ô trống) thẳng cột Học viên */
   .lich-luoi .bang :is(th, td):first-child { padding-left: 44px; }

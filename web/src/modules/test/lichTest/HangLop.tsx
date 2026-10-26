@@ -125,7 +125,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
   /** SV-S-EXPERT: lượt S Ex của tuần — cột S Ex trong lưới FT. */
   sEx: LichTest['sEx'];
 }) {
-  const cot = hep ? [null, 92, 96] : [174, null, ...(coChiNhanh ? [110] : []), 110, 180, 140, 44];   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày"
+  const cot = hep ? [null, 92, 96] : [190, null, ...(coChiNhanh ? [110] : []), 110, 180, 220, 44];   // "L, R của bạn: còn 120 bài" một dòng   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày"
   const soCot = cot.length;
   /* Lớp kế (sau lớp này, vòng lên) còn bài của người xem — cùng số "… của bạn: còn n bài" ở hàng lớp. */
   const onHet = (l: LopLichTest) => () => {
@@ -186,14 +186,14 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
                  (lớp dài khỏi cuộn ngược) + số cùng nguồn hàng lớp. */
               <div className="day-khoi mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 py-1.5 pl-7 pr-4 text-[13px] text-slate-400 max-md:pl-5">
                 <button type="button" aria-expanded
-                  className="link inline-flex min-h-[32px] items-center appearance-none border-0 bg-transparent p-0 font-semibold no-underline max-sm:min-h-[44px]"
+                  className="link inline-flex min-h-[32px] items-center gap-1 appearance-none border-0 bg-transparent p-0 font-semibold no-underline max-sm:min-h-[44px]"
                   onClick={(e) => {
                     const bang = e.currentTarget.parentElement?.previousElementSibling;
                     onMo(l);
                     /* Nút này mất khi thu → con trỏ phím về ▸ của hàng lớp. */
                     requestAnimationFrame(() => { bang?.scrollIntoView({ block: 'nearest' }); bang?.querySelector<HTMLElement>('button[aria-expanded]')?.focus({ preventScroll: true }); });
                   }}>
-                  ▴ {t('Thu lớp {classCode}', { classCode: l.classCode })}
+                  <span aria-hidden>▴</span> {t('Thu lớp {classCode}', { classCode: l.classCode })}
                 </button>
                 <span className="tabular-nums">{t('{daCham}/{tong} bài · {n} HV', { daCham: l.daCham, tong: l.tong, n: l.soHv })}</span>
               </div>

@@ -650,7 +650,9 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
     if ((e.target as HTMLElement).closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
     if (!moi.current.daGo) moi.current.onDong();
     else {
-      /* R1-PHAN-CAP-TEST: đã gõ → cú bấm ra ngoài không làm gì (vd thu lớp chứa ô — mất chữ); hỏi Bỏ · Gõ tiếp như Esc. */
+      /* R1-PHAN-CAP-TEST: đã gõ → cú bấm ra ngoài không làm gì (vd thu lớp chứa ô — mất chữ; focus không sang nút đó, <select> không mở);
+         hỏi Bỏ · Gõ tiếp như Esc. */
+      e.preventDefault();
       const chan = (ev: Event) => { if (!box.current?.contains(ev.target as Node)) { ev.stopPropagation(); ev.preventDefault(); } };
       document.addEventListener('click', chan, { capture: true, once: true });
       setTimeout(() => document.removeEventListener('click', chan, true), 1000);   // kéo chuột ra ngoài không thành click → gỡ chặn

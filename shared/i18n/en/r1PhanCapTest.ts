@@ -6,6 +6,6 @@ export const EN_R1_PHAN_CAP_TEST = {
   '{daCham}/{tong} bài · {n} HV': (b) => `${b.daCham}/${b.tong} tests · ${b.n} ${Number(b.n) === 1 ? 'student' : 'students'}`,
   'S Expert ngày {ngay}': 'S Expert on {ngay}',
   'S Expert của {ten}': 'S Expert of {ten}',
-  'Dán nhiều điểm từ Excel: dùng panel <b>Nhập điểm</b> (Học viên & Lớp › <b>⋯</b> › Nhập điểm) — lưới Lịch Test không có nút Dán.':
-    'To paste many scores from Excel, use the <b>Enter scores</b> panel (Students & Classes › <b>⋯</b> › Enter scores) — the Weekly tests grid has no Paste button.',
+  'KV {kv}': 'Exp. {kv}',
+  '{n} lớp · ': (b) => `${b.n} ${Number(b.n) === 1 ? 'class' : 'classes'} · `,
 } satisfies Record<string, Dich>;
