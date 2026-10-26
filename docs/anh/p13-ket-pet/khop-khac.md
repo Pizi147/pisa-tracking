@@ -140,3 +140,19 @@ Phép kiểm tốc độ sau gộp P9a: TD4-a chụp lại 7 băm — so JSON ×
 và tổng bài nhóm W3 SEP (+3); 4 góc trùng hẳn. Trần dòng Học viên & Lớp (×3): P13 trước gộp 7 313, main 7 507, bản gộp 7 543 (seed PET 4 môn gặp bộ demo Xét lại)
 → trần 7 510 → 7 545, mã đường không đổi. `standingFor` chỉ đọc bảng chương trình cho mã không có hằng số (KET / PET) — FT không đọc thêm (TD2-a giữ trần).
 
+## Vòng 3 — PTA Plan rà (26/10)
+
+| # | Việc | Cách sửa | Phép kiểm |
+|---|---|---|---|
+| 1 | Huỷ cả lượt Checkpoint đã chấm L+S / R+W → 400 | `xoaDiemLuot` kiểm môn theo lượt (`boMonCuaLuot`) | KP-6a |
+| 2 | Excel PET trộn lượt gộp / 4 môn lệch cột | `bangThuong`: tiêu đề = hợp môn mọi dòng (môn chương trình trước, L+S / R+W sau), dòng điền theo mã môn, thiếu để trống | KP-6c |
+| 3 | Lượt có lịch gộp chưa điểm kẹt (khôi phục, có `ket_qua_huy`, lớp đã kết thúc) | MỘT luật: `daGhi` = dòng lịch ∪ dòng điểm (`daGhiLuot`) ở `boMonCuaLuot` và mọi nơi gọi `boMonTheoLuot` — nơi đã nạp `bundle.skillRows` / `attempt_skills` dùng luôn; nơi chưa nạp đọc theo lô CHỈ dòng lịch môn gộp (`lichGopCua` — rất ít dòng, giữ trần đọc) | KP-6b, KP-6a |
+| 4 | Bước 3–4 không có nhật ký | Mỗi lộ trình một dòng `cycle.update` (trước → sau, `kyThi`, nguồn "migrate prKetPet") trong cùng `tx`; chú thích đầu tệp nói rõ bước 3–4 đụng cả khoá đã đóng | KP-6d |
+| 5 | Chạy lại mỗi deploy | Bước 1–2 một lần (`demo_config` `pr_ket_pet_at`, mẫu `prCvLoi`); bước 3–4 chạy mỗi lần (không còn gì thì không làm) | KP-6e, KP-2b |
+| 6 | Lớp PET / KET đã kết thúc không tách | Bước 2a: `class_skills` + phân công của MỌI lớp (dòng gộp giữ, dòng tách chép nguyên trạng thái / ngày hiệu lực); lượt không đụng | KP-6f |
+| nhỏ | Câu KQ thi thật ghép ở máy chủ | Các lộ trình trả `ketQua.kyThi` (số liệu) — web ghép `t('Thi thật {kq}')` (EN có) | KP-6g |
+| nhỏ | `docDiem` KET / PET | Đọc như `docTargetKyThi` (chỉ chữ số nguyên; "160.0", "1.6e2" → 400 đúng ô) | KP-6g |
+
+Ghi chú KP-6a: lớp thường Huỷ cả lượt XOÁ điểm (PR-VN4) — Khôi phục trả lượt về "planned", lịch gộp giữ; nhập lại L+S / R+W được (trước: 400 ngay khi huỷ).
+Mỗi phép kiểm KP-6a…g đã chạy ĐỎ khi gỡ đúng phần sửa của nó, XANH khi có.
+
