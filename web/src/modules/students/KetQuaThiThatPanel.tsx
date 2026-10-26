@@ -9,7 +9,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { MONTH_CODE, hienTargetKck, ketQuaKyThi, ketQuaThiThat, kiemDiemKyThi, kyThiCuaChuongTrinh, ngay } from '@shared/domain/index.ts';
+import { MONTH_CODE, chuGradeKyThi, hienTargetKck, ketQuaKyThi, ketQuaThiThat, kiemDiemKyThi, kyThiCuaChuongTrinh, ngay } from '@shared/domain/index.ts';
 import { laBand } from './StudentPlanPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
@@ -148,7 +148,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
             {kqKt && !kqKt.khongThi && (
               <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-300">
                 {/* P13: Grade + CEFR tính từ Overall (không lưu) — "Grade B · B1". */}
-                <span className="tabular-nums">{[kqKt.grade ? `Grade ${kqKt.grade}` : t('dưới Grade C'), kqKt.cefr].filter(Boolean).join(' · ')}</span>
+                <span className="tabular-nums">{chuGradeKyThi(kqKt)}</span>
                 {kqKt.dat !== null && <Nhan tone={kqKt.dat ? 'ok' : 'bad'}>{kqKt.dat ? t('Đạt Target') : t('Chưa đạt Target')}</Nhan>}
               </div>
             )}

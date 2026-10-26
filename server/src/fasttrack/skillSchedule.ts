@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
-import { db, theoLo, tx } from '../db.ts';
+import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
+  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
   khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -165,32 +165,10 @@ export function boMonCuaLuot(conn: any, attemptId: number, dongLich?: readonly {
   if (r?.kind === 'mt0') return ASSESSED_SKILLS;   // PR-MT0: MT0 luôn bốn kỹ năng IELTS
   const prog = programmeByCode(r?.ct);
   const bo = boMonLich(r?.ct ?? null, prog?.skills);
-  if (!prog?.lapMoiTuan) return bo;
-  /* P13: lượt gộp cũ — đọc từ dòng lịch nơi gọi đã nạp (`ensureSkillRows`) thay vì hỏi thêm một câu. */
-  if (dongLich) { const gop = dongLich.filter((x) => x.skill in MON_GOP).map((x) => x.skill).sort(); return gop.length && !bo.some((k) => k in MON_GOP) ? gop : bo; }
-  return monGopCu([attemptId], { ...prog, skills: bo }).get(attemptId) ?? bo;
+  /* P13: lượt đã ghi môn gộp cũ → bộ gộp (`boMonTheoLuot`). Chỉ chương trình liên tục có thể có; dòng lịch nơi gọi đã nạp không còn môn gộp → khỏi hỏi điểm. */
+  if (!prog?.lapMoiTuan || (dongLich && !dongLich.some((x) => Object.hasOwn(MON_GOP, x.skill)))) return bo;
+  return boMonTheoLuot(bo, (conn.prepare('SELECT skill FROM assessment_scores WHERE attempt_id = ?').all(attemptId) as any[]).map((x) => x.skill));
 }
-
-/**
- * P13 KET-PET (N18): lượt của chương trình LIÊN TỤC đã chấm MÔN GỘP (L+S, R+W) trước khi chương trình tách 4 môn (migrate `prKetPet` giữ đợt đã có
- * điểm) → bộ môn của CHÍNH lượt đó. Lượt khác / chương trình còn môn gộp / chương trình có số tuần: không có trong Map (dùng bộ môn chương trình).
- */
-export function monGopCu(attemptIds: readonly number[], prog: { skills: readonly string[]; lapMoiTuan?: number | null } | null | undefined): Map<number, string[]> {
-  const out = new Map<number, string[]>();
-  const gop = Object.keys(MON_GOP);
-  if (!prog?.lapMoiTuan || !attemptIds.length || prog.skills.some((k) => gop.includes(k))) return out;
-  theoLo([...new Set(attemptIds)], (lo, ph) => {
-    for (const r of db().prepare(`SELECT attempt_id, skill FROM attempt_skills WHERE skill IN (${gop.map(() => '?').join(',')}) AND attempt_id IN (${ph}) ORDER BY attempt_id, skill`)
-      .all(...gop, ...lo) as any[]) {
-      if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
-      out.get(r.attempt_id)!.push(r.skill);
-    }
-  });
-  return out;
-}
-/** Bộ môn chấm của MỘT lượt lớp thường: lượt gộp cũ (P13) → môn của lượt; còn lại = môn chương trình. */
-export const monCuaLuotThuong = (prog: { skills: readonly string[]; lapMoiTuan?: number | null }, attemptId: number): readonly string[] =>
-  monGopCu([attemptId], prog).get(attemptId) ?? prog.skills;
 
 export function ensureSkillRows(attemptId: number): SkillRow[] {
   const conn = db();

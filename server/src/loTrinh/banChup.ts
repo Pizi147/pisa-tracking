@@ -7,7 +7,7 @@
  */
 import { theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, daiCuoiKhoa, huongTiep, ketQuaThiThat, type AssessedSkill, type LyDoDong,
+  ASSESSED_SKILLS, boMonTheoLuot, daiCuoiKhoa, huongTiep, ketQuaThiThat, type AssessedSkill, type LyDoDong,
 } from '../../../shared/domain/index.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, nguongDatKhacMacDinh, nguongDatLop, programmeByCode } from '../normal/regular.ts';
@@ -46,7 +46,7 @@ export function tinhLuot(
 ): LuotTinh {
   const diemRows = huy ? [] : rows;
   if (!nc.laFt) {
-    const r = evaluateRegular(nc.mon, diemRows, nc.maCt, nc.nguong);
+    const r = evaluateRegular(boMonTheoLuot(nc.mon, rows.map((x) => x.skill)), diemRows, nc.maCt, nc.nguong);   // P13: bộ môn theo lượt
     const dong = r.skills.map((s) => ({
       kyNang: s.skill, batBuoc: 1, boQua: 0, diem: s.score, diemTho: null, diemTong: s.total,
       dat: s.outcome === 'missing' ? null : s.outcome === 'pass' ? 1 : 0,

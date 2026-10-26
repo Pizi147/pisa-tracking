@@ -5,7 +5,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { NutChon, TargetText } from '../../ui/ui.tsx';
-import { chuTargetKck, dsLoi, tachKck, type LuatTruong, type TruongDeXuat } from '@shared/domain/index.ts';
+import { chuTargetKck, docTargetKyThi, dsLoi, tachKck, type KyThi, type LuatTruong, type TruongDeXuat } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -21,7 +21,9 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   studentId: number; studentName: string; lop?: string | null;
   truongDau?: TruongDeXuat;
   /** Giá trị đang có — hiện cạnh ô mới để người gửi thấy mình đổi từ đâu. */
-  hienTai?: { target?: number | null; khongCamKet?: boolean; route?: string | null };
+  hienTai?: { target?: number | null; khongCamKet?: boolean; route?: string | null;
+    /** P13: khoá KET / PET — Target theo thang Cambridge (số nguyên trong thang, không KCK). */
+    kyThi?: KyThi | null };
   /** OV-7a: người gửi Sửa thẻ còn chờ — điền sẵn, giữ trường (đổi trường thì Rút rồi gửi lại). */
   sua?: { id: number; truong: TruongDeXuat; moi: string; lyDo: string };
   onClose: () => void; onDone?: () => void;
@@ -30,10 +32,11 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   const lf = useLoiForm();
   const [truong, setTruong] = useState<TruongDeXuat | null>(sua?.truong ?? truongDau ?? null);
   /* OV-9: Target = số + ô tích KCK riêng; thẻ cũ "6.5 KCK" / "KCK" tách ra khi Sửa. */
-  const tachSua = sua?.truong === 'target' ? tachKck(sua.moi) : null;
+  const kt = hienTai?.kyThi ?? null;
+  const tachSua = sua?.truong === 'target' ? (kt ? { so: sua.moi, kck: false } : tachKck(sua.moi)) : null;
   const [moi, setMoi] = useState(tachSua ? String(tachSua.so ?? '') : sua?.moi ?? '');
   /* OV-11d (Q8): dấu KCK chỉ QL / Quản trị / TVV đổi — đề xuất của GV giữ dấu đang có (chỉ đọc; máy chủ 403 nếu khác). */
-  const kck = tachSua ? tachSua.kck : !!hienTai?.khongCamKet;
+  const kck = kt ? false : tachSua ? tachSua.kck : !!hienTai?.khongCamKet;
   const moiGui = truong === 'target' ? chuTargetKck(moi.trim() || null, kck) : moi;
   const [lyDo, setLyDo] = useState(sua?.lyDo ?? '');
   const [busy, setBusy] = useState(false);
@@ -46,7 +49,8 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   ];
   const loi = [
     ...dsLoi(luat, { truong, moi: moiGui, 'ly-do': lyDo }),
-    ...(truong === 'target' && moi !== '' && !hopLeTarget(moi) ? [{ khoa: 'moi', nhan: t('Target mới'), lyDo: t('Band từ 0 đến 9, bước 0.5') }] : []),
+    ...(truong === 'target' && moi !== '' && (kt ? 'loi' in docTargetKyThi(kt, moi) : !hopLeTarget(moi))
+      ? [{ khoa: 'moi', nhan: t('Target mới'), lyDo: kt ? t('Số nguyên {min}–{max}', { min: kt.min, max: kt.max }) : t('Band từ 0 đến 9, bước 0.5') }] : []),
   ];
 
   const gui = async () => {
@@ -85,11 +89,11 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
             as={truong === 'target' ? 'div' : undefined}>
             {truong === 'target' ? (
               <div className="flex flex-wrap items-center gap-2">
-                <input className="field w-24 tabular-nums" aria-label={t('Target mới')} type="number" inputMode="decimal" step="0.5" min={0} max={9}
+                <input className="field w-24 tabular-nums" aria-label={t('Target mới')} type="number" inputMode={kt ? 'numeric' : 'decimal'} step={kt ? 1 : 0.5} min={kt?.min ?? 0} max={kt?.max ?? 9}
                   {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)} />
                 {kck && <span className="text-sm text-slate-300">KCK</span>}
                 {(hienTai?.target != null || hienTai?.khongCamKet) && (
-                  <span className="text-xs text-slate-400 tabular-nums">{t('đang là')}{' '}<TargetText band={hienTai.target} kck={hienTai.khongCamKet} /></span>
+                  <span className="text-xs text-slate-400 tabular-nums">{t('đang là')}{' '}<TargetText band={hienTai.target} kck={!kt && hienTai.khongCamKet} kyThi={kt} /></span>
                 )}
               </div>
             ) : truong === 'lo-trinh' ? (

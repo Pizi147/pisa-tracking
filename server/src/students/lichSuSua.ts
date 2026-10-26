@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { can, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { NHAN_SAU_THI, nhanHanhDongNhatKy, PERMISSIONS, STUDENT_STATUS_LABEL, tuanLich, type LuaChonSauThi } from '../../../shared/domain/index.ts';
+import { NHAN_SAU_THI, kyThiCuaChuongTrinh, nhanHanhDongNhatKy, PERMISSIONS, STUDENT_STATUS_LABEL, tuanLich, type LuaChonSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 
 /**
@@ -81,7 +81,8 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
 
   const ph = HANH_DONG.map(() => '?').join(',');
   const cau = conn.prepare(
-    `SELECT a.id, a.action, a.entity_type et, a.before_json b, a.after_json f, a.created_at luc, a.actor_user_id uid, u.full_name ten
+    `SELECT a.id, a.action, a.entity_type et, a.before_json b, a.after_json f, a.created_at luc, a.actor_user_id uid, u.full_name ten,
+            (SELECT CASE WHEN x.route IS NULL THEN x.programme_code END FROM learning_cycles x WHERE a.entity_type IN ('learning_cycle', 'lich_thi') AND x.id = a.entity_id) ct
        FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
       WHERE a.action IN (${ph}) AND a.id < ?
         AND ((a.entity_type = 'student' AND a.entity_id = ?)
@@ -89,7 +90,7 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
       ORDER BY a.id DESC LIMIT ?`,
   );
 
-  type Tho = { id: number; luc: string; uid: number | null; nguoi: string; nguon: string | null; hd: Set<string>; doi: Map<string, [unknown, unknown]> };
+  type Tho = { id: number; luc: string; uid: number | null; nguoi: string; nguon: string | null; hd: Set<string>; doi: Map<string, [unknown, unknown]>; ct: string | null };
   const khoi: Tho[] = [];
   let truoc = q.truoc ?? Number.MAX_SAFE_INTEGER;
   let conNua = true;
@@ -108,8 +109,8 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
       if (tr && tr.uid === r.uid && tr.nguon === nguon && Math.abs(Date.parse(tr.luc) - Date.parse(r.luc)) <= 5000
         && GOP.has(r.action) && [...tr.hd].every((x) => GOP.has(x))) {
         for (const [c, [cu, moi]] of doi) tr.doi.set(c, [cu, tr.doi.get(c)?.[1] ?? moi]);
-        tr.id = r.id; tr.hd.add(r.action);
-      } else khoi.push({ id: r.id, luc: r.luc, uid: r.uid, nguoi: r.ten ?? 'Hệ thống', nguon, hd: new Set([r.action]), doi });
+        tr.id = r.id; tr.hd.add(r.action); tr.ct ??= r.ct ?? null;
+      } else khoi.push({ id: r.id, luc: r.luc, uid: r.uid, nguoi: r.ten ?? 'Hệ thống', nguon, hd: new Set([r.action]), doi, ct: r.ct ?? null });
     }
   }
   /* Còn dòng chưa đọc → khối cuối có thể nối tiếp ở trang sau: bỏ, đọc lại từ đó (con trỏ = id nhỏ nhất đã giữ). */
@@ -121,7 +122,7 @@ export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; t
   const dong = trang.map((k) => ({
     id: k.id, luc: k.luc, nguoi: k.nguoi, nguon: k.nguon,
     truong: [...k.doi].sort((x, y) => THU_TU.indexOf(x[0]) - THU_TU.indexOf(y[0]))
-      .map(([c, [cu, moi]]) => ({ ten: TRUONG[c][0], cu: hien(c, cu, ten), moi: hien(c, moi, ten) }))
+      .map(([c, [cu, moi]]) => ({ ten: TRUONG[c][0], cu: hien(c, cu, ten, k.ct), moi: hien(c, moi, ten, k.ct) }))
       .filter((x) => x.cu !== x.moi)
       .filter((x, i, ds) => ds.findIndex((y) => y.ten === x.ten) === i),   // tuần thi + tháng thi cùng đổi (cùng tên) → giữ tuần
   })).filter((d) => d.truong.length);
@@ -156,26 +157,28 @@ function doiCuaDong(r: { action: string; et: string; b: string | null }, f: Reco
  */
 export function truongSuaCaLop(tu: number, den: number): { ten: string; cu: string | null; moi: string | null; doiTuong: string; sid: number | null; khoa: string }[] {
   const rows = db().prepare(
-    `SELECT a.action, a.entity_type et, a.entity_id eid, a.before_json b, a.after_json f, COALESCE(s.id, lc.student_id) sid, COALESCE(s.full_name, s2.full_name) hv
+    `SELECT a.action, a.entity_type et, a.entity_id eid, a.before_json b, a.after_json f, COALESCE(s.id, lc.student_id) sid, COALESCE(s.full_name, s2.full_name) hv,
+            (SELECT CASE WHEN x.route IS NULL THEN x.programme_code END FROM learning_cycles x WHERE a.entity_type IN ('learning_cycle', 'lich_thi') AND x.id = a.entity_id) ct
        FROM audit_logs a LEFT JOIN students s ON a.entity_type = 'student' AND s.id = a.entity_id
        LEFT JOIN learning_cycles lc ON a.entity_type IN ('learning_cycle', 'lich_thi') AND lc.id = a.entity_id LEFT JOIN students s2 ON s2.id = lc.student_id
       WHERE a.id > ? AND a.id < ? AND a.action IN (${HANH_DONG.map(() => '?').join(',')}) ORDER BY a.id`,
   ).all(tu, den, ...HANH_DONG) as any[];
-  const theoEm = new Map<string, { hv: string | null; sid: number | null; doi: Map<string, [unknown, unknown]> }>();
+  const theoEm = new Map<string, { hv: string | null; sid: number | null; doi: Map<string, [unknown, unknown]>; ct: string | null }>();
   for (const r of rows) {
     /* Em đã xoá: không còn hàng `students` — khoá theo đối tượng của dòng nhật ký (em = id em ở dòng `student`). */
     const sid: number | null = r.sid ?? (r.et === 'student' ? r.eid : null);
     const khoa = sid !== null ? `s${sid}` : `${r.et}:${r.eid}`;
-    const em = theoEm.get(khoa) ?? { hv: r.hv ?? null, sid, doi: new Map() };
+    const em = theoEm.get(khoa) ?? { hv: r.hv ?? null, sid, doi: new Map(), ct: null };
+    em.ct ??= r.ct ?? null;
     theoEm.set(khoa, em);
     for (const [c, [cu, moi]] of doiCuaDong(r, docJson(r.f), null)) em.doi.set(c, [em.doi.has(c) ? em.doi.get(c)![0] : cu, moi]);
   }
   const ten = tenTheoLo([...theoEm.values()]);
   let daXoa = 0;
-  return [...theoEm].flatMap(([khoa, { hv, sid, doi }]) => {
+  return [...theoEm].flatMap(([khoa, { hv, sid, doi, ct }]) => {
     const doiTuong = hv ?? `Học viên đã xoá · ${(daXoa += 1)}`;
     return [...doi].sort((x, y) => THU_TU.indexOf(x[0]) - THU_TU.indexOf(y[0]))
-      .map(([c, [cu, moi]]) => ({ ten: TRUONG[c][0], cu: hien(c, cu, ten), moi: hien(c, moi, ten), doiTuong, sid, khoa }))
+      .map(([c, [cu, moi]]) => ({ ten: TRUONG[c][0], cu: hien(c, cu, ten, ct), moi: hien(c, moi, ten, ct), doiTuong, sid, khoa }))
       .filter((x) => x.cu !== x.moi).filter((x, i, ds) => ds.findIndex((y) => y.ten === x.ten) === i);
   });
 }
@@ -204,7 +207,8 @@ function tenTheoLo(ds: { doi: Map<string, [unknown, unknown]> }[]): BangTen {
   return out;
 }
 
-function hien(c: string, v: unknown, ten: BangTen): string | null {
+/** `ct`: mã chương trình của lộ trình (lộ trình lớp thường) — KET / PET hiện Target theo thang Cambridge (số nguyên), không định dạng band. */
+function hien(c: string, v: unknown, ten: BangTen, ct: string | null = null): string | null {
   const kieu = TRUONG[c][2];
   if (kieu === 'co') return v ? 'Có' : 'Không';
   if (v === null || v === undefined || v === '') return null;
@@ -212,7 +216,7 @@ function hien(c: string, v: unknown, ten: BangTen): string | null {
   switch (kieu) {
     case 'ngay': return /^\d{4}-\d{2}-\d{2}/.test(s) ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : s;
     case 'thang': return /^\d{4}-\d{2}$/.test(s) ? `${s.slice(5, 7)}/${s.slice(0, 4)}` : s;
-    case 'band': return Number.isFinite(Number(v)) ? (Number(v) > 9 ? String(Number(v)) : Number(v).toFixed(1)) : s;   // P13: điểm Cambridge (> 9) giữ số nguyên
+    case 'band': return Number.isFinite(Number(v)) ? (c === 'target_score' && kyThiCuaChuongTrinh(ct) ? String(Number(v)) : Number(v).toFixed(1)) : s;
     case 'trangThai': return STUDENT_STATUS_LABEL[s as keyof typeof STUDENT_STATUS_LABEL] ?? s;
     case 'buocTiep': return NHAN_SAU_THI[s as LuaChonSauThi] ?? s;
     case 'ketLuan': return KET_LUAN[s] ?? s;

@@ -9,7 +9,7 @@
  */
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, type AttemptKind, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
-  caseCategoryLabel, khoaBai, nhanBai,
+  caseCategoryLabel, khoaBai, nhanBai, boMonTheoLuot,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -87,7 +87,9 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
   };
 
   if (thuong) {
-    const mon = [...(prog?.skills ?? REGULAR_SKILLS)];
+    /* P13: dòng = bộ môn của các lượt đang xét (`boMonTheoLuot`) — lượt đã ghi môn gộp cũ thêm dòng L+S / R+W. */
+    const boCt = prog?.skills ?? REGULAR_SKILLS;
+    const mon = [...new Set([...boCt, ...attempts.flatMap((a) => boMonTheoLuot(boCt, (bundle.scores.get(a.id) ?? []).map((x: any) => x.skill)))])];
     const khongChiaMon = prog?.code === 'PREFOU';
     for (const a of attempts) {
       const r = danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, null);
@@ -144,7 +146,7 @@ export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo |
 } | null {
   if (prog?.scoringMode === 'ratio') {
     if (a.kind !== 'progress' && a.kind !== 'final' && a.kind !== 'checkpoint') return null;
-    const r = evaluateRegular([...(prog?.skills ?? REGULAR_SKILLS)], scores as any, prog?.code, nguongDatLop(a.class_id));
+    const r = evaluateRegular(boMonTheoLuot(prog?.skills ?? REGULAR_SKILLS, scores.map((x: any) => x.skill)), scores as any, prog?.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
     return {
       mon: r.skills.filter((x) => x.outcome === 'pass' || x.outcome === 'fail').map((x) => ({ skill: x.skill as string, dat: x.outcome === 'pass' })),
       tyLeTong: r.tyLeTong ?? null, nguong: r.passThreshold, ovr: null, kv: null,

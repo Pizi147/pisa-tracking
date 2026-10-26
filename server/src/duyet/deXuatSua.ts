@@ -72,7 +72,7 @@ export function lyDoDeXuat(v: unknown): string {
 }
 
 /** Giá trị mới của một trường đề xuất + giá trị cũ ghi vào thẻ — dùng chung lúc gửi và lúc người gửi Sửa (OV-7a). */
-export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeXuat, moiVao: unknown): { cu: string | number | null; moi: string | number } {
+export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeXuat, moiVao: unknown): { cu: string | number | null; moi: string | number; kyThi?: string } {
   const ht = hienTaiCua(conn, studentId);
   let moi: string | number;
   let cu: string | number | null = null;
@@ -90,10 +90,11 @@ export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeX
     }
     if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi Target.');
     /* OV-11d (Q8): đề xuất là đường của GV — dấu KCK chỉ QL / Quản trị / TVV đổi (`reviseTarget`), đề xuất giữ dấu đang có. */
-    if (kck !== !!ht.cycle.khong_cam_ket) throw forbidden(CHI_DOI_KCK);
+    if (!kt && kck !== !!ht.cycle.khong_cam_ket) throw forbidden(CHI_DOI_KCK);   // P13: khoá KET / PET không có KCK — bỏ qua cờ
     moi = kck ? chuTargetKck(coSo ? n : null, true) : n;
-    cu = ht.cycle.khong_cam_ket ? chuTargetKck(ht.cycle.target_score ?? null, true) : ht.cycle.target_score ?? null;
+    cu = !kt && ht.cycle.khong_cam_ket ? chuTargetKck(ht.cycle.target_score ?? null, true) : ht.cycle.target_score ?? null;
     if (cu === moi) throw badRequest('Target mới trùng Target hiện tại.');
+    if (kt) return { cu, moi, kyThi: kt.ma };   // P13: thẻ nhớ thang (KET / PET) — Sửa đề xuất kiểm cùng thang
   } else if (truong === 'lo-trinh') {
     const code = String(moiVao ?? '').trim();
     if (!conn.prepare(`SELECT 1 FROM routes WHERE code = ? AND status = 'active'`).get(code)) throw badRequest('Chọn một lộ trình còn dùng.');

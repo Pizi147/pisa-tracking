@@ -27,6 +27,8 @@ export type DongChoMenu = {
   id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string; classId: number; luot: string | null } | null; status?: string; ft?: boolean;
   /** Danh sách nhiều lớp (Học viên & Lớp TVV / CX): lớp và quyền của chính dòng — không gửi thì theo bảng. */
   maLop?: string | null; suaThongTin?: boolean; suaThem?: boolean;
+  /** P13: khoá KET / PET — ⋯ theo vai có "Kết quả thi thật". */
+  kyThi?: boolean;
   /** OV-12e: em đang cần xử lý Ý thức (cờ `canhBaoYThuc` của dòng) — ⋯ có "Xác nhận xử lý". */
   xuLyYThuc?: boolean;
 };
@@ -88,7 +90,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
   ] : quyen.theoVai ? [
     ...mucDongTheoVai({
       suaThongTin: d.suaThongTin ?? !!quyen.coTheSuaThongTin, suaThem: d.suaThem ?? !!quyen.coTheSuaThem,
-      ft: d.ft ?? !laLopThuong, status: d.status ?? (d.dangHoc ? 'active' : 'finished'),
+      ft: d.ft ?? !laLopThuong, status: d.status ?? (d.dangHoc ? 'active' : 'finished'), kyThi: d.kyThi,
     }).map((m): MucMenu => ({ key: m.key, nhan: m.nhan, onChon: () => setMo({ viec: 'sua-thong-tin', id: d.id, ten: d.ten, quanLy: m.key, lop: d.maLop }) })),
     { key: 'ho-so', nhan: t('Mở hồ sơ'), keTruoc: true, onChon: () => navigate(duongHoSoHocVien(d.id)) },
   ] : mucMenuDongHocVien({

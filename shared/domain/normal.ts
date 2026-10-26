@@ -154,6 +154,15 @@ const TEN_CHUNG: Record<string, string> = {
 export const MON_CHON = ['listening', 'reading', 'writing', 'speaking', 'listening_speaking', 'reading_writing'] as const;
 /** Môn gộp → hai môn nó đã gồm (không chọn cùng lúc). */
 export const MON_GOP: Record<string, readonly string[]> = { listening_speaking: ['listening', 'speaking'], reading_writing: ['reading', 'writing'] };
+/**
+ * P13 KET-PET: MỘT luật bộ môn chấm của một lượt lớp thường — chương trình đã tách môn (không còn L+S, R+W) mà lượt đã GHI ở môn gộp cũ (điểm, dấu "-",
+ * nhận xét: có dòng `assessment_scores`) → bộ gộp của lượt đó; còn lại → bộ môn chương trình. `daGhi` = các môn có dòng điểm của lượt.
+ */
+export function boMonTheoLuot(boCt: readonly string[], daGhi: Iterable<string>): readonly string[] {
+  if (boCt.some((k) => Object.hasOwn(MON_GOP, k))) return boCt;
+  for (const k of daGhi) if (Object.hasOwn(MON_GOP, k)) return Object.keys(MON_GOP);
+  return boCt;
+}
 const oChuan = (o: string) => LEGACY_REGULAR_SKILL_MAP[o] ?? o;       // prep_writing → writing, pronunciation → speaking
 /** MH2: MỘT nơi ra tên môn. `ct` = mã chương trình của lớp/lộ trình (null = không rõ → tên chung). */
 export function tenMon(ct: string | null | undefined, o: string): string {

@@ -531,7 +531,8 @@ export const duocDoiTarget = (p: Principal, ctx: Ctx) => coQuyen(p, PERMISSIONS.
 const lienTucKhongKyThi = (c: any) => !c.route && !!programmeByCode(c.programme_code)?.lapMoiTuan && !kyThiCuaChuongTrinh(c.programme_code);
 export function loiDoiTarget(p: Principal, c: any, t: { kck: boolean }): HttpError | null {
   if (lienTucKhongKyThi(c)) return badRequest(CAU_LIEN_TUC.target);
-  if (t.kck !== !!c.khong_cam_ket && !duocDoiKck(p.roleKeys, coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) return forbidden(CHI_DOI_KCK);
+  /* P13: khoá KET / PET không có KCK — bỏ qua cờ (Target Cambridge). */
+  if (!(!c.route && kyThiCuaChuongTrinh(c.programme_code)) && t.kck !== !!c.khong_cam_ket && !duocDoiKck(p.roleKeys, coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) return forbidden(CHI_DOI_KCK);
   return null;
 }
 

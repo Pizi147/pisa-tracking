@@ -67,6 +67,15 @@ export function ketQuaKyThi(kt: KyThi, c: { thi_that_l?: number | null; thi_that
   if (tong === null) return null;
   return { khongThi: false, tong, grade: gradeKyThi(kt, tong), cefr: cefrKyThi(kt, tong), dat: c.target_score == null ? null : tong >= c.target_score };
 }
-/** "159 · Grade B · B1" · "Không thi". Grade dưới C → "dưới Grade C". */
-export const chuKetQuaKyThi = (k: KetQuaKyThi): string =>
-  k.khongThi ? t('Không thi') : [String(k.tong), k.grade ? `Grade ${k.grade}` : t('dưới Grade C'), k.cefr].filter(Boolean).join(' · ');
+/** "Grade B · B1" (dưới C → "dưới Grade C · A2"). */
+export const chuGradeKyThi = (k: { grade: 'A' | 'B' | 'C' | null; cefr: string | null }): string =>
+  [k.grade ? `Grade ${k.grade}` : t('dưới Grade C'), k.cefr].filter(Boolean).join(' · ');
+/** "159 · Grade B · B1" · "Không thi". */
+export const chuKetQuaKyThi = (k: KetQuaKyThi): string => (k.khongThi ? t('Không thi') : `${k.tong} · ${chuGradeKyThi(k)}`);
+
+/**
+ * P13 KET-PET: MỘT luật chép Target / KCK / mục tiêu sang khoá mới — chỉ khi CÙNG THANG: cùng kỳ thi Cambridge, hoặc cùng không kỳ thi (band IELTS).
+ * `tuCt` = chương trình khoá cũ; mục tiêu người dùng ghi cho lệnh / Lộ trình tiếp theo là band → `tuCt = null`.
+ */
+export const cungThangTarget = (tuCt: string | null | undefined, denCt: string | null | undefined): boolean =>
+  (kyThiCuaChuongTrinh(tuCt)?.ma ?? null) === (kyThiCuaChuongTrinh(denCt)?.ma ?? null);

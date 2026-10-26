@@ -97,9 +97,9 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
  * OV-10b (mockup vai 13/10 mục 1, 6): ⋯ dòng học viên của TVV / CX / Admin — cùng mục, cùng thứ tự ⋯ hồ sơ HV của vai đó (`mucQuanLyHocVien`), chỉ
  * việc thông tin / trạng thái: Sửa thông tin · Tạm dừng/ Kết thúc học · Quay lại học · Kết quả thi thật. Nơi gọi thêm "Mở hồ sơ".
  */
-export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: boolean; status: string }) {
+export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: boolean; status: string; /** P13: khoá KET / PET. */ kyThi?: boolean }) {
   const quyen: LopHocQuyen = { ghiLoTrinhTiep: false, chuyenLop: false, tamDung: i.suaThem, quayLai: i.suaThem, ketThuc: i.suaThem, luuTru: false, boLuuTru: false };
-  return mucQuanLyHocVien({ canEdit: false, suaThongTin: i.suaThongTin, suaThem: i.suaThem, lopHoc: { quyen }, cycle: { ratio: !i.ft }, status: i.status })
+  return mucQuanLyHocVien({ canEdit: false, suaThongTin: i.suaThongTin, suaThem: i.suaThem, lopHoc: { quyen }, cycle: { ratio: !i.ft, kyThi: !!i.kyThi }, status: i.status })
     .filter((m) => m.key === 'info' || m.key === 'tam-dung-ket-thuc' || m.key === 'quay-lai' || m.key === 'outcome');
 }
 

@@ -6,7 +6,7 @@ import {
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
-  coONhapLienHe, type LienHe } from '../../../shared/domain/index.ts';
+  coONhapLienHe, type LienHe, boMonTheoLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -89,7 +89,7 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
   if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
-    const r = evaluateRegular(prog.skills, rows, prog.code, nguongDatLop(attempt.class_id));
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, rows.map((x: any) => x.skill)), rows, prog.code, nguongDatLop(attempt.class_id));   // P13: bộ môn theo lượt
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const scores = pre?.scores ?? scoresOf(attempt.id);
@@ -530,7 +530,7 @@ function dongThongTin(i: {
     target: (dangChay?.target_score as number | null | undefined) ?? null, kck: !!dangChay?.khong_cam_ket,
     tuanHoc, thiDuKien, thiIelts, lopThuong: !!khoa, gvcn: i.gvcn, tamDung,
     /* P13 KET-PET: Target điểm Cambridge (không định dạng band) + kết quả thi thật (Overall · Grade · CEFR, tính khi hiện). */
-    ...(ktDang ? { kyThi: { ten: ktDang.ten, min: ktDang.min, max: ktDang.max }, thiThat: ketQuaKyThi(ktDang, dangChay) } : {}),
+    ...(ktDang ? { kyThi: { ten: ktDang.ten, min: ktDang.min, max: ktDang.max }, thiThat: ketQuaKyThi(ktDang, { ...dangChay, target_score: dangChay.thi_that_target ?? dangChay.target_score }) } : {}),
   };
 }
 

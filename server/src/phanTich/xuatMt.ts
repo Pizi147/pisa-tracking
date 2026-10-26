@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import {
   PERMISSIONS, ROUTE_NAME, chuTargetKck, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, chuNhomNguyenNhan, docNhomNguyenNhan, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
   soSanhLop, tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
-  type BoLocXuatMt, type Cell, type DongFT, type DongThuong,
+  type BoLocXuatMt, type Cell, type DongFT, type DongThuong, boMonTheoLuot,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, type Principal } from '../permissions.ts';
@@ -132,7 +132,7 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
 function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: string[] }): { d: DongThuong; du: boolean } {
   const scores = b.scores.get(a.id) ?? [];
   const skillRows = b.skillRows.get(a.id) ?? [];
-  const r = evaluateRegular(prog.skills, scores, prog.code, nguongDatLop(a.class_id));
+  const r = evaluateRegular(boMonTheoLuot(prog.skills, scores.map((x: any) => x.skill)), scores, prog.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
   const d: DongThuong = {
     ten: a.full_name, email: a.email ?? null, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, a.attempt_no), tuan: a.tuan_code, tuanBd: a.week_start,
     mon: r.skills.map((m) => ({

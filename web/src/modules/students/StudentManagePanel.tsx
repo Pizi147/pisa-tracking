@@ -79,7 +79,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
       <DeXuatSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose}
-        hienTai={{ target: cycle?.target ?? null, khongCamKet: !!cycle?.khongCamKet, route: cycle?.route ?? null }} />
+        hienTai={{ target: cycle?.target ?? null, khongCamKet: !!cycle?.khongCamKet, route: cycle?.route ?? null, kyThi: cycle?.kyThi ?? null }} />
     );
     default: return null;
   }
@@ -389,7 +389,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   if (suaDx && dx) {
     return (
       <DeXuatSuaPanel studentId={student.id} studentName={studentName} lop={lop} onClose={onClose} onDone={onDone}
-        hienTai={{ target: cycle?.target ?? null, khongCamKet: kckCu, route: cycle?.route ?? null }}
+        hienTai={{ target: cycle?.target ?? null, khongCamKet: kckCu, route: cycle?.route ?? null, kyThi: kt }}
         sua={{ id: dx.id, truong: 'target', moi: dx.moi, lyDo: dx.lyDo }} />
     );
   }
@@ -472,7 +472,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           {(targetThang || targetDeXuat) && !(targetDeXuat && dx) ? (
             <Truong nhan={kt ? `Target (${kt.ten} ${kt.min}–${kt.max})` : 'Target'} tuyChon as="div" loi={lf.loiCua(loi, 'target')}
               phu={[targetDeXuat ? 'Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.' : kt ? t('Số nguyên. Bỏ trống = chưa có Target.') : `Band 0–9, bước 0,5.${oKck ? ` KCK: ${GIAI_THICH_KCK}.` : ''}`,
-                dx ? `Chờ duyệt: ${chuDeXuat(dx.moi)}` : null].filter(Boolean).join(' · ')}>
+                dx ? `Chờ duyệt: ${kt ? dx.moi : chuDeXuat(dx.moi)}` : null].filter(Boolean).join(' · ')}>
               <span className="flex flex-wrap items-center gap-3">
                 <input className="field max-w-[8rem]" type="number" inputMode={kt ? 'numeric' : 'decimal'} step={kt ? 1 : 0.5} min={kt?.min ?? 0} max={kt?.max ?? 9} aria-label="Target"
                   {...lf.o(loi, 'target')} value={target} onChange={(e) => sua(setTarget)(e.target.value)} />
@@ -481,8 +481,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             </Truong>
           ) : (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-200">
-              <span>Target: {targetCu || kckCu ? <strong className="tabular-nums">{kt ? targetCu : <TargetText band={cycle.target ?? null} kck={kckCu} />}</strong> : <span className="text-slate-500">chưa có</span>}</span>
-              {dx ? <span className="text-slate-400">· Chờ duyệt: <strong className="text-slate-200">{chuDeXuat(dx.moi)}</strong></span>
+              <span>Target: {targetCu || kckCu ? <strong className="tabular-nums"><TargetText band={cycle.target ?? null} kck={kckCu} kyThi={kt} /></strong> : <span className="text-slate-500">chưa có</span>}</span>
+              {dx ? <span className="text-slate-400">· Chờ duyệt: <strong className="text-slate-200">{kt ? dx.moi : chuDeXuat(dx.moi)}</strong></span>
                 : <span className="text-slate-500">· Quản lý / TVV sửa</span>}
               {dx?.cuaToi && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setSuaDx(true)}>Sửa đề xuất</button>}
             </div>

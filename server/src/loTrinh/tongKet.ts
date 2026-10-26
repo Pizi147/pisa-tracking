@@ -5,7 +5,7 @@
  */
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, ketQuaThiThat, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
+  ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, chuKetQuaKyThi, ketQuaKyThi, ketQuaThiThat, kyThiCuaChuongTrinh, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
   type HuongTiepTk, type LyDoDong, ATTEMPT_KIND_LABEL, tenRoute } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
@@ -38,6 +38,18 @@ function ketQuaBanChup(b: any): KetQuaGon | null {
     return { chinh: k.nhan === 'Không thi' ? 'Không thi' : 'Chờ kết quả thi thật', tone: 'muted' };
   }
   return b.ty_le_cuoi_khoa === null || b.ty_le_cuoi_khoa === undefined ? null : { chinh: phanTram(b.ty_le_cuoi_khoa), tone: toneDai(b.dai_cuoi_khoa) };
+}
+
+/**
+ * P13 KET-PET: kết quả thi thật KET / PET (điểm Cambridge) — đọc thẳng lộ trình (không bản chụp; Báo cáo lịch sử không đọc bản chụp), cả khoá đã đóng.
+ * Đạt Target so với Target LÚC NHẬP (`thi_that_target`, NULL → Target hiện tại). Không kỳ thi / chưa đủ 4 điểm → null.
+ */
+function ketQuaKyThiGon(c: any): KetQuaGon | null {
+  const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+  const k = kt ? ketQuaKyThi(kt, { ...c, target_score: c.thi_that_target ?? c.target_score }) : null;
+  if (!k) return null;
+  if (k.khongThi) return { chinh: 'Không thi', tone: 'muted' };
+  return { chinh: `Thi thật ${chuKetQuaKyThi(k)}`, tone: k.dat === null ? 'muted' : k.dat ? 'ok' : 'late', phu: k.dat === null ? undefined : k.dat ? 'Đạt Target' : 'Chưa đạt Target' };
 }
 
 /** Lượt gần nhất CÓ ĐIỂM của lộ trình đang chạy — một câu cho cả em, tính bằng `tinhLuot` (cùng hàm với bản chụp). */
@@ -95,12 +107,12 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
       return {
         id: c.id, ten: c.route ? `Fast Track · ${tenRoute(c)}` : ct?.name ?? 'Lộ trình', lop: lopDang?.code ?? null, batDau: c.started_at, ketThuc: null,
         thoiGian: khoangTuan(c.started_at, null, homNay), dangHoc: c.status === 'active', lyDo: null,
-        ketQua: ketQuaSong(c, lopCuaLoTrinh, diem), huong: null, buocTiep,
+        ketQua: ketQuaKyThiGon(c) ?? ketQuaSong(c, lopCuaLoTrinh, diem), huong: null, buocTiep,
       };
     }
     return {
       id: c.id, ten: tenLoTrinh(b, c.route_ten), lop: b.class_code, batDau: b.bat_dau_ngay, ketThuc: b.dong_ngay, thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay),
-      dangHoc: false, lyDo: b.ly_do, ketQua: ketQuaBanChup(b), huong: nhanHuong(b.huong_tiep), buocTiep,
+      dangHoc: false, lyDo: b.ly_do, ketQua: ketQuaKyThiGon(c) ?? ketQuaBanChup(b), huong: nhanHuong(b.huong_tiep), buocTiep,
     };
   });
 }
@@ -133,7 +145,7 @@ const monKqdr = (x: string | null): string[] => { try { const v = JSON.parse(x ?
 
 export function tongKetLoTrinh(p: Principal, cycleId: number) {
   const conn = db();
-  const c = conn.prepare('SELECT id, student_id, status, route_ten FROM learning_cycles WHERE id = ?').get(cycleId) as any;
+  const c = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   if (c.status === 'active') throw notFound('Lộ trình chưa kết thúc');
@@ -159,6 +171,10 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
     target: b.target as number | null, khongCamKet: !!b.khong_cam_ket,
     thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay), lyDo: b.ly_do as LyDoDong, lyDoNhan: LY_DO_DONG_NHAN[b.ly_do as LyDoDong] ?? null,
     dich: { target: b.target as number | null, thiDuKien: b.thi_du_kien_nhan as string | null },
+    /* P13 KET-PET: thang + kết quả thi thật Cambridge của khoá (đọc lộ trình, Đạt so Target lúc nhập). */
+    ...(() => { const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+      return { kyThi: kt ? { ten: kt.ten, min: kt.min, max: kt.max } : null, thiThatKyThi: kt ? ketQuaKyThi(kt, { ...c, target_score: c.thi_that_target ?? c.target_score }) : null,
+        ngayThiKyThi: kt ? c.thi_that_ngay ?? null : null }; })(),
     ketQua: laFt
       ? { loai: 'ft' as const, ovr: b.thi_that_ovr as number | null, l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, ngay: b.thi_that_ngay as string | null,
           khongThi: !!b.thi_that_khong_thi, khongCoThi,
