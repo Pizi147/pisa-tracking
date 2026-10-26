@@ -354,14 +354,14 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(s) as any;   // PR-CT2: 4 môn × 2 buổi
     assert(mt.so_buoi === 8 && mt.ngay_du_kien === d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 2 }).ngayMiniTest, JSON.stringify(mt));
   });
-  check('LT2b (5) · BE 72% sang FT + kết luận Trung tâm {R, W} → 2 Case FT (Reading, Writing 2) + PA tutor preset 0; Học viên mà MT0 không kỹ năng nào dưới ngưỡng, không chọn kỹ năng → 400, không Case (PR-KV); đánh dấu sau khi đã sang FT tạo ngay', () => {
+  check('LT2b (5) · BE 72% sang FT + kết luận Trung tâm {R, W} → 2 Case FT (Reading, Writing 2) + PA tutor preset 0; Học viên không chọn kỹ năng → lưu phương án, không Case (N17, P9b); đánh dấu sau khi đã sang FT tạo ngay', () => {
     const l = taoLop('BE', 3);
     const [a, b, c2] = l.sids;
     for (const s of l.sids) ghiDiem(l.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });   // 75%
     mt0Kv(l.classId, a, [4, 3.5, 3.5, 4]); mt0Kv(l.classId, b, [4, 4, 4, 4]); mt0Kv(l.classId, c2, [3.5, 4, 4, 4]);
     voiLenhFt(l.classId, a, () => cuoiSvc.ghiKetLuanFt(P.mbManager, a, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] }));
-    voiLenhFt(l.classId, b, () => assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' }),
-      /kỹ năng/, 'Học viên: MT0 không kỹ năng dưới ngưỡng, không chọn kỹ năng → 400'));
+    /* P9b (rà PTA 26/10): Học viên = ghi phương án, không bắt kỹ năng, không Case (N17). */
+    voiLenhFt(l.classId, b, () => cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' }));
     const ft = classId('MB FT 101');
     chuyen(l.classId, [a, b, c2].map((studentId) => ({ studentId, huong: 'fast_track', toClassId: ft, mucTieu: 6.5 })));
     const cs = caseCuaEm(a, cycleMoi(a));
@@ -369,7 +369,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(cs.every((c) => c.origin_kind === 'chuyen_cap' && /^Kỳ vọng đầu ra chưa đạt · /.test(c.title)), JSON.stringify(cs.map((c) => c.title)));
     const tutor = conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ?`).all(cs[0].id) as any[];
     assert(tutor.length === 1 && tutor[0].kind === 'tutor' && tutor[0].preset === 0 && /Tutor 10 buổi/.test(tutor[0].description), JSON.stringify(tutor));
-    assert(caseCuaEm(b, cycleMoi(b)).length === 0, 'kết luận bị từ chối → không Case');
+    assert(caseCuaEm(b, cycleMoi(b)).length === 0, 'Học viên → không Case');
     assert(caseCuaEm(c2, cycleMoi(c2)).length === 0, 'chưa đánh dấu → không Case');
     const r = cuoiSvc.ghiKetLuanFt(P.mbManager, c2, { dat: false, nguyenNhan: 'trung_tam', mon: ['listening'] });   // sau khi đã sang FT
     assert(r.taoCaseTutor === 1 && caseCuaEm(c2, cycleMoi(c2)).length === 1, 'đánh dấu sau khi sang FT phải tạo Case ngay');

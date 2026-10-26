@@ -265,7 +265,7 @@ export async function runPrLcbTests(t: YThucTestKit) {
 
     /* Lớp MB: cả lớp sang lớp chi nhánh khác → chặn (N17); sang lớp MB → GVCN (không ứng viên) vẫn đọc mã lớp chuyển đến + ngày ra lệnh. */
     const m = taoLop('FOU', 8, 1);
-    const khac = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_CN }] });
+    const khac = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, caLop: true, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_CN }] });
     assert(!khac.ok.length && /cùng chi nhánh/.test(khac.failed[0]?.message ?? ''), `cả lớp sang chi nhánh khác phải lỗi: ${JSON.stringify(khac)}`);
     const r0 = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_DICH }] });
     assert(!r0.failed.length, `tiền đề: lệnh sang lớp MB — ${JSON.stringify(r0.failed)}`);
