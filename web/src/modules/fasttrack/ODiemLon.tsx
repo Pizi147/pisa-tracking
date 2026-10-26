@@ -6,16 +6,18 @@
  *
  * L · R · W · S · Overall cùng cỡ: nhãn 12 px · số 28 px / 700 · MỘT dòng phụ 12 px (câu dài vào tooltip). Ô mở được hộp
  * (`suaDuoc` — từ `cell.canEdit` / `daChot.goDuoc` của máy chủ, web không tự suy quyền) là nút; bấm → hộp nhập điểm (OV-4b,
- * `HopNhapDiem`) neo ngay ô, chỉ "Lưu" (trang một em). W: dòng phụ là HAI nút W1 · W2 — hai hộp riêng, mỗi task lưu riêng (K4-31).
+ * `HopNhapDiem`) neo ngay ô. R1-LUU-TIEP: "Lưu · bài tiếp ›" = ô còn thiếu kế của CHÍNH lượt; hết → "Lưu · em tiếp ›" (danh sách nguồn,
+ * `emTiep`) hoặc trạng thái hết + "‹ Về {nguồn}" / Đóng. W: dòng phụ là HAI nút W1 · W2 — hai hộp riêng, mỗi task lưu riêng (K4-31).
  */
 import { useRef, type ReactNode } from 'react';
-import { CHU_O_THIEU, chuDoiVang, ngay, skillShort, soKyVong, tuanLich } from '@shared/domain/index.ts';
+import { CHU_O_THIEU, ENTRY_SKILLS, chuDoiVang, conThieuFt, ngay, skillShort, soKyVong, tuanLich } from '@shared/domain/index.ts';
 import { DauKetQua, lopKq } from '../../ui/BieuTuong.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { suaDuoc, type Cell, type SaveOpts, type SavePatch } from './ScoreEntry.tsx';
-import { HopNhapDiem, type NguCanhHop } from './HopNhapDiem.tsx';
+import { HopNhapDiem, type KetThucHop, type NguCanhHop } from './HopNhapDiem.tsx';
+import { usePhienCham } from '../cham/phienCham.ts';
 import { t } from '@shared/i18n/index.ts';
 
 export type KyNangLon = 'listening' | 'reading' | 'writing' | 'speaking';
@@ -55,16 +57,33 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   return { chu: t('Chưa có điểm') };
 }
 
-export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, save, ketLuanOverall, nguCanh }: {
+export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCha, save, ketLuanOverall, nguCanh, emTiep = null, ve = null }: {
   cells: Cell[]; lich: LichKn[]; result: any; lichSu: boolean; homNay: string;
   /** PR-MT0: thay dòng kết luận dưới Overall (MT0 không có kỳ vọng — `MT0 ✓` / chip SOS). */
   ketLuanOverall?: ReactNode;
   /** Bài nhập đang mở hộp (lifted — nút chính "Nhập điểm" của bảng dưới cũng mở đúng bài). */
   mo: string | null; onMo: (k: string | null) => void;
-  save: (skill: string, patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
+  save: (skill: string, patch: SavePatch, opts?: SaveOpts) => Promise<boolean | 'trung'>;
   /** Đầu hộp: em · lớp · lượt; kỳ vọng; MT0. */
   nguCanh: Omit<NguCanhHop, 'bandTaskKia'>;
+  /** R1-LUU-TIEP: trang mở từ một danh sách (lưới) → hết bài của lượt thì "Lưu · em tiếp ›" sang em kế, mở đúng kỹ năng. */
+  emTiep?: ((kyNang: string) => void) | null;
+  /** Không có danh sách nguồn: nút của trạng thái hết ("‹ Về {nguồn}"); null → Đóng. */
+  ve?: KetThucHop['nut'];
 }) {
+  /* Một lượt: khoá hàng cố định 0; còn thiếu = `conThieuFt` của ô; kỹ năng của người xem theo thứ tự cột. */
+  const phien = usePhienCham();
+  const mot = () => [0];
+  const kyNangToi = ENTRY_SKILLS.filter((k) => cells.some((c) => c.skill === k && c.canEdit));
+  const conThieu = (v: { kyNang: string }) => { const c = cells.find((x) => x.skill === v.kyNang); return !!c && conThieuFt(c); };
+  const onMo = (k: string | null) => { if (k) phien.mo(mot); else phien.dong(); onMoCha(k); };
+  const keMo = mo && !phien.het ? phien.ke({ khoa: 0, kyNang: mo }, conThieu, kyNangToi, mot) : null;
+  const tiep = (daLuu: boolean) => {
+    if (!mo) return;
+    const k = phien.tiep({ khoa: 0, kyNang: mo }, daLuu, conThieu, kyNangToi, mot);
+    if (k) onMoCha(k.kyNang);
+    else if (emTiep) emTiep(mo);
+  };
   const oCua = (k: string) => cells.find((c) => c.skill === k);
   const baiCua = (k: KyNangLon) => (k === 'writing' ? [oCua('writing1'), oCua('writing2')] : [oCua(k)]).filter((c): c is Cell => !!c);
   /* Nút neo của từng bài nhập — hộp mở ngay dưới ô (L/R/S: cả ô; W1/W2: nút nhỏ ở dòng phụ). */
@@ -168,6 +187,8 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
 
       {oMo && neoMo && (
         <HopNhapDiem key={oMo.skill} cell={oMo} anchor={neoMo} onDong={() => onMo(null)} onSave={(p, x) => save(oMo.skill, p, x)}
+          onTiep={tiep} nhanTiep={keMo ? skillLabel(keMo.kyNang) : null} tiepEm={!keMo && !!emTiep}
+          ketThuc={phien.het ? { phamVi: `${nguCanh.tenHv} · ${nguCanh.luot}`, daLuu: phien.soDaLuu(), nut: ve } : null}
           ctx={{ ...nguCanh, bandTaskKia: oMo.skill === 'writing1' ? oCua('writing2')?.band ?? null : oMo.skill === 'writing2' ? oCua('writing1')?.band ?? null : undefined }} />
       )}
     </div>

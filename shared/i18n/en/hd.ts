@@ -74,7 +74,8 @@ export const EN_HD = {
   'Chọn lớp, chọn lượt (MT1, MT2…).': 'Pick a class, then a round (MT1, MT2…).',
   '<b>Chỉ ô còn trống</b> để nhập nốt.': '<b>Empty cells only</b> to finish entering.',
   'Gõ điểm': 'Typing scores',
-  'Gõ điểm, Enter sang ô dưới; mỗi ô tự lưu.': 'Type a score, Enter moves down; each cell saves itself.',
+  'Lớp thường: gõ điểm, Enter sang ô còn nhập ở dưới (bỏ qua ô đã có điểm); mỗi ô tự lưu.': 'Regular classes: type a score, Enter moves to the next open cell below (skips scored cells); each cell saves itself.',
+  'Ô MT: <b>Lưu</b> ở lại (✓ Đã lưu · <b>Bài tiếp ›</b>); <b>Lưu · bài tiếp ›</b> (Enter) sang bài còn thiếu kế, hết cột thì sang kỹ năng kế. Xong phần của bạn: <b>Lớp tiếp</b> / <b>Việc tiếp</b>; hồ sơ MT mở từ lưới: <b>Lưu · em tiếp ›</b>.': 'MT cell: <b>Save</b> stays (✓ Saved · <b>Next ›</b>); <b>Save &amp; next ›</b> (Enter) opens the next missing score, then the next skill. Your part done: <b>Next class</b> / <b>Next task</b>; MT profile opened from a grid: <b>Save &amp; next student ›</b>.',
   'Làm việc ngay trên dòng': 'Work right on the row',
   'Bấm dòng → ô cần điền mở ngay bên.': 'Click a row → the fields open right beside it.',
   'Bấm một dòng để làm việc đó.': 'Click a row to do that task.',
@@ -163,7 +164,7 @@ export const EN_HD = {
   'Nhiều em cùng lớp, tuần Test, mức SOS: <b>Xác nhận PA cùng lúc</b> — em tick sẵn, <b>Nội dung / hướng dẫn</b> + <b>Bắt đầu</b> + <b>Người dạy</b> ghi một lần, <b>Sửa riêng</b> từng em.': 'Several students of one class, test week and SOS level: <b>Confirm PAs together</b> — students pre-ticked, <b>Content / guidance</b> + <b>Start</b> + <b>Teacher</b> filled once, <b>Edit for this student</b> per student.',
   'Muốn cách khác: <b>Đề xuất PA khác…</b> → <b>Gửi Quản lý duyệt</b>; Case "Chờ duyệt đổi PA".': 'Want another way: <b>Propose another PA…</b> → <b>Send to manager</b>; the case shows "Awaiting PA change approval".',
   'Dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b>: bài Speaking Mock mọi lớp FT chi nhánh bạn, từ Thứ Hai tuần Test.': 'The "Speaking marking · n tests" row at the top of <b>Marking</b>: Mock Speaking of every FT class in your branch, from Monday of the test week.',
-  'Bấm dòng: tìm em (tên, email), lọc lớp, bấm ô S để chấm; <b>Enter</b> sang em kế.': 'Click the row: find a student (name, email), filter by class, click the S cell to mark; <b>Enter</b> goes to the next student.',
+  'Bấm dòng: tìm em (tên, email), lọc lớp, bấm ô S để chấm; <b>Enter</b> sang em chưa chấm kế.': 'Click the row: find a student (name, email), filter by class, click the S cell to mark; <b>Enter</b> goes to the next unmarked student.',
   // ---------------------------------------------------------------- rà lại planning #417 (2)
   'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác" rồi tự sang việc kế; trong panel bấm <b>Việc tiếp ›</b>.': 'Saved on the row: "✓ Saved · … · Undo", then the next task opens; in a panel click <b>Next task ›</b>.',
   'Em dưới kỳ vọng ở MT: lượt chưa chốt → Case tạm "Chờ chốt SOS"; lượt chốt → Case + PA theo quy chế, GVBM đúng kỹ năng <b>Xác nhận PA</b> (QL làm thay được).': 'Student below expected on an MT: round not closed → provisional case "Awaiting SOS close"; round closed → case + rule-based PA, the subject teacher of that skill clicks <b>Confirm PA</b> (the manager can do it for them).',

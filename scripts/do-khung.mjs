@@ -14,6 +14,7 @@
 // KHUNG-LOI: (k) thanh trên cắt mục · (l) thanh dưới > 5 nút · (m) vùng bấm số < 24 px (< 44 px ở điện thoại) · (n) "—" / "/" tương phản < 4,5:1.
 // Kịch bản `thanh`: thanh trên ở 1 100 / 1 280 / 1 366 / 1 440 (QL, QT, GV) + thanh dưới 375. `focus`: Tab ở 375 không bị thanh dưới che.
 // `menu-phim`: ⋯ hồ sơ HV bằng phím (Enter → mục đầu, ↓, Esc → về nút).
+// R1-LUU-TIEP `cham-lien-mach` (chỉ khi gọi đúng tên — ghi điểm vào DB demo): Lưu · bài tiếp liền mạch, lỗi 500, Enter × 2, em tiếp, Việc tiếp.
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -610,6 +611,106 @@ if (!CHI_BANG && (!LOC || 'lich'.includes(LOC) || LOC.startsWith('lich-'))) {
   const [con, chuMien] = locMien('lich', 'lich', loi);
   console.log(`${con.length ? '✗' : '✓'} lich (bấm trong lịch không đóng hộp cha)${chuMien}${con.map((l) => `\n    ${l}`).join('')}`);
   tongLoi += con.length;
+}
+/*
+ * R1-LUU-TIEP (kịch bản `cham-lien-mach`, GV 7, MB FT 101 ở Lịch Test W3 SEP): GHI ĐIỂM vào DB demo — chỉ chạy khi gọi đúng tên
+ * (`node scripts/do-khung.mjs cham-lien-mach`), trên DB vừa `npm run seed`. (a) ô đã có điểm (dưới / bằng / trên kỳ vọng) đều có nút tiếp ·
+ * (d) PUT điểm trả 500 → hộp ở lại, chữ còn · (e) Enter × 2 trong 100 ms → một PUT · (c) bắt đầu ở ô L trống thứ hai → vòng lên ô đầu ·
+ * (b) L cuối → R · (f) tên em → hồ sơ MT → "Lưu · em tiếp ›" sang em kế (?kn=) · (g) Chấm Test: "Việc tiếp ›" mở đúng dòng kế. 1440 tối + 375 sáng.
+ */
+if (LOC === 'cham-lien-mach') {
+  const loi = [];
+  const HOP = '[role=dialog]';
+  for (const [w, h, sang] of [[1440, 900, false], [375, 812, true]]) {
+    const ctx = await trinh.newContext({ viewport: { width: w, height: h } });
+    await ctx.addInitScript((s) => { try { localStorage.setItem('pisa-giao-dien', s ? 'light' : 'dark'); localStorage.setItem('pisa-ngon-ngu', 'vi'); } catch {} }, sang);
+    const p = await ctx.newPage();
+    p.setDefaultTimeout(8000);
+    const nhan = (x) => `cham-lien-mach-${w} ${x}`;
+    const moLop = async () => {
+      await p.goto(`${BASE}/test/lich`, { waitUntil: 'networkidle' }); await p.waitForTimeout(400);
+      const mo = p.getByRole('button', { name: /^Mở lớp MB FT 101$/ });
+      if (await mo.count()) { await mo.click(); await p.waitForTimeout(800); }
+    };
+    const dau = async () => (await p.locator(HOP).locator('div').first().innerText()).split('\n').slice(0, 2).join(' / ');
+    try {
+      await p.request.post(`${BASE}/api/demo/session`, { data: { userId: 7 } });
+      await moLop();
+      /* 375: lưới một kỹ năng (chip L) — cùng hộp, cùng luật; máy tính: bảng. */
+      const oL = p.locator('#noi-dung [data-kn="listening"] button[aria-haspopup="dialog"]:visible');
+      // (a)
+      const daCo = p.locator('#noi-dung [data-kn="listening"] button[aria-label*=" câu, band "]:visible, #noi-dung [data-kn="reading"] button[aria-label*=" câu, band "]:visible');
+      for (let i = 0; i < Math.min(3, await daCo.count()); i++) {
+        await daCo.nth(i).click(); await p.waitForTimeout(300);
+        if (!(await p.locator(HOP).getByRole('button', { name: /Lưu · bài tiếp ›/ }).count())) loi.push(nhan(`(a) ô đã có điểm #${i + 1}: không có "Lưu · bài tiếp ›"`));
+        await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+      }
+      const trong = p.locator('#noi-dung [data-kn="listening"][data-trong] button[aria-haspopup="dialog"]:visible');
+      const nTrong = await trong.count();
+      /* (b)–(e) cần ô trống: chạy ở 1440 (dùng hết ô L trống của lớp); 375 chỉ (a) + (f) + (g). */
+      if (w === 1440 && nTrong < 2) loi.push(nhan(`cần ≥ 2 ô L trống (có ${nTrong}) — chạy lại sau npm run seed`));
+      if (w === 1440 && nTrong >= 2) {
+      const tenDau = (await trong.nth(0).getAttribute('aria-label')).split(':')[0];
+      // (d) lỗi máy chủ
+      await trong.nth(1).click(); await p.waitForTimeout(300);
+      const o = p.locator(`${HOP} #hop-diem-o`);
+      await p.route('**/api/attempts/*/scores/*', (r) => r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"thu loi"}' }));
+      await o.fill('21'); await o.press('Enter'); await p.waitForTimeout(600);
+      if (!(await p.locator(HOP).count()) || (await o.inputValue()) !== '21' || !(await p.locator(`${HOP} [role=alert]`).count())) loi.push(nhan('(d) lỗi 500: hộp không ở lại / mất chữ / không báo lỗi'));
+      await p.unroute('**/api/attempts/*/scores/*');
+      // (e) Enter × 2 nhanh → một PUT
+      let soPut = 0;
+      const dem = (r) => { if (r.method() === 'PUT' && /\/scores\//.test(r.url())) soPut++; };
+      p.on('request', dem);
+      const truoc = await dau();
+      await o.press('Enter'); await p.waitForTimeout(80); if (await o.count()) await o.press('Enter').catch(() => {});
+      await p.waitForTimeout(1200);
+      p.off('request', dem);
+      if (soPut !== 1) loi.push(nhan(`(e) Enter × 2 gửi ${soPut} PUT (cần 1)`));
+      // (c) + (b): chấm tiếp các ô L còn thiếu → phải vòng về em đầu, rồi sang Reading
+      const di = [truoc];
+      for (let i = 0; i < 12 && (await p.locator(HOP).count()); i++) {
+        const tieuDe = await dau();
+        di.push(tieuDe);
+        if (tieuDe.startsWith('Reading')) break;
+        if (!(await o.count())) break;
+        await o.fill('22'); await o.press('Enter'); await p.waitForTimeout(1000);
+      }
+      if (!di.some((x) => x.startsWith('Listening') && x.includes(tenDau.replace('Listening · ', '')))) loi.push(nhan(`(c) không vòng lên ô L đầu (${tenDau}): ${di.join(' → ')}`));
+      if (!di.at(-1).startsWith('Reading')) loi.push(nhan(`(b) hết L không sang Reading: ${di.join(' → ')}`));
+      await p.keyboard.press('Escape');
+      }
+      // (f) hồ sơ MT từ lưới → Lưu · em tiếp ›
+      await moLop();
+      await p.locator('#noi-dung [data-hv] a[href^="/mock-test/"]:visible').first().click(); await p.waitForTimeout(1200);
+      const url1 = p.url();
+      await p.locator('#dai-diem button[aria-haspopup="dialog"]').first().click(); await p.waitForTimeout(400);
+      const emTiep = p.locator(HOP).getByRole('button', { name: /Lưu · em tiếp ›|Lưu · bài tiếp ›/ });
+      for (let i = 0; i < 5 && p.url() === url1 && (await emTiep.count()); i++) {
+        const oSo = p.locator(`${HOP} #hop-diem-o`);
+        if ((await oSo.count()) && !(await oSo.inputValue())) await oSo.fill('20');   // ô còn trống của lượt: chấm rồi đi tiếp
+        await emTiep.click(); await p.waitForTimeout(1200);
+      }
+      if (p.url() === url1 || !/\/mock-test\/\d+\?kn=/.test(p.url())) loi.push(nhan(`(f) hồ sơ MT không sang em kế (${p.url()})`));
+      // (g) Chấm Test — Việc tiếp mở đúng dòng kế
+      await p.goto(`${BASE}/test/cham`, { waitUntil: 'networkidle' }); await p.waitForTimeout(600);
+      const dong = p.locator('section[aria-label="Bài cần chấm"] li > button:visible');
+      if (await dong.count() >= 2) {
+        await dong.nth(0).click(); await p.waitForTimeout(800);
+        const viecTiep = p.getByRole('button', { name: 'Việc tiếp ›' }).last();
+        if (!(await viecTiep.count())) loi.push(nhan('(g) Chấm Test: thiếu "Việc tiếp ›"'));
+        else {
+          await viecTiep.click(); await p.waitForTimeout(800);
+          const viTri = await p.locator('section[aria-label="Bài cần chấm"] li > button').evaluateAll((ds) => ds.findIndex((b) => b.getAttribute('aria-current') === 'true'));
+          if (viTri !== 1) loi.push(nhan(`(g) Việc tiếp mở dòng #${viTri + 1} thay vì dòng #2`));
+        }
+      }
+      if (process.env.KHUNG_CHUP) await p.screenshot({ path: path.join(ANH, `cham-lien-mach-${w}.png`) });
+    } catch (e) { loi.push(nhan(`kịch bản dừng: ${e.message.split('\n')[0]}`)); }
+    await ctx.close();
+  }
+  console.log(`${loi.length ? '✗' : '✓'} cham-lien-mach (Lưu · bài tiếp liền mạch)${loi.map((l) => `\n    ${l}`).join('')}`);
+  tongLoi += loi.length;
 }
 await trinh.close();
 /* Dòng miễn không khớp lỗi nào (chỉ biết khi chạy đủ, không lọc): lỗi đã sửa → PR sửa phải gỡ dòng đó. */

@@ -70,7 +70,7 @@ export function xoaNhapViec(kho: KhoNhap | null, viec: string): void {
   } catch { /* như trên */ }
 }
 
-/** "Lưu và tiếp" (V5 07 mục 4.4): chỉ sang việc kế SAU khi máy chủ trả đã lưu — `luu` trả `false` / ném lỗi thì ở lại, chữ giữ. */
+/** "Lưu · việc tiếp ›" (V5; R1-LUU-TIEP đổi chữ 07 mục 4.4): chỉ sang việc kế SAU khi máy chủ trả đã lưu — `luu` trả `false` / ném lỗi thì ở lại, chữ giữ. */
 export async function luuRoiTiep(luu: () => Promise<boolean | void>, tiep: () => void): Promise<void> {
   if ((await luu()) !== false) tiep();
 }
