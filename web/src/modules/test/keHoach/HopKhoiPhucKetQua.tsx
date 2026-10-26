@@ -8,6 +8,7 @@ import { Truong } from '../../../ui/KhungPanel.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { duongDotTest, tuanLich, type KetQuaHuy } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * HỘP "KHÔI PHỤC KẾT QUẢ" (PR-MTb Task 8, T2): Quản lý trả lại điểm của MT đã huỷ do dời vượt. Dùng chung hồ sơ Mock (menu đầu
@@ -27,17 +28,17 @@ export function HopKhoiPhucKetQua({ attemptId, nhan, ketQua, onDong, onXong }: {
     try {
       await api.post(`/attempts/${attemptId}/khoi-phuc-ket-qua`, { lyDo: lyDo.trim() || null });
       for (const k of ['/attempts', '/tong-quan', '/classes', '/students', '/ke-hoach-test', '/cycles', '/my-work']) invalidate(k);
-      toast.push('ok', `Đã khôi phục kết quả ${nhan}`);
+      toast.push('ok', t('Đã khôi phục kết quả {nhan}', { nhan }));
       onXong(); onDong();
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
   return (
-    <ConfirmDialog open z="z-[80]" busy={busy} closeLabel="Đóng" confirmLabel="Khôi phục" title={`Khôi phục kết quả ${nhan}?`}
+    <ConfirmDialog open z="z-[80]" busy={busy} closeLabel={t('Đóng')} confirmLabel={t('Khôi phục')} title={t('Khôi phục kết quả {nhan}?', { nhan })}
       onClose={onDong} onConfirm={() => void lam()}
       body={(
         <div className="space-y-3">
-          <p className="m-0">{nhan}: {ketQua.soDiem} điểm đã huỷ{ketQua.vuotBoi ? ` khi dời ${ketQua.vuotBoi}` : ''}.</p>
-          <Truong nhan="Lý do" tuyChon>
+          <p className="m-0">{nhan}: {t('{n} điểm đã huỷ', { n: ketQua.soDiem })}{ketQua.vuotBoi ? ` ${t('khi dời {dot}', { dot: ketQua.vuotBoi })}` : ''}.</p>
+          <Truong nhan={t('Lý do')} tuyChon>
             <textarea className="field w-full" rows={2} maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
           </Truong>
           {loiMay && <p className="m-0 text-xs font-semibold text-bad" role="alert">{loiMay}</p>}
@@ -76,9 +77,10 @@ export function HopKhoiPhucMt({ attemptId, attemptNo, onDong, onXong, onXepMoi, 
   const daHuy = d?.status === 'cancelled';
   const duocLam = !!d?.viewer.canCancel && daHuy;
   const ai = b ? [b.luc, b.nguoi] : [d?.huy?.khi ?? null, d?.huy?.ai ?? null];
-  const phu = d ? [d.student.name, d.classCode, ai[0] ? `huỷ ${fmtDate(ai[0])}${ai[1] ? ` bởi ${ai[1]}` : ''}` : null].filter(Boolean).join(' · ') : '';
-  const traLai = b ? [b.tuan && homNay ? `lịch ${tuanLich(b.tuan, homNay)}` : 'lịch', b.soDiem ? `${b.soDiem} điểm` : null,
-    b.soCase ? `${b.soCase} Case` : null, b.soPa ? `${b.soPa} PA` : null, b.soPhoiHop ? `${b.soPhoiHop} việc Phối hợp` : null].filter(Boolean).join(', ') : null;
+  const huyLuc = (luc: string, nguoi: string | null) => (nguoi ? t('huỷ {ngay} bởi {ai}', { ngay: fmtDate(luc), ai: nguoi }) : t('huỷ {ngay}', { ngay: fmtDate(luc) }));
+  const phu = d ? [d.student.name, d.classCode, ai[0] ? huyLuc(ai[0], ai[1]) : null].filter(Boolean).join(' · ') : '';
+  const traLai = b ? [b.tuan && homNay ? t('lịch {tuan}', { tuan: tuanLich(b.tuan, homNay) }) : t('lịch'), b.soDiem ? t('{n} điểm', { n: b.soDiem }) : null,
+    b.soCase ? `${b.soCase} Case` : null, b.soPa ? `${b.soPa} PA` : null, b.soPhoiHop ? t('{n} việc Phối hợp', { n: b.soPhoiHop }) : null].filter(Boolean).join(', ') : null;
   const moi = duongDotTest({ id: attemptId, kind: 'mock' });
   const lam = async () => {
     if (busy) return;
@@ -86,48 +88,48 @@ export function HopKhoiPhucMt({ attemptId, attemptNo, onDong, onXong, onXepMoi, 
     try {
       const r = await api.post<{ cau: string[] }>(`/attempts/${attemptId}/reopen`, { banId: b?.id ?? null });
       for (const k of ['/attempts', '/tong-quan', '/classes', '/students', '/ke-hoach-test', '/cycles', '/my-work']) invalidate(k);
-      toast.push('ok', [`Đã khôi phục ${mt}`, ...(r.cau ?? [])].join(' '));
+      toast.push('ok', [t('Đã khôi phục {mt}', { mt }), ...(r.cau ?? []).map((c) => dich(c))].join(' '));
       onXong(); onDong();
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
   return (
-    <Modal open z={z} width="max-w-md" onClose={onDong} title={<>{daHuy || !d ? `${mt} · Đã huỷ` : `${mt} cũ · Đã huỷ`}{phu && <span className="mt-0.5 block break-words text-xs font-normal text-slate-400">{phu}</span>}</>}
+    <Modal open z={z} width="max-w-md" onClose={onDong} title={<>{daHuy || !d ? t('{mt} · Đã huỷ', { mt }) : t('{mt} cũ · Đã huỷ', { mt })}{phu && <span className="mt-0.5 block break-words text-xs font-normal text-slate-400">{phu}</span>}</>}
       footer={(
         /* 375: link + 3 nút xuống dòng trong khung, không tràn ngang (footer của Modal không tự xuống dòng). */
         <div className="flex w-full flex-wrap items-center justify-end gap-2">
-          {d?.khoiPhuc.chan && moi !== pathname && <Link className="link mr-auto text-xs" to={moi} onClick={onDong}>Mở {mt} mới ↗</Link>}
-          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong} disabled={busy}>Đóng</button>
-          {duocLam && onXepMoi && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onXepMoi} disabled={busy}>Xếp {mt} mới</button>}
+          {d?.khoiPhuc.chan && moi !== pathname && <Link className="link mr-auto text-xs" to={moi} onClick={onDong}>{t('Mở {mt} mới ↗', { mt })}</Link>}
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong} disabled={busy}>{t('Đóng')}</button>
+          {duocLam && onXepMoi && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onXepMoi} disabled={busy}>{t('Xếp {mt} mới', { mt })}</button>}
           {duocLam && (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void lam()} disabled={busy}>
-              {busy ? 'Đang khôi phục…' : `Khôi phục ${mt}`}
+              {busy ? t('Đang khôi phục…') : t('Khôi phục {mt}', { mt })}
             </button>
           )}
         </div>
       )}>
       <div className="space-y-3 text-sm leading-relaxed text-slate-300">
-        {!d ? <p className="m-0 text-slate-400">{doc.error ? doc.error.message : 'Đang đọc lượt…'}</p>
+        {!d ? <p className="m-0 text-slate-400">{doc.error ? doc.error.message : t('Đang đọc lượt…')}</p>
           : d.khoiPhuc.chan ? (
             <p className="m-0 rounded-lg border border-bad-line bg-bad-bg px-3 py-2" role="alert">
-              {d.khoiPhuc.chan}
+              {dich(d.khoiPhuc.chan)}
             </p>
-          ) : !d.viewer.canCancel ? <p className="m-0 text-slate-400">Chỉ Quản lý khôi phục được lượt đã huỷ.</p>
-          : !daHuy ? <p className="m-0 text-slate-400">{mt} không ở trạng thái huỷ.</p>
+          ) : !d.viewer.canCancel ? <p className="m-0 text-slate-400">{t('Chỉ Quản lý khôi phục được lượt đã huỷ.')}</p>
+          : !daHuy ? <p className="m-0 text-slate-400">{t('{mt} không ở trạng thái huỷ.', { mt })}</p>
           : (
             <>
               {ban.length > 1 && (
                 <fieldset className="m-0 space-y-1 border-0 p-0">
-                  <legend className="mb-1 text-xs font-semibold text-slate-400">Chọn bản huỷ để khôi phục</legend>
+                  <legend className="mb-1 text-xs font-semibold text-slate-400">{t('Chọn bản huỷ để khôi phục')}</legend>
                   {ban.map((x) => (
                     <label key={x.id} className="flex min-h-[44px] items-start gap-2 sm:min-h-0">
                       <input type="radio" name={`ban-${attemptId}`} className="mt-1" checked={x.id === b?.id} onChange={() => setChon(x.id)} />
-                      <span>huỷ {fmtDate(x.luc)}{x.nguoi ? ` bởi ${x.nguoi}` : ''} · {x.soDiem} điểm<span className="block text-xs text-slate-500">{x.lyDo}</span></span>
+                      <span>{huyLuc(x.luc, x.nguoi)} · {t('{n} điểm', { n: x.soDiem })}<span className="block text-xs text-slate-500">{dich(x.lyDo)}</span></span>
                     </label>
                   ))}
                 </fieldset>
               )}
               <ul className="m-0 pl-5" style={{ listStyle: 'disc' }}>
-                <li>{traLai ? <>Khôi phục: <span className="tabular-nums">{traLai}</span> trở lại.</> : 'Lượt huỷ trước 10/2026: không còn điểm để khôi phục — lượt trở lại, chưa có điểm.'}</li>
+                <li>{traLai ? <>{t('Khôi phục:')} <span className="tabular-nums">{traLai}</span> {t('trở lại.')}</> : t('Lượt huỷ trước 10/2026: không còn điểm để khôi phục — lượt trở lại, chưa có điểm.')}</li>
               </ul>
             </>
           )}

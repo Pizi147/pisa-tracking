@@ -15,7 +15,7 @@ import { db } from '../db.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { classIssueBoard } from '../cases/effectiveness.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
-import { badRequest } from '../util.ts';
+import { badRequest, loi } from '../util.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, nguongDatLop, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
@@ -189,7 +189,7 @@ export function oPhanTichLop(p: Principal, classId: number, category: string, co
     'pa-dang': ['dangThucHien', 'đang thực hiện'], 'pa-da': ['daThucHien', 'đã thực hiện'], 'pa-thanh-cong': ['thanhCong', 'thành công'],
   };
   const k = khoaPa[cot];
-  if (!k) throw badRequest(`Cột "${cot}" không hợp lệ.`);
+  if (!k) throw loi(400, 'Cột "{cot}" không hợp lệ.', { cot });
   if (!pa) return { n: 0, tieuDe: `Không có phương án nào thuộc loại này ở ${mon}`, rows: [] };
   const ids = [...pa.ids[k[0]]].sort((x, y) => x - y);
   return { n: ids.length, tieuDe: `${ids.length} PA ${pa.label} ${k[1]} · ${mon}`, rows: rowsFor('phuong-an', ids) };

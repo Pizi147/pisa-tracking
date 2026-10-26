@@ -11,6 +11,7 @@ import {
   chuanHoaMaLop, ghepMaLop, goiYSoTiep, gopLoiTheoDong, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong, slotsTuO,
   themDongGiong, type LoiDong, type OPhanCong, type TruongDongTaoLop,
 } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type Branch = { id: number; code: string; name: string; phanCong?: boolean };
 type Programme = { code: string; skills: readonly string[] };
@@ -172,35 +173,35 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
     const slots = coGv ? slotsTuO(oList, d.chon) : [];
     const loiPc = kiemPhanCong(d.chuongTrinh, kyNang(d.chuongTrinh), slots);
     const loi: LoiO = {};
-    if (!cn) loi.branchId = 'Chọn chi nhánh.';
+    if (!cn) loi.branchId = t('Chọn chi nhánh.');
     const loiSo = d.so ? kiemSoLop(d.so) : null;
-    if (loiSo) loi.so = loiSo;
-    else if (!d.so) loi.so = 'Chưa có số lớp.';
+    if (loiSo) loi.so = dich(loiSo);
+    else if (!d.so) loi.so = t('Chưa có số lớp.');
     if (ma) {
       const c = chuanHoaMaLop(ma);
       const ds0 = d.branchId !== null ? maCn[d.branchId] : undefined;
-      if (Array.isArray(ds0) && ds0.some((l) => chuanHoaMaLop(l.code) === c)) loi.so = `Đã có lớp ${ma}.`;
-      else if (daThay.has(c)) loi.so = `Trùng tên ${ma} với dòng ${daThay.get(c)}.`;
+      if (Array.isArray(ds0) && ds0.some((l) => chuanHoaMaLop(l.code) === c)) loi.so = t('Đã có lớp {ma}.', { ma });
+      else if (daThay.has(c)) loi.so = t('Trùng tên {ma} với dòng {n}.', { ma, n: daThay.get(c) });
       else daThay.set(c, i + 1);
     }
-    if (d.chuongTrinh !== 'FT' && !d.startPeriodId) loi.tuan = 'Chọn tuần khai giảng.';
-    const loiO = (o: OPhanCong) => loiPc.find((l) => l.khoa === o.khoa || o.gop?.includes(l.khoa))?.lyDo ?? null;
+    if (d.chuongTrinh !== 'FT' && !d.startPeriodId) loi.tuan = t('Chọn tuần khai giảng.');
+    const loiO = (o: OPhanCong) => { const l = loiPc.find((x) => x.khoa === o.khoa || o.gop?.includes(x.khoa))?.lyDo; return l ? dich(l) : null; };
     return { d, cn, ma, oList, coGv, slots, loi, loiPc, loiO, may: loiMayChu[d.k] ?? {} };
   });
-  const soLoiWeb = tinh.reduce((n, t) => n + Object.keys(t.loi).length + t.loiPc.length, 0);
-  const soLoiMay = tinh.reduce((n, t) => n + Object.keys(t.may).length, 0);
+  const soLoiWeb = tinh.reduce((n, x) => n + Object.keys(x.loi).length + x.loiPc.length, 0);
+  const soLoiMay = tinh.reduce((n, x) => n + Object.keys(x.may).length, 0);
   const coLoi = soLoiWeb + soLoiMay > 0;
   const idO = (k: number, o: string) => `tl-${k}-${o}`;
   /* Lỗi ô hiện sau khi bấm Kiểm tra / Tạo; riêng số đã gõ và luật phân công hiện ngay (như form một lớp). */
-  const hienLoi = (t: (typeof tinh)[number], o: O) => t.may[o] ?? ((daBam || (o === 'so' && t.d.so)) ? t.loi[o as TruongDongTaoLop] ?? null : null);
+  const hienLoi = (x: (typeof tinh)[number], o: O) => x.may[o] ?? ((daBam || (o === 'so' && x.d.so)) ? x.loi[o as TruongDongTaoLop] ?? null : null);
 
   const nhanTruong: Record<O, string> = {
-    branchId: 'Chi nhánh', chuongTrinh: 'Chương trình', loTrinh: 'Lộ trình', so: 'Số lớp', tuan: 'Tuần khai giảng', slots: 'Phân công', chung: 'Dòng',
+    branchId: t('Chi nhánh'), chuongTrinh: t('Chương trình'), loTrinh: t('Lộ trình'), so: t('Số lớp'), tuan: t('Tuần khai giảng'), slots: t('Phân công'), chung: t('Dòng'),
   };
   const conThieu: MucThieu[] | undefined = daBam
-    ? tinh.flatMap((t, i) => [
-      ...(Object.keys({ ...t.loi, ...t.may }) as O[]).map((o) => ({ nhan: `Dòng ${i + 1}: ${nhanTruong[o]}`, oId: idO(t.d.k, o) })),
-      ...t.oList.filter((o) => t.loiO(o)).map((o) => ({ nhan: `Dòng ${i + 1}: ${o.nhan}`, oId: idO(t.d.k, o.khoa) })),
+    ? tinh.flatMap((x, i) => [
+      ...(Object.keys({ ...x.loi, ...x.may }) as O[]).map((o) => ({ nhan: t('Dòng {n}: {o}', { n: i + 1, o: nhanTruong[o] }), oId: idO(x.d.k, o) })),
+      ...x.oList.filter((o) => x.loiO(o)).map((o) => ({ nhan: t('Dòng {n}: {o}', { n: i + 1, o: o.nhan }), oId: idO(x.d.k, o.khoa) })),
     ])
     : undefined;
 
@@ -221,60 +222,60 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
         '/classes/bulk', { rows, idempotencyKey: khoaGui, dryRun });
       if (r.ok) {
         invalidate('/classes'); invalidate('/ref/classes'); invalidate('/hoc-vien-lop'); invalidate('/my-work');
-        toast.push('ok', `Đã tạo ${r.lop.length} lớp`);
+        toast.push('ok', t('Đã tạo {n} lớp', { n: r.lop.length }));
         onClose();
         return;
       }
       const theoDong = gopLoiTheoDong(r.loi);
       setLoiMayChu(Object.fromEntries(Object.entries(theoDong).map(([dong, l]) => [khoaDong[Number(dong) - 1], l])));
-      if (r.loi.length) toast.push('error', `Còn ${r.loi.length} lỗi — sửa ở ô viền đỏ rồi bấm lại.`);
+      if (r.loi.length) toast.push('error', t('Còn {n} lỗi — sửa ở ô viền đỏ rồi bấm lại.', { n: r.loi.length }));
       else if (dryRun) setKiemXong(anh);
     } catch (e) {
       /* 403 cả lô (thiếu quyền một chi nhánh), mất mạng… — giữ nguyên lưới, bấm lại dùng cùng khoá. */
-      toast.push('error', e instanceof Error ? e.message : 'Không gửi được — thử lại.');
+      toast.push('error', e instanceof Error ? e.message : t('Không gửi được — thử lại.'));
     } finally { dangGui.current = false; setBusy(false); }
   };
 
   const nutChinh = (
     <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void gui(false)}
-      disabled={busy || (daBam && coLoi)}>{busy ? 'Đang gửi…' : `Tạo ${ds.length} lớp`}</button>
+      disabled={busy || (daBam && coLoi)}>{busy ? t('Đang gửi…') : t('Tạo {n} lớp', { n: ds.length })}</button>
   );
   const nutKiem = (
-    <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => void gui(true)} disabled={busy}>Kiểm tra</button>
+    <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => void gui(true)} disabled={busy}>{t('Kiểm tra')}</button>
   );
 
   return (
-    <KhungPanel tieuDe="Tạo nhiều lớp" rong="toan" onDong={onClose}
+    <KhungPanel tieuDe={t('Tạo nhiều lớp')} rong="toan" onDong={onClose}
       chan={{
         daSua: luoi.daSua, huy: { onClick: onClose, disabled: busy },
         phu: nutKiem, chinh: nutChinh, conThieu,
         dongTren: kiemXong === anh && !coLoi
-          ? <div className="px-4 pt-2 text-right text-xs text-slate-400" role="status">Đã kiểm tra: tạo được cả {ds.length} lớp.</div>
+          ? <div className="px-4 pt-2 text-right text-xs text-slate-400" role="status">{t('Đã kiểm tra: tạo được cả {n} lớp.', { n: ds.length })}</div>
           : null,
       }}>
       <div className="space-y-3 pt-3.5">
         {cheDo}
         <p className="m-0 text-xs text-slate-400">
-          Tối đa {TOI_DA_DONG_TAO_LOP} lớp một lần. Tạo tất cả hoặc không lớp nào — một dòng lỗi thì chưa lớp nào được tạo.
+          {t('Tối đa {n} lớp một lần. Tạo tất cả hoặc không lớp nào — một dòng lỗi thì chưa lớp nào được tạo.', { n: TOI_DA_DONG_TAO_LOP })}
         </p>
         <ol className="m-0 list-none space-y-2.5 p-0">
-          {tinh.map((t, i) => (
-            <DongThe key={t.d.k} t={t} i={i} soDong={ds.length} busy={busy} routes={routes.data ?? []} dsCt={['FT', ...chuongTrinhThuong(programmes.data)]} branches={branches}
-              gv={t.d.branchId !== null ? gvCn[t.d.branchId] : undefined} hienLoi={(o) => hienLoi(t, o)} idO={(o) => idO(t.d.k, o)}
-              sua={(p, laSua) => sua(t.d.k, p, laSua)} xoa={() => xoa(t.d.k)} />
+          {tinh.map((x, i) => (
+            <DongThe key={x.d.k} t={x} i={i} soDong={ds.length} busy={busy} routes={routes.data ?? []} dsCt={['FT', ...chuongTrinhThuong(programmes.data)]} branches={branches}
+              gv={x.d.branchId !== null ? gvCn[x.d.branchId] : undefined} hienLoi={(o) => hienLoi(x, o)} idO={(o) => idO(x.d.k, o)}
+              sua={(p, laSua) => sua(x.d.k, p, laSua)} xoa={() => xoa(x.d.k)} />
           ))}
         </ol>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || conCho <= 0} onClick={themGiong}>
-            + Thêm {Math.min(soThem, Math.max(conCho, 1))} dòng giống dòng trên
+            {t('+ Thêm {n} dòng giống dòng trên', { n: Math.min(soThem, Math.max(conCho, 1)) })}
           </button>
           <label className="flex items-center gap-1.5 text-xs text-slate-400">
-            Số dòng
+            {t('Số dòng')}
             <select className="field w-16 tabular-nums" value={soThem} onChange={(e) => setSoThem(Number(e.target.value))} disabled={conCho <= 0}>
               {[1, 2, 3, 5, 10].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>
-          {conCho <= 0 && <span className="text-xs text-slate-500">Đã đủ {TOI_DA_DONG_TAO_LOP} dòng.</span>}
+          {conCho <= 0 && <span className="text-xs text-slate-500">{t('Đã đủ {n} dòng.', { n: TOI_DA_DONG_TAO_LOP })}</span>}
         </div>
       </div>
     </KhungPanel>
@@ -282,38 +283,38 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
 }
 
 /** Một dòng = một thẻ: điện thoại xếp dọc; màn rộng các ô nằm một hàng, phân công một hàng dưới. */
-function DongThe({ t, i, soDong, busy, routes, dsCt, branches, gv, hienLoi, idO, sua, xoa }: {
+function DongThe({ t: dong, i, soDong, busy, routes, dsCt, branches, gv, hienLoi, idO, sua, xoa }: {
   t: { d: DongLuoi; cn: Branch | undefined; ma: string | null; oList: OPhanCong[]; coGv: boolean; loiO: (o: OPhanCong) => string | null; may: LoiO };
   i: number; soDong: number; busy: boolean; routes: { code: string; name: string }[]; dsCt: string[]; branches: Branch[];
   gv: GiaoVien[] | 'loi' | undefined; hienLoi: (o: O) => string | null; idO: (o: string) => string;
   sua: (p: Partial<DongLuoi>, laSua?: boolean) => void; xoa: () => void;
 }) {
-  const { d } = t;
+  const { d } = dong;
   const o = (k: O) => ({ id: idO(k), 'aria-invalid': !!hienLoi(k) || undefined });
   const ft = d.chuongTrinh === 'FT';
   const dsGv = Array.isArray(gv) ? gv : [];
-  const dsChon = dsGv.map((g) => ({ id: g.id, ten: g.name, phu: g.classCount ? `${g.classCount} lớp` : undefined }));
+  const dsChon = dsGv.map((g) => ({ id: g.id, ten: g.name, phu: g.classCount ? t('{n} lớp', { n: g.classCount }) : undefined }));
   return (
     <li className={`rounded-lg border p-3 ${hienLoi('chung') ? 'border-late' : ''}`} style={hienLoi('chung') ? undefined : { borderColor: 'var(--line)' }}>
       <div className="mb-2 flex items-center gap-2">
-        <span className="text-xs font-bold text-slate-400 tabular-nums">Dòng {i + 1}</span>
+        <span className="text-xs font-bold text-slate-400 tabular-nums">{t('Dòng {n}', { n: i + 1 })}</span>
         <span className="min-w-0 flex-1 truncate text-sm tabular-nums" aria-live="polite">
-          {t.ma
-            ? <strong className="text-slate-100">{t.ma}</strong>
-            : <span className="text-slate-500">{t.cn?.code ?? '…'} {kyHieuLop(d.chuongTrinh, ltCua(d))} …</span>}
+          {dong.ma
+            ? <strong className="text-slate-100">{dong.ma}</strong>
+            : <span className="text-slate-500">{dong.cn?.code ?? '…'} {kyHieuLop(d.chuongTrinh, ltCua(d))} …</span>}
         </span>
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" disabled={busy || soDong <= 1}
-          onClick={xoa} aria-label={`Xoá dòng ${i + 1}`}>Xoá dòng</button>
+          onClick={xoa} aria-label={t('Xoá dòng {n}', { n: i + 1 })}>{t('Xoá dòng')}</button>
       </div>
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-[minmax(9rem,1.2fr)_8.5rem_6rem_6.5rem_minmax(17rem,2.2fr)]">
-        <O1 nhan="Chi nhánh" batBuoc htmlFor={idO('branchId')} loi={hienLoi('branchId')}>
+        <O1 nhan={t('Chi nhánh')} batBuoc htmlFor={idO('branchId')} loi={hienLoi('branchId')}>
           <select className="field w-full" {...o('branchId')} value={d.branchId ?? ''}
             onChange={(e) => sua({ branchId: e.target.value ? Number(e.target.value) : null, chon: {} /* GV cũ không thuộc chi nhánh mới */ })}>
-            <option value="">— Chọn —</option>
+            <option value="">{t('— Chọn —')}</option>
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.code})</option>)}
           </select>
         </O1>
-        <O1 nhan="Chương trình" htmlFor={idO('chuongTrinh')} loi={hienLoi('chuongTrinh')}>
+        <O1 nhan={t('Chương trình')} htmlFor={idO('chuongTrinh')} loi={hienLoi('chuongTrinh')}>
           <select className="field w-full" {...o('chuongTrinh')} value={d.chuongTrinh}
             onChange={(e) => sua({ chuongTrinh: e.target.value })}>
             {dsCt.map((c) => (
@@ -322,18 +323,18 @@ function DongThe({ t, i, soDong, busy, routes, dsCt, branches, gv, hienLoi, idO,
           </select>
         </O1>
         {ft ? (
-          <O1 nhan="Lộ trình" htmlFor={idO('loTrinh')} loi={hienLoi('loTrinh')}>
+          <O1 nhan={t('Lộ trình')} htmlFor={idO('loTrinh')} loi={hienLoi('loTrinh')}>
             <select className="field w-full" {...o('loTrinh')} value={d.loTrinh} onChange={(e) => sua({ loTrinh: e.target.value })}>
               {(routes.length ? routes : [{ code: d.loTrinh, name: d.loTrinh }]).map((r) => <option key={r.code} value={r.code} title={r.name}>{r.code}</option>)}
             </select>
           </O1>
         ) : <div className="hidden lg:block" aria-hidden />}
-        <O1 nhan="Số lớp" batBuoc htmlFor={idO('so')} loi={hienLoi('so')}>
-          <input className="field w-full tabular-nums" {...o('so')} inputMode="numeric" autoComplete="off" placeholder="Ví dụ: 05"
+        <O1 nhan={t('Số lớp')} batBuoc htmlFor={idO('so')} loi={hienLoi('so')}>
+          <input className="field w-full tabular-nums" {...o('so')} inputMode="numeric" autoComplete="off" placeholder={t('Ví dụ: 05')}
             value={d.so} onChange={(e) => sua({ so: locSoLop(e.target.value), soTay: true })} />
         </O1>
         <div className="sm:col-span-2 lg:col-span-1">
-          <O1 nhan="Tuần khai giảng" batBuoc={!ft} loi={hienLoi('tuan')}>
+          <O1 nhan={t('Tuần khai giảng')} batBuoc={!ft} loi={hienLoi('tuan')}>
             <div {...o('tuan')} tabIndex={-1}>
               {/* WeekPicker tự đặt tuần hiện tại khi còn trống — không tính là người dùng sửa. */}
               <WeekPicker periodId={d.startPeriodId} label={null} scope="planning"
@@ -342,15 +343,15 @@ function DongThe({ t, i, soDong, busy, routes, dsCt, branches, gv, hienLoi, idO,
           </O1>
         </div>
       </div>
-      {t.coGv && (
+      {dong.coGv && (
         <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" id={idO('slots')} tabIndex={-1}>
-          {t.oList.map((x) => {
-            const l = t.loiO(x);
+          {dong.oList.map((x) => {
+            const l = dong.loiO(x);
             return (
               <O1 key={x.khoa} nhan={x.nhan} htmlFor={idO(x.khoa)} loi={l}>
                 {/* PR-O-CHON: gõ tên rồi chọn ở danh sách bên dưới — đúng danh sách GV của chi nhánh dòng này. */}
                 <ChonNguoi id={idO(x.khoa)} nhom="giao_vien" choToi={false} choNgoai={false} invalid={!!l}
-                  ariaLabel={`${x.nhan}: chọn giáo viên`} choTrong="— Chưa chọn —" ds={dsChon}
+                  ariaLabel={t('{nhan}: chọn giáo viên', { nhan: x.nhan })} choTrong={t('— Chưa chọn —')} ds={dsChon}
                   value={(() => { const id = d.chon[x.khoa]; const g = id ? dsChon.find((z) => z.id === id) : undefined;
                     return id ? { kieu: 'tai_khoan' as const, id, ten: g?.ten ?? '…', phu: g?.phu } : null; })()}
                   onChange={(v) => sua({ chon: { ...d.chon, [x.khoa]: v?.kieu === 'tai_khoan' ? v.id : '' } })} />
@@ -359,8 +360,8 @@ function DongThe({ t, i, soDong, busy, routes, dsCt, branches, gv, hienLoi, idO,
           })}
         </div>
       )}
-      {hienLoi('slots') && <p className="m-0 mt-1 text-xs text-late">{hienLoi('slots')}</p>}
-      {hienLoi('chung') && <p className="m-0 mt-1.5 text-xs text-late" id={idO('chung')} tabIndex={-1}>{hienLoi('chung')}</p>}
+      {hienLoi('slots') && <p className="m-0 mt-1 text-xs text-late">{dich(hienLoi('slots')!)}</p>}
+      {hienLoi('chung') && <p className="m-0 mt-1.5 text-xs text-late" id={idO('chung')} tabIndex={-1}>{dich(hienLoi('chung')!)}</p>}
     </li>
   );
 }
@@ -373,10 +374,10 @@ function O1({ nhan, batBuoc, htmlFor, loi, children }: {
   return (
     <div className="min-w-0">
       <Nhan htmlFor={htmlFor} className="mb-1 block text-xs font-bold text-slate-300">
-        {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}
+        {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}
       </Nhan>
       <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
-      {loi && <span className="mt-1 block text-xs text-late">{loi}</span>}
+      {loi && <span className="mt-1 block text-xs text-late">{dich(loi)}</span>}
     </div>
   );
 }

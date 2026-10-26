@@ -132,7 +132,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(/CHU_CHUYEN_LOP\.sapChuyen/.test(docNguon('web/src/modules/classes/DaiChuyenLop.tsx')), 'DaiChuyenLop dùng hằng');
     const ll = docNguon('shared/domain/lenLop.ts');
     assert(ll.includes("'Tạm dừng học (bảo lưu)'") && ll.includes("'Dừng học hẳn'") && ll.includes("'Lên FT'"), 'nhãn hướng (lenLop)');
-    assert(docNguon('web/src/modules/students/StudentManagePanel.tsx').includes('nhan="Điểm đầu vào"'), 'Điểm đầu vào');   // OV-11d: chỉ ở Sửa thông tin
+    assert(docNguon('web/src/modules/students/StudentManagePanel.tsx').includes("nhan={t('Điểm đầu vào')}"), 'Điểm đầu vào');   // OV-11d: chỉ ở Sửa thông tin
     /* OV-4b: mockup overhaul-1 §3 (duyệt 11/10) ghi "Overall" — cột nới 84 px. */
     /* BANG-1: tiêu đề cột là định nghĩa cột của `Bang` (`nhan`). */
     assert(/key: 'ovr', nhan: 'Overall'/.test(docNguon('web/src/modules/cham/LuoiFT.tsx')), 'LuoiFT Overall (mockup §3)');

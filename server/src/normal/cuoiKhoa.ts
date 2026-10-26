@@ -3,7 +3,7 @@ import {
   CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
   type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -658,7 +658,7 @@ export function ghiMiniTest(p: Principal, miniTestId: number, input: { tyLe?: un
   const mt = conn.prepare('SELECT * FROM mini_test WHERE id = ?').get(miniTestId) as any;
   if (!mt) throw notFound('Không tìm thấy Mini Test.');
   const daGhi = mt.ty_le !== null;
-  if (!quyenGhiMiniTest(p, mt)) throw forbidden(`Bạn không có quyền ${daGhi ? 'sửa' : 'ghi'} Mini Test của học viên này.`);
+  if (!quyenGhiMiniTest(p, mt)) throw loi(403, 'Bạn không có quyền {x} Mini Test của học viên này.', { x: daGhi ? 'sửa' : 'ghi' });
   const v = kiemMiniTest(mt, input);
   const lyDo = String(input.lyDo ?? '').trim();
   /* T7 (PR-MTa): sửa điểm Mini Test đã ghi — lý do tuỳ chọn (như sửa điểm Test). */

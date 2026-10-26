@@ -6,7 +6,7 @@ import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
 import { can, require_, type Ctx, type Principal } from '../permissions.ts';
-import { HttpError, badRequest, forbidden, kiemKieuO, loi, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, forbidden, kiemKieuO, loi, loi as loiHttp, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
   docDiemXuatPhat, docDuKienThi, docTargetCua, docTuanBatDau, duocDoiTarget, loiDoiTarget, reviseTarget, setBaseline, updateCycle,
@@ -119,7 +119,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   if (!Array.isArray(input?.rows) || input.rows.some((r) => !r || typeof r !== 'object' || Array.isArray(r))) {
     throw badRequest('Dữ liệu sửa không hợp lệ — cần danh sách dòng.');
   }
-  if (input.rows.length > TOI_DA_DONG_SUA_CA_LOP) throw badRequest(`Tối đa ${TOI_DA_DONG_SUA_CA_LOP} học viên một lần sửa.`);
+  if (input.rows.length > TOI_DA_DONG_SUA_CA_LOP) throw loiHttp(400, 'Tối đa {TOI_DA_DONG_SUA_CA_LOP} học viên một lần sửa.', { TOI_DA_DONG_SUA_CA_LOP });
   const conn = db();
   const cls = conn.prepare('SELECT id, code, programme_code, lich_mt, route, branch_id FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
@@ -128,14 +128,14 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
 
   const ids = input.rows.map((r) => Number(r.studentId));
   const sai = input.rows.find((_, i) => !Number.isInteger(ids[i]));
-  if (sai) throw badRequest(`Mã học viên "${String(sai.studentId)}" không hợp lệ.`);
+  if (sai) throw loiHttp(400, 'Mã học viên "{studentId}" không hợp lệ.', { studentId: String(sai.studentId) });
   const lap = ids.find((id, i) => ids.indexOf(id) !== i);
-  if (lap !== undefined) throw badRequest(`Học viên #${lap} có hai dòng trong lô.`);
+  if (lap !== undefined) throw loiHttp(400, 'Học viên #{lap} có hai dòng trong lô.', { lap });
   const { em, loTrinh } = emVaLoTrinh(cls.id, ids.filter(Number.isInteger));
 
   const dong = input.rows.map((r, i) => {
     const s = em.get(ids[i]);
-    if (!s) throw badRequest(`Học viên #${r.studentId} không thuộc lớp này.`);
+    if (!s) throw loiHttp(400, 'Học viên #{studentId} không thuộc lớp này.', { studentId: r.studentId });
     kiemKieuO(r as Record<string, unknown>, ['fullName', 'dob', 'email', 'startWeek', 'examDate', 'phone', 'parentName', 'parentRelation', 'parentPhone'], ['target', 'baseline', 'consultantUserId'],
       (k) => `${s.full_name} · ${NHAN[k] ?? k}`);
     const c = loTrinh.get(s.id) ?? null;
@@ -151,7 +151,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
        đổi Target THẬT cần `duocDoiTarget`. */
     const coSua = [...HO_SO, ...LO_TRINH].some((k) => k !== 'target' && k !== 'monDangKy' && r[k] !== undefined);
     if (coSua && !can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id })) {
-      if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })) throw forbidden(`Bạn không có quyền sửa học viên ${s.full_name}.`);
+      if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })) throw loiHttp(403, 'Bạn không có quyền sửa học viên {full_name}.', { full_name: s.full_name });
       if (r.startWeek !== undefined) throw forbidden(CHI_SUA_THONG_TIN);
     }
     /* P8 (chủ SP 26/10 đêm): Môn học — QL, Quản trị, GVCN, TVV đúng phạm vi (`duocDoiMon`); CX, GV bộ môn không. */
@@ -251,7 +251,7 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
   const conn = db();
   /* Lưu theo lô (web gửi từng `LO_LUU_SUA_CA_LOP` em): một request không ghi cả lớp — 10 s của Netlify. */
   if (Array.isArray(input?.rows) && input.rows.length > TOI_DA_LUU_SUA_CA_LOP) {
-    throw badRequest(`Lưu tối đa ${TOI_DA_LUU_SUA_CA_LOP} học viên một lần.`);
+    throw loiHttp(400, 'Lưu tối đa {TOI_DA_LUU_SUA_CA_LOP} học viên một lần.', { TOI_DA_LUU_SUA_CA_LOP });
   }
   const { cls, dong, roiEmail } = kiemLo(p, classId, input);
   /* Chống gửi trùng như `commitIntake`: khoá gắn NGƯỜI GỬI + LỚP, kiểm sau quyền; đọc lại trong giao dịch. */

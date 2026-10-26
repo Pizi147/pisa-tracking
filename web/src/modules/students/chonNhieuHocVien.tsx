@@ -18,7 +18,7 @@ export type ChonNhieu = ReturnType<typeof useChonNhieu>;
 /** Ô tick một học viên — vùng bấm 44 px trên điện thoại. */
 export function OChon({ chon, id, ten }: { chon: ChonNhieu; id: number; ten: string }) {
   return (
-    <input type="checkbox" className="h-[18px] w-[18px] shrink-0 cursor-pointer max-sm:m-[13px]" aria-label={`Chọn ${ten}`}
+    <input type="checkbox" className="h-[18px] w-[18px] shrink-0 cursor-pointer max-sm:m-[13px]" aria-label={t('Chọn {ten}', { ten })}
       checked={chon.chon.has(id)} onChange={() => chon.doi(id)} />
   );
 }

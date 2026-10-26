@@ -7,6 +7,7 @@ import { HangTab } from '../../ui/HangTab.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { DUONG_TAB_TEST, boMonLich, tenMonNgan, thamSoCt, tuanLich, type ChuongTrinh } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * LỊCH SẮP TỚI (PR-Pa, §3.2; trước đây 'Sự kiện nổi bật') — khối nhỏ trên Tổng quan.
@@ -64,7 +65,7 @@ function gomTheoLop(w: Week, hienFt: boolean, hienThuong: boolean): DongLop[] {
   if (hienThuong) {
     for (const r of w.normal.progressClasses) { if (!r.students) continue; const d = lay(r.id, r.code, r.programme); d.chip.push({ chu: 'Progress', so: r.students }); d.soEm += r.students; }
     for (const r of w.normal.finalClasses) { if (!r.students) continue; const d = lay(r.id, r.code, r.programme); d.chip.push({ chu: 'Final', so: r.students }); d.soEm += r.students; }
-    for (const r of w.normal.endingClasses) lay(r.id, r.code, r.programme).chip.push({ chu: 'Hết khoá', so: null, den: `/hoc-vien/lop/${r.id}?viec=chuyen-tiep` });
+    for (const r of w.normal.endingClasses) lay(r.id, r.code, r.programme).chip.push({ chu: t('Hết khoá'), so: null, den: `/hoc-vien/lop/${r.id}?viec=chuyen-tiep` });
   }
   return [...lop.values()].sort((a, b) => a.code.localeCompare(b.code, 'vi', { numeric: true }));
 }
@@ -82,7 +83,7 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
   );
   const data = duLieu !== undefined ? duLieu : tai.data;
   const loading = duLieu !== undefined ? duLieu === null : tai.loading;
-  if (loading) return <Card title="Lịch sắp tới"><Skeleton rows={3} /></Card>;
+  if (loading) return <Card title={t('Lịch sắp tới')}><Skeleton rows={3} /></Card>;
   if (!data || data.scopeEmpty || !data.weeks.length) return null;
 
   const hienThuong = ct !== 'ft';
@@ -95,22 +96,22 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
   const hien = moHet ? dong : dong.slice(0, TOI_DA);
   const conLai = dong.length - hien.length;
   const maTuan = (x: Week) => tuanLich(x.weekStart, homNay);
-  const nhanTab = (x: Week) => (x.offset === 0 ? (hep ? 'Tuần này' : `Tuần này · ${maTuan(x)}`)
-    : x.offset === 1 ? (hep ? 'Tuần sau' : `Tuần sau · ${maTuan(x)}`) : maTuan(x));
+  const nhanTab = (x: Week) => (x.offset === 0 ? (hep ? t('Tuần này') : `${t('Tuần này')} · ${maTuan(x)}`)
+    : x.offset === 1 ? (hep ? t('Tuần sau') : `${t('Tuần sau')} · ${maTuan(x)}`) : maTuan(x));
   const q = new URLSearchParams({ tuan: w.weekStart });
   if (branchId) q.set('cn', String(branchId));
   if (ct) q.set('loai', ct);
-  const xemHet = <Link to={`${DUONG_TAB_TEST['ke-hoach']}?${q}`} className="link inline-flex items-center whitespace-nowrap text-xs max-sm:min-h-[44px]">Xem toàn bộ lịch ›</Link>;
+  const xemHet = <Link to={`${DUONG_TAB_TEST['ke-hoach']}?${q}`} className="link inline-flex items-center whitespace-nowrap text-xs max-sm:min-h-[44px]">{t('Xem toàn bộ lịch ›')}</Link>;
   const chuaRo = hienFt && data.examMonthOnly.students > 0;
 
   return (
-    <Card title="Lịch sắp tới" bodyClass="p-0" action={hep ? undefined : xemHet}>
+    <Card title={t('Lịch sắp tới')} bodyClass="p-0" action={hep ? undefined : xemHet}>
       <div className="px-2 pt-1">
-        <HangTab cap="con" ariaLabel="Tuần" value={String(i)} onChange={(k) => { setTab(k); setMoHet(false); }}
-          tabs={data.weeks.map((x, j) => ({ key: String(j), label: nhanTab(x), so: theoTuan[j].reduce((n, d) => n + d.soEm, 0), donVi: 'em' }))} />
+        <HangTab cap="con" ariaLabel={t('Tuần')} value={String(i)} onChange={(k) => { setTab(k); setMoHet(false); }}
+          tabs={data.weeks.map((x, j) => ({ key: String(j), label: nhanTab(x), so: theoTuan[j].reduce((n, d) => n + d.soEm, 0), donVi: t('em') }))} />
       </div>
       {!dong.length ? (
-        <p className="m-0 px-4 py-3 text-sm text-slate-400">Không có đợt Test nào trong tuần này.</p>
+        <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có đợt Test nào trong tuần này.')}</p>
       ) : (
         <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
           {hien.map((d) => (
@@ -120,7 +121,7 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
                 : <b className="truncate font-semibold text-slate-200">{d.code}</b>}
               <span className="flex min-w-0 flex-wrap gap-1.5">
                 {d.chip.map((c) => {
-                  const noiDung = <>{c.chu}{c.so !== null && <i className="not-italic text-slate-500">· <span className="tabular-nums">{c.so}</span><span className="max-sm:hidden"> em</span></i>}</>;
+                  const noiDung = <>{c.chu}{c.so !== null && <i className="not-italic text-slate-500">· <span className="tabular-nums">{c.so}</span><span className="max-sm:hidden"> {t('em')}</span></i>}</>;
                   const cls = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-[7px] text-xs text-slate-300';
                   return c.den
                     ? <Link key={c.chu} to={c.den} className={`${cls} no-underline hover:underline`} style={{ borderColor: 'var(--line-strong)' }}>{noiDung}</Link>
@@ -134,16 +135,16 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
       )}
       {(conLai > 0 || thi > 0 || chuaRo || hep) && (
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t px-4 py-2 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
-          {conLai > 0 && <button type="button" className="link min-h-[44px] sm:min-h-0" onClick={() => setMoHet(true)}>+ {conLai} lớp</button>}
+          {conLai > 0 && <button type="button" className="link min-h-[44px] sm:min-h-0" onClick={() => setMoHet(true)}>+ {t('{n} lớp', { n: conLai })}</button>}
           {conLai > 0 && thi > 0 && <span aria-hidden>·</span>}
-          {thi > 0 && <span>Dự kiến thi IELTS · <b className="tabular-nums font-semibold text-slate-300">{thi} em</b></span>}
+          {thi > 0 && <span>{t('Dự kiến thi IELTS')} · <b className="tabular-nums font-semibold text-slate-300">{t('{n} em', { n: thi })}</b></span>}
           <span className="flex-1" />
           {/*
             CHỈ BIẾT THÁNG THÌ KHÔNG XẾP VÀO TUẦN NÀO (mục 3.5) — nói thẳng là chưa xác định tuần, không lặng lẽ xếp vào tuần đầu tháng.
           */}
           {chuaRo && (
-            <span><Info>Chưa xác định tuần</Info>{' '}
-              {data.examMonthOnly.students} em ({data.examMonthOnly.months.map(monthLabel).join(', ')})</span>
+            <span><Info>{t('Chưa xác định tuần')}</Info>{' '}
+              {t('{n} em', { n: data.examMonthOnly.students })} ({data.examMonthOnly.months.map(monthLabel).join(', ')})</span>
           )}
           {hep && xemHet}
         </div>
@@ -154,5 +155,5 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
 const MONTHS = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
 function monthLabel(m: string): string {
   const [y, mm] = m.split('-');
-  return MONTHS.includes(mm) ? `tháng ${Number(mm)}/${y}` : m;
+  return MONTHS.includes(mm) ? t('tháng {m}/{y}', { m: Number(mm), y }) : m;
 }

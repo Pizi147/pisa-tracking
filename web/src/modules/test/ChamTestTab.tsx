@@ -159,7 +159,10 @@ export function ChamTestTab() {
 
 const demNhom = (ds: readonly { soBai?: number }[]) => t('{n} nhóm · {bai} bài', { n: ds.length, bai: tongBai(ds) });
 
-/** Một nhóm theo hạn: tên + số ở đầu; `gap` (true/false) = nhóm gập được (`<details>`), mở sẵn khi false. Nhóm trống: MỘT dòng chữ. */
+/**
+ * Một nhóm theo hạn: tên + số ở đầu; `gap` (true/false) = nhóm gập được (`<details>`), mở sẵn khi false. Nhóm trống: MỘT dòng chữ.
+ * Đầu nhóm = thanh `--cap-nhom`, cùng dáng thanh nhóm Lịch Test (R1-PHAN-CAP-TEST, M2 A2).
+ */
 function Nhom({ ten, dem, rong, gap, children }: { ten: string; dem: ReactNode; rong?: string; gap?: boolean; children: ReactNode[] }) {
   const dau = (
     <>
@@ -172,14 +175,14 @@ function Nhom({ ten, dem, rong, gap, children }: { ten: string; dem: ReactNode; 
   if (gap === undefined) {
     return (
       <div className="border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
-        <div className="flex items-baseline gap-2 px-4 pt-3 pb-1.5">{dau}</div>
+        <div className="flex min-h-[40px] items-baseline gap-2 bg-[color:var(--cap-nhom)] px-4 py-2.5">{dau}</div>
         {than}
       </div>
     );
   }
   return (
     <details className="group border-b last:border-b-0" style={{ borderColor: 'var(--line)' }} open={!gap}>
-      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 px-4 py-2 sm:min-h-0 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 bg-[color:var(--cap-nhom)] px-4 py-2.5 sm:min-h-[40px] [&::-webkit-details-marker]:hidden">
         <span aria-hidden className="w-3 text-slate-500 group-open:rotate-90 transition-transform">▸</span>{dau}
       </summary>
       {than}

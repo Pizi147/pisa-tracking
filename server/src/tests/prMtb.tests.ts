@@ -561,7 +561,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(!/kiemLyDoThaoTac\('huy-luot'/.test(m) && !/Lý do huỷ \(bắt buộc\)/.test(m), 'CancelDialog: lý do tuỳ chọn (PR-MTGON)');
     /* PR-HOP1: WeekModal bỏ — dời cả đợt đi hộp một đợt `HopKyNang` (chip "Tuần đã qua", Quản lý chọn tuần đã qua). */
-    assert(!/WeekModal/.test(m) && /Tuần đã qua<\/Nhan>/.test(nguon('web/src/modules/test/keHoach/HopKyNang.tsx')), 'WeekModal');
+    assert(!/WeekModal/.test(m) && /\{t\('Tuần đã qua'\)\}<\/Nhan>/.test(nguon('web/src/modules/test/keHoach/HopKyNang.tsx')), 'WeekModal');
     const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function AbsenceMoveModal'));
     assert(!/<SectionNote>/.test(han), 'DeadlineModal: câu giải thích chuyển vào title');
     const vang = m.slice(m.indexOf('function AbsenceMoveModal'), m.indexOf('function TraLoiDeNghiModal'));
@@ -839,7 +839,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert((d as any).chipDongKyNang(het, '2026-10-06')?.tone === 'muted', 'mặc định không phải MT cũ');
     const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
     assert(/chipDongKyNang\(o, homNay, ct, lichSu\)/.test(h) && /lichSu=\{lichSu\}/.test(h), 'hộp chưa truyền lichSu');
-    assert(/!\(chip\.chu === 'chưa xếp' && d\.weekStart\)/.test(h), 'chip "chờ chấm" bị ẩn cùng chip "chưa xếp"');
+    assert(/!\(chip\.chu === t\('chưa xếp'\) && d\.weekStart\)/.test(h), 'chip "chờ chấm" bị ẩn cùng chip "chưa xếp"');
   });
 
   check('MTb sau rà đợt 2 (6) · nút ⋯: vùng bấm ở điện thoại đủ 44px (after theo mép trong viền 1px: 28 - 2 + 2 × 9) — hồ sơ Mock và Lộ trình dùng chung MenuDong', () => {

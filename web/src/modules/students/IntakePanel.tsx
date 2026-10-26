@@ -5,7 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
@@ -27,6 +27,8 @@ type KetQua = {
 
 const ISO_NGAY = /^\d{4}-\d{2}-\d{2}$/;
 const moiKhoa = () => `intake-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+/** Nhãn cột đã là chữ Anh (Overall, L, Target…) giữ nguyên — từ điển nới "Overall" thành "Overall band", tràn cột 72 px. */
+const nhanCot = (n: string) => (/[^\x00-\x7F]/.test(n) ? dich(n) : n);
 const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').trim());
 
 /* Bề rộng cột theo M2 (px). Cột Tình trạng do panel vẽ, không nằm trong `cotLuoiNhap`. */
@@ -36,13 +38,13 @@ const RONG: Partial<Record<CotNhap, number>> = {
   entrySpeaking: 48, target: 80, examDate: 104, daThiToiMt: 104, startWeek: 172,   // OV-9: Target 80 cho "6.5 KCK"
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
-  fullName: 'Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.',
-  baselineScore: 'Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.',
-  entryWriting: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.',
-  target: `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm KCK (ví dụ 6.5 KCK; chưa có Target thì gõ KCK) — vẫn có kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target. Lớp thường: chỉ để theo dõi.`,
-  examDate: 'Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.',
-  daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT cũ để nhập điểm bù. Bỏ trống = em mới.',
-  startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được. Em vào muộn: cột Trạng thái báo trước MT nào sẽ là MT cũ.',
+  fullName: t('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.'),
+  baselineScore: t('Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.'),
+  entryWriting: t('Writing TỔNG trên phiếu điểm — không chia W1/W2.'),
+  target: t('Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm KCK (ví dụ 6.5 KCK; chưa có Target thì gõ KCK) — vẫn có kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target. Lớp thường: chỉ để theo dõi.'),
+  examDate: t('Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.'),
+  daThiToiMt: t('Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT cũ để nhập điểm bù. Bỏ trống = em mới.'),
+  startWeek: t('Theo tuần chọn ở đầu panel; đổi riêng từng dòng được. Em vào muộn: cột Trạng thái báo trước MT nào sẽ là MT cũ.'),
 };
 
 /** Mũi tên nhỏ vẽ SVG (▸/▾ của Inter ở cỡ chữ nhỏ chỉ còn như một dấu chấm). */
@@ -84,7 +86,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const [lichSu, setLichSu] = useState(false);   // OV-15g: lịch sử các lô nhập vào lớp — thay nội dung panel, ← Thêm học viên (lưới giữ nguyên)
   /* O5: ô của cả lô báo lỗi dưới ô; lỗi từng dòng vẫn ở cột Trạng thái (máy chủ xem trước + kiểm lại khi thêm). */
   const lf = useLoiForm();
-  const loiLo = dsLoi([{ khoa: 'lop', nhan: 'Thêm vào lớp', chon: true }], { lop: classId });
+  const loiLo = dsLoi([{ khoa: 'lop', nhan: t('Thêm vào lớp'), chon: true }], { lop: classId });
   const [pasteText, setPasteText] = useState('');
   /* PR-NT: giữ nội dung vừa dán + cách đã đọc để đổi cách đọc (tiêu đề ↔ học viên) mà không phải dán lại. */
   const [daDan, setDaDan] = useState<{ text: string; cach: CachDoc | null } | null>(null);
@@ -106,7 +108,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     if (!text.trim()) return;
     try {
       const r = await api.post<{ rows: Row[]; cotBoQua: string[]; cach: CachDoc | null }>('/intake/parse', { text, classId, coTieuDe });
-      if (!r.rows.length) { toast.push('error', 'Không đọc được dòng nào từ nội dung đã dán.'); return; }
+      if (!r.rows.length) { toast.push('error', t('Không đọc được dòng nào từ nội dung đã dán.')); return; }
       doiLuoi(() => r.rows);
       setMoDong(null); setKetQua(null); setPasteText(''); setDaDan({ text, cach: r.cach });
     } catch (e: any) { toast.push('error', e.message); }
@@ -147,7 +149,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       setMoDong(null);
       setKetQua(r);
       if (r.added > 0) { onDone(); setDaDan(null); }
-      else toast.push('info', 'Chưa thêm được dòng nào — xem cột Trạng thái.');
+      else toast.push('info', t('Chưa thêm được dòng nào — xem cột Trạng thái.'));
     } catch (e: any) {
       toast.push('error', e.message);        // giữ nguyên lưới đang nhập để thử lại
     } finally { setBusy(false); }
@@ -157,7 +159,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     document.querySelector('[data-needs-fix="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
   /* CA2-10: bỏ câu giải thích dưới ô — chỉ giữ chỗ người nhập phải tự chọn. */
-  const goiYTuan = cls && !macDinh ? 'Lớp chưa có ngày khai giảng.' : null;
+  const goiYTuan = cls && !macDinh ? t('Lớp chưa có ngày khai giảng.') : null;
 
   const hoSoLop = classId ? `/hoc-vien/lop/${classId}` : null;
 
@@ -165,35 +167,35 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     return <LichSuThayDoi loai="nhap-hv" id={classId} dong2={[t('Thêm học viên'), cls?.code]} quayLai={{ nhan: t('Thêm học viên'), onClick: () => setLichSu(false) }} onClose={onClose} />;
   }
   return (
-    <KhungPanel tieuDe="Thêm học viên" lop={cls?.code} rong="toan" onDong={onClose}
-      ngCanh="Chọn lớp, dán từ Excel hoặc gõ vào lưới"
+    <KhungPanel tieuDe={t('Thêm học viên')} lop={cls?.code} rong="toan" onDong={onClose}
+      ngCanh={t('Chọn lớp, dán từ Excel hoặc gõ vào lưới')}
       chan={{
         /* Luật S3 (I1): có dòng đã gõ hoặc chữ trong ô dán → "Huỷ thay đổi". */
         daSua: !!pasteText.trim() || rows.some((r) => !dongTrong(r)), huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loiLo),
         phu: pv && hangCoDuLieu.length > 0 && (
           <span className="text-xs text-slate-400 tabular-nums">
-            {san} dòng sẵn sàng
+            {t('{n} dòng sẵn sàng', { n: san })}
             {canSua > 0 && <> · <button type="button" className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs sm:min-h-0"
-              onClick={denDongCanSua}>{canSua} dòng cần sửa</button></>}
+              onClick={denDongCanSua}>{t('{n} dòng cần sửa', { n: canSua })}</button></>}
           </span>
         ),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={commit}
             disabled={busy || (!!classId && (!pv || san === 0))}>
-            {busy ? 'Đang lưu…' : san > 0 ? `Thêm ${san} học viên` : 'Thêm học viên'}
+            {busy ? t('Đang lưu…') : san > 0 ? t('Thêm {n} học viên', { n: san }) : t('Thêm học viên')}
           </button>
         ),
       }}>
       <div className="space-y-4 pt-3">
         {/* LỚP VÀ TUẦN BẮT ĐẦU — hai quyết định của CẢ LÔ, đặt ở trên cùng: lớp quyết định lưới có những cột nào. */}
         <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
-          <Field label="Thêm vào lớp" required loi={lf.loiCua(loiLo, 'lop')}>
-            <ChonLop ariaLabel="Thêm vào lớp" {...lf.o(loiLo, 'lop')} value={classId} khongKhop={classes.data ? undefined : 'Đang tải…'}
+          <Field label={t('Thêm vào lớp')} required loi={lf.loiCua(loiLo, 'lop')}>
+            <ChonLop ariaLabel={t('Thêm vào lớp')} {...lf.o(loiLo, 'lop')} value={classId} khongKhop={classes.data ? undefined : t('Đang tải…')}
               onChange={(id) => { setClassId(id); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}
               ds={(classes.data ?? []).map((c: any) => ({ id: c.id, ma: c.code, phu: c.programme_name ?? undefined }))} />
           </Field>
-          <Field label="Tuần bắt đầu học (mặc định cho mọi dòng)" hint={goiYTuan ?? undefined}>
+          <Field label={t('Tuần bắt đầu học (mặc định cho mọi dòng)')} hint={goiYTuan ?? undefined}>
             <ONgay kieu="tuan" value={tuanChung} onChange={(v) => { setStartWeek(v); setPreview(null); }} />
           </Field>
         </div>
@@ -201,12 +203,12 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         {/* I3: ô dán phông thường, nút "Đọc nội dung đã dán" nằm DƯỚI ô dán. */}
         <div className="space-y-2">
           <label className="block">
-            <span className="label">Dán vùng bảng từ Excel / Google Sheets</span>
+            <span className="label">{t('Dán vùng bảng từ Excel / Google Sheets')}</span>
             <textarea
               className="field text-xs"
               rows={3}
               disabled={!classId}
-              placeholder={classId ? 'Dán từ Excel' : 'Chọn lớp trước'}
+              placeholder={classId ? t('Dán từ Excel') : t('Chọn lớp trước')}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
               onPaste={(e) => {
@@ -217,7 +219,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           </label>
           <div className="flex justify-end">
             <button type="button" className="btn btn-sm min-h-[44px] w-full justify-center sm:w-auto sm:min-h-0" onClick={() => void handlePaste(pasteText)} disabled={!classId || !pasteText.trim()}>
-              Đọc nội dung đã dán
+              {t('Đọc nội dung đã dán')}
             </button>
           </div>
         </div>
@@ -227,34 +229,34 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           <div className="text-xs text-slate-300 space-y-1" role="status">
             <p className="m-0">
               {cach.coTieuDe
-                ? <>Đã đọc theo dòng tiêu đề{cach.boQua.length ? ` · bỏ qua cột ${cach.boQua.join(', ')}` : ''}.</>
-                : <>Đã đọc theo mẫu Excel chung: {cach.thuTu.map((k) => nhanCotNhap(k)).join(' · ')}.{cach.boQua.length ? ` Lớp thường bỏ qua cột ${cach.boQua.join(', ')}.` : ''}</>}
+                ? <>{t('Đã đọc theo dòng tiêu đề')}{cach.boQua.length ? ` · ${t('bỏ qua cột {ds}', { ds: cach.boQua.join(', ') })}` : ''}.</>
+                : <>{t('Đã đọc theo mẫu Excel chung: {ds}.', { ds: cach.thuTu.map((k) => dich(nhanCotNhap(k))).join(' · ') })}{cach.boQua.length ? ` ${t('Lớp thường bỏ qua cột {ds}.', { ds: cach.boQua.join(', ') })}` : ''}</>}
               {' '}
               <button type="button" className="link flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs align-baseline sm:inline-flex sm:min-h-0"
                 onClick={() => void handlePaste(daDan.text, !cach.coTieuDe)}>
-                {cach.coTieuDe ? 'Dòng đầu là học viên?' : 'Dòng đầu là tiêu đề?'}
+                {cach.coTieuDe ? t('Dòng đầu là học viên?') : t('Dòng đầu là tiêu đề?')}
               </button>
             </p>
-            {cach.thua > 0 && <p className="m-0 text-soon">Mỗi dòng dư {cach.thua} ô ở cuối — đã bỏ. Kiểm lại thứ tự cột.</p>}
-            {cach.thieu > 0 && <p className="m-0 text-slate-400">{cach.thieu} cột cuối để trống — điền thêm trên lưới nếu cần.</p>}
+            {cach.thua > 0 && <p className="m-0 text-soon">{t('Mỗi dòng dư {n} ô ở cuối — đã bỏ. Kiểm lại thứ tự cột.', { n: cach.thua })}</p>}
+            {cach.thieu > 0 && <p className="m-0 text-slate-400">{t('{n} cột cuối để trống — điền thêm trên lưới nếu cần.', { n: cach.thieu })}</p>}
           </div>
         )}
 
         {ketQua && ketQua.added > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <Outcome tone="ok" mark="✓">
-              Đã thêm {ketQua.added} học viên vào {cls?.code ?? 'lớp'}
-              {ketQua.mt?.soEm ? ` · đã lên lịch MT cho ${ketQua.mt.soEm} em` : ''}
+              {t('Đã thêm {n} học viên vào {lop}', { n: ketQua.added, lop: cls?.code ?? t('lớp') })}
+              {ketQua.mt?.soEm ? ` · ${t('đã lên lịch MT cho {n} em', { n: ketQua.mt.soEm })}` : ''}
             </Outcome>
             {!!ketQua.mt?.soLuotLichSu && (
               <span className="text-xs text-soon tabular-nums">
-                {ketQua.mt.soLuotLichSu} MT cũ chưa có điểm ({ketQua.mt.soEmCoLichSu} em)
+                {t('{n} MT cũ chưa có điểm ({em})', { n: ketQua.mt.soLuotLichSu, em: t('{n} em', { n: ketQua.mt.soEmCoLichSu }) })}
               </span>
             )}
             {ketQua.mt?.luotLichSuDau && (
-              <Link className="link text-xs" to={duongDotTest({ id: ketQua.mt.luotLichSuDau, kind: 'mock' })}>Nhập điểm MT cũ</Link>
+              <Link className="link text-xs" to={duongDotTest({ id: ketQua.mt.luotLichSuDau, kind: 'mock' })}>{t('Nhập điểm MT cũ')}</Link>
             )}
-            {hoSoLop && pathname !== hoSoLop && <Link className="link text-xs" to={hoSoLop}>Mở hồ sơ lớp</Link>}
+            {hoSoLop && pathname !== hoSoLop && <Link className="link text-xs" to={hoSoLop}>{t('Mở hồ sơ lớp')}</Link>}
             <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs max-sm:py-2" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
           </div>
         )}
@@ -271,10 +273,10 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 <th className="th">#</th>
                 {cols.map((c) => (
                   <Th key={c.key} hint={c.key === 'target' && ktLop ? t('{ten}: số nguyên {min}–{max}, không KCK. Bỏ trống = chưa có Target.', { ten: ktLop.ten, min: ktLop.min, max: ktLop.max }) : GOI_Y_COT[c.key]} align={c.so ? 'right' : 'left'}>
-                    {c.nhan}{c.batBuoc && <span className="text-bad"> *</span>}
+                    {nhanCot(c.nhan)}{c.batBuoc && <span className="text-bad"> *</span>}
                   </Th>
                 ))}
-                <Th>Trạng thái</Th>
+                <Th>{t('Trạng thái')}</Th>
               </tr>
             </thead>
             <tbody>
@@ -292,8 +294,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                         const cua = ds.filter((x) => x.field === c.key);
                         const loiO = cua.some((x) => x.muc === 'loi');
                         const vien = loiO ? ' border-late' : cua.length ? ' border-soon' : '';
-                        const title = cua.map((x) => x.message).join(' · ') || undefined;
-                        const nhan = `${c.nhan} dòng ${i + 1}`;
+                        const title = cua.map((x) => dich(x.message)).join(' · ') || undefined;
+                        const nhan = t('{cot} dòng {n}', { cot: nhanCot(c.nhan), n: i + 1 });
                         return (
                           <td key={c.key} className="td px-1.5 py-1.5">
                             {c.key === 'startWeek' && (!giaTriTuan || ISO_NGAY.test(giaTriTuan)) ? (
@@ -309,7 +311,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                                 value={String(r[c.key] ?? '')}
                                 type={c.key === 'email' ? 'email' : 'text'}
                                 inputMode={c.key === 'target' ? undefined : c.so ? 'decimal' : c.key === 'email' ? 'email' : undefined}
-                                placeholder={c.key === 'dob' ? 'dd/mm/yyyy' : c.key === 'email' && !dongTrong(r) ? 'Thiếu' : undefined}
+                                placeholder={c.key === 'dob' ? 'dd/mm/yyyy' : c.key === 'email' && !dongTrong(r) ? t('Thiếu') : undefined}
                                 autoComplete="off"
                                 title={title}
                                 aria-invalid={loiO || undefined}
@@ -323,11 +325,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                       })}
                       <td className="td px-2 py-1.5 whitespace-nowrap text-xs">
                         {dongTrong(r) || !pv ? <span className="text-slate-500">—</span>
-                          : ds.length === 0 ? <span className="text-ok">✓ Sẵn sàng</span>
+                          : ds.length === 0 ? <span className="text-ok">✓ {t('Sẵn sàng')}</span>
                           : (
                             <button type="button" aria-expanded={mo} onClick={() => setMoDong(mo ? null : i)}
                               className={`inline-flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-xs sm:min-h-0 ${nLoi ? 'text-late' : 'text-soon'}`}>
-                              {[nLoi && `${nLoi} lỗi`, nLuuY && `${nLuuY} lưu ý`].filter(Boolean).join(' · ')}
+                              {[nLoi && t('{n} lỗi', { n: nLoi }), nLuuY && t('{n} lưu ý', { n: nLuuY })].filter(Boolean).join(' · ')}
                               <MuiTen mo={mo} />
                             </button>
                           )}
@@ -338,13 +340,13 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                         <td colSpan={cols.length + 2} className="td surface-2 px-2 py-2 text-[13px] text-slate-200">
                           {/* Chi tiết trải ngang nhưng neo ở mép trái vùng cuộn — trên điện thoại vẫn đọc được, không phải cuộn ngang. */}
                           <div className="sticky left-0 max-w-[calc(100vw-4rem)] whitespace-normal">
-                            Dòng {i + 1}
+                            {t('Dòng {n}', { n: i + 1 })}
                             {ds.map((x, k) => (
-                              <span key={k}> · <b className={x.muc === 'loi' ? 'text-late' : 'text-soon'}>{nhanCotNhap(x.field)}</b>: {x.message}</span>
+                              <span key={k}> · <b className={x.muc === 'loi' ? 'text-late' : 'text-soon'}>{dich(nhanCotNhap(x.field))}</b>: {dich(x.message)}</span>
                             ))}
                             <button type="button" className="link ml-3 inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs align-middle sm:min-h-0"
                               onClick={() => { doiLuoi((rs) => (rs.length > 1 ? rs.filter((_, j) => j !== i) : [{}])); setMoDong(null); }}>
-                              Xoá dòng này
+                              {t('Xoá dòng này')}
                             </button>
                           </div>
                         </td>
@@ -359,7 +361,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => doiLuoi((rs) => [...rs, {}])}>
-            + Thêm dòng
+            {t('+ Thêm dòng')}
           </button>
         </div>
       </div>

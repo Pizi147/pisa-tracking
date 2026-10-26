@@ -18,7 +18,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { KHOA_HOAN_TAT_HINT, ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel } from '../../lib/format.ts';
 import {
-  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, nhanBai, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -587,7 +587,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
     }
     : kdt.length ? { chu: t('{x} vắng', { x: kdt.map(ngan).join(', ') }), tone: 'text-slate-400', title: t('{x}: Vắng.', { x: kdt.map(du).join(', ') }) }
     : row.goiY
-      ? { chu: row.goiY.nhanNgan, tone: 'text-slate-500', title: `${row.goiY.nhan}${kq.phu ? ` — ${kq.phu}` : ''}` }
+      ? { chu: dich(row.goiY.nhanNgan), tone: 'text-slate-500', title: `${nhanGoiY(row.goiY)}${kq.phu ? ` — ${kq.phu}` : ''}` }
     : kq.phu && !row.chip
       ? {
         chu: `${kq.phu}${row.overdue ? t(' · quá hạn') : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500',

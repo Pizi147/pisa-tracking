@@ -376,7 +376,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const dx = doc('web/src/modules/duyet/DeXuatSuaPanel.tsx');
     assert(/nhan: t\('Thông tin khác'\)/.test(dx) && !/nhan: (?:t\()?'Khác'/.test(dx), 'DeXuatSuaPanel');
     const lt = doc('web/src/modules/students/LuuTruPage.tsx');
-    assert(/Không có lớp khớp "\$\{/.test(lt) && /Không có học viên khớp "\$\{/.test(lt), 'LuuTruPage chưa có câu "Không có … khớp"');
+    assert(/Không có lớp khớp "\{loc\}"/.test(lt) && /Không có học viên khớp "\{loc\}"/.test(lt), 'LuuTruPage chưa có câu "Không có … khớp"');
     assert(/Chưa có lớp nào kết thúc/.test(lt) && /Chưa có học viên nào được lưu trữ/.test(lt), 'ô tìm trống phải giữ câu cũ');
   });
 

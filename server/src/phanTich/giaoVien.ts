@@ -849,7 +849,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
     const ds = [...thi.values()].filter((x) => (!mt[1] || x.classId === Number(mt[1])) && (!mt[2] || x.datKn.has(mt[2])))
       .sort((a, b) => Number(datCua(a)) - Number(datCua(b)) || a.ngay.localeCompare(b.ngay) || a.ten.localeCompare(b.ten, 'vi'));
     const rows: MetricRow[] = ds.map((x, i) => ({
-      ketQua: datCua(x) ? 'dat' : 'chua', vuot: vuotThi(x, mt[2]), overall: x.ovr, ngCanh: `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, soVoi: x.kv !== null ? { nhan: 'Target', v: x.kv } : null,
+      ketQua: datCua(x) ? 'dat' : 'chua', vuot: vuotThi(x, mt[2]), overall: x.ovr, ngCanh: `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, ngayThiThat: `${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, soVoi: x.kv !== null ? { nhan: 'Target', v: x.kv } : null,
       diem: (['listening', 'reading', 'writing1', 'speaking'] as const).map((k) => ({ k: k === 'writing1' ? 'W' : tenMonNgan(null, k), v: x.band.get(k) ?? null, cua: x.cua.has(k) })),
       /* một em có thể thi hai lần trong kỳ — id theo dòng */ id: i + 1, title: x.ten, href: `/hoc-vien/${x.sid}`, lop: x.ma,
       sub: [x.ma, `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, x.ovr !== null ? `Overall ${x.ovr.toFixed(1)}` : null,

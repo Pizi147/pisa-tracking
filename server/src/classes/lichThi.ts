@@ -13,7 +13,7 @@ import {
   type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { lopTrongPhamVi } from './classes.ts';
@@ -233,7 +233,7 @@ export function luuLichThi(
   const doc = () => db().prepare(`SELECT cy.*, ${COT_LICH_THI_SQL} FROM learning_cycles cy LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi WHERE cy.id = ?`).get(cycleId) as any;
   const cu = luuTuCot(doc());
   const ghiChu = i.ghiChu === undefined ? undefined : String(i.ghiChu ?? '').trim();
-  if (ghiChu !== undefined && ghiChu.length > GHI_CHU_TOI_DA) throw badRequest(`Ghi chú tối đa ${GHI_CHU_TOI_DA} ký tự.`);
+  if (ghiChu !== undefined && ghiChu.length > GHI_CHU_TOI_DA) throw loi(400, 'Ghi chú tối đa {GHI_CHU_TOI_DA} ký tự.', { GHI_CHU_TOI_DA });
   const ketLuan = i.ketLuan === undefined || i.ketLuan === null ? null : String(i.ketLuan);
   if (ketLuan !== null && !(KET_LUAN_LICH_THI as readonly string[]).includes(ketLuan)) throw badRequest('Kết luận không hợp lệ.');
   if (ketLuan === null && ghiChu === undefined) throw badRequest('Chọn kết luận hoặc ghi chú.');

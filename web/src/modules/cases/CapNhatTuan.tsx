@@ -205,7 +205,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const daDay = pa.daDay ?? 0;
   /* Chủ SP 14/10 tối: PA Tutor có buổi — nhận xét nằm ở từng buổi, không ô Nhận xét chung; máy chủ nhận nhận xét các buổi ghép lại làm ghi chú. */
   const nhanXetTheoBuoi = coBuoi && soDong > 0;
-  const ghepBuoi = Array.from({ length: soDong }, (_, i) => (buoi[i]?.nhanXet ?? '').trim()).filter(Boolean).map((x, i) => `Buổi ${i + 1}: ${x}`).join(' · ');
+  const ghepBuoi = Array.from({ length: soDong }, (_, i) => (buoi[i]?.nhanXet ?? '').trim()).filter(Boolean).map((x, i) => { const n = i + 1; return `Buổi ${n}: ${x}`; }).join(' · ');   // ghi chú lưu máy chủ: giữ chữ Việt, web hiện qua dich()
   const dem = coDem ? demSauKetQua(daDay, pa.soBuoi!, tuan) : null;
   const thanDc = thanSuaPa(dc, gocDc, { moi: '', cu: null });
 

@@ -3,6 +3,7 @@ import { buildOv2aDemo } from './ov2aSeed.ts';
 import { buildHeadTutor, buildTutorDs } from './tuSeed.ts';
 import { buildPetDemo } from './petSeed.ts';
 import { buildUxDemo } from './uxSeed.ts';
+import { buildLonDemo } from './lonSeed.ts';
 import crypto from 'node:crypto';
 import { db, recreateSchema, tx } from '../db.ts';
 import {
@@ -329,6 +330,8 @@ export function runSeed() {
        `napDuLieuNen` đã đặt — nên seed gọi thẳng bước gán). */
     ganChuCaseThieu({ actorId: null, luc: nowNghiepVu() });   // mốc nghiệp vụ, không giờ thật (bẫy 11 plan.md, #559)
 
+    /* R1-PHAN-CAP-TEST: dữ liệu nghiệm thu Lịch Test (lớp 60 HV + 6 lớp W3 SEP) — CHỈ khi `SEED_LON=1`; tắt thì seed y nguyên. Cuối cùng để id cũ không đổi. */
+    if (process.env.SEED_LON === '1') buildLonDemo(conn, adminId);
     capNhatConOChoTatCa();   // TD7b: dữ liệu mẫu ghi thẳng SQL — tính cờ "còn ô chờ điểm" một lần cho mọi lượt
     conn.prepare('UPDATE demo_config SET value = ?, updated_at = ? WHERE key = ?').run(nowIso(), nowIso(), MOC_LICH_SU);   // OV-15g: bộ demo dựng thẳng SQL không có lịch sử — mốc SAU mọi dữ liệu mẫu
     return {

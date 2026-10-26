@@ -11,7 +11,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { KCK, chuMon, LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLoSuaCaLop, chuTargetKck, chuanOTarget, kyThiCuaChuongTrinh, tachKck, type KyThi, type VanDeNhap } from '@shared/domain/index.ts';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type Cot = 'fullName' | 'dob' | 'email' | 'consultantUserId' | 'phone' | 'parentName' | 'parentRelation' | 'parentPhone' | 'startWeek' | 'examDate' | 'target' | 'baseline' | 'monDangKy';
 type DongGoc = {
@@ -29,16 +29,16 @@ type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; kyThi?: K
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[]; monHoc?: { studentId: number; dong: string[] }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
-  { key: 'fullName', nhan: 'Họ và tên', rong: 210 },
+  { key: 'fullName', nhan: t('Họ và tên'), rong: 210 },
   /* P8 (mockup k5): Môn học ngay sau tên — thấy được không cần cuộn ngang. */
-  { key: 'monDangKy', nhan: 'Môn học', rong: 300 },
-  { key: 'dob', nhan: 'Ngày sinh', rong: 190 },
+  { key: 'monDangKy', nhan: t('Môn học'), rong: 300 },
+  { key: 'dob', nhan: t('Ngày sinh'), rong: 190 },
   { key: 'email', nhan: 'Email', rong: 250 }, { key: 'consultantUserId', nhan: 'TVV', rong: 210 },
-  { key: 'phone', nhan: NHAN_LIEN_HE.phone, rong: 150 }, { key: 'parentName', nhan: NHAN_LIEN_HE.parentName, rong: 190 },
-  { key: 'parentRelation', nhan: NHAN_LIEN_HE.parentRelation, rong: 110 }, { key: 'parentPhone', nhan: NHAN_LIEN_HE.parentPhone, rong: 150 },
-  { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
-  { key: 'examDate', nhan: 'Dự kiến thi', rong: 190 }, { key: 'target', nhan: 'Target', rong: 100, so: true },
-  { key: 'baseline', nhan: 'Điểm đầu vào', rong: 112, so: true },
+  { key: 'phone', nhan: dich(NHAN_LIEN_HE.phone), rong: 150 }, { key: 'parentName', nhan: dich(NHAN_LIEN_HE.parentName), rong: 190 },
+  { key: 'parentRelation', nhan: dich(NHAN_LIEN_HE.parentRelation), rong: 110 }, { key: 'parentPhone', nhan: dich(NHAN_LIEN_HE.parentPhone), rong: 150 },
+  { key: 'startWeek', nhan: t('Tuần bắt đầu học'), rong: 172 },
+  { key: 'examDate', nhan: t('Dự kiến thi'), rong: 190 }, { key: 'target', nhan: 'Target', rong: 100, so: true },
+  { key: 'baseline', nhan: t('Điểm đầu vào'), rong: 112, so: true },
 ];
 /* Mockup 05/10: cột đủ cho ô đã sửa có ↺ (không cắt chữ). PR-OV2b thêm cột TVV → bảng rộng hơn panel 1440 thì cuộn ngang trong khung bảng. */
 const RONG_LUU_Y = 150;
@@ -136,8 +136,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
 
   const vanDe = (sid: number, k: Cot) => xem?.rows.find((x) => x.studentId === sid)?.issues.filter((i) => i.field === k) ?? [];
   const soLoi = xem ? xem.rows.reduce((n, x) => n + x.issues.filter((i) => i.muc === 'loi').length, 0) : 0;
-  const loiLyDo = doiTarget && !lyDo.trim() ? 'Ghi lý do đổi Target.' : null;   // T7 (PR-MTa): không tối thiểu ký tự
-  const loiForm = loiLyDo ? [{ khoa: 'ly-do-target', nhan: 'Lý do đổi Target', lyDo: loiLyDo }] : [];
+  const loiLyDo = doiTarget && !lyDo.trim() ? t('Ghi lý do đổi Target.') : null;   // T7 (PR-MTa): không tối thiểu ký tự
+  const loiForm = loiLyDo ? [{ khoa: 'ly-do-target', nhan: t('Lý do đổi Target'), lyDo: loiLyDo }] : [];
 
   const datO = (sid: number, k: Cot, v: string) => setSua((s) => ({ ...s, [sid]: { ...s[sid], [k]: v } }));
   const hoanTac = (sid: number, k: Cot) => setSua((s) => {
@@ -171,50 +171,50 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
           ? Object.fromEntries(Object.entries(o).filter(([k, v]) => ghi.get(Number(sid))![k] === undefined || chuan(k as Cot, v!) !== ghi.get(Number(sid))![k]))
           : o])));
       }
-      toast.push('ok', `Đã cập nhật ${daSua} học viên`);
+      toast.push('ok', t('Đã cập nhật {n} học viên', { n: daSua }));
       onDone();
       onClose();
     } catch (e: any) {
       /* Dừng ở lô lỗi; em chưa lưu giữ nguyên để bấm Lưu lại (khoá mới = lần lưu mới). Chưa lưu em nào → báo như cũ. */
       khoa.current = moiKhoa();
       if (xong) {
-        setLuuDo({ cau: `Đã lưu ${xong} em · ${payload.length - xong} em chưa lưu`, lyDo: e.message });
+        setLuuDo({ cau: t('Đã lưu {ok} em · {loi} em chưa lưu', { ok: xong, loi: payload.length - xong }), lyDo: e.message });
         onDone();
       } else toast.push('error', e.message);
     } finally { setBusy(false); setTienDo(null); }
   };
 
   return (
-    <KhungPanel tieuDe="Sửa thông tin học viên" lop={d ? `Lớp ${d.lop.code}` : null} rong="toan" onDong={dong}
-      ngCanh={soEm ? `Đã sửa ${soEm} em` : undefined}
+    <KhungPanel tieuDe={t('Sửa thông tin học viên')} lop={d ? t('Lớp {code}', { code: d.lop.code }) : null} rong="toan" onDong={dong}
+      ngCanh={soEm ? t('Đã sửa {n} em', { n: soEm }) : undefined}
       chan={{
         daSua: soEm > 0, tuHoi: true, huy: { onClick: dong, disabled: busy },
         conThieu: lf.conThieu(loiForm),
-        phu: soLoi > 0 ? <span className="text-xs text-late tabular-nums">{soLoi} ô cần sửa</span>
+        phu: soLoi > 0 ? <span className="text-xs text-late tabular-nums">{t('{n} ô cần sửa', { n: soLoi })}</span>
           : luuDo && soEm ? <span className="text-xs text-late tabular-nums" title={luuDo.lyDo}>{luuDo.cau}</span>
           /* P8 (mockup k5 chân): tóm tắt đổi môn của em đầu tiên + số em còn lại (đủ từng em ở cột Lưu ý). */
           : xem?.monHoc?.length ? (() => {
             const m = xem.monHoc[0], ten = goc.get(m.studentId)?.fullName ?? '';
-            return <span className="text-xs text-slate-300">{`${ten}: ${m.dong.join(' · ')}`}{xem.monHoc.length > 1 ? ` · +${xem.monHoc.length - 1} em` : ''}</span>;
+            return <span className="text-xs text-slate-300">{`${ten}: ${m.dong.map((x) => dich(x)).join(' · ')}`}{xem.monHoc.length > 1 ? ` · +${t('{n} em', { n: xem.monHoc.length - 1 })}` : ''}</span>;
           })() : null,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}
             disabled={busy || !soEm || soLoi > 0 || !xem}>
-            {busy ? (tienDo ? `Đang lưu ${tienDo.xong}/${tienDo.tong}…` : 'Đang lưu…') : soEm ? `Lưu ${soEm} em` : 'Lưu'}
+            {busy ? (tienDo ? t('Đang lưu {xong}/{tong}…', { xong: tienDo.xong, tong: tienDo.tong }) : t('Đang lưu…')) : soEm ? t('Lưu {n} em', { n: soEm }) : t('Lưu')}
           </button>
         ),
       }}>
       {du.error ? <ErrorState message={du.error.message} hint={du.error.hint} onRetry={du.reload} />
         : !d ? <Skeleton rows={6} />
-        : !d.rows.length ? <p className="pt-3 text-sm text-slate-400">Lớp chưa có học viên đang học.</p>
+        : !d.rows.length ? <p className="pt-3 text-sm text-slate-400">{t('Lớp chưa có học viên đang học.')}</p>
         : (
           /* OV-14a (F02): đang lưu thì khoá mọi ô (chữ, ngày, TVV, ↺) — lưu xong panel đóng, chữ gõ thêm lúc lưu sẽ mất. */
           <fieldset disabled={busy} className="m-0 min-w-0 space-y-3 border-0 p-0 pt-3">
             {doiTarget && (
               <div className="max-w-xl">
-                <Truong nhan={`Lý do đổi Target · ${soDoiTarget} em`} batBuoc loi={lf.loiCua(loiForm, 'ly-do-target')}>
+                <Truong nhan={`${t('Lý do đổi Target')} · ${t('{n} em', { n: soDoiTarget })}`} batBuoc loi={lf.loiCua(loiForm, 'ly-do-target')}>
                   <input className="field w-full" {...lf.o(loiForm, 'ly-do-target')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-                    placeholder="Ví dụ: Phụ huynh đổi Target sau buổi tư vấn" />
+                    placeholder={t('Ví dụ: Phụ huynh đổi Target sau buổi tư vấn')} />
                 </Truong>
               </div>
             )}
@@ -245,11 +245,11 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                     {cot.map((c) => (
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
                         className={c.key === 'fullName' ? 'sticky-col' : ''}
-                        hint={khoaCot(c.key) ?? (c.key === 'target' ? (du.data?.kyThi ? t('{ten}: số nguyên {min}–{max}, không KCK. Bỏ trống = chưa có Target.', { ten: du.data.kyThi.ten, min: du.data.kyThi.min, max: du.data.kyThi.max }) : `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm ${KCK} (ví dụ 6.5 ${KCK}).`) : undefined)}>
+                        hint={khoaCot(c.key) ?? (c.key === 'target' ? (du.data?.kyThi ? t('{ten}: số nguyên {min}–{max}, không KCK. Bỏ trống = chưa có Target.', { ten: du.data.kyThi.ten, min: du.data.kyThi.min, max: du.data.kyThi.max }) : t('Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm {kck} (ví dụ 6.5 {kck}).', { kck: KCK })) : undefined)}>
                         {c.nhan}{c.key === 'email' && <span className="text-bad"> *</span>}
                       </Th>
                     ))}
-                    <Th>Lưu ý</Th>
+                    <Th>{t('Lưu ý')}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -280,11 +280,11 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                 <span className="min-w-0 flex-1">
                                   {c.key === 'consultantUserId' ? (
                                     <>
-                                      <ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={d.tvv} choTrong="— Chưa chọn —" placeholder="Chọn"
+                                      <ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={d.tvv} choTrong={t('— Chưa chọn —')} placeholder={t('Chọn')}
                                         ariaLabel={nhan} invalid={!!loi}
                                         value={v ? { kieu: 'tai_khoan', id: Number(v), ten: d.tvv.find((t) => t.id === Number(v))?.ten ?? `#${v}` } : null}
                                         onChange={(x) => datO(r.studentId, c.key, x?.kieu === 'tai_khoan' ? String(x.id) : '')} />
-                                      {!v && r.consultantName && <span className="mt-0.5 block truncate text-xs text-slate-500" title={r.consultantName}>cũ: “{r.consultantName}”</span>}
+                                      {!v && r.consultantName && <span className="mt-0.5 block truncate text-xs text-slate-500" title={r.consultantName}>{t('cũ: “{ten}”', { ten: r.consultantName })}</span>}
                                     </>
                                   ) : c.key === 'monDangKy' ? (
                                     r.laFt
@@ -296,9 +296,9 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                       onChange={(x) => datO(r.studentId, c.key, x)} />
                                   ) : (
                                     <input className={`field w-full${c.so ? ' text-right tabular-nums' : ''}${c.key === 'email' ? ' placeholder:font-bold placeholder:text-late' : ''}${loi ? ' border-late' : ''}`}
-                                      placeholder={c.key === 'email' ? 'Thiếu' : undefined}
+                                      placeholder={c.key === 'email' ? t('Thiếu') : undefined}
                                       value={v} aria-label={nhan} aria-invalid={!!loi || undefined} aria-describedby={loi ? idLoi : undefined}
-                                      disabled={khoaO} title={khoaO ? khoaCot(c.key) ?? 'Em chưa có lộ trình' : undefined}
+                                      disabled={khoaO} title={khoaO ? khoaCot(c.key) ?? t('Em chưa có lộ trình') : undefined}
                                       type={c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : 'text'} autoComplete="off"
                                       inputMode={c.key === 'baseline' ? 'decimal' : c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : undefined}
                                       list={c.key === 'parentRelation' ? 'quan-he-goi-y-lop' : undefined}
@@ -309,19 +309,19 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                 </span>
                                 {daSuaO && (
                                   <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[32px] justify-center px-0 sm:min-h-[28px] sm:min-w-[28px] sm:px-1"
-                                    title={`Hoàn tác — về "${c.key === 'monDangKy' ? chuMon(monCuaO(nen(r, c.key))) : nen(r, c.key) || 'trống'}"`} aria-label={`Hoàn tác ${nhan}`}
+                                    title={t('Hoàn tác — về "{goc}"', { goc: c.key === 'monDangKy' ? dich(chuMon(monCuaO(nen(r, c.key)))) : nen(r, c.key) || t('trống') })} aria-label={t('Hoàn tác {nhan}', { nhan })}
                                     onClick={() => hoanTac(r.studentId, c.key)}>↺</button>
                                 )}
                               </div>
-                              {loi && <span id={idLoi} className="mt-1 block text-xs text-late">{loi}</span>}
+                              {loi && <span id={idLoi} className="mt-1 block text-xs text-late">{dich(loi)}</span>}
                             </td>
                           );
                         })}
                         <td className="td px-2 py-1.5 align-top text-xs">
                           {/* R1-NO-NHO: một dòng (cắt + title) — câu dài làm dòng đã chọn cao gấp đôi; đủ câu ở chân panel. */}
-                          {monTom.length ? <span className="block truncate pt-1.5 text-soon" title={monTom.join(' · ')}>{monTom.join(' · ')}</span>
-                            : mt ? <span className="block truncate pt-1.5 text-soon" title={mt.cau}>{mt.cau}</span>
-                            : Object.keys(doi).length ? <span className="inline-flex items-center gap-1.5 text-slate-300"><span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: 'rgb(var(--soon-rgb))' }} />đã sửa</span>
+                          {monTom.length ? <span className="block truncate pt-1.5 text-soon" title={monTom.map((x) => dich(x)).join(' · ')}>{monTom.map((x) => dich(x)).join(' · ')}</span>
+                            : mt ? <span className="block truncate pt-1.5 text-soon" title={dich(mt.cau)}>{dich(mt.cau)}</span>
+                            : Object.keys(doi).length ? <span className="inline-flex items-center gap-1.5 text-slate-300"><span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: 'rgb(var(--soon-rgb))' }} />{t('đã sửa')}</span>
                             : <span className="text-slate-500">—</span>}
                         </td>
                       </tr>
@@ -333,8 +333,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
           </fieldset>
         )}
       <ConfirmDialog open={hoiDong} onClose={() => setHoiDong(false)} onConfirm={() => { setHoiDong(false); onClose(); }} danger
-        title="Bỏ những gì vừa sửa?" closeLabel="Tiếp tục sửa" confirmLabel="Bỏ thay đổi"
-        body={`Đã sửa ${soEm} em nhưng chưa lưu. Đóng panel thì các thay đổi này mất.`} />
+        title={t('Bỏ những gì vừa sửa?')} closeLabel={t('Tiếp tục sửa')} confirmLabel={t('Bỏ thay đổi')}
+        body={t('Đã sửa {n} em nhưng chưa lưu. Đóng panel thì các thay đổi này mất.', { n: soEm })} />
     </KhungPanel>
   );
 }
