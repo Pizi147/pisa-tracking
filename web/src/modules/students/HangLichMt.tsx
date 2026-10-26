@@ -68,22 +68,22 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
   const muc: MucMenu[] = [];
   let chinh: { nhan: string; lam: (el: HTMLElement) => void } | null = null;
   if (l && bang.coTheXep) {
-    if (l.trangThai === 'chua-xep') chinh = { nhan: 'Xếp lịch', lam: moHop };
+    if (l.trangThai === 'chua-xep') chinh = { nhan: t('Xếp lịch'), lam: moHop };
     else if (l.trangThai === 'da-xep') {
-      chinh = { nhan: 'Dời lịch', lam: moHop };
+      chinh = { nhan: t('Dời lịch'), lam: moHop };
       /* OV-15c (mục 6): "Huỷ lịch" → "Xóa" — cùng tên, cùng câu hỏi với chân hộp lịch ở Kế hoạch Test. */
       muc.push({ key: 'huy-lich', nhan: t('Xóa'), onChon: () => setHuyLich(true), nguyHiem: true },
-        { key: 'nhap-diem', nhan: 'Nhập điểm', onChon: () => onMoDiem(true) });
+        { key: 'nhap-diem', nhan: t('Nhập điểm'), onChon: () => onMoDiem(true) });
     } else if (l.trangThai === 'co-diem' || l.trangThai === 'lich-su') {
-      chinh = { nhan: 'Nhập điểm', lam: () => onMoDiem(!moDiem) };
-      muc.push({ key: 'doi-lich', nhan: 'Dời lịch', onChon: () => { const el = document.getElementById(`mt-${l.attemptId}`); if (el) moHop(el); } });
+      chinh = { nhan: t('Nhập điểm'), lam: () => onMoDiem(!moDiem) };
+      muc.push({ key: 'doi-lich', nhan: t('Dời lịch'), onChon: () => { const el = document.getElementById(`mt-${l.attemptId}`); if (el) moHop(el); } });
     }
   }
   /* PR-OV4a: lượt đã huỷ — Quản lý / Quản trị Khôi phục ngay ở hàng (Admin, GV: không nút, chỉ Mở hồ sơ MT). */
-  if (!l && h.huy && bang.coTheKhoiPhuc) chinh = { nhan: `Khôi phục MT${h.attemptNo}`, lam: () => setKhoiPhucLuot(true) };
+  if (!l && h.huy && bang.coTheKhoiPhuc) chinh = { nhan: t('Khôi phục MT{attemptNo}', { attemptNo: h.attemptNo }), lam: () => setKhoiPhucLuot(true) };
   /* T2: lượt bị vượt có kết quả đã huỷ → Quản lý khôi phục được (⋯ chỉ có mục này khi có `ketQuaHuy`). */
-  if (l?.ketQuaHuy && bang.coTheKhoiPhuc) muc.push({ key: 'khoi-phuc-ket-qua', nhan: 'Khôi phục kết quả', onChon: () => setKhoiPhuc(true) });
-  if (moHoSo) muc.push({ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: moHoSo, keTruoc: muc.length > 0 });
+  if (l?.ketQuaHuy && bang.coTheKhoiPhuc) muc.push({ key: 'khoi-phuc-ket-qua', nhan: t('Khôi phục kết quả'), onChon: () => setKhoiPhuc(true) });
+  if (moHoSo) muc.push({ key: 'ho-so', nhan: t('Mở hồ sơ MT'), onChon: moHoSo, keTruoc: muc.length > 0 });
 
   /* PR-MT0: hàng MT0 (số 0) không có tuần đề xuất — hiện tuần thật sớm nhất của nó. */
   const tuanHien = h.weekStart ?? (h.attemptNo === 0 ? Object.values(l?.kn ?? {}).map((o) => o?.tuan ?? null).filter((x): x is string => !!x).sort()[0] ?? null : null);
@@ -92,41 +92,41 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
       <tr className="row-hover">
         <td className="td whitespace-nowrap">
           <OMt v={{ so: h.attemptNo, attemptId: l?.attemptId ?? null, kn: l?.kn ?? {}, cu: !!l?.lichSu }} homNay={homNay} huy={!l && !!h.huy} />
-          {l?.kyVong != null && <span className="block text-xs tabular-nums text-slate-500">kỳ vọng {fmtBand(l.kyVong)}</span>}
+          {l?.kyVong != null && <span className="block text-xs tabular-nums text-slate-500">{t('kỳ vọng {band}', { band: fmtBand(l.kyVong) })}</span>}
         </td>
-        <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? `tuần ${h.studyWeek}` : '—'}</td>
+        <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? t('tuần {n}', { n: h.studyWeek }) : '—'}</td>
         <td className="td whitespace-nowrap">
           {tuanHien ? (
             <>
               <span className="text-slate-200">{tuanLich(tuanHien, homNay)}</span>
               <span className="block text-xs text-slate-500">{ngay(tuanHien, homNay)} – {ngay(addDaysStr(tuanHien, 6), homNay)}</span>
             </>
-          ) : <span className="text-xs text-slate-500" title="Ngoài lịch mặc định — Quản lý xếp tay">xếp tay</span>}
+          ) : <span className="text-xs text-slate-500" title={t('Ngoài lịch mặc định — Quản lý xếp tay')}>{t('xếp tay')}</span>}
         </td>
         <td className="td">
           {/*
             Hai điều trong một ô: lượt đang ở tuần nào THẬT, và bấm Áp lịch thì lượt này ra sao. Lời hứa "hệ thống không ghi đè
             cái Quản lý đã xếp" phải thấy TRƯỚC khi bấm.
           */}
-          {!l && h.huy ? <Status kind="idle">Đã huỷ</Status>
-            : l?.trangThai === 'chua-xep' ? <Status kind="waiting">Chưa xếp lịch</Status>
-            : !l ? <Status kind="waiting">Chưa có, sẽ tạo</Status>
-            : !coDeXuat ? <Status kind="done">Quản lý đã xếp</Status>
-            : h.locked ? <Status kind="done">Đã làm xong, giữ nguyên</Status>
-            : h.existingSource === 'manual' ? <Status kind="done">Quản lý đã chốt, giữ nguyên</Status>
-            : h.existingPeriodId !== h.periodId ? <Status kind="waiting">Sẽ dời sang tuần đề xuất</Status>
-            : <Status kind="done">Đã đúng</Status>}
-          {that && <span className="mt-0.5 block text-xs text-slate-400">Đang ở {that}</span>}
+          {!l && h.huy ? <Status kind="idle">{t('Đã huỷ')}</Status>
+            : l?.trangThai === 'chua-xep' ? <Status kind="waiting">{t('Chưa xếp lịch')}</Status>
+            : !l ? <Status kind="waiting">{t('Chưa có, sẽ tạo')}</Status>
+            : !coDeXuat ? <Status kind="done">{t('Quản lý đã xếp')}</Status>
+            : h.locked ? <Status kind="done">{t('Đã làm xong, giữ nguyên')}</Status>
+            : h.existingSource === 'manual' ? <Status kind="done">{t('Quản lý đã chốt, giữ nguyên')}</Status>
+            : h.existingPeriodId !== h.periodId ? <Status kind="waiting">{t('Sẽ dời sang tuần đề xuất')}</Status>
+            : <Status kind="done">{t('Đã đúng')}</Status>}
+          {that && <span className="mt-0.5 block text-xs text-slate-400">{t('Đang ở {tuan}', { tuan: that })}</span>}
         </td>
         <td className="td whitespace-nowrap">
           <span className="flex items-center justify-end gap-1">
             {chinh ? (
               <button id={l ? `mt-${l.attemptId}` : undefined} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0"
-                aria-expanded={chinh.nhan === 'Nhập điểm' ? moDiem : undefined}
+                aria-expanded={chinh.nhan === t('Nhập điểm') ? moDiem : undefined}
                 onClick={(e) => chinh!.lam(e.currentTarget)}>{chinh.nhan}</button>
-            ) : !l && h.huy ? <span className="text-xs text-slate-500">Chỉ Quản lý khôi phục được</span>
-            : !l ? <span className="text-xs text-slate-500">Áp lịch để tạo</span> : null}
-            {muc.length > 0 && <MenuDong nhan={`Thao tác khác · MT${h.attemptNo}`} muc={muc} />}
+            ) : !l && h.huy ? <span className="text-xs text-slate-500">{t('Chỉ Quản lý khôi phục được')}</span>
+            : !l ? <span className="text-xs text-slate-500">{t('Áp lịch để tạo')}</span> : null}
+            {muc.length > 0 && <MenuDong nhan={t('Thao tác khác · MT{n}', { n: h.attemptNo })} muc={muc} />}
           </span>
         </td>
       </tr>
@@ -194,7 +194,7 @@ function DaiDiemMt({ attemptId, homNay, onDoi, onDong }: { attemptId: number; ho
       <DaiODiemLon cells={ct.data.cells} lich={ct.data.skillSchedule as LichKn[]} result={ct.data.result} lichSu={ct.data.lichSu} homNay={homNay}
         mo={mo} onMo={setMo} save={save} nguCanh={nguCanhChiTiet(ct.data)} />
       <div className="flex justify-end">
-        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onDong}>Đóng dải điểm</button>
+        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng dải điểm')}</button>
       </div>
     </div>
   );

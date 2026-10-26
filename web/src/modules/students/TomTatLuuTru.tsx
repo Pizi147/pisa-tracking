@@ -3,7 +3,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { chuTargetKck, ngay } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
-import type { DongCacLoTrinh } from './CacLoTrinh.tsx';
+import { chuKetQuaGon, type DongCacLoTrinh } from './CacLoTrinh.tsx';
 
 /**
  * TÓM TẮT HỒ SƠ LƯU TRỮ (P7, mockup V6 `trang-thai-hv.html` k6, GPT 7): MỘT dòng dưới tên — lộ trình gần nhất · Target · thi thật · kết quả · ngày kết thúc —
@@ -25,7 +25,7 @@ export function TomTatLuuTru({ studentId, target, kck, ketThuc }: { studentId: n
       {tg && o('Target', tg)}
       {bt?.ngayThi && o(t('Thi thật'), ngay(bt.ngayThi, homNay))}
       {bt ? <Nhan tone={bt.ketLuan === 'reached' ? 'ok' : bt.ketLuan === 'not_reached' ? 'bad' : 'muted'}>{dich(bt.daXong)}</Nhan>
-        : g.ketQua && <Nhan tone={g.ketQua.tone}>{dich(g.ketQua.chinh)}</Nhan>}
+        : g.ketQua && <Nhan tone={g.ketQua.tone}>{chuKetQuaGon(g.ketQua)}</Nhan>}
       {ketThuc && o(t('Kết thúc'), ngay(ketThuc, homNay))}
     </div>
   );

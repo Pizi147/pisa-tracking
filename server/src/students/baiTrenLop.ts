@@ -8,7 +8,7 @@
 import { db, tx } from '../db.ts';
 import { BAI_LOP_NHAN_XET_TOI_DA, BAI_LOP_TEN_TOI_DA, BAI_LOP_THANG_TOI_DA, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt, loi } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -56,13 +56,13 @@ function docThan(body: Record<string, unknown>, today: string) {
   const tenBai = chuTuDo(body.tenBai ?? null, 'Tên bài', BAI_LOP_TEN_TOI_DA);
   if (!tenBai) throw badRequest('Thiếu tên bài.');
   const so = (v: unknown, ten: string) => {
-    if (typeof v !== 'number' || !Number.isFinite(v)) throw badRequest(`${ten} phải là số.`);
+    if (typeof v !== 'number' || !Number.isFinite(v)) throw loi(400, '{ten} phải là số.', { ten });
     return v;
   };
   const diem = so(body.diem, 'Điểm');
   const thang = so(body.thang, 'Thang điểm');
-  if (thang <= 0 || thang > BAI_LOP_THANG_TOI_DA) throw badRequest(`Thang điểm phải lớn hơn 0 và không quá ${BAI_LOP_THANG_TOI_DA}.`);
-  if (diem < 0 || diem > thang) throw badRequest(`Điểm phải từ 0 tới ${thang}.`);
+  if (thang <= 0 || thang > BAI_LOP_THANG_TOI_DA) throw loi(400, 'Thang điểm phải lớn hơn 0 và không quá {BAI_LOP_THANG_TOI_DA}.', { BAI_LOP_THANG_TOI_DA });
+  if (diem < 0 || diem > thang) throw loi(400, 'Điểm phải từ 0 tới {thang}.', { thang });
   if (!isIsoDate(body.tuan)) throw badRequest('Tuần không hợp lệ.');
   const tuan = mondayOf(body.tuan);
   if (tuan > mondayOf(today)) throw badRequest('Chưa tới tuần này — chỉ ghi bài từ tuần này trở về trước.');
@@ -78,7 +78,7 @@ function kiemGhi(p: Principal, classId: number, skill: string, today: string) {
   const { c, cot } = kyNangGhi(p, classId, today);
   const k = cot.find((x) => x.skill === skill);
   if (!k) throw badRequest('Kỹ năng không thuộc lớp này.');
-  if (!k.ghiDuoc) throw forbidden(`Bạn không ghi được bài ${k.nhan} của lớp ${c.code} — chỉ GV dạy ${k.nhan}, GVCN hoặc Quản lý.`);
+  if (!k.ghiDuoc) throw loi(403, 'Bạn không ghi được bài {nhan} của lớp {code} — chỉ GV dạy {nhan2}, GVCN hoặc Quản lý.', { nhan: k.nhan, code: c.code, nhan2: k.nhan });
   return { c, nhan: k.nhan };
 }
 

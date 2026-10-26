@@ -272,7 +272,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           mucTieu: mucTieuCua(x.e, x.x), ngayXemLai: x.x.xemLai || null, ghiChu: x.x.lyDo.trim() || null })),
       }) : { ok: [], failed: [] };
       for (const x of xoa) { await api.del(`/classes/${classId}/lo-trinh-nhap/${x.e.id}`); r.ok.push(x.e.id); }
-      toast.push(r.failed.length ? 'error' : 'ok', `${t('Đã lưu nháp')} ${r.ok.length} em${r.failed.length ? ` · ${r.failed.length} em chưa lưu — xem lý do ở dòng` : ''}`);
+      toast.push(r.failed.length ? 'error' : 'ok', `${t('Đã lưu nháp')} ${t('{n} em', { n: r.ok.length })}${r.failed.length ? ` · ${t('{n} em chưa lưu — xem lý do ở dòng', { n: r.failed.length })}` : ''}`);
       ketThuc(r.ok, r.failed);
       setKetQua(null);
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

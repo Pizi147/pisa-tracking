@@ -27,7 +27,7 @@ import { laBand } from './StudentPlanPanel.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { ErrorState, NutChon, OKck, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich as dichChu, t } from '@shared/i18n/index.ts';
 
 /**
  * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`Menu`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
@@ -167,11 +167,11 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
   const target = targetGo ?? String(tgCu.so ?? '');
   const kck = kckGo ?? tgCu.kck;
   const setTarget = (v: string) => setTargetGo(v);
-  const loi = dsLoi([...(dich === 'moi' ? [{ khoa: 'lop', nhan: 'Lớp', toiThieu: 1 }] : [])], { lop: lopMoiId === '' ? '' : String(lopMoiId) });
-  if (canTarget && !giuTargetCu && !target.trim() && !kck) loi.push({ khoa: 'target', nhan: 'Target', lyDo: 'Lên FT cần Target (hoặc tích KCK)' });
+  const loi = dsLoi([...(dich === 'moi' ? [{ khoa: 'lop', nhan: t('Lớp'), toiThieu: 1 }] : [])], { lop: lopMoiId === '' ? '' : String(lopMoiId) });
+  if (canTarget && !giuTargetCu && !target.trim() && !kck) loi.push({ khoa: 'target', nhan: 'Target', lyDo: t('Lên FT cần Target (hoặc tích KCK)') });
   /* Tên lộ trình đúng như hồ sơ gọi: lớp FT = LT1 / RF…, lớp thường = chương trình (FOU…). */
   const tenLoTrinhMoi = lopMoi ? (lopMoi.ft ? lopMoi.route : lopMoi.ma) : null;
-  const chan = !data?.lopCu ? 'Chưa có lớp để học lại' : null;
+  const chan = !data?.lopCu ? t('Chưa có lớp để học lại') : null;
 
   const luu = async () => {
     lf.bam();
@@ -184,11 +184,11 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
       };
       await api.post(`/students/${studentId}/hoc-lai`, than);
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
-      toast.hoanTac(`Đã cho ${studentName} quay lại học${lopMoi ? ` · ${lopMoi.code}` : ''}`, async () => {
+      toast.hoanTac(`${t('Đã cho {ten} quay lại học', { ten: studentName })}${lopMoi ? ` · ${lopMoi.code}` : ''}`, async () => {
         const r = await hoanTacHangLoat('hoc-lai', [studentId]);
         for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
-        if (r.failed.length) { toast.push('error', r.failed[0].message); return; }
-        toast.push('ok', 'Đã hoàn tác');
+        if (r.failed.length) { toast.push('error', dichChu(r.failed[0].message)); return; }
+        toast.push('ok', t('Đã hoàn tác'));
         onDone();
       }, { key: `hoc-lai:${studentId}` });
       onDone();
@@ -207,40 +207,40 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
           <Khoi tieuDe={tieuDe}>
             {chan ? <p className="m-0 text-sm text-late">{chan}</p> : null}
             <span role="group" aria-label={tieuDe} className="flex flex-wrap gap-1.5">
-              <NutChon chon={dich === 'cu'} onClick={() => setDich('cu')}>Về lớp cũ</NutChon>
-              <NutChon chon={dich === 'moi'} onClick={() => setDich('moi')}>Sang lớp mới</NutChon>
+              <NutChon chon={dich === 'cu'} onClick={() => setDich('cu')}>{t('Về lớp cũ')}</NutChon>
+              <NutChon chon={dich === 'moi'} onClick={() => setDich('moi')}>{t('Sang lớp mới')}</NutChon>
             </span>
             {dich === 'cu' ? (
               <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
-                <li>Về lớp {data.lopCu?.code}</li><li>{data.loTrinh.chayTiep ? 'Lộ trình chạy tiếp' : 'Lộ trình mới'}{data.loTrinh.ten ? ` · ${data.loTrinh.ten}` : ''}</li>{!data.conHoc && <li>Ra khỏi Lưu trữ</li>}
-                {data.lopCu?.daKetThuc && <li className="text-soon">Mở lại lớp {data.lopCu.code}</li>}
+                <li>{t('Về lớp {lop}', { lop: data.lopCu?.code })}</li><li>{data.loTrinh.chayTiep ? t('Lộ trình chạy tiếp') : t('Lộ trình mới')}{data.loTrinh.ten ? ` · ${data.loTrinh.ten}` : ''}</li>{!data.conHoc && <li>{t('Ra khỏi Lưu trữ')}</li>}
+                {data.lopCu?.daKetThuc && <li className="text-soon">{t('Mở lại lớp {ds}', { ds: data.lopCu.code })}</li>}
               </ul>
             ) : (
               <>
-                <Truong nhan="Lớp" batBuoc loi={lf.loiCua(loi, 'lop')}>
-                  <ChonLop ariaLabel="Lớp" {...lf.o(loi, 'lop')} value={lopMoiId || null} onChange={(id) => setLopMoiId(id ?? '')}
-                    ds={data.lop.filter((l) => l.id !== data.lopCu?.id).map((l) => ({ id: l.id, ma: l.code, phu: [l.ft ? 'Fast Track' : l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null, l.siSo != null ? `${l.siSo} em` : null].filter(Boolean).join(' · ') }))} />
+                <Truong nhan={t('Lớp')} batBuoc loi={lf.loiCua(loi, 'lop')}>
+                  <ChonLop ariaLabel={t('Lớp')} {...lf.o(loi, 'lop')} value={lopMoiId || null} onChange={(id) => setLopMoiId(id ?? '')}
+                    ds={data.lop.filter((l) => l.id !== data.lopCu?.id).map((l) => ({ id: l.id, ma: l.code, phu: [l.ft ? 'Fast Track' : l.tenChuongTrinh, l.gvcn ? `${t('GVCN')} ${l.gvcn}` : null, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ') }))} />
                 </Truong>
                 {canTarget && (
                   <>
                     <Truong nhan="Target" batBuoc={!giuTargetCu} as="div" loi={lf.loiCua(loi, 'target')}>
                       <span className="flex flex-wrap items-center gap-3">
-                        <input className="field w-full max-w-[8rem]" inputMode="decimal" placeholder="Ví dụ: 6.5" aria-label="Target" {...lf.o(loi, 'target')} value={target} onChange={(e) => setTarget(e.target.value)} />
+                        <input className="field w-full max-w-[8rem]" inputMode="decimal" placeholder={t('Ví dụ: 6.5')} aria-label="Target" {...lf.o(loi, 'target')} value={target} onChange={(e) => setTarget(e.target.value)} />
                         <OKck chon={kck} onChange={setKckGo} />
                       </span>
                     </Truong>
-                    <Truong nhan="Dự kiến thi" tuyChon><ONgay kieu="ngay-hoac-thang" value={thi} goiY="dd/mm/yyyy hoặc mm/yyyy" onChange={setThi} /></Truong>
+                    <Truong nhan={t('Dự kiến thi')} tuyChon><ONgay kieu="ngay-hoac-thang" value={thi} goiY={t('dd/mm/yyyy hoặc mm/yyyy')} onChange={setThi} /></Truong>
                   </>
                 )}
                 {lopMoi && (
                   <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
-                    <li>Vào lớp {lopMoi.code}</li><li>Lộ trình mới{tenLoTrinhMoi ? ` · ${tenLoTrinhMoi}` : ''}</li><li>Lộ trình cũ giữ ở Hành trình</li>{!data.conHoc && <li>Ra khỏi Lưu trữ</li>}
+                    <li>{t('Vào lớp {lop}', { lop: lopMoi.code })}</li><li>{t('Lộ trình mới')}{tenLoTrinhMoi ? ` · ${tenLoTrinhMoi}` : ''}</li><li>{t('Lộ trình cũ giữ ở Hành trình')}</li>{!data.conHoc && <li>{t('Ra khỏi Lưu trữ')}</li>}
                   </ul>
                 )}
               </>
             )}
-            <Truong nhan="Có hiệu lực từ"><ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon="Mặc định: hôm nay" /></Truong>
-            <Truong nhan="Lý do" tuyChon><input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} /></Truong>
+            <Truong nhan={t('Có hiệu lực từ')}><ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon={t('Mặc định: hôm nay')} /></Truong>
+            <Truong nhan={t('Lý do')} tuyChon><input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} /></Truong>
           </Khoi>
         )}
     </KhungPanel>
@@ -325,21 +325,21 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const sua = <T,>(f: (v: T) => void) => (v: T) => { setLoiMay(null); f(v); };
 
   /* OV-11d (Q3 chủ SP, HL-11): ngày sinh và email không bắt buộc — gõ thì kiểm dạng (ONgay / máy chủ), xoá trống = bỏ; em thiếu nằm ở "Thiếu thông tin". */
-  const loi = dsLoi([{ khoa: 'ho-ten', nhan: 'Họ tên', toiThieu: 1 }], { 'ho-ten': fullName });
+  const loi = dsLoi([{ khoa: 'ho-ten', nhan: t('Họ tên'), toiThieu: 1 }], { 'ho-ten': fullName });
   const loiEmail = docEmail(email).loi;   // PR-OV2c / OV-13f: trống vẫn lưu (việc Thiếu email), có gõ thì đúng dạng; trùng em khác → máy chủ báo
-  if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
+  if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: dichChu(loiEmail) });
   for (const k of ['phone', 'parentPhone'] as const) {
     const e = nhapLienHe ? docSoDienThoai(lh[k]).loi : null;
-    if (e) loi.push({ khoa: k, nhan: NHAN_LIEN_HE[k], lyDo: `${e[0].toUpperCase()}${e.slice(1)}` });
+    if (e) loi.push({ khoa: k, nhan: dichChu(NHAN_LIEN_HE[k]), lyDo: dichChu(`${e[0].toUpperCase()}${e.slice(1)}`) });
   }
-  if (quanLy && cycle && !tuan) loi.push({ khoa: 'tuan', nhan: 'Tuần bắt đầu', lyDo: 'Chưa chọn' });
+  if (quanLy && cycle && !tuan) loi.push({ khoa: 'tuan', nhan: t('Tuần bắt đầu'), lyDo: t('Chưa chọn') });
   if (doiTarget && kt) { const d = docTargetKyThi(kt, target); if ('loi' in d) loi.push({ khoa: 'target', nhan: 'Target', lyDo: t('Số nguyên {min}–{max}', { min: kt.min, max: kt.max }) }); }
-  else if (doiTarget && (target !== '' || !kck) && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: target ? 'Band từ 0 đến 9, bước 0.5' : 'Chưa điền — hoặc tích KCK' });
-  if (doiTarget) loi.push(...dsLoi([{ khoa: 'ly-do-target', nhan: 'Lý do đổi Target', toiThieu: 1 }], { 'ly-do-target': lyDo }));
+  else if (doiTarget && (target !== '' || !kck) && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: target ? t('Band từ 0 đến 9, bước 0.5') : t('Chưa điền — hoặc tích KCK') });
+  if (doiTarget) loi.push(...dsLoi([{ khoa: 'ly-do-target', nhan: t('Lý do đổi Target'), toiThieu: 1 }], { 'ly-do-target': lyDo }));
   if (doiDauVao) {
-    if (kn.some((x) => x !== '' && !laBand(x))) loi.push({ khoa: 'dau-vao', nhan: 'Điểm đầu vào', lyDo: 'Band 0–9, bước 0.5' });
-    else if (!duKn && dv.o !== '' && !laBand(dv.o)) loi.push({ khoa: 'dau-vao', nhan: 'Điểm đầu vào', lyDo: 'Overall: band 0–9, bước 0.5' });
-    else if (!duKn && dv.o === '' && kn.some((x) => x !== '')) loi.push({ khoa: 'dau-vao', nhan: 'Điểm đầu vào', lyDo: 'Nhập đủ L R W S hoặc nhập Overall' });
+    if (kn.some((x) => x !== '' && !laBand(x))) loi.push({ khoa: 'dau-vao', nhan: t('Điểm đầu vào'), lyDo: t('Band 0–9, bước 0.5') });
+    else if (!duKn && dv.o !== '' && !laBand(dv.o)) loi.push({ khoa: 'dau-vao', nhan: t('Điểm đầu vào'), lyDo: t('Overall: band 0–9, bước 0.5') });
+    else if (!duKn && dv.o === '' && kn.some((x) => x !== '')) loi.push({ khoa: 'dau-vao', nhan: t('Điểm đầu vào'), lyDo: t('Nhập đủ L R W S hoặc nhập Overall') });
   }
   if (doiMon && mon?.length === 0) loi.push({ khoa: 'mon', nhan: t('Môn học'), lyDo: t('Chọn ít nhất một môn.') });
   if (loiMay) loi.push(loiMay);
@@ -350,7 +350,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
     if (loi.length > 0) return;
     setBusy(true);
     const xong: string[] = [];
-    let phan = 'Thông tin';
+    let phan = t('Thông tin');
     try {
       const dauVao = !doiDauVao ? undefined
         : kn.every((x) => x === '') && dv.o === '' ? null
@@ -363,7 +363,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           ...(nhapLienHe ? Object.fromEntries(lhDoi.map((k) => [k, lh[k].trim() || null])) : {}),
         });
         for (const k of ['/students', '/hoc-vien-lop']) invalidate(k);
-        toast.push('ok', 'Đã lưu');
+        toast.push('ok', t('Đã lưu'));
         onDone();
         return;
       }
@@ -374,19 +374,19 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         ...(nhapLienHe ? Object.fromEntries(lhDoi.map((k) => [k, lh[k].trim() || null])) : {}),
         ...(dauVao !== undefined ? { dauVao } : {}),
       });
-      xong.push('thông tin');
+      xong.push(t('thông tin'));
       /* Lộ trình — chỉ trường đã đổi (máy chủ kiểm lại). */
       const doi = { ...(quanLy && cycle && tuan !== tuanCu ? { startWeek: tuan } : {}), ...(cycle && thi !== thiCu ? { examDate: thi } : {}) };
       if (cycle && Object.keys(doi).length) {
-        phan = 'Lộ trình';
+        phan = t('Lộ trình');
         await api.patch(`/cycles/${cycle.id}`, doi);
-        xong.push('lộ trình');
+        xong.push(t('lộ trình'));
       }
       if (doiTarget) {
         phan = 'Target';
         const moi = kt ? (target === '' ? null : Number(target)) : kck ? chuTargetKck(target === '' ? null : Number(target), true) : Number(target);
         if (targetThang) { await api.post(`/cycles/${cycle.id}/target-revision`, { newTarget: moi, reason: lyDo.trim() }); xong.push('Target'); }
-        else { await api.post(`/students/${student.id}/de-xuat-sua`, { truong: 'target', moi: moi ?? '', lyDo: lyDo.trim() }); invalidate('/yeu-cau'); xong.push('đề xuất Target'); }
+        else { await api.post(`/students/${student.id}/de-xuat-sua`, { truong: 'target', moi: moi ?? '', lyDo: lyDo.trim() }); invalidate('/yeu-cau'); xong.push(t('đề xuất Target')); }
       }
       if (doiMon) {
         phan = t('Môn học');
@@ -394,14 +394,14 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         xong.push(t('môn học'));
       }
       for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop', '/tong-quan']) invalidate(k);
-      toast.push('ok', targetDeXuat && doiTarget ? 'Đã lưu · Target gửi Quản lý duyệt' : 'Đã lưu');
+      toast.push('ok', targetDeXuat && doiTarget ? t('Đã lưu · Target gửi Quản lý duyệt') : t('Đã lưu'));
       onDone();
     } catch (e: any) {
       if (xong.length) for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop']) invalidate(k);
       /* P13: lỗi thang Cambridge gắn ô qua `details.o` ("A2 Key: 100–150"). */
       const o = e?.details?.o === 'target' ? { khoa: 'target', nhan: 'Target' } : oCuaLoi(String(e.message ?? ''));
       if (o) setLoiMay({ ...o, lyDo: e?.details?.o === 'target' ? String(e.message) : String(e.message).replace(/^[^:]+:\s*/, '') });
-      toast.push('error', xong.length ? `Đã lưu ${xong.join(', ')} · ${phan} chưa lưu: ${e.message}` : e.message);
+      toast.push('error', xong.length ? t('Đã lưu {ds} · {phan} chưa lưu: {loi}', { ds: xong.join(', '), phan, loi: e.message }) : e.message);
     } finally { setBusy(false); }
   };
 
@@ -422,80 +422,80 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       chan={{
         daSua,
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
       }}>
-      <Khoi tieuDe="Học viên">
+      <Khoi tieuDe={t('Học viên')}>
         {!chiLienHe && <>
-        <Truong nhan="Họ tên" batBuoc loi={lf.loiCua(loi, 'ho-ten')}>
+        <Truong nhan={t('Họ tên')} batBuoc loi={lf.loiCua(loi, 'ho-ten')}>
           <input className="field w-full" {...lf.o(loi, 'ho-ten')} value={fullName} onChange={(e) => sua(setFullName)(e.target.value)} />
         </Truong>
-        <Truong nhan="Ngày sinh" tuyChon loi={lf.loiCua(loi, 'ngay-sinh')}>
+        <Truong nhan={t('Ngày sinh')} tuyChon loi={lf.loiCua(loi, 'ngay-sinh')}>
           <ONgay kieu="ngay" toiDa={homNay} id={lf.oId('ngay-sinh')} onBlur={lf.roi('ngay-sinh')} invalid={!!lf.loiCua(loi, 'ngay-sinh')}
             value={dob} onChange={sua(setDob)} />
         </Truong>
         </>}
         <Truong nhan="Email" batBuoc thieu={!email.trim()} loi={lf.loiCua(loi, 'email')}>
           <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
-            value={email} onChange={(e) => sua(setEmail)(e.target.value)} placeholder="Ví dụ: an.nguyen@gmail.com" />
+            value={email} onChange={(e) => sua(setEmail)(e.target.value)} placeholder={t('Ví dụ: an.nguyen@gmail.com')} />
         </Truong>
         {!chiLienHe && <Truong nhan="TVV" tuyChon loi={lf.loiCua(loi, 'tvv')}
-          phu={[student.consultantName ? `Ghi cũ: “${student.consultantName}”` : null,
-            !(student.tvvChon ?? []).length ? 'Chưa có tài khoản Tư vấn viên — Quản trị tạo ở Tài khoản' : null].filter(Boolean).join(' · ') || undefined}>
-          <ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={student.tvvChon ?? []} choTrong="— Chưa chọn —"
-            placeholder="Chọn tư vấn viên" ariaLabel="TVV" id={lf.oId('tvv')} invalid={!!lf.loiCua(loi, 'tvv')}
-            value={tvv} onChange={sua(setTvv)} khongKhop={(go) => `Không có tư vấn viên khớp “${go}”`} />
+          phu={[student.consultantName ? t('Ghi cũ: “{ten}”', { ten: student.consultantName }) : null,
+            !(student.tvvChon ?? []).length ? t('Chưa có tài khoản Tư vấn viên — Quản trị tạo ở Tài khoản') : null].filter(Boolean).join(' · ') || undefined}>
+          <ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={student.tvvChon ?? []} choTrong={t('— Chưa chọn —')}
+            placeholder={t('Chọn tư vấn viên')} ariaLabel="TVV" id={lf.oId('tvv')} invalid={!!lf.loiCua(loi, 'tvv')}
+            value={tvv} onChange={sua(setTvv)} khongKhop={(go) => t('Không có tư vấn viên khớp “{go}”', { go })} />
         </Truong>}
         {ghiChu && (
-          <Truong nhan="Ghi chú" tuyChon>
+          <Truong nhan={t('Ghi chú')} tuyChon>
             <textarea className="field w-full" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
           </Truong>
         )}
       </Khoi>
       {nhapLienHe && (
-        <Khoi tieuDe="Liên hệ">
-          <Truong nhan={NHAN_LIEN_HE.phone} tuyChon loi={lf.loiCua(loi, 'phone')}>
+        <Khoi tieuDe={t('Liên hệ')}>
+          <Truong nhan={dichChu(NHAN_LIEN_HE.phone)} tuyChon loi={lf.loiCua(loi, 'phone')}>
             <input className="field w-full tabular-nums" type="tel" inputMode="tel" autoComplete="off" maxLength={LIEN_HE_TOI_DA.sdt} {...lf.o(loi, 'phone')}
-              value={lh.phone} onChange={(e) => sua(setLh)({ ...lh, phone: e.target.value })} placeholder="Ví dụ: 0901 234 567" />
+              value={lh.phone} onChange={(e) => sua(setLh)({ ...lh, phone: e.target.value })} placeholder={t('Ví dụ: 0901 234 567')} />
           </Truong>
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
-            <Truong nhan={NHAN_LIEN_HE.parentName} tuyChon>
+            <Truong nhan={dichChu(NHAN_LIEN_HE.parentName)} tuyChon>
               <input className="field w-full" maxLength={LIEN_HE_TOI_DA.parentName} autoComplete="off"
-                value={lh.parentName} onChange={(e) => sua(setLh)({ ...lh, parentName: e.target.value })} placeholder="Ví dụ: Phạm Văn Long" />
+                value={lh.parentName} onChange={(e) => sua(setLh)({ ...lh, parentName: e.target.value })} placeholder={t('Ví dụ: Phạm Văn Long')} />
             </Truong>
-            <Truong nhan={NHAN_LIEN_HE.parentRelation} tuyChon>
+            <Truong nhan={dichChu(NHAN_LIEN_HE.parentRelation)} tuyChon>
               <input className="field w-full" list="quan-he-goi-y" maxLength={LIEN_HE_TOI_DA.parentRelation} autoComplete="off"
-                value={lh.parentRelation} onChange={(e) => sua(setLh)({ ...lh, parentRelation: e.target.value })} placeholder="Ví dụ: Bố" />
+                value={lh.parentRelation} onChange={(e) => sua(setLh)({ ...lh, parentRelation: e.target.value })} placeholder={t('Ví dụ: Bố')} />
               <datalist id="quan-he-goi-y">{QUAN_HE_GOI_Y.map((x) => <option key={x} value={x} />)}</datalist>
             </Truong>
           </div>
-          <Truong nhan={NHAN_LIEN_HE.parentPhone} tuyChon loi={lf.loiCua(loi, 'parentPhone')}>
+          <Truong nhan={dichChu(NHAN_LIEN_HE.parentPhone)} tuyChon loi={lf.loiCua(loi, 'parentPhone')}>
             <input className="field w-full tabular-nums" type="tel" inputMode="tel" autoComplete="off" maxLength={LIEN_HE_TOI_DA.sdt} {...lf.o(loi, 'parentPhone')}
-              value={lh.parentPhone} onChange={(e) => sua(setLh)({ ...lh, parentPhone: e.target.value })} placeholder="Ví dụ: 0912 345 678" />
+              value={lh.parentPhone} onChange={(e) => sua(setLh)({ ...lh, parentPhone: e.target.value })} placeholder={t('Ví dụ: 0912 345 678')} />
           </Truong>
         </Khoi>
       )}
       {cycle && !chiLienHe ? (
-        <Khoi tieuDe="Lộ trình đang học"
+        <Khoi tieuDe={t('Lộ trình đang học')}
           luat={kt ? t('{ten}: Target theo điểm Cambridge {min}–{max} — không quy đổi band IELTS, không tính SOS.', { ten: kt.ten, min: kt.min, max: kt.max })
             : cycle.ratio
-            ? 'Lớp thường: Target và Dự kiến thi chỉ để theo dõi — không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.'
-            : 'Lịch MT sửa ở mục Lộ trình. Đổi Target ở đâu cũng bắt ghi lý do.'}>
+            ? t('Lớp thường: Target và Dự kiến thi chỉ để theo dõi — không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.')
+            : t('Lịch MT sửa ở mục Lộ trình. Đổi Target ở đâu cũng bắt ghi lý do.')}>
           <p className="m-0 text-sm text-slate-200">
-            {cycle.ratio ? (cycle.programmeName ?? cycle.label) : cycle.label}
-            {cycle.endWeek && <span className="text-slate-500"> · kết thúc {tuanLich(cycle.endWeek.weekStart, homNay)}</span>}
+            {cycle.ratio ? (cycle.programmeName ?? dichChu(cycle.label)) : dichChu(cycle.label)}
+            {cycle.endWeek && <span className="text-slate-500"> · {t('kết thúc {tuan}', { tuan: tuanLich(cycle.endWeek.weekStart, homNay) })}</span>}
           </p>
           {quanLy && (
-            <Truong nhan="Tuần bắt đầu" batBuoc loi={lf.loiCua(loi, 'tuan')} phu={cauDoi}>
+            <Truong nhan={t('Tuần bắt đầu')} batBuoc loi={lf.loiCua(loi, 'tuan')} phu={cauDoi && dichChu(cauDoi)}>
               <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')} value={tuan} onChange={setTuan} />
             </Truong>
           )}
-          <Truong nhan="Dự kiến thi" tuyChon loi={lf.loiCua(loi, 'thi')} phu="dd/mm/yyyy hoặc mm/yyyy">
-            <ONgay kieu="ngay-hoac-thang" id={lf.oId('thi')} value={thi} goiY="dd/mm/yyyy hoặc mm/yyyy" onChange={sua(setThi)} />
+          <Truong nhan={t('Dự kiến thi')} tuyChon loi={lf.loiCua(loi, 'thi')} phu={t('dd/mm/yyyy hoặc mm/yyyy')}>
+            <ONgay kieu="ngay-hoac-thang" id={lf.oId('thi')} value={thi} goiY={t('dd/mm/yyyy hoặc mm/yyyy')} onChange={sua(setThi)} />
           </Truong>
           {(targetThang || targetDeXuat) && !(targetDeXuat && dx) ? (
             <Truong nhan={kt ? `Target (${kt.ten} ${kt.min}–${kt.max})` : 'Target'} tuyChon as="div" loi={lf.loiCua(loi, 'target')}
-              phu={[targetDeXuat ? 'Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.' : kt ? t('Số nguyên. Bỏ trống = chưa có Target.') : `Band 0–9, bước 0,5.${oKck ? ` KCK: ${GIAI_THICH_KCK}.` : ''}`,
-                dx ? `Chờ duyệt: ${kt ? dx.moi : chuDeXuat(dx.moi)}` : null].filter(Boolean).join(' · ')}>
+              phu={[targetDeXuat ? t('Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.') : kt ? t('Số nguyên. Bỏ trống = chưa có Target.') : `${t('Band 0–9, bước 0,5.')}${oKck ? ` KCK: ${dichChu(GIAI_THICH_KCK)}.` : ''}`,
+                dx ? t('Chờ duyệt: {x}', { x: kt ? dx.moi : chuDeXuat(dx.moi) }) : null].filter(Boolean).join(' · ')}>
               <span className="flex flex-wrap items-center gap-3">
                 <input className="field max-w-[8rem]" type="number" inputMode={kt ? 'numeric' : 'decimal'} step={kt ? 1 : 0.5} min={kt?.min ?? 0} max={kt?.max ?? 9} aria-label="Target"
                   {...lf.o(loi, 'target')} value={target} onChange={(e) => sua(setTarget)(e.target.value)} />
@@ -504,21 +504,21 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             </Truong>
           ) : (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-200">
-              <span>Target: {targetCu || kckCu ? <strong className="tabular-nums"><TargetText band={cycle.target ?? null} kck={kckCu} kyThi={kt} /></strong> : <span className="text-slate-500">chưa có</span>}</span>
-              {dx ? <span className="text-slate-400">· Chờ duyệt: <strong className="text-slate-200">{kt ? dx.moi : chuDeXuat(dx.moi)}</strong></span>
-                : <span className="text-slate-500">· Quản lý / TVV sửa</span>}
-              {dx?.cuaToi && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setSuaDx(true)}>Sửa đề xuất</button>}
+              <span>Target: {targetCu || kckCu ? <strong className="tabular-nums"><TargetText band={cycle.target ?? null} kck={kckCu} kyThi={kt} /></strong> : <span className="text-slate-500">{t('chưa có')}</span>}</span>
+              {dx ? <span className="text-slate-400">· {t('Chờ duyệt:')} <strong className="text-slate-200">{kt ? dx.moi : chuDeXuat(dx.moi)}</strong></span>
+                : <span className="text-slate-500">· {t('Quản lý / TVV sửa')}</span>}
+              {dx?.cuaToi && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setSuaDx(true)}>{t('Sửa đề xuất')}</button>}
             </div>
           )}
           {doiTarget && (
-            <Truong nhan="Lý do đổi Target" batBuoc loi={lf.loiCua(loi, 'ly-do-target')}
-              phu={targetDeXuat ? 'Quản lý đọc lý do này khi duyệt.' : 'Ghi vào Hành trình — sau này đọc lại biết vì sao Target đổi.'}>
+            <Truong nhan={t('Lý do đổi Target')} batBuoc loi={lf.loiCua(loi, 'ly-do-target')}
+              phu={targetDeXuat ? t('Quản lý đọc lý do này khi duyệt.') : t('Ghi vào Hành trình — sau này đọc lại biết vì sao Target đổi.')}>
               <input className="field w-full" maxLength={2000} {...lf.o(loi, 'ly-do-target')} value={lyDo}
-                onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: Gia đình đổi kế hoạch thi" />
+                onChange={(e) => setLyDo(e.target.value)} placeholder={t('Ví dụ: Gia đình đổi kế hoạch thi')} />
             </Truong>
           )}
           {targetDeXuat && onDeXuatSua && (
-            <button type="button" className="btn btn-sm btn-ghost self-start min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}>Đề xuất sửa lộ trình / thông tin khác…</button>
+            <button type="button" className="btn btn-sm btn-ghost self-start min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}>{t('Đề xuất sửa lộ trình / thông tin khác…')}</button>
           )}
           {coMon && (
             <Truong as="div" nhan={`${t('Môn học')} · FT ${cycle.label}`} loi={lf.loiCua(loi, 'mon')}>
@@ -527,21 +527,21 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           )}
           {doiMon && monTom && <KhoiKhiLuu dong={monTom.dong} vang />}
           {coDauVao && (
-            <Truong as="div" nhan="Điểm đầu vào" tuyChon loi={lf.loiCua(loi, 'dau-vao')}
-              phu={bl?.attemptId ? `Đang lấy từ MT${bl.attemptNo ?? ''} · gõ tay thì thay` : 'Đủ L R W S thì Overall tự tính'}>
+            <Truong as="div" nhan={t('Điểm đầu vào')} tuyChon loi={lf.loiCua(loi, 'dau-vao')}
+              phu={bl?.attemptId ? t('Đang lấy từ MT{n} · gõ tay thì thay', { n: bl.attemptNo ?? '' }) : t('Đủ L R W S thì Overall tự tính')}>
               <span className="flex flex-wrap items-center gap-2" id={lf.oId('dau-vao')} onBlur={lf.roi('dau-vao')}>
                 {(['l', 'r', 'w', 's'] as const).map((k) => (
                   <label key={k} className="flex items-center gap-1 text-xs text-slate-400">
                     {k.toUpperCase()}
-                    <input className="field w-16 tabular-nums" inputMode="decimal" aria-label={`Điểm đầu vào ${k.toUpperCase()}`}
+                    <input className="field w-16 tabular-nums" inputMode="decimal" aria-label={`${t('Điểm đầu vào')} ${k.toUpperCase()}`}
                       aria-invalid={!!lf.loiCua(loi, 'dau-vao')} value={dv[k]} onChange={(e) => sua(setDv)({ ...dv, [k]: e.target.value.replace(',', '.') })} />
                   </label>
                 ))}
                 <label className="flex items-center gap-1 text-xs text-slate-400">
                   Overall
                   {duKn
-                    ? <strong className="w-16 tabular-nums text-sm text-slate-100" aria-label="Overall tự tính">{overall}</strong>
-                    : <input className="field w-16 tabular-nums" inputMode="decimal" aria-label="Điểm đầu vào Overall" aria-invalid={!!lf.loiCua(loi, 'dau-vao')}
+                    ? <strong className="w-16 tabular-nums text-sm text-slate-100" aria-label={t('Overall tự tính')}>{overall}</strong>
+                    : <input className="field w-16 tabular-nums" inputMode="decimal" aria-label={`${t('Điểm đầu vào')} Overall`} aria-invalid={!!lf.loiCua(loi, 'dau-vao')}
                         value={dv.o} onChange={(e) => sua(setDv)({ ...dv, o: e.target.value.replace(',', '.') })} />}
                 </label>
               </span>
@@ -549,8 +549,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           )}
         </Khoi>
       ) : (
-        <Khoi tieuDe="Lộ trình đang học">
-          <p className="m-0 text-sm text-slate-400">Em chưa có lộ trình — Dự kiến thi, Target, Điểm đầu vào sửa được sau khi em vào lớp.</p>
+        <Khoi tieuDe={t('Lộ trình đang học')}>
+          <p className="m-0 text-sm text-slate-400">{t('Em chưa có lộ trình — Dự kiến thi, Target, Điểm đầu vào sửa được sau khi em vào lớp.')}</p>
         </Khoi>
       )}
     </KhungPanel>
@@ -569,9 +569,10 @@ function s5(v: number | null | undefined): string { return v == null ? '' : Stri
 
 /** Câu lỗi máy chủ mở đầu bằng tên ô ("Email: …", "Ngày sinh: …") → ô đó. */
 function oCuaLoi(m: string): { khoa: string; nhan: string } | null {
-  const o: [RegExp, string, string][] = [[/^Họ tên/, 'ho-ten', 'Họ tên'], [/^Ngày sinh/, 'ngay-sinh', 'Ngày sinh'], [/^Email/, 'email', 'Email'],
-    [/^TVV/, 'tvv', 'TVV'], [/^Dự kiến thi/, 'thi', 'Dự kiến thi'], [/^Điểm đầu vào/, 'dau-vao', 'Điểm đầu vào'], [/Target/, 'target', 'Target'],
-    [/^SĐT em/, 'phone', NHAN_LIEN_HE.phone], [/^SĐT phụ huynh/, 'parentPhone', NHAN_LIEN_HE.parentPhone]];
-  const x = o.find(([re]) => re.test(m));
-  return x ? { khoa: x[1], nhan: x[2] } : null;
+  /* Câu lỗi đã qua dich() ở api.ts: so cả tên ô tiếng Việt lẫn bản dịch. */
+  const o: [string, string][] = [['Họ tên', 'ho-ten'], ['Ngày sinh', 'ngay-sinh'], ['Email', 'email'], ['TVV', 'tvv'], ['Dự kiến thi', 'thi'],
+    ['Điểm đầu vào', 'dau-vao'], ['SĐT em', 'phone'], ['SĐT phụ huynh', 'parentPhone']];
+  const x = o.find(([vi]) => m.startsWith(vi) || m.startsWith(dichChu(vi)));
+  if (!x) return m.includes('Target') ? { khoa: 'target', nhan: 'Target' } : null;
+  return { khoa: x[1], nhan: dichChu(x[0] === 'SĐT em' ? NHAN_LIEN_HE.phone : x[0] === 'SĐT phụ huynh' ? NHAN_LIEN_HE.parentPhone : x[0]) };
 }

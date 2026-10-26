@@ -9,7 +9,7 @@
 import { db, tx } from '../db.ts';
 import { GOP_Y_SO_TUAN, GOP_Y_TOI_DA, PERMISSIONS, tenMonNgan, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt } from '../util.ts';
+import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt, loi } from '../util.ts';
 import { activeAt, can, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
@@ -83,7 +83,7 @@ export function ghiGopYTuan(p: Principal, classId: number, body: Record<string, 
   if (w > mondayOf(today)) throw badRequest('Chưa tới tuần này — chỉ ghi góp ý từ tuần này trở về trước.');
   const cot = cotCua(p, c, today).find((k) => k.skill === body.skill);
   if (!cot) throw badRequest('Kỹ năng không thuộc lớp này.');
-  if (!cot.ghiDuoc) throw forbidden(`Bạn không ghi được góp ý ${cot.nhan} của lớp ${c.code} — chỉ GV dạy ${cot.nhan}, GVCN hoặc Quản lý.`);
+  if (!cot.ghiDuoc) throw loi(403, 'Bạn không ghi được góp ý {nhan} của lớp {code} — chỉ GV dạy {nhan2}, GVCN hoặc Quản lý.', { nhan: cot.nhan, code: c.code, nhan2: cot.nhan });
   const noiDung = chuTuDo(body.noiDung ?? null, 'Góp ý', GOP_Y_TOI_DA);
   const sid = toInt(body.studentId);
   const conn = db();

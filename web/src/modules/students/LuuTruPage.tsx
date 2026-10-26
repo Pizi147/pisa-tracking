@@ -99,33 +99,33 @@ export default function LuuTruPage() {
   return (
     <div className="page space-y-3">
       <div>
-        <button className="btn btn-sm btn-ghost" onClick={() => navigate('/hoc-vien')}>‹ Học viên &amp; Lớp</button>
+        <button className="btn btn-sm btn-ghost" onClick={() => navigate('/hoc-vien')}>‹ {t('Học viên & Lớp')}</button>
       </div>
-      <h1 className="text-xl font-bold text-slate-100 m-0">Lưu trữ</h1>
+      <h1 className="text-xl font-bold text-slate-100 m-0">{t('Lưu trữ')}</h1>
 
       <div className="flex flex-wrap items-center gap-2">
-        <input className="field w-full sm:w-72" aria-label="Tìm" placeholder="Tìm tên, mã học viên hoặc mã lớp…"
+        <input className="field w-full sm:w-72" aria-label={t('Tìm')} placeholder={t('Tìm tên, mã học viên hoặc mã lớp…')}
           value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
         {(branches.data?.length ?? 0) > 1 && (
-          <select className="field w-auto" aria-label="Chi nhánh" value={branchId ?? ''}
+          <select className="field w-auto" aria-label={t('Chi nhánh')} value={branchId ?? ''}
             onChange={(e) => { nhoChiNhanh(uid, e.target.value ? Number(e.target.value) : null); setParam({ cn: e.target.value || null, branchId: null }); }}>
-            <option value="">Mọi chi nhánh</option>
+            <option value="">{t('Mọi chi nhánh')}</option>
             {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         )}
       </div>
 
-      <HangTab ariaLabel="Lưu trữ" value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
+      <HangTab ariaLabel={t('Lưu trữ')} value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
         tabs={[
-          { key: 'lop', label: 'Lớp đã kết thúc', so: data?.lop.length },
-          { key: 'hv', label: 'Học viên đã lưu trữ', so: data?.hocVien.length },
+          { key: 'lop', label: t('Lớp đã kết thúc'), so: data?.lop.length },
+          { key: 'hv', label: t('Học viên đã lưu trữ'), so: data?.hocVien.length },
         ]} />
 
       {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
       {loading && !data && <Skeleton rows={6} />}
       {data && tab === 'lop' && (
         data.lop.length === 0
-          ? <Card><Empty title={loc ? `Không có lớp khớp "${loc}"` : 'Chưa có lớp nào kết thúc'} /></Card>
+          ? <Card><Empty title={loc ? t('Không có lớp khớp "{loc}"', { loc }) : t('Chưa có lớp nào kết thúc')} /></Card>
           : <div className="space-y-1.5">
               {data.lop.map((l) => (
                 <div key={l.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3">
@@ -133,27 +133,27 @@ export default function LuuTruPage() {
                     <span className="font-semibold text-slate-200">{l.code}</span>
                     <span className="text-xs text-slate-500">
                       {l.tenChuongTrinh ?? l.ma ?? '—'} · {l.chiNhanh}
-                      {l.gvcn && <> · GVCN {l.gvcn}</>} · {l.soHvTungHoc} HV từng học
+                      {l.gvcn && <> · {t('GVCN')} {l.gvcn}</>} · {t('{n} HV từng học', { n: l.soHvTungHoc })}
                     </span>
                     <span className="flex-1" />
                     <span className="text-xs text-slate-500 whitespace-nowrap">
-                      Đã kết thúc {l.finishedAt ? ngay(l.finishedAt) : '—'}
+                      {t('Đã kết thúc {ngay}', { ngay: l.finishedAt ? ngay(l.finishedAt) : '—' })}
                     </span>
                   </Link>
-                  <Link to={`/hoc-vien/lop/${l.id}?tab=tong-ket`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">Tổng kết</Link>
-                  {l.coTheMoLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLai(l)}>Mở lại</button>}
+                  <Link to={`/hoc-vien/lop/${l.id}?tab=tong-ket`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">{t('Tổng kết')}</Link>
+                  {l.coTheMoLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLai(l)}>{t('Mở lại')}</button>}
                 </div>
               ))}
             </div>
       )}
       {data && tab === 'hv' && (
         data.hocVien.length === 0
-          ? <Card><Empty title={loc ? `Không có học viên khớp "${loc}"` : 'Chưa có học viên nào được lưu trữ'} /></Card>
+          ? <Card><Empty title={loc ? t('Không có học viên khớp "{loc}"', { loc }) : t('Chưa có học viên nào được lưu trữ')} /></Card>
           : <div className="space-y-1.5">
               {data.hocVien.some((s) => s.coTheQuayLai) && (
                 <div className="flex justify-end">
                   <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}
-                    className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'btn-ghost'}`}>Chọn nhiều học viên</button>
+                    className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'btn-ghost'}`}>{t('Chọn nhiều học viên')}</button>
                 </div>
               )}
               {data.hocVien.map((s) => {
@@ -167,7 +167,7 @@ export default function LuuTruPage() {
                       {[s.lopCuoi ?? t('chưa từng học lớp nào'), s.loTrinh ? `FT ${s.loTrinh}` : null, dung ? t('từ {ngay}', { ngay: ngay(s.archivedAt) }) : ngay(s.archivedAt), s.chiNhanh].filter(Boolean).join(' · ')}
                     </span>
                     {!chon.bat && s.cycleIdCuoi != null && (
-                      <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">Tổng kết</Link>
+                      <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">{t('Tổng kết')}</Link>
                     )}
                     {!chon.bat && s.coTheQuayLai && (
                       <button type="button" className={dung ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={quayLai.dangMo === s.id}
