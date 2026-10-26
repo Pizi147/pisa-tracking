@@ -174,8 +174,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
                       <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? l.periodId : null} kind={l.kind}
                         tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
                         datConTro={conTro.has(k)} onDaLuu={onDaLuu} coLinkRieng sEx={l.mode === 'ielts_band' ? sEx.filter((x) => x.classId === l.classId) : undefined}
-                        onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)}
-                        nhanTrai={`${t('{n} học viên', { n: l.soHv })} · ${l.mode === 'ielts_band' && l.kind !== 'mt0' ? 'Fast Track' : t('Lớp thường')}`} />
+                        onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)} />
                     </td>
                   </tr>
                 )}

@@ -49,7 +49,7 @@ Chủ SP 27/10: mockup là gợi ý — không chấm khớp từng chi tiết; 
 | 13 | Lớp mở dính khi cuộn trong khối | mỗi lớp một `<table>`, `position: sticky` | KHỚP — đo `dinh-khong-che` |
 | 14 | Lượt · kỹ năng · tiến độ · hạn · phần của bạn · ↗ trên hàng lớp | `HangLop` (không đổi) | KHỚP (GIỮ) |
 | 15 | Lưới trên nền thẻ, không nền bọc, không thụt khung, không vạch | `<tr>` thường thay `HangCon` | KHỚP |
-| 16 | Hàng công cụ trái "6 học viên · Fast Track / Lớp thường" | `nhanTrai` (`LuoiFT` / `LuoiChamLop`), số = `l.soHv` | KHỚP |
+| 16 | Hàng công cụ trái "6 học viên · Fast Track / Lớp thường" | **BỎ** — chủ SP 27/10 khi duyệt ảnh: "rất thừa thãi" (số HV đã có ở hàng lớp) | BỎ |
 | 17 | (mockup không vẽ) "GV chấm S" phải hàng công cụ | `NutGvCham` cùng hàng nhãn | KHỚP (GIỮ) |
 | 18 | "Dán từ Excel" + "?" | — | **BỎ** theo chủ SP 26/10 (không tính) |
 | 19 | Đầu cột nền riêng, 13 / 600, không viền dưới | `.lich-luoi .bang th` `--cap-dau-cot` | KHỚP |

@@ -70,7 +70,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, sEx, onHet, nhanTrai,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, sEx, onHet,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -90,8 +90,6 @@ export function LuoiChamLop({
   sEx?: SExTuan;
   /** R1-LUU-TIEP: hết bài của người xem ở lưới FT → nút "Lớp tiếp" / "Việc tiếp" của nơi gọi. */
   onHet?: OnHet;
-  /** R1-PHAN-CAP-TEST (M2 A2): nhãn trái hàng công cụ ("6 học viên · Fast Track"); điện thoại không hiện. */
-  nhanTrai?: string;
 }) {
   const hep = useManHinhHep();
   /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
@@ -108,9 +106,6 @@ export function LuoiChamLop({
   const [caLop, setCaLop] = useState(false);
   const cotHien = chiCot?.length && !caLop ? chiCot : null;
   const laFt = data.mode === 'ielts_band';
-  /* Nhãn trái: lưới FT đặt chung hàng với "GV chấm S" (LuoiFT); lớp thường ở hàng công cụ dưới. */
-  const nhan = hep ? null : nhanTrai;
-
   /* "Cả lớp" (chỉ có khi mở từ việc) mở cả mọi em của lượt, không chỉ em của việc. */
   const locLuot = caLop ? null : chiAttempt;
   const ft = useMemo<FtSheet | null>(
@@ -160,7 +155,7 @@ export function LuoiChamLop({
     <>
       {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} onHet={onHet} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} tuanDangXem={tuanDangXem} />}
-      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} sEx={sEx} the={theHv} onHet={onHet} nhanTrai={nhan ?? undefined} />}
+      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} sEx={sEx} the={theHv} onHet={onHet} />}
       {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} />}
     </>
   );
@@ -170,9 +165,8 @@ export function LuoiChamLop({
   return (
     <BaoLuuContext.Provider value={bao}>
     <div ref={khung}>
-      {(hep || thanhTren || (nutCaLop && !!chiCot?.length) || (!!nhan && !laFt)) && (
+      {(hep || thanhTren || (nutCaLop && !!chiCot?.length)) && (
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-          {!!nhan && !laFt && <span className="mr-auto py-2 pl-11 text-[13px] text-slate-400">{nhan}</span>}
           {thanhTren}
           {nutCaLop && !!chiCot?.length && !tungKyNang && (
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={caLop} onClick={() => setCaLop((v) => !v)}>

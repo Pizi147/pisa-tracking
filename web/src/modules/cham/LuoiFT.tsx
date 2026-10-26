@@ -110,7 +110,7 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, sEx, the = false, onHet, nhanTrai }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, sEx, the = false, onHet }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
@@ -123,8 +123,6 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   the?: boolean;
   /** R1-LUU-TIEP: hết bài của người xem ở lớp này → "Lớp tiếp: {mã} ›" / "Việc tiếp ›" (nơi gọi chọn); không có → "Đóng". */
   onHet?: OnHet;
-  /** R1-PHAN-CAP-TEST (M2 A2): nhãn trái cùng hàng "GV chấm S" — "6 học viên · Fast Track" (Lịch Test). */
-  nhanTrai?: string;
 }) {
   /* Hộp đang mở: lượt × kỹ năng. */
   const [mo, setMo] = useState<{ aid: number; s: string } | null>(null);
@@ -246,9 +244,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng (công cụ ngoài khung — BANG-1). */}
     {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
-    {(coKhongHoc || (suaS && dot && hien('speaking')) || nhanTrai) && (
-      <div className={`flex flex-wrap items-center justify-end gap-x-4 gap-y-1 px-3 ${nhanTrai ? 'min-h-[40px] py-1' : 'pb-1'}`}>
-        {nhanTrai && <span className="mr-auto pl-8 text-[13px] text-slate-400">{nhanTrai}</span>}
+    {(coKhongHoc || (suaS && dot && hien('speaking'))) && (
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 px-3 pb-1">
         {coKhongHoc && <ChuGiaiKhongHoc />}
         {suaS && dot && hien('speaking') && <NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
       </div>
