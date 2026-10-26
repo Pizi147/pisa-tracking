@@ -20,6 +20,7 @@ export async function runPrKetPetTests(t: any) {
   const bc: any = await import('../phanTich/baoCao.ts');
   const buocTiep: any = await import('../loTrinh/buocTiep.ts');
   const luat: any = await import('../classes/luatLoTrinh.ts');
+  const studentsSvc: any = await import('../students/students.ts');
   const loi = (fn: () => unknown): any => { try { fn(); } catch (e: any) { return e; } return null; };
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const thu = <T>(fn: () => T): T => {
@@ -254,5 +255,30 @@ export async function runPrKetPetTests(t: any) {
     assert(mo(lopPet, lopFou, cu) === null, 'PET → FOU mang Target Cambridge sang lớp band');
     assert(mo(lopFou, lopPet, { ...cu, target_score: 6.5 }) === null, 'FOU → PET mang band sang');
     assert(mo(lopFou, lopFou, { ...cu, target_score: 6.5 }) === 6.5, 'FOU → FOU phải giữ như cũ');
+  }));
+
+  check('KP-3d · chuyển lớp: FT (Target 6.5) → PET không mang band sang; PET (Target 150) → FT không điền sẵn 150 làm Target FT', () => thu(() => {
+    const pet = one(`SELECT id FROM classes WHERE code = 'MB PET 01'`).id;
+    const ft = one(`SELECT c.id, c.student_id FROM learning_cycles c JOIN enrollments e ON e.student_id = c.student_id AND e.status = 'active' JOIN classes k ON k.id = e.class_id
+      WHERE k.code = 'MB FT 101' AND c.status = 'active' AND c.route IS NOT NULL ORDER BY c.id LIMIT 1`);
+    cycles.reviseTarget(P.admin, ft.id, { newTarget: 6.5, reason: 'thử' });
+    studentsSvc.transferStudent(P.admin, ft.student_id, pet, TODAY, 'Xếp lại trình độ', { noNote: false, note: 'sang PET' });
+    const moi = one(`SELECT target_score, khong_cam_ket, programme_code FROM learning_cycles WHERE student_id = ? AND status = 'active'`, ft.student_id);
+    assert(moi.programme_code === 'PET' && moi.target_score === null && !moi.khong_cam_ket, `FT → PET: ${JSON.stringify(moi)}`);
+    const c = emPet();
+    cycles.reviseTarget(P.admin, c.id, { newTarget: 150, reason: 'thử' });
+    const lopFt = one(`SELECT id FROM classes WHERE code = 'MB FT 101'`).id;
+    const v = luat.xemChuyenLop(P.mbManager, c.student_id, lopFt);
+    assert(v.targetSan == null, `PET → FT điền sẵn Target ${v.targetSan}`);
+  }));
+
+  check('KP-2e · migrate: GV đã có sẵn môn tách (L) cạnh L+S → không thành hai dòng L trùng; vẫn dạy S', () => thu(() => {
+    const { lop } = dungCu();
+    const t0 = one(`SELECT * FROM teacher_assignments WHERE class_id = ? AND skill = 'listening_speaking' AND status = 'active'`, lop.id);
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,0,?, 'active', ?)`)
+      .run(t0.user_id, lop.id, 'listening', t0.effective_from, t0.created_at);
+    mig.migratePrKetPet(conn, []); xoaNho();
+    const ds = all(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active' AND skill IS NOT NULL ORDER BY skill`, lop.id, t0.user_id).map((r) => r.skill);
+    assert(ds.join() === 'listening,speaking', `phân công sau migrate: ${ds}`);
   }));
 }

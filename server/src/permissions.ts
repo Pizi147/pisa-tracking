@@ -332,7 +332,7 @@ export function hasAssignment(p: Principal, ctx: Ctx, need: 'any' | 'skill' | 'c
   /* PR-MT0: lớp thường phân công `writing` (một môn) — MT0 nhập W1, W2 như Mock nên GV Writing của lớp nhập cả hai ô. */
   if (need === 'skill') return ctx.skill ? mine.some((a) => a.skill === ctx.skill || (a.skill === 'writing' && (ctx.skill === 'writing1' || ctx.skill === 'writing2'))
     /* P13 KET-PET: ô môn gộp CŨ (L+S, R+W — lượt / Case trước khi tách môn) = việc của GV dạy một trong hai môn tách. */
-    || (!!a.skill && !!MON_GOP[ctx.skill!]?.includes(a.skill))) : false;
+    || (!!a.skill && Object.hasOwn(MON_GOP, ctx.skill!) && MON_GOP[ctx.skill!].includes(a.skill))) : false;
   return true;
 }
 

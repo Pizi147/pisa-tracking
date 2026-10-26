@@ -418,7 +418,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   if (luat.khoa === 'dong-mo' || sauThi) {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     /* PR-CL (B4.4, §7 "chuyển từ FT: Target giữ như cũ", Q1): FT → thường giữ Target / KCK của lộ trình FT — chỉ nhánh này (Lưu trữ "Học lại" không đổi). */
-    const veThuong = tuLop.ft && !denLop.ft && !!curCycle;
+    const veThuong = tuLop.ft && !denLop.ft && !!curCycle && !kyThiCuaChuongTrinh(denLop.ma);   // P13: band FT không sang Target Cambridge (KET / PET)
     const { moiId } = moLoTrinhMoi(p, {
       sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle ?? cuoiCycle, thangThi: d.thangThi,
       target: (sauThi ? d.mucTieu : mucTieu) ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mucTieu == null && !!curCycle.khong_cam_ket,
@@ -551,7 +551,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     if (!ft && denLop.ft) {
       /* Target như `raLenh` (LCa-2): Target GVCN ghi ở Lộ trình tiếp theo → khoá đang chạy (KCK giữ) → null (web hỏi). */
       const lt = conn.prepare('SELECT muc_tieu FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(sid, enr.class_id) as any;
-      const khoa = cyc && !cyc.route ? { target: cyc.target_score ?? null, kck: !!cyc.khong_cam_ket } : null;
+      const khoa = cyc && !cyc.route && !kyThiCuaChuongTrinh(cyc.programme_code) ? { target: cyc.target_score ?? null, kck: !!cyc.khong_cam_ket } : null;   // P13: Target Cambridge không điền sẵn Target FT
       targetSan = targetLenFt({ lt: lt ? { mucTieu: lt.muc_tieu ?? null } : null, khoa });
       nguonTarget = targetSan === null ? null : typeof lt?.muc_tieu === 'number' ? 'gvcn' : 'khoa';
       /* R-C6: lệnh `cho` mang Target → giữ Target đó (như R-C3), chữ "(đã quyết)". */

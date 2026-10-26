@@ -128,7 +128,7 @@ function docJson(s: string | null): Record<string, any> {
 }
 
 const chu = (v: unknown): string | null => (v === null || v === undefined || v === '' ? null : String(v));
-const band = (v: unknown): string | null => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? chu(v) : Number(v).toFixed(1));
+const band = (v: unknown): string | null => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? chu(v) : Number(v) > 9 ? String(Number(v)) : Number(v).toFixed(1));   // P13: điểm Cambridge (> 9) giữ số nguyên
 const ngay = (v: unknown): string | null => { const s = chu(v); return s && /^\d{4}-\d{2}-\d{2}/.test(s) ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : s; };
 const coKhong = (v: unknown): string => (v ? 'Có' : 'Không');
 

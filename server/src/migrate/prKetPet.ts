@@ -9,6 +9,7 @@
  * `kiemTruocKetPet` = số liệu Task 0, CHỈ ĐỌC (`npm run kiem-truoc-ket-pet`).
  */
 import { tx } from '../db.ts';
+import { nowIso } from '../util.ts';
 import { CHUONG_TRINH_LIEN_TUC_CO_SAN, MON_GOP } from '../../../shared/domain/index.ts';
 
 const GOP = Object.keys(MON_GOP);                                   // listening_speaking, reading_writing
@@ -80,11 +81,14 @@ export function migratePrKetPet(conn: any, applied: string[]) {
       }
       for (const t of conn.prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill IN (${IN(GOP.length)})`).all(l.id, ...GOP) as any[]) {
         const [dau, sau] = MON_GOP[t.skill];
-        conn.prepare('UPDATE teacher_assignments SET skill = ? WHERE id = ?').run(dau, t.id);
-        if (!conn.prepare(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = ? AND status = 'active'`).get(l.id, t.user_id, sau)) {
+        const coSan = (k: string) => !!conn.prepare(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = ? AND status = 'active'`).get(l.id, t.user_id, k);
+        /* GV đã có sẵn môn tách đầu → kết thúc dòng gộp (không thành hai dòng trùng); chưa có → dòng gộp thành môn đó. */
+        if (!coSan(sau)) {   // chép TRƯỚC khi dòng gộp đổi / kết thúc (bản chép giữ trạng thái đang dạy)
           const cotTa = (conn.prepare('SELECT name FROM pragma_table_info(?)').all('teacher_assignments') as any[]).map((c) => c.name as string).filter((c) => c !== 'id' && c !== 'skill');
           conn.prepare(`INSERT INTO teacher_assignments (skill, ${cotTa.join(', ')}) SELECT ?, ${cotTa.join(', ')} FROM teacher_assignments WHERE id = ?`).run(sau, t.id);
         }
+        if (coSan(dau)) conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = COALESCE(effective_to, ?) WHERE id = ?`).run(nowIso().slice(0, 10), t.id);
+        else conn.prepare('UPDATE teacher_assignments SET skill = ? WHERE id = ?').run(dau, t.id);
         doi++;
       }
       if (doi) applied.push(`P13 KET-PET: lớp ${l.code} — môn và phân công GV L+S, R+W → L · R · W · S.`);

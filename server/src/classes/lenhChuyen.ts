@@ -1,7 +1,7 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
+  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
   type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso } from '../util.ts';
@@ -133,8 +133,8 @@ export function raLenh(p: Principal, v: {
           `SELECT student_id, huong, muc_tieu, thang_thi FROM lo_trinh_tiep_theo WHERE class_id = ? AND student_id IN (${ph})`,
         ).all(v.lopNguonId, ...lo) as any[]) ltt.set(r.student_id, { huong: r.huong, mucTieu: r.muc_tieu ?? null, thangThi: r.thang_thi ?? null });
         if (canKhoa) for (const r of conn.prepare(
-          `SELECT student_id, target_score, khong_cam_ket FROM learning_cycles WHERE status = 'active' AND route IS NULL AND student_id IN (${ph})`,
-        ).all(...lo) as any[]) khoa.set(r.student_id, { target: r.target_score ?? null, kck: !!r.khong_cam_ket });
+          `SELECT student_id, target_score, khong_cam_ket, programme_code FROM learning_cycles WHERE status = 'active' AND route IS NULL AND student_id IN (${ph})`,
+        ).all(...lo) as any[]) if (!kyThiCuaChuongTrinh(r.programme_code)) khoa.set(r.student_id, { target: r.target_score ?? null, kck: !!r.khong_cam_ket });   // P13: Target Cambridge không thành Target FT
       });
     }
 

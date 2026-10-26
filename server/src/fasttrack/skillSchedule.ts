@@ -160,12 +160,15 @@ export function scoringModeOf(
  * KHÔNG bịa trạng thái thi và KHÔNG bịa nguyên nhân vắng: mọi dòng mới đều là 'scheduled'.
  */
 /** K5-38, PF6: bộ môn xếp lịch của MỘT lượt — FT 4 kỹ năng đánh giá; lớp thường theo `programme_skills` (Pre FOU một ô). */
-export function boMonCuaLuot(conn: any, attemptId: number): readonly string[] {
+export function boMonCuaLuot(conn: any, attemptId: number, dongLich?: readonly { skill: string }[]): readonly string[] {
   const r = conn.prepare(`SELECT c.programme_code AS ct, a.kind FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
   if (r?.kind === 'mt0') return ASSESSED_SKILLS;   // PR-MT0: MT0 luôn bốn kỹ năng IELTS
   const prog = programmeByCode(r?.ct);
   const bo = boMonLich(r?.ct ?? null, prog?.skills);
-  return prog ? monGopCu([attemptId], { ...prog, skills: bo }).get(attemptId) ?? bo : bo;
+  if (!prog?.lapMoiTuan) return bo;
+  /* P13: lượt gộp cũ — đọc từ dòng lịch nơi gọi đã nạp (`ensureSkillRows`) thay vì hỏi thêm một câu. */
+  if (dongLich) { const gop = dongLich.filter((x) => x.skill in MON_GOP).map((x) => x.skill).sort(); return gop.length && !bo.some((k) => k in MON_GOP) ? gop : bo; }
+  return monGopCu([attemptId], { ...prog, skills: bo }).get(attemptId) ?? bo;
 }
 
 /**
@@ -192,7 +195,7 @@ export const monCuaLuotThuong = (prog: { skills: readonly string[]; lapMoiTuan?:
 export function ensureSkillRows(attemptId: number): SkillRow[] {
   const conn = db();
   const existing = conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[];
-  const bo = boMonCuaLuot(conn, attemptId);
+  const bo = boMonCuaLuot(conn, attemptId, existing);
   if (bo.every((k) => existing.some((r) => r.skill === k))) return sortRows(existing, bo);
 
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
