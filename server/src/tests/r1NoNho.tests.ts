@@ -29,12 +29,11 @@ export async function runR1NoNhoTests(t: YThucTestKit) {
 
   try {
     await checkAsync('R1-NO-NHO · GOPY-KHOA: PUT góp ý tuần — QL, GVCN, GV dạy kỹ năng, Quản trị → 403 "chỉ đọc"; GET 200 dữ liệu cũ y nguyên; bảng không đổi', async () => {
-      /* Giao dịch cuộn lại: không đụng góp ý sẵn có của em (UNIQUE em × lớp × tuần × kỹ năng). */
-      conn.exec('BEGIN IMMEDIATE');
+      /* Tuần xa trong quá khứ: không trùng góp ý sẵn có (UNIQUE em × lớp × tuần × kỹ năng); không bọc giao dịch — lỗi 403 làm máy chủ cuộn lại giao dịch ngoài. */
+      const tuanCu = week.mondayOf(t.addDays(TODAY, -7 * 40)) as string;
+      const id = Number(conn.prepare(`INSERT INTO gop_y_tuan (student_id, class_id, period_id, skill, noi_dung, ghi_boi, ghi_luc) VALUES (?,?,?, 'listening', 'Góp ý cũ R1', ?, ?)`)
+        .run(em, lop, week.ensurePeriod(tuanCu).id, P.coreTeacher.userId, '2026-10-01T00:00:00Z').lastInsertRowid);
       try {
-        conn.prepare(`INSERT INTO gop_y_tuan (student_id, class_id, period_id, skill, noi_dung, ghi_boi, ghi_luc) VALUES (?,?,?, 'listening', 'Góp ý cũ R1', ?, ?)
-          ON CONFLICT(student_id, class_id, period_id, skill) DO UPDATE SET noi_dung = excluded.noi_dung, ghi_boi = excluded.ghi_boi`)
-          .run(em, lop, week.ensurePeriod(TODAY).id, P.coreTeacher.userId, '2026-10-01T00:00:00Z');
         const dem = () => one('SELECT COUNT(*) n FROM gop_y_tuan').n as number;
         const truoc = dem();
         for (const [ten, p, skill] of [['QL', P.mbManager, 'listening'], ['GVCN', P.coreTeacher, 'listening'], ['GV W1', P.w1Teacher, 'writing'], ['Quản trị', P.admin, 'reading']] as const) {
@@ -42,10 +41,10 @@ export async function runR1NoNhoTests(t: YThucTestKit) {
           assert(r.status === 403 && JSON.stringify(r.json).includes('Góp ý tuần đã chuyển sang chỉ đọc.'), `${ten}: ${r.status} ${JSON.stringify(r.json)}`);
         }
         assert(dem() === truoc, `số dòng gop_y_tuan đổi: ${truoc} → ${dem()}`);
-        const g = await goi(P.mbManager.userId, `/classes/${lop}/gop-y?tuan=${TODAY}`);
+        const g = await goi(P.mbManager.userId, `/classes/${lop}/gop-y?tuan=${tuanCu}`);
         const o = (g.json?.o ?? []).find((x: any) => x.studentId === em && x.skill === 'listening');
         assert(g.status === 200 && o?.noiDung === 'Góp ý cũ R1' && o.ghiBoi === P.coreTeacher.fullName, `GET: ${g.status} ${JSON.stringify(o)}`);
-      } finally { conn.exec('ROLLBACK'); xoaNho(); }
+      } finally { conn.prepare('DELETE FROM gop_y_tuan WHERE id = ?').run(id); xoaNho(); }
     });
   } finally { may.close(); }
 }
