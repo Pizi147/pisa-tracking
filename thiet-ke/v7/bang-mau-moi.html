@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="bang-mau-moi.css">
 <style>
   /* Khung trang so sánh (không phải đề xuất) — xám TRUNG TÍNH, không thuộc bảng nào, để mắt không quen sẵn với TRƯỚC hay SAU. */
-  :root { --k-nen: #1b1b1e; --k-mat: #242428; --k-vien: #3a3a40; --k-chu: #e4e4e8; --k-phu: #aaaab2; --k-nhan: #a4b6d6; color-scheme: dark; }
+  :root { --k-nen: #0e0e10; --k-mat: #1c1c20; --k-vien: #3a3a40; --k-chu: #e4e4e8; --k-phu: #aaaab2; --k-nhan: #a4b6d6; color-scheme: dark; }
   :root[data-theme="light"] { --k-nen: #e9e9ec; --k-mat: #f7f7f8; --k-vien: #cfcfd5; --k-chu: #1f1f24; --k-phu: #55555e; --k-nhan: #273c8f; color-scheme: light; }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
@@ -49,6 +49,15 @@
   /* Chế độ LẬT: một khung toàn khổ, bấm A / nút nổi để đổi TRƯỚC ↔ SAU tại chỗ — so lệch nhỏ dễ hơn hai cột thu nhỏ. */
   body[data-xem="lat"] .cap { grid-template-columns: 1fr; }
   body[data-xem="lat"] .cap > div + div { display: none; }
+  details.mo-rong > summary { cursor: pointer; list-style: none; } details.mo-rong > summary::-webkit-details-marker { display: none; }
+  details.mo-rong > summary h2 { display: inline-block; } details.mo-rong > summary h2::before { content: '▸ '; color: var(--k-phu); }
+  details.mo-rong[open] > summary h2::before { content: '▾ '; }
+  .phu-trang { color: var(--k-phu); font-size: 13px; margin: 24px 0 0; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
+  .thu-dam { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; color: var(--k-chu); font-size: 14px; cursor: pointer; }
+  .thu-dam input { width: 18px; height: 18px; accent-color: var(--k-nhan); }
+  /* Xem thử (KHÔNG thuộc D4): bớt một bậc đậm ở cột SAU để chủ SP thấy phần "đậm" góp bao nhiêu vào độ chói. */
+  body.bot-dam .app.sau :is(.ten, .oso, .kv, .kb, .kd, .the-dau, .nhom, .hang-lon td, .chiso .lon, .tieu h3) { font-weight: 600; }
+  body.bot-dam .app.sau :is(.btn, .qh, .sh, .sos, .nhan, .lich, .tab .mo, .nav .mo) { font-weight: 500; }
   .lat-noi { position: fixed; z-index: 5; right: 16px; bottom: 16px; display: none; font: inherit; font-size: 14px; font-weight: 700; min-height: 44px; padding: 0 16px;
     border-radius: 22px; border: 1px solid var(--k-vien); background: var(--k-mat); color: var(--k-chu); box-shadow: 0 6px 20px rgb(0 0 0 / .35); cursor: pointer; }
   body[data-xem="lat"] .lat-noi { display: inline-flex; align-items: center; gap: 8px; }
@@ -141,7 +150,7 @@
     <p class="phu">Cách xem nhanh: để "Lật toàn khổ", bấm <kbd>A</kbd> (hoặc nút nổi góc dưới) để đổi TRƯỚC ↔ SAU ngay tại chỗ; đổi Tối / Sáng ở góc trên.</p>
   </div>
 
-  <h2 id="chan-doan">Chẩn đoán — vì sao đau mắt (đo trên bản demo 1440, góc QL + GV)</h2>
+  <details class="mo-rong"><summary><h2 id="chan-doan">Chẩn đoán — vì sao đau mắt (bấm để mở)</h2></summary>
   <div class="giai">
     <ul>
       <li><b>Nền gần đen, chữ gần trắng:</b> nền <span class="sw">#050a16</span>, chữ chính 16,8 : 1. Mức chói này gây loá viền chữ (halation) trên nền tối khi đọc lâu; chữ phụ cũng 11 : 1 nên không còn tầng chính / phụ.</li>
@@ -155,11 +164,15 @@
     <p class="phu">Cách đo: Playwright đếm phần tử có chữ trong &lt;main&gt; ở 4 trang × 2 vai; tương phản và độ bão hoà: <code>thiet-ke/v7/kiem-tuong-phan-mau-moi.py</code> (SAU: mọi cặp chữ ≥ 4,5 : 1, viền ô nhập / SOS ≥ 3 : 1, thẻ tách nền ≥ 1,15 tối · 1,09 sáng như <code>prOv15a</code>).</p>
   </div>
 
-  <h2 id="token">Token đổi — chỉ giá trị, giữ tên (bước 2 chép vào <code>web/src/index.css</code>)</h2>
+  </details>
+  <details class="mo-rong"><summary><h2 id="token">Token đổi — chỉ giá trị, giữ tên (bấm để mở)</h2></summary>
   <div class="giai bang-cuon">
     <table class="tk" id="bang-token"><thead><tr><th>Token</th><th>Vai trò</th><th>TRƯỚC</th><th>SAU</th></tr></thead><tbody></tbody></table>
-    <p class="phu">Bảng đổi theo nút Tối / Sáng. Đầy đủ mọi token: <code>thiet-ke/v7/bang-mau-moi.css</code>.</p>
+    <p class="phu">Bảng đổi theo nút Tối / Sáng. Bước 2 chép vào <code>web/src/index.css</code>; đầy đủ mọi token: <code>thiet-ke/v7/bang-mau-moi.css</code>.</p>
   </div>
+  </details>
+  <p class="phu-trang">Ở 375 các khung dưới chỉ để xem màu — bố cục điện thoại thật là thẻ, không phải bảng thu nhỏ.
+    <label class="thu-dam"><input type="checkbox" id="bot-dam"> Xem thử SAU + bớt chữ đậm <span class="tag">kiến nghị riêng, ngoài D4</span></label></p>
 
   <section><h2 id="tong-quan">① Tổng quan — góc GV</h2><div class="cap" data-mau="t-tong-quan"></div></section>
   <section><h2 id="hv-lop">② Học viên &amp; Lớp — góc QL, tab Tất cả</h2><div class="cap" data-mau="t-hv-lop"></div></section>
@@ -171,7 +184,8 @@
     <ul>
       <li><span class="tag">[XM]</span> Kế hoạch D4 ghi "trạng thái không nền đặc", nhưng luật V5 (P6, chủ SP 22/10) giữ <b>SOS 3 nền đỏ đặc chữ trắng</b> để 3 mức khác hẳn. Đề xuất: <b>giữ đặc, đổi sang đỏ trầm</b> (bão hoà 0,16 → 0,11) + viền đôi sáng hơn. Nếu chủ SP muốn bỏ hẳn nền đặc, SOS 3 sẽ còn phân biệt bằng viền đôi 2,5 px.</li>
       <li>Giữ xanh <span class="sw">#273C8F</span> thanh điều hướng sáng và hồng logo (V2); hồng tối chỉ bớt bão hoà nhẹ.</li>
-      <li><span class="tag">kiến nghị riêng</span> Bớt chữ đậm (≈ 55 % chữ ≥ 600): mã lớp, tên việc, ô số đang 700 cùng lúc. Đây là đổi độ đậm, không phải token màu — nếu chủ SP đồng ý thì làm một PR riêng sau D4.</li>
+      <li><span class="tag">[XM]</span> Nút chính tô nền <code>--accent</code> vẫn là mảng sáng nhất ở tối; token này cũng là màu link nên không hạ thêm được mà giữ ≥ 4,5 : 1. Bước 2 có thể cho nút chính nền <code>--accent-soft</code> + viền <code>--accent-line</code> — đổi component, cần chủ SP đồng ý.</li>
+      <li><span class="tag">kiến nghị riêng</span> Bớt chữ đậm (≈ 55 % chữ ≥ 600): mã lớp, tên việc, ô số đang 700 cùng lúc — xem thử bằng ô "Xem thử SAU + bớt chữ đậm". Đây là đổi độ đậm, không phải token màu — nếu chủ SP đồng ý thì làm một PR riêng sau D4.</li>
       <li>Không đổi: phông Be Vietnam Pro, cỡ chữ, bố cục, ký hiệu ⚠ ✓ ✗, luật nghiệp vụ.</li>
     </ul>
   </div>
@@ -287,14 +301,14 @@
     const mau = document.getElementById(cap.dataset.mau);
     for (const [c, nhan, phu] of [['truoc', 'TRƯỚC', 'bản chính hiện tại'], ['sau', 'SAU', 'đề xuất']]) {
       const cot = document.createElement('div');
-      cot.innerHTML = `<p class="cot-nhan" aria-live="polite"><b>${nhan}</b> ${phu}</p>`;
+      cot.innerHTML = `<p class="cot-nhan"><b>${nhan}</b> ${phu}</p>`;
       const app = document.createElement('div'); app.className = 'app ' + c; app.append(mau.content.cloneNode(true));
       cot.append(app); cap.append(cot);
     }
   }
   // Lật: cột đầu của mỗi cặp đổi lớp truoc ↔ sau tại chỗ.
-  let dangXem = 'sau';
-  const latNoi = document.createElement('button'); latNoi.type = 'button'; latNoi.className = 'lat-noi'; document.body.append(latNoi);
+  let dangXem = 'truoc';   // mở ở TRƯỚC: lần bấm A đầu tiên cho thấy cái được
+  const latNoi = document.createElement('button'); latNoi.type = 'button'; latNoi.className = 'lat-noi'; latNoi.setAttribute('aria-live', 'polite'); document.body.append(latNoi);
   function lat(c) {
     dangXem = c;
     for (const cap of document.querySelectorAll('[data-mau]')) {
@@ -315,6 +329,7 @@
     if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey && !e.altKey && document.body.dataset.xem === 'lat') lat(dangXem === 'sau' ? 'truoc' : 'sau');
   });
   xem(new URLSearchParams(location.search).get('xem') || 'lat');
+  document.getElementById('bot-dam').addEventListener('change', (e) => document.body.classList.toggle('bot-dam', e.target.checked));
   const nut = document.querySelectorAll('[data-che-do]');
   function dat(cd) {
     document.documentElement.dataset.theme = cd;

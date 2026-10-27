@@ -34,7 +34,7 @@
   /* Chữ 3 bậc rõ: chính không trắng tinh (12,6 : 1 thay 16,8 : 1), phụ lùi hẳn để có tầng. */
   --text: #d5dce8;  --chu-2: #bec6d5;  --text-dim: #a6b0c3;  --text-faint: #8c98ad;
   --hong: #e687b2;  --hong-chu: #eda5c5;  --hong-nen: #382333;
-  --dieu-huong-nen: #16223b;  --dieu-huong-chu: #c2cce0;  --dieu-huong-hover: #1e2c48;  --dieu-huong-vien: #36496c;
+  --dieu-huong-nen: #14234a;  --dieu-huong-chu: #c2cce0;  --dieu-huong-hover: #1b2d58;  --dieu-huong-vien: #364c7c;
   --lich-nen: #1f3a4f;  --lich-chu: #a3c5dd;  --lich-vien: #375f7b;
   /* Trạng thái: chữ dịu (C ≈ 0,08), nền / viền thấp; vẫn kèm ⚠ ✓ ✗. */
   --ok: #86bea0;  --ok-bg: #1d3329;  --ok-line: #3f6c56;
