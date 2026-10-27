@@ -35,11 +35,20 @@ Máy chủ: gỡ `GET /tong-quan/ql/tre` (web không gọi từ 6b-4; panel dùn
 | Xem hồ sơ từ dòng chỉ đọc | bấm dòng → mở rộng → "Mở trang ↗" (2 bấm) | bấm tên ↗ (1 bấm) |
 | Xem tình trạng / người / hạn dòng chỉ đọc | mở rộng dòng | đọc ngay trên dòng |
 
+## 6c-2 ③ Hộp xác nhận (PTA 28/10: đưa 9 hộp `KhungPanel longTrong` vào 6c-2)
+
+| Hộp | TRƯỚC | SAU |
+|---|---|---|
+| Xoá PA · Kết thúc PA (`MenuXoaPa`) · Xoá Case (`ThaoTacCase`) · Xoá vi phạm (`DeleteViolationConfirm`) · Thu hồi / Rút xử lý (`XemXuLyPanel`) | ngăn 480 đè panel đang mở | `ConfirmDialog` (hộp nhỏ, z trên panel), nêu đúng đối tượng; ô lý do đang gõ → ✕ / Esc / nền / Huỷ hỏi một lần |
+
+Phép kiểm cũ SL-7 (PR-SL I4: Xoá vi phạm phải là `KhungPanel longTrong`) đổi theo luật M6 mới hơn "không panel chồng panel" (V11 / V19).
+Chưa bấm thử trên trình duyệt: vai QL demo không có PA / Case đủ điều kiện Kết thúc / Xoá. Còn 4 chỗ `longTrong` để lại — xem mục cuối.
+
 ## 6c-2 ④ Bỏ (mã chết, không đổi màn)
 Ô số `SoLieu` (0 nơi gọi) · `NutMoDanhSach` · `BangGiaoVienChiNhanh.tsx` · tham số `kqMacDinh` / `trongPanel` của `BangMock` + gỡ 3 phép kiểm cũ chỉ đọc các mã đó.
 
 ## Để sau / [XM] hỏi PTA
 - **Bỏ chưa làm:** `SkillBoard()` và phần bảng `BangSos()` — kéo theo chuỗi hàm phụ + phép kiểm cũ đọc nội dung (panelUx3, prDh, prBang0); hộp "Hướng dẫn nạp lại" chồng Modal (`DemoBar`).
-- **Gộp chạm bố cục — cần chủ SP:** link trùng ở Điều hướng Tổng quan (QL "Case chưa có PA ›", "HV thi tháng này ›"; TVV 3 link Cần chú ý) · bảng "Lớp tôi dạy" V4 cuối Công việc · ⋯ › Hồ sơ lớp ở HV & Lớp · badge "n bài chờ chấm" + Nhập điểm hồ sơ lớp · Lịch Test ô "bài quá hạn" · "Xuất điểm Test" · hồ sơ MT hai nút "Lịch sử" · Quản trị Sửa (vai) + Sửa thông tin.
+- **Gộp chạm bố cục — để lại có lý do:** QL "Case chưa có PA ›" do chủ SP thêm (XM-3, 23/10) — không tự gỡ · QL "HV thi tháng này ›" là đường sang trang lọc lớn (panel số không thay được) · TVV khối "Thi thật" (3 link trùng 3 ô số): gỡ thì cột trái trống → cần thiết kế lại bố cục TVV · bảng "Lớp tôi dạy" cuối Công việc: gỡ thì `LopToiDay()` thành mã chết mà 4 phép kiểm cũ đọc thân hàm (prS6fB, prS3Chu, prDonA, prBang0) · ⋯ › Hồ sơ lớp ở HV & Lớp: thao tác V4 được giữ có chủ đích (V1) · badge "n bài chờ chấm" + Nhập điểm hồ sơ lớp · Lịch Test ô "bài quá hạn" · "Xuất điểm Test" · hồ sơ MT hai nút "Lịch sử" · Quản trị Sửa (vai) + Sửa thông tin — chưa rà.
 - **Gộp mã (không đổi màn) chưa làm:** `?mo-viec=` → `?viec=mgmt:<id>` · ⋯ › Quay lại học → `useQuayLaiHoc` · `NeedsEvaluation` → `NganDanhSach` · `DeleteViolationConfirm` trùng hộp xoá của `ChiTietViPham`.
-- **Ngoài bảng kê:** 9 hộp xác nhận khác vẫn là `KhungPanel longTrong` (MenuXoaPa, ThaoTacCase xoá Case, DeleteViolationConfirm, XemXuLyPanel thu hồi, GvCham, NganLichSuBai, HopThaoTacMt…).
+- **`longTrong` còn lại (4 + 2 form):** `GvCham` (ô chọn người có danh sách thả — vào `Modal` thân `overflow` dễ cắt, cần bấm thử) · `NganLichSuBai`, `HopThaoTacMt` (mở từ hộp xếp lịch nổi, `trongHop`) · Tạo lớp từ Chuyển tiếp, Việc con (form lớn — nên là view kế, cần thiết kế).
