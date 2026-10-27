@@ -230,7 +230,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, vuaDoi = null
               : (
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="text-slate-400">{t('Chưa có')}</span>
-                  {data.viewer.canEdit && data.viecTiep?.chu === 'Mô tả Case' && (
+                  {data.viewer.canEdit && data.trangThaiV4?.k === 'cho-nhan-xet' && (
                     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-nhan-xet' })}>{t('Mô tả Case')}</button>
                   )}
                 </span>
