@@ -581,6 +581,16 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
  * (không trông như một em khác), chip "S Ex" ở CỘT MT · nhận xét · ô điểm thẳng cột S · "không vào Overall" · Kết quả = "GV · tuần". Lưới không có cột MT
  * hoặc em chỉ có S Ex (`rieng`) → tên + chip ở ô tên như cũ. Bấm ô (QL / Admin đổi ngày · GV S chấm) mở hộp S Ex sẵn có (`HopSEx`); máy chủ kiểm quyền.
  */
+/** Chip "S Ex" (V17: dòng phụ S Expert) — Lịch Test tuần và hồ sơ lượt (HSL-FT) cùng một dáng. */
+export function NhanSEx({ title }: { title?: string }) {
+  return (
+    <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border border-[color:var(--hong)] bg-[color:var(--hong-nen)] px-1.5 text-xs font-bold text-[color:var(--hong-chu)]"
+      title={title}>
+      S Ex
+    </span>
+  );
+}
+
 function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   d: SExTuan[number]; ten: string; studentId: number; cotDs: DinhNghiaCot[]; cc: Record<string, DinhNghiaCot>;
   /** Em không có MT tuần này — dòng S Ex đứng riêng, ghi tên em. */
@@ -591,12 +601,7 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   const iS = cotDs.findIndex((c) => c.key === 'speaking');
   const iMt = cotDs.findIndex((c) => c.key === 'mt');
   const sua = d.sua || d.cham;
-  const chip = (
-    <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border border-[color:var(--hong)] bg-[color:var(--hong-nen)] px-1.5 text-xs font-bold text-[color:var(--hong-chu)]"
-      title={d.ngay ? t('S Expert ngày {ngay}', { ngay: ngay(d.ngay, homNay) }) : undefined}>
-      S Ex
-    </span>
-  );
+  const chip = <NhanSEx title={d.ngay ? t('S Expert ngày {ngay}', { ngay: ngay(d.ngay, homNay) }) : undefined} />;
   const chipCotMt = iMt === 1 && !rieng;
   /* Cột giữa (MT/tên … S) và cột sau S (… Kết quả): đếm theo định nghĩa cột đang hiện. */
   const dau = chipCotMt ? 2 : 1, iKq = cotDs.length - 1;   // Kết quả luôn là cột cuối

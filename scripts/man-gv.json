@@ -63,6 +63,7 @@
  "web/src/modules/duyet/DeXuatSuaPanel.tsx",
  "web/src/modules/duyet/TheYeuCau.tsx",
  "web/src/modules/duyet/YeuCauCuaToi.tsx",
+ "web/src/modules/fasttrack/CaseLuotKn.tsx",
  "web/src/modules/fasttrack/DongThoiGianLuot.tsx",
  "web/src/modules/fasttrack/HopNhapDiem.tsx",
  "web/src/modules/fasttrack/HopThaoTacMt.tsx",

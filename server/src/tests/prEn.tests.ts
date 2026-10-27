@@ -452,6 +452,7 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   /* Đợt b: giá trị so khớp với chữ máy chủ gửi (không hiện ra; chỗ hiện bọc dich()). */
   { file: 'web/src/modules/fasttrack/DongThoiGianLuot.tsx', text: /^Trống$/ },
   { file: 'web/src/modules/fasttrack/MockDetailPage.tsx', text: /^(đã huỷ|đã có điểm|đã làm bài)$/ },
+  { file: 'web/src/modules/fasttrack/MockDetailPage.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA)$/ },   // HSL-FT: so với viecTiep.chu máy chủ (như DongCase), chỗ hiện bọc dich()
   { file: 'shared/domain/paDongBo.ts', text: /^(Người dạy|Người thực hiện)$/ },
   { file: 'web/src/modules/congViec/DanhSachViec.tsx', text: /^Lớp \{/ },
   { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{…\}: \{x\}$/ },   // ghi chú gửi máy chủ, lưu vào nhật ký (giữ Việt) — OV-12f
