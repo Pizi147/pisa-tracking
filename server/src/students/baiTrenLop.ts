@@ -26,7 +26,7 @@ function kyNangGhi(p: Principal, classId: number, today: string) {
   return { c, cot: cotCua(p, c, today) };
 }
 
-/** GET /students/:id/bai-tren-lop — mọi bài của em (mới trước) + lớp của em và kỹ năng người xem ghi được (nút "+ Ghi bài trên lớp"). */
+/** GET /students/:id/bai-tren-lop — mọi bài của em (mới trước) + góp ý tuần cũ `gopY` (chỉ đọc) + lớp của em và kỹ năng người xem ghi được. */
 export function dsBaiTrenLop(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   const today = demoToday();
@@ -49,7 +49,16 @@ export function dsBaiTrenLop(p: Principal, studentId: number) {
     ghiBoi: (r.ghi_ten ?? null) as string | null, ghiLuc: r.ghi_luc as string, suaBoi: (r.sua_ten ?? null) as string | null, suaLuc: (r.sua_luc ?? null) as string | null,
     sua: ghi.get(r.class_id)?.has(r.skill) ?? false,
   }));
-  return { bai, lop: lop.map(({ nhan: _n, ...l }) => l) };
+  /* SV-BAI-LOP-2: góp ý tuần cũ (chỉ đọc từ 27/10) của em ở mọi lớp — cột trái Tiến độ trên lớp hiện cùng, có mã lớp lúc ghi. */
+  const gopY = (conn.prepare(
+    `SELECT g.class_id, c.code AS lop, g.skill, g.noi_dung, rp.week_start, u.full_name AS ghi_ten, g.ghi_luc
+       FROM gop_y_tuan g JOIN classes c ON c.id = g.class_id JOIN report_periods rp ON rp.id = g.period_id LEFT JOIN users u ON u.id = g.ghi_boi
+      WHERE g.student_id = ? ORDER BY rp.week_start DESC, g.id DESC`,
+  ).all(studentId) as any[]).map((r) => ({
+    classId: r.class_id as number, lop: r.lop as string, skill: r.skill as string, noiDung: r.noi_dung as string,
+    tuan: r.week_start as string, tuanMa: tuanLich(r.week_start, today), ghiBoi: (r.ghi_ten ?? null) as string | null, ghiLuc: r.ghi_luc as string,
+  }));
+  return { bai, gopY, lop: lop.map(({ nhan: _n, ...l }) => l) };
 }
 
 /** Đọc + kiểm thân yêu cầu (dùng cho thêm và sửa). Kết quả tuỳ chọn: điểm / thang của bài (không quy đổi band) HOẶC band; nhận xét bắt buộc. */
