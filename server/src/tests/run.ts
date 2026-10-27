@@ -9637,6 +9637,9 @@ await runTenChiSoTests({ check, assert });
 // ==================================================================== R1-NO-CU (đổi người phụ trách Case — D17)
 const { runR1NoCuTests } = await import('./r1NoCu.tests.ts');
 await runR1NoCuTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== UI-CHART-D (dữ liệu chỉ đọc cho chart D: điểm W1 / W2 + nhận xét MT mọi lượt, thi thật)
+const { runUiChartDTests } = await import('./uiChartD.tests.ts');
+await runUiChartDTests({ check, assert, conn, P } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

@@ -39,6 +39,7 @@ import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
 import { coKetQuaThi, trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
 import { sauThiCuaEm } from '../loTrinh/thiThat.ts';
+import { thiThatCuaCycle } from '../loTrinh/banChup.ts';
 import { dsTvv } from './students.ts';
 import { laGvLopDangHoc } from '../duyet/deXuatSua.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
@@ -648,8 +649,13 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const r = t.ft!;
     /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` (band ≤ Target − 2.0) để nhìn. */
     const mt0 = a.kind === 'mt0';
+    /* UI-CHART-D: band từng ô nhập (W1 / W2 tách) + nhận xét bài MT của kỹ năng — chart D / nút Bảng đọc đủ MỌI lượt (`points` bảng kỹ năng chỉ 4 lượt cuối).
+       Đọc từ điểm đã nạp sẵn (`diemCuaLuot`), không thêm câu SQL. Speaking chấm chéo chưa có nhận xét người chấm → nhận xét GV phụ trách (OV-13k). */
+    const diem = scoresOf(a.id);
     return {
       ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null, khongDuBoMon: r.khongDuBoMon,
+      diemKn: Object.fromEntries(diem.map((x) => [x.skill, x.band])),
+      nhanXet: Object.fromEntries(diem.flatMap((x) => { const nx = x.comment ?? (x.skill === 'speaking' ? x.nhan_xet_phu_trach : null); return nx ? [[x.skill, nx]] : []; })),
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, chot: r.chot, provisional: r.provisional,
       sosLevel: r.sosLevel, kckDuoi: r.kckDuoi, scopeNote: r.scopeNote,
@@ -972,6 +978,16 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
             outcome: selected.outcome,
             label: CYCLE_OUTCOME_LABEL[selected.outcome as keyof typeof CYCLE_OUTCOME_LABEL],
             score: selected.outcome_score, attemptId: selected.outcome_attempt_id, note: selected.outcome_note,
+          }
+          : null,
+        /* UI-CHART-D: kết quả thi thật của lộ trình FT (cột cuối chart D, hàng Thi thật bảng Mock Test) — OVR cùng `thiThatCuaCycle` với Tổng kết;
+           Target lúc nhập (P12). Chỉ có ngày (đã thi, chờ kết quả) → điểm null. Chưa thi / dữ liệu cũ chỉ có kết luận tay → null. */
+        thiThat: selected.route && (selected.thi_that_ngay || selected.thi_that_khong_thi || [selected.thi_that_l, selected.thi_that_r, selected.thi_that_w, selected.thi_that_s].some((x) => x != null))
+          ? {
+            ngay: selected.thi_that_ngay ?? null, l: selected.thi_that_l ?? null, r: selected.thi_that_r ?? null, w: selected.thi_that_w ?? null, s: selected.thi_that_s ?? null,
+            khongThi: !!selected.thi_that_khong_thi, target: selected.thi_that_target ?? target,
+            ovr: thiThatCuaCycle({ laFt: true, target, khongCamKet: !!selected.khong_cam_ket, l: selected.thi_that_l ?? null, r: selected.thi_that_r ?? null, w: selected.thi_that_w ?? null,
+              s: selected.thi_that_s ?? null, khongThi: !!selected.thi_that_khong_thi, outcome: selected.outcome ?? null, outcomeScore: selected.outcome_score ?? null }).ovr,
           }
           : null,
         targetRevisions: targetRevisions(selected.id).map((r) => ({
