@@ -3,7 +3,7 @@ import { CASE_CATEGORY_SKILL, MON_GOP, PERMISSIONS, caseTopicLabel, categoryOf }
 import { can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
-import { loi, notFound, nowIso } from '../util.ts';
+import { loi, nowIso } from '../util.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { kiemXemCase } from './cases.ts';
 
@@ -76,7 +76,7 @@ export function ganChuCaseThieu(o: {
     const chu = suggestCaseOwner({ classId: r.class_id ?? null, category: r.category ?? null });
     if (chu === null) continue;
     /* Chỉ ghi lịch sử khi thật sự gán (người khác vừa gán cùng lúc → 0 dòng đổi, không lịch sử giả). */
-    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ? AND owner_user_id IS NULL').run(chu, r.id).changes !== 1) continue;
+    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id IS NULL').run(chu, o.luc, r.id).changes !== 1) continue;
     conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', NULL, ?, ?, ?)`)
       .run(r.id, String(chu), o.actorId, o.luc);
     if (o.nguon) writeAudit({ actorUserId: o.actorId, action: 'case.owner_assign', entityType: 'case', entityId: r.id, after: { ownerUserId: chu, _nguon: o.nguon } });
@@ -190,9 +190,10 @@ export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unkno
   if (body.ownerCu === undefined || (body.ownerCu !== null && !Number.isInteger(body.ownerCu))) throw loi(400, 'Thiếu người phụ trách hiện tại — tải lại.');
   const ownerCu = body.ownerCu as number | null;
   return tx(() => {
-    const c = caseDoiChu(caseId);
-    if (!c) throw notFound();
-    kiemXemCase(p, caseId);   // D7: đổi người cũng phải xem được Case (cùng cổng `GET /cases/:id`)
+    /* D7: đổi người cũng phải xem được Case (cùng cổng `GET /cases/:id`). D11: dùng lại dòng Case `kiemXemCase` đã đọc (lớp hiện tại của em trước). */
+    const { c: lc } = kiemXemCase(p, caseId);
+    const c: CaseDoiChu = { ...lc, student_id: lc.eff_student_id, class_id: lc.current_class_id ?? null,
+      full_name: (db().prepare('SELECT full_name FROM students WHERE id = ?').get(lc.eff_student_id) as any)?.full_name ?? null };
     if (!duocDoi(p, c)) throw loi(403, 'Chỉ Quản lý hoặc GVCN của lớp em đổi được người phụ trách Case.');
     if (c.status === 'done') throw loi(400, 'Case đã đóng.');
     if (c.tam) throw loi(400, 'Case tạm chưa là việc — chưa đổi người được.');
