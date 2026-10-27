@@ -68,7 +68,7 @@ export function BaoCao(pv: PhamViPhanTich) {
           giaTri={ft ? <PhanTram x={d.datMt} nguon={nguon('dat-mt')} tieuDe={t('Đạt MT')} /> : chiFt} mau={ft ? tuMau(d.datMt, t('HV')) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Đạt Target thi thật')} ky={ky} giaTri={ft ? ptChu(d.thiThat) : chiFt}
           mau={ft ? (d.thiThat?.mau ? tuMau(d.thiThat, t('HV có KQ')) : t('chưa HV nào có KQ')) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('Thi đợt này')} ky={ky} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi đợt này')} nguon={nguon('thi-dot-nay')} />} mau={t('HV có ngày thi trong kỳ')} />
+        <ChiSo ten={t('Thi trong kỳ')} ky={ky} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi trong kỳ')} nguon={nguon('thi-dot-nay')} />} mau={t('HV có ngày thi trong kỳ')} />
         <ChiSo ten={t('Case có PA')} ky={t('hiện tại')} giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={nguonCase} tieuDe={t('Case đang mở')} />}
           mau={d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null} />
         <ChiSo ten={t('PA cải thiện')} ky={ky} luat={t('PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).')}

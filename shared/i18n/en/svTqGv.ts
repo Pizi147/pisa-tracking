@@ -1,6 +1,5 @@
 /** SV-TQ-GV (Tổng quan GV hai khối — Kỹ năng tôi dạy · Lớp tôi chủ nhiệm). */
 export const EN_SV_TQ_GV = {
-  'Lớp FT: Đạt kỳ vọng Test · lớp thường: Đạt Test': 'FT classes: Met Test expectation · regular classes: Passed Test',
   'Lớp thường: HV chưa đạt': 'Regular classes: students not passed',
   'Kỹ năng tôi dạy': 'Skills I teach',
   'Lớp của tôi': 'My classes',

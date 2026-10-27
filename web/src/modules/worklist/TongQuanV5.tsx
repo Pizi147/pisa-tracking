@@ -78,7 +78,7 @@ function BoCuc({ trai, phai }: { trai: ReactNode; phai: ReactNode }) {
 }
 
 /** "Điều hướng" (chủ SP 23/10, trước là "Đi tiếp"): mỗi dòng một link đổi trang (›) — số đậm ở đầu, dòng phụ nói đích. */
-export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: string; t1: ReactNode; t2: ReactNode }[]; tieuDe?: string }) {
+export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: string; t1: ReactNode; t2?: ReactNode }[]; tieuDe?: string }) {
   return (
     <Card title={tieuDe} bodyClass="p-0">
       <ul className="m-0 list-none p-0">
@@ -87,7 +87,7 @@ export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: s
             <Link to={d.to} className="bam grid min-h-[44px] grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-slate-100 no-underline">
               <span className="text-sm font-medium">{d.t1}</span>
               <span aria-hidden className="row-span-2 self-center font-bold text-[color:var(--accent)]">›</span>
-              <span className="text-xs text-slate-500">{d.t2}</span>
+              {d.t2 && <span className="text-xs text-slate-500">{d.t2}</span>}
             </Link>
           </li>
         ))}
@@ -299,17 +299,17 @@ const COT_CN_CX: readonly CotBang[] = [
   { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten', rong: 200 }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 }, { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 },
   { key: 'sos', nhan: t('SOS 2–3'), kieu: 'so', rong: 100 }, { key: 'case', nhan: t('Case chưa PA'), kieu: 'so', rong: 120 },
 ];
-/** UI-PHAN-TICH · Báo cáo HV (QT): kết quả trước, hỗ trợ sau — "Thi đợt này" theo kỳ đang xem; cột tên cố định để các cột số trải đều cả bề rộng. */
+/** UI-PHAN-TICH · Báo cáo HV (QT): kết quả trước, hỗ trợ sau — "Thi trong kỳ" theo kỳ đang xem; cột tên cố định để các cột số trải đều cả bề rộng. */
 const COT_CN_BC: readonly CotBang[] = [
   { key: 'cn', nhan: t('Chi nhánh'), kieu: 'ten', rong: 200 }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 150 },
-  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 }, { key: 'thi', nhan: t('Thi đợt này'), kieu: 'so', rong: 150 },
+  { key: 'tt', nhan: t('Đạt Target thi thật'), kieu: 'phan-tram', rong: 170 }, { key: 'thi', nhan: t('Thi trong kỳ'), kieu: 'so', rong: 150 },
   { key: 'case', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 150 }, { key: 'sos', nhan: t('SOS 2–3'), kieu: 'so', rong: 150 },
 ];
 export const ptChu = (x: TyLeV5 | null, gon = false) => (!x ? <span className="text-slate-500">—</span>
   : x.mau ? <span className="font-semibold tabular-nums">{Math.round((100 * x.dat) / x.mau)} %</span>
     : gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span> : <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>);
 
-export function TheoChiNhanh({ d, cx, baoCao, onChiNhanh }: { d: TongQuanV5Data; cx?: boolean; /** Báo cáo HV (kỳ chọn tự do): cột "Thi đợt này" + SOS 2–3. */ baoCao?: boolean; onChiNhanh: (id: number) => void }) {
+export function TheoChiNhanh({ d, cx, baoCao, onChiNhanh }: { d: TongQuanV5Data; cx?: boolean; /** Báo cáo HV (kỳ chọn tự do): cột "Thi trong kỳ" + SOS 2–3. */ baoCao?: boolean; onChiNhanh: (id: number) => void }) {
   type H = DongCn & { tong?: boolean };
   const hang: H[] = [...(d.chiNhanh ?? []), ...(cx ? [] : [{
     id: 0, khoa: 'tong', ten: t('Toàn hệ thống'), datMt: d.datMt, casePa: d.casePa, thiThat: d.thiThat, thiThangNay: d.thiThangNay, sos23: (d.chiNhanh ?? []).reduce((n, h) => n + h.sos23, 0), caseChuaPa: d.casePa.chuaPa, tong: true,
@@ -391,7 +391,7 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
 /* ───────────── GV ───────────── */
 
 type ChiSoGv = { tu: string; den: string; ketQua: OPtGv; tienBo: OPtGv };
-/** GV (chủ SP 23/10; Head tutor tạm dùng chung): Việc của tôi (+ quá hạn) · Case đang xử lý · Đạt MT kỹ năng tôi dạy · Tiến bộ. */
+/** GV (chủ SP 23/10; Head tutor tạm dùng chung): Việc của tôi (+ quá hạn) · Case đang xử lý · Đạt kỳ vọng Test (kỹ năng tôi dạy) · Tiến bộ. */
 /** `lopToiDay(phai)`: khối trái tự đặt cột Điều hướng (SV-TQ-GV — khối chủ nhiệm trải cả bề ngang dưới khi 1100–1439). */
 export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => ReactNode }) {
   const { session } = useSession();
@@ -410,7 +410,7 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => Re
           mau={viec?.viecQuaHan ? <span className="font-semibold text-bad">⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span> : t('không việc nào quá hạn')} />}
         <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} />}
           mau={t('Case tôi phụ trách')} />
-        <ChiSo ten={t('Đạt MT · kỹ năng tôi dạy')} ky={ky} giaTri={o(cs.data?.ketQua, 'ket-qua', t('Kết quả'))} mau={tuMau(tyLeGv(cs.data?.ketQua), t('lượt'))} />
+        <ChiSo ten={t('Đạt kỳ vọng Test')} ky={ky} giaTri={o(cs.data?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test'))} mau={tuMau(tyLeGv(cs.data?.ketQua), t('lượt Test'))} />
         <ChiSo ten={t('Tiến bộ')} ky={ky} giaTri={o(cs.data?.tienBo, 'tien-bo', t('HV tiến bộ'))} mau={tuMau(tyLeGv(cs.data?.tienBo), t('lượt'))} />
       </DaiChiSo>
       {lopToiDay(<DiTiep dong={[
@@ -445,10 +445,10 @@ export function TongQuanTvvV5() {
           mau={t('{a} chờ KQ · {b} chưa chốt bước tiếp', { a: choKq, b: buoc })} />
       </div>
       <BoCuc
-        trai={<DiTiep tieuDe={t('Cần chú ý')} dong={[
-          { to: '/hoc-vien?phamVi=cua-toi&thi=1', t1: <>{t('Thi tháng này')} · <So n={d.thiThangNay} /> HV</>, t2: t('HV của tôi · lọc "Thi tháng này"') },
-          { to: den('da-thi'), t1: <>{t('Chờ KQ thi thật')} · <So n={choKq} /> HV</>, t2: t('HV của tôi · lọc "Đã thi · chờ kết quả"') },
-          { to: den('cho-buoc-tiep'), t1: <>{t('Chưa chốt lộ trình tiếp')} · <So n={buoc} /> HV</>, t2: t('HV của tôi · lọc "Chờ chọn bước tiếp"') },
+        trai={<DiTiep tieuDe={t('Thi thật')} dong={[
+          { to: '/hoc-vien?phamVi=cua-toi&thi=1', t1: <>{t('Thi tháng này')} · <So n={d.thiThangNay} /> HV</> },
+          { to: den('da-thi'), t1: <>{t('Chờ KQ thi thật')} · <So n={choKq} /> HV</> },
+          { to: den('cho-buoc-tiep'), t1: <>{t('Chưa chốt lộ trình tiếp')} · <So n={buoc} /> HV</> },
         ]} />}
         phai={<DiTiep dong={[
           { to: '/cong-viec', t1: <><So n={viec?.viec ?? 0} /> {t('việc của tôi')}</>, t2: t('Công việc') },

@@ -344,7 +344,7 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
       : tapThiThangNay(p, f);
     const ids = [...tap.keys()].sort((a, b) => tap.get(a)!.localeCompare(tap.get(b)!) || a - b);
     const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, t('thi {ngay}', { ngay: `${tap.get(row.id)!.slice(8, 10)}/${tap.get(row.id)!.slice(5, 7)}` })].filter(Boolean).join(' · ') }));
-    return { n: ids.length, tieuDe: f.o === 'thi-dot-nay' ? t('{n} HV — thi đợt này', { n: ids.length }) : t('{n} HV — thi tháng này', { n: ids.length }), rows };
+    return { n: ids.length, tieuDe: f.o === 'thi-dot-nay' ? t('{n} HV — thi trong kỳ', { n: ids.length }) : t('{n} HV — thi tháng này', { n: ids.length }), rows };
   }
   if (f.o === 'pa-co-ket-qua') {
     /* Panel chỉ đọc "PA cải thiện": mẫu = CHÍNH tập `pa-co-ket-qua` của kỳ (cùng số ô), chưa cải thiện lên đầu. */

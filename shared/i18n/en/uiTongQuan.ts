@@ -49,7 +49,6 @@ export const EN_UI_TONG_QUAN = {
   "{a} chờ KQ · {b} chưa chốt bước tiếp": "{a} awaiting result · {b} next step not set",
   "Điều hướng": "Navigate",
   "Đạt MT": "MT met",
-  "Đạt MT · kỹ năng tôi dạy": "MT met · my skills",
   "Đạt MT · {lop}": "MT met · {lop}",
   "Đạt Target thi thật": "Real exam target met",
   "đề xuất": "requests",

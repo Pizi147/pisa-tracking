@@ -2,7 +2,7 @@
 export const EN_UI_HO_SO_GV = {
   '{nhan} · {ai} · {dung}/{tong} HV': '{nhan} · {ai} · {dung}/{tong} students',
   'Thi thật trong kỳ': 'Real exams in period',
-  'Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. Số theo kỳ: Việc đúng hạn, Điểm đúng hạn, Đạt kỳ vọng, Tiến bộ, bảng Học thuật.': 'Pick any two weeks; default is the 4 weeks to this week. Period figures: Tasks on time, Scores on time, Met expectation, Progress, Academic table.',
+  'Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. Số theo kỳ: Việc đúng hạn, Điểm đúng hạn, Đạt kỳ vọng Test, Tiến bộ, bảng Học thuật.': 'Pick any two weeks; default is the 4 weeks to this week. Period figures: Tasks on time, Scores on time, Test expectation met, Progress, Academic table.',
   'Cộng': 'Total',
   '{nhan} · {ai} · {dung}/{tong} lượt Test': '{nhan} · {ai} · {dung}/{tong} test attempts',
   'Bài Test trong kỳ': 'Tests in period',

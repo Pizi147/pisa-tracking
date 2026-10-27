@@ -40,7 +40,7 @@ const COT_DAY: readonly CotBang[] = [
   ...COT_GON.slice(3).map((c) => ({ ...c, rong: 108 })),
   { key: 'casePa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 108, nhom: HT },
   { key: 'pa', nhan: t('PA cải thiện'), kieu: 'phan-tram', rong: 108, nhom: HT },
-  { key: 'tt', nhan: 'Pass Target', kieu: 'phan-tram', rong: 124, nhom: HT, goiY: t('Kết quả thi thật') },
+  { key: 'tt', nhan: t('Kết quả thi thật'), kieu: 'phan-tram', rong: 150, nhom: HT, goiY: '% Pass Target' },
 ];
 /** Cột chỉ Fast Track (lớp thường không có MT / tiến bộ band / PA cải thiện / thi thật) — lớp thường: "Đạt Test" (≥ ngưỡng đạt của lớp; HSGV-1). */
 const CHI_FT = new Set(['tb', 'pa', 'tt']);
@@ -160,7 +160,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
   const q = new URLSearchParams({ cn: String(kq.cn), ct: kq.khung, gv: String(h.id), ...(kq.thang ? { thang: kq.thang } : { tu: kq.tu, den: kq.den }) });
   const { data, loading, error, reload } = useApi<PanelCham>(`/phan-tich/giao-vien/cham-diem?${q}`, [q.toString()]);
   const rows = (data?.rows ?? []).filter((r) => !chiTre || !r.dung);
-  const pt = usePhanTrang(rows.length, `${q}|${chiTre}`, 'ô');
+  const pt = usePhanTrang(rows.length, `${q}|${chiTre}`, 'bài');
   const khoang = `${tuanLich(kq.tu, homNay)} – ${tuanLich(kq.den, homNay)}`;
   return (
     <KhungPanel tieuDe={`${t('Chấm Test đúng hạn')} · ${h.ten}`} rong="rong" onDong={onDong}
@@ -171,7 +171,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
         </span>
       ) : undefined}
       tabs={data ? (
-        <BoLocDoan<'tat-ca' | 'tre'> ariaLabel="Lọc ô điểm" value={chiTre ? 'tre' : 'tat-ca'} onChange={(v) => setChiTre(v === 'tre')}
+        <BoLocDoan<'tat-ca' | 'tre'> ariaLabel={t('Lọc bài')} value={chiTre ? 'tre' : 'tat-ca'} onChange={(v) => setChiTre(v === 'tre')}
           muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: data.rows.length }, { key: 'tre', nhan: 'Trễ', so: data.tre }]} />
       ) : undefined}
       chan={{
@@ -185,11 +185,11 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
       }}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : loading || !data ? <div className="pt-3"><Skeleton rows={6} /></div>
-        : !rows.length ? <div className="pt-3"><Empty title={chiTre ? 'Không có ô trễ.' : 'Không có ô điểm nào trong khoảng này.'} /></div>
+        : !rows.length ? <div className="pt-3"><Empty title={chiTre ? t('Không có bài trễ.') : t('Không có bài nào trong khoảng này.')} /></div>
         : (
           <>
           <div className="mt-2"><PhanTrang {...pt.thanh} /></div>
-          <div className="table-scroll rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label="Danh sách ô điểm" tabIndex={0}>
+          <div className="table-scroll rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label={t('Danh sách bài')} tabIndex={0}>
             <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '640px' }}>
               <colgroup><col style={{ width: '20%' }} /><col style={{ width: '23%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '16%' }} /><col style={{ width: '19%' }} /></colgroup>
               <thead><tr className="whitespace-nowrap">

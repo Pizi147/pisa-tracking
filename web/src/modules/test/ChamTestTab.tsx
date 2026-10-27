@@ -118,7 +118,7 @@ export function ChamTestTab() {
         ) : (
           <>
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b px-4 py-3 text-sm text-slate-300" style={{ borderColor: 'var(--line)' }}>
-              <span>{t('Của tôi')}: <b className="tabular-nums text-slate-100">{cua.length}</b> {t('nhóm')} · <b className="tabular-nums text-slate-100">{tongBai(cua)}</b> {t('bài')}</span>
+              <span>{t('Của tôi')}: <b className="tabular-nums text-slate-100">{cua.length}</b> {t('việc')} · <b className="tabular-nums text-slate-100">{tongBai(cua)}</b> {t('bài')}</span>
               {coS && <span>{t('Có thể chấm')}: <b className="tabular-nums text-slate-100">{baiCheo}</b> {t('bài Speaking')}</span>}
               <NutLuat label={t('Cách đếm')}>{t('Bài = một kỹ năng của một HV trong một lượt. "Của tôi" chỉ gồm phần được phân công cho bạn; Speaking chấm chéo không tính nợ.')}</NutLuat>
             </div>
@@ -151,13 +151,13 @@ export function ChamTestTab() {
                 : <PanelViec key={chon.key} it={chon} tuMo={tuMo === chon.key} onDong={() => mo(null)} onDaLam={reload} onTiep={keTiep ? () => mo(keTiep, true) : null} />}
             </KhungTaiCho.Provider>
           </>
-        ) : !rong ? <Card><Empty title={t('Chọn một nhóm bên trái để chấm')} /></Card> : null}
+        ) : !rong ? <Card><Empty title={t('Chọn một việc bên trái để chấm')} /></Card> : null}
       </div>
     </div>
   );
 }
 
-const demNhom = (ds: readonly { soBai?: number }[]) => t('{n} nhóm · {bai} bài', { n: ds.length, bai: tongBai(ds) });
+const demNhom = (ds: readonly { soBai?: number }[]) => t('{n} việc · {bai} bài', { n: ds.length, bai: tongBai(ds) });
 
 /**
  * Một nhóm theo hạn: tên + số ở đầu; `gap` (true/false) = nhóm gập được (`<details>`), mở sẵn khi false. Nhóm trống: MỘT dòng chữ.

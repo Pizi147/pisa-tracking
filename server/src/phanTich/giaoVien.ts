@@ -516,7 +516,6 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
 /** Tiêu đề panel "{nhãn} · {ai / kỳ} · {đúng}/{tổng} {đơn vị}" — qua `t()` để web tiếng Anh dịch theo mẫu (K5: đơn vị ghi đúng chữ). */
 function tieuDeChiSo(nhan: string, ai: string, dung: number, tong: number, donVi: string): string {
   const b = { nhan, ai, dung, tong };
-  if (donVi === 'lượt kỹ năng') return t('{nhan} · {ai} · {dung}/{tong} lượt kỹ năng', b);
   if (donVi === 'lượt Test') return t('{nhan} · {ai} · {dung}/{tong} lượt Test', b);
   if (donVi === 'việc') return t('{nhan} · {ai} · {dung}/{tong} việc', b);
   if (donVi === 'bài') return t('{nhan} · {ai} · {dung}/{tong} bài', b);
@@ -649,8 +648,8 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
       return { ngCanh: `${x.bai} · ${tuanLichNgan(x.tuan)}`, diem: ds, overall: m?.ovr ?? null, soVoi: m?.kv != null ? { nhan: thi ? 'Target' : t('kỳ vọng'), v: m.kv } : null };
     };
     const nhan = !kq ? t('HV tiến bộ') : kq[1] === 'dat-mt' ? t('Đạt kỳ vọng Test') : kq[1] === 'thi-that' ? t('Kết quả thi thật')
-      : kq[2] ? t('Kết quả {mon}', { mon: tenMonNgan(null, kq[2]) }) : t('Kết quả');
-    return ra(nhan, 'lượt kỹ năng', dongTheoTap(tap, theoBai(o, new Set(tap?.dung ?? []), ky, kq ? diemLuot : undefined)));
+      : kq[2] ? t('Đạt kỳ vọng Test {mon}', { mon: tenMonNgan(null, kq[2]) }) : t('Đạt kỳ vọng Test');
+    return ra(nhan, 'lượt Test', dongTheoTap(tap, theoBai(o, new Set(tap?.dung ?? []), ky, kq ? diemLuot : undefined)));
   }
   if (cot === 'cham-diem') {
     const dong = [...tapChamDiem(c, napBai(p, c)).dong.values()].filter((d) => d.gv === gv)
@@ -869,9 +868,8 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
   const maLop = lopId !== null ? ds.find((c) => c.lop.has(lopId))?.lop.get(lopId)?.ma : null;
   if (lopId !== null && !maLop) throw badRequest('Lớp này không có trong kỳ của giáo viên.');
   const dong = phan.flatMap((x) => x.dong).filter((d) => !maLop || d.row.lop === maLop).sort((a, b) => Number(a.dung) - Number(b.dung));
-  const dau0 = phan[0] ?? { nhan: q.cot === 'cham-diem' ? t('Điểm đúng hạn') : q.cot === 'viec-dung-han' ? t('Việc đúng hạn') : t('Kết quả'), donVi: '' };
-  /* Thuật ngữ chốt 23/10 (THUAT_NGU HSGV-1, 6): hồ sơ GV ghi "Đạt kỳ vọng Test" · "lượt Test" — bảng Phân tích GV giữ chữ cũ tới đợt overhaul thuật ngữ. */
-  const dau = { nhan: dau0.nhan.replace(/^Kết quả(?= |$)/, t('Đạt kỳ vọng Test')), donVi: dau0.donVi === 'lượt kỹ năng' ? 'lượt Test' : dau0.donVi };
+  /* TEN-CHI-SO: panel hồ sơ GV và Phân tích GV cùng tên "Đạt kỳ vọng Test" · đơn vị "lượt Test" (THUAT_NGU HSGV-1, 6) — đặt ở `oChiSoCua`. */
+  const dau = phan[0] ?? { nhan: q.cot === 'cham-diem' ? t('Điểm đúng hạn') : q.cot === 'viec-dung-han' ? t('Việc đúng hạn') : t('Đạt kỳ vọng Test'), donVi: '' };
   const dung = dong.filter((d) => d.dung).length;
   return { n: dong.length, tieuDe: tieuDeChiSo(dau.nhan, `${tuanLichNgan(g.tu)} – ${tuanLichNgan(g.den)}`, dung, dong.length, dau.donVi), rows: dong.map((d) => d.row) };
 }

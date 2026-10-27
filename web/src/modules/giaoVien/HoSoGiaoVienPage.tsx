@@ -108,7 +108,7 @@ export function HoSoGiaoVienPage() {
               <span className="w-[8.75rem]"><ONgay kieu="tuan" gon value={den} ariaLabel={t('Đến tuần')} onChange={(v) => v && setDen(mondayOfDate(v))} invalid={!!kyLoi} /></span>
             </span>
             <NutLuat label={t('Kỳ xem')} phai>
-              {t('Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. Số theo kỳ: Việc đúng hạn, Điểm đúng hạn, Đạt kỳ vọng, Tiến bộ, bảng Học thuật.')}
+              {t('Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. Số theo kỳ: Việc đúng hạn, Điểm đúng hạn, Đạt kỳ vọng Test, Tiến bộ, bảng Học thuật.')}
               {!gv.laChinhMinh && data.phamVi.chiNhanh && <> {t('Quản lý đang xem · chỉ tính lớp, Case, yêu cầu ở {cn}', { cn: data.phamVi.chiNhanh.join(', ') })}.</>}
             </NutLuat>
             {coNutViec && (
@@ -428,7 +428,7 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
     { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'chu', rong: RONG_TL },
     { key: 'tb', nhan: t('Tiến bộ'), kieu: 'chu', rong: RONG_TL },
-    { key: 'tt', nhan: 'Pass Target', kieu: 'chu', rong: RONG_TL, goiY: t('Kết quả thi thật') },
+    { key: 'tt', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: RONG_TL, goiY: '% Pass Target' },
   ] : [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
