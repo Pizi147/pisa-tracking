@@ -57,7 +57,7 @@ function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?:
 function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
   return (
     <span className="block min-w-0">
-      <Link className="link block truncate font-semibold" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}>{h.ten}</Link>
+      <Link className="ten-ho-so block truncate" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}>{h.ten}</Link>
       {/* HV-LOP-SUA: mã lớp đã ở hàng lớp — dòng phụ không lặp. */}
       <span className="block truncate text-xs font-normal text-slate-400">
         {h.tvv ? `TVV ${h.tvv}` : t('chưa có TVV')}{h.ketThuc ? ` · ${t('Kết thúc học')}` : ''}{ev?.status === 'inactive' ? ` · ${t('Tạm dừng')}` : ''}
@@ -233,7 +233,7 @@ function TheHvLop({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
         return (
           <article key={`${h.classId}:${h.id}`} className={`space-y-1 border-t px-3 py-2.5 first:border-t-0 ${h.ketThuc ? 'opacity-60' : ''}`} style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center gap-2">
-              <Link className="link min-w-0 truncate font-semibold" to={`/hoc-vien/${h.id}`} state={{ ds: nguCanh }}>{h.ten}</Link>
+              <Link className="ten-ho-so min-w-0 truncate" to={`/hoc-vien/${h.id}`} state={{ ds: nguCanh }}>{h.ten}</Link>
               {ev?.status === 'inactive' && <span className="shrink-0 text-xs text-slate-400">{t('Tạm dừng')}</span>}
               <span className="ml-auto shrink-0">{g?.hoTro.sos ? <ChipSos muc={g.hoTro.sos} kyNang={g.hoTro.kyNang.map((k) => skillShort(k))} /> : !h.lich && ev ? <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span> : <ChipLichThi l={h.lich} />}</span>
               <span className="shrink-0"><MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} /></span>
@@ -290,7 +290,7 @@ export function BangSosGon({ rows, hang, nguCanh, onMo }: { rows: DongSos[]; han
     switch (c.key) {
       case 'ten': return (
         <span className="block min-w-0">
-          <Link className="link block truncate font-semibold" to={`/hoc-vien/${r.studentId}`} state={{ ds: nguCanh }}>{r.ten}</Link>
+          <Link className="ten-ho-so block truncate" to={`/hoc-vien/${r.studentId}`} state={{ ds: nguCanh }}>{r.ten}</Link>
           <span className="block text-xs font-normal text-slate-400">{r.classCode}</span>
         </span>);
       case 'muc': return <ChipSos muc={r.sosLevel} kyNang={r.kyNang.map((k) => skillShort(k))} dot={r.luot} ten={r.ten} thuong={!r.ft} />;

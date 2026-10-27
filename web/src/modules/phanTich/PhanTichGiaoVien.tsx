@@ -199,7 +199,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
               <tbody>
                 {pt.cat(rows).map((r) => (
                   <tr key={r.id} style={r.dung ? undefined : { boxShadow: 'inset 3px 0 0 rgb(var(--bad-rgb))' }}>
-                    <td className="td"><Link to={`/hoc-vien/${r.studentId}`} className="link">{r.hocVien}</Link></td>
+                    <td className="td"><Link to={`/hoc-vien/${r.studentId}`} className="ten-ho-so">{r.hocVien}</Link></td>
                     <td className="td text-slate-300">{r.lop} · {r.bai} · {r.mon}</td>
                     <td className="td whitespace-nowrap tabular-nums">{tuanLich(r.tuan, homNay)}</td>
                     <td className="td whitespace-nowrap text-right text-xs tabular-nums">{ngay(r.han, homNay)}</td>

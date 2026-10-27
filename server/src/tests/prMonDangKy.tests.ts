@@ -12,6 +12,9 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   const dtlMod: any = await import('../cham/diemTheoLuot.ts');
   const khMod: any = await import('../keHoach/keHoachTest.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
+  const scoringMod: any = await import('../fasttrack/scoring.ts');
+  const profileMod: any = await import('../students/profile.ts');
+  const nguCanh: any = await import('../platform/nguCanhRequest.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const { O_CHO_TU_SQL, capNhatConOCho } = await import('../fasttrack/conOCho.ts');
   /** Cờ "còn ô chờ" đang lưu khớp cách tính lại — chỉ các lượt của em này (bộ kiểm khác ghi SQL thẳng có thể để lệch lượt của chúng). */
@@ -499,6 +502,67 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       const dong = get('SELECT status, system_close_reason r FROM sos_cases WHERE id = ?', cu.id);
       assert(dong.status === 'done' && dong.r === 'khong_con_hoc_mon', `Case S cũ: ${JSON.stringify(dong)}`);
       assert(get('SELECT status FROM assessment_attempts WHERE id = ?', mt3.id).status === 'done', 'MT3 vừa đủ điểm (L R W2 S, W1 bỏ) → done');
+    });
+  });
+  check('MDK-16 · D7 P8: bỏ S khi lượt đã chấm S dưới kỳ vọng (giữ điểm) → lưu điểm THƯỜNG các ô còn lại làm lượt đủ điểm: không Case / tín hiệu S; môn còn học vẫn có', () => {
+    thu(() => {
+      const x = emDu();
+      const a = x.mt(3).id as number;
+      attempts.saveScore(P.admin, a, 'speaking', { criteria: [4, 4, 4, 4] }, TODAY);
+      attempts.saveScore(P.admin, a, 'listening', { rawScore: 10 }, TODAY);
+      attempts.saveScore(P.admin, a, 'reading', { rawScore: 10 }, TODAY);
+      mdk.apMonDangKy(P.mbManager, x.id, KHONG_S);
+      attempts.saveScore(P.admin, a, 'writing1', { criteria: [4, 4, 4, 4] }, TODAY);
+      attempts.saveScore(P.admin, a, 'writing2', { criteria: [4, 4, 4, 4] }, TODAY);
+      const caseS = all(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'speaking' AND status != 'done'`, x.sid);
+      const thS = all(`SELECT id, status FROM case_signals WHERE attempt_id = ? AND skill = 'speaking' AND status != 'withdrawn'`, a);
+      assert(!caseS.length && !thS.length, `môn S đã bỏ vẫn sinh Case / tín hiệu: ${JSON.stringify({ caseS, thS })}`);
+      assert(all(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'listening' AND status != 'done'`, x.sid).length === 1, 'L còn học, dưới kỳ vọng → Case L');
+    });
+  });
+  check('MDK-17 · D7 P8: Case môn đã bỏ còn mở (báo tay sau khi bỏ) + lượt có bài môn đó dưới kỳ vọng → KHÔNG ghi mốc "đã đạt", không hạ mức', () => {
+    thu(() => {
+      const x = emDu();
+      const a = x.mt(3).id as number;
+      attempts.saveScore(P.admin, a, 'speaking', { criteria: [4, 4, 4, 4] }, TODAY);
+      mdk.apMonDangKy(P.mbManager, x.id, KHONG_S);
+      const c = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, attempt_id, category, topic, title, status, sos_level, created_at, updated_at) VALUES (?,?,?,?,?,?, 'open', 2, ?, ?)`)
+        .run(x.sid, x.id, a, 'speaking', 'speaking', 'Case S báo tay', NOW, NOW).lastInsertRowid);
+      xoaNho();
+      for (const [k, v] of [['listening', { rawScore: 10 }], ['reading', { rawScore: 10 }], ['writing1', { criteria: [4, 4, 4, 4] }], ['writing2', { criteria: [4, 4, 4, 4] }]] as const) {
+        attempts.saveScore(P.admin, a, k, v, TODAY);
+      }
+      const moc = all(`SELECT id FROM case_milestones WHERE case_id = ? AND kind = 'passed'`, c);
+      assert(!moc.length, `Case S (bài S 4.0 < KV) bị ghi "đã đạt": ${JSON.stringify(moc)}`);
+      assert(get('SELECT sos_level m FROM sos_cases WHERE id = ?', c).m === 2, 'mức SOS Case S giữ');
+    });
+  });
+  check('MDK-18 · chủ SP 27/10: mức SOS + Phối hợp chỉ đếm môn còn học — SOS 2 (R, W) bỏ W → SOS 1 · R, Case R SOS 1, Phối hợp theo SOS 1; điểm W giữ', () => {
+    const KHONG_W = ['listening', 'reading', 'speaking'];
+    assert(scoringMod.evaluateAttempt(6.5, 3, { listening: 9, reading: 4, writing1: 4, writing2: 4, speaking: 7 }, d.dauBoMon(KHONG_W)).sosLevel === 1, 'hàm thuần: dấu bỏ W → SOS 1');
+    thu(() => {
+      const x = emDu();
+      const a = x.mt(3).id as number;
+      attempts.saveScore(P.admin, a, 'listening', { rawScore: 40 }, TODAY);
+      attempts.saveScore(P.admin, a, 'reading', { rawScore: 10 }, TODAY);
+      attempts.saveScore(P.admin, a, 'speaking', { criteria: [7, 7, 7, 7] }, TODAY);
+      attempts.saveScore(P.admin, a, 'writing1', { criteria: [4, 4, 4, 4] }, TODAY);
+      attempts.saveScore(P.admin, a, 'writing2', { criteria: [4, 4, 4, 4] }, TODAY);
+      const luot = () => get('SELECT * FROM assessment_attempts WHERE id = ?', a);
+      assert(attempts.resultOf(luot()).sosLevel === 2, `trước: SOS 2 (R, W) — ${attempts.resultOf(luot()).sosLevel}`);
+      mdk.apMonDangKy(P.mbManager, x.id, KHONG_W);
+      xoaNho();
+      const r = attempts.resultOf(luot());
+      assert(r.sosLevel === 1, `sau bỏ W: SOS ${r.sosLevel}`);
+      const caseR = get(`SELECT sos_level m FROM sos_cases WHERE student_id = ? AND topic = 'reading' AND status != 'done'`, x.sid);
+      assert(caseR?.m === 1, `Case R: ${JSON.stringify(caseR)}`);
+      const ph = all(`SELECT kind FROM sos_coordination_actions WHERE attempt_id = ? AND preset = 1 AND status = 'pending'`, a).map((q) => q.kind).sort().join();
+      assert(ph === [...d.sosCoordinationFor(3, 1, 'LT1')].sort().join(), `Phối hợp: ${ph}`);
+      assert(all(`SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill IN ('writing1', 'writing2') AND band IS NOT NULL`, a).length === 2, 'điểm W giữ');
+      /* Hồ sơ HV (GET, danh sách bỏ nạp sẵn theo lô) cùng mức với `resultOf`. */
+      const hs: any = nguCanh.chayTrongRequest('GET', () => profileMod.studentProfile(P.admin, x.sid, x.id));
+      const o = hs.attempts.find((q: any) => q.id === a);
+      assert(o?.sosLevel === 1, `hồ sơ HV: SOS ${o?.sosLevel}`);
     });
   });
 }

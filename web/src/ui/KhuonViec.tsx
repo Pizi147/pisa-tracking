@@ -122,7 +122,8 @@ export function NhomCoSo({ ds }: { ds: { code: string; label: string }[] }) {
 }
 
 /** OV-13b: kết quả một lần lưu ở panel làm việc — câu chính, dòng phụ, Hoàn tác (nếu có đường đảo). */
-export type DaLuuPanel = { chu: string; phu?: string | null; hoanTac?: () => Promise<void> };
+/** M6 6b-2: `paId` = PA vừa thêm / vừa ghi (Ngăn Case về Case, viền thẻ PA đó). */
+export type DaLuuPanel = { chu: string; phu?: string | null; hoanTac?: () => Promise<void>; paId?: number };
 
 /**
  * SAU KHI LƯU Ở PANEL (OV-13b, mockup OV-13 §1 "Sau khi lưu", §7, §9) — ở lại panel, không nhảy sang Case đầy đủ: khối "✓ Đã lưu · …" + nút chính

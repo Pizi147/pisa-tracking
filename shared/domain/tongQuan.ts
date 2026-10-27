@@ -263,3 +263,21 @@ export const NHOM_CASE_CHUA_CHOT_LABEL: Record<NhomCaseChuaChot, string> = {
   trongPa: t('Case trống PA'), choNhanXet: t('Chờ mô tả / nguyên nhân'), choXacNhanPa: t('PA chờ xác nhận'), choDuyetPa: t('PA chờ duyệt đổi'),
   paXong: t('PA xong · chờ đóng Case'), khongTheoDoi: t('Chờ duyệt không theo dõi'),
 };
+
+/** M6 6b-2 (Q3): danh sách "Case chưa chốt PA" theo 6 nhóm máy chủ — thứ tự `NHOM_CASE_CHUA_CHOT`, nhóm rỗng không vẽ, quá hạn lên đầu nhóm (giữ thứ tự máy chủ). */
+export function xepNhomCase<T extends { nhom?: string | null }>(ds: readonly T[], tre: (x: T) => boolean): { nhom: NhomCaseChuaChot; ten: string; dong: T[] }[] {
+  return NHOM_CASE_CHUA_CHOT.map((nhom) => {
+    const cua = ds.filter((x) => x.nhom === nhom);
+    return { nhom, ten: NHOM_CASE_CHUA_CHOT_LABEL[nhom], dong: [...cua.filter(tre), ...cua.filter((x) => !tre(x))] };
+  }).filter((g) => g.dong.length > 0);
+}
+
+/**
+ * M6 6b-2 (Q7): "Case tiếp ›" — Case kế sau `hienTai` theo thứ tự danh sách mà người xem làm được (`lam`) và chưa xử lý (`xong`); hết đuôi thì vòng lên đầu.
+ * `hienTai` đã ra khỏi danh sách → Case đầu còn chờ. Không còn Case nào khác → null.
+ */
+export function caseTiep(ds: readonly { id: number; lam?: boolean; xong?: unknown }[], hienTai: number): number | null {
+  const i = ds.findIndex((x) => x.id === hienTai);
+  const vong = [...ds.slice(i + 1), ...ds.slice(0, Math.max(i, 0))];
+  return vong.find((x) => x.lam && !x.xong && x.id !== hienTai)?.id ?? null;
+}

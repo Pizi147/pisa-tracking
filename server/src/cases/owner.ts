@@ -5,6 +5,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { loi, notFound, nowIso } from '../util.ts';
 import { activeClassOf } from '../yThuc/access.ts';
+import { kiemXemCase } from './cases.ts';
 
 /**
  * GỢI Ý NGƯỜI PHỤ TRÁCH CHÍNH cho một Case mới (mục 2.3).
@@ -138,11 +139,16 @@ function caseDoiChu(caseId: number): CaseDoiChu | undefined {
   return c && { ...c, class_id: activeClassOf(c.student_id) };
 }
 
-/** Ứng viên (D17): GV đang dạy đúng kỹ năng của Case ở lớp em (môn gộp L+S / R+W: cả GV môn tách) + GVCN lớp đó; mỗi người một lần. */
+/**
+ * Ứng viên (D17): GV đang dạy đúng kỹ năng của Case ở lớp em + GVCN lớp đó; mỗi người một lần. Môn gộp hai chiều: Case L+S / R+W ← GV môn tách;
+ * Case môn tách ← GV môn gộp chứa nó (W1 / W2 → cả GV "W" và "R+W").
+ */
 function ungVienCua(c: CaseDoiChu) {
   if (!c.class_id) return [];
   const skill = CASE_CATEGORY_SKILL[(c.category ?? categoryOf(c.topic)) as string] ?? null;
-  const kyNang = new Set(skill ? [skill, ...(MON_GOP[skill] ?? [])] : []);
+  const tach = skill === 'writing1' || skill === 'writing2' ? [skill, 'writing'] : skill ? [skill] : [];
+  const gopChua = Object.keys(MON_GOP).filter((g) => MON_GOP[g].some((k) => tach.includes(k)));
+  const kyNang = new Set([...tach, ...(skill ? MON_GOP[skill] ?? [] : []), ...gopChua]);
   const ds = new Map<number, { id: number; ten: string | null }>();
   for (const r of phanCongLop(c.class_id)) if (r.is_core === 1 || kyNang.has(r.skill ?? '')) ds.set(r.user_id, { id: r.user_id, ten: r.ten });
   return [...ds.values()];
@@ -186,6 +192,7 @@ export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unkno
   return tx(() => {
     const c = caseDoiChu(caseId);
     if (!c) throw notFound();
+    kiemXemCase(p, caseId);   // D7: đổi người cũng phải xem được Case (cùng cổng `GET /cases/:id`)
     if (!duocDoi(p, c)) throw loi(403, 'Chỉ Quản lý hoặc GVCN của lớp em đổi được người phụ trách Case.');
     if (c.status === 'done') throw loi(400, 'Case đã đóng.');
     if (c.tam) throw loi(400, 'Case tạm chưa là việc — chưa đổi người được.');
@@ -194,7 +201,7 @@ export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unkno
     const moi = ungVienCua(c).find((u) => u.id === ownerId);
     if (!moi) throw loi(400, 'Chỉ chọn GV dạy kỹ năng của Case ở lớp em hoặc GVCN.');
     const conn = db();
-    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ? AND owner_user_id IS ?').run(ownerId, caseId, ownerCu).changes !== 1) {
+    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id IS ?').run(ownerId, nowIso(), caseId, ownerCu).changes !== 1) {
       throw loi(409, 'Người phụ trách vừa đổi — tải lại.');
     }
     conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', ?, ?, ?, ?)`)

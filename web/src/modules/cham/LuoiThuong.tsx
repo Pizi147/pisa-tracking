@@ -465,7 +465,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
       {/* Tên + chip "Đủ điểm" một dòng; MỘT dòng phụ: dòng thi · trạng thái lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
         <span className="inline-flex max-w-full items-center gap-1.5 align-baseline">
-          <Link className="link min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+          <Link className="ten-ho-so min-w-0 truncate max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">

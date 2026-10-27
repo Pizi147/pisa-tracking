@@ -152,7 +152,7 @@ export default function LuuTruPage() {
                 return (
                   <div key={s.id} className={`card flex flex-wrap items-center gap-x-2.5 gap-y-1.5 p-3 ${chon.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
                     {chon.bat && s.coTheQuayLai && <OChon chon={chon} id={s.id} ten={s.fullName} />}
-                    <Link to={`/hoc-vien/${s.id}`} className="link font-semibold">{s.fullName}</Link>
+                    <Link to={`/hoc-vien/${s.id}`} className="ten-ho-so">{s.fullName}</Link>
                     <Nhan tone={dung ? 'doing' : 'soon'}>{dung ? t('Tạm dừng · Có thể quay lại') : t('Kết thúc học')}</Nhan>
                     <span className="min-w-0 flex-1 text-xs text-slate-500">
                       {[s.lopCuoi ?? t('chưa từng học lớp nào'), s.loTrinh ? `FT ${s.loTrinh}` : null, dung ? t('từ {ngay}', { ngay: ngay(s.archivedAt) }) : ngay(s.archivedAt), s.chiNhanh].filter(Boolean).join(' · ')}

@@ -29,20 +29,22 @@
     --line: #22324f;
     --line-strong: #33496f;
 
-    --accent: #94bdf2;          /* = nhan V5: nút chính, link, focus, đang chọn */
-    --accent-strong: #b8d3f7;
+    --accent: #9cbde7;          /* = nhan V5: nút chính, link, focus, đang chọn */
+    --accent-strong: #bdd3ef;
     --accent-ink-rgb: 6 12 26; /* chữ trên nền accent */
     --accent-ink: rgb(var(--accent-ink-rgb));
-    --accent-soft: #142a4c;     /* = nhan-nen V5 */
-    --accent-line: #3a62a0;     /* = nhan-vien V5 */
+    --accent-soft: #192b46;     /* = nhan-nen V5 */
+    --accent-line: #436394;     /* = nhan-vien V5 */
+    /* D4 MAU-WEB (chủ SP 27/10): nút chính tối = nền xanh thẫm + viền, không tô kín màu nhấn sáng (mảng chói nhất màn). Chữ 9,1 : 1. */
+    --nut-chinh-nen: #22406c;  --nut-chinh-vien: #4d72a8;  --nut-chinh-chu: #eaf1fb;  --nut-chinh-hover: #2a4c7e;
 
     --text: #e7edf7;
 
     /* V5 — token vai trò mới (chỉ ở đây và khối sáng). Hồng KHÔNG mang nghĩa lỗi / SOS. */
-    --hong: #f57aae;  --hong-chu: #f79cc2;  --hong-nen: #3a1830;
+    --hong: #f57aae;  --hong-chu: #efa1c1;  --hong-nen: #371b2f;
     --dieu-huong-nen: #0a1a3a;  --dieu-huong-chu: #c3d2ec;  --dieu-huong-chu-mo: #ffffff;  --dieu-huong-hover: #12284f;
     --dieu-huong-vien: #2b4673;  --dieu-huong-nut: #12284f;  --dieu-huong-chu-rgb: 195 210 236;  --trang-rgb: 255 255 255;
-    --lich-nen: #1a3d5c;  --lich-chu: #9fd0f0;  --lich-vien: #2d5f82;
+    --lich-nen: #283d51;  --lich-chu: #afcee2;  --lich-vien: #405e74;
     --thieu-rgb: 158 172 200;  --thieu-vien: #66789f;
 
     /*
@@ -50,27 +52,27 @@
      * `tailwind.config.js` ánh xạ tên (`text-ok`, `bg-bad-bg`, `border-late-line`), `ui.tsx` chỉ dùng tên đó.
      * Chữ ≥ 4.5:1 trên nền riêng và mọi nền trang — phép kiểm `nenGiaoDien.tests.ts` đọc chính khối này.
      */
-    --ok-rgb: 116 217 163;    --ok-bg-rgb: 18 52 42;     --ok-line-rgb: 47 122 85;     /* đạt · đã lưu ✓ */
-    --bad-rgb: 255 154 143;   --bad-bg-rgb: 59 23 25;    --bad-line-rgb: 143 58 51;    /* lỗi · chưa đạt ✗ */
-    --late-rgb: 255 154 143;  --late-bg-rgb: 59 23 25;   --late-line-rgb: 143 58 51;   /* quá hạn = màu lỗi V5, luôn kèm ⚠ */
-    --soon-rgb: 242 196 80;   --soon-bg-rgb: 51 41 15;   --soon-line-rgb: 125 100 32;  /* sắp hạn · hôm nay · cần chú ý */
-    --doing-rgb: 148 189 242; --doing-bg-rgb: 20 42 76;  --doing-line-rgb: 58 98 160;  /* đang làm · đang lưu */
+    --ok-rgb: 148 209 174;    --ok-bg-rgb: 30 50 43;     --ok-line-rgb: 73 117 92;     /* đạt · đã lưu ✓ */
+    --bad-rgb: 232 154 140;   --bad-bg-rgb: 52 28 29;    --bad-line-rgb: 126 72 65;    /* lỗi · chưa đạt ✗ */
+    --late-rgb: 232 154 140;  --late-bg-rgb: 52 28 29;   --late-line-rgb: 126 72 65;   /* quá hạn = màu lỗi V5, luôn kèm ⚠ */
+    --soon-rgb: 228 199 132;   --soon-bg-rgb: 48 42 26;   --soon-line-rgb: 118 102 63;  /* sắp hạn · hôm nay · cần chú ý */
+    --doing-rgb: 156 189 231; --doing-bg-rgb: 25 43 70;  --doing-line-rgb: 67 99 148;  /* đang làm · đang lưu */
     --done-rgb: 158 172 200;  --done-bg-rgb: 22 34 58;   --done-line-rgb: 51 70 105;   /* đã xong */
     --muted-rgb: 186 198 222; --muted-bg-rgb: 22 34 58;  --muted-line-rgb: 51 70 105;  /* trung tính · thông tin · chip */
-    --text-dim-rgb: 186 198 222;    /* = chu-2 V5 */
-    --text-faint-rgb: 158 172 200;  /* = chu-3 V5, mờ nhất được phép */
+    --text-dim-rgb: 183 194 216;    /* = chu-2 V5 (#b7c2d8) */
+    --text-faint-rgb: 154 168 194;  /* = chu-3 V5 (#9aa8c2), mờ nhất được phép */
     /* N-1b — Đạt dùng chung xanh lá của `ok`. */
     --dat-rgb: var(--ok-rgb);    --dat-bg-rgb: var(--ok-bg-rgb);    --dat-line-rgb: var(--ok-line-rgb);
     /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — chỉ VIỀN (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`), không nền. */
-    --sos1-rgb: 214 184 40;  --sos1-chu-rgb: 227 200 74;
-    --sos2-rgb: 232 112 42;  --sos2-chu-rgb: 245 147 90;
-    --sos3-rgb: 240 100 90;  --sos3-chu-rgb: 255 154 143;
+    --sos1-rgb: 204 185 109;  --sos1-chu-rgb: 217 201 129;
+    --sos2-rgb: 207 129 91;  --sos2-chu-rgb: 223 159 124;
+    --sos3-rgb: 213 123 113;  --sos3-chu-rgb: 232 154 140;
     /* P6 (chủ SP 22/10): 3 mức khác hẳn — SOS 1 viền mảnh · SOS 2 viền dày + nền cam nhạt · SOS 3 nền đỏ đậm đặc chữ trắng (NEN-SUA: bớt chói = đậm hơn; viền --sos3-vien tách mặt tối). */
-    --sos2-nen: #3a2410;  --sos3-nen: #9c201c;  --sos3-vien: #d32f2f;  --sos3-tren: #ffffff;
+    --sos2-nen: #35261a;  --sos3-nen: #873c34;  --sos3-vien: #b7544c;  --sos3-tren: #ffffff;
     /* Hàng ĐÃ THI · chờ KQ — nền cả hàng + vạch trái 3 px màu lịch (V5 `--da-thi-nen`). */
-    --da-thi-bg-rgb: 15 35 53;
+    --da-thi-bg-rgb: 22 35 46;
     /* KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới. */
-    --kq-vuot-rgb: 116 217 163;  --kq-bang-rgb: 148 189 242;  --kq-duoi-rgb: 255 154 143;
+    --kq-vuot-rgb: 148 209 174;  --kq-bang-rgb: 156 189 231;  --kq-duoi-rgb: 232 154 140;
 
     /* Tên cũ giữ làm bí danh để chỗ đang dùng không vỡ. */
     --ok: rgb(var(--ok-rgb));
@@ -85,13 +87,13 @@
     --hang-lon-dong-bg: #101b33;  --hang-lon-dong-vach: #33496f;
     --hang-con-bg: #0a1325;       --hang-con-chu: #b8c4dc;
     /* Ô sửa được / chỉ đọc (lưới chấm) */
-    --o-sua-vien: #66789f;        --o-sua-nen: #0b1427;   --o-sua-focus: #94bdf2;
+    --o-sua-vien: #66789f;        --o-sua-nen: #0b1427;   --o-sua-focus: #9cbde7;
 
     /*
      * PR-SANG (T15) — HAI CHẾ ĐỘ. `tailwind.config.js` ánh xạ tên Tailwind cũ về các biến này:
      * `slate-100/200/300` → chu-1/2/3 · `slate-600/700` → chu-mo (chỉ dấu trang trí) · `white` → phu (lớp phủ rê chuột).
      */
-    --chu-1-rgb: 231 237 247;  --chu-2-rgb: 210 219 236;  --chu-3-rgb: 186 198 222;
+    --chu-1-rgb: 231 237 247;  --chu-2-rgb: 200 210 228;  --chu-3-rgb: 183 194 216;   /* D4 bổ sung: bậc chữ như mockup V5 (chu #e8edf6 · chu-2 #b7c2d8 · chu-3 #9aa8c2) */
     --chu-mo-rgb: 102 120 159;   --chu-mo-2-rgb: 51 73 111;
     --phu-rgb: 255 255 255;
     /* NEN (HTT-1, HTT-2): phủ rê chuột lên chính phần tử bấm được · dò hàng bảng dày không bấm được. */
@@ -108,35 +110,36 @@
     --line: #d9deea;  --line-strong: #b0b8cd;
     --accent: #273c8f;  --accent-strong: #1f3077;  --accent-ink-rgb: 255 255 255;
     --accent-soft: #eef1fa;  --accent-line: #8c9cd6;
+    --nut-chinh-nen: initial;  --nut-chinh-vien: initial;  --nut-chinh-chu: initial;  --nut-chinh-hover: initial;   /* sáng: nút chính tô xanh logo như cũ (fallback ở .btn-primary) */
     --text: #141a2b;
 
-    --hong: #f25a98;  --hong-chu: #b81f62;  --hong-nen: #fef0f6;
+    --hong: #f25a98;  --hong-chu: #ae3463;  --hong-nen: #fdf1f6;
     --dieu-huong-nen: #273c8f;  --dieu-huong-chu: #dce2f4;  --dieu-huong-chu-mo: #ffffff;  --dieu-huong-hover: #31479c;
     --dieu-huong-vien: #5c70be;  --dieu-huong-nut: #31479c;  --dieu-huong-chu-rgb: 220 226 244;  --trang-rgb: 255 255 255;
-    --lich-nen: #d9eaf5;  --lich-chu: #164e72;  --lich-vien: #9cc4dd;
+    --lich-nen: #dee9f0;  --lich-chu: #2e4d64;  --lich-vien: #a8c2d2;
     --thieu-rgb: 95 105 132;  --thieu-vien: #8690ab;
 
-    --ok-rgb: 20 108 67;      --ok-bg-rgb: 227 245 234;    --ok-line-rgb: 95 185 138;
-    --bad-rgb: 180 35 24;     --bad-bg-rgb: 253 236 234;   --bad-line-rgb: 232 150 141;
-    --late-rgb: 180 35 24;    --late-bg-rgb: 253 236 234;  --late-line-rgb: 232 150 141;
-    --soon-rgb: 138 90 0;     --soon-bg-rgb: 255 244 214;  --soon-line-rgb: 217 169 58;
+    --ok-rgb: 56 103 76;      --ok-bg-rgb: 231 243 236;    --ok-line-rgb: 124 178 147;
+    --bad-rgb: 166 58 45;     --bad-bg-rgb: 251 237 235;   --bad-line-rgb: 222 156 148;
+    --late-rgb: 166 58 45;    --late-bg-rgb: 251 237 235;  --late-line-rgb: 222 156 148;
+    --soon-rgb: 126 95 54;     --soon-bg-rgb: 251 244 225;  --soon-line-rgb: 203 173 110;
     --doing-rgb: 58 80 166;   --doing-bg-rgb: 238 241 250; --doing-line-rgb: 140 156 214;
     --done-rgb: 74 83 108;    --done-bg-rgb: 242 244 249;  --done-line-rgb: 210 215 229;
     --muted-rgb: 74 83 108;   --muted-bg-rgb: 242 244 249; --muted-line-rgb: 210 215 229;
     --text-dim-rgb: 74 83 108;  --text-faint-rgb: 95 105 132;
-    --sos1-rgb: 168 122 0;   --sos1-chu-rgb: 122 89 0;
-    --sos2-rgb: 217 101 15;  --sos2-chu-rgb: 163 71 10;
-    --sos3-rgb: 180 35 24;   --sos3-chu-rgb: 155 28 20;
-    --sos2-nen: #fdebd9;  --sos3-nen: #911c18;  --sos3-vien: #911c18;  --sos3-tren: #ffffff;
-    --da-thi-bg-rgb: 238 245 250;
-    --kq-vuot-rgb: 20 108 67;    --kq-bang-rgb: 39 60 143;    --kq-duoi-rgb: 180 35 24;
+    --sos1-rgb: 155 126 71;   --sos1-chu-rgb: 113 92 50;
+    --sos2-rgb: 193 118 78;  --sos2-chu-rgb: 144 85 56;
+    --sos3-rgb: 166 58 45;   --sos3-chu-rgb: 143 48 38;
+    --sos2-nen: #f8ece1;  --sos3-nen: #862e27;  --sos3-vien: #862e27;  --sos3-tren: #ffffff;
+    --da-thi-bg-rgb: 240 245 248;
+    --kq-vuot-rgb: 56 103 76;    --kq-bang-rgb: 39 60 143;    --kq-duoi-rgb: 166 58 45;
 
     --hang-lon-bg: #f2f4f9;       --hang-lon-vach: #8690ab;
     --hang-lon-dong-bg: #f8f9fc;  --hang-lon-dong-vach: #b0b8cd;
     --hang-con-bg: #fbfcfe;       --hang-con-chu: #353d54;
     --o-sua-vien: #7f8aa6;        --o-sua-nen: #ffffff;   --o-sua-focus: #3a50a6;
 
-    --chu-1-rgb: 20 26 43;  --chu-2-rgb: 35 42 63;  --chu-3-rgb: 53 61 84;
+    --chu-1-rgb: 20 26 43;  --chu-2-rgb: 44 51 72;  --chu-3-rgb: 74 83 108;   /* D4 bổ sung: chữ phụ như mockup (chu-2 #4a536c), không gần đen */
     --chu-mo-rgb: 134 144 171;  --chu-mo-2-rgb: 210 215 229;
     --phu-rgb: 17 26 66;
     --phu-re: rgb(var(--phu-rgb) / .07);
@@ -153,6 +156,7 @@
     --goc-text-dim-rgb: var(--text-dim-rgb);  --goc-text-faint-rgb: var(--text-faint-rgb);  --goc-phu-rgb: var(--phu-rgb);  --goc-phu-re: var(--phu-re);
     --goc-line-strong: var(--line-strong);  --goc-surface-2: var(--surface-2);  --goc-nut-hover: var(--nut-hover);
     --goc-accent: var(--accent);  --goc-accent-strong: var(--accent-strong);  --goc-accent-soft: var(--accent-soft);  --goc-accent-line: var(--accent-line);
+    --goc-nut-chinh-nen: var(--nut-chinh-nen);  --goc-nut-chinh-vien: var(--nut-chinh-vien);  --goc-nut-chinh-chu: var(--nut-chinh-chu);  --goc-nut-chinh-hover: var(--nut-chinh-hover);
   }
   .thanh-xanh {
     background: var(--dieu-huong-nen);
@@ -161,6 +165,7 @@
     --text-dim-rgb: var(--dieu-huong-chu-rgb);  --text-faint-rgb: var(--dieu-huong-chu-rgb);  --phu-rgb: var(--trang-rgb);  --phu-re: rgb(var(--trang-rgb) / .1);
     --line-strong: var(--dieu-huong-vien);  --surface-2: var(--dieu-huong-nut);  --nut-hover: var(--dieu-huong-hover);
     --accent: var(--dieu-huong-chu-mo);  --accent-strong: var(--dieu-huong-chu-mo);  --accent-soft: var(--dieu-huong-hover);  --accent-line: var(--dieu-huong-vien);
+    --nut-chinh-nen: initial;  --nut-chinh-vien: initial;  --nut-chinh-chu: initial;  --nut-chinh-hover: initial;   /* trên thanh: nút chính theo --accent của thanh như cũ */
   }
   .thanh-xanh :is(.card, .field, [role="dialog"], [role="listbox"], [role="menu"], [aria-modal="true"]) {
     --text: var(--goc-text);  --text-dim: var(--goc-text-dim);  --text-faint: var(--goc-text-faint);
@@ -168,6 +173,7 @@
     --text-dim-rgb: var(--goc-text-dim-rgb);  --text-faint-rgb: var(--goc-text-faint-rgb);  --phu-rgb: var(--goc-phu-rgb);  --phu-re: var(--goc-phu-re);
     --line-strong: var(--goc-line-strong);  --surface-2: var(--goc-surface-2);  --nut-hover: var(--goc-nut-hover);
     --accent: var(--goc-accent);  --accent-strong: var(--goc-accent-strong);  --accent-soft: var(--goc-accent-soft);  --accent-line: var(--goc-accent-line);
+    --nut-chinh-nen: var(--goc-nut-chinh-nen);  --nut-chinh-vien: var(--goc-nut-chinh-vien);  --nut-chinh-chu: var(--goc-nut-chinh-chu);  --nut-chinh-hover: var(--goc-nut-chinh-hover);
     color: var(--text);
   }
   html, body, #root { height: 100%; }
@@ -281,9 +287,9 @@
   .btn:hover:not(:disabled) { background: var(--nut-hover); border-color: var(--accent-line); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-primary {
-    background: var(--accent); border-color: var(--accent-strong); color: var(--accent-ink); font-weight: 600;
+    background: var(--nut-chinh-nen, var(--accent)); border-color: var(--nut-chinh-vien, var(--accent-strong)); color: var(--nut-chinh-chu, var(--accent-ink)); font-weight: 600;
   }
-  .btn-primary:hover:not(:disabled) { background: var(--accent-strong); color: var(--accent-ink); }
+  .btn-primary:hover:not(:disabled) { background: var(--nut-chinh-hover, var(--accent-strong)); color: var(--nut-chinh-chu, var(--accent-ink)); }
   .btn-danger { border-color: rgb(var(--bad-rgb) / 0.42); color: var(--danger); }
   .btn-danger:hover:not(:disabled) { background: rgb(var(--bad-rgb) / 0.12); }
   .btn-sm { padding: 0.25rem 0.6rem; font-size: 13px; font-weight: 600; border-radius: 0.4rem; }
@@ -355,6 +361,9 @@
   /* OV-15a: hàng ĐÃ THI (từ hôm sau ngày thi tới khi chọn Bước tiếp) — nền cả hàng + vạch trái 3 px; chữ phụ lên một bậc để giữ tương phản. */
   tr.hang-da-thi > td, .hang-da-thi:not(tr) { background: rgb(var(--da-thi-bg-rgb)); --text-faint-rgb: var(--text-dim-rgb); }
   tr.hang-da-thi > td:first-child, .hang-da-thi:not(tr) { box-shadow: inset 3px 0 0 var(--lich-chu); }   /* NEN-V5: vạch màu lịch thi (khác Đạt) */
+  /* UI-CHART-D: dấu trên chart D (Tab vào được) — vòng focus quanh vùng chạm 28 px; hàng Thi thật của bảng kỹ năng / Mock Test nổi nhất. */
+  .diem-d:focus-visible > rect:first-of-type { stroke: var(--accent); stroke-width: 2; rx: 6px; }
+  tr.hang-thi-that > td, .hang-thi-that:not(tr) { background: var(--lich-nen); font-weight: 700; border-top: 2px solid var(--lich-chu); --text-faint-rgb: var(--text-dim-rgb); }
   /* HTT-6 (PTA-v4-9, đảo m1 §1d): ĐANG CHỌN = nền nhấn nhạt + vạch trái 3 px. Hàng đã thi đang chọn: giữ nền đã thi, vạch đổi màu nhấn. */
   :is(.dang-mo, .row-active):not(tr) { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); box-shadow: inset 3px 0 0 var(--accent-strong); }
   tr:is(.dang-mo, .row-active) > td { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); }
@@ -459,6 +468,15 @@
     color: var(--dieu-huong-nen); font-size: 12px; font-weight: 800; line-height: 17px; text-align: center; font-variant-numeric: tabular-nums;
     box-shadow: 0 0 0 2px var(--dieu-huong-nen); }
   .link { color: var(--accent); text-decoration: none; }
+  /* D4 bổ sung (= mockup V5 `.ten-ho-so`): tên đối tượng mở hồ sơ — màu chữ thường + "↗" (G6), chỉ rê mới xanh + gạch; không tô xanh như link khắp bảng. */
+  .ten-ho-so { color: var(--text); font-weight: 600; text-decoration: none; }
+  .ten-ho-so::after { content: "↗"; content: "↗" / ""; display: inline-block; margin-left: 3px; color: var(--text-faint); font-weight: 400; font-size: .8em; }
+  /* Tên bị cắt (…): "↗" nằm trong phần đệm phải, không bị cắt theo chữ — trên điện thoại (không rê) vẫn thấy là mở hồ sơ. */
+  .ten-ho-so.truncate { position: relative; padding-right: 1em; }
+  .ten-ho-so.truncate::after { position: absolute; right: 0; bottom: .2em; margin-left: 0; }
+  /* Phụ đề trong tiêu đề khối (`Card`: "· W4 AUG – W3 SEP", "· 8 lớp") = 13 / 400 như mockup, không theo cỡ 17 của tiêu đề. */
+  .h-khoi .font-normal { font-size: 13px; }
+  .ten-ho-so:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
   .link:hover { text-decoration: underline; }
 
   .skel { background: linear-gradient(90deg, var(--surface-2) 25%, var(--nut-hover) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 0.375rem; }
