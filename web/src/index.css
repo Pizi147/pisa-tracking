@@ -355,6 +355,9 @@
   /* OV-15a: hàng ĐÃ THI (từ hôm sau ngày thi tới khi chọn Bước tiếp) — nền cả hàng + vạch trái 3 px; chữ phụ lên một bậc để giữ tương phản. */
   tr.hang-da-thi > td, .hang-da-thi:not(tr) { background: rgb(var(--da-thi-bg-rgb)); --text-faint-rgb: var(--text-dim-rgb); }
   tr.hang-da-thi > td:first-child, .hang-da-thi:not(tr) { box-shadow: inset 3px 0 0 var(--lich-chu); }   /* NEN-V5: vạch màu lịch thi (khác Đạt) */
+  /* UI-CHART-D: dấu trên chart D (Tab vào được) — vòng focus quanh vùng chạm 28 px; hàng Thi thật của bảng kỹ năng / Mock Test nổi nhất. */
+  .diem-d:focus-visible > rect:first-of-type { stroke: var(--accent); stroke-width: 2; rx: 6px; }
+  tr.hang-thi-that > td, .hang-thi-that:not(tr) { background: var(--lich-nen); font-weight: 700; border-top: 2px solid var(--lich-chu); --text-faint-rgb: var(--text-dim-rgb); }
   /* HTT-6 (PTA-v4-9, đảo m1 §1d): ĐANG CHỌN = nền nhấn nhạt + vạch trái 3 px. Hàng đã thi đang chọn: giữ nền đã thi, vạch đổi màu nhấn. */
   :is(.dang-mo, .row-active):not(tr) { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); box-shadow: inset 3px 0 0 var(--accent-strong); }
   tr:is(.dang-mo, .row-active) > td { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); }

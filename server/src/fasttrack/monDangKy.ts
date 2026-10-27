@@ -11,13 +11,12 @@ import { badRequest, forbidden, notFound } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
-import { withdrawSignalsNoLongerValid } from '../cases/signals.ts';
 import { capNhatConOCho } from './conOCho.ts';
 import { setSkillScope } from './skillSchedule.ts';
 import { refreshOutcome } from './attempts.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, PERMISSIONS, SYSTEM_CLOSE_REASON_LABEL, boTaskCua, chuMon, kyNangKhongHoc, luuMon, monThieu, type MonVao,
+  ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, PERMISSIONS, boTaskCua, chuMon, kyNangKhongHoc, luuMon, monThieu, type MonVao,
 } from '../../../shared/domain/index.ts';
 
 export type TomTatMon = {
@@ -125,22 +124,10 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
     /* R1-NO-NHO: lượt vừa đổi bài (bỏ task W1 khi W2 đã chấm…) có thể vừa đủ điểm → kết quả + tín hiệu / Case ngay, như khi lưu điểm.
        Chỉ lượt đã có điểm — lượt rỗng không đổi trạng thái / tín hiệu (lô Sửa cả lớp không làm mới hàng chục lượt tương lai). */
     const coDiem = new Set(dong.filter((r) => r.co_diem).map((r) => r.attempt_id as number));
-    const lamMoi = [...new Set([...tat, ...bat, ...doiTask].map((r) => r.attempt_id as number))].filter((id) => coDiem.has(id));
-    if (lamMoi.length) {
-      /* P8 (#595): SOS / Case chỉ môn đăng ký — bài môn bỏ "đã chấm giữ nguyên" không được mở lại Case / tín hiệu qua đường làm mới này (đóng ngay trong cùng giao dịch). */
-      const boMon = [...monThieu(luu), ...(khongHoc.includes('writing') ? ['writing'] : [])];
-      const caseMo = () => (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE sc.student_id = ? AND sc.status != 'done' AND sc.topic IN (${boMon.map(() => '?').join(',') || 'NULL'})`)
-        .all(cy.student_id, ...boMon) as any[]).map((r) => r.id as number);
-      const tinCho = () => (conn.prepare(`SELECT id, attempt_id, skill FROM case_signals WHERE student_id = ? AND status = 'pending' AND skill IN (${boMon.map(() => '?').join(',') || 'NULL'})`)
-        .all(cy.student_id, ...boMon) as any[]);
-      const caseTruoc = new Set(caseMo()), tinTruoc = new Set(tinCho().map((r) => r.id as number));
-      for (const id of lamMoi) refreshOutcome(p, id);
-      const caseMoi = caseMo().filter((id) => !caseTruoc.has(id));
-      if (caseMoi.length) closeCasesBySystem({ actorUserId: p.userId, studentId: cy.student_id, reason: 'khong_con_hoc_mon', on: o.ngay ?? demoToday(), caseIds: caseMoi });
-      for (const r of tinCho().filter((r) => !tinTruoc.has(r.id))) {
-        withdrawSignalsNoLongerValid({ actorUserId: p.userId, attemptId: r.attempt_id, passingSkills: [r.skill], reason: SYSTEM_CLOSE_REASON_LABEL.khong_con_hoc_mon });
-      }
-    }
+    /* D7 (chủ SP 27/10): lượt có bài môn vừa bỏ / vừa bật lại đã chấm (`giu`) cũng làm mới — mức SOS + Phối hợp tính lại theo môn còn học. */
+    const lamMoi = [...new Set([...tat, ...bat, ...doiTask, ...giu, ...giuW].map((r) => r.attempt_id as number))].filter((id) => coDiem.has(id));
+    /* P8 (#595): môn bỏ không sinh tín hiệu / Case — chặn chung ở `boMonDaBo` (cases/sos.ts), mọi đường làm mới lượt đi qua đó. */
+    for (const id of lamMoi) refreshOutcome(p, id);
     writeAudit({
       actorUserId: p.userId, action: 'cycle.mon_dang_ky', entityType: 'learning_cycle', entityId: cycleId, entityLabel: 'Môn học',
       before: { monDangKy: tom.truoc }, after: { monDangKy: tom.sau, boKhoiDot: tom.boKhoiDot, giuDaCham: tom.giuDaCham, batLai: tom.batLai, caseDong: tom.caseDong },
