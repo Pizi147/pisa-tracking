@@ -164,7 +164,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
                   {x.pa.map((p) => (
                     <span key={p.id} title={dich(p.ten)}
                       className={`${CHIP_VUONG} h-5 min-w-0 max-w-full gap-1 overflow-hidden max-sm:h-auto max-sm:min-h-5 max-sm:py-0.5 max-sm:whitespace-normal ${KHOI_PA[p.tone]}`}>
-                      {DAU_PA[p.tone]}<span className={`truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words ${p.tone === 'wait' ? '' : 'text-slate-100'}`}>{dich(p.ten)}</span>
+                      {DAU_PA[p.tone]}<span className={`truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words max-sm:leading-4 ${p.tone === 'wait' ? '' : 'text-slate-100'}`}>{dich(p.ten)}</span>
                     </span>
                   ))}
                 </span>

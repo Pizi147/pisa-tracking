@@ -9,5 +9,6 @@
   {"cong_cu":"do-bang","pr":"M5","ly_do":"bảng Kế hoạch Test (Bang)","khop":"^(test-ke-hoach|cham-test-kh-lop|hop-ky-nang-mt|panel-xep-lich-mt)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"M6","ly_do":"bảng Phân tích (Bang)","khop":"^(phan-tich|phan-tich-thuong)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"M7","ly_do":"bảng Quản trị (Bang)","khop":"^(quan-tri|quan-tri-quyen|ho-so-ca-nhan)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
-  {"cong_cu":"do-bang","pr":"P9b","ly_do":"trang Cuối khoá (Bang): cột Hướng / Nhận xét là ô chọn / ô nhập (máy đo không có chữ để so mép), hàng có ô nhập + dòng phụ Progress / Kỳ vọng cao hơn 64 như mockup V6 k3","khop":"^(cuoi-khoa|cuoi-khoa-ap|cuoi-khoa-gvcn)-\\d+-(toi|sang) «[^»]+» g[13] "}
+  {"cong_cu":"do-bang","pr":"P9b","ly_do":"trang Cuối khoá (Bang): cột Hướng / Nhận xét là ô chọn / ô nhập (máy đo không có chữ để so mép), hàng có ô nhập + dòng phụ Progress / Kỳ vọng cao hơn 64 như mockup V6 k3","khop":"^(cuoi-khoa|cuoi-khoa-ap|cuoi-khoa-gvcn)-\\d+-(toi|sang) «[^»]+» g[13] "},
+  {"cong_cu":"do-bang","pr":"SUA-375-3","ly_do":"T17: ô GV chấm / trạng thái xuống dòng, không cắt — hàng cao theo nội dung (bảng Quá hạn chấm; PTA Plan 28/10 chọn miễn, không đổi mật độ khi chủ SP chưa duyệt)","khop":"^gv-nhap-diem-\\d+-(toi|sang) «bảng 1» g3 "}
 ]
