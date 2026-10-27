@@ -29,8 +29,8 @@
 .sau {
   /* Nền: nâng khỏi gần-đen (L 0,13 → 0,22 OKLCH), bớt ngả tím; thẻ / nền vẫn tách ≥ 1,15 : 1 (OV-15a). */
   --bg: #111a2a;  --surface: #1c273a;  --surface-2: #222e44;  --line: #2e3c55;  --line-strong: #41516e;
-  /* Nhấn: bớt bão hoà (C 0,09 → 0,08), tối hơn một nấc — nút chính không loá; vẫn ≥ 7 : 1 làm chữ link. */
-  --accent: #82a2d2;  --accent-strong: #a7bfe3;  --accent-soft: #1f2f4a;  --accent-line: #44628f;  --accent-ink: #0b1322;
+  /* Nhấn: bớt bão hoà (C 0,09 → 0,08), tối hơn hai nấc — nút chính không loá; vẫn ≥ 7 : 1 làm chữ link. */
+  --accent: #7a98c9;  --accent-strong: #a7bfe3;  --accent-soft: #1f2f4a;  --accent-line: #44628f;  --accent-ink: #0b1322;
   /* Chữ 3 bậc rõ: chính không trắng tinh (12,6 : 1 thay 16,8 : 1), phụ lùi hẳn để có tầng. */
   --text: #d5dce8;  --chu-2: #bec6d5;  --text-dim: #a6b0c3;  --text-faint: #8c98ad;
   --hong: #e687b2;  --hong-chu: #eda5c5;  --hong-nen: #382333;
@@ -38,15 +38,15 @@
   --lich-nen: #1f3a4f;  --lich-chu: #a3c5dd;  --lich-vien: #375f7b;
   /* Trạng thái: chữ dịu (C ≈ 0,08), nền / viền thấp; vẫn kèm ⚠ ✓ ✗. */
   --ok: #86bea0;  --ok-bg: #1d3329;  --ok-line: #3f6c56;
-  --bad: #dd9a92;  --bad-bg: #3b2427;  --bad-line: #774a45;
+  --bad: #e39486;  --bad-bg: #3b2427;  --bad-line: #774a45;
   --soon: #cdb374;  --soon-bg: #342d1e;  --soon-line: #6c5c36;
-  --doing: #82a2d2;  --doing-bg: #1f2f4a;  --doing-line: #44628f;
+  --doing: #7a98c9;  --doing-bg: #1f2f4a;  --doing-line: #44628f;
   --muted: #a6b0c3;  --muted-bg: #222e44;  --muted-line: #3d4c66;
   /* SOS giữ 3 mức khác hẳn (V5 P6): 1 viền mảnh · 2 viền dày + nền cam trầm · 3 nền đỏ ĐẶC nhưng trầm (bớt bão hoà) + viền sáng hơn. */
-  --sos1: #c0a64e;  --sos1-chu: #d0bb78;  --sos2: #cc8550;  --sos2-chu: #dda27c;  --sos2-nen: #39291e;
-  --sos3: #d06c66;  --sos3-chu: #dd9a92;  --sos3-nen: #74302d;  --sos3-vien: #b85650;  --sos3-tren: #ffffff;
+  --sos1: #c4ad48;  --sos1-chu: #d3bf6c;  --sos2: #d07a45;  --sos2-chu: #dd9a6e;  --sos2-nen: #39291e;
+  --sos3: #d06c66;  --sos3-chu: #e39486;  --sos3-nen: #74302d;  --sos3-vien: #b85650;  --sos3-tren: #ffffff;
   --da-thi-bg: #1a2b3c;
-  --kq-vuot: #86bea0;  --kq-bang: #82a2d2;  --kq-duoi: #dd9a92;
+  --kq-vuot: #86bea0;  --kq-bang: #7a98c9;  --kq-duoi: #e39486;
   --hang-lon-bg: #222e44;  --hang-lon-vach: #687890;  --hang-con-bg: #17202f;  --hang-con-chu: #b3bccc;
   --o-nhap-nen: #161f30;  --o-nhap-vien: #66768f;  --nut-hover: #26334b;
 }

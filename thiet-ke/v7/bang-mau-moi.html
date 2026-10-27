@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="bang-mau-moi.css">
 <style>
-  /* Khung trang so sánh (không phải đề xuất) — theo nền "sau" để người duyệt đọc dễ. */
-  :root { --k-nen: #111a2a; --k-mat: #1c273a; --k-vien: #2e3c55; --k-chu: #d5dce8; --k-phu: #a6b0c3; --k-nhan: #82a2d2; --k-hong: #e687b2; color-scheme: dark; }
-  :root[data-theme="light"] { --k-nen: #eff1f5; --k-mat: #ffffff; --k-vien: #dce0e8; --k-chu: #1d2333; --k-phu: #4c556b; --k-nhan: #273c8f; --k-hong: #ad2861; color-scheme: light; }
+  /* Khung trang so sánh (không phải đề xuất) — xám TRUNG TÍNH, không thuộc bảng nào, để mắt không quen sẵn với TRƯỚC hay SAU. */
+  :root { --k-nen: #1b1b1e; --k-mat: #242428; --k-vien: #3a3a40; --k-chu: #e4e4e8; --k-phu: #aaaab2; --k-nhan: #a4b6d6; color-scheme: dark; }
+  :root[data-theme="light"] { --k-nen: #e9e9ec; --k-mat: #f7f7f8; --k-vien: #cfcfd5; --k-chu: #1f1f24; --k-phu: #55555e; --k-nhan: #273c8f; color-scheme: light; }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body { margin: 0; background: var(--k-nen); color: var(--k-chu); font: 15px/1.5 'Be Vietnam Pro', system-ui, sans-serif; }
@@ -25,7 +25,7 @@
   .chon button { font: inherit; font-size: 14px; font-weight: 600; color: var(--k-phu); background: transparent; border: 0; padding: 8px 16px; min-height: 40px; cursor: pointer; }
   .chon button[aria-pressed="true"] { background: var(--k-mat); color: var(--k-chu); box-shadow: inset 0 -2px 0 var(--k-nhan); }
   .muc-luc { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 16px 0 0; padding: 0; list-style: none; font-size: 14px; }
-  .muc-luc a { color: var(--k-nhan); text-decoration: none; } .muc-luc a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .muc-luc a, a.lk { color: var(--k-nhan); text-decoration: none; } :is(.muc-luc a, a.lk):hover { text-decoration: underline; text-underline-offset: 3px; }
   h2 { font-size: 17px; font-weight: 700; margin: 40px 0 12px; line-height: 1.3; scroll-margin-top: 16px; }
   .giai { background: var(--k-mat); border: 1px solid var(--k-vien); border-radius: 12px; padding: 16px 20px; }
   .giai p, .giai li { max-width: 80ch; }
@@ -42,6 +42,16 @@
   @media (min-width: 1100px) { .cap { grid-template-columns: 1fr 1fr; } }
   .cot-nhan { font-size: 13px; font-weight: 700; margin: 0 0 6px; color: var(--k-phu); display: flex; gap: 8px; align-items: baseline; }
   .cot-nhan b { color: var(--k-chu); }
+  .quyet { border: 2px solid var(--k-nhan); }
+  .quyet ol { margin: 8px 0 0; padding-left: 22px; } .quyet li { margin: 6px 0; max-width: 90ch; }
+  .chuyen { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  kbd { font: 600 12px 'Inter', sans-serif; padding: 1px 6px; border: 1px solid var(--k-vien); border-bottom-width: 2px; border-radius: 4px; }
+  /* Chế độ LẬT: một khung toàn khổ, bấm A / nút nổi để đổi TRƯỚC ↔ SAU tại chỗ — so lệch nhỏ dễ hơn hai cột thu nhỏ. */
+  body[data-xem="lat"] .cap { grid-template-columns: 1fr; }
+  body[data-xem="lat"] .cap > div + div { display: none; }
+  .lat-noi { position: fixed; z-index: 5; right: 16px; bottom: 16px; display: none; font: inherit; font-size: 14px; font-weight: 700; min-height: 44px; padding: 0 16px;
+    border-radius: 22px; border: 1px solid var(--k-vien); background: var(--k-mat); color: var(--k-chu); box-shadow: 0 6px 20px rgb(0 0 0 / .35); cursor: pointer; }
+  body[data-xem="lat"] .lat-noi { display: inline-flex; align-items: center; gap: 8px; }
 
   /* ========== Mini app — CHỈ đọc token (bang-mau-moi.css), cùng cỡ / độ đậm ở hai cột để chỉ so màu ========== */
   .app { background: var(--bg); color: var(--text); border-radius: 10px; overflow: hidden; border: 1px solid var(--k-vien); font-size: 15px; line-height: 1.45; }
@@ -104,33 +114,50 @@
 <div class="khung">
   <header class="dau">
     <h1>Bảng màu mới · TRƯỚC | SAU <small>D4 MAU-WEB · đề xuất, chưa vào mã</small></h1>
-    <div class="chon" role="group" aria-label="Chế độ">
-      <button type="button" data-che-do="dark" aria-pressed="true">Tối</button>
-      <button type="button" data-che-do="light" aria-pressed="false">Sáng</button>
+    <div class="chuyen">
+      <div class="chon" role="group" aria-label="Cách xem">
+        <button type="button" data-xem="lat" aria-pressed="true">Lật toàn khổ</button>
+        <button type="button" data-xem="canh" aria-pressed="false">Cạnh nhau</button>
+      </div>
+      <div class="chon" role="group" aria-label="Chế độ">
+        <button type="button" data-che-do="dark" aria-pressed="true">Tối</button>
+        <button type="button" data-che-do="light" aria-pressed="false">Sáng</button>
+      </div>
     </div>
   </header>
   <ul class="muc-luc">
-    <li><a href="#chan-doan">Chẩn đoán</a></li><li><a href="#token">Token đổi</a></li>
+    <li><a href="#quyet">Quyết 3 điều</a></li><li><a href="#chan-doan">Chẩn đoán</a></li><li><a href="#token">Token đổi</a></li>
     <li><a href="#tong-quan">Tổng quan</a></li><li><a href="#hv-lop">HV &amp; Lớp</a></li><li><a href="#cong-viec">Công việc</a></li><li><a href="#lich-test">Lịch Test tuần</a></li>
     <li><a href="#hoi">Cần chủ SP quyết</a></li>
   </ul>
+
+  <h2 id="quyet">Chủ SP quyết 3 điều</h2>
+  <div class="giai quyet">
+    <ol>
+      <li><b>Tối — dùng bảng SAU?</b> Khuyến nghị: <b>có</b>. Nền nâng khỏi gần-đen, chữ chính bớt chói (16,8 → 12,6 : 1), chữ phụ lùi thành tầng rõ, đỏ / cam / xanh lá bớt rực khoảng 35 %, nút chính tối hơn hai nấc.</li>
+      <li><b>Sáng — dùng bảng SAU?</b> Khuyến nghị: <b>có</b>. Sáng gần như không đổi (vốn ổn): chỉ chữ chính bớt đen tuyền, đỏ / cam bớt rực.</li>
+      <li><b>SOS 3:</b> giữ nền đỏ đặc nhưng đỏ trầm (khuyến nghị, đúng luật V5 P6) — hay bỏ nền, chỉ viền đôi? <span class="tag">[XM]</span> chi tiết ở cuối trang.</li>
+    </ol>
+    <p class="phu">Cách xem nhanh: để "Lật toàn khổ", bấm <kbd>A</kbd> (hoặc nút nổi góc dưới) để đổi TRƯỚC ↔ SAU ngay tại chỗ; đổi Tối / Sáng ở góc trên.</p>
+  </div>
 
   <h2 id="chan-doan">Chẩn đoán — vì sao đau mắt (đo trên bản demo 1440, góc QL + GV)</h2>
   <div class="giai">
     <ul>
       <li><b>Nền gần đen, chữ gần trắng:</b> nền <span class="sw">#050a16</span>, chữ chính 16,8 : 1. Mức chói này gây loá viền chữ (halation) trên nền tối khi đọc lâu; chữ phụ cũng 11 : 1 nên không còn tầng chính / phụ.</li>
-      <li><b>Màu bão hoà cùng lúc:</b> đỏ quá hạn, cam / vàng hạn, xanh lá đạt, xanh nhấn, hồng logo đều có độ bão hoà OKLCH 0,12–0,16, xuất hiện cùng một màn (Tổng quan GV: 61 chữ màu bão hoà trên 182 chữ).</li>
+      <li><b>Màu bão hoà cùng lúc:</b> đỏ quá hạn, cam / vàng hạn, xanh lá đạt, xanh nhấn, hồng logo đều rực (độ bão hoà OKLCH 0,12–0,16), xuất hiện cùng một màn (Tổng quan GV: 61 chữ màu bão hoà trên 182 chữ).</li>
       <li><b>Nền đặc gắt:</b> SOS 3 nền đỏ <span class="sw">#9c201c</span> (bão hoà 0,16) · nút chính tô xanh nhạt sáng (Xem, + Thêm học viên) nổi hơn cả nội dung.</li>
       <li><b>Quá nhiều chữ đậm:</b> 51–65 % chữ ở Tổng quan, Công việc, Lịch Test có độ đậm ≥ 600. Không thuộc phạm vi token — <span class="tag">kiến nghị riêng</span> ở cuối trang.</li>
       <li><b>Link gạch chân:</b> link chữ thường đã chỉ gạch khi rê; phần gạch chân còn lại là ô số (25–35 ô ở Tổng quan) — đúng luật G6 / D4, giữ.</li>
       <li><b>Sáng:</b> vốn ổn (chữ 15,9 : 1, thẻ trắng). Chỉ chỉnh nhẹ đỏ / cam và chữ chính bớt đen tuyền.</li>
     </ul>
+    <p class="phu">Ảnh bản chính hiện tại (tối 1440, bản demo — cột TRƯỚC bên dưới dựng lại từ đây): <a class="lk" href="anh/mau-truoc-tong-quan.png">Tổng quan</a> · <a class="lk" href="anh/mau-truoc-hv-lop.png">HV &amp; Lớp</a> · <a class="lk" href="anh/mau-truoc-cong-viec.png">Công việc</a> · <a class="lk" href="anh/mau-truoc-lich-test.png">Lịch Test</a>.</p>
     <p class="phu">Cách đo: Playwright đếm phần tử có chữ trong &lt;main&gt; ở 4 trang × 2 vai; tương phản và độ bão hoà: <code>thiet-ke/v7/kiem-tuong-phan-mau-moi.py</code> (SAU: mọi cặp chữ ≥ 4,5 : 1, viền ô nhập / SOS ≥ 3 : 1, thẻ tách nền ≥ 1,15 tối · 1,09 sáng như <code>prOv15a</code>).</p>
   </div>
 
   <h2 id="token">Token đổi — chỉ giá trị, giữ tên (bước 2 chép vào <code>web/src/index.css</code>)</h2>
   <div class="giai bang-cuon">
-    <table class="tk" id="bang-token"><thead><tr><th>Token</th><th>Vai trò</th><th>TRƯỚC</th><th>SAU</th><th>Ghi chú</th></tr></thead><tbody></tbody></table>
+    <table class="tk" id="bang-token"><thead><tr><th>Token</th><th>Vai trò</th><th>TRƯỚC</th><th>SAU</th></tr></thead><tbody></tbody></table>
     <p class="phu">Bảng đổi theo nút Tối / Sáng. Đầy đủ mọi token: <code>thiet-ke/v7/bang-mau-moi.css</code>.</p>
   </div>
 
@@ -250,7 +277,7 @@
     for (const [ten, vai] of TOKEN) {
       const a = lay('truoc', ten), b = lay('sau', ten);
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><code>${ten}</code></td><td>${vai}</td><td><span class="sw"><i style="background:${a}"></i>${a}</span></td><td><span class="sw"><i style="background:${b}"></i>${b}</span></td><td>${a === b ? '<span class="tag">giữ</span>' : ''}</td>`;
+      tr.innerHTML = `<td><code>${ten}</code></td><td>${vai}</td><td><span class="sw"><i style="background:${a}"></i>${a}</span></td><td><span class="sw"><i style="background:${b}"></i>${b}</span>${a === b ? ' <span class="tag">giữ</span>' : ''}</td>`;
       tb.append(tr);
     }
   }
@@ -260,11 +287,34 @@
     const mau = document.getElementById(cap.dataset.mau);
     for (const [c, nhan, phu] of [['truoc', 'TRƯỚC', 'bản chính hiện tại'], ['sau', 'SAU', 'đề xuất']]) {
       const cot = document.createElement('div');
-      cot.innerHTML = `<p class="cot-nhan"><b>${nhan}</b> ${phu}</p>`;
+      cot.innerHTML = `<p class="cot-nhan" aria-live="polite"><b>${nhan}</b> ${phu}</p>`;
       const app = document.createElement('div'); app.className = 'app ' + c; app.append(mau.content.cloneNode(true));
       cot.append(app); cap.append(cot);
     }
   }
+  // Lật: cột đầu của mỗi cặp đổi lớp truoc ↔ sau tại chỗ.
+  let dangXem = 'sau';
+  const latNoi = document.createElement('button'); latNoi.type = 'button'; latNoi.className = 'lat-noi'; document.body.append(latNoi);
+  function lat(c) {
+    dangXem = c;
+    for (const cap of document.querySelectorAll('[data-mau]')) {
+      const cot = cap.firstElementChild;
+      cot.querySelector('.app').className = 'app ' + c;
+      cot.querySelector('.cot-nhan').innerHTML = c === 'sau' ? '<b>SAU</b> đề xuất' : '<b>TRƯỚC</b> bản chính hiện tại';
+    }
+    latNoi.innerHTML = `Đang xem: <b>${c === 'sau' ? 'SAU' : 'TRƯỚC'}</b> · <kbd>A</kbd> lật`;
+  }
+  function xem(x) {
+    document.body.dataset.xem = x;
+    document.querySelectorAll('[data-xem]').forEach((n) => n !== document.body && n.setAttribute('aria-pressed', String(n.dataset.xem === x)));
+    lat(x === 'lat' ? dangXem : 'truoc');
+  }
+  latNoi.addEventListener('click', () => lat(dangXem === 'sau' ? 'truoc' : 'sau'));
+  document.querySelectorAll('button[data-xem]').forEach((n) => n.addEventListener('click', () => xem(n.dataset.xem)));
+  addEventListener('keydown', (e) => {
+    if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey && !e.altKey && document.body.dataset.xem === 'lat') lat(dangXem === 'sau' ? 'truoc' : 'sau');
+  });
+  xem(new URLSearchParams(location.search).get('xem') || 'lat');
   const nut = document.querySelectorAll('[data-che-do]');
   function dat(cd) {
     document.documentElement.dataset.theme = cd;
