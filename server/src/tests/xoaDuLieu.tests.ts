@@ -724,7 +724,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
 
   check('6C-NHO · Tài khoản chưa có email: chặn và nói bước tiếp (không tắt nút im lặng)', () => {
     const k = accounts.createAccount(P.admin, {
-      email: `thu.xoa.ko.email${Date.now() % 100000}.pisa@gmail.com`, password: 'matkhau-ko-email', fullName: 'Thu Xoa Khong Email', roles: [],
+      email: `thu.xoa.ko.email${Date.now() % 100000}.pisa@gmail.com`, password: 'matkhau-ko-email', fullName: 'Thu Xoa Khong Email', roles: [{ role: 'teacher', branches: ['MB'] }],
     }) as { userId: number };
     conn.prepare('UPDATE users SET email = NULL WHERE id = ?').run(k.userId);
     const x = xoaTK.xemXoaTaiKhoan(P.admin, k.userId);
