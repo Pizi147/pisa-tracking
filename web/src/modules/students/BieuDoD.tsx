@@ -88,7 +88,7 @@ export function BieuDoD(o: BieuDoDProps) {
   }, [goi]);
 
   const nay = mondayOfDate(o.homNay);
-  /* Thi dự kiến theo tháng → khối các tuần của tháng đó; còn lại một cột. */
+  /* Dự kiến thi theo tháng → khối các tuần của tháng đó; còn lại một cột. */
   const thiKhoi = o.thi ? (o.thi.tuan ? [o.thi.tuan, o.thi.tuan] : o.thi.thang ? tuanCuaThang(o.thi.thang) : null) : null;
   const moc = [...o.diem.map((p) => p.tuan), ...o.sex.map((x) => x.tuan), ...o.cases.flatMap((c) => [c.mo, ...c.pa.map((p) => p.tu)]), ...(thiKhoi ?? [])];
   const { tuan: truc, coTruoc, coSau } = dungTrucTuan([cong([...moc].sort()[0] ?? nay, -1), ...(thiKhoi ? [] : [cong(nay, 1)]), ...moc], nay, lui);
@@ -268,7 +268,7 @@ export function BieuDoD(o: BieuDoDProps) {
   o.sex.filter((q) => trong(q.tuan)).forEach((q) => nhanMoc.push([Xc(q.tuan), 'S Ex', 'var(--text-dim)', 0]));
   if (o.thi && thiKhoi && thiTrong) {
     const rongKhoi = Xl(thiKhoi[1]) + cw - Xl(thiKhoi[0]);
-    nhanMoc.push([(Xl(thiKhoi[0]) + Xl(thiKhoi[1]) + cw) / 2, o.thi.v != null || o.thi.cho ? t('Thi thật') : rongKhoi > 90 ? t('Thi dự kiến') : t('Thi'), 'var(--lich-chu)', 3]);
+    nhanMoc.push([(Xl(thiKhoi[0]) + Xl(thiKhoi[1]) + cw) / 2, o.thi.v != null || o.thi.cho ? t('Thi thật') : rongKhoi > 90 ? t('Dự kiến thi') : t('Thi'), 'var(--lich-chu)', 3]);
   }
   if (trong(nay) && !nayLuot) nhanMoc.push([Xc(nay), t('nay'), 'var(--hong-chu)', 2]);
   nhanMoc.sort((a, b) => b[3] - a[3] || b[0] - a[0]);
@@ -367,7 +367,7 @@ export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, kyToi = fa
       {kyToi && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0.5" y="1.5" width="17" height="9" rx="2" fill="none" stroke="var(--accent)" strokeDasharray="3 2" />)}{t('kỳ tới')}</span>}
       {thi === 'kq' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="5" y="2" width="8" height="8" transform="rotate(45 9 6)" fill="var(--lich-chu)" />)}{t('thi thật')}</span>}
       {thi === 'cho' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0" y="0" width="18" height="12" fill="var(--lich-nen)" />)}{t('thi thật · chờ kết quả')}</span>}
-      {thi === 'du-kien' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0.5" y="0.5" width="17" height="11" rx="2" fill="var(--lich-nen)" stroke="var(--lich-vien)" strokeDasharray="3 2" />)}{t('thi thật dự kiến')}</span>}
+      {thi === 'du-kien' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0.5" y="0.5" width="17" height="11" rx="2" fill="var(--lich-nen)" stroke="var(--lich-vien)" strokeDasharray="3 2" />)}{t('dự kiến thi')}</span>}
     </div>
   );
 }

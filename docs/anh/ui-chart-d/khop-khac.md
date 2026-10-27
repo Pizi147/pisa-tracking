@@ -36,7 +36,7 @@ Ngô Hải Yến (id 23) môn đăng ký bỏ W1 + xoá điểm W1 MT3 → "khô
 | K12 | S Ex thoi hồng, không tính | KHỚP (Speaking, `/s-expert`) |
 | K13 | Làn Case: thanh màu SOS, chữ trong thanh, đã đóng viền mảnh | KHỚP (+ mã MT trong thanh "Case W2 · MT3 · SOS 1" để phân biệt hai Case cùng kỹ năng) |
 | K14 | Làn PA: chữ trong thanh + ●◐○✕… (vẽ SVG — ◐ không có trong phông); "kỳ tới" đứt tới hạn kỳ | KHỚP (hạn = `actionDue`, cùng "hạn kế" của ngăn Case) |
-| K15 | Thi dự kiến theo tháng → khối tháng; theo tuần → một cột | KHỚP |
+| K15 | Dự kiến thi theo tháng → khối tháng; theo tuần → một cột | KHỚP |
 | K16 | Đã thi chờ KQ → cột xanh lơ | KHỚP (ghi chú mockup nói "◇ ở mức Target", hình mockup chỉ có cột — theo hình: ◇ dễ đọc nhầm là điểm = Target) |
 | K17 | Đã thi có KQ → ◆ lớn, số 15/800, vạch đỏ tới Target + "−0.5" | KHỚP |
 | K18 | Chạm / Tab dấu → hộp nhỏ; Enter → "Hồ sơ lượt ›" | KHỚP (+ Enter trên thanh Case / PA mở ngăn Case tại trang) |
@@ -54,7 +54,7 @@ Ngô Hải Yến (id 23) môn đăng ký bỏ W1 + xoá điểm W1 MT3 → "khô
 | K30 | Kết quả hàng thi: "✗ Chưa đạt Target · −0.5" / "✓ Đạt Target" | KHỚP |
 | K31 | 375 Overall: bảng cột đầu dính, cuộn ngang | KHÁC — GIỮ thẻ điện thoại V4 (PR-UXD Q9) + thẻ Thi thật cuối (xem [XM-2]) |
 | K32 | Lớp thường: trục %, vạch "Đạt từ 70 %", nhãn "18/25", cột cuối Final | KHỚP (máy chủ thêm `attempts[].nguongDat`) |
-| K33 | Chưa có lượt: chart chỉ MT1 sắp tới + cột thi dự kiến | KHỚP |
+| K33 | Chưa có lượt: chart chỉ MT1 sắp tới + cột dự kiến thi | KHỚP |
 
 **BỎ / GIỮ**
 
