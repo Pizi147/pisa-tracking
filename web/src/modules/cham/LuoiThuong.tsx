@@ -24,6 +24,7 @@ import {
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HopThaoTacMt, THAO_TAC_CO_HOP } from '../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from './NganLichSuBai.tsx';
+import { useTrongKhung } from '../../ui/KhungPanel.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 import { DongThi } from './DongThi.tsx';
 import { NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';
@@ -409,6 +410,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
 }) {
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
+  /* 6C-NHO (bảng kê lỗi 4): lưới nằm trong panel (Nhập điểm, Quá hạn chấm, panel việc) → hộp ⋯ / Lịch sử mở đè, không đóng panel cha. */
+  const trongKhung = useTrongKhung();
   const { can } = useSession();
   const ct = sheet.programme.code;
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
@@ -452,7 +455,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
     const s = lichCua(row, hop.k);
     return (
       <HopThaoTacMt key={`${hop.t}:${hop.k}`} thaoTac={hop.t} attemptId={row.attemptId} skill={hop.k} ct={ct} laThuong
-        quanLy={sheet.canPlan}
+        quanLy={sheet.canPlan} trongHop={trongKhung}
         row={{ periodId: null, weekStart: s?.weekStart ?? null, deadline: s?.deadline ?? null }}
         onClose={() => setHop(null)} onDone={onReload} />
     );
@@ -545,7 +548,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
       <OBang c={cc.kq}>
         <KetQua row={row} sheet={sheet} />
         {hopO}
-        {lichSu && <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} onClose={() => setLichSu(null)} />}
+        {lichSu && <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} trongHop={trongKhung} onClose={() => setLichSu(null)} />}
       </OBang>
     </tr>
   );

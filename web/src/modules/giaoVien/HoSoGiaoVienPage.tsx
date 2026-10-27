@@ -184,7 +184,7 @@ function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
     o1(t('Đạt kỳ vọng Test'), o(d?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test')),
       <>{tuMau(tyLeGv(d?.ketQua), t('lượt Test'))}{d && d.tienBo.k !== 'na' && <> · {t('Tiến bộ')} {nho(d.tienBo, 'tien-bo', t('HV tiến bộ'))}</>}</>,
       t('Test (MT, Progress, Final — không gồm thi thật): theo quy tắc Overall, một lượt = một lượt Test của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi. Tiến bộ: lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (Fast Track).')),
-    o1(t('Case có PA'), <PhanTram x={pa} nguon={nguon(id, 'cot=case-mo')} tieuDe={t('Case đang phụ trách')} />,
+    o1(t('Case có PA'), <PhanTram x={pa} nguon={nguon(id, 'cot=case-mo')} tieuDe={t('Case đang phụ trách')} vung="chi-so" />,
       paCt ? <>{t('PA cải thiện')} <OSo giaTri={paCt.tong} nhan={`${paCt.dung}/${paCt.tong}`} nguon={nguonCs('pa-hieu-qua')} tieuDe={t('PA hiệu quả')} className={vung} /></> : t('Case đang phụ trách')),
     /* Chủ SP 23/10: thi thật (IELTS) RẤT quan trọng — % Pass Target + Fail · Pass · Exceed (bấm → danh sách có điểm). */
     o1(t('Kết quả thi thật'),
@@ -560,11 +560,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
               </ul>
             </div>
           )}
-          {ds.length > truoc.length && (
-            <span className="text-sm text-slate-400">
-              <OSo giaTri={ds.length} nhan={t('Xem cả {n} Case', { n: ds.length })} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} className={vung} />
-            </span>
-          )}
+          {/* 6C-NHO (bảng kê lỗi 2): bỏ "Xem cả n Case" — trùng số to đầu thẻ (cùng panel, cùng khoá → nháy). */}
         </div>
       )}
     </Card>
