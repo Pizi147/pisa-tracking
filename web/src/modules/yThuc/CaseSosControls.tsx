@@ -9,7 +9,7 @@ import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BoiCanh, CanLam, DiemKq, NhomCoSo, NutChu, TrangThaiLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, CanLam, DiemKq, DongTiep, NhomCoSo, NutChu, NutVaTiep, TrangThaiLuu, type DaLuuPanel, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { FormDoiPa, useDoiPa } from '../cases/DoiPa.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
@@ -43,19 +43,7 @@ type ChungPanel = {
   quayLai?: { nhan: string; onClick: () => void };
   onClose: () => void;
 };
-/**
- * M6 6b-3 (mockup panel-pilot ②b): panel việc có việc kế — thêm nút "Xác nhận · việc tiếp ›" (V12 ②: chỉ chuyển khi máy chủ đã nhận); `lam` nhận kết
- * quả để dải "✓ … · Hoàn tác" hiện ở đầu việc kế. `ten` = "Tiếp: {việc} · {em}" (V12 ⑥).
- */
-export type TiepViec = { ten: string | null; lam: (x: DaLuuPanel) => void };
-/** Hàng nút của form xác nhận: nút thường + "Xác nhận · việc tiếp ›" (nút chính khi có việc kế), "Đang lưu…" chỉ ở nút đã bấm (V12 ⑨). */
-function NutXacNhan({ chu, busy, tiep, bam, luu }: { chu: string; busy: boolean; tiep?: TiepViec; bam: 'luu' | 'tiep' | null; luu: (diTiep: boolean) => void }) {
-  return <>
-    <button type="button" className={`btn ${tiep ? '' : 'btn-primary'} min-h-[40px] px-4 font-bold`} disabled={busy} onClick={() => luu(false)}>{busy && bam !== 'tiep' ? t('Đang lưu…') : chu}</button>
-    {tiep && <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => luu(true)}>{busy && bam === 'tiep' ? t('Đang lưu…') : t('Xác nhận · việc tiếp ›')}</button>}
-  </>;
-}
-const dongTiep = (tiep?: TiepViec) => (tiep?.ten ? <p className="m-0 -mt-1.5 truncate text-[13px] text-slate-400" title={tiep.ten}>{t('Tiếp: {x}', { x: tiep.ten })}</p> : null);
+
 
 /** PA theo quy chế như `caseDetail` trả — chỉ các trường panel cần. */
 export type PaQuyChe = {
@@ -149,11 +137,11 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
       else { toast.push('ok', chu); onXong(); }
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
-  const nut = <NutXacNhan chu={t('Xác nhận Case')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
+  const nut = <NutVaTiep chu={t('Xác nhận Case')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
   return (
     <KhungPanel tieuDe={t('Xác nhận Case')} {...chung} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, `Progress · ${tenMonNgan(ct, topic)}`, true)}
-      chan={{ v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi), dongTren: busy || sua ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} onHuy={() => { setSua(false); setV(goc); }} /> : undefined }}>
+      chan={{ v3: true, chinh: <><DongTiep tiep={tiep} chan />{nut}</>, daSua, conThieu: lf.conThieu(loi), dongTren: busy || sua ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} onHuy={() => { setSua(false); setV(goc); }} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
           <div>
@@ -181,7 +169,7 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
             </div>
           )}
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
-          {dongTiep(tiep)}
+          <DongTiep tiep={tiep} />
         </CanLam>
         <BoiCanh dong={[['SOS', data.sosLevel ? t('SOS {sosLevel} · theo số môn trượt của Progress Test', { sosLevel: data.sosLevel }) : null]]} />
       </div>
@@ -250,7 +238,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>
       {busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}
     </button>
-  ) : <NutXacNhan chu={t('Xác nhận PA')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
+  ) : <NutVaTiep chu={t('Xác nhận PA')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
   const daSua = cheDo === 'doi' ? doi.daSua : !!v.description.trim();
   const theoLuot = data.nguyenNhanTheoLuot ?? [];
   const tuChoi = pa.doiPa?.trangThai === 'tu_choi' ? pa.doiPa : null;
@@ -258,7 +246,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
   return (
     <KhungPanel tieuDe={t('Xác nhận PA')} {...chung} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, [`MT${data.tenSos?.mt ?? data.attemptNo ?? ''}`, data.categoryLabel ?? '', data.sosLevel ? `SOS ${data.sosLevel}` : null].filter(Boolean).join(' · '), true)}
-      chan={{ v3: true, chinh: cheDo === 'ktd' ? undefined : nut, daSua, conThieu: lf.conThieu(loi),
+      chan={{ v3: true, chinh: cheDo === 'ktd' ? undefined : cheDo === 'doi' ? nut : <><DongTiep tiep={tiep} chan />{nut}</>, daSua, conThieu: lf.conThieu(loi),
         dongTren: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu(bam === 'tiep')} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         {tuChoi && (
@@ -297,7 +285,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
                 <NutChu onClick={() => { setCheDo('doi'); lf.datLai(); }}>{t('Đề xuất PA khác…')}</NutChu>
                 <button type="button" className="btn btn-ghost min-h-[44px] text-slate-400 sm:min-h-0" onClick={() => setCheDo('ktd')}>{t('Không cần theo dõi…')}</button>
               </div>
-              {dongTiep(tiep)}
+              <DongTiep tiep={tiep} />
             </>
           )}
         </CanLam>

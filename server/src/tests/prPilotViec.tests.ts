@@ -29,7 +29,12 @@ export async function runPrPilotViecTests(t: YThucTestKit) {
   check('6b-3 · PanelViec: ngăn xếp view (`useXem`), "Xem Case" = view kế, form việc giữ gắn (ẩn) — không "‹ Việc", không mở Case dưới bối cảnh', () => {
     const pv = docSach('web/src/modules/congViec/PanelViec.tsx');
     const goc = pv.slice(pv.indexOf('export function PanelViec'), pv.indexOf('function PanelMotViec'));
-    assert(/useXem\(\{\s*dau:\s*\['viec'\]/.test(goc), 'PanelViec không dùng ngăn xếp view của 6b-1');
+    assert(/useXem\(\{\s*url:\s*p\.xemUrl,\s*dau:\s*\['viec'\]/.test(goc), 'PanelViec không dùng ngăn xếp view của 6b-1');
+    /* V19 (critique P1): ở Công việc view Case là mục lịch sử `?panel=case` — Back lùi một view; đóng / đổi việc tính cả các mục đã push. */
+    const tab = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx');
+    assert(/<PanelViec [^>]*xemUrl/.test(tab), 'Công việc không ghi view Case lên URL (Back rời trang)');
+    assert(/navigate\(-1 - soMucPanel\(stLs\)\)/.test(tab), 'đóng panel từ view Case không lùi đủ số mục');
+    assert(/next\.delete\('panel'\)/.test(tab.slice(tab.indexOf('const mo = '), tab.indexOf('const dong = '))), 'đổi việc vẫn mở view Case của việc trước');
     assert(/xem\.vao\('case'\)/.test(goc) && /XemCaseViec\.Provider/.test(goc), '"Xem Case" không vào view kế');
     assert(/hidden=\{/.test(goc), 'form việc bị gỡ khi xem Case — chữ / lựa chọn mất');
     assert(/<NganCase[\s\S]*veNguon=\{\{\s*nhan:\s*tenBoEm\(p\.it\),\s*onClick:\s*xem\.lui/.test(goc), '‹ ở view Case không về đúng tên việc (không lặp tên em)');
@@ -53,14 +58,17 @@ export async function runPrPilotViecTests(t: YThucTestKit) {
     for (const ten of ['XacNhanPaPanel', 'XacNhanCasePanel']) {
       const i = cs.indexOf(`export function ${ten}`);
       const f = cs.slice(i, cs.indexOf('\nexport function', i + 10));
-      assert(/<NutXacNhan [^>]*tiep=\{tiep\}/.test(f), `${ten}: thiếu nút "Xác nhận · việc tiếp ›"`);
+      assert(/<NutVaTiep [^>]*chuTiep=\{t\('Xác nhận · việc tiếp ›'\)\}[^>]*tiep=\{tiep\}/.test(f), `${ten}: thiếu nút "Xác nhận · việc tiếp ›"`);
       const sauGui = f.slice(f.search(/await api\.post/));
       assert(/tiep\.lam\(/.test(sauGui), `${ten}: sang việc kế trước khi máy chủ nhận`);
-      assert(/\{dongTiep\(tiep\)\}/.test(f), `${ten}: thiếu "Tiếp: …" (V12 ⑥)`);
+      assert(/<DongTiep tiep=\{tiep\} \/>/.test(f) && /<DongTiep tiep=\{tiep\} chan \/>/.test(f), `${ten}: thiếu "Tiếp: …" (V12 ⑥) ở khối Cần làm / chân 375`);
     }
-    assert(/const dongTiep = [^\n]*t\('Tiếp: \{x\}'/.test(cs), 'dongTiep không in "Tiếp: …"');
-    const nut = cs.slice(cs.indexOf('function NutXacNhan'), cs.indexOf('const dongTiep'));
-    assert(/tiep && <button[\s\S]*luu\(true\)[\s\S]*t\('Xác nhận · việc tiếp ›'\)/.test(nut), 'NutXacNhan không có "Xác nhận · việc tiếp ›"');
+    const kv = docSach('web/src/ui/KhuonViec.tsx');
+    const nut = kv.slice(kv.indexOf('export function NutVaTiep'), kv.indexOf('export function DongTiep'));
+    assert(/tiep && <button[\s\S]*luu\(true\)[\s\S]*chuTiep/.test(nut), 'NutVaTiep không có nút "· việc tiếp ›"');
+    assert(/t\('Tiếp: \{x\}'/.test(kv.slice(kv.indexOf('export function DongTiep'))), 'DongTiep không in "Tiếp: …"');
+    const tc = docSach('web/src/modules/cases/ThaoTacCase.tsx');
+    assert(/chuTiep=\{t\('Thêm PA · việc tiếp ›'\)\}/.test(tc) && /if \(diTiep && tiep\) tiep\.lam\(x\)/.test(tc), 'Thêm PA thiếu "· việc tiếp ›" (chuỗi việc gãy sau dải)');
     const ng = docSach('web/src/modules/students/NganCase.tsx');
     assert(/useContext\(ViecVuaLuu\)/.test(ng) && /cv\?\.bao\(/.test(ng), 'Ngăn Case không báo việc vừa lưu cho dải');
   });

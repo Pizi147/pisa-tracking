@@ -3,4 +3,5 @@ import type { Dich } from '../en.ts';
 
 export const EN_PILOT_VIEC = {
   'Đã lưu kết quả': 'Result saved',
+  'Thêm PA · việc tiếp ›': 'Add PA · next task ›',
 } satisfies Record<string, Dich>;

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -18,12 +18,13 @@ import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } f
 import { DauViecCongViec, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { useToast } from '../../ui/Toast.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
-  LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, type LocNhanh, type NhomViec as MaNhomViec, demViec, laViecChamCheo, shortDate, chiaVachHan,
+  LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type NhomViec as MaNhomViec, demViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, demNguoiViec, khopNguoiViec, trongKhoiHomNay, type DemYeuCau, type LocNguoiViec,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -65,6 +66,8 @@ const phang = (ds: readonly WorkItem[]) => ds.flatMap((x) => [x, ...(x.con ?? []
 export function HoTroHocVienTab() {
   const { session } = useSession();
   const navigate = useNavigate();
+  /* M6 6b-3: view Case trong panel việc là mục lịch sử `?panel=case` (`panelSau` = số mục đã push) — đóng / đổi việc tính cả các mục đó. */
+  const { state: stLs } = useLocation();
   const [params, setParams] = useSearchParams();
   const macDinh = useChiNhanhMacDinh();
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
@@ -183,14 +186,15 @@ export function HoTroHocVienTab() {
     .filter((x) => lamTaiCho(x)), [dsNhom]);
   /* Địa chỉ (không `viec`) lúc mở panel bằng một bước lịch sử — đóng chỉ lùi khi bộ lọc chưa đổi, không thì mất lựa chọn lọc vừa bấm. */
   const daDay = useRef<string | null>(null);
-  const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); return x.toString(); };
+  const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); x.delete('panel'); return x.toString(); };
   const cuon = useRef(0);
   const mo = (it: WorkItem) => {
     if (!lamTaiCho(it)) { navigate(it.href); return; }
     const next = new URLSearchParams(params);
     next.set('viec', it.key);
-    /* Mở từ danh sách: một bước lịch sử (nút Lùi của điện thoại về danh sách); đổi việc khi panel đang mở: thay tại chỗ. */
-    if (viec) setParams(next, { replace: true });
+    next.delete('panel');   // việc mới mở ở form, không ở view Case của việc trước
+    /* Mở từ danh sách: một bước lịch sử (nút Lùi của điện thoại về danh sách); đổi việc khi panel đang mở: thay tại chỗ (giữ số mục view đã push để đóng lùi đủ). */
+    if (viec) setParams(next, { replace: true, state: soMucPanel(stLs) ? { panelSau: soMucPanel(stLs) } : undefined });
     else {
       daDay.current = khongViec(params);
       const v = vungCuon();
@@ -201,8 +205,8 @@ export function HoTroHocVienTab() {
   const dong = () => {
     const lui = daDay.current !== null && daDay.current === khongViec(params);
     daDay.current = null;
-    if (lui) navigate(-1);
-    else setParam('viec', null);
+    if (lui) navigate(-1 - soMucPanel(stLs));
+    else { const next = new URLSearchParams(params); next.delete('viec'); next.delete('panel'); setParams(next, { replace: true }); }
   };
   /* Điện thoại: danh sách hiện lại (nút "‹ Công việc" hay nút Lùi) → về đúng chỗ cuộn cũ, SAU khi vẽ (trước đó cuộn neo theo nội dung panel). */
   const coChon = !!chon;
@@ -230,10 +234,11 @@ export function HoTroHocVienTab() {
    */
   const [vuaLuu, setVuaLuu] = useState<{ x: DaLuuPanel; tu: WorkItem; den: string | null; lan: number } | null>(null);
   const [lan, setLan] = useState(0);
+  const toast = useToast();
   const noiDai = choDaiVuaLuu(vuaLuu && { tu: vuaLuu.tu.key, den: vuaLuu.den }, chon?.key ?? null, !!het);
   const daiVuaLuu = vuaLuu && noiDai && (
     <DaiVuaLuu key={vuaLuu.lan} x={vuaLuu.x} ai={vuaLuu.tu.studentId !== null ? vuaLuu.tu.studentName : null}
-      onHoanTac={() => { const tu = vuaLuu.tu; setVuaLuu(null); setHet(null); if (tu.key === chon?.key) setLan((n) => n + 1); else boChuRoi(() => mo(tu)); }} />
+      onHoanTac={() => { const tu = vuaLuu.tu; setVuaLuu(null); setHet(null); toast.push('ok', t('Đã hoàn tác')); if (tu.key === chon?.key) setLan((n) => n + 1); else boChuRoi(() => mo(tu)); }} />
   );
   const viecVuaLuu = {
     ten: keTiep ? [tenBoEm(keTiep), keTiep.studentId !== null ? keTiep.studentName : null].filter(Boolean).join(' · ') : null,
@@ -424,7 +429,7 @@ export function HoTroHocVienTab() {
                   {/* Panel vẫn gắn khi thẻ "Hết việc" hiện: "Xem lại việc vừa lưu" mở lại đúng panel đã lưu (sửa / hoàn tác của chính panel). */}
                   <div hidden={!!het}>
                     <ViecVuaLuu.Provider value={viecVuaLuu}>
-                    <PanelViec key={`${chon.key}:${lan}`} it={chon} onDong={dong} onDaLam={() => daLam(chon)}
+                    <PanelViec key={`${chon.key}:${lan}`} xemUrl it={chon} onDong={dong} onDaLam={() => daLam(chon)}
                       onTiep={keTiep ? () => mo(keTiep) : hienTai && !theoDoiChon ? () => setHet({ nhom: hienTai.nhom, ke: keNhomKhac }) : null}
                       tenTiep={keTiep?.studentId !== null ? keTiep?.studentName : null} onMo={(x) => boChuRoi(() => mo(x))} />
                     </ViecVuaLuu.Provider>

@@ -8,7 +8,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
-import { BoiCanh, CanLam, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, CanLam, DongTiep, NutVaTiep, TrangThaiLuu, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
@@ -45,8 +45,10 @@ type ChungPanel = {
  * em ↗ · lớp · ngữ cảnh (nơi gọi truyền `dau`), MỘT khối Cần làm (form + nút chính "Thêm PA" / "Gửi QL duyệt"), Bối cảnh ≤ 3 dòng, chân trạng thái lưu;
  * Bắt đầu = ô ngày gõ được + nút lịch (`ChonNgayGan` = `ONgay`, không sau hôm nay), mặc định hôm nay.
  */
-export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh }: ChungPanel & {
+export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh, tiep: tiepViec }: ChungPanel & {
   caseId: number; studentId?: number | null;
+  /** M6 6b-3: panel việc có việc kế — "Thêm PA · việc tiếp ›" (đề xuất cần Quản lý duyệt thì không). */
+  tiep?: TiepViec;
   /** Case có PA theo quy chế đang chạy → PA này là hỗ trợ thêm. */
   coPaBatBuoc?: boolean;
   /** OV-12e: đầu panel v3 (`dauViec`) + Bối cảnh (Nguyên nhân · Kết quả gần nhất). */
@@ -65,17 +67,20 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
   const khoa = useRef(moiKhoaGui('pa'));
   /* Nhóm Đề xuất luôn phải có Quản lý trả lời. */
   const deXuat = isProposalKind(v.kind);
+  const tiep = deXuat ? undefined : tiepViec;
+  const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
 
   const loi = [
     ...loiFormPa(v),
     ...dsLoi(status === 'completed' ? [{ khoa: 'ngay-lam', nhan: t('Ngày đã làm'), chon: true }] : [], { 'ngay-lam': completedDate }),
   ];
 
-  const luu = async () => {
+  const luu = async (diTiep = false) => {
     lf.bam();
     if (loi.length > 0) return;
     setBusy(true);
     setLoiLuu(null);
+    setBam(diTiep ? 'tiep' : 'luu');
     try {
       const c = await api.post<{ interventions?: { id: number }[] }>(`/cases/${caseId}/interventions`, {
         ...paPayload(v), status,
@@ -88,22 +93,19 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
       /* OV-13b: panel ở lại "✓ Đã lưu · Việc tiếp ›" (nơi gọi vẽ) — không toast đè chân. */
       /* M6 6b-2 (Q1): PA vừa thêm = id lớn nhất Case trả về (gửi lại cùng khoá trả đúng PA đó) → Hoàn tác Thêm PA (#623; máy chủ kiểm người thêm + 10 giây). */
       const paId = Math.max(0, ...(c?.interventions ?? []).map((x) => x.id)) || undefined;
-      onSaved({ chu: deXuat ? t('Đã gửi Quản lý duyệt') : t('Đã thêm PA'), phu: [dich(INTERVENTION_KIND_LABEL[v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.kind), v.description.trim()].filter(Boolean).join(' · '),
-        paId, hoanTac: paId ? async () => { await api.post(`/interventions/${paId}/hoan-tac-them`); invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work'); } : undefined });
+      const x = { chu: deXuat ? t('Đã gửi Quản lý duyệt') : t('Đã thêm PA'), phu: [dich(INTERVENTION_KIND_LABEL[v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.kind), v.description.trim()].filter(Boolean).join(' · '),
+        paId, hoanTac: paId ? async () => { await api.post(`/interventions/${paId}/hoan-tac-them`); invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work'); } : undefined };
+      if (diTiep && tiep) tiep.lam(x); else onSaved(x);
     } catch (e: any) { setLoiLuu(e.message); } finally { setBusy(false); }
   };
 
-  const nut = (
-    <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>
-      {busy ? t('Đang lưu…') : deXuat ? t('Gửi Quản lý duyệt') : t('Thêm PA')}
-    </button>
-  );
+  const nut = <NutVaTiep chu={deXuat ? t('Gửi Quản lý duyệt') : t('Thêm PA')} chuTiep={t('Thêm PA · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
   const daSua = !!(v.description.trim() || status === 'completed');
   return (
     <KhungPanel tieuDe={t('Thêm PA')} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose} dau={dau}
       chan={{
-        v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi),
-        dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
+        v3: true, chinh: <><DongTiep tiep={tiep} chan />{nut}</>, daSua, conThieu: lf.conThieu(loi),
+        dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu(bam === 'tiep')} /> : undefined,
       }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
@@ -130,6 +132,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
               </button>
             )} />
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
+          <DongTiep tiep={tiep} />
         </CanLam>
         {boiCanh && <BoiCanh dong={boiCanh} />}
       </div>

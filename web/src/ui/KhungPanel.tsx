@@ -285,7 +285,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
               {!lui && nutDong}
             </div>
             <p className="m-0 flex flex-wrap items-baseline text-sm leading-snug text-slate-400">
-              {[...dau.dong2, nutXem].filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
+              {dau.dong2.filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
+              {/* "· Xem Case" không tách dòng (375: không còn "·" mồ côi). */}
+              {nutXem && <span className="whitespace-nowrap"><span aria-hidden className="mx-1.5 text-slate-500">·</span>{nutXem}</span>}
             </p>
             {cvNgoai?.them}
           </header>

@@ -98,6 +98,8 @@ type PropsViec = {
   onMo?: (it: WorkItem) => void;
   /** UI-CV-TVV: tên em của việc kế ("Việc kế: Lý Tuấn Bình"). */
   tenTiep?: string | null;
+  /** M6 6b-3 (V19): view Case ghi lên URL `?panel=case` — Back trình duyệt lùi một view, F5 giữ view (trang Công việc). */
+  xemUrl?: boolean;
 };
 /**
  * NEN-PANEL (K12): khoá nháp = khoá việc — chữ đang gõ trong panel của việc này giữ ở máy tới khi lưu / bỏ.
@@ -105,7 +107,7 @@ type PropsViec = {
  * đúng form: form việc vẫn gắn (ẩn) nên chữ, lựa chọn, trạng thái lưu còn nguyên; không panel chồng panel. ✕ ở view Case = đóng cả panel.
  */
 export function PanelViec(p: PropsViec) {
-  const xem = useXem({ dau: ['viec'] });
+  const xem = useXem({ url: p.xemUrl, dau: ['viec'] });
   const caseId = p.it.con?.length ? null : p.it.caseId ?? null;
   const dangXemCase = caseId !== null && xem.ds[xem.ds.length - 1] === 'case';
   /* Nút vừa bấm ("Xem Case" / ‹) ẩn theo lớp của nó — focus sang lớp vừa hiện, người dùng bàn phím không mất chỗ. */

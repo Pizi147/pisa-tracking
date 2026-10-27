@@ -132,6 +132,26 @@ export type DaLuuPanel = { chu: string; phu?: string | null; hoanTac?: () => Pro
 export const ViecVuaLuu = createContext<{ ten: string | null; bao: (x: DaLuuPanel, oLai?: boolean) => void } | null>(null);
 
 /**
+ * M6 6b-3 (mockup panel-pilot ②b): form của panel việc có việc kế — thêm nút "{việc} · việc tiếp ›" (V12 ②: chỉ chuyển khi máy chủ đã nhận); `lam` nhận
+ * kết quả để dải "✓ … · Hoàn tác" hiện ở đầu việc kế. `ten` = "Tiếp: {việc} · {em}" (V12 ⑥).
+ */
+export type TiepViec = { ten: string | null; lam: (x: DaLuuPanel) => void };
+/** Nút thường + "{việc} · việc tiếp ›" (nút chính khi có việc kế); "Đang lưu…" chỉ ở nút đã bấm (V12 ⑨). */
+export function NutVaTiep({ chu, chuTiep, busy, tiep, bam, luu }: {
+  chu: string; chuTiep: string; busy: boolean; tiep?: TiepViec; bam: 'luu' | 'tiep' | null; luu: (diTiep: boolean) => void;
+}) {
+  return <>
+    <button type="button" className={`btn ${tiep ? '' : 'btn-primary'} min-h-[40px] px-4 font-bold`} disabled={busy} onClick={() => luu(false)}>{busy && bam !== 'tiep' ? t('Đang lưu…') : chu}</button>
+    {tiep && <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => luu(true)}>{busy && bam === 'tiep' ? t('Đang lưu…') : chuTiep}</button>}
+  </>;
+}
+/** "Tiếp: {việc} · {em}" — dưới hàng nút trong khối Cần làm (≥ 640); `chan`: bản ở chân dính 375, trên nút (không bị chân che). */
+export function DongTiep({ tiep, chan = false }: { tiep?: TiepViec; chan?: boolean }) {
+  if (!tiep?.ten) return null;
+  return <p className={`m-0 truncate text-[13px] text-slate-400 ${chan ? '' : '-mt-1.5 max-sm:hidden'}`} title={tiep.ten}>{t('Tiếp: {x}', { x: tiep.ten })}</p>;
+}
+
+/**
  * SAU KHI LƯU Ở PANEL (OV-13b, mockup OV-13 §1 "Sau khi lưu", §7, §9) — ở lại panel, không nhảy sang Case đầy đủ: khối "✓ Đã lưu · …" + nút chính
  * "Việc tiếp ›" (việc kế của danh sách) / về nơi mở / Đóng. Chân: "✓ Đã lưu HH:MM · Hoàn tác" (10 giây, chỉ khi có đường đảo). Toast không dùng — chân đã nói.
  */
