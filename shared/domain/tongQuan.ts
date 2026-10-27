@@ -260,7 +260,7 @@ export const COT_BANG_DON_VI: Record<CotBang, 'hoc-vien' | 'case'> = {
 export const NHOM_CASE_CHUA_CHOT = ['trongPa', 'choNhanXet', 'choXacNhanPa', 'choDuyetPa', 'paXong', 'khongTheoDoi'] as const;
 export type NhomCaseChuaChot = (typeof NHOM_CASE_CHUA_CHOT)[number];
 export const NHOM_CASE_CHUA_CHOT_LABEL: Record<NhomCaseChuaChot, string> = {
-  trongPa: t('Case trống PA'), choNhanXet: t('Chờ nhận xét / nguyên nhân'), choXacNhanPa: t('PA chờ xác nhận'), choDuyetPa: t('PA chờ duyệt đổi'),
+  trongPa: t('Case trống PA'), choNhanXet: t('Chờ mô tả / nguyên nhân'), choXacNhanPa: t('PA chờ xác nhận'), choDuyetPa: t('PA chờ duyệt đổi'),
   paXong: t('PA xong · chờ đóng Case'), khongTheoDoi: t('Chờ duyệt không theo dõi'),
 };
 

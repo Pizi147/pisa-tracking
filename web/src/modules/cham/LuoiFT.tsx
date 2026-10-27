@@ -223,7 +223,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     return (
       <div>
         {coKhongHoc && <div className="flex justify-end px-3 py-1"><ChuGiaiKhongHoc /></div>}
-        {suaS && dot && <div className="flex justify-end px-3 py-1"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
+        {suaS && dot && <div className="flex justify-end px-3 py-1 max-sm:pt-4"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
         {rowsHien.map((r) => (
           <TheHv key={r.attemptId} row={r} lop={data.classCode} active={hv !== null && r.studentId === hv} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
             onReload={onReload} gvMacDinh={gvCot} moS={mo?.aid === r.attemptId ? mo.s : null} hop={mo?.aid === r.attemptId ? hop : null} dsLuot={dsLuot}
