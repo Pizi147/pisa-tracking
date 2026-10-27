@@ -129,3 +129,39 @@ export function tenNguon(url: string): TenTrang {
   if (p === '/huong-dan') return { ten: t('Hướng dẫn') };   // HD-a
   return { ten: TRANG_TRUOC };
 }
+
+/**
+ * NGĂN XẾP VIEW CỦA PANEL (M6 6b-1, mockup `panel-pilot.html` khu "Quay lại" — mockup gọi `?xem=`; web dùng `?panel=` vì `?xem=` đã là tab của Chờ
+ * duyệt): chuỗi view đang mở trên URL `?panel=a.b` — vào sâu = push một mục lịch sử, ‹ = lùi một view, Back trình duyệt = cũng lùi một view; F5 dựng
+ * lại từ chuỗi. URL là dữ liệu ngoài: đoạn lạ thì bỏ cả chuỗi.
+ */
+const DOAN_XEM = /^[a-z0-9-]{1,40}$/;
+export function docXem(chu: string | null | undefined): string[] {
+  if (!chu) return [];
+  const ds = chu.split('.');
+  return ds.length <= 20 && ds.every((x) => DOAN_XEM.test(x)) ? ds : [];
+}
+/** Mục lịch sử đang xem do app push từ view cha (`state.xem` = độ dài chuỗi lúc push) → ‹ = history.back(); không (link sâu, replace) → thay URL. */
+export const luiBangBack = (st: unknown, doDai: number): boolean => (st as { xem?: unknown } | null)?.xem === doDai;
+/** ✕ / Esc / nền: số mục panel đã push từ lúc mở (`state.panelSau`) → lùi đúng chừng đó; 0 = mở bằng link sâu → thay URL, không rời app. */
+export function soMucPanel(st: unknown): number {
+  const n = (st as { panelSau?: unknown } | null)?.panelSau;
+  return typeof n === 'number' && Number.isInteger(n) && n > 0 && n <= 20 ? n : 0;
+}
+
+/** Một view của Ngăn Case ↔ một đoạn `?panel=` (`them-pa`, `ghi-ket-qua-55`). Kiểu đầy đủ: `ViewCase` (web `cases/CasePanel.tsx`). */
+export type ViewMa = { loai: string; paId?: number; followupId?: number };
+const VIEW_KHONG_ID = ['case', 'them-pa', 'hoan-thanh', 'xac-nhan', 'ghi-nhan-xet', 'xac-nhan-s', 'sua'];
+const VIEW_PA = ['ghi-ket-qua', 'xac-nhan-pa', 'sua-pa'];
+export function maView(v: ViewMa): string {
+  const id = v.loai === 'sua-ket-qua' ? v.followupId : VIEW_PA.includes(v.loai) ? v.paId : null;
+  if (id === null) return v.loai;
+  return id ? `${v.loai}-${id}` : 'case';   // view cần id mà thiếu (dòng việc cũ) → mở Case, như `tuViec` của Ngăn Case
+}
+export function viewTuMa(ma: string): ViewMa | null {
+  if (VIEW_KHONG_ID.includes(ma)) return { loai: ma };
+  const m = /^([a-z-]+)-(\d{1,9})$/.exec(ma);
+  if (!m) return null;
+  if (VIEW_PA.includes(m[1])) return { loai: m[1], paId: Number(m[2]) };
+  return m[1] === 'sua-ket-qua' ? { loai: m[1], followupId: Number(m[2]) } : null;
+}

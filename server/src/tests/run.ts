@@ -9640,6 +9640,15 @@ await runR1NoCuTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== UI-CHART-D (dữ liệu chỉ đọc cho chart D: điểm W1 / W2 + nhận xét MT mọi lượt, thi thật)
 const { runUiChartDTests } = await import('./uiChartD.tests.ts');
 await runUiChartDTests({ check, assert, conn, P } as any);
+// ==================================================================== SV-BAI-LOP-2 (M5 PR ①: Tiến độ trên lớp band / nhận xét tuỳ chọn, gopY[], Hoàn tác thêm PA)
+const { runPrSvBaiLop2Tests } = await import('./prSvBaiLop2.tests.ts');
+await runPrSvBaiLop2Tests({ check, assert, conn, P, classId } as any);
+// ==================================================================== M6 6b-1 KHUNG-NGAN-XEP (ngăn xếp view ?xem=, ‹ lùi một view)
+const { runPrKhungNganXepTests } = await import('./prKhungNganXep.tests.ts');
+await runPrKhungNganXepTests({ check, assert } as any);
+// ==================================================================== HSL-MAY-CHU (M4 PR 1: hồ sơ một lượt Test — S Ex, lớp hiện tại, GET /regular/attempts/:id)
+const { runPrHslMayChuTests } = await import('./prHslMayChu.tests.ts');
+await runPrHslMayChuTests({ check, assert, conn, P, classId, TODAY, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

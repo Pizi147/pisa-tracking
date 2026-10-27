@@ -84,6 +84,7 @@ export function buildXlmtDemo(ctx: BuildCtx): { students: number } {
   /* PR-LT2a M1b: vào lớp thường tự có bài Cuối khoá — kịch bản X4 chỉ cần MỘT bài Giữa khoá đã qua, bỏ bài Cuối khoá tự tạo để L dời tuần được. */
   for (const a of conn.prepare(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = 'final'`).all(nam.cycleId) as any[]) {
     conn.prepare('DELETE FROM attempt_skills WHERE attempt_id = ?').run(a.id);
+    conn.prepare('DELETE FROM attempt_schedule_history WHERE attempt_id = ?').run(a.id);   // HSL-MAY-CHU: lượt thường mới có dòng "created"
     conn.prepare(`DELETE FROM journey_events WHERE ref_table = 'assessment_attempts' AND ref_id = ?`).run(a.id);
     conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(a.id);
   }

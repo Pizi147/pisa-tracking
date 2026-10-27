@@ -25,21 +25,24 @@ export function OSo(props: Props) {
   if (props.id !== undefined && !metricById(props.id)) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id: props.id })}</span>;
   if (giaTri <= 0) return <span className={`tabular-nums font-medium text-slate-500 ${className}`}>{giaTri}</span>;
   const ten = props.ten ?? (props.id !== undefined ? (metricById(props.id)?.ten ?? props.id) : props.tieuDe);
+  /* M6 6b-1 (bảng kê lỗi 3): ô số nằm trong hàng bấm được (`Bang onHang`, `HangNhom`) — click / Enter / Space ở nút VÀ trong panel (portal vẫn nổi
+     theo cây React) không lên hàng: hàng không đổi chi nhánh thay vì mở panel, ô gõ trong panel gõ được dấu cách. Esc không chặn (khung nghe ở document). */
   return (
-    <>
+    <span className="contents" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}>
       <button type="button" onClick={() => setOpen(true)}
         className={`${VUNG_BAM_SO} ${mauOSo(className)}`}
         aria-label={t('{gt} — {ten}. Bấm để xem danh sách', { gt: props.nhan ?? giaTri, ten })}>{props.nhan ?? giaTri}</button>
       {props.id !== undefined
         ? <DanhSachSoLieu id={props.id} giaTri={giaTri} phamVi={props.phamVi} extra={props.extra} open={open} onClose={() => setOpen(false)} ten={props.ten} />
         : <DanhSachNguon nguon={props.nguon} tieuDe={props.tieuDe} open={open} onClose={() => setOpen(false)} />}
-    </>
+    </span>
   );
 }
 
 export function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe: string; open: boolean; onClose: () => void }) {
   const { data, loading, error, reload } = useApi<{ n: number; tieuDe: string; rows: DongSoLieu[] }>(open ? nguon : null, [nguon, open]);
   if (!open) return null;
-  /* OV-12e: cùng panel mở rộng dòng với ô số trong sổ (`NganDanhSach`). */
-  return <NganDanhSach tieuDe={data?.tieuDe ?? tieuDe} data={data} loading={loading} error={error} reload={reload} onDong={onClose} />;
+  /* OV-12e: cùng panel mở rộng dòng với ô số trong sổ (`NganDanhSach`). M6 6b-1 (bảng kê 0.2): tiêu đề = chữ nơi gọi (kèm ngữ cảnh: chi nhánh, lớp)
+     — không đổi sang tiêu đề máy chủ khi tải xong (đầu panel không nhảy, không mất ngữ cảnh). */
+  return <NganDanhSach tieuDe={tieuDe} data={data} loading={loading} error={error} reload={reload} onDong={onClose} />;
 }

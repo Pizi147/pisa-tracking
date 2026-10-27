@@ -21,7 +21,7 @@ import {
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
-import { HttpError, addDays, badRequest, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { HttpError, addDays, badRequest, conflict, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -35,7 +35,7 @@ import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
 import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, xuLyCaseMany } from './sosState.ts';
-import { CAU_LUU_TRU, PLAN_DECISIONS, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
+import { CAU_LUU_TRU, PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { ganMoTaTuO } from './nguyenNhanO.ts';
 import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
@@ -1565,17 +1565,52 @@ export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId:
   const khoaTep: string[] = [];
   tx(() => {
     const ketQua = conn.prepare('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id').all(interventionId) as any[];
-    chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: interventionId }, 'tu_dong', { lyDo: 'PA đã xoá' });
-    for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND owner_type = 'case_intervention' AND owner_id = ?`)
-      .all(interventionId) as any[]) khoaTep.push(r.url);
-    for (const sql of CAU_XOA_PA) conn.prepare(sql).run(interventionId);
-    if (conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? LIMIT 1').get(iv.case_id)) dongBoTrangThaiCase(iv.case_id);
-    else conn.prepare(`UPDATE sos_cases SET status = 'open', updated_at = ? WHERE id = ?`).run(nowIso(), iv.case_id);
+    goPaTrongTx(conn, iv, { lyDo: 'PA đã xoá' }, khoaTep);
     writeAudit({ actorUserId: p.userId, action: 'intervention.delete', entityType: 'case_intervention', entityId: interventionId,
       entityLabel: iv.description ?? iv.kind, before: { pa: iv, ketQua, soTep: khoaTep.length } });
   });
   xoaTepSauGiaoDich(khoaTep);
   return { ok: true, caseId: iv.case_id };
+}
+
+/** Gỡ MỘT PA trong giao dịch (Xoá PA · Hoàn tác thêm PA): thẻ Chờ duyệt đang chờ của PA tự đóng, xoá con → cha, Case đồng bộ (hết PA → "Mới mở"). */
+function goPaTrongTx(conn: any, iv: any, the: { nguoiDuyet?: number; lyDo: string }, khoaTep: string[]): void {
+  chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', the);
+  for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND owner_type = 'case_intervention' AND owner_id = ?`)
+    .all(iv.id) as any[]) khoaTep.push(r.url);
+  for (const sql of CAU_XOA_PA) conn.prepare(sql).run(iv.id);
+  if (conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? LIMIT 1').get(iv.case_id)) dongBoTrangThaiCase(iv.case_id);
+  else conn.prepare(`UPDATE sos_cases SET status = 'open', updated_at = ? WHERE id = ?`).run(nowIso(), iv.case_id);
+}
+
+/**
+ * HOÀN TÁC THÊM PA (SV-BAI-LOP-2, mockup `thiet-ke/v7/ho-so-hv.html` "✓ Vừa thêm · Hoàn tác") — chỉ NGƯỜI VỪA THÊM (còn quyền ghi PA của Case), trong
+ * `HOAN_TAC_PA_MS` (+5 s mạng), khi PA chưa có kết quả và QL chưa trả lời đề xuất. Gỡ như Xoá PA (`goPaTrongTx`): thẻ Chờ duyệt đóng, mốc Hành trình mất,
+ * Case về trạng thái trước. Nhật ký `intervention.undo_add` chụp PA. PA "Đề xuất PA khác" (thay PA gốc) rút ở thẻ, không qua đây. Trả Case.
+ */
+export function hoanTacThemPa(p: Principal, interventionId: number) {
+  const conn = db();
+  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án');
+  const c = loadCase(iv.case_id);
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), 'Bạn không có quyền ghi nhận hỗ trợ cho Case này.');
+  if (iv.recorded_by !== p.userId) throw forbidden('Chỉ người vừa thêm PA hoàn tác được — Quản lý dùng "Xoá PA".');
+  if (iv.preset === 1 || (SYSTEM_KINDS as readonly string[]).includes(iv.kind)) throw badRequest('PA do hệ thống tạo — không hoàn tác được.');
+  if (!duocHoanTacPa(iv.created_at, Date.now())) throw conflict('Đã quá thời gian hoàn tác.');
+  const khoaTep: string[] = [];
+  tx(() => {
+    /* Kiểm trong giao dịch: kết quả / câu trả lời QL ghi chen giữa lúc kiểm và lúc gỡ không bị xoá theo. */
+    if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) throw conflict('PA đã có kết quả — không hoàn tác được.');
+    const tt = (conn.prepare('SELECT approval_state FROM case_interventions WHERE id = ?').get(interventionId) as any)?.approval_state;
+    if (tt && tt !== 'pending') throw conflict('Quản lý đã trả lời đề xuất — không hoàn tác được.');
+    if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?
+        AND json_extract(du_lieu, '$.thayPaId') IS NOT NULL`).get(interventionId)) throw badRequest('PA đề xuất thay PA khác — rút ở thẻ Chờ duyệt.');
+    goPaTrongTx(conn, iv, { nguoiDuyet: p.userId, lyDo: 'Giáo viên hoàn tác thêm PA' }, khoaTep);
+    writeAudit({ actorUserId: p.userId, action: 'intervention.undo_add', entityType: 'case_intervention', entityId: interventionId,
+      entityLabel: iv.description ?? iv.kind, before: { pa: iv }, after: null });
+  });
+  xoaTepSauGiaoDich(khoaTep);
+  return caseDetail(p, iv.case_id);
 }
 
 /**

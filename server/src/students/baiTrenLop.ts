@@ -1,12 +1,14 @@
 /**
- * BÀI TRÊN LỚP (SV-BAI-LOP, V5 C11 / T18, mockup `thiet-ke/v5/ho-so-hv.html` khu "Bài trên lớp") — hồ sơ HV ghi điểm một bài trên lớp theo thang
- * của bài (7 / 10, 15 / 20…). Tuỳ chọn: không sinh việc, không nhắc, KHÔNG vào bảng điểm MT, Overall, chỉ số hay KPI (bảng riêng `bai_tren_lop`).
+ * BÀI TRÊN LỚP (SV-BAI-LOP, V5 C11 / T18) — hồ sơ HV ghi Tiến độ trên lớp. SV-BAI-LOP-2 (M5, mockup `thiet-ke/v7/ho-so-hv.html` form Ghi tiến độ):
+ * KHÔNG bắt buộc nhận xét (chủ SP 27/10: "chỉ cần điểm thôi") — cần ít nhất một trong: nhận xét · điểm / thang của bài (7 / 10) · band (0–9, bước 0.5);
+ * tên bài tuỳ chọn.
+ * Tuỳ chọn: không sinh việc, không nhắc, KHÔNG vào bảng điểm MT, Overall, chỉ số hay KPI (bảng riêng `bai_tren_lop`).
  *
  * QUYỀN (máy chủ, mỗi lần ghi / sửa / xoá): cùng cột với Góp ý tuần (`cotCua`) — GV dạy kỹ năng ở lớp → kỹ năng đó (FT W1 / W2 → W); GVCN → mọi kỹ năng;
  * Quản lý / Quản trị (`class.edit` của lớp) → mọi kỹ năng. Đọc = quyền xem hồ sơ HV (`student.view`). Lịch sử: `audit_logs` bai_tren_lop.*.
  */
 import { db, tx } from '../db.ts';
-import { BAI_LOP_NHAN_XET_TOI_DA, BAI_LOP_TEN_TOI_DA, BAI_LOP_THANG_TOI_DA, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
+import { BAI_LOP_NHAN_XET_TOI_DA, BAI_LOP_TEN_TOI_DA, BAI_LOP_THANG_TOI_DA, PERMISSIONS, kiemBand, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt, loi } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -14,7 +16,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
 import { cotCua, docLop } from '../classes/gopYTuan.ts';
 
-type Dong = { id: number; student_id: number; class_id: number; skill: string; ten_bai: string; diem: number; thang: number; tuan: string; nhan_xet: string | null };
+type Dong = { id: number; student_id: number; class_id: number; skill: string; ten_bai: string | null; diem: number | null; thang: number | null; band: number | null; tuan: string; nhan_xet: string | null };
 
 const coLop = (sid: number, classId: number) =>
   !!db().prepare('SELECT 1 AS c FROM enrollments WHERE student_id = ? AND class_id = ? LIMIT 1').get(sid, classId);
@@ -25,7 +27,7 @@ function kyNangGhi(p: Principal, classId: number, today: string) {
   return { c, cot: cotCua(p, c, today) };
 }
 
-/** GET /students/:id/bai-tren-lop — mọi bài của em (mới trước) + lớp của em và kỹ năng người xem ghi được (nút "+ Ghi bài trên lớp"). */
+/** GET /students/:id/bai-tren-lop — mọi bài của em (mới trước) + góp ý tuần cũ `gopY` (chỉ đọc) + lớp của em và kỹ năng người xem ghi được. */
 export function dsBaiTrenLop(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   const today = demoToday();
@@ -43,35 +45,49 @@ export function dsBaiTrenLop(p: Principal, studentId: number) {
       WHERE b.student_id = ? ORDER BY b.tuan DESC, b.id DESC`,
   ).all(studentId) as any[]).map((r) => ({
     id: r.id as number, classId: r.class_id as number, lop: r.lop as string, skill: r.skill as string,
-    tenBai: r.ten_bai as string, diem: r.diem as number, thang: r.thang as number,
+    tenBai: (r.ten_bai ?? null) as string | null, diem: (r.diem ?? null) as number | null, thang: (r.thang ?? null) as number | null, band: (r.band ?? null) as number | null,
     tuan: r.tuan as string, tuanMa: tuanLich(r.tuan, today), nhanXet: (r.nhan_xet ?? null) as string | null,
     ghiBoi: (r.ghi_ten ?? null) as string | null, ghiLuc: r.ghi_luc as string, suaBoi: (r.sua_ten ?? null) as string | null, suaLuc: (r.sua_luc ?? null) as string | null,
     sua: ghi.get(r.class_id)?.has(r.skill) ?? false,
   }));
-  return { bai, lop: lop.map(({ nhan: _n, ...l }) => l) };
+  /* SV-BAI-LOP-2: góp ý tuần cũ (chỉ đọc từ 27/10) của em ở mọi lớp — cột trái Tiến độ trên lớp hiện cùng, có mã lớp lúc ghi. */
+  const gopY = (conn.prepare(
+    `SELECT g.class_id, c.code AS lop, g.skill, g.noi_dung, rp.week_start, u.full_name AS ghi_ten, g.ghi_luc
+       FROM gop_y_tuan g JOIN classes c ON c.id = g.class_id JOIN report_periods rp ON rp.id = g.period_id LEFT JOIN users u ON u.id = g.ghi_boi
+      WHERE g.student_id = ? ORDER BY rp.week_start DESC, g.id DESC`,
+  ).all(studentId) as any[]).map((r) => ({
+    classId: r.class_id as number, lop: r.lop as string, skill: r.skill as string, noiDung: r.noi_dung as string,
+    tuan: r.week_start as string, tuanMa: tuanLich(r.week_start, today), ghiBoi: (r.ghi_ten ?? null) as string | null, ghiLuc: r.ghi_luc as string,
+  }));
+  return { bai, gopY, lop: lop.map(({ nhan: _n, ...l }) => l) };
 }
 
-/** Đọc + kiểm thân yêu cầu (dùng cho thêm và sửa). Thang của bài, không quy đổi band. */
+/** Đọc + kiểm thân yêu cầu (dùng cho thêm và sửa). Kết quả tuỳ chọn: điểm / thang của bài (không quy đổi band) HOẶC band; cần ít nhất một trong nhận xét / x/y / band. */
 function docThan(body: Record<string, unknown>, today: string) {
   const tenBai = chuTuDo(body.tenBai ?? null, 'Tên bài', BAI_LOP_TEN_TOI_DA);
-  if (!tenBai) throw badRequest('Thiếu tên bài.');
   const so = (v: unknown, ten: string) => {
+    if (v === undefined || v === null) return null;
     if (typeof v !== 'number' || !Number.isFinite(v)) throw loi(400, '{ten} phải là số.', { ten });
     return v;
   };
   const diem = so(body.diem, 'Điểm');
   const thang = so(body.thang, 'Thang điểm');
-  if (thang <= 0 || thang > BAI_LOP_THANG_TOI_DA) throw loi(400, 'Thang điểm phải lớn hơn 0 và không quá {BAI_LOP_THANG_TOI_DA}.', { BAI_LOP_THANG_TOI_DA });
-  if (diem < 0 || diem > thang) throw loi(400, 'Điểm phải từ 0 tới {thang}.', { thang });
+  const band = so(body.band, 'Band');
+  if ((diem === null) !== (thang === null)) throw badRequest('Điểm và thang điểm phải nhập cùng nhau.');
+  if (diem !== null && thang !== null) {
+    if (band !== null) throw badRequest('Chọn một kiểu kết quả: điểm / thang hoặc band.');
+    if (thang <= 0 || thang > BAI_LOP_THANG_TOI_DA) throw loi(400, 'Thang điểm phải lớn hơn 0 và không quá {BAI_LOP_THANG_TOI_DA}.', { BAI_LOP_THANG_TOI_DA });
+    if (diem < 0 || diem > thang) throw loi(400, 'Điểm phải từ 0 tới {thang}.', { thang });
+  }
+  if (band !== null) { const sai = kiemBand(band); if (sai) throw badRequest(sai); }
   if (!isIsoDate(body.tuan)) throw badRequest('Tuần không hợp lệ.');
   const tuan = mondayOf(body.tuan);
   if (tuan > mondayOf(today)) throw badRequest('Chưa tới tuần này — chỉ ghi bài từ tuần này trở về trước.');
   const nhanXet = chuTuDo(body.nhanXet ?? null, 'Nhận xét', BAI_LOP_NHAN_XET_TOI_DA);
+  if (!nhanXet && diem === null && band === null) throw badRequest('Nhập nhận xét hoặc kết quả (điểm / thang hoặc band).');
   if (typeof body.skill !== 'string') throw badRequest('Thiếu kỹ năng.');
-  return { skill: body.skill, tenBai, diem, thang, tuan, nhanXet };
+  return { skill: body.skill, tenBai, diem, thang, band, tuan, nhanXet };
 }
-
-type Than = ReturnType<typeof docThan>;
 
 /** Kỹ năng phải là cột của lớp; người ghi phải được ghi kỹ năng đó. */
 function kiemGhi(p: Principal, classId: number, skill: string, today: string) {
@@ -82,10 +98,10 @@ function kiemGhi(p: Principal, classId: number, skill: string, today: string) {
   return { c, nhan: k.nhan };
 }
 
-const tuDong = (d: Dong): Than => ({ skill: d.skill, tenBai: d.ten_bai, diem: d.diem, thang: d.thang, tuan: d.tuan, nhanXet: d.nhan_xet });
-const anh = ({ skill: _s, ...t }: Than, nhan: string) => ({ kyNang: nhan, ...t });
+const tuDong = (d: Dong) => ({ skill: d.skill, tenBai: d.ten_bai, diem: d.diem, thang: d.thang, band: d.band, tuan: d.tuan, nhanXet: d.nhan_xet });
+const anh = ({ skill: _s, ...t }: ReturnType<typeof tuDong>, nhan: string) => ({ kyNang: nhan, ...t });
 
-/** POST /students/:id/bai-tren-lop { classId, skill, tenBai, diem, thang, tuan, nhanXet? } — thêm một bài. */
+/** POST /students/:id/bai-tren-lop { classId, skill, tuan, nhanXet, tenBai?, diem? + thang? | band? } — thêm một dòng. */
 export function themBaiTrenLop(p: Principal, studentId: number, body: Record<string, unknown>) {
   const today = demoToday();
   const classId = toInt(body.classId);
@@ -96,8 +112,8 @@ export function themBaiTrenLop(p: Principal, studentId: number, body: Record<str
   const luc = nowIso();
   return tx(() => {
     const id = Number(db().prepare(
-      `INSERT INTO bai_tren_lop (student_id, class_id, skill, ten_bai, diem, thang, tuan, nhan_xet, ghi_boi, ghi_luc) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-    ).run(studentId, classId, t.skill, t.tenBai, t.diem, t.thang, t.tuan, t.nhanXet, p.userId, luc).lastInsertRowid);
+      `INSERT INTO bai_tren_lop (student_id, class_id, skill, ten_bai, diem, thang, band, tuan, nhan_xet, ghi_boi, ghi_luc) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    ).run(studentId, classId, t.skill, t.tenBai, t.diem, t.thang, t.band, t.tuan, t.nhanXet, p.userId, luc).lastInsertRowid);
     writeAudit({
       actorUserId: p.userId, action: 'bai_tren_lop.them', entityType: 'student', entityId: studentId,
       entityLabel: `${c.code} · ${tuanLich(t.tuan, today)} · ${nhan}`, before: null, after: { id, ...anh(t, nhan) },
@@ -107,12 +123,12 @@ export function themBaiTrenLop(p: Principal, studentId: number, body: Record<str
 }
 
 function docBai(id: number): Dong {
-  const r = db().prepare('SELECT id, student_id, class_id, skill, ten_bai, diem, thang, tuan, nhan_xet FROM bai_tren_lop WHERE id = ?').get(id) as Dong | undefined;
+  const r = db().prepare('SELECT id, student_id, class_id, skill, ten_bai, diem, thang, band, tuan, nhan_xet FROM bai_tren_lop WHERE id = ?').get(id) as Dong | undefined;
   if (!r) throw notFound('Không tìm thấy tiến độ trên lớp.');
   return r;
 }
 
-/** PUT /bai-tren-lop/:id { skill, tenBai, diem, thang, tuan, nhanXet? } — sửa (lớp giữ nguyên); phải ghi được cả kỹ năng cũ lẫn mới. Lưu lại y nguyên = không ghi. */
+/** PUT /bai-tren-lop/:id { skill, tuan, nhanXet, tenBai?, diem? + thang? | band? } — sửa (lớp giữ nguyên); phải ghi được cả kỹ năng cũ lẫn mới. Lưu lại y nguyên = không ghi. */
 export function suaBaiTrenLop(p: Principal, id: number, body: Record<string, unknown>) {
   const today = demoToday();
   const cu = docBai(id);
@@ -124,8 +140,8 @@ export function suaBaiTrenLop(p: Principal, id: number, body: Record<string, unk
   if (JSON.stringify(truoc) === JSON.stringify(sau)) return { id, doi: false };
   const luc = nowIso();
   return tx(() => {
-    db().prepare('UPDATE bai_tren_lop SET skill = ?, ten_bai = ?, diem = ?, thang = ?, tuan = ?, nhan_xet = ?, sua_boi = ?, sua_luc = ? WHERE id = ?')
-      .run(t.skill, t.tenBai, t.diem, t.thang, t.tuan, t.nhanXet, p.userId, luc, id);
+    db().prepare('UPDATE bai_tren_lop SET skill = ?, ten_bai = ?, diem = ?, thang = ?, band = ?, tuan = ?, nhan_xet = ?, sua_boi = ?, sua_luc = ? WHERE id = ?')
+      .run(t.skill, t.tenBai, t.diem, t.thang, t.band, t.tuan, t.nhanXet, p.userId, luc, id);
     writeAudit({
       actorUserId: p.userId, action: 'bai_tren_lop.sua', entityType: 'student', entityId: cu.student_id,
       entityLabel: `${c.code} · ${tuanLich(t.tuan, today)} · ${nhan}`, before: { id, ...truoc }, after: { id, ...sau },
