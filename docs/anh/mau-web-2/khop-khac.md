@@ -30,7 +30,7 @@ Tổng quan còn cao hơn mockup vì có nhiều dòng hơn (ô số 700, tên l
 | Mã lớp mở hồ sơ (HV & Lớp, dải lớp, panel Ý thức, Phân tích Ý thức) | link xanh đậm / gạch chấm | `.ten-ho-so` (màu chữ, ↗, rê mới xanh) như mockup | `StudentsPage`, `PanelViec`, `YThucPhoiHop` |
 | Chờ bạn duyệt (Tổng quan) | cả dòng 600 | loại việc 500 · tên HV 600 | `TongQuanV5.tsx` |
 | Ô lộ trình "2/5 MT" (HV & Lớp) | 700 | 500 | `DanhSachHvLop.tsx` |
-| Tên việc ở cột Việc (HV & Lớp, dải lớp) — PTA 27/10 | link xanh mỗi dòng | màu chữ 500, rê / focus mới xanh + gạch; trạng thái ở chip hạn; "Xem thêm n" 600 → 500 | `DanhSachHvLop.tsx` (`OViec`) |
+| Tên việc ở cột Việc (HV & Lớp, dải lớp) — PTA 27/10 | link xanh mỗi dòng, hạn xa là chữ xám trần | nút viền nhỏ màu chữ 500 như mockup `.viec-o .nut` (chủ SP 27/10: "các nút ở phần việc rất ok"); hạn luôn là chip tiến độ (quá hạn ⚠ · hôm nay vàng · còn lại xám) ngay sau nút; "Xem thêm n" 600 → 500 | `DanhSachHvLop.tsx` (`OViec`, `HanViec`) |
 | Số Thi thật trên chart D | 800 | 700 | `BieuDoD.tsx` |
 
 GIỮ (khớp mockup / luật đã khoá): badge 12 / 600 (V4), ô số `OSo` 700 gạch chân (G6), đầu cột 13 / 600, tên em 15 / 600 và tên việc 15 / 500 (V18),

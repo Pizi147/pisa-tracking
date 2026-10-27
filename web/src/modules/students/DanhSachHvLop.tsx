@@ -66,15 +66,13 @@ function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
   );
 }
 
-/** Hạn của một việc: quá hạn / hôm nay = chip có ⚠ (không chỉ màu), còn lại chữ phụ `dd/mm`. */
+/** Hạn của một việc = chip tiến độ (mockup V5 `.bd-td`): quá hạn ⚠ · hôm nay `soon` · còn lại xám chờ. */
 function HanViec({ x }: { x: ViecEm }) {
   const { homNay } = useNgayNghiepVu();
   if (!x.han) return null;
   const ngay = shortDate(x.han, homNay);
-  /* Quá hạn = badge tiến độ `late` (Nhan tự thêm ⚠); hôm nay = `soon`; còn lại chữ phụ. */
   if (x.quaHan) return <span className="shrink-0"><span className="sr-only">{t('Quá hạn')} </span><Nhan tone="late">{ngay}</Nhan></span>;
-  if (x.it.urgency === 'today') return <span className="shrink-0"><Nhan tone="soon">{ngay}</Nhan></span>;
-  return <span className="shrink-0 px-2 text-xs tabular-nums text-dim">{ngay}</span>;
+  return <span className="shrink-0 tabular-nums"><Nhan tone={x.it.urgency === 'today' ? 'soon' : 'muted'}>{ngay}</Nhan></span>;
 }
 
 /**
@@ -92,10 +90,10 @@ export function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it:
   return (
     <span className="block min-w-0 space-y-1 max-sm:space-y-0">
       {hien.map(({ dau: x, them }) => (
-        <span key={x.it.key} className="flex min-w-0 items-center gap-2">
-          {/* D10 (PTA 27/10): tên việc màu chữ thường — chỉ rê / focus mới xanh + gạch; trạng thái nằm ở chip hạn. */}
-          <button type="button" className="min-w-0 flex-1 truncate appearance-none border-0 bg-transparent p-0 text-left text-[13px] font-medium text-[color:var(--text)] underline-offset-2 hover:text-[color:var(--accent)] hover:underline focus-visible:text-[color:var(--accent)] focus-visible:underline max-sm:min-h-[44px]"
-            title={dich(x.chu)} onClick={() => onMo(x.it)}>{chuCua(x)}</button>
+        <span key={x.it.key} className="flex min-w-0 items-center gap-1.5">
+          {/* D10 (chủ SP 27/10, mockup V5 `.viec-o .nut`): việc = nút viền nhỏ màu chữ thường (không link xanh) · chip hạn ngay sau; trạng thái nằm ở chip. */}
+          <button type="button" className="btn btn-sm h-[30px] min-w-0 max-w-full shrink justify-start max-sm:h-[36px]"
+            title={dich(x.chu)} onClick={() => onMo(x.it)}><span className="truncate">{chuCua(x)}</span></button>
           {them > 0 && <span className="shrink-0 text-xs text-dim">{t('+{n} việc', { n: them })}</span>}
           <HanViec x={x} />
         </span>
