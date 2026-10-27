@@ -8,25 +8,25 @@ colors:
   line: "#22324f"
   line-strong: "#33496f"
   text: "#e7edf7"
-  accent: "#94bdf2"
-  accent-strong: "#b8d3f7"
+  accent: "#9cbde7"
+  accent-strong: "#bdd3ef"
   hong: "#f57aae"
   dieu-huong-nen: "#0a1a3a"
-  ok: "rgb(116 217 163)"
-  bad: "rgb(255 154 143)"
-  late: "rgb(255 154 143)"
-  soon: "rgb(242 196 80)"
-  doing: "rgb(148 189 242)"
+  ok: "rgb(148 209 174)"
+  bad: "rgb(233 167 158)"
+  late: "rgb(233 167 158)"
+  soon: "rgb(228 199 132)"
+  doing: "rgb(156 189 231)"
   done: "rgb(158 172 200)"
   muted: "rgb(186 198 222)"
   text-dim: "rgb(186 198 222)"
   text-faint: "rgb(158 172 200)"
-  sos1: "rgb(214 184 40)"
-  sos2: "rgb(232 112 42)"
-  sos2-nen: "#3a2410"
-  sos3: "rgb(240 100 90)"
-  sos3-nen: "#9c201c"
-  da-thi-bg: "rgb(15 35 53)"
+  sos1: "rgb(204 185 109)"
+  sos2: "rgb(207 129 91)"
+  sos2-nen: "#35261a"
+  sos3: "rgb(213 123 113)"
+  sos3-nen: "#873c34"
+  da-thi-bg: "rgb(22 35 46)"
   light-bg: "#f3f5f9"
   light-surface: "#ffffff"
   light-surface-2: "#f2f4f9"
@@ -192,6 +192,7 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
   5. Trung tính `muted` — mọi trạng thái khác (chờ duyệt, chờ chấm, Chưa chốt PA…). Đã bỏ tím `wait` và teal `chon-*` (OV-15a).
 - Đạt = `ok`; `bad` còn cho thao tác nguy hiểm.
 - **Màu cấp Lịch Test** (V17): `--cap-nhom` `#283452` / sáng `#cfd6e4` · `--cap-lop` `#1d3b72` / `#d4e1fb` · `--cap-lop-dong` `#172b50` / `#edf2fd` · `--cap-dau-cot` `#0a1224` / `#eceff5`. Chỉ dùng ở Lịch Test (+ nhóm trái Chấm Test).
+- **Giảm độ rực (D4 MAU-WEB, chủ SP 27/10 — "giữ tông, giảm độ rực"):** nền, mặt, viền, chữ, thanh điều hướng, xanh logo, hồng logo GIỮ; mọi màu nghĩa giảm chroma OKLCH, giữ độ sáng — trạng thái / SOS / lịch / kết quả × 0,65 (sáng: đỏ lỗi, quá hạn, SOS 3 × 0,8), nhấn tối × 0,8, chữ hồng × 0,85. Màu mới không được rực hơn mức này. Nút chính ở tối: nền `--nut-chinh-nen` xanh thẫm + viền `--nut-chinh-vien`, không tô kín `--accent` (sáng giữ tô xanh logo). Bảng so sánh + đo: `thiet-ke/v7/bang-mau-moi.html`, `kiem-tuong-phan-mau-moi.py`.
 - Chữ phụ: `text-dim` (quan trọng), `text-faint` (nhỏ) — cả hai ≥ 7:1 trên `bg`, `surface`, `surface-2` ở sáng lẫn tối (`prOv15a`).
 
 ## Typography
