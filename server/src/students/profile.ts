@@ -32,7 +32,7 @@ import { cuoiKhoaTheoHocVien, emConMiniTest, emLenFtTu, miniTestCuaHocVien, quye
 import { mt0TheoLop } from '../normal/kyVong.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { lichGopCua, loadSkillRows } from '../fasttrack/skillSchedule.ts';
+import { boTaskCuaDong, lichGopCua, loadSkillRows, monLuotSql } from '../fasttrack/skillSchedule.ts';
 import { duocDoiMon } from '../fasttrack/monDangKy.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
@@ -606,14 +606,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   if (attemptRows.length) {
     const ids = attemptRows.map((a) => a.id);
     theoLo(ids, (lo, ph) => {
-      for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count FROM attempt_skills WHERE attempt_id IN (${ph})`)
+      for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count, bo_task, scope_reason, ${monLuotSql('attempt_skills')} AS mon_luot FROM attempt_skills WHERE attempt_id IN (${ph})`)
         .all(...lo) as any[]) lichCua.set(r.attempt_id, [...(lichCua.get(r.attempt_id) ?? []), r]);
     });
     diemCuaLuot(ids);   // TD2-a: nạp sẵn khoá `diem:` của `scoresOf` (một lần đọc dùng chung với `loadBundle`)
     for (const [id, rows] of lichCua) {
       const batBuoc = rows.filter((r) => r.required === 1).map(({ required: _, ...r }) => r);
       if (batBuoc.length) kyNangCua.set(id, batBuoc);
-      datNho(`bo-mon:${id}`, rows.filter((r) => !r.required).map((r) => r.skill as AssessedSkill));
+      datNho(`bo-mon:${id}`, [...rows.filter((r) => !r.required).map((r) => r.skill), ...boTaskCuaDong(rows)] as AssessedSkill[]);   // cùng luật `skipsOf` (P8 task bỏ, D7 môn bỏ)
     }
   }
 

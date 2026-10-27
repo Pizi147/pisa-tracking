@@ -24,7 +24,7 @@ import { mondayOf } from '../platform/week.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { taoPaBoTro } from './boTro.ts';
 import { dongBoNguyenNhanMt } from './nguyenNhanO.ts';
-import { soThuTuLuot, tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
+import { boMonDaBo, soThuTuLuot, tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
 
 /**
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
@@ -350,7 +350,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     .all(attempt.id) as any[];
   const entry: EntryBands = {};
   for (const r of rows) entry[r.skill as EntrySkill] = r.band;
-  const failing = failingEntrySkills(result.expectation, entry, result.boQua);
+  const failing = failingEntrySkills(result.expectation, entry, result.boQua);   // D7: trừ môn đã bỏ (`boMonDaBo` trong danh sách bỏ của lượt)
 
   /*
    * NGÀY PHÁT HIỆN = thứ Hai của TUẦN THI. Đây là ngày NGHIỆP VỤ của kết quả.
@@ -384,6 +384,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    * lại phương án nào đã ăn thua. Người có thẩm quyền chốt kết quả, máy chỉ đưa tin.
    */
   const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
+  const boMon = boMonDaBo(result.boQua);   // D7: Case môn đã bỏ còn mở không xét "đã đạt" — bài môn đó không còn là căn cứ
   const openHere = conn
     .prepare(
       `SELECT * FROM sos_cases
@@ -391,7 +392,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     )
     .all(attempt.student_id, attempt.cycle_id ?? 0) as any[];
   for (const c of openHere) {
-    if (!c.category || failingCats.has(c.category)) continue;
+    if (!c.category || failingCats.has(c.category) || boMon.has(c.category)) continue;
     const cat = c.category as CaseCategory;
     const band = entry[cat as EntrySkill] ?? null;
     if (band === null || result.expectation === null) continue;

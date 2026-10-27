@@ -59,3 +59,18 @@ export function chuMon(mon: MonVao): string {
   const s = chuanMon(mon);
   return s.size === ENTRY_SKILLS.length ? 'Đủ môn' : ENTRY_SKILLS.filter((k) => s.has(k)).map((k) => ENTRY_SKILL_SHORT[k]).join(' · ');
 }
+
+/*
+ * D7 (chủ SP 27/10, plan.md 1.6 dòng P8): bài môn đã bỏ mà ĐÃ CHẤM (dòng lịch giữ `required`, điểm giữ) không vào mức SOS, Phối hợp, tín hiệu, Case.
+ * Dấu "bo_mon:<ô>" đi CÙNG danh sách kỹ năng bỏ của lượt (như `DAU_KHONG_HOC`, task Writing bỏ) — mọi nơi đã truyền `skips` vào `evaluateAttempt` /
+ * `failingEntrySkills` đọc được qua MỘT hàm `boMonDaBo`, không vá từng nơi. Overall, điểm, lịch sử không đổi.
+ */
+const DAU_BO_MON = 'bo_mon:';
+/** Dấu của các ô (L R W1 W2 S) lộ trình nay không học; đủ môn → []. */
+export const dauBoMon = (mon: MonVao): string[] => monThieu(mon).map((k) => DAU_BO_MON + k);
+export const laDauBoMon = (k: string) => k.startsWith(DAU_BO_MON);
+/** Ô nhập lộ trình đã bỏ, đọc từ danh sách kỹ năng bỏ của lượt. */
+export const boMonDaBo = (skipped: readonly string[]): Set<string> =>
+  new Set(skipped.filter(laDauBoMon).map((k) => k.slice(DAU_BO_MON.length)));
+/** Kỹ năng đánh giá đã bỏ: Writing chỉ khi bỏ cả hai task. */
+export const kyNangDaBo = (bo: ReadonlySet<string>, skill: string) => (skill === 'writing' ? bo.has('writing1') && bo.has('writing2') : bo.has(skill));
