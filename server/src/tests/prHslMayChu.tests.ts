@@ -23,14 +23,16 @@ export async function runPrHslMayChuTests(t: any) {
   const LOP = classId('MB FOU 12');
   const luotFt = () => get(`SELECT a.id, a.student_id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.planned_period_id IS NOT NULL ORDER BY a.id LIMIT 1`, LOP_FT);
+  /* Em còn học lớp (phép kiểm chạy trước có thể đã chuyển em khỏi lớp mà không cuộn lại). */
   const luotThuong = (coDiem = false) => get(`SELECT a.id, a.student_id, a.kind FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.archived_at IS NULL
+     JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
      WHERE a.class_id = ? AND a.kind = 'progress' AND a.status != 'cancelled'
        ${coDiem ? 'AND EXISTS (SELECT 1 FROM assessment_scores x WHERE x.attempt_id = a.id AND x.raw_score IS NOT NULL)' : ''} ORDER BY a.id LIMIT 1`, LOP);
   const themSEx = (sid: number, tuan: string, diem: number, cham: number) => Number(conn.prepare(
     `INSERT INTO s_expert (student_id, tuan, diem, nhan_xet, cham_boi, cham_luc, them_boi, them_luc) VALUES (?,?,?,?,?,?,?,?)`,
   ).run(sid, tuan, diem, 'Fluency tốt', cham, TODAY, P.mbManager.userId, TODAY).lastInsertRowid);
 
-  check('HSL-1 · FT: sEx = lượt S Ex của em trong tuần của lượt (điểm, GV, tuần); tuần khác / đã xoá không hiện; em không có → []', () => thu(() => {
+  check('HSLM-1 · FT: sEx = lượt S Ex của em trong tuần của lượt (điểm, GV, tuần); tuần khác / đã xoá không hiện; em không có → []', () => thu(() => {
     const l = luotFt();
     assert(l, 'demo phải có lượt Mock đang học ở MB FT 101');
     conn.prepare('DELETE FROM s_expert WHERE student_id = ?').run(l.student_id);
@@ -49,7 +51,7 @@ export async function runPrHslMayChuTests(t: any) {
     assert(JSON.stringify(d.result) === JSON.stringify(truoc.result), 'S Ex không được đổi kết quả lượt');
   }));
 
-  check('HSL-2 · FT: lopHienTai null khi em còn ở lớp của lượt; đã chuyển lớp → { id, code } lớp mới (classCode vẫn là lớp lúc Test)', () => thu(() => {
+  check('HSLM-2 · FT: lopHienTai null khi em còn ở lớp của lượt; đã chuyển lớp → { id, code } lớp mới (classCode vẫn là lớp lúc Test)', () => thu(() => {
     const l = luotFt();
     assert(attempts.attemptDetail(P.mbManager, l.id).lopHienTai === null, 'cùng lớp → null');
     const moi = get(`SELECT id, code FROM classes WHERE id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) AND status != 'finished' ORDER BY id LIMIT 1`, LOP_FT, LOP_FT);
@@ -60,7 +62,7 @@ export async function runPrHslMayChuTests(t: any) {
     assert(d.classId === LOP_FT, 'lớp của lượt giữ nguyên = lớp lúc Test');
   }));
 
-  check('HSL-3 · /regular/attempts/:id: `dong` = đúng dòng của regularSheet (QL và GVBM — cùng quyền canEdit); kèm lớp, chương trình, ngưỡng', () => {
+  check('HSLM-3 · /regular/attempts/:id: `dong` = đúng dòng của regularSheet (QL và GVBM — cùng quyền canEdit); kèm lớp, chương trình, ngưỡng', () => {
     const l = luotThuong();
     assert(l, 'demo phải có Progress Test ở MB FOU 12');
     for (const p of [P.mbManager, P.normalSubjectTeacher, P.normalCoreTeacher]) {
@@ -71,7 +73,7 @@ export async function runPrHslMayChuTests(t: any) {
     }
   });
 
-  check('HSL-4 · /regular/attempts/:id: người nhập từng môn (`nguoiNhap`), lịch sử lịch (`history`) + điểm (`scoreHistory`) của lượt', () => thu(() => {
+  check('HSLM-4 · /regular/attempts/:id: người nhập từng môn (`nguoiNhap`), lịch sử lịch (`history`) + điểm (`scoreHistory`) của lượt', () => thu(() => {
     const l = luotThuong(true);
     assert(l, 'demo phải có Progress Test đã có điểm ở MB FOU 12');
     const o = get('SELECT skill FROM assessment_scores WHERE attempt_id = ? AND raw_score IS NOT NULL ORDER BY id LIMIT 1', l.id);
@@ -89,7 +91,7 @@ export async function runPrHslMayChuTests(t: any) {
     assert(JSON.stringify(d.scoreHistory) === JSON.stringify(attempts.scoreHistoryOf(l.id)), 'scoreHistory = scoreHistoryOf của lượt');
   }));
 
-  check('HSL-5 · /regular/attempts/:id: QL chi nhánh khác → 403; lượt FT / MT0 / id không có → 404', () => {
+  check('HSLM-5 · /regular/attempts/:id: QL chi nhánh khác → 403; lượt FT / MT0 / id không có → 404', () => {
     const l = luotThuong();
     assert(maLoi(() => regular.regularAttemptDetail(P.cpManager, l.id)) === 403, 'QL CP xem lượt MB → 403');
     assert(maLoi(() => regular.regularAttemptDetail(P.mbManager, luotFt().id)) === 404, 'lượt FT → 404');
@@ -98,7 +100,7 @@ export async function runPrHslMayChuTests(t: any) {
     assert(maLoi(() => regular.regularAttemptDetail(P.mbManager, 99_999_999)) === 404, 'id không có → 404');
   });
 
-  check('HSL-6 · /regular/attempts/:id: lượt đã huỷ vẫn mở (status cancelled, `huy`), không ô nào nhập / nhận xét / đổi lịch / gỡ dấu được', () => thu(() => {
+  check('HSLM-6 · /regular/attempts/:id: lượt đã huỷ vẫn mở (status cancelled, `huy`), không ô nào nhập / nhận xét / đổi lịch / gỡ dấu được', () => thu(() => {
     const l = luotThuong(true);
     conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(l.id);
     conn.prepare(`INSERT INTO attempt_schedule_history (attempt_id, action, reason, actor_user_id, created_at) VALUES (?, 'cancelled', 'Thử huỷ', ?, ?)`)
@@ -110,11 +112,17 @@ export async function runPrHslMayChuTests(t: any) {
     assert(mo.length === 0, `lượt huỷ còn ô mở: ${JSON.stringify(mo.map((x: any) => x.skill))}`);
   }));
 
-  check('HSL-7 · /regular/attempts/:id: lopHienTai như FT (null cùng lớp)', () => {
-    assert(regular.regularAttemptDetail(P.mbManager, luotThuong().id).lopHienTai === null, 'cùng lớp → null');
-  });
+  check('HSLM-7 · /regular/attempts/:id: lopHienTai như FT (null cùng lớp; đã chuyển lớp → lớp mới, `class` vẫn là lớp lúc Test)', () => thu(() => {
+    const l = luotThuong();
+    assert(regular.regularAttemptDetail(P.mbManager, l.id).lopHienTai === null, 'cùng lớp → null');
+    const moi = get(`SELECT id, code FROM classes WHERE id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) AND status != 'finished' ORDER BY id LIMIT 1`, LOP, LOP);
+    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND class_id = ? AND status = 'active'`).run(TODAY, l.student_id, LOP);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(l.student_id, moi.id, TODAY, TODAY);
+    const d = regular.regularAttemptDetail(P.mbManager, l.id);
+    assert(d.lopHienTai?.id === moi.id && d.lopHienTai.code === moi.code && d.class.id === LOP, `lopHienTai: ${JSON.stringify(d.lopHienTai)}`);
+  }));
 
-  check('HSL-8 · lượt lớp thường mới (QL xếp — planRegularTests; em vào lớp — taoBaiThuongMacDinh) ghi dòng lịch sử "created" như FT', () => thu(() => {
+  check('HSLM-8 · lượt lớp thường mới (QL xếp — planRegularTests; em vào lớp — taoBaiThuongMacDinh) ghi dòng lịch sử "created" như FT', () => thu(() => {
     const br = get('SELECT branch_id b FROM classes WHERE id = ?', LOP).b;
     const taoEm = (ma: string) => {
       const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
