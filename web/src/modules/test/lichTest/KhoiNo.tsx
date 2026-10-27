@@ -138,7 +138,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                   aria-expanded={dangMo}
                   title={dangMo ? t('Thu lưới lại') : d.duocCham ? t('Mở lưới ngay dưới dòng, chỉ các em còn nợ') : t('Xem lưới (môn người khác dạy)')}
                   onClick={() => onMoDong(dangMo ? null : d, i)}>
-                  {dangMo ? 'Thu' : d.duocCham && !xong ? t('Nhập điểm') : 'Xem'}
+                  {dangMo ? t('Thu') : d.duocCham && !xong ? t('Nhập điểm') : t('Xem')}
                 </button>
               );
               return (

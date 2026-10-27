@@ -337,7 +337,7 @@ export function LichTestTab() {
                 <Fragment key={x.so}>
                   {' · '}
                   <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={t('Nhập MT{so} cũ lớp {classCode}', { so: x.so, classCode: n.classCode })}>
-                    MT{x.so} · {x.soEm} em
+                    MT{x.so} · {t('{n} em', { n: x.soEm })}
                   </Link>
                 </Fragment>
               ))}
