@@ -30,6 +30,11 @@ export type TongQuanV5Data = {
 };
 
 /** Tham số chung của mọi đường trên trang (chi nhánh + khung). */
+/** M6 6b-4 (Q5, Q8): ô "⚠ n" Quá hạn của GV → panel GV chấm quá hạn (lớp · lượt · kỹ năng → em còn trống → Nhập hộ), cùng tập Trễ chấm. */
+const GV_TRE_QL = {
+  loai: t('SỐ LIỆU · TỔNG QUAN'), trong: t('Giáo viên này không còn bài trễ chấm'),
+  cachTinh: t('Bài = ô kỹ năng còn trống của em đã thi (W1, W2 tính riêng), đã qua hạn chấm. Cùng tập với cột "Quá hạn" của bảng GV cần chú ý; Speaking chấm chéo chưa ai nhận vẫn tính quá hạn.'),
+};
 export const thamSoTq = (branchId: number | null, ct: ChuongTrinh) => `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
 
 /* ───────────── khung chung ───────────── */
@@ -233,7 +238,7 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
     if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
     if (c.key === 'tre') {
       const n = tre.get(h.id) ?? 0;
-      return n ? <span className="font-semibold text-bad">⚠ <OSo giaTri={n} className="text-bad" tieuDe={t('Bài trễ chấm · {ten}', { ten: h.ten })} nguon={`/tong-quan/ql/tre?gv=${h.id}&${thamSoTq(d.branchId, d.ct)}`} /></span>
+      return n ? <span className="font-semibold text-bad">⚠ <OSo giaTri={n} className="text-bad" tieuDe={t('Chấm quá hạn · {ten}', { ten: h.ten })} nguon={`/tong-quan/gv-tre?gv=${h.id}&${thamSoTq(d.branchId, d.ct)}`} gvTre={GV_TRE_QL} /></span>
         : <span className="tabular-nums text-slate-500">0</span>;
     }
     const nguon = c.key === 'pa' ? `/giao-vien/${h.id}/o?cot=case-mo&cn=${d.branchId}&ct=${d.ct}` : `/phan-tich/giao-vien/o?gv=${h.id}&cot=${COT[c.key]}&${q}`;

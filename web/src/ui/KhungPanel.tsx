@@ -217,6 +217,10 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
     /* Esc chỉ đóng lớp TRÊN CÙNG: panel mở sau cùng (`nganPanel`); `Modal` mở chồng trong panel (không portal) tự đóng bằng Esc — panel đứng yên. */
     nganPanel.push(id);
     const onKey = (e: KeyboardEvent) => {
+      /* M6 6b-4: hộp nổi vẽ qua portal NGOÀI panel (hộp điểm của lưới Nhập điểm) nghe Esc sau panel — focus đang ở đó thì để hộp tự đóng,
+         không đóng cả panel (mất ô đang gõ). */
+      const hop = (document.activeElement as HTMLElement | null)?.closest('[role="dialog"]');
+      if (hop && khung.current && !khung.current.contains(hop) && !hop.contains(khung.current)) return;
       if (e.key === 'Escape' && !e.defaultPrevented && nganPanel[nganPanel.length - 1] === id
         && !khung.current?.querySelector('[aria-modal="true"]')) dong();
     };
