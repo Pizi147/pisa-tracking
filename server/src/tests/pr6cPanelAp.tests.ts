@@ -110,15 +110,15 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
   const d: any = await import('../../../shared/domain/index.ts');
   check('6c ⑥ gvTre (Admin + QL): mọi dòng có lượt → luotChu = nhanMaLuot(docMaLuot(luot))', () => {
     const id = (sql: string) => (conn.prepare(sql).get() as any)?.id as number | undefined;
-    const ad = id(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin' ORDER BY ur.user_id LIMIT 1`);
+    const ads = (conn.prepare(`SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin'`).all() as any[]).map((r) => r.id as number);
     const ql = id(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'branch_manager' ORDER BY ur.user_id LIMIT 1`);
     let n = 0;
     const kiem = (r: any) => { for (const g of r.nhom) for (const x of g.dong) if (x.luot) { n++; assert(x.luotChu === d.nhanMaLuot(d.docMaLuot(x.luot)), `${x.luot}: "${x.luotChu}"`); } };
-    if (ad) kiem(gvTre(loadPrincipal(ad), {}));
+    for (const ad of ads) kiem(gvTre(loadPrincipal(ad), {}));
     if (ql) {
       const p = loadPrincipal(ql);
       for (const ct of ['ft', 'thuong'] as const) for (const g of treCham(p, null, ct).dong) kiem(gvTre(p, { ct, gv: g.khoa }));
     }
-    assert(n > 0 || !ad, 'seed không có dòng GV trễ nào để kiểm');
+    assert(n > 0 || !ads.length, 'seed không có dòng GV trễ nào để kiểm');
   });
 }
