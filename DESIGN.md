@@ -41,7 +41,7 @@ typography:
   label:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
     fontSize: "13px"
-    fontWeight: 600
+    fontWeight: 500
   table-head:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
     fontSize: "13px"
@@ -204,6 +204,9 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
   nhãn, `btn-sm` · `sm` 14 lưới dày, giá trị panel · `base` 15 chữ thường, ô bảng, nút · `lg` 17 tiêu đề khối / panel · `xl` 22 tiêu đề trang · `2xl` 28 số lớn.
   Ô nhập ở 375 = 16 (Safari không tự phóng to). Đầu cột **không in hoa**. Line-height Việt ≥ 1,45 (nhiều dòng), tiêu đề ≥ 1,3.
 - Hàng nhóm đậm, hàng con nhạt hơn (cỡ theo thang trên).
+- **Độ đậm (MAU-WEB-2 D10, 27/10):** chữ thường 400 · nhãn (ô form, trường panel, nút phụ `btn-sm`, tab / chip lọc / nút đoạn KHÔNG chọn) 500 ·
+  mục đang chọn, nút chính, tên đầu dòng (`.ten-ho-so`), đầu cột, badge 600 · tiêu đề trang / khối, số chính (`OSo`), tên lớp hàng nhóm 700 · không dùng 800 (trừ logo).
+  Ô hàng nhóm ghi `font-normal` thì giữ chữ thường (`.hang-lon > :where(td)`).
 - **Số căn giữa** + `tabular-nums` (`td.tabular-nums`, đầu cột số); tên / chữ dài căn trái (C06).
 - Đối tượng trong khối **Cần làm** của panel v3 (tên PA, mức kỷ luật, loại meeting): **15 px đậm 700** (OV-12e, chủ SP 14/10).
 - **Không chữ < 11 px** ở bất kỳ đâu (→ Luật 21/10 G13: tối thiểu 12).

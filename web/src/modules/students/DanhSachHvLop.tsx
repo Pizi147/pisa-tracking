@@ -66,15 +66,13 @@ function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
   );
 }
 
-/** Hạn của một việc: quá hạn / hôm nay = chip có ⚠ (không chỉ màu), còn lại chữ phụ `dd/mm`. */
+/** Hạn của một việc = chip tiến độ (mockup V5 `.bd-td`): quá hạn ⚠ · hôm nay `soon` · còn lại xám chờ. */
 function HanViec({ x }: { x: ViecEm }) {
   const { homNay } = useNgayNghiepVu();
   if (!x.han) return null;
   const ngay = shortDate(x.han, homNay);
-  /* Quá hạn = badge tiến độ `late` (Nhan tự thêm ⚠); hôm nay = `soon`; còn lại chữ phụ. */
   if (x.quaHan) return <span className="shrink-0"><span className="sr-only">{t('Quá hạn')} </span><Nhan tone="late">{ngay}</Nhan></span>;
-  if (x.it.urgency === 'today') return <span className="shrink-0"><Nhan tone="soon">{ngay}</Nhan></span>;
-  return <span className="shrink-0 px-2 text-xs tabular-nums text-dim">{ngay}</span>;
+  return <span className="shrink-0 tabular-nums"><Nhan tone={x.it.urgency === 'today' ? 'soon' : 'muted'}>{ngay}</Nhan></span>;
 }
 
 /**
@@ -92,16 +90,17 @@ export function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it:
   return (
     <span className="block min-w-0 space-y-1 max-sm:space-y-0">
       {hien.map(({ dau: x, them }) => (
-        <span key={x.it.key} className="flex min-w-0 items-center gap-2">
-          <button type="button" className="link min-w-0 flex-1 truncate appearance-none border-0 bg-transparent p-0 text-left text-[13px] font-medium no-underline hover:underline max-sm:min-h-[44px]"
-            title={dich(x.chu)} onClick={() => onMo(x.it)}>{chuCua(x)}</button>
+        <span key={x.it.key} className="flex min-w-0 items-center gap-1.5">
+          {/* D10 (chủ SP 27/10, mockup V5 `.viec-o .nut`): việc = nút viền nhỏ màu chữ thường (không link xanh) · chip hạn ngay sau; trạng thái nằm ở chip. */}
+          <button type="button" className="btn btn-sm h-[30px] min-w-0 max-w-full shrink justify-start max-sm:h-[36px]"
+            title={dich(x.chu)} onClick={() => onMo(x.it)}><span className="truncate">{chuCua(x)}</span></button>
           {them > 0 && <span className="shrink-0 text-xs text-dim">{t('+{n} việc', { n: them })}</span>}
           <HanViec x={x} />
         </span>
       ))}
       {dong.length > SO_DONG_VIEC_MAC_DINH && (
         <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
-          className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-semibold text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
+          className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-medium text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
           {mo ? t('Thu gọn') : t('Xem thêm {n}', { n: dong.length - SO_DONG_VIEC_MAC_DINH })}
         </button>
       )}
@@ -181,7 +180,7 @@ export function BangHvGon({ nhom, lop, viec, gopMon, nguCanh, onMoViec, onDoi, v
     switch (c.key) {
       case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} />;
       case 'lo': return g
-        ? <span className="block"><b className="block tabular-nums text-slate-100" title={t('MT đã xong / đã tạo')} aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
+        ? <span className="block"><b className="block font-medium tabular-nums text-slate-100" title={t('MT đã xong / đã tạo')} aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
             {g.loTrinh.soMt ? `${g.loTrinh.mt}/${g.loTrinh.soMt} MT` : '—'}</b>
             <span className="block text-xs text-slate-400">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
         : <span className="block truncate text-xs text-slate-400">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;

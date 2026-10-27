@@ -446,7 +446,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           </OBang>
         );
       })}
-      {cot.kyVong && <OBang c={cc.kv} className={lich ? 'text-slate-300' : 'font-extrabold'}>{fmtBand(row.result.expectation)}</OBang>}
+      {cot.kyVong && <OBang c={cc.kv} className={lich ? 'text-slate-300' : 'font-bold'}>{fmtBand(row.result.expectation)}</OBang>}
       {cot.ovr && (
         <OBang c={cc.ovr}>
           {/* NEN (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}

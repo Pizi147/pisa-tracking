@@ -103,7 +103,7 @@ export function CongTac<K extends string>({ value, onChange, muc }: { value: K; 
     <span role="group" aria-label={t('Lọc')} className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
       {muc.map(([k, nhan]) => (
         <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)}
-          className={`min-h-[44px] px-3 text-[13px] sm:min-h-[30px] ${value === k ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
+          className={`min-h-[44px] px-3 text-[13px] sm:min-h-[30px] ${value === k ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
       ))}
     </span>
   );
@@ -132,7 +132,7 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
           <li key={y.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
             <button type="button" onClick={() => setMo(y)}
               className={`bam grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-left ${mo?.id === y.id ? 'dang-mo' : ''}`}>
-              <span className="truncate text-sm font-semibold text-slate-100">{y.nhanLoai}{y.hocVien && ` · ${y.hocVien}`}</span>
+              <span className="truncate text-sm font-medium text-slate-100">{y.nhanLoai}{y.hocVien && <> · <b className="font-semibold">{y.hocVien}</b></>}</span>
               <span className="whitespace-nowrap text-xs text-slate-400">{cho(y)}</span>
               <span className="col-span-2 truncate text-xs text-slate-500">{[y.lop, y.phu, y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
             </button>

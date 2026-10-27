@@ -109,7 +109,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
         <span role="group" aria-label={t('Bộ cột')} className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
           {([['gon', t('Gọn')], ['day', t('Đầy đủ')]] as const).map(([k, nhan]) => (
             <button key={k} type="button" aria-pressed={boCot === k} onClick={() => setBoCot(k)}
-              className={`min-h-[44px] px-3 text-sm sm:min-h-[34px] ${boCot === k ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
+              className={`min-h-[44px] px-3 text-sm sm:min-h-[34px] ${boCot === k ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
           ))}
         </span>
         <input type="search" name="tim-gv" autoComplete="off" className="field w-56 max-sm:min-h-[44px] max-sm:w-full" placeholder={t('Tìm GV…')} aria-label={t('Tìm GV')} value={tim} onChange={(e) => setTim(e.target.value)} />

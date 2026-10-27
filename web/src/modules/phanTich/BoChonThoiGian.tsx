@@ -13,7 +13,7 @@ export function BoChonThoiGian({ khoang, onChange, toanBo = false }: { khoang: K
   const laTb = khoang.kieu === 'toan-bo';
   const tuanDau = khoang.tu, tuanCuoi = addDaysIso(khoang.den, -6);   // Thứ Hai tuần đầu / tuần cuối
   const dat = (tu: string, cuoi: string) => onChange(khoangVeTuan({ tu, den: addDaysIso(cuoi, 6) }, homNay));
-  const nut = (bat: boolean) => `min-h-[44px] px-3 text-sm sm:min-h-[34px] ${bat ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--accent)]' : 'text-slate-400'}`;
+  const nut = (bat: boolean) => `min-h-[44px] px-3 text-sm sm:min-h-[34px] ${bat ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]' : 'text-slate-400'}`;
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-2" data-hd="pt-thoi-gian" role="group" aria-label={t('Thời gian')}>
       {toanBo && (

@@ -126,7 +126,7 @@ export function DanhSachViec({ nhom, dem, homNay, soHien, moHet, gapSan, cuoiNho
                 {so.bai > 0
                   ? <span className="font-normal text-dim"><b className="font-semibold tabular-nums text-[color:var(--text)]">{so.bai}</b> {t('bài')}</span>
                   : so.hv > 0 && !chiDemViec ? <span className="font-normal text-dim"><b className="font-semibold tabular-nums text-[color:var(--text)]">{so.hv}</b> {t('HV')}</span> : null}
-                {quaHan > 0 && <span className="font-bold text-late">{t('⚠ {quaHan} quá hạn', { quaHan })}</span>}
+                {quaHan > 0 && <span className="font-semibold text-late">{t('⚠ {quaHan} quá hạn', { quaHan })}</span>}
                 {homNayN > 0 && <span className="font-semibold text-soon">{t('⚠ {n} hạn hôm nay', { n: homNayN })}</span>}
               </>} />
             {dangMo && (vach ? (

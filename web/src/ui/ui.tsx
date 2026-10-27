@@ -565,8 +565,8 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
         const chon = !tat && m.key === value;
         return (
           <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
-            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold disabled:pointer-events-none max-sm:rounded-lg max-sm:border sm:min-h-[32px] ${i ? 'sm:border-l' : ''} ${
-              chon ? 'bg-[color:var(--accent-soft)] text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs disabled:pointer-events-none max-sm:rounded-lg max-sm:border sm:min-h-[32px] ${i ? 'sm:border-l' : ''} ${
+              chon ? 'bg-[color:var(--accent-soft)] font-semibold text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
             <span aria-hidden className={`text-[12px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
           </button>

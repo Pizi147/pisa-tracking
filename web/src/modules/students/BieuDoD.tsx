@@ -249,7 +249,7 @@ export function BieuDoD(o: BieuDoDProps) {
       const yt = Y(o.thi.v), tg = o.thi.target;
       if (tg != null && o.thi.v < tg) ve.push(lech('thilc', xt, yt, Y(tg), fmt(tg - o.thi.v), true));
       ve.push(dau('thi', xt, yt, o.thi.goi, <rect x={xt - 8} y={yt - 8} width="16" height="16" transform={`rotate(45 ${xt} ${yt})`} fill="var(--lich-chu)" stroke="var(--surface)" strokeWidth="2" />));
-      ve.push(<text key="thic" x={xt} y={tg != null && o.thi.v < tg ? yt + 24 : yt - 14} textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--text)" aria-hidden>{fmt(o.thi.v)}</text>);
+      ve.push(<text key="thic" x={xt} y={tg != null && o.thi.v < tg ? yt + 24 : yt - 14} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--text)" aria-hidden>{fmt(o.thi.v)}</text>);
     } else {   // chờ KQ / dự kiến: chỉ cột; vùng chạm = chính cột / khối (vòng focus ôm cột)
       const a = Xl(thiKhoi[0]), b = Xl(thiKhoi[1]) + cw;
       ve.push(dau('thi', xt, py1 - 10, o.thi.goi, null, { x: a + 1, y: py0, w: b - a - 2, h: py1 - py0 }));
