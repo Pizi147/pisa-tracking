@@ -17,22 +17,23 @@ export function QuaHan({ ngay, gon }: { ngay: number | null; gon?: boolean }) {
  *   1 · KẾT QUẢ HỌC TẬP (`NhanKq`, `CHIP_VUONG`): góc 4 px, viền 1 px màu nghĩa, nền thẻ, ✓ ✗ – đứng đầu.
  *   2 · LỊCH THI (`NhanLich`): nền xanh lơ đặc, góc 2 px, không viền màu kết quả — "Đã thi · chờ KQ" không thể nhầm Đạt.
  *   3 · TIẾN ĐỘ XỬ LÝ (`Nhan`, `CHIP_TRON`): viên tròn nền xám nhạt + chấm màu; sắp hạn / quá hạn: nền nhạt + ⚠.
- *   4 · MỨC SOS (`ChipSos`, `lopSos`): cùng họ viền với kết quả (C23); mức tách bằng độ dày viền + chữ "SOS n".
+ *   4 · MỨC SOS (`ChipSos`, `lopSos`): cùng họ góc 4 px với kết quả (C23); mức tách bằng độ đặc nền (rỗng · nền vừa · đặc) + chữ "SOS n".
  * Họ tròn viền trong suốt (tông có viền thì đè); tông viền đứt dùng `!border-current`.
  */
 export const CHIP_TRON = 'inline-flex h-[22px] items-center whitespace-nowrap rounded-full border border-transparent px-2 text-xs font-semibold leading-none';
 export const CHIP_VUONG = 'inline-flex h-[22px] items-center whitespace-nowrap rounded border px-2 text-xs font-semibold leading-none tabular-nums';
 
 /**
- * DÁNG CHIP SOS — MỘT CHỖ (C23 + P6 chủ SP 22/10): vàng → cam → ĐỎ (không hồng); ba mức khác hẳn, đọc được cả khi không phân biệt màu:
- * SOS 1 viền mảnh trên nền thẻ · SOS 2 viền 2 px + nền cam nhạt · SOS 3 nền đỏ đặc chữ trắng. Tạm = viền đứt (SOS 3 tạm: không nền, viền đứt 2 px).
+ * DÁNG CHIP SOS — MỘT CHỖ (C23 + MAU-MUC chủ SP 28/10): vàng → cam → ĐỎ (không hồng); ba mức tách bằng ĐỘ ĐẶC nền, đọc được cả khi không phân biệt màu:
+ * SOS 1 rỗng (viền mảnh trên nền thẻ) · SOS 2 nền cam vừa · SOS 3 nền đỏ đặc chữ trắng; cùng viền 1 px, cùng chữ 600.
+ * Tạm = GIỮ nền của mức, mép viền đứt (SOS 2 / 3: 2 px, `bg-clip-padding` để khe hở lộ nền thẻ) + chữ "tạm".
  * `SCORE_CHIP` (ô kết quả) dùng lại lớp này.
  */
 export function lopSos(muc: number, tam?: boolean): string {
   if (muc <= 1) return `bg-[color:var(--surface)] border border-sos1 text-sos1-chu ${tam ? '!border-dashed' : ''}`;
-  if (muc === 2) return `border-2 !px-[7px] border-sos2 text-sos2-chu ${tam ? 'bg-[color:var(--surface)] !border-dashed' : 'bg-[color:var(--sos2-nen)]'}`;
-  return tam ? 'bg-[color:var(--surface)] border-2 !px-[7px] border-dashed border-sos3 text-sos3-chu'
-    : 'border border-[color:var(--sos3-vien)] bg-[color:var(--sos3-nen)] font-bold text-[color:var(--sos3-tren)]';
+  const vien = tam ? 'border-2 !px-[7px] border-dashed bg-clip-padding' : 'border';
+  if (muc === 2) return `${vien} border-sos2 bg-[color:var(--sos2-nen)] text-sos2-chu`;
+  return `${vien} ${tam ? 'border-sos3' : 'border-[color:var(--sos3-vien)]'} bg-[color:var(--sos3-nen)] text-[color:var(--sos3-tren)]`;
 }
 /** Khung chip SOS (cùng họ góc 4 px với kết quả — C23). */
 export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded px-2 text-xs font-semibold leading-none tabular-nums';

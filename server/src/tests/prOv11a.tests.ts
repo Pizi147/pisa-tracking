@@ -85,7 +85,7 @@ export async function runPrOv11aTests(t: YThucTestKit) {
     assert(diem(a, 'listening').raw_score === 30, 'điểm chưa vào');
     /* NEN-SUA (nợ #544): ô đã có điểm ở tuần thi bù vẫn mang tuần cũ — lưới ghi "vắng W1 NOV". */
     const c = o(a, 'listening', gvL, W1, SAU_BU);
-    assert(d.chuDoiVang(c?.doiTu) === 'vắng W1 NOV' && c.daChot === null, `ô có điểm phải ghi "vắng W1 NOV": ${JSON.stringify({ doiTu: c?.doiTu, daChot: c?.daChot })}`);
+    assert(d.chuDoiVang(c?.doiTu) === 'vắng W1\u00a0NOV' && c.daChot === null, `ô có điểm phải ghi "vắng W1 NOV": ${JSON.stringify({ doiTu: c?.doiTu, daChot: c?.daChot })}`);
   }));
 
   check('OV11a-2 · TE-2/TE-3: ô tuần thi bù mang tuần gốc; "-" lần 2 → huỷ phần thi, ô ghi vắng 2 lần; Khôi phục xoá "-"', () => thu(() => {

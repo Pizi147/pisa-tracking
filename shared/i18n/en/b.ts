@@ -230,6 +230,7 @@ const EN_B_WEB = {
   'Quá hạn chấm': 'Overdue',
   '· {lop} lớp': (b) => `· ${so(b.lop, 'class', 'classes')}`,
   '{n} bài của GV khác': (b) => `${so(b.n, 'paper', 'papers')} of other teachers`,
+  '{n} GV khác': (b) => `${b.n} by others`,
   'của bạn xong': 'yours done',
   'của bạn: còn {con} bài': (b) => `yours: ${so(b.con, 'paper', 'papers')} left`,
   ': GV khác': ': other teachers',
