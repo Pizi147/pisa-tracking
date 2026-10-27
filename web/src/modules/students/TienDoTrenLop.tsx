@@ -205,8 +205,9 @@ function FormTienDo({ duong, bai, lop, lopNay, knDau, ct, homNay, onHuy, onXong 
     skill, tuan, tenBai: tenBai.trim() || null, nhanXet: nhanXet.trim() || null,
     diem: kieu === 'diem' ? soDiem : null, thang: kieu === 'diem' ? soThang : null, band: kieu === 'band' ? soBand : null,
   };
-  /* Esc chỉ đóng khi chưa gõ gì — không mất chữ vì một phím (Huỷ vẫn bỏ). */
+  /* Esc chỉ đóng khi chưa gõ gì — không mất chữ vì một phím. Nút trái theo luật S3: chưa sửa "Đóng", đã sửa "Huỷ thay đổi". */
   const goc = useRef(JSON.stringify(than));
+  const daSua = JSON.stringify(than) !== goc.current;
   const gui = async (xoa = false) => {
     if (dang.current) return;
     if (!xoa) {
@@ -231,7 +232,7 @@ function FormTienDo({ duong, bai, lop, lopNay, knDau, ct, homNay, onHuy, onXong 
   };
   const phim = (e: KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
-    if (e.key === 'Escape' && !busy && JSON.stringify(than) === goc.current) { e.preventDefault(); onHuy(); return; }
+    if (e.key === 'Escape' && !busy && !daSua) { e.preventDefault(); onHuy(); return; }
     if (e.key !== 'Enter') return;
     const el = e.target as HTMLElement;
     if (el.tagName === 'TEXTAREA' ? e.ctrlKey || e.metaKey : el.tagName === 'INPUT') { e.preventDefault(); void gui(); }
@@ -289,7 +290,7 @@ function FormTienDo({ duong, bai, lop, lopNay, knDau, ct, homNay, onHuy, onXong 
         <div className="flex flex-wrap items-center gap-2">
           {bai && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui(true)}>{t('Xoá')}</button>}
           <span className="flex-1" />
-          <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onHuy}>{t('Huỷ')}</button>
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onHuy}>{daSua ? t('Huỷ thay đổi') : t('Đóng')}</button>
           <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" aria-busy={busy} onClick={() => void gui()}>
             {busy ? t('Đang lưu…') : loi ? t('Thử lại') : t('Lưu')}
           </button>
