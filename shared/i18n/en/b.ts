@@ -90,7 +90,7 @@ const EN_B_WEB = {
   'Cả lớp ({length})': 'Whole class ({length})',
   'Nguyên nhân chính': 'Main cause',
   'Ghi rõ nguyên nhân': 'Describe the cause',
-  'Mô tả': 'Details',
+  'Mô tả': 'Description',   // D8: ô Mô tả của Case (EN tách khỏi nút Describe Case)
   '{x}: PA theo quy chế khác mức các em còn lại — bỏ chọn, xác nhận riêng.': '{x}: rule-based PA differs from the others — untick and confirm separately.',
   'Đã xác nhận {xong} em. Lỗi ở lô sau: {message}': 'Confirmed {xong}. Error in the next batch: {message}',
   'Không cần theo dõi…': 'Stop tracking…',
@@ -1790,7 +1790,7 @@ const EN_B_MAY = {
   'Xác nhận Case {x}': 'Confirm case {x}',
   'Chờ xác nhận Case': 'Awaiting case confirmation',
   'Chờ mô tả Case': 'Awaiting case description',
-  'Mô tả Case {x}': 'Describe case {x}',
+  'Mô tả Case {x}': 'Describe Case {x}',
   'chưa xác nhận Case': 'case not confirmed',
   'chưa xác nhận Case, không hạn': 'case not confirmed, no due date',
   'Case chưa có mô tả': 'case has no description',

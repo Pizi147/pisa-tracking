@@ -33,6 +33,16 @@ export type TongQuanMt = {
   gvQuaHan: GvQuaHan[];
 };
 
+/** M6 6b-4 (Q8): tập "GV chấm quá hạn" của Admin — khối Tổng quan và panel của nó (`gvTre`) lọc CÙNG hàm này trên `myWork` (Admin, tất cả).
+ *  `choCham`: S chấm chéo chưa ai nhận — chờ chấm, ngoài Σ quá hạn (Q12). */
+export function viecQuaHanAdmin(items: readonly any[]): { quaHan: any[]; choCham: any[] } {
+  const score = items.filter((it) => it.group === 'score');
+  return {
+    quaHan: score.filter((it) => it.urgency === 'overdue'),
+    choCham: score.filter((it) => it.ownerId === null && it.urgency !== 'overdue' && laChamCheo(it.kind, it.kn)),
+  };
+}
+
 export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): TongQuanMt {
   if (phamViXemViec(p) !== 'cham-diem') throw forbidden('Khối Mock Test chỉ dành cho Admin.');
   const today = demoToday();
@@ -43,7 +53,7 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
   const dong = (w.dong ?? []) as any[];
   const keHoach = danhSachLop(p, { branchId });
 
-  const quaHan = ((w.items ?? []) as any[]).filter((it) => it.group === 'score' && it.urgency === 'overdue');
+  const { quaHan, choCham } = viecQuaHanAdmin(w.items ?? []);
   const gvQuaHan: GvQuaHan[] = quaHan.filter((it) => it.ownerId !== null)
     .map((it) => ({
       key: it.key, ownerId: it.ownerId, gv: it.owner ?? '', kyNang: it.reason, lop: it.classCode ?? null, luot: it.contextLabel ?? null,
@@ -59,7 +69,7 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
     });
   };
   chuaCoGv(quaHan.filter((it) => it.ownerId === null), 'chua-co-gv', false);
-  chuaCoGv(((w.items ?? []) as any[]).filter((it) => it.group === 'score' && it.ownerId === null && it.urgency !== 'overdue' && laChamCheo(it.kind, it.kn)), 'cham-cheo-chua-nhan', true);
+  chuaCoGv(choCham, 'cham-cheo-chua-nhan', true);
 
   return {
     tuan: tuanDau?.weekStart ?? mondayOf(today),

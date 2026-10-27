@@ -151,7 +151,7 @@ const COT_DAY: readonly CotBang[] = [
 ];
 const COT_CN: readonly CotBang[] = [
   /* R1-EN-2 (PTA #599): "Below expected" / "Exam this month" cần ~120 px — bớt Lớp / SOS / Case, tổng vẫn 500 px. */
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 108 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'diem', rong: 120, goiY: t('Lớp thường: HV chưa đạt') },
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 116 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'diem', rong: 120, goiY: t('Lớp thường: HV chưa đạt') },
   { key: 'sos', nhan: t('SOS hiện tại'), kieu: 'diem', rong: 100 }, { key: 'case', nhan: 'Case', kieu: 'diem', rong: 52 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'diem', rong: 120 },
 ];
 

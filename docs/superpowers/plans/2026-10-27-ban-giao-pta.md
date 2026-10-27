@@ -36,13 +36,13 @@
 ## 2. PR đang mở (lúc bàn giao)
 | PR | Việc | Trạng thái / việc PTA |
 |---|---|---|
-| #619 | D4 màu web | Chủ SP duyệt. PTA cũ đang check (worktree `scratchpad/p619`). Xong → merge → nhắn MAU-WEB-2 + 6C-NHO gộp main |
+| #638 | HSL-FT (M4 PR 2, trang lượt Test FT) | Chờ chủ SP duyệt ảnh `docs/anh/hsl-ft/`. Session HSL-FT đang tự gộp main (sau #619). [XM] PTA cũ đã trả lời: ① bỏ "›" ở nút "Còn lại" (G6); ② tên người ở việc của người khác → việc sau. Sau merge: đưa prompt M4 PR 3 HSL-LT |
 | #635 | D8 sửa nhỏ UI (Lịch Test cột "của bạn", 3 lỗi do-khung #608, "Chờ mô tả / nguyên nhân", 409 tải lại) | PTA đã thụt hàng "Tổng số câu" (commit `ba003295`, chủ SP yêu cầu). Cần: chụp lại Lịch Test lớp thường cho chủ SP xem → chạy check đầy đủ (run.js session chạy bị 127) → merge |
 
 ## 3. Session đang chạy (báo về PTA Plan khi mở PR)
-- **HSL-FT** (M4 PR 2, trang lượt Test FT): đang check, sắp mở PR. Kế hoạch `2026-10-27-m4-code.md`.
+- **HSL-FT**: đã mở #638 (xem mục 2), đang tự gộp main.
 - **6C-NHO** (D9): sửa nốt `LuoiThuong` / `PhanTichGiaoVien` / `HoSoGiaoVienPage` (trùng tệp #619).
-- **MAU-WEB-2** (D10): code xong, chờ #619 merge rồi dựng lại nhánh từ main, check, mở PR.
+- **MAU-WEB-2** (D10): #619 ĐÃ merge (dbdc5246) — session đang dựng lại nhánh từ main, check, mở PR.
   - PTA đã trả lời [XM]: "Chờ n kỹ năng" giữ badge V4; cột Việc HV & Lớp chữ thường, màu nhấn chỉ khi rê; 375 badge sát nhau để sau.
 - **SAU-D7-NHO** (D11): 4 điểm nhỏ máy chủ #633.
 - **6b-3 PILOT-VIEC**, **6b-4 PILOT-GV-TRE**, **M5 ② UI-HO-SO-HV-2**: vừa mở 27/10 ~22:00 (kế hoạch `2026-10-27-m6-code.md`, `2026-10-27-m5-code.md`).
@@ -68,4 +68,4 @@
   - `thiet-ke/v7/panel-pilot.html` (M6);
   - `thiet-ke/v7/cong-viec-2.html` (Công việc);
   - `thiet-ke/v7/bang-mau-moi.html` (màu).
-- Đã merge tối 27/10: #618 #622 #623 #624 #626 #627 #628 #629 #630 #632 #633 (+ kế hoạch #625 #631 #634 #636).
+- Đã merge tối 27/10: #619 (màu, check 4497 + 58 xanh) · #618 #622 #623 #624 #626 #627 #628 #629 #630 #632 #633 (+ kế hoạch #625 #631 #634 #636).

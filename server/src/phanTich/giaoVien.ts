@@ -815,7 +815,7 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
 }
 
 /** Panel chỉ đọc của một số ở hồ sơ GV theo kỳ — CÙNG `oChiSoCua` qua mọi ngữ cảnh của `chiSoHoSoGv` (số = số dòng). `cot` thêm `ket-qua:<khung>:<kỹ năng>[:<lớp>]`. */
-export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string; loc?: string | null }): { n: number; tieuDe: string; rows: MetricRow[] } {
+export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string; loc?: string | null; /** 6C-NHO: Phân tích GV — chỉ chi nhánh đang chọn. */ cn?: number | null }): { n: number; tieuDe: string; rows: MetricRow[] } {
   if (q.loc != null && q.loc !== 'dat' && q.loc !== 'chua' && q.loc !== 'vuot') throw badRequest('Lọc phải là "dat", "chua" hoặc "vuot".');
   const r = oChiSoHoSoGvDu(p, gvId, q);
   /*
@@ -835,7 +835,7 @@ export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null
   return { n: rows.length, tieuDe: r.tieuDe, rows };
 }
 
-function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string }): { n: number; tieuDe: string; rows: MetricRow[] } {
+function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string; cn?: number | null }): { n: number; tieuDe: string; rows: MetricRow[] } {
   const g = nguCanhCuaGv(p, gvId, q);
   const kyChu = `${tuanLichNgan(g.tu)} – ${tuanLichNgan(g.den)}`;
   /* `thi-that[-lop:<lớp>]`: một dòng một lần thi thật (chưa đạt trước), cùng `thiThatCuaGv` với số. */
@@ -843,7 +843,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
   const mt = /^thi-that(?:-lop:(\d+)|-ky:(\w+))?$/.exec(q.cot);
   if (mt) {
     const thi = new Map<string, ThiGv>();
-    for (const c of g.ds.filter((x) => x.khung === 'ft')) { const muc = mucKetQua(c, napBai(p, c)).filter((m) => m.x.kind === 'thi-that'); thiThatCuaGv(c, muc, tapKetQua(c, muc), gvId, thi); }
+    for (const c of g.ds.filter((x) => x.khung === 'ft' && (!q.cn || x.cn === q.cn))) { const muc = mucKetQua(c, napBai(p, c)).filter((m) => m.x.kind === 'thi-that'); thiThatCuaGv(c, muc, tapKetQua(c, muc), gvId, thi); }
     const datCua = (x: ThiGv) => (mt[2] ? !!x.datKn.get(mt[2]) : x.dat);
     const ds = [...thi.values()].filter((x) => (!mt[1] || x.classId === Number(mt[1])) && (!mt[2] || x.datKn.has(mt[2])))
       .sort((a, b) => Number(datCua(a)) - Number(datCua(b)) || a.ngay.localeCompare(b.ngay) || a.ten.localeCompare(b.ten, 'vi'));

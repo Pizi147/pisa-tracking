@@ -254,7 +254,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
             <CotGhim hang={2} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 text-[12px] text-faint">{t('Tuần')}</CotGhim>
             {truc.tuan.map((w, i) => (
               <div key={w.thuHai} title={`${tuanLich(w.thuHai, homNay)}${w.homNay ? ` · ${t('tuần này')}` : i > cotHomNay && cotHomNay >= 0 ? ` · ${t('tuần tới')}` : ''}`}
-                className={`z-[2] pb-1.5 pt-1 text-center text-[12px] tabular-nums ${w.homNay ? 'font-extrabold text-doing' : 'text-faint'} ${cotHomNay >= 0 && i > cotHomNay ? 'opacity-60' : ''}`}
+                className={`z-[2] pb-1.5 pt-1 text-center text-[12px] tabular-nums ${w.homNay ? 'font-bold text-doing' : 'text-faint'} ${cotHomNay >= 0 && i > cotHomNay ? 'opacity-60' : ''}`}
                 style={{ gridRow: 2, gridColumn: i + 2 }}>
                 {w.nhan}
               </div>

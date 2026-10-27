@@ -104,7 +104,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               <>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
-                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}<ChipXetLaiDong sid={s.id} />
+                  <Link className="ten-ho-so" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}<ChipXetLaiDong sid={s.id} />
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
@@ -176,7 +176,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               <td className="td sticky-col h-11">
                 <span className="flex min-w-0 items-center gap-1.5">
                   {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
-                  <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}<ChipXetLaiDong sid={s.id} />
+                  <Link className="ten-ho-so truncate" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}<ChipXetLaiDong sid={s.id} />
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>

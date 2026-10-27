@@ -46,6 +46,8 @@ export default {
         sans: ['var(--font-sans)'], // 'Be Vietnam Pro' tự phục vụ + dự phòng: khai ở index.css
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
+      // D4 bổ sung (chủ SP 27/10: web phải dịu như mockup): mockup V5 không dùng 800 — `font-extrabold` cũ hiện ra 700.
+      fontWeight: { extrabold: '700' },
       borderRadius: { xl: '0.75rem', '2xl': '1rem' },
     },
   },

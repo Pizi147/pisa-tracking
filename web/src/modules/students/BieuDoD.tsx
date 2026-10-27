@@ -19,6 +19,8 @@ export type BieuDoDProps = {
   cases: CaseD[]; thi: ThiD | null; homNay: string;
   /** Mọi khoảng Tạm dừng của em (`den` null = đang dừng) — dải xám "Tạm dừng", không nối điểm qua. */
   tamDung?: { tu: string; den: string | null }[];
+  /** UI-HO-SO-HV-2: tuần đang rê ở Tiến độ trên lớp (thứ Hai) — tô cột tuần đó. */
+  toTuan?: string | null;
   lo: number; hi: number; buoc: number; fmt: (v: number) => string;
 };
 
@@ -158,6 +160,7 @@ export function BieuDoD(o: BieuDoDProps) {
     if (b - a <= chu.length * 7.5 && chu.includes(' ')) chu = d.nam;
     if (b - a > chu.length * 7.5) nen.push(<text key={`t${k}`} x={(a + b) / 2} y={17} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>{chu}</text>);
   });
+  if (o.toTuan && trong(o.toTuan)) nen.push(<rect key="re" x={Xl(o.toTuan)} y={0} width={cw} height={H} fill="var(--accent)" opacity=".16" />);
   if (trong(nay)) nen.push(<rect key="nay" x={Xl(nay)} y={0} width={cw} height={H} fill="var(--hong)" opacity=".14" />);
   const thiTrong = thiKhoi && trong(thiKhoi[0]);
   if (o.thi && thiKhoi && thiTrong) {
@@ -249,7 +252,7 @@ export function BieuDoD(o: BieuDoDProps) {
       const yt = Y(o.thi.v), tg = o.thi.target;
       if (tg != null && o.thi.v < tg) ve.push(lech('thilc', xt, yt, Y(tg), fmt(tg - o.thi.v), true));
       ve.push(dau('thi', xt, yt, o.thi.goi, <rect x={xt - 8} y={yt - 8} width="16" height="16" transform={`rotate(45 ${xt} ${yt})`} fill="var(--lich-chu)" stroke="var(--surface)" strokeWidth="2" />));
-      ve.push(<text key="thic" x={xt} y={tg != null && o.thi.v < tg ? yt + 24 : yt - 14} textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--text)" aria-hidden>{fmt(o.thi.v)}</text>);
+      ve.push(<text key="thic" x={xt} y={tg != null && o.thi.v < tg ? yt + 24 : yt - 14} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--text)" aria-hidden>{fmt(o.thi.v)}</text>);
     } else {   // chờ KQ / dự kiến: chỉ cột; vùng chạm = chính cột / khối (vòng focus ôm cột)
       const a = Xl(thiKhoi[0]), b = Xl(thiKhoi[1]) + cw;
       ve.push(dau('thi', xt, py1 - 10, o.thi.goi, null, { x: a + 1, y: py0, w: b - a - 2, h: py1 - py0 }));

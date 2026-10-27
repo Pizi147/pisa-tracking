@@ -9,7 +9,7 @@ export const EN_SV_NX_CASE = {
   'Mô tả đã sửa riêng — nhận xét của bài không đè.': 'Description edited separately — test comments no longer overwrite it.',
   'Nhận xét chấm chéo': 'Cross-marker comment',
   'Chưa có nhận xét': 'No comment yet',
-  'Mô tả Case': 'Case description',
+  'Mô tả Case': 'Describe Case',   // D8: nút / việc (động từ); ô nhập = 'Mô tả' → Description
   'Dùng làm mô tả': 'Use as description',
   'Giữ mô tả đang có': 'Keep current description',
   'Viết mô tả khác': 'Write another description',

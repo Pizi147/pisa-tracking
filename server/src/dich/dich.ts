@@ -9,11 +9,11 @@ import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { cauHinhDich } from '../moiTruong.ts';
-import { requireXemLuotCham, type Principal } from '../permissions.ts';
+import { require_, requireXemLuotCham, type Principal } from '../permissions.ts';
 import { kiemXemCase } from '../cases/cases.ts';
 import { phieuBanGiao } from '../classes/banGiao.ts';
 import { HttpError, badRequest, notFound, nowIso } from '../util.ts';
-import { ENTRY_SKILLS } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, PERMISSIONS } from '../../../shared/domain/index.ts';
 
 type Dong = { chu: string | null; studentId: number | null };
 type Nguon = { cot: readonly string[]; doc: (p: Principal, id: number, cot: string, kyNang: string | null) => Dong };
@@ -26,6 +26,14 @@ const theoCase = (bang: string) => (p: Principal, id: number, cot: string): Dong
   if (!r) throw notFound();
   const { c } = kiemXemCase(p, r.case_id);
   return { chu: r.chu, studentId: c.eff_student_id ?? c.student_id ?? null };
+};
+
+/** Chữ của dòng gắn một em (`student_id`): kiểm như xem hồ sơ em. */
+const theoHocVien = (bang: string) => (p: Principal, id: number, cot: string): Dong => {
+  const r = mot(`SELECT student_id, ${cot} AS chu FROM ${bang} WHERE id = ?`, id);
+  if (!r) throw notFound();
+  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  return { chu: r.chu, studentId: r.student_id };
 };
 
 export const NGUON_DICH: Record<string, Nguon> = {
@@ -48,6 +56,9 @@ export const NGUON_DICH: Record<string, Nguon> = {
     },
   },
   case_issues: { cot: ['observation'], doc: theoCase('case_issues') },
+  /* UI-HO-SO-HV-2: Tiến độ trên lớp + góp ý tuần cũ (hồ sơ HV) — quyền như `GET /students/:id/bai-tren-lop` (xem hồ sơ em). */
+  bai_tren_lop: { cot: ['nhan_xet'], doc: theoHocVien('bai_tren_lop') },
+  gop_y_tuan: { cot: ['noi_dung'], doc: theoHocVien('gop_y_tuan') },
   case_interventions: { cot: ['description'], doc: theoCase('case_interventions') },
   case_followups: { cot: ['note', 'remaining_issue', 'decision_note'], doc: theoCase('case_followups') },
   ban_giao_mon: {

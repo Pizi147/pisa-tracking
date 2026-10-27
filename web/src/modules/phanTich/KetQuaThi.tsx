@@ -152,7 +152,7 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
                   <tbody>
                     {pt.cat(rows).map((r) => (
                       <tr key={r.attemptId} className="row-hover">
-                        <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className="link font-semibold">{r.ten}</Link></td>
+                        <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className="ten-ho-so">{r.ten}</Link></td>
                         <td className="td text-slate-300">{r.lop}</td>
                         <td className="td">{mt(r)}</td>
                         <td className="td text-center text-[15px] font-bold tabular-nums">{fmtBand(r.ovr)}</td>
@@ -253,7 +253,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                           </td></tr>
                           {ds.map((r) => (
                             <tr key={r.cycleId} className="row-hover">
-                              <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className="link font-semibold">{r.ten}</Link></td>
+                              <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className="ten-ho-so">{r.ten}</Link></td>
                               <td className="td text-slate-300">{r.lop}</td>
                               <td className="td tabular-nums">{ngay(r.ngayThi, homNay)}</td>
                               <td className="td text-center text-[15px] font-bold tabular-nums">{fmtBand(r.ovr)}</td>
