@@ -184,12 +184,13 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten, onMoCase }: 
     const dong = c.status === 'done' ? c.closedOn ?? c.touchedOn ?? c.openedOn : null;
     return {
       id: c.id, chu: row!.short, mt: (c.tenSos?.mt ?? c.attempts[0]?.attemptNo) != null ? `MT${c.tenSos?.mt ?? c.attempts[0]?.attemptNo}` : null, sos: c.sosLevel, mo: c.openedOn!, dong,
-      goi: { tieu: `Case ${tenKn}${c.sosLevel ? ` · SOS ${c.sosLevel}` : ''}`, mo: onMoCase ? () => onMoCase(c.id) : undefined, dong: [c.title.replace(/\[[^\]]*\]\s*/g, '').trim(), `${t('mở {ngay}', { ngay: ngay(c.openedOn, homNay) })}${dong ? ` · ${t('đã đóng {ngay}', { ngay: ngay(dong, homNay) })}` : ''}`] },
+      goi: { tieu: `Case ${tenKn}${(c.tenSos?.mt ?? c.attempts[0]?.attemptNo) != null ? ` · MT${c.tenSos?.mt ?? c.attempts[0]?.attemptNo}` : ''}${c.sosLevel ? ` · SOS ${c.sosLevel}` : ''}`, mo: onMoCase ? () => onMoCase(c.id) : undefined, dong: [c.title.replace(/\[[^\]]*\]\s*/g, '').trim(), `${t('mở {ngay}', { ngay: ngay(c.openedOn, homNay) })}${dong ? ` · ${t('đã đóng {ngay}', { ngay: ngay(dong, homNay) })}` : ''}`] },
       pa: c.plans.filter((p) => p.startedOn && p.status !== 'cancelled' && !p.chuaChay).sort((x, y) => x.startedOn!.localeCompare(y.startedOn!)).map((p, i) => {
         const den = p.completedOn;
         return {
           id: p.id, ten: `PA${i + 1}`, tu: p.startedOn!, den, denDk: den ? null : p.actionDue ?? p.followupDue, kq: p.lastOutcome,   // hạn kỳ tới = hạn ghi kết quả của ngăn Case (`actionDue`)
-          goi: { tieu: `PA${i + 1} · ${dich(p.kindLabel)}`, mo: onMoCase ? () => onMoCase(c.id, p.id) : undefined, dong: [p.name, `${tuanLich(p.startedOn)} – ${den ? tuanLich(den) : t('nay')}${p.lastOutcomeLabel ? ` · ${dich(p.lastOutcomeLabel)}` : ''}`] },
+          goi: { tieu: `PA${i + 1} · ${dich(p.kindLabel)}`, mo: onMoCase ? () => onMoCase(c.id, p.id) : undefined, dong: [p.name, `${tuanLich(p.startedOn)} – ${den ? tuanLich(den) : t('nay')}${p.lastOutcomeLabel ? ` · ${dich(p.lastOutcomeLabel)}` : ''}`,
+            ...(!den && (p.actionDue ?? p.followupDue) ? [t('hạn kế {ngay}', { ngay: ngay(p.actionDue ?? p.followupDue, homNay) })] : [])] },
         };
       }),
     };
@@ -272,6 +273,7 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
             kvLuot={!cy.ratio && d.diem.some((x) => x.kv != null && x.kv !== (d.target?.filter((g) => !g.tu || g.tu <= x.tuan).at(-1)?.v ?? null))}
             vang={d.diem.some((x) => x.loai === 'vang')} thieu={d.diem.some((x) => x.loai === 'thieu')} tamDung={!!tamDung?.length} sex={d.sex.length > 0}
             pa={d.cases.flatMap((c) => c.pa.map((p) => p.kq).filter((k): k is string => !!k))}
+            kyToi={d.cases.some((c) => c.pa.some((p) => !p.den && !!p.denDk && mondayOfDate(p.denDk) > mondayOfDate(homNay)))}
             thi={!d.thi ? null : d.thi.v != null ? 'kq' : d.thi.cho ? 'cho' : 'du-kien'} kvChu={d.kvPhang?.chu ?? 'Target'} />
           {!coDiem && <p className="m-0 px-4 pb-3 text-[13px] text-slate-400">{t('Chưa có điểm MT ở {kn}.', { kn: tenKn })}</p>}
         </>

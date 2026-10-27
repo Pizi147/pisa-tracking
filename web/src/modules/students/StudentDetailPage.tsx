@@ -571,7 +571,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
   const diemKyNang = (a: any, k: typeof KN_MOCK[number]) => {
     const w = k === 'writing1' || k === 'writing2', b = w ? a.diemKn?.[k] ?? null : a.bands?.[k] ?? null, kd = w ? 'writing' : k;
     return b != null
-      ? <Link to={duongDotTest(a, kd)} className="no-underline hover:underline" title={`${t('Mở Hồ sơ Mock Test')} · MT${a.attemptNo} · ${w ? CHU_KY_NANG[k] : skillLabel(kd)}`} onClick={(e) => e.stopPropagation()}><DiemKq diem={b} kyVong={a.expectation} /></Link>
+      ? <Link to={duongDotTest(a, kd)} className={`no-underline hover:underline ${dienThoai ? '-mx-1.5 -my-3.5 inline-block px-1.5 py-3.5' : ''}`} title={`${t('Mở Hồ sơ Mock Test')} · MT${a.attemptNo} · ${w ? CHU_KY_NANG[k] : skillLabel(kd)}`} onClick={(e) => e.stopPropagation()}><DiemKq diem={b} kyVong={a.expectation} /></Link>
       : fmtBand(b);
   };
   /*
@@ -586,7 +586,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
             dau={(
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <Link to={attemptHref(a)} className="link font-semibold tabular-nums">MT{a.attemptNo} ›</Link><NhanDot a={a} />
+                  <Link to={attemptHref(a)} className="link min-w-[44px] font-semibold tabular-nums">MT{a.attemptNo} ›</Link><NhanDot a={a} />
                   <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>{t('Chưa có tuần')}</Info>}</div>
                 </div>
                 <div className="shrink-0 text-right">

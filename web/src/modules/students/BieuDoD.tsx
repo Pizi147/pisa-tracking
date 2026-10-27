@@ -102,7 +102,7 @@ export function BieuDoD(o: BieuDoDProps) {
   /* Case chồng thời gian → làn riêng (mỗi làn một hàng Case + một hàng PA nếu có): không Case nào bị che. */
   const lan: { cs: CaseD[]; het: number; coPa: boolean; paHang?: Map<number, number>; soHang?: number }[] = [];
   const hetPa = (p: PaD) => cot(p.den ?? (p.denDk && p.denDk > nay ? p.denDk : nay));
-  [...o.cases].sort((a, b) => a.mo.localeCompare(b.mo) || a.id - b.id).forEach((c) => {
+  [...o.cases].sort((a, b) => a.mo.localeCompare(b.mo) || (a.mt ?? '').localeCompare(b.mt ?? '', 'en', { numeric: true }) || a.id - b.id).forEach((c) => {
     const dau = cot(c.mo), het = Math.max(cot(c.dong ?? nay), ...c.pa.map(hetPa));
     const l = lan.find((x) => x.het < dau);
     if (l) { l.cs.push(c); l.het = Math.max(l.het, het); l.coPa ||= c.pa.length > 0; } else lan.push({ cs: [c], het, coPa: c.pa.length > 0 });
@@ -216,7 +216,9 @@ export function BieuDoD(o: BieuDoDProps) {
     if (p.loai === 'sap') return;
     const x = Xc(p.tuan);
     if (p.loai === 'khong') {
-      ve.push(<text key={`k${p.khoa}`} x={x} y={py1 - 8} textAnchor="middle" fontSize="12" fill="var(--text-dim)" fontFamily={PHONG} aria-hidden>{p.chu}</text>);
+      /* Tab / đọc màn tới được cả lượt không học */
+      ve.push(dau(p.khoa, x, py1 - 12, p.goi, <text x={x} y={py1 - 8} textAnchor="middle" fontSize="12" fill="var(--text-dim)" fontFamily={PHONG}>{p.chu}</text>,
+        { x: x - 32, y: py1 - 24, w: 64, h: 22 }));
       return;
     }
     if (p.loai === 'vang') {
@@ -248,7 +250,10 @@ export function BieuDoD(o: BieuDoDProps) {
       if (tg != null && o.thi.v < tg) ve.push(lech('thilc', xt, yt, Y(tg), fmt(tg - o.thi.v), true));
       ve.push(dau('thi', xt, yt, o.thi.goi, <rect x={xt - 8} y={yt - 8} width="16" height="16" transform={`rotate(45 ${xt} ${yt})`} fill="var(--lich-chu)" stroke="var(--surface)" strokeWidth="2" />));
       ve.push(<text key="thic" x={xt} y={tg != null && o.thi.v < tg ? yt + 24 : yt - 14} textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--text)" aria-hidden>{fmt(o.thi.v)}</text>);
-    } else ve.push(dau('thi', xt, py1 - 10, o.thi.goi, null));   // chờ KQ / dự kiến: chỉ cột, dấu vô hình để Tab / chạm đọc
+    } else {   // chờ KQ / dự kiến: chỉ cột; vùng chạm = chính cột / khối (vòng focus ôm cột)
+      const a = Xl(thiKhoi[0]), b = Xl(thiKhoi[1]) + cw;
+      ve.push(dau('thi', xt, py1 - 10, o.thi.goi, null, { x: a + 1, y: py0, w: b - a - 2, h: py1 - py0 }));
+    }
   }
   /* trục: W1…W5 mọi cột (đậm ở cột có mốc) + hàng tên mốc đúng cột */
   const coMoc = new Set([...xem.map((p) => mondayOfDate(p.tuan)), ...o.sex.map((q) => mondayOfDate(q.tuan)), ...(o.thi?.tuan ? [mondayOfDate(o.thi.tuan)] : [])]);
@@ -335,8 +340,10 @@ export function BieuDoD(o: BieuDoDProps) {
 }
 
 /** Chú giải dưới chart (chỉ mục có trên chart; đọc màn bỏ qua — mỗi dấu đã có tên riêng). */
-export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, thi, kvChu }: {
+export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, kyToi = false, thi, kvChu }: {
   kq: { vuot: boolean; bang: boolean; duoi: boolean } | 'thuong'; kvLuot: boolean; vang: boolean; thieu: boolean; tamDung: boolean; sex: boolean;
+  /** Có khung đứt "kỳ tới" (PA đang chạy, hạn ghi kết quả sau tuần này). */
+  kyToi?: boolean;
   /** Mã kết quả PA có trên chart (chỉ giải thích ký hiệu đang thấy). */
   pa: string[];
   thi: 'kq' | 'cho' | 'du-kien' | null; kvChu: string;
@@ -357,6 +364,7 @@ export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, thi, kvChu
       {pa.length > 0 && <span className="inline-flex items-center gap-1 whitespace-nowrap">{t('PA')} {(['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const).filter((k) => pa.includes(k)).map((k, i) => (
         <span key={k} className="inline-flex items-center gap-1">{i > 0 && ' · '}<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden><KyHieuPa k={k} x={6} y={6} /></svg>{{ improved: t('rõ'), partial: t('một phần'), unchanged: t('không'), worse: t('kém hơn'), insufficient: t('chưa đủ dữ liệu') }[k]}</span>
       ))}</span>}
+      {kyToi && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0.5" y="1.5" width="17" height="9" rx="2" fill="none" stroke="var(--accent)" strokeDasharray="3 2" />)}{t('kỳ tới')}</span>}
       {thi === 'kq' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="5" y="2" width="8" height="8" transform="rotate(45 9 6)" fill="var(--lich-chu)" />)}{t('thi thật')}</span>}
       {thi === 'cho' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0" y="0" width="18" height="12" fill="var(--lich-nen)" />)}{t('thi thật · chờ kết quả')}</span>}
       {thi === 'du-kien' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0.5" y="0.5" width="17" height="11" rx="2" fill="var(--lich-nen)" stroke="var(--lich-vien)" strokeDasharray="3 2" />)}{t('thi thật dự kiến')}</span>}
