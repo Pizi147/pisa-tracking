@@ -37,7 +37,7 @@ Phép kiểm cũ nới regex (ý giữ nguyên — nháp thì ‹ không hỏi):
 | Thao tác | TRƯỚC | SAU |
 |---|---|---|
 | Thấy em thiếu bao nhiêu (Case chưa chốt PA) | mở từng Case | đọc ngay dòng 2 "✗ 5.5 · kỳ vọng 6.5 · thiếu 1.0" |
-| Xem hồ sơ từ dòng chỉ đọc | bấm dòng → mở rộng → "Mở trang ↗" (2 bấm) | bấm tên ↗ (1 bấm) |
+| Xem hồ sơ từ một dòng | dòng chỉ đọc: bấm dòng → mở rộng → "Mở trang ↗"; dòng có việc: mở rộng → "Xem hồ sơ ↗" (2 bấm) | ↗ CÙNG chỗ — cuối dòng 1 — ở MỌI dòng (1 bấm). PTA 28/10 "một danh sách một kiểu mở": thân dòng chỉ bấm được khi có việc mở tại chỗ; dòng chỉ đọc thân không bấm; không dòng nào cả dòng là link |
 | Xem việc / tình trạng / người / hạn dòng chỉ đọc | mở rộng dòng | đọc ngay trên dòng |
 
 Ảnh: `cap-k2-case-1440.png`, `cap-k2-case-375.png`, `4-dong-chi-doc-link-thang-1440.png`, `4-dong-chi-doc-link-thang-375.png`.
@@ -51,13 +51,21 @@ Máy chủ: dòng Đạt MT gửi `diemCase` (nhãn Overall) thay chữ "Overall
 | Xoá PA · Kết thúc PA (`MenuXoaPa`) · Xoá Case (`ThaoTacCase`) · Xoá vi phạm (`DeleteViolationConfirm`) · Thu hồi / Rút xử lý (`XemXuLyPanel`) | ngăn 480 đè panel đang mở | `ConfirmDialog` giữa màn, nêu đúng đối tượng; ô lý do đang gõ → ✕ / Esc / nền / Huỷ hỏi "Lý do chưa lưu…" một lần; nút đang chạy nói đúng việc ("Đang xoá…") |
 
 Phép kiểm cũ SL-7 (PR-SL I4: Xoá vi phạm phải là `KhungPanel longTrong`) đổi theo luật M6 mới hơn "không panel chồng panel" (V11 / V19).
-Chưa bấm thử trên trình duyệt: vai QL demo không có PA / Case đủ điều kiện Kết thúc / Xoá.
+**Bấm thử (28/10, vai QL demo, DB cục bộ):**
+
+| Hộp | Chỗ mở | Kết quả |
+|---|---|---|
+| Xoá PA | Case 1 (HV 1) · ⋯ dòng PA | Hộp đè trên panel Case, nêu đúng tên PA · Esc chỉ đóng hộp (panel Case còn) · xác nhận → "Đã xoá PA", panel còn mở. ĐẠT |
+| Xoá Case | Case 9 (HV 3) · Sửa → Xoá Case | Nêu tên Case · ✕ và Huỷ chỉ đóng hộp, panel "Sửa Case" còn. ĐẠT (không xoá thật) |
+| Thu hồi lần xử lý (có ô lý do) | HV 4 · Ý thức · Report 1 · Thu hồi… | Gõ lý do → Esc → "Bỏ chữ đang gõ? Lý do chưa lưu…", focus "Ở lại" · Ở lại → chữ còn nguyên · ✕ → hỏi lại · Huỷ → hỏi · "Bỏ chữ, đóng" → chỉ đóng hộp, panel Report 1 còn · Thu hồi thật → "Đã thu hồi Report 1", lý do ghi đúng. ĐẠT |
+| Xoá vi phạm | HV 46 · Ý thức · vi phạm → Sửa → Xoá vi phạm | Panel Sửa đóng trước (luồng cũ, không chồng) · hộp nay nêu tên vi phạm (sửa trong lượt này) · Esc đóng. ĐẠT |
+| Kết thúc PA (có ô lý do) | — | **Không với tới được trên giao diện**: PA theo quy chế đang chạy luôn vẽ dạng dòng gọn (`DongPaGon`), mà ⋯ của dòng gọn không truyền `ketThuc` (`CasePanel.tsx`, `MenuPa` của `DongPaGon`). Có sẵn trước 6c — [XM]. Đường hỏi khi còn chữ là `ConfirmDialog daSua` chung, đã thử ở Thu hồi. |
 
 ## 6c-2 ④ Bỏ (mã chết, không đổi màn)
 Ô số `SoLieu` (0 nơi gọi) · `NutMoDanhSach` · `BangGiaoVienChiNhanh.tsx` · tham số `kqMacDinh` / `trongPanel` của `BangMock` + gỡ phép kiểm cũ chỉ đọc các mã đó (prGv, prS6fB ×2, prBang0).
 
 ## Để sau / [XM] hỏi PTA
-- **"Một danh sách một kiểu mở" (luật 21/10):** panel số trộn dòng làm được (mở rộng tại chỗ) với dòng chỉ đọc (link ↗) — V11 có coi là ngoại lệ không?
+- **Kết thúc PA không với tới được** (bảng bấm thử) — đề xuất PR nhỏ: truyền `ketThuc={nut.ketThuc}` cho `MenuPa` của dòng PA gọn (`DongPaGon`).
 - **Bỏ chưa làm:** `SkillBoard()` và phần bảng `BangSos()` — kéo theo chuỗi hàm phụ + phép kiểm cũ đọc nội dung (panelUx3, prDh, prBang0); hộp "Hướng dẫn nạp lại" chồng Modal (`DemoBar`).
 - **Gộp chạm bố cục — để lại có lý do:** QL "Case chưa có PA ›" do chủ SP thêm (XM-3, 23/10) · QL "HV thi tháng này ›" là đường sang trang lọc lớn · TVV khối "Thi thật": gỡ thì cột trái trống → cần thiết kế lại · bảng "Lớp tôi dạy" cuối Công việc: gỡ thì `LopToiDay()` thành mã chết mà 4 phép kiểm cũ đọc thân hàm · ⋯ › Hồ sơ lớp: thao tác V4 giữ có chủ đích (V1) · badge "n bài chờ chấm", Lịch Test ô "bài quá hạn", "Xuất điểm Test", hồ sơ MT hai nút "Lịch sử", Quản trị Sửa (vai) + Sửa thông tin — chưa rà.
 - **Gộp mã (không đổi màn) chưa làm:** `?mo-viec=` → `?viec=mgmt:<id>` · ⋯ › Quay lại học → `useQuayLaiHoc` · `NeedsEvaluation` → `NganDanhSach` · `DeleteViolationConfirm` trùng hộp xoá của `ChiTietViPham`.

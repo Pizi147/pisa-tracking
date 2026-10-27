@@ -258,14 +258,23 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     );
   }
 
+  /* 6c-2 (PTA 28/10, "một danh sách một kiểu mở" + tách nút làm việc / link xem hồ sơ): MỌI dòng có ↗ CÙNG một chỗ — cuối dòng 1 — là link đổi trang
+     tới hồ sơ; thân dòng chỉ bấm được khi có việc mở tại chỗ; dòng chỉ đọc thì thân không bấm. Không còn dòng mà cả dòng là link. */
+  const nutHoSo = (r: DongSoLieu) => (
+    <Link to={r.href} aria-label={t('Mở hồ sơ {ten}', { ten: r.em?.ten ?? r.title })} title={t('Mở hồ sơ {ten}', { ten: r.em?.ten ?? r.title })}
+      className="flex min-h-[44px] min-w-[44px] shrink-0 justify-center pt-2.5 text-[15px] leading-6 text-slate-400 no-underline hover:text-slate-100 sm:min-w-[40px]">
+      <span aria-hidden>↗</span>
+    </Link>
+  );
+
   /* M6 6b-2 (mockup ① view gốc): dòng Case = một nút — em 15 / 500 · tên Case; lớp · việc tiếp 13; cột phải người giữ việc ("Bạn") + hạn. Bấm → view Case. */
   const veDongCase = (r: DongSoLieu & { xong?: string }) => {
     const v = r.viec ?? null;
     const chon = mo === r.id;
     return (
-      <li key={r.id} data-dong={r.id} className="scroll-mt-12 border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <button type="button" aria-current={chon || undefined} onClick={() => moCase(r)} style={chon ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : undefined}
-          className="flex min-h-[44px] w-full appearance-none flex-col gap-0.5 border-0 bg-transparent px-4 py-2.5 text-left hover:bg-[color:var(--accent-soft)]">
+      <li key={r.id} data-dong={r.id} className="flex scroll-mt-12 border-t first:border-t-0" style={{ borderColor: 'var(--line)', ...(chon ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : {}) }}>
+        <button type="button" aria-current={chon || undefined} onClick={() => moCase(r)}
+          className="flex min-h-[44px] min-w-0 flex-1 appearance-none flex-col gap-0.5 border-0 bg-transparent py-2.5 pl-4 pr-1 text-left hover:bg-[color:var(--accent-soft)]">
           <span className="flex w-full items-baseline gap-3">
             <span className={`min-w-0 flex-1 text-[15px] font-medium leading-snug ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>
               {/* 6c-2 (mockup khu K ②): dòng 1 = em · Case · lớp · lượt; dòng 2 chỉ điểm. */}
@@ -288,6 +297,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
             {!r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
           </span>
         </button>
+        {nutHoSo(r)}
       </li>
     );
   };
@@ -320,19 +330,20 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
       </span>
     );
     /* 6c-2 (bảng kê mục 1 [RỖNG], mockup M6 khu K ②): dòng người xem KHÔNG làm được thì không mở rộng (trước: mở ra chỉ lặp chữ + "Mở trang ↗") —
-       tên em / mục là link ↗ thẳng tới hồ sơ (link xem hồ sơ mang tên hồ sơ, không mang tên việc), dòng dưới tự đủ việc · tình trạng · người · hạn.
+       thân dòng chỉ đọc (không bấm), dòng tự đủ việc · tình trạng · người · hạn; hồ sơ qua ↗ cuối dòng như mọi dòng.
        Dòng có việc làm được giữ mở rộng (Xác nhận PA tại chỗ / mở việc). */
     if (!v?.lam && !r.xong) {
       const chipHan = v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
       const hanRieng = !chipHan && hanCua(r);
       const conNguoi = !!r.nguoi && r.nguoiId !== toi && !(r.em || r.ngCanh);   // dòng chỉ `sub`: `dong2` chưa có người phụ trách
       return (
-        <li key={r.id} data-dong={r.id} className="flex flex-col gap-0.5 border-t px-4 py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+        <li key={r.id} data-dong={r.id} className="flex border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-2.5 pl-4 pr-1">
           <span className="flex w-full items-center gap-2.5">
-            <Link to={r.href} className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-slate-100 no-underline hover:underline max-sm:-my-3 max-sm:py-3">
-              {r.em?.ten ?? r.title} <span aria-hidden className="text-xs font-normal text-slate-400">↗</span>
+            <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-slate-100">
+              {r.em?.ten ?? r.title}
               {r.em && r.title && <span className="text-[13px] font-normal text-slate-400"> · {r.title}</span>}
-            </Link>
+            </span>
             {chipHan}
           </span>
           {r.diemCase && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={doanDiem(r.diemCase)} /></span>}
@@ -345,14 +356,17 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
             </span>
           )}
           {r.diem?.length ? <DiemDong r={r} /> : null}
+          </div>
+          {nutHoSo(r)}
         </li>
       );
     }
     const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
     return (
-      <li key={r.id} data-dong={r.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <button type="button" aria-expanded={r.xong ? undefined : moRong} disabled={!!r.xong} onClick={() => setMo(moRong ? null : r.id)} style={nen}
-          className="flex min-h-[44px] w-full appearance-none flex-col gap-0.5 border-0 bg-transparent px-4 py-2.5 text-left hover:bg-[color:var(--accent-soft)] disabled:hover:bg-transparent">
+      <li key={r.id} data-dong={r.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)', ...nen }}>
+        <div className="flex">
+        <button type="button" aria-expanded={r.xong ? undefined : moRong} disabled={!!r.xong} onClick={() => setMo(moRong ? null : r.id)}
+          className="flex min-h-[44px] min-w-0 flex-1 appearance-none flex-col gap-0.5 border-0 bg-transparent py-2.5 pl-4 pr-1 text-left hover:bg-[color:var(--accent-soft)] disabled:cursor-default disabled:hover:bg-transparent">
           <span className="flex w-full items-center gap-2.5">
             <span className={`min-w-0 flex-1 text-sm font-bold ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>{v ? dich(v.chu) : r.title}</span>
             {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>
@@ -361,8 +375,10 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           {dong2Chu}
           {r.diem?.length ? <DiemDong r={r} /> : null}
         </button>
+        {nutHoSo(r)}
+        </div>
         {moRong && (
-          <div className="flex flex-col gap-3 px-4 pb-4 pt-1" style={nen}>
+          <div className="flex flex-col gap-3 px-4 pb-4 pt-1">
             {/* 6c-2: chỉ dòng làm được mới mở rộng (dòng chỉ đọc trả sớm ở trên). */}
             {v?.lam && (
               <CanLam trongDong>
@@ -388,9 +404,6 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
                 {loiDong?.id === r.id && <p role="alert" className="m-0 text-xs font-semibold text-bad">⚠ {loiDong.loi}</p>}
               </CanLam>
             )}
-            <Link to={r.href} className="link w-fit text-[13px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">
-              {t('Xem hồ sơ')} <span aria-hidden>↗</span>
-            </Link>
           </div>
         )}
       </li>

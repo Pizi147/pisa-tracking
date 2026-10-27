@@ -14,7 +14,7 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const { data } = useApi<{ measures: any[] }>(violationId ? `/violations/${violationId}` : null, [violationId]);
+  const { data } = useApi<{ measures: any[]; ten?: string | null }>(violationId ? `/violations/${violationId}` : null, [violationId]);
   const n = data?.measures?.length ?? 0;
 
   const confirm = async () => {
@@ -32,6 +32,8 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
   return (
     <ConfirmDialog open={violationId !== null} onClose={onClose} onConfirm={() => void confirm()} title={t('Xoá vi phạm này?')} danger busy={busy} z="z-[60]"
       confirmLabel={t('Xoá vi phạm')} busyLabel={t('Đang xoá…')} closeLabel={t('Huỷ')}
-      body={n > 0 ? t('Vi phạm nằm trong {n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.', { n }) : t('Vi phạm chưa nằm trong lần xử lý nào.')} />
+      /* 6c-2 (bấm thử): nêu đúng vi phạm bị xoá (tên) rồi hậu quả với lần xử lý. */
+      body={<>{data?.ten && <p className="m-0 font-semibold text-slate-100">{data.ten}</p>}
+        <p className="m-0">{n > 0 ? t('Vi phạm nằm trong {n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.', { n }) : t('Vi phạm chưa nằm trong lần xử lý nào.')}</p></>} />
   );
 }
