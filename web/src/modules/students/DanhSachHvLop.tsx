@@ -57,7 +57,7 @@ function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?:
 function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
   return (
     <span className="block min-w-0">
-      <Link className="link block truncate font-semibold" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}>{h.ten}</Link>
+      <Link className="ten-ho-so block truncate" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}>{h.ten}</Link>
       {/* HV-LOP-SUA: mã lớp đã ở hàng lớp — dòng phụ không lặp. */}
       <span className="block truncate text-xs font-normal text-slate-400">
         {h.tvv ? `TVV ${h.tvv}` : t('chưa có TVV')}{h.ketThuc ? ` · ${t('Kết thúc học')}` : ''}{ev?.status === 'inactive' ? ` · ${t('Tạm dừng')}` : ''}
@@ -66,15 +66,13 @@ function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
   );
 }
 
-/** Hạn của một việc: quá hạn / hôm nay = chip có ⚠ (không chỉ màu), còn lại chữ phụ `dd/mm`. */
+/** Hạn của một việc = chip tiến độ (mockup V5 `.bd-td`): quá hạn ⚠ · hôm nay `soon` · còn lại xám chờ. */
 function HanViec({ x }: { x: ViecEm }) {
   const { homNay } = useNgayNghiepVu();
   if (!x.han) return null;
   const ngay = shortDate(x.han, homNay);
-  /* Quá hạn = badge tiến độ `late` (Nhan tự thêm ⚠); hôm nay = `soon`; còn lại chữ phụ. */
   if (x.quaHan) return <span className="shrink-0"><span className="sr-only">{t('Quá hạn')} </span><Nhan tone="late">{ngay}</Nhan></span>;
-  if (x.it.urgency === 'today') return <span className="shrink-0"><Nhan tone="soon">{ngay}</Nhan></span>;
-  return <span className="shrink-0 px-2 text-xs tabular-nums text-dim">{ngay}</span>;
+  return <span className="shrink-0 tabular-nums"><Nhan tone={x.it.urgency === 'today' ? 'soon' : 'muted'}>{ngay}</Nhan></span>;
 }
 
 /**
@@ -92,16 +90,17 @@ export function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it:
   return (
     <span className="block min-w-0 space-y-1 max-sm:space-y-0">
       {hien.map(({ dau: x, them }) => (
-        <span key={x.it.key} className="flex min-w-0 items-center gap-2">
-          <button type="button" className="link min-w-0 flex-1 truncate appearance-none border-0 bg-transparent p-0 text-left text-[13px] font-medium no-underline hover:underline max-sm:min-h-[44px]"
-            title={dich(x.chu)} onClick={() => onMo(x.it)}>{chuCua(x)}</button>
+        <span key={x.it.key} className="flex min-w-0 items-center gap-1.5">
+          {/* D10 (chủ SP 27/10, mockup V5 `.viec-o .nut`): việc = nút viền nhỏ màu chữ thường (không link xanh) · chip hạn ngay sau; trạng thái nằm ở chip. */}
+          <button type="button" className="btn btn-sm h-[30px] min-w-0 max-w-full shrink justify-start max-sm:h-[36px]"
+            title={dich(x.chu)} onClick={() => onMo(x.it)}><span className="truncate">{chuCua(x)}</span></button>
           {them > 0 && <span className="shrink-0 text-xs text-dim">{t('+{n} việc', { n: them })}</span>}
           <HanViec x={x} />
         </span>
       ))}
       {dong.length > SO_DONG_VIEC_MAC_DINH && (
         <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
-          className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-semibold text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
+          className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-medium text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
           {mo ? t('Thu gọn') : t('Xem thêm {n}', { n: dong.length - SO_DONG_VIEC_MAC_DINH })}
         </button>
       )}
@@ -181,7 +180,7 @@ export function BangHvGon({ nhom, lop, viec, gopMon, nguCanh, onMoViec, onDoi, v
     switch (c.key) {
       case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} />;
       case 'lo': return g
-        ? <span className="block"><b className="block tabular-nums text-slate-100" title={t('MT đã xong / đã tạo')} aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
+        ? <span className="block"><b className="block font-medium tabular-nums text-slate-100" title={t('MT đã xong / đã tạo')} aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
             {g.loTrinh.soMt ? `${g.loTrinh.mt}/${g.loTrinh.soMt} MT` : '—'}</b>
             <span className="block text-xs text-slate-400">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
         : <span className="block truncate text-xs text-slate-400">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
@@ -233,7 +232,7 @@ function TheHvLop({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
         return (
           <article key={`${h.classId}:${h.id}`} className={`space-y-1 border-t px-3 py-2.5 first:border-t-0 ${h.ketThuc ? 'opacity-60' : ''}`} style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center gap-2">
-              <Link className="link min-w-0 truncate font-semibold" to={`/hoc-vien/${h.id}`} state={{ ds: nguCanh }}>{h.ten}</Link>
+              <Link className="ten-ho-so min-w-0 truncate" to={`/hoc-vien/${h.id}`} state={{ ds: nguCanh }}>{h.ten}</Link>
               {ev?.status === 'inactive' && <span className="shrink-0 text-xs text-slate-400">{t('Tạm dừng')}</span>}
               <span className="ml-auto shrink-0">{g?.hoTro.sos ? <ChipSos muc={g.hoTro.sos} kyNang={g.hoTro.kyNang.map((k) => skillShort(k))} /> : !h.lich && ev ? <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span> : <ChipLichThi l={h.lich} />}</span>
               <span className="shrink-0"><MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} /></span>
@@ -290,7 +289,7 @@ export function BangSosGon({ rows, hang, nguCanh, onMo }: { rows: DongSos[]; han
     switch (c.key) {
       case 'ten': return (
         <span className="block min-w-0">
-          <Link className="link block truncate font-semibold" to={`/hoc-vien/${r.studentId}`} state={{ ds: nguCanh }}>{r.ten}</Link>
+          <Link className="ten-ho-so block truncate" to={`/hoc-vien/${r.studentId}`} state={{ ds: nguCanh }}>{r.ten}</Link>
           <span className="block text-xs font-normal text-slate-400">{r.classCode}</span>
         </span>);
       case 'muc': return <ChipSos muc={r.sosLevel} kyNang={r.kyNang.map((k) => skillShort(k))} dot={r.luot} ten={r.ten} thuong={!r.ft} />;

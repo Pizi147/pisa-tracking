@@ -91,7 +91,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   );
   const tenLopCell = (x: DongLopViPham) => (
     <span className="block min-w-0 truncate">
-      {x.classId ? <Link to={`/hoc-vien/lop/${x.classId}`} className="link" title="Mở hồ sơ lớp">{x.nhan}</Link> : x.nhan}
+      {x.classId ? <Link to={`/hoc-vien/lop/${x.classId}`} className="ten-ho-so" title="Mở hồ sơ lớp">{x.nhan}</Link> : x.nhan}
     </span>
   );
 

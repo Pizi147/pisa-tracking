@@ -312,7 +312,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
       <HangNhom mo={open && expandable} onMo={() => { if (expandable) onToggle(); }} nhan={row.label}
         tieuDe={(
           <span className="block min-w-0 font-normal">
-            <span className="text-sm font-extrabold text-slate-100">{row.label}</span>
+            <span className="text-sm font-bold text-slate-100">{row.label}</span>
             {row.tuLopTruoc ? <span className="ml-2 text-[12px] font-normal text-slate-400">{t('từ {tuLopTruoc}', { tuLopTruoc: row.tuLopTruoc })}</span> : <Trend row={row} />}
           </span>
         )}>

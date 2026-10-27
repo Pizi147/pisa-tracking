@@ -59,7 +59,7 @@ function TheKyNang({ row, onMoCase, onGap }: { row: SkillBoardRow; onMoCase: (ca
   return (
     <KhungThe>
       <div className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate text-[14px] font-extrabold text-slate-100">{row.label}</span>
+        <span className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-100">{row.label}</span>
         {!row.tuLopTruoc && (
           <span className={`inline-flex items-center rounded-md border px-2 text-[15px] font-bold leading-6 tabular-nums ${SCORE_CHIP_ROW(row)}`}>
             {row.band === null ? '—' : row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band)}

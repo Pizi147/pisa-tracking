@@ -3,11 +3,17 @@ import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChiSo } from './TongQuanV5.tsx';
+import { OSo } from '../../ui/OSo.tsx';
 import { nhanQuaHan, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Số của ô = link đổi trang tới đúng danh sách (G6: không phải panel); 0 vẫn mở được — danh sách trống nói rõ. */
 const So = ({ to, n }: { to: string; n: number }) => <Link to={to} className={`link tabular-nums ${n ? '' : 'text-slate-500'}`}>{n}</Link>;
+
+const GV_TRE_ADMIN = {
+  loai: t('SỐ LIỆU · MOCK TEST'), theoGv: true, trong: t('Không GV nào chấm quá hạn'),
+  cachTinh: t('Bài = ô kỹ năng còn trống của em đã thi (W1, W2 tính riêng), đã qua hạn chấm. Cùng tập với khối "GV chấm quá hạn" và ô "quá hạn" ở Tổng quan.'),
+};
 
 /** Trả lời của `GET /tong-quan/mock-test` (server/src/worklist/tongQuanMt.ts). */
 type GvQuaHan = { key: string; ownerId: number; gv: string; kyNang: string; lop: string | null; luot: string | null; soBai: number; han: string | null; choCham?: true };
@@ -45,7 +51,12 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
       <section className="card" aria-labelledby="gv-qua-han">
         <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">
           <h2 id="gv-qua-han" className="m-0 text-[15px] font-semibold text-slate-100">GV chấm quá hạn</h2>
-          {soGv > 0 && <span className="text-xs text-slate-500">· {soGv} giáo viên</span>}
+          {/* M6 6b-4 (Q5): số GV mở panel theo GV → lớp · lượt · kỹ năng → em còn trống → Nhập hộ; số = số nhóm GV của panel (cùng tập). */}
+          {soGv > 0 && (
+            <span className="text-xs text-slate-500">
+              · <OSo giaTri={soGv} tieuDe={t('GV chấm quá hạn')} nguon={`/tong-quan/gv-tre${branchId ? `?branchId=${branchId}` : ''}`} gvTre={GV_TRE_ADMIN} /> {t('giáo viên')}
+            </span>
+          )}
         </div>
         {data.gvQuaHan.length === 0
           ? <p className="m-0 px-4 pb-4 text-sm text-slate-400">Không có giáo viên nào chấm quá hạn.</p>

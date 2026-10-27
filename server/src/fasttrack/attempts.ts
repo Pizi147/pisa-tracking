@@ -31,7 +31,7 @@ import {
   baoHuyVangCu, canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
 } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
-import { reconcileCorrectedSignals } from '../cases/signals.ts';
+import { reconcileCorrectedSignals, withdrawSignalsNoLongerValid } from '../cases/signals.ts';
 import { dongBoNguyenNhanMt } from '../cases/nguyenNhanO.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong } from '../cases/systemClose.ts';
@@ -1991,6 +1991,8 @@ function reconcileCorrectedScores(p: Principal, attemptId: number, result: Attem
   const passing = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) !== null && !failing.has(k) && !boMon.has(k)) as string[];
   /* PR-S3F #1: ô nay TRỐNG và không bị bỏ (Huỷ điểm / Thi lại xoá điểm) — tín hiệu dựng trên điểm đó cũng hết căn cứ. */
   const cleared = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) === null && !result.skipped.includes(assessedSkillOf(k))) as string[];
+  /* D11: tín hiệu chờ (`pending`) có từ trước của môn đã bỏ → thu hồi "Không còn học môn" (Case mở của môn đó `apMonDangKy` đã đóng). */
+  withdrawSignalsNoLongerValid({ actorUserId: p.userId, attemptId, passingSkills: [...boMon], reason: SYSTEM_CLOSE_REASON_LABEL.khong_con_hoc_mon });
   reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng', clearedSkills: cleared, thiLai });
 }
 

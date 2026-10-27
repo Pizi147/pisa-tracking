@@ -291,7 +291,7 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
 /**
  * MÔ TẢ CASE (MO-TA-CASE, N8 — chủ SP 27/10): nhận xét bài KHÔNG bắt buộc; Case MT chưa có mô tả (bài không nhận xét) → GV phụ trách kỹ năng ghi
  * Mô tả * (≥ 10) + Nhóm nguyên nhân * (chip, 1 = chính) THẲNG vào Case (`PATCH /cases/:id` — `nhom` + `observation`, như Sửa Case: mô tả riêng, nhận xét
- * sau không đè). Bài không bị ghi nhận xét. Lưu xong Case sang Xác nhận PA. `luc` cũ (Case vừa có mô tả từ nhận xét) → 409, chữ đang gõ giữ.
+ * sau không đè). Bài không bị ghi nhận xét. Lưu xong Case sang Xác nhận PA. `luc` cũ (Case vừa có mô tả từ nhận xét) → 409: tự tải lại Case, chữ đang gõ giữ.
  */
 export function MoTaCasePanel({ data, onXong, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void }) {
   const toast = useToast();
@@ -315,7 +315,8 @@ export function MoTaCasePanel({ data, onXong, ...chung }: ChungPanel & { data: C
       toast.push('ok', t('Đã lưu mô tả — Case sang Xác nhận PA'));
       onXong();
     } catch (e: any) {
-      if (e instanceof ApiError && e.status === 409) setLuc(e.details?.luc ?? null);   // chữ đang gõ giữ nguyên
+      /* D8: Case vừa đổi → tải lại Case (thấy mô tả mới nếu có); chữ đang gõ giữ trong kho nháp. */
+      if (e instanceof ApiError && e.status === 409) { setLuc(e.details?.luc ?? null); invalidateCases(); }
       toast.push('error', e.message);
     } finally { setBusy(false); }
   };

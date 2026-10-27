@@ -30,6 +30,11 @@ export type TongQuanV5Data = {
 };
 
 /** Tham số chung của mọi đường trên trang (chi nhánh + khung). */
+/** M6 6b-4 (Q5, Q8): ô "⚠ n" Quá hạn của GV → panel GV chấm quá hạn (lớp · lượt · kỹ năng → em còn trống → Nhập hộ), cùng tập Trễ chấm. */
+const GV_TRE_QL = {
+  loai: t('SỐ LIỆU · TỔNG QUAN'), trong: t('Giáo viên này không còn bài trễ chấm'),
+  cachTinh: t('Bài = ô kỹ năng còn trống của em đã thi (W1, W2 tính riêng), đã qua hạn chấm. Cùng tập với cột "Quá hạn" của bảng GV cần chú ý; Speaking chấm chéo chưa ai nhận vẫn tính quá hạn.'),
+};
 export const thamSoTq = (branchId: number | null, ct: ChuongTrinh) => `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
 
 /* ───────────── khung chung ───────────── */
@@ -58,12 +63,12 @@ export function ChiSo({ ten, giaTri, mau, ky, luat }: { ten: string; giaTri: Rea
 export const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">{children}</div>;
 
 /** % to gạch chân bấm mở panel đúng tập; mẫu 0 → "Chưa có dữ liệu" (T19), không "0 %". */
-export function PhanTram({ x, nguon, tieuDe, gon }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean }) {
+export function PhanTram({ x, nguon, tieuDe, gon, vung }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean; vung?: string }) {
   if (!x) return <span className="text-slate-500">—</span>;
   const v = rateView(x.dat, x.mau);
   if (v.kind !== 'value') return gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')} aria-label={t('Chưa có dữ liệu')}>—</span>
     : <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>;
-  return <OSo giaTri={x.mau} nhan={`${v.percent} %`} nguon={nguon} tieuDe={tieuDe} />;
+  return <OSo giaTri={x.mau} nhan={`${v.percent} %`} nguon={nguon} tieuDe={tieuDe} vung={vung} />;
 }
 export const tuMau = (x: TyLeV5 | null, donVi: string) => (x && x.mau ? `${x.dat}/${x.mau} ${donVi}` : null);
 
@@ -103,7 +108,7 @@ export function CongTac<K extends string>({ value, onChange, muc }: { value: K; 
     <span role="group" aria-label={t('Lọc')} className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
       {muc.map(([k, nhan]) => (
         <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)}
-          className={`min-h-[44px] px-3 text-[13px] sm:min-h-[30px] ${value === k ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
+          className={`min-h-[44px] px-3 text-[13px] sm:min-h-[30px] ${value === k ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
       ))}
     </span>
   );
@@ -132,7 +137,7 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
           <li key={y.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
             <button type="button" onClick={() => setMo(y)}
               className={`bam grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-left ${mo?.id === y.id ? 'dang-mo' : ''}`}>
-              <span className="truncate text-sm font-semibold text-slate-100">{y.nhanLoai}{y.hocVien && ` · ${y.hocVien}`}</span>
+              <span className="truncate text-sm font-medium text-slate-100">{y.nhanLoai}{y.hocVien && <> · <b className="font-semibold">{y.hocVien}</b></>}</span>
               <span className="whitespace-nowrap text-xs text-slate-400">{cho(y)}</span>
               <span className="col-span-2 truncate text-xs text-slate-500">{[y.lop, y.phu, y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
             </button>
@@ -233,7 +238,7 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
     if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
     if (c.key === 'tre') {
       const n = tre.get(h.id) ?? 0;
-      return n ? <span className="font-semibold text-bad">⚠ <OSo giaTri={n} className="text-bad" tieuDe={t('Bài trễ chấm · {ten}', { ten: h.ten })} nguon={`/tong-quan/ql/tre?gv=${h.id}&${thamSoTq(d.branchId, d.ct)}`} /></span>
+      return n ? <span className="font-semibold text-bad">⚠ <OSo giaTri={n} className="text-bad" tieuDe={t('Chấm quá hạn · {ten}', { ten: h.ten })} nguon={`/tong-quan/gv-tre?gv=${h.id}&${thamSoTq(d.branchId, d.ct)}`} gvTre={GV_TRE_QL} /></span>
         : <span className="tabular-nums text-slate-500">0</span>;
     }
     const nguon = c.key === 'pa' ? `/giao-vien/${h.id}/o?cot=case-mo&cn=${d.branchId}&ct=${d.ct}` : `/phan-tich/giao-vien/o?gv=${h.id}&cot=${COT[c.key]}&${q}`;
@@ -317,12 +322,14 @@ export function TheoChiNhanh({ d, cx, baoCao, onChiNhanh }: { d: TongQuanV5Data;
   const bc = (h: H, o: string) => `/phan-tich/bao-cao/o?o=${o}${h.tong ? '' : `&branchId=${h.id}`}${thamSoCt(d.ct)}${kyQ(d)}`;
   const oCua = (h: H, c: CotBang): ReactNode => {
     if (c.key === 'cn') return <b className="text-slate-100">{h.ten}</b>;
-    if (c.key === 'dat') return <PhanTram gon x={h.datMt} nguon={bc(h, 'dat-mt')} tieuDe={`${t('Đạt MT')} · ${h.ten}`} />;
-    if (c.key === 'case' && !cx) return <PhanTram gon x={{ dat: h.casePa.coPa, mau: h.casePa.mo }} nguon={qCn(d, 'caseMo', h.khoa)} tieuDe={`${t('Case đang mở')} · ${h.ten}`} />;
+    // 6C-NHO (bảng kê lỗi 2): hàng "Toàn hệ thống" cùng nguồn với ô dải đầu trang → khoá panel riêng, không "nháy".
+    const vung = h.tong ? 'tong' : undefined;
+    if (c.key === 'dat') return <PhanTram gon x={h.datMt} nguon={bc(h, 'dat-mt')} tieuDe={`${t('Đạt MT')} · ${h.ten}`} vung={vung} />;
+    if (c.key === 'case' && !cx) return <PhanTram gon x={{ dat: h.casePa.coPa, mau: h.casePa.mo }} nguon={qCn(d, 'caseMo', h.khoa)} tieuDe={`${t('Case đang mở')} · ${h.ten}`} vung={vung} />;
     if (c.key === 'tt') return ptChu(h.thiThat, true);
-    if (c.key === 'thi') return <OSo giaTri={h.thiThangNay} tieuDe={`${c.nhan} · ${h.ten}`} nguon={bc(h, baoCao ? 'thi-dot-nay' : 'thi-thang-nay')} />;
+    if (c.key === 'thi') return <OSo giaTri={h.thiThangNay} tieuDe={`${c.nhan} · ${h.ten}`} nguon={bc(h, baoCao ? 'thi-dot-nay' : 'thi-thang-nay')} vung={vung} />;
     if (c.key === 'sos') return <span className="tabular-nums">{h.sos23}</span>;
-    return <OSo giaTri={h.caseChuaPa} tieuDe={`${t('Case chưa chốt PA')} · ${h.ten}`} nguon={qCn(d, 'caseChuaChot', h.khoa)} />;
+    return <OSo giaTri={h.caseChuaPa} tieuDe={`${t('Case chưa chốt PA')} · ${h.ten}`} nguon={qCn(d, 'caseChuaChot', h.khoa)} vung={vung} />;
   };
   const phuCua = (h: H, c: CotBang) => (c.key === 'dat' ? tuMau(h.datMt, t('HV')) : c.key === 'case' && !cx ? (h.casePa.mo ? `${h.casePa.coPa}/${h.casePa.mo} Case` : null)
     : c.key === 'tt' ? tuMau(h.thiThat, t('HV')) : null);
