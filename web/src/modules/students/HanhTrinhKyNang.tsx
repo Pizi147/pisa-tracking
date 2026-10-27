@@ -98,7 +98,7 @@ function ODiemTo({ nhan, title, phu, chon, onClick, children }: { nhan: string; 
 /** Lượt kèm điểm từng ô + nhận xét MT (UI-CHART-D, `GET /students/:id`) — lớp thường: `skills` + `nguongDat`. */
 type LuotD = Luot & {
   classId?: number | null; studentId?: number | null; mode?: string;
-  diemKn?: Record<string, number | null>; nhanXet?: Record<string, string>;
+  diemKn?: Record<string, number | null>; nhanXet?: Record<string, string>; doiKyNang?: string[];
   skills?: { skill: string; score: number | null; total: number | null }[] | null; nguongDat?: number;
 };
 /** Phần lộ trình chart D đọc (`cycle` của hồ sơ). */
@@ -135,8 +135,9 @@ export function thiThatCua(cy: LoTrinhD, homNay: string): ThiThatD | 'khong' | n
  * Dữ liệu một kỹ năng cho chart D + Bảng (cùng một nguồn): lượt từ `attempts` (đủ mọi lượt — `diemKn`, không phải 4 mốc `points`), kỳ vọng của CHÍNH lượt,
  * Target bậc thang từ `targetRevisions`, Case / PA của hàng kỹ năng, S Ex (Speaking), thi thật (`cycle.thiThat` → `examPlan`). Không đổi luật tính.
  */
-function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten }: {
+function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten, onMoCase }: {
   kn: string; row: SkillBoardRow | null; attempts: LuotD[]; cy: LoTrinhD; sEx: SEx[]; homNay: string; tenKn: string; ten: (a: LuotD) => string;
+  onMoCase?: (caseId: number, paId?: number) => void;
 }) {
   const nay = mondayOfDate(homNay);
   const ratio = cy.ratio;
@@ -162,8 +163,10 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten }: {
       diem.push({ khoa: `a${a.id}`, ten: tenL, tuan, v: null, kv, loai: 'sap', chu: t('dự kiến'), a, goi: { tieu: tenL, dong: [] } });
     } else if (laMt0(a)) continue;
     else {
-      const chu = !hocKn ? t('không học') : a.vangCu?.[kn] ? chuDoiVang(a.vangCu[kn], homNay) : t('chưa có điểm');
-      diem.push({ khoa: `a${a.id}`, ten: tenL, tuan, v: null, kv, loai: hocKn ? 'trong' : 'khong', chu, a,
+      /* Vắng (dời / đang vắng) khác chưa có điểm (việc nhập còn nợ) — hai dấu, hai chữ. */
+      const vang = !!a.vangCu?.[kn] || !!a.doiKyNang?.includes(kyNangDot(kn));
+      const chu = !hocKn ? t('không học') : a.vangCu?.[kn] ? chuDoiVang(a.vangCu[kn], homNay) : vang ? t('vắng') : t('chưa có điểm');
+      diem.push({ khoa: `a${a.id}`, ten: tenL, tuan, v: null, kv, loai: !hocKn ? 'khong' : vang ? 'vang' : 'thieu', chu, a,
         goi: { tieu: `${tenL} · ${tuanLich(tuan)}`, dong: [`${tenKn}: ${chu}`], href, chuLink: t('Hồ sơ lượt {mt} ›', { mt: tenL }) } });
     }
   }
@@ -179,12 +182,12 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten }: {
     const dong = c.status === 'done' ? c.closedOn ?? c.touchedOn ?? c.openedOn : null;
     return {
       id: c.id, chu: row!.short, sos: c.sosLevel, mo: c.openedOn!, dong,
-      goi: { tieu: `Case ${tenKn}${c.sosLevel ? ` · SOS ${c.sosLevel}` : ''}`, dong: [c.title, `${t('mở {ngay}', { ngay: ngay(c.openedOn, homNay) })}${dong ? ` · ${t('đã đóng {ngay}', { ngay: ngay(dong, homNay) })}` : ''}`] },
+      goi: { tieu: `Case ${tenKn}${c.sosLevel ? ` · SOS ${c.sosLevel}` : ''}`, mo: onMoCase ? () => onMoCase(c.id) : undefined, dong: [c.title.replace(/\[[^\]]*\]\s*/g, '').trim(), `${t('mở {ngay}', { ngay: ngay(c.openedOn, homNay) })}${dong ? ` · ${t('đã đóng {ngay}', { ngay: ngay(dong, homNay) })}` : ''}`] },
       pa: c.plans.filter((p) => p.startedOn && p.status !== 'cancelled' && !p.chuaChay).sort((x, y) => x.startedOn!.localeCompare(y.startedOn!)).map((p, i) => {
         const den = p.completedOn;
         return {
           id: p.id, ten: `PA${i + 1}`, tu: p.startedOn!, den, denDk: den ? null : p.followupDue, kq: p.lastOutcome,
-          goi: { tieu: `PA${i + 1} · ${dich(p.kindLabel)}`, dong: [p.name, `${tuanLich(p.startedOn)} – ${den ? tuanLich(den) : t('nay')}${p.lastOutcomeLabel ? ` · ${dich(p.lastOutcomeLabel)}` : ''}`] },
+          goi: { tieu: `PA${i + 1} · ${dich(p.kindLabel)}`, mo: onMoCase ? () => onMoCase(c.id, p.id) : undefined, dong: [p.name, `${tuanLich(p.startedOn)} – ${den ? tuanLich(den) : t('nay')}${p.lastOutcomeLabel ? ` · ${dich(p.lastOutcomeLabel)}` : ''}`] },
         };
       }),
     };
@@ -216,14 +219,18 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten }: {
  * HÀNH TRÌNH · {kỹ năng} (UI-CHART-D, mockup M5): đầu khối "Hành trình · Speaking" ⓘ + Biểu đồ | Bảng. Biểu đồ = chart D; Bảng = Lượt · Tuần · Band · Kỳ vọng · ± ·
  * Ghi chú (nhận xét bài MT của kỹ năng ở lượt đó; không có thì vắng / không học / dự kiến), hàng cuối Thi thật. 375: luôn Bảng (chart nhiều cột không đọc được).
  */
-export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn }: {
+export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, tamDung, onMoCase }: {
   studentId: number; kn: string; row: SkillBoardRow | null; attempts: LuotD[]; cy: LoTrinhD; homNay: string; tenKn: string;
+  /** Mọi khoảng Tạm dừng (`dauHoSo.thongTin.khoangDung`). */
+  tamDung?: { tu: string; den: string | null }[];
+  /** Enter / "Mở Case" trên thanh Case / PA của chart → ngăn Case tại trang (cùng chỗ mở của Case & phương án). */
+  onMoCase?: (caseId: number, paId?: number) => void;
 }) {
   const sExApi = useApi<SEx[]>(kn === 'speaking' ? `/students/${studentId}/s-expert` : null, [studentId, kn]);
   const hep = useDienThoai();
   const [xem, setXem] = useState<'bieu' | 'bang'>('bieu');
   const tenLuot_ = (a: LuotD) => (cy.ratio ? tenBaiThuong(attempts, a) : tenLuot(a));
-  const d = duLieuKn({ kn, row, attempts, cy, sEx: sExApi.data ?? [], homNay, tenKn, ten: tenLuot_ });
+  const d = duLieuKn({ kn, row, attempts, cy, sEx: sExApi.data ?? [], homNay, tenKn, ten: tenLuot_, onMoCase });
   const bang = hep || xem === 'bang';
   const coDiem = d.diem.some((x) => x.loai === 'diem');
   return (
@@ -249,12 +256,12 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn }:
         <p className="m-0 px-4 py-6 text-center text-[14px] text-slate-400">{t('Chưa có lượt nào ở {kn}.', { kn: tenKn })}</p>
       ) : bang ? <BangKn kn={kn} d={d} cy={cy} homNay={homNay} hep={hep} /> : (
         <>
-          <BieuDoD ten={tenKn} diem={d.diem} sex={d.sex} target={d.target} kvPhang={d.kvPhang} cases={d.cases} thi={d.thi} homNay={homNay} lo={d.lo} hi={d.hi} buoc={d.buoc} fmt={d.fmt} />
+          <BieuDoD ten={tenKn} diem={d.diem} sex={d.sex} target={d.target} kvPhang={d.kvPhang} cases={d.cases} thi={d.thi} homNay={homNay} tamDung={tamDung} lo={d.lo} hi={d.hi} buoc={d.buoc} fmt={d.fmt} />
           <ChuGiaiD kq={cy.ratio ? 'thuong' : { vuot: d.diem.some((x) => kqSo(x.v, x.kv) === 'vuot'), bang: d.diem.some((x) => kqSo(x.v, x.kv) === 'bang'), duoi: d.diem.some((x) => kqSo(x.v, x.kv) === 'duoi') }}
             kvLuot={!cy.ratio && d.diem.some((x) => x.kv != null && x.kv !== (d.target?.filter((g) => !g.tu || g.tu <= x.tuan).at(-1)?.v ?? null))}
-            vang={d.diem.some((x) => x.loai === 'trong')} sex={d.sex.length > 0} pa={d.cases.some((c) => c.pa.length > 0)}
+            vang={d.diem.some((x) => x.loai === 'vang')} thieu={d.diem.some((x) => x.loai === 'thieu')} tamDung={!!tamDung?.length} sex={d.sex.length > 0} pa={d.cases.some((c) => c.pa.length > 0)}
             thi={!d.thi ? null : d.thi.v != null ? 'kq' : d.thi.cho ? 'cho' : 'du-kien'} kvChu={d.kvPhang?.chu ?? 'Target'} />
-          {!coDiem && <p className="m-0 px-4 pb-3 text-[13px] text-slate-400">{t('Chưa có điểm MT nào ở {kn} — chưa có điểm không phải là không tiến bộ.', { kn: tenKn })}</p>}
+          {!coDiem && <p className="m-0 px-4 pb-3 text-[13px] text-slate-400">{t('Chưa có điểm MT ở {kn}.', { kn: tenKn })}</p>}
         </>
       )}
     </>
@@ -272,7 +279,7 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
     const d2 = p.v != null && p.kv != null ? Math.round((p.v - p.kv) * 10) / 10 : null;
     return {
       khoa: p.khoa, tuan: tuanLich(p.tuan, homNay), sap: p.loai === 'sap',
-      luot: p.loai !== 'sap' && p.goi.href ? <Link to={p.goi.href} className="link font-semibold">{p.ten} ›</Link> : p.ten,
+      luot: p.loai !== 'sap' && p.goi.href ? <Link to={p.goi.href} className={`link font-semibold ${hep ? 'inline-block py-3 -my-3' : ''}`}>{p.ten} ›</Link> : p.ten,
       band: p.v != null ? <span className="font-bold" style={{ color: k ? `rgb(var(--kq-${k}-rgb))` : undefined }}>{k === 'duoi' ? '✗' : k ? '✓' : ''} {p.chuDiem ?? fmtBand(p.v)}</span> : gach,
       kv: p.kv != null ? d.fmt(p.kv) : gach,
       pm: d2 == null ? gach : <span className={d2 < 0 ? 'text-bad' : d2 > 0 ? 'text-ok' : 'text-slate-400'}>{cy.ratio ? (d2 > 0 ? `+${Math.round(d2)}` : d2 < 0 ? `−${Math.round(-d2)}` : '=') : pm(d2)}</span>,
@@ -292,7 +299,7 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
     hang.push({
       khoa: 'thi', thi: true, luot: t('Thi thật'),
       tuan: th && th !== 'khong' ? (th.loai === 'du-kien' ? t('dự kiến {thang}', { thang: th.nhan }) : th.nhan) : '',
-      band: v != null ? <span style={{ color: k ? `rgb(var(--kq-${k}-rgb))` : undefined }}>{k === 'duoi' ? '✗' : '✓'} {fmtBand(v)}</span> : gach,
+      band: v != null ? <span style={{ color: k ? `rgb(var(--kq-${k}-rgb))` : undefined }}>{k === 'duoi' ? '✗ ' : k ? '✓ ' : ''}{fmtBand(v)}</span> : gach,
       kv: tg != null ? `Target ${fmtBand(tg)}` : gach, pm: d2 == null ? gach : <span className={d2 < 0 ? 'text-bad' : d2 > 0 ? 'text-ok' : ''}>{pm(d2)}</span>,
       gc: v != null ? (kn.startsWith('writing') ? t('W gộp') : null) : d.thi.cho ? t('chờ kết quả') : t('chưa thi'),
     });

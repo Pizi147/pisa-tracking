@@ -357,7 +357,8 @@ export default function StudentDetailPage() {
               </>
             ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
               : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
-              : homNay && <HanhTrinhKn studentId={data.id} kn={chon} row={hangChon} attempts={data.attempts} cy={cy} homNay={homNay} tenKn={tenChon} />}
+              : homNay && <HanhTrinhKn studentId={data.id} kn={chon} row={hangChon} attempts={data.attempts} cy={cy} homNay={homNay} tenKn={tenChon}
+                tamDung={data.dauHoSo?.thongTin?.khoangDung} onMoCase={(caseId, paId) => setOpenCase({ caseId, paId })} />}
             {homNay && <TienDoTrenLop studentId={data.id} hocVien={data.fullName} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} />}
           </section>
 
@@ -546,7 +547,9 @@ function KetQuaThi({ th }: { th: ThiThatD | 'khong' }) {
 }
 
 /** Chữ cái kỹ năng ở dòng Điểm của thẻ điện thoại (cùng chữ với đầu cột bảng). */
-const CHU_KY_NANG = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' } as const;
+const CHU_KY_NANG = { listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S' } as const;
+/** UI-CHART-D (mockup M5): bảng Mock Test tách W1 | W2 cho khớp ô điểm đầu trang (điểm từng ô `diemKn`); thi thật W một số. */
+const KN_MOCK = ['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const;
 
 /**
  * BẢNG MOCK TEST của hồ sơ HV (F8, K4-33). Nằm ở: Học viên & Lớp › hồ sơ học viên › tab Học thuật › khối "Mock Test".
@@ -565,11 +568,12 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
   const ngayThi = !thi || thi === 'khong' ? '—' : thi.loai === 'du-kien' ? t('dự kiến {thang}', { thang: thi.nhan }) : thi.nhan;
   const dienThoai = useDienThoai();
   /* G12: số điểm tô ✓ / ✗ theo kỳ vọng của lượt (như lưới lớp), không màu link. G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
-  const diemKyNang = (a: any, k: 'listening' | 'reading' | 'writing' | 'speaking') => (
-    a.bands?.[k] != null
-      ? <Link to={duongDotTest(a, k)} className="no-underline hover:underline" title={`${t('Mở Hồ sơ Mock Test')} · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}><DiemKq diem={a.bands[k]} kyVong={a.expectation} /></Link>
-      : fmtBand(a.bands?.[k])
-  );
+  const diemKyNang = (a: any, k: typeof KN_MOCK[number]) => {
+    const w = k === 'writing1' || k === 'writing2', b = w ? a.diemKn?.[k] ?? null : a.bands?.[k] ?? null, kd = w ? 'writing' : k;
+    return b != null
+      ? <Link to={duongDotTest(a, kd)} className="no-underline hover:underline" title={`${t('Mở Hồ sơ Mock Test')} · MT${a.attemptNo} · ${w ? CHU_KY_NANG[k] : skillLabel(kd)}`} onClick={(e) => e.stopPropagation()}><DiemKq diem={b} kyVong={a.expectation} /></Link>
+      : fmtBand(b);
+  };
   /*
    * ĐIỆN THOẠI (PR-UXD Q9): mỗi lượt MỘT thẻ — đầu thẻ `MT2 · W3 SEP` + Kết quả bên phải (tầng 1), rồi Điểm L R W S · Overall · Kỳ vọng ·
    * Lớp (tầng 3, cuối). Cùng trường `a.*` và cùng link `attemptHref` / `duongDotTest` với bảng — đổi bảng thì đổi thẻ.
@@ -582,7 +586,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
             dau={(
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <Link to={attemptHref(a)} className="link font-semibold tabular-nums">MT{a.attemptNo}</Link><NhanDot a={a} />
+                  <Link to={attemptHref(a)} className="link font-semibold tabular-nums">MT{a.attemptNo} ›</Link><NhanDot a={a} />
                   <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>{t('Chưa có tuần')}</Info>}</div>
                 </div>
                 <div className="shrink-0 text-right">
@@ -594,7 +598,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
             dong={[
               {
                 nhan: t('Điểm'),
-                noiDung: (['listening', 'reading', 'writing', 'speaking'] as const).map((k, i) => (
+                noiDung: KN_MOCK.map((k, i) => (
                   <Fragment key={k}>{i > 0 && ' · '}<span className="text-slate-500">{CHU_KY_NANG[k]}</span> {diemKyNang(a, k)}</Fragment>
                 )),
               },
@@ -629,7 +633,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
             <Th hint={t('Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.')}>{t('Lớp lúc đánh giá')}</Th>
             <Th hint={t('Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.')}>{t('Tuần')}</Th>
             <Th align="right" hint="Band Listening">L</Th><Th align="right" hint="Band Reading">R</Th>
-            <Th align="right" hint={t('Band Writing — gộp từ W1 và W2')}>W</Th><Th align="right" hint="Band Speaking">S</Th>
+            <Th align="right" hint="Band Writing Task 1">W1</Th><Th align="right" hint="Band Writing Task 2">W2</Th><Th align="right" hint="Band Speaking">S</Th>
             <Th align="right" hint={t('Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.')}>OVR</Th>
             <Th align="right" hint={t('Mức mong đợi của chính đợt Test đó, tính theo Target tại thời điểm ấy. Đổi Target không chấm lại quá khứ.')}>{t('Kỳ vọng')}</Th>
             <Th hint={t('Tiến độ chấm và kết luận của đợt: số kỹ năng dưới kỳ vọng — chính là mức SOS. Thiếu điểm thì chưa kết luận.')}>{t('Kết quả')}</Th>
@@ -641,14 +645,14 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
               <tr key={a.id} id={`dot-${a.id}`} className="bam cursor-pointer" onClick={() => onOpen(a)}
                 style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
                 <td className="td whitespace-nowrap">
-                  <Link to={attemptHref(a)} className="link tabular-nums" onClick={(e) => e.stopPropagation()}>MT{a.attemptNo}</Link>
+                  <Link to={attemptHref(a)} className="link tabular-nums" onClick={(e) => e.stopPropagation()}>MT{a.attemptNo} ›</Link>
                   <NhanDot a={a} />
                 </td>
                 <td className="td text-slate-300">{a.classCode ?? '—'}</td>
                 <td className="td whitespace-nowrap">
                   {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>{t('Chưa có tuần')}</Info>}
                 </td>
-                {(['listening', 'reading', 'writing', 'speaking'] as const).map((k) => (
+                {KN_MOCK.map((k) => (
                   <td key={k} className={so}>{diemKyNang(a, k)}</td>
                 ))}
                 <td className={`${so} text-slate-100`}>{a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall)}</td>
@@ -665,8 +669,8 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
               <td className="td whitespace-nowrap">{t('Thi thật')}</td>
               <td className="td">IELTS</td>
               <td className="td whitespace-nowrap">{ngayThi}</td>
-              {thiKq ? (['l', 'r', 'w', 's', 'ovr'] as const).map((k) => <td key={k} className={so}>{diemThi(k)}</td>)
-                : <td colSpan={5} className="td text-center font-normal text-slate-400">{thi !== 'khong' && thi.loai === 'cho' ? t('chờ kết quả') : '—'}</td>}
+ {thiKq ? (['l', 'r', 'w', 's', 'ovr'] as const).map((k) => <td key={k} colSpan={k === 'w' ? 2 : undefined} className={so}>{diemThi(k)}</td>)
+                : <td colSpan={6} className="td text-center font-normal text-slate-400">{thi !== 'khong' && thi.loai === 'cho' ? t('chờ kết quả') : '—'}</td>}
               <td className={so}>{thi !== 'khong' && thi.target != null ? `Target ${fmtBand(thi.target)}` : '—'}</td>
               <td className="td"><KetQuaThi th={thi} /></td>
             </tr>

@@ -4,10 +4,10 @@ import { dungTrucTuan, mondayOfDate, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 
-/** Hộp nhỏ khi chạm / Tab / rê một dấu: dòng đậm đầu + các dòng + liên kết "Hồ sơ lượt ›" (Enter trên dấu = mở liên kết). */
-export type GoiD = { tieu: string; dong: string[]; href?: string; chuLink?: string };
-/** Một lượt của kỹ năng: có điểm · đã tới tuần mà chưa có điểm (vắng) · không học (P8, môn đăng ký) · sắp tới. `chuDiem` = chữ thay số (lớp thường "18/25"). */
-export type DiemD = { khoa: string; ten: string; tuan: string; v: number | null; kv: number | null; loai: 'diem' | 'trong' | 'khong' | 'sap'; chu?: string | null; chuDiem?: string; goi: GoiD };
+/** Hộp nhỏ khi chạm / Tab / rê một dấu: dòng đậm đầu + các dòng + "Hồ sơ lượt ›" (`href`) hoặc "Mở Case" (`mo`, ngăn Case tại trang). Enter trên dấu = làm đúng việc đó. */
+export type GoiD = { tieu: string; dong: string[]; href?: string; mo?: () => void; chuLink?: string };
+/** Một lượt của kỹ năng: có điểm · vắng (dời / đang vắng) · chưa có điểm (đã tới tuần, chưa nhập) · không học (P8) · sắp tới. `chuDiem` = chữ thay số (lớp thường "18/25"). */
+export type DiemD = { khoa: string; ten: string; tuan: string; v: number | null; kv: number | null; loai: 'diem' | 'vang' | 'thieu' | 'khong' | 'sap'; chu?: string | null; chuDiem?: string; goi: GoiD };
 export type PaD = { id: number; ten: string; tu: string; den: string | null; denDk: string | null; kq: string | null; goi: GoiD };
 export type CaseD = { id: number; chu: string; sos: number | null; mo: string; dong: string | null; goi: GoiD; pa: PaD[] };
 /** Thi thật: đã có kết quả (`v`) · đã thi chờ kết quả (`cho`) · dự kiến theo tuần · dự kiến theo tháng (`thang` YYYY-MM → khối tháng). */
@@ -17,6 +17,8 @@ export type BieuDoDProps = {
   /** Target bậc thang (`tu` null = từ đầu) — FT. Lớp thường: `kvPhang` (ngưỡng đạt, một vạch phẳng). */
   target: { tu: string | null; v: number }[] | null; kvPhang?: { v: number; chu: string } | null;
   cases: CaseD[]; thi: ThiD | null; homNay: string;
+  /** Mọi khoảng Tạm dừng của em (`den` null = đang dừng) — dải xám "Tạm dừng", không nối điểm qua. */
+  tamDung?: { tu: string; den: string | null }[];
   lo: number; hi: number; buoc: number; fmt: (v: number) => string;
 };
 
@@ -53,7 +55,7 @@ export function BieuDoD(o: BieuDoDProps) {
   const khung = useRef<HTMLDivElement>(null);
   const [rong, setRong] = useState(0);
   const [lui, setLui] = useState(0);
-  const [goi, setGoi] = useState<{ x: number; y: number; g: GoiD } | null>(null);
+  const [goi, setGoi] = useState<{ x: number; y: number; g: GoiD; re: boolean } | null>(null);
   useLayoutEffect(() => {
     const el = khung.current;
     if (!el) return undefined;
@@ -90,11 +92,13 @@ export function BieuDoD(o: BieuDoDProps) {
   const Y = (v: number) => py1 - ((py1 - py0) * (v - o.lo)) / (o.hi - o.lo);
   const fmt = o.fmt;
 
-  const mo = (x: number, y: number, g: GoiD) => setGoi({ x, y, g });
+  /* Rê chuột mở → rời chuột đóng; chạm / Tab mở → giữ tới khi bấm ra ngoài hoặc Esc. */
+  const mo = (x: number, y: number, g: GoiD, re = false) => setGoi({ x, y, g, re });
   const dau = (k: string, x: number, y: number, g: GoiD, noi: ReactNode) => (
     <g key={k} className="diem-d" tabIndex={0} role="button" aria-label={[g.tieu, ...g.dong].join(' · ')} style={{ cursor: 'pointer', outline: 'none' }}
-      onMouseEnter={() => mo(x, y, g)} onFocus={() => mo(x, y, g)} onClick={() => mo(x, y, g)}
-      onKeyDown={(e) => { if (e.key === 'Enter' && g.href) navigate(g.href); }}>
+      onMouseEnter={() => mo(x, y, g, true)} onMouseLeave={() => setGoi((c) => (c?.re && c.g === g ? null : c))}
+      onFocus={() => mo(x, y, g)} onClick={() => mo(x, y, g)}
+      onKeyDown={(e) => { if (e.key !== 'Enter') return; if (g.href) navigate(g.href); else g.mo?.(); }}>
       <rect x={x - 14} y={y - 14} width="28" height="28" fill="transparent" />
       {noi}
     </g>
@@ -126,6 +130,17 @@ export function BieuDoD(o: BieuDoDProps) {
     if (o.thi.v != null || o.thi.cho) nen.push(<rect key="thi" x={a} y={24} width={b - a} height={H - 24} fill="var(--lich-nen)" />);
     else nen.push(<rect key="thi" x={a + 1} y={24} width={b - a - 2} height={mky + 8 - 24} rx="4" fill="var(--lich-nen)" fillOpacity=".45" stroke="var(--lich-vien)" strokeDasharray="5 4" />);
   }
+  /* Tạm dừng: dải xám trong vùng vẽ + chữ, cắt nối điểm */
+  const dungXem = (o.tamDung ?? []).map((k) => ({ tu: mondayOfDate(k.tu), den: mondayOfDate(k.den ?? o.homNay) })).filter((k) => k.den >= t0 && k.tu <= truc.at(-1)!);
+  dungXem.forEach((k, i) => {
+    const a = Xl(k.tu < t0 ? t0 : k.tu), b = Xl(k.den) + cw;
+    nen.push(<g key={`td${i}`} aria-hidden>
+      <rect x={a} y={py0} width={b - a} height={py1 - py0} fill="var(--surface-2)" />
+      {b - a > 70 && <text x={(a + b) / 2} y={(py0 + py1) / 2 + 4} textAnchor="middle" fontSize="12" fill="var(--text-dim)" fontFamily={PHONG}>{t('Tạm dừng')}</text>}
+    </g>);
+  });
+  /* trục ngang dưới mọi dấu (không che dấu vắng / thiếu điểm nằm trên trục) */
+  nen.push(<line key="truc" x1={x0} x2={x1} y1={py1} y2={py1} stroke="var(--line-strong)" />);
   /* lưới ngang + số trục */
   for (let v = o.lo; v <= o.hi + 1e-9; v += o.buoc) {
     ve.push(<line key={`l${v}`} x1={x0} x2={x1} y1={Y(v)} y2={Y(v)} stroke="var(--line)" strokeOpacity=".7" />);
@@ -153,7 +168,7 @@ export function BieuDoD(o: BieuDoDProps) {
   const thu = xem.filter((p) => p.loai !== 'sap' && p.loai !== 'khong');   // không học (P8) không phải khoảng thiếu — nối qua
   thu.forEach((p, k) => {
     const q = thu[k - 1];
-    if (q?.loai === 'diem' && p.loai === 'diem') ve.push(<line key={`n${p.khoa}`} x1={Xc(q.tuan)} y1={Y(q.v!)} x2={Xc(p.tuan)} y2={Y(p.v!)} stroke="var(--accent)" strokeOpacity=".4" strokeWidth="2" />);
+    if (q?.loai === 'diem' && p.loai === 'diem' && !dungXem.some((k) => q.tuan < k.tu && p.tuan > k.den)) ve.push(<line key={`n${p.khoa}`} x1={Xc(q.tuan)} y1={Y(q.v!)} x2={Xc(p.tuan)} y2={Y(p.v!)} stroke="var(--accent)" strokeOpacity=".4" strokeWidth="2" />);
   });
   const cuoi = thu.filter((p) => p.loai === 'diem').at(-1);
   const lech = (k: string, x: number, y: number, yk: number, chu: string, trai = false) => (
@@ -169,8 +184,15 @@ export function BieuDoD(o: BieuDoDProps) {
       ve.push(<text key={`k${p.khoa}`} x={x} y={py1 - 8} textAnchor="middle" fontSize="12" fill="var(--text-dim)" fontFamily={PHONG} aria-hidden>{p.chu}</text>);
       return;
     }
-    if (p.loai === 'trong') {
+    if (p.loai === 'vang') {
       ve.push(dau(p.khoa, x, py1, p.goi, <circle cx={x} cy={py1} r="6" fill="var(--surface)" stroke="var(--text-dim)" strokeWidth="1.5" strokeDasharray="3 2.5" />));
+      return;
+    }
+    if (p.loai === 'thieu') {   // chưa có điểm = việc còn nợ, khác vắng: vòng liền + "?"
+      ve.push(dau(p.khoa, x, py1, p.goi, <>
+        <circle cx={x} cy={py1} r="7" fill="var(--surface)" stroke="rgb(var(--soon-rgb))" strokeWidth="1.5" />
+        <text x={x} y={py1 + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="rgb(var(--soon-rgb))">?</text>
+      </>));
       return;
     }
     const kv = o.kvPhang ? o.kvPhang.v : p.kv, k = kqSo(p.v, kv, !!o.kvPhang), y = Y(p.v!);
@@ -191,25 +213,24 @@ export function BieuDoD(o: BieuDoDProps) {
       if (tg != null && o.thi.v < tg) ve.push(lech('thilc', xt, yt, Y(tg), fmt(tg - o.thi.v), true));
       ve.push(dau('thi', xt, yt, o.thi.goi, <rect x={xt - 8} y={yt - 8} width="16" height="16" transform={`rotate(45 ${xt} ${yt})`} fill="var(--lich-chu)" stroke="var(--surface)" strokeWidth="2" />));
       ve.push(<text key="thic" x={xt} y={tg != null && o.thi.v < tg ? yt + 24 : yt - 14} textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--text)" aria-hidden>{fmt(o.thi.v)}</text>);
-    } else if (o.thi.cho && o.thi.target != null) {
-      const yt = Y(o.thi.target);
-      ve.push(dau('thi', xt, yt, o.thi.goi, <rect x={xt - 7} y={yt - 7} width="14" height="14" transform={`rotate(45 ${xt} ${yt})`} fill="var(--surface)" stroke="var(--lich-chu)" strokeWidth="1.8" strokeDasharray="3 2" />));
-    } else ve.push(dau('thi', xt, py1 - 10, o.thi.goi, null));
+    } else ve.push(dau('thi', xt, py1 - 10, o.thi.goi, null));   // chờ KQ / dự kiến: chỉ cột, dấu vô hình để Tab / chạm đọc
   }
   /* trục: W1…W5 mọi cột (đậm ở cột có mốc) + hàng tên mốc đúng cột */
-  ve.push(<line key="truc" x1={x0} x2={x1} y1={py1} y2={py1} stroke="var(--line-strong)" />);
   const coMoc = new Set([...xem.map((p) => mondayOfDate(p.tuan)), ...o.sex.map((q) => mondayOfDate(q.tuan)), ...(o.thi?.tuan ? [mondayOfDate(o.thi.tuan)] : [])]);
   if (!day_) truc.forEach((w, i) => {
     const la = w === nay, cm = coMoc.has(w);
     ve.push(<text key={`w${w}`} x={x0 + (i + 0.5) * cw} y={wy} textAnchor="middle" fontSize="12" fill={la ? 'var(--hong-chu)' : cm ? 'var(--text-dim)' : 'var(--text-faint, var(--text-dim))'} fontWeight={la || cm ? 700 : 400} aria-hidden>{maTuan(w)[0]}</text>);
   });
-  const nhanMoc: [number, string, string, number][] = xem.map((p) => [Xc(p.tuan), p.ten, p.loai === 'sap' ? 'var(--text-faint, var(--text-dim))' : 'var(--text-dim)', 0]);
+  /* Lượt đúng tuần này: "MT3 · nay" một nhãn hồng (không để "nay" nuốt tên lượt). */
+  const nayLuot = xem.find((p) => mondayOfDate(p.tuan) === nay);
+  const nhanMoc: [number, string, string, number][] = xem.map((p) => [Xc(p.tuan), p === nayLuot ? `${p.ten} · ${t('nay')}` : p.ten,
+    p === nayLuot ? 'var(--hong-chu)' : p.loai === 'sap' ? 'var(--text-faint, var(--text-dim))' : 'var(--text-dim)', p === nayLuot ? 2 : 0]);
   o.sex.filter((q) => trong(q.tuan)).forEach((q) => nhanMoc.push([Xc(q.tuan), 'S Ex', 'var(--text-dim)', 0]));
   if (o.thi && thiKhoi && thiTrong) {
     const rongKhoi = Xl(thiKhoi[1]) + cw - Xl(thiKhoi[0]);
     nhanMoc.push([(Xl(thiKhoi[0]) + Xl(thiKhoi[1]) + cw) / 2, o.thi.v != null || o.thi.cho ? t('Thi thật') : rongKhoi > 90 ? t('Thi dự kiến') : t('Thi'), 'var(--lich-chu)', 3]);
   }
-  if (trong(nay)) nhanMoc.push([Xc(nay), t('nay'), 'var(--hong-chu)', 2]);
+  if (trong(nay) && !nayLuot) nhanMoc.push([Xc(nay), t('nay'), 'var(--hong-chu)', 2]);
   nhanMoc.sort((a, b) => b[3] - a[3] || b[0] - a[0]);
   const dung: number[] = [];
   nhanMoc.forEach(([x, chu, mau]) => {
@@ -259,11 +280,12 @@ export function BieuDoD(o: BieuDoDProps) {
         {nen}{ve}
       </svg>
       {goi && (
-        <div role="dialog" aria-label={goi.g.tieu} className="absolute z-20 grid min-w-[180px] max-w-[280px] gap-0.5 rounded-[10px] border px-3 py-2 text-[13px] shadow-xl"
+        <div aria-hidden className="absolute z-20 grid min-w-[180px] max-w-[280px] gap-0.5 rounded-[10px] border px-3 py-2 text-[13px] shadow-xl"
           style={{ left: goiX + 14, top: goi.y + 32, background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
           <b className="text-[14px] text-slate-100">{goi.g.tieu}</b>
           {goi.g.dong.map((d, i) => <span key={i} className={i === goi.g.dong.length - 1 && goi.g.dong.length > 1 && !goi.g.href ? 'text-slate-400' : 'text-slate-300'}>{d}</span>)}
-          {goi.g.href && <Link to={goi.g.href} className="link mt-1 text-[13px] font-semibold">{goi.g.chuLink ?? t('Mở hồ sơ lượt ›')}</Link>}
+          {goi.g.href && <Link to={goi.g.href} tabIndex={-1} className="link mt-1 text-[13px] font-semibold">{goi.g.chuLink ?? t('Mở hồ sơ lượt ›')}</Link>}
+          {goi.g.mo && <button type="button" tabIndex={-1} className="link mt-1 justify-self-start appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold" onClick={() => { setGoi(null); goi.g.mo!(); }}>{goi.g.chuLink ?? t('Mở Case')}</button>}
         </div>
       )}
       {(coTruoc || coSau) && (
@@ -277,8 +299,8 @@ export function BieuDoD(o: BieuDoDProps) {
 }
 
 /** Chú giải dưới chart (chỉ mục có trên chart; đọc màn bỏ qua — mỗi dấu đã có tên riêng). */
-export function ChuGiaiD({ kq, kvLuot, vang, sex, pa, thi, kvChu }: {
-  kq: { vuot: boolean; bang: boolean; duoi: boolean } | 'thuong'; kvLuot: boolean; vang: boolean; sex: boolean; pa: boolean;
+export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, thi, kvChu }: {
+  kq: { vuot: boolean; bang: boolean; duoi: boolean } | 'thuong'; kvLuot: boolean; vang: boolean; thieu: boolean; tamDung: boolean; sex: boolean; pa: boolean;
   thi: 'kq' | 'cho' | 'du-kien' | null; kvChu: string;
 }) {
   const c = (x: ReactNode) => <svg viewBox="0 0 18 12" width="18" height="12" className="overflow-visible" aria-hidden>{x}</svg>;
@@ -290,6 +312,8 @@ export function ChuGiaiD({ kq, kvLuot, vang, sex, pa, thi, kvChu }: {
       </>}
       {kvLuot && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<line x1="3" x2="15" y1="6" y2="6" stroke="var(--text)" strokeWidth="2.5" strokeLinecap="round" />)}{t('kỳ vọng lượt')}</span>}
       <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<line x1="0" x2="18" y1="6" y2="6" stroke="var(--text-dim)" strokeWidth="1.5" strokeDasharray="5 3" />)}{kvChu}</span>
+      {thieu && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<><circle cx="9" cy="6" r="5.5" fill="none" stroke="rgb(var(--soon-rgb))" strokeWidth="1.5" /><text x="9" y="9" textAnchor="middle" fontSize="8" fontWeight="700" fill="rgb(var(--soon-rgb))">?</text></>)}{t('chưa có điểm')}</span>}
+      {tamDung && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0" y="1" width="18" height="10" fill="var(--surface-2)" stroke="var(--line-strong)" />)}{t('Tạm dừng')}</span>}
       {vang && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<circle cx="9" cy="6" r="4.5" fill="none" stroke="var(--text-dim)" strokeDasharray="2.5 2" />)}{t('vắng')}</span>}
       {sex && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="5" y="2" width="8" height="8" transform="rotate(45 9 6)" fill="none" stroke="var(--hong)" strokeWidth="1.6" />)}{t('S Ex (không tính)')}</span>}
       {pa && <span className="whitespace-nowrap">{t('PA')} {(['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const).map((k, i) => (
