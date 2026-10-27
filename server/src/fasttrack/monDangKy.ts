@@ -125,7 +125,7 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
        Chỉ lượt đã có điểm — lượt rỗng không đổi trạng thái / tín hiệu (lô Sửa cả lớp không làm mới hàng chục lượt tương lai). */
     const coDiem = new Set(dong.filter((r) => r.co_diem).map((r) => r.attempt_id as number));
     const lamMoi = [...new Set([...tat, ...bat, ...doiTask].map((r) => r.attempt_id as number))].filter((id) => coDiem.has(id));
-    /* P8 (#595): môn bỏ không sinh tín hiệu / Case — chặn chung ở `failingDangHoc` (cases/sos.ts), mọi đường làm mới lượt đi qua đó. */
+    /* P8 (#595): môn bỏ không sinh tín hiệu / Case — chặn chung ở `boMonDaBo` (cases/sos.ts), mọi đường làm mới lượt đi qua đó. */
     for (const id of lamMoi) refreshOutcome(p, id);
     writeAudit({
       actorUserId: p.userId, action: 'cycle.mon_dang_ky', entityType: 'learning_cycle', entityId: cycleId, entityLabel: 'Môn học',

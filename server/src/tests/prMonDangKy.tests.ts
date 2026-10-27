@@ -517,4 +517,21 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assert(all(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'listening' AND status != 'done'`, x.sid).length === 1, 'L còn học, dưới kỳ vọng → Case L');
     });
   });
+  check('MDK-17 · D7 P8: Case môn đã bỏ còn mở (báo tay sau khi bỏ) + lượt có bài môn đó dưới kỳ vọng → KHÔNG ghi mốc "đã đạt", không hạ mức', () => {
+    thu(() => {
+      const x = emDu();
+      const a = x.mt(3).id as number;
+      attempts.saveScore(P.admin, a, 'speaking', { criteria: [4, 4, 4, 4] }, TODAY);
+      mdk.apMonDangKy(P.mbManager, x.id, KHONG_S);
+      const c = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, attempt_id, category, topic, title, status, sos_level, created_at, updated_at) VALUES (?,?,?,?,?,?, 'open', 2, ?, ?)`)
+        .run(x.sid, x.id, a, 'speaking', 'speaking', 'Case S báo tay', NOW, NOW).lastInsertRowid);
+      xoaNho();
+      for (const [k, v] of [['listening', { rawScore: 10 }], ['reading', { rawScore: 10 }], ['writing1', { criteria: [4, 4, 4, 4] }], ['writing2', { criteria: [4, 4, 4, 4] }]] as const) {
+        attempts.saveScore(P.admin, a, k, v, TODAY);
+      }
+      const moc = all(`SELECT id FROM case_milestones WHERE case_id = ? AND kind = 'passed'`, c);
+      assert(!moc.length, `Case S (bài S 4.0 < KV) bị ghi "đã đạt": ${JSON.stringify(moc)}`);
+      assert(get('SELECT sos_level m FROM sos_cases WHERE id = ?', c).m === 2, 'mức SOS Case S giữ');
+    });
+  });
 }
