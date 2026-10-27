@@ -2386,6 +2386,11 @@ api.delete('/interventions/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.xoaPa(principalOf(req), pInt(req, 'id'));
 }));
+/** SV-BAI-LOP-2: Hoàn tác Thêm PA — người vừa thêm, trong 10 s (+5 s mạng), PA chưa có kết quả / QL chưa trả lời; trả Case. */
+api.post('/interventions/:id/hoan-tac-them', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.hoanTacThemPa(principalOf(req), pInt(req, 'id'));
+}));
 
 /** Đổi hạn BÁO KẾT QUẢ của case. Mặc định hết tuần MT kế tiếp, nhưng sửa được. */
 api.patch('/cases/:id/follow-until', requireAuth, wrap((req) => {

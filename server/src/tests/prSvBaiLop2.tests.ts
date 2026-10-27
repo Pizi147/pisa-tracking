@@ -3,6 +3,8 @@
  *   (1) Tiến độ trên lớp: tên bài / điểm / thang được trống, thêm `band` (0–9, bước 0.5); có điểm thì có thang và điểm ≤ thang; band và x/y không cùng lúc;
  *       nhận xét bắt buộc · migrate prSvBaiLop2 đổi bảng cũ, giữ dữ liệu, chạy lặp được;
  *   (2) GET tiến độ của em trả `gopY[]` — góp ý tuần cũ của em qua mọi lớp (mã lớp, người ghi, tuần), chỉ đọc, quyền xem HV (PUT gop-y 403: prOv13h);
+ *   (3) Hoàn tác Thêm PA: người vừa thêm, trong `HOAN_TAC_PA_MS` (+5 s mạng) → PA, mốc Hành trình, thẻ chờ duyệt (đóng) đi theo; Case về trạng thái trước;
+ *       nhật ký `intervention.undo_add`; chặn: người khác 403, quá giờ / đã có kết quả / QL đã trả lời 409, PA hệ thống 400.
  * Mỗi ca ghi trong một giao dịch rồi cuộn lại (`thu`).
  */
 export async function runPrSvBaiLop2Tests(t: any) {
@@ -88,6 +90,68 @@ export async function runPrSvBaiLop2Tests(t: any) {
     assert(g.every((x) => !('sua' in x)), 'chỉ đọc: không cờ sửa');
     const TVV = loadPrincipal(accounts.createAccount(P.admin, { email: `svbl2.tvv${accounts.EMAIL_SUFFIX}`, password: 'matkhau-svbl2', fullName: 'Thử SVBL2 TVV', roles: [{ role: 'consultant', branches: ['MB'] }] }).userId);
     assert(bai.dsBaiTrenLop(TVV, sid).gopY.length === 2, 'TVV (student.view) đọc được');
+  }));
+
+  const cases: any = await import('../cases/cases.ts');
+  const dm: any = await import('../../../shared/domain/index.ts');
+  /** Thêm PA bằng GVCN MB FT 101 vào Case mở đầu tiên của lớp nhận được PA — trả id Case, id PA, trạng thái Case trước khi thêm. */
+  const themPa = (input: Record<string, unknown>) => {
+    for (const r of conn.prepare(`SELECT sc.id, sc.status FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+        JOIN enrollments e ON e.student_id = COALESCE(sc.student_id, a.student_id) AND e.class_id = ? AND e.status = 'active'
+       WHERE sc.status != 'done' AND sc.tam = 0 ORDER BY sc.id`).all(LOP) as any[]) {
+      try { cases.recordIntervention(P.coreTeacher, r.id, input); } catch { continue; }
+      return { caseId: r.id as number, truoc: r.status as string, paId: get('SELECT MAX(id) AS id FROM case_interventions WHERE case_id = ?', r.id).id as number };
+    }
+    throw new Error('demo phải có Case mở ở MB FT 101 mà GVCN thêm được PA');
+  };
+  const PA = { kind: 'extra_homework', description: 'Làm thêm 2 đề Part 2 mỗi tuần', status: 'started', startedDate: demoToday() };
+
+  check('SVBL2-7 · Hoàn tác Thêm PA: PA + mốc Hành trình mất, Case về trạng thái trước, nhật ký intervention.undo_add (chụp PA), trả Case', () => thu(() => {
+    const x = themPa(PA);
+    assert(get(`SELECT 1 AS c FROM journey_events WHERE ref_table = 'case_interventions' AND ref_id = ?`, x.paId), 'có mốc Hành trình sau khi thêm');
+    const r = cases.hoanTacThemPa(P.coreTeacher, x.paId);
+    assert(r && r.id === x.caseId, `trả Case ${r?.id}`);
+    assert(!get('SELECT 1 AS c FROM case_interventions WHERE id = ?', x.paId), 'PA đã gỡ');
+    assert(!get(`SELECT 1 AS c FROM journey_events WHERE ref_table = 'case_interventions' AND ref_id = ?`, x.paId), 'mốc Hành trình đã gỡ');
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', x.caseId).status === x.truoc, `Case về ${x.truoc}`);
+    const au = get(`SELECT * FROM audit_logs WHERE action = 'intervention.undo_add' AND entity_id = ? ORDER BY id DESC`, x.paId);
+    assert(au && au.actor_user_id === P.coreTeacher.userId && JSON.parse(au.before_json).pa.description === PA.description, `nhật ký ${JSON.stringify(au)}`);
+    assert(dm.nhanHanhDongNhatKy('intervention.undo_add') === 'Hoàn tác thêm PA', 'nhãn nhật ký');
+  }));
+
+  check('SVBL2-8 · Hoàn tác đề xuất (cần QL duyệt): thẻ Chờ duyệt đóng tự động, không còn thẻ chờ', () => thu(() => {
+    const x = themPa({ kind: 'extra_support', description: 'Xin thêm buổi hỗ trợ 1-1 với GV' });
+    const the = () => get(`SELECT trang_thai FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ? ORDER BY id DESC`, x.paId);
+    assert(the()?.trang_thai === 'cho', 'có thẻ chờ sau khi thêm');
+    cases.hoanTacThemPa(P.coreTeacher, x.paId);
+    assert(the()?.trang_thai === 'tu_dong', `thẻ ${JSON.stringify(the())}`);
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', x.caseId).status === x.truoc, 'Case về trạng thái trước');
+  }));
+
+  check('SVBL2-9 · chặn Hoàn tác: người khác (kể cả QL) 403 · quá giờ 409 · đã có kết quả 409 · QL đã trả lời 409 · không có PA 404 — PA giữ nguyên', () => thu(() => {
+    const ma = (fn: () => unknown) => { try { fn(); return 0; } catch (e: any) { return e?.status ?? -1; } };
+    const x = themPa(PA);
+    assert(ma(() => cases.hoanTacThemPa(P.mbManager, x.paId)) === 403, 'QL (không phải người thêm) → 403');
+    const cu = new Date(Date.now() - dm.HOAN_TAC_PA_MS - 6000).toISOString();
+    conn.prepare('UPDATE case_interventions SET created_at = ? WHERE id = ?').run(cu, x.paId);
+    assert(ma(() => cases.hoanTacThemPa(P.coreTeacher, x.paId)) === 409, 'quá giờ → 409');
+    conn.prepare('UPDATE case_interventions SET created_at = ? WHERE id = ?').run(new Date().toISOString(), x.paId);
+    conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, created_at) VALUES (?, ?, ?, ?)`).run(x.caseId, x.paId, demoToday(), new Date().toISOString());
+    assert(ma(() => cases.hoanTacThemPa(P.coreTeacher, x.paId)) === 409, 'đã có kết quả → 409');
+    const y = themPa({ kind: 'extra_support', description: 'Xin thêm buổi hỗ trợ 1-1 với GV' });
+    conn.prepare(`UPDATE case_interventions SET approval_state = 'approved' WHERE id = ?`).run(y.paId);
+    assert(ma(() => cases.hoanTacThemPa(P.coreTeacher, y.paId)) === 409, 'QL đã trả lời → 409');
+    assert(ma(() => cases.hoanTacThemPa(P.coreTeacher, 987654)) === 404, 'không có PA → 404');
+    assert(get('SELECT 1 AS c FROM case_interventions WHERE id = ?', x.paId) && get('SELECT 1 AS c FROM case_interventions WHERE id = ?', y.paId), 'PA giữ nguyên');
+  }));
+
+  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+  check(`SVBL2-10 · trần câu SQL: hoàn tác thêm PA ≤ ${TRAN_GHI_LO.hoanTacThemPa}`, () => thu(() => {
+    const x = themPa(PA);
+    xoaNho(); const s0 = soCauSql(); cases.hoanTacThemPa(P.coreTeacher, x.paId); const n = soCauSql() - s0;
+    console.log(`    hoàn tác thêm PA ${n} câu`);
+    assert(n <= TRAN_GHI_LO.hoanTacThemPa, `${n} câu`);
   }));
 
   const { default: Database } = await import('libsql');
