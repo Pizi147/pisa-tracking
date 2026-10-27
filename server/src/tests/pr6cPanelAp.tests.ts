@@ -110,15 +110,33 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
   const d: any = await import('../../../shared/domain/index.ts');
   check('6c ⑥ gvTre (Admin + QL): mọi dòng có lượt → luotChu = nhanMaLuot(docMaLuot(luot))', () => {
     const id = (sql: string) => (conn.prepare(sql).get() as any)?.id as number | undefined;
-    const ad = id(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin' ORDER BY ur.user_id LIMIT 1`);
+    const ads = (conn.prepare(`SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin'`).all() as any[]).map((r) => r.id as number);
     const ql = id(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'branch_manager' ORDER BY ur.user_id LIMIT 1`);
     let n = 0;
     const kiem = (r: any) => { for (const g of r.nhom) for (const x of g.dong) if (x.luot) { n++; assert(x.luotChu === d.nhanMaLuot(d.docMaLuot(x.luot)), `${x.luot}: "${x.luotChu}"`); } };
-    if (ad) kiem(gvTre(loadPrincipal(ad), {}));
+    for (const ad of ads) kiem(gvTre(loadPrincipal(ad), {}));
     if (ql) {
       const p = loadPrincipal(ql);
       for (const ct of ['ft', 'thuong'] as const) for (const g of treCham(p, null, ct).dong) kiem(gvTre(p, { ct, gv: g.khoa }));
     }
-    assert(n > 0 || !ad, 'seed không có dòng GV trễ nào để kiểm');
+    assert(n > 0 || !ads.length, 'seed không có dòng GV trễ nào để kiểm');
+  });
+
+  /* ---------------------------------------------------------------- 6c-2 ⑤ (#632 XM-1): dòng danh sách Case có điểm lượt mở Case */
+  const { rowsFor } = await import('../worklist/metrics.ts');
+  check('6c-2 ⑤ rowsFor(case): diem = mốc mở / lặp Case gần nhất có band (điểm, kỳ vọng, MT n); Case không mốc điểm → null; một câu cho cả lô', () => {
+    const ids = (conn.prepare(`SELECT id FROM sos_cases ORDER BY id LIMIT 60`).all() as any[]).map((r) => r.id as number);
+    const moc = new Map<number, any>();
+    for (const m of conn.prepare(`SELECT case_id, attempt_no, band, expectation FROM case_milestones WHERE kind IN ('opened', 'repeat') AND band IS NOT NULL ORDER BY occurred_on, id`).all() as any[]) moc.set(m.case_id, m);
+    let co = 0, khong = 0;
+    for (const r of rowsFor('case', ids) as any[]) {
+      const m = moc.get(r.id);
+      if (!m) { khong++; assert(r.diemCase == null, `Case ${r.id} không mốc điểm mà có diem`); continue; }
+      co++;
+      assert(r.diemCase && r.diemCase.so === Number(m.band) && r.diemCase.kyVong === (m.expectation == null ? null : Number(m.expectation)) && (!m.attempt_no || !!r.diemCase.luot),
+        `Case ${r.id}: ${JSON.stringify(r.diemCase)} ≠ mốc ${JSON.stringify(m)}`);
+    }
+    assert(co > 0, 'seed không có Case nào có mốc điểm');
+    assert(/FROM case_milestones m LEFT JOIN assessment_attempts a ON a\.id = m\.attempt_id\s+WHERE m\.case_id IN \(\$\{ph\}\)/.test(doc('server/src/worklist/metrics.ts')), 'điểm phải đọc theo lô (IN), không mỗi dòng một câu');
   });
 }

@@ -6,7 +6,7 @@ import { XemCha, useMoSoLieu, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
-import { CanLam, NutChu } from './KhuonViec.tsx';
+import { CanLam, DiemKq, NutChu } from './KhuonViec.tsx';
 import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
 import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
@@ -47,6 +47,8 @@ export type DongSoLieu = {
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ; có nhóm thì panel vẽ dải nhóm và dòng mở view Case trong cùng panel. */
   nhom?: NhomCaseChuaChot | null;
+  /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
+  diemCase?: { so: number; kyVong: number | null; luot: string | null } | null;
   /** UI-HO-SO-GV: dòng kết quả — điểm từng kỹ năng (`cua` = kỹ năng GV phụ trách), Overall, mốc so, kết luận (tab Chưa đạt · Đạt). */
   diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%'; vuot?: boolean;
 };
@@ -259,7 +261,12 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           </span>
           <span className="flex w-full flex-wrap items-center gap-x-3 gap-y-1">
             <span className="min-w-0 flex-1 text-[13px] leading-snug text-slate-400">
-              {r.xong ? <>{r.lop && <>{r.lop} · </>}<b className="font-semibold text-ok">✓ {r.xong}</b></> : [r.lop, v ? dich(v.chu) : r.tinhTrang ? dich(r.tinhTrang) : null].filter(Boolean).join(' · ')}
+              {/* 6c-2 (#632 XM-1, mockup khu K ②): điểm lượt mở Case đứng đầu dòng 2 — "✗ 5.0 · kỳ vọng 6.0 · thiếu 1.0" (✓ / ✗ + chữ, không chỉ màu). */}
+              {!r.xong && r.diemCase && <><DiemKq diem={r.diemCase.so} kyVong={r.diemCase.kyVong} />
+                {r.diemCase.kyVong != null && <> · {t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) })}</>}
+                {r.diemCase.kyVong != null && r.diemCase.so < r.diemCase.kyVong && <> · {t('thiếu {n}', { n: (r.diemCase.kyVong - r.diemCase.so).toFixed(1) })}</>}
+                {' · '}</>}
+              {r.xong ? <>{r.lop && <>{r.lop} · </>}<b className="font-semibold text-ok">✓ {r.xong}</b></> : [r.lop, r.diemCase?.luot, v ? dich(v.chu) : r.tinhTrang ? dich(r.tinhTrang) : null].filter(Boolean).join(' · ')}
             </span>
             {!r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
           </span>
