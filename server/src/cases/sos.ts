@@ -24,7 +24,7 @@ import { mondayOf } from '../platform/week.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { taoPaBoTro } from './boTro.ts';
 import { dongBoNguyenNhanMt } from './nguyenNhanO.ts';
-import { soThuTuLuot, tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
+import { monThieu, soThuTuLuot, tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
 
 /**
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
@@ -350,7 +350,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     .all(attempt.id) as any[];
   const entry: EntryBands = {};
   for (const r of rows) entry[r.skill as EntrySkill] = r.band;
-  const failing = failingEntrySkills(result.expectation, entry, result.boQua);
+  const failing = failingDangHoc(attempt, result, entry);
 
   /*
    * NGÀY PHÁT HIỆN = thứ Hai của TUẦN THI. Đây là ngày NGHIỆP VỤ của kết quả.
@@ -756,6 +756,19 @@ function dongBoCaseTam(actor: number | null, attempt: any, result: AttemptResult
   return k.tao.map((s) => `${attempt.id}:${s}`);
 }
 
+/**
+ * D7 (P8 #595 "SOS / Case chỉ môn đăng ký", N13): ô dưới kỳ vọng của lượt, TRỪ môn lộ trình nay không học. Bài môn bỏ đã chấm giữ điểm (Q5) nhưng
+ * không sinh tín hiệu / Case / Case tạm — chặn MỘT chỗ cho mọi đường làm mới lượt (lưu điểm, đổi môn, Sửa cả lớp…). MT0 không áp môn.
+ */
+function failingDangHoc(attempt: any, result: AttemptResult, entry: EntryBands): EntrySkill[] {
+  const failing = failingEntrySkills(result.expectation, entry, result.boQua);
+  if (!failing.length || !attempt.cycle_id || laMt0(attempt)) return failing;
+  const mon = (db().prepare('SELECT mon_dang_ky FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.mon_dang_ky ?? null;
+  if (!mon) return failing;
+  const boMon = new Set<string>(monThieu(mon));
+  return failing.filter((k) => !boMon.has(k));
+}
+
 /** Lượt có thuộc luật Case tạm không (Mock FT, chưa chốt, không MT0, MT cũ trong cửa sổ, lớp chưa kết thúc) + dữ liệu cần — CHỈ ĐỌC. */
 function luotCaseTam(attemptId: number): { attempt: any; result: AttemptResult; failing: string[]; entry: EntryBands; detectedAt: string } | null {
   const conn = db();
@@ -769,7 +782,7 @@ function luotCaseTam(attemptId: number): { attempt: any; result: AttemptResult; 
   }
   const entry: EntryBands = {};
   for (const r of conn.prepare('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?').all(attempt.id) as any[]) entry[r.skill as EntrySkill] = r.band;
-  const failing = failingEntrySkills(result.expectation, entry, result.boQua) as string[];
+  const failing = failingDangHoc(attempt, result, entry) as string[];
   return { attempt, result, failing, entry, detectedAt: attempt.lich_su ? demoToday() : weekStartOf(attempt) ?? demoToday() };
 }
 /** Migrate `prOv13a` (e) / `kiem-truoc-ov13a`: Case tạm còn thiếu của một lượt (`ghi` = sinh luôn). Trả khoá `lượt:kỹ năng`. */

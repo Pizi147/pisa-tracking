@@ -192,4 +192,39 @@ export async function runR1NoCuTests(t: YThucTestKit) {
     assert(maLoi(() => owner.doiChuCase(pGvcn, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 403, 'GVCN lớp cũ (ghi danh cũ hơn) → 403');
     assert(!owner.ungVienChuCase(c.id).some((u: any) => u.id === c.gvMon) || one(`SELECT 1 x FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active'`, lopMoi, c.gvMon), 'ứng viên theo lớp mới');
   }));
+
+  /* D7 SAU-R1-MAY-CHU — ba mục "để sau" của #606. */
+  check('CHU-12 đổi người qua quyền lớp mà KHÔNG xem được Case (kiemXemCase) → 403, không ghi', () => thu(() => {
+    const c = caseCuaLop();
+    const chiGan = { ...P.mbManager, grants: P.mbManager.grants.map((g: any) => ({ ...g, permissions: new Set([dm.PERMISSIONS.CLASS_ASSIGN]) })) };
+    assert(maLoi(() => owner.doiChuCase(chiGan, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 403, 'không có quyền xem Case → 403');
+    assert(chuCua(c.id) === gvcn(), 'không ghi');
+  }));
+
+  check('CHU-13 đổi người → updated_at của Case đổi; chi tiết Case trả mốc mới (capNhatLuc của Sửa Case)', () => thu(() => {
+    const c = caseCuaLop();
+    conn.prepare(`UPDATE sos_cases SET updated_at = '2026-01-01T00:00:00.000Z' WHERE id = ?`).run(c.id);
+    owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: gvcn() });
+    const moi = one('SELECT updated_at u FROM sos_cases WHERE id = ?', c.id).u;
+    assert(moi && moi !== '2026-01-01T00:00:00.000Z', `updated_at: ${moi}`);
+    assert(cases.caseDetail(P.mbManager, c.id).capNhatLuc === moi, 'chi tiết Case trả mốc mới (Sửa Case so mốc này — mốc cũ thì 409)');
+  }));
+
+  check('CHU-14 MON_GOP chiều ngược: Case môn tách (L · W1) ← GV môn gộp (L+S · W · R+W) là ứng viên', () => thu(() => {
+    const c = caseCuaLop();
+    const gv = all(`SELECT id FROM users WHERE id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active') ORDER BY id LIMIT 3`, LOP).map((r) => r.id);
+    const them = conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, ?, 0, 'active', '2026-09-01', '2026-09-01')`);
+    them.run(LOP, gv[0], 'listening_speaking'); them.run(LOP, gv[1], 'writing'); them.run(LOP, gv[2], 'reading_writing');
+    xoaNho();
+    const ungVien = (cat: string) => {
+      conn.prepare('UPDATE sos_cases SET category = ?, topic = ? WHERE id = ?').run(cat, cat, c.id);
+      return owner.ungVienChuCase(c.id).map((u: any) => u.id) as number[];
+    };
+    const l = ungVien('listening');
+    assert(l.includes(gv[0]) && !l.includes(gv[1]) && !l.includes(gv[2]), `Case L: ${l}`);
+    const w1 = ungVien('writing1');
+    assert(w1.includes(gv[1]) && w1.includes(gv[2]) && !w1.includes(gv[0]), `Case W1: ${w1}`);
+    const w = ungVien('writing');
+    assert(w.includes(gv[1]) && w.includes(gv[2]) && !w.includes(gv[0]), `Case W: ${w}`);
+  }));
 }
