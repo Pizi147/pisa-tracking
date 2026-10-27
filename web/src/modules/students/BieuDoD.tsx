@@ -86,9 +86,30 @@ export function BieuDoD(o: BieuDoDProps) {
   const trong = (iso: string) => { const c = cot(iso); return c >= 0 && c < n; };
   const Xl = (iso: string) => x0 + Math.min(n, Math.max(0, cot(iso))) * cw;
   const Xc = (iso: string) => Xl(iso) + cw / 2;
-  const coPa = o.cases.some((c) => c.pa.length);
+  /* Case chồng thời gian → làn riêng (mỗi làn một hàng Case + một hàng PA nếu có): không Case nào bị che. */
+  const lan: { cs: CaseD[]; het: number; coPa: boolean; paHang?: Map<number, number>; soHang?: number }[] = [];
+  const hetPa = (p: PaD) => cot(p.den ?? (p.denDk && p.denDk > nay ? p.denDk : nay));
+  [...o.cases].sort((a, b) => a.mo.localeCompare(b.mo) || a.id - b.id).forEach((c) => {
+    const dau = cot(c.mo), het = Math.max(cot(c.dong ?? nay), ...c.pa.map(hetPa));
+    const l = lan.find((x) => x.het < dau);
+    if (l) { l.cs.push(c); l.het = Math.max(l.het, het); l.coPa ||= c.pa.length > 0; } else lan.push({ cs: [c], het, coPa: c.pa.length > 0 });
+  });
   const py0 = 34, py1 = py0 + 170, wy = py1 + 17, mky = py1 + (day_ ? 17 : 35);
-  const cy = mky + 24, pyy = cy + 30, H = o.cases.length ? (coPa ? pyy + 16 : cy + 16) : mky + 10;
+  /* PA chạy song song trong một làn → hàng PA riêng (cùng cách chia làn). */
+  lan.forEach((l) => {
+    const hang: number[] = [];
+    l.paHang = new Map();
+    l.cs.flatMap((c) => c.pa).sort((a, b) => a.tu.localeCompare(b.tu)).forEach((p) => {
+      let i = hang.findIndex((h) => h < cot(p.tu));
+      if (i < 0) { i = hang.length; hang.push(0); }
+      hang[i] = hetPa(p); l.paHang!.set(p.id, i);
+    });
+    l.soHang = hang.length;
+  });
+  const lanY: { cy: number; pyy: number }[] = [];
+  let yLan = mky + 24;
+  lan.forEach((l) => { lanY.push({ cy: yLan, pyy: yLan + 30 }); yLan += 34 + 30 * (l.soHang ?? 0); });
+  const H = lan.length ? yLan - 18 : mky + 10;
   const Y = (v: number) => py1 - ((py1 - py0) * (v - o.lo)) / (o.hi - o.lo);
   const fmt = o.fmt;
 
@@ -98,7 +119,7 @@ export function BieuDoD(o: BieuDoDProps) {
     <g key={k} className="diem-d" tabIndex={0} role="button" aria-label={[g.tieu, ...g.dong].join(' · ')} style={{ cursor: 'pointer', outline: 'none' }}
       onMouseEnter={() => mo(x, y, g, true)} onMouseLeave={() => setGoi((c) => (c?.re && c.g === g ? null : c))}
       onFocus={() => mo(x, y, g)} onClick={() => mo(x, y, g)}
-      onKeyDown={(e) => { if (e.key !== 'Enter') return; if (g.href) navigate(g.href); else g.mo?.(); }}>
+      onKeyDown={(e) => { if (e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); setGoi(null); if (g.href) navigate(g.href); else g.mo?.(); }}>
       <rect x={x - 14} y={y - 14} width="28" height="28" fill="transparent" />
       {noi}
     </g>
@@ -191,7 +212,7 @@ export function BieuDoD(o: BieuDoDProps) {
     if (p.loai === 'thieu') {   // chưa có điểm = việc còn nợ, khác vắng: vòng liền + "?"
       ve.push(dau(p.khoa, x, py1, p.goi, <>
         <circle cx={x} cy={py1} r="7" fill="var(--surface)" stroke="rgb(var(--soon-rgb))" strokeWidth="1.5" />
-        <text x={x} y={py1 + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="rgb(var(--soon-rgb))">?</text>
+        <text x={x} y={py1 + 4} textAnchor="middle" fontSize="12" fontWeight="700" fill="rgb(var(--soon-rgb))">?</text>
       </>));
       return;
     }
@@ -247,17 +268,18 @@ export function BieuDoD(o: BieuDoDProps) {
       {w2 > chuDai * 6.6 + 12 && <text x={a + 8} y={y + 4} fontSize="12" fontWeight="700" fill={mauChu} fontFamily={PHONG}>{chu}</text>}
     </>);
   };
-  if (o.cases.length) {
-    ve.push(<text key="lc" x={0} y={cy + 4} fontSize="13" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>Case</text>);
-    if (coPa) ve.push(<text key="lp" x={0} y={pyy + 4} fontSize="13" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>{t('PA')}</text>);
-    o.cases.forEach((c) => {
+  lan.forEach((l, li) => {
+    const { cy, pyy } = lanY[li];
+    ve.push(<text key={`lc${li}`} x={0} y={cy + 4} fontSize="13" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>Case</text>);
+    if (l.coPa) ve.push(<text key={`lp${li}`} x={0} y={pyy + 4} fontSize="13" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>{t('PA')}</text>);   // một nhãn cho mọi hàng PA của làn
+    l.cs.forEach((c) => {
       const dong = !!c.dong, s2 = (c.sos ?? 0) >= 2;
       const mauV = s2 ? 'rgb(var(--sos2-rgb))' : 'rgb(var(--sos1-rgb))';
       const chu = `Case ${c.chu}${dong ? ` · ${t('đã đóng')}` : c.sos ? ` · SOS ${c.sos}` : ''}`;
       ve.push(thanh(`c${c.id}`, Xl(c.mo) + 2, Xl(c.dong ?? nay) + cw - 2, cy, dong ? 'var(--surface)' : s2 ? 'var(--sos2-nen)' : 'var(--surface)', dong ? 'var(--line-strong)' : mauV,
         chu, chu.length, dong ? 'var(--text-dim)' : s2 ? 'rgb(var(--sos2-chu-rgb))' : 'rgb(var(--sos1-chu-rgb))', c.goi, dong));
       c.pa.forEach((p) => {
-        const g = p.kq ? KQ_PA[p.kq] : null;
+        const g = p.kq ? KQ_PA[p.kq] : null, pyy = lanY[li].pyy + 30 * (l.paHang!.get(p.id) ?? 0);
         if (!p.den && p.denDk && cot(p.denDk) > cot(nay) && trong(nay)) {
           const a = Xl(nay) + cw, b = Xl(p.denDk) + cw;
           ve.push(<g key={`pk${p.id}`} aria-hidden>
@@ -269,7 +291,7 @@ export function BieuDoD(o: BieuDoDProps) {
           <>{p.ten}{g && <>{p.den ? ' ' : ' · '}<tspan fill={g[1]}>{g[0]}</tspan></>}</>, p.ten.length + (g ? 3 : 0), 'var(--accent)', p.goi));
       });
     });
-  }
+  });
 
   /* hộp nhỏ: đặt dưới dấu, kẹp trong khung */
   const goiX = goi ? Math.min(Math.max(8, goi.x - 90), W - 290) : 0;
@@ -300,7 +322,9 @@ export function BieuDoD(o: BieuDoDProps) {
 
 /** Chú giải dưới chart (chỉ mục có trên chart; đọc màn bỏ qua — mỗi dấu đã có tên riêng). */
 export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, thi, kvChu }: {
-  kq: { vuot: boolean; bang: boolean; duoi: boolean } | 'thuong'; kvLuot: boolean; vang: boolean; thieu: boolean; tamDung: boolean; sex: boolean; pa: boolean;
+  kq: { vuot: boolean; bang: boolean; duoi: boolean } | 'thuong'; kvLuot: boolean; vang: boolean; thieu: boolean; tamDung: boolean; sex: boolean;
+  /** Mã kết quả PA có trên chart (chỉ giải thích ký hiệu đang thấy). */
+  pa: string[];
   thi: 'kq' | 'cho' | 'du-kien' | null; kvChu: string;
 }) {
   const c = (x: ReactNode) => <svg viewBox="0 0 18 12" width="18" height="12" className="overflow-visible" aria-hidden>{x}</svg>;
@@ -316,8 +340,8 @@ export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, thi, kvChu
       {tamDung && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0" y="1" width="18" height="10" fill="var(--surface-2)" stroke="var(--line-strong)" />)}{t('Tạm dừng')}</span>}
       {vang && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<circle cx="9" cy="6" r="4.5" fill="none" stroke="var(--text-dim)" strokeDasharray="2.5 2" />)}{t('vắng')}</span>}
       {sex && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="5" y="2" width="8" height="8" transform="rotate(45 9 6)" fill="none" stroke="var(--hong)" strokeWidth="1.6" />)}{t('S Ex (không tính)')}</span>}
-      {pa && <span className="whitespace-nowrap">{t('PA')} {(['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const).map((k, i) => (
-        <span key={k}>{i > 0 && ' · '}<b style={{ color: KQ_PA[k][1] }}>{KQ_PA[k][0]}</b> {[t('rõ'), t('một phần'), t('không'), t('kém hơn'), t('chưa đủ dữ liệu')][i]}</span>
+      {pa.length > 0 && <span className="whitespace-nowrap">{t('PA')} {(['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const).filter((k) => pa.includes(k)).map((k, i) => (
+        <span key={k}>{i > 0 && ' · '}<b style={{ color: KQ_PA[k][1] }}>{KQ_PA[k][0]}</b> {{ improved: t('rõ'), partial: t('một phần'), unchanged: t('không'), worse: t('kém hơn'), insufficient: t('chưa đủ dữ liệu') }[k]}</span>
       ))}</span>}
       {thi === 'kq' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="5" y="2" width="8" height="8" transform="rotate(45 9 6)" fill="var(--lich-chu)" />)}{t('thi thật')}</span>}
       {thi === 'cho' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0" y="0" width="18" height="12" fill="var(--lich-nen)" />)}{t('thi thật · chờ kết quả')}</span>}

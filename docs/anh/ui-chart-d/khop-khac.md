@@ -74,7 +74,10 @@ Không tính K22 (thuộc PR ②) → 34/37 = 92 %; chủ SP chấp nhận K10, 
 - **[XM-1]** Bảng Mock Test: mockup tách W1 \| W2 (tự ghi [XM] "web gộp W"), kế hoạch nói "khối Mock Test hiện có". Đã làm theo khung duyệt (W1 \| W2, khớp ô điểm),
   thi thật W một số trải hai cột. Muốn giữ W gộp thì đổi lại một chỗ (`KN_MOCK` trong `StudentDetailPage.tsx`).
 - **[XM-2]** 375 Overall: GIỮ thẻ mỗi lượt (PR-UXD Q9, đã duyệt) thay bảng cuộn ngang của mockup; thêm thẻ Thi thật cuối. Đổi sang bảng = PR riêng nếu chủ SP muốn.
-- **[XM-3]** Hai Case cùng kỹ năng mở chồng thời gian (dữ liệu demo em 21: hai Case W2) vẽ chồng trên một làn — mockup chỉ vẽ một Case / làn. Đề xuất: giữ (hiếm), hoặc làn thứ hai ở PR sau.
+- **[XM-3]** Hai Case cùng kỹ năng mở chồng thời gian (demo em 21: hai Case W2) — mockup chỉ vẽ một Case. Đã làm: mỗi Case chồng thời gian một làn Case + PA riêng
+  (critique vòng 2: Case bị che = "bỏ sót"). Không đổi luật.
+- **[XM-4]** MT xếp lịch SAU ngày thi thật (demo em 21: MT4 W1 OCT sau thi 12/09) — kế hoạch nói "Thi thật là cột cuối", nhưng thi thật không phải luật chặn nên web
+  vẫn vẽ MT4 (sau cột thi) và bảng Mock Test vẫn có hàng MT4 "Chưa có điểm". Hỏi chủ SP: sau thi có KQ thì MT chưa làm ẩn đi, hay giữ (mờ, "dự kiến")? Chưa đổi gì.
 
 ## Thao tác TRƯỚC → SAU PR (CLAUDE.md "PR giao diện V5 = nâng cấp")
 

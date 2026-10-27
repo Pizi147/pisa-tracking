@@ -670,7 +670,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
               <td className="td">IELTS</td>
               <td className="td whitespace-nowrap">{ngayThi}</td>
  {thiKq ? (['l', 'r', 'w', 's', 'ovr'] as const).map((k) => <td key={k} colSpan={k === 'w' ? 2 : undefined} className={so}>{diemThi(k)}</td>)
-                : <td colSpan={6} className="td text-center font-normal text-slate-400">{thi !== 'khong' && thi.loai === 'cho' ? t('chờ kết quả') : '—'}</td>}
+                : <td colSpan={6} className="td text-center font-normal text-slate-400">—</td>}
               <td className={so}>{thi !== 'khong' && thi.target != null ? `Target ${fmtBand(thi.target)}` : '—'}</td>
               <td className="td"><KetQuaThi th={thi} /></td>
             </tr>

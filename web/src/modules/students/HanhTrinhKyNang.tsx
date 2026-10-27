@@ -215,6 +215,9 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten, onMoCase }: 
     fmt: ratio ? (v: number) => `${Math.round(v)} %` : (v: number) => fmtBand(v) };
 }
 
+/** Biểu đồ | Bảng nhớ trong phiên (đổi kỹ năng / qua Overall rồi về vẫn giữ). */
+let xemNho: 'bieu' | 'bang' = 'bieu';
+
 /**
  * HÀNH TRÌNH · {kỹ năng} (UI-CHART-D, mockup M5): đầu khối "Hành trình · Speaking" ⓘ + Biểu đồ | Bảng. Biểu đồ = chart D; Bảng = Lượt · Tuần · Band · Kỳ vọng · ± ·
  * Ghi chú (nhận xét bài MT của kỹ năng ở lượt đó; không có thì vắng / không học / dự kiến), hàng cuối Thi thật. 375: luôn Bảng (chart nhiều cột không đọc được).
@@ -228,7 +231,8 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
 }) {
   const sExApi = useApi<SEx[]>(kn === 'speaking' ? `/students/${studentId}/s-expert` : null, [studentId, kn]);
   const hep = useDienThoai();
-  const [xem, setXem] = useState<'bieu' | 'bang'>('bieu');
+  const [xem, setXem_] = useState<'bieu' | 'bang'>(() => xemNho);
+  const setXem = (v: 'bieu' | 'bang') => { xemNho = v; setXem_(v); };
   const tenLuot_ = (a: LuotD) => (cy.ratio ? tenBaiThuong(attempts, a) : tenLuot(a));
   const d = duLieuKn({ kn, row, attempts, cy, sEx: sExApi.data ?? [], homNay, tenKn, ten: tenLuot_, onMoCase });
   const bang = hep || xem === 'bang';
@@ -240,7 +244,7 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
         <NutLuat label={t('Cách đọc hành trình')}>
           {cy.ratio
             ? t('Chấm = điểm bài của môn (% so tổng), màu theo ngưỡng đạt của lớp · vạch đứt = ngưỡng đạt · cột hồng = tuần này.')
-            : t('Chấm = điểm MT, màu theo kỳ vọng của lượt · vạch ngắn = kỳ vọng lượt · đứt = Target · cột hồng = tuần này · cột xanh lơ = thi thật. Chạm hoặc Tab một dấu để xem chi tiết.')}
+            : t('Chấm = điểm MT, màu theo kỳ vọng của lượt · vạch ngắn = kỳ vọng lượt · đứt = Target · cột hồng = tuần này · cột xanh lơ = thi thật. Chạm hoặc Tab một dấu để xem chi tiết; Enter mở hồ sơ lượt hoặc Case.')}
         </NutLuat>
         {!hep && (
           <span className="ml-auto inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }} role="group" aria-label={t('Kiểu xem')}>
@@ -252,14 +256,20 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
           </span>
         )}
       </div>
-      {!d.diem.length && !d.thi ? (
+      {kn === 'speaking' && sExApi.error && (
+        <p className="m-0 flex flex-wrap items-center gap-2 px-4 pt-2 text-[13px] text-slate-400" role="status">{t('Không tải được S Ex.')}
+          <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold" onClick={sExApi.reload}>{t('Thử lại')}</button></p>
+      )}
+      {kn === 'speaking' && !sExApi.data && !sExApi.error && !bang ? <div className="p-4"><Skeleton rows={4} /></div>
+        : !d.diem.length && !d.thi ? (
         <p className="m-0 px-4 py-6 text-center text-[14px] text-slate-400">{t('Chưa có lượt nào ở {kn}.', { kn: tenKn })}</p>
       ) : bang ? <BangKn kn={kn} d={d} cy={cy} homNay={homNay} hep={hep} /> : (
         <>
           <BieuDoD ten={tenKn} diem={d.diem} sex={d.sex} target={d.target} kvPhang={d.kvPhang} cases={d.cases} thi={d.thi} homNay={homNay} tamDung={tamDung} lo={d.lo} hi={d.hi} buoc={d.buoc} fmt={d.fmt} />
           <ChuGiaiD kq={cy.ratio ? 'thuong' : { vuot: d.diem.some((x) => kqSo(x.v, x.kv) === 'vuot'), bang: d.diem.some((x) => kqSo(x.v, x.kv) === 'bang'), duoi: d.diem.some((x) => kqSo(x.v, x.kv) === 'duoi') }}
             kvLuot={!cy.ratio && d.diem.some((x) => x.kv != null && x.kv !== (d.target?.filter((g) => !g.tu || g.tu <= x.tuan).at(-1)?.v ?? null))}
-            vang={d.diem.some((x) => x.loai === 'vang')} thieu={d.diem.some((x) => x.loai === 'thieu')} tamDung={!!tamDung?.length} sex={d.sex.length > 0} pa={d.cases.some((c) => c.pa.length > 0)}
+            vang={d.diem.some((x) => x.loai === 'vang')} thieu={d.diem.some((x) => x.loai === 'thieu')} tamDung={!!tamDung?.length} sex={d.sex.length > 0}
+            pa={d.cases.flatMap((c) => c.pa.map((p) => p.kq).filter((k): k is string => !!k))}
             thi={!d.thi ? null : d.thi.v != null ? 'kq' : d.thi.cho ? 'cho' : 'du-kien'} kvChu={d.kvPhang?.chu ?? 'Target'} />
           {!coDiem && <p className="m-0 px-4 pb-3 text-[13px] text-slate-400">{t('Chưa có điểm MT ở {kn}.', { kn: tenKn })}</p>}
         </>
@@ -279,7 +289,7 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
     const d2 = p.v != null && p.kv != null ? Math.round((p.v - p.kv) * 10) / 10 : null;
     return {
       khoa: p.khoa, tuan: tuanLich(p.tuan, homNay), sap: p.loai === 'sap',
-      luot: p.loai !== 'sap' && p.goi.href ? <Link to={p.goi.href} className={`link font-semibold ${hep ? 'inline-block py-3 -my-3' : ''}`}>{p.ten} ›</Link> : p.ten,
+      luot: p.loai !== 'sap' && p.goi.href ? <Link to={p.goi.href} className={`link font-semibold ${hep ? 'inline-block min-w-[44px] py-3 -my-3' : ''}`}>{p.ten} ›</Link> : p.ten,
       band: p.v != null ? <span className="font-bold" style={{ color: k ? `rgb(var(--kq-${k}-rgb))` : undefined }}>{k === 'duoi' ? '✗' : k ? '✓' : ''} {p.chuDiem ?? fmtBand(p.v)}</span> : gach,
       kv: p.kv != null ? d.fmt(p.kv) : gach,
       pm: d2 == null ? gach : <span className={d2 < 0 ? 'text-bad' : d2 > 0 ? 'text-ok' : 'text-slate-400'}>{cy.ratio ? (d2 > 0 ? `+${Math.round(d2)}` : d2 < 0 ? `−${Math.round(-d2)}` : '=') : pm(d2)}</span>,
