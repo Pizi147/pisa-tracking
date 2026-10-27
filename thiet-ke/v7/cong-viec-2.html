@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Công việc 2 · mockup D5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;600;700&display=swap">
+<style>
+/* Mockup D5 CONG-VIEC-2 (kế hoạch 2026-10-27-sua-toi.md). Màu = token thật của web (`web/src/index.css`, như M6 `panel-pilot.html`), không token mới.
+   Khung 1440 luôn tối (.toi), khung 375 luôn sáng (.sang) — phần chú thích theo máy / nút Sáng · Tối. */
+:root, .sang {
+  --bg: #f3f5f9; --surface: #ffffff; --surface-2: #f2f4f9; --line: #d9deea; --line-strong: #b0b8cd;
+  --accent: #273c8f; --accent-strong: #1f3077; --accent-soft: #eef1fa; --accent-ink: #ffffff; --text: #141a2b; --text-dim: #4a536c; --text-faint: #5f6984;
+  --ok: #146c43; --ok-nen: #e3f5ea; --ok-vien: #5fb98a; --bad: #b42318; --bad-nen: #fdecea; --bad-vien: #e8968d;
+  --soon: #8a5a00; --soon-nen: #fff4d6; --soon-vien: #d9a93a; --doing: #3a50a6; --doing-nen: #eef1fa;
+  --o-nen: #ffffff; --o-vien: #7f8aa6; --dh-nen: #273c8f; --dh-chu: #dce2f4;
+  --hong: #f25a98; --da-thi: #0e7490; --da-thi-chu: #ffffff;
+  --sos1: #b38600; --sos1-chu: #6b4e00; --sos1-nen: #fff1b8; --sos2: rgb(217 101 15); --sos2-chu: rgb(163 71 10); --sos2-nen: #fdebd9;
+  --nen-chim: #eceff5;
+  --note-bg: #fffbea; --note-line: #d9a93a; --note-text: #4a3a06;
+  --phong: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif; --phong-so: 'Inter', 'Be Vietnam Pro', system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #050a16; --surface: #111c33; --surface-2: #172440; --line: #22324f; --line-strong: #33496f;
+  --accent: #94bdf2; --accent-strong: #b8d3f7; --accent-soft: #142a4c; --accent-ink: #060c1a; --text: #e7edf7; --text-dim: #bac6de; --text-faint: #9eacc8;
+  --ok: #74d9a3; --ok-nen: #12342a; --ok-vien: #2f7a55; --bad: #ff9a8f; --bad-nen: #3b1719; --bad-vien: #8f3a33;
+  --soon: #f2c450; --soon-nen: #33290f; --soon-vien: #7d6420; --doing: #94bdf2; --doing-nen: #142a4c;
+  --o-nen: #0b1427; --o-vien: #66789f; --dh-nen: #0a1a3a; --dh-chu: #c3d2ec;
+  --hong: #f57aae; --da-thi: #155e75; --da-thi-chu: #e6fbff;
+  --sos1: #d6b828; --sos1-chu: #f0d24a; --sos1-nen: #3a3006; --sos2: rgb(232 112 42); --sos2-chu: rgb(245 147 90); --sos2-nen: #3a2410;
+  --nen-chim: #0b1427;
+  --note-bg: #2a2410; --note-line: #7d6420; --note-text: #f2e2a8; color-scheme: dark; } }
+:root[data-theme="dark"], .toi {
+  --bg: #050a16; --surface: #111c33; --surface-2: #172440; --line: #22324f; --line-strong: #33496f;
+  --accent: #94bdf2; --accent-strong: #b8d3f7; --accent-soft: #142a4c; --accent-ink: #060c1a; --text: #e7edf7; --text-dim: #bac6de; --text-faint: #9eacc8;
+  --ok: #74d9a3; --ok-nen: #12342a; --ok-vien: #2f7a55; --bad: #ff9a8f; --bad-nen: #3b1719; --bad-vien: #8f3a33;
+  --soon: #f2c450; --soon-nen: #33290f; --soon-vien: #7d6420; --doing: #94bdf2; --doing-nen: #142a4c;
+  --o-nen: #0b1427; --o-vien: #66789f; --dh-nen: #0a1a3a; --dh-chu: #c3d2ec;
+  --hong: #f57aae; --da-thi: #155e75; --da-thi-chu: #e6fbff;
+  --sos1: #d6b828; --sos1-chu: #f0d24a; --sos1-nen: #3a3006; --sos2: rgb(232 112 42); --sos2-chu: rgb(245 147 90); --sos2-nen: #3a2410;
+  --nen-chim: #0b1427;
+  --note-bg: #2a2410; --note-line: #7d6420; --note-text: #f2e2a8; color-scheme: dark; }
+:root[data-theme="light"] .sang, .sang { color-scheme: light; }
+.toi, .sang { color: var(--text); }
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--phong); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+.trang { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+.trang > * { min-width: 0; }
+table { font: inherit; color: inherit; border-collapse: collapse; }
+.so { font-family: var(--phong-so); font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; line-height: 1.3; }
+p { margin: 0; }
+
+/* ---- phần đọc mockup (KHÔNG phải giao diện web) ---- */
+.dau { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; }
+.dau h1 { font-size: 22px; font-weight: 700; text-wrap: balance; }
+.dau p { color: var(--text-dim); max-width: 78ch; flex: 1 1 30ch; min-width: 0; }
+.muc { display: flex; flex-wrap: wrap; gap: 8px; }
+.muc a, .muc button { font: 600 13px var(--phong); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); text-decoration: none; cursor: pointer; }
+.muc button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.khu { display: grid; gap: 12px; scroll-margin-top: 12px; }
+.khu > h2 { font-size: 17px; font-weight: 700; }
+.ghi { background: var(--note-bg); color: var(--note-text); border: 1px dashed var(--note-line); border-radius: 8px; padding: 10px 14px; font-size: 13px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; min-width: 0; margin: 0; }
+.ghi dt { font-weight: 700; } .ghi dd { margin: 0; min-width: 0; max-width: 120ch; }
+.ghi code { font-size: 12px; }
+.ghi ol, .ghi ul { margin: 0; padding-left: 18px; }
+.khung { overflow-x: auto; border: 1px dashed var(--line-strong); border-radius: 10px; padding: 12px; background: var(--bg); }
+.hang-khung { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.hang-khung > figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.hang-khung figcaption, .chu-khung { font-size: 13px; font-weight: 700; color: var(--note-text); background: var(--note-bg); border: 1px dashed var(--note-line); border-radius: 6px; padding: 3px 8px; justify-self: start; }
+.dieu-khien { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--note-bg); color: var(--note-text); border: 1px dashed var(--note-line); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.dieu-khien b { font-weight: 700; }
+.dieu-khien .nhom-dk { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.dieu-khien button { font: 600 13px var(--phong); padding: 4px 9px; border-radius: 6px; border: 1px solid var(--note-line); background: transparent; color: var(--note-text); cursor: pointer; }
+.dieu-khien button[aria-pressed="true"] { background: var(--note-text); color: var(--note-bg); border-color: var(--note-text); }
+.bang-ghi { width: 100%; font-size: 13px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: clip; }
+.bang-ghi th, .bang-ghi td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.bang-ghi th { background: var(--surface-2); font-weight: 600; color: var(--text-dim); }
+.bang-ghi tr:last-child td { border-bottom: 0; }
+.bang-ghi td.so { white-space: nowrap; }
+.bang-ghi .sau { color: var(--ok); font-weight: 700; }
+.cuon-ngang { overflow-x: auto; }
+.khuyen { background: var(--note-bg); color: var(--note-text); border: 1px dashed var(--note-line); border-radius: 10px; padding: 14px 18px; display: grid; gap: 10px; font-size: 14px; }
+.khuyen h3 { font-size: 15px; font-weight: 700; }
+.khuyen ol, .khuyen ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.khuyen code { font-size: 12px; }
+
+/* ================= GIAO DIỆN WEB (mô phỏng) ================= */
+.man { position: relative; width: 1408px; height: 880px; overflow: hidden; background: var(--bg); border-radius: 6px; display: flex; flex-direction: column; }
+.dt { position: relative; width: 375px; height: 780px; overflow: hidden; background: var(--bg); border-radius: 6px; display: flex; flex-direction: column; }
+.tt { flex: none; height: 52px; background: var(--dh-nen); display: flex; align-items: center; gap: 2px; padding: 0 16px; color: var(--dh-chu); font-size: 14px; }
+.tt .logo { display: inline-flex; align-items: baseline; gap: 6px; margin-right: 18px; }
+.tt .logo b { color: var(--hong); font-size: 22px; font-weight: 800; letter-spacing: .02em; }
+.tt .logo span { color: #fff; font-size: 12px; font-weight: 400; letter-spacing: .24em; }
+.tt .m { padding: 0 12px; height: 52px; display: inline-flex; align-items: center; gap: 6px; border-bottom: 3px solid transparent; white-space: nowrap; }
+.tt .m.dang { color: #fff; font-weight: 700; border-bottom-color: var(--hong); }
+.tt .m .so-nav { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #fff; color: #0a1a3a; font: 700 12px/20px var(--phong-so); text-align: center; }
+.tt .phai { margin-left: auto; display: inline-flex; gap: 14px; align-items: center; font-size: 13px; }
+.dt .tt { padding: 0 8px; } .dt .tt .logo { margin-right: 6px; } .dt .tt .logo span { display: none; } .dt .tt .m { padding: 0 8px; font-size: 13px; } .dt .tt .an-dt { display: none; }
+.noi-dung { flex: 1; min-height: 0; padding: 18px 24px 0; display: flex; flex-direction: column; gap: 14px; }
+.dt .noi-dung { padding: 12px 16px 0; gap: 10px; overflow-y: auto; }
+.dau-trang { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.dau-trang h1 { font-size: 22px; font-weight: 700; }
+.dau-trang .dem-tong { font-size: 14px; color: var(--text-dim); }
+.dau-trang .dem-tong b { color: var(--text); font-weight: 600; font-family: var(--phong-so); }
+.dau-trang .xong-nay { font-size: 13px; color: var(--ok); font-weight: 600; }
+.dau-trang .loc { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dt .dau-trang .loc { margin-left: 0; width: 100%; }
+.dt .dau-trang .loc > .o-chon { flex: 1; }
+.o-chon { appearance: none; height: 36px; padding: 0 30px 0 12px; border-radius: 8px; border: 1px solid var(--o-vien); background: var(--o-nen) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237f8aa6' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 11px center; color: var(--text); font: 500 14px var(--phong); display: inline-flex; align-items: center; white-space: nowrap; cursor: pointer; }
+.dt .o-chon { height: 44px; font-size: 16px; }
+.doan { display: inline-flex; height: 36px; border: 1px solid var(--o-vien); border-radius: 8px; overflow: hidden; }
+.doan button { appearance: none; border: 0; background: var(--o-nen); padding: 0 12px; font: 500 14px var(--phong); color: var(--text-dim); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.doan button + button { border-left: 1px solid var(--o-vien); }
+.doan button[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); font-weight: 700; box-shadow: inset 0 -2px 0 var(--accent); }
+.doan .so { font-size: 12px; color: var(--text-faint); }
+.dt .doan { height: 44px; width: 100%; } .dt .doan button { flex: 1; justify-content: center; padding: 0 6px; font-size: 15px; white-space: nowrap; }
+.bao-chi-xem { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 9px 12px; border-radius: 8px; background: var(--surface-2); color: var(--text-dim); font-size: 14px; }
+.bao-chi-xem b { color: var(--text); font-weight: 600; }
+.bao-chi-xem > span:nth-child(2) { flex: 1 1 24ch; min-width: 0; }
+.bao-chi-xem .nut { margin-left: auto; }
+
+.bo-cuc { flex: 1; min-height: 0; display: grid; grid-template-columns: 600px minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.cot-ds { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 24px; display: grid; gap: 14px; align-content: start; scrollbar-color: var(--line-strong) transparent; scrollbar-width: thin; }
+.cot-pn { min-height: 0; padding-bottom: 16px; display: flex; flex-direction: column; }
+.dt .bo-cuc { display: block; }
+.dt .cot-ds { overflow: visible; padding-bottom: 24px; }
+
+/* Nút, ô */
+.nut { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); font: 600 14px var(--phong); cursor: pointer; white-space: nowrap; }
+.nut:hover { border-color: var(--accent); }
+.nut-chinh { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.nut-ma { background: transparent; border-color: transparent; color: var(--accent); }
+.nut-nho { height: 30px; padding: 0 10px; font-size: 13px; }
+.nut[disabled] { opacity: .45; cursor: not-allowed; }
+.dt .nut { height: 44px; } .dt .nut-nho { height: 36px; }
+.o { font: 15px var(--phong); color: var(--text); background: var(--o-nen); border: 1px solid var(--o-vien); border-radius: 8px; height: 40px; padding: 0 10px; width: 100%; }
+textarea.o { height: auto; min-height: 84px; padding: 8px 10px; resize: vertical; line-height: 1.45; }
+.dt .o { font-size: 16px; height: 44px; } .dt textarea.o { height: auto; }
+.o::placeholder { color: var(--text-faint); }
+.link-nho { appearance: none; border: 0; background: none; padding: 0; color: var(--accent); font: 600 13px var(--phong); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.nut-i { appearance: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--text-dim); font: 700 12px/1 var(--phong); cursor: help; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+
+/* Chip / badge V4 */
+.td { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); font: 600 12px var(--phong); white-space: nowrap; }
+.td.sap { color: var(--soon); background: var(--soon-nen); } .td.qua { color: var(--bad); background: var(--bad-nen); }
+.td.dang { color: var(--doing); background: var(--doing-nen); }
+.td.dang::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.td.qua::before, .td.sap::before { content: "⚠"; font-size: 12px; }
+.td.khong { background: none; color: var(--text-faint); font-weight: 500; padding: 0; }
+.lich { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 2px; background: var(--da-thi); color: var(--da-thi-chu); font: 600 12px var(--phong); white-space: nowrap; }
+.sos { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 4px; font: 700 12px var(--phong); white-space: nowrap; }
+.sos.m1 { color: var(--sos1-chu); background: var(--sos1-nen); border: 1px solid var(--sos1); }
+.sos.m2 { color: var(--sos2-chu); background: var(--sos2-nen); border: 2px solid var(--sos2); }
+.dem { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 4px; border: 1px solid var(--line-strong); background: var(--surface); font: 600 12px var(--phong); color: var(--text); white-space: nowrap; }
+.diem-duoi { color: var(--bad); font-weight: 700; font-family: var(--phong-so); white-space: nowrap; }
+.diem-duoi::before { content: "✗ "; }
+.mo { color: var(--text-dim); } .mo2 { color: var(--text-faint); }
+.ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- DANH SÁCH BA TẦNG ---------- */
+/* Tầng 1 — nhóm việc: thẻ riêng, dải đầu nền --surface-2 + vạch 3 px, 15 / 700, chip đếm, dính khi cuộn */
+.nhom { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.dai-nhom { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 12px 0 13px; background: var(--surface-2); border-left: 3px solid var(--accent); border-bottom: 1px solid var(--line); border-radius: 11px 11px 0 0; font: 700 15px/1.35 var(--phong); }
+.nhom.gap .dai-nhom { border-bottom: 0; border-radius: 11px; }
+.nhom.trung-tinh .dai-nhom { border-left-color: var(--text-faint); }
+.dai-nhom .bam-nhom { appearance: none; border: 0; background: none; padding: 12px 0; display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-align: left; cursor: pointer; font: inherit; flex-wrap: wrap; }
+.dai-nhom .ic { color: var(--accent); }
+.nhom.trung-tinh .dai-nhom .ic { color: var(--text-faint); }
+.dai-nhom .phu { font: 400 13px var(--phong); color: var(--text-dim); }
+.dai-nhom .phu b { font-weight: 600; color: var(--text); font-family: var(--phong-so); }
+.dai-nhom .bao-qua { font: 700 13px var(--phong); color: var(--bad); }
+.dai-nhom .bao-nay { font: 600 13px var(--phong); color: var(--soon); }
+.dai-nhom .mui { appearance: none; border: 0; background: none; margin-left: auto; color: var(--text-dim); font-size: 13px; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; flex: none; }
+.dai-nhom .mui:hover { background: var(--accent-soft); }
+.dai-nhom .bam-nhom { flex: 0 1 auto; flex-wrap: nowrap; white-space: nowrap; }
+.dt .dai-nhom { flex-wrap: wrap; column-gap: 8px; }
+.dt .dai-nhom .bam-nhom { flex: 1 1 0; white-space: normal; }
+.dai-nhom .bam-nhom > span:not(.dem) { min-width: 0; }
+.dt .dai-nhom .sau-ten { order: 3; flex-basis: 100%; padding: 0 0 10px 24px; margin-top: -6px; }
+.dt .dai-nhom .sau-ten:empty { display: none; }
+.dai-nhom .sau-ten { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.dt .dai-nhom { top: -12px; }
+
+/* Vạch hạn (Chấm điểm, T14) — chia theo thời gian, nhỏ hơn đầu đối tượng */
+.vach-han { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 0 16px; font: 600 13px var(--phong); color: var(--text-dim); background: none; border: 0; border-top: 1px solid var(--line); text-align: left; }
+.dai-nhom + .vach-han, .dai-nhom + div > .vach-han:first-child { border-top: 0; }
+button.vach-han { cursor: pointer; }
+button.vach-han:hover { background: var(--accent-soft); }
+.vach-han .mui { display: inline-block; margin-left: 2px; }
+
+/* Tầng 2 — đối tượng: học viên (vòng tròn chữ đầu) hoặc lớp / nhóm em (ô vuông biểu tượng). Khối cách khối bằng vạch đậm. */
+.khoi { border-top: 1px solid var(--line-strong); padding: 12px 0 6px; }
+.dai-nhom + .khoi, .vach-han + .khoi, .khoi.dau-tien { border-top: 0; }
+.dt-khoi { display: flex; align-items: center; gap: 10px; padding: 0 16px 4px; min-height: 30px; }
+.av { width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text-dim); font: 700 12px/26px var(--phong); text-align: center; }
+.av.vuong { border-radius: 8px; background: var(--accent-soft); border-color: transparent; color: var(--accent); display: inline-flex; align-items: center; justify-content: center; }
+.ten-em { font: 600 15px/1.35 var(--phong); color: var(--text); }
+.ten-em::after { content: " ↗"; font-weight: 400; font-size: 13px; color: var(--text-faint); }
+.ten-em:hover { color: var(--accent); }
+.dt-ten { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; min-width: 0; }
+.ten-em { white-space: nowrap; }
+.dt-khoi .lop { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+
+/* Tầng 3 — một việc: tên 15 / 500 · phụ 13 · hạn cột cố định · một nút. Cả dòng mở panel (một kiểu mở). */
+.ds-viec { list-style: none; margin: 0; padding: 0; }
+.viec { display: grid; grid-template-columns: minmax(0, 1fr) 140px 112px; column-gap: 12px; align-items: center; min-height: 50px; padding: 6px 16px 6px 54px; cursor: pointer; position: relative; }
+.ds-viec .viec::before { content: ""; position: absolute; left: 30px; top: 0; bottom: 0; width: 1px; background: var(--line-strong); }
+.ds-viec > li:last-child > .viec::before { bottom: 50%; }
+.ds-viec .viec::after { content: ""; position: absolute; left: 30px; top: 50%; width: 12px; height: 1px; background: var(--line-strong); }
+.viec:hover { background: var(--accent-soft); }
+.viec.chon { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.viec .tv { appearance: none; border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; min-width: 0; display: grid; gap: 1px; border-radius: 4px; }
+.viec .tv:disabled { cursor: default; }
+.nw { white-space: nowrap; }
+.viec .t2 .nguoi { color: var(--text); }
+.viec .h { display: grid; gap: 2px; justify-items: start; }
+.viec .h .ai { font-size: 13px; color: var(--text); padding-left: 2px; }
+.dt .viec .h { display: flex; gap: 8px; align-items: center; }
+.o-nhom-khac { font-size: 13px; color: var(--text-faint); white-space: nowrap; }
+.luat-mo { margin: 0; padding: 10px 16px 10px 40px; border-bottom: 1px solid var(--line); background: var(--surface-2); font-size: 13px; color: var(--text-dim); max-width: 72ch; }
+.dau-trang .bao-qua { font: 700 13px var(--phong); color: var(--bad); }
+.dau-trang .cho-duyet { font-size: 13px; color: var(--text-dim); }
+.xong-het { color: var(--ok); font-size: 15px; }
+.viec .t1 { font: 500 15px/1.35 var(--phong); color: var(--text); display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
+.viec .t1 .doi-trang { font-size: 13px; color: var(--accent); }
+.viec .t2 { font-size: 13px; line-height: 1.4; color: var(--text-dim); display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
+.viec .h { justify-self: start; }
+.viec .n { justify-self: stretch; display: flex; }
+.viec .n .nut { width: 100%; }
+.viec .n.ba { flex-direction: column; gap: 2px; }
+.viec .n.ba .nut-ma { height: 26px; }
+.viec.xong { cursor: default; }
+.viec.xong:hover { background: transparent; }
+.viec.xong .t1 { color: var(--text-dim); }
+.viec.xong .t1 .ten::before { content: "✓ "; color: var(--ok); }
+.da-luu { color: var(--ok); font: 700 13px var(--phong); }
+.dang-luu { color: var(--doing); font: 600 13px var(--phong); display: inline-flex; gap: 6px; align-items: center; }
+
+/* Đối tượng lớp / nhóm em: chính dòng là việc (một bước), biểu tượng vuông ở cột tên */
+.viec.dt-lop { grid-template-columns: 28px minmax(0, 1fr) 140px 112px; padding-left: 16px; column-gap: 12px; min-height: 56px; }
+.viec.dt-lop .tv { padding-left: 2px; }
+.viec.dt-lop .t1 { font-weight: 600; }
+.av.gop { position: relative; border-radius: 8px; background: var(--surface); border: 1.5px solid var(--accent); color: var(--accent); font: 700 13px/25px var(--phong-so); margin: 3px 3px 0 0; }
+.av.gop::before { content: ""; position: absolute; inset: -5px -5px 3px 3px; border: 1.5px solid var(--accent); border-radius: 8px; opacity: .5; z-index: -1; }
+.viec.gop { isolation: isolate; }
+.khoi-gop.mo { background: var(--nen-chim); }
+.khoi-gop.mo > .viec:hover { background: var(--accent-soft); }
+.ds-con { list-style: none; margin: 0; padding: 0 0 6px; border-top: 1px dashed var(--line-strong); }
+.ds-con .viec { padding-left: 54px; grid-template-columns: minmax(0, 1fr) 140px 112px; min-height: 48px; }
+.ds-con > li + li > .viec { border-top: 1px solid var(--line); }
+.ds-con .viec::before, .ds-con .viec::after { display: none; }
+.mo-con { display: inline-flex; gap: 6px; }
+.mo-con .mui { font-size: 12px; }
+
+/* 375: chạm cả dòng (ẩn nút), hạn cùng dòng phải, dòng ≥ 56 px */
+.dt .viec { grid-template-columns: minmax(0, 1fr); row-gap: 4px; min-height: 56px; padding: 8px 12px 8px 46px; }
+.dt .viec .h:empty { display: none; }
+.dt .ds-viec .viec::before, .dt .ds-viec .viec::after { left: 26px; }
+.dt .viec .n { display: none; }
+.dt .viec.dt-lop { grid-template-columns: 28px minmax(0, 1fr); padding-left: 12px; }
+.dt .viec.dt-lop .h { grid-column: 2; }
+.dt .viec.dt-lop .av { align-self: start; margin-top: 2px; }
+.dt .dt-khoi { padding: 0 12px 4px; }
+.dt .ds-con .viec { padding-left: 50px; }
+.dt .ds-con .viec { grid-template-columns: minmax(0, 1fr); }
+.dt .viec.dt-lop .n, .dt .viec .n { display: none; }
+.dt .viec .n.luon { display: flex; grid-column: 1 / -1; }
+.dt .viec .n.ba { flex-direction: row; gap: 6px; }
+.dt .viec .n.ba .nut { width: auto; height: 36px; }
+.dt .viec .n.phu { display: flex; grid-column: 1 / -1; }
+.dt .viec .n.phu .nut:not(.nut-ma) { display: none; }
+.dt .vach-han { padding: 0 12px; min-height: 44px; }
+
+.cuoi-nhom { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; padding: 10px 16px 12px; border-top: 1px solid var(--line); font-size: 13px; }
+.the-phu { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 8px; font-size: 14px; }
+.the-phu .dong { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.the-phu h2 { font-size: 15px; font-weight: 700; display: flex; gap: 8px; align-items: center; }
+.duyet-nut { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+/* Trạng thái */
+.skel { height: 14px; border-radius: 6px; background: linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2)); }
+.skel.tron { width: 28px; height: 28px; border-radius: 50%; flex: none; }
+.rong { text-align: center; padding: 32px 16px; color: var(--text-dim); display: grid; gap: 6px; justify-items: center; }
+.rong .tieu { color: var(--text); font-weight: 600; font-size: 17px; }
+.bao-loi { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; background: var(--bad-nen); border: 1px solid var(--bad-vien); font-size: 14px; }
+.bao-loi b { color: var(--bad); }
+.cho-chon { border: 1px dashed var(--line-strong); border-radius: 12px; padding: 48px 24px; text-align: center; color: var(--text-dim); font-size: 14px; }
+
+/* ---------- PANEL VIỆC (giữ M6 ②: KhungPanel tại chỗ) ---------- */
+.pn { flex: 1; min-height: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; overflow: clip; }
+.dt .pn-toan { position: absolute; inset: 0; z-index: 6; background: var(--bg); display: flex; flex-direction: column; }
+.dt .pn-toan .pn { border-radius: 0; border: 0; }
+.pn-dau { padding: 10px 20px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 4px; flex: none; }
+.dt .pn-dau { padding: 6px 16px 12px; }
+.pn-h1 { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.quay { appearance: none; border: 0; background: none; color: var(--accent); font: 600 14px var(--phong); padding: 6px 8px; margin-left: -8px; border-radius: 6px; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; min-height: 44px; }
+.quay .mui { font-size: 17px; line-height: 1; }
+.x { margin-left: auto; appearance: none; border: 0; background: transparent; color: var(--text-dim); width: 36px; height: 36px; border-radius: 8px; font-size: 17px; cursor: pointer; flex: none; }
+.x:hover { background: var(--surface-2); }
+.dt .x { width: 44px; height: 44px; margin-right: -8px; }
+.loai { display: flex; align-items: center; gap: 6px; font: 700 12px/1.4 var(--phong); letter-spacing: .06em; color: var(--text-faint); }
+.loai::before { content: ""; width: 14px; height: 3px; border-radius: 2px; background: var(--hong); }
+.pn-tieu { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.pn-tieu h2 { flex: 1; min-width: 12ch; font-size: 17px; font-weight: 800; line-height: 1.35; }
+.pn-ngu { font-size: 14px; color: var(--text-dim); display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 2px; }
+.pn-ngu > span + span::before { content: "·"; margin: 0 7px; color: var(--text-faint); }
+.pn-ngu .ten-em { font-size: 14px; }
+.em-con { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; font-size: 13px; color: var(--text-dim); }
+.pn-than { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px 20px; }
+.dt .pn-than { padding: 0 16px 20px; }
+.pn-chan { flex: none; border-top: 1px solid var(--line-strong); padding: 10px 20px; display: flex; align-items: center; gap: 10px; background: var(--surface); flex-wrap: wrap; }
+.pn-chan .trai { flex: 1; min-width: 0; font-size: 13px; color: var(--text-dim); display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dt .pn-chan { padding: 10px 16px 14px; }
+.dt .pn-chan .trai { flex-basis: 100%; }
+.dt .pn-chan .nut-chinh { flex: 1; }
+.tt-luu { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.tt-luu.da { color: var(--ok); } .tt-luu.dang { color: var(--doing); } .tt-luu.loi { color: var(--bad); } .tt-luu.nhap { color: var(--soon); }
+.xoay { width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; display: inline-block; animation: xoay 0.9s linear infinite; }
+@keyframes xoay { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .xoay { animation: none; } }
+.form { display: grid; gap: 22px; padding-top: 20px; }
+.boi-canh { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 8px 14px; font-size: 15px; margin: 0; align-items: baseline; }
+.dt .boi-canh { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.dt .boi-canh dd { margin-bottom: 6px; }
+.boi-canh dt { color: var(--text-dim); font-size: 13px; font-weight: 500; } .boi-canh dd { margin: 0; text-wrap: pretty; }
+.truong { display: grid; gap: 8px; }
+.truong > .nhan { font: 700 15px/1.35 var(--phong); color: var(--text); }
+.truong > .nhan .bb { color: var(--bad); }
+.truong .phu { font-size: 13px; color: var(--text-faint); font-weight: 400; }
+.lua { display: flex; flex-wrap: wrap; gap: 8px; }
+.lua button { appearance: none; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--o-vien); background: var(--o-nen); font: 500 14px var(--phong); color: var(--text); cursor: pointer; }
+.lua button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; box-shadow: inset 0 0 0 1px var(--accent); }
+.dt .lua button { height: 44px; }
+.dai-xong { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--ok-nen); border: 1px solid var(--ok-vien); font-size: 13px; color: var(--text); }
+.dai-xong b { color: var(--ok); }
+.dai-xong .link-nho { margin-left: auto; }
+.het-viec { display: grid; gap: 10px; justify-items: center; text-align: center; padding: 40px 20px 24px; }
+.het-viec .lon { font-size: 17px; font-weight: 700; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+fieldset[disabled] { opacity: .6; }
+.hop-hoi { position: absolute; inset: 0; z-index: 9; background: rgb(0 0 0 / .6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.hop-hoi .pn { flex: none; width: 420px; max-width: 100%; }
+.tag { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--note-bg); color: var(--note-text); border: 1px dashed var(--note-line); font: 700 12px var(--phong); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau">
+    <h1>D5 — Công việc 2: nhóm việc → học viên → việc của em</h1>
+    <p>Mockup chờ chủ SP duyệt (27/10). Dữ liệu demo như M6: chi nhánh Mỹ Đình, hôm nay <b>thứ Sáu 18/09 (W3 SEP)</b>. Khung 1440 luôn <b>tối</b>, khung 375 luôn <b>sáng</b>.
+      Nền vàng viền đứt = chú thích mockup, không lên web. Panel bên phải giữ nguyên M6 ② (<code>panel-pilot.html</code>).</p>
+    <nav class="muc" aria-label="Khu mockup">
+      <a href="#brief">Brief</a><a href="#a">A · 1440 bấm thử</a><a href="#b">B · 375</a><a href="#c">C · QL, TVV</a><a href="#tt">D · trạng thái</a>
+      <a href="#tang">Luật tầng</a><a href="#ts">Thao tác trước → sau</a><a href="#kn">Critique · câu hỏi</a>
+      <span style="flex-basis:12px"></span>
+      <button type="button" data-theme-chon="light" aria-pressed="false">Chú thích sáng</button>
+      <button type="button" data-theme-chon="dark" aria-pressed="false">Chú thích tối</button>
+      <button type="button" data-theme-chon="" aria-pressed="true">Theo máy</button>
+    </nav>
+  </header>
+
+  <section class="khu" id="brief">
+    <h2>Brief — vì sao rối và sửa thế nào</h2>
+    <dl class="ghi">
+      <dt>Chủ SP báo</dt><dd>"Công việc: không phân biệt được dòng nào việc nào, không phân loại rõ, việc từng học viên lẫn nhau, rất rối mắt — sửa lại." (27/10, ảnh góc GV)</dd>
+      <dt>Hiện trạng đã kiểm</dt><dd>Đọc <code>DanhSachViec.tsx</code>, <code>gopViec.ts</code>, <code>mywork.ts</code>: ① tên việc máy chủ đã chứa tên em (<code>Ghi nhận xét Listening · MT2 · {em}</code>) rồi dòng phụ lại ghi em · lớp → tên em lặp; ② em có 1 việc là dòng lẻ, em có ≥ 2 việc mới có dòng tên em → hai kiểu dòng lẫn nhau trong cùng nhóm; ③ dòng gộp "3 em" trông y dòng một em; ④ đầu nhóm số 13 xám, nhóm cách nhóm chỉ bằng khe thẻ; ⑤ hạn đứng cột trái 116 px, nút phải — mắt phải quét hai đầu.</dd>
+      <dt>Sửa (D5)</dt><dd><b>Ba tầng, mỗi tầng một dáng:</b> ① <b>nhóm việc</b> — thẻ riêng, dải nền <code>--surface-2</code> + vạch 3 px + biểu tượng, 15 / 700, chip "n việc", dính khi cuộn · ② <b>đối tượng</b> — học viên: vòng tròn chữ đầu + tên 15 / 600 ↗ (link hồ sơ) · lớp · SOS ghi <b>một lần</b>; lớp / nhóm em: ô vuông biểu tượng, chính dòng là việc · ③ <b>việc của em</b> — thụt dưới tên, nối bằng nét cây mảnh, tên việc 15 / 500 KHÔNG lặp tên em, phụ 13, <b>hạn ở cột cố định</b>, một nút. Em chỉ có một việc vẫn có dòng tên (một kiểu, không đổi dáng theo số việc).</dd>
+      <dt>Dòng gộp</dt><dd>"Mô tả Case Listening · MB FT 102 · 3 em" là <b>đối tượng lớp</b> (ô vuông), nút "3 em ▾" mở danh sách em trong khay nền chìm có viền — khác hẳn khối học viên. Mở ra mỗi em một dòng việc, bấm mở panel.</dd>
+      <dt>Giả định (không hỏi lại — CLAUDE.md)</dt><dd>Giữ <b>4 nhóm GV</b> đang có (Chấm điểm · Case học thuật · Ý thức &amp; Phối hợp · Vận hành) và 4 nhóm TVV — D5 ghi 3 nhóm là ví dụ; thứ tự nhóm, cách đếm, gộp, "việc tiếp", bộ lọc giữ nguyên máy chủ / <code>gomNhomViec</code>. Trong nhóm: khối xếp theo việc gấp nhất của khối; trong khối: theo hạn. Em có việc ở hai nhóm thì có ở cả hai khối (nhóm trước); panel "Em này còn" nối hai nơi. Tên việc theo D6: "Ghi nhận xét …" → <b>"Mô tả Case {kỹ năng}"</b>.</dd>
+      <dt>Màu</dt><dd>Chủ SP chê màu đau mắt (D4): vạch nhóm <b>một màu nhấn</b> (nhóm phân biệt bằng tên + biểu tượng, không thêm màu); màu chỉ cho hạn (quá hạn đỏ ⚠, sắp hạn vàng ⚠) và SOS. Nhóm "không phải việc của bạn" (Speaking chấm chéo) vạch xám.</dd>
+      <dt>Panel</dt><dd>Giữ M6 ②: đầu "VIỆC · CASE HỌC THUẬT" · tiêu đề · tên em ↗ · "Em này còn" · bối cảnh · form · chân "Tiếp: …" + <b>Lưu</b> / <b>Lưu · việc tiếp ›</b> (V12) · dòng vừa xong đứng chỗ "✓ Đã lưu" · dải Hoàn tác ở việc kế · đổi việc khi đang gõ hỏi "Bỏ chữ đang gõ?".</dd>
+      <dt>Trạng thái duyệt</dt><dd>Đề xuất — chờ chủ SP. Không code trước khi duyệt (PR code CONG-VIEC-2 sau).</dd>
+    </dl>
+  </section>
+
+  <section class="khu" id="a">
+    <h2>A · 1440 tối — bấm thử (đổi vai, trạng thái, panel)</h2>
+    <div class="dieu-khien" role="toolbar" aria-label="Điều khiển mockup (không phải giao diện)">
+      <b>Người xem</b><span class="nhom-dk" data-dk="vai"></span>
+      <b>Danh sách</b><span class="nhom-dk" data-dk="tt"></span>
+      <b>Panel</b><span class="nhom-dk" data-dk="pnl"></span>
+    </div>
+    <div class="khung"><div class="man toi" id="manA"></div></div>
+  </section>
+
+  <section class="khu" id="b">
+    <h2>B · 375 sáng — GV: danh sách, dòng gộp mở, panel toàn màn</h2>
+    <dl class="ghi">
+      <dt>375</dt><dd>Chạm cả dòng để mở (ẩn nút động từ, dòng ≥ 56 px — như V5; dòng gộp và thẻ duyệt vẫn hiện nút vì nút mang nghĩa) · hạn ở dòng riêng dưới tên, căn trái · nét cây thu còn 26 px · dải nhóm dính đầu khi cuộn · panel toàn màn với "‹ Công việc" về đúng chỗ cuộn · bộ lọc xuống hàng riêng, ô 44 px, chữ 16.</dd>
+    </dl>
+    <div class="khung"><div class="hang-khung">
+      <figure><figcaption>B1 · GV · danh sách</figcaption><div class="dt sang" data-k="b1"></div></figure>
+      <figure><figcaption>B2 · dòng gộp "3 em" mở</figcaption><div class="dt sang" data-k="b2"></div></figure>
+      <figure><figcaption>B3 · panel Mô tả Case (toàn màn)</figcaption><div class="dt sang" data-k="b3"></div></figure>
+    </div></div>
+  </section>
+
+  <section class="khu" id="c">
+    <h2>C · QL và TVV (1440 tối + 375 sáng)</h2>
+    <dl class="ghi">
+      <dt>QL · của tôi</dt><dd>"Chờ bạn duyệt" là nhóm đầu (thẻ duyệt giữ nguyên <code>HopChoDuyet gon</code>: Nếu duyệt … · Duyệt · Từ chối… · Mở) · việc của QL theo cùng ba tầng · "Việc quản lý" cuối, gập sẵn, chân nhóm "+ Giao việc · Vận hành › · Họp đơn vị ›".</dd>
+      <dt>QL · Tất cả</dt><dd>Mọi việc trong phạm vi, cùng ba tầng; <b>người giữ việc</b> ở cuối dòng phụ (em có việc của nhiều GV vẫn một khối em) · việc của người khác là theo dõi, chỉ "Làm thay" / "Nhập hộ" · việc của chính QL ghi "bạn" và có nút · mỗi nhóm 10 dòng đầu + "Xem thêm 10 việc" · nhóm thứ 3 trở đi gập sẵn ở 375.</dd>
+      <dt>QL xem một GV</dt><dd>Cùng danh sách GV, chế độ theo dõi: không nút động từ; chỉ "Làm thay" / "Nhập hộ" khi máy chủ báo <code>lamThay</code>; dải 👁 dưới đầu trang.</dd>
+      <dt>TVV</dt><dd>4 nhóm TVV giữ nguyên (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ), ⓘ luật hạn cạnh đầu nhóm · badge trạng thái TVV ở dòng phụ · "Gia hạn" ngay ở dòng việc Sau thi · việc đổi trang có "↗".</dd>
+    </dl>
+    <div class="khung"><div class="man toi" data-k="c1"></div></div>
+    <div class="khung"><div class="man toi" data-k="c7"></div></div>
+    <div class="khung"><div class="man toi" data-k="c2"></div></div>
+    <div class="khung"><div class="man toi" data-k="c3"></div></div>
+    <div class="khung"><div class="hang-khung">
+      <figure><figcaption>C4 · QL · 375</figcaption><div class="dt sang" data-k="c4"></div></figure>
+      <figure><figcaption>C8 · QL Tất cả · 375</figcaption><div class="dt sang" data-k="c8"></div></figure>
+      <figure><figcaption>C5 · TVV · 375</figcaption><div class="dt sang" data-k="c5"></div></figure>
+      <figure><figcaption>C6 · GV Speaking (chấm chéo) · 375</figcaption><div class="dt sang" data-k="c6"></div></figure>
+    </div></div>
+  </section>
+
+  <section class="khu" id="tt">
+    <h2>D · Trạng thái — đang tải, lỗi tải, hết việc, xong hết hôm nay, lọc không khớp, vừa lưu, chưa có phạm vi (375 sáng) · panel hết việc trong nhóm (1440 tối)</h2>
+    <dl class="ghi">
+      <dt>Giữ</dt><dd>Lỗi tải chỉ ở vùng danh sách — đầu trang, bộ lọc giữ; lỗi ≠ hết việc · đang tải là khung theo hình ba tầng (dải nhóm, vòng tròn, dòng) · hết việc: "Không còn việc đang mở" (GV, QL), TVV thêm "HV của tôi ›", badge menu ẩn · hết việc quá hạn + hạn tuần này: "Xong hết hôm nay ✓", việc sau tuần này vẫn ở dưới (gập) · lọc không khớp: "Xoá lọc" · việc vừa lưu đứng chỗ "✓ Đã lưu", đầu trang "✓ 1 xong hôm nay" · panel hết việc trong nhóm (M6 ②d): "Hết việc {nhóm} của bạn" + "Còn: {nhóm} · n việc" + Đóng / Việc tiếp ›.</dd>
+    </dl>
+    <div class="khung"><div class="hang-khung">
+      <figure><figcaption>D1 · đang tải</figcaption><div class="dt sang" data-k="d1" style="height:600px"></div></figure>
+      <figure><figcaption>D2 · lỗi tải</figcaption><div class="dt sang" data-k="d2" style="height:600px"></div></figure>
+      <figure><figcaption>D3 · hết việc</figcaption><div class="dt sang" data-k="d3" style="height:600px"></div></figure>
+      <figure><figcaption>D6 · xong hết hôm nay</figcaption><div class="dt sang" data-k="d6" style="height:600px"></div></figure>
+      <figure><figcaption>D4 · lọc không khớp</figcaption><div class="dt sang" data-k="d4" style="height:600px"></div></figure>
+      <figure><figcaption>D5 · vừa lưu: dòng đứng chỗ "✓ Đã lưu"</figcaption><div class="dt sang" data-k="d5" style="height:600px"></div></figure>
+      <figure><figcaption>D7 · chưa có phạm vi</figcaption><div class="dt sang" data-k="d7" style="height:600px"></div></figure>
+    </div></div>
+    <div class="khung"><div class="man toi" data-k="d8" style="height:640px"></div></div>
+  </section>
+
+  <section class="khu" id="tang">
+    <h2>Luật tầng của danh sách Công việc (ghi vào DESIGN.md khi code — PR này chưa sửa DESIGN.md)</h2>
+    <div class="cuon-ngang"><table class="bang-ghi" style="min-width:960px">
+      <thead><tr><th style="width:14%">Tầng</th><th style="width:16%">Chữ</th><th style="width:30%">Nền · dấu</th><th style="width:16%">Khoảng</th><th>Ghi</th></tr></thead>
+      <tbody>
+        <tr><td>① Nhóm việc</td><td class="so">15 / 700 + chip đếm 12 / 600 vuông</td><td>thẻ riêng; dải <code>--surface-2</code>, vạch trái 3 px <code>--accent</code> (xám = không phải việc của bạn), biểu tượng nét 16 px</td><td class="so">cao 48 · thẻ cách thẻ 14</td><td>dính khi cuộn; bấm = gập / mở; ⓘ luật nhóm (TVV); quá hạn / hôm nay bằng ⚠ + chữ màu</td></tr>
+        <tr><td>Vạch hạn</td><td class="so">13 / 600 <code>--text-dim</code></td><td>kẻ mảnh trên</td><td class="so">cao 36</td><td>chỉ Chấm điểm (T14); vạch sau tuần này gập sẵn</td></tr>
+        <tr><td>② Học viên</td><td class="so">tên 15 / 600 ↗ · lớp 13</td><td>vòng tròn 28 px chữ đầu (trung tính) · SOS một lần</td><td class="so">khối cách khối: vạch <code>--line-strong</code> + 12 trên</td><td>tên là link hồ sơ (không mở việc) — tách xem hồ sơ / làm việc</td></tr>
+        <tr><td>② Lớp / nhóm em</td><td class="so">tên việc 15 / 600 · phụ 13</td><td>ô vuông 28 px nền <code>--accent-soft</code> biểu tượng</td><td class="so">dòng ≥ 56</td><td>chính dòng là việc; gộp → nút "n em ▾", khay em nền chìm có viền</td></tr>
+        <tr><td>③ Việc</td><td class="so">tên 15 / 500 · phụ 13</td><td>thụt 54 px dưới tên, nét cây 1 px; đang chọn nền nhấn nhạt + vạch 3 px (G14)</td><td class="so">dòng ≥ 50 (375: ≥ 56)</td><td>tên không lặp tên em / lớp; hạn cột 140 px cố định; một nút 112 px</td></tr>
+        <tr><td>Hạn</td><td class="so">chip 12 / 600</td><td>quá hạn đỏ nhạt ⚠ "quá hạn n ngày" · ≤ 2 ngày vàng ⚠ · còn lại xám "hạn dd/mm" · "không hạn" chữ mờ</td><td>—</td><td>V8: ngày thật, không thứ</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="khu" id="ts">
+    <h2>Bảng thao tác TRƯỚC → SAU (không mất thao tác nào)</h2>
+    <div class="cuon-ngang"><table class="bang-ghi" style="min-width:960px">
+      <thead><tr><th style="width:28%">Thao tác</th><th style="width:30%">Trước (web 27/10)</th><th style="width:30%">Sau (mockup)</th><th>Bước</th></tr></thead>
+      <tbody>
+        <tr><td>Tìm việc của một em</td><td>quét tên em trong tên việc / dòng phụ, em 1 việc và em 2 việc khác dáng</td><td>quét cột tên em (vòng tròn chữ đầu) — mọi em cùng dáng</td><td class="so sau">= · nhanh hơn</td></tr>
+        <tr><td>Mở làm một việc</td><td>bấm dòng / nút → panel phải</td><td>như cũ</td><td class="so">1 = 1</td></tr>
+        <tr><td>Làm liền nhiều việc</td><td>Lưu · việc tiếp ›</td><td>như cũ (thứ tự theo danh sách đang vẽ)</td><td class="so">= </td></tr>
+        <tr><td>Mở danh sách em của dòng gộp</td><td>bấm dòng / nút "{động từ} ▾"</td><td>bấm dòng / nút "3 em ▾"</td><td class="so">1 = 1</td></tr>
+        <tr><td>Xem hồ sơ em</td><td>link ở panel</td><td>tên em ↗ ở danh sách + ở panel</td><td class="so sau">2 → 1</td></tr>
+        <tr><td>Gập / mở nhóm · Xem thêm 10 việc</td><td>bấm đầu nhóm · "Xem thêm n việc"</td><td>như cũ</td><td class="so">=</td></tr>
+        <tr><td>Lọc hạn · khung FT / Lớp thường · chi nhánh · chip lọc đến từ link (✕)</td><td>hàng bộ lọc phải tiêu đề</td><td>như cũ (ô chi nhánh theo component D3)</td><td class="so">=</td></tr>
+        <tr><td>QL: Việc của ai · chọn GV · theo dõi · Làm thay / Nhập hộ</td><td>đầu trang + dải 👁</td><td>như cũ</td><td class="so">=</td></tr>
+        <tr><td>QL: Chờ bạn duyệt (Duyệt · Từ chối… · Mở)</td><td>khối đầu danh sách</td><td>nhóm đầu, cùng dáng dải nhóm</td><td class="so">=</td></tr>
+        <tr><td>QL: + Giao việc · Vận hành › · Họp đơn vị ›</td><td>cuối "Việc quản lý" (gập)</td><td>như cũ</td><td class="so">=</td></tr>
+        <tr><td>TVV: Gia hạn sau thi · ⓘ luật nhóm · badge trạng thái</td><td>ở dòng việc / đầu nhóm</td><td>như cũ</td><td class="so">=</td></tr>
+        <tr><td>GV: Yêu cầu của tôi (Sửa và gửi lại) · Lớp tôi dạy · dải "Mới dùng PISA?"</td><td>dưới / trên danh sách</td><td>như cũ (vẽ gọn)</td><td class="so">=</td></tr>
+        <tr><td>Đổi việc khi đang gõ</td><td>hộp "Bỏ chữ đang gõ?"</td><td>như cũ</td><td class="so">=</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="khu" id="kn">
+    <h2>Critique · câu hỏi cho chủ SP · PR sau duyệt</h2>
+    <div class="khuyen" id="critique">
+      <h3>impeccable critique (cổng ≥ 35/40 mục tiêu, gửi được từ ~31)</h3>
+      <p>Đang chấm — điền sau vòng 1.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var e = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
+  var q = function (s, r) { return (r || document).querySelector(s); };
+  var qa = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var svg = function (d) { return '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true">' + d + '</svg>'; };
+  var IC = {
+    cham: svg('<path d="M3 13l.9-3.3L10.6 3a1.4 1.4 0 0 1 2 0l.4.4a1.4 1.4 0 0 1 0 2L6.3 12.1z"/><path d="M9.5 4.1l2.4 2.4"/>'),
+    kase: svg('<path d="M3.5 14V2.5"/><path d="M3.5 3h8.5l-1.8 2.7L12 8.5H3.5"/>'),
+    ythuc: svg('<path d="M8 2l5 2v4c0 3-2.2 5-5 6-2.8-1-5-3-5-6V4z"/>'),
+    vanhanh: svg('<rect x="3.5" y="2.5" width="9" height="11" rx="1.5"/><path d="M6 6h4M6 9h4"/>'),
+    duyet: svg('<circle cx="8" cy="8" r="5.5"/><path d="M5.6 8.2l1.7 1.7 3.2-3.4"/>'),
+    mic: svg('<rect x="6" y="2" width="4" height="8" rx="2"/><path d="M4 8a4 4 0 0 0 8 0M8 12v2"/>'),
+    lop: svg('<circle cx="6" cy="6" r="2.2"/><circle cx="11.2" cy="6.6" r="1.7"/><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3"/>'),
+    dt: svg('<path d="M4.2 2.5h2l1 3-1.4 1a7 7 0 0 0 3.7 3.7l1-1.4 3 1v2a1.5 1.5 0 0 1-1.6 1.5A10 10 0 0 1 2.7 4.1 1.5 1.5 0 0 1 4.2 2.5z"/>'),
+    thi: svg('<rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/>'),
+    hoso: svg('<path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3"/>'),
+    chuong: svg('<path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3z"/><path d="M6.5 14a1.5 1.5 0 0 0 3 0"/>'),
+    lich: svg('<rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/>')
+  };
+
+  /* ================= DỮ LIỆU (giả; hôm nay thứ Sáu 18/09/2026, W3 SEP) ================= */
+  /* Hạn: ['qua', n] quá hạn n ngày · ['nay'] hôm nay · ['sap', 'dd/mm'] ≤ 2 ngày · ['han', 'dd/mm'] · ['khong'] */
+  var H = function (l, x) { return [l, x]; };
+  /* Việc: id · ten (KHÔNG lặp tên em) · t2 (dòng phụ) · han · nut · p (kiểu panel) · kn (kỹ năng) */
+  function gvHa() {
+    return {
+      nguoi: 'Trần Ngọc Hà', vai: 'GV', badge: 14, qua: 2, dem: '<b>4</b> nhóm · <b>14</b> việc · <b>8</b> HV · <b>40</b> bài', khung: true,
+      nhom: [
+        { k: 'kase', ten: 'Case học thuật', ic: IC.kase, chip: '8 việc', phu: '<b>7</b> HV', qua: 1, nay: 1, muc: [
+          { k: 'em', em: 'Trần Thu Hà', lop: 'MB FT 101', sos: [1, 'L'], viec: [
+            { id: 'ha-kq', ten: 'Ghi kết quả kỳ 2 · Listening', t2: 'PA Xếp tự học · kỳ 2 W1–W2 SEP', han: H('qua', 3), nut: 'Ghi kết quả', p: 'ghikq', lamThay: true }] },
+          { k: 'em', em: 'Vũ Hải Đăng', lop: 'MB FT 101', sos: [2, 'L, R'], viec: [
+            { id: 'dang-l', ten: 'Mô tả Case Listening', t2: 'MT3 · W2 SEP · <span class="diem-duoi">6.0</span> kỳ vọng 7.0', han: H('nay'), nut: 'Mô tả Case', p: 'mota', kn: 'L', mt: 'MT3 · thi W2 SEP', lamThay: true },
+            { id: 'dang-r', ten: 'Mô tả Case Reading', t2: 'MT3 · W2 SEP · <span class="diem-duoi">5.5</span> kỳ vọng 6.5', han: H('sap', '20/09'), nut: 'Mô tả Case', p: 'mota', kn: 'R', mt: 'MT3 · thi W2 SEP', lamThay: true }] },
+          { k: 'em', em: 'Nguyễn Minh An', lop: 'MB FT 101', sos: [2, 'R'], viec: [
+            { id: 'an-pa', ten: 'Xác nhận PA Reading', t2: 'Xếp tự học · 4 buổi · theo quy chế', han: H('sap', '19/09'), nut: 'Xác nhận PA', p: 'xnpa', lamThay: true }] },
+          { k: 'em', em: 'Hoàng Gia Linh', lop: 'MB IE 05', viec: [
+            { id: 'linh-case', ten: 'Xác nhận Case Reading', t2: 'Progress Test 2 · <span class="diem-duoi">18/40</span> kỳ vọng 24/40', han: H('sap', '19/09'), nut: 'Xác nhận Case', p: 'xncase', lamThay: true }] },
+          { k: 'lop', id: 'g102', ten: 'Mô tả Case Listening', t2: 'MB FT 102 · MT2 · thi W2 SEP', sosGop: [1, 'L'], mt: 'MT2 · thi W2 SEP', han: H('han', '21/09'), donVi: '3 em', lamThay: true, con: [
+            { id: 'vy-l', ten: 'Đỗ Khánh Vy', t2: '<span class="diem-duoi">5.5</span> kỳ vọng 6.0', han: H('han', '21/09'), nut: 'Mô tả Case', p: 'mota', kn: 'L', em: 'Đỗ Khánh Vy', lop: 'MB FT 102', lamThay: true },
+            { id: 'long-l', ten: 'Bùi Đức Long', t2: '<span class="diem-duoi">5.0</span> kỳ vọng 5.5', han: H('han', '21/09'), nut: 'Mô tả Case', p: 'mota', kn: 'L', em: 'Bùi Đức Long', lop: 'MB FT 102', lamThay: true },
+            { id: 'chau-l', ten: 'Lý Minh Châu', t2: '<span class="diem-duoi">5.5</span> kỳ vọng 6.0', han: H('han', '22/09'), nut: 'Mô tả Case', p: 'mota', kn: 'L', em: 'Lý Minh Châu', lop: 'MB FT 102', lamThay: true }] }
+        ] },
+        { k: 'cham', ten: 'Chấm điểm', ic: IC.cham, chip: '4 việc', phu: '<b>40</b> bài', qua: 1, muc: [
+          { k: 'vach', nhan: 'Quá hạn · 1 việc · 4 bài', muc: [
+            { k: 'lop', id: 'nd-r', ic: IC.cham, ten: 'Nhập điểm Reading', t2: 'MB FT 101 · MT3 · thi W2 SEP · 4 bài', han: H('qua', 2), nut: 'Nhập điểm', p: 'nhap', nhapHo: true }] },
+          { k: 'vach', nhan: 'Hạn đến 20/09 · 0' },
+          { k: 'vach', id: 'v-sau', nhan: 'Hạn sau 20/09 · 3 việc · 36 bài', gap: true, muc: [
+            { k: 'lop', id: 'nd-w3', ic: IC.cham, ten: 'Nhập điểm · thi W3 SEP', t2: '2 lớp · 3 việc · 36 bài', han: H('han', '25/09'), donVi: '2 lớp', nhapHo: true, con: [
+              { id: 'nd-101', ten: 'MB FT 101 · Listening, Reading', t2: 'MT4 · 22 bài', han: H('han', '25/09'), nut: 'Nhập điểm', p: 'nhap', nhapHo: true },
+              { id: 'nd-102', ten: 'MB FT 102 · Listening', t2: 'MT3 · 14 bài', han: H('han', '25/09'), nut: 'Nhập điểm', p: 'nhap', nhapHo: true }] }] }
+        ] },
+        { k: 'yt', ten: 'Ý thức & Phối hợp', ic: IC.ythuc, chip: '1 việc', phu: '<b>1</b> HV', muc: [
+          { k: 'em', em: 'Lê Quang Huy', lop: 'MB FT 101', viec: [
+            { id: 'huy-vp', ten: 'Ghi nhận 2 vi phạm mới', t2: 'Đi muộn · W3 SEP', han: H('han', '21/09'), nut: 'Ghi nhận', p: 'chung' }] }
+        ] },
+        { k: 'vh', ten: 'Vận hành', ic: IC.vanhanh, chip: '1 việc', phu: '<b>1</b> HV', muc: [
+          { k: 'em', em: 'Lê Quang Huy', lop: 'MB FT 101', viec: [
+            { id: 'huy-tg', ten: 'Điền Target', t2: 'chưa có Target IELTS', han: H('khong'), nut: 'Điền Target', doiTrang: true }] }
+        ] }
+      ],
+      sau: '<div class="the-phu"><h2>Yêu cầu của tôi</h2><div class="dong"><span class="td qua">bị từ chối</span><span>Dời MT3 Reading · Vũ Hải Đăng · <span class="mo">QL ghi: "Tuần W4 SEP đã kín phòng"</span></span><button type="button" class="nut nut-nho">Sửa và gửi lại</button></div><div class="dong"><a href="#ds">1 yêu cầu chờ duyệt ›</a></div></div>'
+        + '<div class="the-phu"><h2>Lớp tôi dạy <span class="dem">3</span></h2><div class="dong mo">MB FT 101 · MB FT 102 · MB IE 05 · <a href="#ds">mở ở Tổng quan ›</a></div></div>'
+    };
+  }
+  function qlToi() {
+    return {
+      nguoi: 'Nguyễn Thu Trang', vai: 'QL', badge: 4, duyetSo: 2, dem: '<b>2</b> nhóm · <b>4</b> việc · <b>1</b> HV', ql: 'toi', cn: true,
+      nhom: [
+        { k: 'duyet', ten: 'Chờ bạn duyệt', ic: IC.duyet, chip: '2 thẻ', qua: 1, muc: [
+          { k: 'lop', id: 'dy-doi', ic: IC.lop, ten: 'Dời MT3 Speaking · 2 em', t2: 'MB FT 102 · Anna Lee gửi · <span class="nw">W4 SEP → W1 OCT</span>', han: H('qua', 1), duyet: true },
+          { k: 'em', em: 'Phạm Bảo Ngọc', lop: 'MB FT 101', sos: [2, 'L'], viec: [
+            { id: 'dy-pa', ten: 'Duyệt đổi PA Listening', t2: 'Nếu duyệt: Hỗ trợ học thuật thay Xếp tự học · Trần Ngọc Hà đề xuất', han: H('sap', '20/09'), duyet: true }] }
+        ] },
+        { k: 'kase', ten: 'Case học thuật', ic: IC.kase, chip: '2 việc', phu: '<b>1</b> HV', muc: [
+          { k: 'em', em: 'Trịnh Gia Bảo', lop: 'MB FT 103', sos: [1, 'W'], viec: [
+            { id: 'bao-pt', ten: 'Chọn người phụ trách Case Writing', t2: 'lớp chưa có GV Writing', han: H('sap', '19/09'), nut: 'Chọn người', p: 'chung' }] },
+          { k: 'lop', id: 'pc-103', ic: IC.lop, ten: 'Phân công GV Listening', t2: 'MB FT 103 · 2 Case chờ người phụ trách', han: H('sap', '19/09'), nut: 'Phân công', p: 'chung' }
+        ] },
+        { k: 'vh', ten: 'Việc quản lý', ic: IC.vanhanh, chip: '2 việc', gapSan: true, muc: [
+          { k: 'lop', id: 'cl-98', ic: IC.lop, ten: 'Chốt lộ trình', t2: 'MB FT 98 · cuối khoá W4 SEP · 12 em', han: H('han', '26/09'), nut: 'Cuối khoá', doiTrang: true },
+          { k: 'lop', id: 'vh-ph', ic: IC.vanhanh, ten: 'Gọi lại PH 3 em', t2: 'MB IE 05 · Phạm Thu Trang giao 15/09', han: H('han', '22/09'), nut: 'Mở', p: 'chung' }
+        ], cuoi: '<button type="button" class="nut nut-nho">+ Giao việc</button><a href="#vh">Vận hành ›</a><a href="#bc">Họp đơn vị ›</a>' }
+      ]
+    };
+  }
+  function qlXemHa() {
+    var d = gvHa();
+    d.nguoi = 'Nguyễn Thu Trang'; d.vai = 'QL'; d.badge = 4; d.qua = 0; d.ql = 'gv'; d.cn = true; d.khung = false; d.theoDoi = true; d.sau = '';
+    return d;
+  }
+  function tvvMai() {
+    return {
+      nguoi: 'Vũ Thị Mai', vai: 'TVV', badge: 6, dem: '<b>6</b> việc · <b>11</b> HV · Mỹ Đình', tvv: true,
+      nhom: [
+        { k: 'bph', ten: 'Báo PH', ic: IC.dt, chip: '2 việc', luat: 'Hạn 23:59 ngày lưu xử lý + 4 (tính cả T7, CN). Chưa liên hệ được: việc vẫn mở, giữ hạn.', muc: [
+          { k: 'em', em: 'Hoàng Gia Linh', lop: 'MB IE 05', viec: [
+            { id: 'bp-linh', ten: 'Báo PH Progress Test 2', t2: '<span class="td sap">Chưa liên hệ được · lần 2</span>', han: H('sap', '19/09'), nut: 'Báo PH', p: 'baoph' }] },
+          { k: 'em', em: 'Lê Quang Huy', lop: 'MB FT 101', viec: [
+            { id: 'bp-huy', ten: 'Báo PH Final Test 68%', t2: 'còn 4 ngày', han: H('han', '22/09'), nut: 'Báo PH', p: 'baoph' }] }
+        ] },
+        { k: 'sthi', ten: 'Sau thi', ic: IC.thi, chip: '2 việc', luat: 'Lưu điểm thi thật trước; bước tiếp hạn 7 ngày từ ngày có kết quả.', muc: [
+          { k: 'em', em: 'Ngô Thanh Tùng', lop: 'MB FT 98', viec: [
+            { id: 'st-tung', ten: 'Ghi KQ thi IELTS', t2: '<span class="lich">Đã thi · chờ KQ</span> thi 12/09', han: H('han', '24/09'), nut: 'Ghi KQ', p: 'chung', nutPhu: 'Gia hạn' }] },
+          { k: 'em', em: 'Đặng Mai Anh', lop: 'MB FT 98', viec: [
+            { id: 'st-ma', ten: 'Chốt bước tiếp', t2: '<span class="td dang">Đã có kết quả · Chưa chốt bước tiếp</span> IELTS 6.5', han: H('han', '21/09'), nut: 'Chốt bước tiếp', p: 'chung' }] }
+        ] },
+        { k: 'cnt', ten: 'Chốt ngày thi', ic: IC.lich, chip: '1 việc', muc: [
+          { k: 'lop', id: 'cnt-10', ic: IC.lop, ten: 'Chốt ngày thi tháng 10/2026', t2: '3 em dự kiến thi 10/2026', han: H('khong'), nut: 'Chốt ngày', doiTrang: true }] },
+        { k: 'bs', ten: 'Bổ sung hồ sơ', ic: IC.hoso, chip: '1 việc', muc: [
+          { k: 'lop', id: 'bs-4', ic: IC.lop, ten: 'Bổ sung hồ sơ thiếu', t2: '4 em · thiếu SĐT phụ huynh, ngày sinh', han: H('khong'), nut: 'Bổ sung', p: 'chung' }] }
+      ]
+    };
+  }
+  function gvAnna() {
+    return {
+      nguoi: 'Anna Lee', vai: 'GV', badge: 1, dem: '<b>1</b> nhóm · <b>1</b> việc · <b>1</b> HV',
+      nhom: [
+        { k: 'kase', ten: 'Case học thuật', ic: IC.kase, chip: '1 việc', phu: '<b>1</b> HV', muc: [
+          { k: 'em', em: 'Đỗ Khánh Vy', lop: 'MB FT 102', sos: [1, 'S'], viec: [
+            { id: 'vy-s', ten: 'Mô tả Case Speaking', t2: 'MT2 · W2 SEP · <span class="diem-duoi">5.5</span> kỳ vọng 6.0 · Phạm Thu Trang chấm', han: H('han', '21/09'), nut: 'Mô tả Case', p: 'mota', kn: 'S', mt: 'MT2 · thi W2 SEP' }] }
+        ] },
+        { k: 'cc', ten: 'Bài thi Speaking tuần này', ic: IC.mic, chip: '36 bài', trungTinh: true, luat: 'Bạn có kỹ năng S trong hồ sơ GV nên được chấm chéo trong chi nhánh. Không tính là việc / nợ của bạn; bài bạn chấm ghi bạn là người chấm.', muc: [
+          { k: 'lop', id: 'cc-1', ic: IC.mic, ten: 'Chấm Speaking', t2: 'MB FT 101 · 22 bài · MB FT 102 · 14 bài', han: H('khong', 'từ 14/09'), nut: 'Chấm Speaking', p: 'nhap', khongViec: true }] }
+      ]
+    };
+  }
+  /* QL "Tất cả": việc của mọi người trong phạm vi — người giữ việc ở dòng phụ; việc của người khác là theo dõi (Làm thay / Nhập hộ khi có quyền). */
+  function qlTatCa() {
+    return {
+      nguoi: 'Nguyễn Thu Trang', vai: 'QL', badge: 4, duyetSo: 2, qua: 6, ql: 'all', cn: true, tatCa: true, dem: '<b>4</b> nhóm · <b>63</b> việc · <b>41</b> HV · <b>212</b> bài',
+      nhom: [
+        { k: 'kase', ten: 'Case học thuật', ic: IC.kase, chip: '27 việc', phu: '<b>22</b> HV', qua: 3, nay: 1, them: '22 việc', muc: [
+          { k: 'em', em: 'Trần Thu Hà', lop: 'MB FT 101', sos: [1, 'L'], viec: [
+            { id: 'a-ha', ten: 'Ghi kết quả kỳ 2 · Listening', t2: 'PA Xếp tự học', cua: 'Trần Ngọc Hà', han: H('qua', 3), p: 'ghikq', lamThay: true }] },
+          { k: 'em', em: 'Vũ Hải Đăng', lop: 'MB FT 101', sos: [2, 'L, R, W'], viec: [
+            { id: 'a-dw', ten: 'Thêm PA Writing', t2: 'MT3 · nguyên nhân: Lập luận Task 2', cua: 'Lê Minh Khoa', han: H('qua', 1), p: 'chung', nut: 'Thêm PA', lamThay: true },
+            { id: 'a-dl', ten: 'Mô tả Case Listening', t2: 'MT3 · W2 SEP · <span class="diem-duoi">6.0</span> kỳ vọng 7.0', cua: 'Trần Ngọc Hà', han: H('nay'), p: 'mota', kn: 'L', mt: 'MT3 · thi W2 SEP', lamThay: true },
+            { id: 'a-dr', ten: 'Mô tả Case Reading', t2: 'MT3 · W2 SEP · <span class="diem-duoi">5.5</span> kỳ vọng 6.5', cua: 'Trần Ngọc Hà', han: H('sap', '20/09'), p: 'mota', kn: 'R', mt: 'MT3 · thi W2 SEP', lamThay: true }] },
+          { k: 'em', em: 'Trịnh Gia Bảo', lop: 'MB FT 103', sos: [1, 'W'], viec: [
+            { id: 'a-bao', ten: 'Chọn người phụ trách Case Writing', t2: 'lớp chưa có GV Writing', mine: true, han: H('sap', '19/09'), nut: 'Chọn người', p: 'chung' }] },
+          { k: 'em', em: 'Đỗ Khánh Vy', lop: 'MB FT 102', sos: [1, 'L, S'], viec: [
+            { id: 'a-vys', ten: 'Mô tả Case Speaking', t2: 'MT2 · W2 SEP · <span class="diem-duoi">5.5</span> kỳ vọng 6.0', cua: 'Anna Lee', han: H('han', '21/09'), p: 'mota', kn: 'S', mt: 'MT2 · thi W2 SEP', lamThay: true }] }
+        ] },
+        { k: 'cham', ten: 'Chấm điểm', ic: IC.cham, chip: '31 việc', phu: '<b>212</b> bài', qua: 3, them: '19 việc', muc: [
+          { k: 'vach', nhan: 'Quá hạn · 3 việc · 13 bài', muc: [
+            { k: 'lop', id: 'a-nw', ic: IC.cham, ten: 'Nhập điểm Writing', t2: 'MB FT 102 · MT2 · thi W1 SEP · 5 bài', cua: 'Lê Minh Khoa', han: H('qua', 5), p: 'nhap', nhapHo: true },
+            { k: 'lop', id: 'a-nr', ic: IC.cham, ten: 'Nhập điểm Reading', t2: 'MB FT 101 · MT3 · thi W2 SEP · 4 bài', cua: 'Trần Ngọc Hà', han: H('qua', 2), p: 'nhap', nhapHo: true },
+            { k: 'lop', id: 'a-nl', ic: IC.cham, ten: 'Nhập điểm Listening', t2: 'MB FT 103 · MT1 · thi W2 SEP · 4 bài', han: H('qua', 1), p: 'nhap', nhapHo: true, cua: 'chưa có GV' }] },
+          { k: 'vach', nhan: 'Hạn đến 20/09 · 9 việc · 71 bài', gap: true, id: 'a-v2', muc: [] },
+          { k: 'vach', nhan: 'Hạn sau 20/09 · 19 việc · 128 bài', gap: true, id: 'a-v3', muc: [] }
+        ] },
+        { k: 'yt', ten: 'Ý thức & Phối hợp', ic: IC.ythuc, chip: '3 việc', phu: '<b>3</b> HV', gapSan: true, muc: [] },
+        { k: 'vh', ten: 'Việc quản lý', ic: IC.vanhanh, chip: '2 việc', gapSan: true, muc: [], cuoi: '<button type="button" class="nut nut-nho">+ Giao việc</button><a href="#vh">Vận hành ›</a><a href="#bc">Họp đơn vị ›</a>' }
+      ]
+    };
+  }
+  var VAI = { gv: gvHa, ql: qlToi, qlall: qlTatCa, qlgv: qlXemHa, tvv: tvvMai, gvs: gvAnna };
+
+  /* ================= VẼ ================= */
+  var hanChip = function (h) {
+    if (!h) return '';
+    if (h[0] === 'qua') return '<span class="td qua">quá hạn ' + h[1] + ' ngày</span>';
+    if (h[0] === 'nay') return '<span class="td sap">hạn hôm nay</span>';
+    if (h[0] === 'sap') return '<span class="td sap">hạn ' + h[1] + '</span>';
+    if (h[0] === 'han') return '<span class="td">hạn ' + h[1] + '</span>';
+    return '<span class="td khong">' + (h[1] || 'không hạn') + '</span>';
+  };
+  var hanChu = function (h) { return h[0] === 'qua' ? 'quá hạn ' + h[1] + ' ngày' : h[0] === 'nay' ? 'hạn hôm nay' : h[0] === 'khong' ? (h[1] || 'không hạn') : 'hạn ' + h[1]; };
+  var sosChip = function (s) { return s ? '<span class="sos m' + s[0] + '">SOS ' + s[0] + ' · ' + e(s[1]) + '</span>' : ''; };
+  var chuDau = function (ten) { var w = ten.trim().split(/\s+/); return (w.length > 1 ? w[w.length - 2][0] + w[w.length - 1][0] : w[0].slice(0, 2)).toUpperCase(); };
+
+  /* Danh sách phẳng các việc (thứ tự vẽ) — cho "việc tiếp", "Em này còn", panel. */
+  function phang(d) {
+    var ds = [];
+    var them = function (v, ngu) { v.ngu = ngu; ds.push(v); };
+    var muc = function (m, g) {
+      if (m.k === 'vach') { (m.muc || []).forEach(function (x) { muc(x, g); }); return; }
+      if (m.k === 'em') m.viec.forEach(function (v) { v.em = m.em; v.lop = m.lop; v.sos = m.sos; them(v, g); });
+      else if (m.con) m.con.forEach(function (v) { v.lopCha = m; them(v, g); });
+      else them(m, g);
+    };
+    d.nhom.forEach(function (g) { g.muc.forEach(function (m) { muc(m, g); }); });
+    return ds;
+  }
+
+  function veMan(st, hep) {
+    var d = VAI[st.vai]();
+    d.ds = phang(d);
+    var nav = '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>'
+      + ['Tổng quan', 'Học viên &amp; Lớp', 'Test', 'Công việc', 'Phân tích'].map(function (m, i) {
+        return '<span class="m' + (i === 3 ? ' dang' : '') + (i === 4 || (hep && (i === 1 || i === 2)) ? ' an-dt' : '') + '">' + (hep && i === 1 ? 'HV' : m)
+          + (i === 3 && d.badge && st.tt !== 'rong' ? '<span class="so-nav" aria-label="' + d.badge + ' ' + (d.vai === 'QL' ? 'việc của tôi' : 'việc của tôi') + '">' + d.badge + '</span>' : '') + '</span>';
+      }).join('')
+      + '<span class="phai"><span>' + IC.chuong + '</span>' + (hep ? '' : '<span>' + e(d.nguoi) + ' · ' + d.vai + '</span>') + '</span></div>';
+    var pnMo = st.chon && st.tt === 'co' && d.ds.some(function (v) { return v.id === st.chon; });
+    var noi = '<div class="noi-dung">' + dauTrang(d, st, hep) + '<div class="bo-cuc"><div class="cot-ds">' + veDs(d, st, hep) + '</div>'
+      + (hep ? '' : '<div class="cot-pn">' + (pnMo ? vePanel(d, st, hep) : (st.tt === 'co' ? '<div class="cho-chon">Chọn một việc ở danh sách để làm tại đây.</div>' : '')) + '</div>') + '</div></div>';
+    var toan = hep && pnMo ? '<div class="pn-toan">' + vePanel(d, st, hep) + '</div>' : '';
+    return nav + noi + toan + (st.hoi ? hopHoi(d, st) : '');
+  }
+
+  function dauTrang(d, st, hep) {
+    var dem = st.tt === 'loi' || st.tt === 'tai' || st.tt === 'phamvi' ? '' : st.tt === 'rong' ? '<span class="dem-tong"><b>0</b> việc</span>'
+      : st.tt === 'xonghet' ? '<span class="dem-tong"><b>1</b> nhóm · <b>3</b> việc · <b>36</b> bài</span>'
+      : '<span class="dem-tong" aria-live="polite">' + d.dem + '</span>' + (d.qua ? '<span class="bao-qua">⚠ ' + d.qua + ' quá hạn</span>' : '');
+    var xong = Object.keys(st.xong).filter(function (k) { return st.xong[k] === 1; }).length;
+    var loc = '';
+    if (d.ql) loc += '<span class="doan" role="group" aria-label="Việc của ai"><button type="button" aria-pressed="' + (d.ql === 'toi') + '">Của tôi <span class="so">4</span></button><button type="button" aria-pressed="' + (d.ql === 'all') + '">Tất cả <span class="so">63</span></button></span>'
+      + '<span class="o-chon" role="button" aria-label="Chọn GV">' + (d.ql === 'gv' ? 'Trần Ngọc Hà · 14 việc' : 'Chọn GV') + '</span>';
+    if (d.khung) loc += '<span class="doan" role="group" aria-label="Chương trình"><button type="button" aria-pressed="true">Tất cả</button><button type="button" aria-pressed="false">FT <span class="so">12</span></button><button type="button" aria-pressed="false">Lớp thường <span class="so">2</span></button></span>';
+    if (d.cn) loc += '<span class="o-chon" role="button" aria-label="Chi nhánh">Mỹ Đình</span>';
+    loc += '<span class="o-chon" role="button" aria-label="Lọc theo hạn">' + (st.tt === 'loc' ? 'Quá hạn · 0' : 'Mọi hạn') + '</span>';
+    var h = '<header class="dau-trang"><h1>Công việc</h1>' + dem + (d.duyetSo ? '<span class="cho-duyet">' + d.duyetSo + ' chờ bạn duyệt</span>' : '') + (xong ? '<span class="xong-nay">✓ ' + xong + ' xong hôm nay</span>' : '') + '<span class="loc">' + loc + '</span></header>';
+    if (st.tt === 'loc') h += '<div><button type="button" class="nut nut-nho" title="Bỏ lọc">Ý thức &amp; Phối hợp <span aria-hidden="true">✕</span></button></div>';
+    if (d.theoDoi) h += '<div class="bao-chi-xem" role="status"><span aria-hidden="true">👁</span><span>Đang xem việc của <b>Trần Ngọc Hà</b> — chế độ theo dõi.</span></div>';
+    return h;
+  }
+
+  function veDs(d, st, hep) {
+    if (st.tt === 'tai') {
+      var k = function () { return '<div class="khoi" style="padding:14px 16px;display:grid;gap:10px"><div style="display:flex;gap:10px;align-items:center"><span class="skel tron"></span><span class="skel" style="width:40%"></span></div><span class="skel" style="margin-left:38px;width:62%"></span><span class="skel" style="margin-left:38px;width:48%"></span></div>'; };
+      return '<div class="nhom" aria-busy="true" aria-label="Đang tải việc"><div class="dai-nhom"><span class="skel" style="width:46%;height:16px"></span></div>' + k() + k() + k() + '</div>';
+    }
+    if (st.tt === 'loi') return '<div class="bao-loi" role="alert"><span aria-hidden="true">⚠</span><div><b>Không tải được danh sách việc.</b> Kiểm tra mạng rồi tải lại; việc đã lưu không mất.<div style="margin-top:8px"><button type="button" class="nut nut-nho">Tải lại</button></div></div></div>';
+    if (st.tt === 'phamvi') return '<div class="nhom"><div class="rong"><span class="tieu">Bạn chưa được cấp phạm vi nào</span><span>Nhờ Quản trị gán chi nhánh / lớp cho tài khoản.</span></div></div>';
+    if (st.tt === 'rong') return '<div class="nhom"><div class="rong"><span class="tieu">Không còn việc đang mở</span>' + (d.tvv ? '<a href="#hv">HV của tôi ›</a>' : '') + '</div></div>' + (d.sau || '');
+    if (st.tt === 'loc') return '<div class="nhom"><div class="rong"><span class="tieu">Không có việc nào khớp bộ lọc</span><button type="button" class="nut nut-nho">Xoá lọc</button></div></div>';
+    if (st.tt === 'xonghet') {
+      var cham = gvHa().nhom[1];
+      var g = { k: 'cham', ten: cham.ten, ic: cham.ic, chip: '3 việc', phu: '<b>36</b> bài', muc: [{ k: 'vach', nhan: 'Quá hạn · 0' }, { k: 'vach', nhan: 'Hạn đến 20/09 · 0' }, cham.muc[2]] };
+      return '<div class="the-phu xong-het" role="status"><b>Xong hết hôm nay ✓</b></div>' + veNhom(g, st, hep, d) + (d.sau || '');
+    }
+    return d.nhom.map(function (g) { return veNhom(g, st, hep, d); }).join('') + (d.sau || '');
+  }
+
+  function veNhom(g, st, hep, d) {
+    var gap = st.gap[g.k] != null ? st.gap[g.k] : !!g.gapSan;
+    /* Một nút gập chính (tên + chip, có aria-expanded); ⓘ ngay sau tên, bấm mở luật dưới dải (chạm được trên điện thoại); mũi bên phải chỉ là vùng bấm thêm cho chuột. */
+    var dau = '<h2 class="dai-nhom"><button type="button" class="bam-nhom" data-gap="' + g.k + '" aria-expanded="' + !gap + '">' + g.ic + '<span>' + e(g.ten) + '</span><span class="dem">' + e(g.chip) + '</span></button>'
+      + (g.luat ? '<button type="button" class="nut-i" data-luat="' + g.k + '" aria-expanded="' + !!st.luat[g.k] + '" aria-label="Luật nhóm ' + e(g.ten) + '">i</button>' : '')
+      + '<span class="sau-ten">' + (g.phu ? '<span class="phu">' + g.phu + '</span>' : '')
+      + (g.qua ? '<span class="bao-qua">⚠ ' + g.qua + ' quá hạn</span>' : '') + (g.nay ? '<span class="bao-nay">⚠ ' + g.nay + ' hạn hôm nay</span>' : '') + '</span>'
+      + '<button type="button" class="mui" data-gap="' + g.k + '" tabindex="-1" aria-hidden="true">' + (gap ? '▸' : '▾') + '</button></h2>'
+      + (g.luat && st.luat[g.k] ? '<p class="luat-mo">' + e(g.luat) + '</p>' : '');
+    var than = gap ? '' : g.muc.map(function (m, i) { return veMuc(m, st, hep, d, i === 0, g); }).join('')
+      + (g.them ? '<div class="cuoi-nhom"><button type="button" class="nut nut-nho">Xem thêm 10 việc</button><span class="mo">còn ' + e(g.them) + '</span></div>' : '')
+      + (g.cuoi ? '<div class="cuoi-nhom">' + g.cuoi + '</div>' : '');
+    return '<section class="nhom' + (gap ? ' gap' : '') + (g.trungTinh ? ' trung-tinh' : '') + '" aria-label="' + e(g.ten) + '">' + dau + than + '</section>';
+  }
+
+  function veMuc(m, st, hep, d, dau, g) {
+    if (m.k === 'vach') {
+      if (!m.muc) return '<div class="vach-han">' + e(m.nhan) + '</div>';
+      var mo = m.gap ? !!st.mo[m.id] : true;
+      var nhan = m.gap ? '<button type="button" class="vach-han" data-mo="' + m.id + '" aria-expanded="' + mo + '">' + e(m.nhan) + '<span class="mui" aria-hidden="true">' + (mo ? '▾' : '▸') + '</span></button>'
+        : '<div class="vach-han">' + e(m.nhan) + '</div>';
+      return nhan + (mo ? m.muc.map(function (x) { return veMuc(x, st, hep, d, true, g); }).join('') : '');
+    }
+    if (m.k === 'em') {
+      /* Em có việc ở nhóm khác: nhắc một dòng ở tầng em (không phải nhớ qua lại giữa hai nhóm). */
+      var khac = d.ds.filter(function (x) { return x.em === m.em && x.ngu !== g; });
+      var noiKhac = khac.length ? '<span class="o-nhom-khac">+ ' + khac.length + ' việc ở ' + e(khac[0].ngu.ten) + '</span>' : '';
+      return '<div class="khoi' + (dau ? ' dau-tien' : '') + '"><div class="dt-khoi"><span class="av" aria-hidden="true">' + chuDau(m.em) + '</span><span class="dt-ten"><a class="ten-em" href="#hs" title="Mở hồ sơ ' + e(m.em) + '">' + e(m.em) + '</a><span class="lop">' + e(m.lop) + '</span>' + sosChip(m.sos) + noiKhac + '</span></div>'
+        + '<ul class="ds-viec">' + m.viec.map(function (v) { return '<li>' + dongViec(v, st, d) + '</li>'; }).join('') + '</ul></div>';
+    }
+    /* đối tượng lớp (ô vuông biểu tượng) · dòng gộp nhiều em (ô chồng có số, mở ra khay em nền chìm) */
+    var moCon = !!st.mo[m.id];
+    return '<div class="khoi' + (dau ? ' dau-tien' : '') + (m.con ? ' khoi-gop' + (moCon ? ' mo' : '') : '') + '">' + dongViec(m, st, d, true, moCon)
+      + (m.con && moCon ? '<ul class="ds-con" id="con-' + m.id + '" aria-label="' + e(m.donVi) + ' của ' + e(m.ten) + '">' + m.con.map(function (v) { return '<li>' + dongViec(v, st, d) + '</li>'; }).join('') + '</ul>' : '') + '</div>';
+  }
+
+  var laTheoDoi = function (d, v) { return !!d.theoDoi || (!!d.tatCa && !v.mine); };
+  function nutCua(v, d, moCon) {
+    if (v.con) return '<button type="button" class="nut nut-nho mo-con" data-mo="' + v.id + '" aria-expanded="' + moCon + '" aria-controls="con-' + v.id + '">' + e(v.donVi) + ' <span class="mui" aria-hidden="true">' + (moCon ? '▴' : '▾') + '</span></button>';
+    if (v.duyet) return '<button type="button" class="nut nut-nho" data-dung>Duyệt</button><button type="button" class="nut nut-nho nut-ma" data-dung>Từ chối…</button><button type="button" class="nut nut-nho nut-ma" data-dung>Mở</button>';
+    if (laTheoDoi(d, v)) return v.lamThay ? '<button type="button" class="nut nut-nho" data-chon="' + v.id + '">Làm thay</button>' : v.nhapHo ? '<button type="button" class="nut nut-nho" data-chon="' + v.id + '">Nhập hộ</button>' : '';
+    /* nút phụ của dòng (OV-13q "Gia hạn" sau thi): hộp nhỏ tại chỗ, không đổi việc đang mở */
+    return (v.nut ? '<button type="button" class="nut nut-nho" ' + (v.doiTrang ? 'data-doi-trang' : 'data-chon="' + v.id + '"') + '>' + e(v.nut) + '</button>' : '')
+      + (v.nutPhu ? '<button type="button" class="nut nut-nho nut-ma" data-dung>' + e(v.nutPhu) + '</button>' : '');
+  }
+
+  /* MỘT DÒNG: div bấm được bằng chuột (chuyển cho nút tên); tên việc là <button> thật (bàn phím, đọc màn) — không lồng nút trong role=button. */
+  function dongViec(v, st, d, laLop, moCon) {
+    var xong = st.xong[v.id], chon = st.chon === v.id, gop = !!v.con;
+    var h = xong === 'dang' ? '<span class="dang-luu"><span class="xoay" aria-hidden="true"></span>Đang lưu…</span>' : xong ? '<span class="da-luu">✓ Đã lưu</span>' : hanChip(v.han);
+    var t2 = v.t2.replace(/(<span class="diem-duoi">[^<]+<\/span> kỳ vọng [\d.\/]+)/g, '<span class="nw">$1</span>');
+    /* QL Tất cả: người giữ việc đứng dưới hạn — cột "ai · khi nào" thẳng hàng, dòng phụ không gãy. */
+    if (d.tatCa && !xong) h += '<span class="ai">' + (v.mine ? 'bạn' : e(v.cua || '')) + '</span>';
+    var hanhDong = gop ? 'data-mo="' + v.id + '" aria-expanded="' + moCon + '" aria-controls="con-' + v.id + '"' : v.doiTrang ? 'data-doi-trang' : 'data-chon="' + v.id + '"';
+    var glyph = !laLop ? '' : gop ? '<span class="av gop" aria-hidden="true">' + v.con.length + '</span>' : '<span class="av vuong" aria-hidden="true">' + (v.ic || IC.lop) + '</span>';
+    var nhan = v.ten + (v.em && !v.lopCha ? ' · ' + v.em : '') + (gop ? ' · ' + v.donVi : '') + ' · ' + hanChu(v.han) + (v.doiTrang ? ' · mở trang khác' : '');
+    return '<div class="viec' + (laLop ? ' dt-lop' : '') + (gop ? ' gop' : '') + (chon ? ' chon' : '') + (xong && xong !== 'dang' ? ' xong' : '') + '">' + glyph
+      + '<button type="button" class="tv" ' + hanhDong + (chon ? ' aria-current="true"' : '') + (xong === 1 ? ' disabled' : '') + ' aria-label="' + e(nhan) + '">'
+      + '<span class="t1"><span class="ten">' + e(v.ten) + '</span>' + (v.sosGop ? sosChip(v.sosGop) : '') + (v.doiTrang ? '<span class="doi-trang" aria-hidden="true">›</span>' : '') + '</span>'
+      + '<span class="t2">' + t2 + '</span></button>'
+      + '<span class="h">' + h + '</span><span class="n' + (v.duyet ? ' ba luon' : '') + (gop ? ' luon' : '') + (v.nutPhu ? ' ba phu' : '') + '">' + (xong ? '' : nutCua(v, d, moCon)) + '</span></div>';
+  }
+
+  /* ---------- Panel việc (M6 ②) ---------- */
+  function dauPanel(o, hep) {
+    return '<header class="pn-dau"><div class="pn-h1">' + (hep ? '<button type="button" class="quay" data-dong><span class="mui" aria-hidden="true">‹</span>Công việc</button>' : '<span class="loai">' + e(o.loai) + '</span>')
+      + '<button type="button" class="x" data-dong aria-label="Đóng">✕</button></div>' + (hep ? '<span class="loai">' + e(o.loai) + '</span>' : '')
+      + '<div class="pn-tieu"><h2>' + e(o.tieu) + '</h2>' + (o.chip || '') + '</div>'
+      + (o.ngu ? '<div class="pn-ngu">' + o.ngu.map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' : '') + (o.them || '') + '</header>';
+  }
+  var KN = { L: 'Listening', R: 'Reading', W: 'Writing', S: 'Speaking' };
+  var NN = { L: ['Dạng Map / Plan', 'Nghe số', 'Từ vựng', 'Mất tập trung'], R: ['Matching Headings', 'True / False / Not Given', 'Thời gian làm bài', 'Từ vựng'], S: ['Độ trôi chảy', 'Phát âm', 'Từ vựng', 'Ngữ pháp'], W: ['Lập luận', 'Ngữ pháp câu phức'] };
+  /* Việc kế: việc CỦA người xem (không theo dõi, không chấm chéo, không đổi trang, không thẻ duyệt), chưa xong, sau việc này theo thứ tự đang vẽ (V12 ⑤). */
+  var laViecToi = function (d, st, x) { return !x.doiTrang && !x.duyet && !x.khongViec && !laTheoDoi(d, x) && !st.xong[x.id]; };
+  function keTiep(d, st, id) {
+    var ds = d.ds, i = ds.map(function (x) { return x.id; }).indexOf(id);
+    return ds.filter(function (x, j) { return j > i && laViecToi(d, st, x); })[0] || ds.filter(function (x) { return x.id !== id && laViecToi(d, st, x); })[0] || null;
+  }
+  var tenViec = function (x) { return x.lopCha ? x.lopCha.ten + ' · ' + x.ten : x.ten; };
+
+  function vePanel(d, st, hep) {
+    var ds = d.ds, v = ds.filter(function (x) { return x.id === st.chon; })[0];
+    var td = laTheoDoi(d, v), chu = v.cua || 'Trần Ngọc Hà';
+    var ke = td ? null : keTiep(d, st, v.id);
+    var em = v.em || null;
+    var emCon = em ? ds.filter(function (x) { return x.em === em && x.id !== v.id && !st.xong[x.id]; }) : [];
+    var loai = (td ? 'THEO DÕI · ' : 'VIỆC · ') + (v.ngu ? v.ngu.ten.toLocaleUpperCase('vi') : '');
+    var ngu = em ? ['<a class="ten-em" href="#hs">' + e(em) + '</a>', e(v.lop || '')] : [e((v.lopCha && v.lopCha.t2.split(' · ')[0]) || v.t2.split(' · ')[0])];
+    var them = emCon.length ? '<div class="em-con"><span>Em này còn:</span>' + emCon.map(function (x) { return '<button type="button" class="nut nut-nho" data-chon="' + x.id + '">' + e(x.ten) + ' · ' + e(hanChu(x.han)) + '</button>'; }).join('') + '</div>' : '';
+    var tieu = v.lopCha ? (v.p === 'mota' ? 'Mô tả Case ' + KN[v.kn] : v.lopCha.ten) : v.ten;
+    var dau = dauPanel({ loai: loai, tieu: tieu, chip: hanChip(v.han), ngu: ngu, them: them }, hep);
+    var dai = st.vuaXong ? '<div class="dai-xong" role="status"><b>✓ Đã lưu</b><span>' + e(st.vuaXong) + '</span><button type="button" class="link-nho">Hoàn tác</button></div>' : '';
+    var ghiMockup = function (s) { return '<p class="chu-khung" style="margin-top:4px">Mockup: ' + s + '</p>'; };
+    if (st.pnl === 'het') {
+      var conNhom = d.nhom.filter(function (g) { return g !== v.ngu && g.k !== 'cc'; })[0];
+      return '<div class="pn" role="region" aria-label="' + e(tieu) + '">' + dau + '<div class="pn-than"><div class="het-viec"><span class="tt-luu da" style="font-size:15px">✓ Đã lưu <button type="button" class="link-nho" style="white-space:nowrap">Hoàn tác</button></span><span class="lon">Hết việc ' + e(v.ngu.ten) + ' của bạn</span><span class="mo">Đã lưu ' + d.ds.filter(function (x) { return x.ngu === v.ngu && st.xong[x.id] === 1; }).length + ' việc trong nhóm này hôm nay.</span></div></div>'
+        + '<div class="pn-chan"><span class="trai">' + (conNhom ? 'Còn: ' + e(conNhom.ten) + ' · ' + e(conNhom.chip) : 'Đã xong phần của bạn') + '</span><button type="button" class="nut" data-dong>Đóng</button>' + (conNhom ? '<button type="button" class="nut nut-chinh">Việc tiếp ›</button>' : '') + '</div></div>';
+    }
+    var than = '', chinh = 'Lưu', tiep = 'Lưu · việc tiếp ›';
+    if (v.p === 'mota') {
+      var kn = v.kn;
+      than = '<div class="form"><dl class="boi-canh"><dt>Case</dt><dd>' + v.t2.replace(/^MT\d · W\d SEP · /, '').replace(/ · Phạm Thu Trang chấm$/, '') + ' <span class="mo">· ' + e(v.mt || (v.lopCha && v.lopCha.mt) || '') + '</span></dd><dt>Nhận xét bài</dt><dd class="mo">chưa có · mô tả ở đây thành mô tả Case</dd>'
+        + (v.kn === 'S' ? '<dt>Người chấm</dt><dd>Phạm Thu Trang (chấm chéo) · Case giao GV phụ trách S</dd>' : '') + '</dl>'
+        + '<div class="truong"><span class="nhan">Nhóm nguyên nhân <span class="bb">*</span> <span class="phu">· chọn một hoặc nhiều</span></span><div class="lua">' + NN[kn].map(function (x, i) { return '<button type="button" aria-pressed="' + (st.pnl !== 'nhap' && i === 0) + '">' + x + '</button>'; }).join('') + '<button type="button" aria-pressed="false">Khác…</button></div></div>'
+        + '<label class="truong"><span class="nhan">Mô tả <span class="bb">*</span></span><textarea class="o" rows="3" placeholder="Sai ở dạng nào, bao nhiêu câu, vì sao" data-go>' + (st.pnl === 'nhap' ? '' : 'Section 2 sai 7/10 câu Map; nghe số chậm ở Section 1.') + '</textarea></label></div>';
+    } else if (v.p === 'xnpa') {
+      than = '<div class="form"><dl class="boi-canh"><dt>Case</dt><dd><span class="diem-duoi">5.5</span> <span class="mo">· kỳ vọng 6.5 · thiếu 1.0 · Matching Headings</span></dd><dt>PA</dt><dd>Xếp tự học · theo quy chế SOS 2, hệ thống điền sẵn</dd></dl>'
+        + '<label class="truong"><span class="nhan">Nội dung <span class="bb">*</span></span><textarea class="o" rows="2" data-go>Tự học Reading có bài chấm mỗi buổi, tới MT4</textarea></label>'
+        + '<div style="display:flex;gap:12px;flex-wrap:wrap"><label class="truong"><span class="nhan">Số buổi</span><input class="o so" value="4" style="max-width:120px"></label>'
+        + '<div class="truong"><span class="nhan">Bắt đầu <span class="bb">*</span></span><span style="display:flex;gap:8px;align-items:center"><span class="o so" style="display:flex;align-items:center;width:150px">21/09/2026</span><button type="button" class="nut nut-nho" aria-label="Mở lịch">' + IC.lich + '</button></span></div></div>'
+        + '<p style="font-size:13px"><button type="button" class="link-nho">Đề xuất PA khác…</button></p></div>';
+      chinh = 'Xác nhận PA'; tiep = 'Xác nhận · việc tiếp ›';
+    } else if (v.p === 'ghikq') {
+      than = '<div class="form"><dl class="boi-canh"><dt>PA</dt><dd>Xếp tự học · 3 đề Section 2 mỗi tuần ở thư viện</dd><dt>Kỳ 1</dt><dd><b>Không tiến bộ</b> · W3–W4 AUG</dd><dt>Case</dt><dd><span class="diem-duoi">6.0</span> <span class="mo">· kỳ vọng 6.5 · thiếu 0.5 · MT1</span> · <button type="button" class="link-nho">Xem Case</button></dd></dl>'
+        + '<div class="truong"><span class="nhan">Tiến triển (2 tuần) <span class="bb">*</span></span><div class="lua">' + ['Tiến bộ rõ', 'Tiến bộ một phần', 'Không tiến bộ', 'Kém hơn', 'Chưa đủ dữ liệu'].map(function (x) { return '<button type="button" aria-pressed="' + (x === 'Tiến bộ một phần') + '">' + x + '</button>'; }).join('') + '</div></div>'
+        + '<div class="truong"><span class="nhan">Quyết định</span><div class="lua">' + ['Giữ nguyên', 'Điều chỉnh', 'Kết thúc PA'].map(function (x) { return '<button type="button" aria-pressed="' + (x === 'Giữ nguyên') + '">' + x + '</button>'; }).join('') + '</div></div>'
+        + '<label class="truong"><span class="nhan">Nhận xét</span><textarea class="o" rows="3" data-go>Section 2 đúng 7/10 (kỳ trước 5/10); còn sai dạng Map.</textarea></label></div>';
+      chinh = 'Lưu kết quả';
+    } else if (v.p === 'xncase') {
+      than = '<div class="form"><dl class="boi-canh"><dt>Case</dt><dd><span class="diem-duoi">18/40</span> <span class="mo">· kỳ vọng 24/40 · thiếu 6 câu · Progress Test 2</span></dd><dt>Mở</dt><dd>hệ thống, khi chốt Progress Test 2 · 15/09</dd></dl>'
+        + '<div class="truong"><span class="nhan">Nhóm nguyên nhân <span class="bb">*</span></span><div class="lua">' + NN.R.map(function (x) { return '<button type="button" aria-pressed="false">' + x + '</button>'; }).join('') + '</div></div>'
+        + '<label class="truong"><span class="nhan">Mô tả <span class="bb">*</span></span><textarea class="o" rows="3" placeholder="Sai ở dạng nào, bao nhiêu câu, vì sao" data-go></textarea></label></div>';
+      chinh = 'Xác nhận Case'; tiep = 'Xác nhận · việc tiếp ›';
+    } else if (v.p === 'nhap') {
+      than = '<div class="form"><dl class="boi-canh"><dt>Lượt</dt><dd>' + e(v.lopCha ? v.ten + ' · ' + v.t2 : v.t2) + '</dd><dt>Của bạn</dt><dd>' + (v.khongViec ? 'bài chưa ai nhận · ai chấm thì ghi tên người chấm' : 'chỉ kỹ năng bạn dạy; kỹ năng của GV khác không tính') + '</dd></dl>'
+        + ghiMockup('lưới nhập điểm dùng chung với Lịch Test (Dán Excel ở panel Nhập điểm), không vẽ lại.') + '</div>';
+      var soBai = ((v.t2.match(/(\d+) bài/) || [0, '?'])[1]);
+      var chanNhap = td ? '<span class="trai">Bài bạn nhập ghi tên bạn; việc vẫn của ' + e(chu) + '</span><button type="button" class="nut nut-chinh">Nhập hộ</button>'
+        : '<span class="trai">0 / ' + soBai + ' bài</span><button type="button" class="nut nut-chinh">' + (v.khongViec ? 'Chấm Speaking' : 'Nhập điểm') + '</button>';
+      return '<div class="pn" role="region" aria-label="' + e(tieu) + '">' + dau + '<div class="pn-than">' + dai + than + '</div><div class="pn-chan">' + chanNhap + '</div></div>';
+    } else if (v.p === 'baoph') {
+      than = '<div class="form"><dl class="boi-canh"><dt>Bài</dt><dd>' + e(v.ten.replace('Báo PH ', '')) + ' · GV đã ghi xử lý 15/09</dd><dt>Lần trước</dt><dd>' + (v.id === 'bp-linh' ? '17/09 · không nghe máy' : 'chưa liên hệ') + '</dd></dl>'
+        + '<div class="truong"><span class="nhan">Kết quả liên hệ <span class="bb">*</span></span><div class="lua"><button type="button" aria-pressed="false">Đã báo PH</button><button type="button" aria-pressed="false">Chưa liên hệ được</button></div></div>'
+        + '<label class="truong"><span class="nhan">Ghi chú</span><textarea class="o" rows="2" data-go></textarea></label></div>';
+    } else {
+      than = '<div class="form"><dl class="boi-canh"><dt>Việc</dt><dd>' + e(v.ten) + '</dd><dt>Chi tiết</dt><dd>' + v.t2 + '</dd></dl>' + ghiMockup('form của việc này giữ như web hiện tại, D5 không đổi.') + '</div>';
+      chinh = v.nut || 'Lưu';
+    }
+    if (td) {
+      /* Theo dõi (brief 7): thân + chân khoá; "Làm thay" chỉ khi máy chủ báo lamThay, ở dải 👁 như web (DaiTheoDoi). */
+      return '<div class="pn" role="region" aria-label="' + e(tieu) + '">' + dau + '<div class="pn-than"><div class="bao-chi-xem" style="margin-top:12px"><span aria-hidden="true">👁</span><span>Việc của <b>' + e(chu) + '</b> — chỉ theo dõi.</span>'
+        + (v.lamThay ? '<button type="button" class="nut nut-nho">Làm thay</button>' : '') + '</div><fieldset disabled>' + than + '</fieldset></div><div class="pn-chan"><span class="trai">Chỉ theo dõi</span></div></div>';
+    }
+    var tenKe = ke ? 'Tiếp: ' + e(tenViec(ke)) + (ke.em && !ke.lopCha ? (ke.em === em ? ' · cùng em' : ' · ' + e(ke.em)) : '') : 'Việc cuối của bạn';
+    var p = st.pnl;
+    var chan = p === 'dang' ? '<span class="trai"><span class="tt-luu dang"><span class="xoay" aria-hidden="true"></span>Đang lưu…</span></span><button type="button" class="nut" disabled>' + chinh + '</button>' + (ke ? '<button type="button" class="nut nut-chinh" disabled>' + tiep + '</button>' : '')
+      : p === 'da' ? '<span class="trai"><span class="tt-luu da">✓ Đã lưu 10:42</span><button type="button" class="link-nho">Hoàn tác</button></span><button type="button" class="nut" data-dong>Đóng</button>' + (ke ? '<button type="button" class="nut nut-chinh" data-tiep>Việc tiếp ›</button>' : '')
+      : p === 'loi' ? '<span class="trai"><span class="tt-luu loi">⚠ Chưa lưu được: mất mạng. Chữ đang gõ vẫn giữ.</span></span><button type="button" class="nut nut-chinh" data-luu>Thử lại</button>'
+      : '<span class="trai">' + (p === 'go' ? '<span class="tt-luu nhap">● Chưa lưu</span>' : '') + '<span class="mo">' + tenKe + '</span></span><button type="button" class="nut" data-luu>' + chinh + '</button>' + (ke ? '<button type="button" class="nut nut-chinh" data-luu-tiep>' + tiep + '</button>' : '');
+    return '<div class="pn" role="region" aria-label="' + e(tieu) + '">' + dau + '<div class="pn-than">' + dai + than + '</div><div class="pn-chan">' + chan + '</div></div>';
+  }
+
+  function hopHoi(d, st) {
+    var v = d.ds.filter(function (x) { return x.id === st.chon; })[0];
+    return '<div class="hop-hoi" role="alertdialog" aria-modal="true" aria-label="Bỏ chữ đang gõ?"><div class="pn"><header class="pn-dau"><div class="pn-tieu"><h2>Bỏ chữ đang gõ?</h2></div><div class="pn-ngu"><span>' + e(tenViec(v)) + (v.em && !v.lopCha ? ' · ' + e(v.em) : '') + ' chưa lưu. Sang việc khác sẽ mất chữ này.</span></div></header>'
+      + '<div class="pn-chan"><span class="trai"></span><button type="button" class="nut" data-bo="' + st.hoi + '">Bỏ chữ, sang việc khác</button><button type="button" class="nut nut-chinh" data-o-lai>Ở lại</button></div></div></div>';
+  }
+
+  /* ================= BỘ MÁY: mỗi khung một trạng thái ================= */
+  function Khung(el, st, hep) {
+    this.el = el; this.st = st; this.hep = hep;
+    st.xong = st.xong || {}; st.mo = st.mo || {}; st.gap = st.gap || {}; st.luat = st.luat || {}; st.pnl = st.pnl || 'nhap';
+    var self = this;
+    el.addEventListener('click', function (ev) { self.bam(ev); });
+    el.addEventListener('input', function (ev) { if (ev.target.hasAttribute('data-go') && self.st.pnl === 'nhap') { self.st.pnl = 'go'; var t = q('.pn-chan .trai', el); if (t && !q('.tt-luu', t)) t.insertAdjacentHTML('afterbegin', '<span class="tt-luu nhap">● Chưa lưu</span>'); } });
+    this.ve();
+  }
+  Khung.prototype.ve = function () {
+    var cuon = q('.cot-ds', this.el), y = cuon ? cuon.scrollTop : 0, dt = q('.noi-dung', this.el), y2 = dt ? dt.scrollTop : 0;
+    this.el.innerHTML = veMan(this.st, this.hep);
+    if (q('.cot-ds', this.el)) q('.cot-ds', this.el).scrollTop = y;
+    if (this.hep && q('.noi-dung', this.el)) q('.noi-dung', this.el).scrollTop = y2;
+    if (this.st.cuon && !this.daCuon && this.hep) {
+      var dich = q(this.st.cuon, this.el), nd = q('.noi-dung', this.el);
+      if (dich && nd) nd.scrollTop += dich.getBoundingClientRect().top - nd.getBoundingClientRect().top - 120;
+      this.daCuon = true;
+    }
+    if (this.onVe) this.onVe();
+  };
+  Khung.prototype.chuyen = function (ke, vuaXong) {
+    var st = this.st;
+    st.vuaXong = vuaXong;
+    if (ke) { st.chon = ke.id; st.pnl = 'nhap'; if (ke.lopCha) st.mo[ke.lopCha.id] = true; } else st.pnl = 'het';
+  };
+  Khung.prototype.bam = function (ev) {
+    var st = this.st, chon = '[data-gap],[data-mo],[data-chon],[data-luat],[data-dong],[data-luu],[data-luu-tiep],[data-tiep],[data-bo],[data-o-lai],[data-dung],a,[data-doi-trang]';
+    var t = ev.target.closest(chon);
+    /* Bấm vào chỗ trống của dòng = bấm tên việc (một kiểu mở, G4). */
+    if (!t) { var hang = ev.target.closest('.viec'); t = hang ? q('.tv', hang) : null; }
+    if (!t || t.disabled) return;
+    if (t.tagName === 'A' || t.hasAttribute('data-dung') || t.hasAttribute('data-doi-trang')) { ev.preventDefault(); return; }
+    var self = this, d = VAI[st.vai](); d.ds = phang(d);
+    var lay = function (id) { return d.ds.filter(function (x) { return x.id === id; })[0]; };
+    var chuXong = function (v) { return tenViec(v) + (v.em && !v.lopCha ? ' · ' + v.em : ''); };
+    if (t.hasAttribute('data-gap')) { var k = t.getAttribute('data-gap'); var g = d.nhom.filter(function (x) { return x.k === k; })[0]; st.gap[k] = !(st.gap[k] != null ? st.gap[k] : !!g.gapSan); }
+    else if (t.hasAttribute('data-luat')) { var kl = t.getAttribute('data-luat'); st.luat[kl] = !st.luat[kl]; }
+    else if (t.hasAttribute('data-mo')) { var m = t.getAttribute('data-mo'); st.mo[m] = !st.mo[m]; }
+    else if (t.hasAttribute('data-chon')) {
+      var id = t.getAttribute('data-chon');
+      if (st.xong[id]) return;
+      if (st.pnl === 'go' && st.chon && id !== st.chon) { st.hoi = id; }
+      else { st.chon = id; st.pnl = 'nhap'; st.vuaXong = null; }
+    }
+    else if (t.hasAttribute('data-bo')) { st.chon = t.getAttribute('data-bo'); st.hoi = null; st.pnl = 'nhap'; st.vuaXong = null; }
+    else if (t.hasAttribute('data-o-lai')) { st.hoi = null; }
+    else if (t.hasAttribute('data-dong')) { st.chon = null; st.vuaXong = null; st.pnl = 'nhap'; }
+    else if (t.hasAttribute('data-luu') || t.hasAttribute('data-luu-tiep')) {
+      var tiep = t.hasAttribute('data-luu-tiep'), cu = st.chon;
+      st.pnl = 'dang'; st.xong[cu] = 'dang'; this.ve();
+      setTimeout(function () {
+        var v = lay(cu);
+        st.xong[cu] = 1;
+        if (tiep) self.chuyen(keTiep(d, st, cu), chuXong(v)); else st.pnl = 'da';
+        self.ve();
+      }, 650);
+      return;
+    }
+    else if (t.hasAttribute('data-tiep')) { this.chuyen(keTiep(d, st, st.chon), chuXong(lay(st.chon))); }
+    this.ve();
+  };
+
+  /* Khung A — có thanh điều khiển */
+  var A = new Khung(q('#manA'), { vai: 'gv', tt: 'co', chon: 'dang-l', pnl: 'nhap' }, false);
+  var DK = {
+    vai: [['gv', 'GV Trần Ngọc Hà (L, R)'], ['gvs', 'GV Speaking Anna Lee'], ['ql', 'QL · của tôi'], ['qlall', 'QL · Tất cả'], ['qlgv', 'QL xem GV Hà'], ['tvv', 'TVV Vũ Thị Mai']],
+    tt: [['co', 'Có việc'], ['tai', 'Đang tải'], ['loi', 'Lỗi tải'], ['rong', 'Hết việc'], ['xonghet', 'Xong hết hôm nay'], ['loc', 'Lọc không khớp'], ['phamvi', 'Chưa có phạm vi']],
+    pnl: [['nhap', 'Mới mở'], ['go', 'Đang gõ'], ['dang', 'Đang lưu'], ['da', 'Đã lưu'], ['loi', 'Lỗi mạng'], ['het', 'Hết việc nhóm'], ['hoi', 'Đổi việc khi đang gõ']]
+  };
+  var CHON_DAU = { gv: 'dang-l', gvs: 'vy-s', ql: 'bao-pt', qlall: 'a-dw', qlgv: 'dang-l', tvv: 'bp-linh' };
+  function veDk() {
+    Object.keys(DK).forEach(function (k) {
+      q('[data-dk="' + k + '"]').innerHTML = DK[k].map(function (o) {
+        var bat = k === 'pnl' ? (o[0] === 'hoi' ? !!A.st.hoi : A.st.pnl === o[0] && !A.st.hoi) : A.st[k] === o[0];
+        return '<button type="button" data-k="' + k + '" data-v="' + o[0] + '" aria-pressed="' + bat + '">' + o[1] + '</button>';
+      }).join('');
+    });
+  }
+  A.onVe = veDk; veDk();
+  q('.dieu-khien').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-k]'); if (!b) return;
+    var k = b.getAttribute('data-k'), v = b.getAttribute('data-v'), st = A.st;
+    if (k === 'vai') { st.vai = v; st.chon = CHON_DAU[v]; st.xong = {}; st.mo = {}; st.gap = {}; st.luat = {}; st.pnl = 'nhap'; st.hoi = null; st.vuaXong = null; st.tt = 'co'; }
+    else if (k === 'tt') st.tt = v;
+    else if (v === 'hoi') { st.pnl = 'go'; var d = VAI[st.vai](); d.ds = phang(d); st.hoi = (keTiep(d, st, st.chon) || {}).id || null; }
+    else {
+      st.pnl = v; st.hoi = null;
+      /* dòng bên trái theo trạng thái panel: đang lưu / đã lưu / còn mở */
+      if (st.chon) { if (v === 'dang') st.xong[st.chon] = 'dang'; else if (v === 'da' || v === 'het') st.xong[st.chon] = 1; else delete st.xong[st.chon]; }
+    }
+    A.ve();
+  });
+
+  /* Khung tĩnh (vẫn bấm được) */
+  var tinh = function (k, st, hep) { var el = q('[data-k="' + k + '"]'); if (el) new Khung(el, st, hep); };
+  tinh('b1', { vai: 'gv', tt: 'co' }, true);
+  tinh('b2', { vai: 'gv', tt: 'co', mo: { g102: true }, cuon: '.khoi-gop' }, true);
+  tinh('b3', { vai: 'gv', tt: 'co', chon: 'dang-l', pnl: 'nhap' }, true);
+  tinh('c1', { vai: 'ql', tt: 'co', chon: 'bao-pt' }, false);
+  tinh('c7', { vai: 'qlall', tt: 'co', chon: 'a-dw' }, false);
+  tinh('c2', { vai: 'qlgv', tt: 'co', chon: 'dang-l' }, false);
+  tinh('c3', { vai: 'tvv', tt: 'co', chon: 'bp-linh' }, false);
+  tinh('c4', { vai: 'ql', tt: 'co' }, true);
+  tinh('c8', { vai: 'qlall', tt: 'co' }, true);
+  tinh('c5', { vai: 'tvv', tt: 'co' }, true);
+  tinh('c6', { vai: 'gvs', tt: 'co' }, true);
+  tinh('d1', { vai: 'gv', tt: 'tai' }, true);
+  tinh('d2', { vai: 'gv', tt: 'loi' }, true);
+  tinh('d3', { vai: 'gv', tt: 'rong' }, true);
+  tinh('d6', { vai: 'gv', tt: 'xonghet' }, true);
+  tinh('d4', { vai: 'gv', tt: 'loc' }, true);
+  tinh('d7', { vai: 'gv', tt: 'phamvi' }, true);
+  tinh('d5', { vai: 'gv', tt: 'co', xong: { 'dang-l': 1 }, cuon: '.viec.xong' }, true);
+  tinh('d8', { vai: 'gv', tt: 'co', chon: 'huy-vp', pnl: 'het', xong: { 'huy-vp': 1 } }, false);
+
+  /* Chú thích: sáng / tối / theo máy */
+  var nutTheme = qa('[data-theme-chon]');
+  function datTheme(t) {
+    if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
+    nutTheme.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-chon') === (t || ''))); });
+  }
+  nutTheme.forEach(function (b) { b.addEventListener('click', function () { datTheme(b.getAttribute('data-theme-chon')); }); });
+  try {
+    var qs = new URLSearchParams(location.search);
+    if (qs.get('theme')) datTheme(qs.get('theme'));
+    var khu = qs.get('khu');
+    if (khu) qa('.khu').forEach(function (k) { if (k.id !== khu) k.hidden = true; });
+  } catch (err) { /* không có query khi xem dạng artifact */ }
+})();
+</script>
+</body>
+</html>
