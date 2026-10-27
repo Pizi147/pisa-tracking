@@ -93,7 +93,8 @@ export function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it:
     <span className="block min-w-0 space-y-1 max-sm:space-y-0">
       {hien.map(({ dau: x, them }) => (
         <span key={x.it.key} className="flex min-w-0 items-center gap-2">
-          <button type="button" className="link min-w-0 flex-1 truncate appearance-none border-0 bg-transparent p-0 text-left text-[13px] font-medium no-underline hover:underline max-sm:min-h-[44px]"
+          {/* D10 (PTA 27/10): tên việc màu chữ thường — chỉ rê / focus mới xanh + gạch; trạng thái nằm ở chip hạn. */}
+          <button type="button" className="min-w-0 flex-1 truncate appearance-none border-0 bg-transparent p-0 text-left text-[13px] font-medium text-[color:var(--text)] underline-offset-2 hover:text-[color:var(--accent)] hover:underline focus-visible:text-[color:var(--accent)] focus-visible:underline max-sm:min-h-[44px]"
             title={dich(x.chu)} onClick={() => onMo(x.it)}>{chuCua(x)}</button>
           {them > 0 && <span className="shrink-0 text-xs text-dim">{t('+{n} việc', { n: them })}</span>}
           <HanViec x={x} />
@@ -101,7 +102,7 @@ export function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it:
       ))}
       {dong.length > SO_DONG_VIEC_MAC_DINH && (
         <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
-          className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-semibold text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
+          className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-medium text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
           {mo ? t('Thu gọn') : t('Xem thêm {n}', { n: dong.length - SO_DONG_VIEC_MAC_DINH })}
         </button>
       )}

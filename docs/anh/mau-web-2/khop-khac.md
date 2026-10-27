@@ -30,6 +30,7 @@ Tổng quan còn cao hơn mockup vì có nhiều dòng hơn (ô số 700, tên l
 | Mã lớp mở hồ sơ (HV & Lớp, dải lớp, panel Ý thức, Phân tích Ý thức) | link xanh đậm / gạch chấm | `.ten-ho-so` (màu chữ, ↗, rê mới xanh) như mockup | `StudentsPage`, `PanelViec`, `YThucPhoiHop` |
 | Chờ bạn duyệt (Tổng quan) | cả dòng 600 | loại việc 500 · tên HV 600 | `TongQuanV5.tsx` |
 | Ô lộ trình "2/5 MT" (HV & Lớp) | 700 | 500 | `DanhSachHvLop.tsx` |
+| Tên việc ở cột Việc (HV & Lớp, dải lớp) — PTA 27/10 | link xanh mỗi dòng | màu chữ 500, rê / focus mới xanh + gạch; trạng thái ở chip hạn; "Xem thêm n" 600 → 500 | `DanhSachHvLop.tsx` (`OViec`) |
 | Số Thi thật trên chart D | 800 | 700 | `BieuDoD.tsx` |
 
 GIỮ (khớp mockup / luật đã khoá): badge 12 / 600 (V4), ô số `OSo` 700 gạch chân (G6), đầu cột 13 / 600, tên em 15 / 600 và tên việc 15 / 500 (V18),
@@ -38,7 +39,7 @@ chữ trên chart D (mockup M5), logo 800, `.hang-thi-that` 700.
 ## Thao tác TRƯỚC → SAU
 Không đổi thao tác nào: mọi nút, tab, chip lọc, link, panel giữ nguyên vị trí, chữ, đích. Mã lớp vẫn bấm mở Hồ sơ lớp (↗ giờ do `.ten-ho-so` vẽ).
 
-## [XM] để PTA Plan quyết
-- "Chờ n kỹ năng" ở cột Kết quả lưới Lịch Test là `Level tone="muted"` (badge 12 / 600, V4). Critique đề nghị chữ thường 400; giữ badge vì luật V4 khoá — đổi thì sửa V4.
-- HV & Lớp cột Việc: tên việc còn chữ xanh (link) mỗi dòng — để D2 / PR riêng (bang-lech D4b đã ghi).
-- Badge 375 "Tài khoản" / "Xem" nền đặc liền nhau; ô "Chưa có lịch" viền mọi dòng — bố cục, ngoài phạm vi.
+## [XM] — PTA Plan đã trả lời 27/10
+- "Chờ n kỹ năng" (Lịch Test) badge 12 / 600: GIỮ theo V4.
+- HV & Lớp cột Việc link xanh: làm trong D10 (dòng trong bảng trên).
+- Badge 375 liền nhau, ô "Chưa có lịch" viền mọi dòng: ngoài D10, PTA ghi việc sau.
