@@ -18,7 +18,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { KHOA_HOAN_TAT_HINT, ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel } from '../../lib/format.ts';
 import {
-  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, duongDotTest, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -56,6 +56,8 @@ type SkillSchedule = {
   khongVang?: string | null;
   /** CV-LOI (V4B H15): máy chủ cho đổi lịch môn này — nút "Xếp lại bài vắng". */
   doiLich?: boolean;
+  /** HSL-MAY-CHU: người nhập điểm môn này (null = chưa có điểm). */
+  nguoiNhap?: string | null;
 };
 type Row = {
   /** Khoá bài (`khoaBai`): `progress` / `final`; OV-6b2 Checkpoint kèm số (`checkpoint:2`). */
@@ -464,7 +466,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
       {/* Tên + chip "Đủ điểm" một dòng; MỘT dòng phụ: dòng thi · trạng thái lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
         <span className="inline-flex max-w-full items-center gap-1.5 align-baseline">
-          <Link className="ten-ho-so min-w-0 truncate max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+          {/* HSL-LT: tên em mở hồ sơ lượt lớp thường (như tên em ở lưới FT → hồ sơ lượt Mock); hồ sơ HV là tên ↗ ở đầu trang đó. */}
+          <Link className="ten-ho-so min-w-0 truncate max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id })} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">
@@ -559,7 +562,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
  * huống thường gặp — nếu Case đứng cuối hàng ưu tiên thì nó biến mất đúng lúc cần thấy. Nên Case là một nhãn trạng thái
  * nhỏ đứng CẠNH dòng chính ("Case L"), màu theo Case đại diện (đang mở trước — `cases[0]`), tooltip ghi đủ từng Case.
  */
-function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
+export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: ThuongSheet; anCase?: boolean }) {
   const r = row.result;
   const ngan = (k: string) => tenMonNgan(sheet.programme.code, k);
   const du = (k: string) => tenMon(sheet.programme.code, k);
@@ -614,7 +617,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   /* Nhãn Case: một nhãn cho cả dòng, liệt kê môn; tooltip "Case Listening · Đang xử lý" cho từng Case. */
   const cases = row.cases;
   const dauCase = cases[0] ?? null;
-  const nhanCase = dauCase && (
+  const nhanCase = dauCase && !anCase && (
     <Status
       kind={dauCase.status === 'done' ? 'done' : dauCase.status === 'open' ? 'idle' : 'doing'}
       title={cases.map((c) => `Case ${du(c.skill)} · ${dich(caseStatusLabel(c.status))}`).join('\n')}>

@@ -441,7 +441,7 @@ async function runTask7(t: YThucTestKit, d: any) {
     } finally { xoaNhatKy(ids); }
   });
 
-  check('S6F-b (7) · mốc điểm mang kind + classId từ máy chủ; lượt lớp thường → /bang-diem-thuong/ (kể cả chưa xếp tuần); web duongMoc đọc mốc, không tra ghim', () => {
+  check('S6F-b (7) · mốc điểm mang kind + classId từ máy chủ; lượt lớp thường → /luot-test/ (HSL-LT; kể cả chưa xếp tuần); web duongMoc đọc mốc, không tra ghim', () => {
     const th = get(`SELECT e.student_id id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = e.student_id
        WHERE c.is_fast_track = 0 AND e.status = 'active' AND s.id <= ? AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN assessment_scores sc ON sc.attempt_id = a.id WHERE a.class_id = c.id AND a.student_id = s.id)
        ORDER BY s.id LIMIT 1`, seedMax.students);
@@ -450,7 +450,7 @@ async function runTask7(t: YThucTestKit, d: any) {
     const diem = h.hop.flatMap((x: any) => x.diem);
     assert(diem.length && diem.every((m: any) => m.classId && m.kind), `mốc thiếu kind/classId: ${JSON.stringify(diem.slice(0, 2))}`);
     const moc = d.chuoiDiem(h.hop.find((x: any) => x.diem.length).diem, 'ratio', false);
-    assert(moc.every((m: any) => m.classId && m.kind) && d.duongDotTest({ id: moc[0].attemptId, kind: moc[0].kind, classId: moc[0].classId }, 'listening').startsWith('/bang-diem-thuong/'), JSON.stringify(moc[0]));
+    assert(moc.every((m: any) => m.classId && m.kind) && d.duongDotTest({ id: moc[0].attemptId, kind: moc[0].kind, classId: moc[0].classId }, 'listening').startsWith('/luot-test/'), JSON.stringify(moc[0]));
     const tsx = doc('web/src/modules/students/HanhTrinh.tsx');
     assert(/duongDotTest\(\{ id: m\.attemptId, kind: m\.kind \?\? null, classId: m\.classId \?\? null \}/.test(tsx) && !/ghim\.find\(\(x\) => x\.attemptId === attemptId\)/.test(tsx), 'duongMoc đọc kind/classId của mốc');
   });

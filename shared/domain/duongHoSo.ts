@@ -85,18 +85,19 @@ const soNguyenDuong = (v: string | null): number | undefined => {
 
 /**
  * G5 / E.4 (PR-VAI-b Q24): MỘT đường tới kết quả một đợt Test của em. FT → hồ sơ Mock `/mock-test/{id}` (+ `?kn=` để cuộn tới kỹ năng);
- * lớp thường → bảng điểm lớp thường như cũ (BỎ `kn` — bảng đó chưa có ô kỹ năng để cuộn). Không ai tự ghép `/mock-test/`.
- * Quyền không đổi: hồ sơ Mock tự kiểm quyền như cũ (`kn` chỉ là chỗ cuộn).
+ * lớp thường (HSL-LT) → trang lượt `/luot-test/{id}` (+ `?kn=` mở sẵn dòng môn). Không ai tự ghép `/mock-test/`, `/luot-test/`.
+ * Quyền không đổi: mỗi trang tự kiểm quyền như cũ (`kn` chỉ là chỗ mở sẵn).
  */
 export function duongDotTest(d: { id: number; kind?: string | null; classId?: number | null; studentId?: number | null }, kn?: string | null): string {
-  /* PR-MT0: MT0 mở hồ sơ Mock (chấm band), không bảng điểm lớp thường. */
-  if (d.kind && d.kind !== 'mock' && d.kind !== 'mt0') {
-    if (d.classId) return `/bang-diem-thuong/${d.classId}?kind=${d.kind}`;
-    /* R1-SUA-NHO: lượt lớp thường mất lớp — hồ sơ Mock sẽ chuyển về chính nó, nên về hồ sơ HV. */
-    if (d.studentId) return duongHoSoHocVien(d.studentId);
-  }
   const k = kn && KY_NANG_HOP_LE.includes(kn) ? kn : null;
-  return `/mock-test/${d.id}${k ? `?kn=${k}` : ''}`;
+  const q = k ? `?kn=${k}` : '';
+  /* PR-MT0: MT0 mở hồ sơ Mock (chấm band), không trang lớp thường. */
+  if (d.kind && d.kind !== 'mock' && d.kind !== 'mt0') {
+    /* R1-SUA-NHO: lượt lớp thường mất lớp — máy chủ không dựng được trang lượt (404), nên về hồ sơ HV. */
+    if (!d.classId && d.studentId) return duongHoSoHocVien(d.studentId);
+    return `/luot-test/${d.id}${q}`;
+  }
+  return `/mock-test/${d.id}${q}`;
 }
 
 /** `kn` trên URL hồ sơ Mock → ô lớn: writing1/writing2/writing → 'writing'; lạ → null. */
@@ -222,7 +223,7 @@ export function noiDenThongBao(n: ThongBaoRow): string | null {
   if (path.startsWith('/cong-viec/yeu-cau')) return t('Công việc › Yêu cầu của tôi');
   if (path.startsWith('/cong-viec/cho-duyet')) return t('Công việc › Chờ duyệt');
   if (path.startsWith('/cong-viec')) return t('Công việc');
-  if (path.startsWith('/mock-test/')) return t('Test › Lượt{x}', { x: n.ten_hv ? t(' của {ten_hv}', { ten_hv: n.ten_hv }) : '' });
+  if (path.startsWith('/mock-test/') || path.startsWith('/luot-test/')) return t('Test › Lượt{x}', { x: n.ten_hv ? t(' của {ten_hv}', { ten_hv: n.ten_hv }) : '' });
   if (path.startsWith('/test')) return t('Test › Lịch Test');
   if (path.startsWith('/quan-tri')) return t('Quản trị › Tài khoản');
   return null;

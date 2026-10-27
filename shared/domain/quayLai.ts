@@ -13,19 +13,19 @@ import { t } from '../i18n/index.ts';
 
 export type BuocVe = { url: string; ten: string; chiTiet?: string; cuon: number };
 export type TenTrang = { ten: string; chiTiet?: string };
-export type LoaiHoSo = 'hoc-vien' | 'lop' | 'mt' | 'gv' | 'case' | 'nhap-diem';
+export type LoaiHoSo = 'hoc-vien' | 'lop' | 'mt' | 'luot' | 'gv' | 'case' | 'nhap-diem';
 /** `POP` = lùi / tiến trình duyệt (hoặc nút Quay lại về trang cha): chỉ cắt chồng khi về đúng một bước, không ghi thêm. */
 export type KieuDi = 'PUSH' | 'REPLACE' | 'POP';
 
 export const CHONG_TOI_DA = 5;
 
 const HO_SO: [RegExp, LoaiHoSo][] = [
-  [/^\/hoc-vien\/\d+$/, 'hoc-vien'], [/^\/hoc-vien\/lop\/\d+$/, 'lop'], [/^\/mock-test\/\d+$/, 'mt'],
+  [/^\/hoc-vien\/\d+$/, 'hoc-vien'], [/^\/hoc-vien\/lop\/\d+$/, 'lop'], [/^\/mock-test\/\d+$/, 'mt'], [/^\/luot-test\/\d+$/, 'luot'],
   [/^\/giao-vien\/\d+$/, 'gv'], [/^\/hoc-thuat\/case\/\d+$/, 'case'], [/^\/(nhap-diem|bang-diem-thuong)\/\d+$/, 'nhap-diem'],
 ];
 const TRANG_TRUOC = t('Trang trước');
 const TEN_HO_SO: Record<LoaiHoSo, string> = {
-  'hoc-vien': t('Hồ sơ học viên'), lop: t('Hồ sơ lớp'), mt: t('Hồ sơ Mock Test'), gv: t('Hồ sơ giáo viên'), case: 'Case', 'nhap-diem': t('Nhập điểm'),
+  'hoc-vien': t('Hồ sơ học viên'), lop: t('Hồ sơ lớp'), mt: t('Hồ sơ Mock Test'), luot: t('Hồ sơ lượt Test'), gv: t('Hồ sơ giáo viên'), case: 'Case', 'nhap-diem': t('Nhập điểm'),
 };
 
 /** Trang Nhập điểm tính như hồ sơ: có nút Quay lại theo nguồn (Đầu ra 6), bấm em trong lưới là đi tiếp hồ sơ → hồ sơ. */
@@ -83,7 +83,7 @@ export function buocMoi(chong: BuocVe[], o: { tu: BuocVe | null; den: string; ki
 export function trangCha(loai: LoaiHoSo, o: { studentId?: number | null; tenHv?: string | null; nav?: { phanTichGv?: boolean; admin?: boolean } | null } = {}): TenTrang & { url: string } {
   const hvLop = { url: '/hoc-vien', ten: t('Học viên & Lớp') };
   switch (loai) {
-    case 'mt': case 'case':
+    case 'mt': case 'luot': case 'case':
       return o.studentId ? { url: `/hoc-vien/${o.studentId}`, ten: o.tenHv ? t('Hồ sơ {ten}', { ten: o.tenHv }) : TEN_HO_SO['hoc-vien'] } : hvLop;
     case 'gv':
       if (o.nav?.phanTichGv) return { url: '/phan-tich?goc=giao-vien', ten: t('Phân tích'), chiTiet: GOC_NHIN_LABEL['giao-vien'] };

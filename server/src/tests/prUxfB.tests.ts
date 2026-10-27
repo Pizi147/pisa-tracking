@@ -132,7 +132,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
       assert(attemptsSvc.attemptHref(a) === d.duongDotTest(a), `${JSON.stringify(a)}: ${attemptsSvc.attemptHref(a)} ≠ ${d.duongDotTest(a)}`);
     }
   });
-  check('UXF-b (5) · quét chuỗi: không nơi nào tự ghép "/mock-test/${…}" hay "/bang-diem-thuong/${…}?kind=" (chỉ duongHoSo.ts, route App.tsx, và lối vào bảng điểm cả lớp thaoTacDongHocVien.tsx — không có id lượt)', () => {
+  check('UXF-b (5) · quét chuỗi: không nơi nào tự ghép "/mock-test/${…}", "/luot-test/${…}" hay "/bang-diem-thuong/${…}?kind=" (chỉ duongHoSo.ts, route App.tsx, và lối vào bảng điểm cả lớp thaoTacDongHocVien.tsx — không có id lượt)', () => {
     const co: string[] = [];
     const quet = (dir: string) => {
       for (const e of fs.readdirSync(path.join(REPO, dir), { withFileTypes: true })) {
@@ -140,7 +140,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
         if (e.isDirectory()) { if (e.name !== 'tests' && e.name !== 'node_modules') quet(rel); continue; }
         if (!/\.tsx?$/.test(e.name) || ['App.tsx', 'thaoTacDongHocVien.tsx'].includes(e.name) || rel.endsWith('shared/domain/duongHoSo.ts')) continue;
         const s = doc(rel);
-        if (/\/mock-test\/\$\{/.test(s) || /\/bang-diem-thuong\/\$\{[^}]*\}\?kind=/.test(s)) co.push(rel);
+        if (/\/(mock|luot)-test\/\$\{/.test(s) || /\/bang-diem-thuong\/\$\{[^}]*\}\?kind=/.test(s)) co.push(rel);
       }
     };
     for (const dir of ['web/src', 'server/src', 'shared']) quet(dir);

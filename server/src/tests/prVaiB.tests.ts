@@ -447,13 +447,13 @@ export async function runPrVaiBTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ khối 8 · đường dẫn sâu "MT · kỹ năng" → hồ sơ Mock (E.4 / G5)
   const attemptsSvc = await import('../fasttrack/attempts.ts');
-  check('VAI-b (8) · duongDotTest / docKnMock: FT → /mock-test/{id}?kn=; kn lạ bỏ; lớp thường → bảng điểm lớp thường (bỏ kn); attemptHref web chỉ gọi duongDotTest', () => {
+  check('VAI-b (8) · duongDotTest / docKnMock: FT → /mock-test/{id}?kn=; kn lạ bỏ; lớp thường → trang lượt /luot-test/{id} (HSL-LT, giữ kn); attemptHref web chỉ gọi duongDotTest', () => {
     assert(d.duongDotTest({ id: 5, kind: 'mock' }, 'speaking') === '/mock-test/5?kn=speaking', 'FT + kn');
     assert(d.duongDotTest({ id: 5, kind: 'mock' }) === '/mock-test/5' && d.duongDotTest({ id: 5 }) === '/mock-test/5', 'không kn');
     assert(d.duongDotTest({ id: 5, kind: 'mock' }, 'abc') === '/mock-test/5', 'kn lạ → bỏ');
-    assert(d.duongDotTest({ id: 7, kind: 'progress', classId: 3 }, 'speaking') === '/bang-diem-thuong/3?kind=progress', 'lớp thường bỏ kn');
-    /* Không đổi đường cũ của attemptHref (mọi mẫu): mock · thiếu kind · lớp thường · lớp thường thiếu lớp. */
-    const cu = (a: any) => (!a.kind || a.kind === 'mock' ? `/mock-test/${a.id}` : a.classId ? `/bang-diem-thuong/${a.classId}?kind=${a.kind}` : `/mock-test/${a.id}`);
+    assert(d.duongDotTest({ id: 7, kind: 'progress', classId: 3 }, 'speaking') === '/luot-test/7?kn=speaking', 'lớp thường → trang lượt + kn');
+    /* Đường của attemptHref (mọi mẫu): mock · thiếu kind · lớp thường · lớp thường thiếu lớp (không có em → trang lượt; máy chủ 404 → hồ sơ Mock tự chuyển). */
+    const cu = (a: any) => (!a.kind || a.kind === 'mock' ? `/mock-test/${a.id}` : `/luot-test/${a.id}`);
     for (const a of [{ id: 1, kind: 'mock' }, { id: 2 }, { id: 3, kind: 'final', classId: 9 }, { id: 4, kind: 'progress', classId: null }]) {
       assert(d.duongDotTest(a) === cu(a), `attemptHref đổi đường cũ: ${JSON.stringify(a)} → ${d.duongDotTest(a)}`);
     }
