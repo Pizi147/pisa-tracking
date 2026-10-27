@@ -132,7 +132,7 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
           <li key={y.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
             <button type="button" onClick={() => setMo(y)}
               className={`bam grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-left ${mo?.id === y.id ? 'dang-mo' : ''}`}>
-              <span className="truncate text-sm font-semibold text-slate-100">{y.nhanLoai}{y.hocVien && ` · ${y.hocVien}`}</span>
+              <span className="truncate text-sm font-medium text-slate-100">{y.nhanLoai}{y.hocVien && <> · <b className="font-semibold">{y.hocVien}</b></>}</span>
               <span className="whitespace-nowrap text-xs text-slate-400">{cho(y)}</span>
               <span className="col-span-2 truncate text-xs text-slate-500">{[y.lop, y.phu, y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
             </button>
