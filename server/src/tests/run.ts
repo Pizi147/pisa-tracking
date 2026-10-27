@@ -9637,6 +9637,9 @@ await runTenChiSoTests({ check, assert });
 // ==================================================================== R1-NO-CU (đổi người phụ trách Case — D17)
 const { runR1NoCuTests } = await import('./r1NoCu.tests.ts');
 await runR1NoCuTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== HSL-MAY-CHU (M4 PR 1: hồ sơ một lượt Test — S Ex, lớp hiện tại, GET /regular/attempts/:id)
+const { runPrHslMayChuTests } = await import('./prHslMayChu.tests.ts');
+await runPrHslMayChuTests({ check, assert, conn, P, classId, TODAY, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
