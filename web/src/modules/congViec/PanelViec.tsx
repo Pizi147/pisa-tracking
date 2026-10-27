@@ -224,7 +224,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
     ),
   });
   if (caLop) {
-    return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('‹ Việc'), onClick: () => setCaLop(false) }} />;
+    return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('Việc'), onClick: () => setCaLop(false) }} />;
   }
   return (
     <KhungPanel tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}
@@ -426,7 +426,7 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
   if (lon) return <NganCase caseId={it.caseId!} paId={it.paId} viec="ghi-ket-qua" hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
   if (viecCase) {
     return <NganCase caseId={it.caseId!} viecBanDau={viecCase} hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={() => { reload(); onDaLam(); }}
-      veNguon={{ nhan: t('‹ Việc'), onClick: () => setViecCase(null) }} />;
+      veNguon={{ nhan: t('Việc'), onClick: () => setViecCase(null) }} />;
   }
   const iv = (data?.interventions ?? []).find((x: any) => x.id === it.paId);
   if (data && daTruoc.current === undefined) daTruoc.current = (data.followups ?? []).find((f: any) => f.interventionId === it.paId && f.outcome) ?? null;
