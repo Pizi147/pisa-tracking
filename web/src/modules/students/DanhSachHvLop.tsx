@@ -70,13 +70,11 @@ function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
 function HanViec({ x }: { x: ViecEm }) {
   const { homNay } = useNgayNghiepVu();
   if (!x.han) return null;
-  const gap = x.quaHan || x.it.urgency === 'today';
-  return (
-    <span className={`inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap text-xs tabular-nums px-2 ${gap ? `rounded-full font-semibold ${x.quaHan ? 'bg-late-bg text-late' : 'bg-soon-bg text-soon'}` : 'text-dim'}`}
->
-      {gap && <span aria-hidden>⚠</span>}{x.quaHan && <span className="sr-only">{t('Quá hạn')} </span>}{shortDate(x.han, homNay)}
-    </span>
-  );
+  const ngay = shortDate(x.han, homNay);
+  /* Quá hạn = badge tiến độ `late` (Nhan tự thêm ⚠); hôm nay = `soon`; còn lại chữ phụ. */
+  if (x.quaHan) return <span className="shrink-0"><span className="sr-only">{t('Quá hạn')} </span><Nhan tone="late">{ngay}</Nhan></span>;
+  if (x.it.urgency === 'today') return <span className="shrink-0"><Nhan tone="soon">{ngay}</Nhan></span>;
+  return <span className="shrink-0 px-2 text-xs tabular-nums text-dim">{ngay}</span>;
 }
 
 /**
