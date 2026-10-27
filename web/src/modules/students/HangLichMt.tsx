@@ -6,7 +6,7 @@ import { addDaysStr, fmtBand } from '../../lib/format.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
-import { Skeleton, Status } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
 import { OMt } from '../../ui/OMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
@@ -188,6 +188,7 @@ function DaiDiemMt({ attemptId, homNay, onDoi, onDong }: { attemptId: number; ho
   const ct = useApi<any>(`/attempts/${attemptId}`, [attemptId]);
   const { save } = useSaveScore(attemptId, () => { ct.reload(); onDoi(); });
   const [mo, setMo] = useState<string | null>(null);
+  if (ct.error) return <ErrorState message={ct.error.message} hint={ct.error.hint} onRetry={ct.reload} />;
   if (!ct.data) return <Skeleton rows={2} />;
   return (
     <div className="space-y-2">

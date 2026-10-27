@@ -46,4 +46,28 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     const thieu = can.filter(([f, re]) => !re.test(doc(W + f).replace(/\r\n/g, '\n'))).map(([f]) => f);
     assert(thieu.length === 0, `chưa báo đang sửa: ${thieu.join(', ')}`);
   });
+
+  check('6c ② lỗi tải có ErrorState / dòng "Không tải được" + Thử lại (không như rỗng, không "Đang tải…" mãi)', () => {
+    const can: [string, RegExp][] = [
+      ['students/StudentPlanPanel.tsx', /cycle\.error \? <ErrorState[^]*sugg\.error \? <ErrorState/],
+      ['students/HangLichMt.tsx', /if \(ct\.error\) return <ErrorState/],
+      ['students/DauHoSo.tsx', /<LoiTaiNho /],
+      ['platform/Header.tsx', /notifications\.error \? <LoiTaiNho /],
+      ['worklist/SignalList.tsx', /if \(error\) return <Card[^\n]*<ErrorState/],
+      ['yThuc/XacNhanXuLyPanel.tsx', /<ErrorState message=\{loiTai\.message\}/],
+      ['yThuc/KhaiBacPanel.tsx', /<ErrorState message=\{loiTai\.message\}/],
+      ['yThuc/DaThucHienPanel.tsx', /<ErrorState message=\{loiTai\.message\}/],
+      ['yThuc/ChiTietViPham.tsx', /if \(loiTai\) return <ErrorState/],
+    ];
+    const thieu = can.filter(([f, re]) => !re.test(doc(W + f).replace(/\r\n/g, '\n'))).map(([f]) => f);
+    assert(thieu.length === 0, `lỗi tải còn hiện như rỗng: ${thieu.join(', ')}`);
+    assert(/export function LoiTaiNho\(/.test(doc('web/src/ui/ui.tsx')), 'thiếu dòng lỗi tải gọn LoiTaiNho');
+  });
+
+  check('6c ② Tài khoản / Chương trình: chỉ nói "chỉ dành cho Quản trị" khi máy chủ trả 403; lỗi mạng → ErrorState + Thử lại', () => {
+    for (const f of ['platform/AccountsAdmin.tsx', 'platform/CatalogAdmin.tsx']) {
+      const s = doc(W + f);
+      assert(/\.status !== 403/.test(s) && /<ErrorState /.test(s), `${f}: lỗi mạng vẫn báo thiếu quyền`);
+    }
+  });
 }

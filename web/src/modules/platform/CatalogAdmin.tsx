@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Field, Forbidden, Info, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Field, Forbidden, Info, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { MON_CHON, MON_GOP, MT_TOI_DA, dsLoi, kyHieuLop, oPhanCong, skillShort, thuTuKyHieu, type LoiTruong } from '@shared/domain/index.ts';
@@ -60,7 +60,12 @@ export function CatalogAdmin() {
   const [sua, setSua] = useState<Dong | null>(null);
 
   /* Không có quyền thì nói thẳng, đừng để một khối trống — xem chú thích ở `AccountsAdmin`. */
-  if (routes.error || programmes.error) {
+  /* 6c (lỗi 6): chỉ 403 mới là thiếu quyền — lỗi mạng / máy chủ thì nói thật + Thử lại. */
+  const loiTai = routes.error ?? programmes.error;
+  if (loiTai && loiTai.status !== 403) {
+    return <Card title="Chương trình"><ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={() => { routes.reload(); programmes.reload(); }} /></Card>;
+  }
+  if (loiTai) {
     return (
       <Forbidden
         message="Phần này chỉ dành cho Quản trị hệ thống."

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
-import { Info } from '../../ui/ui.tsx';
+import { Info, LoiTaiNho } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
@@ -314,7 +314,8 @@ export function Header() {
                   catch (e: any) { toast.push('error', e?.message || t('Chưa đánh dấu đã đọc được — thử lại.')); }
                 }}>{t('Đánh dấu đã đọc')}</button>
             </div>
-            {dsThongBao.length === 0 && <div className="px-3.5 py-2.5 text-[13px] text-slate-500">{t('Chưa có thông báo mới')}</div>}
+            {notifications.error ? <LoiTaiNho chu={t('Không tải được thông báo.')} onRetry={notifications.reload} />
+              : dsThongBao.length === 0 && <div className="px-3.5 py-2.5 text-[13px] text-slate-500">{t('Chưa có thông báo mới')}</div>}
             {(['can-lam', 'de-biet'] as const).map((nhom) => {
               const ds = nhom === 'can-lam' ? chuong.canLam : chuong.deBiet;
               if (!ds.length) return null;

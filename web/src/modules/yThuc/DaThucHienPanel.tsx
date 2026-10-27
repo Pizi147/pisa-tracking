@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { ErrorState } from '../../ui/ui.tsx';
 import { Hang2, Khoi, KhungPanel, KhungTaiCho, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
@@ -18,7 +19,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: number | null; onClose: () => void; onDone?: () => void }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const { data: m } = useApi<XuLyView>(measureId ? `/y-thuc/xu-ly/${measureId}` : null, [measureId]);
+  const { data: m, error: loiTai, reload } = useApi<XuLyView>(measureId ? `/y-thuc/xu-ly/${measureId}` : null, [measureId]);
   const [ngayTh, setNgayTh] = useState(homNay);
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [ghiChu, setGhiChu] = useState('');
@@ -30,6 +31,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); lf.datLai(); }, [measureId, homNay]);
 
   if (!measureId) return null;
+  if (loiTai) return <KhungPanel tieuDe={t('Đã thực hiện')} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={reload} /></KhungPanel>;
   if (!m) return <KhungPanel tieuDe={t('Đã thực hiện')} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
   if (daLuu) {
