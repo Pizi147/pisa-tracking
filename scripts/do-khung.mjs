@@ -476,7 +476,8 @@ if (!CHI_BANG && (!LOC || 'ngon-ngu'.includes(LOC))) {
     await p2.request.post(`${BASE}/api/demo/session`, { data: { userId: 9 } });
     await p2.goto(BASE + '/', { waitUntil: 'networkidle' }); await p2.waitForTimeout(1500);
     ktra((await p2.evaluate(() => document.documentElement.lang)) === 'en', '(3) máy mới đăng nhập cùng vai không tự EN');
-    await p2.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'VI' }).click();
+    await p2.getByRole('button', { name: /^(Tài khoản|Account) / }).click();   // OV-15a: VI | EN nằm trong menu Tài khoản (SUA-DO-KHUNG)
+    await p2.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'VI' }).click({ timeout: 8000 });
     await p2.waitForLoadState('networkidle'); await p2.waitForTimeout(800);
     ktra(await nnTk(p2) === 'vi' && (await p2.evaluate(() => document.documentElement.lang)) === 'vi', `(4) bấm VI: tài khoản ${await nnTk(p2)}`);
     await ctx2.close();
@@ -558,16 +559,12 @@ if (!CHI_BANG && (!LOC || 'hd-chi'.includes(LOC))) {
  */
 if (!CHI_BANG && (!LOC || 'lich'.includes(LOC) || LOC.startsWith('lich-'))) {
   const theoTen = (ten) => KICH_BAN.find((k) => k[0] === ten);
-  const hopThoiGian = async (p) => {   // BoChonThoiGian: mở hộp → "Theo tuần" (hiện ô Từ tuần / Đến tuần)
-    await p.locator('[data-hd="pt-thoi-gian"] > button[aria-expanded]:visible').last().click();   // panel (vẽ sau) nằm cuối
-    await p.getByRole('dialog', { name: 'Khoảng thời gian' }).getByRole('button', { name: 'Theo tuần' }).click();
-    await p.waitForTimeout(200);
-  };
+  /* BoChonThoiGian (UI-PHAN-TICH vòng 2): ô Tuần bắt đầu → Tuần kết thúc hiện thẳng, không còn hộp "Khoảng thời gian" (SUA-DO-KHUNG). */
+  const hopThoiGian = async (p) => { await p.locator('[data-hd="pt-thoi-gian"]:visible').last().waitFor(); await p.waitForTimeout(200); };
   /** [tên, vai, đường, mở hộp]: mọi hộp / panel có ô ngày mà demo mở được. */
   const HOP_NGAY = [
     ['lich-phan-tich', 2, '/phan-tich', hopThoiGian],
-    ['lich-tutor', 1, '/tutor', hopThoiGian],
-    ['lich-panel-tutor', 1, '/tutor', async (p) => { await p.getByRole('button', { name: /^✓?Tất cả/ }).click(); await p.waitForTimeout(600); await p.locator('#noi-dung button.link').first().click(); await p.waitForTimeout(800); await hopThoiGian(p); }],
+    /* lich-tutor, lich-panel-tutor: bỏ — /tutor chuyển về trang chủ (Tutor hoãn, App.tsx) (SUA-DO-KHUNG). */
     ['lich-loc-them', 2, '/hoc-vien?lt=1&ltu=2026-08-03&lden=2026-09-13', hopThoiGian],
     ...['hop-ky-nang-mt', 'panel-tao-case', 'panel-vi-pham', 'panel-pa'].map((k) => { const [, v, d, mo] = theoTen(k); return [`lich-${k}`, v, d, mo]; }),
   ];
