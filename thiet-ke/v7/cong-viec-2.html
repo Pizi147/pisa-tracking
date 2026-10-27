@@ -148,7 +148,7 @@ textarea.o { height: auto; min-height: 84px; padding: 8px 10px; resize: vertical
 .dt .o { font-size: 16px; height: 44px; } .dt textarea.o { height: auto; }
 .o::placeholder { color: var(--text-faint); }
 .link-nho { appearance: none; border: 0; background: none; padding: 0; color: var(--accent); font: 600 13px var(--phong); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.nut-i { appearance: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--text-dim); font: 700 12px/1 var(--phong); cursor: help; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.nut-i { appearance: none; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--text-dim); font: 700 12px/1 var(--phong); cursor: help; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 
 /* Chip / badge V4 */
 .td { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); font: 600 12px var(--phong); white-space: nowrap; }
@@ -156,6 +156,7 @@ textarea.o { height: auto; min-height: 84px; padding: 8px 10px; resize: vertical
 .td.dang { color: var(--doing); background: var(--doing-nen); }
 .td.dang::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .td.qua::before, .td.sap::before { content: "⚠"; font-size: 12px; }
+.td.sap.nay { font-weight: 700; box-shadow: inset 0 0 0 1px var(--soon-vien); }
 .td.khong { background: none; color: var(--text-faint); font-weight: 500; padding: 0; }
 .lich { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 2px; background: var(--da-thi); color: var(--da-thi-chu); font: 600 12px var(--phong); white-space: nowrap; }
 .sos { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 4px; font: 700 12px var(--phong); white-space: nowrap; }
@@ -375,7 +376,7 @@ fieldset[disabled] { opacity: .6; }
       <dt>Chủ SP báo</dt><dd>"Công việc: không phân biệt được dòng nào việc nào, không phân loại rõ, việc từng học viên lẫn nhau, rất rối mắt — sửa lại." (27/10, ảnh góc GV)</dd>
       <dt>Hiện trạng đã kiểm</dt><dd>Đọc <code>DanhSachViec.tsx</code>, <code>gopViec.ts</code>, <code>mywork.ts</code>: ① tên việc máy chủ đã chứa tên em (<code>Ghi nhận xét Listening · MT2 · {em}</code>) rồi dòng phụ lại ghi em · lớp → tên em lặp; ② em có 1 việc là dòng lẻ, em có ≥ 2 việc mới có dòng tên em → hai kiểu dòng lẫn nhau trong cùng nhóm; ③ dòng gộp "3 em" trông y dòng một em; ④ đầu nhóm số 13 xám, nhóm cách nhóm chỉ bằng khe thẻ; ⑤ hạn đứng cột trái 116 px, nút phải — mắt phải quét hai đầu.</dd>
       <dt>Sửa (D5)</dt><dd><b>Ba tầng, mỗi tầng một dáng:</b> ① <b>nhóm việc</b> — thẻ riêng, dải nền <code>--surface-2</code> + vạch 3 px + biểu tượng, 15 / 700, chip "n việc", dính khi cuộn · ② <b>đối tượng</b> — học viên: vòng tròn chữ đầu + tên 15 / 600 ↗ (link hồ sơ) · lớp · SOS ghi <b>một lần</b>; lớp / nhóm em: ô vuông biểu tượng, chính dòng là việc · ③ <b>việc của em</b> — thụt dưới tên, nối bằng nét cây mảnh, tên việc 15 / 500 KHÔNG lặp tên em, phụ 13, <b>hạn ở cột cố định</b>, một nút. Em chỉ có một việc vẫn có dòng tên (một kiểu, không đổi dáng theo số việc).</dd>
-      <dt>Dòng gộp</dt><dd>"Mô tả Case Listening · MB FT 102 · 3 em" là <b>đối tượng lớp</b> (ô vuông), nút "3 em ▾" mở danh sách em trong khay nền chìm có viền — khác hẳn khối học viên. Mở ra mỗi em một dòng việc, bấm mở panel.</dd>
+      <dt>Dòng gộp (2 kiểu, như web)</dt><dd><b>Làm cả dòng</b> (<code>moCaDong</code>: "Xác nhận PA Reading · 3 em", "Nhập điểm · thi W3 SEP · 2 lớp"): ô chồng có số, nút động từ, bấm mở một panel lô. <b>Mở danh sách em</b>: "Mô tả Case Listening · MB FT 102 · 3 em" là <b>đối tượng lớp</b> (ô vuông), nút "3 em ▾" mở danh sách em trong khay nền chìm có viền — khác hẳn khối học viên. Mở ra mỗi em một dòng việc, bấm mở panel.</dd>
       <dt>Giả định (không hỏi lại — CLAUDE.md)</dt><dd>Giữ <b>4 nhóm GV</b> đang có (Chấm điểm · Case học thuật · Ý thức &amp; Phối hợp · Vận hành) và 4 nhóm TVV — D5 ghi 3 nhóm là ví dụ; thứ tự nhóm, cách đếm, gộp, "việc tiếp", bộ lọc giữ nguyên máy chủ / <code>gomNhomViec</code>. Trong nhóm: khối xếp theo việc gấp nhất của khối; trong khối: theo hạn. Em có việc ở hai nhóm thì có ở cả hai khối (nhóm trước); panel "Em này còn" nối hai nơi. Tên việc theo D6: "Ghi nhận xét …" → <b>"Mô tả Case {kỹ năng}"</b>.</dd>
       <dt>Màu</dt><dd>Chủ SP chê màu đau mắt (D4): vạch nhóm <b>một màu nhấn</b> (nhóm phân biệt bằng tên + biểu tượng, không thêm màu); màu chỉ cho hạn (quá hạn đỏ ⚠, sắp hạn vàng ⚠) và SOS. Nhóm "không phải việc của bạn" (Speaking chấm chéo) vạch xám.</dd>
       <dt>Panel</dt><dd>Giữ M6 ②: đầu "VIỆC · CASE HỌC THUẬT" · tiêu đề · tên em ↗ · "Em này còn" · bối cảnh · form · chân "Tiếp: …" + <b>Lưu</b> / <b>Lưu · việc tiếp ›</b> (V12) · dòng vừa xong đứng chỗ "✓ Đã lưu" · dải Hoàn tác ở việc kế · đổi việc khi đang gõ hỏi "Bỏ chữ đang gõ?".</dd>
@@ -411,7 +412,7 @@ fieldset[disabled] { opacity: .6; }
       <dt>QL · của tôi</dt><dd>"Chờ bạn duyệt" là nhóm đầu (thẻ duyệt giữ nguyên <code>HopChoDuyet gon</code>: Nếu duyệt … · Duyệt · Từ chối… · Mở) · việc của QL theo cùng ba tầng · "Việc quản lý" cuối, gập sẵn, chân nhóm "+ Giao việc · Vận hành › · Họp đơn vị ›".</dd>
       <dt>QL · Tất cả</dt><dd>Mọi việc trong phạm vi, cùng ba tầng; <b>người giữ việc</b> ở cuối dòng phụ (em có việc của nhiều GV vẫn một khối em) · việc của người khác là theo dõi, chỉ "Làm thay" / "Nhập hộ" · việc của chính QL ghi "bạn" và có nút · mỗi nhóm 10 dòng đầu + "Xem thêm 10 việc" · nhóm thứ 3 trở đi gập sẵn ở 375.</dd>
       <dt>QL xem một GV</dt><dd>Cùng danh sách GV, chế độ theo dõi: không nút động từ; chỉ "Làm thay" / "Nhập hộ" khi máy chủ báo <code>lamThay</code>; dải 👁 dưới đầu trang.</dd>
-      <dt>TVV</dt><dd>4 nhóm TVV giữ nguyên (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ), ⓘ luật hạn cạnh đầu nhóm · badge trạng thái TVV ở dòng phụ · "Gia hạn" ngay ở dòng việc Sau thi · việc đổi trang có "↗".</dd>
+      <dt>TVV</dt><dd>4 nhóm TVV giữ nguyên (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ), ⓘ luật hạn cạnh đầu nhóm (bấm mở luật dưới dải — chạm được) · badge trạng thái TVV ở dòng phụ · "Gia hạn" ngay ở dòng việc Sau thi · Chốt ngày thi làm tại chỗ · Bổ sung hồ sơ mở trang ("›").</dd>
     </dl>
     <div class="khung"><div class="man toi" data-k="c1"></div></div>
     <div class="khung"><div class="man toi" data-k="c7"></div></div>
@@ -458,14 +459,18 @@ fieldset[disabled] { opacity: .6; }
   </section>
 
   <section class="khu" id="ts">
-    <h2>Bảng thao tác TRƯỚC → SAU (không mất thao tác nào)</h2>
+    <h2>Bảng thao tác TRƯỚC → SAU (đối chiếu <code>DanhSachViec.tsx</code>, <code>HoTroHocVienTab.tsx</code>, <code>PanelViec.tsx</code> — không mất thao tác)</h2>
     <div class="cuon-ngang"><table class="bang-ghi" style="min-width:960px">
       <thead><tr><th style="width:28%">Thao tác</th><th style="width:30%">Trước (web 27/10)</th><th style="width:30%">Sau (mockup)</th><th>Bước</th></tr></thead>
       <tbody>
         <tr><td>Tìm việc của một em</td><td>quét tên em trong tên việc / dòng phụ, em 1 việc và em 2 việc khác dáng</td><td>quét cột tên em (vòng tròn chữ đầu) — mọi em cùng dáng</td><td class="so sau">= · nhanh hơn</td></tr>
         <tr><td>Mở làm một việc</td><td>bấm dòng / nút → panel phải</td><td>như cũ</td><td class="so">1 = 1</td></tr>
-        <tr><td>Làm liền nhiều việc</td><td>Lưu · việc tiếp ›</td><td>như cũ (thứ tự theo danh sách đang vẽ)</td><td class="so">= </td></tr>
-        <tr><td>Mở danh sách em của dòng gộp</td><td>bấm dòng / nút "{động từ} ▾"</td><td>bấm dòng / nút "3 em ▾"</td><td class="so">1 = 1</td></tr>
+        <tr><td>Làm liền nhiều việc</td><td>Lưu · việc tiếp › (việc kế cùng nhóm — CV-05)</td><td>như cũ: hết nhóm → "Hết việc {nhóm} của bạn · Còn: …" + Việc tiếp › sang nhóm sau</td><td class="so">=</td></tr>
+        <tr><td>Dòng gộp mở danh sách em (Mô tả Case lớp FT, Xác nhận Case lớp thường…)</td><td>bấm dòng / nút "{động từ} ▾" → em bên dưới</td><td>bấm dòng / nút "3 em ▾" → khay em nền chìm (nút đổi chữ: nói số em thay động từ)</td><td class="so">1 = 1</td></tr>
+        <tr><td>Dòng gộp làm cả dòng (<code>moCaDong</code>: Xác nhận PA lô · Nhập điểm theo tuần thi) · Ý thức lô (<code>laLo</code>)</td><td>bấm dòng / nút động từ → một panel lô</td><td>như cũ: ô chồng có số, nút động từ ("Xác nhận 3 em", "Nhập điểm tuần"), không ▾</td><td class="so">1 = 1</td></tr>
+        <tr><td>Điền Target · Chốt ngày thi · Chọn người phụ trách · Báo PH (<code>lamTaiCho</code>)</td><td>panel tại chỗ</td><td>như cũ</td><td class="so">=</td></tr>
+        <tr><td>Việc mở trang (Bổ sung hồ sơ, Chốt lộ trình → Cuối khoá…)</td><td>dòng có "↗", bấm đổi trang</td><td>dòng có "›" sau tên (G6: "›" = đổi trang, "↗" chỉ còn cho hồ sơ) [XM]</td><td class="so">=</td></tr>
+        <tr><td>Lý do của việc (rê chuột dòng)</td><td><code>title = reason</code></td><td>giữ <code>title</code> (mockup không vẽ)</td><td class="so">=</td></tr>
         <tr><td>Xem hồ sơ em</td><td>link ở panel</td><td>tên em ↗ ở danh sách + ở panel</td><td class="so sau">2 → 1</td></tr>
         <tr><td>Gập / mở nhóm · Xem thêm 10 việc</td><td>bấm đầu nhóm · "Xem thêm n việc"</td><td>như cũ</td><td class="so">=</td></tr>
         <tr><td>Lọc hạn · khung FT / Lớp thường · chi nhánh · chip lọc đến từ link (✕)</td><td>hàng bộ lọc phải tiêu đề</td><td>như cũ (ô chi nhánh theo component D3)</td><td class="so">=</td></tr>
@@ -473,7 +478,8 @@ fieldset[disabled] { opacity: .6; }
         <tr><td>QL: Chờ bạn duyệt (Duyệt · Từ chối… · Mở)</td><td>khối đầu danh sách</td><td>nhóm đầu, cùng dáng dải nhóm</td><td class="so">=</td></tr>
         <tr><td>QL: + Giao việc · Vận hành › · Họp đơn vị ›</td><td>cuối "Việc quản lý" (gập)</td><td>như cũ</td><td class="so">=</td></tr>
         <tr><td>TVV: Gia hạn sau thi · ⓘ luật nhóm · badge trạng thái</td><td>ở dòng việc / đầu nhóm</td><td>như cũ</td><td class="so">=</td></tr>
-        <tr><td>GV: Yêu cầu của tôi (Sửa và gửi lại) · Lớp tôi dạy · dải "Mới dùng PISA?"</td><td>dưới / trên danh sách</td><td>như cũ (vẽ gọn)</td><td class="so">=</td></tr>
+        <tr><td>GV: Yêu cầu của tôi (Sửa và gửi lại) · Lớp tôi dạy</td><td>dưới danh sách</td><td>như cũ (vẽ gọn)</td><td class="so">=</td></tr>
+        <tr><td>GV: dải "Mới dùng PISA TRACKING? · Xem"</td><td>trên tiêu đề, chỉ khi chưa xem hướng dẫn</td><td>giữ nguyên (mockup không vẽ)</td><td class="so">=</td></tr>
         <tr><td>Đổi việc khi đang gõ</td><td>hộp "Bỏ chữ đang gõ?"</td><td>như cũ</td><td class="so">=</td></tr>
       </tbody>
     </table></div>
@@ -482,8 +488,27 @@ fieldset[disabled] { opacity: .6; }
   <section class="khu" id="kn">
     <h2>Critique · câu hỏi cho chủ SP · PR sau duyệt</h2>
     <div class="khuyen" id="critique">
-      <h3>impeccable critique (cổng ≥ 35/40 mục tiêu, gửi được từ ~31)</h3>
-      <p>Đang chấm — điền sau vòng 1.</p>
+      <h3>impeccable critique — 2 agent tách biệt (A rà thiết kế · B bộ dò CLI + <code>detect.js</code> trên trình duyệt localhost)</h3>
+      <ol>
+        <li><b>Vòng 1 — A 29/40</b> (P1: ở 375 dòng gộp mất "3 em ▾", trông như một việc lẻ). Đã sửa cả P1 lẫn P2: dòng gộp ô chồng có số + nút luôn hiện ở 375 · khay em thẳng cột hạn / nút (đo x 372 / 524) · "›" cho việc đổi trang, "↗" chỉ còn cho hồ sơ (G6) · badge QL = việc của tôi (V13), "2 chờ bạn duyệt" riêng · thêm khung QL Tất cả (người giữ việc dưới hạn), "Xem thêm 10 việc", "Xong hết hôm nay ✓", "Chưa có phạm vi", panel hết việc trong nhóm · tên việc là nút thật (bỏ nút lồng trong role=button) · chữ đầu tên 12 px (G13) · ⓘ bấm mở luật (chạm được) · "+ n việc ở {nhóm}" ở tầng em · việc kế bỏ bài chấm chéo · MT đúng từng dòng. B: 6 mục thật nhẹ (logo 375 17 px → 22 như web, h3 → h2, phủ hộp 60 % như web, bán kính 7 → 8) — đã sửa.</li>
+        <li><b>Lần chấm sau khi xong (luật PTA 27/10 tối: chấm một lần, đạt khi ≥ 25/40 và không còn P0 / P1) — A 28/40</b>, 2 P1: ① thiếu kiểu gộp "làm cả dòng" của web (<code>moCaDong</code>: Xác nhận PA lô, Nhập điểm theo tuần thi) và Target / Chốt ngày thi bị vẽ thành đổi trang; ② bảng TRƯỚC → SAU ghi sai. <b>Đã sửa cả hai, không chấm lại</b>: thêm dòng lô (ô chồng có số, nút động từ, không ▾), Target / Chốt ngày thi tại chỗ, Bổ sung hồ sơ mở trang, viết lại bảng thao tác. Kèm P2 rẻ: "việc tiếp" đi hết nhóm (sau → vòng lên) rồi "Hết việc {nhóm} · Còn: …" + Việc tiếp ›; ẩn badge / số ô lọc khi tải, lỗi, hết việc; ⓘ 24 px; "2 yêu cầu"; "hạn hôm nay" đậm + viền. <b>B: 0 mục thật</b> trong khung giao diện (CLI 16 + trình duyệt ~90 đều giả: chú thích mockup, khung mockup coi là thẻ, quyết định đã chốt).</li>
+      </ol>
+      <h3>Còn mở (P2 / P3 — để PR code hoặc chủ SP quyết)</h3>
+      <ul>
+        <li>Số đầu trang / chip nhóm trong mockup không trừ ngay khi lưu (web đếm từ máy chủ — PR code giữ luật "việc đã xong không nơi nào còn báo chờ").</li>
+        <li>Nền mờ hộp xác nhận chưa có token (web dùng <code>bg-black/60</code>) · hai chữ "chế độ theo dõi" / "chỉ theo dõi" đang có trên web — thống nhất một tên khi code.</li>
+        <li>Mỗi dòng 2 điểm Tab (tên việc + nút) · QL Tất cả nhiều nút "Làm thay" — có thể đổi nút ma · 375: khay em cuộn khuất dòng cha dưới dải nhóm dính.</li>
+      </ul>
+      <h3>Câu hỏi cho chủ SP</h3>
+      <ol>
+        <li><b>Vạch nhóm</b>: giữ một màu nhấn (khuyến nghị — chủ SP chê nhiều màu; nhóm phân biệt bằng tên + biểu tượng) hay màu trung tính để khác hẳn "đang chọn" (G14)? [XM]</li>
+        <li><b>Nút ở mọi dòng</b> (như V5, khuyến nghị — thấy ngay việc gì) hay chỉ hiện ở dòng đang chọn / khi rê chuột cho bớt lặp?</li>
+        <li><b>Tên em 15 / 600</b> (tầng 2) và tên việc 15 / 500 (tầng 3) — M6 vòng 2 ghi tên dòng 15 / 500; tách tầng thêm bằng vòng tròn chữ đầu + thụt + nét cây. Đủ chưa? [XM]</li>
+        <li><b>"›" thay "↗"</b> cho việc đổi trang (Bổ sung hồ sơ, Chốt lộ trình) theo G6 — web hiện dùng "↗". Đồng ý? [XM]</li>
+      </ol>
+      <h3>PR sau khi duyệt</h3>
+      <p><b>CONG-VIEC-2</b> (code, một màn một PR): <code>DanhSachViec.tsx</code> vẽ ba tầng (dải nhóm · khối em / đối tượng lớp · dòng việc) trên dữ liệu sẵn có (<code>gomNhomViec</code>, <code>xepTheoEm</code> luôn tạo khối em kể cả 1 việc, <code>gopViecTheoLop</code>, <code>moCaDong</code>); tên việc bỏ tên em (máy chủ hoặc web cắt hậu tố "· {em}"); hạn cột 140 px phải; "việc tiếp" cùng nhóm rồi thẻ hết nhóm; DESIGN.md thêm "Luật tầng Công việc". Ảnh cặp mockup | web, chủ SP duyệt trước merge.</p>
+      <p>Trạng thái: <b>Đề xuất — chờ chủ SP duyệt.</b> Không code trước khi duyệt.</p>
     </div>
   </section>
 </div>
@@ -516,16 +541,15 @@ fieldset[disabled] { opacity: .6; }
   /* Việc: id · ten (KHÔNG lặp tên em) · t2 (dòng phụ) · han · nut · p (kiểu panel) · kn (kỹ năng) */
   function gvHa() {
     return {
-      nguoi: 'Trần Ngọc Hà', vai: 'GV', badge: 14, qua: 2, dem: '<b>4</b> nhóm · <b>14</b> việc · <b>8</b> HV · <b>40</b> bài', khung: true,
+      nguoi: 'Trần Ngọc Hà', vai: 'GV', badge: 16, qua: 2, dem: '<b>4</b> nhóm · <b>16</b> việc · <b>10</b> HV · <b>40</b> bài', khung: true,
       nhom: [
-        { k: 'kase', ten: 'Case học thuật', ic: IC.kase, chip: '8 việc', phu: '<b>7</b> HV', qua: 1, nay: 1, muc: [
+        { k: 'kase', ten: 'Case học thuật', ic: IC.kase, chip: '10 việc', phu: '<b>9</b> HV', qua: 1, nay: 1, muc: [
           { k: 'em', em: 'Trần Thu Hà', lop: 'MB FT 101', sos: [1, 'L'], viec: [
             { id: 'ha-kq', ten: 'Ghi kết quả kỳ 2 · Listening', t2: 'PA Xếp tự học · kỳ 2 W1–W2 SEP', han: H('qua', 3), nut: 'Ghi kết quả', p: 'ghikq', lamThay: true }] },
           { k: 'em', em: 'Vũ Hải Đăng', lop: 'MB FT 101', sos: [2, 'L, R'], viec: [
             { id: 'dang-l', ten: 'Mô tả Case Listening', t2: 'MT3 · W2 SEP · <span class="diem-duoi">6.0</span> kỳ vọng 7.0', han: H('nay'), nut: 'Mô tả Case', p: 'mota', kn: 'L', mt: 'MT3 · thi W2 SEP', lamThay: true },
             { id: 'dang-r', ten: 'Mô tả Case Reading', t2: 'MT3 · W2 SEP · <span class="diem-duoi">5.5</span> kỳ vọng 6.5', han: H('sap', '20/09'), nut: 'Mô tả Case', p: 'mota', kn: 'R', mt: 'MT3 · thi W2 SEP', lamThay: true }] },
-          { k: 'em', em: 'Nguyễn Minh An', lop: 'MB FT 101', sos: [2, 'R'], viec: [
-            { id: 'an-pa', ten: 'Xác nhận PA Reading', t2: 'Xếp tự học · 4 buổi · theo quy chế', han: H('sap', '19/09'), nut: 'Xác nhận PA', p: 'xnpa', lamThay: true }] },
+          { k: 'lop', id: 'pa-lo', ten: 'Xác nhận PA Reading', t2: 'MB FT 101 · MT3 · thi W2 SEP', sosGop: [2, 'R'], lo: 3, han: H('sap', '19/09'), nut: 'Xác nhận 3 em', p: 'xnpalo', lamThay: true },
           { k: 'em', em: 'Hoàng Gia Linh', lop: 'MB IE 05', viec: [
             { id: 'linh-case', ten: 'Xác nhận Case Reading', t2: 'Progress Test 2 · <span class="diem-duoi">18/40</span> kỳ vọng 24/40', han: H('sap', '19/09'), nut: 'Xác nhận Case', p: 'xncase', lamThay: true }] },
           { k: 'lop', id: 'g102', ten: 'Mô tả Case Listening', t2: 'MB FT 102 · MT2 · thi W2 SEP', sosGop: [1, 'L'], mt: 'MT2 · thi W2 SEP', han: H('han', '21/09'), donVi: '3 em', lamThay: true, con: [
@@ -538,9 +562,7 @@ fieldset[disabled] { opacity: .6; }
             { k: 'lop', id: 'nd-r', ic: IC.cham, ten: 'Nhập điểm Reading', t2: 'MB FT 101 · MT3 · thi W2 SEP · 4 bài', han: H('qua', 2), nut: 'Nhập điểm', p: 'nhap', nhapHo: true }] },
           { k: 'vach', nhan: 'Hạn đến 20/09 · 0' },
           { k: 'vach', id: 'v-sau', nhan: 'Hạn sau 20/09 · 3 việc · 36 bài', gap: true, muc: [
-            { k: 'lop', id: 'nd-w3', ic: IC.cham, ten: 'Nhập điểm · thi W3 SEP', t2: '2 lớp · 3 việc · 36 bài', han: H('han', '25/09'), donVi: '2 lớp', nhapHo: true, con: [
-              { id: 'nd-101', ten: 'MB FT 101 · Listening, Reading', t2: 'MT4 · 22 bài', han: H('han', '25/09'), nut: 'Nhập điểm', p: 'nhap', nhapHo: true },
-              { id: 'nd-102', ten: 'MB FT 102 · Listening', t2: 'MT3 · 14 bài', han: H('han', '25/09'), nut: 'Nhập điểm', p: 'nhap', nhapHo: true }] }] }
+            { k: 'lop', id: 'nd-w3', ten: 'Nhập điểm · thi W3 SEP', t2: 'MB FT 101 L, R · MB FT 102 L · 36 bài', lo: 2, loDonVi: 'lớp', han: H('han', '25/09'), nut: 'Nhập điểm tuần', p: 'nhap', nhapHo: true }] }
         ] },
         { k: 'yt', ten: 'Ý thức & Phối hợp', ic: IC.ythuc, chip: '1 việc', phu: '<b>1</b> HV', muc: [
           { k: 'em', em: 'Lê Quang Huy', lop: 'MB FT 101', viec: [
@@ -548,7 +570,7 @@ fieldset[disabled] { opacity: .6; }
         ] },
         { k: 'vh', ten: 'Vận hành', ic: IC.vanhanh, chip: '1 việc', phu: '<b>1</b> HV', muc: [
           { k: 'em', em: 'Lê Quang Huy', lop: 'MB FT 101', viec: [
-            { id: 'huy-tg', ten: 'Điền Target', t2: 'chưa có Target IELTS', han: H('khong'), nut: 'Điền Target', doiTrang: true }] }
+            { id: 'huy-tg', ten: 'Điền Target', t2: 'chưa có Target IELTS', han: H('khong'), nut: 'Điền Target', p: 'chung' }] }
         ] }
       ],
       sau: '<div class="the-phu"><h2>Yêu cầu của tôi</h2><div class="dong"><span class="td qua">bị từ chối</span><span>Dời MT3 Reading · Vũ Hải Đăng · <span class="mo">QL ghi: "Tuần W4 SEP đã kín phòng"</span></span><button type="button" class="nut nut-nho">Sửa và gửi lại</button></div><div class="dong"><a href="#ds">1 yêu cầu chờ duyệt ›</a></div></div>'
@@ -559,7 +581,7 @@ fieldset[disabled] { opacity: .6; }
     return {
       nguoi: 'Nguyễn Thu Trang', vai: 'QL', badge: 4, duyetSo: 2, dem: '<b>2</b> nhóm · <b>4</b> việc · <b>1</b> HV', ql: 'toi', cn: true,
       nhom: [
-        { k: 'duyet', ten: 'Chờ bạn duyệt', ic: IC.duyet, chip: '2 thẻ', qua: 1, muc: [
+        { k: 'duyet', ten: 'Chờ bạn duyệt', ic: IC.duyet, chip: '2 yêu cầu', qua: 1, muc: [
           { k: 'lop', id: 'dy-doi', ic: IC.lop, ten: 'Dời MT3 Speaking · 2 em', t2: 'MB FT 102 · Anna Lee gửi · <span class="nw">W4 SEP → W1 OCT</span>', han: H('qua', 1), duyet: true },
           { k: 'em', em: 'Phạm Bảo Ngọc', lop: 'MB FT 101', sos: [2, 'L'], viec: [
             { id: 'dy-pa', ten: 'Duyệt đổi PA Listening', t2: 'Nếu duyệt: Hỗ trợ học thuật thay Xếp tự học · Trần Ngọc Hà đề xuất', han: H('sap', '20/09'), duyet: true }] }
@@ -578,7 +600,7 @@ fieldset[disabled] { opacity: .6; }
   }
   function qlXemHa() {
     var d = gvHa();
-    d.nguoi = 'Nguyễn Thu Trang'; d.vai = 'QL'; d.badge = 4; d.qua = 0; d.ql = 'gv'; d.cn = true; d.khung = false; d.theoDoi = true; d.sau = '';
+    d.nguoi = 'Nguyễn Thu Trang'; d.vai = 'QL'; d.badge = 4; d.ql = 'gv'; d.cn = true; d.khung = false; d.theoDoi = true; d.sau = '';
     return d;
   }
   function tvvMai() {
@@ -598,9 +620,9 @@ fieldset[disabled] { opacity: .6; }
             { id: 'st-ma', ten: 'Chốt bước tiếp', t2: '<span class="td dang">Đã có kết quả · Chưa chốt bước tiếp</span> IELTS 6.5', han: H('han', '21/09'), nut: 'Chốt bước tiếp', p: 'chung' }] }
         ] },
         { k: 'cnt', ten: 'Chốt ngày thi', ic: IC.lich, chip: '1 việc', muc: [
-          { k: 'lop', id: 'cnt-10', ic: IC.lop, ten: 'Chốt ngày thi tháng 10/2026', t2: '3 em dự kiến thi 10/2026', han: H('khong'), nut: 'Chốt ngày', doiTrang: true }] },
+          { k: 'lop', id: 'cnt-10', ic: IC.lop, ten: 'Chốt ngày thi tháng 10/2026', t2: '3 em dự kiến thi 10/2026', han: H('khong'), nut: 'Chốt ngày', p: 'chung' }] },
         { k: 'bs', ten: 'Bổ sung hồ sơ', ic: IC.hoso, chip: '1 việc', muc: [
-          { k: 'lop', id: 'bs-4', ic: IC.lop, ten: 'Bổ sung hồ sơ thiếu', t2: '4 em · thiếu SĐT phụ huynh, ngày sinh', han: H('khong'), nut: 'Bổ sung', p: 'chung' }] }
+          { k: 'lop', id: 'bs-4', ic: IC.lop, ten: 'Bổ sung hồ sơ thiếu', t2: '4 em · thiếu SĐT phụ huynh, ngày sinh', han: H('khong'), nut: 'Bổ sung', doiTrang: true }] }
       ]
     };
   }
@@ -653,7 +675,7 @@ fieldset[disabled] { opacity: .6; }
   var hanChip = function (h) {
     if (!h) return '';
     if (h[0] === 'qua') return '<span class="td qua">quá hạn ' + h[1] + ' ngày</span>';
-    if (h[0] === 'nay') return '<span class="td sap">hạn hôm nay</span>';
+    if (h[0] === 'nay') return '<span class="td sap nay">hạn hôm nay</span>';
     if (h[0] === 'sap') return '<span class="td sap">hạn ' + h[1] + '</span>';
     if (h[0] === 'han') return '<span class="td">hạn ' + h[1] + '</span>';
     return '<span class="td khong">' + (h[1] || 'không hạn') + '</span>';
@@ -682,7 +704,7 @@ fieldset[disabled] { opacity: .6; }
     var nav = '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>'
       + ['Tổng quan', 'Học viên &amp; Lớp', 'Test', 'Công việc', 'Phân tích'].map(function (m, i) {
         return '<span class="m' + (i === 3 ? ' dang' : '') + (i === 4 || (hep && (i === 1 || i === 2)) ? ' an-dt' : '') + '">' + (hep && i === 1 ? 'HV' : m)
-          + (i === 3 && d.badge && st.tt !== 'rong' ? '<span class="so-nav" aria-label="' + d.badge + ' ' + (d.vai === 'QL' ? 'việc của tôi' : 'việc của tôi') + '">' + d.badge + '</span>' : '') + '</span>';
+          + (i === 3 && d.badge && /^(co|loc|xonghet)$/.test(st.tt) ? '<span class="so-nav" aria-label="' + d.badge + ' ' + (d.vai === 'QL' ? 'việc của tôi' : 'việc của tôi') + '">' + d.badge + '</span>' : '') + '</span>';
       }).join('')
       + '<span class="phai"><span>' + IC.chuong + '</span>' + (hep ? '' : '<span>' + e(d.nguoi) + ' · ' + d.vai + '</span>') + '</span></div>';
     var pnMo = st.chon && st.tt === 'co' && d.ds.some(function (v) { return v.id === st.chon; });
@@ -699,8 +721,8 @@ fieldset[disabled] { opacity: .6; }
     var xong = Object.keys(st.xong).filter(function (k) { return st.xong[k] === 1; }).length;
     var loc = '';
     if (d.ql) loc += '<span class="doan" role="group" aria-label="Việc của ai"><button type="button" aria-pressed="' + (d.ql === 'toi') + '">Của tôi <span class="so">4</span></button><button type="button" aria-pressed="' + (d.ql === 'all') + '">Tất cả <span class="so">63</span></button></span>'
-      + '<span class="o-chon" role="button" aria-label="Chọn GV">' + (d.ql === 'gv' ? 'Trần Ngọc Hà · 14 việc' : 'Chọn GV') + '</span>';
-    if (d.khung) loc += '<span class="doan" role="group" aria-label="Chương trình"><button type="button" aria-pressed="true">Tất cả</button><button type="button" aria-pressed="false">FT <span class="so">12</span></button><button type="button" aria-pressed="false">Lớp thường <span class="so">2</span></button></span>';
+      + '<span class="o-chon" role="button" aria-label="Chọn GV">' + (d.ql === 'gv' ? 'Trần Ngọc Hà · 16 việc' : 'Chọn GV') + '</span>';
+    if (d.khung && /^(co|loc|xonghet)$/.test(st.tt)) loc += '<span class="doan" role="group" aria-label="Chương trình"><button type="button" aria-pressed="true">Tất cả</button><button type="button" aria-pressed="false">FT <span class="so">12</span></button><button type="button" aria-pressed="false">Lớp thường <span class="so">2</span></button></span>';
     if (d.cn) loc += '<span class="o-chon" role="button" aria-label="Chi nhánh">Mỹ Đình</span>';
     loc += '<span class="o-chon" role="button" aria-label="Lọc theo hạn">' + (st.tt === 'loc' ? 'Quá hạn · 0' : 'Mọi hạn') + '</span>';
     var h = '<header class="dau-trang"><h1>Công việc</h1>' + dem + (d.duyetSo ? '<span class="cho-duyet">' + d.duyetSo + ' chờ bạn duyệt</span>' : '') + (xong ? '<span class="xong-nay">✓ ' + xong + ' xong hôm nay</span>' : '') + '<span class="loc">' + loc + '</span></header>';
@@ -780,9 +802,9 @@ fieldset[disabled] { opacity: .6; }
     /* QL Tất cả: người giữ việc đứng dưới hạn — cột "ai · khi nào" thẳng hàng, dòng phụ không gãy. */
     if (d.tatCa && !xong) h += '<span class="ai">' + (v.mine ? 'bạn' : e(v.cua || '')) + '</span>';
     var hanhDong = gop ? 'data-mo="' + v.id + '" aria-expanded="' + moCon + '" aria-controls="con-' + v.id + '"' : v.doiTrang ? 'data-doi-trang' : 'data-chon="' + v.id + '"';
-    var glyph = !laLop ? '' : gop ? '<span class="av gop" aria-hidden="true">' + v.con.length + '</span>' : '<span class="av vuong" aria-hidden="true">' + (v.ic || IC.lop) + '</span>';
-    var nhan = v.ten + (v.em && !v.lopCha ? ' · ' + v.em : '') + (gop ? ' · ' + v.donVi : '') + ' · ' + hanChu(v.han) + (v.doiTrang ? ' · mở trang khác' : '');
-    return '<div class="viec' + (laLop ? ' dt-lop' : '') + (gop ? ' gop' : '') + (chon ? ' chon' : '') + (xong && xong !== 'dang' ? ' xong' : '') + '">' + glyph
+    var glyph = !laLop ? '' : gop || v.lo ? '<span class="av gop" aria-hidden="true">' + (gop ? v.con.length : v.lo) + '</span>' : '<span class="av vuong" aria-hidden="true">' + (v.ic || IC.lop) + '</span>';
+    var nhan = v.ten + (v.em && !v.lopCha ? ' · ' + v.em : '') + (gop ? ' · ' + v.donVi : v.lo ? ' · làm cả ' + v.lo + ' ' + (v.loDonVi || 'em') : '') + ' · ' + hanChu(v.han) + (v.doiTrang ? ' · mở trang khác' : '');
+    return '<div class="viec' + (laLop ? ' dt-lop' : '') + (gop || v.lo ? ' gop' : '') + (chon ? ' chon' : '') + (xong && xong !== 'dang' ? ' xong' : '') + '">' + glyph
       + '<button type="button" class="tv" ' + hanhDong + (chon ? ' aria-current="true"' : '') + (xong === 1 ? ' disabled' : '') + ' aria-label="' + e(nhan) + '">'
       + '<span class="t1"><span class="ten">' + e(v.ten) + '</span>' + (v.sosGop ? sosChip(v.sosGop) : '') + (v.doiTrang ? '<span class="doi-trang" aria-hidden="true">›</span>' : '') + '</span>'
       + '<span class="t2">' + t2 + '</span></button>'
@@ -801,9 +823,11 @@ fieldset[disabled] { opacity: .6; }
   /* Việc kế: việc CỦA người xem (không theo dõi, không chấm chéo, không đổi trang, không thẻ duyệt), chưa xong, sau việc này theo thứ tự đang vẽ (V12 ⑤). */
   var laViecToi = function (d, st, x) { return !x.doiTrang && !x.duyet && !x.khongViec && !laTheoDoi(d, x) && !st.xong[x.id]; };
   function keTiep(d, st, id) {
-    var ds = d.ds, i = ds.map(function (x) { return x.id; }).indexOf(id);
-    return ds.filter(function (x, j) { return j > i && laViecToi(d, st, x); })[0] || ds.filter(function (x) { return x.id !== id && laViecToi(d, st, x); })[0] || null;
+    var ds = d.ds, i = ds.map(function (x) { return x.id; }).indexOf(id), g = ds[i] && ds[i].ngu;
+    var cung = function (x) { return x.ngu === g && x.id !== id && laViecToi(d, st, x); };
+    return ds.filter(function (x, j) { return j > i && cung(x); })[0] || ds.filter(cung)[0] || null;
   }
+  var dauNhomKhac = function (d, st, g) { return d.ds.filter(function (x) { return x.ngu !== g && laViecToi(d, st, x); })[0] || null; };
   var tenViec = function (x) { return x.lopCha ? x.lopCha.ten + ' · ' + x.ten : x.ten; };
 
   function vePanel(d, st, hep) {
@@ -820,9 +844,9 @@ fieldset[disabled] { opacity: .6; }
     var dai = st.vuaXong ? '<div class="dai-xong" role="status"><b>✓ Đã lưu</b><span>' + e(st.vuaXong) + '</span><button type="button" class="link-nho">Hoàn tác</button></div>' : '';
     var ghiMockup = function (s) { return '<p class="chu-khung" style="margin-top:4px">Mockup: ' + s + '</p>'; };
     if (st.pnl === 'het') {
-      var conNhom = d.nhom.filter(function (g) { return g !== v.ngu && g.k !== 'cc'; })[0];
+      var keNhom = dauNhomKhac(d, st, v.ngu), conNhom = keNhom && keNhom.ngu;
       return '<div class="pn" role="region" aria-label="' + e(tieu) + '">' + dau + '<div class="pn-than"><div class="het-viec"><span class="tt-luu da" style="font-size:15px">✓ Đã lưu <button type="button" class="link-nho" style="white-space:nowrap">Hoàn tác</button></span><span class="lon">Hết việc ' + e(v.ngu.ten) + ' của bạn</span><span class="mo">Đã lưu ' + d.ds.filter(function (x) { return x.ngu === v.ngu && st.xong[x.id] === 1; }).length + ' việc trong nhóm này hôm nay.</span></div></div>'
-        + '<div class="pn-chan"><span class="trai">' + (conNhom ? 'Còn: ' + e(conNhom.ten) + ' · ' + e(conNhom.chip) : 'Đã xong phần của bạn') + '</span><button type="button" class="nut" data-dong>Đóng</button>' + (conNhom ? '<button type="button" class="nut nut-chinh">Việc tiếp ›</button>' : '') + '</div></div>';
+        + '<div class="pn-chan"><span class="trai">' + (conNhom ? 'Còn: ' + e(conNhom.ten) + ' · ' + e(conNhom.chip) : 'Đã xong phần của bạn') + '</span><button type="button" class="nut" data-dong>Đóng</button>' + (conNhom ? '<button type="button" class="nut nut-chinh" data-chon="' + keNhom.id + '">Việc tiếp ›</button>' : '') + '</div></div>';
     }
     var than = '', chinh = 'Lưu', tiep = 'Lưu · việc tiếp ›';
     if (v.p === 'mota') {
@@ -831,6 +855,11 @@ fieldset[disabled] { opacity: .6; }
         + (v.kn === 'S' ? '<dt>Người chấm</dt><dd>Phạm Thu Trang (chấm chéo) · Case giao GV phụ trách S</dd>' : '') + '</dl>'
         + '<div class="truong"><span class="nhan">Nhóm nguyên nhân <span class="bb">*</span> <span class="phu">· chọn một hoặc nhiều</span></span><div class="lua">' + NN[kn].map(function (x, i) { return '<button type="button" aria-pressed="' + (st.pnl !== 'nhap' && i === 0) + '">' + x + '</button>'; }).join('') + '<button type="button" aria-pressed="false">Khác…</button></div></div>'
         + '<label class="truong"><span class="nhan">Mô tả <span class="bb">*</span></span><textarea class="o" rows="3" placeholder="Sai ở dạng nào, bao nhiêu câu, vì sao" data-go>' + (st.pnl === 'nhap' ? '' : 'Section 2 sai 7/10 câu Map; nghe số chậm ở Section 1.') + '</textarea></label></div>';
+    } else if (v.p === 'xnpalo') {
+      than = '<div class="form"><dl class="boi-canh"><dt>Lô</dt><dd>3 Case Reading · MB FT 101 · MT3 · SOS 2 — PA hệ thống điền sẵn theo quy chế</dd></dl>'
+        + ['Nguyễn Minh An', 'Phan Gia Hân', 'Đinh Tuấn Kiệt'].map(function (n, i) { return '<label style="display:flex;gap:10px;align-items:center;font-size:15px"><input type="checkbox" checked> ' + n + ' <span class="mo" style="font-size:13px">Xếp tự học · ' + (4 - (i === 2)) + ' buổi</span></label>'; }).join('')
+        + ghiMockup('panel lô giữ nguyên XacNhanPaLo (bỏ tích em nào thì em đó tách ra làm riêng).') + '</div>';
+      chinh = 'Xác nhận 3 PA'; tiep = 'Xác nhận · việc tiếp ›';
     } else if (v.p === 'xnpa') {
       than = '<div class="form"><dl class="boi-canh"><dt>Case</dt><dd><span class="diem-duoi">5.5</span> <span class="mo">· kỳ vọng 6.5 · thiếu 1.0 · Matching Headings</span></dd><dt>PA</dt><dd>Xếp tự học · theo quy chế SOS 2, hệ thống điền sẵn</dd></dl>'
         + '<label class="truong"><span class="nhan">Nội dung <span class="bb">*</span></span><textarea class="o" rows="2" data-go>Tự học Reading có bài chấm mỗi buổi, tới MT4</textarea></label>'
@@ -851,7 +880,7 @@ fieldset[disabled] { opacity: .6; }
       chinh = 'Xác nhận Case'; tiep = 'Xác nhận · việc tiếp ›';
     } else if (v.p === 'nhap') {
       than = '<div class="form"><dl class="boi-canh"><dt>Lượt</dt><dd>' + e(v.lopCha ? v.ten + ' · ' + v.t2 : v.t2) + '</dd><dt>Của bạn</dt><dd>' + (v.khongViec ? 'bài chưa ai nhận · ai chấm thì ghi tên người chấm' : 'chỉ kỹ năng bạn dạy; kỹ năng của GV khác không tính') + '</dd></dl>'
-        + ghiMockup('lưới nhập điểm dùng chung với Lịch Test (Dán Excel ở panel Nhập điểm), không vẽ lại.') + '</div>';
+        + ghiMockup(v.lo ? 'giữ PanelNhapDiemTuan: lưới điểm từng lớp của tuần thi trong một panel, "việc tiếp" đi qua cả dòng.' : 'lưới nhập điểm dùng chung với Lịch Test (Dán Excel ở panel Nhập điểm), không vẽ lại.') + '</div>';
       var soBai = ((v.t2.match(/(\d+) bài/) || [0, '?'])[1]);
       var chanNhap = td ? '<span class="trai">Bài bạn nhập ghi tên bạn; việc vẫn của ' + e(chu) + '</span><button type="button" class="nut nut-chinh">Nhập hộ</button>'
         : '<span class="trai">0 / ' + soBai + ' bài</span><button type="button" class="nut nut-chinh">' + (v.khongViec ? 'Chấm Speaking' : 'Nhập điểm') + '</button>';
@@ -869,12 +898,12 @@ fieldset[disabled] { opacity: .6; }
       return '<div class="pn" role="region" aria-label="' + e(tieu) + '">' + dau + '<div class="pn-than"><div class="bao-chi-xem" style="margin-top:12px"><span aria-hidden="true">👁</span><span>Việc của <b>' + e(chu) + '</b> — chỉ theo dõi.</span>'
         + (v.lamThay ? '<button type="button" class="nut nut-nho">Làm thay</button>' : '') + '</div><fieldset disabled>' + than + '</fieldset></div><div class="pn-chan"><span class="trai">Chỉ theo dõi</span></div></div>';
     }
-    var tenKe = ke ? 'Tiếp: ' + e(tenViec(ke)) + (ke.em && !ke.lopCha ? (ke.em === em ? ' · cùng em' : ' · ' + e(ke.em)) : '') : 'Việc cuối của bạn';
+    var tenKe = ke ? 'Tiếp: ' + e(tenViec(ke)) + (ke.em && !ke.lopCha ? (ke.em === em ? ' · cùng em' : ' · ' + e(ke.em)) : '') : 'Việc cuối của nhóm · sau đó: Hết việc ' + e(v.ngu.ten);
     var p = st.pnl;
     var chan = p === 'dang' ? '<span class="trai"><span class="tt-luu dang"><span class="xoay" aria-hidden="true"></span>Đang lưu…</span></span><button type="button" class="nut" disabled>' + chinh + '</button>' + (ke ? '<button type="button" class="nut nut-chinh" disabled>' + tiep + '</button>' : '')
-      : p === 'da' ? '<span class="trai"><span class="tt-luu da">✓ Đã lưu 10:42</span><button type="button" class="link-nho">Hoàn tác</button></span><button type="button" class="nut" data-dong>Đóng</button>' + (ke ? '<button type="button" class="nut nut-chinh" data-tiep>Việc tiếp ›</button>' : '')
+      : p === 'da' ? '<span class="trai"><span class="tt-luu da">✓ Đã lưu 10:42</span><button type="button" class="link-nho">Hoàn tác</button></span><button type="button" class="nut" data-dong>Đóng</button>' + '<button type="button" class="nut nut-chinh" data-tiep>Việc tiếp ›</button>'
       : p === 'loi' ? '<span class="trai"><span class="tt-luu loi">⚠ Chưa lưu được: mất mạng. Chữ đang gõ vẫn giữ.</span></span><button type="button" class="nut nut-chinh" data-luu>Thử lại</button>'
-      : '<span class="trai">' + (p === 'go' ? '<span class="tt-luu nhap">● Chưa lưu</span>' : '') + '<span class="mo">' + tenKe + '</span></span><button type="button" class="nut" data-luu>' + chinh + '</button>' + (ke ? '<button type="button" class="nut nut-chinh" data-luu-tiep>' + tiep + '</button>' : '');
+      : '<span class="trai">' + (p === 'go' ? '<span class="tt-luu nhap">● Chưa lưu</span>' : '') + '<span class="mo">' + tenKe + '</span></span><button type="button" class="nut" data-luu>' + chinh + '</button><button type="button" class="nut nut-chinh" data-luu-tiep>' + tiep + '</button>';
     return '<div class="pn" role="region" aria-label="' + e(tieu) + '">' + dau + '<div class="pn-than">' + dai + than + '</div><div class="pn-chan">' + chan + '</div></div>';
   }
 
