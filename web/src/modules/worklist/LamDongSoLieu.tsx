@@ -15,6 +15,8 @@ export function LamDongSoLieu({ dong, onDong, onDaLam }: {
 }) {
   const xem = useXem();
   const v = dong.viec;
+  /* M6 6b-2: dòng "Case chưa chốt PA" (có nhóm) → view Case (bố cục A) của chính Case đó, kể cả khi người xem chỉ xem (câu "ai làm được"). */
+  if (dong.nhom) return <NganCase caseId={dong.id} hocVien={dong.em?.ten ?? null} lop={dong.lop ?? null} onClose={onDong} onChanged={onDaLam} />;
   if (!v) return null;
   const ve = { nhan: xem.ten ?? '', onClick: xem.lui };
   if (v.loai === 'nhap-diem') {

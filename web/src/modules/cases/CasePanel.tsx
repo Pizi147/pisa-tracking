@@ -1,23 +1,22 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { MenuPa } from './MenuXoaPa.tsx';
 import { KhoaNho, NhatKyPa, VachBuoi } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, NhanTrangThai, Outcome } from '../../ui/ui.tsx';
+import { NhanTrangThai, Outcome } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
-import { NhanTamDung, TenCase } from './SkillBoard.tsx';
+import { CHIP_VUONG, Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
+import { MuiTen, NhanTamDung, TenCase } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  chuKhoangPa, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, ghiNhanhDuoc, nhanNguoiDay, nutDongPa, outcomeLabelFor, soDongNhatKyPa, tenMon, toiKyGhi, tuanLich,
+  chuAiLamDuoc, chuKhoangPa, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, ghiNhanhDuoc, nhanNguoiDay, nutDongPa, outcomeLabelFor, soDongNhatKyPa, tenMon, toiKyGhi, tuanLich,
   type NguoiChon, type TrangThai,
 } from '@shared/domain/index.ts';
 import { DongXinYKien } from './DongXinYKien.tsx';
@@ -25,10 +24,10 @@ import { DongBuoiTutor } from './BuoiTutorO.tsx';
 import type { BuoiTutor } from '@shared/domain/index.ts';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from './GhiNhanh.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
-import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
+import { CanLam, NhomCoSo, NutChu } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { DongNguyenNhan } from '../yThuc/CaseSosControls.tsx';
+import { ketQuaGanNhat } from '../yThuc/CaseSosControls.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
@@ -154,14 +153,21 @@ function soNgayGiua(tu: string | null | undefined, den: string | null | undefine
   return Number.isNaN(a) || Number.isNaN(b) ? null : Math.round((b - a) / 86_400_000);
 }
 
+/** M6 6b-2 (Q1): PA vừa thêm / vừa ghi kết quả — thẻ PA viền nhấn + "✓ {chu} · Hoàn tác" (đường đảo của form, 10 giây). */
+export type VuaDoiPa = { paId: number; chu: string; hoanTac?: () => Promise<void> };
+
 /**
- * THÂN của Case (PR-PA §8, mockup pa-dong-bo §9): ba THẺ Vấn đề · Phương án (dòng PA mang `data-pa-id` cho Hành trình cuộn tới; Lịch sử
- * kết quả thu gọn ở cuối thẻ) · Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của `NganCase` hoặc trang riêng.
+ * KHỐI CASE A (M6 6b-2, mockup `thiet-ke/v7/panel-pilot.html` "Case — phương án A", "Vòng 2 · chữ") — THÂN Case dùng chung cho mọi lối vào (Ngăn Case,
+ * trang riêng, panel việc; M5 ② và trang lượt M4 dùng lại): một cột đọc từ trên xuống, mỗi mục một ĐẦU MỤC (`DauMuc`) — Case (tên · Điểm · Nguyên nhân ·
+ * Mô tả) → Phương án (Chờ duyệt · xác nhận / Đang theo dõi; Đã kết thúc gập; việc của PA nằm ngay trong thẻ PA; dòng PA mang `data-pa-id` cho Hành trình
+ * cuộn tới) → Kết luận → Lịch sử (gập) → Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của nơi gọi.
  */
-export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
+export function ThanCase({ data, onViec, onDoi, paNutChinh = null, vuaDoi = null, onHoanTac }: {
   data: CaseDetail; onViec: (v: ViewCase) => void; /** OV-13b: đã lưu tại chỗ (ghi nhanh, chọn người dạy, rút) — nơi gọi tải lại. */ onDoi?: () => void;
   /** OV-14b: PA mà nút chính ở chân panel đã là "Xác nhận PA" — thẻ PA đó không lặp nút. */
   paNutChinh?: number | null;
+  /** M6 6b-2 (Q1): PA vừa đổi ở form trong chuỗi Case; `onHoanTac` = đã hoàn tác xong (nơi gọi tải lại). */
+  vuaDoi?: VuaDoiPa | null; onHoanTac?: () => void;
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const primary = data.issues.find((i) => i.role === 'primary') ?? null;
@@ -170,8 +176,10 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
   /* Đang chạy lên trên, đã xong xuống dưới; trong mỗi nhóm, mới nhất trước. OV-13b: PA mới của đề xuất đổi PA đang chờ / bị từ chối nằm ở dòng PA gốc. */
   const dsPa = [...(data.interventions ?? [])].filter((x) => !(x.laPaDoi && (x.approvalState === 'pending' || x.approvalState === 'declined'))).sort((a, b) =>
     Number(daBatDau(b)) - Number(daBatDau(a)) || (b.id as number) - (a.id as number));
-  /* OV-13b (mockup OV-13 §2): PA còn mở ở trên (đang chạy một dòng), PA đã khép gập ở "Lịch sử PA". */
+  /* Case A: PA còn mở chia "Chờ duyệt · xác nhận" (việc đang chờ ai đó) và "Đang theo dõi"; PA đã khép gập ở "Đã kết thúc". */
   const paMo = dsPa.filter((x) => daBatDau(x));
+  const paCho = paMo.filter((x) => x.awaitingConfirmation || x.approvalState === 'pending' || x.chuaChay);
+  const paChay = paMo.filter((x) => !paCho.includes(x));
   const paKhep = dsPa.filter((x) => !daBatDau(x));
   const lichSu = buildLichSu(data, ngan);
   const chiXem = !data.viewer.canClose && data.status !== 'done';
@@ -179,105 +187,159 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null }: {
   const bc = useApi<{ rows: unknown[] }>(`/attachments?ownerType=sos_case&ownerId=${data.id}`, [data.id]);
   /* OV-11d (HV-20): Case giữ sau "Overall đã đạt" (OV-1c) — nói ngay đầu Case, không chỉ trong Lịch sử thu gọn. */
   const overallDat = data.status !== 'done' ? [...(data.milestones ?? [])].reverse().find((m) => m.kind === 'overall_dat') : null;
+  const diem = ketQuaGanNhat(data);
+  const pa = (iv: any) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh}
+    vua={vuaDoi?.paId === iv.id ? vuaDoi : null} onHoanTac={onHoanTac} />;
+  const nhomPa = (ten: string, ds: any[]) => ds.length > 0 && (
+    <>
+      {paCho.length > 0 && paChay.length > 0 && <p className="m-0 mt-1 flex items-center gap-2 text-[13px] font-semibold text-slate-300">{ten} <span className={`${CHIP_VUONG} text-slate-300`} style={{ borderColor: 'var(--line-strong)' }}>{ds.length}</span></p>}
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">{ds.map(pa)}</ul>
+    </>
+  );
 
   return (
     <>
       {overallDat && (
-        <p className="m-0 mb-2 rounded-lg bg-ok-bg px-3 py-2 text-[13px] text-ok">
+        <p className="m-0 mt-3 rounded-lg bg-ok-bg px-3 py-2 text-[13px] text-ok">
           {t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '') })}
         </p>
       )}
-      <The tieuDe={t('Vấn đề')}>
-        <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-100">
-          <TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} />
-        </div>
-        {data.summary && <p className="m-0 text-[14px] text-slate-300"><ChuDich chu={data.summary} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} /></p>}
-        {data.note && <p className="m-0 text-xs text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></p>}
-        {(primary || secondary.length > 0 || context.length > 0) && (
-          <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-[13px]">
-            {(primary || secondary.length > 0) && <>
-              <dt className="text-slate-400">{t('Nhóm nguyên nhân')}</dt>
-              {/* Hotfix 15/10 (L2): đủ nhóm có số thứ tự + nhận xét (Case MT không có Mô tả — nhận xét của bài là nội dung). */}
-              <dd className="m-0 text-slate-200"><DongNguyenNhan issues={[...(primary ? [primary] : []), ...secondary]} attemptId={data.attemptId} /></dd>
-            </>}
-            {context.length > 0 && <>
-              <dt className="text-slate-400">{t('Bối cảnh')}</dt>
-              <dd className="m-0 flex flex-wrap items-center gap-1.5">
-                {context.map((i) => <Nhan key={i.id} tone="muted" dut title={i.observation ?? undefined}>{i.label}</Nhan>)}
-              </dd>
-            </>}
-          </dl>
-        )}
-      </The>
+      <DauMuc dau tieuDe="Case" phu={<span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
+        {/* Case A (luật chữ): nhãn 13 phụ / giá trị 15; điểm là giá trị chính (màu kết quả + ✓ / ✗). "Ghi nhận" → "Mô tả" (N8, chủ SP 27/10). */}
+        <dl className="m-0 grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-2 max-sm:grid-cols-1 max-sm:gap-y-0.5">
+          {diem && <><dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Điểm')}</dt><dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2">{diem}</dd></>}
+          {(primary || secondary.length > 0) && <>
+            {/* N8 (PTA rà #632): Nguyên nhân chỉ ghi NHÓM (1 = chính, phụ) — câu nhận xét / mô tả nằm ở dòng Mô tả, không lặp. */}
+            <dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Nguyên nhân')}</dt>
+            <dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2"><NhomCoSo ds={[...(primary ? [primary] : []), ...secondary].map((x) => ({ code: x.code, label: x.label }))} /></dd>
+          </>}
+          <dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Mô tả')}</dt>
+          <dd className="m-0 max-w-[68ch] text-[15px] text-slate-100 max-sm:mb-2">
+            {/* N8: mô tả Case = câu của nguyên nhân chính (cùng nguồn #626: đi theo nhận xét bài `moTaTuMt` — chỉ ghi lượt, vì ngày dòng là ngày đồng bộ,
+                không phải ngày GV nhận xét; hoặc người ghi / sửa riêng `byName` · ngày) ·
+                không có thì tóm tắt của Case · thật sự không có → "Chưa có" + "Mô tả Case" khi người xem làm được. */}
+            {primary?.observation ? (
+              <>
+                “<ChuDich chu={primary.observation} nguon={{ bang: 'case_issues', id: primary.id, cot: 'observation' }} />”
+                {(primary.moTaTuMt || primary.byName) && (
+                  <span className="whitespace-nowrap text-[13px] text-slate-400"> — {(primary.moTaTuMt ? [t('theo nhận xét {mt}', { mt: primary.moTaTuMt })] : [primary.byName, primary.createdAt ? ngan(primary.createdAt) : null]).filter(Boolean).join(' · ')}</span>
+                )}
+                {data.summary && <span className="mt-1 block text-[13px] text-slate-400"><ChuDich chu={data.summary} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} /></span>}
+              </>
+            ) : data.summary ? <ChuDich chu={data.summary} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} />
+              : (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-slate-400">{t('Chưa có')}</span>
+                  {data.viewer.canEdit && data.trangThaiV4?.k === 'cho-nhan-xet' && (
+                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-nhan-xet' })}>{t('Mô tả Case')}</button>
+                  )}
+                </span>
+              )}
+            {primary?.nhanXetPhuTrach && (
+              <span className="mt-1 block text-[13px] text-slate-300"><span className="text-slate-400">{t('Nhận xét GV phụ trách')}:</span> “<ChuDich chu={primary.nhanXetPhuTrach} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' } : null} />”</span>
+            )}
+            {data.note && <span className="mt-1 block text-[13px] text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></span>}
+          </dd>
+          {context.length > 0 && <>
+            <dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Bối cảnh')}</dt>
+            <dd className="m-0 flex flex-wrap items-center gap-1.5">
+              {context.map((i) => <Nhan key={i.id} tone="muted" dut title={i.observation ?? undefined}>{i.label}</Nhan>)}
+            </dd>
+          </>}
+        </dl>
+      </DauMuc>
 
-      <The tieuDe={t('Phương án')} dem={dsPa.length}
+      <DauMuc tieuDe={t('Phương án')} dem={dsPa.length || undefined}
         luat={(
           <>
             <p className="m-0">{t('Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.')}</p>
             {chiXem && <p className="m-0">{t('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.')}</p>}
           </>
         )}>
-        {dsPa.length === 0 ? (
-          <Empty title={CHUA_CO_PHUONG_AN} hint={GOI_Y_THEM_PHUONG_AN} />
-        ) : (
+        {!data.viewer.canEdit && data.status !== 'done' && (
+          <p className="m-0 flex items-start gap-2 text-[13px] leading-relaxed text-slate-300 [text-wrap:pretty]"><span className="mt-0.5 text-slate-400"><KhoaNho /></span>{chuAiLamDuoc(data.owner)}</p>
+        )}
+        {dsPa.length === 0 ? <p className="m-0 text-sm text-slate-400">{t('Chưa có PA.')}</p> : (
           <>
-            {paMo.length > 0 && (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {paMo.map((iv) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh} />)}
-              </ul>
-            )}
+            {nhomPa(t('Chờ duyệt · xác nhận'), paCho)}
+            {nhomPa(t('Đang theo dõi'), paChay)}
             {paKhep.length > 0 && (
-              <details open={paMo.length === 0}>
-                <summary className="flex min-h-[44px] cursor-pointer items-center text-[13px] text-slate-400 sm:min-h-0">{t('Lịch sử PA · {n}', { n: paKhep.length })}</summary>
-                <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
-                  {paKhep.map((iv) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh} />)}
-                </ul>
+              <details open={paMo.length === 0 || paKhep.some((x) => x.id === vuaDoi?.paId)}>
+                <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] font-semibold text-slate-300 sm:min-h-0">
+                  {t('Đã kết thúc')} <span className={`${CHIP_VUONG} text-slate-300`} style={{ borderColor: 'var(--line-strong)' }}>{paKhep.length}</span>
+                </summary>
+                <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">{paKhep.map(pa)}</ul>
               </details>
             )}
           </>
         )}
-        {data.outcome || data.status === 'done' ? (
-          <p className="m-0 text-sm text-slate-100">
-            {t('Đã kết luận')}{data.outcomeLabel && <>: <strong>{dich(data.outcomeLabel)}</strong></>}
-            {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
-            {data.closedAt && <span className="text-slate-500"> {t('· kết thúc theo dõi {tuanLich}', { tuanLich: tuanLich(data.closedAt, homNay) })}</span>}
-          </p>
-        ) : null}
-        {lichSu.length > 0 && (
-          <details>
-            <summary className="flex min-h-[44px] cursor-pointer items-center text-[13px] text-slate-400 sm:min-h-0">{t('Nhật ký · {n}', { n: lichSu.length })}</summary>
-            <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
-              {lichSu.map((m) => (
-                <li key={m.key} className="text-xs">
-                  <span className="block text-xs tabular-nums text-slate-500">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
-                  <span className="flex flex-wrap items-center gap-1.5 text-slate-200">{m.tieuDe}{m.badge}</span>
-                  {m.than}
-                  {m.suaXemLai && <SuaXemLai f={m.suaXemLai} />}
-                </li>
-              ))}
-            </ol>
-          </details>
-        )}
-      </The>
+      </DauMuc>
 
-      <The tieuDe={t('Bằng chứng')} dem={bc.data?.rows.length}>
+      {(dsPa.length > 0 || data.outcome || data.status === 'done') && (
+        <DauMuc tieuDe={t('Kết luận')}>
+          {data.outcome || data.status === 'done' ? (
+            <p className="m-0 text-[15px] text-slate-100">
+              {t('Đã kết luận')}{data.outcomeLabel && <>: <strong>{dich(data.outcomeLabel)}</strong></>}
+              {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
+              {data.closedAt && <span className="text-slate-400"> {t('· kết thúc theo dõi {tuanLich}', { tuanLich: tuanLich(data.closedAt, homNay) })}</span>}
+            </p>
+          ) : <p className="m-0 text-sm text-slate-400">{t('Chưa có · ghi khi mọi PA đã khép')}</p>}
+        </DauMuc>
+      )}
+
+      {lichSu.length > 0 && (
+        <details className="group mt-[22px] border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+          <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 sm:min-h-[32px]">
+            <TieuDeMuc tieuDe={t('Lịch sử')} dem={lichSu.length} />
+            <span aria-hidden className="inline-flex text-slate-400 transition-transform group-open:rotate-90"><MuiTen mo={false} /></span>
+          </summary>
+          <ol className="m-0 mt-3 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
+            {lichSu.map((m) => (
+              <li key={m.key} className="text-[13px]">
+                <span className="block text-xs tabular-nums text-slate-400">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
+                <span className="flex flex-wrap items-center gap-1.5 text-slate-200">{m.tieuDe}{m.badge}</span>
+                {m.than}
+                {m.suaXemLai && <SuaXemLai f={m.suaXemLai} />}
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
+
+      <DauMuc tieuDe={t('Bằng chứng')} dem={bc.data?.rows.length || undefined}>
         <BangChung ownerType="sos_case" ownerId={data.id} canEdit={data.viewer.canEdit} tieuDe="" onChanged={bc.reload} />
-      </The>
+      </DauMuc>
     </>
   );
 }
 
-/** Thẻ khối (mockup §9 `.kt`): viền `--line-strong`, đầu nền `surface-2` cao 40, tiêu đề 13.5px đậm + số đếm, ⓘ bên phải. */
-function The({ tieuDe, dem, luat, children }: { tieuDe: string; dem?: number; luat?: ReactNode; children: ReactNode }) {
+/** Chữ đầu mục (luật chữ đầu mục, M6): vạch 3 × 18 px màu nhấn + 15 / 700 + chip đếm vuông. */
+function TieuDeMuc({ tieuDe, dem }: { tieuDe: string; dem?: number }) {
   return (
-    <section className="mt-3 overflow-hidden rounded-[10px] border" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
-      <div className="flex min-h-[40px] items-center gap-2 border-b px-3 py-1.5 surface-2" style={{ borderColor: 'var(--line)' }}>
-        <h3 className="m-0 text-[14px] font-bold text-slate-100">{tieuDe}</h3>
-        {dem !== undefined && <span className="text-xs font-semibold tabular-nums text-slate-500">{dem}</span>}
+    <h3 className="m-0 flex items-center gap-2 text-[15px] font-bold leading-[1.35] text-slate-100">
+      <span aria-hidden className="h-[18px] w-[3px] shrink-0 rounded-sm" style={{ background: 'var(--accent)' }} />
+      {tieuDe}
+      {dem !== undefined && <span className={`${CHIP_VUONG} text-slate-300`} style={{ borderColor: 'var(--line-strong)' }}>{dem}</span>}
+    </h3>
+  );
+}
+
+/**
+ * ĐẦU MỤC của khối Case A (luật chữ đầu mục, M6 — ghi ở DESIGN.md): đường kẻ trên, khoảng trên 22 px, chữ 15 / 700 có vạch nhấn, chip đếm; `phu` = chip
+ * ngữ cảnh cùng hàng (tên Case, lượt); `luat` = ⓘ (V6). Dùng chung: Ngăn Case, trang lượt, M5 ②.
+ */
+export function DauMuc({ tieuDe, dem, phu, luat, dau = false, children }: {
+  tieuDe: string; dem?: number; phu?: ReactNode; luat?: ReactNode; /** Mục đầu khối: không đường kẻ trên (nơi gọi đã có vạch / viền). */ dau?: boolean; children: ReactNode;
+}) {
+  return (
+    <section className={dau ? 'mt-4 first:mt-0' : 'mt-[22px] border-t pt-3'} style={{ borderColor: 'var(--line)' }}>
+      <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <TieuDeMuc tieuDe={tieuDe} dem={dem} />
+        {phu}
         <span className="flex-1" />
         {luat && <NutLuat>{luat}</NutLuat>}
       </div>
-      <div className="flex flex-col gap-2 px-3 py-2.5">{children}</div>
+      <div className="flex flex-col gap-2">{children}</div>
     </section>
   );
 }
@@ -286,9 +348,11 @@ function The({ tieuDe, dem, luat, children }: { tieuDe: string; dem?: number; lu
  * MỘT DÒNG PA (mockup §8, một mẫu cho mọi loại): tên loại + khoá quy chế + trạng thái · ⋯ (Sửa PA · Xoá PA) · nội dung ·
  * "Dạy X / Thực hiện X · Từ W1 OCT · mốc" · vạch buổi (PA có Số buổi) · chân gạch đứt "Kết quả · hạn T2 13/10" + nút · Nhật ký PA (n).
  */
-function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXacNhan = false }: {
+function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXacNhan = false, vua = null, onHoanTac }: {
   iv: any; data: CaseDetail; homNay: string; ngan: (d: string | null | undefined) => string; onViec: (v: ViewCase) => void;
   onDoi?: () => void; anXacNhan?: boolean;
+  /** M6 6b-2 (Q1): PA vừa đổi — viền nhấn + "✓ … · Hoàn tác". */
+  vua?: VuaDoiPa | null; onHoanTac?: () => void;
   /** OV-13b: phần chi tiết dưới dòng PA gọn — không đầu dòng, không chân việc. */
   anDau?: boolean;
 }) {
@@ -296,7 +360,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
   const choDuyet = iv.approvalState === 'pending';
   /* OV-13b (mockup OV-13 §2): PA ĐANG CHẠY = một dòng gọn; chờ xác nhận / chờ duyệt / đã khép giữ thẻ đầy đủ. */
   if (!anDau && iv.status === 'started' && !choDuyet && !iv.awaitingConfirmation && !iv.chuaChay) {
-    return <DongPaGon iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} />;
+    return <DongPaGon iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} vua={vua} onHoanTac={onHoanTac} />;
   }
   /* PR-LT2a → PR-CT2: PA Bổ trợ chưa chạy = chờ Xác nhận Case (không có "Xác nhận PA", không có "Kết quả"). */
   const bt = data.boTro ?? null;
@@ -327,9 +391,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
   /* OV-7b: lần ghi Kết quả gần nhất mà người xem sửa được (người đã ghi + QL, máy chủ quyết `suaDuoc`). */
   const fSua = ketQuaPa.find((f: any) => f.interventionId === iv.id && f.nextStep && f.suaDuoc) ?? null;
   return (
-    <li className={anDau ? 'flex list-none flex-col gap-[5px]' : 'flex flex-col gap-[5px] rounded-lg border px-3 py-2.5 surface-2'} style={anDau ? undefined : { borderColor: 'var(--line)', opacity: dangChay || choDuyet ? undefined : 0.75 }} data-pa-id={anDau ? undefined : iv.id}>
+    <li className={anDau ? 'flex list-none flex-col gap-[5px]' : 'flex flex-col gap-[5px] rounded-lg border px-3 py-2.5 surface-2'} style={anDau ? undefined : { ...vienVua(vua), opacity: dangChay || choDuyet || vua ? undefined : 0.75 }} data-pa-id={anDau ? undefined : iv.id}>
       {!anDau && <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-sm font-bold text-slate-100">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}</span>
+        <span className="text-[15px] font-semibold text-slate-100">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}</span>
         {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán — dấu nhỏ cạnh tên (khoảng cách lấy từ `gap-1.5` của hàng, nên không thêm `ml-1.5`). */}
         {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400" title={iv.kind === 'bo_tro' ? t('PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm') : t('PA theo quy chế SOS — chỉ GVCN / QL kết thúc sớm (⋯)')}><KhoaNho />{t('theo quy chế')}</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
@@ -417,6 +481,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
       {!anDau && data.viewer.canApprove && iv.yeuCau && iv.yeuCau.loai === 'de_xuat_pa' && (
         <div className="mt-1"><TheYeuCau gon yc={iv.yeuCau} onXong={() => onViec({ loai: 'case' })} /></div>
       )}
+      {vua && !anDau && <DaiVuaDoi x={vua} onHoanTac={onHoanTac} />}
     </li>
   );
 }
@@ -426,8 +491,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
  * người dạy: "Chưa chọn người dạy · Chọn" (chọn tại dòng, lưu ngay). Tới kỳ: ghi nhanh ngay dưới (PA không đếm buổi) / nút Ghi kết quả (Tutor, kết quả
  * cuối → panel); chưa tới kỳ: "Cập nhật trước hạn" (nút thường). Nội dung, người, vạch buổi, Sửa kết quả, Nhật ký PA gập ở "Chi tiết".
  */
-function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi }: {
+function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, vua = null, onHoanTac }: {
   iv: any; data: CaseDetail; homNay: string; ngan: (d: string | null | undefined) => string; onViec: (v: ViewCase) => void; onDoi?: () => void;
+  vua?: VuaDoiPa | null; onHoanTac?: () => void;
 }) {
   const [moNhanh, setMoNhanh] = useState(false);
   const [daLuu, setDaLuu] = useState<DaLuuNhanh | null>(null);
@@ -446,9 +512,9 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi }: {
   };
   const moPanel = () => onViec({ loai: 'ghi-ket-qua', paId: iv.id });
   return (
-    <li className="flex flex-col gap-2 rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)' }} data-pa-id={iv.id}>
+    <li className="flex flex-col gap-2 rounded-lg border px-3 py-2.5 surface-2" style={vienVua(vua)} data-pa-id={iv.id}>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="text-sm font-bold text-slate-100">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</span>
+        <span className="text-[15px] font-semibold text-slate-100">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</span>
         {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400"><KhoaNho />{t('theo quy chế')}</span>}
         <Nhan tone="doing">{t('Đang chạy')}</Nhan>
         {fGan && (
@@ -491,7 +557,34 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi }: {
         <summary className="flex min-h-[44px] cursor-pointer items-center text-xs text-slate-400 sm:min-h-0">{t('Chi tiết · Nhật ký PA ({soDongNhatKyPa})', { soDongNhatKyPa: soDongNhatKyPa(iv, data.followups ?? []) })}</summary>
         <ul className="m-0 mt-1 p-0"><TheKhoiPa iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anDau /></ul>
       </details>
+      {vua && <DaiVuaDoi x={vua} onHoanTac={onHoanTac} />}
     </li>
+  );
+}
+
+/** Thẻ PA vừa đổi: viền nhấn 2 px (cùng dáng "đang chọn" — G14), thẻ khác viền mảnh. */
+const vienVua = (vua: VuaDoiPa | null) => (vua ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 1px var(--accent)' } : { borderColor: 'var(--line)' });
+
+/** "✓ Đã thêm PA · Hoàn tác" ngay trong thẻ PA vừa đổi (Q1) — Hoàn tác 10 giây, gọi đường đảo của form (máy chủ kiểm lại quyền + thời gian). */
+function DaiVuaDoi({ x, onHoanTac }: { x: VuaDoiPa; onHoanTac?: () => void }) {
+  const [con, setCon] = useState(!!x.hoanTac);
+  const [busy, setBusy] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  useEffect(() => {
+    if (!con) return undefined;
+    const h = setTimeout(() => setCon(false), 10_000);
+    return () => clearTimeout(h);
+  }, [con]);
+  const bam = async () => {
+    setBusy(true); setLoi(null);
+    try { await x.hoanTac!(); onHoanTac?.(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); setBusy(false); }
+  };
+  return (
+    <p role="status" className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-t pt-2 text-[13px]" style={{ borderColor: 'var(--line)' }}>
+      <b className="font-semibold text-ok">✓ {x.chu}</b>
+      {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
+      {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
+    </p>
   );
 }
 
