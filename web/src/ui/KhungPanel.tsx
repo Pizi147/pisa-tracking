@@ -29,6 +29,8 @@ type NhapPanel = { viec: string; coChu: boolean; bao: (o: string, coChu: boolean
 const NhapCuaPanel = createContext<NhapPanel | null>(null);
 /** Đã ở trong một `KhungPanel` — panel con (hộp mở đè) không tính nháp của việc là "đang sửa" của nó. */
 const TrongKhung = createContext(false);
+/** 6C-NHO (bảng kê lỗi 4): hộp mở từ ô nằm trong panel (lưới điểm trong Nhập điểm / panel việc) phải `longTrong` — không đóng panel cha. */
+export const useTrongKhung = () => useContext(TrongKhung);
 const khoNhap = (): KhoNhap | null => { try { return window.sessionStorage; } catch { return null; } };
 
 /**
