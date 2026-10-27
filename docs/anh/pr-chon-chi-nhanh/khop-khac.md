@@ -21,7 +21,7 @@ Nguồn: `docs/superpowers/plans/2026-10-27-sua-toi.md` mục D3. Không đổi 
 
 ## Không làm (ghi rõ)
 - HV & Lớp (`StudentsPage`) — session D2 sửa thân trang; D2 dùng `BranchFilter` thì tự nhận mẫu mới.
-- Ô "Mọi hạn" ở Công việc cao 36 (không phải ô chi nhánh) — giữ.
+- Ô "Mọi hạn" ở Công việc (cùng hàng): cao 36 → 32, chữ 13 / 600 cho thẳng hàng với ô chi nhánh (chủ SP 27/10 chỉ ảnh lệch hàng).
 - Báo cáo đơn vị / form Giao việc / Tạo lớp: chọn chi nhánh là ô form trong panel, không phải bộ lọc — giữ.
 
 ## Ảnh TRƯỚC | SAU (vai Quản trị, 1440 tối · 375 sáng, phần đầu trang)
