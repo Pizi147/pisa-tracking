@@ -48,7 +48,7 @@ export type DongSoLieu = {
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ; có nhóm thì panel vẽ dải nhóm và dòng mở view Case trong cùng panel. */
   nhom?: NhomCaseChuaChot | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
-  diemCase?: { so: number; kyVong: number | null; luot: string | null } | null;
+  diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** UI-HO-SO-GV: dòng kết quả — điểm từng kỹ năng (`cua` = kỹ năng GV phụ trách), Overall, mốc so, kết luận (tab Chưa đạt · Đạt). */
   diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%'; vuot?: boolean;
 };
@@ -132,9 +132,12 @@ function Doan({ ds }: { ds: ReactNode[] }) {
     <Fragment key={i}>{i > 0 && <><span aria-hidden className="mx-1.5 text-slate-500">·</span><span className="sr-only">, </span><wbr /></>}<span className="whitespace-nowrap">{x}</span></Fragment>
   ))}</>;
 }
-/** Đoạn kết luận "Đạt" / "Chưa đạt" trong câu `sub` của dòng kết quả — thêm ✓ / ✗ + màu kết quả (không chỉ màu), như `DiemKq`. */
-const chuKetQua = (s: string): ReactNode => (s === 'Đạt' ? <b className="font-semibold text-kq-bang">✓ {t('Đạt')}</b>
-  : s === 'Chưa đạt' ? <b className="font-semibold text-kq-duoi">✗ {t('Chưa đạt')}</b> : s);
+/** 6c-2 (critique vòng 3): MỘT cách ghi "điểm so kỳ vọng" cho mọi dòng panel số — "[nhãn] ✗ 5.5 · kỳ vọng 6.5 · thiếu 1.0" (✓ / ✗ + màu `DiemKq`). */
+const doanDiem = (d: NonNullable<DongSoLieu['diemCase']>): ReactNode[] => [
+  <>{d.nhan && <>{d.nhan} </>}<DiemKq diem={d.so} kyVong={d.kyVong} /></>,
+  d.kyVong != null && t('kỳ vọng {kv}', { kv: d.kyVong.toFixed(1) }),
+  d.kyVong != null && d.so < d.kyVong && t('thiếu {n}', { n: (d.kyVong - d.so).toFixed(1) }),
+];
 
 /** M6 6b-2 (luật chữ đầu mục): vạch 3 px của dải nhóm theo BƯỚC — token sẵn có, màu luôn đi kèm tên nhóm (G14 sửa, chủ SP 27/10). */
 const VACH_NHOM: Record<NhomCaseChuaChot, string> = {
@@ -269,7 +272,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
               {r.em?.ten ?? r.title}
               {/* " · ": "·" dính chữ trước (không đứng đầu dòng ở 375); lớp, lượt không ngắt giữa ("MB FT 101"); tên Case dài được xuống dòng. */}
               <span className="text-[13px] font-normal text-slate-400">{[r.em && r.title, r.lop, r.diemCase?.luot].filter(Boolean).map((x, i) => (
-                <Fragment key={i}>{' · '}<span className={x === r.title ? undefined : 'whitespace-nowrap'}>{x}</span></Fragment>
+                <Fragment key={i}><span aria-hidden>{' · '}</span><span className="sr-only">, </span><span className={x === r.title ? undefined : 'whitespace-nowrap'}>{x}</span></Fragment>
               ))}</span>
             </span>
             {/* Người giữ việc (khu K ③): "Bạn" khi chính người xem phụ trách; không thì tên người phụ trách. */}
@@ -280,11 +283,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
               {/* 6c-2 (#632 XM-1, mockup khu K ②): dòng 2 = "✗ 5.5 · kỳ vọng 6.5 · thiếu 1.0" (✓ / ✗ + chữ, không chỉ màu); mỗi đoạn không ngắt giữa (375).
                   Không tên việc / tình trạng — dải nhóm đã nói bước. */}
               {r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b>
-                : <Doan ds={[
-                  r.diemCase && <DiemKq diem={r.diemCase.so} kyVong={r.diemCase.kyVong} />,
-                  r.diemCase?.kyVong != null && t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) }),
-                  r.diemCase?.kyVong != null && r.diemCase.so < r.diemCase.kyVong && t('thiếu {n}', { n: (r.diemCase.kyVong - r.diemCase.so).toFixed(1) }),
-                ]} />}
+                : r.diemCase && <Doan ds={doanDiem(r.diemCase)} />}
             </span>
             {!r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
           </span>
@@ -330,15 +329,16 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
       return (
         <li key={r.id} data-dong={r.id} className="flex flex-col gap-0.5 border-t px-4 py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
           <span className="flex w-full items-center gap-2.5">
-            <Link to={r.href} className="min-w-0 flex-1 text-sm font-bold text-slate-100 no-underline hover:underline max-sm:-my-3 max-sm:py-3">
+            <Link to={r.href} className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-slate-100 no-underline hover:underline max-sm:-my-3 max-sm:py-3">
               {r.em?.ten ?? r.title} <span aria-hidden className="text-xs font-normal text-slate-400">↗</span>
               {r.em && r.title && <span className="text-[13px] font-normal text-slate-400"> · {r.title}</span>}
             </Link>
             {chipHan}
           </span>
+          {r.diemCase && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={doanDiem(r.diemCase)} /></span>}
           {r.em || r.ngCanh
             ? <span className="text-[13px] leading-snug text-slate-400"><Doan ds={dong2.slice(1).filter((x) => x !== r.title)} /></span>
-            : r.sub && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={r.sub.split(' · ').map(chuKetQua)} /></span>}
+            : r.sub && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={r.sub.split(' · ')} /></span>}
           {(v || r.tinhTrang || conNguoi || hanRieng) && (
             <span className="text-[13px] leading-snug text-slate-300">
               <Doan ds={[v && dich(v.chu), r.tinhTrang && dich(r.tinhTrang), conNguoi && r.nguoi, hanRieng && <HanDong han={hanRieng} loai={r.viec?.loaiHan} />]} />

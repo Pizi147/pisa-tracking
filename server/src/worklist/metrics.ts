@@ -132,7 +132,7 @@ export type MetricRow = {
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ (`nhomCaseChuaChot`). */
   nhom?: NhomCaseChuaChot | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở mốc mở / lặp Case gần nhất (band, kỳ vọng lượt đó, "MT2" / "Progress Test"). */
-  diemCase?: { so: number; kyVong: number | null; luot: string | null } | null;
+  diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
   ngayThiThat?: string;
   viec?: ViecDong | null;

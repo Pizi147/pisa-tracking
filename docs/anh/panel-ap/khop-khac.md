@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | K1 | K ② dòng Case — kỹ năng | chip kỹ năng (W, S…) | chữ tên Case ("Writing Task 2", "Speaking tái diễn…") | Tên Case đã nói kỹ năng (và Case tạo tay có tên riêng), thêm chip là lặp. |
 | K2 | K ② dòng Case — Case không có mốc điểm | mọi dòng có "✗ điểm · kỳ vọng · thiếu" | 6 dòng (Case tạo tay, PA xong) không có dòng điểm | Máy chủ chỉ có điểm khi mốc mở Case ghi band; không bịa số. |
-| K3 | Dòng chỉ đọc (Đạt MT) | (mockup K ② chỉ vẽ dòng Case) | các đoạn ngăn "·", kết luận "✓ Đạt / ✗ Chưa đạt" | Nâng cấp theo cùng luật: kết luận có ký hiệu, không chỉ màu. |
+| K3 | Dòng chỉ đọc (Đạt MT) | (mockup K ② chỉ vẽ dòng Case) | dòng 2 "Overall ✗ 5.5 · kỳ vọng 6.0 · thiếu 0.5", dòng 3 lớp · lượt · tuần | Một cách ghi điểm so kỳ vọng cho mọi panel số (cùng dòng Case, V21: điểm là giá trị chính, ✓ / ✗ + màu). |
 | K4 | Hộp xác nhận | `.hop-hoi` giữa màn | `ConfirmDialog` giữa màn, phần còn thấy khi bàn phím mở | Cùng mẫu; thêm né bàn phím 375 (ô lý do tự focus). |
 
 **Cổng ảnh cặp 6c-2 (khung K ②):** 6 thành phần — 5 KHỚP (dòng 1 em · Case · lớp · lượt, dòng 2 "✗ điểm · kỳ vọng · thiếu", người giữ việc + chip hạn bên phải, dải nhóm theo bước, dòng chỉ đọc link ↗ không mở rộng) · 1 GIỮ (K1, không tính) → **5 / 5 = 100 %**. K2 là dữ liệu, không phải khung.
@@ -41,7 +41,8 @@ Phép kiểm cũ nới regex (ý giữ nguyên — nháp thì ‹ không hỏi):
 | Xem việc / tình trạng / người / hạn dòng chỉ đọc | mở rộng dòng | đọc ngay trên dòng |
 
 Ảnh: `cap-k2-case-1440.png`, `cap-k2-case-375.png`, `4-dong-chi-doc-link-thang-1440.png`, `4-dong-chi-doc-link-thang-375.png`.
-Critique (impeccable, 2 agent tách biệt): vòng 1 = 28/40 · vòng 2 = 31/40, không P0 / P1; bộ dò 0 phát hiện thật trong phạm vi (nested-cards ở dải nhóm, em-dash ở bảng Tổng quan = báo nhầm, có sẵn từ 6b-2). Đã sửa hết P2 / P3 của vòng 2.
+Critique (impeccable, agent A / B tách biệt): vòng 1 = 28/40 · vòng 2 = 31/40 · vòng 3 = 30/40 (A, người chấm khác) — cả ba không P0 / P1; bộ dò 0 phát hiện thật trong phạm vi (nested-cards ở dải nhóm, em-dash ở bảng Tổng quan = báo nhầm, có sẵn từ 6b-2). Đã sửa hết P2 / P3 của vòng 2 và 3 (lượt sửa cuối không chấm lại — đã hết 2 vòng sau mốc 30). Audit (code): 17/20.
+Máy chủ: dòng Đạt MT gửi `diemCase` (nhãn Overall) thay chữ "Overall · kỳ vọng · Đạt" trong `sub`; phép kiểm cũ SVSO2 (T11) đổi sang đọc trường có cấu trúc (ý giữ: chưa đạt trước, có Overall + kỳ vọng, không khối việc).
 
 ## 6c-2 ③ Hộp xác nhận (PTA 28/10: hộp `KhungPanel longTrong` → hộp nhỏ)
 

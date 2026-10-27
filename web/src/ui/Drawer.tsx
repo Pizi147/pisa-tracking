@@ -29,7 +29,7 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
     /* 6c-2 (critique 375): bàn phím ảo mở (ô lý do autoFocus) → hộp căn giữa phần màn còn thấy, không để chân hộp dưới bàn phím (`--ban-phim` của KhungPanel). */
     <div className={`fixed inset-0 !mt-0 ${z} flex items-center justify-center p-4`} style={{ bottom: 'var(--ban-phim, 0px)' }} role="dialog" aria-modal="true" aria-labelledby={idTen}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-[88vh] flex flex-col -outline-offset-2`}>
+      <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-full flex flex-col -outline-offset-2`}>
         <header className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
           <h2 id={idTen} className="text-sm font-semibold text-slate-100">{title}</h2>
           <button className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-0 sm:min-w-0" onClick={onClose} aria-label={t('Đóng')}>✕</button>
