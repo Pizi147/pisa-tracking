@@ -19,7 +19,7 @@ Số trên web là dữ liệu seed (khác số demo của mockup) — so khung,
 | 8 | Dòng "Speaking chấm chéo chưa ai nhận: n bài — chờ chấm, không tính quá hạn" | `data.choCham` (Q12) | KHỚP |
 | 9 | "Cách tính" cuối panel, có "Dữ liệu đến" | `<details>` + ngày nghiệp vụ | KHỚP |
 | 10 | View kế: "‹ 4 GV chấm quá hạn" · tiêu đề lớp · lượt · môn · chip quá hạn · "người nhập {GV} ↗ · thi W1 SEP · hạn · n bài còn trống" | `ViewEm` (‹ = tên panel, không số) | KHỚP |
-| 11 | Bảng em × cột của việc (Task 1 / Task 2), tên ↗ hồ sơ HV | `BangEm` đọc lưới `diem-theo-luot` (cùng nguồn Nhập hộ): điểm có → số; ô nợ → chữ **"trống"** (đếm khớp "n bài còn trống"); ô không tính → "Đã huỷ" / "vắng" / "không tính" | KHÁC nhỏ — [XM-1] |
+| 11 | Bảng em × cột của việc (Task 1 / Task 2), tên ↗ hồ sơ HV | `BangEm` đọc lưới `diem-theo-luot` (cùng nguồn Nhập hộ): điểm có → số; ô nợ → chữ **"trống"** (đếm khớp "n bài còn trống"); ô không tính → "Đã huỷ" / "vắng" / "không tính" | KHÁC có lý do — XM-1 (PTA giữ) |
 | 12 | "Mở lưới lớp ở Lịch Test (W1 SEP) ›" (đổi trang, giữ tuần) | `duongLichTest({ classId, periodId, kn })` | KHỚP |
 | 13 | Chân: "Ghi tên bạn là người nhập; bài vẫn của …" + nút chính "Nhập hộ" | chân `KhungPanel`; chữ đổi "Bạn được ghi là người nhập…" (critique: câu cũ đọc như lệnh); người xem chính là GV → "Nhập điểm"; không quyền → một câu "ai làm được" | KHỚP |
 | 14 | "Nhập hộ" mở lưới nhập ngay trong panel (view kế nữa, ‹ về) | `PanelNhapDiem chiEmViec` (lưới Công việc, chỉ các em của dòng, "Cả lớp" mở đủ) trên `?panel=em.nhap` | KHỚP |
@@ -29,7 +29,7 @@ Số trên web là dữ liệu seed (khác số demo của mockup) — so khung,
 | — | GIỮ (mockup không vẽ): danh sách tĩnh dưới khối Admin; dòng loại "VIỆC" ở view Nhập hộ (cùng các view làm việc khác — V11) | | GIỮ |
 | — | GIỮ: panel QL một GV không vẽ dải tên (tiêu đề đã có tên; link "Hồ sơ GV ↗" lên đầu) | | GIỮ |
 
-**Đếm:** 17 dòng có khung — 16 KHỚP · 1 KHÁC nhỏ ([XM-1]) → **94 %**, đạt cổng 90 %.
+**Đếm:** 17 dòng có khung — 16 KHỚP · 1 KHÁC có lý do (XM-1) → **94 %**, đạt cổng 90 %.
 
 ## Thao tác TRƯỚC → SAU (bấm thật 27/10 trên dev cục bộ)
 
@@ -49,12 +49,21 @@ Không mất thao tác: Nhập điểm tại chỗ của QL vẫn có (nay là "
   (hộp hỏi "Bỏ điểm …? Bỏ / Gõ tiếp"). Ảnh hưởng tốt cho mọi panel có lưới nhập (Công việc, Lịch Test).
 - `PanelNhapDiem`: thêm `chiEmViec` (chỉ hàng các em của việc khi việc có nhiều em) — chỉ panel này bật, Công việc giữ như cũ.
 
-## [XM] — hỏi PTA Plan
+## [XM] — PTA Plan đã trả lời (27/10 tối)
 
-- **XM-1** bảng em: mockup để "—" cho ô trống; web ghi chữ "trống" (màu trễ) cho ô còn nợ và chữ mờ "Đã huỷ / vắng / không tính" cho ô không tính — vì seed có ô
-  đã huỷ (dời tuần) nằm cạnh ô nợ; "—" cho cả hai làm đếm "5 bài còn trống" không khớp 8 dấu "—". Giữ hay về "—"?
-- **XM-2** lưới Nhập hộ (thành phần sẵn có `PanelNhapDiem`): cột "Kết quả · Chờ 4 kỹ năng" và nút "Cả lớp" đứng riêng trên đầu bảng — ghi cho 6c, không sửa ở đây.
-- **XM-3** dấu "·" đầu dòng ở 375 khi dòng 2 đầu panel xuống hàng (`KhungPanel dong2`, dùng chung mọi panel) — ghi cho 6c.
+- **XM-1 → GIỮ, KHÁC có lý do** (dòng 11): bảng em ghi chữ "trống" cho ô còn nợ và chữ mờ "Đã huỷ / vắng / không tính" cho ô không tính, thay "—" của mockup —
+  chữ nói trạng thái (không chỉ màu) và số ô "trống" khớp "n bài còn trống" (seed có ô đã huỷ nằm cạnh ô nợ; "—" cho cả hai thì 8 dấu ≠ 5 bài).
+
+## Để sau (6c — PTA Plan 27/10)
+
+- Lưới Nhập hộ (`PanelNhapDiem` sẵn có): cột "Kết quả · Chờ 4 kỹ năng" và nút "Cả lớp" đứng riêng trên đầu bảng (XM-2).
+- Dấu "·" đầu dòng ở 375 khi dòng 2 đầu panel xuống hàng (`KhungPanel dong2`, dùng chung mọi panel) (XM-3).
+- Gỡ `GET /tong-quan/ql/tre` + `oTreCham` (web không còn gọi) cùng phép kiểm cũ.
+
+## Check
+
+`npm run check` một lần: 4500 đạt, 2 đỏ do PR (N1 (7) panel chỉ xem; EN-TRUNG khoá "trống" trùng). Đã sửa; chạy lại riêng hai bộ chứa chúng
+(`suaLoiNong`, `prEn`, bản build): **N1 (7) ✓ · EN-TRUNG ✓**.
 
 ## Critique (impeccable, MỘT lần, hai agent tách biệt)
 
