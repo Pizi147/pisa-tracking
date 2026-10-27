@@ -13,8 +13,8 @@ colors:
   hong: "#f57aae"
   dieu-huong-nen: "#0a1a3a"
   ok: "rgb(148 209 174)"
-  bad: "rgb(233 167 158)"
-  late: "rgb(233 167 158)"
+  bad: "rgb(232 154 140)"
+  late: "rgb(232 154 140)"
   soon: "rgb(228 199 132)"
   doing: "rgb(156 189 231)"
   done: "rgb(158 172 200)"
@@ -192,7 +192,7 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
   5. Trung tính `muted` — mọi trạng thái khác (chờ duyệt, chờ chấm, Chưa chốt PA…). Đã bỏ tím `wait` và teal `chon-*` (OV-15a).
 - Đạt = `ok`; `bad` còn cho thao tác nguy hiểm.
 - **Màu cấp Lịch Test** (V17): `--cap-nhom` `#283452` / sáng `#cfd6e4` · `--cap-lop` `#1d3b72` / `#d4e1fb` · `--cap-lop-dong` `#172b50` / `#edf2fd` · `--cap-dau-cot` `#0a1224` / `#eceff5`. Chỉ dùng ở Lịch Test (+ nhóm trái Chấm Test).
-- **Giảm độ rực (D4 MAU-WEB, chủ SP 27/10 — "giữ tông, giảm độ rực"):** nền, mặt, viền, chữ, thanh điều hướng, xanh logo, hồng logo GIỮ; mọi màu nghĩa giảm chroma OKLCH, giữ độ sáng — trạng thái / SOS / lịch / kết quả × 0,65 (sáng: đỏ lỗi, quá hạn, SOS 3 × 0,8), nhấn tối × 0,8, chữ hồng × 0,85. Màu mới không được rực hơn mức này. Nút chính ở tối: nền `--nut-chinh-nen` xanh thẫm + viền `--nut-chinh-vien`, không tô kín `--accent` (sáng giữ tô xanh logo). Bảng so sánh + đo: `thiet-ke/v7/bang-mau-moi.html`, `kiem-tuong-phan-mau-moi.py`.
+- **Giảm độ rực (D4 MAU-WEB, chủ SP 27/10 — "giữ tông, giảm độ rực"):** nền, mặt, viền, chữ, thanh điều hướng, xanh logo, hồng logo GIỮ; mọi màu nghĩa giảm chroma OKLCH, giữ độ sáng — trạng thái / SOS / lịch / kết quả × 0,65 (sáng: đỏ lỗi, quá hạn, SOS 3 × 0,8), nhấn tối × 0,8, chữ hồng × 0,85. Đỏ chữ tối (lỗi / quá hạn / ✗ dưới) `#e89a8c` hơi ngả cam để ✓ vượt ↔ ✗ dưới vẫn tách khi mù màu đỏ–lục (deutan ΔE 14 ≥ 10, K-MAU-2). Màu mới không được rực hơn mức này. Nút chính ở tối: nền `--nut-chinh-nen` xanh thẫm + viền `--nut-chinh-vien`, không tô kín `--accent` (sáng giữ tô xanh logo). Bảng so sánh + đo: `thiet-ke/v7/bang-mau-moi.html`, `kiem-tuong-phan-mau-moi.py`.
 - Chữ phụ: `text-dim` (quan trọng), `text-faint` (nhỏ) — cả hai ≥ 7:1 trên `bg`, `surface`, `surface-2` ở sáng lẫn tối (`prOv15a`).
 
 ## Typography

@@ -120,15 +120,15 @@
   --nhan: #a0c0e8;  --nhan-hover: #bfd6f2;  --nhan-nen: #1a2a44;  --nhan-vien: #47699a;  --focus: #a0c0e8;
   --hong: #f57aae;  --hong-chu: #efa1c1;  --hong-nen: #331827;
   --hover: #14223d;  --dang-mo: #1a2a44;
-  --loi: #e9a79e;      --loi-nen: #341c1d;   --loi-vien: #7e4841;
+  --loi: #e89a8c;      --loi-nen: #341c1d;   --loi-vien: #7e4841;
   --canh-bao: #e4c784; --canh-bao-nen: #2d2819; --canh-bao-vien: #76663f;
   --dat: #94d1ae;      --dat-nen: #1b2e2a;   --dat-vien: #49755c;
   --thieu: #9aa8c2;    --thieu-nen: #131f36; --thieu-vien: #5d7398;
   --dang: #a0c0e8;     --dang-nen: #1a2a44;  --dang-vien: #47699a;
-  --kq-vuot: #94d1ae;  --kq-bang: #a0c0e8;  --kq-duoi: #e9a79e;
+  --kq-vuot: #94d1ae;  --kq-bang: #a0c0e8;  --kq-duoi: #e89a8c;
   --sos1: #ccb96d;  --sos1-chu: #e5d386;  --sos1-nen: #373119;
   --sos2: #da9761;  --sos2-chu: #e2ab80;  --sos2-nen: #da9761;  --sos2-tren: #1f1000;
-  --sos3: #ab4d45;  --sos3-chu: #e9a79e;  --sos3-nen: #873c34;  --sos3-tren: #ffffff;  --sos3-vien: #b7544c;
+  --sos3: #ab4d45;  --sos3-chu: #e89a8c;  --sos3-nen: #873c34;  --sos3-tren: #ffffff;  --sos3-vien: #b7544c;
   --lich-nen: #233a4d;  --lich-chu: #afcee2;  --lich-vien: #405e74;  --da-thi-nen: #14202c;
   --bong-noi: 0 8px 24px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
 }

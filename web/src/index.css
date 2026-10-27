@@ -53,8 +53,8 @@
      * Chữ ≥ 4.5:1 trên nền riêng và mọi nền trang — phép kiểm `nenGiaoDien.tests.ts` đọc chính khối này.
      */
     --ok-rgb: 148 209 174;    --ok-bg-rgb: 30 50 43;     --ok-line-rgb: 73 117 92;     /* đạt · đã lưu ✓ */
-    --bad-rgb: 233 167 158;   --bad-bg-rgb: 52 28 29;    --bad-line-rgb: 126 72 65;    /* lỗi · chưa đạt ✗ */
-    --late-rgb: 233 167 158;  --late-bg-rgb: 52 28 29;   --late-line-rgb: 126 72 65;   /* quá hạn = màu lỗi V5, luôn kèm ⚠ */
+    --bad-rgb: 232 154 140;   --bad-bg-rgb: 52 28 29;    --bad-line-rgb: 126 72 65;    /* lỗi · chưa đạt ✗ */
+    --late-rgb: 232 154 140;  --late-bg-rgb: 52 28 29;   --late-line-rgb: 126 72 65;   /* quá hạn = màu lỗi V5, luôn kèm ⚠ */
     --soon-rgb: 228 199 132;   --soon-bg-rgb: 48 42 26;   --soon-line-rgb: 118 102 63;  /* sắp hạn · hôm nay · cần chú ý */
     --doing-rgb: 156 189 231; --doing-bg-rgb: 25 43 70;  --doing-line-rgb: 67 99 148;  /* đang làm · đang lưu */
     --done-rgb: 158 172 200;  --done-bg-rgb: 22 34 58;   --done-line-rgb: 51 70 105;   /* đã xong */
@@ -66,13 +66,13 @@
     /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — chỉ VIỀN (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`), không nền. */
     --sos1-rgb: 204 185 109;  --sos1-chu-rgb: 217 201 129;
     --sos2-rgb: 207 129 91;  --sos2-chu-rgb: 223 159 124;
-    --sos3-rgb: 213 123 113;  --sos3-chu-rgb: 233 167 158;
+    --sos3-rgb: 213 123 113;  --sos3-chu-rgb: 232 154 140;
     /* P6 (chủ SP 22/10): 3 mức khác hẳn — SOS 1 viền mảnh · SOS 2 viền dày + nền cam nhạt · SOS 3 nền đỏ đậm đặc chữ trắng (NEN-SUA: bớt chói = đậm hơn; viền --sos3-vien tách mặt tối). */
     --sos2-nen: #35261a;  --sos3-nen: #873c34;  --sos3-vien: #b7544c;  --sos3-tren: #ffffff;
     /* Hàng ĐÃ THI · chờ KQ — nền cả hàng + vạch trái 3 px màu lịch (V5 `--da-thi-nen`). */
     --da-thi-bg-rgb: 22 35 46;
     /* KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới. */
-    --kq-vuot-rgb: 148 209 174;  --kq-bang-rgb: 156 189 231;  --kq-duoi-rgb: 233 167 158;
+    --kq-vuot-rgb: 148 209 174;  --kq-bang-rgb: 156 189 231;  --kq-duoi-rgb: 232 154 140;
 
     /* Tên cũ giữ làm bí danh để chỗ đang dùng không vỡ. */
     --ok: rgb(var(--ok-rgb));
