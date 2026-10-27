@@ -147,6 +147,7 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     run('DELETE FROM case_followups WHERE intervention_id = ?', pa.id);
     cases.suaPa(QL, pa.id, { description: 'Sửa sau khi xác nhận: luyện Part 2 + Part 3 mỗi tuần.' });
     assert(ma(() => sosAuto.hoanTacXacNhanPa(QL, pa.id)) === 409, 'sửa PA sau xác nhận → 409');
+    assert(ma(() => sosAuto.hoanTacXacNhanPa(gvPT, pa.id)) === 403, 'người khác vẫn 403 (không phải 409) dù PA đã đổi');
     assert(one('SELECT status FROM case_interventions WHERE id = ?', pa.id).status === 'started', 'PA giữ nguyên khi bị chặn');
     assert(ma(() => sosAuto.hoanTacXacNhanPa(QL, 987654)) === 404, 'không có PA → 404');
   }));
@@ -223,6 +224,35 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     assert(one('SELECT status FROM case_interventions WHERE id = ?', bt.id).status === 'started', 'xác nhận lại được');
   }));
 
+  check('HTXN-4b · FOU nhóm chung: xác nhận G+V rồi P → hoàn tác G+V chỉ trả PA G+V; PA P vẫn chạy, mốc P giữ, Case P vẫn đã xác nhận', () => thu(() => {
+    const sid = emTruot(`HTXN FOU ${++dem}`, 'MB FOU 12', { writing: 11, speaking: 12 });
+    const ctF = one('SELECT programme_code ct FROM classes WHERE id = ?', classId('MB FOU 12')).ct;
+    const xn = (topic: string) => ({ primaryCode: d.issuesForTopic(topic, ctF)[0].code, urgency: 'attention', moTa: 'Em mất điểm ở phần này, thiếu nền tảng cơ bản.' });
+    const cGv = one(`SELECT * FROM sos_cases WHERE student_id = ? AND topic = 'writing'`, sid), cP = one(`SELECT * FROM sos_cases WHERE student_id = ? AND topic = 'speaking'`, sid);
+    const bt = (caseId: number) => one(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' ORDER BY id LIMIT 1`, caseId);
+    assert(cGv && cP && bt(cGv.id).nhom_bo_tro === bt(cP.id).nhom_bo_tro, 'hai Case cùng nhóm Bổ trợ');
+    const gvW = gvOf('MB FOU 12', 'writing'), gvS = gvOf('MB FOU 12', 'speaking');
+    const truocGv = anhPa(bt(cGv.id).id);
+    sosAuto.xacNhanCase(gvW, cGv.id, xn('writing'));
+    assert(bt(cP.id).status === 'planned', 'PA P còn chờ sau xác nhận G+V');
+    sosAuto.xacNhanCase(gvS, cP.id, xn('speaking'));
+    const sauP = anhPa(bt(cP.id).id);
+    assert(bt(cP.id).status === 'started', 'PA P chạy sau xác nhận P');
+    sosAuto.hoanTacXacNhanCase(gvW, cGv.id);
+    assert(anhPa(bt(cGv.id).id) === truocGv, 'PA G+V về chờ');
+    assert(anhPa(bt(cP.id).id) === sauP, `PA P giữ nguyên: ${anhPa(bt(cP.id).id)}`);
+    assert(one('SELECT 1 c FROM journey_events WHERE dedup_key = ?', `bo-tro-chay:${bt(cP.id).id}`), 'mốc PA P giữ');
+    assert(all(`SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary'`, cP.id).length === 1, 'Case P vẫn đã xác nhận');
+  }));
+
+  check('HTXN-4c · PA của nhóm mà lần xác nhận đổi, bị lần khác đổi tiếp (không nhật ký) → 409, không ghi', () => thu(() => {
+    const { c, bt, gv } = caseBe();
+    sosAuto.xacNhanCase(gv, c.id, XN());
+    run(`UPDATE case_interventions SET performer_name = 'Đổi ngầm', performer_user_id = NULL WHERE id = ?`, bt.id);
+    assert(ma(() => sosAuto.hoanTacXacNhanCase(gv, c.id)) === 409, 'PA đổi sau → 409');
+    assert(all('SELECT 1 FROM case_issues WHERE case_id = ?', c.id).length === 2, 'không ghi gì');
+  }));
+
   check('HTXN-5 · chặn Hoàn tác Xác nhận Case: GVBM môn khác 403 · QL (không phải người xác nhận) 403 · quá giờ 409 · PA Bổ trợ đã có kết quả 409 · lần hai 409', () => thu(() => {
     const { c, bt, gv } = caseBe();
     sosAuto.xacNhanCase(gv, c.id, XN());
@@ -278,6 +308,16 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     sosAuto.hoanTacXacNhanPa(gvPT, pa.id);
     cases.hoanTacXacNhanCaseS(gvPT, c.id);
     assert(ma(() => cases.hoanTacXacNhanCaseS(gvPT, c.id)) === 409, 'lần hai → 409');
+  }));
+
+  check('HTXN-7b · Case S có kết quả PA ghi TRƯỚC lần xác nhận → vẫn hoàn tác được', () => thu(() => {
+    const { gvPT, gvCheo } = nguoiS();
+    const c = caseS(gvCheo);
+    const pa = paCho(c.id);
+    run(`INSERT INTO case_followups (case_id, intervention_id, observed_on, created_at) VALUES (?, ?, ?, ?)`, c.id, pa.id, TODAY, new Date(Date.now() - 60_000).toISOString());
+    cases.xacNhanCaseS(gvPT, c.id, { cach: 'dung' });
+    assert(ma(() => cases.hoanTacXacNhanCaseS(gvPT, c.id)) === 0, 'kết quả cũ không chặn');
+    assert(co(c.id) === 1, 'cờ chờ bật lại');
   }));
 
   // ---------------------------------------------------------------- trần câu SQL · đường

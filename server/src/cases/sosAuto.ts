@@ -252,14 +252,11 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   });
   const today = demoToday();
   return tx(() => {
-    /* HOAN-TAC-XN: chụp trạng thái trước (Case, nhóm đang có, mọi PA cùng nhóm Bổ trợ — `chayPaBoTro` / Sửa PA chạm cả nhóm) để Hoàn tác trả đúng. */
-    const hoanTac = {
-      urgency: c.urgency ?? null, summary: c.summary ?? null, title: c.title ?? null,
-      issues: (conn.prepare('SELECT id FROM case_issues WHERE case_id = ?').all(caseId) as any[]).map((x) => x.id as number),
-      revTu: (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM case_intervention_revisions').get() as any).m as number,
-      pa: (conn.prepare(`SELECT * FROM case_interventions WHERE kind IN ('bo_tro', 'bo_tro_mien_phi') AND nhom_bo_tro = (SELECT nhom_bo_tro FROM case_interventions
-          WHERE case_id = ? AND kind = 'bo_tro' AND status = 'planned' AND nhom_bo_tro IS NOT NULL LIMIT 1)`).all(caseId) as any[]).map((r) => ({ id: r.id, case_id: r.case_id, ...chupPa(r) })),
-    };
+    /* HOAN-TAC-XN: chụp trạng thái trước (Case, nhóm đang có, PA cùng nhóm Bổ trợ — `chayPaBoTro` / Sửa PA chạm cả nhóm); cuối giao dịch chỉ giữ PA lần này đổi. */
+    const issuesTruoc = (conn.prepare('SELECT id FROM case_issues WHERE case_id = ?').all(caseId) as any[]).map((x) => x.id as number);
+    const revTu = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM case_intervention_revisions').get() as any).m as number;
+    const paTruoc = new Map((conn.prepare(`SELECT * FROM case_interventions WHERE kind IN ('bo_tro', 'bo_tro_mien_phi') AND nhom_bo_tro = (SELECT nhom_bo_tro FROM case_interventions
+        WHERE case_id = ? AND kind = 'bo_tro' AND status = 'planned' AND nhom_bo_tro IS NOT NULL LIMIT 1)`).all(caseId) as any[]).map((r) => [r.id as number, r]));
     addIssues(caseId, p.userId, { primaryCode, secondaryCodes: nhom.slice(1), observation, topic: c.topic });
     conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(urgency, moTa, tenGiua, nowIso(), caseId);
     ghiMoc(caseId, 'xac_nhan_case', today, moTa, p.userId, `xac_nhan_case:${caseId}`);
@@ -272,6 +269,16 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
       if (input.pa && Object.keys(input.pa).length) suaPa(p, bt.id, input.pa);
     }
     const ten = caseTitleOf({ ...c, title: tenGiua });
+    /* Chỉ PA lần này thật sự đổi (trước ≠ sau) — PA môn khác còn chờ / chạy từ trước không thuộc lần này. Bản lịch sử: id ghi TRONG giao dịch này (ghi tuần tự). */
+    const ids = JSON.stringify([...paTruoc.keys()]);
+    const hoanTac = {
+      urgency: c.urgency ?? null, summary: c.summary ?? null, title: c.title ?? null, issues: issuesTruoc,
+      pa: (conn.prepare('SELECT * FROM case_interventions WHERE id IN (SELECT value FROM json_each(?))').all(ids) as any[]).flatMap((r) => {
+        const truoc = chupPa(paTruoc.get(r.id)), sau = chupPa(r);
+        return JSON.stringify(truoc) === JSON.stringify(sau) ? [] : [{ id: r.id as number, case_id: r.case_id as number, truoc, sau }];
+      }),
+      revIds: (conn.prepare('SELECT id FROM case_intervention_revisions WHERE id > ? AND intervention_id IN (SELECT value FROM json_each(?))').all(revTu, ids) as any[]).map((x) => x.id as number),
+    };
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
       title: `Xác nhận Case: ${ten}`, detail: moTa, refTable: 'sos_cases', refId: caseId, createdBy: p.userId, dedupKey: `case-confirm:${caseId}`,
@@ -599,13 +606,14 @@ function traPa(conn: any, id: number, anh: Record<string, unknown>): void {
 }
 
 /**
- * Kiểm chung của các đường Hoàn tác xác nhận — gọi TRONG giao dịch. Nhật ký MỚI NHẤT của đối tượng phải là chính lần xác nhận (`action`): có gì ghi sau
- * (Sửa PA, Sửa Case, đã hoàn tác…) → 409; chỉ người đã xác nhận → không thì 403; trong `HOAN_TAC_PA_MS` + 5 s (+ `themMs`) → không thì 409.
+ * Kiểm chung của các đường Hoàn tác xác nhận — gọi TRONG giao dịch. Chỉ người đã xác nhận lần gần nhất (`action`) → không thì 403 (kiểm trước); nhật ký MỚI
+ * NHẤT của đối tượng phải là chính lần đó — có gì ghi sau (Sửa PA, Sửa Case, đã hoàn tác…) → 409; trong `HOAN_TAC_PA_MS` + 5 s (+ `themMs`) → không thì 409.
  */
 export function nhatKyXacNhan(p: Principal, entityType: string, id: number, action: string, buocTiep: 'Sửa PA nếu cần.' | 'Sửa Case nếu cần.', themMs = 0): { nk: any; truoc: any; sau: any } {
-  const nk = db().prepare('SELECT * FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id DESC LIMIT 1').get(entityType, id) as any;
-  if (nk?.action !== action) throw loi(409, 'Không còn hoàn tác được — đã có thay đổi sau lần xác nhận. {buoc}', { buoc: buocTiep });
-  if (nk.actor_user_id !== p.userId) throw loi(403, 'Chỉ người vừa xác nhận hoàn tác được. {buoc}', { buoc: buocTiep });
+  const nk = db().prepare('SELECT * FROM audit_logs WHERE entity_type = ? AND action = ? AND entity_id = ? ORDER BY id DESC LIMIT 1').get(entityType, action, id) as any;
+  if (nk && nk.actor_user_id !== p.userId) throw loi(403, 'Chỉ người vừa xác nhận hoàn tác được. {buoc}', { buoc: buocTiep });
+  const cuoi = db().prepare('SELECT id FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id DESC LIMIT 1').get(entityType, id) as any;
+  if (!nk || cuoi?.id !== nk.id) throw loi(409, 'Không còn hoàn tác được — đã có thay đổi sau lần xác nhận. {buoc}', { buoc: buocTiep });
   if (!duocHoanTacPa(nk.created_at, Date.now(), themMs)) throw loi(409, 'Đã quá thời gian hoàn tác. {buoc}', { buoc: buocTiep });
   let truoc: any = null, sau: any = null;
   try { truoc = JSON.parse(nk.before_json ?? 'null'); sau = JSON.parse(nk.after_json ?? 'null'); } catch { /* nhật ký hỏng — chặn dưới */ }
@@ -613,12 +621,13 @@ export function nhatKyXacNhan(p: Principal, entityType: string, id: number, acti
   return { nk, truoc, sau };
 }
 /**
- * Lý do chặn Hoàn tác xác nhận Case (null = được): PA của Case (hoặc trong `paIds` — PA lần xác nhận này chạy) đã có kết quả · PA khác của Case đang được xác
+ * Lý do chặn Hoàn tác xác nhận Case (null = được): kết quả ghi từ lúc xác nhận (`nk.created_at`) ở Case, hay mọi kết quả của PA trong `paIds` (PA lần xác nhận
+ * này đổi) · PA khác của Case đang được xác
  * nhận từ lúc đó (`nk.created_at`) · PA có nhật ký SAU dòng `nk` ngoài xác nhận / hoàn tác xác nhận (Sửa PA, Kết thúc PA…). Xác nhận rồi hoàn tác PA → không chặn.
  */
 export function chanPaSauXacNhan(conn: any, nk: { id: number; created_at: string }, caseId: number, paIds: readonly number[]): string | null {
   const ids = JSON.stringify(paIds);
-  if (conn.prepare(`SELECT 1 FROM case_followups WHERE case_id = ? OR intervention_id IN (SELECT value FROM json_each(?)) LIMIT 1`).get(caseId, ids)) {
+  if (conn.prepare(`SELECT 1 FROM case_followups WHERE (case_id = ? AND created_at >= ?) OR intervention_id IN (SELECT value FROM json_each(?)) LIMIT 1`).get(caseId, nk.created_at, ids)) {
     return 'PA đã có kết quả — không hoàn tác được; sửa kết quả nếu cần.';
   }
   if (conn.prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND id NOT IN (SELECT value FROM json_each(?)) AND confirmed_at >= ? LIMIT 1`).get(caseId, ids, nk.created_at)) {
@@ -673,7 +682,8 @@ export function hoanTacXacNhanPaNhieu(p: Principal, body: unknown): { ok: number
 
 /**
  * HOÀN TÁC XÁC NHẬN CASE (HOAN-TAC-XN) — đảo `xacNhanCase`: nhóm nguyên nhân vừa thêm gỡ, mức / mô tả / tên về cũ, PA cùng nhóm Bổ trợ về đúng bản chụp
- * (PA vừa chạy về chờ; Sửa PA lúc xác nhận bỏ cả bản lịch sử), mốc + Hành trình của lần xác nhận gỡ; Case đồng bộ → việc "Xác nhận Case" hiện lại cùng hạn.
+ * — CHỈ PA lần này đổi (PA vừa chạy về chờ; Sửa PA lúc xác nhận bỏ đúng bản lịch sử của lần đó), mốc + Hành trình của lần xác nhận gỡ; Case đồng bộ → việc
+ * "Xác nhận Case" hiện lại cùng hạn. PA đó đã đổi tiếp sau (lần xác nhận môn khác cùng nhóm, sửa…) → 409.
  * Quyền như Xác nhận Case + chỉ người vừa xác nhận. Chặn (409): quá giờ · Case đổi sau đó · PA có kết quả / đổi sau đó · Case đã đóng. Nhật ký `case.confirm_undo`.
  */
 export function hoanTacXacNhanCase(p: Principal, caseId: number) {
@@ -683,18 +693,23 @@ export function hoanTacXacNhanCase(p: Principal, caseId: number) {
   if (!coTheXacNhanCase(p, caseId)) throw forbidden(EDIT_MESSAGE);
   return tx(() => {
     const { nk, truoc, sau } = nhatKyXacNhan(p, 'sos_case', caseId, 'case.confirm', 'Sửa Case nếu cần.');
-    const h = truoc.hoanTac as { urgency: string | null; summary: string | null; title: string | null; issues: number[]; revTu: number; pa: any[] };
+    type AnhPa = { id: number; case_id: number; truoc: Record<string, unknown>; sau: Record<string, unknown> };
+    const h = truoc.hoanTac as { urgency: string | null; summary: string | null; title: string | null; issues: number[]; revIds: number[]; pa: AnhPa[] };
     if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(caseId) as any)?.status === 'done') throw conflict('Case đã đóng — Mở lại Case trước.');
     const paIds = h.pa.map((x) => x.id as number);
     const chan = chanPaSauXacNhan(conn, nk, caseId, paIds);
     if (chan) throw conflict(chan);
+    /* PA lần này đổi mà dòng hiện tại khác bản "sau" (lần xác nhận khác của nhóm, sửa ngầm) → không đè. Mốc Cuối khoá điền sau (`dienMocQuyChe`) không tính. */
+    const hien = new Map((conn.prepare('SELECT * FROM case_interventions WHERE id IN (SELECT value FROM json_each(?))').all(JSON.stringify(paIds)) as any[]).map((r) => [r.id as number, chupPa(r)]));
+    const khac = (a: Record<string, unknown> | undefined, b: Record<string, unknown>) => !a || COT_PA_XAC_NHAN.some((k) => k !== 'followup_due' && a[k] !== b[k]);
+    if (h.pa.some((x) => khac(hien.get(x.id), x.sau))) throw conflict('PA của Case đã đổi sau lần xác nhận — sửa PA hoặc sửa Case nếu cần.');
     conn.prepare('DELETE FROM case_issues WHERE case_id = ? AND id NOT IN (SELECT value FROM json_each(?))').run(caseId, JSON.stringify(h.issues));
     conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(h.urgency, h.summary, h.title, nowIso(), caseId);
     conn.prepare('DELETE FROM case_milestones WHERE dedup_key = ?').run(`xac_nhan_case:${caseId}`);
-    for (const x of h.pa) traPa(conn, x.id, x);
-    conn.prepare('DELETE FROM case_intervention_revisions WHERE id > ? AND intervention_id IN (SELECT value FROM json_each(?))').run(h.revTu, JSON.stringify(paIds));
+    for (const x of h.pa) traPa(conn, x.id, x.truoc);
+    conn.prepare('DELETE FROM case_intervention_revisions WHERE id IN (SELECT value FROM json_each(?))').run(JSON.stringify(h.revIds));
     /* Mốc "PA bổ trợ bắt đầu" chỉ của PA lần này chạy (PA môn khác chạy từ trước giữ mốc của nó). */
-    const vuaChay = h.pa.filter((x) => x.status === 'planned').map((x) => `bo-tro-chay:${x.id}`);
+    const vuaChay = h.pa.filter((x) => x.truoc.status === 'planned' && x.sau.status === 'started').map((x) => `bo-tro-chay:${x.id}`);
     conn.prepare('DELETE FROM journey_events WHERE dedup_key IN (SELECT value FROM json_each(?))').run(JSON.stringify([`case-confirm:${caseId}`, ...vuaChay]));
     for (const id of new Set([caseId, ...h.pa.map((x) => x.case_id as number)])) dongBoTrangThaiCase(id);
     writeAudit({ actorUserId: p.userId, action: 'case.confirm_undo', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
