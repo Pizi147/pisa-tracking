@@ -29,7 +29,7 @@ export async function runPrSvBaiLopTests(t: any) {
   const LOP_THUONG = classId('MB FOU 12');
   const tuan = mondayOf(demoToday());
   const em = (lop = LOP) => get(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 1`, lop).student_id as number;
-  const mau = (o: Record<string, unknown> = {}) => ({ classId: LOP, skill: 'writing', tenBai: 'Task 1 line graph', diem: 7, thang: 10, tuan, ...o });
+  const mau = (o: Record<string, unknown> = {}) => ({ classId: LOP, skill: 'writing', tenBai: 'Task 1 line graph', diem: 7, thang: 10, tuan, nhanXet: 'Thiếu overview.', ...o });   // SV-BAI-LOP-2: nhận xét bắt buộc
   const dem = () => ['assessment_scores', 'tasks', 'notifications'].map((b) => get(`SELECT COUNT(*) AS n FROM ${b}`).n).join();
   let seq = 0;
   const taoNguoi = (role: string, branches: string[]) => {
@@ -52,11 +52,11 @@ export async function runPrSvBaiLopTests(t: any) {
     assert(bai.themBaiTrenLop(P.w1Teacher, sid, mau({ diem: 6.5 })).id, 'điểm lẻ 6.5 / 10 được');
   }));
 
-  check('SVBL-2 · kiểm dữ liệu: điểm > thang, âm, chữ; thang 0; thiếu tên; tên > 120; tuần tương lai; kỹ năng ngoài lớp; em không học lớp → 400', () => thu(() => {
+  check('SVBL-2 · kiểm dữ liệu: điểm > thang, âm, chữ; thang 0; tên > 120; tuần tương lai; kỹ năng ngoài lớp; em không học lớp → 400', () => thu(() => {
     const sid = em();
     const sai: [string, Record<string, unknown>, number?][] = [
       ['điểm > thang', { diem: 11 }], ['điểm âm', { diem: -1 }], ['điểm chữ', { diem: '7' }], ['thang 0', { thang: 0 }],
-      ['thiếu tên', { tenBai: '  ' }], ['tên 121', { tenBai: 'x'.repeat(121) }], ['tuần tương lai', { tuan: addDays(tuan, 7) }],
+      ['tên 121', { tenBai: 'x'.repeat(121) }], ['tuần tương lai', { tuan: addDays(tuan, 7) }],
       ['tuần sai', { tuan: '14/09' }], ['kỹ năng W1', { skill: 'writing1' }], ['nhận xét 501', { nhanXet: 'x'.repeat(501) }], ['thiếu lớp', { classId: null }],
     ];
     for (const [ten, o] of sai) assert(maLoi(() => bai.themBaiTrenLop(P.mbManager, sid, mau(o))) === 400, `${ten} → 400`);
@@ -98,7 +98,7 @@ export async function runPrSvBaiLopTests(t: any) {
     const ls = lichSu(P.mbManager, { loai: 'bai-lop', id: sid });
     const tom = ls.dong.map((d: any) => d.truong.map((x: any) => `${x.ten}:${x.cu ?? '∅'}>${x.moi ?? '∅'}`).join('|'));
     assert(ls.dong.length === 4, `4 mục (thêm W, sửa, thêm L, xoá) ${JSON.stringify(tom)}`);
-    assert(tom[0].includes('Điểm:8 / 10>∅') && tom[2].includes('Điểm:7 / 10>8 / 10') && tom[2].includes('Nhận xét:∅>Đã có overview.'), `cũ → mới ${JSON.stringify(tom)}`);
+    assert(tom[0].includes('Điểm:8 / 10>∅') && tom[2].includes('Điểm:7 / 10>8 / 10') && tom[2].includes('Nhận xét:Thiếu overview.>Đã có overview.'), `cũ → mới ${JSON.stringify(tom)}`);
     assert(ls.dong[2].truong.every((x: any) => x.doiTuong.startsWith('MB FT 101 · ') && x.doiTuong.endsWith('Task 1 line graph')), 'đối tượng = lớp · tuần · kỹ năng · tên bài');
     assert(maLoi(() => lichSu(P.cpManager, { loai: 'bai-lop', id: sid })) === 403, 'lịch sử ngoài phạm vi → 403');
   }));

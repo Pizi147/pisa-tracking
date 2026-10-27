@@ -145,13 +145,13 @@ function tenTheoId(bang: 'users' | 'report_periods', ids: Iterable<number>): Map
 function baiLop(p: Principal, studentId: number, tiep: number | null): TrangLs {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   const today = demoToday();
-  const diem = (x: Record<string, any>) => (x.diem === undefined ? null : `${x.diem} / ${x.thang}`);
+  const diem = (x: Record<string, any>) => (x.diem == null ? null : `${x.diem} / ${x.thang}`);   // SV-BAI-LOP-2: điểm / thang trống được
   const tuan = (x: Record<string, any>) => (x.tuan ? tuanLich(x.tuan, today) : null);
   const r = docNhatKy(`a.entity_type = 'student' AND a.entity_id = ? AND a.action IN ('bai_tren_lop.them', 'bai_tren_lop.sua', 'bai_tren_lop.xoa')`, [studentId], tiep, null,
     ({ b, f, label }) => {
-      const doiTuong = `${label ?? ''} · ${f.tenBai ?? b.tenBai ?? ''}`;
+      const doiTuong = [label, f.tenBai ?? b.tenBai].filter(Boolean).join(' · ');   // SV-BAI-LOP-2: tên bài trống được
       return { nguon: null, lyDo: null, truong: ([
-        ['Kỹ năng', chu(b.kyNang), chu(f.kyNang)], ['Tên bài', chu(b.tenBai), chu(f.tenBai)], ['Điểm', diem(b), diem(f)],
+        ['Kỹ năng', chu(b.kyNang), chu(f.kyNang)], ['Tên bài', chu(b.tenBai), chu(f.tenBai)], ['Điểm', diem(b), diem(f)], ['Band', b.band == null ? null : String(b.band), f.band == null ? null : String(f.band)],
         ['Tuần', tuan(b), tuan(f)], ['Nhận xét', chu(b.nhanXet), chu(f.nhanXet)],
       ] as const).map(([ten, cu, moi]) => ({ ten, cu, moi, doiTuong })) };
     });

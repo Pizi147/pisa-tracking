@@ -6,8 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { nhoChiNhanh, useChiNhanhMacDinh, type Branch } from '../../ui/Filters.tsx';
-import { useSession } from '../../lib/session.tsx';
+import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from './chonNhieuHocVien.tsx';
 import { useQuayLaiHoc } from './QuayLaiHoc.tsx';
@@ -39,7 +38,6 @@ export default function LuuTruPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
-  const uid = useSession().session?.user?.id;
   const tab: TabLuuTru = params.get('tab') === 'hv' ? 'hv' : 'lop';
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const macDinh = useChiNhanhMacDinh();
@@ -70,7 +68,6 @@ export default function LuuTruPage() {
     return `/hoc-vien-lop/luu-tru?${s.toString()}`;
   })();
   const { data, loading, error, reload } = useApi<DuLieuLuuTru>(qs);
-  const branches = useApi<Branch[]>('/ref/branches');
 
   const quayLai = useQuayLaiHoc(reload);
   /* Chọn nhiều: em quay lại được một bấm (lớp cũ còn chạy) làm ngay; em cần chọn lớp / lộ trình báo "làm từng em" — không đoán thay người dùng. */
@@ -106,13 +103,7 @@ export default function LuuTruPage() {
       <div className="flex flex-wrap items-center gap-2">
         <input className="field w-full sm:w-72" aria-label={t('Tìm')} placeholder={t('Tìm tên, mã học viên hoặc mã lớp…')}
           value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
-        {(branches.data?.length ?? 0) > 1 && (
-          <select className="field w-auto" aria-label={t('Chi nhánh')} value={branchId ?? ''}
-            onChange={(e) => { nhoChiNhanh(uid, e.target.value ? Number(e.target.value) : null); setParam({ cn: e.target.value || null, branchId: null }); }}>
-            <option value="">{t('Mọi chi nhánh')}</option>
-            {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-        )}
+        <BranchFilter branchId={branchId} onBranch={(id) => setParam({ cn: id ? String(id) : null, branchId: null })} />
       </div>
 
       <HangTab ariaLabel={t('Lưu trữ')} value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}

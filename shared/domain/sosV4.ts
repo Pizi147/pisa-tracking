@@ -3,8 +3,8 @@
  *
  * Mock FT dưới kỳ vọng → Case tự tạo + PA theo quy chế "Chờ xác nhận" (preset=1, planned, confirmed_at NULL — biểu diễn có sẵn).
  * OV-12c (chủ SP 14/10): nguyên nhân Case MT = nhận xét + nhóm của ô (`cases/nguyenNhanO.ts`) → Case đi thẳng "Chờ xác nhận PA"; hạn 5 ngày — Gấp / SOS 3:
- * 3 ngày (tính cả ngày đầu, `soNgayHanXacNhan`): Xác nhận PA (PA chạy từ hôm đó) hoặc Không cần theo dõi (thẻ Chờ duyệt). Case MT cũ mà ô chưa có
- * nhận xét: "Chờ ghi nhận xét". Progress Test lớp thường: MỘT bước "Xác nhận Case" (nhóm + mô tả + PA Bổ trợ), hạn 5 ngày cố định.
+ * 3 ngày (tính cả ngày đầu, `soNgayHanXacNhan`): Xác nhận PA (PA chạy từ hôm đó) hoặc Không cần theo dõi (thẻ Chờ duyệt). Case MT chưa có mô tả (ô
+ * không nhận xét — nhận xét không bắt buộc, N8): "Chờ mô tả Case". Progress Test lớp thường: MỘT bước "Xác nhận Case" (nhóm + mô tả + PA Bổ trợ), hạn 5 ngày cố định.
  * PA quy chế: GVBM không thay, không kết thúc sớm; tới mốc → "Ghi kết quả cuối". OV-13a (chủ SP 15/10): kỹ năng đạt ở lượt MT sau / Overall đạt → mốc
  * `dat_ky_vong` (Kết quả cuối ngay kỳ này) · "đến lúc thi" chưa có ngày thi → mốc MT cuối của lộ trình · GVCN / QL "Kết thúc PA" sớm, lý do ≥ 10 ký tự.
  * Case tạm (lượt chưa chốt): "Chờ chốt SOS" — không hạn / PA / việc.
@@ -88,7 +88,7 @@ export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | n
   return [x.mt ? `[MT${x.mt}]` : '', x.giua, x.kck ? '[KCK]' : x.sos ? `[SOS ${x.sos}]` : ''].filter(Boolean).join(' ');
 }
 
-/** `cho-nguyen-nhan` = Progress chờ "Xác nhận Case"; `cho-nhan-xet` = Case MT cũ mà ô chưa có nhận xét (OV-12c). */
+/** `cho-nguyen-nhan` = Progress chờ "Xác nhận Case"; `cho-nhan-xet` = Case MT chưa có mô tả (ô không nhận xét — N8, MO-TA-CASE). */
 export type TrangThaiCaseV4 = 'tam' | 'cho-nguyen-nhan' | 'cho-nhan-xet' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'cho-duyet-doi-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
 
 export type CaseV4Input = {
@@ -98,7 +98,7 @@ export type CaseV4Input = {
   lyDoHeThong?: string | null;
   /** PR-S5F-b: Case rút khỏi danh sách vì điểm nguồn được sửa/huỷ (`retireCaseForCorrectedScore`) — không phải "Xong". */
   rutSuaDiem?: boolean;
-  /** OV-12c: Case SOS Mock Test — nguyên nhân lấy từ nhận xét của ô; thiếu = "Chờ ghi nhận xét", không phải "Xác nhận Case". */
+  /** OV-12c: Case SOS Mock Test — nguyên nhân lấy từ nhận xét của ô; thiếu = "Chờ mô tả Case", không phải "Xác nhận Case". */
   laMt?: boolean;
   /** OV-13b: PA quy chế chưa xác nhận đã gửi "Đề xuất PA khác" — chờ Quản lý duyệt (PA gốc chưa chạy). */
   choDoiPa?: boolean;
@@ -115,7 +115,7 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
   if (c.tam) return { k: 'tam', t: 'dang-lam', chu: t('Chờ chốt SOS'), han: null };
   if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: t('Chờ Quản lý duyệt · không theo dõi'), han: null };
   const tt: TrangThai = c.hanXacNhan && c.hanXacNhan < homNay ? 'qua-han' : 'can-lam';
-  if (c.fromSos && !c.hasCause) return c.laMt ? { k: 'cho-nhan-xet', t: tt, chu: t('Chờ ghi nhận xét'), han: c.hanXacNhan }
+  if (c.fromSos && !c.hasCause) return c.laMt ? { k: 'cho-nhan-xet', t: tt, chu: t('Chờ mô tả Case'), han: c.hanXacNhan }
     : { k: 'cho-nguyen-nhan', t: tt, chu: t('Chờ xác nhận Case'), han: c.hanXacNhan };
   if (c.fromSos && c.coPaChoXacNhan) return { k: 'cho-xac-nhan-pa', t: tt, chu: t('Chờ xác nhận PA'), han: c.hanXacNhan };
   if (c.fromSos && c.choDoiPa) return { k: 'cho-duyet-doi-pa', t: 'cho-duyet', chu: t('Chờ duyệt đổi PA'), han: null };
@@ -155,7 +155,7 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   const s = trangThaiCaseV4(c, homNay);
   if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong' || s.k === 'rut-sua-diem' || s.k === 'tam') return null;
   if (s.k === 'cho-nguyen-nhan') return { chu: t('Xác nhận Case'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
-  if (s.k === 'cho-nhan-xet') return { chu: t('Ghi nhận xét'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
+  if (s.k === 'cho-nhan-xet') return { chu: t('Mô tả Case'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
   if (s.k === 'cho-duyet-khong-theo-doi') return { chu: t('Chờ Quản lý duyệt · không theo dõi'), loaiHan: null, han: null };
   /* OV-13b: PA gốc chưa chạy chờ QL duyệt đổi PA — việc của QL, không hạn (PA gốc không phải "đang chạy"). */
   if (s.k === 'cho-duyet-doi-pa') return { chu: t('Chờ duyệt đổi PA'), loaiHan: null, han: null };

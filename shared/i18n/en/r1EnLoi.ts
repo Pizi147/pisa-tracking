@@ -285,4 +285,14 @@ export const EN_R1_EN_LOI = {
   'Quá {n} lượt — thu hẹp chi nhánh hoặc thời gian.': 'Over {n} attempts — narrow the branch or time range.',
   'Tệp quá lớn (~{mb} MB) — Thu hẹp phạm vi: chọn ít chi nhánh/lớp, khoảng thời gian ngắn hơn, hoặc chọn cột Gọn.': 'File too large (~{mb} MB) — Narrow the scope: fewer branches/classes, a shorter time range, or Short columns.',
   'Tệp quá lớn (~{mb} MB) — Thu hẹp phạm vi: chọn ít chi nhánh/lớp, khoảng thời gian ngắn hơn.': 'File too large (~{mb} MB) — Narrow the scope: fewer branches/classes or a shorter time range.',
+  /* SV-BAI-LOP-2: Tiến độ trên lớp (band / nhận xét bắt buộc) · Hoàn tác Thêm PA */
+  'Nhập nhận xét hoặc kết quả (điểm / thang hoặc band).': 'Enter a comment or a result (score / out of, or band).',
+  'Điểm và thang điểm phải nhập cùng nhau.': 'Enter the score and the maximum together.',
+  'Chọn một kiểu kết quả: điểm / thang hoặc band.': 'Pick one kind of result: score / maximum or band.',
+  'Chỉ người vừa thêm PA hoàn tác được — Quản lý dùng "Xoá PA".': 'Only the person who just added the PA can undo it — managers use "Delete PA".',
+  'PA do hệ thống tạo — không hoàn tác được.': 'System-created PA — cannot be undone.',
+  'Đã quá thời gian hoàn tác.': 'The undo time has passed.',
+  'PA đã có kết quả — không hoàn tác được.': 'The PA already has a result — cannot be undone.',
+  'Quản lý đã trả lời đề xuất — không hoàn tác được.': 'The manager has already answered the proposal — cannot be undone.',
+  'PA đề xuất thay PA khác — rút ở thẻ Chờ duyệt.': 'This PA was proposed to replace another — withdraw it from the approval card.',
 } satisfies Record<string, Dich>;

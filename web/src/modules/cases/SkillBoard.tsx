@@ -450,7 +450,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
   const td = tienDoCase(c.plans, c);
   const chay = c.plans.filter(dangChay);
   const xong = c.plans.filter((p) => !dangChay(p));
-  /* OV-12c: Case còn chờ một bước trước PA — Progress "Xác nhận Case", Case MT cũ "Ghi nhận xét" (nguyên nhân = nhận xét của bài). */
+  /* OV-12c: Case còn chờ một bước trước PA — Progress "Xác nhận Case", Case MT chưa mô tả "Mô tả Case". */
   const choNguyenNhan = tt.k === 'cho-nguyen-nhan' || tt.k === 'cho-nhan-xet';
   const chanNut = choNguyenNhan || tt.k === 'cho-duyet-khong-theo-doi';
   /* K3-08: Case chờ nguyên nhân chưa có gì để tóm tắt — dòng phụ trống. */
@@ -495,7 +495,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
             khoiSos === null ? (
               <CotPhai nut={(
                 <>
-                  <button type="button" className="btn btn-sm btn-primary" onClick={() => onMoCase(c.id, { viec: 'xac-nhan' })}>{tt.k === 'cho-nhan-xet' ? t('Ghi nhận xét') : t('Xác nhận Case')}</button>
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => onMoCase(c.id, { viec: 'xac-nhan' })}>{tt.k === 'cho-nhan-xet' ? t('Mô tả Case') : t('Xác nhận Case')}</button>
                   {c.canEdit && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setKhoiSos('khong-theo-doi')}>{t('Không cần theo dõi…')}</button>}
                 </>
               )} />
@@ -517,7 +517,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
         </td>
       </HangCon>
 
-      {/* YC-12.1: "Không cần theo dõi…" mở tại chỗ; nút Xác nhận Case / Ghi nhận xét biến mất tới khi Huỷ. */}
+      {/* YC-12.1: "Không cần theo dõi…" mở tại chỗ; nút Xác nhận Case / Mô tả Case biến mất tới khi Huỷ. */}
       {khoiSos === 'khong-theo-doi' && (
         <HangCon>
           <td className="td" colSpan={4}>

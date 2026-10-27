@@ -86,8 +86,6 @@
     --hang-lon-bg: #172440;       --hang-lon-vach: #66789f;
     --hang-lon-dong-bg: #101b33;  --hang-lon-dong-vach: #33496f;
     --hang-con-bg: #0a1325;       --hang-con-chu: #b8c4dc;
-    /* R1-PHAN-CAP-TEST (M2 A2, chủ SP 26/10): Lịch Test — mỗi cấp một màu thanh: nhóm · lớp mở · lớp đóng + đáy khối · đầu cột lưới. */
-    --cap-nhom: #283452;  --cap-lop: #1d3b72;  --cap-lop-dong: #172b50;  --cap-dau-cot: #0a1224;
     /* Ô sửa được / chỉ đọc (lưới chấm) */
     --o-sua-vien: #66789f;        --o-sua-nen: #0b1427;   --o-sua-focus: #9cbde7;
 
@@ -139,7 +137,6 @@
     --hang-lon-bg: #f2f4f9;       --hang-lon-vach: #8690ab;
     --hang-lon-dong-bg: #f8f9fc;  --hang-lon-dong-vach: #b0b8cd;
     --hang-con-bg: #fbfcfe;       --hang-con-chu: #353d54;
-    --cap-nhom: #cfd6e4;  --cap-lop: #d4e1fb;  --cap-lop-dong: #edf2fd;  --cap-dau-cot: #eceff5;
     --o-sua-vien: #7f8aa6;        --o-sua-nen: #ffffff;   --o-sua-focus: #3a50a6;
 
     --chu-1-rgb: 20 26 43;  --chu-2-rgb: 44 51 72;  --chu-3-rgb: 74 83 108;   /* D4 bổ sung: chữ phụ như mockup (chu-2 #4a536c), không gần đen */
@@ -267,9 +264,6 @@
     td .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
     /* OV-14b: lưới trong panel việc (Công việc / Tổng quan) rộng hơn panel — cuộn trong khung riêng, đầu panel không trôi ngang theo. */
     .luoi-trong-panel .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
-    /* R1-PHAN-CAP-TEST: lưới mở dưới hàng lớp Lịch Test VỪA thẻ (`.luoi-vua`, LuoiNhung đo) — đầu cột dính ngay dưới hàng lớp dính (cao 50),
-       không khung cuộn riêng. Lưới rộng hơn thẻ (lớp thường 4 môn) giữ khung cuộn ngang. */
-    .lich-luoi .luoi-vua .bang-dinh { overflow: visible; --th-top: calc(50px - 1.25rem); }
   }
   /* Rà #235 I2: bảng RỘNG HƠN khung ở 1280–1439 px (Tổng hợp 1332–1393 px; lưới Điểm theo lớp 1108 px, khung 950 px) giữ khung cuộn riêng, chỉ dính đầu từ 1440. */
   @media (min-width: 1280px) and (max-width: 1439px) {
@@ -367,6 +361,9 @@
   /* OV-15a: hàng ĐÃ THI (từ hôm sau ngày thi tới khi chọn Bước tiếp) — nền cả hàng + vạch trái 3 px; chữ phụ lên một bậc để giữ tương phản. */
   tr.hang-da-thi > td, .hang-da-thi:not(tr) { background: rgb(var(--da-thi-bg-rgb)); --text-faint-rgb: var(--text-dim-rgb); }
   tr.hang-da-thi > td:first-child, .hang-da-thi:not(tr) { box-shadow: inset 3px 0 0 var(--lich-chu); }   /* NEN-V5: vạch màu lịch thi (khác Đạt) */
+  /* UI-CHART-D: dấu trên chart D (Tab vào được) — vòng focus quanh vùng chạm 28 px; hàng Thi thật của bảng kỹ năng / Mock Test nổi nhất. */
+  .diem-d:focus-visible > rect:first-of-type { stroke: var(--accent); stroke-width: 2; rx: 6px; }
+  tr.hang-thi-that > td, .hang-thi-that:not(tr) { background: var(--lich-nen); font-weight: 700; border-top: 2px solid var(--lich-chu); --text-faint-rgb: var(--text-dim-rgb); }
   /* HTT-6 (PTA-v4-9, đảo m1 §1d): ĐANG CHỌN = nền nhấn nhạt + vạch trái 3 px. Hàng đã thi đang chọn: giữ nền đã thi, vạch đổi màu nhấn. */
   :is(.dang-mo, .row-active):not(tr) { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); box-shadow: inset 3px 0 0 var(--accent-strong); }
   tr:is(.dang-mo, .row-active) > td { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); }
@@ -441,27 +438,6 @@
       background: linear-gradient(var(--hang-lon-bg), var(--hang-lon-bg)), var(--surface);
     }
   }
-  /*
-   * R1-PHAN-CAP-TEST (M2 A2, chủ SP 26/10 đêm): LỊCH TEST — mỗi cấp một màu thanh, không viền / vạch thêm. Nhóm `--cap-nhom` (NhomDau) ·
-   * lớp đóng `--cap-lop-dong` (tên thụt 28, ngăn 1 px nền thẻ) · lớp mở `--cap-lop` cao 50, DÍNH dưới mép trên <main> trong khối lớp (mỗi lớp
-   * một <table> nên dính chỉ trong lớp đó) · lưới nằm trên nền thẻ, đầu cột `--cap-dau-cot`, cột Học viên thụt 44 · đáy khối `--cap-lop-dong`.
-   */
-  .lich-lop > tbody > tr.hang-lon > td { background: var(--cap-lop-dong); height: 44px; border-bottom: 1px solid var(--surface); }
-  .lich-lop > tbody > tr.hang-lon > td:first-child { box-shadow: none; padding-left: 28px; }
-  .lich-lop > tbody > tr.hang-lon.dang-mo > td {
-    background: var(--cap-lop); background-image: none; height: 50px; border-bottom: 0;
-    position: sticky; top: -1rem; z-index: 16;   /* = đệm p-4 / md:p-5 của <main>; trên đầu cột lưới (th dính z 10 / 15) + cột tên dính, dưới thanh dưới (20+) và hộp / menu */
-  }
-  @media (min-width: 768px) { .lich-lop > tbody > tr.hang-lon.dang-mo > td { top: -1.25rem; } }
-  @media not all and (min-width: 768px) { .lich-lop > tbody > tr.hang-lon > td:first-child { padding-left: 20px; } }   /* M2 A2-375: thụt 20 */
-  .lich-lop > tbody > tr.hang-lon.dang-mo .ten-lop { font-size: 17px; }   /* mockup 16 → 17: bậc gần nhất của thang chữ (do-bang g5) */
-  .day-khoi { background: var(--cap-lop-dong); }
-  /* Ô / nút / ô nhập không trốn dưới hàng lớp dính (+ đầu cột lưới dính ≥ 1280) khi focus / con trỏ / "Lưu · bài tiếp" cuộn tới. */
-  #noi-dung:has(.lich-lop tr.dang-mo) { scroll-padding-top: 96px; }
-  .lich-luoi .bang th { background: var(--cap-dau-cot); border-bottom: 0; }
-  .lich-luoi .bang-cong-cu { padding: 4px 12px 6px 44px; }   /* công cụ trên lưới lớp thường (Tổng số câu · Điền ô trống) thẳng cột Học viên */
-  .lich-luoi .bang :is(th, td):first-child { padding-left: 44px; }
-  .lich-luoi .bang > tbody > tr.dong-sex > td { height: 36px; padding-top: 4px; padding-bottom: 4px; font-size: 13px; vertical-align: middle; }
   .hang-con > td { background: var(--hang-con-bg); font-size: 13px; color: var(--hang-con-chu); height: 32px; }
   .hang-con > td:first-child { padding-left: calc(0.75rem + 32px); }
   /* PR-SOS (M7, T20): Case và PA khác hẳn — hàng Case sáng hơn một bậc, cao hơn; hàng PA giữ nền hàng con (thụt ở ô). */

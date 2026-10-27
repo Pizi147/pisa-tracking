@@ -213,12 +213,9 @@ export function LichTestTab() {
   /* OV-14b (14): khung đang chọn (vd `loai=thuong`) không có lớp mà khung kia có → rỗng + nút chuyển khung (không tự nhảy). */
   const khungKhac: Loai | null = loai && dem[loai] === 0 ? (loai === 'ft' ? 'thuong' : 'ft') : null;
   const tenKhung = (k: Loai) => (k === 'ft' ? 'Fast Track' : t('Lớp thường'));
-  /* R1-PHAN-CAP-TEST (M2 A2): "5 lớp · 15/39 bài đã chấm" — số bài cùng nguồn ô "bài đã chấm" của dải số (theo khung đang xem). */
-  const tqKhung = loai ? data.tongQuanKhung[loai] : data.tongQuan;
-  /* 375: bỏ "n lớp ·" để tên nhóm + số một dòng. */
-  const tomTatTuan = lopTab.length
-    ? <><span className="max-sm:hidden">{t('{n} lớp · ', { n: new Set(lopTab.map((l) => l.classId)).size })}</span>{t('{daCham}/{tong} bài đã chấm', { daCham: tqKhung.daCham, tong: tqKhung.tong })}</>
-    : t('Không có Test');
+  /* "5 lớp · 2 đã chấm xong" — lớp xong đếm riêng (OV-11e TE-7: người có phân công tính phần của mình). */
+  const xongLop = lopTab.filter((l) => (l.phan ? l.conBaiCuaToi : l.conBai) === 0).length;
+  const tomTatTuan = lopTab.length ? t('{n} lớp · {x} đã chấm xong', { n: new Set(lopTab.map((l) => l.classId)).size, x: xongLop }) : t('Không có Test');
 
   const tuanPicker = (
     <WeekPicker gon periodId={periodParam ?? data.tuan?.id ?? null} onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />
@@ -299,7 +296,7 @@ export function LichTestTab() {
         ) : (
           <>
             {/* UX-2 (1): ô "bài quá hạn" lấy từ `/cham/lich-test/qua-han`, theo khung đang xem (OV-14b) như hai ô đầu. */}
-            <DaiSo tq={{ ...tqKhung, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tqKhung.khac, no: quaHan?.khac ?? 0 } }}
+            <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
               onBam={bamSo} dangTaiNo={!quaHan} />
             <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
             <KhoiNo no={noTab} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
@@ -311,8 +308,7 @@ export function LichTestTab() {
                 setDongMo(d ? { d, viTri, conTro: true } : null);
               }}
               hep={hep} homNay={homNay} onDaLuu={baoDaLuu} knUrl={dongMo?.d.classId === urlClassId ? urlKn : null} />
-            {/* M2 A2: khe 10 px nền thẻ giữa hai thanh nhóm. */}
-            <div id="lich-test-k3" data-hd="lich-test-tuan" className="pt-2.5">
+            <div id="lich-test-k3" data-hd="lich-test-tuan">
               <NhomDau id="lich-test-k3-than" rong={!lopTab.length} mo={moKhoi.k3 && lopTab.length > 0} onMo={() => thuKhoi('k3')}
                 tieuDe={data.laTuanNay ? t('Test tuần này') : t('Test {maTuan}', { maTuan })} phu={tomTatTuan}>
                 {/* shortcut: lượt S Ex của em ở lớp không có Test tuần đó không có hàng lớp để hiện (xem ở Kế hoạch Test) — thêm hàng riêng nếu chủ SP cần. */}

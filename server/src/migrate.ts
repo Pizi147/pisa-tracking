@@ -51,6 +51,7 @@ import { migratePrOv13n } from './migrate/prOv13n.ts';
 import { migratePrOv13m } from './migrate/prOv13m.ts';
 import { migratePrOv12g } from './migrate/prOv12g.ts';
 import { migratePrSvBaiLop } from './migrate/prSvBaiLop.ts';
+import { migratePrSvBaiLop2 } from './migrate/prSvBaiLop2.ts';
 import { migratePrSvSExpert } from './migrate/prSvSExpert.ts';
 import { migratePrEn } from './migrate/prEn.ts';
 import { migratePrOv12b } from './migrate/prOv12b.ts';
@@ -408,6 +409,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* P12 BAO-CAO-LICH-SU: cột learning_cycles.thi_that_target + điền Target hiện tại cho lộ trình đã có KQ (chạy lặp được). */ buoc(() => migratePrBaoCaoLichSu(conn, applied));
     /* P7 SV-LO-TRINH (N11, N12): em Tạm dừng cũ vào Lưu trữ (ngày pause gần nhất) · cột learning_cycles.route_ten · route KHAC ngừng (chạy lặp không đổi). */ buoc(() => migratePrSvLoTrinh(conn, applied));
     /* P13 KET-PET (N18): Checkpoint PET / KET tách L · R · W · S — bộ môn mặc định, lớp đang chạy, đợt chưa có điểm; đợt đã có điểm giữ L+S / R+W (chạy lặp không đổi). */ buoc(() => migratePrKetPet(conn, applied));
+    /* SV-BAI-LOP-2 (SAU SV-BAI-LOP): bai_tren_lop — tên bài / điểm / thang trống được + cột band (dựng lại bảng, giữ dữ liệu; chạy lặp không đổi). */ buoc(() => migratePrSvBaiLop2(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

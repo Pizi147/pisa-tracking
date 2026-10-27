@@ -292,6 +292,11 @@ export function viecKeTiep<T extends { key: string; nhom: string; mine: boolean 
   if (i < 0) return null;
   return ds.slice(i + 1).find((x) => x.nhom === ds[i].nhom && x.mine === ds[i].mine && duoc(x)) ?? null;
 }
+/** CONG-VIEC-2 (mockup "việc tiếp", V12 ⑤): như `viecKeTiep` nhưng đi hết nhóm — sau việc đang mở, rồi vòng lên đầu nhóm. */
+export function viecKeTiepVong<T extends { key: string; nhom: string; mine: boolean }>(ds: readonly T[], hienTai: string | null, duoc: (x: T) => boolean): T | null {
+  const i = ds.findIndex((x) => x.key === hienTai);
+  return i < 0 ? null : viecKeTiep([...ds.slice(i), ...ds.slice(0, i)], hienTai, duoc);
+}
 
 // ====================================================================== OV-15d — lọc người (Của tôi · Của GV · Tất cả)
 
@@ -310,8 +315,8 @@ export function demNguoiViec(ds: readonly { mine: boolean }[]): Record<LocNguoiV
 
 export type MucTheoEm<T> = { kieu: 'dong'; it: T } | { kieu: 'em'; khoa: string; ten: string; lop: string | null; viec: T[] };
 /**
- * T01 (mockup V5 `cong-viec.html .hv-gop`): một em có ≥ 2 việc trong cùng nhóm → MỘT dòng tên em + dòng con từng việc (Case R ≠ Case W1, mỗi việc
- * hạn riêng). Dòng gộp lớp mà mọi việc là của một em ("1 em · 2 việc", BỎ ở truy vết mục 3) tách ra thành việc của em đó. Dòng gộp nhiều em và
+ * T01 + CONG-VIEC-2 (mockup `thiet-ke/v7/cong-viec-2.html`, tầng ②): mọi việc lẻ của một em trong cùng nhóm → MỘT khối tên em + dòng con từng việc
+ * (Case R ≠ Case W1, mỗi việc hạn riêng) — em một việc cũng có khối (một dáng, không đổi theo số việc). Dòng gộp lớp mà mọi việc là của một em ("1 em · 2 việc", BỎ ở truy vết mục 3) tách ra thành việc của em đó. Dòng gộp nhiều em và
  * dòng làm cả dòng (`caDong`: Xác nhận PA cùng lúc, Nhập điểm theo tuần) giữ nguyên. Thứ tự: khối em đứng ở chỗ việc đầu tiên của em.
  */
 export function xepTheoEm<T extends { key: string; studentId: number | null; studentName: string; classCode: string | null; con?: T[] }>(
@@ -319,12 +324,10 @@ export function xepTheoEm<T extends { key: string; studentId: number | null; stu
 ): MucTheoEm<T>[] {
   const phangDs = ds.flatMap((it) => (it.con?.length && !caDong(it) && it.con.every((c) => c.studentId !== null && c.studentId === it.con![0].studentId) ? it.con : [it]));
   const le = (it: T) => !it.con?.length && it.studentId !== null;
-  const dem = new Map<number, number>();
-  for (const it of phangDs) if (le(it)) dem.set(it.studentId!, (dem.get(it.studentId!) ?? 0) + 1);
   const daDat = new Set<number>();
   const out: MucTheoEm<T>[] = [];
   for (const it of phangDs) {
-    if (!le(it) || (dem.get(it.studentId!) ?? 0) < 2) { out.push({ kieu: 'dong', it }); continue; }
+    if (!le(it)) { out.push({ kieu: 'dong', it }); continue; }
     if (daDat.has(it.studentId!)) continue;
     daDat.add(it.studentId!);
     const viec = phangDs.filter((x) => le(x) && x.studentId === it.studentId);
@@ -358,8 +361,8 @@ export function monCuaViec(it: { group: string; phu?: string | null }): string |
 
 /** Một dòng của ô Việc QL: việc gấp nhất của môn (`dau`) + số việc còn lại cùng môn (`them`). `mon` null = dòng "Khác". */
 export type DongViecMon<T> = { mon: string | null; dau: T; them: number };
-/** Số dòng mặc định của ô Việc QL ("Xem thêm" mở hết — ≤ 5 môn + 1 Khác). */
-export const SO_DONG_VIEC_MAC_DINH = 3;
+/** Số dòng mặc định của ô Việc ("Xem thêm n" mở hết) — HV-LOP-SUA (chủ SP 27/10): tối đa 2 việc. */
+export const SO_DONG_VIEC_MAC_DINH = 2;
 
 /** Gộp việc theo môn, GIỮ thứ tự đầu vào (đã sắp gấp nhất trước): dòng đứng theo việc gấp nhất của môn. Σ (1 + them) = số việc vào. */
 export function gopViecTheoMon<T>(ds: readonly T[], monCua: (x: T) => string | null): DongViecMon<T>[] {

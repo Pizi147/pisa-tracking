@@ -25,7 +25,7 @@ export async function runPrOv13cTests(t: YThucTestKit) {
   const choPa = () => (mywork.myWork(P.mbManager, { nguoi: 'tat-ca' }).items as any[]).filter((x) => x.group === 'xac_nhan_pa')
     .map((x) => ({ id: x.paId as number, kind: x.pa.kind as string, topic: all('SELECT topic FROM sos_cases WHERE id = ?', x.caseId)[0].topic as string }))
     .sort((a, b) => a.id - b.id);
-  const nhan = (g: string) => ({ xac_nhan_pa: 'Xác nhận PA', ghi_nhan_xet: 'Ghi nhận xét', score: 'Nhập điểm', no_plan: 'Thêm PA' } as any)[g] ?? g;
+  const nhan = (g: string) => ({ xac_nhan_pa: 'Xác nhận PA', ghi_nhan_xet: 'Mô tả Case', score: 'Nhập điểm', no_plan: 'Thêm PA' } as any)[g] ?? g;
   const v = (o: Record<string, unknown>) => ({
     key: 'xnpa:1', group: 'xac_nhan_pa', urgency: 'normal', due: '2026-09-18', studentId: 1, studentName: 'An', classId: 10, classCode: 'CP FT 139',
     khung: 'ft', ownerId: 7, tieuDe: 'Xác nhận PA · Reading · An', contextLabel: 'MT3', count: null, href: '/hoc-vien/1', actionLabel: 'Xác nhận PA',

@@ -198,7 +198,7 @@ export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = fa
   const d = viec?.dich?.loai === 'case' ? viec.dich : null;
   /* So trên chữ GỐC của máy chủ (`viecTiep.chu`, tiếng Việt) — `viec.viec` đã theo tiếng của trang. */
   const goc = c.viecTiep?.chu ?? '';
-  const loai = !viec ? undefined : goc.startsWith('Xác nhận Case') || goc.startsWith('Ghi nhận xét') ? 'xac-nhan' as const
+  const loai = !viec ? undefined : goc.startsWith('Xác nhận Case') || goc.startsWith('Mô tả Case') ? 'xac-nhan' as const
     : goc.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
   const dangLam = c.pas.filter((p) => !p.xong);
   const cacPa = dangLam.length === 0 ? <span className="text-slate-500">—</span> : dangLam.map((p) => (

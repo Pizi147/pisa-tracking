@@ -142,7 +142,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       for (const r of (skillSupportBoard(P.admin, sid) as any).rows) {
         for (const c of r.cases.filter((x: any) => x.status !== 'done' && x.viecTiep)) {
           const sc = get('SELECT owner_user_id FROM sos_cases WHERE id = ?', c.id);
-          if (c.viecTiep.chu === 'Xác nhận Case' || c.viecTiep.chu === 'Ghi nhận xét') {
+          if (c.viecTiep.chu === 'Xác nhận Case' || c.viecTiep.chu === 'Mô tả Case') {
             chu++;
             assert((c.nguoiLam?.id ?? null) === (sc.owner_user_id ?? null), `Case ${c.id}: nguoiLam ${JSON.stringify(c.nguoiLam)} ≠ owner ${sc.owner_user_id}`);
             if (!sc.owner_user_id) rong++;
@@ -593,7 +593,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
 
   check('VAI-b (11) · khoiCho (R5-2): chờ nguyên nhân / chưa có PA / chờ xác nhận PA / có PA → null (PR-CT2: bỏ "Chờ duyệt kế hoạch")', () => {
     assert(d.khoiCho({ cho: 'nguyen-nhan', soPa: 0, pa: [] }) === 'Chờ xác nhận Case', 'nguyên nhân (OV-12c: Progress)');
-    assert(d.khoiCho({ cho: 'nhan-xet', soPa: 0, pa: [] }) === 'Chờ ghi nhận xét', 'OV-12c: Case MT chưa có nhận xét');
+    assert(d.khoiCho({ cho: 'nhan-xet', soPa: 0, pa: [] }) === 'Chờ mô tả Case', 'OV-12c: Case MT chưa có mô tả');
     assert(d.khoiCho({ cho: null, soPa: 0, pa: [] }) === 'Chưa có PA', 'chưa PA');
     assert(d.khoiCho({ soPa: 1, pa: [] }) === 'Chờ xác nhận PA', 'PA chưa vẽ được');
     assert(d.khoiCho({ soPa: 1, pa: [{}] }) === null, 'có khối PA');

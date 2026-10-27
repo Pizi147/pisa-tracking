@@ -79,6 +79,7 @@
  "web/src/modules/phanTich/dungChung.tsx",
  "web/src/modules/students/BangHocVienLop.tsx",
  "web/src/modules/students/BangSos.tsx",
+ "web/src/modules/students/BieuDoD.tsx",
  "web/src/modules/students/CacLoTrinh.tsx",
  "web/src/modules/students/ChuongLop.tsx",
  "web/src/modules/students/ChuyenLopPanel.tsx",
