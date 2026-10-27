@@ -130,6 +130,18 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     assert(/export function BangMock\(\{ pv \}: \{ pv: PhamViPhanTich \}\)/.test(doc(W + 'phanTich/KetQuaThi.tsx')), 'BangMock còn tham số chết');
   });
 
+  /* ---------------------------------------------------------------- 6c-2 lỗi 9 (PTA 28/10): hộp xác nhận ngắn = hộp nhỏ, không KhungPanel đè */
+  check('6c-2 ③ Xoá PA · Kết thúc PA · Xoá Case · Xoá vi phạm · Thu hồi / Rút xử lý = ConfirmDialog; ô lý do đang gõ → hỏi một lần', () => {
+    const can: [string, number][] = [['cases/MenuXoaPa.tsx', 2], ['cases/ThaoTacCase.tsx', 1], ['yThuc/DeleteViolationConfirm.tsx', 1], ['yThuc/XemXuLyPanel.tsx', 1]];
+    for (const [f, n] of can) {
+      const s = doc(W + f);
+      assert((s.match(/<ConfirmDialog /g) ?? []).length === n && !/<KhungPanel[^>]*longTrong/.test(s), `${f}: còn panel đè / thiếu hộp nhỏ`);
+    }
+    assert(/daSua=\{!!lyDo\.trim\(\)\}/.test(doc(W + 'cases/MenuXoaPa.tsx')) && /daSua=\{!rutDuoc && !!lyDo\.trim\(\)\}/.test(doc(W + 'yThuc/XemXuLyPanel.tsx')), 'ô lý do chưa giữ chữ');
+    const dr = doc('web/src/ui/Drawer.tsx');
+    assert(/const dong = busy \? \(\) => \{\} : daSua \? \(\) => setHoi\(true\) : onClose;/.test(dr) && /export function HopBoChu\(/.test(dr), 'ConfirmDialog chưa hỏi khi còn chữ');
+  });
+
   /* ---------------------------------------------------------------- 6c-2 ⑤ (#632 XM-1): dòng danh sách Case có điểm lượt mở Case */
   const { rowsFor } = await import('../worklist/metrics.ts');
   check('6c-2 ⑤ rowsFor(case): diem = mốc mở / lặp Case gần nhất có band (điểm, kỳ vọng, MT n); Case không mốc điểm → null; một câu cho cả lô', () => {

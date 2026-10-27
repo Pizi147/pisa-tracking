@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useGiuFocus } from './giuFocus.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -40,8 +40,23 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
   );
 }
 
+/** T16 (mockup `cong-viec.html` `.hop-hoi`): hộp nhỏ, "Ở lại" là nút chính và nhận focus; bỏ chữ là nút thường nói rõ việc sẽ làm. */
+export function HopBoChu({ viec, nut, onO, onBo }: { viec: string; nut: string; onO: () => void; onBo: () => void }) {
+  const oLai = useRef<HTMLButtonElement>(null);
+  useEffect(() => { oLai.current?.focus(); }, []);   // sau effect giữ focus của Modal (con chạy trước) — focus vào "Ở lại"
+  return (
+    <Modal open onClose={onO} title={t('Bỏ chữ đang gõ?')} width="max-w-[420px]" z="z-[70]"
+      footer={<>
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onBo}>{nut}</button>
+        <button ref={oLai} type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onO}>{t('Ở lại')}</button>
+      </>}>
+      <p className="m-0 text-sm text-slate-300">{t('{viec} chưa lưu — chữ đang gõ sẽ mất.', { viec })}</p>
+    </Modal>
+  );
+}
+
 /** Xác nhận rõ ràng cho thao tác không dùng autosave (chuyển lớp, cảnh báo, import, đổi quyền). */
-export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = t('Xác nhận'), danger, busy, closeLabel = t('Đóng'), z, confirmDisabled, confirmTitle }: {
+export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = t('Xác nhận'), danger, busy, closeLabel = t('Đóng'), z, confirmDisabled, confirmTitle, daSua }: {
   open: boolean; onClose: () => void; onConfirm: () => void; title: string;
   body: ReactNode; confirmLabel?: string; danger?: boolean; busy?: boolean;
   closeLabel?: string; z?: string;
@@ -49,9 +64,12 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
   confirmDisabled?: boolean;
   /** Tooltip nút xác nhận — nói vì sao đang mờ (ví dụ câu lỗi của ô lý do). */
   confirmTitle?: string;
+  /** 6c-2 (bảng kê lỗi 5 + 9): hộp có ô lý do đang gõ — Esc / nền / ✕ / Đóng hỏi MỘT lần (`HopBoChu`), không mất chữ âm thầm. */
+  daSua?: boolean;
 }) {
+  const [hoi, setHoi] = useState(false);
   /* OV-14a (F11): đang chạy thì Esc / bấm nền / ✕ không đóng — hộp là chỗ duy nhất hiện lỗi của thao tác. */
-  const dong = busy ? () => {} : onClose;
+  const dong = busy ? () => {} : daSua ? () => setHoi(true) : onClose;
   return (
     <Modal open={open} onClose={dong} title={title} width="max-w-md" z={z}
       footer={
@@ -63,6 +81,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
         </>
       }>
       <div className="text-sm text-slate-300 leading-relaxed">{body}</div>
+      {hoi && <HopBoChu viec={title} nut={t('Bỏ chữ, đóng')} onO={() => setHoi(false)} onBo={() => { setHoi(false); onClose(); }} />}
     </Modal>
   );
 }

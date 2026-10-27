@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
@@ -229,25 +230,24 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
       </KhungPanel>
 
       {/* Hộp hỏi MỘT DÒNG (mẫu `DeleteViolationConfirm`): panel con, lớp z trên, không đóng panel này. LUAT-5: Thu hồi thêm ô Lý do *. */}
-      {hoiXoa && d && (
-        <KhungPanel tieuDe={rutDuoc ? t('Rút đề xuất này?') : ql ? t('Thu hồi lần xử lý này?') : t('Gửi QL thu hồi?')} longTrong z="z-[60]" onDong={() => !busy && setHoiXoa(false)}
-          chan={{
-            huy: { onClick: () => setHoiXoa(false), disabled: busy },
-            chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>
-              {busy ? (rutDuoc ? t('Đang rút…') : t('Đang gửi…')) : rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')}</button>,
-          }}>
-          <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">
-            {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: d.nhan, length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: d.nhan, length: d.viPham.length, bacVe })}
-          </p>
-          {!rutDuoc && (
-            <div className="pt-3">
-              <Truong nhan={t('Lý do')} batBuoc loi={daBam && !lyDo.trim() ? t('Chưa điền') : null}>
-                <textarea className="field w-full" rows={2} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
-              </Truong>
-            </div>
-          )}
-          {loiMay && <p className="m-0 mt-2 text-xs text-late" role="alert">{loiMay}</p>}
-        </KhungPanel>
+      {/* 6c-2 (lỗi 9): hộp nhỏ trong panel (không ngăn 480 đè); LUAT-5: Thu hồi có ô Lý do * — đang gõ thì đóng hỏi một lần. */}
+      {d && (
+        <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={() => void xoa()} danger busy={busy} z="z-[60]" closeLabel={t('Huỷ')}
+          title={rutDuoc ? t('Rút đề xuất này?') : ql ? t('Thu hồi lần xử lý này?') : t('Gửi QL thu hồi?')}
+          confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')} daSua={!rutDuoc && !!lyDo.trim()}
+          body={<>
+            <p className="m-0">
+              {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: d.nhan, length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: d.nhan, length: d.viPham.length, bacVe })}
+            </p>
+            {!rutDuoc && (
+              <div className="pt-3">
+                <Truong nhan={t('Lý do')} batBuoc loi={daBam && !lyDo.trim() ? t('Chưa điền') : null}>
+                  <textarea className="field w-full" rows={2} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
+                </Truong>
+              </div>
+            )}
+            {loiMay && <p className="m-0 mt-2 text-xs text-late" role="alert">{loiMay}</p>}
+          </>} />
       )}
     </>
   );

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -466,17 +467,10 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
           )}
         </Khoi>
       </KhungPanel>
-      {hoiXoa && (
-        <KhungPanel tieuDe={t('Xoá Case này?')} longTrong z="z-[60]" onDong={() => !busy && setHoiXoa(false)}
-          chan={{
-            huy: { onClick: () => setHoiXoa(false), disabled: busy },
-            chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{busy ? t('Đang xoá…') : t('Xoá Case')}</button>,
-          }}>
-          <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">
-            {tenCase}{soPaChuaLam > 0 ? t(' · {soPaChuaLam} PA chưa làm sẽ huỷ', { soPaChuaLam }) : ''}
-          </p>
-        </KhungPanel>
-      )}
+      {/* 6c-2 (lỗi 9): hộp nhỏ trong panel, không ngăn 480 đè panel. */}
+      <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={() => void xoa()} title={t('Xoá Case này?')} danger busy={busy} z="z-[60]"
+        confirmLabel={t('Xoá Case')} closeLabel={t('Huỷ')}
+        body={<>{tenCase}{soPaChuaLam > 0 ? t(' · {soPaChuaLam} PA chưa làm sẽ huỷ', { soPaChuaLam }) : ''}</>} />
     </>
   );
 }

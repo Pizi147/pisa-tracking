@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useR
 import { createPortal } from 'react-dom';
 import { docNhap, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
-import { Modal } from './Drawer.tsx';
+import { HopBoChu } from './Drawer.tsx';
 import { DongCanSua, useNoiLoi, type MucThieu } from './loiForm.tsx';
 import { useGiuFocus } from './giuFocus.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
@@ -114,20 +114,8 @@ function useBanPhim(bat: boolean) {
   }, [bat]);
 }
 
-/** T16 (mockup `cong-viec.html` `.hop-hoi`): hộp nhỏ, "Ở lại" là nút chính và nhận focus; bỏ chữ là nút thường nói rõ việc sẽ làm. */
-export function HopBoChu({ viec, nut, onO, onBo }: { viec: string; nut: string; onO: () => void; onBo: () => void }) {
-  const oLai = useRef<HTMLButtonElement>(null);
-  useEffect(() => { oLai.current?.focus(); }, []);   // sau effect giữ focus của Modal (con chạy trước) — focus vào "Ở lại"
-  return (
-    <Modal open onClose={onO} title={t('Bỏ chữ đang gõ?')} width="max-w-[420px]" z="z-[70]"
-      footer={<>
-        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onBo}>{nut}</button>
-        <button ref={oLai} type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onO}>{t('Ở lại')}</button>
-      </>}>
-      <p className="m-0 text-sm text-slate-300">{t('{viec} chưa lưu — chữ đang gõ sẽ mất.', { viec })}</p>
-    </Modal>
-  );
-}
+/** 6c-2: `HopBoChu` nay ở `Drawer.tsx` (cùng `ConfirmDialog` dùng) — giữ tên xuất ở đây cho nơi gọi cũ. */
+export { HopBoChu };
 /** CV-LOI (CV-05): panel đang hiện "✓ Đã lưu · Hoàn tác" còn bấm được — hàng đợi Công việc không tự sang việc kế (Hoàn tác không bị thay). */
 const choHoanTac = new Set<symbol>();
 export const dangChoHoanTac = () => choHoanTac.size > 0;
