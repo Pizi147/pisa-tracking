@@ -38,15 +38,29 @@ const khoNhap = (): KhoNhap | null => { try { return window.sessionStorage; } ca
  * máy theo khoá này; panel ngoài cùng biết còn chữ → ✕ / đổi việc hỏi trước.
  */
 export function NhapViec({ khoa, children }: { khoa: string; children: ReactNode }) {
+  const [coChu, bao, boHet] = useTapCoChu();
+  const v = useMemo<NhapPanel>(() => ({ viec: khoa, coChu, bao, xoa: () => { xoaNhapViec(khoNhap(), khoa); boHet(); } }), [khoa, coChu, bao, boHet]);
+  return <NhapCuaPanel.Provider value={v}>{children}</NhapCuaPanel.Provider>;
+}
+/** Tập ô (khoá `o`) đang còn chữ: [còn ô nào, báo một ô, bỏ hết]. */
+function useTapCoChu(): [boolean, (o: string, co: boolean) => void, () => void] {
   const [oCoChu, setOCoChu] = useState<ReadonlySet<string>>(() => new Set());
   const bao = useCallback((o: string, co: boolean) => setOCoChu((x) => {
     if (x.has(o) === co) return x;
     const n = new Set(x); if (co) n.add(o); else n.delete(o);
     return n;
   }), []);
-  const coChu = oCoChu.size > 0;
-  const v = useMemo<NhapPanel>(() => ({ viec: khoa, coChu, bao, xoa: () => { xoaNhapViec(khoNhap(), khoa); setOCoChu(new Set()); } }), [khoa, coChu, bao]);
-  return <NhapCuaPanel.Provider value={v}>{children}</NhapCuaPanel.Provider>;
+  const boHet = useCallback(() => setOCoChu(new Set()), []);
+  return [oCoChu.size > 0, bao, boHet];
+}
+
+/** 6c (bảng kê lỗi 5): form nằm trong CON của `KhungPanel` (không qua `chan`) báo "còn chữ chưa lưu" lên panel gần nhất → ✕ / Esc / nền hỏi một lần. */
+const BaoSuaPanel = createContext<((o: string, co: boolean) => void) | null>(null);
+export function useBaoDangSua(co: boolean) {
+  const bao = useContext(BaoSuaPanel);
+  const o = useId();
+  useEffect(() => { bao?.(o, co); }, [bao, o, co]);
+  useEffect(() => () => bao?.(o, false), [bao, o]);
 }
 
 /**
@@ -101,7 +115,7 @@ function useBanPhim(bat: boolean) {
 }
 
 /** T16 (mockup `cong-viec.html` `.hop-hoi`): hộp nhỏ, "Ở lại" là nút chính và nhận focus; bỏ chữ là nút thường nói rõ việc sẽ làm. */
-function HopBoChu({ viec, nut, onO, onBo }: { viec: string; nut: string; onO: () => void; onBo: () => void }) {
+export function HopBoChu({ viec, nut, onO, onBo }: { viec: string; nut: string; onO: () => void; onBo: () => void }) {
   const oLai = useRef<HTMLButtonElement>(null);
   useEffect(() => { oLai.current?.focus(); }, []);   // sau effect giữ focus của Modal (con chạy trước) — focus vào "Ở lại"
   return (
@@ -153,7 +167,7 @@ export const HienLaiPanel = createContext<(() => void) | null>(null);
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh, quayLai, chan, longTrong, z = 'z-50', dau, loai, onDong, children }: {
+export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh, quayLai, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, onDong, children }: {
   tieuDe: string; hocVien?: string | null; lop?: string | null;
   /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". M6 6b-1: khung KHÔNG
    *  đoán theo `dau` — panel việc khai qua `dauViec` (`dau.loai`) hoặc prop này; `null` = không vẽ. */
@@ -187,6 +201,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
      *  (trạng thái lưu); 375: dòng trạng thái trên nút chính rộng hết khung, dính đáy. */
     v3?: boolean;
   };
+  /** 6c (lỗi 5): như `chan.daSua` cho panel KHÔNG có chân (form + nút lưu nằm trong thân). */
+  daSua?: boolean;
   onDong: () => void; children: ReactNode;
 }) {
   const id = useId();
@@ -201,7 +217,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
   /* NEN-PANEL (K12): panel ngoài cùng của việc — ô `useNhap` còn chữ → coi là đang sửa như `chan.daSua`. */
   const nhap = useContext(NhapCuaPanel);
   const trongKhung = useContext(TrongKhung);
-  const daSua = !!chan?.daSua || (!trongKhung && !!nhap?.coChu);
+  /* 6c (lỗi 5): form trong con báo qua `useBaoDangSua` — chữ chỉ ở state như `chan.daSua`. */
+  const [conSua, baoSua] = useTapCoChu();
+  const daSua = !!chan?.daSua || !!daSuaRieng || conSua || (!trongKhung && !!nhap?.coChu);
   const hienLai = useContext(HienLaiPanel);
   const hienLaiRef = useRef(hienLai);
   hienLaiRef.current = hienLai;
@@ -253,7 +271,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
      thì vẫn hỏi (cùng hộp), không mất chữ âm thầm — kể cả khi nơi gọi `tuHoi` (nơi gọi chỉ tự hỏi ở ✕ / Esc / nền). */
   const lui = quayLai && !quayLai.xem ? quayLai : undefined;
   const veLai = () => {
-    if (chan?.daSua) setHoi({ nut: t('Bỏ chữ, quay lại'), tiep: () => lui?.onClick() });
+    if (chan?.daSua || daSuaRieng || conSua) setHoi({ nut: t('Bỏ chữ, quay lại'), tiep: () => lui?.onClick() });
     else lui?.onClick();
   };
   /* 6b-3: "Xem Case" — form việc vẫn gắn (ẩn) dưới view Case, không mất chữ nên không hỏi. */
@@ -320,7 +338,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
         {/* PR-KHUNG: pb-2 — thân cuộn bắt đầu cách dòng ngữ cảnh; không có thì ô bị cắt ngay sát chữ, trông như đè nhãn (rà LUI-a1, 375). */}
         {ngCanh && <div className="shrink-0 truncate px-4 pb-2 pt-2 text-xs text-slate-400 max-sm:whitespace-normal">{ngCanh}</div>}
         <fieldset disabled={!!cvNgoai?.khoa} className="contents">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */

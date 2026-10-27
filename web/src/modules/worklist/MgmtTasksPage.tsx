@@ -570,6 +570,8 @@ function SuaViec({ open, onClose, task, onDone }: {
   return (
     <KhungPanel tieuDe="Sửa công việc" hocVien={task.title} longTrong onDong={onClose}
       chan={{
+        daSua: title !== task.title || due !== (task.due ?? '') || note !== (task.note ?? '') || group !== (task.group ?? 'curriculum') || !!lyDoDoiHan.trim()
+          || (assignee && 'id' in assignee ? assignee.id : null) !== (task.assigneeUserId ?? null) || (watcher && 'id' in watcher ? watcher.id : null) !== (task.watcherUserId ?? null),
         huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,

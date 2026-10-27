@@ -16,7 +16,7 @@ import { GHI_CHU_TOI_DA, chuTacGia, luuGhiChu } from './GhiChuLichThi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
 import { Nhan } from '../../../ui/Nhan.tsx';
-import { Truong } from '../../../ui/KhungPanel.tsx';
+import { HopBoChu, Truong } from '../../../ui/KhungPanel.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { useGiuFocus } from '../../../ui/giuFocus.ts';
@@ -323,14 +323,18 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   const neo = useRef<Element>(anchor);
   neo.current = anchor;
   /* Hộp / menu nổi khác (kể cả không phải con React của hộp) vẫn không tính là ngoài — giữ luật cũ. */
-  useBamNgoai(true, (e) => { if (!(e.target as HTMLElement).closest('[role="dialog"], [role="menu"]')) onClose(); }, box, neo);
+  /* 6c (bảng kê lỗi 5): bấm ngoài / Esc / ✕ khi còn thay đổi chưa lưu → hỏi MỘT lần (cùng hộp `HopBoChu` của panel), không mất âm thầm. */
+  const [hoiDong, setHoiDong] = useState(false);
+  const dongHop = useRef(onClose);
+  dongHop.current = () => { if (daSua || doiGhi) setHoiDong(true); else onClose(); };
+  useBamNgoai(true, (e) => { if (!(e.target as HTMLElement).closest('[role="dialog"], [role="menu"]')) dongHop.current(); }, box, neo);
   useEffect(() => {
     /* Esc chỉ đóng lớp TRÊN CÙNG: có hộp / panel modal mở SAU hộp này (trong hộp, hoặc vẽ ra `body` sau nó) thì để lớp đó tự đóng. Panel mở
        TRƯỚC hộp (Lộ trình hồ sơ HV) không chặn — trước đây chặn nên Esc không đóng được hộp ở đó. */
     const esc = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented || !box.current) return;
       const phiaTren = [...document.querySelectorAll('[aria-modal="true"]')].some((m) => box.current!.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING);
-      if (!phiaTren) onClose();
+      if (!phiaTren) dongHop.current();
     };
     document.addEventListener('keydown', esc);
     window.addEventListener('resize', dat);
@@ -359,7 +363,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
             : <span className="block truncate">{tieuDe}</span>}
         </div>
         {mucDau.length > 0 && <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: tieuDe })} muc={mucDau} />}
-        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={onClose} aria-label={t('Đóng')}>✕</button>
+        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={() => dongHop.current()} aria-label={t('Đóng')}>✕</button>
       </div>
       <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
         {nhomChung.length > 0 && (
@@ -456,6 +460,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
       {nhatKy && attemptId !== null && (
         <NganLichSuBai attemptId={attemptId} skill={nhatKy === 'ca-luot' ? null : nhatKy} ct={ct} tenHv={tieuDe} trongHop onClose={() => setNhatKy(null)} />
       )}
+      {hoiDong && <HopBoChu viec={tieuDe} nut={t('Bỏ chữ, đóng')} onO={() => setHoiDong(false)} onBo={onClose} />}
     </div>,
     document.body,
   );

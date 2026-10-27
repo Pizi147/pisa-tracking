@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent
 import { Link } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { NhanTrangThai, NutChon } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
@@ -53,6 +54,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const uid = useId();
   const [o, setO] = useState<O>(null);
   const [chu, setChu] = useState('');
+  /* 6c (lỗi 5): ô Từ chối / Trả lời / Sửa… đang gõ dở → panel chứa thẻ (Tổng quan "Chờ bạn duyệt") hỏi trước khi đóng. */
+  useBaoDangSua(!!o && chu.trim() !== (o.loai === 'sua' ? (yc.lyDo ?? '').trim() : ''));
   const [tuan, setTuan] = useState<string>(typeof yc.duLieu?.tuanDeNghi === 'string' ? (yc.duLieu.tuanDeNghi as string) : '');
   const [daBam, setDaBam] = useState(false);
   const [loiMay, setLoiMay] = useState<string | null>(null);

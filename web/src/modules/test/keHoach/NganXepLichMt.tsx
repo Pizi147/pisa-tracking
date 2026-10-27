@@ -232,7 +232,9 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
   return (
     <KhungPanel tieuDe="Xếp lịch Mock Test" rong="toan" onDong={onClose}
       tabs={tabs}
-      chan={{ huy: { nhan: 'Đóng', onClick: onClose }, chinh: nutChinh }}>
+      chan={{ huy: { nhan: 'Đóng', onClick: onClose }, chinh: nutChinh,
+        /* 6c (lỗi 5): lựa chọn đã chỉnh tay (tuần riêng, đợt / thi lại từng em) chưa lưu → ✕ hỏi. Tuần chung, tick là mặc định tự điền. */
+        daSua: Object.keys(rieng).length > 0 || Object.keys(dotTheoEm).length > 0 || Object.keys(thiLai).length > 0 }}>
       <Khoi tieuDe="Lọc">
         <div className="flex flex-wrap items-end gap-2">
           <BranchFilter branchId={branchId} onBranch={setBranchId} />

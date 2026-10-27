@@ -117,7 +117,8 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
   };
   return (
     <KhungPanel tieuDe={t('Không đạt Kỳ vọng')} hocVien={studentName} lop={lop} onDong={onDong}
-      chan={{ conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{t('Lưu')}</button> }}>
+      chan={{ daSua: nn !== (ban?.dat === false ? ban.nguyenNhan ?? '' : '') || ghiChu !== (ban?.ghiChu ?? '') || mon.join() !== (ban?.mon?.length ? ban.mon : monTruot).join(),
+        conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{t('Lưu')}</button> }}>
       <Khoi tieuDe={t('Nguyên nhân')}>
         <div {...lf.o(loi, 'nguyen-nhan')} tabIndex={-1} role="radiogroup" aria-label={t('Nguyên nhân')} className="grid grid-cols-2 gap-2 outline-none">
           <NutChon chon={nn === 'trung_tam'} onClick={() => setNn('trung_tam')} className="justify-center">{t('Trung tâm')}</NutChon>

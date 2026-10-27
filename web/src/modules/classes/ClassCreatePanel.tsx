@@ -150,6 +150,8 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
   return (
     <KhungPanel tieuDe={khoa ? t('Mở lớp mới') : t('Tạo lớp mới')} ngCanh={khoa} longTrong={!!khoa} onDong={onClose}
       chan={{
+        /* 6c (lỗi 5): số lớp đã gõ hoặc GV đã chọn chưa tạo lớp → ✕ hỏi. */
+        daSua: so !== locSoLop(macDinh?.so ?? '') || Object.values(chon).some((v) => v !== ''),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tao}
             disabled={busy || loiPc.length > 0} title={loiPcDau}>{khoa ? t('Mở lớp') : t('Tạo lớp')}</button>

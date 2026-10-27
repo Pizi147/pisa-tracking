@@ -60,6 +60,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
     <KhungPanel tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
       ngCanh={<span className="truncate">{dich(m.nhan)}{m.quyetLuc ? t(' · QL duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
       chan={{
+        daSua: !daLuu && !!ghiChu.trim(),
         conThieu: lf.daBam && (loiNgay || loiNguoi) ? [{ nhan: t('Đã thực hiện'), lyDo: loiNgay ?? loiNguoi ?? '' }] : undefined,
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || m.status !== 'da_duyet'} onClick={luu}>{t('Lưu · Đã thực hiện')}</button> }}>
       <Khoi tieuDe={t('Đã thực hiện')}>
