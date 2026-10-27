@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE,
   CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot,
@@ -23,7 +23,7 @@ import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platf
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
-  setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong,
+  setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, monLuotSql,
   type SkillRow, type SkillScheduleView,
   chanCuoiTuan, tuanCacKyNang,
 } from './skillSchedule.ts';
@@ -125,7 +125,7 @@ export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
  */
 export function skipsOf(attemptId: number): AssessedSkill[] {
   return nho(`bo-mon:${attemptId}`, () => {
-    const rows = db().prepare('SELECT skill, required, bo_task, scope_reason FROM attempt_skills WHERE attempt_id = ?').all(attemptId) as any[];
+    const rows = db().prepare(`SELECT skill, required, bo_task, scope_reason, ${monLuotSql('attempt_skills')} AS mon_luot FROM attempt_skills WHERE attempt_id = ?`).all(attemptId) as any[];
     if (rows.length) return [...rows.filter((r) => !r.required).map((r) => r.skill), ...boTaskCuaDong(rows)] as AssessedSkill[];   // P8: + task Writing bỏ
     return (db().prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(attemptId) as any[])
       .map((r) => r.skill as AssessedSkill)
@@ -2003,8 +2003,9 @@ export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) 
 function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult, thiLai = false) {
   const entry = entryBandsOf(scoresOf(attemptId));
   const failing = new Set(failingEntrySkills(result.expectation, entry, result.boQua));
-  /* Ô đã có điểm mà KHÔNG nằm trong danh sách dưới kỳ vọng = ô đang đạt. */
-  const passing = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) !== null && !failing.has(k)) as string[];
+  /* Ô đã có điểm mà KHÔNG nằm trong danh sách dưới kỳ vọng = ô đang đạt. D7: ô môn đã bỏ không "đạt" — tín hiệu / Case cũ của nó giữ như lúc bỏ. */
+  const boMon = boMonDaBo(result.boQua);
+  const passing = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) !== null && !failing.has(k) && !boMon.has(k)) as string[];
   /* PR-S3F #1: ô nay TRỐNG và không bị bỏ (Huỷ điểm / Thi lại xoá điểm) — tín hiệu dựng trên điểm đó cũng hết căn cứ. */
   const cleared = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) === null && !result.skipped.includes(assessedSkillOf(k))) as string[];
   reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng', clearedSkills: cleared, thiLai });

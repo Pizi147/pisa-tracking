@@ -109,8 +109,8 @@ function FormThemPaTaiCho({ caseId, studentId, onHuy, onXong }: {
 }) {
   const h = useThemPa({
     caseId, v0: NHAP.get(caseId),
-    /* Máy chủ trả Case sau khi ghi — PA mới là PA có id lớn nhất (khoá gửi trùng cũng trả đúng Case đó). */
-    onSaved: (c) => { const ids = ((c?.interventions ?? []) as { id: number }[]).map((x) => x.id); onXong(ids.length ? Math.max(...ids) : null); },
+    /* PA mới = `paId` hook tính từ Case máy chủ trả (cùng luật Hoàn tác của panel Thêm PA). */
+    onSaved: (_c, x) => onXong(x.paId ?? null),
   });
   const { v, setV, lf, busy, loiLuu, deXuat, loi, luu, daSua } = h;
   useEffect(() => { NHAP.set(caseId, v); }, [caseId, v]);

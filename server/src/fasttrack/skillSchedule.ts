@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
+  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
   khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
@@ -98,6 +98,8 @@ export type SkillRow = {
   huy_vang: number;
   /** P8 (N13): task Writing không học ('writing1' | 'writing2') — Writing = task còn lại; NULL = đủ hai task. */
   bo_task?: string | null;
+  /** D7: môn đăng ký của lộ trình của lượt (NULL = đủ môn / MT0) — dấu môn đã bỏ (`boTaskCuaDong`). */
+  mon_luot?: string | null;
   /** Ghép sẵn từ bảng tuần để không phải hỏi lại theo từng dòng. */
   week_start: string | null;
   week_end: string | null;
@@ -111,7 +113,7 @@ export type SkillRow = {
 const SELECT_SKILLS = `
   SELECT ask.id, ask.attempt_id, ask.skill, ask.required, ask.scope_reason, ask.planned_period_id, ask.plan_source, ask.sit_status,
          ask.sit_note, ask.deadline_override, ask.deadline_override_reason, ask.absence_move_count, ask.absent_from_no_show, ask.huy_vang, ask.bo_task,
-         pr.week_start, pr.week_end, pr.code AS period_code
+         pr.week_start, pr.week_end, pr.code AS period_code, ${monLuotSql('ask')} AS mon_luot
     FROM attempt_skills ask
     LEFT JOIN report_periods pr ON pr.id = ask.planned_period_id`;
 
@@ -288,13 +290,17 @@ export function skippedSkillsOf(rows: SkillRow[] | undefined, attempt?: { id: nu
  * P8 (N13): task Writing không học của lượt đi CÙNG danh sách kỹ năng bỏ ('writing1' | 'writing2' bên cạnh kỹ năng đánh giá) — mọi nơi đã truyền
  * `skips` vào `evaluateAttempt` / `failingEntrySkills` / `skillCells` đọc được mà không thêm tham số. Lọc theo `ASSESSED_SKILLS` vẫn ra đúng kỹ năng bỏ.
  */
-export const boTaskCuaDong = (rows: readonly { skill: string; required: number | boolean; bo_task?: string | null; scope_reason?: string | null }[]): string[] => [
+export const boTaskCuaDong = (rows: readonly { skill: string; required: number | boolean; bo_task?: string | null; scope_reason?: string | null; mon_luot?: string | null }[]): string[] => [
   ...rows.filter((r) => r.skill === 'writing' && r.required && r.bo_task).map((r) => r.bo_task!),
   ...(rows.some((r) => !r.required && r.scope_reason === LY_DO_KHONG_HOC) ? [DAU_KHONG_HOC] : []),
+  ...dauBoMon(rows[0]?.mon_luot),   // D7 (chủ SP 27/10): bài môn đã bỏ không vào mức SOS / tín hiệu / Case (`boMonDaBo`)
 ];
 
-/** Môn đăng ký của lộ trình của lượt `k.attempt_id` (alias `k` = `attempt_skills`). */
-const MON_LUOT_SQL = "(SELECT cy.mon_dang_ky FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE a.id = k.attempt_id AND a.kind != 'mt0')";   // ledger: MT0 không áp môn
+/** Môn đăng ký của lộ trình của lượt `<bang>.attempt_id` (`bang` = bảng / alias `attempt_skills`). */
+export function monLuotSql(bang: string) {   // ledger: MT0 không áp môn
+  return `(SELECT cy.mon_dang_ky FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE a.id = ${bang}.attempt_id AND a.kind != 'mt0')`;
+}
+const MON_LUOT_SQL = monLuotSql('k');
 const KHONG_HOC_SQL = `(CASE k.skill WHEN 'writing' THEN NOT EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value IN ('writing1', 'writing2'))
   ELSE NOT EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value = k.skill) END)`;
 const BO_TASK_SQL = `(CASE WHEN k.skill = 'writing' AND (SELECT COUNT(*) FROM json_each(${MON_LUOT_SQL}) j WHERE j.value IN ('writing1', 'writing2')) = 1

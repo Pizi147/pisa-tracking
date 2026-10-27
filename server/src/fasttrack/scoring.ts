@@ -1,5 +1,5 @@
 import {
-  ASSESSED_SKILLS, CRITERIA_SKILLS, DAU_KHONG_HOC, ENTRY_SKILLS, RAW_SCORE_SKILLS, expectationDelta, roundToHalf,
+  ASSESSED_SKILLS, CRITERIA_SKILLS, DAU_KHONG_HOC, ENTRY_SKILLS, RAW_SCORE_SKILLS, boMonDaBo, expectationDelta, kyNangDaBo, laDauBoMon, roundToHalf,
   type AssessedSkill, type EntrySkill, type SosLevel,
 } from '../../../shared/domain/index.ts';
 
@@ -95,8 +95,10 @@ export function failingEntrySkills(
   const wBand = writingBand(w1, w2, boTask);
   /* Cổng tầng một: band Writing tổng hợp có trượt không. */
   const writingFails = !writingSkipped && wBand !== null && wBand < expectation;
+  const boMon = boMonDaBo(skippedSkills);   // D7: ô môn đã bỏ (bài đã chấm giữ) không sinh tín hiệu / Case
 
   return ENTRY_SKILLS.filter((skill) => {
+    if (boMon.has(skill)) return false;
     if (skill === 'writing1' || skill === 'writing2') {
       if (!writingFails) return false;
       const band = skill === 'writing1' ? w1 : w2;
@@ -220,7 +222,9 @@ export function evaluateAttempt(
    */
   const hasAnyScore = scoredRequired > 0;
   const canConclude = hasAnyScore && expectation !== null;
-  const failedCount = canConclude ? verdicts.filter((v) => v.passed === false).length : null;
+  /* D7 (chủ SP 27/10): kỹ năng lộ trình đã bỏ không đếm vào mức SOS (bài đã chấm giữ điểm, Overall giữ). */
+  const boMon = boMonDaBo(skippedSkills);
+  const failedCount = canConclude ? verdicts.filter((v) => v.passed === false && !kyNangDaBo(boMon, v.skill)).length : null;
   /*
    * Fast Track KẾT LUẬN TẠM THỜI ngay trên phần điểm đang có, kể cả khi kết luận đó là
    * "đạt" — owner chốt ở vòng 3, và cờ `provisional` bên dưới nói rõ đó là tạm thời.
@@ -252,7 +256,7 @@ export function evaluateAttempt(
   const sosLevel = kckDuoi ? null : mucSos;
 
   return {
-    expectation, bands, verdicts, required, skipped, boQua: [...skipped, ...(boTask ? [boTask] : [])],
+    expectation, bands, verdicts, required, skipped, boQua: [...skipped, ...(boTask ? [boTask] : []), ...skippedSkills.filter(laDauBoMon)],
     scoredRequired, complete, evaluable, failedCount, sosLevel, kckDuoi, overall, khongDuBoMon,
     chot, provisional,
     /*

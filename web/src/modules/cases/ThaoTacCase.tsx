@@ -73,7 +73,7 @@ export function useThemPa({ caseId, onSaved, v0 }: {
     setBusy(true);
     setLoiLuu(null);
     try {
-      const res = await api.post(`/cases/${caseId}/interventions`, {
+      const c = await api.post<{ interventions?: { id: number }[] }>(`/cases/${caseId}/interventions`, {
         ...paPayload(v), status,
         completedDate: status === 'completed' ? completedDate || undefined : undefined,
         startedDate: status === 'started' ? startedDate || undefined : undefined,
@@ -82,7 +82,10 @@ export function useThemPa({ caseId, onSaved, v0 }: {
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work');   // OV-11c (CV-2): việc Thêm PA hết ở Công việc
       /* OV-13b: panel ở lại "✓ Đã lưu · Việc tiếp ›" (nơi gọi vẽ) — không toast đè chân. */
-      onSaved(res, { chu: deXuat ? t('Đã gửi Quản lý duyệt') : t('Đã thêm PA'), phu: [dich(INTERVENTION_KIND_LABEL[v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.kind), v.description.trim()].filter(Boolean).join(' · ') });
+      /* M6 6b-2 (Q1): PA vừa thêm = id lớn nhất Case trả về (gửi lại cùng khoá trả đúng PA đó) → Hoàn tác Thêm PA (#623; máy chủ kiểm người thêm + 10 giây). */
+      const paId = Math.max(0, ...(c?.interventions ?? []).map((x) => x.id)) || undefined;
+      onSaved(c, { chu: deXuat ? t('Đã gửi Quản lý duyệt') : t('Đã thêm PA'), phu: [dich(INTERVENTION_KIND_LABEL[v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.kind), v.description.trim()].filter(Boolean).join(' · '),
+        paId, hoanTac: paId ? async () => { await api.post(`/interventions/${paId}/hoan-tac-them`); invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work'); } : undefined });
     } catch (e: any) { setLoiLuu(e.message); } finally { setBusy(false); }
   };
 

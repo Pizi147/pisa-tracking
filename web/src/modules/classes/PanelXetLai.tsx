@@ -276,7 +276,7 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
     <article className={`flex flex-col rounded-[10px] border bg-[color:var(--surface)] ${xong ? 'opacity-75' : ''}`} style={vien} aria-label={e.ten}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-3.5 pb-2 pt-3">
         {!chiXem && !xong && <input type="checkbox" className="h-[18px] w-[18px] accent-[color:var(--accent)]" aria-label={t('Chọn {ten}', { ten: e.ten })} checked={tick} disabled={busy} onChange={(ev) => onTick(ev.target.checked)} />}
-        <b className="text-[15px]"><Link className="link" to={`/hoc-vien/${e.studentId}`}>{e.ten}</Link></b>
+        <b className="text-[15px]"><Link className="ten-ho-so" to={`/hoc-vien/${e.studentId}`}>{e.ten}</Link></b>
         {chiXem && <ChipXetLai />}
         {!xong && e.lyDo.chu && <span className={`text-[13px] font-bold ${doLyDo(e) ? 'text-bad' : 'text-soon'}`}>{e.lyDo.chu}</span>}
         {chuDaLuu && (daLuu && !daLuu.chu.startsWith('Học lại') ? <span className="text-[13px] font-semibold text-ok">{chuDaLuu}</span>

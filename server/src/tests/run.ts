@@ -9629,20 +9629,23 @@ const { runPrMonDangKyTests } = await import('./prMonDangKy.tests.ts');
 await runPrMonDangKyTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY, classId, addDays } as any);
 const { runR1NoNhoTests } = await import('./r1NoNho.tests.ts');
 await runR1NoNhoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);
-// ==================================================================== R1-PHAN-CAP-TEST (Dán Excel chỉ bỏ ở Lịch Test, token màu cấp)
-const { runR1PhanCapTestTests } = await import('./r1PhanCapTest.tests.ts');
-await runR1PhanCapTestTests({ check, assert });
 const { runTenChiSoTests } = await import('./tenChiSo.tests.ts');
 await runTenChiSoTests({ check, assert });
 // ==================================================================== R1-NO-CU (đổi người phụ trách Case — D17)
 const { runR1NoCuTests } = await import('./r1NoCu.tests.ts');
 await runR1NoCuTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== UI-CHART-D (dữ liệu chỉ đọc cho chart D: điểm W1 / W2 + nhận xét MT mọi lượt, thi thật)
+const { runUiChartDTests } = await import('./uiChartD.tests.ts');
+await runUiChartDTests({ check, assert, conn, P } as any);
 // ==================================================================== SV-BAI-LOP-2 (M5 PR ①: Tiến độ trên lớp band / nhận xét tuỳ chọn, gopY[], Hoàn tác thêm PA)
 const { runPrSvBaiLop2Tests } = await import('./prSvBaiLop2.tests.ts');
 await runPrSvBaiLop2Tests({ check, assert, conn, P, classId } as any);
 // ==================================================================== M6 6b-1 KHUNG-NGAN-XEP (ngăn xếp view ?xem=, ‹ lùi một view)
 const { runPrKhungNganXepTests } = await import('./prKhungNganXep.tests.ts');
 await runPrKhungNganXepTests({ check, assert } as any);
+// ==================================================================== M6 6b-2 PILOT-CASE (nhóm theo bước, việc trong dòng, Case A, lưu về Case)
+const { runPrPilotCaseTests } = await import('./prPilotCase.tests.ts');
+await runPrPilotCaseTests({ check, assert, conn, P } as any);
 // ==================================================================== HSL-MAY-CHU (M4 PR 1: hồ sơ một lượt Test — S Ex, lớp hiện tại, GET /regular/attempts/:id)
 const { runPrHslMayChuTests } = await import('./prHslMayChu.tests.ts');
 await runPrHslMayChuTests({ check, assert, conn, P, classId, TODAY, addDays } as any);

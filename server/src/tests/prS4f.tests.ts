@@ -271,7 +271,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     nhapBand(e.aid, 'listening', 6);
     assert(standing.standingFor([e.sid]).get(e.sid).attemptId === e.aid, 'đủ một kỹ năng (L) thì là kết quả gần nhất');
     const b = docWeb('modules/students/BangHocVienLop.tsx');
-    assert(/link block truncate font-semibold" title=\{h\.ten\}/.test(docWeb('modules/students/DanhSachHvLop.tsx')), 'tên: title (UI-HV-LOP: danh sách gọn)');
+    assert(/ten-ho-so block truncate" title=\{h\.ten\}/   /* D4 bổ sung: tên mở hồ sơ dùng .ten-ho-so (như mockup) */.test(docWeb('modules/students/DanhSachHvLop.tsx')), 'tên: title (UI-HV-LOP: danh sách gọn)');
     assert(b.includes('<DongCham chu={k.dong1}')   /* UXF-b: thêm lienKet (link tên lượt) */ && b.slice(b.indexOf('function DongCham')).includes('whitespace-nowrap'), 'DongCham');
     assert(docWeb('ui/TheDong.tsx').includes('grid-cols-[5.5rem_minmax(0,1fr)] items-baseline'), 'TheDong items-baseline');
     assert(docWeb('modules/classes/ClassIssueBoard.tsx').includes('td text-right tabular-nums"><TyLe'), 'Tỷ lệ tabular-nums');

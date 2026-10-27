@@ -8,25 +8,25 @@ colors:
   line: "#22324f"
   line-strong: "#33496f"
   text: "#e7edf7"
-  accent: "#94bdf2"
-  accent-strong: "#b8d3f7"
+  accent: "#9cbde7"
+  accent-strong: "#bdd3ef"
   hong: "#f57aae"
   dieu-huong-nen: "#0a1a3a"
-  ok: "rgb(116 217 163)"
-  bad: "rgb(255 154 143)"
-  late: "rgb(255 154 143)"
-  soon: "rgb(242 196 80)"
-  doing: "rgb(148 189 242)"
+  ok: "rgb(148 209 174)"
+  bad: "rgb(232 154 140)"
+  late: "rgb(232 154 140)"
+  soon: "rgb(228 199 132)"
+  doing: "rgb(156 189 231)"
   done: "rgb(158 172 200)"
   muted: "rgb(186 198 222)"
   text-dim: "rgb(186 198 222)"
   text-faint: "rgb(158 172 200)"
-  sos1: "rgb(214 184 40)"
-  sos2: "rgb(232 112 42)"
-  sos2-nen: "#3a2410"
-  sos3: "rgb(240 100 90)"
-  sos3-nen: "#9c201c"
-  da-thi-bg: "rgb(15 35 53)"
+  sos1: "rgb(204 185 109)"
+  sos2: "rgb(207 129 91)"
+  sos2-nen: "#35261a"
+  sos3: "rgb(213 123 113)"
+  sos3-nen: "#873c34"
+  da-thi-bg: "rgb(22 35 46)"
   light-bg: "#f3f5f9"
   light-surface: "#ffffff"
   light-surface-2: "#f2f4f9"
@@ -129,13 +129,16 @@ components:
 | V8 | **Hạn = ngày thật** `hạn 28/10` (P7), không thứ, không "tuần này / tuần sau"; tháng thi dự kiến luôn kèm năm `Dự kiến 02/2027` (P5); "Thi tháng này" thay "Thi tuần này" (P4) | `10` P4, P5, P7 |
 | V9 | **Thời gian tự do (P9):** Từ tuần → Đến tuần; Phân tích thêm **Toàn bộ** · **Chọn khoảng tuần**, không trần 52 tuần (#558); hồ sơ GV mặc định 4 tuần; ô chọn một tuần `‹ W3 SEP ›` + **Tuần này** (#560) | `10` P9 |
 | V10 | **Trang đầu mọi vai = Tổng quan tình hình** (3–4 chỉ số + khối theo vai + cột "Chờ bạn duyệt" / **Điều hướng**), không form làm việc; việc làm ở **Công việc** (GV, TVV có Công việc riêng, Admin, QL). Thay G3 | `04` M1, M2 (C04, C05); #551 |
-| V11 | **Số → panel chỉ đọc (C22):** định nghĩa, phạm vi, tử / mẫu, danh sách đúng tập tạo nên số — không form / nút làm việc trong panel báo cáo. Số theo **lượt của từng HV** (P8), không "MT gần nhất của lớp" | `04` M3; `10` P8 |
+| V11 | **Số → panel giải thích đúng số (bản M6, chủ SP 27/10 — thay C22 "chỉ đọc"):** tên, phạm vi, ngày dữ liệu, tổng + đơn vị, danh sách đúng tập tạo ra số, Cách tính. Dòng mà người xem **có quyền làm** → bấm mở việc ngay trong CÙNG panel (view kế, ‹ về đúng dòng; máy chủ `kemViec`); không có quyền → **một câu "ai làm được"** (`chuAiLamDuoc`), không 403 trống. Báo cáo / Phân tích giữ chỉ đọc (G8). Một panel một lúc, không panel chồng panel. Số theo **lượt của từng HV** (P8). Pilot 6b-2: ô "Case chưa chốt PA" — 6 nhóm phân rã máy chủ (rỗng không vẽ, quá hạn lên đầu nhóm), dòng → view Case (khối Case A) | `04` M3; `10` P8; M6 #605 (Q3, Q4)
 | V12 | **Sau lưu (bản 26/10, chủ SP 26/10 — thiết kế deploy-ux 4.1):** ① **Lưu** chờ máy chủ → ở lại, "✓ Đã lưu", nút chính thành **Bài tiếp ›** (không gửi lại) · ② **Lưu · bài tiếp ›** (chấm) / **Lưu · việc tiếp ›** (panel việc) chỉ chuyển khi máy chủ đã nhận; lỗi → ở lại, giữ chữ, focus ô sai (lỗi máy chủ: ô điểm đầu) · ③ không đổi gì: bài xong → chuyển ngay, không gọi máy chủ; ô trống → ở lại, nhắc "Ô còn trống — nhập điểm hoặc Vắng" · ④ **Vắng** ghi "-" rồi chuyển, toast Hoàn tác · ⑤ bài kế = bài CÒN THIẾU của người xem (`baiKeTiep`, ảnh chụp thứ tự lúc mở): cùng kỹ năng phía sau → vòng lên → kỹ năng khác theo cột · ⑥ chân hộp "Tiếp: Reading · Minh Anh" · ⑦ hết: "Đã xong phần của bạn · {lớp · lượt}: đã lưu n bài" + **Lớp tiếp: {mã} ›** / **Việc tiếp ›** / Đóng — không bao giờ "cả lớp xong"; trang một em: bài trong lượt → **Lưu · em tiếp ›** (danh sách nguồn) → "‹ Về {nguồn}" · ⑧ Enter = nút chính, Enter trên nút = nút đó, nhận xét Ctrl / Cmd + Enter, bỏ qua khi gõ IME · ⑨ chống bấm đôi bằng ref, "Đang lưu…" chỉ ở nút đã bấm · hộp một trường đóng sau lưu: **Lưu · đóng** · ô gõ trực tiếp lớp thường: Enter xuống hàng, bỏ qua ô chỉ đọc · không tự chuyển theo giờ | `04` M16; R1-LUU-TIEP |
 | V13 | **Đơn vị luôn ghi** (việc / bài / HV / lượt / Case); badge Công việc = số **việc của chính người xem** (`mine`), chuông = tin chưa đọc, khác dáng badge | `04` M15; #560 (nợ #528) |
 | V14 | **Tìm kiếm thanh trên:** `/` hoặc `Ctrl K`; nhóm Học viên · Lớp · GV, chỉ trong phạm vi quyền máy chủ; chữ khớp tô hồng | #560 k1 |
 | V15 | **Ô MT thiếu nhận xét:** chỉ MT mới nhất của em, ô **viền vàng** + nhắc ở tooltip / tên đọc màn — không chữ dưới ô, không chặn lưu (LUAT-NX-MT, N8) | `10` mục 7; #549, #560 |
 | V16 | **Tiêu đề trang 22 / 700** (`text-xl` = 22 trong thang Tailwind; mockup `.h-trang`). Còn lệch 17 px (`text-lg`) ở 11 trang — CHAM-LAI sửa (`plan.md` mục 4) | `04` mục 2.2; mockup V5 |
-| V17 | **Phân cấp Lịch Test — mỗi cấp một màu thanh** (chủ SP 26/10, M2 A2), không thêm viền / vạch: nhóm `--cap-nhom` chữ 17 / 700 + số có đơn vị 13 / 500, khe 10 px nền thẻ giữa nhóm · lớp đóng `--cap-lop-dong` (tên thụt 28, ngăn 1 px nền thẻ) · lớp mở `--cap-lop` cao 50, **dính mép trên** trong khối lớp (mỗi lớp một bảng) · lưới trên nền thẻ, đầu cột `--cap-dau-cot`, cột Học viên thụt 44 · **S Ex dòng phụ: chip ở cột MT**, điểm cột S, Kết quả "GV · tuần" · đáy khối `--cap-lop-dong` "▴ Thu lớp" · 375: lớp thụt 20, thẻ em 32. Hai nền liền nhau ΔL ≥ 3 (OKLCH), chữ ≥ 4,5 : 1 (`thiet-ke/v7/kiem-tuong-phan-cap.py`). Lưới Lịch Test không có Dán từ Excel (còn ở panel Nhập điểm, Điểm theo lớp) | M2 A2; deploy-ux 4.2; R1-PHAN-CAP-TEST |
+| V18 | **Công việc ba tầng** (CONG-VIEC-2, chủ SP duyệt mockup `thiet-ke/v7/cong-viec-2.html` #621): ① **nhóm việc** — thẻ riêng, dải `--surface-2` + vạch trái 3 px **một màu nhấn** (xám = bài chấm chéo, không phải việc của bạn) + biểu tượng nét, 15 / 700, chip đếm vuông có đơn vị, dính khi cuộn (`DaiNhom`, dùng cả cho Chờ bạn duyệt / Việc quản lý) · ② **học viên** — vòng tròn chữ đầu 28 px + tên **15 / 600** ↗ (link hồ sơ) · lớp 13 · SOS **một lần**; em một việc vẫn có khối; khối cách khối vạch `--line-strong` · **lớp / nhóm em** — ô vuông biểu tượng, chính dòng là việc; dòng gộp ô chồng có số: "n em ▾" mở khay em, hoặc làm cả dòng (`moCaDong`) · ③ **việc** — thụt dưới tên + nét cây 1 px, tên **15 / 500** không lặp tên em, phụ 13, **hạn cột cố định 136 px** (`ChipHan`) + nút 112 px; "›" = việc đổi trang · "việc tiếp" đi hết nhóm (sau → vòng lên), hết nhóm → thẻ "Hết việc {nhóm} của bạn" + "Còn: {nhóm} · n việc" + Việc tiếp › · 375: chạm cả dòng, hạn dưới tên, ẩn nút (trừ "n em ▾", Gia hạn) | D5 / D5b sửa tối 27/10 |
+| V19 | **Luật Quay lại (M6, chủ SP 27/10 Q2):** ‹ = lùi một view · Back trình duyệt / vuốt Back điện thoại = cũng lùi một view (mỗi view sâu = một mục lịch sử `?panel=`); ở view gốc thì đóng panel; mở từ link sâu (thông báo, tab mới) → thay URL bằng view cha, không rời app · ✕ / Esc / bấm nền = đóng cả panel về URL trước khi mở (còn chữ chưa gửi thì hỏi MỘT lần) · link ↗ = đổi trang, Back về đúng view · nháp theo người + Case + view · **một chuỗi view một bề rộng** (720 ở 1440 cho chuỗi Case, toàn màn ở 375 — `XemCha.rong`) | M6 khu "Quay lại"; 6b-1 #618, 6b-2
+| V20 | **Sau lưu trong chuỗi Case (Q1):** form mở TỪ view Case (Thêm PA, Ghi kết quả) lưu xong **tự về Case**, thẻ PA vừa đổi viền nhấn + "✓ Đã thêm PA · Hoàn tác" (10 giây, đường đảo máy chủ); form mở thẳng (Công việc, link) giữ "✓ Đã lưu · Việc tiếp ›" (V12). Danh sách số: **"Case tiếp ›"** = Case kế bạn làm được, chưa xử lý, theo thứ tự danh sách (Q7), thay view — ‹ vẫn về danh sách; hết → "Hết Case chờ trong danh sách". Hộp điểm giữ V12 | M6 Q1, Q7
+| V21 | **Luật chữ đầu mục (M6 vòng 2, chủ SP 27/10):** Đầu nhóm danh sách = dải nền `surface-2` rộng hết panel, chữ 15 / 700 `--text`, vạch trái 3 px **theo bước** (token sẵn có: trống PA `bad` · chờ nhận xét `soon` · chờ xác nhận PA `doing` · chờ duyệt đổi `hong` · PA xong `ok` · không theo dõi `text-faint`; màu luôn kèm tên nhóm), chip đếm vuông (Case còn chờ; hết → ✓), dính khi cuộn · Đầu mục view Case (Case · Phương án · Kết luận · Lịch sử · Bằng chứng — `DauMuc`) 15 / 700, vạch 3 × 18 px `--accent`, đường kẻ + khoảng trên 22 px, chip đếm vuông · Tên dòng 15 / 500 · Tên thẻ PA 15 / 600 · Nhãn 13 / 500 `text-dim` (cột 7.5rem; 375 nằm trên giá trị) · Giá trị 15 (điểm là giá trị chính: màu kết quả + ✓ / ✗) · Phụ 13 · Tiêu đề panel 17. **Đổi tên:** "Vấn đề" → **"Case"**; "Ghi nhận" → **"Mô tả"** (mô tả Case — N8) | mockup M6 "Vòng 2 · chữ"; 6b-2
 
 ## Luật 21/10 (overhaul — chủ SP duyệt #486; thắng phần mô tả bên dưới khi khác)
 
@@ -157,7 +160,7 @@ Phần bên dưới mục này là **bản ghi mã hiện tại**; dòng ghi "�
 | G11 | Thứ tự menu: Tổng quan → Học viên & Lớp → Test → Công việc → Phân tích → Tutor | 02 2.4 (V1 I.2) |
 | G12 | Màu kết quả tô **chính con số điểm** (✓ / ✗ trước số), mọi chỗ có điểm; không % trong ô ("✗ 17/25") | 02 2.4 (V1 I.3), 4.7 A6 |
 | G13 | Thang chữ **12 · 13 · 14 · 15 · 17 · 22 · 28** (ô bảng / ô nhập 15, lưới điểm 14, nhãn 13, tối thiểu 12); không in hoa | 02 4.7 A4; 04 mục 2.2 |
-| G14 | **Đang chọn** = nền nhấn nhạt + vạch trái 3 px, khác hẳn vòng focus 2 px; vạch trái hàng nhóm màu trung tính | 02 4.7 A11; 04 mục 6.3 |
+| G14 | **Đang chọn** = nền nhấn nhạt + vạch trái 3 px, khác hẳn vòng focus 2 px; vạch trái hàng nhóm màu trung tính — **trừ dải nhóm danh sách theo bước** (V21: vạch theo bước, chủ SP 27/10 — màu luôn kèm tên nhóm) | 02 4.7 A11; 04 mục 6.3; M6 vòng 2
 
 ## Overview
 
@@ -191,7 +194,7 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
   4. Hạn — chỉ chữ: quá hạn cam `late` **luôn kèm ⚠** (không chip, không nền, không tô hàng); sắp hạn / hôm nay vàng `soon`. Hạn ghi ngày `hạn 18/09`, không thứ.
   5. Trung tính `muted` — mọi trạng thái khác (chờ duyệt, chờ chấm, Chưa chốt PA…). Đã bỏ tím `wait` và teal `chon-*` (OV-15a).
 - Đạt = `ok`; `bad` còn cho thao tác nguy hiểm.
-- **Màu cấp Lịch Test** (V17): `--cap-nhom` `#283452` / sáng `#cfd6e4` · `--cap-lop` `#1d3b72` / `#d4e1fb` · `--cap-lop-dong` `#172b50` / `#edf2fd` · `--cap-dau-cot` `#0a1224` / `#eceff5`. Chỉ dùng ở Lịch Test (+ nhóm trái Chấm Test).
+- **Giảm độ rực (D4 MAU-WEB, chủ SP 27/10 — "giữ tông, giảm độ rực"):** nền, mặt, viền, chữ, thanh điều hướng, xanh logo, hồng logo GIỮ; mọi màu nghĩa giảm chroma OKLCH, giữ độ sáng — trạng thái / SOS / lịch / kết quả × 0,65 (sáng: đỏ lỗi, quá hạn, SOS 3 × 0,8), nhấn tối × 0,8, chữ hồng × 0,85. Đỏ chữ tối (lỗi / quá hạn / ✗ dưới) `#e89a8c` hơi ngả cam để ✓ vượt ↔ ✗ dưới vẫn tách khi mù màu đỏ–lục (deutan ΔE 14 ≥ 10, K-MAU-2). Màu mới không được rực hơn mức này. Nút chính ở tối: nền `--nut-chinh-nen` xanh thẫm + viền `--nut-chinh-vien`, không tô kín `--accent` (sáng giữ tô xanh logo). Bảng so sánh + đo: `thiet-ke/v7/bang-mau-moi.html`, `kiem-tuong-phan-mau-moi.py`.
 - Chữ phụ: `text-dim` (quan trọng), `text-faint` (nhỏ) — cả hai ≥ 7:1 trên `bg`, `surface`, `surface-2` ở sáng lẫn tối (`prOv15a`).
 
 ## Typography

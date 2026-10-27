@@ -389,7 +389,7 @@ export default function MockDetailPage() {
                 <li key={v.khoa} className="min-w-0 max-w-full">
                   {v.mo ? (
                     <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
-                      <b className="mr-1 text-[color:var(--accent-strong)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span> ›
+                      <b className="mr-1 text-[color:var(--accent-strong)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
                     </button>
                   ) : (
                     <span className="inline-flex min-h-[32px] items-center rounded-md border px-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
@@ -479,7 +479,7 @@ type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null
 
 /**
  * "CÒN LẠI" CỦA LƯỢT (khung M4-A ③, chủ SP 27/10) — chỉ gom việc máy chủ đã có: bài thiếu điểm, thiếu nhận xét (V15), vắng chờ xếp lại, đề nghị
- * dời chờ duyệt, việc tiếp của Case (cùng `viecTiep` với Công việc). Việc của người xem = nút "›" (mở đúng dòng + focus / mở form Thêm PA /
+ * dời chờ duyệt, việc tiếp của Case (cùng `viecTiep` với Công việc). Việc của người xem = nút không "›" — mở tại chỗ, G6 (mở đúng dòng + focus / mở form Thêm PA /
  * Ngăn Case); việc của người khác chỉ đọc. Nút của một dòng lấy từ `thaoTacKyNang` — cùng nguồn với cột thao tác của bảng.
  */
 function conLaiLuot(d: Detail, homNay: string, theCase: Map<number, CaseCard>, chiDoc: boolean, mo: {

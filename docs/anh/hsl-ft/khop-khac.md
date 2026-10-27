@@ -71,6 +71,6 @@ Không bỏ thao tác nào.
 - audit + web-design-guidelines: P1 đã sửa — form Thêm PA giữ nháp theo Case khi thu dòng / mở dòng khác / mở form Case khác (không mất chữ). P2/P3 đã sửa: focus sau lưu → "Hoàn tác", sau huỷ / hoàn tác → "+ Thêm PA"; vùng đọc màn `aria-live`; ô điểm / nút Case ≥ 44 px ở 375; vùng mở là `row > cell aria-colspan=7`; dấu mở dòng ▸ / ▾ (không "›"); ▸ cho dải Lịch sử; ↗ `aria-hidden`; `aria-controls` chỉ khi mở; h2 trong vùng mở; tôn trọng giảm chuyển động.
 - Detector: 3 cỡ chữ 20 px ngoài thang → `text-xl` (22).
 
-## [XM] cần PTA Plan quyết
-1. Nút việc ở "Còn lại" có "›" (mockup vẽ vậy) nhưng chỉ mở tại chỗ — luật G6 "›" = đổi trang. Giữ theo mockup; đổi thì bỏ "›".
-2. Việc ô điểm / nhận xét của người khác ở "Còn lại" chưa có tên người (máy chủ chưa trả người được phân công ô) — mockup TVV có tên. Cần thì thêm trường ở `attemptDetail`.
+## [XM] — PTA Plan đã quyết (27/10)
+1. Nút việc ở "Còn lại": bỏ "›" (G6: "›" chỉ cho đổi trang) — đã sửa.
+2. Tên người ở việc ô điểm / nhận xét của người khác: để việc sau, không làm trong PR này.
