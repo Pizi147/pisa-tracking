@@ -114,8 +114,6 @@ function useBanPhim(bat: boolean) {
   }, [bat]);
 }
 
-/** 6c-2: `HopBoChu` nay ở `Drawer.tsx` (cùng `ConfirmDialog` dùng) — giữ tên xuất ở đây cho nơi gọi cũ. */
-export { HopBoChu };
 /** CV-LOI (CV-05): panel đang hiện "✓ Đã lưu · Hoàn tác" còn bấm được — hàng đợi Công việc không tự sang việc kế (Hoàn tác không bị thay). */
 const choHoanTac = new Set<symbol>();
 export const dangChoHoanTac = () => choHoanTac.size > 0;

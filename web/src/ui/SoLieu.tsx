@@ -263,8 +263,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
             <span className="min-w-0 flex-1 text-[13px] leading-snug text-slate-400">
               {/* 6c-2 (#632 XM-1, mockup khu K ②): điểm lượt mở Case đứng đầu dòng 2 — "✗ 5.0 · kỳ vọng 6.0 · thiếu 1.0" (✓ / ✗ + chữ, không chỉ màu). */}
               {!r.xong && r.diemCase && <><DiemKq diem={r.diemCase.so} kyVong={r.diemCase.kyVong} />
-                {r.diemCase.kyVong != null && <> · {t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) })}</>}
-                {r.diemCase.kyVong != null && r.diemCase.so < r.diemCase.kyVong && <> · {t('thiếu {n}', { n: (r.diemCase.kyVong - r.diemCase.so).toFixed(1) })}</>}
+                {r.diemCase.kyVong != null && <> · {t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) })}
+                  {r.diemCase.so < r.diemCase.kyVong && <> · {t('thiếu {n}', { n: (r.diemCase.kyVong - r.diemCase.so).toFixed(1) })}</>}</>}
                 {' · '}</>}
               {r.xong ? <>{r.lop && <>{r.lop} · </>}<b className="font-semibold text-ok">✓ {r.xong}</b></> : [r.lop, r.diemCase?.luot, v ? dich(v.chu) : r.tinhTrang ? dich(r.tinhTrang) : null].filter(Boolean).join(' · ')}
             </span>
