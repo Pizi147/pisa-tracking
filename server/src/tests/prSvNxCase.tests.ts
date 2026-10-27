@@ -336,4 +336,50 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     assert(moTa(c.id)?.observation === NX.speaking, `mô tả bị đè: ${moTa(c.id)?.observation}`);
     assert(viec(gvPT, 'xem_nx_s', c.id).length === 1, 'phải có việc Xác nhận Case');
   }));
+
+  // ---------------------------------------------------------------- MO-TA-CASE (D6, chủ SP 27/10 — N8: không ép nhận xét, Case chưa mô tả → "Mô tả Case")
+  check('MC1 · nhập band KHÔNG nhận xét → lưu được, ô xong (chỉ nhắc)', () => thu(() => {
+    const a = emMoi();
+    svc.saveScore(QL, a.m1, 'reading', { band: 6.5 }, TODAY);
+    xoaNho();
+    const r = o(a.m1, 'reading');
+    assert(r.band === 6.5 && r.xong === true && !r.comment, JSON.stringify({ band: r.band, xong: r.xong, nx: r.comment }));
+  }));
+
+  check('MC2 · Case MT chưa mô tả → việc "Mô tả Case {kỹ năng}" của GV phụ trách kỹ năng; trạng thái "Chờ mô tả Case"; việc tiếp "Mô tả Case"', () => thu(() => {
+    const { gvPT } = nguoiS();
+    const a = emMoi();
+    const c = chot(a.m1, { bandS: 5, nguoiLuuS: gvPT });
+    const ct = cases.caseDetail(QL, c.id);
+    assert(ct.trangThaiV4.chu === 'Chờ mô tả Case' && ct.viecTiep?.chu === 'Mô tả Case', JSON.stringify({ tt: ct.trangThaiV4, v: ct.viecTiep }));
+    const v = viec(gvPT, 'ghi_nhan_xet', c.id);
+    assert(v.length === 1 && v[0].mine && v[0].tieuDe.startsWith('Mô tả Case Speaking') && v[0].actionLabel === 'Mô tả Case' && v[0].statusLabel === 'Chờ mô tả Case',
+      JSON.stringify(v.map((x) => ({ t: x.tieuDe, n: x.actionLabel, s: x.statusLabel, m: x.mine }))));
+    assert(!/nhận xét/i.test(`${v[0].tieuDe} ${v[0].reason}`), `việc không được nói "nhận xét": ${v[0].tieuDe} — ${v[0].reason}`);
+  }));
+
+  check('MC3 · S chấm chéo KHÔNG nhận xét → việc "Mô tả Case Speaking" của GV phụ trách S; người chấm chéo không có việc', () => thu(() => {
+    const { gvPT, gvCheo } = nguoiS();
+    const a = emMoi();
+    const c = chot(a.m1, { bandS: 5, nguoiLuuS: gvCheo });
+    assert(c && !moTa(c.id), 'tiền đề: Case S chưa mô tả');
+    assert(viec(gvPT, 'ghi_nhan_xet', c.id).length === 1, 'GV phụ trách S phải có việc Mô tả Case');
+    assert(!(mywork.myWork(gvCheo).items as any[]).some((x) => x.caseId === c.id), 'người chấm chéo không có việc của Case');
+  }));
+
+  check('MC4 · Mô tả Case nhiều nhóm (`nhom`) qua Sửa Case → mô tả riêng + nhóm phụ, hết việc; nhóm ngoài bộ → 400', () => thu(() => {
+    const { gvPT } = nguoiS();
+    const a = emMoi();
+    const c = chot(a.m1, { bandS: 5, nguoiLuuS: gvPT });
+    const bo = d.issuesForTopic('speaking').map((i: any) => i.code);
+    let loi: any = null;
+    try { cases.suaCase(gvPT, c.id, { nhom: [bo[0], 'khong-co'], observation: 'Em ngại nói, Part 2 dừng sau 1 phút.' }); } catch (e) { loi = e; }
+    assert(loi?.status === 400 && !moTa(c.id), `nhóm ngoài bộ phải 400: ${loi?.status}`);
+    cases.suaCase(gvPT, c.id, { nhom: [bo[1], bo[0]], observation: 'Em ngại nói, Part 2 dừng sau 1 phút.' });
+    xoaNho();
+    const ds = all(`SELECT role, taxonomy_code, observation, created_by FROM case_issues WHERE case_id = ? ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`, c.id);
+    assert(ds.length === 2 && ds[0].taxonomy_code === bo[1] && ds[1].taxonomy_code === bo[0] && ds[1].role === 'secondary'
+      && ds[0].observation === 'Em ngại nói, Part 2 dừng sau 1 phút.' && ds[0].created_by === gvPT.userId, JSON.stringify(ds));
+    assert(!viec(gvPT, 'ghi_nhan_xet', c.id).length && cases.caseDetail(QL, c.id).trangThaiV4.k === 'cho-xac-nhan-pa', 'hết việc, sang Xác nhận PA');
+  }));
 }

@@ -538,7 +538,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const d = cases.caseDetail(w2T, f.w2.id) as any;
     assert(d.interventions.some((i: any) => i.id === iv.id && i.awaitingConfirmation && i.batBuoc), 'caseDetail trả PA quy chế chờ xác nhận');
     /* OV-12c: nguyên nhân Case MT = nhận xét của bài — bài chưa nhận xét (dữ liệu cũ) thì chưa xác nhận PA được. */
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /chưa có nhận xét/, 'Xác nhận PA khi chưa có nguyên nhân');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /chưa có mô tả/, 'Xác nhận PA khi chưa có nguyên nhân');
     xacNhanCaseW2(w2T, f);
     assert(get('SELECT status FROM sos_cases WHERE id = ?', f.w2.id).status === 'open', 'Q28-5: chưa có PA người xác nhận thì Case vẫn Chưa xử lý');
     sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));
@@ -734,17 +734,17 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const due = domain.hanXacNhan(TODAY);   // PR-SOS: hạn ở `sos_cases.han_xac_nhan`
     const mine = item(w2T, f.w2.id);
     assert(mine && mine.group === 'ghi_nhan_xet' && mine.urgency === 'normal' && mine.due === due && mine.mine === true && mine.caseId === f.w2.id
-      && mine.actionLabel === 'Ghi nhận xét' && mine.statusLabel === 'Chờ ghi nhận xét' && !('overdueLabel' in mine) && mine.studentId === f.st.id,
+      && mine.actionLabel === 'Mô tả Case' && mine.statusLabel === 'Chờ mô tả Case' && !('overdueLabel' in mine) && mine.studentId === f.st.id,
     `Dòng của GVBM: ${JSON.stringify(mine)}`);
-    assert(/chưa có nhận xét/.test(mine.reason) && !/PA học thuật|gợi ý/.test(mine.reason), `Lý do chỉ nói thiếu nhận xét (nguyên nhân): ${mine.reason}`);
+    assert(/chưa có mô tả/.test(mine.reason) && !/PA học thuật|gợi ý/.test(mine.reason), `Lý do chỉ nói thiếu nhận xét (nguyên nhân): ${mine.reason}`);
     assert(!item(P.mbManager, f.w2.id) && !item(w1T, f.w2.id), 'Chưa quá hạn thì Quản lý không thấy; GVBM kỹ năng khác không thấy');
     const groups = myworkSvc.myWork(w2T, {}).groups as any[];
-    assert(groups.some((g: any) => g.key === 'ghi_nhan_xet' && g.label === 'Ghi nhận xét' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `ghi_nhan_xet` trong danh sách nhóm');
+    assert(groups.some((g: any) => g.key === 'ghi_nhan_xet' && g.label === 'Mô tả Case' && g.items.some((i: any) => i.key === key(f.w2.id))), 'Phải có nhóm `ghi_nhan_xet` trong danh sách nhóm');
     /* Quá hạn: hết ngày hạn mới tính (hạn = hôm qua). */
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -1), f.w2.id);
     const late = item(w2T, f.w2.id), mgr = itemQl(P.mbManager, f.w2.id);
     assert(!item(P.mbManager, f.w2.id), 'Quản lý "Của tôi" còn dòng Ghi nhận xét quá hạn của GV');
-    assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Ghi nhận xét'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
+    assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Mô tả Case'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
     assert(mgr && mgr.urgency === 'overdue' && mgr.mine === false && /chưa/.test(mgr.reason), `Quản lý thấy khi quá hạn: ${JSON.stringify(mgr)}`);
     assert(!itemQl(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
     assert(myworkSvc.myWork(w2T, {}).summary.overdue >= 1, 'Tính vào tổng số việc quá hạn');
@@ -768,7 +768,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(domain.metricById('case-cho-xac-dinh-nguyen-nhan')?.donVi === 'case', 'Chỉ số phải có trong sổ, đơn vị case');
     /* OV-12c (rà #389): cùng tập cột "Chờ xác nhận" của Tổng hợp — Case MT cũ bài chưa nhận xét (việc Ghi nhận xét) thuộc tập; có nhận xét (nguyên nhân) thì thôi. */
     assert(M().includes(f.w2.id) && M().includes(f.sp.id), 'Case MT chưa nhận xét phải thuộc tập "chờ xác nhận"');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /chưa có nhận xét/, 'Xác nhận PA trước nguyên nhân');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /chưa có mô tả/, 'Xác nhận PA trước nguyên nhân');
     datNguyenNhanThu(f.w2.id, 'student.writing.task');
     /* OV-12d: "Case chờ duyệt" = cột Chờ duyệt của Tổng hợp — có nguyên nhân rồi vẫn chờ (PA quy chế chờ xác nhận). */
     assert(M().includes(f.w2.id), 'Có nguyên nhân, PA quy chế chưa xác nhận: vẫn chờ duyệt');

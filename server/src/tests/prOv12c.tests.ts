@@ -273,7 +273,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(cL.id);
     xoaNho();
     const ct = cases.caseDetail(QL, cL.id);
-    assert(ct.trangThaiV4.k === 'cho-nhan-xet' && ct.trangThaiV4.chu === 'Chờ ghi nhận xét', `trạng thái: ${JSON.stringify(ct.trangThaiV4)}`);
+    assert(ct.trangThaiV4.k === 'cho-nhan-xet' && ct.trangThaiV4.chu === 'Chờ mô tả Case', `trạng thái: ${JSON.stringify(ct.trangThaiV4)}`);
     /* Rà #389 (3): Tổng quan "Case chờ xác nhận" cùng tập cột "Chờ xác nhận" của Tổng hợp (gộp Chờ ghi nhận xét); Báo QL vẫn chỉ Progress. */
     const choXn = () => metrics.metricSet(QL, 'case-cho-xac-dinh-nguyen-nhan', {}).ids as number[];
     assert(choXn().includes(cL.id), 'Tổng quan thiếu Case MT chờ ghi nhận xét');
@@ -284,7 +284,7 @@ export async function runPrOv12cTests(t: YThucTestKit) {
     const no = one('SELECT attempt_no n FROM assessment_attempts WHERE id = ?', luot).n;
     const gv = P.lrTeacher;
     const it = mywork.myWork(gv, {}).items.find((x: any) => x.caseId === cL.id);
-    assert(it && it.group === 'ghi_nhan_xet' && it.tieuDe.startsWith(`Ghi nhận xét Listening · MT${no}`) && it.luot && it.kn === 'listening', `việc: ${JSON.stringify(it && { g: it.group, t: it.tieuDe, l: it.luot, k: it.kn })}`);
+    assert(it && it.group === 'ghi_nhan_xet' && it.tieuDe.startsWith(`Mô tả Case Listening · MT${no}`) && it.luot && it.kn === 'listening', `việc: ${JSON.stringify(it && { g: it.group, t: it.tieuDe, l: it.luot, k: it.kn })}`);
     attempts.saveScore(gv, luot, 'listening', { nhanXet: 'Bổ sung: nghe sót số liệu Part 1.', nhomNguyenNhan: [nhom('listening')[0]] }, '2026-12-01');
     assert(cases.caseDetail(QL, cL.id).trangThaiV4.k === 'cho-xac-nhan-pa', 'lưu nhận xét xong → Chờ xác nhận PA');
     assert(choXn().includes(cL.id), 'OV-12d: đã có nhận xét → Chờ xác nhận PA, vẫn trong "Case chờ duyệt"');
