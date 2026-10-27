@@ -3,7 +3,18 @@
 Màn: `/mock-test/:id` (`MockDetailPage.tsx`). Ảnh cặp mockup | web (trái mockup, phải web thật, DB demo cục bộ, ngày demo 14/09) ở thư mục này:
 `cap-{a, them-pa, vua-them-pa, tvv, huy, chuyen-lop, khong-hoc}-1440-toi.png` + `-375-sang.png`. Vai: a / Thêm PA / Vừa thêm = GVCN Trần Ngọc Hà (MT3 Phạm Bảo Ngọc,
 Case L chưa PA) · TVV Phan Mai · huỷ / chuyển lớp = QL Nguyễn Khánh Vy · Không học = Quản trị. Ảnh 375 so với khung `#a-375` (mockup chỉ vẽ 375 cho mặc định, Thêm PA, vừa thêm).
-"Vừa thêm PA" chụp bằng lưu thật rồi Hoàn tác qua API (DB demo trả về như cũ).
+"Vừa thêm PA" chụp bằng lưu thật rồi Hoàn tác qua API (DB demo trả về như cũ). Ảnh chụp lại 28/10 trên nhánh đã gộp main.
+
+**Tỉ lệ KHỚP = KHỚP / (KHỚP + KHÁC) = 22 / 28 = 79 % — dưới cổng 90 %.** 6 dòng KHÁC dưới đây cần chủ SP đồng ý (không dòng nào mất thao tác):
+
+| # | KHÁC | Lý do |
+|---|---|---|
+| 27 | "Chỉnh lịch ▾" chỉ hiện khi có mục | GV không có quyền dời / khôi phục thì nút mở ra menu rỗng. |
+| 28 | Form Thêm PA xếp dọc, không 2 cột | Dùng lại đúng `FormPa` của panel Thêm PA — một form một kiểu, 2 cột phải vẽ ô mới. |
+| 29 | PA không có ⋯ (Sửa PA · Kết quả) | Dùng lại khối Case / PA của hồ sơ HV: bấm tên PA mở Ngăn Case đúng PA, "Kết quả" là nút dưới khối. |
+| 30 | Bỏ dòng riêng "3/4 kỹ năng có điểm" | Số này đã có trong chip kết quả — tránh lặp một số hai chỗ. |
+| 31 | Câu giải thích phạm vi / chưa Target vào ⓘ cạnh Overall | Luật V6: giải thích để ⓘ, màn ít chữ. |
+| 34 | Việc ô điểm / nhận xét của người khác chưa có tên người | Máy chủ chưa trả người được phân công ô; PTA quyết để việc sau (việc Case đã có tên). |
 
 ## Khung → thành phần → ảnh
 
@@ -17,7 +28,7 @@ Case L chưa PA) · TVV Phan Mai · huỷ / chuyển lớp = QL Nguyễn Khánh 
 | 6 | Dòng nhãn / giá trị: Lớp lúc Test (· nay …) · Lịch · Target · Kỳ vọng MTn | `NhanGt` | KHỚP |
 | 7 | "Nhập điểm lớp ›" · "Chỉnh lịch ▾" | Link + `Menu` (cùng mục, cùng điều kiện) | KHỚP |
 | 8 | Thẻ tóm tắt: Overall / "– Không đủ bộ môn" · kết quả + n/4 kỹ năng có điểm · Còn lại | `TomTatLuot` | KHỚP |
-| 9 | Còn lại: việc của tôi = nút "›" (mở dòng + focus); việc người khác chỉ đọc | `conLaiLuot` + `TomTatLuot` | KHỚP |
+| 9 | Còn lại: việc của tôi = nút (mở dòng + focus; bỏ "›" theo G6); việc người khác chỉ đọc | `conLaiLuot` + `TomTatLuot` | KHỚP |
 | 10 | Bảng 7 cột Kỹ năng · Lịch · Điểm · Trạng thái · Nhận xét · Case · (thao tác) | `BangKetQuaLuot` | KHỚP |
 | 11 | Lịch gốc gạch → thực tế + "QL dời 09/09" / "vắng lần 1" | `lichGocKn` (từ `history`) | KHỚP |
 | 12 | Ô điểm ✓ / ✗ + phụ (câu · W1 W2) — bấm = hộp nhập điểm | `useODiem` (chung với dải ô lớn) + `HopNhapDiem` | KHỚP |
@@ -40,7 +51,7 @@ Case L chưa PA) · TVV Phan Mai · huỷ / chuyển lớp = QL Nguyễn Khánh 
 | 31 | Câu giải thích phạm vi / chưa có Target dưới bảng (H) | vào ⓘ cạnh "Overall" (Luật V6) | KHÁC — ít chữ |
 | 32 | Còn lại "Case R · Thêm PA" mất sau khi thêm | cùng luật; việc "Kết quả PA" chưa tới hạn không vào Còn lại (Công việc cũng chưa đếm) | KHỚP |
 | 33 | `?kn=` mở hộp nhập điểm (H) | `?kn=` mở sẵn dòng kỹ năng + cuộn tới (khung A "?kn=R mở sẵn dòng Reading") | KHỚP khung A |
-| 34 | "Nhận xét" ở Còn lại có tên người (TVV) | việc ô điểm / nhận xét của người khác: chỉ đọc, chưa có tên (máy chủ chưa trả người được phân công ô); việc Case có tên (`nguoiLam`) | KHÁC — [XM] nếu cần tên, thêm trường máy chủ |
+| 34 | "Nhận xét" ở Còn lại có tên người (TVV) | việc ô điểm / nhận xét của người khác: chỉ đọc, chưa có tên (máy chủ chưa trả người được phân công ô); việc Case có tên (`nguoiLam`) | KHÁC — PTA quyết để việc sau (cần thêm trường máy chủ) |
 | 25 | (H) dải 5 ô điểm lớn | ô điểm vào cột Điểm từng dòng | BỎ (khung A) |
 | 26 | (H) thẻ Nhận xét riêng · thẻ Lịch Test · thẻ Case | vào bảng + vùng mở | BỎ (khung A) |
 

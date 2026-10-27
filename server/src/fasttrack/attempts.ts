@@ -1311,7 +1311,6 @@ export function huyCua(status: string, history: ReturnType<typeof lichSuLichCua>
   return h ? { lyDo: h.reason ?? null, ai: h.actorName ?? null, khi: h.createdAt } : null;
 }
 
-/** HSL-MAY-CHU: lớp đang học mới nhất của em khi em không còn ở `classId` (đã chuyển lớp) — null khi còn ở đó hoặc không còn lớp nào. */
 /** HSL-FT: dòng Lịch sử của Case — `case` = Case mở (tên), `pa` = thêm PA (mô tả · người ghi). `topic` = kỹ năng của Case. */
 export function lichSuCaseCua(caseIds: readonly number[]): { id: string; loai: 'case' | 'pa'; topic: string | null; ten: string; actorName: string | null; createdAt: string }[] {
   if (!caseIds.length) return [];
@@ -1326,6 +1325,7 @@ export function lichSuCaseCua(caseIds: readonly number[]): { id: string; loai: '
   ];
 }
 
+/** HSL-MAY-CHU: lớp đang học mới nhất của em khi em không còn ở `classId` (đã chuyển lớp) — null khi còn ở đó hoặc không còn lớp nào. */
 export function lopHienTaiCua(studentId: number, classId: number | null): { id: number; code: string } | null {
   const ds = db().prepare(`SELECT c.id, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
      WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC`).all(studentId) as { id: number; code: string }[];
