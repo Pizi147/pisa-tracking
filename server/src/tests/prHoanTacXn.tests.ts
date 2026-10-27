@@ -359,13 +359,20 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
   check('HTXN-W2 · Ngăn Case: Xác nhận PA / Case / Case S gắn Hoàn tác đúng đường đảo + trả nháp; không dải thì toast 10 s (HOAN_TAC_PA_MS)', () => {
     const cs = doc('web/src/modules/yThuc/CaseSosControls.tsx');
     const pa = ham(cs, 'XacNhanPaPanel'), ca = ham(cs, 'XacNhanCasePanel'), s = ham(cs, 'XacNhanSPanel');
-    assert(/const traNhap = xoaNhap\(\)/.test(pa) && /hoanTac: async \(\) => \{ await api\.post\(`\/interventions\/\$\{pa\.id\}\/hoan-tac-xac-nhan`\); traNhap\(\)/.test(pa), 'Xác nhận PA: dải thiếu Hoàn tác / trả nháp');
-    assert(/api\.post\(`\/cases\/\$\{caseId\}\/hoan-tac-xac-nhan`\); traNhap\(\)/.test(ca) && /tiep\.lam\(\{ chu, hoanTac \}\)/.test(ca) && /toastHoanTac\(toast, chu, hoanTac\)/.test(ca),
+    assert(/const traNhap = xoaNhap\(\)/.test(pa) && /hoanTac: async \(\) => \{\s*await api\.post\(`\/interventions\/\$\{pa\.id\}\/hoan-tac-xac-nhan`\);\s*traNhap\(\)/.test(pa), 'Xác nhận PA: dải thiếu Hoàn tác / trả nháp');
+    assert(/api\.post\(`\/cases\/\$\{caseId\}\/hoan-tac-xac-nhan`\);\s*traNhap\(\)/.test(ca) && /tiep\.lam\(\{ chu, hoanTac \}\)/.test(ca) && /toastHoanTac\(toast, chu, hoanTac\)/.test(ca),
       'Xác nhận Case: dải / toast thiếu Hoàn tác');
     assert(/toastHoanTac\(/.test(s) && /\/cases\/\$\{data\.id\}\/hoan-tac-xac-nhan-s/.test(s) && /traNhap\(\)/.test(s), 'Xác nhận Case S: toast thiếu Hoàn tác');
     assert(/function toastHoanTac[\s\S]{0,200}ms: HOAN_TAC_PA_MS, demLui: true/.test(cs), 'toast Hoàn tác không 10 s đếm lùi');
     assert(/choLaiS[\s\S]{0,120}data\.choXacNhanS\?\.coTheXacNhan/.test(doc('web/src/modules/students/NganCase.tsx')), 'Hoàn tác Case S ở bước Xác nhận PA: không hiện lại Xác nhận Case');
     assert(/const traLai = xoaNhapViec\(/.test(doc('web/src/ui/KhungPanel.tsx')), 'useXoaNhap không đưa hàm trả lại nháp');
+    /* Ngoài panel việc (Ngăn Case, hồ sơ HV, toast): Hoàn tác đặt lại nội dung vừa gửi, ô gắn lại điền sẵn một lần (`traLaiO` → `useNhap`). */
+    const kp = doc('web/src/ui/KhungPanel.tsx');
+    assert(/\?\? \(traLaiNgoai\.get\(o\) as T \| undefined\) \?\? dau/.test(kp) && /traLaiNgoai\.delete\(o\)/.test(kp), 'useNhap không đọc nội dung trả lại khi Hoàn tác');
+    assert(/traLaiO\(o\.nhom, nhom\); traLaiO\(o\.moTa, moTa\); traLaiO\(o\.sua, sua\); traLaiO\(o\.pa, v\)/.test(ca)
+      && /useNhap<string\[\]>\(o\.nhom/.test(ca) && /useNhap\(o\.moTa/.test(ca), 'Xác nhận Case: Hoàn tác không trả nhóm / mô tả / PA sửa');
+    assert(/traLaiO\(`xac-nhan-pa:\$\{pa\.id\}`, v\); traLaiO\(`xac-nhan-pa-bat-dau:\$\{pa\.id\}`, batDau\)/.test(pa) && /useNhap\(`xac-nhan-pa-bat-dau:/.test(pa), 'Xác nhận PA: Hoàn tác không trả nội dung / ngày');
+    assert(/traLaiO\(`xac-nhan-s-cach-\$\{data\.id\}`, cach\); traLaiO\(`xac-nhan-s-\$\{data\.id\}`, moTa\)/.test(s) && /useNhap<'dung' \| 'giu' \| 'viet'>/.test(s), 'Xác nhận Case S: Hoàn tác không trả cách / mô tả');
   });
 
   check('HTXN-W3 · hộp Xác nhận PA cùng lúc + dòng Số liệu: dải "✓ Đã xác nhận …" có Hoàn tác (lô: ids của lần gửi gần nhất)', () => {
