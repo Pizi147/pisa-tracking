@@ -126,7 +126,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
 
   return (
     <div className="space-y-2">
-      {congCu && <div className="bang-cong-cu flex flex-wrap items-center gap-2">{congCu}</div>}
+      {congCu && <div className="flex flex-wrap items-center gap-2">{congCu}</div>}
       {khung ? <div className="card overflow-clip" aria-label={dienThoai ? ten : undefined}>{than}</div> : than}
     </div>
   );
