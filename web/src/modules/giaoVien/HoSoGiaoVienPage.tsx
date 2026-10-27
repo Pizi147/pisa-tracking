@@ -237,7 +237,7 @@ function KhoiLop({ data }: { data: HoSo }) {
           {data.lop.map((l) => (
             <li key={l.id} className="flex min-w-0 flex-col gap-1.5 rounded-lg border px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <Link to={`/hoc-vien/lop/${l.id}`} className="link font-semibold">{l.ma}</Link>
+                <Link to={`/hoc-vien/lop/${l.id}`} className="ten-ho-so">{l.ma}</Link>
                 {l.laGvcn && <ChipGvcn />}
                 <ChipBanGiaoLop l={l} />
               </span>
@@ -550,7 +550,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
                 {truoc.map((c) => (
                   <li key={c.id} className="grid gap-x-4 gap-y-0.5 border-t py-2 first:border-t-0 sm:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)_minmax(0,16rem)] sm:items-center"
                     style={{ borderColor: 'var(--line)', ...(c.quaHan ? { boxShadow: 'inset 3px 0 0 rgb(var(--bad-rgb))', paddingLeft: 8 } : {}) }}>
-                    <span className="min-w-0 truncate text-sm"><Link to={`/hoc-vien/${c.studentId}`} className="link font-semibold">{c.hocVien}</Link>{c.maLop && <span className="text-xs text-slate-400"> · {c.maLop}</span>}</span>
+                    <span className="min-w-0 truncate text-sm"><Link to={`/hoc-vien/${c.studentId}`} className="ten-ho-so">{c.hocVien}</Link>{c.maLop && <span className="text-xs text-slate-400"> · {c.maLop}</span>}</span>
                     <Link to={duongHoSoHocVien(c.studentId, { caseId: c.id })} className="link inline-flex min-w-0 max-w-full text-left text-sm" title={dich(c.tieuDe)}>
                       <TenCase c={{ title: dich(c.tieuDe), tenSos: c.tenSos && { ...c.tenSos, giua: dich(c.tenSos.giua) } }} />
                     </Link>

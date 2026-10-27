@@ -117,7 +117,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
             <div className="space-y-1 border-b p-3 md:border-b-0 md:border-r" style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-start gap-1.5">
                 <span className="min-w-0 flex-1">
-                  <Link className="link font-semibold" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>{' '}
+                  <Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>{' '}
                 </span>
                 {r && (
                   <MenuDong muc={tt.mucCua({ id: e.id, ten: e.ten, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, laLopThuong, r.timeline ?? []), status: r.status })} />
