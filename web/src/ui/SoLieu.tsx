@@ -369,7 +369,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
                 {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). */}
                 {([['chua', laThi ? 'Fail' : t('Chưa đạt'), soChua, '▼ '], ['dat', laThi ? 'Pass' : t('Đạt'), soDat, '▲ '], ...(soVuot ? [['vuot', 'Exceed', soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
                   <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-                    className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm font-semibold ${tab === k ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
+                    className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tab === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
                     {dau}{nhan} <span className="tabular-nums">{n}</span>
                   </button>
                 ))}

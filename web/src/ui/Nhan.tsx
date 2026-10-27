@@ -9,7 +9,7 @@ import { t } from '@shared/i18n/index.ts';
  * `gon` bỏ chữ "quá hạn" ("⚠ 15 ngày") cho chỗ đã có tiêu đề nói rõ.
  */
 export function QuaHan({ ngay, gon }: { ngay: number | null; gon?: boolean }) {
-  return <span className="whitespace-nowrap font-bold text-late">⚠ {nhanQuaHan(ngay, gon)}</span>;
+  return <span className="whitespace-nowrap font-semibold text-late">⚠ {nhanQuaHan(ngay, gon)}</span>;
 }
 
 /**

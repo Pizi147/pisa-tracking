@@ -470,7 +470,7 @@ function PanelPhoiHop({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => voi
   const { data, loading, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos`, [it.classId]);
   const dau = dauViec({
     han: it.due ? <ChipHan loai="phoi-hop" han={it.due} /> : null,
-    ngCanh: <Link className="link" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode} <span aria-hidden className="text-xs">↗</span></Link>,
+    ngCanh: <Link className="ten-ho-so" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode}</Link>,
   });
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} dau={dau} onDong={onDong}>

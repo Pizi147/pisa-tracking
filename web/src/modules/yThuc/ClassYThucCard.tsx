@@ -318,7 +318,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
 /** Tiêu đề một nhóm em ở khung trái ("BẮT BUỘC XỬ LÝ · 3"). */
 function TieuDeNhom({ chu, so }: { chu: string; so: number }) {
   return (
-    <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[12px] font-extrabold  text-slate-500" style={{ borderColor: 'var(--line)' }}>
+    <h3 className="m-0 border-b px-3 pb-1.5 pt-3 text-[12px] font-semibold text-slate-500" style={{ borderColor: 'var(--line)' }}>
       {chu} · <span className="tabular-nums">{so}</span>
     </h3>
   );

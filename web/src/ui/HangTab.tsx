@@ -37,9 +37,9 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
         const active = t.key === value;
         return (
           <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => onChange(t.key)}
-            className={`min-h-[44px] whitespace-nowrap px-2.5 sm:px-3 py-2 -mb-px sm:min-h-0 border-b-2 font-semibold appearance-none bg-transparent cursor-pointer ${
+            className={`min-h-[44px] whitespace-nowrap px-2.5 sm:px-3 py-2 -mb-px sm:min-h-0 border-b-2 appearance-none bg-transparent cursor-pointer ${
               cap === 'con' ? 'text-xs' : 'text-sm'
-            } ${active ? 'border-[color:var(--accent)] text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
+            } ${active ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
             {t.label}
             {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label={CAN_XU_LY} title={CAN_XU_LY}>●</span>}
             {!!t.so && t.so > 0 && (
