@@ -13,6 +13,8 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   const khMod: any = await import('../keHoach/keHoachTest.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const scoringMod: any = await import('../fasttrack/scoring.ts');
+  const profileMod: any = await import('../students/profile.ts');
+  const nguCanh: any = await import('../platform/nguCanhRequest.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const { O_CHO_TU_SQL, capNhatConOCho } = await import('../fasttrack/conOCho.ts');
   /** Cờ "còn ô chờ" đang lưu khớp cách tính lại — chỉ các lượt của em này (bộ kiểm khác ghi SQL thẳng có thể để lệch lượt của chúng). */
@@ -557,6 +559,10 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       const ph = all(`SELECT kind FROM sos_coordination_actions WHERE attempt_id = ? AND preset = 1 AND status = 'pending'`, a).map((q) => q.kind).sort().join();
       assert(ph === [...d.sosCoordinationFor(3, 1, 'LT1')].sort().join(), `Phối hợp: ${ph}`);
       assert(all(`SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill IN ('writing1', 'writing2') AND band IS NOT NULL`, a).length === 2, 'điểm W giữ');
+      /* Hồ sơ HV (GET, danh sách bỏ nạp sẵn theo lô) cùng mức với `resultOf`. */
+      const hs: any = nguCanh.chayTrongRequest('GET', () => profileMod.studentProfile(P.admin, x.sid, x.id));
+      const o = hs.attempts.find((q: any) => q.id === a);
+      assert(o?.sosLevel === 1, `hồ sơ HV: SOS ${o?.sosLevel}`);
     });
   });
 }
