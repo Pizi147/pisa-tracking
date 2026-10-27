@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, KhungTrongCot } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -56,7 +56,10 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   const { homNay, ngan } = useNgayNghiepVu();
   const vai = useSession().session?.roles ?? [];
   const { data, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
-  const xem = useXem({ dau: [maView(viecBanDau ?? tuViec(viec, paId) ?? { loai: 'case' })] });
+  /* UI-HO-SO-HV-2: trong cột, view việc mở thẳng vẫn nằm trên view Case — lưu xong tự về Case (V20), ‹ về Case. */
+  const trongCot = useContext(KhungTrongCot);
+  const v0 = viecBanDau ?? tuViec(viec, paId);
+  const xem = useXem({ dau: trongCot && v0 && v0.loai !== 'case' ? ['case', maView(v0)] : [maView(v0 ?? { loai: 'case' })] });
   const maHien = xem.ds[xem.ds.length - 1] ?? 'case';
   const view = (viewTuMa(maHien) ?? { loai: 'case' }) as ViewCase;   // đoạn lạ trên URL → thân Case
   /* Vào view việc từ view đang xem (push) — ‹ / Back về đúng view này. */
@@ -68,6 +71,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   /* R1-NO-CU: hộp Đổi người phụ trách đang mở ở dải đầu. */
   const [doiNguoi, setDoiNguoi] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  /* Trong cột (`trongCot`): không tự mở form khi tải, người chỉ xem thấy đủ Case A (không bản gọn), không nút Đóng. */
 
   /* Về thân Case: view ngay dưới là Case thì lùi (không chồng Case lên Case), không thì thay view trên cùng. */
   const veCase = () => { if (xem.ds[xem.ds.length - 2] === 'case') xem.lui(); else xem.thay('case'); lf.datLai(); };
@@ -76,7 +80,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   /* B1: mở từ thông báo / đường `?case=` (không kèm việc) — hoặc `viec=xac-nhan` từ hồ sơ — khi Case đang chờ → mở sẵn đúng khối: Progress chờ
      Xác nhận Case → Xác nhận Case; Case MT chưa mô tả → Mô tả Case (MO-TA-CASE). Trong panel số (`?panel=`) chỉ dòng "Xác nhận Case" chung tự
      sang đúng khối (thay view — F5 giữ khối đã chọn). */
-  const tuDong = useRef(xem.url ? maHien === 'xac-nhan' : !viecBanDau && !paId && (!viec || viec === 'xac-nhan'));
+  const tuDong = useRef(trongCot ? false : xem.url ? maHien === 'xac-nhan' : !viecBanDau && !paId && (!viec || viec === 'xac-nhan'));
   useEffect(() => {
     if (!tuDong.current || !data) return;
     tuDong.current = false;
@@ -256,7 +260,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
    * + Bối cảnh 3 dòng (+ Phụ huynh · Gọi cho TVV / CX); toàn bộ thân Case (PA, lịch sử, bằng chứng) ở "Xem thêm", không mất thông tin.
    */
   const vw = data.viewer;
-  if (!vw.canEdit && !vw.canApprove && !vw.canClose && !vw.coTheXacNhanCase && !vw.coTheMoLai && !vw.coTheSua && !data.choXacNhanS?.coTheXacNhan) {
+  if (!trongCot && !vw.canEdit && !vw.canApprove && !vw.canClose && !vw.coTheXacNhanCase && !vw.coTheMoLai && !vw.coTheSua && !data.choXacNhanS?.coTheXacNhan) {
     const vt = data.viecTiep ?? null;
     const hv3 = vt?.han ? deadlineView({ kind: (vt.loaiHan ?? 'xac-minh-sos') as DeadlineKind, due: vt.han, today: homNay }) : null;   // ngưỡng một chỗ
     const paChay = (data.interventions ?? []).find((x: any) => x.status === 'planned' || x.status === 'started');
@@ -366,8 +370,8 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
     <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={quayLai}
       /* 6b-2 (critique): hạn của việc tiếp ở đầu view Case — cùng chip của dòng danh sách, không mất khi mở Case. */
       dau={dauViec({ em, lop, han: canDong && v?.han && v.loaiHan ? <ChipHan loai={v.loaiHan as DeadlineKind} han={v.han} /> : null })}
-      chan={{
-        huy: { nhan: t('Đóng'), onClick: onClose },
+      chan={trongCot && !themPaDuoc && !nutChinh && !nutTiep && !(lf.daBam && chanHoanThanh.length) ? undefined : {
+        huy: trongCot ? null : { nhan: t('Đóng'), onClick: onClose },
         phu: <>
           {themPaDuoc && v?.loaiHan !== 'lap-pa'   // CV-LOI (A1-15): đã là nút chính thì không lặp
             ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
