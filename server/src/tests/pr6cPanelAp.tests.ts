@@ -70,4 +70,12 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
       assert(/\.status !== 403/.test(s) && /<ErrorState /.test(s), `${f}: lỗi mạng vẫn báo thiếu quyền`);
     }
   });
+
+  check('6c ③ không panel chồng panel: Gia hạn = hộp nhỏ; Sửa công việc = view kế (‹ về việc, ✕ đóng cả panel)', () => {
+    const gh = doc(W + 'students/HopGiaHan.tsx');
+    assert(!/<KhungPanel/.test(gh) && /<Modal open onClose=\{dong\}/.test(gh), 'Gia hạn vẫn là KhungPanel đè');
+    const mg = doc(W + 'worklist/MgmtTasksPage.tsx');
+    assert(/if \(data && editing\) return <SuaViec /.test(mg), 'Sửa việc chưa thay view');
+    assert(/tieuDe="Sửa công việc" hocVien=\{task\.title\} rong="rong" quayLai=\{\{ nhan: task\.title, onClick: onClose \}\} onDong=\{dongCa\}/.test(mg), 'Sửa việc còn longTrong / thiếu ‹');
+  });
 }
