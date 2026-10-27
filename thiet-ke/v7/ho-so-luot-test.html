@@ -170,7 +170,7 @@ button { font: inherit; color: inherit; }
 .bkn .thao { display: flex; justify-content: flex-end; gap: 6px; align-items: center; }
 .bkn .chi-xem { font-size: 12px; color: var(--text-faint); }
 .bkn tr.vung > td { padding: 0 12px 14px 12px; background: var(--accent-soft); }
-.vung-mo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.vung-mo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .vung-mo > .ls-kn { grid-column: 1 / -1; }
 .vung-mo > section { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
 .vung-mo h3 { margin: 0; font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
@@ -194,7 +194,7 @@ button { font: inherit; color: inherit; }
 .cs-tt { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12.5px; color: var(--text-faint); }
 .pa-khoi { position: relative; margin: 4px 0 0 14px; padding: 8px 10px 8px 12px; border-radius: 8px; background: var(--surface-2); display: grid; gap: 3px; }
 .pa-khoi::before { content: ''; position: absolute; left: -14px; top: -8px; width: 12px; height: 24px; border-left: 1.5px solid var(--line-strong); border-bottom: 1.5px solid var(--line-strong); border-bottom-left-radius: 6px; }
-.pa-khoi.moi { box-shadow: inset 0 0 0 1px var(--ok-line); }
+.pa-khoi.moi { box-shadow: inset 0 0 0 1px var(--accent); }
 .pa-d1 { display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; min-width: 0; }
 .pa-d1 span.ten { min-width: 0; flex: 1; }
 .pa-d1 .btn.ba-cham { height: 26px; width: 26px; flex: none; }
@@ -213,20 +213,6 @@ button { font: inherit; color: inherit; }
 .ls-kn .ds-ls { padding: 0 14px 10px; }
 .ls-kn em { font-style: normal; }
 .vung-h .ls-kn em { display: none; }
-/* panel Thêm PA (`ThemPaPanel` + `FormPa` có sẵn, `KhungPanel` hẹp bên phải) */
-.web.co-panel { position: relative; }
-.man-phu { position: absolute; inset: 0; background: rgb(5 10 22 / .45); border-radius: 8px; }
-.panel { position: absolute; top: 0; right: 0; bottom: 0; width: 440px; background: var(--surface); border-left: 1px solid var(--line-strong); box-shadow: -12px 0 32px rgb(5 10 22 / .28); display: grid; grid-template-rows: auto 1fr auto; }
-.panel.phu-man { position: static; width: 100%; min-height: 720px; border: 1px solid var(--line); border-radius: 12px; box-shadow: none; }
-.pn-dau { padding: 14px 18px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
-.pn-dau .d1 { display: flex; align-items: center; gap: 10px; }
-.pn-dau h2 { margin: 0; flex: 1; font-size: 17px; font-weight: 800; }
-.pn-dau .dong { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); font-size: 16px; cursor: pointer; }
-.pn-dau .ngu { font-size: 13px; color: var(--text-dim); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
-.pn-dau .ngu a { font-weight: 600; text-decoration: none; }
-.pn-than { padding: 16px 18px; display: grid; gap: 20px; align-content: start; }
-.pn-khoi { display: grid; gap: 12px; }
-.pn-khoi h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-dim); display: flex; gap: 6px; align-items: center; }
 .truong { display: grid; gap: 5px; font-size: 13px; }
 .truong > span:first-child { font-weight: 600; } .truong > span:first-child i { color: var(--bad); font-style: normal; } .truong > span:first-child small { color: var(--text-faint); font-weight: 400; }
 .field { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); font-size: 14px; }
@@ -235,9 +221,23 @@ button { font: inherit; color: inherit; }
 .field.ngay { padding-right: 0; } .field.ngay .lich-nut { margin-left: auto; width: 38px; height: 36px; border: 0; border-left: 1px solid var(--line-strong); background: none; display: inline-flex; align-items: center; justify-content: center; color: var(--text-dim); }
 .truong .goi-y { font-size: 12px; color: var(--text-faint); }
 .hai { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-.pn-chan { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
-.toast { position: absolute; right: 16px; bottom: 16px; display: grid; gap: 2px; padding: 10px 14px; border-radius: 8px; background: var(--text); color: var(--bg); font-size: 13px; box-shadow: 0 8px 24px rgb(5 10 22 / .3); }
-.toast b { font-weight: 700; }
+/* form Thêm PA mở tại chỗ trong cột Case & PA (ô của `FormPa`, không panel — chủ SP 27/10 vòng 3) */
+.form-pa { margin: 6px 0 0 14px; padding: 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--surface); display: grid; gap: 10px; }
+.form-pa .fp-dau { display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; }
+.form-pa .hai.ls { grid-template-columns: minmax(0, 1fr) 96px; }
+.form-pa .fp-chan { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 2px; }
+.form-pa .fp-chan .trai-chan { margin-right: auto; font-size: 12.5px; }
+.form-pa .fp-chan a { font-size: 12.5px; margin-right: auto; }
+.form-pa .loi-luu { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; padding: 8px 10px; border-radius: 6px; background: var(--bad-bg); color: var(--bad); font-size: 12.5px; }
+.form-pa .loi-luu b { font-weight: 700; }
+.form-pa.dang-luu .field { opacity: .7; }
+.vung-h .form-pa { margin-left: 0; }
+.vung-h .form-pa .hai, .vung-h .form-pa .hai.ls { grid-template-columns: minmax(0, 1fr); }
+.vung-h .form-pa .fp-chan a { flex-basis: 100%; }
+.vung-h .form-pa .fp-chan .btn { flex: 1; height: 44px; }
+.btn[aria-disabled="true"] { opacity: .75; cursor: progress; }
+.bao-xong { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ok); font-weight: 600; }
+.bao-xong button { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .ds-ls { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
 .ds-ls li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; }
 .ds-ls li .so { color: var(--text-faint); font-size: 12px; padding-top: 1px; }
@@ -389,10 +389,10 @@ button { font: inherit; color: inherit; }
       <dt>Route · vai</dt><dd><code>/mock-test/:id</code> · GV (nhập điểm kỹ năng được phân công), GVCN, QL / Admin (thêm Chỉnh lịch, hạn, huỷ), TVV / CX (chỉ xem) — quyền từ máy chủ như hiện tại</dd>
       <dt>Điểm vào</dt><dd>Như H. Đường về <code>‹ {nguồn}</code> giữ nguồn, tuần, bộ lọc, dòng (<code>useVe</code>); <code>?kn=R</code> mở sẵn dòng Reading</dd>
       <dt>Vùng</dt><dd>① đường về · ② đầu hồ sơ: tên (link ↗ hồ sơ HV), chọn lượt, ⓘ thông tin lượt; dòng nhãn / giá trị: lớp lúc Test · lịch · Target · kỳ vọng của lượt · ③ tóm tắt: Overall + kết quả + <b>Còn lại</b> (việc của lượt, ai làm) · ④ bảng kỹ năng: một dòng một kỹ năng — lịch (gốc → thực tế), điểm, trạng thái và hạn, nhận xét, Case, thao tác · ⑤ vùng mở của dòng: hai cột ngang nhau <b>Nhận xét</b> (gõ tại chỗ, nhóm nguyên nhân) | <b>Case &amp; phương án</b> (khối Case đặc + khối PA thụt có đường nối, như <code>TheKyNang.tsx</code> hồ sơ HV: tên PA · người · khoảng · số buổi · kết quả gần nhất · ⋯), dưới cả hai là <b>dải Lịch sử kỹ năng</b> thu gọn (số thay đổi + mới nhất, › mở danh sách); 375 xếp dọc theo cùng thứ tự · ⑥ S Ex ngoài bảng · ⑦ Lịch sử lượt thu gọn (dạng dòng thời gian của C)</dd>
-      <dt>Bấm</dt><dd>Dòng kỹ năng = mở / thu vùng ⑤ tại chỗ (một dòng mở một lúc) · ô điểm = hộp nhập điểm neo tại ô (<code>HopNhapDiem</code>, "Lưu · bài tiếp ›" / "Lưu · em tiếp ›" giữ nguyên) · W1 / W2 = hai hộp · nút dòng = <code>thaoTacKyNang</code> (≤ 1 nút + ⋯) · việc ở "Còn lại" = mở đúng dòng + focus vào ô / nút của việc đó · tên Case / PA = Ngăn Case tại chỗ · ⋯ của PA = Sửa PA / Kết quả theo quyền · <b>+ Thêm PA</b> (và việc "Case R · Thêm PA" ở Còn lại) = panel Thêm PA có sẵn bên phải (<code>ThemPaPanel</code> + <code>FormPa</code>; 375 phủ toàn màn) → Thêm PA: panel đóng, PA mới hiện ngay dưới Case, việc rời "Còn lại", Lịch sử thêm dòng (thử trạng thái "Thêm PA" → bấm Thêm PA) · "Nhập điểm lớp ›" = lưới cả lớp đúng tuần (đổi trang)</dd>
+      <dt>Bấm</dt><dd>Dòng kỹ năng = mở / thu vùng ⑤ tại chỗ (một dòng mở một lúc) · ô điểm = hộp nhập điểm neo tại ô (<code>HopNhapDiem</code>, "Lưu · bài tiếp ›" / "Lưu · em tiếp ›" giữ nguyên) · W1 / W2 = hai hộp · nút dòng = <code>thaoTacKyNang</code> (≤ 1 nút + ⋯) · việc ở "Còn lại" = mở đúng dòng + focus vào ô / nút của việc đó · tên Case / PA = Ngăn Case tại chỗ · ⋯ của PA = Sửa PA / Kết quả theo quyền · <b>+ Thêm PA</b> (và việc "Case R · Thêm PA" ở Còn lại) = form Thêm PA <b>mở tại chỗ</b> trong cột Case &amp; phương án, dưới khối Case (đúng các ô của <code>FormPa</code>: Loại · Số buổi · Nội dung · Người thực hiện · Bắt đầu = ô gõ + nút lịch, mặc định hôm nay · "PA đã làm trước đây"; không panel, không phủ nền; cột Nhận xét giữ nguyên) → <b>Thêm PA</b>: "Đang lưu…" (khoá nút, giữ chữ) → form đóng, PA mới viền nhấn + "✓ Vừa thêm · Hoàn tác" (không toast), việc rời "Còn lại", Lịch sử kỹ năng + Lịch sử lượt thêm dòng · lỗi lưu → ở lại form, giữ chữ, "⚠ Không lưu được" + lý do, nút thành "Thử lại" · Huỷ = đóng form (thử: trạng thái "Thêm PA" → bấm Thêm PA) · "Nhập điểm lớp ›" = lưới cả lớp đúng tuần (đổi trang)</dd>
       <dt>Phân biệt ô</dt><dd>"—" chưa có điểm (+ hạn) · <b>Vắng</b> (+ lần) · <b>Không học</b> (dòng mờ, ngoài phạm vi) · lịch <b>gốc gạch → thực tế</b> khi dời · <b>Đã huỷ</b> · có điểm thiếu nhận xét = viền vàng ô điểm + "Chưa có" ở cột Nhận xét (V15)</dd>
       <dt>Lỗi / rỗng</dt><dd>Bấm các nút trạng thái dưới đây. Lưu nhận xét lỗi → giữ chữ, "Chưa lưu — thử lại" (như <code>ONhanXet</code>) · mất quyền giữa chừng → toast lỗi máy chủ, tải lại</dd>
-      <dt>Trạng thái duyệt</dt><dd><b>Chủ SP chọn A (27/10)</b>; vòng 2 sửa vùng mở (2 cột + dải Lịch sử, Case / PA đủ thông tin, Thêm PA) — chờ duyệt lại</dd>
+      <dt>Trạng thái duyệt</dt><dd><b>Chủ SP chọn A (27/10)</b>; vòng 2 sửa vùng mở (2 cột + dải Lịch sử, Case / PA đủ thông tin); vòng 3: Thêm PA mở form tại chỗ trong cột Case &amp; PA, không panel — chờ duyệt lại</dd>
     </dl>
     <div class="trang-thai-chon" role="group" aria-label="Trạng thái khu A">
       <span>Trạng thái:</span>
@@ -401,7 +401,9 @@ button { font: inherit; color: inherit; }
       <button type="button" data-tt="vang2">S vắng lần 2</button>
       <button type="button" data-tt="khong-hoc">Không học cả S</button>
       <button type="button" data-tt="chuyen-lop">Đã chuyển lớp</button>
-      <button type="button" data-tt="them-pa">Thêm PA (panel)</button>
+      <button type="button" data-tt="them-pa">Thêm PA</button>
+      <button type="button" data-tt="them-pa-luu">Thêm PA · đang lưu</button>
+      <button type="button" data-tt="them-pa-loi">Thêm PA · lỗi lưu</button>
       <button type="button" data-tt="vua-them-pa">Vừa thêm PA</button>
       <button type="button" data-tt="huy">Đã huỷ</button>
       <button type="button" data-tt="tai">Đang tải</button>
@@ -423,7 +425,7 @@ button { font: inherit; color: inherit; }
             <tr><td>Nhận xét L/R/W/S gõ tại chỗ · nhóm nguyên nhân · GV chấm S · nhận xét GV phụ trách</td><td>Chuyển vào vùng mở của đúng dòng; cột Nhận xét báo có / chưa</td></tr>
             <tr><td>"Thông tin đợt Mock Test" (thu gọn)</td><td>Lớp lúc Test, lịch, Target, kỳ vọng lên dòng đầu; tuần dự kiến hoàn tất, dự kiến thi, mốc gợi ý vào ⓘ cạnh chọn lượt</td></tr>
             <tr><td>Case & phương án (DongCase → Ngăn Case)</td><td>Cột Case từng dòng + khối Case / PA đầy đủ trong vùng mở (cách hiện của hồ sơ HV); bấm → Ngăn Case tại chỗ</td></tr>
-            <tr><td>Thêm PA (Ngăn Case / hồ sơ HV → panel <code>ThemPaPanel</code>)</td><td>Dùng lại đúng panel đó, mở từ "+ Thêm PA" trong vùng mở hoặc việc ở "Còn lại"; trang lượt không phải panel nên không lồng panel</td></tr>
+            <tr><td>Thêm PA (Ngăn Case / hồ sơ HV → panel <code>ThemPaPanel</code>)</td><td>Form mở tại chỗ trong cột Case &amp; PA (cùng ô <code>FormPa</code>), không panel; lưu xong PA mới viền nhấn + Hoàn tác tại chỗ</td></tr>
             <tr><td>Nút "Lịch sử" + thẻ Lịch sử</td><td>Lịch sử lượt thu gọn cuối trang + dải Lịch sử kỹ năng (thu gọn) dưới Nhận xét và Case trong vùng mở</td></tr>
             <tr><td>Dải Đã huỷ + Khôi phục MTn (QL)</td><td>Giữ nguyên</td></tr>
             <tr><td>MT0: "MT0 ✓" / chip SOS MT0</td><td>Giữ ở ô kết quả của tóm tắt</td></tr>
@@ -475,13 +477,13 @@ button { font: inherit; color: inherit; }
   <section class="khu" id="a-375">
     <h2>A ở 375 px (điện thoại)</h2>
     <dl class="ghi">
-      <dt>Mã</dt><dd>M4-A-375 — bảng kỹ năng thành thẻ từng kỹ năng (không cuộn ngang); bấm thẻ = mở vùng ngay dưới (thử bấm): nút việc → Nhận xét → Case &amp; PA → dải Lịch sử; Thêm PA = panel phủ toàn màn</dd>
+      <dt>Mã</dt><dd>M4-A-375 — bảng kỹ năng thành thẻ từng kỹ năng (không cuộn ngang); bấm thẻ = mở vùng ngay dưới (thử bấm): nút việc → Nhận xét → Case &amp; PA → dải Lịch sử; Thêm PA = form trong khối Case &amp; PA (xếp dọc); khi gõ, form cuộn lên trên bàn phím (<code>--ban-phim</code> như <code>KhungPanel</code>) để nút Thêm PA không bị che</dd>
       <dt>Kiểm</dt><dd>Tên dài xuống dòng, không cắt; vùng bấm ≥ 44 px; trạng thái có chữ, không chỉ màu; Case, nhận xét vào vùng mở</dd>
     </dl>
     <div class="cap-375">
       <figure><figcaption>FT · MT2 (mặc định)</figcaption><div class="khung hep"><div class="web" data-bien-the="a-375"></div></div></figure>
       <figure><figcaption>Lớp thường · Progress Test</figcaption><div class="khung hep"><div class="web" data-bien-the="a-375-thuong"></div></div></figure>
-      <figure><figcaption>FT · Thêm PA (panel phủ toàn màn)</figcaption><div class="khung hep"><div class="web" data-bien-the="a-375-pa"></div></div></figure>
+      <figure><figcaption>FT · Thêm PA (form tại chỗ)</figcaption><div class="khung hep"><div class="web" data-bien-the="a-375-pa"></div></div></figure>
       <figure><figcaption>FT · vừa thêm PA</figcaption><div class="khung hep"><div class="web" data-bien-the="a-375-vua"></div></div></figure>
     </div>
   </section>
@@ -491,7 +493,7 @@ button { font: inherit; color: inherit; }
     <div class="kn-khoi">
       <h3>Chủ SP chốt 27/10</h3>
       <ul>
-        <li>Chọn <b>A</b>. Vùng mở: Nhận xét | Case &amp; phương án ngang nhau, dải Lịch sử nhỏ dưới cả hai; Thêm PA dùng lại panel có sẵn.</li>
+        <li>Chọn <b>A</b>. Vùng mở: Nhận xét | Case &amp; phương án ngang nhau, dải Lịch sử nhỏ dưới cả hai; Thêm PA mở form ngay trong cột Case &amp; PA, không panel; lưu xong PA mới viền nhấn + Hoàn tác tại chỗ.</li>
         <li>"Còn lại" hiện cả việc của <b>người khác</b> — chỉ đọc, không nút.</li>
         <li>S Ex cùng tuần hiện ở trang lượt — chỉ đọc, ngoài Overall.</li>
       </ul>
@@ -570,15 +572,15 @@ button { font: inherit; color: inherit; }
       d.conLai = [['R', 'Viết nhận xét', true], ['Case R', 'Thêm PA', true]];
     }
     if (tt === 'chuyen-lop') d.lopNay = 'MB FT 104';
-    if (tt === 'them-pa') d.panel = true;
+    if (tt === 'them-pa' || tt === 'them-pa-luu' || tt === 'them-pa-loi') d.formPa = tt;
     if (tt === 'vua-them-pa') {
       var r = d.kn[1];
       r.cs.tt = ['cho', 'Đang làm'];
-      r.cs.pas = [{ ten: 'Đọc 2 bài Passage 3 / tuần', meta: 'Trần Ngọc Hà · từ W3 SEP · 0/6 buổi', kq: null, menu: 'Sửa PA', moi: true }];
+      r.cs.pas = [{ ten: 'Đọc 2 bài Passage 3 / tuần', meta: 'Tăng cường bài tập · Trần Ngọc Hà · từ W3 SEP · 0/6 buổi', kq: null, menu: 'Sửa PA', moi: true }];
       r.ls = r.ls.concat([['17/09', 'Thêm PA "Đọc 2 bài Passage 3 / tuần" · Trần Ngọc Hà']]);
       d.conLai = d.conLai.filter(function (v) { return v[0] !== 'Case R'; });
-      d.toast = ['✓ Đã thêm PA', 'Tăng cường bài tập · Đọc 2 bài Passage 3 / tuần'];
       d.moLs = true;
+      d.themPa = true;
     }
     if (tt === 'huy') {
       d.huy = 'Em bảo lưu 3 tuần · Nguyễn Thị Mai · 15/09'; d.conLai = []; d.vai = 'huy';
@@ -671,9 +673,11 @@ button { font: inherit; color: inherit; }
       return '<div class="pa-khoi' + (pa.moi ? ' moi' : '') + '"><div class="pa-d1"><span class="chip-loai pa">PA</span><span class="ten">' + e(pa.ten) + '</span>'
         + (chiXem(d) ? '' : '<button type="button" class="btn ba-cham" aria-label="' + e(pa.menu) + '" title="' + e(pa.menu) + '">⋯</button>') + '</div>'
         + '<span class="pa-meta">' + e(pa.meta) + '</span>'
-        + (pa.kq ? '<span class="pa-kq ' + pa.kq[0] + '"><span aria-hidden="true">' + e(pa.kq[1]) + '</span>' + e(pa.kq[2]) + '</span>' : '<span class="pa-meta">Chưa có kết quả</span>') + '</div>';
+        + (pa.kq ? '<span class="pa-kq ' + pa.kq[0] + '"><span aria-hidden="true">' + e(pa.kq[1]) + '</span>' + e(pa.kq[2]) + '</span>' : '<span class="pa-meta">Chưa có kết quả</span>')
+        + (pa.moi ? '<span class="bao-xong" role="status">✓ Vừa thêm<button type="button" data-hanh="hoan-tac">Hoàn tác</button></span>' : '') + '</div>';
     }).join('');
-    if (!c.pas.length) h += '<div class="pa-rong">Chưa có PA' + (chiXem(d) ? '' : '<button type="button" class="btn nho" data-hanh="them-pa">+ Thêm PA</button>') + '</div>';
+    if (!c.pas.length && d.formPa && k.k === 'R') h += formThemPa(d.formPa);
+    else if (!c.pas.length) h += '<div class="pa-rong">Chưa có PA' + (chiXem(d) ? '' : '<button type="button" class="btn nho" data-hanh="them-pa">+ Thêm PA</button>') + '</div>';
     return h + '</div>';
   }
   function dauHoSo(d) {
@@ -708,8 +712,9 @@ button { font: inherit; color: inherit; }
     return '<div class="the tom">' + ov + kl + cl + '</div>';
   }
   function lichSuLuot(d) {
-    var n = d.loai === 'ft' ? 9 : 4;
-    return '<details class="the lich-su"><summary>Lịch sử lượt <small>' + n + ' thay đổi · mới nhất ' + (d.loai === 'ft' ? '16/09 R 5.5 · Trần Ngọc Hà' : '17/09 R 17/40 · Trần Ngọc Hà') + '</small></summary><div class="than v-c">' + dongThoiGian(d, false) + '</div></details>';
+    var n = d.loai === 'ft' ? (d.themPa ? 10 : 9) : 4;
+    var moi = d.loai !== 'ft' ? '17/09 R 17/40 · Trần Ngọc Hà' : d.themPa ? '17/09 Thêm PA Case R · Trần Ngọc Hà' : '16/09 R 5.5 · Trần Ngọc Hà';
+    return '<details class="the lich-su"><summary>Lịch sử lượt <small>' + n + ' thay đổi · mới nhất ' + moi + '</small></summary><div class="than v-c">' + dongThoiGian(d, false) + '</div></details>';
   }
 
   /* ---------- A: bảng kết quả làm trung tâm ---------- */
@@ -732,26 +737,24 @@ button { font: inherit; color: inherit; }
     return '<div class="the"><table class="bkn"><thead>' + dau + '</thead><tbody>' + than + '</tbody></table>' + sex + '</div>';
   }
   function trangA(d, moK) {
-    return '<div class="pg">' + dauHoSo(d) + tomTat(d) + bangA(d, moK) + lichSuLuot(d) + '</div>'
-      + (d.panel ? '<div class="man-phu" data-hanh="dong-pa"></div>' + panelThemPa(false) : '')
-      + (d.toast ? '<div class="toast" role="status"><b>' + e(d.toast[0]) + '</b><span>' + e(d.toast[1]) + '</span></div>' : '');
+    return '<div class="pg">' + dauHoSo(d) + tomTat(d) + bangA(d, moK) + lichSuLuot(d) + '</div>';
   }
-  /* Panel "Thêm PA" = `ThemPaPanel` + `FormPa` đang có (Case › Thêm PA ở hồ sơ HV / Ngăn Case) — vẽ lại đúng ô, không thêm ô mới. */
+  /* Form "Thêm PA" mở TẠI CHỖ dưới khối Case (chủ SP 27/10 vòng 3, như M5) — đúng các ô của `FormPa`, không panel, không phủ nền.
+     tt: them-pa (đang gõ) · them-pa-luu (đang lưu: khoá nút, giữ chữ) · them-pa-loi (lỗi lưu: giữ chữ, nêu lý do, Thử lại). */
   var LICH_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>';
-  function panelThemPa(phuMan) {
-    return '<section class="panel' + (phuMan ? ' phu-man' : '') + '" role="dialog" aria-label="Thêm PA">'
-      + '<div class="pn-dau"><div class="d1"><h2>Thêm PA</h2><button type="button" class="dong" aria-label="Đóng" data-hanh="dong-pa">✕</button></div>'
-      + '<div class="ngu"><a href="#a">Nguyễn Hoàng Minh An ↗</a><span>· MB FT 101</span></div>'
-      + '<div class="ngu"><span class="chip-loai">Case</span><b>Case R · Reading</b><span class="sos1 tam">SOS 1 tạm</span></div></div>'
-      + '<div class="pn-than"><div class="pn-khoi"><h3>Phương án <span class="i" title="Chọn một mục trong &quot;Cần Quản lý duyệt&quot; tức là đang xin ý kiến Quản lý.">?</span></h3>'
-      + '<label class="truong"><span>Loại PA <i>*</i></span><span class="field">Tăng cường bài tập<span class="mui">▾</span></span></label>'
+  function formThemPa(tt) {
+    var luu = tt === 'them-pa-luu', loi = tt === 'them-pa-loi';
+    return '<div class="form-pa' + (luu ? ' dang-luu' : '') + '" role="group" aria-label="Thêm PA · Case R"' + (luu ? ' aria-busy="true"' : '') + '>'
+      + '<div class="fp-dau"><span class="chip-loai pa">PA</span>Thêm PA<span class="i" title="Chọn một mục trong &quot;Cần Quản lý duyệt&quot; tức là đang xin ý kiến Quản lý.">?</span></div>'
+      + '<div class="hai ls"><label class="truong"><span>Loại PA <i>*</i></span><span class="field">Tăng cường bài tập<span class="mui">▾</span></span></label>'
+      + '<label class="truong"><span>Số buổi</span><span class="field so" title="Tuỳ chọn — có số buổi thì web đếm sau mỗi lần Kết quả">6</span></label></div>'
       + '<label class="truong"><span>Nội dung <i>*</i></span><span class="field vb">Đọc 2 bài Passage 3 / tuần</span></label>'
-      + '<label class="truong"><span>Số buổi <small>· tuỳ chọn</small></span><span class="field" style="max-width:120px">6</span><span class="goi-y">Có số buổi thì web đếm sau mỗi lần Kết quả</span></label></div>'
-      + '<div class="pn-khoi"><h3>Người và thời gian</h3><div class="hai">'
-      + '<label class="truong"><span>Người thực hiện</span><span class="field">Trần Ngọc Hà<span class="mui">✕</span></span></label>'
+      + '<div class="hai"><label class="truong"><span>Người thực hiện</span><span class="field">Trần Ngọc Hà<span class="mui">✕</span></span></label>'
       + '<label class="truong"><span>Bắt đầu <i>*</i></span><span class="field ngay so">17/09/2026<button type="button" class="lich-nut" aria-label="Chọn ngày">' + LICH_SVG + '</button></span></label></div>'
-      + '<a href="#a" style="font-size:12.5px">PA đã làm trước đây</a></div></div>'
-      + '<div class="pn-chan"><button type="button" class="btn" data-hanh="dong-pa">Huỷ</button><button type="button" class="btn chinh" data-hanh="luu-pa">Thêm PA</button></div></section>';
+      + (loi ? '<div class="loi-luu" role="alert"><b>⚠ Không lưu được</b><span>Mất kết nối máy chủ — chữ vẫn giữ, bấm Thử lại.</span></div>' : '')
+      + '<div class="fp-chan"><a href="#a">PA đã làm trước đây</a>'
+      + '<button type="button" class="btn nho" data-hanh="dong-pa"' + (luu ? ' aria-disabled="true"' : '') + '>Huỷ</button>'
+      + '<button type="button" class="btn nho chinh" data-hanh="luu-pa"' + (luu ? ' aria-disabled="true"' : '') + '>' + (luu ? 'Đang lưu…' : loi ? 'Thử lại' : 'Thêm PA') + '</button></div></div>';
   }
   function trangThaiKhac(tt) {
     var dau = '<div class="pg"><a class="ve" href="#a">‹ Lịch Test W3 SEP</a>';
@@ -785,7 +788,7 @@ button { font: inherit; color: inherit; }
   function dongThoiGian(d, coTiep) {
     var ft = d.loai === 'ft';
     var tuan = ft ? [
-      ['W3 SEP', [['17/09', 'S Ex', 'S Ex 6.5 · ngoài Overall', 'Anna Lee'], ['16/09', 'R', 'Nhập 5.5 (19 câu) → SOS 1 tạm · Case R tự mở', 'Trần Ngọc Hà']]],
+      ['W3 SEP', (d.themPa ? [['17/09', 'Case R', 'Thêm PA "Đọc 2 bài Passage 3 / tuần"', 'Trần Ngọc Hà']] : []).concat([['17/09', 'S Ex', 'S Ex 6.5 · ngoài Overall', 'Anna Lee'], ['16/09', 'R', 'Nhập 5.5 (19 câu) → SOS 1 tạm · Case R tự mở', 'Trần Ngọc Hà']])],
       ['W2 SEP', [['12/09', 'W', 'W1 nhập 7.0 · nhận xét Task 1', 'Lê Minh Thu'], ['11/09', 'L', 'Nhập 6.0 (23 câu) · nhận xét', 'Trần Ngọc Hà'], ['09/09', 'R', 'Dời W2 SEP → W3 SEP · trùng lịch lớp', 'Nguyễn Thị Mai'], ['08/09', 'S', 'Báo vắng lần 1', 'Trần Ngọc Hà']]],
       ['W1 SEP', [['03/09', 'MT2', 'Xếp lịch L R W S → W2 SEP', 'Nguyễn Thị Mai'], ['02/09', 'Case W', 'Thêm PA "2 bài Task 2 / tuần" · hạn 24/09', 'Lê Minh Thu']]]
     ] : [
@@ -848,7 +851,7 @@ button { font: inherit; color: inherit; }
     }).join('');
     var sex = d.loai === 'ft' ? '<div class="sex-dong"><span class="chip-ex">S Ex</span><b>6.5</b><span>Anna Lee · W3 SEP</span><span class="i" title="Không tính vào Overall / SOS">i</span></div>' : '';
     return '<div class="hep-pg pg">' + dauHoSo(d) + tomTat(d) + '<div class="the">' + the + sex + '</div>'
-      + '<details class="the lich-su"><summary>Lịch sử lượt <small>' + (d.loai === 'ft' ? 9 : 4) + ' thay đổi</small></summary></details></div>';
+      + '<details class="the lich-su"><summary>Lịch sử lượt <small>' + (d.loai === 'ft' ? (d.themPa ? 10 : 9) : 4) + ' thay đổi</small></summary></details></div>';
   }
 
   /* ---------- dựng + tương tác ---------- */
@@ -856,7 +859,6 @@ button { font: inherit; color: inherit; }
   var ttA = 'mac-dinh', moA = 'R', chonB = 'R', mo375 = 'R', mo375t = 'R', moT = 'R';
   function dungA() {
     var web = o('a');
-    web.classList.toggle('co-panel', ttA === 'them-pa' || ttA === 'vua-them-pa');
     web.innerHTML = ttA === 'tai' || ttA === 'loi' ? trangThaiKhac(ttA) : trangA(duLieuFT(ttA), moA);
   }
   function chonTt(t) {
@@ -873,7 +875,7 @@ button { font: inherit; color: inherit; }
     o('a-thuong').innerHTML = trangA(NT, moT);
     o('a-375').innerHTML = trang375(duLieuFT(), mo375);
     o('a-375-thuong').innerHTML = trang375(NT, mo375t);
-    o('a-375-pa').innerHTML = panelThemPa(true);
+    o('a-375-pa').innerHTML = trang375(duLieuFT('them-pa'), 'R');
     o('a-375-vua').innerHTML = trang375(duLieuFT('vua-them-pa'), 'R');
   }
   dung();
@@ -893,9 +895,14 @@ button { font: inherit; color: inherit; }
   o('b').addEventListener('click', function (ev) { var b = ev.target.closest('.muc-kn[data-k]'); if (b) { chonB = b.getAttribute('data-k'); dung(); } });
   /* "Còn lại": bấm việc → mở đúng dòng (mô phỏng focus) */
   o('a').addEventListener('click', function (ev) {
-    /* + Thêm PA → panel; Thêm PA (lưu) → vừa thêm PA; Huỷ / ✕ / bấm nền → đóng panel */
+    /* + Thêm PA → form tại chỗ; Thêm PA → đang lưu → vừa thêm PA; Huỷ / Hoàn tác → về mặc định */
     var h = ev.target.closest('[data-hanh]');
-    if (h) { var x = h.getAttribute('data-hanh'); chonTt(x === 'them-pa' ? 'them-pa' : x === 'luu-pa' ? 'vua-them-pa' : 'mac-dinh'); return; }
+    if (h) {
+      if (h.getAttribute('aria-disabled') === 'true') return;
+      var x = h.getAttribute('data-hanh');
+      if (x === 'luu-pa') { chonTt('them-pa-luu'); setTimeout(function () { if (ttA === 'them-pa-luu') chonTt('vua-them-pa'); }, 900); return; }
+      chonTt(x === 'them-pa' ? 'them-pa' : 'mac-dinh'); return;
+    }
     var b = ev.target.closest('button.viec');
     if (!b) return;
     var k = b.querySelector('b').textContent;
