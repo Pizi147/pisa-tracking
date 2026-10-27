@@ -33,6 +33,7 @@ export async function runPrPilotViecTests(t: YThucTestKit) {
     assert(/xem\.vao\('case'\)/.test(goc) && /XemCaseViec\.Provider/.test(goc), '"Xem Case" không vào view kế');
     assert(/hidden=\{/.test(goc), 'form việc bị gỡ khi xem Case — chữ / lựa chọn mất');
     assert(/<NganCase[\s\S]*veNguon=\{\{\s*nhan:\s*tenBoEm\(p\.it\),\s*onClick:\s*xem\.lui/.test(goc), '‹ ở view Case không về đúng tên việc (không lặp tên em)');
+    assert(/<NganCase caseId=\{caseId\} viecBanDau=\{\{ loai: 'case' \}\}/.test(goc), 'view Case tự nhảy sang Xác nhận Case / Mô tả Case (tuDong)');
     assert(!/nhan: t\('Việc'\)/.test(pv.slice(pv.indexOf('function PanelKetQuaNhanh'))), 'còn nhãn lặp "‹ Việc"');
     assert(!/setMoCase|setViecCase/.test(pv), 'còn mở Case dưới bối cảnh / thay panel bằng Ngăn Case');
   });
