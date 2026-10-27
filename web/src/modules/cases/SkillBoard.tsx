@@ -225,7 +225,7 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
 }
 
 /** Đang xử lý / mới cập nhật lên trước, đã hoàn thành xuống dưới, đã huỷ / hệ thống đóng cuối cùng. */
-function xepCase(cases: CaseCard[]): CaseCard[] {
+export function xepCase(cases: CaseCard[]): CaseCard[] {
   const done = (x: CaseCard) => (x.trangThaiV4.t === 'da-huy' ? 2 : x.status === 'done' ? 1 : 0);
   return [...cases].sort((a, b) => done(a) - done(b) || (b.touchedOn ?? '').localeCompare(a.touchedOn ?? '') || b.id - a.id);
 }

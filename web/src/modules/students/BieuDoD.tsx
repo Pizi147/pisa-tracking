@@ -19,6 +19,8 @@ export type BieuDoDProps = {
   cases: CaseD[]; thi: ThiD | null; homNay: string;
   /** Mọi khoảng Tạm dừng của em (`den` null = đang dừng) — dải xám "Tạm dừng", không nối điểm qua. */
   tamDung?: { tu: string; den: string | null }[];
+  /** UI-HO-SO-HV-2: tuần đang rê ở Tiến độ trên lớp (thứ Hai) — tô cột tuần đó. */
+  toTuan?: string | null;
   lo: number; hi: number; buoc: number; fmt: (v: number) => string;
 };
 
@@ -158,6 +160,7 @@ export function BieuDoD(o: BieuDoDProps) {
     if (b - a <= chu.length * 7.5 && chu.includes(' ')) chu = d.nam;
     if (b - a > chu.length * 7.5) nen.push(<text key={`t${k}`} x={(a + b) / 2} y={17} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>{chu}</text>);
   });
+  if (o.toTuan && trong(o.toTuan)) nen.push(<rect key="re" x={Xl(o.toTuan)} y={0} width={cw} height={H} fill="var(--accent)" opacity=".16" />);
   if (trong(nay)) nen.push(<rect key="nay" x={Xl(nay)} y={0} width={cw} height={H} fill="var(--hong)" opacity=".14" />);
   const thiTrong = thiKhoi && trong(thiKhoi[0]);
   if (o.thi && thiKhoi && thiTrong) {

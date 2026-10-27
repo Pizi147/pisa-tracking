@@ -6,10 +6,12 @@ import { api } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
-import { CaseKyNang, type SkillBoardRow } from '../cases/SkillBoard.tsx';
+import type { SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
-import { DiemDau, HanhTrinhKn, OVERALL, TienDoTrenLop, thiThatCua, type ChonKn, type LoTrinhD, type ThiThatD } from './HanhTrinhKyNang.tsx';
+import { DiemDau, HanhTrinhKn, OVERALL, thiThatCua, type ChonKn, type LoTrinhD, type ThiThatD } from './HanhTrinhKyNang.tsx';
+import { TienDoTrenLop } from './TienDoTrenLop.tsx';
+import { CotCaseHv, type MoCot } from './CotCaseHv.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
@@ -99,6 +101,9 @@ export default function StudentDetailPage() {
   const baoCase = (cat: string) => { setKyNangDau(cat); setReportOpen(true); };
   /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
   const [openCase, setOpenCase] = useState<OpenCase>(null);
+  /* UI-HO-SO-HV-2: Case mở NGAY TRONG cột Case & PA (Việc của tôi, chart) — không có trong cột thì Ngăn Case như cũ. Tuần đang rê ở Tiến độ → chart tô cột. */
+  const [moCot, setMoCot] = useState<MoCot | null>(null);
+  const [toTuan, setToTuan] = useState<string | null>(null);
   /*
    * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối Case bên dưới.
    * Bấm "Reading" ở bảng trên là khối dưới chỉ còn Case Reading; bấm lại thì bỏ lọc.
@@ -192,12 +197,24 @@ export default function StudentDetailPage() {
   const hangChon = chon === OVERALL ? null : (skillRows ?? []).find((r) => r.category === chon && !r.tuLopTruoc) ?? null;
   const tenChon = chon === OVERALL ? 'Overall' : hangChon ? dich(hangChon.label) : chon;
   const chonKn = (k: ChonKn) => { setChonTay(k); if (tab !== 'hoc-thuat') setTab('hoc-thuat'); };
+  /*
+   * MỞ CASE TẠI CHỖ (UI-HO-SO-HV-2, mockup M5 "GV S sau buổi học"): Case có trong cột Case & PA → đổi sang kỹ năng của Case (Overall giữ — đã có mọi Case),
+   * mở đúng view (Ghi kết quả / Thêm PA / …) hoặc cuộn tới PA ngay trong cột. Case không thuộc kỹ năng nào của lộ trình (Ý thức, bàn giao) → Ngăn Case như cũ.
+   */
+  const moCase = (caseId: number, o?: { paId?: number; viec?: MoCot['viec'] }) => {
+    const hang = tab === 'hoc-thuat' && cy ? (skillRows ?? []).find((r) => r.cases.some((c) => c.id === caseId)) : null;
+    if (!hang) { setOpenCase({ caseId, paId: o?.paId, viec: o?.viec }); return; }
+    if (chon !== OVERALL && hang.category !== chon && !hang.tuLopTruoc) setChonTay(hang.category);
+    else if (chon !== OVERALL && hang.tuLopTruoc) setChonTay(OVERALL);   // Case bàn giao chỉ nằm ở Overall
+    setMoCot({ caseId, paId: o?.paId, viec: o?.viec, n: Date.now() });
+    if (!o?.paId || o.viec) cuonOnDinh(() => document.getElementById(`case-${caseId}`), null);
+  };
 
   /** Nút động từ của thanh việc: mở đúng Ngăn Case / tab Ý thức / trang bàn giao. */
   const lamViec = (x: Viec) => {
     const m = x.mo;
     if (!m) return;
-    if (m.loai === 'case') setOpenCase({ caseId: m.caseId, paId: m.paId, viec: m.viec });
+    if (m.loai === 'case') moCase(m.caseId, { paId: m.paId, viec: m.viec });
     else if (m.loai === 'tab') navigate(duongHoSoHocVien(data.id, { tab: m.tab, sub: m.sub }));
     else navigate(m.href);
   };
@@ -239,11 +256,6 @@ export default function StudentDetailPage() {
             <h1 className="m-0 flex flex-wrap items-center gap-2 text-[22px] font-bold leading-tight text-slate-100">
               {data.fullName}
               <MissingBadge items={data.missing} />
-              {/* P8 (mockup V6 k7): em thiếu môn, lượt kết quả gần nhất không có Overall → "– MT3 · Không đủ bộ môn" cạnh tên. */}
-              {(() => {
-                const a = cy?.monHoc ? (data.attempts as any[]).find((x) => x.id === data.dauHoSo?.o?.ketQua?.kq?.attemptId) : null;
-                return a?.khongDuBoMon && a.overall == null ? <NhanKq kq="thieu">{`${a.kind === 'mt0' ? 'MT0' : `MT${a.attemptNo}`} · ${t('Không đủ bộ môn')}`}</NhanKq> : null;
-              })()}
               {/* P7 (k6): em Tạm dừng ở Lưu trữ — "Tạm dừng 14/09 · Có thể quay lại"; em Kết thúc học — "Kết thúc học 22/08". */}
               {data.status === 'inactive' && data.archivedAt ? <Info>{t('Tạm dừng {ngay} · Có thể quay lại', { ngay: ngay(data.archivedAt, homNay) })}</Info>
                 : data.status === 'finished' && data.finishedAt ? <Info>{t('Kết thúc học {ngay}', { ngay: ngay(data.finishedAt, homNay) })}</Info>
@@ -304,7 +316,8 @@ export default function StudentDetailPage() {
       {data.currentClass && <DaiXetLai classId={data.currentClass.id} studentId={data.id} />}
 
       {/* UI-HO-SO-HV: ô điểm to Overall · L · R · W1 · W2 · S — bấm đổi kỹ năng của Hành trình + Case & PA (khu c `.diem-dau`). */}
-      {cy && skillRows && <DiemDau rows={skillRows} attempts={data.attempts} ketQuaId={data.dauHoSo?.o?.ketQua?.kq?.attemptId ?? null} chon={chon} onChon={chonKn} homNay={homNay} mon={cy.monDangKy ?? null} />}
+      {cy && skillRows && <DiemDau rows={skillRows} attempts={data.attempts} ketQuaId={data.dauHoSo?.o?.ketQua?.kq?.attemptId ?? null} chon={chon} onChon={chonKn} homNay={homNay} mon={cy.monDangKy ?? null}
+        thi={homNay && !cy.ratio ? thiThatCua(cy as LoTrinhD, homNay) : null} />}
 
       {/* UI-HO-SO-HV: thanh Việc cần làm — chỗ DUY NHẤT có việc; bấm = mở đúng chỗ làm ngay tại trang. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
@@ -358,20 +371,21 @@ export default function StudentDetailPage() {
             ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
               : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
               : homNay && <HanhTrinhKn studentId={data.id} kn={chon} row={hangChon} attempts={data.attempts} cy={cy} homNay={homNay} tenKn={tenChon}
-                tamDung={data.dauHoSo?.thongTin?.khoangDung} onMoCase={(caseId, paId) => setOpenCase({ caseId, paId })} />}
-            {homNay && <TienDoTrenLop studentId={data.id} hocVien={data.fullName} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} />}
+                tamDung={data.dauHoSo?.thongTin?.khoangDung} onMoCase={(caseId, paId) => moCase(caseId, { paId })} toTuan={toTuan} />}
           </section>
 
-          {/* CASE & PHƯƠNG ÁN CHỈ CỦA KỸ NĂNG ĐANG CHỌN (Overall: mọi kỹ năng có Case) — cùng hàng Case / PA, nút, ngăn Case với bảng kỹ năng cũ. */}
-          {skillRows && (
-            <Card title={t('Case & phương án · {kn}', { kn: tenChon })} bodyClass="p-0">
-              <CaseKyNang rows={hangChon ? [hangChon] : skillRows}
+          {/*
+            HAI CỘT DƯỚI HÀNH TRÌNH (UI-HO-SO-HV-2, mockup M5): trái Tiến độ trên lớp (form ghi / sửa / xoá trong cột, Hoàn tác, góp ý tuần khoá đọc) · phải
+            Case & PA của kỹ năng đang chọn (Overall: mọi Case) — khối Case A của M6, form tại chỗ. 375: xếp dọc. Bỏ panel Ghi tiến độ cũ.
+          */}
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+            {homNay && <TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan} />}
+            {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
+              : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
+              : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
                 onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? baoCase : undefined}
-                onChanged={() => { board.reload(); reload(); }}
-                onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })}
-                tamDungTu={board.data?.tamDungTu ?? null} />
-            </Card>
-          )}
+                onChanged={() => { board.reload(); reload(); }} />}
+          </div>
 
           {/*
             TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp thường là "Kết quả Test" (cuối tab). FT: bảng Mock Test nay ở chỗ chart khi chọn Overall (UI-CHART-D).
