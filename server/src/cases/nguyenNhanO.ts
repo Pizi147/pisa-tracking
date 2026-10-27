@@ -9,7 +9,7 @@ import { LA_CASE_MT, dongBoTrangThaiCaseLo } from './sosState.ts';
  * (`sos_cases.mo_ta_attempt_id` — nguồn) tới khi có người sửa riêng mô tả ở Case (`case_issues.created_by` có người → tách hẳn, không bao giờ bị đè).
  * Trượt lại ở MT sau mà Case đã có mô tả → giữ mô tả (vẫn theo nhận xét MT cũ). Case chưa có mô tả → lấy từ ô của lượt Case đang theo (`sc.attempt_id`).
  * Nhóm thứ nhất = `case_issues` primary (quan sát = nhận xét), nhóm sau = secondary; ô có nhận xét mà chưa chọn nhóm → nhóm "Khác" của kỹ năng.
- * Ô chưa có nhận xét → giữ mô tả đang có; Case chưa có gì → "Chờ ghi nhận xét".
+ * Ô chưa có nhận xét → giữ mô tả đang có; Case chưa có gì → "Chờ mô tả Case" (GV ghi mô tả ở Case — MO-TA-CASE).
  * S chấm chéo (N8 ③): ô S đang chờ GV phụ trách "Xác nhận Case" (`cho_phu_trach_xem` = 1) KHÔNG tự thành mô tả — GV phụ trách chọn (`xacNhanCaseS`).
  *
  * Gọi sau mọi lần ô đổi nhận xét / nhóm (`saveScore`), lúc Case MT ra đời / trượt lại (`sos.ts`), và migrate. Trả số Case đã đổi.
@@ -37,7 +37,7 @@ export function dongBoNguyenNhanMt(theo: { caseIds?: readonly number[]; attemptI
     if (r.mo_ta_attempt_id == null && r.co_mo_ta) continue;
     if (r.cho_phu_trach_xem) continue;   // S chấm chéo chờ GV phụ trách Xác nhận Case
     const nx = String(r.comment ?? '').trim() || null;
-    /* Ô chưa có nhận xét (MT cũ / nhập bù): không xoá mô tả đang có — chỉ Case chưa có gì mới "Chờ ghi nhận xét". */
+    /* Ô chưa có nhận xét (MT cũ / nhập bù): không xoá mô tả đang có — chỉ Case chưa có gì mới "Chờ mô tả Case". */
     if (!nx) continue;
     if (ganMoTaTuO(conn, r.id, r.topic, r.nguon, nx, r.nhom_nguyen_nhan)) doi.push(r.id as number);
   }

@@ -91,7 +91,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
   const v = c.viecTiep;
   const han = v?.loaiHan && v.han ? deadlineView({ kind: v.loaiHan, due: v.han, today: homNay }) : null;
   const viecMo: MoCase | undefined = !v ? undefined
-    : v.chu === 'Xác nhận Case' || v.chu === 'Ghi nhận xét' ? { viec: 'xac-nhan' }   // OV-12c: Ngăn Case mở đúng khối theo trạng thái
+    : v.chu === 'Xác nhận Case' || v.chu === 'Mô tả Case' ? { viec: 'xac-nhan' }   // OV-12c: Ngăn Case mở đúng khối theo trạng thái
     : v.chu.startsWith('Xác nhận PA') ? { viec: 'xac-nhan-pa', paId: v.paId }
     : v.loaiHan === 'cap-nhat-pa' ? { viec: 'ghi-ket-qua', paId: v.paId } : undefined;
   return (
@@ -120,7 +120,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
             </>}
           </span>
           {viecMo && (viecMo.viec === 'ghi-ket-qua' ? !!c.plans.find((p) => p.id === viecMo.paId)?.ghiDuoc : v.chu === 'Xác nhận Case' ? c.coTheXacNhanCase : c.canEdit)
-            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Kết quả cuối') ? t('Kết quả cuối') : v.chu === 'Ghi nhận xét' ? t('Ghi nhận xét') : NUT_VIEC[viecMo.viec!]}</button>
+            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Kết quả cuối') ? t('Kết quả cuối') : v.chu === 'Mô tả Case' ? t('Mô tả Case') : NUT_VIEC[viecMo.viec!]}</button>
             : (
               <span className="flex items-center justify-between gap-2 text-[12px] text-slate-400">
                 <span className="min-w-0 truncate">{c.nguoiLam?.ten ? t('Việc của {ten}', { ten: c.nguoiLam.ten }) : t('Việc của người khác')}</span>

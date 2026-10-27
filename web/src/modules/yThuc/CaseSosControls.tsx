@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -31,7 +31,7 @@ const oDich = (attemptId: number, topic: string | null | undefined): NguonDich |
 /**
  * CASE TỰ TẠO TỪ SOS (SOS v4, PR-SOS — M7, YC-12.1, 12.3, 12.4, Q28-3; OV-12c khuôn panel v3):
  *   · Case MT: nguyên nhân = nhận xét + nhóm của bài → `XacNhanPaPanel` (bấm thẳng; Sửa PA / Không cần theo dõi trong khối Cần làm);
- *     Case MT cũ bài chưa nhận xét → `GhiNhanXetPanel`.
+ *     Case MT chưa có mô tả (bài không nhận xét) → `MoTaCasePanel`.
  *   · Progress Test lớp thường: `XacNhanCasePanel` MỘT bước (nhóm + mô tả + PA Bổ trợ) → PA chạy.
  *   · `KhongTheoDoiForm` → gửi Quản lý duyệt (thẻ Chờ duyệt, 5 ngày) — Case chưa đóng.
  */
@@ -58,7 +58,7 @@ export type PaQuyChe = {
 export function dauCase(data: CaseDetail, lop: string | null | undefined, ngCanh: string, lam: boolean) {
   const st = data.student;
   return {
-    han: lam ? <ChipHan loai="xac-minh-sos" han={data.sos?.dueOn ?? data.trangThaiV4?.han ?? null} /> : null,
+    han: lam ? <ChipHan loai="xac-minh-sos" han={data.sos?.dueOn ?? data.trangThaiV4?.han ?? null} /> : null, loai: t('VIỆC'),
     dong2: [
       st ? <Link className="font-bold text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(st.id)}>{st.name}<span aria-hidden className="ml-0.5 text-xs">↗</span></Link> : null,
       lop ?? null, ngCanh,
@@ -289,41 +289,44 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
 }
 
 /**
- * GHI NHẬN XÉT — Case MT CŨ (trước luật nhận xét bắt buộc) mà bài chưa có nhận xét (OV-12c). Cần làm = Nhận xét * (≥ 10) + Nhóm nguyên nhân *
- * (chip, 1 = chính) của đúng bài, lưu qua đường ghi điểm (`PUT /attempts/:id/scores/:skill`, chỉ hai trường — điểm không đổi). Lưu xong nguyên
- * nhân Case = nhận xét này, Case sang Xác nhận PA. GV đúng kỹ năng bổ sung được cả khi lượt đã hoàn tất (chỉ ô còn thiếu).
+ * MÔ TẢ CASE (MO-TA-CASE, N8 — chủ SP 27/10): nhận xét bài KHÔNG bắt buộc; Case MT chưa có mô tả (bài không nhận xét) → GV phụ trách kỹ năng ghi
+ * Mô tả * (≥ 10) + Nhóm nguyên nhân * (chip, 1 = chính) THẲNG vào Case (`PATCH /cases/:id` — `nhom` + `observation`, như Sửa Case: mô tả riêng, nhận xét
+ * sau không đè). Bài không bị ghi nhận xét. Lưu xong Case sang Xác nhận PA. `luc` cũ (Case vừa có mô tả từ nhận xét) → 409, chữ đang gõ giữ.
  */
-export function GhiNhanXetPanel({ data, onXong, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void }) {
+export function MoTaCasePanel({ data, onXong, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void }) {
   const toast = useToast();
   const skill = data.topic ?? '';
-  const attemptId = data.attemptId;
   const [nx, setNx] = useNhap('ghi-nhan-xet', '');
   const xoaNhap = useXoaNhap();
   const [nhom, setNhom] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [luc, setLuc] = useState<string | null | undefined>(data.capNhatLuc);
   const lf = useLoiForm();
-  const loi = dsLoi([{ khoa: 'nhan-xet', nhan: t('Nhận xét'), toiThieu: NHAN_XET_MT_TOI_THIEU }, { khoa: 'nhom', nhan: t('Nhóm nguyên nhân'), chon: true }],
+  const loi = dsLoi([{ khoa: 'nhan-xet', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU }, { khoa: 'nhom', nhan: t('Nhóm nguyên nhân'), chon: true }],
     { 'nhan-xet': nx, nhom: nhom[0] ?? '' });
   const luu = async () => {
     lf.bam();
-    if (loi.length > 0 || !attemptId) return;
+    if (loi.length > 0) return;
     setBusy(true);
     try {
-      await api.put(`/attempts/${attemptId}/scores/${skill}`, { nhanXet: nx.trim(), nhomNguyenNhan: nhom });
-      invalidateCases(); invalidate('/attempts'); invalidate('/classes');
+      await api.patch(`/cases/${data.id}`, { luc, nhom, observation: nx.trim() });
+      invalidateCases();
       xoaNhap();
-      toast.push('ok', t('Đã lưu nhận xét — Case sang Xác nhận PA'));
+      toast.push('ok', t('Đã lưu mô tả — Case sang Xác nhận PA'));
       onXong();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) {
+      if (e instanceof ApiError && e.status === 409) setLuc(e.details?.luc ?? null);   // chữ đang gõ giữ nguyên
+      toast.push('error', e.message);
+    } finally { setBusy(false); }
   };
-  const nut = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu nhận xét')}</button>;
+  const nut = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu mô tả')}</button>;
   return (
-    <KhungPanel tieuDe={t('Ghi nhận xét {x}', { x: data.categoryLabel ?? '' }).trim()} {...chung} onDong={chung.onClose}
+    <KhungPanel tieuDe={t('Mô tả Case {x}', { x: data.categoryLabel ?? '' }).trim()} {...chung} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, `MT${data.tenSos?.mt ?? data.attemptNo ?? ''} · ${data.categoryLabel ?? ''}`, true)}
       chan={{ v3: true, chinh: nut, daSua: !!(nx.trim() || nhom.length), conThieu: lf.conThieu(loi), dongTren: busy ? <span>{t('Đang lưu…')}</span> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
-          <Truong nhan={t('Nhận xét')} batBuoc phu={t('Cũng là nguyên nhân của Case')} loi={lf.loiCua(loi, 'nhan-xet')} dem={{ co: nx.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
+          <Truong nhan={t('Mô tả')} batBuoc phu={t('Nguyên nhân của Case — bài không cần nhận xét')} loi={lf.loiCua(loi, 'nhan-xet')} dem={{ co: nx.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
             <textarea className="field w-full" rows={3} maxLength={NHAN_XET_TOI_DA} {...lf.o(loi, 'nhan-xet')} value={nx} disabled={busy} onChange={(e) => setNx(e.target.value)}
               placeholder={viDuNhanXet(skill)} />
           </Truong>

@@ -456,10 +456,10 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/congViec/DanhSachViec.tsx', text: /^Lớp \{/ },
   { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{…\}: \{x\}$/ },   // ghi chú gửi máy chủ, lưu vào nhật ký (giữ Việt) — OV-12f
   /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
-  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA)$/ },
+  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA)$/ },
   { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
   { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
-  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },
+  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },
   { file: 'shared/domain/congViec.ts', text: /^Kỹ năng$/ },   // P11: so với nhãn máy chủ gửi khi Case chưa có môn (`monCuaViec`) — không hiện ra
 ];
 
@@ -478,8 +478,8 @@ const FILE_DA_DICH_D = [
 const CHO_PHEP_D: { file: string; text: RegExp }[] = [
   ...['cases/CasePanel', 'cases/FormPa', 'cases/SkillBoard'].map((f) => ({ file: `web/src/modules/${f}.tsx`, text: /^Người dạy$/ })),   // so với nhanNguoiDay()
   ...['KhaiBacPanel', 'StudentYThucSection', 'ThangYThuc', 'XacNhanXuLyPanel'].map((f) => ({ file: `web/src/modules/yThuc/${f}.tsx`, text: /^lớp thường$/ })),   // so với chuoi.nhan máy chủ gửi
-  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },
-  { file: 'web/src/modules/cases/TheKyNang.tsx', text: /^(Xác nhận Case|Ghi nhận xét|Xác nhận PA|Kết quả cuối)$/ },   // so với viecTiep.chu máy chủ gửi   // so với viecTiep.chu máy chủ gửi
+  { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },
+  { file: 'web/src/modules/cases/TheKyNang.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },   // so với viecTiep.chu máy chủ gửi   // so với viecTiep.chu máy chủ gửi
   { file: 'shared/domain/cases.ts', text: /^(Không còn hợp lệ do sửa điểm|Bỏ qua|Chỉnh khi xác nhận gợi ý tự động)$/ },   // hằng máy chủ ghi vào DB
 ];
 /** Câu lỗi máy chủ GV gặp trên đường Case / Ý thức (đợt d). */

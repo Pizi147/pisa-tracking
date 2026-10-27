@@ -41,8 +41,8 @@ import { dich, t } from '@shared/i18n/index.ts';
 const soCuaKhoa = (k: string) => Number(k.slice(k.lastIndexOf(':') + 1)) || null;
 
 /**
- * VIỆC NÀO LÀM TẠI CHỖ (OV-5a, mockup M1 §2; OV-12c): Xác nhận Case (Progress) · Ghi nhận xét (Case MT cũ) · Thêm PA / Kết quả PA / Xác nhận PA /
- * Mini Test (Ngăn Case, khuôn panel v3 cho Xác nhận Case · Xác nhận PA · Ghi nhận xét) · Nhập điểm
+ * VIỆC NÀO LÀM TẠI CHỖ (OV-5a, mockup M1 §2; OV-12c): Xác nhận Case (Progress) · Mô tả Case (Case MT chưa mô tả) · Thêm PA / Kết quả PA / Xác nhận PA /
+ * Mini Test (Ngăn Case, khuôn panel v3 cho Xác nhận Case · Xác nhận PA · Mô tả Case) · Nhập điểm
  * (một lớp · một lượt) · Bàn giao · Ý thức (xử lý, đã thực hiện, khai bậc một em) · việc Vận hành. Còn lại (Chốt lộ trình, Kết quả đầu ra, Xét lại
  * lộ trình cần cả bảng lớp; Phối hợp, Thiếu dữ liệu, thi thật…) mở trang như cũ. OV-13m: Chọn bước tiếp = panel Bước tiếp (`PanelBuocTiep`).
  */
@@ -224,7 +224,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
     ),
   });
   if (caLop) {
-    return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('‹ Việc'), onClick: () => setCaLop(false) }} />;
+    return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('Việc'), onClick: () => setCaLop(false) }} />;
   }
   return (
     <KhungPanel tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}
@@ -426,7 +426,7 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
   if (lon) return <NganCase caseId={it.caseId!} paId={it.paId} viec="ghi-ket-qua" hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
   if (viecCase) {
     return <NganCase caseId={it.caseId!} viecBanDau={viecCase} hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={() => { reload(); onDaLam(); }}
-      veNguon={{ nhan: t('‹ Việc'), onClick: () => setViecCase(null) }} />;
+      veNguon={{ nhan: t('Việc'), onClick: () => setViecCase(null) }} />;
   }
   const iv = (data?.interventions ?? []).find((x: any) => x.id === it.paId);
   if (data && daTruoc.current === undefined) daTruoc.current = (data.followups ?? []).find((f: any) => f.interventionId === it.paId && f.outcome) ?? null;

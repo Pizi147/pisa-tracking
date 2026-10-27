@@ -358,8 +358,8 @@ export function monCuaViec(it: { group: string; phu?: string | null }): string |
 
 /** Một dòng của ô Việc QL: việc gấp nhất của môn (`dau`) + số việc còn lại cùng môn (`them`). `mon` null = dòng "Khác". */
 export type DongViecMon<T> = { mon: string | null; dau: T; them: number };
-/** Số dòng mặc định của ô Việc QL ("Xem thêm" mở hết — ≤ 5 môn + 1 Khác). */
-export const SO_DONG_VIEC_MAC_DINH = 3;
+/** Số dòng mặc định của ô Việc ("Xem thêm n" mở hết) — HV-LOP-SUA (chủ SP 27/10): tối đa 2 việc. */
+export const SO_DONG_VIEC_MAC_DINH = 2;
 
 /** Gộp việc theo môn, GIỮ thứ tự đầu vào (đã sắp gấp nhất trước): dòng đứng theo việc gấp nhất của môn. Σ (1 + them) = số việc vào. */
 export function gopViecTheoMon<T>(ds: readonly T[], monCua: (x: T) => string | null): DongViecMon<T>[] {

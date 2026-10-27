@@ -12,12 +12,12 @@ export async function runPrViecDungVaiTests(t: any) {
   const normal: any = await import('../normal/regular.ts');
   console.log('\nP11 VIEC-DUNG-VAI · cột Việc đúng vai (GV việc của mình, QL gộp theo môn)');
 
-  check('VDV-1 · gopViecTheoMon: 7 việc / 3 môn + 1 không môn → 4 dòng, mặc định 3, tổng 7, dòng đầu = việc gấp nhất của môn', () => {
+  check('VDV-1 · gopViecTheoMon: 7 việc / 3 môn + 1 không môn → 4 dòng, mặc định 2, tổng 7, dòng đầu = việc gấp nhất của môn', () => {
     const ds = [['a', 'L'], ['b', 'R'], ['c', null], ['d', 'L'], ['e', 'S'], ['f', 'R'], ['g', 'L']] as const;
     const dong = gopViecTheoMon(ds, (x) => x[1]);
     assert(dong.map((d) => d.mon).join() === 'L,R,,S', `thứ tự dòng ${dong.map((d) => d.mon).join()}`);
     assert(dong.map((d) => d.dau[0]).join('') === 'abce', 'dau không phải việc đầu của môn');
-    assert(dong.slice(0, SO_DONG_VIEC_MAC_DINH).length === 3 && dong.length === 4, 'mặc định 3 / Xem thêm 4');
+    assert(dong.slice(0, SO_DONG_VIEC_MAC_DINH).length === 2 && dong.length === 4, 'mặc định 2 / Xem thêm 4');
     assert(dong.reduce((s, d) => s + 1 + d.them, 0) === 7, 'mất việc khi gộp');
     assert(gopViecTheoMon([], () => null).length === 0, 'rỗng');
   });
