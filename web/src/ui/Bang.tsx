@@ -111,7 +111,8 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
                   {cot.map((c, i) => (
                     <td key={c.key} data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                       {oCua(h, c)}
-                      {coPhu(phu[i]) && <span className="bang-phu" data-phu-odiem="">{phu[i]}</span>}
+                      {/* SUA-375-3: dòng phụ dạng chữ bị cắt "…" thì rê chuột xem đủ (mẫu G4: cắt + title). */}
+                      {coPhu(phu[i]) && <span className="bang-phu" data-phu-odiem="" title={typeof phu[i] === 'string' ? phu[i] : undefined}>{phu[i]}</span>}
                     </td>
                   ))}
                 </tr>
