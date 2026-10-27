@@ -7,7 +7,7 @@ import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
+import { OChiNhanh, docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
 import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
@@ -361,10 +361,9 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         </select>
       )}
       {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
-        <select className={SELECT_GON} aria-label={t('Chi nhánh')} value={pv.chiNhanh ?? ''}
-          onChange={(e) => { nhoChiNhanh(session?.user?.id, Number(e.target.value)); setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null }); }}>
-          {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+        /* D3: cùng ô chi nhánh gọn mọi trang (nhãn trong ô). */
+        <OChiNhanh branches={branches.data ?? []} branchId={pv.chiNhanh ?? null} tatCa={false}
+          onBranch={(id) => { if (id === null) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
       )}
     </>
   );
