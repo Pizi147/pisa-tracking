@@ -49,7 +49,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     /* OV-12c: Case không phải MT (Progress) chờ "Xác nhận Case"; Case MT cũ (bài chưa nhận xét) "Chờ ghi nhận xét". */
     assert(cn.k === 'cho-nguyen-nhan' && cn.t === 'can-lam' && cn.han === '2026-09-16' && cn.chu === 'Chờ xác nhận Case', JSON.stringify(cn));
     const nx = k({ laMt: true });
-    assert(nx.k === 'cho-nhan-xet' && nx.t === 'can-lam' && nx.han === '2026-09-16' && nx.chu === 'Chờ ghi nhận xét', JSON.stringify(nx));
+    assert(nx.k === 'cho-nhan-xet' && nx.t === 'can-lam' && nx.han === '2026-09-16' && nx.chu === 'Chờ mô tả Case', JSON.stringify(nx));
     assert(k({}, '2026-09-17').t === 'qua-han' && k({}, '2026-09-16').t === 'can-lam', 'quá hạn khi hôm nay > hạn');
     assert(k({ hasCause: true }).k === 'cho-xac-nhan-pa' && k({ hasCause: true }).chu === 'Chờ xác nhận PA', 'chờ xác nhận PA');
     assert(k({ hasCause: true, coPaChoXacNhan: false, status: 'in_progress' }).k === 'dang-lam', 'đang làm');
@@ -60,7 +60,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const pa = (x: object) => ({ id: 1, ten: 'Tutor', batBuoc: true, choXacNhan: false, xong: false, actionDue: '2026-09-28', followupDue: '2026-10-18', ...x });
     const hom = '2026-09-22';
     assert(d.viecTiepCuaCase(c, [pa({ choXacNhan: true })], hom)?.chu === 'Xác nhận Case', 'nguyên nhân (Progress: Xác nhận Case)');
-    assert(d.viecTiepCuaCase({ ...c, laMt: true }, [pa({ choXacNhan: true })], hom)?.chu === 'Ghi nhận xét', 'Case MT cũ: Ghi nhận xét');
+    assert(d.viecTiepCuaCase({ ...c, laMt: true }, [pa({ choXacNhan: true })], hom)?.chu === 'Mô tả Case', 'Case MT chưa mô tả: Mô tả Case');
     assert(d.viecTiepCuaCase({ ...c, choDuyetKhongTheoDoi: true }, [], hom)?.han === null, 'chờ duyệt không hạn');
     const xn = d.viecTiepCuaCase({ ...c, hasCause: true }, [pa({ choXacNhan: true })], hom);
     assert(xn?.chu === 'Xác nhận PA Tutor' && xn.han === '2026-09-16' && xn.loaiHan === 'xac-minh-sos' && xn.paId === 1, JSON.stringify(xn));
@@ -220,7 +220,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const c = caseOf(st.id, 'listening');
     assertThrows(() => cases.reportIssue(P.mbManager, { studentId: st.id, cycleId: st.cycleId, topic: 'listening', primaryCode: d.issuesForTopic('listening', null)[0].code,
       title: 'Báo thêm', summary: 'Em nghe chưa bắt được ý chính ở phần 3, cần xem lại.', mergeIntoExisting: true }),
-      /Listening đang có Case chờ ghi nhận xét \(MT1 · SOS 3\) — mở Case để ghi nhận xét\./, 'gộp vào Case chờ nguyên nhân (OV-12c: MT cũ chờ ghi nhận xét)');
+      /Listening đang có Case chờ mô tả \(MT1 · SOS 3\) — mở Case để ghi mô tả\./, 'gộp vào Case chờ nguyên nhân (OV-12c: MT cũ chờ ghi nhận xét)');
     assert(get('SELECT COUNT(*) n FROM case_issues WHERE case_id = ?', c.id).n === 0, 'đã gộp nguyên nhân');
   });
 
@@ -248,7 +248,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const { st } = mt1Sos3('T4b');
     const c = caseOf(st.id, 'reading');
     const iv = plansOf(c.id)[0];
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: MO_TA })), /chưa có nhận xét/, 'chưa nguyên nhân (OV-12c: bài chưa nhận xét)');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: MO_TA })), /chưa có mô tả/, 'chưa nguyên nhân (OV-12c: bài chưa nhận xét)');
     nhanXet(P.admin, c.id, { ...XN, primaryCode: d.issuesForTopic('reading', null)[0].code });
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: 'ngắn' })), /ít nhất 15/, 'mô tả ngắn');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.w1Teacher, iv.id, duXacNhan(conn, iv.id, { description: MO_TA })), /phân công/, 'GV W1');
@@ -430,9 +430,9 @@ export async function runPrSosTests(t: YThucTestKit) {
     const iv = plansOf(c.id)[0];
     /* OV-12c: Case MT cũ (bài chưa nhận xét) → "Ghi nhận xét Writing Task 2 · MT2 · {HV}"; ghi xong → "Xác nhận PA". */
     const cause = viecCua(P.w2Teacher).find((i) => i.key === `ghi_nhan_xet:${c.id}`);
-    assert(cause && cause.tieuDe === `Ghi nhận xét Writing Task 2 · MT2 · ${st.name}` && cause.due === c.han_xac_nhan && cause.actionLabel === 'Ghi nhận xét', JSON.stringify(cause));
+    assert(cause && cause.tieuDe === `Mô tả Case Writing Task 2 · MT2 · ${st.name}` && cause.due === c.han_xac_nhan && cause.actionLabel === 'Mô tả Case', JSON.stringify(cause));
     /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec.cuaBan` — GVBM W2 thấy "Ghi nhận xét W2" là việc của mình. */
-    assert(/^Ghi nhận xét W/.test(profileSvc.studentProfile(P.w2Teacher, st.id).dauHoSo.viec.cuaBan[0]?.chu ?? ''), 'đầu hồ sơ chưa dùng việc tiếp v4');
+    assert(/^Mô tả Case W/.test(profileSvc.studentProfile(P.w2Teacher, st.id).dauHoSo.viec.cuaBan[0]?.chu ?? ''), 'đầu hồ sơ chưa dùng việc tiếp v4');
     nhanXet(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
     const ds = viecCua(P.w2Teacher);
     const xn = ds.find((i) => i.key === `xnpa:${iv.id}`);
@@ -496,7 +496,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const h = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNguyenNhan: true }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, '2026-09-22');
     assert(h?.chu === 'Cần làm · chờ xác nhận Case', JSON.stringify(h));
     const hn = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNhanXet: true }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, '2026-09-22');
-    assert(hn?.chu === 'Cần làm · chờ ghi nhận xét', JSON.stringify(hn));
+    assert(hn?.chu === 'Cần làm · chờ mô tả Case', JSON.stringify(hn));
     const pa = { status: 'planned', lastOutcome: null, preset: true, confirmedAt: null, pendingApproval: false, approvalDue: null, actionDue: null, actionOverdue: false, completedOn: null };
     assert(d.viecTiepPhuongAn({ ...pa, choXacNhan: true }).loai === 'cho-xac-nhan', 'chờ xác nhận');
     assert(d.viecTiepPhuongAn({ ...pa, status: 'started', lanCuoi: true, actionDue: '2026-09-28' }).text === 'Kết quả cuối', 'ghi cuối');

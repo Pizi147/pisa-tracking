@@ -641,13 +641,13 @@ export function reportIssue(p: Principal, input: {
   const caChuongTrinhKhac = !!caCu && caseKhacChuongTrinh(caCu, chuongTrinhCuaLop(activeClassOf(input.studentId)));
   const existing = caChuongTrinhKhac ? null : caCu;
 
-  /* PR-SOS K3-23 (M4): Case SOS cùng kỹ năng đang chờ (Xác nhận Case / ghi nhận xét MT cũ) → không gộp, không mở song song — làm ở Case đó. */
+  /* PR-SOS K3-23 (M4): Case SOS cùng kỹ năng đang chờ (Xác nhận Case / Mô tả Case MT) → không gộp, không mở song song — làm ở Case đó. */
   const stCu = existing ? sosCaseState(existing.id) : null;
   if (existing && (stCu!.awaitingCause || stCu!.choNhanXet)) {
     const mt = existing.attempt_id
       ? (conn.prepare('SELECT attempt_no FROM assessment_attempts WHERE id = ?').get(existing.attempt_id) as any)?.attempt_no ?? null : null;
     const nhan = [mt ? `MT${mt}` : null, existing.sos_level ? `SOS ${existing.sos_level}` : null].filter(Boolean).join(' · ');
-    throw loi(400, stCu!.choNhanXet ? '{chuDe} đang có Case chờ ghi nhận xét{nhan} — mở Case để ghi nhận xét.' : '{chuDe} đang có Case chờ xác nhận{nhan} — mở Case để xác nhận.',
+    throw loi(400, stCu!.choNhanXet ? '{chuDe} đang có Case chờ mô tả{nhan} — mở Case để ghi mô tả.' : '{chuDe} đang có Case chờ xác nhận{nhan} — mở Case để xác nhận.',
       { chuDe: caseTopicLabel(existing.topic ?? topic, ctCuaCase), nhan: nhan ? ` (${nhan})` : '' },
       { caseChoNguyenNhan: { id: existing.id } },
     );
@@ -1292,6 +1292,8 @@ function chanXoaCase(c: any): string | null {
 export function suaCase(p: Principal, caseId: number, input: {
   title?: string | null; summary?: string | null; urgency?: string | null; topic?: string | null;
   primaryCode?: string | null; observation?: string | null;
+  /** MO-TA-CASE: nhóm nguyên nhân theo thứ tự chọn (1 = chính, sau = phụ) — như Xác nhận Case; có thì thay `primaryCode` và mọi nhóm phụ. */
+  nhom?: unknown;
   /** SV-NX-CASE: `capNhatLuc` của Case lúc mở panel — khác bản đang có → 409 (không ghi đè im lặng); `undefined` = không so. */
   luc?: string | null;
 }) {
@@ -1309,16 +1311,24 @@ export function suaCase(p: Principal, caseId: number, input: {
   const topic: string = input.topic === undefined || input.topic === null ? c.topic : String(input.topic).trim();
   const doiKyNang = topic !== c.topic;
   /* SV-NX-CASE: chỉ coi là sửa mô tả khi CÓ gửi nhóm / mô tả — Case MT chưa mô tả mà chỉ đổi tên / mức độ không bị đòi mô tả. */
-  const guiMoTa = (input.primaryCode != null && input.primaryCode !== '') || input.observation !== undefined;
+  const nhom = input.nhom == null ? null : input.nhom;
+  if (nhom !== null && (!Array.isArray(nhom) || !nhom.length || !nhom.every((x) => typeof x === 'string') || new Set(nhom).size !== nhom.length)) {
+    throw badRequest('Nhóm nguyên nhân không hợp lệ.');
+  }
+  const guiMoTa = (input.primaryCode != null && input.primaryCode !== '') || input.observation !== undefined || nhom !== null;
   if (typeof input.observation === 'string' && input.observation.trim().length > NHAN_XET_TOI_DA) {
     throw loi(400, 'Nhận xét tối đa {x} ký tự (đang {length}).', { x: NHAN_XET_TOI_DA, length: input.observation.trim().length });
   }
   const nd = kiemNoiDungCase(topic, ct, {
-    primaryCode: input.primaryCode ?? (doiKyNang ? null : chinh?.taxonomy_code ?? null),
+    primaryCode: nhom?.[0] ?? input.primaryCode ?? (doiKyNang ? null : chinh?.taxonomy_code ?? null),
     observation: input.observation !== undefined ? input.observation : chinh?.observation ?? null,
     urgency: input.urgency ?? c.urgency ?? DEFAULT_URGENCY,
     moTa: input.summary ?? c.summary, tenGiua: input.title ?? c.title ?? tenGiuaCua(c),
   }, { khongDoiMoTa: st.laMt, boNguyenNhan: st.laMt && !chinh && !guiMoTa });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài
+  if (nhom?.slice(1).some((x) => !issuesForTopic(topic, ct).some((i) => i.code === x))) {
+    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ct) });
+  }
+  const phuCu = (conn.prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? AND role = 'secondary' ORDER BY id`).all(caseId) as any[]).map((x) => x.taxonomy_code as string);
   let khoaMoi: string | null = c.dedup_key ?? null;
   if (doiKyNang) {
     if (c.origin_kind === 'mock') throw badRequest('Case từ kết quả Test — không đổi kỹ năng.');
@@ -1331,14 +1341,15 @@ export function suaCase(p: Principal, caseId: number, input: {
   }
   const truoc: Record<string, unknown> = {
     title: c.title ?? null, summary: c.summary ?? null, urgency: c.urgency ?? null, topic: c.topic ?? null,
-    primaryCode: chinh?.taxonomy_code ?? null, observation: chinh?.observation ?? null,
+    primaryCode: chinh?.taxonomy_code ?? null, observation: chinh?.observation ?? null, nhomPhu: phuCu.join(',') || null,
   };
   const sau: Record<string, unknown> = {
     title: nd.tenGiua, summary: nd.moTa, urgency: nd.urgency, topic, primaryCode: nd.primaryCode || null, observation: nd.observation,
+    nhomPhu: nhom ? nhom.slice(1).join(',') || null : phuCu.join(',') || null,
   };
   const doi = Object.keys(sau).filter((k) => (truoc[k] ?? null) !== (sau[k] ?? null));
   if (!doi.length) return caseDetail(p, caseId);
-  const doiMoTa = guiMoTa && (doi.includes('primaryCode') || doi.includes('observation') || !chinh);
+  const doiMoTa = guiMoTa && (doi.includes('primaryCode') || doi.includes('observation') || doi.includes('nhomPhu') || !chinh);
   if (st.laMt && doiMoTa && (nd.observation ?? '').length < NHAN_XET_MT_TOI_THIEU) {
     throw loi(400, 'Mô tả Case cần ít nhất {n} ký tự — vấn đề học thuật của kỹ năng.', { n: NHAN_XET_MT_TOI_THIEU });
   }
@@ -1354,6 +1365,10 @@ export function suaCase(p: Principal, caseId: number, input: {
       conn.prepare('UPDATE case_issues SET taxonomy_code = ?, observation = ?, skill = ?, created_by = ? WHERE id = ?')
         .run(nd.primaryCode, nd.observation, topic, doiMoTa ? p.userId : chinh.created_by ?? null, chinh.id);
     } else if (nd.primaryCode) addIssues(caseId, p.userId, { primaryCode: nd.primaryCode, observation: nd.observation, topic });
+    if (doi.includes('nhomPhu')) {
+      conn.prepare(`DELETE FROM case_issues WHERE case_id = ? AND role = 'secondary'`).run(caseId);
+      addIssues(caseId, p.userId, { secondaryCodes: nhom!.slice(1), topic });
+    }
     const ls = conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)`);
     for (const k of doi) ls.run(caseId, k, truoc[k] == null ? null : String(truoc[k]), sau[k] == null ? null : String(sau[k]), p.userId, nowIso());
     if (theoNhanXet && doiMoTa) ls.run(caseId, 'mo_ta_nguon', 'nhan_xet', 'sua_rieng', p.userId, nowIso());   // SV-NX-CASE: từ nay tách khỏi nhận xét

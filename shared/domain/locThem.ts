@@ -11,7 +11,7 @@ import type { KetQuaVao } from './hocVienLop.ts';
 export const LOC_CASE = ['co-case', 'khong-case', 'trong-pa', 'cho-nhan-xet', 'cho-pa', 'pa-chay', 'pa-xong'] as const;
 export type LocCase = (typeof LOC_CASE)[number];
 export const NHAN_LOC_CASE = {
-  'co-case': 'Có Case mở', 'khong-case': 'Không Case', 'trong-pa': 'Case trống PA', 'cho-nhan-xet': 'Chờ nhận xét',
+  'co-case': 'Có Case mở', 'khong-case': 'Không Case', 'trong-pa': 'Case trống PA', 'cho-nhan-xet': 'Chờ mô tả Case',
   'cho-pa': 'PA chờ xác nhận / duyệt', 'pa-chay': 'PA đang chạy', 'pa-xong': 'PA xong · chờ đóng',
 } as const satisfies Record<LocCase, string>;
 export const LOC_KY_NANG = ['listening', 'reading', 'writing', 'speaking'] as const;

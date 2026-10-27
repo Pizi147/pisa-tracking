@@ -50,6 +50,8 @@ export type BoTro = {
 
 export type CaseDetail = {
   id: number; originKind: string;
+  /** SV-NX-CASE: mốc phiên bản (409 khi Case vừa đổi) — Sửa Case · Mô tả Case. */
+  capNhatLuc?: string | null;
   /** Còn thiếu gì để hoàn thành case. Rỗng = đủ điều kiện đóng (mục 7.7 [5]). */
   closeBlockers: string[];
   /** PR-SOS (K3-09): `an` = ẩn nút Hoàn thành (PA theo quy chế chưa khép), `dong` = câu mờ thay nút. */
@@ -119,7 +121,7 @@ export type CaseDetail = {
 export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' } | { loai: 'hoan-thanh' }
   /* PR-SOS (Q28-3): Xác nhận Case → Xác nhận PA theo quy chế. */
   | { loai: 'xac-nhan' } | { loai: 'xac-nhan-pa'; paId: number }
-  /* OV-12c: Case MT cũ bài chưa nhận xét → Ghi nhận xét (nhận xét + nhóm = nguyên nhân). */
+  /* MO-TA-CASE (N8): Case MT chưa có mô tả → Mô tả Case (mô tả + nhóm ghi thẳng vào Case). */
   | { loai: 'ghi-nhan-xet' }
   /* SV-NX-CASE (N8 ③): Speaking chấm chéo — GV phụ trách chọn mô tả Case. */
   | { loai: 'xac-nhan-s' }

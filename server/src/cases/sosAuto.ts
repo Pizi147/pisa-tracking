@@ -465,8 +465,8 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   if (iv.case_status === 'done') throw badRequest('Case đã đóng — không còn xác nhận PA được.');
   if (iv.confirmed_at || iv.status !== 'planned') throw badRequest('PA này đã được xác nhận rồi.');
   const stCase = sosCaseState(iv.case_id);
-  /* OV-12c: nguyên nhân Case MT = nhận xét của ô — Case MT cũ chưa có nhận xét thì ghi nhận xét trước. */
-  if (!stCase.hasCause) throw badRequest(stCase.laMt ? 'Bài này chưa có nhận xét — ghi nhận xét (nguyên nhân) trước, rồi mới xác nhận PA.' : 'Xác nhận Case trước, rồi mới xác nhận PA.');
+  /* OV-12c: nguyên nhân Case MT = nhận xét của ô — Case MT chưa có mô tả thì Mô tả Case trước. */
+  if (!stCase.hasCause) throw badRequest(stCase.laMt ? 'Case chưa có mô tả — ghi Mô tả Case trước, rồi mới xác nhận PA.' : 'Xác nhận Case trước, rồi mới xác nhận PA.');
   if (stCase.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận PA.');
   /* PR-S4F #9 (Q28-5): mô tả phải do người xác nhận gửi lên — không lấy mô tả máy gán thay (xác nhận "nguyên văn" thì gửi lại đúng chữ đó). */
   if (typeof input.description !== 'string' || !input.description.trim()) {

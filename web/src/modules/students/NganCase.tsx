@@ -14,7 +14,7 @@ import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
-import { DongNguyenNhan, GhiNhanXetPanel, XacNhanCasePanel, XacNhanPaPanel, XacNhanSPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
+import { DongNguyenNhan, MoTaCasePanel, XacNhanCasePanel, XacNhanPaPanel, XacNhanSPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { BoiCanh, KhoiDaLuu, NutChu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -74,7 +74,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   /* Một bước của chuỗi xong (Xác nhận Case → Xác nhận PA, "Việc tiếp ›"): THAY view trên cùng — ‹ vẫn về view cha cũ. */
   const sangViec = (v: ViewCase) => xem.thay(maView(v));
   /* B1: mở từ thông báo / đường `?case=` (không kèm việc) — hoặc `viec=xac-nhan` từ hồ sơ — khi Case đang chờ → mở sẵn đúng khối: Progress chờ
-     Xác nhận Case → Xác nhận Case; Case MT cũ bài chưa nhận xét → Ghi nhận xét (OV-12c). Trong panel số (`?panel=`) chỉ dòng "Xác nhận Case" chung tự
+     Xác nhận Case → Xác nhận Case; Case MT chưa mô tả → Mô tả Case (MO-TA-CASE). Trong panel số (`?panel=`) chỉ dòng "Xác nhận Case" chung tự
      sang đúng khối (thay view — F5 giữ khối đã chọn). */
   const tuDong = useRef(xem.url ? maHien === 'xac-nhan' : !viecBanDau && !paId && (!viec || viec === 'xac-nhan'));
   useEffect(() => {
@@ -178,7 +178,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   if (view.loai === 'sua-ket-qua') {
     return <SuaKetQuaPanel key={view.followupId} followupId={view.followupId} {...chung} onSaved={xong} onThemPa={() => setView({ loai: 'them-pa' })} />;
   }
-  /* OV-12c (khuôn panel v3): Progress — Xác nhận Case MỘT bước (PA Bổ trợ chạy ngay); Case MT — Ghi nhận xét (MT cũ) → Xác nhận PA. */
+  /* OV-12c (khuôn panel v3): Progress — Xác nhận Case MỘT bước (PA Bổ trợ chạy ngay); Case MT — Mô tả Case (chưa mô tả) → Xác nhận PA. */
   const paCho = (data.interventions ?? []).filter((x: any) => x.awaitingConfirmation && x.kind !== 'bo_tro') as PaQuyChe[];
   if (view.loai === 'xac-nhan' && data.trangThaiV4?.k === 'cho-nguyen-nhan') {
     return <XacNhanCasePanel {...chung} data={data} onXong={xong} />;
@@ -187,7 +187,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
     return <XacNhanSPanel {...chung} data={data} onXong={() => { if (paCho[0]) { reload(); onChanged?.(); sangViec({ loai: 'xac-nhan-pa', paId: paCho[0].id }); } else xong(); }} />;
   }
   if ((view.loai === 'ghi-nhan-xet' || view.loai === 'xac-nhan') && data.trangThaiV4?.k === 'cho-nhan-xet') {
-    return <GhiNhanXetPanel {...chung} data={data} onXong={() => { if (paCho[0]) { reload(); onChanged?.(); sangViec({ loai: 'xac-nhan-pa', paId: paCho[0].id }); } else xong(); }} />;
+    return <MoTaCasePanel {...chung} data={data} onXong={() => { if (paCho[0]) { reload(); onChanged?.(); sangViec({ loai: 'xac-nhan-pa', paId: paCho[0].id }); } else xong(); }} />;
   }
   if (view.loai === 'xac-nhan-pa') {
     const pa = paCho.find((x) => x.id === view.paId);
@@ -272,7 +272,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   const chanHoanThanh = data.closeBlockers ?? [];
   const ht = data.hoanThanh ?? null;
   /*
-   * NÚT CHÍNH = VIỆC TIẾP (B2, K3-07, K3-09; OV-12c): Xác nhận Case (Progress) / Ghi nhận xét (MT cũ) / Xác nhận PA / Ghi kết quả cuối {PA} / Ghi kết quả PA {PA quá hạn nhất} /
+   * NÚT CHÍNH = VIỆC TIẾP (B2, K3-07, K3-09; OV-12c): Xác nhận Case (Progress) / Mô tả Case (MT) / Xác nhận PA / Ghi kết quả cuối {PA} / Ghi kết quả PA {PA quá hạn nhất} /
    * Hoàn thành Case. PA theo quy chế chưa khép → ẨN Hoàn thành, hiện dòng mờ nói khi nào hoàn thành được.
    */
   const v = data.viecTiep ?? null;
@@ -309,7 +309,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
     if (data.choXacNhanS?.coTheXacNhan && canDong) return nut(t('Xác nhận Case'), () => setView({ loai: 'xac-nhan-s' }));
     if (v?.chu === 'Xác nhận Case') return data.viewer.coTheXacNhanCase && canDong ? nut(t('Xác nhận Case'), () => setView({ loai: 'xac-nhan' })) : undefined;
     if (!data.viewer.canEdit || !canDong) return undefined;
-    if (v?.chu === 'Ghi nhận xét') return nut(t('Ghi nhận xét'), () => setView({ loai: 'ghi-nhan-xet' }));
+    if (v?.chu === 'Mô tả Case') return nut(t('Mô tả Case'), () => setView({ loai: 'ghi-nhan-xet' }));
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut(t('Xác nhận PA'), () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
     /* CV-LOI (A1-15): Case chưa có PA (việc tiếp = lập PA) → nút chính là "+ Thêm PA", không phải "Hoàn thành Case". */
     if (v?.loaiHan === 'lap-pa' && themPaDuoc) return nut(t('+ Thêm PA'), () => setView({ loai: 'them-pa' }));
@@ -387,7 +387,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
 /** Tên view trên nút "‹ {view trước}" (cùng chữ với nút mở view đó). */
 const TEN_VIEW: Record<string, string> = {
   'ghi-ket-qua': t('Ghi kết quả'), 'sua-ket-qua': t('Sửa kết quả'), 'them-pa': t('Thêm PA'), 'sua-pa': t('Sửa PA'), 'xac-nhan-pa': t('Xác nhận PA'),
-  'xac-nhan': t('Xác nhận Case'), 'xac-nhan-s': t('Xác nhận Case'), 'ghi-nhan-xet': t('Ghi nhận xét'), 'hoan-thanh': t('Hoàn thành Case'), sua: t('Sửa'),
+  'xac-nhan': t('Xác nhận Case'), 'xac-nhan-s': t('Xác nhận Case'), 'ghi-nhan-xet': t('Mô tả Case'), 'hoan-thanh': t('Hoàn thành Case'), sua: t('Sửa'),
 };
 function tuViec(viec: string | undefined, paId: number | null | undefined): ViewCase | null {
   if (viec === 'ghi-ket-qua' && paId) return { loai: 'ghi-ket-qua', paId };

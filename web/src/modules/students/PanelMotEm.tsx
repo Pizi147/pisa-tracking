@@ -37,7 +37,7 @@ const TONE_NHOM = { 'cho-duyet': 'muted', 'dang-xu-ly': 'doing', xong: 'done' } 
 const VIEC_CUA_NHOM: Record<string, ViecCase> = { xac_nhan_pa: 'xac-nhan-pa', ghi_ket_qua_pa: 'ghi-ket-qua', mini_test: 'ghi-ket-qua', no_plan: 'them-pa', cause: 'xac-nhan', ghi_nhan_xet: 'ghi-nhan-xet' };
 /** Nút chính = động từ của việc (panel v3 §1: một nút chính, chữ = động từ việc). */
 const NUT_CUA_NHOM: Record<string, string> = {
-  xac_nhan_pa: t('Xác nhận PA'), ghi_ket_qua_pa: t('Ghi kết quả'), mini_test: t('Ghi Mini Test'), no_plan: t('Thêm PA'), cause: t('Xác nhận Case'), ghi_nhan_xet: t('Ghi nhận xét'),
+  xac_nhan_pa: t('Xác nhận PA'), ghi_ket_qua_pa: t('Ghi kết quả'), mini_test: t('Ghi Mini Test'), no_plan: t('Thêm PA'), cause: t('Xác nhận Case'), ghi_nhan_xet: t('Mô tả Case'),
 };
 
 /**
