@@ -14,9 +14,9 @@ import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Pri
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
-import { kckCuaLuot, regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
+import { huyCua, kckCuaLuot, lichSuLichCua, lopHienTaiCua, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { boMonCuaLuot, lichGopCua, canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { boMonCuaLuot, lichGopCua, canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { catDiemO, diemHuyMo, dongBanCat } from '../fasttrack/ketQuaHuy.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
@@ -388,6 +388,7 @@ export function planRegularTests(p: Principal, classId: number, opts: {
           .run(cycle.id, st.id, nextNo, kind, classId, period.id, p.userId, nowIso());
         /* Bốn môn cùng tuần khi mới lập; trải ra nhiều tuần là thao tác đổi lịch sau đó. */
         ensureSkillRows(Number(info.lastInsertRowid));
+        logSchedule(Number(info.lastInsertRowid), { action: 'created', field: 'planned_period', newValue: period.code, actor: p.userId });   // HSL-MAY-CHU: như lượt FT
         created.push(Number(info.lastInsertRowid));
         addJourney({
           studentId: st.id, eventType: 'mock_scheduled', eventDate: week,
@@ -495,6 +496,10 @@ function ghiLuotThuong(moi: readonly LuotMoi[], ctLop: Map<number, string | null
     }, THAM_SO_TOI_DA - bo.length - 1);
   }
   capNhatConOCho(ids);   // TD7b: lượt mới + dòng lịch chèn bằng SQL lô
+  /* HSL-MAY-CHU: dòng "created" của lịch sử lịch như lượt FT (`taoMtMacDinh`) — trang lượt đọc lịch sử từ đây. */
+  chenNhieuDong(
+    'INSERT INTO attempt_schedule_history (attempt_id, action, field, old_value, new_value, reason, actor_user_id, created_at)',
+    moi.map((m, i) => [ids[i], 'created', 'planned_period', null, tuan.get(m.week)!.code, chiTiet, actorUserId, now]));
   chenNhieuDong(
     'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
     moi.map((m, i) => [m.studentId, m.cycleId, 'mock_scheduled', m.week,
@@ -1068,7 +1073,9 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
  */
 export function regularSheet(p: Principal, classId: number, kind?: string, today: string = demoToday(),
   /** OV-6b2: số Checkpoint (`kind = 'checkpoint'`); hoặc gửi thẳng khoá bài `checkpoint:2` ở `kind`. */
-  attemptNo?: number) {
+  attemptNo?: number,
+  /** HSL-MAY-CHU: chỉ MỘT lượt (`regularAttemptDetail`) — kể cả lượt đã huỷ, em đã rời lớp / ở Lưu trữ. */
+  chiLuot?: number) {
   const conn = db();
   const cls = conn
     .prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?')
@@ -1083,7 +1090,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
 
   const params: unknown[] = [classId];
   /* PR-OV1a: MT0 chấm band — chỉ ở `chamSheet(kind: 'mt0')`, không bao giờ thành hàng của bảng tỷ lệ. */
-  let where = `a.class_id = ? AND a.status != 'cancelled' AND a.kind != 'mt0'`;
+  let where = chiLuot ? `a.class_id = ? AND a.id = ? AND a.kind != 'mt0'` : `a.class_id = ? AND a.status != 'cancelled' AND a.kind != 'mt0'`;
+  if (chiLuot) params.push(chiLuot);
   const cp = /^checkpoint:(\d+)$/.exec(kind ?? '');
   if (cp) { kind = 'checkpoint'; attemptNo = Number(cp[1]); }
   if (kind) { where += ' AND a.kind = ?'; params.push(kind); }
@@ -1096,7 +1104,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE ${where} AND (s.archived_at IS NULL OR s.status = 'inactive')   -- P7: em Tạm dừng ở Lưu trữ vẫn nhập bù / sửa điểm cũ
+        WHERE ${where}${chiLuot ? '' : ` AND (s.archived_at IS NULL OR s.status = 'inactive')`}   -- P7: em Tạm dừng ở Lưu trữ vẫn nhập bù / sửa điểm cũ
         ORDER BY a.kind DESC, s.full_name`,
     )
     .all(...params) as any[];
@@ -1220,6 +1228,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         ? pending.map((x) => x.v!.deadline!).sort().slice(-1)[0]
         : null;
       const ht = hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null };
+      const huy = a.status === 'cancelled';   // HSL-MAY-CHU: chỉ có ở `chiLuot` — máy chủ không nhận ghi gì vào lượt đã huỷ
       const hoanTat = ketThuc ? { hoanTat: true, chuNhatCuoi: ht.chuNhatCuoi ?? cls.finished_at ?? null } : ht;
       return {
         attemptId: a.id,
@@ -1246,14 +1255,16 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             khongDuThi: !scored && !!row?.no_show_cu && row.no_show_period_id === v.periodId,
             /** OV-4b: nhận xét của môn (nút "Nhận xét" cạnh ô). */
             nhanXet: (row?.comment ?? null) as string | null,
+            /** HSL-MAY-CHU: người nhập điểm môn này (null = chưa có điểm). */
+            nguoiNhap: (scored ? row?.entered_by_name ?? null : null) as string | null,
             movedFrom: row?.no_show_period_id ? periodCode.get(row.no_show_period_id) ?? null : null,
             /** Thứ Hai của tuần `movedFrom` — để lưới viết "trả lịch về W3 SEP" bằng `tuanLich`. */
             movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,
             /** PR-BV: người xem gỡ được dấu "-" (QL, GV chấm môn, GVCN — mọi lúc từ OV-13h). */
-            goDau: !!row?.no_show_period_id && duocGoDau(p, { classId, skill: k, today, duocNhap: canEditSkill.get(k) ?? false }) === null,
+            goDau: !huy && !!row?.no_show_period_id && duocGoDau(p, { classId, skill: k, today, duocNhap: canEditSkill.get(k) ?? false }) === null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
             /* OV-13h: lớp kết thúc GV đúng môn vẫn nhập ô trống (cùng `oChuaCoDiem` với `saveRegularScore`). LUAT-34: "Đủ điểm" không khoá. */
-            canEdit: (ketThuc ? suaSauHoanTat || (!!nhapSkill.get(k) && oChuaCoDiem(row)) : (canEditSkill.get(k) ?? false))
+            canEdit: !huy && (ketThuc ? suaSauHoanTat || (!!nhapSkill.get(k) && oChuaCoDiem(row)) : (canEditSkill.get(k) ?? false))
               /* T19 (PR-MTa): môn chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ, kể cả ô đã có điểm (rà #212); ô mang dấu "-"
                * (đã dời sang tuần sau) vẫn mở để gỡ dấu. */
               && (!!row?.no_show_period_id || (!!v.weekStart && String(v.weekStart).slice(0, 10) <= mondayOf(today))),
@@ -1262,11 +1273,11 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             /** LUAT-34 (T20b): ô trống có điểm đã huỷ còn cất → "Khôi phục điểm". */
             diemHuy: !scored && diemHuy.has(`${a.id}:${k}`),
             /** OV-13h (rà #410): nút Nhận xét — GV đúng môn ghi được cả khi lớp đã kết thúc, cùng luật `saveRegularScore`. */
-            nhanXetDuoc: ketThuc ? suaSauHoanTat || !!nhapSkill.get(k) : (canEditSkill.get(k) ?? false),
+            nhanXetDuoc: !huy && (ketThuc ? suaSauHoanTat || !!nhapSkill.get(k) : (canEditSkill.get(k) ?? false)),
             /** OV-13h (rà #410): lớp đã kết thúc — ô không nhận "-" (cùng câu `chanVangLopKetThuc`); null = gõ "-" được. */
             khongVang: ketThuc ? CAU_KHONG_VANG : null,
             /** CV-LOI (V4B H15): người xem đổi được lịch môn này (Xếp lại bài vắng) — cùng luật `setSkillWeek`. */
-            doiLich: doiLichMon.get(k) ?? false,
+            doiLich: !huy && (doiLichMon.get(k) ?? false),
           };
         }),
         // Quá hạn khi có ÍT NHẤT MỘT môn đã tới hạn mà chưa chấm — không xét theo cả bài.
@@ -1295,5 +1306,26 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
       };
     }),
     today: demoToday(),
+  };
+}
+
+/**
+ * HSL-MAY-CHU — GET /regular/attempts/:id: hồ sơ MỘT lượt lớp thường (Progress / Final / Checkpoint). `dong` = đúng một dòng của `regularSheet`
+ * (cùng hàm, cùng quyền — không xem được lớp → 403) + đầu bảng (lớp, chương trình, tên môn, ngưỡng đạt), lịch sử lịch + điểm, lớp hiện tại.
+ * Lượt FT / MT0 / không có → 404 (trang FT là `GET /attempts/:id`; web chọn đường theo `kind`).
+ */
+export function regularAttemptDetail(p: Principal, attemptId: number) {
+  const a = db().prepare('SELECT id, class_id, student_id, kind FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  if (!a || !a.class_id || !['progress', 'final', 'checkpoint'].includes(a.kind)) throw loi(404, 'Không tìm thấy lượt Test lớp thường.');
+  const { rows, ...bang } = regularSheet(p, a.class_id, undefined, demoToday(), undefined, attemptId);
+  const history = lichSuLichCua(attemptId);
+  return {
+    ...bang,
+    dong: rows[0],
+    lopHienTai: lopHienTaiCua(a.student_id, a.class_id),
+    huy: huyCua(rows[0].status, history),
+    canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
+    history,
+    scoreHistory: scoreHistoryOf(attemptId),
   };
 }

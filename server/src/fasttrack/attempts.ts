@@ -45,6 +45,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
+import { sExCuaHv } from '../cham/sExpert.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -1171,18 +1172,13 @@ export function attemptDetail(p: Principal, attemptId: number) {
     });
     return [{ ...view, label: ASSESSED_SKILL_LABEL[skill] }];
   });
-  const history = conn
-    .prepare(
-      `SELECT h.*, u.full_name AS actor_name FROM attempt_schedule_history h
-         LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.attempt_id = ? ORDER BY h.id DESC`,
-    )
-    .all(attemptId) as any[];
+  const history = lichSuLichCua(attemptId);
   /*
    * PR-HSM (K4-30): "dời từ" = tuần cũ của lần dời do vắng MỚI NHẤT từng kỹ năng (`history` đã xếp mới trước). Mã tuần → ngày
    * bằng MỘT câu, chỉ khi có dời.
    */
   const doiMa = new Map<string, string>();
-  for (const h of history) if (h.action === 'skill_week_moved_absence' && h.old_value && !doiMa.has(h.field)) doiMa.set(h.field, h.old_value);
+  for (const h of history) if (h.action === 'skill_week_moved_absence' && h.field && h.oldValue && !doiMa.has(h.field)) doiMa.set(h.field, h.oldValue);
   const doiNgay = new Map<string, string>();
   if (doiMa.size) {
     const ma = [...new Set(doiMa.values())];
@@ -1190,7 +1186,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
       doiNgay.set(r.code, r.week_start);
     }
   }
-  const huyDong = a.status === 'cancelled' ? history.find((h) => h.action === 'cancelled') : null;
+  /* HSL-MAY-CHU: tuần của lượt = tuần thi từng kỹ năng (+ tuần kế hoạch) — S Ex cùng tuần hiện ở trang lượt, chỉ đọc. */
+  const tuanLuot = new Set([a.period_start, ...scheduleRows.map((r) => r.weekStart)].filter(Boolean).map((w) => mondayOf(String(w))));
 
   return {
     id: a.id,
@@ -1199,6 +1196,10 @@ export function attemptDetail(p: Principal, attemptId: number) {
     student: { id: a.student_id, name: a.full_name, code: a.student_code },
     cycle: { id: a.cycle_id, seq: a.cycle_seq, route: a.route, target: a.target_score, khongCamKet: !!a.khong_cam_ket, examPlan: examPlanOf(a) },
     classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
+    /** HSL-MAY-CHU: lớp đang học khi em đã rời lớp của lượt (`classCode` = lớp lúc Test); null = còn ở lớp đó. */
+    lopHienTai: lopHienTaiCua(a.student_id, a.class_id),
+    /** HSL-MAY-CHU (N10): lượt S Ex của em trong các tuần của lượt — chỉ đọc, ngoài Overall / SOS. */
+    sEx: (sExCuaHv(p, [a.student_id], today).get(a.student_id) ?? []).filter((x) => tuanLuot.has(x.tuan)),
     /* OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
     phuTrachS: laChamCheo(a.kind, 'speaking') && quyenPhuTrachS(p, a.class_id),
     attemptNo: a.attempt_no,
@@ -1227,7 +1228,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     /** T2 (PR-MTa): kết quả đã huỷ do dời vượt, chưa khôi phục (Quản lý: nút Khôi phục — PR-MTb). */
     ketQuaHuy: ketQuaHuyCua([a.id]).get(a.id) ?? null,
     /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi (dòng `cancelled` mới nhất của lịch sử). */
-    huy: huyDong ? { lyDo: huyDong.reason ?? null, ai: huyDong.actor_name ?? null, khi: huyDong.created_at } : null,
+    huy: huyCua(a.status, history),
     /** PR-OV4a: bản Huỷ cả lượt còn khôi phục được (hộp Khôi phục) + câu chặn khi số MT đã được xếp lại. */
     khoiPhuc: khoiPhucCua(a),
     /** Đợt này có tách tuần không — nhiều hơn một tuần trong các kỹ năng bắt buộc. */
@@ -1256,10 +1257,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
            LEFT JOIN users u ON u.id = k.created_by WHERE k.attempt_id = ?`,
       )
       .all(attemptId) as any[]),
-    history: history.map((h) => ({
-      id: h.id, action: h.action, field: h.field, oldValue: h.old_value, newValue: h.new_value,
-      reason: h.reason, actorName: h.actor_name, createdAt: h.created_at,
-    })),
+    history,
     /*
      * HỒ SƠ TEST KHÔNG CÒN KHỐI CASE (PR-I, rule book §17.5): vấn đề, phương án và việc gắn với Case nằm ở hồ sơ
      * học viên và bảng Case — nên payload này không còn `sosCase` · `caseSteps` · `caseHistory` · `tasks`.
@@ -1288,6 +1286,33 @@ export function attemptDetail(p: Principal, attemptId: number) {
       editableSkills: a.class_id ? editableSkills(p, a.class_id, ENTRY_SKILLS, luotQuyen(a)) : [],
     },
   };
+}
+
+/** Lịch sử lịch của một lượt (mới trước) — hồ sơ lượt FT và lớp thường (HSL-MAY-CHU) cùng một câu. */
+export function lichSuLichCua(attemptId: number): {
+  id: number; action: string; field: string | null; oldValue: string | null; newValue: string | null;
+  reason: string | null; actorName: string | null; createdAt: string;
+}[] {
+  return (db().prepare(
+    `SELECT h.*, u.full_name AS actor_name FROM attempt_schedule_history h
+       LEFT JOIN users u ON u.id = h.actor_user_id WHERE h.attempt_id = ? ORDER BY h.id DESC`,
+  ).all(attemptId) as any[]).map((h) => ({
+    id: h.id, action: h.action, field: h.field, oldValue: h.old_value, newValue: h.new_value,
+    reason: h.reason, actorName: h.actor_name, createdAt: h.created_at,
+  }));
+}
+
+/** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi (dòng `cancelled` mới nhất của lịch sử, `history` mới trước); null khi lượt chưa huỷ. */
+export function huyCua(status: string, history: ReturnType<typeof lichSuLichCua>) {
+  const h = status === 'cancelled' ? history.find((x) => x.action === 'cancelled') : null;
+  return h ? { lyDo: h.reason ?? null, ai: h.actorName ?? null, khi: h.createdAt } : null;
+}
+
+/** HSL-MAY-CHU: lớp đang học mới nhất của em khi em không còn ở `classId` (đã chuyển lớp) — null khi còn ở đó hoặc không còn lớp nào. */
+export function lopHienTaiCua(studentId: number, classId: number | null): { id: number; code: string } | null {
+  const ds = db().prepare(`SELECT c.id, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
+     WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC`).all(studentId) as { id: number; code: string }[];
+  return ds.some((c) => c.id === classId) ? null : ds[0] ?? null;
 }
 
 // ---------------------------------------------------------------- tạo lượt
