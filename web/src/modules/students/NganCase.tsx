@@ -168,7 +168,8 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
     return (
       <KhungPanel tieuDe={daLuu.tieuDe} hocVien={hv} lop={lop} onDong={onClose} dau={dauViec({ em: data.student ? { id: data.student.id, ten: data.student.name } : null, lop, ngCanh: data.categoryLabel })}>
         <KhoiDaLuu x={daLuu} luc={daLuu.luc} nutChinh={nut}
-          phu={<NutChu onClick={() => { setDaLuu(null); veCase(); }}>{t('Xem Case')}</NutChu>}
+          /* 6b-3: trong panel việc "Xem Case" là view kế — ‹ về lại khối "✓ Đã lưu" này. */
+          phu={<NutChu onClick={() => { if (xemCaseViec) xemCaseViec(); else { setDaLuu(null); veCase(); } }}>{t('Xem Case')}</NutChu>}
           onHoanTac={() => { setDaLuu(null); reload(); onChanged?.(); }} />
       </KhungPanel>
     );

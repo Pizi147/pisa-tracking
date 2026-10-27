@@ -1,5 +1,5 @@
 import { PanelXetLai } from '../classes/PanelXetLai.tsx';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
@@ -108,16 +108,26 @@ export function PanelViec(p: PropsViec) {
   const xem = useXem({ dau: ['viec'] });
   const caseId = p.it.con?.length ? null : p.it.caseId ?? null;
   const dangXemCase = caseId !== null && xem.ds[xem.ds.length - 1] === 'case';
+  /* Nút vừa bấm ("Xem Case" / ‹) ẩn theo lớp của nó — focus sang lớp vừa hiện, người dùng bàn phím không mất chỗ. */
+  const lopViec = useRef<HTMLDivElement>(null);
+  const lopCase = useRef<HTMLDivElement>(null);
+  const daDoi = useRef(false);
+  useEffect(() => {
+    if (!daDoi.current) { daDoi.current = true; return; }
+    (dangXemCase ? lopCase : lopViec).current?.querySelector<HTMLElement>('section[tabindex]')?.focus();
+  }, [dangXemCase]);
   return (
     <NhapViec khoa={p.it.key}>
       <HienLaiPanel.Provider value={dangXemCase ? xem.lui : null}>
         <XemCaseViec.Provider value={caseId !== null ? () => xem.vao('case') : null}>
-          <div hidden={dangXemCase}><PanelMotViec {...p} /></div>
+          <div ref={lopViec} hidden={dangXemCase}><PanelMotViec {...p} /></div>
         </XemCaseViec.Provider>
       </HienLaiPanel.Provider>
       {dangXemCase && (
-        <NganCase caseId={caseId} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
-          veNguon={{ nhan: tenBoEm(p.it), onClick: xem.lui }} />
+        <div ref={lopCase}>
+          <NganCase caseId={caseId} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
+            veNguon={{ nhan: tenBoEm(p.it), onClick: xem.lui }} />
+        </div>
       )}
     </NhapViec>
   );
