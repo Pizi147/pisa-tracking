@@ -22,7 +22,6 @@ export const EN_UI_CHART_D = {
   'Ngưỡng đạt': 'Pass mark',
   'PA': 'Plan',
   'S Ex (không tính)': 'S Ex (not counted)',
-  'Target {v}': 'Target {v}',
   'Thi thật IELTS · {ngay}': 'IELTS exam · {ngay}',
   'Thi thật · dự kiến {thang}': 'Real exam · planned {thang}',
   'W gộp': 'W combined',

@@ -5,14 +5,14 @@ import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { NhanKq } from '../../ui/Nhan.tsx';
-import { Bang, type CotBang } from '../../ui/Bang.tsx';
+import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BieuDoD, ChuGiaiD, kqSo, type CaseD, type DiemD, type ThiD } from './BieuDoD.tsx';
 import type { SkillBoardRow } from '../cases/SkillBoard.tsx';
 import {
@@ -282,11 +282,13 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
   );
 }
 
-/** Bảng đơn giản của kỹ năng (nút Bảng; 375): Lượt · Tuần · Band · Kỳ vọng · ± · Ghi chú — số hẹp, Ghi chú rộng nhất. 375: Tuần + Ghi chú xuống dòng phụ dưới Lượt. */
+/**
+ * Bảng đơn giản của kỹ năng (nút Bảng; 375): Lượt · Tuần · Band · Kỳ vọng · ± · Ghi chú — số hẹp, Ghi chú rộng nhất; vẽ bằng `Bang` (BANG-3).
+ * 375: vẫn là bảng (không thẻ) — Tuần + Ghi chú xuống dòng phụ dưới Lượt. Hàng cuối Thi thật nổi nhất (`cuoi`).
+ */
 function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof duLieuKn>; cy: LoTrinhD; homNay: string; hep: boolean }) {
-  const so = `td w-[1%] whitespace-nowrap ${hep ? 'px-2' : 'px-4'} text-center tabular-nums`;
   const gach = <span className="text-slate-500">—</span>;
-  type Hang = { khoa: string; luot: React.ReactNode; tuan: string; band: React.ReactNode; kv: React.ReactNode; pm: React.ReactNode; gc: string | null; thi?: boolean; sap?: boolean };
+  type Hang = { khoa: string; luot: React.ReactNode; tuan: string; band: React.ReactNode; kv: React.ReactNode; pm: React.ReactNode; gc: string | null; sap?: boolean };
   const hang: Hang[] = [];
   const cot = (p: DongKn): Hang => {
     const k = kqSo(p.v, p.kv, cy.ratio);
@@ -306,48 +308,39 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
     if ('p' in e) hang.push(cot(e.p));
     else hang.push({ khoa: `sx${e.tuan}`, luot: 'S Ex', tuan: tuanLich(e.tuan, homNay), band: fmtBand(e.s.v), kv: gach, pm: gach, gc: t('không tính') });
   }
+  let thi: Hang | null = null;
   if (d.thi) {
     const v = d.thi.v, tg = d.thi.target, k = kqSo(v, tg);
     const d2 = v != null && tg != null ? Math.round((v - tg) * 10) / 10 : null;
     const th = thiThatCua(cy, homNay);
-    hang.push({
-      khoa: 'thi', thi: true, luot: t('Thi thật'),
+    thi = {
+      khoa: 'thi', luot: t('Thi thật'),
       tuan: th && th !== 'khong' ? (th.loai === 'du-kien' ? t('dự kiến {thang}', { thang: th.nhan }) : th.nhan) : '',
       band: v != null ? <span style={{ color: k ? `rgb(var(--kq-${k}-rgb))` : undefined }}>{k === 'duoi' ? '✗ ' : k ? '✓ ' : ''}{fmtBand(v)}</span> : gach,
       kv: tg != null ? `Target ${fmtBand(tg)}` : gach, pm: d2 == null ? gach : <span className={d2 < 0 ? 'text-bad' : d2 > 0 ? 'text-ok' : ''}>{pm(d2)}</span>,
       gc: v != null ? (kn.startsWith('writing') ? t('W gộp') : null) : d.thi.cho ? t('chờ kết quả') : t('chưa thi'),
-    });
+    };
   }
+  /* 375: bốn cột vừa 343 px (không cuộn ngang); 1440: số hẹp, Ghi chú lấy phần còn lại. */
+  const cotBang: CotBang[] = hep
+    ? [{ key: 'luot', nhan: t('Lượt'), kieu: 'ten', rong: 104 }, { key: 'band', nhan: cy.ratio ? t('Điểm') : 'Band', kieu: 'diem', rong: 72 },
+      { key: 'kv', nhan: cy.ratio ? t('Ngưỡng đạt') : t('Kỳ vọng'), kieu: 'so', rong: 84 }, { key: 'pm', nhan: '±', kieu: 'so', rong: 48 }]
+    : [{ key: 'luot', nhan: t('Lượt'), kieu: 'ten', rong: 120 }, { key: 'tuan', nhan: t('Tuần'), kieu: 'tuan', rong: 170 },
+      { key: 'band', nhan: cy.ratio ? t('Điểm') : 'Band', kieu: 'diem', rong: 96 }, { key: 'kv', nhan: cy.ratio ? t('Ngưỡng đạt') : t('Kỳ vọng'), kieu: 'so', rong: 110 },
+      { key: 'pm', nhan: '±', kieu: 'so', rong: 72 }, { key: 'gc', nhan: t('Ghi chú'), kieu: 'chu' }];
+  const o = (h: Hang, c: CotBang): React.ReactNode => {
+    const x = c.key === 'luot' ? h.luot : c.key === 'tuan' ? h.tuan : c.key === 'band' ? h.band : c.key === 'kv' ? h.kv : c.key === 'pm' ? h.pm
+      : <span className="whitespace-normal break-words text-slate-300">{h.gc ?? ''}</span>;
+    return h.sap ? <span className="text-slate-400">{x}</span> : x;
+  };
+  const phu = (h: Hang, c: CotBang) => (hep && c.key === 'luot' ? <span className="whitespace-normal">{h.tuan}{h.gc ? ` · ${h.gc}` : ''}</span> : null);
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[14px]">
-        <thead>
-          <tr>
-            <Th className={hep ? 'pl-3' : 'w-[1%] pl-4'}>{t('Lượt')}</Th>
-            {!hep && <Th>{t('Tuần')}</Th>}
-            <Th align="center">{cy.ratio ? t('Điểm') : 'Band'}</Th>
-            <Th align="center">{cy.ratio ? t('Ngưỡng đạt') : t('Kỳ vọng')}</Th>
-            <Th align="center">±</Th>
-            {!hep && <Th className="pr-4">{t('Ghi chú')}</Th>}
-          </tr>
-        </thead>
-        <tbody>
-          {hang.map((h) => (
-            <tr key={h.khoa} className={h.thi ? 'hang-thi-that' : h.sap ? 'text-slate-400' : undefined}>
-              <td className={`td whitespace-nowrap ${hep ? 'pl-3 pr-2' : 'w-[1%] pl-4 pr-6'}`}>
-                {h.luot}
-                {hep && <span className="block whitespace-normal text-[12px] font-normal tabular-nums text-slate-400">{h.tuan}{h.gc ? ` · ${h.gc}` : ''}</span>}
-              </td>
-              {!hep && <td className="td w-[1%] whitespace-nowrap pr-6">{h.tuan}</td>}
-              <td className={so}>{h.band}</td>
-              <td className={so}>{h.kv}</td>
-              <td className={so}>{h.pm}</td>
-              {!hep && <td className="td break-words pr-4 text-slate-300">{h.gc ?? ''}</td>}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Bang ten={t('Hành trình · {kn}', { kn })} khung={false} the375={false} deu={hep} cot={cotBang} hang={hang} khoa={(h) => h.khoa} oCua={o} phuCua={phu}
+      cuoi={thi && (
+        <tr className="hang-thi-that">
+          {cotBang.map((c) => <OBang key={c.key} c={c}>{o(thi!, c)}{c.key === 'luot' && hep && <span className="bang-phu">{phu(thi!, c)}</span>}</OBang>)}
+        </tr>
+      )} />
   );
 }
 

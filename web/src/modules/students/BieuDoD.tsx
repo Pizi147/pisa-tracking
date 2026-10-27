@@ -188,7 +188,7 @@ export function BieuDoD(o: BieuDoDProps) {
     d += ` H${x1}`;
     const vc = mucTai(truc.at(-1)!) ?? o.target.at(-1)!.v;
     ve.push(<path key="tg" d={d} fill="none" stroke="var(--text-dim)" strokeWidth="1.5" strokeDasharray="6 4" />);
-    ve.push(<text key="tgc" x={x1 + 8} y={Y(vc) + 4} fontSize="12" fontWeight="700" fill="var(--text)" fontFamily={PHONG}>{t('Target {v}', { v: fmt(vc) })}</text>);
+    ve.push(<text key="tgc" x={x1 + 8} y={Y(vc) + 4} fontSize="12" fontWeight="700" fill="var(--text)" fontFamily={PHONG}>{`Target ${fmt(vc)}`}</text>);
   }
   if (o.kvPhang) {
     ve.push(<line key="kp" x1={x0} x2={x1} y1={Y(o.kvPhang.v)} y2={Y(o.kvPhang.v)} stroke="var(--text-dim)" strokeWidth="1.5" strokeDasharray="6 4" />);
