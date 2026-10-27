@@ -24,7 +24,7 @@ import { mondayOf } from '../platform/week.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { taoPaBoTro } from './boTro.ts';
 import { dongBoNguyenNhanMt } from './nguyenNhanO.ts';
-import { monThieu, soThuTuLuot, tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
+import { boMonDaBo, soThuTuLuot, tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
 
 /**
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
@@ -350,8 +350,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     .all(attempt.id) as any[];
   const entry: EntryBands = {};
   for (const r of rows) entry[r.skill as EntrySkill] = r.band;
-  const duoiKyVong = failingEntrySkills(result.expectation, entry, result.boQua);
-  const failing = boMonDaBo(attempt, duoiKyVong);
+  const failing = failingEntrySkills(result.expectation, entry, result.boQua);   // D7: trừ môn đã bỏ (`boMonDaBo` trong danh sách bỏ của lượt)
 
   /*
    * NGÀY PHÁT HIỆN = thứ Hai của TUẦN THI. Đây là ngày NGHIỆP VỤ của kết quả.
@@ -384,8 +383,8 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    * Một lần đạt chưa chứng minh vấn đề đã hết, và đóng hộ người ta thì mất luôn cơ hội ghi
    * lại phương án nào đã ăn thua. Người có thẩm quyền chốt kết quả, máy chỉ đưa tin.
    */
-  /* "Đã đạt" xét theo ĐIỂM (cả bài môn đã bỏ) — Case môn bỏ còn mở mà bài vẫn dưới kỳ vọng không được ghi đạt. */
-  const failingCats = new Set(duoiKyVong.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
+  const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
+  const boMon = boMonDaBo(result.boQua);   // D7: Case môn đã bỏ còn mở không xét "đã đạt" — bài môn đó không còn là căn cứ
   const openHere = conn
     .prepare(
       `SELECT * FROM sos_cases
@@ -393,7 +392,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     )
     .all(attempt.student_id, attempt.cycle_id ?? 0) as any[];
   for (const c of openHere) {
-    if (!c.category || failingCats.has(c.category)) continue;
+    if (!c.category || failingCats.has(c.category) || boMon.has(c.category)) continue;
     const cat = c.category as CaseCategory;
     const band = entry[cat as EntrySkill] ?? null;
     if (band === null || result.expectation === null) continue;
@@ -758,18 +757,6 @@ function dongBoCaseTam(actor: number | null, attempt: any, result: AttemptResult
   return k.tao.map((s) => `${attempt.id}:${s}`);
 }
 
-/**
- * D7 (P8 #595 "SOS / Case chỉ môn đăng ký", N13): ô dưới kỳ vọng của lượt, TRỪ môn lộ trình nay không học. Bài môn bỏ đã chấm giữ điểm (Q5) nhưng
- * không sinh tín hiệu / Case / Case tạm — chặn MỘT chỗ cho mọi đường làm mới lượt (lưu điểm, đổi môn, Sửa cả lớp…). MT0 không áp môn.
- */
-function boMonDaBo(attempt: any, failing: EntrySkill[]): EntrySkill[] {
-  if (!failing.length || !attempt.cycle_id || laMt0(attempt)) return failing;
-  const mon = (db().prepare('SELECT mon_dang_ky FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.mon_dang_ky ?? null;
-  if (!mon) return failing;
-  const boMon = new Set<string>(monThieu(mon));
-  return failing.filter((k) => !boMon.has(k));
-}
-
 /** Lượt có thuộc luật Case tạm không (Mock FT, chưa chốt, không MT0, MT cũ trong cửa sổ, lớp chưa kết thúc) + dữ liệu cần — CHỈ ĐỌC. */
 function luotCaseTam(attemptId: number): { attempt: any; result: AttemptResult; failing: string[]; entry: EntryBands; detectedAt: string } | null {
   const conn = db();
@@ -783,7 +770,7 @@ function luotCaseTam(attemptId: number): { attempt: any; result: AttemptResult; 
   }
   const entry: EntryBands = {};
   for (const r of conn.prepare('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?').all(attempt.id) as any[]) entry[r.skill as EntrySkill] = r.band;
-  const failing = boMonDaBo(attempt, failingEntrySkills(result.expectation, entry, result.boQua)) as string[];
+  const failing = failingEntrySkills(result.expectation, entry, result.boQua) as string[];
   return { attempt, result, failing, entry, detectedAt: attempt.lich_su ? demoToday() : weekStartOf(attempt) ?? demoToday() };
 }
 /** Migrate `prOv13a` (e) / `kiem-truoc-ov13a`: Case tạm còn thiếu của một lượt (`ghi` = sinh luôn). Trả khoá `lượt:kỹ năng`. */

@@ -124,7 +124,8 @@ export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { 
     /* R1-NO-NHO: lượt vừa đổi bài (bỏ task W1 khi W2 đã chấm…) có thể vừa đủ điểm → kết quả + tín hiệu / Case ngay, như khi lưu điểm.
        Chỉ lượt đã có điểm — lượt rỗng không đổi trạng thái / tín hiệu (lô Sửa cả lớp không làm mới hàng chục lượt tương lai). */
     const coDiem = new Set(dong.filter((r) => r.co_diem).map((r) => r.attempt_id as number));
-    const lamMoi = [...new Set([...tat, ...bat, ...doiTask].map((r) => r.attempt_id as number))].filter((id) => coDiem.has(id));
+    /* D7 (chủ SP 27/10): lượt có bài môn vừa bỏ / vừa bật lại đã chấm (`giu`) cũng làm mới — mức SOS + Phối hợp tính lại theo môn còn học. */
+    const lamMoi = [...new Set([...tat, ...bat, ...doiTask, ...giu, ...giuW].map((r) => r.attempt_id as number))].filter((id) => coDiem.has(id));
     /* P8 (#595): môn bỏ không sinh tín hiệu / Case — chặn chung ở `boMonDaBo` (cases/sos.ts), mọi đường làm mới lượt đi qua đó. */
     for (const id of lamMoi) refreshOutcome(p, id);
     writeAudit({
