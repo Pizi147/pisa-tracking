@@ -10,6 +10,7 @@ Nguồn: `docs/superpowers/plans/2026-10-27-sua-toi.md` mục D3. Không đổi 
 - Một ô chung `OChiNhanh` (`web/src/ui/Filters.tsx`), cả `BranchFilter` và `WeekBranchFilter` dùng: nhãn "Chi nhánh" nằm TRONG ô bên trái, cao 32 (điện thoại 44), chữ 13 / 600, viền / nền theo token ô nhập, viền accent khi focus. Lựa chọn rỗng ghi "Tất cả" (nhãn đã nói "Chi nhánh").
 - Lưu trữ dùng `BranchFilter` (bỏ select riêng).
 - Phân tích: hàng tiêu đề căn giữa thay căn đáy (trước đây căn đáy vì ô có nhãn chồng).
+- Ô "Mọi hạn" ở Công việc (cùng hàng): cao 36 → 32, chữ 13 / 600 cho thẳng hàng với ô chi nhánh (chủ SP 27/10 chỉ ảnh lệch hàng).
 - GIỮ: tự ẩn khi tài khoản một chi nhánh / hệ thống một chi nhánh; nhớ chi nhánh (`nhoChiNhanh`); vị trí ô ở từng trang như cũ.
 
 ## Bảng thao tác TRƯỚC → SAU
@@ -21,7 +22,6 @@ Nguồn: `docs/superpowers/plans/2026-10-27-sua-toi.md` mục D3. Không đổi 
 
 ## Không làm (ghi rõ)
 - HV & Lớp (`StudentsPage`) — session D2 sửa thân trang; D2 dùng `BranchFilter` thì tự nhận mẫu mới.
-- Ô "Mọi hạn" ở Công việc (cùng hàng): cao 36 → 32, chữ 13 / 600 cho thẳng hàng với ô chi nhánh (chủ SP 27/10 chỉ ảnh lệch hàng).
 - Báo cáo đơn vị / form Giao việc / Tạo lớp: chọn chi nhánh là ô form trong panel, không phải bộ lọc — giữ.
 
 ## Ảnh TRƯỚC | SAU (vai Quản trị, 1440 tối · 375 sáng, phần đầu trang)
