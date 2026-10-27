@@ -494,7 +494,12 @@
   .link { color: var(--accent); text-decoration: none; }
   /* D4 bổ sung (= mockup V5 `.ten-ho-so`): tên đối tượng mở hồ sơ — màu chữ thường + "↗" (G6), chỉ rê mới xanh + gạch; không tô xanh như link khắp bảng. */
   .ten-ho-so { color: var(--text); font-weight: 600; text-decoration: none; }
-  .ten-ho-so::after { content: "↗"; margin-left: 3px; color: var(--text-faint); font-weight: 400; font-size: .8em; }
+  .ten-ho-so::after { content: "↗"; content: "↗" / ""; display: inline-block; margin-left: 3px; color: var(--text-faint); font-weight: 400; font-size: .8em; }
+  /* Tên bị cắt (…): "↗" nằm trong phần đệm phải, không bị cắt theo chữ — trên điện thoại (không rê) vẫn thấy là mở hồ sơ. */
+  .ten-ho-so.truncate { position: relative; padding-right: 1em; }
+  .ten-ho-so.truncate::after { position: absolute; right: 0; bottom: .2em; margin-left: 0; }
+  /* Phụ đề trong tiêu đề khối (`Card`: "· W4 AUG – W3 SEP", "· 8 lớp") = 13 / 400 như mockup, không theo cỡ 17 của tiêu đề. */
+  .h-khoi .font-normal { font-size: 13px; }
   .ten-ho-so:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
   .link:hover { text-decoration: underline; }
 
