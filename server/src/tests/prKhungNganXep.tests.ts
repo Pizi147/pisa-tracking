@@ -82,7 +82,8 @@ export async function runPrKhungNganXepTests(t: YThucTestKit) {
     assert(!/←\s*\{quayLai\.nhan\}/.test(k), 'còn dòng "← {quayLai.nhan}" riêng dưới đầu');
     assert(/‹/.test(k) && /aria-label=\{t\('Quay lại \{x\}'/.test(k), 'đầu panel không có nút ‹ {view trước}');
     const veLai = k.slice(k.indexOf('const veLai'), k.indexOf('const dauCv'));
-    assert(/if \(chan\?\.daSua\) setHoi/.test(veLai), '‹ vẫn hỏi cả khi chữ đã ở nháp, hoặc bỏ hỏi khi nơi gọi tự hỏi (tuHoi chỉ cho ✕ / Esc / nền)');
+    /* 6c: + chữ chỉ trong state của panel không chân (`daSua`) / form con (`useBaoDangSua`) — vẫn không tính nháp. */
+    assert(/if \(chan\?\.daSua(?: \|\| daSuaRieng \|\| conSua)?\) setHoi/.test(veLai), '‹ vẫn hỏi cả khi chữ đã ở nháp, hoặc bỏ hỏi khi nơi gọi tự hỏi (tuHoi chỉ cho ✕ / Esc / nền)');
   });
 
   check('6b-1 · nhãn loại không đoán "VIỆC" theo `dau`: panel việc khai qua dauViec / loai; panel chỉ đọc không mang nhãn VIỆC', () => {
