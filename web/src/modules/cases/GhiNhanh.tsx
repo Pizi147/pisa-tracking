@@ -18,13 +18,22 @@ export type DaLuuNhanh = { paId: number; followupId: number | null; outcome: str
 
 const lamMoi = () => { for (const k of ['/cases', '/my-work', '/students', '/tong-quan', '/hoc-vien-lop', '/followups']) invalidate(k); };
 
+/** Hoàn tác một lần ghi nhanh (`POST /followups/:id/hoan-tac`) — dòng đã lưu và dải việc vừa lưu ở Công việc (6b-3) dùng chung; chữ trả về ô ghi nhanh. */
+export async function hoanTacNhanh(kq: DaLuuNhanh): Promise<void> {
+  await api.post(`/followups/${kq.followupId}/hoan-tac`);
+  lamMoi();
+  nhapKetQua.set(kq.paId, { outcome: kq.outcome, note: kq.note });
+}
+
 /**
  * GHI KẾT QUẢ GỌN TRÊN DÒNG (OV-13b, mockup OV-13 §1) — Công việc · ngăn Case · panel một em: 5 chip Tiến triển (2 tuần) * · Nhận xét * · Lưu; Quyết định
  * mặc định Giữ nguyên (`ketQuaNhanh`, cùng `POST /interventions/:id/result` với panel). "Điều chỉnh / Kết thúc…" mở panel lớn, chữ mang theo. Trạng
  * thái: Đang lưu (khoá nút) · lỗi (chữ giữ, nút Thử lại) · thiếu ô ("⚠ Còn thiếu n ô"). Lưu xong nơi gọi vẽ `DongDaLuu`.
  */
-export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, trongDong = false }: {
+export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, tenTiep = null, trongDong = false }: {
   paId: number; batBuoc?: boolean;
+  /** M6 6b-3 (V12 ⑥): "Tiếp: {việc} · {em}" dưới hàng nút. */
+  tenTiep?: string | null;
   /** NEN-PANEL: có việc kế (hàng đợi Công việc) → thêm "Lưu · việc tiếp ›" (R1-LUU-TIEP) — chỉ sang việc kế sau khi lưu xong. */
   onTiep?: (() => void) | null;
   onDaLuu: (kq: DaLuuNhanh) => void;
@@ -95,6 +104,7 @@ export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, tr
           </NutChu>
         )}
       </div>
+      {onTiep && tenTiep && <p className="m-0 -mt-1.5 truncate text-[13px] text-slate-400" title={tenTiep}>{t('Tiếp: {x}', { x: tenTiep })}</p>}
     </CanLam>
   );
 }
@@ -114,9 +124,7 @@ export function DongDaLuu({ kq, onHoanTac }: { kq: DaLuuNhanh; onHoanTac: (kq: D
   const hoanTac = async () => {
     setBusy(true); setLoi(null);
     try {
-      await api.post(`/followups/${kq.followupId}/hoan-tac`);
-      lamMoi();
-      nhapKetQua.set(kq.paId, { outcome: kq.outcome, note: kq.note });
+      await hoanTacNhanh(kq);
       onHoanTac(kq);
     } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };

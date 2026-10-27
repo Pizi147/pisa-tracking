@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { createContext, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { duongHoSoHocVien } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -126,6 +126,12 @@ export function NhomCoSo({ ds }: { ds: { code: string; label: string }[] }) {
 export type DaLuuPanel = { chu: string; phu?: string | null; hoanTac?: () => Promise<void>; paId?: number };
 
 /**
+ * M6 6b-3 (mockup panel-pilot ②): trang Công việc nghe việc vừa lưu bằng "· việc tiếp ›" — `bao` trước khi sang việc kế, dải "✓ … · Hoàn tác" của nó
+ * hiện ở đầu việc kế (`oLai`: việc kế cùng Case — PA kế, panel không đổi). `ten` = "Tiếp: {việc} · {em}" (V12 ⑥). Ngoài Công việc: không có.
+ */
+export const ViecVuaLuu = createContext<{ ten: string | null; bao: (x: DaLuuPanel, oLai?: boolean) => void } | null>(null);
+
+/**
  * SAU KHI LƯU Ở PANEL (OV-13b, mockup OV-13 §1 "Sau khi lưu", §7, §9) — ở lại panel, không nhảy sang Case đầy đủ: khối "✓ Đã lưu · …" + nút chính
  * "Việc tiếp ›" (việc kế của danh sách) / về nơi mở / Đóng. Chân: "✓ Đã lưu HH:MM · Hoàn tác" (10 giây, chỉ khi có đường đảo). Toast không dùng — chân đã nói.
  */
@@ -146,20 +152,26 @@ export function KhoiDaLuu({ x, luc, nutChinh, phu, onHoanTac }: {
   );
 }
 
-function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => Promise<void>; onHoanTac?: () => void }) {
+/** Hoàn tác 10 giây (mockup OV-13 §1) — chân "✓ Đã lưu" và dải việc vừa lưu (6b-3) dùng chung. */
+function useHoanTac(hoanTac: (() => Promise<void>) | undefined, onHoanTac?: () => void) {
   const [con, setCon] = useState(!!hoanTac);
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   useChoHoanTac(con);
   useEffect(() => {
     if (!con) return undefined;
-    const h = setTimeout(() => setCon(false), 10_000);   // mockup OV-13 §1: Hoàn tác 10 giây
+    const h = setTimeout(() => setCon(false), 10_000);
     return () => clearTimeout(h);
   }, [con]);
   const bam = async () => {
     setBusy(true); setLoi(null);
     try { await hoanTac!(); onHoanTac?.(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
+  return { con, busy, loi, bam };
+}
+
+function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => Promise<void>; onHoanTac?: () => void }) {
+  const { con, busy, loi, bam } = useHoanTac(hoanTac, onHoanTac);
   return (
     <p className="m-0 flex min-h-6 flex-wrap items-center gap-2 border-t pt-2.5 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
       <span className="font-semibold text-done">✓ {t('Đã lưu')} <span className="tabular-nums">{luc}</span></span>
@@ -167,6 +179,23 @@ function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => P
       {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
       {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
     </p>
+  );
+}
+
+/**
+ * DẢI VIỆC VỪA LƯU (M6 6b-3, mockup panel-pilot ②b `.dai-xong`): đầu thân việc kế — "✓ {câu} · {em · chi tiết}" + Hoàn tác 10 giây (chỉ khi việc đó
+ * có đường đảo máy chủ). Hoàn tác xong nơi gọi mở lại việc đó để làm lại.
+ */
+export function DaiVuaLuu({ x, ai, onHoanTac }: { x: DaLuuPanel; ai: string | null; onHoanTac: () => void }) {
+  const { con, busy, loi, bam } = useHoanTac(x.hoanTac, onHoanTac);
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[4px_10px_10px_4px] bg-ok-bg py-2.5 pl-[15px] pr-3 text-[13px]" style={{ boxShadow: 'inset 3px 0 0 var(--ok)' }} role="status">
+      <b className="font-bold text-ok">✓ {x.chu}</b>
+      <span className="min-w-0 text-slate-300">{[ai, x.phu].filter(Boolean).join(' · ')}</span>
+      <span className="flex-1" />
+      {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
+      {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
+    </div>
   );
 }
 

@@ -276,7 +276,7 @@ function CotNut({ it, nut, daXong, mo, onBam, nutPhu, luon }: { it: WorkItem; nu
 }
 
 /** Tên việc bỏ tên em (máy chủ ghép "Xác nhận Case R · {em}") — tên em đã ở tầng ②. */
-const tenBoEm = (it: WorkItem) => {
+export const tenBoEm = (it: WorkItem) => {
   const ten = dich(it.group === 'bao_ph_yt' && it.phu ? it.phu : it.tieuDe);
   return ten.split(' · ').filter((x) => !x.startsWith(it.studentName)).join(' · ') || ten;
 };

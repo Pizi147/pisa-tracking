@@ -9646,6 +9646,9 @@ await runPrKhungNganXepTests({ check, assert } as any);
 // ==================================================================== M6 6b-2 PILOT-CASE (nhóm theo bước, việc trong dòng, Case A, lưu về Case)
 const { runPrPilotCaseTests } = await import('./prPilotCase.tests.ts');
 await runPrPilotCaseTests({ check, assert, conn, P } as any);
+// ==================================================================== M6 6b-3 PILOT-VIEC (Xem Case trong panel việc, Xác nhận · việc tiếp ›, dải Hoàn tác)
+const { runPrPilotViecTests } = await import('./prPilotViec.tests.ts');
+await runPrPilotViecTests({ check, assert } as any);
 // ==================================================================== HSL-MAY-CHU (M4 PR 1: hồ sơ một lượt Test — S Ex, lớp hiện tại, GET /regular/attempts/:id)
 const { runPrHslMayChuTests } = await import('./prHslMayChu.tests.ts');
 await runPrHslMayChuTests({ check, assert, conn, P, classId, TODAY, addDays } as any);
