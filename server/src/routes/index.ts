@@ -1684,6 +1684,12 @@ api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
   return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));
 }));
 
+/** HSL-MAY-CHU: hồ sơ một lượt lớp thường — một dòng của bảng điểm lớp + lịch sử (FT: `GET /attempts/:id`). */
+api.get('/regular/attempts/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return regularSvc.regularAttemptDetail(principalOf(req), pInt(req, 'id'));
+}));
+
 /** Tạo hai bài kiểm tra của khoá theo đúng mốc TUẦN HỌC của chương trình. */
 api.post('/regular/classes/:classId/plan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

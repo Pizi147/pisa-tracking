@@ -1,7 +1,7 @@
 /**
  * PHÉP KIỂM SV-BAI-LOP-2 (kế hoạch M5 `docs/superpowers/plans/2026-10-27-m5-code.md` PR ①, mockup `thiet-ke/v7/ho-so-hv.html` form Ghi tiến độ):
  *   (1) Tiến độ trên lớp: tên bài / điểm / thang được trống, thêm `band` (0–9, bước 0.5); có điểm thì có thang và điểm ≤ thang; band và x/y không cùng lúc;
- *       nhận xét bắt buộc · migrate prSvBaiLop2 đổi bảng cũ, giữ dữ liệu, chạy lặp được;
+ *       cần ít nhất một trong nhận xét / x/y / band (nhận xét KHÔNG bắt buộc — chủ SP 27/10) · migrate prSvBaiLop2 đổi bảng cũ, giữ dữ liệu, chạy lặp được;
  *   (2) GET tiến độ của em trả `gopY[]` — góp ý tuần cũ của em qua mọi lớp (mã lớp, người ghi, tuần), chỉ đọc, quyền xem HV (PUT gop-y 403: prOv13h);
  *   (3) Hoàn tác Thêm PA: người vừa thêm, trong `HOAN_TAC_PA_MS` (+5 s mạng) → PA, mốc Hành trình, thẻ chờ duyệt (đóng) đi theo; Case về trạng thái trước;
  *       nhật ký `intervention.undo_add`; chặn: người khác 403, quá giờ / đã có kết quả / QL đã trả lời 409, PA hệ thống 400.
@@ -16,7 +16,7 @@ export async function runPrSvBaiLop2Tests(t: any) {
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const accounts: any = await import('../platform/accounts.ts');
   const { loadPrincipal } = await import('../permissions.ts');
-  console.log('\nSV-BAI-LOP-2 · Tiến độ trên lớp: band · nhận xét bắt buộc · migrate');
+  console.log('\nSV-BAI-LOP-2 · Tiến độ trên lớp: band · nhận xét tuỳ chọn · migrate');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
@@ -50,24 +50,35 @@ export async function runPrSvBaiLop2Tests(t: any) {
     assert(c.diem === 6 && c.thang === 10 && c.band === null && c.tenBai === null, `x/y không tên ${JSON.stringify(c)}`);
   }));
 
-  check('SVBL2-3 · 400: band lẻ / ngoài 0–9 / chữ; band cùng x/y; điểm thiếu thang; thang thiếu điểm; thiếu nhận xét — không dòng nào lọt', () => thu(() => {
+  check('SVBL2-2b · KHÔNG nhận xét: chỉ band / chỉ x/y lưu được (chủ SP 27/10 "chỉ cần điểm thôi"); sửa bỏ nhận xét còn kết quả vẫn lưu', () => thu(() => {
+    const sid = em();
+    const a = dong(sid, bai.themBaiTrenLop(P.mbManager, sid, nx({ nhanXet: undefined, band: 6 })).id);
+    assert(a.band === 6 && a.nhanXet === null, `chỉ band ${JSON.stringify(a)}`);
+    const b = dong(sid, bai.themBaiTrenLop(P.mbManager, sid, nx({ nhanXet: '', diem: 7, thang: 10 })).id);
+    assert(b.diem === 7 && b.thang === 10 && b.nhanXet === null, `chỉ x/y ${JSON.stringify(b)}`);
+    const { id } = bai.themBaiTrenLop(P.mbManager, sid, nx({ band: 5.5 }));
+    assert(bai.suaBaiTrenLop(P.mbManager, id, nx({ nhanXet: null, band: 5.5 })).doi, 'sửa bỏ nhận xét, còn band');
+    assert(get('SELECT nhan_xet FROM bai_tren_lop WHERE id = ?', id).nhan_xet === null, 'nhận xét về trống');
+  }));
+
+  check('SVBL2-3 · 400: band lẻ / ngoài 0–9 / chữ; band cùng x/y; điểm thiếu thang; thang thiếu điểm; rỗng hết (không nhận xét, không kết quả) — không dòng nào lọt', () => thu(() => {
     const sid = em();
     const sai: [string, Record<string, unknown>][] = [
       ['band 5.3', { band: 5.3 }], ['band 9.5', { band: 9.5 }], ['band -0.5', { band: -0.5 }], ['band chữ', { band: '6' }],
       ['band + điểm', { band: 6, diem: 6, thang: 10 }], ['điểm thiếu thang', { diem: 6 }], ['thang thiếu điểm', { thang: 10 }],
-      ['thiếu nhận xét', { nhanXet: undefined }], ['nhận xét trống', { nhanXet: '   ' }], ['nhận xét null', { nhanXet: null }],
+      ['rỗng: thiếu nhận xét', { nhanXet: undefined }], ['rỗng: nhận xét trống', { nhanXet: '   ' }], ['rỗng: nhận xét null', { nhanXet: null }],
     ];
     for (const [ten, o] of sai) assert(maLoi(() => bai.themBaiTrenLop(P.mbManager, sid, nx(o))) === 400, `${ten} → 400`);
     assert(!get('SELECT 1 AS c FROM bai_tren_lop WHERE student_id = ?', sid), 'không dòng nào lọt');
   }));
 
-  check('SVBL2-4 · sửa x/y → band: điểm / thang về trống; sửa bỏ nhận xét → 400; lịch sử có Band', () => thu(() => {
+  check('SVBL2-4 · sửa x/y → band: điểm / thang về trống; sửa thành rỗng hết → 400; bỏ nhận xét còn band → lưu được; lịch sử có Band', () => thu(() => {
     const sid = em();
     const { id } = bai.themBaiTrenLop(P.mbManager, sid, nx({ tenBai: 'Part 2', diem: 6, thang: 10 }));
     assert(bai.suaBaiTrenLop(P.mbManager, id, nx({ band: 6.5 })).doi, 'sửa sang band');
     const r = get('SELECT ten_bai, diem, thang, band FROM bai_tren_lop WHERE id = ?', id);
     assert(r.ten_bai === null && r.diem === null && r.thang === null && r.band === 6.5, `dòng ${JSON.stringify(r)}`);
-    assert(maLoi(() => bai.suaBaiTrenLop(P.mbManager, id, nx({ nhanXet: '' }))) === 400, 'sửa bỏ nhận xét → 400');
+    assert(maLoi(() => bai.suaBaiTrenLop(P.mbManager, id, nx({ nhanXet: '' }))) === 400, 'sửa thành rỗng hết → 400');
     const tom = lichSu(P.mbManager, { loai: 'bai-lop', id: sid }).dong[0].truong.map((x: any) => `${x.ten}:${x.cu ?? '∅'}>${x.moi ?? '∅'}`).join('|');
     assert(tom.includes('Điểm:6 / 10>∅') && tom.includes('Band:∅>6.5') && tom.includes('Tên bài:Part 2>∅'), `lịch sử ${tom}`);
   }));

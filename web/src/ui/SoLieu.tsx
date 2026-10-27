@@ -1,8 +1,8 @@
 import { Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, deadlineView, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, deadlineView, maView, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
-import { useMoSoLieu, useThamSoUrl } from '../lib/quayLai.ts';
+import { XemCha, useMoSoLieu, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
@@ -143,17 +143,14 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const [moChu, datMo] = useThamSoUrl('dong', '');
   const mo = moChu ? Number(moChu) : null;
   const setMo = (v: number | null) => datMo(v === null ? '' : String(v));
-  const [lam, setLam] = useState<DongSoLieu | null>(null);
+  /* M6 6b-1: việc dài của dòng `?dong=` là view kế trên `?panel=` (push — ‹ / Back trình duyệt về danh sách, F5 dựng lại). */
+  const xem = useXem({ url: true });
+  const moViec = (r: DongSoLieu) => { const v = r.viec!; xem.vao(v.loai === 'nhap-diem' || v.loai === 'van-hanh' ? v.loai : maView({ loai: v.loai, paId: v.paId }), true); };
   const [giu, setGiu] = useState<Map<number, { dong: DongSoLieu; i: number; chu: string }>>(() => new Map());
   const [busy, setBusy] = useState<number | null>(null);
   const [loiDong, setLoiDong] = useState<{ id: number; loi: string } | null>(null);
   const [vuaXong, setVuaXong] = useState<string | null>(null);
   const ds = useRef<HTMLUListElement>(null);
-  /* Về từ việc dài: cuộn tới đúng dòng vừa làm. */
-  useEffect(() => {
-    if (lam || mo === null) return;
-    ds.current?.querySelector(`[data-dong="${mo}"]`)?.scrollIntoView({ block: 'nearest' });
-  }, [lam, mo]);
 
   const hanCua = (r: DongSoLieu) => r.viec ? r.viec.han : r.han ?? null;
   const tre = (r: DongSoLieu) => { const h = hanCua(r); return !!h && deadlineView({ kind: r.viec?.loaiHan ?? 'viec-van-hanh', due: h, today: homNay }).tone === 'overdue'; };
@@ -161,6 +158,16 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const xep = [...goc.filter(tre), ...goc.filter((r) => !tre(r))];   // quá hạn lên đầu, giữ thứ tự máy chủ trong từng nhóm
   const hien: (DongSoLieu & { xong?: string })[] = [...xep];
   for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
+  /* Việc của dòng `?dong=` khi chuỗi có view. Đang làm thì giữ dòng đã mở (`giuLam`): lưu xong máy chủ trả dòng không còn việc / bỏ dòng → panel làm việc
+     không tắt giữa "✓ Đã lưu". Mở lại từ URL (F5, Forward) chỉ với dòng còn việc, chưa xong. */
+  const giuLam = useRef<DongSoLieu | null>(null);
+  const lam = xem.ds.length && mo !== null ? hien.find((r) => r.id === mo && r.viec && !r.xong) ?? (giuLam.current?.id === mo ? giuLam.current : null) : null;
+  giuLam.current = lam;
+  /* Về từ việc dài: cuộn tới đúng dòng vừa làm. */
+  useEffect(() => {
+    if (lam || mo === null) return;
+    ds.current?.querySelector(`[data-dong="${mo}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [lam, mo]);
   const soTre = xep.filter(tre).length;
   /* UI-HO-SO-GV (chủ SP 23/10): dòng có kết luận → hai tab Chưa đạt · Đạt (mặc định Chưa đạt nếu có); chỉ một loại thì không tab. */
   const soChua = hien.filter((r) => r.ketQua === 'chua').length, soDat = hien.filter((r) => r.ketQua === 'dat').length;
@@ -200,8 +207,10 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   if (lam) {
     return (
       <Suspense fallback={<KhungPanel tieuDe={tieuDe} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>}>
-        <LamDongSoLieu dong={lam} onDong={onDong} onVe={() => { setMo(lam.id); setLam(null); }}
-          onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong(`${dich(lam.viec?.chu ?? '')} · ${lam.em?.ten ?? lam.title}`); }} />
+        <XemCha.Provider value={{ ten: tieuDe }}>
+          <LamDongSoLieu dong={lam} onDong={onDong}
+            onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong(`${dich(lam.viec?.chu ?? '')} · ${lam.em?.ten ?? lam.title}`); }} />
+        </XemCha.Provider>
       </Suspense>
     );
   }
@@ -247,10 +256,10 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
                       <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold max-sm:w-full sm:min-h-[40px]" disabled={busy === r.id} onClick={() => void xacNhanPa(r)}>
                         {busy === r.id ? t('Đang lưu…') : t('Xác nhận PA')}
                       </button>
-                      <NutChu onClick={() => setLam(r)}>{t('Sửa PA')}</NutChu>
+                      <NutChu onClick={() => moViec(r)}>{t('Sửa PA')}</NutChu>
                     </>
                   ) : (
-                    <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold max-sm:w-full sm:min-h-[40px]" onClick={() => setLam(r)}>{dich(v.chu)}</button>
+                    <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold max-sm:w-full sm:min-h-[40px]" onClick={() => moViec(r)}>{dich(v.chu)}</button>
                   )}
                 </div>
                 {loiDong?.id === r.id && <p role="alert" className="m-0 text-xs font-semibold text-bad">⚠ {loiDong.loi}</p>}

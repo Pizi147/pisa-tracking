@@ -1,6 +1,7 @@
 /**
  * BÀI TRÊN LỚP (SV-BAI-LOP, V5 C11 / T18) — hồ sơ HV ghi Tiến độ trên lớp. SV-BAI-LOP-2 (M5, mockup `thiet-ke/v7/ho-so-hv.html` form Ghi tiến độ):
- * nhận xét bắt buộc; kết quả tuỳ chọn — không có · điểm / thang của bài (7 / 10) · band (0–9, bước 0.5); tên bài tuỳ chọn.
+ * KHÔNG bắt buộc nhận xét (chủ SP 27/10: "chỉ cần điểm thôi") — cần ít nhất một trong: nhận xét · điểm / thang của bài (7 / 10) · band (0–9, bước 0.5);
+ * tên bài tuỳ chọn.
  * Tuỳ chọn: không sinh việc, không nhắc, KHÔNG vào bảng điểm MT, Overall, chỉ số hay KPI (bảng riêng `bai_tren_lop`).
  *
  * QUYỀN (máy chủ, mỗi lần ghi / sửa / xoá): cùng cột với Góp ý tuần (`cotCua`) — GV dạy kỹ năng ở lớp → kỹ năng đó (FT W1 / W2 → W); GVCN → mọi kỹ năng;
@@ -61,7 +62,7 @@ export function dsBaiTrenLop(p: Principal, studentId: number) {
   return { bai, gopY, lop: lop.map(({ nhan: _n, ...l }) => l) };
 }
 
-/** Đọc + kiểm thân yêu cầu (dùng cho thêm và sửa). Kết quả tuỳ chọn: điểm / thang của bài (không quy đổi band) HOẶC band; nhận xét bắt buộc. */
+/** Đọc + kiểm thân yêu cầu (dùng cho thêm và sửa). Kết quả tuỳ chọn: điểm / thang của bài (không quy đổi band) HOẶC band; cần ít nhất một trong nhận xét / x/y / band. */
 function docThan(body: Record<string, unknown>, today: string) {
   const tenBai = chuTuDo(body.tenBai ?? null, 'Tên bài', BAI_LOP_TEN_TOI_DA);
   const so = (v: unknown, ten: string) => {
@@ -83,7 +84,7 @@ function docThan(body: Record<string, unknown>, today: string) {
   const tuan = mondayOf(body.tuan);
   if (tuan > mondayOf(today)) throw badRequest('Chưa tới tuần này — chỉ ghi bài từ tuần này trở về trước.');
   const nhanXet = chuTuDo(body.nhanXet ?? null, 'Nhận xét', BAI_LOP_NHAN_XET_TOI_DA);
-  if (!nhanXet) throw badRequest('Nhập nhận xét.');
+  if (!nhanXet && diem === null && band === null) throw badRequest('Nhập nhận xét hoặc kết quả (điểm / thang hoặc band).');
   if (typeof body.skill !== 'string') throw badRequest('Thiếu kỹ năng.');
   return { skill: body.skill, tenBai, diem, thang, band, tuan, nhanXet };
 }

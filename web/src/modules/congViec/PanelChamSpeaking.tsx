@@ -58,7 +58,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   /* Lớp đang lọc không còn bài nào (đã chấm hết, rời hàng đợi) → bỏ lọc. */
   useEffect(() => { if (lop !== null && !dsLop.some(([id]) => id === lop)) setLop(null); }, [dsLop, lop]);
 
-  const dau = { dong2: [data ? t('{n} bài chờ chấm', { n: data.soBai }) : null] };
+  const dau = { loai: t('VIỆC'), dong2: [data ? t('{n} bài chờ chấm', { n: data.soBai }) : null] };
   /* R1-LUU-TIEP: khoá = lượt (một dòng một bài S); còn thiếu = máy chủ còn báo chờ (`cho`) và người xem sửa được. */
   const dsAid = () => ds.map((r) => r.attemptId);
   const conThieu = (v: { khoa: number }) => { const x = ds.find((r) => r.attemptId === v.khoa); return !!x && x.cho && suaDuoc(x.cell); };
