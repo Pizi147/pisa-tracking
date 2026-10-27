@@ -206,7 +206,7 @@ export function HoTroHocVienTab() {
     const lui = daDay.current !== null && daDay.current === khongViec(params);
     daDay.current = null;
     if (lui) navigate(-1 - soMucPanel(stLs));
-    else { const next = new URLSearchParams(params); next.delete('viec'); next.delete('panel'); setParams(next, { replace: true }); }
+    else setParams(new URLSearchParams(khongViec(params)), { replace: true });
   };
   /* Điện thoại: danh sách hiện lại (nút "‹ Công việc" hay nút Lùi) → về đúng chỗ cuộn cũ, SAU khi vẽ (trước đó cuộn neo theo nội dung panel). */
   const coChon = !!chon;
