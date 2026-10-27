@@ -1597,12 +1597,14 @@ export function hoanTacThemPa(p: Principal, interventionId: number) {
   if (iv.recorded_by !== p.userId) throw forbidden('Chỉ người vừa thêm PA hoàn tác được — Quản lý dùng "Xoá PA".');
   if (iv.preset === 1 || (SYSTEM_KINDS as readonly string[]).includes(iv.kind)) throw badRequest('PA do hệ thống tạo — không hoàn tác được.');
   if (!duocHoanTacPa(iv.created_at, Date.now())) throw conflict('Đã quá thời gian hoàn tác.');
-  if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) throw conflict('PA đã có kết quả — không hoàn tác được.');
-  if (iv.approval_state && iv.approval_state !== 'pending') throw conflict('Quản lý đã trả lời đề xuất — không hoàn tác được.');
-  if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?
-      AND json_extract(du_lieu, '$.thayPaId') IS NOT NULL`).get(interventionId)) throw badRequest('PA đề xuất thay PA khác — rút ở thẻ Chờ duyệt.');
   const khoaTep: string[] = [];
   tx(() => {
+    /* Kiểm trong giao dịch: kết quả / câu trả lời QL ghi chen giữa lúc kiểm và lúc gỡ không bị xoá theo. */
+    if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) throw conflict('PA đã có kết quả — không hoàn tác được.');
+    const tt = (conn.prepare('SELECT approval_state FROM case_interventions WHERE id = ?').get(interventionId) as any)?.approval_state;
+    if (tt && tt !== 'pending') throw conflict('Quản lý đã trả lời đề xuất — không hoàn tác được.');
+    if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?
+        AND json_extract(du_lieu, '$.thayPaId') IS NOT NULL`).get(interventionId)) throw badRequest('PA đề xuất thay PA khác — rút ở thẻ Chờ duyệt.');
     goPaTrongTx(conn, iv, { nguoiDuyet: p.userId, lyDo: 'Giáo viên hoàn tác thêm PA' }, khoaTep);
     writeAudit({ actorUserId: p.userId, action: 'intervention.undo_add', entityType: 'case_intervention', entityId: interventionId,
       entityLabel: iv.description ?? iv.kind, before: { pa: iv }, after: null });

@@ -31,11 +31,13 @@ export async function runPrSvBaiLop2Tests(t: any) {
   const nx = (o: Record<string, unknown> = {}) => ({ classId: LOP, skill: 'speaking', tuan, nhanXet: 'Trả lời Part 3 dài hơn.', ...o });
   const dong = (sid: number, id: number) => bai.dsBaiTrenLop(P.mbManager, sid).bai.find((x: any) => x.id === id);
 
-  check('SVBL2-1 · chỉ nhận xét (không tên bài, điểm, thang) lưu được; đọc lại tenBai / diem / thang / band = null', () => thu(() => {
+  check('SVBL2-1 · chỉ nhận xét (không tên bài, điểm, thang) lưu được; đọc lại tenBai / diem / thang / band = null; Lịch sử không treo " · "', () => thu(() => {
     const sid = em();
     const { id } = bai.themBaiTrenLop(P.mbManager, sid, nx());
     const b = dong(sid, id);
     assert(b && b.tenBai === null && b.diem === null && b.thang === null && b.band === null && b.nhanXet === 'Trả lời Part 3 dài hơn.', `dòng ${JSON.stringify(b)}`);
+    const dt = lichSu(P.mbManager, { loai: 'bai-lop', id: sid }).dong[0].truong[0].doiTuong as string;
+    assert(/^MB FT 101 · W\d [A-Z]{3} · \S+$/.test(dt), `Lịch sử: đối tượng không treo " · " khi không tên bài: "${dt}"`);
   }));
 
   check('SVBL2-2 · band 5.5 lưu được (kèm tên bài tuỳ chọn); x/y cũ vẫn lưu, band = null', () => thu(() => {
