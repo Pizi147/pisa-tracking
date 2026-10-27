@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { duongHoSoHocVien, duongLichTest, skillShort, tuanLich } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -28,7 +28,7 @@ export type CauHinhGvTre = {
   trong: string; cachTinh: string;
 };
 
-const tenNhom = (g: Pick<NhomGvTre, 'gvId' | 'ten'>) => (g.gvId > 0 ? g.ten : g.gvId === 0 ? t('Chưa có GV') : g.ten);
+const tenNhom = (g: Pick<NhomGvTre, 'gvId' | 'ten'>) => (g.gvId === 0 ? t('Chưa có GV') : g.ten);
 const tenDong = (d: DongGvTre) => [d.lop, d.luotChu].filter(Boolean).join(' · ');
 const tieuDeDong = (d: DongGvTre) => `${tenDong(d)} · ${d.knChu}`;
 
@@ -56,7 +56,11 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
   /* Panel một GV (QL bấm ô của một GV): tiêu đề đã có tên — không vẽ dải nhóm lặp tên; link hồ sơ GV lên đầu panel. */
   const motGv = !cauHinh.theoGv && nhom.length === 1 ? nhom[0] : null;
   const soDu = nhom.reduce((n, g) => n + g.dong.filter((d) => d.du).length, 0);
-  const tim = nhom.flatMap((g) => g.dong.map((d) => ({ g, d }))).find((x) => x.d.key === moKhoa) ?? null;
+  /* Đang ở view sâu mà danh sách tải lại (lưu điểm `invalidate('/tong-quan')`) không còn dòng này → giữ dòng cũ, không bật về danh sách giữa lúc nhập. */
+  const giuTim = useRef<{ g: NhomHien; d: DongHien } | null>(null);
+  const tim = nhom.flatMap((g) => g.dong.map((d) => ({ g, d }))).find((x) => x.d.key === moKhoa)
+    ?? (xem.ds.length && giuTim.current?.d.key === moKhoa ? giuTim.current : null);
+  giuTim.current = tim;
   const view = tim ? xem.ds[xem.ds.length - 1] : undefined;
   const moDong = (k: string) => { datMo(k); xem.vao('em', true, { dong: k }); };
 

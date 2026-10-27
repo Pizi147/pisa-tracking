@@ -51,7 +51,8 @@ export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTr
   const branchId = f.branchId ?? null;
   /* Không chọn chi nhánh mà quyền chỉ một chi nhánh (Admin, QL một nơi) → vẫn ghi tên chi nhánh đó, không "Mọi chi nhánh". */
   const sc = scopeFor(p, PERMISSIONS.WORK_VIEW);
-  const mot = branchId ?? (!sc.all && sc.branchIds.length === 1 ? sc.branchIds[0] : null);
+  const mot = branchId !== null ? (sc.all || sc.branchIds.includes(branchId) ? branchId : null)
+    : !sc.all && sc.branchIds.length === 1 ? sc.branchIds[0] : null;
   const chiNhanh = mot ? ((db().prepare('SELECT name FROM branches WHERE id = ?').get(mot) as any)?.name ?? null) : null;
   if (f.gv === undefined) {
     if (phamViXemViec(p) !== 'cham-diem') throw forbidden('Khối Mock Test chỉ dành cho Admin.');
@@ -121,5 +122,5 @@ export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTr
   }
   for (const d of theoDong.values()) { d.nhapHo = nhapHoDuoc(p, d.classId, d.kns); d.knChu = monChu(d.ct, xepMon(d.kns)); delete d.ct; }
   const nhom = xep([{ gvId: g.khoa, ten: g.ten, soBai: g.bai, dong: [...theoDong.values()] }]);
-  return { ...rong, soGv: g.khoa > 0 ? 1 : 0, soBai: g.khoa === 0 ? 0 : g.bai, soBaiChuaCoGv: g.khoa === 0 ? g.bai : 0, nhom };
+  return { ...rong, soGv: g.khoa > 0 ? 1 : 0, soBai: g.bai, nhom };   // panel một GV: tổng = số ô "⚠ n" (kể cả "Chưa phân công")
 }
