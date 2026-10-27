@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongDotTest,
+  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
   khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
@@ -997,7 +997,7 @@ export const gvcnCua = (classId: number | null): number[] => (db()
 
 /**
  * T11 (PR-MTa, G16): người KHÁC GVCN dời Test lớp thường → MỘT chuông "để biết" cho GVCN, một em một ngày (nhiều môn gộp nhờ dedupKey).
- * GVCN tự dời → không chuông. Không thẻ, không Case. Chuông mở thẳng bảng điểm lớp thường của đúng bài.
+ * GVCN tự dời → không chuông. Không thẻ, không Case. Chuông một em mở trang lượt (HSL-LT); chuông cả lớp mở bảng điểm lớp thường của đúng bài.
  */
 export function baoGvcnDoiLichThuong(p: Principal, a: { id: number; class_id: number | null; student_id: number; kind: string; attempt_no: number },
   tuanMoi: string, homNay: string = demoToday()): void {
@@ -1022,7 +1022,7 @@ export function baoGvcnDoiLichThuongLop(p: Principal, classId: number, kind: str
   for (const userId of gv) {
     notify({
       userId, kind: 'doi_lich_thuong', title: `${nhanDot(kind, null)} · ${soEm} em · đổi lịch`, entityType: 'class', entityId: classId,
-      dedupKey: `doi-thuong-lop:${classId}:${homNay}`, duong: duongDotTest({ id: 0, kind, classId }),
+      dedupKey: `doi-thuong-lop:${classId}:${homNay}`, duong: duongBangDiemThuong(classId, kind),
     });
   }
 }

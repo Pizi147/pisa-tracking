@@ -100,6 +100,9 @@ export function duongDotTest(d: { id: number; kind?: string | null; classId?: nu
   return `/mock-test/${d.id}${q}`;
 }
 
+/** HSL-LT: bảng điểm CẢ LỚP của một bài lớp thường (chuông "n em đổi lịch") — đường cũ, App chuyển tới panel Nhập điểm lớp đúng bài. */
+export const duongBangDiemThuong = (classId: number, kind: string): string => `/bang-diem-thuong/${classId}?kind=${kind}`;
+
 /** `kn` trên URL hồ sơ Mock → ô lớn: writing1/writing2/writing → 'writing'; lạ → null. */
 export function docKnMock(kn: string | null | undefined): 'listening' | 'reading' | 'writing' | 'speaking' | null {
   if (kn === 'writing' || kn === 'writing1' || kn === 'writing2') return 'writing';

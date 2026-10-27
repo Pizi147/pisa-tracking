@@ -146,7 +146,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     for (const dir of ['web/src', 'server/src', 'shared']) quet(dir);
     assert(co.length === 0, `còn tự ghép: ${co.join(', ')}`);
   });
-  check('UXF-b (5) · dòng "bài quá hạn nhập điểm" (Cần xử lý): lượt FT mở hồ sơ Mock kèm ?kn= đúng kỹ năng của ô; lớp thường bỏ kn', () => {
+  check('UXF-b (5) · dòng "bài quá hạn nhập điểm" (Cần xử lý): lượt FT mở hồ sơ Mock, lớp thường mở trang lượt (HSL-LT) — cả hai kèm ?kn= đúng kỹ năng của ô', () => {
     const o = metricsSvc.metricSet(t.P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB });
     const rows = metricsSvc.rowsFor('bai', o.ids);
     assert(rows.length > 0, 'seed không có bài quá hạn');
@@ -156,7 +156,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
       const muon = d.duongDotTest({ id: attemptId, kind: a.kind, classId: a.class_id }, skill);
       assert(r.href === muon, `${r.href} ≠ ${muon}`);
       if (a.kind === 'mock') assert(/\?kn=(listening|reading|writing1|writing2|speaking)$/.test(r.href), r.href);
-      else assert(!/kn=/.test(r.href), r.href);
+      else assert(/^\/luot-test\/\d+\?kn=(listening|reading|writing|speaking)$/.test(r.href), r.href);
     }
   });
   check('UXF-b (5) · duongHoSoHocVien/docThamSoHoSo: muc=ket-luan-khoa đi-về; muc lạ bị bỏ', () => {

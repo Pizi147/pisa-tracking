@@ -43,6 +43,7 @@ Dữ liệu demo khác mockup (em, tuần, số câu) — so khung, không so s�
 | Hồ sơ HV › bảng Test, Hành trình, chuông, Công việc → `duongDotTest` → bảng điểm cả lớp `/bang-diem-thuong/:lop` (mất lớp → hồ sơ HV) | → `/luot-test/:id` (+ `?kn=` mở sẵn dòng môn); mất lớp + biết em → hồ sơ HV như cũ |
 | Tên em ở bảng điểm lớp thường (panel Nhập điểm lớp, Lịch Test tuần, Điểm theo lớp; lưới + một kỹ năng) → hồ sơ HV | → trang lượt (như tên em ở lưới FT → hồ sơ lượt Mock); hồ sơ HV = tên ↗ đầu trang lượt |
 | `/mock-test/:id` của lượt thường → chuyển về bảng điểm lớp | → chuyển sang `/luot-test/:id` |
+| Chuông "đổi lịch" một em (GVCN) · Cần xử lý "bài quá hạn nhập điểm" → bảng điểm lớp | → trang lượt (chuông) / trang lượt `?kn=` mở đúng môn (Cần xử lý); chuông "n em đổi lịch" cả lớp giữ bảng điểm lớp (`duongBangDiemThuong`) |
 | Ô điểm: gõ đúng / tổng, "-" = vắng (dời tuần sau), xoá "-" = hết vắng, sửa điểm có lý do | Giữ — cùng `ODiemThuong` + `useLuuThuong` (lưu từng ô, lỗi giữ nháp + "Lưu lại") |
 | Nút Nhận xét cạnh ô → hộp | Ô Nhận xét gõ tại chỗ trong vùng mở (cùng đường lưu, cùng quyền `nhanXetDuoc`); bảng điểm lớp vẫn có nút cũ |
 | ⋯ ô: Xếp lại bài vắng · Dời lịch · Dời hạn · Báo vắng · Huỷ / Khôi phục điểm · Lịch sử | Giữ ở ⋯ cột cuối (cùng `thaoTacKyNang`, cùng `HopThaoTacMt`); nút chính dòng khi có việc lịch (Xếp lại bài vắng) |
