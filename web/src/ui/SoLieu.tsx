@@ -1,13 +1,13 @@
 import { Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, deadlineView, maView, metricById, nhanQuaHan, thamSoCt, type ChiSo, type ChuongTrinh, type DeadlineKind } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, deadlineView, maView, metricById, nhanQuaHan, thamSoCt, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { XemCha, useMoSoLieu, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
 import { CanLam, NutChu } from './KhuonViec.tsx';
-import { ChipHan, ChipSoQuaHan } from './Nhan.tsx';
+import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
 import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
@@ -45,6 +45,8 @@ export type DongSoLieu = {
   id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null;
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null; ngayThiThat?: string;
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
+  /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ; có nhóm thì panel vẽ dải nhóm và dòng mở view Case trong cùng panel. */
+  nhom?: NhomCaseChuaChot | null;
   /** UI-HO-SO-GV: dòng kết quả — điểm từng kỹ năng (`cua` = kỹ năng GV phụ trách), Overall, mốc so, kết luận (tab Chưa đạt · Đạt). */
   diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%'; vuot?: boolean;
 };
@@ -121,6 +123,12 @@ function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
     : <span className={`tabular-nums ${v.ganHan ? 'font-semibold text-soon' : ''}`}>{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
 }
 
+/** M6 6b-2 (luật chữ đầu mục): vạch 3 px của dải nhóm theo BƯỚC — token sẵn có, màu luôn đi kèm tên nhóm (G14 sửa, chủ SP 27/10). */
+const VACH_NHOM: Record<NhomCaseChuaChot, string> = {
+  trongPa: 'rgb(var(--bad-rgb))', choNhanXet: 'rgb(var(--soon-rgb))', choXacNhanPa: 'rgb(var(--doing-rgb))', choDuyetPa: 'var(--hong)',
+  paXong: 'rgb(var(--ok-rgb))', khongTheoDoi: 'rgb(var(--text-faint-rgb))',
+};
+
 /* Việc dài của dòng (Ngăn Case, Nhập điểm, Vận hành) chỉ tải khi bấm — trang có ô số không kéo cả cây panel làm việc vào lần tải đầu. */
 const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.tsx').then((m) => ({ default: m.LamDongSoLieu })));
 
@@ -150,19 +158,30 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const [busy, setBusy] = useState<number | null>(null);
   const [loiDong, setLoiDong] = useState<{ id: number; loi: string } | null>(null);
   const [vuaXong, setVuaXong] = useState<string | null>(null);
-  const ds = useRef<HTMLUListElement>(null);
+  const ds = useRef<HTMLDivElement>(null);
 
   const hanCua = (r: DongSoLieu) => r.viec ? r.viec.han : r.han ?? null;
   const tre = (r: DongSoLieu) => { const h = hanCua(r); return !!h && deadlineView({ kind: r.viec?.loaiHan ?? 'viec-van-hanh', due: h, today: homNay }).tone === 'overdue'; };
   const goc = data?.rows ?? [];
+  /* M6 6b-2: dòng có nhóm (ô "Case chưa chốt PA") → danh sách theo nhóm, bấm dòng mở view Case; dòng vừa xử lý GIỮ nhóm gốc (không nhảy mắt). */
+  const nhomCase = goc.some((r) => r.nhom);
   const xep = [...goc.filter(tre), ...goc.filter((r) => !tre(r))];   // quá hạn lên đầu, giữ thứ tự máy chủ trong từng nhóm
-  const hien: (DongSoLieu & { xong?: string })[] = [...xep];
+  const hien: (DongSoLieu & { xong?: string })[] = nhomCase
+    ? xep.map((r) => { const g = giu.get(r.id); return g ? { ...r, nhom: g.dong.nhom, xong: g.chu } : r; })
+    : [...xep];
   for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
+  const nhom = nhomCase ? xepNhomCase(hien, (r) => !r.xong && tre(r)) : null;
+  const thuTu = nhom ? nhom.flatMap((g) => g.dong) : hien;
   /* Việc của dòng `?dong=` khi chuỗi có view. Đang làm thì giữ dòng đã mở (`giuLam`): lưu xong máy chủ trả dòng không còn việc / bỏ dòng → panel làm việc
-     không tắt giữa "✓ Đã lưu". Mở lại từ URL (F5, Forward) chỉ với dòng còn việc, chưa xong. */
+     không tắt giữa "✓ Đã lưu". Mở lại từ URL (F5, Forward) chỉ với dòng còn việc, chưa xong. 6b-2: dòng Case có nhóm mở được cả khi chỉ xem / đã xử lý. */
   const giuLam = useRef<DongSoLieu | null>(null);
-  const lam = xem.ds.length && mo !== null ? hien.find((r) => r.id === mo && r.viec && !r.xong) ?? (giuLam.current?.id === mo ? giuLam.current : null) : null;
+  const lam = xem.ds.length && mo !== null
+    ? hien.find((r) => r.id === mo && (nhomCase || (r.viec && !r.xong))) ?? (giuLam.current?.id === mo ? giuLam.current : null) : null;
   giuLam.current = lam;
+  /* Q7: "Case tiếp ›" = Case kế bạn làm được, chưa xử lý, theo thứ tự danh sách — thay view (‹ vẫn về danh sách). */
+  const tiepId = nhomCase && mo !== null ? caseTiep(thuTu.map((r) => ({ id: r.id, lam: !!r.viec?.lam, xong: r.xong })), mo) : null;
+  /* `dong` ghi CẢ lên mục danh sách (replace) rồi mới push view Case — ‹ / Back về danh sách còn tô + cuộn tới dòng vừa mở. */
+  const moCase = (r: DongSoLieu) => { setMo(r.id); xem.vao('case', true, { dong: String(r.id) }); };
   /* Về từ việc dài: cuộn tới đúng dòng vừa làm. */
   useEffect(() => {
     if (lam || mo === null) return;
@@ -176,7 +195,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   /* Thi thật: tab thứ ba "Vượt" (Overall / kỹ năng cao hơn Target — tập con của Đạt). */
   const coTab = (soChua > 0 && soDat > 0) || (soVuot > 0 && soVuot < hien.length);
   const [tab, setTab] = useState<'chua' | 'dat' | 'vuot'>(soChua > 0 ? 'chua' : 'dat');
-  const hienTab = coTab ? hien.filter((r) => (tab === 'vuot' ? r.vuot : r.ketQua === tab)) : hien;
+  const hienTab = coTab ? hien.filter((r) => (tab === 'vuot' ? r.vuot : r.ketQua === tab)) : thuTu;
   /* OV-15e: panel số liệu phân trang 10 / 20 / 50 (thanh đầu + cuối); dòng đang mở (`?dong=`) ở trang sau vẫn mở được khi lật tới. */
   const pt = usePhanTrang(hienTab.length, tieuDe, dv ?? t('mục'));
   /* Dòng đang mở (về từ hồ sơ) nằm ở trang sau → lật tới trang đó. */
@@ -205,15 +224,64 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   };
 
   if (lam) {
+    /* Hoàn tác ở view Case (6b-2): dòng hết "đã xử lý" — Case tiếp / chip đếm tính lại như trước khi lưu. */
+    const boXong = () => {
+      setGiu((m) => { const n = new Map(m); n.delete(lam.id); return n; });
+      invalidate('/metrics'); invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/cases');
+      reload();
+    };
     return (
-      <Suspense fallback={<KhungPanel tieuDe={tieuDe} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>}>
-        <XemCha.Provider value={{ ten: tieuDe }}>
+      <XemCha.Provider value={nhomCase
+        ? { ten: tieuDe, rong: 'rong', caseTiep: { xong: !!hien.find((r) => r.id === lam.id)?.xong, di: tiepId ? () => xem.thay('case', { dong: String(tiepId) }) : null, boXong } }
+        : { ten: tieuDe }}>
+        <Suspense fallback={<KhungPanel tieuDe={tieuDe} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>}>
           <LamDongSoLieu dong={lam} onDong={onDong}
-            onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong(`${dich(lam.viec?.chu ?? '')} · ${lam.em?.ten ?? lam.title}`); }} />
-        </XemCha.Provider>
-      </Suspense>
+            onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong([lam.viec && !nhomCase ? dich(lam.viec.chu) : t('Đã lưu'), lam.em?.ten ?? lam.title].join(' · ')); }} />
+        </Suspense>
+      </XemCha.Provider>
     );
   }
+
+  /* M6 6b-2 (mockup ① view gốc): dòng Case = một nút — em 15 / 500 · tên Case; lớp · việc tiếp 13; cột phải người giữ việc ("Bạn") + hạn. Bấm → view Case. */
+  const veDongCase = (r: DongSoLieu & { xong?: string }) => {
+    const v = r.viec ?? null;
+    const chon = mo === r.id;
+    return (
+      <li key={r.id} data-dong={r.id} className="scroll-mt-12 border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+        <button type="button" aria-current={chon || undefined} onClick={() => moCase(r)} style={chon ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : undefined}
+          className="flex min-h-[44px] w-full appearance-none flex-col gap-0.5 border-0 bg-transparent px-4 py-2.5 text-left hover:bg-[color:var(--accent-soft)]">
+          <span className="flex w-full items-baseline gap-3">
+            <span className={`min-w-0 flex-1 text-[15px] font-medium leading-snug ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>
+              {r.em?.ten ?? r.title}{r.em && r.title && <span className="text-[13px] font-normal text-slate-400"> · {r.title}</span>}
+            </span>
+            {/* Người giữ việc (khu K ③): "Bạn" khi chính người xem phụ trách; không thì tên người phụ trách. */}
+            <span className="shrink-0 text-right text-[13px] text-slate-300">{r.nguoiId != null && r.nguoiId === toi ? <b className="font-semibold">{t('Bạn')}</b> : r.nguoi ?? t('Chưa có người phụ trách')}</span>
+          </span>
+          <span className="flex w-full flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="min-w-0 flex-1 text-[13px] leading-snug text-slate-400">
+              {r.xong ? <>{r.lop && <>{r.lop} · </>}<b className="font-semibold text-ok">✓ {r.xong}</b></> : [r.lop, v ? dich(v.chu) : r.tinhTrang ? dich(r.tinhTrang) : null].filter(Boolean).join(' · ')}
+            </span>
+            {!r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
+          </span>
+        </button>
+      </li>
+    );
+  };
+  /* Dải nhóm (luật chữ đầu mục): nền surface-2, vạch 3 px theo bước, 15 / 700, chip đếm Case còn chờ (hết → ✓), dính khi cuộn. */
+  const veNhom = (dong: (DongSoLieu & { xong?: string })[]) => xepNhomCase(dong, () => false).map((g) => {
+    const conCho = nhom?.find((x) => x.nhom === g.nhom)?.dong.filter((r) => !r.xong).length ?? 0;
+    return (
+      <section key={g.nhom}>
+        <h3 className="sticky top-0 z-[1] -mx-4 m-0 flex min-h-[40px] items-center gap-2 px-4 py-2 text-[15px] font-bold leading-[1.35] text-slate-100"
+          style={{ background: 'var(--surface-2)', boxShadow: `inset 3px 0 0 ${VACH_NHOM[g.nhom]}` }}>
+          <span className="min-w-0">{dich(g.ten)}</span>
+          <span className={`${CHIP_VUONG} ${conCho ? 'text-slate-200' : 'text-ok'}`} style={{ borderColor: 'var(--line-strong)' }}
+            title={conCho ? t('{n} Case còn chờ', { n: conCho }) : t('Đã xử lý hết')}>{conCho || '✓'}</span>
+        </h3>
+        <ul className="-mx-4 m-0 list-none p-0">{g.dong.map(veDongCase)}</ul>
+      </section>
+    );
+  });
 
   const veDong = (r: DongSoLieu & { xong?: string }) => {
     const v = r.viec ?? null;
@@ -281,14 +349,16 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={goc.some((r) => r.diem?.length) ? 'rong' : 'hep'}
+    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase || goc.some((r) => r.diem?.length) ? 'rong' : 'hep'}
       /* NEN-PANEL: không dòng nào làm được ở đây = panel báo cáo (07 mục 3). */
-      loai={hien.some((r) => r.viec?.lam) ? t('VIỆC') : t('BÁO CÁO · CHỈ ĐỌC')}
+      loai={nhomCase ? t('SỐ LIỆU · TỔNG QUAN') : hien.some((r) => r.viec?.lam) ? t('VIỆC') : t('BÁO CÁO · CHỈ ĐỌC')}
       dau={{
         han: soTre ? <ChipSoQuaHan n={soTre} /> : null,
-        dong2: [data && dv ? `${data.n} ${dv}` : null, soTre ? t('quá hạn lên đầu') : null],
+        /* 6b-2: dòng vừa xử lý giữ chỗ nhưng không còn trong tập — đầu panel nói rõ để số khớp số dòng ("6 Case · 1 vừa xử lý"). */
+        dong2: [data && (dv || nhomCase) ? `${data.n} ${dv ?? 'Case'}` : null, nhomCase && hien.length > data!.n ? t('{n} vừa xử lý', { n: hien.length - data!.n }) : null,
+          soTre ? t('quá hạn lên đầu') : null],
       }}
-      chan={vuaXong ? { v3: true, dongTren: <span className="font-semibold text-ok">✓ {vuaXong}</span> } : undefined}>
+      chan={vuaXong && !nhomCase ? { v3: true, dongTren: <span className="font-semibold text-ok">✓ {vuaXong}</span> } : undefined}>
       {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
         : loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div>
         : !hien.length ? <Empty title={trong ?? t('Không có mục nào')} />
@@ -306,7 +376,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
               </div>
             )}
             <PhanTrang {...pt.thanh} />
-            <ul ref={ds} className="-mx-4 m-0 list-none p-0">{pt.cat(hienTab).map(veDong)}</ul>
+            <div ref={ds}>{nhomCase ? veNhom(pt.cat(hienTab)) : <ul className="-mx-4 m-0 list-none p-0">{pt.cat(hienTab).map(veDong)}</ul>}</div>
             <PhanTrang {...pt.thanh} duoi />
           </>
         )}

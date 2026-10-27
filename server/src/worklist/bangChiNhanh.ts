@@ -8,7 +8,8 @@ import { latestAttempts, studentsInScope } from './danhGia.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 import { demoToday } from '../demoConfig.ts';
 import { locTheoChuongTrinh, lopCuaTap } from './chuongTrinh.ts';
-import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
+import { metricSet, nhomCaseChuaChot, rowsFor, type MetricRow } from './metrics.ts';
+import { xuLyCaseMany } from '../cases/sosState.ts';
 
 /**
  * BẢNG "THEO CHI NHÁNH" (§3.2, mockup 02 phương án A; kiểm kê P5) — Học viên · Dưới kỳ vọng · SOS · Case mở · Thiếu PA học
@@ -195,7 +196,13 @@ export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: C
   if (!tap) throw badRequest('Không tìm thấy hàng này trong bảng — có thể bộ lọc vừa đổi.');
   const ids = [...tap[cot]].sort((a, b) => a - b);
   const unit = COT_BANG_DON_VI[cot];
-  return { n: ids.length, unit, tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[unit]} — ${NHAN_COT[cot]} · ${noi}`, rows: rowsFor(unit, ids, undefined, p) };
+  /* M6 6b-2 (Q3, Q4): "Case chưa chốt PA" — dòng mang việc tiếp (`kemViec`, `lam` = người xem làm được; máy chủ vẫn kiểm khi lưu) + nhóm phân rã
+     (`nhomCaseChuaChot`, cùng hàm của `phanRa`). Cột khác giữ chỉ đọc (G8). */
+  const caseViec = cot === 'caseChuaChot';
+  const rows = rowsFor(unit, ids, undefined, p, caseViec);
+  const nhom = caseViec ? nhomCaseChuaChot(ids, xuLyCaseMany(ids, demoToday())) : null;
+  return { n: ids.length, unit, tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[unit]} — ${NHAN_COT[cot]} · ${noi}`,
+    rows: nhom ? rows.map((x) => ({ ...x, nhom: nhom.get(x.id) ?? null })) : rows };
 }
 
 /**
