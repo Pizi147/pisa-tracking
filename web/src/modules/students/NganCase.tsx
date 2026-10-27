@@ -153,7 +153,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   /* "Xem Case" không phải lùi: làm xong view việc đầu chuỗi trong panel việc thì thay bằng thân Case (như link sâu), không mở thêm view Case. */
   const xong = () => { reload(); onChanged?.(); if (quayLai?.xem) veCase(); else quayLai?.onClick(); };
   /* 6b-3 (mockup ②b): "Xác nhận · việc tiếp ›" — máy chủ nhận xong mới sang: PA chờ xác nhận kế của Case (`sau`), không thì việc kế của danh sách. */
-  const tiepViec = (sau?: ViewCase) => (onTiep ? {
+  const tiepViec = (sau?: ViewCase) => (onTiep && cv ? {
     ten: sau ? null : cv?.ten ?? null,
     lam: (x: DaLuuPanel) => { reload(); onChanged?.(); cv?.bao(x, !!sau); if (sau) sangViec(sau); else onTiep(); },
   } : undefined);
@@ -162,7 +162,8 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   if (daLuu?.ma === maHien) {
     const nut = daLuu.tiep
       ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={() => { sangViec(daLuu.tiep!); setDaLuu(null); }}>{t('Việc tiếp ›')}</button>
-      : onTiep ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={onTiep}>{t('Việc tiếp ›')}</button>
+      /* 6b-3: Hoàn tác của lần lưu này theo sang đầu việc kế (dải). */
+      : onTiep ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={() => { cv?.bao(daLuu); onTiep(); }}>{t('Việc tiếp ›')}</button>
         : quayLai && !quayLai.xem ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={quayLai.onClick}>‹ {quayLai.nhan}</button>
           : <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={onClose}>{t('Đóng')}</button>;
     return (

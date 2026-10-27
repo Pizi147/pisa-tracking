@@ -111,9 +111,10 @@ export function PanelViec(p: PropsViec) {
   /* Nút vừa bấm ("Xem Case" / ‹) ẩn theo lớp của nó — focus sang lớp vừa hiện, người dùng bàn phím không mất chỗ. */
   const lopViec = useRef<HTMLDivElement>(null);
   const lopCase = useRef<HTMLDivElement>(null);
-  const daDoi = useRef(false);
+  const truoc = useRef(dangXemCase);
   useEffect(() => {
-    if (!daDoi.current) { daDoi.current = true; return; }
+    if (truoc.current === dangXemCase) return;   // chỉ khi đổi lớp — mở panel (kể cả StrictMode chạy effect hai lần) không giành focus (CV-09)
+    truoc.current = dangXemCase;
     (dangXemCase ? lopCase : lopViec).current?.querySelector<HTMLElement>('section[tabindex]')?.focus();
   }, [dangXemCase]);
   return (
@@ -125,7 +126,7 @@ export function PanelViec(p: PropsViec) {
       </HienLaiPanel.Provider>
       {dangXemCase && (
         <div ref={lopCase}>
-          <NganCase caseId={caseId} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
+          <NganCase caseId={caseId} viecBanDau={{ loai: 'case' }} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
             veNguon={{ nhan: tenBoEm(p.it), onClick: xem.lui }} />
         </div>
       )}
@@ -485,7 +486,7 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
             <DongDaLuu kq={daLuu} onHoanTac={() => setDaLuu(null)} />
             <div>
               {onTiep
-                ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
+                ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tiepSauGhi ?? onTiep}>{t('Việc tiếp ›')}</button>
                 : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>}
             </div>
           </div>
