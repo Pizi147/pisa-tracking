@@ -16,13 +16,23 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChonNhom, viDuNhanXet } from '../fasttrack/NhanXet.tsx';
 import { skillShort } from '../../lib/format.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, HOAN_TAC_PA_MS, INTERVENTION_KIND_LABEL, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
   dsLoi, duongHoSoHocVien, kiemGhiRoKhac, tenMonNgan, tuanLich, reasonNeedsText,
   datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
   type CaseDismissReason,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
+
+/**
+ * HOAN-TAC-XN: chỗ xác nhận không có dải (lưu xong về Case / sang bước kế) — toast "✓ … · Hoàn tác (n)" 10 giây như dải panel. Lỗi đảo (403 / 409)
+ * báo đúng câu máy chủ (lý do + bước tiếp).
+ */
+function toastHoanTac(toast: ReturnType<typeof useToast>, chu: string, hoanTac: () => Promise<void>) {
+  toast.push('ok', chu, { ms: HOAN_TAC_PA_MS, demLui: true, hanhDong: { nhan: t('Hoàn tác'), onBam: () => {
+    hoanTac().then(() => toast.push('ok', t('Đã hoàn tác')), (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
+  } } });
+}
 
 /** P14 DICH: ô nhận xét của lượt theo kỹ năng Case — Writing có hai ô (Task 1 / 2) nên không có nút ở dòng gộp. */
 const oDich = (attemptId: number, topic: string | null | undefined): NguonDich | null =>
@@ -130,11 +140,13 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
       }
       await api.post(`/cases/${caseId}/xac-nhan`, { nhom, moTa: moTa.trim(), ...(paSua && Object.keys(paSua).length ? { pa: paSua } : {}) });
       invalidateCases();
-      xoaNhap();
+      const traNhap = xoaNhap();
       const chu = pa ? t('Đã xác nhận Case — PA Bổ trợ bắt đầu từ hôm nay') : t('Đã xác nhận Case');
+      /* HOAN-TAC-XN: Case về "Chờ xác nhận Case" (PA Bổ trợ về chờ), chữ mô tả về lại ô khi mở lại việc. */
+      const hoanTac = async () => { await api.post(`/cases/${caseId}/hoan-tac-xac-nhan`); traNhap(); invalidateCases(); };
       /* "· việc tiếp ›": dải ở đầu việc kế nói kết quả — không thêm toast. */
-      if (diTiep && tiep) tiep.lam({ chu });
-      else { toast.push('ok', chu); onXong(); }
+      if (diTiep && tiep) tiep.lam({ chu, hoanTac });
+      else { toastHoanTac(toast, chu, hoanTac); onXong(); }
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
   const nut = <NutVaTiep chu={t('Xác nhận Case')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
@@ -224,10 +236,12 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
         });
         invalidateCases();
         const iv = (ct?.interventions ?? []).find((x: any) => x.id === pa.id);
-        xoaNhap();
+        const traNhap = xoaNhap();
         const x = {
           chu: t('Đã xác nhận PA'),
           phu: [tenLoai, t('từ {tuanLich}', { tuanLich: tuanLich(batDau, homNay) }), iv?.actionDue ? t('hạn kết quả {ngay}', { ngay: ngan(iv.actionDue) }) : null].filter(Boolean).join(' · '),
+          /* HOAN-TAC-XN: PA về chờ xác nhận (việc "Xác nhận PA" hiện lại cùng hạn), nội dung đã gõ về lại ô khi mở lại việc. */
+          hoanTac: async () => { await api.post(`/interventions/${pa.id}/hoan-tac-xac-nhan`); traNhap(); invalidateCases(); },
         };
         if (diTiep && tiep) tiep.lam(x); else onXong(x);
       }
@@ -380,8 +394,10 @@ export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: C
     try {
       await api.post(`/cases/${data.id}/xac-nhan-s`, { cach, ...(cach === 'viet' ? { moTa: moTa.trim() } : {}) });
       invalidateCases(); invalidate('/attempts');
-      xoaNhap();
-      toast.push('ok', t('Đã xác nhận Case'));
+      const traNhap = xoaNhap();
+      toastHoanTac(toast, t('Đã xác nhận Case'), async () => {
+        await api.post(`/cases/${data.id}/hoan-tac-xac-nhan-s`); traNhap(); invalidateCases(); invalidate('/attempts');
+      });
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };

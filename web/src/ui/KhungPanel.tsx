@@ -25,7 +25,7 @@ export function boChuRoi(tiep: () => void) {
   if (hoi) hoi(tiep); else tiep();
 }
 
-type NhapPanel = { viec: string; coChu: boolean; bao: (o: string, coChu: boolean) => void; xoa: () => void };
+type NhapPanel = { viec: string; coChu: boolean; bao: (o: string, coChu: boolean) => void; xoa: () => () => void };
 const NhapCuaPanel = createContext<NhapPanel | null>(null);
 /** Đã ở trong một `KhungPanel` — panel con (hộp mở đè) không tính nháp của việc là "đang sửa" của nó. */
 const TrongKhung = createContext(false);
@@ -45,7 +45,7 @@ export function NhapViec({ khoa, children }: { khoa: string; children: ReactNode
     return n;
   }), []);
   const coChu = oCoChu.size > 0;
-  const v = useMemo<NhapPanel>(() => ({ viec: khoa, coChu, bao, xoa: () => { xoaNhapViec(khoNhap(), khoa); setOCoChu(new Set()); } }), [khoa, coChu, bao]);
+  const v = useMemo<NhapPanel>(() => ({ viec: khoa, coChu, bao, xoa: () => { const traLai = xoaNhapViec(khoNhap(), khoa); setOCoChu(new Set()); return traLai; } }), [khoa, coChu, bao]);
   return <NhapCuaPanel.Provider value={v}>{children}</NhapCuaPanel.Provider>;
 }
 
@@ -68,10 +68,13 @@ export function useNhap<T>(o: string, dau: T): [T, Dispatch<SetStateAction<T>>] 
   useEffect(() => () => n?.bao(o, false), []);   // eslint-disable-line react-hooks/exhaustive-deps -- ô gỡ: không còn chữ để hỏi; nháp vẫn trong kho
   return [v, setV];
 }
-/** Lưu xong: bỏ nháp của việc (mọi ô) — panel thôi coi là "đang sửa" tới khi gõ tiếp. */
-export function useXoaNhap(): () => void {
+/**
+ * Lưu xong: bỏ nháp của việc (mọi ô) — panel thôi coi là "đang sửa" tới khi gõ tiếp. Trả hàm ghi lại nháp đó (HOAN-TAC-XN: Hoàn tác lần lưu → mở lại
+ * việc thì chữ còn). Ngoài panel việc: không có kho, hàm rỗng.
+ */
+export function useXoaNhap(): () => () => void {
   const n = useContext(NhapCuaPanel);
-  return useCallback(() => n?.xoa(), [n]);
+  return useCallback(() => n?.xoa() ?? (() => {}), [n]);
 }
 
 /**

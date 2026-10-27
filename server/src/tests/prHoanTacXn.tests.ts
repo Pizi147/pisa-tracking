@@ -6,6 +6,8 @@
  *   (3) Hoàn tác Xác nhận Case Speaking chấm chéo: mô tả / nhóm / nguồn về cũ, cờ chờ bật lại → việc "Xác nhận Case" hiện lại cùng hạn.
  *   Chặn: người không quyền / người khác 403 · quá `HOAN_TAC_PA_MS` (+5 s) 409 · bị đè (đã có kết quả, sửa sau, xác nhận PA sau, hoàn tác lần hai) 409.
  * Mỗi ca ghi trong một giao dịch rồi cuộn lại (`thu`).
+ * HOAN-TAC-XN-WEB (HTXN-W*): nháp của việc trả lại được sau khi xoá (`xoaNhapViec`) · mỗi chỗ xác nhận trên web gắn Hoàn tác vào đúng đường đảo: dải panel việc /
+ *   chân "✓ Đã lưu" (Xác nhận PA, Xác nhận Case · việc tiếp ›), toast 10 s (Xác nhận Case, Case S khi không có dải), hộp xác nhận lô, dòng Số liệu.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { tieuChiThu } from '../seed/tieuChiThu.ts';
@@ -336,6 +338,45 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     console.log(`    hoàn tác xác nhận PA ${nPa} · Case ${nCase} · Case S ${nS} câu`);
     assert(nPa <= TRAN_GHI_LO.hoanTacXacNhanPa && nCase <= TRAN_GHI_LO.hoanTacXacNhanCase && nS <= TRAN_GHI_LO.hoanTacXacNhanCaseS, `${nPa} · ${nCase} · ${nS}`);
   }));
+
+  // ---------------------------------------------------------------- HOAN-TAC-XN-WEB
+  check('HTXN-W1 · xoaNhapViec trả hàm ghi lại đúng nháp vừa xoá (chữ về lại ô sau Hoàn tác); việc khác không đụng; kho null không lỗi', () => {
+    const m = new Map<string, string>();
+    const kho = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); }, removeItem: (k: string) => { m.delete(k); },
+      key: (i: number) => [...m.keys()][i] ?? null, get length() { return m.size; } };
+    d.ghiNhap(kho, 'case:1', 'mo-ta', 'Em sai thì động từ', false);
+    d.ghiNhap(kho, 'case:1', 'pa', { soBuoi: '3' }, false);
+    d.ghiNhap(kho, 'case:2', 'mo-ta', 'Việc khác', false);
+    const traLai = d.xoaNhapViec(kho, 'case:1');
+    assert(d.docNhap(kho, 'case:1', 'mo-ta') === undefined && d.docNhap(kho, 'case:2', 'mo-ta') === 'Việc khác', 'xoá đúng việc');
+    traLai();
+    assert(d.docNhap(kho, 'case:1', 'mo-ta') === 'Em sai thì động từ' && d.docNhap(kho, 'case:1', 'pa').soBuoi === '3' && m.size === 3, `trả lại ${JSON.stringify([...m])}`);
+    d.xoaNhapViec(null, 'x')();
+  });
+
+  const doc = (f: string) => fs.readFileSync(path.join(REPO, f), 'utf8');
+  const ham = (src: string, ten: string) => { const i = src.indexOf(`export function ${ten}`); assert(i >= 0, `thiếu ${ten}`); return src.slice(i, src.indexOf('\nexport function', i + 10)); };
+  check('HTXN-W2 · Ngăn Case: Xác nhận PA / Case / Case S gắn Hoàn tác đúng đường đảo + trả nháp; không dải thì toast 10 s (HOAN_TAC_PA_MS)', () => {
+    const cs = doc('web/src/modules/yThuc/CaseSosControls.tsx');
+    const pa = ham(cs, 'XacNhanPaPanel'), ca = ham(cs, 'XacNhanCasePanel'), s = ham(cs, 'XacNhanSPanel');
+    assert(/const traNhap = xoaNhap\(\)/.test(pa) && /hoanTac: async \(\) => \{ await api\.post\(`\/interventions\/\$\{pa\.id\}\/hoan-tac-xac-nhan`\); traNhap\(\)/.test(pa), 'Xác nhận PA: dải thiếu Hoàn tác / trả nháp');
+    assert(/api\.post\(`\/cases\/\$\{caseId\}\/hoan-tac-xac-nhan`\); traNhap\(\)/.test(ca) && /tiep\.lam\(\{ chu, hoanTac \}\)/.test(ca) && /toastHoanTac\(toast, chu, hoanTac\)/.test(ca),
+      'Xác nhận Case: dải / toast thiếu Hoàn tác');
+    assert(/toastHoanTac\(/.test(s) && /\/cases\/\$\{data\.id\}\/hoan-tac-xac-nhan-s/.test(s) && /traNhap\(\)/.test(s), 'Xác nhận Case S: toast thiếu Hoàn tác');
+    assert(/function toastHoanTac[\s\S]{0,200}ms: HOAN_TAC_PA_MS, demLui: true/.test(cs), 'toast Hoàn tác không 10 s đếm lùi');
+    assert(/choLaiS[\s\S]{0,120}data\.choXacNhanS\?\.coTheXacNhan/.test(doc('web/src/modules/students/NganCase.tsx')), 'Hoàn tác Case S ở bước Xác nhận PA: không hiện lại Xác nhận Case');
+    assert(/const traLai = xoaNhapViec\(/.test(doc('web/src/ui/KhungPanel.tsx')), 'useXoaNhap không đưa hàm trả lại nháp');
+  });
+
+  check('HTXN-W3 · hộp Xác nhận PA cùng lúc + dòng Số liệu: dải "✓ Đã xác nhận …" có Hoàn tác (lô: ids của lần gửi gần nhất)', () => {
+    const lo = doc('web/src/modules/congViec/XacNhanPaLo.tsx');
+    assert(/api\.post<[^>]+>\('\/interventions\/hoan-tac-xac-nhan-pa-lo', \{ ids: vuaXn\.ids \}\)/.test(lo) && /setVuaXn\(\(v\) => \(\{ lan: [^}]+, ids: okLan \}\)\)/.test(lo), 'lô: Hoàn tác không gửi đúng PA vừa xác nhận');
+    assert(/<DaiVuaLuu key=\{vuaXn\?\.lan \?\? 0\}[\s\S]{0,240}hoanTac: hoanTacLo/.test(lo), 'lô: dải không có nút Hoàn tác');
+    const sl = doc('web/src/ui/SoLieu.tsx');
+    assert(/\/interventions\/\$\{v\.paId\}\/hoan-tac-xac-nhan/.test(sl) && /<NutHoanTac key=\{vuaXong\.lan\} hoanTac=\{vuaXong\.hoanTac\}/.test(sl), 'Số liệu: Xác nhận PA thiếu Hoàn tác');
+    const kv = doc('web/src/ui/KhuonViec.tsx');
+    assert((kv.match(/<NutHoanTac /g) ?? []).length >= 2 && /export function NutHoanTac[\s\S]{0,200}useHoanTac\(hoanTac, onHoanTac\)/.test(kv), 'dải + chân "Đã lưu" không dùng chung NutHoanTac');
+  });
 
   check('HTXN-9 · đường máy chủ: 4 đường hoàn tác xác nhận (PA, lô PA, Case, Case S)', () => {
     const src = fs.readFileSync(path.join(REPO, 'server/src/routes/index.ts'), 'utf8');
