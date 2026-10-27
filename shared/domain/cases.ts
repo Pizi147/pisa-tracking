@@ -1120,3 +1120,8 @@ export const CASE_STATUS_TONE: Record<CaseStatus, 'danger' | 'warn' | 'ok'> = {
 export function isNoPlanCase(c: { status: string; disposition?: string | null; interventionCount: number; tam?: boolean | number | null }): boolean {
   return c.status !== 'done' && !c.disposition && c.interventionCount === 0 && !c.tam;   // OV-13a: Case tạm (chờ chốt SOS) chưa là "Thiếu PA"
 }
+
+/** M6 6b-2 (khu K ⑤, luồng ①): câu "ai làm được" khi người xem không có quyền — MỘT câu cho mọi nơi; "Quản lý" là luật quyền cố định. */
+export function chuAiLamDuoc(phuTrach: string | null | undefined): string {
+  return phuTrach ? t('Chỉ {ten} (phụ trách) hoặc Quản lý làm được việc ở Case này.', { ten: phuTrach }) : t('Chỉ Quản lý làm được việc ở Case này (Case chưa có người phụ trách).');
+}

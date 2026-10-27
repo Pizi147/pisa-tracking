@@ -1994,7 +1994,7 @@ export function caseDetail(p: Principal, caseId: number) {
     .map((i) => ({
       id: i.id, role: i.role, code: i.taxonomy_code, label: issueLabel(i.taxonomy_code),
       branch: issueBranchOf(i.taxonomy_code), skill: i.skill, observation: i.observation,
-      byName: i.by_name ?? null,
+      byName: i.by_name ?? null, /** 6b-2: ngày ghi mô tả (Case A "Mô tả · người · ngày"). */ createdAt: i.created_at ?? null,
     }));
   /* OV-13k: Case MT Speaking — nguyên nhân = nhận xét người chấm + "Nhận xét GV phụ trách" (đọc sống từ ô, lưu riêng) + nhóm. */
   const nxPhuTrach = c.topic === 'speaking' && c.attempt_id

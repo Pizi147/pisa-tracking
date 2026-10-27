@@ -145,14 +145,16 @@ const giuDau = (st: unknown) => {
   return s && (s.xem !== undefined || s.panelSau !== undefined) ? { xem: s.xem, panelSau: s.panelSau } : undefined;
 };
 
-/** Panel mở từ URL dựng chuỗi `?panel=` cho panel làm việc bên trong (Ngăn Case trong panel số): `ten` = tên view gốc (nhãn ‹ ở view đầu chuỗi). */
-export const XemCha = createContext<{ ten: string } | null>(null);
+/** Panel mở từ URL dựng chuỗi `?panel=` cho panel làm việc bên trong (Ngăn Case trong panel số): `ten` = tên view gốc (nhãn ‹ ở view đầu chuỗi).
+ *  M6 6b-2: `rong` = bề rộng của cả chuỗi (một chuỗi view một bề rộng — khu K D6); `caseTiep` = "Case tiếp ›" của danh sách (Q7). */
+export const XemCha = createContext<{ ten: string; rong?: 'hep' | 'rong'; caseTiep?: { xong: boolean; di: (() => void) | null; /** Hoàn tác: dòng hết "đã xử lý". */ boXong: () => void } } | null>(null);
 export type NganXep = {
   ds: string[]; ten: string | null; /** Chuỗi nằm trên URL (`?panel=`). */ url: boolean;
-  /** Vào view sâu hơn: push một mục lịch sử. `tuDau` = chuỗi bắt đầu lại từ view này (panel gốc mở việc của một dòng). */
-  vao: (v: string, tuDau?: boolean) => void;
-  /** Thay view trên cùng (lưu xong sang việc kế, "Xem Case"): replace, ‹ vẫn về view cha cũ. */
-  thay: (v: string) => void;
+  /** Vào view sâu hơn: push một mục lịch sử. `tuDau` = chuỗi bắt đầu lại từ view này (panel gốc mở việc của một dòng). `them` = tham số URL đổi CÙNG mục
+   *  (6b-2: `dong` của dòng vừa bấm — một mục lịch sử, Back về danh sách). */
+  vao: (v: string, tuDau?: boolean, them?: Record<string, string>) => void;
+  /** Thay view trên cùng (lưu xong sang việc kế, "Xem Case", "Case tiếp ›"): replace, ‹ vẫn về view cha cũ. */
+  thay: (v: string, them?: Record<string, string>) => void;
   /** ‹ = lùi một view: history.back() khi mục này do app push từ view cha; không thì thay URL bằng view cha (link sâu, F5 sau replace). */
   lui: () => void;
 };
@@ -168,16 +170,17 @@ export function useXem(o: { url?: boolean; dau?: string[] } = {}): NganXep {
   const navigate = useNavigate();
   const [cucBo, setCucBo] = useState<string[]>(o.dau ?? []);
   const ds = url ? docXem(sp.get('panel')) : cucBo;
-  const ghi = (moi: string[], push: boolean) => {
+  const ghi = (moi: string[], push: boolean, them?: Record<string, string>) => {
     if (!url) { setCucBo(moi); return; }
     const n = new URLSearchParams(sp);
+    for (const [k, v] of Object.entries(them ?? {})) n.set(k, v);
     if (moi.length) n.set('panel', moi.join('.')); else n.delete('panel');
     navigate(`?${n}`, push ? { state: { xem: moi.length, panelSau: soMucPanel(state) + 1 } } : { replace: true, state: giuDau(state) });
   };
   return {
     ds, ten: cha?.ten ?? null, url,
-    vao: (v, tuDau = false) => ghi([...(tuDau ? [] : ds), v], true),
-    thay: (v) => ghi([...ds.slice(0, -1), v], false),
+    vao: (v, tuDau = false, them) => ghi([...(tuDau ? [] : ds), v], true, them),
+    thay: (v, them) => ghi([...ds.slice(0, -1), v], false, them),
     lui: () => (url && luiBangBack(state, ds.length) ? navigate(-1) : ghi(ds.slice(0, -1), false)),
   };
 }
