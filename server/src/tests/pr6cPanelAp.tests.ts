@@ -138,6 +138,10 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
       assert((s.match(/<ConfirmDialog /g) ?? []).length === n && !/<KhungPanel[^>]*longTrong/.test(s), `${f}: còn panel đè / thiếu hộp nhỏ`);
     }
     assert(/daSua=\{!!lyDo\.trim\(\)\}/.test(doc(W + 'cases/MenuXoaPa.tsx')) && /daSua=\{!rutDuoc && !!lyDo\.trim\(\)\}/.test(doc(W + 'yThuc/XemXuLyPanel.tsx')), 'ô lý do chưa giữ chữ');
+    /* PTA 28/10: dòng PA gọn (`DongPaGon`) phải có "Kết thúc PA" — PA quy chế đang chạy chỉ vẽ dạng gọn. */
+    const cp = doc(W + 'cases/CasePanel.tsx');
+    assert((cp.match(/<MenuPa [^\n]*ketThuc=\{nut\.ketThuc\}/g) ?? []).length === 2 && (cp.match(/coTheKetThucPa: data\.viewer\.coTheKetThucPa/g) ?? []).length === 2,
+      'dòng PA gọn thiếu Kết thúc PA');
     const dr = doc('web/src/ui/Drawer.tsx');
     assert(/const dong = busy \? \(\) => \{\} : daSua \? \(\) => setHoi\(true\) : onClose;/.test(dr) && /export function HopBoChu\(/.test(dr), 'ConfirmDialog chưa hỏi khi còn chữ');
   });

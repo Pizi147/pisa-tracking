@@ -59,13 +59,18 @@ Phép kiểm cũ SL-7 (PR-SL I4: Xoá vi phạm phải là `KhungPanel longTrong
 | Xoá Case | Case 9 (HV 3) · Sửa → Xoá Case | Nêu tên Case · ✕ và Huỷ chỉ đóng hộp, panel "Sửa Case" còn. ĐẠT (không xoá thật) |
 | Thu hồi lần xử lý (có ô lý do) | HV 4 · Ý thức · Report 1 · Thu hồi… | Gõ lý do → Esc → "Bỏ chữ đang gõ? Lý do chưa lưu…", focus "Ở lại" · Ở lại → chữ còn nguyên · ✕ → hỏi lại · Huỷ → hỏi · "Bỏ chữ, đóng" → chỉ đóng hộp, panel Report 1 còn · Thu hồi thật → "Đã thu hồi Report 1", lý do ghi đúng. ĐẠT |
 | Xoá vi phạm | HV 46 · Ý thức · vi phạm → Sửa → Xoá vi phạm | Panel Sửa đóng trước (luồng cũ, không chồng) · hộp nay nêu tên vi phạm (sửa trong lượt này) · Esc đóng. ĐẠT |
-| Kết thúc PA (có ô lý do) | — | **Không với tới được trên giao diện**: PA theo quy chế đang chạy luôn vẽ dạng dòng gọn (`DongPaGon`), mà ⋯ của dòng gọn không truyền `ketThuc` (`CasePanel.tsx`, `MenuPa` của `DongPaGon`). Có sẵn trước 6c — [XM]. Đường hỏi khi còn chữ là `ConfirmDialog daSua` chung, đã thử ở Thu hồi. |
+| Kết thúc PA (có ô lý do) | Case 34 (HV 46) · ⋯ dòng PA gọn | (Sau sửa ở dưới) ⋯ có "Kết thúc PA" · gõ lý do → Esc → "Bỏ chữ đang gõ? Lý do chưa lưu…", focus "Ở lại" · Ở lại → chữ còn · ✕ → hỏi lại · kết thúc thật → "Đã kết thúc PA", panel Case còn. ĐẠT |
+
+**Sửa kèm (PTA 28/10 — mất thao tác):** "Kết thúc PA" trước đây không với tới được trên giao diện: PA quy chế đang chạy luôn vẽ dạng dòng gọn (`DongPaGon`), mà ⋯ của dòng gọn không nhận `ketThuc` (cũng không truyền `coTheKetThucPa` vào `nutDongPa`). Nay dòng gọn truyền cả hai (`CasePanel.tsx`).
+
+| Thao tác | TRƯỚC | SAU |
+|---|---|---|
+| Kết thúc PA theo quy chế đang chạy | không có đường (⋯ dòng PA chỉ "Sửa PA") | ⋯ dòng PA → "Kết thúc PA" → hộp có ô lý do |
 
 ## 6c-2 ④ Bỏ (mã chết, không đổi màn)
 Ô số `SoLieu` (0 nơi gọi) · `NutMoDanhSach` · `BangGiaoVienChiNhanh.tsx` · tham số `kqMacDinh` / `trongPanel` của `BangMock` + gỡ phép kiểm cũ chỉ đọc các mã đó (prGv, prS6fB ×2, prBang0).
 
 ## Để sau / [XM] hỏi PTA
-- **Kết thúc PA không với tới được** (bảng bấm thử) — đề xuất PR nhỏ: truyền `ketThuc={nut.ketThuc}` cho `MenuPa` của dòng PA gọn (`DongPaGon`).
 - **Bỏ chưa làm:** `SkillBoard()` và phần bảng `BangSos()` — kéo theo chuỗi hàm phụ + phép kiểm cũ đọc nội dung (panelUx3, prDh, prBang0); hộp "Hướng dẫn nạp lại" chồng Modal (`DemoBar`).
 - **Gộp chạm bố cục — để lại có lý do:** QL "Case chưa có PA ›" do chủ SP thêm (XM-3, 23/10) · QL "HV thi tháng này ›" là đường sang trang lọc lớn · TVV khối "Thi thật": gỡ thì cột trái trống → cần thiết kế lại · bảng "Lớp tôi dạy" cuối Công việc: gỡ thì `LopToiDay()` thành mã chết mà 4 phép kiểm cũ đọc thân hàm · ⋯ › Hồ sơ lớp: thao tác V4 giữ có chủ đích (V1) · badge "n bài chờ chấm", Lịch Test ô "bài quá hạn", "Xuất điểm Test", hồ sơ MT hai nút "Lịch sử", Quản trị Sửa (vai) + Sửa thông tin — chưa rà.
 - **Gộp mã (không đổi màn) chưa làm:** `?mo-viec=` → `?viec=mgmt:<id>` · ⋯ › Quay lại học → `useQuayLaiHoc` · `NeedsEvaluation` → `NganDanhSach` · `DeleteViolationConfirm` trùng hộp xoá của `ChiTietViPham`.

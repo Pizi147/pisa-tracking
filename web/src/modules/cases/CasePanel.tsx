@@ -504,7 +504,8 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua 
   const [daLuu, setDaLuu] = useState<DaLuuNhanh | null>(null);
   const [chonNguoi, setChonNguoi] = useState(false);
   const [loiNguoi, setLoiNguoi] = useState<string | null>(null);
-  const nut = nutDongPa(iv, { canApprove: data.viewer.canApprove, caseXong: data.status === 'done' });
+  /* 6c-2 (bấm thử): PA quy chế đang chạy luôn vẽ dòng gọn — thiếu `coTheKetThucPa` / `ketThuc` ở đây thì "Kết thúc PA" không với tới được. */
+  const nut = nutDongPa(iv, { canApprove: data.viewer.canApprove, caseXong: data.status === 'done', coTheKetThucPa: data.viewer.coTheKetThucPa });
   const fGan = (data.followups ?? []).find((f: any) => f.interventionId === iv.id && f.outcome) ?? null;
   const hanGhi = iv.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
   const toiKy = toiKyGhi(iv.actionDue, homNay);
@@ -529,7 +530,7 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua 
         {hanGhi && !daLuu && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
           : <span className={`text-[13px] tabular-nums ${hanGhi.tone === 'overdue' ? 'font-semibold text-late' : 'text-slate-400'}`}>· {hanGhi.quaHan ? `⚠ ${hanGhi.quaHan}` : t('hạn kế {ngay}', { ngay: ngan(iv.actionDue) })}</span>)}
         <span className="flex-1" />
-        <MenuPa iv={iv} ten={iv.description || iv.kind} xoa={nut.xoa} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
+        <MenuPa iv={iv} ten={iv.description || iv.kind} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
           soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
       </div>
       {thieuNguoi && (
