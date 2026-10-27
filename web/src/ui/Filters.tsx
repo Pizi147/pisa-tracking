@@ -277,13 +277,26 @@ export function BranchFilter({ branchId, onBranch }: {
   const branches = useApi<Branch[]>('/ref/branches');
   const { session, branchCount } = useSession();
   if ((branches.data?.length ?? 0) <= 1 || branchCount <= 1) return null;
+  return <OChiNhanh branches={branches.data ?? []} branchId={branchId}
+    onBranch={(id) => { nhoChiNhanh(session?.user?.id, id); onBranch(id); }} />;
+}
+
+/**
+ * D3 CHON-CHI-NHANH (chủ SP 27/10): ô chọn chi nhánh gọn — nhãn nằm TRONG ô bên trái, cao 32 (điện thoại 44) bằng nút lọc / công tắc
+ * cùng hàng, chữ 13 / 600. Một mẫu cho mọi trang (không nhãn chồng trên ô như `.label` + `.field` cũ).
+ */
+export function OChiNhanh({ branches, branchId, onBranch, tatCa = true }: {
+  branches: Branch[]; branchId: number | null; onBranch: (id: number | null) => void;
+  /** HV & Lớp: phạm vi "Tất cả" nằm ở ô Phạm vi riêng — ô này chỉ chọn một chi nhánh. */
+  tatCa?: boolean;
+}) {
   return (
-    <label className="block">
-      <span className="label">{t('Chi nhánh')}</span>
-      <select className="field w-44" value={branchId ?? ''}
-        onChange={(e) => { const id = e.target.value ? Number(e.target.value) : null; nhoChiNhanh(session?.user?.id, id); onBranch(id); }}>
-        <option value="">{t('Tất cả chi nhánh')}</option>
-        {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+    <label className="inline-flex h-8 shrink-0 cursor-pointer items-center rounded-lg border border-[var(--o-nhap-vien)] bg-[var(--o-nhap-nen)] text-[13px] font-semibold focus-within:border-[var(--accent)] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] max-sm:min-h-[44px]">
+      <span className="whitespace-nowrap pl-2.5 pr-1.5 text-slate-400">{t('Chi nhánh')}</span>
+      <select className="min-w-0 cursor-pointer self-stretch rounded-r-lg border-0 bg-[var(--o-nhap-nen)] py-0 pl-1 pr-2 font-semibold text-slate-100 outline-none"
+        value={branchId ?? ''} onChange={(e) => onBranch(e.target.value ? Number(e.target.value) : null)}>
+        {tatCa && <option value="">{t('Tất cả')}</option>}
+        {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
       </select>
     </label>
   );
@@ -303,16 +316,10 @@ export function WeekBranchFilter({ periodId, onPeriod, branchId, onBranch, child
   const showBranch = !!onBranch && (branches.data?.length ?? 0) > 1 && branchCount > 1;
 
   return (
-    <div className="flex flex-wrap items-end gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <WeekPicker periodId={periodId} onPeriod={(id) => id && onPeriod(id)} />
       {showBranch && (
-        <label className="block">
-          <span className="label">{t('Chi nhánh')}</span>
-          <select className="field w-44" value={branchId ?? ''} onChange={(e) => onBranch!(e.target.value ? Number(e.target.value) : null)}>
-            <option value="">{t('Tất cả chi nhánh')}</option>
-            {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-        </label>
+        <OChiNhanh branches={branches.data ?? []} branchId={branchId ?? null} onBranch={onBranch!} />
       )}
       {children}
     </div>

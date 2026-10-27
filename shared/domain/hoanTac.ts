@@ -5,3 +5,9 @@ export const HOAN_TAC_MS = 5000;
 export function giayHoanTacConLai(het: number, bayGio: number): number {
   return Math.max(0, Math.ceil((het - bayGio) / 1000));
 }
+
+/** SV-BAI-LOP-2: Hoàn tác Thêm PA (form tại chỗ ở hồ sơ HV, "✓ Vừa thêm · Hoàn tác") — 10 giây trên web; máy chủ nhận thêm 5 giây cho mạng chậm. */
+export const HOAN_TAC_PA_MS = 10_000;
+export function duocHoanTacPa(taoLuc: string | null | undefined, bayGio: number): boolean {
+  return !!taoLuc && bayGio - Date.parse(taoLuc) <= HOAN_TAC_PA_MS + 5_000;
+}

@@ -2127,16 +2127,18 @@ CREATE TABLE gop_y_tuan (
 );
 CREATE INDEX idx_gop_y_tuan_lop ON gop_y_tuan(class_id, period_id);
 
--- SV-BAI-LOP (V5 C11, T18): BÀI TRÊN LỚP ở hồ sơ HV — tuỳ chọn, thang của bài (diem / thang, không quy đổi band); KHÔNG vào MT, Overall, KPI,
--- không sinh việc. `tuan` = thứ Hai của tuần. Lịch sử sửa / xoá ở `audit_logs` (bai_tren_lop.*, entity HV).
+-- SV-BAI-LOP (V5 C11, T18): BÀI TRÊN LỚP ở hồ sơ HV (Tiến độ trên lớp) — tuỳ chọn; KHÔNG vào MT, Overall, KPI, không sinh việc. `tuan` = thứ Hai.
+-- SV-BAI-LOP-2 (M5): nhận xét bắt buộc (kiểm ở máy chủ; dòng cũ có thể trống); kết quả tuỳ chọn: diem / thang của bài (không quy đổi) HOẶC band (0–9, bước 0.5);
+-- tên bài tuỳ chọn. Lịch sử sửa / xoá ở `audit_logs` (bai_tren_lop.*, entity HV).
 CREATE TABLE bai_tren_lop (
   id INTEGER PRIMARY KEY,
   student_id INTEGER NOT NULL REFERENCES students(id),
   class_id INTEGER NOT NULL REFERENCES classes(id),
   skill TEXT NOT NULL,
-  ten_bai TEXT NOT NULL,
-  diem REAL NOT NULL,
-  thang REAL NOT NULL,
+  ten_bai TEXT,
+  diem REAL,
+  thang REAL,
+  band REAL,
   tuan TEXT NOT NULL,
   nhan_xet TEXT,
   ghi_boi INTEGER REFERENCES users(id),
