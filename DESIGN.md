@@ -22,10 +22,10 @@ colors:
   text-dim: "rgb(186 198 222)"
   text-faint: "rgb(158 172 200)"
   sos1: "rgb(204 185 109)"
-  sos2: "rgb(207 129 91)"
-  sos2-nen: "#35261a"
+  sos2: "rgb(154 102 51)"
+  sos2-nen: "#5a320f"
   sos3: "rgb(213 123 113)"
-  sos3-nen: "#873c34"
+  sos3-nen: "#a33d2d"
   da-thi-bg: "rgb(22 35 46)"
   light-bg: "#f3f5f9"
   light-surface: "#ffffff"
@@ -123,7 +123,7 @@ components:
 | V2 | **Màu PISA từ logo:** xanh `#273C8F` (cấu trúc: thanh điều hướng `--dieu-huong-*`, nút chính sáng) · hồng `--hong` chỉ để **nhận diện** (logo, chữ khớp khi tìm) — hồng KHÔNG mang nghĩa lỗi / SOS. Tối: xanh bớt ngả tím, nền `#050a16` (P3) | `04` M19; `10` P3 |
 | V3 | **Logo:** chữ "PISA" hồng đậm + "TRACKING" mảnh giãn chữ, không ảnh logo trung tâm; "TRACKING" trắng cả ở chế độ sáng vì thanh vẫn nền xanh (chữ đen 2,1 : 1 — [XM] #545) | `10` mục 8; #545 |
 | V4 | **Bốn nhóm badge, một cỡ** (cao 22, chữ 12 / 600, `ui/Nhan.tsx`): ① kết quả học tập `NhanKq` — góc 4 px, viền 1 px màu nghĩa, ✓ ✗ – đứng đầu · ② lịch thi `NhanLich` — nền xanh lơ đặc, góc 2 px ("Đã thi · chờ KQ" không nhầm Đạt) · ③ tiến độ xử lý `Nhan` — viên tròn nền xám + chấm màu; sắp hạn / quá hạn nền nhạt + ⚠ · ④ mức SOS `ChipSos` / `lopSos` | `04` M12 (C23); #528 NEN-V5 |
-| V5 | **SOS 1 · 2 · 3 khác hẳn, đọc được không cần màu:** SOS 1 viền mảnh vàng trên nền thẻ · SOS 2 viền 2 px cam + nền cam nhạt · SOS 3 nền đỏ đặc `--sos3-nen` chữ trắng (không hồng, bớt chói #545) · tạm = viền đứt | `10` P6, mục 8 |
+| V5 | **SOS 1 · 2 · 3 = rỗng · nền vừa · đặc (MAU-MUC, chủ SP 28/10 — thay P6):** mức tách bằng ĐỘ ĐẶC nền trước, màu (vàng → cam → đỏ, không hồng) sau; mọi chip SOS, ô đếm hàng lớp, làn Case biểu đồ D đi qua một chỗ (`lopSos` / `MAU_THANH_SOS`). SOS 1 viền mảnh vàng trên nền thẻ · SOS 2 nền cam vừa `--sos2-nen` + viền 1 px · SOS 3 nền đỏ đặc `--sos3-nen` chữ trắng; cùng viền 1 px, chữ 600. Nền hai mức liền nhau cách ΔL ≥ 0,10, chữ / nền chip ≥ 4,5 (đo `thiet-ke/v7/kiem-mau-muc.py`, kể cả giả lập deutan / protan). Tạm = giữ nền của mức + viền đứt + chữ "tạm". Rê chuột chip có nền: sáng lên, không đổi nền | `thiet-ke/v7/mau-muc.html`; P6 cũ |
 | V6 | **Ít chữ (P1):** không câu giải thích luật / cách tính trên màn chính → dấu **"?"** (`NutLuat`) hoặc ⓘ; chú thích trong mockup không lên web | `10` P1 |
 | V7 | **Phân cấp (P2):** nhãn nhỏ xám / giá trị đậm (`NhanGt`, dòng thông tin đầu hồ sơ), chính trước phụ, dữ liệu tách thao tác; không lạm dụng badge | `10` P2 |
 | V8 | **Hạn = ngày thật** `hạn 28/10` (P7), không thứ, không "tuần này / tuần sau"; tháng thi dự kiến luôn kèm năm `Dự kiến 02/2027` (P5); "Thi tháng này" thay "Thi tuần này" (P4) | `10` P4, P5, P7 |
