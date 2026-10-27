@@ -167,6 +167,8 @@ assert(LO_TRINH_DONG, 'Seed thiếu lộ trình đã đóng (bản chụp) ở c
 /** OV-15i1: lộ trình đang học + lượt Test đầu của {hv} — Lịch sử thi thật / ô điểm. */
 const LO_TRINH_HV = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY id DESC LIMIT 1`).get(HV) as any).id as number;
 const LUOT_HV = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? ORDER BY id LIMIT 1`).get(HV, LOP_FT) as any).id as number;
+/** HSL-MAY-CHU: một Progress Test của lớp thường mẫu — `/regular/attempts/{luotThuong}`. */
+const LUOT_THUONG = (conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id = ? AND kind = 'progress' AND status != 'cancelled' ORDER BY id LIMIT 1`).get(LOP_THUONG) as any).id as number;
 /** PR-TK: lớp ĐÃ KẾT THÚC có bản chụp (lớp cũ của em có lộ trình đóng) — đường `/classes/{lopKetThuc}/tong-ket`. Bộ demo chưa có lớp kết thúc → đặt lớp cũ đó `finished`. */
 const LOP_KET_THUC = (conn.prepare('SELECT class_id AS id FROM ban_chup_lo_trinh WHERE cycle_id = ? AND class_id IS NOT NULL').get(LO_TRINH_DONG) as any)?.id as number;
 assert(LOP_KET_THUC, 'Bản chụp mẫu thiếu lớp');
@@ -218,6 +220,7 @@ function urlFor(mau: string): string {
     .replace('{loTrinhDong}', String(LO_TRINH_DONG))
     .replace('{loTrinhHv}', String(LO_TRINH_HV))
     .replace('{luotHv}', String(LUOT_HV))
+    .replace('{luotThuong}', String(LUOT_THUONG))
     .replace('{lopKetThuc}', String(LOP_KET_THUC))
     .replace('{case}', String(KASE))
     .replace('{paTutor}', String(PA_TUTOR))

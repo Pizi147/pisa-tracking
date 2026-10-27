@@ -635,6 +635,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 27/10/2026 | HSL-MAY-CHU (Opus 5.5) · `claude/zealous-sagan-h6cvma` | M4 PR 1 máy chủ: `GET /attempts/:id` thêm `sEx` cùng tuần + `lopHienTai`; `GET /regular/attempts/:id` = một dòng `regularSheet` + lịch sử lịch / điểm + người nhập; lượt thường mới ghi lịch sử "created". |
 | 27/10/2026 | R1-EN-2b (Opus 5.5) · `claude/r1-en-2b` | Tiếng Anh Lịch Test sau PHAN-CAP-TEST: chữ sót (MT{n} · n em, Thu / Xem), ghi chú vắng một dòng (1440), chip "SOS n prov." (375); do-khung EN không còn chữ Việt, lỗi khung còn lại = bản Việt. |
 | 27/10/2026 | R1-NO-CU (Opus 5.5) · `claude/r1-no-cu-063381` | Đổi người phụ trách Case (D17): API `POST /cases/:id/nguoi-phu-trach` (QL / GVCN lớp hiện tại, ứng viên theo kỹ năng + GVCN, lịch sử + nhật ký + thông báo, 409); nút "Đổi người…" đầu Case + việc "Chọn người phụ trách" làm tại chỗ. |
 | 27/10/2026 | R1-BO-DAN-EXCEL (Opus 5.5) · `claude/kind-dirac-afb708` | Bỏ hết "Dán từ Excel" + "?" điểm ở web (Lịch Test, panel Nhập điểm Công việc, Điểm theo lớp — một khối `LuoiChamLop`); xoá `DanExcel.tsx`, `shared/domain/danExcel.ts`, khoá EN thừa, HD `dl-dan`; API `/scores/lo` giữ (web không gọi); kiểm tĩnh OV15b-2 |
