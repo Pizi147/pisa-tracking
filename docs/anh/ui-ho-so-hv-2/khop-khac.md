@@ -38,7 +38,7 @@ Trương Ngọc Bích (id 36) chỉnh `thi_that_ngay` = 12/09 (chờ KQ) · Ngô
 | K10 | Dòng tiến độ: tuần · người ghi (+ mã lớp khi khác lớp) / "Part 2 · 6/10" · "Band 6.0" + nhận xét → `TienDoTrenLop` | KHỚP (nhận xét qua `ChuDich`) |
 | K11 | Góp ý tuần cũ: nhãn khoá "Góp ý tuần", chỉ đọc | KHỚP (`gopY` của #623) |
 | K12 | "+ Ghi tiến độ" → form tại chỗ: Kỹ năng · Tuần (`ONgay`) · Kết quả Không có \| Điểm \| Band · Tên bài · Nhận xét | KHỚP |
-| K13 | Nhận xét * bắt buộc (mockup) | KHÁC — theo Global Constraints (chủ SP 27/10 tối): cần ít nhất một trong nhận xét / x/y / band; "Không có" kết quả → Nhận xét thành bắt buộc |
+| K13 | Nhận xét * bắt buộc (mockup) | KHÁC — theo luật chủ SP 27/10 tối (Global Constraints): cần ít nhất một trong nhận xét / x/y / band → bỏ dấu *; chọn "Không có" mà trống nhận xét thì lỗi tại ô "Nhập nhận xét — hoặc chọn kết quả Điểm / Band" (PTA Plan duyệt XM-1) |
 | K14 | Lưu → "Đang lưu…" → form đóng, dòng mới viền nhấn + "✓ Đã lưu · Hoàn tác" | KHỚP (Hoàn tác 10 s = xoá dòng vừa thêm / PUT bản cũ / thêm lại dòng vừa xoá) |
 | K15 | Lỗi lưu: ở lại, giữ chữ, "Thử lại" | KHỚP |
 | K16 | Bấm dòng mình sửa được → sửa / xoá tại chỗ | KHỚP (xoá không hỏi lại, có Hoàn tác — "không khoá cứng") |
@@ -75,15 +75,15 @@ Không mất thao tác nào.
 
 ## [XM] cần PTA Plan / chủ SP
 
-- **[XM-1]** K13: mockup vẽ "Nhận xét *"; làm theo Global Constraints (không bắt buộc, cần một trong ba). Nhãn * chỉ hiện khi chọn "Không có" kết quả.
-- **[XM-2]** K19: Thêm PA / Ghi kết quả thay thân Case trong khối (dùng nguyên form Ngăn Case, cùng luật V20) thay vì chen form giữa mục Phương án. Chen giữa = viết lại form, để PR sau nếu chủ SP muốn.
-- **[XM-3]** TVV có việc riêng với em thì không còn thấy việc của người khác ở hồ sơ (mockup "chỉ việc của người xem"); TVV không có việc vẫn có khối "Đang xử lý".
-- **[XM-4]** Xoá dòng tiến độ không hỏi lại (có Hoàn tác 10 s, thêm lại đúng nội dung; người ghi / giờ ghi thành người hoàn tác). Muốn giữ hộp hỏi thì thêm lại một chỗ.
+- **[XM-1]** K13: mockup vẽ "Nhận xét *"; làm theo luật (không bắt buộc, cần một trong ba), không dấu * — PTA Plan đồng ý.
+- **[XM-2]** (PTA Plan đồng ý) K19: Thêm PA / Ghi kết quả thay thân Case trong khối (dùng nguyên form Ngăn Case, cùng luật V20) thay vì chen form giữa mục Phương án. Chen giữa = viết lại form, để PR sau nếu chủ SP muốn.
+- **[XM-3]** (PTA Plan đồng ý) TVV có việc riêng với em thì không còn thấy việc của người khác ở hồ sơ (mockup "chỉ việc của người xem"); TVV không có việc vẫn có khối "Đang xử lý".
+- **[XM-4]** (PTA Plan đồng ý) Xoá dòng tiến độ không hỏi lại (có Hoàn tác 10 s, thêm lại đúng nội dung; người ghi / giờ ghi thành người hoàn tác). Muốn giữ hộp hỏi thì thêm lại một chỗ.
 
 ## Critique (impeccable, MỘT lần, A + B hai agent độc lập): **29 / 40**, không P0
 
 - A (thiết kế): P1 ① cột trái ngắn hơn cột phải nhiều (theo khung mockup — hai cột `items-start`, không ép cao; giữ) · ② 375 ô điểm cắt "Overall M…", "MT1 5.0 ▲…" → **đã sửa** (375 bỏ chữ góc ô kỹ năng / Overall, dòng phụ chỉ xuống dòng ở " · ").
-  P2: nhãn "(không bắt buộc)" lặp → **đã bỏ** ở Nhận xét (dấu * chỉ khi chọn "Không có"); hai tầng tiêu đề khi form trong cột (giữ — ‹ Case Speaking là đường về, [XM-2]).
+  P2: nhãn "(không bắt buộc)" lặp → **đã bỏ** ở Nhận xét (không dấu *); hai tầng tiêu đề khi form trong cột (giữ — ‹ Case Speaking là đường về, [XM-2]).
 - B (detector + trình duyệt): 375 không tràn ngang; vùng chạm cột mới ≥ 44 px. Lỗi thật: hộp ⓘ (`NutLuat`) neo trái tràn mép phải ở 375 →
   **sửa gốc ở `NutLuat`** (đo khi mở, lùi vào trong 8 px — mọi nơi dùng chung đều được). Còn lại: `text-[14px]` / `[17px]` advisory (14 · 17 có trong thang G13), `side-tab` thanh việc là code cũ.
 - web-design-guidelines: bấm Lưu khi thiếu → focus ô lỗi đầu; Esc chỉ đóng form khi chưa gõ gì (không mất chữ vì một phím).

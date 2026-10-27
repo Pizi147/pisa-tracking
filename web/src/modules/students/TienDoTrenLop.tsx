@@ -283,7 +283,7 @@ function FormTienDo({ duong, bai, lop, lopNay, knDau, ct, homNay, onHuy, onXong 
         <Truong nhan={t('Tên bài')} tuyChon>
           <input className="field w-full" maxLength={BAI_LOP_TEN_TOI_DA} value={tenBai} disabled={busy} onChange={(e) => setTenBai(e.target.value)} placeholder={t('Ví dụ: Part 3 so sánh')} />
         </Truong>
-        <Truong nhan={t('Nhận xét')} batBuoc={kieu === 'khong'} loi={lf.loiCua(loiO, 'nx')}>
+        <Truong nhan={t('Nhận xét')} loi={lf.loiCua(loiO, 'nx')}>
           <textarea className="field w-full" rows={2} maxLength={BAI_LOP_NHAN_XET_TOI_DA} value={nhanXet} disabled={busy} onChange={(e) => setNhanXet(e.target.value)} {...lf.o(loiO, 'nx')} />
         </Truong>
         {loi && <p className="m-0 text-[13px] font-semibold text-bad" role="alert">⚠ {loi} {t('— chữ vẫn còn.')}</p>}
