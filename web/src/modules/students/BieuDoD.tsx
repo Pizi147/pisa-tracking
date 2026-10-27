@@ -78,7 +78,8 @@ export function BieuDoD(o: BieuDoDProps) {
   const moc = [...o.diem.map((p) => p.tuan), ...o.sex.map((x) => x.tuan), ...o.cases.flatMap((c) => [c.mo, ...c.pa.map((p) => p.tu)]), ...(thiKhoi ?? [])];
   const { tuan: truc, coTruoc, coSau } = dungTrucTuan([cong([...moc].sort()[0] ?? nay, -1), ...(thiKhoi ? [] : [cong(nay, 1)]), ...moc], nay, lui);
   const t0 = truc[0], n = truc.length;
-  const W = Math.max(560, rong || 1000), nhanW = 58, x0 = nhanW + 30, x1 = W - 92, cw = (x1 - x0) / n, day_ = cw < 26;
+  /* Lề trái: chữ "Case" / "PA" của làn chỉ khi có Case; không thì chỉ chỗ số trục. */
+  const W = Math.max(560, rong || 1000), nhanW = o.cases.length ? 58 : 12, x0 = nhanW + 30, x1 = W - 92, cw = (x1 - x0) / n, day_ = cw < 26;
   const cot = (iso: string) => Math.round((Date.parse(mondayOfDate(iso)) - Date.parse(t0)) / (7 * NGAY));
   const trong = (iso: string) => { const c = cot(iso); return c >= 0 && c < n; };
   const Xl = (iso: string) => x0 + Math.min(n, Math.max(0, cot(iso))) * cw;
@@ -259,7 +260,7 @@ export function BieuDoD(o: BieuDoDProps) {
       </svg>
       {goi && (
         <div role="dialog" aria-label={goi.g.tieu} className="absolute z-20 grid min-w-[180px] max-w-[280px] gap-0.5 rounded-[10px] border px-3 py-2 text-[13px] shadow-xl"
-          style={{ left: goiX + 14, top: goi.y + 22, background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
+          style={{ left: goiX + 14, top: goi.y + 32, background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
           <b className="text-[14px] text-slate-100">{goi.g.tieu}</b>
           {goi.g.dong.map((d, i) => <span key={i} className={i === goi.g.dong.length - 1 && goi.g.dong.length > 1 && !goi.g.href ? 'text-slate-400' : 'text-slate-300'}>{d}</span>)}
           {goi.g.href && <Link to={goi.g.href} className="link mt-1 text-[13px] font-semibold">{goi.g.chuLink ?? t('Mở hồ sơ lượt ›')}</Link>}

@@ -263,7 +263,7 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn }:
 
 /** Bảng đơn giản của kỹ năng (nút Bảng; 375): Lượt · Tuần · Band · Kỳ vọng · ± · Ghi chú — số hẹp, Ghi chú rộng nhất. 375: Tuần + Ghi chú xuống dòng phụ dưới Lượt. */
 function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof duLieuKn>; cy: LoTrinhD; homNay: string; hep: boolean }) {
-  const so = 'td w-[1%] whitespace-nowrap px-4 text-center tabular-nums';
+  const so = `td w-[1%] whitespace-nowrap ${hep ? 'px-2' : 'px-4'} text-center tabular-nums`;
   const gach = <span className="text-slate-500">—</span>;
   type Hang = { khoa: string; luot: React.ReactNode; tuan: string; band: React.ReactNode; kv: React.ReactNode; pm: React.ReactNode; gc: string | null; thi?: boolean; sap?: boolean };
   const hang: Hang[] = [];
@@ -302,7 +302,7 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
       <table className="w-full text-[14px]">
         <thead>
           <tr>
-            <Th className="w-[1%] pl-4">{t('Lượt')}</Th>
+            <Th className={hep ? 'pl-3' : 'w-[1%] pl-4'}>{t('Lượt')}</Th>
             {!hep && <Th>{t('Tuần')}</Th>}
             <Th align="center">{cy.ratio ? t('Điểm') : 'Band'}</Th>
             <Th align="center">{cy.ratio ? t('Ngưỡng đạt') : t('Kỳ vọng')}</Th>
@@ -313,7 +313,7 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
         <tbody>
           {hang.map((h) => (
             <tr key={h.khoa} className={h.thi ? 'hang-thi-that' : h.sap ? 'text-slate-400' : undefined}>
-              <td className="td w-[1%] whitespace-nowrap pl-4 pr-6">
+              <td className={`td whitespace-nowrap ${hep ? 'pl-3 pr-2' : 'w-[1%] pl-4 pr-6'}`}>
                 {h.luot}
                 {hep && <span className="block whitespace-normal text-[12px] font-normal tabular-nums text-slate-400">{h.tuan}{h.gc ? ` · ${h.gc}` : ''}</span>}
               </td>
