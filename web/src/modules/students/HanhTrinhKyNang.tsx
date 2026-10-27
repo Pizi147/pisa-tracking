@@ -165,7 +165,9 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten, onMoCase }: 
     else {
       /* Vắng (dời / đang vắng) khác chưa có điểm (việc nhập còn nợ) — hai dấu, hai chữ. */
       const vang = !!a.vangCu?.[kn] || !!a.doiKyNang?.includes(kyNangDot(kn));
-      const chu = !hocKn ? t('không học') : a.vangCu?.[kn] ? chuDoiVang(a.vangCu[kn], homNay) : vang ? t('vắng') : t('chưa có điểm');
+      /* Cùng chữ "dời S" của bảng Mock Test (`NhanDot`), kèm tuần vắng cũ khi có (LUAT-NX-MT 7.4). */
+      const doi = t('dời {mon}', { mon: row?.short ?? tenKn });
+      const chu = !hocKn ? t('không học') : a.vangCu?.[kn] ? `${doi} · ${chuDoiVang(a.vangCu[kn], homNay)}` : vang ? doi : t('chưa có điểm');
       diem.push({ khoa: `a${a.id}`, ten: tenL, tuan, v: null, kv, loai: !hocKn ? 'khong' : vang ? 'vang' : 'thieu', chu, a,
         goi: { tieu: `${tenL} · ${tuanLich(tuan)}`, dong: [`${tenKn}: ${chu}`], href, chuLink: t('Hồ sơ lượt {mt} ›', { mt: tenL }) } });
     }
@@ -181,12 +183,12 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten, onMoCase }: 
   const cases: CaseD[] = (row?.cases ?? []).filter((c) => c.openedOn).map((c) => {
     const dong = c.status === 'done' ? c.closedOn ?? c.touchedOn ?? c.openedOn : null;
     return {
-      id: c.id, chu: row!.short, sos: c.sosLevel, mo: c.openedOn!, dong,
+      id: c.id, chu: row!.short, mt: (c.tenSos?.mt ?? c.attempts[0]?.attemptNo) != null ? `MT${c.tenSos?.mt ?? c.attempts[0]?.attemptNo}` : null, sos: c.sosLevel, mo: c.openedOn!, dong,
       goi: { tieu: `Case ${tenKn}${c.sosLevel ? ` · SOS ${c.sosLevel}` : ''}`, mo: onMoCase ? () => onMoCase(c.id) : undefined, dong: [c.title.replace(/\[[^\]]*\]\s*/g, '').trim(), `${t('mở {ngay}', { ngay: ngay(c.openedOn, homNay) })}${dong ? ` · ${t('đã đóng {ngay}', { ngay: ngay(dong, homNay) })}` : ''}`] },
       pa: c.plans.filter((p) => p.startedOn && p.status !== 'cancelled' && !p.chuaChay).sort((x, y) => x.startedOn!.localeCompare(y.startedOn!)).map((p, i) => {
         const den = p.completedOn;
         return {
-          id: p.id, ten: `PA${i + 1}`, tu: p.startedOn!, den, denDk: den ? null : p.followupDue, kq: p.lastOutcome,
+          id: p.id, ten: `PA${i + 1}`, tu: p.startedOn!, den, denDk: den ? null : p.actionDue ?? p.followupDue, kq: p.lastOutcome,   // hạn kỳ tới = hạn ghi kết quả của ngăn Case (`actionDue`)
           goi: { tieu: `PA${i + 1} · ${dich(p.kindLabel)}`, mo: onMoCase ? () => onMoCase(c.id, p.id) : undefined, dong: [p.name, `${tuanLich(p.startedOn)} – ${den ? tuanLich(den) : t('nay')}${p.lastOutcomeLabel ? ` · ${dich(p.lastOutcomeLabel)}` : ''}`] },
         };
       }),

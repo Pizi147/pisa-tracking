@@ -9,7 +9,7 @@ export type GoiD = { tieu: string; dong: string[]; href?: string; mo?: () => voi
 /** Một lượt của kỹ năng: có điểm · vắng (dời / đang vắng) · chưa có điểm (đã tới tuần, chưa nhập) · không học (P8) · sắp tới. `chuDiem` = chữ thay số (lớp thường "18/25"). */
 export type DiemD = { khoa: string; ten: string; tuan: string; v: number | null; kv: number | null; loai: 'diem' | 'vang' | 'thieu' | 'khong' | 'sap'; chu?: string | null; chuDiem?: string; goi: GoiD };
 export type PaD = { id: number; ten: string; tu: string; den: string | null; denDk: string | null; kq: string | null; goi: GoiD };
-export type CaseD = { id: number; chu: string; sos: number | null; mo: string; dong: string | null; goi: GoiD; pa: PaD[] };
+export type CaseD = { id: number; chu: string; mt?: string | null; sos: number | null; mo: string; dong: string | null; goi: GoiD; pa: PaD[] };
 /** Thi thật: đã có kết quả (`v`) · đã thi chờ kết quả (`cho`) · dự kiến theo tuần · dự kiến theo tháng (`thang` YYYY-MM → khối tháng). */
 export type ThiD = { tuan: string | null; thang: string | null; v: number | null; cho: boolean; target: number | null; goi: GoiD };
 export type BieuDoDProps = {
@@ -38,6 +38,15 @@ export const KQ_PA: Record<string, [string, string]> = {
   improved: ['●', 'rgb(var(--ok-rgb))'], partial: ['◐', 'rgb(var(--soon-rgb))'], unchanged: ['○', 'rgb(var(--bad-rgb))'],
   worse: ['✕', 'rgb(var(--bad-rgb))'], insufficient: ['…', 'var(--text-dim)'],
 };
+/** Ký hiệu kết quả PA vẽ bằng SVG (◐ không có trong phông Be Vietnam Pro / Inter — vẽ chữ thì ra mảnh vụn). */
+export function KyHieuPa({ k, x, y, r = 5 }: { k: string; x: number; y: number; r?: number }) {
+  const mau = KQ_PA[k]?.[1] ?? 'var(--text-dim)';
+  if (k === 'improved') return <circle cx={x} cy={y} r={r} fill={mau} />;
+  if (k === 'partial') return <g><circle cx={x} cy={y} r={r - 0.75} fill="none" stroke={mau} strokeWidth="1.5" /><path d={`M${x} ${y - r + 0.75} A${r - 0.75} ${r - 0.75} 0 0 0 ${x} ${y + r - 0.75} Z`} fill={mau} /></g>;
+  if (k === 'unchanged') return <circle cx={x} cy={y} r={r - 0.75} fill="none" stroke={mau} strokeWidth="1.5" />;
+  if (k === 'worse') return <path d={`M${x - r + 1} ${y - r + 1} L${x + r - 1} ${y + r - 1} M${x + r - 1} ${y - r + 1} L${x - r + 1} ${y + r - 1}`} stroke={mau} strokeWidth="1.8" strokeLinecap="round" />;
+  return <g fill={mau}>{[-1, 0, 1].map((i) => <circle key={i} cx={x + i * (r - 1)} cy={y + r - 1.5} r="1.2" />)}</g>;
+}
 const MAU_KQ = { vuot: 'rgb(var(--kq-vuot-rgb))', bang: 'rgb(var(--kq-bang-rgb))', duoi: 'rgb(var(--kq-duoi-rgb))' } as const;
 /** ✓ / ✗ so kỳ vọng của lượt (vượt · bằng · dưới); `dat` = lớp thường so ngưỡng đạt: bằng ngưỡng là đạt (`ratioResult`), chỉ hai màu. */
 export const kqSo = (v: number | null, kv: number | null, dat = false) => (v == null || kv == null ? null : dat ? (v >= kv - 1e-9 ? 'vuot' : 'duoi')
@@ -56,6 +65,11 @@ export function BieuDoD(o: BieuDoDProps) {
   const [rong, setRong] = useState(0);
   const [lui, setLui] = useState(0);
   const [goi, setGoi] = useState<{ x: number; y: number; g: GoiD; re: boolean } | null>(null);
+  /* Rê ra khỏi dấu: chờ 150 ms để chuột kịp vào hộp nhỏ (bấm "Hồ sơ lượt ›"); vào hộp thì giữ. */
+  const hen = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const boHen = () => { if (hen.current) clearTimeout(hen.current); hen.current = null; };
+  const dongRe = () => { boHen(); hen.current = setTimeout(() => setGoi((c) => (c?.re ? null : c)), 150); };
+  useEffect(() => boHen, []);
   useLayoutEffect(() => {
     const el = khung.current;
     if (!el) return undefined;
@@ -114,13 +128,14 @@ export function BieuDoD(o: BieuDoDProps) {
   const fmt = o.fmt;
 
   /* Rê chuột mở → rời chuột đóng; chạm / Tab mở → giữ tới khi bấm ra ngoài hoặc Esc. */
-  const mo = (x: number, y: number, g: GoiD, re = false) => setGoi({ x, y, g, re });
-  const dau = (k: string, x: number, y: number, g: GoiD, noi: ReactNode) => (
+  const mo = (x: number, y: number, g: GoiD, re = false) => { boHen(); setGoi({ x, y, g, re }); };
+  /** Dấu bấm / Tab được; `hop` = vùng chạm (mặc định 28 px quanh tâm; thanh Case / PA = chính thanh, vòng focus ôm thanh). */
+  const dau = (k: string, x: number, y: number, g: GoiD, noi: ReactNode, hop?: { x: number; y: number; w: number; h: number }) => (
     <g key={k} className="diem-d" tabIndex={0} role="button" aria-label={[g.tieu, ...g.dong].join(' · ')} style={{ cursor: 'pointer', outline: 'none' }}
-      onMouseEnter={() => mo(x, y, g, true)} onMouseLeave={() => setGoi((c) => (c?.re && c.g === g ? null : c))}
+      onMouseEnter={() => mo(x, y, g, true)} onMouseLeave={dongRe}
       onFocus={() => mo(x, y, g)} onClick={() => mo(x, y, g)}
       onKeyDown={(e) => { if (e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); setGoi(null); if (g.href) navigate(g.href); else g.mo?.(); }}>
-      <rect x={x - 14} y={y - 14} width="28" height="28" fill="transparent" />
+      <rect x={hop?.x ?? x - 14} y={hop?.y ?? y - 14} width={hop?.w ?? 28} height={hop?.h ?? 28} fill="transparent" />
       {noi}
     </g>
   );
@@ -261,12 +276,13 @@ export function BieuDoD(o: BieuDoDProps) {
     ve.push(<text key={`m${x}${chu}`} x={x} y={mky} textAnchor="middle" fontSize="12" fontWeight="700" fill={mau} fontFamily={PHONG} aria-hidden>{chu}</text>);
   });
   /* làn Case · PA — chữ trong thanh */
-  const thanh = (k: string, a: number, b: number, y: number, nenT: string, vien: string, chu: ReactNode, chuDai: number, mauChu: string, g: GoiD, mong = false) => {
-    const w2 = Math.max(6, b - a);
+  const thanh = (k: string, a: number, b: number, y: number, nenT: string, vien: string, chu: string, mauChu: string, g: GoiD, mong = false, kq: string | null = null) => {
+    const w2 = Math.max(6, b - a), rongChu = chu.length * 7.4;   // 12 px / 700, ước lượng rộng chữ
     return dau(k, (a + b) / 2, y, g, <>
       <rect x={a} y={y - 11} width={w2} height="22" rx="5" fill={nenT} stroke={vien} strokeWidth={mong ? 1 : 1.5} />
-      {w2 > chuDai * 6.6 + 12 && <text x={a + 8} y={y + 4} fontSize="12" fontWeight="700" fill={mauChu} fontFamily={PHONG}>{chu}</text>}
-    </>);
+      {w2 > rongChu + (kq ? 18 : 0) + 12 && <text x={a + 8} y={y + 4} fontSize="12" fontWeight="700" fill={mauChu} fontFamily={PHONG}>{chu}</text>}
+      {kq && w2 > rongChu + 32 && <KyHieuPa k={kq} x={a + 8 + rongChu + 9} y={y} />}
+    </>, { x: a - 2, y: y - 13, w: w2 + 4, h: 26 });
   };
   lan.forEach((l, li) => {
     const { cy, pyy } = lanY[li];
@@ -275,11 +291,11 @@ export function BieuDoD(o: BieuDoDProps) {
     l.cs.forEach((c) => {
       const dong = !!c.dong, s2 = (c.sos ?? 0) >= 2;
       const mauV = s2 ? 'rgb(var(--sos2-rgb))' : 'rgb(var(--sos1-rgb))';
-      const chu = `Case ${c.chu}${dong ? ` · ${t('đã đóng')}` : c.sos ? ` · SOS ${c.sos}` : ''}`;
+      const chu = `Case ${c.chu}${c.mt ? ` · ${c.mt}` : ''}${dong ? ` · ${t('đã đóng')}` : c.sos ? ` · SOS ${c.sos}` : ''}`;
       ve.push(thanh(`c${c.id}`, Xl(c.mo) + 2, Xl(c.dong ?? nay) + cw - 2, cy, dong ? 'var(--surface)' : s2 ? 'var(--sos2-nen)' : 'var(--surface)', dong ? 'var(--line-strong)' : mauV,
-        chu, chu.length, dong ? 'var(--text-dim)' : s2 ? 'rgb(var(--sos2-chu-rgb))' : 'rgb(var(--sos1-chu-rgb))', c.goi, dong));
+        chu, dong ? 'var(--text-dim)' : s2 ? 'rgb(var(--sos2-chu-rgb))' : 'rgb(var(--sos1-chu-rgb))', c.goi, dong));
       c.pa.forEach((p) => {
-        const g = p.kq ? KQ_PA[p.kq] : null, pyy = lanY[li].pyy + 30 * (l.paHang!.get(p.id) ?? 0);
+        const pyy = lanY[li].pyy + 30 * (l.paHang!.get(p.id) ?? 0);
         if (!p.den && p.denDk && cot(p.denDk) > cot(nay) && trong(nay)) {
           const a = Xl(nay) + cw, b = Xl(p.denDk) + cw;
           ve.push(<g key={`pk${p.id}`} aria-hidden>
@@ -287,8 +303,7 @@ export function BieuDoD(o: BieuDoDProps) {
             {b - a > 60 && <text x={a + 8} y={pyy + 4} fontSize="12" fill="var(--text-dim)" fontFamily={PHONG}>{t('kỳ tới')}</text>}
           </g>);
         }
-        ve.push(thanh(`p${p.id}`, Xl(p.tu) + 2, Xl(p.den ?? nay) + cw - 2, pyy, 'var(--accent-soft)', 'var(--accent)',
-          <>{p.ten}{g && <>{p.den ? ' ' : ' · '}<tspan fill={g[1]}>{g[0]}</tspan></>}</>, p.ten.length + (g ? 3 : 0), 'var(--accent)', p.goi));
+        ve.push(thanh(`p${p.id}`, Xl(p.tu) + 2, Xl(p.den ?? nay) + cw - 2, pyy, 'var(--accent-soft)', 'var(--accent)', p.ten, 'var(--accent)', p.goi, false, p.kq && KQ_PA[p.kq] ? p.kq : null));
       });
     });
   });
@@ -302,7 +317,7 @@ export function BieuDoD(o: BieuDoDProps) {
         {nen}{ve}
       </svg>
       {goi && (
-        <div aria-hidden className="absolute z-20 grid min-w-[180px] max-w-[280px] gap-0.5 rounded-[10px] border px-3 py-2 text-[13px] shadow-xl"
+        <div aria-hidden onMouseEnter={boHen} onMouseLeave={dongRe} className="absolute z-20 grid min-w-[180px] max-w-[280px] gap-0.5 rounded-[10px] border px-3 py-2 text-[13px] shadow-xl"
           style={{ left: goiX + 14, top: goi.y + 32, background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
           <b className="text-[14px] text-slate-100">{goi.g.tieu}</b>
           {goi.g.dong.map((d, i) => <span key={i} className={i === goi.g.dong.length - 1 && goi.g.dong.length > 1 && !goi.g.href ? 'text-slate-400' : 'text-slate-300'}>{d}</span>)}
@@ -338,10 +353,10 @@ export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, thi, kvChu
       <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<line x1="0" x2="18" y1="6" y2="6" stroke="var(--text-dim)" strokeWidth="1.5" strokeDasharray="5 3" />)}{kvChu}</span>
       {thieu && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<><circle cx="9" cy="6" r="5.5" fill="none" stroke="rgb(var(--soon-rgb))" strokeWidth="1.5" /><text x="9" y="9" textAnchor="middle" fontSize="8" fontWeight="700" fill="rgb(var(--soon-rgb))">?</text></>)}{t('chưa có điểm')}</span>}
       {tamDung && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0" y="1" width="18" height="10" fill="var(--surface-2)" stroke="var(--line-strong)" />)}{t('Tạm dừng')}</span>}
-      {vang && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<circle cx="9" cy="6" r="4.5" fill="none" stroke="var(--text-dim)" strokeDasharray="2.5 2" />)}{t('vắng')}</span>}
+      {vang && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<circle cx="9" cy="6" r="4.5" fill="none" stroke="var(--text-dim)" strokeDasharray="2.5 2" />)}{t('vắng · dời')}</span>}
       {sex && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="5" y="2" width="8" height="8" transform="rotate(45 9 6)" fill="none" stroke="var(--hong)" strokeWidth="1.6" />)}{t('S Ex (không tính)')}</span>}
-      {pa.length > 0 && <span className="whitespace-nowrap">{t('PA')} {(['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const).filter((k) => pa.includes(k)).map((k, i) => (
-        <span key={k}>{i > 0 && ' · '}<b style={{ color: KQ_PA[k][1] }}>{KQ_PA[k][0]}</b> {{ improved: t('rõ'), partial: t('một phần'), unchanged: t('không'), worse: t('kém hơn'), insufficient: t('chưa đủ dữ liệu') }[k]}</span>
+      {pa.length > 0 && <span className="inline-flex items-center gap-1 whitespace-nowrap">{t('PA')} {(['improved', 'partial', 'unchanged', 'worse', 'insufficient'] as const).filter((k) => pa.includes(k)).map((k, i) => (
+        <span key={k} className="inline-flex items-center gap-1">{i > 0 && ' · '}<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden><KyHieuPa k={k} x={6} y={6} /></svg>{{ improved: t('rõ'), partial: t('một phần'), unchanged: t('không'), worse: t('kém hơn'), insufficient: t('chưa đủ dữ liệu') }[k]}</span>
       ))}</span>}
       {thi === 'kq' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="5" y="2" width="8" height="8" transform="rotate(45 9 6)" fill="var(--lich-chu)" />)}{t('thi thật')}</span>}
       {thi === 'cho' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0" y="0" width="18" height="12" fill="var(--lich-nen)" />)}{t('thi thật · chờ kết quả')}</span>}

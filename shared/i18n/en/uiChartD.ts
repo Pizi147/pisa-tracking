@@ -10,6 +10,7 @@ export const EN_UI_CHART_D = {
   'Chấm = điểm MT, màu theo kỳ vọng của lượt · vạch ngắn = kỳ vọng lượt · đứt = Target · cột hồng = tuần này · cột xanh lơ = thi thật. Chạm hoặc Tab một dấu để xem chi tiết; Enter mở hồ sơ lượt hoặc Case.':
     'Dot = MT score, coloured against that attempt’s expectation · short bar = attempt expectation · dashed = Target · pink column = this week · blue column = real exam. Tap or Tab to a mark for details; Enter opens the attempt record or the case.',
   'Không tải được S Ex.': 'Couldn’t load S Ex.',
+  'vắng · dời': 'absent · moved',
   'Chấm = điểm bài của môn (% so tổng), màu theo ngưỡng đạt của lớp · vạch đứt = ngưỡng đạt · cột hồng = tuần này.':
     'Dot = subject test score (% of total), coloured against the class pass mark · dashed = pass mark · pink column = this week.',
   'Cách đọc bảng Mock Test': 'How to read the Mock Test table',

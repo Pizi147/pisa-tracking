@@ -599,7 +599,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
               {
                 nhan: t('Điểm'),
                 noiDung: KN_MOCK.map((k, i) => (
-                  <Fragment key={k}>{i > 0 && ' · '}<span className="text-slate-500">{CHU_KY_NANG[k]}</span> {diemKyNang(a, k)}</Fragment>
+                  <Fragment key={k}>{i > 0 && ' · '}<span className="whitespace-nowrap"><span className="text-slate-500">{CHU_KY_NANG[k]}</span> {diemKyNang(a, k)}</span></Fragment>
                 )),
               },
               { nhan: 'Overall', noiDung: a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall) },
@@ -615,7 +615,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
             </div>
           )}
           dong={thiKq ? [
-            { nhan: t('Điểm'), noiDung: (['l', 'r', 'w', 's'] as const).map((k, i) => <Fragment key={k}>{i > 0 && ' · '}<span className="text-slate-500">{k.toUpperCase()}</span> {diemThi(k)}</Fragment>) },
+            { nhan: t('Điểm'), noiDung: (['l', 'r', 'w', 's'] as const).map((k, i) => <Fragment key={k}>{i > 0 && ' · '}<span className="whitespace-nowrap"><span className="text-slate-500">{k.toUpperCase()}</span> {diemThi(k)}</span></Fragment>) },
             { nhan: 'Overall', noiDung: diemThi('ovr') },
             { nhan: 'Target', noiDung: fmtBand(thiKq.target) },
           ] : []} />

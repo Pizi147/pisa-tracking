@@ -30,12 +30,12 @@ Ngô Hải Yến (id 23) môn đăng ký bỏ W1 + xoá điểm W1 MT3 → "khô
 | K6 | Kỳ vọng lượt = vạch ngắn đúng cột (bỏ khi trùng Target) | KHỚP |
 | K7 | Target bậc thang, một nhãn đầu phải | KHỚP (bậc từ `targetRevisions`) |
 | K8 | Tuần này = cột hồng | KHỚP |
-| K9 | Vắng: vòng đứt trên trục | KHỚP |
+| K9 | Vắng: vòng đứt trên trục | KHỚP (chữ "dời S · vắng W3 SEP" — cùng nhãn "dời S" của bảng Mock Test) |
 | K10 | Lượt chưa có điểm | KHÁC nhỏ — mockup không vẽ trạng thái này; web: vòng liền vàng + "?" + chú giải "chưa có điểm" (critique: chưa nhập ≠ vắng, nguyên tắc "không em nào bị bỏ sót") |
 | K11 | Không học (P8): mockup lọc khỏi chart | KHÁC nhỏ — web ghi chữ "không học" trên trục, nối điểm qua (Review Focus 1: "chart / Bảng ghi 'không học'") |
 | K12 | S Ex thoi hồng, không tính | KHỚP (Speaking, `/s-expert`) |
-| K13 | Làn Case: thanh màu SOS, chữ trong thanh, đã đóng viền mảnh | KHỚP |
-| K14 | Làn PA: chữ trong thanh + ●◐○✕…; "kỳ tới" đứt tới hạn kỳ | KHỚP (hạn = `followupDue`) |
+| K13 | Làn Case: thanh màu SOS, chữ trong thanh, đã đóng viền mảnh | KHỚP (+ mã MT trong thanh "Case W2 · MT3 · SOS 1" để phân biệt hai Case cùng kỹ năng) |
+| K14 | Làn PA: chữ trong thanh + ●◐○✕… (vẽ SVG — ◐ không có trong phông); "kỳ tới" đứt tới hạn kỳ | KHỚP (hạn = `actionDue`, cùng "hạn kế" của ngăn Case) |
 | K15 | Thi dự kiến theo tháng → khối tháng; theo tuần → một cột | KHỚP |
 | K16 | Đã thi chờ KQ → cột xanh lơ | KHỚP (ghi chú mockup nói "◇ ở mức Target", hình mockup chỉ có cột — theo hình: ◇ dễ đọc nhầm là điểm = Target) |
 | K17 | Đã thi có KQ → ◆ lớn, số 15/800, vạch đỏ tới Target + "−0.5" | KHỚP |
