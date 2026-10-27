@@ -143,7 +143,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const [moChu, datMo] = useThamSoUrl('dong', '');
   const mo = moChu ? Number(moChu) : null;
   const setMo = (v: number | null) => datMo(v === null ? '' : String(v));
-  /* M6 6b-1: việc dài của dòng `?dong=` là view kế trên `?xem=` (push — ‹ / Back trình duyệt về danh sách, F5 dựng lại). */
+  /* M6 6b-1: việc dài của dòng `?dong=` là view kế trên `?panel=` (push — ‹ / Back trình duyệt về danh sách, F5 dựng lại). */
   const xem = useXem({ url: true });
   const moViec = (r: DongSoLieu) => { const v = r.viec!; xem.vao(v.loai === 'nhap-diem' || v.loai === 'van-hanh' ? v.loai : maView({ loai: v.loai, paId: v.paId }), true); };
   const [giu, setGiu] = useState<Map<number, { dong: DongSoLieu; i: number; chu: string }>>(() => new Map());
@@ -158,8 +158,11 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const xep = [...goc.filter(tre), ...goc.filter((r) => !tre(r))];   // quá hạn lên đầu, giữ thứ tự máy chủ trong từng nhóm
   const hien: (DongSoLieu & { xong?: string })[] = [...xep];
   for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
-  /* Dòng vừa làm xong mà máy chủ không còn trả vẫn ở `hien` (giữ chỗ) → panel làm việc không tắt giữa "✓ Đã lưu". */
-  const lam = xem.ds.length && mo !== null ? hien.find((r) => r.id === mo && r.viec) ?? null : null;
+  /* Việc của dòng `?dong=` khi chuỗi có view. Đang làm thì giữ dòng đã mở (`giuLam`): lưu xong máy chủ trả dòng không còn việc / bỏ dòng → panel làm việc
+     không tắt giữa "✓ Đã lưu". Mở lại từ URL (F5, Forward) chỉ với dòng còn việc, chưa xong. */
+  const giuLam = useRef<DongSoLieu | null>(null);
+  const lam = xem.ds.length && mo !== null ? hien.find((r) => r.id === mo && r.viec && !r.xong) ?? (giuLam.current?.id === mo ? giuLam.current : null) : null;
+  giuLam.current = lam;
   /* Về từ việc dài: cuộn tới đúng dòng vừa làm. */
   useEffect(() => {
     if (lam || mo === null) return;

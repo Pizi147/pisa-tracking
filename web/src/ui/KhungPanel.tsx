@@ -226,9 +226,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   useBanPhim(!trongKhung);   // rà #530: một nơi đo — panel con đóng không gỡ `--ban-phim` khi panel ngoài còn mở
 
   /* M6 6b-1 (luật Quay lại): ‹ lùi một view KHÔNG hỏi khi chữ đã ở nháp (`useNhap` — mở lại view là còn); form chỉ giữ chữ trong state (`chan.daSua`)
-     thì vẫn hỏi (cùng hộp), không mất chữ âm thầm. */
+     thì vẫn hỏi (cùng hộp), không mất chữ âm thầm — kể cả khi nơi gọi `tuHoi` (nơi gọi chỉ tự hỏi ở ✕ / Esc / nền). */
   const veLai = () => {
-    if (chan?.daSua && !chan.tuHoi) setHoi({ nut: t('Bỏ chữ, quay lại'), tiep: () => quayLai?.onClick() });
+    if (chan?.daSua) setHoi({ nut: t('Bỏ chữ, quay lại'), tiep: () => quayLai?.onClick() });
     else quayLai?.onClick();
   };
   const dauCv = useContext(DauViecCongViec);

@@ -29,7 +29,7 @@ export type { ViewCase };
  * NGĂN CASE dùng chung cho mọi lối vào (PR-UX3, N-4, G-8): Hồ sơ HV › Học thuật, Hành trình, thông báo (`?case=&pa=`), Việc cần làm
  * (`?viec=ghi-ket-qua`), bảng Case, Phân tích. MỘT panel — không chồng: view `case` (thân Case) và các view làm việc (Kết quả ·
  * Thêm PA · Hoàn thành; PR-DUYET bỏ Trả lời đề xuất — thẻ Chờ duyệt nhúng dưới PA) THAY nội dung cho nhau. Tải `/cases/{id}` MỘT lần.
- * M6 6b-1: các view là NGĂN XẾP (`useXem` — `?xem=` khi mở trong panel số, mảng cục bộ ở nơi khác): "‹ {view trước}" lùi đúng một view (view mở từ
+ * M6 6b-1: các view là NGĂN XẾP (`useXem` — `?panel=` khi mở trong panel số, mảng cục bộ ở nơi khác): "‹ {view trước}" lùi đúng một view (view mở từ
  * Case về Case, không nhảy cóc về danh sách); view đầu chuỗi về nơi mở (`XemCha` / `veNguon`); không có nơi mở thì view việc ‹ về Case.
  *
  * Có `paId` (view `case`) thì sau khi tải xong dò `[data-pa-id="{paId}"]` (giao kèo với Hành trình) để cuộn tới và viền sáng 2 giây.
@@ -48,7 +48,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   hocVien?: string | null; lop?: string | null;
   onClose: () => void; onChanged?: () => void;
   /** OV-12f: nơi mở giữ view bằng state (Panel một em, panel việc) — "‹ {tên em}" ở view đầu chuỗi, làm xong view đầu về đúng nơi đó (không panel
-   *  lồng panel). Mở trong panel số: chuỗi `?xem=` + `XemCha`, không truyền. */
+   *  lồng panel). Mở trong panel số: chuỗi `?panel=` + `XemCha`, không truyền. */
   veNguon?: { nhan: string; onClick: () => void };
   /** OV-13b: việc kế của danh sách nơi mở (Công việc) — nút "Việc tiếp ›" sau khi lưu. */
   onTiep?: (() => void) | null;
@@ -74,8 +74,9 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   /* Một bước của chuỗi xong (Xác nhận Case → Xác nhận PA, "Việc tiếp ›"): THAY view trên cùng — ‹ vẫn về view cha cũ. */
   const sangViec = (v: ViewCase) => xem.thay(maView(v));
   /* B1: mở từ thông báo / đường `?case=` (không kèm việc) — hoặc `viec=xac-nhan` từ hồ sơ — khi Case đang chờ → mở sẵn đúng khối: Progress chờ
-     Xác nhận Case → Xác nhận Case; Case MT cũ bài chưa nhận xét → Ghi nhận xét (OV-12c). Trong panel số (`?xem=`) dòng đã nói đúng việc: không tự mở. */
-  const tuDong = useRef(!xem.url && !viecBanDau && !paId && (!viec || viec === 'xac-nhan'));
+     Xác nhận Case → Xác nhận Case; Case MT cũ bài chưa nhận xét → Ghi nhận xét (OV-12c). Trong panel số (`?panel=`) chỉ dòng "Xác nhận Case" chung tự
+     sang đúng khối (thay view — F5 giữ khối đã chọn). */
+  const tuDong = useRef(xem.url ? maHien === 'xac-nhan' : !viecBanDau && !paId && (!viec || viec === 'xac-nhan'));
   useEffect(() => {
     if (!tuDong.current || !data) return;
     tuDong.current = false;

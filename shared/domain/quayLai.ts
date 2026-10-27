@@ -131,14 +131,15 @@ export function tenNguon(url: string): TenTrang {
 }
 
 /**
- * NGĂN XẾP VIEW CỦA PANEL (M6 6b-1, mockup `panel-pilot.html` khu "Quay lại"): chuỗi view đang mở trên URL `?xem=a.b` — vào sâu = push một mục
- * lịch sử, ‹ = lùi một view, Back trình duyệt = cũng lùi một view; F5 dựng lại từ chuỗi. URL là dữ liệu ngoài: đoạn lạ thì bỏ cả chuỗi.
+ * NGĂN XẾP VIEW CỦA PANEL (M6 6b-1, mockup `panel-pilot.html` khu "Quay lại" — mockup gọi `?xem=`; web dùng `?panel=` vì `?xem=` đã là tab của Chờ
+ * duyệt): chuỗi view đang mở trên URL `?panel=a.b` — vào sâu = push một mục lịch sử, ‹ = lùi một view, Back trình duyệt = cũng lùi một view; F5 dựng
+ * lại từ chuỗi. URL là dữ liệu ngoài: đoạn lạ thì bỏ cả chuỗi.
  */
 const DOAN_XEM = /^[a-z0-9-]{1,40}$/;
 export function docXem(chu: string | null | undefined): string[] {
   if (!chu) return [];
   const ds = chu.split('.');
-  return ds.length <= 8 && ds.every((x) => DOAN_XEM.test(x)) ? ds : [];
+  return ds.length <= 20 && ds.every((x) => DOAN_XEM.test(x)) ? ds : [];
 }
 /** Mục lịch sử đang xem do app push từ view cha (`state.xem` = độ dài chuỗi lúc push) → ‹ = history.back(); không (link sâu, replace) → thay URL. */
 export const luiBangBack = (st: unknown, doDai: number): boolean => (st as { xem?: unknown } | null)?.xem === doDai;
@@ -148,7 +149,7 @@ export function soMucPanel(st: unknown): number {
   return typeof n === 'number' && Number.isInteger(n) && n > 0 && n <= 20 ? n : 0;
 }
 
-/** Một view của Ngăn Case ↔ một đoạn `?xem=` (`them-pa`, `ghi-ket-qua-55`). Kiểu đầy đủ: `ViewCase` (web `cases/CasePanel.tsx`). */
+/** Một view của Ngăn Case ↔ một đoạn `?panel=` (`them-pa`, `ghi-ket-qua-55`). Kiểu đầy đủ: `ViewCase` (web `cases/CasePanel.tsx`). */
 export type ViewMa = { loai: string; paId?: number; followupId?: number };
 const VIEW_KHONG_ID = ['case', 'them-pa', 'hoan-thanh', 'xac-nhan', 'ghi-nhan-xet', 'xac-nhan-s', 'sua'];
 const VIEW_PA = ['ghi-ket-qua', 'xac-nhan-pa', 'sua-pa'];

@@ -61,7 +61,7 @@ export async function runPrOv12eTests(t: YThucTestKit) {
 
   check('OV12e-2c · không mất chữ đang gõ: "‹ {view trước}" (nút quayLai của KhungPanel) hỏi trước khi form đang sửa dở (chan.daSua — M6 6b-1: chữ đã ở nháp thì không hỏi); Hoàn thành Case báo daSua', () => {
     const kp = doc('web/src/ui/KhungPanel.tsx');
-    assert(/const veLai = \(\) => \{\s*if \(chan\?\.daSua && !chan\.tuHoi\) setHoi\(/.test(kp)   // NEN-PANEL: hỏi bằng hộp "Bỏ chữ đang gõ?" thay window.confirm
+    assert(/const veLai = \(\) => \{\s*if \(chan\?\.daSua\) setHoi\(/.test(kp)   // NEN-PANEL: hỏi bằng hộp "Bỏ chữ đang gõ?" thay window.confirm
        && /onClick=\{veLai\}/.test(kp), 'quayLai chưa qua veLai');
     assert(/tieuDe=\{?t?\(?['"]Hoàn thành Case['"]\)?\}?[\s\S]{0,200}daSua:/.test(doc('web/src/modules/cases/ThaoTacCase.tsx')), 'Hoàn thành Case thiếu daSua');
   });

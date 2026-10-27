@@ -129,13 +129,13 @@ export function useMoSoLieu(khoa: string): [boolean, (mo: boolean) => void] {
   const navigate = useNavigate();
   return [sp.get('so-lieu') === khoa, (mo) => {
     if (mo) {
-      setSp((q) => { const n = new URLSearchParams(q); n.set('so-lieu', khoa); n.delete('dong'); n.delete('xem'); return n; }, { state: { panelSau: 1 } });
+      setSp((q) => { const n = new URLSearchParams(q); n.set('so-lieu', khoa); n.delete('dong'); n.delete('panel'); return n; }, { state: { panelSau: 1 } });
       return;
     }
     if (sp.get('so-lieu') !== khoa) return;
     const lui = soMucPanel(state);
     if (lui) navigate(-lui);
-    else setSp((q) => { const n = new URLSearchParams(q); n.delete('so-lieu'); n.delete('dong'); n.delete('xem'); return n; }, { replace: true });   // đóng = bỏ cả dòng, chuỗi view
+    else setSp((q) => { const n = new URLSearchParams(q); n.delete('so-lieu'); n.delete('dong'); n.delete('panel'); return n; }, { replace: true });   // đóng = bỏ cả dòng, chuỗi view
   }];
 }
 
@@ -145,10 +145,10 @@ const giuDau = (st: unknown) => {
   return s && (s.xem !== undefined || s.panelSau !== undefined) ? { xem: s.xem, panelSau: s.panelSau } : undefined;
 };
 
-/** Panel mở từ URL dựng chuỗi `?xem=` cho panel làm việc bên trong (Ngăn Case trong panel số): `ten` = tên view gốc (nhãn ‹ ở view đầu chuỗi). */
+/** Panel mở từ URL dựng chuỗi `?panel=` cho panel làm việc bên trong (Ngăn Case trong panel số): `ten` = tên view gốc (nhãn ‹ ở view đầu chuỗi). */
 export const XemCha = createContext<{ ten: string } | null>(null);
 export type NganXep = {
-  ds: string[]; ten: string | null; /** Chuỗi nằm trên URL (`?xem=`). */ url: boolean;
+  ds: string[]; ten: string | null; /** Chuỗi nằm trên URL (`?panel=`). */ url: boolean;
   /** Vào view sâu hơn: push một mục lịch sử. `tuDau` = chuỗi bắt đầu lại từ view này (panel gốc mở việc của một dòng). */
   vao: (v: string, tuDau?: boolean) => void;
   /** Thay view trên cùng (lưu xong sang việc kế, "Xem Case"): replace, ‹ vẫn về view cha cũ. */
@@ -157,7 +157,7 @@ export type NganXep = {
   lui: () => void;
 };
 /**
- * NGĂN XẾP VIEW CỦA PANEL (M6 6b-1, luật Quay lại): `url` (panel mở bằng URL) hoặc đang trong `XemCha` → chuỗi trên `?xem=` (Back trình duyệt lùi
+ * NGĂN XẾP VIEW CỦA PANEL (M6 6b-1, luật Quay lại): `url` (panel mở bằng URL) hoặc đang trong `XemCha` → chuỗi trên `?panel=` (Back trình duyệt lùi
  * một view, F5 dựng lại); ngoài ra chuỗi là mảng cục bộ, đầu = `dau` (nơi mở giữ view bằng state — PanelMotEm, PanelViec).
  */
 export function useXem(o: { url?: boolean; dau?: string[] } = {}): NganXep {
@@ -167,11 +167,11 @@ export function useXem(o: { url?: boolean; dau?: string[] } = {}): NganXep {
   const { state } = useLocation();
   const navigate = useNavigate();
   const [cucBo, setCucBo] = useState<string[]>(o.dau ?? []);
-  const ds = url ? docXem(sp.get('xem')) : cucBo;
+  const ds = url ? docXem(sp.get('panel')) : cucBo;
   const ghi = (moi: string[], push: boolean) => {
     if (!url) { setCucBo(moi); return; }
     const n = new URLSearchParams(sp);
-    if (moi.length) n.set('xem', moi.join('.')); else n.delete('xem');
+    if (moi.length) n.set('panel', moi.join('.')); else n.delete('panel');
     navigate(`?${n}`, push ? { state: { xem: moi.length, panelSau: soMucPanel(state) + 1 } } : { replace: true, state: giuDau(state) });
   };
   return {
