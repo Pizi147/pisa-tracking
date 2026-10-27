@@ -314,11 +314,15 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
               {dau.han}
               {!lui && nutDong}
             </div>
-            {!trongCot && <p className="m-0 flex flex-wrap items-baseline text-sm leading-snug text-slate-400">
-              {dau.dong2.filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
-              {/* "· Xem Case" không tách dòng (375: không còn "·" mồ côi). */}
-              {nutXem && <span className="whitespace-nowrap"><span aria-hidden className="mx-1.5 text-slate-500">·</span>{nutXem}</span>}
-            </p>}
+            {/* 6c (#641 XM-3): mỗi mục mang "·" rộng cố định ĐỨNG TRƯỚC, hàng lùi trái đúng bề rộng đó, khung cắt ngang → mục đầu mỗi dòng
+                (kể cả khi xuống hàng ở 375) mất dấu, không còn "·" mồ côi đầu dòng. "· Xem Case" không tách dòng. */}
+            {!trongCot && <div className="overflow-x-clip text-sm leading-snug text-slate-400">
+              <p className="m-0 -ml-5 flex flex-wrap items-baseline">
+                {[...dau.dong2.filter(Boolean), ...(nutXem ? [nutXem] : [])].map((x, i, ds) => (
+                  <span key={i} className={nutXem && i === ds.length - 1 ? 'whitespace-nowrap' : 'min-w-0'}><span aria-hidden className="inline-block w-5 text-center text-slate-500">·</span>{x}</span>
+                ))}
+              </p>
+            </div>}
             {cvNgoai?.them}
           </header>
         ) : (

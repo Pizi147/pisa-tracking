@@ -69,19 +69,13 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
     for (const ct of ['ft', 'thuong']) {
       const r = GET(() => tqQl.tongQuanQl(P.mbManager, { branchId: MB, ct }));
       const n = GET(() => m.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB, program: ct }).n);
-      /* Bài hai người chấm có ở cả hai hàng — hợp các panel = đúng tập "bài trễ chấm". */
-      const hop = new Set(r.tre.flatMap((x: any) => GET(() => tqQl.oTreCham(P.mbManager, { branchId: MB, ct, gv: x.khoa })).rows.map((y: any) => y.id)));
-      assert(hop.size === n, `${ct}: hợp bài Trễ chấm ${hop.size} ≠ ${n}`);
+      /* 6c: panel một GV nay là `gvTre` (đã kiểm ở prPilotGvTre) — ở đây: Σ bài mỗi GV ≥ tập "bài trễ chấm" (bài hai người chấm ở cả hai hàng). */
+      assert(r.tre.reduce((s: number, x: any) => s + x.bai, 0) >= n, `${ct}: Σ Trễ chấm < ${n}`);
       const bg = GET(() => gv.bangGvChiNhanh(P.mbManager, { cn: MB, ct }));
       for (const x of r.tre.filter((y: any) => y.khoa > 0)) {
         const h = bg.hang.find((y: any) => y.id === x.khoa);
         assert(h && h.quaHan === x.bai, `${ct} ${x.ten}: Trễ chấm ${x.bai} ≠ bảng GV ${h?.quaHan}`);
         assert(x.lop.reduce((s: number, l: any) => s + l.n, 0) === x.bai, `${ct} ${x.ten}: Σ lớp ≠ số bài`);
-      }
-      const dau = r.tre[0];
-      if (dau) {
-        const o = GET(() => tqQl.oTreCham(P.mbManager, { branchId: MB, ct, gv: dau.khoa }));
-        assert(o.n === dau.bai && o.rows.length === dau.bai, `${ct}: panel ${o.n}/${o.rows.length} ≠ ${dau.bai}`);
       }
     }
     assert(r1(() => tqQl.tongQuanQl(P.coreTeacher, { branchId: null, ct: 'ft' })) === 403, 'GV không xem được Tổng quan QL');
@@ -129,8 +123,7 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
     } finally { conn.prepare = goc; conn.exec('ROLLBACK'); xoaNho(); }
   });
 
-  check('H1-7 · panel Trễ chấm: GV gọi → 403; xoá thông báo hết việc chia lô ≤ 900 tham số (Turso)', () => {
-    assert(r1(() => tqQl.oTreCham(P.coreTeacher, { branchId: null, ct: 'ft', gv: 0 })) === 403, 'GV mở panel Trễ chấm phải 403');
+  check('H1-7 · xoá thông báo hết việc chia lô ≤ 900 tham số (Turso) — 403 của panel Trễ chấm nay kiểm ở `gvTre` (prPilotGvTre)', () => {
     const p = P.w1Teacher;
     conn.exec('BEGIN IMMEDIATE');
     const goc = conn.prepare;

@@ -1,5 +1,5 @@
 import { db, theoLo } from '../db.ts';
-import { ATTEMPT_KIND_SHORT, PERMISSIONS, emCuaViec, tachBaiId, tenMonNgan, tuanLich, vietMaLuot, type AttemptKind, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, docMaLuot, emCuaViec, nhanMaLuot, tachBaiId, tenMonNgan, vietMaLuot, type ChuongTrinh, type MaLuot } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { forbidden } from '../util.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
@@ -47,6 +47,8 @@ const xep = (nhom: NhomGvTre[]) => {
  *    nhóm GV = số "n giáo viên" của khối, Σ bài = ô "n quá hạn";
  *  · `gv` (QL, cột "Quá hạn" bảng GV cần chú ý): CHÍNH tập bài của GV đó trong `treCham`, gom lớp · lượt · kỹ năng; Σ bài = số ô "⚠ n".
  */
+const chuLuot = (ma: string | null | undefined) => { const m = ma ? docMaLuot(ma) : null; return m ? nhanMaLuot(m) : null; };
+
 export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTrinh; gv?: number }): PanelGvTre {
   const branchId = f.branchId ?? null;
   /* Không chọn chi nhánh mà quyền chỉ một chi nhánh (Admin, QL một nơi) → vẫn ghi tên chi nhánh đó, không "Mọi chi nhánh". */
@@ -68,8 +70,8 @@ export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTr
       g.soBai += it.soBai ?? 0;
       g.dong.push({
         key: it.key, classId: it.classId ?? null, lop: it.classCode ?? null, luot: it.luot ?? null,
-        /* `contextLabel` của việc = "MT2 W1 SEP" — tuần tách riêng (`tuan`). */
-        luotChu: tuan ? String(it.contextLabel ?? '').replace(` ${tuanLich(tuan)}`, '') : it.contextLabel ?? '', tuan, periodId: it.periodId ?? null,
+        /* 6c: chữ lượt theo MÃ lượt có cấu trúc (`mt:2` → "MT2"), như dòng của QL — không cắt tuần khỏi chuỗi `contextLabel`. */
+        luotChu: chuLuot(it.luot) ?? it.contextLabel ?? '', tuan, periodId: it.periodId ?? null,
         kns, knChu: monChu(ct.get(it.classId), kns), soBai: it.soBai ?? 0, han: it.due ?? null, em: [...(emCuaViec(it) ?? [])],
         nhapHo: nhapHoDuoc(p, it.classId ?? null, kns),
       });
@@ -105,14 +107,15 @@ export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTr
     const x = tachBaiId(b);
     const a = luot.get(x.attemptId);
     if (!a) continue;
-    const ma = vietMaLuot(a.kind === 'mock' ? { loai: 'mt', so: a.attempt_no } : a.kind === 'checkpoint' ? { loai: 'cp', so: a.attempt_no } : { loai: 'thuong', kind: a.kind });
+    const m: MaLuot = a.kind === 'mock' ? { loai: 'mt', so: a.attempt_no } : a.kind === 'checkpoint' ? { loai: 'cp', so: a.attempt_no } : { loai: 'thuong', kind: a.kind };
+    const ma = vietMaLuot(m);
     const tm = tuanMon.get(`${x.attemptId}|${x.skill}`) ?? tuanMon.get(`${x.attemptId}|${assessedSkillOf(x.skill)}`);
     const tuan = tm?.week_start ?? a.week_start ?? null;
     /* Một lớp · lượt · tuần thi = một dòng, mọi môn của GV trong đó (như việc Chấm điểm của Admin: một lưới nhập; em thi bù tuần khác là dòng khác). */
     const key = `${a.class_id ?? 0}|${ma}|${tuan ?? ''}`;
     const d = theoDong.get(key) ?? theoDong.set(key, {
       key, classId: a.class_id ?? null, lop: a.code ?? null, luot: a.class_id ? ma : null,
-      luotChu: a.kind === 'mock' ? `MT${a.attempt_no}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind, tuan, periodId: tm?.planned_period_id ?? a.planned_period_id ?? null,
+      luotChu: nhanMaLuot(m), tuan, periodId: tm?.planned_period_id ?? a.planned_period_id ?? null,
       kns: [], knChu: '', soBai: 0, han: null, em: [], nhapHo: false, ct: a.programme_code ?? null,
     }).get(key)!;
     d.soBai += 1;

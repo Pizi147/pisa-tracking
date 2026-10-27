@@ -13,7 +13,7 @@ import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 /**
  * TỔNG QUAN V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B) — MỘT GET cho QL / QT / CX. KHÔNG ĐẾM LẠI: mọi số gọi CHÍNH hàm tập của Báo cáo
  * Phân tích (`tapDatMt`, `tapThiThangNayLop`, `tapKqMt`) và bảng chi nhánh chế độ chú ý (`bangChiNhanh`), rồi chỉ CHIA theo lớp / chi nhánh — nên số ở
- * Tổng quan = số ở Phân tích, ô bấm mở đúng panel của hàm đó (`/phan-tich/bao-cao/o`, `/tong-quan/chi-nhanh/o`, `/tong-quan/ql/tre`).
+ * Tổng quan = số ở Phân tích, ô bấm mở đúng panel của hàm đó (`/phan-tich/bao-cao/o`, `/tong-quan/chi-nhanh/o`, `/tong-quan/gv-tre`).
  * Kỳ = 2 tuần hoàn chỉnh vừa qua (mặc định Báo cáo); Case, SOS, Thi tháng này = tại lúc xem.
  */
 type TyLeV5 = { dat: number; mau: number };

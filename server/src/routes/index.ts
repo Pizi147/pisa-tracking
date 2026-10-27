@@ -2163,14 +2163,6 @@ api.get('/tong-quan/tvv/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanV5Svc.oTongQuanTvv(principalOf(req), qStr(req, 'o') ?? '');
 }));
-/** OV-15h1: panel "n bài" của một GV ở Trễ chấm (`gv`: id · 0 chưa phân công · -1 Speaking chấm chéo). */
-api.get('/tong-quan/ql/tre', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  const gvChu = String(req.query.gv ?? '').trim();
-  if (!/^-?\d+$/.test(gvChu)) throw badRequest('Thiếu giáo viên.');   // rỗng / chữ → 400, không hiểu là 0 (Chưa phân công)
-  const gv = Number(gvChu);
-  return tongQuanQlSvc.oTreCham(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), gv });
-}));
 
 /** Bảng Theo chi nhánh → lớp. Chỉ số của từng ô; danh sách ô ở route dưới. */
 api.get('/tong-quan/chi-nhanh', requireAuth, wrap((req) => {

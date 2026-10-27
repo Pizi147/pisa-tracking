@@ -78,4 +78,39 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     assert(/if \(data && editing\) return <SuaViec /.test(mg), 'Sửa việc chưa thay view');
     assert(/tieuDe="Sửa công việc" hocVien=\{task\.title\} rong="rong" quayLai=\{\{ nhan: task\.title, onClick: onClose \}\} onDong=\{dongCa\}/.test(mg), 'Sửa việc còn longTrong / thiếu ‹');
   });
+
+  check('6c ⑥ Nhập hộ gọn (#641 XM-2): không cột Kết quả, không nút "Cả lớp"; "·" không đứng đầu dòng 2 đầu panel (XM-3)', () => {
+    const pv = doc(W + 'congViec/PanelViec.tsx');
+    assert(/nutCaLop=\{!chiEmViec\} anKetQua=\{chiEmViec\}/.test(pv), 'PanelNhapDiem chưa gọn khi chiEmViec');
+    assert(/kq: !anKetQua/.test(doc(W + 'cham/LuoiFT.tsx')), 'LuoiFT chưa ẩn được cột Kết quả');
+    const kp = doc('web/src/ui/KhungPanel.tsx');
+    assert(/overflow-x-clip[^\n]*\n\s*<p className="m-0 -ml-5 flex flex-wrap/.test(kp.replace(/\r\n/g, '\n')) && /inline-block w-5 text-center/.test(kp), 'dòng 2 đầu panel vẫn có thể "·" đầu dòng');
+  });
+
+  check('6c ⑥ gỡ GET /tong-quan/ql/tre + oTreCham (web không còn gọi); gvTre: luotChu lấy từ mã lượt, không cắt chuỗi contextLabel', () => {
+    assert(!doc('server/src/routes/index.ts').includes("'/tong-quan/ql/tre'"), 'route cũ còn');
+    assert(!/export function oTreCham/.test(doc('server/src/worklist/tongQuanQl.ts')), 'oTreCham còn');
+    const g = doc('server/src/worklist/gvTre.ts');
+    assert(!/contextLabel[^\n]*\.replace\(/.test(g) && /luotChu: chuLuot\(it\.luot\)/.test(g) && /luotChu: nhanMaLuot\(m\)/.test(g), 'luotChu chưa theo mã lượt ở cả hai vai');
+  });
+
+  const { conn } = t as any;
+  if (!conn) return;   // chạy riêng phép kiểm đọc nguồn (không DB)
+  const { gvTre } = await import('../worklist/gvTre.ts');
+  const { treCham } = await import('../worklist/tongQuanQl.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const d: any = await import('../../../shared/domain/index.ts');
+  check('6c ⑥ gvTre (Admin + QL): mọi dòng có lượt → luotChu = nhanMaLuot(docMaLuot(luot))', () => {
+    const id = (sql: string) => (conn.prepare(sql).get() as any)?.id as number | undefined;
+    const ad = id(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin' ORDER BY ur.user_id LIMIT 1`);
+    const ql = id(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'branch_manager' ORDER BY ur.user_id LIMIT 1`);
+    let n = 0;
+    const kiem = (r: any) => { for (const g of r.nhom) for (const x of g.dong) if (x.luot) { n++; assert(x.luotChu === d.nhanMaLuot(d.docMaLuot(x.luot)), `${x.luot}: "${x.luotChu}"`); } };
+    if (ad) kiem(gvTre(loadPrincipal(ad), {}));
+    if (ql) {
+      const p = loadPrincipal(ql);
+      for (const ct of ['ft', 'thuong'] as const) for (const g of treCham(p, null, ct).dong) kiem(gvTre(p, { ct, gv: g.khoa }));
+    }
+    assert(n > 0 || !ad, 'seed không có dòng GV trễ nào để kiểm');
+  });
 }
