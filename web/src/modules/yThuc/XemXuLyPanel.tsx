@@ -234,7 +234,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
       {d && (
         <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={() => void xoa()} danger busy={busy} z="z-[60]" closeLabel={t('Huỷ')}
           title={rutDuoc ? t('Rút đề xuất này?') : ql ? t('Thu hồi lần xử lý này?') : t('Gửi QL thu hồi?')}
-          confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')} daSua={!rutDuoc && !!lyDo.trim()}
+          confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')} busyLabel={rutDuoc ? t('Đang rút…') : t('Đang gửi…')} daSua={!rutDuoc && !!lyDo.trim()}
           body={<>
             <p className="m-0">
               {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: d.nhan, length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: d.nhan, length: d.viPham.length, bacVe })}

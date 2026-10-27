@@ -56,7 +56,7 @@ export function HopBoChu({ viec, nut, onO, onBo }: { viec: string; nut: string; 
 }
 
 /** Xác nhận rõ ràng cho thao tác không dùng autosave (chuyển lớp, cảnh báo, import, đổi quyền). */
-export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = t('Xác nhận'), danger, busy, closeLabel = t('Đóng'), z, confirmDisabled, confirmTitle, daSua }: {
+export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = t('Xác nhận'), danger, busy, closeLabel = t('Đóng'), z, confirmDisabled, confirmTitle, daSua, busyLabel = t('Đang xử lý…') }: {
   open: boolean; onClose: () => void; onConfirm: () => void; title: string;
   body: ReactNode; confirmLabel?: string; danger?: boolean; busy?: boolean;
   closeLabel?: string; z?: string;
@@ -66,6 +66,8 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
   confirmTitle?: string;
   /** 6c-2 (bảng kê lỗi 5 + 9): hộp có ô lý do đang gõ — Esc / nền / ✕ / Đóng hỏi MỘT lần (`HopBoChu`), không mất chữ âm thầm. */
   daSua?: boolean;
+  /** 6c-2: chữ nút xác nhận khi đang chạy — nói đúng việc ("Đang xoá…", "Đang gửi…"). */
+  busyLabel?: string;
 }) {
   const [hoi, setHoi] = useState(false);
   /* OV-14a (F11): đang chạy thì Esc / bấm nền / ✕ không đóng — hộp là chỗ duy nhất hiện lỗi của thao tác. */
@@ -76,12 +78,12 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
         <>
           <button className="btn min-h-[44px] sm:min-h-0" onClick={dong} disabled={busy}>{closeLabel}</button>
           <button className={`btn min-h-[44px] sm:min-h-0 ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy || confirmDisabled} title={confirmDisabled ? confirmTitle : undefined}>
-            {busy ? t('Đang xử lý…') : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </button>
         </>
       }>
       <div className="text-sm text-slate-300 leading-relaxed">{body}</div>
-      {hoi && <HopBoChu viec={title} nut={t('Bỏ chữ, đóng')} onO={() => setHoi(false)} onBo={() => { setHoi(false); onClose(); }} />}
+      {hoi && <HopBoChu viec={t('Lý do')} nut={t('Bỏ chữ, đóng')} onO={() => setHoi(false)} onBo={() => { setHoi(false); onClose(); }} />}
     </Modal>
   );
 }

@@ -469,7 +469,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
       </KhungPanel>
       {/* 6c-2 (lỗi 9): hộp nhỏ trong panel, không ngăn 480 đè panel. */}
       <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={() => void xoa()} title={t('Xoá Case này?')} danger busy={busy} z="z-[60]"
-        confirmLabel={t('Xoá Case')} closeLabel={t('Huỷ')}
+        confirmLabel={t('Xoá Case')} busyLabel={t('Đang xoá…')} closeLabel={t('Huỷ')}
         body={<>{tenCase}{soPaChuaLam > 0 ? t(' · {soPaChuaLam} PA chưa làm sẽ huỷ', { soPaChuaLam }) : ''}</>} />
     </>
   );

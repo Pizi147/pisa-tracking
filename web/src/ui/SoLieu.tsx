@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, deadlineView, maView, metricById, nhanQuaHan, thamSoCt, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -124,6 +124,17 @@ function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
   return v.tone === 'overdue' ? <span className="font-semibold tabular-nums text-late">⚠ {nhanQuaHan(v.daysOverdue)}</span>
     : <span className={`tabular-nums ${v.ganHan ? 'font-semibold text-soon' : ''}`}>{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
 }
+
+/** 6c-2 (critique 375): các đoạn ngăn "·", mỗi đoạn không ngắt giữa — xuống dòng chỉ ở giữa hai đoạn (không tách "MB / FT 101", "Chưa / đạt"). */
+function Doan({ ds }: { ds: ReactNode[] }) {
+  /* `<wbr />` sau "·": chỗ ngắt dòng duy nhất (đoạn nowrap sát nhau không tự ngắt) — "·" ở cuối dòng trên, không mồ côi đầu dòng. */
+  return <>{ds.filter((x) => x || x === 0).map((x, i) => (
+    <Fragment key={i}>{i > 0 && <><span aria-hidden className="mx-1.5 text-slate-500">·</span><wbr /></>}<span className="whitespace-nowrap">{x}</span></Fragment>
+  ))}</>;
+}
+/** Đoạn kết luận "Đạt" / "Chưa đạt" trong câu `sub` của dòng kết quả — thêm ✓ / ✗ + màu kết quả (không chỉ màu), như `DiemKq`. */
+const chuKetQua = (s: string): ReactNode => (s === 'Đạt' ? <b className="font-semibold text-kq-bang">✓ {t('Đạt')}</b>
+  : s === 'Chưa đạt' ? <b className="font-semibold text-kq-duoi">✗ {t('Chưa đạt')}</b> : s);
 
 /** M6 6b-2 (luật chữ đầu mục): vạch 3 px của dải nhóm theo BƯỚC — token sẵn có, màu luôn đi kèm tên nhóm (G14 sửa, chủ SP 27/10). */
 const VACH_NHOM: Record<NhomCaseChuaChot, string> = {
@@ -261,12 +272,15 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           </span>
           <span className="flex w-full flex-wrap items-center gap-x-3 gap-y-1">
             <span className="min-w-0 flex-1 text-[13px] leading-snug text-slate-400">
-              {/* 6c-2 (#632 XM-1, mockup khu K ②): điểm lượt mở Case đứng đầu dòng 2 — "✗ 5.0 · kỳ vọng 6.0 · thiếu 1.0" (✓ / ✗ + chữ, không chỉ màu). */}
-              {!r.xong && r.diemCase && <><DiemKq diem={r.diemCase.so} kyVong={r.diemCase.kyVong} />
-                {r.diemCase.kyVong != null && <> · {t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) })}
-                  {r.diemCase.so < r.diemCase.kyVong && <> · {t('thiếu {n}', { n: (r.diemCase.kyVong - r.diemCase.so).toFixed(1) })}</>}</>}
-                {' · '}</>}
-              {r.xong ? <>{r.lop && <>{r.lop} · </>}<b className="font-semibold text-ok">✓ {r.xong}</b></> : [r.lop, r.diemCase?.luot, v ? dich(v.chu) : r.tinhTrang ? dich(r.tinhTrang) : null].filter(Boolean).join(' · ')}
+              {/* 6c-2 (#632 XM-1, mockup khu K ②): dòng 2 = "MT2 ✗ 5.5 · kỳ vọng 6.5 · thiếu 1.0 · lớp" (✓ / ✗ + chữ, không chỉ màu); lượt đứng sát điểm
+                  như view Case; mỗi đoạn không ngắt giữa (375). Tên việc bỏ — dải nhóm đã nói bước. */}
+              {r.xong ? <Doan ds={[r.lop, <b className="font-semibold text-ok">✓ {r.xong}</b>]} />
+                : <Doan ds={[
+                  r.diemCase && <>{r.diemCase.luot && <>{r.diemCase.luot} </>}<DiemKq diem={r.diemCase.so} kyVong={r.diemCase.kyVong} /></>,
+                  r.diemCase?.kyVong != null && t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) }),
+                  r.diemCase?.kyVong != null && r.diemCase.so < r.diemCase.kyVong && t('thiếu {n}', { n: (r.diemCase.kyVong - r.diemCase.so).toFixed(1) }),
+                  r.lop, !v && r.tinhTrang ? dich(r.tinhTrang) : null,
+                ]} />}
             </span>
             {!r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
           </span>
@@ -303,22 +317,27 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
       </span>
     );
     /* 6c-2 (bảng kê mục 1 [RỖNG], mockup M6 khu K ②): dòng người xem KHÔNG làm được thì không mở rộng (trước: mở ra chỉ lặp chữ + "Mở trang ↗") —
-       tên là link ↗ thẳng tới hồ sơ, dòng tự đủ người · hạn · tình trạng. Dòng có việc làm được giữ mở rộng (Xác nhận PA tại chỗ / mở việc). */
+       tên em / mục là link ↗ thẳng tới hồ sơ (link xem hồ sơ mang tên hồ sơ, không mang tên việc), dòng dưới tự đủ việc · tình trạng · người · hạn.
+       Dòng có việc làm được giữ mở rộng (Xác nhận PA tại chỗ / mở việc). */
     if (!v?.lam && !r.xong) {
       const chipHan = v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
       const hanRieng = !chipHan && hanCua(r);
-      const tt = r.tinhTrang ? dich(r.tinhTrang) : null;
+      const conNguoi = !!r.nguoi && r.nguoiId !== toi && !(r.em || r.ngCanh);   // dòng chỉ `sub`: `dong2` chưa có người phụ trách
       return (
         <li key={r.id} data-dong={r.id} className="flex flex-col gap-0.5 border-t px-4 py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
           <span className="flex w-full items-center gap-2.5">
-            <Link to={r.href} className="min-w-0 flex-1 text-sm font-bold text-slate-100 no-underline hover:underline max-sm:min-h-[44px] max-sm:content-center">
-              {v ? dich(v.chu) : r.title} <span aria-hidden className="text-xs font-normal text-slate-400">↗</span>
+            <Link to={r.href} className="min-w-0 flex-1 text-sm font-bold text-slate-100 no-underline hover:underline max-sm:-my-2 max-sm:py-2">
+              {r.em?.ten ?? r.title} <span aria-hidden className="text-xs font-normal text-slate-400">↗</span>
             </Link>
             {chipHan}
           </span>
-          {dong2Chu}
-          {(tt || hanRieng) && (
-            <span className="text-[13px] leading-snug text-slate-300">{tt}{hanRieng && <>{tt && ' · '}<HanDong han={hanRieng} loai={r.viec?.loaiHan} /></>}</span>
+          {r.em || r.ngCanh
+            ? <span className="text-[13px] leading-snug text-slate-400"><Doan ds={dong2.slice(1)} /></span>
+            : r.sub && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={r.sub.split(' · ').map(chuKetQua)} /></span>}
+          {(v || r.tinhTrang || conNguoi || hanRieng) && (
+            <span className="text-[13px] leading-snug text-slate-300">
+              <Doan ds={[v && dich(v.chu), r.tinhTrang && dich(r.tinhTrang), conNguoi && r.nguoi, hanRieng && <HanDong han={hanRieng} loai={r.viec?.loaiHan} />]} />
+            </span>
           )}
           {r.diem?.length ? <DiemDong r={r} /> : null}
         </li>
@@ -339,7 +358,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         </button>
         {moRong && (
           <div className="flex flex-col gap-3 px-4 pb-4 pt-1" style={nen}>
-            {v?.lam ? (
+            {/* 6c-2: chỉ dòng làm được mới mở rộng (dòng chỉ đọc trả sớm ở trên). */}
+            {v?.lam && (
               <CanLam trongDong>
                 {v.loai === 'xac-nhan-pa' && v.pa ? (
                   <div className="flex flex-col gap-1">
@@ -362,15 +382,9 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
                 </div>
                 {loiDong?.id === r.id && <p role="alert" className="m-0 text-xs font-semibold text-bad">⚠ {loiDong.loi}</p>}
               </CanLam>
-            ) : (
-              /* Không làm được: câu tình trạng (chữ, không khối màu, không nút). */
-              <p className="m-0 text-sm leading-relaxed text-slate-200">
-                {[r.tinhTrang ? dich(r.tinhTrang) : r.sub, r.nguoi].filter(Boolean).join(' · ')}
-                {hanCua(r) && <> · <HanDong han={hanCua(r)!} loai={r.viec?.loaiHan} /></>}
-              </p>
             )}
             <Link to={r.href} className="link w-fit text-[13px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">
-              {v ? t('Xem hồ sơ') : t('Mở trang')} <span aria-hidden>↗</span>
+              {t('Xem hồ sơ')} <span aria-hidden>↗</span>
             </Link>
           </div>
         )}
