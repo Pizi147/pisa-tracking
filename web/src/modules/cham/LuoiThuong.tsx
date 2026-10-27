@@ -362,8 +362,9 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   const monSua = skills.filter(cotSuaDuoc);
   const dienHet = () => setDien((d) => Object.fromEntries([...Object.entries(d),
     ...monSua.flatMap((k) => { const n = soTong(k); return n === null ? [] : [[k, { gt: n, lan: (d[k]?.lan ?? 0) + 1 }]]; })]));
+  /* Chủ SP 27/10: hàng công cụ thụt vào thẳng chữ cột đầu (px-3 như ô bảng), không dính mép khung. */
   const congCu = monSua.length > 0 && (
-    <>
+    <div className="flex flex-wrap items-center gap-2 px-3 pt-2">
       <span className="text-[13px] font-semibold text-slate-400">{t('Tổng số câu')}</span>
       {monSua.map((k) => (
         <label key={k} className="inline-flex items-center gap-1 text-[13px] text-slate-300">
@@ -376,7 +377,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
       ))}
       <button type="button" className="btn btn-sm" disabled={!monSua.some((k) => soTong(k) !== null)}
         title={t('Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên.')} onClick={dienHet}>{t('Điền ô trống')}</button>
-    </>
+    </div>
   );
 
   return (
