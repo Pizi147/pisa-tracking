@@ -31,6 +31,5 @@ export const EN_PILOT_GV_TRE = {
   'Các em của dòng này không còn trong lưới lượt — mở lưới lớp để xem.': 'These students are no longer in this test grid — open the class grid to check.',
   'Em còn trống': 'Students with empty cells',
   'SỐ LIỆU · MOCK TEST': 'DATA · MOCK TEST',
-  'trống': 'empty',
   'không tính': 'not counted',
 } satisfies Record<string, Dich>;
