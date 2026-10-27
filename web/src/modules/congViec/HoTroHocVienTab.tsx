@@ -434,7 +434,7 @@ export function HoTroHocVienTab() {
 
 /**
  * HẾT VIỆC TRONG NHÓM (CONG-VIEC-2, mockup M6 ②d / khung D8): "Lưu · việc tiếp ›" ở việc cuối nhóm → thẻ thay panel "Hết việc {nhóm} của bạn" ·
- * chân "Còn: {nhóm} · n việc" + Đóng / Việc tiếp › (việc đầu nhóm sau). Không còn nhóm nào: "Đã xong phần của bạn" + Đóng.
+ * chân "Còn: {nhóm} · n việc" + Đóng / Việc tiếp › (việc đầu nhóm sau). Không còn nhóm nào: "Xong phần của bạn" + Đóng.
  */
 function HetViecNhom({ nhom, ke, con, daLuu, tenNhom, onDong, onTiep, onXemLai }: {
   nhom: string; ke: (WorkItem & { nhom: string }) | null; con: number; daLuu: number; tenNhom: (k: string) => string;
@@ -443,14 +443,14 @@ function HetViecNhom({ nhom, ke, con, daLuu, tenNhom, onDong, onTiep, onXemLai }
   return (
     <section className="card flex flex-col p-0" aria-label={t('Hết việc {nhom} của bạn', { nhom: tenNhom(nhom) })}>
       <div className="grid justify-items-center gap-2.5 px-5 pb-6 pt-10 text-center" role="status">
-        <span className="text-[15px] font-semibold text-ok">{t('✓ Đã lưu')}</span>
+        <span className="text-[15px] font-semibold text-dim">{t('✓ Đã lưu')}</span>
         <span className="text-[17px] font-bold">{t('Hết việc {nhom} của bạn', { nhom: tenNhom(nhom) })}</span>
         {daLuu > 0 && <span className="text-sm text-dim">{t('Đã lưu {n} việc trong nhóm này hôm nay.', { n: daLuu })}</span>}
         <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] sm:min-h-0" onClick={onXemLai}>{t('‹ Xem lại việc vừa lưu')}</button>
       </div>
       <div className="flex flex-wrap items-center gap-2.5 border-t px-5 py-2.5" style={{ borderColor: 'var(--line-strong)' }}>
         <span className="min-w-0 flex-1 text-[13px] text-dim max-sm:basis-full">
-          {ke ? t('Còn: {nhom} · {n} việc', { nhom: tenNhom(ke.nhom), n: con }) : t('Đã xong phần của bạn')}
+          {ke ? t('Còn: {nhom} · {n} việc', { nhom: tenNhom(ke.nhom), n: con }) : t('Xong phần của bạn')}
         </span>
         <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onDong}>{t('Đóng')}</button>
         {/* eslint-disable-next-line jsx-a11y/no-autofocus */}

@@ -6,7 +6,7 @@ export const EN_CONG_VIEC_2 = {
   '+ {n} việc ở {nhom}': '+ {n} task(s) in {nhom}',
   'Hết việc {nhom} của bạn': 'No more {nhom} tasks for you',
   'Còn: {nhom} · {n} việc': 'Left: {nhom} · {n} task(s)',
-  'Đã xong phần của bạn': 'Your part is done',
+  'Xong phần của bạn': 'Your part is done',
   '{n} yêu cầu': '{n} request(s)',
   'Đã lưu {n} việc trong nhóm này hôm nay.': '{n} task(s) in this group saved today.',
   '‹ Xem lại việc vừa lưu': '‹ Review the task just saved',

@@ -210,7 +210,8 @@ function MucNhom({ items, khacCua, ...dong }: ChungDong & { items: readonly Work
         return (
           <li key={m.khoa} className="border-t pb-1.5 pt-3 first:border-t-0" style={{ borderColor: 'var(--line-strong)' }}>
             <div className="flex min-h-[30px] items-center gap-2.5 px-4 pb-1 max-sm:px-3">
-              <span aria-hidden className="h-7 w-7 shrink-0 rounded-full border text-center text-xs font-bold leading-[26px] text-dim"
+              {/* Vòng chữ đầu tên (avatar), không phải chip trạng thái. */}
+              <span aria-hidden className="h-7 w-7 shrink-0 rounded-full border text-center text-[12px] font-bold leading-[26px] text-dim"
                 style={{ background: 'var(--surface-2)', borderColor: 'var(--line-strong)' }}>{chuDau(m.ten)}</span>
               <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5">
                 <Link to={`/hoc-vien/${sid}`} title={t('Mở hồ sơ {ten}', { ten: m.ten })}
@@ -249,7 +250,7 @@ function CotHan({ it, daXong, nguoi }: { it: WorkItem; daXong: boolean; nguoi: s
   const tvv = laViecTvvTheoEm(it);
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] sm:grid sm:justify-items-start">
-      {daXong ? <span className="font-bold text-ok">{t('✓ Đã lưu')}</span>
+      {daXong ? <span className="font-semibold text-dim">{t('✓ Đã lưu')}</span>
         : it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />
         : laViecChamCheo(it) ? null : <span className="text-faint">{tvv || it.group === 'bo_sung_ho_so' ? t('không hạn') : t('Chưa có hạn')}</span>}
       {!daXong && it.due && tvv && <HanPhu it={it} />}
