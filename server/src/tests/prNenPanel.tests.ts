@@ -130,9 +130,9 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     assert(/html\[data-ban-phim\] \[data-thanh-duoi\] \{ display: none; \}/.test(css) && /<nav data-thanh-duoi/.test(docSach('web/src/App.tsx')), 'thanh dưới chưa ẩn khi bàn phím mở');
   });
 
-  check('NEN-PANEL · dòng loại (vạch hồng): panel việc mặc định "VIỆC"; panel số không dòng làm được = "BÁO CÁO · CHỈ ĐỌC"', () => {
+  check('NEN-PANEL · dòng loại (vạch hồng): panel việc "VIỆC" (M6 6b-1: khai qua dauViec, khung không đoán); panel số không dòng làm được = "BÁO CÁO · CHỈ ĐỌC"', () => {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
-    assert(/loai === undefined \? \(cvNgoai\?\.loai \?\? \(dau \? t\('VIỆC'\) : null\)\) : loai/.test(kp) && /bg-\[color:var\(--hong\)\]/.test(kp), 'dòng loại');
+    assert(/loai === undefined \? \(cvNgoai\?\.loai \?\? dau\?\.loai \?\? null\) : loai/.test(kp) && /bg-\[color:var\(--hong\)\]/.test(kp), 'dòng loại');
     assert(/t\('BÁO CÁO · CHỈ ĐỌC'\)/.test(docSach('web/src/ui/SoLieu.tsx')), 'SoLieu chưa đặt loại báo cáo');
   });
 }
