@@ -2220,6 +2220,22 @@ api.post('/interventions/xac-nhan-pa-lo', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanPaNhieu(principalOf(req), req.body);
 }));
+/**
+ * HOAN-TAC-XN (luật N3): Hoàn tác Xác nhận PA / lô PA / Xác nhận Case — người vừa xác nhận, trong `HOAN_TAC_PA_MS` (+5 s); bị đè / quá giờ → 409. Một PA, Case: trả Case;
+ * lô: `{ ids }` (= `ok` của lô xác nhận) → `{ ok, loi }`.
+ */
+api.post('/interventions/:id/hoan-tac-xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.hoanTacXacNhanPa(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/interventions/hoan-tac-xac-nhan-pa-lo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.hoanTacXacNhanPaNhieu(principalOf(req), req.body);
+}));
+api.post('/cases/:id/hoan-tac-xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.hoanTacXacNhanCase(principalOf(req), pInt(req, 'id'));
+}));
 api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.guiKhongTheoDoi(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
@@ -2386,6 +2402,11 @@ api.post('/cases/:id/nguoi-phu-trach', requireAuth, wrap((req) => {
 api.post('/cases/:id/xac-nhan-s', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.xacNhanCaseS(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** HOAN-TAC-XN: Hoàn tác Xác nhận Case Speaking — cùng luật Hoàn tác Xác nhận Case; trả Case. */
+api.post('/cases/:id/hoan-tac-xac-nhan-s', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.hoanTacXacNhanCaseS(principalOf(req), pInt(req, 'id'));
 }));
 api.delete('/cases/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

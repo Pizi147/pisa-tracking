@@ -9652,6 +9652,9 @@ await runPrPilotGvTreTests({ check, assert, conn, P } as any);
 // ==================================================================== HSL-MAY-CHU (M4 PR 1: hồ sơ một lượt Test — S Ex, lớp hiện tại, GET /regular/attempts/:id)
 const { runPrHslMayChuTests } = await import('./prHslMayChu.tests.ts');
 await runPrHslMayChuTests({ check, assert, conn, P, classId, TODAY, addDays } as any);
+// ==================================================================== HOAN-TAC-XN (luật N3: Hoàn tác Xác nhận PA · lô PA · Xác nhận Case · Xác nhận Case S)
+const { runPrHoanTacXnTests } = await import('./prHoanTacXn.tests.ts');
+await runPrHoanTacXnTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
