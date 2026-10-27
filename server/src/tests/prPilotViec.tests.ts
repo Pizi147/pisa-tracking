@@ -62,7 +62,11 @@ export async function runPrPilotViecTests(t: YThucTestKit) {
       const sauGui = f.slice(f.search(/await api\.post/));
       assert(/tiep\.lam\(/.test(sauGui), `${ten}: sang việc kế trước khi máy chủ nhận`);
       assert(/<DongTiep tiep=\{tiep\} \/>/.test(f) && /<DongTiep tiep=\{tiep\} chan \/>/.test(f), `${ten}: thiếu "Tiếp: …" (V12 ⑥) ở khối Cần làm / chân 375`);
+      /* XM-3: máy chủ chưa có đường đảo Xác nhận PA / Case → dải không được có nút Hoàn tác giả. */
+      const xacNhan = sauGui.slice(sauGui.search(/\/xac-nhan/));
+      assert(!/hoanTac/.test(xacNhan.slice(0, xacNhan.search(/tiep\.lam\(/))), `${ten}: dải có Hoàn tác giả (chưa có đường đảo máy chủ)`);
     }
+    assert(/useState\(!!hoanTac\)/.test(docSach('web/src/ui/KhuonViec.tsx')), 'dải vẽ nút Hoàn tác khi việc không có đường đảo');
     const kv = docSach('web/src/ui/KhuonViec.tsx');
     const nut = kv.slice(kv.indexOf('export function NutVaTiep'), kv.indexOf('export function DongTiep'));
     assert(/tiep && <button[\s\S]*luu\(true\)[\s\S]*chuTiep/.test(nut), 'NutVaTiep không có nút "· việc tiếp ›"');

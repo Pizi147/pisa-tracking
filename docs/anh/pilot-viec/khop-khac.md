@@ -5,6 +5,17 @@
 `cap-c-xem-case-1440-toi.png` (②c) · `cap-d-het-viec-1440-toi.png` (②d) · `cap-e-375-sang.png` (②e).
 Số / tên trên web là dữ liệu seed (khác số demo của mockup) — so khung, thứ tự, tên, kiểu chữ.
 
+## Lý do 3 dòng KHÁC (79 % < cổng 90 % — chờ chủ SP đồng ý)
+
+- **#3 "Xem Case" ở đầu panel:** mọi việc Case (không chỉ Ghi kết quả) có "Xem Case" ở cùng một chỗ — PTA đồng ý [XM-1].
+- **#11 không có dòng "✎ … chưa lưu — chữ còn":** form việc chỉ ẩn nên chữ còn nguyên, nút "‹ {việc}" đã đủ để về — PTA đồng ý [XM-2].
+- **#13 dải sau Xác nhận PA / Case không có Hoàn tác:** máy chủ chưa có đường đảo; không vẽ nút Hoàn tác giả — để PR máy chủ riêng (Để sau).
+
+## Để sau
+
+- Hoàn tác sau Xác nhận PA / Xác nhận Case (luật "luôn Hoàn tác ngắn + khôi phục được"): PR máy chủ riêng sau 6b — thêm đường đảo rồi gắn `hoanTac` vào dải.
+- [XM-4] View Case mở từ việc vẫn có ô ghi nhanh / "Xác nhận PA" của chính PA đó: để 6c.
+
 ## Truy vết khung → thành phần
 
 | # | Khung mockup | Thành phần web | Kết quả |
@@ -44,7 +55,7 @@ Không mất thao tác nào: nút "Xác nhận PA" / "Xác nhận Case" / "Lưu"
 "Không cần theo dõi…", "Điều chỉnh / Kết thúc…", "Em này còn", Làm thay, Hoàn tác 10 giây trong panel giữ nguyên. Thêm PA (việc "Case chưa có PA") nay cũng có "Thêm PA · việc tiếp ›"
 (đề xuất cần Quản lý duyệt thì không).
 
-## [XM] — hỏi PTA Plan
+## [XM] — PTA Plan đã trả lời 28/10: ① ② đồng ý · ③ PR máy chủ riêng sau 6b, PR này không có Hoàn tác giả (phép kiểm khoá) · ④ để 6c
 
 - **XM-1** "Xem Case" đặt ở cuối dòng 2 đầu panel (em ↗ · lớp · lượt · Xem Case) thay vì trong dòng Bối cảnh "Case" như mockup ②a — để MỌI việc Case
   (Xác nhận PA / Case, Mô tả Case, Thêm PA, Ghi kết quả đủ) có cùng một chỗ (luật "cùng loại thao tác cùng vị trí"); Bối cảnh các form khác không có dòng Case.
