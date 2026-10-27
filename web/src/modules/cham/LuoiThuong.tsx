@@ -603,7 +603,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
     ? <Level tone={row.chip.dat ? 'ok' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
-    ? <span className="text-xs text-slate-500">{kq.chinh}</span>
+    ? <span className="px-2 text-xs text-slate-500">{kq.chinh}</span>   /* chữ thường trong cột chip lùi 8 px như chữ trong chip (index.css `th[data-kieu="chip"]`) */
     : (
       <Level tone={tone} title={chiTiet}>
         {/* PR-LT2b: Cuối khoá đủ điểm → tầng 1 là % tổng (hướng gợi ý ở dòng phụ); Giữa khoá giữ `n/4 môn đạt`. */}
