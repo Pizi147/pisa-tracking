@@ -59,8 +59,8 @@
     --doing-rgb: 156 189 231; --doing-bg-rgb: 25 43 70;  --doing-line-rgb: 67 99 148;  /* đang làm · đang lưu */
     --done-rgb: 158 172 200;  --done-bg-rgb: 22 34 58;   --done-line-rgb: 51 70 105;   /* đã xong */
     --muted-rgb: 186 198 222; --muted-bg-rgb: 22 34 58;  --muted-line-rgb: 51 70 105;  /* trung tính · thông tin · chip */
-    --text-dim-rgb: 186 198 222;    /* = chu-2 V5 */
-    --text-faint-rgb: 158 172 200;  /* = chu-3 V5, mờ nhất được phép */
+    --text-dim-rgb: 183 194 216;    /* = chu-2 V5 (#b7c2d8) */
+    --text-faint-rgb: 154 168 194;  /* = chu-3 V5 (#9aa8c2), mờ nhất được phép */
     /* N-1b — Đạt dùng chung xanh lá của `ok`. */
     --dat-rgb: var(--ok-rgb);    --dat-bg-rgb: var(--ok-bg-rgb);    --dat-line-rgb: var(--ok-line-rgb);
     /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — chỉ VIỀN (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`), không nền. */
@@ -95,7 +95,7 @@
      * PR-SANG (T15) — HAI CHẾ ĐỘ. `tailwind.config.js` ánh xạ tên Tailwind cũ về các biến này:
      * `slate-100/200/300` → chu-1/2/3 · `slate-600/700` → chu-mo (chỉ dấu trang trí) · `white` → phu (lớp phủ rê chuột).
      */
-    --chu-1-rgb: 231 237 247;  --chu-2-rgb: 210 219 236;  --chu-3-rgb: 186 198 222;
+    --chu-1-rgb: 231 237 247;  --chu-2-rgb: 200 210 228;  --chu-3-rgb: 183 194 216;   /* D4 bổ sung: bậc chữ như mockup V5 (chu #e8edf6 · chu-2 #b7c2d8 · chu-3 #9aa8c2) */
     --chu-mo-rgb: 102 120 159;   --chu-mo-2-rgb: 51 73 111;
     --phu-rgb: 255 255 255;
     /* NEN (HTT-1, HTT-2): phủ rê chuột lên chính phần tử bấm được · dò hàng bảng dày không bấm được. */
@@ -142,7 +142,7 @@
     --cap-nhom: #cfd6e4;  --cap-lop: #d4e1fb;  --cap-lop-dong: #edf2fd;  --cap-dau-cot: #eceff5;
     --o-sua-vien: #7f8aa6;        --o-sua-nen: #ffffff;   --o-sua-focus: #3a50a6;
 
-    --chu-1-rgb: 20 26 43;  --chu-2-rgb: 35 42 63;  --chu-3-rgb: 53 61 84;
+    --chu-1-rgb: 20 26 43;  --chu-2-rgb: 44 51 72;  --chu-3-rgb: 74 83 108;   /* D4 bổ sung: chữ phụ như mockup (chu-2 #4a536c), không gần đen */
     --chu-mo-rgb: 134 144 171;  --chu-mo-2-rgb: 210 215 229;
     --phu-rgb: 17 26 66;
     --phu-re: rgb(var(--phu-rgb) / .07);
@@ -492,6 +492,10 @@
     color: var(--dieu-huong-nen); font-size: 12px; font-weight: 800; line-height: 17px; text-align: center; font-variant-numeric: tabular-nums;
     box-shadow: 0 0 0 2px var(--dieu-huong-nen); }
   .link { color: var(--accent); text-decoration: none; }
+  /* D4 bổ sung (= mockup V5 `.ten-ho-so`): tên đối tượng mở hồ sơ — màu chữ thường + "↗" (G6), chỉ rê mới xanh + gạch; không tô xanh như link khắp bảng. */
+  .ten-ho-so { color: var(--text); font-weight: 600; text-decoration: none; }
+  .ten-ho-so::after { content: "↗"; margin-left: 3px; color: var(--text-faint); font-weight: 400; font-size: .8em; }
+  .ten-ho-so:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
   .link:hover { text-decoration: underline; }
 
   .skel { background: linear-gradient(90deg, var(--surface-2) 25%, var(--nut-hover) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 0.375rem; }

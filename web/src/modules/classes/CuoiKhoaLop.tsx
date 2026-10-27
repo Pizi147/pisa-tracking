@@ -484,7 +484,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   };
   const oTen = (e: Em) => (
     <span className="block">
-      <Link className="link font-semibold" to={`/hoc-vien/${e.id}`}>{e.fullName}</Link>
+      <Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.fullName}</Link>
       <span className="ml-1.5"><ChipXetLaiDong sid={e.id} /></span>
       {sua[e.id] && Object.keys(sua[e.id]).some((k) => k !== 'mo') && !loi[e.id] && <span className="ml-1.5"><Nhan tone="doing">{t('đã sửa')}</Nhan></span>}
       {e.lenh && laQl && <span className="mt-0.5 block text-[12px] text-ok">✓ {t('Đã chốt')}</span>}
