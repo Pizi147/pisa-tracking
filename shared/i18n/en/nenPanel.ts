@@ -3,6 +3,8 @@ import type { Dich } from '../en.ts';
 
 export const EN_NEN_PANEL = {
   'VIỆC': 'TASK',
+  /* M6 6b-1: nút ‹ {view trước} ở đầu panel. */
+  'Quay lại {x}': (b) => `Back to ${b.x}`,
   'BÁO CÁO · CHỈ ĐỌC': 'REPORT · READ-ONLY',
   'Bỏ chữ đang gõ?': 'Discard what you typed?',
   'Bỏ chữ, đóng': 'Discard and close',

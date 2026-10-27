@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
-import { buocMoi, docChong, tenNguon, tieuDeTab, type BuocVe, type KieuDi, type TenTrang } from '@shared/domain/index.ts';
+import { buocMoi, docChong, docXem, luiBangBack, soMucPanel, tenNguon, tieuDeTab, type BuocVe, type KieuDi, type TenTrang } from '@shared/domain/index.ts';
 import { cuonVeViTri } from './cuonOnDinh.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -108,27 +108,78 @@ export function useVe() {
  */
 export function useThamSoUrl(ten: string, macDinh: string): [string, (v: string | ((cu: string) => string)) => void] {
   const [sp, setSp] = useSearchParams();
+  const { state } = useLocation();
   const dat = (v: string | ((cu: string) => string)) => setSp((q) => {
     const n = new URLSearchParams(q);
     const moi = typeof v === 'function' ? v(q.get(ten) ?? macDinh) : v;
     if (moi === macDinh) n.delete(ten); else n.set(ten, moi);
     return n;
-  }, { replace: true });
+  }, { replace: true, state: giuDau(state) });
   return [sp.get(ten) ?? macDinh, dat];
 }
 
 /**
  * OV-13b (đặc tả OV-13 §1): panel số liệu đang mở ghi lên URL (`?so-lieu=<khoá>`) — "Xem hồ sơ ↗" rồi "‹ Tổng quan" mở lại đúng panel (chồng nguồn
- * giữ URL). `khoa` = mã chỉ số (+ bộ lọc phụ) của nơi gọi.
+ * giữ URL). `khoa` = mã chỉ số (+ bộ lọc phụ) của nơi gọi. M6 6b-1: mở = PUSH (Back trình duyệt ở view gốc đóng panel, không rời trang); đóng = lùi
+ * đúng số mục panel đã push (về URL trước khi mở); mở bằng link sâu thì bỏ tham số bằng replace.
  */
 export function useMoSoLieu(khoa: string): [boolean, (mo: boolean) => void] {
   const [sp, setSp] = useSearchParams();
-  return [sp.get('so-lieu') === khoa, (mo) => setSp((q) => {
-    const n = new URLSearchParams(q);
-    if (mo) n.set('so-lieu', khoa);
-    else if (n.get('so-lieu') === khoa) { n.delete('so-lieu'); n.delete('dong'); }   // đóng panel = bỏ cả dòng đang mở
-    return n;
-  }, { replace: true })];
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  return [sp.get('so-lieu') === khoa, (mo) => {
+    if (mo) {
+      setSp((q) => { const n = new URLSearchParams(q); n.set('so-lieu', khoa); n.delete('dong'); n.delete('xem'); return n; }, { state: { panelSau: 1 } });
+      return;
+    }
+    if (sp.get('so-lieu') !== khoa) return;
+    const lui = soMucPanel(state);
+    if (lui) navigate(-lui);
+    else setSp((q) => { const n = new URLSearchParams(q); n.delete('so-lieu'); n.delete('dong'); n.delete('xem'); return n; }, { replace: true });   // đóng = bỏ cả dòng, chuỗi view
+  }];
+}
+
+/** Dấu ngăn xếp panel trên mục lịch sử (`xem`, `panelSau`) — giữ qua mọi replace của panel; dấu khác (`veCha`) không mang theo như trước. */
+const giuDau = (st: unknown) => {
+  const s = st as { xem?: unknown; panelSau?: unknown } | null;
+  return s && (s.xem !== undefined || s.panelSau !== undefined) ? { xem: s.xem, panelSau: s.panelSau } : undefined;
+};
+
+/** Panel mở từ URL dựng chuỗi `?xem=` cho panel làm việc bên trong (Ngăn Case trong panel số): `ten` = tên view gốc (nhãn ‹ ở view đầu chuỗi). */
+export const XemCha = createContext<{ ten: string } | null>(null);
+export type NganXep = {
+  ds: string[]; ten: string | null; /** Chuỗi nằm trên URL (`?xem=`). */ url: boolean;
+  /** Vào view sâu hơn: push một mục lịch sử. `tuDau` = chuỗi bắt đầu lại từ view này (panel gốc mở việc của một dòng). */
+  vao: (v: string, tuDau?: boolean) => void;
+  /** Thay view trên cùng (lưu xong sang việc kế, "Xem Case"): replace, ‹ vẫn về view cha cũ. */
+  thay: (v: string) => void;
+  /** ‹ = lùi một view: history.back() khi mục này do app push từ view cha; không thì thay URL bằng view cha (link sâu, F5 sau replace). */
+  lui: () => void;
+};
+/**
+ * NGĂN XẾP VIEW CỦA PANEL (M6 6b-1, luật Quay lại): `url` (panel mở bằng URL) hoặc đang trong `XemCha` → chuỗi trên `?xem=` (Back trình duyệt lùi
+ * một view, F5 dựng lại); ngoài ra chuỗi là mảng cục bộ, đầu = `dau` (nơi mở giữ view bằng state — PanelMotEm, PanelViec).
+ */
+export function useXem(o: { url?: boolean; dau?: string[] } = {}): NganXep {
+  const cha = useContext(XemCha);
+  const url = !!o.url || !!cha;
+  const [sp] = useSearchParams();
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  const [cucBo, setCucBo] = useState<string[]>(o.dau ?? []);
+  const ds = url ? docXem(sp.get('xem')) : cucBo;
+  const ghi = (moi: string[], push: boolean) => {
+    if (!url) { setCucBo(moi); return; }
+    const n = new URLSearchParams(sp);
+    if (moi.length) n.set('xem', moi.join('.')); else n.delete('xem');
+    navigate(`?${n}`, push ? { state: { xem: moi.length, panelSau: soMucPanel(state) + 1 } } : { replace: true, state: giuDau(state) });
+  };
+  return {
+    ds, ten: cha?.ten ?? null, url,
+    vao: (v, tuDau = false) => ghi([...(tuDau ? [] : ds), v], true),
+    thay: (v) => ghi([...ds.slice(0, -1), v], false),
+    lui: () => (url && luiBangBack(state, ds.length) ? navigate(-1) : ghi(ds.slice(0, -1), false)),
+  };
 }
 
 /** Tập hàng đang mở ghi lên URL (`?mo=a,b`); `setMo` nhận giá trị hoặc hàm như `useState`. */

@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { useTenTrang } from '../../lib/quayLai.ts';
+import { useMoSoLieu, useTenTrang } from '../../lib/quayLai.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
@@ -192,7 +192,8 @@ export function LichTestTab() {
   const qsQuaHan = new URLSearchParams([...qs].filter(([k]) => k !== 'periodId'));
   if (loai) qsQuaHan.set('khung', loai);
   const quaHan = useApi<{ n: number; lop: number; khac: number }>(`/cham/lich-test/qua-han?${qsQuaHan}`).data;
-  const [moQuaHan, setMoQuaHan] = useState(false);
+  /* M6 6b-1 (bảng kê lỗi 7): panel lên URL như ô số — ‹ / Back / F5 theo ngăn xếp `?xem=` (Nhập điểm của dòng là view kế). */
+  const [moQuaHan, setMoQuaHan] = useMoSoLieu('qua-han-cham');
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   const bamSo = (o: OSo) => {
     if (!data) return;

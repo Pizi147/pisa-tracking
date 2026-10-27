@@ -144,12 +144,12 @@ export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; k
  */
 export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, quayLai, chan, longTrong, z = 'z-50', dau, loai, onDong, children }: {
   tieuDe: string; hocVien?: string | null; lop?: string | null;
-  /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". Panel việc (`dau`)
-   *  mặc định "VIỆC"; `null` = không vẽ. */
+  /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". M6 6b-1: khung KHÔNG
+   *  đoán theo `dau` — panel việc khai qua `dauViec` (`dau.loai`) hoặc prop này; `null` = không vẽ. */
   loai?: string | null;
   /** OV-12c — ĐẦU PANEL v3 (mockup panel v3 §1): dòng 1 tên việc 17 px + MỘT chip hạn (`ChipHan`) + ✕; dòng 2 em (link ↗) · lớp · ngữ cảnh.
    *  Có `dau` thì `hocVien` / `lop` không vẽ ở đầu một dòng cũ. */
-  dau?: { han?: ReactNode; dong2: ReactNode[] };
+  dau?: { han?: ReactNode; dong2: ReactNode[]; loai?: string };
   /** Lớp z — panel mở từ một popover `z-[60]` (hộp xếp lịch `HopKyNang`) cần nằm trên popover đó (PR-LM). */
   z?: string;
   /** Không vào `khoPanelChung`: panel con mở đè (Chuyển tiếp → Tạo lớp) không đóng panel này, state giữ nguyên.
@@ -225,14 +225,15 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   }, [id, daSua]);
   useBanPhim(!trongKhung);   // rà #530: một nơi đo — panel con đóng không gỡ `--ban-phim` khi panel ngoài còn mở
 
-  /* OV-12e (rà #395): "← Danh sách / ← tên em / ← Case" bỏ panel đang gõ — đang sửa dở thì hỏi trước (cùng hộp), không mất chữ âm thầm. */
+  /* M6 6b-1 (luật Quay lại): ‹ lùi một view KHÔNG hỏi khi chữ đã ở nháp (`useNhap` — mở lại view là còn); form chỉ giữ chữ trong state (`chan.daSua`)
+     thì vẫn hỏi (cùng hộp), không mất chữ âm thầm. */
   const veLai = () => {
-    if (daSua) setHoi({ nut: t('Bỏ chữ, quay lại'), tiep: () => quayLai?.onClick() });
+    if (chan?.daSua && !chan.tuHoi) setHoi({ nut: t('Bỏ chữ, quay lại'), tiep: () => quayLai?.onClick() });
     else quayLai?.onClick();
   };
   const dauCv = useContext(DauViecCongViec);
   const cvNgoai = dauCv && !trongKhung ? dauCv : null;
-  const dongLoai = loai === undefined ? (cvNgoai?.loai ?? (dau ? t('VIỆC') : null)) : loai;
+  const dongLoai = loai === undefined ? (cvNgoai?.loai ?? dau?.loai ?? null) : loai;
   const vachLoai = dongLoai && (
     <div className="mb-1 flex items-center gap-1.5 text-xs font-bold tracking-[.02em] text-slate-500">
       <span aria-hidden className="h-[3px] w-3.5 shrink-0 rounded-sm bg-[color:var(--hong)]" />{dongLoai}
@@ -244,15 +245,27 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
      Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới
      lớp xếp chồng của ô, không kế thừa chữ in hoa / căn phải của ô. Sự kiện React vẫn nổi theo cây React như cũ. */
+  const nutDong = <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${dau && !quayLai ? '-my-1' : ''} ${quayLai ? 'ml-auto' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>;
+  /* M6 6b-1 (mockup panel-pilot khu K ①): "‹ {view trước}" cùng hàng ✕ ở đầu panel, ✕ luôn góc phải — thay dòng "← …" riêng dưới đầu. */
+  const hangLui = quayLai && (
+    <div className="-ml-2 flex min-h-9 w-[calc(100%+0.5rem)] items-center gap-2">
+      <button type="button" onClick={veLai} aria-label={t('Quay lại {x}', { x: quayLai.nhan })}
+        className="inline-flex min-h-[44px] min-w-0 appearance-none items-center gap-1 rounded-md border-0 bg-transparent px-2 py-1.5 text-left text-sm font-semibold text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)] sm:min-h-0">
+        <span aria-hidden className="text-[17px] leading-none">‹</span><span className="min-w-0 truncate">{quayLai.nhan}</span>
+      </button>
+      {nutDong}
+    </div>
+  );
   const than = (
     <>
         {dau ? (
-          <header className="flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 pt-4 sm:px-5" style={{ borderColor: 'var(--line)' }}>
+          <header className={`flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 sm:px-5 ${quayLai ? 'pt-2' : 'pt-4'}`} style={{ borderColor: 'var(--line)' }}>
+            {hangLui}
             {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
             <div className="flex items-start gap-2.5">
               <h2 className="m-0 min-w-0 flex-1 text-[17px] font-extrabold leading-6 text-slate-100">{tieuDe}</h2>
               {dau.han}
-              <button type="button" className={`btn btn-sm btn-ghost -my-1 min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]`} onClick={dong} aria-label={t('Đóng')}>✕</button>
+              {!quayLai && nutDong}
             </div>
             <p className="m-0 flex flex-wrap items-baseline text-sm leading-snug text-slate-400">
               {dau.dong2.filter(Boolean).map((x, i) => <span key={i} className="min-w-0">{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
@@ -260,20 +273,16 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             {cvNgoai?.them}
           </header>
         ) : (
-        <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${vachLoai || cvNgoai?.them ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
+        <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${quayLai ? 'flex-wrap pb-2.5 pt-1.5' : vachLoai || cvNgoai?.them ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
+          {hangLui}
           {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
           <h2 className="m-0 min-w-0 truncate text-sm font-extrabold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           {/* Rà #530: ✕ ở mọi cỡ như mockup V5 (375 có thêm "‹ Công việc" của nơi gọi — cùng đường đóng). */}
-          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]`} onClick={dong} aria-label={t('Đóng')}>✕</button>
+          {!quayLai && nutDong}
           {cvNgoai?.them && <div className="w-full pb-1">{cvNgoai.them}</div>}
         </header>
-        )}
-        {quayLai && (
-          <div className="shrink-0 border-b px-4 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>
-            <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={veLai}>← {quayLai.nhan}</button>
-          </div>
         )}
         {tabs && <div className="shrink-0 border-b px-4" style={{ borderColor: 'var(--line)' }}>{tabs}</div>}
         {/* PR-KHUNG: pb-2 — thân cuộn bắt đầu cách dòng ngữ cảnh; không có thì ô bị cắt ngay sát chữ, trông như đè nhãn (rà LUI-a1, 375). */}
