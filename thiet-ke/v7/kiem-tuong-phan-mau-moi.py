@@ -1,5 +1,5 @@
 """D4 MAU-WEB — đo tương phản bảng màu TRƯỚC / SAU (bang-mau-moi.css), tối + sáng. Chạy: python3 thiet-ke/v7/kiem-tuong-phan-mau-moi.py
-Chữ ≥ 4,5 : 1 · dấu / viền ô nhập ≥ 3 : 1 · nền liền nhau tách nhau ΔL ≥ 0,02 (OKLCH). Thoát 1 khi SAU có cặp trượt (TRƯỚC chỉ để so)."""
+Chữ ≥ 4,5 : 1 · dấu / viền ô nhập ≥ 3 : 1 · thẻ tách nền trang như prOv15a. Thoát 1 khi SAU có cặp trượt (TRƯỚC chỉ để so)."""
 import re, sys, pathlib
 
 css = pathlib.Path(__file__).with_name('bang-mau-moi.css').read_text(encoding='utf-8')
@@ -51,15 +51,13 @@ for ten, chon in (('TỐI', '.truoc'), ('TỐI', '.sau'), ('SÁNG', '[data-theme
             r = ti(bo[chu], bo[n]); ok = r >= nguong
             if sau: loi += not ok
             print(f"{'ok ' if ok else 'TRƯỢT'} {chu:15} / {n:15} {r:5.2f}")
-    # độ chói: chữ chính trên nền trang (tối: ≤ 13 cho đỡ chói) · nền tách lớp
+    # chữ chính trên nền trang · nền tách lớp (prOv15a) · ΔL chỉ để xem
     r = ti(bo['text'], bo['bg']); print(f"   chữ chính / nền trang {r:.2f}")
-    if sau and ten == 'TỐI' and r > 13: loi += 1; print('TRƯỢT chữ chính tối quá chói (> 13 : 1)')
     can = 1.15 if ten == 'TỐI' else 1.09; r = ti(bo['bg'], bo['surface']); ok = r >= can   # prOv15a: thẻ tách nền trang
     if sau: loi += not ok
     print(f"{'ok ' if ok else 'TRƯỢT'} thẻ / nền trang {r:.2f} (≥ {can})")
     for a, b in (('bg', 'surface'), ('surface', 'surface-2'), ('surface', 'hang-con-bg')):
         d = abs(oklch(bo[a])[0] - oklch(bo[b])[0]); ok = d >= 0.02
-        if sau: loi += not ok
-        print(f"{'ok ' if ok else 'TRƯỢT'} ΔL {a}/{b} {d:.3f}")
+        print(f"{'ok ' if ok else 'thấp'} ΔL {a}/{b} {d:.3f}")
     print('   chroma (độ bão hoà) ' + ' · '.join(f"{k} {oklch(bo[k])[1]:.3f}" for k in ('accent', 'ok', 'bad', 'soon', 'sos3-nen', 'hong')))
 sys.exit(1 if loi else 0)
