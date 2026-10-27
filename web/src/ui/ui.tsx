@@ -39,7 +39,7 @@ export type LevelTone = Tone | 'late';
  *   sky      bằng kỳ vọng
  *   emerald  vượt kỳ vọng / Đạt — xanh lá chỉ dành cho kết quả học tập
  *   slate    thiếu dữ liệu    — khác điểm 0, khác ô trống
- *   sos1/2/3 mức SOS          — OV-15a: chỉ viền vàng · cam · đỏ (dày 1 / 1,5 / 2,5 px), cùng lớp với `<ChipSos>` (`lopSos`)
+ *   sos1/2/3 mức SOS          — MAU-MUC: rỗng vàng · nền cam vừa · nền đỏ đặc, cùng lớp với `<ChipSos>` (`lopSos`)
  *   tam      tạm thời / chưa đủ điểm — xám, viền đứt
  *
  * Trước đây bảng này được chép ở `SkillBoard.tsx`, và mỗi component mới sẽ tự chép thêm một

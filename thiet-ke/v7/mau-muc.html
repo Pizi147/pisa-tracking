@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mức SOS dễ phân biệt</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* MAU-MUC (chủ SP 28/10: "3 level … rất khó phân biệt, 2 mốc ở trang HV & Lớp cũng vẫn rất khó phân biệt").
+     Khung so sánh xám trung tính; bên trong mỗi khung dùng đúng token web (index.css) TRƯỚC và đề xuất SAU. Đo: kiem-mau-muc.py. */
+  :root { --k-nen: #0e0e10; --k-mat: #1c1c20; --k-vien: #3a3a40; --k-chu: #e4e4e8; --k-phu: #aaaab2; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--k-nen); color: var(--k-chu); font: 15px/1.5 'Be Vietnam Pro', system-ui, sans-serif; }
+  .so { font-family: 'Inter', 'Be Vietnam Pro', sans-serif; font-variant-numeric: tabular-nums; }
+  .khung { max-width: 1480px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 8px; font-weight: 700; }
+  h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px; }
+  .giai { background: var(--k-mat); border: 1px solid var(--k-vien); border-radius: 12px; padding: 14px 18px; max-width: 110ch; }
+  .giai ul { margin: 6px 0 0; padding-left: 20px; } .giai li { margin: 3px 0; }
+  .cap { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 1100px) { .cap { grid-template-columns: 1fr 1fr; } }
+  .cap375 { display: flex; flex-wrap: wrap; gap: 24px; }
+  .cot-nhan { font-size: 13px; font-weight: 700; margin: 0 0 6px; color: var(--k-phu); }
+  .cot-nhan b { color: var(--k-chu); }
+
+  /* ---- token web: TỐI mặc định, .sang = SÁNG; .sau = đề xuất ---- */
+  .app { --surface: #111c33; --surface-2: #172440; --hang-lon-bg: #172440; --line: #22324f; --line-strong: #33496f; --text: #e7edf7; --text-dim: #b7c2d8; --faint: #8f9bb5; --bad: #e89a8c; --soon: #e4c784; --soon-bg: #302a1a;
+    --sos1: #ccb96d; --sos1-chu: #d9c981; --sos2: #cf815b; --sos2-chu: #df9f7c; --sos2-nen: #35261a; --sos3: #d57b71; --sos3-chu: #e89a8c; --sos3-nen: #873c34; --sos3-vien: #b7544c; --sos3-tren: #fff; }
+  .app.sau { --sos2: #9a6633; --sos2-chu: #f3c79c; --sos2-nen: #5a320f; --sos3-nen: #a33d2d; --sos3-vien: #c45a47; }
+  .sang .app { --surface: #fff; --surface-2: #f2f4f9; --hang-lon-bg: #f2f4f9; --line: #d9deea; --line-strong: #b0b8cd; --text: #141a2b; --text-dim: #424b63; --faint: #5d6680; --bad: #a6392c; --soon: #7e5f36; --soon-bg: #fbf4e1;
+    --sos1: #9b7e47; --sos1-chu: #715c32; --sos2: #c1764e; --sos2-chu: #905538; --sos2-nen: #f8ece1; --sos3: #a6392c; --sos3-chu: #8f3125; --sos3-nen: #862e27; --sos3-vien: #862e27; }
+  .sang .app.sau { --sos2: #b9773f; --sos2-chu: #7c4316; --sos2-nen: #f6d8b8; }
+  .app { background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 14px; }
+  .app.w375 { width: 375px; }
+
+  /* chip SOS — CHIP_SOS (h 22, chữ 12 / 600, góc 4) + lopSos */
+  .chip { display: inline-flex; height: 22px; min-width: 30px; align-items: center; justify-content: center; white-space: nowrap; border-radius: 4px; padding: 0 8px; font: 600 12px/1 'Be Vietnam Pro', sans-serif; font-variant-numeric: tabular-nums; border: 1px solid transparent; }
+  .chip.dem { min-width: 26px; padding: 0 6px; }
+  .chip.khong { border: 1px dashed var(--line-strong); color: var(--faint); font-weight: 500; }
+  /* TRƯỚC */
+  .truoc .m1 { background: var(--surface); border-color: var(--sos1); color: var(--sos1-chu); }
+  .truoc .m2 { border-width: 2px; padding: 0 7px; border-color: var(--sos2); color: var(--sos2-chu); background: var(--sos2-nen); }
+  .truoc .m3 { border-color: var(--sos3-vien); background: var(--sos3-nen); color: var(--sos3-tren); font-weight: 700; }
+  .truoc .chip.dem.m2 { padding: 0 5px; }
+  /* SAU — rỗng · nền vừa · đặc: mức tách bằng ĐỘ ĐẶC nền trước, màu sau */
+  .sau .m1 { background: var(--surface); border-color: var(--sos1); color: var(--sos1-chu); }
+  .sau .m2 { background: var(--sos2-nen); border-color: var(--sos2); color: var(--sos2-chu); }
+  .sau .m3 { background: var(--sos3-nen); border-color: var(--sos3-vien); color: var(--sos3-tren); }
+  /* tạm: TRƯỚC = rỗng viền đứt (SOS 2 / 3 mất bậc nền) · SAU = giữ nền của mức, mép viền đứt 2 px (khe hở lộ nền thẻ) */
+  .truoc .m2.tam, .truoc .m3.tam { background: var(--surface); border: 2px dashed var(--sos2); color: var(--sos2-chu); padding: 0 7px; font-weight: 600; }
+  .truoc .m3.tam { border-color: var(--sos3); color: var(--sos3-chu); }
+  .sau .m2.tam, .sau .m3.tam { border: 2px dashed var(--sos2); background-clip: padding-box; padding: 0 7px; }
+  .sau .m3.tam { border-color: var(--sos3); }
+  .m1.tam { border-style: dashed; }
+
+  .hang-lon { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; background: var(--hang-lon-bg); padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .hang-lon .ma { font-weight: 700; font-size: 15px; } .dim { color: var(--text-dim); font-size: 13px; }
+  .o-sos { display: inline-flex; gap: 4px; align-items: center; }
+  .hang { display: grid; grid-template-columns: 180px 1fr 200px; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); align-items: start; }
+  .w375 .hang { grid-template-columns: 1fr auto; }
+  .w375 .hang .diem { grid-column: 1 / -1; }
+  .ten { font-weight: 600; font-size: 15px; } .phu { color: var(--text-dim); font-size: 12px; }
+  .x { color: var(--bad); font-weight: 600; } .ok { color: var(--text-dim); font-weight: 600; }
+  .tq { display: flex; flex-wrap: wrap; gap: 6px 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); align-items: center; }
+  .tq a { color: var(--text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .lan { position: relative; padding: 14px 16px 16px; }
+  .lan .nhan { color: var(--text-dim); font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .thanh { display: flex; align-items: center; height: 22px; border-radius: 5px; padding: 0 8px; font: 600 12px/1 'Be Vietnam Pro', sans-serif; margin: 6px 0; border: 1.5px solid; }
+  .truoc .thanh.m1 { background: var(--surface); border-color: var(--sos1); color: var(--sos1-chu); }
+  .truoc .thanh.m2, .truoc .thanh.m3 { background: var(--sos2-nen); border-color: var(--sos2); color: var(--sos2-chu); font-weight: 700; }   /* web: SOS 3 vẽ như SOS 2 */
+  .sau .thanh.m1 { background: var(--surface); border-color: var(--sos1); color: var(--sos1-chu); }
+  .sau .thanh.m2 { background: var(--sos2-nen); border-color: var(--sos2); color: var(--sos2-chu); }
+  .sau .thanh.m3 { background: var(--sos3-nen); border-color: var(--sos3-vien); color: var(--sos3-tren); }
+  .chu-thich { font-size: 12px; color: var(--text-dim); padding: 0 16px 12px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  table.tk { border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  table.tk th, table.tk td { text-align: left; padding: 5px 10px; border-bottom: 1px solid var(--k-vien); }
+  table.tk th { color: var(--k-phu); font-weight: 600; }
+  .trot { color: #f0a090; font-weight: 600; } .dat { color: #9fd3b0; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="khung">
+  <h1>Mức SOS: rỗng · nền vừa · đặc</h1>
+  <div class="giai">
+    <b>Vấn đề (chủ SP 28/10):</b> SOS 1 và SOS 2 cùng là chip <i>rỗng</i> — nền SOS 2 tối <span class="so">#35261a</span> gần bằng nền thẻ (ΔL 0,05), sáng <span class="so">#f8ece1</span> gần trắng; chỉ khác độ dày viền 1 / 2 px.
+    Thanh Case trên biểu đồ hồ sơ HV vẽ SOS 3 giống hệt SOS 2.
+    <ul>
+      <li><b>SOS 1</b> — rỗng: viền vàng mảnh trên nền thẻ, chữ vàng.</li>
+      <li><b>SOS 2</b> — nền cam vừa (thấy rõ là có nền), viền cam, chữ cam đậm / sáng.</li>
+      <li><b>SOS 3</b> — nền đỏ đặc, chữ trắng (bỏ chữ đậm 700 → 600 như mọi chip).</li>
+      <li>Mắt đọc được bậc độ đặc kể cả khi không phân biệt màu (giả lập deutan / protan, bảng cuối). Chữ "SOS n" vẫn luôn hiện.</li>
+      <li><b>Tạm</b> (chưa đủ điểm): giữ nguyên nền của mức, mép viền đứt 2 px + chữ "tạm" — TRƯỚC SOS 2 / 3 tạm đều rỗng nên lại khó phân biệt.</li>
+      <li>Ô đếm trên hàng lớp giữ chú thích rê chuột / đọc màn "SOS mức 1: 4 HV, mức 2: …" như cũ.</li>
+      <li>Giữ phông, bố cục, cỡ chip; chỉ đổi token <span class="so">--sos*</span> + <span class="so">lopSos</span> + thanh Case biểu đồ.</li>
+    </ul>
+  </div>
+
+  <div id="cac-khung"></div>
+
+  <h2>Đo (kiem-mau-muc.py) — ngưỡng: chữ / nền chip ≥ 4,5 · mép chip / nền thẻ ≥ 3 · ΔL nền giữa hai mức liền ≥ 0,10 · TRƯỚC 1↔2 trượt = đúng chỗ chủ SP chê</h2>
+  <table class="tk so">
+    <tr><th>Cặp</th><th>Tối TRƯỚC</th><th>Tối SAU</th><th>Sáng TRƯỚC</th><th>Sáng SAU</th></tr>
+    <tr><td>SOS 1↔2 ΔL nền</td><td class="trot">0,053</td><td class="dat">0,129</td><td class="trot">0,050</td><td class="dat">0,101</td></tr>
+    <tr><td>SOS 2↔3 ΔL nền</td><td>0,171</td><td class="dat">0,141</td><td>0,520</td><td class="dat">0,469</td></tr>
+    <tr><td>SOS 1↔2 ΔE nền+chữ (deutan · protan)</td><td>0,176 · 0,185</td><td class="dat">0,207 · 0,175</td><td class="trot">0,080 · 0,067</td><td class="dat">0,151 · 0,192</td></tr>
+    <tr><td>SOS 2↔3 ΔE nền+chữ (deutan · protan)</td><td>0,427 · 0,418</td><td class="dat">0,303 · 0,270</td><td>1,001 · 1,104</td><td class="dat">1,018 · 1,113</td></tr>
+    <tr><td>Chữ / nền chip SOS 1 · 2 · 3</td><td>10,2 · 6,5 · 7,7</td><td class="dat">10,2 · 7,1 · 6,4</td><td>6,4 · 5,1 · 8,6</td><td class="dat">6,4 · 5,8 · 8,6</td></tr>
+    <tr><td>Mép chip / nền thẻ SOS 1 · 2 · 3</td><td>8,7 · 5,6 · 3,5</td><td class="dat">8,7 · 3,5 · 4,0</td><td>3,8 · 3,5 · 8,6</td><td class="dat">3,8 · 3,6 · 8,6</td></tr>
+  </table>
+</div>
+
+<template id="mau">
+  <div class="hang-lon"><span class="ma">MB FT 101 ↗</span><span class="dim">34 HV</span><span class="dim">GVCN Trần Ngọc Hà</span>
+    <span class="o-sos"><span class="dim">SOS</span><span class="chip dem m1 so">4</span><span class="chip dem m2 so">2</span><span class="chip dem m3 so">5</span></span>
+    <span class="o-sos"><span class="dim">MB FT 104</span><span class="chip dem khong so">0</span><span class="chip dem m2 so">1</span><span class="chip dem khong so">0</span></span></div>
+  <div class="hang"><div><div class="ten">Bùi Thảo Vy</div><div class="phu">TVV Phan Mai</div></div><div class="diem so"><span class="x">✗ 6.5</span> <span class="phu">/ KV 7.0 · W2 SEP</span></div><div><span class="chip m1">SOS 1 · S</span><div class="phu">1 Case · 1 PA</div></div></div>
+  <div class="hang"><div><div class="ten">Đỗ Minh Khôi</div><div class="phu">TVV Phan Mai</div></div><div class="diem so"><span class="x">✗ 6.0</span> <span class="phu">/ KV 6.5 · W1 SEP</span></div><div><span class="chip m2">SOS 2 · W, S</span><div class="phu" style="color:var(--bad)">PA quá hạn</div></div></div>
+  <div class="hang"><div><div class="ten">Kiều Thảo Nhi</div><div class="phu">TVV Phan Mai</div></div><div class="diem so"><span class="x">✗ 5.5</span> <span class="phu">/ KV 6.0 · W3 AUG</span></div><div><span class="chip m3">SOS 3 · L, R, W, S</span><div class="phu">5 Case · 5 PA</div></div></div>
+  <div class="hang"><div><div class="ten">Lý Minh Châu</div><div class="phu">chấm chưa đủ · tạm</div></div><div class="diem so"><span class="phu">MT2 · tạm</span></div><div style="display:flex;gap:4px;flex-wrap:wrap"><span class="chip m1 tam">SOS 1 tạm</span><span class="chip m2 tam">SOS 2 tạm</span><span class="chip m3 tam">SOS 3 tạm</span></div></div>
+  <div class="tq"><span class="dim" style="width:100%">Tổng quan · Lớp cần chú ý · SOS hiện tại</span><span class="chip m1">SOS 1</span><a class="so">4 HV</a><span class="chip m2">SOS 2</span><a class="so">2 HV</a><span class="chip m3">SOS 3</span><a class="so">5 HV</a></div>
+  <div class="lan"><div class="nhan">Hồ sơ HV · biểu đồ · làn Case</div>
+    <div class="thanh m1" style="width:70%">Case W4 · MT1 · SOS 1</div>
+    <div class="thanh m2" style="width:55%;margin-left:20%">Case W2 · MT2 · SOS 2</div>
+    <div class="thanh m3" style="width:60%;margin-left:35%">Case W3 · MT2 · SOS 3</div></div>
+</template>
+
+<script>
+  const mau = document.getElementById('mau');
+  const khung = (lop, rong) => { const d = document.createElement('div'); d.className = `app ${lop} ${rong}`; d.append(mau.content.cloneNode(true)); return d; };
+  const nhan = (b, s) => { const p = document.createElement('p'); p.className = 'cot-nhan'; p.innerHTML = `<b>${b}</b> ${s}`; return p; };
+  const noi = document.getElementById('cac-khung');
+  for (const [gd, ten] of [['toi', 'Tối'], ['sang', 'Sáng']]) {
+    for (const [rong, w] of [['w1440', '1440'], ['w375', '375']]) {
+      const sec = document.createElement('section'); sec.className = gd; sec.id = `${gd}-${w}`;
+      sec.innerHTML = `<h2>${ten} · ${w}</h2>`;
+      const cap = document.createElement('div'); cap.className = rong === 'w375' ? 'cap375' : 'cap';
+      for (const [lop, nh] of [['truoc', 'TRƯỚC (web hiện tại)'], ['sau', 'SAU (đề xuất)']]) {
+        const c = document.createElement('div'); c.append(nhan(nh, ''), khung(lop, rong)); cap.append(c);
+      }
+      sec.append(cap); noi.append(sec);
+    }
+  }
+</script>
+</body>
+</html>
