@@ -6,6 +6,7 @@ export const EN_PILOT_CASE = {
   'Bạn': 'You',
   '{n} Case còn chờ': (b) => `${b.n} ${Number(b.n) === 1 ? 'case' : 'cases'} waiting`,
   'Đã xử lý hết': 'All handled',
+  'theo nhận xét {mt}': 'from the {mt} comment',
   '{n} vừa xử lý': '{n} just handled',
   'Chưa có PA.': 'No plan yet.',
   'Chờ duyệt · xác nhận': 'Awaiting approval · confirmation',

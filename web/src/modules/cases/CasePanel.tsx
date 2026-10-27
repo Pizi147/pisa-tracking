@@ -24,10 +24,10 @@ import { DongBuoiTutor } from './BuoiTutorO.tsx';
 import type { BuoiTutor } from '@shared/domain/index.ts';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from './GhiNhanh.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
-import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
+import { CanLam, NhomCoSo, NutChu } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { DongNguyenNhan, ketQuaGanNhat } from '../yThuc/CaseSosControls.tsx';
+import { ketQuaGanNhat } from '../yThuc/CaseSosControls.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
@@ -209,13 +209,35 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, vuaDoi = null
         <dl className="m-0 grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-2 max-sm:grid-cols-1 max-sm:gap-y-0.5">
           {diem && <><dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Điểm')}</dt><dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2">{diem}</dd></>}
           {(primary || secondary.length > 0) && <>
+            {/* N8 (PTA rà #632): Nguyên nhân chỉ ghi NHÓM (1 = chính, phụ) — câu nhận xét / mô tả nằm ở dòng Mô tả, không lặp. */}
             <dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Nguyên nhân')}</dt>
-            {/* Hotfix 15/10 (L2): đủ nhóm có số thứ tự + nhận xét. */}
-            <dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2"><DongNguyenNhan issues={[...(primary ? [primary] : []), ...secondary]} attemptId={data.attemptId} /></dd>
+            <dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2"><NhomCoSo ds={[...(primary ? [primary] : []), ...secondary].map((x) => ({ code: x.code, label: x.label }))} /></dd>
           </>}
           <dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Mô tả')}</dt>
           <dd className="m-0 max-w-[68ch] text-[15px] text-slate-100 max-sm:mb-2">
-            {data.summary ? <ChuDich chu={data.summary} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} /> : <span className="text-slate-400">{t('Chưa có')}</span>}
+            {/* N8: mô tả Case = câu của nguyên nhân chính (cùng nguồn #626: đi theo nhận xét bài `moTaTuMt` — chỉ ghi lượt, vì ngày dòng là ngày đồng bộ,
+                không phải ngày GV nhận xét; hoặc người ghi / sửa riêng `byName` · ngày) ·
+                không có thì tóm tắt của Case · thật sự không có → "Chưa có" + "Mô tả Case" khi người xem làm được. */}
+            {primary?.observation ? (
+              <>
+                “<ChuDich chu={primary.observation} nguon={{ bang: 'case_issues', id: primary.id, cot: 'observation' }} />”
+                {(primary.moTaTuMt || primary.byName) && (
+                  <span className="whitespace-nowrap text-[13px] text-slate-400"> — {(primary.moTaTuMt ? [t('theo nhận xét {mt}', { mt: primary.moTaTuMt })] : [primary.byName, primary.createdAt ? ngan(primary.createdAt) : null]).filter(Boolean).join(' · ')}</span>
+                )}
+                {data.summary && <span className="mt-1 block text-[13px] text-slate-400"><ChuDich chu={data.summary} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} /></span>}
+              </>
+            ) : data.summary ? <ChuDich chu={data.summary} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} />
+              : (
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-slate-400">{t('Chưa có')}</span>
+                  {data.viewer.canEdit && data.viecTiep?.chu === 'Mô tả Case' && (
+                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-nhan-xet' })}>{t('Mô tả Case')}</button>
+                  )}
+                </span>
+              )}
+            {primary?.nhanXetPhuTrach && (
+              <span className="mt-1 block text-[13px] text-slate-300"><span className="text-slate-400">{t('Nhận xét GV phụ trách')}:</span> “<ChuDich chu={primary.nhanXetPhuTrach} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' } : null} />”</span>
+            )}
             {data.note && <span className="mt-1 block text-[13px] text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></span>}
           </dd>
           {context.length > 0 && <>

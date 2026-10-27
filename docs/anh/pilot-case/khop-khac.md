@@ -18,7 +18,7 @@ Số trên web là dữ liệu seed (khác số demo của mockup) — so khung,
 | 6 | Bấm dòng → view Case trong CÙNG panel (không panel chồng), một chuỗi một bề rộng 720 | `xem.vao('case', …, { dong })` + `LamDongSoLieu` → `NganCase`; `XemCha.rong` | KHỚP |
 | 7 | Đầu view Case: "‹ n Case chưa chốt PA" cùng hàng ✕ · tiêu đề "Case Listening" · em ↗ · lớp · **chip hạn** | `KhungPanel` (6b-1) + `dauViec({ han })` | KHỚP |
 | 8 | Vùng A: trạng thái · mở W.. · phụ trách · Sửa | dải đầu Ngăn Case có sẵn (thêm "Đổi người…", khoá điều kiện hoàn thành) | GIỮ |
-| 9 | Đầu mục **Case** (B): chip lượt · Điểm · Nguyên nhân · Mô tả | `ThanCase` → `DauMuc` "Case" (tên Case + chip MT / SOS) · Điểm (`ketQuaGanNhat`) · Nguyên nhân · **Mô tả** (`ChuDich`) | KHỚP |
+| 9 | Đầu mục **Case** (B): chip lượt · Điểm · Nguyên nhân · Mô tả | `ThanCase` → `DauMuc` "Case" (tên Case + chip MT / SOS) · Điểm (`ketQuaGanNhat`) · Nguyên nhân = **chỉ nhóm** (1 = chính, phụ) · **Mô tả** = câu nhận xét / mô tả của nguyên nhân chính (cùng nguồn #626: "— theo nhận xét MT1" hoặc người · ngày); không có → "Chưa có" + nút "Mô tả Case" (PTA rà #632, N8) | KHỚP |
 | 10 | Lượt "MT2 · W4 AUG ↗" là link hồ sơ lượt | chip "MT2" không link (trang lượt M4 chưa có đường) | KHÁC — [XM-2] |
 | 11 | Đầu mục **Phương án** (C): chip đếm · nhóm Chờ duyệt · xác nhận / Đang theo dõi (chỉ ghi khi có cả hai) · Đã kết thúc gập · việc của PA trong thẻ PA | `ThanCase` (`paCho` / `paChay` / `paKhep`) + `TheKhoiPa` / `DongPaGon` (giữ Duyệt / Từ chối, Xác nhận PA, Ghi kết quả, ghi nhanh, ⋯) | KHỚP |
 | 12 | Kết quả kỳ trong từng thẻ PA | giữ cách đang có (Kết quả · hạn kế; Nhật ký PA) | GIỮ |

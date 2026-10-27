@@ -77,6 +77,9 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
     const than = cp.slice(cp.indexOf('export function ThanCase'), cp.indexOf('function TheKhoiPa'));
     for (const x of ['tieuDe="Case"', "t('Phương án')", "t('Kết luận')", "t('Lịch sử')", "t('Mô tả')"]) assert(than.includes(x), `thiếu ${x}`);
     assert(!/t\('Vấn đề'\)|Ghi nhận/.test(than), 'còn "Vấn đề" / "Ghi nhận"');
+    /* PTA rà #632 (N8): Nguyên nhân chỉ nhóm; Mô tả = câu của nguyên nhân chính (cùng nguồn #626) — không "Chưa có" khi đã có câu. */
+    assert(!/<DongNguyenNhan/.test(than) && /<NhomCoSo/.test(than), 'Nguyên nhân còn kèm câu nhận xét');
+    assert(/primary\?\.observation \?/.test(than) && /moTaTuMt/.test(than) && /loai: 'ghi-nhan-xet'/.test(than), 'Mô tả không đọc observation / thiếu nút Mô tả Case');
     assert(/export function DauMuc/.test(cp), 'đầu mục chưa là component dùng chung');
     assert(/chuAiLamDuoc/.test(cp) && /chuAiLamDuoc/.test(docSach('web/src/modules/students/NganCase.tsx')), 'chưa có câu "ai làm được"');
     assert(typeof d.chuAiLamDuoc === 'function' && d.chuAiLamDuoc('Lê Minh Khoa').includes('Lê Minh Khoa') && d.chuAiLamDuoc(null).includes('Quản lý'), 'câu ai làm được');
