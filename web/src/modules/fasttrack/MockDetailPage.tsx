@@ -463,15 +463,17 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
       <span className="block text-xs font-medium text-slate-400">{conLai.length ? t('Còn lại') : t('Không còn việc')}</span>
       {conLai.length > 0 && (
         <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0 sm:justify-end">
-          {conLai.map((v) => (
+          {[...conLai].sort((a, b) => Number(!!b.quaHan) - Number(!!a.quaHan)).map((v) => (
             <li key={v.khoa} className="min-w-0 max-w-full">
               {v.mo ? (
                 <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
                   <b className="mr-1 text-[color:var(--accent-strong)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
+                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
                 </button>
               ) : (
-                <span className="inline-flex min-h-[32px] items-center rounded-md border px-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
+                <span className="inline-flex min-h-[32px] items-center rounded-md border border-dashed px-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
                   <b className="mr-1 text-slate-300">{v.nhan}</b><span className="max-w-[16rem] truncate">{[v.viec, v.ai].filter(Boolean).join(' · ')}</span>
+                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
                 </span>
               )}
             </li>
@@ -482,7 +484,9 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
   );
 }
 
-export type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void };
+export type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void;
+  /** HSL-LT: việc đã quá hạn — chữ "⚠ quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
+  quaHan?: string | null };
 
 /**
  * "CÒN LẠI" CỦA LƯỢT (khung M4-A ③, chủ SP 27/10) — chỉ gom việc máy chủ đã có: bài thiếu điểm, thiếu nhận xét (V15), vắng chờ xếp lại, đề nghị
@@ -925,7 +929,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
 export function VungMoKn({ id, nhanXet, caseNode, lichSu }: { id: string; nhanXet: ReactNode; caseNode: ReactNode; lichSu: ReactNode }) {
   return (
     <div role="row"><div role="cell" aria-colspan={7} id={id} className="space-y-3 px-3 pb-3">
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid items-start gap-3 md:grid-cols-2">
         <div className="min-w-0 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>{nhanXet}</div>
         <div className="min-w-0 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
           <h2 className="m-0 mb-1 text-sm font-semibold text-slate-200">{t('Case & phương án')}</h2>

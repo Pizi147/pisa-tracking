@@ -4,4 +4,5 @@ export const EN_HSL_LT = {
   'Hồ sơ lượt Test ·': 'Test attempt profile ·',
   'Thông tin lượt Test': 'Test attempt details',
   'Kết quả theo môn': 'Results by subject',
+  'chờ {x}': 'awaiting {x}',
 };

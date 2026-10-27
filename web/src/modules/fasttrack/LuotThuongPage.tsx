@@ -28,7 +28,7 @@ import { KetQua, oThuong, useLuuThuong, type ThuongSheet } from '../cham/LuoiThu
 import { DauO, VIEN_LOI } from '../cham/LuoiFT.tsx';
 import { NganLichSuBai } from '../cham/NganLichSuBai.tsx';
 import { HopThaoTacMt, THAO_TAC_CO_HOP } from './HopThaoTacMt.tsx';
-import { KHOA_HOAN_TAT_HINT, ODiemThuong } from './ScoreEntry.tsx';
+import { KHOA_HOAN_TAT_HINT, ODiemThuong, datPhanTram } from './ScoreEntry.tsx';
 import { ONhanXet } from './NhanXet.tsx';
 import { CaseLuotKn } from './CaseLuotKn.tsx';
 import { dongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
@@ -142,7 +142,7 @@ export default function LuotThuongPage() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h1 className="m-0 min-w-0 break-words text-xl font-bold text-slate-100">
               <span className="sr-only">{t('Hồ sơ lượt Test ·')} </span>
-              <Link to={`/hoc-vien/${r.studentId}`} className="text-inherit no-underline hover:underline" title={t('Hồ sơ học viên')}>
+              <Link to={`/hoc-vien/${r.studentId}`} className="text-inherit no-underline hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" title={t('Hồ sơ học viên')}>
                 {r.studentName}<span aria-hidden className="ml-1 text-base text-slate-400">↗</span>
               </Link>
             </h1>
@@ -154,7 +154,6 @@ export default function LuotThuongPage() {
                 <dl className="m-0 grid gap-2">
                   <Info label={t('Chương trình')}>{d.programme.name}</Info>
                   {d.class.branchName && <Info label={t('Chi nhánh')}>{d.class.branchName}</Info>}
-                  <Info label={t('Hạn chấm')}>{r.deadline ? t('hạn {ngay}', { ngay: ngay(r.deadline, homNay) }) : '—'}</Info>
                 </dl>
               </NutLuat>
             </span>
@@ -173,11 +172,11 @@ export default function LuotThuongPage() {
       <section aria-label={t('Tóm tắt lượt')} className="card flex flex-wrap items-start gap-x-8 gap-y-3 px-4 py-3">
         <div className="min-w-0">
           <span className="block text-xs font-medium text-slate-400">{t('% tổng')}</span>
-          {/* Chỉ khi đủ môn (`tyLeTong`); môn còn thiếu đã nằm ở dòng phụ của Kết quả — không lặp. */}
+          {/* Chỉ khi đủ môn (`tyLeTong`); chưa đủ → "chờ G+V, P" (khung) thay dấu "—" to. */}
           <span className="mt-1 block">
             {r.result.tyLeTong != null
               ? <span className="text-xl font-bold leading-none tabular-nums text-slate-100">{Math.round(r.result.tyLeTong * 100)}%</span>
-              : <span className="text-xl font-bold leading-none text-slate-600">—</span>}
+              : <span className="text-sm text-slate-400">{huy ? '—' : t('chờ {x}', { x: r.result.skills.filter((x) => x.outcome === 'missing').map((x) => tenMonNgan(ct, x.skill)).join(', ') })}</span>}
           </span>
         </div>
         <div className="min-w-0 sm:pt-4">
@@ -190,13 +189,14 @@ export default function LuotThuongPage() {
       <section aria-label={t('Kết quả theo môn')} className="card overflow-hidden p-0">
         <div role="table" aria-label={t('Kết quả theo môn')}>
           <div role="row" className={`${LUOI_MON} hidden px-3 py-2 text-[12px] font-semibold text-slate-500 md:grid`}>
-            <div role="columnheader">{t('Môn')}</div>
-            <div role="columnheader">{t('Lịch')}</div>
-            <div role="columnheader">{t('Điểm')}</div>
-            <div role="columnheader">{t('Trạng thái')}</div>
-            <div role="columnheader">{t('Nhận xét')}</div>
-            <div role="columnheader">Case</div>
-            <div role="columnheader"><span className="sr-only">{t('Thao tác')}</span></div>
+            {/* aria-colindex: ô Điểm đứng trước ô Lịch trong DOM (thẻ 375) — trình đọc màn vẫn ghép đúng tên cột. */}
+            <div role="columnheader" aria-colindex={1}>{t('Môn')}</div>
+            <div role="columnheader" aria-colindex={2}>{t('Lịch')}</div>
+            <div role="columnheader" aria-colindex={3}>{t('Điểm')}</div>
+            <div role="columnheader" aria-colindex={4}>{t('Trạng thái')}</div>
+            <div role="columnheader" aria-colindex={5}>{t('Nhận xét')}</div>
+            <div role="columnheader" aria-colindex={6}>Case</div>
+            <div role="columnheader" aria-colindex={7}><span className="sr-only">{t('Thao tác')}</span></div>
           </div>
           {d.programme.skills.filter((k) => r.skillSchedule.some((s) => s.skill === k)).map((k) => (
             <DongMon key={k} d={d} k={k} homNay={homNay} chiDoc={chiDoc} hep={hep} luu={luu} mo={moKn === k} thaoTac={thaoTac(k)}
@@ -246,13 +246,12 @@ export default function LuotThuongPage() {
   );
 }
 
-/** Tuần thi của lượt: một tuần → tuần đó; nhiều tuần → "L, R: W3 SEP · P: W4 SEP". Môn dời bằng "-" giữ tuần gốc (cột Lịch ghi tuần mới). */
+/** Tuần thi của lượt: một tuần → tuần đó; nhiều tuần → "L, R: W3 SEP · P: W4 SEP". Tuần đang xếp của từng môn (môn dời bằng "-": tuần gốc gạch ở cột Lịch). */
 function tuanLuot(r: Dong, ct: string | null, homNay: string): string | null {
   const nhom: { tuan: string; mon: string[] }[] = [];
   for (const s of r.skillSchedule) {
-    const w = s.noShow && s.movedFromStart ? s.movedFromStart : s.weekStart;
-    if (!w) continue;
-    const tuan = tuanLich(w, homNay);
+    if (!s.weekStart) continue;
+    const tuan = tuanLich(s.weekStart, homNay);
     const cu = nhom.find((n) => n.tuan === tuan);
     if (cu) cu.mon.push(tenMonNgan(ct, s.skill)); else nhom.push({ tuan, mon: [tenMonNgan(ct, s.skill)] });
   }
@@ -287,16 +286,16 @@ function conLaiThuong(d: ChiTiet, homNay: string, theCase: Map<number, CaseCard>
   for (const k of d.programme.skills) {
     const s = r.skillSchedule.find((x) => x.skill === k);
     if (!s) continue;
-    const { cell, trong } = oThuong(r, k, homNay);
+    const { cell, trong, quaHan } = oThuong(r, k, homNay);
     const n = tenMonNgan(ct, k);
-    const cua = (viec: string, chon: string | null) => ds.push({ khoa: `${k}:${viec}`, nhan: n, viec, mo: chon !== null && !chiDoc ? () => mo.moDong(k, chon) : undefined });
+    const cua = (viec: string, chon: string | null) => ds.push({ khoa: `${k}:${viec}`, nhan: n, viec, quaHan, mo: chon !== null && !chiDoc ? () => mo.moDong(k, chon) : undefined });
     if (cell.diem !== null || s.khongDuThi) continue;
     if (s.progress === 'absent') {
       const chinh = thaoTac(k).chinh;
       cua(CHU_THAO_TAC['xep-lai'], chinh === 'xep-lai' ? '[data-chinh]' : null);
     } else if (trong) cua(CHU_THAO_TAC['nhap-diem'], 'input');
     else if (s.progress === 'due' || s.progress === 'sat') cua(t('Chờ điểm'), null);
-    else if (s.noShow && s.weekStart) cua(t('Làm bài {tuan}', { tuan: tuanLich(s.weekStart, homNay) }), null);
+    else if (s.progress === 'upcoming' && s.noShow && s.weekStart) cua(t('Làm bài {tuan}', { tuan: tuanLich(s.weekStart, homNay) }), null);
   }
   for (const c of r.cases) {
     const the = theCase.get(c.id);
@@ -314,7 +313,7 @@ function conLaiThuong(d: ChiTiet, homNay: string, theCase: Map<number, CaseCard>
 function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, onThaoTac, onLichSu, vungCase, lichSu }: {
   d: ChiTiet; k: string; homNay: string; chiDoc: boolean; hep: boolean; luu: ReturnType<typeof useLuuThuong>;
   mo: boolean; thaoTac: { chinh: ThaoTac | null; menu: ThaoTac[] };
-  /** Trạng thái Case đại diện của môn (thẻ hồ sơ HV — `trangThaiV4`), dòng phụ cột Case. */
+  /** Dòng phụ cột Case: trạng thái Case đại diện của môn (thẻ hồ sơ HV — `trangThaiV4`), cùng chữ với khối Case. */
   caseChu: string | null;
   onMo: () => void; onThaoTac: (x: ThaoTac) => void; onLichSu: () => void; vungCase: ReactNode; lichSu: ReactNode;
 }) {
@@ -330,7 +329,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
   const tt: { chu: string; kind: 'done' | 'idle' | 'doing' | 'waiting' } = coDiem ? { chu: t('Đã có điểm'), kind: 'done' }
     : s.khongDuThi ? { chu: t('Vắng'), kind: 'idle' }
     : dung ? { chu: chuDung!, kind: s.progress === 'absent' ? 'waiting' : 'idle' }
-    : s.progress === 'upcoming' || (s.noShow && s.weekStart) ? { chu: t('Làm bài {tuan}', { tuan: s.weekStart ? tuanLich(s.weekStart, homNay) : '—' }), kind: 'waiting' }
+    : s.progress === 'upcoming' ? { chu: t('Làm bài {tuan}', { tuan: s.weekStart ? tuanLich(s.weekStart, homNay) : '—' }), kind: 'waiting' }
     : { chu: t('Chờ điểm'), kind: 'doing' };
   const han = !coDiem && !dung && !s.khongDuThi && s.deadline ? (quaHan ?? t('hạn {ngay}', { ngay: ngay(s.deadline, homNay) })) : null;
   const cs = r.cases.filter((c) => c.skill === k);
@@ -340,13 +339,13 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
   return (
     <div className={`border-t ${mo ? 'bg-white/[0.025]' : ''}`} style={{ borderColor: 'var(--line)' }}>
       <div id={`kn-${k}`} role="row" onClick={bamDong} className={`${LUOI_MON} cursor-pointer scroll-mt-4 px-3 py-2.5`}>
-        <div role="cell" className="min-w-0">
+        <div role="cell" aria-colindex={1} className="min-w-0">
           <button type="button" aria-expanded={mo} aria-controls={mo ? `vung-${k}` : undefined} onClick={onMo}
             className="inline-flex min-h-[44px] items-center gap-2 border-0 bg-transparent p-0 text-left text-[15px] font-bold text-slate-100 sm:min-h-0">
             <span aria-hidden className="w-3 text-xs text-slate-500">{mo ? '▾' : '▸'}</span>{ten}
           </button>
         </div>
-        <div role="cell" className={`justify-self-end md:col-start-3 md:row-start-1 md:justify-self-start ${luu.o[k] === 'loi' ? `rounded-md ${VIEN_LOI}` : ''}`} data-kn={k}>
+        <div role="cell" aria-colindex={3} className={`justify-self-end md:col-start-3 md:row-start-1 md:justify-self-start ${luu.o[k] === 'loi' ? `rounded-md ${VIEN_LOI}` : ''}`} data-kn={k}>
           <span className="inline-flex flex-col items-end gap-0.5 md:items-start">
             <span className="inline-flex items-center gap-1">
               <DauO lon={hep} tt={luu.o[k]} loi={luu.loi[k]} onLuuLai={() => luu.luuLai(k)} />
@@ -355,14 +354,16 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
                   onSave={(p, o) => luu.luu(k, p, o)} onDau={(bat) => luu.dau(k, bat)} onLoiNhap={(x) => luu.loiNhap(k, x)} />
               )}
             </span>
-            {/* Ô cỡ lớn (375) đã có "Đạt · 80%" dưới hai số. */}
-            {coDiem && cell.tiLe != null && !hep && (
-              <span className={`text-xs tabular-nums ${cell.ketQua === 'fail' ? 'text-kq-duoi' : 'text-slate-400'}`}>{Math.round(cell.tiLe * 100)}%</span>
+            {/* Kết quả bằng chữ, không chỉ màu (G12): "✗ Chưa đạt · 25%" — ô cỡ lớn (375) tự có "Chưa đạt · 25%" dưới hai số. */}
+            {coDiem && !hep && datPhanTram(cell.ketQua, cell.tiLe) && (
+              <span className={`text-xs tabular-nums ${cell.ketQua === 'fail' ? 'text-kq-duoi' : 'text-slate-400'}`}>
+                {cell.ketQua === 'fail' ? '✗ ' : '✓ '}{datPhanTram(cell.ketQua, cell.tiLe)}
+              </span>
             )}
           </span>
         </div>
         <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 md:contents">
-          <div role="cell" className="text-sm md:col-start-2 md:row-start-1">
+          <div role="cell" aria-colindex={2} className="text-sm md:col-start-2 md:row-start-1">
             {s.weekStart ? (
               <span className="tabular-nums">
                 {goc && <><s className="whitespace-nowrap text-slate-500" title={t('Lịch gốc')}>{goc}</s><span className="mx-1 text-slate-500">→</span></>}
@@ -371,18 +372,18 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
               </span>
             ) : <Tag pending>{t('Chưa xếp tuần')}</Tag>}
           </div>
-          <div role="cell" className="min-w-0 space-y-1 md:col-start-4 md:row-start-1">
+          <div role="cell" aria-colindex={4} className="min-w-0 space-y-1 md:col-start-4 md:row-start-1">
             <Status kind={tt.kind}>{tt.chu}</Status>
             {han && <div className={`text-xs ${quaHan ? 'text-late' : 'text-slate-400'}`}>{quaHan ? `⚠ ${han}` : han}</div>}
           </div>
         </div>
-        <div className="col-span-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm md:contents">
-          <div role="cell" className="min-w-0 md:col-start-5 md:row-start-1">
+        <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm md:contents">
+          <div role="cell" aria-colindex={5} className="min-w-0 md:col-start-5 md:row-start-1">
             {s.nhanXet ? <span className="text-slate-300">{[t('Có'), nguoiNhap].filter(Boolean).join(' · ')}</span>
               /* N8: lớp thường không bắt buộc nhận xét — chữ mờ, không màu nhắc như FT (V15). */
               : coDiem ? <span className="text-slate-500">{t('Chưa nhận xét')}</span> : <span className="text-slate-500 max-md:hidden">—</span>}
           </div>
-          <div role="cell" className="min-w-0 md:col-start-6 md:row-start-1">
+          <div role="cell" aria-colindex={6} className="min-w-0 md:col-start-6 md:row-start-1">
             {!cs.length ? <span className="text-slate-500 max-md:hidden">—</span> : (
               <span className="flex min-w-0 flex-col">
                 <b className="text-slate-100">Case {tenMonNgan(ct, k)}{cs.length > 1 && <span className="font-normal text-slate-400"> +{cs.length - 1}</span>}</b>
@@ -390,18 +391,19 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
               </span>
             )}
           </div>
-        </div>
-        <div role="cell" className="col-span-2 flex flex-wrap items-center gap-1.5 md:col-span-1 md:col-start-7 md:row-start-1 md:justify-end">
-          {thaoTac.chinh && !chiDoc && (
-            <button type="button" data-chinh className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onThaoTac(thaoTac.chinh!)}>{CHU_THAO_TAC[thaoTac.chinh]}</button>
-          )}
-          {!thaoTac.chinh && !chiDoc && !canEdit && !huy && (
-            <span className="text-xs text-slate-500" title={t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
-          )}
-          <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: ten })} muc={[
-            ...(chiDoc ? [] : thaoTac.menu).map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => onThaoTac(x), nguyHiem: x === 'huy-diem' })),
-            { key: 'lich-su', nhan: t('Lịch sử'), onChon: onLichSu, keTruoc: !chiDoc && thaoTac.menu.length > 0 },
-          ]} />
+          {/* ⋯ cùng hàng Nhận xét · Case ở điện thoại; màn rộng là cột cuối (md:contents). */}
+          <div role="cell" aria-colindex={7} className="ml-auto flex flex-wrap items-center gap-1.5 md:col-start-7 md:row-start-1 md:ml-0 md:justify-end">
+            {thaoTac.chinh && !chiDoc && (
+              <button type="button" data-chinh className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onThaoTac(thaoTac.chinh!)}>{CHU_THAO_TAC[thaoTac.chinh]}</button>
+            )}
+            {!thaoTac.chinh && !chiDoc && !canEdit && !huy && (
+              <span className="text-xs text-slate-500" title={t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
+            )}
+            <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: ten })} muc={[
+              ...(chiDoc ? [] : thaoTac.menu).map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => onThaoTac(x), nguyHiem: x === 'huy-diem' })),
+              { key: 'lich-su', nhan: t('Lịch sử'), onChon: onLichSu, keTruoc: !chiDoc && thaoTac.menu.length > 0 },
+            ]} />
+          </div>
         </div>
       </div>
       {mo && (
