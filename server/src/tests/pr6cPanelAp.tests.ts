@@ -122,6 +122,14 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     assert(n > 0 || !ads.length, 'seed không có dòng GV trễ nào để kiểm');
   });
 
+  /* ---------------------------------------------------------------- 6c-2 ④ Bỏ: mã chết theo bảng kê mục 3 (0 nơi gọi) */
+  check('6c-2 ④ Bỏ: ô số SoLieu, NutMoDanhSach, BangGiaoVienChiNhanh, tham số kqMacDinh / trongPanel của BangMock', () => {
+    assert(!/export function SoLieu\(/.test(doc('web/src/ui/SoLieu.tsx')), 'ô số SoLieu còn');
+    assert(!/NutMoDanhSach/.test(doc(W + 'phanTich/dungChung.tsx')), 'NutMoDanhSach còn');
+    assert(!fs.existsSync(path.join(ROOT, W + 'giaoVien/BangGiaoVienChiNhanh.tsx')), 'BangGiaoVienChiNhanh còn');
+    assert(/export function BangMock\(\{ pv \}: \{ pv: PhamViPhanTich \}\)/.test(doc(W + 'phanTich/KetQuaThi.tsx')), 'BangMock còn tham số chết');
+  });
+
   /* ---------------------------------------------------------------- 6c-2 ⑤ (#632 XM-1): dòng danh sách Case có điểm lượt mở Case */
   const { rowsFor } = await import('../worklist/metrics.ts');
   check('6c-2 ⑤ rowsFor(case): diem = mốc mở / lặp Case gần nhất có band (điểm, kỳ vọng, MT n); Case không mốc điểm → null; một câu cho cả lô', () => {

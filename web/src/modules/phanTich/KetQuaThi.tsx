@@ -44,13 +44,13 @@ export function KetQuaThi(props: PhamViPhanTich) {
 
 // ------------------------------------------------------------------ Mock Test
 
-/** Bảng Mock — dùng ở tab và trong panel số của Báo cáo (`kqMacDinh`: mở sẵn đúng nhóm vừa bấm). */
-export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kqMacDinh?: KetQuaMock; trongPanel?: boolean }) {
+/** Bảng Mock — tab Kết quả thi (6c-2: bỏ tham số `kqMacDinh` / `trongPanel` của panel số cũ — không nơi nào truyền). */
+export function BangMock({ pv }: { pv: PhamViPhanTich }) {
   const [params, setParams] = useSearchParams();
   const { homNay } = useNgayNghiepVu();
   const dienThoai = useDienThoai();
   const xep: XepMock = params.get('xep') === 'sos' ? 'sos' : 'lop';
-  const [loc, setLoc] = useState<LocKq>(kqMacDinh ?? ALL);
+  const [loc, setLoc] = useState<LocKq>(ALL);
   const query = thamSoLoc(pv, { loai: 'mock', xep });
   const { data, loading, error, reload } = useApi<KetQuaMockKq>(`/phan-tich/ket-qua-thi?${query}`, [query]);
   const rows = (data?.rows ?? []).filter((r) => loc === ALL || r.ketQua === loc);
@@ -94,13 +94,11 @@ export function BangMock({ pv, kqMacDinh, trongPanel }: { pv: PhamViPhanTich; kq
   return (
     <Card bodyClass="p-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 text-xs" style={{ borderColor: 'var(--line)' }}>
-        {!trongPanel && (
-          <label className="flex items-center gap-1.5 text-slate-400">{t('Xếp theo')}
-            <select className="field w-28 text-xs max-sm:min-h-[44px]" value={xep} onChange={(e) => setXep(e.target.value as XepMock)} aria-label={t('Xếp theo')}>
-              {XEP_MOCK.map((k) => <option key={k} value={k}>{NHAN_XEP_MOCK[k]}</option>)}
-            </select>
-          </label>
-        )}
+        <label className="flex items-center gap-1.5 text-slate-400">{t('Xếp theo')}
+          <select className="field w-28 text-xs max-sm:min-h-[44px]" value={xep} onChange={(e) => setXep(e.target.value as XepMock)} aria-label={t('Xếp theo')}>
+            {XEP_MOCK.map((k) => <option key={k} value={k}>{NHAN_XEP_MOCK[k]}</option>)}
+          </select>
+        </label>
         {tg && (
           <BoLocDoan<LocKq> ariaLabel={t('Kết quả')} value={loc} onChange={setLoc}
             muc={[{ key: ALL, nhan: t('Tất cả'), so: tg.luot }, ...(['dat', 'chua-dat', 'chua-du'] as const).map((k) => ({ key: k, nhan: NHAN_KET_QUA_MOCK[k], so: k === 'dat' ? tg.dat : k === 'chua-dat' ? tg.chuaDat : tg.chuaDu }))]} />

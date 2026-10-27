@@ -1,8 +1,8 @@
-import { Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, deadlineView, maView, metricById, nhanQuaHan, thamSoCt, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
-import { XemCha, useMoSoLieu, useThamSoUrl, useXem } from '../lib/quayLai.ts';
+import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
@@ -415,63 +415,3 @@ export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose, ten }
   );
 }
 
-/**
- * MỖI CON SỐ TỰ GIẢI THÍCH ĐƯỢC (hợp đồng số liệu §3).
- *
- *   <SoLieu id="hv-co-case-mo" giaTri={18} phamVi={{ branchId: 1 }} />
- *
- * Hiển thị: số + tên + đơn vị. Hai hành vi bắt buộc:
- *   · "Cách tính" → đọc THẲNG từ sổ chỉ số (`ChiSo`): câu hỏi, tập đủ điều kiện, quy tắc khử trùng,
- *     mốc thời gian, ngày dữ liệu. Không có chữ giải thích nào nằm riêng trong component này.
- *   · Bấm số → panel bên phải `{n} {đơn vị} — {tên}`, danh sách đúng TẬP ID sinh ra con số (cùng hàm,
- *     cùng quyền, cùng bộ lọc), có đường quay lại.
- *
- * CẤM hiển thị một con số dashboard ngoài `<SoLieu>`: mã không có trong sổ thì KHÔNG vẽ số, để một
- * con số không có định nghĩa không lọt lên màn hình.
- */
-export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, phu, tone }: {
-  id: string; giaTri: number; phamVi?: PhamViSoLieu; rong?: boolean; className?: string; extra?: Record<string, string>;
-  /** Nhãn hiện ở ô khi khác tên trong sổ (plan PR-Pa Q20). "Cách tính" vẫn ghi tên trong sổ. */
-  nhan?: string;
-  /** Một dòng phụ dưới số (G-3). */
-  phu?: ReactNode;
-  tone?: 'danger' | 'warn';
-}) {
-  const cs = metricById(id);
-  const [open, setOpen] = useMoSoLieu(`${id}${extra ? `|${new URLSearchParams(extra)}` : ''}`);
-  const [howTo, setHowTo] = useState(false);
-  const idCachTinh = useId();
-  if (!cs) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id })}</span>;
-  const dv = METRIC_UNIT_LABEL[cs.donVi];
-  const clickable = giaTri > 0;
-  const mau = tone === 'danger' ? '!text-bad' : tone === 'warn' ? '!text-soon' : '';
-  return (
-    <OChiSo className={className} ten={<>
-      {nhan ?? cs.ten}
-      {/* PR-VAI-a (K1-08): "Cách tính" là chú thích NỔI — rê chuột, Tab hoặc bấm; Esc đóng. Không đẩy giãn hàng ô. */}
-      <span className="relative ml-1.5 inline-block" onMouseEnter={() => setHowTo(true)} onMouseLeave={() => setHowTo(false)}>
-        {/* Bấm chỉ MỞ: chạm trên điện thoại phát mouseenter → focus → click, đảo trạng thái thì vừa mở đã đóng. Đóng: Esc, rời chuột, mất focus. */}
-        <button type="button" onClick={() => setHowTo(true)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
-          onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
-          onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
-          aria-label={t('Cách tính')}
-          className="appearance-none bg-transparent border-0 p-0 max-sm:p-3 max-sm:-m-3 cursor-pointer text-sm leading-none text-slate-500 hover:text-slate-300">ⓘ</button>
-        {howTo && (
-          <div id={idCachTinh} role="tooltip" className="card absolute left-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
-            <CachTinh cs={cs} />
-          </div>
-        )}
-      </span>
-    </>}
-      giaTri={<span className="inline-flex flex-wrap items-baseline gap-1.5">
-        {clickable ? (
-          <button type="button" onClick={() => setOpen(true)} className={`${VUNG_BAM_SO} ${LOP_OSO} ${mau}`}
-            aria-label={t('{gt} {dv} — {ten}. Bấm để xem danh sách', { gt: giaTri, dv, ten: nhan ?? cs.ten })}>{giaTri}</button>
-        ) : <span className="text-slate-500">{giaTri}</span>}
-        <span className="text-xs font-normal text-slate-400">{dv}</span>
-      </span>}
-      mau={phu ?? ((rong || giaTri === 0) ? (rong ? t('Không có dữ liệu trong phạm vi') : t('Không có mục nào')) : null)}>
-      <DanhSachSoLieu id={id} giaTri={giaTri} phamVi={phamVi} extra={extra} open={open} onClose={() => setOpen(false)} ten={nhan} />
-    </OChiSo>
-  );
-}

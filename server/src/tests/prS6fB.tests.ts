@@ -245,9 +245,6 @@ async function runTask9(t: YThucTestKit, d: any) {
     assert(dong.trangThai === 'qua-han' && dong.han?.ngay === han && dong.han?.loai === 'chot-len-ft', JSON.stringify({ t: dong.trangThai, han: dong.han }));
   });
 
-  check('S6F-b (9) · bảng GV chi nhánh: không hàng GV nhưng có "Chưa phân công" → không Empty (Σ = ô)', () => {
-    assert(/if \(!data\.hang\.length && !data\.chuaPhanCong\) return <Empty/.test(doc('web/src/modules/giaoVien/BangGiaoVienChiNhanh.tsx')), 'BangGiaoVienChiNhanh Empty');
-  });
 
   check('S6F-b (9) · Q21 ghi bù đúng Thứ Hai: PA hạn 24/08, ghi 07/09 → 3 nghĩa vụ (2 trễ, 1 đúng) = "ghi bù 3 tuần"', () => {
     const caseId = get(`SELECT id FROM sos_cases WHERE status != 'done' ORDER BY id LIMIT 1`).id as number;
