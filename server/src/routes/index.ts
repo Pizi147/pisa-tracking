@@ -121,6 +121,7 @@ import { timGiaoVien } from '../giaoVien/phamVi.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
+import { gvTre } from '../worklist/gvTre.ts';   // M6 6b-4
 import * as caseSvc from '../cases/cases.ts';
 import * as ownerSvc from '../cases/owner.ts';
 import * as regularSvc from '../normal/regular.ts';
@@ -2117,6 +2118,13 @@ api.get('/tong-quan/viec-cua-toi', requireAuth, wrap((req) => {
 api.get('/tong-quan/mock-test', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanMt(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
+}));
+/* M6 6b-4: panel "GV chấm quá hạn" — không `gv`: Admin (cùng tập khối Mock Test); `gv` (id · 0 · -1): QL, cùng tập Trễ chấm của GV đó (Q8). */
+api.get('/tong-quan/gv-tre', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const gvChu = req.query.gv === undefined ? null : String(req.query.gv).trim();
+  if (gvChu !== null && !/^-?\d+$/.test(gvChu)) throw badRequest('Thiếu giáo viên.');
+  return gvTre(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ...(gvChu !== null ? { gv: Number(gvChu) } : {}) });
 }));
 api.get('/tong-quan/lop-toi-day', requireAuth, wrap((req) => {
   maybeSimulateReadError();
