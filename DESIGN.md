@@ -135,7 +135,7 @@ components:
 | V14 | **Tìm kiếm thanh trên:** `/` hoặc `Ctrl K`; nhóm Học viên · Lớp · GV, chỉ trong phạm vi quyền máy chủ; chữ khớp tô hồng | #560 k1 |
 | V15 | **Ô MT thiếu nhận xét:** chỉ MT mới nhất của em, ô **viền vàng** + nhắc ở tooltip / tên đọc màn — không chữ dưới ô, không chặn lưu (LUAT-NX-MT, N8) | `10` mục 7; #549, #560 |
 | V16 | **Tiêu đề trang 22 / 700** (`text-xl` = 22 trong thang Tailwind; mockup `.h-trang`). Còn lệch 17 px (`text-lg`) ở 11 trang — CHAM-LAI sửa (`plan.md` mục 4) | `04` mục 2.2; mockup V5 |
-| V17 | **Phân cấp Lịch Test — mỗi cấp một màu thanh** (chủ SP 26/10, M2 A2), không thêm viền / vạch: nhóm `--cap-nhom` chữ 17 / 700 + số có đơn vị 13 / 500, khe 10 px nền thẻ giữa nhóm · lớp đóng `--cap-lop-dong` (tên thụt 28, ngăn 1 px nền thẻ) · lớp mở `--cap-lop` cao 50, **dính mép trên** trong khối lớp (mỗi lớp một bảng) · lưới trên nền thẻ, đầu cột `--cap-dau-cot`, cột Học viên thụt 44 · **S Ex dòng phụ: chip ở cột MT**, điểm cột S, Kết quả "GV · tuần" · đáy khối `--cap-lop-dong` "▴ Thu lớp" · 375: lớp thụt 20, thẻ em 32. Hai nền liền nhau ΔL ≥ 3 (OKLCH), chữ ≥ 4,5 : 1 (`thiet-ke/v7/kiem-tuong-phan-cap.py`). Lưới Lịch Test không có Dán từ Excel (còn ở panel Nhập điểm, Điểm theo lớp) | M2 A2; deploy-ux 4.2; R1-PHAN-CAP-TEST |
+| V18 | **Công việc ba tầng** (CONG-VIEC-2, chủ SP duyệt mockup `thiet-ke/v7/cong-viec-2.html` #621): ① **nhóm việc** — thẻ riêng, dải `--surface-2` + vạch trái 3 px **một màu nhấn** (xám = bài chấm chéo, không phải việc của bạn) + biểu tượng nét, 15 / 700, chip đếm vuông có đơn vị, dính khi cuộn (`DaiNhom`, dùng cả cho Chờ bạn duyệt / Việc quản lý) · ② **học viên** — vòng tròn chữ đầu 28 px + tên **15 / 600** ↗ (link hồ sơ) · lớp 13 · SOS **một lần**; em một việc vẫn có khối; khối cách khối vạch `--line-strong` · **lớp / nhóm em** — ô vuông biểu tượng, chính dòng là việc; dòng gộp ô chồng có số: "n em ▾" mở khay em, hoặc làm cả dòng (`moCaDong`) · ③ **việc** — thụt dưới tên + nét cây 1 px, tên **15 / 500** không lặp tên em, phụ 13, **hạn cột cố định 136 px** (`ChipHan`) + nút 112 px; "›" = việc đổi trang · "việc tiếp" đi hết nhóm (sau → vòng lên), hết nhóm → thẻ "Hết việc {nhóm} của bạn" + "Còn: {nhóm} · n việc" + Việc tiếp › · 375: chạm cả dòng, hạn dưới tên, ẩn nút (trừ "n em ▾", Gia hạn) | D5 / D5b sửa tối 27/10 |
 
 ## Luật 21/10 (overhaul — chủ SP duyệt #486; thắng phần mô tả bên dưới khi khác)
 
@@ -191,7 +191,6 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
   4. Hạn — chỉ chữ: quá hạn cam `late` **luôn kèm ⚠** (không chip, không nền, không tô hàng); sắp hạn / hôm nay vàng `soon`. Hạn ghi ngày `hạn 18/09`, không thứ.
   5. Trung tính `muted` — mọi trạng thái khác (chờ duyệt, chờ chấm, Chưa chốt PA…). Đã bỏ tím `wait` và teal `chon-*` (OV-15a).
 - Đạt = `ok`; `bad` còn cho thao tác nguy hiểm.
-- **Màu cấp Lịch Test** (V17): `--cap-nhom` `#283452` / sáng `#cfd6e4` · `--cap-lop` `#1d3b72` / `#d4e1fb` · `--cap-lop-dong` `#172b50` / `#edf2fd` · `--cap-dau-cot` `#0a1224` / `#eceff5`. Chỉ dùng ở Lịch Test (+ nhóm trái Chấm Test).
 - Chữ phụ: `text-dim` (quan trọng), `text-faint` (nhỏ) — cả hai ≥ 7:1 trên `bg`, `surface`, `surface-2` ở sáng lẫn tối (`prOv15a`).
 
 ## Typography

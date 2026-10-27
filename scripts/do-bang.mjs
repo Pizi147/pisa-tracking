@@ -133,8 +133,6 @@ export function doBang() {
     const de = [];
     for (let a = 0; a < bam.length; a++) for (let b = a + 1; b < bam.length; b++) {
       if (bam[a].contains(bam[b]) || bam[b].contains(bam[a])) continue;
-      /* R1-PHAN-CAP-TEST: hàng lớp Lịch Test đang mở DÍNH khi cuộn — nội dung trượt dưới nó là đúng ý; "không che" đo ở kịch bản `dinh-khong-che`. */
-      if (!!bam[a].closest('.lich-lop tr.dang-mo') !== !!bam[b].closest('.lich-lop tr.dang-mo')) continue;   // chỉ cặp vượt biên hàng dính
       const w = Math.min(hop[a].right, hop[b].right) - Math.max(hop[a].left, hop[b].left);
       const h = Math.min(hop[a].bottom, hop[b].bottom) - Math.max(hop[a].top, hop[b].top);
       if (w > 2 && h > 2) de.push(`«${nhanEl(bam[a])}» × «${nhanEl(bam[b])}»`);
