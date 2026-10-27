@@ -164,7 +164,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
       <tr className={`${mo === r.id ? 'dang-mo' : ''} ${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
         {COT.map((c) => {
           const phu = phuCua(r, c);
-          return <OBang key={c.key} c={c} className={c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}>{oCua(r, c)}{phu && <span className="bang-phu" data-phu-odiem="">{phu}</span>}</OBang>;
+          return <OBang key={c.key} c={c} className={c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}>{oCua(r, c)}{phu && <span className="bang-phu -mx-3 whitespace-nowrap" data-phu-odiem="">{phu}</span>}</OBang>;
         })}
       </tr>
       {mo === r.id && (

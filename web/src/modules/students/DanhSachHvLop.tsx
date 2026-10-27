@@ -88,12 +88,14 @@ export function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it:
   /* Ô Việc nằm trên dòng của em → bỏ " · {tên em}" cuối tên việc (không lặp). */
   const chuCua = (x: ViecEm) => { const c = dich(x.chu); const duoi = ` · ${x.it.studentName}`; return x.it.studentName && c.endsWith(duoi) ? c.slice(0, -duoi.length) : c; };
   return (
-    <span className="block min-w-0 space-y-1 max-sm:space-y-0">
+    /* SUA-375: điện thoại nút cao 36 → cách 6 px, không dính nhau. */
+    <span className="block min-w-0 space-y-1 max-sm:space-y-1.5">
       {hien.map(({ dau: x, them }) => (
         <span key={x.it.key} className="flex min-w-0 items-center gap-1.5">
           {/* D10 (chủ SP 27/10, mockup V5 `.viec-o .nut`): việc = nút viền nhỏ màu chữ thường (không link xanh) · chip hạn ngay sau; trạng thái nằm ở chip. */}
-          <button type="button" className="btn btn-sm h-[30px] min-w-0 max-w-full shrink justify-start max-sm:h-[36px]"
-            title={dich(x.chu)} onClick={() => onMo(x.it)}><span className="truncate">{chuCua(x)}</span></button>
+          {/* SUA-375: điện thoại tên việc xuống dòng trong nút (không cắt "…"), nút cao tối thiểu 36. */}
+          <button type="button" className="btn btn-sm h-[30px] min-w-0 max-w-full shrink justify-start max-sm:h-auto max-sm:min-h-[36px] max-sm:whitespace-normal max-sm:py-1.5 max-sm:text-left"
+            title={dich(x.chu)} onClick={() => onMo(x.it)}><span className="sm:truncate">{chuCua(x)}</span></button>
           {them > 0 && <span className="shrink-0 text-xs text-dim">{t('+{n} việc', { n: them })}</span>}
           <HanViec x={x} />
         </span>
