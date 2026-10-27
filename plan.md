@@ -240,6 +240,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### SÁNG 27/10 — kết quả đêm (PTA Plan)
+- **Đã merge (R1 xong phần code):** #601 BO-DAN-EXCEL · #599 EN-2 · #600 PHAN-CAP-TEST (chủ SP duyệt ảnh + bỏ dòng "n học viên · Fast Track / Lớp thường") · #606 NO-CU (đổi người phụ trách Case, security-review đạt) · #607 NO-NHO (Case W2 khi đổi môn, khoá ghi góp ý tuần, MDK-15) · #608 EN-2b · #609 TEN-CHI-SO. Mỗi PR check đầy đủ xanh trên bản gộp main.
+- **Mockup chờ chủ SP duyệt (PR mở, KHÔNG merge):** M4 hồ sơ lượt Test #603 (artifact https://claude.ai/artifact/E6NLFryD83JGNnCqQVq7ae, 2 câu hỏi) · M5 + M5b #604 (https://claude.ai/artifact/VQVd5d1rau5PJXqMHQvBoY, 4 câu hỏi) · 6a + M6 #605 (https://claude.ai/artifact/EkZ9sFcZEqbwaXtHyiQ25c, Q1–Q8; bảng kê 6a 415 dòng, 10 lỗi chính đọc từ mã).
+- **Để sau (ghi trong PR):** P8 — đường lưu điểm thường vẫn có thể sinh tín hiệu môn đã bỏ (#607) · NO-CU — kiemXemCase thêm, updated_at, MON_GOP chiều ngược (#606) · lỗi đo do-khung có từ trước (MB Pre FOU 03 cắt 375, Xem dạng bảng × GV chấm S 375, cột Kết quả −8 GVBM) (#608).
+- **Tiếp:** chủ SP duyệt M4 / M5 / M6 → PR máy chủ + giao diện theo khối "Khuyến nghị" mỗi mockup · Tutor (D12, chủ SP bàn) · deploy R1 khi chủ SP bảo.
+
 ### ĐÊM 27/10 — chủ SP duyệt thiết kế `docs/superpowers/specs/2026-10-27-dem-27-10-design.md` (D12–D17); **CHỜ chủ SP bảo "chạy"**
 - **Chủ SP 27/10 ~03:00:** Tutor chưa đụng (D12) · lớp thường có trang lượt riêng cùng khung FT (D13) · góp ý tuần **chỉ đọc, khoá API ghi** (D14) · chạy máy này (D15) · mockup chỉ là gợi ý (D16) · đổi người phụ trách Case: QL / QT + GVCN đổi, chọn GV dạy đúng kỹ năng ở lớp + GVCN (D17) · **không tập dượt deploy** — khi cần deploy chủ SP bảo.
 - **PTA làm ngay (đã được phép từ trước):** merge #601 BO-DAN-EXCEL (check gộp main) → EN-2 #599 (sau khi session gộp P8 + check) · rà lại #600 PHAN-CAP-TEST (chủ SP duyệt ảnh, không merge qua đêm).
