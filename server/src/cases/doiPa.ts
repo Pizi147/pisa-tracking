@@ -36,7 +36,7 @@ function kiemDoiPa(p: Principal, goc: any, v: VaoDoiPa) {
   if (goc.status !== 'planned' && goc.status !== 'started') throw badRequest('PA này đã kết thúc — không đổi được.');
   if (goc.kind === 'bo_tro' && goc.status === 'planned') throw badRequest('PA Bổ trợ chưa chạy — Xác nhận Case trước.');
   if (choDoiPa(goc)) throw badRequest('PA này đang chờ Quản lý duyệt đổi PA — Rút đề xuất cũ rồi gửi lại.');
-  if (chuaChay && !sosCaseState(goc.case_id).hasCause) throw badRequest('Ghi nhận xét (nguyên nhân) trước, rồi mới đề xuất PA khác.');
+  if (chuaChay && !sosCaseState(goc.case_id).hasCause) throw badRequest('Ghi Mô tả Case (nguyên nhân) trước, rồi mới đề xuất PA khác.');
   const kind = String(v.kind ?? '');
   if (!(LOAI_PA_DOI as readonly string[]).includes(kind)) throw badRequest('Chọn loại PA mới.');
   if (kind === goc.kind) throw badRequest('PA mới phải khác loại PA hiện tại.');

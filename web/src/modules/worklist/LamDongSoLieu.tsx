@@ -6,7 +6,7 @@ import { t } from '@shared/i18n/index.ts';
 
 /**
  * VIỆC DÀI CỦA MỘT DÒNG PANEL SỐ LIỆU (OV-12e, P12, mockup v3 §10): THAY nội dung panel (không panel lồng panel) bằng đúng panel làm việc sẵn có —
- * Ngăn Case đúng việc (Xác nhận Case · Ghi nhận xét · Sửa PA / Xác nhận PA · Ghi kết quả · Thêm PA · Hoàn thành), bảng Nhập điểm một lớp · một lượt ·
+ * Ngăn Case đúng việc (Xác nhận Case · Mô tả Case · Sửa PA / Xác nhận PA · Ghi kết quả · Thêm PA · Hoàn thành), bảng Nhập điểm một lớp · một lượt ·
  * một kỹ năng (cùng Công việc), ngăn Vận hành. "← Danh sách" về đúng dòng; lưu xong về danh sách (nơi gọi tải lại số).
  */
 export function LamDongSoLieu({ dong, onVe, onDong, onDaLam }: {

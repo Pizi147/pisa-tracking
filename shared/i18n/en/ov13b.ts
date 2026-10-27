@@ -55,7 +55,7 @@ export const EN_OV13B = {
   "PA này đã kết thúc — không đổi được.": "This PA has ended — cannot change it.",
   "PA Bổ trợ chưa chạy — Xác nhận Case trước.": "Support PA has not started — confirm the Case first.",
   "PA này đang chờ Quản lý duyệt đổi PA — Rút đề xuất cũ rồi gửi lại.": "This PA already has a change awaiting approval — withdraw it first, then resend.",
-  "Ghi nhận xét (nguyên nhân) trước, rồi mới đề xuất PA khác.": "Record the comment (cause) first, then propose another PA.",
+  "Ghi Mô tả Case (nguyên nhân) trước, rồi mới đề xuất PA khác.": "Describe the case (cause) first, then propose another PA.",
   "Chọn loại PA mới.": "Choose the new PA type.",
   "PA mới phải khác loại PA hiện tại.": "The new PA must be a different type.",
   "Lý do đổi PA tối đa 1000 ký tự.": "Reason for changing the PA is at most 1000 characters.",

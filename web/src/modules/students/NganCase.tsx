@@ -13,7 +13,7 @@ import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
-import { DongNguyenNhan, GhiNhanXetPanel, XacNhanCasePanel, XacNhanPaPanel, XacNhanSPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
+import { DongNguyenNhan, MoTaCasePanel, XacNhanCasePanel, XacNhanPaPanel, XacNhanSPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { BoiCanh, KhoiDaLuu, NutChu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -59,7 +59,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
 
   const veCase = () => { setView({ loai: 'case' }); lf.datLai(); };
   /* B1: mở từ thông báo / đường `?case=` (không kèm việc) — hoặc `viec=xac-nhan` từ hồ sơ — khi Case đang chờ → mở sẵn đúng khối: Progress chờ
-     Xác nhận Case → Xác nhận Case; Case MT cũ bài chưa nhận xét → Ghi nhận xét (OV-12c). */
+     Xác nhận Case → Xác nhận Case; Case MT chưa mô tả → Mô tả Case (MO-TA-CASE). */
   const tuDong = useRef(!viecBanDau && !paId && (!viec || viec === 'xac-nhan'));
   useEffect(() => {
     if (!tuDong.current || !data) return;
@@ -155,7 +155,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   if (view.loai === 'sua-ket-qua') {
     return <SuaKetQuaPanel key={view.followupId} followupId={view.followupId} {...chung} onSaved={xong} onThemPa={() => setView({ loai: 'them-pa' })} />;
   }
-  /* OV-12c (khuôn panel v3): Progress — Xác nhận Case MỘT bước (PA Bổ trợ chạy ngay); Case MT — Ghi nhận xét (MT cũ) → Xác nhận PA. */
+  /* OV-12c (khuôn panel v3): Progress — Xác nhận Case MỘT bước (PA Bổ trợ chạy ngay); Case MT — Mô tả Case (chưa mô tả) → Xác nhận PA. */
   const paCho = (data.interventions ?? []).filter((x: any) => x.awaitingConfirmation && x.kind !== 'bo_tro') as PaQuyChe[];
   if (view.loai === 'xac-nhan' && data.trangThaiV4?.k === 'cho-nguyen-nhan') {
     return <XacNhanCasePanel {...chung} data={data} onXong={() => { reload(); onChanged?.(); veSau(); }} />;
@@ -164,7 +164,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     return <XacNhanSPanel {...chung} data={data} onXong={() => { reload(); onChanged?.(); if (paCho[0]) setView({ loai: 'xac-nhan-pa', paId: paCho[0].id }); else veSau(); }} />;
   }
   if ((view.loai === 'ghi-nhan-xet' || view.loai === 'xac-nhan') && data.trangThaiV4?.k === 'cho-nhan-xet') {
-    return <GhiNhanXetPanel {...chung} data={data} onXong={() => { reload(); onChanged?.(); if (paCho[0]) setView({ loai: 'xac-nhan-pa', paId: paCho[0].id }); else veSau(); }} />;
+    return <MoTaCasePanel {...chung} data={data} onXong={() => { reload(); onChanged?.(); if (paCho[0]) setView({ loai: 'xac-nhan-pa', paId: paCho[0].id }); else veSau(); }} />;
   }
   if (view.loai === 'xac-nhan-pa') {
     const pa = paCho.find((x) => x.id === view.paId);
@@ -249,7 +249,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const chanHoanThanh = data.closeBlockers ?? [];
   const ht = data.hoanThanh ?? null;
   /*
-   * NÚT CHÍNH = VIỆC TIẾP (B2, K3-07, K3-09; OV-12c): Xác nhận Case (Progress) / Ghi nhận xét (MT cũ) / Xác nhận PA / Ghi kết quả cuối {PA} / Ghi kết quả PA {PA quá hạn nhất} /
+   * NÚT CHÍNH = VIỆC TIẾP (B2, K3-07, K3-09; OV-12c): Xác nhận Case (Progress) / Mô tả Case (MT) / Xác nhận PA / Ghi kết quả cuối {PA} / Ghi kết quả PA {PA quá hạn nhất} /
    * Hoàn thành Case. PA theo quy chế chưa khép → ẨN Hoàn thành, hiện dòng mờ nói khi nào hoàn thành được.
    */
   const v = data.viecTiep ?? null;
@@ -286,7 +286,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     if (data.choXacNhanS?.coTheXacNhan && canDong) return nut(t('Xác nhận Case'), () => setView({ loai: 'xac-nhan-s' }));
     if (v?.chu === 'Xác nhận Case') return data.viewer.coTheXacNhanCase && canDong ? nut(t('Xác nhận Case'), () => setView({ loai: 'xac-nhan' })) : undefined;
     if (!data.viewer.canEdit || !canDong) return undefined;
-    if (v?.chu === 'Ghi nhận xét') return nut(t('Ghi nhận xét'), () => setView({ loai: 'ghi-nhan-xet' }));
+    if (v?.chu === 'Mô tả Case') return nut(t('Mô tả Case'), () => setView({ loai: 'ghi-nhan-xet' }));
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut(t('Xác nhận PA'), () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
     /* CV-LOI (A1-15): Case chưa có PA (việc tiếp = lập PA) → nút chính là "+ Thêm PA", không phải "Hoàn thành Case". */
     if (v?.loaiHan === 'lap-pa' && themPaDuoc) return nut(t('+ Thêm PA'), () => setView({ loai: 'them-pa' }));

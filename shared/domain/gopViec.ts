@@ -8,7 +8,7 @@
  * Giữ từng dòng: Case SOS Fast Track (Xác nhận PA · Thêm PA ở lớp FT — mỗi Case một quyết định riêng), việc không gắn lớp. Khác người
  * giữ việc thì không gộp: mỗi dòng một nút Nhắc cho đúng một người. Thẻ Chờ duyệt không phải dòng việc (hộp riêng).
  * OV-12c: bỏ gom Xác nhận nguyên nhân theo kỹ năng + lượt (OV-5a) — Case MT lấy nguyên nhân từ nhận xét (không còn việc đó).
- * OV-13c (chủ SP 15/10, Q4): Case SOS FT — Xác nhận PA, Ghi nhận xét — gộp theo lớp + TUẦN THI + MỨC SOS (không cần cùng MT); Thêm PA vẫn từng
+ * OV-13c (chủ SP 15/10, Q4): Case SOS FT — Xác nhận PA, Mô tả Case — gộp theo lớp + TUẦN THI + MỨC SOS (không cần cùng MT); Thêm PA vẫn từng
  * dòng. Nhập điểm gộp theo TUẦN THI qua mọi lớp của cùng người giữ việc (lưới Lịch Test) — mỗi em con là một lớp của tuần đó.
  */
 import { tuanLich } from './hienThiNgay.ts';
@@ -33,7 +33,7 @@ export type ConGop<T> = T & { conTen: string; conPhu: string };
 export type DongGop<T> = T & { con: ConGop<T>[] };
 
 /** Case SOS Fast Track: mỗi Case giữ một dòng (§7 Q1) — chỉ Case sinh từ SOS; Case GV tự tạo gộp như việc khác (chủ sản phẩm 08/10). */
-/* OV-12c: Ghi nhận xét (Case MT cũ) như trước OV-5a — mỗi Case một dòng; Xác nhận Case lớp thường gộp theo lớp, mở từng em. */
+/* OV-12c: Mô tả Case (Case MT chưa mô tả) như trước OV-5a — mỗi Case một dòng; Xác nhận Case lớp thường gộp theo lớp, mở từng em. */
 const GIU_TUNG_DONG_FT = new Set(['no_plan']);
 /** OV-13c (Q4): Case SOS FT gộp theo lớp + tuần thi + mức SOS. */
 const GOP_TUAN_SOS = new Set(['ghi_nhan_xet', 'xac_nhan_pa']);

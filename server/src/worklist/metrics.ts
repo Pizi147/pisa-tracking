@@ -169,7 +169,7 @@ function viecCuaCase(rows: any[], p: Principal | undefined): Map<number, { viec:
   for (const r of rows) {
     const c = ct.get(r.id);
     const v = c?.viecTiep ?? null;
-    const loai: ViecDong['loai'] | null = !v ? null : v.chu === 'Xác nhận Case' ? 'xac-nhan' : v.chu === 'Ghi nhận xét' ? 'ghi-nhan-xet'
+    const loai: ViecDong['loai'] | null = !v ? null : v.chu === 'Xác nhận Case' ? 'xac-nhan' : v.chu === 'Mô tả Case' ? 'ghi-nhan-xet'
       : v.chu.startsWith('Xác nhận PA') ? 'xac-nhan-pa' : v.loaiHan === 'cap-nhat-pa' ? 'ghi-ket-qua' : v.chu === CHU_THEM_PA ? 'them-pa'
         : v.chu === 'Hoàn thành Case' ? 'hoan-thanh' : null;
     if (!v || !loai) { out.set(r.id, { viec: null, tinhTrang: v?.chu ?? c?.trangThai.chu ?? null }); continue; }
