@@ -722,6 +722,17 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(JSON.stringify(user(gvcnId)) === truoc, 'bị chặn mà vẫn đổi');
   });
 
+  check('6C-NHO · Tài khoản chưa có email: chặn và nói bước tiếp (không tắt nút im lặng)', () => {
+    const k = accounts.createAccount(P.admin, {
+      email: `thu.xoa.ko.email${Date.now() % 100000}.pisa@gmail.com`, password: 'matkhau-ko-email', fullName: 'Thu Xoa Khong Email', roles: [],
+    }) as { userId: number };
+    conn.prepare('UPDATE users SET email = NULL WHERE id = ?').run(k.userId);
+    const x = xoaTK.xemXoaTaiKhoan(P.admin, k.userId);
+    assert(x.chan === 'Tài khoản chưa có email. Thêm email ở ⋯ › Sửa thông tin rồi xoá.', String(x.chan));
+    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, k.userId, { emailXacNhan: '' })) === 400, 'không email phải 400');
+    assert(user(k.userId) !== undefined, 'bị chặn mà vẫn xoá');
+  });
+
   check('PR-XOA T8 · Cảnh báo: GVBM → "Lớp … sẽ thiếu GV môn …"; việc đang giao có số', () => {
     const g = taoTK('canhbao');
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)

@@ -2066,7 +2066,7 @@ api.get('/giao-vien/:id/chi-so', requireAuth, wrap((req) => {
 api.get('/giao-vien/:id/chi-so/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return giaoVienPtSvc.oChiSoHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'),
-    { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, cot: qStr(req, 'cot') ?? '', loc: qStr(req, 'loc') ?? null });
+    { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, cot: qStr(req, 'cot') ?? '', loc: qStr(req, 'loc') ?? null, cn: soDuong(req.query.cn, 'cn') });
 }));
 api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
