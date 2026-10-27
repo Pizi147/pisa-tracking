@@ -33,14 +33,13 @@ function tuanCuaThang(thang: string): [string, string] {
   while (new Date(Date.parse(cong(d, 1)) + 3 * NGAY).toISOString().slice(0, 7) === thang) d = cong(d, 1);
   return [dau, d];
 }
-/* Kết quả kỳ PA bằng ký hiệu (mockup M5): ▲▼ dành cho thay đổi điểm. */
-export const KQ_PA: Record<string, [string, string]> = {
-  improved: ['●', 'rgb(var(--ok-rgb))'], partial: ['◐', 'rgb(var(--soon-rgb))'], unchanged: ['○', 'rgb(var(--bad-rgb))'],
-  worse: ['✕', 'rgb(var(--bad-rgb))'], insufficient: ['…', 'var(--text-dim)'],
+/* Màu kết quả kỳ PA (ký hiệu ● ◐ ○ ✕ … vẽ ở `KyHieuPa`; ▲▼ dành cho thay đổi điểm). */
+const MAU_PA: Record<string, string> = {
+  improved: 'rgb(var(--ok-rgb))', partial: 'rgb(var(--soon-rgb))', unchanged: 'rgb(var(--bad-rgb))', worse: 'rgb(var(--bad-rgb))', insufficient: 'var(--text-dim)',
 };
 /** Ký hiệu kết quả PA vẽ bằng SVG (◐ không có trong phông Be Vietnam Pro / Inter — vẽ chữ thì ra mảnh vụn). */
 export function KyHieuPa({ k, x, y, r = 5 }: { k: string; x: number; y: number; r?: number }) {
-  const mau = KQ_PA[k]?.[1] ?? 'var(--text-dim)';
+  const mau = MAU_PA[k] ?? 'var(--text-dim)';
   if (k === 'improved') return <circle cx={x} cy={y} r={r} fill={mau} />;
   if (k === 'partial') return <g><circle cx={x} cy={y} r={r - 0.75} fill="none" stroke={mau} strokeWidth="1.5" /><path d={`M${x} ${y - r + 0.75} A${r - 0.75} ${r - 0.75} 0 0 0 ${x} ${y + r - 0.75} Z`} fill={mau} /></g>;
   if (k === 'unchanged') return <circle cx={x} cy={y} r={r - 0.75} fill="none" stroke={mau} strokeWidth="1.5" />;
@@ -303,7 +302,7 @@ export function BieuDoD(o: BieuDoDProps) {
             {b - a > 60 && <text x={a + 8} y={pyy + 4} fontSize="12" fill="var(--text-dim)" fontFamily={PHONG}>{t('kỳ tới')}</text>}
           </g>);
         }
-        ve.push(thanh(`p${p.id}`, Xl(p.tu) + 2, Xl(p.den ?? nay) + cw - 2, pyy, 'var(--accent-soft)', 'var(--accent)', p.ten, 'var(--accent)', p.goi, false, p.kq && KQ_PA[p.kq] ? p.kq : null));
+        ve.push(thanh(`p${p.id}`, Xl(p.tu) + 2, Xl(p.den ?? nay) + cw - 2, pyy, 'var(--accent-soft)', 'var(--accent)', p.ten, 'var(--accent)', p.goi, false, p.kq && MAU_PA[p.kq] ? p.kq : null));
       });
     });
   });
