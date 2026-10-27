@@ -356,8 +356,9 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   })();
   /* M6 6b-2 (Q7): mở từ danh sách "Case chưa chốt PA" — Case vừa xử lý → nút chính "Case tiếp ›" (Case kế bạn làm được, chưa xử lý); hết → một câu. */
   const tiep = chuoi?.caseTiep?.xong ? chuoi.caseTiep : null;
+  /* Case còn việc của chính nó (nút chính) → giữ nút đó, "Case tiếp ›" thành nút phụ; hết việc → "Case tiếp ›" là nút chính. */
   const nutTiep = tiep?.di
-    ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tiep.di}>{t('Case tiếp ›')}</button>
+    ? <button type="button" className={`btn ${nutChinh ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={tiep.di}>{t('Case tiếp ›')}</button>
     : tiep ? <span className="text-[13px] text-slate-400">{t('Hết Case chờ trong danh sách')}</span> : null;
   /* Điều kiện hoàn thành (PA quy chế chưa khép) một dòng có ổ khoá: "Hoàn thành được sau khi PA theo quy chế kết thúc · **mốc**". */
   const dk = canDong && ht?.an && ht.dong ? /^(.*?) \((.*)\)$/.exec(ht.dong) : null;
@@ -367,10 +368,13 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
       dau={dauViec({ em, lop, han: canDong && v?.han && v.loaiHan ? <ChipHan loai={v.loaiHan as DeadlineKind} han={v.han} /> : null })}
       chan={{
         huy: { nhan: t('Đóng'), onClick: onClose },
-        phu: themPaDuoc && v?.loaiHan !== 'lap-pa'   // CV-LOI (A1-15): đã là nút chính thì không lặp
-          ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
-          : undefined,
-        chinh: nutTiep ?? nutChinh,
+        phu: <>
+          {themPaDuoc && v?.loaiHan !== 'lap-pa'   // CV-LOI (A1-15): đã là nút chính thì không lặp
+            ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
+            : null}
+          {nutChinh ? nutTiep : null}
+        </>,
+        chinh: nutChinh ?? nutTiep,
         conThieu: lf.daBam && chanHoanThanh.length > 0 ? [{ nhan: t('Hoàn thành Case'), lyDo: dich(chanHoanThanh[0]) }] : undefined,
       }}>
       <div ref={boxRef}>

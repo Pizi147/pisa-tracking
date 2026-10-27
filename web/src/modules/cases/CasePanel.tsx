@@ -242,7 +242,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, vuaDoi = null
             {nhomPa(t('Chờ duyệt · xác nhận'), paCho)}
             {nhomPa(t('Đang theo dõi'), paChay)}
             {paKhep.length > 0 && (
-              <details open={paMo.length === 0}>
+              <details open={paMo.length === 0 || paKhep.some((x) => x.id === vuaDoi?.paId)}>
                 <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] font-semibold text-slate-300 sm:min-h-0">
                   {t('Đã kết thúc')} <span className={`${CHIP_VUONG} text-slate-300`} style={{ borderColor: 'var(--line-strong)' }}>{paKhep.length}</span>
                 </summary>
@@ -310,7 +310,7 @@ export function DauMuc({ tieuDe, dem, phu, luat, dau = false, children }: {
   tieuDe: string; dem?: number; phu?: ReactNode; luat?: ReactNode; /** Mục đầu khối: không đường kẻ trên (nơi gọi đã có vạch / viền). */ dau?: boolean; children: ReactNode;
 }) {
   return (
-    <section className={dau ? 'mt-4' : 'mt-[22px] border-t pt-3'} style={{ borderColor: 'var(--line)' }}>
+    <section className={dau ? 'mt-4 first:mt-0' : 'mt-[22px] border-t pt-3'} style={{ borderColor: 'var(--line)' }}>
       <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <TieuDeMuc tieuDe={tieuDe} dem={dem} />
         {phu}
