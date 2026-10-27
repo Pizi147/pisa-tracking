@@ -490,7 +490,9 @@ function dongThongTin(i: {
     ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(dangDung.boiId) as any)?.full_name ?? null
     : null;
   const tamDung = dangDung ? { tu: dangDung.tu, lyDo: dangDung.lyDo, boi } : null;
-  if (!current) return { lop: null, lopId: null, loTrinh: null, target: null, kck: false, tuanHoc: null, thiDuKien: null, thiIelts: null, gvcn: null, tamDung };
+  /* UI-CHART-D: mọi khoảng Tạm dừng (cả đã quay lại) — dải xám "Tạm dừng" trên chart D, không nối điểm qua khoảng dừng. */
+  const khoangDung = dung.map(({ tu, den }) => ({ tu, den }));
+  if (!current) return { lop: null, lopId: null, loTrinh: null, target: null, kck: false, tuanHoc: null, thiDuKien: null, thiIelts: null, gvcn: null, tamDung, khoangDung };
 
   let tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null = null;
   let thiDuKien: { nhan: string; gt: string } | null = null;
@@ -530,7 +532,7 @@ function dongThongTin(i: {
     loTrinh: khoa ? khoa.ma : dangChay?.route ?? null,
     /* OV-9: Target và dấu KCK tách — "6.5 · KCK", KCK chưa có Target "— · KCK". */
     target: (dangChay?.target_score as number | null | undefined) ?? null, kck: !!dangChay?.khong_cam_ket,
-    tuanHoc, thiDuKien, thiIelts, lopThuong: !!khoa, gvcn: i.gvcn, tamDung,
+    tuanHoc, thiDuKien, thiIelts, lopThuong: !!khoa, gvcn: i.gvcn, tamDung, khoangDung,
     /* P13 KET-PET: Target điểm Cambridge (không định dạng band) + kết quả thi thật (Overall · Grade · CEFR, tính khi hiện). */
     ...(ktDang ? { kyThi: { ten: ktDang.ten, min: ktDang.min, max: ktDang.max }, thiThat: ketQuaKyThi(ktDang, { ...dangChay, target_score: dangChay.thi_that_target ?? dangChay.target_score }) } : {}),
   };

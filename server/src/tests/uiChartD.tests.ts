@@ -69,6 +69,13 @@ export async function runUiChartDTests(t: YThucTestKit) {
     assert(a && typeof a.nguongDat === 'number' && a.nguongDat > 0 && a.nguongDat <= 1, `nguongDat = ${a?.nguongDat}`);
   }));
 
+  check('dauHoSo.thongTin.khoangDung = mọi khoảng Tạm dừng (cả đã quay lại) — dải xám chart D', () => thu(() => {
+    conn.prepare(`INSERT INTO journey_events (student_id, event_type, event_date, title, detail, created_at) VALUES (?, 'pause', '2026-05-04', 'Tạm dừng', 'thử', '2026-05-04'), (?, 'resume', '2026-06-01', 'Quay lại', NULL, '2026-06-01')`)
+      .run(dong.student_id, dong.student_id);
+    const k = profile.studentProfile(P.admin, dong.student_id, dong.cycle_id).dauHoSo.thongTin.khoangDung;
+    assert(Array.isArray(k) && k.some((x: any) => x.tu === '2026-05-04' && x.den === '2026-06-01'), `khoangDung = ${JSON.stringify(k)}`);
+  }));
+
   check('cycle.thiThat: đã thi, chưa có điểm → ngày, điểm null (chờ kết quả)', () => thu(() => {
     conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = '2026-10-17', thi_that_l = NULL, thi_that_r = NULL, thi_that_w = NULL, thi_that_s = NULL, thi_that_khong_thi = 0,
       outcome = NULL, outcome_score = NULL WHERE id = ?`).run(dong.cycle_id);
