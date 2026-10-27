@@ -71,7 +71,7 @@
   --o-nhap-nen: #ffffff;  --o-nhap-vien: #7f8aa6;  --nut-hover: #f0f2f8;
 }
 [data-theme="light"] .sau {
-  /* Sáng: nền, chữ, xanh logo (nhấn, thanh điều hướng) giữ nguyên; trạng thái / SOS / lịch độ rực × 0,65, chữ hồng × 0,85. */
+  /* Sáng: nền, chữ, xanh logo (nhấn, thanh điều hướng) giữ nguyên; trạng thái / SOS / lịch độ rực × 0,65 (đỏ lỗi, SOS 3 × 0,8 để vẫn đọc là "nguy"), chữ hồng × 0,85. */
   --bg: #f3f5f9;  --surface: #ffffff;  --surface-2: #f2f4f9;  --line: #d9deea;  --line-strong: #b0b8cd;
   --accent: #273c8f;  --accent-strong: #1f3077;  --accent-soft: #eef1fa;  --accent-line: #8c9cd6;  --accent-ink: #ffffff;
   --text: #141a2b;  --chu-2: #232a3f;  --text-dim: #4a536c;  --text-faint: #5f6984;
@@ -79,14 +79,14 @@
   --dieu-huong-nen: #273c8f;  --dieu-huong-chu: #dce2f4;  --dieu-huong-hover: #31479c;  --dieu-huong-vien: #5c70be;
   --lich-nen: #dee9f0;  --lich-chu: #2e4d64;  --lich-vien: #a8c2d2;
   --ok: #38674c;  --ok-bg: #e7f3ec;  --ok-line: #7cb293;
-  --bad: #9b4539;  --bad-bg: #f9eeec;  --bad-line: #d6a099;
+  --bad: #a6392c;  --bad-bg: #f9eeec;  --bad-line: #d6a099;
   --soon: #7e5f36;  --soon-bg: #fbf4e1;  --soon-line: #cbad6e;
   --doing: #3a50a6;  --doing-bg: #eef1fa;  --doing-line: #8c9cd6;
   --muted: #4a536c;  --muted-bg: #f2f4f9;  --muted-line: #d2d7e5;
   --sos1: #9b7e47;  --sos1-chu: #715c32;  --sos2: #c1764e;  --sos2-chu: #905538;  --sos2-nen: #f8ece1;
-  --sos3: #9b4539;  --sos3-chu: #863a30;  --sos3-nen: #7d372f;  --sos3-vien: #7d372f;  --sos3-tren: #ffffff;
+  --sos3: #a6392c;  --sos3-chu: #8f3125;  --sos3-nen: #862e27;  --sos3-vien: #862e27;  --sos3-tren: #ffffff;
   --da-thi-bg: #f0f5f8;
-  --kq-vuot: #38674c;  --kq-bang: #273c8f;  --kq-duoi: #9b4539;
+  --kq-vuot: #38674c;  --kq-bang: #273c8f;  --kq-duoi: #a6392c;
   --hang-lon-bg: #f2f4f9;  --hang-lon-vach: #8690ab;  --hang-con-bg: #fbfcfe;  --hang-con-chu: #353d54;
   --o-nhap-nen: #ffffff;  --o-nhap-vien: #7f8aa6;  --nut-hover: #f0f2f8;
 }
