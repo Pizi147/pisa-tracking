@@ -602,14 +602,14 @@ function traPa(conn: any, id: number, anh: Record<string, unknown>): void {
  * Kiểm chung của các đường Hoàn tác xác nhận — gọi TRONG giao dịch. Nhật ký MỚI NHẤT của đối tượng phải là chính lần xác nhận (`action`): có gì ghi sau
  * (Sửa PA, Sửa Case, đã hoàn tác…) → 409; chỉ người đã xác nhận → không thì 403; trong `HOAN_TAC_PA_MS` + 5 s (+ `themMs`) → không thì 409.
  */
-export function nhatKyXacNhan(p: Principal, entityType: string, id: number, action: string, buocTiep: string, themMs = 0): { nk: any; truoc: any; sau: any } {
+export function nhatKyXacNhan(p: Principal, entityType: string, id: number, action: string, buocTiep: 'Sửa PA nếu cần.' | 'Sửa Case nếu cần.', themMs = 0): { nk: any; truoc: any; sau: any } {
   const nk = db().prepare('SELECT * FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id DESC LIMIT 1').get(entityType, id) as any;
-  if (nk?.action !== action) throw conflict(`Không còn hoàn tác được — đã có thay đổi sau lần xác nhận. ${buocTiep}`);
-  if (nk.actor_user_id !== p.userId) throw forbidden(`Chỉ người vừa xác nhận hoàn tác được. ${buocTiep}`);
-  if (!duocHoanTacPa(nk.created_at, Date.now(), themMs)) throw conflict(`Đã quá thời gian hoàn tác. ${buocTiep}`);
+  if (nk?.action !== action) throw loi(409, 'Không còn hoàn tác được — đã có thay đổi sau lần xác nhận. {buoc}', { buoc: buocTiep });
+  if (nk.actor_user_id !== p.userId) throw loi(403, 'Chỉ người vừa xác nhận hoàn tác được. {buoc}', { buoc: buocTiep });
+  if (!duocHoanTacPa(nk.created_at, Date.now(), themMs)) throw loi(409, 'Đã quá thời gian hoàn tác. {buoc}', { buoc: buocTiep });
   let truoc: any = null, sau: any = null;
   try { truoc = JSON.parse(nk.before_json ?? 'null'); sau = JSON.parse(nk.after_json ?? 'null'); } catch { /* nhật ký hỏng — chặn dưới */ }
-  if (!truoc?.hoanTac) throw conflict(`Lần xác nhận này ghi trước khi có Hoàn tác. ${buocTiep}`);
+  if (!truoc?.hoanTac) throw loi(409, 'Lần xác nhận này ghi trước khi có Hoàn tác. {buoc}', { buoc: buocTiep });
   return { nk, truoc, sau };
 }
 /**
