@@ -154,7 +154,7 @@ export type WorkItem = {
  * chắn nhất để nó không bao giờ được làm.
  */
 export type WorkGroupKey =
-  /* OV-12c: `cause` = "Xác nhận Case" Progress lớp thường; `ghi_nhan_xet` = Case MT cũ mà ô chưa có nhận xét (nguyên nhân Case MT = nhận xét). */
+  /* OV-12c: `cause` = "Xác nhận Case" Progress lớp thường; `ghi_nhan_xet` = "Mô tả Case": Case MT chưa có mô tả (MO-TA-CASE, N8 — khoá giữ tên cũ). */
   | 'cause' | 'ghi_nhan_xet' | 'xac_nhan_pa' | 'phoi_hop' | 'mini_test' | 'score' | 'no_plan' | 'ghi_ket_qua_pa'
   | 'no_owner' | 'missing_data' | 'mgmt'
   /* PR-VAI-a: Phối hợp SOS là việc thật (K5-10); khai bậc Ý thức HS cũ (K1-15); kỳ vọng đầu ra (K5-11). */
@@ -197,10 +197,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Progress Test đã tự tạo Case cho môn này. Chọn nhóm nguyên nhân, ghi mô tả ngắn, xem PA Bổ trợ rồi Xác nhận Case — '
       + 'hoặc Không cần theo dõi (gửi Quản lý duyệt). Hạn 5 ngày, tính cả ngày Case ra đời.',
   },
-  /* OV-12c: Case MT cũ (trước luật nhận xét bắt buộc) mà ô chưa có nhận xét — ghi nhận xét + nhóm ở hộp chấm, Case tự sang Xác nhận PA. */
+  /* MO-TA-CASE (N8, chủ SP 27/10): nhận xét bài không bắt buộc — Case MT chưa có mô tả thì GV phụ trách kỹ năng ghi Mô tả + nhóm ở Case, Case sang Xác nhận PA. */
   ghi_nhan_xet: {
-    label: 'Ghi nhận xét',
-    hint: 'Nguyên nhân Case Mock Test là nhận xét của bài. Ghi nhận xét và nhóm nguyên nhân — lưu xong Case sang Xác nhận PA.',
+    label: 'Mô tả Case',
+    hint: 'Bài không có nhận xét nên Case chưa có mô tả. Ghi mô tả và nhóm nguyên nhân — lưu xong Case sang Xác nhận PA.',
   },
   /* PR-SOS (§3.1d) → OV-12c: Case MT có nguyên nhân từ nhận xét — PA theo quy chế chờ xác nhận, chưa chạy tới khi bấm Xác nhận PA. */
   xac_nhan_pa: {
@@ -882,9 +882,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------- 3b. Case TỰ TẠO TỪ SOS: Xác nhận Case (Progress) · Ghi nhận xét (MT cũ) · Xác nhận PA (S4-2, §3.1d, OV-12c)
+  // ------------------------------------- 3b. Case TỰ TẠO TỪ SOS: Xác nhận Case (Progress) · Mô tả Case (MT) · Xác nhận PA (S4-2, §3.1d, OV-12c)
   /*
-   * MỘT DÒNG MỖI CASE (Xác nhận Case / Ghi nhận xét) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (`hanXacNhan`: 5 ngày; MT Gấp / SOS 3: 3;
+   * MỘT DÒNG MỖI CASE (Xác nhận Case / Mô tả Case) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (`hanXacNhan`: 5 ngày; MT Gấp / SOS 3: 3;
    * Progress cố định 5), hết ngày hạn mới tính quá hạn. Case chờ = `sosCaseStateMany` (đã loại thẻ Không cần theo dõi đang chờ). Case MT mới
    * có nguyên nhân từ nhận xét ngay khi ra đời → chỉ còn Xác nhận PA.
    *
@@ -911,7 +911,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`,
     )
     .all() as any[];
-  /* OV-12c: MỘT định nghĩa (`sosCaseStateMany`) — Progress chờ "Xác nhận Case", MT cũ chờ "Ghi nhận xét"; thẻ Không cần theo dõi đang chờ thì không. */
+  /* OV-12c: MỘT định nghĩa (`sosCaseStateMany`) — Progress chờ "Xác nhận Case", MT chờ "Mô tả Case"; thẻ Không cần theo dõi đang chờ thì không. */
   const stCho = sosCaseStateMany(causeCandidates.map((c) => c.id as number));
   const xacNhanPa = !co('xac_nhan_pa') ? [] : conn
     .prepare(
@@ -953,8 +953,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const chu = {
       cause: { key: `cause:${c.id}`, ly: `${skillLabel} ${laThuong ? 'chưa đạt' : 'dưới kỳ vọng'}${kck} — chưa xác nhận Case${kck ? ', không hạn' : ''}`,
         tieuDe: `Xác nhận Case ${skillLabel}${kck} · ${hv}`, nut: 'Xác nhận Case', tt: 'Chờ xác nhận Case' },
-      ghi_nhan_xet: { key: `ghi_nhan_xet:${c.id}`, ly: `${skillLabel} dưới kỳ vọng${kck} — bài chưa có nhận xét (nguyên nhân Case)`,
-        tieuDe: `Ghi nhận xét ${skillLabel}${kck} · ${mt} · ${hv}`, nut: 'Ghi nhận xét', tt: 'Chờ ghi nhận xét' },
+      ghi_nhan_xet: { key: `ghi_nhan_xet:${c.id}`, ly: `${skillLabel} dưới kỳ vọng${kck} — Case chưa có mô tả`,
+        tieuDe: `Mô tả Case ${skillLabel}${kck} · ${mt} · ${hv}`, nut: 'Mô tả Case', tt: 'Chờ mô tả Case' },
       xac_nhan_pa: { key: `xnpa:${c.iv_id}`, ly: `${skillLabel} — PA theo quy chế chưa bắt đầu`,
         tieuDe: `Xác nhận PA · ${skillLabel} · ${hv}`, nut: 'Xác nhận PA', tt: 'Chờ xác nhận PA' },
     }[loai];
@@ -977,7 +977,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       /* OV-13c (Q4): dòng gộp theo tuần thi + mức SOS; Xác nhận PA cùng lúc cần loại PA, nội dung máy gán, người dạy đã có. */
       tuanThi: c.tuan_thi ?? null, sos: c.sos_level ?? null,
       ...(loai === 'xac_nhan_pa' ? { pa: { kind: c.iv_kind, moTa: c.iv_mo_ta ?? null, nguoiId: c.iv_nguoi_id ?? null, nguoi: c.iv_nguoi ?? null, soBuoi: c.iv_so_buoi ?? null } } : {}),
-      /* OV-12c: Ghi nhận xét mở hộp chấm tại chỗ — bảng điểm một lớp · một lượt · đúng bài của Case (cùng panel Nhập điểm). */
+      /* OV-12c: lượt + kỹ năng của bài Case (Công việc mở Ngăn Case "Mô tả Case"; nơi khác dùng để tới đúng bài). */
       ...(loai === 'ghi_nhan_xet' ? { luot: `mt:${c.attempt_no}`, kn: c.topic ?? undefined } : {}),
     });
   };
@@ -1033,7 +1033,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         caseSos: true,
       });
     }
-    /* Một Case một việc: Case S chưa có mô tả mà đang chờ xác nhận nhận xét chấm chéo — bỏ dòng "Ghi nhận xét" trùng. */
+    /* Một Case một việc: Case S chưa có mô tả mà đang chờ xác nhận nhận xét chấm chéo — bỏ dòng "Mô tả Case" trùng. */
     for (let i = items.length - 1; i >= 0; i -= 1) if (items[i].group === 'ghi_nhan_xet' && caseXnS.has(items[i].caseId as number)) items.splice(i, 1);
   }
 

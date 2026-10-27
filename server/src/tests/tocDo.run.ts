@@ -1078,9 +1078,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        "Nhập điểm Checkpoint · MB PET 01" (L + S / R + W → L, S / R, W; 3 → 6 bài, `kn` / đường theo môn tách) và tổng bài nhóm W3 SEP (+3). Trước (main P9a):
        GVCN toi a298f2a5bc0f779f, GVBM toi d2ae222a70a8ab15, GVCN_THUONG toi a298f2a5bc0f779f, QL tat-ca 0674f0c5032b5a23, QT tat-ca 50944d5f2d8af799,
        QT tat-ca cn de4df8179b21e493, QL gvcn cab96ce5168b2724 */
-    'QL toi': 'e1049bc984a18aca', 'QT toi': '7de7b28ab5fe8b93', 'GVCN toi': '3ec58e6c5f038a5b', 'GVBM toi': '5da1466b01c6787d',
-    'GVCN_THUONG toi': '3ec58e6c5f038a5b', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '7833387f3be72dc5', 'QT tat-ca': '1c4725c92e5fe58c',
-    'QT tat-ca cn': '97e0e1570f6369be', 'QL gvcn': '8b8a066eaa52e514', 'GVS toi': '1f37a0df4f07d06d',
+    /* MO-TA-CASE (N8, chủ SP 27/10): chụp lại 8 băm (QL / QT toi, ADMIN giữ) — đổi CÓ CHỦ Ý chỉ chữ việc ghi_nhan_xet: "Ghi nhận xét" → "Mô tả Case",
+       "Chờ ghi nhận xét" → "Chờ mô tả Case", lý do "bài chưa có nhận xét (nguyên nhân Case)" → "Case chưa có mô tả", hint nhóm. Đã kiểm: thay ngược bốn chữ đó
+       trong JSON trước khi băm → cả 11 băm trùng ảnh cũ. Trước: GVCN toi 3ec58e6c5f038a5b, GVBM toi 5da1466b01c6787d, GVCN_THUONG toi 3ec58e6c5f038a5b,
+       QL tat-ca 7833387f3be72dc5, QT tat-ca 1c4725c92e5fe58c, QT tat-ca cn 97e0e1570f6369be, QL gvcn 8b8a066eaa52e514, GVS toi 1f37a0df4f07d06d */
+    'QL toi': 'e1049bc984a18aca', 'QT toi': '7de7b28ab5fe8b93', 'GVCN toi': '82fc3ddf32d43f10', 'GVBM toi': 'e852965c7d7de6a4',
+    'GVCN_THUONG toi': '82fc3ddf32d43f10', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '22c0808af745c50f', 'QT tat-ca': 'b54f972219247783',
+    'QT tat-ca cn': 'fdc0016b89453d9d', 'QL gvcn': '87927080df295343', 'GVS toi': '858db2ced1555af8',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

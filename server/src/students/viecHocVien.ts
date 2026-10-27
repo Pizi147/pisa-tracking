@@ -88,10 +88,10 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   for (const { r, c } of cases) {
     const kn: string = r.label;
     const v = c.viecTiep as { chu: string; han: string | null } | null;
-    /* OV-12c: Progress "Xác nhận Case" (một bước); Case MT cũ ô chưa nhận xét → "Ghi nhận xét" (nguyên nhân Case MT = nhận xét). */
-    if (v?.chu === 'Xác nhận Case' || v?.chu === 'Ghi nhận xét') {
+    /* OV-12c: Progress "Xác nhận Case" (một bước); Case MT chưa mô tả → "Mô tả Case" (MO-TA-CASE, N8). */
+    if (v?.chu === 'Xác nhận Case' || v?.chu === 'Mô tả Case') {
       const xn = v.chu === 'Xác nhận Case';
-      ds.push({ key: `${xn ? 'cause' : 'ghi_nhan_xet'}:${c.id}`, loai: 'nguyen-nhan', ...(xn ? kem('Xác nhận Case {kn}', { kn }) : kem('Ghi nhận xét {kn}', { kn })), kyNang: r.category, caseId: c.id, paId: null,
+      ds.push({ key: `${xn ? 'cause' : 'ghi_nhan_xet'}:${c.id}`, loai: 'nguyen-nhan', ...(xn ? kem('Xác nhận Case {kn}', { kn }) : kem('Mô tả Case {kn}', { kn })), kyNang: r.category, caseId: c.id, paId: null,
         han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: v.chu, mo: { loai: 'case', caseId: c.id, viec: 'xac-nhan' } });   // Ngăn Case mở đúng khối theo trạng thái
     }
     /* PR-S6F-b (Q5): Case chưa có PA → "Thêm PA" của người phụ trách Case; khoá `support:{caseId}` như Công việc (nhóm no_plan), hạn = hạn lập PA. */

@@ -180,7 +180,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const choNn = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNguyenNhan: true }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
     assert(choNn?.tone === 'warn' && choNn.chu === 'Cần làm · chờ xác nhận Case', `Chờ nguyên nhân: ${JSON.stringify(choNn)}`);
     const choNx = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNhanXet: true }], coTungCase: true, diemCuoiChuaDat: true, xongGanNhat: null }, homNay);
-    assert(choNx?.tone === 'warn' && choNx.chu === 'Cần làm · chờ ghi nhận xét', `Chờ ghi nhận xét: ${JSON.stringify(choNx)}`);
+    assert(choNx?.tone === 'warn' && choNx.chu === 'Cần làm · chờ mô tả Case', `Chờ ghi nhận xét: ${JSON.stringify(choNx)}`);
     const choDuyet = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choDuyet: true }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
     assert(choDuyet?.chu === 'Chờ duyệt', `Chờ duyệt: ${JSON.stringify(choDuyet)}`);
     const chuaCoPa = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 0 }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);

@@ -81,7 +81,7 @@ export type SosCaseState = {
   hasCause: boolean;
   /** OV-12c: Case theo lượt Mock Test (`LA_CASE_MT`). */
   laMt: boolean;
-  /** OV-12c: Case MT cũ (trước luật nhận xét bắt buộc) mà ô chưa có nhận xét — việc "Ghi nhận xét", không Báo QL, không chỉ số "chờ nguyên nhân". */
+  /** OV-12c → MO-TA-CASE (N8): Case MT chưa có mô tả (ô không nhận xét — không bắt buộc) — việc "Mô tả Case", không Báo QL, không chỉ số "chờ nguyên nhân". */
   choNhanXet: boolean;
   /**
    * `Chờ xác nhận Case` (S04, S4-2): Case từ SOS đang mở mà chưa có nguyên nhân — OV-12c: CHỈ Case không phải MT (Progress Test lớp thường,
@@ -176,7 +176,7 @@ export function awaitingCauseCaseIds(caseIds: number[]): number[] {
  * OV-12d: nhóm Xử lý (Chờ duyệt · Đang xử lý · xong / huỷ) — MỘT luật cho cột Tổng hợp và ô Tổng quan "Case chờ duyệt" / "quá hạn". `XU_LY_COT_SQL` là
  * các cột cần (bí danh `sc` = `sos_cases`) để nơi đã có câu SELECT riêng (Tổng hợp) ghép vào câu của mình, không thêm câu; `xuLyCuaDong` tính từ một dòng.
  * Trạng thái theo `trangThaiCaseV4` (cùng đầu vào `sosCaseStateMany`) + PA đang theo dõi (`cotXuLy`). `quaHan` (chỉ khi Chờ duyệt) = việc tiếp có hạn đã
- * qua: hạn Xác nhận Case / Ghi nhận xét / Xác nhận PA (`han_xac_nhan`), hoặc hạn Thêm PA (`hanThemPa`) khi Case chưa có PA nào.
+ * qua: hạn Xác nhận Case / Mô tả Case / Xác nhận PA (`han_xac_nhan`), hoặc hạn Thêm PA (`hanThemPa`) khi Case chưa có PA nào.
  */
 export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reason_code, sc.system_close_reason, sc.detected_at, sc.created_at, sc.urgency, sc.sos_level, sc.kck, sc.tam,
   ${LA_CASE_SOS('sc')} AS from_sos, ${LA_CASE_MT('sc')} AS la_mt,
