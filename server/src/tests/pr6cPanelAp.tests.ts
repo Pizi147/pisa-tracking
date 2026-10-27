@@ -94,6 +94,14 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     assert(!/contextLabel[^\n]*\.replace\(/.test(g) && /luotChu: chuLuot\(it\.luot\)/.test(g) && /luotChu: nhanMaLuot\(m\)/.test(g), 'luotChu chưa theo mã lượt ở cả hai vai');
   });
 
+  check('6c ⑥ (#644 XM-4): view Case mở từ việc không lặp ô ghi nhanh / Xác nhận PA / Kết quả của chính PA đó', () => {
+    assert(/viecBanDau=\{\{ loai: 'case' \}\} paViec=\{p\.it\.paId \?\? null\}/.test(doc(W + 'congViec/PanelViec.tsx')), 'PanelViec chưa truyền paViec');
+    const nc = doc(W + 'students/NganCase.tsx');
+    assert(/paViec=\{paViec\}/.test(nc) && /if \(paViec !== null && v\?\.paId === paViec\) return undefined;/.test(nc), 'NganCase chưa chặn nút chính / thẻ PA');
+    const cp = doc(W + 'cases/CasePanel.tsx');
+    assert(/anViec=\{iv\.id === paViec\}/.test(cp) && /nutXacNhan = !anXacNhan && !anViec/.test(cp) && /nutKetQua = !anViec/.test(cp) && /ghiDuoc = !anViec/.test(cp), 'thẻ PA còn lặp thao tác');
+  });
+
   const { conn } = t as any;
   if (!conn) return;   // chạy riêng phép kiểm đọc nguồn (không DB)
   const { gvTre } = await import('../worklist/gvTre.ts');

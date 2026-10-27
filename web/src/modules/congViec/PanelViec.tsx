@@ -128,7 +128,7 @@ export function PanelViec(p: PropsViec) {
       </HienLaiPanel.Provider>
       {dangXemCase && (
         <div ref={lopCase}>
-          <NganCase caseId={caseId} viecBanDau={{ loai: 'case' }} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
+          <NganCase caseId={caseId} viecBanDau={{ loai: 'case' }} paViec={p.it.paId ?? null} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
             veNguon={{ nhan: tenBoEm(p.it), onClick: xem.lui }} />
         </div>
       )}

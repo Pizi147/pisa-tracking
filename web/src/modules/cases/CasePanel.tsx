@@ -162,7 +162,9 @@ export type VuaDoiPa = { paId: number; chu: string; hoanTac?: () => Promise<void
  * Mô tả) → Phương án (Chờ duyệt · xác nhận / Đang theo dõi; Đã kết thúc gập; việc của PA nằm ngay trong thẻ PA; dòng PA mang `data-pa-id` cho Hành trình
  * cuộn tới) → Kết luận → Lịch sử (gập) → Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của nơi gọi.
  */
-export function ThanCase({ data, onViec, onDoi, paNutChinh = null, vuaDoi = null, onHoanTac }: {
+export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac }: {
+  /** 6c (#644 XM-4): PA mà việc đang mở (view dưới, panel việc) đã làm — thẻ PA đó không lặp thao tác của việc. */
+  paViec?: number | null;
   data: CaseDetail; onViec: (v: ViewCase) => void; /** OV-13b: đã lưu tại chỗ (ghi nhanh, chọn người dạy, rút) — nơi gọi tải lại. */ onDoi?: () => void;
   /** OV-14b: PA mà nút chính ở chân panel đã là "Xác nhận PA" — thẻ PA đó không lặp nút. */
   paNutChinh?: number | null;
@@ -188,7 +190,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, vuaDoi = null
   /* OV-11d (HV-20): Case giữ sau "Overall đã đạt" (OV-1c) — nói ngay đầu Case, không chỉ trong Lịch sử thu gọn. */
   const overallDat = data.status !== 'done' ? [...(data.milestones ?? [])].reverse().find((m) => m.kind === 'overall_dat') : null;
   const diem = ketQuaGanNhat(data);
-  const pa = (iv: any) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh}
+  const pa = (iv: any) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh} anViec={iv.id === paViec}
     vua={vuaDoi?.paId === iv.id ? vuaDoi : null} onHoanTac={onHoanTac} />;
   const nhomPa = (ten: string, ds: any[]) => ds.length > 0 && (
     <>
@@ -348,9 +350,11 @@ export function DauMuc({ tieuDe, dem, phu, luat, dau = false, children }: {
  * MỘT DÒNG PA (mockup §8, một mẫu cho mọi loại): tên loại + khoá quy chế + trạng thái · ⋯ (Sửa PA · Xoá PA) · nội dung ·
  * "Dạy X / Thực hiện X · Từ W1 OCT · mốc" · vạch buổi (PA có Số buổi) · chân gạch đứt "Kết quả · hạn T2 13/10" + nút · Nhật ký PA (n).
  */
-function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXacNhan = false, vua = null, onHoanTac }: {
+function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXacNhan = false, anViec = false, vua = null, onHoanTac }: {
   iv: any; data: CaseDetail; homNay: string; ngan: (d: string | null | undefined) => string; onViec: (v: ViewCase) => void;
   onDoi?: () => void; anXacNhan?: boolean;
+  /** 6c (#644 XM-4): việc của PA này đang mở ở view dưới — không vẽ Xác nhận PA / Kết quả / ghi nhanh. */
+  anViec?: boolean;
   /** M6 6b-2 (Q1): PA vừa đổi — viền nhấn + "✓ … · Hoàn tác". */
   vua?: VuaDoiPa | null; onHoanTac?: () => void;
   /** OV-13b: phần chi tiết dưới dòng PA gọn — không đầu dòng, không chân việc. */
@@ -360,7 +364,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
   const choDuyet = iv.approvalState === 'pending';
   /* OV-13b (mockup OV-13 §2): PA ĐANG CHẠY = một dòng gọn; chờ xác nhận / chờ duyệt / đã khép giữ thẻ đầy đủ. */
   if (!anDau && iv.status === 'started' && !choDuyet && !iv.awaitingConfirmation && !iv.chuaChay) {
-    return <DongPaGon iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} vua={vua} onHoanTac={onHoanTac} />;
+    return <DongPaGon iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anViec={anViec} vua={vua} onHoanTac={onHoanTac} />;
   }
   /* PR-LT2a → PR-CT2: PA Bổ trợ chưa chạy = chờ Xác nhận Case (không có "Xác nhận PA", không có "Kết quả"). */
   const bt = data.boTro ?? null;
@@ -383,8 +387,8 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
   /* Chân dòng PA: mỗi phần một cờ, tính một lần; không phần nào thì không vẽ chân. */
   const hienHan = !!hanGhi && !choDuyet;
   const hienChoQl = choDuyet && !(data.viewer.canApprove && iv.yeuCau);
-  const nutXacNhan = !anXacNhan && !!(data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause);
-  const nutKetQua = nut.ketQua && !iv.awaitingConfirmation && !chuaChay;
+  const nutXacNhan = !anXacNhan && !anViec && !!(data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause);
+  const nutKetQua = !anViec && nut.ketQua && !iv.awaitingConfirmation && !chuaChay;
   const coChan = hienHan || hienChoQl || nutXacNhan || nutKetQua;
   /* Nhật ký PA (mockup §8): Tạo · Kết quả từng tuần · Sửa PA / Điều chỉnh — luôn có ít nhất dòng Tạo. */
   const ketQuaPa = data.followups ?? [];
@@ -491,8 +495,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
  * người dạy: "Chưa chọn người dạy · Chọn" (chọn tại dòng, lưu ngay). Tới kỳ: ghi nhanh ngay dưới (PA không đếm buổi) / nút Ghi kết quả (Tutor, kết quả
  * cuối → panel); chưa tới kỳ: "Cập nhật trước hạn" (nút thường). Nội dung, người, vạch buổi, Sửa kết quả, Nhật ký PA gập ở "Chi tiết".
  */
-function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, vua = null, onHoanTac }: {
+function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua = null, onHoanTac }: {
   iv: any; data: CaseDetail; homNay: string; ngan: (d: string | null | undefined) => string; onViec: (v: ViewCase) => void; onDoi?: () => void;
+  anViec?: boolean;
   vua?: VuaDoiPa | null; onHoanTac?: () => void;
 }) {
   const [moNhanh, setMoNhanh] = useState(false);
@@ -503,7 +508,7 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, vua = null, onHoanTa
   const fGan = (data.followups ?? []).find((f: any) => f.interventionId === iv.id && f.outcome) ?? null;
   const hanGhi = iv.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
   const toiKy = toiKyGhi(iv.actionDue, homNay);
-  const ghiDuoc = nut.ketQua && iv.ghiDuoc !== false;
+  const ghiDuoc = !anViec && nut.ketQua && iv.ghiDuoc !== false;
   const nhanh = ghiNhanhDuoc(iv);
   const thieuNguoi = coNguoiDay(iv.kind) && !iv.performer;
   const datNguoi = async (x: NguoiChon | null) => {
