@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { Bang, type CotBang } from '../../ui/Bang.tsx';
+import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
+import { HangNhom, MuiTenMo } from '../../ui/HangNhom.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -53,45 +54,57 @@ function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?:
   return <>{muc.length > 0 && <MenuDong muc={muc} nhan={t('Thao tác khác')} />}{createPortal(tt.panels, document.body)}</>;
 }
 
-function TenEm({ h, lop, ev, ds }: { h: HvGon; lop?: LopGon; ev?: EmVai; ds: NguCanhDs }) {
+function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
   return (
     <span className="block min-w-0">
       <Link className="link block truncate font-semibold" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}>{h.ten}</Link>
+      {/* HV-LOP-SUA: mã lớp đã ở hàng lớp — dòng phụ không lặp. */}
       <span className="block truncate text-xs font-normal text-slate-400">
-        {lop ? <Link className="text-slate-400 hover:text-slate-200" to={`/hoc-vien/lop/${lop.id}`}>{lop.code}</Link> : null}
-        {' · '}{h.tvv ? `TVV ${h.tvv}` : t('chưa có TVV')}{h.ketThuc ? ` · ${t('Kết thúc học')}` : ''}{ev?.status === 'inactive' ? ` · ${t('Tạm dừng')}` : ''}
+        {h.tvv ? `TVV ${h.tvv}` : t('chưa có TVV')}{h.ketThuc ? ` · ${t('Kết thúc học')}` : ''}{ev?.status === 'inactive' ? ` · ${t('Tạm dừng')}` : ''}
       </span>
     </span>
   );
 }
 
-/**
- * Ô Việc: việc gấp nhất (bấm = làm tại chỗ như Công việc) · hạn dd/mm (⚠ đỏ khi quá hạn) · "+n việc".
- * P11 VIEC-DUNG-VAI: GV / TVV một dòng (việc của mình). QL / Admin (`gopMon`): mỗi môn một dòng (việc gấp nhất của môn + "+n"), một dòng cho việc không
- * gắn môn; 3 dòng gấp nhất, "Xem thêm (n)" mở hết tại chỗ — Σ dòng + "+n" = số việc thật.
- */
-function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void; gopMon?: boolean }) {
+/** Hạn của một việc: quá hạn / hôm nay = chip có ⚠ (không chỉ màu), còn lại chữ phụ `dd/mm`. */
+function HanViec({ x }: { x: ViecEm }) {
   const { homNay } = useNgayNghiepVu();
+  if (!x.han) return null;
+  const gap = x.quaHan || x.it.urgency === 'today';
+  return (
+    <span className={`inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap text-xs tabular-nums px-2 ${gap ? `rounded-full font-semibold ${x.quaHan ? 'bg-late-bg text-late' : 'bg-soon-bg text-soon'}` : 'text-dim'}`}
+>
+      {gap && <span aria-hidden>⚠</span>}{x.quaHan && <span className="sr-only">{t('Quá hạn')} </span>}{shortDate(x.han, homNay)}
+    </span>
+  );
+}
+
+/**
+ * Ô Việc (HV-LOP-SUA, chủ SP 27/10 "phân tầng rõ"): mỗi việc MỘT dòng — tên việc (bấm = làm tại chỗ như Công việc) · hạn là chip cùng dòng căn phải;
+ * 2 dòng gấp nhất, "Xem thêm n" mở hết tại chỗ. QL / Admin (`gopMon`, P11): mỗi môn một dòng (việc gấp nhất của môn + "+n") — Σ dòng + "+n" = số việc thật.
+ * Việc cấp lớp nằm ở hàng lớp (nơi gọi lọc), không lặp ở từng em.
+ */
+export function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void; gopMon?: boolean }) {
   const [mo, setMo] = useState(false);
   if (!v?.length) return trong;
-  const dong = gopMon ? gopViecTheoMon(v, (x) => monCuaViec(x.it)) : [{ mon: null, dau: v[0], them: v.length - 1 }];
+  const dong = gopMon ? gopViecTheoMon(v, (x) => monCuaViec(x.it)) : v.map((x) => ({ mon: null, dau: x, them: 0 }));
   const hien = mo ? dong : dong.slice(0, SO_DONG_VIEC_MAC_DINH);
+  /* Ô Việc nằm trên dòng của em → bỏ " · {tên em}" cuối tên việc (không lặp). */
+  const chuCua = (x: ViecEm) => { const c = dich(x.chu); const duoi = ` · ${x.it.studentName}`; return x.it.studentName && c.endsWith(duoi) ? c.slice(0, -duoi.length) : c; };
   return (
-    <span className="block min-w-0 space-y-1 text-xs max-sm:space-y-0">
+    <span className="block min-w-0 space-y-1 max-sm:space-y-0">
       {hien.map(({ dau: x, them }) => (
-        <span key={x.it.key} className="block min-w-0 max-sm:flex max-sm:items-center max-sm:gap-2">
-          <button type="button" className="link block max-w-full min-w-0 truncate appearance-none border-0 bg-transparent p-0 text-left text-xs max-sm:min-h-[44px] max-sm:flex-1 max-sm:leading-[44px]"
-            title={dich(x.chu)} onClick={() => onMo(x.it)}>{dich(x.chu)}</button>
-          <span className="block tabular-nums max-sm:shrink-0">
-            {x.han && <span className={x.quaHan ? 'font-semibold text-bad' : 'text-slate-400'}>{x.quaHan ? '⚠ ' : ''}{shortDate(x.han, homNay)}</span>}
-            {them > 0 && <span className="text-slate-500">{x.han ? ' · ' : ''}{t('+{n} việc', { n: them })}</span>}
-          </span>
+        <span key={x.it.key} className="flex min-w-0 items-center gap-2">
+          <button type="button" className="link min-w-0 flex-1 truncate appearance-none border-0 bg-transparent p-0 text-left text-[13px] font-medium no-underline hover:underline max-sm:min-h-[44px]"
+            title={dich(x.chu)} onClick={() => onMo(x.it)}>{chuCua(x)}</button>
+          {them > 0 && <span className="shrink-0 text-xs text-dim">{t('+{n} việc', { n: them })}</span>}
+          <HanViec x={x} />
         </span>
       ))}
       {dong.length > SO_DONG_VIEC_MAC_DINH && (
         <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
           className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-semibold text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
-          {mo ? t('Thu gọn') : t('Xem thêm ({n})', { n: dong.length - SO_DONG_VIEC_MAC_DINH })}
+          {mo ? t('Thu gọn') : t('Xem thêm {n}', { n: dong.length - SO_DONG_VIEC_MAC_DINH })}
         </button>
       )}
     </span>
@@ -99,7 +112,7 @@ function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it: WorkIt
 }
 
 function OHoTro({ h }: { h: HangHv['hoTro'] }) {
-  if (!h.sos && !h.soCase) return <span className="text-slate-400">{t('Không có Case')}</span>;
+  if (!h.sos && !h.soCase) return <span className="text-faint" title={t('Không có Case')}>—</span>;   // HV-LOP-SUA: bớt chữ lặp mỗi dòng
   return (
     <span className="block">
       {h.sos ? <ChipSos muc={h.sos} kyNang={h.kyNang.map((k) => skillShort(k))} /> : null}
@@ -129,17 +142,15 @@ const COT_HV: CotBang[] = [
   { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 210 },
   { key: 'lo', nhan: t('Lộ trình'), kieu: 'chu', rong: 104 },
   { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 224 },
-  { key: 'xu', nhan: t('Xu hướng'), kieu: 'chu', rong: 84 },
   { key: 'ho', nhan: t('Hỗ trợ'), kieu: 'chu', rong: 140 },
   { key: 'y', nhan: t('Ý thức'), kieu: 'chu', rong: 112 },
   { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 180 },
   { key: 'viec', nhan: t('Việc'), kieu: 'viec' },
   { key: 'nut', nhan: '', kieu: 'nut' },
 ];
-/** TVV / CX: + Phụ huynh (SĐT bấm gọi) trước ⋯; CX không có Công việc nên bỏ cột Việc (Phụ huynh thành cột giãn — `cotLinhHoat`). Vài cột hẹp lại để cả bảng vừa khung 1440 (⋯ không khuất). */
-const RONG_VAI: Record<string, number> = { ten: 190, lo: 96, mt: 200, y: 96 };
-const cotHv = (vai?: VaiBang): CotBang[] => (!vai ? COT_HV : COT_HV.flatMap((c): CotBang[] => (c.key === 'viec' && !vai.coViec ? []
-  : c.key === 'nut' ? [vai.coViec ? { key: 'ph', nhan: t('Phụ huynh'), kieu: 'chu', rong: 120 } : { key: 'ph', nhan: t('Phụ huynh'), kieu: 'viec' }, c] : [vai.coViec && RONG_VAI[c.key] ? { ...c, rong: RONG_VAI[c.key] } : c])));
+/** CX (không có Công việc): cột Việc thành cột Phụ huynh giãn (SĐT bấm gọi). TVV: không cột Phụ huynh (chủ SP 27/10 — SĐT ở thẻ 375 và hồ sơ). */
+const cotHv = (vai?: VaiBang): CotBang[] => (!vai || vai.coViec ? COT_HV
+  : COT_HV.map((c): CotBang => (c.key === 'viec' ? { key: 'ph', nhan: t('Phụ huynh'), kieu: 'viec' } : c)));
 
 /** Ô Lịch thi: chip lịch; TVV / CX thêm nhãn sau thi (bấm = panel một em: nhập KQ / chọn bước tiếp / gia hạn tại chỗ). Em ngoài danh sách lớp (Tạm dừng…) chưa có `lich` → dự kiến thi. */
 function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) => void }) {
@@ -155,31 +166,28 @@ function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) 
   );
 }
 
+/** Một lớp của danh sách theo lớp (HV-LOP-SUA): `dau` = nội dung hàng lớp (nơi gọi dựng: mã ↗ · n HV · GVCN · SOS · việc cấp lớp · ⋯); `hv` chỉ vẽ khi `mo`. */
+export type NhomLop = { id: number; nhan: string; dau: ReactNode; mo: boolean; onMo: () => void; hv: HvGon[] };
+
 /**
- * BẢNG "TẤT CẢ" (UI-HV-LOP, `dieu-chinh-cuoi.html` khu d + `10` mục 5): mỗi em một dòng — Học viên · Lộ trình · MT gần nhất (Overall / KV + 5 kỹ năng) ·
- * Xu hướng · Hỗ trợ · Ý thức · Lịch thi · Việc · ⋯ (thao tác của em, giữ từ bảng cũ — `10` mục 8). Em lớp thường: cột MT để "—" (không có lượt MT).
+ * BẢNG "TẤT CẢ" THEO LỚP (HV-LOP-SUA, mockup đã duyệt `thiet-ke/v5/hoc-vien-lop.html`; chủ SP 27/10 "mặc định danh sách THEO LỚP"): hàng lớp ▾ (`HangNhom`)
+ * rồi mỗi em một dòng — Học viên · Lộ trình · MT gần nhất (Overall / KV + 5 kỹ năng) · Hỗ trợ · Ý thức · Lịch thi · Việc · ⋯ (thao tác của em, giữ — `10` mục 8).
+ * Bỏ Xu hướng (chủ SP 27/10). Em lớp thường: cột MT để "—" (không có lượt MT).
  */
-export function BangHvGon({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
-  ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
+export function BangHvGon({ nhom, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
+  nhom: NhomLop[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
 }) {
   const o = (h: HvGon, c: CotBang) => {
     const g = h.hang;
     const ev = vai?.em.get(h.id);
     switch (c.key) {
-      case 'ten': return <TenEm h={h} lop={lop.get(h.classId)} ev={ev} ds={nguCanh} />;
+      case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} />;
       case 'lo': return g
         ? <span className="block"><b className="block tabular-nums text-slate-100" title={t('MT đã xong / đã tạo')} aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
             {g.loTrinh.soMt ? `${g.loTrinh.mt}/${g.loTrinh.soMt} MT` : '—'}</b>
             <span className="block text-xs text-slate-400">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
         : <span className="block truncate text-xs text-slate-400">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
       case 'mt': return g ? <OMtGan g={g} /> : trong;
-      case 'xu': return g?.xuHuong ? (
-        <span className="block">
-          <span className={`block font-semibold tabular-nums ${g.xuHuong.lech > 0 ? 'text-ok' : g.xuHuong.lech < 0 ? 'text-bad' : 'text-slate-400'}`}>
-            {g.xuHuong.lech === 0 ? '= 0' : `${g.xuHuong.lech > 0 ? '↑' : '↓'} ${Math.abs(g.xuHuong.lech).toFixed(1)}`}
-          </span>
-          <span className="block text-xs text-slate-400">{t('so MT{n}', { n: g.xuHuong.soMt })}</span>
-        </span>) : trong;
       case 'ho': return g ? <OHoTro h={g.hoTro} /> : trong;
       case 'y': return g?.yThuc ? <Nhan tone="doing">{dich(g.yThuc)}</Nhan> : trong;
       case 'lich': return ev ? <OLich h={h} ev={ev} onMoEm={vai?.onMoEm} /> : <ChipLichThi l={h.lich} />;
@@ -188,11 +196,33 @@ export function BangHvGon({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai
       default: return <MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} />;
     }
   };
-  return <Bang ten={t('Học viên & Lớp')} cot={cotHv(vai)} hang={ds} khoa={(h) => `${h.classId}:${h.id}`} oCua={o} khung={false} the375={false} dinh />;
+  const cot = cotHv(vai);
+  type Dong = { k: 'lop'; g: NhomLop } | { k: 'hv'; h: HvGon };
+  const dong: Dong[] = nhom.flatMap((g): Dong[] => [{ k: 'lop', g }, ...(g.mo ? g.hv.map((h): Dong => ({ k: 'hv', h })) : [])]);
+  return <Bang ten={t('Học viên & Lớp')} cot={cot} hang={dong} khoa={(d) => (d.k === 'lop' ? `lop:${d.g.id}` : `${d.h.classId}:${d.h.id}`)} khung={false} the375={false} dinh
+    hangRieng={(d) => (d.k === 'lop'
+      ? <HangNhom mo={d.g.mo} onMo={d.g.onMo} nhan={d.g.nhan} tieuDe={d.g.dau} soCotDau={cot.length} />
+      : <tr className={`do-hang ${d.h.ketThuc ? 'opacity-60' : ''}`}>{cot.map((c) => <OBang key={c.key} c={c}>{o(d.h, c)}</OBang>)}</tr>)} />;
 }
 
-/** Điện thoại (< 640 px, khu d 375): mỗi em một thẻ — tên · lớp · chip (SOS trước, không thì lịch thi) · ⋯; dòng 2 = việc gấp nhất, không việc thì Target · Overall. */
-export function TheHvGon({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
+/** Điện thoại (< 640 px): hàng lớp (▾ + `dau`) rồi mỗi em một thẻ — tên · chip (SOS trước, không thì lịch thi) · ⋯; dòng 2 = việc, không việc thì Target · Overall. */
+export function TheHvGon({ nhom, ...p }: Omit<Parameters<typeof TheHvLop>[0], 'ds'> & { nhom: NhomLop[] }) {
+  return (
+    <div>
+      {nhom.map((g) => (
+        <section key={g.id} aria-label={g.nhan}>
+          <div className="flex min-h-[44px] items-center gap-2 border-t px-3 py-2 first:border-t-0" style={{ borderColor: 'var(--line)', background: g.mo ? 'var(--hang-lon-bg)' : 'var(--hang-lon-dong-bg)', boxShadow: `inset 3px 0 0 var(${g.mo ? '--hang-lon-vach' : '--hang-lon-dong-vach'})` }}>
+            <MuiTenMo mo={g.mo} onMo={g.onMo} nhan={g.nhan} />
+            <div className="min-w-0 flex-1">{g.dau}</div>
+          </div>
+          {g.mo && <TheHvLop ds={g.hv} {...p} />}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function TheHvLop({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
   ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
 }) {
   return (
@@ -206,7 +236,7 @@ export function TheHvGon({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai 
           <article key={`${h.classId}:${h.id}`} className={`space-y-1 border-t px-3 py-2.5 first:border-t-0 ${h.ketThuc ? 'opacity-60' : ''}`} style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center gap-2">
               <Link className="link min-w-0 truncate font-semibold" to={`/hoc-vien/${h.id}`} state={{ ds: nguCanh }}>{h.ten}</Link>
-              <span className="shrink-0 text-xs text-slate-400">{lop.get(h.classId)?.code}{ev?.status === 'inactive' ? ` · ${t('Tạm dừng')}` : ''}</span>
+              {ev?.status === 'inactive' && <span className="shrink-0 text-xs text-slate-400">{t('Tạm dừng')}</span>}
               <span className="ml-auto shrink-0">{g?.hoTro.sos ? <ChipSos muc={g.hoTro.sos} kyNang={g.hoTro.kyNang.map((k) => skillShort(k))} /> : !h.lich && ev ? <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span> : <ChipLichThi l={h.lich} />}</span>
               <span className="shrink-0"><MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} /></span>
             </div>
