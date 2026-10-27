@@ -64,7 +64,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
     : <span className="text-xs text-slate-500">{t('Chưa bàn giao')}</span>);
   const oFinal = (e: Em) => (e.final === null ? <span className="text-slate-500">—</span>
     : <Nhan tone={e.finalDat ? 'ok' : 'soon'}>{`${Math.round(e.final * 100)}%`}</Nhan>);
-  const tenEm = (e: Em) => <Link className="link font-semibold" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
+  const tenEm = (e: Em) => <Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
   const dongDot = (d: Bang['dot'][number]) => (
     <span className="flex flex-wrap items-baseline gap-x-2 text-xs text-slate-400">
       <b className="font-semibold text-slate-200">{t('Đợt')} {tuan(d.vao)}</b>
