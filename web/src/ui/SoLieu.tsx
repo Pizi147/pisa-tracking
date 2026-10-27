@@ -297,6 +297,33 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     const dong2 = r.em || r.ngCanh
       ? [r.em?.ten, r.lop, r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh, r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
       : [r.sub];
+    const dong2Chu = dong2.some(Boolean) && (
+      <span className="text-[13px] leading-snug text-slate-400">
+        {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{i === 0 && r.em ? <b className="font-bold text-slate-200">{x}</b> : x}</span>)}
+      </span>
+    );
+    /* 6c-2 (bảng kê mục 1 [RỖNG], mockup M6 khu K ②): dòng người xem KHÔNG làm được thì không mở rộng (trước: mở ra chỉ lặp chữ + "Mở trang ↗") —
+       tên là link ↗ thẳng tới hồ sơ, dòng tự đủ người · hạn · tình trạng. Dòng có việc làm được giữ mở rộng (Xác nhận PA tại chỗ / mở việc). */
+    if (!v?.lam && !r.xong) {
+      const chipHan = v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
+      const hanRieng = !chipHan && hanCua(r);
+      const tt = r.tinhTrang ? dich(r.tinhTrang) : null;
+      return (
+        <li key={r.id} data-dong={r.id} className="flex flex-col gap-0.5 border-t px-4 py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+          <span className="flex w-full items-center gap-2.5">
+            <Link to={r.href} className="min-w-0 flex-1 text-sm font-bold text-slate-100 no-underline hover:underline max-sm:min-h-[44px] max-sm:content-center">
+              {v ? dich(v.chu) : r.title} <span aria-hidden className="text-xs font-normal text-slate-400">↗</span>
+            </Link>
+            {chipHan}
+          </span>
+          {dong2Chu}
+          {(tt || hanRieng) && (
+            <span className="text-[13px] leading-snug text-slate-300">{tt}{hanRieng && <>{tt && ' · '}<HanDong han={hanRieng} loai={r.viec?.loaiHan} /></>}</span>
+          )}
+          {r.diem?.length ? <DiemDong r={r} /> : null}
+        </li>
+      );
+    }
     const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
     return (
       <li key={r.id} data-dong={r.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
@@ -307,11 +334,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
             {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>
               : v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
           </span>
-          {dong2.some(Boolean) && (
-            <span className="text-[13px] leading-snug text-slate-400">
-              {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{i === 0 && r.em ? <b className="font-bold text-slate-200">{x}</b> : x}</span>)}
-            </span>
-          )}
+          {dong2Chu}
           {r.diem?.length ? <DiemDong r={r} /> : null}
         </button>
         {moRong && (

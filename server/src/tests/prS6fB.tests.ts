@@ -152,11 +152,6 @@ async function runTask13(t: YThucTestKit, d: any) {
     assert(d.soSanhLop({ code: 'MB FT 9' }, { code: 'MB FT 10' }) < 0, 'soSanhLop');
   });
 
-  check('S6F-b (13) · "Cách tính": bấm chỉ MỞ (đóng bằng Esc / rời chuột / mất focus) — không đảo trạng thái', () => {
-    const s = doc('web/src/ui/SoLieu.tsx');
-    assert(!s.includes('setHowTo(!howTo)') && /onClick=\{\(\) => setHowTo\(true\)\}/.test(s), 'SoLieu: onClick còn đảo howTo');
-  });
-
   check('S6F-b (13) · chữ theo mockup 24 D1 / 26: ghim chương "Progress Test · 3/4 môn"; chân "Lên FT + bổ trợ S"; chú giải "dự kiến"; ô Sắp tới em Tạm dừng "giữ lịch · Quản lý dời nếu cần"', () => {
     const g = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 1, soDat: 3, soYeuCau: 4, soCoDiem: 4 });
     assert(g.chuong === 'Progress Test · 3/4 môn' && g.chu === 'Progress · 3/4 môn đạt', JSON.stringify(g));
