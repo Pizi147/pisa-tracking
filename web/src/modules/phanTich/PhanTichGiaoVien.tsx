@@ -40,7 +40,7 @@ const COT_DAY: readonly CotBang[] = [
   ...COT_GON.slice(3).map((c) => ({ ...c, rong: 108 })),
   { key: 'casePa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 108, nhom: HT },
   { key: 'pa', nhan: t('PA cải thiện'), kieu: 'phan-tram', rong: 108, nhom: HT },
-  { key: 'tt', nhan: t('Kết quả thi thật'), kieu: 'phan-tram', rong: 150, nhom: HT, goiY: t('% Pass Target') },
+  { key: 'tt', nhan: t('Kết quả thi thật'), kieu: 'phan-tram', rong: 150, nhom: HT, goiY: '% Pass Target' },
 ];
 /** Cột chỉ Fast Track (lớp thường không có MT / tiến bộ band / PA cải thiện / thi thật) — lớp thường: "Đạt Test" (≥ ngưỡng đạt của lớp; HSGV-1). */
 const CHI_FT = new Set(['tb', 'pa', 'tt']);

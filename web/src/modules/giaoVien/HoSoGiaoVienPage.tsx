@@ -428,7 +428,7 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
     { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'chu', rong: RONG_TL },
     { key: 'tb', nhan: t('Tiến bộ'), kieu: 'chu', rong: RONG_TL },
-    { key: 'tt', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: RONG_TL, goiY: t('% Pass Target') },
+    { key: 'tt', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: RONG_TL, goiY: '% Pass Target' },
   ] : [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
