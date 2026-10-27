@@ -316,7 +316,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
             </div>
             {/* 6c (#641 XM-3): mỗi mục mang "·" rộng cố định ĐỨNG TRƯỚC, hàng lùi trái đúng bề rộng đó, khung cắt ngang → mục đầu mỗi dòng
                 (kể cả khi xuống hàng ở 375) mất dấu, không còn "·" mồ côi đầu dòng. "· Xem Case" không tách dòng. */}
-            {!trongCot && <div className="overflow-x-clip text-sm leading-snug text-slate-400">
+            {/* `-ml-1 pl-1`: chừa 4 px cho vòng focus của link đầu dòng (dấu "·" vẫn nằm ngoài vùng cắt). */}
+            {!trongCot && <div className="-ml-1 overflow-x-clip pl-1 text-sm leading-snug text-slate-400">
               <p className="m-0 -ml-5 flex flex-wrap items-baseline">
                 {[...dau.dong2.filter(Boolean), ...(nutXem ? [nutXem] : [])].map((x, i, ds) => (
                   <span key={i} className={nutXem && i === ds.length - 1 ? 'whitespace-nowrap' : 'min-w-0'}><span aria-hidden className="inline-block w-5 text-center text-slate-500">·</span>{x}</span>
