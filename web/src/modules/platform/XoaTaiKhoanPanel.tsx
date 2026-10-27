@@ -15,7 +15,7 @@ export type XemXoaTaiKhoan = {
 
 /**
  * QUẢN TRỊ HỆ THỐNG › TÀI KHOẢN › ⋯ › XOÁ TÀI KHOẢN (PR-XOA, đặc tả §3). Panel nói trước cách xoá: CÓ DẤU VẾT → khoá và ẩn, lịch sử giữ tên
- * kèm "(đã xoá)"; CHƯA CÓ → xoá hẳn. Bị chặn (tự xoá, QT cuối, đang là GVCN) thì nói lý do và tắt nút. Gõ lại đúng email (không phân biệt
+ * kèm "(đã xoá)"; CHƯA CÓ → xoá hẳn. Bị chặn (tự xoá, QT cuối, đang là GVCN, chưa có email) thì nói lý do + bước tiếp và tắt nút. Gõ lại đúng email (không phân biệt
  * hoa thường) mới bật nút đỏ; máy chủ kiểm lại tất cả.
  */
 export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; onClose: () => void; onDone: () => void }) {

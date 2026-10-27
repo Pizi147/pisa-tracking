@@ -24,6 +24,7 @@ import {
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HopThaoTacMt, THAO_TAC_CO_HOP } from '../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from './NganLichSuBai.tsx';
+import { useTrongKhung } from '../../ui/KhungPanel.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 import { DongThi } from './DongThi.tsx';
 import { NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';
@@ -362,8 +363,9 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   const monSua = skills.filter(cotSuaDuoc);
   const dienHet = () => setDien((d) => Object.fromEntries([...Object.entries(d),
     ...monSua.flatMap((k) => { const n = soTong(k); return n === null ? [] : [[k, { gt: n, lan: (d[k]?.lan ?? 0) + 1 }]]; })]));
+  /* Chủ SP 27/10: hàng công cụ thụt vào thẳng chữ cột đầu (px-3 như ô bảng), không dính mép khung. */
   const congCu = monSua.length > 0 && (
-    <>
+    <div className="flex flex-wrap items-center gap-2 px-3 pt-2">
       <span className="text-[13px] font-semibold text-slate-400">{t('Tổng số câu')}</span>
       {monSua.map((k) => (
         <label key={k} className="inline-flex items-center gap-1 text-[13px] text-slate-300">
@@ -376,7 +378,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
       ))}
       <button type="button" className="btn btn-sm" disabled={!monSua.some((k) => soTong(k) !== null)}
         title={t('Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên.')} onClick={dienHet}>{t('Điền ô trống')}</button>
-    </>
+    </div>
   );
 
   return (
@@ -409,6 +411,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
 }) {
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
+  /* 6C-NHO (bảng kê lỗi 4): lưới nằm trong panel (Nhập điểm, Quá hạn chấm, panel việc) → hộp ⋯ / Lịch sử mở đè, không đóng panel cha. */
+  const trongKhung = useTrongKhung();
   const { can } = useSession();
   const ct = sheet.programme.code;
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
@@ -452,7 +456,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
     const s = lichCua(row, hop.k);
     return (
       <HopThaoTacMt key={`${hop.t}:${hop.k}`} thaoTac={hop.t} attemptId={row.attemptId} skill={hop.k} ct={ct} laThuong
-        quanLy={sheet.canPlan}
+        quanLy={sheet.canPlan} trongHop={trongKhung}
         row={{ periodId: null, weekStart: s?.weekStart ?? null, deadline: s?.deadline ?? null }}
         onClose={() => setHop(null)} onDone={onReload} />
     );
@@ -464,7 +468,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
       {/* Tên + chip "Đủ điểm" một dòng; MỘT dòng phụ: dòng thi · trạng thái lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
         <span className="inline-flex max-w-full items-center gap-1.5 align-baseline">
-          <Link className="link min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+          <Link className="ten-ho-so min-w-0 truncate max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">
@@ -545,7 +549,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
       <OBang c={cc.kq}>
         <KetQua row={row} sheet={sheet} />
         {hopO}
-        {lichSu && <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} onClose={() => setLichSu(null)} />}
+        {lichSu && <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} trongHop={trongKhung} onClose={() => setLichSu(null)} />}
       </OBang>
     </tr>
   );
@@ -603,7 +607,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
     ? <Level tone={row.chip.dat ? 'ok' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
-    ? <span className="text-xs text-slate-500">{kq.chinh}</span>
+    ? <span className="px-2 text-xs text-slate-500">{kq.chinh}</span>   /* chữ thường trong cột chip lùi 8 px như chữ trong chip (index.css `th[data-kieu="chip"]`) */
     : (
       <Level tone={tone} title={chiTiet}>
         {/* PR-LT2b: Cuối khoá đủ điểm → tầng 1 là % tổng (hướng gợi ý ở dòng phụ); Giữa khoá giữ `n/4 môn đạt`. */}

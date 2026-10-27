@@ -1,0 +1,92 @@
+/*
+ * D4 MAU-WEB (chủ SP 27/10: "màu toàn web nhìn đau mắt") — BẢNG MÀU ĐỀ XUẤT, CHƯA VÀO MÃ.
+ * Chỉ đổi GIÁ TRỊ token, giữ TÊN token của `web/src/index.css` (bước 2 chép thẳng). Giữ Be Vietnam Pro, giữ xanh / hồng logo (V2).
+ *   .truoc = giá trị đang chạy trên bản chính (index.css @ 73a9c37) · .sau = đề xuất.
+ *   Khối không kèm [data-theme] = TỐI (mặc định của web) · [data-theme="light"] = SÁNG.
+ * Đo: `python3 thiet-ke/v7/kiem-tuong-phan-mau-moi.py` (chữ ≥ 4,5 : 1, dấu / viền ô nhập ≥ 3 : 1).
+ */
+
+/* ============================ TỐI ============================ */
+.truoc {
+  --bg: #050a16;  --surface: #111c33;  --surface-2: #172440;  --line: #22324f;  --line-strong: #33496f;
+  --accent: #94bdf2;  --accent-strong: #b8d3f7;  --accent-soft: #142a4c;  --accent-line: #3a62a0;  --accent-ink: #060c1a;
+  --text: #e7edf7;  --chu-2: #d2dbec;  --text-dim: #bac6de;  --text-faint: #9eacc8;
+  --hong: #f57aae;  --hong-chu: #f79cc2;  --hong-nen: #3a1830;
+  --dieu-huong-nen: #0a1a3a;  --dieu-huong-chu: #c3d2ec;  --dieu-huong-hover: #12284f;  --dieu-huong-vien: #2b4673;
+  --lich-nen: #1a3d5c;  --lich-chu: #9fd0f0;  --lich-vien: #2d5f82;
+  --ok: #74d9a3;  --ok-bg: #12342a;  --ok-line: #2f7a55;
+  --bad: #ff9a8f;  --bad-bg: #3b1719;  --bad-line: #8f3a33;
+  --soon: #f2c450;  --soon-bg: #33290f;  --soon-line: #7d6420;
+  --doing: #94bdf2;  --doing-bg: #142a4c;  --doing-line: #3a62a0;
+  --muted: #bac6de;  --muted-bg: #16223a;  --muted-line: #334669;
+  --sos1: #d6b828;  --sos1-chu: #e3c84a;  --sos2: #e8702a;  --sos2-chu: #f5935a;  --sos2-nen: #3a2410;
+  --sos3: #f0645a;  --sos3-chu: #ff9a8f;  --sos3-nen: #9c201c;  --sos3-vien: #d32f2f;  --sos3-tren: #ffffff;
+  --da-thi-bg: #0f2335;
+  --kq-vuot: #74d9a3;  --kq-bang: #94bdf2;  --kq-duoi: #ff9a8f;
+  --hang-lon-bg: #172440;  --hang-lon-vach: #66789f;  --hang-con-bg: #0a1325;  --hang-con-chu: #b8c4dc;
+  --o-nhap-nen: #0b1427;  --o-nhap-vien: #66789f;  --nut-hover: #16264a;
+}
+.sau {
+  /* Bản 2 (chủ SP 27/10: "vẫn giữ tông màu, giảm độ rực"): nền, chữ, viền, thanh điều hướng GIỮ NGUYÊN — chỉ giảm độ rực (chroma OKLCH, giữ độ sáng). */
+  --bg: #050a16;  --surface: #111c33;  --surface-2: #172440;  --line: #22324f;  --line-strong: #33496f;
+  /* Nhấn: độ rực × 0,8. */
+  --accent: #9cbde7;  --accent-strong: #bdd3ef;  --accent-soft: #192b46;  --accent-line: #436394;  --accent-ink: #070c17;
+  --text: #e7edf7;  --chu-2: #d2dbec;  --text-dim: #bac6de;  --text-faint: #9eacc8;
+  --hong: #f57aae;  --hong-chu: #efa1c1;  --hong-nen: #371b2f;
+  --dieu-huong-nen: #0a1a3a;  --dieu-huong-chu: #c3d2ec;  --dieu-huong-hover: #12284f;  --dieu-huong-vien: #2b4673;
+  --lich-nen: #283d51;  --lich-chu: #afcee2;  --lich-vien: #405e74;
+  /* Trạng thái, SOS, lịch, kết quả: độ rực × 0,65; vẫn kèm ⚠ ✓ ✗. Hồng logo giữ (V2), chữ hồng × 0,85. */
+  --ok: #94d1ae;  --ok-bg: #1e322b;  --ok-line: #49755c;
+  --bad: #e89a8c;  --bad-bg: #341c1d;  --bad-line: #7e4841;
+  --soon: #e4c784;  --soon-bg: #302a1a;  --soon-line: #76663f;
+  --doing: #9cbde7;  --doing-bg: #192b46;  --doing-line: #436394;
+  --muted: #bac6de;  --muted-bg: #16223a;  --muted-line: #334669;
+  /* SOS giữ 3 mức khác hẳn (V5 P6): 1 viền mảnh · 2 viền dày + nền cam · 3 nền đỏ ĐẶC (bớt rực) chữ trắng. */
+  --sos1: #ccb96d;  --sos1-chu: #d9c981;  --sos2: #cf815b;  --sos2-chu: #df9f7c;  --sos2-nen: #35261a;
+  --sos3: #d57b71;  --sos3-chu: #e89a8c;  --sos3-nen: #873c34;  --sos3-vien: #b7544c;  --sos3-tren: #ffffff;
+  --da-thi-bg: #16232e;
+  --kq-vuot: #94d1ae;  --kq-bang: #9cbde7;  --kq-duoi: #e89a8c;
+  --hang-lon-bg: #172440;  --hang-lon-vach: #66789f;  --hang-con-bg: #0a1325;  --hang-con-chu: #b8c4dc;
+  --o-nhap-nen: #0b1427;  --o-nhap-vien: #66789f;  --nut-hover: #16264a;
+}
+
+/* ============================ SÁNG ============================ */
+[data-theme="light"] .truoc {
+  --bg: #f3f5f9;  --surface: #ffffff;  --surface-2: #f2f4f9;  --line: #d9deea;  --line-strong: #b0b8cd;
+  --accent: #273c8f;  --accent-strong: #1f3077;  --accent-soft: #eef1fa;  --accent-line: #8c9cd6;  --accent-ink: #ffffff;
+  --text: #141a2b;  --chu-2: #232a3f;  --text-dim: #4a536c;  --text-faint: #5f6984;
+  --hong: #f25a98;  --hong-chu: #b81f62;  --hong-nen: #fef0f6;
+  --dieu-huong-nen: #273c8f;  --dieu-huong-chu: #dce2f4;  --dieu-huong-hover: #31479c;  --dieu-huong-vien: #5c70be;
+  --lich-nen: #d9eaf5;  --lich-chu: #164e72;  --lich-vien: #9cc4dd;
+  --ok: #146c43;  --ok-bg: #e3f5ea;  --ok-line: #5fb98a;
+  --bad: #b42318;  --bad-bg: #fdecea;  --bad-line: #e8968d;
+  --soon: #8a5a00;  --soon-bg: #fff4d6;  --soon-line: #d9a93a;
+  --doing: #3a50a6;  --doing-bg: #eef1fa;  --doing-line: #8c9cd6;
+  --muted: #4a536c;  --muted-bg: #f2f4f9;  --muted-line: #d2d7e5;
+  --sos1: #a87a00;  --sos1-chu: #7a5900;  --sos2: #d9650f;  --sos2-chu: #a3470a;  --sos2-nen: #fdebd9;
+  --sos3: #b42318;  --sos3-chu: #9b1c14;  --sos3-nen: #911c18;  --sos3-vien: #911c18;  --sos3-tren: #ffffff;
+  --da-thi-bg: #eef5fa;
+  --kq-vuot: #146c43;  --kq-bang: #273c8f;  --kq-duoi: #b42318;
+  --hang-lon-bg: #f2f4f9;  --hang-lon-vach: #8690ab;  --hang-con-bg: #fbfcfe;  --hang-con-chu: #353d54;
+  --o-nhap-nen: #ffffff;  --o-nhap-vien: #7f8aa6;  --nut-hover: #f0f2f8;
+}
+[data-theme="light"] .sau {
+  /* Sáng: nền, chữ, xanh logo (nhấn, thanh điều hướng) giữ nguyên; trạng thái / SOS / lịch độ rực × 0,65 (đỏ lỗi, SOS 3 × 0,8 để vẫn đọc là "nguy"), chữ hồng × 0,85. */
+  --bg: #f3f5f9;  --surface: #ffffff;  --surface-2: #f2f4f9;  --line: #d9deea;  --line-strong: #b0b8cd;
+  --accent: #273c8f;  --accent-strong: #1f3077;  --accent-soft: #eef1fa;  --accent-line: #8c9cd6;  --accent-ink: #ffffff;
+  --text: #141a2b;  --chu-2: #232a3f;  --text-dim: #4a536c;  --text-faint: #5f6984;
+  --hong: #f25a98;  --hong-chu: #ae3463;  --hong-nen: #fdf1f6;
+  --dieu-huong-nen: #273c8f;  --dieu-huong-chu: #dce2f4;  --dieu-huong-hover: #31479c;  --dieu-huong-vien: #5c70be;
+  --lich-nen: #dee9f0;  --lich-chu: #2e4d64;  --lich-vien: #a8c2d2;
+  --ok: #38674c;  --ok-bg: #e7f3ec;  --ok-line: #7cb293;
+  --bad: #a6392c;  --bad-bg: #f9eeec;  --bad-line: #d6a099;
+  --soon: #7e5f36;  --soon-bg: #fbf4e1;  --soon-line: #cbad6e;
+  --doing: #3a50a6;  --doing-bg: #eef1fa;  --doing-line: #8c9cd6;
+  --muted: #4a536c;  --muted-bg: #f2f4f9;  --muted-line: #d2d7e5;
+  --sos1: #9b7e47;  --sos1-chu: #715c32;  --sos2: #c1764e;  --sos2-chu: #905538;  --sos2-nen: #f8ece1;
+  --sos3: #a6392c;  --sos3-chu: #8f3125;  --sos3-nen: #862e27;  --sos3-vien: #862e27;  --sos3-tren: #ffffff;
+  --da-thi-bg: #f0f5f8;
+  --kq-vuot: #38674c;  --kq-bang: #273c8f;  --kq-duoi: #a6392c;
+  --hang-lon-bg: #f2f4f9;  --hang-lon-vach: #8690ab;  --hang-con-bg: #fbfcfe;  --hang-con-chu: #353d54;
+  --o-nhap-nen: #ffffff;  --o-nhap-vien: #7f8aa6;  --nut-hover: #f0f2f8;
+}

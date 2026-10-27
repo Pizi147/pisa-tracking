@@ -643,7 +643,7 @@ function DauLop({ lop, hv, viecLop, vai, gopMon, dsLop, onMoViec, onThemHocVien 
   const sos = [1, 2, 3].map((m) => new Set(hv.filter((h) => h.hang?.hoTro.sos === m).map((h) => h.id)).size);
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 py-1">
-      {lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="link font-bold no-underline hover:underline">{lop.code}<span aria-hidden className="ml-1 text-xs font-normal text-dim">↗</span></Link>
+      {lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so font-bold">{lop.code}</Link>
         : <span>{t('Chưa xếp lớp')}</span>}
       <span className="text-[13px] font-normal tabular-nums text-dim">{t('{n} HV', { n: new Set(hv.map((h) => h.id)).size })}</span>
       {day?.gvcn && <span className="text-[13px] font-normal text-dim">{t('GVCN')} <TenGiaoVien id={day.gvcn.id} ten={day.gvcn.name} /></span>}
@@ -670,7 +670,7 @@ function DaiLop({ lop, vai, soViecQuaHan, dsLop, onThemHocVien, onBo }: {
   const chuLop = [lop.programmeName ? dich(lop.programmeName) : '—', !thuong && lop.route ? lop.route : null, t('{n} HV', { n: lop.studentCount })].filter(Boolean).join(' · ');
   return (
     <div className="card flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2" aria-label={t('Lớp {lop}', { lop: lop.code })}>
-      <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{lop.code}</Link>
+      <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so font-bold">{lop.code}</Link>
       <span className="min-w-0 text-xs text-slate-400">
         {chuLop}{lop.gvcn && <> · {t('GVCN')} <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
       </span>

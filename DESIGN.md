@@ -8,25 +8,25 @@ colors:
   line: "#22324f"
   line-strong: "#33496f"
   text: "#e7edf7"
-  accent: "#94bdf2"
-  accent-strong: "#b8d3f7"
+  accent: "#9cbde7"
+  accent-strong: "#bdd3ef"
   hong: "#f57aae"
   dieu-huong-nen: "#0a1a3a"
-  ok: "rgb(116 217 163)"
-  bad: "rgb(255 154 143)"
-  late: "rgb(255 154 143)"
-  soon: "rgb(242 196 80)"
-  doing: "rgb(148 189 242)"
+  ok: "rgb(148 209 174)"
+  bad: "rgb(232 154 140)"
+  late: "rgb(232 154 140)"
+  soon: "rgb(228 199 132)"
+  doing: "rgb(156 189 231)"
   done: "rgb(158 172 200)"
   muted: "rgb(186 198 222)"
   text-dim: "rgb(186 198 222)"
   text-faint: "rgb(158 172 200)"
-  sos1: "rgb(214 184 40)"
-  sos2: "rgb(232 112 42)"
-  sos2-nen: "#3a2410"
-  sos3: "rgb(240 100 90)"
-  sos3-nen: "#9c201c"
-  da-thi-bg: "rgb(15 35 53)"
+  sos1: "rgb(204 185 109)"
+  sos2: "rgb(154 102 51)"
+  sos2-nen: "#5a320f"
+  sos3: "rgb(213 123 113)"
+  sos3-nen: "#a33d2d"
+  da-thi-bg: "rgb(22 35 46)"
   light-bg: "#f3f5f9"
   light-surface: "#ffffff"
   light-surface-2: "#f2f4f9"
@@ -41,7 +41,7 @@ typography:
   label:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
     fontSize: "13px"
-    fontWeight: 600
+    fontWeight: 500
   table-head:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
     fontSize: "13px"
@@ -123,7 +123,7 @@ components:
 | V2 | **Màu PISA từ logo:** xanh `#273C8F` (cấu trúc: thanh điều hướng `--dieu-huong-*`, nút chính sáng) · hồng `--hong` chỉ để **nhận diện** (logo, chữ khớp khi tìm) — hồng KHÔNG mang nghĩa lỗi / SOS. Tối: xanh bớt ngả tím, nền `#050a16` (P3) | `04` M19; `10` P3 |
 | V3 | **Logo:** chữ "PISA" hồng đậm + "TRACKING" mảnh giãn chữ, không ảnh logo trung tâm; "TRACKING" trắng cả ở chế độ sáng vì thanh vẫn nền xanh (chữ đen 2,1 : 1 — [XM] #545) | `10` mục 8; #545 |
 | V4 | **Bốn nhóm badge, một cỡ** (cao 22, chữ 12 / 600, `ui/Nhan.tsx`): ① kết quả học tập `NhanKq` — góc 4 px, viền 1 px màu nghĩa, ✓ ✗ – đứng đầu · ② lịch thi `NhanLich` — nền xanh lơ đặc, góc 2 px ("Đã thi · chờ KQ" không nhầm Đạt) · ③ tiến độ xử lý `Nhan` — viên tròn nền xám + chấm màu; sắp hạn / quá hạn nền nhạt + ⚠ · ④ mức SOS `ChipSos` / `lopSos` | `04` M12 (C23); #528 NEN-V5 |
-| V5 | **SOS 1 · 2 · 3 khác hẳn, đọc được không cần màu:** SOS 1 viền mảnh vàng trên nền thẻ · SOS 2 viền 2 px cam + nền cam nhạt · SOS 3 nền đỏ đặc `--sos3-nen` chữ trắng (không hồng, bớt chói #545) · tạm = viền đứt | `10` P6, mục 8 |
+| V5 | **SOS 1 · 2 · 3 = rỗng · nền vừa · đặc (MAU-MUC, chủ SP 28/10 — thay P6):** mức tách bằng ĐỘ ĐẶC nền trước, màu (vàng → cam → đỏ, không hồng) sau; mọi chip SOS, ô đếm hàng lớp, làn Case biểu đồ D đi qua một chỗ (`lopSos` / `MAU_THANH_SOS`). SOS 1 viền mảnh vàng trên nền thẻ · SOS 2 nền cam vừa `--sos2-nen` + viền 1 px · SOS 3 nền đỏ đặc `--sos3-nen` chữ trắng; cùng viền 1 px, chữ 600. Nền hai mức liền nhau cách ΔL ≥ 0,10, chữ / nền chip ≥ 4,5 (đo `thiet-ke/v7/kiem-mau-muc.py`, kể cả giả lập deutan / protan). Tạm = giữ nền của mức + viền đứt + chữ "tạm". Rê chuột chip có nền: sáng lên, không đổi nền | `thiet-ke/v7/mau-muc.html`; P6 cũ |
 | V6 | **Ít chữ (P1):** không câu giải thích luật / cách tính trên màn chính → dấu **"?"** (`NutLuat`) hoặc ⓘ; chú thích trong mockup không lên web | `10` P1 |
 | V7 | **Phân cấp (P2):** nhãn nhỏ xám / giá trị đậm (`NhanGt`, dòng thông tin đầu hồ sơ), chính trước phụ, dữ liệu tách thao tác; không lạm dụng badge | `10` P2 |
 | V8 | **Hạn = ngày thật** `hạn 28/10` (P7), không thứ, không "tuần này / tuần sau"; tháng thi dự kiến luôn kèm năm `Dự kiến 02/2027` (P5); "Thi tháng này" thay "Thi tuần này" (P4) | `10` P4, P5, P7 |
@@ -194,6 +194,7 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
   4. Hạn — chỉ chữ: quá hạn cam `late` **luôn kèm ⚠** (không chip, không nền, không tô hàng); sắp hạn / hôm nay vàng `soon`. Hạn ghi ngày `hạn 18/09`, không thứ.
   5. Trung tính `muted` — mọi trạng thái khác (chờ duyệt, chờ chấm, Chưa chốt PA…). Đã bỏ tím `wait` và teal `chon-*` (OV-15a).
 - Đạt = `ok`; `bad` còn cho thao tác nguy hiểm.
+- **Giảm độ rực (D4 MAU-WEB, chủ SP 27/10 — "giữ tông, giảm độ rực"):** nền, mặt, viền, chữ, thanh điều hướng, xanh logo, hồng logo GIỮ; mọi màu nghĩa giảm chroma OKLCH, giữ độ sáng — trạng thái / SOS / lịch / kết quả × 0,65 (sáng: đỏ lỗi, quá hạn, SOS 3 × 0,8), nhấn tối × 0,8, chữ hồng × 0,85. Đỏ chữ tối (lỗi / quá hạn / ✗ dưới) `#e89a8c` hơi ngả cam để ✓ vượt ↔ ✗ dưới vẫn tách khi mù màu đỏ–lục (deutan ΔE 14 ≥ 10, K-MAU-2). Màu mới không được rực hơn mức này. Nút chính ở tối: nền `--nut-chinh-nen` xanh thẫm + viền `--nut-chinh-vien`, không tô kín `--accent` (sáng giữ tô xanh logo). Bảng so sánh + đo: `thiet-ke/v7/bang-mau-moi.html`, `kiem-tuong-phan-mau-moi.py`.
 - Chữ phụ: `text-dim` (quan trọng), `text-faint` (nhỏ) — cả hai ≥ 7:1 trên `bg`, `surface`, `surface-2` ở sáng lẫn tối (`prOv15a`).
 
 ## Typography
@@ -203,6 +204,9 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
   nhãn, `btn-sm` · `sm` 14 lưới dày, giá trị panel · `base` 15 chữ thường, ô bảng, nút · `lg` 17 tiêu đề khối / panel · `xl` 22 tiêu đề trang · `2xl` 28 số lớn.
   Ô nhập ở 375 = 16 (Safari không tự phóng to). Đầu cột **không in hoa**. Line-height Việt ≥ 1,45 (nhiều dòng), tiêu đề ≥ 1,3.
 - Hàng nhóm đậm, hàng con nhạt hơn (cỡ theo thang trên).
+- **Độ đậm (MAU-WEB-2 D10, 27/10):** chữ thường 400 · nhãn (ô form, trường panel, nút phụ `btn-sm`, tab / chip lọc / nút đoạn KHÔNG chọn) 500 ·
+  mục đang chọn, nút chính, tên đầu dòng (`.ten-ho-so`), đầu cột, badge 600 · tiêu đề trang / khối, số chính (`OSo`), tên lớp hàng nhóm 700 · không dùng 800 (trừ logo).
+  Ô hàng nhóm ghi `font-normal` thì giữ chữ thường (`.hang-lon > :where(td)`).
 - **Số căn giữa** + `tabular-nums` (`td.tabular-nums`, đầu cột số); tên / chữ dài căn trái (C06).
 - Đối tượng trong khối **Cần làm** của panel v3 (tên PA, mức kỷ luật, loại meeting): **15 px đậm 700** (OV-12e, chủ SP 14/10).
 - **Không chữ < 11 px** ở bất kỳ đâu (→ Luật 21/10 G13: tối thiểu 12).

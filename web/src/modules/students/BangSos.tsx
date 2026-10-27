@@ -135,7 +135,7 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
     const tre = em.filter((x) => x.cases.some((c) => c.viecTiep?.quaHan)).length;
     return (
       <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-        <Link to={`/hoc-vien/lop/${r.classId}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">{r.classCode}</Link>
+        <Link to={`/hoc-vien/lop/${r.classId}`} className="shrink-0 font-bold text-slate-100 underline decoration-dotted underline-offset-4">{r.classCode}</Link>
         {toanLop.get(r.classId)?.tiep && <span className="text-xs text-slate-400">{t('(tiếp)')}</span>}
         {cot === 'cx' && r.branchName && <span className="text-xs text-slate-400">{r.branchName}</span>}
         <Nhan tone="muted">{t('{n} em SOS', { n: soEm })}</Nhan>
@@ -149,7 +149,7 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
   );
   const tenEm = (r: DongSos) => (
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
-      <Link className="link max-w-full truncate font-semibold" title={r.ten} to={`/hoc-vien/${r.studentId}`} state={{ ds }}>{r.ten}</Link>
+      <Link className="ten-ho-so max-w-full truncate" title={r.ten} to={`/hoc-vien/${r.studentId}`} state={{ ds }}>{r.ten}</Link>
     </span>
   );
   const trangThai = (r: DongSos) => { const n = nhomDong(r); return <Nhan tone={TONE_NHOM[n]}>{t(NHAN_NHOM_XU_LY[n])}</Nhan>; };

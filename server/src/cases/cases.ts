@@ -42,7 +42,7 @@ import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
-import { dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, tenGiuaCua } from './sosAuto.ts';
+import { chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, tenGiuaCua } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 
@@ -1410,6 +1410,9 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
     /* Nhóm chính + nhóm phụ TRƯỚC (lịch sử + nhật ký): "dùng nhận xét" thay cả nhóm theo ô — khôi phục được từ đây. */
     const nhomCu = (conn.prepare(`SELECT role, taxonomy_code FROM case_issues WHERE case_id = ? ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`).all(caseId) as any[])
       .map((x) => x.taxonomy_code as string);
+    /* HOAN-TAC-XN: chụp nguyên dòng nhóm + nguồn mô tả để Hoàn tác trả đúng. */
+    const hoanTac = { issues: conn.prepare('SELECT * FROM case_issues WHERE case_id = ? ORDER BY id').all(caseId) as any[], scoreId: o.id as number,
+      moTaAttemptId: (conn.prepare('SELECT mo_ta_attempt_id m FROM sos_cases WHERE id = ?').get(caseId) as any)?.m ?? null };
     if (cach === 'dung') {
       conn.prepare('UPDATE sos_cases SET mo_ta_attempt_id = NULL WHERE id = ?').run(caseId);   // ép ghi lại (kể cả Case đang có mô tả / đã sửa riêng)
       ganMoTaTuO(conn, caseId, 'speaking', c.attempt_id, nx, o.nhom_nguyen_nhan);
@@ -1432,9 +1435,45 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
     conn.prepare('UPDATE sos_cases SET updated_at = ? WHERE id = ?').run(luc, caseId);
     dongBoTrangThaiCase(caseId);
     writeAudit({ actorUserId: p.userId, action: 'case.xac_nhan_s', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
-      before: { moTa: chinh?.observation ?? null, nhom: nhomCu },
+      before: { moTa: chinh?.observation ?? null, nhom: nhomCu, hoanTac },
       after: { cach, moTa: cach === 'dung' ? nx : cach === 'viet' ? moTa : chinh?.observation ?? null,
         nhom: (conn.prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`).all(caseId) as any[]).map((x) => x.taxonomy_code) } });
+    return caseDetail(p, caseId);
+  });
+}
+
+/**
+ * HOÀN TÁC XÁC NHẬN CASE SPEAKING (HOAN-TAC-XN) — đảo `xacNhanCaseS`: nhóm + mô tả (nguyên dòng chụp lúc xác nhận) và nguồn mô tả về cũ, cờ chờ bật lại →
+ * việc "Xác nhận Case" hiện lại cùng hạn (hạn ở Case, không đổi). Quyền như Xác nhận Case S + chỉ người vừa xác nhận. Chặn (409): quá giờ · Case đổi sau đó ·
+ * PA đã xác nhận / đổi sau đó · Case đã đóng. Lịch sử Case: dòng mô tả đảo lại; nhật ký `case.xac_nhan_s_undo`. Trả Case.
+ */
+export function hoanTacXacNhanCaseS(p: Principal, caseId: number) {
+  const conn = db();
+  const c = loadCase(caseId);
+  if (!quyenPhuTrachS(p, c.attempt_class_id ?? null)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Quản lý hoàn tác được.');
+  return tx(() => {
+    const { nk, truoc, sau } = nhatKyXacNhan(p, 'sos_case', caseId, 'case.xac_nhan_s', 'Sửa Case nếu cần.');
+    const h = truoc.hoanTac as { issues: any[]; scoreId: number; moTaAttemptId: number | null };
+    if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(caseId) as any)?.status === 'done') throw conflict('Case đã đóng — Mở lại Case trước.');
+    const chan = chanPaSauXacNhan(conn, nk, caseId, []);
+    if (chan) throw conflict(chan);
+    const moTaSau = (conn.prepare(`SELECT observation FROM case_issues WHERE case_id = ? AND role = 'primary' ORDER BY id LIMIT 1`).get(caseId) as any)?.observation ?? null;
+    conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(caseId);
+    for (const r of h.issues) {
+      conn.prepare(`INSERT INTO case_issues (id, case_id, role, taxonomy_code, taxonomy_version, skill, observation, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?)`)
+        .run(r.id, caseId, r.role, r.taxonomy_code, r.taxonomy_version, r.skill ?? null, r.observation ?? null, r.created_by ?? null, r.created_at);
+    }
+    const luc = nowIso();
+    conn.prepare('UPDATE sos_cases SET mo_ta_attempt_id = ?, updated_at = ? WHERE id = ?').run(h.moTaAttemptId, luc, caseId);
+    conn.prepare('UPDATE assessment_scores SET cho_phu_trach_xem = 1 WHERE id = ?').run(h.scoreId);
+    const moTaTruoc = h.issues.find((r) => r.role === 'primary')?.observation ?? null;
+    if (moTaSau !== moTaTruoc) {
+      conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'observation', ?, ?, ?, ?)`)
+        .run(caseId, moTaSau, moTaTruoc, p.userId, luc);
+    }
+    dongBoTrangThaiCase(caseId);
+    writeAudit({ actorUserId: p.userId, action: 'case.xac_nhan_s_undo', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
+      before: sau, after: { moTa: truoc.moTa ?? null, nhom: truoc.nhom ?? [] } });
     return caseDetail(p, caseId);
   });
 }

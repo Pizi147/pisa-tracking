@@ -64,7 +64,7 @@ export default function HuongDanPage() {
           {PHAN.map((p) => (
             <button key={p} type="button" aria-current={p === phan ? 'true' : undefined} onClick={() => dat('phan', p === 'viec' ? null : p)}
               className={`flex min-h-[36px] items-center rounded-lg border px-2.5 text-left text-[14px] ${p === phan
-                ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] font-bold text-slate-100' : 'border-transparent bg-transparent text-slate-400 bam'}`}>
+                ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] font-semibold text-slate-100' : 'border-transparent bg-transparent text-slate-400 bam'}`}>
               {TEN_PHAN[p]}<span className="ml-auto text-xs tabular-nums text-slate-500">{dem[p]}</span>
             </button>
           ))}

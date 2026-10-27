@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from './useBamNgoai.ts';
@@ -15,6 +15,15 @@ export function NutLuat({ children, label = t('Luật'), phai = false }: {
 }) {
   const [mo, setMo] = useState(false);
   const hop = useRef<HTMLSpanElement>(null);
+  const noi = useRef<HTMLSpanElement>(null);
+  /* UI-HO-SO-HV-2 (critique 375): nút giữa hàng → hộp 22rem tràn mép màn; đo khi mở, lùi vào trong (cách mép 8 px). */
+  useLayoutEffect(() => {
+    const el = noi.current;
+    if (!mo || !el) return;
+    const r = el.getBoundingClientRect();
+    const lech = r.right > window.innerWidth - 8 ? window.innerWidth - 8 - r.right : r.left < 8 ? 8 - r.left : 0;
+    if (lech) el.style.transform = `translateX(${lech}px)`;
+  }, [mo]);
   useBamNgoai(mo, () => setMo(false), hop);
   useEffect(() => {
     if (!mo) return;
@@ -27,7 +36,7 @@ export function NutLuat({ children, label = t('Luật'), phai = false }: {
       <button type="button" className="-m-[15px] p-[15px] text-slate-500 hover:text-slate-200 text-sm font-normal leading-none sm:m-0 sm:p-0"
         title={label} aria-label={label} aria-expanded={mo} onClick={() => setMo((v) => !v)}>ⓘ</button>
       {mo && (
-        <span role="dialog" aria-label={label}
+        <span ref={noi} role="dialog" aria-label={label}
           className={`absolute ${phai ? 'right-0' : 'left-0'} top-full mt-2 z-30 w-[22rem] max-w-[calc(100vw-2rem)] surface-2 rounded-lg border shadow-xl p-3 space-y-2 text-left text-xs font-normal normal-case tracking-normal whitespace-normal text-slate-300 leading-relaxed`}
           style={{ borderColor: 'var(--line-strong)' }}>
           {children}

@@ -63,32 +63,32 @@
 
   /* Điểm nhấn — hồng (KHÔNG mang nghĩa lỗi / SOS) */
   --hong: #f25a98;              /* vạch, chấm, dấu — chỉ dấu không chữ (3,1 : 1 trên trắng và trên thanh xanh, ≥ 3) */
-  --hong-chu: #b81f62;          /* khi hồng phải là chữ (số nhấn, "Tuần này")   6,2 : 1 */
-  --hong-nen: #fef0f6;
+  --hong-chu: #ae3463;          /* khi hồng phải là chữ (số nhấn, "Tuần này")   6,2 : 1 */
+  --hong-nen: #fdf1f6;
 
   /* Hover / phủ */
   --hover: #f0f2f8;             /* rê chuột lên hàng / nút phụ */
   --dang-mo: #eef1fa;           /* hàng đang mở panel */
 
   /* ---- 3. MÀU NGHĨA (chữ · nền · viền) — luôn kèm chữ / ký hiệu ---- */
-  --loi: #b42318;      --loi-nen: #fdecea;   --loi-vien: #e8968d;     /* lỗi lưu, quá hạn ⚠, chưa đạt ✗   6,6 : 1 */
-  --canh-bao: #8a5a00; --canh-bao-nen: #fff4d6; --canh-bao-vien: #d9a93a; /* sắp hạn, hôm nay, cần chú ý   5,9 : 1 */
-  --dat: #146c43;      --dat-nen: #e3f5ea;   --dat-vien: #5fb98a;     /* đạt ✓, đã lưu ✓                6,5 : 1 */
+  --loi: #a63a2d;      --loi-nen: #fbedeb;   --loi-vien: #de9c94;     /* lỗi lưu, quá hạn ⚠, chưa đạt ✗   6,6 : 1 */
+  --canh-bao: #7e5f36; --canh-bao-nen: #fbf4e1; --canh-bao-vien: #cbad6e; /* sắp hạn, hôm nay, cần chú ý   5,9 : 1 */
+  --dat: #38674c;      --dat-nen: #e7f3ec;   --dat-vien: #7cb293;     /* đạt ✓, đã lưu ✓                6,5 : 1 */
   --thieu: #5f6984;    --thieu-nen: #f2f4f9; --thieu-vien: #8690ab;   /* thiếu dữ liệu – (viền đứt)      5,5 : 1 */
   --dang: #3a50a6;     --dang-nen: #eef1fa;  --dang-vien: #8c9cd6;    /* đang lưu, đang làm               7,3 : 1 */
 
   /* Kết quả điểm — tô chính con số + ✓ / ✗ trước số (G12), không nền */
-  --kq-vuot: #146c43;  --kq-bang: #273c8f;  --kq-duoi: #b42318;
+  --kq-vuot: #38674c;  --kq-bang: #273c8f;  --kq-duoi: #a63a2d;
 
   /* SOS — thang vàng → cam → đỏ, KHÔNG hồng (brief 5.2). V5-D (09 I.6, P6): 3 mức khác hẳn bằng ĐỘ ĐẶC của nền —
      SOS 1 nền vàng nhạt · SOS 2 nền cam đặc · SOS 3 nền đỏ đậm đặc chữ trắng (NEN-SUA 22/10: bớt chói = đậm hơn; tối có viền --sos3-vien sáng hơn để tách mặt ≥ 3 : 1); luôn kèm chữ "SOS n"; tạm = viền đứt. Logic SOS không đổi. */
-  --sos1: #b38600;  --sos1-chu: #6b4e00;  --sos1-nen: #fff1b8;
-  --sos2: #e07a16;  --sos2-chu: #a3470a;  --sos2-nen: #f28a1f;  --sos2-tren: #1f1000;
-  --sos3: #8f1610;  --sos3-chu: #9b1c14;  --sos3-nen: #911c18;  --sos3-tren: #ffffff;  --sos3-vien: #911c18;
+  --sos1: #a68a4e;  --sos1-chu: #63512b;  --sos1-nen: #faf1cd;
+  --sos2: #c1764e;  --sos2-chu: #905538;  --sos2-nen: #da9761;  --sos2-tren: #1f1000;
+  --sos3: #842a21;  --sos3-chu: #8f3026;  --sos3-nen: #862e27;  --sos3-tren: #ffffff;  --sos3-vien: #862e27;
 
   /* Lịch thi — nền xanh lơ nhạt đặc, góc vuông: khác hẳn kết quả học tập (C23) */
-  --lich-nen: #d9eaf5;  --lich-chu: #164e72;  --lich-vien: #9cc4dd;
-  --da-thi-nen: #eef5fa; /* hàng "Đã thi · chờ KQ": nền nhạt cả hàng + vạch trái 3 px --lich-chu */
+  --lich-nen: #dee9f0;  --lich-chu: #2e4d64;  --lich-vien: #a8c2d2;
+  --da-thi-nen: #f0f5f8; /* hàng "Đã thi · chờ KQ": nền nhạt cả hàng + vạch trái 3 px --lich-chu */
 
   /* ---- 4. CHỮ ---- */
   /* Be Vietnam Pro cho chữ; chữ số Inter (mã thật: @font-face unicode-range 0–9 trong web/src/index.css; mockup: lớp .so) */
@@ -117,19 +117,19 @@
   --vien: #233149;  --vien-dam: #344766;  --vien-o: #5d7398;
   --chu: #e8edf6;  --chu-2: #b7c2d8;  --chu-3: #9aa8c2;  --chu-tren-dam: #ffffff;
   --dieu-huong-nen: #0b1730;  --dieu-huong-chu: #c6d2ea;  --dieu-huong-chu-mo: #ffffff;  --dieu-huong-hover: #15264a;
-  --nhan: #98c0f2;  --nhan-hover: #bad6fa;  --nhan-nen: #16294a;  --nhan-vien: #3d68a6;  --focus: #98c0f2;
-  --hong: #f57aae;  --hong-chu: #f79cc2;  --hong-nen: #351628;
-  --hover: #14223d;  --dang-mo: #16294a;
-  --loi: #ff9a8f;      --loi-nen: #3b1719;   --loi-vien: #8f3a33;
-  --canh-bao: #f2c450; --canh-bao-nen: #30270e; --canh-bao-vien: #7d6420;
-  --dat: #74d9a3;      --dat-nen: #10302a;   --dat-vien: #2f7a55;
+  --nhan: #a0c0e8;  --nhan-hover: #bfd6f2;  --nhan-nen: #1a2a44;  --nhan-vien: #47699a;  --focus: #a0c0e8;
+  --hong: #f57aae;  --hong-chu: #efa1c1;  --hong-nen: #331827;
+  --hover: #14223d;  --dang-mo: #1a2a44;
+  --loi: #e89a8c;      --loi-nen: #341c1d;   --loi-vien: #7e4841;
+  --canh-bao: #e4c784; --canh-bao-nen: #2d2819; --canh-bao-vien: #76663f;
+  --dat: #94d1ae;      --dat-nen: #1b2e2a;   --dat-vien: #49755c;
   --thieu: #9aa8c2;    --thieu-nen: #131f36; --thieu-vien: #5d7398;
-  --dang: #98c0f2;     --dang-nen: #16294a;  --dang-vien: #3d68a6;
-  --kq-vuot: #74d9a3;  --kq-bang: #98c0f2;  --kq-duoi: #ff9a8f;
-  --sos1: #d6b828;  --sos1-chu: #f0d24a;  --sos1-nen: #3a3006;
-  --sos2: #f28a1f;  --sos2-chu: #f7a25a;  --sos2-nen: #f28a1f;  --sos2-tren: #1f1000;
-  --sos3: #c62828;  --sos3-chu: #ff9a8f;  --sos3-nen: #9c201c;  --sos3-tren: #ffffff;  --sos3-vien: #d32f2f;
-  --lich-nen: #133a58;  --lich-chu: #9fd0f0;  --lich-vien: #2d5f82;  --da-thi-nen: #0c2033;
+  --dang: #a0c0e8;     --dang-nen: #1a2a44;  --dang-vien: #47699a;
+  --kq-vuot: #94d1ae;  --kq-bang: #a0c0e8;  --kq-duoi: #e89a8c;
+  --sos1: #ccb96d;  --sos1-chu: #e5d386;  --sos1-nen: #373119;
+  --sos2: #da9761;  --sos2-chu: #e2ab80;  --sos2-nen: #da9761;  --sos2-tren: #1f1000;
+  --sos3: #ab4d45;  --sos3-chu: #e89a8c;  --sos3-nen: #873c34;  --sos3-tren: #ffffff;  --sos3-vien: #b7544c;
+  --lich-nen: #233a4d;  --lich-chu: #afcee2;  --lich-vien: #405e74;  --da-thi-nen: #14202c;
   --bong-noi: 0 8px 24px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
 }
 

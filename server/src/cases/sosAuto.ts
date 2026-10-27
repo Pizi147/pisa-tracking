@@ -2,9 +2,9 @@ import { db, theoLo, tx } from '../db.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
-  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, conflict, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
@@ -252,6 +252,11 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   });
   const today = demoToday();
   return tx(() => {
+    /* HOAN-TAC-XN: chụp trạng thái trước (Case, nhóm đang có, PA cùng nhóm Bổ trợ — `chayPaBoTro` / Sửa PA chạm cả nhóm); cuối giao dịch chỉ giữ PA lần này đổi. */
+    const issuesTruoc = (conn.prepare('SELECT id FROM case_issues WHERE case_id = ?').all(caseId) as any[]).map((x) => x.id as number);
+    const revTu = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM case_intervention_revisions').get() as any).m as number;
+    const paTruoc = new Map((conn.prepare(`SELECT * FROM case_interventions WHERE kind IN ('bo_tro', 'bo_tro_mien_phi') AND nhom_bo_tro = (SELECT nhom_bo_tro FROM case_interventions
+        WHERE case_id = ? AND kind = 'bo_tro' AND status = 'planned' AND nhom_bo_tro IS NOT NULL LIMIT 1)`).all(caseId) as any[]).map((r) => [r.id as number, r]));
     addIssues(caseId, p.userId, { primaryCode, secondaryCodes: nhom.slice(1), observation, topic: c.topic });
     conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(urgency, moTa, tenGiua, nowIso(), caseId);
     ghiMoc(caseId, 'xac_nhan_case', today, moTa, p.userId, `xac_nhan_case:${caseId}`);
@@ -264,13 +269,23 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
       if (input.pa && Object.keys(input.pa).length) suaPa(p, bt.id, input.pa);
     }
     const ten = caseTitleOf({ ...c, title: tenGiua });
+    /* Chỉ PA lần này thật sự đổi (trước ≠ sau) — PA môn khác còn chờ / chạy từ trước không thuộc lần này. Bản lịch sử: id ghi TRONG giao dịch này (ghi tuần tự). */
+    const ids = JSON.stringify([...paTruoc.keys()]);
+    const hoanTac = {
+      urgency: c.urgency ?? null, summary: c.summary ?? null, title: c.title ?? null, issues: issuesTruoc,
+      pa: (conn.prepare('SELECT * FROM case_interventions WHERE id IN (SELECT value FROM json_each(?))').all(ids) as any[]).flatMap((r) => {
+        const truoc = chupPa(paTruoc.get(r.id)), sau = chupPa(r);
+        return JSON.stringify(truoc) === JSON.stringify(sau) ? [] : [{ id: r.id as number, case_id: r.case_id as number, truoc, sau }];
+      }),
+      revIds: (conn.prepare('SELECT id FROM case_intervention_revisions WHERE id > ? AND intervention_id IN (SELECT value FROM json_each(?))').all(revTu, ids) as any[]).map((x) => x.id as number),
+    };
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
       title: `Xác nhận Case: ${ten}`, detail: moTa, refTable: 'sos_cases', refId: caseId, createdBy: p.userId, dedupKey: `case-confirm:${caseId}`,
     });
     writeAudit({
       actorUserId: p.userId, action: 'case.confirm', entityType: 'sos_case', entityId: caseId, entityLabel: ten,
-      after: { primaryCode, secondaryCodes: nhom.slice(1), urgency, tenGiua },
+      before: { hoanTac }, after: { primaryCode, secondaryCodes: nhom.slice(1), urgency, tenGiua },
     });
     return o.chiGhi ? null : caseDetail(p, caseId);
   });
@@ -491,9 +506,10 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
         cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?, confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`)
       .run(description, performerUserId, performerName, soBuoi, batDau, batDau, hanKyGhiKetQua(batDau, today), moc, p.userId, nowIso(), nowIso(), interventionId);
     /* Sửa bản máy gán lúc xác nhận thì giữ bản gợi ý trong lịch sử (PR-S2 S2, Q7). */
+    let revId: number | null = null;
     if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)
         || soBuoi !== (iv.so_buoi ?? null)) {
-      ghiBanDieuChinh({
+      revId = ghiBanDieuChinh({
         iv, source: 'confirm_edit', on: today, actorUserId: p.userId, followupId: null, reason: CONFIRM_EDIT_REASON,
         /* Mốc quy chế, ngày bắt đầu không phải "điều chỉnh". */
         after: { description, performerUserId, performerName, followupDue: iv.followup_due ?? null, soBuoi, startedDate: iv.started_date ?? null },
@@ -508,7 +524,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     });
     writeAudit({
       actorUserId: p.userId, action: 'case.preset.confirm', entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description }, after: { description, followupDue: moc, performerUserId },
+      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description, hoanTac: chupPa(iv) }, after: { description, followupDue: moc, performerUserId, revId },
     });
     return o.chiGhi ? null : caseDetail(p, iv.case_id);
   });
@@ -576,6 +592,130 @@ export function xacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi
     try { xacNhanPaQuyChe(p, id, than, { chiGhi: true }); ok.push(id); } catch (e: any) { hong.push({ id, loi: e?.message ?? 'Không xác nhận được.', ma: e?.status ?? 500 }); }
   }
   return { ok, loi: hong, chuaLam };
+}
+
+// ---------------------------------------------------------------- HOAN-TAC-XN: Hoàn tác Xác nhận PA · Xác nhận Case (luật N3)
+
+/** Cột PA mà Xác nhận PA / chạy PA Bổ trợ / Sửa PA lúc xác nhận ghi — chụp vào nhật ký xác nhận (`before.hoanTac`), Hoàn tác trả lại đúng. */
+const COT_PA_XAC_NHAN = ['description', 'performer_user_id', 'performer_name', 'so_buoi', 'status', 'started_date', 'cycle_no', 'cycle_started_on',
+  'action_due', 'followup_due', 'confirmed_by', 'confirmed_at'] as const;
+const chupPa = (iv: any): Record<string, unknown> => Object.fromEntries(COT_PA_XAC_NHAN.map((k) => [k, iv[k] ?? null]));
+function traPa(conn: any, id: number, anh: Record<string, unknown>): void {
+  conn.prepare(`UPDATE case_interventions SET ${COT_PA_XAC_NHAN.map((k) => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`)
+    .run(...COT_PA_XAC_NHAN.map((k) => anh[k] ?? null), nowIso(), id);
+}
+
+/**
+ * Kiểm chung của các đường Hoàn tác xác nhận — gọi TRONG giao dịch. Chỉ người đã xác nhận lần gần nhất (`action`) → không thì 403 (kiểm trước); nhật ký MỚI
+ * NHẤT của đối tượng phải là chính lần đó — có gì ghi sau (Sửa PA, Sửa Case, đã hoàn tác…) → 409; trong `HOAN_TAC_PA_MS` + 5 s (+ `themMs`) → không thì 409.
+ */
+export function nhatKyXacNhan(p: Principal, entityType: string, id: number, action: string, buocTiep: 'Sửa PA nếu cần.' | 'Sửa Case nếu cần.', themMs = 0): { nk: any; truoc: any; sau: any } {
+  const nk = db().prepare('SELECT * FROM audit_logs WHERE entity_type = ? AND action = ? AND entity_id = ? ORDER BY id DESC LIMIT 1').get(entityType, action, id) as any;
+  if (nk && nk.actor_user_id !== p.userId) throw loi(403, 'Chỉ người vừa xác nhận hoàn tác được. {buoc}', { buoc: buocTiep });
+  const cuoi = db().prepare('SELECT id FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id DESC LIMIT 1').get(entityType, id) as any;
+  if (!nk || cuoi?.id !== nk.id) throw loi(409, 'Không còn hoàn tác được — đã có thay đổi sau lần xác nhận. {buoc}', { buoc: buocTiep });
+  if (!duocHoanTacPa(nk.created_at, Date.now(), themMs)) throw loi(409, 'Đã quá thời gian hoàn tác. {buoc}', { buoc: buocTiep });
+  let truoc: any = null, sau: any = null;
+  try { truoc = JSON.parse(nk.before_json ?? 'null'); sau = JSON.parse(nk.after_json ?? 'null'); } catch { /* nhật ký hỏng — chặn dưới */ }
+  if (!truoc?.hoanTac) throw loi(409, 'Lần xác nhận này ghi trước khi có Hoàn tác. {buoc}', { buoc: buocTiep });
+  return { nk, truoc, sau };
+}
+/**
+ * Lý do chặn Hoàn tác xác nhận Case (null = được): kết quả ghi từ lúc xác nhận (`nk.created_at`) ở Case, hay mọi kết quả của PA trong `paIds` (PA lần xác nhận
+ * này đổi) · PA khác của Case đang được xác
+ * nhận từ lúc đó (`nk.created_at`) · PA có nhật ký SAU dòng `nk` ngoài xác nhận / hoàn tác xác nhận (Sửa PA, Kết thúc PA…). Xác nhận rồi hoàn tác PA → không chặn.
+ */
+export function chanPaSauXacNhan(conn: any, nk: { id: number; created_at: string }, caseId: number, paIds: readonly number[]): string | null {
+  const ids = JSON.stringify(paIds);
+  if (conn.prepare(`SELECT 1 FROM case_followups WHERE (case_id = ? AND created_at >= ?) OR intervention_id IN (SELECT value FROM json_each(?)) LIMIT 1`).get(caseId, nk.created_at, ids)) {
+    return 'PA đã có kết quả — không hoàn tác được; sửa kết quả nếu cần.';
+  }
+  if (conn.prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND id NOT IN (SELECT value FROM json_each(?)) AND confirmed_at >= ? LIMIT 1`).get(caseId, ids, nk.created_at)) {
+    return 'Đã xác nhận PA sau đó — hoàn tác Xác nhận PA trước.';
+  }
+  if (conn.prepare(`SELECT 1 FROM audit_logs WHERE id > ? AND entity_type = 'case_intervention' AND action NOT IN ('case.preset.confirm', 'case.preset.confirm_undo')
+      AND entity_id IN (SELECT id FROM case_interventions WHERE case_id = ? UNION SELECT value FROM json_each(?)) LIMIT 1`).get(nk.id, caseId, ids)) {
+    return 'PA của Case đã đổi sau lần xác nhận — sửa PA hoặc sửa Case nếu cần.';
+  }
+  return null;
+}
+
+/**
+ * HOÀN TÁC XÁC NHẬN PA (HOAN-TAC-XN, dải "✓ Đã xác nhận PA · Hoàn tác") — đảo `xacNhanPaQuyChe`: PA về đúng như trước (chờ xác nhận; mô tả, người,
+ * số buổi, ngày, hạn cũ — `before.hoanTac`), bỏ bản lịch sử "sửa lúc xác nhận" + mốc Hành trình; Case đồng bộ lại → việc "Xác nhận PA" hiện lại cùng hạn
+ * (hạn ở Case, không đổi), việc "Ghi kết quả" mất. Quyền như Xác nhận PA + chỉ người vừa xác nhận. Chặn (409): quá giờ · đã có kết quả · PA đổi sau đó ·
+ * Case đã đóng. Nhật ký `case.preset.confirm_undo`. Trả Case (`chiGhi`: không trả).
+ */
+export function hoanTacXacNhanPa(p: Principal, interventionId: number, o: { chiGhi?: boolean; themMs?: number } = {}) {
+  const conn = db();
+  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án.');
+  caseAccess(iv.case_id).requireEdit(p, EDIT_MESSAGE);
+  return tx(() => {
+    const { truoc, sau } = nhatKyXacNhan(p, 'case_intervention', interventionId, 'case.preset.confirm', 'Sửa PA nếu cần.', o.themMs);
+    if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(iv.case_id) as any)?.status === 'done') throw conflict('Case đã đóng — Mở lại Case trước.');
+    if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) throw conflict('PA đã có kết quả — không hoàn tác được; sửa kết quả nếu cần.');
+    traPa(conn, interventionId, truoc.hoanTac);
+    if (sau?.revId) conn.prepare('DELETE FROM case_intervention_revisions WHERE id = ? AND intervention_id = ?').run(sau.revId, interventionId);
+    conn.prepare('DELETE FROM journey_events WHERE dedup_key = ?').run(`preset-confirm:${interventionId}`);
+    dongBoTrangThaiCase(iv.case_id);
+    writeAudit({ actorUserId: p.userId, action: 'case.preset.confirm_undo', entityType: 'case_intervention', entityId: interventionId,
+      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: sau, after: truoc.hoanTac });
+    return o.chiGhi ? null : caseDetail(p, iv.case_id);
+  });
+}
+
+/** Lô xác nhận chạy tới khi còn `DUNG_KHI_CON_MS` của lời gọi 10 s — PA đầu lô xác nhận sớm hơn lúc web hiện dải chừng ấy. */
+const LO_XAC_NHAN_MS = 10_000 - DUNG_KHI_CON_MS;
+/** HOÀN TÁC XÁC NHẬN PA CÙNG LÚC (dải sau `xacNhanPaNhieu`): `ids` = `ok` của lô; mỗi PA một giao dịch qua `hoanTacXacNhanPa`, PA lỗi báo riêng kèm mã HTTP. */
+export function hoanTacXacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi: { id: unknown; loi: string; ma: number }[] } {
+  const ids = (body as { ids?: unknown } | null)?.ids;
+  if (!Array.isArray(ids) || !ids.length || ids.length > TRAN_XAC_NHAN_PA_LO) throw loi(400, 'Chọn từ 1 đến {n} PA để hoàn tác.', { n: TRAN_XAC_NHAN_PA_LO });
+  const ok: number[] = [];
+  const hong: { id: unknown; loi: string; ma: number }[] = [];
+  for (const id of new Set(ids)) {
+    if (!(Number.isInteger(id) && (id as number) > 0)) { hong.push({ id, loi: 'Mã PA không hợp lệ.', ma: 400 }); continue; }
+    try { hoanTacXacNhanPa(p, id as number, { chiGhi: true, themMs: LO_XAC_NHAN_MS }); ok.push(id as number); } catch (e: any) { hong.push({ id, loi: e?.message ?? 'Không hoàn tác được.', ma: e?.status ?? 500 }); }
+  }
+  return { ok, loi: hong };
+}
+
+/**
+ * HOÀN TÁC XÁC NHẬN CASE (HOAN-TAC-XN) — đảo `xacNhanCase`: nhóm nguyên nhân vừa thêm gỡ, mức / mô tả / tên về cũ, PA cùng nhóm Bổ trợ về đúng bản chụp
+ * — CHỈ PA lần này đổi (PA vừa chạy về chờ; Sửa PA lúc xác nhận bỏ đúng bản lịch sử của lần đó), mốc + Hành trình của lần xác nhận gỡ; Case đồng bộ → việc
+ * "Xác nhận Case" hiện lại cùng hạn. PA đó đã đổi tiếp sau (lần xác nhận môn khác cùng nhóm, sửa…) → 409.
+ * Quyền như Xác nhận Case + chỉ người vừa xác nhận. Chặn (409): quá giờ · Case đổi sau đó · PA có kết quả / đổi sau đó · Case đã đóng. Nhật ký `case.confirm_undo`.
+ */
+export function hoanTacXacNhanCase(p: Principal, caseId: number) {
+  const conn = db();
+  const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
+  if (!c) throw notFound('Không tìm thấy Case');
+  if (!coTheXacNhanCase(p, caseId)) throw forbidden(EDIT_MESSAGE);
+  return tx(() => {
+    const { nk, truoc, sau } = nhatKyXacNhan(p, 'sos_case', caseId, 'case.confirm', 'Sửa Case nếu cần.');
+    type AnhPa = { id: number; case_id: number; truoc: Record<string, unknown>; sau: Record<string, unknown> };
+    const h = truoc.hoanTac as { urgency: string | null; summary: string | null; title: string | null; issues: number[]; revIds: number[]; pa: AnhPa[] };
+    if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(caseId) as any)?.status === 'done') throw conflict('Case đã đóng — Mở lại Case trước.');
+    const paIds = h.pa.map((x) => x.id as number);
+    const chan = chanPaSauXacNhan(conn, nk, caseId, paIds);
+    if (chan) throw conflict(chan);
+    /* PA lần này đổi mà dòng hiện tại khác bản "sau" (lần xác nhận khác của nhóm, sửa ngầm) → không đè. Mốc Cuối khoá điền sau (`dienMocQuyChe`) không tính. */
+    const hien = new Map((conn.prepare('SELECT * FROM case_interventions WHERE id IN (SELECT value FROM json_each(?))').all(JSON.stringify(paIds)) as any[]).map((r) => [r.id as number, chupPa(r)]));
+    const khac = (a: Record<string, unknown> | undefined, b: Record<string, unknown>) => !a || COT_PA_XAC_NHAN.some((k) => k !== 'followup_due' && a[k] !== b[k]);
+    if (h.pa.some((x) => khac(hien.get(x.id), x.sau))) throw conflict('PA của Case đã đổi sau lần xác nhận — sửa PA hoặc sửa Case nếu cần.');
+    conn.prepare('DELETE FROM case_issues WHERE case_id = ? AND id NOT IN (SELECT value FROM json_each(?))').run(caseId, JSON.stringify(h.issues));
+    conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(h.urgency, h.summary, h.title, nowIso(), caseId);
+    conn.prepare('DELETE FROM case_milestones WHERE dedup_key = ?').run(`xac_nhan_case:${caseId}`);
+    for (const x of h.pa) traPa(conn, x.id, x.truoc);
+    conn.prepare('DELETE FROM case_intervention_revisions WHERE id IN (SELECT value FROM json_each(?))').run(JSON.stringify(h.revIds));
+    /* Mốc "PA bổ trợ bắt đầu" chỉ của PA lần này chạy (PA môn khác chạy từ trước giữ mốc của nó). */
+    const vuaChay = h.pa.filter((x) => x.truoc.status === 'planned' && x.sau.status === 'started').map((x) => `bo-tro-chay:${x.id}`);
+    conn.prepare('DELETE FROM journey_events WHERE dedup_key IN (SELECT value FROM json_each(?))').run(JSON.stringify([`case-confirm:${caseId}`, ...vuaChay]));
+    for (const id of new Set([caseId, ...h.pa.map((x) => x.case_id as number)])) dongBoTrangThaiCase(id);
+    writeAudit({ actorUserId: p.userId, action: 'case.confirm_undo', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
+      before: sau, after: { urgency: h.urgency, summary: h.summary, title: h.title } });
+    return caseDetail(p, caseId);
+  });
 }
 
 /**

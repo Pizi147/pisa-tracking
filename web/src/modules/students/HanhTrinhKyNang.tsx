@@ -1,22 +1,16 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
-import { NhanKq } from '../../ui/Nhan.tsx';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
-import { ONgay } from '../../ui/ONgay.tsx';
-import { useLoiForm } from '../../ui/loiForm.tsx';
-import { useToast } from '../../ui/Toast.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Skeleton } from '../../ui/ui.tsx';
 import { BieuDoD, ChuGiaiD, kqSo, type CaseD, type DiemD, type ThiD } from './BieuDoD.tsx';
 import type { SkillBoardRow } from '../cases/SkillBoard.tsx';
 import {
-  BAI_LOP_NHAN_XET_TOI_DA, BAI_LOP_TEN_TOI_DA, chuDoiVang, duongDotTest, mondayOfDate, ngay, soKyVong, tenBaiThuong, tenMonNgan, tuanLich,
+  chuDoiVang, duongDotTest, mondayOfDate, ngay, soKyVong, tenBaiThuong, tuanLich,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -36,45 +30,95 @@ const tenLuot = (a: Luot) => (laMt0(a) ? 'MT0' : `MT${a.attemptNo}`);
 /** Lượt tính trên trục: không huỷ, có tuần. */
 const luotTruc = <T extends Luot>(attempts: T[]) => attempts.filter((a) => a.status !== 'cancelled' && !!a.weekStart);
 
+/** Dòng phụ ô điểm một mẫu (mockup M5): "MT3 6.5 · ▲ 0.5" · "MT2 5.5 · =" — ▲ ▼ chỉ cho thay đổi điểm so mốc đứng trước. */
+const soMoc = (moc: string, cu: number, moi: number) => {
+  const d = Math.round((moi - cu) * 10) / 10;
+  return `${moc} ${fmtBand(cu)} · ${d > 0 ? `▲ ${fmtBand(d)}` : d < 0 ? `▼ ${fmtBand(-d)}` : '='}`;
+};
+/** Kỹ năng bảng kỹ năng → `bands` của lượt (Writing gộp — so với thi thật W một số). */
+const KN_BAND: Record<string, 'listening' | 'reading' | 'writing' | 'speaking'> = { listening: 'listening', reading: 'reading', writing1: 'writing', writing2: 'writing', speaking: 'speaking' };
+
 /**
- * Ô ĐIỂM TO ĐẦU HỒ SƠ (`dieu-chinh-cuoi.html` khu c `.diem-dau`): Overall · L · R · W1 · W2 · S (lớp thường: từng môn) — bấm đổi kỹ năng của Hành trình +
- * Case & PA (`aria-pressed`). Số từ máy chủ: Overall = lượt "Kết quả gần nhất" (`dauHoSo.o.ketQua`), kỹ năng = hàng bảng kỹ năng (`band`, `trend`,
- * `expectation` của chính lượt). ✓ / ✗ so kỳ vọng của lượt (`soKyVong`, cùng ô điểm bảng lớp). Kỹ năng dời do vắng: dòng phụ "vắng W3 SEP" (7.4).
+ * Ô ĐIỂM TO ĐẦU HỒ SƠ (UI-HO-SO-HV-2, mockup M5 `thiet-ke/v7/ho-so-hv.html`): Overall · L · R · W1 · W2 · S (lớp thường: từng môn) — bấm đổi kỹ năng của
+ * Hành trình + Tiến độ + Case & PA (`aria-pressed`). Số từ máy chủ: Overall = lượt "Kết quả gần nhất" (`dauHoSo.o.ketQua`), kỹ năng = hàng bảng kỹ năng
+ * (`band`, `trend`, `expectation` của chính lượt). ✓ / ✗ so kỳ vọng của lượt (`soKyVong`). Dòng phụ MỘT mẫu "MT3 6.5 · ▲ 0.5" (`soMoc`); kỹ năng dời do vắng:
+ * "vắng W3 SEP" (7.4); môn em không còn học (P8): "—" + "không học từ MT4".
+ * ĐÃ THI (chủ SP 27/10 — thi thật là kết quả quan trọng nhất, KHÔNG phải luật chặn): ô Thi thật thay ô Overall (màu lịch thi, so Target), bốn ô L · R · W · S
+ * ghi "thi thật" ở góc, dòng phụ = MT cuối để so; chờ kết quả → ô "Chờ kết quả", ô kỹ năng giữ điểm MT, góc ghi nguồn.
  */
-export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = null }: {
-  rows: SkillBoardRow[]; attempts: Luot[]; ketQuaId: number | null; chon: ChonKn; onChon: (k: ChonKn) => void; homNay: string | null;
-  /** P8 (mockup k7): môn đăng ký của lộ trình (null = đủ) — hồ sơ chỉ vẽ ô môn em học; Overall thiếu bộ môn ghi "Không đủ bộ môn". */
+export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = null, thi = null }: {
+  rows: SkillBoardRow[]; attempts: (Luot & { bands?: Record<string, number | null>; diemKn?: Record<string, number | null> })[];
+  ketQuaId: number | null; chon: ChonKn; onChon: (k: ChonKn) => void; homNay: string | null;
+  /** P8 (mockup k7): môn đăng ký của lộ trình (null = đủ) — hồ sơ chỉ vẽ ô môn em học; Overall thiếu bộ môn ghi "không đủ bộ môn". */
   mon?: readonly string[] | null;
+  /** Thi thật của lộ trình (`thiThatCua`) — 'kq' / 'cho' đổi ô đầu; dự kiến / không thi: như đang học. */
+  thi?: ThiThatD | 'khong' | null;
 }) {
-  const ds = rows.filter((r) => !r.tuLopTruoc && (!mon || r.ratio || mon.includes(r.category) || r.band !== null));   // môn đã bỏ vẫn hiện điểm cũ
+  const hep = useDienThoai();
+  const ds = rows.filter((r) => !r.tuLopTruoc && (!mon || r.ratio || mon.includes(r.category) || r.band !== null));   // môn đã bỏ vẫn hiện (ô "không học")
   if (!ds.length) return null;
   const ratio = ds.some((r) => r.ratio);
+  const daThi = !ratio && thi && thi !== 'khong' && thi.loai !== 'du-kien' ? thi : null;
+  const luot = attempts.filter((x) => x.status !== 'cancelled' && !laMt0(x) && !!x.weekStart).sort((x, y) => x.weekStart!.localeCompare(y.weekStart!) || x.attemptNo - y.attemptNo);
   const a = attempts.find((x) => x.id === ketQuaId) ?? null;
-  const truoc = a ? attempts.filter((x) => x.overall !== null && x.status !== 'cancelled' && !laMt0(x) && x.attemptNo < a.attemptNo).sort((x, y) => y.attemptNo - x.attemptNo)[0] : undefined;
-  const lech = (moi: number, cu: number) => { const d = Math.round((moi - cu) * 10) / 10; return d > 0 ? ` · +${d.toFixed(1)}` : d < 0 ? ` · ${d.toFixed(1)}` : ''; };
+  const truoc = a ? luot.filter((x) => x.overall !== null && x.attemptNo < a.attemptNo).at(-1) : undefined;
+  /* P8: lượt đầu sau lượt cuối có điểm của môn đã bỏ = "không học từ MTn". */
+  const khongHocTu = (k: string) => {
+    const cuoi = luot.map((x) => x.diemKn?.[k] != null).lastIndexOf(true);
+    const dau = luot[cuoi + 1];
+    return dau ? t('không học từ {mt}', { mt: tenLuot(dau) }) : t('không học');
+  };
+  const lech = (v: number, tg: number) => (v > tg ? `+${fmtBand(v - tg)}` : v < tg ? `−${fmtBand(tg - v)}` : '=');
+  const oDau = daThi ? (
+    <ODiemTo key="thi" nhan={t('Thi thật IELTS')} goc={daThi.nhan} chon={chon === OVERALL} onClick={() => onChon(OVERALL)} thi
+      phu={daThi.loai === 'kq' && daThi.diem.ovr != null && daThi.target != null ? `Target ${fmtBand(daThi.target)} · ${lech(daThi.diem.ovr, daThi.target)}` : null}>
+      {daThi.loai === 'kq'
+        ? <ODiem kieu="lon" so={daThi.diem.ovr != null ? fmtBand(daThi.diem.ovr) : null} kq={soKyVong(daThi.diem.ovr, daThi.target)} nhan={t('Thi thật')} kyVong={daThi.target != null ? `Target ${fmtBand(daThi.target)}` : undefined} />
+        : <span className="py-1 text-[17px] font-bold text-[color:var(--lich-chu)]">{t('Chờ kết quả')}</span>}
+    </ODiemTo>
+  ) : !ratio && (
+    <ODiemTo key="ov" nhan="Overall" goc={a ? [tenLuot(a), a.weekStart ? tuanLich(a.weekStart, homNay) : null].filter(Boolean).join(' · ') : undefined} chon={chon === OVERALL} onClick={() => onChon(OVERALL)}
+      phu={a?.khongDuBoMon && a.overall == null ? (hep ? t('thiếu môn') : t('không đủ bộ môn'))
+        : a?.overall == null ? t('chưa có điểm') : truoc?.overall != null ? soMoc(tenLuot(truoc), truoc.overall, a.overall) : null}>
+      <ODiem kieu="lon" so={a?.overall != null ? fmtBand(a.overall) : null} kq={soKyVong(a?.overall, a?.expectation)} nhan="Overall" kyVong={a?.expectation != null ? fmtBand(a.expectation) : undefined} />
+    </ODiemTo>
+  );
+  /* Đã có KQ thi thật: W một ô (thi thật W một số) — bấm vào ô Writing đang có (W2 trước). */
+  const coKq = daThi?.loai === 'kq';
+  const dsO = coKq ? ds.filter((r) => r.category !== 'writing1' || !ds.some((x) => x.category === 'writing2')) : ds;
   return (
     <div role="group" aria-label={t('Chọn kỹ năng xem hành trình')}
-      className={`grid gap-2.5 ${ratio ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3 min-[900px]:grid-cols-[1.2fr_repeat(5,1fr)] [&>*:first-child]:max-[899px]:col-span-3'}`}>
-      {!ratio && (
-        <ODiemTo nhan={a ? `Overall · ${tenLuot(a)}` : 'Overall'} chon={chon === OVERALL} onClick={() => onChon(OVERALL)}
-          phu={a?.khongDuBoMon && a.overall == null ? null : a?.overall != null ? [a.expectation != null ? t('kỳ vọng {kv}', { kv: fmtBand(a.expectation) }) : null,
-            truoc?.overall != null ? (truoc.overall === a.overall ? `= ${tenLuot(truoc)}` : `${tenLuot(truoc)} ${fmtBand(truoc.overall)}${lech(a.overall, truoc.overall)}`) : null].filter(Boolean).join(' · ') : t('chưa có điểm')}>
-          {a?.khongDuBoMon && a.overall == null ? <span className="py-1.5"><NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq></span>
-            : <ODiem kieu="lon" so={a?.overall != null ? fmtBand(a.overall) : null} kq={soKyVong(a?.overall, a?.expectation)} nhan="Overall" kyVong={a?.expectation != null ? fmtBand(a.expectation) : undefined} />}
-        </ODiemTo>
-      )}
-      {ds.map((r) => {
+      className={`grid gap-2.5 ${ratio ? 'grid-cols-2 sm:grid-cols-4'
+        : coKq ? 'grid-cols-2 min-[900px]:grid-cols-[1.6fr_repeat(4,1fr)] [&>*:first-child]:max-[899px]:col-span-2'
+        : 'grid-cols-3 min-[900px]:grid-cols-[1.2fr_repeat(5,1fr)]'}`}>
+      {oDau}
+      {dsO.map((r) => {
+        const kb = KN_BAND[r.category];
+        if (coKq && kb) {
+          const v = daThi!.diem[KN_THI[r.category]] ?? null;
+          const mt = [...luot].reverse().find((x) => x.bands?.[kb] != null);
+          const laW = kb === 'writing';
+          return (
+            <ODiemTo key={r.category} nhan={laW ? 'W' : r.short} title={laW ? 'Writing' : r.label} goc={t('thi thật')}
+              chon={laW ? chon.startsWith('writing') : chon === r.category} onClick={() => onChon(laW && chon.startsWith('writing') ? chon : r.category)}
+              phu={mt && v != null ? soMoc(tenLuot(mt), mt.bands![kb]!, v) : null}>
+              <ODiem kieu="lon" so={v != null ? fmtBand(v) : null} kq={soKyVong(v, daThi!.target)} nhan={laW ? 'W' : r.short} kyVong={daThi!.target != null ? `Target ${fmtBand(daThi!.target)}` : undefined} />
+            </ODiemTo>
+          );
+        }
+        const boMon = !r.ratio && !!mon && !mon.includes(r.category);
         const vang = a?.vangCu?.[r.category] ? chuDoiVang(a.vangCu[r.category], homNay) : null;
         const cu = r.trend !== null && r.band !== null ? Math.round((r.band - r.trend) * 10) / 10 : null;
-        const phu = r.ratio ? (r.missed === false ? t('đạt') : r.missed === true ? t('chưa đạt') : t('chưa có điểm'))
-          : r.band === null ? t('chưa có điểm')
-          : r.trendFrom !== null && cu !== null ? (r.trend === 0 ? `= MT${r.trendFrom}` : `MT${r.trendFrom} ${fmtBand(cu)}${lech(r.band, cu)}`)
-          : r.bandAttemptNo ? `MT${r.bandAttemptNo}` : null;
+        const phu = boMon ? khongHocTu(r.category)
+          : r.ratio ? (r.missed === false ? t('đạt') : r.missed === true ? t('chưa đạt') : t('chưa có điểm'))
+          : vang ?? (r.band === null ? t('chưa có điểm')
+            : r.trendFrom !== null && cu !== null ? soMoc(`MT${r.trendFrom}`, cu, r.band)
+            : r.bandAttemptNo ? `MT${r.bandAttemptNo}` : null);
         return (
-          <ODiemTo key={r.category} nhan={r.short} title={r.label} chon={chon === r.category} onClick={() => onChon(r.category)} phu={vang ?? phu}>
+          <ODiemTo key={r.category} nhan={r.short} title={r.label} goc={daThi && !boMon && r.bandAttemptNo ? `MT${r.bandAttemptNo}` : undefined} chon={chon === r.category} onClick={() => onChon(r.category)} phu={phu}>
             {r.ratio
               ? <ODiem kieu="lon" so={r.score !== null ? String(r.score) : null} kq={r.missed === null ? null : r.missed ? 'duoi' : 'vuot'} nhan={r.short} phu={r.total ? `/ ${r.total}` : undefined} />
-              : <ODiem kieu="lon" so={r.band !== null ? fmtBand(r.band) : null} kq={soKyVong(r.band, r.expectation)} kck={r.kck} nhan={r.short} kyVong={r.expectation != null ? fmtBand(r.expectation) : undefined} />}
+              : <ODiem kieu="lon" so={!boMon && r.band !== null ? fmtBand(r.band) : null} kq={boMon ? null : soKyVong(r.band, r.expectation)} kck={r.kck} nhan={r.short} kyVong={r.expectation != null ? fmtBand(r.expectation) : undefined} />}
           </ODiemTo>
         );
       })}
@@ -82,15 +126,25 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
   );
 }
 
-function ODiemTo({ nhan, title, phu, chon, onClick, children }: { nhan: string; title?: string; phu?: string | null; chon: boolean; onClick: () => void; children: React.ReactNode }) {
+function ODiemTo({ nhan, goc, title, phu, chon, thi = false, onClick, children }: {
+  nhan: string; /** Góc phải: nguồn số ("MT4 · W4 SEP", "thi thật", ngày thi). */ goc?: string; title?: string; phu?: string | null; chon: boolean;
+  /** Ô Thi thật: viền + nền màu lịch thi (`--lich-*`), không nhầm Đạt. */ thi?: boolean; onClick: () => void; children: React.ReactNode;
+}) {
   return (
     <button type="button" aria-pressed={chon} title={title} onClick={onClick}
-      className={`flex min-w-0 flex-col items-start gap-0.5 rounded-[10px] border px-3.5 py-2.5 text-left max-sm:min-h-[44px] ${chon
+      className={`flex min-w-0 flex-col items-stretch gap-0.5 rounded-[10px] border px-2.5 py-2.5 text-left max-sm:min-h-[44px] sm:px-3.5 ${chon
         ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] shadow-[inset_0_-3px_0_var(--accent)]'
-        : 'border-[color:var(--line)] bg-[color:var(--surface)] hover:border-[color:var(--accent-line)]'}`}>
-      <span className="text-[13px] font-semibold text-slate-300">{nhan}</span>
-      {children}
-      {phu && <span className="text-[12px] tabular-nums text-slate-400">{phu}</span>}
+        : 'border-[color:var(--line)] bg-[color:var(--surface)] hover:border-[color:var(--accent-line)]'}`}
+      style={thi && !chon ? { borderColor: 'var(--lich-chu)', background: 'var(--lich-nen)' } : undefined}>
+      <span className="flex min-w-0 items-baseline gap-2">
+        <span className={`whitespace-nowrap text-[13px] font-semibold ${thi ? 'text-[color:var(--lich-chu)]' : 'text-slate-300'}`}>{nhan}</span>
+        {goc && <span className={`ml-auto min-w-0 truncate text-[12px] tabular-nums text-slate-400 ${thi ? '' : 'max-sm:hidden'}`}>{goc}</span>}
+      </span>
+      <span className="flex">{children}</span>
+      {/* 375: xuống dòng chỉ ở " · " ("MT1 5.0 ·" / "▲ 0.5"), không cắt giữa mốc. */}
+      {phu && <span className="text-[12px] tabular-nums leading-4 text-slate-400 sm:truncate">
+        {phu.split(' · ').map((x, i) => <Fragment key={i}>{i > 0 && ' · '}<span className="whitespace-nowrap">{x}</span></Fragment>)}
+      </span>}
     </button>
   );
 }
@@ -225,12 +279,14 @@ let xemNho: 'bieu' | 'bang' = 'bieu';
  * HÀNH TRÌNH · {kỹ năng} (UI-CHART-D, mockup M5): đầu khối "Hành trình · Speaking" ⓘ + Biểu đồ | Bảng. Biểu đồ = chart D; Bảng = Lượt · Tuần · Band · Kỳ vọng · ± ·
  * Ghi chú (nhận xét bài MT của kỹ năng ở lượt đó; không có thì vắng / không học / dự kiến), hàng cuối Thi thật. 375: luôn Bảng (chart nhiều cột không đọc được).
  */
-export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, tamDung, onMoCase }: {
+export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, tamDung, onMoCase, toTuan = null }: {
   studentId: number; kn: string; row: SkillBoardRow | null; attempts: LuotD[]; cy: LoTrinhD; homNay: string; tenKn: string;
   /** Mọi khoảng Tạm dừng (`dauHoSo.thongTin.khoangDung`). */
   tamDung?: { tu: string; den: string | null }[];
   /** Enter / "Mở Case" trên thanh Case / PA của chart → ngăn Case tại trang (cùng chỗ mở của Case & phương án). */
   onMoCase?: (caseId: number, paId?: number) => void;
+  /** Tuần đang rê ở Tiến độ trên lớp — chart tô cột đó. */
+  toTuan?: string | null;
 }) {
   const sExApi = useApi<SEx[]>(kn === 'speaking' ? `/students/${studentId}/s-expert` : null, [studentId, kn]);
   const hep = useDienThoai();
@@ -268,7 +324,7 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
         <p className="m-0 px-4 py-6 text-center text-[14px] text-slate-400">{t('Chưa có lượt nào ở {kn}.', { kn: tenKn })}</p>
       ) : bang ? <BangKn kn={kn} d={d} cy={cy} homNay={homNay} hep={hep} /> : (
         <>
-          <BieuDoD ten={tenKn} diem={d.diem} sex={d.sex} target={d.target} kvPhang={d.kvPhang} cases={d.cases} thi={d.thi} homNay={homNay} tamDung={tamDung} lo={d.lo} hi={d.hi} buoc={d.buoc} fmt={d.fmt} />
+          <BieuDoD ten={tenKn} diem={d.diem} sex={d.sex} target={d.target} kvPhang={d.kvPhang} cases={d.cases} thi={d.thi} homNay={homNay} tamDung={tamDung} toTuan={toTuan} lo={d.lo} hi={d.hi} buoc={d.buoc} fmt={d.fmt} />
           <ChuGiaiD kq={cy.ratio ? 'thuong' : { vuot: d.diem.some((x) => kqSo(x.v, x.kv) === 'vuot'), bang: d.diem.some((x) => kqSo(x.v, x.kv) === 'bang'), duoi: d.diem.some((x) => kqSo(x.v, x.kv) === 'duoi') }}
             kvLuot={!cy.ratio && d.diem.some((x) => x.kv != null && x.kv !== (d.target?.filter((g) => !g.tu || g.tu <= x.tuan).at(-1)?.v ?? null))}
             vang={d.diem.some((x) => x.loai === 'vang')} thieu={d.diem.some((x) => x.loai === 'thieu')} tamDung={!!tamDung?.length} sex={d.sex.length > 0}
@@ -341,167 +397,5 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
           {cotBang.map((c) => <OBang key={c.key} c={c}>{o(thi!, c)}{c.key === 'luot' && hep && <span className="bang-phu">{phu(thi!, c)}</span>}</OBang>)}
         </tr>
       )} />
-  );
-}
-
-/** `GET /students/:id/bai-tren-lop` (SV-BAI-LOP). */
-type Bai = { id: number; classId: number; lop: string; skill: string; tenBai: string; diem: number; thang: number; tuan: string; tuanMa: string; nhanXet: string | null; ghiBoi: string | null; suaBoi: string | null; sua: boolean };
-type DsBai = { bai: Bai[]; lop: { classId: number; code: string; kyNang: string[] }[] };
-/** Kỹ năng của bài trên lớp: FT W1 / W2 ghi chung "writing" (cột Góp ý tuần). */
-const kyNangBai = (chon: ChonKn) => (chon === 'writing1' || chon === 'writing2' ? 'writing' : chon);
-const so = (d: number) => (Number.isInteger(d) ? String(d) : String(Math.round(d * 100) / 100));
-const TOI_DA = 3;
-/** Cột bảng Tiến độ trên lớp (khu c `.bang-td`): Tuần · (Kỹ năng khi xem Overall) · Kết quả · Nhận xét · GV. */
-const cotTienDo = (coKn: boolean): CotBang[] => [
-  { key: 'tuan', nhan: t('Tuần'), kieu: 'tuan' },
-  ...(coKn ? [{ key: 'kn', nhan: t('Kỹ năng'), kieu: 'so' as const, rong: 72 }] : []),
-  { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 300 },
-  { key: 'nx', nhan: t('Nhận xét'), kieu: 'chu' },
-  { key: 'gv', nhan: 'GV', kieu: 'chu', rong: 180 },
-];
-
-/**
- * TIẾN ĐỘ TRÊN LỚP (khu c, `10` mục 5): bảng dưới biểu đồ — 3 dòng mới nhất + "Xem thêm n dòng", ghi NGUYÊN VĂN GV nhập (tên bài · điểm / thang của bài),
- * thang riêng, không vào MT / Overall / KPI. Overall = mọi kỹ năng (thêm cột kỹ năng). "+ Ghi tiến độ" khi người xem ghi được ít nhất một kỹ năng (máy chủ kiểm lại);
- * bấm dòng mình sửa được → panel sửa / xoá.
- */
-export function TienDoTrenLop({ studentId, hocVien, lopNay, chon, ct, homNay }: {
-  studentId: number; hocVien: string; lopNay: number | null; chon: ChonKn; ct: string | null; homNay: string;
-}) {
-  const duong = `/students/${studentId}/bai-tren-lop`;
-  const { data, error, reload } = useApi<DsBai>(duong, [studentId]);
-  const [du, setDu] = useState(false);
-  const [mo, setMo] = useState<Bai | 'moi' | null>(null);
-  const kn = chon === OVERALL ? null : kyNangBai(chon);
-  const ds = (data?.bai ?? []).filter((b) => !kn || b.skill === kn);
-  const hien = du ? ds : ds.slice(0, TOI_DA);
-  const ghiDuoc = (data?.lop ?? []).some((l) => l.kyNang.length && (!kn || l.kyNang.includes(kn)));
-  return (
-    <>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h3 className="m-0 text-[15px] font-semibold text-slate-100">{t('Tiến độ trên lớp')}</h3>
-        <span className="text-[12px] text-slate-400">{t('GV ghi tuỳ ý · không vào MT')}</span>
-        {ghiDuoc && <button type="button" className="btn btn-sm ml-auto max-sm:min-h-[44px]" onClick={() => setMo('moi')}>{t('+ Ghi tiến độ')}</button>}
-      </div>
-      {error ? <div className="px-4 pb-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
-        : !data ? <div className="px-4 pb-3"><Skeleton rows={2} /></div>
-        : !ds.length ? <p className="m-0 px-4 pb-4 text-[13px] text-slate-400">{t('Chưa có ghi nhận nào.')}</p>
-        : (
-          <>
-            <Bang ten={t('Tiến độ trên lớp')} khung={false} cot={cotTienDo(!kn)} hang={hien} khoa={(b) => b.id}
-              onHang={ds.some((b) => b.sua) ? (b) => { if (b.sua) setMo(b); } : undefined}
-              oCua={(b, c) => c.key === 'tuan' ? <span className="tabular-nums">{b.tuanMa}</span>
-                : c.key === 'kn' ? tenMonNgan(ct, b.skill)
-                : c.key === 'kq' ? <span className="rounded-md bg-[color:var(--accent-soft)] px-2 py-0.5 text-[14px] font-bold text-slate-100" title={b.sua ? t('Sửa') : undefined}>{b.tenBai} · <span className="tabular-nums">{so(b.diem)}/{so(b.thang)}</span></span>
-                : c.key === 'nx' ? (b.nhanXet ? <span className="break-words text-slate-300">{b.nhanXet}</span> : <span className="text-faint">—</span>)
-                : <span className="text-slate-300">{b.suaBoi ?? b.ghiBoi ?? '—'}</span>} />
-            {ds.length > TOI_DA && (
-              <div className="border-t px-4 py-2" style={{ borderColor: 'var(--line)' }}>
-                <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" aria-expanded={du} onClick={() => setDu(!du)}>
-                  {du ? t('Thu gọn ▴') : t('Xem thêm {n} dòng ▾', { n: ds.length - TOI_DA })}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      {mo && data && (
-        <PanelTienDo duong={duong} bai={mo === 'moi' ? null : mo} lop={data.lop} lopNay={lopNay} knDau={kn} hocVien={hocVien} ct={ct} homNay={homNay}
-          onDong={() => setMo(null)} onXong={() => { invalidate(duong); reload(); setMo(null); }} />
-      )}
-    </>
-  );
-}
-
-/** Panel ghi / sửa một dòng tiến độ trên lớp: Kỹ năng · Tên bài · Điểm / Thang (thang của bài, không quy đổi band) · Tuần · Nhận xét. Lỗi lưu giữ chữ. */
-function PanelTienDo({ duong, bai, lop, lopNay, knDau, hocVien, ct, homNay, onDong, onXong }: {
-  duong: string; bai: Bai | null; lop: DsBai['lop']; lopNay: number | null; knDau: string | null; hocVien: string; ct: string | null; homNay: string;
-  onDong: () => void; onXong: () => void;
-}) {
-  const toast = useToast();
-  const lf = useLoiForm();
-  const lopGhi = lop.filter((l) => l.kyNang.length);
-  const lopDau = bai ? lop.find((l) => l.classId === bai.classId) : lopGhi.find((l) => l.classId === lopNay && (!knDau || l.kyNang.includes(knDau))) ?? lopGhi.find((l) => !knDau || l.kyNang.includes(knDau)) ?? lopGhi[0];
-  const [classId] = useState(lopDau?.classId ?? null);
-  const kyNang = lop.find((l) => l.classId === classId)?.kyNang ?? [];
-  const [skill, setSkill] = useState(bai?.skill ?? (knDau && kyNang.includes(knDau) ? knDau : kyNang[0] ?? ''));
-  const [tenBai, setTenBai] = useState(bai?.tenBai ?? '');
-  const [diem, setDiem] = useState(bai ? so(bai.diem) : '');
-  const [thang, setThang] = useState(bai ? so(bai.thang) : '10');
-  const [tuan, setTuan] = useState(bai?.tuan ?? mondayOfDate(homNay));
-  const [nhanXet, setNhanXet] = useState(bai?.nhanXet ?? '');
-  const [busy, setBusy] = useState(false);
-  const [loi, setLoi] = useState<string | null>(null);
-  /* Xoá dòng: hỏi lại (cùng mẫu "Xoá Case này?") — dòng xoá không khôi phục được. */
-  const [hoiXoa, setHoiXoa] = useState(false);
-  const soDiem = Number(diem.replace(',', '.')), soThang = Number(thang.replace(',', '.'));
-  const loiO = [
-    ...(!skill ? [{ khoa: 'kn', nhan: t('Kỹ năng'), lyDo: t('Chưa chọn') }] : []),
-    ...(!tenBai.trim() ? [{ khoa: 'ten', nhan: t('Tên bài'), lyDo: t('Chưa nhập') }] : []),
-    ...(!thang.trim() || !Number.isFinite(soThang) || soThang <= 0 ? [{ khoa: 'thang', nhan: t('Thang điểm'), lyDo: t('Phải lớn hơn 0') }] : []),
-    ...(!diem.trim() || !Number.isFinite(soDiem) || soDiem < 0 || (Number.isFinite(soThang) && soDiem > soThang) ? [{ khoa: 'diem', nhan: t('Điểm'), lyDo: t('Từ 0 tới thang điểm') }] : []),
-    ...(!tuan ? [{ khoa: 'tuan', nhan: t('Tuần'), lyDo: t('Chưa chọn') }] : []),
-  ];
-  const daSua = !bai ? !!(tenBai.trim() || diem.trim() || nhanXet.trim()) : tenBai !== bai.tenBai || diem !== so(bai.diem) || thang !== so(bai.thang) || tuan !== bai.tuan || nhanXet !== (bai.nhanXet ?? '') || skill !== bai.skill;
-  const gui = async (xoa = false) => {
-    if (!xoa) { lf.bam(); if (loiO.length) return; }
-    setBusy(true); setLoi(null);
-    try {
-      const than = { skill, tenBai: tenBai.trim(), diem: soDiem, thang: soThang, tuan, nhanXet: nhanXet.trim() || null };
-      if (xoa && bai) await api.del(`/bai-tren-lop/${bai.id}`);
-      else if (bai) await api.put(`/bai-tren-lop/${bai.id}`, than);
-      else await api.post(duong, { classId, ...than });
-      toast.push('ok', xoa ? t('Đã xoá') : t('Đã lưu'));
-      onXong();
-    } catch (e: any) { setHoiXoa(false); setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
-  };
-  const lopCode = lop.find((l) => l.classId === classId)?.code ?? null;
-  return (
-    <>
-    <KhungPanel tieuDe={t('Tiến độ trên lớp')} loai={t('GHI NHẬN · TUỲ CHỌN')} hocVien={hocVien} lop={lopCode} onDong={() => !busy && onDong()}
-      chan={{
-        daSua, huy: { onClick: onDong, disabled: busy }, conThieu: lf.conThieu(loiO),
-        xoa: bai ? { onClick: () => setHoiXoa(true) } : undefined,
-        dongTren: loi ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loi}</p> : undefined,
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !classId} onClick={() => void gui()}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
-      }}>
-      <div className="space-y-3 pt-3">
-        {!classId && <p className="m-0 text-[13px] text-slate-400">{t('Bạn không ghi được tiến độ trên lớp của học viên này.')}</p>}
-        <Truong nhan={t('Kỹ năng')} batBuoc as="div" loi={lf.loiCua(loiO, 'kn')}>
-          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t('Kỹ năng')} {...lf.o(loiO, 'kn')}>
-            {kyNang.map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={skill === k} onClick={() => setSkill(k)}
-                className={`btn btn-sm min-w-[44px] max-sm:min-h-[44px] ${skill === k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{tenMonNgan(ct, k)}</button>
-            ))}
-          </div>
-        </Truong>
-        <Truong nhan={t('Tên bài')} batBuoc loi={lf.loiCua(loiO, 'ten')}>
-          <input className="field w-full" maxLength={BAI_LOP_TEN_TOI_DA} value={tenBai} onChange={(e) => setTenBai(e.target.value)} placeholder={t('Ví dụ: KT từ vựng, BTVN Unit 3')} {...lf.o(loiO, 'ten')} />
-        </Truong>
-        <div className="flex flex-wrap items-start gap-3">
-          <Truong nhan={t('Điểm')} batBuoc loi={lf.loiCua(loiO, 'diem')}>
-            <input className="field w-24 text-center tabular-nums" inputMode="decimal" value={diem} onChange={(e) => setDiem(e.target.value)} {...lf.o(loiO, 'diem')} />
-          </Truong>
-          <Truong nhan={t('Thang điểm')} batBuoc loi={lf.loiCua(loiO, 'thang')} phu={t('thang của bài · không quy đổi band')}>
-            <input className="field w-24 text-center tabular-nums" inputMode="decimal" value={thang} onChange={(e) => setThang(e.target.value)} {...lf.o(loiO, 'thang')} />
-          </Truong>
-        </div>
-        <Truong nhan={t('Tuần')} batBuoc loi={lf.loiCua(loiO, 'tuan')}>
-          <ONgay kieu="tuan" value={tuan} onChange={setTuan} toiDa={homNay} id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loiO, 'tuan')} />
-        </Truong>
-        <Truong nhan={t('Nhận xét')} tuyChon>
-          <textarea className="field w-full" rows={3} maxLength={BAI_LOP_NHAN_XET_TOI_DA} value={nhanXet} onChange={(e) => setNhanXet(e.target.value)} />
-        </Truong>
-      </div>
-    </KhungPanel>
-    {hoiXoa && bai && (
-      <KhungPanel tieuDe={t('Xoá dòng tiến độ này?')} longTrong z="z-[60]" onDong={() => !busy && setHoiXoa(false)}
-        chan={{
-          huy: { onClick: () => setHoiXoa(false), disabled: busy },
-          chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui(true)}>{busy ? t('Đang xoá…') : t('Xoá')}</button>,
-        }}>
-        <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">{bai.tuanMa} · {bai.tenBai} · <span className="tabular-nums">{so(bai.diem)}/{so(bai.thang)}</span></p>
-      </KhungPanel>
-    )}
-    </>
   );
 }

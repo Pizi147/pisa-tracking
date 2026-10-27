@@ -184,7 +184,7 @@ function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
     o1(t('Đạt kỳ vọng Test'), o(d?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test')),
       <>{tuMau(tyLeGv(d?.ketQua), t('lượt Test'))}{d && d.tienBo.k !== 'na' && <> · {t('Tiến bộ')} {nho(d.tienBo, 'tien-bo', t('HV tiến bộ'))}</>}</>,
       t('Test (MT, Progress, Final — không gồm thi thật): theo quy tắc Overall, một lượt = một lượt Test của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi. Tiến bộ: lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (Fast Track).')),
-    o1(t('Case có PA'), <PhanTram x={pa} nguon={nguon(id, 'cot=case-mo')} tieuDe={t('Case đang phụ trách')} />,
+    o1(t('Case có PA'), <PhanTram x={pa} nguon={nguon(id, 'cot=case-mo')} tieuDe={t('Case đang phụ trách')} vung="chi-so" />,
       paCt ? <>{t('PA cải thiện')} <OSo giaTri={paCt.tong} nhan={`${paCt.dung}/${paCt.tong}`} nguon={nguonCs('pa-hieu-qua')} tieuDe={t('PA hiệu quả')} className={vung} /></> : t('Case đang phụ trách')),
     /* Chủ SP 23/10: thi thật (IELTS) RẤT quan trọng — % Pass Target + Fail · Pass · Exceed (bấm → danh sách có điểm). */
     o1(t('Kết quả thi thật'),
@@ -237,7 +237,7 @@ function KhoiLop({ data }: { data: HoSo }) {
           {data.lop.map((l) => (
             <li key={l.id} className="flex min-w-0 flex-col gap-1.5 rounded-lg border px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <Link to={`/hoc-vien/lop/${l.id}`} className="link font-semibold">{l.ma}</Link>
+                <Link to={`/hoc-vien/lop/${l.id}`} className="ten-ho-so">{l.ma}</Link>
                 {l.laGvcn && <ChipGvcn />}
                 <ChipBanGiaoLop l={l} />
               </span>
@@ -550,7 +550,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
                 {truoc.map((c) => (
                   <li key={c.id} className="grid gap-x-4 gap-y-0.5 border-t py-2 first:border-t-0 sm:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)_minmax(0,16rem)] sm:items-center"
                     style={{ borderColor: 'var(--line)', ...(c.quaHan ? { boxShadow: 'inset 3px 0 0 rgb(var(--bad-rgb))', paddingLeft: 8 } : {}) }}>
-                    <span className="min-w-0 truncate text-sm"><Link to={`/hoc-vien/${c.studentId}`} className="link font-semibold">{c.hocVien}</Link>{c.maLop && <span className="text-xs text-slate-400"> · {c.maLop}</span>}</span>
+                    <span className="min-w-0 truncate text-sm"><Link to={`/hoc-vien/${c.studentId}`} className="ten-ho-so">{c.hocVien}</Link>{c.maLop && <span className="text-xs text-slate-400"> · {c.maLop}</span>}</span>
                     <Link to={duongHoSoHocVien(c.studentId, { caseId: c.id })} className="link inline-flex min-w-0 max-w-full text-left text-sm" title={dich(c.tieuDe)}>
                       <TenCase c={{ title: dich(c.tieuDe), tenSos: c.tenSos && { ...c.tenSos, giua: dich(c.tenSos.giua) } }} />
                     </Link>
@@ -560,11 +560,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
               </ul>
             </div>
           )}
-          {ds.length > truoc.length && (
-            <span className="text-sm text-slate-400">
-              <OSo giaTri={ds.length} nhan={t('Xem cả {n} Case', { n: ds.length })} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} className={vung} />
-            </span>
-          )}
+          {/* 6C-NHO (bảng kê lỗi 2): bỏ "Xem cả n Case" — trùng số to đầu thẻ (cùng panel, cùng khoá → nháy). */}
         </div>
       )}
     </Card>

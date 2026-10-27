@@ -37,8 +37,8 @@ type Hang = RosterRow & { lichThi?: LichThi; standing?: KetQuaVao | null };
 type Moc = RosterRow['history'][number] & { writing?: number | null; expectation?: number | null; khongHoc?: string[]; khongDuBoMon?: boolean };
 type Loc = 'tat-ca' | 'sos' | 'thieu';
 /* Chip lọc — cùng dáng chip của `CongTacKhung` (kieu chip). */
-const CHIP_CHON = 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]';
-const CHIP_THUONG = 'border-[color:var(--line-strong)] bg-transparent text-slate-300 hover:text-slate-100';
+const CHIP_CHON = 'font-semibold border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]';
+const CHIP_THUONG = 'font-medium border-[color:var(--line-strong)] bg-transparent text-slate-300 hover:text-slate-100';
 
 /** Lượt hiện của em (P8 — lượt của TỪNG HV): lượt máy chủ kết luận (`standing`, cùng `standingFor` của Học viên & Lớp); chưa có → lượt mới nhất có điểm. */
 const mocCua = (r: Hang): Moc | null => (r.history.find((h) => h.id === r.standing?.attemptId) ?? r.history[0] ?? null) as Moc | null;
@@ -164,7 +164,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
       <tr className={`${mo === r.id ? 'dang-mo' : ''} ${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
         {COT.map((c) => {
           const phu = phuCua(r, c);
-          return <OBang key={c.key} c={c} className={c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}>{oCua(r, c)}{phu && <span className="bang-phu" data-phu-odiem="">{phu}</span>}</OBang>;
+          return <OBang key={c.key} c={c} className={c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}>{oCua(r, c)}{phu && <span className="bang-phu -mx-3 whitespace-nowrap" data-phu-odiem="">{phu}</span>}</OBang>;
         })}
       </tr>
       {mo === r.id && (
@@ -184,7 +184,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         {(['tat-ca', 'sos', 'thieu'] as const).map((k) => (
           <button key={k} type="button" aria-pressed={loc === k} onClick={() => { setLoc(k); setMo(null); }}
-            className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] font-semibold max-sm:h-11 ${loc === k ? CHIP_CHON : CHIP_THUONG}`}>
+            className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-11 ${loc === k ? CHIP_CHON : CHIP_THUONG}`}>
             {k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? 'SOS' : t('Chưa đủ dữ liệu')} <span className="tabular-nums">{dem[k]}</span>
           </button>
         ))}
