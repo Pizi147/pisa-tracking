@@ -62,6 +62,13 @@ export async function runUiChartDTests(t: YThucTestKit) {
     assert(tt?.ngay === '2026-10-17' && tt.l === 6.5 && tt.w === 5.5 && tt.ovr === 6.0 && tt.target === 6.5 && tt.khongThi === false, `thiThat = ${JSON.stringify(tt)}`);
   }));
 
+  check('lượt lớp thường có nguongDat (ngưỡng đạt của lớp)', () => thu(() => {
+    const r = one(`SELECT a.student_id, a.cycle_id FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id WHERE c.route IS NULL AND c.status = 'active' AND a.status != 'cancelled' LIMIT 1`);
+    assert(r, 'demo phải có em lớp thường có lượt');
+    const a = profile.studentProfile(P.admin, r.student_id, r.cycle_id).attempts.find((x: any) => x.mode === 'ratio');
+    assert(a && typeof a.nguongDat === 'number' && a.nguongDat > 0 && a.nguongDat <= 1, `nguongDat = ${a?.nguongDat}`);
+  }));
+
   check('cycle.thiThat: đã thi, chưa có điểm → ngày, điểm null (chờ kết quả)', () => thu(() => {
     conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = '2026-10-17', thi_that_l = NULL, thi_that_r = NULL, thi_that_w = NULL, thi_that_s = NULL, thi_that_khong_thi = 0,
       outcome = NULL, outcome_score = NULL WHERE id = ?`).run(dong.cycle_id);

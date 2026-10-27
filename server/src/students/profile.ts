@@ -643,7 +643,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         ...base, expectation: null, bands: null, overall: null, evaluable: null,
         skills: r.skills, scored: r.scored, required: r.required,
         complete: r.complete, provisional: r.provisional,
-        sosLevel: r.sosLevel, scopeNote: null, tyLeTong: r.tyLeTong,   // PR-LT2a (T58): web dựng chữ kết quả qua nhanKetQuaThuong, không đọc sosLevel
+        sosLevel: r.sosLevel, scopeNote: null, tyLeTong: r.tyLeTong, nguongDat: r.passThreshold,   // UI-CHART-D: vạch "Đạt từ 70 %" của chart lớp thường   // PR-LT2a (T58): web dựng chữ kết quả qua nhanKetQuaThuong, không đọc sosLevel
       };
     }
     const r = t.ft!;

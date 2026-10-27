@@ -9,12 +9,13 @@ import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { CaseKyNang, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
-import { BieuDoHanhTrinh, DauHanhTrinh, DiemDau, OVERALL, TienDoTrenLop, type ChonKn } from './HanhTrinhKyNang.tsx';
+import { DiemDau, HanhTrinhKn, OVERALL, TienDoTrenLop, thiThatCua, type ChonKn, type LoTrinhD, type ThiThatD } from './HanhTrinhKyNang.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
-import { Nhan, NhanKq } from '../../ui/Nhan.tsx';
+import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { CHU_DA_XONG } from '@shared/domain/index.ts';
 import { DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -185,7 +186,9 @@ export default function StudentDetailPage() {
    */
   const rowsFt = (skillRows ?? []).filter((r) => !r.tuLopTruoc);
   const macDinh = data.dauHoSo?.o?.hocThuat?.dong?.[0]?.category as string | undefined;
-  const chon: ChonKn = chonTay ?? (macDinh && rowsFt.some((r) => r.category === macDinh) ? macDinh : cy?.ratio && rowsFt[0] ? rowsFt[0].category : OVERALL);
+  /* UI-CHART-D: `?dot=` (mở đúng lượt) → Overall, vì bảng Mock Test nay nằm ở chỗ chart khi chọn Overall. */
+  const chon: ChonKn = chonTay ?? (cy?.ratio && rowsFt[0] ? (macDinh && rowsFt.some((r) => r.category === macDinh) ? macDinh : rowsFt[0].category)
+    : p.dot != null ? OVERALL : macDinh && rowsFt.some((r) => r.category === macDinh) ? macDinh : OVERALL);
   const hangChon = chon === OVERALL ? null : (skillRows ?? []).find((r) => r.category === chon && !r.tuLopTruoc) ?? null;
   const tenChon = chon === OVERALL ? 'Overall' : hangChon ? dich(hangChon.label) : chon;
   const chonKn = (k: ChonKn) => { setChonTay(k); if (tab !== 'hoc-thuat') setTab('hoc-thuat'); };
@@ -340,14 +343,21 @@ export default function StudentDetailPage() {
               cuoiKhoa={data.cuoiKhoa} coTheKetLuan={!!data.viewer?.coTheKetLuan} onDoi={reload} />
           )}
           {/*
-            HÀNH TRÌNH THEO KỸ NĂNG ĐANG CHỌN (khu c, `10` mục 5): biểu đồ chỉ MT chính thức + kỳ vọng bậc thang + mốc tuần (FT; lớp thường không
-            vẽ trục band — điểm theo thang của bài ở bảng Kết quả Test) · Tiến độ trên lớp là bảng dưới biểu đồ, thang riêng, không vào MT.
+            HÀNH TRÌNH THEO KỸ NĂNG ĐANG CHỌN (UI-CHART-D, mockup M5): kỹ năng → chart D | Bảng (`HanhTrinhKn`); Overall (FT) → bảng Mock Test ĐẶT CHỖ CHART
+            + hàng Thi thật cuối, nổi nhất (chủ SP 27/10). Tiến độ trên lớp vẫn dưới, thang riêng, không vào MT.
           */}
-          <section id="hanh-trinh-kn" className="card overflow-hidden" aria-label={t('Hành trình · {kn}', { kn: tenChon })}>
-            <DauHanhTrinh tenKn={tenChon} />
-            {board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
+          <section id="hanh-trinh-kn" className="card overflow-hidden" aria-label={chon === OVERALL && !cy.ratio ? 'Mock Test' : t('Hành trình · {kn}', { kn: tenChon })}>
+            {chon === OVERALL && !cy.ratio ? (
+              <>
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+                  <h2 className="m-0 text-[15px] font-bold text-slate-100">Mock Test</h2>
+                  <NutLuat label={t('Cách đọc bảng Mock Test')}>{t('Điểm tô theo kỳ vọng của chính lượt · hàng cuối là thi thật — kết quả cuối của lộ trình, so Target.')}</NutLuat>
+                </div>
+                <KhoiMockTest cy={cy} attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
+              </>
+            ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
               : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
-              : !cy.ratio && homNay && <BieuDoHanhTrinh studentId={data.id} row={hangChon} attempts={data.attempts} homNay={homNay} tenKn={tenChon} />}
+              : homNay && <HanhTrinhKn studentId={data.id} kn={chon} row={hangChon} attempts={data.attempts} cy={cy} homNay={homNay} tenKn={tenChon} />}
             {homNay && <TienDoTrenLop studentId={data.id} hocVien={data.fullName} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} />}
           </section>
 
@@ -363,40 +373,16 @@ export default function StudentDetailPage() {
           )}
 
           {/*
-            TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp Fast Track là "Mock Test",
-            lớp thường là "Kết quả kiểm tra". Cụm "Điểm qua các lượt" đã bỏ — nó không phải
-            tiếng Việt ai dùng, và nó đúng với cả hai loại lớp nên chẳng nói được gì.
+            TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp thường là "Kết quả Test" (cuối tab). FT: bảng Mock Test nay ở chỗ chart khi chọn Overall (UI-CHART-D).
           */}
-          <Card title={cy.ratio ? t('Kết quả Test') : 'Mock Test'} bodyClass="p-0">
-            {data.attempts.length === 0 ? (
-              <div className="p-4"><Empty title={t('Chưa có lượt đánh giá nào trong lộ trình này')} /></div>
-            ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} ct={cy.programmeCode ?? null} onOpen={(a) => navigate(attemptHref(a))} />
-              : <>
-                {/* RF: kỳ vọng mọi MT bằng target — nói một lần ở đầu khối, không lặp ở từng hàng. */}
-                {cy.route === 'RF' && <p className="m-0 px-3 pt-2 text-xs text-slate-500">{t('Lộ trình RF — kỳ vọng mọi MT bằng Target.')}</p>}
-                <IeltsAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
-              </>}
-            <div className="p-3">
-              {cy.targetRevisions.length > 0 && (
-                <p className="text-xs text-slate-500 mt-2 mb-0">
-                  {t('Target đã đổi {n} lần — lần gần nhất {tuan}:', { n: cy.targetRevisions.length, tuan: tuanLich(cy.targetRevisions[0].effectiveFrom, homNay) })}
-                  {' '}<TargetText band={cy.targetRevisions[0].oldTarget} kck={cy.targetRevisions[0].oldKck} kyThi={cy.kyThi} /> → <TargetText band={cy.targetRevisions[0].newTarget} kck={cy.targetRevisions[0].newKck} kyThi={cy.kyThi} />
-                  {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
-                  {' '}{t('Các lượt đã chốt vẫn giữ kỳ vọng tính theo Target lúc đó.')}
-                </p>
-              )}
-              {cy.outcome && (
-                <p className="text-sm text-slate-200 mt-2 mb-0">
-                  {t('Kết luận lộ trình:')} <strong>{dich(cy.outcome.label)}</strong>
-                  {cy.outcome.score !== null && ` · ${fmtBand(cy.outcome.score)}`}
-                  {cy.outcome.note && <span className="text-slate-400"> — {cy.outcome.note}</span>}
-                </p>
-              )}
-              {!cy.baseline && !cy.ratio && (
-                <p className="text-xs text-slate-500 mt-2 mb-0">{t('Chưa ghi điểm đầu vào.')}</p>
-              )}
-            </div>
-          </Card>
+          {cy.ratio && (
+            <Card title={t('Kết quả Test')} bodyClass="p-0">
+              {data.attempts.length === 0 ? (
+                <div className="p-4"><Empty title={t('Chưa có lượt đánh giá nào trong lộ trình này')} /></div>
+              ) : <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} ct={cy.programmeCode ?? null} onOpen={(a) => navigate(attemptHref(a))} />}
+              <GhiChuLoTrinh cy={cy} homNay={homNay} />
+            </Card>
+          )}
         </>
       ))}
 
@@ -503,6 +489,62 @@ function NhanDot({ a, ct = null }: {
   );
 }
 
+/**
+ * KHỐI MOCK TEST KHI CHỌN OVERALL (UI-CHART-D, chủ SP 27/10): bảng Mock Test như web đang có, đặt chỗ chart, + hàng Thi thật cuối, nổi nhất
+ * (kết quả cuối của lộ trình, so Target). Ghi chú Target đã đổi / kết luận / đầu vào giữ dưới bảng.
+ */
+function KhoiMockTest({ cy, attempts, dotId, homNay, onOpen }: { cy: any; attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void }) {
+  const th = homNay ? thiThatCua(cy as LoTrinhD, homNay) : null;
+  return (
+    <>
+      {attempts.length === 0 && !th ? <div className="p-4"><Empty title={t('Chưa có lượt đánh giá nào trong lộ trình này')} /></div> : <>
+        {/* RF: kỳ vọng mọi MT bằng target — nói một lần ở đầu khối, không lặp ở từng hàng. */}
+        {cy.route === 'RF' && <p className="m-0 px-3 pt-2 text-xs text-slate-500">{t('Lộ trình RF — kỳ vọng mọi MT bằng Target.')}</p>}
+        {/* Tăng dần như mockup M5: đọc cùng chiều chart, Thi thật là hàng cuối (kết quả cuối của lộ trình). */}
+        <IeltsAttempts attempts={[...attempts].sort((x, y) => (x.weekStart ?? '9999').localeCompare(y.weekStart ?? '9999') || x.attemptNo - y.attemptNo)} dotId={dotId} homNay={homNay} onOpen={onOpen} thi={th} />
+      </>}
+      <GhiChuLoTrinh cy={cy} homNay={homNay} />
+    </>
+  );
+}
+
+/** Dưới bảng Mock Test / Kết quả Test: Target đã đổi · kết luận lộ trình · chưa ghi điểm đầu vào (giữ nguyên chữ cũ). */
+function GhiChuLoTrinh({ cy, homNay }: { cy: any; homNay: string | null }) {
+  return (
+    <div className="p-3">
+      {cy.targetRevisions.length > 0 && (
+        <p className="text-xs text-slate-500 mt-2 mb-0">
+          {t('Target đã đổi {n} lần — lần gần nhất {tuan}:', { n: cy.targetRevisions.length, tuan: tuanLich(cy.targetRevisions[0].effectiveFrom, homNay) })}
+          {' '}<TargetText band={cy.targetRevisions[0].oldTarget} kck={cy.targetRevisions[0].oldKck} kyThi={cy.kyThi} /> → <TargetText band={cy.targetRevisions[0].newTarget} kck={cy.targetRevisions[0].newKck} kyThi={cy.kyThi} />
+          {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
+          {' '}{t('Các lượt đã chốt vẫn giữ kỳ vọng tính theo Target lúc đó.')}
+        </p>
+      )}
+      {cy.outcome && (
+        <p className="text-sm text-slate-200 mt-2 mb-0">
+          {t('Kết luận lộ trình:')} <strong>{dich(cy.outcome.label)}</strong>
+          {cy.outcome.score !== null && ` · ${fmtBand(cy.outcome.score)}`}
+          {cy.outcome.note && <span className="text-slate-400"> — {cy.outcome.note}</span>}
+        </p>
+      )}
+      {!cy.baseline && !cy.ratio && (
+        <p className="text-xs text-slate-500 mt-2 mb-0">{t('Chưa ghi điểm đầu vào.')}</p>
+      )}
+    </div>
+  );
+}
+
+/** Kết quả của hàng Thi thật: Đạt Target / Chưa đạt Target · −0.5 (OVR so Target lúc nhập) · đã thi chờ KQ · chưa thi · không thi. */
+function KetQuaThi({ th }: { th: ThiThatD | 'khong' }) {
+  if (th === 'khong') return <span className="text-slate-300">{t('Không thi')}</span>;
+  if (th.loai === 'cho') return <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>;
+  if (th.loai === 'du-kien') return <span className="text-slate-400">{t('chưa thi')}</span>;
+  const { ovr } = th.diem, tg = th.target;
+  if (ovr == null || tg == null) return null;
+  return ovr >= tg ? <span className="font-bold text-ok">✓ {t('Đạt Target')}</span>
+    : <span className="font-bold text-bad">✗ {t('Chưa đạt Target')} · −{fmtBand(tg - ovr)}</span>;
+}
+
 /** Chữ cái kỹ năng ở dòng Điểm của thẻ điện thoại (cùng chữ với đầu cột bảng). */
 const CHU_KY_NANG = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' } as const;
 
@@ -513,9 +555,14 @@ const CHU_KY_NANG = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' 
  * phải. Ô MT{n} là liên kết (Tab vào được); cả hàng vẫn bấm được. Nhãn nhỏ cạnh MT: lịch sử · đã huỷ · huỷ phần · dời S —
  * tối đa hai, còn lại "+n" có tooltip.
  */
-function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
+function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
   attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
+  /** UI-CHART-D: hàng Thi thật cuối bảng (null = chưa có kế hoạch thi). */
+  thi?: ThiThatD | 'khong' | null;
 }) {
+  const thiKq = thi && thi !== 'khong' && thi.loai === 'kq' ? thi : null;
+  const diemThi = (k: 'l' | 'r' | 'w' | 's' | 'ovr') => (thiKq?.diem[k] != null ? <DiemKq diem={thiKq.diem[k]!} kyVong={thiKq.target} /> : '—');
+  const ngayThi = !thi || thi === 'khong' ? '—' : thi.loai === 'du-kien' ? t('dự kiến {thang}', { thang: thi.nhan }) : thi.nhan;
   const dienThoai = useDienThoai();
   /* G12: số điểm tô ✓ / ✗ theo kỳ vọng của lượt (như lưới lớp), không màu link. G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
   const diemKyNang = (a: any, k: 'listening' | 'reading' | 'writing' | 'speaking') => (
@@ -556,6 +603,19 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
               { nhan: t('Lớp'), noiDung: a.classCode ?? '—' },
             ]} />
         ))}
+        {thi && (
+          <TheDong className="hang-thi-that" dau={(
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0"><b>{t('Thi thật')}</b><div className="text-xs text-slate-400">{ngayThi}</div></div>
+              <div className="shrink-0 text-right"><KetQuaThi th={thi} /></div>
+            </div>
+          )}
+          dong={thiKq ? [
+            { nhan: t('Điểm'), noiDung: (['l', 'r', 'w', 's'] as const).map((k, i) => <Fragment key={k}>{i > 0 && ' · '}<span className="text-slate-500">{k.toUpperCase()}</span> {diemThi(k)}</Fragment>) },
+            { nhan: 'Overall', noiDung: diemThi('ovr') },
+            { nhan: 'Target', noiDung: fmtBand(thiKq.target) },
+          ] : []} />
+        )}
       </div>
     );
   }
@@ -600,6 +660,17 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
               </tr>
             );
           })}
+          {thi && (
+            <tr className="hang-thi-that">
+              <td className="td whitespace-nowrap">{t('Thi thật')}</td>
+              <td className="td">IELTS</td>
+              <td className="td whitespace-nowrap">{ngayThi}</td>
+              {thiKq ? (['l', 'r', 'w', 's', 'ovr'] as const).map((k) => <td key={k} className={so}>{diemThi(k)}</td>)
+                : <td colSpan={5} className="td text-center font-normal text-slate-400">{thi !== 'khong' && thi.loai === 'cho' ? t('chờ kết quả') : '—'}</td>}
+              <td className={so}>{thi !== 'khong' && thi.target != null ? `Target ${fmtBand(thi.target)}` : '—'}</td>
+              <td className="td"><KetQuaThi th={thi} /></td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
