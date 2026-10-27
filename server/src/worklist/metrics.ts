@@ -129,6 +129,8 @@ export type MetricRow = {
   nguoi?: string | null; han?: string | null;
   /** OV-12e: đầu dòng v3 — em (link hồ sơ) · lớp · ngữ cảnh; việc của dòng (null = không còn việc, ví dụ Case đã xong). */
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
+  /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ (`nhomCaseChuaChot`). */
+  nhom?: NhomCaseChuaChot | null;
   /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
   ngayThiThat?: string;
   viec?: ViecDong | null;
