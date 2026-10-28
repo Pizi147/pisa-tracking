@@ -138,10 +138,12 @@ RÚT GỌN được bớt bước thừa, nhưng mọi thao tác đang có phả
 | K26 | L40 Ý thức cả lớp | **LỖI** mất chữ | Lưu lô được một phần → panel xoá nháp + thôi coi là "đã sửa" → đóng là mất mô tả đã gõ của các em chưa lưu | giữ nháp khi còn em chưa lưu | RA-LUONG-11 |
 | K27 | L07 hàng loạt HV | **LỖI** lô một phần | Lỗi máy chủ (không phải lỗi luật) ở một em giữa lô → 500 cả lô: web báo mọi em "chưa lưu" dù em trước đã lưu, không nhật ký, Thử lại kẹt | trả đúng em đã lưu, em lỗi + em sau "chưa lưu" | RA-LUONG-12 |
 | K28 | L01 Thêm HV | **LỖI** mất dòng | Sau khi lưu, bỏ dòng đã thêm theo CHỈ SỐ lưới hiện tại — dán / sửa lưới trong lúc chờ → xoá nhầm dòng mới chưa lưu | bỏ theo dòng đã gửi | RA-LUONG-13 |
-| K29 | L02 Sửa cả lớp | RÚT GỌN (để sau) | Một ô lỗi chặn lưu cả bảng (máy chủ từ chối cả lô, web khoá Lưu) — trái "lô lỗi một phần: dòng đúng vẫn lưu"; chữ không mất | lưu dòng đúng, giữ dòng lỗi — cần đổi máy chủ từng dòng | — |
+| K29 | L02 Sửa cả lớp | RÚT GỌN | Một ô lỗi chặn lưu cả bảng (web khoá Lưu) — trái "lô lỗi một phần: dòng đúng vẫn lưu"; chữ không mất | web gửi các em hợp lệ, em có ô lỗi ở lại lưới; máy chủ giữ "lô = một lần lưu" (C22). Bấm thử: "Lưu 1 em" bật khi còn ô lỗi, em hợp lệ lưu, panel ở lại "1 ô cần sửa" | RA-LUONG-15 |
 | K30 | L10 Xếp MT mới | ghi nhận | "MT mới" không có khoá chống lặp: mất phản hồi mạng rồi bấm lại → tạo MT n+1 cho em đã lưu; việc sau vòng lưu (chuông GVCN, nhật ký) lỗi → báo lỗi dù đã lưu | để sau | — |
 | K31 | L64 quyền | đạt | Mã trả về API theo vai khớp nav: CX / TVV 403 Phân tích GV, Test; TVV có Công việc (việc TVV), CX không; Admin VP có Phân tích (trừ Ý thức — tab ẩn đúng); GV 403 Phân tích; Head tutor 403 mọi khu | — | — |
 | K32 | L40 Ý thức → TVV (N1, N2) | đạt (bấm thử) | GVCN Xác nhận xử lý Report 1 (Lê Quang Huy) → việc Báo PH của TVV sinh ngay, hạn 18/09 (lưu T2 14/09 + 4) | — | — |
+| K33 | L12 Kế hoạch Test (N23) | đạt | GV bộ môn mở lớp: chỉ xem, không nút ghi; mọi lối dời lịch lớp thường trên web (bảng lớp thường, trang lượt lớp thường, hộp kỹ năng) đọc cờ máy chủ `doiLich` / `canPlan` → sau RA-LUONG-2 GV không thấy nút; GVCN dời MT tuần đã qua thì hộp chặn tuần đích ngay tại ô | — | — |
+| K34 | hồ sơ HV (RA-UI báo) | **LỖI** văng trang | Tab Ý thức đọc `cy.ratio` khi em chưa có lộ trình (`cycle` null) — chỗ khác đều `cy?.`; bộ demo không có ca này | `cy?.ratio` | RA-LUONG-14 |
 | K24 | phiên | ghi nhận | Hai lần văng về màn đăng nhập giữa thao tác (một lần `GET /cycles/41/lo-trinh-moi/xem-truoc` 401, phiên vẫn còn trong DB); không tái hiện, log máy chủ không lỗi | theo dõi | — |
 
 ## 4. Giả thuyết cần kiểm trước (từ tài liệu — chưa xác minh)
@@ -169,7 +171,7 @@ Lấy từ `plan.md` mục 4 "Ghi chú không chặn còn mở" và Rulebook 20.
 
 - K6: em vắng dời hết 4 kỹ năng không còn hàng ở lưới tuần gốc (không kẹt, ô tuần mới gỡ được).
 - K8: chủ Case cũ giữ việc "Ghi kết quả" khi lớp mới không có GV môn đó (P03).
-- K29 Sửa cả lớp một ô lỗi chặn cả bảng · K30 "MT mới" không chống lặp khi mất phản hồi.
+- K30 "MT mới" không chống lặp khi mất phản hồi.
 - K14 panel Sau thi không đọc lại sau "Mở lộ trình" · K20 hạn bước tiếp từ lần lưu dở · K21 (năm điểm agent đọc mã) · K23 câu chặn ghi vi phạm thiếu bước tiếp · K24 văng phiên chập chờn.
 - [XM] nhóm Công việc tên "Bài thi Speaking tuần này" (mockup T03) nhưng chứa cả bài chấm chéo tuần trước (quá hạn) — đổi tên là chữ hiển thị, của RA-UI / chủ SP; Chấm Test gọi cùng nhóm là "Speaking chấm chéo".
 - `moveableSkills` (máy chủ trả ở hồ sơ Mock) web không đọc — dọn khi đụng.
