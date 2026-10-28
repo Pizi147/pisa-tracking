@@ -194,18 +194,19 @@ export function KeHoachTestTab() {
             <span className="block">Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.</span>
           </NutLuat>
         </span>
-        <span className="flex-1 max-sm:order-2" />
+        <span className="flex-1 max-sm:hidden" />
         {loai === 'ft' && coXep && (
           /* OV-15c: Xuất Excel Kế hoạch Test 13 cột (C17) theo bộ lọc đang xem + Xuất điểm Test (mockup 6 khung 9). */
-          <span className="flex flex-wrap items-center gap-2 max-sm:order-2">
-            <span className="text-xs tabular-nums text-slate-400">{t('{n} học viên', { n: danhSach.reduce((n, l) => n + l.soHv, 0) })}</span>
+          /* RA-UI-4 (mockup 375, PTA 29/10): 375 "Xuất ▾ · Xếp nhiều MT…" sát trái như mockup; số HV giữ, nhỏ, cuối hàng. */
+          <span className="flex flex-wrap items-center gap-2 max-sm:contents">
+            <span className="text-xs tabular-nums text-slate-400 max-sm:order-3 max-sm:ml-auto max-sm:self-center">{t('{n} học viên', { n: danhSach.reduce((n, l) => n + l.soHv, 0) })}</span>
             <span className="hidden gap-2 sm:flex">
               <button type="button" className="btn btn-sm" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
               <button type="button" className="btn btn-sm" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
             </span>
             {/* Mockup #659 (375): hai nút xuất gộp "Xuất ▾". */}
             {!lyDoTat && (
-              <span className="sm:hidden">
+              <span className="sm:hidden max-sm:order-2">
                 <Menu label={t('Xuất')} className="btn btn-sm min-h-[44px]" items={[
                   ...(danhSach.length ? [{ label: t('Xuất Excel'), onClick: () => setXuat('ke-hoach') }] : []),
                   { label: t('Xuất điểm Test'), onClick: () => setXuat('diem') },

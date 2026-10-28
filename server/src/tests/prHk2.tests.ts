@@ -39,12 +39,14 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C2 · Level, Task, Info, Status, Alert, Outcome, NhanTrangThai, MissingBadge, NhanViPham, NhanLoai lấy lớp từ CHIP_TRON / CHIP_VUONG (không text-[11px])', () => {
     const ui = doc('web/src/ui/ui.tsx');
-    for (const [ten, hang] of [['Level', 'CHIP_TRON'], ['Task', 'CHIP_VUONG'], ['Info', 'CHIP_VUONG'], ['Status', 'CHIP_VUONG'], ['Alert', 'CHIP_VUONG'],
+    for (const [ten, hang] of [['Level', 'CHIP_TRON'], ['Task', 'CHIP_VUONG'], ['Info', 'CHIP_VUONG'], ['Alert', 'CHIP_VUONG'],
       ['Outcome', 'CHIP_VUONG'], ['NhanTrangThai', 'CHIP_VUONG']] as const) {
       const n = than(ui, ten);
       assert(n.includes(hang), `${ten} chưa dùng ${hang}`);
       assert(!/text-\[11px\]/.test(n), `${ten} còn text-[11px]`);
     }
+    /* RA-UI-7 (PTA 29/10 mục 6, mockup v7 / V4 nhóm ③): Status = tiến độ xử lý → MỘT dáng với `Nhan` (viên CHIP_TRON + chấm), không còn chip vuông riêng. */
+    assert(/<Nhan\b/.test(than(ui, 'Status')), 'Status phải vẽ qua Nhan (viên tiến độ, V4 nhóm ③)');
     for (const [f, ten] of [['web/src/modules/students/MissingBadge.tsx', null], ['web/src/modules/yThuc/NhanViPham.tsx', null], ['web/src/modules/cases/SkillBoard.tsx', 'NhanLoai']] as const) {
       const s = ten ? than(doc(f), ten).split(/\r?\n\}\r?\n/)[0] : doc(f);   // đúng thân hàm, không lấn sang hàm kế
       assert(/CHIP_VUONG/.test(s) && !/text-\[11\.5px\]/.test(s) && !/rounded-md border px-/.test(s), `${f}: chưa dùng CHIP_VUONG hoặc còn chip tự dựng`);

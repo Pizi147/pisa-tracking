@@ -229,7 +229,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       action={
         <div className="flex flex-wrap items-center gap-2 p-3 pb-0">
           <label className="flex items-center gap-1.5 text-xs text-slate-400">Xếp theo
-            <select className="field w-32 text-xs max-sm:min-h-[44px]" value={theo} onChange={(e) => setTheo(e.target.value as TheoDong)} aria-label="Xếp theo">
+            <select className="field w-32 text-sm max-sm:min-h-[44px]" value={theo} onChange={(e) => setTheo(e.target.value as TheoDong)} aria-label="Xếp theo">
               {THEO_DONG.filter((k) => k !== 'cn' || !anCotChiNhanh).map((k) => <option key={k} value={k}>{NHAN_XEP[k]}</option>)}
             </select>
           </label>

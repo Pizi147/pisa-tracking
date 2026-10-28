@@ -6,6 +6,7 @@ import { Han } from '../../../ui/Han.tsx';
 import { CHAM_CHEO, chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
+import { useManHinh } from '../../../ui/TheDong.tsx';
 import { COT_DAU_LICH_TEST, OPhan } from './HangLop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -98,7 +99,10 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
   /* UI-LICH-TUAN (dieu-chinh-cuoi khu a): nhóm "Quá hạn chấm" trong thẻ Lịch tuần, thu sẵn; dòng tóm tắt nói đủ khi chỉ một dòng. */
   const tieuDe = t('Quá hạn chấm');
   if (!ds.length) return <div id="lich-test-no"><NhomDau id="lich-test-no-than" rong mo={false} onMo={onMo} tieuDe={tieuDe} phu={t('{n} bài', { n: 0 })} /></div>;
-  const soCot = hep ? 2 : 8;
+  /* RA-UI-4 (PTA 29/10): 768–1023 px tám cột cố định (≈ 800 px) không vừa — cột "GV chấm" co về 0, tên GV xuống dòng từng chữ, nút bị che.
+     Dùng dáng hai cột của điện thoại: lớp · đợt · kỹ năng / còn · hạn · trạng thái / "GV chấm:" dòng phụ — đủ thông tin, nút không bị che. */
+  const gon = useManHinh('(max-width: 1023px)') || hep;
+  const soCot = gon ? 2 : 8;
   const mot = ds.length === 1 ? ds[0].d : null;
   const tomTat = mot
     ? <>{mot.classCode} · {mot.dotLabel} · {dich(kyNangCua(mot, homNay).chu)} · {t('{n} bài', { n: soBai })} · <Han loai="nhap-diem" han={mot.han} boTinHieu={!!mot.phan && !mot.quaHan} /></>
@@ -110,7 +114,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
         {/* SUA-375-2: mọi ô canh theo dòng chữ đầu — ô GV chấm / trạng thái hai dòng không kéo lệch chữ cả hàng. */}
         <table className="w-full text-sm bang-dinh [&>tbody>tr>td]:align-baseline" style={{ tableLayout: 'fixed' }}>
           <colgroup>
-            {hep ? (<><col /><col style={{ width: COT_THAO_TAC - 4 }} /></>) : (
+            {gon ? (<><col /><col style={{ width: COT_THAO_TAC - 4 }} /></>) : (
               <>
                 {/* E5: ba cột đầu cùng độ rộng với bảng lớp (`COT_DAU_LICH_TEST`) — các bảng thẳng cột. GV chấm giãn (cột không cố định). */}
                 {COT_DAU_LICH_TEST.map((w, i) => <col key={i} style={{ width: w }} />)}
@@ -119,7 +123,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
               </>
             )}
           </colgroup>
-          {!hep && (
+          {!gon && (
             <thead>
               <tr>
                 <th className="th">{t('Lớp')}</th><th className="th">{t('Đợt')}</th><th className="th">{t('Kỹ năng')}</th>
@@ -144,11 +148,11 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
               return (
                 <Fragment key={d.key}>
                   <tr className="row-hover" style={{ height: 44 }}>
-                    {hep ? (
+                    {gon ? (
                       <>
                         <td className="td py-2">
                           <div className="font-semibold text-slate-100">
-                            {d.classCode} · {dotTuan(d, homNay)} · <span title={k.goiY}>{dich(k.chu)}</span>
+                            <Link to={`/hoc-vien/lop/${d.classId}`} className="ten-ho-so" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link> · {dotTuan(d, homNay)} · <span title={k.goiY}>{dich(k.chu)}</span>
                           </div>
                           {k.phu && <div className="truncate text-xs text-slate-500">{dich(k.phu)}</div>}
                           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-slate-400 tabular-nums">
