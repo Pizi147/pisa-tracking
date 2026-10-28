@@ -307,7 +307,7 @@
   }
   .nut-loc:hover { background-image: linear-gradient(var(--phu-re), var(--phu-re)); }   /* HTT-1 (bỏ filter: brightness) */
   .nut-loc:where([aria-pressed='true'], .nut-loc-dang) {   /* :where = độ đặc 0 — tông màu riêng (ChipDem) vẫn đè được */
-    border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong);   /* mockup V5 `.chip[aria-pressed]`: viền nhấn sáng — đang chọn khác hẳn không chọn */
+    border-color: var(--accent); background: var(--accent-soft); color: var(--accent);   /* mockup V5 `.chip[aria-pressed]`: chữ = viền màu nhấn — đang chọn khác hẳn không chọn */
   }
 
   .field {

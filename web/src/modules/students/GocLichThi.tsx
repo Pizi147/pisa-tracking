@@ -74,12 +74,12 @@ export const kqOverall = (ovr: number | null | undefined, kv: number | null | un
  */
 export function MiniKn({ kn, kv }: { kn: Kn; kv: number | null }) {
   return (
-    <span className="mt-1 grid w-max grid-cols-[34px_34px_42px_42px_34px] gap-x-1 text-[13px] font-semibold leading-5 tabular-nums text-slate-200">
+    <span className="mt-1 grid w-max grid-cols-[36px_36px_44px_44px_36px] gap-x-1 text-[13px] font-semibold leading-5 tabular-nums text-slate-100">
       {KN_MINI.map((k) => {
         const duoi = kn[k] != null && kv != null && kn[k]! < kv;
         return (
           <span key={k} className={`whitespace-nowrap rounded px-1 ${duoi ? 'bg-bad-bg text-bad' : ''}`} title={duoi ? t('Dưới kỳ vọng') : undefined}>
-            <span className={`mr-0.5 text-[12px] font-medium ${duoi ? '' : 'text-faint'}`}>{k}</span>{kn[k] != null ? kn[k]!.toFixed(1) : <span className="font-normal text-faint">—</span>}
+            <span className={`mr-0.5 font-medium ${duoi ? '' : 'text-faint'}`}>{k}</span>{kn[k] != null ? kn[k]!.toFixed(1) : <span className="font-normal text-faint">—</span>}
             {duoi && <span className="sr-only"> {t('Dưới kỳ vọng')}</span>}
           </span>
         );

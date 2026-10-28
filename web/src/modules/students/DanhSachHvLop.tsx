@@ -117,7 +117,7 @@ function OHoTro({ h }: { h: HangHv['hoTro'] }) {
   return (
     <span className="block">
       {h.sos ? <ChipSos muc={h.sos} kyNang={h.kyNang.map((k) => skillShort(k))} /> : null}
-      <span className={`block text-xs ${h.quaHan ? 'font-semibold text-bad' : 'text-slate-400'}`}>
+      <span className={`block text-xs ${h.quaHan ? 'font-semibold text-bad' : 'text-faint'}`}>
         {h.quaHan ? t('PA quá hạn') : t('{c} Case · {p} PA', { c: h.soCase, p: h.soPa })}
       </span>
     </span>
@@ -185,10 +185,10 @@ export function BangHvGon({ nhom, lop, viec, gopMon, nguCanh, onMoViec, onDoi, v
     switch (c.key) {
       case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} />;
       case 'lo': return g
-        ? <span className="block"><b className="block font-medium tabular-nums text-slate-100" title={t('MT đã xong / đã tạo')} aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
+        ? <span className="block"><b className="block font-bold tabular-nums text-slate-100" title={t('MT đã xong / đã tạo')} aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
             {g.loTrinh.soMt ? `${g.loTrinh.mt}/${g.loTrinh.soMt} MT` : '—'}</b>
-            <span className="block text-xs text-slate-400">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
-        : <span className="block truncate text-xs text-slate-400">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
+            <span className="block text-xs text-faint">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
+        : <span className="block truncate text-xs text-faint">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
       case 'mt': return g ? <OMtGan g={g} /> : trong;
       case 'ho': return g ? <OHoTro h={g.hoTro} /> : trong;
       case 'y': return g?.yThuc ? <Nhan tone="doing">{dich(g.yThuc)}</Nhan> : trong;

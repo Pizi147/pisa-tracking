@@ -45,8 +45,13 @@ Không mất thao tác nào.
 Chữ mọi chip ≥ 4,5. Mép < 3: viên tiến độ (Report, hạn, chờ chấm) và kỹ năng dưới KV — theo mockup không viền, nhận bằng chữ + chấm / ⚠ / nền; "Dự kiến" viền `--lich-vien` = token mockup.
 
 ## critique
-Vòng 1: 31/40. P1 (mũi tên mở lớp nhỏ, 375 lơ lửng) → sửa. Còn P2/P3 không sửa: ✓/✗ trước Overall (đúng mockup + aria-label), nút việc ở hàng lớp nặng (= mockup `.viec-lop .nut`), 375 chip việc dài. Detector impeccable: 0 phát hiện.
+Vòng 1: 31/40. P1 (mũi tên mở lớp nhỏ, 375 lơ lửng) → sửa. Detector impeccable: 0 phát hiện.
+
+Vòng 2 (sau gộp main + #664): đo computed mockup khu d ↔ web rồi sửa cho sát: "n/3 MT" 15/700 (trước 500) · "Target", "n Case · n PA" màu `--text-faint` như `.phu-o` · kỹ năng số màu chữ chính, nhãn 13/500 (trước 12) · ô tìm 34 px, 14 px, rộng 240 · nút lọc đang chọn chữ = viền màu nhấn (`.chip[aria-pressed]`). Chấm lại **32/40**, không P0. Không sửa:
+- P1 "ô Việc là nút viền, hàng cao" — nút viền nhỏ là quyết định D10 chủ SP 27/10 (`.viec-o .nut`), việc bấm mở panel tại chỗ; giữ.
+- P2 ✓ màu lam (= token `--kq-bang` "bằng KV" của mockup), "Chưa có lịch" chip viền (= mockup `.bd-lich.chua`), SOS 1 viền / SOS 2–3 nền (= #646), "—" thay "Không có Case" (HV-LOP-SUA), cột Xu hướng (bỏ từ PR trước) — đã chốt, không thuộc PR này.
+Hết 2 vòng theo luật 28/10, không P0 → dừng.
 
 ## [XM]
-- **XM-1**: "mọi lớp mặc định gập" — khi đang tìm / lọc tôi vẫn mở lớp có em khớp (không thì kết quả tìm bị giấu sau hàng lớp). Chủ SP muốn gập cả lúc lọc thì đổi một dòng `moSet`.
-- **XM-2**: `.nut-loc` là nút lọc chung toàn web → đổi viền ở mọi trang (cùng dáng mockup `.chip`).
+- **XM-1** (PTA Plan ĐỒNG Ý 28/10): đang tìm / lọc vẫn mở lớp có em khớp — người lọc là muốn thấy kết quả.
+- **XM-2** (PTA Plan ĐỒNG Ý 28/10): `.nut-loc` là nút lọc chung → đổi ở mọi trang theo mockup `.chip`.

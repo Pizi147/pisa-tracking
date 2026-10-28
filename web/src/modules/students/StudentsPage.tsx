@@ -369,7 +369,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     </>
   );
   const locTim = (
-    <input className="field h-8 w-full sm:w-56 max-sm:min-h-[44px]" aria-label={t('Tìm')} placeholder={t('Tìm học viên, lớp')}
+    <input className="field h-[34px] w-full text-sm sm:w-60 max-sm:min-h-[44px]" aria-label={t('Tìm')} placeholder={t('Tìm học viên, lớp')}
       value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
   );
   /* Chọn / lọc một lớp chỉ ở Đang SOS và Lịch thi (chủ SP 27/10) — Tất cả đã chia theo lớp. */
