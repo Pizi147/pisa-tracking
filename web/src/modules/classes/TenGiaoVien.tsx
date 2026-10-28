@@ -10,6 +10,6 @@ export function TenGiaoVien({ id, ten }: { id: number | null; ten: string }) {
   const { session } = useSession();
   const den = duongHoSoGiaoVien(id, { userId: session?.user?.id ?? 0, laQuanLy: laVaiQuanLy(session?.roles) || !!session?.nav?.phanTichGv });   // OV-10a: Admin (`analysis.view_teacher`) mở được hồ sơ GV như QL
   return den
-    ? <Link className="link max-sm:py-3 max-sm:-my-3" to={den}>{ten}</Link>   /* audit P2-3: 375 vùng chạm cao như mẫu K3 */
+    ? <Link className="ten-ho-so max-sm:py-3 max-sm:-my-3" to={den}>{ten}</Link>   /* audit P2-3: 375 vùng chạm cao như mẫu K3 */
     : <span className="text-slate-200">{ten}</span>;
 }
