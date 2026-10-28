@@ -376,6 +376,10 @@
   .row-muted .link { color: var(--text-dim); }
 
   .sticky-col { position: sticky; left: 0; z-index: 5; background: var(--surface); }
+  /* RA-UI-8: ô dính của `Bang` kẻ đáy bằng bóng trong (không viền) — viền của ô dính (lớp riêng) làm tròn điểm ảnh khác phần cuộn khi hàng cao lẻ
+     (tên + nhãn hai dòng) → vạch lệch / đứt. Hàng đang mở giữ vạch trái 3 px cùng vạch đáy. */
+  .bang > tbody > tr > td.sticky-col { border-bottom-width: 0; box-shadow: inset 0 -1px var(--line); }
+  .bang > tbody > tr:is(.dang-mo, .row-active) > td.sticky-col:first-child { box-shadow: inset 3px 0 0 var(--accent-strong), inset 0 -1px var(--line); }
 
   /*
    * BẢNG MỘT MẪU (BANG-0, 04 mục 6) — `ui/Bang.tsx`. Căn theo KIỂU CỘT: `data-kieu` gắn trên CẢ th và td (luật `KIEU_COT` ở
