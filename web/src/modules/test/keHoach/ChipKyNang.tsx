@@ -86,8 +86,9 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
               <span className="flex min-h-5 min-w-0 flex-wrap items-center gap-[2px]">
                 {d.mon.map((m) => (
                   <span key={m.k} title={`${m.ten} · ${CHU_MON[m.loai]}`}
-                    className={`inline-flex h-5 items-center whitespace-nowrap rounded border px-[2px] text-[11px] font-semibold leading-none tabular-nums ${O_MON[m.loai]}`}>
-                    {m.ten}{m.loai === 'co' && <span className="text-[9px]" aria-hidden>✓</span>}
+                    className={`inline-flex h-5 items-center whitespace-nowrap rounded border px-[2px] text-xs font-semibold leading-none tabular-nums ${O_MON[m.loai]}`}>
+                    {/* Dấu ✓ là hình (SVG nhỏ, aria-hidden — câu đọc ở `title` / aria của ô) để 4 ô môn vừa một dòng ở cột 180 px; chữ môn 12 theo thang. */}
+                    {m.ten}{m.loai === 'co' && <svg viewBox="0 0 8 8" className="ml-px h-[7px] w-[7px]" aria-hidden><path d="M1 4.3 3.1 6.3 7 1.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                   </span>
                 ))}
               </span>
@@ -128,7 +129,7 @@ export function NutXepO({ chu, title, onMo }: { chu: string; title?: string; onM
   if (!onMo) return <span className="block px-2 text-xs text-faint" title={title}>{t('chưa xếp')}</span>;
   return (
     <button type="button" onClick={(e) => onMo(e.currentTarget)} title={title} className={`${O_LUOI} group items-start hover:bg-transparent`}>
-      <span className="inline-flex h-[26px] items-center whitespace-nowrap rounded-md border border-dashed border-[var(--muted-line)] px-2.5 text-xs font-medium text-dim group-hover:border-[var(--accent-line)] group-hover:text-[var(--text)]">{chu}</span>
+      <span className="inline-flex h-[26px] items-center whitespace-nowrap rounded-md border border-dashed border-muted-line px-2.5 text-xs font-medium text-dim group-hover:border-[var(--accent-line)] group-hover:text-[var(--text)]">{chu}</span>
     </button>
   );
 }

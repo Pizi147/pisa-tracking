@@ -11,7 +11,6 @@ export const EN_KHT_GON = {
   'có điểm': 'scored',
   'Bấm để xem / khôi phục': 'Click to view / restore',
   'Đợt này không có kỹ năng nào': 'No skill in this round',
-  'chưa có điểm': 'not scored',
   'không thi trong đợt': 'not in this round',
   'Đã xong — Overall, ✓ đạt / ✗ chưa đạt kỳ vọng; không có Overall ghi "xong"': 'Done — Overall, ✓ met / ✗ below expectation; without Overall it says "done"',
   'Đã xếp, chưa tới tuần': 'Scheduled, week not reached yet',
