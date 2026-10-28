@@ -222,3 +222,72 @@ export function khongDuThiTuO(
   const o = cells.filter((c) => c.assessedSkill === skill);
   return o.length > 0 && o.every((c) => c.noShow?.state === 'khong-du-thi' && !c.daChot && c.band === null && c.rawScore === null);
 }
+
+/** Ô GỌN — trạng thái chữ (chủ SP duyệt mockup `thiet-ke/v7/ke-hoach-test.html` #659, 28/10). `vang` = cần Quản lý xếp lại / chờ duyệt (vàng). */
+export type LoaiTtGon = 'nay' | 'tre' | 'cho' | 'vang' | 'xong' | 'chua';
+/** Ô kỹ năng của ô gọn: `co` có điểm (ô đặc) · `chua` chưa có điểm (viền đứt) · `khong` không thi trong đợt (chữ gạch). */
+export type KnGon = { k: KyNangKH; ten: string; loai: 'co' | 'chua' | 'khong' };
+export type OGon = {
+  /** Mã tuần không năm (`W3 OCT`); xong = tuần muộn nhất; null = chưa xếp. */
+  tuan: string | null;
+  xong: boolean;
+  /** Một chữ trạng thái; null = đã xếp, chưa tới tuần (chỉ tuần mờ). Xong: web thay bằng ✓ / ✗ Overall khi có. */
+  tt: { chu: string; loai: LoaiTtGon } | null;
+  /** Bốn ô kỹ năng — chỉ khi cần: đợt thiếu kỹ năng, hoặc có điểm một phần. */
+  kn: KnGon[] | null;
+  /** Kỹ năng khác tuần trong CÙNG đợt: `S riêng · W3 DEC`. */
+  rieng: string | null;
+  /** Vắng đã dời, MỘT dòng: `vắng W2 OCT` (cả đợt) · `vắng W · W1 NOV`. Đủ điểm → null. */
+  vang: string | null;
+};
+
+/**
+ * KẾ HOẠCH TEST BẢN GỌN: nội dung MỘT ô đợt (FT và lớp thường) — tuần + MỘT chữ (hoặc kết quả), ô kỹ năng / dòng riêng / dòng vắng chỉ khi cần.
+ * Cùng `loaiKn` / `troCham` với ô MT (một luật trạng thái). null = đợt không có kỹ năng nào phải thi.
+ */
+export function oGon(kn: OMtVao['kn'], homNay: string, ct?: string | null): OGon | null {
+  const ds = O_KE_HOACH.flatMap((k) => (kn[k] ? [{ k, o: kn[k]!, loai: loaiKn(kn[k]!, homNay) }] : []));
+  const req = ds.filter((x) => x.loai !== 'khong-yeu-cau');
+  if (!req.length) return null;
+  const ten = (xs: typeof ds) => xs.map((x) => tenMonNgan(ct, x.k)).join(' ');
+  const daXong = (x: (typeof ds)[number]) => x.loai === 'xong' || x.loai === 'khong-du-thi';
+  const ma = (w: string) => tuanLich(w);
+  const xong = req.every(daXong);
+  const con = req.filter((x) => !daXong(x));
+  /* Tuần chính: xong → tuần muộn nhất; chưa xong → tuần nhiều kỹ năng còn lại nhất (hoà: sớm hơn). */
+  const dem = new Map<string, number>();
+  for (const x of xong ? [] : con) if (x.o.tuan) dem.set(ngayCua(x.o.tuan), (dem.get(ngayCua(x.o.tuan)) ?? 0) + 1);
+  const chinh = xong
+    ? req.map((x) => x.o.tuan && ngayCua(x.o.tuan)).filter((w): w is string => !!w).sort().pop() ?? null
+    : [...dem].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null;
+
+  const tre = con.filter((x) => x.loai === 'het-tuan' && troCham(x.o, homNay));
+  const vang = con.filter((x) => x.loai === 'vang' || x.loai === 'da-huy');
+  const tt: OGon['tt'] = xong ? { chu: t('xong'), loai: 'xong' }
+    : tre.length ? { chu: t('trễ chấm'), loai: 'tre' }
+    : vang.length ? { chu: vang.some((x) => x.o.choDuyet) ? t('chờ duyệt') : t('xếp lại {x}', { x: ten(vang) }), loai: 'vang' }
+    : con.some((x) => x.loai === 'het-tuan') ? { chu: t('chờ chấm'), loai: 'cho' }
+    : con.some((x) => x.loai === 'tuan-nay') ? { chu: t('tuần này'), loai: 'nay' }
+    : con.every((x) => x.loai === 'chua-lich') ? { chu: t('chưa xếp'), loai: 'chua' } : null;
+
+  const thieu = ds.some((x) => x.loai === 'khong-yeu-cau' || x.loai === 'khong-du-thi');
+  const motPhan = !xong && req.some(daXong);
+  const knGon = thieu || motPhan
+    ? ds.map((x): KnGon => ({ k: x.k, ten: tenMonNgan(ct, x.k), loai: x.loai === 'xong' ? 'co' : x.loai === 'khong-yeu-cau' || x.loai === 'khong-du-thi' ? 'khong' : 'chua' }))
+    : null;
+
+  const theoTuan = (xs: typeof ds, tuanCua: (x: (typeof ds)[number]) => string | null) => {
+    const m = new Map<string, typeof ds>();
+    for (const x of xs) { const w = tuanCua(x); if (w) m.set(ngayCua(w), [...(m.get(ngayCua(w)) ?? []), x]); }
+    return [...m].sort((a, b) => a[0].localeCompare(b[0]));
+  };
+  const rieng = xong ? [] : theoTuan(con.filter((x) => x.o.tuan && ngayCua(x.o.tuan) !== chinh), (x) => x.o.tuan);
+  const doi = xong ? [] : theoTuan(req.filter((x) => x.o.doiTu), (x) => x.o.doiTu);
+  return {
+    tuan: chinh ? ma(chinh) : null, xong, tt, kn: knGon,
+    rieng: rieng.length ? rieng.map(([w, xs]) => t('{x} riêng · {tuan}', { x: ten(xs), tuan: ma(w) })).join(' · ') : null,
+    vang: doi.length ? (doi.length === 1 && doi[0][1].length === req.length
+      ? t('vắng {tuan}', { tuan: ma(doi[0][0]) })
+      : doi.map(([w, xs]) => t('vắng {x} · {tuan}', { x: ten(xs), tuan: ma(w) })).join(' · ')) : null,
+  };
+}

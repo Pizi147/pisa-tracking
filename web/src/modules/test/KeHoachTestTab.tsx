@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { ChuGiaiMau } from './keHoach/ChipKyNang.tsx';
+import { ChuGiaiGon } from './keHoach/ChipKyNang.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
@@ -172,8 +172,7 @@ export function KeHoachTestTab() {
             {loai === 'ft' ? (
               <span className="block">
                 Mỗi đợt xếp riêng <b>L</b> (Listening), <b>R</b> (Reading), <b>W</b> (Writing), <b>S</b> (Speaking). <b>W = chấm cả
-                W1 và W2</b> — một lịch W đặt cho cả hai. Kỹ năng cùng tuần thì gộp một chip (<b>L R W S · W3 SEP</b>), khác tuần
-                thì tách dòng.
+                W1 và W2</b> — một lịch W đặt cho cả hai. Kỹ năng khác tuần trong cùng đợt ghi riêng (<b>S riêng · W3 DEC</b>).
               </span>
             ) : (
               <span className="block">
@@ -182,11 +181,11 @@ export function KeHoachTestTab() {
                 {monTheoCt.map(([ct, mon], i) => (
                   <span key={ct}>{i ? ' · ' : ''}<b>{ct}</b> {mon}</span>
                 ))}
-                {monTheoCt.length ? '.' : ''} Môn cùng tuần thì gộp một chip, khác tuần thì tách dòng.
+                {monTheoCt.length ? '.' : ''} Môn khác tuần trong cùng đợt ghi riêng.
               </span>
             )}
-            {/* KHUNG-LOI (TST-05): chú giải màu sinh từ bảng màu thật của chip. */}
-            <ChuGiaiMau ft={loai === 'ft'} />
+            {/* KHT-GON (mockup #659): chú giải dựng bằng chính ô gọn. */}
+            <ChuGiaiGon />
             {loai !== 'ft' && <span className="block">Lớp thường ghi thêm tuần trong khoá (<b>W5/10</b>).</span>}
             <span className="block">Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.</span>
           </NutLuat>
