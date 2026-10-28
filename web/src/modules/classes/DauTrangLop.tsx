@@ -176,7 +176,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
       )}
       {/* UI-HO-SO-LOP (`dieu-chinh-cuoi.html` khu b): mã lớp + nhãn nhỏ xám / giá trị đậm (P2) — GVCN · Học viên · Lượt gần nhất · Đạt · SOS; + Case · ⋯ bên phải. */}
       <div className="flex flex-wrap items-center gap-x-[22px] gap-y-2.5">
-        <h1 className="m-0 text-[22px] font-bold leading-tight text-slate-100" title={dich(data.programme?.name ?? data.kind)}>{data.code}</h1>
+        <h1 className="m-0 text-xl font-bold leading-tight text-slate-100" title={dich(data.programme?.name ?? data.kind)}>{data.code}</h1>
         <NhanGt n={t('GVCN')} g={gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-soon">{t('Chưa có GVCN')}</span>} />
         <NhanGt n={t('Học viên')} g={<span className="tabular-nums">{s?.studentCount ?? 0}</span>} />
         {tomTat?.luot && <NhanGt n={t('Lượt gần nhất')} g={tomTat.luot} />}

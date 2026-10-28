@@ -31,7 +31,7 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-full flex flex-col -outline-offset-2`}>
         <header className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
-          <h2 id={idTen} className="text-sm font-semibold text-slate-100">{title}</h2>
+          <h2 id={idTen} className="m-0 text-[17px] font-bold leading-6 text-slate-100">{title}</h2>
           <button className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-0 sm:min-w-0" onClick={onClose} aria-label={t('Đóng')}>✕</button>
         </header>
         <div className="p-5 overflow-y-auto">{children}</div>
