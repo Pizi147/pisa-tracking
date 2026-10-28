@@ -134,6 +134,14 @@ RÚT GỌN được bớt bước thừa, nhưng mọi thao tác đang có phả
 | K21 | L52/L53 | ghi nhận | (agent đọc mã, chưa bấm thử) việc Phối hợp SOS chờ (Báo PH qua TVV, gặp CX) của lộ trình cũ không đóng khi "Lộ trình mới" — N12 không nói; bản chụp lộ trình đóng tính lại SOS khi sửa điểm muộn không trừ môn đã bỏ; đầu vào lộ trình mới bỏ qua KQ thi cũ chỉ có Overall; "Hẹn bắt đầu" → Case cũ còn mở tới thứ Hai hẹn; xoá nhận xét chấm chéo không hạ cờ Xác nhận Case | để sau / hỏi chủ SP Q-RL3 | — |
 | K22 | không khoá cứng | **CẦN CHỦ SP** | Xoá vĩnh viễn, không Hoàn tác / khôi phục: học viên (một / hàng loạt, QL làm được), Case, PA (cả kết quả 6 tuần), vi phạm, tệp bằng chứng; "Kết thúc PA" quy chế không mở lại được; "Bỏ việc Báo PH" (TVV) không mở lại; Duyệt / Từ chối ở Chờ duyệt chỉ huỷ được với Đề xuất PA + Thu hồi Ý thức (trong ngày) | Q-RL2 | — |
 | K23 | L40 ghi vi phạm | RÚT GỌN (thấp) | Em đã chuyển / tạm dừng → "chưa xếp lớp hoặc không còn đang học — chưa ghi được vi phạm" không nói bước tiếp | để sau | — |
+| K25 | L60 hồ sơ lớp | **LỖI** số lệch | Badge "⚠ 6 việc quá hạn" (đếm dòng con) cạnh Công việc 9 việc quá hạn của cùng lớp (đếm `demViec`) | `demViec` | RA-LUONG-10 |
+| K26 | L40 Ý thức cả lớp | **LỖI** mất chữ | Lưu lô được một phần → panel xoá nháp + thôi coi là "đã sửa" → đóng là mất mô tả đã gõ của các em chưa lưu | giữ nháp khi còn em chưa lưu | RA-LUONG-11 |
+| K27 | L07 hàng loạt HV | **LỖI** lô một phần | Lỗi máy chủ (không phải lỗi luật) ở một em giữa lô → 500 cả lô: web báo mọi em "chưa lưu" dù em trước đã lưu, không nhật ký, Thử lại kẹt | trả đúng em đã lưu, em lỗi + em sau "chưa lưu" | RA-LUONG-12 |
+| K28 | L01 Thêm HV | **LỖI** mất dòng | Sau khi lưu, bỏ dòng đã thêm theo CHỈ SỐ lưới hiện tại — dán / sửa lưới trong lúc chờ → xoá nhầm dòng mới chưa lưu | bỏ theo dòng đã gửi | RA-LUONG-13 |
+| K29 | L02 Sửa cả lớp | RÚT GỌN (để sau) | Một ô lỗi chặn lưu cả bảng (máy chủ từ chối cả lô, web khoá Lưu) — trái "lô lỗi một phần: dòng đúng vẫn lưu"; chữ không mất | lưu dòng đúng, giữ dòng lỗi — cần đổi máy chủ từng dòng | — |
+| K30 | L10 Xếp MT mới | ghi nhận | "MT mới" không có khoá chống lặp: mất phản hồi mạng rồi bấm lại → tạo MT n+1 cho em đã lưu; việc sau vòng lưu (chuông GVCN, nhật ký) lỗi → báo lỗi dù đã lưu | để sau | — |
+| K31 | L64 quyền | đạt | Mã trả về API theo vai khớp nav: CX / TVV 403 Phân tích GV, Test; TVV có Công việc (việc TVV), CX không; Admin VP có Phân tích (trừ Ý thức — tab ẩn đúng); GV 403 Phân tích; Head tutor 403 mọi khu | — | — |
+| K32 | L40 Ý thức → TVV (N1, N2) | đạt (bấm thử) | GVCN Xác nhận xử lý Report 1 (Lê Quang Huy) → việc Báo PH của TVV sinh ngay, hạn 18/09 (lưu T2 14/09 + 4) | — | — |
 | K24 | phiên | ghi nhận | Hai lần văng về màn đăng nhập giữa thao tác (một lần `GET /cycles/41/lo-trinh-moi/xem-truoc` 401, phiên vẫn còn trong DB); không tái hiện, log máy chủ không lỗi | theo dõi | — |
 
 ## 4. Giả thuyết cần kiểm trước (từ tài liệu — chưa xác minh)
@@ -161,6 +169,7 @@ Lấy từ `plan.md` mục 4 "Ghi chú không chặn còn mở" và Rulebook 20.
 
 - K6: em vắng dời hết 4 kỹ năng không còn hàng ở lưới tuần gốc (không kẹt, ô tuần mới gỡ được).
 - K8: chủ Case cũ giữ việc "Ghi kết quả" khi lớp mới không có GV môn đó (P03).
+- K29 Sửa cả lớp một ô lỗi chặn cả bảng · K30 "MT mới" không chống lặp khi mất phản hồi.
 - K14 panel Sau thi không đọc lại sau "Mở lộ trình" · K20 hạn bước tiếp từ lần lưu dở · K21 (năm điểm agent đọc mã) · K23 câu chặn ghi vi phạm thiếu bước tiếp · K24 văng phiên chập chờn.
 - [XM] nhóm Công việc tên "Bài thi Speaking tuần này" (mockup T03) nhưng chứa cả bài chấm chéo tuần trước (quá hạn) — đổi tên là chữ hiển thị, của RA-UI / chủ SP; Chấm Test gọi cùng nhóm là "Speaking chấm chéo".
 - `moveableSkills` (máy chủ trả ở hồ sơ Mock) web không đọc — dọn khi đụng.
