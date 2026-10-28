@@ -60,3 +60,10 @@ GIỮ: mọi thao tác (bảng dưới), chú giải luật, ghi chú lịch / g
 | Ghi chú lịch / ghi chú lớp | sửa tại chỗ | như cũ | = |
 | GV chỉ xem (PR A) | — | ô mở trang lượt MT; không nút xếp / xuất / + MT | mới |
 | Biết kỹ năng nào chưa có điểm | đọc dòng "L R W ✓ · S" | nhìn ô đặc / viền đứt | = · nhanh hơn |
+
+## Sửa theo check chung 29/10 (luật giao diện)
+
+- Chữ môn 12 px (thang 12·13·14·15·17·22·28); dấu ✓ trong ô môn là SVG 7 px `aria-hidden` (câu đọc ở `title` / aria của ô) — đo JS: 0/29 hàng môn vỡ dòng ở cột 180 px (1440 tối, 375 sáng), lớp thường 0/5, chữ nhỏ nhất 12.
+- Viền đứt nút "Xếp MTn": token có thật `--o-nhap-vien` (biến cũ `--muted-line` không tồn tại → trình duyệt dùng màu chữ; giữ dáng đã duyệt).
+- "đã xếp" cùng chân chữ với tuần (đo lệch 0 px).
+- Ảnh cặp chụp lại sau gộp main 29/10, cùng giao diện: 1440 tối | tối, 375 sáng | sáng.

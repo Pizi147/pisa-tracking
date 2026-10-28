@@ -129,7 +129,7 @@ export function NutXepO({ chu, title, onMo }: { chu: string; title?: string; onM
   if (!onMo) return <span className="block px-2 text-xs text-faint" title={title}>{t('chưa xếp')}</span>;
   return (
     <button type="button" onClick={(e) => onMo(e.currentTarget)} title={title} className={`${O_LUOI} group items-start hover:bg-transparent`}>
-      <span className="inline-flex h-[26px] items-center whitespace-nowrap rounded-md border border-dashed border-muted-line px-2.5 text-xs font-medium text-dim group-hover:border-[var(--accent-line)] group-hover:text-[var(--text)]">{chu}</span>
+      <span className="inline-flex h-[26px] items-center whitespace-nowrap rounded-md border border-dashed border-[var(--o-nhap-vien)] px-2.5 text-xs font-medium text-dim group-hover:border-[var(--accent-line)] group-hover:text-[var(--text)]">{chu}</span>
     </button>
   );
 }
