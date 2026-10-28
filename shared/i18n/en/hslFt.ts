@@ -1,0 +1,31 @@
+/** HSL-FT (M4 PR 2) — hồ sơ một lượt Mock Test theo khung A: đầu hồ sơ, tóm tắt + Còn lại, bảng kỹ năng, vùng mở, lịch sử thu gọn. */
+const soNhieu = (n: unknown, mot: string, nhieu: string) => `${n} ${Number(n) === 1 ? mot : nhieu}`;
+
+export const EN_HSL_FT = {
+  'Lớp lúc Test': 'Class at test',
+  'nay {x}': 'now {x}',
+  'Kỳ vọng MT{attemptNo}': 'MT{attemptNo} expectation',
+  'Nhập điểm lớp ›': 'Class scores ›',
+  'Tóm tắt lượt': 'Attempt summary',
+  'Em không học đủ bốn kỹ năng ở lượt này': 'The student does not take all four skills in this attempt',
+  'Còn lại': 'Still to do',
+  'Không còn việc': 'Nothing left to do',
+  'Chờ điểm': 'Awaiting score',
+  'Viết nhận xét': 'Write comment',
+  'Chờ nhận xét': 'Awaiting comment',
+  'vắng lần {x}': 'absence #{x}',
+  'dời {ngay}': 'moved {ngay}',
+  'Vắng lần {x} · chờ xếp lại': 'Absence #{x} · awaiting reschedule',
+  'Lịch gốc': 'Original schedule',
+  'Chờ QL duyệt dời lần {moveNo} · hạn {ngay}': 'Awaiting manager approval for move #{moveNo} · due {ngay}',
+  'Chưa nhận xét': 'No comment yet',
+  'Kết quả theo kỹ năng': 'Results by skill',
+  'GV {ten}': 'Teacher {ten}',
+  'S Expert — lượt Speaking riêng, không tính vào Overall / SOS.': 'S Expert — a separate Speaking attempt, not counted in Overall / SOS.',
+  '{n} thay đổi': (b: Record<string, unknown>) => soNhieu(b.n, 'change', 'changes'),
+  'mới nhất': 'latest',
+  'Lịch sử chi tiết': 'Full history',
+  'Lịch sử lượt': 'Attempt history',
+  'Lịch sử {x}': '{x} history',
+  'Vừa thêm': 'Just added',
+};

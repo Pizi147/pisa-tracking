@@ -100,8 +100,9 @@ const HanHang = ({ l }: { l: LopLichTest }) => (l.conBai === 0
   ? <span className="text-slate-500">—</span>
   : <Han loai="nhap-diem" han={l.han} boTinHieu={!!l.phan && !l.quaHan} />);
 
-/** E5 (PR-HSM): độ rộng ba cột đầu (Lớp · Đợt · Kỹ năng) — dùng chung với bảng khối 1 (`KhoiNo`) để các bảng thẳng cột. */
-export const COT_DAU_LICH_TEST = [190, 120, 110] as const;
+/** E5 (PR-HSM): độ rộng ba cột đầu (Lớp · Đợt · Kỹ năng) — dùng chung với bảng khối 1 (`KhoiNo`) để các bảng thẳng cột.
+ *  SUA-375-2: "MT1 · W1 SEP" / "L, R, W1, W2, S" cần 98 px + đệm 24 → một dòng; Lớp (mã ~70–100 px) nhường bớt. Tổng giữ 410. */
+export const COT_DAU_LICH_TEST = [160, 125, 125] as const;
 
 /**
  * HÀNG LỚP của Lịch tuần (UI-LICH-TUAN, dieu-chinh-cuoi khu a): MỘT DÒNG gọn, không hàng tiêu đề cột —

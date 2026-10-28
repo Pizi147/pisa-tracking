@@ -63,12 +63,13 @@
     --text-faint-rgb: 154 168 194;  /* = chu-3 V5 (#9aa8c2), mờ nhất được phép */
     /* N-1b — Đạt dùng chung xanh lá của `ok`. */
     --dat-rgb: var(--ok-rgb);    --dat-bg-rgb: var(--ok-bg-rgb);    --dat-line-rgb: var(--ok-line-rgb);
-    /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — chỉ VIỀN (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`), không nền. */
+    /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — viền (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`). */
     --sos1-rgb: 204 185 109;  --sos1-chu-rgb: 217 201 129;
-    --sos2-rgb: 207 129 91;  --sos2-chu-rgb: 223 159 124;
+    --sos2-rgb: 154 102 51;  --sos2-chu-rgb: 243 199 156;
     --sos3-rgb: 213 123 113;  --sos3-chu-rgb: 232 154 140;
-    /* P6 (chủ SP 22/10): 3 mức khác hẳn — SOS 1 viền mảnh · SOS 2 viền dày + nền cam nhạt · SOS 3 nền đỏ đậm đặc chữ trắng (NEN-SUA: bớt chói = đậm hơn; viền --sos3-vien tách mặt tối). */
-    --sos2-nen: #35261a;  --sos3-nen: #873c34;  --sos3-vien: #b7544c;  --sos3-tren: #ffffff;
+    /* MAU-MUC (chủ SP 28/10, thay P6): 3 mức tách bằng ĐỘ ĐẶC nền — SOS 1 rỗng · SOS 2 nền cam vừa · SOS 3 nền đỏ đặc chữ trắng.
+     * Nền cách nhau ΔL ≥ 0,12 (cũ: nền SOS 2 #35261a cách nền thẻ 0,05 → nhìn như rỗng). Đo: `thiet-ke/v7/kiem-mau-muc.py`. */
+    --sos2-nen: #5a320f;  --sos3-nen: #a33d2d;  --sos3-vien: #c45a47;  --sos3-tren: #ffffff;
     /* Hàng ĐÃ THI · chờ KQ — nền cả hàng + vạch trái 3 px màu lịch (V5 `--da-thi-nen`). */
     --da-thi-bg-rgb: 22 35 46;
     /* KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới. */
@@ -128,9 +129,9 @@
     --muted-rgb: 74 83 108;   --muted-bg-rgb: 242 244 249; --muted-line-rgb: 210 215 229;
     --text-dim-rgb: 74 83 108;  --text-faint-rgb: 95 105 132;
     --sos1-rgb: 155 126 71;   --sos1-chu-rgb: 113 92 50;
-    --sos2-rgb: 193 118 78;  --sos2-chu-rgb: 144 85 56;
+    --sos2-rgb: 185 119 63;  --sos2-chu-rgb: 124 67 22;
     --sos3-rgb: 166 58 45;   --sos3-chu-rgb: 143 48 38;
-    --sos2-nen: #f8ece1;  --sos3-nen: #862e27;  --sos3-vien: #862e27;  --sos3-tren: #ffffff;
+    --sos2-nen: #f6d8b8;  --sos3-nen: #862e27;  --sos3-vien: #862e27;  --sos3-tren: #ffffff;
     --da-thi-bg-rgb: 240 245 248;
     --kq-vuot-rgb: 56 103 76;    --kq-bang-rgb: 39 60 143;    --kq-duoi-rgb: 166 58 45;
 

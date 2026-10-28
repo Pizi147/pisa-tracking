@@ -28,7 +28,7 @@ export default {
         ok: nghia('ok'), bad: nghia('bad'), late: nghia('late'), soon: nghia('soon'),
         doing: nghia('doing'), done: nghia('done'), muted: nghia('muted'),
         dat: nghia('dat'),
-        // OV-15a: SOS chỉ viền (`border-sos1`) + chữ (`text-sos1-chu`), không nền; nền hàng đã thi `bg-da-thi`.
+        // SOS: viền (`border-sos1`) + chữ (`text-sos1-chu`); nền SOS 2 / 3 là `--sos2-nen` / `--sos3-nen` (`lopSos`); nền hàng đã thi `bg-da-thi`.
         sos1: { DEFAULT: v('sos1'), chu: v('sos1-chu') }, sos2: { DEFAULT: v('sos2'), chu: v('sos2-chu') }, sos3: { DEFAULT: v('sos3'), chu: v('sos3-chu') },
         'da-thi': v('da-thi-bg'),
         dim: v('text-dim'), faint: v('text-faint'),
