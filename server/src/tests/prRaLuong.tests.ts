@@ -16,6 +16,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_hangLoat: any = await import('../students/hangLoat.ts');
   const require_keHoach: any = await import('../keHoach/keHoachTest.ts');
   const require_thongBao: any = await import('../platform/thongBao.ts');
+  const require_chotVang: any = await import('../ops/chotVangDinhKy.ts');
   const require_d: any = await import('../../../shared/domain/index.ts');
   console.log('\nRA-LUONG · rà soát luồng đêm 29/10');
 
@@ -163,6 +164,14 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
       assert(chu && chu.con_viec === 1, `người phụ trách: Case giao đã đọc vẫn trong danh sách và còn việc (${JSON.stringify(chu)})`);
       assert(cua(khac)?.con_viec === 0, 'người không phụ trách: Case giao thành Để biết');
     } finally { conn.prepare('DELETE FROM notifications WHERE id > ?').run(moc); }
+  });
+
+  check('RA-LUONG-18 · quét định kỳ (cron thứ Hai) chạy cả `sweepExpiredMoves` và `quetYeuCau` — không chỉ khi có người mở web (P08); chạy lặp vô hại', () => {
+    const cv: any = require_chotVang;
+    const nguon = fsMod.readFileSync('server/src/ops/chotVangDinhKy.ts', 'utf8') as string;
+    assert(/sweepExpiredMoves\(\)/.test(nguon) && /quetYeuCau\(/.test(nguon), 'chotVangDinhKy chưa gọi hai lượt quét');
+    const a = cv.chotVangDinhKy({ ngay: TODAY }), b = cv.chotVangDinhKy({ ngay: TODAY });
+    assert(a.boQua === null && b.boQua === null && b.daChuyen === 0, `chạy hai lần: ${JSON.stringify([a, b])}`);
   });
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {
