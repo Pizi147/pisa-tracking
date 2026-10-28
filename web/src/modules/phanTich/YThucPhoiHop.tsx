@@ -111,7 +111,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         <tbody>
           {rows.map((x) => (
             <tr key={x.studentId} className="row-hover">
-              <td className="td sticky-col"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="link font-semibold">{x.ten}</Link></td>
+              <td className="td sticky-col"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so">{x.ten}</Link></td>
               <td className="td text-slate-300">{x.lop ?? ''}</td>
               <td className="td">{nhanNhom(x)}</td>
               <td className="td text-slate-200">{x.bac ?? <span className="text-faint">Chưa xử lý lần nào</span>}</td>
