@@ -243,7 +243,7 @@ export type OGon = {
   tt: { chu: string; loai: LoaiTtGon } | null;
   /** Đợt chỉ thi vài môn: `không thi W S` (chữ mờ, không khung). */
   khongThi: string | null;
-  /** Vắng (chữ thường, không khung, dòng dưới cùng): `vắng S · W2 OCT` · `vắng L R W S · W2 OCT`; đủ điểm → null. */
+  /** Vắng (chữ thường, không khung, dòng dưới cùng): `vắng S · W2 OCT` · `vắng L R W S · W2 OCT`; luôn ghi, kể cả đã đủ điểm. */
   vang: string | null;
 };
 
@@ -285,10 +285,10 @@ export function oGon(kn: OMtVao['kn'], homNay: string, ct?: string | null): OGon
     : vangNay.length ? { chu: vangNay.some((x) => x.o.choDuyet) ? t('chờ duyệt') : t('xếp lại {x}', { x: ten(vangNay) }), loai: 'vang' }
     : dong.some((d) => d.tt?.loai === 'nay') ? { chu: t('tuần này'), loai: 'nay' } : null;
 
-  /* Vắng: môn đã dời do vắng (`doiTu`, có thể là mã tuần) + môn đang vắng (tuần của nó) — gộp theo tuần vắng. Đủ điểm → không ghi (chủ SP 28/10). */
+  /* Vắng: môn đã dời do vắng (`doiTu`, có thể là mã tuần) + môn đang vắng (tuần của nó) — gộp theo tuần vắng. LUÔN ghi, kể cả đã đủ điểm (chủ SP 28/10 mới nhất: "cái gì vắng cũng nên ghi thêm"). */
   const ngayVang = (x: X) => (x.o.doiTu ? (/^\d{4}-\d{2}-\d{2}/.test(x.o.doiTu) ? x.o.doiTu : docTuanLich(x.o.doiTu, homNay)) : vangNay.includes(x) ? x.o.tuan : null);
   const nhomVang = new Map<string, X[]>();
-  if (!xong) for (const x of req) { const w = ngayVang(x); if (w) nhomVang.set(ngayCua(w), [...(nhomVang.get(ngayCua(w)) ?? []), x]); }
+  for (const x of req) { const w = ngayVang(x); if (w) nhomVang.set(ngayCua(w), [...(nhomVang.get(ngayCua(w)) ?? []), x]); }
   const vang = [...nhomVang].sort((a, b) => a[0].localeCompare(b[0])).map(([w, xs]) => t('vắng {x} · {tuan}', { x: ten(xs), tuan: ma(w) })).join(' · ');
 
   const boMon = ds.filter((x) => x.loai === 'khong-yeu-cau');

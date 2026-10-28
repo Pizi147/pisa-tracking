@@ -18,9 +18,9 @@ export async function runPrKhtGonTests(t: YThucTestKit) {
 
   const monCua = (dg: any) => dg.mon.map((m: any) => `${m.ten}:${m.loai}`).join(' ');
 
-  check('KHT-1 · đủ điểm: xong, một dòng tuần + 4 ô "✓", KHÔNG ghi vắng dù đã từng vắng; tuần chính = tuần muộn nhất', () => {
+  check('KHT-1 · đủ điểm: xong, một dòng tuần + 4 ô "✓"; vắng VẪN ghi (chủ SP 28/10 "cái gì vắng cũng nên ghi")', () => {
     const g = d.oGon({ listening: xong('2026-10-05', { doiTu: '2026-09-28' }), reading: xong('2026-10-05'), writing: xong('2026-10-05'), speaking: xong('2026-10-05') }, HN);
-    assert(g.xong && g.tt.loai === 'xong' && g.vang === null && g.hienMon && g.dong.length === 1, JSON.stringify(g));
+    assert(g.xong && g.tt.loai === 'xong' && g.vang === `vắng L · ${d.tuanLich('2026-09-28')}` && g.hienMon && g.dong.length === 1, JSON.stringify(g));
     assert(monCua(g.dong[0]) === 'L:co R:co W:co S:co' && g.dong[0].tt === null, monCua(g.dong[0]));
   });
 

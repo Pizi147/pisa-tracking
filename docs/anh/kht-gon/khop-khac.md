@@ -21,14 +21,14 @@ Dữ liệu mockup là dữ liệu giả (Cầu Giấy, MT1–MT7); web là seed
 | Ô MT: tuần (cột 56 px, 14 / 600, không năm) + kết quả `✓ 6.0` 13 / 600 hoặc một chữ 12 / 600 cùng một x | `ODotGon` (`ChipKyNang.tsx`), nội dung `oGon` (`shared/domain/oMt.ts`) | KHỚP |
 | Đã xếp, chưa tới tuần: chỉ tuần mờ, bỏ "đã xếp" | `oGon` `tt = null` → tuần `font-medium text-dim` | KHỚP |
 | Ô MT chia DÒNG THEO TUẦN THI (chủ SP chốt 28/10): tuần đậm 58 px + ô môn có khung `L✓` (có điểm) · `L` (chưa điểm) · `S trễ chấm` (nhiều môn trễ: ô đỏ + "trễ chấm" một lần) + trạng thái dòng (đã xếp / tuần này / chờ chấm); điểm tổng sau các môn; môn tuần khác → dòng riêng; "· không thi W S"; MT tương lai một tuần → chỉ tuần + "đã xếp" | `oGon.dong` · `ODotGon` | KHỚP |
-| Vắng chữ thường dòng cuối: `vắng L R W S · W2 OCT`; đủ điểm → không ghi (lời chủ SP ban đầu) | `oGon.vang` | KHỚP |
+| Vắng chữ thường dòng cuối: `vắng L R W S · W2 OCT`; LUÔN ghi, kể cả đã đủ điểm (chủ SP 28/10 mới nhất) | `oGon.vang` | KHỚP |
 | Khung ô MT rõ: viền `--line-strong` + nền `--bg` tối hơn thẻ; ô trễ chấm nền + viền đỏ nhạt (chủ SP 28/10 "khung MT rõ hẳn, màu tối xuống") | `ODotGon` | KHỚP |
 | Vạch trái: tuần này xanh · trễ chấm đỏ + nền đỏ nhạt · xếp lại vàng; không khung ô | `VACH` (`--doing/--bad/--soon`) | KHỚP |
 | Chỉ MT kế tiếp "Xếp MTn" viền đứt; MT sau "–"; tóm tắt lớp "MTn chưa xếp k em" đếm đúng các ô đó (PTA 28/10, một số liệu một hàm) | `NutXepO` / `OTrong` · máy chủ `oXepMt` + `soCotMt` (lưới và `tomTatLopFT` cùng gọi) | KHỚP (cột MT kế tiếp chỉ vẽ khi lớp có cột đó — như trước; vượt số cột thì "+ MT ▾") |
 | Đã huỷ: "đã huỷ" | `OHuy` | KHÁC nhỏ: mockup gạch tuần cũ — lượt huỷ không gửi tuần về lưới, nên chỉ chữ "đã huỷ" |
 | S Ex một dòng khung đứt hồng | nút S Ex một dòng | KHỚP |
 | Thẻ lớp nền `surface`, hàng lớn, chip "Chỉ xem" | `LopKeHoach` | KHỚP |
-| Cột: tên 190 (375: 120, tên hai dòng) · MT 252 · lớp thường 250 (mockup sửa theo: 150 làm "W2 SEP W4/8 chờ chấm" tràn cột) · S Ex 136; tiêu đề cột trái; dòng 1 chặn tràn (chữ trạng thái cắt gọn + tooltip) | `LuoiKeHoach` · `ODotGon` | KHỚP |
+| Cột: tên 190 (375: 120, tên hai dòng) · MT 180 · lớp thường 190 (môn không đủ chỗ thì xuống dòng thụt dưới cột môn — không cuộn ngang ở 1440, PTA 28/10) (mockup sửa theo: 150 làm "W2 SEP W4/8 chờ chấm" tràn cột) · S Ex 136; tiêu đề cột trái; dòng 1 chặn tràn (chữ trạng thái cắt gọn + tooltip) | `LuoiKeHoach` · `ODotGon` | KHỚP |
 | Lớp thường: tuần + `W4/8` + chữ; chưa có bài "Xếp W2 NOV" (đề xuất ở tooltip); tiêu đề "đề xuất W4/8" dòng 2 | `ODotGon khoa` · `NutXepO` | KHỚP |
 | ⓘ chú giải 6 dòng | `ChuGiaiGon` (mẫu dựng bằng chính ô) | KHỚP |
 | 375: Xuất ▾ | `Menu` "Xuất" (sm:hidden) | KHỚP; ⓘ nằm cùng hàng ô tìm thay vì cạnh công tắc (hàng công cụ sẵn có tự xuống dòng) |

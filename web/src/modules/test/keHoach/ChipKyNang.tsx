@@ -68,8 +68,10 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
         const soTre = d.mon.filter((m) => m.loai === 'tre').length;
         const tt = soTre > 1 ? { chu: t('trễ chấm'), loai: 'tre' as const } : i === 0 && ttO && !d.tt ? ttO : d.tt;
         return (
-          <span key={d.tuanDu ?? `chua-${i}`} className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-[3px]">
-            <span className={`mr-0.5 w-[58px] min-w-[58px] shrink-0 whitespace-nowrap text-sm tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{d.tuan ?? '—'}</span>
+          /* PTA 28/10: cột tuần 58 px cố định; môn / chữ không đủ chỗ thì xuống dòng THỤT dưới cột môn (không nới cột, không cuộn ngang). */
+          <span key={d.tuanDu ?? `chua-${i}`} className="grid min-w-0 grid-cols-[58px_minmax(0,1fr)] items-start gap-x-1">
+            <span className={`whitespace-nowrap text-sm leading-5 tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{d.tuan ?? '—'}</span>
+            <span className="flex min-h-5 min-w-0 flex-wrap items-center gap-x-1 gap-y-[3px]">
             {i === 0 && nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
             {o.hienMon && d.mon.map((m) => (
               <span key={m.k} title={`${m.ten} · ${CHU_MON[m.loai]}`}
@@ -83,6 +85,7 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
               </span>
             ) : tt && tt.loai !== 'xong' && <span className={`whitespace-nowrap text-xs font-semibold ${MAU_TT[tt.loai]}`}>{tt.chu}</span>}
             {i === 0 && o.khongThi && <span className="whitespace-nowrap text-xs text-faint">· {o.khongThi}</span>}
+            </span>
           </span>
         );
       })}
