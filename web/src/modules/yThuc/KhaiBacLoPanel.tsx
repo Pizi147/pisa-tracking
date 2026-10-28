@@ -7,7 +7,8 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BAC_0_NHAN, THANG, nhanLoaiXuLy, ngay } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, THANG, dsLoi, nhanLoaiXuLy, ngay } from '@shared/domain/index.ts';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { CO_LO, guiTheoLo } from './LoYThucPanel.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type EmLo, type KqEm } from './kieu.ts';
@@ -47,6 +48,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
   /* Lô vừa lưu (em ok + bậc trước) — Hoàn tác cả lô. */
   const [loVua, setLoVua] = useState<KqEm[]>([]);
   const tatCaRef = useRef<HTMLInputElement>(null);
+  const lf = useLoiForm();
   useEffect(() => { if (!thang && homNay) setThang(homNay.slice(0, 7)); }, [homNay]);
 
   const tieuDe = t('Khai / sửa cấp bậc vi phạm');
@@ -80,8 +82,11 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
     boKq([sid]);
   };
 
+  /* Luật N1: bấm Lưu khi chưa đổi em nào → báo còn thiếu "Bậc mới" (không tắt nút im lặng). */
+  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc mới'), chon: true }], { bac: gui.length ? 'co' : '' });
   const luu = async () => {
-    if (!gui.length) return;
+    lf.bam();
+    if (loi.length) return;
     setBusy(true); setLoiLuu(null);
     const ids = gui.map((e) => e.studentId);
     const daGui = new Map(gui.map((e) => [e.studentId, bacMoi[e.studentId]]));
@@ -146,7 +151,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
   const lyDoKhoa = (e: EmLo) => {
     const chu = e.capBac.lyDo ? dichChu(e.capBac.lyDo) : t('chỉ QL sửa');
     const hoa = chu.charAt(0).toUpperCase() + chu.slice(1);
-    return e.capBac.lyDo?.chu === 'đã có xử lý trên web' ? `${hoa} · ${t('chỉ QL sửa')}` : hoa;
+    return /QL/.test(hoa) ? hoa : `${hoa} · ${t('chỉ QL sửa')}`;
   };
   const chonBac = (value: number | undefined | null, onChange: (v: string) => void, nhan: string, goiY: string, doi = false) => (
     <select className={`field min-h-[44px] w-full py-1 text-[13px] sm:min-h-0 ${doi ? 'border-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`}
@@ -163,10 +168,11 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
         dong2: [lop ?? data.classCode, t('{n} HV', { n: ds.length }), t('bậc cao nhất em đã bị xử lý trước khi dùng web')] }}
       chan={{
         daSua: gui.length > 0,
+        conThieu: lf.conThieu(loi),
         trai: busy ? <span role="status" className="text-[13px] text-dim">{t('Đang lưu…')}</span>
           : loiLuu ? <span role="alert" className="text-[13px] font-semibold text-bad">{loiLuu}</span>
           : <span className="text-[13px] text-dim">{gui.length ? t('{n} em đổi bậc', { n: gui.length }) : t('Chưa đổi em nào')}{soKhoa ? ` · ${t('{n} em khoá (chỉ QL sửa)', { n: soKhoa })}` : ''}</span>,
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !gui.length} onClick={() => void luu()}>
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>
           {gui.length ? t('Lưu {n} em', { n: gui.length }) : t('Lưu')}</button>,
       }}>
       <div className="-mx-4 [container-type:inline-size] sm:-mx-5">
@@ -215,7 +221,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
               : kh?.loi ? <span role="alert" className="text-[12px] font-semibold text-bad">{t('Chưa hoàn tác: {loi}', { loi: dichChu(kh.loi) })}</span>
               : k && !k.ok && k.loi ? <span role="alert" className="text-[12px] font-semibold text-bad">{t('Chưa lưu: {loi}', { loi: dichChu(k.loi) })}</span>
               : doi ? <span className={`text-[12px] font-semibold ${ha ? 'text-soon' : 'text-[color:var(--accent)]'}`}>{nhanDoi(e)}</span>
-              : vuaLuu ? <span className="text-[12px] font-semibold text-ok">✓ {t('Đã lưu')}</span> : null;
+              : vuaLuu ? <span className="text-[12px] font-semibold text-dim">✓ {t('Đã lưu')}</span> : null;
             return (
               <li key={e.studentId} className={`grid grid-cols-[36px_minmax(0,1fr)] gap-x-2.5 gap-y-1 border-b px-4 py-2.5 sm:px-5 [@container(min-width:600px)]:py-1.5 ${COT} ${tick.has(e.studentId) && !khoa ? 'bg-[color:var(--accent-soft)]' : ''}`}
                 style={{ borderColor: 'var(--line)' }}>

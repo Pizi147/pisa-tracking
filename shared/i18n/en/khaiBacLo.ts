@@ -32,6 +32,7 @@ export const EN_KHAI_BAC_LO = {
   'Đã lưu {n} em: {tom}': 'Saved {n} students: {tom}',
   '{n} em chưa lưu — xem dòng đỏ': '{n} not saved — see red rows',
   'Chưa hoàn tác: {loi}': 'Not undone: {loi}',
+  'Hoàn tác cấp bậc vi phạm': 'Undo incident level',
   'Chỉ hoàn tác được lần lưu của chính bạn trong hôm nay.': 'You can only undo your own save from today.',
   'Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.': 'This student’s level changed after this save — not undone.',
 } satisfies Record<string, Dich>;
