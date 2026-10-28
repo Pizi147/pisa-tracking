@@ -114,6 +114,11 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     assert(/const gui = rows;/.test(nguon) && /rows: gui,/.test(nguon) && /rs\.filter\(\(x\) => !daThem\.has\(x\)\)/.test(nguon), 'commit chưa chụp dòng đã gửi');
   });
 
+  check('RA-LUONG-14 · Hồ sơ HV tab Ý thức: em chưa có lộ trình (`cycle` null) không văng trang — đọc `cy?.ratio` như mọi chỗ khác', () => {
+    const nguon = fsMod.readFileSync('web/src/modules/students/StudentDetailPage.tsx', 'utf8') as string;
+    assert(!/\bcy\.ratio\b/.test(nguon.slice(nguon.indexOf("tab === 'y-thuc'"))), 'tab Ý thức còn đọc cy.ratio khi cy có thể null');
+  });
+
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {
     const nguon = fsMod.readFileSync('web/src/modules/students/ChuyenLopPanel.tsx', 'utf8') as string;
     const huy = nguon.slice(nguon.indexOf('const huyLenh = async'), nguon.indexOf('const nhanChinh'));
