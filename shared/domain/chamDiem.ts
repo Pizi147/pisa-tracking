@@ -194,7 +194,7 @@ export function kiemBangQuyDoi(b: unknown): LoiBangQuyDoi[] {
       else if (kiemBand(v) !== null) loi.push({ skill, cau: n, loi: t('{ten} {n} câu: band từ 0 đến 9, bậc 0.5 (đang là {v}).', { ten, n, v }), ngan: t('bậc 0.5') });
       else if (n > 0 && kiemBand(cot[n - 1]) === null && v < cot[n - 1]) {
         const a = v.toFixed(1), m = n - 1, truoc = cot[m].toFixed(1);
-        loi.push({ skill, cau: n, loi: t('{ten} {n} câu: {a} thấp hơn {m} câu ({b}) — band không giảm khi số câu tăng.', { ten, n, a, m, b: truoc }), ngan: t('≥ {b}', { b: truoc }) });
+        loi.push({ skill, cau: n, loi: t('{ten} {n} câu: {a} thấp hơn {m} câu ({b}) — band không giảm khi số câu tăng.', { ten, n, a, m, b: truoc }), ngan: `≥ ${truoc}` });
       }
     });
   }
