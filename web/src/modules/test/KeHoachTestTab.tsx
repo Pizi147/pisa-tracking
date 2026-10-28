@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { Menu } from '../../ui/Menu.tsx';
 import { ChuGiaiGon } from './keHoach/ChipKyNang.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
@@ -195,8 +196,19 @@ export function KeHoachTestTab() {
           /* OV-15c: Xuất Excel Kế hoạch Test 13 cột (C17) theo bộ lọc đang xem + Xuất điểm Test (mockup 6 khung 9). */
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-xs tabular-nums text-slate-400">{t('{n} học viên', { n: danhSach.reduce((n, l) => n + l.soHv, 0) })}</span>
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
+            <span className="hidden gap-2 sm:flex">
+              <button type="button" className="btn btn-sm" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
+              <button type="button" className="btn btn-sm" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
+            </span>
+            {/* Mockup #659 (375): hai nút xuất gộp "Xuất ▾". */}
+            {!lyDoTat && (
+              <span className="sm:hidden">
+                <Menu label={t('Xuất')} className="btn btn-sm min-h-[44px]" items={[
+                  ...(danhSach.length ? [{ label: t('Xuất Excel'), onClick: () => setXuat('ke-hoach') }] : []),
+                  { label: t('Xuất điểm Test'), onClick: () => setXuat('diem') },
+                ]} />
+              </span>
+            )}
           </span>
         )}
         {coXep && (
