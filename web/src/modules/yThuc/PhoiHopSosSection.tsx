@@ -48,24 +48,26 @@ export type CoordTurn = {
 /** `gon`: hiện trước bấy nhiêu lượt (chưa xong xếp trước theo máy chủ), còn lại "Hiện thêm n HV". */
 const GON_TOI_DA = 4;
 
-export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcademic, onChanged, gon = false }: {
+export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcademic, onChanged, gon = false, xanh = false }: {
   turns: CoordTurn[] | null; loading?: boolean;
   cot1?: 'luot' | 'hocVien';
   /** UI-Y-THUC-LOP: hồ sơ lớp — mọi thẻ đóng sẵn (một dòng một em, bấm mở việc); mặc định thẻ chưa xong mở sẵn. */
   gon?: boolean;
+  /** UI-Y-THUC-HV: khung xanh nhạt (nhóm học thuật, mockup `.phoi-hop`) mà thẻ vẫn mở sẵn như cũ. */
+  xanh?: boolean;
   onGoAcademic?: () => void; onChanged?: () => void;
 }) {
   const [het, setHet] = useState(false);
   if (loading || !turns) return <Skeleton rows={3} />;
   /* PR-S5F-b: tab dùng chung FT và lớp thường — màn rỗng không nói "SOS" (lớp thường không có SOS). */
-  if (!turns.length) return <Empty title={t('Không có lượt phối hợp nào')} />;
+  if (!turns.length) return xanh ? <p className="m-0 text-[13px] text-dim">{t('Không có lượt phối hợp nào')}</p> : <Empty title={t('Không có lượt phối hợp nào')} />;
   /* `gon`: lượt chưa xong lên trước (máy chủ xếp theo tên) — "Hiện thêm" không giấu việc còn mở. */
   const xep = gon ? [...turns].sort((a, b) => Number(a.summary.complete) - Number(b.summary.complete)) : turns;
   const hien = gon && !het ? xep.slice(0, GON_TOI_DA) : xep;
   return (
     <div className="space-y-2">
       {hien.map((t) => (
-        <TheSos key={t.attemptId} t={t} cot1={cot1} onGoAcademic={onGoAcademic} onChanged={onChanged} gon={gon} />
+        <TheSos key={t.attemptId} t={t} cot1={cot1} onGoAcademic={onGoAcademic} onChanged={onChanged} gon={gon} xanh={xanh} />
       ))}
       {gon && turns.length > GON_TOI_DA && (
         <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold appearance-none sm:min-h-0" onClick={() => setHet((v) => !v)}>
@@ -83,8 +85,8 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
  * Đầu thẻ là `div role="button"` chứ không phải `<button>`: cột 2 có một nút link bên trong (đổi sang tab Học thuật),
  * nút lồng trong nút là HTML sai. Nút link gọi `stopPropagation` để không làm thẻ mở/đóng.
  */
-export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = false }: {
-  t: CoordTurn; gon?: boolean;
+export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = false, xanh = false }: {
+  t: CoordTurn; gon?: boolean; xanh?: boolean;
   /** 'luot' (hồ sơ HV): cột 1 = `MT2 · SOS 2` + kỹ năng. 'hocVien' (hồ sơ lớp): cột 1 = tên HV + `MT2 · SOS 2 · kỹ năng`. */
   cot1?: 'luot' | 'hocVien';
   onGoAcademic?: () => void;
@@ -99,10 +101,10 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
 
   return (
     /* UI-Y-THUC-LOP (`gon`): mỗi em một khung xanh nhạt (mockup `.phoi-hop`) — nhóm học thuật, khác hẳn hàng vi phạm. */
-    <div className={gon ? 'rounded-[10px] border border-doing-line bg-doing-bg' : 'rounded-lg border'} style={gon ? undefined : { borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+    <div className={gon || xanh ? 'rounded-[10px] border border-doing-line bg-doing-bg' : 'rounded-lg border'} style={gon || xanh ? undefined : { borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
       <div role="button" tabIndex={0} aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
+        onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
         className={`grid gap-x-3 gap-y-1 items-center cursor-pointer bam grid-cols-2 ${gon ? 'px-3.5 py-3' : 'px-3 py-2.5'} md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]`}>
         <div className="col-span-2 md:col-span-1 min-w-0">
           <span className={`flex items-center gap-1 font-semibold text-slate-100 ${gon ? 'text-[15px]' : 'text-sm'}`}>{gon && <MuiTenGap mo={open} />}{cot1 === 'luot' ? mtSos : luot.studentName}</span>
@@ -121,7 +123,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           <span className={gon ? 'block text-sm text-dim' : 'block text-sm font-semibold text-slate-100'}>{t('{label} việc hoàn thành', { label: luot.summary.label })}</span>
           {cot1 === 'luot' ? (
             onGoAcademic ? (
-              <button type="button" className="link text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer text-left"
+              <button type="button" className="link min-h-[44px] text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer text-left sm:min-h-0"
                 onClick={(e) => { e.stopPropagation(); onGoAcademic(); }}>
                 {t('Hỗ trợ học thuật xem ở tab Học thuật')}
               </button>
@@ -145,7 +147,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           ))}
           {/* PR-S5F-b: lượt Giữa khoá lớp thường (`nhanDot`) không thêm việc — máy chủ chỉ nhận ở lượt Mock FT có SOS. */}
           {luot.canAct && !adding && !luot.nhanDot && (
-            <button type="button" className="btn btn-sm mt-2" onClick={() => setAdding(true)}>{t('+ Thêm việc')}</button>
+            <button type="button" className="btn btn-sm mt-2 min-h-[44px] sm:min-h-0" onClick={() => setAdding(true)}>{t('+ Thêm việc')}</button>
           )}
           {adding && (
             <div className="mt-2">

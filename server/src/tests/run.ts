@@ -9674,6 +9674,8 @@ const { runPrHslLtTests } = await import('./prHslLt.tests.ts');
 await runPrHslLtTests({ check, assert, conn, P, classId, TODAY } as any);
 const { runPrLuotTenGvTests } = await import('./prLuotTenGv.tests.ts');
 await runPrLuotTenGvTests({ check, assert, conn, P, classId } as any);
+const { runPrLuotKhoiPhucTests } = await import('./prLuotKhoiPhuc.tests.ts');
+await runPrLuotKhoiPhucTests({ check, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== HOAN-TAC-XN (luật N3: Hoàn tác Xác nhận PA · lô PA · Xác nhận Case · Xác nhận Case S)
 const { runPrHoanTacXnTests } = await import('./prHoanTacXn.tests.ts');
 await runPrHoanTacXnTests({ check, assert, conn, P, TODAY, classId, addDays } as any);

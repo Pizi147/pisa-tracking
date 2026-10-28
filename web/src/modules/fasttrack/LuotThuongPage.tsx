@@ -50,6 +50,8 @@ type ChiTiet = Omit<ThuongSheet, 'rows'> & {
   nguoiLam?: Record<string, string | null>;
   huy: { lyDo: string | null; ai: string | null; khi: string } | null;
   canCancel: boolean;
+  /** LUOT-KHOI-PHUC: lượt đã huỷ — `chan` = câu lý do + bước tiếp khi không khôi phục được (cùng câu máy chủ chặn); null = chưa huỷ. */
+  khoiPhuc?: { chan: string | null } | null;
   history: NguonLs['history']; scoreHistory: NguonLs['scoreHistory'];
 };
 type DotCuaHv = Parameters<typeof ChonDot>[0]['ds'][number];
@@ -80,6 +82,8 @@ export default function LuotThuongPage() {
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
   const [lichSuMon, setLichSuMon] = useState<string | null>(null);
   const dangKhoiPhuc = useRef(false);   // chống bấm đúp
+  /* LUOT-KHOI-PHUC: đang gửi khôi phục lượt (khoá nút) · vừa khôi phục (dải "Đã khôi phục · Điểm trước khi huỷ xem ở Lịch sử"). */
+  const [khoiPhucLuot, setKhoiPhucLuot] = useState<'dang' | 'xong' | null>(null);
   /* `?kn=` (hồ sơ HV › bảng Test, Công việc): mở sẵn dòng môn + cuộn tới, một lần khi dữ liệu có. Lượt không có môn đó → không cuộn, không lỗi. */
   const [thamSo] = useSearchParams();
   const knUrl = thamSo.get('kn');
@@ -126,6 +130,17 @@ export default function LuotThuongPage() {
       reload();
     } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
   };
+  /* LUOT-KHOI-PHUC: khôi phục cả lượt đã huỷ — cùng đường `reopenAttempt` với FT (quyền ATTEMPT_CANCEL); bị chặn → câu máy chủ (lý do + bước tiếp). */
+  const khoiPhucCaLuot = async () => {
+    if (khoiPhucLuot === 'dang') return;
+    setKhoiPhucLuot('dang');
+    try {
+      await api.post(`/attempts/${r.attemptId}/reopen`, {});
+      invalidate('/regular'); invalidate('/classes'); invalidate('/attempts'); invalidate('/students'); invalidate('/my-work');
+      setKhoiPhucLuot('xong');
+      reload();
+    } catch (e: any) { setKhoiPhucLuot(null); toast.push('error', e.message); }
+  };
 
   return (
     <div className="page space-y-4">
@@ -134,6 +149,28 @@ export default function LuotThuongPage() {
         <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line-strong)' }}>
           <span className="font-semibold text-slate-100">{t('Đã huỷ')}</span>
           <span className="min-w-0 break-words text-slate-400">{[d.huy?.lyDo, d.huy?.ai, d.huy ? fmtDate(d.huy.khi) : null].filter(Boolean).join(' · ')}</span>
+          {/* LUOT-KHOI-PHUC (luật "không khoá cứng"): người có quyền → nút; bị chặn → câu lý do + bước tiếp; còn lại → ai khôi phục được (như FT). */}
+          {!d.canCancel ? <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Quản lý khôi phục được lượt đã huỷ.')}</span>
+            : d.khoiPhuc?.chan ? <span className="min-w-0 break-words text-xs text-slate-400 sm:ml-auto">{dich(d.khoiPhuc.chan)}</span>
+            : (
+              <button type="button" className="btn btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" disabled={khoiPhucLuot === 'dang'} onClick={() => void khoiPhucCaLuot()}>
+                {khoiPhucLuot === 'dang' ? t('Đang khôi phục…') : t('Khôi phục {x}', { x: r.kindLabel })}
+              </button>
+            )}
+        </div>
+      )}
+      {!huy && khoiPhucLuot === 'xong' && (
+        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line-strong)' }}>
+          <span className="font-semibold text-slate-100">✓ {t('Đã khôi phục {mt}', { mt: r.kindLabel })}</span>
+          <span className="text-slate-400">{t('Điểm trước khi huỷ xem ở Lịch sử.')}</span>
+          <button type="button" className="link border-0 bg-transparent p-0 text-sm max-sm:min-h-[44px] sm:ml-auto"
+            onClick={() => {
+              const ls = document.getElementById('lich-su');
+              ls?.querySelector('details')?.setAttribute('open', '');   // mở sẵn Lịch sử lượt, không chỉ cuộn tới dòng thu gọn
+              ls?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+            }}>
+            {t('Xem Lịch sử')}
+          </button>
         </div>
       )}
 

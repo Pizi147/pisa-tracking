@@ -278,15 +278,16 @@ export const DUONG_DO: MucDo[] = [
   // ---------------------------------------------------------------- Kế hoạch Test (PR-Rc2)
   { trang: 'Kế hoạch Test', vai: MOI_VAI, url: '/ke-hoach-test/lop?branchId={cn}' },
   {
-    trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/ke-hoach-test/ft/{lopFT}',
-    maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
+    trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG', 'TVV'], url: '/ke-hoach-test/ft/{lopFT}',
+    /* QUYEN-LICH-MT (chủ SP 28/10): GV xem Kế hoạch Test lớp mình dạy / chấm S chéo → 200 (chỉ xem); TVV không dạy lớp nào → vẫn 403. */
+    maChuDich: { TVV: 403 },
   },
   {
-    trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/ke-hoach-test/thuong/{lopThuong}',
-    maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
+    trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG', 'TVV'], url: '/ke-hoach-test/thuong/{lopThuong}',
+    maChuDich: { TVV: 403 },   // QUYEN-LICH-MT: GV dạy lớp → 200 chỉ xem; TVV → 403
   },
   /* OV-15c (C18): ô tìm lớp / học viên / email — một câu lớp + một câu học viên. */
-  { trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN'], url: '/ke-hoach-test/tim?q=minh&branchId={cn}', maChuDich: { GVCN: 403 } },
+  { trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN'], url: '/ke-hoach-test/tim?q=minh&branchId={cn}' },   // QUYEN-LICH-MT: GV tìm trong lớp mình dạy
   /* OV-15c (C21): lịch sử ghi chú lịch thi (ghi chú lớp — một câu quyền lớp + một câu lịch sử). */
   { trang: 'Kế hoạch Test', vai: ['QL', 'QT', 'GVCN'], url: '/ke-hoach-test/ghi-chu/lich-su?classId={lopFT}', maChuDich: { GVCN: 403 } },
 
@@ -739,9 +740,9 @@ export const TRAN: Record<string, number> = {
   'QT /notifications': 40,   // OV-15h1: QT vừa ghi (POST) ở phép kiểm trước → lần mở chuông này đồng bộ thông báo tự động ngay (`daGhi`), đo 33; không ghi thì vẫn ~13
   /* OV-15i1 (ý 12): đo lại 20/10 vẫn 33 (đồng bộ vì vừa ghi; sau nhân ×3: 4) — đo + 30 % = 43 > 40, nên giữ 40 (= đo + 21 %); không hạ thêm được khi chưa làm nhẹ lần đồng bộ (`myWork`). */
   'QL /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
-  'GVCN /ke-hoach-test/lop?branchId=1': 13,
-  'GVBM /ke-hoach-test/lop?branchId=1': 13,
-  'GVCN_THUONG /ke-hoach-test/lop?branchId=1': 13,
+  'GVCN /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: GV nay thấy lớp mình dạy (chỉ xem) → chạy các câu đếm theo lớp (HV, lượt, cần xếp lại, tiến độ) như QL; đo 15 / 14
+  'GVBM /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: GV nay thấy lớp mình dạy (chỉ xem) → chạy các câu đếm theo lớp (HV, lượt, cần xếp lại, tiến độ) như QL; đo 15 / 14
+  'GVCN_THUONG /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: như GVCN / GVBM — GV nay thấy lớp mình dạy
   'QT /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
   'QL /ke-hoach-test/tim?q=minh&branchId=1': 15, 'QT /ke-hoach-test/tim?q=minh&branchId=1': 14,   // OV-15c: đo 5 / 4 → đo + 10
   'QL /ke-hoach-test/ghi-chu/lich-su?classId=3': 15, 'QT /ke-hoach-test/ghi-chu/lich-su?classId=3': 14,   // OV-15c: đo 5 / 4 → đo + 10
