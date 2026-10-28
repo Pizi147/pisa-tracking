@@ -1,6 +1,6 @@
 # VIEW-CASE-LUOT — chip lượt của Case thành link ↗ trang lượt
 
-Không có mockup riêng (thêm link theo mẫu sẵn có — CLAUDE.md "Đổi chữ, thêm nút/ô theo mẫu sẵn có: không cần mockup"). Ảnh cặp TRƯỚC (main) | SAU, DB demo cục bộ,
+Hình theo mockup đã duyệt `thiet-ke/v7/panel-pilot.html` (đầu mục "Case" + lượt `.link-luot` — luật chủ SP 28/10: hình theo mockup sát). Ảnh cặp TRƯỚC (main) | SAU, DB demo cục bộ,
 ngày demo 14/09, vai GVCN Trần Ngọc Hà (7):
 `cap-ngan-case-thuong-1440-toi.png` (Ngăn Case lớp thường, Dương Ngọc Ánh · Case Reading) · `cap-ngan-case-thuong-375-sang.png` ·
 `cap-ngan-case-ft-1440-toi.png` (Ngăn Case FT, Phạm Bảo Ngọc · Case Listening MT3) · `cap-khoi-case-ho-so-hv-1440-toi.png` (hồ sơ HV, cột Case & phương án).
@@ -21,7 +21,7 @@ ngày demo 14/09, vai GVCN Trần Ngọc Hà (7):
 
 | Trước | Sau |
 |---|---|
-| Từ Case muốn xem lượt sinh ra Case: đóng Ngăn Case → tìm lượt ở bảng Test / Hành trình | Bấm chip "MT3 ↗" / "Progress Test ↗" ở đầu khối Case → trang lượt, dòng môn của Case mở sẵn |
+| Từ Case muốn xem lượt sinh ra Case: đóng Ngăn Case → tìm lượt ở bảng Test / Hành trình | Bấm link "MT3 · W4 SEP ↗" / "Progress Test · W3 AUG ↗" ở đầu mục Case → trang lượt, dòng môn của Case mở sẵn |
 | Back trình duyệt | Về đúng hồ sơ em, Ngăn Case vẫn mở (`?case=`) — đã thử |
 | Mọi nút làm việc của Case (Xác nhận, Thêm PA, Kết quả, Sửa…) | Giữ nguyên — link ↗ tách khỏi nút làm việc |
 
