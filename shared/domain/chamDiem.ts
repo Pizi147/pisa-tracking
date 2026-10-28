@@ -164,6 +164,18 @@ export const BANG_QUY_DOI_GOC: BangQuyDoi = {
     5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
   ],
 };
+const theoKhoang = (ds: [number, number, number][]): (number | null)[] =>
+  Array.from({ length: 41 }, (_, n) => ds.find(([tu, den]) => n >= tu && n <= den)?.[2] ?? null);
+/**
+ * BẢNG THAM CHIẾU IDP (chỉ đọc, KHÔNG phải dữ liệu sửa được) — bảng "trung bình" IDP công bố, mỗi đề lệch nhẹ; `null` = IDP không công bố.
+ * Nguồn (tra 28/10/2026): Listening ielts.idp.com/vietnam/results/scores/listening · Academic Reading ielts.idp.com/southafrica/results/scores/reading.
+ * Màn Quản trị › Bảng quy đổi hiện cạnh bảng đang dùng (tô ô lệch) + nút "Áp bảng IDP" (ô `null` giữ số đang có).
+ */
+export const BANG_IDP: { listening: (number | null)[]; reading: (number | null)[] } = {
+  listening: theoKhoang([[39, 40, 9], [37, 38, 8.5], [35, 36, 8], [32, 34, 7.5], [30, 31, 7], [26, 29, 6.5], [23, 25, 6], [18, 22, 5.5], [16, 17, 5], [13, 15, 4.5], [11, 12, 4]]),
+  reading: theoKhoang([[39, 40, 9], [37, 38, 8.5], [35, 36, 8], [33, 34, 7.5], [30, 32, 7], [27, 29, 6.5], [23, 26, 6], [19, 22, 5.5], [15, 18, 5], [13, 14, 4.5],
+    [10, 12, 4], [8, 9, 3.5], [6, 7, 3], [4, 5, 2.5]]),
+};
 /** Band của `n` câu đúng (L/R) theo `bang`. Ngoài 0–40 hoặc không nguyên → null. */
 export function bandTuSoCau(bang: BangQuyDoi, skill: 'listening' | 'reading', n: number): number | null {
   return Number.isInteger(n) && n >= 0 && n <= 40 ? bang[skill][n] : null;

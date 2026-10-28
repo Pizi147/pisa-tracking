@@ -52,12 +52,14 @@ export function xemBangQuyDoi(p: Principal) {
     `SELECT b.*, u.full_name AS ten FROM bang_quy_doi b LEFT JOIN users u ON u.id = b.nguoi_id ORDER BY b.id`,
   ).all() as DongPb[];
   let truoc = BANG_QUY_DOI_GOC;
-  const phienBan = [{ id: 0, luc: null as string | null, nguoi: null as string | null, lyDo: null as string | null, khoiPhucTu: null as number | null, doi: {} as Record<string, [number, number]> }];
+  const phienBan: { id: number; luc: string | null; nguoi: string | null; lyDo: string | null; khoiPhucTu: number | null; doi: Record<string, [number, number]> }[] = [];
   for (const r of ds) {
     const bang = bangCua(r);
     phienBan.push({ id: r.id, luc: r.tao_luc, nguoi: r.ten, lyDo: r.ly_do, khoiPhucTu: r.khoi_phuc_tu, doi: oDoi(truoc, bang) });
     truoc = bang;
   }
+  /* Phiên bản 0 (bảng gốc, không có dòng) chỉ hiện khi bản đầu ở DB không phải chính nó — DB bản chính đã có v1 = bảng gốc (migrate). */
+  if (!phienBan.length || Object.keys(phienBan[0].doi).length) phienBan.unshift({ id: 0, luc: null, nguoi: null, lyDo: null, khoiPhucTu: null, doi: {} });
   return { bang: truoc, phienBan: phienBan.reverse(), suaDuoc: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }) };
 }
 

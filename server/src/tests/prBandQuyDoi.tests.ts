@@ -1,6 +1,7 @@
 /**
  * PHÉP KIỂM BAND-QUY-DOI (chủ SP 28/10) — bảng quy đổi số câu → band ở DB, Quản trị sửa: hợp lệ bảng · quyền (QT sửa, QL xem, GV 403) ·
- * điểm cũ giữ band khi đổi bảng, điểm mới theo bảng mới · phiên bản + Hoàn tác / khôi phục + chặn ghi đè. Mỗi phép kiểm cuộn lại (`thu`).
+ * điểm cũ giữ band khi đổi bảng, điểm mới theo bảng mới · phiên bản + Hoàn tác / khôi phục + chặn ghi đè · migrate v1 + v2 (Listening IDP).
+ * Mỗi phép kiểm cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -10,6 +11,7 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const week: any = await import('../platform/week.ts');
   const bqd: any = await import('../platform/bangQuyDoi.ts');
+  const m: any = await import('../migrate/prBandQuyDoi.ts');
   const { navOf } = await import('../platform/nav.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -99,5 +101,24 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
     bqd.luuBangQuyDoi(P.admin, { khoiPhucTu: v1.id });
     assert(bqd.bangHienHanh().listening[26] === 6.5, 'khôi phục lại phiên bản 1');
     assert(loi(() => bqd.luuBangQuyDoi(P.admin, { khoiPhucTu: 99999 }))?.status === 400, 'phiên bản không có → 400');
+  }));
+
+  check('BQD-5 · migrate bản chính (chưa có bảng): v1 bảng cũ + v2 Listening theo IDP; Reading giữ; chạy lặp không làm gì', () => thu(() => {
+    const mg: any = { applied: [] as string[] };
+    conn.exec('DROP TABLE bang_quy_doi');
+    m.migratePrBandQuyDoi(conn, mg.applied);
+    assert(mg.applied.length === 1 && all('SELECT 1 FROM bang_quy_doi').length === 2, `2 phiên bản: ${JSON.stringify(mg.applied)}`);
+    const b = bqd.bangHienHanh();
+    const L = (n: number) => b.listening[n];
+    assert(L(10) === 3.5 && L(11) === 4 && L(18) === 5.5 && L(19) === 5.5 && L(26) === 6.5 && L(32) === 7.5 && L(9) === GOC.listening[9], `L theo IDP: ${b.listening.join(',')}`);
+    assert(JSON.stringify(b.reading) === JSON.stringify(GOC.reading), 'Reading giữ bảng cũ');
+    assert(dm.kiemBangQuyDoi(b).length === 0, 'v2 hợp lệ');
+    for (let n = 11; n <= 40; n += 1) assert(L(n) === dm.BANG_IDP.listening[n], `L ${n} ≠ IDP`);
+    for (let n = 4; n <= 40; n += 1) assert(GOC.reading[n] === dm.BANG_IDP.reading[n], `R ${n}: bảng cũ ≠ IDP Academic`);
+    const x = bqd.xemBangQuyDoi(P.admin);
+    assert(x.phienBan.length === 2 && x.phienBan[1].id !== 0 && Object.keys(x.phienBan[0].doi).length > 0 && /IDP/.test(x.phienBan[0].lyDo),
+      `lịch sử v2, v1 (không có "Bảng gốc" ảo): ${JSON.stringify(x.phienBan.map((p: any) => p.id))}`);
+    m.migratePrBandQuyDoi(conn, mg.applied);
+    assert(mg.applied.length === 1 && all('SELECT 1 FROM bang_quy_doi').length === 2, 'chạy lặp không làm gì');
   }));
 }
