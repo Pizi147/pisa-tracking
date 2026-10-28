@@ -119,32 +119,32 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       /* P2 MT-DEM: em đã xong đủ MT mặc định của lớp thì thôi nhắc xếp thêm (lượt đã tạo vẫn nhắc thi / chấm như cũ). */
       if (r.chua_co_lich && !daDuMtMacDinh(r.so_mt_xong, lichMtCua({ lich_mt: r.lich_mt, route: r.lop_route }, r.route).length)) chuaCoLichTiep.set(r.class_id, (chuaCoLichTiep.get(r.class_id) ?? 0) + 1);
     }
+    /*
+     * MỘT câu lượt cho cả hai số (KHT-GON, trần tocDo): lượt của em đang học ở lớp FT — (1) `luotCuaLop` = lượt ở CHÍNH lớp đó, còn hiệu lực, còn là
+     * kế hoạch (PTA 28/10) → "MTn đang làm bài"; (2) `luotLoTrinh` = lượt Mock theo LỘ TRÌNH ĐANG CHẠY (kể cả huỷ, như `luoiFT`) → "MTn chưa xếp k em"
+     * đếm đúng ô "Xếp MTn" (`oXepMt`).
+     */
+    const dangHoc = new Map([...hvCuaLop].map(([lop, ds]) => [lop, new Set(ds)]));
     for (const r of conn
       .prepare(
-        `SELECT a.class_id, a.student_id, a.attempt_no, a.status, a.planned_period_id
-           FROM assessment_attempts a
-           JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
-           JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
-           JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
-          WHERE a.class_id IN (${phOf(ftClassIds.length)}) AND a.status != 'cancelled' AND ${LUOT_CON_KE_HOACH_SQL('a')}`,   // PTA 28/10: MT chưa làm sau thi thật không còn là kế hoạch
-      )
-      .all(...ftClassIds) as any[]) {
-      if (!luotCuaLop.has(r.class_id)) luotCuaLop.set(r.class_id, []);
-      luotCuaLop.get(r.class_id)!.push({ hv: r.student_id, no: r.attempt_no, status: r.status, coTuan: r.planned_period_id != null });
-    }
-    /* KHT-GON: lượt Mock theo LỘ TRÌNH ĐANG CHẠY của em (như `luoiFT`, kể cả lượt huỷ) — tóm tắt "MTn chưa xếp" đếm đúng ô "Xếp MTn" (`oXepMt`). */
-    for (const r of conn
-      .prepare(
-        `SELECT e.class_id, a.student_id, a.attempt_no, a.status,
+        `SELECT e.class_id AS lop, a.class_id AS a_lop, a.kind, a.student_id, a.attempt_no, a.status, a.planned_period_id,
+                CASE WHEN ${LUOT_CON_KE_HOACH_SQL('a')} THEN 1 ELSE 0 END AS con_ke_hoach,
                 EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)) AS co_diem
            FROM assessment_attempts a
            JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
            JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active'
-          WHERE a.kind = 'mock' AND e.class_id IN (${phOf(ftClassIds.length)})`,
+          WHERE e.class_id IN (${phOf(ftClassIds.length)}) AND (a.kind = 'mock' OR a.class_id = e.class_id)`,
       )
       .all(...ftClassIds) as any[]) {
-      const k = `${r.class_id}:${r.student_id}`;
-      luotLoTrinh.set(k, [...(luotLoTrinh.get(k) ?? []), { attempt_no: r.attempt_no, status: r.status, coDiem: !!r.co_diem }]);
+      if (!dangHoc.get(r.lop)?.has(r.student_id) || !r.con_ke_hoach) continue;
+      if (r.a_lop === r.lop && r.status !== 'cancelled') {
+        if (!luotCuaLop.has(r.lop)) luotCuaLop.set(r.lop, []);
+        luotCuaLop.get(r.lop)!.push({ hv: r.student_id, no: r.attempt_no, status: r.status, coTuan: r.planned_period_id != null });
+      }
+      if (r.kind === 'mock') {
+        const k = `${r.lop}:${r.student_id}`;
+        luotLoTrinh.set(k, [...(luotLoTrinh.get(k) ?? []), { attempt_no: r.attempt_no, status: r.status, coDiem: !!r.co_diem }]);
+      }
     }
   }
   /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. */

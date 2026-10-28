@@ -519,10 +519,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const sid2 = hv(); xl(gvcn, sid2, [ghiVp(gvbm, sid2)]);
     assert(/đã có lần xử lý/.test(loiCua(() => xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' })).msg), 'khai sau lần xử lý');
   });
-  check('YT4 (4) · Khai bậc: bậc ngoài 1–6 hoặc ghi chú < 3 ký tự → 400', () => {
+  /* KHAI-BAC-LO (chủ SP 28/10): ghi chú tuỳ chọn — chỉ bậc sai mới 400. */
+  check('YT4 (4) · Khai bậc: bậc ngoài 0–6 → 400; ghi chú ngắn / rỗng hợp lệ', () => {
     const sid = hv();
     assert(/Report 1 … WL 2/.test(loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 7, ghiChu: 'Report 7' })).msg), 'bậc 7');
-    assert(/ít nhất 3 ký tự/.test(loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'x' })).msg), 'ghi chú');
+    assert(xuLy.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'x' }).ok === true, 'ghi chú ngắn vẫn lưu');
   });
   check('YT4 (4) · Xoá vi phạm trong lần xử lý đã xong (V4-12): lần xử lý còn, bậc KHÔNG lùi', () => {
     const sid = hv(); const v = ghiVp(gvbm, sid);
@@ -891,9 +892,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{daLuu\.id\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
     assert(/Cần xử lý nặng hơn/.test(s) && /Xác nhận cấp bậc vi phạm trước/.test(s), 'nút Đề xuất + dòng Xác nhận cấp bậc (Q7)');
   });
-  check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú ≥ 3; QL sửa bằng PUT', () => {
+  /* KHAI-BAC-LO (chủ SP 28/10): ghi chú khai TUỲ CHỌN (từng em và theo lô). */
+  check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú tuỳ chọn; QL sửa bằng PUT', () => {
     const s = docW(`${YT}/KhaiBacPanel.tsx`);
-    assert(/BAC_KHAI = \[BAC_0_NHAN, \.\.\.THANG\./.test(s) && /GHI_CHU_MIN = 3/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
+    assert(/BAC_KHAI = \[BAC_0_NHAN, \.\.\.THANG\./.test(s) && !/GHI_CHU_MIN/.test(s) && /nhan=\{t\('Ghi chú'\)\} tuyChon/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
   });
   check('YT4 (8) · + Ghi vi phạm (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
     const s = docW(`${YT}/RecordViolationPanel.tsx`);

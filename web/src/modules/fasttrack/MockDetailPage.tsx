@@ -860,7 +860,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
                 </Status>
               ) : <Status kind="idle"><span title={r.scopeReason ?? undefined}>{t('Ngoài phạm vi')}</span></Status>}
               {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. MT lịch sử không có hạn (T34). */}
-              {r.required && prog !== 'scored' && !khongDuThi && !huy && r.sitStatus !== 'absent' && !r.pendingMove && !d.lichSu && <div><DeadlinePill cell={oThieu} /></div>}
+              {r.required && prog !== 'scored' && !khongDuThi && !huy && r.sitStatus !== 'absent' && !r.pendingMove && !d.lichSu && <div><DeadlinePill cell={oThieu} mo={!cells.some((c) => c.required && c.canEdit)} /></div>}
               {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
               {r.pendingMove && (
                 <div className="text-xs text-amber-200" title={`${t('Đề nghị dời sang')} ${r.pendingMove.toWeek ?? t('tuần kế tiếp')} ${t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })} ${fmtDate(r.pendingMove.decideBy)}${r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.`}>

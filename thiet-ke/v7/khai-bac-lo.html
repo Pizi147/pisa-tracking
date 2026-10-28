@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Khai bậc theo lớp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;600;700&display=swap">
+<style>
+/* Mockup KHAI-BAC-LO (chủ SP 28/10: "cho tôi chọn cả danh sách bằng 1 thao tác, hoặc áp chung 1 cấp bậc; tối giản"). Nâng cấp panel lô
+   "Xác nhận cấp bậc" đang có (`LoYThucPanel` viec="cap-bac", máy chủ `loCapBac`): bảng em × ô chọn bậc + Chọn tất cả + Áp bậc cho các em đã chọn,
+   tháng mặc định tháng này, ghi chú chung tuỳ chọn, MỘT nút Lưu, Hoàn tác cả lô. Token = web (`web/src/index.css`, DESIGN.md Luật V5, D4).
+   Một mã vẽ cả 1440 và 375 (container query). Nền vàng viền đứt = phần đọc mockup, không phải giao diện. Dữ liệu demo. */
+:root {
+  --bg: #f3f5f9; --surface: #ffffff; --surface-2: #f2f4f9; --line: #d9deea; --line-strong: #b0b8cd;
+  --accent: #273c8f; --accent-soft: #eef1fa; --text: #141a2b; --text-dim: #4a536c; --text-faint: #5f6984;
+  --ok: #146c43; --ok-nen: #e5f4ec; --ok-vien: #7cb293; --bad: #a63a2d; --bad-nen: #fbedeb; --soon: #7e5f36; --soon-nen: #fbf4e1;
+  --hong: #f25a98; --nut-chinh-nen: #273c8f; --nut-chinh-vien: #273c8f; --nut-chinh-chu: #ffffff; --phu-nen: rgba(5, 10, 22, .45);
+  --note-bg: #fffbea; --note-line: #d9a93a; --note-text: #4a3a06;
+  --phong: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif; --phong-so: 'Inter', 'Be Vietnam Pro', system-ui, sans-serif;
+}
+:root[data-theme="dark"] {
+  --bg: #050a16; --surface: #111c33; --surface-2: #172440; --line: #22324f; --line-strong: #33496f;
+  --accent: #9cbde7; --accent-soft: #192b46; --text: #e7edf7; --text-dim: #b7c2d8; --text-faint: #9aa8c2;
+  --ok: #94d1ae; --ok-nen: #1e322b; --ok-vien: #49755c; --bad: #e89a8c; --bad-nen: #341c1d; --soon: #e4c784; --soon-nen: #302a1a;
+  --hong: #f57aae; --nut-chinh-nen: #22406c; --nut-chinh-vien: #4d72a8; --nut-chinh-chu: #eaf1fb; --phu-nen: rgba(0, 0, 0, .55);
+  --note-bg: #2a2410; --note-line: #7d6420; --note-text: #f2e2a8; color-scheme: dark; }
+
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--phong); }
+.trang { padding: 16px 16px 48px; display: grid; gap: 20px; }
+.trang > * { min-width: 0; }
+.so { font-family: var(--phong-so); font-variant-numeric: tabular-nums; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* phần đọc mockup */
+.dau h1 { margin: 0 0 4px; font-size: 22px; } .dau p { margin: 0; color: var(--text-dim); max-width: 95ch; }
+.dk { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13px; color: var(--note-text); background: var(--note-bg); border: 1px dashed var(--note-line); border-radius: 8px; padding: 8px 12px; }
+.dk a { color: inherit; font-weight: 600; padding: 4px 9px; border: 1px solid var(--note-line); border-radius: 6px; text-decoration: none; }
+.dk a[aria-current] { background: var(--surface); }
+.ghi { background: var(--note-bg); color: var(--note-text); border: 1px dashed var(--note-line); border-radius: 8px; padding: 10px 14px; font-size: 13px; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
+.ghi dt { font-weight: 700; } .ghi dd { margin: 0; }
+.hai-khung { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.khung { border: 1px dashed var(--line-strong); border-radius: 10px; padding: 12px; overflow-x: auto; flex: 1 1 100%; min-width: 0; }
+.khung.hep { flex: 0 0 auto; } .khung.hep > .web { width: 375px; } .khung > .web { min-width: 1180px; }
+.khung.hep > .web { min-width: 0; }
+.nhan-khung { font: 600 12px var(--phong); color: var(--text-faint); margin: 0 0 8px; }
+
+/* ---------- giao diện web ---------- */
+.web { container-type: inline-size; position: relative; min-height: 760px; background: var(--bg); border-radius: 10px; overflow: hidden; }
+.nen-lop { padding: 16px; opacity: .55; }
+.nen-lop .dong { display: flex; gap: 8px; align-items: center; } .nen-lop h2 { margin: 0; font-size: 17px; flex: 1; }
+.nen-lop .the { margin-top: 12px; height: 520px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.phu { position: absolute; inset: 0; background: var(--phu-nen); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--line-strong); border-radius: 6.4px; padding: 4px 10px; font-size: 13px; font-weight: 500; background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; min-height: 30px; }
+.btn.chinh { background: var(--nut-chinh-nen); border-color: var(--nut-chinh-vien); color: var(--nut-chinh-chu); font-weight: 600; }
+.btn.ma { background: transparent; border-color: transparent; color: var(--text-dim); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.link { appearance: none; border: 0; background: none; padding: 0; color: var(--accent); font: 600 13px var(--phong); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.cua-toi { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--hong); margin-right: 4px; }
+@container (max-width: 600px) { .btn { min-height: 44px; } .link { min-height: 44px; } }
+
+/* panel phải (KhungPanel rong) */
+.panel { position: absolute; top: 0; right: 0; bottom: 0; width: 760px; background: var(--surface); border-left: 1px solid var(--line-strong); display: grid; grid-template-rows: auto auto 1fr auto; grid-template-columns: minmax(0, 1fr); box-shadow: -12px 0 32px rgba(0,0,0,.25); }
+@container (max-width: 600px) { .panel { width: 100%; border-left: 0; } }
+.p-dau { display: flex; gap: 10px; align-items: flex-start; padding: 14px 18px 10px; border-bottom: 1px solid var(--line); }
+.p-dau h3 { margin: 0; font-size: 17px; font-weight: 700; } .p-dau .phu-de { font-size: 13px; color: var(--text-dim); }
+.p-dau .dong-x { margin-left: auto; }
+.cong-cu { display: grid; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--surface-2); font-size: 13px; }
+.cong-cu .h { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.o-chon { font: 13px var(--phong); padding: 4px 8px; border-radius: 6.4px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); min-height: 30px; }
+@container (max-width: 600px) { .o-chon { min-height: 44px; } }
+.o-chon.doi { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.tick { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.tick input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
+@container (max-width: 600px) { .tick { min-height: 44px; } }
+.cong-cu .ap { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cong-cu .h2 { flex-wrap: wrap; } .cong-cu .thang { display: inline-flex; gap: 6px; align-items: center; flex: none; }
+.cong-cu .gc { flex: 1 1 120px; min-width: 0; display: flex; gap: 8px; align-items: center; } .cong-cu .gc input { flex: 1; min-width: 0; }
+.bang th.w-tick { font-size: 12px; white-space: nowrap; }
+@container (max-width: 600px) { .cong-cu .ap .o-chon { max-width: 150px; } .cong-cu .gc > span { display: none; } }
+.mo { color: var(--text-faint); } .dim { color: var(--text-dim); }
+.than { overflow-y: auto; }
+.bang { width: 100%; border-collapse: collapse; font-size: 14px; }
+.bang th { text-align: left; font-size: 13px; font-weight: 600; color: var(--text-dim); padding: 8px 10px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); }
+.bang td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.bang tr.chon td { background: var(--accent-soft); }
+.bang tr.khoa td { color: var(--text-faint); }
+.bang .ten { font-weight: 600; white-space: nowrap; }
+.bang .w-tick { width: 36px; padding-left: 18px; } .bang td:last-child, .bang th:last-child { padding-right: 18px; }
+.ghi-chu-hang { font-size: 12px; } .ghi-chu-hang.doi.ha { color: var(--soon); } .ghi-chu-hang:empty { display: none; } .ghi-chu-hang.doi { color: var(--accent); font-weight: 600; } .ghi-chu-hang.loi { color: var(--bad); font-weight: 600; } .ghi-chu-hang.ok { color: var(--ok); font-weight: 600; }
+/* 375: bảng thành danh sách (mỗi em một khối) */
+@container (max-width: 600px) {
+  .bang thead { display: none; }
+  .bang tr { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 2px 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .bang td { display: block; padding: 0; border: 0; } .bang .w-tick { padding: 0; grid-row: span 3; padding-top: 2px; }
+  .bang td:last-child { padding: 0; grid-column: 2; } .bang .c-moi:has(> .mo) { display: none; } .bang tr.chon { background: var(--accent-soft); } .bang tr.chon td { background: transparent; }
+  .bang .c-hien::before { content: 'Hiện tại: '; color: var(--text-faint); font-size: 12px; } .bang .c-hien { font-size: 13px; }
+  .bang .c-moi .o-chon { width: 100%; }
+}
+.chan { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 18px; border-top: 1px solid var(--line); background: var(--surface); }
+.chan .trai { flex: 1; font-size: 13px; color: var(--text-dim); min-width: 0; }
+@container (max-width: 600px) { .chan .trai { flex-basis: 100%; } .chan .btn { flex: 1; } }
+.dai-ok { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 10px 18px; background: var(--ok-nen); color: var(--ok); font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--ok-vien); }
+.dai-ok .dim { font-weight: 400; color: var(--text-dim); }
+</style>
+</head>
+<body>
+<main class="trang">
+  <header class="dau">
+    <h1>Khai / sửa cấp bậc theo lớp — một bảng, một nút Lưu</h1>
+    <p>Chủ SP 28/10: chọn cả danh sách một thao tác, áp chung một cấp bậc, không thêm bước. Nâng cấp panel lô "Xác nhận cấp bậc" đang có — không thêm màn mới.</p>
+  </header>
+  <nav class="dk" aria-label="Chọn trạng thái">
+    <b>Trạng thái</b>
+    <a href="?tt=sua" data-tt="sua">Đang sửa (đã áp bậc cho 4 em)</a>
+    <a href="?tt=da-luu" data-tt="da-luu">Đã lưu · Hoàn tác · 1 em lỗi (GVCN: khoá · QL: Thử lại)</a>
+    <b>Vai</b>
+    <a href="?vai=gvcn" data-vai="gvcn">GVCN</a>
+    <a href="?vai=ql" data-vai="ql">QL</a>
+    <b>Giao diện</b>
+    <a href="?theme=dark" data-theme="dark">Tối</a>
+    <a href="?theme=light" data-theme="light">Sáng</a>
+  </nav>
+  <dl class="ghi">
+    <dt>Mở từ</dt><dd>Tab Ý thức hồ sơ lớp: nút "Khai / sửa cấp bậc" ở đầu thẻ (cạnh "Chọn nhiều") · việc "Xác nhận cấp bậc" ở Công việc (dòng gộp theo lớp). Panel mở với MỌI em của lớp — không cần Chọn nhiều trước.</dd>
+    <dt>Thao tác</dt><dd>① "Chọn tất cả" (một chạm; ô gạch khi mới tick một phần) hoặc tick từng em — <b>ô tick chỉ để Áp</b> · ② chọn bậc → "Áp cho n em" (đổi ô Bậc mới của các em đó, chưa lưu) · ③ sửa riêng ô Bậc mới dòng nào cũng được · ④ <b>Lưu n em</b> — lưu theo ô Bậc mới ("— giữ nguyên —" không gửi). Nhãn dòng bằng chữ: Khai mới · Nâng từ … · <b>↓ Hạ từ …</b> (không chặn, không hỏi lại).</dd>
+    <dt>Tối giản</dt><dd>Ghi chú KHÔNG bắt buộc (một ô chung cho cả lô; bỏ trống → "Xác nhận theo lớp MB FT 101" như hiện nay) · tháng mặc định tháng này, sửa được · bỏ hàng 7 chip mỗi em → một ô chọn bậc mỗi dòng.</dd>
+    <dt>Quyền</dt><dd>Như khai từng em (máy chủ quyết): GVCN khai / sửa khi chuỗi chưa có lần xử lý trên web; QL sửa cả sau đó. Em không đủ quyền: dòng khoá + lý do. Lưu: một lần gọi theo lô, em lỗi báo riêng dòng đó (giữ ô đã chọn + Thử lại), em khác vẫn lưu; nhật ký từng em.</dd>
+    <dt>Sau lưu</dt><dd>Dải "✓ Đã lưu n em · Hoàn tác" (trả bậc cũ cho đúng các em vừa lưu) ở trên công cụ · panel DÙNG TIẾP được (ô bậc về "giữ nguyên", Lưu lại khi đổi tiếp) · em lỗi: GVCN gặp "em vừa có xử lý trên web" → dòng khoá "chỉ QL sửa" (không mời Thử lại); lỗi mạng / máy chủ → giữ ô đã chọn, bấm Lưu lại (một nút, không thêm Thử lại riêng). Đóng / ✕ khi còn đổi chưa lưu → hỏi "Bỏ thay đổi của n em?" (khung panel `daSua` sẵn có).</dd>
+    <dt>Giữ</dt><dd>Khai / sửa từng em ở hồ sơ HV (`KhaiBacPanel`, ghi chú vẫn tuỳ chọn như lô) · Chọn nhiều → Xác nhận cấp bậc (cùng panel này, chỉ các em đã chọn).</dd>
+  </dl>
+  <section class="hai-khung" aria-label="Khung giao diện">
+    <div class="khung"><p class="nhan-khung">1440</p><div class="web" id="w1440"></div></div>
+    <div class="khung hep"><p class="nhan-khung">375</p><div class="web" id="w375"></div></div>
+  </section>
+</main>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var tt = q.get('tt') || 'sua', vai = q.get('vai') || 'gvcn', ql = vai === 'ql';
+  if (q.get('theme')) document.documentElement.dataset.theme = q.get('theme');
+  document.querySelectorAll('.dk a').forEach(function (a) {
+    var k = a.dataset.tt ? 'tt' : a.dataset.vai ? 'vai' : 'theme', v = a.dataset.tt || a.dataset.vai || a.dataset.theme;
+    var p = new URLSearchParams(location.search); p.set(k, v); a.href = '?' + p.toString();
+    if ((q.get(k) || (k === 'tt' ? 'sua' : k === 'vai' ? 'gvcn' : 'dark')) === v) a.setAttribute('aria-current', 'true');
+  });
+  var BAC = ['Chưa có xử lý', 'Report 1', 'Report 2', 'WL 1', 'Report 4 + Meeting CX/GĐCN', 'Report 5', 'WL 2'];
+  /* [tên, bậc hiện tại (null = chưa khai), ghi hiện tại, bậc mới (null = giữ nguyên), tick "Áp cho", khoá với GVCN, sửa riêng] */
+  var EM = [
+    ['Đỗ Minh Khôi', null, 'Chưa khai', 3, true, false],
+    ['Hoàng Bảo Ngọc', null, 'Chưa khai', 3, true, false],
+    ['Kiều Thảo Nhi', 1, 'Report 1 · khai 20/08', 3, true, false],
+    ['Lê Quang Huy', null, 'Chưa khai', 2, true, false, true],
+    ['Lương Gia Bảo', 6, 'WL 2 · có xử lý trên web', null, false, true],
+    ['Mạc Tuấn Kiệt', null, 'Chưa khai', null, false, false],
+    ['Nguyễn Minh An', 6, 'WL 2 · khai 02/09', 3, true, false],
+    ['Phạm Bảo Ngọc', null, 'Chưa khai', null, false, false],
+    ['Vũ Hải Đăng', 3, 'WL 1 · có xử lý trên web', null, false, true]
+  ];
+  var daLuu = tt === 'da-luu';
+  var LOI = 2;   /* Kiều Thảo Nhi: lỗi riêng khi lưu */
+  function chon(bac, doi, nhan, goi) {
+    return '<select class="o-chon' + (doi ? ' doi' : '') + '" aria-label="' + nhan + '"><option>' + (goi || '— giữ nguyên —') + '</option>' +
+      BAC.map(function (b, i) { return '<option' + (bac === i ? ' selected' : '') + '>' + b + '</option>'; }).join('') + '</select>';
+  }
+  /* Nhãn đổi bằng CHỮ (không chỉ màu): khai mới · nâng · ↓ hạ — không chặn, không hỏi lại. */
+  function nhanDoi(e) {
+    var rieng = e[6] ? ' · sửa riêng' : '';
+    if (e[1] === null) return 'Khai mới' + rieng;
+    return (e[3] < e[1] ? '↓ Hạ từ ' : 'Nâng từ ') + BAC[e[1]] + rieng;
+  }
+  function hang(e, i) {
+    var khoaGoc = e[5] && !ql;
+    var loi = daLuu && i === LOI, ok = daLuu && e[3] !== null && !loi && !khoaGoc;
+    var khoa = khoaGoc || (loi && !ql);
+    var ghi = khoaGoc ? '<span class="ghi-chu-hang">Đã có xử lý trên web · chỉ QL sửa</span>'
+      : loi && !ql ? '<span class="ghi-chu-hang loi">Chưa lưu: em vừa có lần xử lý trên web · chỉ QL sửa</span>'
+      : loi ? '<span class="ghi-chu-hang loi">Chưa lưu: mất kết nối · bấm Lưu lại</span>'
+      : ok ? '<span class="ghi-chu-hang ok">✓ Đã lưu</span>'
+      : e[3] !== null ? '<span class="ghi-chu-hang doi' + (e[1] !== null && e[3] < e[1] ? ' ha' : '') + '">' + nhanDoi(e) + '</span>' : '';
+    var hien = ok ? BAC[e[3]] : e[2];
+    var bacMoi = daLuu && !loi ? null : e[3];
+    return '<tr class="' + (khoa ? 'khoa' : e[4] && !daLuu ? 'chon' : '') + '">' +
+      '<td class="w-tick">' + (khoa ? '' : '<label class="tick"><input type="checkbox"' + (e[4] && !daLuu ? ' checked' : '') + ' aria-label="Áp cho ' + e[0] + '"></label>') + '</td>' +
+      '<td class="ten">' + e[0] + '</td>' +
+      '<td class="c-hien dim">' + hien + '</td>' +
+      '<td class="c-moi">' + (khoa ? '<span class="mo">—</span>' : chon(bacMoi, bacMoi !== null, 'Bậc mới của ' + e[0])) + '</td>' +
+      '<td>' + ghi + '</td></tr>';
+  }
+  function web() {
+    /* Em khoá với người xem: khoá từ đầu, hoặc (GVCN) vừa lỗi "em vừa có xử lý trên web" khi lưu. */
+    var duocChon = EM.filter(function (e, i) { return !(e[5] && !ql) && !(daLuu && i === LOI && !ql); }).length;
+    var soChon = daLuu ? 0 : EM.filter(function (e) { return e[4]; }).length;
+    var soKhoa = EM.length - duocChon;
+    var nen = '<div class="nen-lop" aria-hidden="true"><div class="dong"><h2>Ý thức &amp; Phối hợp</h2><span class="btn">Chọn nhiều</span><span class="btn">Khai / sửa cấp bậc</span><span class="btn chinh">+ Ghi vi phạm</span></div><div class="the"></div></div><div class="phu"></div>';
+    var dau = '<div class="p-dau"><div><h3>Khai / sửa cấp bậc vi phạm</h3><div class="phu-de">MB FT 101 · ' + EM.length + ' HV · bậc cao nhất em đã bị xử lý trước khi dùng web</div></div><button class="btn ma dong-x" type="button" aria-label="Đóng">✕</button></div>';
+    var ok = daLuu ? '<div class="dai-ok" role="status">✓ Đã lưu 4 em: WL 1 (3 em) · Report 2 (1 em) <button class="link" type="button">Hoàn tác</button><span class="dim">1 em chưa lưu — xem dòng đỏ</span></div>' : '';
+    var cc = '<div class="cong-cu">' +
+      '<div class="h"><label class="tick"><input type="checkbox" class="mot-phan" aria-label="Chọn tất cả"> Chọn tất cả (' + duocChon + ')</label>' +
+      '<span class="ap">Áp bậc ' + chon(daLuu ? null : 3, false, 'Bậc áp cho các em đã tick', 'Chọn bậc…') +
+      '<button class="btn" type="button"' + (soChon ? '' : ' disabled') + '>Áp cho ' + soChon + ' em</button></span></div>' +
+      '<div class="h h2"><span class="thang">Tháng <input class="o-chon so" value="10/2026" aria-label="Tháng xử lý (mm/yyyy)" style="width:80px"><button class="btn" type="button" aria-label="Mở lịch tháng">▦</button></span>' +
+      '<label class="gc"><span>Ghi chú</span> <input class="o-chon" placeholder="Ghi chú (tuỳ chọn)" aria-label="Ghi chú chung"></label></div></div>';
+    var bang = '<div class="than"><table class="bang"><thead><tr><th class="w-tick">Áp cho</th><th>Học viên</th><th>Bậc hiện tại</th><th>Bậc mới</th><th></th></tr></thead><tbody>' +
+      EM.map(hang).join('') + '</tbody></table></div>';
+    var soDoi = daLuu ? (ql ? 1 : 0) : EM.filter(function (e) { return e[3] !== null && !(e[5] && !ql); }).length;
+    var chan = '<div class="chan"><span class="trai">' + (soDoi ? soDoi + ' em đổi bậc' : 'Chưa đổi em nào') + (soKhoa ? ' · ' + soKhoa + ' em khoá (chỉ QL sửa)' : '') + '</span>' +
+      '<button class="btn ma" type="button">' + (soDoi ? 'Huỷ' : 'Đóng') + '</button><button class="btn chinh" type="button"' + (soDoi ? '' : ' disabled') + '>' + (soDoi ? 'Lưu ' + soDoi + ' em' : 'Lưu') + '</button></div>';
+    return nen + '<aside class="panel" role="dialog" aria-label="Khai / sửa cấp bậc vi phạm">' + dau + '<div class="tren">' + ok + cc + '</div>' + bang + chan + '</aside>';
+  }
+  document.getElementById('w1440').innerHTML = web();
+  document.getElementById('w375').innerHTML = web();
+  /* "Chọn tất cả" chọn một phần: dấu gạch (indeterminate) khi 0 < đã tick < số em chọn được. */
+  if (!daLuu) document.querySelectorAll('.mot-phan').forEach(function (x) { x.indeterminate = true; });
+})();
+</script>
+</body>
+</html>
