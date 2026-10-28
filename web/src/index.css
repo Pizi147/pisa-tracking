@@ -478,7 +478,7 @@
   /* Tên bị cắt (…): "↗" nằm trong phần đệm phải, không bị cắt theo chữ — trên điện thoại (không rê) vẫn thấy là mở hồ sơ. */
   .ten-ho-so.truncate { position: relative; padding-right: 1em; }
   .ten-ho-so.truncate::after { position: absolute; right: 0; bottom: .2em; margin-left: 0; }
-  /* HV-LOP-GON (chủ SP 28/10): trang Học viên & Lớp bỏ "↗" — tên em / mã lớp vẫn là link hồ sơ (rê = xanh + gạch). */
+  /* HV-LOP-GON (chủ SP 28/10: bỏ "↗" toàn web — trang khác do PR quét riêng): Học viên & Lớp — tên em / mã lớp vẫn là link hồ sơ (rê = xanh + gạch). */
   .ten-ho-so.khong-mui::after { content: none; }
   .ten-ho-so.khong-mui.truncate { padding-right: 0; }
   /* Phụ đề trong tiêu đề khối (`Card`: "· W4 AUG – W3 SEP", "· 8 lớp") = 13 / 400 như mockup, không theo cỡ 17 của tiêu đề. */

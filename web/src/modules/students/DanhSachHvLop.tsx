@@ -168,7 +168,7 @@ function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) 
   );
 }
 
-/** Một lớp của danh sách theo lớp (HV-LOP-SUA): `dau` = nội dung hàng lớp (nơi gọi dựng: mã ↗ · n HV · GVCN · SOS · việc cấp lớp · ⋯); `hv` chỉ vẽ khi `mo`. */
+/** Một lớp của danh sách theo lớp (HV-LOP-SUA): `dau` = nội dung hàng lớp (nơi gọi dựng: mã (link hồ sơ) · n HV · GVCN · SOS · việc cấp lớp · ⋯); `hv` chỉ vẽ khi `mo`. */
 export type NhomLop = { id: number; nhan: string; dau: ReactNode; mo: boolean; onMo: () => void; hv: HvGon[] };
 
 /**

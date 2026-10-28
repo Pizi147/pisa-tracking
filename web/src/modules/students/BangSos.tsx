@@ -149,7 +149,7 @@ export function BangSos({ data, tatCa = data.rows, cot, dam, dienThoai, ds, onMo
   );
   const tenEm = (r: DongSos) => (
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
-      <Link className="ten-ho-so max-w-full truncate" title={r.ten} to={`/hoc-vien/${r.studentId}`} state={{ ds }}>{r.ten}</Link>
+      <Link className="ten-ho-so khong-mui max-w-full truncate" title={r.ten} to={`/hoc-vien/${r.studentId}`} state={{ ds }}>{r.ten}</Link>
     </span>
   );
   const trangThai = (r: DongSos) => { const n = nhomDong(r); return <Nhan tone={TONE_NHOM[n]}>{t(NHAN_NHOM_XU_LY[n])}</Nhan>; };

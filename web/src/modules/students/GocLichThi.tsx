@@ -207,7 +207,7 @@ function DongLichThi({ r, ds, mo, onMo, nhom, hop, onHop, onLuu }: {
     <>
       <tr className={mo ? 'dang-mo' : ''}>
         <OBang c={C_TEN}>
-          <Link className="ten-ho-so block truncate" to={`/hoc-vien/${r.studentId}`} state={ds ? { ds } : undefined}>{r.ten}</Link>
+          <Link className="ten-ho-so khong-mui block truncate" to={`/hoc-vien/${r.studentId}`} state={ds ? { ds } : undefined}>{r.ten}</Link>
           <span className="block truncate text-xs text-slate-400" title={phuEm}>{phuEm}</span>
         </OBang>
         <OBang c={C_MT}><ODiem so={st?.overall != null ? st.overall.toFixed(1) : null} kq={kqOverall(st?.overall, st?.expectation)} phu={st?.attemptLabel ?? undefined} /></OBang>

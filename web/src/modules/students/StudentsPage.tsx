@@ -632,7 +632,7 @@ function OSosLop({ sos }: { sos: number[] }) {
 }
 
 /**
- * HÀNG LỚP của danh sách theo lớp (HV-LOP-SUA, mockup `hoc-vien-lop.html`): mã lớp ↗ (Hồ sơ lớp) · n HV · GVCN · ô SOS (lớp FT) · badge việc của lớp ·
+ * HÀNG LỚP của danh sách theo lớp (HV-LOP-SUA, mockup `hoc-vien-lop.html`): mã lớp (link Hồ sơ lớp) · n HV · GVCN · ô SOS (lớp FT) · badge việc của lớp ·
  * việc CẤP LỚP của người xem (tối đa 2 + Xem thêm, bấm = làm tại chỗ) · ⋯ lớp. Lớp ngoài danh sách (em TVV Tạm dừng…) chỉ có mã; em chưa xếp lớp: "Chưa xếp lớp".
  */
 function DauLop({ lop, hv, viecLop, vai, gopMon, dsLop, onMoViec, onThemHocVien }: {
