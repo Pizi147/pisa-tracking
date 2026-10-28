@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
-import { Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { demLanSua, nhanLichSuViPham } from '@shared/domain/index.ts';
 import { fmtDate } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -29,12 +29,13 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const { data: d, reload } = useApi<ViolationDetail>(`/violations/${violationId}`, [violationId]);
+  const { data: d, error: loiTai, reload } = useApi<ViolationDetail>(`/violations/${violationId}`, [violationId]);
   const [hoiXoa, setHoiXoa] = useState(false);
   const [errXoa, setErrXoa] = useState<string | null>(null);
   const [xemLichSu, setXemLichSu] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  if (loiTai) return <ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={reload} />;
   if (!d) return <Skeleton rows={3} />;
 
   const soLanSua = demLanSua(d.history);

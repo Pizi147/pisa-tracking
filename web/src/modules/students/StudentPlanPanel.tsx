@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
+import { Empty, ErrorState, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { HangLichMt, type BangLichMt } from './HangLichMt.tsx';
@@ -60,7 +60,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
   return (
     <KhungPanel tieuDe={t('Lộ trình')} hocVien={studentName} rong="rong" onDong={hopMo ? () => { /* Esc đóng hộp xếp lịch trước */ } : onClose}
       chan={{ huy: { nhan: t('Đóng'), onClick: onClose, disabled: busy } }}>
-      {cycle.loading ? <div className="pt-3"><Skeleton rows={6} /></div> : (
+      {cycle.error ? <ErrorState message={cycle.error.message} hint={cycle.error.hint} onRetry={cycle.reload} />
+        : cycle.loading ? <div className="pt-3"><Skeleton rows={6} /></div> : (
         <div className="space-y-4 pt-3">
           {ratio ? (
             <SectionNote>
@@ -80,7 +81,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
                 <Empty title={t('Chưa có Tuần bắt đầu')} hint={t('Điền Tuần bắt đầu ở Sửa thông tin — lịch MT đề xuất hiện ngay ở đây.')}
                   action={onSuaThongTin ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>{t('Sửa thông tin')}</button> : undefined} />
               ) : rows.length === 0 ? (
-                <Skeleton rows={3} />
+                sugg.error ? <ErrorState message={sugg.error.message} hint={sugg.error.hint} onRetry={sugg.reload} /> : <Skeleton rows={3} />
               ) : (
                 <div className="surface-2 rounded-lg overflow-x-auto">
                   <table className="w-full text-sm">

@@ -93,6 +93,8 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   const [chonKn, setChonKn] = useState<Record<KyNangKH, boolean>>(() => Object.fromEntries(O_KE_HOACH.map((k) => [k, true])) as Record<KyNangKH, boolean>);
   const [tuan, setTuan] = useState<Record<KyNangKH, Tuan | null>>(() => Object.fromEntries(O_KE_HOACH.map((k) => [k, null])) as Record<KyNangKH, Tuan | null>);
   const [ap, setAp] = useState<Tuan | null>(null);
+  /* 6c (lỗi 5): tuần / tick đã chỉnh tay chưa lưu → ✕ hỏi (tuần tự điền theo đợt không tính). */
+  const [daChinh, setDaChinh] = useState(false);
   const nghiepVu = useNgayNghiepVu().homNay;
   const homNay = nghiepVu ? mondayOfDate(nghiepVu) : null;
   useEffect(() => {
@@ -195,7 +197,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   return (
     <KhungPanel tieuDe="Xếp lịch Test" rong="rong" onDong={onClose}
       tabs={<KhungXepLich value="thuong" onChange={onDoiKhung} coFt={coFt} coThuong />}
-      chan={{ huy: { nhan: 'Đóng', onClick: onClose }, chinh, conThieu: lf.conThieu(loi) }}>
+      chan={{ huy: { nhan: 'Đóng', onClick: onClose }, chinh, conThieu: lf.conThieu(loi), daSua: daChinh }}>
       <Khoi tieuDe="Lớp">
         {dsCt.length > 1 && (
           <div className="flex flex-wrap gap-1.5">
@@ -272,8 +274,8 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
             {dongLoi('ky-nang')}
             <div id={lf.oId('tuan')} tabIndex={-1} className="space-y-3 outline-none">
             {ky.map((k) => (
-              <DongKyNang key={k} k={k} ct={ct} oId={ky.length === 1 ? lf.oId('ky-nang') : undefined} laFt={false} tick={chonKn[k]} onTick={(v) => setChonKn((s) => ({ ...s, [k]: v }))}
-                tuan={tuan[k]} goc={homNay} onTuan={(t) => setTuan((s) => ({ ...s, [k]: t }))}
+              <DongKyNang key={k} k={k} ct={ct} oId={ky.length === 1 ? lf.oId('ky-nang') : undefined} laFt={false} tick={chonKn[k]} onTick={(v) => { setDaChinh(true); setChonKn((s) => ({ ...s, [k]: v })); }}
+                tuan={tuan[k]} goc={homNay} onTuan={(t) => { setDaChinh(true); setTuan((s) => ({ ...s, [k]: t })); }}
                 nhanKhoa={dot?.loai === 'thuong' && tuan[k]
                   ? nhanTuanKhoa(tuan[k]!.weekStart, th.data?.khaiGiang ?? null, th.data?.tongTuan ?? null) : null} />
             ))}
@@ -282,7 +284,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
             <div className="grid items-start gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) auto' }}>
               <div className="min-w-0">
                 <span className="mb-1 block text-[12px] font-bold text-slate-200">Áp một tuần cho mọi môn đã chọn</span>
-                <TuanNho nam d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={setAp} />
+                <TuanNho nam d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={(t) => { setDaChinh(true); setAp(t); }} />
               </div>
               <button type="button" className="btn mt-[22px] min-h-[44px] sm:min-h-[32px]" disabled={!ap}
                 onClick={() => setTuan((s) => {

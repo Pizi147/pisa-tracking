@@ -128,7 +128,7 @@ export function PanelViec(p: PropsViec) {
       </HienLaiPanel.Provider>
       {dangXemCase && (
         <div ref={lopCase}>
-          <NganCase caseId={caseId} viecBanDau={{ loai: 'case' }} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
+          <NganCase caseId={caseId} viecBanDau={{ loai: 'case' }} paViec={p.it.paId ?? null} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
             veNguon={{ nhan: tenBoEm(p.it), onClick: xem.lui }} />
         </div>
       )}
@@ -235,7 +235,8 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
   tuMo?: boolean;
   /** R1-LUU-TIEP: việc kế của danh sách (Công việc, Chấm Test, thanh việc lớp). */
   onTiep?: (() => void) | null;
-  /** M6 6b-4 (Nhập hộ ở panel GV chấm quá hạn): chỉ hàng các em của dòng (`emIds`), không chỉ khi một em — "Cả lớp" vẫn mở đủ. */
+  /** M6 6b-4 (Nhập hộ ở panel GV chấm quá hạn): chỉ hàng các em của dòng (`emIds`), không chỉ khi một em. 6c (#641 XM-2): lưới gọn như mockup —
+   *  không cột Kết quả, không nút "Cả lớp" (cả lớp: "lớp · lượt ↗" ở đầu panel hoặc "Mở lưới lớp ở Lịch Test ›"). */
   chiEmViec?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
@@ -272,6 +273,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
           : (
             <div className="luoi-trong-panel -mx-4 px-2">
               <LuoiChamLop data={data} kind={null} kn={kn} onReload={daLuu} gon anNutTao chiCot={kns} datConTro={!tuMo}
+                nutCaLop={!chiEmViec} anKetQua={chiEmViec}
                 chiAttempt={chiAttempt?.size ? chiAttempt : null} onHet={hetViec(onTiep)} />
             </div>
           )}

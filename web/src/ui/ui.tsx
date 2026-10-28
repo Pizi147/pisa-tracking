@@ -300,6 +300,16 @@ function NutVeCha() {
   return <button type="button" className="btn btn-sm mt-2" onClick={() => ve(dich.url, !chong.length)}><span aria-hidden>‹</span> {dich.ten}</button>;
 }
 
+/** 6c (bảng kê lỗi 6): lỗi tải GỌN cho chỗ hẹp (chuông, dải đầu hồ sơ) — nói rõ không tải được + Thử lại, không im lặng như rỗng. */
+export function LoiTaiNho({ chu, onRetry, className = 'px-3.5 py-2.5' }: { chu: string; onRetry: () => void; className?: string }) {
+  return (
+    <p role="alert" className={`m-0 text-[13px] text-bad ${className}`}>
+      {chu}{' '}
+      <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" onClick={onRetry}>{t('Thử lại')}</button>
+    </p>
+  );
+}
+
 export function Forbidden({ message, hint }: { message?: string; hint?: string }) {
   return (
     <div className="card p-6 text-center">

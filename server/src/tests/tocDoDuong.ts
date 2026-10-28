@@ -46,10 +46,9 @@ export const DUONG_DO: MucDo[] = [
   },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong' },
-  /* OV-15h1: Tổng quan QL phần theo khung MỘT GET (Lớp cần chú ý + Tuần này + Trễ chấm) · panel Trễ chấm một GV (-1 = Speaking chấm chéo) · Chờ bạn duyệt theo chi nhánh. */
+  /* OV-15h1: Tổng quan QL phần theo khung MỘT GET (Lớp cần chú ý + Tuần này + Trễ chấm) · Chờ bạn duyệt theo chi nhánh. */
   { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/ql?ct=ft', maChuDich: { GVCN: 403 } },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/ql?ct=thuong' },
-  { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/ql/tre?ct=ft&gv=-1' },
   /* UI-TONG-QUAN: Tổng quan V5 MỘT GET (QL chế độ lớp · QT chế độ chi nhánh · CX) + TVV (Báo PH đúng hạn, Thi tháng này) và panel Báo PH. */
   { trang: 'Tổng quan V5', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=ft' },
   { trang: 'Tổng quan V5', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=thuong' },
@@ -439,7 +438,7 @@ export const TRAN: Record<string, number> = {
   'ADMIN /highlights': 20,
   /* OV-15h1: trần = đo + 6 (đo demo 20/10: QL 56 · 54 · 21 · 15; QT 52 · 50 · 19 · 14). */
   'QL /tong-quan/ql?ct=ft': 62, 'QT /tong-quan/ql?ct=ft': 58, 'GVCN /tong-quan/ql?ct=ft': 15, 'QL /tong-quan/ql?ct=thuong': 60, 'QT /tong-quan/ql?ct=thuong': 56,
-  'QL /tong-quan/ql/tre?ct=ft&gv=-1': 27, 'QT /tong-quan/ql/tre?ct=ft&gv=-1': 25, 'QL /yeu-cau/dem?branchId=1': 21, 'QT /yeu-cau/dem?branchId=1': 20,
+  'QL /yeu-cau/dem?branchId=1': 21, 'QT /yeu-cau/dem?branchId=1': 20,
   'QL /tong-quan/chi-nhanh': 45,
   'QT /tong-quan/chi-nhanh': 41,
   'QL /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 63,   // OV-15d: + tập Case chưa chốt PA (cột Lớp cần chú ý) — đo 48
@@ -923,8 +922,6 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /cham/lich-test?classId=3': 847,   // TD7c: đo 454 (trước TD7c 511; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 651 (trần cũ 591) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
   /* OV-15h1: trần = max(đo + 50, ⌈đo × 1,3⌉), đo demo 20/10 (QL 1 914 · 1 862 · 483; QT 2 393 · 2 322 · 583). */
   'QL /tong-quan/ql?ct=ft': 2489, 'QL /tong-quan/ql?ct=thuong': 2421, 'QT /tong-quan/ql?ct=ft': 4402, 'QT /tong-quan/ql?ct=thuong': 4073,   // V5 SV-SO1 sau gộp main: đo 3386 (trần cũ 3111) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ   // V5 SV-SO1 sau gộp main: đo 3133 (trần cũ 3019) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
-  /* V5 SV-SO1: đo 817 · 1626 (trước 628 · 758) — ô thiếu nhận xét bắt buộc là nợ điểm (trễ chấm). */
-  'QL /tong-quan/ql/tre?ct=ft&gv=-1': 1063, 'QT /tong-quan/ql/tre?ct=ft&gv=-1': 2114,
   'QL /tong-quan/chi-nhanh': 3336,   // đo 2566
   'QT /tong-quan/chi-nhanh': 4397,   // đo 3382
   'QL /tong-quan/diem-chu-y?ct=ft': 3260,   // đo 2507

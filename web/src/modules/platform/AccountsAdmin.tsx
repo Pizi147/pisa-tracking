@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { BoLocDoan, Card, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
@@ -69,6 +69,10 @@ export function AccountsAdmin() {
    * rỗng và không biết là mình thiếu quyền hay phần mềm hỏng — và trên bảng điều khiển của
    * trình duyệt thì nó hiện thành một lỗi đỏ, đúng thứ làm người ta hết tin vào những lỗi khác.
    */
+  /* 6c (lỗi 6): chỉ 403 mới là thiếu quyền — lỗi mạng / máy chủ thì nói thật + Thử lại. */
+  if (accounts.error && accounts.error.status !== 403) {
+    return <Card title="Tài khoản"><ErrorState message={accounts.error.message} hint={accounts.error.hint} onRetry={accounts.reload} /></Card>;
+  }
   if (accounts.error) {
     return (
       <Forbidden

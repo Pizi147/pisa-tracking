@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, Truong, useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { CHO_TAO_PRE_FOU, ghepMaLop, kiemSoLop, kyHieuLop, locSoLop, tachSoLop, type LoiTruong } from '@shared/domain/index.ts';
@@ -50,11 +50,14 @@ export function NoiDungThongTinLop({ lop, phan, onDone, onChuyenTiep, chiDoc = f
  * MỘT PHẦN của panel: tiêu đề · Sửa (xem) hoặc Huỷ + Lưu (đang sửa) ngay trên đầu phần; lỗi lưu hiện trong phần (chữ đã gõ giữ nguyên).
  * `moSua`: mở sẵn chế độ sửa + cuộn tới (lối cũ "Sửa phân công").
  */
-export function PhanThongTin({ tieuDe, suaDuoc, dangSua, busy, nhanLuu = t('Lưu'), loi, onSua, onHuy, onLuu, cuonToi, children }: {
+export function PhanThongTin({ tieuDe, suaDuoc, dangSua, daDoi = true, busy, nhanLuu = t('Lưu'), loi, onSua, onHuy, onLuu, cuonToi, children }: {
   tieuDe: string; suaDuoc: boolean; dangSua: boolean; busy: boolean; nhanLuu?: string; loi: string | null;
+  /** 6c (lỗi 5): phần đang sửa có đổi thật — ✕ panel hỏi trước khi bỏ. Không truyền = mở Sửa là coi như đã đổi. */
+  daDoi?: boolean;
   onSua: () => void; onHuy: () => void; onLuu: () => void; cuonToi?: boolean; children: ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
+  useBaoDangSua(dangSua && daDoi);
   useEffect(() => { if (cuonToi) ref.current?.scrollIntoView({ block: 'start' }); }, [cuonToi]);
   return (
     <section ref={ref} aria-label={tieuDe} className="border-t py-3.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
@@ -142,6 +145,7 @@ function PhanLop({ lop, suaDuoc, onDone }: {
 
   return (
     <PhanThongTin tieuDe={t('Lớp')} suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} loi={loiLuu}
+      daDoi={so !== (soCu ?? '') || chuongTrinh !== (lop.programmeCode ?? '') || loTrinh !== (lop.route ?? 'LT1')}
       onSua={() => setDangSua(true)} onHuy={huy} onLuu={luu}>
       {!dangSua ? (
         <DongXem dong={[

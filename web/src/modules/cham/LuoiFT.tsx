@@ -110,13 +110,15 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, sEx, the = false, onHet }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
   hangMo?: HangMo[];
   /** OV-15b (mục 1): mở từ việc — chỉ cột kỹ năng của việc + Kết quả (`writing` = W1 + W2); null = đủ cột. */
   chiCot?: readonly string[] | null;
+  /** 6c (#641 XM-2): Nhập hộ trong panel GV chấm quá hạn — chỉ Học viên + cột kỹ năng của dòng (mockup khu ③), không cột Kết quả. */
+  anKetQua?: boolean;
   /** UI-LICH-TUAN (10 mục 6): lượt S Ex của tuần ở lớp này (Lịch tuần) → dòng phụ dưới hàng của em. */
   sEx?: SExTuan;
   /** UI-LICH-TUAN (mockup 375 khu a): điện thoại ở Lịch tuần — mỗi em một thẻ, 5 ô L R W1 W2 S (cùng ô / hộp / lưu với bảng). */
@@ -138,6 +140,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     kyVong: !chiCot && !(data.rows.length > 0 && data.rows.every((r) => r.mt0Sos)),
     w: !chiCot,
     ovr: !chiCot,
+    kq: !anKetQua,
   };
   const rawCot = RAW_SKILLS.filter(hien), wCot = W_SKILLS.filter(hien);
   /* P8 (mockup k6): chú giải ở hàng công cụ + cột Overall đủ chỗ cho "Không đủ bộ môn" chỉ khi lưới có ô "Không học". */
@@ -159,7 +162,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...(hien('speaking') ? [oKn('speaking')] : []),
     ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich ? 'diem' : 'noi-bat', rong: lich ? 80 : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
     ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
-    { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') },
+    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
@@ -344,7 +347,7 @@ export type PhienO = { nhanTiep: string | null; ketThuc: KetThucHop | null };
 
 function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx, cotDs, lich = false }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean;
-  cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
+  cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean; kq: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
   tuanDangXem: string | null; tuanXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
@@ -457,7 +460,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
         </OBang>
       )}
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
-      <OBang c={cc.kq}>
+      {cot.kq && <OBang c={cc.kq}>
         <div className="flex flex-col items-start gap-0.5 min-w-0">
           {/* N-1b: chưa đủ điểm là TẠM — xám, không mang màu mức SOS. OV-1d: em không còn đang học → không "Chờ n" / SOS tạm. */}
           {row.ngungHoc ? (
@@ -486,7 +489,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
             </span>
           )}
         </div>
-      </OBang>
+      </OBang>}
     </tr>
     {sEx?.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={row.studentName} studentId={row.studentId} cotDs={cotDs} cc={cc} />)}
     </>

@@ -284,7 +284,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
   return (
     <KhungPanel tieuDe="Xếp lịch Mock Test" rong="toan" onDong={onClose} tabs={tabs}
       chan={{
-        huy: soThayDoi ? { nhan: 'Huỷ thay đổi', onClick: huyNhap } : { nhan: 'Đóng', onClick: onClose },
+        huy: soThayDoi ? { nhan: 'Huỷ thay đổi', onClick: huyNhap } : { nhan: 'Đóng', onClick: onClose }, daSua: soThayDoi > 0,
         phu: soLoiKiem ? <span className="text-xs text-bad">{soLoiKiem} em còn lỗi</span> : undefined,
         chinh: <>{nutXep}{nutLuu}</>, conThieu: lf.conThieu(loiO),
       }}>

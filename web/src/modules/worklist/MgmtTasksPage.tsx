@@ -287,6 +287,8 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
   const [addingSub, setAddingSub] = useState(false);
 
   if (taskId === null) return null;
+  /* 6c (bảng kê lỗi 9): Sửa việc = view kế trong CÙNG panel (‹ về việc, ✕ đóng cả panel), không mở panel đè. */
+  if (data && editing) return <SuaViec onClose={() => setEditing(false)} dongCa={onClose} task={data} onDone={() => { reload(); onDone(); }} />;
   return (
     <KhungPanel tieuDe={data?.title ?? 'Công việc'} rong="rong" onDong={onClose} quayLai={quayLai}
       ngCanh={data ? TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] || undefined : undefined}>
@@ -416,10 +418,6 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
       )}
 
       {data && (
-        <SuaViec open={editing} onClose={() => setEditing(false)} task={data}
-          onDone={() => { reload(); onDone(); }} />
-      )}
-      {data && (
         <CreateTask open={addingSub} onClose={() => setAddingSub(false)} parent={data}
           branchId={data.branchId} onDone={() => { reload(); onDone(); }} />
       )}
@@ -522,8 +520,9 @@ function UpdateDialog({ open, onClose, task, onDone }: {
 }
 
 /** Sửa phần mô tả: tên, nhóm, người, hạn, ghi chú — không đụng tiến độ. Đổi hạn ĐANG CÓ thì bắt buộc lý do (Q9). */
-function SuaViec({ open, onClose, task, onDone }: {
-  open: boolean; onClose: () => void; task: any; onDone: () => void;
+function SuaViec({ onClose, dongCa, task, onDone }: {
+  /** `onClose` = về view việc (‹, Huỷ, sau lưu); `dongCa` = ✕ / Esc / nền đóng cả panel. */
+  onClose: () => void; dongCa: () => void; task: any; onDone: () => void;
 }) {
   const toast = useToast();
   const { session } = useSession();
@@ -539,7 +538,6 @@ function SuaViec({ open, onClose, task, onDone }: {
   const [lyDoDoiHan, setLyDoDoiHan] = useState('');
   const [note, setNote] = useState(task.note ?? '');
   const [busy, setBusy] = useState(false);
-  if (!open) return null;
 
   const canDoi = !!task.due && due !== task.due;
   const loi = dsLoi([
@@ -568,8 +566,10 @@ function SuaViec({ open, onClose, task, onDone }: {
   };
 
   return (
-    <KhungPanel tieuDe="Sửa công việc" hocVien={task.title} longTrong onDong={onClose}
+    <KhungPanel tieuDe="Sửa công việc" hocVien={task.title} rong="rong" quayLai={{ nhan: task.title, onClick: onClose }} onDong={dongCa}
       chan={{
+        daSua: title !== task.title || due !== (task.due ?? '') || note !== (task.note ?? '') || group !== (task.group ?? 'curriculum') || !!lyDoDoiHan.trim()
+          || (assignee && 'id' in assignee ? assignee.id : null) !== (task.assigneeUserId ?? null) || (watcher && 'id' in watcher ? watcher.id : null) !== (task.watcherUserId ?? null),
         huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,

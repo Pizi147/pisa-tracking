@@ -5,7 +5,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, KhungTaiCho, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { NutChon } from '../../ui/ui.tsx';
+import { ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, nhanLoaiXuLy } from '@shared/domain/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
@@ -25,7 +25,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const { data: d } = useApi<YThucHocVien>(studentId ? `/students/${studentId}/y-thuc` : null, [studentId]);
+  const { data: d, error: loiTai, reload } = useApi<YThucHocVien>(studentId ? `/students/${studentId}/y-thuc` : null, [studentId]);
   const [bac, setBac] = useState<number | null>(null);
   const [thang, setThang] = useState('');
   const [ghiChu, setGhiChu] = useState('');
@@ -40,6 +40,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
 
   if (!studentId) return null;
   const tieuDe = sua ? t('Sửa cấp bậc vi phạm') : t('Xác nhận cấp bậc vi phạm');
+  if (loiTai) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
   if (daLuu) {
@@ -72,6 +73,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
     <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
       ngCanh={<span className="truncate">{t('Thang {x} · xác nhận một lần, chỉ QL sửa sau', { x: d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan })}</span>}
       chan={{
+        daSua: !daLuu && (bac !== (sua && d.khai ? d.khai.bac : null) || thang !== (sua && d.khai?.thang ? d.khai.thang : '') || ghiChu !== (sua && d.khai ? d.khai.ghiChu : '')),
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{sua ? t('Lưu') : t('Xác nhận')}</button>,
       }}>

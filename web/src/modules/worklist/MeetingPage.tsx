@@ -345,6 +345,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
   if (!unit || !cell) return null;
   return (
     <KhungPanel tieuDe={`${unit.unitName} · ${cell.label}`} onDong={onClose}
+      daSua={!chiDoc && (status !== (cell.status ?? '') || note !== (cell.note ?? ''))}
       ngCanh={cell.submittedAt ? `đã nộp ${fmtDateTime(cell.submittedAt)}${cell.submittedBy ? ` · ${cell.submittedBy}` : ''}${cell.nopMuon ? ` · ${t('nộp muộn')}` : ''}`
         : cell.updatedAt ? `nháp lưu ${fmtDateTime(cell.updatedAt)}` : undefined}>
         <div className="space-y-4 pt-3">

@@ -136,6 +136,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
       <KhungPanel tieuDe={d ? dich(d.nhan) : t('Lần xử lý')} hocVien={d?.ten} onDong={dong}
         ngCanh={d ? <span className="truncate">{dich(d.statusLabel)}{d.bac ? t(' · bậc {bac} trên thang', { bac: d.bac }) : t(' · ngoài thang, không đổi bậc')}</span> : undefined}
         chan={{
+          daSua: sua || !!tt,
           huy: sua || tt ? { nhan: t('Huỷ thay đổi'), onClick: () => { setSua(false); setTt(null); setLoiMay(null); }, disabled: busy } : { nhan: t('Đóng'), onClick: dong },
           xoa: sua || tt ? undefined
             : d?.coTheThuHoi || rutDuoc ? { nhan: rutDuoc ? t('Rút đề xuất') : t('Thu hồi…'), onClick: () => { setLoiMay(null); setLyDo(''); setDaBam(false); setHoiXoa(true); } }

@@ -67,6 +67,8 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
   const nhap = em ? nhanXet[em.lenhId] ?? em.nhanXetChung ?? '' : '';
   const thieu = nhap.trim().length < NHAN_XET_TOI_THIEU;
   const dsXn = dto.ds.filter((e) => !e.xacNhan).length;
+  /* 6c (lỗi 5): nhận xét đã gõ khác bản đã lưu, hoặc ô điền thay đang mở. */
+  const daSuaNx = !!dienThay || dto.ds.some((e) => nhanXet[e.lenhId] !== undefined && nhanXet[e.lenhId] !== (e.nhanXetChung ?? ''));
 
   const phim = (e: KeyboardEvent<HTMLUListElement>) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
@@ -119,6 +121,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
     <KhungPanel quayLai={quayLai} rong="toan" tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
       ngCanh={<span className="tabular-nums">{t('{n} em', { n: dto.tong })} · {t('{a}/{b} đã xác nhận', { a: dto.daXacNhan, b: dto.tong })}{dto.hanGvcn && <> · <Han loai="viec-van-hanh" han={dto.hanGvcn} /></>}</span>}
       chan={{
+        daSua: daSuaNx,
         huy: suaPhieu
           ? { nhan: t('Huỷ thay đổi'), disabled: busy, onClick: () => { setDangSua(false); setDaBam(false); setDienThay(null); setNhanXet((m) => { const { [em!.lenhId]: _, ...con } = m; return con; }); } }
           : { nhan: t('Đóng'), onClick: onClose },

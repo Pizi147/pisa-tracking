@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { chuKetQuaKyThi, chuPhuHuynh, chuTamDung, chuTuanHoc, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
-import { TargetText } from '../../ui/ui.tsx';
+import { LoiTaiNho, TargetText } from '../../ui/ui.tsx';
 import { NhanLich } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
@@ -229,9 +229,10 @@ export function DaiChoDuyet({ studentId, homNay, onDoi, onThemPa }: {
   /** Thẻ Xin ý kiến có nút "+ Thêm PA" như hộp Chờ duyệt (Q9 — đúng thẻ của hộp). */
   onThemPa?: (caseId: number) => void;
 }) {
-  const { data, reload } = useApi<{ the: TheYeuCauDto[] }>(`/yeu-cau?studentId=${studentId}`, [studentId]);
+  const { data, error, reload } = useApi<{ the: TheYeuCauDto[] }>(`/yeu-cau?studentId=${studentId}`, [studentId]);
   const [mo, setMo] = useState(true);
   const ds = data?.the ?? [];
+  if (error) return <LoiTaiNho chu={t('Không tải được yêu cầu chờ duyệt.')} onRetry={reload} className="rounded-[10px] bg-muted-bg px-3 py-[9px]" />;
   if (!ds.length) return null;
   const quaHan = ds.filter((y) => !!y.hanDuyet && !!homNay && y.hanDuyet < homNay).length;
   return (

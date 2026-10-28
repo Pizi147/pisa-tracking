@@ -409,7 +409,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     /* CV-LOI (CV-14): chip hạn là hạn Mini Test khi PA còn chờ Mini Test, không thì hạn cập nhật PA. */
     assert(/dau=\{dauViec\(\{[\s\S]{0,240}ChipHan loai="cap-nhat-pa"[\s\S]{0,120}ngCanh: ngCanh \?\? tenPa/.test(s), 'không thấy tên PA ở đầu panel v3');
     const kpDau = doc('web/src/ui/KhungPanel.tsx');
-    assert(/<p className="m-0 flex flex-wrap items-baseline/.test(kpDau) && !/dau\.dong2[\s\S]{0,200}truncate/.test(kpDau), 'dòng 2 đầu panel v3 phải xuống dòng, không cắt');
+    assert(/<p className="m-0 (-ml-5 )?flex flex-wrap items-baseline/.test(kpDau) && !/dau\.dong2[\s\S]{0,200}truncate/.test(kpDau), 'dòng 2 đầu panel v3 phải xuống dòng, không cắt');
     const kp = /\{ngCanh && <div className="([^"]*)"/.exec(doc('web/src/ui/KhungPanel.tsx'));
     assert(kp && /max-sm:whitespace-normal/.test(kp[1]) && /(^|\s)pb-2(\s|$)/.test(kp[1]), `KhungPanel ngCanh: ${kp?.[1]}`);
   });

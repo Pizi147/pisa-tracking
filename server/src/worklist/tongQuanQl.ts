@@ -1,10 +1,9 @@
 import { db, theoLo } from '../db.ts';
 import { PERMISSIONS, tachBaiId, tenMonNgan, soSanhLop, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { scopeFor } from '../permissions.ts';
-import { metricSet, rowsFor, type MetricRow } from './metrics.ts';
+import { metricSet } from './metrics.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
 import { highlights } from './highlights.ts';
 
@@ -67,12 +66,3 @@ export function treCham(p: Principal, branchId: number | null, ct: ChuongTrinh) 
   return { dong, baiCua, hanCua };
 }
 
-/** Panel "n bài" của một GV ở Trễ chấm — tính lại bằng CHÍNH `treCham` nên số = số dòng. */
-export function oTreCham(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; gv: number }): { n: number; tieuDe: string; rows: MetricRow[] } {
-  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Bảng này dành cho Quản lý.');
-  const { dong, baiCua } = treCham(p, f.branchId ?? null, f.ct);
-  const g = dong.find((x) => x.khoa === f.gv);
-  if (!g) throw badRequest('Giáo viên này không còn bài trễ chấm — có thể vừa nhập xong hoặc bộ lọc vừa đổi.');
-  const ids = [...baiCua.get(f.gv)!].sort((a, b) => a - b);
-  return { n: ids.length, tieuDe: `${ids.length} bài trễ chấm · ${g.ten}`, rows: rowsFor('bai', ids, undefined, p) };
-}

@@ -206,7 +206,9 @@ export function RecordViolationPanel({
       chan={{
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
         xoa: editing && violation && onDelete ? { nhan: t('Xoá vi phạm'), onClick: () => onDelete(violation.id) } : undefined,
-        daSua: !editing && (dong.some((d) => d.ten || d.moTa || d.nhom) || tep.length > 0),
+        daSua: editing && violation
+          ? !luu && (dong[0].ten !== violation.ten || dong[0].moTa !== violation.moTa || dong[0].nhom !== violation.category || dong[0].ngay !== violation.occurredOn || (dong[0].mon || null) !== (violation.skill ?? null))
+          : dong.some((d) => d.ten || d.moTa || d.nhom) || tep.length > 0,
         huy: luu ? { nhan: t('Đóng'), onClick: dongPanel, disabled: busy } : undefined,
         conThieu: lf.conThieu(loi),
         phu: luu && !luu.tien ? <span className="text-xs text-slate-400">{t('Đã lưu {length} học viên · {length2} học viên chưa lưu', { length: luu.daXong.length, length2: chuaLuu.length })}</span> : undefined,

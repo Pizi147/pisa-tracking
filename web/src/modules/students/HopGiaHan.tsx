@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { HopBoChu, Truong } from '../../ui/KhungPanel.tsx';
+import { Modal } from '../../ui/Drawer.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
@@ -15,7 +16,7 @@ export type HanSauThi = { cycleId: number; han: string | null; daGiaHan: boolean
 
 /**
  * HỘP GIA HẠN SAU THI (OV-13q, mẫu "Dời hạn chấm" + hộp nhỏ "Kết thúc PA"): Hạn mới (ô gõ được + lịch, mặc định hạn đang áp dụng + 7) · Lý do tuỳ chọn ·
- * Lưu / Bỏ gia hạn (khi đã gia hạn). Mở ĐÈ panel đang mở (`longTrong`), không đóng nó. Máy chủ kiểm lại (hạn trước hôm nay → câu lỗi hiện trong hộp, giữ chữ).
+ * Lưu / Bỏ gia hạn (khi đã gia hạn). Hộp nhỏ (`Modal`) trong panel đang mở — không đóng, không phủ panel (6c lỗi 9). Máy chủ kiểm lại (hạn trước hôm nay → câu lỗi hiện trong hộp, giữ chữ).
  */
 export function HopGiaHan({ x, hocVien, lop, onClose, onDone }: { x: HanSauThi; hocVien?: string | null; lop?: string | null; onClose: () => void; onDone?: () => void }) {
   const toast = useToast();
@@ -37,15 +38,20 @@ export function HopGiaHan({ x, hocVien, lop, onClose, onDone }: { x: HanSauThi; 
       onDone?.(); onClose();
     } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
+  /* 6c (bảng kê lỗi 9): việc một ô → HỘP NHỎ (G5 bậc 2) trong panel đang mở, không ngăn 480 phủ panel. Đang chạy thì không đóng; còn lý do đang gõ → hỏi một lần. */
+  const [hoi, setHoi] = useState(false);
+  const dong = () => { if (busy) return; if (lyDo.trim()) setHoi(true); else onClose(); };
+  const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   return (
-    <KhungPanel tieuDe={t('Gia hạn')} hocVien={hocVien} lop={lop} longTrong z="z-[60]" onDong={() => !busy && onClose()}
-      chan={{
-        daSua: !!lyDo.trim(), huy: { onClick: onClose, disabled: busy }, conThieu: lf.conThieu(loiO),
-        dongTren: loi ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loi}</p> : undefined,
-        phu: x.daGiaHan ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui(null)}>{t('Bỏ gia hạn')}</button> : undefined,
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui(han)}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
-      }}>
-      <div className="space-y-3 pt-3">
+    <Modal open onClose={dong} width="max-w-[440px]" z="z-[60]"
+      title={<>{t('Gia hạn')}{ngu && <span className="ml-2 font-normal text-slate-400">{ngu}</span>}</>}
+      footer={<>
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={dong} disabled={busy}>{lyDo.trim() ? t('Huỷ thay đổi') : t('Đóng')}</button>
+        {x.daGiaHan && <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui(null)}>{t('Bỏ gia hạn')}</button>}
+        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui(han)}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
+      </>}>
+      {hoi && <HopBoChu viec={t('Gia hạn')} nut={t('Bỏ chữ, đóng')} onO={() => setHoi(false)} onBo={onClose} />}
+      <div className="space-y-3">
         <Truong nhan={t('Hạn mới')} batBuoc loi={lf.loiCua(loiO, 'han')}>
           <ONgay kieu="ngay" value={han} onChange={setHan} toiThieu={homNay ?? undefined} id={lf.oId('han')} onBlur={lf.roi('han')} invalid={!!lf.loiCua(loiO, 'han')} />
           {x.han && <span className="mt-1 block text-xs text-slate-500">{t('Hạn đang áp dụng')}{' '}{ngay(x.han, homNay)}{x.daGiaHan ? ` · ${t('đã gia hạn')}` : ''}</span>}
@@ -53,8 +59,9 @@ export function HopGiaHan({ x, hocVien, lop, onClose, onDone }: { x: HanSauThi; 
         <Truong nhan={t('Lý do')} tuyChon>
           <textarea className="field w-full" rows={2} maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder={t('Ví dụ: em chờ phiếu điểm từ IDP')} />
         </Truong>
+        {loi && <p className="m-0 text-xs font-semibold text-bad" role="alert">{loi}</p>}
       </div>
-    </KhungPanel>
+    </Modal>
   );
 }
 

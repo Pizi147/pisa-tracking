@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Info, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
+import { Card, ErrorState, Info, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 
 type Signal = {
@@ -30,8 +30,9 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
   const qs = new URLSearchParams();
   if (branchId) qs.set('branchId', String(branchId));
   if (periodId) qs.set('periodId', String(periodId));
-  const { data, loading } = useApi<Signal[]>(`/signals${qs.toString() ? `?${qs}` : ''}`);
+  const { data, loading, error, reload } = useApi<Signal[]>(`/signals${qs.toString() ? `?${qs}` : ''}`);
 
+  if (error) return <Card title="Việc đang tồn"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;
   if (loading) return <Card title="Việc đang tồn"><Skeleton rows={3} /></Card>;
   if (!data?.length) {
     return (

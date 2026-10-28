@@ -9652,6 +9652,9 @@ await runPrPilotViecTests({ check, assert } as any);
 // ==================================================================== M6 6b-4 PILOT-GV-TRE (panel GV chấm quá hạn: Admin gvQuaHan · QL treCham, Nhập hộ)
 const { runPrPilotGvTreTests } = await import('./prPilotGvTre.tests.ts');
 await runPrPilotGvTreTests({ check, assert, conn, P } as any);
+// ==================================================================== 6c-1 PANEL-AP (chống mất chữ, lỗi tải ≠ rỗng, không panel chồng, nợ 6b)
+const { runPr6cPanelApTests } = await import('./pr6cPanelAp.tests.ts');
+await runPr6cPanelApTests({ check, assert, conn, P } as any);
 // ==================================================================== HSL-MAY-CHU (M4 PR 1: hồ sơ một lượt Test — S Ex, lớp hiện tại, GET /regular/attempts/:id)
 const { runPrHslMayChuTests } = await import('./prHslMayChu.tests.ts');
 await runPrHslMayChuTests({ check, assert, conn, P, classId, TODAY, addDays } as any);
