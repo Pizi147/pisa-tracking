@@ -348,7 +348,7 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, dangGhi,
     ? <button type="button" className={quaHan ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} onClick={() => onPanel({ loai: 'xu-ly', studentId: x.studentId })}>{CUA_TOI}{t('Xác nhận xử lý')}</button>
     : canManage && nhom === 'moi' && x.viPhamCho.length > 0
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangGhi} title={t('Đã xem, không cần xử lý')} onClick={() => onGhiNhan(x.viPhamCho.filter((v) => v.trangThai === 'moi').map((v) => v.id))}>
-          {CUA_TOI}{x.viPhamCho.length > 1 ? t('Ghi nhận {n} vi phạm', { n: x.viPhamCho.length }) : t('Ghi nhận')}
+          {CUA_TOI}{dangGhi ? t('Đang lưu…') : x.viPhamCho.length > 1 ? t('Ghi nhận {n} vi phạm', { n: x.viPhamCho.length }) : t('Ghi nhận')}
         </button>
       : canManage && x.deXuat?.status === 'da_duyet'
         ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onPanel({ loai: 'da-thuc-hien', id: x.deXuat!.id })}>{CUA_TOI}{t('Đã thực hiện…')}</button>

@@ -20,12 +20,12 @@ Vai: cô Trần Ngọc Hà (GVCN, id 7) · QL (id 2) cho Báo PH · lớp MB FT 
 | K6 | Bậc xử lý: cửa sổ 3 bậc — bậc đã qua "✓" xanh viền xanh · bậc lần này viền nhấn nền nhấn đậm · bậc sau viền mờ · "› …" → `ThangNho` | KHỚP |
 | K7 | Duyệt · thu hồi: chữ thường mờ ("Report 1 · 07/08", "Chưa có xử lý") + dòng phụ "Thu hồi được · QL duyệt" (khung CP 110) → `DuyetThuHoi` | KHỚP (chữ bấm được → xem lần xử lý, nơi có Thu hồi) |
 | K8 | Báo PH: "—" khi chưa có; viên tròn nền vàng nhạt "Chờ báo PH · hạn dd/mm" + dòng phụ "Việc của TVV · …" → `BaoPh` | KHỚP — chấm tròn thay "⚠" trên viên CHỜ (luật V5: ⚠ chỉ nghĩa quá hạn); viên quá hạn có ⚠ nền đỏ |
-| K9 | Một nút việc mỗi hàng, cột cuối, chấm hồng "việc của tôi"; hàng quá hạn nút chính | KHỚP — nhãn "Xác nhận xử lý" (tên V4, cùng tên thanh Chọn nhiều + thang; một khái niệm một tên) thay "Xử lý vi phạm" |
+| K9 | Một nút việc mỗi hàng, cột cuối, chấm hồng "việc của tôi"; hàng quá hạn nút chính | KHỚP — nhãn "Xác nhận xử lý" (tên V4, cùng tên thanh Chọn nhiều + thang; một khái niệm một tên) thay "Xử lý vi phạm" Hàng quá hạn: `btn-primary` (đã kiểm computed style). Ở TỐI nút chính là nền xanh thẫm + viền, không tô kín màu nhấn — theo D4 MAU-WEB (chủ SP 27/10, DESIGN.md mục Colors, mới hơn mockup V5 vẽ nút tô kín); ở SÁNG tô kín như mockup. |
 | K10 | "▸ Đã xử lý · 7 ngày (n)" gập | KHỚP |
 | K11 | Nhóm "Chờ TVV báo PH" (khung CP 110: em không còn vi phạm chờ, việc Báo PH mở) | KHỚP |
-| K12 | Lịch sử em gập (khung CP 110 "Lịch sử Ngô Hải Yến") → "› Chi tiết · nhật ký" mở dưới hàng (thang đủ + vi phạm + lần xử lý + câu M6) | KHỚP |
+| K12 | Lịch sử em gập (khung CP 110 "Lịch sử Ngô Hải Yến") → "Chi tiết" (375: "Chi tiết · nhật ký") mở dưới hàng (thang đủ + vi phạm + lần xử lý + câu M6) | KHỚP |
 | K13 | Hàng đang mở: nền `dang-mo` + vạch nhấn trái 3 px | KHỚP |
-| K14 | Phối hợp SOS: tiêu đề "Phối hợp SOS · học thuật · tách khỏi vi phạm", mỗi em một khung xanh nhạt viền xanh, bo 10 px; "Hiện cả lượt đã xong" nút mờ | KHỚP |
+| K14 | Phối hợp SOS: tiêu đề "Phối hợp SOS · học thuật · tách khỏi vi phạm", mỗi em một khung xanh nhạt viền xanh, bo 10 px, chữ 14 px, tên 15 px, chip "SOS 2 · R, W"; chân là link | KHỚP — đo computed style: nền / viền lệch ≤ 6 RGB (token web `doing-bg` / `doing-line` = `dang-nen` / `dang-vien` V5) |
 | K15 | Nội dung khung Phối hợp: mockup một dòng "MT2 · Case R (GV) PA đang làm" + nút "Xác nhận phối hợp" | KHÁC [XM] — web giữ thẻ lượt V4 (tên · MT · SOS · kỹ năng · "n/m việc hoàn thành" · Đang làm), bấm mở danh sách việc phối hợp và Xác nhận / Bỏ từng việc (thao tác V4; mockup gộp một nút không có trong luật Phối hợp) |
 | K16 | 375: hàng xếp dọc (tên + "Chi tiết" cùng dòng · khối vi phạm · thang · Duyệt | Báo PH hai cột · nút việc đủ rộng) | KHỚP |
 | K17 | Tab "Ý thức & Phối hợp ⚠ 2" ở hàng tab hồ sơ lớp | KHÁC [XM] — GIỮ chấm "●" hiện có: số đó đếm em CẦN xử lý (không phải quá hạn), "⚠" sai nghĩa theo luật V5; hàng tab thuộc `ClassOverviewPage` (session hồ sơ lớp khác đang sửa) |

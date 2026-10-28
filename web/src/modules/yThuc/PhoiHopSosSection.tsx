@@ -129,7 +129,8 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           ) : gon ? (
             /* Việc còn mở ngay trên đầu thẻ — không phải mở thẻ mới biết còn gì. */
             luot.actions.some((a) => a.status === 'pending')
-              ? <span className="block truncate text-xs text-dim">{t('Còn: {viec}', { viec: luot.actions.filter((a) => a.status === 'pending').map((a) => dich(a.name)).join(' · ') })}</span> : null
+              ? (() => { const con = t('Còn: {viec}', { viec: luot.actions.filter((a) => a.status === 'pending').map((a) => dich(a.name)).join(' · ') });
+                return <span className="block line-clamp-2 text-xs text-dim md:truncate" title={con}>{con}</span>; })() : null
           ) : <span className="block text-xs text-slate-500">{t('Học thuật theo dõi ở bảng kỹ năng')}</span>}
         </div>
         <div className="justify-self-end">
