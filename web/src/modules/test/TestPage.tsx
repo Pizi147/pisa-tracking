@@ -45,7 +45,7 @@ export default function TestPage() {
       <h1 className="text-xl font-bold text-slate-100 m-0">{t('Test')}</h1>
       {tabs.length > 1 && (
         <HangTab ariaLabel={t('Test')} value={lopCu ? 'lich' : tab} onChange={go}
-          tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k], ...(k === 'cham' && viec.data ? { so: viecChamCuaToi(viec.data.dong).length, donVi: t('nhóm') } : {}) }))} />
+          tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k], ...(k === 'cham' && viec.data ? { so: viecChamCuaToi(viec.data.dong).length, donVi: t('việc') } : {}) }))} />
       )}
       {(tab === 'lich' || lopCu) && <LichTestTab />}
       {lopCu && <PanelNhapDiemLop classId={lopCu} luot={params.get('luot')} onDong={dongLopCu} />}

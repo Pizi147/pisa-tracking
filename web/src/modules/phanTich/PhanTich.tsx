@@ -104,7 +104,7 @@ export function PhanTich() {
         {coCt && <ChonChuongTrinh value={ct} onChange={setCt} />}
         <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo />
         {coLop && (
-          <select className="field w-40 text-xs max-sm:min-h-[44px]" value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
+          <select className="field w-40 text-sm max-sm:min-h-[44px]" value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
             <option value="">{t('Mọi lớp')}</option>
             {classes.filter((c) => !c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
             {classes.some((c) => c.ket_thuc) && (
