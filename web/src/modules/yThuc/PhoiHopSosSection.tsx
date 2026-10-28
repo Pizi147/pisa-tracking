@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
@@ -15,7 +16,8 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
 import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
+import { MuiTenGap } from './NhanViPham.tsx';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
@@ -35,6 +37,7 @@ export type CoordTurn = {
   /** Lớp thường (T58): `Giữa khoá` + `2/4 môn đạt` thay cho `MT2 · SOS 2`; null với lượt Mock FT. */
   nhanDot?: string | null; ketQua?: { chinh: string; phu: string | null } | null;
   summary: { done: number; active: number; label: string; complete: boolean };
+  kyNangNgan?: string[];
   actions: CoordAction[]; canAct: boolean;
 };
 
@@ -42,19 +45,33 @@ export type CoordTurn = {
  * DANH SÁCH `Phối hợp SOS` (§7.2/§7.3, prototype v3 — PR-HV) — dùng chung cho tab lớp (`cot1="hocVien"`: cột 1 là tên
  * học viên) và tab hồ sơ học viên (`cot1="luot"`: cột 1 là `MT2 · SOS 2`). Mỗi lượt một thẻ `TheSos`.
  */
-export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcademic, onChanged }: {
+/** `gon`: hiện trước bấy nhiêu lượt (chưa xong xếp trước theo máy chủ), còn lại "Hiện thêm n HV". */
+const GON_TOI_DA = 4;
+
+export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcademic, onChanged, gon = false }: {
   turns: CoordTurn[] | null; loading?: boolean;
   cot1?: 'luot' | 'hocVien';
+  /** UI-Y-THUC-LOP: hồ sơ lớp — mọi thẻ đóng sẵn (một dòng một em, bấm mở việc); mặc định thẻ chưa xong mở sẵn. */
+  gon?: boolean;
   onGoAcademic?: () => void; onChanged?: () => void;
 }) {
+  const [het, setHet] = useState(false);
   if (loading || !turns) return <Skeleton rows={3} />;
   /* PR-S5F-b: tab dùng chung FT và lớp thường — màn rỗng không nói "SOS" (lớp thường không có SOS). */
   if (!turns.length) return <Empty title={t('Không có lượt phối hợp nào')} />;
+  /* `gon`: lượt chưa xong lên trước (máy chủ xếp theo tên) — "Hiện thêm" không giấu việc còn mở. */
+  const xep = gon ? [...turns].sort((a, b) => Number(a.summary.complete) - Number(b.summary.complete)) : turns;
+  const hien = gon && !het ? xep.slice(0, GON_TOI_DA) : xep;
   return (
     <div className="space-y-2">
-      {turns.map((t) => (
-        <TheSos key={t.attemptId} t={t} cot1={cot1} onGoAcademic={onGoAcademic} onChanged={onChanged} />
+      {hien.map((t) => (
+        <TheSos key={t.attemptId} t={t} cot1={cot1} onGoAcademic={onGoAcademic} onChanged={onChanged} gon={gon} />
       ))}
+      {gon && turns.length > GON_TOI_DA && (
+        <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold appearance-none sm:min-h-0" onClick={() => setHet((v) => !v)}>
+          {het ? t('Thu gọn') : t('Hiện thêm {n} HV', { n: turns.length - GON_TOI_DA })}
+        </button>
+      )}
     </div>
   );
 }
@@ -66,14 +83,14 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
  * Đầu thẻ là `div role="button"` chứ không phải `<button>`: cột 2 có một nút link bên trong (đổi sang tab Học thuật),
  * nút lồng trong nút là HTML sai. Nút link gọi `stopPropagation` để không làm thẻ mở/đóng.
  */
-export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged }: {
-  t: CoordTurn;
+export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = false }: {
+  t: CoordTurn; gon?: boolean;
   /** 'luot' (hồ sơ HV): cột 1 = `MT2 · SOS 2` + kỹ năng. 'hocVien' (hồ sơ lớp): cột 1 = tên HV + `MT2 · SOS 2 · kỹ năng`. */
   cot1?: 'luot' | 'hocVien';
   onGoAcademic?: () => void;
   onChanged?: () => void;
 }) {
-  const [open, setOpen] = useState(!luot.summary.complete);
+  const [open, setOpen] = useState(!gon && !luot.summary.complete);
   const [adding, setAdding] = useState(false);
   const mtSos = luot.nhanDot
     ? `${luot.nhanDot}${luot.ketQua ? ` · ${luot.ketQua.chinh}` : ''}`
@@ -81,19 +98,27 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged }: {
   const kyNang = luot.skillLabels.length > 0 ? luot.skillLabels.join(' + ') : '—';
 
   return (
-    <div className="rounded-lg border" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+    /* UI-Y-THUC-LOP (`gon`): mỗi em một khung xanh nhạt (mockup `.phoi-hop`) — nhóm học thuật, khác hẳn hàng vi phạm. */
+    <div className={gon ? 'rounded-[10px] border border-doing-line bg-doing-bg' : 'rounded-lg border'} style={gon ? undefined : { borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
       <div role="button" tabIndex={0} aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
-        className="grid gap-x-3 gap-y-1 items-center px-3 py-2.5 cursor-pointer bam grid-cols-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]">
+        className={`grid gap-x-3 gap-y-1 items-center cursor-pointer bam grid-cols-2 ${gon ? 'px-3.5 py-3' : 'px-3 py-2.5'} md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]`}>
         <div className="col-span-2 md:col-span-1 min-w-0">
-          <span className="block text-sm font-semibold text-slate-100">{cot1 === 'luot' ? mtSos : luot.studentName}</span>
-          <span className="block text-xs text-slate-500">
-            {cot1 === 'luot' ? kyNang : `${mtSos}${luot.skillLabels.length > 0 ? ` · ${luot.skillLabels.join(' + ')}` : ''}`}
-          </span>
+          <span className={`flex items-center gap-1 font-semibold text-slate-100 ${gon ? 'text-[15px]' : 'text-sm'}`}>{gon && <MuiTenGap mo={open} />}{cot1 === 'luot' ? mtSos : luot.studentName}</span>
+          {gon && !luot.nhanDot && luot.sosLevel !== null ? (
+            /* Mockup `.phoi-hop`: chip "SOS 2 · R, W" dưới tên; chip tĩnh — đầu thẻ đã là nút mở. */
+            <span className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+              <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />MT{luot.attemptNo}
+            </span>
+          ) : (
+            <span className={`block text-xs text-slate-500 ${gon ? 'truncate' : ''}`} title={gon ? kyNang : undefined}>
+              {cot1 === 'luot' ? kyNang : gon ? mtSos : `${mtSos}${luot.skillLabels.length > 0 ? ` · ${luot.skillLabels.join(' + ')}` : ''}`}
+            </span>
+          )}
         </div>
         <div className="min-w-0">
-          <span className="block text-sm font-semibold text-slate-100">{t('{label} việc hoàn thành', { label: luot.summary.label })}</span>
+          <span className={gon ? 'block text-sm text-dim' : 'block text-sm font-semibold text-slate-100'}>{t('{label} việc hoàn thành', { label: luot.summary.label })}</span>
           {cot1 === 'luot' ? (
             onGoAcademic ? (
               <button type="button" className="link text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer text-left"
@@ -101,6 +126,11 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged }: {
                 {t('Hỗ trợ học thuật xem ở tab Học thuật')}
               </button>
             ) : <span className="block text-xs text-slate-500">{t('Hỗ trợ học thuật xem ở tab Học thuật')}</span>
+          ) : gon ? (
+            /* Việc còn mở ngay trên đầu thẻ — không phải mở thẻ mới biết còn gì. */
+            luot.actions.some((a) => a.status === 'pending')
+              ? (() => { const con = t('Còn: {viec}', { viec: luot.actions.filter((a) => a.status === 'pending').map((a) => dich(a.name)).join(' · ') });
+                return <span className="block line-clamp-2 text-xs text-dim md:truncate" title={con}>{con}</span>; })() : null
           ) : <span className="block text-xs text-slate-500">{t('Học thuật theo dõi ở bảng kỹ năng')}</span>}
         </div>
         <div className="justify-self-end">

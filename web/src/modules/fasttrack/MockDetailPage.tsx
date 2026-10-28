@@ -60,6 +60,8 @@ type Detail = {
   classId: number | null; classCode: string | null; branchName: string | null;
   /** OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
   phuTrachS?: boolean;
+  /** LUOT-TEN-GV: người được phân công từng ô (`writing1` / `writing2` riêng; Speaking Mock = "GV chấm chéo", null = chưa phân công). */
+  nguoiLam?: Record<string, string | null>;
   attemptNo: number; targetAtAttempt: number | null; studyWeekHint: number | null;
   period: { id: number; code: string; weekStart: string; weekEnd: string; range: string } | null;
   /** Tuần kế hoạch hoàn tất đã đủ căn cứ chưa, và môn nào đang chặn. */
@@ -301,7 +303,7 @@ export default function MockDetailPage() {
         </div>
       )}
 
-      {/* ① ĐẦU HỒ SƠ — ai (↗ hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Target · kỳ vọng; việc làm (Nhập điểm lớp ›, Chỉnh lịch) bên phải. */}
+      {/* ① ĐẦU HỒ SƠ — ai (link hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Target · kỳ vọng; việc làm (Nhập điểm lớp ›, Chỉnh lịch) bên phải. */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <DuongVe cha={trangCha('mt', { studentId: d.student.id, tenHv: d.student.name })} ten={`MT${d.attemptNo} · ${d.student.name}`} chiTiet={d.classCode} />
@@ -309,7 +311,7 @@ export default function MockDetailPage() {
             <h1 className="m-0 min-w-0 break-words text-xl font-bold text-slate-100">
               <span className="sr-only">{t('Hồ sơ Mock Test ·')} </span>
               <Link to={`/hoc-vien/${d.student.id}`} className="text-inherit no-underline hover:underline" title={t('Hồ sơ học viên')}>
-                {d.student.name}<span aria-hidden className="ml-1 text-base text-slate-400">↗</span>
+                {d.student.name}
               </Link>
             </h1>
             <span className="inline-flex items-center gap-2">
@@ -467,13 +469,19 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
             <li key={v.khoa} className="min-w-0 max-w-full">
               {v.mo ? (
                 <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
-                  <b className="mr-1 text-[color:var(--accent-strong)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
+                  <b className="mr-1 text-[color:var(--accent)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
                   {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
                 </button>
               ) : (
-                <span className="inline-flex min-h-[32px] items-center rounded-md border border-dashed px-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-                  <b className="mr-1 text-slate-300">{v.nhan}</b><span className="max-w-[16rem] truncate">{[v.viec, v.ai].filter(Boolean).join(' · ')}</span>
-                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
+                /* Khung `.viec.khac`: cao 30, nền surface, viền đứt mảnh, khoảng 6, chữ 13 / 500 màu text-dim, nhãn môn màu nhấn. Quá hạn của người
+                   khác: "⚠" + chữ cùng màu text-dim (không đỏ đậm — việc không phải của người xem). Tên người giữ việc không cắt; hẹp thì xuống
+                   dòng giữa các mẩu (việc · tên · quá hạn), không bẻ giữa tên. */
+                <span className="inline-flex min-h-[30px] max-w-full items-center rounded-md border border-dashed px-2.5 py-0.5 text-[13px] font-medium text-slate-400"
+                  style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+                  <span className="min-w-0">
+                    <b className="mr-1.5 text-[color:var(--accent)]">{v.nhan}</b>
+                    {[v.viec, v.ai].filter(Boolean).map((x) => giuLien(x!)).join(' · ')}{v.quaHan && ` ${giuLien(`⚠ ${v.quaHan}`)}`}
+                  </span>
                 </span>
               )}
             </li>
@@ -483,6 +491,13 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
     </div>
   );
 }
+
+/** LUOT-TEN-GV: tên người làm các ô của một dòng (máy chủ `nguoiLam`; W1 / W2 hai người → "A, B") — chưa phân công thì nói rõ; máy chủ cũ không trả thì không hiện. */
+export const tenNguoiLam = (m: Record<string, string | null> | undefined, o: readonly string[]): string | null =>
+  (m && o.length ? [...new Set(o.map((k) => m[k] ?? t('Chưa phân công')))].join(', ') : null);
+
+/** Mỗi mẩu chữ không bị bẻ giữa chừng (dấu cách không ngắt) — chip chỉ xuống dòng giữa các mẩu. */
+const giuLien = (x: string) => x.replace(/ /g, '\u00a0');
 
 export type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void;
   /** HSL-LT: việc đã quá hạn — chữ "⚠ quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
@@ -508,10 +523,14 @@ function conLaiLuot(d: Detail, homNay: string, theCase: Map<number, CaseCard>, c
     if (r.pendingMove) cua(CHU_THAO_TAC['tra-loi-de-nghi'], chinh === 'tra-loi-de-nghi' ? '[data-chinh]' : null, chinh === 'tra-loi-de-nghi' ? null : t('Quản lý'));
     else if (r.required && r.sitStatus === 'absent' && prog !== 'cancelled') cua(CHU_THAO_TAC['xep-lai'], chinh === 'xep-lai' ? '[data-chinh]' : null, chinh === 'xep-lai' ? null : t('Quản lý'));
     else if (r.required && (prog === 'due' || prog === 'overdue') && cells.some((c) => c.required && c.band === null && c.rawScore === null && !c.noShow)) {
-      cua(chinh === 'nhap-diem' ? CHU_THAO_TAC['nhap-diem'] : t('Chờ điểm'), chinh === 'nhap-diem' ? '[data-chinh]' : null);
+      cua(chinh === 'nhap-diem' ? CHU_THAO_TAC['nhap-diem'] : t('Chờ điểm'), chinh === 'nhap-diem' ? '[data-chinh]' : null,
+        chinh === 'nhap-diem' ? null : tenNguoiLam(d.nguoiLam, cells.filter((c) => c.required && !coDiemO(c)).map((c) => c.skill)));
     }
     const thieuNx = cells.filter((c) => c.thieuNhanXet);
-    if (thieuNx.length) cua(thieuNx.some((c) => c.canEdit) ? t('Viết nhận xét') : t('Chờ nhận xét'), thieuNx.some((c) => c.canEdit) ? 'textarea' : null);
+    if (thieuNx.length) {
+      const cuaToi = thieuNx.some((c) => c.canEdit);
+      cua(cuaToi ? t('Viết nhận xét') : t('Chờ nhận xét'), cuaToi ? 'textarea' : null, cuaToi ? null : tenNguoiLam(d.nguoiLam, thieuNx.map((c) => c.skill)));
+    }
   }
   for (const c of d.caseLuot ?? []) {
     const k = kyNangCase(c.topic) as KyNangLon | null;
@@ -847,6 +866,10 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
                 <div className="text-xs text-amber-200" title={`${t('Đề nghị dời sang')} ${r.pendingMove.toWeek ?? t('tuần kế tiếp')} ${t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })} ${fmtDate(r.pendingMove.decideBy)}${r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.`}>
                   ⚠ {t('Chờ QL duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
                 </div>
+              )}
+              {/* LUOT-TEN-GV (khung: "Chờ điểm · hạn …" + tên): bài còn nợ mà người xem không nhập được — ai đang giữ việc. */}
+              {r.required && prog !== 'scored' && !khongDuThi && !huy && r.sitStatus !== 'absent' && !r.pendingMove && !cells.some((c) => c.required && c.canEdit) && (
+                <div className="text-xs text-slate-500">{tenNguoiLam(d.nguoiLam, cells.filter((c) => c.required && !coDiemO(c)).map((c) => c.skill))}</div>
               )}
               {r.sitNote && !c0.noShow && <div className="text-xs text-slate-500">{r.sitNote}</div>}
             </div>

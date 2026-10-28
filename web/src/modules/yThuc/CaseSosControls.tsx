@@ -65,13 +65,13 @@ export type PaQuyChe = {
   doiPa?: { trangThai: 'cho' | 'tu_choi'; lyDoTuChoi: string | null; yeuCauId: number } | null;
 };
 
-/** Đầu panel v3 cho việc của một Case: chip hạn (chỉ người làm) · em ↗ (xem hồ sơ, tách khỏi nút làm) · lớp · ngữ cảnh ("MT2 · Reading"). */
+/** Đầu panel v3 cho việc của một Case: chip hạn (chỉ người làm) · tên em (link xem hồ sơ, tách khỏi nút làm) · lớp · ngữ cảnh ("MT2 · Reading"). */
 export function dauCase(data: CaseDetail, lop: string | null | undefined, ngCanh: string, lam: boolean) {
   const st = data.student;
   return {
     han: lam ? <ChipHan loai="xac-minh-sos" han={data.sos?.dueOn ?? data.trangThaiV4?.han ?? null} /> : null, loai: t('VIỆC'),
     dong2: [
-      st ? <Link className="font-bold text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(st.id)}>{st.name}<span aria-hidden className="ml-0.5 text-xs">↗</span></Link> : null,
+      st ? <Link className="font-bold text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(st.id)}>{st.name}</Link> : null,
       lop ?? null, ngCanh,
     ],
   };

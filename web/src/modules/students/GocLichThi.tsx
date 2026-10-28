@@ -68,15 +68,22 @@ export function ChipLichThi({ l, them }: { l: LichThi | null | undefined; them?:
 export const kqOverall = (ovr: number | null | undefined, kv: number | null | undefined) =>
   ovr == null || kv == null ? null : ovr > kv ? 'vuot' as const : ovr === kv ? 'bang' as const : 'duoi' as const;
 
-/** Dải 5 ô nhỏ L R W1 W2 S (W1 W2 riêng); ô dưới kỳ vọng chữ đỏ. */
+/**
+ * Dải 5 ô L R W1 W2 S (W1 W2 riêng) — HV-LOP-GON (chủ SP 28/10, mockup V5 `.mini-kn`): số 13 / 600, nhãn mờ; ô cột cố định nên các hàng thẳng cột;
+ * ô dưới kỳ vọng = nền đỏ nhạt + chữ đỏ (thấy ngay, không cần đọc số) + tên cho trình đọc màn.
+ */
 export function MiniKn({ kn, kv }: { kn: Kn; kv: number | null }) {
   return (
-    <span className="flex flex-wrap gap-x-2 text-[12px] tabular-nums text-slate-300">
-      {KN_MINI.map((k) => (
-        <span key={k} className={kn[k] != null && kv != null && kn[k]! < kv ? 'text-bad' : ''}>
-          <span className="mr-0.5 text-faint">{k}</span>{kn[k] != null ? kn[k]!.toFixed(1) : '—'}
-        </span>
-      ))}
+    <span className="mt-1 grid w-max grid-cols-[36px_36px_44px_44px_36px] gap-x-1 text-[13px] font-semibold leading-5 tabular-nums text-slate-100">
+      {KN_MINI.map((k) => {
+        const duoi = kn[k] != null && kv != null && kn[k]! < kv;
+        return (
+          <span key={k} className={`whitespace-nowrap rounded px-1 ${duoi ? 'bg-bad-bg text-bad' : ''}`} title={duoi ? t('Dưới kỳ vọng') : undefined}>
+            <span className={`mr-0.5 font-medium ${duoi ? '' : 'text-faint'}`}>{k}</span>{kn[k] != null ? kn[k]!.toFixed(1) : <span className="font-normal text-faint">—</span>}
+            {duoi && <span className="sr-only"> {t('Dưới kỳ vọng')}</span>}
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -99,7 +106,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
   const [tu, den] = khoangThang(thangUrl, homNay);
   const thang = useMemo(() => thangTrongKhoang(tu, den), [tu, den]);
   const duong = `/hoc-vien-lop/lich-thi${duongGoc}${duongGoc.includes('?') ? '&' : '?'}thang=${thang.join(',')}`;
-  const { data, loading, error, reload } = useApi<Trang>(duong, [duong]);
+  const { data, loading, error, reload, cu } = useApi<Trang>(duong, [duong], { giuCu: true });
   const [rows, setRows] = useState<HangHien[]>([]);
   useEffect(() => { setRows((data?.rows ?? []).map((r) => ({ ...r, doiSang: null }))); }, [data]);
   const [moChuaCo, setMoChuaCo] = useState(false);
@@ -157,6 +164,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
       {loading && !data && <div className="p-3"><Skeleton rows={5} /></div>}
       {data && rows.length === 0 && <Card><Empty title={t('Không có HV có lịch thi trong {khoang}.', { khoang: `${nhanThang(tu)} → ${nhanThang(den)}` })} /></Card>}
       {data && rows.length > 0 && (
+        <div className={cu ? 'dang-tai-lai' : undefined} aria-busy={cu || undefined}>
         <Bang ten={t('Lịch thi')} cot={COT_LICH} hang={dongBang} khoa={(x) => x.khoa} khung={false} the375={false} dinh
           hangRieng={(x) => x.loai === 'nhom' ? (
             <tr className="bg-[color:var(--surface-2)]">
@@ -171,6 +179,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
             <DongLichThi r={x.r} ds={ds} mo={mo.has(x.r.studentId)} onMo={() => doiMo(x.r.studentId)} nhom={x.nhom}
               hop={hop?.id === x.r.studentId ? hop.kieu : null} onHop={(kieu) => setHop(kieu ? { id: x.r.studentId, kieu } : null)} onLuu={(b) => luu(x.r, b)} />
           )} />
+        </div>
       )}
     </div>
   );
@@ -200,7 +209,7 @@ function DongLichThi({ r, ds, mo, onMo, nhom, hop, onHop, onLuu }: {
     <>
       <tr className={mo ? 'dang-mo' : ''}>
         <OBang c={C_TEN}>
-          <Link className="ten-ho-so block truncate" to={`/hoc-vien/${r.studentId}`} state={ds ? { ds } : undefined}>{r.ten}</Link>
+          <Link className="ten-ho-so khong-mui block truncate" to={`/hoc-vien/${r.studentId}`} state={ds ? { ds } : undefined}>{r.ten}</Link>
           <span className="block truncate text-xs text-slate-400" title={phuEm}>{phuEm}</span>
         </OBang>
         <OBang c={C_MT}><ODiem so={st?.overall != null ? st.overall.toFixed(1) : null} kq={kqOverall(st?.overall, st?.expectation)} phu={st?.attemptLabel ?? undefined} /></OBang>

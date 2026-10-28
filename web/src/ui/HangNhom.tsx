@@ -24,7 +24,7 @@ export function MuiTenMo({ mo, onMo, nhan }: { mo: boolean; onMo: () => void; nh
 }
 
 /** Bấm vào chỗ trống trên hàng thì mở/đóng; bấm vào liên kết/nút con thì để yên. */
-function boQuaNutCon(e: MouseEvent<HTMLElement>, lam: () => void) {
+export function boQuaNutCon(e: MouseEvent<HTMLElement>, lam: () => void) {
   const nut = (e.target as HTMLElement).closest('a,button');
   if (nut && nut !== e.currentTarget) return;
   lam();
