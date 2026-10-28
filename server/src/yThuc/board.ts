@@ -168,7 +168,7 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   }
   /* Vi phạm còn chờ của các em có hàng — một lần đọc (cùng cửa trạng thái với dòng thời gian). */
   const vps = violationsOfStudents([...dongCuaEm.keys()]);
-  for (const v of vps.slice().sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id)) {
+  for (const v of vps.sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id)) {
     if (v.trangThai === 'moi' || v.trangThai === 'can_xu_ly' || v.trangThai === 'qua_han') {
       dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai });
     }
