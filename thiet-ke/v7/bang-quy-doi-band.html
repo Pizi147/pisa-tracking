@@ -96,7 +96,8 @@ table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .bqd td.c-idp.lech::before { content: "≠ "; font-weight: 600; }
 
 /* ---- sửa: ô nhập ---- */
-.bqd.sua td { height: 40px; padding: 2px 6px; }
+.bqd.sua td { height: 54px; padding: 2px 6px; vertical-align: top; padding-top: 7px; }
+.bqd.sua td.c-cau, .bqd.sua td.c-idp { vertical-align: middle; padding-top: 2px; }
 .bqd.sua td.c-cau { padding-left: 12px; }
 .o-so { width: 60px; height: 32px; padding: 0 8px; border: 1px solid var(--o-nhap-vien); border-radius: 6px; background: var(--o-nhap-nen); color: var(--text);
   font: 500 14px var(--phong-so); font-variant-numeric: tabular-nums; text-align: right; }
@@ -106,7 +107,8 @@ table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .bqd td.c-cau.doi { color: var(--accent); font-weight: 700; }
 .bqd td.c-cau.doi::before { content: "• "; }
 .o-so.sai { border-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); background: var(--bad-bg); }
-.o-so.focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.o-so.focus { outline: 2px solid var(--text); outline-offset: 2px; }
+.truoc { white-space: nowrap; } .truoc.sai { color: var(--bad); font-family: var(--phong); }
 
 /* ---- cột phải ---- */
 .cot-phai { display: grid; gap: 16px; }
@@ -212,7 +214,7 @@ table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
     <div class="luoi-trang">
       <section class="the">
         <div class="the-dau"><h2>Bảng quy đổi band</h2><span class="gian"></span><button class="nut">Sửa</button></div>
-        <div class="dong-tt">Số câu đúng → band. Đang dùng: <b>Phiên bản 2</b> · <span class="so">28/10/2026 22:10</span><span class="gian" style="flex:1"></span><span class="chip ok">Khớp IDP</span></div>
+        <div class="dong-tt">Số câu đúng → band (số đậm = số câu đầu tiên lên band mới). Đang dùng: <b>Phiên bản 2</b> · <span class="so">28/10/2026 22:10</span><span class="gian" style="flex:1"></span><span class="chip ok">Khớp IDP</span></div>
         <div class="hai-nua" data-bang="xem" data-ban="v2"></div>
       </section>
       <div class="cot-phai" data-cot="v2"></div>
@@ -222,7 +224,7 @@ table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
 <!-- ===================== B · 1440 · ĐANG SỬA (lệch IDP + Áp bảng IDP) ===================== -->
 <div class="ct"><h2>B · 1440 · Đang sửa — Listening 18–19 câu về 5.0, Reading 30 câu về 6.5 (cả ba lệch IDP)</h2>
-  Ô đã đổi viền xanh + • ở số câu; cột IDP tô vàng + ≠ ô lệch. Hàng trên bảng: số ô lệch từng kỹ năng + "Áp bảng IDP · Listening" / "· Reading" (kỹ năng khớp IDP thì không có nút). Bấm Áp → các ô của kỹ năng đó về số IDP (vẫn chờ Lưu, Hoàn tác được).</div>
+  Ô đã đổi viền xanh + • ở số câu; cột IDP tô vàng + ≠ ô lệch. Hàng trên bảng: số ô lệch từng kỹ năng + "Áp IDP · Listening (2 ô)" / "· Reading (1 ô)" (kỹ năng khớp IDP thì không có nút). Bấm "Áp IDP · Listening (2 ô)" → khung G. Lưu khi không đổi ô nào → đóng panel, báo "Bảng không đổi" (không thêm phiên bản); nút "n ô đã đổi ↓" ẩn khi 0.</div>
 <div class="app" style="height:920px">
   <div class="app-dau">
     <h1 class="h-trang">Quản trị hệ thống</h1>
@@ -234,8 +236,8 @@ table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
 </div>
 
 <!-- ===================== C · 1440 · LỖI HỢP LỆ ===================== -->
-<div class="ct"><h2>C · 1440 · Lỗi — bấm Lưu khi Listening 35 câu = 7.0 (thấp hơn 34 câu) và Reading 12 câu bỏ trống</h2>
-  Ô sai viền đỏ; danh sách lỗi nói đúng ô ngay trên bảng; chân "2 ô cần sửa ↑" (bấm → nhảy tới ô đầu). Chữ đã gõ giữ nguyên. Máy chủ kiểm lại cùng hàm.</div>
+<div class="ct"><h2>C · 1440 · Lỗi — Reading 12 câu bỏ trống, Listening 22 câu = 5.3, Listening 35 câu = 7.0 (thấp hơn 34 câu)</h2>
+  Kiểm ngay khi rời ô / dán (ô đỏ + lý do ngắn dưới ô, nối <code>aria-describedby</code>); bấm Lưu khi còn lỗi → danh sách lỗi trên bảng (bấm → tới ô) + chân "3 ô cần sửa ↑". Ảnh vẽ lúc đã nhảy tới ô L 35. Ô sai không đếm vào "≠ IDP". Chữ đã gõ giữ nguyên. Máy chủ kiểm lại cùng hàm; người khác vừa lưu bản mới → báo "Bảng vừa được người khác lưu — tải lại…", chữ đang gõ giữ nguyên.</div>
 <div class="app" style="height:920px">
   <div class="app-dau">
     <h1 class="h-trang">Quản trị hệ thống</h1>
@@ -269,7 +271,7 @@ table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
 <!-- ===================== D · 1440 · ĐÃ LƯU + HOÀN TÁC + LỊCH SỬ + KHÔI PHỤC ===================== -->
 <div class="ct"><h2>D · 1440 · Đã lưu (phiên bản 3) + toast Hoàn tác · Lịch sử phiên bản · hộp Khôi phục</h2>
-  Toast "Đã lưu bảng quy đổi — áp cho điểm nhập từ bây giờ · Hoàn tác (4)". <b>Hoàn tác = lưu lại bản ngay trước thành một phiên bản mới</b> (lý do "Hoàn tác"), không xoá bản vừa lưu; bài nhập trong mấy giây đó giữ band đã nhận. Lịch sử: bản mới nhất trên cùng ("đang dùng"), mỗi bản: lúc · người · lý do · ô đổi (3 ô đầu, "+n ô"). Khôi phục → hộp xác nhận (vẽ chồng ở đây để xem cùng lúc).</div>
+  Toast "Đã lưu bảng quy đổi — áp cho điểm nhập từ bây giờ · Hoàn tác (4)". <b>Hoàn tác = lưu lại bản ngay trước thành một phiên bản mới</b> (lý do "Hoàn tác"), không xoá bản vừa lưu; bài nhập trong mấy giây đó giữ band đã nhận. Lịch sử: bản mới nhất trên cùng ("đang dùng"), mỗi bản: lúc · người · lý do · ô đổi (3 ô đầu, "+n ô"). Khôi phục → hộp xác nhận (vẽ chồng ở đây để xem cùng lúc; web có nền mờ như mọi ConfirmDialog); bản tạo ra ghi lý do "Khôi phục phiên bản n".</div>
 <div class="app">
   <div class="app-dau">
     <h1 class="h-trang">Quản trị hệ thống</h1>
@@ -280,7 +282,7 @@ table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
     <div class="luoi-trang">
       <section class="the">
         <div class="the-dau"><h2>Bảng quy đổi band</h2><span class="gian"></span><button class="nut">Sửa</button></div>
-        <div class="dong-tt">Số câu đúng → band. Đang dùng: <b>Phiên bản 3</b> · <span class="so">29/10/2026 09:12</span> · Đỗ Vũ Tuấn Phong<span class="gian" style="flex:1"></span><span class="chip lech">≠ IDP 3 ô</span></div>
+        <div class="dong-tt">Số câu đúng → band (số đậm = số câu đầu tiên lên band mới). Đang dùng: <b>Phiên bản 3</b> · <span class="so">29/10/2026 09:12</span> · Đỗ Vũ Tuấn Phong<span class="gian" style="flex:1"></span><span class="chip lech">≠ IDP 3 ô</span></div>
         <div class="hai-nua" data-bang="xem" data-ban="v3"></div>
       </section>
       <div class="cot-phai" data-cot="v3"></div>
@@ -296,7 +298,7 @@ table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
 <!-- ===================== E · 375 ===================== -->
 <div class="ct"><h2>E · 375 — Quản lý chỉ xem · Quản trị đang sửa (panel toàn màn) · Quản trị đã lưu</h2>
-  QL: tiêu đề trang "Bảng quy đổi band", không tab, không Sửa / Khôi phục. Panel sửa phủ toàn màn, chân dính: Đóng / Lưu ≥ 48 px. Bảng một cột: 0–40 liền, tiêu đề cột một lần.</div>
+  QL: tiêu đề trang "Bảng quy đổi band", không tab, không Sửa / Khôi phục. Panel sửa phủ toàn màn, chân dính: Huỷ thay đổi / Lưu ≥ 48 px. Bảng một cột: 0–40 liền, tiêu đề cột một lần.</div>
 <div class="hai-cot">
   <div class="dt">
     <div class="app-dau"><h1 class="h-trang">Bảng quy đổi band</h1><p class="h-phu">Quản trị hệ thống sửa; Quản lý xem.</p></div>
@@ -349,11 +351,12 @@ function bangSua(b, goc, sai = {}, focus = null) {
     Array.from({ length: z - a + 1 }, (_, i) => a + i).map((n) => `<tr><td class="c-cau so${['L', 'R'].some((k) => b[k][n] !== goc[k][n]) ? ' doi' : ''}">${n}</td>${['L', 'R'].map((k) => {
       const v = b[k][n], s = sai[`${k}${n}`];
       const lop = (s ? 'sai' : v !== goc[k][n] ? 'doi' : '') + (n > 0 && v === b[k][n - 1] ? ' lap' : ' moc');
-      return `<td><input class="o-so ${lop}${focus === `${k}${n}` ? ' focus' : ''}"${!s && v !== goc[k][n] ? ` title="Trước: ${f(goc[k][n])}"` : ''} value="${Number.isNaN(v) ? '' : f(v)}" aria-label="${k === 'L' ? 'Listening' : 'Reading'} ${n} câu"${s ? ' aria-invalid="true"' : ''}>${v !== goc[k][n] ? `<span class="truoc">trước ${f(goc[k][n])}</span>` : ''}</td><td class="c-idp${!Number.isNaN(v) && lech(b, k, n) ? ' lech' : ''}">${f(IDP[k][n])}</td>`;
+      return `<td><input class="o-so ${lop}${focus === `${k}${n}` ? ' focus' : ''}"${!s && v !== goc[k][n] ? ` title="Trước: ${f(goc[k][n])}"` : ''} value="${Number.isNaN(v) ? '' : f(v)}" aria-label="${k === 'L' ? 'Listening' : 'Reading'} ${n} câu"${s ? ` aria-invalid="true" aria-describedby="ly-${k}${n}"` : ''}>${s ? `<span class="truoc sai" id="ly-${k}${n}">${s}</span>` : v !== goc[k][n] ? `<span class="truoc">trước ${f(goc[k][n])}</span>` : ''}</td><td class="c-idp${!s && !Number.isNaN(v) && lech(b, k, n) ? ' lech' : ''}">${f(IDP[k][n])}</td>`;
     }).join('')}</tr>`).join('')
   }</tbody></table></div>`).join('');
 }
-const demLech = (b, k) => b[k].filter((v, n) => !Number.isNaN(v) && lech(b, k, n)).length;
+let SAI = {};
+const demLech = (b, k) => b[k].filter((v, n) => !Number.isNaN(v) && !SAI[`${k}${n}`] && lech(b, k, n)).length;
 function hangIdp(b, daAp) {
   return `<div class="hang-idp">IDP: ${['L', 'R'].map((k) => { const d = demLech(b, k); return `${k === 'L' ? 'Listening' : 'Reading'} ${d ? `<span class="chip lech">≠ ${d} ô</span>` : '<span class="chip ok">khớp</span>'}`; }).join(' · ')}
     <span class="gian"></span>${['L', 'R'].filter((k) => demLech(b, k)).map((k) => `<button class="nut nut-nho">Áp IDP · ${k === 'L' ? 'Listening' : 'Reading'} (${demLech(b, k)} ô)</button>`).join('')}</div>
@@ -361,13 +364,14 @@ function hangIdp(b, daAp) {
     <p class="goi-y">Dán một cột từ Excel vào một ô → điền xuống · ↑ ↓ / Enter chuyển ô · "5,5" hay "5.5" đều được · — = IDP không công bố</p>`;
 }
 function panel(b, goc, { sai = {}, loi = [], focus = null, soDoi, lyDo = '', dt = false, daAp = '' } = {}) {
+  SAI = sai;
   return `<div class="panel-dau"><h2>Sửa bảng quy đổi band</h2><button class="nut x" aria-label="Đóng">✕</button></div>
     <div class="panel-ng">Áp cho điểm nhập sau khi lưu · điểm đã nhập giữ band cũ</div>
     <div class="panel-than">${hangIdp(b, daAp)}${loi.length ? `<ul class="loi-ds" role="alert">${loi.map((l) => `<li><button class="loi-o">${l}</button></li>`).join('')}</ul>` : ''}
       <div class="hai-nua">${bangSua(b, goc, sai, focus)}</div>
       <label class="truong">Lý do (không bắt buộc)<span class="o-chu${lyDo ? '' : ' trong'}">${lyDo || 'Vd: theo bảng IDP'}</span></label></div>
     ${loi.length ? `<div class="can-sua">${loi.length} ô cần sửa ↑</div>` : ''}
-    <div class="panel-chan"${loi.length ? ' style="border-top:0"' : ''}><button class="nut">Huỷ thay đổi</button><button class="nut nut-nho so" title="Tới ô đã đổi kế tiếp">${soDoi} ô đã đổi ↓</button><span class="gian"></span><button class="nut nut-chinh">Lưu</button></div>`;
+    <div class="panel-chan"${loi.length ? ' style="border-top:0"' : ''}><button class="nut">Huỷ thay đổi</button>${soDoi ? `<button class="nut nut-nho so" title="Tới ô đã đổi kế tiếp">${soDoi} ô đã đổi ↓</button>` : ''}<span class="gian"></span><button class="nut nut-chinh">Lưu</button></div>`;
 }
 function cotPhai(ban, { ql = false } = {}) {
   const pbs = ban === 'v3'
@@ -377,8 +381,8 @@ function cotPhai(ban, { ql = false } = {}) {
     : [{ id: 2, luc: '28/10/2026 22:10 · Hệ thống', ly: 'Listening theo IDP — quyết định chủ SP 28/10', doi: 'L 10 câu: 4.0 → 3.5 · L 18 câu: 5.0 → 5.5 · L 19 câu: 5.0 → 5.5 · <button class="mo-them">+2 ô</button>', dung: true },
        { id: 1, luc: '28/10/2026 22:10 · Hệ thống', ly: 'Bảng trung tâm (sheet "Bang quy doi") — dùng tới 28/10/2026', doi: '' }];
   return `<section class="the"><div class="the-dau"><h2>Áp dụng</h2></div>
-      <ul class="ap"><li>Áp cho điểm L / R nhập <b>từ lúc lưu</b>.</li><li>Điểm đã nhập giữ band cũ — SOS, Case, kết quả không đổi.</li><li>Sửa số câu của một bài cũ → band bài đó tính lại theo bảng đang dùng.</li></ul>
-      <p class="nguon">IDP = bảng trung bình IDP công bố (tra 28/10/2026): Listening ielts.idp.com/vietnam · Academic Reading ielts.idp.com/southafrica (bảng chung mọi nước). Mỗi đề lệch khoảng ±1 câu.</p></section>
+      <ul class="ap"><li>Áp cho điểm L / R nhập <b>từ lúc lưu</b>.</li><li>Điểm đã nhập giữ band cũ — SOS, Case, kết quả không đổi.</li><li>Sửa số câu đúng của một bài cũ → tính lại theo bảng đang dùng (như nhập mới).</li></ul>
+      <p class="nguon">IDP = bảng trung bình IDP công bố (tra 28/10/2026): Listening <a href="https://ielts.idp.com/vietnam/results/scores/listening" style="color:var(--accent)">ielts.idp.com/vietnam</a> · Academic Reading <a href="https://ielts.idp.com/southafrica/results/scores/reading" style="color:var(--accent)">ielts.idp.com/southafrica</a> (bảng chung mọi nước). Mỗi đề lệch khoảng ±1 câu.</p></section>
     <section class="the"><div class="the-dau"><h2>Lịch sử phiên bản</h2></div><ul class="pb">${pbs.map((p) => `<li>
       <div class="d1">Phiên bản ${p.id}${p.dung ? ' <span class="chip">đang dùng</span>' : ''}${!p.dung && !ql ? `<button class="nut nut-nho" aria-label="Khôi phục phiên bản ${p.id}">Khôi phục</button>` : ''}</div>
       <span class="so">${p.luc}</span><span class="ly">Lý do: ${p.ly}</span>${p.doi ? `<span class="doi">${p.doi}</span>` : ''}</li>`).join('')}</ul></section>`;
@@ -397,9 +401,9 @@ document.querySelectorAll('[data-khoi-phuc]').forEach((el) => {
 });
 const LOI = { L: V2.L.map((v, n) => (n === 35 ? 7 : n === 22 ? 5.3 : v)), R: V2.R.map((v, n) => (n === 12 ? NaN : v)) };
 document.querySelectorAll('[data-panel="loi"]').forEach((el) => { el.innerHTML = panel(LOI, V2, {
-  sai: { L35: 1, L22: 1, R12: 1 }, focus: 'L35', soDoi: 3,
+  sai: { L35: '< 34 câu (7.5)', L22: '0–9, bậc 0.5', R12: 'chưa có band' }, focus: 'L35', soDoi: 3,
   loi: ['Reading 12 câu: chưa có band.', 'Listening 22 câu: band từ 0 đến 9, bậc 0.5 (đang là 5.3).', 'Listening 35 câu: 7.0 thấp hơn 34 câu (7.5) — band không giảm khi số câu tăng.'],
-}); el.querySelector('.panel-than').scrollTop = 180; });
+}); { const t = el.querySelector('.panel-than'), o = el.querySelector('.o-so.focus'); t.scrollTop = o.getBoundingClientRect().top - t.getBoundingClientRect().top - 260; } });
 </script>
 </body>
 </html>
