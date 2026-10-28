@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { db } from '../db.ts';
-import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, moiNhatTruoc, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, moiNhatTruoc, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
@@ -79,8 +79,10 @@ export function evaluateAttemptRow(
   }
   const r = resultOf(a, scores, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
   const skills: Record<string, SkillEval> = {};
+  /* RA-LUONG-9 (N13 P8): môn em đã bỏ (bài đã chấm giữ điểm) không còn "dưới kỳ vọng" / kỹ năng SOS — cùng luật mức SOS (`scoring.ts` `kyNangDaBo`). */
+  const boMon = boMonDaBo(bundle.skips.get(a.id) ?? []);
   for (const v of r.verdicts) {
-    skills[v.skill] = { evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false };
+    skills[v.skill] = { evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false && !kyNangDaBo(boMon, v.skill) };
   }
   return {
     complete: r.complete, scored: r.scoredRequired, required: r.required.length,
