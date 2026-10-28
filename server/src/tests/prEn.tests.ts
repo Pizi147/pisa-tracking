@@ -482,6 +482,7 @@ const CHO_PHEP_D: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },
   { file: 'web/src/modules/cases/TheKyNang.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },   // so với viecTiep.chu máy chủ gửi   // so với viecTiep.chu máy chủ gửi
   { file: 'shared/domain/cases.ts', text: /^(Không còn hợp lệ do sửa điểm|Bỏ qua|Chỉnh khi xác nhận gợi ý tự động)$/ },   // hằng máy chủ ghi vào DB
+  { file: 'web/src/modules/yThuc/ClassYThucCard.tsx', text: /^Chưa báo$/ },   // UI-Y-THUC-LOP: so với nhanTrangThai máy chủ gửi
 ];
 /** Câu lỗi máy chủ GV gặp trên đường Case / Ý thức (đợt d). */
 const LOI_D = ['cases/cases', 'cases/boTro', 'cases/nguoiThucHien', 'cases/sosAuto', 'yThuc/violations', 'yThuc/phoiHop', 'platform/attachments']
