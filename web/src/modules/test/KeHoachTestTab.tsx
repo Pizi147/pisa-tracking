@@ -5,7 +5,6 @@ import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Menu } from '../../ui/Menu.tsx';
-import { ChuGiaiGon } from './keHoach/ChipKyNang.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
@@ -188,8 +187,6 @@ export function KeHoachTestTab() {
                 {monTheoCt.length ? '.' : ''} Môn khác tuần trong cùng đợt ghi riêng.
               </span>
             )}
-            {/* KHT-GON (mockup #659): chú giải dựng bằng chính ô gọn. */}
-            <ChuGiaiGon />
             {loai !== 'ft' && <span className="block">Lớp thường ghi thêm tuần trong khoá (<b>W5/10</b>).</span>}
             <span className="block">Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.</span>
           </NutLuat>

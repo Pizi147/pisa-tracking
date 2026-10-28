@@ -3,6 +3,7 @@ import type { Dich } from '../en.ts';
 
 export const EN_KHT_GON = {
   'xếp lại {x}': 'reschedule {x}',
+  'không thi {x}': 'not taking {x}',
   '{x} riêng · {tuan}': '{x} separate · {tuan}',
   'vắng {x} · {tuan}': 'absent {x} · {tuan}',
   'Xếp MT{n}': 'Schedule MT{n}',
