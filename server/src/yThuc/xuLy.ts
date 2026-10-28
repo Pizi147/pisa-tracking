@@ -32,7 +32,6 @@ import { dongViecTheoXuLy, moLaiViecTheoXuLy, sinhViecBaoPh } from './baoPhTvv.t
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Quản lý trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
 export const MO_TA_MIN = 10;
-const KHAI_GHI_CHU_MIN = 3;
 
 const duongXuLy = (sid: number) => `${duongHoSoHocVien(sid, { tab: 'y-thuc' })}&mo=xu-ly`;
 
@@ -267,8 +266,8 @@ export function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }
   if (!Number.isInteger(bac) || bac < 0 || bac > THANG.length) throw badRequest('Chọn bậc đã xử lý: Chưa có xử lý vi phạm, Report 1 … WL 2.');
   const thangStr = String(v.thang ?? '').trim();
   if (thangStr && !/^\d{4}-(0[1-9]|1[0-2])$/.test(thangStr)) throw badRequest('Tháng xử lý không hợp lệ.');
+  /* KHAI-BAC-LO (chủ SP 28/10): ghi chú TUỲ CHỌN — khai từng em và theo lô; rỗng lưu chuỗi rỗng (cột NOT NULL). */
   const ghiChu = String(v.ghiChu ?? '').trim();
-  if (ghiChu.length < KHAI_GHI_CHU_MIN) throw badRequest(`Ghi chú cần ít nhất ${KHAI_GHI_CHU_MIN} ký tự — ví dụ "Report 2 tháng 8, cô Hà gửi".`);
   return { bac, thang: thangStr || null, ghiChu: ghiChu.slice(0, 500) };
 }
 

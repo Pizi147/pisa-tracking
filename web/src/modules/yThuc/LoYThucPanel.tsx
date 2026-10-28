@@ -13,6 +13,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BAC_0_NHAN, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, type NguoiChon } from '@shared/domain/index.ts';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type EmLo, type KqEm } from './kieu.ts';
+import { KhaiBacLoPanel } from './KhaiBacLoPanel.tsx';
 
 export type ViecLo = 'xu-ly' | 'ghi-nhan' | 'cap-bac';
 const MO_TA_MIN = 10;
@@ -38,7 +39,13 @@ const CHIP_BAC = [BAC_0_NHAN, ...THANG.map((k) => nhanLoaiXuLy(k))];
  * Em không làm được hành động này nằm ở "Không đưa vào" kèm lý do (máy chủ quyết). Kết quả theo từng em: em xong ✓, em lỗi giữ lại kèm lý do + Thử lại.
  * Danh sách em CHỐT lúc mở (lưu xong em không nhảy nhóm); bậc / bậc kế đọc bản mới nhất.
  */
-export function LoYThucPanel({ classId, lop, viec, studentIds, han, onClose, onDone }: {
+export function LoYThucPanel(props: Parameters<typeof LoYThucPanelBa>[0]) {
+  /* KHAI-BAC-LO (chủ SP 28/10): Xác nhận cấp bậc theo lô là panel riêng (Chọn tất cả · Áp bậc · một nút Lưu · Hoàn tác) — mọi lối vào cũ đi qua đây. */
+  if (props.viec === 'cap-bac') return <KhaiBacLoPanel classId={props.classId} lop={props.lop} han={props.han} studentIds={props.studentIds} onClose={props.onClose} onDone={props.onDone} />;
+  return <LoYThucPanelBa {...props} />;
+}
+
+function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }: {
   classId: number; lop?: string | null; viec: ViecLo;
   /** Hạn sớm nhất của dòng việc (Công việc) — chip hạn ở đầu panel. */
   han?: string | null;

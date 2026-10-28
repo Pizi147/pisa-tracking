@@ -139,6 +139,34 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(maLoi(() => lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] })) === 400 || !kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] }), moi).ok, 'bậc ngoài 0–6 bị từ chối');
   }));
 
+  await checkAsync('KHAI-BAC-LO · lô cấp bậc: tháng + ghi chú chung (rỗng hợp lệ), em khoá báo riêng em khác vẫn lưu, Hoàn tác cả lô (về chưa khai / bậc cũ), bậc đã đổi thì không đè; khai từng em ghi chú rỗng hợp lệ', () => thu(() => {
+    const a = moiEm(), b = moiEm(), khoa = moiEm(), c = moiEm();
+    const bacDb = (sid: number) => get('SELECT bac, thang, ghi_chu FROM y_thuc_khai_bac WHERE student_id = ?', sid);
+    xu.khaiBac(gvcn, b, { bac: 1, thang: '2026-08', ghiChu: '' });   // khai từng em: ghi chú tuỳ chọn
+    assert(bacDb(b).bac === 1 && bacDb(b).ghi_chu === '', `khai một em ghi chú rỗng: ${JSON.stringify(bacDb(b))}`);
+    xu.xacNhanXuLy(gvcn, khoa, { violationIds: nVp(khoa, 1), performedOn: TODAY, note: MO_TA });   // có xử lý trên web → GVCN khoá
+    assert(maLoi(() => lo.loCapBac(gvcn, cid, { em: [{ studentId: a, bac: 3 }], thang: '2026-13' })) === 400, 'tháng sai → cả lô 400');
+
+    const r = lo.loCapBac(gvcn, cid, { em: [{ studentId: a, bac: 3 }, { studentId: b, bac: 2 }, { studentId: khoa, bac: 1 }], thang: '2026-09', ghiChu: '' });
+    assert(kq(r, a).ok && kq(r, b).ok && !kq(r, khoa).ok, `em khoá báo riêng: ${JSON.stringify(r)}`);
+    assert(kq(r, a).truoc === null && kq(r, a).bac === 3 && kq(r, b).truoc.bac === 1 && kq(r, b).bac === 2, `trả bậc trước / bậc vừa lưu: ${JSON.stringify(r)}`);
+    assert(bacDb(a).thang === '2026-09' && /Xác nhận theo lớp/.test(bacDb(a).ghi_chu), `khai mới: tháng chung, ghi chú tự điền: ${JSON.stringify(bacDb(a))}`);
+    assert(bacDb(b).bac === 2 && bacDb(b).thang === '2026-09' && bacDb(b).ghi_chu === '', `sửa: tháng chung, giữ ghi chú cũ: ${JSON.stringify(bacDb(b))}`);
+    const r2 = lo.loCapBac(gvcn, cid, { em: [{ studentId: c, bac: 0 }], ghiChu: 'Cả lớp xác nhận 28/10' });
+    assert(bacDb(c).ghi_chu === 'Cả lớp xác nhận 28/10' && bacDb(c).thang === null, `ghi chú chung, không tháng: ${JSON.stringify(bacDb(c))}`);
+
+    /* Hoàn tác: a về chưa khai, b về bậc 1 (tháng / ghi chú cũ); GVBM không có quyền lô. */
+    const lai = (x: any) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc });
+    assert(maLoi(() => lo.loHoanTacCapBac(gvbm, cid, { em: [lai(kq(r, a))] })) === 403, 'GVBM 403');
+    const h = lo.loHoanTacCapBac(gvcn, cid, { em: [lai(kq(r, a)), lai(kq(r, b))] });
+    assert(kq(h, a).ok && kq(h, b).ok, JSON.stringify(h));
+    assert(!bacDb(a) && bacDb(b).bac === 1 && bacDb(b).thang === '2026-08', `hoàn tác: ${JSON.stringify([bacDb(a), bacDb(b)])}`);
+    /* Bậc đã đổi sau lần lưu (QL sửa) → không đè. */
+    lo.loCapBac(P.mbManager, cid, { em: [{ studentId: c, bac: 4 }] });
+    assert(!kq(lo.loHoanTacCapBac(gvcn, cid, { em: [lai(kq(r2, c))] }), c).ok && bacDb(c).bac === 4, 'bậc đã đổi → không hoàn tác');
+    assert(xu.yThucHocVien(gvcn, a).keTiep.nhan === 'Report 1', 'a về chưa khai: lần kế Report 1');
+  }));
+
   /* Rà planning #408: lô chạy trên Netlify (~7,5 s, Turso ~20–50 ms/câu) — khoá số câu SQL mỗi em để một lời gọi web (≤ 4 em xử lý · ≤ 12 em cấp bậc) vừa giờ. */
   const { soCauSql } = await import('../platform/nguCanhRequest.ts');
   const dem = (fn: () => unknown) => { const truoc = soCauSql(); fn(); return soCauSql() - truoc; };
