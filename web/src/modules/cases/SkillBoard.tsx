@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Empty, ErrorState, NhanTrangThai, Outcome, SCORE_CHIP, SCORE_TEXT, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { fmtBand } from '../../lib/format.ts';
@@ -101,6 +101,8 @@ type CaseCard = {
   canClose: boolean; closeBlockers: string[];
   plans: Plan[];
   attempts: { attemptNo: number; week: string | null; attemptKind?: string | null }[];
+  /** VIEW-CASE-LUOT: lượt của Case — chip lượt ở `TenCase` là link tới trang lượt. */
+  luot?: LuotCase | null;
   followUntil: string | null; followOverdue: boolean;
   outcomeLabel: string | null; outcomeNote: string | null; closedOn: string | null;
   /** NHẬP BÙ (PR-C Task 3, chốt 7) — ai ghi lại, ghi lúc nào. Null khi ghi tại chỗ như bình thường. */
@@ -384,13 +386,49 @@ function CotCase({ row }: { row: Row }) {
 }
 
 /** Chip nhỏ, viền mảnh — `[MT1]`, `[SOS 3]` trong tên Case (T21). SOS chỉ hiện Ở ĐÂY, một lần (K3-08). */
-export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
-  if (!c.tenSos) return <>{c.title}</>;
+/** VIEW-CASE-LUOT: lượt mà Case gắn (máy chủ `luotCuaCase`) — đủ để dựng đường bằng `duongDotTest`. */
+export type LuotCase = { id: number; kind: string; classId: number | null; dot: string; tuan?: string | null };
+const CHIP_LUOT = 'shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[12px] font-semibold leading-4 text-slate-300 tabular-nums';
+
+/**
+ * VIEW-CASE-LUOT: link tới trang lượt của Case (FT → mock-test, lớp thường → luot-test, ?kn= theo môn) qua `duongDotTest` — kiểu `.link-luot`
+ * của mockup `panel-pilot.html` (đầu mục Case): chữ 600 13 px màu nhấn, gạch chân lệch 3 px, "MT3 · W2 SEP" (không ký hiệu mũi tên — chủ SP 28/10). Đang ở chính trang lượt đó → chip thường.
+ * Vùng bấm 44 px ở điện thoại bằng `after` (như ⋯ `MenuDong`).
+ */
+export function LinkLuot({ luot, kn = null }: { luot: LuotCase; kn?: string | null }) {
+  const { pathname } = useLocation();
+  const den = duongDotTest({ id: luot.id, kind: luot.kind, classId: luot.classId }, kn);
+  if (den.split('?')[0] === pathname) return <span className={CHIP_LUOT}>{luot.dot}</span>;
+  return (
+    <Link to={den} className="relative shrink-0 whitespace-nowrap text-[13px] font-semibold tabular-nums text-[color:var(--accent)] underline underline-offset-[3px] after:absolute after:-inset-x-1 after:-inset-y-[14px] after:content-[''] sm:after:hidden"
+      title={t('Mở lượt {x}', { x: luot.dot })}>{[luot.dot, luot.tuan ? tuanLich(luot.tuan) : null].filter(Boolean).join(' · ')}</Link>
+  );
+}
+
+/**
+ * Tên Case: chip lượt + phần giữa + chip SOS. `luot` (chỉ nơi không nằm trong nút — khối Case hồ sơ HV) → chip lượt là `LinkLuot`; `anLuot` = bỏ chip lượt
+ * (thân Case: link lượt đã ở đầu mục). Case lớp thường không có `tenSos` — tên "[Progress Test] …" bỏ tiền tố trùng lượt.
+ */
+export function TenCase({ c, luot = null, kn = null, anLuot = false }: { c: Pick<CaseCard, 'title' | 'tenSos'>; luot?: LuotCase | null; kn?: string | null; anLuot?: boolean }) {
+  const chip = (nhan: string) => (anLuot ? null : luot ? <LinkLuot luot={luot} kn={kn} /> : <span className={CHIP_LUOT}>{nhan}</span>);
+  /* Có link lượt: tên xuống dòng sau link, không cắt. Nơi khác giữ một dòng cắt "…". */
+  const khung = luot ? 'inline-flex min-w-0 max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5' : 'inline-flex min-w-0 max-w-full items-center gap-1.5';
+  const lopTen = luot || anLuot ? 'min-w-0' : 'min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words';
+  if (!c.tenSos) {
+    if (!luot) return <>{c.title}</>;
+    const tienTo = `[${luot.dot}] `;
+    return (
+      <span className={khung}>
+        {chip(luot.dot)}
+        <span className={lopTen}>{c.title.startsWith(tienTo) ? c.title.slice(tienTo.length) : c.title}</span>
+      </span>
+    );
+  }
   const { mt, giua, sos, kck } = c.tenSos;
   return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
-      {mt && <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[12px] font-semibold leading-4 text-slate-300 tabular-nums">MT{mt}</span>}
-      <span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{giua}</span>
+    <span className={khung}>
+      {mt && chip(luot?.dot ?? `MT${mt}`)}
+      <span className={lopTen}>{giua}</span>
       {/* OV-9: Case nhẹ của em KCK — chip trung tính, không SOS, không đỏ. */}
       {kck ? <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[12px] font-semibold leading-4 text-slate-300" title={GIAI_THICH_KCK}>KCK</span>
         : sos ? <ChipSos muc={sos} dot={mt ? `MT${mt}` : null} tinh /> : null}
