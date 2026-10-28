@@ -391,7 +391,7 @@ export type LuotCase = { id: number; kind: string; classId: number | null; dot: 
 const CHIP_LUOT = 'shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[12px] font-semibold leading-4 text-slate-300 tabular-nums';
 
 /**
- * VIEW-CASE-LUOT: link ↗ tới trang lượt của Case (FT `/mock-test/:id`, lớp thường `/luot-test/:id`, `?kn=` theo môn) qua `duongDotTest` — kiểu `.link-luot`
+ * VIEW-CASE-LUOT: link ↗ tới trang lượt của Case (FT → mock-test, lớp thường → luot-test, ?kn= theo môn) qua `duongDotTest` — kiểu `.link-luot`
  * của mockup `panel-pilot.html` (đầu mục Case): chữ 600 13 px màu nhấn, gạch chân lệch 3 px, "MT3 · W2 SEP ↗". Đang ở chính trang lượt đó → chip thường.
  * Vùng bấm 44 px ở điện thoại bằng `after` (như ⋯ `MenuDong`).
  */
