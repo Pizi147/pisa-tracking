@@ -11,7 +11,7 @@ Việc "Để sau" của HSL-LT (#653). Không có mockup riêng (thêm nút the
 |---|---|---|---|
 | 1 | FT: dải "Đã huỷ" + nút "Khôi phục MT{n}" bên phải (QL) | cùng dải, nút "Khôi phục Progress Test" (tên bài theo `kindLabel`); 375: nút xuống dòng, cao 44 | KHỚP |
 | 2 | Người không có quyền | "Chỉ Quản lý khôi phục được lượt đã huỷ." (quyền `ATTEMPT_CANCEL` như FT; máy chủ 403) | KHỚP |
-| 3 | Bị chặn: nói lý do + bước tiếp (CLAUDE.md) | câu máy chủ thay nút: em không còn học lớp (nay lớp …) · đã có bài cùng loại khác · lớp đã kết thúc — `khoiPhuc.chan` cùng hàm `chanKhoiPhucThuong` với chặn 400 | KHỚP (phép kiểm LKP-3..5; không dựng được trên demo để chụp) |
+| 3 | Bị chặn: nói lý do + bước tiếp (CLAUDE.md) | câu máy chủ thay nút: em đã lưu trữ / kết thúc học (bỏ lưu trữ trước; Tạm dừng vẫn được) · em không còn học lớp (nay lớp …) · đã có bài cùng loại khác · lớp đã kết thúc — `khoiPhuc.chan` cùng hàm `chanKhoiPhucThuong` với chặn 400 | KHỚP (phép kiểm LKP-3..6; không dựng được trên demo để chụp) |
 | 4 | Sau khôi phục: phản hồi rõ, không báo xong khi chưa lưu | dải "✓ Đã khôi phục Progress Test · Điểm trước khi huỷ xem ở Lịch sử." + "Xem Lịch sử" (mở sẵn + cuộn tới) chỉ khi máy chủ trả 200; lỗi → toast câu máy chủ, nút bấm lại được | KHỚP |
 | 5 | Điểm cũ | KHÔNG tự trả (PTA Plan 28/10): huỷ lượt thường xoá điểm (PR-VN5), audit `regular.score` còn giữ — xem ở Lịch sử | GIỮ (`ponytail:` ở `reopenAttempt`) |
 

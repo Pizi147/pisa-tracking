@@ -94,4 +94,17 @@ export async function runPrLuotKhoiPhucTests(t: any) {
     const e = loi(() => attempts.reopenAttempt(P.mbManager, l.id));
     assert(e.status === 400 && e.msg.includes('đã kết thúc'), `lớp kết thúc: ${e.status} ${e.msg}`);
   }));
+
+  check('LKP-6 · em đã lưu trữ / kết thúc học → 400 "bỏ lưu trữ trước"; khoiPhuc.chan cùng câu; em Tạm dừng (chưa lưu trữ) vẫn khôi phục được', () => {
+    for (const [sua, chan] of [[`status = 'finished'`, true], [`archived_at = '${TODAY}'`, true], [`status = 'inactive'`, false]] as const) thu(() => {
+      const l = luotHuy();
+      conn.prepare(`UPDATE students SET ${sua} WHERE id = ?`).run(l.student_id);
+      xoaNho();
+      const e = loi(() => attempts.reopenAttempt(P.mbManager, l.id));
+      if (chan) {
+        assert(e.status === 400 && e.msg.includes('Em đã lưu trữ / kết thúc học') && e.msg.includes('bỏ lưu trữ trước'), `${sua}: ${e.status} ${e.msg}`);
+        assert(regular.regularAttemptDetail(P.mbManager, l.id).khoiPhuc.chan === e.msg, `${sua}: hộp và máy chủ cùng một câu`);
+      } else assert(e.status === 'không ném', `${sua}: Tạm dừng phải khôi phục được — ${e.status} ${e.msg}`);
+    });
+  });
 }

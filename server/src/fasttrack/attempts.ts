@@ -1798,6 +1798,10 @@ export function chanKhoiPhucThuong(a: any, nhan: string): string | null {
   const conn = db();
   const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any)?.code ?? '';
   if (laLopKetThuc(a.class_id)) return `Lớp ${lop} đã kết thúc — không khôi phục được ${nhan}. Điểm trước khi huỷ xem ở Lịch sử.`;
+  /* Em lưu trữ / kết thúc học: lượt khôi phục sẽ bị mọi danh sách hiện tại ẩn. Tạm dừng (chưa lưu trữ) vẫn khôi phục được. */
+  if (!conn.prepare(`SELECT 1 FROM students s WHERE s.id = ? AND (${HV_DANG_HOC_SQL('s')} OR (s.status = 'inactive' AND s.archived_at IS NULL))`).get(a.student_id)) {
+    return `Em đã lưu trữ / kết thúc học — bỏ lưu trữ trước rồi khôi phục ${nhan}.`;
+  }
   if (!conn.prepare(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(a.student_id, a.class_id)) {
     const nay = lopHienTaiCua(a.student_id, a.class_id);
     return `Em không còn học ${lop}${nay ? ` (nay ${nay.code})` : ''} — không khôi phục được ${nhan} của lớp cũ. Bài của em xếp ở lớp đang học.`;
