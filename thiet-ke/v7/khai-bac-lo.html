@@ -127,7 +127,7 @@ button, select, input { font: inherit; color: inherit; }
     <dt>Thao tác</dt><dd>① "Chọn tất cả" (một chạm; ô gạch khi mới tick một phần) hoặc tick từng em — <b>ô tick chỉ để Áp</b> · ② chọn bậc → "Áp cho n em" (đổi ô Bậc mới của các em đó, chưa lưu) · ③ sửa riêng ô Bậc mới dòng nào cũng được · ④ <b>Lưu n em</b> — lưu theo ô Bậc mới ("— giữ nguyên —" không gửi). Nhãn dòng bằng chữ: Khai mới · Nâng từ … · <b>↓ Hạ từ …</b> (không chặn, không hỏi lại).</dd>
     <dt>Tối giản</dt><dd>Ghi chú KHÔNG bắt buộc (một ô chung cho cả lô; bỏ trống → "Xác nhận theo lớp MB FT 101" như hiện nay) · tháng mặc định tháng này, sửa được · bỏ hàng 7 chip mỗi em → một ô chọn bậc mỗi dòng.</dd>
     <dt>Quyền</dt><dd>Như khai từng em (máy chủ quyết): GVCN khai / sửa khi chuỗi chưa có lần xử lý trên web; QL sửa cả sau đó. Em không đủ quyền: dòng khoá + lý do. Lưu: một lần gọi theo lô, em lỗi báo riêng dòng đó (giữ ô đã chọn + Thử lại), em khác vẫn lưu; nhật ký từng em.</dd>
-    <dt>Sau lưu</dt><dd>Dải "✓ Đã lưu n em · Hoàn tác" (trả bậc cũ cho đúng các em vừa lưu) ở trên công cụ · panel DÙNG TIẾP được (ô bậc về "giữ nguyên", Lưu lại khi đổi tiếp) · em lỗi: GVCN gặp "em vừa có xử lý trên web" → dòng khoá "chỉ QL sửa" (không mời Thử lại); lỗi mạng / máy chủ → giữ ô đã chọn + Thử lại. Đóng / ✕ khi còn đổi chưa lưu → hỏi "Bỏ thay đổi của n em?" (khung panel `daSua` sẵn có).</dd>
+    <dt>Sau lưu</dt><dd>Dải "✓ Đã lưu n em · Hoàn tác" (trả bậc cũ cho đúng các em vừa lưu) ở trên công cụ · panel DÙNG TIẾP được (ô bậc về "giữ nguyên", Lưu lại khi đổi tiếp) · em lỗi: GVCN gặp "em vừa có xử lý trên web" → dòng khoá "chỉ QL sửa" (không mời Thử lại); lỗi mạng / máy chủ → giữ ô đã chọn, bấm Lưu lại (một nút, không thêm Thử lại riêng). Đóng / ✕ khi còn đổi chưa lưu → hỏi "Bỏ thay đổi của n em?" (khung panel `daSua` sẵn có).</dd>
     <dt>Giữ</dt><dd>Khai / sửa từng em ở hồ sơ HV (`KhaiBacPanel`, ghi chú vẫn tuỳ chọn như lô) · Chọn nhiều → Xác nhận cấp bậc (cùng panel này, chỉ các em đã chọn).</dd>
   </dl>
   <section class="hai-khung" aria-label="Khung giao diện">
@@ -176,7 +176,7 @@ button, select, input { font: inherit; color: inherit; }
     var khoa = khoaGoc || (loi && !ql);
     var ghi = khoaGoc ? '<span class="ghi-chu-hang">Đã có xử lý trên web · chỉ QL sửa</span>'
       : loi && !ql ? '<span class="ghi-chu-hang loi">Chưa lưu: em vừa có lần xử lý trên web · chỉ QL sửa</span>'
-      : loi ? '<span class="ghi-chu-hang loi">Chưa lưu: mất kết nối · <button class="link" type="button">Thử lại</button></span>'
+      : loi ? '<span class="ghi-chu-hang loi">Chưa lưu: mất kết nối · ô bậc giữ nguyên, bấm Lưu lại</span>'
       : ok ? '<span class="ghi-chu-hang ok">✓ Đã lưu</span>'
       : e[3] !== null ? '<span class="ghi-chu-hang doi' + (e[1] !== null && e[3] < e[1] ? ' ha' : '') + '">' + nhanDoi(e) + '</span>' : '';
     var hien = ok ? BAC[e[3]] : e[2];
@@ -206,7 +206,7 @@ button, select, input { font: inherit; color: inherit; }
       EM.map(hang).join('') + '</tbody></table></div>';
     var soDoi = daLuu ? (ql ? 1 : 0) : EM.filter(function (e) { return e[3] !== null && !(e[5] && !ql); }).length;
     var chan = '<div class="chan"><span class="trai">' + (soDoi ? soDoi + ' em đổi bậc' : 'Chưa đổi em nào') + (soKhoa ? ' · ' + soKhoa + ' em khoá (chỉ QL sửa)' : '') + '</span>' +
-      '<button class="btn ma" type="button">' + (soDoi ? 'Huỷ' : 'Đóng') + '</button><button class="btn chinh" type="button"' + (soDoi ? '' : ' disabled') + '>Lưu ' + soDoi + ' em</button></div>';
+      '<button class="btn ma" type="button">' + (soDoi ? 'Huỷ' : 'Đóng') + '</button><button class="btn chinh" type="button"' + (soDoi ? '' : ' disabled') + '>' + (soDoi ? 'Lưu ' + soDoi + ' em' : 'Lưu') + '</button></div>';
     return nen + '<aside class="panel" role="dialog" aria-label="Khai / sửa cấp bậc vi phạm">' + dau + '<div class="tren">' + ok + cc + '</div>' + bang + chan + '</aside>';
   }
   document.getElementById('w1440').innerHTML = web();
