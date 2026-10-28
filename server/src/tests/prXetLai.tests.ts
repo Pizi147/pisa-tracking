@@ -494,6 +494,17 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(!h2.failed.length && get('SELECT status FROM students WHERE id = ?', S.sid).status === 'active', `đúng trạng thái: ${JSON.stringify(h2)}`);
   });
 
+  check('XL-RA (RA-LUONG-16) · Tạm dừng ở Xét lại khi em còn lệnh chuyển CHƯA thi hành → huỷ lệnh cùng quyết định; Hoàn tác → lệnh và trạng thái trở lại', () => {
+    const S = kb(45, 'len_lop');
+    const lenh = get(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`, S.sid);
+    assert(lenh, 'tiền đề: lệnh chờ');
+    const r = xl.luuXetLai(QL, S.fou.id, [{ studentId: S.sid, quyetDinh: 'dung', trangThai: 'inactive', lyDo: 'Nghỉ ốm' }]);
+    assert(!r.failed.length && get('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', lenh.id).trang_thai === 'huy', `lệnh phải huỷ: ${JSON.stringify(r)}`);
+    const h = xl.hoanTacXetLai(QL, S.fou.id, [r.ok[0].id]);
+    assert(!h.failed.length && get('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', lenh.id).trang_thai === 'cho'
+      && get('SELECT status FROM students WHERE id = ?', S.sid).status === 'active', `Hoàn tác: ${JSON.stringify(h)}`);
+  });
+
   check('XL-14 · coXetLaiMiniTest chỉ đúng Mini Test gây dòng (d)', () => {
     const M = kb(55, 'len_lop', { thiHanh: true });
     const mt = get('SELECT * FROM mini_test WHERE student_id = ?', M.sid);
