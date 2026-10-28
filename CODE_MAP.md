@@ -288,7 +288,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | PA Bổ trợ · PA đại diện nhóm Bổ trợ | `server/src/cases/boTro.ts` · `shared/domain/daiDienBoTro.ts` |
 | Buổi Tutor trong kết quả PA | `web/src/modules/cases/BuoiTutorO.tsx` · `server/src/cases/cases.ts` (`ghiBuoiTutor`) · `server/src/tutors/chon.ts` |
 | Hệ thống tự đóng Case | `server/src/cases/systemClose.ts` (`closeCasesBySystem`, `closeCasesOnProgrammeSwitch`) |
-| Bảng kỹ năng ở hồ sơ, Case + PA dưới hàng kỹ năng | `web/src/modules/cases/SkillBoard.tsx` (`HangCase`, `HangPA`, `CaseKyNang`) |
+| Bảng kỹ năng ở hồ sơ, Case + PA dưới hàng kỹ năng | `web/src/modules/cases/SkillBoard.tsx` (`HangCase`, `HangPA`) |
 | Hiệu quả PA (đếm thành công / thất bại, n/N) | `server/src/cases/effectiveness.ts` (`planOutcomes`) · `server/src/phanTich/hieuQuaPa.ts` · `web/src/modules/phanTich/HieuQuaPa.tsx` |
 | Lớp + chương trình gốc của Case | `server/src/cases/sos.ts` (`caseKhacChuongTrinh`) |
 
