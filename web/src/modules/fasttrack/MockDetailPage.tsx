@@ -60,6 +60,8 @@ type Detail = {
   classId: number | null; classCode: string | null; branchName: string | null;
   /** OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
   phuTrachS?: boolean;
+  /** LUOT-TEN-GV: người được phân công từng ô (`writing1` / `writing2` riêng; Speaking Mock = "GV chấm chéo", null = chưa phân công). */
+  nguoiLam?: Record<string, string | null>;
   attemptNo: number; targetAtAttempt: number | null; studyWeekHint: number | null;
   period: { id: number; code: string; weekStart: string; weekEnd: string; range: string } | null;
   /** Tuần kế hoạch hoàn tất đã đủ căn cứ chưa, và môn nào đang chặn. */
@@ -471,9 +473,13 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
                   {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
                 </button>
               ) : (
-                <span className="inline-flex min-h-[32px] items-center rounded-md border border-dashed px-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-                  <b className="mr-1 text-slate-300">{v.nhan}</b><span className="max-w-[16rem] truncate">{[v.viec, v.ai].filter(Boolean).join(' · ')}</span>
-                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
+                /* Khung `.viec.khac`: cao 30, chữ 13 / 500 màu text-dim, nhãn môn màu nhấn, viền đứt. */
+                /* Tên người giữ việc là thứ cần đọc: không cắt; hẹp thì xuống dòng giữa các mẩu (việc · tên · quá hạn), không bẻ giữa tên. */
+                <span className="inline-flex min-h-[30px] max-w-full flex-wrap items-center gap-x-1 rounded-md border border-dashed px-2.5 py-0.5 text-[13px] font-medium text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
+                  <b className="text-[color:var(--accent-strong)]">{v.nhan}</b>
+                  <span className="whitespace-nowrap">{v.viec}</span>
+                  {v.ai && <span className="whitespace-nowrap">· {v.ai}</span>}
+                  {v.quaHan && <span className="ml-0.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
                 </span>
               )}
             </li>
@@ -483,6 +489,10 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
     </div>
   );
 }
+
+/** LUOT-TEN-GV: tên người làm các ô của một dòng (máy chủ `nguoiLam`; W1 / W2 hai người → "A, B") — chưa phân công thì nói rõ; máy chủ cũ không trả thì không hiện. */
+export const tenNguoiLam = (m: Record<string, string | null> | undefined, o: readonly string[]): string | null =>
+  (m && o.length ? [...new Set(o.map((k) => m[k] ?? t('Chưa phân công')))].join(', ') : null);
 
 export type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void;
   /** HSL-LT: việc đã quá hạn — chữ "⚠ quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
@@ -508,10 +518,14 @@ function conLaiLuot(d: Detail, homNay: string, theCase: Map<number, CaseCard>, c
     if (r.pendingMove) cua(CHU_THAO_TAC['tra-loi-de-nghi'], chinh === 'tra-loi-de-nghi' ? '[data-chinh]' : null, chinh === 'tra-loi-de-nghi' ? null : t('Quản lý'));
     else if (r.required && r.sitStatus === 'absent' && prog !== 'cancelled') cua(CHU_THAO_TAC['xep-lai'], chinh === 'xep-lai' ? '[data-chinh]' : null, chinh === 'xep-lai' ? null : t('Quản lý'));
     else if (r.required && (prog === 'due' || prog === 'overdue') && cells.some((c) => c.required && c.band === null && c.rawScore === null && !c.noShow)) {
-      cua(chinh === 'nhap-diem' ? CHU_THAO_TAC['nhap-diem'] : t('Chờ điểm'), chinh === 'nhap-diem' ? '[data-chinh]' : null);
+      cua(chinh === 'nhap-diem' ? CHU_THAO_TAC['nhap-diem'] : t('Chờ điểm'), chinh === 'nhap-diem' ? '[data-chinh]' : null,
+        chinh === 'nhap-diem' ? null : tenNguoiLam(d.nguoiLam, cells.filter((c) => c.required && !coDiemO(c)).map((c) => c.skill)));
     }
     const thieuNx = cells.filter((c) => c.thieuNhanXet);
-    if (thieuNx.length) cua(thieuNx.some((c) => c.canEdit) ? t('Viết nhận xét') : t('Chờ nhận xét'), thieuNx.some((c) => c.canEdit) ? 'textarea' : null);
+    if (thieuNx.length) {
+      const cuaToi = thieuNx.some((c) => c.canEdit);
+      cua(cuaToi ? t('Viết nhận xét') : t('Chờ nhận xét'), cuaToi ? 'textarea' : null, cuaToi ? null : tenNguoiLam(d.nguoiLam, thieuNx.map((c) => c.skill)));
+    }
   }
   for (const c of d.caseLuot ?? []) {
     const k = kyNangCase(c.topic) as KyNangLon | null;
@@ -847,6 +861,10 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
                 <div className="text-xs text-amber-200" title={`${t('Đề nghị dời sang')} ${r.pendingMove.toWeek ?? t('tuần kế tiếp')} ${t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })} ${fmtDate(r.pendingMove.decideBy)}${r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.`}>
                   ⚠ {t('Chờ QL duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
                 </div>
+              )}
+              {/* LUOT-TEN-GV (khung: "Chờ điểm · hạn …" + tên): bài còn nợ mà người xem không nhập được — ai đang giữ việc. */}
+              {r.required && prog !== 'scored' && !khongDuThi && !huy && r.sitStatus !== 'absent' && !r.pendingMove && !cells.some((c) => c.required && c.canEdit) && (
+                <div className="text-xs text-slate-500">{tenNguoiLam(d.nguoiLam, cells.filter((c) => c.required && !coDiemO(c)).map((c) => c.skill))}</div>
               )}
               {r.sitNote && !c0.noShow && <div className="text-xs text-slate-500">{r.sitNote}</div>}
             </div>
