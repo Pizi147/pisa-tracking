@@ -622,7 +622,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 sm:min-h-0 text-sm" onClick={quayLai}>‹ {d.from.code}</button>
       <section className="card overflow-clip" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })}>
         <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b px-4 py-3.5" style={{ borderColor: 'var(--line)' }}>
-          <h1 className="m-0 text-[17px] font-bold text-slate-100">{t('Cuối khoá · {lop}', { lop: d.from.code })}</h1>
+          <h1 className="m-0 text-xl font-bold text-slate-100">{t('Cuối khoá · {lop}', { lop: d.from.code })}</h1>
           <span className="text-[13px] tabular-nums text-slate-400">
             {[ma, t('{n} em', { n: ds.length }), d.tuanCuoiKhoa ? `Final ${tuanLich(d.tuanCuoiKhoa, h)}` : null, d.gvcn ? `GVCN ${d.gvcn}` : null].filter(Boolean).join(' · ')}
           </span>

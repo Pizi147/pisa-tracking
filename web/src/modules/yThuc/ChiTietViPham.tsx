@@ -104,14 +104,14 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
       )}
 
       <div className="flex items-center gap-2 pt-1">
-        {suaDuoc && <button type="button" className="btn btn-sm" onClick={() => onSua(d)}>{t('Sửa')}</button>}
+        {suaDuoc && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onSua(d)}>{t('Sửa')}</button>}
         {xoaDuoc && (!hoiXoa ? (
-          <button type="button" className="btn btn-sm btn-ghost text-rose-200" onClick={() => setHoiXoa(true)}>{t('Xoá')}</button>
+          <button type="button" className="btn btn-sm max-sm:min-h-[44px] btn-ghost text-rose-200" onClick={() => setHoiXoa(true)}>{t('Xoá')}</button>
         ) : (
           <span className="flex flex-wrap items-center gap-2 text-xs text-amber-200">
             {d.measures.length ? t('Xoá vi phạm này? Lần xử lý chứa nó vẫn giữ, bậc không lùi.') : t('Xoá vi phạm này?')}
-            <button type="button" className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>{t('Đóng')}</button>
-            <button type="button" className="btn btn-sm text-rose-200" disabled={busy} onClick={xoa}>{t('Xoá')}</button>
+            <button type="button" className="btn btn-sm max-sm:min-h-[44px] btn-ghost" disabled={busy} onClick={() => { setHoiXoa(false); setErrXoa(null); }}>{t('Đóng')}</button>
+            <button type="button" className="btn btn-sm max-sm:min-h-[44px] text-rose-200" disabled={busy} onClick={xoa}>{t('Xoá')}</button>
           </span>
         ))}
       </div>
