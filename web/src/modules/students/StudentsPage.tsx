@@ -293,7 +293,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const khoaLoc = [goc, q, khung, chiLop, locThiThang, locQuaHan, locDaThi, chipVai, mucSos, branchId, phamViUrl, sapXep, ...['lc', 'lk', 'lq', 'ltu', 'lden'].map((k) => params.get(k))].join('|');
   /*
    * HV-LOP-SUA (chủ SP 27/10, mockup `hoc-vien-lop.html`): Tất cả = danh sách THEO LỚP — hàng lớp rồi HV của lớp. Không lọc gì thì hiện cả lớp chưa có em
-   * (để còn ⋯ + Học viên / Nhập điểm); có lọc thì chỉ lớp có em khớp. Lớp mở: `mo` trên URL; chưa có → đang lọc / ≤ 2 lớp: mở hết, còn lại mở lớp đầu.
+   * (để còn ⋯ + Học viên / Nhập điểm); có lọc thì chỉ lớp có em khớp. Lớp mở: `mo` trên URL; chưa có → MỌI lớp gập (chủ SP 28/10: không tự mở lớp đầu); đang lọc / tìm thì mở lớp có em khớp (kết quả lọc phải thấy được).
    */
   const dangLoc = !!(q.trim() || locThiThang || locQuaHan || locDaThi || chipVai || batThem || chiLop);
   const nhomLop = useMemo(() => {
@@ -303,7 +303,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     return [...m].map(([id, hv]) => ({ id, hv }));
   }, [hvLoc, dangLoc, data, khung]);   // eslint-disable-line react-hooks/exhaustive-deps
   const moUrl = params.get('mo');
-  const moSet = new Set(moUrl !== null ? moUrl.split(',').map(Number) : (dangLoc || nhomLop.length <= 2 ? nhomLop : nhomLop.slice(0, 1)).map((g) => g.id));
+  const moSet = new Set(moUrl !== null ? moUrl.split(',').map(Number) : dangLoc ? nhomLop.map((g) => g.id) : []);
   const doiMo = (id: number) => { const s2 = new Set(moSet); if (s2.has(id)) s2.delete(id); else s2.add(id); setParam({ mo: [...s2].join(',') || '-' }); };
   /* Đổi bộ lọc → về cách mở mặc định (không giữ lớp gập của bộ lọc trước làm "mất" em vừa lọc ra). Lần đầu (Back / tải lại) giữ `mo` của URL. */
   const khoaTruoc = useRef(khoaLoc);
@@ -643,7 +643,7 @@ function DauLop({ lop, hv, viecLop, vai, gopMon, dsLop, onMoViec, onThemHocVien 
   const sos = [1, 2, 3].map((m) => new Set(hv.filter((h) => h.hang?.hoTro.sos === m).map((h) => h.id)).size);
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 py-1">
-      {lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so font-bold">{lop.code}</Link>
+      {lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui font-bold">{lop.code}</Link>
         : <span>{t('Chưa xếp lớp')}</span>}
       <span className="text-[13px] font-normal tabular-nums text-dim">{t('{n} HV', { n: new Set(hv.map((h) => h.id)).size })}</span>
       {day?.gvcn && <span className="text-[13px] font-normal text-dim">{t('GVCN')} <TenGiaoVien id={day.gvcn.id} ten={day.gvcn.name} /></span>}
@@ -670,7 +670,7 @@ function DaiLop({ lop, vai, soViecQuaHan, dsLop, onThemHocVien, onBo }: {
   const chuLop = [lop.programmeName ? dich(lop.programmeName) : '—', !thuong && lop.route ? lop.route : null, t('{n} HV', { n: lop.studentCount })].filter(Boolean).join(' · ');
   return (
     <div className="card flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2" aria-label={t('Lớp {lop}', { lop: lop.code })}>
-      <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so font-bold">{lop.code}</Link>
+      <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui font-bold">{lop.code}</Link>
       <span className="min-w-0 text-xs text-slate-400">
         {chuLop}{lop.gvcn && <> · {t('GVCN')} <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
       </span>

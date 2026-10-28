@@ -302,11 +302,12 @@
    * Đang lọc = `aria-pressed="true"` (nút bật/tắt) hoặc `.nut-loc-dang` (nút "bỏ lọc ✕" luôn ở trạng thái đang lọc).
    */
   .nut-loc {
-    @apply inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-300/30 bg-transparent px-3 text-[13px] font-medium text-slate-300 max-sm:min-h-[44px];
+    @apply inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border bg-[color:var(--surface)] px-3 text-[13px] font-semibold text-dim max-sm:min-h-[44px];
+    border-color: var(--o-nhap-vien);   /* HV-LOP-GON (mockup V5 `.chip`): viền ô nhập ≥ 3 : 1 — thấy rõ là nút; trước viền 30 % gần chìm */
   }
   .nut-loc:hover { background-image: linear-gradient(var(--phu-re), var(--phu-re)); }   /* HTT-1 (bỏ filter: brightness) */
   .nut-loc:where([aria-pressed='true'], .nut-loc-dang) {   /* :where = độ đặc 0 — tông màu riêng (ChipDem) vẫn đè được */
-    border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-strong); font-weight: 600;   /* D10: chỉ nút đang lọc đậm */
+    border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong);   /* mockup V5 `.chip[aria-pressed]`: viền nhấn sáng — đang chọn khác hẳn không chọn */
   }
 
   .field {
@@ -477,6 +478,9 @@
   /* Tên bị cắt (…): "↗" nằm trong phần đệm phải, không bị cắt theo chữ — trên điện thoại (không rê) vẫn thấy là mở hồ sơ. */
   .ten-ho-so.truncate { position: relative; padding-right: 1em; }
   .ten-ho-so.truncate::after { position: absolute; right: 0; bottom: .2em; margin-left: 0; }
+  /* HV-LOP-GON (chủ SP 28/10): trang Học viên & Lớp bỏ "↗" — tên em / mã lớp vẫn là link hồ sơ (rê = xanh + gạch). */
+  .ten-ho-so.khong-mui::after { content: none; }
+  .ten-ho-so.khong-mui.truncate { padding-right: 0; }
   /* Phụ đề trong tiêu đề khối (`Card`: "· W4 AUG – W3 SEP", "· 8 lớp") = 13 / 400 như mockup, không theo cỡ 17 của tiêu đề. */
   .h-khoi .font-normal { font-size: 13px; }
   .ten-ho-so:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
