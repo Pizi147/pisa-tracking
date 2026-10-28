@@ -8,8 +8,9 @@ import { t } from '@shared/i18n/index.ts';
  * "⚠ quá hạn 15 ngày" — chữ đỏ cam đậm, KHÔNG nền, KHÔNG khung (B-3). ⚠ chỉ nghĩa quá hạn (G-4).
  * `gon` bỏ chữ "quá hạn" ("⚠ 15 ngày") cho chỗ đã có tiêu đề nói rõ.
  */
-export function QuaHan({ ngay, gon }: { ngay: number | null; gon?: boolean }) {
-  return <span className="whitespace-nowrap font-semibold text-late">⚠ {nhanQuaHan(ngay, gon)}</span>;
+/** `mo`: việc của người khác — chữ mờ, không đỏ (đỏ chỉ khi là việc của người xem, LUOT-TEN-GV). */
+export function QuaHan({ ngay, gon, mo }: { ngay: number | null; gon?: boolean; mo?: boolean }) {
+  return <span className={`whitespace-nowrap ${mo ? 'text-slate-400' : 'font-semibold text-late'}`}>⚠ {nhanQuaHan(ngay, gon)}</span>;
 }
 
 /**
