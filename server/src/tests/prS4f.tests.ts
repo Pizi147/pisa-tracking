@@ -271,7 +271,14 @@ export async function runPrS4fTests(t: YThucTestKit) {
     nhapBand(e.aid, 'listening', 6);
     assert(standing.standingFor([e.sid]).get(e.sid).attemptId === e.aid, 'đủ một kỹ năng (L) thì là kết quả gần nhất');
     const b = docWeb('modules/students/BangHocVienLop.tsx');
-    assert(/ten-ho-so block truncate" title=\{h\.ten\}/   /* D4 bổ sung: tên mở hồ sơ dùng .ten-ho-so (như mockup) */.test(docWeb('modules/students/DanhSachHvLop.tsx')), 'tên: title (UI-HV-LOP: danh sách gọn)');
+    assert(/ten-ho-so (khong-mui )?block truncate" title=\{h\.ten\}/   /* D4 bổ sung: tên mở hồ sơ dùng .ten-ho-so (như mockup) */.test(docWeb('modules/students/DanhSachHvLop.tsx')), 'tên: title (UI-HV-LOP: danh sách gọn)');
+    /* HV-LOP-GON (chủ SP 28/10): vào trang không tự mở lớp nào; tên em không còn dòng TVV. */
+    const sp = docWeb('modules/students/StudentsPage.tsx');
+    assert(sp.includes(": dangLoc ? nhomLop.map((g) => g.id) : []);") && !sp.includes('nhomLop.slice(0, 1)'), 'HV-LOP-GON: lớp gập mặc định');
+    assert(!docWeb('modules/students/DanhSachHvLop.tsx').includes('`TVV ${h.tvv}`'), 'HV-LOP-GON: bỏ dòng TVV dưới tên em');
+    /* Chủ SP 28/10: hàng lớp không còn việc cấp lớp (làm ở Công việc / Hồ sơ lớp); chip tình trạng giữ. */
+    const dau = sp.slice(sp.indexOf('function DauLop'), sp.indexOf('function DaiLop'));
+    assert(!dau.includes('OViec') && dau.includes('<NhanLop'), 'HV-LOP-GON: hàng lớp không có ô Việc, còn chip tình trạng');
     assert(b.includes('<DongCham chu={k.dong1}')   /* UXF-b: thêm lienKet (link tên lượt) */ && b.slice(b.indexOf('function DongCham')).includes('whitespace-nowrap'), 'DongCham');
     assert(docWeb('ui/TheDong.tsx').includes('grid-cols-[5.5rem_minmax(0,1fr)] items-baseline'), 'TheDong items-baseline');
     assert(docWeb('modules/classes/ClassIssueBoard.tsx').includes('td text-right tabular-nums"><TyLe'), 'Tỷ lệ tabular-nums');

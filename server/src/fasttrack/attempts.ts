@@ -738,6 +738,21 @@ function ownersByClass(classIds: number[]): Map<number, Record<string, string>> 
   return map;
 }
 
+/**
+ * T18 (PR-LT3): người làm từng môn — Speaking Mock → "GV chấm chéo" (không phải GVBM S, không phải "chưa phân công"); null = chưa phân công.
+ * Danh sách lượt (`pendingOwners`) + hồ sơ lượt FT / lớp thường (`nguoiLam`, LUOT-TEN-GV) cùng một luật.
+ */
+function nguoiLamMon(rec: Record<string, string>, skills: readonly string[], kind: string): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const s of skills) out[s] = laChamCheo(kind, s) ? CHAM_CHEO : rec[s] ?? null;
+  return out;
+}
+
+/** LUOT-TEN-GV: người làm từng môn của MỘT lượt (lớp lúc Test) — tên ở "Còn lại" / cột Trạng thái của trang lượt. */
+export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[], kind: string): Record<string, string | null> {
+  return nguoiLamMon(classId !== null ? ownersByClass([classId]).get(classId) ?? {} : {}, skills, kind);
+}
+
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
@@ -794,13 +809,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   const ownersMap = ownersByClass(
     rows.map((r) => r.class_id).filter((id): id is number => id !== null),
   );
-  /* T18 (PR-LT3): Speaking Mock → "GV chấm chéo" (không phải GVBM S, không phải "chưa phân công"). */
-  const ownersOf = (classId: number | null, skills: string[], kind: string): Record<string, string | null> => {
-    const rec = (classId !== null && ownersMap.get(classId)) || {};
-    const out: Record<string, string | null> = {};
-    for (const s of skills) out[s] = laChamCheo(kind, s) ? CHAM_CHEO : rec[s] ?? null;
-    return out;
-  };
+  const ownersOf = (classId: number | null, skills: string[], kind: string) => nguoiLamMon((classId !== null && ownersMap.get(classId)) || {}, skills, kind);
 
   /*
    * Lớp thường chấm theo số câu đúng chứ không theo band, nên KHÔNG được đo bằng bộ kỹ năng
@@ -1202,6 +1211,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     lopHienTai: lopHienTaiCua(a.student_id, a.class_id),
     /** HSL-MAY-CHU (N10): lượt S Ex của em trong các tuần của lượt — chỉ đọc, ngoài Overall / SOS. */
     sEx: (sExCuaHv(p, [a.student_id], today).get(a.student_id) ?? []).filter((x) => tuanLuot.has(x.tuan)),
+    /** LUOT-TEN-GV: người được phân công từng ô (`writing1` / `writing2` riêng — như phân công FT; Speaking Mock = "GV chấm chéo", null = chưa phân công). */
+    nguoiLam: nguoiLamCuaLuot(a.class_id, ENTRY_SKILLS, a.kind),
     /* OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
     phuTrachS: laChamCheo(a.kind, 'speaking') && quyenPhuTrachS(p, a.class_id),
     attemptNo: a.attempt_no,
