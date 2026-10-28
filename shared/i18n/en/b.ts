@@ -193,6 +193,11 @@ const EN_B_WEB = {
 
   /* Lịch Test */
   'Còn {chuOChuaLuu}. Thu khối này thì mất các giá trị đó — vẫn thu?': '{chuOChuaLuu} left. Collapsing this block loses those values — collapse anyway?',
+  /* RA-UI-3: hộp hỏi chung thay `window.confirm` ở Lịch Test. */
+  'Thu khối này?': 'Collapse this block?',
+  'Bỏ, thu khối': 'Discard, collapse',
+  'Đóng lưới này?': 'Close this grid?',
+  'Bỏ, đóng lưới': 'Discard, close grid',
   '{size} lớp': (b) => so(b.size, 'class', 'classes'),
   'hạn T4': 'due Wed',
   'Quá hạn · T4': 'Overdue · Wed',

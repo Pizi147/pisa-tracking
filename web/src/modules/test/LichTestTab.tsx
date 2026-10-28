@@ -4,6 +4,7 @@ import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useMoSoLieu, useTenTrang } from '../../lib/quayLai.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -91,6 +92,8 @@ export function LichTestTab() {
   const [conTro, setConTro] = useState<Set<string>>(new Set());
   const [moKhoi, setMoKhoi] = useState({ k1: false, k3: true });
   const [moXuat, setMoXuat] = useState(false);
+  /* RA-UI-3: hỏi bỏ ô chưa lưu bằng hộp chung (`ConfirmDialog`), không dùng hộp gốc `window.confirm` của trình duyệt. */
+  const [hoiBo, setHoiBo] = useState<{ title: string; body: string; nut: string; tiep: () => void } | null>(null);
   const [dongMo, setDongMo] = useState<{ d: DongNo; viTri: number; conTro: boolean } | null>(null);
   /* Số ô lưu hỏng theo hàng lớp / dòng khối 1 (PR-UX1) — badge của hàng nói "n ô chưa lưu" tới khi hết. */
   const [chuaLuu, setChuaLuu] = useState<Record<string, number>>({});
@@ -181,8 +184,9 @@ export function LichTestTab() {
     if (!moKhoi[k]) { setMoKhoi((m) => ({ ...m, [k]: true })); return; }
     const khoa = k === 'k1' ? (dongMo ? [`no:${dongMo.d.key}`] : []) : lopTab.map(khoaHang);
     const n = khoa.reduce((s, x) => s + (chuaLuu[x] ?? 0), 0);
-    if (n > 0 && !window.confirm(t('Còn {chuOChuaLuu}. Thu khối này thì mất các giá trị đó — vẫn thu?', { chuOChuaLuu: chuOChuaLuu(n) }))) return;
-    setMoKhoi((m) => ({ ...m, [k]: false }));
+    const thu = () => setMoKhoi((m) => ({ ...m, [k]: false }));
+    if (n > 0) { setHoiBo({ title: t('Thu khối này?'), body: t('Còn {chuOChuaLuu}. Thu khối này thì mất các giá trị đó — vẫn thu?', { chuOChuaLuu: chuOChuaLuu(n) }), nut: t('Bỏ, thu khối'), tiep: thu }); return; }
+    thu();
   };
 
   /*
@@ -304,8 +308,9 @@ export function LichTestTab() {
               onMoDong={(d, viTri) => {
                 /* Dòng đang mở còn ô chưa lưu: đóng nó là mất giá trị đã gõ — hỏi trước. */
                 const n = dongMo ? chuaLuu[`no:${dongMo.d.key}`] ?? 0 : 0;
-                if (n > 0 && !window.confirm(t('Lớp {classCode} còn {chuOChuaLuu}. Đóng lưới thì mất các giá trị đó — vẫn đóng?', { classCode: dongMo!.d.classCode, chuOChuaLuu: chuOChuaLuu(n) }))) return;
-                setDongMo(d ? { d, viTri, conTro: true } : null);
+                const doi = () => setDongMo(d ? { d, viTri, conTro: true } : null);
+                if (n > 0) { setHoiBo({ title: t('Đóng lưới này?'), body: t('Lớp {classCode} còn {chuOChuaLuu}. Đóng lưới thì mất các giá trị đó — vẫn đóng?', { classCode: dongMo!.d.classCode, chuOChuaLuu: chuOChuaLuu(n) }), nut: t('Bỏ, đóng lưới'), tiep: doi }); return; }
+                doi();
               }}
               hep={hep} homNay={homNay} onDaLuu={baoDaLuu} knUrl={dongMo?.d.classId === urlClassId ? urlKn : null} />
             <div id="lich-test-k3" data-hd="lich-test-tuan">
@@ -319,6 +324,8 @@ export function LichTestTab() {
           </>
         )}
       </div>
+      <ConfirmDialog open={!!hoiBo} onClose={() => setHoiBo(null)} title={hoiBo?.title ?? ''} body={hoiBo?.body} danger
+        confirmLabel={hoiBo?.nut} closeLabel={t('Ở lại')} onConfirm={() => { hoiBo?.tiep(); setHoiBo(null); }} />
       {moXuat && data.tuan && (
         <NganXuatMt khung={loai ?? 'ft'} chiNhanh={branchId} lop={urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null}
           thoiGianMacDinh={{ kieu: 'tuan', tu: data.tuan.weekStart, den: data.tuan.weekStart }}   /* SL1 (V3B-07 #6): đúng tuần đang xem, không từ đầu tháng */ onDong={() => setMoXuat(false)} />
