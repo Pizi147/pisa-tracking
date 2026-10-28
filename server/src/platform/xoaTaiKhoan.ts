@@ -87,6 +87,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch Test'),   // OV-15c
   c('tutors', 'created_by', DV, 'danh sách tutor'), c('tutors', 'updated_by', DV, 'danh sách tutor'),   // TU-a
   c('tutor_nhan_xet', 'nguoi_id', DV, 'nhận xét về tutor'),
+  c('bang_quy_doi', 'nguoi_id', DV, 'bảng quy đổi band'),   // BAND-QUY-DOI
 ];
 
 const COT_DAU_VET = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'dau_vet');

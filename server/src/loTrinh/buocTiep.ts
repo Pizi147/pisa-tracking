@@ -34,10 +34,10 @@ import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
 import { chuViecTvv, coTheGiuViecTvv } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
+import { CO_KET_QUA_THI_SQL } from '../students/tamDung.ts';
 
 /** Lộ trình FT có kết quả thi thật (cùng nghĩa `!canChoThiThat`): đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay). */
-const CO_KET_QUA = `(c.thi_that_khong_thi = 1 OR (c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
-  OR c.outcome_score IS NOT NULL OR COALESCE(c.outcome, 'unknown') != 'unknown')`;
+const CO_KET_QUA = CO_KET_QUA_THI_SQL('c');
 /** Cùng nghĩa `CO_KET_QUA` trên một dòng `learning_cycles` đã nạp — hồ sơ hỏi trước khi chạy câu Bước tiếp (trần câu SQL của `GET /students/:id`). */
 export const coKetQuaThi = (c: any): boolean => !!c && (!!c.thi_that_khong_thi || [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].every((x) => x !== null && x !== undefined)
   || (c.outcome_score ?? null) !== null || (!!c.outcome && c.outcome !== 'unknown'));

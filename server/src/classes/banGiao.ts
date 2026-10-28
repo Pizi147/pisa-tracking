@@ -9,6 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import type { PhieuBanGiaoDto, PhieuEm, PhieuMon, TuDien } from '../../../shared/domain/index.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
+import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { chuCuoiKhoaLo } from '../normal/cuoiKhoa.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { nguoiNhanGoiY } from './luatLoTrinh.ts';
@@ -83,7 +84,8 @@ function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number
   const baiChuaLam = new Map<number, number>();
   theoLo(sids, (lo, ph) => {
     for (const r of conn.prepare(
-      `SELECT student_id, COUNT(*) AS n FROM assessment_attempts WHERE status = 'planned' AND student_id IN (${ph}) GROUP BY student_id`,
+      `SELECT a.student_id, COUNT(*) AS n FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
+        WHERE a.status = 'planned' AND a.student_id IN (${ph}) GROUP BY a.student_id`,
     ).all(...lo) as any[]) baiChuaLam.set(r.student_id, r.n);
   });
   /* PR-S5F-a (planning chốt): PA bổ trợ Giữa khoá CHƯA ghi kết quả cuối không tự khép khi chuyển — người dạy cũ ghi tiếp; phiếu nói rõ. */

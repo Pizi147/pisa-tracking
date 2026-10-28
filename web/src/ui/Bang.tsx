@@ -13,7 +13,7 @@ export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
  * Tiêu đề chỉ nhận chữ (`nhan`, `phu`) — cấm ô nhập / nút trong `th`. < 640 px: thẻ từ cùng định nghĩa cột.
  * Hàng bấm được (`onHang`) = `.bam` + Enter; đang mở = `.dang-mo`; bảng ≥ 8 cột không bấm = dò hàng `.do-hang`.
  */
-export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, hangRieng, cuoi, the375 = true, dinh, khung = true, deu }: {
+export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, chat, hangRieng, cuoi, the375 = true, dinh, khung = true, deu }: {
   /** Tên bảng cho trình đọc màn + công cụ đo `do-bang`. */
   ten: string;
   cot: readonly DinhNghiaCot[];
@@ -29,6 +29,8 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   rong?: { tieuDe: string; goiY?: string; nut?: ReactNode };
   /** Lưới dày (> 8 cột, lưới điểm): chữ ô 14. */
   day?: boolean;
+  /** Bảng tra cứu dài (vd bảng quy đổi band 41 hàng): ≥ 640 px hàng 32 px; < 640 px giữ 44 px (vùng chạm) — `.bang[data-chat]`. */
+  chat?: boolean;
   /** BANG-1: hàng là component có hook riêng (lưới điểm: lưu theo từng hàng) — tự vẽ `<tr>` bằng `OBang`. */
   hangRieng?: (h: H) => ReactNode;
   /** Hàng thêm sau cùng (hàng mờ "em chưa có lịch"). */
@@ -85,7 +87,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   } else {
     than = (
       <div className={`table-scroll ${dinh ? 'bang-dinh' : ''} ${dinh === '1440' ? 'bang-dinh-1440' : ''}`}>
-        <table className="bang" data-day={day || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.kieu === 'ten' ? 205 : 240)), 0) }}>
+        <table className="bang" data-day={day || undefined} data-chat={chat || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.kieu === 'ten' ? 205 : 240)), 0) }}>
           <colgroup>{cot.map((c) => { const r = rongCua(c); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
             {nhom && (

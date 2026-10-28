@@ -7990,8 +7990,10 @@ const prgWeekEnd = (conn.prepare('SELECT week_end FROM report_periods WHERE id =
  * rồi phân vai: A, B chỉ có L/R/W sạch; C, D sạch cả bốn kỹ năng. Nhiều kỹ năng KHÁC NHAU của cùng một lượt
  * được dùng cho nhiều phép kiểm vì chúng độc lập (mỗi kỹ năng có lịch và bộ đếm riêng).
  */
+const { LUOT_LO_TRINH_CUOI_SQL } = await import('../students/tamDung.ts');
 const prgSlot = (skills: string[]) => conn.prepare(
-  `SELECT a.id FROM assessment_attempts a
+  /* LOC-HIEN-TAI (chủ SP 28/10): bảng điểm lớp không còn hàng em Kết thúc học (Ngô Thanh Tùng có MT3 W3 SEP) hay lượt lộ trình cũ — chỉ chọn lượt hiện tại. */
+  `SELECT a.id FROM assessment_attempts a JOIN students st ON st.id = a.student_id AND st.status = 'active' AND st.archived_at IS NULL AND ${LUOT_LO_TRINH_CUOI_SQL('a')}
     WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind = 'mock'
       AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id)
       AND (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1
@@ -8572,13 +8574,19 @@ check('PR-N · N1 do-phu-danh-gia: HV có dữ liệu đủ điều kiện / HV 
   assert(!r.ids.includes(G.id), 'G chưa có đợt nào thì chưa "cần được đánh giá"');
   assert(!r.ids.includes(H.id), 'H chỉ có đợt đã huỷ thì không cần đánh giá');
   assert(r.n === r.ids.length, 'Số phải là độ dài của tập mẫu số');
-  /* Sự thật độc lập: em đang học có đợt không huỷ đã đến lịch; tử số = đợt gần nhất đủ điểm mọi kỹ năng bắt buộc. */
+  /* Sự thật độc lập: em đang học có đợt không huỷ đã đến lịch; tử số = đợt gần nhất đủ điểm mọi kỹ năng bắt buộc.
+   * T34 (`latestAttempts` 'due'): MT lịch sử chưa đủ điểm không phải "cần được đánh giá" (nhập bù, không hạn). LOC-HIEN-TAI: lộ ra khi ca dựng PR-G nay
+   * dời MT3 W3 SEP của "Học Viên Nhập Một" sang W4 SEP — em chỉ còn MT1 / MT2 lịch sử chưa điểm đã tới lịch (trước đây câu này đếm em, hàm thì không). */
   const today = demoToday();
   const need = (conn.prepare(
     `SELECT DISTINCT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
       WHERE s.archived_at IS NULL AND EXISTS (
         SELECT 1 FROM assessment_attempts a JOIN report_periods pr ON pr.id = a.planned_period_id
-         WHERE a.student_id = s.id AND a.status != 'cancelled' AND pr.week_start <= ?)`,
+         WHERE a.student_id = s.id AND a.status != 'cancelled' AND pr.week_start <= ?
+           AND (a.lich_su = 0 OR NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled'
+             AND (SELECT COUNT(DISTINCT sc.skill) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)
+                    AND sc.skill IN (k.skill, CASE WHEN k.skill = 'writing' THEN 'writing1' END, CASE WHEN k.skill = 'writing' THEN 'writing2' END))
+                 < CASE WHEN k.skill = 'writing' THEN 2 ELSE 1 END)))`,
   ).all(today) as any[]).map((x) => x.id as number).sort((x, y) => x - y);
   assert(JSON.stringify([...r.ids].sort((x: number, y: number) => x - y)) === JSON.stringify(need),
     `Mẫu số: hàm ${r.ids.length} em, sự thật ${need.length} em`);
@@ -9266,6 +9274,9 @@ await runPrOv4aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV4b (hộp nhập điểm MT: nhận xét 4 kỹ năng, W1 / W2 riêng, nhận xét lớp thường)
 const { runPrOv4bTests } = await import('./prOv4b.tests.ts');
 await runPrOv4bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== BAND-QUY-DOI (bảng quy đổi band ở DB, Quản trị sửa)
+const { runPrBandQuyDoiTests } = await import('./prBandQuyDoi.tests.ts');
+await runPrBandQuyDoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV6b1 (Quản trị › Chương trình: cấu hình, bản chụp lớp, tuần MT FT, ngưỡng đạt)
 const { runPrOv6b1Tests } = await import('./prOv6b1.tests.ts');
 await runPrOv6b1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9668,6 +9679,9 @@ await runPrLuotKhoiPhucTests({ check, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== HOAN-TAC-XN (luật N3: Hoàn tác Xác nhận PA · lô PA · Xác nhận Case · Xác nhận Case S)
 const { runPrHoanTacXnTests } = await import('./prHoanTacXn.tests.ts');
 await runPrHoanTacXnTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== LOC-HIEN-TAI (lỗi chủ SP 28/10: danh sách hiện tại = lộ trình mới nhất + em đang học)
+const { runPrLocHienTaiTests } = await import('./prLocHienTai.tests.ts');
+await runPrLocHienTaiTests({ check, assert, conn, P, classId, TODAY } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

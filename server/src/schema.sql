@@ -2244,3 +2244,15 @@ CREATE TABLE IF NOT EXISTS dich_luot (
   luc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_dich_luot_ngay ON dich_luot(ngay, user_id);
+
+-- BAND-QUY-DOI (chủ SP 28/10): bảng quy đổi số câu đúng → band (L / R), mỗi lần lưu một phiên bản (sửa / Hoàn tác / khôi phục), không sửa / xoá
+-- dòng cũ. Bảng đang dùng = id lớn nhất; rỗng = bảng gốc `BANG_QUY_DOI_GOC`. `listening` / `reading` = JSON 41 số (index = số câu). Migrate `prBandQuyDoi` chép y.
+CREATE TABLE IF NOT EXISTS bang_quy_doi (
+  id INTEGER PRIMARY KEY,
+  listening TEXT NOT NULL,
+  reading TEXT NOT NULL,
+  ly_do TEXT,
+  khoi_phuc_tu INTEGER,
+  nguoi_id INTEGER REFERENCES users(id),
+  tao_luc TEXT NOT NULL
+);

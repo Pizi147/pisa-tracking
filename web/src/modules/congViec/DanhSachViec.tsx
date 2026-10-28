@@ -56,7 +56,7 @@ const chuDau = (ten: string) => {
  * DANH SÁCH CÔNG VIỆC — BA TẦNG (CONG-VIEC-2, mockup `thiet-ke/v7/cong-viec-2.html`, chủ SP duyệt #621 27/10; thay bố cục V5 `cong-viec.html`):
  *  ① nhóm việc — thẻ riêng, dải `--surface-2` + vạch trái 3 px một màu nhấn (xám = bài chấm chéo, không phải việc của bạn), biểu tượng, 15 / 700,
  *    chip "n việc", dính khi cuộn; số đếm việc thật của máy chủ (`dem`; gập / lọc không đổi số — T17);
- *  ② đối tượng — học viên: vòng tròn chữ đầu + tên 15 / 600 ↗ (link hồ sơ, tách xem hồ sơ / làm việc) · lớp · SOS MỘT lần; em một việc vẫn có khối
+ *  ② đối tượng — học viên: vòng tròn chữ đầu + tên 15 / 600 = link hồ sơ (không ký hiệu mũi tên; tách xem hồ sơ / làm việc) · lớp · SOS MỘT lần; em một việc vẫn có khối
  *    (một dáng); lớp / nhóm em: ô vuông biểu tượng, chính dòng là việc; dòng gộp: ô chồng có số ("n em ▾" mở khay em nền chìm, hoặc làm cả dòng);
  *  ③ việc của em — thụt dưới tên, nét cây, tên 15 / 500 KHÔNG lặp tên em, phụ 13, hạn cột cố định, một nút.
  * Chấm điểm chia vạch hạn, vạch sau tuần này gập sẵn (T14) · bài Speaking chấm chéo là nhóm riêng, không đếm việc (T03).
@@ -215,8 +215,8 @@ function MucNhom({ items, khacCua, ...dong }: ChungDong & { items: readonly Work
                 style={{ background: 'var(--surface-2)', borderColor: 'var(--line-strong)' }}>{chuDau(m.ten)}</span>
               <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5">
                 <Link to={`/hoc-vien/${sid}`} title={t('Mở hồ sơ {ten}', { ten: m.ten })}
-                  className="whitespace-nowrap text-[15px] font-semibold leading-snug text-[color:var(--text)] no-underline hover:text-[color:var(--accent)]">
-                  {m.ten}<span aria-hidden className="text-[13px] font-normal text-faint"> ↗</span>
+                  className="whitespace-nowrap text-[15px] font-semibold leading-snug text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline">
+                  {m.ten}
                 </Link>
                 {m.lop && <span className="whitespace-nowrap text-[13px] text-dim">{m.lop}</span>}
                 {sos > 0 && <ChipSos muc={sos as 1 | 2 | 3} />}

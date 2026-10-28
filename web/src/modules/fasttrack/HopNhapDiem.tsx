@@ -24,7 +24,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom';
 import {
   CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi,
-  chuDoiVang, demNguocSuaDau, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type NguoiChon,
+  chuDoiVang, demNguocSuaDau, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -280,6 +280,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const loiRef = useRef<HTMLDivElement>(null);
   const nutHetRef = useRef<HTMLButtonElement>(null);
 
+  const bangQd = useApi<BangQuyDoi>('/ref/bang-quy-doi').data;
   /* Lệnh điểm từ chữ đang gõ — cùng hàm với mọi nơi nhập. `o` = ô sai (0..3 tiêu chí / ô một, 4 = Band) để tô đỏ. */
   const diem = (() => {
     if (motO) {
@@ -294,8 +295,9 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       const p = rawPatchFrom(tho, cell) as SavePatch | null;
       if (!p) return { doi, patch: null, loi: LOI_SO_CAU, o: 0, preview: null };
       if (p.rawScore != null) {
-        const b = bandTuSoCau(cell.skill as 'listening' | 'reading', p.rawScore);
-        return b === null ? { doi, patch: null, loi: LOI_SO_CAU_KHOANG, o: 0, preview: null } : { doi, patch: p, loi: null, o: null, preview: b };
+        /* BAND-QUY-DOI: xem trước theo bảng ĐANG DÙNG (cùng hàm máy chủ); bảng chưa tải xong thì chưa hiện band — máy chủ vẫn tính khi lưu. */
+        if (!Number.isInteger(p.rawScore) || p.rawScore < 0 || p.rawScore > 40) return { doi, patch: null, loi: LOI_SO_CAU_KHOANG, o: 0, preview: null };
+        return { doi, patch: p, loi: null, o: null, preview: bangQd ? bandTuSoCau(bangQd, cell.skill as 'listening' | 'reading', p.rawScore) : null };
       }
       return { doi, patch: p, loi: null, o: null, preview: p.band ?? null };
     }

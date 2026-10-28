@@ -1,30 +1,22 @@
 import {
-  ASSESSED_SKILLS, CRITERIA_SKILLS, DAU_KHONG_HOC, ENTRY_SKILLS, RAW_SCORE_SKILLS, boMonDaBo, expectationDelta, kyNangDaBo, laDauBoMon, roundToHalf,
-  type AssessedSkill, type EntrySkill, type SosLevel,
+  ASSESSED_SKILLS, BANG_QUY_DOI_GOC, CRITERIA_SKILLS, DAU_KHONG_HOC, ENTRY_SKILLS, RAW_SCORE_SKILLS, boMonDaBo, expectationDelta, kyNangDaBo, laDauBoMon, roundToHalf,
+  bandTuSoCau, type AssessedSkill, type BangQuyDoi, type EntrySkill, type SosLevel,
 } from '../../../shared/domain/index.ts';
+import { bangHienHanh } from '../platform/bangQuyDoi.ts';
 
-/**
- * Bảng quy đổi số câu đúng → band, lấy nguyên từ sheet 'Bang quy doi' của trung tâm.
- * Index là số câu đúng 0–40. Không thay bằng bảng IELTS phổ biến trên mạng.
- */
-export const LISTENING_BY_RAW = [
-  0, 0, 1, 2.5, 2.5, 3, 3, 3.5, 3.5, 3.5, 4, 4, 4, 4.5, 4.5, 4.5, 5, 5, 5, 5,
-  5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
-];
-export const READING_BY_RAW = [
-  0, 0, 1, 1.5, 2.5, 2.5, 3, 3, 3.5, 3.5, 4, 4, 4, 4.5, 4.5, 5, 5, 5, 5, 5.5,
-  5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
-];
+/** Bảng GỐC (seed / phép kiểm dò số câu theo band). Bảng ĐANG DÙNG ở DB — `bangHienHanh()` (BAND-QUY-DOI). */
+export const { listening: LISTENING_BY_RAW, reading: READING_BY_RAW } = BANG_QUY_DOI_GOC;
 
 export class ScoreError extends Error {}
 
 /** Làm tròn về mức 0.5 — luật ở `shared/domain/tongKetLoTrinh.ts` (PR-TK dùng chung); giữ tên cũ ở đây. */
 export { roundToHalf };
 
-export function bandFromRaw(skill: 'listening' | 'reading', raw: number): number {
+/** Band của số câu đúng theo bảng quy đổi ĐANG DÙNG (cùng hàm `bandTuSoCau` với web). */
+export function bandFromRaw(skill: 'listening' | 'reading', raw: number, bang: BangQuyDoi = bangHienHanh()): number {
   if (!Number.isInteger(raw)) throw new ScoreError('Số câu đúng phải là số nguyên.');
   if (raw < 0 || raw > 40) throw new ScoreError('Số câu đúng phải nằm trong khoảng 0–40.');
-  return skill === 'listening' ? LISTENING_BY_RAW[raw] : READING_BY_RAW[raw];
+  return bandTuSoCau(bang, skill, raw) as number;
 }
 
 /** Band của một kỹ năng chấm theo tiêu chí = trung bình 4 tiêu chí, làm tròn về 0.5. */
