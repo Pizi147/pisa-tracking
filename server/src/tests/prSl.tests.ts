@@ -303,7 +303,7 @@ export async function runPrSlTests(t: YThucTestKit) {
       /* OV-14a (F05): panel chia lô bằng `chiaLoSuaCaLop` — không có em đổi email cho nhau thì vẫn (8, 8, 4). */
       const lo2 = d.chiaLoSuaCaLop(Array.from({ length: 20 }, (_, i) => ({ studentId: i })), () => null).lo;
       assert(JSON.stringify(lo2.map((x: unknown[]) => x.length)) === '[8,8,4]', JSON.stringify(lo2));
-      assert(pn.includes('chiaLoSuaCaLop(payload,') && pn.includes('em chưa lưu') && pn.includes("t('Đang lưu {xong}/{tong}…'"),
+      assert(pn.includes('chiaLoSuaCaLop(guiDuoc,') && pn.includes('em chưa lưu') && pn.includes("t('Đang lưu {xong}/{tong}…'"),
         'panel gửi theo lô, báo lưu dở ở chân panel, hiện tiến độ');
     });
 

@@ -136,6 +136,9 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
 
   const vanDe = (sid: number, k: Cot) => xem?.rows.find((x) => x.studentId === sid)?.issues.filter((i) => i.field === k) ?? [];
   const soLoi = xem ? xem.rows.reduce((n, x) => n + x.issues.filter((i) => i.muc === 'loi').length, 0) : 0;
+  /* RA-LUONG-15 (lô lỗi một phần): em có ô lỗi ở lại lưới để sửa, các em khác vẫn lưu được — một ô lỗi không chặn cả bảng. */
+  const emLoi = new Set((xem?.rows ?? []).filter((x) => x.issues.some((i) => i.muc === 'loi')).map((x) => x.studentId));
+  const guiDuoc = payload.filter((r) => !emLoi.has(r.studentId));
   const loiLyDo = doiTarget && !lyDo.trim() ? t('Ghi lý do đổi Target.') : null;   // T7 (PR-MTa): không tối thiểu ký tự
   const loiForm = loiLyDo ? [{ khoa: 'ly-do-target', nhan: t('Lý do đổi Target'), lyDo: loiLyDo }] : [];
 
@@ -149,13 +152,13 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const dong = () => { if (busy) return; if (soEm) setHoiDong(true); else onClose(); };
   const luu = async () => {
     lf.bam();
-    if (busy || !soEm || soLoi || !xem || loiLyDo) return;
+    if (busy || !guiDuoc.length || !xem || loiLyDo) return;
     setBusy(true);
     setLuuDo(null);
     /* F05: em đổi email cho nhau chung một lô (một giao dịch) — xem trước đã báo nhóm quá một lô. */
-    const lo = chiaLoSuaCaLop(payload, (sid) => (luuRoi[sid]?.email ?? goc.get(sid)?.email) || null).lo;
+    const lo = chiaLoSuaCaLop(guiDuoc, (sid) => (luuRoi[sid]?.email ?? goc.get(sid)?.email) || null).lo;
     let xong = 0, daSua = 0;
-    setTienDo({ xong, tong: payload.length });
+    setTienDo({ xong, tong: guiDuoc.length });
     try {
       for (const [i, rows] of lo.entries()) {
         const r = await api.post<{ daSua: number }>(`/classes/${classId}/sua-ca-lop`, {
@@ -163,7 +166,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
         });
         daSua += r.daSua;
         xong += rows.length;
-        setTienDo({ xong, tong: payload.length });
+        setTienDo({ xong, tong: guiDuoc.length });
         /* Lô này đã ghi: giá trị vừa gửi thành gốc mới → ô thôi tô nhấn (ô gõ thêm trong lúc lưu vẫn còn là "đã sửa"). */
         const ghi = new Map(rows.map(({ studentId, ...o }) => [studentId, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v == null ? '' : String(v)]))]));
         setLuuRoi((m) => ({ ...m, ...Object.fromEntries([...ghi].map(([sid, o]) => [sid, { ...m[sid], ...o }])) }));
@@ -173,7 +176,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
       }
       toast.push('ok', t('Đã cập nhật {n} học viên', { n: daSua }));
       onDone();
-      onClose();
+      if (emLoi.size) { khoa.current = moiKhoa(); setLuuDo({ cau: t('Đã lưu {ok} em · {loi} em chưa lưu', { ok: xong, loi: emLoi.size }), lyDo: t('{n} ô cần sửa', { n: soLoi }) }); }
+      else onClose();
     } catch (e: any) {
       /* Dừng ở lô lỗi; em chưa lưu giữ nguyên để bấm Lưu lại (khoá mới = lần lưu mới). Chưa lưu em nào → báo như cũ. */
       khoa.current = moiKhoa();
@@ -199,8 +203,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
           })() : null,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}
-            disabled={busy || !soEm || soLoi > 0 || !xem}>
-            {busy ? (tienDo ? t('Đang lưu {xong}/{tong}…', { xong: tienDo.xong, tong: tienDo.tong }) : t('Đang lưu…')) : soEm ? t('Lưu {n} em', { n: soEm }) : t('Lưu')}
+            disabled={busy || !guiDuoc.length || !xem}>
+            {busy ? (tienDo ? t('Đang lưu {xong}/{tong}…', { xong: tienDo.xong, tong: tienDo.tong }) : t('Đang lưu…')) : guiDuoc.length ? t('Lưu {n} em', { n: guiDuoc.length }) : t('Lưu')}
           </button>
         ),
       }}>
