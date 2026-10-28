@@ -3,7 +3,7 @@ import { api, invalidate } from '../../../lib/api.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../../ui/ui.tsx';
 import { HangNhom } from '../../../ui/HangNhom.tsx';
-import { Nhan } from '../../../ui/Nhan.tsx';
+import { CHIP_TRON } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { LuoiKeHoach } from './LuoiKeHoach.tsx';
 import type { LopKH, LuoiFTData, LuoiThuongData } from './kieu.ts';
@@ -43,7 +43,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
   ) : null;
 
   return (
-    <div className="overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
+    <div className="overflow-hidden rounded-lg border bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
       <table className="w-full">
         <tbody>
           <HangNhom mo={mo} onMo={onToggle} nhan={`lớp ${lop.code}`}
@@ -51,7 +51,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
               <span className="block min-w-0">
                 <span className="flex flex-wrap items-baseline gap-x-2">
                   <span>{lop.code}</span>
-                  {lop.chiXem && <Nhan tone="muted">{t('Chỉ xem')}</Nhan>}
+                  {lop.chiXem && <span className={`${CHIP_TRON} !border-[var(--line-strong)] bg-[var(--surface)] text-dim`}>{t('Chỉ xem')}</span>}
                   <span className="text-xs font-normal text-slate-400">{[lop.chiNhanh, kyHieuLop(lop.chuongTrinh, null) ?? lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
                 </span>
                 <span className="block truncate text-xs font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>
