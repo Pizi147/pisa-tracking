@@ -138,14 +138,16 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     lf.bam();
     if (busy || loiLo.length > 0) return;
     setBusy(true);
+    /* RA-LUONG-13: chụp đúng các dòng đã gửi — trong lúc chờ người dùng có thể sửa / dán đè lưới; bỏ dòng theo ĐỐI TƯỢNG đã gửi, không theo chỉ số lưới hiện tại. */
+    const gui = rows;
     try {
       const r = await api.post<KetQua>('/intake/commit', {
-        rows, classId, defaultStartWeek: tuanChung || null, idempotencyKey: idempotencyKey.current,
+        rows: gui, classId, defaultStartWeek: tuanChung || null, idempotencyKey: idempotencyKey.current,
       });
       /* K2-21: panel Ở LẠI — bỏ các dòng đã thêm, giữ dòng còn lỗi để sửa rồi thêm tiếp (khoá mới, không trả lại kết quả cũ). */
       idempotencyKey.current = moiKhoa();
-      const daThem = new Set(r.hangDaThem);
-      doiLuoi((rs) => { const con = rs.filter((_, j) => !daThem.has(j + 1)); return con.length ? con : [{}]; });
+      const daThem = new Set(gui.filter((_, j) => r.hangDaThem.includes(j + 1)));
+      doiLuoi((rs) => { const con = rs.filter((x) => !daThem.has(x)); return con.length ? con : [{}]; });
       setMoDong(null);
       setKetQua(r);
       if (r.added > 0) { onDone(); setDaDan(null); }

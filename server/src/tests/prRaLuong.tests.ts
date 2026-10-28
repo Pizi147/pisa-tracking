@@ -109,6 +109,11 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     assert(/daSua: \(!soOk \|\| soLoi > 0\)/.test(nguon), 'còn em chưa lưu mà panel không coi là đã sửa');
   });
 
+  check('RA-LUONG-13 · Thêm học viên: bỏ dòng đã thêm theo dòng ĐÃ GỬI (đối tượng), không theo chỉ số lưới lúc trả về — sửa / dán đè trong lúc chờ không mất dòng', () => {
+    const nguon = fsMod.readFileSync('web/src/modules/students/IntakePanel.tsx', 'utf8') as string;
+    assert(/const gui = rows;/.test(nguon) && /rows: gui,/.test(nguon) && /rs\.filter\(\(x\) => !daThem\.has\(x\)\)/.test(nguon), 'commit chưa chụp dòng đã gửi');
+  });
+
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {
     const nguon = fsMod.readFileSync('web/src/modules/students/ChuyenLopPanel.tsx', 'utf8') as string;
     const huy = nguon.slice(nguon.indexOf('const huyLenh = async'), nguon.indexOf('const nhanChinh'));
