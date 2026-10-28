@@ -63,15 +63,20 @@ export type DongEm = {
   keTiep: { kind: string; nhan: string };
   soMo: number; soBatBuoc: number; soMoi: number; han: string | null; hanXem: string | null; quaHanNgay: number | null;
   moiTuoi: number | null;
-  deXuat: { nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null } | null;
-  xuLyGanNhat: { nhan: string; ngay: string } | null;
+  deXuat: { id: number; nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null } | null;
+  xuLyGanNhat: { id: number; nhan: string; ngay: string } | null;
   tuChoi: { nhan: string } | null;
+  /** UI-Y-THUC-LOP — khớp `DongEm` ở `server/src/yThuc/board.ts`. */
+  viPhamCho: { id: number; ngay: string; ten: string; trangThai: TrangThaiVp }[];
+  thuHoi: { id: number; nhan: string; cho: boolean } | null;
+  baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean } | null;
 };
 
 export type BangYThucLop = {
   classId: number; classCode: string; homNay: string; canManage: boolean; canRecord: boolean;
   nhom: Record<NhomEm, DongEm[]>;
   dongThoiGian: DongThoiGianYt[];
+  choBaoPh: DongEm[];
 };
 
 /** Làm mới mọi dữ liệu Ý thức sau một thao tác ghi (tab lớp, tab HV, việc, hộp, số liệu). */

@@ -325,6 +325,25 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(bd.nhom.bat_buoc[0].keTiep.nhan === 'Report 1' && bd.nhom.bat_buoc[0].soBatBuoc === 3 && bd.nhom.bat_buoc[0].han === addDays(TODAY, 3), JSON.stringify(bd.nhom.bat_buoc[0]));
     assert(bd.nhom.moi[0].moiTuoi === 0, 'tuổi vi phạm Mới');
   });
+  check('UI-Y-THUC-LOP · Hàng em: vi phạm chờ (cũ nhất trước) · Báo PH mới nhất · em sạch còn việc Báo PH mở vào "Chờ TVV báo PH"', () => {
+    const lop = lopMoi('MB FT YTLOP');
+    const b = hv(lop.id); ba3(b);
+    const d = hv(lop.id);
+    const bp = (sid: number, han: string, tt = 'mo') => conn.prepare(
+      `INSERT INTO viec_bao_ph (student_id, nhan, han, trang_thai, tao_luc) VALUES (?, 'Report 1', ?, ?, ?)`).run(sid, han, tt, `${TODAY}T03:00:00Z`);
+    bp(d, addDays(TODAY, -1));
+    const bd = board.bangYThucLop(lop.gvcn, lop.id) as any;
+    const hb = bd.nhom.bat_buoc[0];
+    assert(hb.viPhamCho.length === 3 && hb.viPhamCho.every((v: any) => v.trangThai === 'can_xu_ly' && v.ten)
+      && hb.viPhamCho[0].ngay <= hb.viPhamCho[2].ngay, JSON.stringify(hb.viPhamCho));
+    assert(hb.baoPh === null && hb.thuHoi === null, 'em chưa có xử lý: không Báo PH, không thu hồi');
+    assert(bd.choBaoPh.length === 1 && bd.choBaoPh[0].studentId === d, JSON.stringify(bd.choBaoPh));
+    const x = bd.choBaoPh[0].baoPh;
+    assert(x.trangThai === 'mo' && x.quaHan === true && x.nhanTrangThai === 'Chưa báo' && x.coTheGhi === false, `GVCN không ghi Báo PH: ${JSON.stringify(x)}`);
+    assert(board.bangYThucLop(P.mbManager, lop.id).choBaoPh[0].baoPh.coTheGhi === true, 'QL chi nhánh ghi được');
+    bp(d, TODAY, 'xong');
+    assert(board.bangYThucLop(lop.gvcn, lop.id).choBaoPh.length === 0, 'việc mới nhất đã xong → em sạch không còn hàng');
+  });
   check('YT4 (3) · Bảng lớp: dòng thời gian CẢ LỚP có tên em, mới nhất trước; không có thang', () => {
     const lop = lopMoi('MB FT YT4DT');
     const a = hv(lop.id); vpDb(a, addDays(TODAY, -5));
