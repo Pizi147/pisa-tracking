@@ -48,11 +48,13 @@ export type CoordTurn = {
 /** `gon`: hiện trước bấy nhiêu lượt (chưa xong xếp trước theo máy chủ), còn lại "Hiện thêm n HV". */
 const GON_TOI_DA = 4;
 
-export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcademic, onChanged, gon = false }: {
+export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcademic, onChanged, gon = false, xanh = false }: {
   turns: CoordTurn[] | null; loading?: boolean;
   cot1?: 'luot' | 'hocVien';
   /** UI-Y-THUC-LOP: hồ sơ lớp — mọi thẻ đóng sẵn (một dòng một em, bấm mở việc); mặc định thẻ chưa xong mở sẵn. */
   gon?: boolean;
+  /** UI-Y-THUC-HV: khung xanh nhạt (nhóm học thuật, mockup `.phoi-hop`) mà thẻ vẫn mở sẵn như cũ. */
+  xanh?: boolean;
   onGoAcademic?: () => void; onChanged?: () => void;
 }) {
   const [het, setHet] = useState(false);
@@ -65,7 +67,7 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
   return (
     <div className="space-y-2">
       {hien.map((t) => (
-        <TheSos key={t.attemptId} t={t} cot1={cot1} onGoAcademic={onGoAcademic} onChanged={onChanged} gon={gon} />
+        <TheSos key={t.attemptId} t={t} cot1={cot1} onGoAcademic={onGoAcademic} onChanged={onChanged} gon={gon} xanh={xanh} />
       ))}
       {gon && turns.length > GON_TOI_DA && (
         <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold appearance-none sm:min-h-0" onClick={() => setHet((v) => !v)}>
@@ -83,8 +85,8 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
  * Đầu thẻ là `div role="button"` chứ không phải `<button>`: cột 2 có một nút link bên trong (đổi sang tab Học thuật),
  * nút lồng trong nút là HTML sai. Nút link gọi `stopPropagation` để không làm thẻ mở/đóng.
  */
-export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = false }: {
-  t: CoordTurn; gon?: boolean;
+export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = false, xanh = false }: {
+  t: CoordTurn; gon?: boolean; xanh?: boolean;
   /** 'luot' (hồ sơ HV): cột 1 = `MT2 · SOS 2` + kỹ năng. 'hocVien' (hồ sơ lớp): cột 1 = tên HV + `MT2 · SOS 2 · kỹ năng`. */
   cot1?: 'luot' | 'hocVien';
   onGoAcademic?: () => void;
@@ -99,7 +101,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
 
   return (
     /* UI-Y-THUC-LOP (`gon`): mỗi em một khung xanh nhạt (mockup `.phoi-hop`) — nhóm học thuật, khác hẳn hàng vi phạm. */
-    <div className={gon ? 'rounded-[10px] border border-doing-line bg-doing-bg' : 'rounded-lg border'} style={gon ? undefined : { borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+    <div className={gon || xanh ? 'rounded-[10px] border border-doing-line bg-doing-bg' : 'rounded-lg border'} style={gon || xanh ? undefined : { borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
       <div role="button" tabIndex={0} aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}

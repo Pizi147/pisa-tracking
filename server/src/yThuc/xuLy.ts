@@ -25,7 +25,7 @@ import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { KEY_TAKEN_MESSAGE, canManageDiscipline, requireManageDiscipline, requireViewStudent } from './access.ts';
 import { chotHanXuLy, ghiPhanHoi, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { noteMeasureChange, violationsByIds, type ViolationView } from './violations.ts';
-import { dongThoiGian, type DongThoiGianYt } from './board.ts';
+import { dongThoiGian, hangCuaEm, type DongEm, type DongThoiGianYt } from './board.ts';
 import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { dongViecTheoXuLy, moLaiViecTheoXuLy, sinhViecBaoPh } from './baoPhTvv.ts';
@@ -418,6 +418,8 @@ export type YThucHocVien = {
   dongThoiGian: DongThoiGianYt[];
   /** Dòng chữ cuối (K3 §4f): số vi phạm trong phạm vi, theo nhóm. */
   demCuoi: { tong: number; theoNhom: { nhom: string; so: number }[] };
+  /** UI-Y-THUC-HV: dòng trạng thái "Duyệt · thu hồi | Báo PH (TVV)" — cùng hàng em của bảng lớp (`hangCuaEm`). */
+  hang: Pick<DongEm, 'xuLyGanNhat' | 'tuChoi' | 'thuHoi' | 'baoPh'>;
 };
 
 export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chuoi' | 'tat-ca' } = {}): YThucHocVien {
@@ -453,6 +455,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     daBaoQl, phamVi, viPham,
     macDinh: macDinhTick(viPham.map((v) => ({ id: v.id, t: v.trangThai, occurredOn: v.occurredOn })), homNay),
     dongThoiGian: dongThoiGian([studentId], trang, { chiTrongChuoi: phamVi === 'chuoi' }),
+    hang: (({ xuLyGanNhat, tuChoi, thuHoi, baoPh }) => ({ xuLyGanNhat, tuChoi, thuHoi, baoPh }))(hangCuaEm(p, em, hv.full_name, hv.student_code, homNay)),
     demCuoi: {
       tong: viPham.length,
       theoNhom: [...demNhom.entries()].sort((a, b) => b[1] - a[1]).map(([k, so]) => ({ nhom: VIOLATION_CATEGORY_LABEL[k as ViolationCategory] ?? k, so })),
