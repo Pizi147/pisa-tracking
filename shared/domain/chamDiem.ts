@@ -190,9 +190,10 @@ export function kiemBangQuyDoi(b: unknown): LoiBangQuyDoi[] {
     const cot = (b as Partial<BangQuyDoi> | null)?.[skill];
     if (!Array.isArray(cot) || cot.length !== 41) { loi.push({ skill, cau: null, loi: `${ten}: cần đủ 41 ô (0–40 câu).` }); continue; }
     cot.forEach((v, n) => {
-      if (kiemBand(v) !== null) loi.push({ skill, cau: n, loi: `${ten} ${n} câu: band từ 0 đến 9, bậc 0.5.` });
+      if (v === null || v === undefined || Number.isNaN(v)) loi.push({ skill, cau: n, loi: `${ten} ${n} câu: chưa có band.` });
+      else if (kiemBand(v) !== null) loi.push({ skill, cau: n, loi: `${ten} ${n} câu: band từ 0 đến 9, bậc 0.5.` });
       else if (n > 0 && kiemBand(cot[n - 1]) === null && v < cot[n - 1]) {
-        loi.push({ skill, cau: n, loi: `${ten} ${n} câu: ${v} thấp hơn ${n - 1} câu (${cot[n - 1]}) — band không giảm khi số câu tăng.` });
+        loi.push({ skill, cau: n, loi: `${ten} ${n} câu: ${v.toFixed(1)} thấp hơn ${n - 1} câu (${cot[n - 1].toFixed(1)}) — band không giảm khi số câu tăng.` });
       }
     });
   }

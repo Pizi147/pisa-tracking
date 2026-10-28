@@ -47,12 +47,14 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
     assert(dm.kiemBangQuyDoi(GOC).length === 0, 'bảng gốc phải hợp lệ');
     const thieu = dm.kiemBangQuyDoi({ listening: GOC.listening.slice(0, 40), reading: GOC.reading });
     assert(thieu.length === 1 && thieu[0].skill === 'listening' && thieu[0].cau === null && /41 ô/.test(thieu[0].loi), `thiếu ô: ${JSON.stringify(thieu)}`);
+    const trong = dm.kiemBangQuyDoi({ listening: GOC.listening, reading: GOC.reading.map((v: number, n: number) => (n === 12 ? null : v)) });
+    assert(trong.length === 1 && trong[0].cau === 12 && trong[0].loi === 'Reading 12 câu: chưa có band.', `ô trống: ${JSON.stringify(trong)}`);
     const le = dm.kiemBangQuyDoi({ listening: GOC.listening, reading: GOC.reading.map((v: number, n: number) => (n === 12 ? 4.3 : v)) });
     assert(le.length === 1 && le[0].skill === 'reading' && le[0].cau === 12 && /Reading 12 câu/.test(le[0].loi), `bậc 0.5: ${JSON.stringify(le)}`);
     const giam = dm.kiemBangQuyDoi({ listening: GOC.listening.map((v: number, n: number) => (n === 20 ? 4.5 : v)), reading: GOC.reading });
-    assert(giam.length === 1 && giam[0].cau === 20 && giam[0].loi === 'Listening 20 câu: 4.5 thấp hơn 19 câu (5) — band không giảm khi số câu tăng.', `giảm: ${JSON.stringify(giam)}`);
+    assert(giam.length === 1 && giam[0].cau === 20 && giam[0].loi === 'Listening 20 câu: 4.5 thấp hơn 19 câu (5.0) — band không giảm khi số câu tăng.', `giảm: ${JSON.stringify(giam)}`);
     const giam4 = dm.kiemBangQuyDoi({ listening: GOC.listening.map((v: number, n: number) => (n === 35 ? 7 : v)), reading: GOC.reading });
-    assert(giam4.length === 1 && giam4[0].cau === 35 && /Listening 35 câu: 7 thấp hơn 34 câu \(7.5\)/.test(giam4[0].loi), `giảm ở 35: ${JSON.stringify(giam4)}`);
+    assert(giam4.length === 1 && giam4[0].cau === 35 && /Listening 35 câu: 7.0 thấp hơn 34 câu \(7.5\)/.test(giam4[0].loi), `giảm ở 35: ${JSON.stringify(giam4)}`);
     const e = loi(() => thu(() => bqd.luuBangQuyDoi(P.admin, { listening: GOC.listening.map((v: number, n: number) => (n === 35 ? 7 : v)), reading: GOC.reading })));
     assert(e?.status === 400 && /Listening 35 câu/.test(e.message) && e.details?.loi?.[0]?.cau === 35, `máy chủ chặn bảng giảm: ${e?.status} ${e?.message}`);
   });
