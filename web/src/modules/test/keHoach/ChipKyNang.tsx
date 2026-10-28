@@ -57,39 +57,60 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
   /* Chủ SP 28/10: khung ô MT rõ hẳn — viền mảnh + nền tối hơn thẻ (`--bg`); ô trễ chấm vẫn nền đỏ nhạt (VACH đè). */
   /* `O_LUOI` có `border-0 bg-transparent` (dùng chung) — khung ô MT phải `!`; ô trễ: nền + viền đỏ nhạt thay nền tối (một lớp nền, không chồng). */
   const tre = o.tt?.loai === 'tre';
-  const lop = `${O_LUOI} rounded-md !border ${tre ? '!border-bad-line !bg-bad-bg' : '!border-[var(--line-strong)] !bg-[var(--bg)] hover:!bg-[var(--nut-hover)]'} ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
+  const lop = `${O_LUOI} !px-1.5 rounded-md !border ${tre ? '!border-bad-line !bg-bad-bg' : '!border-[var(--line-strong)] !bg-[var(--bg)] hover:!bg-[var(--nut-hover)]'} ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
   /* "xếp lại S" / "chờ duyệt" không thuộc dòng tuần nào (môn đang vắng) — đặt ở dòng đầu khi dòng đó chưa có chữ. */
   const ttO = o.tt?.loai === 'vang' ? o.tt : null;
   const noi = (
     <>
       {o.dong.map((d, i) => {
         const mo = d.tt?.loai === 'xep';   // tuần tương lai: tuần mờ
-        /* PTA 28/10 — một luật: môn trễ = ô viền đỏ, chữ "trễ chấm" MỘT lần ở cuối dòng tuần (kể cả chỉ một môn trễ). */
+        /* PTA 28/10 — một luật: môn trễ = ô viền đỏ, chữ "trễ chấm" MỘT lần (dòng trạng thái của tuần, kể cả chỉ một môn trễ). */
         const coTre = d.mon.some((m) => m.loai === 'tre');
         const tt = coTre ? { chu: t('trễ chấm'), loai: 'tre' as const } : i === 0 && ttO && !d.tt ? ttO : d.tt;
+        const kqDong = i === 0 ? kq : null;
+        const ttHien = tt && tt.loai !== 'xong' ? tt : null;
+        const coMon = o.hienMon && d.mon.length > 0;
+        const ketQuaChu = kqDong ? (
+          <span className={`whitespace-nowrap text-[13px] font-semibold tabular-nums ${kqDong.dat === false ? 'text-bad' : 'text-ok'}`}>
+            {kqDong.dat === null ? '' : kqDong.dat ? '✓ ' : '✗ '}{fmtBand(kqDong.ovr)}
+          </span>
+        ) : ttHien && <span className={`whitespace-nowrap text-xs font-semibold ${MAU_TT[ttHien.loai]}`}>{ttHien.chu}</span>;
+        /*
+         * PTA 28/10 — cấu trúc cố định (cột tuần 54 px): DÒNG 1 = tuần + đủ ô môn của tuần (một dòng, không rơi lẻ) · DÒNG 2 (thụt dưới cột
+         * môn) = tuần khoá lớp thường + điểm tổng ✓/✗ hoặc chữ trạng thái. Tuần chưa có hàng môn (MT tương lai) → trạng thái ngay dòng 1.
+         */
         return (
-          /* PTA 28/10: cột tuần 58 px cố định; môn / chữ không đủ chỗ thì xuống dòng THỤT dưới cột môn (không nới cột, không cuộn ngang). */
-          <span key={d.tuanDu ?? `chua-${i}`} className="grid min-w-0 grid-cols-[58px_minmax(0,1fr)] items-start gap-x-1">
-            <span className={`whitespace-nowrap text-sm leading-5 tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{d.tuan ?? '—'}</span>
-            <span className="flex min-h-5 min-w-0 flex-wrap items-center gap-x-1 gap-y-[3px]">
-            {i === 0 && nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
-            {o.hienMon && d.mon.map((m) => (
-              <span key={m.k} title={`${m.ten} · ${CHU_MON[m.loai]}`}
-                className={`inline-flex h-5 items-center whitespace-nowrap rounded border px-[3px] text-xs font-semibold leading-none tabular-nums ${O_MON[m.loai]}`}>
-                {m.ten}{m.loai === 'co' ? '✓' : ''}
+          <span key={d.tuanDu ?? `chua-${i}`} className="grid min-w-0 grid-cols-[54px_minmax(0,1fr)] items-center gap-x-1 gap-y-[2px]">
+            <span className={`whitespace-nowrap text-[13px] leading-5 tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{d.tuan ?? '—'}</span>
+            {coMon ? (
+              <span className="flex min-h-5 min-w-0 flex-wrap items-center gap-[2px]">
+                {d.mon.map((m) => (
+                  <span key={m.k} title={`${m.ten} · ${CHU_MON[m.loai]}`}
+                    className={`inline-flex h-5 items-center whitespace-nowrap rounded border px-[2px] text-[11px] font-semibold leading-none tabular-nums ${O_MON[m.loai]}`}>
+                    {m.ten}{m.loai === 'co' && <span className="text-[9px]" aria-hidden>✓</span>}
+                  </span>
+                ))}
               </span>
-            ))}
-            {i === 0 && kq ? (
-              <span className={`whitespace-nowrap text-[13px] font-semibold tabular-nums ${kq.dat === false ? 'text-bad' : 'text-ok'}`}>
-                {kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}{fmtBand(kq.ovr)}
+            ) : (
+              <span className="flex min-h-5 min-w-0 items-center gap-x-1.5">
+                {i === 0 && nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
+                {ketQuaChu}
               </span>
-            ) : tt && tt.loai !== 'xong' && <span className={`whitespace-nowrap text-xs font-semibold ${MAU_TT[tt.loai]}`}>{tt.chu}</span>}
-            {i === 0 && o.khongThi && <span className="whitespace-nowrap text-xs text-faint">· {o.khongThi}</span>}
-            </span>
+            )}
+            {coMon && ((i === 0 && nhanKhoa) || ketQuaChu) && (
+              <span className="col-start-2 flex min-w-0 items-center gap-x-1.5">
+                {i === 0 && nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
+                {ketQuaChu}
+              </span>
+            )}
           </span>
         );
       })}
-      {o.vang && <span className="truncate text-xs tabular-nums text-faint" title={o.vang}>{o.vang}</span>}
+      {(o.vang || o.khongThi) && (
+        <span className="truncate text-xs tabular-nums text-faint" title={[o.khongThi, o.vang].filter(Boolean).join(' · ')}>
+          {[o.khongThi, o.vang].filter(Boolean).join(' · ')}
+        </span>
+      )}
     </>
   );
   return (

@@ -101,10 +101,12 @@ button.o:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 .o.xem { cursor: default; }
 a.o { text-decoration: none; }
 a.o:hover { background: var(--nut-hover); }
-.d1 { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: start; column-gap: 4px; }
-.d1r { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 4px; min-width: 0; }
+.d1 { display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: start; column-gap: 4px; }
+.d1r { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; min-height: 20px; }
+.d1s { grid-column: 2; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.d1 { row-gap: 2px; }
 /* chữ trạng thái / kết quả luôn bắt đầu cùng một cột (sau ô tuần rộng cố định), cùng cỡ 12 / 600 */
-.tuan { line-height: 20px; font: 600 14px var(--phong-so); letter-spacing: .01em; white-space: nowrap; }
+.tuan { line-height: 20px; font: 600 13px var(--phong-so); letter-spacing: .01em; white-space: nowrap; }
 .tuan.mo { color: var(--text-dim); font-weight: 500; }
 .kq { font: 600 13px var(--phong-so); white-space: nowrap; }
 .kq.dat { color: var(--ok); } .kq.chua { color: var(--bad); }
@@ -119,15 +121,16 @@ a.o:hover { background: var(--nut-hover); }
 .kn i.khong { color: var(--text-faint); text-decoration: line-through; }
 .ghi { font-size: 12px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ghi.can { color: var(--soon); }
-.mon { display: inline-flex; align-items: center; height: 20px; padding: 0 3px; border: 1px solid var(--line-strong); border-radius: 4px;
-  font: 600 12px/1 var(--phong-so); font-style: normal; color: var(--text); white-space: nowrap; }
+.mon { display: inline-flex; align-items: center; height: 20px; padding: 0 2px; border: 1px solid var(--line-strong); border-radius: 4px;
+  font: 600 11px/1 var(--phong-so); font-style: normal; color: var(--text); white-space: nowrap; }
 .mon.co { border-color: var(--ok-line); color: var(--ok); }
+.mon .dau { font-size: 9px; }
 .mon.tre { border-color: var(--bad-line); color: var(--bad); }
 .tt.xep { color: var(--text-faint); font-weight: 500; }
 .ghi-inl { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
 /* Chủ SP 28/10: khung ô MT rõ hẳn — viền mảnh + nền tối hơn thẻ (--bg); ô trễ chấm giữ nền đỏ nhạt */
 .luoi td:has(> .o:not(.xep)) { padding: 3px; }
-.luoi td > .o:not(.xep) { background: var(--bg); border: 1px solid var(--line-strong); border-radius: 6px; }
+.luoi td > .o:not(.xep) { padding-left: 6px; padding-right: 6px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: 6px; }
 .luoi td > .o.tre { background: var(--bad-bg); border-color: var(--bad-line); }
 /* trạng thái cần chú ý */
 .o.nay { box-shadow: inset 3px 0 0 var(--doing); }
@@ -200,12 +203,12 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
 <div class="ct">
   <h2>Ý chính (ngoài giao diện) — phương án chủ SP chốt 28/10</h2>
   <ul>
-    <li><b>Ô MT chia dòng theo tuần thi:</b> tuần đậm (cột 58 px) + các môn thi tuần đó, mỗi môn một ô nhỏ có khung: <i class="mon co">L✓</i> có điểm · <i class="mon">L</i> chưa có điểm · <i class="mon tre">S</i> trễ chấm (ô viền đỏ; chữ "trễ chấm" MỘT lần cuối dòng tuần, kể cả chỉ một môn trễ). Môn thi tuần khác → dòng riêng với tuần của nó.</li>
+    <li><b>Ô MT chia dòng theo tuần thi:</b> tuần đậm (cột 58 px) + các môn thi tuần đó, mỗi môn một ô nhỏ có khung: <i class="mon co">L<span class="dau">✓</span></i> có điểm · <i class="mon">L</i> chưa có điểm · <i class="mon tre">S</i> trễ chấm (ô viền đỏ; chữ "trễ chấm" MỘT lần cuối dòng tuần, kể cả chỉ một môn trễ). Môn thi tuần khác → dòng riêng với tuần của nó.</li>
     <li><b>Trạng thái dòng:</b> đã xếp (mờ) · tuần này · chờ chấm · xếp lại S. Điểm tổng <b>✓ 6.0 / ✗ 4.5</b> sau các môn.</li>
     <li><b>Vắng</b> chữ thường, mờ, dòng cuối: <span class="so">vắng S · W2 OCT</span> · <span class="so">vắng L R W S · W2 OCT</span> — LUÔN ghi, kể cả đã đủ điểm. Đợt chỉ thi vài môn: <span class="so">· không thi W S</span>.</li>
     <li><b>MT tương lai</b> (chưa tới tuần): chỉ tuần + "đã xếp", không hàng môn. Chỉ MT kế tiếp có "Xếp MTn"; MT sau "–".</li>
     <li><b>Khung ô MT rõ:</b> viền + nền tối hơn thẻ; trễ chấm nền + viền đỏ nhạt; vạch trái: tuần này xanh · trễ đỏ · xếp lại vàng.</li>
-    <li>Cột MT 180 px (lớp thường 190): một dòng tuần không đủ chỗ thì môn xuống dòng thụt dưới cột môn — không cuộn ngang ở 1440. Năm ở tooltip.</li>
+    <li><b>Cấu trúc cố định</b> (PTA 28/10): dòng 1 = tuần + đủ ô môn của tuần (không để ô môn rơi lẻ) · dòng 2 (dưới cột môn) = điểm tổng ✓/✗ hoặc chữ trạng thái · dòng cuối = vắng / không thi. Cột MT 180 px (lớp thường 250) — không cuộn ngang ở 1440. Năm ở tooltip.</li>
   </ul>
 </div>
 
@@ -237,7 +240,7 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         <tbody>
         <tr>
           <td class="ten"><a href="#">Nguyễn Minh Anh</a></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W1 OCT</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq dat">✓ 6.0</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W1 OCT</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq dat">✓ 6.0</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W1 DEC</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W4 JAN</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W2 MAR</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
@@ -248,10 +251,10 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         </tr>
         <tr>
           <td class="ten"><a href="#">Trần Bảo Ngọc</a></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W1 AUG</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 5.0</span></span></span></button></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W4 AUG</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 5.0</span></span></span></button></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W3 SEP</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 4.5</span></span></span></button></td>
-          <td><button class="o nay"><span class="d1"><span class="tuan">W5 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i><span class="tt nay">tuần này</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W1 AUG</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 5.0</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W4 AUG</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 5.0</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W3 SEP</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 4.5</span></span></span></button></td>
+          <td><button class="o nay"><span class="d1"><span class="tuan">W5 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i></span><span class="d1s"><span class="tt nay">tuần này</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W4 NOV</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><button class="o xep"><span>Xếp MT6</span></button></td>
           <td><span class="trong">–</span></td>
@@ -259,7 +262,7 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         </tr>
         <tr>
           <td class="ten"><a href="#">Lê Gia Huy</a><span class="phu">vào muộn</span></td>
-          <td><button class="o nay"><span class="d1"><span class="tuan">W5 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i><span class="tt nay">tuần này</span></span></span><span class="ghi">✎ Thi chiều thứ Bảy</span></button></td>
+          <td><button class="o nay"><span class="d1"><span class="tuan">W5 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i></span><span class="d1s"><span class="tt nay">tuần này</span></span></span><span class="ghi">✎ Thi chiều thứ Bảy</span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W2 DEC</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W4 JAN</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W2 MAR</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
@@ -270,8 +273,8 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         </tr>
         <tr>
           <td class="ten"><a href="#">Phạm Thu Hà</a></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W2 SEP</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 4.5</span></span></span></button></td>
-          <td><button class="o tre"><span class="d1"><span class="tuan">W3 OCT</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon tre">S</i><span class="tt tre">trễ chấm</span></span></span><span class="ghi so">vắng L R W S · W2 OCT</span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W2 SEP</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 4.5</span></span></span></button></td>
+          <td><button class="o tre"><span class="d1"><span class="tuan">W3 OCT</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon tre">S</i></span><span class="d1s"><span class="tt tre">trễ chấm</span></span></span><span class="ghi so">vắng L R W S · W2 OCT</span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W2 NOV</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W2 DEC</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><button class="o xep"><span>Xếp MT5</span></button></td>
@@ -281,9 +284,9 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         </tr>
         <tr>
           <td class="ten"><a href="#">Đỗ Quang Vinh</a></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W2 SEP</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq dat">✓ 5.5</span></span></span></button></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W1 OCT</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><span class="ghi-inl">· không thi W S</span></span></span></button></td>
-          <td><button class="o"><span class="d1"><span class="tuan mo">W2 DEC</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><span class="tt xep">đã xếp</span></span></span><span class="d1"><span class="tuan mo">W3 DEC</span><span class="d1r"><i class="mon">S</i><span class="tt xep">đã xếp</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W2 SEP</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq dat">✓ 5.5</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W1 OCT</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i></span></span><span class="ghi so">không thi W S</span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan mo">W2 DEC</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i></span><span class="d1s"><span class="tt xep">đã xếp</span></span></span><span class="d1"><span class="tuan mo">W3 DEC</span><span class="d1r"><i class="mon">S</i></span><span class="d1s"><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><button class="o xep"><span>Xếp MT4</span></button></td>
           <td><span class="trong">–</span></td>
           <td><span class="trong">–</span></td>
@@ -293,8 +296,8 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         <tr>
           <td class="ten"><a href="#">Võ Khánh Linh</a></td>
           <td><button class="o huy"><span class="d1"><span class="tt cho">đã huỷ</span></span></button></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W2 OCT</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq dat">✓ 5.5</span></span></span><span class="ghi so">vắng S · W1 OCT</span></button></td>
-          <td><button class="o vang"><span class="d1"><span class="tuan">W4 OCT</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><span class="tt vang">xếp lại S</span></span></span><span class="ghi so">vắng S · W4 OCT</span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W2 OCT</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq dat">✓ 5.5</span></span></span><span class="ghi so">vắng S · W1 OCT</span></button></td>
+          <td><button class="o vang"><span class="d1"><span class="tuan">W4 OCT</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i></span><span class="d1s"><span class="tt vang">xếp lại S</span></span></span><span class="ghi so">vắng S · W4 OCT</span></button></td>
           <td><span class="trong">–</span></td>
           <td><span class="trong">–</span></td>
           <td><span class="trong">–</span></td>
@@ -303,8 +306,8 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         </tr>
         <tr>
           <td class="ten"><a href="#">Hoàng Đức Tâm</a></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W1 SEP</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq dat">✓ 6.5</span></span></span></button></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W4 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i><span class="tt cho">chờ chấm</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W1 SEP</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq dat">✓ 6.5</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W4 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i></span><span class="d1s"><span class="tt cho">chờ chấm</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W2 NOV</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span><span class="ghi so">vắng W · W1 NOV</span></button></td>
           <td><button class="o xep"><span>Xếp MT4</span></button></td>
           <td><span class="trong">–</span></td>
@@ -348,18 +351,18 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         <tbody>
         <tr>
           <td class="ten"><a href="#">Trần Bảo Ngọc</a></td>
-          <td><a class="o" href="#"><span class="d1"><span class="tuan">W1 AUG</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 5.0</span></span></span></a></td>
-          <td><a class="o" href="#"><span class="d1"><span class="tuan">W4 AUG</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 5.0</span></span></span></a></td>
-          <td><a class="o" href="#"><span class="d1"><span class="tuan">W3 SEP</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 4.5</span></span></span></a></td>
-          <td><a class="o nay" href="#"><span class="d1"><span class="tuan">W5 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i><span class="tt nay">tuần này</span></span></span></a></td>
+          <td><a class="o" href="#"><span class="d1"><span class="tuan">W1 AUG</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 5.0</span></span></span></a></td>
+          <td><a class="o" href="#"><span class="d1"><span class="tuan">W4 AUG</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 5.0</span></span></span></a></td>
+          <td><a class="o" href="#"><span class="d1"><span class="tuan">W3 SEP</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 4.5</span></span></span></a></td>
+          <td><a class="o nay" href="#"><span class="d1"><span class="tuan">W5 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i></span><span class="d1s"><span class="tt nay">tuần này</span></span></span></a></td>
           <td><a class="o" href="#"><span class="d1"><span class="tuan mo">W4 NOV</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></a></td>
           <td><span class="trong chua" title="MT6 chưa xếp — Quản lý xếp">chưa xếp</span></td>
           <td><span class="trong">–</span></td>
         </tr>
         <tr>
           <td class="ten"><a href="#">Phạm Thu Hà</a></td>
-          <td><a class="o" href="#"><span class="d1"><span class="tuan">W2 SEP</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 4.5</span></span></span></a></td>
-          <td><a class="o tre" href="#"><span class="d1"><span class="tuan">W3 OCT</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon tre">S</i><span class="tt tre">trễ chấm</span></span></span><span class="ghi so">vắng L R W S · W2 OCT</span></a></td>
+          <td><a class="o" href="#"><span class="d1"><span class="tuan">W2 SEP</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 4.5</span></span></span></a></td>
+          <td><a class="o tre" href="#"><span class="d1"><span class="tuan">W3 OCT</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon tre">S</i></span><span class="d1s"><span class="tt tre">trễ chấm</span></span></span><span class="ghi so">vắng L R W S · W2 OCT</span></a></td>
           <td><a class="o" href="#"><span class="d1"><span class="tuan mo">W2 NOV</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></a></td>
           <td><a class="o" href="#"><span class="d1"><span class="tuan mo">W2 DEC</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></a></td>
           <td><span class="trong chua" title="MT5 chưa xếp — Quản lý xếp">chưa xếp</span></td>
@@ -381,18 +384,18 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
       <div class="lop-dau"><span>▾</span><b>CG-FOU2603</b><span class="phu">Cầu Giấy · FOU · <span class="so">12</span> HV</span><span class="tom">đang W6/8 · <button class="nut" style="min-height:26px;font-size:12px">Xếp cả lớp theo đề xuất</button></span></div>
       <div class="cuon">
       <table class="luoi" style="width:100%;min-width:650px">
-        <colgroup><col style="width:190px"><col span="3" style="width:190px"></colgroup>
+        <colgroup><col style="width:190px"><col span="3" style="width:250px"></colgroup>
         <thead><tr><th class="ten">Học viên</th><th style="height:44px">Progress Test<span class="phu" style="display:block;font-weight:400">đề xuất W4/8</span></th><th>Final Test<span class="phu" style="display:block;font-weight:400">đề xuất W8/8</span></th><th>MT0</th></tr></thead>
         <tbody>
         <tr>
           <td class="ten"><a href="#">Bùi Ngọc Mai</a></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W2 OCT</span><span class="d1r"><span class="phu">W4/8</span><i class="mon co">G+V✓</i><i class="mon co">R✓</i><i class="mon co">L✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W2 OCT</span><span class="d1r"><i class="mon co">G+V<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="phu">W4/8</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W2 NOV</span><span class="d1r"><span class="phu">W8/8</span><span class="tt xep">đã xếp</span></span></span></button></td>
           <td><span class="trong">–</span></td>
         </tr>
         <tr>
           <td class="ten"><a href="#">Ngô Thanh Bình</a></td>
-          <td><button class="o vang"><span class="d1"><span class="tuan">W3 OCT</span><span class="d1r"><span class="phu">W5/8</span><i class="mon co">G+V✓</i><i class="mon co">L✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="tt vang">xếp lại R</span></span></span><span class="ghi so">vắng R · W3 OCT</span></button></td>
+          <td><button class="o vang"><span class="d1"><span class="tuan">W3 OCT</span><span class="d1r"><i class="mon co">G+V<span class="dau">✓</span></i><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="phu">W5/8</span><span class="tt vang">xếp lại R</span></span></span><span class="ghi so">vắng R · W3 OCT</span></button></td>
           <td><button class="o xep" title="Xếp Final Test · đề xuất W2 NOV (W8/8)"><span>Xếp W2 NOV</span></button></td>
           <td><span class="trong">–</span></td>
         </tr>
@@ -461,8 +464,8 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
           <tbody>
         <tr>
           <td class="ten"><a href="#">Trần Bảo Ngọc</a></td>
-          <td><button class="o"><span class="d1"><span class="tuan">W3 SEP</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon co">S✓</i><span class="kq chua">✗ 4.5</span></span></span></button></td>
-          <td><button class="o nay"><span class="d1"><span class="tuan">W5 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i><span class="tt nay">tuần này</span></span></span></button></td>
+          <td><button class="o"><span class="d1"><span class="tuan">W3 SEP</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon co">S<span class="dau">✓</span></i></span><span class="d1s"><span class="kq chua">✗ 4.5</span></span></span></button></td>
+          <td><button class="o nay"><span class="d1"><span class="tuan">W5 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i></span><span class="d1s"><span class="tt nay">tuần này</span></span></span></button></td>
           <td><button class="o"><span class="d1"><span class="tuan mo">W4 NOV</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></button></td>
         </tr>
         <tr>
@@ -473,7 +476,7 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
         </tr>
         <tr>
           <td class="ten"><a href="#">Võ Khánh Linh</a></td>
-          <td><button class="o vang"><span class="d1"><span class="tuan">W4 OCT</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><span class="tt vang">xếp lại S</span></span></span><span class="ghi so">vắng S · W4 OCT</span></button></td>
+          <td><button class="o vang"><span class="d1"><span class="tuan">W4 OCT</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i></span><span class="d1s"><span class="tt vang">xếp lại S</span></span></span><span class="ghi so">vắng S · W4 OCT</span></button></td>
           <td><span class="trong">–</span></td>
           <td><span class="trong">–</span></td>
         </tr>
@@ -499,13 +502,13 @@ button.o.xep:hover { background: transparent; } button.o.xep:hover span { border
           <tbody>
         <tr>
           <td class="ten"><a href="#">Phạm Thu Hà</a></td>
-          <td><a class="o tre" href="#"><span class="d1"><span class="tuan">W3 OCT</span><span class="d1r"><i class="mon co">L✓</i><i class="mon co">R✓</i><i class="mon co">W✓</i><i class="mon tre">S</i><span class="tt tre">trễ chấm</span></span></span><span class="ghi so">vắng L R W S · W2 OCT</span></a></td>
+          <td><a class="o tre" href="#"><span class="d1"><span class="tuan">W3 OCT</span><span class="d1r"><i class="mon co">L<span class="dau">✓</span></i><i class="mon co">R<span class="dau">✓</span></i><i class="mon co">W<span class="dau">✓</span></i><i class="mon tre">S</i></span><span class="d1s"><span class="tt tre">trễ chấm</span></span></span><span class="ghi so">vắng L R W S · W2 OCT</span></a></td>
           <td><a class="o" href="#"><span class="d1"><span class="tuan mo">W2 NOV</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></a></td>
           <td><a class="o" href="#"><span class="d1"><span class="tuan mo">W2 DEC</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span></a></td>
         </tr>
         <tr>
           <td class="ten"><a href="#">Hoàng Đức Tâm</a></td>
-          <td><a class="o" href="#"><span class="d1"><span class="tuan">W4 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i><span class="tt cho">chờ chấm</span></span></span></a></td>
+          <td><a class="o" href="#"><span class="d1"><span class="tuan">W4 OCT</span><span class="d1r"><i class="mon">L</i><i class="mon">R</i><i class="mon">W</i><i class="mon">S</i></span><span class="d1s"><span class="tt cho">chờ chấm</span></span></span></a></td>
           <td><a class="o" href="#"><span class="d1"><span class="tuan mo">W2 NOV</span><span class="d1r"><span class="tt xep">đã xếp</span></span></span><span class="ghi so">vắng W · W1 NOV</span></a></td>
           <td><span class="trong">–</span></td>
         </tr>

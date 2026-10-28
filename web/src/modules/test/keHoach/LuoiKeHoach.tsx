@@ -64,7 +64,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
     }));
   }, [loai, data]);
 
-  const rongDot = loai === 'ft' ? 180 : 190;   // lớp thường: tuần + W4/8 + chữ trạng thái một dòng
+  const rongDot = loai === 'ft' ? 180 : 250;   // lớp thường: tuần + W4/8 + chữ trạng thái một dòng
   const dotDenLuot = useMemo(() => cots.findIndex((c) => (data.hang as Array<HangFT | HangThuong>).some((h) => (
     !emXongDot(dotCuaEm(loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot))
   ))), [cots, data, loai]);

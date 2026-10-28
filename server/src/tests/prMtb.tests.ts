@@ -677,11 +677,11 @@ export async function runPrMtbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 9 — lưới Kế hoạch Test FT dùng Ô MT (Q1 = A)
-  check('MTb (T9) · quét nguồn (KHT-GON, mockup #659): lưới vẽ ODotGon theo oGon (mở hộp, kyNangDau null); MT kế tiếp "Xếp MTn", MT sau nữa "–"; cột 180 / 190', () => {
+  check('MTb (T9) · quét nguồn (KHT-GON, mockup #659): lưới vẽ ODotGon theo oGon (mở hộp, kyNangDau null); MT kế tiếp "Xếp MTn", MT sau nữa "–"; cột 180 / 250', () => {
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/<ODotGon\b/.test(l) && /oGon\(dot\.kn, homNay, ct\)/.test(l), 'LuoiKeHoach chưa vẽ ODotGon theo oGon');
     assert(/kyNangDau: null/.test(l) && /Xếp MT trước rồi mới tới/.test(l) && /attemptNo === \(h as HangFT\)\.soKeTiep/.test(l), 'thiếu mở hộp / chỉ MT kế tiếp có nút xếp');
-    assert(/loai === 'ft' \? 180 : 190/.test(l), 'rongDot FT 180, lớp thường 190');
+    assert(/loai === 'ft' \? 180 : 250/.test(l), 'rongDot FT 180, lớp thường 250');
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
     assert(!/#[0-9a-fA-F]{3,8}\b/.test(c) && !/duongDotTest|NhanCu/.test(c), 'ô gọn: màu token, không liên kết thẳng');
   });
@@ -894,7 +894,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/sm:flex-nowrap/.test(p) && /sm:w-\[300px\]/.test(p), 'Mock Test nowrap, cột Sẽ xếp 300px');
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/<ODotGon\b/.test(l) && /dot\.attemptId !== null/.test(l), 'lưới: ODotGon cho đợt đã có (KHT-GON)');
-    assert(/loai === 'ft' \? 180 : 190/.test(l), 'cột đợt FT 180 (ô môn theo dòng tuần, chủ SP 28/10)');
+    assert(/loai === 'ft' \? 180 : 250/.test(l), 'cột đợt FT 180 (ô môn theo dòng tuần, chủ SP 28/10)');
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
     assert(/export function ODotGon\b/.test(c) && /VACH\[o\.tt\.loai\]/.test(c) && !/#[0-9a-fA-F]{3,8}\b/.test(c), 'ODotGon: vạch theo trạng thái, màu token');
   });

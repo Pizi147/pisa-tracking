@@ -171,7 +171,7 @@ export async function runFixDtlOmtTests(t: YThucTestKit) {
   check('DTL5 · lưới Kế hoạch Test (KHT-GON, mockup #659): dòng 1 tuần + chữ không cắt (nowrap, tuần cột cố định 58 px, môn xuống dòng thụt (PTA 28/10)); ô cao tối thiểu 56', () => {
     const c = doc('web/src/modules/test/keHoach/ChipKyNang.tsx');
     const o = c.slice(c.indexOf('export function ODotGon'), c.indexOf('export function NutXepO'));
-    assert(/grid-cols-\[58px_minmax\(0,1fr\)\]/.test(o) && /whitespace-nowrap text-xs font-semibold/.test(o), 'tuần / chữ trạng thái phải nowrap, tuần cột cố định');
+    assert(/grid-cols-\[54px_minmax\(0,1fr\)\]/.test(o) && /whitespace-nowrap text-xs font-semibold/.test(o), 'tuần / chữ trạng thái phải nowrap, tuần cột cố định');
     assert(/min-h-\[56px\]/.test(c), 'ô lưới cao ≥ 56');
   });
 }
