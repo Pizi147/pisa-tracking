@@ -62,6 +62,8 @@ export function khoaGopCua(it: ViecGopDuoc): string | null {
   if (!gopDuoc(it)) return null;
   if (theoTuanThi(it)) return `gop:score:t${it.tuanThi}:u${it.ownerId ?? 0}:${it.khung ?? ''}`;
   const k = khoaDongGop(it.group, it.classId!, it.ownerId);
+  /* RA-LUONG-1: dòng gộp chấm chéo (QL "Tất cả", gom theo lớp) giữ đuôi `|cc` như việc lẻ — không thì nó lọt vào Chấm điểm (không đếm) và mở panel Nhập điểm cả dòng. */
+  if (laViecChamCheo(it)) return `${k}|cc`;
   return it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? `${k}:t${it.tuanThi ?? ''}:s${it.sos ?? 0}` : k;
 }
 /** PR-DON: các khoá cùng chỉ một (nhóm) việc — khoá gửi, khoá dòng, khoá gộp của việc lẻ, khoá từng em của dòng gộp. Nhắc qua khoá nào cũng tính một lần/ngày. */
