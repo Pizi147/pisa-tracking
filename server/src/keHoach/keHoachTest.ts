@@ -17,6 +17,7 @@ import {
   bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam,
   type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
+import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, require_, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
@@ -1141,6 +1142,8 @@ export function xepHangLoat(p: Principal, i: {
   kyNang?: KyNangKH[];
   /** PR-XLMT (khung FT): Quản lý bấm chip đợt riêng cho em (`ep`) · kỹ năng cho thi lại · lý do (dời bài tuần đã bắt đầu, thi lại). */
   dotTheoEm?: Record<string, number>; thiLai?: Record<string, KyNangKH[]>; lyDo?: string | null;
+  /** RA-LUONG-17: khoá chống gửi lặp của MỘT lần bấm Lưu (web giữ khoá khi lỗi mạng, đổi khoá khi đã nhận phản hồi). */
+  idempotencyKey?: string;
 }, today: string = demoToday()): { dong: DongHangLoat[]; daLuu: number } {
   const conn = db();
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
@@ -1194,6 +1197,19 @@ export function xepHangLoat(p: Principal, i: {
   });
   if (i.xemTruoc) return { dong: xet.map((x) => x.dong), daLuu: 0 };
 
+  /*
+   * RA-LUONG-17 (K30): CHỐNG GỬI LẶP như Thêm HV / Sửa cả lớp — mất phản hồi rồi bấm Lưu lại (cùng khoá, cùng nội dung) → trả kết quả lần trước, không
+   * xét lại "MT mới" (đã tạo MT n thì lần hai thành MT n+1). Nội dung khác (đổi em / tuần) cùng khoá → làm như lần mới. Khoá theo người gửi + lớp.
+   */
+  const k = typeof i.idempotencyKey === 'string' ? i.idempotencyKey.trim().slice(0, 100) : '';
+  const khoaGui = k ? `xephl:${p.userId}:${i.classId}:${k}` : null;
+  const dauGui = JSON.stringify([i.attemptNo ?? null, i.kind ?? null, studentIds, tuan, i.kyNang ?? null, i.dotTheoEm ?? null, i.thiLai ?? null, !!i.force]);
+  if (khoaGui) {
+    const cu = conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(khoaGui) as any;
+    const da = cu ? JSON.parse(cu.value) : null;
+    if (da && da.dau === dauGui) return da.ketQua;
+  }
+
   let daLuu = 0;
   let soEmDoi = 0;
   const ketQua = xet.map(({ dong, attemptId }) => {
@@ -1234,6 +1250,11 @@ export function xepHangLoat(p: Principal, i: {
     entityLabel: laThuong ? nhanBaiThuong(i.kind!.replace(/^cp(\d+)$/, 'checkpoint:$1')) : i.attemptNo === 'moi' ? 'MT mới' : `MT${i.attemptNo}`,
     before: null, after: { daLuu, loi: ketQua.filter((d) => d.hanhDong === 'loi').map((d) => ({ studentId: d.studentId, loi: d.loi })) },
   });
+  if (khoaGui) {
+    donKhoaGuiCu(conn, nowIso());
+    conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)')
+      .run(khoaGui, JSON.stringify({ dau: dauGui, ketQua: { dong: ketQua, daLuu } }), nowIso());
+  }
   return { dong: ketQua, daLuu };
 }
 

@@ -676,6 +676,7 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
     dotTheoEm: req.body?.dotTheoEm && typeof req.body.dotTheoEm === 'object' ? req.body.dotTheoEm : undefined,
     thiLai: req.body?.thiLai && typeof req.body.thiLai === 'object' ? req.body.thiLai : undefined,
     lyDo: typeof req.body?.lyDo === 'string' ? req.body.lyDo : null,
+    idempotencyKey: typeof req.body?.idempotencyKey === 'string' ? req.body.idempotencyKey : undefined,
   });
 }));
 

@@ -14,6 +14,9 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_mywork: any = await import('../worklist/mywork.ts');
   const require_perm: any = await import('../permissions.ts');
   const require_hangLoat: any = await import('../students/hangLoat.ts');
+  const require_keHoach: any = await import('../keHoach/keHoachTest.ts');
+  const require_thongBao: any = await import('../platform/thongBao.ts');
+  const require_chotVang: any = await import('../ops/chotVangDinhKy.ts');
   const require_d: any = await import('../../../shared/domain/index.ts');
   console.log('\nRA-LUONG · rà soát luồng đêm 29/10');
 
@@ -124,6 +127,50 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     const nguon = fsMod.readFileSync('web/src/modules/students/SuaCaLopPanel.tsx', 'utf8') as string;
     assert(/const guiDuoc = payload\.filter\(\(r\) => !emLoi\.has\(r\.studentId\)\)/.test(nguon) && /chiaLoSuaCaLop\(guiDuoc,/.test(nguon), 'Lưu chưa lọc em lỗi');
     assert(!/soLoi > 0 \|\| !xem\}/.test(nguon), 'nút Lưu còn khoá khi có ô lỗi');
+  });
+
+  check('RA-LUONG-17 · Xếp "MT mới" hàng loạt: bấm Lưu lại CÙNG khoá + cùng nội dung (mất phản hồi) → trả kết quả cũ, không tạo MT n+1; khoá mới → lần lưu mới', () => {
+    const kh: any = require_keHoach;
+    const lop = conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 105'`).all()[0] as any;
+    const em = (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 2`).all(lop.id) as any[]).map((x) => x.student_id as number);
+    const tuanId = week.ensurePeriod(addDays(week.mondayOf(TODAY), 35)).id as number;
+    const tuan = { listening: tuanId, reading: tuanId, writing: tuanId, speaking: tuanId };
+    const soMt = () => (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts WHERE kind = 'mock' AND status != 'cancelled' AND student_id IN (${em.map(() => '?').join(',')})`).all(...em)[0] as any).n as number;
+    const truoc = soMt();
+    const gui = { classId: lop.id, attemptNo: 'moi', studentIds: em, tuan, force: true, idempotencyKey: 'ra-luong-17' };
+    const r1 = kh.xepHangLoat(P.mbManager, gui, TODAY);
+    const sau1 = soMt();
+    const r2 = kh.xepHangLoat(P.mbManager, gui, TODAY);
+    assert(r1.daLuu > 0 && sau1 === truoc + r1.daLuu, `lần một phải tạo MT: ${JSON.stringify(r1.dong.map((d: any) => [d.hanhDong, d.loi]))}`);
+    assert(soMt() === sau1 && JSON.stringify(r2) === JSON.stringify(r1), 'bấm lại cùng khoá không được tạo thêm MT');
+    kh.xepHangLoat(P.mbManager, { ...gui, idempotencyKey: 'ra-luong-17b' }, TODAY);
+    assert(soMt() > sau1, 'khoá mới = lần lưu mới (MT kế tiếp)');
+  });
+
+  check('RA-LUONG-19 · Chuông: "Case giao" chỉ Cần làm với người ĐANG phụ trách — người cũ (đã đổi người phụ trách) thành Để biết', () => {
+    const tb: any = require_thongBao;
+    const c = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') ORDER BY sc.id LIMIT 1`).all()[0] as any;
+    assert(c, 'seed phải có Case mở chưa PA có người phụ trách');
+    const khac = (conn.prepare(`SELECT id FROM users WHERE id NOT IN (?) ORDER BY id LIMIT 1`).all(c.owner_user_id)[0] as any).id as number;
+    const them = conn.prepare(`INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, read_at, created_at) VALUES (?,?,?,?,?,?,?,?)`);
+    const moc = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM notifications').all()[0] as any).m as number;
+    try {
+      them.run(c.owner_user_id, 'case_giao', 'ra-luong-19', 'sos_case', c.id, `ra19:${c.id}`, null, TODAY);
+      them.run(khac, 'case_giao', 'ra-luong-19', 'sos_case', c.id, `ra19:${c.id}`, null, TODAY);
+      const cua = (u: number) => (tb.thongBaoCua(u) as any[]).find((x) => x.title === 'ra-luong-19' && x.entity_id === c.id);
+      const chu = cua(c.owner_user_id);
+      assert(chu && chu.con_viec === 1, `người phụ trách: Case giao còn việc (${JSON.stringify(chu)})`);
+      assert(cua(khac)?.con_viec === 0, 'người không phụ trách: Case giao thành Để biết');
+    } finally { conn.prepare('DELETE FROM notifications WHERE id > ?').run(moc); }
+  });
+
+  check('RA-LUONG-18 · quét định kỳ (cron thứ Hai) chạy cả `sweepExpiredMoves` — không chỉ khi có người mở web (P08); chạy lặp vô hại', () => {
+    const cv: any = require_chotVang;
+    const nguon = fsMod.readFileSync('server/src/ops/chotVangDinhKy.ts', 'utf8') as string;
+    assert(/sweepExpiredMoves\(\)/.test(nguon), 'chotVangDinhKy chưa gọi sweepExpiredMoves');
+    const a = cv.chotVangDinhKy({ ngay: TODAY }), b = cv.chotVangDinhKy({ ngay: TODAY });
+    assert(a.boQua === null && b.boQua === null && b.daChuyen === 0, `chạy hai lần: ${JSON.stringify([a, b])}`);
   });
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {

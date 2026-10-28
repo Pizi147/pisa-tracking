@@ -786,7 +786,7 @@ export function taoLopHangLoat(p: Principal, input: { rows: unknown; idempotency
  */
 export function donKhoaGuiCu(conn: any, now: string): void {
   const moc = new Date(Date.parse(now) - 7 * 864e5).toISOString();
-  conn.prepare(`DELETE FROM demo_config WHERE (key LIKE 'bulkclass:%' OR key LIKE 'intake:%' OR key LIKE 'suacalop:%') AND updated_at < ?`).run(moc);
+  conn.prepare(`DELETE FROM demo_config WHERE (key LIKE 'bulkclass:%' OR key LIKE 'intake:%' OR key LIKE 'suacalop:%' OR key LIKE 'xephl:%') AND updated_at < ?`).run(moc);
 }
 
 /**
