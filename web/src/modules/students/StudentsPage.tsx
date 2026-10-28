@@ -397,7 +397,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         {chonKhung}
         {chonPhamVi}
         <div className="ml-auto flex items-center gap-2">
-          <button type="button" className="btn btn-sm max-sm:min-h-[44px]" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>
+          <button type="button" className="btn btn-sm whitespace-nowrap max-sm:min-h-[44px]" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>
           {data?.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>{t('+ Thêm học viên')}</button>}
           <MenuDong nhan={t('Thao tác trang')} muc={[
             ...(dienThoai && data?.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: t('+ Thêm học viên'), onChon: () => setThem(null) }] : []),

@@ -164,7 +164,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
       <div className="grid items-start gap-3.5 [@container(min-width:900px)]:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <section className="card min-w-0" aria-labelledby={`yt-vp-${studentId}`}>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pb-1.5 pt-3">
-            <h3 id={`yt-vp-${studentId}`} className="m-0 text-sm font-bold text-slate-100">{t('Vi phạm chưa xong')}</h3>
+            <h3 id={`yt-vp-${studentId}`} className="m-0 text-[15px] font-bold text-slate-100">{t('Vi phạm chưa xong')}</h3>
             {/* Số chỉ khi dòng đầu khối chưa nói số (quá hạn / đề xuất) — không lặp. */}
             {chuaXong.length > 0 && (d.nhom === 'qua_han' || !!d.deXuat) && <span className="text-[13px] font-medium text-dim">{t('{n} vi phạm', { n: chuaXong.length })}</span>}
             <NutLuat label={t('Luật xử lý vi phạm')}>

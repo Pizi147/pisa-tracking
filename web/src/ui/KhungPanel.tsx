@@ -306,7 +306,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
             {hangLui}
             {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
             <div className="flex items-start gap-2.5">
-              <h2 className="m-0 min-w-0 flex-1 text-[17px] font-bold leading-6 text-slate-100">{tieuDe}</h2>
+              {/* RA-UI-6 (critique A4): panel nằm trong cột hồ sơ (`trongCot`) dưới đầu mục 15 → tiêu đề 15, không lớn hơn tầng cha. */}
+              <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}`}>{tieuDe}</h2>
               {dau.han}
               {!lui && nutDong}
             </div>
