@@ -7309,7 +7309,7 @@ function normalWritingAttemptSkill() {
   return row as { attemptId: number; skill: string; periodId: number };
 }
 
-check('SCH-01 · GVBM lớp Normal dời được ĐÚNG môn mình dạy, không dời được môn khác', () => {
+check('SCH-01 · GVBM lớp Normal: quyền "-" tự dời ĐÚNG môn mình dạy; dời TAY → 403 (chỉ Quản lý — R14, RA-LUONG-2)', () => {
   const { attemptId, periodId } = normalWritingAttemptSkill();
   const otherPeriod = periodOf(addDays(week.periodById(periodId)!.week_start, 7));
   assert(
@@ -7320,11 +7320,11 @@ check('SCH-01 · GVBM lớp Normal dời được ĐÚNG môn mình dạy, khôn
     can(P.normalSubjectTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: classId('MB FOU 12'), skill: 'writing' }),
     'GVBM Writing phải dời được đúng môn Writing',
   );
-  const r = skillSchedule.setSkillWeek(P.normalSubjectTeacher, attemptId, 'writing', otherPeriod, {});
-  assert(r.ok, 'GVBM Writing phải dời được lịch Writing của lớp Normal mình dạy');
+  assertThrows(() => skillSchedule.setSkillWeek(P.normalSubjectTeacher, attemptId, 'writing', otherPeriod, {}), /Chỉ Quản lý dời lịch Test/,
+    'GVBM dời tay lịch Writing phải bị chặn (R14)');
 });
 
-check('SCH-01 · GVCN lớp Normal dời được mọi môn trong lớp mình chủ nhiệm', () => {
+check('SCH-01 · GVCN lớp Normal: quyền "-" tự dời mọi môn trong lớp mình chủ nhiệm', () => {
   const cid = classId('MB FOU 12');
   for (const skill of ['listening', 'reading', 'writing', 'speaking']) {
     assert(
@@ -7437,7 +7437,7 @@ check('T07 · Sửa lượt cũ (dời lịch một kỹ năng) KHÔNG tạo lư
   const { attemptId, periodId } = normalWritingAttemptSkill();
   const before = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
   const otherPeriod = periodOf(addDays(week.periodById(periodId)!.week_start, 14));
-  const r = skillSchedule.setSkillWeek(P.normalCoreTeacher, attemptId, 'writing', otherPeriod, {});
+  const r = skillSchedule.setSkillWeek(P.mbManager, attemptId, 'writing', otherPeriod, {});   // RA-LUONG-2: dời tay chỉ Quản lý (R14)
   assert(r.ok, 'Phải dời lịch được');
   const after = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n;
   assert(after === before, `Sửa lịch một kỹ năng không được tạo thêm lượt (đợt) nào, chênh lệch ${after - before}`);
@@ -9688,6 +9688,9 @@ await runPrQuyenLichMtTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== KHT-GON (mockup #659: ô Kế hoạch Test bản gọn)
 const { runPrKhtGonTests } = await import('./prKhtGon.tests.ts');
 await runPrKhtGonTests({ check, assert } as any);
+// ==================================================================== RA-LUONG (rà soát luồng đêm 29/10)
+const { runPrRaLuongTests } = await import('./prRaLuong.tests.ts');
+await runPrRaLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

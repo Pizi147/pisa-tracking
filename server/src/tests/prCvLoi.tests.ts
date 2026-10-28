@@ -195,7 +195,7 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
     assert(chuCua(c.id) === null, 'Case tạm → không gán');
   }));
 
-  check('K10 GVBM lớp thường: bảng lớp trả cờ đổi lịch đúng môn mình → có nút "Xếp lại bài vắng"; môn khác thì không', () => {
+  check('K10 GVBM lớp thường: bảng lớp trả cờ đổi lịch = máy chủ — dời tay chỉ Quản lý (R14, RA-LUONG-2) → GVBM không có "Xếp lại bài vắng"; QL có', () => {
     const regular: any = require_regular;
     const gv = P.normalSubjectTeacher;
     const mon = one(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active' AND is_core = 0 LIMIT 1`, LOP, gv.userId)?.skill;
@@ -204,8 +204,8 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
     const o = sheet.rows[0].skillSchedule as any[];
     const nut = (k: string) => dm.thaoTacKyNang('vang', { nhapDiem: false, quanLy: !!sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: false,
       doiLich: o.find((x) => x.skill === k)?.doiLich }).chinh === 'xep-lai';
-    assert(nut(mon), `GVBM môn ${mon}: phải có nút`);
-    const khac = o.find((x) => x.skill !== mon && !one(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active' AND (skill = ? OR is_core = 1)`, LOP, gv.userId, x.skill));
-    if (khac) assert(!nut(khac.skill), `môn ${khac.skill} không dạy: không có nút`);
+    assert(!nut(mon), `GVBM môn ${mon}: không có nút (dời tay chỉ Quản lý)`);
+    const ql = regular.regularSheet(P.mbManager, LOP).rows[0].skillSchedule as any[];
+    assert(ql.find((x) => x.skill === mon)?.doiLich === true, 'Quản lý: cờ đổi lịch bật');
   });
 }
