@@ -13,7 +13,7 @@ export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
  * Tiêu đề chỉ nhận chữ (`nhan`, `phu`) — cấm ô nhập / nút trong `th`. < 640 px: thẻ từ cùng định nghĩa cột.
  * Hàng bấm được (`onHang`) = `.bam` + Enter; đang mở = `.dang-mo`; bảng ≥ 8 cột không bấm = dò hàng `.do-hang`.
  */
-export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, chat, hangRieng, cuoi, the375 = true, dinh, khung = true, deu, lopHang, sauThe }: {
+export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, chat, hangRieng, cuoi, the375 = true, dinh, khung = true, deu, lopHang, sauThe, theRieng }: {
   /** Tên bảng cho trình đọc màn + công cụ đo `do-bang`. */
   ten: string;
   cot: readonly DinhNghiaCot[];
@@ -37,6 +37,8 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   lopHang?: (h: H) => string;
   /** RA-UI-8: phần mở thêm ở cuối thẻ (< 640 px) — thay hàng mở dưới hàng của `hangRieng` (vd các Case của em). */
   sauThe?: (h: H) => ReactNode;
+  /** RA-UI-8: thân thẻ tự vẽ (< 640 px) khi mockup 375 của màn có dáng thẻ riêng — khung thẻ, lớp hàng, `sauThe` vẫn do `Bang`. */
+  theRieng?: (h: H) => ReactNode;
   /** Hàng thêm sau cùng (hàng mờ "em chưa có lịch"). */
   cuoi?: ReactNode;
   /** false: không đổi thành thẻ ở < 640 px (lưới nhập điểm có màn điện thoại riêng). */
@@ -67,6 +69,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
     than = hang.map((h) => (
       <article key={khoa(h)} className={`border-t px-3 py-2.5 first:border-t-0 ${lop(h)}`} style={{ borderColor: 'var(--line)' }}
         tabIndex={onHang ? 0 : undefined} onClick={onHang ? () => onHang(h) : undefined} onKeyDown={phim(h)}>
+        {theRieng ? theRieng(h) : <>
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">{phan.dau.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}</div>
         {phuCua && coPhu(phuCua(h, theoKey.get(phan.dau[0])!)) && <div className="text-[13px] text-slate-400">{phuCua(h, theoKey.get(phan.dau[0])!)}</div>}
         {phan.diem.length > 0 && (
@@ -86,6 +89,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
           </dl>
         )}
         {phan.duoi.length > 0 && <div className="mt-2 flex min-h-[44px] items-center justify-between gap-2 text-[14px]">{phan.duoi.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}</div>}
+        </>}
         {sauThe?.(h)}
       </article>
     ));

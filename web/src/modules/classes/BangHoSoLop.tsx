@@ -37,6 +37,8 @@ type CaseLop = {
 type Hang = RosterRow & { lichThi?: LichThi; standing?: KetQuaVao | null };
 type Moc = RosterRow['history'][number] & { writing?: number | null; expectation?: number | null; khongHoc?: string[]; khongDuBoMon?: boolean };
 type Loc = 'tat-ca' | 'sos' | 'thieu';
+type KyO = 'l' | 'r' | 'w' | 'w1' | 'w2' | 's' | 'ovr';
+const BAND = { l: 'listening', r: 'reading', s: 'speaking', w1: 'writing1', w2: 'writing2' } as const;
 /* Chip lọc — cùng dáng chip của `CongTacKhung` (kieu chip). */
 const CHIP_CHON = 'font-semibold border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]';
 const CHIP_THUONG = 'font-medium border-[color:var(--line-strong)] bg-transparent text-slate-300 hover:text-slate-100';
@@ -101,21 +103,23 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
   const ngCanh: NguCanhDs = { loai: 'hoc-vien', ids: ds.map((s) => s.id), nhan: t('Lớp {lop}', { lop: maLop }) };
   const xong = () => { invalidate(`/cases?classId=${classId}`); cases.reload(); roster.reload(); onDoi(); };
 
-  const oDiem = (r: Hang, h: Moc | null, k: 'l' | 'r' | 'w' | 's' | 'ovr') => {
+  /* Thẻ 375 (mockup: "vẫn tách W1 · W2", C18) dùng thêm w1 / w2; bấm W1 / W2 / W / S → điểm thành phần. */
+  const oDiem = (r: Hang, h: Moc | null, k: KyO) => {
     if (!h) return <span className="text-faint">—</span>;
     /* P8 (mockup k6): môn em không học → "Không học"; Overall thiếu bộ môn → "Không đủ bộ môn" (khác "—" chưa điểm). */
     const kh = h.khongHoc ?? [];
-    if (k === 'w' ? kh.includes('writing1') && kh.includes('writing2') : k !== 'ovr' && kh.includes(k === 'l' ? 'listening' : k === 'r' ? 'reading' : 'speaking')) return <OKhongHoc nhan={k.toUpperCase()} />;
+    if (k === 'w' ? kh.includes('writing1') && kh.includes('writing2') : k !== 'ovr' && kh.includes(BAND[k])) return <OKhongHoc nhan={k.toUpperCase()} />;
     if (k === 'ovr' && h.overall == null && h.khongDuBoMon && h.scoredRequired === h.requiredCount) return <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>;
-    const v = k === 'ovr' ? h.overall : k === 'w' ? h.writing ?? null : h.bands?.[k === 'l' ? 'listening' : k === 'r' ? 'reading' : 'speaking'] ?? null;
+    const v = k === 'ovr' ? h.overall : k === 'w' ? h.writing ?? null : h.bands?.[BAND[k]] ?? null;
     const o = <ODiem kieu={dienThoai ? 'doc' : 'to'} so={v === null ? null : fmtBand(v)} kq={h.lichSu ? null : soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
-    if ((k !== 'w' && k !== 's') || v === null) return o;
-    const dangMo = pop?.sid === r.id && pop.kn === k;
+    const kn = k === 's' ? 's' : k === 'w' || k === 'w1' || k === 'w2' ? 'w' : null;
+    if (!kn || v === null) return o;
+    const dangMo = pop?.sid === r.id && pop.kn === kn;
     return (
       <button type="button" aria-haspopup="dialog" aria-expanded={dangMo} title={t('Điểm thành phần')}
-        className="relative appearance-none rounded border-0 bg-transparent px-1 py-0.5 hover:bg-[color:var(--nut-hover)] after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-[''] sm:after:hidden"
+        className="relative appearance-none rounded border-0 bg-transparent px-1 py-0.5 max-sm:p-0 hover:bg-[color:var(--nut-hover)] after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-[''] sm:after:hidden"
         /* RA-UI-8: vùng chạm 44 px ở điện thoại bằng `after` (không nới cao nút) — thẻ em gọn như mockup 375. */
-        onClick={(e) => { const nut = e.currentTarget; setPop(dangMo ? null : { sid: r.id, kn: k, nut }); }}>{o}</button>
+        onClick={(e) => { const nut = e.currentTarget; setPop(dangMo ? null : { sid: r.id, kn, nut }); }}>{o}</button>
     );
   };
   const oCua = (r: Hang, c: DinhNghiaCot): ReactNode => {
@@ -163,11 +167,33 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
     const [w1, w2] = [h.bands?.writing1 ?? null, h.bands?.writing2 ?? null];
     return w1 === null && w2 === null ? null : `${w1 === null ? '—' : fmtBand(w1)} · ${w2 === null ? '—' : fmtBand(w2)}`;
   };
-  /* Thẻ 375: dòng phụ của ô điểm (W1 · W2, "vắng …") ngay dưới ô — chế độ thẻ của `Bang` chỉ vẽ `phuCua` của cột tên. */
-  const oThe = (r: Hang, c: DinhNghiaCot): ReactNode => {
-    const o = oCua(r, c);
-    const phu = c.kieu === 'diem' ? phuCua(r, c) : null;
-    return phu ? <span className="inline-flex flex-col items-start">{o}<span className="text-[12px] leading-4 text-faint" data-phu-odiem="">{phu}</span></span> : o;
+  /*
+   * THẺ EM 375 (mockup `ho-so-lop.html` `.the-dt`): tên + Kết quả · một hàng điểm L R W1 W2 S OVR (14 px, nhãn 12 xám, khe 12; "vắng …" nhỏ ngay sau
+   * ô) · dòng phụ Target · MT · Ngày thi (· Phụ huynh) · hàng cuối Case + PA trái, ⋯ phải. Cùng ô / thao tác với bảng 1440.
+   */
+  const cotTheo = new Map(COT.map((c) => [c.key, c]));
+  const o = (r: Hang, k: string) => oCua(r, cotTheo.get(k)!);
+  const theEm = (r: Hang): ReactNode => {
+    const h = mocCua(r);
+    const vang = (kn: string) => (h?.vangCu?.[kn] ? <span className="text-[12px] text-faint">{chuDoiVang(h.vangCu[kn], homNay)}</span> : null);
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-wrap items-start gap-2 text-[15px]">{o(r, 'ten')}{o(r, 'kq')}</div>
+        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 text-[14px]">
+          {(['l', 'r', 'w1', 'w2', 's', 'ovr'] as const).map((k) => (
+            <span key={k} className="inline-flex items-baseline gap-1">
+              <span className="text-[12px] text-slate-400">{k === 'ovr' ? 'OVR' : k.toUpperCase()}</span>{oDiem(r, h, k)}{k !== 'ovr' && vang(k === 'w1' || k === 'w2' ? 'writing' : BAND[k])}
+            </span>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-slate-400">
+          <span>Target <b className="font-semibold tabular-nums text-slate-200">{o(r, 'target')}</b></span><span aria-hidden>·</span>
+          <span>MT <b className="font-semibold text-slate-200">{o(r, 'mt')}</b></span>
+          {o(r, 'thi')}{quyen.theoVai && o(r, 'ph')}
+        </div>
+        <div className="flex items-center justify-between gap-2">{o(r, 'cp')}{o(r, 'nut')}</div>
+      </div>
+    );
   };
   const lopHang = (r: Hang) => `${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
   const caseMo = (r: Hang) => (caseCua.get(r.id) ?? []).map((ca) => <TheCase key={ca.id} c={ca} ngan={ngan} onMo={(view) => setNgan2({ caseId: ca.id, view, hv: r.fullName })} />);
@@ -206,9 +232,8 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
           </span>
         )}
       </div>
-      {/* Thẻ 375: cột Case + PA xuống hàng cuối thẻ cạnh ⋯ (kiểu `viec` → phần dưới của thẻ). */}
-      <Bang ten={t('Học viên lớp {lop}', { lop: maLop })} cot={dienThoai ? COT.map((c) => (c.key === 'cp' ? { ...c, kieu: 'viec' as const } : c)) : COT} hang={ds} khoa={(r) => r.id}
-        oCua={dienThoai ? oThe : oCua} phuCua={phuCua} hangRieng={hangCua} lopHang={lopHang} dangMo={(r) => mo === r.id}
+      <Bang ten={t('Học viên lớp {lop}', { lop: maLop })} cot={COT} hang={ds} khoa={(r) => r.id}
+        oCua={oCua} phuCua={phuCua} hangRieng={hangCua} theRieng={theEm} lopHang={lopHang} dangMo={(r) => mo === r.id}
         sauThe={(r) => mo === r.id && <div id={`case-${r.id}`} className="mt-2 flex flex-col gap-2.5">{caseMo(r)}</div>}
         khung={false} dinh rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca' && onThemHocVien ? <button type="button" className="btn btn-sm" onClick={onThemHocVien}>{t('Thêm học viên')}</button> : undefined }} />
       {pop && (() => { const r = tatCa.find((x) => x.id === pop.sid); const h = r && mocCua(r); return h ? <PopThanhPhan attemptId={h.id} kn={pop.kn} nut={pop.nut} tong={h.writing ?? null} onDong={() => setPop(null)} /> : null; })()}
