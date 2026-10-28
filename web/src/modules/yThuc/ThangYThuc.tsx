@@ -19,6 +19,8 @@ import { dich, t } from '@shared/i18n/index.ts';
  */
 /** Mạch chính (Report 1 … WL 2) = 6 bậc; thang dài hơn 6 + ô kế tiếp thì em đã qua WL 2. */
 const BAC_MACH_CHINH = 6;
+/** Chấm hồng = việc của tôi (mockup `.cua-toi`, cùng tab lớp). */
+const CUA_TOI = <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--hong)] align-middle" />;
 /** Khi gộp: số bậc vừa qua còn hiện, trước ô kế tiếp. */
 const BAC_HIEN_SAU_WL2 = 3;
 
@@ -73,7 +75,7 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
       </ol>
       {coNut && (xuLyDuoc || onDeXuat) && (
         <div className="flex flex-wrap items-center gap-2">
-          {xuLyDuoc && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyChinh ? ' btn-primary' : ''}`} onClick={onXuLy}>{t('Xác nhận xử lý')}</button>}
+          {xuLyDuoc && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyChinh ? ' btn-primary' : ''}`} onClick={onXuLy}>{xuLyChinh && CUA_TOI}{t('Xác nhận xử lý')}</button>}
           {onDeXuat && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyDuoc || !xuLyChinh ? '' : ' btn-primary'}`} onClick={onDeXuat}>{t('Đề xuất QL duyệt')}</button>}
           {/* ⓘ = giải thích (luật V5): hai nút khác nhau ở đâu — thay câu dài cạnh nút. */}
           <NutLuat label={t('Xác nhận hay Đề xuất?')}>
