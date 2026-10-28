@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,8 +18,6 @@ export default defineConfig({
     port: webPort,
     strictPort: false,
     proxy: { '/api': { target: `http://127.0.0.1:${apiPort}`, changeOrigin: true } },
-    /* Worktree trong `.claude/worktrees/` dùng `node_modules` là junction tới repo chính — cho Vite đọc đường thật (phông @fontsource), không thì 403. */
-    fs: { allow: [projectRoot, fs.realpathSync(path.resolve(projectRoot, 'node_modules'))] },
   },
   build: { outDir: 'dist/web', emptyOutDir: true },
 });

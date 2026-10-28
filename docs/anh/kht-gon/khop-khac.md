@@ -24,7 +24,7 @@ Dữ liệu mockup là dữ liệu giả (Cầu Giấy, MT1–MT7); web là seed
 | "S riêng · W3 DEC" | `oGon.rieng` | KHỚP |
 | Vắng một dòng mờ: `vắng W2 OCT` / `vắng W · W1 NOV`; đủ điểm → không ghi | `oGon.vang` (đọc cả `doiTu` dạng mã tuần) | KHỚP |
 | Vạch trái: tuần này xanh · trễ chấm đỏ + nền đỏ nhạt · xếp lại vàng; không khung ô | `VACH` (`--doing/--bad/--soon`) | KHỚP |
-| Chỉ MT kế tiếp "Xếp MTn" viền đứt; MT sau "–" | `NutXepO` / `OTrong` | KHỚP (cột MT kế tiếp chỉ vẽ khi lớp có cột đó — như trước; vượt số cột thì "+ MT ▾") |
+| Chỉ MT kế tiếp "Xếp MTn" viền đứt; MT sau "–"; tóm tắt lớp "MTn chưa xếp k em" đếm đúng các ô đó (PTA 28/10, một số liệu một hàm) | `NutXepO` / `OTrong` · máy chủ `oXepMt` + `soCotMt` (lưới và `tomTatLopFT` cùng gọi) | KHỚP (cột MT kế tiếp chỉ vẽ khi lớp có cột đó — như trước; vượt số cột thì "+ MT ▾") |
 | Đã huỷ: "đã huỷ" | `OHuy` | KHÁC nhỏ: mockup gạch tuần cũ — lượt huỷ không gửi tuần về lưới, nên chỉ chữ "đã huỷ" |
 | S Ex một dòng khung đứt hồng | nút S Ex một dòng | KHỚP |
 | Thẻ lớp nền `surface`, hàng lớn, chip "Chỉ xem" | `LopKeHoach` | KHỚP |
@@ -37,10 +37,9 @@ Dữ liệu mockup là dữ liệu giả (Cầu Giấy, MT1–MT7); web là seed
 | (không vẽ) Lớp dài thu gọn: 10 em đầu | 10 em đầu + MỌI em cần chú ý (cần xếp lại, trễ chấm, MT kế tiếp chưa xếp) | THÊM (critique P1, nguyên tắc "không em nào bị bỏ sót") |
 
 [XM] cho chủ SP chọn (không tự đổi, ngoài phạm vi màn):
-- Nút "Xếp nhiều MT…" ở chế độ tối: mockup tô kín xanh nhạt; web giữ nút chính có viền theo DESIGN D4 (27/10).
+- Nút "Xếp nhiều MT…" ở chế độ tối: mockup tô kín xanh nhạt; web GIỮ nút chính tối = nền thẫm + viền (D4, chủ SP 27/10, áp toàn web — một nút một dáng; PTA chốt giữ 28/10).
 - Công tắc "✓ Fast Track · n lớp" (thành phần chung `CongTacKhung`) khác mockup "Fast Track  4"; ở 375 công tắc chiếm một hàng, "Lọc ▾" xuống hàng sau.
 - Hộp một đợt (`HopKyNang`, mockup ghi "giữ"): chip trạng thái dòng kỹ năng là viên nền nhạt, nút "Xóa" cùng hàng Đóng / Lưu — critique đề nghị dời Xóa vào ⋯; để PR riêng nếu chủ SP muốn.
-- Tóm tắt lớp "MT2 chưa xếp 1 em" (máy chủ `tomTatLopFT`) có thể nói số MT khác ô "Xếp MT1" của em vào muộn chưa có MT nào — luật đếm máy chủ cũ, không đổi trong PR này.
 
 BỎ: dòng "L R W S" ở mọi ô · năm `2026` · chữ "Overall" (ở tooltip + câu đọc) · chữ "đã xếp" · khung viền mọi ô · chip "MTn · chưa xếp" ở mọi MT sau MT kế tiếp · dòng vắng lặp từng môn (`L vắng W2 OCT · R vắng W2 OCT · …`).
 "↗" (chủ SP 28/10 bỏ toàn web): "Mở MTn mới ↗" trong hộp Khôi phục → "Mở MTn mới ›".

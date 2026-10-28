@@ -11,7 +11,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, khoaCuoiTuan, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT,
   bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam,
@@ -93,6 +93,8 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
   /* Lớp FT: HV đang học + lượt Mock của họ — hai câu cho MỌI lớp, gom trong JS (Q12). */
   const hvCuaLop = new Map<number, number[]>();
   const luotCuaLop = new Map<number, Array<{ hv: number; no: number; status: string; coTuan: boolean }>>();
+  /** `lớp:em` → mọi lượt Mock của lộ trình đang chạy (để `oXepMt`). */
+  const luotLoTrinh = new Map<string, LuotSo[]>();
   const chuaCoLichTiep = new Map<number, number>();
   /** Số MT mặc định của lịch lớp (`lichMtCua`) — gợi ý "MT{b} chưa xếp" tới đó (P2 MT-DEM, thay hằng 3). */
   const soMacDinh = new Map<number, number>();
@@ -130,21 +132,35 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       if (!luotCuaLop.has(r.class_id)) luotCuaLop.set(r.class_id, []);
       luotCuaLop.get(r.class_id)!.push({ hv: r.student_id, no: r.attempt_no, status: r.status, coTuan: r.planned_period_id != null });
     }
+    /* KHT-GON: lượt Mock theo LỘ TRÌNH ĐANG CHẠY của em (như `luoiFT`, kể cả lượt huỷ) — tóm tắt "MTn chưa xếp" đếm đúng ô "Xếp MTn" (`oXepMt`). */
+    for (const r of conn
+      .prepare(
+        `SELECT e.class_id, a.student_id, a.attempt_no, a.status,
+                EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)) AS co_diem
+           FROM assessment_attempts a
+           JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
+           JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active'
+          WHERE a.kind = 'mock' AND e.class_id IN (${phOf(ftClassIds.length)})`,
+      )
+      .all(...ftClassIds) as any[]) {
+      const k = `${r.class_id}:${r.student_id}`;
+      luotLoTrinh.set(k, [...(luotLoTrinh.get(k) ?? []), { attempt_no: r.attempt_no, status: r.status, coDiem: !!r.co_diem }]);
+    }
   }
   /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. */
   const canXepLai = new Map([...emCanXepLai(ftClassIds)].map(([lop, em]) => [lop, em.size]));
   const tomTatFT = (classId: number): string => {
+    const hvLop = hvCuaLop.get(classId) ?? [];
+    const dsCua = (hv: number) => luotLoTrinh.get(`${classId}:${hv}`) ?? [];
+    const soCot = soCotMt(soMacDinh.get(classId) ?? 0, hvLop.flatMap((hv) => dsCua(hv).filter((x) => x.status !== 'cancelled').map((x) => x.attempt_no)));
+    const chua = new Map<number, number>();
+    for (const hv of hvLop) { const n = oXepMt(dsCua(hv), soCot); if (n !== null) chua.set(n, (chua.get(n) ?? 0) + 1); }
     const luot = luotCuaLop.get(classId) ?? [];
-    const hv = hvCuaLop.get(classId) ?? [];
     /* PR-LM: lượt `planned` đã huỷ lịch (chưa có tuần) không "đang thi" — em đó tính vào "chưa xếp". */
     const dangThi = luot.filter((l) => l.status === 'planned' && l.coTuan).map((l) => l.no);
     const a = dangThi.length ? Math.min(...dangThi) : null;
-    const b = a !== null ? a + 1 : (luot.length ? Math.max(...luot.map((l) => l.no)) : 0) + 1;
-    const coB = new Set(luot.filter((l) => l.no === b && (l.status !== 'planned' || l.coTuan)).map((l) => l.hv));
-    const soEm = hv.filter((id) => !coB.has(id)).length;
-    /* V5 C20 (T04) + P2 MT-DEM: quá số MT mặc định của lịch lớp (LT 3, RF 2) không tự gợi ý MT kế — "MT{b} chưa xếp k em" chỉ khi QL đã tạo lượt số b. */
-    const goiY = b <= (soMacDinh.get(classId) ?? 0) || luot.some((l) => l.no === b);
-    return tomTatLopFT({ dangThi: a, chuaXep: goiY ? { dot: b, soEm } : null, canXepLai: canXepLai.get(classId) ?? 0 });
+    /* KHT-GON (PTA 28/10): "MTn chưa xếp k em" = đúng các ô "Xếp MTn" của lưới (`oXepMt`, cột theo `soCotMt`) — thay cách đếm "MT kế của lớp". */
+    return tomTatLopFT({ dangThi: a, chuaXep: [...chua].sort((x, y) => x[0] - y[0]).map(([dot, soEm]) => ({ dot, soEm })), canXepLai: canXepLai.get(classId) ?? 0 });
   };
 
   /* Lớp thường: tiến độ (một lượt gom) + số em chưa có bài (một câu). */
@@ -361,10 +377,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   })))]));
   /* T37 → UI-CHAM-TEST (C20, T04): cột 1 … min(MT8, max(số lớn nhất còn hiệu lực, lịch mặc định của lộ trình lớp)) — MT kế tiếp không mở cột
      (không cột MT4 trống "chưa xếp"); Quản lý thêm MT4+ tay qua "Xếp nhiều MT…", có lượt thì cột hiện. */
-  const soCot = Math.min(MT_TOI_DA, Math.max(
-    lichMtCua(cls, cls.route).length,
-    ...attempts.filter((a) => a.status !== 'cancelled').map((a) => a.attempt_no as number),
-  ));
+  const soCot = soCotMt(lichMtCua(cls, cls.route).length, attempts.filter((a) => a.status !== 'cancelled').map((a) => a.attempt_no as number));
   const cot = Array.from({ length: soCot }, (_, i) => i + 1);
 
   const hang = students.map((s) => {

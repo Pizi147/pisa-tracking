@@ -53,4 +53,13 @@ export async function runPrKhtGonTests(t: YThucTestKit) {
     const n = d.oGon({ listening: o(tuan('2026-10-26')), reading: o(tuan('2026-10-26')), writing: o(tuan('2026-10-26')), speaking: o(tuan('2026-10-26')) }, HN);
     assert(n.tt.loai === 'nay' && n.kn === null, JSON.stringify(n));
   });
+
+  check('KHT-6 · oXepMt (một hàm cho ô "Xếp MTn" và tóm tắt lớp): em chưa có lượt → MT1; MT kế ngoài cột → null; lượt huỷ không điểm → ô "đã huỷ", không "Xếp"', () => {
+    const l = (attempt_no: number, status = 'planned', coDiem = false) => ({ attempt_no, status, coDiem });
+    assert(d.oXepMt([], 3) === 1, 'chưa có lượt → MT1');
+    assert(d.oXepMt([l(1), l(2)], 3) === 3 && d.oXepMt([l(1), l(2), l(3)], 3) === null, 'MT kế trong / ngoài cột');
+    assert(d.oXepMt([l(1), l(2, 'cancelled')], 3) === null, 'huỷ không điểm: số dùng lại nhưng ô là "đã huỷ"');
+    assert(d.soCotMt(3, [1, 5]) === 5 && d.soCotMt(3, []) === 3 && d.soCotMt(3, [12]) === d.MT_TOI_DA, 'số cột');
+    assert(d.tomTatLopFT({ dangThi: 1, chuaXep: [{ dot: 1, soEm: 1 }, { dot: 2, soEm: 0 }] }) === 'MT1 đang làm bài · MT1 chưa xếp 1 em', 'tóm tắt theo ô');
+  });
 }
