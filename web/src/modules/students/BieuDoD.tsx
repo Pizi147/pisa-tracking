@@ -48,6 +48,12 @@ export function KyHieuPa({ k, x, y, r = 5 }: { k: string; x: number; y: number; 
   if (k === 'worse') return <path d={`M${x - r + 1} ${y - r + 1} L${x + r - 1} ${y + r - 1} M${x + r - 1} ${y - r + 1} L${x - r + 1} ${y + r - 1}`} stroke={mau} strokeWidth="1.8" strokeLinecap="round" />;
   return <g fill={mau}>{[-1, 0, 1].map((i) => <circle key={i} cx={x + i * (r - 1)} cy={y + r - 1.5} r="1.2" />)}</g>;
 }
+/** Thanh Case theo mức SOS — cùng dáng chip `lopSos` (MAU-MUC): [nền, viền, chữ]; SOS 3 không còn vẽ như SOS 2. */
+const MAU_THANH_SOS: Record<number, [string, string, string]> = {
+  1: ['var(--surface)', 'rgb(var(--sos1-rgb))', 'rgb(var(--sos1-chu-rgb))'],
+  2: ['var(--sos2-nen)', 'rgb(var(--sos2-rgb))', 'rgb(var(--sos2-chu-rgb))'],
+  3: ['var(--sos3-nen)', 'var(--sos3-vien)', 'var(--sos3-tren)'],
+};
 const MAU_KQ = { vuot: 'rgb(var(--kq-vuot-rgb))', bang: 'rgb(var(--kq-bang-rgb))', duoi: 'rgb(var(--kq-duoi-rgb))' } as const;
 /** ✓ / ✗ so kỳ vọng của lượt (vượt · bằng · dưới); `dat` = lớp thường so ngưỡng đạt: bằng ngưỡng là đạt (`ratioResult`), chỉ hai màu. */
 export const kqSo = (v: number | null, kv: number | null, dat = false) => (v == null || kv == null ? null : dat ? (v >= kv - 1e-9 ? 'vuot' : 'duoi')
@@ -296,11 +302,10 @@ export function BieuDoD(o: BieuDoDProps) {
     ve.push(<text key={`lc${li}`} x={0} y={cy + 4} fontSize="13" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>Case</text>);
     if (l.coPa) ve.push(<text key={`lp${li}`} x={0} y={pyy + 4} fontSize="13" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>{t('PA')}</text>);   // một nhãn cho mọi hàng PA của làn
     l.cs.forEach((c) => {
-      const dong = !!c.dong, s2 = (c.sos ?? 0) >= 2;
-      const mauV = s2 ? 'rgb(var(--sos2-rgb))' : 'rgb(var(--sos1-rgb))';
+      const dong = !!c.dong;
       const chu = `Case ${c.chu}${c.mt ? ` · ${c.mt}` : ''}${dong ? ` · ${t('đã đóng')}` : c.sos ? ` · SOS ${c.sos}` : ''}`;
-      ve.push(thanh(`c${c.id}`, Xl(c.mo) + 2, Xl(c.dong ?? nay) + cw - 2, cy, dong ? 'var(--surface)' : s2 ? 'var(--sos2-nen)' : 'var(--surface)', dong ? 'var(--line-strong)' : mauV,
-        chu, dong ? 'var(--text-dim)' : s2 ? 'rgb(var(--sos2-chu-rgb))' : 'rgb(var(--sos1-chu-rgb))', c.goi, dong));
+      const [nenT, vien, mauChu] = dong ? ['var(--surface)', 'var(--line-strong)', 'var(--text-dim)'] : MAU_THANH_SOS[Math.min(3, Math.max(1, c.sos ?? 1))];
+      ve.push(thanh(`c${c.id}`, Xl(c.mo) + 2, Xl(c.dong ?? nay) + cw - 2, cy, nenT, vien, chu, mauChu, c.goi, dong));
       c.pa.forEach((p) => {
         const pyy = lanY[li].pyy + 30 * (l.paHang!.get(p.id) ?? 0);
         if (!p.den && p.denDk && cot(p.denDk) > cot(nay) && trong(nay)) {

@@ -371,7 +371,7 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
   const oCua = (h: HangKn, c: CotBang): ReactNode => {
     const cot = `ket-qua:${khung}:${h.skill}`;
     /* Cột "chu" linh hoạt: chữ trong chip thẳng mép chữ tiêu đề (cùng cách `th[data-kieu=chip]` đệm 20 px). */
-    if (c.key === 'kn') return <span className={dienThoai ? '' : '-ml-1.5 inline-flex'}><ChipKy k={h.nhan} /></span>;
+    if (c.key === 'kn') return <span className={dienThoai ? '' : '-ml-2 inline-flex'}><ChipKy k={h.nhan} /></span>;   // SUA-DO-KHUNG: chip min-w 24 canh giữa → chữ lùi ~8 px, bù 8 (g1)
     if (c.key === 'kq') return <OTyLe x={h.kq && { dat: h.kq.dung, mau: h.kq.tong }} nguon={nguonCs(cot)} tieuDe={`${c.nhan} · ${h.nhan}`} />;
     if (!h.thi) return <span className="text-slate-500">—</span>;
     return <BaThi gon={!dienThoai} motDong={!dienThoai} cot={`thi-that-ky:${h.skill}`} fail={h.thi.tong - h.thi.dung} pass={h.thi.dung} exceed={h.vuot} nguonCua={nguonCs} ten={`${t('Kết quả thi thật')} ${h.nhan}`} />;
