@@ -295,4 +295,16 @@ export const EN_R1_EN_LOI = {
   'PA đã có kết quả — không hoàn tác được.': 'The PA already has a result — cannot be undone.',
   'Quản lý đã trả lời đề xuất — không hoàn tác được.': 'The manager has already answered the proposal — cannot be undone.',
   'PA đề xuất thay PA khác — rút ở thẻ Chờ duyệt.': 'This PA was proposed to replace another — withdraw it from the approval card.',
+  /* HOAN-TAC-XN: Hoàn tác Xác nhận PA / Case / Case Speaking */
+  'Không còn hoàn tác được — đã có thay đổi sau lần xác nhận. {buoc}': 'Can no longer undo — something changed after the confirmation. {buoc}',
+  'Chỉ người vừa xác nhận hoàn tác được. {buoc}': 'Only the person who just confirmed can undo. {buoc}',
+  'Đã quá thời gian hoàn tác. {buoc}': 'The undo time has passed. {buoc}',
+  'Lần xác nhận này ghi trước khi có Hoàn tác. {buoc}': 'This confirmation was saved before Undo existed. {buoc}',
+  'Sửa PA nếu cần.': 'Edit the PA if needed.',
+  'Sửa Case nếu cần.': 'Edit the Case if needed.',
+  'Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Quản lý hoàn tác được.': 'Only the class Speaking teacher, the homeroom teacher or a manager can undo.',
+  'Case đã đóng — Mở lại Case trước.': 'The Case is closed — reopen it first.',
+  'PA đã có kết quả — không hoàn tác được; sửa kết quả nếu cần.': 'The PA already has a result — cannot be undone; edit the result if needed.',
+  'Đã xác nhận PA sau đó — hoàn tác Xác nhận PA trước.': 'A PA was confirmed afterwards — undo that PA confirmation first.',
+  'PA của Case đã đổi sau lần xác nhận — sửa PA hoặc sửa Case nếu cần.': 'A PA of this Case changed after the confirmation — edit the PA or the Case if needed.',
 } satisfies Record<string, Dich>;

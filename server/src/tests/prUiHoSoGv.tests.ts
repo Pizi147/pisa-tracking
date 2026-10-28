@@ -49,6 +49,20 @@ export async function runPrUiHoSoGvTests(t: any) {
     assert(tong === cs.thiThat.tong, `Σ lớp ${tong} ≠ ô ${cs.thiThat.tong}`);
   });
 
+  check('6C-NHO · Pass Target Phân tích GV: panel `thi-that&cn=` chỉ chi nhánh đang chọn — số dòng = ô của hàng GV', () => {
+    assert(thi, 'seed phải có ít nhất một kết quả thi thật đã kết luận');
+    const ky = { tu: d.mondayOfDate(d.addDaysIso(thi.ngay, -14)), den: d.mondayOfDate(d.addDaysIso(thi.ngay, 14)) };
+    const cnGv = (conn.prepare(`SELECT DISTINCT c.branch_id AS cn FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE ta.user_id = ?`).all(thi.gv) as any[]).map((r) => r.cn);
+    for (const cn of cnGv) {
+      const h = pt.phanTichGiaoVien(P.admin, { cn, ct: 'ft', ...ky }).hang.find((x: any) => x.id === thi.gv);
+      const o = pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', cn });
+      const tong = h?.thiThat?.k === 'so' ? h.thiThat.tong : 0;
+      assert(o.n === tong, `chi nhánh ${cn}: panel ${o.n} dòng ≠ ô ${tong}`);
+    }
+    const khac = conn.prepare(`SELECT id FROM branches WHERE id NOT IN (${cnGv.map(() => '?').join(',') || 'NULL'}) LIMIT 1`).get(...cnGv) as any;
+    if (khac) assert(pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', cn: khac.id }).n === 0, 'chi nhánh GV không dạy phải 0 dòng');
+  });
+
   check('UIHSGV-2 · Case theo trạng thái: Σ các nhóm `tt` = Case đang phụ trách; `tt` lạ → 400', () => {
     const gv = conn.prepare(`SELECT owner_user_id AS gv FROM sos_cases WHERE owner_user_id IS NOT NULL AND status != 'done' GROUP BY owner_user_id ORDER BY COUNT(*) DESC LIMIT 1`).get() as any;
     assert(gv, 'seed có Case đang mở');

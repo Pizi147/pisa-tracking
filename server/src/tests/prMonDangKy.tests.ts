@@ -565,4 +565,50 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       assert(o?.sosLevel === 1, `hồ sơ HV: SOS ${o?.sosLevel}`);
     });
   });
+  check('MDK-19 · D11: tín hiệu S `pending` có từ trước (lượt đã chấm S) → bỏ S thu hồi tín hiệu "Không còn học môn"; tín hiệu L giữ', () => {
+    thu(() => {
+      const x = emDu();
+      const a = x.mt(3).id as number;
+      attempts.saveScore(P.admin, a, 'speaking', { criteria: [4, 4, 4, 4] }, TODAY);
+      attempts.saveScore(P.admin, a, 'listening', { rawScore: 10 }, TODAY);
+      const th = (skill: string) => Number(conn.prepare(`INSERT INTO case_signals (student_id, cycle_id, attempt_id, skill, category, detected_on, raised_on, verify_due, status, created_at) VALUES (?,?,?,?,?,?,?,?, 'pending', ?)`)
+        .run(x.sid, x.id, a, skill, skill, TODAY, TODAY, TODAY, NOW).lastInsertRowid);
+      const s = th('speaking'), l = th('listening');
+      mdk.apMonDangKy(P.mbManager, x.id, KHONG_S);
+      const gs = get('SELECT status, withdrawn_reason r FROM case_signals WHERE id = ?', s);
+      assert(gs.status === 'withdrawn' && gs.r === d.SYSTEM_CLOSE_REASON_LABEL.khong_con_hoc_mon, `tín hiệu S: ${JSON.stringify(gs)}`);
+      assert(get('SELECT status FROM case_signals WHERE id = ?', l).status === 'pending', 'tín hiệu L (môn còn học) giữ');
+    });
+  });
+  check('MDK-20 · D11: Case tạm (Mock chưa chốt) S dưới kỳ vọng có nhận xét → bỏ S: Case tạm S đóng, lưu tiếp ô khác không sinh lại; Case tạm L vẫn sinh', () => {
+    thu(() => {
+      const x = emDu();
+      const a = x.mt(3).id as number;
+      attempts.saveScore(P.admin, a, 'speaking', { criteria: [4, 4, 4, 4], nhanXet: 'Nói còn ngập ngừng nhiều.' }, TODAY);
+      const tamS = () => all(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'speaking' AND status != 'done'`, x.sid);
+      assert(tamS().length === 1 && get('SELECT tam FROM sos_cases WHERE id = ?', tamS()[0].id).tam === 1, 'seed: Case tạm S');
+      mdk.apMonDangKy(P.mbManager, x.id, KHONG_S);
+      attempts.saveScore(P.admin, a, 'listening', { rawScore: 10, nhanXet: 'Nghe sót ý chính nhiều.' }, TODAY);
+      assert(!tamS().length, `Case S (môn bỏ) còn mở: ${JSON.stringify(tamS())}`);
+      assert(all(`SELECT id FROM case_signals WHERE attempt_id = ? AND skill = 'speaking' AND status = 'pending'`, a).length === 0, 'không tín hiệu S chờ');
+      assert(all(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'listening' AND tam = 1 AND status != 'done'`, x.sid).length === 1, 'Case tạm L');
+    });
+  });
+  check('MDK-21 · D11: task W1 đã chấm dưới kỳ vọng rồi chỉ học W2 → lượt đủ điểm: không Case / tín hiệu W1; W2 dưới kỳ vọng vẫn có Case', () => {
+    thu(() => {
+      const x = emDu();
+      const a = x.mt(3).id as number;
+      attempts.saveScore(P.admin, a, 'writing1', { criteria: [4, 4, 4, 4] }, TODAY);
+      mdk.apMonDangKy(P.mbManager, x.id, CHI_W2);
+      for (const [k, v] of [['listening', { rawScore: 10 }], ['reading', { rawScore: 10 }], ['speaking', { criteria: [4, 4, 4, 4] }], ['writing2', { criteria: [4, 4, 4, 4] }]] as const) {
+        attempts.saveScore(P.admin, a, k, v, TODAY);
+      }
+      assert(get('SELECT status FROM assessment_attempts WHERE id = ?', a).status === 'done', 'lượt đủ điểm (W1 bỏ)');
+      assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`, a)?.band != null, 'điểm W1 giữ');
+      const w1 = all(`SELECT id, status FROM case_signals WHERE attempt_id = ? AND skill = 'writing1' AND status != 'withdrawn'`, a);
+      const caseW1 = all(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'writing1' AND status != 'done'`, x.sid);
+      assert(!w1.length && !caseW1.length, `task W1 đã bỏ vẫn sinh tín hiệu / Case: ${JSON.stringify({ w1, caseW1 })}`);
+      assert(all(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'writing2' AND status != 'done'`, x.sid).length === 1, 'W2 dưới kỳ vọng → Case W2');
+    });
+  });
 }

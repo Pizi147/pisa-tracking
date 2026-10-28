@@ -52,11 +52,11 @@ export function dsBaiTrenLop(p: Principal, studentId: number) {
   }));
   /* SV-BAI-LOP-2: góp ý tuần cũ (chỉ đọc từ 27/10) của em ở mọi lớp — cột trái Tiến độ trên lớp hiện cùng, có mã lớp lúc ghi. */
   const gopY = (conn.prepare(
-    `SELECT g.class_id, c.code AS lop, g.skill, g.noi_dung, rp.week_start, u.full_name AS ghi_ten, g.ghi_luc
+    `SELECT g.id, g.class_id, c.code AS lop, g.skill, g.noi_dung, rp.week_start, u.full_name AS ghi_ten, g.ghi_luc
        FROM gop_y_tuan g JOIN classes c ON c.id = g.class_id JOIN report_periods rp ON rp.id = g.period_id LEFT JOIN users u ON u.id = g.ghi_boi
       WHERE g.student_id = ? ORDER BY rp.week_start DESC, g.id DESC`,
   ).all(studentId) as any[]).map((r) => ({
-    classId: r.class_id as number, lop: r.lop as string, skill: r.skill as string, noiDung: r.noi_dung as string,
+    id: r.id as number, classId: r.class_id as number, lop: r.lop as string, skill: r.skill as string, noiDung: r.noi_dung as string,
     tuan: r.week_start as string, tuanMa: tuanLich(r.week_start, today), ghiBoi: (r.ghi_ten ?? null) as string | null, ghiLuc: r.ghi_luc as string,
   }));
   return { bai, gopY, lop: lop.map(({ nhan: _n, ...l }) => l) };

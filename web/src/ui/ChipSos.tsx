@@ -50,7 +50,7 @@ export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong,
   return (
     <>
       <button ref={nut} type="button" aria-haspopup="dialog" aria-expanded={!!cho} aria-controls={cho ? idHop : undefined} onClick={() => (cho ? setCho(null) : mo())}
-        className={`${CHIP} ${lopSos(muc, tam)} relative cursor-pointer hover:bg-[color:var(--accent-soft)] max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']`}>
+        className={`${CHIP} ${lopSos(muc, tam)} relative cursor-pointer ${muc <= 1 ? 'hover:bg-[color:var(--accent-soft)]' : 'hover:brightness-110'} max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']`}>
         {chuChipSos(hienKyNang ? vao : { muc, tam })}
       </button>
       {cho && createPortal(

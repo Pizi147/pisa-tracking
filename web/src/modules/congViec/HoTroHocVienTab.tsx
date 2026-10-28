@@ -322,7 +322,7 @@ export function HoTroHocVienTab() {
             {haiKhung && <CongTacKhung trang="cong-viec" coTatCa value={khung} dem={{ ft: demKhung.ft, thuong: demKhung.thuong }} onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />}
             <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
             {/* Mockup "Mọi hạn ▾" — P7: hạn ghi ngày thật, không "tuần này". */}
-            <select className="field h-8 w-auto !py-0 text-[13px] font-semibold max-sm:flex-1" aria-label={t('Lọc theo hạn')} value={loc === 'qua-han' || loc === 'den-het-tuan' ? loc : 'tat-ca'}
+            <select className="field h-8 w-auto !py-0 text-[13px] font-medium max-sm:flex-1" aria-label={t('Lọc theo hạn')} value={loc === 'qua-han' || loc === 'den-het-tuan' ? loc : 'tat-ca'}
               onChange={(e) => setParam('loc', e.target.value === 'tat-ca' ? null : e.target.value)}>
               <option value="tat-ca">{t('Mọi hạn')}</option>
               <option value="qua-han">{t('Quá hạn')} · {demHan['qua-han'] ?? 0}</option>
@@ -346,7 +346,7 @@ export function HoTroHocVienTab() {
       {!!demDuyet?.cho && (
         <section id="nhom-cho-duyet" className={`card overflow-clip p-0 ${anTrenDienThoai}`} aria-label={t('Chờ bạn duyệt')}>
           <DaiNhom k="duyet" nhan={t('Chờ bạn duyệt')} chip={t('{n} yêu cầu', { n: demDuyet.cho })} mo={moDuyet} onMo={() => setMoDuyet((x) => !x)}
-            phu={demDuyet.quaHan ? <span className="font-bold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: demDuyet.quaHan })}</span> : null} />
+            phu={demDuyet.quaHan ? <span className="font-semibold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: demDuyet.quaHan })}</span> : null} />
           {moDuyet && <div className="px-3 pb-3 pt-2"><HopChoDuyet gon branchId={branchId} /></div>}
         </section>
       )}

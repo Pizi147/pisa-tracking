@@ -201,7 +201,8 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | Vi phạm · Ghi vi phạm | Incident · Log incident | "Violation" nặng, nghe như pháp lý; trường học quốc tế dùng *incident* |
 | + Thêm vi phạm | + Add incident | |
 | Nhóm: Chuyên cần · BTVN · Thái độ / hành vi · Kỷ luật lớp học · Khác | Attendance · Homework · Behaviour · Class rules · Other | |
-| Mô tả · Chi tiết nếu cần | Details · Add details if needed | |
+| Mô tả · Chi tiết nếu cần | Description · Add details if needed | D8 27/10: chung khoá với ô Mô tả của Case |
+| Mô tả Case (nút / việc) | Describe Case | D8 27/10 |
 | Bằng chứng · Đính kèm tệp · Thêm liên kết | Evidence · Attach file · Add link | |
 | Lần xử lý · Thang xử lý vi phạm | Action · Action ladder | |
 | Report 1, 2, 4, 5, 7 | Report 1, 2, 4, 5, 7 | Giữ (mã nội bộ) |

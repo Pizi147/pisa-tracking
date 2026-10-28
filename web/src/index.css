@@ -63,12 +63,13 @@
     --text-faint-rgb: 154 168 194;  /* = chu-3 V5 (#9aa8c2), mờ nhất được phép */
     /* N-1b — Đạt dùng chung xanh lá của `ok`. */
     --dat-rgb: var(--ok-rgb);    --dat-bg-rgb: var(--ok-bg-rgb);    --dat-line-rgb: var(--ok-line-rgb);
-    /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — chỉ VIỀN (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`), không nền. */
+    /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — viền (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`). */
     --sos1-rgb: 204 185 109;  --sos1-chu-rgb: 217 201 129;
-    --sos2-rgb: 207 129 91;  --sos2-chu-rgb: 223 159 124;
+    --sos2-rgb: 154 102 51;  --sos2-chu-rgb: 243 199 156;
     --sos3-rgb: 213 123 113;  --sos3-chu-rgb: 232 154 140;
-    /* P6 (chủ SP 22/10): 3 mức khác hẳn — SOS 1 viền mảnh · SOS 2 viền dày + nền cam nhạt · SOS 3 nền đỏ đậm đặc chữ trắng (NEN-SUA: bớt chói = đậm hơn; viền --sos3-vien tách mặt tối). */
-    --sos2-nen: #35261a;  --sos3-nen: #873c34;  --sos3-vien: #b7544c;  --sos3-tren: #ffffff;
+    /* MAU-MUC (chủ SP 28/10, thay P6): 3 mức tách bằng ĐỘ ĐẶC nền — SOS 1 rỗng · SOS 2 nền cam vừa · SOS 3 nền đỏ đặc chữ trắng.
+     * Nền cách nhau ΔL ≥ 0,12 (cũ: nền SOS 2 #35261a cách nền thẻ 0,05 → nhìn như rỗng). Đo: `thiet-ke/v7/kiem-mau-muc.py`. */
+    --sos2-nen: #5a320f;  --sos3-nen: #a33d2d;  --sos3-vien: #c45a47;  --sos3-tren: #ffffff;
     /* Hàng ĐÃ THI · chờ KQ — nền cả hàng + vạch trái 3 px màu lịch (V5 `--da-thi-nen`). */
     --da-thi-bg-rgb: 22 35 46;
     /* KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới. */
@@ -128,9 +129,9 @@
     --muted-rgb: 74 83 108;   --muted-bg-rgb: 242 244 249; --muted-line-rgb: 210 215 229;
     --text-dim-rgb: 74 83 108;  --text-faint-rgb: 95 105 132;
     --sos1-rgb: 155 126 71;   --sos1-chu-rgb: 113 92 50;
-    --sos2-rgb: 193 118 78;  --sos2-chu-rgb: 144 85 56;
+    --sos2-rgb: 185 119 63;  --sos2-chu-rgb: 124 67 22;
     --sos3-rgb: 166 58 45;   --sos3-chu-rgb: 143 48 38;
-    --sos2-nen: #f8ece1;  --sos3-nen: #862e27;  --sos3-vien: #862e27;  --sos3-tren: #ffffff;
+    --sos2-nen: #f6d8b8;  --sos3-nen: #862e27;  --sos3-vien: #862e27;  --sos3-tren: #ffffff;
     --da-thi-bg-rgb: 240 245 248;
     --kq-vuot-rgb: 56 103 76;    --kq-bang-rgb: 39 60 143;    --kq-duoi-rgb: 166 58 45;
 
@@ -292,7 +293,7 @@
   .btn-primary:hover:not(:disabled) { background: var(--nut-chinh-hover, var(--accent-strong)); color: var(--nut-chinh-chu, var(--accent-ink)); }
   .btn-danger { border-color: rgb(var(--bad-rgb) / 0.42); color: var(--danger); }
   .btn-danger:hover:not(:disabled) { background: rgb(var(--bad-rgb) / 0.12); }
-  .btn-sm { padding: 0.25rem 0.6rem; font-size: 13px; font-weight: 600; border-radius: 0.4rem; }
+  .btn-sm { padding: 0.25rem 0.6rem; font-size: 13px; border-radius: 0.4rem; }   /* D10: chữ nút phụ 500 (theo .btn) — nút lặp từng dòng không đậm; nút chính vẫn 600 */
   .btn-ghost { background: transparent; border-color: transparent; }
   .btn-ghost:hover:not(:disabled) { background: rgb(var(--phu-rgb) / 0.1); }
 
@@ -301,11 +302,11 @@
    * Đang lọc = `aria-pressed="true"` (nút bật/tắt) hoặc `.nut-loc-dang` (nút "bỏ lọc ✕" luôn ở trạng thái đang lọc).
    */
   .nut-loc {
-    @apply inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-300/30 bg-transparent px-3 text-[13px] font-semibold text-slate-300 max-sm:min-h-[44px];
+    @apply inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-300/30 bg-transparent px-3 text-[13px] font-medium text-slate-300 max-sm:min-h-[44px];
   }
   .nut-loc:hover { background-image: linear-gradient(var(--phu-re), var(--phu-re)); }   /* HTT-1 (bỏ filter: brightness) */
   .nut-loc:where([aria-pressed='true'], .nut-loc-dang) {   /* :where = độ đặc 0 — tông màu riêng (ChipDem) vẫn đè được */
-    border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-strong);
+    border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-strong); font-weight: 600;   /* D10: chỉ nút đang lọc đậm */
   }
 
   .field {
@@ -335,7 +336,7 @@
     html[data-ban-phim] .chan-dinh-375 { bottom: calc(var(--ban-phim) - 80px); }
   }
   html[data-ban-phim] [data-thanh-duoi] { display: none; }
-  .label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 600; }   /* NEN: nhãn ô form 13 / 600 */
+  .label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }   /* D10: nhãn ô form 13 / 500 (luật chữ: nhãn 500) */
 
   .th {
     position: sticky; top: var(--th-top, 0px); z-index: 10;
@@ -422,7 +423,9 @@
    * xanh trung tính (không màu trạng thái), chữ đậm 12.5px, cao 38px; đang đóng thì mờ hơn. Hàng con: thụt 16px
    * sau cột mũi tên 16px, nền tối hơn, chữ 12px, cao tối thiểu 32px. Số tổng thẳng cột với số con vì cùng bảng.
    */
-  .hang-lon > td { background: var(--hang-lon-bg); font-weight: 700; font-size: 15px; height: 40px; }   /* NEN: hàng nhóm 40 px, 15 / 700 */
+  .hang-lon > td { background: var(--hang-lon-bg); font-size: 15px; height: 40px; }   /* NEN: hàng nhóm 40 px, 15 / 700 */
+  /* D10: độ đậm ở độ đặc 0,1,0 (`:where`) — ô ghi `font-normal` (thông tin phụ của hàng lớp) được giữ; trước đây cả hàng ra 700. */
+  .hang-lon > :where(td) { font-weight: 700; }
   .hang-lon > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-vach); }
   .hang-lon.dong > td { background: var(--hang-lon-dong-bg); }
   .hang-lon.dong > td:first-child { box-shadow: inset 3px 0 0 var(--hang-lon-dong-vach); }
@@ -465,7 +468,7 @@
   .tim-khop { background: var(--hong-nen); color: var(--hong-chu); border-radius: 3px; padding: 0 1px; }
   /* k4: số tin CHƯA ĐỌC trên chuông — chấm tròn nền trắng chữ xanh, khác dáng badge việc (chữ nhật, nền màu) ở mục Công việc. */
   .cham-chuong { position: absolute; top: 4px; right: 3px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--dieu-huong-chu-mo);
-    color: var(--dieu-huong-nen); font-size: 12px; font-weight: 800; line-height: 17px; text-align: center; font-variant-numeric: tabular-nums;
+    color: var(--dieu-huong-nen); font-size: 12px; font-weight: 700; line-height: 17px; text-align: center; font-variant-numeric: tabular-nums;
     box-shadow: 0 0 0 2px var(--dieu-huong-nen); }
   .link { color: var(--accent); text-decoration: none; }
   /* D4 bổ sung (= mockup V5 `.ten-ho-so`): tên đối tượng mở hồ sơ — màu chữ thường + "↗" (G6), chỉ rê mới xanh + gạch; không tô xanh như link khắp bảng. */

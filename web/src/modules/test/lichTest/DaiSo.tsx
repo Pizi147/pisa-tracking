@@ -27,7 +27,12 @@ export function DaiSo({ tq, onBam, dangTaiNo = false }: {
   );
 }
 
-const Khac = ({ n }: { n: number }) => <span className="block w-full text-xs font-normal leading-tight text-slate-500">{t('{n} bài của GV khác', { n })}</span>;
+/** SUA-375: điện thoại ô chỉ ~93 px → chữ gọn "15 GV khác" một dòng (nhãn ô đã nói "bài"). */
+const Khac = ({ n }: { n: number }) => (
+  <span className="block w-full text-xs font-normal leading-tight text-slate-500">
+    <span className="sm:hidden">{t('{n} GV khác', { n })}</span><span className="max-sm:hidden">{t('{n} bài của GV khác', { n })}</span>
+  </span>
+);
 
 /** Một ô số: số to trước, chữ sau (điện thoại: số trên, chữ dưới). `mo` = số 0 → chữ phụ, vẫn bấm được. */
 function O({ nhan, so, phu, onClick, mo, mau }: {
