@@ -570,6 +570,16 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
  * DÒNG PHỤ S EX của một em trong tuần (UI-LICH-TUAN; 10 mục 6): chip "S Ex · dd/mm" dưới tên · GV chấm · ô điểm thẳng cột S · "không vào Overall".
  * Bấm ô (QL / Admin đổi ngày · GV S chấm) mở hộp S Ex sẵn có (`HopSEx`); máy chủ kiểm quyền, giữ lịch sử.
  */
+/** Chip "S Ex" (V17: dòng phụ S Expert) — Lịch Test tuần và hồ sơ lượt (HSL-FT) cùng một dáng. */
+export function NhanSEx({ title, children }: { title?: string; children?: React.ReactNode }) {
+  return (
+    <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border border-[color:var(--hong)] bg-[color:var(--hong-nen)] px-1.5 text-xs font-bold text-[color:var(--hong-chu)]"
+      title={title}>
+      S Ex{children}
+    </span>
+  );
+}
+
 function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   d: SExTuan[number]; ten: string; studentId: number; cotDs: DinhNghiaCot[]; cc: Record<string, DinhNghiaCot>;
   /** Em không có MT tuần này — dòng S Ex đứng riêng, ghi tên em. */
@@ -579,11 +589,7 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   const { homNay } = useNgayNghiepVu();
   const iS = cotDs.findIndex((c) => c.key === 'speaking');
   const sua = d.sua || d.cham;
-  const chip = (
-    <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border border-[color:var(--hong)] bg-[color:var(--hong-nen)] px-1.5 text-xs font-bold text-[color:var(--hong-chu)]">
-      S Ex{d.ngay ? ` · ${ngay(d.ngay, homNay)}` : ''}
-    </span>
-  );
+  const chip = <NhanSEx>{d.ngay ? ` · ${ngay(d.ngay, homNay)}` : ''}</NhanSEx>;
   return (
     <tr className="do-hang" data-hv={studentId} data-sex={d.id}>
       <OBang c={cc.hv}>

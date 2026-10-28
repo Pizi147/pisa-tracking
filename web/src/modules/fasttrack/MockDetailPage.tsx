@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useChongVe, useVe } from '../../lib/quayLai.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
-import { OMt } from '../../ui/OMt.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { Empty, ErrorState, ExamPlanText, Info as Tag, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
+import { Nhan, NhanKq } from '../../ui/Nhan.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
+import { DauKetQua, lopKq } from '../../ui/BieuTuong.tsx';
 import { Menu, type MenuItem } from '../../ui/Menu.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
@@ -17,21 +18,23 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { HopThaoTacMt } from './HopThaoTacMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
-import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
+import { DongThoiGianLuot, dongLuot, type DongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
 import {
-  DeadlinePill, KHOA_HOAN_TAT_HINT, coDiemChinhThuc, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
+  DeadlinePill, KHOA_HOAN_TAT_HINT, coDiemChinhThuc, lockedByNoShow, useSaveScore, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
-import { DaiODiemLon, type LichKn } from './ODiemLon.tsx';
-import { nguCanhChiTiet } from './HopNhapDiem.tsx';
+import { KY_NANG_LON, useODiem, type KyNangLon, type LichKn } from './ODiemLon.tsx';
+import { nguCanhChiTiet, type KetThucHop } from './HopNhapDiem.tsx';
 import { NhomTaiCho, NhomTinh, ONhanXet } from './NhanXet.tsx';
+import { CaseLuotKn } from './CaseLuotKn.tsx';
 import { NutGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
+import { NhanSEx } from '../cham/LuoiFT.tsx';
 import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, canNhomNguyenNhan, CHU_THAO_TAC, chipSosMt0, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
-  type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
-  docKnMock, docNguCanhDs, duongDotTest, keBen, hangCanHoTro, vaiXemHocVien, KY_NANG_KE_HOACH, type HangKyNang, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao, trangCha,
+  ATTEMPT_KIND_SHORT, canNhomNguyenNhan, CHU_THAO_TAC, CHU_THEM_PA, chipSosMt0, docTuanLich, mondayOfDate, nhanLuot, skillShort, soKyVong, thaoTacKyNang, trangThaiTT, tuanLich,
+  type AssessedSkill, type AttemptKind, type TheYeuCauDto, type ThaoTac, type LoiTruong,
+  docKnMock, docNguCanhDs, duongDotTest, keBen, vaiXemHocVien, KY_NANG_KE_HOACH, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, trangCha,
 } from '@shared/domain/index.ts';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -39,9 +42,10 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
 import type { KnO } from '../test/keHoach/kieu.ts';
-import { DongCase, LUOI, LUOI_DOC, type CaseCua } from '../classes/BangCanHoTro.tsx';
+import { TenCase, type CaseCard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
+import type { CaseCua } from '../classes/BangCanHoTro.tsx';
 import { NganCase } from '../students/NganCase.tsx';
-import { useDienThoai } from '../../ui/TheDong.tsx';
+import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
@@ -74,7 +78,7 @@ type Detail = {
   /** PR-MT0: MT0 — chip SOS chỉ để nhìn (band ≤ Target − 2.0); không kỳ vọng, không Case. */
   mt0?: { sos: { skill: AssessedSkill; band: number }[] } | null;
   /** Lịch và phạm vi. */
-  history: any[];
+  history: { id: number; action: string; field: string | null; oldValue: string | null; newValue: string | null; reason: string | null; actorName: string | null; createdAt: string }[];
   /** Điểm: ai sửa, trước → sau (PR-I). */
   scoreHistory: ScoreHistoryRow[];
   /** PR-MT (T34): MT lịch sử — nhập bù, không tính hạn, không luồng vắng. */
@@ -83,6 +87,12 @@ type Detail = {
   ketQuaHuy?: KetQuaHuy | null;
   /** OV-12d: Case sinh từ lượt + Case trượt lại ở lượt — null = không có khối (GV chấm chéo, Admin). */
   caseLuot: CaseCua[] | null;
+  /** HSL-MAY-CHU: lớp đang học khi em đã rời lớp của lượt (`classCode` = lớp lúc Test); null = còn ở lớp đó. */
+  lopHienTai?: { id: number; code: string } | null;
+  /** HSL-MAY-CHU (N10): lượt S Ex của em trong các tuần của lượt — chỉ đọc, ngoài Overall / SOS. */
+  sEx?: { id: number; tuan: string; diem: number | null; nguoiCham: string | null }[];
+  /** HSL-FT: Case mở · PA thêm của các Case trên — Lịch sử kỹ năng / Lịch sử lượt. */
+  lichSuCase?: LichSuCase[];
   viewer: {
     canPlanWeek: boolean; canCancel: boolean; canHandleAbsence: boolean;
     /** PR-XLMT: GVCN của lớp — Báo vắng / Xếp lại bài vắng (`thaoTacKyNang`). */
@@ -126,16 +136,20 @@ type DotCuaHv = {
 };
 
 /**
- * Bốn cột làm việc — một dòng mỗi bài nhập. Điểm đã lên dải ô lớn (PR-HSM), bảng chỉ còn lịch · tình trạng · thao tác. Dưới
- * `md` mỗi bài là một thẻ xếp dọc, không có cột.
+ * Lưới một dòng kỹ năng của bảng kết quả (khung M4-A): Kỹ năng · Lịch · Điểm · Trạng thái · Nhận xét · Case · thao tác. Dưới `md` mỗi kỹ năng là
+ * một thẻ: tên + điểm, rồi lịch · trạng thái, nhận xét · Case, nút (các nhóm `md:contents` thành ô lưới ở màn rộng).
  */
-const ROW_GRID = 'md:grid md:grid-cols-[6.5rem_minmax(13rem,1fr)_minmax(14rem,1.2fr)_11rem] md:gap-x-3';
+const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_7.5rem_minmax(11rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
 
 export default function MockDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { data, loading, error, reload } = useApi<Detail>(id ? `/attempts/${id}` : null);
+  const { data, loading, error, reload: taiLai } = useApi<Detail>(id ? `/attempts/${id}` : null);
+  /* HSL-FT: khối Case / PA trong vùng mở = thẻ của bảng kỹ năng hồ sơ HV (cùng nguồn, cùng lộ trình của lượt) — chỉ gọi khi lượt có Case. */
+  const bang = useApi<{ rows: SkillBoardRow[] }>(data?.caseLuot?.length ? `/students/${data.student.id}/skill-board?cycleId=${data.cycle.id}` : null);
+  /* Sau mọi thao tác: trang lượt + bảng Case cùng tải lại — Còn lại, cột Case, hai lịch sử đổi cùng lúc. */
+  const reload = () => { taiLai(); if (bang.data) bang.reload(); };
   const { save } = useSaveScore(Number(id), reload, data?.student.name);
   /* R1-LUU-TIEP: mở từ lưới (tên em) — danh sách lượt nguồn ở `location.state.ds` → "Lưu · em tiếp ›"; không có → "‹ Về {nguồn}". */
   const location = useLocation();
@@ -144,6 +158,7 @@ export default function MockDetailPage() {
   const chongVe = useChongVe();
   const veNguon = useVe();
   const { homNay } = useNgayNghiepVu();
+  const chiDoc = !!vaiXemHocVien(useSession().session?.roles);
   /* R15 — các đợt của CHÍNH học viên này, để chuyển đợt ngay trên trang (không phải quay lại hồ sơ). */
   const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.student.id}` : null);
   /* PR-HOP1: dời lịch (cả đợt hoặc một kỹ năng) = hộp một đợt `HopKyNang` như Kế hoạch Test — một đường lưu `/ke-hoach-test/dot`. */
@@ -152,19 +167,23 @@ export default function MockDetailPage() {
   const [deadlineOpen, setDeadlineOpen] = useState(false);
   const [khoiPhucOpen, setKhoiPhucOpen] = useState(false);
   const [khoiPhucLuot, setKhoiPhucLuot] = useState(false);
-  /* PR-HSM: ô lớn đang mở khung sửa — nút chính "Nhập điểm / Sửa điểm" của bảng dưới cũng mở đúng ô này. */
+  /* PR-HSM: bài nhập đang mở hộp nhập điểm (ô điểm của dòng, nút chính "Nhập điểm / Sửa điểm" mở đúng bài). */
   const [moO, setMoO] = useState<string | null>(null);
+  /* HSL-FT: dòng kỹ năng đang mở vùng (một dòng một lúc) · Case đang mở form Thêm PA · Ngăn Case tại chỗ. */
+  const [moKn, setMoKn] = useState<KyNangLon | null>(null);
+  const [formPa, setFormPa] = useState<number | null>(null);
+  const [ngan, setNgan] = useState<{ caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' } | null>(null);
   /*
-   * G5 / E.4 (PR-VAI-b): `?kn=` — "MT2 · Speaking" ở hồ sơ HV mở thẳng ô Speaking + cuộn tới dải điểm, một lần khi dữ liệu có (như hồ sơ HV R7).
+   * G5 / E.4 (PR-VAI-b): `?kn=` — "MT2 · Speaking" ở hồ sơ HV mở sẵn dòng Speaking + cuộn tới đó, một lần khi dữ liệu có (khung M4-A).
    * Đợt không có ô kỹ năng đó → không cuộn, không lỗi.
    */
   const [thamSo] = useSearchParams();
   const knUrl = docKnMock(thamSo.get('kn'));
   useEffect(() => {
     if (!data || !knUrl) return undefined;
-    if (!data.cells.some((c) => (c.skill === 'writing1' || c.skill === 'writing2' ? 'writing' : c.skill) === knUrl)) return undefined;
-    setMoO(knUrl === 'writing' ? 'writing1' : knUrl);
-    return cuonOnDinh(() => document.getElementById('dai-diem'), null);
+    if (!data.cells.some((c) => c.assessedSkill === knUrl)) return undefined;
+    setMoKn(knUrl as KyNangLon);
+    return cuonOnDinh(() => document.getElementById(`kn-${knUrl}`), null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!data, knUrl]);
 
@@ -192,11 +211,6 @@ export default function MockDetailPage() {
   const ketQuaMt0 = d.mt0 && d.result.complete
     ? (d.mt0.sos.length ? <>{d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)}</> : <Nhan tone="ok">MT0 ✓</Nhan>)
     : null;
-  /* Ô MT đầu trang (không bấm): cùng luật `oMt` với lưới và bảng Lộ trình. */
-  const omtDau: OMtVao = {
-    so: d.attemptNo, attemptId: d.id, cu: d.lichSu,
-    kn: Object.fromEntries(d.skillSchedule.filter((r) => (KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)).map((r) => [r.skill, oKyNangTuLich(r, khongDuThiTuO(d.cells, r.skill))])),
-  };
   /* Đủ điểm và có kỳ vọng thì mới kết luận đạt; còn lại là "chưa biết" — không phải "đạt". */
   const passed: boolean | null = d.result.evaluable ? d.result.sosLevel === 0 : null;
 
@@ -213,8 +227,6 @@ export default function MockDetailPage() {
       return false;
     }
   };
-
-  const openHistory = () => document.getElementById('lich-su')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   /*
    * NGOẠI LỆ CỦA QUẢN LÝ nằm trong MỘT menu, không phải ba nút ngang hàng với việc nhập điểm. "Huỷ lượt" không còn
@@ -254,11 +266,24 @@ export default function MockDetailPage() {
   ];
   const coKhoa = d.cells.some((c) => c.khoa);
   const laRf = d.cycle.route === 'RF';
-  const dong2 = [
-    d.period ? `${tuanLich(d.period.weekStart, homNay)} · ${d.period.range}` : t('Chưa chốt tuần'),
-    d.classCode, d.cycle.route ? t('Lộ trình {route}', { route: d.cycle.route }) : null, d.lichSu ? t('Nhập bù, không tính hạn') : null,
-  ].filter(Boolean).join(' · ');
-  const moODiem = (k: string) => { setMoO(k); document.getElementById('dai-diem')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  /* HSL-FT: Case của lượt trong bảng kỹ năng hồ sơ HV (thẻ đủ: PA, việc tiếp, quyền) — Case không có thẻ thì vùng mở chỉ có nút mở Ngăn Case. */
+  const theCase = new Map((bang.data?.rows ?? []).flatMap((r) => r.cases).filter((c) => d.caseLuot?.some((x) => x.id === c.id)).map((c) => [c.id, c]));
+  /** Mở dòng kỹ năng + cuộn tới + focus đúng chỗ của việc (Còn lại). */
+  const moDong = (k: KyNangLon, chon?: string) => {
+    setMoKn(k);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = document.getElementById(`kn-${k}`);
+      el?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      if (chon) document.querySelector<HTMLElement>(`#kn-${k} ${chon}, #vung-${k} ${chon}`)?.focus({ preventScroll: true });
+    }));
+  };
+  const conLai = cancelled ? [] : conLaiLuot(d, homNay, theCase, chiDoc, {
+    moDong,
+    themPa: (k, caseId) => { setFormPa(caseId); moDong(k); },
+    moCase: (caseId, viec, paId) => setNgan({ caseId, viec, paId }),
+  });
+  const veMt = (() => { const v = chongVe[0] ?? trangCha('mt', { studentId: d.student.id, tenHv: d.student.name }); return { nhan: t('‹ Về {x}', { x: v.ten }), onClick: () => veNguon(v.url, !chongVe.length) }; })();
+  const lichSuLuot = dongLuot({ history: d.history, scoreHistory: d.scoreHistory, lichSuCase: d.lichSuCase ?? [], homNay });
 
   return (
     <div className="page space-y-4">
@@ -276,102 +301,148 @@ export default function MockDetailPage() {
         </div>
       )}
 
-      {/* A. ĐẦU TRANG — ai · đợt nào · kết luận gì, trong ba dòng. */}
+      {/* ① ĐẦU HỒ SƠ — ai (↗ hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Target · kỳ vọng; việc làm (Nhập điểm lớp ›, Chỉnh lịch) bên phải. */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <DuongVe cha={trangCha('mt', { studentId: d.student.id, tenHv: d.student.name })} ten={`MT${d.attemptNo} · ${d.student.name}`} chiTiet={d.classCode} />
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="text-xl font-bold text-slate-100 min-w-0 break-words">
-              <span className="mr-2 text-sm font-medium text-slate-400">{t('Hồ sơ Mock Test ·')}</span>{d.student.name}
-              <span className="ml-2 align-middle"><OMt v={omtDau} homNay={homNay} /></span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <h1 className="m-0 min-w-0 break-words text-xl font-bold text-slate-100">
+              <span className="sr-only">{t('Hồ sơ Mock Test ·')} </span>
+              <Link to={`/hoc-vien/${d.student.id}`} className="text-inherit no-underline hover:underline" title={t('Hồ sơ học viên')}>
+                {d.student.name}<span aria-hidden className="ml-1 text-base text-slate-400">↗</span>
+              </Link>
             </h1>
-            {cancelled && <Tag>{t('Đã huỷ')}</Tag>}
+            <span className="inline-flex items-center gap-2">
+              <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref({ ...r, studentId: d.student.id }), { replace: true })} />
+              <NutLuat label={t('Thông tin đợt Mock Test')}>
+                <dl className="m-0 grid gap-2">
+                  <Info label={t('Trạng thái')}>{nhanLuot(d.status, d.result.scoredRequired, d.result.required.length)}</Info>
+                  <Info label={t('Tuần dự kiến hoàn tất')} title={TOOLTIP_TUAN_HOAN_TAT}>
+                    {d.period ? <>{tuanLich(d.period.weekStart, homNay)} <span className="text-xs text-slate-500">({d.period.range})</span></> : t('Chưa chốt tuần')}
+                  </Info>
+                  <Info label={t('Dự kiến thi')}><ExamPlanText plan={d.cycle.examPlan} /></Info>
+                  {d.cycle.route && <Info label={t('Lộ trình')}>{d.cycle.route}{laRf ? ` · ${t('Lộ trình RF — kỳ vọng mọi MT bằng Target.')}` : ''}</Info>}
+                  {d.branchName && <Info label={t('Chi nhánh')}>{d.branchName}</Info>}
+                  {d.studyWeekHint && <Info label={t('Mốc gợi ý')}>{t('Tuần học {studyWeekHint}', { studyWeekHint: d.studyWeekHint })}</Info>}
+                </dl>
+              </NutLuat>
+            </span>
             {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>{t('Đủ điểm')}</Tag>}
-            {laRf && <span className="text-xs text-slate-400" title={t('Lộ trình RF — kỳ vọng mọi MT bằng Target.')}>RF</span>}
-            <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref({ ...r, studentId: d.student.id }), { replace: true })} />
+            {d.lichSu && <Tag>{t('Nhập bù, không tính hạn')}</Tag>}
           </div>
-          <p className="text-xs text-slate-500 mt-0.5 m-0" title={d.branchName ? t('Lớp lúc đánh giá: {x} · {branchName}', { x: d.classCode ?? '—', branchName: d.branchName }) : undefined}>
-            {dong2}
-          </p>
+          <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5">
+            <NhanGt n={t('Lớp lúc Test')} g={<>{d.classCode ?? '—'}{d.lopHienTai && <span className="ml-1 text-xs font-medium text-slate-400">· {t('nay {x}', { x: d.lopHienTai.code })}</span>}</>} />
+            <NhanGt n={t('Lịch')} g={<span className="tabular-nums">{d.period ? tuanLich(d.period.weekStart, homNay) : t('Chưa chốt tuần')}</span>} />
+            {!d.mt0 && <NhanGt n="Target" g={<TargetText band={d.targetAtAttempt} kck={d.cycle.khongCamKet} />} />}
+            {!d.mt0 && <NhanGt n={t('Kỳ vọng MT{attemptNo}', { attemptNo: d.attemptNo })} g={<span className="tabular-nums">{fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}</span>} />}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link className="btn min-h-[44px] no-underline sm:min-h-0" to={`/hoc-vien/${d.student.id}`}>{t('Hồ sơ học viên')}</Link>
           {d.classId && d.viewer.editableSkills.length > 0 && daToiTuan && (
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
             <Link className="btn min-h-[44px] no-underline sm:min-h-0"
               to={d.mt0 ? `/nhap-diem/${d.classId}?kind=mt0${d.period ? `&periodId=${d.period.id}` : ''}`
                 : `/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
-              {t('Nhập điểm')}
+              {t('Nhập điểm lớp ›')}
             </Link>
           )}
-          <span ref={nutChinhLich} className="inline-flex"><Menu label={t('Chỉnh lịch')} items={headerItems} className="btn min-h-[44px] sm:min-h-0" /></span>
+          {headerItems.length > 0 && <span ref={nutChinhLich} className="inline-flex"><Menu label={t('Chỉnh lịch')} items={headerItems} className="btn min-h-[44px] sm:min-h-0" /></span>}
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". */}
-        {/* PR-MT0 (planning 07/10): MT0 không có kỳ vọng — đủ điểm thì chỉ `MT0 ✓` / chip SOS, không câu "chưa có kỳ vọng". */}
-        {ketQuaMt0 ?? <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
-          sos={d.result.sosLevel ?? null} chot={d.result.chot} kckDuoi={d.result.kckDuoi} />}
-        {d.mt0 ? (!ketQuaMt0 && d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)) : (
-          <span className="text-sm text-slate-400 tabular-nums">
-            {t('Kỳ vọng')}{' '}{fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
+      {/* ③ TÓM TẮT — Overall · kết quả + n/4 kỹ năng có điểm · Còn lại (việc của lượt, ai làm). */}
+      <section aria-label={t('Tóm tắt lượt')} className="card flex flex-wrap items-start gap-x-8 gap-y-3 px-4 py-3">
+        <div className="min-w-0">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400">Overall
+            {/* Luật V6: câu giải thích phạm vi / Target vào ⓘ, không nằm trên màn chính. */}
+            {(d.result.scopeDetail || (d.result.complete && !d.result.evaluable)) && (
+              <NutLuat label="Overall">
+                {d.result.scopeDetail && <p className="m-0">{t('{scopeDetail}. Kỹ năng ngoài phạm vi không tính vào mẫu số SOS và không bị coi là thiếu điểm; vì không đủ bốn kỹ năng nên đợt này không có Overall.', { scopeDetail: d.result.scopeDetail })}</p>}
+                {d.result.complete && !d.result.evaluable && <p className="m-0">{t('Đã đủ điểm nhưng lộ trình chưa có Target, nên chưa tính được kỳ vọng và SOS.')}</p>}
+              </NutLuat>
+            )}
           </span>
-        )}
-        {d.deadlineOverride && (
-          <Tag title={d.deadlineOverride.reason ?? undefined}>
-            {t('Hạn chấm cả đợt')}{' '}{fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
-          </Tag>
-        )}
-      </div>
-
-      {/* B. NĂM Ô ĐIỂM LỚN — tầng 1 của màn; bấm ô là sửa tại chỗ (YC-13.7, YC-13.8). */}
-      <div id="dai-diem" className="scroll-mt-4">
-        {/* R1-LUU-TIEP: `key` lượt — "Lưu · em tiếp ›" đổi lượt không remount trang; phiên chấm (bài đã lưu, hết) phải là của lượt mới. */}
-        <DaiODiemLon key={d.id} cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
-          mo={moO} onMo={setMoO} save={save} nguCanh={nguCanhChiTiet(d)}
-          emTiep={emSau !== null ? (k) => navigate(duongDotTest({ id: emSau }, k), { state: { ds: dsLuot }, replace: true }) : null}
-          ve={(() => { const v = chongVe[0] ?? trangCha('mt', { studentId: d.student.id, tenHv: d.student.name }); return { nhan: t('‹ Về {x}', { x: v.ten }), onClick: () => veNguon(v.url, !chongVe.length) }; })()} />
-      </div>
-
-      {/* C. NHẬN XÉT 4 kỹ năng (YC-13.5, OV-4b) — không bắt buộc, không phải điểm. */}
-      <KhoiNhanXet attemptId={d.id} cells={d.cells} save={save} phuTrach={d.phuTrachS ? luuPhuTrach : null} />
-
-      <details className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
-        <summary className="cursor-pointer text-sm text-slate-300 max-sm:py-2.5 max-sm:-my-2.5">{t('Thông tin đợt Mock Test')}</summary>
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 m-0 mt-3">
-          <Info label={t('Trạng thái')}>
-            <Status kind={d.status === 'done' ? 'done' : cancelled ? 'idle' : 'doing'}>
-              {nhanLuot(d.status, d.result.scoredRequired, d.result.required.length)}
-            </Status>
-          </Info>
-          <Info label={t('Tuần dự kiến hoàn tất')}
-            title={TOOLTIP_TUAN_HOAN_TAT}>
-            {d.period
-              ? <>{tuanLich(d.period.weekStart, homNay)} <span className="text-slate-500 text-xs">({d.period.range})</span></>
-              : <Tag pending>{t('Chưa chốt tuần')}</Tag>}
-          </Info>
-          <Info label={t('Dự kiến thi')}><ExamPlanText plan={d.cycle.examPlan} /></Info>
-          <Info label={t('Target tại thời điểm đánh giá')}>
-            <TargetText band={d.targetAtAttempt} kck={d.cycle.khongCamKet} />
-          </Info>
-          {d.studyWeekHint && (
-            <Info label={t('Mốc gợi ý')} title={t('Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.')}>
-              {t('Tuần học {studyWeekHint}', { studyWeekHint: d.studyWeekHint })}
-            </Info>
+          <span className="mt-1 block">
+            {d.result.overall !== null ? <ODiemOverall band={d.result.overall} kyVong={d.result.expectation} />
+              : d.result.khongDuBoMon ? <NhanKq kq="thieu" title={t('Em không học đủ bốn kỹ năng ở lượt này')}>{t('Không đủ bộ môn')}</NhanKq>
+              : <span className="text-xl font-bold leading-none text-slate-600">—</span>}
+          </span>
+        </div>
+        <div className="flex min-w-0 flex-col gap-1 sm:pt-4">
+          <span className="flex flex-wrap items-center gap-1.5">
+            {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". PR-MT0: MT0 không có kỳ vọng — `MT0 ✓` / chip SOS. */}
+            {cancelled ? <NhanKq kq="thieu">{t('Đã huỷ')}</NhanKq> : ketQuaMt0 ?? (d.mt0 ? d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)
+              : <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
+                sos={d.result.sosLevel ?? null} chot={d.result.chot} kckDuoi={d.result.kckDuoi} />)}
+            {d.deadlineOverride && (
+              <Tag title={d.deadlineOverride.reason ?? undefined}>
+                {t('Hạn chấm cả đợt')}{' '}{fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
+              </Tag>
+            )}
+          </span>
+        </div>
+        <div className="min-w-0 max-sm:w-full sm:ml-auto sm:text-right">
+          <span className="block text-xs font-medium text-slate-400">{conLai.length ? t('Còn lại') : t('Không còn việc')}</span>
+          {conLai.length > 0 && (
+            <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0 sm:justify-end">
+              {conLai.map((v) => (
+                <li key={v.khoa} className="min-w-0 max-w-full">
+                  {v.mo ? (
+                    <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
+                      <b className="mr-1 text-[color:var(--accent-strong)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
+                    </button>
+                  ) : (
+                    <span className="inline-flex min-h-[32px] items-center rounded-md border px-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
+                      <b className="mr-1 text-slate-300">{v.nhan}</b><span className="max-w-[16rem] truncate">{[v.viec, v.ai].filter(Boolean).join(' · ')}</span>
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
-        </dl>
-      </details>
+        </div>
+      </section>
 
-      {/* D. LỊCH KIỂM TRA — MỘT bảng làm việc: lịch, tình trạng, thao tác từng bài (điểm đã ở dải trên). */}
-      <SkillWorkTable d={d} onMoDiem={moODiem} onDone={reload} onOpenHistory={openHistory} onDoiLich={(anchor, k) => setHopLich({ anchor, k })} />
+      {/* ④ BẢNG KỸ NĂNG — một dòng một kỹ năng; bấm dòng mở vùng Nhận xét | Case & phương án + Lịch sử kỹ năng ngay dưới. */}
+      <BangKetQuaLuot d={d} homNay={homNay} chiDoc={chiDoc} moKn={moKn} onMoKn={(k) => setMoKn((x) => (x === k ? null : k))}
+        moO={moO} onMoO={setMoO} save={save} onDone={reload} onDoiLich={(anchor, k) => setHopLich({ anchor, k })}
+        emTiep={emSau !== null ? (k) => navigate(duongDotTest({ id: emSau }, k), { state: { ds: dsLuot }, replace: true }) : null} ve={veMt}
+        vungCase={(k) => {
+          const cs = (d.caseLuot ?? []).filter((c) => kyNangCase(c.topic) === k);
+          const the = cs.map((c) => theCase.get(c.id)).filter((x): x is CaseCard => !!x);
+          return (
+            <>
+              <CaseLuotKn cards={the} studentId={d.student.id} chiDoc={chiDoc || cancelled} form={formPa} onForm={setFormPa}
+                onMoCase={(caseId, o) => setNgan({ caseId, paId: o?.paId, viec: o?.viec === 'them-pa' ? undefined : o?.viec })} onDoi={reload} />
+              {/* Case chưa có thẻ ở bảng kỹ năng (bảng đang tải / lộ trình khác): vẫn mở được Ngăn Case. */}
+              {cs.filter((c) => !theCase.has(c.id)).map((c) => (
+                <button key={c.id} type="button" className="link mt-1 block border-0 bg-transparent p-0 text-left text-xs font-semibold max-sm:min-h-[44px]" onClick={() => setNgan({ caseId: c.id })}>
+                  <TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} />
+                </button>
+              ))}
+            </>
+          );
+        }}
+        nhanXet={(k) => <NhanXetKn k={k} attemptId={d.id} cells={d.cells} save={save} phuTrach={d.phuTrachS ? luuPhuTrach : null} />}
+        lichSuKn={(k) => (
+          <LichSuGon tieuDe={t('Lịch sử {x}', { x: skillLabel(k) })} 
+            dong={dongLuot({
+              history: d.history.filter((h) => h.field === k), scoreHistory: d.scoreHistory.filter((h) => kyNangO(h.skill) === k),
+              lichSuCase: (d.lichSuCase ?? []).filter((h) => kyNangCase(h.topic) === k), homNay,
+            })} />
+        )}
+        duoiBang={d.sEx?.length ? <DongSEx ds={d.sEx} homNay={homNay} /> : null} />
 
-      {/* D2. CASE & PHƯƠNG ÁN (OV-12d, Rulebook 17.5 sửa 14/10) — lượt có Case mới hiện; làm việc tại chỗ qua Ngăn Case. */}
-      <KhoiCaseLuot d={d} onDoi={reload} />
+      {/* ⑦ LỊCH SỬ LƯỢT — thu gọn cuối trang; "Lịch sử chi tiết" mở đủ chi tiết của các ô (OV-15g). */}
+      <div id="lich-su">
+        <LichSuGon tieuDe={t('Lịch sử lượt')} dong={lichSuLuot} the
+          chiTiet={{ dong2: [d.student.name, `MT${d.attemptNo}`, d.classCode], id: d.id }} />
+      </div>
 
-      {/* E. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. */}
-      <HistoryCard d={d} />
-
+      {ngan && (
+        <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={d.student.name} lop={d.classCode}
+          onClose={() => { setNgan(null); reload(); }} onChanged={reload} />
+      )}
       {hopLich && d.classId !== null && (
         <HopKyNang anchor={hopLich.anchor} tieuDe={`${d.student.name} · MT${d.attemptNo}`} loai="ft" classId={d.classId} studentId={d.student.id}
           dot={{ loai: 'ft', attemptNo: d.attemptNo }} attemptId={d.id} kn={knHop(d)} kyNangDau={hopLich.k} doiTuanDau={hopLich.k !== null} lichSu={d.lichSu}
@@ -386,6 +457,68 @@ export default function MockDetailPage() {
       )}
     </div>
   );
+}
+
+/** Ô nhập (`writing1` …) → kỹ năng của bảng. */
+const kyNangO = (s: string): string => (s === 'writing1' || s === 'writing2' ? 'writing' : s);
+/** Chủ đề Case → kỹ năng của bảng (Case W theo task vẫn ở dòng Writing). */
+const kyNangCase = (topic: string | null): string | null => (topic ? kyNangO(topic) : null);
+
+/** Overall của tóm tắt: ✓ / ✗ trước số, cùng luật tô với ô kỹ năng (`soKyVong`). */
+function ODiemOverall({ band, kyVong }: { band: number; kyVong: number | null }) {
+  const kq = soKyVong(band, kyVong);
+  return (
+    <span className="flex items-center gap-1.5">
+      {kq && <DauKetQua kq={kq} />}
+      <span className={`text-xl font-bold leading-none tabular-nums ${lopKq(kq) || 'text-slate-100'}`}>{fmtBand(band)}</span>
+    </span>
+  );
+}
+
+type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void };
+
+/**
+ * "CÒN LẠI" CỦA LƯỢT (khung M4-A ③, chủ SP 27/10) — chỉ gom việc máy chủ đã có: bài thiếu điểm, thiếu nhận xét (V15), vắng chờ xếp lại, đề nghị
+ * dời chờ duyệt, việc tiếp của Case (cùng `viecTiep` với Công việc). Việc của người xem = nút không "›" — mở tại chỗ, G6 (mở đúng dòng + focus / mở form Thêm PA /
+ * Ngăn Case); việc của người khác chỉ đọc. Nút của một dòng lấy từ `thaoTacKyNang` — cùng nguồn với cột thao tác của bảng.
+ */
+function conLaiLuot(d: Detail, homNay: string, theCase: Map<number, CaseCard>, chiDoc: boolean, mo: {
+  moDong: (k: KyNangLon, chon?: string) => void; themPa: (k: KyNangLon, caseId: number) => void;
+  moCase: (caseId: number, viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa', paId?: number) => void;
+}): ViecConLai[] {
+  const ds: ViecConLai[] = [];
+  for (const k of KY_NANG_LON) {
+    const dong = thaoTacDong(d, k, homNay);
+    if (!dong) continue;
+    const { r, cells, chinh, prog } = dong;
+    const n = skillShort(k);
+    const cua = (viec: string, chon: string | null, ai?: string | null) =>
+      ds.push({ khoa: `${k}:${viec}`, nhan: n, viec, ai, mo: chon !== null && !chiDoc ? () => mo.moDong(k, chon) : undefined });
+    if (r.pendingMove) cua(CHU_THAO_TAC['tra-loi-de-nghi'], chinh === 'tra-loi-de-nghi' ? '[data-chinh]' : null, chinh === 'tra-loi-de-nghi' ? null : t('Quản lý'));
+    else if (r.required && r.sitStatus === 'absent' && prog !== 'cancelled') cua(CHU_THAO_TAC['xep-lai'], chinh === 'xep-lai' ? '[data-chinh]' : null, chinh === 'xep-lai' ? null : t('Quản lý'));
+    else if (r.required && (prog === 'due' || prog === 'overdue') && cells.some((c) => c.required && c.band === null && c.rawScore === null && !c.noShow)) {
+      cua(chinh === 'nhap-diem' ? CHU_THAO_TAC['nhap-diem'] : t('Chờ điểm'), chinh === 'nhap-diem' ? '[data-chinh]' : null);
+    }
+    const thieuNx = cells.filter((c) => c.thieuNhanXet);
+    if (thieuNx.length) cua(thieuNx.some((c) => c.canEdit) ? t('Viết nhận xét') : t('Chờ nhận xét'), thieuNx.some((c) => c.canEdit) ? 'textarea' : null);
+  }
+  for (const c of d.caseLuot ?? []) {
+    const the = theCase.get(c.id);
+    const v = the?.viecTiep ?? c.viecTiep;
+    /* Kết quả PA chưa tới hạn chưa là việc (Công việc cũng chưa đếm) — PA vừa thêm không sinh việc ngay. */
+    if (!v || c.trangThai.k === 'tam' || (v.loaiHan === 'cap-nhat-pa' && (!v.han || v.han > homNay))) continue;
+    const k = kyNangCase(c.topic) as KyNangLon | null;
+    const nhan = `Case ${k ? skillShort(k) : ''}`.trim();
+    const viec = dich(v.chu);
+    const cuaToi = !chiDoc && !!the?.canEdit;
+    const loai = v.chu.startsWith('Xác nhận Case') || v.chu.startsWith('Mô tả Case') ? 'xac-nhan' as const
+      : v.chu.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : v.loaiHan === 'cap-nhat-pa' ? 'ghi-ket-qua' as const : undefined;
+    ds.push({
+      khoa: `case:${c.id}`, nhan, viec, ai: cuaToi ? null : the?.nguoiLam?.ten ?? null,
+      mo: !cuaToi ? undefined : v.chu === CHU_THEM_PA && k ? () => mo.themPa(k, c.id) : () => mo.moCase(c.id, loai, (v as { paId?: number }).paId),
+    });
+  }
+  return ds;
 }
 
 /**
@@ -410,37 +543,6 @@ function ChonDot({ hienTai, ds, homNay, onChon }: {
       onChange={(e) => { const r = xep.find((x) => x.id === Number(e.target.value)); if (r && r.id !== hienTai) onChon(r); }}>
       {xep.map((r) => <option key={r.id} value={r.id}>{nhan(r)}</option>)}
     </select>
-  );
-}
-
-/**
- * OV-12d: khối "Case & phương án" — Case của lượt (+ Case trượt lại ở lượt, "lặp từ MTn"), một dòng `DongCase` như tab Cần hỗ trợ: Kỹ năng · Case
- * (nguyên nhân, trạng thái) · PA đang làm · Việc tiếp + hạn. Bấm tên Case / việc → Ngăn Case tại chỗ, đóng xong tải lại hồ sơ. TVV / CX: chỉ đọc.
- */
-function KhoiCaseLuot({ d, onDoi }: { d: Detail; onDoi: () => void }) {
-  const { homNay } = useNgayNghiepVu();
-  const chiDoc = !!vaiXemHocVien(useSession().session?.roles);
-  const dienThoai = useDienThoai();
-  const [ngan, setNgan] = useState<{ caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' } | null>(null);
-  if (!d.caseLuot?.length) return null;
-  const hang = hangCanHoTro({ ct: 'FT', cases: d.caseLuot }).filter((h): h is HangKyNang<CaseCua> => h.kind === 'hang' && h.cases.length > 0);
-  const luoi = chiDoc ? LUOI_DOC : LUOI;
-  return (
-    <Card title={t('Case & phương án')} bodyClass="p-0" action={<span className="text-xs tabular-nums text-slate-400">{d.caseLuot.length} Case</span>}>
-      <div className={`hidden px-3 pt-2 text-[12px] font-semibold  text-slate-500 ${luoi}`}>
-        <span>{t('Kỹ năng')}</span><span>Case</span><span>{t('PA đang làm')}</span>{!chiDoc && <span>{t('Việc tiếp · hạn')}</span>}
-      </div>
-      <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
-        {hang.flatMap((h) => h.cases.map((c, i) => (
-          <DongCase key={c.id} h={h} c={c} dau={i === 0} ct="FT" homNay={homNay} the={dienThoai} chiDoc={chiDoc}
-            onMo={(viec, paId) => setNgan({ caseId: c.id, viec, paId })} />
-        )))}
-      </div>
-      {ngan && (
-        <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={d.student.name} lop={d.classCode}
-          onClose={() => { setNgan(null); onDoi(); }} onChanged={onDoi} />
-      )}
-    </Card>
   );
 }
 
@@ -473,21 +575,19 @@ function knHop(d: Detail): KnO {
 }
 
 /**
- * KHỐI NHẬN XÉT (PR-HSM, YC-13.5, Q1; OV-4b: thêm Listening · Reading). Nằm ở: Test › một lượt MT → ngay dưới dải ô điểm lớn.
+ * NHẬN XÉT MỘT KỸ NĂNG (PR-HSM, YC-13.5, Q1; OV-4b; HSL-FT: cột trái vùng mở của dòng kỹ năng).
  *
  * "Nhận xét Writing" có HAI phần Task 1 · Task 2 (hai task có thể hai GV — K4-31), mỗi phần ghi người nhập điểm của bài đó;
  * "Nhận xét Speaking" kèm GV chấm (đổi là lưu ngay). Người sửa được bài đó (`cell.canEdit`) gõ tại chỗ, lưu khi rời ô; người
- * khác đọc chữ thường, phần rỗng thì ẩn. Cả khối rỗng mà không ai sửa được → không vẽ.
- * OV-12b (mockup ov12-1 §4): ô MT có điểm → "*", xoá / dưới 10 ký tự không lưu; ô dưới kỳ vọng → chip "Nhóm nguyên nhân *" ngay dưới
- * nhận xét (bấm là lưu, chip cuối không bỏ được); người không sửa được thấy chip tĩnh.
+ * khác đọc chữ thường. OV-12b: ô dưới kỳ vọng → chip "Nhóm nguyên nhân *" ngay dưới nhận xét (bấm là lưu); người không sửa được thấy chip tĩnh.
  */
-function KhoiNhanXet({ attemptId, cells, save, phuTrach }: {
-  attemptId: number; cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean | 'trung'>;
+function NhanXetKn({ k, attemptId, cells, save, phuTrach }: {
+  k: KyNangLon; attemptId: number; cells: Cell[]; save: (skill: string, patch: SavePatch) => Promise<boolean | 'trung'>;
   /** OV-13k: người xem là GV phụ trách S / GVCN / QL — ghi "Nhận xét GV phụ trách", sửa nhóm ô S (đường riêng). */
   phuTrach: ((body: { nhanXetPhuTrach?: string | null; nhomNguyenNhan?: string[] }) => Promise<boolean>) | null;
 }) {
   const toi = useSession().session?.user?.id;
-  const o = (k: string) => cells.find((c) => c.skill === k);
+  const o = (s: string) => cells.find((c) => c.skill === s);
   const sua = (c: Cell | undefined): boolean => !!c && c.canEdit && !lockedByNoShow(c);
   const phu = (c: Cell) => (c.enteredByName ? t('Người nhập điểm: {enteredByName}', { enteredByName: c.enteredByName }) : null);
   const nenCo = (c: Cell) => !!c.nenCoNhanXet && coDiemChinhThuc(c);
@@ -515,16 +615,25 @@ function KhoiNhanXet({ attemptId, cells, save, phuTrach }: {
       </div>
     );
   };
-  /* OV-4b: Listening · Reading cũng có nhận xét. */
-  const lr = (['listening', 'reading'] as const).map((k) => ({ k, nx: phan(o(k), t('Nhận xét')) })).filter((x) => x.nx);
-  const w = [phan(o('writing1'), 'Task 1'), phan(o('writing2'), 'Task 2')].filter(Boolean);
+  const tieuDe = (phai?: ReactNode) => (
+    <div className="flex flex-wrap items-baseline gap-x-2">
+      <h2 className="m-0 text-sm font-semibold text-slate-200">{t('Nhận xét')}{' '}{skillLabel(k)}</h2>{phai}
+    </div>
+  );
+  const rong = <p className="m-0 text-xs text-slate-500">{t('Chưa có')}</p>;
+  if (k === 'writing') {
+    const w = [phan(o('writing1'), 'Task 1'), phan(o('writing2'), 'Task 2')].filter(Boolean);
+    return <section className="min-w-0 space-y-3">{tieuDe()}{w.length ? w : rong}</section>;
+  }
+  if (k !== 'speaking') return <section className="min-w-0 space-y-3">{tieuDe()}{phan(o(k), t('Nhận xét')) ?? rong}</section>;
   const s = o('speaking');
+  if (!s) return <section className="min-w-0 space-y-3">{tieuDe()}{rong}</section>;
   /* OV-13k: GV phụ trách xem bài người khác chấm — nhận xét người chấm chỉ đọc (không đè), nhóm sửa qua đường phụ trách. */
-  const ptXem = !!phuTrach && !!s && coDiemChinhThuc(s) && (s.gvCham?.userId ?? null) !== toi;
+  const ptXem = !!phuTrach && coDiemChinhThuc(s) && (s.gvCham?.userId ?? null) !== toi;
   const nxS = phan(s, t('Nhận xét'), ptXem ? (v) => phuTrach!({ nhomNguyenNhan: v }) : undefined);
-  const pt = s?.nhanXetPhuTrach ?? null;
+  const pt = s.nhanXetPhuTrach ?? null;
   /* GV phụ trách TỰ chấm: nhận xét của họ là nhận xét người chấm — không có ô thứ hai. */
-  const nxPt = !s ? null : ptXem ? (
+  const nxPt = ptXem ? (
     <ONhanXet nhan={t('Nhận xét GV phụ trách')} phu={pt?.ten ?? null} giaTri={pt?.chu ?? null} onLuu={(v) => phuTrach!({ nhanXetPhuTrach: v })} />
   ) : pt ? (
     <div className="min-w-0">
@@ -534,55 +643,102 @@ function KhoiNhanXet({ attemptId, cells, save, phuTrach }: {
       <p className="m-0 mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200"><ChuDich chu={pt.chu} nguon={{ bang: 'assessment_scores', id: attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' }} /></p>
     </div>
   ) : null;
-  const coS = !!s && (sua(s) || !!s.nhanXet || !!s.gvCham);
-  if (!lr.length && !w.length && !coS) return null;
   return (
-    <Card title={t('Nhận xét')}>
-      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
-        {lr.map((x) => (
-          <section key={x.k} className="min-w-0 space-y-3">
-            <h3 className="m-0 text-sm font-semibold text-slate-200">{t('Nhận xét')}{' '}{x.k === 'listening' ? 'Listening' : 'Reading'}</h3>
-            {x.nx}
-          </section>
-        ))}
-        {w.length > 0 && (
-          <section className="min-w-0 space-y-3">
-            <h3 className="m-0 text-sm font-semibold text-slate-200">{t('Nhận xét Writing')}</h3>
-            {w}
-          </section>
-        )}
-        {coS && s && (
-          <section className="min-w-0 space-y-3">
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              <h3 className="m-0 text-sm font-semibold text-slate-200">{t('Nhận xét Speaking')}</h3>
-              {sua(s)
-                ? <NutGvCham value={gvChamThanhChon(s.gvCham)} goiY={t('Lưu ngay cho bài Speaking này.')}
-                  onChange={(v) => void save('speaking', { gvCham: gvChamPayload(v) })} />
-                : s.gvCham && coDiemChinhThuc(s) && <span className="text-xs text-slate-400">{t('GV chấm: {ten}', { ten: s.gvCham.ten })}</span>}
-            </div>
-            {nxS}
-            {nxPt}
-          </section>
-        )}
-      </div>
-    </Card>
+    <section className="min-w-0 space-y-3">
+      {tieuDe(sua(s)
+        ? <NutGvCham value={gvChamThanhChon(s.gvCham)} goiY={t('Lưu ngay cho bài Speaking này.')} onChange={(v) => void save('speaking', { gvCham: gvChamPayload(v) })} />
+        : s.gvCham && coDiemChinhThuc(s) && <span className="text-xs text-slate-400">{t('GV chấm: {ten}', { ten: s.gvCham.ten })}</span>)}
+      {nxS ?? (!nxPt && rong)}
+      {nxPt}
+    </section>
   );
 }
 
+const THU_TU_O = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
+const coDiemO = (c: Cell) => c.band !== null || c.rawScore !== null;
+/* LUAT-34: ô "-" MT cũ = Đã huỷ (`da-huy`) — như "Không dự thi" cũ: không hạn; GV đúng ô: nút chính Nhập điểm (gỡ "-" trong hộp). */
+const khongDuThiO = (c: Cell) => (c.noShow?.state === 'khong-du-thi' || c.noShow?.state === 'da-huy') && !c.daChot && !coDiemO(c);
+const laDiem = (x: ThaoTac | null) => x === 'nhap-diem' || x === 'sua-diem';
+
 /**
- * MỘT BẢNG THAY HAI (MT-P04): mỗi bài nhập (L · R · W1 · W2 · S) là MỘT dòng, bốn cột: Kỹ năng · Lịch kiểm tra · Tình trạng và
- * hạn · Thao tác. PR-HSM: cột Điểm và dòng Writing tổng đã lên dải ô lớn; nút chính "Nhập điểm / Sửa điểm" mở ô lớn tương ứng.
- *
- * THAO TÁC THEO TRẠNG THÁI (PR-XLMT, T38, K4-27): nút chính và menu ⋯ của mỗi dòng lấy từ MỘT nguồn `thaoTacKyNang` — ≤ 1 nút
- * chính + ≤ 3 mục menu, sáu tên T38. Dòng W2 chỉ có nhập/sửa/huỷ điểm của ô W2 (lịch W đặt ở dòng W1). "Lịch sử" không nằm trong
- * menu dòng: nút ở đầu thẻ cuộn tới dòng thời gian của đợt.
+ * THAO TÁC MỘT DÒNG KỸ NĂNG (PR-XLMT, T38, K4-27): nút chính và menu ⋯ từ MỘT nguồn `thaoTacKyNang`, tính cho từng ô nhập rồi gộp — Writing:
+ * thao tác lịch của W1 (một lịch cho hai task), nút điểm của task còn thiếu, Huỷ / Khôi phục điểm của cả hai task. Còn lại (`conLaiLuot`) đọc cùng hàm.
  */
-function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
-  d: Detail; onMoDiem: (k: string) => void; onDone: () => void; onOpenHistory: () => void;
+function thaoTacDong(d: Detail, k: string, homNay: string) {
+  const r = d.skillSchedule.find((x) => x.skill === k);
+  const cells = d.cells.filter((c) => c.assessedSkill === k).sort((a, b) => THU_TU_O.indexOf(a.skill) - THU_TU_O.indexOf(b.skill));
+  if (!r || !cells.length) return null;
+  const cancelled = d.status === 'cancelled';
+  const ws = cells.map((c, i) => {
+    const ownsSchedule = i === 0;
+    const canScore = !cancelled && r.required && c.canEdit && !lockedByNoShow(c)
+      && r.sitStatus !== 'absent' && r.sitStatus !== 'cancelled' && r.progress !== 'cancelled';
+    /* OV-11a: "Không dự thi" chưa có điểm → nút chính "Nhập điểm" (không "Sửa điểm"). */
+    const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || (!!c.noShow && !khongDuThiO(c));
+    /* LUAT-34 (S13): MT cũ, mọi ô của kỹ năng "Đã huỷ" → Khôi phục / Không mock lại như vắng 2 lần (chỉ Quản lý). */
+    const huyCu = d.viewer.canPlanWeek && d.lichSu && cells.every((x) => x.noShow?.state === 'da-huy');
+    const tt = trangThaiTT({
+      batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang, huyCu,
+    });
+    const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
+      : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa,
+          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy });
+    const chinh0 = ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
+    /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
+    const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
+    const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem' || x === 'khoi-phuc-diem');
+    return { c, chinh, menu, hasValue, canScore };
+  });
+  const lich = ws[0].chinh && !laDiem(ws[0].chinh) ? ws[0] : null;
+  const chon = lich ?? ws.find((w) => laDiem(w.chinh) && !w.hasValue) ?? ws.find((w) => laDiem(w.chinh)) ?? null;
+  const menu: { x: ThaoTac; c: Cell }[] = [];
+  for (const w of ws) for (const x of w.menu) if (!menu.some((m) => m.x === x)) menu.push({ x, c: w.c });
+  const prog = r.scored || ws.every((w) => coDiemO(w.c) || !w.c.required) ? 'scored' : r.progress;
+  return {
+    r, cells, chinh: chon?.chinh ?? null, chinhO: chon?.c ?? cells[0], menu, prog,
+    nhanChinh: chon?.chinh === 'nhap-diem' && chon.hasValue ? CHU_THAO_TAC['sua-diem'] : chon?.chinh ? CHU_THAO_TAC[chon.chinh] : '',
+    canScore: ws.some((w) => w.canScore),
+  };
+}
+
+/** Lịch gốc khi đã dời (QL dời / dời do vắng) — tuần cũ của lần dời ĐẦU TIÊN + câu phụ của lần MỚI NHẤT; null = chưa dời. */
+function lichGocKn(d: Detail, k: string, homNay: string): { goc: string; phu: string; title: string | null } | null {
+  const doi = d.history.filter((h) => h.field === k && (h.action === 'skill_week_set' || h.action === 'skill_week_moved_absence') && h.oldValue && h.newValue)
+    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+  if (!doi.length) return null;
+  const tuan = (v: string) => { const x = docTuanLich(v, homNay); return x ? tuanLich(x, homNay) : v; };
+  const r = d.skillSchedule.find((x) => x.skill === k);
+  const goc = tuan(doi[0].oldValue!);
+  if (!r?.weekStart || goc === tuanLich(r.weekStart, homNay)) return null;
+  const moi = doi[doi.length - 1];
+  const vang = moi.action === 'skill_week_moved_absence';
+  return {
+    goc,
+    phu: vang ? t('vắng lần {x}', { x: Math.max(1, r.absenceMoveCount) }) : t('dời {ngay}', { ngay: fmtDate(moi.createdAt).slice(0, 5) }),
+    title: [moi.actorName, moi.reason].filter(Boolean).join(' · ') || null,
+  };
+}
+
+/**
+ * BẢNG KẾT QUẢ CỦA LƯỢT (khung M4-A ④–⑥, HSL-FT): một dòng mỗi kỹ năng L · R · W · S — lịch (gốc gạch → thực tế), ô điểm (bấm = hộp nhập điểm
+ * neo ô, như dải ô lớn cũ — `useODiem`), trạng thái + hạn, có / chưa nhận xét, Case, nút chính + ⋯. Bấm dòng mở vùng ngay dưới (một dòng một lúc):
+ * Nhận xét | Case & phương án ngang nhau, dải Lịch sử kỹ năng dưới cả hai; 375 xếp dọc. S Ex dưới bảng (chỉ đọc, ngoài Overall / SOS).
+ */
+function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onDone, onDoiLich, emTiep, ve, nhanXet, vungCase, lichSuKn, duoiBang }: {
+  d: Detail; homNay: string; chiDoc: boolean;
+  moKn: KyNangLon | null; onMoKn: (k: KyNangLon) => void;
+  moO: string | null; onMoO: (k: string | null) => void;
+  save: (skill: string, patch: SavePatch, opts?: SaveOpts) => Promise<boolean | 'trung'>;
+  onDone: () => void;
   /** PR-HOP1: "Xếp lịch" / "Dời lịch thi" một kỹ năng → hộp một đợt, dòng kỹ năng đó mở sẵn ô chọn tuần. */
   onDoiLich: (anchor: HTMLElement, k: KyNangKH) => void;
+  emTiep: ((kyNang: string) => void) | null; ve: KetThucHop['nut'];
+  nhanXet: (k: KyNangLon) => ReactNode; vungCase: (k: KyNangLon) => ReactNode; lichSuKn: (k: KyNangLon) => ReactNode;
+  duoiBang: ReactNode;
 }) {
   const [moveFor, setMoveFor] = useState<SkillRow | null>(null);
+  const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
+  const [hop, setHop] = useState<{ t: ThaoTac; r: SkillRow; c: Cell } | null>(null);
   const toast = useToast();
   const dangKhoiPhuc = useRef(false);   // chống bấm đúp
   /* LUAT-34 (T20b): "Khôi phục điểm" một bấm — máy chủ ghi lại điểm cất (mọi ô của kỹ năng) qua đúng đường lưu điểm. */
@@ -596,166 +752,157 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
       onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
   };
-  const [decideFor, setDecideFor] = useState<SkillRow | null>(null);
-  const [hop, setHop] = useState<{ t: ThaoTac; r: SkillRow; c: Cell } | null>(null);
-  const { homNay } = useNgayNghiepVu();
   const cancelled = d.status === 'cancelled';
+  const { o, hop: hopDiem } = useODiem({
+    cells: d.cells, lich: d.skillSchedule as LichKn[], result: d.result, lichSu: d.lichSu, homNay, mo: moO, onMo: onMoO, save,
+    nguCanh: nguCanhChiTiet(d), emTiep, ve,
+  });
+  /* Huỷ điểm Writing: hộp tích sẵn mọi ô W đang có điểm (dòng W gộp hai task). */
+  const oCoDiemCua = (c: Cell): string[] => (c.assessedSkill !== 'writing' ? [c.skill]
+    : d.cells.filter((x) => x.assessedSkill === 'writing' && coDiemO(x)).map((x) => x.skill));
 
-  const order = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
-  const cells = [...d.cells].sort((a, b) => order.indexOf(a.skill) - order.indexOf(b.skill));
-  const coDiemO = (c: Cell) => c.band !== null || c.rawScore !== null;
-  /* LUAT-34: ô "-" MT cũ = Đã huỷ (`da-huy`) — như "Không dự thi" cũ: không hạn; GV đúng ô: nút chính Nhập điểm (gỡ "-" trong hộp). */
-  const khongDuThiO = (c: Cell) => (c.noShow?.state === 'khong-du-thi' || c.noShow?.state === 'da-huy') && !c.daChot && !coDiemO(c);
-
-  const renderRow = (c: Cell) => {
-    const r = d.skillSchedule.find((x) => x.skill === c.assessedSkill)!;
-    /* Writing có HAI dòng nhưng MỘT lịch: thao tác về lịch chỉ đặt ở dòng W1, dòng W2 chỉ nhập/sửa/huỷ điểm ô W2. */
-    const ownsSchedule = c.skill !== 'writing2';
-    const canScore = !cancelled && r.required && c.canEdit && !lockedByNoShow(c)
-      && r.sitStatus !== 'absent' && r.sitStatus !== 'cancelled' && r.progress !== 'cancelled';
-    /* OV-11a: "Không dự thi" chưa có điểm → nút chính "Nhập điểm" (không "Sửa điểm"). */
-    const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || (!!c.noShow && !khongDuThiO(c));
-
-    /* LUAT-34 (S13): MT cũ, mọi ô của kỹ năng "Đã huỷ" → Khôi phục / Không mock lại như vắng 2 lần. */
-    /* Khôi phục / Giữ huỷ chỉ là việc của Quản lý — GV giữ trạng thái MT cũ (nút Nhập điểm), không kẹt ở dòng không thao tác. */
-    const huyCu = d.viewer.canPlanWeek && d.lichSu && d.cells.filter((x) => x.assessedSkill === c.assessedSkill).every((x) => x.noShow?.state === 'da-huy');
-    const tt = trangThaiTT({
-      batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang, huyCu,
-    });
-    const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
-      : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa,
-          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy });
-    const laDiem = (x: ThaoTac | null) => x === 'nhap-diem' || x === 'sua-diem';
-    const chinh0 = ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
-    /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
-    const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
-    const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem' || x === 'khoi-phuc-diem');
-    const chay = (t: ThaoTac) => {
-      if (laDiem(t)) onMoDiem(c.skill);
+  const dongKn = (k: KyNangLon) => {
+    const td = thaoTacDong(d, k, homNay);
+    if (!td) return null;
+    const { r, cells, chinh, chinhO, menu, prog, nhanChinh } = td;
+    const mo = moKn === k;
+    const chay = (t: ThaoTac, c: Cell) => {
+      if (laDiem(t)) onMoO(c.skill);
       else if (t === 'khoi-phuc-diem') void khoiPhuc(c.skill);
       else if (t === 'xep-lai') setMoveFor(r);
       else if (t === 'tra-loi-de-nghi') setDecideFor(r);
-      else if ((t === 'doi-lich' || t === 'dat-lich') && d.classId !== null) onDoiLich(document.getElementById(`kn-${c.skill}`)!, r.skill as KyNangKH);
+      else if ((t === 'doi-lich' || t === 'dat-lich') && d.classId !== null) onDoiLich(document.getElementById(`kn-${k}`)!, r.skill as KyNangKH);
       else setHop({ t, r, c });
     };
-    const nhanChinh = chinh === 'nhap-diem' && hasValue ? CHU_THAO_TAC['sua-diem'] : chinh ? CHU_THAO_TAC[chinh] : '';
-
-    const prog = c.progress === 'scored' ? 'scored' : r.progress;
-    /* OV-11a: MỘT dòng trạng thái — Không dự thi (CA3-5) thay "Chờ nhập điểm"; huỷ vì vắng ghi số lần thật, bỏ dòng "Đã dời do vắng" (CA3-3). */
-    const khongDuThi = khongDuThiO(c);
+    const c0 = cells[0];
+    /* OV-11a: MỘT dòng trạng thái — Không dự thi (CA3-5) thay "Chờ nhập điểm"; huỷ vì vắng ghi số lần thật. */
+    const khongDuThi = khongDuThiO(c0);
     const huy = prog === 'cancelled';
-    const nhanTT = khongDuThi ? (c.noShow?.state === 'da-huy' ? t('Đã huỷ · vắng MT cũ') : t('Vắng'))
-      : huy && r.huyVang ? t('{progressLabel} · vắng {x} lần', { progressLabel: progressLabel('cancelled'), x: r.absenceMoveCount + 1 }) : progressLabel(prog);
-
+    const nhanTT = khongDuThi ? (c0.noShow?.state === 'da-huy' ? t('Đã huỷ · vắng MT cũ') : t('Vắng'))
+      : huy && r.huyVang ? t('{progressLabel} · vắng {x} lần', { progressLabel: progressLabel('cancelled'), x: r.absenceMoveCount + 1 })
+      : r.sitStatus === 'absent' && !r.pendingMove && !huy ? t('Vắng lần {x} · chờ xếp lại', { x: r.absenceMoveCount + 1 })
+      : progressLabel(prog);
+    const goc = r.required ? lichGocKn(d, k, homNay) : null;
+    const coDiemCells = cells.filter(coDiemO);
+    const nguoiNx = [...new Set(coDiemCells.filter((c) => c.nhanXet).map((c) => c.enteredByName).filter(Boolean))];
+    const cs = (d.caseLuot ?? []).filter((c) => kyNangCase(c.topic) === k);
+    const oThieu = cells.find((c) => c.required && !coDiemO(c)) ?? c0;
+    /* Bấm vào khoảng trống của dòng = mở / thu vùng; bấm nút, link, ô điểm thì không. */
+    const bamDong = (e: React.MouseEvent) => { if (!(e.target as HTMLElement).closest('button, a, input, select, textarea, [role="dialog"], [role="menu"]')) onMoKn(k); };
     return (
-      <div key={c.skill} id={`kn-${c.skill}`}
-        className={`${ROW_GRID} grid gap-y-2 border-t px-2 py-3 ${r.required ? '' : 'row-muted'}`}
-        style={{ borderColor: 'var(--line)' }} role="row">
-        <div role="cell" className="text-slate-200 whitespace-nowrap">
-          <span className="font-medium">{skillLabel(c.skill)}</span>
-          {ownsSchedule && r.planSource === 'manual' && (
-            <span className="text-slate-500 text-xs block">{t('đã xếp riêng')}</span>
-          )}
-        </div>
-
-        <div role="cell">
-          <Label>{t('Lịch Test')}</Label>
-          {!r.required ? <span className="text-slate-500 text-xs">—</span>
-            : r.periodCode
-              ? <>{tuanLich(r.weekStart, homNay)} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
-              : <Tag pending>{t('Chưa xếp tuần')}</Tag>}
-          {/* K4-30: bài dời do vắng nói rõ dời từ tuần nào. */}
-          {r.required && r.doiTu && r.absenceMoveCount > 0 && !huy && (
-            <span className="block text-xs text-slate-500">{t('(dời từ {doiTu} · vắng lần {x})', { doiTu: r.doiTu, x: r.absenceMoveCount })}</span>
-          )}
-        </div>
-
-        <div role="cell" className="space-y-1">
-          <Label>{t('Trạng thái và hạn')}</Label>
-          {r.required && (
-            <Status kind={prog === 'scored' ? 'done'
-              /* MT lịch sử: nhập bù, không hạn — xám như việc "không tính hạn", không màu chờ. */
-              : khongDuThi || prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' || prog === 'lich_su' ? 'idle'
-              : prog === 'due' || prog === 'sat' ? 'doing' : 'waiting'}>
-              {nhanTT}
-            </Status>
-          )}
-          {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. */}
-          {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không tính hạn" đã nói đủ. */}
-          {prog !== 'scored' && !khongDuThi && !(prog === 'cancelled' && c.progress === 'cancelled') && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
-          {ownsSchedule && r.absenceMoveCount > 0 && !huy && (
-            <div className="text-xs text-amber-200">{t('Đã dời do vắng {x} lần', { x: r.absenceMoveCount })}</div>
-          )}
-          {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
-          {ownsSchedule && r.pendingMove && (
-            <div className="text-xs text-amber-200">
-              {t('Đề nghị dời sang')}{' '}{r.pendingMove.toWeek ?? t('tuần kế tiếp')}{' '}{t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })}{' '}{fmtDate(r.pendingMove.decideBy)}{r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.
+      <div key={k} className={`border-t ${mo ? 'bg-white/[0.025]' : ''}`} style={{ borderColor: 'var(--line)' }}>
+        <div id={`kn-${k}`} role="row" onClick={bamDong}
+          className={`${ROW_GRID} cursor-pointer scroll-mt-4 px-3 py-2.5 ${r.required ? '' : 'row-muted'}`}>
+          <div role="cell" className="min-w-0 md:order-none">
+            <button type="button" aria-expanded={mo} aria-controls={mo ? `vung-${k}` : undefined} onClick={() => onMoKn(k)}
+              className="inline-flex min-h-[44px] items-center gap-2 border-0 bg-transparent p-0 text-left text-[15px] font-bold text-slate-100 sm:min-h-0">
+              <span aria-hidden className="w-3 text-xs text-slate-500">{mo ? '▾' : '▸'}</span>{skillLabel(k)}
+            </button>
+          </div>
+          <div role="cell" className="justify-self-end md:order-none md:col-start-3 md:row-start-1 md:justify-self-start">{o(k, true)}</div>
+          <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 md:contents">
+            <div role="cell" className="text-sm md:col-start-2 md:row-start-1">
+              {!r.required ? <span className="text-slate-500 max-md:hidden">—</span> : r.periodCode ? (
+                <span className="tabular-nums">
+                  {goc && <><s className="text-slate-500" title={t('Lịch gốc')}>{goc.goc}</s><span className="mx-1 text-slate-500">→</span></>}
+                  <span className="font-semibold text-slate-200">{tuanLich(r.weekStart, homNay)}</span>
+                  {goc ? <span className="block text-xs text-slate-500" title={goc.title ?? undefined}>{goc.phu}</span>
+                    : r.planSource === 'manual' && <span className="block text-xs text-slate-500">{t('đã xếp riêng')}</span>}
+                </span>
+              ) : <Tag pending>{t('Chưa xếp tuần')}</Tag>}
             </div>
-          )}
-          {!r.required && r.scopeReason && <div className="text-xs text-slate-500">{r.scopeReason}</div>}
-          {r.sitNote && !c.noShow && <div className="text-xs text-slate-500">{r.sitNote}</div>}
+            <div role="cell" className="min-w-0 space-y-1 md:col-start-4 md:row-start-1">
+              {r.required ? (
+                <Status kind={prog === 'scored' ? 'done'
+                  /* MT lịch sử: nhập bù, không hạn — xám như việc "không tính hạn", không màu chờ. */
+                  : khongDuThi || prog === 'skipped' || prog === 'cancelled' || prog === 'not_scheduled' || prog === 'lich_su' ? 'idle'
+                  : prog === 'due' || prog === 'sat' ? 'doing' : 'waiting'}>
+                  {nhanTT}
+                </Status>
+              ) : <Status kind="idle"><span title={r.scopeReason ?? undefined}>{t('Ngoài phạm vi')}</span></Status>}
+              {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. MT lịch sử không có hạn (T34). */}
+              {r.required && prog !== 'scored' && !khongDuThi && !huy && r.sitStatus !== 'absent' && !r.pendingMove && !d.lichSu && <div><DeadlinePill cell={oThieu} /></div>}
+              {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
+              {r.pendingMove && (
+                <div className="text-xs text-amber-200" title={`${t('Đề nghị dời sang')} ${r.pendingMove.toWeek ?? t('tuần kế tiếp')} ${t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })} ${fmtDate(r.pendingMove.decideBy)}${r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.`}>
+                  ⚠ {t('Chờ QL duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
+                </div>
+              )}
+              {r.sitNote && !c0.noShow && <div className="text-xs text-slate-500">{r.sitNote}</div>}
+            </div>
+          </div>
+          <div className="col-span-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm md:contents">
+            <div role="cell" className="min-w-0 md:col-start-5 md:row-start-1">
+              {!r.required || !coDiemCells.length ? <span className="text-slate-500 max-md:hidden">—</span>
+                : coDiemCells.every((c) => c.nhanXet) ? <span className="text-slate-300">{[t('Có'), ...nguoiNx].join(' · ')}</span>
+                : <span className={cells.some((c) => c.thieuNhanXet) ? 'font-semibold text-soon' : 'text-slate-500'}>{t('Chưa nhận xét')}</span>}
+            </div>
+            <div role="cell" className="min-w-0 md:col-start-6 md:row-start-1">
+              {!cs.length ? <span className="text-slate-500 max-md:hidden">—</span> : (
+                <span className="flex min-w-0 flex-col">
+                  <b className="text-slate-100">Case {skillShort(k)}{cs.length > 1 && <span className="font-normal text-slate-400"> +{cs.length - 1}</span>}</b>
+                  <span className="text-xs text-slate-400 max-md:hidden">{cs[0].pas.some((p) => !p.xong) ? t('PA đang làm') : t('Chưa có PA')}</span>
+                </span>
+              )}
+            </div>
+          </div>
+          <div role="cell" className="col-span-2 flex flex-wrap items-center gap-1.5 md:col-span-1 md:col-start-7 md:row-start-1 md:justify-end">
+            {chinh && (
+              <button type="button" data-chinh className={`btn btn-sm min-h-[44px] sm:min-h-0 ${nhanChinh === CHU_THAO_TAC['sua-diem'] ? '' : 'btn-primary'}`} onClick={() => chay(chinh, chinhO)}>{nhanChinh}</button>
+            )}
+            {!chinh && !chiDoc && cells.some((c) => c.required && !c.canEdit) && !cancelled && (
+              <span className="text-xs text-slate-500" title={t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
+            )}
+            {/* Không có mục thì giữ chỗ cùng rộng nút ⋯ (w-7) — nút chính các dòng thẳng cột (rà #126). */}
+            {menu.length ? (
+              <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: skillLabel(k) })} muc={menu.map(({ x, c }) => ({
+                key: x, nhan: CHU_THAO_TAC[x], onChon: () => chay(x, c), nguyHiem: x === 'bo-ky-nang' || x === 'huy-diem' || x === 'khong-mock-lai',
+              }))} />
+            ) : <span aria-hidden className="inline-block w-7 flex-none max-md:hidden" />}
+          </div>
         </div>
-
-        <div role="cell" className="flex flex-wrap items-start gap-1.5 md:justify-end">
-          {chinh && (
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => chay(chinh)}>{nhanChinh}</button>
-          )}
-          {!chinh && !ownsSchedule && r.required && !canScore && r.sitStatus === 'absent' && (
-            <span className="text-xs text-slate-500">{t('Xử lý ở dòng W1')}</span>
-          )}
-          {!chinh && c.required && !c.canEdit && !cancelled && (
-            <span className="text-xs text-slate-500" title={t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
-          )}
-          {/* Không có mục thì giữ chỗ cùng rộng nút ⋯ (w-7) — nút chính các dòng thẳng cột (rà #126). */}
-          {menu.length ? (
-            <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: skillLabel(c.skill) })} muc={menu.map((x) => ({
-              key: x, nhan: CHU_THAO_TAC[x], onChon: () => chay(x), nguyHiem: x === 'bo-ky-nang' || x === 'huy-diem' || x === 'khong-mock-lai',
-            }))} />
-          ) : <span aria-hidden className="inline-block w-7 flex-none" />}
-        </div>
+        {mo && (
+          <div role="row"><div role="cell" aria-colspan={7} id={`vung-${k}`} className="space-y-3 px-3 pb-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="min-w-0 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>{nhanXet(k)}</div>
+              <div className="min-w-0 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
+                <h2 className="m-0 mb-1 text-sm font-semibold text-slate-200">{t('Case & phương án')}</h2>
+                {vungCase(k)}
+              </div>
+            </div>
+            {lichSuKn(k)}
+          </div></div>
+        )}
       </div>
     );
   };
 
-  /* Huỷ điểm Writing: dòng W1 tích sẵn mọi ô W đang có điểm; dòng W2 chỉ ô W2. */
-  const oCoDiemCua = (c: Cell): string[] => (c.assessedSkill !== 'writing' ? [c.skill]
-    : c.skill === 'writing2' ? ['writing2']
-      : d.cells.filter((x) => x.assessedSkill === 'writing' && coDiemO(x)).map((x) => x.skill));
-
   return (
-    <Card title={t('Lịch Test')}
-      action={<div className="flex items-center gap-2">
-        {d.splitWeeks && <Tag>{t('Đợt này làm bài ở nhiều tuần')}</Tag>}
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onOpenHistory}>{t('Lịch sử')}</button>
-      </div>}>
+    <section aria-label={t('Kết quả theo kỹ năng')} className="card overflow-hidden p-0">
       {!d.completionWeek.valid && (
-        <p className="text-xs text-amber-200 mt-0 mb-3">
+        <p className="m-0 px-3 pt-3 text-xs text-amber-200">
           {t('Chưa có kế hoạch hợp lệ cho tuần dự kiến hoàn tất:')}{' '}{d.completionWeek.blockingLabels.join(', ')}{' '}{t('chưa có tuần Test hoặc đã bị huỷ. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.')}
         </p>
       )}
       {d.cells.length === 0 ? (
         <Empty title={t('Lớp này chưa cấu hình kỹ năng nào')} />
       ) : (
-        <div role="table" aria-label={t('Lịch Test theo kỹ năng')}>
-          <div role="row"
-            className={`${ROW_GRID} hidden px-2 pb-2 text-[12px] font-semibold  text-slate-500`}>
+        <div role="table" aria-label={t('Kết quả theo kỹ năng')}>
+          <div role="row" className={`${ROW_GRID} hidden px-3 py-2 text-[12px] font-semibold text-slate-500 md:grid`}>
             <div role="columnheader">{t('Kỹ năng')}</div>
-            <div role="columnheader">{t('Lịch Test')}</div>
-            <div role="columnheader">{t('Trạng thái và hạn')}</div>
-            <div role="columnheader" className="text-right">{t('Thao tác')}</div>
+            <div role="columnheader">{t('Lịch')}</div>
+            <div role="columnheader">{t('Điểm')}</div>
+            <div role="columnheader">{t('Trạng thái')}</div>
+            <div role="columnheader">{t('Nhận xét')}</div>
+            <div role="columnheader">Case</div>
+            <div role="columnheader"><span className="sr-only">{t('Thao tác')}</span></div>
           </div>
-          {cells.map(renderRow)}
+          {KY_NANG_LON.map(dongKn)}
         </div>
       )}
-      {d.result.scopeDetail && (
-        <SectionNote>
-          {t('{scopeDetail}. Kỹ năng ngoài phạm vi không tính vào mẫu số SOS và không bị coi là thiếu điểm; vì không đủ bốn kỹ năng nên đợt này không có Overall.', { scopeDetail: d.result.scopeDetail })}
-        </SectionNote>
-      )}
-      {d.result.complete && !d.result.evaluable && (
-        <SectionNote>{t('Đã đủ điểm nhưng lộ trình chưa có Target, nên chưa tính được kỳ vọng và SOS.')}</SectionNote>
-      )}
+      {duoiBang}
 
+      {hopDiem}
       {hop && (
         <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false}
           quanLy={d.viewer.canPlanWeek} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
@@ -763,27 +910,56 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
       )}
       {moveFor && <AbsenceMoveModal row={moveFor} detail={d} onClose={() => setMoveFor(null)} onDone={onDone} />}
       {decideFor && <TraLoiDeNghiModal row={decideFor} detail={d} onClose={() => setDecideFor(null)} onDone={onDone} />}
-    </Card>
+    </section>
   );
 }
 
-/** Nhãn cột chỉ hiện ở dạng thẻ (điện thoại); từ `md` trở lên đã có hàng tiêu đề. */
-function Label({ children }: { children: React.ReactNode }) {
-  return <span className="mb-0.5 block text-[12px] font-semibold  text-slate-500 md:hidden">{children}</span>;
+/** Dòng S Ex dưới bảng (N10): chip · điểm · GV · tuần — lượt Speaking riêng, chỉ đọc, không tính vào Overall / SOS. */
+function DongSEx({ ds, homNay }: { ds: NonNullable<Detail['sEx']>; homNay: string }) {
+  return (
+    <div className="space-y-1 border-t border-dashed px-3 py-2.5" style={{ borderColor: 'var(--line-strong)' }}>
+      {ds.map((x, i) => (
+        <div key={x.id} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm">
+          <NhanSEx />
+          <b className="tabular-nums text-slate-100">{x.diem !== null ? fmtBand(x.diem) : t('Chưa chấm')}</b>
+          <span className="text-slate-400">{[x.nguoiCham && t('GV {ten}', { ten: x.nguoiCham }), tuanLich(x.tuan, homNay)].filter(Boolean).join(' · ')}</span>
+          {i === 0 && <NutLuat label="S Expert">{t('S Expert — lượt Speaking riêng, không tính vào Overall / SOS.')}</NutLuat>}
+        </div>
+      ))}
+    </div>
+  );
 }
 
-// ---------------------------------------------------------------- lịch sử thay đổi
-
-/** LỊCH SỬ CUỐI TRANG (YC-13.6): lịch, phạm vi và điểm trong MỘT dòng thời gian — nút "Lịch sử" đầu bảng cuộn tới đây. */
-function HistoryCard({ d }: { d: Detail }) {
-  const [mo, setMo] = useState(false);   // OV-15g: Lịch sử đủ chi tiết của các ô (nhận xét đủ chữ, GV chấm S, lý do)
+/**
+ * LỊCH SỬ THU GỌN (khung M4-A ⑤ dải Lịch sử kỹ năng, ⑦ Lịch sử lượt): "n thay đổi · mới nhất {ngày} {việc}"; mở ra là dòng thời gian
+ * (`DongThoiGianLuot`) của đúng tập đó (`dongLuot`) — số và dòng cùng nguồn. Lịch sử lượt giữ nút "Lịch sử chi tiết" (OV-15g).
+ */
+function LichSuGon({ tieuDe, dong, the = false, chiTiet }: {
+  tieuDe: string; dong: DongLuot[]; the?: boolean;
+  chiTiet?: { id: number; dong2: (string | null)[] };
+}) {
+  const [mo, setMo] = useState(false);
+  const { ngan } = useNgayNghiepVu();
+  if (!dong.length && !the) return null;
+  const moi = dong[0];
   return (
-    <div id="lich-su">
-      <Card title={t('Lịch sử')} action={<button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMo(true)}>{t('Lịch sử')}</button>}>
-        {mo && <LichSuThayDoi loai="o" id={d.id} dong2={[d.student.name, `MT${d.attemptNo}`, d.classCode]} onClose={() => setMo(false)} />}
-        <DongThoiGianLuot history={d.history} scoreHistory={d.scoreHistory} />
-      </Card>
-    </div>
+    <details className={`group ${the ? 'card px-4 py-3' : 'rounded-lg border px-3 py-2'}`} style={the ? undefined : { borderColor: 'var(--line)' }}>
+      <summary className="flex min-h-[44px] cursor-pointer list-none flex-wrap items-baseline gap-x-2 sm:min-h-0 [&::-webkit-details-marker]:hidden">
+        <span aria-hidden className="w-3 text-xs text-slate-500 transition-transform group-open:rotate-90">▸</span>
+        <b className={the ? 'text-[15px] text-slate-100' : 'text-sm text-slate-200'}>{tieuDe}</b>
+        <span className="text-xs tabular-nums text-slate-400">
+          {dong.length ? t('{n} thay đổi', { n: dong.length }) : t('Chưa có thay đổi nào.')}
+          {moi && <> · {t('mới nhất')} {ngan(moi.at)} {[moi.viec, moi.mon, moi.ai].filter(Boolean).join(' · ')}</>}
+        </span>
+      </summary>
+      <div className="mt-2.5">
+        <DongThoiGianLuot history={[]} scoreHistory={[]} dong={dong} gioiHan={the ? 10 : 5} />
+        {chiTiet && (
+          <button type="button" className="btn btn-ghost btn-sm mt-2 min-h-[44px] sm:min-h-0" onClick={() => setMo(true)}>{t('Lịch sử chi tiết')}</button>
+        )}
+      </div>
+      {mo && chiTiet && <LichSuThayDoi loai="o" id={chiTiet.id} dong2={chiTiet.dong2} onClose={() => setMo(false)} />}
+    </details>
   );
 }
 

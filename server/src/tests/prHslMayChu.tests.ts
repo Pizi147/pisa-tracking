@@ -142,4 +142,21 @@ export async function runPrHslMayChuTests(t: any) {
     if (ids.length) assert(tao(s2)?.new_value, `taoBaiThuongMacDinh tạo ${ids.length} lượt mà không có dòng created`);
     else console.log('    (HSL-8: lớp không còn mốc chưa qua — bỏ nhánh taoBaiThuongMacDinh)');
   }));
+
+  check('HSL-FT · FT: lichSuCase = Case mở + PA thêm của Case của lượt (người ghi, kỹ năng); PA huỷ không hiện; lượt không Case → []', () => thu(() => {
+    const c = get(`SELECT sc.id, sc.attempt_id, sc.topic FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.kind = 'mock' AND sc.status != 'done' ORDER BY sc.id LIMIT 1`);
+    assert(c, 'demo phải có Case MT');
+    const truoc = attempts.attemptDetail(P.mbManager, c.attempt_id).lichSuCase;
+    assert(truoc.some((h: any) => h.id === `c${c.id}` && h.loai === 'case' && h.topic === c.topic), `thiếu dòng Case mở: ${JSON.stringify(truoc)}`);
+    const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, recorded_by, created_at) VALUES (?, 'self_study', 'PA thử HSL-FT', 'started', ?, ?)`)
+      .run(c.id, P.mbManager.userId, `${TODAY}T09:00:00.000Z`).lastInsertRowid);
+    const huy = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, recorded_by, created_at) VALUES (?, 'self_study', 'PA huỷ', 'cancelled', ?, ?)`)
+      .run(c.id, P.mbManager.userId, `${TODAY}T09:00:00.000Z`).lastInsertRowid);
+    const sau = attempts.attemptDetail(P.mbManager, c.attempt_id).lichSuCase;
+    const dong = sau.find((h: any) => h.id === `p${iv}`);
+    const ten = get('SELECT full_name n FROM users WHERE id = ?', P.mbManager.userId).n;
+    assert(dong && dong.loai === 'pa' && dong.ten === 'PA thử HSL-FT' && dong.actorName === ten && dong.topic === c.topic, `dòng PA: ${JSON.stringify(dong)}`);
+    assert(!sau.some((h: any) => h.id === `p${huy}`), 'PA đã huỷ không vào lịch sử');
+    assert(attempts.lichSuCaseCua([]).length === 0, 'không Case → []');
+  }));
 }

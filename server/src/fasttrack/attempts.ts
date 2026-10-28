@@ -1187,6 +1187,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     }
   }
   /* HSL-MAY-CHU: tuần của lượt = tuần thi từng kỹ năng (+ tuần kế hoạch) — S Ex cùng tuần hiện ở trang lượt, chỉ đọc. */
+  const caseLuot = caseCuaLuot(p, a);
   const tuanLuot = new Set([a.period_start, ...scheduleRows.map((r) => r.weekStart)].filter(Boolean).map((w) => mondayOf(String(w))));
 
   return {
@@ -1248,7 +1249,9 @@ export function attemptDetail(p: Principal, attemptId: number) {
     /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` để nhìn (`mt0.sos`), không Case / PA. */
     result,
     /** OV-12d: khối "Case & phương án" (thay Rulebook 17.5 cũ) — null = không có khối (chấm chéo, Admin). */
-    caseLuot: caseCuaLuot(p, a),
+    caseLuot,
+    /** HSL-FT: Case mở · PA thêm của các Case ở khối trên — Lịch sử kỹ năng / Lịch sử lượt (cùng tập Case, không bịa sự kiện). */
+    lichSuCase: lichSuCaseCua(caseLuot?.map((c) => c.id) ?? []),
     mt0: laMt0(a) ? { sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null) } : null,
     cells,
     skips: (conn
@@ -1306,6 +1309,20 @@ export function lichSuLichCua(attemptId: number): {
 export function huyCua(status: string, history: ReturnType<typeof lichSuLichCua>) {
   const h = status === 'cancelled' ? history.find((x) => x.action === 'cancelled') : null;
   return h ? { lyDo: h.reason ?? null, ai: h.actorName ?? null, khi: h.createdAt } : null;
+}
+
+/** HSL-FT: dòng Lịch sử của Case — `case` = Case mở (tên), `pa` = thêm PA (mô tả · người ghi). `topic` = kỹ năng của Case. */
+export function lichSuCaseCua(caseIds: readonly number[]): { id: string; loai: 'case' | 'pa'; topic: string | null; ten: string; actorName: string | null; createdAt: string }[] {
+  if (!caseIds.length) return [];
+  const ph = caseIds.map(() => '?').join(',');
+  const conn = db();
+  const mo = conn.prepare(`SELECT sc.id, sc.topic, sc.title, sc.created_at, u.full_name AS ai FROM sos_cases sc LEFT JOIN users u ON u.id = sc.reported_by WHERE sc.id IN (${ph})`).all(...caseIds) as any[];
+  const pa = conn.prepare(`SELECT iv.id, sc.topic, COALESCE(iv.description, iv.kind) AS ten, iv.created_at, u.full_name AS ai FROM case_interventions iv
+    JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN users u ON u.id = iv.recorded_by WHERE iv.case_id IN (${ph}) AND iv.status != 'cancelled'`).all(...caseIds) as any[];
+  return [
+    ...mo.map((r) => ({ id: `c${r.id}`, loai: 'case' as const, topic: r.topic ?? null, ten: String(r.title ?? ''), actorName: r.ai ?? null, createdAt: String(r.created_at) })),
+    ...pa.map((r) => ({ id: `p${r.id}`, loai: 'pa' as const, topic: r.topic ?? null, ten: String(r.ten), actorName: r.ai ?? null, createdAt: String(r.created_at) })),
+  ];
 }
 
 /** HSL-MAY-CHU: lớp đang học mới nhất của em khi em không còn ở `classId` (đã chuyển lớp) — null khi còn ở đó hoặc không còn lớp nào. */

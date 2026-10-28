@@ -57,7 +57,7 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   return { chu: t('Chưa có điểm') };
 }
 
-export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCha, save, ketLuanOverall, nguCanh, emTiep = null, ve = null }: {
+type DaiProps = {
   cells: Cell[]; lich: LichKn[]; result: any; lichSu: boolean; homNay: string;
   /** PR-MT0: thay dòng kết luận dưới Overall (MT0 không có kỳ vọng — `MT0 ✓` / chip SOS). */
   ketLuanOverall?: ReactNode;
@@ -70,7 +70,26 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo: onM
   emTiep?: ((kyNang: string) => void) | null;
   /** Không có danh sách nguồn: nút của trạng thái hết ("‹ Về {nguồn}"); null → Đóng. */
   ve?: KetThucHop['nut'];
-}) {
+};
+
+export function DaiODiemLon(props: DaiProps) {
+  const { o, overall, hop } = useODiem(props);
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {KY_NANG_LON.map((k) => o(k))}
+        {overall}
+      </div>
+      {hop}
+    </div>
+  );
+}
+
+/**
+ * Ô điểm một kỹ năng + hộp nhập điểm của MỘT lượt — dải ô lớn (`DaiODiemLon`) và bảng kết quả hồ sơ lượt (HSL-FT, `gon`: ô trong dòng,
+ * không nhãn kỹ năng, số 20 px, dòng phụ ngoài ô) dùng chung: cùng luật bấm (`suaDuoc`), viền vàng thiếu nhận xét, phiên "Lưu · bài tiếp ›".
+ */
+export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCha, save, ketLuanOverall, nguCanh, emTiep = null, ve = null }: DaiProps) {
   /* Một lượt: khoá hàng cố định 0; còn thiếu = `conThieuFt` của ô; kỹ năng của người xem theo thứ tự cột. */
   const phien = usePhienCham();
   const mot = () => [0];
@@ -91,7 +110,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo: onM
 
   const ketLuan = result.evaluable ? result.sosLevel === 0 : null;
 
-  const oKyNang = (k: KyNangLon) => {
+  const oKyNang = (k: KyNangLon, gon = false) => {
     const bai = baiCua(k);
     const band: number | null = result.bands?.[k] ?? null;
     const v = result.verdicts?.find((x: any) => x.skill === k);
@@ -129,25 +148,33 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo: onM
     }
     const nhapBoi = bai.filter((c) => c.enteredByName).map((c) => t('{skillLabel}: nhập bởi {enteredByName}', { skillLabel: skillLabel(c.skill), enteredByName: c.enteredByName })).join('\n');
     const kq = band !== null && v && v.passed !== null ? soKyVong(band, result.expectation) ?? (v.passed ? 'bang' : 'duoi') : null;
-    const noiDung = (
+    /* Ô gọn chưa có điểm: một chữ ngắn (Vắng · Không học · Đã huỷ) — câu trạng thái + hạn đã ở cột Trạng thái của bảng. */
+    const chuRong = !gon ? '—' : !l?.required ? t('Không học') 
+      : l.sitStatus === 'absent' ? t('Vắng') : '—';
+    const so = (
+      /* NEN-TYPO-MAU: ✓ / ✗ đứng TRƯỚC số, số tô cùng màu kết quả (`lopKq`). */
+      <span className={`flex items-center gap-1.5 ${gon ? '' : 'mt-0.5'}`}>
+        {kq && <DauKetQua kq={kq} />}
+        <span className={`${gon ? (band === null && chuRong !== '—' ? 'text-sm font-semibold text-slate-300' : 'text-xl font-bold') : 'text-[28px] font-bold'} leading-none tabular-nums ${band === null ? (gon && chuRong !== '—' ? '' : 'text-slate-600') : lopKq(kq) || 'text-slate-100'}`}>
+          {band === null ? chuRong : fmtBand(band)}
+        </span>
+      </span>
+    );
+    const dongPhu = <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>;
+    const noiDung = gon ? so : (
       <>
         <span className="block text-xs font-medium text-slate-400">{NHAN[k]}</span>
-        {/* NEN-TYPO-MAU: ✓ / ✗ đứng TRƯỚC số, số tô cùng màu kết quả (`lopKq`). */}
-        <span className="mt-0.5 flex items-center gap-1.5">
-          {kq && <DauKetQua kq={kq} />}
-          <span className={`text-[28px] font-bold leading-none tabular-nums ${band === null ? 'text-slate-600' : lopKq(kq) || 'text-slate-100'}`}>
-            {band === null ? '—' : fmtBand(band)}
-          </span>
-        </span>
-        <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>
+        {so}{dongPhu}
       </>
     );
     /* PR-S4F #10: flex-col cho cả nút và ô chỉ đọc — nút căn giữa nội dung theo chiều dọc nên lệch ~3 px so với ô bên cạnh. */
     const dangMo = mo !== null && bai.some((c) => c.skill === mo);
     /* UI-CON-LAI (chủ SP 24/10): thiếu nhận xét MT → viền vàng, không chữ dưới điểm; câu nhắc ở tooltip (Writing ghi task). */
     const thieu = bai.filter((c) => c.thieuNhanXet).map((c) => `${laW ? `${c.skill === 'writing1' ? 'W1' : 'W2'} ` : ''}${CHU_O_THIEU[c.thieuNhanXet!]}`);
-    const vo = `flex min-w-0 flex-col rounded-lg border px-3 py-2.5 text-left ${dangMo ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
-    return sua ? (
+    const vo = `flex min-w-0 flex-col rounded-lg border text-left ${gon ? 'w-fit justify-center px-2.5 py-1.5 max-sm:min-h-[44px] max-sm:min-w-[44px]' : 'px-3 py-2.5'} ${dangMo ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
+    /* Ô gọn (bảng): chỉ ô bấm được / thiếu nhận xét có viền; dòng phụ (câu · W1 W2) dưới ô, chỉ khi có điểm hoặc là Writing. */
+    const vienGon = gon && !sua && !thieu.length;
+    const o = sua ? (
       <button key={k} type="button" aria-expanded={dangMo} aria-haspopup="dialog" ref={(el) => { neo.current[bai[0].skill] = el; }}
         title={[...thieu, nhapBoi, t('Bấm để nhập / sửa điểm tại chỗ.')].filter(Boolean).join('\n')}
         aria-description={thieu.join(', ') || undefined}
@@ -157,17 +184,16 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo: onM
         {noiDung}
       </button>
     ) : (
-      <div key={k} className={vo} style={{ borderColor: thieu.length ? 'rgb(var(--soon-rgb))' : 'var(--line)' }} title={[...thieu, nhapBoi].filter(Boolean).join('\n') || undefined}>{noiDung}</div>
+      <div key={k} className={vienGon ? 'flex min-w-0 flex-col py-1.5' : vo} style={vienGon ? undefined : { borderColor: thieu.length ? 'rgb(var(--soon-rgb))' : 'var(--line)' }} title={[...thieu, nhapBoi].filter(Boolean).join('\n') || undefined}>{noiDung}</div>
     );
+    /* 375: ô gọn chưa có gì để nói ("—") thì không vẽ — trông như nút thu ở góc thẻ. */
+    return gon ? <div key={k} className={`min-w-0 ${band === null && chuRong === '—' && !sua && !bai.some(suaDuoc) ? 'max-md:hidden' : ''}`}>{o}{(band !== null || (laW && (bai.some(suaDuoc) || bai.some(coDiem)))) && dongPhu}</div> : o;
   };
 
   const kqOverall = soKyVong(result.overall, result.expectation);
   const oMo = mo ? oCua(mo) : undefined;
   const neoMo = mo ? neo.current[mo] : null;
-  return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        {KY_NANG_LON.map(oKyNang)}
+  const overall = (
         <div className="col-span-2 flex min-w-0 flex-col rounded-lg border px-3 py-2.5 sm:col-span-1" style={{ borderColor: 'var(--line)' }}>
           <span className="block text-xs font-medium text-slate-400">Overall</span>
           {/* NEN-TYPO-MAU (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
@@ -183,14 +209,12 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo: onM
               duoiKyVong={(result.verdicts ?? []).filter((x: any) => x.passed === false).map((x: any) => skillShort(x.skill))} />}
           </span>
         </div>
-      </div>
-
-      {oMo && neoMo && (
+  );
+  const hop = oMo && neoMo && (
         <HopNhapDiem key={oMo.skill} cell={oMo} anchor={neoMo} onDong={() => onMo(null)} onSave={(p, x) => save(oMo.skill, p, x)}
           onTiep={tiep} nhanTiep={keMo ? skillLabel(keMo.kyNang) : null} tiepEm={!keMo && !!emTiep}
           ketThuc={phien.het ? { phamVi: `${nguCanh.tenHv} · ${nguCanh.luot}`, daLuu: phien.soDaLuu(), nut: ve } : null}
           ctx={{ ...nguCanh, bandTaskKia: oMo.skill === 'writing1' ? oCua('writing2')?.band ?? null : oMo.skill === 'writing2' ? oCua('writing1')?.band ?? null : undefined }} />
-      )}
-    </div>
   );
+  return { o: oKyNang, overall, hop };
 }
