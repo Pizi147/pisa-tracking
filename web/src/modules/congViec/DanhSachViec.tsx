@@ -126,7 +126,7 @@ export function DanhSachViec({ nhom, dem, homNay, soHien, moHet, gapSan, cuoiNho
                 {so.bai > 0
                   ? <span className="font-normal text-dim"><b className="font-semibold tabular-nums text-[color:var(--text)]">{so.bai}</b> {t('bài')}</span>
                   : so.hv > 0 && !chiDemViec ? <span className="font-normal text-dim"><b className="font-semibold tabular-nums text-[color:var(--text)]">{so.hv}</b> {t('HV')}</span> : null}
-                {quaHan > 0 && <span className="font-bold text-late">{t('⚠ {quaHan} quá hạn', { quaHan })}</span>}
+                {quaHan > 0 && <span className="font-semibold text-late">{t('⚠ {quaHan} quá hạn', { quaHan })}</span>}
                 {homNayN > 0 && <span className="font-semibold text-soon">{t('⚠ {n} hạn hôm nay', { n: homNayN })}</span>}
               </>} />
             {dangMo && (vach ? (
@@ -276,7 +276,7 @@ function CotNut({ it, nut, daXong, mo, onBam, nutPhu, luon }: { it: WorkItem; nu
 }
 
 /** Tên việc bỏ tên em (máy chủ ghép "Xác nhận Case R · {em}") — tên em đã ở tầng ②. */
-const tenBoEm = (it: WorkItem) => {
+export const tenBoEm = (it: WorkItem) => {
   const ten = dich(it.group === 'bao_ph_yt' && it.phu ? it.phu : it.tieuDe);
   return ten.split(' · ').filter((x) => !x.startsWith(it.studentName)).join(' · ') || ten;
 };

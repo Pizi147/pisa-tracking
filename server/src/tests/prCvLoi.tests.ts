@@ -135,6 +135,14 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
     assert(chuCua(khac.id) === null, 'Case lớp khác không bị chạm');
   }));
 
+  check('K6b D11: ganChuCaseThieu gán chủ → updated_at đổi (Sửa Case với mốc cũ → 409 như đổi người)', () => thu(() => {
+    const c = caseCuaLop();
+    conn.prepare(`UPDATE sos_cases SET owner_user_id = NULL, updated_at = '2026-01-01T00:00:00Z' WHERE id = ?`).run(c.id);
+    owner.ganChuCaseThieu({ classId: LOP, actorId: null, luc: '2026-10-21T00:00:00Z' });
+    const r = one('SELECT owner_user_id o, updated_at u FROM sos_cases WHERE id = ?', c.id);
+    assert(r.o !== null && r.u === '2026-10-21T00:00:00Z', `sau gán: ${JSON.stringify(r)}`);
+  }));
+
   check('K7 hàng đợi: việc kế cùng nhóm, cùng "của tôi", đang hiện, chưa xong; QL không tự mở việc của GV (CV-05, CV-09)', () => {
     const ds = [
       { key: 'a', nhom: 'cham', mine: true }, { key: 'b', nhom: 'case', mine: true }, { key: 'c', nhom: 'cham', mine: false },

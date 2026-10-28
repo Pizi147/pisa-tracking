@@ -179,7 +179,8 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
     <OSo giaTri={n} nguon={`/tong-quan/lop-toi-day/o?ct=${khung}&classId=${classId}&cot=${cot}`} tieuDe={tieuDe} className={className} />
   );
   const coTb = data.day.some((d) => d.khung === 'ft');
-  const lopLink = (classId: number, code: string) => <Link to={`/hoc-vien/lop/${classId}`} className="ten-ho-so font-semibold">{code}</Link>;
+  /* SUA-375-3: mã dài ("MB Pre FOU 03") ở thẻ nửa bề rộng → cắt "…" ngay trên link + title (mẫu G4); không dùng `.truncate` (chừa 1em cho ↗ làm mã vừa khít như "MB FOU 22" bị cắt). */
+  const lopLink = (classId: number, code: string) => <Link to={`/hoc-vien/lop/${classId}`} className="ten-ho-so inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap align-bottom font-semibold" title={code}>{code}</Link>;
 
   const oDay = (d: DongDay, c: CotBang): ReactNode => {
     if (c.key === 'lop') return lopLink(d.classId, d.code);
@@ -193,7 +194,7 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
   const phuDay = (d: DongDay, c: CotBang): ReactNode => {
     if (c.key === 'lop') {
       const ben = d.khung === 'ft' ? [d.route, d.testKeTiep] : [d.tuanHoc, d.testKeTiep];
-      return <>{dich(ben.filter(Boolean).join(' · ')) || null}{d.testTuanNay && <> · {t('tuần này')}</>}</>;
+      return [dich(ben.filter(Boolean).join(' · ')), d.testTuanNay ? t('tuần này') : null].filter(Boolean).join(' · ') || null;   // chuỗi → Bang gắn title
     }
     if (c.key === 'dat') return tuMau(tyLeGv(d.ketQua ?? undefined), t('lượt'));
     if (c.key === 'tb') return d.khung === 'ft' ? tuMau(tyLeGv(d.tienBo ?? undefined), t('lượt')) : null;

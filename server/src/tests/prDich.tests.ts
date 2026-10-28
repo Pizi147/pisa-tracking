@@ -68,6 +68,7 @@ export async function runPrDichTests(t: any) {
       ['web/src/modules/cases/CasePanel.tsx', ['sos_cases.summary', 'sos_cases.note', 'case_interventions.description', 'case_followups.note', 'case_followups.remaining_issue', 'case_followups.decision_note']],
       ['web/src/modules/yThuc/CaseSosControls.tsx', ['case_issues.observation', 'assessment_scores.comment', 'assessment_scores.nhan_xet_phu_trach']],
       ['web/src/modules/classes/BanGiaoPanel.tsx', ['ban_giao_mon.noi_dung', 'lenh_chuyen_lop.nhan_xet_chung']],
+      ['web/src/modules/students/TienDoTrenLop.tsx', ['bai_tren_lop.nhan_xet', 'gop_y_tuan.noi_dung']],
     ];
     for (const [tep, can] of noi) {
       const s = doc(tep);
@@ -119,6 +120,22 @@ export async function runPrDichTests(t: any) {
       const e = await loiCua(() => svc.dich(p, yc()));
       assert(e?.status === 403, `phải 403: ${e?.status} ${e?.message}`);
       assert(gui.length === n, 'gọi OpenAI dù không quyền');
+    });
+
+    await checkAsync('DICH-4b · Tiến độ trên lớp / góp ý tuần (hồ sơ HV): dịch được khi xem được em; GV ngoài phạm vi em → 403, không gọi OpenAI', async () => {
+      const id = Number(conn.prepare(`INSERT INTO bai_tren_lop (student_id, class_id, skill, tuan, nhan_xet, ghi_boi, ghi_luc) VALUES (?, ?, 'speaking', '2026-09-07', 'Em nói trôi chảy hơn.', ?, 'x')`)
+        .run(c.eff_student_id, c.class_id, P.admin.userId).lastInsertRowid);
+      try {
+        const ok = await svc.dich(P.admin, { bang: 'bai_tren_lop', id, cot: 'nhan_xet', den: 'en' });
+        assert(typeof ok.banDich === 'string' && ok.banDich.length > 0, 'Quản trị không dịch được');
+        const n = gui.length;
+        const gy = conn.prepare('SELECT id FROM gop_y_tuan WHERE class_id = ? LIMIT 1').get(c.class_id) as any;   // seed có thể không có góp ý của lớp này
+        for (const [bang, cot, ma] of [['bai_tren_lop', 'nhan_xet', id], ...(gy ? [['gop_y_tuan', 'noi_dung', gy.id]] : [])] as [string, string, number][]) {
+          const e = await loiCua(() => svc.dich(loadPrincipal(gvKhac.id), { bang, id: ma, cot, den: 'en' }));
+          assert(e?.status === 403, `${bang}: ${e?.status} ${e?.message}`);
+        }
+        assert(gui.length === n, 'gọi OpenAI dù không quyền');
+      } finally { conn.prepare('DELETE FROM bai_tren_lop WHERE id = ?').run(id); }
     });
 
     await checkAsync('DICH-5 · thân gửi đi đã che tên HV / GV / email / SĐT; bản dịch thay lại tên; khoá chỉ ở header', async () => {

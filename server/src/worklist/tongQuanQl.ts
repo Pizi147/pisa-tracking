@@ -33,7 +33,7 @@ const soNgay = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(
  * trong `chiTiet`): Σ hàng = số ở dải tóm tắt; số mỗi GV = cột "Bài quá hạn" bảng GV (H1-3). Nhiều bài trước, rồi theo tên.
  */
 export function treCham(p: Principal, branchId: number | null, ct: ChuongTrinh) {
-  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) return { dong: [] as GvTre[], baiCua: new Map<number, number[]>() };
+  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) return { dong: [] as GvTre[], baiCua: new Map<number, number[]>(), hanCua: new Map<number, string[]>() };
   const r = metricSet(p, 'bai-qua-han-nhap-diem', { branchId, program: ct });
   const baiCua = new Map<number, number[]>();
   for (const b of r.ids) {
@@ -62,7 +62,9 @@ export function treCham(p: Principal, branchId: number | null, ct: ChuongTrinh) 
       treNhat: Math.max(0, ...han.map((h) => soNgay(h, homNay))),
     };
   }).sort((a, b) => b.bai - a.bai || a.ten.localeCompare(b.ten, 'vi'));
-  return { dong, baiCua };
+  /* 6b-4: hạn từng bài — panel GV trễ chấm (`gvTre`) ghi hạn + quá hạn bao lâu của từng dòng lớp · lượt · kỹ năng. */
+  const hanCua = new Map(r.ids.map((b) => [b, r.chiTiet?.get(b)?.han ?? []]));
+  return { dong, baiCua, hanCua };
 }
 
 /** Panel "n bài" của một GV ở Trễ chấm — tính lại bằng CHÍNH `treCham` nên số = số dòng. */

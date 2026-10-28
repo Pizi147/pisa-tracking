@@ -67,9 +67,9 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
       <span className="inline-flex flex-wrap items-center gap-2" role="group" aria-label={t('Khung lớp')}>
         {muc.map(([k, ten]) => (
           <button key={k} type="button" aria-pressed={value === k} onClick={() => { nhoKhung(trang, k); onChange(k); }}
-            className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] font-semibold max-sm:h-11 ${value === k
-              ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]'
-              : 'border-[color:var(--line-strong)] bg-[color:var(--surface)] text-slate-300 hover:text-slate-100'}`}>
+            className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-11 ${value === k
+              ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]'
+              : 'border-[color:var(--line-strong)] font-medium bg-[color:var(--surface)] text-slate-300 hover:text-slate-100'}`}>
             {chu(ten, k)}
           </button>
         ))}

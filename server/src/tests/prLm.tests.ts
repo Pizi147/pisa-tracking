@@ -69,7 +69,7 @@ export async function runPrLmTests(t: YThucTestKit) {
   });
 
   check('PR-LM (6) → LUAT-NX-MT · chuDoiVang: "vắng" + tuần CŨ (mã tuần, không ngày); chữ mẫu nhận xét "Ví dụ:"', () => {
-    assert(d.chuDoiVang('W3 SEP', '2026-10-01') === 'vắng W3 SEP' && d.chuDoiVang('2026-09-14', '2026-10-01') === 'vắng W3 SEP', 'tuần cũ');
+    assert(d.chuDoiVang('W3 SEP', '2026-10-01') === 'vắng W3\u00a0SEP' && d.chuDoiVang('2026-09-14', '2026-10-01') === 'vắng W3\u00a0SEP', 'tuần cũ');
     assert(d.chuDoiVang(null, '2026-10-01') === null, 'không dời → null');
     const nx = nguon('web/src/modules/fasttrack/NhanXet.tsx');
     assert(!/"Không bắt buộc"/.test(nx) && /placeholder=\{viDuNhanXet\(kyNang\)\}/.test(nx) && /t\('Ví dụ:/.test(nx), 'chữ mẫu nhận xét (OV-14b: theo kỹ năng)');

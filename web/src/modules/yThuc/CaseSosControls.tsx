@@ -9,7 +9,7 @@ import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BoiCanh, CanLam, DiemKq, NhomCoSo, NutChu, TrangThaiLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, CanLam, DiemKq, DongTiep, NhomCoSo, NutChu, NutVaTiep, TrangThaiLuu, type DaLuuPanel, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { FormDoiPa, useDoiPa } from '../cases/DoiPa.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
@@ -43,6 +43,7 @@ type ChungPanel = {
   quayLai?: { nhan: string; onClick: () => void };
   onClose: () => void;
 };
+
 
 /** PA theo quy chế như `caseDetail` trả — chỉ các trường panel cần. */
 export type PaQuyChe = {
@@ -92,7 +93,7 @@ export function ketQuaGanNhat(data: CaseDetail): ReactNode {
  * Mô tả ngắn * (≥ 15) · Phương án = PA Bổ trợ điền sẵn (FOU chung 2 buổi/tuần GVCN dạy; BE / ELE 1 buổi/tuần/môn GVBM môn), "Sửa" mở ô ngay
  * trong khối (Nội dung · Số buổi · Người dạy — cùng `FormPa`). Lưu: `POST /cases/:id/xac-nhan` → PA Bổ trợ chạy ngay. Case MT không có bước này.
  */
-export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void }) {
+export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void; tiep?: TiepViec }) {
   const toast = useToast();
   const caseId = data.id;
   const topic = data.topic ?? data.category ?? '';
@@ -105,6 +106,7 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
   const [sua, setSua] = useState(false);
   const [v, setV] = useState<GiaTriPa | null>(goc);
   const [busy, setBusy] = useState(false);
+  const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
   const lf = useLoiForm();
   const loi = [
     ...dsLoi([{ khoa: 'nguyen-nhan', nhan: t('Nhóm nguyên nhân'), chon: true }, { khoa: 'mo-ta', nhan: t('Mô tả ngắn'), toiThieu: 15 }],
@@ -112,10 +114,10 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
     ...(sua && v && goc ? loiFormPa(v, { goc }) : []),
   ];
   const daSua = !!(nhom.length || moTa.trim() || sua);
-  const luu = async () => {
+  const luu = async (diTiep = false) => {
     lf.bam();
     if (loi.length > 0) return;
-    setBusy(true);
+    setBusy(true); setBam(diTiep ? 'tiep' : 'luu');
     try {
       let paSua: Record<string, unknown> | undefined;
       if (sua && v && goc) {
@@ -129,15 +131,17 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
       await api.post(`/cases/${caseId}/xac-nhan`, { nhom, moTa: moTa.trim(), ...(paSua && Object.keys(paSua).length ? { pa: paSua } : {}) });
       invalidateCases();
       xoaNhap();
-      toast.push('ok', pa ? t('Đã xác nhận Case — PA Bổ trợ bắt đầu từ hôm nay') : t('Đã xác nhận Case'));
-      onXong();
+      const chu = pa ? t('Đã xác nhận Case — PA Bổ trợ bắt đầu từ hôm nay') : t('Đã xác nhận Case');
+      /* "· việc tiếp ›": dải ở đầu việc kế nói kết quả — không thêm toast. */
+      if (diTiep && tiep) tiep.lam({ chu });
+      else { toast.push('ok', chu); onXong(); }
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
-  const nut = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Xác nhận Case')}</button>;
+  const nut = <NutVaTiep chu={t('Xác nhận Case')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
   return (
     <KhungPanel tieuDe={t('Xác nhận Case')} {...chung} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, `Progress · ${tenMonNgan(ct, topic)}`, true)}
-      chan={{ v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi), dongTren: busy || sua ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} onHuy={() => { setSua(false); setV(goc); }} /> : undefined }}>
+      chan={{ v3: true, chinh: <><DongTiep tiep={tiep} chan />{nut}</>, daSua, conThieu: lf.conThieu(loi), dongTren: busy || sua ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} onHuy={() => { setSua(false); setV(goc); }} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
           <div>
@@ -165,6 +169,7 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
             </div>
           )}
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
+          <DongTiep tiep={tiep} />
         </CanLam>
         <BoiCanh dong={[['SOS', data.sosLevel ? t('SOS {sosLevel} · theo số môn trượt của Progress Test', { sosLevel: data.sosLevel }) : null]]} />
       </div>
@@ -177,14 +182,17 @@ export function XacNhanCasePanel({ data, onXong, ...chung }: ChungPanel & { data
  * `GOI_Y_MO_TA_PA`, ≥ 15) · Người dạy (loại có người) · Số buổi (Tutor / Tự học) · Bắt đầu *; nút chính "Xác nhận PA" + "Đề xuất PA khác…" (PA mới +
  * lý do → Quản lý duyệt; PA gốc chờ, chưa chạy) + "Không cần theo dõi…". QL từ chối PA khác → dòng lý do ở đầu, việc quay lại.
  */
-export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa: PaQuyChe; data: CaseDetail; onXong: (x?: DaLuuPanel) => void }) {
+export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel & { pa: PaQuyChe; data: CaseDetail; onXong: (x?: DaLuuPanel) => void; tiep?: TiepViec }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const goc: GiaTriPa = { ...paMoi(pa.kind), soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa) ?? nguoiMacDinh(pa.kind) };
-  const [v, setV] = useState<GiaTriPa>(goc);
+  /* 6b-3: nội dung đang gõ ở nháp của việc — ✕ khi đang "Xem Case" (form ẩn) vẫn hỏi, mở lại việc thì chữ còn. */
+  const [v, setV] = useNhap<GiaTriPa>(`xac-nhan-pa:${pa.id}`, goc);
+  const xoaNhap = useXoaNhap();
   const [batDau, setBatDau] = useState(homNay);
   const [cheDo, setCheDo] = useState<'xac-nhan' | 'doi' | 'ktd'>('xac-nhan');
   const doi = useDoiPa(pa.kind);
   const [busy, setBusy] = useState(false);
+  const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const lf = useLoiForm();
   const loi = cheDo === 'doi' ? doi.loi : [
@@ -192,15 +200,16 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
     ...(batDau ? [] : [{ khoa: 'bat-dau', nhan: t('Bắt đầu'), lyDo: t('Chọn ngày bắt đầu') }]),
   ];
   const tenLoai = dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? t('PA theo quy chế'));
-  const luu = async () => {
+  const luu = async (diTiep = false) => {
     lf.bam();
     if (loi.length > 0) return;
-    setBusy(true); setLoiLuu(null);
+    setBusy(true); setLoiLuu(null); setBam(diTiep ? 'tiep' : 'luu');
     try {
       if (cheDo === 'doi') {
         const ct = await api.post<any>(`/interventions/${pa.id}/de-xuat-doi-pa`, doi.payload());
         invalidateCases();
         const yc = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.doiPa?.yeuCauId ?? null;
+        xoaNhap();
         onXong({
           chu: t('Đã gửi Quản lý duyệt'),
           phu: t('{moi} thay {goc} · Case "Chờ duyệt đổi PA"', { moi: dich(INTERVENTION_KIND_LABEL[doi.v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? doi.v.kind), goc: tenLoai }),
@@ -215,18 +224,21 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
         });
         invalidateCases();
         const iv = (ct?.interventions ?? []).find((x: any) => x.id === pa.id);
-        onXong({
+        xoaNhap();
+        const x = {
           chu: t('Đã xác nhận PA'),
           phu: [tenLoai, t('từ {tuanLich}', { tuanLich: tuanLich(batDau, homNay) }), iv?.actionDue ? t('hạn kết quả {ngay}', { ngay: ngan(iv.actionDue) }) : null].filter(Boolean).join(' · '),
-        });
+        };
+        if (diTiep && tiep) tiep.lam(x); else onXong(x);
       }
     } catch (e: any) { setLoiLuu(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
-  const nut = (
+  /* Đề xuất PA khác gửi Quản lý duyệt — việc chưa xong (PA gốc chờ duyệt), không có "· việc tiếp ›". */
+  const nut = cheDo === 'doi' ? (
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>
-      {busy ? (cheDo === 'doi' ? t('Đang gửi…') : t('Đang lưu…')) : cheDo === 'doi' ? t('Gửi Quản lý duyệt') : t('Xác nhận PA')}
+      {busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}
     </button>
-  );
+  ) : <NutVaTiep chu={t('Xác nhận PA')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
   const daSua = cheDo === 'doi' ? doi.daSua : !!v.description.trim();
   const theoLuot = data.nguyenNhanTheoLuot ?? [];
   const tuChoi = pa.doiPa?.trangThai === 'tu_choi' ? pa.doiPa : null;
@@ -234,8 +246,8 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
   return (
     <KhungPanel tieuDe={t('Xác nhận PA')} {...chung} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, [`MT${data.tenSos?.mt ?? data.attemptNo ?? ''}`, data.categoryLabel ?? '', data.sosLevel ? `SOS ${data.sosLevel}` : null].filter(Boolean).join(' · '), true)}
-      chan={{ v3: true, chinh: cheDo === 'ktd' ? undefined : nut, daSua, conThieu: lf.conThieu(loi),
-        dongTren: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined }}>
+      chan={{ v3: true, chinh: cheDo === 'ktd' ? undefined : cheDo === 'doi' ? nut : <><DongTiep tiep={tiep} chan />{nut}</>, daSua, conThieu: lf.conThieu(loi),
+        dongTren: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu(bam === 'tiep')} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         {tuChoi && (
           <p className="m-0 rounded-lg bg-late-bg px-3 py-2 text-[13px] text-slate-200" role="status">
@@ -269,10 +281,11 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
                   </Truong>
                 )} />
               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <span className="max-sm:hidden">{nut}</span>
+                <span className="flex flex-wrap gap-1.5 max-sm:hidden">{nut}</span>
                 <NutChu onClick={() => { setCheDo('doi'); lf.datLai(); }}>{t('Đề xuất PA khác…')}</NutChu>
                 <button type="button" className="btn btn-ghost min-h-[44px] text-slate-400 sm:min-h-0" onClick={() => setCheDo('ktd')}>{t('Không cần theo dõi…')}</button>
               </div>
+              <DongTiep tiep={tiep} />
             </>
           )}
         </CanLam>
@@ -291,7 +304,7 @@ export function XacNhanPaPanel({ pa, data, onXong, ...chung }: ChungPanel & { pa
 /**
  * MÔ TẢ CASE (MO-TA-CASE, N8 — chủ SP 27/10): nhận xét bài KHÔNG bắt buộc; Case MT chưa có mô tả (bài không nhận xét) → GV phụ trách kỹ năng ghi
  * Mô tả * (≥ 10) + Nhóm nguyên nhân * (chip, 1 = chính) THẲNG vào Case (`PATCH /cases/:id` — `nhom` + `observation`, như Sửa Case: mô tả riêng, nhận xét
- * sau không đè). Bài không bị ghi nhận xét. Lưu xong Case sang Xác nhận PA. `luc` cũ (Case vừa có mô tả từ nhận xét) → 409, chữ đang gõ giữ.
+ * sau không đè). Bài không bị ghi nhận xét. Lưu xong Case sang Xác nhận PA. `luc` cũ (Case vừa có mô tả từ nhận xét) → 409: tự tải lại Case, chữ đang gõ giữ.
  */
 export function MoTaCasePanel({ data, onXong, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void }) {
   const toast = useToast();
@@ -315,7 +328,8 @@ export function MoTaCasePanel({ data, onXong, ...chung }: ChungPanel & { data: C
       toast.push('ok', t('Đã lưu mô tả — Case sang Xác nhận PA'));
       onXong();
     } catch (e: any) {
-      if (e instanceof ApiError && e.status === 409) setLuc(e.details?.luc ?? null);   // chữ đang gõ giữ nguyên
+      /* D8: Case vừa đổi → tải lại Case (thấy mô tả mới nếu có); chữ đang gõ giữ trong kho nháp. */
+      if (e instanceof ApiError && e.status === 409) { setLuc(e.details?.luc ?? null); invalidateCases(); }
       toast.push('error', e.message);
     } finally { setBusy(false); }
   };

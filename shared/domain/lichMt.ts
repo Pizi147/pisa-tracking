@@ -218,7 +218,8 @@ export type KetQuaHuy = { id: number; attemptId: number; luc: string; lyDo: stri
 export function chuDoiVang(tuanCu: string | null | undefined, homNay?: string | null): string | null {
   if (!tuanCu) return null;
   const iso = /^\d{4}-\d{2}-\d{2}/.test(tuanCu) ? tuanCu : homNay ? docTuanLich(tuanCu, homNay) : null;
-  return t('vắng {tuan}', { tuan: iso ? tuanLich(iso, homNay) : tuanCu.replace(/ \d{4}$/, '') });
+  /* SUA-375: mã tuần dính một khối (NBSP) — ô hẹp xuống dòng thành "vắng / W2 SEP", không cắt "SEP" riêng. */
+  return t('vắng {tuan}', { tuan: (iso ? tuanLich(iso, homNay) : tuanCu.replace(/ \d{4}$/, '')).replace(' ', '\u00a0') });
 }
 
 /** Một lượt cần lưu ở tab "Xếp theo học viên" (PR-XTHV): tuần sớm nhất trước / sau khi sửa; `taoMoi` = lượt chưa có (đi `/xep-moi`). */

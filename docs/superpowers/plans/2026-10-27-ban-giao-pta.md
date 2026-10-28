@@ -1,12 +1,12 @@
-# Bàn giao PTA Plan — 27/10/2026 tối (session planning cũ đầy ngữ cảnh)
+# Bàn giao PTA Plan — cập nhật 28/10/2026 rạng sáng (sau đêm tự chạy)
 
 Đọc tệp này trước. Mọi việc chi tiết nằm ở các kế hoạch dẫn dưới đây; đây chỉ là trạng thái và luật làm việc mới nhất.
 
 ## 1. Luật làm việc mới nhất (chủ SP 27/10 — thắng ghi chép cũ)
 - Tên session planning: **PTA Plan**. Session code nhắn tới tên này bằng SendMessage.
 - Trả lời chủ SP bằng tiếng Việt đơn giản, ngắn.
-- **Không deploy** khi chủ SP chưa bảo. Lần deploy cuối: 27/10 14:19.
-  - Migration mới sau đó: `prSvBaiLop2` (#623).
+- **Không deploy** khi chủ SP chưa bảo. Lần deploy cuối: **28/10 ~01:01**, main `6d2eecc6` (#635 #640 #642), DB `pisatracking-261028` (DB cũ `261027` giữ ~1 tuần).
+  - Migration mới sau đó: chưa có (tới `f5dfb984`).
   - Khi chủ SP bảo deploy: soát lại danh sách migration từ commit đã deploy.
   - Cách làm theo bộ nhớ "Cách deploy" + `DEPLOY_2026-10.md`.
 - **Chỗ check** (`C:/Users/Admin/AppData/Local/Temp/pisa-slot/check-N`):
@@ -18,7 +18,8 @@
 - Gộp lại main sau khi PR khác vừa merge, nếu chỉ vướng `shared/i18n/en.ts` (danh sách `...EN_*`) hoặc `server/src/tests/run.ts`:
   - typecheck + phép kiểm liên quan, không chạy lại cả bộ;
   - en.ts: lấy hợp hai danh sách, bỏ `EN_R1_PHAN_CAP_TEST` (đã gỡ).
-- **Cổng critique:** chấm MỘT lần, ≥ 25/40 và không P0 / P1 là đạt khi cần nhanh; mục tiêu thường ≥ 35, gửi chủ SP được từ ~31.
+- **Cổng critique (chủ SP 28/10, thắng bản cũ):** mục tiêu ≥ 35/40; chạm 30 thì sửa tối đa 2 vòng nữa, rồi chỉ cần không P0 / P1 là đạt.
+- **Đêm 28/10 chủ SP uỷ quyền:** tự giao việc, tự rà, tự merge PR giao diện khi ảnh cặp ≥ 90 % KHỚP + đúng luật + check xanh; PR < 90 % chờ chủ SP đồng ý lý do các dòng KHÁC. Đêm khác hỏi lại.
 - **Luật / dữ liệu chủ SP đã nhắc gắt:**
   - **N8:** nhận xét MT KHÔNG bắt buộc; nhận xét thành "Mô tả" Case; không có thì việc "Mô tả Case" cho GV phụ trách; S chấm chéo = GV phụ trách S.
   - Form tiến độ trên lớp: cần ít nhất một trong nhận xét / x/y / band.
@@ -33,39 +34,36 @@
 - PR giao diện: chủ SP duyệt ảnh cặp trước merge. PR máy chủ: PTA rà + check xanh thì tự merge.
 - Bộ nhớ (MEMORY.md) đã cập nhật đủ các luật trên.
 
-## 2. PR đang mở (lúc bàn giao)
-| PR | Việc | Trạng thái / việc PTA |
+## 2. Chờ chủ SP sáng 28/10 (ảnh cặp < 90 % — mỗi dòng KHÁC có 1 câu lý do ở đầu khop-khac.md)
+| PR / nhánh | Việc | Ghi chú |
 |---|---|---|
-| #619 | D4 màu web | Chủ SP duyệt. PTA cũ đang check (worktree `scratchpad/p619`). Xong → merge → nhắn MAU-WEB-2 + 6C-NHO gộp main |
-| #635 | D8 sửa nhỏ UI (Lịch Test cột "của bạn", 3 lỗi do-khung #608, "Chờ mô tả / nguyên nhân", 409 tải lại) | PTA đã thụt hàng "Tổng số câu" (commit `ba003295`, chủ SP yêu cầu). Cần: chụp lại Lịch Test lớp thường cho chủ SP xem → chạy check đầy đủ (run.js session chạy bị 127) → merge |
+| #638 HSL-FT | trang lượt Mock Test FT | 79 % (6 KHÁC). PTA đã rà code + máy chủ: đạt. Merge → nhắn HSL-LT |
+| #644 6b-3 PILOT-VIEC | panel việc ngăn xếp | 79 % (3 KHÁC; Hoàn tác xác nhận nay đã có ở HOAN-TAC-XN-WEB). Merge → nhắn 6c + HOAN-TAC-XN-WEB |
+| nhánh `claude/hsl-lt` (chưa PR) | M4 PR 3 trang lượt lớp thường | critique 31, 85 % (92 % tính KHÁC chấp nhận). Chờ #638; sửa chung `ConLaiLuot` (FT đổi theo) |
+| nhánh `claude/panel-6c-d34757` (6c-1, chưa PR) | chống mất chữ, lỗi tải ≠ rỗng, panel chồng, việc để sau | check xanh. Chờ #644 |
+| nhánh `claude/panel-6c2` (6c-2, chưa PR) | dòng Case có điểm, 5 hộp xác nhận nhỏ, bỏ mã chết, panel số ↗ mọi dòng, Kết thúc PA hiện lại | critique 30, K② 100 %. Chờ #644 + 6c-1 |
+| nhánh `claude/hoan-tac-xn-web` (chưa PR) | Hoàn tác Xác nhận PA / Case trên web, trả lại chữ | check xanh. Chờ #644 |
 
-## 3. Session đang chạy (báo về PTA Plan khi mở PR)
-- **HSL-FT** (M4 PR 2, trang lượt Test FT): đang check, sắp mở PR. Kế hoạch `2026-10-27-m4-code.md`.
-- **6C-NHO** (D9): sửa nốt `LuoiThuong` / `PhanTichGiaoVien` / `HoSoGiaoVienPage` (trùng tệp #619).
-- **MAU-WEB-2** (D10): code xong, chờ #619 merge rồi dựng lại nhánh từ main, check, mở PR.
-  - PTA đã trả lời [XM]: "Chờ n kỹ năng" giữ badge V4; cột Việc HV & Lớp chữ thường, màu nhấn chỉ khi rê; 375 badge sát nhau để sau.
-- **SAU-D7-NHO** (D11): 4 điểm nhỏ máy chủ #633.
-- **6b-3 PILOT-VIEC**, **6b-4 PILOT-GV-TRE**, **M5 ② UI-HO-SO-HV-2**: vừa mở 27/10 ~22:00 (kế hoạch `2026-10-27-m6-code.md`, `2026-10-27-m5-code.md`).
+Thứ tự merge sáng: #638 → nhắn HSL-LT mở PR · #644 → nhắn 6c (6c-1 rồi 6c-2) + HOAN-TAC-XN-WEB mở PR (gộp main, typecheck + phép kiểm liên quan). Check-3 cho PTA.
 
-## 4. Chờ PR trước merge mới chạy
-- **M4 PR 3 HSL-LT** (trang lượt lớp thường): sau HSL-FT. Prompt cuối `2026-10-27-m4-code.md`.
-- **6c** (áp dần bảng kê panel `docs/superpowers/specs/2026-10-27-panel-inventory.md`: chống mất chữ lỗi 5, lỗi tải ≠ rỗng lỗi 6, panel chồng lỗi 9, rồi Gộp / Bỏ; + dòng danh sách Case có điểm [XM-1 #632]): sau 6b-3, 6b-4.
+## 3. Đã merge đêm 27–28/10
+#635 #640 #642 (đã deploy) · #645 màu cột Việc · #641 6b-4 GV chấm quá hạn · #643 M5 ② hồ sơ HV hai cột · #646 MAU-MUC 3 mức SOS rỗng · nền vừa · đặc (mockup `thiet-ke/v7/mau-muc.html`, PTA duyệt thay) · #648 HOAN-TAC-XN máy chủ (rà sâu /code-review high, 4 điểm đã sửa) · #647 #649 #650 #651 sửa 375 / do-khung (75 → 58 lỗi; miễn g3 bảng Quá hạn chấm theo T17).
+Check đầy đủ trên main sau #643: 4509 + 58 xanh; sau #651: xem bình luận PTA.
 
-## 5. Việc nhỏ ghi để sau
-- 375:
-  - badge sát nhau (HV & Lớp);
-  - "vắng W2 SEP" cắt chữ SEP;
-  - thẻ "15 bài của GV khác" 2 dòng (#635).
-- View Case: chip lượt chưa link ↗ (chờ route trang lượt M4).
-- Bật nút Dịch AI: chủ SP tự gắn khoá OpenAI theo `docs/huong-dan/bat-dich-ai.md` (không xem / nhập khoá).
+## 4. Session (linked từ PTA Plan, sau #651 đều nghỉ)
+- hsl-lt, panel-6c, hoan-tac-xn: chờ tin "đã merge #638 / #644" (mục 2).
+- mau-muc: xong MAU-MUC + SUA-375 1–3 + SUA-DO-KHUNG; rảnh — dùng cho việc nhỏ tiếp.
+- Session cũ (HSL-FT, 6b-3, 6b-4, M5 ②, MAU-WEB-2, 6C-NHO, SAU-D7-NHO): PR đã xong / chờ; có thể lưu trữ khi chủ SP đồng ý.
+
+## 5. Việc để sau (ghi lại, chưa giao)
+- cv-cho-duyet 375: 38 lỗi cắt chữ thẻ Chờ duyệt (`duyet/TheYeuCau.tsx`) — sau 6c-2.
+- hd-chi "Chỉ cho tôi": đích bước hướng dẫn sai (`shared/huongDan/gv.ts`, `ql.ts`) — sau hsl-lt.
+- Khôi phục lượt Test lớp thường đã huỷ (luật không khoá cứng) — PR máy chủ.
+- Tên GV ở việc của người khác ("Còn lại" trang lượt FT / LT) — cần trường máy chủ.
+- P2 HSL-LT: dòng "Lịch" đầu trang khi các môn khác tuần.
+- View Case: chip lượt ↗ trang lượt (sau HSL-FT / HSL-LT merge).
+- Bật nút Dịch AI: chủ SP tự gắn khoá theo `docs/huong-dan/bat-dich-ai.md`.
 
 ## 6. Kế hoạch / tài liệu chính
-- `docs/superpowers/plans/2026-10-27-sua-toi.md` — D1–D11 (đợt sửa sau deploy 14:19).
-- `2026-10-27-m4-code.md`, `2026-10-27-m5-code.md`, `2026-10-27-m6-code.md` — code M4 / M5 / M6.
-- Mockup đã duyệt:
-  - `thiet-ke/v7/ho-so-luot-test.html` (M4);
-  - `thiet-ke/v7/ho-so-hv.html` (M5);
-  - `thiet-ke/v7/panel-pilot.html` (M6);
-  - `thiet-ke/v7/cong-viec-2.html` (Công việc);
-  - `thiet-ke/v7/bang-mau-moi.html` (màu).
-- Đã merge tối 27/10: #618 #622 #623 #624 #626 #627 #628 #629 #630 #632 #633 (+ kế hoạch #625 #631 #634 #636).
+- `docs/superpowers/plans/2026-10-27-sua-toi.md` · `-m4-code.md` · `-m5-code.md` · `-m6-code.md` · `2026-10-28-6c-panel-ap.md`.
+- Mockup đã duyệt: `thiet-ke/v7/ho-so-luot-test.html` (M4) · `ho-so-hv.html` (M5) · `panel-pilot.html` (M6) · `cong-viec-2.html` · `bang-mau-moi.html` · `mau-muc.html` (28/10).

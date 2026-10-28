@@ -20,6 +20,7 @@ export const EN_OV13C = {
   'Đề xuất PA khác cho em này…': 'Propose another PA for this student…',
   'Nhập điểm · {tuan}': 'Enter scores · {tuan}',
   'Chọn từ 1 đến {n} PA để xác nhận.': 'Select 1 to {n} PAs to confirm.',
+  'Chọn từ 1 đến {n} PA để hoàn tác.': 'Select 1 to {n} PAs to undo.',   // HOAN-TAC-XN
   'Ngày bắt đầu chỉ được lùi tối đa 7 ngày, tới tối đa 30 ngày.': 'Start date can be at most 7 days back and 30 days ahead.',
   'Đang xác nhận {n}/{m} em': 'Confirming {n}/{m} students',
   'Chọn người dạy': 'Choose a teacher',

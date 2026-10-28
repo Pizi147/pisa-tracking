@@ -84,8 +84,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const NGUON: Record<string, (h: HangPtGv) => string> = {
     viec: (h) => nguonO(h, 'viec-dung-han'), dat: (h) => nguonO(h, ft ? 'dat-mt' : 'ket-qua'), tb: (h) => nguonO(h, 'tien-bo'),
     casePa: (h) => `/giao-vien/${h.id}/o?cot=case-mo&${ctQ}`, pa: (h) => nguonO(h, 'pa-hieu-qua'),
-    /* Pass Target: panel của hồ sơ GV (cùng `thiThatCuaGv`, một dòng một lần thi). shortcut: hồ sơ gộp mọi chi nhánh GV dạy — GV dạy hai chi nhánh thì panel có thể dài hơn ô. */
-    tt: (h) => `/giao-vien/${h.id}/chi-so/o?cot=thi-that&tu=${data?.tu ?? ''}&den=${data?.den ?? ''}`,
+    /* Pass Target: panel của hồ sơ GV (cùng `thiThatCuaGv`, một dòng một lần thi) — 6C-NHO: chỉ chi nhánh đang chọn (`cn`), số dòng = ô. */
+    tt: (h) => `/giao-vien/${h.id}/chi-so/o?cot=thi-that&cn=${branchId}&tu=${data?.tu ?? ''}&den=${data?.den ?? ''}`,
   };
   const DV: Record<string, string> = { viec: t('việc'), diem: t('bài Test'), dat: t('lượt Test'), tb: t('lượt Test'), casePa: 'Case', pa: 'PA', tt: t('lần thi') };
   const oCua = (h: HangPtGv, c: CotBang): ReactNode => {
@@ -109,7 +109,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
         <span role="group" aria-label={t('Bộ cột')} className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
           {([['gon', t('Gọn')], ['day', t('Đầy đủ')]] as const).map(([k, nhan]) => (
             <button key={k} type="button" aria-pressed={boCot === k} onClick={() => setBoCot(k)}
-              className={`min-h-[44px] px-3 text-sm sm:min-h-[34px] ${boCot === k ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
+              className={`min-h-[44px] px-3 text-sm sm:min-h-[34px] ${boCot === k ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
           ))}
         </span>
         <input type="search" name="tim-gv" autoComplete="off" className="field w-56 max-sm:min-h-[44px] max-sm:w-full" placeholder={t('Tìm GV…')} aria-label={t('Tìm GV')} value={tim} onChange={(e) => setTim(e.target.value)} />

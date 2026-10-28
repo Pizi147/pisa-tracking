@@ -430,7 +430,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
 
       <div role={dt ? 'list' : 'table'} aria-label={`${t('Chuyển lớp')} · ${data.lop.code}`} className={dt ? 'mt-3 space-y-2' : 'surface-2 mt-3 overflow-x-auto rounded-lg'}>
         {!dt && (
-          <div role="row" className={`${LUOI_NHIEU} min-w-max border-b px-3 py-2 text-[12px] font-extrabold  text-slate-500 lg:min-w-0`} style={{ borderColor: 'var(--line)' }}>
+          <div role="row" className={`${LUOI_NHIEU} min-w-max border-b px-3 py-2 text-[12px] font-semibold text-slate-500 lg:min-w-0`} style={{ borderColor: 'var(--line)' }}>
             <span role="columnheader"><span className="sr-only">{t('Chọn')}</span></span>
             <span role="columnheader">{t('Học viên')}</span>
             <span role="columnheader" />

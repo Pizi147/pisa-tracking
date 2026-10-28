@@ -142,6 +142,8 @@ function lyDoChan(p: Principal, u: Nguoi): string | null {
   if (u.la_qt && u.status === 'active' && u.so_qt_khac === 0) return 'Đây là Quản trị hệ thống cuối cùng.';
   /* PR-UXF-a U1: group_concat không hứa thứ tự — sắp bằng soSanhLop. */
   if (u.lop_gvcn) return `Đổi GVCN lớp ${u.lop_gvcn.split(', ').sort((a, b) => soSanhLop({ code: a }, { code: b })).join(', ')} trước.`;
+  /* 6C-NHO: xác nhận xoá bằng gõ lại email — chưa có email thì nói lý do + bước tiếp, không tắt nút im lặng. */
+  if (!u.email) return 'Tài khoản chưa có email. Thêm email ở ⋯ › Sửa thông tin rồi xoá.';
   return null;
 }
 

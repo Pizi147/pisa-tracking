@@ -292,6 +292,15 @@ export function viecKeTiep<T extends { key: string; nhom: string; mine: boolean 
   if (i < 0) return null;
   return ds.slice(i + 1).find((x) => x.nhom === ds[i].nhom && x.mine === ds[i].mine && duoc(x)) ?? null;
 }
+/**
+ * M6 6b-3 (mockup panel-pilot ②b, ②d): dải "✓ Đã lưu … · Hoàn tác" của việc `tu` vừa lưu bằng "· việc tiếp ›" hiện ở đầu việc `den` mà nút đó đưa tới
+ * (`den` = `tu`: việc kế cùng Case), hoặc ở thẻ "Hết việc" khi `den` = null. Mở việc khác bằng tay → không hiện (dải không thuộc việc đó).
+ */
+export function choDaiVuaLuu(v: { tu: string; den: string | null } | null, chon: string | null, het: boolean): 'viec' | 'het' | null {
+  if (!v || !chon) return null;
+  if (het) return v.den === null && v.tu === chon ? 'het' : null;
+  return v.den === chon ? 'viec' : null;
+}
 /** CONG-VIEC-2 (mockup "việc tiếp", V12 ⑤): như `viecKeTiep` nhưng đi hết nhóm — sau việc đang mở, rồi vòng lên đầu nhóm. */
 export function viecKeTiepVong<T extends { key: string; nhom: string; mine: boolean }>(ds: readonly T[], hienTai: string | null, duoc: (x: T) => boolean): T | null {
   const i = ds.findIndex((x) => x.key === hienTai);

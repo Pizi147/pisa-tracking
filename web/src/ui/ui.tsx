@@ -39,7 +39,7 @@ export type LevelTone = Tone | 'late';
  *   sky      bằng kỳ vọng
  *   emerald  vượt kỳ vọng / Đạt — xanh lá chỉ dành cho kết quả học tập
  *   slate    thiếu dữ liệu    — khác điểm 0, khác ô trống
- *   sos1/2/3 mức SOS          — OV-15a: chỉ viền vàng · cam · đỏ (dày 1 / 1,5 / 2,5 px), cùng lớp với `<ChipSos>` (`lopSos`)
+ *   sos1/2/3 mức SOS          — MAU-MUC: rỗng vàng · nền cam vừa · nền đỏ đặc, cùng lớp với `<ChipSos>` (`lopSos`)
  *   tam      tạm thời / chưa đủ điểm — xám, viền đứt
  *
  * Trước đây bảng này được chép ở `SkillBoard.tsx`, và mỗi component mới sẽ tự chép thêm một
@@ -565,8 +565,8 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
         const chon = !tat && m.key === value;
         return (
           <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
-            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs font-semibold disabled:pointer-events-none max-sm:rounded-lg max-sm:border sm:min-h-[32px] ${i ? 'sm:border-l' : ''} ${
-              chon ? 'bg-[color:var(--accent-soft)] text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs disabled:pointer-events-none max-sm:rounded-lg max-sm:border sm:min-h-[32px] ${i ? 'sm:border-l' : ''} ${
+              chon ? 'bg-[color:var(--accent-soft)] font-semibold text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
             <span aria-hidden className={`text-[12px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
           </button>
