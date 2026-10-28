@@ -17,7 +17,6 @@ export async function runPrOv15cTests(t: YThucTestKit) {
   const util: any = await import('../util.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const m15c: any = await import('../migrate/prOv15c.ts');
-  const kiem: any = await import('../ops/kiemTruocOv15c.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const { createApp } = await import('../app.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -260,8 +259,8 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     });
   });
 
-  // ------------------------------------------------------------------ 6 · migrate + lệnh kiểm trước
-  check('C15-9 · migrate prOv15c trên DB không có bảng: tạo bảng + chỉ mục giống schema.sql; chạy lần hai không làm gì; kiem-truoc-ov15c chỉ đọc, đếm lượt huỷ cũ theo loại', () => {
+  // ------------------------------------------------------------------ 6 · migrate
+  check('C15-9 · migrate prOv15c trên DB không có bảng: tạo bảng + chỉ mục giống schema.sql; chạy lần hai không làm gì', () => {
     const tam = new Database(':memory:');
     tam.exec(`CREATE TABLE classes (id INTEGER PRIMARY KEY); CREATE TABLE students (id INTEGER PRIMARY KEY); CREATE TABLE learning_cycles (id INTEGER PRIMARY KEY); CREATE TABLE users (id INTEGER PRIMARY KEY);`);
     const ap: string[] = [];
@@ -273,10 +272,5 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     const cm = (c: any) => c.prepare(`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'ghi_chu_lich_thi' ORDER BY name`).all().map((x: any) => x.name).join(',');
     assert(cm(tam) === cm(conn) && cm(conn) === 'idx_gcl_hoc_vien,idx_gcl_lop', cm(tam));
     tam.close();
-    const truoc = conn.prepare('SELECT total_changes() AS n').get().n;
-    const r = kiem.demHuyCu(conn);
-    assert(conn.prepare('SELECT total_changes() AS n').get().n === truoc, 'chỉ đọc');
-    const that = one(`SELECT COUNT(*) AS n FROM assessment_attempts WHERE status = 'cancelled' AND kind = 'mock'`).n;
-    assert((r.luot.find((x: any) => x.kind === 'mock' && !x.chiNhanh)?.n ?? 0) === that && typeof r.huyVang === 'number', JSON.stringify(r));
   });
 }

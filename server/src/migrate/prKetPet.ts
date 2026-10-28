@@ -13,7 +13,6 @@
  * (trước → sau, nguồn "migrate prKetPet") trong cùng `tx`:
  *   3. Bỏ dấu KCK (Target Cambridge không có KCK; Target giữ).   4. Target ngoài thang Cambridge (band cũ, số lẻ) → trống.
  *   Case mở theo môn gộp giữ nguyên.
- * `kiemTruocKetPet` = số liệu Task 0, CHỈ ĐỌC (`npm run kiem-truoc-ket-pet`).
  */
 import { tx } from '../db.ts';
 import { voiNguon, writeAuditLo } from '../platform/audit.ts';
@@ -63,26 +62,6 @@ const SQL_KCK = (ma: readonly string[]) => `FROM learning_cycles WHERE route IS 
 const SQL_TARGET_SAI = () => `FROM learning_cycles WHERE route IS NULL AND target_score IS NOT NULL AND (${MA.map(() =>
   '(programme_code = ? AND (target_score < ? OR target_score > ? OR target_score != CAST(target_score AS INTEGER)))').join(' OR ')})`;
 const THAM_TARGET_SAI = () => MA.flatMap((m) => [m, kyThiCuaChuongTrinh(m)!.min, kyThiCuaChuongTrinh(m)!.max]);
-
-export type KiemTruocKetPet = {
-  boMon: Record<string, string[]>; lop: { ma: string; status: string; so: number }[]; soEm: number;
-  luotGiu: number; luotTach: number; phanCongThem: number; caseMoGop: number; kck: number; targetSai: number;
-};
-export function kiemTruocKetPet(conn: any): KiemTruocKetPet {
-  const r: KiemTruocKetPet = { boMon: {}, lop: [], soEm: 0, luotGiu: 0, luotTach: 0, phanCongThem: 0, caseMoGop: 0, kck: 0, targetSai: 0 };
-  if (!coBang(conn, 'programme_skills')) return r;
-  for (const m of MA) r.boMon[m] = boMon(conn, m);
-  r.lop = conn.prepare(`SELECT programme_code AS ma, status, COUNT(*) AS so FROM classes WHERE programme_code IN (${IN(MA.length)}) GROUP BY 1, 2 ORDER BY 1, 2`).all(...MA) as any[];
-  r.soEm = (conn.prepare(`SELECT COUNT(DISTINCT e.student_id) AS n FROM enrollments e JOIN classes c ON c.id = e.class_id
-     WHERE c.programme_code IN (${IN(MA.length)}) AND e.status = 'active'`).get(...MA) as any).n;
-  for (const l of luotGop(conn, MA)) l.co_diem ? r.luotGiu++ : r.luotTach++;
-  r.phanCongThem = phanCongThieuTach(conn, MA).length;
-  r.caseMoGop = (conn.prepare(`SELECT COUNT(*) AS n FROM sos_cases WHERE status != 'done' AND (topic IN (${IN(GOP.length)}) OR category IN (${IN(GOP.length)}))`)
-    .get(...GOP, ...GOP) as any).n;
-  r.kck = (conn.prepare(`SELECT COUNT(*) AS n ${SQL_KCK(MA)}`).get(...MA) as any).n;
-  r.targetSai = (conn.prepare(`SELECT COUNT(*) AS n ${SQL_TARGET_SAI()}`).get(...THAM_TARGET_SAI()) as any).n;
-  return r;
-}
 
 export const KHOA_PR_KET_PET = 'pr_ket_pet_at';
 export const NGUON_PR_KET_PET = 'migrate prKetPet';

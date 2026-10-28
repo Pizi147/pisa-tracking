@@ -6,9 +6,9 @@
  *   (c) PA quy chế ĐANG CHẠY của Case mà kỹ năng đã đạt sau khi PA ra đời (mốc `passed` / `overall_dat`) → "Kết quả cuối" (luật A, `paSangKetQuaCuoi`).
  *   (b) PA quy chế "đến lúc thi" đang chạy chưa có ngày thi → mốc MT cuối của lộ trình (luật B, `dienMocQuyChe`) — sau (c).
  *   (e) Lượt Mock FT chưa chốt có ô dưới kỳ vọng có điểm + nhận xét mà chưa có Case → Case tạm (luật Q2) — sau (a): Case vừa xoá nhường chỗ.
- *   (d) `migratePrOv1c` KHÔNG chạy nữa (rà #406): chỉ ghi khoá `pr_ov1c_da_chay` — (a) + (e) đã thay việc của nó, kiểm trước = migrate.
+ *   (d) `migratePrOv1c` KHÔNG chạy nữa (rà #406): chỉ ghi khoá `pr_ov1c_da_chay` — (a) + (e) đã thay việc của nó.
  *
- * `kiemTruocOv13a` = CÙNG danh sách mà KHÔNG ghi gì (lệnh `kiem-truoc-ov13a`). In từng Case xoá (em · mã · Case).
+ * In từng Case xoá (em · mã · Case).
  */
 import { CASE_CATEGORY_LABEL, type CaseCategory } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
@@ -90,12 +90,6 @@ function inRa(ra: KetQuaOv13a, applied: string[]) {
   applied.push(`PR-OV13a: (a) ${ra.xoaChoChot.length} Case "Chờ chốt SOS" cũ chưa ai đụng xoá hẳn · (b) ${ra.mocMtCuoi.length} PA "đến lúc thi" chưa có ngày thi → mốc MT cuối · `
     + `(c) ${ra.ketQuaCuoi.length} PA quy chế kỹ năng đã đạt → Kết quả cuối · (e) ${ra.caseTam.length} Case tạm cho lượt chưa chốt.`);
   for (const d of ra.dongXoa) applied.push(`  xoá: ${d}`);
-}
-
-export function kiemTruocOv13a(conn: any): KetQuaOv13a {
-  const ra = rong();
-  buocA(conn, ra, false); buocC(conn, ra, false); buocB(conn, ra, false); buocE(conn, ra, false);
-  return ra;
 }
 
 /** Cả bốn phần liền nhau (phép kiểm); migrate.ts gọi từng phần trong giao dịch riêng (`chayTungBuoc`). */

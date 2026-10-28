@@ -111,7 +111,7 @@ Từ vựng nghiệp vụ dùng chung: `shared/domain/` (xuất qua `shared/doma
 - `shared/i18n/` — `t('chữ Việt', {biến})`, khoá là chữ Việt; `shared/i18n/index.ts` (`t`, `dich`, `ghepChu`); bản Anh theo đợt ở `shared/i18n/en/<đợt>.ts`, gộp ở `shared/i18n/en.ts`. Thêm chữ mới = thêm vào tệp `en/` của đợt; tsc báo chữ thiếu bản Anh.
 - `server/src/migrate/` — mỗi đợt một tệp `pr<Ma>.ts`, gọi theo thứ tự từ `server/src/migrate.ts`; `server/src/migrate/run.ts` = `npm run migrate`. Chạy lặp an toàn. Bảng gốc: `server/src/schema.sql`.
 - `server/src/seed/` — bộ demo (mục dưới); `<tínhNăng>Seed.ts` = dữ liệu demo theo tính năng, gọi từ `seed.ts`.
-- `server/src/ops/` — lệnh `npm run …`: `run*.ts` là điểm chạy, luật ở tệp cùng tên (initBanChinh, runInit, themChiNhanh, saoLuu, runSaoLuu, khoiPhuc, runKhoiPhuc, thuTurso, xoaKhoTep, kiemSauInit, chotVangDinhKy, demBoTroTrung, kiemOLop, kiemDuLieuMt, kiemTieuChiLe). `kiemTruoc*.ts` CHỈ ĐỌC, chạy trên bản chính trước migrate cùng tên (kiemTruocOv1b, kiemTruocOv1c, kiemTruocOv3b, kiemTruocOv13a, kiemTruocOv13f, kiemTruocOv13m, kiemTruocOv13n, kiemTruocOv13q, kiemTruocOv15c, kiemTruocLtSv, kiemTruocTd7b, kiemTruocKetPet, kiemTruocSvNxCase).
+- `server/src/ops/` — lệnh `npm run …`: `run*.ts` là điểm chạy, luật ở tệp cùng tên (initBanChinh, runInit, themChiNhanh, saoLuu, runSaoLuu, khoiPhuc, runKhoiPhuc, thuTurso, xoaKhoTep, kiemSauInit, chotVangDinhKy, demBoTroTrung, kiemOLop, kiemDuLieuMt, kiemTieuChiLe). Lệnh kiểm trước một lần (`kiem-truoc-*`) đã xoá sau deploy 28/10 (GON-MA-3) — cần thì lấy lại từ git.
 - `server/src/tests/` — `run.ts` gọi mọi `*.tests.ts`; `tocDo.run.ts` đo tốc độ riêng.
 
 ---

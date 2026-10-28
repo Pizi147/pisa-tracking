@@ -9,7 +9,7 @@
  *      đã có người làm → giữ + mốc "Overall đã đạt" (in khi mốc chưa có).
  *
  * OV-12c: giữ luật OV-1c nguyên bản (`CASE_CHUA_DUNG_OV1C`, đóng chứ không xoá) — chạy lại trên DB đã dọn không đổi gì.
- * In từng Case: em · mã · lớp · lượt · Case · việc. `kiemTruocOv1c` = CÙNG danh sách mà KHÔNG ghi gì (lệnh `kiem-truoc-ov1c`).
+ * In từng Case: em · mã · lớp · lượt · Case · việc. `kiemTruocOv1c` = CÙNG danh sách mà KHÔNG ghi gì (phép kiểm OV13a-10 dùng để soát ca dựng).
  */
 import { CASE_CATEGORY_LABEL, SYSTEM_CLOSE_REASON_LABEL, type CaseCategory } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';

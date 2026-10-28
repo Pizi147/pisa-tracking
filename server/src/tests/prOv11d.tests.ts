@@ -112,9 +112,9 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(loi(() => students.setStudentStatus(GVCN, sid, 'inactive', TODAY))?.status === 403, 'GVCN lớp cũ không Tạm dừng được');
   }));
 
-  /* Em lộ trình FT đã đóng mà còn ghi danh (demo UB FT 401) — cùng câu chỉ đọc của kiem-truoc. */
+  /* Em lộ trình FT đã đóng mà còn ghi danh (demo UB FT 401). */
   const dongCon = buocTiep.emDongConGhiDanh(conn) as any[];
-  check('OV11d-2 · HV-6: câu đếm chỉ đọc (kiem-truoc) thấy em lộ trình FT đã đóng mà còn ghi danh', () => {
+  check('OV11d-2 · HV-6: câu đếm chỉ đọc thấy em lộ trình FT đã đóng mà còn ghi danh', () => {
     assert(dongCon.length > 0 && dongCon.every((r) => ['completed', 'abandoned'].includes(r.cycle_status)), JSON.stringify(dongCon));
     assert(/^SELECT /.test(buocTiep.SQL_DONG_CON_GHI_DANH.trim()) && !/\b(UPDATE|INSERT|DELETE)\b/i.test(buocTiep.SQL_DONG_CON_GHI_DANH), 'câu kiểm phải chỉ đọc');
   });

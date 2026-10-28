@@ -13,8 +13,7 @@
  *   C. "-" TRONG TUẦN chưa chốt (luật cũ chờ hết Chủ nhật), đủ mọi ô của buổi, đúng tuần đang xếp → chốt MỘT lần theo luật mới
  *      (`settleGroup`: lần 1 dời tuần sau, lần 2 huỷ phần thi). Buổi Writing mới một task "-" giữ nguyên (đã là "xong" ở ô, không quá hạn).
  *
- * In từng ô đổi: em · mã · lớp · lượt · ô · trước → sau. `kiemTruocOv1b` = CÙNG danh sách mà KHÔNG ghi gì (lệnh `kiem-truoc-ov1b`,
- * chủ SP chạy trên bản chính trước deploy) — cột "sau" của buổi C ở bản chỉ đọc ghi luật, bản ghi thật ghi tuần cụ thể.
+ * In từng ô đổi: em · mã · lớp · lượt · ô · trước → sau.
  */
 import { nowIso } from '../util.ts';
 import { tuanLich } from '../../../shared/domain/index.ts';
@@ -35,8 +34,7 @@ type Buoi = {
 
 /**
  * OV-1e, OV-11e (đặc tả rà soát 14/10 — bền khi deploy muộn): "-" nhập bù đã chốt mà máy đã dời bài sang TUẦN KHÁC tuần "-" (có lịch thi lại), còn
- * `scheduled` / `sat` (chưa huỷ / chưa chờ QL) → migrate không đụng, BẤT KỂ hôm nay (tuần thi lại đã qua vẫn giữ). Một điều kiện cho migrate và
- * `kiemTruocOv1b`.
+ * `scheduled` / `sat` (chưa huỷ / chưa chờ QL) → migrate không đụng, BẤT KỂ hôm nay (tuần thi lại đã qua vẫn giữ). Một điều kiện cho migrate.
  */
 export function giuLichThiLai(ky: { planned_period_id: number | null; sit_status: string }, dauPeriodId: number | null): boolean {
   return !!ky.planned_period_id && ky.planned_period_id !== dauPeriodId && (ky.sit_status === 'scheduled' || ky.sit_status === 'sat');
@@ -104,11 +102,6 @@ function sauDuKien(b: Buoi): string {
 
 const dongCua = (b: Buoi, sau: (d: any) => string): DongDoiOv1b[] =>
   b.dau.map((d) => ({ attemptId: b.attemptId, o: d.skill as string, ...b.ten, truoc: truocCua(b, d), sau: sau(d) }));
-
-/** LỆNH CHỈ ĐỌC `kiem-truoc-ov1b`: danh sách ô migrate sẽ đổi — không ghi câu nào. */
-export function kiemTruocOv1b(conn: any): DongDoiOv1b[] {
-  return lapKeHoach(conn).flatMap((b) => dongCua(b, () => sauDuKien(b)));
-}
 
 /** Ghi "Không dự thi" cho các ô "-" của buổi. */
 function ghiKhongDuThi(conn: any, dau: any[]) {
