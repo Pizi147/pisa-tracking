@@ -106,7 +106,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
       setLoiLuu(e instanceof ApiError ? dich(e.message) : String(e?.message ?? e));
     } finally {
       setBusy(false);
-      if (okMoi.length) { setLoVua(okMoi); onDone?.(); lamMoi(); reload(); }
+      if (okMoi.length) { setLoVua(okMoi); setApBac(null); onDone?.(); lamMoi(); reload(); }
     }
   };
 
@@ -142,6 +142,12 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
     ? `${dich(BAC[e.capBac.khai])}${e.capBac.luc ? ` · ${t('khai {ngay}', { ngay: ngay(e.capBac.luc, homNay) })}` : ''}`
     : !e.capBac.duoc && e.bacNhan ? `${dich(e.bacNhan)} · ${t('có xử lý trên web')}` : t('Chưa khai'));
 
+  /* Mockup: "Đã có xử lý trên web · chỉ QL sửa" — viết hoa đầu câu, luôn nói ai sửa được. */
+  const lyDoKhoa = (e: EmLo) => {
+    const chu = e.capBac.lyDo ? dichChu(e.capBac.lyDo) : t('chỉ QL sửa');
+    const hoa = chu.charAt(0).toUpperCase() + chu.slice(1);
+    return e.capBac.lyDo?.chu === 'đã có xử lý trên web' ? `${hoa} · ${t('chỉ QL sửa')}` : hoa;
+  };
   const chonBac = (value: number | undefined | null, onChange: (v: string) => void, nhan: string, goiY: string, doi = false) => (
     <select className={`field min-h-[44px] w-full py-1 text-[13px] sm:min-h-0 ${doi ? 'border-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`}
       aria-label={nhan} value={value ?? ''} onChange={(ev) => onChange(ev.target.value)}>
@@ -167,7 +173,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
         {soOk > 0 && (
           <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-ok-bg px-4 py-2.5 text-[13px] font-semibold text-ok border-ok-line sm:px-5">
             <span>✓ {t('Đã lưu {n} em: {tom}', { n: soOk, tom: tomTatOk() })}</span>
-            <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold appearance-none sm:min-h-0" disabled={busy} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
+            <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold underline underline-offset-2 appearance-none sm:min-h-0" disabled={busy} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
             {soLoi > 0 && <span className="font-normal text-dim">{t('{n} em chưa lưu — xem dòng đỏ', { n: soLoi })}</span>}
           </div>
         )}
@@ -205,13 +211,13 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
             const doi = bacMoi[e.studentId] !== undefined && bacMoi[e.studentId] !== e.capBac.khai;
             const vuaLuu = loVua.some((x) => x.studentId === e.studentId) && !doi;
             const ha = doi && e.capBac.khai !== null && bacMoi[e.studentId] < e.capBac.khai;
-            const ghi = khoa ? <span className="text-[12px] text-faint">{e.capBac.lyDo ? dichChu(e.capBac.lyDo) : t('chỉ QL sửa')}</span>
+            const ghi = khoa ? <span className="text-[12px] text-faint">{lyDoKhoa(e)}</span>
               : kh?.loi ? <span role="alert" className="text-[12px] font-semibold text-bad">{t('Chưa hoàn tác: {loi}', { loi: dichChu(kh.loi) })}</span>
               : k && !k.ok && k.loi ? <span role="alert" className="text-[12px] font-semibold text-bad">{t('Chưa lưu: {loi}', { loi: dichChu(k.loi) })}</span>
               : doi ? <span className={`text-[12px] font-semibold ${ha ? 'text-soon' : 'text-[color:var(--accent)]'}`}>{nhanDoi(e)}</span>
               : vuaLuu ? <span className="text-[12px] font-semibold text-ok">✓ {t('Đã lưu')}</span> : null;
             return (
-              <li key={e.studentId} className={`grid grid-cols-[36px_minmax(0,1fr)] gap-x-2.5 gap-y-1 border-b px-4 py-2.5 sm:px-5 ${COT} ${tick.has(e.studentId) && !khoa ? 'bg-[color:var(--accent-soft)]' : ''}`}
+              <li key={e.studentId} className={`grid grid-cols-[36px_minmax(0,1fr)] gap-x-2.5 gap-y-1 border-b px-4 py-2.5 sm:px-5 [@container(min-width:600px)]:py-1.5 ${COT} ${tick.has(e.studentId) && !khoa ? 'bg-[color:var(--accent-soft)]' : ''}`}
                 style={{ borderColor: 'var(--line)' }}>
                 <span className="row-span-4 pt-0.5 [@container(min-width:600px)]:row-span-1 [@container(min-width:600px)]:pt-0">
                   {!khoa && (
