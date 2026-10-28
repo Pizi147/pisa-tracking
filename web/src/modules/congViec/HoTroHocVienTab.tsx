@@ -317,7 +317,7 @@ export function HoTroHocVienTab() {
         {laGv && <DaiMoiDung />}
         {/* V5 (mockup `.dau-trang`): "Công việc · n nhóm · n việc · n HV · n bài" trái — bộ lọc phải. KHUNG-LOI (A1-07): tiêu đề = tên menu. */}
         <header className="flex flex-wrap items-center gap-x-3.5 gap-y-2" data-hd="cv-loc-them">
-          <h1 className="m-0 text-[22px] font-bold text-slate-100">{t('Công việc')}</h1>
+          <h1 className="m-0 text-xl font-bold text-slate-100">{t('Công việc')}</h1>
           {data && !data.scopeEmpty && (
             <span className="text-sm tabular-nums text-slate-400" aria-live="polite">
               {conViec ? <>
