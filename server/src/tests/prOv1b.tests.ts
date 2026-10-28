@@ -3,6 +3,7 @@
  * + migrate prOv1b / lệnh chỉ đọc `kiem-truoc-ov1b`. Mỗi phép kiểm dựng ca của nó trong một giao dịch rồi cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';   // LOC-HIEN-TAI: ca dựng chỉ chọn lượt hiện tại (bảng điểm lớp bỏ lượt lộ trình cũ)
 
 export async function runPrOv1bTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId } = t;
@@ -38,11 +39,12 @@ export async function runPrOv1bTests(t: YThucTestKit) {
 
   /* Lượt MT CUỐI của mỗi em đang học MB FT 101 — không có lượt sau để luật thứ tự đợt (T15) chặn lần dời. */
   const luot = all(
-    `SELECT a.id, a.student_id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+    `SELECT a.id, a.student_id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL AND ${LUOT_LO_TRINH_CUOI_SQL('a')}
       JOIN enrollments e ON e.student_id = s.id AND e.class_id = a.class_id AND e.status = 'active'
      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
        AND a.attempt_no = (SELECT MAX(x.attempt_no) FROM assessment_attempts x WHERE x.cycle_id = a.cycle_id AND x.kind = 'mock')
-     ORDER BY a.id LIMIT 4`, lop).map((r) => r.id as number);
+       AND COALESCE(a.planned_period_id, 0) NOT IN (?, ?)   -- LOC-HIEN-TAI: tập lượt đổi (bỏ lượt lộ trình cũ) — lượt chưa dựng không được nằm sẵn ở W / W1
+     ORDER BY a.id LIMIT 4`, lop, W, W1).map((r) => r.id as number);
 
   /** Đặt lượt về trạng thái sạch: mọi kỹ năng bắt buộc ở tuần `ws`, chưa điểm, chưa vắng; lượt khác của lớp rời tuần này (hàng lớp chỉ có ca dựng). */
   const dung = (aid: number, pid = W) => {

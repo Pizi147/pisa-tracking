@@ -9,7 +9,7 @@ import { MucHuongDan, useDaXemHd, useVaiHd } from './MucHuongDan.tsx';
 /**
  * HD-a — panel Hướng dẫn của MÀN ĐANG ĐỨNG (mockup OV-13 §5b): đúng mục "Theo màn › {màn}" (theo đường dẫn), không chuyển trang.
  * OV-15a (C11): mở từ menu Tài khoản › "Hướng dẫn" (trước: nút "?" cạnh Thông báo). Ô tìm lọc cả hướng dẫn của vai; cuối panel
- * "Mở trang Hướng dẫn ↗". "Chỉ cho tôi" đóng panel rồi khoanh phần tử.
+ * "Mở trang Hướng dẫn". "Chỉ cho tôi" đóng panel rồi khoanh phần tử.
  */
 export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
   const { pathname } = useLocation();
@@ -32,7 +32,7 @@ function PanelHuongDan({ duong, vai, hd, onDong, onChi }: { duong: string; vai: 
         {!man && !tim && <p className="m-0 text-[13px] text-slate-400">{t('Màn này chưa có mục riêng — xem các màn khác bên dưới.')}</p>}
         {ds.map((m, i) => <MucHuongDan key={`${m.id}-${tim ? 'tim' : ''}`} muc={m} moSan={tim || i === 0} onChi={onChi} />)}
         {tim && ds.length === 0 && <p className="m-0 text-[13px] text-slate-400">{t('Không có mục nào khớp')}</p>}
-        <Link to="/huong-dan" className="link inline-flex min-h-[44px] items-center text-[13px] font-semibold sm:min-h-0" onClick={onDong}>{t('Mở trang Hướng dẫn ↗')}</Link>
+        <Link to="/huong-dan" className="link inline-flex min-h-[44px] items-center text-[13px] font-semibold sm:min-h-0" onClick={onDong}>{t('Mở trang Hướng dẫn')}</Link>
       </div>
     </KhungPanel>
   );

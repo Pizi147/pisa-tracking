@@ -325,6 +325,25 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(bd.nhom.bat_buoc[0].keTiep.nhan === 'Report 1' && bd.nhom.bat_buoc[0].soBatBuoc === 3 && bd.nhom.bat_buoc[0].han === addDays(TODAY, 3), JSON.stringify(bd.nhom.bat_buoc[0]));
     assert(bd.nhom.moi[0].moiTuoi === 0, 'tuổi vi phạm Mới');
   });
+  check('UI-Y-THUC-LOP · Hàng em: vi phạm chờ (cũ nhất trước) · Báo PH mới nhất · em sạch còn việc Báo PH mở vào "Chờ TVV báo PH"', () => {
+    const lop = lopMoi('MB FT YTLOP');
+    const b = hv(lop.id); ba3(b);
+    const d = hv(lop.id);
+    const bp = (sid: number, han: string, tt = 'mo') => conn.prepare(
+      `INSERT INTO viec_bao_ph (student_id, nhan, han, trang_thai, tao_luc) VALUES (?, 'Report 1', ?, ?, ?)`).run(sid, han, tt, `${TODAY}T03:00:00Z`);
+    bp(d, addDays(TODAY, -1));
+    const bd = board.bangYThucLop(lop.gvcn, lop.id) as any;
+    const hb = bd.nhom.bat_buoc[0];
+    assert(hb.viPhamCho.length === 3 && hb.viPhamCho.every((v: any) => v.trangThai === 'can_xu_ly' && v.ten)
+      && hb.viPhamCho[0].ngay <= hb.viPhamCho[2].ngay, JSON.stringify(hb.viPhamCho));
+    assert(hb.baoPh === null && hb.thuHoi === null, 'em chưa có xử lý: không Báo PH, không thu hồi');
+    assert(bd.choBaoPh.length === 1 && bd.choBaoPh[0].studentId === d, JSON.stringify(bd.choBaoPh));
+    const x = bd.choBaoPh[0].baoPh;
+    assert(x.trangThai === 'mo' && x.quaHan === true && x.nhanTrangThai === 'Chưa báo' && x.coTheGhi === false, `GVCN không ghi Báo PH: ${JSON.stringify(x)}`);
+    assert(board.bangYThucLop(P.mbManager, lop.id).choBaoPh[0].baoPh.coTheGhi === true, 'QL chi nhánh ghi được');
+    bp(d, TODAY, 'xong');
+    assert(board.bangYThucLop(lop.gvcn, lop.id).choBaoPh.length === 0, 'việc mới nhất đã xong → em sạch không còn hàng');
+  });
   check('YT4 (3) · Bảng lớp: dòng thời gian CẢ LỚP có tên em, mới nhất trước; không có thang', () => {
     const lop = lopMoi('MB FT YT4DT');
     const a = hv(lop.id); vpDb(a, addDays(TODAY, -5));
@@ -877,17 +896,18 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s = docW('web/src/ui/DongThoiGian.tsx');
     assert(/khong: 'grid-cols-\[3\.25rem_minmax\(0,1fr\)\] md:/.test(s) && /col-span-2 md:col-span-1/.test(s), 'lưới D5');
   });
-  check('YT4 (9) · Tab lớp M6: hai khung + tab "Xử lý · Vi phạm" dưới md; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
+  /* UI-Y-THUC-LOP (mockup V5): hai khung M6 thay bằng bảng theo HV — nhóm em (NhomHang), bốn khối nghĩa, chi tiết mở dưới hàng. */
+  check('YT4 (9) · Tab lớp V5: bảng theo HV theo nhóm, chi tiết mở dưới hàng; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: t\('Theo xử lý'\)/.test(s) && /label: t\('Theo vi phạm'\)/.test(s), 'hai khung');
+    assert(/function NhomHang/.test(s) && /function HangEm/.test(s) && /function ChiTietEm/.test(s) && /t\('Chờ TVV báo PH'\)/.test(s), 'bảng theo HV');
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
-    assert(/NHOM_EM\.filter/.test(s) && /params\.get\('mo'\)/.test(s) && /t\('Phối hợp'\)/.test(s), 'nhóm em, ?mo, tab Phối hợp');
+    assert(/params\.get\('mo'\)/.test(s) && /t\('Phối hợp'\)/.test(s), '?mo, khối Phối hợp');
   });
   check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
     assert(/const coGhiNhan = hv\.canManage &&/.test(s) && /const nut = hv\.canManage &&/.test(s) && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`))
-      && /onKhai=\{hv\.canManage \?/.test(s), 'ẩn theo quyền');
-    assert(/d\.canRecord \? <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
+      && /onKhai=\{hv\.canManage \?/.test(s) && /const cta = canManage &&/.test(s), 'ẩn theo quyền');
+    assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" + chữ phụ "không phải xử lý vi phạm, không cần QL duyệt"', () => {
     const s = docW(`${YT}/PhoiHopSosSection.tsx`);

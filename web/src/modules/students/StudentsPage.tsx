@@ -22,7 +22,7 @@ import { PanelMotEm } from './PanelMotEm.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { GocLichThi, khoangThang } from './GocLichThi.tsx';
 import { NganXuatDs } from './NganXuatDs.tsx';
-import { BangHvGon, BangSosGon, OViec, TheHvGon, coPaQuaHan, type EmVai, type HvGon, type LopGon, type NhomLop, type VaiBang, type ViecEm } from './DanhSachHvLop.tsx';
+import { BangHvGon, BangSosGon, TheHvGon, coPaQuaHan, type EmVai, type HvGon, type LopGon, type NhomLop, type VaiBang, type ViecEm } from './DanhSachHvLop.tsx';
 import {
   LOC_CASE, LOC_HOC_VIEN_NHAN, LOC_KET_QUA, LOC_KY_NANG, NHAN_LOC_CASE, NHAN_LOC_KET_QUA, KIEU_KHOANG, badgeHienTheoVai, badgeLop, docLocThem, duongLichTest,
   khoangMacDinh, khopLocThem, locThemBat, nhanKhoang, needScoresText, type BadgeLop, type KieuKhoang,
@@ -161,7 +161,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
   const canNhan = moLocThem || locThemBat(locThem);
   const qs = useMemo(() => duongHocVienLop(params, { tuLienKet, daNho }), [q, phamViUrl, branchId, daNho, tuLienKet, canNhan]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const trang = useApi<TrangHocVienLop>('chuyenDen' in doc ? null : qs);
+  /* giuCu (HV-LOC): gõ tìm / bật lọc đổi `qs` — giữ trang cũ tới khi bản mới về, không gỡ ô tìm đang gõ. */
+  const trang = useApi<TrangHocVienLop>('chuyenDen' in doc ? null : qs, [], { giuCu: true });
   const branches = useApi<Branch[]>('/ref/branches');
   const data = trang.data;
   /* Đang SOS: cùng phạm vi trang (`qs`). Số trên tab cần nguồn này nên tải luôn (Admin không có chế độ này). */
@@ -170,7 +171,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     s.set('goc', 'sos');
     return `/hoc-vien-lop?${s.toString()}`;
   }, [qs]);
-  const sos = useApi<TrangSos>(admin || 'chuyenDen' in doc ? null : duongSos);
+  const sos = useApi<TrangSos>(admin || 'chuyenDen' in doc ? null : duongSos, [], { giuCu: true });
   /* Cột Việc + chip "Có việc quá hạn": việc ở Công việc — QL / Admin mọi người (cùng chi nhánh trang), GV việc của mình. Chờ trang tải xong mới gọi. */
   const laQl = laVaiQuanLy(session?.roles);
   const cnViec = data?.phamVi.dangDung === 'chi-nhanh' ? data.phamVi.chiNhanh : null;
@@ -235,24 +236,14 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     return m;
   }, [work.data, chiCuaToi]);
   /*
-   * HV-LOP-SUA (chủ SP 27/10): việc CẤP LỚP (không gắn một em — Nhập điểm cả lớp…) hiện ở hàng lớp, không lặp ở từng em. `viec` (trên) vẫn tính cho từng em
-   * để chip "Có việc quá hạn" và "Cần chú ý trước" giữ nguyên số; chỉ phần HIỂN THỊ tách.
+   * Ô Việc của em: chỉ việc gắn em (hoặc không gắn lớp). Việc CẤP LỚP (Nhập điểm cả lớp, Phối hợp SOS…) không hiện trên hàng lớp nữa (chủ SP 28/10) —
+   * làm ở Công việc / Hồ sơ lớp; chip tình trạng của hàng lớp ("n bài chờ chấm"…) là lối vào. `viec` (trên) vẫn tính cho chip "Có việc quá hạn", "Cần chú ý trước".
    */
-  const [viecHien, viecLop] = useMemo(() => {
+  const viecHien = useMemo(() => {
     const em = new Map<number, ViecEm[]>();
-    const lopV = new Map<number, ViecEm[]>();
     for (const [id, ds] of viec) em.set(id, ds.filter((v) => v.it.studentId !== null || v.it.classId === null));
-    for (const it of (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))) {
-      if ((chiCuaToi && !it.mine) || it.studentId !== null || it.classId === null) continue;
-      /* Hai việc cùng tên ở một lớp (Nhập điểm MT1 / MT2) → thêm lượt để phân biệt. */
-      /* Bỏ " · {mã lớp}" (đã ở đầu hàng lớp) — sau khi dịch (chữ máy chủ dịch theo mẫu cả câu). */
-      const ten = it.classCode ? dich(it.tieuDe).split(' · ').filter((x) => x !== it.classCode).join(' · ') : dich(it.tieuDe);
-      const chu = it.contextLabel && !ten.includes(it.contextLabel) ? `${ten} · ${it.contextLabel}` : ten;
-      lopV.set(it.classId, [...(lopV.get(it.classId) ?? []), { chu, han: it.due, quaHan: it.urgency === 'overdue', it }]);
-    }
-    for (const ds of lopV.values()) ds.sort(gapTruoc);
-    return [em, lopV];
-  }, [viec, work.data, chiCuaToi]);
+    return em;
+  }, [viec]);
 
   /* Chương trình (Fast Track · Lớp thường) chỉ có nghĩa khi phạm vi có cả hai loại lớp. */
   const soLopTheoKhung = { ft: 0, thuong: 0 };
@@ -293,7 +284,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const khoaLoc = [goc, q, khung, chiLop, locThiThang, locQuaHan, locDaThi, chipVai, mucSos, branchId, phamViUrl, sapXep, ...['lc', 'lk', 'lq', 'ltu', 'lden'].map((k) => params.get(k))].join('|');
   /*
    * HV-LOP-SUA (chủ SP 27/10, mockup `hoc-vien-lop.html`): Tất cả = danh sách THEO LỚP — hàng lớp rồi HV của lớp. Không lọc gì thì hiện cả lớp chưa có em
-   * (để còn ⋯ + Học viên / Nhập điểm); có lọc thì chỉ lớp có em khớp. Lớp mở: `mo` trên URL; chưa có → đang lọc / ≤ 2 lớp: mở hết, còn lại mở lớp đầu.
+   * (để còn ⋯ + Học viên / Nhập điểm); có lọc thì chỉ lớp có em khớp. Lớp mở: `mo` trên URL; chưa có → MỌI lớp gập (chủ SP 28/10: không tự mở lớp đầu); đang lọc / tìm thì mở lớp có em khớp (kết quả lọc phải thấy được).
    */
   const dangLoc = !!(q.trim() || locThiThang || locQuaHan || locDaThi || chipVai || batThem || chiLop);
   const nhomLop = useMemo(() => {
@@ -303,7 +294,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     return [...m].map(([id, hv]) => ({ id, hv }));
   }, [hvLoc, dangLoc, data, khung]);   // eslint-disable-line react-hooks/exhaustive-deps
   const moUrl = params.get('mo');
-  const moSet = new Set(moUrl !== null ? moUrl.split(',').map(Number) : (dangLoc || nhomLop.length <= 2 ? nhomLop : nhomLop.slice(0, 1)).map((g) => g.id));
+  const moSet = new Set(moUrl !== null ? moUrl.split(',').map(Number) : dangLoc ? nhomLop.map((g) => g.id) : []);
   const doiMo = (id: number) => { const s2 = new Set(moSet); if (s2.has(id)) s2.delete(id); else s2.add(id); setParam({ mo: [...s2].join(',') || '-' }); };
   /* Đổi bộ lọc → về cách mở mặc định (không giữ lớp gập của bộ lọc trước làm "mất" em vừa lọc ra). Lần đầu (Back / tải lại) giữ `mo` của URL. */
   const khoaTruoc = useRef(khoaLoc);
@@ -368,7 +359,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     </>
   );
   const locTim = (
-    <input className="field h-8 w-full sm:w-56 max-sm:min-h-[44px]" aria-label={t('Tìm')} placeholder={t('Tìm học viên, lớp')}
+    <input className="field h-[34px] w-full text-sm sm:w-60 max-sm:min-h-[44px]" aria-label={t('Tìm')} placeholder={t('Tìm học viên, lớp')}
       value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
   );
   /* Chọn / lọc một lớp chỉ ở Đang SOS và Lịch thi (chủ SP 27/10) — Tất cả đã chia theo lớp. */
@@ -394,8 +385,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     const l = lop.get(g.id);
     return {
       id: g.id, hv: g.hv, mo: moSet.has(g.id), onMo: () => doiMo(g.id), nhan: l?.code ?? t('Chưa xếp lớp'),
-      dau: <DauLop lop={l} hv={g.hv} viecLop={viecLop.get(g.id) ?? []} vai={vai} gopMon={laQl || admin}
-        dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} onMoViec={moViec} onThemHocVien={(x) => setThem(x)} />,
+      dau: <DauLop lop={l} hv={g.hv} vai={vai}
+        dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} onThemHocVien={(x) => setThem(x)} />,
     };
   });
 
@@ -488,6 +479,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               )}
             </div>
           )}
+          <div className={trang.cu ? 'dang-tai-lai' : undefined} aria-busy={trang.cu || undefined}>
           {theoVai.error && <div className="p-3"><ErrorState message={theoVai.error.message} hint={theoVai.error.hint} onRetry={theoVai.reload} /></div>}
           {laVai && !vaiTrang && !theoVai.error ? <div className="p-3"><Skeleton rows={6} /></div>
           : laVai && pv?.dangDung === 'cua-toi' && dsEm.length === 0 && !q.trim() ? (
@@ -505,6 +497,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
             </>
           )}
+          </div>
         </div>
       )}
 
@@ -522,6 +515,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               {t('PA quá hạn')} · <span className="tabular-nums">{sosTat.filter(coPaQuaHan).length}</span>
             </button>
           </div>
+          <div className={sos.cu ? 'dang-tai-lai' : undefined} aria-busy={sos.cu || undefined}>
           {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} /></div>
             : !sos.data ? <div className="p-3"><Skeleton rows={6} /></div>
             : sosRows.length === 0 ? <Empty title={t('Không có học viên SOS')} />
@@ -533,6 +527,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
                 {sosRows.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
               </>
             )}
+          </div>
         </div>
       )}
 
@@ -632,30 +627,25 @@ function OSosLop({ sos }: { sos: number[] }) {
 }
 
 /**
- * HÀNG LỚP của danh sách theo lớp (HV-LOP-SUA, mockup `hoc-vien-lop.html`): mã lớp ↗ (Hồ sơ lớp) · n HV · GVCN · ô SOS (lớp FT) · badge việc của lớp ·
- * việc CẤP LỚP của người xem (tối đa 2 + Xem thêm, bấm = làm tại chỗ) · ⋯ lớp. Lớp ngoài danh sách (em TVV Tạm dừng…) chỉ có mã; em chưa xếp lớp: "Chưa xếp lớp".
+ * HÀNG LỚP của danh sách theo lớp (HV-LOP-SUA, mockup `hoc-vien-lop.html`): mã lớp (link Hồ sơ lớp) · n HV · GVCN · ô SOS (lớp FT) · chip tình trạng
+ * (bấm = sang đúng trang) · ⋯ lớp. Không còn việc cấp lớp (chủ SP 28/10). Lớp ngoài danh sách (em TVV Tạm dừng…) chỉ có mã; em chưa xếp lớp: "Chưa xếp lớp".
  */
-function DauLop({ lop, hv, viecLop, vai, gopMon, dsLop, onMoViec, onThemHocVien }: {
-  lop: (LopGon & Partial<LopTrenTrang>) | undefined; hv: HvGon[]; viecLop: ViecEm[]; vai: VaiXemHocVien | null; gopMon: boolean;
-  dsLop: NguCanhDs; onMoViec: (it: WorkItem) => void; onThemHocVien: (lop: { id: number; code: string }) => void;
+function DauLop({ lop, hv, vai, dsLop, onThemHocVien }: {
+  lop: (LopGon & Partial<LopTrenTrang>) | undefined; hv: HvGon[]; vai: VaiXemHocVien | null;
+  dsLop: NguCanhDs; onThemHocVien: (lop: { id: number; code: string }) => void;
 }) {
   const day = lop && 'needScores' in lop ? (lop as LopTrenTrang) : null;
   const sos = [1, 2, 3].map((m) => new Set(hv.filter((h) => h.hang?.hoTro.sos === m).map((h) => h.id)).size);
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 py-1">
-      {lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so font-bold">{lop.code}</Link>
+      {lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui font-bold">{lop.code}</Link>
         : <span>{t('Chưa xếp lớp')}</span>}
       <span className="text-[13px] font-normal tabular-nums text-dim">{t('{n} HV', { n: new Set(hv.map((h) => h.id)).size })}</span>
       {day?.gvcn && <span className="text-[13px] font-normal text-dim">{t('GVCN')} <TenGiaoVien id={day.gvcn.id} ten={day.gvcn.name} /></span>}
       {day && day.scoringMode !== 'ratio' && <OSosLop sos={sos} />}
-      {/* Không lặp: bài chờ chấm đã là việc "Nhập điểm" cấp lớp bên phải; quá hạn đã có ⚠ trên từng việc + chip "Có việc quá hạn" của dải lọc. */}
-      {day && <NhanLop lop={day} vai={vai} soViecQuaHan={0} bo={(k) => k === 'qua-han' || (k === 'cham' && viecLop.some((v) => v.it.group === 'score'))} />}
-      {(viecLop.length > 0 || day) && (
-        <span className="ml-auto flex min-w-0 items-center gap-2">
-          {viecLop.length > 0 && <span className="w-96 min-w-0 font-normal max-sm:w-auto max-sm:flex-1"><OViec v={viecLop} onMo={onMoViec} gopMon={gopMon} /></span>}
-          {day && <MenuLop lop={day} dsLop={dsLop} onThemHocVien={() => onThemHocVien({ id: day.id, code: day.code })} />}
-        </span>
-      )}
+      {/* Quá hạn đã có chip "Có việc quá hạn" của dải lọc. "n bài chờ chấm" → Lịch Test, "chờ duyệt" → Công việc, lộ trình → Hồ sơ lớp. */}
+      {day && <NhanLop lop={day} vai={vai} soViecQuaHan={0} bo={(k) => k === 'qua-han'} />}
+      {day && <span className="ml-auto"><MenuLop lop={day} dsLop={dsLop} onThemHocVien={() => onThemHocVien({ id: day.id, code: day.code })} /></span>}
     </span>
   );
 }
@@ -670,7 +660,7 @@ function DaiLop({ lop, vai, soViecQuaHan, dsLop, onThemHocVien, onBo }: {
   const chuLop = [lop.programmeName ? dich(lop.programmeName) : '—', !thuong && lop.route ? lop.route : null, t('{n} HV', { n: lop.studentCount })].filter(Boolean).join(' · ');
   return (
     <div className="card flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2" aria-label={t('Lớp {lop}', { lop: lop.code })}>
-      <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so font-bold">{lop.code}</Link>
+      <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui font-bold">{lop.code}</Link>
       <span className="min-w-0 text-xs text-slate-400">
         {chuLop}{lop.gvcn && <> · {t('GVCN')} <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}
       </span>

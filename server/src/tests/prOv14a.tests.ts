@@ -116,6 +116,26 @@ export async function runPrOv14aTests(t: YThucTestKit) {
       assert(!log.data.some((d: any) => d?.v === 'A'), `dữ liệu A sống lại: ${JSON.stringify(log.data)}`);
     });
 
+    await checkAsync('HV-LOC · giuCu: đổi truy vấn chưa có bản xem → GIỮ dữ liệu cũ (cu = true) tới khi bản mới về; không giuCu → về null như cũ', async () => {
+      api.invalidateAll(); cho = [];
+      const cuLog: boolean[] = [];
+      const x = bo(); Object.assign(x.b, { giuCu: true, setCu: (v: boolean) => cuLog.push(v) });
+      ua.batDauTai('/hvloc?q=a', x.b);
+      traJson('/hvloc?q=a', { v: 'A' });
+      await xong(); await xong();
+      x.b.coDuLieu.current = true;
+      const n = x.log.data.length;
+      ua.batDauTai('/hvloc?q=ab', x.b);
+      assert(x.log.data.length === n && cuLog[cuLog.length - 1] === true, `giuCu vẫn đặt dữ liệu: ${JSON.stringify(x.log.data.slice(n))} · cu ${cuLog}`);
+      traJson('/hvloc?q=ab', { v: 'AB' });
+      await xong(); await xong();
+      assert((x.log.data[x.log.data.length - 1] as any)?.v === 'AB' && cuLog[cuLog.length - 1] === false, `bản mới: ${JSON.stringify(x.log.data)} · cu ${cuLog}`);
+      const y = bo(); y.b.coDuLieu.current = true; y.b.currentPath.current = '/hvloc?q=a';
+      ua.batDauTai('/hvloc?q=abc', y.b);
+      assert(y.log.data[0] === null, 'mặc định (không giuCu) phải bỏ dữ liệu cũ khi đổi truy vấn');
+      traJson('/hvloc?q=abc', {}); await xong();
+    });
+
     await checkAsync('OV-14a F09 · tải nền gặp 401 → báo hết phiên, không toast "Chưa tải lại được"; 403 vẫn như cũ', async () => {
       api.invalidateAll(); cho = [];
       let het = 0, toast = 0;

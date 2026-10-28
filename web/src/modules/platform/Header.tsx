@@ -449,9 +449,13 @@ export function Header() {
                 <Link to={`/giao-vien/${session.user.id}`} className="btn btn-sm w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Hồ sơ giáo viên')}</Link>
               )}
-              {session?.nav?.admin && (
+              {session?.nav?.admin ? (
                 <Link to="/quan-tri" className="btn btn-sm w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Quản trị hệ thống')}</Link>
+              ) : session?.nav?.bangQuyDoi && (
+                /* BAND-QUY-DOI: Quản lý xem bảng quy đổi (chỉ đọc) — trang Quản trị chỉ có tab này. */
+                <Link to="/quan-tri?tab=band" className="btn btn-sm w-full justify-center no-underline"
+                  onClick={() => setOpenMenu(null)}>{t('Bảng quy đổi band')}</Link>
               )}
             </div>
             <div className="border-t pt-1 mb-2" style={{ borderColor: 'var(--line)' }}>

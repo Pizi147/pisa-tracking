@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Bảng quy đổi band</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;600;700&display=swap">
+<style>
+/* QUẢN TRỊ › BẢNG QUY ĐỔI BAND (BAND-QUY-DOI, chủ SP 28/10: "Đổi sang IDP và thiết kế chỗ trong quản trị để chỉnh mốc luôn cho cả L R").
+   Màu = token đang chạy của web (giống `ke-hoach-test.html`). Tối mặc định như web; nút trên cùng đổi Sáng. Bảng vẽ bằng script từ số thật. */
+:root {
+  --bg: #050a16; --surface: #111c33; --surface-2: #172440; --line: #22324f; --line-strong: #33496f;
+  --accent: #9cbde7; --accent-soft: #192b46; --accent-line: #436394; --accent-ink: #070c17;
+  --text: #e7edf7; --chu-2: #d2dbec; --text-dim: #bac6de; --text-faint: #9eacc8;
+  --ok: #94d1ae; --ok-bg: #1e322b; --ok-line: #49755c;
+  --bad: #e89a8c; --bad-bg: #341c1d; --bad-line: #7e4841;
+  --soon: #e4c784; --soon-bg: #302a1a; --soon-line: #76663f;
+  --o-nhap-nen: #0b1427; --o-nhap-vien: #66789f; --nut-hover: #16264a; --phu-mo: rgb(0 0 0 / .55);
+  --phong: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif; --phong-so: 'Inter', 'Be Vietnam Pro', system-ui, sans-serif;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f3f5f9; --surface: #ffffff; --surface-2: #f2f4f9; --line: #d9deea; --line-strong: #b0b8cd;
+  --accent: #273c8f; --accent-soft: #eef1fa; --accent-line: #8c9cd6; --accent-ink: #ffffff;
+  --text: #141a2b; --chu-2: #232a3f; --text-dim: #4a536c; --text-faint: #5f6984;
+  --ok: #38674c; --ok-bg: #e7f3ec; --ok-line: #7cb293;
+  --bad: #a63a2d; --bad-bg: #fbedeb; --bad-line: #de9c94;
+  --soon: #7e5f36; --soon-bg: #fbf4e1; --soon-line: #cbad6e;
+  --o-nhap-nen: #ffffff; --o-nhap-vien: #7f8aa6; --nut-hover: #f0f2f8; --phu-mo: rgb(20 26 43 / .35);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--phong); }
+.so { font-family: var(--phong-so); font-variant-numeric: tabular-nums; }
+.trang { max-width: 1440px; margin: 0 auto; padding: 24px 24px 64px; }
+
+/* ---- chú thích mockup (ngoài giao diện) ---- */
+.ct { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 10px 14px; margin: 28px 0 12px; color: var(--text-dim); font-size: 13px; }
+.ct h2 { margin: 0 0 4px; font-size: 15px; color: var(--text); }
+.ct ul { margin: 4px 0 0; padding-left: 18px; }
+.chon-che-do { position: sticky; top: 0; z-index: 20; display: flex; gap: 8px; align-items: center; padding: 8px 0; background: var(--bg); font-size: 13px; color: var(--text-dim); }
+
+/* ---- khung app ---- */
+.app { position: relative; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); overflow: hidden; }
+.app-dau { padding: 16px 20px 0; }
+.h-trang { margin: 0; font-size: 22px; font-weight: 700; }
+.h-phu { margin: 2px 0 0; font-size: 12px; color: var(--text-faint); }
+.tabs { display: flex; gap: 24px; margin-top: 12px; border-bottom: 1px solid var(--line); }
+.tab { font-size: 14px; color: var(--text-dim); padding: 8px 0; }
+.tab.chon { color: var(--text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.than { padding: 16px 20px 20px; }
+.luoi-trang { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+
+.nut { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line-strong);
+  background: transparent; color: var(--text); font: 500 13px var(--phong); cursor: pointer; white-space: nowrap; }
+.nut:hover { background: var(--nut-hover); }
+.nut-chinh { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.nut-chinh:hover { background: var(--accent); filter: brightness(1.08); }
+.nut-chip { min-height: 28px; border-radius: 999px; font-size: 13px; }
+.nut-nho { min-height: 28px; padding: 0 10px; font-size: 12px; }
+.chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 12px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
+.chip.ok { color: var(--ok); border-color: var(--ok-line); background: var(--ok-bg); }
+.chip.lech { color: var(--soon); border-color: var(--soon-line); background: var(--soon-bg); }
+.phu { font-size: 12px; color: var(--text-faint); }
+
+/* ---- thẻ ---- */
+.the { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.the-dau { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.the-dau h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.the-dau .gian { flex: 1; }
+.dong-tt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--text-dim); }
+.dong-tt b { color: var(--text); font-weight: 600; }
+
+/* ---- bảng quy đổi ---- */
+.hai-nua { display: grid; grid-template-columns: 1fr 1fr; }
+.hai-nua > .nua + .nua { border-left: 1px solid var(--line); }
+.app .panel .hai-nua > .nua + .nua { margin-left: 12px; padding-left: 12px; border-left-color: var(--line-strong); }
+table.bqd { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.bqd col.cc { width: 76px; } .bqd col.ci { width: 72px; }
+.bqd th { height: 32px; padding: 0 10px; font-size: 12px; font-weight: 600; color: var(--text-dim); text-align: right; border-bottom: 1px solid var(--line-strong); background: var(--surface); white-space: nowrap; }
+.bqd th.c-cau { text-align: left; }
+.bqd th.c-idp, .bqd td.c-idp { color: var(--text-faint); font-weight: 500; }
+.bqd th .ky { color: var(--text); }
+.bqd td { height: 30px; padding: 0 10px; text-align: right; border-bottom: 1px solid var(--line); font: 500 14px var(--phong-so); font-variant-numeric: tabular-nums; }
+.bqd tr:last-child td { border-bottom: 0; }
+.bqd td.c-cau { text-align: left; color: var(--text-faint); width: 64px; }
+.bqd td.moc { color: var(--text); font-weight: 600; }
+.bqd td.lap { color: var(--text-faint); }
+.bqd td.c-idp { font-size: 13px; width: 64px; border-right: 1px solid var(--line); }
+.bqd td.c-idp:last-child, .bqd th.c-idp:last-child { border-right: 0; }
+.bqd th.c-idp { border-right: 1px solid var(--line); }
+/* ô lệch IDP: nền vàng nhạt + dấu ≠ (không chỉ màu) */
+.bqd td.c-idp.lech { background: var(--soon-bg); color: var(--soon); font-weight: 600; }
+.bqd td.c-idp.lech::before { content: "≠ "; font-weight: 600; }
+
+/* ---- sửa: ô nhập ---- */
+.bqd.sua td { height: 54px; padding: 2px 6px; vertical-align: top; padding-top: 7px; }
+.bqd.sua td.c-cau, .bqd.sua td.c-idp { vertical-align: middle; padding-top: 2px; }
+.bqd.sua td.c-cau { padding-left: 12px; }
+.o-so { width: 60px; height: 32px; padding: 0 8px; border: 1px solid var(--o-nhap-vien); border-radius: 6px; background: var(--o-nhap-nen); color: var(--text);
+  font: 500 14px var(--phong-so); font-variant-numeric: tabular-nums; text-align: right; }
+.o-so.doi { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.o-so.moc { font-weight: 700; } .o-so.lap { color: var(--text-dim); }
+/* hàng có ô đã đổi: dấu • xanh trước số câu (không chỉ màu viền ô) */
+.bqd td.c-cau.doi { color: var(--accent); font-weight: 700; }
+.bqd td.c-cau.doi::before { content: "• "; }
+.o-so.sai { border-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); background: var(--bad-bg); }
+.o-so.focus { outline: 2px solid var(--text); outline-offset: 2px; }
+.truoc { white-space: nowrap; } .truoc.sai { color: var(--bad); font-family: var(--phong); }
+
+/* ---- cột phải ---- */
+.cot-phai { display: grid; gap: 16px; }
+.ap { margin: 0; padding: 12px 16px 14px 32px; font-size: 13px; color: var(--chu-2); display: grid; gap: 6px; }
+.ap b { color: var(--text); }
+.nguon { margin: 0 16px 14px; padding-left: 10px; border-left: 2px solid var(--line-strong); font-size: 12px; color: var(--text-faint); }
+.pb { list-style: none; margin: 0; padding: 0; }
+.pb li { padding: 10px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 2px; font-size: 12px; color: var(--text-faint); }
+.pb li:last-child { border-bottom: 0; }
+.pb .d1 { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); font-weight: 600; }
+.pb .d1 .nut { margin-left: auto; }
+.pb .ly { color: var(--chu-2); }
+.pb .doi { font-family: var(--phong-so); font-variant-numeric: tabular-nums; }
+
+/* ---- panel sửa (bên phải, đè trang) ---- */
+.mo-nen { position: absolute; inset: 0; background: var(--phu-mo); }
+.panel { position: absolute; top: 0; right: 0; bottom: 0; width: 760px; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--line-strong); box-shadow: -12px 0 28px rgb(0 0 0 / .3); }
+.panel-dau { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
+.panel-dau h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.panel-dau .x { margin-left: auto; }
+.panel-ng { padding: 0 16px 10px; font-size: 13px; color: var(--text-dim); border-bottom: 1px solid var(--line); }
+.panel-than { flex: 1; overflow: auto; padding: 12px 16px; display: grid; gap: 12px; align-content: start; }
+.hang-idp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 13px; color: var(--text-dim); }
+.hang-idp .gian { flex: 1; }
+.goi-y { margin: -4px 0 0; font-size: 12px; color: var(--text-faint); }
+.da-ap { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 12px; border-radius: 6px; background: var(--ok-bg); color: var(--ok); font-size: 13px; }
+.truoc { display: block; margin-top: 2px; font: 11px var(--phong-so); color: var(--text-faint); text-align: right; }
+.mo-them { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.loi-ds { margin: 0; padding: 6px 8px; list-style: none; border-radius: 6px; background: var(--bad-bg); display: grid; gap: 2px; }
+.loi-o { display: block; width: 100%; padding: 4px 4px; border: 0; background: transparent; color: var(--bad); font: 13px var(--phong); text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--bad-line); }
+.truong { display: grid; gap: 4px; font-size: 13px; color: var(--text-dim); }
+.truong .o-chu { min-height: 56px; border: 1px solid var(--o-nhap-vien); border-radius: 6px; background: var(--o-nhap-nen); padding: 8px 10px; color: var(--text); font-size: 14px; }
+.truong .o-chu.trong { color: var(--text-faint); }
+.panel-chan { display: flex; align-items: center; gap: 10px; padding: 10px 16px 12px; border-top: 1px solid var(--line-strong); background: var(--surface); font-size: 13px; color: var(--text-dim); }
+.panel-chan .gian { flex: 1; }
+.can-sua { font-size: 12px; color: var(--text-faint); text-align: right; padding: 6px 16px 0; border-top: 1px solid var(--line-strong); }
+
+/* ---- toast, hộp xác nhận ---- */
+.toast { position: absolute; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 12px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 10px 12px; font-size: 13px; box-shadow: 0 8px 20px rgb(0 0 0 / .3); }
+.toast .ok { color: var(--ok); font-weight: 700; }
+.hop { position: absolute; left: 50%; top: 180px; transform: translateX(-50%); width: 420px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 12px 28px rgb(0 0 0 / .35); }
+.hop-dau { padding: 14px 16px 6px; font-size: 16px; font-weight: 700; }
+.hop-than { padding: 0 16px 12px; font-size: 13px; color: var(--chu-2); }
+.hop-chan { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px 14px; }
+.doi-ds { max-height: 168px; overflow: auto; padding: 8px 10px; border-radius: 6px; background: var(--surface-2); font-size: 12px; color: var(--chu-2); display: grid; gap: 2px; }
+.doi-ds b { color: var(--text); font-family: var(--phong); }
+
+/* ---- 375 ---- */
+.hai-cot { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 375px)); gap: 24px; align-items: start; }
+.dt { width: 375px; max-width: 100%; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--bg); position: relative; }
+.dt .app-dau { padding: 14px 16px 0; }
+.dt .than { padding: 12px 0 16px; }
+.dt .the { border-radius: 0; border-left: 0; border-right: 0; }
+.dt .cot-phai { margin-top: 16px; }
+.dt .hai-nua { grid-template-columns: 1fr; }
+.dt .hai-nua > .nua + .nua { border-left: 0; }
+.dt .hai-nua > .nua + .nua thead { display: none; }
+.dt .bqd td { height: 36px; }
+.dt .nut { min-height: 44px; }
+.dt .nut-nho { min-height: 44px; }
+.dt .panel { position: static; width: 100%; box-shadow: none; border-left: 0; min-height: 760px; }
+.dt .bqd.sua td { height: 52px; padding: 0 4px; }
+.dt .o-so { width: 64px; height: 44px; }
+.dt .panel-chan .nut { min-height: 48px; }
+.dt .toast { left: 12px; right: 12px; bottom: 12px; }
+@media (max-width: 1100px) { .luoi-trang { grid-template-columns: minmax(0, 1fr); } .panel { width: 100%; } }
+@media (max-width: 500px) { .trang { padding: 16px 0 48px; } .ct, .chon-che-do { margin-left: 16px; margin-right: 16px; } .app { border-radius: 0; } .dt { border-radius: 0; border-left: 0; border-right: 0; } .chon-che-do { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+<script>/* ?theme=light: mở sẵn giao diện sáng (ảnh cặp 375). */ if (new URLSearchParams(location.search).get('theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');</script>
+<div class="trang">
+
+<div class="chon-che-do">
+  Chế độ: <button class="nut nut-chip" onclick="document.documentElement.removeAttribute('data-theme')">Tối</button>
+  <button class="nut nut-chip" onclick="document.documentElement.setAttribute('data-theme','light')">Sáng</button>
+  <span>· Mockup Quản trị › Bảng quy đổi band — 28/10</span>
+</div>
+
+<div class="ct">
+  <h2>Ý chính (ngoài giao diện)</h2>
+  <ul>
+    <li><b>Một bảng hàng · cột:</b> hàng = số câu đúng 0–40, cột = <b>Listening · IDP · Reading · IDP</b>. Màn rộng chia hai nửa 0–20 | 21–40 cạnh nhau (bảng không dài quá màn); điện thoại một cột, nửa sau nối tiếp. Chọn 41 hàng (không phải "mốc band từ–đến"): mỗi ô một số như sheet gốc, sửa một ô không kéo ô khác, lỗi chỉ đúng ô.</li>
+    <li><b>Đọc nhanh mốc:</b> số câu đầu tiên lên band mới đậm, band lặp lại mờ. <b>IDP</b> = bảng trung bình IDP công bố (chỉ đọc, ghi nguồn + ngày tra); ô bảng trung tâm khác IDP → ô IDP nền vàng + dấu <b>≠</b>. "—" = IDP không công bố (Listening dưới 11 câu, Reading dưới 4).</li>
+    <li><b>Sửa = panel bên phải</b> (cả bảng, một lần Lưu, Lý do không bắt buộc). Hai dấu, hai màu: <b>ô đã đổi</b> = viền xanh + dấu <b>•</b> trước số câu (tooltip "Trước: 5.5"); <b>lệch IDP</b> = ô IDP vàng + <b>≠</b>. Ô sai viền đỏ; dòng lỗi bấm được → tới ô đó. Chân: nút "n ô đã đổi ↓" nhảy lần lượt tới ô đã đổi. Số đầu mốc band vẫn đậm khi sửa.</li>
+    <li><b>Gõ nhanh:</b> ↑ ↓ / Enter chuyển ô trong cột; <b>dán một cột từ Excel</b> (vd 41 số của sheet) vào một ô → điền xuống từ ô đó (như Dán Excel ở Nhập điểm). <b>"Áp IDP · kỹ năng (n ô)"</b> chỉ hiện khi kỹ năng đó còn lệch: điền số IDP (ô IDP không công bố giữ số đang có), vẫn phải bấm Lưu. Ngay sau khi Áp: dòng xanh "Đã áp IDP · Listening: 2 ô · Hoàn tác" — Hoàn tác trả đúng các ô đó về số ngay trước khi Áp (sửa tay ở kỹ năng khác không mất). Gõ "5,5" hay "5.5" đều nhận.</li>
+    <li><b>Đóng khi chưa lưu</b> (✕, Esc, bấm nền, "Huỷ thay đổi"): hộp "Bỏ n ô đã đổi?" — Ở lại (nút chính) / Bỏ thay đổi, như mọi panel đang sửa.</li>
+    <li><b>Lưu → toast Hoàn tác</b> (5 giây). Mỗi lần lưu thêm một phiên bản; Lịch sử phiên bản nói ai, lúc, lý do, ô đổi; <b>Khôi phục</b> bản bất kỳ (hộp xác nhận). Không xoá phiên bản nào.</li>
+    <li><b>Luật áp dụng:</b> bảng mới áp cho điểm L/R nhập TỪ LÚC LƯU; điểm đã nhập giữ band cũ (SOS, Case, kết quả không đổi). Sửa số câu của bài cũ → bảng đang dùng.</li>
+    <li><b>Quyền:</b> Quản trị sửa. Quản lý chỉ xem (menu tài khoản "Bảng quy đổi band" → trang chỉ có bảng này, không Sửa / Khôi phục). GV không thấy.</li>
+  </ul>
+</div>
+
+<!-- ===================== A · 1440 · QUẢN TRỊ XEM ===================== -->
+<div class="ct"><h2>A · 1440 · Quản trị — xem (sau deploy: phiên bản 2 "Listening theo IDP")</h2>
+  Listening 11–40 câu khớp IDP; 10 câu = 3.5 (IDP không công bố, lấy 3.5 cho liền với 11–12 = 4). Reading khớp IDP Academic từ 4 câu.</div>
+<div class="app">
+  <div class="app-dau">
+    <h1 class="h-trang">Quản trị hệ thống</h1>
+    <p class="h-phu">Tài khoản, danh mục và cấu hình quyền của phần mềm.</p>
+    <div class="tabs"><span class="tab">Tài khoản</span><span class="tab">Chương trình</span><span class="tab chon">Bảng quy đổi</span><span class="tab">Quyền &amp; nhật ký</span></div>
+  </div>
+  <div class="than">
+    <div class="luoi-trang">
+      <section class="the">
+        <div class="the-dau"><h2>Bảng quy đổi band</h2><span class="gian"></span><button class="nut">Sửa</button></div>
+        <div class="dong-tt">Số câu đúng → band (số đậm = số câu đầu tiên lên band mới). Đang dùng: <b>Phiên bản 2</b> · <span class="so">28/10/2026 22:10</span><span class="gian" style="flex:1"></span><span class="chip ok">Khớp IDP</span></div>
+        <div class="hai-nua" data-bang="xem" data-ban="v2"></div>
+      </section>
+      <div class="cot-phai" data-cot="v2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== B · 1440 · ĐANG SỬA (lệch IDP + Áp bảng IDP) ===================== -->
+<div class="ct"><h2>B · 1440 · Đang sửa — Listening 18–19 câu về 5.0, Reading 30 câu về 6.5 (cả ba lệch IDP)</h2>
+  Ô đã đổi viền xanh + • ở số câu; cột IDP tô vàng + ≠ ô lệch. Hàng trên bảng: số ô lệch từng kỹ năng + "Áp IDP · Listening (2 ô)" / "· Reading (1 ô)" (kỹ năng khớp IDP thì không có nút). Bấm "Áp IDP · Listening (2 ô)" → khung G. Lưu khi không đổi ô nào → đóng panel, báo "Bảng không đổi" (không thêm phiên bản); nút "n ô đã đổi ↓" ẩn khi 0.</div>
+<div class="app" style="height:920px">
+  <div class="app-dau">
+    <h1 class="h-trang">Quản trị hệ thống</h1>
+    <p class="h-phu">Tài khoản, danh mục và cấu hình quyền của phần mềm.</p>
+    <div class="tabs"><span class="tab">Tài khoản</span><span class="tab">Chương trình</span><span class="tab chon">Bảng quy đổi</span><span class="tab">Quyền &amp; nhật ký</span></div>
+  </div>
+  <div class="mo-nen"></div>
+  <aside class="panel" data-panel="lech"></aside>
+</div>
+
+<!-- ===================== C · 1440 · LỖI HỢP LỆ ===================== -->
+<div class="ct"><h2>C · 1440 · Lỗi — Reading 12 câu bỏ trống, Listening 22 câu = 5.3, Listening 35 câu = 7.0 (thấp hơn 34 câu)</h2>
+  Kiểm ngay khi rời ô / dán (ô đỏ + lý do ngắn dưới ô, nối <code>aria-describedby</code>); bấm Lưu khi còn lỗi → danh sách lỗi trên bảng (bấm → tới ô) + chân "3 ô cần sửa ↑". Ảnh vẽ lúc đã nhảy tới ô L 35. Ô sai không đếm vào "≠ IDP". Chữ đã gõ giữ nguyên. Máy chủ kiểm lại cùng hàm; người khác vừa lưu bản mới → báo "Bảng vừa được người khác lưu — tải lại…", chữ đang gõ giữ nguyên.</div>
+<div class="app" style="height:920px">
+  <div class="app-dau">
+    <h1 class="h-trang">Quản trị hệ thống</h1>
+    <p class="h-phu">Tài khoản, danh mục và cấu hình quyền của phần mềm.</p>
+    <div class="tabs"><span class="tab">Tài khoản</span><span class="tab">Chương trình</span><span class="tab chon">Bảng quy đổi</span><span class="tab">Quyền &amp; nhật ký</span></div>
+  </div>
+  <div class="mo-nen"></div>
+  <aside class="panel" data-panel="loi"></aside>
+</div>
+
+<!-- ===================== G · 1440 · VỪA ÁP IDP ===================== -->
+<div class="ct"><h2>G · 1440 · Vừa bấm "Áp IDP · Listening (2 ô)" ở B</h2>
+  L 18, 19 câu về 5.5 (bằng bảng đang dùng → hết "đã đổi"); Reading 30 câu vẫn 6.5 (sửa tay, không bị đụng). Dòng xanh nói đã áp gì + Hoàn tác (trả 2 ô về 5.0). Vẫn phải bấm Lưu.</div>
+<div class="app" style="height:560px">
+  <div class="mo-nen"></div>
+  <aside class="panel" data-panel="da-ap"></aside>
+</div>
+
+<!-- ===================== F · 1440 · ĐÓNG KHI CHƯA LƯU ===================== -->
+<div class="ct"><h2>F · 1440 · Đóng panel khi còn ô đã đổi (✕ / Esc / bấm nền / Huỷ thay đổi)</h2>
+  Hộp nhỏ trong panel, nói đúng ô sẽ mất; Ở lại là nút chính (không mất chữ âm thầm). Không còn ô đổi → đóng ngay, không hỏi.</div>
+<div class="app" style="height:560px">
+  <div class="mo-nen"></div>
+  <aside class="panel" data-panel="lech-dong"></aside>
+  <div class="hop" role="dialog" aria-label="Bỏ 3 ô đã đổi?" style="left:auto; right:170px; transform:none; top:150px">
+    <div class="hop-dau">Bỏ 3 ô đã đổi?</div>
+    <div class="hop-than">Bảng chưa lưu. Đóng thì bỏ: <span class="so">L 18 câu · L 19 câu · R 30 câu</span> và lý do đã gõ.</div>
+    <div class="hop-chan"><button class="nut">Bỏ thay đổi</button><button class="nut nut-chinh">Ở lại</button></div>
+  </div>
+</div>
+
+<!-- ===================== D · 1440 · ĐÃ LƯU + HOÀN TÁC + LỊCH SỬ + KHÔI PHỤC ===================== -->
+<div class="ct"><h2>D · 1440 · Đã lưu (phiên bản 3) + toast Hoàn tác · Lịch sử phiên bản · hộp Khôi phục</h2>
+  Toast "Đã lưu bảng quy đổi — áp cho điểm nhập từ bây giờ · Hoàn tác (4)". <b>Hoàn tác = lưu lại bản ngay trước thành một phiên bản mới</b> (lý do "Hoàn tác"), không xoá bản vừa lưu; bài nhập trong mấy giây đó giữ band đã nhận. Lịch sử: bản mới nhất trên cùng ("đang dùng"), mỗi bản: lúc · người · lý do · ô đổi (3 ô đầu, "+n ô"). Khôi phục → hộp xác nhận (vẽ chồng ở đây để xem cùng lúc; web có nền mờ như mọi ConfirmDialog); bản tạo ra ghi lý do "Khôi phục phiên bản n".</div>
+<div class="app">
+  <div class="app-dau">
+    <h1 class="h-trang">Quản trị hệ thống</h1>
+    <p class="h-phu">Tài khoản, danh mục và cấu hình quyền của phần mềm.</p>
+    <div class="tabs"><span class="tab">Tài khoản</span><span class="tab">Chương trình</span><span class="tab chon">Bảng quy đổi</span><span class="tab">Quyền &amp; nhật ký</span></div>
+  </div>
+  <div class="than">
+    <div class="luoi-trang">
+      <section class="the">
+        <div class="the-dau"><h2>Bảng quy đổi band</h2><span class="gian"></span><button class="nut">Sửa</button></div>
+        <div class="dong-tt">Số câu đúng → band (số đậm = số câu đầu tiên lên band mới). Đang dùng: <b>Phiên bản 3</b> · <span class="so">29/10/2026 09:12</span> · Đỗ Vũ Tuấn Phong<span class="gian" style="flex:1"></span><span class="chip lech">≠ IDP 3 ô</span></div>
+        <div class="hai-nua" data-bang="xem" data-ban="v3"></div>
+      </section>
+      <div class="cot-phai" data-cot="v3"></div>
+    </div>
+  </div>
+  <div class="hop" role="dialog" aria-label="Khôi phục phiên bản 1?">
+    <div class="hop-dau">Khôi phục phiên bản 1?</div>
+    <div class="hop-than"><p style="margin:0 0 8px">Bảng này thành bảng đang dùng, áp cho điểm nhập từ bây giờ. Điểm đã nhập giữ band. Bản hiện tại vẫn còn trong lịch sử.</p><div class="doi-ds so" data-khoi-phuc></div></div>
+    <div class="hop-chan"><button class="nut">Đóng</button><button class="nut nut-chinh">Khôi phục</button></div>
+  </div>
+  <div class="toast"><span class="ok">✓</span> Đã lưu bảng quy đổi — áp cho điểm nhập từ bây giờ <button class="nut nut-nho">Hoàn tác (4)</button></div>
+</div>
+
+<!-- ===================== E · 375 ===================== -->
+<div class="ct"><h2>E · 375 — Quản lý chỉ xem · Quản trị đang sửa (panel toàn màn) · Quản trị đã lưu</h2>
+  QL: tiêu đề trang "Bảng quy đổi band", không tab, không Sửa / Khôi phục. Panel sửa phủ toàn màn, chân dính: Huỷ thay đổi / Lưu ≥ 48 px. Bảng một cột: 0–40 liền, tiêu đề cột một lần.</div>
+<div class="hai-cot">
+  <div class="dt">
+    <div class="app-dau"><h1 class="h-trang">Bảng quy đổi band</h1><p class="h-phu">Quản trị hệ thống sửa; Quản lý xem.</p></div>
+    <div class="than">
+      <section class="the">
+        <div class="dong-tt">Đang dùng: <b>Phiên bản 2</b> · <span class="so">28/10/2026</span><span class="gian" style="flex:1"></span><span class="chip ok">Khớp IDP</span></div>
+        <div class="hai-nua" data-bang="xem" data-ban="v2"></div>
+      </section>
+      <div class="cot-phai" data-cot="v2-ql"></div>
+    </div>
+  </div>
+  <div class="dt">
+    <aside class="panel" data-panel="lech-dt"></aside>
+  </div>
+  <div class="dt" style="min-height:760px">
+    <div class="app-dau"><h1 class="h-trang">Quản trị hệ thống</h1>
+      <div class="tabs" style="overflow:hidden"><span class="tab">Tài khoản</span><span class="tab">Chương trình</span><span class="tab chon">Bảng quy đổi</span></div></div>
+    <div class="than">
+      <div class="cot-phai" data-cot="v3" style="margin-top:0"></div>
+    </div>
+    <div class="toast"><span class="ok">✓</span> Đã lưu — áp cho điểm nhập từ bây giờ <button class="nut nut-nho">Hoàn tác (4)</button></div>
+  </div>
+</div>
+
+</div>
+<script>
+/* Số thật: bảng trung tâm cũ (v1), Listening theo IDP (v2 = sau deploy), IDP tham chiếu (null = không công bố). */
+const khoang = (ds) => Array.from({ length: 41 }, (_, n) => (ds.find(([a, b]) => n >= a && n <= b) || [0, 0, null])[2]);
+const GOC_L = [0,0,1,2.5,2.5,3,3,3.5,3.5,3.5,4,4,4,4.5,4.5,4.5,5,5,5,5,5.5,5.5,5.5,6,6,6,6,6.5,6.5,6.5,7,7,7,7.5,7.5,8,8,8.5,8.5,9,9];
+const GOC_R = [0,0,1,1.5,2.5,2.5,3,3,3.5,3.5,4,4,4,4.5,4.5,5,5,5,5,5.5,5.5,5.5,5.5,6,6,6,6,6.5,6.5,6.5,7,7,7,7.5,7.5,8,8,8.5,8.5,9,9];
+const IDP = {
+  L: khoang([[39,40,9],[37,38,8.5],[35,36,8],[32,34,7.5],[30,31,7],[26,29,6.5],[23,25,6],[18,22,5.5],[16,17,5],[13,15,4.5],[11,12,4]]),
+  R: khoang([[39,40,9],[37,38,8.5],[35,36,8],[33,34,7.5],[30,32,7],[27,29,6.5],[23,26,6],[19,22,5.5],[15,18,5],[13,14,4.5],[10,12,4],[8,9,3.5],[6,7,3],[4,5,2.5]]),
+};
+const V2 = { L: GOC_L.map((v, n) => (n === 10 ? 3.5 : IDP.L[n] ?? v)), R: GOC_R };
+const V3 = { L: V2.L.map((v, n) => (n === 18 || n === 19 ? 5 : v)), R: V2.R.map((v, n) => (n === 30 ? 6.5 : v)) };
+const BAN = { v2: V2, v3: V3 };
+const f = (v) => (v === null || v === undefined || Number.isNaN(v) ? '—' : v.toFixed(1));
+const NUA = [[0, 20], [21, 40]];
+const lech = (b, k, n) => IDP[k][n] !== null && IDP[k][n] !== b[k][n];
+
+function bangXem(b) {
+  return NUA.map(([a, z]) => `<div class="nua"><table class="bqd"><colgroup><col class="cc"><col><col class="ci"><col><col class="ci"></colgroup><thead><tr><th class="c-cau">Số câu</th><th><span class="ky">Listening</span></th><th class="c-idp">IDP</th><th><span class="ky">Reading</span></th><th class="c-idp">IDP</th></tr></thead><tbody>${
+    Array.from({ length: z - a + 1 }, (_, i) => a + i).map((n) => `<tr><td class="c-cau">${n}</td>${['L', 'R'].map((k) =>
+      `<td class="${n > 0 && b[k][n] === b[k][n - 1] ? 'lap' : 'moc'}">${f(b[k][n])}</td><td class="c-idp${lech(b, k, n) ? ' lech' : ''}" ${lech(b, k, n) ? `title="IDP ${f(IDP[k][n])} — bảng đang dùng ${f(b[k][n])}"` : ''}>${f(IDP[k][n])}</td>`).join('')}</tr>`).join('')
+  }</tbody></table></div>`).join('');
+}
+function bangSua(b, goc, sai = {}, focus = null) {
+  return NUA.map(([a, z]) => `<div class="nua"><table class="bqd sua"><colgroup><col class="cc"><col><col class="ci"><col><col class="ci"></colgroup><thead><tr><th class="c-cau">Số câu</th><th><span class="ky">Listening</span></th><th class="c-idp">IDP</th><th><span class="ky">Reading</span></th><th class="c-idp">IDP</th></tr></thead><tbody>${
+    Array.from({ length: z - a + 1 }, (_, i) => a + i).map((n) => `<tr><td class="c-cau so${['L', 'R'].some((k) => b[k][n] !== goc[k][n]) ? ' doi' : ''}">${n}</td>${['L', 'R'].map((k) => {
+      const v = b[k][n], s = sai[`${k}${n}`];
+      const lop = (s ? 'sai' : v !== goc[k][n] ? 'doi' : '') + (n > 0 && v === b[k][n - 1] ? ' lap' : ' moc');
+      return `<td><input class="o-so ${lop}${focus === `${k}${n}` ? ' focus' : ''}"${!s && v !== goc[k][n] ? ` title="Trước: ${f(goc[k][n])}"` : ''} value="${Number.isNaN(v) ? '' : f(v)}" aria-label="${k === 'L' ? 'Listening' : 'Reading'} ${n} câu"${s ? ` aria-invalid="true" aria-describedby="ly-${k}${n}"` : ''}>${s ? `<span class="truoc sai" id="ly-${k}${n}">${s}</span>` : v !== goc[k][n] ? `<span class="truoc">trước ${f(goc[k][n])}</span>` : ''}</td><td class="c-idp${!s && !Number.isNaN(v) && lech(b, k, n) ? ' lech' : ''}">${f(IDP[k][n])}</td>`;
+    }).join('')}</tr>`).join('')
+  }</tbody></table></div>`).join('');
+}
+let SAI = {};
+const demLech = (b, k) => b[k].filter((v, n) => !Number.isNaN(v) && !SAI[`${k}${n}`] && lech(b, k, n)).length;
+function hangIdp(b, daAp) {
+  return `<div class="hang-idp">IDP: ${['L', 'R'].map((k) => { const d = demLech(b, k); return `${k === 'L' ? 'Listening' : 'Reading'} ${d ? `<span class="chip lech">≠ ${d} ô</span>` : '<span class="chip ok">khớp</span>'}`; }).join(' · ')}
+    <span class="gian"></span>${['L', 'R'].filter((k) => demLech(b, k)).map((k) => `<button class="nut nut-nho">Áp IDP · ${k === 'L' ? 'Listening' : 'Reading'} (${demLech(b, k)} ô)</button>`).join('')}</div>
+    ${daAp ? `<div class="da-ap" role="status">✓ ${daAp} <span class="gian" style="flex:1"></span><button class="nut nut-nho">Hoàn tác</button></div>` : ''}
+    <p class="goi-y">Dán một cột từ Excel vào một ô → điền xuống · ↑ ↓ / Enter chuyển ô · "5,5" hay "5.5" đều được · — = IDP không công bố</p>`;
+}
+function panel(b, goc, { sai = {}, loi = [], focus = null, soDoi, lyDo = '', dt = false, daAp = '' } = {}) {
+  SAI = sai;
+  return `<div class="panel-dau"><h2>Sửa bảng quy đổi band</h2><button class="nut x" aria-label="Đóng">✕</button></div>
+    <div class="panel-ng">Áp cho điểm nhập sau khi lưu · điểm đã nhập giữ band cũ</div>
+    <div class="panel-than">${hangIdp(b, daAp)}${loi.length ? `<ul class="loi-ds" role="alert">${loi.map((l) => `<li><button class="loi-o">${l}</button></li>`).join('')}</ul>` : ''}
+      <div class="hai-nua">${bangSua(b, goc, sai, focus)}</div>
+      <label class="truong">Lý do (không bắt buộc)<span class="o-chu${lyDo ? '' : ' trong'}">${lyDo || 'Vd: theo bảng IDP'}</span></label></div>
+    ${loi.length ? `<div class="can-sua">${loi.length} ô cần sửa ↑</div>` : ''}
+    <div class="panel-chan"${loi.length ? ' style="border-top:0"' : ''}><button class="nut">Huỷ thay đổi</button>${soDoi ? `<button class="nut nut-nho so" title="Tới ô đã đổi kế tiếp">${soDoi} ô đã đổi ↓</button>` : ''}<span class="gian"></span><button class="nut nut-chinh">Lưu</button></div>`;
+}
+function cotPhai(ban, { ql = false } = {}) {
+  const pbs = ban === 'v3'
+    ? [{ id: 3, luc: '29/10/2026 09:12 · Đỗ Vũ Tuấn Phong', ly: 'Theo đề Cam 19 (thử)', doi: 'L 18 câu: 5.5 → 5.0 · L 19 câu: 5.5 → 5.0 · R 30 câu: 7.0 → 6.5', dung: true },
+       { id: 2, luc: '28/10/2026 22:10 · Hệ thống', ly: 'Listening theo IDP — quyết định chủ SP 28/10', doi: 'L 10 câu: 4.0 → 3.5 · L 18 câu: 5.0 → 5.5 · L 19 câu: 5.0 → 5.5 · <button class="mo-them">+2 ô</button>' },
+       { id: 1, luc: '28/10/2026 22:10 · Hệ thống', ly: 'Bảng trung tâm (sheet "Bang quy doi") — dùng tới 28/10/2026', doi: '' }]
+    : [{ id: 2, luc: '28/10/2026 22:10 · Hệ thống', ly: 'Listening theo IDP — quyết định chủ SP 28/10', doi: 'L 10 câu: 4.0 → 3.5 · L 18 câu: 5.0 → 5.5 · L 19 câu: 5.0 → 5.5 · <button class="mo-them">+2 ô</button>', dung: true },
+       { id: 1, luc: '28/10/2026 22:10 · Hệ thống', ly: 'Bảng trung tâm (sheet "Bang quy doi") — dùng tới 28/10/2026', doi: '' }];
+  return `<section class="the"><div class="the-dau"><h2>Áp dụng</h2></div>
+      <ul class="ap"><li>Áp cho điểm L / R nhập <b>từ lúc lưu</b>.</li><li>Điểm đã nhập giữ band cũ — SOS, Case, kết quả không đổi.</li><li>Sửa số câu đúng của một bài cũ → tính lại theo bảng đang dùng (như nhập mới).</li></ul>
+      <p class="nguon">IDP = bảng trung bình IDP công bố (tra 28/10/2026): Listening <a href="https://ielts.idp.com/vietnam/results/scores/listening" style="color:var(--accent)">ielts.idp.com/vietnam</a> · Academic Reading <a href="https://ielts.idp.com/southafrica/results/scores/reading" style="color:var(--accent)">ielts.idp.com/southafrica</a> (bảng chung mọi nước). Mỗi đề lệch khoảng ±1 câu.</p></section>
+    <section class="the"><div class="the-dau"><h2>Lịch sử phiên bản</h2></div><ul class="pb">${pbs.map((p) => `<li>
+      <div class="d1">Phiên bản ${p.id}${p.dung ? ' <span class="chip">đang dùng</span>' : ''}${!p.dung && !ql ? `<button class="nut nut-nho" aria-label="Khôi phục phiên bản ${p.id}">Khôi phục</button>` : ''}</div>
+      <span class="so">${p.luc}</span><span class="ly">Lý do: ${p.ly}</span>${p.doi ? `<span class="doi">${p.doi}</span>` : ''}</li>`).join('')}</ul></section>`;
+}
+
+document.querySelectorAll('[data-bang="xem"]').forEach((el) => { el.innerHTML = bangXem(BAN[el.dataset.ban]); });
+document.querySelectorAll('[data-cot]').forEach((el) => { const c = el.dataset.cot; el.innerHTML = cotPhai(c.startsWith('v3') ? 'v3' : 'v2', { ql: c.endsWith('-ql') }); });
+const LECH = { L: V2.L.map((v, n) => (n === 18 || n === 19 ? 5 : v)), R: V2.R.map((v, n) => (n === 30 ? 6.5 : v)) };
+document.querySelectorAll('[data-panel="lech"], [data-panel="lech-dt"], [data-panel="lech-dong"]').forEach((el) => { el.innerHTML = panel(LECH, V2, { soDoi: 3, lyDo: 'Theo đề Cam 19 (thử)' }); });
+document.querySelectorAll('[data-panel="da-ap"]').forEach((el) => { el.innerHTML = panel({ L: V2.L, R: LECH.R }, V2, { soDoi: 1, lyDo: 'Theo đề Cam 19 (thử)', daAp: 'Đã áp IDP · Listening: 2 ô (L 18, L 19 câu → 5.5)' }); });
+/* Hộp Khôi phục phiên bản 1 khi đang dùng v3: ô sẽ đổi = v3 → v1 (bảng trung tâm cũ). */
+document.querySelectorAll('[data-khoi-phuc]').forEach((el) => {
+  const V1 = { L: GOC_L, R: GOC_R }, ds = [];
+  ['L', 'R'].forEach((k) => V3[k].forEach((v, n) => { if (v !== V1[k][n]) ds.push(`${k} ${n} câu: ${f(v)} → ${f(V1[k][n])}`); }));
+  el.innerHTML = `<b>${ds.length} ô sẽ đổi</b>${ds.map((x) => `<span>${x}</span>`).join('')}`;
+});
+const LOI = { L: V2.L.map((v, n) => (n === 35 ? 7 : n === 22 ? 5.3 : v)), R: V2.R.map((v, n) => (n === 12 ? NaN : v)) };
+document.querySelectorAll('[data-panel="loi"]').forEach((el) => { el.innerHTML = panel(LOI, V2, {
+  sai: { L35: '≥ 7.5', L22: 'bậc 0.5', R12: 'trống' }, focus: 'L35', soDoi: 3,
+  loi: ['Reading 12 câu: chưa có band.', 'Listening 22 câu: band từ 0 đến 9, bậc 0.5 (đang là 5.3).', 'Listening 35 câu: 7.0 thấp hơn 34 câu (7.5) — band không giảm khi số câu tăng.'],
+}); { const t = el.querySelector('.panel-than'), o = el.querySelector('.o-so.focus'); t.scrollTop = o.getBoundingClientRect().top - t.getBoundingClientRect().top - 260; } });
+</script>
+</body>
+</html>

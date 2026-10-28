@@ -34,13 +34,15 @@ export type NavQuyen = {
   tutor: boolean;
   /** TU-b: sửa danh sách tutor, gộp, nhận xét (`tutor.manage`) — Head tutor, Quản trị; số "Tutor n" trên menu. */
   tutorSua: boolean;
+  /** BAND-QUY-DOI: xem Quản trị › Bảng quy đổi (chỉ đọc) — Quản lý không có `admin` vẫn vào được trang Quản trị, chỉ tab này. */
+  bangQuyDoi: boolean;
 };
 
 export const NAV_RONG: NavQuyen = {
   overview: true, students: false, admin: false, analysis: false, phanTichGv: false, hvCuaToi: false,
   test: false, testGrade: false, testSchedule: false, testPlan: false,
   work: false, workSupport: false, workOps: false, workReports: false, workApprove: false, workRequests: false, workChamDiem: false,
-  xuatMt: false, tutor: false, tutorSua: false,
+  xuatMt: false, tutor: false, tutorSua: false, bangQuyDoi: false,
 };
 
 export type KhuVucMuc = { key: KhuVuc; to: string; label: string; labelNgan: string };

@@ -214,6 +214,8 @@ export type CoordinationTurn = {
   ketQua: { chinh: string; phu: string | null; pct: string | null; dat: boolean | null } | null;
   /** Kỹ năng đang trượt ở lượt này (từ tín hiệu còn hiệu lực). */
   skills: string[]; skillLabels: string[];
+  /** Chữ ngắn của kỹ năng cho chip SOS ("R", "W"). */
+  kyNangNgan: string[];
   summary: ReturnType<typeof coordinationSummary>;
   actions: CoordinationAction[];
   canAct: boolean;
@@ -310,7 +312,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       attemptId, attemptNo: a.attempt_no, studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
       classId: a.class_id ?? null, classCode: a.class_code ?? null,
       sosLevel, nhanDot: laMock ? null : nhanDot(a.kind, a.attempt_no), ketQua,
-      skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)),
+      skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)), kyNangNgan: skills.map((s) => tenMonNgan(a.programme_code, s)),
       summary: coordinationSummary(list.map((r) => r.status)),
       actions: list.map((r) => {
         const x = shapeAction(r, attachments);

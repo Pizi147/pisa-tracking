@@ -3,6 +3,7 @@
  * bảng quy đổi số câu → band dùng chung (web xem trước band). Mỗi phép kiểm dựng ca trong một giao dịch rồi cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';   // LOC-HIEN-TAI: ca dựng chỉ chọn lượt hiện tại (bảng điểm lớp bỏ lượt lộ trình cũ)
 
 export async function runPrOv4bTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId } = t;
@@ -29,7 +30,7 @@ export async function runPrOv4bTests(t: YThucTestKit) {
   const WS = '2026-11-02', TRONG = '2026-11-04';
   const W = week.ensurePeriod(WS).id as number;
   const luot = (one(
-    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL AND ${LUOT_LO_TRINH_CUOI_SQL('a')}
       WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0 ORDER BY a.id DESC LIMIT 1`, lop)?.id) as number;
   /** Lượt về sạch: mọi kỹ năng bắt buộc ở tuần W, chưa điểm. */
   const dung = (aid: number) => {
@@ -43,12 +44,13 @@ export async function runPrOv4bTests(t: YThucTestKit) {
   };
   const dong = (aid: number, s: string) => one('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', aid, s);
 
-  check('OV4b-0 · bảng quy đổi số câu → band ở shared (web xem trước) trùng bảng máy chủ', () => {
+  check('OV4b-0 · web xem trước band theo cùng hàm + cùng bảng với máy chủ (BAND-QUY-DOI: bảng ở DB)', () => {
+    const bang = dm.BANG_QUY_DOI_GOC;
     for (const k of ['listening', 'reading'] as const) {
       for (let n = 0; n <= 40; n += 1) {
-        assert(dm.bandTuSoCau(k, n) === scoring.bandFromRaw(k, n), `${k} ${n}: ${dm.bandTuSoCau(k, n)} ≠ ${scoring.bandFromRaw(k, n)}`);
+        assert(dm.bandTuSoCau(bang, k, n) === scoring.bandFromRaw(k, n, bang), `${k} ${n}: ${dm.bandTuSoCau(bang, k, n)} ≠ ${scoring.bandFromRaw(k, n, bang)}`);
       }
-      assert(dm.bandTuSoCau(k, 41) === null && dm.bandTuSoCau(k, -1) === null && dm.bandTuSoCau(k, 2.5) === null, `${k}: ngoài 0–40 phải null`);
+      assert(dm.bandTuSoCau(bang, k, 41) === null && dm.bandTuSoCau(bang, k, -1) === null && dm.bandTuSoCau(bang, k, 2.5) === null, `${k}: ngoài 0–40 phải null`);
     }
   });
 
@@ -123,7 +125,8 @@ export async function runPrOv4bTests(t: YThucTestKit) {
     const khac = ['listening', 'reading', 'writing', 'speaking'].find((k) => !mon.includes(k));
     assert(mon.length && khac, `GVBM MB FOU 12 dạy ${mon}`);
     /* Bài chưa hoàn tất (R11: bài đã hoàn tất chỉ Quản lý sửa — kể cả nhận xét). */
-    const a = all(`SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.archived_at IS NULL
+    const a = all(`SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.archived_at IS NULL AND s.status = 'active'
+        AND ${LUOT_LO_TRINH_CUOI_SQL('a')}
       WHERE a.class_id = ? AND a.kind != 'mt0' AND a.status != 'cancelled' ORDER BY a.id`, LOP)
       .map((x) => x.id as number).find((id) => !hoanTat.dotHoanTat(id, t.TODAY).hoanTat)!;
     assert(a, 'cần một bài lớp thường chưa hoàn tất ở MB FOU 12');

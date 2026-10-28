@@ -41,7 +41,7 @@ const NUT_CUA_NHOM: Record<string, string> = {
 };
 
 /**
- * PANEL MỘT EM (OV-12f, mockup panel v3 §9, mockup 3 v2 P1–P3) — Học viên & Lớp › Mở ở MỌI góc. Một `KhungPanel`: đầu = tên em (↗ hồ sơ là link xem,
+ * PANEL MỘT EM (OV-12f, mockup panel v3 §9, mockup 3 v2 P1–P3) — Học viên & Lớp › Mở ở MỌI góc. Một `KhungPanel`: đầu = tên em (hồ sơ là link xem,
  * tách khỏi nút làm việc) · lớp · lượt · SOS. Mỗi Case một dòng (kỹ năng · nguyên nhân · trạng thái chữ); Case có việc của người xem mở sẵn với khối
  * Cần làm (việc lấy từ `/my-work` — cùng nguồn Công việc / góc Cần làm), Case khác gập. Bấm việc → Ngăn Case sẵn có THAY nội dung panel ("← tên em"),
  * lưu xong về đúng panel này (không panel lồng panel). TVV / CX chỉ đọc + Phụ huynh.
@@ -96,14 +96,14 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
     if (dangMo(c)) { s.delete(c.id); s.add(-c.id); } else { s.add(c.id); s.delete(-c.id); }
     return s;
   });
-  /* OV-12e — đầu panel v3 chung (mockup v3 §9): tên em · chip hạn = việc gấp nhất của người xem / Hồ sơ ↗ · lớp · lượt · SOS. */
+  /* OV-12e — đầu panel v3 chung (mockup v3 §9): tên em · chip hạn = việc gấp nhất của người xem / Hồ sơ · lớp · lượt · SOS. */
   const gapNhat = (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
     .filter((x) => x.studentId === studentId && VIEC_CUA_NHOM[x.group] && x.due && LOAI_HAN_CUA_VIEC[x.group])
     .sort((a, b) => a.due!.localeCompare(b.due!))[0];
   const dau = {
     han: gapNhat ? <ChipHan loai={LOAI_HAN_CUA_VIEC[gapNhat.group]!} han={gapNhat.due} /> : null,
     dong2: data ? [
-      <Link className="link inline-flex min-h-[44px] items-center sm:min-h-0" to={`/hoc-vien/${studentId}`}>{t('Hồ sơ')} <span aria-hidden className="text-xs">↗</span></Link>,
+      <Link className="link inline-flex min-h-[44px] items-center sm:min-h-0" to={`/hoc-vien/${studentId}`}>{t('Hồ sơ')}</Link>,
       lop, data.luot?.nhan ? dich(data.luot.nhan) : null,
       data.luot?.sosLevel ? <ChipSos muc={data.luot.sosLevel} dot={data.luot.nhan ? dich(data.luot.nhan) : null} /> : null,
     ] : [],

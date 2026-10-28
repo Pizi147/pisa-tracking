@@ -145,7 +145,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const rawCot = RAW_SKILLS.filter(hien), wCot = W_SKILLS.filter(hien);
   /* P8 (mockup k6): chú giải ở hàng công cụ + cột Overall đủ chỗ cho "Không đủ bộ môn" chỉ khi lưới có ô "Không học". */
   const coKhongHoc = data.rows.some((r) => r.cells.some((c) => c.khongHoc));
-  /* UI-LICH-TUAN (mockup khu a): ở Lịch tuần (có `sEx`) Kỳ vọng / Overall là cột thường (không dải nổi bật), tên em chữ đậm + ↗. */
+  /* UI-LICH-TUAN (mockup khu a): ở Lịch tuần (có `sEx`) Kỳ vọng / Overall là cột thường (không dải nổi bật), tên em chữ đậm (link, không ký hiệu mũi tên). */
   const lich = sEx !== undefined;
   /* Cột theo đúng những cột đang hiện (BANG-1: định nghĩa cột của `Bang`). */
   const goiYO = (s: string) => (s === 'listening' || s === 'reading'
@@ -388,7 +388,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
     <tr className={`do-hang ${row.ngungHoc ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`} data-hv={row.studentId}>
       {/* Tên + chip "Đủ điểm" một dòng; MỘT dòng phụ: dòng thi (Điểm theo lớp) · "lịch sử" · dấu lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
-        <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline after:shrink-0 after:text-[13px] after:font-normal after:text-slate-500 after:content-['↗']" : ''}`}>
+        <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline" : ''}`}>
           <Link className="link min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
         </span>
@@ -512,7 +512,7 @@ function ChipSEx({ d, ten, studentId }: { d: SExTuan[number]; ten: string; stude
 }
 
 /**
- * THẺ MỘT EM (điện thoại, Lịch tuần — mockup 375 khu a): tên ↗ · "MT3 · kỳ vọng 6.0" · kết quả bên phải; 5 ô L R W1 W2 S (ô `ODiemMt` cỡ lớn,
+ * THẺ MỘT EM (điện thoại, Lịch tuần — mockup 375 khu a): tên (link) · "MT3 · kỳ vọng 6.0" · kết quả bên phải; 5 ô L R W1 W2 S (ô `ODiemMt` cỡ lớn,
  * cùng hộp nhập / "Lưu · em tiếp ›" / lưu của bảng — không luật thứ hai); dòng dưới: dấu lưu + chip S Ex.
  */
 function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx }: {

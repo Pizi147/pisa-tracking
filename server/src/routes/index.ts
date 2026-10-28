@@ -102,6 +102,7 @@ import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
 import * as gioiHan from '../platform/gioiHanThu.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
+import * as bangQuyDoiSvc from '../platform/bangQuyDoi.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
 import * as tongQuanSvc from '../worklist/tongQuan.ts';
@@ -3031,3 +3032,7 @@ api.get('/admin/routes', requireAuth, wrap((req) => {
 api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));
 api.get('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.listProgrammes(principalOf(req))));
 api.put('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.saveProgramme(principalOf(req), req.body ?? {})));
+/* BAND-QUY-DOI: bảng quy đổi số câu → band. `/ref` = bảng đang dùng (hộp nhập điểm xem trước band); `/admin` = phiên bản (QT sửa, QL xem). */
+api.get('/ref/bang-quy-doi', requireAuth, wrap(() => bangQuyDoiSvc.bangHienHanh()));
+api.get('/admin/bang-quy-doi', requireAuth, wrap((req) => bangQuyDoiSvc.xemBangQuyDoi(principalOf(req))));
+api.put('/admin/bang-quy-doi', requireAuth, wrap((req) => bangQuyDoiSvc.luuBangQuyDoi(principalOf(req), req.body ?? {})));

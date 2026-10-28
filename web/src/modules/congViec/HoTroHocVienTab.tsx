@@ -99,7 +99,7 @@ export function HoTroHocVienTab() {
   /* GV không gửi `nguoi` — `/my-work` không tham số giữ NGUYÊN hành vi cũ (Q3). OV-15d: QL đọc "tất cả" MỘT lần, Của tôi / Của GV lọc tại máy (cùng danh sách, cùng số). */
   if (laQuanLy) qs.set('nguoi', typeof nguoi === 'number' ? String(nguoi) : 'tat-ca');
   const url = `/my-work${qs.toString() ? `?${qs}` : ''}`;
-  const { data, loading, error, reload } = useApi<Work>(url, [url]);
+  const { data, loading, error, reload, cu } = useApi<Work>(url, [url], { giuCu: true });
 
   const { homNay } = useNgayNghiepVu();
   /*
@@ -374,7 +374,7 @@ export function HoTroHocVienTab() {
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       <div className="lg:grid lg:grid-cols-[520px_minmax(0,1fr)] lg:items-start lg:gap-4 xl:grid-cols-[600px_minmax(0,1fr)]">
-        <div className={anTrenDienThoai}>
+        <div className={`${anTrenDienThoai} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* V5: lỗi tải chỉ ở vùng danh sách — đầu trang, bộ lọc giữ. */}
           {error && <Card><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>}
           {!error && loading && !data && <Card><Skeleton rows={8} /></Card>}

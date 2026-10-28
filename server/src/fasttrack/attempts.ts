@@ -41,7 +41,7 @@ import {
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -738,6 +738,21 @@ function ownersByClass(classIds: number[]): Map<number, Record<string, string>> 
   return map;
 }
 
+/**
+ * T18 (PR-LT3): người làm từng môn — Speaking Mock → "GV chấm chéo" (không phải GVBM S, không phải "chưa phân công"); null = chưa phân công.
+ * Danh sách lượt (`pendingOwners`) + hồ sơ lượt FT / lớp thường (`nguoiLam`, LUOT-TEN-GV) cùng một luật.
+ */
+function nguoiLamMon(rec: Record<string, string>, skills: readonly string[], kind: string): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const s of skills) out[s] = laChamCheo(kind, s) ? CHAM_CHEO : rec[s] ?? null;
+  return out;
+}
+
+/** LUOT-TEN-GV: người làm từng môn của MỘT lượt (lớp lúc Test) — tên ở "Còn lại" / cột Trạng thái của trang lượt. */
+export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[], kind: string): Record<string, string | null> {
+  return nguoiLamMon(classId !== null ? ownersByClass([classId]).get(classId) ?? {} : {}, skills, kind);
+}
+
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
@@ -766,7 +781,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   }
   /* PR-S6F-a Q2: một điều kiện "em đang học" — cả danh sách "cần chấm" (`my_scores`), đích của badge "n bài chờ chấm" (số = danh sách). */
   /* PR-Dọn (Q9): và CÙNG luật Nợ điểm (`scoreDebt.ts`) — lớp đã kết thúc không sinh việc nhập điểm. */
-  if (f.chiDangHoc || f.need === 'my_scores') where.push(HV_DANG_HOC_SQL('s'), `c.status = 'active'`);
+  /* Lỗi chủ SP 28/10: "đang học" của danh sách hiện tại = lượt hiện tại (lộ trình mới nhất + em đang học) — Lịch Test, Công việc, chip GVCN. */
+  if (f.chiDangHoc || f.need === 'my_scores') where.push(LUOT_HIEN_TAI_SQL('a', 's'), `c.status = 'active'`);
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   const today = demoToday();
@@ -793,13 +809,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   const ownersMap = ownersByClass(
     rows.map((r) => r.class_id).filter((id): id is number => id !== null),
   );
-  /* T18 (PR-LT3): Speaking Mock → "GV chấm chéo" (không phải GVBM S, không phải "chưa phân công"). */
-  const ownersOf = (classId: number | null, skills: string[], kind: string): Record<string, string | null> => {
-    const rec = (classId !== null && ownersMap.get(classId)) || {};
-    const out: Record<string, string | null> = {};
-    for (const s of skills) out[s] = laChamCheo(kind, s) ? CHAM_CHEO : rec[s] ?? null;
-    return out;
-  };
+  const ownersOf = (classId: number | null, skills: string[], kind: string) => nguoiLamMon((classId !== null && ownersMap.get(classId)) || {}, skills, kind);
 
   /*
    * Lớp thường chấm theo số câu đúng chứ không theo band, nên KHÔNG được đo bằng bộ kỹ năng
@@ -1201,6 +1211,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     lopHienTai: lopHienTaiCua(a.student_id, a.class_id),
     /** HSL-MAY-CHU (N10): lượt S Ex của em trong các tuần của lượt — chỉ đọc, ngoài Overall / SOS. */
     sEx: (sExCuaHv(p, [a.student_id], today).get(a.student_id) ?? []).filter((x) => tuanLuot.has(x.tuan)),
+    /** LUOT-TEN-GV: người được phân công từng ô (`writing1` / `writing2` riêng — như phân công FT; Speaking Mock = "GV chấm chéo", null = chưa phân công). */
+    nguoiLam: nguoiLamCuaLuot(a.class_id, ENTRY_SKILLS, a.kind),
     /* OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
     phuTrachS: laChamCheo(a.kind, 'speaking') && quyenPhuTrachS(p, a.class_id),
     attemptNo: a.attempt_no,
@@ -2331,8 +2343,12 @@ export function saveScore(
       } else if (isRawSkill(skill)) {
         if (patch.rawScore !== undefined) raw = patch.rawScore;
         if (patch.rawTotal !== undefined) total = patch.rawTotal;
-        /* Ô chỉ có band nhập thẳng (T10) mà lần ghi này không đụng số câu → giữ band. */
-        if (raw !== null || patch.rawScore !== undefined) band = raw === null || raw === undefined ? null : bandFromRaw(skill, raw);
+        /* Ô chỉ có band nhập thẳng (T10) mà lần ghi này không đụng số câu → giữ band. BAND-QUY-DOI: band tính lại theo bảng ĐANG DÙNG chỉ khi số câu
+           đổi (hoặc xoá, hoặc ô chưa có band) — sửa ghi chú / ngày / gửi lại y số cũ (dán lại cả bảng) giữ band đã lưu, nên đổi bảng không đổi điểm cũ.
+           Ô cũ có số câu mà band NULL (dữ liệu cũ): lần ghi không gửi số câu vẫn tính band như trước (rà #666). */
+        const doiSoCau = (patch.rawScore !== undefined && (patch.rawScore === null || patch.rawScore !== (existing?.raw_score ?? null) || band === null))
+          || (patch.rawScore === undefined && raw !== null && raw !== undefined && band === null);
+        if (doiSoCau) band = raw === null || raw === undefined ? null : bandFromRaw(skill, raw);
         crit = [null, null, null, null];
       } else if (isCriteriaSkill(skill)) {
         if (patch.criteria !== undefined) {
@@ -2507,6 +2523,8 @@ export function classScoreSheet(
 
   const params: unknown[] = [classId];
   let sql = `${ATTEMPT_SELECT} WHERE a.class_id = ? AND a.status != 'cancelled'`;
+  /* Lỗi chủ SP 28/10: lớp đang học chỉ hiện lượt hiện tại (lộ trình mới nhất, em đang học hoặc Tạm dừng); lớp đã kết thúc (Lưu trữ) giữ đủ lịch sử. */
+  if (cls.status !== 'finished') sql += ` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`;
   /*
    * LỌC THEO LỊCH TỪNG KỸ NĂNG, KHÔNG THEO TUẦN CỦA CẢ ĐỢT.
    *
@@ -2602,7 +2620,7 @@ export function baiChamSpeaking(p: Principal, today = demoToday()) {
     attempts.push(...conn.prepare(
       `${ATTEMPT_SELECT}
         WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
-          AND ${HV_DANG_HOC_SQL('s')} AND c.status = 'active' AND ${TUAN_S_SQL} <= ?
+          AND ${LUOT_HIEN_TAI_SQL('a', 's')} AND c.status = 'active' AND ${TUAN_S_SQL} <= ?
           AND (NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'speaking' AND ${O_FT_XONG_SQL('sc', 'a')})
             OR ${TUAN_S_SQL} >= ?)`,
     ).all(...lo, today, tuanTruoc) as any[]);

@@ -15,7 +15,7 @@ import { nhapRowToView, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 import { standingFor } from '../students/standing.ts';
 import { cuoiKhoaTheoHocVien, tyLeTongLo } from '../normal/cuoiKhoa.ts';
-import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL, khoangTamDung } from '../students/tamDung.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
 
@@ -157,6 +157,7 @@ export function transitionPlan(p: Principal, classId: number) {
   if (!ft && sids.length) {
     for (const r of conn.prepare(
       `SELECT a.id, a.student_id, rp.week_start FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+         JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: Progress của lộ trình hiện tại
         WHERE a.class_id = ? AND a.kind = 'progress' AND a.status != 'cancelled' ORDER BY a.id`,
     ).all(classId) as any[]) luotPg.set(r.student_id, { id: r.id, tuan: r.week_start ?? null });
   }

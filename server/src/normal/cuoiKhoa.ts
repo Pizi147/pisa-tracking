@@ -1,4 +1,5 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';
 import {
   CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
   type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot,
@@ -83,7 +84,8 @@ export function chuCuoiKhoaLo(classId: number, sids: readonly number[]): Map<num
   const luot = new Map<number, number>();
   theoLo([...new Set(sids)], (lo, ph) => {
     for (const r of db().prepare(
-      `SELECT id, student_id FROM assessment_attempts WHERE class_id = ? AND kind = 'final' AND status != 'cancelled' AND student_id IN (${ph}) ORDER BY id`,
+      `SELECT a.id, a.student_id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'final' AND a.status != 'cancelled' AND a.student_id IN (${ph})
+          AND ${LUOT_LO_TRINH_CUOI_SQL('a')} ORDER BY a.id`,   // lỗi chủ SP 28/10: Cuối khoá của lộ trình hiện tại
     ).all(classId, ...lo) as any[]) luot.set(r.student_id, r.id);
   });
   const t = tyLeTongLo([...luot.values()]);
@@ -135,7 +137,8 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o
   /* `daRoi` (PR-S5F-a): cả em đã chuyển khỏi lớp — hồ sơ HV sau chuyển vẫn thấy % Cuối khoá của lớp cũ. */
   const dong = conn.prepare(
     `SELECT e.student_id, a.id AS attempt_id FROM enrollments e
-       LEFT JOIN assessment_attempts a ON a.student_id = e.student_id AND a.class_id = e.class_id AND a.kind = 'final' AND a.status != 'cancelled'
+       LEFT JOIN assessment_attempts a ON a.student_id = e.student_id AND a.class_id = e.class_id AND a.kind = 'final' AND a.status != 'cancelled'${
+         o.daRoi ? '' : ` AND ${LUOT_LO_TRINH_CUOI_SQL('a')}`}   -- lỗi chủ SP 28/10: lộ trình mới nhất của em; hồ sơ (daRoi) giữ lịch sử
       WHERE e.class_id = ? AND e.status ${o.daRoi ? "IN ('active', 'transferred')" : "= 'active'"}${loc} ORDER BY a.id`,
   ).all(classId, ...(sids ?? [])) as any[];
   const luotCuaEm = new Map<number, number | null>();
