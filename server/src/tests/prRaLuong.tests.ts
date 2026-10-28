@@ -82,8 +82,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
 
   check('RA-LUONG-10 · Hồ sơ lớp: badge "n việc quá hạn" đếm bằng `demViec` (cùng đơn vị Công việc / Tổng quan), không đếm dòng', () => {
     const nguon = fsMod.readFileSync('web/src/modules/classes/DauTrangLop.tsx', 'utf8') as string;
-    const dong = nguon.split('
-').find((l) => l.includes('const soViecQuaHan')) ?? '';
+    const dong = nguon.split('\n').find((l) => l.includes('const soViecQuaHan')) ?? '';
     assert(/demViec\(/.test(dong) && !/demQuaHan/.test(nguon), `soViecQuaHan: ${dong.trim()}`);
   });
 
