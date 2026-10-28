@@ -7,6 +7,7 @@ So với **main** (đã có #646 màu SOS). Mockup: `thiet-ke/v5/dieu-chinh-cuoi
 |---|---|
 | `truoc-1440.png` · `truoc-375.png` | mockup \| web main (lớp đầu tự mở) |
 | `sau-1440-mac-dinh.png` | mockup \| web sau — vào trang: mọi lớp gập |
+| `sau-1440-gap-can.png` | cận cảnh hàng lớp gập — không còn ô Việc |
 | `sau-1440-mo-lop.png` · `sau-375.png` | mockup \| web sau — người dùng mở MB FT 101 (`?mo=3`) |
 | `truoc-1440-can.png` · `sau-1440-can.png` | cận cảnh hàng em: ô MT gần nhất, tên em, nút lọc |
 
@@ -19,6 +20,7 @@ So với **main** (đã có #646 màu SOS). Mockup: `thiet-ke/v5/dieu-chinh-cuoi
 | Ô MT gần nhất | `OMtGan` + `MiniKn` | SỬA: Overall 15/700 màu kết quả · "/ KV · tuần" 12 mờ · 5 kỹ năng 13/600 lưới cột cố định (thẳng hàng giữa các em) · kỹ năng dưới KV nền đỏ nhạt + chữ đỏ + "Dưới kỳ vọng" cho trình đọc màn (mockup `.mini-kn`) |
 | Nút lọc chọn / không chọn | `.nut-loc` (toàn web) | SỬA theo mockup `.chip`: không chọn viền ô nhập (3,8 : 1, trước 30 % gần chìm), chữ 600; đang chọn viền màu nhấn sáng (10,2 : 1) |
 | Hàng "Đã thi" | `tr.hang-da-thi` (+ thẻ 375) | THÊM theo mockup `.da-thi`: nền + vạch trái màu lịch — "Đã thi 24/10" khác "Thi 28/11" không chỉ bằng chữ |
+| Hàng lớp không còn việc (chủ SP 28/10) | `DauLop`: bỏ ô Việc cấp lớp (Nhập điểm…, Phối hợp SOS, Chốt lộ trình, Bàn giao, Xem thêm); giữ ô SOS + chip tình trạng | BỎ — hàng lớp một dòng đều nhau (`sau-1440-gap-can.png`) |
 | 375: hàng lớp | `TheHvGon` | SỬA: cả dải bấm mở / gập, mũi tên cạnh mã lớp (critique P1) |
 | Chip SOS, ô đếm SOS, PA quá hạn, Report n, Lịch thi, hạn ⚠, n bài chờ chấm | `ChipSos`/`lopSos`, `OSosLop`, `Nhan`, `NhanLich` | GIỮ — token đã = mockup (`bang-mau-moi .sau` + `mau-muc .sau`), đo bên dưới |
 
@@ -27,9 +29,10 @@ So với **main** (đã có #646 màu SOS). Mockup: `thiet-ke/v5/dieu-chinh-cuoi
 |---|---|---|
 | Vào trang | lớp đầu tự mở | mọi lớp gập; bấm hàng lớp / ▸ để mở; Quay lại giữ lớp đã mở (`mo` trên URL) |
 | Tìm / chip lọc | mở lớp có em khớp | giữ |
+| Việc cấp lớp (Nhập điểm cả lớp, Phối hợp SOS, Chốt lộ trình, Bàn giao…) | nút trên hàng lớp, mở panel tại chỗ | Công việc (cùng việc) · Hồ sơ lớp › Việc cần làm · chip hàng lớp: "n bài chờ chấm" → Lịch Test, "n chờ duyệt" → Công việc › Chờ duyệt, "n HV chưa chốt lộ trình" → Hồ sơ lớp · ⋯ lớp › Nhập điểm (panel) giữ |
 | Tên em / mã lớp → hồ sơ | link có ↗ | link không ↗ (cùng đích, cùng `state.ds`) |
 | Lọc, tìm, phân trang, Xuất Excel, + Thêm học viên, ⋯ lớp / em, hộp "Vì sao SOS", việc bấm mở panel tại chỗ, Xem thêm | có | giữ nguyên |
-Không mất thao tác nào.
+Không mất thao tác nào (việc cấp lớp đổi lối vào, như trên).
 
 ## Đo tương phản (computed trên trang, demo QL)
 | Phần tử | Tối chữ / mép | Sáng chữ / mép |

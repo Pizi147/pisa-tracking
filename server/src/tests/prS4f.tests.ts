@@ -276,6 +276,9 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const sp = docWeb('modules/students/StudentsPage.tsx');
     assert(sp.includes(": dangLoc ? nhomLop.map((g) => g.id) : []);") && !sp.includes('nhomLop.slice(0, 1)'), 'HV-LOP-GON: lớp gập mặc định');
     assert(!docWeb('modules/students/DanhSachHvLop.tsx').includes('`TVV ${h.tvv}`'), 'HV-LOP-GON: bỏ dòng TVV dưới tên em');
+    /* Chủ SP 28/10: hàng lớp không còn việc cấp lớp (làm ở Công việc / Hồ sơ lớp); chip tình trạng giữ. */
+    const dau = sp.slice(sp.indexOf('function DauLop'), sp.indexOf('function DaiLop'));
+    assert(!dau.includes('OViec') && dau.includes('<NhanLop'), 'HV-LOP-GON: hàng lớp không có ô Việc, còn chip tình trạng');
     assert(b.includes('<DongCham chu={k.dong1}')   /* UXF-b: thêm lienKet (link tên lượt) */ && b.slice(b.indexOf('function DongCham')).includes('whitespace-nowrap'), 'DongCham');
     assert(docWeb('ui/TheDong.tsx').includes('grid-cols-[5.5rem_minmax(0,1fr)] items-baseline'), 'TheDong items-baseline');
     assert(docWeb('modules/classes/ClassIssueBoard.tsx').includes('td text-right tabular-nums"><TyLe'), 'Tỷ lệ tabular-nums');
