@@ -50,7 +50,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
       </div>
       <section className="card" aria-labelledby="gv-qua-han">
         <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">
-          <h2 id="gv-qua-han" className="m-0 text-[15px] font-semibold text-slate-100">GV chấm quá hạn</h2>
+          <h2 id="gv-qua-han" className="h-khoi m-0 text-lg font-bold text-slate-100">GV chấm quá hạn</h2>
           {/* M6 6b-4 (Q5): số GV mở panel theo GV → lớp · lượt · kỹ năng → em còn trống → Nhập hộ; số = số nhóm GV của panel (cùng tập). */}
           {soGv > 0 && (
             <span className="text-xs text-slate-500">

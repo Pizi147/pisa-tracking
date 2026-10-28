@@ -326,7 +326,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
         <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${lui ? 'flex-wrap pb-2.5 pt-1.5' : vachLoai || cvNgoai?.them ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
           {hangLui}
           {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
-          <h2 className="m-0 min-w-0 truncate text-sm font-bold text-slate-100" title={tieuDe}>{tieuDe}</h2>
+          <h2 className="m-0 min-w-0 truncate text-[17px] font-bold text-slate-100" title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           {nutXem}
@@ -353,10 +353,11 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
           <footer className={`shrink-0 border-t ${taiCho ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
-            <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
+            {/* RA-UI-1 (mockup `v7/khai-bac-lo.html` #w375): 375 — dòng trạng thái / đếm lên đầu chân, mọi nút chia đều MỘT hàng (Huỷ | Lưu, Lưu không còn nhỏ lệch trái). */}
+            <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 max-sm:[&>.btn]:flex-1 max-sm:[&>.btn]:justify-center">
               {huy && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>}
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? t('Xoá')}</button>}
-              {chan.trai ? <span className="flex min-w-0 flex-1 items-center gap-2 text-[13px] max-sm:basis-full">{chan.trai}</span> : <span className="flex-1" />}
+              {chan.trai ? <span className="flex min-w-0 flex-1 items-center gap-2 text-[13px] max-sm:order-first max-sm:basis-full">{chan.trai}</span> : <span className="flex-1 max-sm:hidden" />}
               {chan.phu}
               {chan.chinh}
             </div>

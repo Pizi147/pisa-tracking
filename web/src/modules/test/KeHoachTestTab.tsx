@@ -7,6 +7,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Menu } from '../../ui/Menu.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
 import { NganXepLichMt } from './keHoach/NganXepLichMt.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
@@ -29,6 +30,7 @@ export function KeHoachTestTab() {
   const { branchCount } = useSession();
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const macDinh = useChiNhanhMacDinh();
+  const dienThoai = useDienThoai();
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
   const loaiParam = params.get('loai') as 'ft' | 'thuong' | null;
   const classIdParam = params.get('classId') ? Number(params.get('classId')) : null;
@@ -125,9 +127,10 @@ export function KeHoachTestTab() {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-x-3 gap-y-2" data-hd="kht-loc">
+      {/* RA-UI-1 (mockup `v7/ke-hoach-test.html` 375): công tắc · Lọc ▾ · ⓘ MỘT hàng — 375 bỏ chữ "lớp" sau số, ô tìm + nút xuất xuống sau (order). */}
+      <div className="flex flex-wrap items-end gap-x-2 gap-y-2 sm:gap-x-3" data-hd="kht-loc">
         {/* MH4: công tắc khung đứng ĐẦU hàng lọc (chỉ hiện khi có cả hai khung). */}
-        <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }} donVi="lớp"
+        <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }} donVi={dienThoai ? '' : 'lớp'}
           onChange={(k) => { if (k !== 'tat-ca') setLoai(k); }} />
         {tuanXem && (
           <span className="pb-1">
@@ -169,7 +172,7 @@ export function KeHoachTestTab() {
             </>
           );
         })()}
-        <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 basis-full sm:basis-auto sm:w-72" />
+        <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 basis-full max-sm:order-1 sm:basis-auto sm:w-72" />
         <span className="pb-2">
           <NutLuat label="Luật xếp lịch Test">
             {loai === 'ft' ? (
@@ -191,10 +194,10 @@ export function KeHoachTestTab() {
             <span className="block">Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.</span>
           </NutLuat>
         </span>
-        <span className="flex-1" />
+        <span className="flex-1 max-sm:order-2" />
         {loai === 'ft' && coXep && (
           /* OV-15c: Xuất Excel Kế hoạch Test 13 cột (C17) theo bộ lọc đang xem + Xuất điểm Test (mockup 6 khung 9). */
-          <span className="flex flex-wrap items-center gap-2">
+          <span className="flex flex-wrap items-center gap-2 max-sm:order-2">
             <span className="text-xs tabular-nums text-slate-400">{t('{n} học viên', { n: danhSach.reduce((n, l) => n + l.soHv, 0) })}</span>
             <span className="hidden gap-2 sm:flex">
               <button type="button" className="btn btn-sm" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
@@ -212,7 +215,7 @@ export function KeHoachTestTab() {
           </span>
         )}
         {coXep && (
-          <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
+          <button type="button" className="btn btn-primary btn-sm min-h-[44px] max-sm:order-2 sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
             onClick={() => setXep(loai)}>
             {loai === 'ft' ? 'Xếp nhiều MT…' : 'Xếp lịch Test…'}
           </button>
