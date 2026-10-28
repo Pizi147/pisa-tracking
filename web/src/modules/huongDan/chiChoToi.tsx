@@ -36,9 +36,14 @@ export function KhoanhPhanTu() {
     if (!chi) return undefined;
     setKhung(null); setKhongThay(false);
     let lan = 0;
+    let truoc = NaN;
     const id = window.setInterval(() => {
       const x = [...document.querySelectorAll([chi.hd].flat().map((h) => `[data-hd="${h}"]`).join(','))].find(thay);
-      if (x) {
+      /* HD-CHI: đợi phần tử đứng yên một nhịp — khối phía trên còn tải (Yêu cầu của tôi trên "Lớp tôi dạy") sẽ đẩy nó ra ngoài màn sau khi cuộn. */
+      const top = x ? x.getBoundingClientRect().top : NaN;
+      const yen = top === truoc;
+      truoc = top;
+      if (x && yen) {
         window.clearInterval(id);
         el.current = x;
         x.scrollIntoView({ block: 'nearest', inline: 'nearest' });
