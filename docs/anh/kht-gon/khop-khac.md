@@ -33,9 +33,17 @@ Dữ liệu mockup là dữ liệu giả (Cầu Giấy, MT1–MT7); web là seed
 | ⓘ chú giải 6 dòng | `ChuGiaiGon` (mẫu dựng bằng chính ô) | KHỚP |
 | 375: Xuất ▾ | `Menu` "Xuất" (sm:hidden) | KHỚP; ⓘ nằm cùng hàng ô tìm thay vì cạnh công tắc (hàng công cụ sẵn có tự xuống dòng) |
 | Hộp một đợt, ngăn Xếp nhiều MT, Xuất | giữ `HopKyNang`, `NganXepLichMt`, `NganXuat*` | GIỮ (mockup ghi "giữ HopKyNang hiện có") |
-| "+ 2 HV · Hiện tất cả 9" và "+ Ghi chú lớp" một hàng | hai hàng như cũ | KHÁC nhỏ: hai thành phần sẵn có (hàng trong bảng / chân thẻ) |
+| "+ 2 HV · Hiện tất cả 9" và "+ Ghi chú lớp" một hàng | chân lớp một hàng | KHỚP |
+| (không vẽ) Lớp dài thu gọn: 10 em đầu | 10 em đầu + MỌI em cần chú ý (cần xếp lại, trễ chấm, MT kế tiếp chưa xếp) | THÊM (critique P1, nguyên tắc "không em nào bị bỏ sót") |
+
+[XM] cho chủ SP chọn (không tự đổi, ngoài phạm vi màn):
+- Nút "Xếp nhiều MT…" ở chế độ tối: mockup tô kín xanh nhạt; web giữ nút chính có viền theo DESIGN D4 (27/10).
+- Công tắc "✓ Fast Track · n lớp" (thành phần chung `CongTacKhung`) khác mockup "Fast Track  4"; ở 375 công tắc chiếm một hàng, "Lọc ▾" xuống hàng sau.
+- Hộp một đợt (`HopKyNang`, mockup ghi "giữ"): chip trạng thái dòng kỹ năng là viên nền nhạt, nút "Xóa" cùng hàng Đóng / Lưu — critique đề nghị dời Xóa vào ⋯; để PR riêng nếu chủ SP muốn.
+- Tóm tắt lớp "MT2 chưa xếp 1 em" (máy chủ `tomTatLopFT`) có thể nói số MT khác ô "Xếp MT1" của em vào muộn chưa có MT nào — luật đếm máy chủ cũ, không đổi trong PR này.
 
 BỎ: dòng "L R W S" ở mọi ô · năm `2026` · chữ "Overall" (ở tooltip + câu đọc) · chữ "đã xếp" · khung viền mọi ô · chip "MTn · chưa xếp" ở mọi MT sau MT kế tiếp · dòng vắng lặp từng môn (`L vắng W2 OCT · R vắng W2 OCT · …`).
+"↗" (chủ SP 28/10 bỏ toàn web): "Mở MTn mới ↗" trong hộp Khôi phục → "Mở MTn mới ›".
 GIỮ: mọi thao tác (bảng dưới), chú giải luật, ghi chú lịch / ghi chú lớp sửa tại chỗ, tooltip đầy đủ, câu đọc màn.
 
 ## Thao tác TRƯỚC → SAU

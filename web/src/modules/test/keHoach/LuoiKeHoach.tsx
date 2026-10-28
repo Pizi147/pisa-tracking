@@ -91,8 +91,11 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
     && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || o?.trangThai === 'da-huy'));
   const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiCanXepLai || canXepLai(h));
   /* UI-CHAM-TEST (mockup khu a): lớp dài hiện HANG_GON em đầu + "Hiện tất cả n"; đang tìm em / lọc "Cần xếp lại" thì hiện hết. */
-  /* KHT-GON (critique): lớp dài thu gọn vẫn hiện MỌI em cần chú ý (cần xếp lại, trễ chấm) — không em nào bị khuất sau "Hiện tất cả". */
-  const canChuY = (h: HangFT | HangThuong) => canXepLai(h) || (!!homNay && Object.values((h as HangFT).dot ?? {})
+  /* KHT-GON (critique): lớp dài thu gọn vẫn hiện MỌI em cần chú ý (cần xếp lại, trễ chấm, MT kế tiếp chưa xếp trong cột đang vẽ) —
+     không em nào bị khuất sau "Hiện tất cả". */
+  const chuaXepKeTiep = (h: HangFT | HangThuong) => loai === 'ft' && (data as LuoiFTData).cot.includes((h as HangFT).soKeTiep)
+    && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.attemptId && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.huy;
+  const canChuY = (h: HangFT | HangThuong) => canXepLai(h) || chuaXepKeTiep(h) || (!!homNay && Object.values((h as HangFT).dot ?? {})
     .some((d) => oGon(d.kn, homNay)?.tt?.loai === 'tre'));
   const hangs = hetHang || hvChon || chiCanXepLai || tatCa.length <= HANG_GON + 2 ? tatCa
     : tatCa.filter((h, i) => i < HANG_GON || canChuY(h));
@@ -200,22 +203,20 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
               <td className="td" aria-hidden />
             </tr>
           ))}
-          {hangs.length < tatCa.length && (
-            <tr>
-              <td colSpan={2 + cots.length + (loai === 'ft' && !chiXem ? 1 : 0)} className="td sticky-col py-2 text-[13px] text-slate-400">
-                {t('+ {n} HV', { n: tatCa.length - hangs.length })} ·{' '}
-                <button type="button" className="link appearance-none border-0 bg-transparent p-0 max-sm:min-h-[44px]" onClick={() => setHetHang(true)}>
-                  {t('Hiện tất cả {n}', { n: tatCa.length })}
-                </button>
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
-      {/* C21: ghi chú cả lớp dưới bảng, ghi rõ "Ghi chú lớp". */}
+      {/* Chân lớp MỘT hàng (mockup #659): "+ n HV · Hiện tất cả" trái · ghi chú lớp (C21) phải. */}
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>
+        {hangs.length < tatCa.length && (
+          <span className="text-[13px] text-slate-400">
+            {t('+ {n} HV', { n: tatCa.length - hangs.length })} ·{' '}
+            <button type="button" className="link appearance-none border-0 bg-transparent p-0 max-sm:min-h-[44px]" onClick={() => setHetHang(true)}>
+              {t('Hiện tất cả {n}', { n: tatCa.length })}
+            </button>
+          </span>
+        )}
         {data.ghiChuLop && <b className="text-slate-300">{t('Ghi chú lớp · {lop}', { lop: data.classCode })}</b>}
-        <div className="min-w-0 flex-1">
+        <div className="ml-auto min-w-0 text-right">
           <GhiChuTaiCho khoa={{ classId: data.classId }} ghiChu={data.ghiChuLop ?? null} onDoi={onReload}
             nhan={t('Ghi chú lớp · {lop}', { lop: data.classCode })} them={t('+ Ghi chú lớp')} chiDoc={chiXem} />
         </div>

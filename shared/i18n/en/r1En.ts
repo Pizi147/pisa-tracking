@@ -158,7 +158,7 @@ export const EN_R1_EN = {
   'Đã khôi phục {mt}': 'Restored {mt}',
   '{mt} · Đã huỷ': '{mt} · Cancelled',
   '{mt} cũ · Đã huỷ': 'Past {mt} · Cancelled',
-  'Mở {mt} mới ↗': 'Open new {mt} ↗',
+  'Mở {mt} mới ›': 'Open new {mt} ›',
   'Xếp {mt} mới': 'Schedule new {mt}',
   'Đang khôi phục…': 'Restoring…',
   'Khôi phục {mt}': 'Restore {mt}',
