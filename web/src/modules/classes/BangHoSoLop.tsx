@@ -207,7 +207,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
 
 /** Tên em → hồ sơ HV; mang danh sách đang xem (`state.ds`) để hồ sơ đi Trước / Sau theo đúng thứ tự bảng (PR-DH). */
 function TenEm({ s, ds }: { s: Hang; ds: NguCanhDs }) {
-  return <Link className="truncate font-semibold text-slate-100 no-underline hover:underline" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName} <span aria-hidden className="font-normal text-slate-500">↗</span></Link>;
+  return <Link className="truncate font-semibold text-slate-100 no-underline hover:underline" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>;
 }
 
 /** Kết quả lượt của em: SOS (thay "Chưa đạt" — không hai badge) · Đạt · Chưa đủ dữ liệu; em KCK / đã kết thúc giữ kết luận cũ (`KetLuan`). */

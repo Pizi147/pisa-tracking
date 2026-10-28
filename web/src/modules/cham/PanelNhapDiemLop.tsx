@@ -16,7 +16,7 @@ export function PanelNhapDiemLop({ classId, classCode, luot, onDong, quayLai }: 
   const dau = dauViec({
     ngCanh: (
       <Link className="link" to={`/hoc-vien/lop/${classId}`}>
-        {t('Hồ sơ lớp')} <span aria-hidden className="text-xs">↗</span>
+        {t('Hồ sơ lớp')}
       </Link>
     ),
   });

@@ -15,7 +15,7 @@ export const EN_HD = {
   '"{q}" · {n} mục': '"{q}" · {n} items',
   'Không có mục nào khớp': 'No matching items',
   'Chỉ cho tôi': 'Show me',
-  'Mở trang Hướng dẫn ↗': 'Open the Guide page ↗',
+  'Mở trang Hướng dẫn': 'Open the Guide page',
   'Chưa có việc nào ở đây': 'Nothing here yet',
   'Mới dùng PISA TRACKING?': 'New to PISA TRACKING?',
   'Xem 5 việc hằng tuần của bạn (3 phút)': 'See your 5 weekly tasks (3 min)',

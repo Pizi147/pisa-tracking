@@ -31,7 +31,7 @@ const loaiCua = (l: { mode: LopLichTest['mode']; kind?: string | null }): Loai =
  *   thanh tuần   ‹ W3 SEP 14/09 – 20/09 › · chip Tất cả · Fast Track · n · Lớp thường · n · (Lớp tôi dạy | Tất cả · chi nhánh) · Xuất Excel · Lịch thi thật ›
  *   dải số       n/m bài đã chấm · n bài còn chấm · n bài quá hạn — tuần đang xem (quá hạn theo hôm nay); bấm mở đúng tập
  *   ▸ Quá hạn chấm   theo hôm nay, không đổi khi đổi tuần; thu sẵn; mở dòng → lưới tại chỗ chỉ các em còn nợ
- *   ▸ Test tuần này  hàng lớp gọn một dòng (lớp · HV theo lượt · kỹ năng · tiến độ · hạn dd/mm · trạng thái · ↗ hồ sơ lớp); mở lớp → bảng
+ *   ▸ Test tuần này  hàng lớp gọn một dòng (lớp · HV theo lượt · kỹ năng · tiến độ · hạn dd/mm · trạng thái; mã lớp = link hồ sơ lớp); mở lớp → bảng
  *                    từng HV làm Test trong tuần (MT của em · L R W1 W2 W S · kỳ vọng · Overall · kết quả), sửa điểm tại chỗ theo quyền,
  *                    S Ex là dòng phụ của em (10 mục 6)
  *

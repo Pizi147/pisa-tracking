@@ -488,6 +488,9 @@
   @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
   /* HV-LOC: đổi lọc / tìm — giữ bảng cũ, mờ nhẹ tới khi bản mới về (không khung chờ, không gỡ ô đang gõ). */
   .dang-tai-lai { opacity: 0.55; transition: opacity 120ms; }
+  /* BO-MUI-TEN (chủ SP 28/10): bỏ "↗" sau tên hồ sơ trên toàn web (thay G6 cũ) — tên vẫn là link: rê = màu nhấn + gạch chân, focus-visible như mọi link. */
+  .ten-ho-so::after { content: none; }
+  .ten-ho-so.truncate { padding-right: 0; }
 }
 
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */

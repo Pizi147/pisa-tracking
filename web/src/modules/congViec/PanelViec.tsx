@@ -236,13 +236,13 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
   /** R1-LUU-TIEP: việc kế của danh sách (Công việc, Chấm Test, thanh việc lớp). */
   onTiep?: (() => void) | null;
   /** M6 6b-4 (Nhập hộ ở panel GV chấm quá hạn): chỉ hàng các em của dòng (`emIds`), không chỉ khi một em. 6c (#641 XM-2): lưới gọn như mockup —
-   *  không cột Kết quả, không nút "Cả lớp" (cả lớp: "lớp · lượt ↗" ở đầu panel hoặc "Mở lưới lớp ở Lịch Test ›"). */
+   *  không cột Kết quả, không nút "Cả lớp" (cả lớp: link "lớp · lượt" ở đầu panel hoặc "Mở lưới lớp ở Lịch Test ›"). */
   chiEmViec?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const { data, error, reload } = useApi<BangTheoLuot>(duongDiemTheoLuot(it.classId!, it.luot!), [it.classId, it.luot]);
   const daLuu = () => { reload(); onDaLam(); };
-  /* OV-15b: "lớp · lượt ↗" đổi panel này sang Nhập điểm cả lớp (cùng chỗ, không panel lồng panel); "‹ Việc" quay về việc. */
+  /* OV-15b: link "lớp · lượt" đổi panel này sang Nhập điểm cả lớp (cùng chỗ, không panel lồng panel); "‹ Việc" quay về việc. */
   const [caLop, setCaLop] = useState(false);
   /* Plan mục 4: kỹ năng VÀ tiêu đề giữ như lúc mở — tải lại sau khi lưu (việc còn môn khác) không đổi chữ đầu panel dưới tay người dùng. */
   const [kn] = useState(it.kn ?? null);
@@ -253,12 +253,12 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
   const em = chiEmViec ? emCuaViec(it) : it.studentId !== null ? [it.studentId] : null;
   const chiAttempt = useMemo(() => (data && em
     ? new Set((data.ft?.rows ?? data.thuong?.rows ?? []).filter((r) => em.includes(r.studentId)).map((r) => r.attemptId)) : null), [data, em?.join()]);   // eslint-disable-line react-hooks/exhaustive-deps
-  /* OV-12e: đầu panel v3 — tên việc + chip hạn / lớp · lượt ↗ (xem Điểm theo lớp, tách khỏi ô nhập). */
+  /* OV-12e: đầu panel v3 — tên việc + chip hạn / link lớp · lượt (xem Điểm theo lớp, tách khỏi ô nhập). */
   const dau = dauViec({
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
     lop: it.classCode, ngCanh: (
       <button type="button" className="link text-left" onClick={() => setCaLop(true)}>
-        {dich((laViecChamCheo({ key: it.key ?? '' }) ? it.phu : it.contextLabel) ?? '')} <span aria-hidden className="text-xs">↗</span>
+        {dich((laViecChamCheo({ key: it.key ?? '' }) ? it.phu : it.contextLabel) ?? '')}
       </button>
     ),
   });
@@ -316,7 +316,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
     ngCanh: (
       <Link className="link" to={duongLichTest({ periodId })}>
-        {t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })} <span aria-hidden className="text-xs">↗</span>
+        {t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })}
       </Link>
     ),
   });
