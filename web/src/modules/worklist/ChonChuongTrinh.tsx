@@ -6,7 +6,7 @@ export function ChonChuongTrinh({ value, onChange }: { value: ChuongTrinh; onCha
     <div role="group" aria-label="Chương trình" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
       {CHUONG_TRINH.map((k) => (
         <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)}
-          className={`min-h-[38px] px-3 text-sm border-0 cursor-pointer max-sm:min-h-[44px] ${value === k ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+          className={`min-h-[38px] px-3 text-[15px] border-0 cursor-pointer max-sm:min-h-[44px] ${value === k ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
           {CHUONG_TRINH_LABEL[k]}
         </button>
       ))}
