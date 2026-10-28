@@ -145,10 +145,13 @@ export async function runPrDlTests(t: YThucTestKit) {
       ORDER BY a.id`).all(LOP, periodId, periodId) as any[]).map((r) => r.id).join(',');
   /* LOC-HIEN-TAI (chủ SP 28/10): bảng điểm lớp đang học chỉ còn LƯỢT HIỆN TẠI — em đang học hoặc Tạm dừng, lộ trình mới nhất, MT chưa làm sau thi thật
    * không còn (MB FT 101 có em Kết thúc học Ngô Thanh Tùng, hàng mờ OV-1d bỏ). Viết lại độc lập bằng SQL; `a` lượt, `s` em. */
-  const HIEN_TAI = `(s.status = 'active' AND s.archived_at IS NULL OR s.status = 'inactive')
+  const HIEN_TAI = `s.archived_at IS NULL AND s.status IN ('active', 'inactive')
     AND a.cycle_id = (SELECT cy.id FROM learning_cycles cy JOIN learning_cycles cg ON cg.id = a.cycle_id
                        WHERE cy.student_id = a.student_id AND (cy.route IS NULL) = (cg.route IS NULL) ORDER BY cy.seq DESC LIMIT 1)
-    AND NOT (a.status = 'planned' AND EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.id = a.cycle_id AND (cy.thi_that_ngay IS NOT NULL OR cy.thi_that_khong_thi = 1))
+    AND NOT (a.status = 'planned' AND EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.id = a.cycle_id AND cy.route IS NOT NULL
+               AND (cy.thi_that_khong_thi = 1 OR (cy.thi_that_l IS NOT NULL AND cy.thi_that_r IS NOT NULL AND cy.thi_that_w IS NOT NULL AND cy.thi_that_s IS NOT NULL)
+                    OR cy.outcome_score IS NOT NULL OR COALESCE(cy.outcome, 'unknown') != 'unknown')
+               AND (cy.buoc_tiep IS NULL OR cy.buoc_tiep IN ('ket_thuc', 'tam_dung', 'lo_trinh_moi')))
              AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)))`;
   const idsCua = (sheet: any) => sheet.rows.map((r: any) => r.attemptId).sort((x: number, y: number) => x - y).join(',');
 

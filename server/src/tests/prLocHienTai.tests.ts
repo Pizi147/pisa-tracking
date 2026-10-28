@@ -12,6 +12,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { CO_KET_QUA_THI_SQL } from '../students/tamDung.ts';
+
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'server', 'src');   // chạy từ dist-server/server/src/tests
 
 export async function runPrLocHienTaiTests(t: any) {
@@ -80,9 +82,12 @@ export async function runPrLocHienTaiTests(t: any) {
     assert(t, 'seed phải có bài Giữa / Cuối khoá ở MB FOU 12');
     const coEm = () => { xoaNho(); return (regular.regularSheet(P.admin, FOU).rows as any[]).some((r) => r.studentId === t.student_id); };
     assert(coEm(), 'trước lưu trữ: em có hàng ở bảng lớp thường');
-    /* PTA 28/10: em Tạm dừng (ở Lưu trữ) giữ như cũ ở bảng điểm; Kết thúc học + Lưu trữ thì bỏ hàng. */
-    conn.prepare(`UPDATE students SET archived_at = ?, status = 'inactive' WHERE id = ?`).run(`${TODAY}T00:00:00Z`, t.student_id);
-    assert(coEm(), 'em Tạm dừng: bảng lớp thường phải giữ hàng như cũ');
+    /* PTA 28/10: em Tạm dừng CHƯA lưu trữ giữ như cũ ở bảng điểm; đã lưu trữ (Tạm dừng hay Kết thúc học) thì bỏ hàng — lưu trữ là ẩn hết (thay P7;
+     * nhập bù cho em Tạm dừng đã lưu trữ qua hồ sơ HV). */
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(t.student_id);
+    assert(coEm(), 'em Tạm dừng chưa lưu trữ: bảng lớp thường phải giữ hàng như cũ');
+    conn.prepare(`UPDATE students SET archived_at = ? WHERE id = ?`).run(`${TODAY}T00:00:00Z`, t.student_id);
+    assert(!coEm(), 'em Tạm dừng + Lưu trữ: bảng lớp thường còn hàng');
     conn.prepare(`UPDATE students SET status = 'finished' WHERE id = ?`).run(t.student_id);
     assert(!coEm(), 'em Kết thúc học + Lưu trữ: bảng lớp thường còn hàng');
     xoaNho();
@@ -91,7 +96,7 @@ export async function runPrLocHienTaiTests(t: any) {
 
   check('LHT-7 · thi thật là kết thúc: MT chưa làm của lộ trình đã có kết quả thi thật ẩn khỏi Kế hoạch Test, bảng điểm, Lịch Test, nợ điểm; MT đã làm giữ; gỡ kết quả → hiện lại', () => thu(() => {
     const a = get(`SELECT a.id, a.student_id, a.class_id, a.attempt_no, a.cycle_id FROM assessment_attempts a
-       JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active' AND cy.thi_that_ngay IS NULL AND cy.thi_that_khong_thi = 0
+       JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active' AND cy.route IS NOT NULL AND cy.buoc_tiep IS NULL AND NOT ${CO_KET_QUA_THI_SQL('cy')}
        JOIN classes c ON c.id = a.class_id AND c.status = 'active'
        JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
        JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
@@ -102,7 +107,14 @@ export async function runPrLocHienTaiTests(t: any) {
     const daLam = get(`SELECT id, attempt_no FROM assessment_attempts WHERE cycle_id = ? AND status = 'done' AND class_id = ? LIMIT 1`, a.cycle_id, a.class_id);
     const trongLuoi = () => { xoaNho(); return JSON.stringify(keHoach.luoiFT(P.admin, a.class_id)).includes(`"attemptId":${a.id},`); };
     assert(trongLuoi() && bangMt(a.class_id, a.attempt_no).some((r) => r.attemptId === a.id), 'trước thi thật: MT chưa làm ở Kế hoạch Test + bảng điểm');
+    /* Chỉ ngày thi, chưa có kết quả: chưa phải "đã xong" (`coKetQuaThi`) — MT vẫn là kế hoạch. */
     conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = ? WHERE id = ?`).run(TODAY, a.cycle_id);
+    assert(trongLuoi(), 'chỉ có ngày thi, chưa kết quả: MT phải còn ở Kế hoạch Test');
+    /* Kết quả CŨ không ngày (Overall chọn tay — ca live PTA 28/10): đã xong. */
+    conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = NULL, outcome_score = 6.5 WHERE id = ?`).run(a.cycle_id);
+    assert(!trongLuoi(), 'kết quả cũ không ngày: Kế hoạch Test còn MT chưa làm');
+    /* Đủ 4 kỹ năng thi thật. */
+    conn.prepare(`UPDATE learning_cycles SET outcome_score = NULL, thi_that_ngay = ?, thi_that_l = 6, thi_that_r = 6, thi_that_w = 6, thi_that_s = 6 WHERE id = ?`).run(TODAY, a.cycle_id);
     assert(!trongLuoi(), 'đã thi thật: Kế hoạch Test còn MT chưa làm');
     assert(!bangMt(a.class_id, a.attempt_no).some((r) => r.attemptId === a.id), 'đã thi thật: bảng điểm còn MT chưa làm');
     assert(!lichTest(a.class_id).some((x) => x.id === a.id), 'đã thi thật: Lịch Test / Công việc còn MT chưa làm');
@@ -110,7 +122,12 @@ export async function runPrLocHienTaiTests(t: any) {
     if (daLam) assert(bangMt(a.class_id, daLam.attempt_no).some((r) => r.attemptId === daLam.id), 'MT đã làm phải giữ ở bảng điểm');
     assert(get(`SELECT status FROM assessment_attempts WHERE id = ?`, a.id).status === 'planned' && get(`SELECT status FROM learning_cycles WHERE id = ?`, a.cycle_id).status === 'active',
       'không huỷ lượt, không đóng lộ trình');
-    conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = NULL WHERE id = ?`).run(a.cycle_id);
+    /* Bước tiếp cũ học tiếp (`hoc_tiep`) — lộ trình còn học: MT giữ. Chọn dừng / lộ trình mới thì vẫn ẩn. */
+    conn.prepare(`UPDATE learning_cycles SET buoc_tiep = 'hoc_tiep' WHERE id = ?`).run(a.cycle_id);
+    assert(trongLuoi() && bangMt(a.class_id, a.attempt_no).some((r) => r.attemptId === a.id), 'bước tiếp học tiếp: MT phải còn');
+    conn.prepare(`UPDATE learning_cycles SET buoc_tiep = 'tam_dung' WHERE id = ?`).run(a.cycle_id);
+    assert(!trongLuoi(), 'bước tiếp Tạm dừng: MT chưa làm phải ẩn');
+    conn.prepare(`UPDATE learning_cycles SET buoc_tiep = NULL, thi_that_ngay = NULL, thi_that_l = NULL, thi_that_r = NULL, thi_that_w = NULL, thi_that_s = NULL WHERE id = ?`).run(a.cycle_id);
     assert(trongLuoi(), 'gỡ kết quả thi thật: MT hiện lại');
   }));
 
