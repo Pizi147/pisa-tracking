@@ -2263,7 +2263,7 @@ export function caseDetail(p: Principal, caseId: number) {
     classId: c.class_id,
     attemptId: c.attempt_id, attemptNo: c.attempt_no ?? null,
     /** VIEW-CASE-LUOT: lượt của Case (chip "MT2" / "Progress Test" → link ↗ trang lượt). */
-    luot: luotCuaCase(c.attempt_id),
+    luot: luotCuaCase(c.id),
     /** Chủ đề — kỹ năng của Case; mọi vấn đề đều phải có chỗ cất. */
     topic: c.topic as string | null,
     /** MH2: mã chương trình của lộ trình Case — web gọi `tenMon(chuongTrinh, …)` (FOU G+V/P, Pre FOU Tổng hợp). */
@@ -2973,6 +2973,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
               goc_programme_code AS ct_attempt,
               (SELECT cl.code FROM classes cl WHERE cl.id = sos_cases.goc_class_id) AS lop_attempt,
               (SELECT a.class_id FROM assessment_attempts a WHERE a.id = sos_cases.attempt_id) AS attempt_class_id,
+              (${LUOT_CASE_SQL}) AS luot_json,
               (SELECT u.full_name FROM users u WHERE u.id = sos_cases.owner_user_id) AS owner_name FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')
@@ -2982,7 +2983,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   /* AN-8: số bằng chứng của MỌI Case trên bảng — một câu hỏi, không phải một câu cho mỗi thẻ. */
   const soBangChung = demBangChungCase(caseRows.map((c) => c.id as number));
   const boTroMap = boTroCuaCase(caseRows.map((c) => c.id as number));   // PR-LT2a: theo TẬP, không hỏi từng Case
-  const luotMap = luotCuaCacCase(caseRows.map((c) => c.attempt_id));   // VIEW-CASE-LUOT: theo TẬP
   /* PR-UXF-b (O1): thẻ Xin ý kiến của MỌI PA trên bảng — một câu tìm PA có thẻ, rồi MỘT lần `theCuaDoiTuong` (rỗng thì không câu nào). Cùng luật chọn với Ngăn Case. */
   const xinYKienCua = new Map<number, any>();
   {
@@ -3217,7 +3217,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           canClose: canCloseCase(p, { class_id: lopDangHoc, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
-          ...caseCardOf(p, c.id, { ...c, class_id: lopCase(c), eff_student_id: studentId }, soBangChung, boTroMap.get(c.id) ?? null, xinYKienCua, giuKq, luotMap),
+          ...caseCardOf(p, c.id, { ...c, class_id: lopCase(c), eff_student_id: studentId }, soBangChung, boTroMap.get(c.id) ?? null, xinYKienCua, giuKq),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -3271,19 +3271,21 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của Case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
-/** VIEW-CASE-LUOT: lượt mà Case đang gắn (`sos_cases.attempt_id`) — id, loại, lớp (web dựng đường bằng `duongDotTest`), nhãn "MT2" / "Progress Test", tuần của lượt. Theo TẬP (một câu SQL cho cả bảng kỹ năng). */
+/** VIEW-CASE-LUOT: lượt mà Case đang gắn (`sos_cases.attempt_id`) — id, loại, lớp (web dựng đường bằng `duongDotTest`), nhãn "MT2" / "Progress Test", tuần của lượt. */
+const LUOT_CASE_SQL = `SELECT json_object('id', a.id, 'kind', a.kind, 'class_id', a.class_id, 'attempt_no', a.attempt_no, 'week_start', rp.week_start)
+  FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id = sos_cases.attempt_id`;
 type LuotCase = { id: number; kind: string; classId: number | null; dot: string; tuan: string | null };
-function luotCuaCacCase(attemptIds: (number | null | undefined)[]): Map<number, LuotCase> {
-  const ids = [...new Set(attemptIds.filter((x): x is number => !!x))];
-  if (!ids.length) return new Map();
-  const rows = db().prepare(`SELECT a.id, a.kind, a.class_id, a.attempt_no, rp.week_start FROM assessment_attempts a
-     LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[];
-  return new Map(rows.map((a) => [a.id, { id: a.id, kind: a.kind, classId: a.class_id ?? null, dot: nhanDot(a.kind, a.attempt_no ?? null), tuan: a.week_start ?? null }]));
+function luotTuJson(j: string | null | undefined): LuotCase | null {
+  if (!j) return null;
+  const a = JSON.parse(j);
+  return { id: a.id, kind: a.kind, classId: a.class_id ?? null, dot: nhanDot(a.kind, a.attempt_no ?? null), tuan: a.week_start ?? null };
 }
-function luotCuaCase(attemptId: number | null | undefined): LuotCase | null { return attemptId ? luotCuaCacCase([attemptId]).get(attemptId) ?? null : null; }
+function luotCuaCase(caseId: number): LuotCase | null {
+  return luotTuJson((db().prepare(`SELECT (${LUOT_CASE_SQL}) AS j FROM sos_cases WHERE id = ?`).get(caseId) as any)?.j);
+}
 
 function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null,
-  xinYKienCua: ReadonlyMap<number, unknown>, giuKq: ReadonlyMap<number, { id: number | null; ten: string | null }>, luotMap: ReadonlyMap<number, LuotCase>) {
+  xinYKienCua: ReadonlyMap<number, unknown>, giuKq: ReadonlyMap<number, { id: number | null; ten: string | null }>) {
   const conn = db();
   const today = demoToday();
 
@@ -3449,7 +3451,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     plans,
     attempts,
     /** VIEW-CASE-LUOT: lượt của Case — chip lượt ở khối Case hồ sơ HV là link ↗ trang lượt. */
-    luot: luotMap.get(c.attempt_id) ?? null,
+    luot: luotTuJson(c.luot_json),
     followUntil: c.follow_until ?? null,
     followOverdue: c.status !== 'done' && !!c.follow_until && c.follow_until < today,
     outcomeLabel: c.outcome ? CASE_OUTCOME_LABEL[c.outcome as CaseOutcome] ?? null : null,
