@@ -44,6 +44,7 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
   const xuLyDuoc = coNut && !!onXuLy;
   const rutGon = d.dongThang.length > BAC_MACH_CHINH + 1;
   const hien = rutGon ? d.dongThang.slice(-(BAC_HIEN_SAU_WL2 + 1)) : d.dongThang;
+  const deXuatTrenThang = !!d.deXuat && hien.some((b) => b.trangThai === 'lan-nay' && b.nhan === d.deXuat!.nhan);
   return (
     <section className="surface-2 space-y-2 rounded-[10px] border px-3.5 py-2.5 [container-type:inline-size]" style={{ borderColor: 'var(--line-strong)' }}
       aria-label={t('Thang xử lý vi phạm ({nhanChuoi})', { nhanChuoi })}>
@@ -70,16 +71,15 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
         {hien.map((b, i) => (
           <Fragment key={b.kind}>
             {(i > 0 || rutGon) && <li aria-hidden className="shrink-0 text-slate-600">›</li>}
-            <BacO b={b} title={b.trangThai === 'khai' ? khaiTitle : undefined} coDeXuat={!!d.deXuat} />
+            {b.trangThai === 'lan-nay' && deXuatTrenThang ? <ChipDeXuat d={d} /> : <BacO b={b} title={b.trangThai === 'khai' ? khaiTitle : undefined} coDeXuat={!!d.deXuat} />}
           </Fragment>
         ))}
-        {/* Mockup `.bac.de-xuat`: đề xuất đang chờ / đã duyệt nằm ngay trên thang (viền đứt vàng) — bậc kế tiếp không còn "lần này". */}
-        {d.deXuat && (
+        {/* Mockup `.bac.de-xuat`: đề xuất đang chờ / đã duyệt nằm ngay trên thang (viền đứt vàng) — đề xuất chính là bậc kế thì vẽ tại bậc đó,
+            đề xuất ngoài thang (WL 3, phương án khác) nối ở cuối; bậc kế tiếp không còn "lần này". */}
+        {d.deXuat && !deXuatTrenThang && (
           <>
             <li aria-hidden className="shrink-0 text-slate-600">›</li>
-            <li className="inline-flex shrink-0 items-center rounded border border-dashed border-soon px-[7px] py-px font-bold text-soon">
-              {dich(d.deXuat.nhan)} · {d.deXuat.status === 'cho_duyet' ? t('đề xuất chờ QL') : t('QL đã duyệt')}
-            </li>
+            <ChipDeXuat d={d} />
           </>
         )}
       </ol>
@@ -94,6 +94,15 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
         </div>
       )}
     </section>
+  );
+}
+
+function ChipDeXuat({ d }: { d: Pick<YThucHocVien, 'deXuat'> }) {
+  if (!d.deXuat) return null;
+  return (
+    <li className="inline-flex shrink-0 items-center rounded border border-dashed border-soon px-[7px] py-px font-bold text-soon">
+      {dich(d.deXuat.nhan)} · {d.deXuat.status === 'cho_duyet' ? t('đề xuất chờ QL') : t('QL đã duyệt')}
+    </li>
   );
 }
 

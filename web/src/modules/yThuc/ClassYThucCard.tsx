@@ -433,8 +433,8 @@ export function DuyetThuHoi({ x, homNay, canManage, onXem, link = false }: {
   link?: boolean;
 }) {
   const nut = (id: number, chu: ReactNode, phu?: ReactNode) => (
-    <button type="button" className="group/xem block min-h-[44px] border-0 bg-transparent p-0 text-left text-[13px] text-dim appearance-none sm:min-h-0" onClick={() => onXem(id)}
-      aria-label={typeof chu === 'string' ? t('Xem lần xử lý {nhan}', { nhan: chu }) : undefined}>
+    <button type="button" className="group/xem block min-h-[44px] border-0 bg-transparent p-0 text-left text-[13px] text-dim appearance-none sm:min-h-0" onClick={() => onXem(id)}>
+      <span className="sr-only">{t('Xem lần xử lý')} </span>
       <span className={link ? 'font-semibold text-[color:var(--accent)] underline underline-offset-2' : 'group-hover/xem:text-[color:var(--accent)] group-hover/xem:underline'}>{chu}</span>{phu}
     </button>
   );

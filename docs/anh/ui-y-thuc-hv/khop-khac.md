@@ -37,6 +37,10 @@ Luật 28/10: hình ảnh sát mockup, tính năng giữ V4.
 
 **Đếm:** 22 dòng (trừ H21 GIỮ) — KHỚP 20 · KHÁC [XM] 2 (H15 giữ thao tác V4, H20 một chỗ duyệt). **20/22 = 90,9 %**.
 
+**Ảnh thêm:** `cap-sos-1440.png` (tt=sach ↔ HV có lượt SOS), `web-lop-mo-hang-de-xuat-1440.png` — `ThangYThuc` dùng chung nên phần mở hàng em ở **tab lớp** cũng đổi theo: bậc chip V5, đề xuất trên thang (đề xuất là bậc kế → vẽ tại bậc đó; ngoài thang như WL 3 → nối cuối), bậc kế "· kế tiếp" khi có đề xuất, thang đo theo khối 600 px. Khớp chip `ThangNho` của hàng.
+
+**Panel Công việc (`yt_xem`):** tab tự biết lớp thường từ `chuoi.nhan` (không cần truyền `thuong`) → HV lớp thường thấy "Phối hợp", không chữ SOS.
+
 ## Thao tác TRƯỚC → SAU
 
 | Thao tác V4 | Sau PR |
