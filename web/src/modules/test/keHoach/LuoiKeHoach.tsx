@@ -64,7 +64,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
     }));
   }, [loai, data]);
 
-  const rongDot = loai === 'ft' ? 236 : 250;   // lớp thường: tuần + W4/8 + chữ trạng thái một dòng
+  const rongDot = loai === 'ft' ? 252 : 250;   // lớp thường: tuần + W4/8 + chữ trạng thái một dòng
   const dotDenLuot = useMemo(() => cots.findIndex((c) => (data.hang as Array<HangFT | HangThuong>).some((h) => (
     !emXongDot(dotCuaEm(loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot))
   ))), [cots, data, loai]);
@@ -141,7 +141,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                 const trangLuot = chiXem && dot.attemptId !== null ? duongDotTest({ id: dot.attemptId, kind: c.dot.loai === 'ft' ? 'mock' : khoaBaiThuong(c.dot.kind), classId: data.classId, studentId: h.studentId }) : null;
                 const moHop = (el: HTMLElement) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: null });
                 return (
-                  <td key={c.key} className="td !p-0 align-middle">
+                  <td key={c.key} className="td !p-[3px] align-middle">
                     {!homNay ? <span className="block px-2 text-xs text-faint">…</span> : dot.attemptId !== null ? (() => {
                       /* KHT-GON (mockup #659): ô = tuần + kết quả / một chữ; ô kỹ năng, dòng riêng, dòng vắng chỉ khi cần (`oGon`). */
                       const ct = loai === 'thuong' ? (data as LuoiThuongData).chuongTrinh : null;

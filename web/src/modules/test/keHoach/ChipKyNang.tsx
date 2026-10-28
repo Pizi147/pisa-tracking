@@ -12,7 +12,7 @@ import { t } from '@shared/i18n/index.ts';
  */
 const VACH: Partial<Record<LoaiTtGon, string>> = {
   nay: 'shadow-[inset_3px_0_0_rgb(var(--doing-rgb))]',
-  tre: '!bg-bad-bg shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]',   // `bg-transparent` của khung ô đè nền trễ — nên `!`
+  tre: '!bg-bad-bg !border-bad-line shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]',   // `bg-transparent` của khung ô đè nền trễ — nên `!`
   vang: 'shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]',
 };
 const MAU_TT: Record<LoaiTtGon, string> = {
@@ -54,7 +54,8 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
     kq ? `${kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(kq.ovr)}` : o.tt && o.tt.loai !== 'xong' ? o.tt.chu : null,
     o.khongThi, o.vang,
   ].filter(Boolean).join(', ');
-  const lop = `${O_LUOI} ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
+  /* Chủ SP 28/10: khung ô MT rõ hẳn — viền mảnh + nền tối hơn thẻ (`--bg`); ô trễ chấm vẫn nền đỏ nhạt (VACH đè). */
+  const lop = `${O_LUOI} rounded-md border border-[var(--line)] !bg-[var(--bg)] hover:!bg-[var(--nut-hover)] ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
   /* "xếp lại S" / "chờ duyệt" không thuộc dòng tuần nào (môn đang vắng) — đặt ở dòng đầu khi dòng đó chưa có chữ. */
   const ttO = o.tt?.loai === 'vang' ? o.tt : null;
   const noi = (
