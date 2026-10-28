@@ -32,7 +32,7 @@ import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, canNhomNguyenNhan, CHU_THAO_TAC, CHU_THEM_PA, chipSosMt0, docTuanLich, mondayOfDate, nhanLuot, skillShort, soKyVong, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, canNhomNguyenNhan, CHU_THAO_TAC, CHU_THEM_PA, chipSosMt0, docTuanLich, mondayOfDate, nhanLuot, skillShort, soKyVong, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
   type AssessedSkill, type AttemptKind, type TheYeuCauDto, type ThaoTac, type LoiTruong,
   docKnMock, docNguCanhDs, duongDotTest, keBen, vaiXemHocVien, KY_NANG_KE_HOACH, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, trangCha,
 } from '@shared/domain/index.ts';
@@ -720,7 +720,7 @@ function thaoTacDong(d: Detail, k: string, homNay: string) {
       batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang, huyCu,
     });
     const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
-      : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa,
+      : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa, quaTuan: tuanDaQua(r.weekStart, homNay),
           huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy });
     const chinh0 = ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
@@ -939,7 +939,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
       {hopDiem}
       {hop && (
         <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false}
-          quanLy={d.viewer.canPlanWeek} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
+          quanLy={d.viewer.canPlanWeek} gvcn={d.viewer.laGvcn} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
           oCoDiem={oCoDiemCua(hop.c)} hocVien={d.student.name} lop={d.classCode} onClose={() => setHop(null)} onDone={onDone} />
       )}
       {moveFor && <AbsenceMoveModal row={moveFor} detail={d} onClose={() => setMoveFor(null)} onDone={onDone} />}

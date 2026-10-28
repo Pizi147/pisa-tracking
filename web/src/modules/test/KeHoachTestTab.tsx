@@ -19,7 +19,7 @@ import type { DanhSachLop } from './keHoach/kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
- * TEST › KẾ HOẠCH TEST (mockup 14, PR-UX2) — CHỈ Quản lý. Một hàng điều khiển: Chi nhánh · ô tìm lớp · tab nhỏ
+ * TEST › KẾ HOẠCH TEST (mockup 14, PR-UX2) — Quản lý xếp; GV xem lớp mình dạy (chỉ xem, chủ SP 28/10). Một hàng điều khiển: Chi nhánh · ô tìm lớp · tab nhỏ
  * `Fast Track · Lớp thường` · ⓘ luật · nút `Xếp nhiều MT…` / `Xếp lịch Test…` (PR-XLMT: ngăn `NganXepLichMt` nhiều lớp · `NganXepHangLoat` một lớp thường); dưới là danh sách lớp (`LopKeHoach`), mỗi lớp một hàng
  * lớn mở ra lưới học viên × đợt — lớp thường làm y như Fast Track. Hộp kỹ năng (neo cạnh chip) và ngăn hàng loạt không
  * bao giờ mở chồng nhau (G-8): hộp mở thì nút hàng loạt tắt.
@@ -93,7 +93,9 @@ export function KeHoachTestTab() {
     ? tuanXem.ft.mockClasses.map((m) => m.id)
     : [...tuanXem.normal.progressClasses, ...tuanXem.normal.finalClasses].map((r) => r.id)) : null;
   const boTuan = () => { const next = new URLSearchParams(params); next.delete('tuan'); setParams(next, { replace: true }); };
-  const soCanXepLai = lopFT.reduce((n, l) => n + (l.canXepLai ?? 0), 0);
+  /* Chủ SP 28/10: GV chỉ xem lớp mình dạy — không có lớp xếp được thì bỏ Cần xếp lại, Xuất, Xếp (máy chủ vẫn chặn ghi). */
+  const coXep = (data?.lop ?? []).some((l) => !l.chiXem);
+  const soCanXepLai = coXep ? lopFT.reduce((n, l) => n + (l.canXepLai ?? 0), 0) : 0;
   const locXepLai = loai === 'ft' && chiXepLai && soCanXepLai > 0;
   /* Chữ ở ô tìm lọc danh sách lớp chỉ khi khớp mã lớp nào đó — gõ tên / email học viên thì danh sách giữ nguyên (chọn em ở gợi ý). */
   const khopMa = chu.trim() ? (loai === 'ft' ? lopFT : lopThuong).filter((l) => chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu))) : [];
@@ -119,7 +121,7 @@ export function KeHoachTestTab() {
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data || (tuan && hl.loading && !hl.data)) return <div className="space-y-3"><Skeleton rows={8} /></div>;
-  if (!data.lop.length) return <div className="card"><Empty title="Bạn không có lớp nào được xếp lịch Test" /></div>;
+  if (!data.lop.length) return <div className="card"><Empty title="Bạn không có lớp nào để xem lịch Test" /></div>;
 
   return (
     <div className="space-y-3">
@@ -190,7 +192,7 @@ export function KeHoachTestTab() {
           </NutLuat>
         </span>
         <span className="flex-1" />
-        {loai === 'ft' && (
+        {loai === 'ft' && coXep && (
           /* OV-15c: Xuất Excel Kế hoạch Test 13 cột (C17) theo bộ lọc đang xem + Xuất điểm Test (mockup 6 khung 9). */
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-xs tabular-nums text-slate-400">{t('{n} học viên', { n: danhSach.reduce((n, l) => n + l.soHv, 0) })}</span>
@@ -198,10 +200,12 @@ export function KeHoachTestTab() {
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
           </span>
         )}
-        <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
-          onClick={() => setXep(loai)}>
-          {loai === 'ft' ? 'Xếp nhiều MT…' : 'Xếp lịch Test…'}
-        </button>
+        {coXep && (
+          <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
+            onClick={() => setXep(loai)}>
+            {loai === 'ft' ? 'Xếp nhiều MT…' : 'Xếp lịch Test…'}
+          </button>
+        )}
       </div>
 
       {danhSach.length === 0 ? (

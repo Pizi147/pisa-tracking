@@ -303,7 +303,9 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
         }
       }
     }
-    assertThrows(() => keHoachMod.luoiFT(P.lrTeacher, mbClass), /Quản lý|quyền/, 'GVBM gọi luoiFT phải bị chặn quyền');
+    /* Chủ SP 28/10: GV xem Kế hoạch Test lớp mình dạy — chỉ xem (ghi vẫn PLAN_WEEK). */
+    assert(keHoachMod.luoiFT(P.lrTeacher, mbClass).chiXem === true, 'GVBM đọc luoiFT, chỉ xem');
+    assertThrows(() => keHoachMod.xepHangLoat(P.lrTeacher, { classId: mbClass, attemptNo: 95, studentIds: [], tuan: {}, xemTruoc: true }), /Quản lý|quyền/, 'GVBM xếp hàng loạt phải bị chặn');
   });
 
   /* PR-MTa T20 thay "kỹ năng đã có điểm giữ nguyên": Quản lý dời được, điểm đi theo. */
@@ -1077,6 +1079,6 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     e403(() => keHoachMod.xepMoi(P.cpManager, { studentId: attemptMB.student_id, attemptNo: 95, tuan: t4(per.id) }), 'xepMoi');
     e403(() => keHoachMod.xepHangLoat(P.cpManager, { classId: mbClass, attemptNo: 95, studentIds: [attemptMB.student_id], tuan: t4(per.id), xemTruoc: true }), 'xepHangLoat');
     assert(keHoachMod.danhSachLop(P.cpManager, { branchId: mbBranch }).lop.length === 0, 'QL chi nhánh CP không được thấy lớp MB');
-    e403(() => keHoachMod.luoiThuong(P.lrTeacher, thuongMB), 'luoiThuong (GVBM)');
+    assert(keHoachMod.luoiThuong(P.lrTeacher, thuongMB).chiXem === true, 'luoiThuong (GVBM): chỉ xem (chủ SP 28/10)');
   });
 }

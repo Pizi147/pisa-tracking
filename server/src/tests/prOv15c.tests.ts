@@ -176,7 +176,8 @@ export async function runPrOv15cTests(t: YThucTestKit) {
       const r3 = await json(await goi(QL, `/ke-hoach-test/tim?q=${encodeURIComponent('c15tim03')}&branchId=${MB}`));
       assert(r3.lop.some((x: any) => x.id === l && x.soHv === 2), JSON.stringify(r3.lop));
       assert(r3.hocVien.length === 0, 'mã lớp không kéo theo tên em');
-      assert((await goi(GV, `/ke-hoach-test/tim?q=tien`)).status === 403, 'GV 403');
+      const g = await json(await goi(GV, `/ke-hoach-test/tim?q=tien&branchId=${MB}`));   // chủ SP 28/10: GV tìm trong lớp mình dạy
+      assert(!g.hocVien.some((x: any) => x.classId === l) && !g.lop.some((x: any) => x.id === l), 'GV không thấy lớp mình không dạy');
       const rong = await json(await goi(QL, `/ke-hoach-test/tim?q=%20`));
       assert(rong.lop.length === 0 && rong.hocVien.length === 0, 'chữ trống');
     });

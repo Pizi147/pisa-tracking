@@ -89,6 +89,14 @@ export function kiemTuanXep(o: { ketThuc: string[]; homNay: string; quanLy: bool
   return { cau: !o.quanLy && quaTuan ? t('Chọn tuần từ tuần này trở đi.') : null, quaTuan, mtCu };
 }
 
+/**
+ * Chủ SP 28/10 (plan.md 1.6): GVCN lớp đó dời / sửa lịch kỹ năng MT có tuần thi ĐÃ QUA (Chủ nhật `tuanCuKetThuc` < hôm nay), kể cả đã có điểm /
+ * đã làm bài, sang tuần đã qua hoặc tuần này (`tuanMoiBatDau` ≤ thứ Hai tuần này). Dời sang tuần tới, xếp mới, hàng loạt vẫn chỉ Quản lý.
+ */
+export function gvcnDoiMtCu(o: { tuanCuKetThuc: string | null | undefined; tuanMoiBatDau: string; homNay: string }): boolean {
+  return !!o.tuanCuKetThuc && laLichSu(o.tuanCuKetThuc, o.homNay) && o.tuanMoiBatDau.slice(0, 10) <= mondayOfDate(o.homNay);
+}
+
 /** Tooltip chip vàng "Tuần đã qua" (T4) — panel Xếp lịch, hộp một đợt: Quản lý xếp MT chưa thi về tuần đã qua. */
 export const CAU_TUAN_DA_QUA = t('MT chưa làm bài xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.');
 

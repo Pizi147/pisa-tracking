@@ -3,10 +3,12 @@ import { api, invalidate } from '../../../lib/api.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../../ui/ui.tsx';
 import { HangNhom } from '../../../ui/HangNhom.tsx';
+import { Nhan } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { LuoiKeHoach } from './LuoiKeHoach.tsx';
 import type { LopKH, LuoiFTData, LuoiThuongData } from './kieu.ts';
 import { kyHieuLop } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT LỚP TRONG KẾ HOẠCH TEST: hàng lớn `HangNhom` (N-2 — `▾/▸ {mã}` · `{chi nhánh} · {n} HV` · bên phải tóm tắt: FT
@@ -33,7 +35,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
       setBusy(false);
     }
   };
-  const nutXep = lop.loai === 'thuong' && lop.hvChuaCoLich > 0 ? (
+  const nutXep = lop.loai === 'thuong' && lop.hvChuaCoLich > 0 && !lop.chiXem ? (
     <button type="button" className="btn btn-sm ml-2 min-h-[28px] align-middle font-normal" disabled={busy} onClick={() => void xepCaLop()}
       title={`${lop.hvChuaCoLich} em chưa có Progress Test / Final Test`}>
       {busy ? 'Đang tạo…' : 'Xếp cả lớp theo đề xuất'}
@@ -49,6 +51,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
               <span className="block min-w-0">
                 <span className="flex flex-wrap items-baseline gap-x-2">
                   <span>{lop.code}</span>
+                  {lop.chiXem && <Nhan tone="muted">{t('Chỉ xem')}</Nhan>}
                   <span className="text-xs font-normal text-slate-400">{[lop.chiNhanh, kyHieuLop(lop.chuongTrinh, null) ?? lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
                 </span>
                 <span className="block truncate text-xs font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>

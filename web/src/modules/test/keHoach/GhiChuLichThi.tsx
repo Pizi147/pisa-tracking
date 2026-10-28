@@ -22,8 +22,10 @@ export const chuTacGia = (g: GhiChuLich) => [g.ai, fmtDateTime(g.luc)].filter(Bo
  * Ghi chú SỬA TẠI CHỖ (OV-15c, C21 — mockup 4 khung 1): một dòng (dài thì "…", rê chuột / chạm xem đủ); bấm = ô gõ, Enter lưu · Esc huỷ.
  * Đang lưu / lỗi hiện ngay dưới ô, chữ đang gõ KHÔNG mất khi lỗi. `them` = chữ nút khi chưa có ghi chú (ghi chú lớp); không có thì không vẽ gì.
  */
-export function GhiChuTaiCho({ khoa, ghiChu, onDoi, them, nhan, className = '' }: {
+export function GhiChuTaiCho({ khoa, ghiChu, onDoi, them, nhan, className = '', chiDoc = false }: {
   khoa: KhoaGhiChu; ghiChu: GhiChuLich | null; onDoi: () => void; them?: string; nhan: string; className?: string;
+  /** Chủ SP 28/10: GV chỉ xem Kế hoạch Test — đọc ghi chú, không sửa. */
+  chiDoc?: boolean;
 }) {
   const [sua, setSua] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -52,6 +54,12 @@ export function GhiChuTaiCho({ khoa, ghiChu, onDoi, them, nhan, className = '' }
         </div>
       </div>
     );
+  }
+  if (chiDoc) {
+    return ghiChu ? (
+      <span title={`${ghiChu.noiDung}
+${chuTacGia(ghiChu)}`} className={`block w-full truncate text-left text-[12px] italic text-slate-400 ${className}`}>{ghiChu.noiDung}</span>
+    ) : null;
   }
   if (!ghiChu) {
     return them ? (

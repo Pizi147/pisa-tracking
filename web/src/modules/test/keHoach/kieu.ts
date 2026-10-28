@@ -11,6 +11,8 @@ export type LopKH = {
   chuaCoLichTiep: number; hvChuaCoLich: number; tomTat: string;
   /** PR-XLMT (Q7): số em lớp FT cần Quản lý xếp lại (vắng chưa có đề nghị + phần thi đã huỷ). */
   canXepLai: number;
+  /** Chủ SP 28/10: lớp GV dạy mà không xếp được (không `plan.week`) — chỉ xem. */
+  chiXem?: boolean;
 };
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 
@@ -34,7 +36,7 @@ export type HangFT = {
   ghiChu?: Record<string, GhiChuLich>;
   sEx?: DongSEx[];
 };
-export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[]; ghiChuLop?: GhiChuLich | null };
+export type LuoiFTData = { classId: number; classCode: string; chiXem?: boolean; cot: number[]; hang: HangFT[]; ghiChuLop?: GhiChuLich | null };
 
 export type DotThuong = { attemptId: number | null; kn: KnO };
 /** `progress` | `final`; OV-6b2 lớp liên tục: `cp{n}` = Checkpoint n. */
@@ -47,7 +49,7 @@ export type HangThuong = {
   ghiChu?: Record<string, GhiChuLich>;
 };
 export type LuoiThuongData = {
-  classId: number; classCode: string; chuongTrinh: string | null; khaiGiang: string | null; tongTuan: number | null;
+  classId: number; classCode: string; chiXem?: boolean; chuongTrinh: string | null; khaiGiang: string | null; tongTuan: number | null;
   tuanHienTai: string | null; hvChuaCoLich: number; cot: CotThuong[]; hang: HangThuong[];
   /** Bộ môn của chương trình lớp (K4-16): FOU/BE/ELE 4 môn, Pre FOU `tong_hop`. */
   boMon: KyNangKH[];

@@ -297,12 +297,12 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     attempts.setPlanningWeek(QL, fin, tuanSo(e.tuanFinal, 0));
     assert(tuanKn(e.aid).split(',').sort().join() === [addDays(e.tuanFinal, 7), addDays(e.tuanFinal, 14)].join(), `đã dời tay: ${tuanKn(e.aid)}`);
   });
-  check('MT0-4d · GVCN dời MT0 về tuần đã qua → chặn như mọi Mock (T4); QL được (Final đã qua, dời trong khoảng hợp lệ)', () => {
+  check('MT0-4d · GVCN dời MT0 về tuần đã qua được (chủ SP 28/10, thay T4); QL được (Final đã qua, dời trong khoảng hợp lệ)', () => {
     const e = lenFt('FOU', 10);   // FOU 8 tuần, đang tuần 10 → Final cách 2 tuần
     const gvcn = ganGv(e.classId, gvKhac(5), null, true);
     const qua = tuanSo(e.tuanFinal, 1);   // tuần trước — vẫn đã qua, trong khoảng Final … Final + 2
-    const x = loi(() => skillSch.setSkillWeek(gvcn, e.aid, 'listening', qua));
-    assert(x?.status === 400 || x?.status === 403, `GVCN: ${x?.status} ${x?.message}`);
+    /* Chủ SP 28/10: MT0 tuần Final đã qua là MT tuần đã qua — GVCN dời về tuần đã qua được (thay T4 cho GVCN). */
+    skillSch.setSkillWeek(gvcn, e.aid, 'reading', qua);
     skillSch.setSkillWeek(QL, e.aid, 'listening', qua);
     assert(tuanKn(e.aid).includes(addDays(e.tuanFinal, 7)), 'QL dời về tuần đã qua được');
   });

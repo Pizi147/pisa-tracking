@@ -21,6 +21,8 @@ export type NavQuyen = {
   /** PR-OV2a: Tổng quan "Học viên của tôi" (vai TVV). */
   hvCuaToi: boolean;
   test: boolean; testGrade: boolean; testSchedule: boolean; testPlan: boolean;
+  /** Chủ SP 28/10: tab Kế hoạch Test CHỈ XEM cho GV (lớp mình dạy) — không thay `testPlan` (tab Chấm Test vẫn theo `testPlan`). */
+  testPlanXem?: boolean;
   work: boolean; workSupport: boolean; workOps: boolean; workReports: boolean;
   /** PR-DUYET: hộp Chờ duyệt (`request.approve` — QL, Quản trị) · Yêu cầu của tôi (mọi người có việc học viên). */
   workApprove: boolean; workRequests: boolean;
@@ -114,7 +116,7 @@ export const TAB_TEST_LABEL: Record<TabTest, string> = { cham: t('Chấm Test'),
 export const DUONG_TAB_TEST: Record<TabTest, string> = { cham: '/test/cham', lich: '/test/lich', 'diem-lop': '/test/diem-lop', 'ke-hoach': '/test/ke-hoach' };
 /** PR-UX1 Q16: Cần chấm gộp vào Lịch Test — ai chấm được (`testGrade`) hay xếp được lịch (`testSchedule`) đều thấy. */
 const HIEN_TEST: Record<TabTest, (n: NavQuyen) => boolean> = {
-  cham: (n) => n.testGrade && !n.testPlan && n.workSupport, lich: (n) => n.testSchedule || n.testGrade, 'diem-lop': (n) => n.testGrade, 'ke-hoach': (n) => n.testPlan,
+  cham: (n) => n.testGrade && !n.testPlan && n.workSupport, lich: (n) => n.testSchedule || n.testGrade, 'diem-lop': (n) => n.testGrade, 'ke-hoach': (n) => n.testPlan || !!n.testPlanXem,
 };
 
 export function tabTestHienThi(nav: NavQuyen): TabTest[] {
