@@ -22,6 +22,7 @@ import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { MoiVao } from './DaiChuyenLop.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import type { CaseDetail, ViewCase } from '../cases/CasePanel.tsx';
 import {
   chipSosTuKetQua, chuDoiVang, ketQuaGanNhat, lyDoChuaDu, type KetQuaVao, duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
@@ -68,7 +69,8 @@ const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
  * (P8) · cột MT (lượt của em) · L R W S Overall — điểm to (`ODiem` 17 px), W hiện MỘT lần + dòng phụ "W1 · W2" (W1, W2 riêng — C18) · bấm W / S → điểm
  * thành phần ngay tại chỗ (popover) · Kết quả: SOS thay "Chưa đạt" · Ngày thi chip nhỏ · Case + PA: bấm mở các Case của em ngay dưới hàng, PA gắn từng
  * Case; thao tác (Ghi KQ PA · Sửa · Lịch sử) mở panel Case của Công việc tại trang (`NganCase`). Việc của em ở thanh Việc cần làm (cột Việc bỏ).
- * < 640 px: bảng cuộn ngang trong khung (mockup 375 — không đổi thành thẻ).
+ * < 640 px (RA-UI-8, mockup 375): mỗi em một thẻ (`Bang` chế độ thẻ) — tên + Kết quả · Ngày thi, đủ điểm L R W S Overall (dòng phụ W1 · W2 / vắng
+ * dưới ô), Target · MT; hàng cuối Case + PA bên trái, ⋯ bên phải; Case mở ngay cuối thẻ (`sauThe`).
  */
 export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien }: {
   classId: number; maLop: string; quyen: QuyenDong; onDoi: () => void; onThemHocVien?: () => void;
@@ -84,6 +86,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
   const [mo, setMo] = useState<number | null>(null);
   const [pop, setPop] = useState<{ sid: number; kn: 'w' | 's'; nut: HTMLElement } | null>(null);
   const [ngan2, setNgan2] = useState<{ caseId: number; view: ViewCase; hv: string } | null>(null);
+  const dienThoai = useDienThoai();
   if (roster.error) return <ErrorState message={roster.error.message} hint={roster.error.hint} onRetry={roster.reload} />;
   if (!roster.data) return <div className="card p-4"><Skeleton rows={6} /></div>;
 
@@ -105,12 +108,13 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
     if (k === 'w' ? kh.includes('writing1') && kh.includes('writing2') : k !== 'ovr' && kh.includes(k === 'l' ? 'listening' : k === 'r' ? 'reading' : 'speaking')) return <OKhongHoc nhan={k.toUpperCase()} />;
     if (k === 'ovr' && h.overall == null && h.khongDuBoMon && h.scoredRequired === h.requiredCount) return <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>;
     const v = k === 'ovr' ? h.overall : k === 'w' ? h.writing ?? null : h.bands?.[k === 'l' ? 'listening' : k === 'r' ? 'reading' : 'speaking'] ?? null;
-    const o = <ODiem kieu="to" so={v === null ? null : fmtBand(v)} kq={h.lichSu ? null : soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
+    const o = <ODiem kieu={dienThoai ? 'doc' : 'to'} so={v === null ? null : fmtBand(v)} kq={h.lichSu ? null : soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
     if ((k !== 'w' && k !== 's') || v === null) return o;
     const dangMo = pop?.sid === r.id && pop.kn === k;
     return (
       <button type="button" aria-haspopup="dialog" aria-expanded={dangMo} title={t('Điểm thành phần')}
-        className="appearance-none rounded border-0 bg-transparent px-1 py-0.5 hover:bg-[color:var(--nut-hover)] max-sm:min-h-[44px]"
+        className="relative appearance-none rounded border-0 bg-transparent px-1 py-0.5 hover:bg-[color:var(--nut-hover)] after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-[''] sm:after:hidden"
+        /* RA-UI-8: vùng chạm 44 px ở điện thoại bằng `after` (không nới cao nút) — thẻ em gọn như mockup 375. */
         onClick={(e) => { const nut = e.currentTarget; setPop(dangMo ? null : { sid: r.id, kn: k, nut }); }}>{o}</button>
     );
   };
@@ -133,10 +137,10 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
       case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-200 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
       case 'l': case 'r': case 'w': case 's': case 'ovr': return oDiem(r, h, c.key);
       case 'kq': return <OKetQua r={r} h={h} kq={kq.get(r.id)!} />;
-      case 'thi': return <OLichThi l={r.lichThi} homNay={homNay} />;
+      case 'thi': return <OLichThi l={r.lichThi} homNay={homNay} the={dienThoai} />;
       case 'cp': {
         const ca = caseCua.get(r.id) ?? [];
-        if (!ca.length) return <span className="text-faint">—</span>;
+        if (!ca.length) return dienThoai ? <span /> : <span className="text-faint">—</span>;
         const soPa = ca.reduce((n, x) => n + x.interventionCount, 0);
         return (
           <button type="button" aria-expanded={mo === r.id} aria-controls={`case-${r.id}`} onClick={() => setMo(mo === r.id ? null : r.id)}
@@ -159,9 +163,17 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
     const [w1, w2] = [h.bands?.writing1 ?? null, h.bands?.writing2 ?? null];
     return w1 === null && w2 === null ? null : `${w1 === null ? '—' : fmtBand(w1)} · ${w2 === null ? '—' : fmtBand(w2)}`;
   };
+  /* Thẻ 375: dòng phụ của ô điểm (W1 · W2, "vắng …") ngay dưới ô — chế độ thẻ của `Bang` chỉ vẽ `phuCua` của cột tên. */
+  const oThe = (r: Hang, c: DinhNghiaCot): ReactNode => {
+    const o = oCua(r, c);
+    const phu = c.kieu === 'diem' ? phuCua(r, c) : null;
+    return phu ? <span className="inline-flex flex-col items-start">{o}<span className="text-[12px] leading-4 text-faint" data-phu-odiem="">{phu}</span></span> : o;
+  };
+  const lopHang = (r: Hang) => `${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
+  const caseMo = (r: Hang) => (caseCua.get(r.id) ?? []).map((ca) => <TheCase key={ca.id} c={ca} ngan={ngan} onMo={(view) => setNgan2({ caseId: ca.id, view, hv: r.fullName })} />);
   const hangCua = (r: Hang) => (
     <Fragment key={r.id}>
-      <tr className={`${mo === r.id ? 'dang-mo' : ''} ${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
+      <tr className={`${mo === r.id ? 'dang-mo' : ''} ${lopHang(r)}`}>
         {COT.map((c) => {
           const phu = phuCua(r, c);
           return <OBang key={c.key} c={c} className={c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}>{oCua(r, c)}{phu && <span className="bang-phu -mx-3 whitespace-nowrap" data-phu-odiem="">{phu}</span>}</OBang>;
@@ -171,7 +183,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
         <tr id={`case-${r.id}`} className="mo-case">
           <td colSpan={COT.length} className="!h-auto !py-3 !pl-10 !pr-4 [background:var(--accent-soft)]">
             <div className="flex flex-col gap-2.5">
-              {(caseCua.get(r.id) ?? []).map((ca) => <TheCase key={ca.id} c={ca} ngan={ngan} onMo={(view) => setNgan2({ caseId: ca.id, view, hv: r.fullName })} />)}
+              {caseMo(r)}
             </div>
           </td>
         </tr>
@@ -194,8 +206,11 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
           </span>
         )}
       </div>
-      <Bang ten={t('Học viên lớp {lop}', { lop: maLop })} cot={COT} hang={ds} khoa={(r) => r.id} oCua={oCua} phuCua={phuCua} hangRieng={hangCua}
-        the375={false} khung={false} dinh rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca' && onThemHocVien ? <button type="button" className="btn btn-sm" onClick={onThemHocVien}>{t('Thêm học viên')}</button> : undefined }} />
+      {/* Thẻ 375: cột Case + PA xuống hàng cuối thẻ cạnh ⋯ (kiểu `viec` → phần dưới của thẻ). */}
+      <Bang ten={t('Học viên lớp {lop}', { lop: maLop })} cot={dienThoai ? COT.map((c) => (c.key === 'cp' ? { ...c, kieu: 'viec' as const } : c)) : COT} hang={ds} khoa={(r) => r.id}
+        oCua={dienThoai ? oThe : oCua} phuCua={phuCua} hangRieng={hangCua} lopHang={lopHang} dangMo={(r) => mo === r.id}
+        sauThe={(r) => mo === r.id && <div id={`case-${r.id}`} className="mt-2 flex flex-col gap-2.5">{caseMo(r)}</div>}
+        khung={false} dinh rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca' && onThemHocVien ? <button type="button" className="btn btn-sm" onClick={onThemHocVien}>{t('Thêm học viên')}</button> : undefined }} />
       {pop && (() => { const r = tatCa.find((x) => x.id === pop.sid); const h = r && mocCua(r); return h ? <PopThanhPhan attemptId={h.id} kn={pop.kn} nut={pop.nut} tong={h.writing ?? null} onDong={() => setPop(null)} /> : null; })()}
       {tt.panels}
       {ngan2 && (
@@ -224,7 +239,9 @@ function OKetQua({ r, h, kq }: { r: Hang; h: Moc | null; kq: ReturnType<typeof k
 }
 
 /** Ngày thi — chip nhỏ (`NhanLich`) chỉ khi có lịch: Thi dd/mm (đã chốt) · Đã thi · Dự kiến MM/YYYY (P5); chưa có lịch → "—" nhạt (Đ6, V7 không lạm dụng badge). */
-function OLichThi({ l, homNay }: { l?: LichThi; homNay: string }) {
+function OLichThi({ l, homNay, the }: { l?: LichThi; homNay: string; the?: boolean }) {
+  /* Thẻ 375: không vẽ "—" lẻ cạnh chip Kết quả — chỉ còn tên đọc màn. */
+  if ((!l || l.trangThai === 'chua-co') && the) return <span className="sr-only">{t('Chưa có lịch')}</span>;
   if (!l || l.trangThai === 'chua-co') return <span className="text-slate-500" title={t('Chưa có lịch')}><span aria-hidden>—</span><span className="sr-only">{t('Chưa có lịch')}</span></span>;
   if (l.trangThai === 'da-chot-ngay' && l.ngay) return <NhanLich loai="co">{t('Thi {ngay}', { ngay: `${l.ngay.slice(8, 10)}/${l.ngay.slice(5, 7)}` })}</NhanLich>;
   if (l.trangThai === 'da-thi') return <NhanLich loai="da-thi">{t('Đã thi')}</NhanLich>;

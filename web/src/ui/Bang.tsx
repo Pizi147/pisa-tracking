@@ -13,7 +13,7 @@ export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
  * Tiêu đề chỉ nhận chữ (`nhan`, `phu`) — cấm ô nhập / nút trong `th`. < 640 px: thẻ từ cùng định nghĩa cột.
  * Hàng bấm được (`onHang`) = `.bam` + Enter; đang mở = `.dang-mo`; bảng ≥ 8 cột không bấm = dò hàng `.do-hang`.
  */
-export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, chat, hangRieng, cuoi, the375 = true, dinh, khung = true, deu }: {
+export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, chat, hangRieng, cuoi, the375 = true, dinh, khung = true, deu, lopHang, sauThe }: {
   /** Tên bảng cho trình đọc màn + công cụ đo `do-bang`. */
   ten: string;
   cot: readonly DinhNghiaCot[];
@@ -31,8 +31,12 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   day?: boolean;
   /** Bảng tra cứu dài (vd bảng quy đổi band 41 hàng): ≥ 640 px hàng 32 px; < 640 px giữ 44 px (vùng chạm) — `.bang[data-chat]`. */
   chat?: boolean;
-  /** BANG-1: hàng là component có hook riêng (lưới điểm: lưu theo từng hàng) — tự vẽ `<tr>` bằng `OBang`. */
+  /** BANG-1: hàng là component có hook riêng (lưới điểm: lưu theo từng hàng) — tự vẽ `<tr>` bằng `OBang`. Chỉ ở dạng bảng (thẻ < 640 px vẽ từ `oCua`). */
   hangRieng?: (h: H) => ReactNode;
+  /** Lớp thêm cho hàng / thẻ (vd `row-muted`, nền đang chọn). */
+  lopHang?: (h: H) => string;
+  /** RA-UI-8: phần mở thêm ở cuối thẻ (< 640 px) — thay hàng mở dưới hàng của `hangRieng` (vd các Case của em). */
+  sauThe?: (h: H) => ReactNode;
   /** Hàng thêm sau cùng (hàng mờ "em chưa có lịch"). */
   cuoi?: ReactNode;
   /** false: không đổi thành thẻ ở < 640 px (lưới nhập điểm có màn điện thoại riêng). */
@@ -47,7 +51,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   const rongCua = (c: DinhNghiaCot) => (deu && c.rong ? c.rong : rongCot(c, cot));
   const dienThoai = useDienThoai();
   const nhom = nhomTieuDe(cot);
-  const lop = (h: H) => `${onHang ? 'bam' : cot.length >= 8 ? 'do-hang' : ''} ${dangMo?.(h) ? 'dang-mo' : ''}`;
+  const lop = (h: H) => `${onHang ? 'bam' : cot.length >= 8 ? 'do-hang' : ''} ${dangMo?.(h) ? 'dang-mo' : ''} ${lopHang?.(h) ?? ''}`;
   const phim = (h: H) => (e: KeyboardEvent) => { if (onHang && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onHang(h); } };
   const coPhu = (x: ReactNode) => x != null && x !== false && x !== '';
 
@@ -82,6 +86,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
           </dl>
         )}
         {phan.duoi.length > 0 && <div className="mt-2 flex min-h-[44px] items-center justify-between gap-2 text-[14px]">{phan.duoi.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}</div>}
+        {sauThe?.(h)}
       </article>
     ));
   } else {

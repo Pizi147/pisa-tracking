@@ -577,7 +577,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   check('PR-HVL (9) · D2: TheDong dùng chung; StudentsPage/BangHocVienLop, ClassRoster, BangDiemLopThuong, BangCanHoTro có nhánh điện thoại (< 640 px) dùng TheDong; tablet cuộn ngang trong vùng bảng, cột tên dính', () => {
     const td = web('ui/TheDong.tsx');
     assert(/export function TheDong/.test(td) && /export function useDienThoai/.test(td) && /max-width: 639px/.test(td) && /tabular-nums/.test(td), 'TheDong.tsx');
-    /* UI-HO-SO-LOP: bảng FT hồ sơ lớp (`BangHoSoLop`) cuộn ngang ở 375 theo mockup V5 — không còn trong danh sách thẻ. */
+    /* RA-UI-8: bảng FT hồ sơ lớp (`BangHoSoLop`) ở 375 = thẻ của `Bang` (không TheDong) — không còn trong danh sách này. */
     for (const f of ['modules/classes/BangDiemLopThuong.tsx', 'modules/classes/BangCanHoTro.tsx']) {   // UI-HV-LOP: BangHocVienLop không còn bảng
       assert(/<TheDong\b/.test(web(f)), `${f} chưa dùng TheDong`);
     }
