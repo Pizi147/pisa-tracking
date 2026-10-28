@@ -11,6 +11,7 @@
 | GV · Việc hằng tuần › Nhập điểm | `lich-test-tuan` @ `/test/lich` «Bài tuần trước cần chấm nằm ở khối này.» | trỏ nhầm: bước ghi "Mở Test › Chấm Test" nhưng khoanh khối "Test tuần này" của Lịch Test | `cham-test-ds` @ `/test/cham` «Bài cần chấm xếp theo hạn — bấm một dòng để chấm.» (thêm `data-hd` vào danh sách Bài cần chấm) |
 | GV · Theo màn Lịch Test › Lịch Test tuần | `lich-test-tuan` «Bài tuần trước cần chấm nằm ở khối này.» | chữ sai chỗ: khối là "Test tuần này" | giữ đích; chữ «Mỗi lớp một dòng — bấm dòng để gõ điểm.» |
 | QL, QT · Theo màn Công việc › Lớp tôi dạy | `tq-lop-toi-day` @ `/cong-viec` | "Chưa có việc" — khối chỉ dựng cho GV | bỏ mục này khỏi hướng dẫn QL / QT (mục nói về khối họ không có) |
+| QL, QT · Theo màn Công việc › Yêu cầu bị từ chối (không có "Chỉ cho tôi") | chữ "Cuối Công việc" | khối chỉ dựng cho GV | bỏ mục khỏi hướng dẫn QL / QT (PTA Plan 28/10) |
 | QT · Theo màn Tổng quan › Chờ bạn duyệt · Điều hướng | `tq-can-xu-ly` @ `/` | "Chưa có việc" — QT mặc định Tất cả chi nhánh (bảng Theo chi nhánh) | bỏ "Chỉ cho tôi" (chữ giữ: đúng khi chọn một chi nhánh) |
 | QT · Theo màn Tổng quan › Lớp cần chú ý · GV cần chú ý | `tq-lop-chu-y` @ `/` | như trên | như trên |
 
@@ -26,6 +27,6 @@ Phần "data-hd có trong web/src" đã có từ HD-a.
 ## Thao tác TRƯỚC → SAU
 Không đổi thao tác. QL / QT bớt một mục hướng dẫn sai vai; QT bớt hai nút "Chỉ cho tôi" trỏ khối không có.
 
-## Để PTA Plan quyết
-- QL / QT Công việc còn mục "Yêu cầu bị từ chối" (`tq-yeu-cau`, không có "Chỉ cho tôi") nói "Cuối Công việc" — khối này cũng chỉ GV thấy. Không sửa (ngoài phạm vi đích).
-- QT Tổng quan chưa có mục nói về bảng "Theo chi nhánh" (bấm hàng → chọn chi nhánh). Đề xuất thêm một mục + "Chỉ cho tôi" nếu cần.
+## PTA Plan đã quyết (28/10)
+- Bỏ mục "Yêu cầu bị từ chối" (`tq-yeu-cau`) khỏi hướng dẫn QL / QT — đã sửa.
+- Không thêm mục "Theo chi nhánh" cho QT.

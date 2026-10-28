@@ -8,7 +8,7 @@ import type { HuongDan, ManHd, MucHd } from './kieu.ts';
 const manGv = (id: string) => HD_GV.man.find((m) => m.id === id)!;
 /** Màn trùng GV: giữ mục của GV, thêm mục QL. */
 const themMan = (id: string, ...muc: MucHd[]): ManHd => ({ ...manGv(id), muc: [...manGv(id).muc, ...muc] });
-/** Mục GV mà QL không thấy trên màn (HD-CHI: "Lớp tôi dạy" chỉ dựng cho GV ở cuối Công việc). */
+/** Mục GV mà QL không thấy trên màn (HD-CHI: "Lớp tôi dạy", "Yêu cầu bị từ chối" chỉ dựng cho GV ở cuối Công việc). */
 const boMuc = (m: ManHd, ...ids: string[]): ManHd => ({ ...m, muc: m.muc.filter((x) => !ids.includes(x.id)) });
 export const luatGv = (...ids: string[]): MucHd[] => ids.map((id) => HD_GV.luat.find((m) => m.id === id)!);
 
@@ -119,7 +119,7 @@ export const HD_QL: HuongDan = {
       ],
     },
     boMuc(themMan('cong-viec', { id: 'ql-cv-cua-gv', ten: 'Việc của GV', buoc: ['<b>Của tôi · Của GV · Tất cả</b> (mặc định Tất cả); ô <b>▾</b> chọn một GV.', '<b>Chờ bạn duyệt</b> ở đầu; <b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Họp đơn vị ›</b>.', 'Việc <b>Chưa có người</b>: <b>Phân công…</b> mở Phân công GV môn của lớp.'],
-      chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Chọn việc của ai, lọc quá hạn ở đây.' } }), 'tq-lop'),
+      chi: { hd: 'cv-loc-them', duong: '/cong-viec', chu: 'Chọn việc của ai, lọc quá hạn ở đây.' } }), 'tq-lop', 'tq-yeu-cau'),
     {
       id: 'van-hanh', ten: 'Vận hành', duong: ['/cong-viec/van-hanh'],
       muc: [{ id: 'ql-vh', ten: 'Việc vận hành', buoc: ['Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.', '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có người phụ trách, hạn.'],
