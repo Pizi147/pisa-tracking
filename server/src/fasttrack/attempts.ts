@@ -2331,8 +2331,10 @@ export function saveScore(
       } else if (isRawSkill(skill)) {
         if (patch.rawScore !== undefined) raw = patch.rawScore;
         if (patch.rawTotal !== undefined) total = patch.rawTotal;
-        /* Ô chỉ có band nhập thẳng (T10) mà lần ghi này không đụng số câu → giữ band. */
-        if (raw !== null || patch.rawScore !== undefined) band = raw === null || raw === undefined ? null : bandFromRaw(skill, raw);
+        /* Ô chỉ có band nhập thẳng (T10) mà lần ghi này không đụng số câu → giữ band. BAND-QUY-DOI: band tính lại theo bảng ĐANG DÙNG chỉ khi số câu
+           đổi (hoặc xoá, hoặc ô chưa có band) — sửa ghi chú / ngày / gửi lại y số cũ (dán lại cả bảng) giữ band đã lưu, nên đổi bảng không đổi điểm cũ. */
+        const doiSoCau = patch.rawScore !== undefined && (patch.rawScore === null || patch.rawScore !== (existing?.raw_score ?? null) || band === null);
+        if (doiSoCau) band = raw === null || raw === undefined ? null : bandFromRaw(skill, raw);
         crit = [null, null, null, null];
       } else if (isCriteriaSkill(skill)) {
         if (patch.criteria !== undefined) {

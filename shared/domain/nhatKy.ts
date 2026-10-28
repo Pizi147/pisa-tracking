@@ -79,6 +79,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'unit_report.link_task': 'Nối công việc vào báo cáo', 'unit_report.save': 'Lưu họp đơn vị', 'unit_report.unlink_task': 'Bỏ công việc khỏi báo cáo',
   'user.delete': 'Xoá tài khoản', 'user_approved': 'Duyệt tài khoản', 'user_declined': 'Từ chối tài khoản', 'user_created': 'Tạo tài khoản',
   'user_info_set': 'Sửa thông tin tài khoản', 'programme_created': 'Thêm chương trình', 'programme_updated': 'Sửa chương trình', 'route_updated': 'Sửa lộ trình FT',
+  'bang_quy_doi.sua': 'Sửa bảng quy đổi band', 'bang_quy_doi.khoi_phuc': 'Khôi phục bảng quy đổi band',
   'user_roles_set': 'Đổi vai tài khoản', 'user_permissions_set': 'Đổi quyền tài khoản', 'user_skills_set': 'Sửa kỹ năng tài khoản', 'password_reset': 'Đặt lại mật khẩu',
   'violation.delete': 'Xoá vi phạm', 'violation.edit': 'Sửa vi phạm', 'violation.record': 'Ghi vi phạm',
   'work.remind': 'Nhắc việc',
