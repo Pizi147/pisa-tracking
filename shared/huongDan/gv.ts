@@ -15,7 +15,7 @@ export const HD_GV: HuongDan = {
       id: 'nhap-diem', ten: 'Nhập điểm MT + Speaking chấm chéo', khi: 'sau mỗi tuần Test',
       buoc: ['Mở <b>Test › Chấm Test</b>: việc xếp theo hạn chấm, bấm một việc để chấm ngay bên phải.', 'Bấm lớp, gõ điểm; MT mới nhất của em: ô thiếu <b>nhận xét</b> viền vàng — nên ghi, không chặn lưu.',
         'Em vắng: gõ <b>-</b>.', 'Chấm Speaking: <b>Công việc</b>, dòng "Chấm Speaking · n bài" đầu nhóm <b>Chấm điểm</b> — không tính quá hạn.'],
-      chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' },
+      chi: { hd: 'cham-test-ds', duong: '/test/cham', chu: 'Bài cần chấm xếp theo hạn — bấm một dòng để chấm.' },
     },
     {
       id: 'xac-nhan-pa', ten: 'Xác nhận PA / Case', khi: 'trong 5 ngày',
@@ -81,7 +81,7 @@ export const HD_GV: HuongDan = {
       id: 'lich-test', ten: 'Lịch Test', duong: ['/test', '/test/lich'],
       muc: [
         { id: 'lt-ba-khoi', ten: 'Lịch Test tuần', buoc: ['Một tuần (<b>‹ W3 SEP ›</b>, <b>Tuần này</b>): <b>Quá hạn chấm</b> (theo hôm nay, không đổi theo tuần) · <b>Test tuần này</b> — mỗi lớp một dòng, hạn dd/mm.', 'Bấm dòng lớp: lưới từng em mở ngay dưới, gõ điểm tại chỗ; S Ex là dòng phụ của em.'],
-          chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Bài tuần trước cần chấm nằm ở khối này.' } },
+          chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Mỗi lớp một dòng — bấm dòng để gõ điểm.' } },
       ],
     },
     {
