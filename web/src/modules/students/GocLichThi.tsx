@@ -99,7 +99,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
   const [tu, den] = khoangThang(thangUrl, homNay);
   const thang = useMemo(() => thangTrongKhoang(tu, den), [tu, den]);
   const duong = `/hoc-vien-lop/lich-thi${duongGoc}${duongGoc.includes('?') ? '&' : '?'}thang=${thang.join(',')}`;
-  const { data, loading, error, reload } = useApi<Trang>(duong, [duong]);
+  const { data, loading, error, reload, cu } = useApi<Trang>(duong, [duong], { giuCu: true });
   const [rows, setRows] = useState<HangHien[]>([]);
   useEffect(() => { setRows((data?.rows ?? []).map((r) => ({ ...r, doiSang: null }))); }, [data]);
   const [moChuaCo, setMoChuaCo] = useState(false);
@@ -157,6 +157,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
       {loading && !data && <div className="p-3"><Skeleton rows={5} /></div>}
       {data && rows.length === 0 && <Card><Empty title={t('Không có HV có lịch thi trong {khoang}.', { khoang: `${nhanThang(tu)} → ${nhanThang(den)}` })} /></Card>}
       {data && rows.length > 0 && (
+        <div className={cu ? 'dang-tai-lai' : undefined} aria-busy={cu || undefined}>
         <Bang ten={t('Lịch thi')} cot={COT_LICH} hang={dongBang} khoa={(x) => x.khoa} khung={false} the375={false} dinh
           hangRieng={(x) => x.loai === 'nhom' ? (
             <tr className="bg-[color:var(--surface-2)]">
@@ -171,6 +172,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
             <DongLichThi r={x.r} ds={ds} mo={mo.has(x.r.studentId)} onMo={() => doiMo(x.r.studentId)} nhom={x.nhom}
               hop={hop?.id === x.r.studentId ? hop.kieu : null} onHop={(kieu) => setHop(kieu ? { id: x.r.studentId, kieu } : null)} onLuu={(b) => luu(x.r, b)} />
           )} />
+        </div>
       )}
     </div>
   );
