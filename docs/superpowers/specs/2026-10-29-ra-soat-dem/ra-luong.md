@@ -106,6 +106,8 @@ Mã luồng `Lxx`; cột "Vai" = ai đi luồng; "Tình huống thật" = ca kh�
 
 Phân loại: **LỖI** (sửa ngay) · **RÚT GỌN** (bớt bước / bỏ chặn cứng, không đổi luật, không đổi bố cục → sửa ngay) ·
 **CẦN CHỦ SP** (luật sai / nên đổi, đổi bố cục — câu hỏi ngắn + một khuyến nghị).
+**Chủ SP 29/10:** mockup chỉ là chuẩn HÌNH ẢNH; không đề xuất bỏ thao tác / nút / thành phần đã có chỉ vì mockup không vẽ.
+RÚT GỌN được bớt bước thừa, nhưng mọi thao tác đang có phải còn đường làm — PR ghi bảng TRƯỚC → SAU.
 
 | Mã | Luồng | Loại | Hiện trạng (bước · trang · kẹt · số lệch · quyền · console) | Đề xuất / sửa | PR |
 |---|---|---|---|---|---|
