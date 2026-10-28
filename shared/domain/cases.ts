@@ -314,17 +314,9 @@ export const CASE_OUTCOME_LABEL: Record<CaseOutcome, string> = {
   unchanged: t('Không tiến bộ'),
   worse: t('Kém hơn'),
 };
-export const CASE_OUTCOME_TONE: Record<CaseOutcome, 'ok' | 'info' | 'warn' | 'danger'> = {
-  much_better: 'ok', improved: 'info', unchanged: 'warn', worse: 'danger',
-};
 
 /** Sau khi đã chấm mức độ thành công thì Case đi đâu. */
 export const CASE_DECISIONS = ['end', 'extend'] as const;
-export type CaseDecision = (typeof CASE_DECISIONS)[number];
-export const CASE_DECISION_LABEL: Record<CaseDecision, string> = {
-  end: t('Kết thúc hẳn'),
-  extend: t('Kéo dài theo dõi + thêm phương án'),
-};
 
 /**
  * BỘ PHÂN LOẠI NGUYÊN NHÂN — chỉ dùng cho mạch HỌC THUẬT.
@@ -477,43 +469,13 @@ export function issuesForTopic(topic: string, ct?: string | null): IssueNode[] {
 }
 
 /**
- * CHUYỂN MÃ CŨ SANG MÃ MỚI.
- *
- * Giữ lại để dữ liệu cũ đọc được và để bước nâng cấp chạy đúng một lần. Hai dòng đầu của
- * mỗi nhánh là SUY ĐOÁN chứ không phải ánh xạ hiển nhiên — owner đã được báo trước:
- * "nghe chi tiết / số liệu / chính tả" gần với CẢM ÂM nhất, còn "tìm chi tiết / paraphrase"
- * của Reading thực chất là chuyện TỪ VỰNG.
- */
-export const LEGACY_ISSUE_CODE_MAP: Record<string, string> = {
-  'student.listening.detail': 'student.listening.sound',
-  'student.listening.recognition': 'student.listening.sound',
-  'student.listening.follow': 'student.listening.distractor',
-  'student.listening.strategy': 'student.listening.technique',
-  'student.reading.detail': 'student.reading.language',
-  'student.reading.structure': 'student.reading.mainidea',
-  'student.reading.inference': 'student.reading.logic',
-  'student.reading.strategy': 'student.reading.technique',
-};
-
-/**
  * "Hoàn cảnh kèm theo" đã BỎ (owner chốt 10/09/2026) — thay bằng một ô Ghi chú không bắt
  * buộc. Bắt người ghi chọn hoàn cảnh từ một danh sách là thêm một bước cho thứ mà một câu
  * chữ nói rõ hơn nhiều.
  */
 export const ISSUE_ROLES = ['primary', 'secondary'] as const;
-export type IssueRole = (typeof ISSUE_ROLES)[number];
-export const ISSUE_ROLE_LABEL: Record<IssueRole, string> = {
-  primary: t('Vấn đề chính'), secondary: t('Yếu tố đi kèm'),
-};
 
 // ------------------------------------------------ Nguồn Case, hướng xử lý, tác động
-
-/** `chuyen_cap` (PR-LT2b): Case Cuối khoá lớp thường / Kỳ vọng đầu ra sinh khi chuyển lớp — KHÔNG phải Case SOS (không chờ nguyên nhân). */
-export const CASE_ORIGINS = ['mock', 'teacher_report', 'chuyen_cap'] as const;
-export type CaseOrigin = (typeof CASE_ORIGINS)[number];
-export const CASE_ORIGIN_LABEL: Record<CaseOrigin, string> = {
-  mock: t('Từ kết quả đánh giá'), teacher_report: t('Giáo viên báo'), chuyen_cap: t('Từ Chuyển tiếp lớp'),
-};
 
 /**
  * MỨC ĐỘ GẤP do người báo nhận định. KHÁC HẲN `sos_level`.
@@ -568,13 +530,6 @@ export const URGENCY_TONE: Record<string, 'neutral' | 'warn' | 'danger'> = {
  */
 export const DISPOSITIONS = ['monitor', 'offline', 'no_action', 'action', 'other'] as const;
 export type Disposition = (typeof DISPOSITIONS)[number];
-export const DISPOSITION_LABEL: Record<Disposition, string> = {
-  monitor: t('Chỉ theo dõi thêm'),
-  offline: t('Đã trao đổi ngoài hệ thống'),
-  no_action: t('Không cần xử lý thêm'),
-  action: t('Có kế hoạch hỗ trợ'),
-  other: t('Khác'),
-};
 
 /**
  * HỆ THỐNG TỰ ĐÓNG CASE — S16 (em kết thúc khoá) và S17 (em đổi chương trình), chủ sản phẩm chốt 21/09/2026 đêm; §3.9 bảng luật lộ
@@ -688,12 +643,6 @@ export function isProposalKind(kind: string): boolean {
   return (PROPOSAL_KINDS as readonly string[]).includes(kind);
 }
 
-/** Chuyển loại cũ sang loại mới, để 26 bản ghi đã có không mất nghĩa. */
-export const LEGACY_INTERVENTION_KIND_MAP: Record<string, InterventionKind> = {
-  meeting: 'meeting_cx',
-  ops_policy: 'other_proposal',
-};
-
 /**
  * QUY ĐỊNH CŨ "SOS 1–2 tự học, SOS 3 tutor" — GIỮ ĐỂ ĐỌC LẠI DỮ LIỆU CŨ, KHÔNG CÒN TỰ SINH.
  *
@@ -717,23 +666,6 @@ export function urgencyFromSos(sosLevel: number | null): 'normal' | 'attention' 
   if (sosLevel >= 3) return 'urgent';
   return sosLevel === 2 ? 'attention' : 'normal';
 }
-
-/**
- * PHƯƠNG ÁN HỖ TRỢ CÓ CẦN QUẢN LÝ DUYỆT KHÔNG — do CHÍNH giáo viên quyết định.
- *
- * Giáo viên là người biết rõ nhất việc mình định làm có tự xoay được hay cần trung tâm
- * đứng sau: trao đổi với em sau buổi học thì làm luôn, còn xếp tutor hay lùi lịch thi thì
- * phải có người quyết. Bắt duyệt hết là biến phần mềm thành cửa xin phép; không duyệt gì
- * thì những việc tốn tiền lại không ai chịu trách nhiệm.
- *
- * Việc hỗ trợ thật diễn ra NGOÀI phần mềm, nên "chờ duyệt" không làm chậm điều gì — nó chỉ
- * để lại dấu vết ai đang chờ ai, và chờ bao lâu.
- */
-export const APPROVAL_STATES = ['pending', 'approved', 'declined'] as const;
-export type ApprovalState = (typeof APPROVAL_STATES)[number];
-export const APPROVAL_LABEL: Record<ApprovalState, string> = {
-  pending: t('Chờ duyệt'), approved: t('Đã duyệt'), declined: t('Bị từ chối'),
-};
 
 /**
  * CHU KỲ XỬ LÝ CỦA PHƯƠNG ÁN HỌC THUẬT: HAI TUẦN.
@@ -1098,15 +1030,6 @@ export const CASE_STATUSES = ['open', 'in_progress', 'done'] as const;
 export type CaseStatus = (typeof CASE_STATUSES)[number];
 export const CASE_STATUS_LABEL: Record<CaseStatus, string> = {
   open: t('Chưa xử lý'), in_progress: t('Đang xử lý'), done: t('Đã xử lý'),
-};
-
-/**
- * Ba trạng thái phải NHÌN LÀ BIẾT, không phải mở chi tiết mới rõ đã có ai làm gì chưa.
- * "GVCN đã nhận" là metadata gắn kèm, KHÔNG phải trạng thái thứ tư — nhận tài liệu không
- * tự nó nghĩa là đã xử lý.
- */
-export const CASE_STATUS_TONE: Record<CaseStatus, 'danger' | 'warn' | 'ok'> = {
-  open: 'danger', in_progress: 'warn', done: 'ok',
 };
 
 /**

@@ -43,8 +43,6 @@ export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = {
 export const HUONG_SAU_THI = ['dung', 'lo_trinh_moi'] as const;
 export type HuongSauThi = (typeof HUONG_SAU_THI)[number];
 export const NHAN_HUONG_SAU_THI: Record<HuongSauThi, string> = { dung: t('Tạm dừng/ Kết thúc học'), lo_trinh_moi: t('Lộ trình mới') };
-/** Hướng của một lựa chọn đã ghi (dữ liệu cũ `hoc_tiep` / `hoc_lai` = Lộ trình mới). */
-export const huongCuaLuaChon = (c: LuaChonSauThi): HuongSauThi => (c === 'tam_dung' || c === 'ket_thuc' ? 'dung' : 'lo_trinh_moi');
 /** "Đã xong · OVR 6.5 · Đạt Target" — MỘT hàm nhãn cho Các lộ trình, đầu hồ sơ, panel Bước tiếp và dòng Công việc (OV-13m). */
 /* Mockup bước tiếp chủ SP duyệt 15/10 dùng đúng chữ "Đã xong" cho lộ trình có kết quả thi (khác trạng thái việc "Xong" của S3) — chỉ ở file này. */
 export const CHU_DA_XONG = t('Đã xong');

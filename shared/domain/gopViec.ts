@@ -45,8 +45,6 @@ export const VIEC_CHAM_CHEO = 'Chấm Speaking';
 export const KHOA_CHAM_SPEAKING = 'score:cham-speaking|cc';
 
 export const khoaDongGop = (group: string, classId: number, ownerId: number | null) => `gop:${group}:${classId}:u${ownerId ?? 0}`;
-/** Nhóm của khoá dòng gộp (`gop:{nhóm}:{lớp}:u{người}`); khoá khác → null. */
-export const nhomCuaKhoaGop = (key: string): string | null => (key.startsWith('gop:') ? key.split(':')[1] ?? null : null);
 
 /** UI-CV-TVV (mockup `tvv.html`): việc TVV theo từng em — mỗi việc một dòng, một panel (Báo PH có lịch sử từng em; Sau thi; Chốt ngày thi). */
 const GIU_TUNG_DONG_TVV = new Set(['bao_ph_yt', 'thi_that', 'buoc_tiep']);
@@ -65,11 +63,6 @@ export function khoaGopCua(it: ViecGopDuoc): string | null {
   /* RA-LUONG-1: dòng gộp chấm chéo (QL "Tất cả", gom theo lớp) giữ đuôi `|cc` như việc lẻ — không thì nó lọt vào Chấm điểm (không đếm) và mở panel Nhập điểm cả dòng. */
   if (laViecChamCheo(it)) return `${k}|cc`;
   return it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? `${k}:t${it.tuanThi ?? ''}:s${it.sos ?? 0}` : k;
-}
-/** PR-DON: các khoá cùng chỉ một (nhóm) việc — khoá gửi, khoá dòng, khoá gộp của việc lẻ, khoá từng em của dòng gộp. Nhắc qua khoá nào cũng tính một lần/ngày. */
-export function khoaCungViec(row: (ViecGopDuoc & { con?: readonly { key: string }[] }) | undefined, key: string): string[] {
-  if (!row) return [key];
-  return [...new Set([key, row.key, ...(row.con ? row.con.map((c) => c.key) : [khoaGopCua(row)])].filter((k): k is string => !!k))];
 }
 const nang = (u: ViecGopDuoc['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 const sapViec = (a: ViecGopDuoc, b: ViecGopDuoc) =>

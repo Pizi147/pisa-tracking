@@ -25,10 +25,6 @@ export const UNIT_STATUS_LABEL: Record<UnitStatus, string> = {
 };
 
 export const TASK_TYPES = ['in_period', 'long_term'] as const;
-export type TaskType = (typeof TASK_TYPES)[number];
-export const TASK_TYPE_LABEL: Record<TaskType, string> = {
-  in_period: t('Trong kỳ'), long_term: t('Dài hạn'),
-};
 
 /**
  * BỐN NHÓM CÔNG VIỆC QUẢN LÝ (mục 8.1) — và chỉ bốn.
@@ -71,7 +67,3 @@ export const TASK_PROGRESS_NEEDS_REASON: TaskProgress[] = ['paused', 'stopped'];
 export const TASK_PROGRESS_CLOSED: TaskProgress[] = ['done', 'stopped'];
 
 export type DueState = 'overdue' | 'due_soon' | 'on_track' | 'no_due' | 'closed';
-export const DUE_LABEL: Record<DueState, string> = {
-  overdue: t('Quá hạn'), due_soon: t('Sắp đến hạn'), on_track: t('Trong hạn'),
-  no_due: t('Chưa có hạn'), closed: t('Đã đóng'),
-};

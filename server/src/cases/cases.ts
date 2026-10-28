@@ -2451,13 +2451,6 @@ export type CaseFilters = {
  */
 /** Ba trạng thái loại trừ nhau dùng cho màn tổng hợp của Quản lý. */
 export type CaseState = 'chua_xu_ly' | 'no_plan' | 'working' | 'done';
-export const CASE_STATE_LABEL: Record<CaseState, string> = {
-  /* Q28-5: Case từ SOS có PA quy chế máy gán nhưng chưa xác nhận đủ nguyên nhân + PA. */
-  chua_xu_ly: 'Chưa xử lý',
-  no_plan: 'Chưa có PA học thuật',
-  working: 'Đang xử lý',
-  done: 'Xong',
-};
 
 /** Một dòng trong danh sách Case, sau khi đã dựng xong. */
 export type MappedCase = {

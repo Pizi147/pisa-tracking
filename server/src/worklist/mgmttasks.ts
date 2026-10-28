@@ -4,7 +4,7 @@ import {
   TASK_PROGRESS_NEEDS_REASON, chuanKhoaGui, facetVanHanh, locVanHanh,
   type DongVanHanh, type HangSo, type TaskGroup, type TaskProgress, type TrangThaiLoc,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -490,21 +490,6 @@ export function createMgmtTask(p: Principal, input: {
     if (cu) return mgmtTaskDetail(p, cu);
     throw e;
   }
-}
-
-/**
- * HẠN MẶC ĐỊNH CỦA VIỆC CON = hạn cha trừ MỘT NGÀY (mục 8.6).
- *
- * Chỉ là GỢI Ý lúc tạo, sửa được ngay. Và đổi hạn cha về sau KHÔNG kéo theo hạn con đã chốt:
- * người ta chốt hạn con vì một lý do riêng, dời hộ là xoá mất lý do đó.
- *
- * Hạn cha đã là quá khứ thì trừ một ngày ra một ngày còn quá khứ hơn — trường hợp đó trả về
- * NULL để người tạo tự chọn, thay vì đưa ra một mặc định vô nghĩa.
- */
-export function defaultSubDue(parentDue: string | null): string | null {
-  if (!parentDue) return null;
-  const d = addDays(parentDue, -1);
-  return d < demoToday() ? null : d;
 }
 
 /**

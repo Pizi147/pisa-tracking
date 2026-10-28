@@ -9,9 +9,6 @@ import { t } from '../i18n/index.ts';
 
 export const KIEU_KHOANG = ['2-tuan', 'tuan', 'thang', 'tuy-chon', 'toan-bo'] as const;
 export type KieuKhoang = (typeof KIEU_KHOANG)[number];
-export const NHAN_KIEU_KHOANG: Record<KieuKhoang, string> = {
-  '2-tuan': t('2 tuần vừa qua'), tuan: t('Theo tuần'), thang: t('Theo tháng'), 'tuy-chon': t('Tùy chọn'), 'toan-bo': t('Toàn bộ'),
-};
 /** `tu`, `den` là NGÀY (gồm cả hai đầu). Theo tuần / tháng / 2 tuần: `tu` Thứ Hai, `den` Chủ nhật. */
 export type KhoangNgay = { kieu: KieuKhoang; tu: string; den: string };
 /** P9 (UI-PHAN-TICH, chủ SP 22/10): "Toàn bộ" = từ tuần đầu dữ liệu có thể có tới hết tuần này; khoảng tự do không khoá trần. */
@@ -88,9 +85,6 @@ export function thamSoKhoang(k: KhoangNgay, homNay: string): Record<string, stri
   if (k.kieu === '2-tuan' && k.tu === md.tu && k.den === md.den) return {};
   return { kieu: k.kieu, tu: k.tu, den: k.den };
 }
-
-/** Thứ Hai tuần đầu / tuần cuối — bộ lọc theo tuần thi (`rp.week_start BETWEEN tuanDau AND tuanCuoi`). */
-export const tuanCuaKhoang = (k: { tu: string; den: string }) => ({ tuanDau: mondayOfDate(k.tu), tuanCuoi: mondayOfDate(k.den) });
 
 /** Khoảng liền trước, cùng độ dài — cột "So 2 tuần trước". */
 export function khoangTruoc(k: { tu: string; den: string }): { tu: string; den: string } {

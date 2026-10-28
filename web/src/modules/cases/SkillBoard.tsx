@@ -144,14 +144,6 @@ export type Row = {
   cases: CaseCard[];
 };
 
-const STATE_LABEL: Record<Row['state'], string> = {
-  none: t('Không có Case mở'),
-  /* Q28-5: Case từ SOS chưa xác nhận đủ nguyên nhân + PA do người xác nhận. */
-  chua_xu_ly: t('Chưa xử lý'),
-  no_plan: t('Chưa có PA'),
-  working: t('Đang xử lý'),
-  done: t('Đã kết thúc'),
-};
 const STATE_KIND: Record<Row['state'], 'doing' | 'waiting' | 'done' | 'idle'> = {
   none: 'idle', chua_xu_ly: 'waiting', no_plan: 'waiting', working: 'doing', done: 'done',
 };
@@ -230,48 +222,6 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
 export function xepCase(cases: CaseCard[]): CaseCard[] {
   const done = (x: CaseCard) => (x.trangThaiV4.t === 'da-huy' ? 2 : x.status === 'done' ? 1 : 0);
   return [...cases].sort((a, b) => done(a) - done(b) || (b.touchedOn ?? '').localeCompare(a.touchedOn ?? '') || b.id - a.id);
-}
-
-/**
- * CASE & PHƯƠNG ÁN CỦA KỸ NĂNG ĐANG CHỌN (UI-HO-SO-HV, `dieu-chinh-cuoi.html` khu c) — đúng các hàng Case / PA của bảng kỹ năng (cùng nút Mở Case ·
- * + Thêm PA · Xác nhận · Kết quả, cùng ngăn Case), luôn mở, bảng `table-fixed` nên cột PA cố định (nút không đẩy chữ). Nhiều hàng (Overall) → mỗi kỹ năng
- * có Case một nhóm. < 640 px: thẻ kỹ năng như bảng cũ.
- */
-export function CaseKyNang({ rows, onReport, onChanged, onMoCase, tamDungTu = null }: {
-  rows: Row[]; tamDungTu?: string | null;
-  onReport?: (category: string) => void; onChanged?: () => void;
-  onMoCase: (caseId: number, o?: MoCase) => void;
-}) {
-  const dienThoai = useDienThoai();
-  const { ngan } = useNgayNghiepVu();
-  const ds = rows.length > 1 ? rows.filter((r) => r.cases.length) : rows;
-  if (!ds.length) return <p className="m-0 px-4 py-3 text-[13px] text-slate-400">{t('Không có Case nào.')}</p>;
-  if (dienThoai) return <TamDungCtx.Provider value={tamDungTu}><TheKyNangDs rows={ds} onMoCase={onMoCase} /></TamDungCtx.Provider>;
-  return (
-    <TamDungCtx.Provider value={tamDungTu}>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[680px] table-fixed text-sm">
-          <colgroup><col className="w-[24%]" /><col className="w-[20%]" /><col className="w-[26%]" /><col className="w-[30%]" /></colgroup>
-          <thead><tr><th className="th" colSpan={2}>{t('Case · Phương án')}</th><th className="th">{t('Trạng thái · Kết quả')}</th><th className="th">{t('Việc')}</th></tr></thead>
-          {ds.map((r) => (
-            <tbody key={khoaHang(r)}>
-              {ds.length > 1 && (
-                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold text-slate-400">{r.label}{r.tuLopTruoc ? ` · ${t('từ {tuLopTruoc}', { tuLopTruoc: r.tuLopTruoc })}` : ''}</th></tr>
-              )}
-              {r.cases.length ? xepCase(r.cases).map((c) => <HangCase key={c.id} c={c} ngan={ngan} onChanged={onChanged} onMoCase={onMoCase} />) : (
-                <HangCon>
-                  <td className="td text-[13px] font-normal text-slate-400" colSpan={4}>
-                    {t('Không có vấn đề nào đang theo dõi ở {label}.', { label: r.label })}
-                    {onReport && <button type="button" className="btn btn-sm ml-2" onClick={() => onReport(r.category)}>{t('+ Case cho {label}', { label: dich(r.label) })}</button>}
-                  </td>
-                </HangCon>
-              )}
-            </tbody>
-          ))}
-        </table>
-      </div>
-    </TamDungCtx.Provider>
-  );
 }
 
 /**
@@ -843,5 +793,4 @@ function CotPhai({ nut, phu }: { nut?: ReactNode; phu?: ReactNode }) {
   );
 }
 
-export { STATE_LABEL as SKILL_STATE_LABEL };
 export type { Row as SkillBoardRow, CaseCard, Plan };

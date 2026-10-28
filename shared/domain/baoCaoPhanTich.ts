@@ -60,6 +60,3 @@ export function chuSoTruoc(nay: number, truoc: number): string {
   return nay > truoc ? t('Tăng {n} HV', { n: nay - truoc }) : t('Giảm {n} HV', { n: truoc - nay });
 }
 
-/** Tỷ lệ đạt Mock = Đạt ÷ (Đạt + Chưa đạt); Chưa đủ điểm không vào mẫu số. Không có mẫu → null. */
-export const tyLeDatMock = (m: { dat: number; chuaDat: number }): number | null =>
-  m.dat + m.chuaDat > 0 ? Math.round((100 * m.dat) / (m.dat + m.chuaDat)) : null;

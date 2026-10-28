@@ -1,6 +1,5 @@
 import { Fragment, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.ts';
-import { Info } from './ui.tsx';
 import { BaoOTrongNhan } from './ONgay.tsx';
 import { buocDanhSach, chotChuGo, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
@@ -88,51 +87,6 @@ export function PersonPicker({ value, valueName, onChange, disabled, placeholder
             </button>
           ))}
         </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Chọn NHIỀU người theo dõi.
- *
- * Người theo dõi không phải người làm và không chịu trách nhiệm hoàn thành — họ chỉ cần
- * biết khi tiến độ đổi. Quản lý của chính chi nhánh được hệ thống thêm sẵn (chip "tự động"),
- * vì đó là câu trả lời hệ thống đã biết; người tạo chỉ thêm ai ngoài danh sách đó.
- */
-export function FollowerPicker({ value, onChange, autoNames = [], disabled }: {
-  value: Person[]; onChange: (people: Person[]) => void;
-  autoNames?: string[]; disabled?: boolean;
-}) {
-  const chosen = useMemo(() => new Set(value.map((p) => p.id)), [value]);
-  return (
-    <div className="space-y-1.5">
-      <div className="flex flex-wrap gap-1">
-        {autoNames.map((n) => (
-          <Info key={`auto-${n}`} title={t('Quản lý chi nhánh — hệ thống tự thêm')}>{n} · {t('tự động')}</Info>
-        ))}
-        {value.map((p) => (
-          <span key={p.id} className="inline-flex items-center gap-1">
-            <Info>{p.name}</Info>
-            {!disabled && (
-              <button
-                className="text-slate-500 hover:text-slate-200 text-xs"
-                onClick={() => onChange(value.filter((x) => x.id !== p.id))}
-                aria-label={t('Bỏ {ten} khỏi người theo dõi', { ten: p.name })}
-              >✕</button>
-            )}
-          </span>
-        ))}
-        {value.length === 0 && autoNames.length === 0 && (
-          <span className="text-xs text-slate-500">{t('Chưa có ai theo dõi thêm')}</span>
-        )}
-      </div>
-      {!disabled && (
-        <PersonPicker
-          value={null}
-          placeholder={t('Thêm người theo dõi…')}
-          onChange={(_, p) => { if (p && !chosen.has(p.id)) onChange([...value, p]); }}
-        />
       )}
     </div>
   );

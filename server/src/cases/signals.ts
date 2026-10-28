@@ -161,16 +161,6 @@ export function labelOf(s: { skill: string | null; programme_code?: string | nul
 
 // ---------------------------------------------------------------- đọc
 
-export function signalsOfStudent(studentId: number, cycleId?: number | null): SignalRow[] {
-  const conn = db();
-  return cycleId
-    ? (conn
-        .prepare(`SELECT * FROM case_signals WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? ORDER BY raised_on DESC, id DESC`)
-        .all(studentId, cycleId) as SignalRow[])
-    : (conn.prepare('SELECT * FROM case_signals WHERE student_id = ? ORDER BY raised_on DESC, id DESC')
-        .all(studentId) as SignalRow[]);
-}
-
 // ---------------------------------------------------------------- thu hồi khi sửa điểm
 
 /**

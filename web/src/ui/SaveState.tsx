@@ -1,4 +1,4 @@
-import { Fragment, createContext, useContext, useEffect, useId, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { capNhatLuuO, tomTatLuuDong, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { ChuLuu } from './KhuonViec.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -91,33 +91,3 @@ export function useTrangThaiLuuO<B>(khoaBao: string) {
   };
 }
 
-/**
- * UI-CON-LAI k5 (T15): KHỐI XUNG ĐỘT khi lưu — máy chủ trả 409 (người khác vừa lưu sau lúc mình mở). Chưa ghi đè gì; chữ đang gõ giữ.
- * Bảng hai cột "Bản đã lưu / Bạn đang sửa" theo từng trường, rồi chọn một: dùng bản đã lưu (bỏ chữ mình) hoặc lưu bản của mình (ghi lịch sử).
- */
-export function KhoiXungDot({ cau, dong, onDungBanLuu, onLuuBanToi, ban }: {
-  cau: string; dong: [nhan: string, daLuu: string | null, dangSua: string | null][];
-  onDungBanLuu: () => void; onLuuBanToi: () => void; ban?: boolean;
-}) {
-  return (
-    <div role="alert" className="flex flex-col gap-2 rounded-lg border px-3 py-2.5 text-[13px]"
-      style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
-      <p className="m-0 font-semibold" style={{ color: 'rgb(var(--soon-rgb))' }}>⚠ {cau}</p>
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 gap-y-1">
-        <span /><span className="text-xs font-semibold text-slate-400">{t('Bản đã lưu')}</span><span className="text-xs font-semibold text-slate-400">{t('Bạn đang sửa')}</span>
-        {dong.map(([nhan, a, b]) => (
-          <Fragment key={nhan}>
-            <span className="text-xs text-slate-400">{nhan}</span>
-            <span className="min-w-0 break-words text-slate-200">{a || '—'}</span>
-            <span className="min-w-0 break-words font-semibold text-slate-100">{b || '—'}</span>
-          </Fragment>
-        ))}
-      </div>
-      <p className="m-0 text-xs text-slate-400">{t('Chưa có gì bị ghi đè. Chữ bạn gõ vẫn giữ.')}</p>
-      <div className="flex flex-wrap justify-end gap-2">
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={ban} onClick={onDungBanLuu}>{t('Dùng bản đã lưu')}</button>
-        <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={ban} onClick={onLuuBanToi}>{t('Lưu bản của tôi')}</button>
-      </div>
-    </div>
-  );
-}

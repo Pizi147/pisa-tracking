@@ -3,7 +3,6 @@
  * bản đã có thay vì ghi dòng thứ hai. Mở form lần mới thì có mã mới — hai việc cùng tiêu đề là hai việc, không bị gộp lặng lẽ.
  * Máy chủ gắn khoá với NGƯỜI TẠO: cùng mã từ người khác là một dòng khác, không đọc ra được dòng của người kia.
  */
-export const KHOA_GUI_TOI_DA = 100;
 const KHOA_HOP_LE = /^[A-Za-z0-9:_-]{8,100}$/;
 
 /** Khoá hợp lệ: 8–100 ký tự [A-Za-z0-9:_-]. Không hợp lệ hoặc trống → null (máy chủ coi như không có khoá; không tin chuỗi lạ). */

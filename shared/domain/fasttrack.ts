@@ -5,8 +5,6 @@ import { t } from '../i18n/index.ts';
 
 // ---------------------------------------------------------------- Mock Test
 
-export const mockLabel = (n: number) => `MT${n}`;
-
 /**
  * Kỳ vọng của một lần MT = target của lộ trình − mức trừ theo LẦN THỨ MẤY trong lộ trình đó.
  * MT1 trừ 1.0, MT2 trừ 0.5, từ MT3 trở đi bằng đúng target (nguồn: Quy trình SOS mục 3).
@@ -79,18 +77,6 @@ export const CLASS_PHASE_LABEL: Record<ClassPhase, string> = {
   finished: t('Đã hết khoá'),
 };
 
-/** Chặng nào đáng nổi lên màn hình, và nổi ở mức nào. */
-export const CLASS_PHASE_TONE: Record<ClassPhase, 'ok' | 'info' | 'warn' | 'danger' | 'muted'> = {
-  unknown: 'warn',
-  not_started: 'muted',
-  running: 'ok',
-  progress_soon: 'info',
-  progress_week: 'warn',
-  final_soon: 'info',
-  final_week: 'warn',
-  finished: 'danger',
-};
-
 /**
  * Tuần học thứ mấy, tính từ TUẦN BẮT ĐẦU HỌC (tuần bắt đầu là tuần thứ 1).
  *
@@ -103,12 +89,6 @@ export function studyWeekOf(startMonday: string | null | undefined, monday: stri
   const b = Date.parse(monday + 'T00:00:00Z');
   if (Number.isNaN(a) || Number.isNaN(b)) return null;
   return Math.floor((b - a) / (7 * 86400000)) + 1;
-}
-
-/** Tháng/năm dạng 'YYYY-MM' → '11/2026'. Trống thì trả về chuỗi rỗng. */
-export function fmtExamMonth(v: string | null | undefined): string {
-  if (!v || !/^\d{4}-\d{2}$/.test(v)) return '';
-  return `${v.slice(5, 7)}/${v.slice(0, 4)}`;
 }
 
 /**
@@ -136,23 +116,6 @@ export function nhanLuot(status: string, coDiem: number, yeuCau: number,
 }
 
 /**
- * PHẠM VI YÊU CẦU của một kỹ năng trong một đợt (mục 10.1).
- *
- * Mặc định MỌI kỹ năng đều nằm trong phạm vi. Quản lý có thể chốt TRƯỚC là đợt này chỉ
- * mock một số kỹ năng — trường hợp rất hiếm. Lớp thường thì không: Giữa khoá / Cuối khoá
- * luôn phải đủ bốn môn, không có thao tác miễn môn.
- *
- * "Ngoài phạm vi" KHÁC "vắng": vắng là em đã được xếp lịch mà không thi, và đợt đó vẫn
- * còn thiếu kết quả. Bỏ một môn khỏi phạm vi SAU khi em vắng chính là cách hợp thức hoá
- * một đợt thiếu thành hoàn tất, nên hệ thống chặn.
- */
-export const SKILL_REQUIREMENTS = ['required', 'skipped'] as const;
-export type SkillRequirement = (typeof SKILL_REQUIREMENTS)[number];
-export const SKILL_REQUIREMENT_LABEL: Record<SkillRequirement, string> = {
-  required: t('Trong phạm vi'), skipped: t('Ngoài phạm vi'),
-};
-
-/**
  * TRẠNG THÁI THI của một kỹ năng trong một đợt — thứ được LƯU, không suy ra từ điểm.
  *
  * Ô điểm trống KHÔNG đủ để kết luận em vắng (mục 10.6): có thể giáo viên chưa chấm, có
@@ -160,12 +123,6 @@ export const SKILL_REQUIREMENT_LABEL: Record<SkillRequirement, string> = {
  */
 export const SIT_STATUSES = ['scheduled', 'sat', 'absent', 'cancelled'] as const;
 export type SitStatus = (typeof SIT_STATUSES)[number];
-export const SIT_STATUS_LABEL: Record<SitStatus, string> = {
-  scheduled: t('Theo lịch'),
-  sat: t('Đã làm bài'),
-  absent: t('Đã xác nhận vắng'),
-  cancelled: t('Đã huỷ'),
-};
 
 /**
  * TIẾN ĐỘ của một kỹ năng trong một đợt — mỗi giá trị là MỘT việc khác nhau của người dùng.

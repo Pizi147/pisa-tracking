@@ -1175,12 +1175,3 @@ export function setSkillDeadline(p: Principal, attemptId: number, skill: string,
   return { ok: true };
 }
 
-/** Người đang xem có được đổi lịch/phạm vi của đợt này không. */
-export function scheduleViewerRights(p: Principal, attempt: { class_id?: number | null; student_id?: number | null }) {
-  const ctx = { classId: attempt.class_id ?? null, studentId: attempt.student_id ?? null };
-  return {
-    canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, ctx),
-    canSetScope: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, ctx),
-    canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, ctx),
-  };
-}

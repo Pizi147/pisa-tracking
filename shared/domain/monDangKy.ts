@@ -11,8 +11,6 @@ import { ENTRY_SKILLS, ENTRY_SKILL_SHORT, type AssessedSkill, type EntrySkill } 
 export const LY_DO_KHONG_HOC = 'Không học (môn đăng ký)';   // chữ riêng — không trùng lý do QL tự gõ khi "Huỷ kỹ năng"
 /** Dấu đi trong danh sách kỹ năng bỏ của lượt: có kỹ năng bỏ VÌ môn đăng ký → Overall "Không đủ bộ môn" (QL "Huỷ kỹ năng" cũ thì không). */
 export const DAU_KHONG_HOC = 'khong_hoc';
-/** Nhãn Overall khi lượt thiếu kỹ năng vì môn đăng ký (khác "Chưa đủ dữ liệu"). */
-export const NHAN_KHONG_DU_BO_MON = 'Không đủ bộ môn';
 
 export type MonVao = string | readonly string[] | null | undefined;
 
