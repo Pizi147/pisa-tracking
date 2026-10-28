@@ -9646,6 +9646,9 @@ await runPrKhungNganXepTests({ check, assert } as any);
 // ==================================================================== M6 6b-2 PILOT-CASE (nhóm theo bước, việc trong dòng, Case A, lưu về Case)
 const { runPrPilotCaseTests } = await import('./prPilotCase.tests.ts');
 await runPrPilotCaseTests({ check, assert, conn, P } as any);
+// ==================================================================== M6 6b-3 PILOT-VIEC (Xem Case trong panel việc, Xác nhận · việc tiếp ›, dải Hoàn tác)
+const { runPrPilotViecTests } = await import('./prPilotViec.tests.ts');
+await runPrPilotViecTests({ check, assert } as any);
 // ==================================================================== M6 6b-4 PILOT-GV-TRE (panel GV chấm quá hạn: Admin gvQuaHan · QL treCham, Nhập hộ)
 const { runPrPilotGvTreTests } = await import('./prPilotGvTre.tests.ts');
 await runPrPilotGvTreTests({ check, assert, conn, P } as any);

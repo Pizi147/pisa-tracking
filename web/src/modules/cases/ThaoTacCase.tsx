@@ -8,7 +8,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
-import { BoiCanh, CanLam, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, CanLam, DongTiep, NutVaTiep, TrangThaiLuu, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
@@ -44,7 +44,9 @@ type ChungPanel = {
  * một lần mở (thử lại không ghi PA thứ hai), cùng đường `POST /cases/:id/interventions`. Lỗi lưu giữ chữ (`loiLuu`, nơi gọi vẽ "Thử lại").
  */
 export function useThemPa({ caseId, onSaved, v0 }: {
-  caseId: number; onSaved: (caseMoi: any, x: DaLuuPanel) => void;
+  caseId: number;
+  /** M6 6b-3 `diTiep`: bấm "… · việc tiếp ›" (panel việc) — nơi gọi chuyển việc kế thay vì ở lại "✓ Đã lưu". */
+  onSaved: (caseMoi: any, x: DaLuuPanel, diTiep: boolean) => void;
   /** Bản nháp còn giữ (form tại chỗ bị đóng khi đổi dòng — không mất chữ). */
   v0?: GiaTriPa;
 }) {
@@ -61,17 +63,19 @@ export function useThemPa({ caseId, onSaved, v0 }: {
   const khoa = useRef(moiKhoaGui('pa'));
   /* Nhóm Đề xuất luôn phải có Quản lý trả lời. */
   const deXuat = isProposalKind(v.kind);
+  const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
 
   const loi = [
     ...loiFormPa(v),
     ...dsLoi(status === 'completed' ? [{ khoa: 'ngay-lam', nhan: t('Ngày đã làm'), chon: true }] : [], { 'ngay-lam': completedDate }),
   ];
 
-  const luu = async () => {
+  const luu = async (diTiep = false) => {
     lf.bam();
     if (loi.length > 0) return;
     setBusy(true);
     setLoiLuu(null);
+    setBam(diTiep ? 'tiep' : 'luu');
     try {
       const c = await api.post<{ interventions?: { id: number }[] }>(`/cases/${caseId}/interventions`, {
         ...paPayload(v), status,
@@ -85,12 +89,12 @@ export function useThemPa({ caseId, onSaved, v0 }: {
       /* M6 6b-2 (Q1): PA vừa thêm = id lớn nhất Case trả về (gửi lại cùng khoá trả đúng PA đó) → Hoàn tác Thêm PA (#623; máy chủ kiểm người thêm + 10 giây). */
       const paId = Math.max(0, ...(c?.interventions ?? []).map((x) => x.id)) || undefined;
       onSaved(c, { chu: deXuat ? t('Đã gửi Quản lý duyệt') : t('Đã thêm PA'), phu: [dich(INTERVENTION_KIND_LABEL[v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.kind), v.description.trim()].filter(Boolean).join(' · '),
-        paId, hoanTac: paId ? async () => { await api.post(`/interventions/${paId}/hoan-tac-them`); invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work'); } : undefined });
+        paId, hoanTac: paId ? async () => { await api.post(`/interventions/${paId}/hoan-tac-them`); invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work'); } : undefined }, diTiep);
     } catch (e: any) { setLoiLuu(e.message); } finally { setBusy(false); }
   };
 
   const daSua = !!(v.description.trim() || status === 'completed');
-  return { v, setV, status, setStatus, completedDate, setCompletedDate, startedDate, setStartedDate, lf, busy, loiLuu, deXuat, loi, luu, daSua };
+  return { v, setV, status, setStatus, completedDate, setCompletedDate, startedDate, setStartedDate, lf, busy, bam, loiLuu, deXuat, loi, luu, daSua };
 }
 
 /** Ô "Bắt đầu" / "Ngày đã làm" + liên kết "PA đã làm trước đây" của form Thêm PA — panel và form tại chỗ cùng chữ, cùng luật. */
@@ -123,26 +127,25 @@ export function phanNgayThemPa(h: ReturnType<typeof useThemPa>) {
  * em ↗ · lớp · ngữ cảnh (nơi gọi truyền `dau`), MỘT khối Cần làm (form + nút chính "Thêm PA" / "Gửi QL duyệt"), Bối cảnh ≤ 3 dòng, chân trạng thái lưu;
  * Bắt đầu = ô ngày gõ được + nút lịch (`ChonNgayGan` = `ONgay`, không sau hôm nay), mặc định hôm nay.
  */
-export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh }: ChungPanel & {
+export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh, tiep: tiepViec }: ChungPanel & {
   caseId: number; studentId?: number | null;
+  /** M6 6b-3: panel việc có việc kế — "Thêm PA · việc tiếp ›" (đề xuất cần Quản lý duyệt thì không). */
+  tiep?: TiepViec;
   /** Case có PA theo quy chế đang chạy → PA này là hỗ trợ thêm. */
   coPaBatBuoc?: boolean;
   /** OV-12e: đầu panel v3 (`dauViec`) + Bối cảnh (Nguyên nhân · Kết quả gần nhất). */
   dau?: { han?: ReactNode; dong2: ReactNode[] }; boiCanh?: [string, ReactNode][];
 }) {
-  const h = useThemPa({ caseId, onSaved: (_c, x) => onSaved(x) });
-  const { v, setV, lf, busy, loiLuu, deXuat, loi, luu, daSua } = h;
-  const nut = (
-    <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>
-      {busy ? t('Đang lưu…') : deXuat ? t('Gửi Quản lý duyệt') : t('Thêm PA')}
-    </button>
-  );
+  const h = useThemPa({ caseId, onSaved: (_c, x, diTiep) => { if (diTiep && tiep) tiep.lam(x); else onSaved(x); } });
+  const { v, setV, lf, busy, bam, loiLuu, deXuat, loi, luu, daSua } = h;
+  const tiep = deXuat ? undefined : tiepViec;
+  const nut = <NutVaTiep chu={deXuat ? t('Gửi Quản lý duyệt') : t('Thêm PA')} chuTiep={t('Thêm PA · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
   const { ngay, cuoi } = phanNgayThemPa(h);
   return (
     <KhungPanel tieuDe={t('Thêm PA')} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose} dau={dau}
       chan={{
-        v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi),
-        dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
+        v3: true, chinh: <><DongTiep tiep={tiep} chan />{nut}</>, daSua, conThieu: lf.conThieu(loi),
+        dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu(bam === 'tiep')} /> : undefined,
       }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
@@ -153,6 +156,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
               : t('Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.')}
             ngay={ngay} cuoi={cuoi} />
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
+          <DongTiep tiep={tiep} />
         </CanLam>
         {boiCanh && <BoiCanh dong={boiCanh} />}
       </div>

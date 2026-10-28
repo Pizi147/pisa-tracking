@@ -1,20 +1,22 @@
 import { PanelXetLai } from '../classes/PanelXetLai.tsx';
-import { useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
+import { HienLaiPanel, KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { BoiCanh, dauViec } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, ViecVuaLuu, dauViec } from '../../ui/KhuonViec.tsx';
+import { ChuDich } from '../../ui/ChuDich.tsx';
+import { XemCaseViec, useXem } from '../../lib/quayLai.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { chonNguoi, phuGv } from '../classes/ClassCreatePanel.tsx';
-import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
+import { DongDaLuu, GhiNhanh, hoanTacNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NganCase } from '../students/NganCase.tsx';
-import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
+import { tenNganCase, type CaseDetail } from '../cases/CasePanel.tsx';
 import { DoiNguoiPhuTrach } from '../cases/DoiNguoiPhuTrach.tsx';
 import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
 import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
@@ -26,6 +28,7 @@ import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { khopKn } from '../cham/LuoiFT.tsx';
 import { oThuong } from '../cham/LuoiThuong.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
+import { tenBoEm } from './DanhSachViec.tsx';
 import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, conThieuFt, shortDate, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, outcomeLabelFor, tenMon, tuanLich } from '@shared/domain/index.ts';
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
@@ -95,10 +98,42 @@ type PropsViec = {
   onMo?: (it: WorkItem) => void;
   /** UI-CV-TVV: tên em của việc kế ("Việc kế: Lý Tuấn Bình"). */
   tenTiep?: string | null;
+  /** M6 6b-3 (V19): view Case ghi lên URL `?panel=case` — Back trình duyệt lùi một view, F5 giữ view (trang Công việc). */
+  xemUrl?: boolean;
 };
-/** NEN-PANEL (K12): khoá nháp = khoá việc — chữ đang gõ trong panel của việc này giữ ở máy tới khi lưu / bỏ. */
+/**
+ * NEN-PANEL (K12): khoá nháp = khoá việc — chữ đang gõ trong panel của việc này giữ ở máy tới khi lưu / bỏ.
+ * M6 6b-3 (mockup panel-pilot ②c): panel việc là ngăn xếp view (`useXem`) — "Xem Case" (đầu panel) vào view Case NGAY TRONG panel việc, "‹ {việc}" về
+ * đúng form: form việc vẫn gắn (ẩn) nên chữ, lựa chọn, trạng thái lưu còn nguyên; không panel chồng panel. ✕ ở view Case = đóng cả panel.
+ */
 export function PanelViec(p: PropsViec) {
-  return <NhapViec khoa={p.it.key}><PanelMotViec {...p} /></NhapViec>;
+  const xem = useXem({ url: p.xemUrl, dau: ['viec'] });
+  const caseId = p.it.con?.length ? null : p.it.caseId ?? null;
+  const dangXemCase = caseId !== null && xem.ds[xem.ds.length - 1] === 'case';
+  /* Nút vừa bấm ("Xem Case" / ‹) ẩn theo lớp của nó — focus sang lớp vừa hiện, người dùng bàn phím không mất chỗ. */
+  const lopViec = useRef<HTMLDivElement>(null);
+  const lopCase = useRef<HTMLDivElement>(null);
+  const truoc = useRef(dangXemCase);
+  useEffect(() => {
+    if (truoc.current === dangXemCase) return;   // chỉ khi đổi lớp — mở panel (kể cả StrictMode chạy effect hai lần) không giành focus (CV-09)
+    truoc.current = dangXemCase;
+    (dangXemCase ? lopCase : lopViec).current?.querySelector<HTMLElement>('section[tabindex]')?.focus();
+  }, [dangXemCase]);
+  return (
+    <NhapViec khoa={p.it.key}>
+      <HienLaiPanel.Provider value={dangXemCase ? xem.lui : null}>
+        <XemCaseViec.Provider value={caseId !== null ? () => xem.vao('case') : null}>
+          <div ref={lopViec} hidden={dangXemCase}><PanelMotViec {...p} /></div>
+        </XemCaseViec.Provider>
+      </HienLaiPanel.Provider>
+      {dangXemCase && (
+        <div ref={lopCase}>
+          <NganCase caseId={caseId} viecBanDau={{ loai: 'case' }} hocVien={p.it.studentId !== null ? p.it.studentName : null} lop={p.it.classCode} onClose={p.onDong} onChanged={p.onDaLam}
+            veNguon={{ nhan: tenBoEm(p.it), onClick: xem.lui }} />
+        </div>
+      )}
+    </NhapViec>
+  );
 }
 
 function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep }: PropsViec) {
@@ -418,50 +453,51 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
   const { homNay } = useNgayNghiepVu();
   const [lon, setLon] = useState(false);
   const [daLuu, setDaLuu] = useState<DaLuuNhanh | null>(null);
-  const { data, reload } = useApi<any>(`/cases/${it.caseId}`, [it.caseId]);
-  /* V5 UI-CONG-VIEC (09 III.2): bấm "Case" → thân Case mở ngay dưới bối cảnh (PA, lịch sử, sửa theo quyền); việc của Case (Sửa Case, Thêm PA…) thay
-     panel tại chỗ, "‹ Việc" về lại — bước duyệt vẫn đi đường của Case. */
-  const [moCase, setMoCase] = useState(false);
-  const [viecCase, setViecCase] = useState<ViewCase | null>(null);
+  const { data } = useApi<any>(`/cases/${it.caseId}`, [it.caseId]);
+  /* M6 6b-3: "Xem Case" (đầu panel) = view Case kế trong panel việc (`PanelViec`) — thay mở thân Case dưới bối cảnh / "‹ Việc" (nhãn lặp). */
+  const xemCase = useContext(XemCaseViec);
+  const cv = useContext(ViecVuaLuu);
+  /* "Lưu · việc tiếp ›": lần ghi vừa lưu (GhiNhanh gọi `onDaLuu` rồi mới sang việc kế) → dải "✓ Đã lưu kết quả · Hoàn tác" ở đầu việc kế. */
+  const vuaGhi = useRef<DaLuuNhanh | null>(null);
   /* Bối cảnh giữ như lúc mở — lưu xong (tải lại Case) không biến lần vừa ghi thành "kỳ trước". */
   const daTruoc = useRef<any>(undefined);
   const em = it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null;
   if (lon) return <NganCase caseId={it.caseId!} paId={it.paId} viec="ghi-ket-qua" hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
-  if (viecCase) {
-    return <NganCase caseId={it.caseId!} viecBanDau={viecCase} hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={() => { reload(); onDaLam(); }}
-      veNguon={{ nhan: t('Việc'), onClick: () => setViecCase(null) }} />;
-  }
+  const tiepSauGhi = onTiep ? () => {
+    const kq = vuaGhi.current;
+    if (kq) {
+      cv?.bao({
+        chu: t('Đã lưu kết quả'), phu: `${dich(outcomeLabelFor(kq.outcome))} · ${t('Giữ nguyên')}`,
+        hoanTac: kq.followupId ? () => hoanTacNhanh(kq) : undefined,
+      });
+    }
+    onTiep();
+  } : null;
   const iv = (data?.interventions ?? []).find((x: any) => x.id === it.paId);
   if (data && daTruoc.current === undefined) daTruoc.current = (data.followups ?? []).find((f: any) => f.interventionId === it.paId && f.outcome) ?? null;
   const truoc = daTruoc.current;
   const tenLoai = iv ? dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind) : null;
   return (
-    <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong}
+    <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong} quayLai={xemCase ? { nhan: t('Xem Case'), onClick: xemCase, xem: true } : undefined}
       dau={dauViec({ han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.ghi_ket_qua_pa ?? 'cap-nhat-pa'} han={it.due} /> : null, em, lop: it.classCode, ngCanh: it.contextLabel })}>
       <div className="flex flex-col gap-4 pt-3">
         <BoiCanh dong={[
-          ['Case', data ? (
-            <button type="button" aria-expanded={moCase} onClick={() => setMoCase((x) => !x)}
-              className="inline-flex min-h-[44px] appearance-none items-center gap-1.5 border-0 bg-transparent p-0 text-left font-semibold text-[color:var(--accent)] sm:min-h-0">
-              {dich(tenNganCase(data))}{data.detectedAt ? ` · ${t('mở {ngan}', { ngan: shortDate(data.detectedAt, homNay) })}` : ''}<span aria-hidden className="text-xs">{moCase ? '▴' : '▾'}</span>
-            </button>
-          ) : null],
-          [t('Phương án'), iv ? [iv.description || tenLoai, iv.performer, iv.mocChu].filter(Boolean).join(' · ') : null],
+          ['Case', data ? <>{dich(tenNganCase(data))}{data.detectedAt ? ` · ${t('mở {ngan}', { ngan: shortDate(data.detectedAt, homNay) })}` : ''}</> : null],
+          [t('Phương án'), iv ? <>{iv.description ? <ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /> : tenLoai}{[iv.performer, iv.mocChu].filter(Boolean).map((x) => ` · ${x}`).join('')}</> : null],
           [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(truoc.outcome))}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
         ]} />
-        {moCase && data && <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}><ThanCase data={data} onViec={setViecCase} onDoi={() => { reload(); onDaLam(); }} /></div>}
-        {/* Thân Case đang mở đã có ô ghi kết quả của PA này — không vẽ form thứ hai. */}
-        {moCase ? null : daLuu ? (
+        {daLuu ? (
           <div className="flex flex-col gap-2">
             <DongDaLuu kq={daLuu} onHoanTac={() => setDaLuu(null)} />
             <div>
               {onTiep
-                ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
+                ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tiepSauGhi ?? onTiep}>{t('Việc tiếp ›')}</button>
                 : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>}
             </div>
           </div>
         ) : (
-          <GhiNhanh key={it.paId} paId={it.paId!} batBuoc={!!iv?.batBuoc} onTiep={onTiep} onDaLuu={(kq) => { setDaLuu(kq); onDaLam(); }} onMoPanel={() => setLon(true)} />
+          <GhiNhanh key={it.paId} paId={it.paId!} batBuoc={!!iv?.batBuoc} onTiep={tiepSauGhi} tenTiep={cv?.ten}
+            onDaLuu={(kq) => { vuaGhi.current = kq; setDaLuu(kq); onDaLam(); }} onMoPanel={() => setLon(true)} />
         )}
       </div>
     </KhungPanel>

@@ -9,14 +9,14 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel } from '../../lib/format.ts';
 import { INTERVENTION_KIND_LABEL, chuAiLamDuoc, chuPhuHuynh, ghiNhanhDuoc, laPaMacDinh, maView, toiKyGhi, deadlineView, nhanQuaHan, type DeadlineKind, outcomeLabelFor, tuanLich, viewTuMa } from '@shared/domain/index.ts';
-import { XemCha, useXem } from '../../lib/quayLai.ts';
+import { XemCaseViec, XemCha, useXem } from '../../lib/quayLai.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type CaseDetail, type VuaDoiPa, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 import { DongNguyenNhan, MoTaCasePanel, XacNhanCasePanel, XacNhanPaPanel, XacNhanSPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { BoiCanh, KhoiDaLuu, NutChu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, KhoiDaLuu, NutChu, ViecVuaLuu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { KhoaNho } from '../cases/FormPa.tsx';
@@ -96,6 +96,9 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   /* M6 6b-2 (Q1): PA vừa thêm / vừa ghi kết quả — view Case viền nhấn thẻ PA đó + "✓ … · Hoàn tác" (10 giây). */
   const [vuaDoi, setVuaDoi] = useState<VuaDoiPa | null>(null);
   const chuoi = useContext(XemCha);
+  /* M6 6b-3: mở trong panel việc (Công việc) — view việc đầu chuỗi có "Xem Case" (view kế trong panel việc), làm xong báo dải việc vừa lưu. */
+  const xemCaseViec = useContext(XemCaseViec);
+  const cv = useContext(ViecVuaLuu);
   const xongLuu = (tieuDe: string, tiep?: ViewCase) => (x?: DaLuuPanel) => {
     reload(); onChanged?.();
     /* Q1: Thêm PA / Ghi kết quả mở TỪ Case (view ngay dưới là Case) → lưu xong tự về Case — không ở lại form "✓ Đã lưu" (hộp điểm giữ V12). */
@@ -147,22 +150,31 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
      thân Case (link sâu — thay, không rời app). Làm xong một view việc (`xong`) cũng đi đường này. */
   const tenView = (ma: string) => { const v = viewTuMa(ma); return !v || v.loai === 'case' ? ten : TEN_VIEW[v.loai] ?? ten; };
   const truoc = xem.ds.length >= 2 ? xem.ds[xem.ds.length - 2] : null;
-  const quayLai = truoc !== null ? { nhan: tenView(truoc), onClick: xem.lui }
+  const quayLai: { nhan: string; onClick: () => void; xem?: boolean } | undefined = truoc !== null ? { nhan: tenView(truoc), onClick: xem.lui }
     : xem.ten !== null ? { nhan: xem.ten, onClick: xem.lui }
-      : veNguon ?? (view.loai !== 'case' ? { nhan: ten, onClick: veCase } : undefined);
-  const xong = () => { reload(); onChanged?.(); quayLai?.onClick(); };
+      : veNguon ?? (view.loai === 'case' ? undefined
+        : xemCaseViec ? { nhan: t('Xem Case'), onClick: xemCaseViec, xem: true } : { nhan: ten, onClick: veCase });
+  /* "Xem Case" không phải lùi: làm xong view việc đầu chuỗi trong panel việc thì thay bằng thân Case (như link sâu), không mở thêm view Case. */
+  const xong = () => { reload(); onChanged?.(); if (quayLai?.xem) veCase(); else quayLai?.onClick(); };
+  /* 6b-3 (mockup ②b): "Xác nhận · việc tiếp ›" — máy chủ nhận xong mới sang: PA chờ xác nhận kế của Case (`sau`), không thì việc kế của danh sách. */
+  const tiepViec = (sau?: ViewCase) => (onTiep && cv ? {
+    ten: sau ? null : cv?.ten ?? null,
+    lam: (x: DaLuuPanel) => { reload(); onChanged?.(); cv?.bao(x, !!sau); if (sau) sangViec(sau); else onTiep(); },
+  } : undefined);
   /* Đang "✓ Đã lưu" mà người dùng ‹ / Back sang view khác → thôi khối đã lưu (khối chỉ thuộc view vừa lưu). */
   if (daLuu && daLuu.ma !== maHien) setDaLuu(null);
   if (daLuu?.ma === maHien) {
     const nut = daLuu.tiep
       ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={() => { sangViec(daLuu.tiep!); setDaLuu(null); }}>{t('Việc tiếp ›')}</button>
-      : onTiep ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={onTiep}>{t('Việc tiếp ›')}</button>
-        : quayLai ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={quayLai.onClick}>‹ {quayLai.nhan}</button>
+      /* 6b-3: Hoàn tác của lần lưu này theo sang đầu việc kế (dải). */
+      : onTiep ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={() => { cv?.bao(daLuu); onTiep(); }}>{t('Việc tiếp ›')}</button>
+        : quayLai && !quayLai.xem ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={quayLai.onClick}>‹ {quayLai.nhan}</button>
           : <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={onClose}>{t('Đóng')}</button>;
     return (
       <KhungPanel tieuDe={daLuu.tieuDe} hocVien={hv} lop={lop} onDong={onClose} dau={dauViec({ em: data.student ? { id: data.student.id, ten: data.student.name } : null, lop, ngCanh: data.categoryLabel })}>
         <KhoiDaLuu x={daLuu} luc={daLuu.luc} nutChinh={nut}
-          phu={<NutChu onClick={() => { setDaLuu(null); veCase(); }}>{t('Xem Case')}</NutChu>}
+          /* 6b-3: trong panel việc "Xem Case" là view kế — ‹ về lại khối "✓ Đã lưu" này. */
+          phu={<NutChu onClick={() => { if (xemCaseViec) xemCaseViec(); else { setDaLuu(null); veCase(); } }}>{t('Xem Case')}</NutChu>}
           onHoanTac={() => { setDaLuu(null); reload(); onChanged?.(); }} />
       </KhungPanel>
     );
@@ -201,7 +213,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
   /* OV-12c (khuôn panel v3): Progress — Xác nhận Case MỘT bước (PA Bổ trợ chạy ngay); Case MT — Mô tả Case (chưa mô tả) → Xác nhận PA. */
   const paCho = (data.interventions ?? []).filter((x: any) => x.awaitingConfirmation && x.kind !== 'bo_tro') as PaQuyChe[];
   if (view.loai === 'xac-nhan' && data.trangThaiV4?.k === 'cho-nguyen-nhan') {
-    return <XacNhanCasePanel {...chung} data={data} onXong={xong} />;
+    return <XacNhanCasePanel {...chung} data={data} onXong={xong} tiep={tiepViec()} />;
   }
   if (view.loai === 'xac-nhan-s' && data.choXacNhanS?.coTheXacNhan) {
     return <XacNhanSPanel {...chung} data={data} onXong={() => { if (paCho[0]) { reload(); onChanged?.(); sangViec({ loai: 'xac-nhan-pa', paId: paCho[0].id }); } else xong(); }} />;
@@ -214,7 +226,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
     if (pa) {
       const tiep = paCho.find((x) => x.id !== pa.id);
       return (
-        <XacNhanPaPanel key={pa.id} {...chung} pa={pa} data={data}
+        <XacNhanPaPanel key={pa.id} {...chung} pa={pa} data={data} tiep={tiepViec(tiep ? { loai: 'xac-nhan-pa', paId: tiep.id } : undefined)}
           onXong={xongLuu(t('Xác nhận PA'), tiep ? { loai: 'xac-nhan-pa', paId: tiep.id } : undefined)} />
       );
     }
@@ -238,7 +250,9 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, o
       dau={dauViec({ han: data.viewer.canEdit && data.viecTiep?.loaiHan === 'lap-pa' ? <ChipHan loai="lap-pa" han={data.viecTiep.han ?? null} /> : null,
         em, lop, ngCanh: [data.tenSos?.mt ? `MT${data.tenSos.mt}` : null, data.categoryLabel, data.tenSos?.kck ? 'KCK' : null].filter(Boolean).join(' · ') })}
       boiCanh={[nguyenNhan, [t('Kết quả gần nhất'), ketQuaGanNhat(data)]]}
-      coPaBatBuoc={(data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'))} />;
+      coPaBatBuoc={(data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'))}
+      /* Thêm PA mở từ Case (Q1 tự về Case) không có "· việc tiếp ›" — chỉ khi Thêm PA là việc đang làm. */
+      tiep={xem.ds[xem.ds.length - 2] === 'case' ? undefined : tiepViec()} />;
   }
   if (view.loai === 'sua' && data.viewer.coTheSua) {
     return (

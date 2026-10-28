@@ -148,6 +148,8 @@ const giuDau = (st: unknown) => {
 /** Panel mở từ URL dựng chuỗi `?panel=` cho panel làm việc bên trong (Ngăn Case trong panel số): `ten` = tên view gốc (nhãn ‹ ở view đầu chuỗi).
  *  M6 6b-2: `rong` = bề rộng của cả chuỗi (một chuỗi view một bề rộng — khu K D6); `caseTiep` = "Case tiếp ›" của danh sách (Q7). */
 export const XemCha = createContext<{ ten: string; rong?: 'hep' | 'rong'; caseTiep?: { xong: boolean; di: (() => void) | null; /** Hoàn tác: dòng hết "đã xử lý". */ boXong: () => void } } | null>(null);
+/** M6 6b-3: panel việc (Công việc, thanh việc lớp) — view việc đầu chuỗi của Ngăn Case có "Xem Case": vào view Case kế TRONG panel việc, ‹ về đúng form. */
+export const XemCaseViec = createContext<(() => void) | null>(null);
 export type NganXep = {
   ds: string[]; ten: string | null; /** Chuỗi nằm trên URL (`?panel=`). */ url: boolean;
   /** Vào view sâu hơn: push một mục lịch sử. `tuDau` = chuỗi bắt đầu lại từ view này (panel gốc mở việc của một dòng). `them` = tham số URL đổi CÙNG mục
