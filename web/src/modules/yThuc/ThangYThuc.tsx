@@ -44,7 +44,9 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
   const xuLyDuoc = coNut && !!onXuLy;
   const rutGon = d.dongThang.length > BAC_MACH_CHINH + 1;
   const hien = rutGon ? d.dongThang.slice(-(BAC_HIEN_SAU_WL2 + 1)) : d.dongThang;
-  const deXuatTrenThang = !!d.deXuat && hien.some((b) => b.trangThai === 'lan-nay' && b.nhan === d.deXuat!.nhan);
+  /* So phần tên trước " +" — bậc gộp "Report 4 + Meeting CX/GĐCN" vẫn khớp đề xuất "Report 4" (không hiện hai bậc). */
+  const goc = (x: string) => x.split(' +')[0].trim();
+  const deXuatTrenThang = !!d.deXuat && hien.some((b) => b.trangThai === 'lan-nay' && goc(b.nhan) === goc(d.deXuat!.nhan));
   return (
     <section className="surface-2 space-y-2 rounded-[10px] border px-3.5 py-2.5 [container-type:inline-size]" style={{ borderColor: 'var(--line-strong)' }}
       aria-label={t('Thang xử lý vi phạm ({nhanChuoi})', { nhanChuoi })}>

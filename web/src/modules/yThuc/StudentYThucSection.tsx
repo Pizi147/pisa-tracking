@@ -254,7 +254,7 @@ function TrangThaiDong({ x, homNay, canManage, onXem, onDaThucHien, onBaoPh }: {
   if (!x.xuLyGanNhat && !x.tuChoi && !x.thuHoi && !x.deXuat && !x.baoPh) {
     return (
       <p className="m-0 px-0.5 text-[13px] text-faint">
-        <span className="font-semibold">{t('Duyệt · thu hồi · Báo PH')}</span> {t('Chưa có lần xử lý · chưa có gì cần báo PH')}
+        <span className="font-semibold">{t('Duyệt · thu hồi · Báo PH')}:</span> {t('Chưa có lần xử lý · chưa có gì cần báo PH')}
       </p>
     );
   }
