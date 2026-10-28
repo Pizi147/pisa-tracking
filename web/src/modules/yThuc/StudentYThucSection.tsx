@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { BoLocDoan, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DongThoiGian, type DongThoiGianMuc } from '../../ui/DongThoiGian.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -160,9 +161,9 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
         <section className="card min-w-0" aria-labelledby={`yt-vp-${studentId}`}>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pb-1.5 pt-3">
             <h3 id={`yt-vp-${studentId}`} className="m-0 text-sm font-bold text-slate-100">{t('Vi phạm chưa xong')}</h3>
-            <GiaiThich nhan={t('Luật xử lý vi phạm')}>
+            <NutLuat label={t('Luật xử lý vi phạm')}>
               {t('≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý, hạn 3 ngày. Vi phạm lẻ: Ghi nhận (đã xem, không cần xử lý) hoặc xử lý nếu nghiêm trọng.')}
-            </GiaiThich>
+            </NutLuat>
             {moiIds.length >= 2 && (
               <button type="button" className="btn btn-sm btn-primary ml-auto min-h-[44px] sm:min-h-0" disabled={dangGhi} onClick={() => void ghiNhan(moiIds)}>
                 {CUA_TOI}{dangGhi ? t('Đang lưu…') : t('Ghi nhận tất cả ({n})', { n: moiIds.length })}
@@ -233,18 +234,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
       )}
       {panels}
     </div>
-  );
-}
-
-/** ⓘ = giải thích (luật V5): bấm mở một ô chữ ngay dưới dòng tiêu đề. */
-function GiaiThich({ nhan, children }: { nhan: string; children: ReactNode }) {
-  const [mo, setMo] = useState(false);
-  return (
-    <>
-      <button type="button" aria-expanded={mo} aria-label={nhan} onClick={() => setMo((v) => !v)}
-        className="relative inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border bg-transparent p-0 text-[11px] font-bold text-dim appearance-none [border-color:var(--line-strong)] before:absolute before:-inset-[13px] before:content-['']">i</button>
-      {mo && <p className="surface-2 order-last m-0 basis-full rounded-lg border px-3 py-2 text-[13px] text-dim [border-color:var(--line-strong)]">{children}</p>}
-    </>
   );
 }
 

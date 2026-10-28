@@ -1,4 +1,5 @@
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ngay } from '@shared/domain/index.ts';
 import { DauTich } from './NhanViPham.tsx';
 import type { BacThangDong, YThucHocVien } from './kieu.ts';
@@ -33,7 +34,6 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
   /** Việc chính lúc này là Xác nhận xử lý (nút chính). false khi chỉ còn vi phạm Mới — việc chính là Ghi nhận. */
   xuLyChinh?: boolean;
 }) {
-  const [moGiai, setMoGiai] = useState(false);
   const nhanChuoi = d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan;
   const khaiTitle = d.khai ? t('xác nhận {ngay}{x}{x2}', { ngay: ngay(d.khai.luc, homNay), x: d.khai.boi ? ` · ${d.khai.boi}` : '', x2: d.khai.ghiChu ? ` — ${d.khai.ghiChu}` : '' }) : undefined;
   /* UX-G G5: không có vi phạm nào chưa xử lý xong thì không có gì để xác nhận / đề xuất — ẩn cả hai nút (≥ 1 vi phạm là hiện, quyết định 02/10). */
@@ -59,8 +59,8 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
           </p>
         ) : null}
       </div>
-      {/* UI-Y-THUC-HV (mockup v7): thang xuống dòng khi hẹp, đủ tên từng bậc (375 không còn chỉ dấu tích); thang dài sau WL 2 vẫn gộp `…`. */}
-      <ol className="m-0 flex w-full min-w-0 list-none flex-wrap items-center gap-x-1.5 gap-y-1 p-0 text-[13px] whitespace-nowrap">
+      {/* UI-Y-THUC-HV (mockup v7 `.thang`): từ sm MỘT dòng, tràn thì mờ dần ở mép phải (PR-S3F #12); dưới sm xuống dòng, đủ tên từng bậc. */}
+      <ol className="m-0 flex w-full min-w-0 list-none flex-wrap items-center gap-x-1.5 gap-y-1.5 p-0 text-[13px] whitespace-nowrap sm:flex-nowrap sm:overflow-hidden sm:[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)]">
         {rutGon && (
           <li className="shrink-0 text-slate-500" aria-label={t('{x} bậc trước đó đã xử lý', { x: d.dongThang.length - hien.length })}>…</li>
         )}
@@ -76,14 +76,10 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
           {xuLyDuoc && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyChinh ? ' btn-primary' : ''}`} onClick={onXuLy}>{t('Xác nhận xử lý')}</button>}
           {onDeXuat && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyDuoc || !xuLyChinh ? '' : ' btn-primary'}`} onClick={onDeXuat}>{t('Đề xuất QL duyệt')}</button>}
           {/* ⓘ = giải thích (luật V5): hai nút khác nhau ở đâu — thay câu dài cạnh nút. */}
-          <button type="button" aria-expanded={moGiai} aria-label={t('Xác nhận hay Đề xuất?')} onClick={() => setMoGiai((v) => !v)}
-            className="relative inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border bg-transparent p-0 text-[11px] font-bold text-dim appearance-none [border-color:var(--line-strong)] before:absolute before:-inset-[13px] before:content-['']">i</button>
+          <NutLuat label={t('Xác nhận hay Đề xuất?')}>
+            {t('Xác nhận xử lý: lưu ngay bậc lần này. Đề xuất QL duyệt: QL duyệt trước khi làm (WL, phương án khác).')}
+          </NutLuat>
         </div>
-      )}
-      {moGiai && coNut && (
-        <p className="m-0 rounded-lg border px-3 py-2 text-[13px] text-dim [border-color:var(--line-strong)] [background:var(--surface)]">
-          {t('Xác nhận xử lý: lưu ngay bậc lần này. Đề xuất QL duyệt: QL duyệt trước khi làm (WL, phương án khác).')}
-        </p>
       )}
     </section>
   );

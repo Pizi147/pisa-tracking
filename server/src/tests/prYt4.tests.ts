@@ -197,6 +197,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const { loadPrincipal, can } = await import('../permissions.ts');
   const tt3: any = await import('../yThuc/trangThai.ts');
   const board: any = await import('../yThuc/board.ts');
+  const xuLyHv: any = await import('../yThuc/xuLy.ts');
   const viol: any = await import('../yThuc/violations.ts');
   const classesSvc: any = await import('../classes/classes.ts');
   const dongHv: any = await import('../classes/dongHocVien.ts');
@@ -325,7 +326,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(bd.nhom.bat_buoc[0].keTiep.nhan === 'Report 1' && bd.nhom.bat_buoc[0].soBatBuoc === 3 && bd.nhom.bat_buoc[0].han === addDays(TODAY, 3), JSON.stringify(bd.nhom.bat_buoc[0]));
     assert(bd.nhom.moi[0].moiTuoi === 0, 'tuổi vi phạm Mới');
   });
-  check('UI-Y-THUC-LOP · Hàng em: vi phạm chờ (cũ nhất trước) · Báo PH mới nhất · em sạch còn việc Báo PH mở vào "Chờ TVV báo PH"', () => {
+  check('UI-Y-THUC-LOP · Hàng em: vi phạm chờ (cũ nhất trước) · Báo PH mới nhất · em sạch còn việc Báo PH mở vào "Chờ TVV báo PH" · UI-Y-THUC-HV: tab HV cùng ô', () => {
     const lop = lopMoi('MB FT YTLOP');
     const b = hv(lop.id); ba3(b);
     const d = hv(lop.id);
@@ -341,6 +342,13 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const x = bd.choBaoPh[0].baoPh;
     assert(x.trangThai === 'mo' && x.quaHan === true && x.nhanTrangThai === 'Chưa báo' && x.coTheGhi === false, `GVCN không ghi Báo PH: ${JSON.stringify(x)}`);
     assert(board.bangYThucLop(P.mbManager, lop.id).choBaoPh[0].baoPh.coTheGhi === true, 'QL chi nhánh ghi được');
+    /* UI-Y-THUC-HV: dòng trạng thái của tab HV = đúng ô của hàng em tab lớp (một hàm `hangCuaEm`, một số liệu). */
+    for (const nguoi of [lop.gvcn, P.mbManager]) {
+      const hangHv = xuLyHv.yThucHocVien(nguoi, d).hang, hangLop = board.bangYThucLop(nguoi, lop.id).choBaoPh[0];
+      assert(JSON.stringify(hangHv.baoPh) === JSON.stringify(hangLop.baoPh) && JSON.stringify(hangHv.thuHoi) === JSON.stringify(hangLop.thuHoi)
+        && hangHv.xuLyGanNhat === hangLop.xuLyGanNhat, `tab HV khác tab lớp: ${JSON.stringify(hangHv)}`);
+    }
+    assert(xuLyHv.yThucHocVien(lop.gvcn, b).hang.baoPh === null, 'em chưa có xử lý: tab HV không có Báo PH');
     bp(d, TODAY, 'xong');
     assert(board.bangYThucLop(lop.gvcn, lop.id).choBaoPh.length === 0, 'việc mới nhất đã xong → em sạch không còn hàng');
   });
@@ -857,12 +865,12 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       assert(!tepYt.some((x) => docW(`${YT}/${x}`).includes(`./${f}.tsx`)), `còn import ${f}`);
     }
   });
-  check('YT4 (8) · Thang MỘT dòng: flex-nowrap, không flex-wrap; bậc đã qua thu thành dấu tích dưới sm; dấu tích là SVG (không ký tự ✓)', () => {
+  /* UI-Y-THUC-HV (mockup v7 chủ SP duyệt 28/10 thay luật 02/10 ở màn hẹp): từ sm MỘT dòng + mờ mép; dưới sm xuống dòng, đủ tên bậc. */
+  check('YT4 (8) · Thang: từ sm MỘT dòng (sm:flex-nowrap + mờ mép), dưới sm xuống dòng đủ tên; dấu tích là SVG (không ký tự ✓)', () => {
     const s = docW(`${YT}/ThangYThuc.tsx`);
-    /* Chủ sản phẩm 02/10: khối Thang có hàng nút (được xuống dòng) — luật "một dòng" chỉ áp cho chính thang (`<ol`). */
     const thang = /<ol[^>]*>/.exec(s)?.[0] ?? '';
-    assert(/flex-nowrap/.test(thang) && /whitespace-nowrap/.test(thang) && !/flex-wrap/.test(thang.replace(/flex-nowrap/g, '')), 'một dòng');
-    assert(/hidden sm:inline/.test(s) && /<DauTich/.test(s) && !/✓/.test(boChuThich(s)), 'thu gọn + SVG');
+    assert(/sm:flex-nowrap/.test(thang) && /whitespace-nowrap/.test(thang) && /sm:\[mask-image/.test(thang) && /\bflex-wrap\b/.test(thang), 'một dòng từ sm, xuống dòng dưới sm');
+    assert(!/hidden sm:inline/.test(s) && /<DauTich/.test(s) && !/✓/.test(boChuThich(s)), 'đủ tên + SVG');
     assert(/<svg/.test(docW(`${YT}/NhanViPham.tsx`)) && /strokeWidth="1.5"/.test(docW(`${YT}/NhanViPham.tsx`)), 'SVG nét 1.5');
   });
   check('YT4 (8) · NhanViPham đủ sáu trạng thái §5.4; "Đã ghi nhận" chữ xám, không nền (chủ sản phẩm 02/10: bỏ "· vẫn tính")', () => {
@@ -914,9 +922,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     /* EN-e: nhãn ở MỘT chỗ — COORDINATION_KIND_LABEL (sos.ts), section dùng lại. */
     assert(/Meeting CX\/GĐCN \(sau Mock\)/.test(docW('shared/domain/sos.ts')) && /COORDINATION_KIND_LABEL\[a\.kind/.test(s) && /không phải xử lý vi phạm, không cần QL duyệt/.test(s), 'nhãn');
   });
-  check('YT4 (10) · Tab HV (K3 §4f): thanh việc, thang, bộ lọc MỘT hàng, dòng thời gian trộn không ô tick, "Xem cả lịch sử", dòng đếm cuối', () => {
+  /* UI-Y-THUC-HV (mockup v7): thanh việc thay bằng dòng đầu khối vi phạm + dòng trạng thái; dòng thời gian vào Nhật ký gập. */
+  check('YT4 (10) · Tab HV (v7): thang, dòng trạng thái, khối vi phạm, Nhật ký gập có bộ lọc MỘT hàng, không ô tick, "Xem cả lịch sử", dòng đếm cuối', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
-    assert(/function ThanhViec/.test(s) && /<ThangYThuc/.test(s) && /Xem cả lịch sử/.test(s) && /demCuoi/.test(s), 'bố cục');
+    assert(/function TrangThaiDong/.test(s) && /function KhoiViPham/.test(s) && /<ThangYThuc/.test(s) && /Xem cả lịch sử/.test(s) && /demCuoi/.test(s), 'bố cục');
     assert(/<BoLocDoan/.test(s) && /'Chờ duyệt'/.test(s) && /Cần xử lý/.test(s) && /'Đã xử lý'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'bộ lọc một hàng + không tick');
     assert(/vach: true/.test(s) && !/violation-warning/.test(docW('web/src/modules/students/StudentDetailPage.tsx')), 'dòng xử lý vạch trái; hồ sơ không gọi violation-warning');
   });

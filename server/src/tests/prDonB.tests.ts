@@ -226,7 +226,8 @@ export async function runPrDonBTests(t: YThucTestKit) {
   });
   check('Dọn-b (YT3–5) · khối Thang có hai nút cùng cỡ "Xác nhận xử lý" + "Đề xuất QL duyệt"; nút không kèm tên bậc; hồ sơ HV và hồ sơ lớp cùng truyền onXuLy (xử lý được cả khi mới 1 vi phạm)', () => {
     const th = doc('web/src/modules/yThuc/ThangYThuc.tsx');
-    assert(/className="btn btn-primary[^"]*" onClick=\{onXuLy\}>\{t\('Xác nhận xử lý'\)\}</.test(th) && /onClick=\{onDeXuat\}>\{t\('Đề xuất QL duyệt'\)\}</.test(th) && !th.includes('Đề xuất QL duyệt…'), 'ThangYThuc');
+    /* UI-Y-THUC-HV: nút chính theo `xuLyChinh` (chỉ còn vi phạm Mới → Ghi nhận là việc chính). */
+    assert(/btn btn-sm min-h-\[44px\] sm:min-h-0\$\{xuLyChinh \? ' btn-primary' : ''\}`\} onClick=\{onXuLy\}>\{t\('Xác nhận xử lý'\)\}</.test(th) && /onClick=\{onDeXuat\}>\{t\('Đề xuất QL duyệt'\)\}</.test(th) && !th.includes('Đề xuất QL duyệt…'), 'ThangYThuc');
     const sotBac = webSrc().filter((x) => x.f.includes('/yThuc/') && /Xác nhận xử lý\$\{|`Xác nhận xử lý ·|Xác nhận xử lý · \$\{/.test(x.s)).map((x) => x.f);
     assert(sotBac.length === 0, sotBac.join(', '));
     for (const f of ['web/src/modules/yThuc/StudentYThucSection.tsx', 'web/src/modules/yThuc/ClassYThucCard.tsx']) assert(/<ThangYThuc[\s\S]{0,400}onXuLy=/.test(doc(f)), f);
