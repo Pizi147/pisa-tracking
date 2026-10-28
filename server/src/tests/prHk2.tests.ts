@@ -398,7 +398,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C33 · LuoiThuong: tên em < 640 px xuống dòng (max-sm:break-words), máy tính giữ truncate + title', () => {
     /* BANG-1: < 640 px lưới lớp thường không vẽ (màn điện thoại MotKyNang, tên xuống dòng — J8); máy tính cắt "…" + title. */
-    const m = /<Link className="([^"]*)" to=\{`\/hoc-vien\/\$\{row\.studentId\}`\} title=\{row\.studentName\}>/.exec(doc('web/src/modules/cham/LuoiThuong.tsx'));
+    const m = /<Link className="([^"]*)" to=\{duongDotTest\(\{ id: row\.attemptId[^}]*\}\)\} title=\{row\.studentName\}>/.exec(doc('web/src/modules/cham/LuoiThuong.tsx'));
     assert(m, 'không thấy Link tên em');
     assert(/(^|\s)truncate(\s|$)/.test(m![1]) && /min-w-0/.test(m![1]), m![1]);
   });

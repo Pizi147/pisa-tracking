@@ -14,7 +14,7 @@ import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Pri
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
-import { huyCua, kckCuaLuot, lichSuLichCua, lopHienTaiCua, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
+import { huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { boMonCuaLuot, lichGopCua, canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
@@ -1315,13 +1315,17 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
  * Lượt FT / MT0 / không có → 404 (trang FT là `GET /attempts/:id`; web chọn đường theo `kind`).
  */
 export function regularAttemptDetail(p: Principal, attemptId: number) {
-  const a = db().prepare('SELECT id, class_id, student_id, kind FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  const a = db().prepare('SELECT id, class_id, student_id, kind, cycle_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a || !a.class_id || !['progress', 'final', 'checkpoint'].includes(a.kind)) throw loi(404, 'Không tìm thấy lượt Test lớp thường.');
   const { rows, ...bang } = regularSheet(p, a.class_id, undefined, demoToday(), undefined, attemptId);
   const history = lichSuLichCua(attemptId);
   return {
     ...bang,
     dong: rows[0],
+    /** HSL-LT: lộ trình của lượt — khối Case / PA lấy thẻ từ bảng kỹ năng hồ sơ HV đúng lộ trình này. */
+    cycleId: (a.cycle_id ?? null) as number | null,
+    /** HSL-LT: Case mở · PA thêm của các Case của lượt — Lịch sử môn / Lịch sử lượt (như FT). */
+    lichSuCase: lichSuCaseCua(rows[0].cases.map((c: { id: number }) => c.id)),
     lopHienTai: lopHienTaiCua(a.student_id, a.class_id),
     huy: huyCua(rows[0].status, history),
     canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),

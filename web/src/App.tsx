@@ -43,6 +43,7 @@ class BatLoiTrang extends Component<{ duong: string; children: ReactNode }, { ma
 /* Tách gói theo trang (PR-TOCDO): trang nào mở mới tải; sau khi mở xong, nạp ngầm các trang còn lại để chuyển trang không phải chờ. */
 const OverviewPage = lazyTai(() => import('./modules/worklist/OverviewPage.tsx'));
 const MockDetailPage = lazyTai(() => import('./modules/fasttrack/MockDetailPage.tsx'));
+const LuotThuongPage = lazyTai(() => import('./modules/fasttrack/LuotThuongPage.tsx'));
 const StudentsPage = lazyTai(() => import('./modules/students/StudentsPage.tsx'));
 const ClassOverviewPage = lazyTai(() => import('./modules/classes/ClassOverviewPage.tsx'));
 const StudentDetailPage = lazyTai(() => import('./modules/students/StudentDetailPage.tsx'));
@@ -340,6 +341,7 @@ export default function App() {
           <Route path="/nhap-diem/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <Navigate to="/" replace />} />
           <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <Navigate to="/" replace />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
+          <Route path="/luot-test/:id" element={<LuotThuongPage />} />
           <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <Navigate to="/" replace />} />
           {/*
             MÀN QUẢN TRỊ CHỈ GẮN VÀO KHI NGƯỜI XEM CÓ QUYỀN. Máy chủ vẫn chặn API; không có quyền thì đưa thẳng về

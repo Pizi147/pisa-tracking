@@ -321,7 +321,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         byId.set(x.id, {
           id: x.id, title: `${ten} · ${r.full_name} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
           sub: [r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
-          href: duongDotTest({ id: r.id, kind: r.kind, classId: r.class_id }, x.skill),   // PR-UXF-b: có kỹ năng → hồ sơ Mock cuộn tới đúng ô (lớp thường bỏ kn)
+          href: duongDotTest({ id: r.id, kind: r.kind, classId: r.class_id }, x.skill),   // PR-UXF-b: có kỹ năng → hồ sơ lượt mở đúng ô (FT hồ sơ Mock, lớp thường trang lượt — HSL-LT)
           em: { id: r.student_id, ten: r.full_name }, lop: r.class_code ?? null, ngCanh: `${ten} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
           /* OV-12e: Nhập điểm tại chỗ — cùng bảng một lớp · một lượt · một kỹ năng của Công việc (`PanelNhapDiem`). */
           viec: r.class_id ? {

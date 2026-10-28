@@ -4406,8 +4406,9 @@ check('Bài của lớp Normal mở ĐÚNG màn nhập điểm Normal, không ph
     .get() as any;
   assert(a, 'Seed thiếu bài Progress Test');
   const href = attempts.attemptHref({ id: a.id, kind: a.kind, classId: a.class_id });
-  assert(href === `/bang-diem-thuong/${a.class_id}?kind=progress`,
-    `Bài Progress Test phải mở bảng điểm lớp Normal, đang là ${href}`);
+  /* HSL-LT: lượt lớp thường có trang lượt riêng `/luot-test/:id` (trước là bảng điểm cả lớp). */
+  assert(href === `/luot-test/${a.id}`,
+    `Bài Progress Test phải mở trang lượt lớp thường, đang là ${href}`);
   const mt = conn.prepare(`SELECT id, class_id FROM assessment_attempts WHERE kind = 'mock' LIMIT 1`).get() as any;
   assert(attempts.attemptHref({ id: mt.id, kind: 'mock', classId: mt.class_id }) === `/mock-test/${mt.id}`,
     'Lượt Mock Test vẫn phải mở màn Mock Test');
@@ -4804,9 +4805,9 @@ check('[1] Lớp Normal: mở đúng màn, nhập đúng môn, ra đúng kết q
     .get() as any;
   assert(a, 'Không có bài lớp Normal nào đã chấm đủ bốn môn');
   const cls = { id: a.class_id, code: a.code };
-  /* Hồ sơ học viên phải trỏ vào BẢNG ĐIỂM NORMAL, không phải màn Mock Test. */
+  /* Hồ sơ học viên phải trỏ vào TRANG LƯỢT LỚP THƯỜNG (HSL-LT), không phải màn Mock Test. */
   const href = attempts.attemptHref({ id: a.id, kind: a.kind, classId: cls.id });
-  assert(href.startsWith('/bang-diem-thuong/'), `Bài lớp Normal mở sai màn: ${href}`);
+  assert(href === `/luot-test/${a.id}`, `Bài lớp Normal mở sai màn: ${href}`);
   /* Đúng bốn môn của chương trình, và mỗi ô là điểm đạt/tổng chứ không phải band. */
   const skills = (conn.prepare('SELECT DISTINCT skill FROM assessment_scores WHERE attempt_id = ?')
     .all(a.id) as any[]).map((r) => r.skill).sort();
@@ -9658,6 +9659,8 @@ await runPr6cPanelApTests({ check, assert, conn, P } as any);
 // ==================================================================== HSL-MAY-CHU (M4 PR 1: hồ sơ một lượt Test — S Ex, lớp hiện tại, GET /regular/attempts/:id)
 const { runPrHslMayChuTests } = await import('./prHslMayChu.tests.ts');
 await runPrHslMayChuTests({ check, assert, conn, P, classId, TODAY, addDays } as any);
+const { runPrHslLtTests } = await import('./prHslLt.tests.ts');
+await runPrHslLtTests({ check, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== HOAN-TAC-XN (luật N3: Hoàn tác Xác nhận PA · lô PA · Xác nhận Case · Xác nhận Case S)
 const { runPrHoanTacXnTests } = await import('./prHoanTacXn.tests.ts');
 await runPrHoanTacXnTests({ check, assert, conn, P, TODAY, classId, addDays } as any);

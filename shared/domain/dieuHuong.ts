@@ -98,7 +98,7 @@ export function khuVucCuaDuong(pathname: string): KhuVuc | null {
   if (thuoc(p, '/phan-tich')) return 'phan-tich';
   if (p === '/' || thuoc(p, '/hoc-thuat')) return 'tong-quan';
   if (thuoc(p, '/hoc-vien')) return 'hoc-vien';
-  if (['/test', '/nhap-diem', '/bang-diem-thuong', '/mock-test'].some((g) => thuoc(p, g))) return 'test';
+  if (['/test', '/nhap-diem', '/bang-diem-thuong', '/mock-test', '/luot-test'].some((g) => thuoc(p, g))) return 'test';
   if (thuoc(p, '/cong-viec')) return 'cong-viec';
   if (thuoc(p, '/tutor')) return 'tutor';
   return null;
