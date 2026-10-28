@@ -88,7 +88,7 @@ button, select, input { font: inherit; color: inherit; }
 .bang tr.khoa td { color: var(--text-faint); }
 .bang .ten { font-weight: 600; white-space: nowrap; }
 .bang .w-tick { width: 36px; padding-left: 18px; } .bang td:last-child, .bang th:last-child { padding-right: 18px; }
-.ghi-chu-hang { font-size: 12px; } .ghi-chu-hang:empty { display: none; } .ghi-chu-hang.doi { color: var(--accent); font-weight: 600; } .ghi-chu-hang.loi { color: var(--bad); font-weight: 600; } .ghi-chu-hang.ok { color: var(--ok); font-weight: 600; }
+.ghi-chu-hang { font-size: 12px; } .ghi-chu-hang.doi.ha { color: var(--soon); } .ghi-chu-hang:empty { display: none; } .ghi-chu-hang.doi { color: var(--accent); font-weight: 600; } .ghi-chu-hang.loi { color: var(--bad); font-weight: 600; } .ghi-chu-hang.ok { color: var(--ok); font-weight: 600; }
 /* 375: bảng thành danh sách (mỗi em một khối) */
 @container (max-width: 600px) {
   .bang thead { display: none; }
@@ -177,8 +177,8 @@ button, select, input { font: inherit; color: inherit; }
     var ghi = khoaGoc ? '<span class="ghi-chu-hang">Đã có xử lý trên web · chỉ QL sửa</span>'
       : loi && !ql ? '<span class="ghi-chu-hang loi">Chưa lưu: em vừa có lần xử lý trên web · chỉ QL sửa</span>'
       : loi ? '<span class="ghi-chu-hang loi">Chưa lưu: mất kết nối · <button class="link" type="button">Thử lại</button></span>'
-      : ok ? '<span class="ghi-chu-hang ok">✓ Đã lưu · ' + BAC[e[3]] + '</span>'
-      : e[3] !== null ? '<span class="ghi-chu-hang doi">' + nhanDoi(e) + '</span>' : '';
+      : ok ? '<span class="ghi-chu-hang ok">✓ Đã lưu</span>'
+      : e[3] !== null ? '<span class="ghi-chu-hang doi' + (e[1] !== null && e[3] < e[1] ? ' ha' : '') + '">' + nhanDoi(e) + '</span>' : '';
     var hien = ok ? BAC[e[3]] : e[2];
     var bacMoi = daLuu && !loi ? null : e[3];
     return '<tr class="' + (khoa ? 'khoa' : e[4] && !daLuu ? 'chon' : '') + '">' +
@@ -189,7 +189,8 @@ button, select, input { font: inherit; color: inherit; }
       '<td>' + ghi + '</td></tr>';
   }
   function web() {
-    var duocChon = EM.filter(function (e) { return !(e[5] && !ql); }).length;
+    /* Em khoá với người xem: khoá từ đầu, hoặc (GVCN) vừa lỗi "em vừa có xử lý trên web" khi lưu. */
+    var duocChon = EM.filter(function (e, i) { return !(e[5] && !ql) && !(daLuu && i === LOI && !ql); }).length;
     var soChon = daLuu ? 0 : EM.filter(function (e) { return e[4]; }).length;
     var soKhoa = EM.length - duocChon;
     var nen = '<div class="nen-lop" aria-hidden="true"><div class="dong"><h2>Ý thức &amp; Phối hợp</h2><span class="btn">Chọn nhiều</span><span class="btn">Khai / sửa cấp bậc</span><span class="btn chinh">+ Ghi vi phạm</span></div><div class="the"></div></div><div class="phu"></div>';
@@ -200,7 +201,7 @@ button, select, input { font: inherit; color: inherit; }
       '<span class="ap">Áp bậc ' + chon(daLuu ? null : 3, false, 'Bậc áp cho các em đã tick', 'Chọn bậc…') +
       '<button class="btn" type="button"' + (soChon ? '' : ' disabled') + '>Áp cho ' + soChon + ' em</button></span></div>' +
       '<div class="h h2"><span class="thang">Tháng <input class="o-chon so" value="10/2026" aria-label="Tháng xử lý (mm/yyyy)" style="width:80px"><button class="btn" type="button" aria-label="Mở lịch tháng">▦</button></span>' +
-      '<label class="gc"><span>Ghi chú</span> <input class="o-chon" placeholder="Tuỳ chọn · chung cả lô" aria-label="Ghi chú chung"></label></div></div>';
+      '<label class="gc"><span>Ghi chú</span> <input class="o-chon" placeholder="Ghi chú (tuỳ chọn)" aria-label="Ghi chú chung"></label></div></div>';
     var bang = '<div class="than"><table class="bang"><thead><tr><th class="w-tick">Áp cho</th><th>Học viên</th><th>Bậc hiện tại</th><th>Bậc mới</th><th></th></tr></thead><tbody>' +
       EM.map(hang).join('') + '</tbody></table></div>';
     var soDoi = daLuu ? (ql ? 1 : 0) : EM.filter(function (e) { return e[3] !== null && !(e[5] && !ql); }).length;
