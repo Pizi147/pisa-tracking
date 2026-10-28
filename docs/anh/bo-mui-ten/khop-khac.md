@@ -12,7 +12,7 @@ Tên em / mã lớp / chip vẫn là link (rê = màu nhấn + gạch chân, foc
 - Lịch Test tuần (`HangLop`) + Quá hạn chấm (`KhoiNo`): cột chỉ có "↗" (đường DUY NHẤT tới hồ sơ lớp) → **mã lớp thành link** hồ sơ lớp, bỏ cột. Hàng lớp vẫn bấm để mở / thu (link trong hàng không mở hàng).
   375: hàng lớp nay cũng có link mã lớp (trước 375 không có đường tới hồ sơ lớp ở đây).
 - Panel số (`SoLieu`): "↗" cuối dòng → link chữ **"Hồ sơ"** cùng chỗ ở cả 3 kiểu dòng (luật 6c-2 "một danh sách một kiểu mở"). Lý do: tên em ở dòng Case và dòng làm được nằm trong nút mở, không thể làm link.
-  **[XM]** đã hỏi PTA Plan (phương án khác: dòng chỉ đọc dùng tên em làm link).
+  **[XM] — PTA Plan đã quyết 28/10:** đồng ý cách này (13 px, màu nhấn, gạch chân khi rê, vùng bấm 44 px, không link lồng nút).
 - Chú thích code nhắc ↗ sửa theo; phép kiểm 6c-2 (`pr6cPanelAp`) đổi chữ (vẫn đòi link hồ sơ cùng chỗ ở 3 kiểu dòng).
 - `DESIGN.md`: G6, V18 (tên em 15 / 600 = link), V19 (link = đổi trang).
 
