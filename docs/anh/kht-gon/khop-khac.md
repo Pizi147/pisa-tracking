@@ -28,7 +28,7 @@ Dữ liệu mockup là dữ liệu giả (Cầu Giấy, MT1–MT7); web là seed
 | Đã huỷ: "đã huỷ" | `OHuy` | KHÁC nhỏ: mockup gạch tuần cũ — lượt huỷ không gửi tuần về lưới, nên chỉ chữ "đã huỷ" |
 | S Ex một dòng khung đứt hồng | nút S Ex một dòng | KHỚP |
 | Thẻ lớp nền `surface`, hàng lớn, chip "Chỉ xem" | `LopKeHoach` | KHỚP |
-| Cột: tên 190 (375: 120, tên hai dòng) · MT 142 · lớp thường 150 · S Ex 136; tiêu đề cột trái | `LuoiKeHoach` | KHỚP |
+| Cột: tên 190 (375: 120, tên hai dòng) · MT 142 · lớp thường 190 (mockup sửa theo: 150 làm "W2 SEP W4/8 chờ chấm" tràn cột) · S Ex 136; tiêu đề cột trái; dòng 1 chặn tràn (chữ trạng thái cắt gọn + tooltip) | `LuoiKeHoach` · `ODotGon` | KHỚP |
 | Lớp thường: tuần + `W4/8` + chữ; chưa có bài "Xếp W2 NOV" (đề xuất ở tooltip); tiêu đề "đề xuất W4/8" dòng 2 | `ODotGon khoa` · `NutXepO` | KHỚP |
 | ⓘ chú giải 6 dòng | `ChuGiaiGon` (mẫu dựng bằng chính ô) | KHỚP |
 | 375: Xuất ▾ | `Menu` "Xuất" (sm:hidden) | KHỚP; ⓘ nằm cùng hàng ô tìm thay vì cạnh công tắc (hàng công cụ sẵn có tự xuống dòng) |

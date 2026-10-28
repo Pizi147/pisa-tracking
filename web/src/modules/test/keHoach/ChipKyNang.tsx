@@ -57,14 +57,14 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
   const lop = `${O_LUOI} ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
   const noi = (
     <>
-        <span className="flex items-baseline gap-1.5">
+        <span className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
           <span className={`w-14 shrink-0 whitespace-nowrap text-sm tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{o.tuan ?? '—'}</span>
           {nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
           {kq ? (
             <span className={`whitespace-nowrap text-[13px] font-semibold tabular-nums ${kq.dat === false ? 'text-bad' : 'text-ok'}`}>
               {kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}{fmtBand(kq.ovr)}
             </span>
-          ) : o.tt && <span className={`whitespace-nowrap text-xs font-semibold ${MAU_TT[o.tt.loai]}`}>{o.tt.chu}</span>}
+          ) : o.tt && <span className={`min-w-0 truncate whitespace-nowrap text-xs font-semibold ${MAU_TT[o.tt.loai]}`}>{o.tt.chu}</span>}
         </span>
         {o.kn && (
           <span className="flex gap-[3px]" aria-hidden>
