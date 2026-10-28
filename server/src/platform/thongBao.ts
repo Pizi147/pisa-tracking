@@ -54,7 +54,8 @@ export function thongBaoCua(userId: number) {
                                      WHERE e2.student_id = sv.id AND e2.status = 'active' ORDER BY e2.id DESC LIMIT 1), sv.branch_id)))))
                     ) THEN 1 ELSE 0 END
                     /* SL1 (C23): Case tạo tay giao người phụ trách — còn việc tới khi Case có PA (hoặc đã đóng). */
-                    WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done'
+                    /* RA-LUONG-19: chỉ người ĐANG phụ trách còn việc — đổi người phụ trách thì chuông của người cũ thành "Để biết" (giữ lịch sử). */
+                    WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done' AND sc.owner_user_id = n.user_id
                       AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') THEN 1 ELSE 0 END
                     /* OV-11f (TQ-7): tín hiệu đã vào Case / đã rút → việc xong (Case có chuông riêng). Báo PH qua TVV: còn khi việc phối hợp của lượt chưa làm. */
                     WHEN n.entity_type = 'case_signal' THEN CASE WHEN cs.status = 'pending' THEN 1 ELSE 0 END
@@ -90,7 +91,7 @@ export function thongBaoCua(userId: number) {
             WHERE n.user_id = ?
          ) x
          LEFT JOIN students s ON s.id = x.student_id
-        ORDER BY (x.read_at IS NULL) DESC, x.id DESC LIMIT ${THONG_BAO_TOI_DA}`,
+        ORDER BY (COALESCE(x.con_viec, 0) = 1) DESC, (x.read_at IS NULL) DESC, x.id DESC LIMIT ${THONG_BAO_TOI_DA}`,   // RA-LUONG-19: "Cần làm" (còn việc, kể cả đã đọc) giữ chỗ trước — không bị dòng "Để biết" mới đẩy khỏi 50 dòng
     )
     .all(userId) as any[];
   /* SL1 (N1): hạn của dòng — lưu sẵn (tự động, Case giao) → hạn thẻ duyệt → hạn việc tiếp của Case (`xuLyCaseMany`, một câu mỗi lô). */

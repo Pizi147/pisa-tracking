@@ -15,6 +15,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_perm: any = await import('../permissions.ts');
   const require_hangLoat: any = await import('../students/hangLoat.ts');
   const require_keHoach: any = await import('../keHoach/keHoachTest.ts');
+  const require_thongBao: any = await import('../platform/thongBao.ts');
   const require_d: any = await import('../../../shared/domain/index.ts');
   console.log('\nRA-LUONG · rà soát luồng đêm 29/10');
 
@@ -143,6 +144,25 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     assert(soMt() === sau1 && JSON.stringify(r2) === JSON.stringify(r1), 'bấm lại cùng khoá không được tạo thêm MT');
     kh.xepHangLoat(P.mbManager, { ...gui, idempotencyKey: 'ra-luong-17b' }, TODAY);
     assert(soMt() > sau1, 'khoá mới = lần lưu mới (MT kế tiếp)');
+  });
+
+  check('RA-LUONG-19 · Chuông: "Case giao" chỉ Cần làm với người ĐANG phụ trách; dòng Cần làm đã đọc không bị 60 dòng chưa đọc đẩy khỏi 50 dòng', () => {
+    const tb: any = require_thongBao;
+    const c = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') ORDER BY sc.id LIMIT 1`).all()[0] as any;
+    assert(c, 'seed phải có Case mở chưa PA có người phụ trách');
+    const khac = (conn.prepare(`SELECT id FROM users WHERE id NOT IN (?) ORDER BY id LIMIT 1`).all(c.owner_user_id)[0] as any).id as number;
+    const them = conn.prepare(`INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, read_at, created_at) VALUES (?,?,?,?,?,?,?,?)`);
+    const moc = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM notifications').all()[0] as any).m as number;
+    try {
+      them.run(c.owner_user_id, 'case_giao', 'ra-luong-19', 'sos_case', c.id, `ra19:${c.id}`, TODAY, TODAY);
+      them.run(khac, 'case_giao', 'ra-luong-19', 'sos_case', c.id, `ra19:${c.id}`, null, TODAY);
+      for (let n = 0; n < 60; n++) them.run(c.owner_user_id, 'thu', `ra-luong-19 ${n}`, null, null, `ra19-moi:${n}`, null, TODAY);
+      const cua = (u: number) => (tb.thongBaoCua(u) as any[]).find((x) => x.title === 'ra-luong-19' && x.entity_id === c.id);
+      const chu = cua(c.owner_user_id);
+      assert(chu && chu.con_viec === 1, `người phụ trách: Case giao đã đọc vẫn trong danh sách và còn việc (${JSON.stringify(chu)})`);
+      assert(cua(khac)?.con_viec === 0, 'người không phụ trách: Case giao thành Để biết');
+    } finally { conn.prepare('DELETE FROM notifications WHERE id > ?').run(moc); }
   });
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {
