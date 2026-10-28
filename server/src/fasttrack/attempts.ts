@@ -41,7 +41,7 @@ import {
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -781,7 +781,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   }
   /* PR-S6F-a Q2: một điều kiện "em đang học" — cả danh sách "cần chấm" (`my_scores`), đích của badge "n bài chờ chấm" (số = danh sách). */
   /* PR-Dọn (Q9): và CÙNG luật Nợ điểm (`scoreDebt.ts`) — lớp đã kết thúc không sinh việc nhập điểm. */
-  if (f.chiDangHoc || f.need === 'my_scores') where.push(HV_DANG_HOC_SQL('s'), `c.status = 'active'`);
+  /* Lỗi chủ SP 28/10: "đang học" của danh sách hiện tại = lượt hiện tại (lộ trình mới nhất + em đang học) — Lịch Test, Công việc, chip GVCN. */
+  if (f.chiDangHoc || f.need === 'my_scores') where.push(LUOT_HIEN_TAI_SQL('a', 's'), `c.status = 'active'`);
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   const today = demoToday();
@@ -2522,6 +2523,8 @@ export function classScoreSheet(
 
   const params: unknown[] = [classId];
   let sql = `${ATTEMPT_SELECT} WHERE a.class_id = ? AND a.status != 'cancelled'`;
+  /* Lỗi chủ SP 28/10: lớp đang học chỉ hiện lượt hiện tại (lộ trình mới nhất, em đang học hoặc Tạm dừng); lớp đã kết thúc (Lưu trữ) giữ đủ lịch sử. */
+  if (cls.status !== 'finished') sql += ` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`;
   /*
    * LỌC THEO LỊCH TỪNG KỸ NĂNG, KHÔNG THEO TUẦN CỦA CẢ ĐỢT.
    *
@@ -2617,7 +2620,7 @@ export function baiChamSpeaking(p: Principal, today = demoToday()) {
     attempts.push(...conn.prepare(
       `${ATTEMPT_SELECT}
         WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
-          AND ${HV_DANG_HOC_SQL('s')} AND c.status = 'active' AND ${TUAN_S_SQL} <= ?
+          AND ${LUOT_HIEN_TAI_SQL('a', 's')} AND c.status = 'active' AND ${TUAN_S_SQL} <= ?
           AND (NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'speaking' AND ${O_FT_XONG_SQL('sc', 'a')})
             OR ${TUAN_S_SQL} >= ?)`,
     ).all(...lo, today, tuanTruoc) as any[]);

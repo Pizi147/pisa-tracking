@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import {
   ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
   duongHoSoHocVien, nguoiGiuViecChu, NHOM_CASE_CHUA_CHOT_LABEL, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
@@ -309,6 +309,7 @@ export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }) {
   if (trong.length && f.ct === 'ft') {
     for (const r of conn.prepare(
       `SELECT a.class_id, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+         JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
         WHERE a.kind = 'mock' AND a.class_id IN (${trong.map(() => '?').join(',')}) AND ${MOC_KE_TIEP_SQL('a', 'rp')}
         ORDER BY rp.week_start, a.attempt_no`,
     ).all(...trong.map((l) => l.id), mondayOf(today)) as any[]) {
