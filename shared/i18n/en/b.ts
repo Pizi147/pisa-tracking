@@ -1701,6 +1701,9 @@ const EN_B_MAY = {
   '{tenHocVien} chuyển vào lớp {code}': '{tenHocVien} moves into class {code}',
   '{x} — xác nhận nguyên nhân{x2}': '{x} — confirm cause{x2}',
   '{x}. Case vẫn còn căn cứ khác; xem có cần theo tiếp không.': '{x}. The case still has other evidence; check whether to keep following it.',
+  /* RA-LUONG (EN-TB): vế đầu của câu trên (`signals.ts`) — trước dịch từng chữ ra "Score nguồn đã bị huỷ". */
+  'Điểm nguồn đã bị huỷ': 'The source score was cancelled',
+  'Điểm nguồn đã được sửa thành {x}': 'The source score was changed to {x}',
   '{x}Giáo viên ghi nhận vấn đề{x2}': '{x}Teacher noted an issue{x2}',
   '{x}Hoàn thành Case: {x2}': '{x}Case closed: {x2}',
   '{x}Hỗ trợ: {x2}': '{x}Support: {x2}',
