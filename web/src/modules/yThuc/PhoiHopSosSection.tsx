@@ -60,7 +60,7 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
   const [het, setHet] = useState(false);
   if (loading || !turns) return <Skeleton rows={3} />;
   /* PR-S5F-b: tab dùng chung FT và lớp thường — màn rỗng không nói "SOS" (lớp thường không có SOS). */
-  if (!turns.length) return <Empty title={t('Không có lượt phối hợp nào')} />;
+  if (!turns.length) return xanh ? <p className="m-0 text-[13px] text-dim">{t('Không có lượt phối hợp nào')}</p> : <Empty title={t('Không có lượt phối hợp nào')} />;
   /* `gon`: lượt chưa xong lên trước (máy chủ xếp theo tên) — "Hiện thêm" không giấu việc còn mở. */
   const xep = gon ? [...turns].sort((a, b) => Number(a.summary.complete) - Number(b.summary.complete)) : turns;
   const hien = gon && !het ? xep.slice(0, GON_TOI_DA) : xep;

@@ -59,8 +59,8 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
           </p>
         ) : null}
       </div>
-      {/* PR-S3F #12 (V4-8): tràn thì mờ dần ở mép phải thay vì cụt chữ (mọi cỡ màn — thang dài thêm sau WL 2). */}
-      <ol className="m-0 flex w-full min-w-0 list-none flex-nowrap items-center gap-1.5 overflow-hidden p-0 text-[13px] whitespace-nowrap [mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)]">
+      {/* UI-Y-THUC-HV (mockup v7): thang xuống dòng khi hẹp, đủ tên từng bậc (375 không còn chỉ dấu tích); thang dài sau WL 2 vẫn gộp `…`. */}
+      <ol className="m-0 flex w-full min-w-0 list-none flex-wrap items-center gap-x-1.5 gap-y-1 p-0 text-[13px] whitespace-nowrap">
         {rutGon && (
           <li className="shrink-0 text-slate-500" aria-label={t('{x} bậc trước đó đã xử lý', { x: d.dongThang.length - hien.length })}>…</li>
         )}
@@ -73,8 +73,8 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
       </ol>
       {coNut && (xuLyDuoc || onDeXuat) && (
         <div className="flex flex-wrap items-center gap-2">
-          {xuLyDuoc && <button type="button" className={`btn min-h-[44px] sm:min-h-0${xuLyChinh ? ' btn-primary' : ''}`} onClick={onXuLy}>{t('Xác nhận xử lý')}</button>}
-          {onDeXuat && <button type="button" className={`btn min-h-[44px] sm:min-h-0${xuLyDuoc || !xuLyChinh ? '' : ' btn-primary'}`} onClick={onDeXuat}>{t('Đề xuất QL duyệt')}</button>}
+          {xuLyDuoc && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyChinh ? ' btn-primary' : ''}`} onClick={onXuLy}>{t('Xác nhận xử lý')}</button>}
+          {onDeXuat && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyDuoc || !xuLyChinh ? '' : ' btn-primary'}`} onClick={onDeXuat}>{t('Đề xuất QL duyệt')}</button>}
           {/* ⓘ = giải thích (luật V5): hai nút khác nhau ở đâu — thay câu dài cạnh nút. */}
           <button type="button" aria-expanded={moGiai} aria-label={t('Xác nhận hay Đề xuất?')} onClick={() => setMoGiai((v) => !v)}
             className="relative inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border bg-transparent p-0 text-[11px] font-bold text-dim appearance-none [border-color:var(--line-strong)] before:absolute before:-inset-[13px] before:content-['']">i</button>
@@ -103,8 +103,7 @@ function BacO({ b, title }: { b: BacThangDong; title?: string }) {
   return (
     <li className={`inline-flex shrink-0 items-center gap-1 rounded py-px ${lop}`} title={title} aria-label={moTa}>
       {daQua && <DauTich />}
-      {/* Dưới sm bậc đã qua chỉ còn dấu tích — thang vẫn một dòng ở 375 px. */}
-      <span className={daQua ? 'hidden sm:inline' : undefined}>{dich(b.nhan)}</span>
+      <span>{dich(b.nhan)}</span>
       {b.trangThai === 'lan-nay' && <span className="font-normal">{t('· lần này')}</span>}
     </li>
   );
