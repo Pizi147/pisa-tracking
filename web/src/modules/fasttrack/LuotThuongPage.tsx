@@ -384,7 +384,8 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
           </div>
           <div role="cell" aria-colindex={4} className="min-w-0 space-y-1 md:col-start-4 md:row-start-1">
             <Status kind={tt.kind}>{tt.chu}</Status>
-            {han && <div className={`text-xs ${quaHan ? 'text-late' : 'text-slate-400'}`}>{quaHan ? `⚠ ${han}` : han}</div>}
+            {/* Quá hạn: đỏ khi là việc của người xem; việc người khác "⚠" + chữ mờ (cùng màu chip "Còn lại" của người khác). */}
+            {han && <div className={`text-xs ${quaHan && canEdit && !chiDoc ? 'text-late' : 'text-slate-400'}`}>{quaHan ? `⚠ ${han}` : han}</div>}
             {/* LUOT-TEN-GV: môn còn nợ mà người xem không nhập được — tên GV môn (khung "Chờ điểm · hạn …" + tên). */}
             {!coDiem && !dung && !s.khongDuThi && !huy && !(canEdit && !chiDoc) && <div className="text-xs text-slate-500">{tenNguoiLam(d.nguoiLam, [k])}</div>}
           </div>

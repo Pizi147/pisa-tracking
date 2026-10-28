@@ -469,17 +469,19 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
             <li key={v.khoa} className="min-w-0 max-w-full">
               {v.mo ? (
                 <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
-                  <b className="mr-1 text-[color:var(--accent-strong)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
+                  <b className="mr-1 text-[color:var(--accent)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
                   {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
                 </button>
               ) : (
-                /* Khung `.viec.khac`: cao 30, chữ 13 / 500 màu text-dim, nhãn môn màu nhấn, viền đứt. */
-                /* Tên người giữ việc là thứ cần đọc: không cắt; hẹp thì xuống dòng giữa các mẩu (việc · tên · quá hạn), không bẻ giữa tên. */
-                <span className="inline-flex min-h-[30px] max-w-full flex-wrap items-center gap-x-1 rounded-md border border-dashed px-2.5 py-0.5 text-[13px] font-medium text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-                  <b className="text-[color:var(--accent-strong)]">{v.nhan}</b>
-                  <span className="whitespace-nowrap">{v.viec}</span>
-                  {v.ai && <span className="whitespace-nowrap">· {v.ai}</span>}
-                  {v.quaHan && <span className="ml-0.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
+                /* Khung `.viec.khac`: cao 30, nền surface, viền đứt mảnh, khoảng 6, chữ 13 / 500 màu text-dim, nhãn môn màu nhấn. Quá hạn của người
+                   khác: "⚠" + chữ cùng màu text-dim (không đỏ đậm — việc không phải của người xem). Tên người giữ việc không cắt; hẹp thì xuống
+                   dòng giữa các mẩu (việc · tên · quá hạn), không bẻ giữa tên. */
+                <span className="inline-flex min-h-[30px] max-w-full items-center rounded-md border border-dashed px-2.5 py-0.5 text-[13px] font-medium text-slate-400"
+                  style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+                  <span className="min-w-0">
+                    <b className="mr-1.5 text-[color:var(--accent)]">{v.nhan}</b>
+                    {[v.viec, v.ai].filter(Boolean).map((x) => giuLien(x!)).join(' · ')}{v.quaHan && ` ${giuLien(`⚠ ${v.quaHan}`)}`}
+                  </span>
                 </span>
               )}
             </li>
@@ -493,6 +495,9 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
 /** LUOT-TEN-GV: tên người làm các ô của một dòng (máy chủ `nguoiLam`; W1 / W2 hai người → "A, B") — chưa phân công thì nói rõ; máy chủ cũ không trả thì không hiện. */
 export const tenNguoiLam = (m: Record<string, string | null> | undefined, o: readonly string[]): string | null =>
   (m && o.length ? [...new Set(o.map((k) => m[k] ?? t('Chưa phân công')))].join(', ') : null);
+
+/** Mỗi mẩu chữ không bị bẻ giữa chừng (dấu cách không ngắt) — chip chỉ xuống dòng giữa các mẩu. */
+const giuLien = (x: string) => x.replace(/ /g, '\u00a0');
 
 export type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void;
   /** HSL-LT: việc đã quá hạn — chữ "⚠ quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
