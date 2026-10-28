@@ -180,7 +180,7 @@ export const BANG_IDP: { listening: (number | null)[]; reading: (number | null)[
 export function bandTuSoCau(bang: BangQuyDoi, skill: 'listening' | 'reading', n: number): number | null {
   return Number.isInteger(n) && n >= 0 && n <= 40 ? bang[skill][n] : null;
 }
-/** Một lỗi của bảng quy đổi — `cau` = số câu của ô sai (null = cả cột); `ngan` = lý do ngắn hiện ngay dưới ô (màn Quản trị). */
+/** Một lỗi của bảng quy đổi — `cau` = số câu của ô sai (null = cả cột); `ngan` = lý do ngắn (≤ 7 ký tự) hiện ngay dưới ô (màn Quản trị). */
 export type LoiBangQuyDoi = { skill: 'listening' | 'reading'; cau: number | null; loi: string; ngan: string };
 /** Bảng hợp lệ: mỗi kỹ năng đủ 41 ô (0–40 câu), band 0–9 bậc 0.5, KHÔNG giảm khi số câu tăng. Rỗng = hợp lệ. Máy chủ + web cùng gọi. */
 export function kiemBangQuyDoi(b: unknown): LoiBangQuyDoi[] {
@@ -188,13 +188,13 @@ export function kiemBangQuyDoi(b: unknown): LoiBangQuyDoi[] {
   for (const skill of ['listening', 'reading'] as const) {
     const ten = skill === 'listening' ? 'Listening' : 'Reading';
     const cot = (b as Partial<BangQuyDoi> | null)?.[skill];
-    if (!Array.isArray(cot) || cot.length !== 41) { loi.push({ skill, cau: null, loi: `${ten}: cần đủ 41 ô (0–40 câu).`, ngan: 'thiếu ô' }); continue; }
+    if (!Array.isArray(cot) || cot.length !== 41) { loi.push({ skill, cau: null, loi: t('{ten}: cần đủ 41 ô (0–40 câu).', { ten }), ngan: t('thiếu ô') }); continue; }
     cot.forEach((v, n) => {
-      if (v === null || v === undefined || Number.isNaN(v)) loi.push({ skill, cau: n, loi: `${ten} ${n} câu: chưa có band.`, ngan: 'chưa có band' });
-      else if (kiemBand(v) !== null) loi.push({ skill, cau: n, loi: `${ten} ${n} câu: band từ 0 đến 9, bậc 0.5 (đang là ${v}).`, ngan: '0–9, bậc 0.5' });
+      if (v === null || v === undefined || Number.isNaN(v)) loi.push({ skill, cau: n, loi: t('{ten} {n} câu: chưa có band.', { ten, n }), ngan: t('trống') });
+      else if (kiemBand(v) !== null) loi.push({ skill, cau: n, loi: t('{ten} {n} câu: band từ 0 đến 9, bậc 0.5 (đang là {v}).', { ten, n, v }), ngan: t('bậc 0.5') });
       else if (n > 0 && kiemBand(cot[n - 1]) === null && v < cot[n - 1]) {
-        loi.push({ skill, cau: n, loi: `${ten} ${n} câu: ${v.toFixed(1)} thấp hơn ${n - 1} câu (${cot[n - 1].toFixed(1)}) — band không giảm khi số câu tăng.`,
-          ngan: `< ${n - 1} câu (${cot[n - 1].toFixed(1)})` });
+        const a = v.toFixed(1), m = n - 1, truoc = cot[m].toFixed(1);
+        loi.push({ skill, cau: n, loi: t('{ten} {n} câu: {a} thấp hơn {m} câu ({b}) — band không giảm khi số câu tăng.', { ten, n, a, m, b: truoc }), ngan: t('≥ {b}', { b: truoc }) });
       }
     });
   }

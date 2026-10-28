@@ -3,11 +3,13 @@ import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, ErrorState, Field, Forbidden, Skeleton } from '../../ui/ui.tsx';
+import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { fmtBand, fmtDateTime } from '../../lib/format.ts';
-import { BANG_IDP, BANG_QUY_DOI_GOC, kiemBangQuyDoi, type BangQuyDoi, type LoiBangQuyDoi } from '@shared/domain/index.ts';
+import { BANG_IDP, BANG_QUY_DOI_GOC, kiemBangQuyDoi, type BangQuyDoi, type LoiTruong } from '@shared/domain/index.ts';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 
 type PhienBan = { id: number; luc: string | null; nguoi: string | null; lyDo: string | null; khoiPhucTu: number | null; doi: Record<string, [number, number]> };
 type DuLieu = { bang: BangQuyDoi; phienBan: PhienBan[]; suaDuoc: boolean; truoc?: number };
@@ -175,62 +177,50 @@ function DsDoi({ doi }: { doi: Record<string, [number, number]> }) {
   );
 }
 
-/** Tiêu đề cột số canh phải như mockup — lớp `text-right` trên `th.th` bị luật chung OV-15a (kể cả bản `!`) đổi thành căn giữa. */
-const PHAI = { textAlign: 'right' } as const;
-/** Đầu bảng + cột: Số câu · Listening · IDP · Reading · IDP (rộng cố định để hai nửa / điện thoại thẳng cột). */
-function DauBang({ an, hep }: { an?: boolean; hep?: boolean }) {
-  const px = hep ? 'px-1.5' : 'px-2.5';
-  return (
-    <>
-      <colgroup><col className={hep ? 'w-14' : 'w-[76px]'} /><col /><col className={hep ? 'w-14' : 'w-[72px]'} /><col /><col className={hep ? 'w-14' : 'w-[72px]'} /></colgroup>
-      <thead className={an ? 'max-sm:hidden' : ''}>
-        <tr>
-          <th className={`th ${px} !text-left`}>Số câu</th>
-          {KY.map((x) => [
-            <th key={x.k} className={`th ${px} text-slate-100`} style={PHAI}>{x.nhan}</th>,
-            <th key={`${x.k}-idp`} className={`th ${px} border-r font-medium text-slate-500 last:border-r-0`} style={{ ...PHAI, borderColor: 'var(--line)' }}>IDP</th>,
-          ])}
-        </tr>
-      </thead>
-    </>
-  );
-}
-/** Ô bảng chỉ đọc: cao 30 px, chữ 14 (mockup A) — `.td` mặc định cao hơn cho bảng thường. Mockup đã duyệt canh số PHẢI (sát cột IDP),
- *  nên các ô ép `!text-right` thắng luật chung OV-15a (số căn giữa). */
-const O_XEM = 'td h-[30px] px-2.5 py-0 text-sm tabular-nums max-sm:h-9';
-const lopIdp = (lech: boolean) => `td border-r !text-right text-[13px] tabular-nums last:border-r-0 ${lech ? 'bg-soon-bg font-semibold text-soon' : 'text-slate-500'}`;
-const OIdp = ({ b, k, n, lech, xem }: { b: BangQuyDoi; k: Ky; n: number; lech: boolean; xem?: boolean }) => (
-  <td className={`${lopIdp(lech)} ${xem ? 'h-[30px] px-2.5 py-0 max-sm:h-9' : 'whitespace-nowrap px-1.5'}`} style={{ borderColor: 'var(--line)' }} title={lech ? `IDP ${fmtBand(BANG_IDP[k][n])} — bảng ${fmtBand(b[k][n])}` : undefined}>
+/**
+ * Cột chung hai bảng (xem + sửa): Số câu · Listening · IDP · Reading · IDP — qua `Bang` (BANG-0): số căn GIỮA theo kiểu cột như mọi bảng
+ * (mockup vẽ canh phải; PTA 28/10 chọn một nghĩa một dáng). Rộng px để hai nửa và 375 thẳng cột; cột IDP vạch phải ngăn hai kỹ năng.
+ */
+const COT: CotBang[] = [
+  { key: 'cau', nhan: 'Số câu', kieu: 'so', rong: 60 },
+  { key: 'listening', nhan: 'Listening', kieu: 'so', rong: 80 },
+  { key: 'listening-idp', nhan: 'IDP', kieu: 'so', rong: 60 },
+  { key: 'reading', nhan: 'Reading', kieu: 'so', rong: 80, tach: true },
+  { key: 'reading-idp', nhan: 'IDP', kieu: 'so', rong: 60 },
+];
+const cotCua = (key: string) => COT.find((c) => c.key === key)!;
+/** Ô IDP: vàng + "≠" khi lệch (không chỉ màu); "—" = IDP không công bố. */
+const OIdp = ({ b, k, n, lech, lop = '' }: { b: BangQuyDoi; k: Ky; n: number; lech: boolean; lop?: string }) => (
+  <OBang c={cotCua(`${k}-idp`)} className={`text-[13px] ${lech ? 'bg-soon-bg font-semibold text-soon' : 'text-slate-500'} ${lop}`}
+    title={lech ? `IDP ${fmtBand(BANG_IDP[k][n])} — bảng ${fmtBand(b[k][n])}` : undefined}>
     {lech && <span aria-label="lệch IDP">≠ </span>}{BANG_IDP[k][n] === null ? '—' : fmtBand(BANG_IDP[k][n])}
-  </td>
+  </OBang>
 );
 
-/** Bảng chỉ đọc: số câu đầu tiên lên band mới đậm, band lặp mờ. */
+/** Bảng chỉ đọc (`Bang chat`: hàng 32 px ≥ 640): số câu đầu tiên lên band mới đậm, band lặp mờ. */
 function BangXem({ bang }: { bang: BangQuyDoi }) {
   return (
-    <div className="grid sm:grid-cols-2">
+    <div className="grid sm:grid-cols-2 sm:[&>*+*]:border-l" style={{ borderColor: 'var(--line)' }}>
       {NUA.map((ds, i) => (
-        <table key={i} className={`w-full table-fixed text-sm ${i ? 'sm:border-l' : ''}`} style={{ borderColor: 'var(--line)' }}>
-          <DauBang an={i > 0} />
-          <tbody>
-            {ds.map((n) => (
-              <tr key={n}>
-                <td className={`${O_XEM} !text-left text-slate-500`}>{n}</td>
-                {KY.map((x) => [
-                  <td key={x.k} className={`${O_XEM} !text-right ${n > 0 && bang[x.k][n] === bang[x.k][n - 1] ? 'text-slate-500' : 'font-semibold text-slate-100'}`}>{fmtBand(bang[x.k][n])}</td>,
-                  <OIdp key={`${x.k}-idp`} b={bang} k={x.k} n={n} lech={lechIdp(bang, x.k, n)} xem />,
-                ])}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Bang key={i} ten={`Bảng quy đổi band, ${ds[0]}–${ds.at(-1)} câu`} cot={COT} hang={ds} khoa={(n) => n} khung={false} the375={false} chat
+          hangRieng={(n) => (
+            <tr>
+              <OBang c={COT[0]} className="text-sm text-slate-500">{n}</OBang>
+              {KY.map((x) => [
+                <OBang key={x.k} c={cotCua(x.k)} className={`text-sm ${n > 0 && bang[x.k][n] === bang[x.k][n - 1] ? 'text-slate-500' : 'font-semibold text-slate-100'}`}>{fmtBand(bang[x.k][n])}</OBang>,
+                <OIdp key={`${x.k}-idp`} b={bang} k={x.k} n={n} lech={lechIdp(bang, x.k, n)} />,
+              ])}
+            </tr>
+          )} />
       ))}
     </div>
   );
 }
 
 const soCua = (s: string) => (s.trim() === '' ? NaN : Number(s.trim().replace(',', '.')));
-const idO = (k: Ky, n: number) => `bqd-${k}-${n}`;
+/** Khoá ô (`useLoiForm`: id DOM = `o-` + khoá). */
+const khoaO = (k: Ky, n: number) => `bqd-${k}-${n}`;
+const idO = (k: Ky, n: number) => `o-${khoaO(k, n)}`;
 /** Tới ô: `giua` (nhảy tới lỗi / ô đã đổi) cuộn ô ra giữa — tiêu đề cột dính không che; ↑ ↓ thì để trình duyệt cuộn vừa đủ. */
 const focusO = (k: Ky, n: number, giua = true) => {
   const el = document.getElementById(idO(k, n));
@@ -249,19 +239,19 @@ function SuaBang({ bang, phienBan, onClose, onDone }: { bang: BangQuyDoi; phienB
   const [o, setO] = useState(() => ({ listening: bang.listening.map(fmtBand), reading: bang.reading.map(fmtBand) }));
   const [lyDo, setLyDo] = useState('');
   const [busy, setBusy] = useState(false);
-  const [daBam, setDaBam] = useState(false);
-  const [daRoi, setDaRoi] = useState<ReadonlySet<string>>(new Set());
+  const lf = useLoiForm();
   const [daAp, setDaAp] = useState<{ k: Ky; cu: Map<number, string>; chu: string } | null>(null);
   const [hoiDong, setHoiDong] = useState(false);
   const moi: BangQuyDoi = { listening: o.listening.map(soCua), reading: o.reading.map(soCua) };
   const loi = kiemBangQuyDoi(moi);
   const loiO = new Map(loi.filter((l) => l.cau !== null).map((l) => [idO(l.skill, l.cau!), l]));
-  const hien = (l: LoiBangQuyDoi) => daBam || (l.cau !== null && daRoi.has(idO(l.skill, l.cau)));
-  const saiO = (k: Ky, n: number) => { const l = loiO.get(idO(k, n)); return l && hien(l) ? l : null; };
+  /* Lỗi theo ô cho `useLoiForm` (hiện khi đã rời ô / đã bấm Lưu); lỗi cả cột (thiếu ô) chỉ có ở dữ liệu hỏng — vẫn chặn Lưu. */
+  const loiTruong: LoiTruong[] = loi.map((l) => ({ khoa: l.cau !== null ? khoaO(l.skill, l.cau) : l.skill, nhan: l.loi, lyDo: l.ngan }));
+  const saiO = (k: Ky, n: number) => (lf.hien(khoaO(k, n)) ? loiO.get(idO(k, n)) ?? null : null);
   const doiO = (k: Ky, n: number) => moi[k][n] !== bang[k][n];
   const dsDoi = KY.flatMap((x) => moi[x.k].flatMap((_, n) => (doiO(x.k, n) ? [{ k: x.k, n, ten: `${x.ngan} ${n} câu` }] : [])));
   const daSua = dsDoi.length > 0 || !!lyDo.trim();
-  const roi = (k: Ky, n: number) => setDaRoi((s) => (s.has(idO(k, n)) ? s : new Set(s).add(idO(k, n))));
+  const roi = (k: Ky, n: number) => lf.roi(khoaO(k, n))();
   const datCot = (k: Ky, cot: string[]) => setO((x) => ({ ...x, [k]: cot }));
 
   const dong = () => { if (busy) return; if (daSua) setHoiDong(true); else onClose(); };
@@ -295,7 +285,7 @@ function SuaBang({ bang, phienBan, onClose, onDone }: { bang: BangQuyDoi; phienB
   };
 
   const luu = async () => {
-    setDaBam(true);
+    lf.bam();
     if (loi.length || busy) {
       if (loi[0]?.cau != null) focusO(loi[0].skill, loi[0].cau);
       return;
@@ -309,13 +299,13 @@ function SuaBang({ bang, phienBan, onClose, onDone }: { bang: BangQuyDoi; phienB
     } finally { setBusy(false); }
   };
 
-  const loiHien = daBam ? loi : [];
+  const loiHien = lf.daBam ? loi : [];
   return (
     <KhungPanel tieuDe="Sửa bảng quy đổi band" rong="rong" onDong={dong}
       ngCanh={<span className="text-[13px] text-slate-400">Áp cho điểm nhập sau khi lưu · điểm đã nhập giữ band cũ</span>}
       chan={{
         daSua, tuHoi: true, huy: { onClick: dong, disabled: busy },
-        conThieu: daBam && loi.length ? loi.map((l) => ({ nhan: l.loi, oId: l.cau !== null ? idO(l.skill, l.cau) : undefined })) : undefined,
+        conThieu: lf.conThieu(loiTruong),
         trai: dsDoi.length > 0 ? <button type="button" className="btn btn-sm min-h-[44px] tabular-nums sm:min-h-0" title="Tới ô đã đổi kế tiếp" onClick={toiDoiKe}>{dsDoi.length} ô đã đổi ↓</button> : null,
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
       }}>
@@ -346,44 +336,41 @@ function SuaBang({ bang, phienBan, onClose, onDone }: { bang: BangQuyDoi; phienB
             ))}
           </ul>
         )}
-        <div className="grid sm:grid-cols-2">
+        <div className="grid sm:grid-cols-2 sm:[&>*+*]:border-l" style={{ borderColor: 'var(--line-strong)' }}>
           {NUA.map((ds, i) => (
-            <div key={i} className={i ? 'sm:ml-3 sm:border-l sm:pl-3' : ''} style={{ borderColor: 'var(--line-strong)' }}><table className="w-full table-fixed text-sm">
-              <DauBang an={i > 0} hep />
-              <tbody>
-                {ds.map((n) => {
-                  const coDoi = KY.some((x) => doiO(x.k, n));
-                  return (
-                    <tr key={n}>
-                      <td className={`td h-[54px] px-1.5 !text-left tabular-nums ${coDoi ? 'font-semibold' : 'text-slate-500'}`} style={coDoi ? { color: ACCENT } : undefined}>
-                        {coDoi && <span aria-label="đã đổi">• </span>}{n}
-                      </td>
-                      {KY.map((x) => {
-                        const sai = saiO(x.k, n);
-                        const doi = doiO(x.k, n);
-                        const v = moi[x.k][n];
-                        const moc = !(n > 0 && v === moi[x.k][n - 1]);
-                        return [
-                          <td key={x.k} className="td h-[54px] px-1.5 pb-0 pt-1.5 !text-right align-top">
-                            <input id={idO(x.k, n)} className={`field h-8 w-[60px] px-2 max-sm:h-11 max-sm:w-16 !text-right tabular-nums ${moc ? 'font-bold' : 'text-slate-400'}`}
-                              style={sai ? { borderColor: 'var(--danger)', boxShadow: 'inset 0 0 0 1px var(--danger)', background: 'rgb(var(--bad-bg-rgb))' }
-                                : doi ? { borderColor: ACCENT, boxShadow: `inset 0 0 0 1px ${ACCENT}` } : undefined}
-                              inputMode="decimal" autoComplete="off" aria-label={`${x.nhan} ${n} câu`} aria-invalid={!!sai}
-                              aria-describedby={sai ? `${idO(x.k, n)}-ly` : undefined}
-                              value={o[x.k][n]}
-                              onBlur={() => roi(x.k, n)} onKeyDown={phim(x.k, n)} onPaste={dan(x.k, n)}
-                              onChange={(e) => datCot(x.k, o[x.k].map((s, j) => (j === n ? e.target.value : s)))} />
-                            {sai ? <span id={`${idO(x.k, n)}-ly`} className="mt-0.5 block whitespace-nowrap text-xs text-bad">{sai.ngan}</span>
-                              : doi ? <span className="mt-0.5 block whitespace-nowrap text-xs tabular-nums text-slate-500">trước {fmtBand(bang[x.k][n])}</span> : null}
-                          </td>,
-                          <OIdp key={`${x.k}-idp`} b={moi} k={x.k} n={n} lech={!sai && !loiO.get(idO(x.k, n)) && lechIdp(moi, x.k, n)} />,
-                        ];
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table></div>
+            <Bang key={i} ten={`Sửa bảng quy đổi, ${ds[0]}–${ds.at(-1)} câu`} cot={COT} hang={ds} khoa={(n) => n} khung={false} the375={false}
+              hangRieng={(n) => {
+                const coDoi = KY.some((x) => doiO(x.k, n));
+                return (
+                  <tr>
+                    <OBang c={COT[0]} className={coDoi ? 'font-semibold' : 'text-slate-500'} style={coDoi ? { color: ACCENT } : undefined}>
+                      {coDoi && <span aria-label="đã đổi">• </span>}{n}
+                    </OBang>
+                    {KY.map((x) => {
+                      const sai = saiO(x.k, n);
+                      const doi = doiO(x.k, n);
+                      const v = moi[x.k][n];
+                      const moc = !(n > 0 && v === moi[x.k][n - 1]);
+                      return [
+                        <OBang key={x.k} c={cotCua(x.k)}>
+                          <input id={idO(x.k, n)} className={`field h-8 w-14 px-1.5 text-center tabular-nums max-sm:h-11 ${moc ? 'font-bold' : 'text-slate-400'}`}
+                            style={sai ? { borderColor: 'var(--danger)', boxShadow: 'inset 0 0 0 1px var(--danger)', background: 'rgb(var(--bad-bg-rgb))' }
+                              : doi ? { borderColor: ACCENT, boxShadow: `inset 0 0 0 1px ${ACCENT}` } : undefined}
+                            inputMode="decimal" autoComplete="off" aria-label={`${x.nhan} ${n} câu`} aria-invalid={!!sai}
+                            aria-describedby={sai ? `${idO(x.k, n)}-ly` : undefined}
+                            value={o[x.k][n]}
+                            onBlur={() => roi(x.k, n)} onKeyDown={phim(x.k, n)} onPaste={dan(x.k, n)}
+                            onChange={(e) => datCot(x.k, o[x.k].map((s, j) => (j === n ? e.target.value : s)))} />
+                          {/* Dòng phụ của ô (Bang: hàng có dòng phụ cao 64): lý do lỗi ngắn hoặc số trước khi sửa. */}
+                          {sai ? <span id={`${idO(x.k, n)}-ly`} className="bang-phu whitespace-nowrap text-bad" data-phu-odiem="" title={sai.loi}><span aria-hidden>{sai.ngan}</span><span className="sr-only">{sai.loi}</span></span>
+                            : doi ? <span className="bang-phu whitespace-nowrap tabular-nums" data-phu-odiem="">trước {fmtBand(bang[x.k][n])}</span> : null}
+                        </OBang>,
+                        <OIdp key={`${x.k}-idp`} b={moi} k={x.k} n={n} lech={!sai && !loiO.get(idO(x.k, n)) && lechIdp(moi, x.k, n)} />,
+                      ];
+                    })}
+                  </tr>
+                );
+              }} />
           ))}
         </div>
         <Field label="Lý do (không bắt buộc)">

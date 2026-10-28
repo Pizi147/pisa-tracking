@@ -216,6 +216,7 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
 
 - Chỉ `<main>` cuộn (một thanh cuộn); không cắt chữ, nút không tràn (PR-KHUNG).
 - Kiểm ở **375** và **1440**, cả sáng và tối.
+- Bảng tra cứu dài (nhiều hàng số ngắn, vd Quản trị › Bảng quy đổi band 41 hàng): `Bang chat` — hàng 32 px ở ≥ 640 px (đệm dọc 4 px), < 640 px giữ 44 px (vùng chạm); căn theo kiểu cột như mọi bảng (BAND-QUY-DOI, PTA 28/10).
 - Bảng rộng: `.table-scroll` cuộn ngang trong bảng, trang không trượt ngang. Điện thoại (< 640 px): bảng chuyển thành thẻ, mỗi em một thẻ.
 - Trên điện thoại: nút và ô nhập cao tối thiểu 44 px (`max-sm:min-h-[44px]`); máy tính 40 px.
 - Thao tác: menu ⋯ ở đầu dòng / đầu hộp; hộp nổi neo vào chỗ bấm (`HopKyNang`, `HopThaoTacMt`); panel trượt (`KhungPanel`) cho form dài.

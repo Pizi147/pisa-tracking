@@ -402,7 +402,7 @@ document.querySelectorAll('[data-khoi-phuc]').forEach((el) => {
 });
 const LOI = { L: V2.L.map((v, n) => (n === 35 ? 7 : n === 22 ? 5.3 : v)), R: V2.R.map((v, n) => (n === 12 ? NaN : v)) };
 document.querySelectorAll('[data-panel="loi"]').forEach((el) => { el.innerHTML = panel(LOI, V2, {
-  sai: { L35: '< 34 câu (7.5)', L22: '0–9, bậc 0.5', R12: 'chưa có band' }, focus: 'L35', soDoi: 3,
+  sai: { L35: '≥ 7.5', L22: 'bậc 0.5', R12: 'trống' }, focus: 'L35', soDoi: 3,
   loi: ['Reading 12 câu: chưa có band.', 'Listening 22 câu: band từ 0 đến 9, bậc 0.5 (đang là 5.3).', 'Listening 35 câu: 7.0 thấp hơn 34 câu (7.5) — band không giảm khi số câu tăng.'],
 }); { const t = el.querySelector('.panel-than'), o = el.querySelector('.o-so.focus'); t.scrollTop = o.getBoundingClientRect().top - t.getBoundingClientRect().top - 260; } });
 </script>
