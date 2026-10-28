@@ -179,6 +179,7 @@ Lấy từ `plan.md` mục 4 "Ghi chú không chặn còn mở" và Rulebook 20.
 
 ## 5. [XM] / để sau (chép sang mục "Việc để sau" của bàn giao PTA)
 
+- K41 cron quét định kỳ giữ lịch sáng thứ Hai (PTA 29/10: LICH_CHOT_VANG gắn luật chốt vắng theo tuần, giữa tuần GV mở web hằng ngày nên quét khi đọc vẫn chạy) — để sau nếu thấy hạn trễ thật.
 - K6: em vắng dời hết 4 kỹ năng không còn hàng ở lưới tuần gốc (không kẹt, ô tuần mới gỡ được).
 - K8: chủ Case cũ giữ việc "Ghi kết quả" khi lớp mới không có GV môn đó (P03).
 - K14 panel Sau thi không đọc lại sau "Mở lộ trình" · K20 hạn bước tiếp từ lần lưu dở · K21 (năm điểm agent đọc mã) · K23 câu chặn ghi vi phạm thiếu bước tiếp · K24 văng phiên chập chờn.
