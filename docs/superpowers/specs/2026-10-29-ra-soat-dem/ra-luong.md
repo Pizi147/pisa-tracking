@@ -123,6 +123,18 @@ RÚT GỌN được bớt bước thừa, nhưng mọi thao tác đang có phả
 | K10 | L65 Xuất | đạt | GVBM không có Xuất (403 + nút ẩn), GVCN xuất lớp mình, TVV 403 | — | — |
 | K11 | L60 TVV / Admin VP | đạt | Tổng quan ↔ Công việc khớp (TVV 3 việc; Admin 46 việc · 89 bài + 18 S chéo riêng) | — | — |
 | K12 | kiểm | ghi nhận | `EN-HOSO` (prEn) đỏ cả trên `origin/main` sạch: "PA Tutor 1-1 hai buổi…" (chữ GV nhập) lọt vào `tomTat` EN — không do RA-LUONG | báo PTA | — |
+| K13 | L53 TVV sau thi | **LỖI** | Công việc bày "Gia hạn" ở việc "Cập nhật KQ thi thật" (không hạn — N6); hộp mở ra, Lưu → máy chủ 400 "Chỉ gia hạn Chọn bước tiếp" | nút chỉ ở "Chọn bước tiếp" | RA-LUONG-4 |
+| K14 | L53 TVV → Lộ trình mới | đạt (bấm thử) | Nhập KQ (6.5/7/6/6) → việc "Chọn bước tiếp" hạn 21/09 = 1 tuần (N6) → Lộ trình mới: đầu vào = KQ thi 05/09, MT1–3 xếp sẵn, lộ trình cũ đóng (N12). Phụ: ngay sau "Mở lộ trình", đầu panel vẫn "Chưa chốt bước tiếp" + ô Bước tiếp về "Chọn một bước" tới khi tải lại (máy chủ đã đúng) | ghi nhận — panel không đọc lại | — |
+| K15 | L50 Chuyển lớp một em | **LỖI** không khoá cứng | Huỷ quyết định chuyển lớp ở hồ sơ em: không Hoàn tác (Cuối khoá lớp thì có), khôi phục chỉ qua thao tác hàng loạt | `toast.hoanTac` → `khoi-phuc-lenh` sẵn có; bấm thử: huỷ → Hoàn tác → "Đã khôi phục quyết định" | RA-LUONG-5 |
+| K16 | L31 S chéo → Case (N8 ③) | **LỖI** số liệu | Xác nhận Case Speaking chọn "Giữ mô tả": chỉ hạ cờ, Case vẫn theo nhận xét ô → lần lưu điểm sau chép nhận xét chấm chéo đè mô tả đã giữ | "giữ" = tách mô tả khỏi nhận xét (như "viết khác"); Hoàn tác trả nguồn cũ | RA-LUONG-6 |
+| K17 | L31/L33 Case tái phát | **LỖI** | Case cũ đóng, em trượt lại → Case mới thừa kế chủ Case cũ kể cả khi người đó đã thôi dạy lớp (chú thích mã nói phải kiểm, mã không kiểm) → việc "Mô tả Case" không tới GV đang dạy (N8 ②) | thừa kế chỉ khi còn phân công ở lớp | RA-LUONG-7 |
+| K18 | L32 SOS tạm | **LỖI** | Case tạm của em KCK sinh việc "Mô tả Case" (thiếu `CASE_THAT` mà mọi câu đếm khác có) — N8 ④ SOS tạm không việc | thêm `CASE_THAT` | RA-LUONG-8 |
+| K19 | L03 bỏ môn (N13 P8) | **LỖI** số liệu | Bỏ môn giữa lộ trình: mức SOS đã trừ môn bỏ nhưng "dưới kỳ vọng" (Tổng quan) và danh sách kỹ năng ở Đang SOS vẫn tính môn bỏ | `evaluateAttemptRow` dùng `kyNangDaBo` như mức SOS | RA-LUONG-9 |
+| K20 | L53 hạn bước tiếp | ghi nhận | Hạn "Chọn bước tiếp" tính từ lần lưu KQ thi ĐẦU TIÊN kể cả lưu dở (thiếu kỹ năng) — lối tắt đã ghi `cotSauThi.ts` ("cần cột riêng nếu chủ SP báo"); KQ IELTS thường về một lần | để sau | — |
+| K21 | L52/L53 | ghi nhận | (agent đọc mã, chưa bấm thử) việc Phối hợp SOS chờ (Báo PH qua TVV, gặp CX) của lộ trình cũ không đóng khi "Lộ trình mới" — N12 không nói; bản chụp lộ trình đóng tính lại SOS khi sửa điểm muộn không trừ môn đã bỏ; đầu vào lộ trình mới bỏ qua KQ thi cũ chỉ có Overall; "Hẹn bắt đầu" → Case cũ còn mở tới thứ Hai hẹn; xoá nhận xét chấm chéo không hạ cờ Xác nhận Case | để sau / hỏi chủ SP Q-RL3 | — |
+| K22 | không khoá cứng | **CẦN CHỦ SP** | Xoá vĩnh viễn, không Hoàn tác / khôi phục: học viên (một / hàng loạt, QL làm được), Case, PA (cả kết quả 6 tuần), vi phạm, tệp bằng chứng; "Kết thúc PA" quy chế không mở lại được; "Bỏ việc Báo PH" (TVV) không mở lại; Duyệt / Từ chối ở Chờ duyệt chỉ huỷ được với Đề xuất PA + Thu hồi Ý thức (trong ngày) | Q-RL2 | — |
+| K23 | L40 ghi vi phạm | RÚT GỌN (thấp) | Em đã chuyển / tạm dừng → "chưa xếp lớp hoặc không còn đang học — chưa ghi được vi phạm" không nói bước tiếp | để sau | — |
+| K24 | phiên | ghi nhận | Hai lần văng về màn đăng nhập giữa thao tác (một lần `GET /cycles/41/lo-trinh-moi/xem-truoc` 401, phiên vẫn còn trong DB); không tái hiện, log máy chủ không lỗi | theo dõi | — |
 
 ## 4. Giả thuyết cần kiểm trước (từ tài liệu — chưa xác minh)
 
@@ -149,6 +161,7 @@ Lấy từ `plan.md` mục 4 "Ghi chú không chặn còn mở" và Rulebook 20.
 
 - K6: em vắng dời hết 4 kỹ năng không còn hàng ở lưới tuần gốc (không kẹt, ô tuần mới gỡ được).
 - K8: chủ Case cũ giữ việc "Ghi kết quả" khi lớp mới không có GV môn đó (P03).
+- K14 panel Sau thi không đọc lại sau "Mở lộ trình" · K20 hạn bước tiếp từ lần lưu dở · K21 (năm điểm agent đọc mã) · K23 câu chặn ghi vi phạm thiếu bước tiếp · K24 văng phiên chập chờn.
 - [XM] nhóm Công việc tên "Bài thi Speaking tuần này" (mockup T03) nhưng chứa cả bài chấm chéo tuần trước (quá hạn) — đổi tên là chữ hiển thị, của RA-UI / chủ SP; Chấm Test gọi cùng nhóm là "Speaking chấm chéo".
 - `moveableSkills` (máy chủ trả ở hồ sơ Mock) web không đọc — dọn khi đụng.
 - plan.md mục 4 dòng "Hồ sơ MT: lượt không có `classId`… (HOP1)" — xoá sau khi RA-LUONG-3 merge.
@@ -158,3 +171,5 @@ Lấy từ `plan.md` mục 4 "Ghi chú không chặn còn mở" và Rulebook 20.
 | # | Câu hỏi | Khuyến nghị |
 |---|---|---|
 | Q-RL1 | Em "Không dự thi" một môn ở Final / Progress lớp thường: kết quả tính thế nào? Nay máy để "chưa đủ môn" mãi (tạm tính), QL không chốt được theo số. | Tính trên các môn đã thi, ghi rõ "{môn}: không dự thi" cạnh kết quả; QL vẫn đổi được ở Cuối khoá. |
+| Q-RL2 | Các thao tác XOÁ (học viên, Case, PA có kết quả, vi phạm, tệp bằng chứng) và "Kết thúc PA", "Bỏ việc Báo PH", Duyệt / Từ chối ở Chờ duyệt hiện không Hoàn tác / không khôi phục được (luật "không khoá cứng" 21/10). Làm thế nào? | Một đợt PR: xoá = xoá mềm + Hoàn tác 10 s + "Khôi phục" ở nhật ký cho người có quyền sửa (30 ngày rồi mới xoá hẳn); Kết thúc PA / Bỏ việc Báo PH có "Mở lại"; Duyệt / Từ chối có Hoàn tác 10 s cho mọi loại thẻ. |
+| Q-RL3 | Em chọn "Lộ trình mới": việc Phối hợp SOS còn chờ của lộ trình cũ (Báo PH qua TVV, gặp CX) có đóng theo như Case / PA không? | Đóng cùng lý do "Kết thúc lộ trình" (giữ lịch sử), như Case / PA. |
