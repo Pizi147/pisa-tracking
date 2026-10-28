@@ -152,7 +152,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                       <>
                         <td className="td py-2">
                           <div className="font-semibold text-slate-100">
-                            {d.classCode} · {dotTuan(d, homNay)} · <span title={k.goiY}>{dich(k.chu)}</span>
+                            <Link to={`/hoc-vien/lop/${d.classId}`} className="ten-ho-so" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link> · {dotTuan(d, homNay)} · <span title={k.goiY}>{dich(k.chu)}</span>
                           </div>
                           {k.phu && <div className="truncate text-xs text-slate-500">{dich(k.phu)}</div>}
                           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-slate-400 tabular-nums">

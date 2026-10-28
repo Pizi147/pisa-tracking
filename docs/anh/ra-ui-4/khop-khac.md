@@ -19,5 +19,5 @@ Loại PR: **sửa nhỏ** — PTA Plan quyết 29/10 (ra-ui.md mục 5 "còn m�
 ## Thao tác TRƯỚC → SAU
 | Màn | TRƯỚC | SAU |
 |---|---|---|
-| Quá hạn chấm | Nhập điểm / Xem / Thu từng dòng, link mã lớp (≥ 1024) | giữ đủ; 768–1023 dòng thẻ như điện thoại (mã lớp không còn là link ở dáng thẻ — giống điện thoại hiện nay; lớp vẫn mở được qua lưới / Hồ sơ lớp) |
+| Quá hạn chấm | Nhập điểm / Xem / Thu từng dòng, link mã lớp (≥ 1024) | giữ đủ; 768–1023 dòng thẻ như điện thoại; mã lớp là link hồ sơ ở cả dáng thẻ (trước đây dáng thẻ điện thoại chỉ là chữ — nay thêm link, không mất thao tác) |
 | Kế hoạch Test 375 | Xuất ▾ (Excel, điểm Test) · Xếp nhiều MT… | giữ đủ |
