@@ -9,6 +9,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const week: any = await import('../platform/week.ts');
   const lich: any = await import('../fasttrack/skillSchedule.ts');
   const { loadPrincipal } = await import('../permissions.ts');
+  const fsMod: any = await import('node:fs');
   console.log('\nRA-LUONG · rà soát luồng đêm 29/10');
 
   const nem = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
@@ -32,5 +33,12 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     const r = vaiLop(0);
     const st = nem(() => lich.setSkillWeek(P.mbManager, r.attempt_id, r.skill, toi, { force: true, today: TODAY }));
     assert(st !== 403, `Quản lý không được 403 (có thể 400 vì luật lịch), được ${st}`);
+  });
+
+  check('RA-LUONG-4 · Công việc: nút "Gia hạn" chỉ ở việc Chọn bước tiếp — "Cập nhật KQ thi thật" không hạn (N6), máy chủ từ chối gia hạn', () => {
+    const fs: any = fsMod;
+    const nguon = fs.readFileSync('web/src/modules/congViec/HoTroHocVienTab.tsx', 'utf8') as string;
+    const dong = nguon.split('\n').find((l) => l.includes('nutPhu={(x) =>')) ?? '';
+    assert(/x\.group === 'buoc_tiep'/.test(dong) && !/thi_that/.test(dong), `nutPhu: ${dong.trim()}`);
   });
 }
