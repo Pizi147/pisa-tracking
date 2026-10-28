@@ -348,10 +348,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(!/Target \/ Khoá/.test(s) && !/x\.key === 'case'/.test(s), 'cột / badge Case');
   });
 
-  check('PR-HVL (4) · Kết quả hai dòng không cắt "…" (không truncate); việc tiếp bấm được; hàng "Cả lớp"; tên em đậm', () => {
-    const b = web('modules/students/BangHocVienLop.tsx');
-    const kq = b.slice(b.indexOf('k.dong1'), b.indexOf('k.dong1') + 400);
-    assert(/k\.dong1/.test(b) && !/truncate/.test(kq), 'dòng Kết quả còn truncate');
+  check('PR-HVL (4) · việc tiếp bấm được (ViecTiep có link)', () => {
+    /* GON-MA-3 xoá KetQuaOHocVien (không còn nơi dùng) cùng dòng kiểm chuỗi của nó (Kết quả hai dòng không truncate). */
     /* UI-HV-LOP (Q-7): bảng HV theo lớp (hàng "Cả lớp", link việc tiếp) đã gỡ — Học viên & Lớp là danh sách gọn; còn kiểm ô Kết quả dùng chung. */
     assert(/den \? <Link to=\{den\}/.test(web('ui/ViecTiep.tsx')), 'ViecTiep chưa có link');
   });
