@@ -1,7 +1,7 @@
 # RA-LUONG — rà soát mọi luồng đầu-cuối theo vai (đêm 29/10)
 
 Session **RA-LUONG** (logic / luồng). RA-UI làm màu, căn, chữ thừa — trùng tệp thì nhắn PTA Plan.
-Trạng thái: **lượt 1 xong (chỉ đọc) — chờ PTA Plan nhắn "BẮT ĐẦU"** sau khi #672–#674 merge.
+Trạng thái: **đang chạy** (BẮT ĐẦU 29/10 sau #672–#674). PR đầu: RA-LUONG-1…3.
 
 Nguồn luật khi so: `plan.md` 1.6 (Q-1…Q-9, N1…N23) + 2c (T1…T23) + 3 · Rulebook §20 (20.1b gỡ chặn, 20.9 ai làm gì) ·
 bộ nhớ (không khoá cứng, thi thật = kết thúc, N8 nhận xét → mô tả Case, đơn giản hoá) · CLAUDE.md (đầu ra trước, tại chỗ, cùng số cùng nguồn).
@@ -111,7 +111,18 @@ RÚT GỌN được bớt bước thừa, nhưng mọi thao tác đang có phả
 
 | Mã | Luồng | Loại | Hiện trạng (bước · trang · kẹt · số lệch · quyền · console) | Đề xuất / sửa | PR |
 |---|---|---|---|---|---|
-| | | | | | |
+| K1 | L60/L61 GVCN Hà | **LỖI** số lệch | Công việc: ô lọc "Quá hạn · 9" cạnh đầu nhóm 7 + 3 + 2 = 12 và Tổng quan "⚠ 12 quá hạn"; công tắc "Fast Track 16 · Lớp thường 11" cạnh "56 việc" — ô lọc đếm DÒNG (dòng gộp = 1), đầu trang đếm VIỆC (`demViec`) | `demLocNhanh` + công tắc khung đếm `demViec` trên việc con | RA-LUONG-1 |
+| K2 | L61 QL Vy | **LỖI** số lệch | "Của tôi 5 · Của GV 91 · Tất cả 96" cạnh "155 việc" (cùng gốc K1) | `demNguoiViec` đếm `demViec` → Tất cả 155 | RA-LUONG-1 |
+| K3 | L30/L61 QL, Admin VP | **LỖI** số lệch | Dòng gộp Speaking chấm chéo MB FT 101 (13 bài) nằm trong "Chấm điểm · Quá hạn" mà không được đếm; nhóm "Bài thi Speaking" chỉ 5 bài ≠ Tổng quan Admin "Speaking · 18 bài". Gốc: khoá dòng gộp chấm chéo mất đuôi `|cc` (chú thích mã nói phải có) → còn mở panel Nhập điểm cả dòng thay vì panel chấm chéo | `khoaGopCua` giữ `|cc` → nhóm Speaking 18 bài = Tổng quan | RA-LUONG-1 |
+| K4 | L14 GVBM / GVCN lớp thường | **LỖI** quyền máy chủ | Rulebook R14 + 14/10-Q13: dời lịch Test (FT và lớp thường) chỉ QL / Quản trị; máy chủ vẫn cho GVCN / GVBM lớp thường dời tay mọi tuần (`SCHEDULE_MOVE`), bảng lớp thường còn bày "Xếp lại bài vắng" cho GVBM. R14 ghi "chặn ở GĐ1" — chưa ai làm | `setSkillWeek`: dời tay cần `PLAN_WEEK`; giữ "-" tự dời (`ghiBuDau`), tạo lượt (`khiTao`), GVCN dời MT tuần đã qua (N23). 5 phép kiểm luật cũ SCH-01 sửa theo R14 | RA-LUONG-2 |
+| K5 | L11 hồ sơ Mock | **LỖI** nhỏ | Lượt không gắn lớp: "Dời lịch cả đợt" bấm không mở gì (plan mục 4 HOP1) | ẩn mục khi `classId` null | RA-LUONG-3 |
+| K6 | L24 vắng FT | RÚT GỌN (chưa sửa, thấp) | Em vắng cả 4 kỹ năng đã dời → biến khỏi lưới tuần gốc (W2 SEP thiếu Hồ Ngọc Diệp); em dời một phần vẫn hiện. Không kẹt: ô tuần mới có "vắng W2 SEP" + gỡ được | thêm nhánh `no_show_period_id` vào lọc tuần — để sau, cần bấm thử giao diện ô tuần gốc | — |
+| K7 | L14 lớp thường | **CẦN CHỦ SP** | Môn "Không dự thi" làm kết quả lớp thường mãi "chưa đủ môn" (tạm tính) — `regularResultOf` không đọc `no_show_cu` | xem câu hỏi Q-RL1 mục 6 | — |
+| K8 | L50 chuyển lớp | ghi nhận | P03 Rulebook: PA Bổ trợ Giữa khoá không tự khép khi chuyển lớp; việc "Ghi kết quả" đi theo GV lớp hiện tại (đúng PR-S5F-a), chỉ còn kẹt khi GV cũ là chủ Case và lớp mới không có GV môn đó | để sau | — |
+| K9 | L42 Ý thức | đạt | N5 đã đúng: GVCN không xoá thẳng; thu hồi gửi QL, lý do bắt buộc, giữ dòng (Rulebook 20.9 "LỆCH" đã cũ) | — | — |
+| K10 | L65 Xuất | đạt | GVBM không có Xuất (403 + nút ẩn), GVCN xuất lớp mình, TVV 403 | — | — |
+| K11 | L60 TVV / Admin VP | đạt | Tổng quan ↔ Công việc khớp (TVV 3 việc; Admin 46 việc · 89 bài + 18 S chéo riêng) | — | — |
+| K12 | kiểm | ghi nhận | `EN-HOSO` (prEn) đỏ cả trên `origin/main` sạch: "PA Tutor 1-1 hai buổi…" (chữ GV nhập) lọt vào `tomTat` EN — không do RA-LUONG | báo PTA | — |
 
 ## 4. Giả thuyết cần kiểm trước (từ tài liệu — chưa xác minh)
 
@@ -136,4 +147,14 @@ Lấy từ `plan.md` mục 4 "Ghi chú không chặn còn mở" và Rulebook 20.
 
 ## 5. [XM] / để sau (chép sang mục "Việc để sau" của bàn giao PTA)
 
-(chưa có)
+- K6: em vắng dời hết 4 kỹ năng không còn hàng ở lưới tuần gốc (không kẹt, ô tuần mới gỡ được).
+- K8: chủ Case cũ giữ việc "Ghi kết quả" khi lớp mới không có GV môn đó (P03).
+- [XM] nhóm Công việc tên "Bài thi Speaking tuần này" (mockup T03) nhưng chứa cả bài chấm chéo tuần trước (quá hạn) — đổi tên là chữ hiển thị, của RA-UI / chủ SP; Chấm Test gọi cùng nhóm là "Speaking chấm chéo".
+- `moveableSkills` (máy chủ trả ở hồ sơ Mock) web không đọc — dọn khi đụng.
+- plan.md mục 4 dòng "Hồ sơ MT: lượt không có `classId`… (HOP1)" — xoá sau khi RA-LUONG-3 merge.
+
+## 6. Câu hỏi CẦN CHỦ SP (gom, không hỏi lẻ)
+
+| # | Câu hỏi | Khuyến nghị |
+|---|---|---|
+| Q-RL1 | Em "Không dự thi" một môn ở Final / Progress lớp thường: kết quả tính thế nào? Nay máy để "chưa đủ môn" mãi (tạm tính), QL không chốt được theo số. | Tính trên các môn đã thi, ghi rõ "{môn}: không dự thi" cạnh kết quả; QL vẫn đổi được ở Cuối khoá. |
