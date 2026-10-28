@@ -161,7 +161,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
   const canNhan = moLocThem || locThemBat(locThem);
   const qs = useMemo(() => duongHocVienLop(params, { tuLienKet, daNho }), [q, phamViUrl, branchId, daNho, tuLienKet, canNhan]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const trang = useApi<TrangHocVienLop>('chuyenDen' in doc ? null : qs);
+  /* giuCu (HV-LOC): gõ tìm / bật lọc đổi `qs` — giữ trang cũ tới khi bản mới về, không gỡ ô tìm đang gõ. */
+  const trang = useApi<TrangHocVienLop>('chuyenDen' in doc ? null : qs, [], { giuCu: true });
   const branches = useApi<Branch[]>('/ref/branches');
   const data = trang.data;
   /* Đang SOS: cùng phạm vi trang (`qs`). Số trên tab cần nguồn này nên tải luôn (Admin không có chế độ này). */
@@ -170,7 +171,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     s.set('goc', 'sos');
     return `/hoc-vien-lop?${s.toString()}`;
   }, [qs]);
-  const sos = useApi<TrangSos>(admin || 'chuyenDen' in doc ? null : duongSos);
+  const sos = useApi<TrangSos>(admin || 'chuyenDen' in doc ? null : duongSos, [], { giuCu: true });
   /* Cột Việc + chip "Có việc quá hạn": việc ở Công việc — QL / Admin mọi người (cùng chi nhánh trang), GV việc của mình. Chờ trang tải xong mới gọi. */
   const laQl = laVaiQuanLy(session?.roles);
   const cnViec = data?.phamVi.dangDung === 'chi-nhanh' ? data.phamVi.chiNhanh : null;
@@ -488,6 +489,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               )}
             </div>
           )}
+          <div className={trang.cu ? 'dang-tai-lai' : undefined} aria-busy={trang.cu || undefined}>
           {theoVai.error && <div className="p-3"><ErrorState message={theoVai.error.message} hint={theoVai.error.hint} onRetry={theoVai.reload} /></div>}
           {laVai && !vaiTrang && !theoVai.error ? <div className="p-3"><Skeleton rows={6} /></div>
           : laVai && pv?.dangDung === 'cua-toi' && dsEm.length === 0 && !q.trim() ? (
@@ -505,6 +507,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
             </>
           )}
+          </div>
         </div>
       )}
 
@@ -522,6 +525,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               {t('PA quá hạn')} · <span className="tabular-nums">{sosTat.filter(coPaQuaHan).length}</span>
             </button>
           </div>
+          <div className={sos.cu ? 'dang-tai-lai' : undefined} aria-busy={sos.cu || undefined}>
           {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} /></div>
             : !sos.data ? <div className="p-3"><Skeleton rows={6} /></div>
             : sosRows.length === 0 ? <Empty title={t('Không có học viên SOS')} />
@@ -533,6 +537,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
                 {sosRows.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
               </>
             )}
+          </div>
         </div>
       )}
 
