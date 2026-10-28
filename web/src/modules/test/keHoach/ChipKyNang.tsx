@@ -5,7 +5,7 @@ import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
- * Ô MỘT ĐỢT của lưới Kế hoạch Test BẢN GỌN (chủ SP duyệt mockup `thiet-ke/v7/ke-hoach-test.html` #659, 28/10) — dùng chung FT và lớp thường.
+ * Ô MỘT ĐỢT của lưới Kế hoạch Test BẢN GỌN (chủ SP duyệt mockup `thiet-ke/v7/ke-hoach-test.html` PR 659, 28/10) — dùng chung FT và lớp thường.
  * Không khung: dòng 1 = tuần (cột rộng cố định) + kết quả ✓ / ✗ HOẶC một chữ trạng thái (cùng một x mọi ô); ô kỹ năng / dòng riêng / dòng vắng
  * chỉ khi cần (`oGon`). Chỉ ô cần chú ý có vạch trái (tuần này · trễ chấm + nền đỏ nhạt · cần xếp lại). Nội dung do `oGon` quyết — ở đây chỉ vẽ.
  */
