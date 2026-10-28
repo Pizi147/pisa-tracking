@@ -320,7 +320,7 @@ export const laTuChoi = (e: any) => typeof e?.status === 'number' && e.status >=
  * Môn chưa tới tuần thi thì chưa nợ ai cái gì, nên nó hiện tuần thi chứ không hiện một
  * cái hạn trông như đang đếm ngược. Đây là chỗ dễ đọc nhầm nhất của lịch tách tuần.
  */
-export function DeadlinePill({ cell }: { cell: Cell }) {
+export function DeadlinePill({ cell, mo }: { cell: Cell; mo?: boolean }) {
   const { homNay } = useNgayNghiepVu();
   if (!cell.required) return <Info pending>{t('Ngoài phạm vi')}</Info>;
   if (cell.progress === 'cancelled') return <Info pending>{t('Đã huỷ')}</Info>;
@@ -342,12 +342,12 @@ export function DeadlinePill({ cell }: { cell: Cell }) {
    * Nguồn hạn (riêng môn / riêng cả đợt) chuyển thành ghi chú đứng sau, không mất thông tin.
    */
   if (cell.progress === 'upcoming') {
-    return <Han loai="nhap-diem" han={cell.deadline} tienTo={t('Làm bài {tuan}', { tuan: cell.weekStart ? tuanLich(cell.weekStart, homNay) : cell.weekRange ?? cell.periodCode ?? '' }).trim()} />;
+    return <Han loai="nhap-diem" han={cell.deadline} tienTo={t('Làm bài {tuan}', { tuan: cell.weekStart ? tuanLich(cell.weekStart, homNay) : cell.weekRange ?? cell.periodCode ?? '' }).trim()} mo={mo} />;
   }
   const ghiChu = cell.deadlineSource === 'skill_override' ? t('riêng môn này')
     : cell.deadlineSource === 'attempt_override' ? t('riêng cả đợt')
     : undefined;
-  return <Han loai="nhap-diem" han={cell.deadline} ghiChu={ghiChu} />;
+  return <Han loai="nhap-diem" han={cell.deadline} ghiChu={ghiChu} mo={mo} />;
 }
 
 
