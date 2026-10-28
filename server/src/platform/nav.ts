@@ -10,6 +10,7 @@ import { db } from '../db.ts';
 import { canSeeBoard } from '../worklist/mgmttasks.ts';
 import { coPhamViXuat, phamViXuatMt } from '../phanTich/xuatMt.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
+import { xemDuocBangQuyDoi } from './bangQuyDoi.ts';
 
 export function navOf(p: Principal): NavQuyen {
   const coPhamVi = (perm: string) => !scopeFor(p, perm).none;
@@ -47,6 +48,7 @@ export function navOf(p: Principal): NavQuyen {
     xuatMt: coPhamViXuat(phamViXuatMt(p)),
     tutor,
     tutorSua: tutor && can(p, PERMISSIONS.TUTOR_MANAGE, { anyScope: true }),
+    bangQuyDoi: xemDuocBangQuyDoi(p),   // BAND-QUY-DOI: cùng hàm với `xemBangQuyDoi`
   };
 }
 

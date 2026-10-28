@@ -50,7 +50,7 @@ export async function runPrOv12bTests(t: any) {
   const R = d.issuesForTopic('reading').map((i: any) => i.code) as string[];
   const Wc = d.issuesForTopic('writing1').map((i: any) => i.code) as string[];
   /** Số câu Reading cho band `b` (bảng quy đổi chung). */
-  const soCau = (b: number) => { for (let n = 40; n >= 0; n -= 1) if (d.bandTuSoCau('reading', n) === b) return n; throw new Error(`không có ${b}`); };
+  const soCau = (b: number) => { for (let n = 40; n >= 0; n -= 1) if (d.bandTuSoCau(d.BANG_QUY_DOI_GOC, 'reading', n) === b) return n; throw new Error(`không có ${b}`); };
 
   check('OV12b-1 · luật chung: thiếu / ngắn / thiếu nhóm khi dưới kỳ vọng; miễn ô không điểm, MT cũ, MT0', () => {
     const o = (x: any) => d.thieuNhanXetMt({ nenCo: true, coDiem: true, band: 6, kyVong: 5.5, nhanXet: NX, nhom: [], ...x });

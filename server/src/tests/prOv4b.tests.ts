@@ -43,12 +43,13 @@ export async function runPrOv4bTests(t: YThucTestKit) {
   };
   const dong = (aid: number, s: string) => one('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', aid, s);
 
-  check('OV4b-0 · bảng quy đổi số câu → band ở shared (web xem trước) trùng bảng máy chủ', () => {
+  check('OV4b-0 · web xem trước band theo cùng hàm + cùng bảng với máy chủ (BAND-QUY-DOI: bảng ở DB)', () => {
+    const bang = dm.BANG_QUY_DOI_GOC;
     for (const k of ['listening', 'reading'] as const) {
       for (let n = 0; n <= 40; n += 1) {
-        assert(dm.bandTuSoCau(k, n) === scoring.bandFromRaw(k, n), `${k} ${n}: ${dm.bandTuSoCau(k, n)} ≠ ${scoring.bandFromRaw(k, n)}`);
+        assert(dm.bandTuSoCau(bang, k, n) === scoring.bandFromRaw(k, n, bang), `${k} ${n}: ${dm.bandTuSoCau(bang, k, n)} ≠ ${scoring.bandFromRaw(k, n, bang)}`);
       }
-      assert(dm.bandTuSoCau(k, 41) === null && dm.bandTuSoCau(k, -1) === null && dm.bandTuSoCau(k, 2.5) === null, `${k}: ngoài 0–40 phải null`);
+      assert(dm.bandTuSoCau(bang, k, 41) === null && dm.bandTuSoCau(bang, k, -1) === null && dm.bandTuSoCau(bang, k, 2.5) === null, `${k}: ngoài 0–40 phải null`);
     }
   });
 

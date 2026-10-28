@@ -9,6 +9,8 @@ import { useToast } from '../../ui/Toast.tsx';
 import { api } from '../../lib/api.ts';
 import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
+import { BangQuyDoiAdmin } from './BangQuyDoiAdmin.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { fmtDateTime, roleLabel } from '../../lib/format.ts';
 import { MO_TA_QUYEN, NHOM_QUYEN, lyDoCamVai, nhanDoiTuongNhatKy, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
 
@@ -26,18 +28,22 @@ type AdminData = {
  *   TÀI KHOẢN  duyệt đăng ký, tạo tài khoản, cấp vai và quyền riêng (mục 7.1, 7.3).
  *   CHƯƠNG TRÌNH  chương trình + FT theo lộ trình — tên, đạt từ, số tuần, mốc Test; áp cho lớp mở sau (OV-6b1); không thêm mã mới (K1-48).
  *   CẤU HÌNH   ma trận quyền theo vai (`/admin/permissions/matrix`), đơn vị báo cáo, nhật ký thay đổi (`/admin/overview`).
+ *   BẢNG QUY ĐỔI  số câu L / R → band (BAND-QUY-DOI) — Quản lý (không có `nav.admin`) vào trang này chỉ thấy tab này, chỉ đọc.
  *
  * Tab nằm trên URL (`?tab=`, OV-11b QT-10g): rời trang rồi Quay lại về đúng tab.
  */
 const TABS = [
   { key: 'accounts', label: 'Tài khoản' },
   { key: 'catalog', label: 'Chương trình' },
+  { key: 'band', label: 'Bảng quy đổi' },
   { key: 'config', label: 'Quyền & nhật ký' },
 ] as const;
 
 export default function AdminPage() {
   const [params, setParams] = useSearchParams();
-  const tab = TABS.find((t) => t.key === params.get('tab'))?.key ?? 'accounts';
+  const quanTri = !!useSession().session?.nav?.admin;
+  const tabs = quanTri ? TABS : TABS.filter((t) => t.key === 'band');
+  const tab = tabs.find((t) => t.key === params.get('tab'))?.key ?? tabs[0].key;
   /* Đổi tab: bỏ bộ lọc của tab cũ (bộ lọc Tài khoản cũng ở URL), thêm một mục lịch sử để Quay lại về tab trước. */
   const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === 'accounts' ? {} : { tab: k });
   const { data, loading, error, reload } = useApi<AdminData>(tab === 'config' ? '/admin/overview' : null, [tab]);
@@ -45,19 +51,22 @@ export default function AdminPage() {
   return (
     <div className="page space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-100">Quản trị hệ thống</h1>
+        <h1 className="text-xl font-bold text-slate-100">{quanTri ? 'Quản trị hệ thống' : 'Bảng quy đổi band'}</h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Tài khoản, danh mục và cấu hình quyền của phần mềm.
+          {quanTri ? 'Tài khoản, danh mục và cấu hình quyền của phần mềm.' : 'Quản trị hệ thống sửa; Quản lý xem.'}
         </p>
       </div>
 
-      <div data-hd="qt-tab">
-        <HangTab ariaLabel="Quản trị hệ thống" value={tab} onChange={setTab}
-          tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} />
-      </div>
+      {quanTri && (
+        <div data-hd="qt-tab">
+          <HangTab ariaLabel="Quản trị hệ thống" value={tab} onChange={setTab}
+            tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} />
+        </div>
+      )}
 
       {tab === 'accounts' && <AccountsAdmin />}
       {tab === 'catalog' && <CatalogAdmin />}
+      {tab === 'band' && <BangQuyDoiAdmin />}
       {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
       {tab === 'config' && (loading || !data) && !error && <Skeleton rows={8} />}
       {tab === 'config' && data && <ConfigTab data={data} onDone={reload} />}

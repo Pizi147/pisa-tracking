@@ -9266,6 +9266,9 @@ await runPrOv4aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV4b (hộp nhập điểm MT: nhận xét 4 kỹ năng, W1 / W2 riêng, nhận xét lớp thường)
 const { runPrOv4bTests } = await import('./prOv4b.tests.ts');
 await runPrOv4bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== BAND-QUY-DOI (bảng quy đổi band ở DB, Quản trị sửa)
+const { runPrBandQuyDoiTests } = await import('./prBandQuyDoi.tests.ts');
+await runPrBandQuyDoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV6b1 (Quản trị › Chương trình: cấu hình, bản chụp lớp, tuần MT FT, ngưỡng đạt)
 const { runPrOv6b1Tests } = await import('./prOv6b1.tests.ts');
 await runPrOv6b1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
