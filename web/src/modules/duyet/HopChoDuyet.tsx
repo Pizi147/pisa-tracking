@@ -338,10 +338,14 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
           {cho ? han && <span className={`shrink-0 text-[12px] font-semibold tabular-nums ${hanV!.tone === 'overdue' ? 'text-late' : hanV!.ganHan ? 'text-soon' : 'text-slate-400'}`}>{han}</span>
             : <span className="flex shrink-0 items-center gap-1.5"><NhanTrangThai t={tt.t} />{yc.xuLyLuc && <span className="text-[12px] text-slate-400">{ngan(yc.xuLyLuc)}</span>}</span>}
         </span>
-        <b className="block truncate text-sm font-semibold text-slate-100">
-          {dich(yc.tieuDe)}{[yc.hocVien, yc.lop].filter(Boolean).length ? <span className="font-normal text-slate-300"> · {[yc.hocVien, yc.lop].filter(Boolean).join(' · ')}</span> : null}
+        {/* CV-CHO-DUYET-375: điện thoại cho xuống dòng (như #647 / #649), từ `sm` giữ một dòng `truncate`; tên em, mã lớp không ngắt giữa và
+            "·" dính chữ trước (không đứng đầu dòng). */}
+        <b className="block break-words text-sm font-semibold text-slate-100 sm:truncate">
+          {dich(yc.tieuDe)}{[yc.hocVien, yc.lop].filter(Boolean).map((x, i) => (
+            <span key={i} className="font-normal text-slate-300">{' · '}<span className="whitespace-nowrap">{x}</span></span>
+          ))}
         </b>
-        {yc.dong[0] && <span className="block truncate text-[12px] text-slate-400">{dich(yc.dong[0])}</span>}
+        {yc.dong[0] && <span className="block break-words text-[12px] text-slate-400 sm:truncate">{dich(yc.dong[0])}</span>}
       </button>
     </li>
   );
