@@ -292,7 +292,7 @@ button { font: inherit; color: inherit; }
   function trangThai() {
     var d = S.duyet, p = S.ph, nut = '';
     /* Cả hai ô trống (chưa có lần xử lý) → một dòng mờ, không vẽ khung hai ô. */
-    if (d[0] === 'Chưa có xử lý' && !p) return '<p class="mo ts-rong">Chưa có lần xử lý · chưa có gì cần báo PH</p>';
+    if (d[0] === 'Chưa có xử lý' && !p) return '<p class="mo ts-rong"><span class="nh">Duyệt · thu hồi · Báo PH</span> Chưa có lần xử lý · chưa có gì cần báo PH</p>';
     if (S.deXuat === 'cho' && vai === 'ql') nut = '<span class="hang"><button type="button" class="btn chinh"><span class="cua-toi" aria-hidden="true"></span>Duyệt</button><button type="button" class="btn">Từ chối…</button></span>';
     if (S.deXuat === 'da' && quanLy) nut = '<span class="hang"><button type="button" class="btn chinh"><span class="cua-toi" aria-hidden="true"></span>Đánh dấu đã thực hiện</button></span>';
     if (tt === 'sach' && quanLy) nut = '<span class="hang"><button type="button" class="link">Thu hồi…</button></span>';
@@ -325,7 +325,7 @@ button { font: inherit; color: inherit; }
     return h + '<div class="phoi-hop"><div class="l1"><b>MT2</b><span class="sos s2">SOS 2 · R, W</span><span class="tien">1/3 việc hoàn thành</span><span class="bd-td dang">Đang làm</span></div>' +
       '<ul class="ph-viec">' +
       '<li><span>Trao đổi với gia đình<span class="p">Xong 12/09 · TVV Nguyễn Thu Hương</span></span><span class="c"><span class="bd-td xong">Xong</span></span></li>' +
-      '<li><span>GVCN meeting với HV<span class="p">Cần xử lý · hạn 18/09</span></span><span class="c">' + (quanLy ? '<button type="button" class="btn' + (vai === 'gvcn' ? ' chinh"><span class="cua-toi" aria-hidden="true"></span>' : '">') + 'Xác nhận</button><button type="button" class="btn ma" aria-haspopup="menu">Bỏ ▾</button>' : '<span class="bd-td">Chờ GVCN</span>') + '</span></li>' +
+      '<li><span>GVCN meeting với HV<span class="p">Cần xử lý · hạn 18/09</span></span><span class="c">' + (quanLy ? '<button type="button" class="btn">' + (vai === 'gvcn' ? '<span class="cua-toi" aria-hidden="true"></span>' : '') + 'Xác nhận</button><button type="button" class="btn ma" aria-haspopup="menu">Bỏ ▾</button>' : '<span class="bd-td">Chờ GVCN</span>') + '</span></li>' +
       '<li><span>Báo hướng hỗ trợ cho TVV<span class="p">Cần xử lý · hạn 20/09 · Case R (Trần Ngọc Hà) · Case W1 (Lê Minh Khoa) — PA đang làm</span></span><span class="c">' + (quanLy ? '<button type="button" class="btn">Xác nhận</button>' : '') + '</span></li>' +
       '</ul></div>' +
       '<div class="ph-chan">' + (quanLy ? '<button type="button" class="btn ma">+ Thêm việc</button>' : '') + '<button type="button" class="btn ma">Hiện cả lượt đã xong (1)</button><button type="button" class="link">Case &amp; PA ở tab Học thuật ›</button></div></section>';
@@ -355,6 +355,7 @@ button { font: inherit; color: inherit; }
       '<div class="yt-dau"><h2>Ý thức &amp; Phối hợp</h2>' + (ghiVp ? '<button type="button" class="btn chinh">+ Ghi vi phạm</button>' : '') + '</div>';
     if (!S) return dau + '<div class="loi-tai" role="alert"><b>Không tải được Ý thức của em.</b> Kiểm tra mạng rồi bấm Tải lại. <button type="button" class="btn">Tải lại</button></div>';
     return dau + thang() + trangThai() + '<div class="hai-cot">' + viPham() + phoiHop() + '</div>' + nhatKy() +
+      (tt === 'qua-han' && quanLy ? '<div class="toast" role="alert" style="border-color:var(--bad)">Chưa lưu được "Xác nhận xử lý" · bậc và vi phạm giữ nguyên <button type="button" class="link">Thử lại</button></div>' : '') +
       (tt === 'moi' && quanLy ? '<div class="toast" role="status">✓ Đã ghi nhận 1 vi phạm (08/09) <button type="button" class="link">Hoàn tác</button></div>' : '');
   }
   ['w1440', 'w375'].forEach(function (id) {
