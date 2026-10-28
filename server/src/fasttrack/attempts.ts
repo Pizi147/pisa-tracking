@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE,
   CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
-  type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot,
+  type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
@@ -41,7 +41,7 @@ import {
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
-import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -1788,6 +1788,30 @@ export function khoiPhucCua(a: any): { ban: BanHuyLuot[]; chan: string | null } 
   return { ban, chan: `Chưa khôi phục được: đã xếp ${nhan} mới${ws ? ` tuần ${tuanLich(ws, demoToday())}` : ''}. Huỷ ${nhan} mới trước, rồi khôi phục ${nhan} cũ.` };
 }
 
+const LOAI_THUONG: readonly string[] = ['progress', 'final', 'checkpoint'];
+
+/**
+ * LUOT-KHOI-PHUC (luật "không khoá cứng"): lượt lớp thường đã huỷ KHÔNG khôi phục được khi — lớp đã kết thúc · em không còn học lớp đó ·
+ * em đã có bài cùng loại khác chưa huỷ (cùng lộ trình; Checkpoint cùng số). Trả câu lý do + bước tiếp; null = khôi phục được.
+ * Một hàm cho hộp (`GET /regular/attempts/:id` → `khoiPhuc.chan`) và `reopenAttempt` (400).
+ */
+export function chanKhoiPhucThuong(a: any, nhan: string): string | null {
+  const conn = db();
+  const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any)?.code ?? '';
+  if (laLopKetThuc(a.class_id)) return `Lớp ${lop} đã kết thúc — không khôi phục được ${nhan}. Điểm trước khi huỷ xem ở Lịch sử.`;
+  /* Em lưu trữ / kết thúc học: lượt khôi phục sẽ bị mọi danh sách hiện tại ẩn. Tạm dừng (chưa lưu trữ) vẫn khôi phục được. */
+  if (!conn.prepare(`SELECT 1 FROM students s WHERE s.id = ? AND (${HV_DANG_HOC_SQL('s')} OR (s.status = 'inactive' AND s.archived_at IS NULL))`).get(a.student_id)) {
+    return `Em đã lưu trữ / kết thúc học — bỏ lưu trữ trước rồi khôi phục ${nhan}.`;
+  }
+  if (!conn.prepare(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(a.student_id, a.class_id)) {
+    const nay = lopHienTaiCua(a.student_id, a.class_id);
+    return `Em không còn học ${lop}${nay ? ` (nay ${nay.code})` : ''} — không khôi phục được ${nhan} của lớp cũ. Bài của em xếp ở lớp đang học.`;
+  }
+  const khac = conn.prepare(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND cycle_id IS ? AND kind = ? AND id != ? AND status != 'cancelled'
+      AND (kind != 'checkpoint' OR attempt_no = ?)`).get(a.student_id, a.cycle_id ?? null, a.kind, a.id, a.attempt_no);
+  return khac ? `Em đã có ${nhan} khác đang dùng — không khôi phục lượt này. Nhập điểm vào ${nhan} đang có.` : null;
+}
+
 /**
  * KHÔI PHỤC LƯỢT (PR-OV4a, đặc tả OV 3.4; thay "Mở lại lượt"). Chỉ QL + Quản trị (`ATTEMPT_CANCEL`). MỘT giao dịch:
  *  · bản `huy_luot` (`banId`, mặc định mới nhất): lượt, lịch, điểm như lúc huỷ; đúng Case / PA / Phối hợp / tín hiệu lần huỷ đã đóng mở lại — Case
@@ -1799,7 +1823,9 @@ export function khoiPhucCua(a: any): { ban: BanHuyLuot[]; chan: string | null } 
 export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: number | null } = {}) {
   const truoc = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Quản lý khôi phục được lượt đã huỷ.');
-  const nhan = `MT${truoc.attempt_no}`;
+  /* LUOT-KHOI-PHUC: lượt lớp thường (Progress / Final / Checkpoint) đi cùng đường — tên theo bài, chặn riêng (`chanKhoiPhucThuong`). */
+  const thuong = LOAI_THUONG.includes(truoc.kind);
+  const nhan = thuong ? nhanBai(khoaBai(truoc.kind, truoc.attempt_no)) : `MT${truoc.attempt_no}`;
   const lyDo = `Khôi phục ${nhan}`;
   chanCuoiTuan(p, truoc, tuanCacKyNang(truoc));
   return tx(() => {
@@ -1810,6 +1836,10 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
       if (chan) throw badRequest(chan);
       throw badRequest(conn.prepare(`SELECT 1 FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_luot' AND khoi_phuc_luc IS NOT NULL`).get(attemptId)
         ? `${nhan} đã khôi phục.` : `${nhan} chưa huỷ.`);
+    }
+    if (thuong) {
+      const chan = chanKhoiPhucThuong(a, nhan);
+      if (chan) throw badRequest(chan);
     }
     const banId = o.banId ?? banHuyLuotCua(attemptId)[0]?.id ?? null;
     const cau: string[] = [];
@@ -1842,6 +1872,9 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
     const doiVuot = traBanDoiVuot(p, attemptId, lyDo);
     soDiem += doiVuot;
     if (banId === null && !doiVuot && a.kind === 'mock') cau.push('Lượt huỷ trước 10/2026: không còn điểm để khôi phục.');
+    /* ponytail: lượt thường huỷ thì điểm đã XOÁ (PR-VN5, không cất) — khôi phục ra lượt trống; điểm cũ còn ở nhật ký `regular.score`
+       (Lịch sử). Nâng cấp khi cần: trả điểm từ nhật ký của lần huỷ (cùng lý do + giờ huỷ) vào ô còn trống. */
+    if (thuong) cau.push('Điểm trước khi huỷ xem ở Lịch sử.');
     logSchedule(attemptId, { action: 'reopened', reason: lyDo, actor: p.userId });
     /* Đọc thẳng (không `ensureSkillRows`): lượt cũ thiếu dòng kỹ năng thì khôi phục không tự đẻ thêm dòng — trở lại đúng như trước. */
     const tuan = (conn.prepare(`SELECT p.week_start FROM attempt_skills k JOIN report_periods p ON p.id = k.planned_period_id
@@ -1859,7 +1892,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
     }
     if (sai || doiVuot) { recomputeCompletionWeek(attemptId, p.userId); tinhLaiMtCu(attemptId, demoToday()); }
     /* Bản cất đưa về NGUYÊN trạng (điểm, Case, tín hiệu, Phối hợp) — không tính lại; còn lại (lượt cũ / dời vượt / đổi tuần) tính lại như mọi lần sửa. */
-    if (banId === null || sai || doiVuot) refreshOutcome(p, attemptId);
+    if (banId === null || sai || doiVuot) (thuong ? refreshRegularOutcome : refreshOutcome)(p, attemptId);
     else lamMoiDiemBanChup(conn, [attemptId]);
     capNhatConOCho([attemptId]);   // TD7b: điểm + lịch trả về từ bản cất
     writeAudit({ actorUserId: p.userId, action: 'attempt.khoi_phuc', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: lyDo,
