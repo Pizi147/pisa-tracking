@@ -291,8 +291,9 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(sai.length === 0, `Placeholder sai luật:\n    ${sai.join('\n    ')}`);
   });
 
-  check('UX3 (7) · nhắc Ý thức không ⚠: HangTab, CanhBaoYThuc, ClassYThucCard, StudentYThucSection', () => {
-    for (const f of ['web/src/ui/HangTab.tsx', 'web/src/modules/classes/CanhBaoYThuc.tsx', 'web/src/modules/yThuc/ClassYThucCard.tsx',
+  /* UI-Y-THUC-LOP (luật V5: ⚠ = quá hạn): bảng lớp vẽ ⚠ ở ô vi phạm / Báo PH QUÁ HẠN như mockup — không còn trong danh sách. */
+  check('UX3 (7) · nhắc Ý thức không ⚠: HangTab, CanhBaoYThuc, StudentYThucSection', () => {
+    for (const f of ['web/src/ui/HangTab.tsx', 'web/src/modules/classes/CanhBaoYThuc.tsx',
       'web/src/modules/yThuc/StudentYThucSection.tsx']) {
       assert(!docSach(f).includes('⚠'), `${f} còn ⚠`);
     }
