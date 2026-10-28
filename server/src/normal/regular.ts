@@ -14,7 +14,7 @@ import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Pri
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
-import { huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
+import { chanKhoiPhucThuong, huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { boMonCuaLuot, lichGopCua, canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
@@ -1315,7 +1315,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
  * Lượt FT / MT0 / không có → 404 (trang FT là `GET /attempts/:id`; web chọn đường theo `kind`).
  */
 export function regularAttemptDetail(p: Principal, attemptId: number) {
-  const a = db().prepare('SELECT id, class_id, student_id, kind, cycle_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  const a = db().prepare('SELECT id, class_id, student_id, kind, cycle_id, attempt_no FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a || !a.class_id || !['progress', 'final', 'checkpoint'].includes(a.kind)) throw loi(404, 'Không tìm thấy lượt Test lớp thường.');
   const { rows, ...bang } = regularSheet(p, a.class_id, undefined, demoToday(), undefined, attemptId);
   const history = lichSuLichCua(attemptId);
@@ -1331,6 +1331,8 @@ export function regularAttemptDetail(p: Principal, attemptId: number) {
     nguoiLam: nguoiLamCuaLuot(a.class_id, bang.programme.skills, a.kind),
     huy: huyCua(rows[0].status, history),
     canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
+    /** LUOT-KHOI-PHUC: lượt đã huỷ — `chan` = câu lý do + bước tiếp khi không khôi phục được (cùng hàm `reopenAttempt` chặn); null = lượt chưa huỷ. */
+    khoiPhuc: rows[0].status === 'cancelled' ? { chan: chanKhoiPhucThuong(a, rows[0].kindLabel) } : null,
     history,
     scoreHistory: scoreHistoryOf(attemptId),
   };
