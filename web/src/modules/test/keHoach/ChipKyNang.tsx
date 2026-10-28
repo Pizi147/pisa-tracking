@@ -10,9 +10,10 @@ import { t } from '@shared/i18n/index.ts';
  */
 const VACH: Partial<Record<LoaiTtGon, string>> = {
   nay: 'shadow-[inset_3px_0_0_rgb(var(--doing-rgb))]',
-  tre: 'bg-bad-bg shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]',
+  tre: '!bg-bad-bg shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]',
   vang: 'shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]',
 };
+/** `bg-transparent` của khung ô đè nền trễ — nên `!bg-bad-bg`. */
 const MAU_TT: Record<LoaiTtGon, string> = {
   nay: 'text-doing', tre: 'text-bad', cho: 'text-dim', vang: 'text-soon', xong: 'text-ok', chua: 'text-dim',
 };
@@ -44,7 +45,7 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, children }: {
   const nhanKhoa = khoa ? nhanTuanKhoa(khoa.tuan, khoa.khaiGiang, khoa.tongTuan) : null;
   const mo = !o.tt && !o.xong;   // đã xếp, chưa tới tuần: tuần mờ, không chữ
   const doc = [
-    nhan, o.tuan ?? t('chưa xếp'),
+    nhan, o.tuanDu ?? o.tuan ?? t('chưa xếp'),
     kq ? `${kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(kq.ovr)}` : o.tt?.chu,
     o.kn?.map((k) => `${k.ten} ${CHU_KN[k.loai]}`).join(', '), o.rieng, o.vang,
   ].filter(Boolean).join(', ');
@@ -101,7 +102,7 @@ export function OHuy({ onMo }: { onMo?: (el: HTMLElement) => void }) {
 /** Chú giải ⓘ (thay chú giải màu cũ) — 6 dòng theo mockup; mẫu dựng bằng chính `ODotGon`. */
 export function ChuGiaiGon() {
   const mau = (o: Partial<OGon>, ketQua?: { ovr: number; dat: boolean }) => (
-    <ODotGon o={{ tuan: 'W1 OCT', xong: false, tt: null, kn: null, rieng: null, vang: null, ...o }} nhan="" ketQua={ketQua} onMo={() => undefined} />
+    <ODotGon o={{ tuan: 'W1 OCT', tuanDu: null, xong: false, tt: null, kn: null, rieng: null, vang: null, ...o }} nhan="" ketQua={ketQua} onMo={() => undefined} />
   );
   const dong: [ReactNode, string][] = [
     [mau({ xong: true, tt: { chu: t('xong'), loai: 'xong' } }, { ovr: 6, dat: true }), t('Đã xong — Overall, ✓ đạt / ✗ chưa đạt kỳ vọng; không có Overall ghi "xong"')],

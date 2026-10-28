@@ -91,22 +91,28 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
     && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || o?.trangThai === 'da-huy'));
   const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiCanXepLai || canXepLai(h));
   /* UI-CHAM-TEST (mockup khu a): lớp dài hiện HANG_GON em đầu + "Hiện tất cả n"; đang tìm em / lọc "Cần xếp lại" thì hiện hết. */
-  const hangs = hetHang || hvChon || chiCanXepLai || tatCa.length <= HANG_GON + 2 ? tatCa : tatCa.slice(0, HANG_GON);
+  /* KHT-GON (critique): lớp dài thu gọn vẫn hiện MỌI em cần chú ý (cần xếp lại, trễ chấm) — không em nào bị khuất sau "Hiện tất cả". */
+  const canChuY = (h: HangFT | HangThuong) => canXepLai(h) || (!!homNay && Object.values((h as HangFT).dot ?? {})
+    .some((d) => oGon(d.kn, homNay)?.tt?.loai === 'tre'));
+  const hangs = hetHang || hvChon || chiCanXepLai || tatCa.length <= HANG_GON + 2 ? tatCa
+    : tatCa.filter((h, i) => i < HANG_GON || canChuY(h));
   const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO; lichSu?: boolean; do?: boolean; huy?: number } => dotCuaEm(
     loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot,
   );
 
   return (
     <div ref={cuon} className="overflow-x-auto">
-      <table className="text-sm" style={{ tableLayout: 'fixed', width: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0), minWidth: '100%' }}>
+      {/* Cột đợt rộng CỐ ĐỊNH (mockup #659) — phần dư dồn vào cột trống cuối, không kéo giãn cột MT. */}
+      <table className="text-sm" style={{ tableLayout: 'fixed', width: '100%', minWidth: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0) }}>
         <colgroup>
           <col style={{ width: RONG_TEN }} />
           {cots.map((c) => <col key={c.key} style={{ width: rongDot }} />)}
           {loai === 'ft' && !chiXem && <col style={{ width: RONG_SEX }} />}
+          <col />
         </colgroup>
         <thead>
           <tr>
-            <Th className="sticky-col">Học viên</Th>
+            <Th className="sticky-col border-r border-[var(--line)]">Học viên</Th>
             {cots.map((c) => (
               <Th key={c.key}>
                 <span className="block">{c.tieu}</span>
@@ -116,14 +122,15 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
             {loai === 'ft' && !chiXem && (
               <Th><span className="sr-only">{t('Lượt thêm')}</span></Th>
             )}
+            <Th><span className="sr-only">{t('Trống')}</span></Th>
           </tr>
         </thead>
         <tbody>
           {hangs.map((h) => (
             <tr key={h.studentId} id={`kht-hv-${data.classId}-${h.studentId}`} className={`row-hover ${hvChon === h.studentId ? 'row-active' : ''}`}
               aria-current={hvChon === h.studentId ? 'true' : undefined}>
-              <td className="td sticky-col py-1.5 align-middle">
-                <Link to={duongHoSoHocVien(h.studentId)} className="link block truncate font-medium text-slate-100 max-sm:line-clamp-2 max-sm:whitespace-normal" title={h.ten}>{h.ten}</Link>
+              <td className="td sticky-col border-r border-[var(--line)] py-1.5 align-middle">
+                <Link to={duongHoSoHocVien(h.studentId)} className="link block truncate font-medium text-slate-100 max-sm:line-clamp-2 max-sm:min-h-[44px] max-sm:whitespace-normal" title={h.ten}>{h.ten}</Link>
                 {'vaoMuon' in h && h.vaoMuon && <div className="text-xs text-faint">vào muộn</div>}
               </td>
               {cots.map((c) => {
@@ -190,11 +197,12 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                   </div>
                 </td>
               )}
+              <td className="td" aria-hidden />
             </tr>
           ))}
           {hangs.length < tatCa.length && (
             <tr>
-              <td colSpan={1 + cots.length + (loai === 'ft' && !chiXem ? 1 : 0)} className="td sticky-col py-2 text-[13px] text-slate-400">
+              <td colSpan={2 + cots.length + (loai === 'ft' && !chiXem ? 1 : 0)} className="td sticky-col py-2 text-[13px] text-slate-400">
                 {t('+ {n} HV', { n: tatCa.length - hangs.length })} ·{' '}
                 <button type="button" className="link appearance-none border-0 bg-transparent p-0 max-sm:min-h-[44px]" onClick={() => setHetHang(true)}>
                   {t('Hiện tất cả {n}', { n: tatCa.length })}
@@ -249,7 +257,7 @@ function NutThemLuot({ hang, onMt, onSEx }: { hang: HangFT; onMt: (n: number, el
   const neo = useRef<HTMLSpanElement>(null);
   return (
     <span ref={neo} className="self-center">
-      <Menu label={t('+ MT')} align="right" className="btn btn-sm min-h-[32px] border-dashed sm:min-h-0" items={[
+      <Menu label={t('+ MT')} align="right" className="btn btn-sm min-h-[44px] border-dashed sm:min-h-0" items={[
         ...(hang.soKeTiep <= MT_TOI_DA ? [{ label: t('MT{n} · MT thường', { n: hang.soKeTiep }), onClick: () => onMt(hang.soKeTiep, neo.current!) }] : []),
         { label: t('S Ex · Speaking với chuyên gia'), onClick: onSEx },
       ]} />

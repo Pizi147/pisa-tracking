@@ -10,6 +10,7 @@
 import { docTuanLich, ngay, tuanLich } from './hienThiNgay.ts';
 import { O_KE_HOACH, trangThaiKyNang, type KyNangKH, type OKyNang } from './keHoachTest.ts';
 import { tenMon, tenMonNgan } from './normal.ts';
+import { tuanNamChu } from './keHoachOv15c.ts';
 import { addDaysIso } from './sos.ts';
 import { lyDoHuy } from './vang.ts';
 import { t } from '../i18n/index.ts';
@@ -230,6 +231,8 @@ export type KnGon = { k: KyNangKH; ten: string; loai: 'co' | 'chua' | 'khong' };
 export type OGon = {
   /** Mã tuần không năm (`W3 OCT`); xong = tuần muộn nhất; null = chưa xếp. */
   tuan: string | null;
+  /** Tuần đủ năm (`W3 OCT 2026`) cho tooltip / câu đọc màn. */
+  tuanDu: string | null;
   xong: boolean;
   /** Một chữ trạng thái; null = đã xếp, chưa tới tuần (chỉ tuần mờ). Xong: web thay bằng ✓ / ✗ Overall khi có. */
   tt: { chu: string; loai: LoaiTtGon } | null;
@@ -286,7 +289,7 @@ export function oGon(kn: OMtVao['kn'], homNay: string, ct?: string | null): OGon
   const ngayDoi = (x: (typeof ds)[number]) => (x.o.doiTu && /^\d{4}-\d{2}-\d{2}/.test(x.o.doiTu) ? x.o.doiTu : x.o.doiTu ? docTuanLich(x.o.doiTu, homNay) : null);
   const doi = xong ? [] : theoTuan(req.filter((x) => x.o.doiTu), ngayDoi);
   return {
-    tuan: chinh ? ma(chinh) : null, xong, tt, kn: knGon,
+    tuan: chinh ? ma(chinh) : null, tuanDu: chinh ? tuanNamChu(chinh) : null, xong, tt, kn: knGon,
     rieng: rieng.length ? rieng.map(([w, xs]) => t('{x} riêng · {tuan}', { x: ten(xs), tuan: ma(w) })).join(' · ') : null,
     vang: doi.length ? (doi.length === 1 && doi[0][1].length === req.length
       ? t('vắng {tuan}', { tuan: ma(doi[0][0]) })

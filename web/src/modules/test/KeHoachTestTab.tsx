@@ -137,8 +137,9 @@ export function KeHoachTestTab() {
             </NutChon>
           </span>
         )}
-        {loai === 'ft' && soCanXepLai > 0 && (
-          <span className="pb-1">
+        {(() => {
+          /* Cần xếp lại + chi nhánh: 1440 nằm trên hàng; 375 gộp vào "Lọc ▾" (mockup #659). */
+          const xepLai = loai === 'ft' && soCanXepLai > 0 ? (
             <NutChon nho chon={locXepLai} onClick={() => {
               const bat = !locXepLai;
               setChiXepLai(bat);
@@ -146,27 +147,29 @@ export function KeHoachTestTab() {
             }} title="Học viên có kỹ năng vắng hoặc đã huỷ — Quản lý cần xếp lại">
               Cần xếp lại <span className="tabular-nums">({soCanXepLai})</span>
             </NutChon>
-          </span>
-        )}
-        {branchCount > 1 && (
-          <>
-            <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={(id) => {
-              const next = new URLSearchParams(params);
-              next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
-              next.delete('classId');
-              setParams(next, { replace: true });
-            }} /></div>
-            <details className="sm:hidden">
-              <summary className="btn btn-sm cursor-pointer list-none">Lọc ▾</summary>
-              <div className="mt-2"><BranchFilter branchId={branchId} onBranch={(id) => {
-                const next = new URLSearchParams(params);
-                next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
-                next.delete('classId');
-                setParams(next, { replace: true });
-              }} /></div>
-            </details>
-          </>
-        )}
+          ) : null;
+          const doiCn = (id: number | null) => {
+            const next = new URLSearchParams(params);
+            next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
+            next.delete('classId');
+            setParams(next, { replace: true });
+          };
+          return (
+            <>
+              {xepLai && <span className="hidden pb-1 sm:inline">{xepLai}</span>}
+              {branchCount > 1 && <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={doiCn} /></div>}
+              {(xepLai || branchCount > 1) && (
+                <details className="sm:hidden">
+                  <summary className="btn btn-sm min-h-[44px] cursor-pointer list-none">Lọc ▾</summary>
+                  <div className="mt-2 flex flex-col items-start gap-2">
+                    {xepLai}
+                    {branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
+                  </div>
+                </details>
+              )}
+            </>
+          );
+        })()}
         <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 basis-full sm:basis-auto sm:w-72" />
         <span className="pb-2">
           <NutLuat label="Luật xếp lịch Test">

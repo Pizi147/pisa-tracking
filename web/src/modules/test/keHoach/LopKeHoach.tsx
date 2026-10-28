@@ -54,7 +54,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
                   {lop.chiXem && <span className={`${CHIP_TRON} !border-[var(--line-strong)] bg-[var(--surface)] text-dim`}>{t('Chỉ xem')}</span>}
                   <span className="text-xs font-normal text-slate-400">{[lop.chiNhanh, kyHieuLop(lop.chuongTrinh, null) ?? lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
                 </span>
-                <span className="block truncate text-xs font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>
+                <span className="block text-xs font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>
               </span>
             )}>
             {/* `.hang-lon > td` đặt chữ đậm 12.5px với độ ưu tiên cao hơn tiện ích Tailwind — chữ phụ phải đặt thẳng vào style. */}
