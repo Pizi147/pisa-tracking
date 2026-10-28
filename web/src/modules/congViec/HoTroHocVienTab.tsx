@@ -111,10 +111,10 @@ export function HoTroHocVienTab() {
   const dsGoc = useMemo(() => data?.dong ?? [], [data]);
   const demNguoi = useMemo(() => demNguoiViec(dsGoc), [dsGoc]);
   const tatCaViec = useMemo(() => (typeof nguoi === 'number' ? dsGoc : dsGoc.filter((it) => khopNguoiViec(it, nguoi))), [dsGoc, nguoi]);
+  /* RA-LUONG-1: số trên công tắc khung đếm VIỆC (`demViec`), cùng đơn vị đầu trang — không đếm dòng gộp. */
   const demKhung = useMemo(() => ({
-    'tat-ca': tatCaViec.length,
-    ft: tatCaViec.filter((it) => it.khung === 'ft').length,
-    thuong: tatCaViec.filter((it) => it.khung === 'thuong').length,
+    ft: demViec(viecThat(tatCaViec.filter((it) => it.khung === 'ft'))).viec,
+    thuong: demViec(viecThat(tatCaViec.filter((it) => it.khung === 'thuong'))).viec,
   }), [tatCaViec]);
   /* Phạm vi chỉ một khung (UX-2: theo lớp trong phạm vi, không theo việc đang có) thì công tắc ẩn — khi đó không lọc. */
   const haiKhung = (demKhung.ft > 0 && demKhung.thuong > 0) || phamViCoHaiKhung();
