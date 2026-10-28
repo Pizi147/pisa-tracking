@@ -48,7 +48,7 @@ Máy chủ: dòng Đạt MT gửi `diemCase` (nhãn Overall) thay chữ "Overall
 
 | Hộp | TRƯỚC | SAU |
 |---|---|---|
-| Xoá PA · Kết thúc PA (`MenuXoaPa`) · Xoá Case (`ThaoTacCase`) · Xoá vi phạm (`DeleteViolationConfirm`) · Thu hồi / Rút xử lý (`XemXuLyPanel`) | ngăn 480 đè panel đang mở | `ConfirmDialog` giữa màn, nêu đúng đối tượng; ô lý do đang gõ → ✕ / Esc / nền / Huỷ hỏi "Lý do chưa lưu…" một lần; nút đang chạy nói đúng việc ("Đang xoá…") |
+| Xoá PA · Kết thúc PA (`MenuXoaPa`) · Xoá Case (`ThaoTacCase`) · Xoá vi phạm (`DeleteViolationConfirm`) · Thu hồi / Rút xử lý (`XemXuLyPanel`) | ngăn 480 đè panel đang mở | `ConfirmDialog` giữa màn, nêu đúng đối tượng; ô lý do đang gõ → ✕ / Esc / nền / Đóng hỏi "Lý do chưa lưu…" một lần; nút đang chạy nói đúng việc ("Đang xoá…") |
 
 Phép kiểm cũ SL-7 (PR-SL I4: Xoá vi phạm phải là `KhungPanel longTrong`) đổi theo luật M6 mới hơn "không panel chồng panel" (V11 / V19).
 **Bấm thử (28/10, vai QL demo, DB cục bộ):**
@@ -56,8 +56,8 @@ Phép kiểm cũ SL-7 (PR-SL I4: Xoá vi phạm phải là `KhungPanel longTrong
 | Hộp | Chỗ mở | Kết quả |
 |---|---|---|
 | Xoá PA | Case 1 (HV 1) · ⋯ dòng PA | Hộp đè trên panel Case, nêu đúng tên PA · Esc chỉ đóng hộp (panel Case còn) · xác nhận → "Đã xoá PA", panel còn mở. ĐẠT |
-| Xoá Case | Case 9 (HV 3) · Sửa → Xoá Case | Nêu tên Case · ✕ và Huỷ chỉ đóng hộp, panel "Sửa Case" còn. ĐẠT (không xoá thật) |
-| Thu hồi lần xử lý (có ô lý do) | HV 4 · Ý thức · Report 1 · Thu hồi… | Gõ lý do → Esc → "Bỏ chữ đang gõ? Lý do chưa lưu…", focus "Ở lại" · Ở lại → chữ còn nguyên · ✕ → hỏi lại · Huỷ → hỏi · "Bỏ chữ, đóng" → chỉ đóng hộp, panel Report 1 còn · Thu hồi thật → "Đã thu hồi Report 1", lý do ghi đúng. ĐẠT |
+| Xoá Case | Case 9 (HV 3) · Sửa → Xoá Case | Nêu tên Case · ✕ và Đóng chỉ đóng hộp, panel "Sửa Case" còn. ĐẠT (không xoá thật) |
+| Thu hồi lần xử lý (có ô lý do) | HV 4 · Ý thức · Report 1 · Thu hồi… | Gõ lý do → Esc → "Bỏ chữ đang gõ? Lý do chưa lưu…", focus "Ở lại" · Ở lại → chữ còn nguyên · ✕ → hỏi lại · Đóng → hỏi · "Bỏ chữ, đóng" → chỉ đóng hộp, panel Report 1 còn · Thu hồi thật → "Đã thu hồi Report 1", lý do ghi đúng. ĐẠT |
 | Xoá vi phạm | HV 46 · Ý thức · vi phạm → Sửa → Xoá vi phạm | Panel Sửa đóng trước (luồng cũ, không chồng) · hộp nay nêu tên vi phạm (sửa trong lượt này) · Esc đóng. ĐẠT |
 | Kết thúc PA (có ô lý do) | Case 34 (HV 46) · ⋯ dòng PA gọn | (Sau sửa ở dưới) ⋯ có "Kết thúc PA" · gõ lý do → Esc → "Bỏ chữ đang gõ? Lý do chưa lưu…", focus "Ở lại" · Ở lại → chữ còn · ✕ → hỏi lại · kết thúc thật → "Đã kết thúc PA", panel Case còn. ĐẠT |
 

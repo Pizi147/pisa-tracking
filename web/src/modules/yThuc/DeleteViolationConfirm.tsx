@@ -31,7 +31,7 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
   /* 6c-2 (lỗi 9): mở từ danh sách vi phạm có thể nằm trong panel khác → hộp nhỏ lớp z trên, không ngăn 480 đè panel. */
   return (
     <ConfirmDialog open={violationId !== null} onClose={onClose} onConfirm={() => void confirm()} title={t('Xoá vi phạm này?')} danger busy={busy} z="z-[60]"
-      confirmLabel={t('Xoá vi phạm')} busyLabel={t('Đang xoá…')} closeLabel={t('Huỷ')}
+      confirmLabel={t('Xoá vi phạm')} busyLabel={t('Đang xoá…')}
       /* 6c-2 (bấm thử): nêu đúng vi phạm bị xoá (tên) rồi hậu quả với lần xử lý. */
       body={<>{data?.ten && <p className="m-0 font-semibold text-slate-100">{data.ten}</p>}
         <p className="m-0">{n > 0 ? t('Vi phạm nằm trong {n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.', { n }) : t('Vi phạm chưa nằm trong lần xử lý nào.')}</p></>} />

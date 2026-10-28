@@ -232,7 +232,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
       {/* Hộp hỏi MỘT DÒNG (mẫu `DeleteViolationConfirm`): panel con, lớp z trên, không đóng panel này. LUAT-5: Thu hồi thêm ô Lý do *. */}
       {/* 6c-2 (lỗi 9): hộp nhỏ trong panel (không ngăn 480 đè); LUAT-5: Thu hồi có ô Lý do * — đang gõ thì đóng hỏi một lần. */}
       {d && (
-        <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={() => void xoa()} danger busy={busy} z="z-[60]" closeLabel={t('Huỷ')}
+        <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={() => void xoa()} danger busy={busy} z="z-[60]"
           title={rutDuoc ? t('Rút đề xuất này?') : ql ? t('Thu hồi lần xử lý này?') : t('Gửi QL thu hồi?')}
           confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')} busyLabel={rutDuoc ? t('Đang rút…') : ql ? t('Đang thu hồi…') : t('Đang gửi…')} daSua={!rutDuoc && !!lyDo.trim()}
           body={<>

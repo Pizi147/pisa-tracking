@@ -50,10 +50,10 @@ export function MenuPa({ iv, ten, soKetQua, onSua, xoa, ketThuc = false }: { iv:
       <MenuDong muc={muc} />
       {/* 6c-2 (lỗi 9): hộp xác nhận = hộp nhỏ giữa màn (mẫu `.hop-hoi`), không ngăn 480 đè panel. Nêu đúng PA + số kết quả bị xoá. */}
       <ConfirmDialog open={hoi === 'xoa'} onClose={() => setHoi(null)} onConfirm={() => void xoaPa()} title={t('Xoá PA này?')} danger busy={busy} z="z-[60]"
-        confirmLabel={t('Xoá PA')} busyLabel={t('Đang xoá…')} closeLabel={t('Huỷ')}
+        confirmLabel={t('Xoá PA')} busyLabel={t('Đang xoá…')}
         body={<>{ten}{soKetQua > 0 ? t(' · {soKetQua} kết quả tuần sẽ xoá', { soKetQua }) : ''}</>} />
       <ConfirmDialog open={hoi === 'ket-thuc'} onClose={() => setHoi(null)} onConfirm={() => void ketThucPa()} title={t('Kết thúc PA này?')} busy={busy} z="z-[60]"
-        confirmLabel={t('Kết thúc PA')} busyLabel={t('Đang lưu…')} closeLabel={t('Huỷ')} daSua={!!lyDo.trim()}
+        confirmLabel={t('Kết thúc PA')} busyLabel={t('Đang lưu…')} daSua={!!lyDo.trim()}
         body={<div className="space-y-2">
           <p className="m-0">{ten}</p>
           <Truong nhan={t('Lý do')} batBuoc loi={thu && ngan ? t('Ít nhất {n} ký tự', { n: LY_DO_KET_THUC_PA_TOI_THIEU }) : null}>
