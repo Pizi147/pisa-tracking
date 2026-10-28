@@ -50,7 +50,7 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
     const trong = dm.kiemBangQuyDoi({ listening: GOC.listening, reading: GOC.reading.map((v: number, n: number) => (n === 12 ? null : v)) });
     assert(trong.length === 1 && trong[0].cau === 12 && trong[0].loi === 'Reading 12 câu: chưa có band.', `ô trống: ${JSON.stringify(trong)}`);
     const le = dm.kiemBangQuyDoi({ listening: GOC.listening, reading: GOC.reading.map((v: number, n: number) => (n === 12 ? 4.3 : v)) });
-    assert(le.length === 1 && le[0].skill === 'reading' && le[0].cau === 12 && /Reading 12 câu/.test(le[0].loi), `bậc 0.5: ${JSON.stringify(le)}`);
+    assert(le.length === 1 && le[0].skill === 'reading' && le[0].cau === 12 && /Reading 12 câu: band từ 0 đến 9, bậc 0.5 \(đang là 4.3\)/.test(le[0].loi) && le[0].ngan === '0–9, bậc 0.5', `bậc 0.5: ${JSON.stringify(le)}`);
     const giam = dm.kiemBangQuyDoi({ listening: GOC.listening.map((v: number, n: number) => (n === 20 ? 4.5 : v)), reading: GOC.reading });
     assert(giam.length === 1 && giam[0].cau === 20 && giam[0].loi === 'Listening 20 câu: 4.5 thấp hơn 19 câu (5.0) — band không giảm khi số câu tăng.', `giảm: ${JSON.stringify(giam)}`);
     const giam4 = dm.kiemBangQuyDoi({ listening: GOC.listening.map((v: number, n: number) => (n === 35 ? 7 : v)), reading: GOC.reading });
