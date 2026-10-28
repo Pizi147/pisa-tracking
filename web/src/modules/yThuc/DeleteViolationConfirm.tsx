@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -14,7 +14,7 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const { data } = useApi<{ measures: any[] }>(violationId ? `/violations/${violationId}` : null, [violationId]);
+  const { data } = useApi<{ measures: any[]; ten?: string | null }>(violationId ? `/violations/${violationId}` : null, [violationId]);
   const n = data?.measures?.length ?? 0;
 
   const confirm = async () => {
@@ -28,21 +28,12 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  /* I4 (PR-SL): khung panel chung. Mở từ danh sách vi phạm có thể nằm trong panel khác → `longTrong`, lớp z trên. */
-  if (violationId === null) return null;
+  /* 6c-2 (lỗi 9): mở từ danh sách vi phạm có thể nằm trong panel khác → hộp nhỏ lớp z trên, không ngăn 480 đè panel. */
   return (
-    <KhungPanel tieuDe={t('Xoá vi phạm này?')} longTrong z="z-[60]" onDong={() => !busy && onClose()}
-      chan={{
-        huy: { onClick: onClose, disabled: busy },
-        chinh: (
-          <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={() => void confirm()} disabled={busy}>
-            {busy ? t('Đang xoá…') : t('Xoá vi phạm')}
-          </button>
-        ),
-      }}>
-      <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">
-        {n > 0 ? t('Vi phạm nằm trong {n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.', { n }) : t('Vi phạm chưa nằm trong lần xử lý nào.')}
-      </p>
-    </KhungPanel>
+    <ConfirmDialog open={violationId !== null} onClose={onClose} onConfirm={() => void confirm()} title={t('Xoá vi phạm này?')} danger busy={busy} z="z-[60]"
+      confirmLabel={t('Xoá vi phạm')} busyLabel={t('Đang xoá…')}
+      /* 6c-2 (bấm thử): nêu đúng vi phạm bị xoá (tên) rồi hậu quả với lần xử lý. */
+      body={<>{data?.ten && <p className="m-0 font-semibold text-slate-100">{data.ten}</p>}
+        <p className="m-0">{n > 0 ? t('Vi phạm nằm trong {n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.', { n }) : t('Vi phạm chưa nằm trong lần xử lý nào.')}</p></>} />
   );
 }

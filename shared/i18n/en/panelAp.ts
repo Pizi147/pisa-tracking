@@ -4,4 +4,5 @@ import type { Dich } from '../en.ts';
 export const EN_PANEL_AP = {
   'Không tải được thông báo.': 'Could not load notifications.',
   'Không tải được yêu cầu chờ duyệt.': 'Could not load requests awaiting approval.',
+  'Đang thu hồi…': 'Withdrawing…',
 } satisfies Record<string, Dich>;

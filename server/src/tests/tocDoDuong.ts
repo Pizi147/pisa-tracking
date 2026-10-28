@@ -814,11 +814,12 @@ export const TRAN: Record<string, number> = {
   'GVBM /giao-vien/7/o?cot=chua-nhap': 16,
   'GVCN_THUONG /giao-vien/7/o?cot=chua-nhap': 32,
   'QT /giao-vien/7/o?cot=chua-nhap': 33,
-  'QL /giao-vien/7/o?cot=case-mo': 30,
-  'GVCN /giao-vien/7/o?cot=case-mo': 28,
+  /* 6c-2 (#632 XM-1): +1 câu điểm lượt mở Case (`diemCase`, `case_milestones` theo lô — một câu cho cả trang). GVBM không có Case trong tập nên không đổi. */
+  'QL /giao-vien/7/o?cot=case-mo': 31,
+  'GVCN /giao-vien/7/o?cot=case-mo': 29,
   'GVBM /giao-vien/7/o?cot=case-mo': 16,
-  'GVCN_THUONG /giao-vien/7/o?cot=case-mo': 28,
-  'QT /giao-vien/7/o?cot=case-mo': 27,   // OV-13a (B): +1 câu MT cuối của lộ trình (chữ mốc "đến MT{n}") khi danh sách có PA "đến lúc thi" — một câu cho cả trang
+  'GVCN_THUONG /giao-vien/7/o?cot=case-mo': 29,
+  'QT /giao-vien/7/o?cot=case-mo': 28,   // OV-13a (B): +1 câu MT cuối của lộ trình (chữ mốc "đến MT{n}") khi danh sách có PA "đến lúc thi" — một câu cho cả trang
   // PR-GV (4), 30/09/2026 — bảng GV chi nhánh: 36 (QL) / 34 (QT) câu, 403 = 9 câu; KHÔNG tăng theo số GV / lớp / Case (phép kiểm prGv.tests.ts).
   'QL /giao-vien?cn=1&ct=ft': 41,
   'QT /giao-vien?cn=1&ct=ft': 39,

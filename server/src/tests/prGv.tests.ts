@@ -355,10 +355,7 @@ export async function runPrGvTests(t: YThucTestKit) {
     const { fileURLToPath } = await import('node:url');
     const REPO = path.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
     const doc = (f: string) => fs.readFileSync(path.join(REPO, 'web/src', f), 'utf-8');
-    const bang = doc('modules/giaoVien/BangGiaoVienChiNhanh.tsx');
-    assert(!/\bsort=|onSort|kpi/i.test(bang), 'bảng không nút sắp xếp, không KPI');
-    assert(!/#[0-9a-fA-F]{3,8}\b|\bwhite\b|color-mix|text-bad|text-ok/.test(bang), 'không màu viết cứng, không màu tốt/xấu cho người');
-    /* UI-TONG-QUAN: BranchPulse (Tổng quan CX cũ) đã gỡ — bảng GV chi nhánh còn ở Phân tích. */
+    /* UI-TONG-QUAN: BranchPulse (Tổng quan CX cũ) đã gỡ; 6c-2: `BangGiaoVienChiNhanh` (0 nơi gọi) đã xoá — bảng GV chi nhánh ở Phân tích GV. */
     const header = doc('modules/platform/Header.tsx');
     assert(/roles\?\.includes\('teacher'\)/.test(header) && header.includes('/giao-vien/'), 'menu tài khoản: Hồ sơ giáo viên cho vai Giáo viên');
     assert(doc('modules/platform/AdminPage.tsx').includes('Quyền dẫn xuất'), 'bảng quyền ghi quyền dẫn xuất (K1-53)');

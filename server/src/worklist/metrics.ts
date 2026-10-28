@@ -4,7 +4,7 @@ import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound, loi } from '../util.ts';
@@ -131,6 +131,8 @@ export type MetricRow = {
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ (`nhomCaseChuaChot`). */
   nhom?: NhomCaseChuaChot | null;
+  /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở mốc mở / lặp Case gần nhất (band, kỳ vọng lượt đó, "MT2" / "Progress Test"). */
+  diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
   ngayThiThat?: string;
   viec?: ViecDong | null;
@@ -236,6 +238,15 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           performerUserId: iv.performer_user_id ?? null, soBuoi: iv.so_buoi ?? null, nhomBoTro: iv.nhom_bo_tro ?? null });
       }
       const viec = viecCuaCase(ds.filter((r) => r.sid != null).map((r) => ({ ...r, pas: paTheoCase.get(r.id) })), p);
+      /* 6c-2 (#632 XM-1): điểm lượt mở Case — mốc mở / lặp có band gần nhất, một câu cho cả lô (như Ngăn Case `ketQuaGanNhat`). */
+      const diemCase = new Map<number, MetricRow['diemCase']>();
+      for (const m of conn.prepare(
+        `SELECT m.case_id, m.attempt_no, m.band, m.expectation, a.kind AS attempt_kind
+           FROM case_milestones m LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
+          WHERE m.case_id IN (${ph}) AND m.kind IN ('opened', 'repeat') AND m.band IS NOT NULL ORDER BY m.occurred_on, m.id`,
+      ).all(...chunk) as any[]) {
+        diemCase.set(m.case_id, { so: Number(m.band), kyVong: m.expectation == null ? null : Number(m.expectation), luot: m.attempt_kind ? nhanDot(m.attempt_kind, m.attempt_no ?? null) : null });
+      }
       for (const r of ds) {
         /* MH2: tên môn theo chương trình của lộ trình (FOU "G+V"), không chữ thô "listening". K1-06 (Q26): mở hồ sơ HV ở Ngăn Case. */
         const v = viec.get(r.id);
@@ -245,7 +256,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           /* OV-12e (đặc tả mục 1, nghi lỗi): hạn = hạn của VIỆC TIẾP — Case xong / không còn việc thì không còn hạn (trước: luôn `han_xac_nhan`). */
           href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: v?.viec?.han ?? null, nguoiId: r.owner_user_id ?? null,
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: ten,
-          viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null,
+          viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null, diemCase: diemCase.get(r.id) ?? null,
         });
       }
     } else if (unit === 'phuong-an') {

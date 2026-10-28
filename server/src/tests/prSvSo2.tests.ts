@@ -195,7 +195,10 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const k = bc.baoCao(P.mbManager, f).datMt;
     const p = bc.oBaoCao(P.mbManager, { ...f, o: 'dat-mt' });
     assert(k && k.mau >= 2 && p.n === k.mau && p.tieuDe === `Đạt MT · ${Math.round((100 * k.dat) / k.mau)} % = ${k.dat}/${k.mau} HV`, JSON.stringify({ k, t: p.tieuDe }));
-    assert(p.rows[0].sub.endsWith('Chưa đạt') && p.rows.every((r: any) => /Overall \d\.\d · kỳ vọng \d\.\d/.test(r.sub) && !('viec' in r)), JSON.stringify(p.rows[0]));
+    /* 6c-2: Overall + kỳ vọng gửi có cấu trúc (`diemCase`, nhãn Overall) — web vẽ ✓ / ✗ + thiếu như dòng Case; chưa đạt vẫn đứng trước. */
+    const chua = (r: any) => r.diemCase.so < r.diemCase.kyVong;
+    assert(chua(p.rows[0]) && p.rows.every((r: any) => r.diemCase?.nhan === 'Overall' && typeof r.diemCase.so === 'number' && typeof r.diemCase.kyVong === 'number' && !('viec' in r))
+      && p.rows.findIndex((r: any) => !chua(r)) >= p.rows.filter(chua).length - 1, JSON.stringify(p.rows[0]));
     assert(bc.oBaoCao(P.mbManager, { ...f, o: 'dat-mt-chua-du' }).n === k.chuaDu, 'ngoài mẫu');
   }));
 

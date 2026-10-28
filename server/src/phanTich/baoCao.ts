@@ -333,7 +333,8 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const ids = [...d.mau].sort((a, b) => Number(d.dat.has(a)) - Number(d.dat.has(b)) || a - b);
     const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => {
       const x = d.luot.get(row.id)!;
-      return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`, `Overall ${x.ovr!.toFixed(1)}`, t('kỳ vọng {kv}', { kv: x.kyVong!.toFixed(1) }), d.dat.has(row.id) ? t('Đạt') : t('Chưa đạt')].join(' · ') };
+      /* 6c-2 (critique): điểm so kỳ vọng gửi có cấu trúc (`diemCase`, nhãn Overall) — web vẽ cùng một cách với dòng Case (✓ / ✗ + thiếu); `sub` còn lớp · lượt · tuần. */
+      return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`].join(' · '), diemCase: { so: x.ovr!, kyVong: x.kyVong!, luot: null, nhan: 'Overall' } };
     });
     return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows };
   }

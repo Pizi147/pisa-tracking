@@ -1,7 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { useApi } from '../../lib/useApi.ts';
+import type { ReactNode } from 'react';
 import { OSo } from '../../ui/OSo.tsx';
-import { NganDanhSach, type DongSoLieu } from '../../ui/SoLieu.tsx';
 import type { ChuongTrinh, KhoangNgay } from '@shared/domain/index.ts';
 
 /**
@@ -31,24 +29,6 @@ export function thamSoLoc(p: PhamViPhanTich, them: Record<string, string> = {}):
  * nên đặt bằng biến thể `td:first-child`; nền của `td` đã do CSS `.hang-lon`/`.hang-con` tô đặc nên không lộ chữ phía sau.
  */
 export const DINH_TRAI = '[&>td:first-child]:sticky [&>td:first-child]:left-0 [&>td:first-child]:z-[5]';
-
-/**
- * NÚT CHỮ MỞ MỘT NGĂN DANH SÁCH (G-8: một ngăn một lúc, G-10: số ngăn = số dòng). Giống `OSo nguon=…` nhưng nút là một cụm chữ
- * ("Mở danh sách Case cần GV phân loại →") chứ không phải một con số; nguồn phải trả `{ n, tieuDe, rows }` bằng chính hàm sinh ra số.
- */
-export function NutMoDanhSach({ nguon, tieuDe, children, className = '' }: { nguon: string; tieuDe: string; children: ReactNode; className?: string }) {
-  const [mo, setMo] = useState(false);
-  const { data, loading, error, reload } = useApi<{ n: number; tieuDe: string; rows: DongSoLieu[] }>(mo ? nguon : null, [nguon, mo]);
-  return (
-    <>
-      <button type="button" onClick={() => setMo(true)}
-        className={`appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 max-sm:px-3 max-sm:-mx-3 cursor-pointer underline decoration-dotted underline-offset-4 hover:text-white ${className}`}>
-        {children}
-      </button>
-      {mo && <NganDanhSach tieuDe={data?.tieuDe ?? tieuDe} data={data} loading={loading} error={error} reload={reload} onDong={() => setMo(false)} />}
-    </>
-  );
-}
 
 /** Dòng tóm tắt đầu bảng: `<b>27 học viên có Case…</b> · 38 Case · 9 lớp` + ⓘ luật. */
 export function DongTomTat({ chinh, phu, luat }: { chinh: ReactNode; phu?: ReactNode; luat?: ReactNode }) {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Truong } from '../../ui/KhungPanel.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { LY_DO_KET_THUC_PA_TOI_THIEU } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -47,30 +48,18 @@ export function MenuPa({ iv, ten, soKetQua, onSua, xoa, ketThuc = false }: { iv:
   return (
     <>
       <MenuDong muc={muc} />
-      {hoi === 'xoa' && (
-        <KhungPanel tieuDe={t('Xoá PA này?')} longTrong z="z-[60]" onDong={() => !busy && setHoi(null)}
-          chan={{
-            huy: { onClick: () => setHoi(null), disabled: busy },
-            chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoaPa()}>{busy ? t('Đang xoá…') : t('Xoá PA')}</button>,
-          }}>
-          <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">{ten}{soKetQua > 0 ? t(' · {soKetQua} kết quả tuần sẽ xoá', { soKetQua }) : ''}</p>
-        </KhungPanel>
-      )}
-      {hoi === 'ket-thuc' && (
-        <KhungPanel tieuDe={t('Kết thúc PA này?')} longTrong z="z-[60]" onDong={() => !busy && setHoi(null)}
-          chan={{
-            daSua: !!lyDo.trim(),
-            huy: { onClick: () => setHoi(null), disabled: busy },
-            chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void ketThucPa()}>{busy ? t('Đang lưu…') : t('Kết thúc PA')}</button>,
-          }}>
-          <div className="space-y-2 pt-3">
-            <p className="m-0 text-sm leading-relaxed text-slate-300">{ten}</p>
-            <Truong nhan={t('Lý do')} batBuoc loi={thu && ngan ? t('Ít nhất {n} ký tự', { n: LY_DO_KET_THUC_PA_TOI_THIEU }) : null}>
-              <textarea className="field w-full" rows={3} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
-            </Truong>
-          </div>
-        </KhungPanel>
-      )}
+      {/* 6c-2 (lỗi 9): hộp xác nhận = hộp nhỏ giữa màn (mẫu `.hop-hoi`), không ngăn 480 đè panel. Nêu đúng PA + số kết quả bị xoá. */}
+      <ConfirmDialog open={hoi === 'xoa'} onClose={() => setHoi(null)} onConfirm={() => void xoaPa()} title={t('Xoá PA này?')} danger busy={busy} z="z-[60]"
+        confirmLabel={t('Xoá PA')} busyLabel={t('Đang xoá…')}
+        body={<>{ten}{soKetQua > 0 ? t(' · {soKetQua} kết quả tuần sẽ xoá', { soKetQua }) : ''}</>} />
+      <ConfirmDialog open={hoi === 'ket-thuc'} onClose={() => setHoi(null)} onConfirm={() => void ketThucPa()} title={t('Kết thúc PA này?')} busy={busy} z="z-[60]"
+        confirmLabel={t('Kết thúc PA')} busyLabel={t('Đang lưu…')} daSua={!!lyDo.trim()}
+        body={<div className="space-y-2">
+          <p className="m-0">{ten}</p>
+          <Truong nhan={t('Lý do')} batBuoc loi={thu && ngan ? t('Ít nhất {n} ký tự', { n: LY_DO_KET_THUC_PA_TOI_THIEU }) : null}>
+            <textarea className="field w-full" rows={3} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
+          </Truong>
+        </div>} />
     </>
   );
 }
