@@ -100,18 +100,24 @@ type Ref<V> = { current: V };
 export function batDauTai<T>(path: string | null, b: {
   latest: Ref<number>; currentPath: Ref<string | null>; coDuLieu: Ref<boolean>;
   setData: (d: T | null) => void; setFetching: (v: boolean) => void; setError: (e: ApiError | null) => void; reload: () => void;
+  /** HV-LOC: đổi truy vấn mà chưa có bản vừa xem → giữ dữ liệu cũ tới khi bản mới về (`setCu(true)` trong lúc đó), không về null. */
+  giuCu?: boolean; setCu?: (v: boolean) => void;
 }): void {
   const { latest, currentPath, coDuLieu, reload } = b;
   if (!path) {
     latest.current += 1;   // F06: phản hồi của đường cũ còn bay không được đặt lại dữ liệu
     b.setData(null);
+    b.setCu?.(false);
     b.setFetching(false);
     currentPath.current = null;
     return;
   }
   // Đổi sang truy vấn khác thì mới bỏ dữ liệu cũ đi.
   if (currentPath.current !== path) {
-    b.setData((daXem.get(path) as T | undefined) ?? null);
+    const banXem = daXem.get(path) as T | undefined;
+    /* HV-LOC: trang lọc / tìm theo truy vấn — gỡ dữ liệu làm trang cha hiện khung chờ, gỡ luôn ô đang gõ (mất focus, hỏng bộ gõ). */
+    if (banXem === undefined && b.giuCu && coDuLieu.current) b.setCu?.(true);
+    else { b.setData(banXem ?? null); b.setCu?.(false); }
     currentPath.current = path;
     /* Mới gắn / đổi đường, bản lưu còn mới → dùng luôn (PR-TD2-c). */
     if (conMoi(path)) { latest.current += 1; b.setFetching(false); b.setError(null); return; }
@@ -125,6 +131,7 @@ export function batDauTai<T>(path: string | null, b: {
       if (!kq) { b.setFetching(false); return; }   // bị xoá giữa chừng: giữ dữ liệu đang có (invalidate tự tải lại)
       loiNen.delete(reload);
       b.setData(kq.d);
+      b.setCu?.(false);
       b.setFetching(false);
     })
     .catch((e) => {
@@ -146,6 +153,8 @@ export type ApiState<T> = {
   loading: boolean;
   /** true khi đang tải lại nền dù đã có dữ liệu cũ trên màn hình. */
   refreshing: boolean;
+  /** `giuCu`: dữ liệu đang hiện là của truy vấn trước, bản mới đang tải (làm mờ nhẹ, không khung chờ). */
+  cu: boolean;
   /** Chỉ khi CHƯA có dữ liệu (HOTFIX-3): đã có mà tải lại lỗi → giữ dữ liệu, toast nhỏ "Chưa tải lại được · Thử lại". */
   error: ApiError | null;
   reload: () => void;
@@ -159,10 +168,11 @@ export type ApiState<T> = {
  * cho mọi lần tải lại, trang cha sẽ đổi sang skeleton và làm unmount bảng đang nhập,
  * khiến bản nháp của người dùng bị mất.
  */
-export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T> {
+export function useApi<T>(path: string | null, deps: unknown[] = [], opts: { giuCu?: boolean } = {}): ApiState<T> {
   const [data, setDataState] = useState<T | null>(() => (path ? (daXem.get(path) as T | undefined) ?? null : null));
   const [fetching, setFetching] = useState(!!path);
   const [error, setError] = useState<ApiError | null>(null);
+  const [cu, setCu] = useState(false);
   const [tick, setTick] = useState(0);
   const latest = useRef(0);
   const currentPath = useRef<string | null>(null);
@@ -180,7 +190,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
   );
 
   useEffect(() => {
-    batDauTai<T>(path, { latest, currentPath, coDuLieu, setData: setDataState, setFetching, setError, reload });
+    batDauTai<T>(path, { latest, currentPath, coDuLieu, setData: setDataState, setFetching, setError, reload, giuCu: opts.giuCu, setCu });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, tick, ...deps]);
 
@@ -188,5 +198,5 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
     setDataState((prev) => (typeof updater === 'function' ? updater(prev) : updater));
   }, []);
 
-  return { data, loading: fetching && data === null, refreshing: fetching, error: loiCanHien(data, error), reload, setData };
+  return { data, loading: fetching && data === null, refreshing: fetching, cu: cu && data !== null, error: loiCanHien(data, error), reload, setData };
 }

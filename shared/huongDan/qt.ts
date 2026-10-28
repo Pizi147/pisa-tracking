@@ -3,7 +3,11 @@
  * màn Quản trị hệ thống; Việc hằng tuần riêng (việc QL gộp một dòng). Trang Quản trị phần lớn chưa dịch: bản Anh giữ nhãn Việt trong <b>.
  */
 import { HD_QL } from './ql.ts';
-import type { HuongDan } from './kieu.ts';
+import type { HuongDan, MucHd } from './kieu.ts';
+
+/** HD-CHI: Tổng quan Quản trị mặc định "Tất cả chi nhánh" (bảng Theo chi nhánh) — Chờ bạn duyệt, Lớp cần chú ý chỉ hiện khi chọn một chi nhánh. */
+const KHONG_CHI = ['ql-tq-can-xu-ly', 'ql-tq-so-lieu'];
+const boChi = ({ chi, ...m }: MucHd): MucHd => m;
 
 export const HD_QT: HuongDan = {
   viec: [
@@ -43,7 +47,7 @@ export const HD_QT: HuongDan = {
     },
   ],
   man: [
-    ...HD_QL.man,
+    ...HD_QL.man.map((m) => (m.id === 'tong-quan' ? { ...m, muc: m.muc.map((x) => (KHONG_CHI.includes(x.id) ? boChi(x) : x)) } : m)),
     {
       id: 'quan-tri', ten: 'Quản trị hệ thống', duong: ['/quan-tri'],
       muc: [
