@@ -210,8 +210,8 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           {/* Việc chờ mà người xem làm được: hai nút đứng chỗ nhãn (dòng phụ đã nói "Cần xử lý"); còn lại là nhãn 6 chữ chung. */}
           {a.status === 'pending' && canAct ? (
             <>
-              <button type="button" className="btn btn-sm btn-primary" onClick={() => setConfirming(!confirming)}>{a.kind === 'bao_ph_tvv' ? t('Đánh dấu đã làm') : t('Xác nhận')}</button>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRemoving(!removing)}>{t('Bỏ ▾')}</button>
+              <button type="button" className="btn btn-sm max-sm:min-h-[44px] btn-primary" onClick={() => setConfirming(!confirming)}>{a.kind === 'bao_ph_tvv' ? t('Đánh dấu đã làm') : t('Xác nhận')}</button>
+              <button type="button" className="btn btn-sm max-sm:min-h-[44px] btn-ghost" onClick={() => setRemoving(!removing)}>{t('Bỏ ▾')}</button>
             </>
           ) : <NhanTrangThai t={trangThaiPhoiHop(a.status)} />}
         </span>
