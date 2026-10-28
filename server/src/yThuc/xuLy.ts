@@ -32,7 +32,6 @@ import { dongViecTheoXuLy, moLaiViecTheoXuLy, sinhViecBaoPh } from './baoPhTvv.t
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Quản lý trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
 export const MO_TA_MIN = 10;
-const KHAI_GHI_CHU_MIN = 3;
 
 const duongXuLy = (sid: number) => `${duongHoSoHocVien(sid, { tab: 'y-thuc' })}&mo=xu-ly`;
 
@@ -246,16 +245,20 @@ export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; 
 }
 
 /** Phần GHI của Sửa cấp bậc (đã kiểm quyền; `ql` = người sửa là Quản lý trong phạm vi em) — OV-13d lô gọi thẳng. */
-export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, ql: boolean, homNay: string) {
+export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, ql: boolean, homNay: string,
+  /** KHAI-BAC-LO Hoàn tác: `bacCu` = bậc phải còn nguyên (so TRONG giao dịch — lần sửa xen giữa không bị đè); `hoanTac` ghi nhật ký loại hoàn tác. */
+  o: { bacCu?: number; hoanTac?: (em: EmYThuc) => void } = {}) {
   const { bac, thang, ghiChu } = k;
   return tx(() => {
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
+    if (o.bacCu !== undefined && em.khai.bac !== o.bacCu) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
+    o.hoanTac?.(em);
     if (!ql && em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
     db().prepare(`UPDATE y_thuc_khai_bac SET bac = ?, thang = ?, ghi_chu = ?, sua_boi = ?, sua_luc = ? WHERE student_id = ? AND chuoi_cycle_id = ?`)
       .run(bac, thang, ghiChu, p.userId, homNay, studentId, em.chuoi[0]);
-    writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
-      entityLabel: `${hv.student_code} · sửa cấp bậc`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
+    writeAudit({ actorUserId: p.userId, action: o.hoanTac ? 'discipline.declare_level_undo' : 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
+      entityLabel: `${hv.student_code} · ${o.hoanTac ? 'hoàn tác cấp bậc' : 'sửa cấp bậc'}`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
     return { ok: true as const, bac };
   });
 }
@@ -267,8 +270,8 @@ export function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }
   if (!Number.isInteger(bac) || bac < 0 || bac > THANG.length) throw badRequest('Chọn bậc đã xử lý: Chưa có xử lý vi phạm, Report 1 … WL 2.');
   const thangStr = String(v.thang ?? '').trim();
   if (thangStr && !/^\d{4}-(0[1-9]|1[0-2])$/.test(thangStr)) throw badRequest('Tháng xử lý không hợp lệ.');
+  /* KHAI-BAC-LO (chủ SP 28/10): ghi chú TUỲ CHỌN — khai từng em và theo lô; rỗng lưu chuỗi rỗng (cột NOT NULL). */
   const ghiChu = String(v.ghiChu ?? '').trim();
-  if (ghiChu.length < KHAI_GHI_CHU_MIN) throw badRequest(`Ghi chú cần ít nhất ${KHAI_GHI_CHU_MIN} ký tự — ví dụ "Report 2 tháng 8, cô Hà gửi".`);
   return { bac, thang: thangStr || null, ghiChu: ghiChu.slice(0, 500) };
 }
 

@@ -12,7 +12,7 @@
  * Rà #408 (Netlify ~7,5 s, Turso ~20–50 ms/câu): quyền xét theo LỚP một lần, trạng thái các em đọc một lượt, ngày nghiệp vụ đọc một lần,
  * không đọc lại lần xử lý vừa ghi — xử lý ~12 câu / em, cấp bậc ~5 câu / em (phép kiểm OV13d-6 khoá); web chia lô ≤ 4 / ≤ 12 em mỗi lời gọi.
  */
-import { db } from '../db.ts';
+import { db, tx } from '../db.ts';
 import {
   BAC_0_NHAN, PERMISSIONS, VIOLATION_CATEGORY_LABEL, kindCuaBac, macDinhTick, nhanLoaiXuLy,
   type NhomEm, type ViolationCategory,
@@ -21,6 +21,7 @@ import { kem, type ChuKhoa } from '../../../shared/i18n/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, loi, notFound } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
+import { writeAudit } from '../platform/audit.ts';
 import { requireViewClass } from './access.ts';
 import { emCuaLop, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { MANAGE_MESSAGE, kiemKhai, luuGhiNhan, luuKhai, luuSuaKhai, luuXuLy, moTa, ngayThucHien, nguoiThucHien } from './xuLy.ts';
@@ -35,10 +36,12 @@ export type EmLo = {
   xuLy: { duoc: boolean; lyDo: ChuKhoa | null; soViPham: number; tomTat: string };
   ghiNhan: { duoc: boolean; lyDo: ChuKhoa | null; soMoi: number };
   /** `khai`: bậc đã khai của chuỗi (0 = "Chưa có xử lý vi phạm"), null = chưa khai. */
-  capBac: { duoc: boolean; lyDo: ChuKhoa | null; khai: number | null };
+  capBac: { duoc: boolean; lyDo: ChuKhoa | null; khai: number | null; luc: string | null };
 };
 export type BangLo = { classId: number; classCode: string; canManage: boolean; laQl: boolean; em: EmLo[] };
-export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[] };
+/** `truoc` / `bac` (Xác nhận cấp bậc): bậc khai trước khi lưu (null = chưa khai) và bậc vừa lưu — web giữ để Hoàn tác cả lô. */
+export type BacKhai = { bac: number; thang: string | null; ghiChu: string };
+export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[]; truoc?: BacKhai | null; bac?: number };
 
 function lopCua(classId: number): { id: number; code: string } {
   const cls = db().prepare('SELECT id, code FROM classes WHERE id = ?').get(classId) as any;
@@ -106,7 +109,7 @@ export function loYThucLop(p: Principal, classId: number): BangLo {
       keTiep: { nhan: nhanLoaiXuLy(e.keTiep.kind), bac: e.keTiep.bac },
       xuLy: { duoc: !lx, lyDo: lx, soViPham: tick.length, tomTat: tomTat(e, tick) },
       ghiNhan: { duoc: !lg, lyDo: lg, soMoi: viPhamMoi(e).length },
-      capBac: { duoc: !lc, lyDo: lc, khai: e.khai ? e.khai.bac : null },
+      capBac: { duoc: !lc, lyDo: lc, khai: e.khai ? e.khai.bac : null, luc: e.khai ? e.khai.luc : null },
     };
   }).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
   return { classId, classCode: cls.code, canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }), laQl, em };
@@ -204,19 +207,73 @@ export function loGhiNhan(p: Principal, classId: number, v: { studentIds?: unkno
   };
 }
 
-export function loCapBac(p: Principal, classId: number, v: { em?: unknown }): { em: KqEm[] } {
+/**
+ * KHAI-BAC-LO (mockup `thiet-ke/v7/khai-bac-lo.html`, chủ SP 28/10): tháng + ghi chú CHUNG cho cả lô (tuỳ chọn; sai định dạng → cả lô 400, một
+ * chỗ sửa). Bỏ trống: em đã khai giữ tháng / ghi chú cũ; em khai mới ghi chú tự điền "Xác nhận theo lớp …". Mỗi em trả `truoc` + `bac` để Hoàn tác.
+ */
+export function loCapBac(p: Principal, classId: number, v: { em?: unknown; thang?: unknown; ghiChu?: unknown }): { em: KqEm[] } {
   const ds = (Array.isArray(v.em) ? v.em : []).filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
   const c = chuanBi(p, classId, ds.map((x) => x.studentId));
-  const bacCua = new Map(ds.map((x) => [Number(x.studentId), x.bac]));
+  const chung = kiemKhai({ bac: 0, thang: v.thang, ghiChu: v.ghiChu });
+  const theoEm = new Map(ds.map((x) => [Number(x.studentId), x]));
   return {
     em: tungEm(c, (sid, em, hv) => {
       const ld = lyDoCapBac(em, c.laQl);
       if (ld) throw loiEm(ld);
-      /* Bảng không có ô ghi chú (mockup mục 4): ghi chú tự điền nơi xác nhận; sửa bậc đã khai giữ tháng + ghi chú cũ. */
-      const k = kiemKhai(em.khai ? { bac: bacCua.get(sid), thang: em.khai.thang, ghiChu: em.khai.ghiChu } : { bac: bacCua.get(sid), ghiChu: `Xác nhận theo lớp ${c.cls.code}` });
+      const x = theoEm.get(sid)!;
+      /* Tháng riêng từng em (web: em khai mới / người dùng đã chạm ô tháng) thắng tháng chung; không gửi → giữ tháng cũ của em đã khai. */
+      const k = kiemKhai({
+        bac: x.bac,
+        thang: x.thang !== undefined ? x.thang : chung.thang ?? em.khai?.thang ?? null,
+        ghiChu: chung.ghiChu || (em.khai ? em.khai.ghiChu : `Xác nhận theo lớp ${c.cls.code}`),
+      });
+      const truoc: BacKhai | null = em.khai ? { bac: em.khai.bac, thang: em.khai.thang, ghiChu: em.khai.ghiChu } : null;
       if (em.khai) luuSuaKhai(p, hv, sid, k, c.laQl, c.homNay);
       else luuKhai(p, hv, sid, k, c.homNay);
-      return { nhan: k.bac > 0 ? nhanLoaiXuLy(kindCuaBac(k.bac)) : BAC_0_NHAN };
+      return { nhan: k.bac > 0 ? nhanLoaiXuLy(kindCuaBac(k.bac)) : BAC_0_NHAN, truoc, bac: k.bac };
+    }),
+  };
+}
+
+/**
+ * Hoàn tác chỉ cho lần lưu của CHÍNH người bấm, trong hôm nay (người ghi cuối dòng khai = người này, ngày ghi = hôm nay) — gửi giả `truoc: null`
+ * không xoá được bậc người khác đã khai / bậc khai từ trước (rà KHAI-BAC-LO, bảo mật).
+ */
+function chiLanCuaMinh(p: Principal, sid: number, em: EmYThuc, homNay: string) {
+  const r = db().prepare('SELECT khai_boi, khai_luc, sua_boi, sua_luc FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').get(sid, em.chuoi[0]) as any;
+  const boi = r?.sua_boi ?? r?.khai_boi, luc = r?.sua_luc ?? r?.khai_luc;
+  if (!r || boi !== p.userId || luc !== homNay) throw badRequest('Chỉ hoàn tác được lần lưu của chính bạn trong hôm nay.');
+}
+
+/**
+ * KHAI-BAC-LO · Hoàn tác cả lô: trả mỗi em về `truoc` (null = xoá dòng khai vừa tạo) — CHỈ khi bậc khai hiện tại vẫn là `bac` vừa lưu (người khác đổi
+ * sau đó thì em đó báo riêng, không đè). Quyền như khai / sửa: lớp một lần (`chuanBi`); xoá dòng khai (về "chưa khai") khi chuỗi chưa có lần xử lý
+ * trên web, trừ QL. Nhật ký từng em (`discipline.declare_level_undo`).
+ */
+export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown }): { em: KqEm[] } {
+  const ds = (Array.isArray(v.em) ? v.em : []).filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
+  const c = chuanBi(p, classId, ds.map((x) => x.studentId));
+  const theoEm = new Map(ds.map((x) => [Number(x.studentId), x]));
+  return {
+    em: tungEm(c, (sid, em, hv) => {
+      const x = theoEm.get(sid)!;
+      const sau = Number(x.bac);
+      if (!em.khai || em.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
+      const tr = x.truoc && typeof x.truoc === 'object' ? x.truoc as Record<string, unknown> : null;
+      if (tr) {
+        luuSuaKhai(p, hv, sid, kiemKhai(tr), c.laQl, c.homNay, { bacCu: sau, hoanTac: (e) => chiLanCuaMinh(p, sid, e, c.homNay) });
+        return { nhan: Number(tr.bac) > 0 ? nhanLoaiXuLy(kindCuaBac(Number(tr.bac))) : BAC_0_NHAN };
+      }
+      tx(() => {
+        const lai = trangThaiYThuc([sid], c.homNay).get(sid)!;
+        if (!lai.khai || lai.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
+        chiLanCuaMinh(p, sid, lai, c.homNay);
+        if (!c.laQl && lai.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
+        db().prepare('DELETE FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').run(sid, lai.chuoi[0]);
+        writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_undo', entityType: 'student', entityId: sid,
+          entityLabel: `${hv.student_code} · hoàn tác cấp bậc`, before: { bac: sau }, after: null });
+      });
+      return { nhan: '' };
     }),
   };
 }
