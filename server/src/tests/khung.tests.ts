@@ -144,7 +144,7 @@ export async function runKhungTests(t: YThucTestKit) {
     for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
       const n = navOf(p);
       /* NEN-V5 (08 K10): GV có lại Tổng quan (thay OV-15d). OV-15b: bỏ tab Điểm theo lớp. */
-      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|cham,lich|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // OV-15b + NEN-V5 + UI-CHAM-TEST
+      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|cham,lich,ke-hoach|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // OV-15b + NEN-V5 + UI-CHAM-TEST + chủ SP 28/10 (Kế hoạch Test chỉ xem)
       assert(d.tabTestMacDinh(n) === 'cham', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
       assert(!n.workOps && !n.workReports, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
     }

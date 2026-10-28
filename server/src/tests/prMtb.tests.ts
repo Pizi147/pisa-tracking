@@ -550,7 +550,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const h = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
     assert(/quanLy: boolean/.test(h) && !/tuanDaBatDau/.test(h), 'prop quanLy / bỏ tuanDaBatDau');
     assert(/const batBuoc = canLyDo\(tt?\)/.test(h), 'batBuoc = canLyDo(t)');
-    assert(/tuanNay = homNay && !quanLy && tt? !== 'khoi-phuc'/.test(h), 'tuanNay chỉ khi không phải Quản lý');
+    assert(/tuanNay = homNay && !quanLy && (!gvcnCu && )?tt? !== 'khoi-phuc'/.test(h), 'tuanNay chỉ khi không phải Quản lý (GVCN dời MT cũ: chủ SP 28/10)');
     for (const c of ['kiemTuanXep', 'CAU_TUAN_DA_QUA', "t('Tuần đã qua')}</Nhan>", 'tone="soon"']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
     assert(!/dem=/.test(h), 'ô lý do tuỳ chọn không có bộ đếm');
     assert(/quanLy=\{d\.viewer\.canPlanWeek\}/.test(nguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'hồ sơ Mock');
