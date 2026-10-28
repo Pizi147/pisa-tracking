@@ -3,7 +3,8 @@
  *   HD-NAV  mỗi đường trong thanh điều hướng (khu vực + tab Test + tab Công việc + Hồ sơ cá nhân + Hướng dẫn) của vai có hướng dẫn đều có mục
  *           "Theo màn" — thêm màn / tab mà quên viết mục → đỏ.
  *   HD-VIEC mỗi vai đúng 5 việc hằng tuần (chủ SP 15/10).
- *   HD-CHI  mỗi "Chỉ cho tôi" trỏ `data-hd` có thật trong mã web (quét nguồn) và mở trang có mục — đổi / xoá phần tử → đỏ.
+ *   HD-CHI  mỗi "Chỉ cho tôi" trỏ `data-hd` có thật trong mã web (quét nguồn) và mở trang có mục — đổi / xoá phần tử → đỏ;
+ *           không trỏ phần tử màn đó không dựng cho vai (bảng CHI_VAI).
  *   HD-NHO  dải "Mới dùng PISA?" nhớ theo tài khoản: PATCH /me/profile { daXemHuongDan: true } → /demo/session; giá trị lạ → 400;
  *           migrate prHd chạy lặp được.
  */
@@ -90,6 +91,8 @@ export async function runPrHdTests(t: any) {
       }
     };
     quet(path.join(ROOT, 'web/src'));
+    /* (đường, data-hd, vai thấy): "Lớp tôi dạy" ở Công việc chỉ GV (`laGv`, HoTroHocVienTab); Tổng quan QT mặc định Tất cả chi nhánh (bảng Theo chi nhánh). */
+    const CHI_VAI: [string, string, string[]][] = [['/cong-viec', 'tq-lop-toi-day', ['gv']], ['/', 'tq-can-xu-ly', ['ql']], ['/', 'tq-lop-chu-y', ['ql']]];
     const loi: string[] = [];
     for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) {
       for (const m of hd.moiMuc(h)) {
@@ -99,6 +102,8 @@ export async function runPrHdTests(t: any) {
         /* Bấm từ trang /huong-dan: không có `duong` thì chỉ khoanh được phần tử có ở MỌI màn (thanh điều hướng, ô tìm, nút tài khoản — OV-15a: Hướng dẫn trong menu tài khoản). */
         const khapNoi = [m.chi.hd].flat().every((x: string) => x.startsWith('nav-') || x === 'tim-hv' || x === 'tai-khoan');
         if (!m.chi.duong && !khapNoi) loi.push(`${vai} ${m.id}: thiếu duong — bấm từ trang Hướng dẫn sẽ "Chưa có việc nào ở đây"`);
+        /* Phần tử chỉ dựng cho một số vai: vai khác bấm sẽ "Chưa có việc nào ở đây" (do-khung hd-chi 28/10). */
+        for (const [duong, x, vaiCo] of CHI_VAI) if (m.chi.duong === duong && [m.chi.hd].flat().includes(x) && !vaiCo.includes(vai)) loi.push(`${vai} ${m.id}: ${x} ở ${duong} không dựng cho vai này`);
       }
     }
     assert(loi.length === 0, loi.join(' · '));

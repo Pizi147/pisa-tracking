@@ -112,7 +112,7 @@ export function ChamTestTab() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[440px_minmax(0,1fr)]">
-      <section aria-label={t('Bài cần chấm')} className={`card overflow-hidden p-0 ${chon ? 'max-lg:hidden' : ''}`}>
+      <section aria-label={t('Bài cần chấm')} data-hd="cham-test-ds" className={`card overflow-hidden p-0 ${chon ? 'max-lg:hidden' : ''}`}>
         {rong ? (
           <Empty title={t('Không còn bài nào cần chấm')} />
         ) : (
