@@ -148,7 +148,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                       const g = oGon(dot.kn, homNay, ct);
                       if (!g) return <OTrong title={t('Đợt này không có kỹ năng nào')} />;
                       const d = dot as DotFT;
-                      const kq = loai === 'ft' && d.ovr !== undefined ? { ovr: d.ovr, dat: d.kyVong == null ? null : d.ovr >= d.kyVong } : null;
+                      const kq = loai === 'ft' && d.ovr !== undefined ? { ovr: d.ovr, dat: d.kyVong == null ? null : d.ovr >= d.kyVong, kyVong: d.kyVong ?? null } : null;
                       const tuanChinh = Object.values(dot.kn).map((x) => x?.tuan).filter((w): w is string => !!w).sort()[0] ?? null;
                       return (
                         <ODotGon o={g} nhan={nhanDot(c.dot)} ketQua={kq} onMo={moHop} href={trangLuot}

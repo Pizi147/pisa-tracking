@@ -34,7 +34,7 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
   /** Tên đợt đọc màn (`MT3`, `Progress Test`). */
   nhan: string;
   /** FT đợt xong: Overall + đạt kỳ vọng (null: không có kỳ vọng). */
-  ketQua?: { ovr: number; dat: boolean | null } | null;
+  ketQua?: { ovr: number; dat: boolean | null; kyVong?: number | null } | null;
   /** Lớp thường: tuần trong khoá (`W4/8`) của tuần chính. */
   khoa?: { khaiGiang: string | null; tongTuan: number | null; tuan: string | null } | null;
   chon?: boolean;
@@ -51,7 +51,7 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
   const doc = [
     nhan,
     ...o.dong.map((d) => [d.tuanDu ?? t('chưa xếp'), ...d.mon.map((m) => `${m.ten} ${CHU_MON[m.loai]}`), d.tt?.chu].filter(Boolean).join(' ')),
-    kq ? `${kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(kq.ovr)}` : o.tt && o.tt.loai !== 'xong' ? o.tt.chu : null,
+    kq ? `${kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(kq.ovr)}${kq.kyVong != null ? ` · ${t('kỳ vọng')} ${fmtBand(kq.kyVong)}` : ''}` : o.tt && o.tt.loai !== 'xong' ? o.tt.chu : null,
     o.khongThi, o.vang,
   ].filter(Boolean).join(', ');
   /* Chủ SP 28/10: khung ô MT rõ hẳn — viền mảnh + nền tối hơn thẻ (`--bg`); ô trễ chấm vẫn nền đỏ nhạt (VACH đè). */
@@ -64,9 +64,9 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
     <>
       {o.dong.map((d, i) => {
         const mo = d.tt?.loai === 'xep';   // tuần tương lai: tuần mờ
-        /* Nhiều môn trễ cùng dòng: ô môn đỏ + "trễ chấm" MỘT lần ở cuối dòng; một môn trễ: "S trễ chấm" ngay trong ô môn. */
-        const soTre = d.mon.filter((m) => m.loai === 'tre').length;
-        const tt = soTre > 1 ? { chu: t('trễ chấm'), loai: 'tre' as const } : i === 0 && ttO && !d.tt ? ttO : d.tt;
+        /* PTA 28/10 — một luật: môn trễ = ô viền đỏ, chữ "trễ chấm" MỘT lần ở cuối dòng tuần (kể cả chỉ một môn trễ). */
+        const coTre = d.mon.some((m) => m.loai === 'tre');
+        const tt = coTre ? { chu: t('trễ chấm'), loai: 'tre' as const } : i === 0 && ttO && !d.tt ? ttO : d.tt;
         return (
           /* PTA 28/10: cột tuần 58 px cố định; môn / chữ không đủ chỗ thì xuống dòng THỤT dưới cột môn (không nới cột, không cuộn ngang). */
           <span key={d.tuanDu ?? `chua-${i}`} className="grid min-w-0 grid-cols-[58px_minmax(0,1fr)] items-start gap-x-1">
@@ -76,7 +76,7 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
             {o.hienMon && d.mon.map((m) => (
               <span key={m.k} title={`${m.ten} · ${CHU_MON[m.loai]}`}
                 className={`inline-flex h-5 items-center whitespace-nowrap rounded border px-[3px] text-xs font-semibold leading-none tabular-nums ${O_MON[m.loai]}`}>
-                {m.ten}{m.loai === 'co' ? '✓' : m.loai === 'tre' && soTre === 1 ? ` ${t('trễ chấm')}` : ''}
+                {m.ten}{m.loai === 'co' ? '✓' : ''}
               </span>
             ))}
             {i === 0 && kq ? (

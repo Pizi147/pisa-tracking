@@ -20,7 +20,7 @@ Dữ liệu mockup là dữ liệu giả (Cầu Giấy, MT1–MT7); web là seed
 |---|---|---|
 | Ô MT: tuần (cột 56 px, 14 / 600, không năm) + kết quả `✓ 6.0` 13 / 600 hoặc một chữ 12 / 600 cùng một x | `ODotGon` (`ChipKyNang.tsx`), nội dung `oGon` (`shared/domain/oMt.ts`) | KHỚP |
 | Đã xếp, chưa tới tuần: chỉ tuần mờ, bỏ "đã xếp" | `oGon` `tt = null` → tuần `font-medium text-dim` | KHỚP |
-| Ô MT chia DÒNG THEO TUẦN THI (chủ SP chốt 28/10): tuần đậm 58 px + ô môn có khung `L✓` (có điểm) · `L` (chưa điểm) · `S trễ chấm` (nhiều môn trễ: ô đỏ + "trễ chấm" một lần) + trạng thái dòng (đã xếp / tuần này / chờ chấm); điểm tổng sau các môn; môn tuần khác → dòng riêng; "· không thi W S"; MT tương lai một tuần → chỉ tuần + "đã xếp" | `oGon.dong` · `ODotGon` | KHỚP |
+| Ô MT chia DÒNG THEO TUẦN THI (chủ SP chốt 28/10): tuần đậm 58 px + ô môn có khung `L✓` (có điểm) · `L` (chưa điểm) · ô môn trễ viền đỏ + chữ "trễ chấm" MỘT lần cuối dòng tuần (PTA 28/10, kể cả chỉ một môn trễ) + trạng thái dòng (đã xếp / tuần này / chờ chấm); điểm tổng sau các môn (tooltip / câu đọc có kỳ vọng); môn tuần khác → dòng riêng; "· không thi W S"; MT tương lai một tuần → chỉ tuần + "đã xếp" | `oGon.dong` · `ODotGon` | KHỚP |
 | Vắng chữ thường dòng cuối: `vắng L R W S · W2 OCT`; LUÔN ghi, kể cả đã đủ điểm (chủ SP 28/10 mới nhất) | `oGon.vang` | KHỚP |
 | Khung ô MT rõ: viền `--line-strong` + nền `--bg` tối hơn thẻ; ô trễ chấm nền + viền đỏ nhạt (chủ SP 28/10 "khung MT rõ hẳn, màu tối xuống") | `ODotGon` | KHỚP |
 | Vạch trái: tuần này xanh · trễ chấm đỏ + nền đỏ nhạt · xếp lại vàng; không khung ô | `VACH` (`--doing/--bad/--soon`) | KHỚP |
