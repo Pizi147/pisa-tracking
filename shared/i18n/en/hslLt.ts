@@ -5,4 +5,6 @@ export const EN_HSL_LT = {
   'Thông tin lượt Test': 'Test attempt details',
   'Kết quả theo môn': 'Results by subject',
   'chờ {x}': 'awaiting {x}',
+  /* VIEW-CASE-LUOT: chip lượt của Case → trang lượt. */
+  'Mở lượt {x}': 'Open attempt {x}',
 };

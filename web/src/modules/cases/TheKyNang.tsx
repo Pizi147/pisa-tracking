@@ -104,7 +104,7 @@ export function KhoiCase({ c, onMoCase, themPa, paMoi }: {
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
       <div className="flex min-w-0 items-center gap-1.5 text-[13px] font-bold text-slate-100">
-        <NhanLoai loai="Case" /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words"><TenCase c={c} /></span>
+        <NhanLoai loai="Case" /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words"><TenCase c={c} luot={c.luot} kn={c.topic} /></span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] text-slate-400">
         {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={dich(tt.chu)} chu={tt.k === 'tam' ? dich(tt.chu) : undefined} />}

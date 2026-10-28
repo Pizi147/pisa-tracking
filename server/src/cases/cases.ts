@@ -2262,6 +2262,8 @@ export function caseDetail(p: Principal, caseId: number) {
     cycle,
     classId: c.class_id,
     attemptId: c.attempt_id, attemptNo: c.attempt_no ?? null,
+    /** VIEW-CASE-LUOT: lượt của Case (chip "MT2" / "Progress Test" → link ↗ trang lượt). */
+    luot: luotCuaCase(c.attempt_id),
     /** Chủ đề — kỹ năng của Case; mọi vấn đề đều phải có chỗ cất. */
     topic: c.topic as string | null,
     /** MH2: mã chương trình của lộ trình Case — web gọi `tenMon(chuongTrinh, …)` (FOU G+V/P, Pre FOU Tổng hợp). */
@@ -3268,6 +3270,13 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của Case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
+/** VIEW-CASE-LUOT: lượt mà Case đang gắn (`sos_cases.attempt_id`) — id, loại, lớp (web dựng đường bằng `duongDotTest`), nhãn "MT2" / "Progress Test". */
+function luotCuaCase(attemptId: number | null | undefined): { id: number; kind: string; classId: number | null; dot: string } | null {
+  if (!attemptId) return null;
+  const a = db().prepare('SELECT id, kind, class_id, attempt_no FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  return a ? { id: a.id, kind: a.kind, classId: a.class_id ?? null, dot: nhanDot(a.kind, a.attempt_no ?? null) } : null;
+}
+
 function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null,
   xinYKienCua: ReadonlyMap<number, unknown>, giuKq: ReadonlyMap<number, { id: number | null; ten: string | null }>) {
   const conn = db();
@@ -3434,6 +3443,8 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     ownerId: (c.owner_user_id ?? null) as number | null,
     plans,
     attempts,
+    /** VIEW-CASE-LUOT: lượt của Case — chip lượt ở khối Case hồ sơ HV là link ↗ trang lượt. */
+    luot: luotCuaCase(c.attempt_id),
     followUntil: c.follow_until ?? null,
     followOverdue: c.status !== 'done' && !!c.follow_until && c.follow_until < today,
     outcomeLabel: c.outcome ? CASE_OUTCOME_LABEL[c.outcome as CaseOutcome] ?? null : null,

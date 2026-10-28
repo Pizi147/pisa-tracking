@@ -9,7 +9,7 @@ import { NhanTrangThai, Outcome } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CHIP_VUONG, Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
-import { MuiTen, NhanTamDung, TenCase } from './SkillBoard.tsx';
+import { MuiTen, NhanTamDung, TenCase, type LuotCase } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
@@ -74,6 +74,8 @@ export type CaseDetail = {
   student: { id: number; code: string; name: string; status: string; phuHuynh?: { parentName: string | null; parentRelation: string | null; parentPhone: string | null } } | null;
   cycle: { id: number; seq: number; route: string | null; target_score: number | null } | null;
   classId: number | null; attemptId: number | null; attemptNo: number | null;
+  /** VIEW-CASE-LUOT: lượt của Case — chip lượt đầu khối Case là link ↗ trang lượt. */
+  luot?: LuotCase | null;
   sosLevel: number | null; urgency: string | null;
   summary: string | null; headline: string; detectedAt: string; reportedBy: string | null;
   status: string; disposition: string | null; dispositionNote: string | null; closedAt: string | null;
@@ -206,7 +208,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
           {t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '') })}
         </p>
       )}
-      <DauMuc dau tieuDe="Case" phu={<span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
+      <DauMuc dau tieuDe="Case" phu={<span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} kn={data.topic} /></span>}>
         {/* Case A (luật chữ): nhãn 13 phụ / giá trị 15; điểm là giá trị chính (màu kết quả + ✓ / ✗). "Ghi nhận" → "Mô tả" (N8, chủ SP 27/10). */}
         <dl className="m-0 grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-2 max-sm:grid-cols-1 max-sm:gap-y-0.5">
           {diem && <><dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Điểm')}</dt><dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2">{diem}</dd></>}
