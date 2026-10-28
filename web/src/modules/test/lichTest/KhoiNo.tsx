@@ -107,7 +107,8 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
   return (
     <div id="lich-test-no">
       <NhomDau id="lich-test-no-than" qua={soBai > 0} mo={mo} onMo={onMo} tieuDe={tieuDe} phu={tomTat}>
-        <table className="w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
+        {/* SUA-375-2: mọi ô canh theo dòng chữ đầu — ô GV chấm / trạng thái hai dòng không kéo lệch chữ cả hàng. */}
+        <table className="w-full text-sm bang-dinh [&>tbody>tr>td]:align-baseline" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             {hep ? (<><col /><col style={{ width: COT_THAO_TAC - 4 }} /></>) : (
               <>

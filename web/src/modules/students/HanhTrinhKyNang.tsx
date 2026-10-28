@@ -379,7 +379,7 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
   }
   /* 375: bốn cột vừa 343 px (không cuộn ngang); 1440: số hẹp, Ghi chú lấy phần còn lại. */
   const cotBang: CotBang[] = hep
-    ? [{ key: 'luot', nhan: t('Lượt'), kieu: 'ten', rong: 104 }, { key: 'band', nhan: cy.ratio ? t('Điểm') : 'Band', kieu: 'diem', rong: 72 },
+    ? [{ key: 'luot', nhan: t('Lượt'), kieu: 'ten', rong: 112 }, { key: 'band', nhan: cy.ratio ? t('Điểm') : 'Band', kieu: 'diem', rong: 64 },   // SUA-375-2: "Progress Test ›" cần ~97 px chữ
       { key: 'kv', nhan: cy.ratio ? t('Ngưỡng đạt') : t('Kỳ vọng'), kieu: 'so', rong: 84 }, { key: 'pm', nhan: '±', kieu: 'so', rong: 48 }]
     : [{ key: 'luot', nhan: t('Lượt'), kieu: 'ten', rong: 120 }, { key: 'tuan', nhan: t('Tuần'), kieu: 'tuan', rong: 170 },
       { key: 'band', nhan: cy.ratio ? t('Điểm') : 'Band', kieu: 'diem', rong: 96 }, { key: 'kv', nhan: cy.ratio ? t('Ngưỡng đạt') : t('Kỳ vọng'), kieu: 'so', rong: 110 },

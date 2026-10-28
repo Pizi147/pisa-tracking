@@ -390,8 +390,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const o = nguon('web/src/ui/OMt.tsx');
     assert(!/#[0-9a-fA-F]{3,8}\b/.test(o), 'OMt.tsx có mã hex');
     assert(/export function OMt\b/.test(o) && !/NhanCu/.test(o), 'OMt.tsx thiếu OMt / còn NhanCu (SV-NX-CASE N8 bỏ)');
-    for (const f of ['web/src/modules/students/HangLichMt.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx']) assert(/import \{[^}]*\bOMt\b[^}]*\} from '[^']*ui\/OMt\.tsx'/.test(nguon(f)), `${f} chưa import OMt`);
-    assert(/<OMt\b/.test(nguon('web/src/modules/students/HangLichMt.tsx')) && /<OMt\b/.test(nguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'chưa vẽ <OMt');
+    /* HSL-FT (M4 khung A, chủ SP 27/10): hồ sơ lượt bỏ ô MT đầu trang — trùng ô chọn lượt "MT2 · W2 SEP" + bảng kỹ năng. */
+    assert(/import \{[^}]*\bOMt\b[^}]*\} from '[^']*ui\/OMt\.tsx'/.test(nguon('web/src/modules/students/HangLichMt.tsx')), 'HangLichMt chưa import OMt');
+    assert(/<OMt\b/.test(nguon('web/src/modules/students/HangLichMt.tsx')), 'chưa vẽ <OMt');
     assert(!/>MT\{h\.attemptNo\}</.test(nguon('web/src/modules/students/HangLichMt.tsx')), 'HangLichMt còn chữ MT{n} thuần');
   });
 

@@ -224,7 +224,8 @@ export async function runPrHsmTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 5: hồ sơ Mock M10 (đọc nguồn)
   check('HSM (5) · hồ sơ Mock: dải ODiemLon, sosLevel (không failedCount), bỏ "Writing (tổng)"; ODiemLon dùng HopNhapDiem (OV-4b) + tabular-nums', () => {
     const mock = docSach('web/src/modules/fasttrack/MockDetailPage.tsx');
-    assert(/<DaiODiemLon/.test(mock) && /sosLevel/.test(mock) && !/failedCount/.test(mock), 'MockDetailPage: dải ô lớn / sosLevel');
+    /* HSL-FT (M4 khung A): ô điểm vào dòng kỹ năng — cùng `useODiem` với dải ô lớn. */
+    assert(/<DaiODiemLon|useODiem\(/.test(mock) && /sosLevel/.test(mock) && !/failedCount/.test(mock), 'MockDetailPage: dải ô lớn / sosLevel');
     assert(!mock.includes('Writing (tổng)') && !/<InlineScoreEditor/.test(mock), 'bảng dưới còn dòng Writing (tổng) / trình sửa trong dòng');
     assert(/<ONhanXet/.test(mock) && /nhanLuot\(/.test(mock), 'khối nhận xét / nhanLuot');
     const lon = docSach('web/src/modules/fasttrack/ODiemLon.tsx');
