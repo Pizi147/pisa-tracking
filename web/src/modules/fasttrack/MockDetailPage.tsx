@@ -249,7 +249,8 @@ export default function MockDetailPage() {
       label: t('Đưa lại cả 4 kỹ năng'), onClick: () => void duaLaiCaLuot(),
       hint: t('Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch'),
     }] : []),
-    ...(d.viewer.canPlanWeek && !cancelled && !huyHet ? [{
+    /* RA-LUONG-3 (plan mục 4 HOP1): lượt không gắn lớp không mở được hộp lịch (`HopKyNang` cần lớp) — không bày mục bấm mà không ra gì. */
+    ...(d.viewer.canPlanWeek && !cancelled && !huyHet && d.classId !== null ? [{
       label: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-lich'] }), onClick: () => { if (nutChinhLich.current) setHopLich({ anchor: nutChinhLich.current, k: null }); },
       hint: t('Mọi kỹ năng còn dời được sang một tuần'),
     }] : []),

@@ -80,7 +80,7 @@ export const QUYEN_SUY_RA_GV: { quyen: PermissionKey; ai: 'GV' | 'GVCN'; ghiChu:
   { quyen: PERMISSIONS.STUDENT_EDIT_INFO, ai: 'GVCN', ghiChu: 'Chỉ học viên lớp chủ nhiệm.' },
   { quyen: PERMISSIONS.DISCIPLINE_MANAGE, ai: 'GVCN', ghiChu: 'Chỉ lớp chủ nhiệm.' },
   { quyen: PERMISSIONS.CASE_CLOSE, ai: 'GVCN', ghiChu: 'Case Ý thức lớp chủ nhiệm; Case học thuật chỉ môn mình dạy.' },
-  { quyen: PERMISSIONS.SCHEDULE_MOVE, ai: 'GVCN', ghiChu: 'Mọi môn của lớp thường mình chủ nhiệm.' },
+  { quyen: PERMISSIONS.SCHEDULE_MOVE, ai: 'GVCN', ghiChu: 'Lớp thường mình chủ nhiệm: máy tự dời khi gõ "-"; dời tay chỉ Quản lý.' },
 ];
 
 /** Quyền CHỈ suy ra (không bật theo vai, không cấp riêng): cấp cho người không chủ nhiệm thì vô nghĩa hoặc mở quá phạm vi. */

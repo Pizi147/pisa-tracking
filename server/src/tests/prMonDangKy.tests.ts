@@ -24,6 +24,9 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
   const cls: any = await import('../classes/classes.ts');
   const cham: any = await import('../cham/canCham.ts');
   const week: any = await import('../platform/week.ts');
+  const require_danhGia: any = await import('../worklist/danhGia.ts');
+  const require_bundle = (ids: number[]) => attempts.loadBundle(ids);
+  const require_ct = () => new Map();
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   /** Lộ trình FT đang học của em (theo tên trong bộ demo) + lượt MT theo số. */
@@ -518,6 +521,11 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       const thS = all(`SELECT id, status FROM case_signals WHERE attempt_id = ? AND skill = 'speaking' AND status != 'withdrawn'`, a);
       assert(!caseS.length && !thS.length, `môn S đã bỏ vẫn sinh Case / tín hiệu: ${JSON.stringify({ caseS, thS })}`);
       assert(all(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'listening' AND status != 'done'`, x.sid).length === 1, 'L còn học, dưới kỳ vọng → Case L');
+      /* RA-LUONG-9: "dưới kỳ vọng" / kỹ năng SOS (Tổng quan, Đang SOS) cùng luật — S đã bỏ không còn under, L còn học vẫn under. */
+      const dg: any = require_danhGia;
+      const row = all(`SELECT * FROM assessment_attempts WHERE id = ?`, a)[0];
+      const ev = dg.evaluateAttemptRow(row, require_bundle([a]), require_ct());
+      assert(ev.skills.speaking?.under === false && ev.skills.listening?.under === true, `under: ${JSON.stringify(ev.skills)}`);
     });
   });
   check('MDK-17 · D7 P8: Case môn đã bỏ còn mở (báo tay sau khi bỏ) + lượt có bài môn đó dưới kỳ vọng → KHÔNG ghi mốc "đã đạt", không hạ mức', () => {

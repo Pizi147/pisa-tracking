@@ -111,10 +111,10 @@ export function HoTroHocVienTab() {
   const dsGoc = useMemo(() => data?.dong ?? [], [data]);
   const demNguoi = useMemo(() => demNguoiViec(dsGoc), [dsGoc]);
   const tatCaViec = useMemo(() => (typeof nguoi === 'number' ? dsGoc : dsGoc.filter((it) => khopNguoiViec(it, nguoi))), [dsGoc, nguoi]);
+  /* RA-LUONG-1: số trên công tắc khung đếm VIỆC (`demViec`), cùng đơn vị đầu trang — không đếm dòng gộp. */
   const demKhung = useMemo(() => ({
-    'tat-ca': tatCaViec.length,
-    ft: tatCaViec.filter((it) => it.khung === 'ft').length,
-    thuong: tatCaViec.filter((it) => it.khung === 'thuong').length,
+    ft: demViec(viecThat(tatCaViec.filter((it) => it.khung === 'ft'))).viec,
+    thuong: demViec(viecThat(tatCaViec.filter((it) => it.khung === 'thuong'))).viec,
   }), [tatCaViec]);
   /* Phạm vi chỉ một khung (UX-2: theo lớp trong phạm vi, không theo việc đang có) thì công tắc ẩn — khi đó không lọc. */
   const haiKhung = (demKhung.ft > 0 && demKhung.thuong > 0) || phamViCoHaiKhung();
@@ -394,7 +394,8 @@ export function HoTroHocVienTab() {
             <DanhSachViec nhom={dsNhomXem} dem={demNhom} homNay={homNay} soHien={10} moHet={moHet} gapSan={(k, viTri) => (k === 'van-hanh' && laQuanLy && !chiChamDiem) || (hep && laQuanLy && viTri >= 2)}
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} cuoiNhom={cuoiNhom} chiDemViec={laTvv} luatNhom={laTvv ? luatNhomTvv : undefined}
-              nutPhu={(x) => (!x.con && x.cycleId && (x.group === 'thi_that' || x.group === 'buoc_tiep') && !xong.has(x.key) && !theoDoi(x)
+              /* RA-LUONG-4: chỉ "Chọn bước tiếp" có hạn để gia hạn (N6; máy chủ `coTheGiaHanSauThi`) — "Cập nhật KQ thi thật" không hạn, Gia hạn sẽ 400. */
+              nutPhu={(x) => (!x.con && x.cycleId && x.group === 'buoc_tiep' && !xong.has(x.key) && !theoDoi(x)
                 ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button> : null)} />
           )}
           {/* OV-15h1: không có việc Vận hành nào — "Việc quản lý" vẫn là MỘT nhóm gập ở cuối danh sách (Giao việc · Vận hành · Báo cáo đơn vị), không thẻ rời. */}

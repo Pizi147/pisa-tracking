@@ -13,7 +13,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, demQuaHan, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
+  DUONG_TAB_TEST, demViec, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -97,13 +97,14 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const s = data.summary;
   const gvcn = data.coreTeachers[0] ?? null;
   const tomTat = useTomTatLop(data, homNay);
-  /* OV-13b: badge "n việc quá hạn" = cùng danh sách việc với Học viên & Lớp › Cần làm (`/my-work`, `demQuaHan`) — bấm ra đúng số dòng. */
+  /* OV-13b: badge "n việc quá hạn" = cùng danh sách việc `/my-work` với Công việc. */
   const laQl = laVaiQuanLy(session?.roles);
   const viec = useApi<{ dong: WorkItem[] }>(laQl ? `/my-work?nguoi=tat-ca&branchId=${data.branchId}` : '/my-work', [data.branchId, laQl]);
   /* P11 VIEC-DUNG-VAI: GV đếm việc CỦA MÌNH (`mine`) — cùng tập với cột Việc / chip quá hạn ở Học viên & Lớp. */
   const chiCuaToi = !laQl && vaiXemHocVien(session?.roles) === null;
-  const soViecQuaHan = demQuaHan((viec.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).filter((it) => !chiCuaToi || it.mine)
-    .map((it) => ({ quaHan: it.urgency === 'overdue', studentId: it.studentId, classId: it.classId })), data.id).viec;
+  /* RA-LUONG-10: đếm VIỆC cùng đơn vị Công việc / Tổng quan (`demViec`: Nhập điểm = số kỹ năng, bỏ S chấm chéo) — trước đếm dòng: "6 việc quá hạn" cạnh Công việc 9. */
+  const soViecQuaHan = demViec((viec.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
+    .filter((it) => (!chiCuaToi || it.mine) && it.urgency === 'overdue' && it.classId === data.id)).viec;
   const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,

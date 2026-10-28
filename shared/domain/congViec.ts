@@ -10,7 +10,7 @@ import { catDongPhu } from './hocVienLop.ts';
 import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { TASK_GROUPS, TASK_PROGRESS_CLOSED, type TaskGroup, type TaskProgress } from './worklist.ts';
-import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
+import { NHOM_VIEC, demViec, nhomViecCua, type NhomViec } from './tongQuan.ts';
 import { t } from '../i18n/index.ts';
 
 const DAY_MS = 86_400_000;
@@ -81,13 +81,18 @@ export function demPhamVi(dong: readonly DongDemPhamVi[], chiChamDiem: boolean, 
   return { nhom: dong.length, so: em.size, donVi: t('học viên') };
 }
 
-/** Số việc ở mỗi ô lọc nhanh — ĐÃ áp Loại việc đang chọn, CHƯA áp chính lọc nhanh (facet không tự lọc chính nó). */
-export function demLocNhanh<T extends MucLocNhanh & { group: string }>(
-  items: T[], loai: string | 'tat-ca' | undefined, homNay: string,
+/**
+ * Số việc ở mỗi ô lọc nhanh — ĐÃ áp Loại việc đang chọn, CHƯA áp chính lọc nhanh (facet không tự lọc chính nó).
+ * RA-LUONG-1: đếm cùng đơn vị `demViec` (dòng gộp = từng việc con, Nhập điểm = số kỹ năng) như đầu trang, đầu nhóm và Tổng quan —
+ * trước đây đếm DÒNG nên ô "Quá hạn · 9" lệch "⚠ 12 quá hạn" ở cùng trang.
+ */
+export function demLocNhanh<T extends MucLocNhanh & { group: string; key: string; studentId: number | null; kns?: string[]; con?: readonly T[] | null }>(
+  items: readonly T[], loai: string | 'tat-ca' | undefined, homNay: string,
 ): Record<LocNhanh, number> {
   const base = !loai || loai === 'tat-ca' ? items : items.filter((it) => it.group === loai);
+  const la = base.flatMap((it) => (it.con?.length ? it.con : [it]));
   const out = {} as Record<LocNhanh, number>;
-  for (const loc of LOC_NHANH) out[loc] = base.filter((it) => khopLocNhanh(it, loc, homNay)).length;
+  for (const loc of LOC_NHANH) out[loc] = demViec(la.filter((it) => khopLocNhanh(it, loc, homNay))).viec;
   return out;
 }
 
@@ -315,9 +320,13 @@ export type LocNguoiViec = (typeof LOC_NGUOI_VIEC)[number];
 export const LOC_NGUOI_VIEC_LABEL: Record<LocNguoiViec, string> = { toi: t('Của tôi'), gv: t('Của GV'), 'tat-ca': t('Tất cả') };
 /** "Của GV" = mọi việc không phải của người xem, kể cả việc chưa có người phụ trách (để Phân công). */
 export const khopNguoiViec = (it: { mine: boolean }, loc: LocNguoiViec): boolean => loc === 'tat-ca' || (loc === 'toi') === it.mine;
-export function demNguoiViec(ds: readonly { mine: boolean }[]): Record<LocNguoiViec, number> {
-  const toi = ds.filter((x) => x.mine).length;
-  return { toi, gv: ds.length - toi, 'tat-ca': ds.length };
+/** RA-LUONG-1: đếm VIỆC (`demViec` trên việc con) như đầu trang "n việc", không đếm dòng gộp — trước đây QL thấy "Tất cả 96" cạnh "155 việc". */
+export function demNguoiViec<T extends { mine: boolean; key: string; group: string; studentId: number | null; kns?: string[]; con?: readonly T[] | null }>(
+  ds: readonly T[],
+): Record<LocNguoiViec, number> {
+  const la = ds.flatMap((x) => (x.con?.length ? x.con.map((c) => ({ ...c, mine: c.mine ?? x.mine })) : [x]));
+  const toi = demViec(la.filter((x) => x.mine)).viec, tatCa = demViec(la).viec;
+  return { toi, gv: tatCa - toi, 'tat-ca': tatCa };
 }
 
 // ====================================================================== V5 UI-CONG-VIEC — dòng theo em, vạch hạn (T01, T14)

@@ -245,8 +245,10 @@ export function upsertCategoryCase(
       )
       .run(attempt.id, attempt.student_id, attempt.cycle_id, topic, category,
            detectedAt, sosLevel, key, followUntil, existing.id,
-           /* Case tái phát thừa kế người phụ trách của Case cũ nếu người đó còn dạy lớp. */
-           existing.owner_user_id
+           /* Case tái phát thừa kế người phụ trách của Case cũ nếu người đó còn dạy lớp (RA-LUONG-7: trước đây không kiểm — GV đã thôi dạy vẫn giữ Case, việc "Mô tả Case" không tới GV mới). */
+           (existing.owner_user_id && attempt.class_id && conn.prepare(
+             `SELECT 1 FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND status = 'active'`).get(existing.owner_user_id, attempt.class_id)
+             ? existing.owner_user_id : null)
              ?? suggestCaseOwner({ classId: attempt.class_id ?? null, category }),
            nowIso());
     const id = Number(info.lastInsertRowid);

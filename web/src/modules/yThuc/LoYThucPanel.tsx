@@ -111,7 +111,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
     lf.bam();
     if (!gui.length || loi.length || loiNguoi) return;
     setBusy(true); setLoiLuu(null);
-    let coOk = false;
+    let coOk = false, coLoi = false;
     let xong = 0;
     setTienDo({ xong, tong: gui.length });
     try {
@@ -122,15 +122,18 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
       } : viec === 'ghi-nhan' ? { studentIds: lo } : { em: lo.map((sid) => ({ studentId: sid, bac: bac[sid] })) }), (em) => {
         setKq((m) => { const n = new Map(m); for (const x of em) n.set(x.studentId, x); return n; });
         coOk ||= em.some((x) => x.ok);
+        coLoi ||= em.some((x) => !x.ok);
         xong += em.length;
         setTienDo({ xong, tong: gui.length });
       });
       setMoRieng(null);
     } catch (e: any) {
+      coLoi = true;
       setLoiLuu(e instanceof ApiError ? dich(e.message) : String(e?.message ?? e));
     } finally {
       setBusy(false); setTienDo(null);
-      if (coOk) { xoaNhap(); onDone?.(); lamMoi(); reload(); }
+      /* RA-LUONG-11: còn em chưa lưu → giữ nháp (mô tả chung / riêng) để Thử lại, không xoá chữ đang gõ. */
+      if (coOk) { if (!coLoi) xoaNhap(); onDone?.(); lamMoi(); reload(); }
     }
   };
 
@@ -229,7 +232,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
 
   return (
     <KhungPanel tieuDe={tieuDe} onDong={onClose} dau={dau(viec === 'cap-bac' ? ds.length : duoc.length)} rong={viec === 'cap-bac' ? 'rong' : 'hep'}
-      chan={{ v3: true, chinh: nutChinh, daSua: !soOk && (!!moTa.trim() || Object.values(rieng).some((x) => x.trim()) || guiCapBac.length > 0), dongTren }}>
+      chan={{ v3: true, chinh: nutChinh, daSua: (!soOk || soLoi > 0) && (!!moTa.trim() || Object.values(rieng).some((x) => x.trim()) || guiCapBac.length > 0), dongTren }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
           {viec === 'cap-bac' ? (

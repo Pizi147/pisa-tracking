@@ -1430,6 +1430,10 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
       else addIssues(caseId, p.userId, { primaryCode: code, observation: moTa, topic: 'speaking' });
       ls.run(caseId, 'observation', chinh?.observation ?? null, moTa, p.userId, luc);
       if (!chinh || chinh.created_by == null) ls.run(caseId, 'mo_ta_nguon', chinh ? 'nhan_xet' : null, 'sua_rieng', p.userId, luc);
+    } else if (hoanTac.moTaAttemptId != null) {
+      /* RA-LUONG-6: "giữ" = tách mô tả khỏi nhận xét ô (nguồn NULL, `dongBoNguyenNhanMt` bỏ qua) — không thì lần đồng bộ sau chép nhận xét chấm chéo đè lên. */
+      conn.prepare('UPDATE sos_cases SET mo_ta_attempt_id = NULL WHERE id = ?').run(caseId);
+      ls.run(caseId, 'mo_ta_nguon', 'nhan_xet', 'sua_rieng', p.userId, luc);   // cùng nghĩa "tách khỏi nhận xét" như sửa riêng
     }
     conn.prepare('UPDATE assessment_scores SET cho_phu_trach_xem = 0 WHERE id = ?').run(o.id);
     conn.prepare('UPDATE sos_cases SET updated_at = ? WHERE id = ?').run(luc, caseId);

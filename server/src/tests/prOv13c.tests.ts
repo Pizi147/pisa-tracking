@@ -59,7 +59,9 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     assert(g[0].con.length === 2 && g[0].con.every((c: any) => c.conTen.startsWith(c.classCode)), `con theo lớp: ${g[0].con.map((c: any) => c.conTen)}`);
     assert(d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p2|u7', classId: 11, tuanThi: '2026-09-14' })], nhan).length === 2, 'khác tuần: hai dòng');
     assert(d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p1|u7', classId: 11, ownerId: 9 })], nhan).length === 2, 'khác người giữ: hai dòng');
-    assert(d.khoaGopCua(s({ key: 'score:10|mock|p1|u0|cc', ownerId: null })) === 'gop:score:10:u0', 'chấm chéo: khoá lớp như cũ');
+    assert(d.khoaGopCua(s({ key: 'score:10|mock|p1|u0|cc', ownerId: null })) === 'gop:score:10:u0|cc', 'chấm chéo: khoá lớp như cũ, giữ đuôi |cc (RA-LUONG-1)');
+    const ccGop = d.gopViecTheoLop([s({ key: 'score:10|mock|p1|u0|cc', ownerId: null }), s({ key: 'score:10|mock|p2|u0|cc', ownerId: null, tuanThi: '2026-09-07' })], nhan);
+    assert(ccGop.length === 1 && d.laViecChamCheo(ccGop[0]), `RA-LUONG-1: dòng gộp chấm chéo phải là việc chấm chéo: ${ccGop.map((x: any) => x.key)}`);
   });
 
   check('OV13c-4 · /my-work: Nhập điểm theo tuần thi (khoá có tuần, tuần trong dòng phụ); Case SOS FT cùng tuần + SOS → một dòng, số em trên dòng = số em trong dòng', () => thu(() => {
