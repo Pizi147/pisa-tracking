@@ -397,7 +397,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         {chonKhung}
         {chonPhamVi}
         <div className="ml-auto flex items-center gap-2">
-          <button type="button" className="btn btn-sm max-sm:min-h-[44px]" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>
+          <button type="button" className="btn btn-sm whitespace-nowrap max-sm:min-h-[44px]" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>
           {data?.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>{t('+ Thêm học viên')}</button>}
           <MenuDong nhan={t('Thao tác trang')} muc={[
             ...(dienThoai && data?.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: t('+ Thêm học viên'), onChon: () => setThem(null) }] : []),
@@ -667,7 +667,7 @@ function DaiLop({ lop, vai, soViecQuaHan, dsLop, onThemHocVien, onBo }: {
       <NhanLop lop={lop} vai={vai} soViecQuaHan={soViecQuaHan} />
       <span className="ml-auto flex items-center gap-2">
         <MenuLop lop={lop} dsLop={dsLop} onThemHocVien={onThemHocVien} />
-        <button type="button" className="btn btn-sm" onClick={onBo} aria-label={t('Bỏ lọc lớp')}>✕</button>
+        <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px]" onClick={onBo} aria-label={t('Bỏ lọc lớp')}>✕</button>
       </span>
     </div>
   );

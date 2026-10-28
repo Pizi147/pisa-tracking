@@ -131,7 +131,7 @@ export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null 
   return (
     <span title={v.text} className={`${CHU_HAN} ${lop} ${can ? 'h-[22px] rounded-full px-2 text-xs' : ''}`}>
       {can && <span aria-hidden>⚠</span>}
-      {v.tone === 'overdue' ? t('Quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : <span className="inline-block first-letter:uppercase">{nhanHan(han, homNay)}</span>}
+      {v.tone === 'overdue' ? t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : nhanHan(han, homNay)}
     </span>
   );
 }

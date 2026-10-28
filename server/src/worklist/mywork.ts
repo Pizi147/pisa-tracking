@@ -903,11 +903,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id`;
+  /* RA-LUONG-8 (N8 ④): Case tạm (em KCK, lượt chưa chốt) không sinh việc "Mô tả Case" — cùng `CASE_THAT` như mọi câu đếm. */
   const causeCandidates = !co('cause', 'ghi_nhan_xet') ? [] : conn
     .prepare(
       `SELECT ${cotCase} FROM sos_cases sc ${noiCase}
         WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
-          AND ${LA_CASE_SOS('sc')}
+          AND ${LA_CASE_SOS('sc')} AND ${CASE_THAT('sc')}
           AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`,
     )
     .all() as any[];

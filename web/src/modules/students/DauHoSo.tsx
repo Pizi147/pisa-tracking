@@ -185,7 +185,7 @@ function OViec({ x, chinh, homNay, onLam }: { x: Viec; chinh: boolean; homNay: s
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 rounded-[10px] border border-l-4 bg-[color:var(--surface)] px-3 py-2.5"
       style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
       {/* SUA-375-2: điện thoại tên việc xuống dòng (không cắt "…"); ≥ 640 px một dòng + title như cũ. */}
-      <span className="min-w-0 text-[14px] text-slate-100 sm:truncate" title={chuViec(x)}><ChuViec chu={chuViec(x)} /></span>
+      <span className="min-w-0 text-[14px] text-slate-100 sm:line-clamp-2" title={chuViec(x)}><ChuViec chu={chuViec(x)} /></span>
       {x.mo
         ? <button type="button" className={['btn btn-sm row-span-2 max-sm:min-h-[44px]', chinh && 'btn-primary'].filter(Boolean).join(' ')} onClick={() => onLam(x)}>{nutViec(x)}</button>
         : <span className="row-span-2" />}

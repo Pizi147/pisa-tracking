@@ -16,7 +16,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import { chanKhoiPhucThuong, huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { boMonCuaLuot, lichGopCua, canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { boMonCuaLuot, lichGopCua, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { catDiemO, diemHuyMo, dongBanCat } from '../fasttrack/ketQuaHuy.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
@@ -1178,8 +1178,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
   const nhapSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
   const canEditSkill = new Map(prog.skills.map((k) => [k, ketThuc ? suaSauHoanTat : nhapSkill.get(k)!]));
-  /* CV-LOI (V4B H15): đổi lịch môn (Xếp lại bài vắng) — cùng luật `setSkillWeek`; lớp thường quyền theo lớp + môn, không theo em → tính một lần mỗi môn. */
-  const doiLichMon = new Map(prog.skills.map((k) => [k, !!attempts[0] && canMoveSkillSchedule(p, { classId, studentId: attempts[0].student_id, skill: k })]));
+  /* CV-LOI (V4B H15): đổi lịch môn (Xếp lại bài vắng) — cùng luật `setSkillWeek`: dời tay chỉ Quản lý (RA-LUONG-2, R14) → tính một lần mỗi môn. */
+  const doiLichMon = new Map(prog.skills.map((k) => [k, !!attempts[0] && can(p, PERMISSIONS.PLAN_WEEK, { classId, studentId: attempts[0].student_id })]));
   /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
   const skillRows = loadSkillRows(attempts.map((a) => a.id));
   /* Mã tuần mà dấu "-" đã dời môn đi (C08) — đọc gộp một lần cho cả bảng. */

@@ -13,7 +13,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, demQuaHan, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
+  DUONG_TAB_TEST, demViec, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -97,13 +97,14 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const s = data.summary;
   const gvcn = data.coreTeachers[0] ?? null;
   const tomTat = useTomTatLop(data, homNay);
-  /* OV-13b: badge "n việc quá hạn" = cùng danh sách việc với Học viên & Lớp › Cần làm (`/my-work`, `demQuaHan`) — bấm ra đúng số dòng. */
+  /* OV-13b: badge "n việc quá hạn" = cùng danh sách việc `/my-work` với Công việc. */
   const laQl = laVaiQuanLy(session?.roles);
   const viec = useApi<{ dong: WorkItem[] }>(laQl ? `/my-work?nguoi=tat-ca&branchId=${data.branchId}` : '/my-work', [data.branchId, laQl]);
   /* P11 VIEC-DUNG-VAI: GV đếm việc CỦA MÌNH (`mine`) — cùng tập với cột Việc / chip quá hạn ở Học viên & Lớp. */
   const chiCuaToi = !laQl && vaiXemHocVien(session?.roles) === null;
-  const soViecQuaHan = demQuaHan((viec.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).filter((it) => !chiCuaToi || it.mine)
-    .map((it) => ({ quaHan: it.urgency === 'overdue', studentId: it.studentId, classId: it.classId })), data.id).viec;
+  /* RA-LUONG-10: đếm VIỆC cùng đơn vị Công việc / Tổng quan (`demViec`: Nhập điểm = số kỹ năng, bỏ S chấm chéo) — trước đếm dòng: "6 việc quá hạn" cạnh Công việc 9. */
+  const soViecQuaHan = demViec((viec.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
+    .filter((it) => (!chiCuaToi || it.mine) && it.urgency === 'overdue' && it.classId === data.id)).viec;
   const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
@@ -161,7 +162,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
 
   return (
-    <header className="space-y-3">
+    <header className="space-y-2">
       {/* PR-DH (Q-0310-4): Quay lại + Lớp trước/sau theo danh sách vừa mở; mở thẳng bằng link thì theo các lớp cùng khung ở Học viên & Lớp. */}
       <ThanhTruocSau loai="lop" id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
         chiTiet={CHE_DO_NHAN[sp.get('che-do') as CheDoHocVien] ?? TAB_HO_SO_LOP_NHAN[sp.get('tab') as TabHoSoLop]}
@@ -175,8 +176,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
         <DaiChiXem>{t('Lớp đã kết thúc')}{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ` — ${t('chỉ xem')}`}</DaiChiXem>
       )}
       {/* UI-HO-SO-LOP (`dieu-chinh-cuoi.html` khu b): mã lớp + nhãn nhỏ xám / giá trị đậm (P2) — GVCN · Học viên · Lượt gần nhất · Đạt · SOS; + Case · ⋯ bên phải. */}
-      <div className="flex flex-wrap items-center gap-x-[22px] gap-y-2.5">
-        <h1 className="m-0 text-[22px] font-bold leading-tight text-slate-100" title={dich(data.programme?.name ?? data.kind)}>{data.code}</h1>
+      <div className="flex flex-wrap items-center gap-x-[22px] gap-y-2">
+        <h1 className="m-0 text-xl font-bold leading-tight text-slate-100" title={dich(data.programme?.name ?? data.kind)}>{data.code}</h1>
         <NhanGt n={t('GVCN')} g={gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-soon">{t('Chưa có GVCN')}</span>} />
         <NhanGt n={t('Học viên')} g={<span className="tabular-nums">{s?.studentCount ?? 0}</span>} />
         {tomTat?.luot && <NhanGt n={t('Lượt gần nhất')} g={tomTat.luot} />}

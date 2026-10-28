@@ -7,7 +7,7 @@ import { useSession } from '../lib/session.tsx';
 import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
-import { CHIP_TRON, CHIP_VUONG, lopSos } from './Nhan.tsx';
+import { CHIP_TRON, CHIP_VUONG, Nhan, lopSos, type ToneNhan } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
@@ -16,10 +16,10 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
   return (
     <section className={`card ${className}`}>
       {(title || action) && (
-        <header className="flex items-center justify-between gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
+        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
           {/* OV-11i (P2-4): không có tiêu đề thì không vẽ <h2> rỗng (trình đọc màn hình đọc "heading, trống"). */}
           {/* D4 bổ sung: tiêu đề khối 17 / 700 chữ chính như mockup V5 (`h-khoi`), thay 14 / 600 chữ phụ — tầng rõ hơn, ít chữ đậm cùng cỡ. */}
-          {title ? <h2 className="h-khoi text-lg font-bold text-slate-100">{title}</h2> : <span />}
+          {title ? <h2 className="h-khoi min-w-0 text-lg font-bold text-slate-100">{title}</h2> : <span />}
           {action}
         </header>
       )}
@@ -184,25 +184,12 @@ export function Info({ children, title, pending }: { children: ReactNode; title?
  *   vàng        đang chờ (chờ duyệt, chờ tới hạn)
  *   xám         đã hoàn thành; viền đứt = chưa bắt đầu
  */
-const STATUS_MARK: Record<'doing' | 'waiting' | 'done' | 'idle', string> = {
-  doing: '▶', waiting: '◷', done: '✓', idle: '·',
-};
-const STATUS_CLASS: Record<'doing' | 'waiting' | 'done' | 'idle', string> = {
-  doing: 'bg-white/[.06] text-slate-200 border-transparent',
-  waiting: 'bg-soon-bg text-soon border-soon-line',
-  done: 'bg-done-bg text-done border-done-line',
-  idle: 'bg-transparent text-faint border-dashed border-muted-line',
-};
+/* RA-UI-7 (PTA 29/10, mockup v7 / V4 nhóm ③): trạng thái tiến độ MỘT dáng cả web = viên tròn nền xám + chấm màu (`Nhan`), thay chip vuông + ký hiệu ▶ ◷ ✓. */
+const STATUS_TONE: Record<'doing' | 'waiting' | 'done' | 'idle', ToneNhan> = { doing: 'doing', waiting: 'soon', done: 'done', idle: 'muted' };
 export function Status({ kind, children, title }: {
   kind: 'doing' | 'waiting' | 'done' | 'idle'; children: ReactNode; title?: string;
 }) {
-  return (
-    <span title={title}
-      className={`${CHIP_VUONG} gap-1 ${STATUS_CLASS[kind]}`}>
-      <span aria-hidden className="opacity-70">{STATUS_MARK[kind]}</span>
-      {children}
-    </span>
-  );
+  return <Nhan tone={STATUS_TONE[kind]} dut={kind === 'idle'} title={title}>{children}</Nhan>;
 }
 
 /**
@@ -566,16 +553,18 @@ type BoLocDoanProps<K extends string> = {
   tat?: string;
 };
 export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, tat }: BoLocDoanProps<K>) {
-  /* OV-14b (rà UX 17/10, thay PR-KHUNG G5 vuốt ngang): điện thoại nút đoạn XUỐNG DÒNG — mỗi nút một viền như hàng chip, không nút nào bị cắt. */
+  /* OV-14b (rà UX 17/10, thay PR-KHUNG G5 vuốt ngang): điện thoại nút đoạn XUỐNG DÒNG — mỗi nút một viền như hàng chip, không nút nào bị cắt.
+     RA-UI-7 (PTA 29/10, mockup v7 cong-viec-2 / ke-hoach-test 375 — duyệt sau OV-14b): ≤ 3 mục giữ MỘT khối liền như máy tính; > 3 mục vẫn xuống dòng. */
+  const lien = muc.length <= 3;
   return (
     <div className="inline-flex max-w-full sm:overflow-x-auto">
     <div role="group" aria-label={ariaLabel} aria-disabled={tat ? true : undefined} title={tat}
-      className={`inline-flex shrink-0 rounded-lg border max-sm:shrink max-sm:flex-wrap max-sm:gap-1.5 max-sm:border-0 ${tat ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
+      className={`inline-flex shrink-0 rounded-lg border max-sm:shrink ${lien ? '' : 'max-sm:flex-wrap max-sm:gap-1.5 max-sm:border-0'} ${tat ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
       {muc.map((m, i) => {
         const chon = !tat && m.key === value;
         return (
           <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
-            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs disabled:pointer-events-none max-sm:rounded-lg max-sm:border sm:min-h-[32px] ${i ? 'sm:border-l' : ''} ${
+            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs disabled:pointer-events-none sm:min-h-[32px] ${lien ? (i ? 'border-l' : '') : `max-sm:rounded-lg max-sm:border ${i ? 'sm:border-l' : ''}`} ${
               chon ? 'bg-[color:var(--accent-soft)] font-semibold text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
             <span aria-hidden className={`text-[12px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}

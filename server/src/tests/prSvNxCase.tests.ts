@@ -335,6 +335,11 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     xoaNho();
     assert(moTa(c.id)?.observation === NX.speaking, `mô tả bị đè: ${moTa(c.id)?.observation}`);
     assert(viec(gvPT, 'xem_nx_s', c.id).length === 1, 'phải có việc Xác nhận Case');
+    /* RA-LUONG-6 (N8 ③ "chọn dùng hay viết khác"): "Giữ mô tả" phải giữ thật — lần đồng bộ sau (lưu ô khác, tính lại) không chép nhận xét chấm chéo vào. */
+    cases.xacNhanCaseS(gvPT, c.id, { cach: 'giu' });
+    svc.saveScore(P.admin, a.m1, 'listening', { band: 5 }, TODAY);
+    xoaNho();
+    assert(moTa(c.id)?.observation === NX.speaking, `"Giữ mô tả" bị nhận xét chấm chéo đè: ${moTa(c.id)?.observation}`);
   }));
 
   // ---------------------------------------------------------------- MO-TA-CASE (D6, chủ SP 27/10 — N8: không ép nhận xét, Case chưa mô tả → "Mô tả Case")

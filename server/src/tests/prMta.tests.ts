@@ -235,11 +235,11 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(luot(a.m1).lich_su === 0, 'tuần trước → MT thường');
   });
 
-  check('MTa T4 (C5) · Test lớp thường về tuần đã qua: Quản lý được (chốt 05/10), GVCN vẫn 400', () => {
+  check('MTa T4 (C5) · Test lớp thường về tuần đã qua: Quản lý được (chốt 05/10), GVCN 403 (dời tay chỉ QL — R14)', () => {
     const b = baiThuong(2);
     skillSch.setSkillWeek(QL, b.aid, 'speaking', tuan(-1).id, {});
     assert(kyNang(b.aid, 'speaking').planned_period_id === tuan(-1).id, 'QL chưa dời được');
-    assertThrows(() => skillSch.setSkillWeek(P.normalCoreTeacher, b.aid, 'listening', tuan(-1).id, {}), /Chọn tuần từ tuần này trở đi/, 'GVCN');
+    assertThrows(() => skillSch.setSkillWeek(P.normalCoreTeacher, b.aid, 'listening', tuan(-1).id, {}), /Chỉ Quản lý dời lịch Test/, 'GVCN');
   });
 
   check('MTa T1 (C6) · Xếp hàng loạt FT: tạo MT ở tuần trước → lichSu false; 3 tuần trước → lichSu true', () => {
@@ -533,7 +533,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ T11 chuông GVCN khi người khác dời Test lớp thường
   console.log('\nPR-MTa · T11 chuông GVCN khi người khác dời Test lớp thường');
-  check('MTa T11 (N1) · QL / GVBM dời → GVCN đúng 1 chuông; GVCN tự dời, "-", FT → 0; hàng loạt 3 em → 1 chuông cả lớp', () => {
+  check('MTa T11 (N1) · QL dời → GVCN đúng 1 chuông; GVBM / GVCN dời tay → 403 (R14); "-", FT → 0; hàng loạt 3 em → 1 chuông cả lớp', () => {
     const GV_CN = P.normalCoreTeacher;
     const dt = (aid: number) => chuong('doi_lich_thuong', GV_CN.userId, aid);
     const a = baiThuong(2);
@@ -544,10 +544,11 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(/^Progress Test · .+ · dời sang W\d [A-Z]{3}$/.test(n.title) && n.duong === `/luot-test/${a.aid}`, JSON.stringify(n));   // HSL-LT: trang lượt
     const gvbm = conn.prepare(`SELECT skill FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND skill IS NOT NULL AND status = 'active'`).get(P.normalSubjectTeacher.userId, LOP_THUONG) as any;
     const b = baiThuong(2);
-    skillSch.setSkillWeek(P.normalSubjectTeacher, b.aid, gvbm.skill === 'writing1' || gvbm.skill === 'writing2' ? 'writing' : gvbm.skill, tuan(3).id, {});
-    assert(dt(b.aid) === 1, 'GVBM');
+    /* RA-LUONG-2 (R14, 14/10-Q13): dời tay lịch môn lớp thường chỉ Quản lý — GVBM, GVCN 403, không chuông. */
+    assert(loiCua(() => skillSch.setSkillWeek(P.normalSubjectTeacher, b.aid, gvbm.skill === 'writing1' || gvbm.skill === 'writing2' ? 'writing' : gvbm.skill, tuan(3).id, {})).status === 403
+      && dt(b.aid) === 0, 'GVBM');
     const c = baiThuong(2);
-    skillSch.setSkillWeek(GV_CN, c.aid, 'speaking', tuan(3).id, {});
+    assert(loiCua(() => skillSch.setSkillWeek(GV_CN, c.aid, 'speaking', tuan(3).id, {})).status === 403, 'GVCN dời tay');
     const c0 = baiThuong(0);
     regular.reportRegularNoShow(P.admin, c0.aid, 'listening', true);
     assert(dt(c.aid) === 0 && dt(c0.aid) === 0, 'GVCN tự dời / "-"');
@@ -670,12 +671,12 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(loiCua(() => skillSch.setSkillWeek(P.lrTeacher, a.m1, 'listening', tuan(1).id, {})).status === 403, 'GVBM');
   });
 
-  check('MTa T20 · lớp thường: Quản lý dời môn có điểm về tuần trước → điểm còn; GVBM → 400 "đã có điểm"', () => {
+  check('MTa T20 · lớp thường: Quản lý dời môn có điểm về tuần trước → điểm còn; GVBM → 403 (dời tay chỉ QL — R14)', () => {
     const b = baiThuong(0);
     const mon = (conn.prepare(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active' LIMIT 1`)
       .get(LOP_THUONG, P.normalSubjectTeacher.userId) as any).skill as string;
     regular.saveRegularScore(P.admin, b.aid, mon, { score: 7, total: 10 });
-    assert(/đã có điểm/.test(loiCua(() => skillSch.setSkillWeek(P.normalSubjectTeacher, b.aid, mon, tuan(1).id, {})).message), 'GVBM');
+    assert(loiCua(() => skillSch.setSkillWeek(P.normalSubjectTeacher, b.aid, mon, tuan(1).id, {})).status === 403, 'GVBM');
     skillSch.setSkillWeek(QL, b.aid, mon, tuan(-1).id, {});
     assert(kyNang(b.aid, mon).week_start === t.addDays(tuanNay, -7) && diemCua(b.aid, mon).raw_score === 7, 'điểm đi theo');
   });

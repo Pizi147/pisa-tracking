@@ -11,6 +11,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KHOI_VANG, NutHomNay, OTuan } from '../classes/chuyenLopChung.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
+import { hoanTacHangLoat } from './hangLoatEm.ts';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
 import {
   CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
@@ -207,7 +208,16 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const huyLenh = async () => {
     if (!lenh || !lyDoHuy.trim()) return;
     setBusy(true);
-    try { await api.post(`/lenh-chuyen/${lenh.id}/huy`, { lyDo: lyDoHuy.trim() }); xong(t('Đã huỷ quyết định chuyển lớp')); } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
+    try {
+      await api.post(`/lenh-chuyen/${lenh.id}/huy`, { lyDo: lyDoHuy.trim() });
+      xongChuyen(); onDone?.(); onClose();
+      /* RA-LUONG-5 (luật không khoá cứng): Hoàn tác tại chỗ — cùng đường khôi phục của Cuối khoá lớp (`khoi-phuc-lenh`). */
+      toast.hoanTac(t('Đã huỷ quyết định chuyển lớp'), async () => {
+        const r = await hoanTacHangLoat('huy-lenh', [studentId]);
+        xongChuyen(); onDone?.();
+        toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? r.failed[0].message : t('Đã khôi phục quyết định'));
+      }, { key: `huy-lenh-${studentId}` });
+    } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
   };
 
   const nhanChinh = dx ? (duyet ? t('Lưu') : t('Gửi đề xuất')) : ngayNay ? t('Chuyển ngay') : duyet ? t('Duyệt và quyết định') : dichChu(lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh);

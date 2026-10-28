@@ -6,7 +6,7 @@ import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { ChiSo, PhanTram, TheoChiNhanh, kyChu, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
+import { ChiSo, PhanTram, TheoChiNhanh, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
 import { thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
@@ -53,7 +53,8 @@ export function BaoCao(pv: PhamViPhanTich) {
   if (loi) return <ErrorState message={loi.message} hint={loi.hint} onRetry={() => { tq.reload(); bc.reload(); }} />;
   if (!tq.data || !bc.data) return <Skeleton rows={8} />;
   const d = tq.data, b = bc.data;
-  const ky = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : kyChu(d.ky);
+  /* RA-UI-5: khoảng tuần đã ghi ở bộ lọc ngay trên — ô chỉ số ghi "trong kỳ" như Tổng quan, không lặp "W1 SEP – W2 SEP" ở 4 ô. */
+  const ky = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : t('trong kỳ');
   const nguon = (o: string) => `/phan-tich/bao-cao/o?${q}&o=${encodeURIComponent(o)}`;
   const nguonCase = `/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong&chuY=1&${q}`;
   const chonCn = (id: number) => { const n = new URLSearchParams(params); n.set('cn', String(id)); setParams(n); };
@@ -63,12 +64,12 @@ export function BaoCao(pv: PhamViPhanTich) {
   return (
     <div className="bao-cao space-y-4">
       <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } }'}</style>
-      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
+      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">
         <ChiSo ten={t('Đạt MT')} ky={ky} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}
           giaTri={ft ? <PhanTram x={d.datMt} nguon={nguon('dat-mt')} tieuDe={t('Đạt MT')} /> : chiFt} mau={ft ? tuMau(d.datMt, t('HV')) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Đạt Target thi thật')} ky={ky} giaTri={ft ? ptChu(d.thiThat) : chiFt}
           mau={ft ? (d.thiThat?.mau ? tuMau(d.thiThat, t('HV có KQ')) : t('chưa HV nào có KQ')) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('Thi trong kỳ')} ky={ky} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi trong kỳ')} nguon={nguon('thi-dot-nay')} />} mau={t('HV có ngày thi trong kỳ')} />
+        <ChiSo ten={t('Thi trong kỳ')} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi trong kỳ')} nguon={nguon('thi-dot-nay')} />} mau={t('HV có ngày thi trong kỳ')} />
         <ChiSo ten={t('Case có PA')} ky={t('hiện tại')} giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={nguonCase} tieuDe={t('Case đang mở')} />}
           mau={d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null} />
         <ChiSo ten={t('PA cải thiện')} ky={ky} luat={t('PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).')}
@@ -122,7 +123,7 @@ function TienBo({ hang, nguon }: { hang: NonNullable<BaoCaoKq['tienBo']>; nguon:
   const oCua = (h: H, c: CotBang): ReactNode => {
     if (c.key === 'kn') return <span className="inline-block min-w-[32px] rounded border px-1.5 text-center text-xs font-bold text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>{tenMonNgan(null, h.skill)}</span>;
     if (rateView(so(h, c.key), h.tong).kind !== 'value') return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
-    return <OSo giaTri={h.tong} nhan={String(so(h, c.key))} tieuDe={t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} nguon={nguon(`tien-bo:${h.skill}`)} vung={c.key}
+    return <OSo giaTri={so(h, c.key)} nhan={String(so(h, c.key))} tieuDe={t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} nguon={nguon(`tien-bo:${h.skill}`)} vung={c.key}
       className={c.key === 'tang' ? 'text-ok' : c.key === 'giam' ? 'text-bad' : ''} />;
   };
   return (

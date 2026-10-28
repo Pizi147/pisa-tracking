@@ -389,7 +389,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
       {/* Tên + chip "Đủ điểm" một dòng; MỘT dòng phụ: dòng thi (Điểm theo lớp) · "lịch sử" · dấu lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
         <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline" : ''}`}>
-          <Link className="link min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}>{row.studentName}</Link>
+          <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
@@ -533,7 +533,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
   return (
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
       <div className="flex min-w-0 items-center gap-x-2">
-        <Link className="link inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
+        <Link className="ten-ho-so inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
         <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>

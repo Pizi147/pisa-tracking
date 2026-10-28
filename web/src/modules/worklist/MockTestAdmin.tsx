@@ -40,7 +40,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
   return (
     <div className="space-y-3">
       {/* SUA-CHAM-LAI L8: ô chỉ số V5 (tên · số · mẫu · kỳ) như mọi vai, 3 cột như Tổng quan TVV; số = link đổi trang (mở đúng danh sách đã lọc). Đơn vị "bài" như Lịch Test. */}
-      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
+      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">
         <ChiSo ten={t('Lượt MT tuần này')} ky={tuanLich(data.tuan, homNay)} giaTri={<So to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} n={data.luotTuanNay.so} />}
           mau={t('{n} lớp', { n: data.luotTuanNay.soLop })} />
         <ChiSo ten={t('Bài chưa nhập điểm')} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
@@ -50,7 +50,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
       </div>
       <section className="card" aria-labelledby="gv-qua-han">
         <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">
-          <h2 id="gv-qua-han" className="m-0 text-[15px] font-semibold text-slate-100">GV chấm quá hạn</h2>
+          <h2 id="gv-qua-han" className="h-khoi m-0 text-lg font-bold text-slate-100">GV chấm quá hạn</h2>
           {/* M6 6b-4 (Q5): số GV mở panel theo GV → lớp · lượt · kỹ năng → em còn trống → Nhập hộ; số = số nhóm GV của panel (cùng tập). */}
           {soGv > 0 && (
             <span className="text-xs text-slate-500">

@@ -31,7 +31,8 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
   const v = dai.viewer;
   const h = homNay ?? '';
   return (
-    <div className="space-y-2">
+    /* RA-UI-8: không dải nào → ẩn hẳn (khối rỗng vẫn ăn một khoảng cách của đầu trang). */
+    <div className="space-y-2 empty:hidden">
       {dai.chuaChuyenDuoc && (
         <Dai nhan={t('Chưa chuyển được')} do
           nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{t('Cuối khoá ›')}</button>}>

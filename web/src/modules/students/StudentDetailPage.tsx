@@ -253,7 +253,7 @@ export default function StudentDetailPage() {
         */}
         <header className="mt-1.5 space-y-2.5">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h1 className="m-0 flex flex-wrap items-center gap-2 text-[22px] font-bold leading-tight text-slate-100">
+            <h1 className="m-0 flex flex-wrap items-center gap-2 text-xl font-bold leading-tight text-slate-100">
               {data.fullName}
               <MissingBadge items={data.missing} />
               {/* P7 (k6): em Tạm dừng ở Lưu trữ — "Tạm dừng 14/09 · Có thể quay lại"; em Kết thúc học — "Kết thúc học 22/08". */}
@@ -403,7 +403,7 @@ export default function StudentDetailPage() {
 
       {tab === 'y-thuc' && (
         /* UI-Y-THUC-HV: các khối của tab tự là thẻ (mockup v7) — không bọc thêm một thẻ ngoài (thẻ lồng thẻ). */
-        <StudentYThucSection studentId={data.id} thuong={!!cy.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
+        <StudentYThucSection studentId={data.id} thuong={!!cy?.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
       )}
 
       {tab === 'hanh-trinh' && <CacLoTrinh studentId={data.id} onTongKet={moTongKet} onBuocTiep={moBuocTiep} onHocThuat={() => setTab('hoc-thuat')} />}

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
-import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PanelViec } from '../congViec/PanelViec.tsx';
@@ -212,7 +212,6 @@ function DongCham({ x, homNay, chon, xong, onMo }: { x: WorkItem | NhomS; homNay
           {cheo ? (
             <>
               <span>{t('{luot} · làm bài {tuan}', { luot: `MT${s.attemptNo}`, tuan: [s.tu, s.den].filter((x, i, a): x is string => !!x && a.indexOf(x) === i).map((x) => tuanLich(x, homNay)).join(' – ') || '—' })}</span>
-              <Nhan tone="muted">{t('chấm chéo · không tính nợ')}</Nhan>
             </>
           ) : <span>{nhanLuot(w)}</span>}
         </span>

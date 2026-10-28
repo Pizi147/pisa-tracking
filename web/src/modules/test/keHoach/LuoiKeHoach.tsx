@@ -104,13 +104,13 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
 
   return (
     <div ref={cuon} className="overflow-x-auto">
-      {/* Cột đợt rộng CỐ ĐỊNH (mockup PR 659) — phần dư dồn vào cột trống TRƯỚC cột "+ MT" / S Ex, để cột thao tác dính mép phải. */}
+      {/* Cột đợt rộng CỐ ĐỊNH (mockup PR 659) — cột "+ MT" / S Ex ngay SAU cột đợt cuối (RA-UI-1, mockup `v7/ke-hoach-test.html`), phần dư dồn vào cột trống cuối hàng. */}
       <table className="text-sm" style={{ tableLayout: 'fixed', width: '100%', minWidth: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0) }}>
         <colgroup>
           <col style={{ width: RONG_TEN }} />
           {cots.map((c) => <col key={c.key} style={{ width: rongDot }} />)}
-          <col />
           {loai === 'ft' && !chiXem && <col style={{ width: RONG_SEX }} />}
+          <col />
         </colgroup>
         <thead>
           <tr>
@@ -121,10 +121,10 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                 {c.phu && <span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
               </Th>
             ))}
-            <Th className="!bg-[var(--surface)]"><span className="sr-only">{t('Trống')}</span></Th>
             {loai === 'ft' && !chiXem && (
               <Th className="!bg-[var(--surface)]"><span className="sr-only">{t('Lượt thêm')}</span></Th>
             )}
+            <Th className="!bg-[var(--surface)]"><span className="sr-only">{t('Trống')}</span></Th>
           </tr>
         </thead>
         <tbody>
@@ -183,7 +183,6 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                   </td>
                 );
               })}
-              <td className="td" aria-hidden />
               {loai === 'ft' && !chiXem && (
                 <td className="td !px-0 py-1.5 align-middle">
                   <div className="flex flex-col gap-1 px-2">
@@ -201,6 +200,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                   </div>
                 </td>
               )}
+              <td className="td" aria-hidden />
             </tr>
           ))}
         </tbody>

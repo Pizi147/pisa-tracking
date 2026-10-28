@@ -867,7 +867,14 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   /* Chủ SP 28/10: GVCN lớp đó dời MT tuần ĐÃ QUA (sang tuần đã qua / tuần này) như Quản lý — kể cả FT, kể cả có điểm. */
   const gvcnCu = !opts.khiTao && !opts.ghiBuDau && !!period && isCoreTeacherOf(p, attempt.class_id, homNay)
     && gvcnDoiMtCu({ tuanCuKetThuc: row.week_end, tuanMoiBatDau: period.week_start, homNay });
-  if (!gvcnCu) {
+  /*
+   * RA-LUONG-2 (Rulebook R14, 14/10-Q13): DỜI TAY lịch một kỹ năng / môn — chỉ Quản lý / Quản trị (`PLAN_WEEK`), cả lớp thường. GV lớp thường
+   * vẫn qua `SCHEDULE_MOVE` khi máy tự dời do "-" (`ghiBuDau`) hoặc khi tạo lượt (`khiTao`); GVCN dời MT tuần đã qua theo `gvcnCu` (N23).
+   */
+  if (!gvcnCu && !opts.khiTao && !opts.ghiBuDau) {
+    require_(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id },
+      'Chỉ Quản lý dời lịch Test. Gõ "-" khi em vắng thì máy tự dời.');
+  } else if (!gvcnCu) {
     requireMoveSkillSchedule(
       p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
       'Bạn không có quyền đổi lịch Test của kỹ năng này.',
