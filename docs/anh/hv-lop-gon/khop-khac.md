@@ -15,7 +15,7 @@ So với **main** (đã có #646 màu SOS). Mockup: `thiet-ke/v5/dieu-chinh-cuoi
 |---|---|---|
 | Lớp không tự mở | `StudentsPage` `moSet`: không `mo` trên URL → rỗng | SỬA. Đang lọc / tìm vẫn mở lớp có em khớp [XM-1] |
 | Bỏ TVV dưới tên em | `TenEm` | BỎ (chỉ còn "Kết thúc học" / "Tạm dừng" khi có) |
-| Bỏ ↗ tên em, mã lớp | `.ten-ho-so.khong-mui` (chỉ trang này; các trang khác giữ ↗) | BỎ — vẫn là link, rê = xanh + gạch |
+| Bỏ ↗ (chủ SP 28/10: toàn web; trang khác do PR quét riêng HSL-LT) | `.ten-ho-so.khong-mui`: tên em, mã lớp, Đang SOS, Lịch thi, Lưu trữ; panel một em "Hồ sơ" | BỎ — vẫn là link, rê = xanh + gạch |
 | Ô MT gần nhất | `OMtGan` + `MiniKn` | SỬA: Overall 15/700 màu kết quả · "/ KV · tuần" 12 mờ · 5 kỹ năng 13/600 lưới cột cố định (thẳng hàng giữa các em) · kỹ năng dưới KV nền đỏ nhạt + chữ đỏ + "Dưới kỳ vọng" cho trình đọc màn (mockup `.mini-kn`) |
 | Nút lọc chọn / không chọn | `.nut-loc` (toàn web) | SỬA theo mockup `.chip`: không chọn viền ô nhập (3,8 : 1, trước 30 % gần chìm), chữ 600; đang chọn viền màu nhấn sáng (10,2 : 1) |
 | Hàng "Đã thi" | `tr.hang-da-thi` (+ thẻ 375) | THÊM theo mockup `.da-thi`: nền + vạch trái màu lịch — "Đã thi 24/10" khác "Thi 28/11" không chỉ bằng chữ |
