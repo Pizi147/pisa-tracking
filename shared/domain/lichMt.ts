@@ -66,6 +66,20 @@ export function soMtKeTiep(ds: LuotSo[]): number {
   return Math.max(0, ...ds.filter((x) => x.status !== 'cancelled' || x.coDiem).map((x) => x.attempt_no)) + 1;
 }
 
+/** Số cột MT của lưới Kế hoạch Test: 1 … min(MT8, max(lịch mặc định của lớp, số lớn nhất còn hiệu lực)). Lưới và tóm tắt lớp dùng chung. */
+export function soCotMt(soMacDinh: number, soHieuLuc: readonly number[]): number {
+  return Math.min(MT_TOI_DA, Math.max(soMacDinh, ...soHieuLuc));
+}
+
+/**
+ * KHT-GON (PTA 28/10, "một số liệu một hàm"): ô "Xếp MTn" của một em — MT kế tiếp (`soMtKeTiep`) nằm trong cột đang vẽ và chưa có lượt nào
+ * số đó (lượt huỷ không điểm = ô "đã huỷ"). null = em không có ô này. Lưới (ô) và tóm tắt lớp ("MTn chưa xếp k em") cùng gọi.
+ */
+export function oXepMt(ds: LuotSo[], soCot: number): number | null {
+  const n = soMtKeTiep(ds);
+  return n <= soCot && !ds.some((x) => x.attempt_no === n) ? n : null;
+}
+
 /** `null` = tạo được MT(n); còn lại là câu lỗi tiếng Việt cho người dùng. Đếm lượt CÒN HIỆU LỰC (`status != 'cancelled'`). */
 export function kiemSoMtMoi(ds: LuotSo[], n: number): string | null {
   const con = ds.filter((x) => x.status !== 'cancelled');

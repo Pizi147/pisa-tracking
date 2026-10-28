@@ -9685,6 +9685,9 @@ await runPrLocHienTaiTests({ check, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== QUYEN-LICH-MT (chủ SP 28/10: GVCN dời MT tuần đã qua · GV xem Kế hoạch Test)
 const { runPrQuyenLichMtTests } = await import('./prQuyenLichMt.tests.ts');
 await runPrQuyenLichMtTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== KHT-GON (mockup #659: ô Kế hoạch Test bản gọn)
+const { runPrKhtGonTests } = await import('./prKhtGon.tests.ts');
+await runPrKhtGonTests({ check, assert } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

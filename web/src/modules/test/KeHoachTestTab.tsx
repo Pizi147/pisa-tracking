@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { ChuGiaiMau } from './keHoach/ChipKyNang.tsx';
+import { Menu } from '../../ui/Menu.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
@@ -136,8 +136,9 @@ export function KeHoachTestTab() {
             </NutChon>
           </span>
         )}
-        {loai === 'ft' && soCanXepLai > 0 && (
-          <span className="pb-1">
+        {(() => {
+          /* Cần xếp lại + chi nhánh: 1440 nằm trên hàng; 375 gộp vào "Lọc ▾" (mockup #659). */
+          const xepLai = loai === 'ft' && soCanXepLai > 0 ? (
             <NutChon nho chon={locXepLai} onClick={() => {
               const bat = !locXepLai;
               setChiXepLai(bat);
@@ -145,35 +146,36 @@ export function KeHoachTestTab() {
             }} title="Học viên có kỹ năng vắng hoặc đã huỷ — Quản lý cần xếp lại">
               Cần xếp lại <span className="tabular-nums">({soCanXepLai})</span>
             </NutChon>
-          </span>
-        )}
-        {branchCount > 1 && (
-          <>
-            <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={(id) => {
-              const next = new URLSearchParams(params);
-              next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
-              next.delete('classId');
-              setParams(next, { replace: true });
-            }} /></div>
-            <details className="sm:hidden">
-              <summary className="btn btn-sm cursor-pointer list-none">Lọc ▾</summary>
-              <div className="mt-2"><BranchFilter branchId={branchId} onBranch={(id) => {
-                const next = new URLSearchParams(params);
-                next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
-                next.delete('classId');
-                setParams(next, { replace: true });
-              }} /></div>
-            </details>
-          </>
-        )}
+          ) : null;
+          const doiCn = (id: number | null) => {
+            const next = new URLSearchParams(params);
+            next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
+            next.delete('classId');
+            setParams(next, { replace: true });
+          };
+          return (
+            <>
+              {xepLai && <span className="hidden pb-1 sm:inline">{xepLai}</span>}
+              {branchCount > 1 && <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={doiCn} /></div>}
+              {(xepLai || branchCount > 1) && (
+                <details className="sm:hidden">
+                  <summary className="btn btn-sm min-h-[44px] cursor-pointer list-none">Lọc ▾</summary>
+                  <div className="mt-2 flex flex-col items-start gap-2">
+                    {xepLai}
+                    {branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
+                  </div>
+                </details>
+              )}
+            </>
+          );
+        })()}
         <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 basis-full sm:basis-auto sm:w-72" />
         <span className="pb-2">
           <NutLuat label="Luật xếp lịch Test">
             {loai === 'ft' ? (
               <span className="block">
                 Mỗi đợt xếp riêng <b>L</b> (Listening), <b>R</b> (Reading), <b>W</b> (Writing), <b>S</b> (Speaking). <b>W = chấm cả
-                W1 và W2</b> — một lịch W đặt cho cả hai. Kỹ năng cùng tuần thì gộp một chip (<b>L R W S · W3 SEP</b>), khác tuần
-                thì tách dòng.
+                W1 và W2</b> — một lịch W đặt cho cả hai. Kỹ năng khác tuần trong cùng đợt ghi riêng (<b>S riêng · W3 DEC</b>).
               </span>
             ) : (
               <span className="block">
@@ -182,11 +184,9 @@ export function KeHoachTestTab() {
                 {monTheoCt.map(([ct, mon], i) => (
                   <span key={ct}>{i ? ' · ' : ''}<b>{ct}</b> {mon}</span>
                 ))}
-                {monTheoCt.length ? '.' : ''} Môn cùng tuần thì gộp một chip, khác tuần thì tách dòng.
+                {monTheoCt.length ? '.' : ''} Môn khác tuần trong cùng đợt ghi riêng.
               </span>
             )}
-            {/* KHUNG-LOI (TST-05): chú giải màu sinh từ bảng màu thật của chip. */}
-            <ChuGiaiMau ft={loai === 'ft'} />
             {loai !== 'ft' && <span className="block">Lớp thường ghi thêm tuần trong khoá (<b>W5/10</b>).</span>}
             <span className="block">Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.</span>
           </NutLuat>
@@ -196,8 +196,19 @@ export function KeHoachTestTab() {
           /* OV-15c: Xuất Excel Kế hoạch Test 13 cột (C17) theo bộ lọc đang xem + Xuất điểm Test (mockup 6 khung 9). */
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-xs tabular-nums text-slate-400">{t('{n} học viên', { n: danhSach.reduce((n, l) => n + l.soHv, 0) })}</span>
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
+            <span className="hidden gap-2 sm:flex">
+              <button type="button" className="btn btn-sm" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
+              <button type="button" className="btn btn-sm" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
+            </span>
+            {/* Mockup #659 (375): hai nút xuất gộp "Xuất ▾". */}
+            {!lyDoTat && (
+              <span className="sm:hidden">
+                <Menu label={t('Xuất')} className="btn btn-sm min-h-[44px]" items={[
+                  ...(danhSach.length ? [{ label: t('Xuất Excel'), onClick: () => setXuat('ke-hoach') }] : []),
+                  { label: t('Xuất điểm Test'), onClick: () => setXuat('diem') },
+                ]} />
+              </span>
+            )}
           </span>
         )}
         {coXep && (

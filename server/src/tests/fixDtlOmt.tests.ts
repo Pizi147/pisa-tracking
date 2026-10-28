@@ -168,11 +168,10 @@ export async function runFixDtlOmtTests(t: YThucTestKit) {
     assert(d.chipDongKyNang(het, '2026-10-06', null, true)?.tone === 'muted', 'chip dòng MT cũ chờ: xám (OV-15a bỏ tím)');
   });
 
-  check('DTL5 · lưới FT (ChipDotFT): chữ chip không bị cắt — không truncate, chip xuống dòng được (cao tối thiểu 20px)', () => {
+  check('DTL5 · lưới Kế hoạch Test (KHT-GON, mockup #659): dòng 1 tuần + chữ không cắt (nowrap, tuần cột cố định 58 px, môn xuống dòng thụt (PTA 28/10)); ô cao tối thiểu 56', () => {
     const c = doc('web/src/modules/test/keHoach/ChipKyNang.tsx');
-    const ft = c.slice(c.indexOf('export function ChipDotFT'));
-    assert(!/truncate/.test(ft), 'ChipDotFT còn truncate');
-    /* UI-CHAM-TEST (mockup V5 khu a): ô đợt = khung viền ba dòng — dòng kỹ năng xuống dòng được, không cao cố định. */
-    assert(/flex-wrap/.test(ft) && !/(?<![\w-])h-5\b/.test(ft), 'chip FT chưa xuống dòng được');
+    const o = c.slice(c.indexOf('export function ODotGon'), c.indexOf('export function NutXepO'));
+    assert(/grid-cols-\[54px_minmax\(0,1fr\)\]/.test(o) && /whitespace-nowrap text-xs font-semibold/.test(o), 'tuần / chữ trạng thái phải nowrap, tuần cột cố định');
+    assert(/min-h-\[56px\]/.test(c), 'ô lưới cao ≥ 56');
   });
 }

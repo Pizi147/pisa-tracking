@@ -1,197 +1,146 @@
-import { KY_NANG_KE_HOACH, NHAN_KIEU_O_MT, chuDoiVang, gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanNamChu, type ChipKH, type KieuOMt, type KyNangKH } from '@shared/domain/index.ts';
-import { MAU_O_MT } from '../../../ui/OMt.tsx';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { nhanTuanKhoa, type LoaiTtGon, type MonGon, type OGon } from '@shared/domain/index.ts';
 import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
-import type { KnO } from './kieu.ts';
 
 /**
- * Ô MỘT ĐỢT của lớp THƯỜNG (Giữa khoá / Cuối khoá — mockup 14 phương án B): gộp chip cùng tuần + cùng trạng thái, khác tuần tách dòng,
- * đợt xong gọn `Xong W3 SEP ✓`. Lớp FT: ô đợt đã có lịch = `ChipDotFT` ở cuối tệp (PR-OMT C6); ô chưa có đợt = `OMt`. Ô cao CỐ ĐỊNH 44px = 2 dòng chip (G-2) nên mọi hàng bằng
- * nhau; hiếm khi hơn 2 nhóm thì dòng 2 ghi `+n`. Màu chỉ dùng token nghĩa (N-1): xong `--done` · đã xếp `--doing` · đã dời `--soon` ·
- * chưa xếp viền đứt `--muted`. `onMo(kỹ năng, phần tử)` mở hộp sửa neo cạnh chip vừa bấm.
+ * Ô MỘT ĐỢT của lưới Kế hoạch Test (mockup `thiet-ke/v7/ke-hoach-test.html`, chủ SP chốt 28/10) — dùng chung FT và lớp thường.
+ * Mỗi DÒNG một tuần thi: tuần (cột 58 px) + ô môn có khung (`L ✓` · `L` · `S trễ chấm`) + trạng thái dòng; điểm tổng sau các môn dòng đầu;
+ * "không thi W S" chữ mờ; vắng chữ thường ở dòng cuối. Chỉ ô cần chú ý có vạch trái (tuần này · trễ chấm + nền đỏ nhạt · xếp lại).
+ * Nội dung do `oGon` quyết — ở đây chỉ vẽ.
  */
-export function ChipKyNang({ kn, attemptId, khaiGiang, tongTuan, deXuat, nhanDeXuat, tenDot, onMo, ct = null }: {
-  /** Mã chương trình lớp (MH3: Kế hoạch Test khung lớp thường gọi tên môn theo chương trình — FOU G+V/P). */
-  ct?: string | null;
-  kn: KnO; attemptId: number | null;
-  khaiGiang?: string | null; tongTuan?: number | null;
-  /** Lớp thường chưa có bài: tuần đề xuất (thứ Hai) và nhãn tuần khoá của nó. */
-  deXuat?: string | null; nhanDeXuat?: string | null;
-  tenDot: string;
-  onMo: (skill: KyNangKH | null, el: HTMLElement) => void;
+const VACH: Partial<Record<LoaiTtGon, string>> = {
+  nay: 'shadow-[inset_3px_0_0_rgb(var(--doing-rgb))]',
+  tre: 'shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]',
+  vang: 'shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]',
+};
+const MAU_TT: Record<LoaiTtGon, string> = {
+  nay: 'text-doing', tre: 'text-bad', cho: 'text-dim', vang: 'text-soon', xong: 'text-ok', chua: 'text-dim', xep: 'text-faint font-medium',
+};
+const CHU_MON: Record<MonGon['loai'], string> = { co: t('có điểm'), cho: t('chưa có điểm'), tre: t('trễ chấm') };
+const O_MON: Record<MonGon['loai'], string> = {
+  co: 'border-ok-line text-ok',
+  cho: 'border-[var(--line-strong)] text-[var(--text)]',
+  tre: 'border-bad-line text-bad',
+};
+
+/** Khung bấm chung của mọi ô lưới (ô đợt, "Xếp MTn", đã huỷ): cao ≥ 56, chữ trái, rê sáng nhẹ, focus viền nhấn. */
+export const O_LUOI = 'flex w-full min-h-[56px] flex-col justify-center gap-[3px] border-0 bg-transparent px-2 py-1.5 text-left'
+  + ' hover:bg-[var(--nut-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)]';
+
+export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false, children }: {
+  o: OGon;
+  /** Tên đợt đọc màn (`MT3`, `Progress Test`). */
+  nhan: string;
+  /** FT đợt xong: Overall + đạt kỳ vọng (null: không có kỳ vọng). */
+  ketQua?: { ovr: number; dat: boolean | null; kyVong?: number | null } | null;
+  /** Lớp thường: tuần trong khoá (`W4/8`) của tuần chính. */
+  khoa?: { khaiGiang: string | null; tongTuan: number | null; tuan: string | null } | null;
+  chon?: boolean;
+  onMo: (el: HTMLElement) => void;
+  /** GV chỉ xem: ô là LINK tới trang lượt (Ctrl / chuột giữa mở tab mới) thay vì mở hộp. */
+  href?: string | null;
+  /** Mẫu tĩnh: không bấm, không nhận Tab. */
+  tinh?: boolean;
+  /** Dòng ghi chú lịch (sửa tại chỗ) — dưới ô, ngoài nút. */
+  children?: ReactNode;
 }) {
-  const bao = 'flex h-[44px] w-full flex-col justify-center gap-[3px]';
-
-  if (attemptId === null) {
-    return (
-      <button type="button" onClick={(e) => onMo(null, e.currentTarget)} title={`Xếp ${tenDot} cho em này (đang là đề xuất)`}
-        className="flex h-[44px] w-full flex-col items-center justify-center rounded border border-dashed border-muted-line text-[12px] text-slate-500 hover:text-slate-200">
-        <span>đề xuất {deXuat ? tuanNamChu(deXuat) : '—'}</span>
-        {nhanDeXuat && <span className="text-[12px]">{nhanDeXuat}</span>}
-      </button>
-    );
-  }
-
-  const g = gomChip(kn);
-  const tooltip = (chip: ChipKH) => chip.kyNang
-    .map((k) => `${tenMon(ct, k)}: ${kn[k]?.tuan ? tuanNamChu(kn[k]!.tuan!) : 'chưa xếp'}${kn[k]?.doiTu ? ` (dời từ ${tuanNamChu(kn[k]!.doiTu!)})` : ''}${kn[k]?.khoa ? ` (${kn[k]!.khoa})` : ''}`)
-    .join('\n');
-
-  if (g.xong) {
-    return (
-      <div className={bao}>
-        <button type="button" className={`${CHIP_CLS} bg-done-bg text-done border-done-line`} title="Đã làm bài — xem" onClick={(e) => onMo(null, e.currentTarget)}>
-          <span className="font-bold">Xong</span>
-          <span className="whitespace-nowrap tabular-nums">
-            {g.tuanXong ? tuanNamChu(g.tuanXong) : ''}<span aria-hidden title="Đã làm bài"> ✓</span>
-            <NhanKhoa tuan={g.tuanXong} khaiGiang={khaiGiang} tongTuan={tongTuan} />
+  const kq = o.xong && ketQua ? ketQua : null;
+  const nhanKhoa = khoa ? nhanTuanKhoa(khoa.tuan, khoa.khaiGiang, khoa.tongTuan) : null;
+  const doc = [
+    nhan,
+    ...o.dong.map((d) => [d.tuanDu ?? t('chưa xếp'), ...d.mon.map((m) => `${m.ten} ${CHU_MON[m.loai]}`), d.tt?.chu].filter(Boolean).join(' ')),
+    kq ? `${kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(kq.ovr)}${kq.kyVong != null ? ` · ${t('kỳ vọng')} ${fmtBand(kq.kyVong)}` : ''}` : o.tt && o.tt.loai !== 'xong' ? o.tt.chu : null,
+    o.khongThi, o.vang,
+  ].filter(Boolean).join(', ');
+  /* Chủ SP 28/10: khung ô MT rõ hẳn — viền mảnh + nền tối hơn thẻ (`--bg`); ô trễ chấm vẫn nền đỏ nhạt (VACH đè). */
+  /* `O_LUOI` có `border-0 bg-transparent` (dùng chung) — khung ô MT phải `!`; ô trễ: nền + viền đỏ nhạt thay nền tối (một lớp nền, không chồng). */
+  const tre = o.tt?.loai === 'tre';
+  const lop = `${O_LUOI} !px-1.5 rounded-md !border ${tre ? '!border-bad-line !bg-bad-bg' : '!border-[var(--line-strong)] !bg-[var(--bg)] hover:!bg-[var(--nut-hover)]'} ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
+  /* "xếp lại S" / "chờ duyệt" không thuộc dòng tuần nào (môn đang vắng) — đặt ở dòng đầu khi dòng đó chưa có chữ. */
+  const ttO = o.tt?.loai === 'vang' ? o.tt : null;
+  const noi = (
+    <>
+      {o.dong.map((d, i) => {
+        const mo = d.tt?.loai === 'xep';   // tuần tương lai: tuần mờ
+        /* PTA 28/10 — một luật: môn trễ = ô viền đỏ, chữ "trễ chấm" MỘT lần (dòng trạng thái của tuần, kể cả chỉ một môn trễ). */
+        const coTre = d.mon.some((m) => m.loai === 'tre');
+        const tt = coTre ? { chu: t('trễ chấm'), loai: 'tre' as const } : i === 0 && ttO && !d.tt ? ttO : d.tt;
+        const kqDong = i === 0 ? kq : null;
+        const ttHien = tt && tt.loai !== 'xong' ? tt : null;
+        const coMon = o.hienMon && d.mon.length > 0;
+        const ketQuaChu = kqDong ? (
+          <span className={`whitespace-nowrap text-[13px] font-semibold tabular-nums ${kqDong.dat === false ? 'text-bad' : 'text-ok'}`}>
+            {kqDong.dat === null ? '' : kqDong.dat ? '✓ ' : '✗ '}{fmtBand(kqDong.ovr)}
           </span>
-        </button>
-      </div>
-    );
-  }
-
-  if (!g.chip.length) {
-    return <div className={bao}><span className="text-center text-[12px] text-slate-500" title="Đợt này không có kỹ năng nào">—</span></div>;
-  }
-
-  const hienThi = g.chip.slice(0, 2);
-  const conLai = g.chip.slice(2);
-  const them = conLai.length;
+        ) : ttHien && <span className={`whitespace-nowrap text-xs font-semibold ${MAU_TT[ttHien.loai]}`}>{ttHien.chu}</span>;
+        /*
+         * PTA 28/10 — cấu trúc cố định (cột tuần 54 px): DÒNG 1 = tuần + đủ ô môn của tuần (một dòng, không rơi lẻ) · DÒNG 2 (thụt dưới cột
+         * môn) = tuần khoá lớp thường + điểm tổng ✓/✗ hoặc chữ trạng thái. Tuần chưa có hàng môn (MT tương lai) → trạng thái ngay dòng 1.
+         */
+        return (
+          <span key={d.tuanDu ?? `chua-${i}`} className={`grid min-w-0 grid-cols-[54px_minmax(0,1fr)] gap-x-1 gap-y-[2px] ${coMon ? 'items-center' : 'items-baseline'}`}>
+            <span className={`whitespace-nowrap text-[13px] leading-5 tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{d.tuan ?? '—'}</span>
+            {coMon ? (
+              <span className="flex min-h-5 min-w-0 flex-wrap items-center gap-[2px]">
+                {d.mon.map((m) => (
+                  <span key={m.k} title={`${m.ten} · ${CHU_MON[m.loai]}`}
+                    className={`inline-flex h-5 items-center whitespace-nowrap rounded border px-[2px] text-xs font-semibold leading-none tabular-nums ${O_MON[m.loai]}`}>
+                    {/* Dấu ✓ là hình (SVG nhỏ, aria-hidden — câu đọc ở `title` / aria của ô) để 4 ô môn vừa một dòng ở cột 180 px; chữ môn 12 theo thang. */}
+                    {m.ten}{m.loai === 'co' && <svg viewBox="0 0 8 8" className="ml-px h-[7px] w-[7px]" aria-hidden><path d="M1 4.3 3.1 6.3 7 1.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span className="flex min-h-5 min-w-0 items-baseline gap-x-1.5">
+                {i === 0 && nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
+                {ketQuaChu}
+              </span>
+            )}
+            {coMon && ((i === 0 && nhanKhoa) || ketQuaChu) && (
+              <span className="col-start-2 flex min-w-0 items-center gap-x-1.5">
+                {i === 0 && nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
+                {ketQuaChu}
+              </span>
+            )}
+          </span>
+        );
+      })}
+      {(o.vang || o.khongThi) && (
+        <span className="truncate text-xs tabular-nums text-faint" title={[o.khongThi, o.vang].filter(Boolean).join(' · ')}>
+          {[o.khongThi, o.vang].filter(Boolean).join(' · ')}
+        </span>
+      )}
+    </>
+  );
   return (
-    <div className={bao}>
-      {hienThi.map((c, i) => (
-        <Chip key={i} c={c} ct={ct} khaiGiang={khaiGiang} tongTuan={tongTuan}
-          them={i === 1 && them > 0 ? { n: them, ds: conLai.map((x) => `${x.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${x.tuan ? tuanNamChu(x.tuan) : 'chưa xếp'}`).join('\n') } : null}
-          title={tooltip(c)} onMo={onMo} />
-      ))}
+    <div>
+      {tinh ? <span className={`${lop} hover:bg-transparent`}>{noi}</span>
+        : href ? <Link to={href} aria-label={doc} title={doc} className={`${lop} no-underline`}>{noi}</Link>
+        : <button type="button" onClick={(e) => onMo(e.currentTarget)} aria-label={doc} title={doc} className={lop}>{noi}</button>}
+      {children}
     </div>
   );
 }
 
-const CHIP_CLS = 'flex h-[20px] w-full items-center justify-between gap-1 rounded border px-1.5 text-[12px] leading-none';
-
-function NhanKhoa({ tuan, khaiGiang, tongTuan }: { tuan: string | null; khaiGiang?: string | null; tongTuan?: number | null }) {
-  const n = nhanTuanKhoa(tuan, khaiGiang ?? null, tongTuan ?? null);
-  return n ? <span className="ml-1 text-[12px] font-normal">{n}</span> : null;
-}
-
-/**
- * Màu theo trạng thái (N-1, token nghĩa): xong `done` · đã xếp `doing` · đã dời `soon` · vắng `late` · chờ Quản lý duyệt `muted` ·
- * trễ `bad` (viền mảnh, nền trong) · đã huỷ `done` gạch ngang · chưa xếp viền đứt. Chữ đuôi ngắn để chip 20px không xuống dòng;
- * câu đủ nằm ở tooltip.
- */
-const MAU_TT: Record<string, { mau: string; duoi: string | null; nghia: string | null }> = {
-  'da-doi': { mau: 'bg-soon-bg text-soon border-soon-line', duoi: 'dời', nghia: null },
-  vang: { mau: 'bg-late-bg text-late border-late-line', duoi: 'vắng', nghia: 'vắng · Quản lý xếp lại' },
-  'cho-duyet': { mau: 'bg-muted-bg text-muted border-muted-line', duoi: 'chờ duyệt', nghia: 'chờ Quản lý duyệt đề nghị dời' },
-  tre: { mau: 'bg-transparent text-bad border-bad-line', duoi: 'trễ', nghia: 'trễ — tuần Test đã hết, chưa có điểm' },
-  'da-huy': { mau: 'bg-done-bg text-done border-done-line line-through', duoi: 'đã huỷ', nghia: 'đã huỷ' },
-  xong: { mau: 'bg-done-bg text-done border-done-line', duoi: null, nghia: null },
-};
-
-/** Chữ chú giải từng trạng thái chip lớp thường (cùng khoá `MAU_TT`). */
-const NHAN_TT: Record<keyof typeof MAU_TT, string> = {
-  'da-doi': 'Đã dời', vang: 'Vắng', 'cho-duyet': 'Chờ duyệt dời', tre: 'Trễ (chưa có điểm)', 'da-huy': 'Đã huỷ', xong: 'Đã làm bài ✓',
-};
-
-/**
- * CHÚ GIẢI MÀU (KHUNG-LOI, TST-05) — sinh từ CHÍNH bảng màu của chip (`MAU_O_MT` cho FT, `MAU_TT` cho lớp thường), không viết tay chữ màu
- * (trước: "Xám = đã thi xong" trong khi chip xong là xanh lá). `cho-cham-cu` cùng màu `cho-cham` → bỏ trùng.
- */
-export function ChuGiaiMau({ ft }: { ft: boolean }) {
-  const mau: [string, string, string][] = ft
-    ? (Object.keys(MAU_O_MT) as KieuOMt[]).filter((k) => k !== 'cho-cham-cu').map((k) => [k, MAU_O_MT[k], NHAN_KIEU_O_MT[k]])
-    : [['chua', 'border-dashed border-muted-line bg-transparent text-muted', 'Chưa xếp'], ['co', 'bg-doing-bg text-doing border-doing-line', 'Đã xếp'],
-      ...(Object.keys(MAU_TT) as (keyof typeof MAU_TT)[]).map((k): [string, string, string] => [k, MAU_TT[k].mau, NHAN_TT[k]])];
+/** Ô MT KẾ TIẾP chưa xếp: nút viền đứt "Xếp MTn" (QL); GV chỉ xem: chữ mờ "chưa xếp". MT sau nữa: "–" (`OTrong`). */
+export function NutXepO({ chu, title, onMo }: { chu: string; title?: string; onMo?: (el: HTMLElement) => void }) {
+  if (!onMo) return <span className="block px-2 text-xs text-faint" title={title}>{t('chưa xếp')}</span>;
   return (
-    <span className="flex flex-wrap gap-1.5">
-      {mau.map(([k, lop, nhan]) => <span key={k} className={`inline-flex h-5 items-center rounded-md border px-1.5 text-xs font-semibold ${lop}`}>{nhan}</span>)}
-    </span>
-  );
-}
-
-function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
-  ct?: string | null;
-  c: ChipKH; khaiGiang?: string | null; tongTuan?: number | null;
-  them: { n: number; ds: string } | null; title: string; onMo: (skill: KyNangKH | null, el: HTMLElement) => void;
-}) {
-  const chua = c.trangThai === 'chua-xep' || c.tuan === null;
-  /* OV-11a: Không dự thi — chữ riêng, không ✓ (không phải "đã thi"). */
-  const tt = c.khongDuThi ? { mau: 'border-muted-line bg-muted-bg text-muted', duoi: 'vắng', nghia: 'Vắng — không dời, không nợ' } : MAU_TT[c.trangThai];
-  const mau = chua ? 'border-dashed border-muted-line bg-transparent text-muted' : tt?.mau ?? 'bg-doing-bg text-doing border-doing-line';
-  const chu = c.kyNang.map((k) => tenMonNgan(ct, k)).join(' ');
-  return (
-    <button type="button" className={`${CHIP_CLS} ${mau} text-left`} title={tt?.nghia ? `${title}\n${tt.nghia}` : title} onClick={(e) => onMo(c.kyNang[0], e.currentTarget)}>
-      <span className="flex min-w-0 items-center truncate font-bold tracking-wide">
-        {chu}{!chua && tt?.duoi && <span className="font-normal"> · {tt.duoi}</span>}
-      </span>
-      <span className="whitespace-nowrap tabular-nums">
-        {chua ? 'chưa xếp' : tuanNamChu(c.tuan!)}
-        {c.trangThai === 'xong' && !c.khongDuThi && <span aria-hidden title="Đã làm bài"> ✓</span>}
-        {!chua && <NhanKhoa tuan={c.tuan} khaiGiang={khaiGiang} tongTuan={tongTuan} />}
-        {them && <span className="ml-1 text-[12px]" title={them.ds}>+{them.n}</span>}
-      </span>
+    <button type="button" onClick={(e) => onMo(e.currentTarget)} title={title} className={`${O_LUOI} group items-start hover:bg-transparent`}>
+      <span className="inline-flex h-[26px] items-center whitespace-nowrap rounded-md border border-dashed border-[var(--o-nhap-vien)] px-2.5 text-xs font-medium text-dim group-hover:border-[var(--accent-line)] group-hover:text-[var(--text)]">{chu}</span>
     </button>
   );
 }
 
-/** Viền ô đợt FT theo trạng thái chính (mockup V5 `dieu-chinh-cuoi.html` `.o-kh`): khung viền, không chip nền màu; trạng thái còn ghi bằng chữ. */
-const VIEN_O: Partial<Record<KieuOMt, string>> = {
-  xong: 'border-ok-line', 'dang-thi': 'border-doing-line shadow-[inset_3px_0_0_rgb(var(--doing-rgb))]', 'tre-cham': 'border-bad-line bg-bad-bg',
-  'con-viec': 'border-soon-line', 'chua-lich': 'border-dashed border-muted-line',
-};
-const CHU_TT: Partial<Record<KieuOMt, string>> = { xong: t('xong'), 'dang-thi': t('Tuần này'), 'co-lich': t('đã xếp'), 'chua-lich': t('chưa xếp') };
-const MAU_TT_O: Partial<Record<KieuOMt, string>> = { xong: 'text-ok', 'dang-thi': 'text-doing', 'tre-cham': 'text-bad', 'con-viec': 'text-soon' };
-/** Nhóm "chính" của ô — việc gấp nhất quyết viền + dòng trạng thái. */
-const UU_TIEN: KieuOMt[] = ['tre-cham', 'con-viec', 'dang-thi', 'cho-cham', 'cho-cham-cu', 'co-lich', 'chua-lich', 'xong'];
+/** Ô không có gì để làm (MT sau MT kế tiếp, Checkpoint em không có). */
+export const OTrong = ({ title }: { title?: string }) => <span className="block px-2 text-faint" title={title}>–</span>;
 
-/**
- * Ô MỘT ĐỢT của lớp FT ở lưới Kế hoạch Test (UI-CHAM-TEST theo mockup V5 khu a, thay chip màu PR-OMT C6): MỘT khung viền, ba dòng —
- * kỹ năng (nhóm khác trạng thái / tuần ghi kèm chữ việc: `L R W · S vắng`) · tuần `W3 SEP 2026` · trạng thái (`Tuần này`, `đã xếp`, `trễ chấm`…;
- * đợt xong = `✓ / ✗ Overall 6.0`). Màu + chữ việc vẫn theo `nhomKyNang` (cùng luật ô MT). Bấm mở hộp cả đợt.
- */
-export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, ovr, kyVong, onMo }: {
-  so: number; kn: KnO; cu: boolean; homNay: string; ct?: string | null; chon: boolean;
-  /** Đợt xong: Overall + kỳ vọng của lượt (máy chủ `luoiFT`). */
-  ovr?: number; kyVong?: number | null;
-  onMo: (el: HTMLElement) => void;
-}) {
-  const nhom = nhomKyNang(kn, homNay, ct, cu);
-  /* C20: tuần của nhóm (nhóm "xong" = tuần muộn nhất) đọc lại từ `kn`, cùng luật gom của `nhomKyNang`. */
-  const tuanCua = (ks: readonly KyNangKH[]) => ks.map((k) => kn[k]?.tuan).filter((x): x is string => !!x).sort().pop() ?? null;
-  if (!nhom.length) return <span className="block text-center text-[12px] text-slate-500" title="Đợt này không có kỹ năng nào">—</span>;
-  const chinh = [...nhom].sort((a, b) => UU_TIEN.indexOf(a.kieu) - UU_TIEN.indexOf(b.kieu))[0];
-  const tuan = chinh.tuan ? tuanNamChu(tuanCua(chinh.kyNang)) : null;
-  const dat = ovr !== undefined && kyVong != null ? ovr >= kyVong : null;
-  /* LUAT-NX-MT: dòng nhắc nhỏ — "S vắng W3 SEP" (dời do vắng, tuần cũ) · "W sau MT3" (lệch thứ tự giữa các MT, không chặn). */
-  const ghi = KY_NANG_KE_HOACH.flatMap((k) => {
-    const o = kn[k];
-    if (!o) return [];
-    const ten = tenMonNgan(ct, k);
-    return [o.doiTu ? `${ten} ${chuDoiVang(o.doiTu, homNay)}` : null, o.sauMt ? t('{ten} sau MT{n}', { ten, n: o.sauMt }) : null].filter((x): x is string => !!x);
-  });
-  const tt = chinh.kieu === 'xong' && ovr !== undefined
-    ? `${dat === null ? '' : dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(ovr)}`
-    : chinh.viec ? chuViec(chinh.viec) : CHU_TT[chinh.kieu] ?? null;
-  return (
-    <button type="button" onClick={(e) => onMo(e.currentTarget)} title={nhom.map((g) => g.title).join('\n')}
-      aria-label={`MT${so}, ${nhom.map((g) => g.doc).join('; ')}${ovr !== undefined ? `, Overall ${fmtBand(ovr)}` : ''}${ghi.length ? `, ${ghi.join(', ')}` : ''}`}
-      className={`mx-auto flex w-full max-w-[168px] flex-col items-start gap-px rounded-md border bg-[var(--surface)] px-2 py-1 text-left max-sm:min-h-[44px] ${dat === false && chinh.kieu === 'xong' ? 'border-bad-line' : VIEN_O[chinh.kieu] ?? 'border-[var(--line)]'} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
-      <span className="flex flex-wrap gap-x-1.5 text-xs font-bold tracking-wide text-slate-300">
-        {nhom.map((g, i) => (
-          <span key={g.ten}>{i > 0 && <span aria-hidden className="font-normal opacity-60">· </span>}{g.ten}
-            {g !== chinh && g.viec && <span className="font-medium"> {g.viec}</span>}
-            {g !== chinh && g.kieu === 'xong' && <span aria-hidden> ✓</span>}
-            {g !== chinh && g.tuan && chinh.tuan && tuanCua(g.kyNang) !== tuanCua(chinh.kyNang) && <span className="font-medium"> {g.tuan}</span>}</span>
-        ))}
-      </span>
-      <span className="whitespace-nowrap text-sm font-bold tabular-nums text-slate-100">{tuan ?? t('chưa xếp')}</span>
-      {tt && <span className={`text-xs font-semibold tabular-nums ${dat === false && chinh.kieu === 'xong' ? 'text-bad' : MAU_TT_O[chinh.kieu] ?? 'text-slate-400'}`}>{tt}</span>}
-      {ghi.length > 0 && <span className="text-xs tabular-nums text-slate-400">{ghi.join(' · ')}</span>}
-    </button>
-  );
+/** Ô đợt chỉ còn lượt đã huỷ: "đã huỷ"; bấm mở hộp Khôi phục (QL). */
+export function OHuy({ onMo }: { onMo?: (el: HTMLElement) => void }) {
+  const noi = <span className="text-xs font-semibold text-dim">{t('đã huỷ')}</span>;
+  return onMo
+    ? <button type="button" onClick={(e) => onMo(e.currentTarget)} title={t('Bấm để xem / khôi phục')} className={O_LUOI}>{noi}</button>
+    : <span className={`${O_LUOI} hover:bg-transparent`}>{noi}</span>;
 }
-
-/** Chữ việc trên ô ("chờ" → "chờ chấm", "trễ" → "trễ chấm") — câu đủ như dòng kỹ năng hộp một đợt. */
-const chuViec = (v: string) => (v === t('chờ') ? t('chờ chấm') : v === t('trễ') ? t('trễ chấm') : v);

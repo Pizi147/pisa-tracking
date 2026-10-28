@@ -123,7 +123,8 @@ export async function runPrLuatNxMtTests(t: YThucTestKit) {
     assert(d.chuDoiVang('W3 SEP', '2026-10-01') === 'vắng W3\u00a0SEP', d.chuDoiVang('W3 SEP', '2026-10-01'));
     assert(d.chuDoiVang('2026-09-14', '2026-10-01') === 'vắng W3\u00a0SEP' && d.chuDoiVang('W3 SEP 2026', '2026-10-01') === 'vắng W3\u00a0SEP', 'ISO / mã có năm');
     assert(d.chuDoiVang(null, '2026-10-01') === null, 'không dời');
-    for (const f of ['web/src/modules/test/keHoach/ChipKyNang.tsx', 'web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/fasttrack/ODiemLon.tsx']) {
+    /* KHT-GON (mockup #659): ô Kế hoạch Test gộp dòng vắng trong `oGon` (cùng chữ "vắng {tuan}"), không gọi chuDoiVang từng kỹ năng. */
+    for (const f of ['web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/fasttrack/ODiemLon.tsx']) {
       assert(/chuDoiVang\(/.test(nguon(f)), `${f} chưa dùng chuDoiVang`);
     }
   });

@@ -677,14 +677,13 @@ export async function runPrMtbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 9 — lưới Kế hoạch Test FT dùng Ô MT (Q1 = A)
-  check('MTb (T9) · quét nguồn: lưới FT vẽ <OMt (mở hộp, kyNangDau null, chưa tới lượt không bấm, rộng 168); ChipKyNang chỉ còn lớp thường', () => {
+  check('MTb (T9) · quét nguồn (KHT-GON, mockup #659): lưới vẽ ODotGon theo oGon (mở hộp, kyNangDau null); MT kế tiếp "Xếp MTn", MT sau nữa "–"; cột 180 / 250', () => {
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
-    assert(/import \{ OMt \} from '[^']*ui\/OMt\.tsx'/.test(l) && /<OMt\b/.test(l), 'LuoiKeHoach chưa vẽ <OMt');
-    assert(/loai === 'ft' && c\.dot\.loai === 'ft'/.test(l.slice(0, l.indexOf('<OMt'))), '<OMt không nằm trong nhánh FT');
-    assert(/kyNangDau: null/.test(l) && /Xếp MT trước rồi mới tới/.test(l), 'thiếu mở hộp / ô chưa tới lượt');   // PR-OMT C6: đợt đã có lịch = ChipDotFT, chưa có đợt vẫn <OMt
-    assert(/loai === 'ft' \? 168 : 208/.test(l), 'rongDot FT phải 168');
+    assert(/<ODotGon\b/.test(l) && /oGon\(dot\.kn, homNay, ct\)/.test(l), 'LuoiKeHoach chưa vẽ ODotGon theo oGon');
+    assert(/kyNangDau: null/.test(l) && /Xếp MT trước rồi mới tới/.test(l) && /attemptNo === \(h as HangFT\)\.soKeTiep/.test(l), 'thiếu mở hộp / chỉ MT kế tiếp có nút xếp');
+    assert(/loai === 'ft' \? 180 : 250/.test(l), 'rongDot FT 180, lớp thường 250');
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
-    assert(!c.includes('+ xếp') && !/chuaToiLuot|lichSu|dangDo|duongDotTest|NhanCu/.test(c), 'ChipKyNang còn nhánh FT');
+    assert(!/#[0-9a-fA-F]{3,8}\b/.test(c) && !/duongDotTest|NhanCu/.test(c), 'ô gọn: màu token, không liên kết thẳng');
   });
 
   /* Rà code #MTb: ô L/R chỉ có band — mở "Sửa điểm" rồi Lưu không được đổi thành xoá điểm (giá trị đầu giữ band, như RawScoreInput). */
@@ -894,10 +893,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/<KhungPanel tieuDe="Xếp lịch Mock Test" rong="toan"/.test(p), 'panel rong="toan"');
     assert(/sm:flex-nowrap/.test(p) && /sm:w-\[300px\]/.test(p), 'Mock Test nowrap, cột Sẽ xếp 300px');
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
-    assert(/<ChipDotFT\b/.test(l) && /dot\.attemptId !== null/.test(l) && /<OMt\b/.test(l), 'lưới FT: ChipDotFT + OMt');
-    assert(/loai === 'ft' \? 168 : 208/.test(l), 'cột đợt FT 168 (tối đa theo C6)');
+    assert(/<ODotGon\b/.test(l) && /dot\.attemptId !== null/.test(l), 'lưới: ODotGon cho đợt đã có (KHT-GON)');
+    assert(/loai === 'ft' \? 180 : 250/.test(l), 'cột đợt FT 180 (ô môn theo dòng tuần, chủ SP 28/10)');
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
-    assert(/export function ChipDotFT\b/.test(c) && /nhomKyNang\(/.test(c) && /VIEN_O\[chinh\.kieu\]/.test(c) && !/#[0-9a-fA-F]{3,8}\b/.test(c), 'ChipDotFT theo nhomKyNang, màu token (UI-CHAM-TEST: khung viền theo trạng thái)');
+    assert(/export function ODotGon\b/.test(c) && /VACH\[o\.tt\.loai\]/.test(c) && !/#[0-9a-fA-F]{3,8}\b/.test(c), 'ODotGon: vạch theo trạng thái, màu token');
   });
 
 }

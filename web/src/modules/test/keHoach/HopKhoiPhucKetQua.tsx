@@ -97,7 +97,7 @@ export function HopKhoiPhucMt({ attemptId, attemptNo, onDong, onXong, onXepMoi, 
       footer={(
         /* 375: link + 3 nút xuống dòng trong khung, không tràn ngang (footer của Modal không tự xuống dòng). */
         <div className="flex w-full flex-wrap items-center justify-end gap-2">
-          {d?.khoiPhuc.chan && moi !== pathname && <Link className="link mr-auto text-xs" to={moi} onClick={onDong}>{t('Mở {mt} mới ↗', { mt })}</Link>}
+          {d?.khoiPhuc.chan && moi !== pathname && <Link className="link mr-auto text-xs" to={moi} onClick={onDong}>{t('Mở {mt} mới ›', { mt })}</Link>}
           <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong} disabled={busy}>{t('Đóng')}</button>
           {duocLam && onXepMoi && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onXepMoi} disabled={busy}>{t('Xếp {mt} mới', { mt })}</button>}
           {duocLam && (
