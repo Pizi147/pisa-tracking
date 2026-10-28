@@ -96,7 +96,7 @@ function loadViec(id: number): any {
  * Ghi được = TVV của em · TVV cùng chi nhánh làm thay (chủ SP 22/10 — như Chọn bước tiếp, `coQuyenBuocTiep`; lịch sử ghi người làm) · QL / Quản trị trong
  * phạm vi em. CX, GV, GVCN: không. Người GIỮ việc (việc của tôi, chuông) vẫn chỉ một: TVV của em / QL khi em chưa có TVV.
  */
-const coTheGhi = (p: Principal, v: any): boolean =>
+export const coTheGhi = (p: Principal, v: { consultant_user_id: number | null; student_id: number }): boolean =>
   v.consultant_user_id === p.userId || coQuyenBuocTiep(p, v.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: v.student_id });
 function requireGhi(p: Principal, v: any): void {
   if (!coTheGhi(p, v)) throw forbidden('Chỉ TVV hoặc Quản lý chi nhánh của em ghi được kết quả báo phụ huynh.');
@@ -136,6 +136,10 @@ function noiDungXuLy(measureId: number | null, note: string | null): string | nu
   return [cau, note?.trim()].filter(Boolean).join('. ') || null;
 }
 
+/** Một tên cho trạng thái việc Báo PH — panel (`xemViecBaoPh`) và hàng em ở tab Ý thức lớp (`bangYThucLop`) đọc chung. */
+export const nhanTrangThaiBaoPh = (trangThai: string, coLan: boolean): string =>
+  trangThai === 'xong' ? 'Đã báo PH' : trangThai === 'bo' ? 'Đã bỏ' : coLan ? 'Chưa liên hệ được' : 'Chưa báo';
+
 export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
   const v = loadViec(id);
   const ghi = coTheGhi(p, v);
@@ -149,7 +153,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
   const the = v.measure_id
     ? db().prepare(`SELECT ly_do FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(v.measure_id) as { ly_do: string | null } | undefined
     : undefined;
-  const nhanTrangThai = v.trang_thai === 'xong' ? 'Đã báo PH' : v.trang_thai === 'bo' ? 'Đã bỏ' : lan.length ? 'Chưa liên hệ được' : 'Chưa báo';
+  const nhanTrangThai = nhanTrangThaiBaoPh(v.trang_thai, lan.length > 0);
   return {
     id, measureId: v.measure_id ?? null, studentId: v.student_id, ten: v.full_name, nhan: v.nhan, tieuDe: `Báo PH · ${v.nhan} · ${v.full_name}`,
     han, quaHan: v.trang_thai === 'mo' && han < homNay, trangThai: v.trang_thai, nhanTrangThai,

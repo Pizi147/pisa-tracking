@@ -4,6 +4,7 @@ import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
 import { KhungPanel, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -11,7 +12,7 @@ import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
-  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, deadlineView, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat,
+  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
@@ -318,13 +319,14 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang }: {
 function DongYeuCau({ yc, dang, onMo, chon }: {
   yc: TheYeuCauDto; dang: boolean; onMo: () => void; chon: { checked: boolean; onChange: (v: boolean) => void } | null;
 }) {
-  const { homNay, ngan } = useNgayNghiepVu();
+  const { ngan } = useNgayNghiepVu();
   const cho = yc.trangThai === 'cho';
-  const hanV = cho && yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
-  const han = !hanV ? null : hanV.tone === 'overdue' ? `⚠ ${t('Quá hạn · {daysOverdue} ngày', { daysOverdue: hanV.daysOverdue })}` : hanV.homNay ? t('Hạn hôm nay') : hanV.han;
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
+  const tieuDeDu = [dich(yc.tieuDe), yc.hocVien, yc.lop].filter(Boolean).join(' · ');
+  /* CV-CHO-DUYET-375 (mockup V5 `con-lai.html` §3 `.the-duyet`, luật hình ảnh 28/10): đệm 12 / 16, nhãn loại 12 / 700 mờ (không IN HOA — luật K-CHU-3), chip hạn `ChipHan` (mẫu V7 cong-viec-2)
+     (badge tiến độ `.bd-td`) bên phải, tiêu đề 14 / 700 cả tên em · lớp, dòng phụ 12 mờ; cách dòng 4 px. */
   return (
-    <li className={`flex items-start gap-2 border-b px-3 py-2.5 last:border-b-0 ${dang ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : 'bam'}`}
+    <li className={`flex items-start gap-2 border-b px-4 py-3 last:border-b-0 ${dang ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : 'bam'}`}
       style={{ borderColor: 'var(--line)' }}>
       {chon && (
         <label className="relative mt-1 inline-flex shrink-0 cursor-pointer max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']">
@@ -333,15 +335,19 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
         </label>
       )}
       <button type="button" className="min-h-[44px] min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left sm:min-h-0" aria-current={dang || undefined} onClick={onMo}>
-        <span className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-[12px] font-semibold text-slate-400">{dich(yc.nhanPhanLoai)}</span>
-          {cho ? han && <span className={`shrink-0 text-[12px] font-semibold tabular-nums ${hanV!.tone === 'overdue' ? 'text-late' : hanV!.ganHan ? 'text-soon' : 'text-slate-400'}`}>{han}</span>
+        <span className="flex min-h-[22px] items-center justify-between gap-2">
+          <span className="min-w-0 truncate text-[12px] font-bold text-slate-400">{dich(yc.nhanPhanLoai)}</span>
+          {cho ? <span className="shrink-0"><ChipHan loai="duyet" han={yc.hanDuyet} /></span>
             : <span className="flex shrink-0 items-center gap-1.5"><NhanTrangThai t={tt.t} />{yc.xuLyLuc && <span className="text-[12px] text-slate-400">{ngan(yc.xuLyLuc)}</span>}</span>}
         </span>
-        <b className="block truncate text-sm font-semibold text-slate-100">
-          {dich(yc.tieuDe)}{[yc.hocVien, yc.lop].filter(Boolean).length ? <span className="font-normal text-slate-300"> · {[yc.hocVien, yc.lop].filter(Boolean).join(' · ')}</span> : null}
+        {/* Điện thoại: xuống dòng (như #647 / #649), không cắt; từ `sm` một dòng `truncate` + `title` đủ chữ. Mã lớp không ngắt giữa ("MB FT 101"),
+            "·" dính chữ trước (không đứng đầu dòng); tên em dài vẫn xuống dòng, không tràn khung. */}
+        <b className="mt-1 block break-words text-sm font-bold text-slate-100 sm:truncate" title={tieuDeDu}>
+          {dich(yc.tieuDe)}{[yc.hocVien, yc.lop].filter(Boolean).map((x, i) => (
+            <span key={i}>{'\u00a0· '}<span className={x === yc.lop ? 'whitespace-nowrap' : undefined}>{x}</span></span>
+          ))}
         </b>
-        {yc.dong[0] && <span className="block truncate text-[12px] text-slate-400">{dich(yc.dong[0])}</span>}
+        {yc.dong[0] && <span className="mt-1 block break-words text-[12px] text-slate-400 sm:truncate" title={dich(yc.dong[0])}>{dich(yc.dong[0])}</span>}
       </button>
     </li>
   );

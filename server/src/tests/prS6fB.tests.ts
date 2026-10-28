@@ -152,11 +152,6 @@ async function runTask13(t: YThucTestKit, d: any) {
     assert(d.soSanhLop({ code: 'MB FT 9' }, { code: 'MB FT 10' }) < 0, 'soSanhLop');
   });
 
-  check('S6F-b (13) · "Cách tính": bấm chỉ MỞ (đóng bằng Esc / rời chuột / mất focus) — không đảo trạng thái', () => {
-    const s = doc('web/src/ui/SoLieu.tsx');
-    assert(!s.includes('setHowTo(!howTo)') && /onClick=\{\(\) => setHowTo\(true\)\}/.test(s), 'SoLieu: onClick còn đảo howTo');
-  });
-
   check('S6F-b (13) · chữ theo mockup 24 D1 / 26: ghim chương "Progress Test · 3/4 môn"; chân "Lên FT + bổ trợ S"; chú giải "dự kiến"; ô Sắp tới em Tạm dừng "giữ lịch · Quản lý dời nếu cần"', () => {
     const g = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 1, soDat: 3, soYeuCau: 4, soCoDiem: 4 });
     assert(g.chuong === 'Progress Test · 3/4 môn' && g.chu === 'Progress · 3/4 môn đạt', JSON.stringify(g));
@@ -245,9 +240,6 @@ async function runTask9(t: YThucTestKit, d: any) {
     assert(dong.trangThai === 'qua-han' && dong.han?.ngay === han && dong.han?.loai === 'chot-len-ft', JSON.stringify({ t: dong.trangThai, han: dong.han }));
   });
 
-  check('S6F-b (9) · bảng GV chi nhánh: không hàng GV nhưng có "Chưa phân công" → không Empty (Σ = ô)', () => {
-    assert(/if \(!data\.hang\.length && !data\.chuaPhanCong\) return <Empty/.test(doc('web/src/modules/giaoVien/BangGiaoVienChiNhanh.tsx')), 'BangGiaoVienChiNhanh Empty');
-  });
 
   check('S6F-b (9) · Q21 ghi bù đúng Thứ Hai: PA hạn 24/08, ghi 07/09 → 3 nghĩa vụ (2 trễ, 1 đúng) = "ghi bù 3 tuần"', () => {
     const caseId = get(`SELECT id FROM sos_cases WHERE status != 'done' ORDER BY id LIMIT 1`).id as number;

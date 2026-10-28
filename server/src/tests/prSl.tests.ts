@@ -58,13 +58,14 @@ export async function runPrSlTests(t: YThucTestKit) {
   });
 
   check('SL-7 · I4: GvCham, hộp 4 tiêu chí, Nhận xét, Xoá vi phạm dùng KhungPanel; StudentDetailPage hết import Modal', () => {
+    /* 6c-2 (M6 V11 / V19 "không panel chồng panel", PTA 28/10): hộp xác nhận ngắn (Xoá vi phạm) quay về hộp nhỏ `ConfirmDialog` — thay luật I4 cũ. */
     for (const f of ['web/src/modules/cham/GvCham.tsx', 'web/src/modules/fasttrack/ScoreEntry.tsx', 'web/src/modules/fasttrack/NhanXet.tsx',
-      'web/src/modules/yThuc/DeleteViolationConfirm.tsx', 'web/src/modules/students/StudentDetailPage.tsx']) {
+      'web/src/modules/students/StudentDetailPage.tsx']) {
       const s = doc(f);
       assert(!/from '..\/..\/ui\/Drawer.tsx'/.test(s) && !/<Modal\b|<ConfirmDialog\b/.test(s), `${f}: còn Modal/ConfirmDialog`);
     }
     /* OV-4b: hộp 4 tiêu chí (ScoreEntry) và hộp nhận xét điện thoại (NhanXet) đã thay bằng hộp nhập điểm neo ô — không còn panel. */
-    for (const f of ['web/src/modules/cham/GvCham.tsx', 'web/src/modules/yThuc/DeleteViolationConfirm.tsx']) {
+    for (const f of ['web/src/modules/cham/GvCham.tsx']) {
       assert(/<KhungPanel\b[^>]*longTrong/.test(doc(f)), `${f}: chưa sang KhungPanel (longTrong — mở được từ trong panel khác)`);
     }
   });

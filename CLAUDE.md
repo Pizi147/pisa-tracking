@@ -22,6 +22,8 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Mockup là tham chiếu. GIỮ mọi tính năng / thao tác đã có (V4 đã duyệt: Nhập điểm, + Case, ⋯, Xuất, Dán Excel…) và sửa đồng bộ CẢ phần mockup không vẽ
   (panel Công việc, hộp thông tin, popover, chân lưu, rỗng / lỗi) theo luật đã chốt; xung đột mockup / luật / tính năng cũ → ghi [XM], hỏi PTA Plan, không tự bỏ.
 - khop-khac.md của PR có bảng thao tác TRƯỚC → SAU PR (mất thao tác nào phải có lý do). Chỉnh nhỏ cho hợp lý / đẹp hơn được.
+- **Hài hoà hai phía (chủ SP 28/10, mới nhất):** HÌNH ẢNH (màu, nền, viền, độ đậm, cỡ chữ, khoảng cách, cân đối, phân cấp) theo mockup SÁT;
+  TÍNH NĂNG (thao tác, vị trí nút, quyền, luồng, dữ liệu) theo luật đã chốt + plan, giữ thao tác cũ. Lệch hình ảnh không có lý do = lỗi, không ghi "KHÁC" cho tiện.
 
 ## Luật cứng của chủ sản phẩm (08/10)
 - Nghĩ tới **đầu ra** trước (em có lịch, có điểm…). Việc không ảnh hưởng đầu ra thì KHÔNG thêm bước, câu hỏi, trạng thái hay điều kiện chặn.

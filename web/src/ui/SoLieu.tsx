@@ -1,12 +1,12 @@
-import { Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Fragment, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, deadlineView, maView, metricById, nhanQuaHan, thamSoCt, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
-import { XemCha, useMoSoLieu, useThamSoUrl, useXem } from '../lib/quayLai.ts';
+import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
-import { CanLam, NutChu, NutHoanTac } from './KhuonViec.tsx';
+import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
 import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
@@ -47,6 +47,8 @@ export type DongSoLieu = {
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ; có nhóm thì panel vẽ dải nhóm và dòng mở view Case trong cùng panel. */
   nhom?: NhomCaseChuaChot | null;
+  /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
+  diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** UI-HO-SO-GV: dòng kết quả — điểm từng kỹ năng (`cua` = kỹ năng GV phụ trách), Overall, mốc so, kết luận (tab Chưa đạt · Đạt). */
   diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%'; vuot?: boolean;
 };
@@ -122,6 +124,20 @@ function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
   return v.tone === 'overdue' ? <span className="font-semibold tabular-nums text-late">⚠ {nhanQuaHan(v.daysOverdue)}</span>
     : <span className={`tabular-nums ${v.ganHan ? 'font-semibold text-soon' : ''}`}>{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
 }
+
+/** 6c-2 (critique 375): các đoạn ngăn "·", mỗi đoạn không ngắt giữa — xuống dòng chỉ ở giữa hai đoạn (không tách "MB / FT 101", "Chưa / đạt"). */
+function Doan({ ds }: { ds: ReactNode[] }) {
+  /* `<wbr />` sau "·": chỗ ngắt dòng duy nhất (đoạn nowrap sát nhau không tự ngắt) — "·" ở cuối dòng trên, không mồ côi đầu dòng. */
+  return <>{ds.filter((x) => x || x === 0).map((x, i) => (
+    <Fragment key={i}>{i > 0 && <><span aria-hidden className="mx-1.5 text-slate-500">·</span><span className="sr-only">, </span><wbr /></>}<span className="whitespace-nowrap">{x}</span></Fragment>
+  ))}</>;
+}
+/** 6c-2 (critique vòng 3): MỘT cách ghi "điểm so kỳ vọng" cho mọi dòng panel số — "[nhãn] ✗ 5.5 · kỳ vọng 6.5 · thiếu 1.0" (✓ / ✗ + màu `DiemKq`). */
+const doanDiem = (d: NonNullable<DongSoLieu['diemCase']>): ReactNode[] => [
+  <>{d.nhan && <>{d.nhan} </>}<DiemKq diem={d.so} kyVong={d.kyVong} /></>,
+  d.kyVong != null && t('kỳ vọng {kv}', { kv: d.kyVong.toFixed(1) }),
+  d.kyVong != null && d.so < d.kyVong && t('thiếu {n}', { n: (d.kyVong - d.so).toFixed(1) }),
+];
 
 /** M6 6b-2 (luật chữ đầu mục): vạch 3 px của dải nhóm theo BƯỚC — token sẵn có, màu luôn đi kèm tên nhóm (G14 sửa, chủ SP 27/10). */
 const VACH_NHOM: Record<NhomCaseChuaChot, string> = {
@@ -252,28 +268,46 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     );
   }
 
+  /* 6c-2 (PTA 28/10, "một danh sách một kiểu mở" + tách nút làm việc / link xem hồ sơ): MỌI dòng có ↗ CÙNG một chỗ — cuối dòng 1 — là link đổi trang
+     tới hồ sơ; thân dòng chỉ bấm được khi có việc mở tại chỗ; dòng chỉ đọc thì thân không bấm. Không còn dòng mà cả dòng là link. */
+  const nutHoSo = (r: DongSoLieu) => (
+    <Link to={r.href} aria-label={t('Mở hồ sơ {ten}', { ten: r.em?.ten ?? r.title })} title={t('Mở hồ sơ {ten}', { ten: r.em?.ten ?? r.title })}
+      className="flex min-h-[44px] min-w-[44px] shrink-0 justify-center pt-2.5 text-[15px] leading-6 text-slate-400 no-underline hover:text-slate-100 sm:min-w-[40px]">
+      <span aria-hidden>↗</span>
+    </Link>
+  );
+
   /* M6 6b-2 (mockup ① view gốc): dòng Case = một nút — em 15 / 500 · tên Case; lớp · việc tiếp 13; cột phải người giữ việc ("Bạn") + hạn. Bấm → view Case. */
   const veDongCase = (r: DongSoLieu & { xong?: string }) => {
     const v = r.viec ?? null;
     const chon = mo === r.id;
     return (
-      <li key={r.id} data-dong={r.id} className="scroll-mt-12 border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <button type="button" aria-current={chon || undefined} onClick={() => moCase(r)} style={chon ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : undefined}
-          className="flex min-h-[44px] w-full appearance-none flex-col gap-0.5 border-0 bg-transparent px-4 py-2.5 text-left hover:bg-[color:var(--accent-soft)]">
+      <li key={r.id} data-dong={r.id} className="flex scroll-mt-12 border-t first:border-t-0" style={{ borderColor: 'var(--line)', ...(chon ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : {}) }}>
+        <button type="button" aria-current={chon || undefined} onClick={() => moCase(r)}
+          className="flex min-h-[44px] min-w-0 flex-1 appearance-none flex-col gap-0.5 border-0 bg-transparent py-2.5 pl-4 pr-1 text-left hover:bg-[color:var(--accent-soft)]">
           <span className="flex w-full items-baseline gap-3">
             <span className={`min-w-0 flex-1 text-[15px] font-medium leading-snug ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>
-              {r.em?.ten ?? r.title}{r.em && r.title && <span className="text-[13px] font-normal text-slate-400"> · {r.title}</span>}
+              {/* 6c-2 (mockup khu K ②): dòng 1 = em · Case · lớp · lượt; dòng 2 chỉ điểm. */}
+              {r.em?.ten ?? r.title}
+              {/* " · ": "·" dính chữ trước (không đứng đầu dòng ở 375); lớp, lượt không ngắt giữa ("MB FT 101"); tên Case dài được xuống dòng. */}
+              <span className="text-[13px] font-normal text-slate-400">{[r.em && r.title, r.lop, r.diemCase?.luot].filter(Boolean).map((x, i) => (
+                <Fragment key={i}><span aria-hidden>{' · '}</span><span className="sr-only">, </span><span className={x === r.title ? undefined : 'whitespace-nowrap'}>{x}</span></Fragment>
+              ))}</span>
             </span>
             {/* Người giữ việc (khu K ③): "Bạn" khi chính người xem phụ trách; không thì tên người phụ trách. */}
             <span className="shrink-0 text-right text-[13px] text-slate-300">{r.nguoiId != null && r.nguoiId === toi ? <b className="font-semibold">{t('Bạn')}</b> : r.nguoi ?? t('Chưa có người phụ trách')}</span>
           </span>
           <span className="flex w-full flex-wrap items-center gap-x-3 gap-y-1">
             <span className="min-w-0 flex-1 text-[13px] leading-snug text-slate-400">
-              {r.xong ? <>{r.lop && <>{r.lop} · </>}<b className="font-semibold text-ok">✓ {r.xong}</b></> : [r.lop, v ? dich(v.chu) : r.tinhTrang ? dich(r.tinhTrang) : null].filter(Boolean).join(' · ')}
+              {/* 6c-2 (#632 XM-1, mockup khu K ②): dòng 2 = "✗ 5.5 · kỳ vọng 6.5 · thiếu 1.0" (✓ / ✗ + chữ, không chỉ màu); mỗi đoạn không ngắt giữa (375).
+                  Không tên việc / tình trạng — dải nhóm đã nói bước. */}
+              {r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b>
+                : r.diemCase && <Doan ds={doanDiem(r.diemCase)} />}
             </span>
             {!r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
           </span>
         </button>
+        {nutHoSo(r)}
       </li>
     );
   };
@@ -300,26 +334,63 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     const dong2 = r.em || r.ngCanh
       ? [r.em?.ten, r.lop, r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh, r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
       : [r.sub];
+    const dong2Chu = dong2.some(Boolean) && (
+      <span className="text-[13px] leading-snug text-slate-400">
+        {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{i === 0 && r.em ? <b className="font-bold text-slate-200">{x}</b> : x}</span>)}
+      </span>
+    );
+    /* 6c-2 (bảng kê mục 1 [RỖNG], mockup M6 khu K ②): dòng người xem KHÔNG làm được thì không mở rộng (trước: mở ra chỉ lặp chữ + "Mở trang ↗") —
+       thân dòng chỉ đọc (không bấm), dòng tự đủ việc · tình trạng · người · hạn; hồ sơ qua ↗ cuối dòng như mọi dòng.
+       Dòng có việc làm được giữ mở rộng (Xác nhận PA tại chỗ / mở việc). */
+    if (!v?.lam && !r.xong) {
+      const chipHan = v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
+      const hanRieng = !chipHan && hanCua(r);
+      const conNguoi = !!r.nguoi && r.nguoiId !== toi && !(r.em || r.ngCanh);   // dòng chỉ `sub`: `dong2` chưa có người phụ trách
+      return (
+        <li key={r.id} data-dong={r.id} className="flex border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-2.5 pl-4 pr-1">
+          <span className="flex w-full items-center gap-2.5">
+            <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-slate-100">
+              {r.em?.ten ?? r.title}
+              {r.em && r.title && <span className="text-[13px] font-normal text-slate-400"> · {r.title}</span>}
+            </span>
+            {chipHan}
+          </span>
+          {r.diemCase && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={doanDiem(r.diemCase)} /></span>}
+          {r.em || r.ngCanh
+            ? <span className="text-[13px] leading-snug text-slate-400"><Doan ds={dong2.slice(1).filter((x) => x !== r.title)} /></span>
+            : r.sub && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={r.sub.split(' · ')} /></span>}
+          {(v || r.tinhTrang || conNguoi || hanRieng) && (
+            <span className="text-[13px] leading-snug text-slate-300">
+              <Doan ds={[v && dich(v.chu), r.tinhTrang && dich(r.tinhTrang), conNguoi && r.nguoi, hanRieng && <HanDong han={hanRieng} loai={r.viec?.loaiHan} />]} />
+            </span>
+          )}
+          {r.diem?.length ? <DiemDong r={r} /> : null}
+          </div>
+          {nutHoSo(r)}
+        </li>
+      );
+    }
     const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
     return (
-      <li key={r.id} data-dong={r.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <button type="button" aria-expanded={r.xong ? undefined : moRong} disabled={!!r.xong} onClick={() => setMo(moRong ? null : r.id)} style={nen}
-          className="flex min-h-[44px] w-full appearance-none flex-col gap-0.5 border-0 bg-transparent px-4 py-2.5 text-left hover:bg-[color:var(--accent-soft)] disabled:hover:bg-transparent">
+      <li key={r.id} data-dong={r.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)', ...nen }}>
+        <div className="flex">
+        <button type="button" aria-expanded={r.xong ? undefined : moRong} disabled={!!r.xong} onClick={() => setMo(moRong ? null : r.id)}
+          className="flex min-h-[44px] min-w-0 flex-1 appearance-none flex-col gap-0.5 border-0 bg-transparent py-2.5 pl-4 pr-1 text-left hover:bg-[color:var(--accent-soft)] disabled:cursor-default disabled:hover:bg-transparent">
           <span className="flex w-full items-center gap-2.5">
             <span className={`min-w-0 flex-1 text-sm font-bold ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>{v ? dich(v.chu) : r.title}</span>
             {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>
               : v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
           </span>
-          {dong2.some(Boolean) && (
-            <span className="text-[13px] leading-snug text-slate-400">
-              {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{i === 0 && r.em ? <b className="font-bold text-slate-200">{x}</b> : x}</span>)}
-            </span>
-          )}
+          {dong2Chu}
           {r.diem?.length ? <DiemDong r={r} /> : null}
         </button>
+        {nutHoSo(r)}
+        </div>
         {moRong && (
-          <div className="flex flex-col gap-3 px-4 pb-4 pt-1" style={nen}>
-            {v?.lam ? (
+          <div className="flex flex-col gap-3 px-4 pb-4 pt-1">
+            {/* 6c-2: chỉ dòng làm được mới mở rộng (dòng chỉ đọc trả sớm ở trên). */}
+            {v?.lam && (
               <CanLam trongDong>
                 {v.loai === 'xac-nhan-pa' && v.pa ? (
                   <div className="flex flex-col gap-1">
@@ -342,16 +413,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
                 </div>
                 {loiDong?.id === r.id && <p role="alert" className="m-0 text-xs font-semibold text-bad">⚠ {loiDong.loi}</p>}
               </CanLam>
-            ) : (
-              /* Không làm được: câu tình trạng (chữ, không khối màu, không nút). */
-              <p className="m-0 text-sm leading-relaxed text-slate-200">
-                {[r.tinhTrang ? dich(r.tinhTrang) : r.sub, r.nguoi].filter(Boolean).join(' · ')}
-                {hanCua(r) && <> · <HanDong han={hanCua(r)!} loai={r.viec?.loaiHan} /></>}
-              </p>
             )}
-            <Link to={r.href} className="link w-fit text-[13px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">
-              {v ? t('Xem hồ sơ') : t('Mở trang')} <span aria-hidden>↗</span>
-            </Link>
           </div>
         )}
       </li>
@@ -418,63 +480,3 @@ export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose, ten }
   );
 }
 
-/**
- * MỖI CON SỐ TỰ GIẢI THÍCH ĐƯỢC (hợp đồng số liệu §3).
- *
- *   <SoLieu id="hv-co-case-mo" giaTri={18} phamVi={{ branchId: 1 }} />
- *
- * Hiển thị: số + tên + đơn vị. Hai hành vi bắt buộc:
- *   · "Cách tính" → đọc THẲNG từ sổ chỉ số (`ChiSo`): câu hỏi, tập đủ điều kiện, quy tắc khử trùng,
- *     mốc thời gian, ngày dữ liệu. Không có chữ giải thích nào nằm riêng trong component này.
- *   · Bấm số → panel bên phải `{n} {đơn vị} — {tên}`, danh sách đúng TẬP ID sinh ra con số (cùng hàm,
- *     cùng quyền, cùng bộ lọc), có đường quay lại.
- *
- * CẤM hiển thị một con số dashboard ngoài `<SoLieu>`: mã không có trong sổ thì KHÔNG vẽ số, để một
- * con số không có định nghĩa không lọt lên màn hình.
- */
-export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, phu, tone }: {
-  id: string; giaTri: number; phamVi?: PhamViSoLieu; rong?: boolean; className?: string; extra?: Record<string, string>;
-  /** Nhãn hiện ở ô khi khác tên trong sổ (plan PR-Pa Q20). "Cách tính" vẫn ghi tên trong sổ. */
-  nhan?: string;
-  /** Một dòng phụ dưới số (G-3). */
-  phu?: ReactNode;
-  tone?: 'danger' | 'warn';
-}) {
-  const cs = metricById(id);
-  const [open, setOpen] = useMoSoLieu(`${id}${extra ? `|${new URLSearchParams(extra)}` : ''}`);
-  const [howTo, setHowTo] = useState(false);
-  const idCachTinh = useId();
-  if (!cs) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id })}</span>;
-  const dv = METRIC_UNIT_LABEL[cs.donVi];
-  const clickable = giaTri > 0;
-  const mau = tone === 'danger' ? '!text-bad' : tone === 'warn' ? '!text-soon' : '';
-  return (
-    <OChiSo className={className} ten={<>
-      {nhan ?? cs.ten}
-      {/* PR-VAI-a (K1-08): "Cách tính" là chú thích NỔI — rê chuột, Tab hoặc bấm; Esc đóng. Không đẩy giãn hàng ô. */}
-      <span className="relative ml-1.5 inline-block" onMouseEnter={() => setHowTo(true)} onMouseLeave={() => setHowTo(false)}>
-        {/* Bấm chỉ MỞ: chạm trên điện thoại phát mouseenter → focus → click, đảo trạng thái thì vừa mở đã đóng. Đóng: Esc, rời chuột, mất focus. */}
-        <button type="button" onClick={() => setHowTo(true)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
-          onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
-          onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
-          aria-label={t('Cách tính')}
-          className="appearance-none bg-transparent border-0 p-0 max-sm:p-3 max-sm:-m-3 cursor-pointer text-sm leading-none text-slate-500 hover:text-slate-300">ⓘ</button>
-        {howTo && (
-          <div id={idCachTinh} role="tooltip" className="card absolute left-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
-            <CachTinh cs={cs} />
-          </div>
-        )}
-      </span>
-    </>}
-      giaTri={<span className="inline-flex flex-wrap items-baseline gap-1.5">
-        {clickable ? (
-          <button type="button" onClick={() => setOpen(true)} className={`${VUNG_BAM_SO} ${LOP_OSO} ${mau}`}
-            aria-label={t('{gt} {dv} — {ten}. Bấm để xem danh sách', { gt: giaTri, dv, ten: nhan ?? cs.ten })}>{giaTri}</button>
-        ) : <span className="text-slate-500">{giaTri}</span>}
-        <span className="text-xs font-normal text-slate-400">{dv}</span>
-      </span>}
-      mau={phu ?? ((rong || giaTri === 0) ? (rong ? t('Không có dữ liệu trong phạm vi') : t('Không có mục nào')) : null)}>
-      <DanhSachSoLieu id={id} giaTri={giaTri} phamVi={phamVi} extra={extra} open={open} onClose={() => setOpen(false)} ten={nhan} />
-    </OChiSo>
-  );
-}

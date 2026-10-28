@@ -100,7 +100,9 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
   check('NEN-PANEL T16 · đổi việc / ✕ khi còn chữ: hộp trong panel (Ở lại nhận focus), không window.confirm; Công việc đi qua boChuRoi', () => {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
     assert(!/window\.confirm/.test(kp), 'KhungPanel còn window.confirm');
-    assert(/t\('Bỏ chữ đang gõ\?'\)/.test(kp) && /ref=\{oLai\}[^>]*btn-primary[^>]*>\{t\('Ở lại'\)\}/.test(kp) && /oLai\.current\?\.focus\(\)/.test(kp), 'hộp Bỏ chữ: Ở lại nút chính + focus');
+    /* 6c-2: `HopBoChu` chuyển sang `ui/Drawer.tsx` (dùng chung với `ConfirmDialog`); KhungPanel vẫn vẽ nó khi hỏi. */
+    const hop = docSach('web/src/ui/Drawer.tsx');
+    assert(/<HopBoChu /.test(kp) && /t\('Bỏ chữ đang gõ\?'\)/.test(hop) && /ref=\{oLai\}[^>]*btn-primary[^>]*>\{t\('Ở lại'\)\}/.test(hop) && /oLai\.current\?\.focus\(\)/.test(hop), 'hộp Bỏ chữ: Ở lại nút chính + focus');
     assert(/const boChu = \(\) => \{[^}]*nhap\?\.xoa\(\)/.test(kp) && /xoaNhapViec\(khoNhap\(\), khoa\)/.test(kp), 'Bỏ chữ phải xoá nháp của việc');
     const cv = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx');
     assert(!/window\.confirm/.test(cv) && (cv.match(/boChuRoi\(/g) ?? []).length >= 4, 'Công việc: đổi việc / ‹ Công việc / việc vừa xong / mở việc khác phải qua boChuRoi');

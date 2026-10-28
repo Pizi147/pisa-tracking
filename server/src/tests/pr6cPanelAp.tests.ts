@@ -121,4 +121,55 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     }
     assert(n > 0 || !ads.length, 'seed không có dòng GV trễ nào để kiểm');
   });
+
+  /* ---------------------------------------------------------------- 6c-2 ④ Bỏ: mã chết theo bảng kê mục 3 (0 nơi gọi) */
+  check('6c-2 ④ Bỏ: ô số SoLieu, NutMoDanhSach, BangGiaoVienChiNhanh, tham số kqMacDinh / trongPanel của BangMock', () => {
+    assert(!/export function SoLieu\(/.test(doc('web/src/ui/SoLieu.tsx')), 'ô số SoLieu còn');
+    assert(!/NutMoDanhSach/.test(doc(W + 'phanTich/dungChung.tsx')), 'NutMoDanhSach còn');
+    assert(!fs.existsSync(path.join(ROOT, W + 'giaoVien/BangGiaoVienChiNhanh.tsx')), 'BangGiaoVienChiNhanh còn');
+    assert(/export function BangMock\(\{ pv \}: \{ pv: PhamViPhanTich \}\)/.test(doc(W + 'phanTich/KetQuaThi.tsx')), 'BangMock còn tham số chết');
+  });
+
+  /* ---------------------------------------------------------------- 6c-2 lỗi 9 (PTA 28/10): hộp xác nhận ngắn = hộp nhỏ, không KhungPanel đè */
+  check('6c-2 ③ Xoá PA · Kết thúc PA · Xoá Case · Xoá vi phạm · Thu hồi / Rút xử lý = ConfirmDialog; ô lý do đang gõ → hỏi một lần', () => {
+    const can: [string, number][] = [['cases/MenuXoaPa.tsx', 2], ['cases/ThaoTacCase.tsx', 1], ['yThuc/DeleteViolationConfirm.tsx', 1], ['yThuc/XemXuLyPanel.tsx', 1]];
+    for (const [f, n] of can) {
+      const s = doc(W + f);
+      assert((s.match(/<ConfirmDialog /g) ?? []).length === n && !/<KhungPanel[^>]*longTrong/.test(s), `${f}: còn panel đè / thiếu hộp nhỏ`);
+    }
+    assert(/daSua=\{!!lyDo\.trim\(\)\}/.test(doc(W + 'cases/MenuXoaPa.tsx')) && /daSua=\{!rutDuoc && !!lyDo\.trim\(\)\}/.test(doc(W + 'yThuc/XemXuLyPanel.tsx')), 'ô lý do chưa giữ chữ');
+    /* PTA 28/10: dòng PA gọn (`DongPaGon`) phải có "Kết thúc PA" — PA quy chế đang chạy chỉ vẽ dạng gọn. */
+    const cp = doc(W + 'cases/CasePanel.tsx');
+    assert((cp.match(/<MenuPa [^\n]*ketThuc=\{nut\.ketThuc\}/g) ?? []).length === 2 && (cp.match(/coTheKetThucPa: data\.viewer\.coTheKetThucPa/g) ?? []).length === 2,
+      'dòng PA gọn thiếu Kết thúc PA');
+    const dr = doc('web/src/ui/Drawer.tsx');
+    assert(/const dong = busy \? \(\) => \{\} : daSua \? \(\) => setHoi\(true\) : onClose;/.test(dr) && /export function HopBoChu\(/.test(dr), 'ConfirmDialog chưa hỏi khi còn chữ');
+  });
+
+  /* ---------------------------------------------------------------- 6c-2 (PTA 28/10): một danh sách một kiểu mở — ↗ cùng chỗ mọi dòng */
+  check('6c-2 panel số: mọi kiểu dòng (Case nhóm, chỉ đọc, làm được) có ↗ hồ sơ cuối dòng; dòng chỉ đọc thân không bấm; không dòng nào cả dòng là link', () => {
+    const s = doc('web/src/ui/SoLieu.tsx').replace(/\r\n/g, '\n');
+    assert((s.match(/\{nutHoSo\(r\)\}/g) ?? []).length === 3, 'thiếu ↗ ở một kiểu dòng');
+    assert(!/<Link to=\{r\.href\} className="min-w-0 flex-1/.test(s) && !/t\('Xem hồ sơ'\)/.test(s), 'còn dòng mà cả tên là link / "Xem hồ sơ" lặp trong phần mở rộng');
+    const chiDoc = s.slice(s.indexOf('if (!v?.lam && !r.xong) {'), s.indexOf('const nen = moRong'));
+    assert(!/<button/.test(chiDoc), 'dòng chỉ đọc còn thân bấm được');
+  });
+
+  /* ---------------------------------------------------------------- 6c-2 ⑤ (#632 XM-1): dòng danh sách Case có điểm lượt mở Case */
+  const { rowsFor } = await import('../worklist/metrics.ts');
+  check('6c-2 ⑤ rowsFor(case): diem = mốc mở / lặp Case gần nhất có band (điểm, kỳ vọng, MT n); Case không mốc điểm → null; một câu cho cả lô', () => {
+    const ids = (conn.prepare(`SELECT id FROM sos_cases ORDER BY id LIMIT 60`).all() as any[]).map((r) => r.id as number);
+    const moc = new Map<number, any>();
+    for (const m of conn.prepare(`SELECT case_id, attempt_no, band, expectation FROM case_milestones WHERE kind IN ('opened', 'repeat') AND band IS NOT NULL ORDER BY occurred_on, id`).all() as any[]) moc.set(m.case_id, m);
+    let co = 0, khong = 0;
+    for (const r of rowsFor('case', ids) as any[]) {
+      const m = moc.get(r.id);
+      if (!m) { khong++; assert(r.diemCase == null, `Case ${r.id} không mốc điểm mà có diem`); continue; }
+      co++;
+      assert(r.diemCase && r.diemCase.so === Number(m.band) && r.diemCase.kyVong === (m.expectation == null ? null : Number(m.expectation)) && (!m.attempt_no || !!r.diemCase.luot),
+        `Case ${r.id}: ${JSON.stringify(r.diemCase)} ≠ mốc ${JSON.stringify(m)}`);
+    }
+    assert(co > 0, 'seed không có Case nào có mốc điểm');
+    assert(/FROM case_milestones m LEFT JOIN assessment_attempts a ON a\.id = m\.attempt_id\s+WHERE m\.case_id IN \(\$\{ph\}\)/.test(doc('server/src/worklist/metrics.ts')), 'điểm phải đọc theo lô (IN), không mỗi dòng một câu');
+  });
 }
