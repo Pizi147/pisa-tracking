@@ -42,6 +42,7 @@ export type YThucHocVien = {
   macDinh: { tick: number[]; cuHon: number[] };
   dongThoiGian: DongThoiGianYt[];
   demCuoi: { tong: number; theoNhom: { nhom: string; so: number }[] };
+  hang: Pick<DongEm, 'xuLyGanNhat' | 'tuChoi' | 'thuHoi' | 'baoPh'>;
 };
 
 export type XuLyView = {

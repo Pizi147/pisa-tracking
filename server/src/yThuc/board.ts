@@ -173,16 +173,7 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
       dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai });
     }
   }
-  /* Luật 5: lần xử lý đang xin thu hồi (thẻ chờ QL) — lần đó vẫn tính tới khi QL duyệt. */
-  const mIds = [...dongCuaEm.values()].flatMap((x) => [x.xuLyGanNhat?.id, x.deXuat?.id]).filter((x): x is number => !!x);
-  const dangXin = new Set<number>();
-  theoLo(mIds, (lo, ph) => {
-    for (const r of db().prepare(`SELECT doi_tuong_id FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND trang_thai = 'cho' AND doi_tuong_id IN (${ph})`).all(...lo) as any[]) dangXin.add(r.doi_tuong_id);
-  });
-  for (const x of dongCuaEm.values()) {
-    const m = x.xuLyGanNhat && dangXin.has(x.xuLyGanNhat.id) ? x.xuLyGanNhat : x.deXuat && dangXin.has(x.deXuat.id) ? x.deXuat : null;
-    if (m) x.thuHoi = { id: m.id, nhan: m.nhan, cho: true };
-  }
+  danhDauDangXinThuHoi([...dongCuaEm.values()]);
   const theoHan = (a: DongEm, b: DongEm) => (a.han ?? a.hanXem ?? a.deXuat?.han ?? '9').localeCompare(b.han ?? b.hanXem ?? b.deXuat?.han ?? '9')
     || a.ten.localeCompare(b.ten, 'vi');
   for (const k of NHOM_EM) nhom[k].sort(k === 'da_xu_ly' ? (a, b) => (b.xuLyGanNhat?.ngay ?? '').localeCompare(a.xuLyGanNhat?.ngay ?? '') : theoHan);
@@ -194,6 +185,26 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA }),
     choBaoPh: choBaoPh.sort((a, b) => (a.baoPh?.han ?? '').localeCompare(b.baoPh?.han ?? '') || a.ten.localeCompare(b.ten, 'vi')),
   };
+}
+
+/** Luật 5: lần xử lý đang xin thu hồi (thẻ chờ QL) — lần đó vẫn tính tới khi QL duyệt. Ghi `thuHoi.cho` vào hàng. */
+function danhDauDangXinThuHoi(dong: DongEm[]) {
+  const mIds = dong.flatMap((x) => [x.xuLyGanNhat?.id, x.deXuat?.id]).filter((x): x is number => !!x);
+  const dangXin = new Set<number>();
+  theoLo(mIds, (lo, ph) => {
+    for (const r of db().prepare(`SELECT doi_tuong_id FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND trang_thai = 'cho' AND doi_tuong_id IN (${ph})`).all(...lo) as any[]) dangXin.add(r.doi_tuong_id);
+  });
+  for (const x of dong) {
+    const m = x.xuLyGanNhat && dangXin.has(x.xuLyGanNhat.id) ? x.xuLyGanNhat : x.deXuat && dangXin.has(x.deXuat.id) ? x.deXuat : null;
+    if (m) x.thuHoi = { id: m.id, nhan: m.nhan, cho: true };
+  }
+}
+
+/** UI-Y-THUC-HV: hàng của MỘT em (Duyệt · thu hồi, Báo PH) cho tab Ý thức hồ sơ HV — cùng hàm, cùng câu với bảng lớp. */
+export function hangCuaEm(p: Principal, em: EmYThuc, ten: string, maHv: string, homNay: string): DongEm {
+  const hang = { ...dongEm(em, ten, maHv, homNay), baoPh: baoPhMoiNhat(p, [em.studentId], homNay).get(em.studentId) ?? null };
+  danhDauDangXinThuHoi([hang]);
+  return hang;
 }
 
 /** Việc Báo PH MỚI NHẤT của mỗi em (một câu cho cả lớp) — hạn hiệu lực trừ ngày tạm dừng như panel TVV. */
