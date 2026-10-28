@@ -400,12 +400,6 @@ export function DaiChiXem({ children }: { children: ReactNode }) {
   return <div className="surface-2 rounded-md px-3 py-1.5 text-xs text-slate-400">{children}</div>;
 }
 
-export function DataCell({ value, state, suffix }: { value: ReactNode; state?: string; suffix?: string }) {
-  if (state === 'not_applicable') return <span className="text-slate-500 text-xs italic">{t('Không áp dụng')}</span>;
-  if (value === null || value === undefined) return <span className="text-slate-500 text-xs">{t('Chưa có dữ liệu')}</span>;
-  return <span className="tabular-nums">{value}{suffix}</span>;
-}
-
 /**
  * TIÊU ĐỀ CỘT CÓ LỜI GIẢI THÍCH — mục 8.5 và 9.2.
  *
@@ -445,36 +439,6 @@ export function Th({ children, hint, align = 'left', sort, className = '' }: {
         </button>
       ) : inner}
     </th>
-  );
-}
-
-/**
- * MỘT Ô ĐIỂM KỲ THI kèm mũi tên so với lượt trước — mục 8.4.
- *
- * Ba thứ trong một ô: con số, màu đạt/chưa đạt, và chiều thay đổi. Mũi tên cố tình nhỏ và
- * nhạt hơn con số: người đọc tìm điểm trước, chiều thay đổi là thông tin thứ hai.
- *
- * "Chưa có" khác "0" và phải nhìn ra ngay — nên ô trống là một dấu gạch mờ, không phải số.
- */
-export function BandCell({ cell, target }: {
-  cell: { now: number | null; prev: number | null; dir: number } | null | undefined;
-  target?: number | null;
-}) {
-  if (!cell || cell.now === null) return <span className="text-slate-700">–</span>;
-  const met = target == null ? null : cell.now >= target;
-  const tone = met === null ? 'text-slate-100' : met ? 'text-ok' : 'text-bad';
-  const delta = cell.prev === null ? null : Math.round((cell.now - cell.prev) * 10) / 10;
-  return (
-    <span className="inline-flex items-baseline gap-1 whitespace-nowrap"
-      title={cell.prev === null ? t('Lượt đầu tiên, chưa có gì để so')
-        : t('Lượt trước {truoc} → lượt này {nay}', { truoc: cell.prev, nay: cell.now })}>
-      <span className={`tabular-nums ${tone}`}>{cell.now}</span>
-      {delta !== null && delta !== 0 && (
-        <span className={`text-[12px] ${cell.dir > 0 ? 'text-ok' : 'text-bad'}`}>
-          {cell.dir > 0 ? '▲' : '▼'}{Math.abs(delta)}
-        </span>
-      )}
-    </span>
   );
 }
 

@@ -3,7 +3,6 @@ export const EN_UI_TONG_QUAN = {
   'Báo PH đúng hạn · {dung}/{tong} việc · xong trễ {tre}': 'Parent call on time · {dung}/{tong} tasks · done late {tre}',
   'Xong trễ': 'Done late',
   'Chưa báo': 'Not called',
-  "Bài trễ chấm · {ten}": "Late marking · {ten}",
   "Báo PH đúng hạn": "Parent call on time",
   "Báo cáo HV": "Student report",
   "Case chưa chốt PA · {lop}": "Cases without plan · {lop}",
@@ -23,7 +22,6 @@ export const EN_UI_TONG_QUAN = {
   "HV của tôi · lọc \"Thi tháng này\"": "My students · filter \"Exam this month\"",
   "HV của tôi · lọc \"Đã thi · chờ kết quả\"": "My students · filter \"Sat · awaiting result\"",
   "HV thi tháng này": "students sit the exam this month",
-  "HV đánh giá được": "assessable students",
   "HV đủ dữ liệu": "students with enough data",
   "Hành chính": "Admin",
   "Hành chính · Học thuật": "Admin · Academic",
@@ -76,5 +74,4 @@ export const EN_UI_TONG_QUAN = {
   "Case tôi phụ trách": "Cases I own",
   "HV SOS 2–3": "Students at SOS 2–3",
   "Học viên & Lớp · Đang SOS": "Students & Classes · In SOS",
-  "Trang đầu tạm dùng góc nhìn GV (Việc của tôi, Case đang xử lý, Lớp tôi dạy); trang Tutor tạm ẩn, dữ liệu tutor vẫn giữ nguyên.": "The home page uses the teacher view for now (My tasks, Cases in progress, My classes); the Tutor page is hidden, tutor data is kept.",
 };

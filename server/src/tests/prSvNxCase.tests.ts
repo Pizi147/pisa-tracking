@@ -13,7 +13,7 @@
  *  NX11 S chấm chéo khác người → viết mô tả khác (tách khỏi nhận xét); người chấm chéo 403; Nhận xét GV phụ trách không làm hết việc
  *  NX12 SOS tạm (lượt chưa chốt): Case tạm không hạn, không việc Xác nhận Case
  *  NX13 Overall đạt → Case chưa xử lý tự mất
- *  NX14 migrate: Case mô tả từ nhận xét gắn nguồn (nội dung giữ), cờ S đã hết việc hạ, lần hai không đổi; kiểm trước không ghi
+ *  NX14 migrate: Case mô tả từ nhận xét gắn nguồn (nội dung giữ), cờ S đã hết việc hạ, lần hai không đổi
  *  NX17 người chấm chéo sửa nhận xét ô S mà người chấm cũ là GV phụ trách → vẫn chờ Xác nhận Case, mô tả không đổi
  *  NX16 Sửa Case MT chưa mô tả chỉ đổi tên / mức độ → lưu (không đòi mô tả); `luc` cũ → 409, không ghi; mô tả > 1000 → 400; lượt nguồn mất → không "MT?"
  *  NX15 migrate: Case đã trượt sang MT2 mà mô tả là nhận xét MT1 → nguồn MT1 (nhận xét MT2 không đè); mô tả không trùng nhận xét nào → NULL, không bị đè
@@ -259,18 +259,16 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
   }));
 
   // ---------------------------------------------------------------- ⑤ migrate
-  check('NX14 · migrate: Case mô tả từ nhận xét gắn nguồn (nội dung giữ) · ô S cờ mà PA đã xác nhận → hạ cờ · còn lại giữ cờ; lần hai không đổi; kiểm trước không ghi', () => thu(() => {
+  check('NX14 · migrate: Case mô tả từ nhận xét gắn nguồn (nội dung giữ) · ô S cờ mà PA đã xác nhận → hạ cờ · còn lại giữ cờ; lần hai không đổi', () => thu(() => {
     const { gvPT } = nguoiS();
     const a = emMoi();
     const c = chot(a.m1, { bandS: 5, nxS: NX.speaking, nguoiLuuS: gvPT });
     run('UPDATE sos_cases SET mo_ta_attempt_id = NULL WHERE id = ?', c.id);   // dữ liệu trước PR
     run(`UPDATE assessment_scores SET cho_phu_trach_xem = 1 WHERE attempt_id = ? AND skill = 'speaking'`, a.m1);
     const truoc = moTa(c.id);
-    const kt = mig.kiemTruocSvNxCase(conn);
-    assert(kt.some((x: any) => x.phan === 'A' && x.id === c.id) && kt.some((x: any) => x.phan === 'B-xac-nhan-case'), JSON.stringify(kt.filter((x: any) => x.id === c.id)));
-    assert(one('SELECT mo_ta_attempt_id n FROM sos_cases WHERE id = ?', c.id).n === null, 'kiểm trước không được ghi');
     const ap: string[] = [];
-    mig.migratePrSvNxCase(conn, ap);
+    const kt = mig.migratePrSvNxCase(conn, ap);
+    assert(kt.some((x: any) => x.phan === 'A' && x.id === c.id) && kt.some((x: any) => x.phan === 'B-xac-nhan-case'), JSON.stringify(kt.filter((x: any) => x.id === c.id)));
     assert(one('SELECT mo_ta_attempt_id n FROM sos_cases WHERE id = ?', c.id).n === a.m1 && JSON.stringify(moTa(c.id)) === JSON.stringify(truoc), 'phần A');
     assert(one(`SELECT cho_phu_trach_xem n FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, a.m1).n === 1, 'chưa xác nhận PA → giữ cờ (Xác nhận Case)');
     /* PA đã xác nhận (việc OV-13k cũ đã hết) → hạ cờ. */
@@ -296,9 +294,8 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
         SELECT id, student_id, cycle_id, 'listening', 'listening', 'mock', 'open', ? FROM assessment_attempts WHERE id = ?`, new Date().toISOString(), a.m1).lastInsertRowid);
     run(`INSERT INTO case_issues (case_id, role, taxonomy_code, skill, observation, created_by, created_at) VALUES (?, 'primary', ?, 'listening', 'Mô tả cũ không trùng nhận xét nào.', NULL, ?)`,
       cL, d.issuesForTopic('listening')[0].code, new Date().toISOString());
-    const kt = mig.kiemTruocSvNxCase(conn);
+    const kt = mig.migratePrSvNxCase(conn, []);
     assert(kt.find((x: any) => x.id === c.id)?.nguon === a.m1 && kt.find((x: any) => x.id === cL)?.phan === 'A-khong-khop', JSON.stringify(kt.filter((x: any) => [c.id, cL].includes(x.id))));
-    mig.migratePrSvNxCase(conn, []);
     assert(one('SELECT mo_ta_attempt_id n FROM sos_cases WHERE id = ?', c.id).n === a.m1 && one('SELECT mo_ta_attempt_id n FROM sos_cases WHERE id = ?', cL).n === null, 'nguồn sai');
     svc.saveScore(gvPT, a.m2, 'speaking', { nhanXet: 'MT2: nhận xét mới sau migrate, không được đè mô tả.' }, TODAY);
     assert(moTa(c.id)?.observation === NX.speaking, `mô tả MT1 bị đè: ${moTa(c.id)?.observation}`);

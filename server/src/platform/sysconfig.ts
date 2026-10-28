@@ -303,12 +303,6 @@ export function activeRouteCodes(): string[] {
   return rows.length ? rows.map((r) => r.code) : [...BUILTIN_ROUTES];
 }
 
-export function requireRoute(code: string) {
-  const list = activeRouteCodes();
-  if (!list.includes(code)) throw notFound(`Không có lộ trình "${code}".`);
-  return code;
-}
-
 // ==================================================================== quyền theo vai
 
 /**

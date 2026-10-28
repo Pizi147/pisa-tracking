@@ -860,7 +860,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(rowOf(f.a.id, 'talk_student').status === 'pending' && coordOf(f.a.id).filter((r) => r.kind === 'talk_student').length === 1, 'SOS1 hồi lại, một dòng');
   });
 
-  check('OV-13n · migrate prOv13n: bỏ talk_student điền sẵn pending của lượt SOS 2–3 (`system_bang_doi` + nhật ký); giữ việc done, việc GVCN tự thêm, lượt SOS1; kiem-truoc đếm đúng; chạy 2 lần không đổi; SOS về 1 thì hồi', () => {
+  check('OV-13n · migrate prOv13n: bỏ talk_student điền sẵn pending của lượt SOS 2–3 (`system_bang_doi` + nhật ký); giữ việc done, việc GVCN tự thêm, lượt SOS1; chạy 2 lần không đổi; SOS về 1 thì hồi', () => {
     const mig = migOv13n;
     const datTs = (a: any, preset: number, status: string) => {
       conn.prepare(`DELETE FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'talk_student'`).run(a.id);
@@ -871,18 +871,17 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const boCu = freshSos('N13n-bo'), xong = freshSos('N13n-xong'), tuThem = freshSos('N13n-tu'), sos1 = freshSos('N13n-s1');
     enter(P.admin, sos1.a, 'speaking', 7);                               // SOS1: talk_student còn trong bảng
     const idBo = datTs(boCu.a, 1, 'pending'), idXong = datTs(xong.a, 1, 'done'), idTu = datTs(tuThem.a, 0, 'pending');
-    const truoc = Object.values(mig.kiemTruocOv13n(conn) as Record<string, number>).reduce((x, y) => x + y, 0);
     const lan1: string[] = []; conn.transaction(() => mig.migratePrOv13n(conn, lan1))();
     const r = get('SELECT * FROM sos_coordination_actions WHERE id = ?', idBo);
     assert(r.status === 'removed' && r.remove_reason_code === 'system_bang_doi' && r.removed_by === null && r.removed_at, `Dòng bỏ: ${JSON.stringify(r)}`);
     assert(domain.COORDINATION_REMOVE_REASON_LABEL.system_bang_doi === 'Luật mới: SOS 2–3 không còn việc này', 'Nhãn lý do');
-    assert(truoc >= 1 && lan1.length === 1 && lan1[0].startsWith(`OV-13n: ${truoc} việc`), `kiem-truoc ${truoc} ≠ migrate: ${lan1}`);
+    assert(lan1.length === 1 && lan1[0].startsWith('OV-13n: '), `migrate: ${lan1}`);
     assert(get('SELECT status FROM sos_coordination_actions WHERE id = ?', idXong).status === 'done', 'Việc done giữ');
     assert(get('SELECT status FROM sos_coordination_actions WHERE id = ?', idTu).status === 'pending', 'Việc GVCN tự thêm giữ');
     assert(rowOf(sos1.a.id, 'talk_student').status === 'pending', 'Lượt SOS1 giữ');
     assert(count("SELECT COUNT(*) n FROM audit_logs WHERE action = 'sos_coordination.sync' AND entity_id = ? AND after_json LIKE '%system_bang_doi%'", boCu.a.id) === 1, 'Ghi nhật ký');
     const lan2: string[] = []; conn.transaction(() => mig.migratePrOv13n(conn, lan2))();
-    assert(lan2.length === 0 && Object.keys(mig.kiemTruocOv13n(conn)).length === 0, `Lần 2 vẫn đổi: ${lan2}`);
+    assert(lan2.length === 0, `Lần 2 vẫn đổi: ${lan2}`);
     enter(P.admin, boCu.a, 'speaking', 7);                               // SOS về 1 → hồi
     assert(rowOf(boCu.a.id, 'talk_student').status === 'pending' && rowOf(boCu.a.id, 'talk_student').id === idBo, 'SOS1 hồi lại việc bị luật mới bỏ');
   });

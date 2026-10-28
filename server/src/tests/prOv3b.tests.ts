@@ -20,7 +20,6 @@ export async function runPrOv3bTests(t: YThucTestKit) {
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const { migratePrOv3b } = await import('../migrate/prOv3b.ts');
-  const { kiemTruocOv3b } = await import('../ops/kiemTruocOv3b.ts');
   console.log('\nPR-OV3b · Lộ trình tiếp theo: nháp / chốt, hạn, bàn giao, Kết quả đầu ra');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -222,8 +221,6 @@ export async function runPrOv3bTests(t: YThucTestKit) {
     ).run(sid, be3, huong, lop, huong === 'fast_track' ? 6.5 : null, 'ghi của GVCN', huong, now, now);
     chen(x, 'len_lop', ele1); chen(y, 'fast_track', ft); chen(z, 'chua_quyet', null);
     lenh.raLenh(QL, { lopNguonId: be3, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: y, huong: 'fast_track', toClassId: ft, tuan: THU_HAI, mucTieu: 6.5 }] });
-    const dem = kiemTruocOv3b(conn);
-    assert(dem.nhap.find((r: any) => r.lopId === be3)?.n === 1, `kiểm trước: ${JSON.stringify(dem.nhap)}`);
     conn.exec('DROP TABLE lo_trinh_nhap');   // DB trước OV-3b
     const lttCu = (conn.prepare("SELECT name FROM pragma_table_info('lo_trinh_tiep_theo')").all() as any[]).length;
     const a1: string[] = [];
@@ -238,11 +235,4 @@ export async function runPrOv3bTests(t: YThucTestKit) {
     migratePrOv3b(conn, a2);
     assert(get('SELECT COUNT(*) n FROM lo_trinh_nhap').n === truoc && !a2.length, `lần hai: ${a2}`);
   }));
-
-  check('OV3b-10 · kiem-truoc-ov3b chỉ đọc: không ghi câu nào', () => {
-    const truoc = get('SELECT total_changes() n').n;
-    const r = kiemTruocOv3b(conn);
-    assert(Array.isArray(r.nhap) && Array.isArray(r.lenhCho), JSON.stringify(r));
-    assert(get('SELECT total_changes() n').n === truoc, 'kiem-truoc ghi dữ liệu');
-  });
 }

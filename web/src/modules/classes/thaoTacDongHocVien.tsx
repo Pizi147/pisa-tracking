@@ -9,7 +9,7 @@ import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { invalidate } from '../../lib/api.ts';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
 import {
-  DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type ViecQuanLy, type ViecTiepTheo,
+  DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type ViecQuanLy,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -50,20 +50,6 @@ export function nhapDiemCua(
     den: `${DUONG_TAB_TEST['diem-lop']}?lop=${classId}${ma ? `&luot=${encodeURIComponent(vietMaLuot(ma))}` : ''}`,
     classId, luot: ma ? vietMaLuot(ma) : null,
   };
-}
-
-/**
- * ĐÍCH BẤM ĐƯỢC của một việc tiếp theo (B8): nhập điểm → lưới nhập điểm của lớp · Case → hồ sơ em mở đúng Ngăn Case (Ghi kết quả mở luôn form) ·
- * Ý thức → tab Ý thức & Phối hợp của em. Nhập điểm mà em không còn kỹ năng nào người xem phải chấm thì không có link.
- */
-export function duongViecTiep(v: ViecTiepTheo, o: {
-  studentId: number; classId: number; laLopThuong: boolean; timeline: readonly { kind: string; kindLabel: string; myPending: string[] }[];
-}): string | null {
-  const d = v.dich;
-  if (!d) return null;
-  if (d.loai === 'nhap-diem') return nhapDiemCua(o.classId, o.laLopThuong, o.timeline)?.den ?? null;
-  if (d.loai === 'y-thuc') return duongHoSoHocVien(o.studentId, { tab: 'y-thuc' });
-  return duongHoSoHocVien(o.studentId, { caseId: d.caseId, paId: d.paId, viec: d.ghiKetQua && d.paId != null ? 'ghi-ket-qua' : undefined });
 }
 
 /**

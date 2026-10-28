@@ -110,8 +110,6 @@ export function giaoKhoangXem(tu: string, den: string | null, khoang: { tu: stri
 
 // ====================================================================== tầng khối phương án (Q5)
 
-export type KhoiThoiGian = { id: number; tu: string; den: string | null; noiTiepTu?: number | null };
-
 /**
  * XẾP TẦNG THAM LAM theo ngày bắt đầu: khối chồng thời gian với khối đang đứng đầu một tầng thì
  * xuống tầng tiếp theo. "Chồng" tính theo TUẦN — hai khối chạm nhau trong cùng một tuần cũng coi là

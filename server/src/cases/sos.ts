@@ -561,11 +561,11 @@ export const CASE_CHUA_DUNG = (sc = 'sc', attemptSql = '?') => `(${sc}.status !=
   AND NOT EXISTS (SELECT 1 FROM attachments t_o WHERE (t_o.owner_type = 'sos_case' AND t_o.owner_id = ${sc}.id)
     OR (t_o.owner_type = 'case_intervention' AND t_o.owner_id IN (SELECT iv_t.id FROM case_interventions iv_t WHERE iv_t.case_id = ${sc}.id)))
   AND NOT EXISTS (SELECT 1 FROM case_interventions iv_o WHERE iv_o.case_id = ${sc}.id AND iv_o.status != 'cancelled' AND NOT ${PA_QUY_CHE_CHUA_GHI('iv_o')}))`;
-/** Luật OV-1c nguyên bản (thêm "chưa nguyên nhân") — chỉ cho migrate `prOv1c` / `kiem-truoc-ov1c`. */
+/** Luật OV-1c nguyên bản (thêm "chưa nguyên nhân") — chỉ cho migrate `prOv1c`. */
 export const CASE_CHUA_DUNG_OV1C = (sc = 'sc', attemptSql = '?') => `(${CASE_CHUA_DUNG(sc, attemptSql)}
   AND NOT EXISTS (SELECT 1 FROM case_issues ci_o WHERE ci_o.case_id = ${sc}.id AND ci_o.role = 'primary'))`;
 
-/** Case đang mở của các kỹ năng `failing` đang theo lượt này (`attempt_id`, nối tín hiệu của lượt — CHỈ ĐỌC): `dong` = chưa ai đụng, `giu` = đã có người làm. Dùng chung với `kiem-truoc-ov1c`. */
+/** Case đang mở của các kỹ năng `failing` đang theo lượt này (`attempt_id`, nối tín hiệu của lượt — CHỈ ĐỌC): `dong` = chưa ai đụng, `giu` = đã có người làm. */
 export function caseXoaSos(attemptId: number, failing: readonly string[], dieuKien = CASE_CHUA_DUNG): { dong: number[]; giu: number[] } {
   const cats = [...new Set(failing.map((k) => categoryOf(k)).filter(Boolean))] as string[];
   if (!cats.length) return { dong: [], giu: [] };
@@ -696,7 +696,7 @@ export function taoCaseTuDong(p: Principal, x: {
 // ---------------------------------------------------------------- OV-13a (chủ SP 15/10, Q2): Case tạm khi lượt chưa chốt
 
 /**
- * KẾ HOẠCH CASE TẠM của một lượt Mock FT — CHỈ ĐỌC (lệnh `kiem-truoc-ov13a` dùng chung). `tao` = kỹ năng dưới kỳ vọng mà ô có điểm + nhận xét, chưa có Case
+ * KẾ HOẠCH CASE TẠM của một lượt Mock FT — CHỈ ĐỌC. `tao` = kỹ năng dưới kỳ vọng mà ô có điểm + nhận xét, chưa có Case
  * đang mở cùng hạng mục, tín hiệu chưa nối Case nào (vd Case đã "Không cần theo dõi"). `xoa` = Case tạm của lượt mà kỹ năng không còn thế (đạt, xoá điểm,
  * bỏ nhận xét) — lượt chưa chốt; lượt đã chốt cũng dọn đúng tập này (Case tạm còn lại thành Case thật ở `chotCaseTam`).
  */
@@ -705,7 +705,7 @@ export function keHoachCaseTam(attempt: { id: number; student_id: number; cycle_
   const coNx = new Set((conn.prepare(`SELECT skill FROM assessment_scores WHERE attempt_id = ? AND TRIM(COALESCE(comment, '')) != ''
       AND (band IS NOT NULL OR raw_score IS NOT NULL)`).all(attempt.id) as any[]).map((r) => r.skill as string));
   const muon = failing.filter((s) => coNx.has(s) && !!categoryOf(s));
-  /* `kiem-truoc-ov13a` chạy trên DB CHƯA migrate (chưa có cột `tam`) → chưa có Case tạm nào để xoá. */
+  /* DB CHƯA migrate (chưa có cột `tam`) → chưa có Case tạm nào để xoá. */
   const coCot = nho('co_cot_tam', () => !!conn.prepare(`SELECT 1 FROM pragma_table_info('sos_cases') WHERE name = 'tam'`).get());
   const xoa = !coCot ? [] : (conn.prepare(`SELECT id, topic FROM sos_cases WHERE attempt_id = ? AND tam = 1 AND status != 'done'`).all(attempt.id) as any[])
     .filter((c) => !muon.includes(c.topic)).map((c) => c.id as number);
@@ -775,7 +775,7 @@ function luotCaseTam(attemptId: number): { attempt: any; result: AttemptResult; 
   const failing = failingEntrySkills(result.expectation, entry, result.boQua) as string[];
   return { attempt, result, failing, entry, detectedAt: attempt.lich_su ? demoToday() : weekStartOf(attempt) ?? demoToday() };
 }
-/** Migrate `prOv13a` (e) / `kiem-truoc-ov13a`: Case tạm còn thiếu của một lượt (`ghi` = sinh luôn). Trả khoá `lượt:kỹ năng`. */
+/** Migrate `prOv13a` (e): Case tạm còn thiếu của một lượt (`ghi` = sinh luôn). Trả khoá `lượt:kỹ năng`. */
 export function caseTamCuaLuot(attemptId: number, ghi: boolean): string[] {
   const l = luotCaseTam(attemptId);
   if (!l) return [];

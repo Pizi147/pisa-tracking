@@ -68,9 +68,6 @@ export const COT_KET_QUA_GV: Record<KhungPtGv, readonly string[]> = {
   ft: ['listening', 'reading', 'writing1', 'writing2', 'speaking'],
   thuong: ['listening', 'reading', 'writing', 'speaking', 'listening_speaking', 'reading_writing'],
 };
-/** OV-11h (PT-1): cột L+S · R+W chỉ hiện khi có GV dạy môn đó trong bảng — chi nhánh không có PET / KET giữ bốn cột. */
-export const cotKetQuaGv = (kq: { khung: KhungPtGv; hang: readonly { ketQua: Record<string, OPtGv> }[] }): readonly string[] =>
-  COT_KET_QUA_GV[kq.khung].filter((k) => !k.includes('_') || kq.hang.some((h) => h.ketQua[k] && h.ketQua[k].k !== 'na'));
 
 const THU_HAI = /^\d{4}-\d{2}-\d{2}$/;
 const laThuHai = (s: string) => THU_HAI.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && mondayOfDate(s) === s;

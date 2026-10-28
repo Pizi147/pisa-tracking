@@ -37,7 +37,6 @@ export const CHU_CHUYEN_LOP = {
 
 export const HUONG_LENH = ['len_lop', 'hoc_lai', 'fast_track', 'chuyen_lop', 'bao_luu', 'dung_hoc'] as const;
 export type HuongLenh = (typeof HUONG_LENH)[number];
-export type TrangThaiLenh = 'cho' | 'da_chuyen' | 'huy';
 export const NHAN_XET_TOI_THIEU = 15;
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -107,17 +106,6 @@ export function hanBanGiaoLenh(o: { nguonFt: boolean; boiCanh: string; tuanFinal
 
 /** Mọi hướng có phiếu bàn giao trừ Dừng học hẳn (Q16). */
 export const coPhieu = (h: HuongLenh): boolean => h !== 'dung_hoc';
-/** OV-3b: bảng theo hướng của cách xem "Lộ trình tiếp theo" (Tạm dừng + Dừng học chung một bảng). */
-export type NhomLoTrinh = 'chua' | 'ft' | 'len' | 'hoc-lai' | 'dung';
-export const nhomLoTrinh = (h: HuongLenh | null): NhomLoTrinh =>
-  h === 'fast_track' ? 'ft' : h === 'len_lop' ? 'len' : h === 'hoc_lai' ? 'hoc-lai' : h === 'bao_luu' || h === 'dung_hoc' ? 'dung' : 'chua';
-/** Lọc nhanh — MỘT hàm cho số đếm và bảng. "Còn bàn giao" = lệnh có phiếu mà GVCN chưa xác nhận (kể cả phiếu cần làm lại). */
-export type LocLoTrinh = 'tat-ca' | 'chua-chot' | 'con-ban-giao';
-export function khopLocLoTrinh(e: { lenh: { huong: HuongLenh; banGiao: { xacNhan: boolean } } | null }, loc: LocLoTrinh): boolean {
-  if (loc === 'chua-chot') return !e.lenh;
-  if (loc === 'con-ban-giao') return !!e.lenh && coPhieu(e.lenh.huong) && !e.lenh.banGiao.xacNhan;
-  return true;
-}
 /** Tạm dừng học (bảo lưu) và Dừng học hẳn không có lớp chuyển đến. */
 export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'dung_hoc';
 

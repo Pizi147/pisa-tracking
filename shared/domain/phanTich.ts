@@ -78,7 +78,6 @@ export function thamSoXoaKhiDoiGoc(goc: GocNhin, _tuGoc?: GocNhin): readonly str
 
 export const KHOANG = [4, 8, 12, 26] as const;
 export type Khoang = (typeof KHOANG)[number];
-export const KHOANG_LABEL: Record<Khoang, string> = { 4: '4 tuần', 8: '8 tuần', 12: '12 tuần', 26: '6 tháng' };
 export const KHOANG_MAC_DINH: Khoang = 8;
 
 export function khoangTuThamSo(s: string | null | undefined): Khoang {
@@ -118,9 +117,6 @@ export function kyNangTooltip(cat: CaseCategory, _ct: ChuongTrinh): string {
 
 export const THEO_DONG = ['tuan', 'lop', 'dot', 'cn'] as const;
 export type TheoDong = (typeof THEO_DONG)[number];
-export const THEO_DONG_LABEL: Record<TheoDong, string> = {
-  tuan: 'Theo tuần', lop: 'Theo lớp', dot: 'Theo đợt', cn: 'Theo chi nhánh',
-};
 /** Nhãn cột đầu bảng ("Tuần", "Lớp"…) theo trục đang xếp. */
 export const THEO_DONG_COT_DAU: Record<TheoDong, string> = {
   tuan: 'Tuần', lop: 'Lớp', dot: 'Đợt', cn: 'Chi nhánh',
@@ -152,7 +148,6 @@ export function thuTuDot(khoa: string): number {
 // ------------------------------------------------------------------ cột bảng Tổng hợp (P10, Q14, Q17, Q18)
 
 export type NhomCot = 'ket-qua' | 'ky-nang' | 'xu-ly';
-export const NHOM_COT: readonly NhomCot[] = ['ket-qua', 'ky-nang', 'xu-ly'];
 const NHAN_NHOM_KY_NANG: Record<ChuongTrinh, string> = {
   ft: 'Dưới kỳ vọng theo kỹ năng (đếm HV)',
   thuong: 'Chưa đạt theo môn (đếm HV)',
@@ -436,14 +431,6 @@ export type DongVanDeHv = {
   phu?: string | null;
   goiY?: string;
   con?: DongVanDeHv[];
-};
-export type VanDeHvKetQua = {
-  gop: boolean; chiChinh: boolean;
-  tomTat: { hv: number; case: number; lop: number };
-  hang: DongVanDeHv[];
-  /** PR-SOS (K1-22): `quaHan` = số Case chờ xác nhận nguyên nhân đã quá hạn xác nhận (`sos_cases.han_xac_nhan`). */
-  chuaPhanLoai: { case: number; hv: number; lop: number; quaHan: number };
-  scopeEmpty: boolean;
 };
 
 /**

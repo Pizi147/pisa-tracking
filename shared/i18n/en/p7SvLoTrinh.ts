@@ -8,7 +8,6 @@ export const EN_P7_SV_LO_TRINH = {
   'Đã lưu trữ — Quay lại học trước rồi sửa.': 'Archived — use Back to study first, then edit.',
   'Bỏ lưu trữ · em đang học ở {lop}': 'Leaves Archive · studying in {lop}',
   'Chuyển lớp theo luật Chuyển lớp · Case chạy hạn lại': 'Class change follows the class-change rules · Case deadlines restart',
-  'Chưa lưu được.': 'Not saved.',
   'Có thể quay lại học': "May return to study",
   'Gợi ý: lớp đang chạy cùng chương trình, cùng chi nhánh': 'Suggested: running class, same programme, same branch',
   'Kết thúc học {ngay}': 'Ended study {ngay}',

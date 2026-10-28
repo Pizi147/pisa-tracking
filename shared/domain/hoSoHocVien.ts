@@ -175,8 +175,6 @@ export type ToneManh = 'danger' | 'warn' | 'sos1' | 'sos2' | 'sos3' | 'wait' | '
 /** `khoa` + `bien` (PR-EN-c): câu do máy chủ dựng — web dịch bằng `dichChu`. */
 export type ManhCau = ChuKhoa & { tone: ToneManh };
 
-/** "A" · "A và B" · "A, B và C". */
-export const noiVa = (ds: readonly string[]): string => noiVaK(ds).chu;
 const noiVaK = (ds: readonly string[]): ChuKhoa => (ds.length < 2 ? { chu: ds.join('') } : kem('{dau} và {cuoi}', { dau: ds.slice(0, -1).join(', '), cuoi: ds[ds.length - 1] }));
 const toneSos = (n: number): ToneManh => (n >= 3 ? 'sos3' : n === 2 ? 'sos2' : 'sos1');
 /** Việc học thuật (mệnh đề 2) — Ý thức, Báo PH, Bàn giao không tính ở đây. */

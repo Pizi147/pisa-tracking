@@ -5,7 +5,6 @@ export const EN_P8_MON_DANG_KY = {
   'Dừng — không còn học môn': 'Stopped — no longer studying the subject',
   'Môn học': 'Subjects',
   'Chọn ít nhất một môn.': 'Choose at least one subject.',
-  'Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu, Môn học': 'Only Managers or homeroom teachers edit Start week and Subjects',
   'Áp môn học cho em đã chọn': 'Apply subjects to selected students',
   'Môn học áp cho em đã chọn': 'Subjects for selected students',
   'Chỉ lộ trình FT': 'Fast Track routes only',

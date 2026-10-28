@@ -7,7 +7,7 @@ import { tx } from '../db.ts';
  *     (QL không mất việc GVCN đã ghi). Chỉ chạy NGAY khi vừa tạo bảng (khuôn `prLcb.ts`): lần sau không chép lại nháp QL đã xoá.
  *     Không xoá LTT, không đụng MT0 đã có. DB dựng từ `schema.sql` đã có bảng → không chép (GVCN chưa từng ghi theo luật mới).
  */
-/** LTT sẽ thành nháp — dùng chung với lệnh chỉ đọc `kiem-truoc-ov3b`. */
+/** LTT sẽ thành nháp. */
 export const LTT_THANH_NHAP_SQL = `FROM lo_trinh_tiep_theo t JOIN classes c ON c.id = t.class_id
   WHERE t.huong IN ('len_lop', 'hoc_lai', 'fast_track', 'bao_luu', 'dung_hoc') AND t.da_ap_dung_luc IS NULL AND c.status = 'active' AND c.is_fast_track = 0
     AND EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = t.student_id AND e.class_id = t.class_id AND e.status = 'active')

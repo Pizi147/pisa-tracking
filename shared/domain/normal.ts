@@ -21,10 +21,6 @@ export const LEGACY_PROGRAMME_CODE: Record<string, ProgrammeCode> = { FOUND: 'FO
 /** Cách chấm của một chương trình. Tách khỏi chương trình để sau này thêm loại khác. */
 export const SCORING_MODES = ['ielts_band', 'ratio'] as const;
 export type ScoringMode = (typeof SCORING_MODES)[number];
-export const SCORING_MODE_LABEL: Record<ScoringMode, string> = {
-  ielts_band: 'Band IELTS (Mock Test)',
-  ratio: t('Điểm đạt / Tổng điểm'),
-};
 
 /**
  * Ngưỡng đạt của cách chấm theo tỷ lệ. Xét trên tỷ lệ CHÍNH XÁC, không làm tròn % rồi mới xét.

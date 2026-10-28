@@ -18,7 +18,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { KHOA_HOAN_TAT_HINT, ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel } from '../../lib/format.ts';
 import {
-  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, duongDotTest, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
+  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, duongDotTest, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -130,70 +130,6 @@ export function oThuong(r: Row, k: string, homNay: string) {
     khongVang: s?.khongVang ?? null,
   };
   return { s, kq, canEdit, trong, dung, chuDung, quaHan, cell };
-}
-
-/** Các bài (Giữa khoá / Cuối khoá) đang có trên lưới, đúng thứ tự mốc của chương trình. */
-export function kindsThuong(data: ThuongSheet | null | undefined): { kind: string; label: string }[] {
-  if (!data) return [];
-  const co = new Set(data.rows.map((r) => r.kind as string));
-  const thuTu = [...data.programme.checkpoints.map((c) => c.kind as string), ...co];
-  return [...new Set(thuTu)].filter((k) => co.has(k))
-    .map((k) => ({ kind: k, label: nhanBai(k) }));
-}
-
-/**
- * BÀI MỞ SẴN khi đường dẫn không nói bài nào: bài có môn ĐANG NỢ (đã tới tuần thi mà chưa có điểm) với hạn sớm nhất;
- * không còn môn nợ thì bài có môn sắp thi gần nhất; không còn gì thì bài cuối cùng — thứ người chấm cần nhìn trước.
- */
-export function kindMacDinh(data: ThuongSheet | null | undefined): string | null {
-  const ks = kindsThuong(data);
-  if (!data || !ks.length) return null;
-  const monNo = data.rows.flatMap((r) => r.skillSchedule
-    .filter((s) => ketQuaCua(r, s.skill)?.outcome === 'missing' && s.progress !== 'cancelled' && s.progress !== 'absent')
-    .map((s) => ({ kind: r.kind as string, s })));
-  const dangNo = monNo.filter((x) => x.s.progress !== 'upcoming' && x.s.deadline)
-    .sort((a, b) => a.s.deadline!.localeCompare(b.s.deadline!))[0];
-  if (dangNo) return dangNo.kind;
-  const sapThi = monNo.filter((x) => x.s.weekStart).sort((a, b) => a.s.weekStart!.localeCompare(b.s.weekStart!))[0];
-  return sapThi?.kind ?? ks[ks.length - 1].kind;
-}
-
-/** Hạn chấm sớm nhất còn nợ trên lưới (đã lọc theo bài) — cho `<Han>` ở đầu trang. */
-export function hanSomNhatThuong(data: ThuongSheet | null | undefined): string | null {
-  const ds = (data?.rows ?? []).flatMap((r) => r.skillSchedule
-    .filter((s) => ketQuaCua(r, s.skill)?.outcome === 'missing' && s.deadline
-      && s.progress !== 'upcoming' && s.progress !== 'cancelled' && s.progress !== 'absent')
-    .map((s) => s.deadline!.slice(0, 10)))
-    .sort();
-  return ds[0] ?? null;
-}
-
-/**
- * TUẦN THI TỪNG MÔN ở đầu lưới, gom môn cùng tuần (Ruling 4, mockup 10b §2): "L, R: W3 SEP · W, S: W4 SEP". Tuần của
- * một môn là tuần mà đa số em thi môn đó — em bị dời bằng "-" không kéo cả cột đi (em đó có dòng phụ riêng ở Kết quả).
- * Cả bài một tuần thì chỉ ghi tuần đó. Luôn qua `tuanLich` (G-6), không bao giờ hiện mã tuần có năm.
- */
-export function tuanThiTheoMon(data: ThuongSheet | null | undefined, homNay: string): string | null {
-  if (!data?.rows.length) return null;
-  const tuanCuaMon = data.programme.skills.map((k) => {
-    const dem = new Map<string, number>();
-    for (const r of data.rows) {
-      const s = lichCua(r, k);
-      if (!s?.weekStart || (s.noShow && s.movedFromStart && !s.khongDuThi)) continue;
-      dem.set(s.weekStart, (dem.get(s.weekStart) ?? 0) + 1);
-    }
-    const nhieuNhat = [...dem.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null;
-    return { k, tuan: nhieuNhat ? tuanLich(nhieuNhat, homNay) : null };
-  }).filter((x) => x.tuan);
-  if (!tuanCuaMon.length) return null;
-  const nhom: { tuan: string; mon: string[] }[] = [];
-  for (const x of tuanCuaMon) {
-    const cu = nhom.find((n) => n.tuan === x.tuan);
-    const ten = tenMonNgan(data.programme.code, x.k);
-    if (cu) cu.mon.push(ten); else nhom.push({ tuan: x.tuan!, mon: [ten] });
-  }
-  if (nhom.length === 1) return nhom[0].tuan;
-  return nhom.map((n) => `${n.mon.join(', ')}: ${n.tuan}`).join(' · ');
 }
 
 /** Tổng hay gặp nhất của một cột — giá trị ban đầu của ô "tổng" đầu cột (không phải tổng cố định, Q8). */

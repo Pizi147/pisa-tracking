@@ -3,7 +3,7 @@ import { db, tx } from '../db.ts';
 import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel, ROLE_LABEL, VAI_DANG_KY } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, padCode } from '../util.ts';
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
-import { COT_PRINCIPAL, can, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
 
 /**
@@ -679,7 +679,3 @@ export function setUserSkills(p: Principal, userId: number, skills: string[]): {
   });
 }
 
-/** Người đang xem có phải Quản trị hệ thống không — dùng để bật/tắt màn quản trị. */
-export function isSystemAdmin(p: Principal): boolean {
-  return can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
-}
