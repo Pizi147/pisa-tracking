@@ -96,7 +96,7 @@ export default function LuuTruPage() {
   return (
     <div className="page space-y-3">
       <div>
-        <button className="btn btn-sm btn-ghost" onClick={() => navigate('/hoc-vien')}>‹ {t('Học viên & Lớp')}</button>
+        <button className="btn btn-sm btn-ghost max-sm:min-h-[44px]" onClick={() => navigate('/hoc-vien')}>‹ {t('Học viên & Lớp')}</button>
       </div>
       <h1 className="text-xl font-bold text-slate-100 m-0">{t('Lưu trữ')}</h1>
 
