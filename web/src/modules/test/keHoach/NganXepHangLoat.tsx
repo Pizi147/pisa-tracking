@@ -123,7 +123,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
   const soDangXem = useRef(0);
-  /* RA-LUONG-17: khoá chống gửi lặp của một lần Lưu — lỗi mạng giữ khoá (bấm lại không tạo MT n+1), nhận phản hồi rồi mới đổi. */
+  /* RA-LUONG-17: khoá chống gửi lặp — sinh MỘT lần khi mở panel, giữ qua thử lại; máy chủ so cả nội dung gửi (đổi em / tuần = lần lưu mới). */
   const khoaLuu = useRef(moiKhoaGui('xephl'));
 
   const studentIds = dsEm.filter((h) => ticked.has(h.studentId)).map((h) => h.studentId);
@@ -173,7 +173,6 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
       const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {
         classId, ...thanDot(dot), studentIds, tuan: tuanGui, force, xemTruoc: false, idempotencyKey: khoaLuu.current,
       });
-      khoaLuu.current = moiKhoaGui('xephl');
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       const conLai = emGiuLaiSauLuu(r.dong);
       toast.push(r.daLuu > 0 ? 'ok' : 'error', `Đã xếp ${r.daLuu} em${conLai.length ? `, còn ${conLai.length} em lỗi` : ''}.`);

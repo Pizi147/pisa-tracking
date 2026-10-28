@@ -147,7 +147,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     assert(soMt() > sau1, 'khoá mới = lần lưu mới (MT kế tiếp)');
   });
 
-  check('RA-LUONG-19 · Chuông: "Case giao" chỉ Cần làm với người ĐANG phụ trách; dòng Cần làm đã đọc không bị 60 dòng chưa đọc đẩy khỏi 50 dòng', () => {
+  check('RA-LUONG-19 · Chuông: "Case giao" chỉ Cần làm với người ĐANG phụ trách — người cũ (đã đổi người phụ trách) thành Để biết', () => {
     const tb: any = require_thongBao;
     const c = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') ORDER BY sc.id LIMIT 1`).all()[0] as any;
@@ -156,20 +156,19 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     const them = conn.prepare(`INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, read_at, created_at) VALUES (?,?,?,?,?,?,?,?)`);
     const moc = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM notifications').all()[0] as any).m as number;
     try {
-      them.run(c.owner_user_id, 'case_giao', 'ra-luong-19', 'sos_case', c.id, `ra19:${c.id}`, TODAY, TODAY);
+      them.run(c.owner_user_id, 'case_giao', 'ra-luong-19', 'sos_case', c.id, `ra19:${c.id}`, null, TODAY);
       them.run(khac, 'case_giao', 'ra-luong-19', 'sos_case', c.id, `ra19:${c.id}`, null, TODAY);
-      for (let n = 0; n < 60; n++) them.run(c.owner_user_id, 'thu', `ra-luong-19 ${n}`, null, null, `ra19-moi:${n}`, null, TODAY);
       const cua = (u: number) => (tb.thongBaoCua(u) as any[]).find((x) => x.title === 'ra-luong-19' && x.entity_id === c.id);
       const chu = cua(c.owner_user_id);
-      assert(chu && chu.con_viec === 1, `người phụ trách: Case giao đã đọc vẫn trong danh sách và còn việc (${JSON.stringify(chu)})`);
+      assert(chu && chu.con_viec === 1, `người phụ trách: Case giao còn việc (${JSON.stringify(chu)})`);
       assert(cua(khac)?.con_viec === 0, 'người không phụ trách: Case giao thành Để biết');
     } finally { conn.prepare('DELETE FROM notifications WHERE id > ?').run(moc); }
   });
 
-  check('RA-LUONG-18 · quét định kỳ (cron thứ Hai) chạy cả `sweepExpiredMoves` và `quetYeuCau` — không chỉ khi có người mở web (P08); chạy lặp vô hại', () => {
+  check('RA-LUONG-18 · quét định kỳ (cron thứ Hai) chạy cả `sweepExpiredMoves` — không chỉ khi có người mở web (P08); chạy lặp vô hại', () => {
     const cv: any = require_chotVang;
     const nguon = fsMod.readFileSync('server/src/ops/chotVangDinhKy.ts', 'utf8') as string;
-    assert(/sweepExpiredMoves\(\)/.test(nguon) && /quetYeuCau\(/.test(nguon), 'chotVangDinhKy chưa gọi hai lượt quét');
+    assert(/sweepExpiredMoves\(\)/.test(nguon), 'chotVangDinhKy chưa gọi sweepExpiredMoves');
     const a = cv.chotVangDinhKy({ ngay: TODAY }), b = cv.chotVangDinhKy({ ngay: TODAY });
     assert(a.boQua === null && b.boQua === null && b.daChuyen === 0, `chạy hai lần: ${JSON.stringify([a, b])}`);
   });

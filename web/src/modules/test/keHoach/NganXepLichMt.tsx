@@ -141,7 +141,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
   const [khoaDong, setKhoaDong] = useState('');
   const khoaTick = `${dot}|${lopChon.join(',')}`;
   const soXem = useRef(0);
-  /* RA-LUONG-17: khoá chống gửi lặp của một lần Lưu — lỗi mạng giữ khoá (bấm lại không tạo MT n+1), nhận phản hồi rồi mới đổi. */
+  /* RA-LUONG-17: khoá chống gửi lặp — sinh MỘT lần khi mở panel, giữ qua thử lại; máy chủ so cả nội dung gửi (đổi em / tuần = lần lưu mới). */
   const khoaLuu = useRef(moiKhoaGui('xephl'));
   const thanChung = { attemptNo: dot, tuan: tuanGui, kyNang: kyChon, dotTheoEm, thiLai };
   const khoaXem = JSON.stringify([dot, tuanGui, kyChon, dotTheoEm, thiLai, hangs.map((h) => h.studentId)]);
@@ -215,7 +215,6 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
           loi.push(...ids.map((sid) => ({ studentId: sid, ten: '', hanhDong: 'loi' as const, bai: [], loi: e.message ?? 'Không lưu được.' })));
         }
       }
-      if (!loi.some((d) => !d.ten)) khoaLuu.current = moiKhoaGui('xephl');   // dòng lỗi mạng (không tên) → giữ khoá để bấm lại an toàn
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       toast.push(daLuu > 0 ? 'ok' : 'error', `Đã xếp ${daLuu} em${loi.length ? `, còn ${loi.length} em lỗi` : ''}.`);
       onDone();

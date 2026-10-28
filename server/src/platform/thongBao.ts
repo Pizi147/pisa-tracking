@@ -91,7 +91,7 @@ export function thongBaoCua(userId: number) {
             WHERE n.user_id = ?
          ) x
          LEFT JOIN students s ON s.id = x.student_id
-        ORDER BY (COALESCE(x.con_viec, 0) = 1) DESC, (x.read_at IS NULL) DESC, x.id DESC LIMIT ${THONG_BAO_TOI_DA}`,   // RA-LUONG-19: "Cần làm" (còn việc, kể cả đã đọc) giữ chỗ trước — không bị dòng "Để biết" mới đẩy khỏi 50 dòng
+        ORDER BY (x.read_at IS NULL) DESC, x.id DESC LIMIT ${THONG_BAO_TOI_DA}`,
     )
     .all(userId) as any[];
   /* SL1 (N1): hạn của dòng — lưu sẵn (tự động, Case giao) → hạn thẻ duyệt → hạn việc tiếp của Case (`xuLyCaseMany`, một câu mỗi lô). */
