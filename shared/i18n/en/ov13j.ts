@@ -3,8 +3,6 @@ export const EN_OV13J = {
   'Lịch sử sửa': 'Edit history',
   'Thông tin': 'Info',
   'Target / lộ trình': 'Target / pathway',
-  'Lọc lịch sử sửa': 'Filter edit history',
-  'Chưa có lần sửa nào': 'No edits yet',
   'SĐT': 'Phone',
   'Quan hệ': 'Relation',
   'SĐT phụ huynh': 'Parent phone',
