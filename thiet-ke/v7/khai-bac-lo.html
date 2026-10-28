@@ -176,7 +176,7 @@ button, select, input { font: inherit; color: inherit; }
     var khoa = khoaGoc || (loi && !ql);
     var ghi = khoaGoc ? '<span class="ghi-chu-hang">Đã có xử lý trên web · chỉ QL sửa</span>'
       : loi && !ql ? '<span class="ghi-chu-hang loi">Chưa lưu: em vừa có lần xử lý trên web · chỉ QL sửa</span>'
-      : loi ? '<span class="ghi-chu-hang loi">Chưa lưu: mất kết nối · ô bậc giữ nguyên, bấm Lưu lại</span>'
+      : loi ? '<span class="ghi-chu-hang loi">Chưa lưu: mất kết nối · bấm Lưu lại</span>'
       : ok ? '<span class="ghi-chu-hang ok">✓ Đã lưu</span>'
       : e[3] !== null ? '<span class="ghi-chu-hang doi' + (e[1] !== null && e[3] < e[1] ? ' ha' : '') + '">' + nhanDoi(e) + '</span>' : '';
     var hien = ok ? BAC[e[3]] : e[2];
