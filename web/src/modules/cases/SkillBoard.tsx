@@ -101,7 +101,7 @@ type CaseCard = {
   canClose: boolean; closeBlockers: string[];
   plans: Plan[];
   attempts: { attemptNo: number; week: string | null; attemptKind?: string | null }[];
-  /** VIEW-CASE-LUOT: lượt của Case — chip lượt ở `TenCase` là link ↗ trang lượt. */
+  /** VIEW-CASE-LUOT: lượt của Case — chip lượt ở `TenCase` là link tới trang lượt. */
   luot?: LuotCase | null;
   followUntil: string | null; followOverdue: boolean;
   outcomeLabel: string | null; outcomeNote: string | null; closedOn: string | null;
@@ -391,8 +391,8 @@ export type LuotCase = { id: number; kind: string; classId: number | null; dot: 
 const CHIP_LUOT = 'shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[12px] font-semibold leading-4 text-slate-300 tabular-nums';
 
 /**
- * VIEW-CASE-LUOT: link ↗ tới trang lượt của Case (FT → mock-test, lớp thường → luot-test, ?kn= theo môn) qua `duongDotTest` — kiểu `.link-luot`
- * của mockup `panel-pilot.html` (đầu mục Case): chữ 600 13 px màu nhấn, gạch chân lệch 3 px, "MT3 · W2 SEP ↗". Đang ở chính trang lượt đó → chip thường.
+ * VIEW-CASE-LUOT: link tới trang lượt của Case (FT → mock-test, lớp thường → luot-test, ?kn= theo môn) qua `duongDotTest` — kiểu `.link-luot`
+ * của mockup `panel-pilot.html` (đầu mục Case): chữ 600 13 px màu nhấn, gạch chân lệch 3 px, "MT3 · W2 SEP" (không ký hiệu mũi tên — chủ SP 28/10). Đang ở chính trang lượt đó → chip thường.
  * Vùng bấm 44 px ở điện thoại bằng `after` (như ⋯ `MenuDong`).
  */
 export function LinkLuot({ luot, kn = null }: { luot: LuotCase; kn?: string | null }) {
@@ -401,7 +401,7 @@ export function LinkLuot({ luot, kn = null }: { luot: LuotCase; kn?: string | nu
   if (den.split('?')[0] === pathname) return <span className={CHIP_LUOT}>{luot.dot}</span>;
   return (
     <Link to={den} className="relative shrink-0 whitespace-nowrap text-[13px] font-semibold tabular-nums text-[color:var(--accent)] underline underline-offset-[3px] after:absolute after:-inset-x-1 after:-inset-y-[14px] after:content-[''] sm:after:hidden"
-      title={t('Mở lượt {x}', { x: luot.dot })}>{[luot.dot, luot.tuan ? tuanLich(luot.tuan) : null].filter(Boolean).join(' · ')} <span aria-hidden>↗</span></Link>
+      title={t('Mở lượt {x}', { x: luot.dot })}>{[luot.dot, luot.tuan ? tuanLich(luot.tuan) : null].filter(Boolean).join(' · ')}</Link>
   );
 }
 

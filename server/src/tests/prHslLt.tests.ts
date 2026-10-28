@@ -73,7 +73,7 @@ export async function runPrHslLtTests(t: any) {
     assert(/<Navigate to=\{attemptHref\(\{ id: data\.id, kind: data\.kind, classId: data\.classId, studentId: data\.student\.id \}\)\} replace \/>/.test(doc('web/src/modules/fasttrack/MockDetailPage.tsx')), 'MockDetailPage chuyển cửa');
   });
 
-  check('VIEW-CASE-LUOT · caseDetail + thẻ bảng kỹ năng trả `luot` của Case (id · loại · lớp · nhãn MT{n} / Progress Test); TenCase dựng link ↗ bằng duongDotTest (+ kn), không tự ghép đường', () => {
+  check('VIEW-CASE-LUOT · caseDetail + thẻ bảng kỹ năng trả `luot` của Case (id · loại · lớp · nhãn MT{n} / Progress Test); TenCase dựng link bằng duongDotTest (+ kn), không tự ghép đường', () => {
     const caseSvc: any = cases;
     const th = get(`SELECT sc.id, sc.attempt_id, sc.student_id, sc.cycle_id, a.kind, a.class_id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
        WHERE a.kind = 'progress' AND sc.status != 'done' ORDER BY sc.id LIMIT 1`);

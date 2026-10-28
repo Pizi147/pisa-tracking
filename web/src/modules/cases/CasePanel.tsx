@@ -74,7 +74,7 @@ export type CaseDetail = {
   student: { id: number; code: string; name: string; status: string; phuHuynh?: { parentName: string | null; parentRelation: string | null; parentPhone: string | null } } | null;
   cycle: { id: number; seq: number; route: string | null; target_score: number | null } | null;
   classId: number | null; attemptId: number | null; attemptNo: number | null;
-  /** VIEW-CASE-LUOT: lượt của Case — chip lượt đầu khối Case là link ↗ trang lượt. */
+  /** VIEW-CASE-LUOT: lượt của Case — chip lượt đầu khối Case là link tới trang lượt. */
   luot?: LuotCase | null;
   sosLevel: number | null; urgency: string | null;
   summary: string | null; headline: string; detectedAt: string; reportedBy: string | null;
@@ -208,7 +208,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
           {t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '') })}
         </p>
       )}
-      {/* VIEW-CASE-LUOT (mockup panel-pilot đầu mục Case): có lượt → đầu mục "Case MT3 · W2 SEP ↗", tên Case (phần giữa + SOS) là dòng đầu ngay dưới; Case tay giữ tên ở đầu mục. */}
+      {/* VIEW-CASE-LUOT (mockup panel-pilot đầu mục Case): có lượt → đầu mục "Case MT3 · W2 SEP" (link), tên Case (phần giữa + SOS) là dòng đầu ngay dưới; Case tay giữ tên ở đầu mục. */}
       <DauMuc dau tieuDe="Case" phu={data.luot ? <LinkLuot luot={data.luot} kn={data.topic} />
         : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
         {data.luot && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
