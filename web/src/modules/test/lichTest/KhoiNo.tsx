@@ -98,7 +98,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
   /* UI-LICH-TUAN (dieu-chinh-cuoi khu a): nhóm "Quá hạn chấm" trong thẻ Lịch tuần, thu sẵn; dòng tóm tắt nói đủ khi chỉ một dòng. */
   const tieuDe = t('Quá hạn chấm');
   if (!ds.length) return <div id="lich-test-no"><NhomDau id="lich-test-no-than" rong mo={false} onMo={onMo} tieuDe={tieuDe} phu={t('{n} bài', { n: 0 })} /></div>;
-  const soCot = hep ? 2 : 9;
+  const soCot = hep ? 2 : 8;
   const mot = ds.length === 1 ? ds[0].d : null;
   const tomTat = mot
     ? <>{mot.classCode} · {mot.dotLabel} · {dich(kyNangCua(mot, homNay).chu)} · {t('{n} bài', { n: soBai })} · <Han loai="nhap-diem" han={mot.han} boTinHieu={!!mot.phan && !mot.quaHan} /></>
@@ -114,7 +114,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
               <>
                 {/* E5: ba cột đầu cùng độ rộng với bảng lớp (`COT_DAU_LICH_TEST`) — các bảng thẳng cột. GV chấm giãn (cột không cố định). */}
                 {COT_DAU_LICH_TEST.map((w, i) => <col key={i} style={{ width: w }} />)}
-                <col style={{ width: 72 }} /><col style={{ width: 200 }} /><col /><col style={{ width: 220 }} /><col style={{ width: 44 }} />
+                <col style={{ width: 72 }} /><col style={{ width: 200 }} /><col /><col style={{ width: 220 }} />
                 <col style={{ width: COT_THAO_TAC }} />
               </>
             )}
@@ -125,7 +125,6 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                 <th className="th">{t('Lớp')}</th><th className="th">{t('Đợt')}</th><th className="th">{t('Kỹ năng')}</th>
                 <th className="th text-right">{t('Còn')}</th><th className="th">{t('Hạn')}</th><th className="th">{t('GV chấm')}</th>
                 <th className="th"><span className="sr-only">{t('Trạng thái')}</span></th>
-                <th className="th"><span className="sr-only">{t('Hồ sơ lớp')}</span></th>
                 <th className="th"><span className="sr-only">{t('Thao tác')}</span></th>
               </tr>
             </thead>
@@ -163,7 +162,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                       </>
                     ) : (
                       <>
-                        <td className="td truncate font-semibold text-slate-100" title={d.classCode}>{d.classCode}</td>
+                        <td className="td truncate"><Link to={`/hoc-vien/lop/${d.classId}`} className="ten-ho-so" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link></td>
                         {/* OV-11e (CA3-11): Đợt xuống dòng, không cắt. */}
                         <td className="td py-1.5 leading-[1.35] text-slate-300">{dotTuan(d, homNay)}</td>
                         {/* Kỹ năng xuống dòng, không cắt "W…" (rà #218). */}
@@ -175,10 +174,6 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                         <td className="td whitespace-nowrap">{xong ? <span className="text-slate-500">—</span> : <Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} />}</td>
                         <td className="td py-1.5 text-xs leading-[1.35] text-slate-300"><GvCham gv={d.gvNo} /></td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
-                        <td className="px-1 text-center">
-                          <Link to={`/hoc-vien/lop/${d.classId}`} title={t('Hồ sơ lớp')} aria-label={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 no-underline hover:text-slate-100">↗</Link>
-                        </td>
                         <td className="td text-right">{nut}</td>
                       </>
                     )}

@@ -119,7 +119,7 @@ export function useThamSoUrl(ten: string, macDinh: string): [string, (v: string 
 }
 
 /**
- * OV-13b (đặc tả OV-13 §1): panel số liệu đang mở ghi lên URL (`?so-lieu=<khoá>`) — "Xem hồ sơ ↗" rồi "‹ Tổng quan" mở lại đúng panel (chồng nguồn
+ * OV-13b (đặc tả OV-13 §1): panel số liệu đang mở ghi lên URL (`?so-lieu=<khoá>`) — "Xem hồ sơ" rồi "‹ Tổng quan" mở lại đúng panel (chồng nguồn
  * giữ URL). `khoa` = mã chỉ số (+ bộ lọc phụ) của nơi gọi. M6 6b-1: mở = PUSH (Back trình duyệt ở view gốc đóng panel, không rời trang); đóng = lùi
  * đúng số mục panel đã push (về URL trước khi mở); mở bằng link sâu thì bỏ tham số bằng replace.
  */
