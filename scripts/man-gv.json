@@ -147,6 +147,7 @@
  "web/src/modules/yThuc/ClassYThucCard.tsx",
  "web/src/modules/yThuc/DaThucHienPanel.tsx",
  "web/src/modules/yThuc/DeleteViolationConfirm.tsx",
+ "web/src/modules/yThuc/KhaiBacLoPanel.tsx",
  "web/src/modules/yThuc/KhaiBacPanel.tsx",
  "web/src/modules/yThuc/LoYThucPanel.tsx",
  "web/src/modules/yThuc/NhanViPham.tsx",

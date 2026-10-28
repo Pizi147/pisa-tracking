@@ -77,7 +77,11 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     const xl = Number(params.get('xl')) || null;
     if (moGi === 'da-thuc-hien' && xl) mo({ loai: 'da-thuc-hien', id: xl });
     /* Rà #408 (5): đúng các em của việc "Xác nhận cấp bậc" (em mới vào web) — không phải mọi em chưa xác nhận của lớp. */
-    if (moGi === 'cap-bac') setLoMo({ viec: 'cap-bac', ids: (params.get('em') ?? '').split(',').map(Number).filter((x) => x > 0) });
+    if (moGi === 'cap-bac') {
+      /* KHAI-BAC-LO: không kèm `em` → mọi em của lớp (nút "Khai / sửa cấp bậc"). */
+      const em = (params.get('em') ?? '').split(',').map(Number).filter((x) => x > 0);
+      setLoMo({ viec: 'cap-bac', ids: em.length ? em : null });
+    }
     if (moGi || params.get('loc')) {
       const p = new URLSearchParams(params); p.delete('mo'); p.delete('xl'); p.delete('loc'); p.delete('em');
       setParams(p, { replace: true });
@@ -181,6 +185,10 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
               className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chonN.bat ? 'border-[color:var(--accent)] text-[color:var(--accent)]' : ''}`}>
               {chonN.bat ? '✓ ' : ''}{t('Chọn nhiều')}
             </button>
+          )}
+          {/* KHAI-BAC-LO: một panel mọi em của lớp — không cần Chọn nhiều trước. */}
+          {d.canManage && (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setLoMo({ viec: 'cap-bac', ids: null })}>{t('Khai / sửa cấp bậc')}</button>
           )}
           {d.canRecord && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button>}
         </span>

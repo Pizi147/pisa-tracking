@@ -11,7 +11,6 @@ import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, nhanLoaiXuLy } from '@shared/doma
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
-const GHI_CHU_MIN = 3;
 /** Khai tối đa bậc 6 (WL 2) — hết mạch chính; Report 7+ chỉ đi tiếp trên web. OV-13d: bậc 0 "Chưa có xử lý vi phạm" đứng đầu (Sửa giữ được bậc 0). */
 const BAC_KHAI = [BAC_0_NHAN, ...THANG.map((k) => nhanLoaiXuLy(k))];
 const tenBac = (b: number) => BAC_KHAI[b] ?? '';
@@ -51,8 +50,8 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       </KhungPanel>
     );
   }
-  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc'), chon: true }, { khoa: 'ghi-chu', nhan: t('Ghi chú'), toiThieu: GHI_CHU_MIN }],
-    { bac: bac === null ? '' : 'co', 'ghi-chu': ghiChu });
+  /* KHAI-BAC-LO (chủ SP 28/10): ghi chú tuỳ chọn — chỉ bậc là bắt buộc. */
+  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc'), chon: true }], { bac: bac === null ? '' : 'co' });
   const luu = async () => {
     lf.bam();
     if (loi.length || bac === null) return;
@@ -90,8 +89,8 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
         <Truong nhan={t('Tháng xử lý')} tuyChon>
           <ONgay kieu="thang" value={thang} onChange={setThang} toiDa={homNay ? homNay.slice(0, 7) : null} goiY={t('Chưa chọn')} />
         </Truong>
-        <Truong nhan={t('Ghi chú')} batBuoc loi={lf.loiCua(loi, 'ghi-chu')} dem={{ co: ghiChu.trim().length, can: GHI_CHU_MIN }}>
-          <textarea className="field w-full" {...lf.o(loi, 'ghi-chu')} rows={2} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)}
+        <Truong nhan={t('Ghi chú')} tuyChon>
+          <textarea className="field w-full" rows={2} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)}
             placeholder={t('Ví dụ: Report 2 tháng 8, cô Hà gửi PH')} />
         </Truong>
       </Khoi>

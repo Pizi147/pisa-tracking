@@ -1316,6 +1316,11 @@ api.post('/classes/:id/y-thuc/lo/cap-bac', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return loYThucSvc.loCapBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
 }));
+/** KHAI-BAC-LO: Hoàn tác cả lô Xác nhận cấp bậc — mỗi em về bậc trước (`truoc`), chỉ khi bậc vẫn là bậc vừa lưu. */
+api.post('/classes/:id/y-thuc/lo/cap-bac/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loYThucSvc.loHoanTacCapBac(principalOf(req), pInt(req, 'id'), yThucBody(req));
+}));
 /** YT-6 "Theo thời gian" — HV ĐANG HỌC ở lớp, MỌI trạng thái (khác ba khu vực của `/classes/:id/y-thuc`, đi theo học viên). */
 api.get('/classes/:id/violations', requireAuth, wrap((req) => {
   maybeSimulateReadError();

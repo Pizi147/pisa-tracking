@@ -90,7 +90,9 @@ export type EmLo = {
   xuLy: { duoc: boolean; lyDo: ChuKhoa | null; soViPham: number; tomTat: string };
   ghiNhan: { duoc: boolean; lyDo: ChuKhoa | null; soMoi: number };
   /** Bậc đã khai (0 = "Chưa có xử lý vi phạm"), null = chưa khai. */
-  capBac: { duoc: boolean; lyDo: ChuKhoa | null; khai: number | null };
+  capBac: { duoc: boolean; lyDo: ChuKhoa | null; khai: number | null; luc: string | null };
 };
 export type BangLo = { classId: number; classCode: string; canManage: boolean; laQl: boolean; em: EmLo[] };
-export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[] };
+export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[];
+  /** KHAI-BAC-LO: bậc khai trước khi lưu (null = chưa khai) + bậc vừa lưu — để Hoàn tác cả lô. */
+  truoc?: { bac: number; thang: string | null; ghiChu: string } | null; bac?: number };
