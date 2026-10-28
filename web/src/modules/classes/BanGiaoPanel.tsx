@@ -164,7 +164,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
             </div>
 
             <section aria-label={t('Hệ thống tự điền')} className="surface-2 rounded-lg p-3">
-              <h4 className="mb-2 mt-0 text-[12px] font-extrabold  text-slate-500">{t('Tự điền · chỉ đọc')}{em.tuDienDaChup && ` · ${t('chụp lúc xác nhận')}`}</h4>
+              <h4 className="mb-2 mt-0 text-[12px] font-semibold text-slate-500">{t('Tự điền · chỉ đọc')}{em.tuDienDaChup && ` · ${t('chụp lúc xác nhận')}`}</h4>
               {em.tuDien ? (
                 <div className={dong}>
                   <span className="text-slate-500">{t('Kết quả')}</span><span className="text-slate-200">{dich(em.tuDien.ketQua)}</span>
@@ -179,7 +179,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
             </section>
 
             <section aria-label={t('Thông tin bàn giao của GVBM')}>
-              <h4 className="mb-2 mt-0 text-[12px] font-extrabold  text-slate-500">
+              <h4 className="mb-2 mt-0 text-[12px] font-semibold text-slate-500">
                 {t('Bàn giao của GVBM · mỗi môn một câu')}{ghi && !em.xacNhan && <span className="ml-2 font-normal normal-case tracking-normal text-slate-500">{t('GVCN điền thay được')}</span>}
               </h4>
               <ul className="m-0 list-none space-y-1.5 p-0">
@@ -283,7 +283,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
         dongTren: <p className="m-0 px-4 pt-2 text-right text-xs tabular-nums text-slate-400">{t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: soDaCo, b: dto.tong })}</p>,
       }}>
       <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={t('Bàn giao môn {mon}', { mon: m0.ngan })}>
-        <div role="row" className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-[12px] font-extrabold  text-slate-500 sm:grid">
+        <div role="row" className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-[12px] font-semibold text-slate-500 sm:grid">
           <span role="columnheader">{t('Học viên')}</span><span role="columnheader">{t('Kết quả')}</span><span role="columnheader">{t('Thông tin bàn giao')}</span>
         </div>
         {dto.ds.map((e) => {

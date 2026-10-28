@@ -26,7 +26,8 @@ export function OPhan({ phan, ct, quaHan }: { phan: PhanCuaBan; ct: string | nul
           </span>
         ))}
       {khac && (
-        <span className="text-slate-500" title={du(khac.kyNang)}>
+        <span className="truncate text-slate-500"
+          title={`${du(khac.kyNang)}${t(': GV khác')}${khac.quaHanNgay !== null ? ` · ${t('⚠ quá hạn {quaHanNgay} ngày', { quaHanNgay: khac.quaHanNgay })}` : ''}`}>
           {mon(khac.kyNang)}{t(': GV khác')}{khac.quaHanNgay !== null && <> · <b className="font-semibold text-late">{t('⚠ quá hạn {quaHanNgay} ngày', { quaHanNgay: khac.quaHanNgay })}</b></>}
         </span>
       )}
@@ -99,8 +100,9 @@ const HanHang = ({ l }: { l: LopLichTest }) => (l.conBai === 0
   ? <span className="text-slate-500">—</span>
   : <Han loai="nhap-diem" han={l.han} boTinHieu={!!l.phan && !l.quaHan} />);
 
-/** E5 (PR-HSM): độ rộng ba cột đầu (Lớp · Đợt · Kỹ năng) — dùng chung với bảng khối 1 (`KhoiNo`) để các bảng thẳng cột. */
-export const COT_DAU_LICH_TEST = [190, 120, 110] as const;
+/** E5 (PR-HSM): độ rộng ba cột đầu (Lớp · Đợt · Kỹ năng) — dùng chung với bảng khối 1 (`KhoiNo`) để các bảng thẳng cột.
+ *  SUA-375-2: "MT1 · W1 SEP" / "L, R, W1, W2, S" cần 98 px + đệm 24 → một dòng; Lớp (mã ~70–100 px) nhường bớt. Tổng giữ 410. */
+export const COT_DAU_LICH_TEST = [160, 125, 125] as const;
 
 /**
  * HÀNG LỚP của Lịch tuần (UI-LICH-TUAN, dieu-chinh-cuoi khu a): MỘT DÒNG gọn, không hàng tiêu đề cột —
@@ -124,7 +126,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
   /** SV-S-EXPERT: lượt S Ex của tuần — cột S Ex trong lưới FT. */
   sEx: LichTest['sEx'];
 }) {
-  const cot = hep ? [null, 92, 96] : [174, null, ...(coChiNhanh ? [110] : []), 110, 180, 140, 44];   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày"
+  const cot = hep ? [null, 92, 82] : [174, null, ...(coChiNhanh ? [110] : []), 110, 180, 220, 44];   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
   const soCot = cot.length;
   /* Lớp kế (sau lớp này, vòng lên) còn bài của người xem — cùng số "… của bạn: còn n bài" ở hàng lớp. */
   const onHet = (l: LopLichTest) => () => {

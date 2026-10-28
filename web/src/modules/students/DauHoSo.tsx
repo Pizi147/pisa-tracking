@@ -156,35 +156,23 @@ function NutGap({ mo, onClick, children }: { mo: boolean; onClick: () => void; c
 /**
  * THANH "VIỆC CẦN LÀM" (UI-HO-SO-HV, `ho-so-hv.html` `.thanh-viec` + ô việc của Hồ sơ lớp khu b) — CHỖ DUY NHẤT trên hồ sơ có việc: mỗi việc CỦA NGƯỜI XEM
  * với em một ô (tên việc · hạn `dd/mm` · nút động từ), vạch trái theo hạn (quá hạn đỏ · còn lại xanh), việc gấp nhất là nút chính. Bấm = mở đúng chỗ làm
- * ngay tại trang (ngăn Case / tab Ý thức / panel). Quá 3 việc → "+n việc khác của tôi"; việc của người khác gập. Người xem không có việc → không vẽ (T72).
+ * ngay tại trang (cột Case & PA / ngăn Case / tab Ý thức / panel). Quá 3 việc → "+n việc khác của tôi". UI-HO-SO-HV-2 (mockup M5): CHỈ việc của người xem — bỏ
+ * "n việc của người khác" (TVV / CX / Admin vẫn có khối Đang xử lý). Người xem không có việc → không vẽ (T72).
  */
 export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; nguoiKhac: Viec[] } | null | undefined; homNay: string | null; onLam: (x: Viec) => void }) {
-  const [mo, setMo] = useState<'ban' | 'khac' | null>(null);
+  const [mo, setMo] = useState(false);
   if (!viec?.cuaBan.length) return null;
-  const hien = mo === 'ban' ? viec.cuaBan : viec.cuaBan.slice(0, 3);
+  const hien = mo ? viec.cuaBan : viec.cuaBan.slice(0, 3);
   const con = viec.cuaBan.length - 3;
   return (
-    <section aria-label={t('Việc cần làm')} className="flex flex-col gap-1.5">
+    <section aria-label={t('Việc của tôi')} className="flex flex-col gap-1.5">
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {hien.map((x, i) => <OViec key={x.key} x={x} chinh={i === 0} homNay={homNay} onLam={onLam} />)}
       </div>
-      {(con > 0 || viec.nguoiKhac.length > 0) && (
-        <div className="flex flex-wrap items-center justify-end gap-x-3.5">
-          {con > 0 && <NutGap mo={mo === 'ban'} onClick={() => setMo(mo === 'ban' ? null : 'ban')}>{t('{n} việc khác của tôi', { n: con })}</NutGap>}
-          {viec.nguoiKhac.length > 0 && (
-            <NutGap mo={mo === 'khac'} onClick={() => setMo(mo === 'khac' ? null : 'khac')}>{t('{n} việc của người khác', { n: viec.nguoiKhac.length })}</NutGap>
-          )}
+      {con > 0 && (
+        <div className="flex justify-end">
+          <NutGap mo={mo} onClick={() => setMo(!mo)}>{t('{n} việc khác của tôi', { n: con })}</NutGap>
         </div>
-      )}
-      {mo === 'khac' && (
-        <ul className="m-0 flex list-none flex-col gap-1.5 px-3 pb-0.5">
-          {viec.nguoiKhac.map((x) => (
-            <li key={x.key} className="grid grid-cols-1 items-baseline gap-x-3 gap-y-0.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_auto]">
-              <span className="text-slate-200">{chuViec(x)}<span className="text-[12px] text-slate-400"> · {tenNguoi(x)}{x.nguoi.vai ? `, ${vaiViec(x)}` : ''}</span></span>
-              <span className="sm:text-right"><HanViec x={x} homNay={homNay} /></span>
-            </li>
-          ))}
-        </ul>
       )}
     </section>
   );
@@ -196,7 +184,8 @@ function OViec({ x, chinh, homNay, onLam }: { x: Viec; chinh: boolean; homNay: s
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 rounded-[10px] border border-l-4 bg-[color:var(--surface)] px-3 py-2.5"
       style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
-      <span className="min-w-0 truncate text-[14px] text-slate-100" title={chuViec(x)}><ChuViec chu={chuViec(x)} /></span>
+      {/* SUA-375-2: điện thoại tên việc xuống dòng (không cắt "…"); ≥ 640 px một dòng + title như cũ. */}
+      <span className="min-w-0 text-[14px] text-slate-100 sm:truncate" title={chuViec(x)}><ChuViec chu={chuViec(x)} /></span>
       {x.mo
         ? <button type="button" className={['btn btn-sm row-span-2 max-sm:min-h-[44px]', chinh && 'btn-primary'].filter(Boolean).join(' ')} onClick={() => onLam(x)}>{nutViec(x)}</button>
         : <span className="row-span-2" />}

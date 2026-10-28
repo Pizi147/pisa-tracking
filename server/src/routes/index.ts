@@ -121,6 +121,7 @@ import { timGiaoVien } from '../giaoVien/phamVi.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
+import { gvTre } from '../worklist/gvTre.ts';   // M6 6b-4
 import * as caseSvc from '../cases/cases.ts';
 import * as ownerSvc from '../cases/owner.ts';
 import * as regularSvc from '../normal/regular.ts';
@@ -2066,7 +2067,7 @@ api.get('/giao-vien/:id/chi-so', requireAuth, wrap((req) => {
 api.get('/giao-vien/:id/chi-so/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return giaoVienPtSvc.oChiSoHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'),
-    { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, cot: qStr(req, 'cot') ?? '', loc: qStr(req, 'loc') ?? null });
+    { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, cot: qStr(req, 'cot') ?? '', loc: qStr(req, 'loc') ?? null, cn: soDuong(req.query.cn, 'cn') });
 }));
 api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2117,6 +2118,13 @@ api.get('/tong-quan/viec-cua-toi', requireAuth, wrap((req) => {
 api.get('/tong-quan/mock-test', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanMt(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
+}));
+/* M6 6b-4: panel "GV chấm quá hạn" — không `gv`: Admin (cùng tập khối Mock Test); `gv` (id · 0 · -1): QL, cùng tập Trễ chấm của GV đó (Q8). */
+api.get('/tong-quan/gv-tre', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const gvChu = req.query.gv === undefined ? null : String(req.query.gv).trim();
+  if (gvChu !== null && !/^-?\d+$/.test(gvChu)) throw badRequest('Thiếu giáo viên.');
+  return gvTre(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ...(gvChu !== null ? { gv: Number(gvChu) } : {}) });
 }));
 api.get('/tong-quan/lop-toi-day', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2211,6 +2219,22 @@ api.post('/interventions/:id/de-xuat-doi-pa', requireAuth, wrap((req) => {
 api.post('/interventions/xac-nhan-pa-lo', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanPaNhieu(principalOf(req), req.body);
+}));
+/**
+ * HOAN-TAC-XN (luật N3): Hoàn tác Xác nhận PA / lô PA / Xác nhận Case — người vừa xác nhận, trong `HOAN_TAC_PA_MS` (+5 s); bị đè / quá giờ → 409. Một PA, Case: trả Case;
+ * lô: `{ ids }` (= `ok` của lô xác nhận) → `{ ok, loi }`.
+ */
+api.post('/interventions/:id/hoan-tac-xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.hoanTacXacNhanPa(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/interventions/hoan-tac-xac-nhan-pa-lo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.hoanTacXacNhanPaNhieu(principalOf(req), req.body);
+}));
+api.post('/cases/:id/hoan-tac-xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.hoanTacXacNhanCase(principalOf(req), pInt(req, 'id'));
 }));
 api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2378,6 +2402,11 @@ api.post('/cases/:id/nguoi-phu-trach', requireAuth, wrap((req) => {
 api.post('/cases/:id/xac-nhan-s', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.xacNhanCaseS(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** HOAN-TAC-XN: Hoàn tác Xác nhận Case Speaking — cùng luật Hoàn tác Xác nhận Case; trả Case. */
+api.post('/cases/:id/hoan-tac-xac-nhan-s', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.hoanTacXacNhanCaseS(principalOf(req), pInt(req, 'id'));
 }));
 api.delete('/cases/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

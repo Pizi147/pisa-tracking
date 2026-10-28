@@ -460,8 +460,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         <div>
           {vang && <div className="mb-1.5 text-xs font-medium text-slate-300">{t('Em có làm bài?')}</div>}
           <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_4rem] items-end gap-1.5">
-            {tc.map((n) => <span key={n} className="text-center text-xs font-semibold text-slate-400">{n}</span>)}
-            <span className="text-center text-xs font-semibold text-slate-400">Band</span>
+            {tc.map((n) => <span key={n} className="text-center text-xs font-medium text-slate-400">{n}</span>)}
+            <span className="text-center text-xs font-medium text-slate-400">Band</span>
             {tc.map((n, i) => (
               <input key={n} className={oSo('w-full px-1 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === i)} inputMode="numeric"
                 value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${n}`} aria-invalid={loi?.o === i || undefined} disabled={busy}
@@ -689,7 +689,7 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {dienThoai && <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20" />}
         <div className="border-b px-3.5 pb-2 pt-3" style={{ borderColor: 'var(--line)' }}>
-          <div className="text-[15px] font-extrabold text-slate-100">{ten}</div>
+          <div className="text-[15px] font-bold text-slate-100">{ten}</div>
           <div className="mt-0.5 truncate text-xs text-slate-400" title={nhanHop}>{phu}</div>
         </div>
         <div className="flex flex-col gap-3 px-3.5 py-3">{children}</div>

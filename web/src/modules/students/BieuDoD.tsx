@@ -19,6 +19,8 @@ export type BieuDoDProps = {
   cases: CaseD[]; thi: ThiD | null; homNay: string;
   /** Mọi khoảng Tạm dừng của em (`den` null = đang dừng) — dải xám "Tạm dừng", không nối điểm qua. */
   tamDung?: { tu: string; den: string | null }[];
+  /** UI-HO-SO-HV-2: tuần đang rê ở Tiến độ trên lớp (thứ Hai) — tô cột tuần đó. */
+  toTuan?: string | null;
   lo: number; hi: number; buoc: number; fmt: (v: number) => string;
 };
 
@@ -46,6 +48,12 @@ export function KyHieuPa({ k, x, y, r = 5 }: { k: string; x: number; y: number; 
   if (k === 'worse') return <path d={`M${x - r + 1} ${y - r + 1} L${x + r - 1} ${y + r - 1} M${x + r - 1} ${y - r + 1} L${x - r + 1} ${y + r - 1}`} stroke={mau} strokeWidth="1.8" strokeLinecap="round" />;
   return <g fill={mau}>{[-1, 0, 1].map((i) => <circle key={i} cx={x + i * (r - 1)} cy={y + r - 1.5} r="1.2" />)}</g>;
 }
+/** Thanh Case theo mức SOS — cùng dáng chip `lopSos` (MAU-MUC): [nền, viền, chữ]; SOS 3 không còn vẽ như SOS 2. */
+const MAU_THANH_SOS: Record<number, [string, string, string]> = {
+  1: ['var(--surface)', 'rgb(var(--sos1-rgb))', 'rgb(var(--sos1-chu-rgb))'],
+  2: ['var(--sos2-nen)', 'rgb(var(--sos2-rgb))', 'rgb(var(--sos2-chu-rgb))'],
+  3: ['var(--sos3-nen)', 'var(--sos3-vien)', 'var(--sos3-tren)'],
+};
 const MAU_KQ = { vuot: 'rgb(var(--kq-vuot-rgb))', bang: 'rgb(var(--kq-bang-rgb))', duoi: 'rgb(var(--kq-duoi-rgb))' } as const;
 /** ✓ / ✗ so kỳ vọng của lượt (vượt · bằng · dưới); `dat` = lớp thường so ngưỡng đạt: bằng ngưỡng là đạt (`ratioResult`), chỉ hai màu. */
 export const kqSo = (v: number | null, kv: number | null, dat = false) => (v == null || kv == null ? null : dat ? (v >= kv - 1e-9 ? 'vuot' : 'duoi')
@@ -158,6 +166,7 @@ export function BieuDoD(o: BieuDoDProps) {
     if (b - a <= chu.length * 7.5 && chu.includes(' ')) chu = d.nam;
     if (b - a > chu.length * 7.5) nen.push(<text key={`t${k}`} x={(a + b) / 2} y={17} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>{chu}</text>);
   });
+  if (o.toTuan && trong(o.toTuan)) nen.push(<rect key="re" x={Xl(o.toTuan)} y={0} width={cw} height={H} fill="var(--accent)" opacity=".16" />);
   if (trong(nay)) nen.push(<rect key="nay" x={Xl(nay)} y={0} width={cw} height={H} fill="var(--hong)" opacity=".14" />);
   const thiTrong = thiKhoi && trong(thiKhoi[0]);
   if (o.thi && thiKhoi && thiTrong) {
@@ -249,7 +258,7 @@ export function BieuDoD(o: BieuDoDProps) {
       const yt = Y(o.thi.v), tg = o.thi.target;
       if (tg != null && o.thi.v < tg) ve.push(lech('thilc', xt, yt, Y(tg), fmt(tg - o.thi.v), true));
       ve.push(dau('thi', xt, yt, o.thi.goi, <rect x={xt - 8} y={yt - 8} width="16" height="16" transform={`rotate(45 ${xt} ${yt})`} fill="var(--lich-chu)" stroke="var(--surface)" strokeWidth="2" />));
-      ve.push(<text key="thic" x={xt} y={tg != null && o.thi.v < tg ? yt + 24 : yt - 14} textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--text)" aria-hidden>{fmt(o.thi.v)}</text>);
+      ve.push(<text key="thic" x={xt} y={tg != null && o.thi.v < tg ? yt + 24 : yt - 14} textAnchor="middle" fontSize="15" fontWeight="700" fill="var(--text)" aria-hidden>{fmt(o.thi.v)}</text>);
     } else {   // chờ KQ / dự kiến: chỉ cột; vùng chạm = chính cột / khối (vòng focus ôm cột)
       const a = Xl(thiKhoi[0]), b = Xl(thiKhoi[1]) + cw;
       ve.push(dau('thi', xt, py1 - 10, o.thi.goi, null, { x: a + 1, y: py0, w: b - a - 2, h: py1 - py0 }));
@@ -293,11 +302,10 @@ export function BieuDoD(o: BieuDoDProps) {
     ve.push(<text key={`lc${li}`} x={0} y={cy + 4} fontSize="13" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>Case</text>);
     if (l.coPa) ve.push(<text key={`lp${li}`} x={0} y={pyy + 4} fontSize="13" fontWeight="700" fill="var(--text-dim)" fontFamily={PHONG}>{t('PA')}</text>);   // một nhãn cho mọi hàng PA của làn
     l.cs.forEach((c) => {
-      const dong = !!c.dong, s2 = (c.sos ?? 0) >= 2;
-      const mauV = s2 ? 'rgb(var(--sos2-rgb))' : 'rgb(var(--sos1-rgb))';
+      const dong = !!c.dong;
       const chu = `Case ${c.chu}${c.mt ? ` · ${c.mt}` : ''}${dong ? ` · ${t('đã đóng')}` : c.sos ? ` · SOS ${c.sos}` : ''}`;
-      ve.push(thanh(`c${c.id}`, Xl(c.mo) + 2, Xl(c.dong ?? nay) + cw - 2, cy, dong ? 'var(--surface)' : s2 ? 'var(--sos2-nen)' : 'var(--surface)', dong ? 'var(--line-strong)' : mauV,
-        chu, dong ? 'var(--text-dim)' : s2 ? 'rgb(var(--sos2-chu-rgb))' : 'rgb(var(--sos1-chu-rgb))', c.goi, dong));
+      const [nenT, vien, mauChu] = dong ? ['var(--surface)', 'var(--line-strong)', 'var(--text-dim)'] : MAU_THANH_SOS[Math.min(3, Math.max(1, c.sos ?? 1))];
+      ve.push(thanh(`c${c.id}`, Xl(c.mo) + 2, Xl(c.dong ?? nay) + cw - 2, cy, nenT, vien, chu, mauChu, c.goi, dong));
       c.pa.forEach((p) => {
         const pyy = lanY[li].pyy + 30 * (l.paHang!.get(p.id) ?? 0);
         if (!p.den && p.denDk && cot(p.denDk) > cot(nay) && trong(nay)) {

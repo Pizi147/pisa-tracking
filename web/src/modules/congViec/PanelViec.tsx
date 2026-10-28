@@ -226,7 +226,7 @@ const chanViecTiep = (onTiep: (() => void) | null | undefined, xong: boolean) =>
 } : undefined);
 const hetViec = (onTiep: (() => void) | null | undefined) => () => (onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null);
 
-export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTiep = null }: {
+export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTiep = null, chiEmViec = false }: {
   it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'> & Partial<Pick<WorkItem, 'key' | 'phu' | 'kns'>>;
   onDong: () => void; onDaLam: () => void;
   /** OV-12e: mở từ panel số liệu — "← Danh sách". */
@@ -235,6 +235,8 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
   tuMo?: boolean;
   /** R1-LUU-TIEP: việc kế của danh sách (Công việc, Chấm Test, thanh việc lớp). */
   onTiep?: (() => void) | null;
+  /** M6 6b-4 (Nhập hộ ở panel GV chấm quá hạn): chỉ hàng các em của dòng (`emIds`), không chỉ khi một em — "Cả lớp" vẫn mở đủ. */
+  chiEmViec?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const { data, error, reload } = useApi<BangTheoLuot>(duongDiemTheoLuot(it.classId!, it.luot!), [it.classId, it.luot]);
@@ -247,8 +249,9 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
   const [tieuDe] = useState(it.tieuDe);
   /* OV-15b (mục 1, mockup 2 khung 1a / 2): lưới chung, chỉ cột của việc + Kết quả, con trỏ ở ô trống đầu. Việc một em: chỉ hàng em đó;
      "Cả lớp" mở mọi em + mọi cột. */
-  const chiAttempt = useMemo(() => (data && it.studentId !== null
-    ? new Set((data.ft?.rows ?? data.thuong?.rows ?? []).filter((r) => r.studentId === it.studentId).map((r) => r.attemptId)) : null), [data, it.studentId]);
+  const em = chiEmViec ? emCuaViec(it) : it.studentId !== null ? [it.studentId] : null;
+  const chiAttempt = useMemo(() => (data && em
+    ? new Set((data.ft?.rows ?? data.thuong?.rows ?? []).filter((r) => em.includes(r.studentId)).map((r) => r.attemptId)) : null), [data, em?.join()]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* OV-12e: đầu panel v3 — tên việc + chip hạn / lớp · lượt ↗ (xem Điểm theo lớp, tách khỏi ô nhập). */
   const dau = dauViec({
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
@@ -506,7 +509,7 @@ function PanelPhoiHop({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => voi
   const { data, loading, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos`, [it.classId]);
   const dau = dauViec({
     han: it.due ? <ChipHan loai="phoi-hop" han={it.due} /> : null,
-    ngCanh: <Link className="link" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode} <span aria-hidden className="text-xs">↗</span></Link>,
+    ngCanh: <Link className="ten-ho-so" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode}</Link>,
   });
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} dau={dau} onDong={onDong}>

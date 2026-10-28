@@ -974,6 +974,10 @@ export const TRAN_GHI_LO = {
   hoanTacKetQua: 99,   // đo 76 câu → max(76 + 10, ⌈76 × 1,3⌉)
   /** SV-BAI-LOP-2: POST /interventions/:id/hoan-tac-them — gỡ PA vừa thêm (như Xoá PA) + nhật ký, trả Case. */
   hoanTacThemPa: 106,   // đo 81 câu (~40 là `caseDetail` trả về) → max(81 + 10, ⌈81 × 1,3⌉)
+  /** HOAN-TAC-XN: POST /interventions/:id/hoan-tac-xac-nhan · /cases/:id/hoan-tac-xac-nhan · /cases/:id/hoan-tac-xac-nhan-s — trả nguyên trạng trước xác nhận + nhật ký, trả Case. */
+  hoanTacXacNhanPa: 110,   // đo 84 câu (~40 là `caseDetail` trả về) → max(84 + 10, ⌈84 × 1,3⌉)
+  hoanTacXacNhanCase: 114,   // đo 87 câu (~40 là `caseDetail` trả về) → max(87 + 10, ⌈87 × 1,3⌉)
+  hoanTacXacNhanCaseS: 103,   // đo 79 câu (~40 là `caseDetail` trả về) → max(79 + 10, ⌈79 × 1,3⌉)
   /** OV-15d: đồng bộ thông báo tự động của MỘT người (`dongBoThongBaoTuDong`, khi mở chuông ≤ 1 lần / 5 phút) — QL / GVCN, trong giao dịch rồi cuộn lại. */
   dongBoThongBaoQL: 41,   // đo 31 câu (×3) → max(31 + 10, ⌈31 × 1,3⌉)
   dongBoThongBaoGVCN: 50,   // đo 38 câu (×3, 1 081 dòng) → max(38 + 10, ⌈38 × 1,3⌉)
