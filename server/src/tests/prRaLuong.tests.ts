@@ -13,6 +13,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_sos: any = await import('../cases/sos.ts');
   const require_mywork: any = await import('../worklist/mywork.ts');
   const require_perm: any = await import('../permissions.ts');
+  const require_hangLoat: any = await import('../students/hangLoat.ts');
   const require_d: any = await import('../../../shared/domain/index.ts');
   console.log('\nRA-LUONG · rà soát luồng đêm 29/10');
 
@@ -84,6 +85,28 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     const nguon = fsMod.readFileSync('web/src/modules/classes/DauTrangLop.tsx', 'utf8') as string;
     const dong = nguon.split('\n').find((l) => l.includes('const soViecQuaHan')) ?? '';
     assert(/demViec\(/.test(dong) && !/demQuaHan/.test(nguon), `soViecQuaHan: ${dong.trim()}`);
+  });
+
+  check('RA-LUONG-12 · Hàng loạt học viên: lỗi máy chủ ở em giữa lô → em trước đã lưu vẫn báo "ok" + em đó và em sau "chưa lưu", không ném 500 cả lô', () => {
+    const hl: any = require_hangLoat;
+    const ds = conn.prepare(
+      `SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id AND c.code = 'MB FT 101'
+        WHERE s.status = 'active' AND s.archived_at IS NULL ORDER BY s.id LIMIT 3`).all().map((x: any) => x.id as number);
+    assert(ds.length === 3, 'seed phải có 3 em đang học MB FT 101');
+    conn.exec(`CREATE TEMP TRIGGER ra_luong_12 BEFORE UPDATE ON students WHEN NEW.id = ${ds[1]} BEGIN SELECT RAISE(ABORT, 'thu loi may chu'); END`);
+    let kq: any = null, nem: any = null;
+    try { kq = hl.chay(P.mbManager, { viec: 'tam-dung', studentIds: ds }); } catch (e) { nem = e; }
+    finally { conn.exec('DROP TRIGGER IF EXISTS ra_luong_12'); }
+    try {
+      assert(!nem, `không được ném cả lô: ${nem?.message}`);
+      assert(kq.ok.join() === String(ds[0]) && kq.failed.map((f: any) => f.studentId).join() === `${ds[1]},${ds[2]}`, `ok ${kq?.ok} · failed ${JSON.stringify(kq?.failed)}`);
+    } finally { if (kq?.ok?.length) hl.chay(P.mbManager, { viec: 'hoan-tac-tam-dung', studentIds: kq.ok }); }
+  });
+
+  check('RA-LUONG-11 · Ý thức cả lớp: lưu được một phần → giữ nháp + còn "đã sửa" (đóng thì hỏi) — không mất chữ đang gõ của em chưa lưu', () => {
+    const nguon = fsMod.readFileSync('web/src/modules/yThuc/LoYThucPanel.tsx', 'utf8') as string;
+    assert(/if \(coOk\) \{ if \(!coLoi\) xoaNhap\(\);/.test(nguon), 'xoá nháp cả khi còn em chưa lưu');
+    assert(/daSua: \(!soOk \|\| soLoi > 0\)/.test(nguon), 'còn em chưa lưu mà panel không coi là đã sửa');
   });
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {

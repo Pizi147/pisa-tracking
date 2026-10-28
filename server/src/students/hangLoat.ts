@@ -175,7 +175,13 @@ export function chay(p: Principal, input: {
         });
         kq.ok.push(id);
       } catch (err) {
-        if (!(err instanceof HttpError)) throw err;
+        if (!(err instanceof HttpError)) {
+          /* RA-LUONG-12: lỗi máy chủ ở giữa lô — các em trước đã chốt (mỗi em một giao dịch): trả đúng em đã lưu + nhật ký, em này và các em sau "chưa lưu"
+             (như luuLo.ts) — trước đây ném 500, web báo cả lô chưa lưu, Thử lại kẹt ở em đã xong. */
+          console.error('[hang-loat]', viec, id, err);
+          kq.failed.push(...lamDuoc.slice(lamDuoc.indexOf(id)).map((sid) => ({ studentId: sid, message: 'Lỗi máy chủ — chưa lưu em này, thử lại.' })));
+          break;
+        }
         kq.failed.push({ studentId: id, message: err.message });
       }
     }
