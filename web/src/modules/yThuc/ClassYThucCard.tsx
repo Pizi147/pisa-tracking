@@ -424,10 +424,18 @@ function ThangNho({ x, lanNay }: { x: DongEm; lanNay: boolean }) {
 }
 
 /** Khối Duyệt · thu hồi: một dòng trạng thái lần xử lý gần nhất; bấm → xem lần xử lý (nơi có Thu hồi, luật 5). */
-function DuyetThuHoi({ x, homNay, canManage, onXem }: { x: DongEm; homNay: string; canManage: boolean; onXem: (id: number) => void }) {
+/** Dùng chung với tab Ý thức hồ sơ HV (UI-Y-THUC-HV) — một khái niệm một chữ. */
+export type HangTrangThai = Pick<DongEm, 'thuHoi' | 'deXuat' | 'tuChoi' | 'xuLyGanNhat' | 'baoPh'>;
+
+export function DuyetThuHoi({ x, homNay, canManage, onXem, link = false }: {
+  x: HangTrangThai; homNay: string; canManage: boolean; onXem: (id: number) => void;
+  /** Tab HV (mockup v7): chữ lần xử lý là link gạch chân — lối vào Xem lần xử lý (Thu hồi, QL duyệt). Tab lớp: chữ mờ như mockup V5. */
+  link?: boolean;
+}) {
   const nut = (id: number, chu: ReactNode, phu?: ReactNode) => (
     <button type="button" className="group/xem block min-h-[44px] border-0 bg-transparent p-0 text-left text-[13px] text-dim appearance-none sm:min-h-0" onClick={() => onXem(id)}>
-      <span className="group-hover/xem:text-[color:var(--accent)] group-hover/xem:underline">{chu}</span>{phu}
+      <span className="sr-only">{t('Xem lần xử lý')} </span>
+      <span className={link ? 'font-semibold text-[color:var(--accent)] underline underline-offset-2' : 'group-hover/xem:text-[color:var(--accent)] group-hover/xem:underline'}>{chu}</span>{phu}
     </button>
   );
   if (x.thuHoi?.cho) return nut(x.thuHoi.id, dich(x.thuHoi.nhan), <span className="block text-soon">{t('Đang xin thu hồi · chờ QL')}</span>);
@@ -447,7 +455,7 @@ function DuyetThuHoi({ x, homNay, canManage, onXem }: { x: DongEm; homNay: strin
 }
 
 /** Khối Báo PH (TVV): viên trạng thái việc Báo PH mới nhất — chờ (vàng) · quá hạn (đỏ + ⚠) · đã báo (✓) · đã bỏ. */
-function BaoPh({ x, homNay }: { x: DongEm; homNay: string }) {
+export function BaoPh({ x, homNay }: { x: HangTrangThai; homNay: string }) {
   const b = x.baoPh;
   if (!b) return <span className="text-faint">—</span>;
   /* Mockup `.bd-td`: viên tròn không viền, chấm màu chữ phía trước; ⚠ chỉ khi quá hạn (luật V5 — mockup vẽ ⚠ cả lúc chờ). */
