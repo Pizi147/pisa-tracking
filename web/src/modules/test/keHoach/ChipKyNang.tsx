@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { nhanTuanKhoa, type KnGon, type LoaiTtGon, type OGon } from '@shared/domain/index.ts';
 import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -28,7 +29,7 @@ const O_KN: Record<KnGon['loai'], string> = {
 export const O_LUOI = 'flex w-full min-h-[56px] flex-col justify-center gap-[3px] border-0 bg-transparent px-2 py-1.5 text-left'
   + ' hover:bg-[var(--nut-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)]';
 
-export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, children }: {
+export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false, children }: {
   o: OGon;
   /** Tên đợt đọc màn (`MT3`, `Progress Test`). */
   nhan: string;
@@ -38,6 +39,10 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, children }: {
   khoa?: { khaiGiang: string | null; tongTuan: number | null; tuan: string | null } | null;
   chon?: boolean;
   onMo: (el: HTMLElement) => void;
+  /** GV chỉ xem: ô là LINK tới trang lượt (Ctrl / chuột giữa mở tab mới) thay vì mở hộp. */
+  href?: string | null;
+  /** Mẫu tĩnh (chú giải ⓘ): không bấm, không nhận Tab. */
+  tinh?: boolean;
   /** Dòng ghi chú lịch (sửa tại chỗ) — dưới ô, ngoài nút. */
   children?: ReactNode;
 }) {
@@ -49,10 +54,9 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, children }: {
     kq ? `${kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(kq.ovr)}` : o.tt?.chu,
     o.kn?.map((k) => `${k.ten} ${CHU_KN[k.loai]}`).join(', '), o.rieng, o.vang,
   ].filter(Boolean).join(', ');
-  return (
-    <div>
-      <button type="button" onClick={(e) => onMo(e.currentTarget)} aria-label={doc} title={doc}
-        className={`${O_LUOI} ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`}>
+  const lop = `${O_LUOI} ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
+  const noi = (
+    <>
         <span className="flex items-baseline gap-1.5">
           <span className={`w-14 shrink-0 whitespace-nowrap text-sm tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{o.tuan ?? '—'}</span>
           {nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
@@ -72,7 +76,13 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, children }: {
         )}
         {o.rieng && <span className="truncate text-xs tabular-nums text-faint">{o.rieng}</span>}
         {o.vang && <span className="truncate text-xs tabular-nums text-faint">{o.vang}</span>}
-      </button>
+    </>
+  );
+  return (
+    <div>
+      {tinh ? <span className={`${lop} hover:bg-transparent`}>{noi}</span>
+        : href ? <Link to={href} aria-label={doc} title={doc} className={`${lop} no-underline`}>{noi}</Link>
+        : <button type="button" onClick={(e) => onMo(e.currentTarget)} aria-label={doc} title={doc} className={lop}>{noi}</button>}
       {children}
     </div>
   );
@@ -102,7 +112,7 @@ export function OHuy({ onMo }: { onMo?: (el: HTMLElement) => void }) {
 /** Chú giải ⓘ (thay chú giải màu cũ) — 6 dòng theo mockup; mẫu dựng bằng chính `ODotGon`. */
 export function ChuGiaiGon() {
   const mau = (o: Partial<OGon>, ketQua?: { ovr: number; dat: boolean }) => (
-    <ODotGon o={{ tuan: 'W1 OCT', tuanDu: null, xong: false, tt: null, kn: null, rieng: null, vang: null, ...o }} nhan="" ketQua={ketQua} onMo={() => undefined} />
+    <ODotGon o={{ tuan: 'W1 OCT', tuanDu: null, xong: false, tt: null, kn: null, rieng: null, vang: null, ...o }} nhan="" ketQua={ketQua} onMo={() => undefined} tinh />
   );
   const dong: [ReactNode, string][] = [
     [mau({ xong: true, tt: { chu: t('xong'), loai: 'xong' } }, { ovr: 6, dat: true }), t('Đã xong — Overall, ✓ đạt / ✗ chưa đạt kỳ vọng; không có Overall ghi "xong"')],

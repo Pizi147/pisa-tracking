@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Empty, Th } from '../../../ui/ui.tsx';
 import { duongDotTest, duongHoSoHocVien, type KyNangKH } from '@shared/domain/index.ts';
 import { OMt } from '../../../ui/OMt.tsx';
@@ -48,7 +48,6 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   const [hetHang, setHetHang] = useState(false);
   const [sEx, setSEx] = useState<{ hang: HangFT; dong: DongSEx | null } | null>(null);
   const homNay = useNgayNghiepVu().homNay;
-  const navigate = useNavigate();
   /* Chủ SP 28/10: lớp GV dạy mà không xếp được — chỉ xem: ô mở trang lượt (đổi trang), không hộp xếp / + MT / sửa ghi chú. */
   const chiXem = !!data.chiXem;
   const cuon = useRef<HTMLDivElement>(null);
@@ -138,8 +137,9 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
               </td>
               {cots.map((c) => {
                 const dot = o(h, c);
-                const moTrang = () => dot.attemptId !== null && navigate(duongDotTest({ id: dot.attemptId, kind: c.dot.loai === 'ft' ? 'mock' : khoaBaiThuong(c.dot.kind), classId: data.classId, studentId: h.studentId }));
-                const moHop = (el: HTMLElement) => (chiXem ? moTrang() : setHop({ anchor: el, hang: h, cot: c, kyNangDau: null }));
+                /* GV chỉ xem: ô là link tới trang lượt (đổi trang) — Ctrl / chuột giữa mở tab mới. */
+                const trangLuot = chiXem && dot.attemptId !== null ? duongDotTest({ id: dot.attemptId, kind: c.dot.loai === 'ft' ? 'mock' : khoaBaiThuong(c.dot.kind), classId: data.classId, studentId: h.studentId }) : null;
+                const moHop = (el: HTMLElement) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: null });
                 return (
                   <td key={c.key} className="td !p-0 align-middle">
                     {!homNay ? <span className="block px-2 text-xs text-faint">…</span> : dot.attemptId !== null ? (() => {
@@ -151,7 +151,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                       const kq = loai === 'ft' && d.ovr !== undefined ? { ovr: d.ovr, dat: d.kyVong == null ? null : d.ovr >= d.kyVong } : null;
                       const tuanChinh = Object.values(dot.kn).map((x) => x?.tuan).filter((w): w is string => !!w).sort()[0] ?? null;
                       return (
-                        <ODotGon o={g} nhan={nhanDot(c.dot)} ketQua={kq} onMo={moHop}
+                        <ODotGon o={g} nhan={nhanDot(c.dot)} ketQua={kq} onMo={moHop} href={trangLuot}
                           khoa={loai === 'thuong' ? { khaiGiang, tongTuan, tuan: tuanChinh } : null}
                           chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key} />
                       );
