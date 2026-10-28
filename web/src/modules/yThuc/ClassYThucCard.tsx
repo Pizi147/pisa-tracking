@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { Card, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.tsx';
+import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { DongThoiGian } from '../../ui/DongThoiGian.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -339,7 +340,7 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNha
 
   /* MỘT nút việc của hàng — đúng việc người xem phải làm tiếp (chấm hồng = việc của tôi, mockup `.cua-toi`). */
   const cta = canManage && (nhom === 'qua_han' || nhom === 'bat_buoc')
-    ? <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${quaHan ? 'btn-primary' : ''}`} onClick={() => onPanel({ loai: 'xu-ly', studentId: x.studentId })}>{CUA_TOI}{t('Xác nhận xử lý')}</button>
+    ? <button type="button" className={quaHan ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} onClick={() => onPanel({ loai: 'xu-ly', studentId: x.studentId })}>{CUA_TOI}{t('Xác nhận xử lý')}</button>
     : canManage && nhom === 'moi' && x.viPhamCho.length > 0
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={t('Đã xem, không cần xử lý')} onClick={() => onGhiNhan(x.viPhamCho.filter((v) => v.trangThai === 'moi').map((v) => v.id))}>
           {CUA_TOI}{x.viPhamCho.length > 1 ? t('Ghi nhận {n} vi phạm', { n: x.viPhamCho.length }) : t('Ghi nhận')}
@@ -347,7 +348,7 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNha
       : canManage && x.deXuat?.status === 'da_duyet'
         ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onPanel({ loai: 'da-thuc-hien', id: x.deXuat!.id })}>{CUA_TOI}{t('Đã thực hiện…')}</button>
         : x.baoPh?.coTheGhi
-          ? <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${x.baoPh.quaHan ? 'btn-primary' : ''}`} onClick={onBaoPh}>{CUA_TOI}{t('Ghi kết quả báo PH')}</button>
+          ? <button type="button" className={x.baoPh.quaHan ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} onClick={onBaoPh}>{CUA_TOI}{t('Ghi kết quả báo PH')}</button>
           : null;
 
   return (
@@ -445,7 +446,7 @@ function BaoPh({ x, homNay }: { x: DongEm; homNay: string }) {
   const b = x.baoPh;
   if (!b) return <span className="text-faint">—</span>;
   /* Mockup `.bd-td`: viên tròn không viền, chấm màu chữ phía trước; ⚠ chỉ khi quá hạn (luật V5 — mockup vẽ ⚠ cả lúc chờ). */
-  const vien = 'inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[12px] font-semibold';
+  const vien = `${CHIP_TRON} max-w-full gap-1`;
   const cham = <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full bg-current" />;
   const han = ngay(b.han, homNay);
   return (

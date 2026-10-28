@@ -896,17 +896,18 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s = docW('web/src/ui/DongThoiGian.tsx');
     assert(/khong: 'grid-cols-\[3\.25rem_minmax\(0,1fr\)\] md:/.test(s) && /col-span-2 md:col-span-1/.test(s), 'lưới D5');
   });
-  check('YT4 (9) · Tab lớp M6: hai khung + tab "Xử lý · Vi phạm" dưới md; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
+  /* UI-Y-THUC-LOP (mockup V5): hai khung M6 thay bằng bảng theo HV — nhóm em (NhomHang), bốn khối nghĩa, chi tiết mở dưới hàng. */
+  check('YT4 (9) · Tab lớp V5: bảng theo HV theo nhóm, chi tiết mở dưới hàng; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: t\('Theo xử lý'\)/.test(s) && /label: t\('Theo vi phạm'\)/.test(s), 'hai khung');
+    assert(/function NhomHang/.test(s) && /function HangEm/.test(s) && /function ChiTietEm/.test(s) && /t\('Chờ TVV báo PH'\)/.test(s), 'bảng theo HV');
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
-    assert(/NHOM_EM\.filter/.test(s) && /params\.get\('mo'\)/.test(s) && /t\('Phối hợp'\)/.test(s), 'nhóm em, ?mo, tab Phối hợp');
+    assert(/params\.get\('mo'\)/.test(s) && /t\('Phối hợp'\)/.test(s), '?mo, khối Phối hợp');
   });
   check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
     assert(/const coGhiNhan = hv\.canManage &&/.test(s) && /const nut = hv\.canManage &&/.test(s) && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`))
-      && /onKhai=\{hv\.canManage \?/.test(s), 'ẩn theo quyền');
-    assert(/d\.canRecord \? <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
+      && /onKhai=\{hv\.canManage \?/.test(s) && /const cta = canManage &&/.test(s), 'ẩn theo quyền');
+    assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" + chữ phụ "không phải xử lý vi phạm, không cần QL duyệt"', () => {
     const s = docW(`${YT}/PhoiHopSosSection.tsx`);
