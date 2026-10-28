@@ -667,7 +667,7 @@ function DaiLop({ lop, vai, soViecQuaHan, dsLop, onThemHocVien, onBo }: {
       <NhanLop lop={lop} vai={vai} soViecQuaHan={soViecQuaHan} />
       <span className="ml-auto flex items-center gap-2">
         <MenuLop lop={lop} dsLop={dsLop} onThemHocVien={onThemHocVien} />
-        <button type="button" className="btn btn-sm" onClick={onBo} aria-label={t('Bỏ lọc lớp')}>✕</button>
+        <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px]" onClick={onBo} aria-label={t('Bỏ lọc lớp')}>✕</button>
       </span>
     </div>
   );
