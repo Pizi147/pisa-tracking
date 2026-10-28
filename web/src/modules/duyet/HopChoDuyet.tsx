@@ -323,7 +323,7 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
   const cho = yc.trangThai === 'cho';
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
   const tieuDeDu = [dich(yc.tieuDe), yc.hocVien, yc.lop].filter(Boolean).join(' · ');
-  /* CV-CHO-DUYET-375 (mockup V5 `con-lai.html` §3 `.the-duyet`, luật hình ảnh 28/10): đệm 12 / 16, nhãn loại 12 / 700 HOA mờ, chip hạn `ChipHan` (mẫu V7 cong-viec-2)
+  /* CV-CHO-DUYET-375 (mockup V5 `con-lai.html` §3 `.the-duyet`, luật hình ảnh 28/10): đệm 12 / 16, nhãn loại 12 / 700 mờ (không IN HOA — luật K-CHU-3), chip hạn `ChipHan` (mẫu V7 cong-viec-2)
      (badge tiến độ `.bd-td`) bên phải, tiêu đề 14 / 700 cả tên em · lớp, dòng phụ 12 mờ; cách dòng 4 px. */
   return (
     <li className={`flex items-start gap-2 border-b px-4 py-3 last:border-b-0 ${dang ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : 'bam'}`}
@@ -336,7 +336,7 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
       )}
       <button type="button" className="min-h-[44px] min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left sm:min-h-0" aria-current={dang || undefined} onClick={onMo}>
         <span className="flex min-h-[22px] items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-[12px] font-bold uppercase text-slate-400">{dich(yc.nhanPhanLoai)}</span>
+          <span className="min-w-0 truncate text-[12px] font-bold text-slate-400">{dich(yc.nhanPhanLoai)}</span>
           {cho ? <span className="shrink-0"><ChipHan loai="duyet" han={yc.hanDuyet} /></span>
             : <span className="flex shrink-0 items-center gap-1.5"><NhanTrangThai t={tt.t} />{yc.xuLyLuc && <span className="text-[12px] text-slate-400">{ngan(yc.xuLyLuc)}</span>}</span>}
         </span>
