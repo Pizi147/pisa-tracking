@@ -60,14 +60,16 @@ export function ghiNhap(kho: KhoNhap | null, viec: string, o: string, gt: unknow
   } catch { /* kho đầy / bị chặn — chữ vẫn trong ô */ }
 }
 
-export function xoaNhapViec(kho: KhoNhap | null, viec: string): void {
-  if (!kho) return;
+/** Trả hàm ghi lại đúng nháp vừa xoá — HOAN-TAC-XN: Hoàn tác lần lưu thì chữ đã gõ về lại ô (mở lại việc đọc từ kho). */
+export function xoaNhapViec(kho: KhoNhap | null, viec: string): () => void {
+  const bo: [string, string][] = [];
+  if (!kho) return () => {};
   try {
     const dau = `${TIEN_TO_NHAP}${viec}\u0001`;   // \u0001: khoá việc có thể chứa ':' / '|'
-    const bo: string[] = [];
-    for (let i = 0; i < kho.length; i++) { const k = kho.key(i); if (k?.startsWith(dau)) bo.push(k); }
-    for (const k of bo) kho.removeItem(k);
+    for (let i = 0; i < kho.length; i++) { const k = kho.key(i); if (k?.startsWith(dau)) bo.push([k, kho.getItem(k) ?? '']); }
+    for (const [k] of bo) kho.removeItem(k);
   } catch { /* như trên */ }
+  return () => { try { for (const [k, v] of bo) kho.setItem(k, v); } catch { /* như trên */ } };
 }
 
 /** "Lưu · việc tiếp ›" (V5; R1-LUU-TIEP đổi chữ 07 mục 4.4): chỉ sang việc kế SAU khi máy chủ trả đã lưu — `luu` trả `false` / ném lỗi thì ở lại, chữ giữ. */

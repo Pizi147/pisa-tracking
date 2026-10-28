@@ -381,26 +381,7 @@ export default function MockDetailPage() {
             )}
           </span>
         </div>
-        <div className="min-w-0 max-sm:w-full sm:ml-auto sm:text-right">
-          <span className="block text-xs font-medium text-slate-400">{conLai.length ? t('Còn lại') : t('Không còn việc')}</span>
-          {conLai.length > 0 && (
-            <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0 sm:justify-end">
-              {conLai.map((v) => (
-                <li key={v.khoa} className="min-w-0 max-w-full">
-                  {v.mo ? (
-                    <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
-                      <b className="mr-1 text-[color:var(--accent-strong)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
-                    </button>
-                  ) : (
-                    <span className="inline-flex min-h-[32px] items-center rounded-md border px-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
-                      <b className="mr-1 text-slate-300">{v.nhan}</b><span className="max-w-[16rem] truncate">{[v.viec, v.ai].filter(Boolean).join(' · ')}</span>
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <ConLaiLuot ds={conLai} />
       </section>
 
       {/* ④ BẢNG KỸ NĂNG — một dòng một kỹ năng; bấm dòng mở vùng Nhận xét | Case & phương án + Lịch sử kỹ năng ngay dưới. */}
@@ -475,7 +456,37 @@ function ODiemOverall({ band, kyVong }: { band: number; kyVong: number | null })
   );
 }
 
-type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void };
+/** "Còn lại" của tóm tắt lượt (khung M4-A ③): việc của người xem = nút (mở tại chỗ, G6 — không "›"); việc người khác chỉ đọc. FT + lớp thường dùng chung. */
+export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
+  return (
+    <div className="min-w-0 max-sm:w-full sm:ml-auto sm:text-right">
+      <span className="block text-xs font-medium text-slate-400">{conLai.length ? t('Còn lại') : t('Không còn việc')}</span>
+      {conLai.length > 0 && (
+        <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0 sm:justify-end">
+          {[...conLai].sort((a, b) => Number(!!b.quaHan) - Number(!!a.quaHan)).map((v) => (
+            <li key={v.khoa} className="min-w-0 max-w-full">
+              {v.mo ? (
+                <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
+                  <b className="mr-1 text-[color:var(--accent-strong)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
+                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
+                </button>
+              ) : (
+                <span className="inline-flex min-h-[32px] items-center rounded-md border border-dashed px-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
+                  <b className="mr-1 text-slate-300">{v.nhan}</b><span className="max-w-[16rem] truncate">{[v.viec, v.ai].filter(Boolean).join(' · ')}</span>
+                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void;
+  /** HSL-LT: việc đã quá hạn — chữ "⚠ quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
+  quaHan?: string | null };
 
 /**
  * "CÒN LẠI" CỦA LƯỢT (khung M4-A ③, chủ SP 27/10) — chỉ gom việc máy chủ đã có: bài thiếu điểm, thiếu nhận xét (V15), vắng chờ xếp lại, đề nghị
@@ -503,30 +514,39 @@ function conLaiLuot(d: Detail, homNay: string, theCase: Map<number, CaseCard>, c
     if (thieuNx.length) cua(thieuNx.some((c) => c.canEdit) ? t('Viết nhận xét') : t('Chờ nhận xét'), thieuNx.some((c) => c.canEdit) ? 'textarea' : null);
   }
   for (const c of d.caseLuot ?? []) {
-    const the = theCase.get(c.id);
-    const v = the?.viecTiep ?? c.viecTiep;
-    /* Kết quả PA chưa tới hạn chưa là việc (Công việc cũng chưa đếm) — PA vừa thêm không sinh việc ngay. */
-    if (!v || c.trangThai.k === 'tam' || (v.loaiHan === 'cap-nhat-pa' && (!v.han || v.han > homNay))) continue;
     const k = kyNangCase(c.topic) as KyNangLon | null;
-    const nhan = `Case ${k ? skillShort(k) : ''}`.trim();
-    const viec = dich(v.chu);
-    const cuaToi = !chiDoc && !!the?.canEdit;
-    const loai = v.chu.startsWith('Xác nhận Case') || v.chu.startsWith('Mô tả Case') ? 'xac-nhan' as const
-      : v.chu.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : v.loaiHan === 'cap-nhat-pa' ? 'ghi-ket-qua' as const : undefined;
-    ds.push({
-      khoa: `case:${c.id}`, nhan, viec, ai: cuaToi ? null : the?.nguoiLam?.ten ?? null,
-      mo: !cuaToi ? undefined : v.chu === CHU_THEM_PA && k ? () => mo.themPa(k, c.id) : () => mo.moCase(c.id, loai, (v as { paId?: number }).paId),
-    });
+    const v = viecCaseLuot({ id: c.id, tam: c.trangThai.k === 'tam', viecTiep: c.viecTiep }, theCase.get(c.id), `Case ${k ? skillShort(k) : ''}`.trim(),
+      homNay, chiDoc, { themPa: k ? () => mo.themPa(k, c.id) : null, moCase: mo.moCase });
+    if (v) ds.push(v);
   }
   return ds;
 }
 
 /**
+ * Việc tiếp của MỘT Case ở "Còn lại" (cùng `viecTiep` với Công việc) — FT + lớp thường. Case tạm / kết quả PA chưa tới hạn chưa là việc
+ * (Công việc cũng chưa đếm) — PA vừa thêm không sinh việc ngay. Việc của người xem mở form Thêm PA tại chỗ / Ngăn Case; người khác chỉ đọc.
+ */
+export function viecCaseLuot(c: { id: number; tam: boolean; viecTiep?: CaseCard['viecTiep'] }, the: CaseCard | undefined, nhan: string, homNay: string, chiDoc: boolean, mo: {
+  themPa: (() => void) | null;
+  moCase: (caseId: number, viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa', paId?: number) => void;
+}): ViecConLai | null {
+  const v = the?.viecTiep ?? c.viecTiep ?? null;
+  if (!v || c.tam || (v.loaiHan === 'cap-nhat-pa' && (!v.han || v.han > homNay))) return null;
+  const cuaToi = !chiDoc && !!the?.canEdit;
+  const loai = v.chu.startsWith('Xác nhận Case') || v.chu.startsWith('Mô tả Case') ? 'xac-nhan' as const
+    : v.chu.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : v.loaiHan === 'cap-nhat-pa' ? 'ghi-ket-qua' as const : undefined;
+  return {
+    khoa: `case:${c.id}`, nhan, viec: dich(v.chu), ai: cuaToi ? null : the?.nguoiLam?.ten ?? null,
+    mo: !cuaToi ? undefined : v.chu === CHU_THEM_PA && mo.themPa ? mo.themPa : () => mo.moCase(c.id, loai, (v as { paId?: number }).paId),
+  };
+}
+
+/**
  * R15 — CHỌN ĐỢT KHÁC của cùng học viên, cạnh tiêu đề. Nhãn `MT{n} · W3 SEP` (Mock Test) hoặc `Giữa khoá · W3 SEP` /
- * `Cuối khoá · W3 SEP` (lớp thường); đi bằng `attemptHref` nên bài lớp thường mở đúng lưới lớp thường. Đợt đang xem chọn
+ * `Cuối khoá · W3 SEP` (lớp thường); đi bằng `attemptHref` nên bài lớp thường mở trang lượt lớp thường (HSL-LT). Đợt đang xem chọn
  * sẵn; chỉ có một đợt thì không hiện.
  */
-function ChonDot({ hienTai, ds, homNay, onChon }: {
+export function ChonDot({ hienTai, ds, homNay, onChon }: {
   hienTai: number; ds: DotCuaHv[]; homNay: string; onChon: (r: DotCuaHv) => void;
 }) {
   if (ds.length < 2 || !ds.some((r) => r.id === hienTai)) return null;
@@ -546,7 +566,7 @@ function ChonDot({ hienTai, ds, homNay, onChon }: {
   );
 }
 
-function Info({ label, title, children }: { label: string; title?: string; children: React.ReactNode }) {
+export function Info({ label, title, children }: { label: string; title?: string; children: React.ReactNode }) {
   return (
     <div title={title}>
       <dt className="text-[12px]  text-slate-500 font-semibold">{label}</dt>
@@ -862,16 +882,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
           </div>
         </div>
         {mo && (
-          <div role="row"><div role="cell" aria-colspan={7} id={`vung-${k}`} className="space-y-3 px-3 pb-3">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="min-w-0 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>{nhanXet(k)}</div>
-              <div className="min-w-0 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-                <h2 className="m-0 mb-1 text-sm font-semibold text-slate-200">{t('Case & phương án')}</h2>
-                {vungCase(k)}
-              </div>
-            </div>
-            {lichSuKn(k)}
-          </div></div>
+          <VungMoKn id={`vung-${k}`} nhanXet={nhanXet(k)} caseNode={vungCase(k)} lichSu={lichSuKn(k)} />
         )}
       </div>
     );
@@ -914,6 +925,22 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
   );
 }
 
+/** Vùng mở của dòng kỹ năng / môn: Nhận xét | Case & phương án ngang nhau, dải Lịch sử dưới cả hai; 375 xếp dọc (FT + lớp thường). */
+export function VungMoKn({ id, nhanXet, caseNode, lichSu }: { id: string; nhanXet: ReactNode; caseNode: ReactNode; lichSu: ReactNode }) {
+  return (
+    <div role="row"><div role="cell" aria-colspan={7} id={id} className="space-y-3 px-3 pb-3">
+      <div className="grid items-start gap-3 md:grid-cols-2">
+        <div className="min-w-0 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>{nhanXet}</div>
+        <div className="min-w-0 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
+          <h2 className="m-0 mb-1 text-sm font-semibold text-slate-200">{t('Case & phương án')}</h2>
+          {caseNode}
+        </div>
+      </div>
+      {lichSu}
+    </div></div>
+  );
+}
+
 /** Dòng S Ex dưới bảng (N10): chip · điểm · GV · tuần — lượt Speaking riêng, chỉ đọc, không tính vào Overall / SOS. */
 function DongSEx({ ds, homNay }: { ds: NonNullable<Detail['sEx']>; homNay: string }) {
   return (
@@ -934,7 +961,7 @@ function DongSEx({ ds, homNay }: { ds: NonNullable<Detail['sEx']>; homNay: strin
  * LỊCH SỬ THU GỌN (khung M4-A ⑤ dải Lịch sử kỹ năng, ⑦ Lịch sử lượt): "n thay đổi · mới nhất {ngày} {việc}"; mở ra là dòng thời gian
  * (`DongThoiGianLuot`) của đúng tập đó (`dongLuot`) — số và dòng cùng nguồn. Lịch sử lượt giữ nút "Lịch sử chi tiết" (OV-15g).
  */
-function LichSuGon({ tieuDe, dong, the = false, chiTiet }: {
+export function LichSuGon({ tieuDe, dong, the = false, chiTiet }: {
   tieuDe: string; dong: DongLuot[]; the?: boolean;
   chiTiet?: { id: number; dong2: (string | null)[] };
 }) {

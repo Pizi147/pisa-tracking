@@ -6,7 +6,7 @@ import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
-import { CanLam, DiemKq, NutChu } from './KhuonViec.tsx';
+import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
 import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
@@ -173,7 +173,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const [giu, setGiu] = useState<Map<number, { dong: DongSoLieu; i: number; chu: string }>>(() => new Map());
   const [busy, setBusy] = useState<number | null>(null);
   const [loiDong, setLoiDong] = useState<{ id: number; loi: string } | null>(null);
-  const [vuaXong, setVuaXong] = useState<string | null>(null);
+  /* HOAN-TAC-XN: `hoanTac` — Xác nhận PA bấm thẳng có đường đảo (10 s); `lan` đổi = dòng mới, đếm lại. */
+  const [vuaXong, setVuaXong] = useState<{ chu: string; hoanTac?: () => Promise<void>; lan: number } | null>(null);
   const ds = useRef<HTMLDivElement>(null);
 
   const hanCua = (r: DongSoLieu) => r.viec ? r.viec.han : r.han ?? null;
@@ -233,7 +234,16 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
       /* Cùng đường "Xác nhận PA" bấm thẳng của Ngăn Case: gửi nội dung quy chế nguyên văn, người / số buổi giữ như máy gán. */
       await api.post(`/interventions/${v.paId}/xac-nhan-pa`, { description: v.pa?.description ?? '' });
       daLam(r, t('Đã xác nhận'));
-      setVuaXong(t('Đã xác nhận PA · {ten}', { ten: r.em?.ten ?? r.title }));
+      setVuaXong((x) => ({
+        chu: t('Đã xác nhận PA · {ten}', { ten: r.em?.ten ?? r.title }), lan: (x?.lan ?? 0) + 1,
+        /* Dòng hết "đã xử lý", việc "Xác nhận PA" của em về lại danh sách (cùng hạn). */
+        hoanTac: async () => {
+          await api.post(`/interventions/${v.paId}/hoan-tac-xac-nhan`);
+          setGiu((m) => { const n = new Map(m); n.delete(r.id); return n; });
+          invalidate('/metrics'); invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/cases');
+          reload();
+        },
+      }));
       const i = hien.findIndex((x) => x.id === r.id);
       setMo(hien.slice(i + 1).find((x) => x.viec?.lam && !x.xong)?.id ?? null);   // dòng kế của bạn tự mở
     } catch (e: any) { setLoiDong({ id: r.id, loi: e?.message ?? t('Không lưu được') }); } finally { setBusy(null); }
@@ -252,7 +262,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         : { ten: tieuDe }}>
         <Suspense fallback={<KhungPanel tieuDe={tieuDe} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>}>
           <LamDongSoLieu dong={lam} onDong={onDong}
-            onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong([lam.viec && !nhomCase ? dich(lam.viec.chu) : t('Đã lưu'), lam.em?.ten ?? lam.title].join(' · ')); }} />
+            onDaLam={() => { daLam(lam, t('Đã lưu')); setVuaXong((x) => ({ chu: [lam.viec && !nhomCase ? dich(lam.viec.chu) : t('Đã lưu'), lam.em?.ten ?? lam.title].join(' · '), lan: (x?.lan ?? 0) + 1 })); }} />
         </Suspense>
       </XemCha.Provider>
     );
@@ -420,7 +430,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         dong2: [data && (dv || nhomCase) ? `${data.n} ${dv ?? 'Case'}` : null, nhomCase && hien.length > data!.n ? t('{n} vừa xử lý', { n: hien.length - data!.n }) : null,
           soTre ? t('quá hạn lên đầu') : null],
       }}
-      chan={vuaXong && !nhomCase ? { v3: true, dongTren: <span className="font-semibold text-ok">✓ {vuaXong}</span> } : undefined}>
+      chan={vuaXong && !nhomCase ? { v3: true, dongTren: <span className="flex flex-wrap items-center gap-x-3"><span className="font-semibold text-ok">✓ {vuaXong.chu}</span><NutHoanTac key={vuaXong.lan} hoanTac={vuaXong.hoanTac} onHoanTac={() => setVuaXong(null)} /></span> } : undefined}>
       {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
         : loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div>
         : !hien.length ? <Empty title={trong ?? t('Không có mục nào')} />
