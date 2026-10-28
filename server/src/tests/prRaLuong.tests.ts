@@ -14,6 +14,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_mywork: any = await import('../worklist/mywork.ts');
   const require_perm: any = await import('../permissions.ts');
   const require_hangLoat: any = await import('../students/hangLoat.ts');
+  const require_keHoach: any = await import('../keHoach/keHoachTest.ts');
   const require_d: any = await import('../../../shared/domain/index.ts');
   console.log('\nRA-LUONG · rà soát luồng đêm 29/10');
 
@@ -124,6 +125,24 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     const nguon = fsMod.readFileSync('web/src/modules/students/SuaCaLopPanel.tsx', 'utf8') as string;
     assert(/const guiDuoc = payload\.filter\(\(r\) => !emLoi\.has\(r\.studentId\)\)/.test(nguon) && /chiaLoSuaCaLop\(guiDuoc,/.test(nguon), 'Lưu chưa lọc em lỗi');
     assert(!/soLoi > 0 \|\| !xem\}/.test(nguon), 'nút Lưu còn khoá khi có ô lỗi');
+  });
+
+  check('RA-LUONG-17 · Xếp "MT mới" hàng loạt: bấm Lưu lại CÙNG khoá + cùng nội dung (mất phản hồi) → trả kết quả cũ, không tạo MT n+1; khoá mới → lần lưu mới', () => {
+    const kh: any = require_keHoach;
+    const lop = conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 105'`).all()[0] as any;
+    const em = (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 2`).all(lop.id) as any[]).map((x) => x.student_id as number);
+    const tuanId = week.ensurePeriod(addDays(week.mondayOf(TODAY), 35)).id as number;
+    const tuan = { listening: tuanId, reading: tuanId, writing: tuanId, speaking: tuanId };
+    const soMt = () => (conn.prepare(`SELECT COUNT(*) n FROM assessment_attempts WHERE kind = 'mock' AND status != 'cancelled' AND student_id IN (${em.map(() => '?').join(',')})`).all(...em)[0] as any).n as number;
+    const truoc = soMt();
+    const gui = { classId: lop.id, attemptNo: 'moi', studentIds: em, tuan, force: true, idempotencyKey: 'ra-luong-17' };
+    const r1 = kh.xepHangLoat(P.mbManager, gui, TODAY);
+    const sau1 = soMt();
+    const r2 = kh.xepHangLoat(P.mbManager, gui, TODAY);
+    assert(r1.daLuu > 0 && sau1 === truoc + r1.daLuu, `lần một phải tạo MT: ${JSON.stringify(r1.dong.map((d: any) => [d.hanhDong, d.loi]))}`);
+    assert(soMt() === sau1 && JSON.stringify(r2) === JSON.stringify(r1), 'bấm lại cùng khoá không được tạo thêm MT');
+    kh.xepHangLoat(P.mbManager, { ...gui, idempotencyKey: 'ra-luong-17b' }, TODAY);
+    assert(soMt() > sau1, 'khoá mới = lần lưu mới (MT kế tiếp)');
   });
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {

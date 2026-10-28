@@ -13,6 +13,7 @@ import {
   PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, MT_TOI_DA, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type ToneSeXep,
 } from '@shared/domain/index.ts';
+import { moiKhoaGui } from '@shared/domain/khoaGui.ts';
 import type { DanhSachLop, HangFT, LopKH, LuoiFTData } from './kieu.ts';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { XepTheoHocVien } from './XepTheoHocVien.tsx';
@@ -140,6 +141,8 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
   const [khoaDong, setKhoaDong] = useState('');
   const khoaTick = `${dot}|${lopChon.join(',')}`;
   const soXem = useRef(0);
+  /* RA-LUONG-17: khoá chống gửi lặp của một lần Lưu — lỗi mạng giữ khoá (bấm lại không tạo MT n+1), nhận phản hồi rồi mới đổi. */
+  const khoaLuu = useRef(moiKhoaGui('xephl'));
   const thanChung = { attemptNo: dot, tuan: tuanGui, kyNang: kyChon, dotTheoEm, thiLai };
   const khoaXem = JSON.stringify([dot, tuanGui, kyChon, dotTheoEm, thiLai, hangs.map((h) => h.studentId)]);
   useEffect(() => {
@@ -203,7 +206,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
         if (!ids.length) continue;
         try {
           const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {
-            classId: id, studentIds: ids, force: true, xemTruoc: false, ...thanChung,
+            classId: id, studentIds: ids, force: true, xemTruoc: false, ...thanChung, idempotencyKey: khoaLuu.current,
           });
           daLuu += r.daLuu;
           loi.push(...r.dong.filter((d) => d.hanhDong === 'loi'));
@@ -212,6 +215,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
           loi.push(...ids.map((sid) => ({ studentId: sid, ten: '', hanhDong: 'loi' as const, bai: [], loi: e.message ?? 'Không lưu được.' })));
         }
       }
+      if (!loi.some((d) => !d.ten)) khoaLuu.current = moiKhoaGui('xephl');   // dòng lỗi mạng (không tên) → giữ khoá để bấm lại an toàn
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       toast.push(daLuu > 0 ? 'ok' : 'error', `Đã xếp ${daLuu} em${loi.length ? `, còn ${loi.length} em lỗi` : ''}.`);
       onDone();
