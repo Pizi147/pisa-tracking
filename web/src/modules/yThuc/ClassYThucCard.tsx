@@ -57,6 +57,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   const [busyLo, setBusyLo] = useState(false);
   const [baoPh, setBaoPh] = useState<DongEm | null>(null);
   const [lanTai, setLanTai] = useState(0);
+  const [dangGhi, setDangGhi] = useState<number | null>(null);
   const phoiHopRef = useRef<HTMLElement>(null);
 
   const lamMoi = () => { board.reload(); lo.reload(); setLanTai((x) => x + 1); };
@@ -141,19 +142,23 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   const okGhiNhan = (ghiNhanKq ?? []).filter((x) => x.ok);
 
   /* Ghi nhận / Bỏ ghi nhận (OV-7a: bấm nhầm → vi phạm về Mới) — một hoặc nhiều vi phạm của MỘT em. */
+  /* Ghi nhận xong có Hoàn tác (luật không khoá cứng); nút của em đang gửi bị khoá — không gửi hai lần. */
   const ghiNhan = async (studentId: number, ids: number[], bo = false) => {
+    setDangGhi(studentId);
     try {
       await api.post(`/students/${studentId}/y-thuc/${bo ? 'bo-ghi-nhan' : 'ghi-nhan'}`, { violationIds: ids });
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', bo ? t('Đã bỏ ghi nhận') : t('Đã ghi nhận'));
+      if (bo) toast.push('ok', t('Đã bỏ ghi nhận'));
+      else toast.hoanTac(t('Đã ghi nhận'), () => void ghiNhan(studentId, ids, true));
       lamMoi();
     } catch (e: any) { toast.push('error', e.message); }
+    finally { setDangGhi(null); }
   };
 
   const hang = (ds: { x: DongEm; nhom: NhomEm }[]) => ds.map(({ x, nhom }) => (
     <HangEm key={x.studentId} x={x} nhom={nhom} homNay={homNay} canManage={d.canManage} chonN={chonN}
       mo={moHv === x.studentId} onMo={() => setMoHv((c) => (c === x.studentId ? null : x.studentId))}
-      onPanel={mo} onGhiNhan={(ids) => void ghiNhan(x.studentId, ids)} onBaoPh={() => setBaoPh(x)}
+      onPanel={mo} dangGhi={dangGhi === x.studentId} onGhiNhan={(ids) => void ghiNhan(x.studentId, ids)} onBaoPh={() => setBaoPh(x)}
       chiTiet={moHv === x.studentId ? (
         <ChiTietEm studentId={x.studentId} lanTai={lanTai} homNay={homNay} onPanel={mo} onLamMoi={lamMoi}
           onGhiNhan={(v, bo) => void ghiNhan(v.studentId, [v.id], bo)} />
@@ -242,7 +247,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
           {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-0 py-1" /> : <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="hocVien" gon onChanged={() => { coord.reload(); }} />}
         </div>
         <div className="px-4 pb-3">
-          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setIncludeDone((v) => !v)}>
+          <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold appearance-none sm:min-h-0" onClick={() => setIncludeDone((v) => !v)}>
             {includeDone ? t('Chỉ hiện lượt chưa xong') : t('Hiện cả lượt đã xong')}
           </button>
         </div>
@@ -325,9 +330,9 @@ const NhanKhoi = ({ chu }: { chu: string }) => <span className="mb-0.5 block tex
 const VP_TREN_HANG = 3;
 const CUA_TOI = <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--hong)] align-middle" />;
 
-function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNhan, onBaoPh, chiTiet }: {
+function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, dangGhi, onGhiNhan, onBaoPh, chiTiet }: {
   x: DongEm; nhom: NhomEm; homNay: string; canManage: boolean; chonN: ChonNhieu;
-  mo: boolean; onMo: () => void; onPanel: (p: PanelYThuc) => void; onGhiNhan: (ids: number[]) => void; onBaoPh: () => void;
+  mo: boolean; onMo: () => void; onPanel: (p: PanelYThuc) => void; dangGhi: boolean; onGhiNhan: (ids: number[]) => void; onBaoPh: () => void;
   chiTiet: ReactNode;
 }) {
   const quaHan = nhom === 'qua_han';
@@ -342,7 +347,7 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNha
   const cta = canManage && (nhom === 'qua_han' || nhom === 'bat_buoc')
     ? <button type="button" className={quaHan ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} onClick={() => onPanel({ loai: 'xu-ly', studentId: x.studentId })}>{CUA_TOI}{t('Xác nhận xử lý')}</button>
     : canManage && nhom === 'moi' && x.viPhamCho.length > 0
-      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={t('Đã xem, không cần xử lý')} onClick={() => onGhiNhan(x.viPhamCho.filter((v) => v.trangThai === 'moi').map((v) => v.id))}>
+      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangGhi} title={t('Đã xem, không cần xử lý')} onClick={() => onGhiNhan(x.viPhamCho.filter((v) => v.trangThai === 'moi').map((v) => v.id))}>
           {CUA_TOI}{x.viPhamCho.length > 1 ? t('Ghi nhận {n} vi phạm', { n: x.viPhamCho.length }) : t('Ghi nhận')}
         </button>
       : canManage && x.deXuat?.status === 'da_duyet'
@@ -357,12 +362,12 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNha
         <div className="col-span-2 flex min-w-0 items-start gap-2 lg:col-span-1">
           {chonN.bat && <OChon chon={chonN} id={x.studentId} ten={x.ten} />}
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 lg:block">
-            <Link className="block truncate text-sm font-semibold text-slate-100 max-lg:flex max-lg:min-h-[44px] max-lg:items-center no-underline hover:text-[color:var(--accent)] hover:underline" to={`/hoc-vien/${x.studentId}?tab=y-thuc`}>
-              {x.ten}<span aria-hidden className="text-[.85em] font-normal text-faint"> ↗</span>
+            <Link className="block truncate text-[15px] font-semibold text-slate-100 max-lg:flex max-lg:min-h-[44px] max-lg:items-center no-underline hover:text-[color:var(--accent)] hover:underline" to={`/hoc-vien/${x.studentId}?tab=y-thuc`}>
+              {x.ten}
             </Link>
             <button type="button" aria-expanded={mo} onClick={onMo}
               className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-[13px] text-dim appearance-none hover:text-slate-100 lg:mt-0.5 lg:min-h-[24px]">
-              <MuiTenGap mo={mo} />{mo ? t('Thu gọn') : t('Chi tiết · nhật ký')}
+              <MuiTenGap mo={mo} />{mo ? t('Thu gọn') : <><span className="lg:hidden">{t('Chi tiết · nhật ký')}</span><span className="max-lg:hidden">{t('Chi tiết')}</span></>}
             </button>
           </span>
         </div>
@@ -436,7 +441,7 @@ function DuyetThuHoi({ x, homNay, canManage, onXem }: { x: DongEm; homNay: strin
       </>
     );
   }
-  if (x.tuChoi) return <span className="text-late">{t('QL từ chối {nhan} · chọn cách khác', { nhan: dich(x.tuChoi.nhan) })}</span>;
+  if (x.tuChoi) return nut(x.tuChoi.id, <span className="text-late">{t('QL từ chối {nhan} · chọn cách khác', { nhan: dich(x.tuChoi.nhan) })}</span>);
   if (x.xuLyGanNhat) return nut(x.xuLyGanNhat.id, <>{dich(x.xuLyGanNhat.nhan)} · {ngay(x.xuLyGanNhat.ngay, homNay)}</>, canManage ? <span className="block text-[12px] text-faint">{t('Thu hồi được · QL duyệt')}</span> : null);
   return <span className="text-faint">{t('Chưa có xử lý')}</span>;
 }
@@ -458,7 +463,7 @@ function BaoPh({ x, homNay }: { x: DongEm; homNay: string }) {
       ) : b.trangThai === 'xong' ? (
         <span className={`${vien} bg-ok-bg text-ok`}>✓ {t('Đã báo PH')}{b.ngayXong ? ` · ${ngay(b.ngayXong, homNay)}` : ''}</span>
       ) : <span className="text-faint">{t('Báo PH đã bỏ')}</span>}
-      <span className="mt-1 block text-[12px] text-faint">{b.trangThai === 'mo' ? t('Việc của TVV · {nhan}', { nhan: dich(b.nhan) }) : dich(b.nhan)}</span>
+      <span className="mt-1 block text-[12px] text-faint">{t('Việc của TVV · {nhan}', { nhan: dich(b.nhan) })}</span>
     </>
   );
 }

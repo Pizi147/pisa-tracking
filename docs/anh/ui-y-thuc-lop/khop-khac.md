@@ -14,7 +14,7 @@ Vai: cô Trần Ngọc Hà (GVCN, id 7) · QL (id 2) cho Báo PH · lớp MB FT 
 |---|---|---|
 | K1 | Bảng theo HV, 5 cột Học viên · Vi phạm chờ xử lý · Bậc xử lý · Duyệt · thu hồi · Báo PH (TVV) (200 px · 1.4fr · 1fr · 180 px · 150 px) → `HangEm`, `COT` | KHỚP |
 | K2 | Tiêu đề nhóm "Cần xử lý" 14 px đậm + đếm "n HV · n vi phạm · ⚠ n quá hạn"; hàng tiêu đề cột nền `be-mat-2` ngay dưới nhóm đầu → `NhomHang` | KHỚP |
-| K3 | Tên em trắng đậm + "↗" mờ, bấm sang hồ sơ HV | KHỚP |
+| K3 | Tên em trắng đậm, bấm sang hồ sơ HV (link: hover gạch chân, focus rõ). Bỏ "↗" của mockup theo quyết định chủ SP 28/10 (bỏ hết ↗ toàn web, thay luật G6) | KHỚP (đổi theo quyết định mới) |
 | K4 | Vi phạm chờ: khối nền vàng nhạt không viền, dòng hạn đậm ("Hạn hôm nay · 14/09"), mỗi vi phạm `dd/mm tên` | KHỚP |
 | K5 | Quá hạn: CHỈ khối đó nền đỏ nhạt + "⚠ Quá hạn n ngày · hạn dd/mm" — không tô đỏ hàng / bảng | KHỚP |
 | K6 | Bậc xử lý: cửa sổ 3 bậc — bậc đã qua "✓" xanh viền xanh · bậc lần này viền nhấn nền nhấn đậm · bậc sau viền mờ · "› …" → `ThangNho` | KHỚP |

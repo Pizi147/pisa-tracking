@@ -65,7 +65,7 @@ export type DongEm = {
   moiTuoi: number | null;
   deXuat: { id: number; nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null } | null;
   xuLyGanNhat: { id: number; nhan: string; ngay: string } | null;
-  tuChoi: { nhan: string } | null;
+  tuChoi: { id: number; nhan: string } | null;
   /** UI-Y-THUC-LOP — khớp `DongEm` ở `server/src/yThuc/board.ts`. */
   viPhamCho: { id: number; ngay: string; ten: string; trangThai: TrangThaiVp }[];
   thuHoi: { id: number; nhan: string; cho: boolean } | null;

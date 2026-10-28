@@ -16,7 +16,8 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
 import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
+import { MuiTenGap } from './NhanViPham.tsx';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
@@ -36,6 +37,7 @@ export type CoordTurn = {
   /** Lớp thường (T58): `Giữa khoá` + `2/4 môn đạt` thay cho `MT2 · SOS 2`; null với lượt Mock FT. */
   nhanDot?: string | null; ketQua?: { chinh: string; phu: string | null } | null;
   summary: { done: number; active: number; label: string; complete: boolean };
+  kyNangNgan?: string[];
   actions: CoordAction[]; canAct: boolean;
 };
 
@@ -66,7 +68,7 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
         <TheSos key={t.attemptId} t={t} cot1={cot1} onGoAcademic={onGoAcademic} onChanged={onChanged} gon={gon} />
       ))}
       {gon && turns.length > GON_TOI_DA && (
-        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setHet((v) => !v)}>
+        <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold appearance-none sm:min-h-0" onClick={() => setHet((v) => !v)}>
           {het ? t('Thu gọn') : t('Hiện thêm {n} HV', { n: turns.length - GON_TOI_DA })}
         </button>
       )}
@@ -101,15 +103,13 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
       <div role="button" tabIndex={0} aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
-        className="grid gap-x-3 gap-y-1 items-center px-3 py-2.5 cursor-pointer bam grid-cols-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]">
+        className={`grid gap-x-3 gap-y-1 items-center cursor-pointer bam grid-cols-2 ${gon ? 'px-3.5 py-3' : 'px-3 py-2.5'} md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]`}>
         <div className="col-span-2 md:col-span-1 min-w-0">
-          <span className="block text-sm font-semibold text-slate-100">{cot1 === 'luot' ? mtSos : luot.studentName}</span>
-          {/* `gon`: một dòng (MT · SOS), kỹ năng đủ ở tooltip — mockup một dòng một em. */}
+          <span className={`flex items-center gap-1 font-semibold text-slate-100 ${gon ? 'text-[15px]' : 'text-sm'}`}>{gon && <MuiTenGap mo={open} />}{cot1 === 'luot' ? mtSos : luot.studentName}</span>
           {gon && !luot.nhanDot && luot.sosLevel !== null ? (
-            /* Mockup `.phoi-hop`: chip SOS dưới tên (mức theo màu + chữ), kỹ năng ở tooltip; chip tĩnh — đầu thẻ đã là nút mở. */
-            <span className="mt-1 flex items-center gap-1.5 text-xs text-slate-500" title={kyNang}>
-              <ChipSos muc={luot.sosLevel} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />MT{luot.attemptNo}
-              <span className="sr-only">{kyNang}</span>
+            /* Mockup `.phoi-hop`: chip "SOS 2 · R, W" dưới tên; chip tĩnh — đầu thẻ đã là nút mở. */
+            <span className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+              <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />MT{luot.attemptNo}
             </span>
           ) : (
             <span className={`block text-xs text-slate-500 ${gon ? 'truncate' : ''}`} title={gon ? kyNang : undefined}>
@@ -118,7 +118,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           )}
         </div>
         <div className="min-w-0">
-          <span className={gon ? 'block text-[13px] text-dim' : 'block text-sm font-semibold text-slate-100'}>{t('{label} việc hoàn thành', { label: luot.summary.label })}</span>
+          <span className={gon ? 'block text-sm text-dim' : 'block text-sm font-semibold text-slate-100'}>{t('{label} việc hoàn thành', { label: luot.summary.label })}</span>
           {cot1 === 'luot' ? (
             onGoAcademic ? (
               <button type="button" className="link text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer text-left"
@@ -126,7 +126,11 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
                 {t('Hỗ trợ học thuật xem ở tab Học thuật')}
               </button>
             ) : <span className="block text-xs text-slate-500">{t('Hỗ trợ học thuật xem ở tab Học thuật')}</span>
-          ) : gon ? null : <span className="block text-xs text-slate-500">{t('Học thuật theo dõi ở bảng kỹ năng')}</span>}
+          ) : gon ? (
+            /* Việc còn mở ngay trên đầu thẻ — không phải mở thẻ mới biết còn gì. */
+            luot.actions.some((a) => a.status === 'pending')
+              ? <span className="block truncate text-xs text-dim">{t('Còn: {viec}', { viec: luot.actions.filter((a) => a.status === 'pending').map((a) => dich(a.name)).join(' · ') })}</span> : null
+          ) : <span className="block text-xs text-slate-500">{t('Học thuật theo dõi ở bảng kỹ năng')}</span>}
         </div>
         <div className="justify-self-end">
           <NhanTrangThai t={luot.summary.complete ? 'xong' : 'dang-lam'} />

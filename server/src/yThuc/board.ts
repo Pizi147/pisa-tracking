@@ -35,7 +35,7 @@ export type DongEm = {
   deXuat: { id: number; nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null } | null;
   xuLyGanNhat: { id: number; nhan: string; ngay: string } | null;
   /** PR-UXF-b (VN26): Quản lý ĐÃ TỪ CHỐI đề xuất mà vi phạm còn mở của em đi kèm — em về "bắt buộc xử lý" vì lý do này, không phải vì ≥ 3 vi phạm / 2 tuần. */
-  tuChoi: { nhan: string } | null;
+  tuChoi: { id: number; nhan: string } | null;
   /**
    * UI-Y-THUC-LOP (mockup V5 `lop-y-thuc-*`, brief 22/10 mục 10) — bốn khối nghĩa của một hàng em:
    *  · `viPhamCho`: vi phạm còn chờ (Mới · Cần xử lý · Quá hạn), cũ nhất trước. Chỉ `bangYThucLop` điền (một câu cho cả lớp).
@@ -84,7 +84,7 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
     moiTuoi: moiNgay ? ngayCach(moiNgay, homNay) : null,
     deXuat: em.deXuat ? { id: em.deXuat.id, nhan: nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName), status: em.deXuat.status, han: em.deXuat.han } : null,
     xuLyGanNhat: xong ? { id: xong.id, nhan: nhanLoaiXuLy(xong.kind, xong.customName), ngay: xong.performedOn! } : null,
-    tuChoi: tuChoi ? { nhan: nhanLoaiXuLy(tuChoi.kind, tuChoi.customName) } : null,
+    tuChoi: tuChoi ? { id: tuChoi.id, nhan: nhanLoaiXuLy(tuChoi.kind, tuChoi.customName) } : null,
     viPhamCho: [],
     thuHoi: thuHoi && (!xong || (thuHoi.quyetLuc ?? thuHoi.createdAt).slice(0, 10) >= xong.performedOn!)
       ? { id: thuHoi.id, nhan: nhanLoaiXuLy(thuHoi.kind, thuHoi.customName), cho: false } : null,
