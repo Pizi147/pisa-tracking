@@ -137,7 +137,7 @@ export default function LuotThuongPage() {
         </div>
       )}
 
-      {/* ① ĐẦU HỒ SƠ — ai (↗ hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Đạt từ; "Nhập điểm lớp ›" bên phải. */}
+      {/* ① ĐẦU HỒ SƠ — ai (link hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Đạt từ; "Nhập điểm lớp ›" bên phải. */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <DuongVe cha={trangCha('luot', { studentId: r.studentId, tenHv: r.studentName })} ten={`${r.kindLabel} · ${r.studentName}`} chiTiet={d.class.code} />
@@ -145,7 +145,7 @@ export default function LuotThuongPage() {
             <h1 className="m-0 min-w-0 break-words text-xl font-bold text-slate-100">
               <span className="sr-only">{t('Hồ sơ lượt Test ·')} </span>
               <Link to={`/hoc-vien/${r.studentId}`} className="text-inherit no-underline hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" title={t('Hồ sơ học viên')}>
-                {r.studentName}<span aria-hidden className="ml-1 text-base text-slate-400">↗</span>
+                {r.studentName}
               </Link>
             </h1>
             <span className="inline-flex items-center gap-2">

@@ -303,7 +303,7 @@ export default function MockDetailPage() {
         </div>
       )}
 
-      {/* ① ĐẦU HỒ SƠ — ai (↗ hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Target · kỳ vọng; việc làm (Nhập điểm lớp ›, Chỉnh lịch) bên phải. */}
+      {/* ① ĐẦU HỒ SƠ — ai (link hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Target · kỳ vọng; việc làm (Nhập điểm lớp ›, Chỉnh lịch) bên phải. */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <DuongVe cha={trangCha('mt', { studentId: d.student.id, tenHv: d.student.name })} ten={`MT${d.attemptNo} · ${d.student.name}`} chiTiet={d.classCode} />
@@ -311,7 +311,7 @@ export default function MockDetailPage() {
             <h1 className="m-0 min-w-0 break-words text-xl font-bold text-slate-100">
               <span className="sr-only">{t('Hồ sơ Mock Test ·')} </span>
               <Link to={`/hoc-vien/${d.student.id}`} className="text-inherit no-underline hover:underline" title={t('Hồ sơ học viên')}>
-                {d.student.name}<span aria-hidden className="ml-1 text-base text-slate-400">↗</span>
+                {d.student.name}
               </Link>
             </h1>
             <span className="inline-flex items-center gap-2">

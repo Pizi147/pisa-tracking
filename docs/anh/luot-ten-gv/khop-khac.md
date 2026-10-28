@@ -31,6 +31,8 @@ Hai việc "Để sau" của HSL-FT (#638, [XM] 2) và HSL-LT (#653, dòng 22 + 
 | Cột Trạng thái: chip + hạn | chip + hạn + tên người giữ việc (chỉ khi người xem không nhập được) |
 | Lịch nhiều tuần: "L: W3 SEP · R, G+V, P: W3 AUG" (theo thứ tự môn, dễ xuống dòng giữa chừng) | "W3 AUG R, G+V, P · W3 SEP L" (theo tuần, tuần sớm trước) |
 
+| Tên em đầu trang "Tên ↗" | "Tên" (vẫn là link hồ sơ HV — chủ SP 28/10 bỏ mọi ↗) |
+
 Không bỏ thao tác nào; không thêm nút.
 
 ## Ghi chú mã
