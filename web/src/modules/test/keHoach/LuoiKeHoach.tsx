@@ -114,16 +114,16 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         </colgroup>
         <thead>
           <tr>
-            <Th className="sticky-col border-r border-[var(--line)]">Học viên</Th>
+            <Th className="sticky-col border-r border-[var(--line)] !bg-[var(--surface)]">Học viên</Th>
             {cots.map((c) => (
-              <Th key={c.key}>
+              <Th key={c.key} className="!bg-[var(--surface)]">
                 <span className="block">{c.tieu}</span>
                 {c.phu && <span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
               </Th>
             ))}
-            <Th><span className="sr-only">{t('Trống')}</span></Th>
+            <Th className="!bg-[var(--surface)]"><span className="sr-only">{t('Trống')}</span></Th>
             {loai === 'ft' && !chiXem && (
-              <Th><span className="sr-only">{t('Lượt thêm')}</span></Th>
+              <Th className="!bg-[var(--surface)]"><span className="sr-only">{t('Lượt thêm')}</span></Th>
             )}
           </tr>
         </thead>
