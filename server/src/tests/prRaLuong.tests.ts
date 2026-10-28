@@ -80,6 +80,13 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     finally { conn.prepare('UPDATE sos_cases SET tam = ?, kck = ? WHERE id = ?').run(c.tam, c.kck, c.id); }
   });
 
+  check('RA-LUONG-10 · Hồ sơ lớp: badge "n việc quá hạn" đếm bằng `demViec` (cùng đơn vị Công việc / Tổng quan), không đếm dòng', () => {
+    const nguon = fsMod.readFileSync('web/src/modules/classes/DauTrangLop.tsx', 'utf8') as string;
+    const dong = nguon.split('
+').find((l) => l.includes('const soViecQuaHan')) ?? '';
+    assert(/demViec\(/.test(dong) && !/demQuaHan/.test(nguon), `soViecQuaHan: ${dong.trim()}`);
+  });
+
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {
     const nguon = fsMod.readFileSync('web/src/modules/students/ChuyenLopPanel.tsx', 'utf8') as string;
     const huy = nguon.slice(nguon.indexOf('const huyLenh = async'), nguon.indexOf('const nhanChinh'));
