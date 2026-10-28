@@ -923,6 +923,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/Meeting CX\/GĐCN \(sau Mock\)/.test(docW('shared/domain/sos.ts')) && /COORDINATION_KIND_LABEL\[a\.kind/.test(s) && /không phải xử lý vi phạm, không cần QL duyệt/.test(s), 'nhãn');
   });
   /* UI-Y-THUC-HV (mockup v7): thanh việc thay bằng dòng đầu khối vi phạm + dòng trạng thái; dòng thời gian vào Nhật ký gập. */
+  check('UI-Y-THUC-HV · tab HV tự biết lớp thường khi không truyền `thuong` (panel Công việc yt_xem): "Phối hợp" không chữ SOS', () => {
+    const s = docW(`${YT}/StudentYThucSection.tsx`);
+    assert(/const thuong = thuongVao \?\? d\.chuoi\.nhan === 'lớp thường'/.test(s) && !/thuong = false/.test(s), 'tự biết lớp thường');
+    assert(/<StudentYThucSection studentId=\{it\.studentId!\} \/>/.test(docW('web/src/modules/congViec/PanelViec.tsx')), 'panel Công việc dựa vào mặc định');
+  });
   check('YT4 (10) · Tab HV (v7): thang, dòng trạng thái, khối vi phạm, Nhật ký gập có bộ lọc MỘT hàng, không ô tick, "Xem cả lịch sử", dòng đếm cuối', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
     assert(/function TrangThaiDong/.test(s) && /function KhoiViPham/.test(s) && /<ThangYThuc/.test(s) && /Xem cả lịch sử/.test(s) && /demCuoi/.test(s), 'bố cục');

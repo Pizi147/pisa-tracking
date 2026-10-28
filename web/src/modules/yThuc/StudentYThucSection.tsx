@@ -38,9 +38,9 @@ const CUA_TOI = <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rou
  *   5. `Nhật ký` gập (vi phạm + lần xử lý, bộ lọc ở trong) — mở sẵn khi em không còn gì chờ.
  * Thông báo / việc mở `?tab=y-thuc&mo=xu-ly` → panel Xác nhận xử lý; `&sub=phoi-hop` → cuộn tới Phối hợp.
  */
-export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }: {
+export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao }: {
   studentId: number;
-  /** Lớp thường: "Phối hợp" (không có chữ SOS); FT: "Phối hợp SOS". */
+  /** Lớp thường: "Phối hợp" (không có chữ SOS); FT: "Phối hợp SOS". Không truyền thì tự biết từ chuỗi em đang học (panel Công việc). */
   thuong?: boolean;
   /** Đổi sang tab Học thuật của hồ sơ (link trong thẻ Phối hợp SOS). */
   onGoAcademic?: () => void;
@@ -102,6 +102,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
   const moiIds = chuaXong.filter(coGhiNhan).map((v) => v.id);
   const hang: HangTrangThai = { ...d.hang, deXuat: d.deXuat };
   const nhatKyMo = moNhatKy ?? (chuaXong.length === 0 && !d.deXuat);
+  /* UI-Y-THUC-HV (PTA 28/10): cùng nguồn với dòng đếm Nhật ký — chuỗi không có lộ trình FT = lớp thường. */
+  const thuong = thuongVao ?? d.chuoi.nhan === 'lớp thường';
   const tenPhoiHop = thuong ? t('Phối hợp') : t('Phối hợp SOS');
   const chiTiet = (id: number) => (
     <ChiTietViPham violationId={id} onSua={(vv) => mo({ loai: 'sua', v: vv, studentName: d.ten })}
