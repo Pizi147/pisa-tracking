@@ -60,7 +60,7 @@ export function ChiSo({ ten, giaTri, mau, ky, luat }: { ten: string; giaTri: Rea
     </OChiSo>
   );
 }
-export const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">{children}</div>;
+export const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">{children}</div>;
 
 /** % to gạch chân bấm mở panel đúng tập; mẫu 0 → "Chưa có dữ liệu" (T19), không "0 %". */
 export function PhanTram({ x, nguon, tieuDe, gon, vung }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean; vung?: string }) {

@@ -439,7 +439,7 @@ export function HoTroHocVienTab() {
               </KhungTaiCho.Provider>
             </>
           ) : data && !data.scopeEmpty && dsNhom.length > 0 ? (
-            <div className="card px-6 py-10 text-center text-sm text-slate-400">{t('Chọn một việc ở danh sách để làm tại đây.')}</div>
+            <div className="card flex items-center justify-center px-6 py-10 text-center text-sm text-slate-400 lg:sticky lg:top-4 lg:min-h-[min(480px,calc(100dvh-14rem))]">{t('Chọn một việc ở danh sách để làm tại đây.')}</div>
           ) : null}
         </div>
       </div>
