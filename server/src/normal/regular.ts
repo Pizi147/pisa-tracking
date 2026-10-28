@@ -1,6 +1,6 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
@@ -1104,7 +1104,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE ${where}${chiLuot ? '' : ` AND (s.archived_at IS NULL OR s.status = 'inactive')`}   -- P7: em Tạm dừng ở Lưu trữ vẫn nhập bù / sửa điểm cũ
+        WHERE ${where}${chiLuot ? '' : cls.status === 'finished' ? ` AND (s.archived_at IS NULL OR s.status = 'inactive')` : ` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`}   -- lỗi chủ SP 28/10: lớp đang học chỉ lượt hiện tại (em Tạm dừng giữ như P7); lớp đã kết thúc giữ như cũ
         ORDER BY a.kind DESC, s.full_name`,
     )
     .all(...params) as any[];

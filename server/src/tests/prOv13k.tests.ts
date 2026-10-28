@@ -15,6 +15,7 @@ import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';   // LOC-HIEN-TAI: ca dựng chỉ chọn lượt hiện tại (bảng điểm lớp bỏ lượt lộ trình cũ)
 
 export async function runPrOv13kTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, TODAY, P, addDays, classId } = t;
@@ -295,7 +296,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
       const tuanTruoc = addDays(dm.mondayOfDate(TODAY), -7), cu = addDays(tuanTruoc, -14);
       /* Một lượt của MB FT 101 có ≥ 2 em đang học: chỉ giữ ô S của hai em (bỏ S các em khác) — nhóm (lớp, lượt) chỉ còn hai bài. */
       const ds = all(`SELECT a.id, a.attempt_no FROM assessment_attempts a JOIN students s ON s.id = a.student_id
-          WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND s.status = 'active' AND s.archived_at IS NULL ORDER BY a.attempt_no, a.id`, FT101);
+          WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND s.status = 'active' AND s.archived_at IS NULL AND ${LUOT_LO_TRINH_CUOI_SQL('a')} ORDER BY a.attempt_no, a.id`, FT101);
       const theoLuot = new Map<number, number[]>();
       for (const r of ds) (theoLuot.get(r.attempt_no) ?? theoLuot.set(r.attempt_no, []).get(r.attempt_no)!).push(r.id);
       const [luot, ids] = [...theoLuot].find(([, v]) => v.length >= 2)!;

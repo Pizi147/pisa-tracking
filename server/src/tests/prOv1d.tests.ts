@@ -1,8 +1,10 @@
 /**
  * PHÉP KIỂM PR-OV1d — lưới chấm FT: ô đã dời vì vắng ở lưới TUẦN GỐC có đủ dữ liệu để mở hộp + Bỏ vắng tại chỗ; em không còn đang học
- * (Kết thúc học / Lưu trữ) → hàng có cờ `ngungHoc`, ô không là việc; chỉ Lưu trữ chỉ đọc + máy chủ chặn ghi (400). Em Tạm dừng như đang học. Mỗi ca cuộn lại (`thu`).
+ * (Kết thúc học / Lưu trữ) → LOC-HIEN-TAI (chủ SP 28/10): không còn hàng ở bảng điểm lớp đang học; Lưu trữ máy chủ chặn ghi (400). Em Tạm dừng như đang học
+ * (hàng mờ `ngungHoc` 'Tạm dừng'). Mỗi ca cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';   // LOC-HIEN-TAI: ca dựng chỉ chọn lượt hiện tại (bảng điểm lớp bỏ lượt lộ trình cũ)
 
 export async function runPrOv1dTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId } = t;
@@ -28,7 +30,7 @@ export async function runPrOv1dTests(t: YThucTestKit) {
   const W = week.ensurePeriod(WS).id as number, W1 = week.ensurePeriod(WS1).id as number;
 
   const luot = all(
-    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL AND ${LUOT_LO_TRINH_CUOI_SQL('a')}
       JOIN enrollments e ON e.student_id = s.id AND e.class_id = a.class_id AND e.status = 'active'
      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
        AND a.attempt_no = (SELECT MAX(x.attempt_no) FROM assessment_attempts x WHERE x.cycle_id = a.cycle_id AND x.kind = 'mock')
@@ -75,45 +77,40 @@ export async function runPrOv1dTests(t: YThucTestKit) {
     assert(!o(a, 'listening', gvL, W, THU6).daChot, 'sau Bỏ vắng ô về tuần gốc, không còn dấu dời');
   }));
 
-  check('OV1d-2 · em Lưu trữ: cờ ngungHoc, ô chỉ đọc (cả Bỏ vắng), ghi → 400; em Kết thúc học chưa lưu trữ: cờ, ô không là việc nhưng vẫn ghi được (PR-TK); em Tạm dừng như đang học; trở lại học → ghi được', () => thu(() => {
+  /* LOC-HIEN-TAI (chủ SP 28/10, PTA Plan): em Kết thúc học / Lưu trữ KHÔNG còn hàng ở bảng điểm lớp đang học (trước: hàng mờ `ngungHoc`); em Tạm dừng giữ như cũ.
+   * Đường ghi giữ hành vi cũ: Lưu trữ chặn ghi (400), Kết thúc học vẫn nhập bù được (PR-TK — qua hồ sơ HV / trang lượt). */
+  check('OV1d-2 · em Lưu trữ: không hàng, ghi → 400; em Kết thúc học chưa lưu trữ: không hàng nhưng vẫn ghi được (PR-TK); em Tạm dừng như đang học; trở lại học → hàng + ghi được', () => thu(() => {
     const a = luot[1], s = sid(a);
     dung(a);
     attempts.saveScore(gvL, a, 'reading', { noShow: true }, TRONG);   // ô dời vì vắng — Bỏ vắng cũng phải khoá khi Lưu trữ
     const dat = (sql: string) => { conn.prepare(`UPDATE students SET ${sql} WHERE id = ?`).run(s); xoaNho(); };
     dat(`archived_at = '2026-10-01T00:00:00Z'`);
-    let r = hang(a, QL, W, THU6);
-    assert(r?.ngungHoc === 'Lưu trữ', `Lưu trữ: cờ hàng = ${JSON.stringify(r?.ngungHoc)}`);
-    assert(r.cells.every((c: any) => !c.canEdit && !c.viec && !c.overdue && !c.daChot?.goDuoc),
-      `Lưu trữ: ô phải chỉ đọc: ${JSON.stringify(r.cells.map((c: any) => [c.skill, c.canEdit, c.viec, c.overdue, c.daChot?.goDuoc]))}`);
+    assert(!hang(a, QL, W, THU6), 'Lưu trữ: không còn hàng ở bảng điểm lớp');
     for (const [k, patch] of [['listening', { rawScore: 30 }], ['reading', { noShow: false }], ['speaking', { nhanXet: 'x' }]] as const) {
       const e = loi(() => attempts.saveScore(QL, a, k, patch, THU6));
       assert(e?.status === 400 && /Quay lại học/.test(e.message), `Lưu trữ ghi ${k}: ${e?.status} ${e?.message}`);
     }
-    /* Kết thúc học chưa lưu trữ (FT chờ thi thật / Bước tiếp): hàng mờ, không việc / quá hạn, nhưng ô vẫn mở — nhập bù vào bản chụp (PR-TK). */
     dat(`archived_at = NULL, status = 'finished'`);
-    r = hang(a, QL, W, THU6);
-    assert(r?.ngungHoc === 'Đã kết thúc học' && r.cells.every((c: any) => !c.viec && !c.overdue)
-      && r.cells.find((c: any) => c.skill === 'listening').canEdit && r.cells.find((c: any) => c.skill === 'reading').daChot?.goDuoc === true,
-      `Kết thúc học: ${JSON.stringify(r?.ngungHoc)} ${JSON.stringify(r?.cells.map((c: any) => [c.skill, c.canEdit, c.viec, c.overdue, c.daChot?.goDuoc]))}`);
+    assert(!hang(a, QL, W, THU6), 'Kết thúc học: không còn hàng ở bảng điểm lớp');
     attempts.saveScore(QL, a, 'speaking', { nhanXet: 'nhập bù sau Kết thúc học' }, THU6);
     dat(`status = 'active'`);
-    /* Em Tạm dừng (thi xong rồi mới dừng): vẫn nhập điểm / Bỏ vắng như thường (chủ SP 13/10). P7 (N11): hàng mờ "Tạm dừng" (em ở Lưu trữ), ô không khoá. */
+    /* Em Tạm dừng (thi xong rồi mới dừng): vẫn nhập điểm / Bỏ vắng như thường (chủ SP 13/10). P7 (N11): hàng mờ "Tạm dừng", ô không khoá — giữ (PTA 28/10). */
     conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(s);
     xoaNho();
     const td = hang(a, QL, W, THU6);
-    assert(td.ngungHoc === 'Tạm dừng' && td.cells.find((c: any) => c.skill === 'reading').daChot?.goDuoc === true, `em Tạm dừng: ${JSON.stringify(td.ngungHoc)}`);
+    assert(td?.ngungHoc === 'Tạm dừng' && td.cells.find((c: any) => c.skill === 'reading').daChot?.goDuoc === true, `em Tạm dừng: ${JSON.stringify(td?.ngungHoc)}`);
     attempts.saveScore(gvL, a, 'reading', { noShow: false }, THU6);
     attempts.saveScore(gvL, a, 'reading', { rawScore: 25 }, THU6);
     assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'reading'`, a).raw_score === 25, 'em Tạm dừng: ghi được');
     conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(s);
     xoaNho();
-    r = hang(a, QL, W, THU6);
-    assert(!r.ngungHoc && r.cells.some((c: any) => c.canEdit), 'em học lại: hàng bình thường');
+    const r = hang(a, QL, W, THU6);
+    assert(r && !r.ngungHoc && r.cells.some((c: any) => c.canEdit), 'em học lại: hàng bình thường');
     attempts.saveScore(QL, a, 'listening', { rawScore: 30 }, THU6);
     assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a).raw_score === 30, 'học lại: ghi được');
   }));
 
-  check('OV1d-3 · số đếm không đổi: hàng lớp Lịch Test không tính em lưu trữ (khớp S6F-a 2b), lưới vẫn giữ hàng (mờ) với điểm cũ', () => thu(() => {
+  check('OV1d-3 · em lưu trữ: Lịch Test không tính (khớp S6F-a 2b), bảng điểm lớp không hàng (LOC-HIEN-TAI), điểm cũ giữ trong DB; bỏ lưu trữ → hàng về với điểm cũ', () => thu(() => {
     const [a, b] = luot;
     dung(a); dung(b);
     attempts.saveScore(QL, b, 'listening', { rawScore: 30 }, TRONG);
@@ -122,7 +119,10 @@ export async function runPrOv1dTests(t: YThucTestKit) {
     conn.prepare(`UPDATE students SET archived_at = '2026-10-01T00:00:00Z' WHERE id = ?`).run(sid(b));
     xoaNho();
     assert(con() < truoc, `Lịch Test vẫn đếm em lưu trữ: ${truoc} → ${con()}`);
-    const r = hang(b, QL, W, THU6);
-    assert(r?.ngungHoc === 'Lưu trữ' && r.cells.find((c: any) => c.skill === 'listening').rawScore === 30, 'hàng em lưu trữ phải còn, điểm cũ giữ');
+    assert(!hang(b, QL, W, THU6), 'em lưu trữ không còn hàng ở bảng điểm lớp');
+    assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, b).raw_score === 30, 'điểm cũ giữ trong DB');
+    conn.prepare(`UPDATE students SET archived_at = NULL WHERE id = ?`).run(sid(b));
+    xoaNho();
+    assert(hang(b, QL, W, THU6)?.cells.find((c: any) => c.skill === 'listening').rawScore === 30, 'bỏ lưu trữ: hàng về, điểm cũ còn');
   }));
 }

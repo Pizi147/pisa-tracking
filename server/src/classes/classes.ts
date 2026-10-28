@@ -29,7 +29,7 @@ import { emChuaCoLenh, emChoDuyetChuyenLop } from './lenhChuyen.ts';
 import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { duocSuaCaLop } from './suaCaLop.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 
@@ -190,7 +190,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
   for (const r of conn.prepare(
     `SELECT class_id, COUNT(*) AS n FROM (
        SELECT a.class_id FROM assessment_attempts a
-         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
+         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}   -- LOC-HIEN-TAI: badge Case theo Case (cùng danh sách Case), không theo lượt
          JOIN sos_cases x ON x.attempt_id = a.id
         WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'
         GROUP BY a.id
@@ -204,7 +204,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               pr.week_start AS period_start, pr.week_end AS period_end
          FROM assessment_attempts a
-         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}   -- PR-S6F-a Q2: badge cùng tập Nợ điểm
+         JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- PR-S6F-a Q2 + lỗi chủ SP 28/10: badge cùng tập Nợ điểm
          JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.class_id IN (${ph}) AND a.status != 'cancelled' AND ${CON_O_SQL}`,

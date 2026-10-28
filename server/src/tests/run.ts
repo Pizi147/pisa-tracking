@@ -7990,8 +7990,10 @@ const prgWeekEnd = (conn.prepare('SELECT week_end FROM report_periods WHERE id =
  * rồi phân vai: A, B chỉ có L/R/W sạch; C, D sạch cả bốn kỹ năng. Nhiều kỹ năng KHÁC NHAU của cùng một lượt
  * được dùng cho nhiều phép kiểm vì chúng độc lập (mỗi kỹ năng có lịch và bộ đếm riêng).
  */
+const { LUOT_LO_TRINH_CUOI_SQL } = await import('../students/tamDung.ts');
 const prgSlot = (skills: string[]) => conn.prepare(
-  `SELECT a.id FROM assessment_attempts a
+  /* LOC-HIEN-TAI (chủ SP 28/10): bảng điểm lớp không còn hàng em Kết thúc học (Ngô Thanh Tùng có MT3 W3 SEP) hay lượt lộ trình cũ — chỉ chọn lượt hiện tại. */
+  `SELECT a.id FROM assessment_attempts a JOIN students st ON st.id = a.student_id AND st.status = 'active' AND st.archived_at IS NULL AND ${LUOT_LO_TRINH_CUOI_SQL('a')}
     WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind = 'mock'
       AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id)
       AND (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1
@@ -9664,6 +9666,9 @@ await runPrHslLtTests({ check, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== HOAN-TAC-XN (luật N3: Hoàn tác Xác nhận PA · lô PA · Xác nhận Case · Xác nhận Case S)
 const { runPrHoanTacXnTests } = await import('./prHoanTacXn.tests.ts');
 await runPrHoanTacXnTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== LOC-HIEN-TAI (lỗi chủ SP 28/10: danh sách hiện tại = lộ trình mới nhất + em đang học)
+const { runPrLocHienTaiTests } = await import('./prLocHienTai.tests.ts');
+await runPrLocHienTaiTests({ check, assert, conn, P, classId, TODAY } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
