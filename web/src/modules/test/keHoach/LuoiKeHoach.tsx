@@ -22,7 +22,8 @@ import {
 type Cot = { key: string; dot: DotChon; tieu: string; phu: string | null; deXuat: string | null; nhanDeXuat: string | null };
 type Hop = { anchor: HTMLElement; hang: HangFT | HangThuong; cot: Cot; kyNangDau: KyNangKH | null };
 
-const RONG_TEN = 190;
+/** Cột tên: 190 (mockup #659), điện thoại 120 — tên dài xuống hai dòng. */
+const RONG_TEN = typeof window !== 'undefined' && window.innerWidth < 640 ? 120 : 190;
 /** Chủ SP 22/10 (10 mục 6): cột cuối hàng HV (lớp FT) — các lượt S Ex của em theo tuần + nút "+ MT" (MT kế tiếp · S Ex). Kế hoạch Test chỉ
  *  QL / Admin thấy (`plan.week`), máy chủ kiểm lại khi ghi. */
 const RONG_SEX = 136;

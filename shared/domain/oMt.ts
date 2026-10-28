@@ -7,7 +7,7 @@
  * Thứ tự (KHÔNG đảo): chưa có lượt → mọi kỹ năng bắt buộc xong → trễ chấm → còn việc (vắng / chờ duyệt, rồi đã huỷ) → chờ chấm →
  * đang thi → có lịch → chưa xếp. Trễ chấm đứng TRƯỚC vắng vì hạn chấm quá là việc gấp hơn.
  */
-import { ngay, tuanLich } from './hienThiNgay.ts';
+import { docTuanLich, ngay, tuanLich } from './hienThiNgay.ts';
 import { O_KE_HOACH, trangThaiKyNang, type KyNangKH, type OKyNang } from './keHoachTest.ts';
 import { tenMon, tenMonNgan } from './normal.ts';
 import { addDaysIso } from './sos.ts';
@@ -282,7 +282,9 @@ export function oGon(kn: OMtVao['kn'], homNay: string, ct?: string | null): OGon
     return [...m].sort((a, b) => a[0].localeCompare(b[0]));
   };
   const rieng = xong ? [] : theoTuan(con.filter((x) => x.o.tuan && ngayCua(x.o.tuan) !== chinh), (x) => x.o.tuan);
-  const doi = xong ? [] : theoTuan(req.filter((x) => x.o.doiTu), (x) => x.o.doiTu);
+  /* `doiTu` có thể là mã tuần (`W2 SEP`) chứ không phải ngày — đổi về thứ Hai như `chuDoiVang`. */
+  const ngayDoi = (x: (typeof ds)[number]) => (x.o.doiTu && /^\d{4}-\d{2}-\d{2}/.test(x.o.doiTu) ? x.o.doiTu : x.o.doiTu ? docTuanLich(x.o.doiTu, homNay) : null);
+  const doi = xong ? [] : theoTuan(req.filter((x) => x.o.doiTu), ngayDoi);
   return {
     tuan: chinh ? ma(chinh) : null, xong, tt, kn: knGon,
     rieng: rieng.length ? rieng.map(([w, xs]) => t('{x} riêng · {tuan}', { x: ten(xs), tuan: ma(w) })).join(' · ') : null,
