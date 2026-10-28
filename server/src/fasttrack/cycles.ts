@@ -374,23 +374,6 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
 }
 
 /**
- * Lộ trình đang chạy TẠI MỘT NGÀY, dùng cho các bản ghi ghi bù.
- *
- * Một quan sát của ngày 20/07 thuộc về lộ trình đang chạy hôm 20/07, không thuộc lộ trình
- * mở hôm nay. Không có lộ trình nào phủ ngày đó thì để trống — gán bừa vào lộ trình hiện
- * tại là làm sai lịch sử một cách khó phát hiện.
- */
-export function cycleForDate(studentId: number, date: string) {
-  return (db()
-    .prepare(
-      `SELECT * FROM learning_cycles
-        WHERE student_id = ? AND started_at <= ? AND (ended_at IS NULL OR ended_at >= ?)
-        ORDER BY (status = 'active') DESC, seq DESC LIMIT 1`,
-    )
-    .get(studentId, date, date) as any) ?? null;
-}
-
-/**
  * ĐIỂM XUẤT PHÁT của lộ trình, kèm NGUỒN.
  *
  * "Em vào học ở mức nào" là câu hỏi khác hẳn "bài Mock đầu tiên được mấy điểm". Không có

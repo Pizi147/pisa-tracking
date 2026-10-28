@@ -3,7 +3,7 @@
  *  1 · email trùng bị chặn: thêm một em · nhập lô (trùng em đã có + trùng trong lô) · sửa một em · sửa cả lớp — câu lỗi có tên + lớp em đang dùng
  *  2 · email trống lưu được → "Thiếu thông tin" có Email · em cũ đang trùng email sửa ô khác vẫn được (chỉ lần ĐỔI email bị kiểm)
  *  3 · mọi file xuất: không cột "Mã", cột 2 là "Email" (header thật của `/xuat-mt`; sheet Ý thức dựng từ hằng dùng chung)
- *  4 · tìm theo mã vẫn ra em (và theo email) · cảnh báo trùng tên hiện email, không hiện mã · lệnh `kiem-truoc-ov13f` đếm trùng / thiếu.
+ *  4 · tìm theo mã vẫn ra em (và theo email) · cảnh báo trùng tên hiện email, không hiện mã.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -150,14 +150,4 @@ export async function runPrOv13fTests(t: YThucTestKit) {
     may.close();
     xoaNho();
   }
-
-  const kiem: any = await import('../ops/kiemTruocOv13f.ts');
-  check('OV-13f 5 · kiem-truoc-ov13f: liệt kê nhóm trùng email (gồm "co.san@ov13f.vn" 2 em) + đếm thiếu theo chi nhánh, không ghi', () => {
-    const truoc = one('SELECT COUNT(*) n FROM audit_logs').n;
-    const r = kiem.kiemTruocOv13f(conn);
-    const nhom = r.trung.find((x: any) => x.email === 'co.san@ov13f.vn');
-    assert(nhom && nhom.em.length === 2, `nhóm trùng: ${JSON.stringify(r.trung.slice(0, 3))}`);
-    assert(r.thieu.some((x: any) => x.chiNhanh && x.soEm >= 1), `thiếu theo chi nhánh: ${JSON.stringify(r.thieu)}`);
-    assert(one('SELECT COUNT(*) n FROM audit_logs').n === truoc, 'lệnh chỉ đọc mà có ghi');
-  });
 }

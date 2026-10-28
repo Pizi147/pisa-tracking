@@ -2,7 +2,7 @@
  * CV-LOI (02 mục 4.7 A13, X-63): ghi bù chủ cho Case cũ còn mở mà chưa có người phụ trách — theo đúng luật lúc tạo Case (GV môn → GVCN),
  * mỗi Case một dòng lịch sử + một dòng nhật ký nguồn "migrate prCvLoi". Chỉ chạm Case `owner_user_id IS NULL`.
  * SUA-NO-RA (CV-LOI-b): ĐÚNG MỘT LẦN (khoá `demo_config`, mẫu `prOv13p`) — deploy sau không tự gán chủ cho Case trống vì lý do khác.
- * Lớp chưa có cả GV môn lẫn GVCN thì để trống (Công việc của QL hiện "Phân công GV {môn}"). Kiểm trước: `scripts/kiem-truoc-cv-loi.mjs`.
+ * Lớp chưa có cả GV môn lẫn GVCN thì để trống (Công việc của QL hiện "Phân công GV {môn}").
  */
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import { nowIso } from '../util.ts';

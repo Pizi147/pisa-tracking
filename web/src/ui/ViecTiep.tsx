@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { ViecTiepTheo } from '@shared/domain/index.ts';
 import { QuaHan } from './Nhan.tsx';
-import { t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT VIỆC Ở CỘT "VIỆC TIẾP THEO" (PR-UX3, B-2/B-3): chữ việc không khung, sau đó hoặc "⚠ quá hạn 3 ngày" đỏ (quá hạn; PR-N1 A6
@@ -31,19 +30,3 @@ export function ViecTiep({ v, den, onBam }: { v: ViecTiepTheo; den?: string | nu
 /** CA2-8: mã tuần "W2 SEP" là một khối đọc — dấu cách không ngắt (U+00A0), không gãy "W2 / SEP". */
 const giuMaTuan = (chu: string) => chu.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');
 
-/** Tối đa 2 việc, phần còn lại gom "+n việc" (tooltip liệt kê). */
-export function DanhSachViecTiep({ viec, den, onBam }: {
-  viec: readonly ViecTiepTheo[]; den?: (v: ViecTiepTheo) => string | null;
-  /** OV-12f: việc mở tại chỗ (Học viên & Lớp › việc Case → Panel một em) — trả null thì dùng `den`. */
-  onBam?: (v: ViecTiepTheo) => (() => void) | null;
-}) {
-  if (viec.length === 0) return <span className="text-slate-500">—</span>;
-  return (
-    <span className="flex flex-col items-start gap-0.5">
-      {viec.slice(0, 2).map((v) => <ViecTiep key={v.viec} v={v} den={den?.(v)} onBam={onBam?.(v) ?? undefined} />)}
-      {viec.length > 2 && (
-        <span className="text-xs text-slate-400" title={viec.slice(2).map((v) => v.title).join(' · ')}>{t('+{n} việc', { n: viec.length - 2 })}</span>
-      )}
-    </span>
-  );
-}

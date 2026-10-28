@@ -6,8 +6,8 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
-  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich,
-  type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
+  categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich,
+  type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
@@ -156,11 +156,6 @@ export function isRatioCycle(c: { id?: number | null; route?: string | null; pro
   if (!c || c.route) return false;
   if (c.programme_code) return programmeByCode(c.programme_code)?.scoringMode === 'ratio';
   return programmeByCode(programmeCodeOfCycle(c.id))?.scoringMode === 'ratio';
-}
-
-/** Bộ hạng mục Case đúng với chương trình của lộ trình này. */
-export function caseCategoriesOfCycle(c: any): readonly CaseCategory[] {
-  return caseCategoriesFor(isRatioCycle(c) ? 'ratio' : 'ielts_band', c?.programme_code ?? programmeCodeOfCycle(c?.id));
 }
 
 // ---------------------------------------------------------------- kết luận

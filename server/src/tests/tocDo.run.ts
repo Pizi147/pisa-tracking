@@ -1023,7 +1023,7 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 15/10 OV-13l: chụp lại mọi vai trừ ADMIN — đổi đầu ra CÓ CHỦ Ý: hạn bàn giao ≥ 7 ngày (GVBM = GVCN), seed D16 (LT1 → RF) giữ lộ trình,
  *   seed kịch bản 6 (MB FOU 23) ra lệnh 9 ngày trước để vẫn "Bàn giao quá hạn".
  * 21/10 LT-SV: chụp lại 'QT toi' / 'QT tat-ca' — đổi CÓ CHỦ Ý: 2 dòng "Chọn bước tiếp" (UB FT 401, chỉ có TUẦN thi W2 AUG) không còn hạn = Chủ nhật tuần + 7
- *   (tuần chưa phải ngày thi — Q-C3 ①); `npm run kiem-truoc-lt-sv` trên bộ demo 14/09: 0 lộ trình về B, đúng 2 dòng này đổi hạn.
+ *   (tuần chưa phải ngày thi — Q-C3 ①); bộ demo 14/09: 0 lộ trình về B, đúng 2 dòng này đổi hạn.
  * 16/10 OV-13q: chụp lại 'QT toi' / 'QT tat-ca' — đổi CÓ CHỦ Ý: 2 dòng "Chọn bước tiếp" (UB FT 401) hạn = ngày thi + 7 (luật 1 tuần), thêm `cycleId` / `daGiaHan` (nút Gia hạn).
  * 16/10 gộp OV-13m với main (13k, 13n): chụp lại QT toi / QT tat-ca trên bản gộp (cùng 2 khoá 13m đã đổi có chủ ý).
  * 16/10 gộp OV-13n với main (13k): chụp lại băm trên bản gộp (13n + 13k đều đổi có chủ ý).

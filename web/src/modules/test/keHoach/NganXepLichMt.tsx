@@ -13,6 +13,7 @@ import {
   PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, MT_TOI_DA, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type ToneSeXep,
 } from '@shared/domain/index.ts';
+import { moiKhoaGui } from '@shared/domain/khoaGui.ts';
 import type { DanhSachLop, HangFT, LopKH, LuoiFTData } from './kieu.ts';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { XepTheoHocVien } from './XepTheoHocVien.tsx';
@@ -140,6 +141,8 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
   const [khoaDong, setKhoaDong] = useState('');
   const khoaTick = `${dot}|${lopChon.join(',')}`;
   const soXem = useRef(0);
+  /* RA-LUONG-17: khoá chống gửi lặp — sinh MỘT lần khi mở panel, giữ qua thử lại; máy chủ so cả nội dung gửi (đổi em / tuần = lần lưu mới). */
+  const khoaLuu = useRef(moiKhoaGui('xephl'));
   const thanChung = { attemptNo: dot, tuan: tuanGui, kyNang: kyChon, dotTheoEm, thiLai };
   const khoaXem = JSON.stringify([dot, tuanGui, kyChon, dotTheoEm, thiLai, hangs.map((h) => h.studentId)]);
   useEffect(() => {
@@ -203,7 +206,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
         if (!ids.length) continue;
         try {
           const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {
-            classId: id, studentIds: ids, force: true, xemTruoc: false, ...thanChung,
+            classId: id, studentIds: ids, force: true, xemTruoc: false, ...thanChung, idempotencyKey: khoaLuu.current,
           });
           daLuu += r.daLuu;
           loi.push(...r.dong.filter((d) => d.hanhDong === 'loi'));

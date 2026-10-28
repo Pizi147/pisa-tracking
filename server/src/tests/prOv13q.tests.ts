@@ -235,11 +235,9 @@ export async function runPrOv13qTests(t: YThucTestKit) {
       const goi = () => cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(lib)}); console.log('APPLIED' + JSON.stringify(m.migrate().applied));`],
         { env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', BAN_CHINH: '', PISA_DB: f }, encoding: 'utf8', timeout: 120_000 });
       const doc = (r: any): string[] => { assert(r.status === 0, `migrate lỗi: ${String(r.stderr).slice(-400)}`); return JSON.parse(String(r.stdout).split('APPLIED').pop()!); };
-      /* Rà #436: chạy ĐÚNG tệp dist như chủ SP (node riêng — module nạp từ chính lệnh, bắt được vòng import): kiểm trước ra số, không lỗi. */
+      /* Rà #436: chạy ĐÚNG tệp dist như chủ SP (node riêng — module nạp từ chính lệnh, bắt được vòng import). */
       const chay = (tep: string) => cp.spawnSync(process.execPath, [pathMod.join(process.cwd(), 'dist-server/server/src', tep)],
         { env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '', BAN_CHINH: '', PISA_DB: f }, encoding: 'utf8', timeout: 120_000 });
-      const kt = chay('ops/kiemTruocOv13q.js');
-      assert(kt.status === 0 && /\d+ lộ trình đã thi chưa xong/.test(kt.stdout) && !/ReferenceError/.test(kt.stderr), `kiem-truoc-ov13q: ${kt.status} ${String(kt.stderr).slice(-300)}`);
       const a1 = doc(goi());
       const c2 = new Database(f);
       const dong = c2.prepare('SELECT han_sau_thi, han_sau_thi_so_lan, han_sau_thi_ly_do FROM learning_cycles WHERE id = ?').get(qua.cy) as any;

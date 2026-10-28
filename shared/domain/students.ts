@@ -63,10 +63,6 @@ export const tenRoute = (c: { route?: string | null; route_ten?: string | null; 
   c.route === ROUTE_KHAC ? (c.route_ten ?? c.routeTen ?? '').trim() || t('Khác') : c.route ?? null;
 
 export const CYCLE_STATUSES = ['active', 'completed', 'abandoned'] as const;
-export type CycleStatus = (typeof CYCLE_STATUSES)[number];
-export const CYCLE_STATUS_LABEL: Record<CycleStatus, string> = {
-  active: 'Đang học', completed: 'Đã hoàn thành', abandoned: 'Đã dừng',
-};
 
 export const JOURNEY_FILTERS = [
   { key: 'all', label: 'Tất cả' },

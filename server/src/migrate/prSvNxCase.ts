@@ -8,8 +8,6 @@
  *        MT1 → nguồn MT1). Không lượt nào trùng (`A-khong-khop`) → để NULL: mô tả giữ, nhận xét sau không đè (như sửa riêng). Nội dung mô tả không đổi.
  *     B. Ô S chấm chéo còn việc "Xem nhận xét Speaking" (OV-13k, `cho_phu_trach_xem` = 1): PA Case S của lượt đã xác nhận (việc cũ đã hết) → hạ cờ
  *        (không sinh việc mới); còn lại giữ cờ → thành việc "Xác nhận Case" của GV phụ trách S khi có Case S thật của lượt (không có Case: không việc).
- *
- * `kiemTruocSvNxCase` = CÙNG danh sách mà KHÔNG ghi gì (lệnh `npm run kiem-truoc-sv-nx-case`).
  */
 import { LA_CASE_MT } from '../cases/sosState.ts';
 
@@ -67,10 +65,6 @@ function lapDanhSach(conn: any): DongSvNxCase[] {
     }
   }
   return ra;
-}
-
-export function kiemTruocSvNxCase(conn: any): DongSvNxCase[] {
-  return lapDanhSach(conn);
 }
 
 export function migratePrSvNxCase(conn: any, applied: string[]): DongSvNxCase[] {

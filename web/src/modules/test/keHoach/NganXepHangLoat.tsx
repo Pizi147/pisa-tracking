@@ -13,6 +13,7 @@ import {
   type BaiXemTruoc, type DongHangLoat, type KyNangKH,
   dsLoi,
 } from '@shared/domain/index.ts';
+import { moiKhoaGui } from '@shared/domain/khoaGui.ts';
 import {
   KY, chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot,
   type DotChon, type LopKH, type LuoiThuongData,
@@ -122,6 +123,8 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
   const soDangXem = useRef(0);
+  /* RA-LUONG-17: khoá chống gửi lặp — sinh MỘT lần khi mở panel, giữ qua thử lại; máy chủ so cả nội dung gửi (đổi em / tuần = lần lưu mới). */
+  const khoaLuu = useRef(moiKhoaGui('xephl'));
 
   const studentIds = dsEm.filter((h) => ticked.has(h.studentId)).map((h) => h.studentId);
   const tuanGui = useMemo(() => {
@@ -168,7 +171,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
     setBusy(true);
     try {
       const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {
-        classId, ...thanDot(dot), studentIds, tuan: tuanGui, force, xemTruoc: false,
+        classId, ...thanDot(dot), studentIds, tuan: tuanGui, force, xemTruoc: false, idempotencyKey: khoaLuu.current,
       });
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       const conLai = emGiuLaiSauLuu(r.dong);

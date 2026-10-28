@@ -302,7 +302,3 @@ export const WORK_SCOPE_LABEL: Record<WorkScope, string> = {
 export function needScoresText(scope: WorkScope | null, n: number): string {
   return scope === 'mine' ? t('Cần chấm: {n} bài', { n }) : t('Lớp còn {n} bài chưa nhập điểm', { n });
 }
-export const WORK_SCOPE_HINT: Record<WorkScope, string> = {
-  mine: 'Kỹ năng bạn được phân công dạy.',
-  managed: 'Mọi bài chưa chấm trong phạm vi bạn được xem, kèm tên giáo viên phụ trách.',
-};

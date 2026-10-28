@@ -126,7 +126,6 @@ function useBanPhim(bat: boolean) {
 
 /** CV-LOI (CV-05): panel đang hiện "✓ Đã lưu · Hoàn tác" còn bấm được — hàng đợi Công việc không tự sang việc kế (Hoàn tác không bị thay). */
 const choHoanTac = new Set<symbol>();
-export const dangChoHoanTac = () => choHoanTac.size > 0;
 export function useChoHoanTac(con: boolean) {
   useEffect(() => {
     if (!con) return undefined;

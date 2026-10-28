@@ -77,7 +77,7 @@ export function luotLechNguyHiem(): number[] {
 
 /**
  * `CON_O_SQL` TRƯỚC TD7b — hai câu con tương quan trên điểm + lịch (alias a = lượt, c = lớp LEFT JOIN, pr = tuần của lượt LEFT JOIN; bốn `?` = hôm nay).
- * KHÔNG dùng ở đường chạy: chỉ để phép kiểm TD7b và `npm run kiem-truoc-td7b` chứng minh cờ mới ≡ cách tính cũ (100 %). Xoá cùng lệnh kiểm khi hết cần.
+ * KHÔNG dùng ở đường chạy: chỉ để phép kiểm TD7b chứng minh cờ mới ≡ cách tính cũ (100 %).
  */
 const oChoDiemCu = (mon: string) => `(EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
       WHERE k.attempt_id = a.id AND k.skill = ${mon} AND k.required = 1 AND k.sit_status NOT IN ('cancelled', 'absent') AND kp.week_start <= ?)

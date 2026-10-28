@@ -13,7 +13,7 @@ import { activeAt, can, isCoreTeacherOf, type Principal } from '../permissions.t
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
 import { emCuaLop, nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
-import { listCases, type MappedCase } from '../cases/cases.ts';
+import type { MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { listAttempts } from '../fasttrack/attempts.ts';
@@ -37,22 +37,6 @@ export function canhBaoTheoHocVien(p: Principal, classId: number): Map<number, N
 /** Số em cần hành động Ý thức (Quá hạn + Bắt buộc) của lớp — huy hiệu ⚠ của tab. */
 export function soEmCanXuLyYThuc(p: Principal, classId: number): number {
   return canhBaoTheoHocVien(p, classId).size;
-}
-
-/**
- * Việc tiếp của Case chưa xong của từng em trong lớp (lớp em ĐANG học), theo đúng phạm vi người xem — cùng tập với `/cases?classId=`.
- * Đọc theo LÔ (`chiTietCaseMo`, số câu SQL cố định) — dùng `viecTiepCuaEm` dựng cột Việc tiếp theo / Theo dõi.
- */
-export function caseViecTheoHocVien(p: Principal, classId: number): Map<number, CaseViec[]> {
-  const out = new Map<number, CaseViec[]>();
-  const mo = listCases(p, { classId }).rows.filter((c) => c.status !== 'done' && c.studentId !== null);
-  const ct = chiTietCaseMo(mo);
-  for (const c of mo) {
-    const x = ct.get(c.id);
-    if (!x) continue;
-    out.set(x.studentId, [...(out.get(x.studentId) ?? []), { caseId: c.id, topic: c.topic, viecTiep: x.viecTiep }]);
-  }
-  return out;
 }
 
 /** `thuTu`: lượt còn nợ SỚM NHẤT (kind + số) — ⋯ dòng em mở panel Nhập điểm lớp đúng lượt (UI-HV-LOP). */

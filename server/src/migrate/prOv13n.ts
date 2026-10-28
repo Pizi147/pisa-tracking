@@ -2,7 +2,6 @@
  * OV-13n (chủ SP 16/10): bảng §5.3 bỏ "Trao đổi ngắn với HV" ở SOS 2 / SOS 3. Việc `talk_student` điền sẵn (`preset = 1`) còn `pending` của lượt
  * Mock FT chưa huỷ đang ở SOS 2–3 → `removed · system_bang_doi` + một dòng nhật ký như P03 (`sos_coordination.sync`). Việc `done` và việc GVCN tự
  * thêm (`preset = 0`) giữ nguyên; SOS về 1 thì `syncSosCoordination` hồi lại. Chạy lại: không còn dòng nào khớp → không đổi gì.
- * `kiemTruocOv13n` = CÙNG danh sách, chỉ `SELECT` (lệnh `kiem-truoc-ov13n`).
  */
 import { nowIso } from '../util.ts';
 import { resultOf } from '../fasttrack/attempts.ts';
@@ -26,13 +25,6 @@ function lapDanhSach(conn: any): DongOv13n[] {
     if (sosLevel === 2 || sosLevel === 3) ra.push({ id: a.sca_id, attemptId: a.id, attemptNo: a.attempt_no, sosLevel, chiNhanh: a.chi_nhanh });
   }
   return ra;
-}
-
-/** Chỉ đọc: số việc sẽ bỏ theo chi nhánh. */
-export function kiemTruocOv13n(conn: any): Record<string, number> {
-  const dem: Record<string, number> = {};
-  for (const d of lapDanhSach(conn)) dem[d.chiNhanh] = (dem[d.chiNhanh] ?? 0) + 1;
-  return dem;
 }
 
 export function migratePrOv13n(conn: any, applied: string[]) {

@@ -1,13 +1,10 @@
 /**
- * KIỂU DÒNG `/classes/:id/roster` + ô Kết quả gần nhất + `dichViec` — dùng chung (hồ sơ lớp, Học viên & Lớp TVV / CX, Cần hỗ trợ, Lộ trình tiếp).
+ * KIỂU DÒNG `/classes/:id/roster` + `dichViec` — dùng chung (hồ sơ lớp, Học viên & Lớp TVV / CX, Cần hỗ trợ, Lộ trình tiếp).
  * UI-HV-LOP: bảng học viên theo lớp của Học viên & Lớp đã thay bằng danh sách gọn (`DanhSachHvLop.tsx`) — thân bảng cũ gỡ khỏi tệp này.
  */
 import type { ExamPlan, GiaiDoanSauThi, LichThi, NhanYThucEm } from '@shared/domain/index.ts';
-import { Link } from 'react-router-dom';
-import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
-import { duongDotTest, ketQuaGanNhat, type KetQuaVao, type ViecTiepTheo, chipSosTuKetQua } from '@shared/domain/index.ts';
-import { dich, t } from '@shared/i18n/index.ts';
-import { ChipSos } from '../../ui/ChipSos.tsx';
+import type { KetQuaVao, ViecTiepTheo } from '@shared/domain/index.ts';
+import { dich } from '@shared/i18n/index.ts';
 
 /** Các trường của một dòng `GET /classes/:id/roster` mà bảng này đọc. */
 export type NhanSauThiEm = { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean };
@@ -37,28 +34,6 @@ export type DongRoster = {
   history?: { id: number; overall: number | null; expectation: number | null; writing: number | null; bands: Record<string, number | null> | null; lichSu?: boolean }[];
 };
 
-/** Ô Kết quả gần nhất — chung cho hàng bảng và thẻ điện thoại: số chính + độ lệch FT + ✓ + SOS (FT) và tối đa hai dòng chữ 12 px, không cắt "…". */
-export function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGanNhat>; standing: KetQuaVao | null; thuong: boolean }) {
-  return (
-    <>
-      <span className="flex flex-wrap items-center gap-x-1.5">
-        <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
-        {k.lech && <span className={`text-xs font-semibold tabular-nums ${k.kckDuoi ? 'text-slate-400' : 'text-bad'}`} title={t('Dưới kỳ vọng {n}', { n: k.lech.replace('−', '') })}>{k.lech}</span>}
-        {k.dat && <span className="text-[12px] text-slate-400" title={thuong ? t('Đạt mọi môn') : t('Đạt kỳ vọng')}>✓</span>}
-        {k.kckDuoi && <ChipDuoiKck />}
-        {k.sos && chipSosTuKetQua(standing) && <ChipSos {...chipSosTuKetQua(standing)!} />}
-      </span>
-      {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong1} lienKet={standing?.attemptId && standing.attemptLabel ? { nhan: standing.attemptLabel, den: duongDotTest({ id: standing.attemptId, kind: standing.attemptKind, classId: standing.attemptClassId }) } : undefined} /></span>}
-      {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong2} /></span>}
-    </>
-  );
-}
-
 /** PR-EN-c: việc tiếp theo máy chủ dựng (chữ Việt) → tiếng của trang. */
 export const dichViec = (v: ViecTiepTheo): ViecTiepTheo => ({ ...v, viec: dich(v.viec), han: v.han && dich(v.han), title: dich(v.title) });
 
-/** PR-S4F #11: dòng "a · b · c" chỉ xuống dòng Ở DẤU "·" (không bẻ "…có / điểm", không để "W ·" đứng riêng ở 375 px). */
-/** PR-UXF-b (G5): `lienKet` biến tên lượt ở đầu dòng 1 ("MT3") thành link tới đợt (`duongDotTest`). */
-function DongCham({ chu, lienKet }: { chu: string; lienKet?: { nhan: string; den: string } }) {
-  return <>{chu.split(' · ').flatMap((x, i) => [i ? ' ' : null, <span key={i} className="whitespace-nowrap">{i ? '· ' : ''}{i === 0 && lienKet && x.startsWith(lienKet.nhan) ? <><Link to={lienKet.den} className="link">{lienKet.nhan}</Link>{x.slice(lienKet.nhan.length)}</> : x}</span>])}</>;
-}

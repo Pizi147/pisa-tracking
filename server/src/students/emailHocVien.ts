@@ -2,7 +2,7 @@ import { db, theoLo } from '../db.ts';
 
 /**
  * OV-13f (chủ SP 15/10, Q8): email học viên KHÔNG TRÙNG giữa các em — so sau cắt khoảng trắng + chữ thường. Ràng buộc ở mã, không UNIQUE DB
- * (dữ liệu cũ có thể trùng — `npm run kiem-truoc-ov13f` liệt kê). Mọi em còn trong DB đều tính (Lưu trữ / Kết thúc cũng tính; xoá học viên là
+ * (dữ liệu cũ có thể trùng). Mọi em còn trong DB đều tính (Lưu trữ / Kết thúc cũng tính; xoá học viên là
  * xoá hẳn). Chỉ kiểm khi email ĐỔI: em cũ đang trùng vẫn sửa được các ô khác.
  */
 export type EmDungEmail = { id: number; ten: string; lop: string | null };

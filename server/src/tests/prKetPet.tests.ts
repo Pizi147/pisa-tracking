@@ -395,14 +395,13 @@ export async function runPrKetPetTests(t: any) {
     assert(!dang().some((x) => x.skill === 'reading_writing'), 'R+W hết việc mà không kết thúc');
   }));
 
-  check('KP-5c · migrate: Target khoá KET / PET ngoài thang (band cũ) → NULL, ghi applied; kiểm trước đếm targetSai', () => thu(() => {
+  check('KP-5c · migrate: Target khoá KET / PET ngoài thang (band cũ) → NULL, ghi applied', () => thu(() => {
     const c = emPet();
     conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE id = ?').run(c.id); xoaNho();
-    assert(mig.kiemTruocKetPet(conn).targetSai >= 1, 'kiemTruoc không đếm Target ngoài thang');
     const applied: string[] = [];
     chayMig(applied); xoaNho();
     assert(one('SELECT target_score FROM learning_cycles WHERE id = ?', c.id).target_score === null, 'Target 6.5 còn ở khoá PET');
-    assert(applied.some((x) => /Target/.test(x)) && mig.kiemTruocKetPet(conn).targetSai === 0, applied.join(' | '));
+    assert(applied.some((x) => /Target/.test(x)), applied.join(' | '));
   }));
 
   check('KP-5d · migrate: lượt đã huỷ / đang có kết quả huỷ (ket_qua_huy) không tách; case_signals không đụng', () => thu(() => {

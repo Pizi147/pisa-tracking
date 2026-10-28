@@ -30,17 +30,6 @@ export function usePeriods() {
 }
 
 /**
- * TUẦN HIỆN TẠI theo ngày demo — hỏi thẳng máy chủ, KHÔNG đi tìm trong danh sách tuần.
- *
- * `/ref/periods` chỉ trả 26 tuần mới nhất trong lịch, mà lịch có sẵn cả những tuần tương lai
- * (kế hoạch MT xếp tới đầu 2027). Khi phần tương lai dài hơn thế thì tuần hiện tại rơi khỏi
- * danh sách, và màn nào đi tìm nó trong đó sẽ không thấy rồi rơi về một tuần bất kỳ.
- */
-export function useCurrentPeriod() {
-  return useApi<Period>('/ref/current-period');
-}
-
-/**
  * Cửa sổ tuần quanh tuần đang xem: hai tháng lịch sử, một tuần tới (rộng hơn ở `scope=planning`).
  * Chọn một tuần cũ thì cửa sổ dịch theo, nên vẫn đi tiếp về quá khứ được mà danh sách
  * không bao giờ dài ra thành một cuộn vô tận.
@@ -302,26 +291,3 @@ export function OChiNhanh({ branches, branchId, onBranch, tatCa = true }: {
   );
 }
 
-/**
- * Bộ lọc mặc định là TUẦN. Bộ lọc chi nhánh chỉ xuất hiện khi tài khoản thật sự
- * có nhiều hơn một chi nhánh — không đặt dropdown thừa trên mọi trang.
- */
-export function WeekBranchFilter({ periodId, onPeriod, branchId, onBranch, children }: {
-  periodId: number | null; onPeriod: (id: number) => void;
-  branchId?: number | null; onBranch?: (id: number | null) => void;
-  children?: React.ReactNode;
-}) {
-  const branches = useApi<Branch[]>(onBranch ? '/ref/branches' : null);
-  const { branchCount } = useSession();
-  const showBranch = !!onBranch && (branches.data?.length ?? 0) > 1 && branchCount > 1;
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <WeekPicker periodId={periodId} onPeriod={(id) => id && onPeriod(id)} />
-      {showBranch && (
-        <OChiNhanh branches={branches.data ?? []} branchId={branchId ?? null} onBranch={onBranch!} />
-      )}
-      {children}
-    </div>
-  );
-}

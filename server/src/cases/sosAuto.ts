@@ -326,7 +326,7 @@ export function mocThi(cycleId: number | null | undefined, ngayXacNhan: string):
  * ĐIỀN MỐC QUY CHẾ (K3-14, Q2): PA quy chế đang chạy `đến MT{n+1}` mà lúc xác nhận chưa có lịch thì `followup_due` NULL — PA vẫn chạy; có lịch
  * rồi thì lần đọc sau tự điền. OV-13a (B): `đến lúc thi` LUÔN theo mốc hiện tại = ngày thi, chưa có thì MT cuối của lộ trình — có ngày thi sau /
  * dời MT cuối thì mốc đi theo. Gọi ở ĐƯỜNG ĐỌC (`caseDetail`, `skillSupportBoard`, Công việc) và migrate `prOv13a`, không cron.
- * `keHoachMocQuyChe` CHỈ ĐỌC (lệnh `kiem-truoc-ov13a`); `dienMocQuyChe` ghi đúng các dòng đó. `theo`: tập Case, mọi Case của một em, hoặc mọi PA (`tatCa`).
+ * `keHoachMocQuyChe` CHỈ ĐỌC; `dienMocQuyChe` ghi đúng các dòng đó. `theo`: tập Case, mọi Case của một em, hoặc mọi PA (`tatCa`).
  */
 export function keHoachMocQuyChe(theo: { caseIds?: readonly number[]; studentId?: number; tatCa?: boolean }): { id: number; moc: string; span: string }[] {
   const conn = db();

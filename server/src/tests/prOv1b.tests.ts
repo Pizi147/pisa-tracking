@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM PR-OV1b — lỗi 5.2 (4 ca thật lớp CP FT RF 01, log chủ SP 11/10) + dấu "-" = Vắng chốt ngay + Bỏ vắng + dòng lớp "phần của bạn"
- * + migrate prOv1b / lệnh chỉ đọc `kiem-truoc-ov1b`. Mỗi phép kiểm dựng ca của nó trong một giao dịch rồi cuộn lại (`thu`).
+ * + migrate prOv1b. Mỗi phép kiểm dựng ca của nó trong một giao dịch rồi cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';   // LOC-HIEN-TAI: ca dựng chỉ chọn lượt hiện tại (bảng điểm lớp bỏ lượt lộ trình cũ)
@@ -13,7 +13,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
   const week: any = await import('../platform/week.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const { kiemOLop } = await import('../ops/kiemOLop.ts');
-  const { migratePrOv1b, kiemTruocOv1b, khoaPrOv1b, KHOA_PR_OV1B } = await import('../migrate/prOv1b.ts');
+  const { migratePrOv1b, khoaPrOv1b, KHOA_PR_OV1B } = await import('../migrate/prOv1b.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV1b · dấu "-" = Vắng, Không dự thi, Bỏ vắng, dòng lớp phần của bạn, migrate 4 ca thật');
 
@@ -237,15 +237,11 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     return { thao, phuong, chuaChot, buDaDoi };
   };
 
-  check('OV1b-8 · migrate prOv1b dọn đúng 4 ca, in từng ô đổi; chạy lần hai không đổi gì; kiem-truoc-ov1b in đúng danh sách mà không ghi', () => thu(() => {
+  check('OV1b-8 · migrate prOv1b dọn đúng 4 ca, in từng ô đổi; chạy lần hai không đổi gì', () => thu(() => {
     const ca = dungCaCu();
-    const n0 = one('SELECT total_changes() n').n;
-    const truoc = kiemTruocOv1b(conn);
-    assert(one('SELECT total_changes() n').n === n0, 'kiem-truoc-ov1b đã ghi DB');
     const applied: string[] = [];
     const doi = migratePrOv1b(conn, applied, BU);
-    const khoa = (ds: any[]) => ds.map((d) => `${d.attemptId}:${d.o}`).sort().join(',');
-    assert(doi.length > 0 && khoa(truoc) === khoa(doi), `kiem-truoc ≠ migrate:\n${khoa(truoc)}\n${khoa(doi)}`);
+    assert(doi.length > 0, 'migrate không đổi ô nào');
     assert(doi.every((d: any) => d.hocVien && d.ma && d.lop && d.luot && d.truoc && d.sau), `dòng thiếu cột: ${JSON.stringify(doi[0])}`);
     /* Thảo: mọi ô Không dự thi, bộ đếm 0, ở nguyên W1, không quá hạn. */
     for (const s of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) assert(dau(ca.thao, s).no_show_cu === 1, `Thảo ${s} chưa Không dự thi`);
@@ -263,7 +259,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     assert(one('SELECT total_changes() n').n === n1 && lan2.every((d: any) => d.sau.startsWith('giữ lịch thi lại')), `chạy lần hai còn đổi: ${lan2.map((d: any) => d.sau).join(' | ')}`);
   }));
 
-  check('OV1e → OV-11e · "-" nhập bù đã chốt, máy dời sang tuần khác (có lịch thi lại) → migrate GIỮ (lịch, lần vắng, "-") dù tuần thi lại là tuần sau, tuần này hay ĐÃ QUA (cả `sat` chưa điểm); kiem-truoc khớp; chạy lại không đổi', () => thu(() => {
+  check('OV1e → OV-11e · "-" nhập bù đã chốt, máy dời sang tuần khác (có lịch thi lại) → migrate GIỮ (lịch, lần vắng, "-") dù tuần thi lại là tuần sau, tuần này hay ĐÃ QUA (cả `sat` chưa điểm); chạy lại không đổi', () => thu(() => {
     const [nay, sau, qua] = luot;
     for (const a of luot) dung(a);
     buDaDoiSang(nay, W, W1);    // BU = thứ Tư W2 NOV → W1 là tuần hiện tại
@@ -273,26 +269,19 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     xoaNho();
     const anh = (a: number) => JSON.stringify([ky(a, 'listening'), dau(a, 'listening')]);
     const truocAnh = new Map([nay, sau, qua].map((a) => [a, anh(a)] as const));
-    const truoc = kiemTruocOv1b(conn);
     const applied: string[] = [];
     const doi = migratePrOv1b(conn, applied, BU);
     /* Giữ nguyên từng cột: tuần thi lại, lần vắng 1, "-" đã chốt chưa là Không dự thi — kết quả không phụ thuộc ngày chạy. */
     for (const a of [nay, sau, qua]) assert(anh(a) === truocAnh.get(a), `ca ${a} đã đổi:\n${truocAnh.get(a)}\n${anh(a)}`);
     assert(ky(qua, 'listening').planned_period_id === W && ky(qua, 'listening').sit_status === 'sat' && dau(qua, 'listening').no_show_cu === 0, 'ca đã thi lại (sat) chưa điểm giữ');
-    /* Báo cáo: dòng "giữ lịch thi lại <mã tuần>" cho cả ba ca, ở cả migrate lẫn kiem-truoc (cùng danh sách). */
+    /* Báo cáo: dòng "giữ lịch thi lại <mã tuần>" cho cả ba ca, ở migrate. */
     const dongCua = (ds: any[], a: number) => ds.find((d) => d.attemptId === a && d.o === 'listening');
     for (const [a, ws] of [[nay, WS1], [sau, '2026-11-16'], [qua, WS]] as const) {
       const ma = dm.tuanLich(ws);
       assert(dongCua(doi, a)?.sau === `giữ lịch thi lại ${ma}`, `migrate ${a}: ${JSON.stringify(dongCua(doi, a))}`);
-      assert(dongCua(truoc, a)?.sau === `giữ lịch thi lại ${ma}`, `kiem-truoc ${a}: ${JSON.stringify(dongCua(truoc, a))}`);
       assert(applied.some((l) => l.includes(`giữ lịch thi lại ${ma}`)), `báo cáo thiếu dòng giữ ${ma}: ${applied.join(' | ')}`);
     }
-    /* `kiemTruocOv1b` không nhận ngày (OV-11e) — danh sách giữ không theo ngày chạy. */
-    const ds = kiemTruocOv1b(conn);
-    for (const a of [nay, sau, qua]) assert(dongCua(ds, a)?.sau.startsWith('giữ lịch thi lại'), JSON.stringify(dongCua(ds, a)));
-    /* Cùng danh sách ô (cột "sau" của buổi C có sẵn trong seed ở bản chỉ đọc ghi luật — khác bản thật, đã nêu ở đầu prOv1b.ts). */
     const khoa = (ds: any[]) => ds.map((d) => `${d.attemptId}:${d.o}`).sort().join(',');
-    assert(khoa(truoc) === khoa(doi), `kiem-truoc ≠ migrate:\n${khoa(truoc)}\n${khoa(doi)}`);
     /* Chạy lại: không ghi gì; chỉ còn hai dòng giữ. */
     const n0 = one('SELECT total_changes() n').n;
     const lan2 = migratePrOv1b(conn, [], BU);

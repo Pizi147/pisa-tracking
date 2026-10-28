@@ -54,7 +54,8 @@ export function thongBaoCua(userId: number) {
                                      WHERE e2.student_id = sv.id AND e2.status = 'active' ORDER BY e2.id DESC LIMIT 1), sv.branch_id)))))
                     ) THEN 1 ELSE 0 END
                     /* SL1 (C23): Case tạo tay giao người phụ trách — còn việc tới khi Case có PA (hoặc đã đóng). */
-                    WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done'
+                    /* RA-LUONG-19: chỉ người ĐANG phụ trách còn việc — đổi người phụ trách thì chuông của người cũ thành "Để biết" (giữ lịch sử). */
+                    WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done' AND sc.owner_user_id = n.user_id
                       AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') THEN 1 ELSE 0 END
                     /* OV-11f (TQ-7): tín hiệu đã vào Case / đã rút → việc xong (Case có chuông riêng). Báo PH qua TVV: còn khi việc phối hợp của lượt chưa làm. */
                     WHEN n.entity_type = 'case_signal' THEN CASE WHEN cs.status = 'pending' THEN 1 ELSE 0 END

@@ -79,16 +79,6 @@ export const chiConHuy = (r: FtSheet['rows'][number], tuanDangXem: string | null
   && r.cells.some((c) => c.required && c.progress === 'cancelled' && c.weekStart === tuanDangXem)
   && !r.cells.some((c) => c.required && c.progress !== 'cancelled' && (!khacTuanFt(c, tuanDangXem) || nutTuanGoc(c)));
 
-/** Hạn nhập điểm sớm nhất còn nợ trên cả lưới — cho `<Han>` ở đầu trang (mockup 05a §2). */
-export function hanSomNhatFt(data: FtSheet | null | undefined): string | null {
-  const ds = (data?.rows ?? []).filter((r) => !r.ngungHoc).flatMap((r) => r.cells)
-    .filter((c) => c.required && c.band === null && c.deadline && !c.noShow
-      && c.progress !== 'cancelled' && c.progress !== 'absent')
-    .map((c) => c.deadline!.slice(0, 10))
-    .sort();
-  return ds[0] ?? null;
-}
-
 /** Tên đợt trên tiêu đề trang: MT{n}; một tuần có em ở MT khác nhau thì liệt kê. */
 export const tenDotFt = (data: FtSheet | null | undefined) =>
   [...new Set((data?.rows ?? []).map((r) => r.attemptNo))].sort((a, b) => a - b).map((n) => `MT${n}`).join(', ');

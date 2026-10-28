@@ -105,20 +105,9 @@ export function toInt(v: unknown): number | null {
   return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
-export function toNum(v: unknown): number | null {
-  if (v === null || v === undefined || v === '') return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
 export function pct(numerator: number, denominator: number): number | null {
   if (!denominator || denominator <= 0) return null;
   return Math.round((numerator / denominator) * 1000) / 10;
-}
-
-export function formatBand(n: number | null | undefined): string {
-  if (n === null || n === undefined) return '—';
-  return n.toFixed(1);
 }
 
 /** Sinh mã dạng PREFIX-000001 từ số thứ tự. */
