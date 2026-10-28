@@ -57,7 +57,9 @@ export function PhoiHopSosSection({ turns, loading, cot1 = 'hocVien', onGoAcadem
   if (loading || !turns) return <Skeleton rows={3} />;
   /* PR-S5F-b: tab dùng chung FT và lớp thường — màn rỗng không nói "SOS" (lớp thường không có SOS). */
   if (!turns.length) return <Empty title={t('Không có lượt phối hợp nào')} />;
-  const hien = gon && !het ? turns.slice(0, GON_TOI_DA) : turns;
+  /* `gon`: lượt chưa xong lên trước (máy chủ xếp theo tên) — "Hiện thêm" không giấu việc còn mở. */
+  const xep = gon ? [...turns].sort((a, b) => Number(a.summary.complete) - Number(b.summary.complete)) : turns;
+  const hien = gon && !het ? xep.slice(0, GON_TOI_DA) : xep;
   return (
     <div className="space-y-2">
       {hien.map((t) => (
@@ -107,6 +109,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
             /* Mockup `.phoi-hop`: chip SOS dưới tên (mức theo màu + chữ), kỹ năng ở tooltip; chip tĩnh — đầu thẻ đã là nút mở. */
             <span className="mt-1 flex items-center gap-1.5 text-xs text-slate-500" title={kyNang}>
               <ChipSos muc={luot.sosLevel} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />MT{luot.attemptNo}
+              <span className="sr-only">{kyNang}</span>
             </span>
           ) : (
             <span className={`block text-xs text-slate-500 ${gon ? 'truncate' : ''}`} title={gon ? kyNang : undefined}>

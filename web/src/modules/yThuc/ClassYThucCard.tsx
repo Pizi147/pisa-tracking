@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
-import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { DongThoiGian } from '../../ui/DongThoiGian.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -90,7 +90,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     if (!d || daCuon.current) return;
     daCuon.current = true;
     const el = params.get('sub') === 'phoi-hop' ? phoiHopRef.current : moHv ? document.getElementById(`yt-em-${moHv}`) : null;
-    el?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    cuonToi(el);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d]);
 
@@ -183,7 +183,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
       {!coHang && !(chonN.bat && chuaKhai.length) ? (
         <div className="p-4"><Empty title={t('Không em nào cần xử lý Ý thức')} hint={t('Vi phạm mới, việc bắt buộc và đề xuất chờ QL sẽ hiện ở đây.')} /></div>
       ) : (
-        <div role="table" aria-label={t('Ý thức theo học viên')}>
+        <div>
           {nhomHang.canXuLy.length > 0 && (
             <NhomHang chu={t('Cần xử lý')} dem={<>{t('{n} HV · {so} vi phạm', { n: nhomHang.canXuLy.length, so: soVp(nhomHang.canXuLy) })}{soQuaHan > 0 && <> · <span className="font-semibold text-late">⚠ {t('{n} quá hạn', { n: soQuaHan })}</span></>}</>}>
               {hang(nhomHang.canXuLy)}
@@ -195,7 +195,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
           {chonN.bat && chuaKhai.length > 0 && (
             <NhomHang chu={t('Chưa xác nhận cấp bậc')} dem={t('{n} HV', { n: chuaKhai.length })}>
               {chuaKhai.map((x) => (
-                <div role="row" key={x.studentId} className="flex min-h-[44px] items-center gap-2 border-t px-4" style={{ borderColor: 'var(--line)' }}>
+                <div key={x.studentId} className="flex min-h-[44px] items-center gap-2 border-t px-4" style={{ borderColor: 'var(--line)' }}>
                   <OChon chon={chonN} id={x.studentId} ten={x.ten} />
                   <span className="min-w-0 flex-1 truncate py-2.5 text-sm font-semibold text-slate-100">{x.ten}</span>
                 </div>
@@ -213,14 +213,14 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
       {/* Nhật ký vi phạm của lớp — gập (brief: không dàn nhật ký mặc định); lọc theo nhóm vi phạm ở trong. */}
       <Gap chu={t('Nhật ký vi phạm của lớp ({n})', { n: vpLop.length })}>
         <div className="space-y-2 px-4 pb-3">
-          <select className="field w-auto py-1 text-xs" aria-label={t('Nhóm vi phạm')} value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
+          <select className="field min-h-[44px] w-auto py-1 text-xs sm:min-h-0" aria-label={t('Nhóm vi phạm')} value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
             <option value="">{t('Mọi nhóm vi phạm')}</option>
             {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}</option>)}
           </select>
           <DongThoiGian bien="day-du"
             muc={vpLopLoc.map((x) => ({
               key: `v${x.id}`, ngay: x.ngay,
-              cot2: <button type="button" className="link block max-w-full truncate text-left text-sm" onClick={() => { setMoHv(x.studentId); document.getElementById(`yt-em-${x.studentId}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }}>{x.ten}</button>,
+              cot2: <button type="button" className="link block max-w-full truncate text-left text-sm" onClick={() => { setMoHv(x.studentId); cuonToi(document.getElementById(`yt-em-${x.studentId}`)); }}>{x.ten}</button>,
               tieuDe: x.viPham,
               dongPhu: [dich(x.nhom), x.nguoiGhi ? t('{ten} ghi', { ten: x.nguoiGhi }) : null].filter(Boolean).join(' · '),
               cuoi: <NhanViPham t={x.trangThai} nhan={dich(x.nhanTrangThai)} />,
@@ -238,7 +238,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
           </span>
         </h3>
         <div className="mx-4 mb-2 mt-1">
-          <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="hocVien" gon onChanged={() => { coord.reload(); }} />
+          {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-0 py-1" /> : <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="hocVien" gon onChanged={() => { coord.reload(); }} />}
         </div>
         <div className="px-4 pb-3">
           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setIncludeDone((v) => !v)}>
@@ -277,25 +277,29 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
 }
 
 /** Lưới 5 cột của bảng (≥ lg); nhỏ hơn: các khối xếp dọc trong một hàng (mockup 375). */
+/** Cuộn tới hàng / khối — không trượt khi người dùng tắt chuyển động. */
+const cuonToi = (el: Element | null | undefined) =>
+  el?.scrollIntoView({ block: 'start', behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+
 const COT = 'lg:grid-cols-[200px_minmax(0,1.4fr)_minmax(0,1fr)_180px_150px] lg:gap-x-3';
 
 /** Nhóm hàng (mockup `.yt-nhom`): tiêu đề nhóm 14 px đậm + đếm; hàng tiêu đề cột (`.yt-dau`) vẽ dưới tiêu đề nhóm ĐẦU TIÊN. */
 function NhomHang({ chu, dem, children }: { chu: string; dem: ReactNode; children: ReactNode }) {
   return (
-    <div role="rowgroup" aria-label={chu} className="group/nhom">
-      <div role="row" className="flex flex-wrap items-baseline gap-x-2 border-t px-4 pb-1.5 pt-3 group-first/nhom:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <span role="rowheader" className="text-sm font-bold text-slate-100">{chu}</span>
+    <section aria-label={chu} className="group/nhom">
+      <div className="flex flex-wrap items-baseline gap-x-2 border-t px-4 pb-1.5 pt-3 group-first/nhom:border-t-0" style={{ borderColor: 'var(--line)' }}>
+        <h3 className="m-0 text-sm font-bold text-slate-100">{chu}</h3>
         <span className="text-[13px] font-medium text-dim">{dem}</span>
       </div>
-      <div role="row" className={`hidden border-b px-4 py-2 text-[13px] font-semibold text-dim group-first/nhom:lg:grid ${COT}`} style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-        <span role="columnheader">{t('Học viên')}</span>
-        <span role="columnheader">{t('Vi phạm chờ xử lý')}</span>
-        <span role="columnheader">{t('Bậc xử lý')}</span>
-        <span role="columnheader">{t('Duyệt · thu hồi')}</span>
-        <span role="columnheader">{t('Báo PH (TVV)')}</span>
+      <div aria-hidden className={`hidden border-b px-4 py-2 text-[13px] font-semibold text-dim group-first/nhom:lg:grid ${COT}`} style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+        <span>{t('Học viên')}</span>
+        <span>{t('Vi phạm chờ xử lý')}</span>
+        <span>{t('Bậc xử lý')}</span>
+        <span>{t('Duyệt · thu hồi')}</span>
+        <span>{t('Báo PH (TVV)')}</span>
       </div>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -314,7 +318,7 @@ function Gap({ chu, moSan = false, children }: { chu: string; moSan?: boolean; c
 }
 
 /** Nhãn khối nhỏ hiện khi bảng xếp dọc (< lg) — thay tiêu đề cột. */
-const NhanKhoi = ({ chu }: { chu: string }) => <span className="mb-0.5 block text-[12px] font-semibold text-faint lg:hidden">{chu}</span>;
+const NhanKhoi = ({ chu }: { chu: string }) => <span className="mb-0.5 block text-[12px] font-semibold text-faint lg:sr-only">{chu}</span>;
 
 /** Vi phạm chờ tối đa trên hàng; còn lại "+n vi phạm" (mở chi tiết để xem đủ). */
 const VP_TREN_HANG = 3;
@@ -331,6 +335,7 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNha
     : hanVp ? (hanVp === homNay ? t('Hạn hôm nay · {ngay}', { ngay: ngay(hanVp, homNay) }) : nhom === 'moi' ? t('Chưa xem · hạn {ngay}', { ngay: ngay(hanVp, homNay) }) : t('Hạn {ngay}', { ngay: ngay(hanVp, homNay) }))
     : null;
   const lanNay = x.viPhamCho.length > 0 && nhom !== 'cho_duyet';
+  const trongPhu = !x.baoPh && !x.thuHoi && !x.deXuat && !x.tuChoi && !x.xuLyGanNhat;
 
   /* MỘT nút việc của hàng — đúng việc người xem phải làm tiếp (chấm hồng = việc của tôi, mockup `.cua-toi`). */
   const cta = canManage && (nhom === 'qua_han' || nhom === 'bat_buoc')
@@ -346,12 +351,12 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNha
           : null;
 
   return (
-    <div role="row" id={`yt-em-${x.studentId}`} className="scroll-mt-24 border-t" style={{ borderColor: 'var(--line)' }}>
+    <div id={`yt-em-${x.studentId}`} className="scroll-mt-24 border-t" style={{ borderColor: 'var(--line)' }}>
       <div className={`grid grid-cols-2 gap-x-3 gap-y-2 px-4 py-3 lg:items-start ${COT} ${mo ? 'bg-doing-bg shadow-[inset_3px_0_0_var(--accent)]' : ''}`}>
-        <div role="cell" className="col-span-2 flex min-w-0 items-start gap-2 lg:col-span-1">
+        <div className="col-span-2 flex min-w-0 items-start gap-2 lg:col-span-1">
           {chonN.bat && <OChon chon={chonN} id={x.studentId} ten={x.ten} />}
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 lg:block">
-            <Link className="block truncate text-sm font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline" to={`/hoc-vien/${x.studentId}?tab=y-thuc`}>
+            <Link className="block truncate text-sm font-semibold text-slate-100 max-lg:flex max-lg:min-h-[44px] max-lg:items-center no-underline hover:text-[color:var(--accent)] hover:underline" to={`/hoc-vien/${x.studentId}?tab=y-thuc`}>
               {x.ten}<span aria-hidden className="text-[.85em] font-normal text-faint"> ↗</span>
             </Link>
             <button type="button" aria-expanded={mo} onClick={onMo}
@@ -360,7 +365,8 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNha
             </button>
           </span>
         </div>
-        <div role="cell" className="col-span-2 min-w-0 lg:col-span-1">
+        <div className="col-span-2 min-w-0 lg:col-span-1">
+          <span className="sr-only">{t('Vi phạm chờ xử lý')}</span>
           {x.viPhamCho.length > 0 ? (
             <div className={`flex flex-col gap-0.5 rounded-lg px-2.5 py-2 text-[13px] text-slate-100 ${quaHan ? 'bg-late-bg' : 'bg-soon-bg'}`}>
               {dauVp && <b className="font-bold">{dauVp}</b>}
@@ -371,20 +377,22 @@ function HangEm({ x, nhom, homNay, canManage, chonN, mo, onMo, onPanel, onGhiNha
             </div>
           ) : <span className="text-[13px] text-faint">{t('Không còn vi phạm chờ')}</span>}
         </div>
-        <div role="cell" className="col-span-2 min-w-0 lg:col-span-1">
+        <div className="col-span-2 min-w-0 lg:col-span-1">
+          <span className="sr-only">{t('Bậc xử lý')}</span>
           <ThangNho x={x} lanNay={lanNay} />
         </div>
-        <div role="cell" className="min-w-0 text-[13px]">
+        {/* < lg: hai khối trống (chưa có xử lý, chưa có Báo PH) thì không vẽ — thẻ 375 ngắn lại. */}
+        <div className={`min-w-0 text-[13px] ${trongPhu ? 'max-lg:hidden' : ''}`}>
           <NhanKhoi chu={t('Duyệt · thu hồi')} />
           <DuyetThuHoi x={x} homNay={homNay} canManage={canManage} onXem={(id) => onPanel({ loai: 'xem', id })} />
         </div>
-        <div role="cell" className="min-w-0 text-[13px]">
+        <div className={`min-w-0 text-[13px] ${trongPhu ? 'max-lg:hidden' : ''}`}>
           <NhanKhoi chu={t('Báo PH (TVV)')} />
           <BaoPh x={x} homNay={homNay} />
           {cta && <div className="mt-2 hidden lg:block">{cta}</div>}
         </div>
         {/* < lg: nút việc một hàng riêng, đủ rộng (không chen cạnh chữ hai khối trên). */}
-        {cta && <div role="cell" className="col-span-2 lg:hidden">{cta}</div>}
+        {cta && <div className="col-span-2 lg:hidden">{cta}</div>}
       </div>
       {mo && chiTiet}
     </div>
@@ -399,7 +407,7 @@ function ThangNho({ x, lanNay }: { x: DongEm; lanNay: boolean }) {
   /* Cửa sổ ba bậc như mockup: chưa có bậc → [kế tiếp, +1, +2]; có bậc → [✓ bậc vừa qua, kế tiếp, +1]. */
   const dsSau = x.bac > 0 ? [x.bac + 2] : [x.bac + 2, x.bac + 3];
   return (
-    <span className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[12px] text-faint" aria-label={t('Thang xử lý vi phạm')}
+    <span className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[12px] text-faint"
       title={[1, 2, 3, 4, 5, 6].map((n) => dich(nhanLoaiXuLy(kindCuaBac(n)))).join(' › ')}>
       {x.bacNhan && <>{bac(<>✓ {dich(x.bacNhan)}</>, 'qua')}<span aria-hidden>›</span></>}
       {bac(<>{dich(x.keTiep.nhan)}{lanNay ? ` · ${t('lần này')}` : ` · ${t('kế tiếp')}`}</>, lanNay ? 'toi' : 'sau')}

@@ -36,4 +36,5 @@ export const EN_UI_Y_THUC_LOP = {
   'Lần xử lý ({n})': 'Actions ({n})',
   'Việc của TVV · {nhan}': 'Consultant task · {nhan}',
   'Hiện thêm {n} HV': 'Show {n} more students',
+  'Không tải được Phối hợp.': 'Could not load coordination.',
 } satisfies Record<string, Dich>;
