@@ -1,7 +1,7 @@
 # RA-UI — rà soát hình ảnh toàn web, đêm 29/10
 
 > Session **RA-UI** (Opus 5.5). Điều phối: **PTA Plan**. Song song: **RA-LUONG** sửa logic — RA-UI chỉ sửa hình ảnh / chữ / CSS; trùng tệp thì nhắn PTA Plan.
-> **Trạng thái: lượt 1 xong (danh mục màn theo mã, chưa chạy máy chủ, chưa sửa mã) — chờ PTA Plan nhắn "BẮT ĐẦU".**
+> **Trạng thái 29/10 sáng:** lượt 1 (danh mục) xong · lượt 2: đo + chụp xong, 3 PR mở — #676 RA-UI-1, #678 RA-UI-2, #680 RA-UI-3. Mục 4–5 dưới là kết quả đo thật.
 
 ## 0. Luật áp cho đợt này (đọc trước khi sửa)
 - **Hình ảnh theo mockup đã duyệt SÁT** (màu, nền, viền, độ đậm, cỡ chữ, khoảng cách, cân đối, phân cấp); **tính năng theo luật + plan, giữ mọi thao tác cũ** (CLAUDE.md, chủ SP 28/10; PTA nhắc lại 29/10). Mỗi PR có bảng thao tác TRƯỚC → SAU, không mất thao tác.
@@ -103,8 +103,28 @@ Xếp theo loại PR dự kiến. "Một chỗ" = sửa ở thành phần / toke
 3. `audit` + `critique` từng màn (đặt cạnh mockup, zoom từng khối) + `web-design-guidelines` → điền mục 4 (điểm / màn) và mục 5 (lỗi P0–P3 kèm ảnh).
 4. PR theo loại, ưu tiên sửa một chỗ áp mọi trang: **RA-UI-1** (a) khung panel chân 375 + 44 px + cắt chữ · **RA-UI-2** (b) thang tiêu đề 4 tầng + panel / Modal / Card + đậm · **RA-UI-3** (c) bớt chữ + ↗ cuối + `window.confirm`. Mỗi PR: ảnh trước | sau (+ mockup) ở `docs/anh/ra-ui-n/`, `khop-khac.md` có bảng thao tác TRƯỚC → SAU, nhắn PTA Plan.
 
-## 4. Điểm critique theo màn
-_(lượt 2)_
+## 4. Kết quả đo (lượt 2)
+- **Máy đo khung `do-khung.mjs`** toàn bộ kịch bản (1440 / 375 × tối / sáng, ~270 lần chụp) trên `main` b5742bd1: **không có chữ cắt, nút tràn, trang trượt ngang thật**; lỗi duy nhất lặp lại là dấu « · » đầu dòng 2 đầu panel (cố ý ngoài vùng cắt) → miễn trong #676. Các dòng "kịch bản không mở được" của lần chạy do máy chủ dev tải lại giữa chừng khi chụp ảnh trước / sau.
+- **Ảnh toàn trang** 43 màn × (1440 tối, 375 sáng) theo 6 vai: lưu ngoài repo (scratchpad session RA-UI), chỉ ảnh dùng cho PR vào `docs/anh/ra-ui-n/`.
+- **Critique**: chưa chấm đủ từng màn theo cùng phương pháp 20/10 (đêm nay dồn sức vào sửa lỗi đo được) — KHÔNG ghi "đạt ≥ 35". Soi bằng mắt 12 màn chính (Tổng quan QL 1440 / 375, KHT, hồ sơ HV 375, panel Xuất / Khai bậc, hộp Công cụ demo, Cuối khoá): bố cục, màu, phân cấp bám mockup V5 / V7; lỗi tìm được đã vào 3 PR.
 
-## 5. Lỗi P0–P3 kèm ảnh
-_(lượt 2)_
+## 5. Lỗi theo mức
+| Mức | Lỗi | Chỗ | Trạng thái |
+|---|---|---|---|
+| P1 | Chân panel 375 xếp dọc, nút Lưu nhỏ lệch trái (mọi panel có chân thường) | `KhungPanel` | ✅ #676 |
+| P2 | KHT 375: Lọc ▾ rơi hàng sau, ⓘ rời hàng | `KeHoachTestTab` | ✅ #676 |
+| P2 | KHT 1440: "+ MT ▾" bị đẩy sát mép phải ở lớp ít cột MT | `LuoiKeHoach` | ✅ #676 |
+| P2 | Tiêu đề panel một dòng / hộp 14 px — cùng cỡ chữ thân, mất tầng (mockup 17) | `KhungPanel`, `Modal` | ✅ #678 |
+| P2 | h1 Cuối khoá 17 (mọi trang 22) | `CuoiKhoaLop` | ✅ #678 |
+| P2 | Hộp hỏi gốc trình duyệt `window.confirm` ở Lịch Test | `LichTestTab` | ✅ #680 |
+| P3 | Nút < 44 px ở 375 (5 chỗ) | HV & Lớp, Lưu trữ, Ý thức, Phối hợp SOS | ✅ #676 |
+| P3 | Khối "GV chấm quá hạn" (Tổng quan Admin) 15 px khác mọi khối 17 | `MockTestAdmin` | ✅ #678 |
+| P3 | CSS "↗" chết | `index.css` | ✅ #680 |
+| P2 | **Còn mở:** bề rộng ~800 px (máy tính bảng / cửa sổ hẹp), bảng Quá hạn chấm cột "GV chấm" xuống dòng từng chữ (đã miễn T17 ở `/nhap-diem` chỉ cho 1440) | `lichTest/KhoiNo.tsx` | đề xuất: 768–1023 ẩn cột GV chấm vào dòng phụ, cần PTA quyết (đổi mật độ bảng) |
+| P3 | **Còn mở:** công tắc FT / Lớp thường ở 375 là hai ô rời có khe (dáng `CongTacKhung` — [XM] chủ SP còn chọn) | `BoLocDoan` max-sm | chờ chủ SP |
+| P3 | **Còn mở:** mockup KHT 375 để "Xuất ▾ · Xếp nhiều MT…" sát trái, không có "51 học viên" | `KeHoachTestTab` | nhỏ, chờ PTA |
+| — | **Chuyển RA-LUONG:** tab Ý thức hồ sơ HV khi em không có lộ trình có thể lỗi trang (`StudentDetailPage.tsx:406` `cy.ratio`, `cy = null`) | | chưa bấm thử (bộ demo không có em đang học mà thiếu lộ trình) |
+| — | Phép kiểm `EN-HOSO` trượt khi chạy riêng (chữ PA demo tiếng Việt) | `prEn.tests.ts` | PTA soi ở check chung |
+
+### Đã xét và giữ (mockup đã duyệt có — không phải lỗi)
+Tiêu đề "Ý thức & Phối hợp" trong tab cùng tên (M7) · số đậm dòng đếm Công việc (cong-viec-2) · dải 👁 theo dõi (cong-viec-2) · câu phụ dưới h1 Quản trị (bang-quy-doi-band) · câu gợi ý ở trạng thái rỗng.
