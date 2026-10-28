@@ -165,6 +165,15 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     lo.loCapBac(P.mbManager, cid, { em: [{ studentId: c, bac: 4 }] });
     assert(!kq(lo.loHoanTacCapBac(gvcn, cid, { em: [lai(kq(r2, c))] }), c).ok && bacDb(c).bac === 4, 'bậc đã đổi → không hoàn tác');
     assert(xu.yThucHocVien(gvcn, a).keTiep.nhan === 'Report 1', 'a về chưa khai: lần kế Report 1');
+    /* Không gửi tháng → em đã khai giữ tháng cũ (b về bậc 1 · 2026-08 sau Hoàn tác). */
+    lo.loCapBac(gvcn, cid, { em: [{ studentId: b, bac: 3 }] });
+    assert(bacDb(b).bac === 3 && bacDb(b).thang === '2026-08', `giữ tháng cũ: ${JSON.stringify(bacDb(b))}`);
+    /* Bảo mật: Hoàn tác gửi giả (truoc: null) không xoá được bậc QL đã khai / lần lưu không phải của mình hôm nay. */
+    const d = moiEm();
+    xu.khaiBac(P.mbManager, d, { bac: 2, ghiChu: 'QL khai' });
+    const gia = lo.loHoanTacCapBac(gvcn, cid, { em: [{ studentId: d, bac: 2, truoc: null }, { studentId: c, bac: 4, truoc: { bac: 6, ghiChu: '' } }] });
+    assert(!kq(gia, d).ok && /chính bạn/.test(kq(gia, d).loi.chu) && bacDb(d)?.bac === 2, `không xoá bậc QL khai: ${JSON.stringify(gia)}`);
+    assert(!kq(gia, c).ok && bacDb(c).bac === 4, 'không đè bậc QL sửa bằng truoc giả');
   }));
 
   /* Rà planning #408: lô chạy trên Netlify (~7,5 s, Turso ~20–50 ms/câu) — khoá số câu SQL mỗi em để một lời gọi web (≤ 4 em xử lý · ≤ 12 em cấp bậc) vừa giờ. */

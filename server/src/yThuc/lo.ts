@@ -215,14 +215,16 @@ export function loCapBac(p: Principal, classId: number, v: { em?: unknown; thang
   const ds = (Array.isArray(v.em) ? v.em : []).filter((x): x is Record<string, unknown> => !!x && typeof x === 'object');
   const c = chuanBi(p, classId, ds.map((x) => x.studentId));
   const chung = kiemKhai({ bac: 0, thang: v.thang, ghiChu: v.ghiChu });
-  const bacCua = new Map(ds.map((x) => [Number(x.studentId), x.bac]));
+  const theoEm = new Map(ds.map((x) => [Number(x.studentId), x]));
   return {
     em: tungEm(c, (sid, em, hv) => {
       const ld = lyDoCapBac(em, c.laQl);
       if (ld) throw loiEm(ld);
+      const x = theoEm.get(sid)!;
+      /* Tháng riêng từng em (web: em khai mới / người dùng đã chạm ô tháng) thắng tháng chung; không gửi → giữ tháng cũ của em đã khai. */
       const k = kiemKhai({
-        bac: bacCua.get(sid),
-        thang: chung.thang ?? em.khai?.thang ?? null,
+        bac: x.bac,
+        thang: x.thang !== undefined ? x.thang : chung.thang ?? em.khai?.thang ?? null,
         ghiChu: chung.ghiChu || (em.khai ? em.khai.ghiChu : `Xác nhận theo lớp ${c.cls.code}`),
       });
       const truoc: BacKhai | null = em.khai ? { bac: em.khai.bac, thang: em.khai.thang, ghiChu: em.khai.ghiChu } : null;
@@ -231,6 +233,16 @@ export function loCapBac(p: Principal, classId: number, v: { em?: unknown; thang
       return { nhan: k.bac > 0 ? nhanLoaiXuLy(kindCuaBac(k.bac)) : BAC_0_NHAN, truoc, bac: k.bac };
     }),
   };
+}
+
+/**
+ * Hoàn tác chỉ cho lần lưu của CHÍNH người bấm, trong hôm nay (người ghi cuối dòng khai = người này, ngày ghi = hôm nay) — gửi giả `truoc: null`
+ * không xoá được bậc người khác đã khai / bậc khai từ trước (rà KHAI-BAC-LO, bảo mật).
+ */
+function chiLanCuaMinh(p: Principal, sid: number, em: EmYThuc, homNay: string) {
+  const r = db().prepare('SELECT khai_boi, khai_luc, sua_boi, sua_luc FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').get(sid, em.chuoi[0]) as any;
+  const boi = r?.sua_boi ?? r?.khai_boi, luc = r?.sua_luc ?? r?.khai_luc;
+  if (!r || boi !== p.userId || luc !== homNay) throw badRequest('Chỉ hoàn tác được lần lưu của chính bạn trong hôm nay.');
 }
 
 /**
@@ -249,12 +261,13 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
       if (!em.khai || em.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
       const tr = x.truoc && typeof x.truoc === 'object' ? x.truoc as Record<string, unknown> : null;
       if (tr) {
-        luuSuaKhai(p, hv, sid, kiemKhai(tr), c.laQl, c.homNay);
+        luuSuaKhai(p, hv, sid, kiemKhai(tr), c.laQl, c.homNay, { bacCu: sau, hoanTac: (e) => chiLanCuaMinh(p, sid, e, c.homNay) });
         return { nhan: Number(tr.bac) > 0 ? nhanLoaiXuLy(kindCuaBac(Number(tr.bac))) : BAC_0_NHAN };
       }
       tx(() => {
         const lai = trangThaiYThuc([sid], c.homNay).get(sid)!;
         if (!lai.khai || lai.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
+        chiLanCuaMinh(p, sid, lai, c.homNay);
         if (!c.laQl && lai.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
         db().prepare('DELETE FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').run(sid, lai.chuoi[0]);
         writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_undo', entityType: 'student', entityId: sid,

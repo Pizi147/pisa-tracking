@@ -245,16 +245,20 @@ export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; 
 }
 
 /** Phần GHI của Sửa cấp bậc (đã kiểm quyền; `ql` = người sửa là Quản lý trong phạm vi em) — OV-13d lô gọi thẳng. */
-export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, ql: boolean, homNay: string) {
+export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, ql: boolean, homNay: string,
+  /** KHAI-BAC-LO Hoàn tác: `bacCu` = bậc phải còn nguyên (so TRONG giao dịch — lần sửa xen giữa không bị đè); `hoanTac` ghi nhật ký loại hoàn tác. */
+  o: { bacCu?: number; hoanTac?: (em: EmYThuc) => void } = {}) {
   const { bac, thang, ghiChu } = k;
   return tx(() => {
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
+    if (o.bacCu !== undefined && em.khai.bac !== o.bacCu) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
+    o.hoanTac?.(em);
     if (!ql && em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
     db().prepare(`UPDATE y_thuc_khai_bac SET bac = ?, thang = ?, ghi_chu = ?, sua_boi = ?, sua_luc = ? WHERE student_id = ? AND chuoi_cycle_id = ?`)
       .run(bac, thang, ghiChu, p.userId, homNay, studentId, em.chuoi[0]);
-    writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
-      entityLabel: `${hv.student_code} · sửa cấp bậc`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
+    writeAudit({ actorUserId: p.userId, action: o.hoanTac ? 'discipline.declare_level_undo' : 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
+      entityLabel: `${hv.student_code} · ${o.hoanTac ? 'hoàn tác cấp bậc' : 'sửa cấp bậc'}`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
     return { ok: true as const, bac };
   });
 }

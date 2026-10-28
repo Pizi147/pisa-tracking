@@ -37,6 +37,9 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
   const [bacMoi, setBacMoi] = useState<Record<number, number>>({});
   const [rieng, setRieng] = useState<Set<number>>(new Set());
   const [thang, setThang] = useState(homNay ? homNay.slice(0, 7) : '');
+  /* Ô tháng mặc định tháng này cho em KHAI MỚI; em đã khai giữ tháng cũ trừ khi người dùng chạm ô tháng (rà KHAI-BAC-LO: không đè tháng cũ). */
+  const [thangCham, setThangCham] = useState(false);
+  const [kqHoanTac, setKqHoanTac] = useState<Map<number, KqEm>>(new Map());
   const [ghiChu, setGhiChu] = useState('');
   const [busy, setBusy] = useState(false);
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
@@ -61,32 +64,41 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
   const soKhoa = ds.length - duoc.length;
   const soOk = loVua.length;
   const soLoi = [...kq.values()].filter((x) => !x.ok).length;
+  const boKq = (ids: Iterable<number>) => setKq((m) => { const n = new Map(m); for (const sid of ids) n.delete(sid); return n; });
 
   const doiTick = (sid: number) => setTick((s) => { const n = new Set(s); if (n.has(sid)) n.delete(sid); else n.add(sid); return n; });
   const tickHet = () => setTick(tickDuoc === duoc.length ? new Set() : new Set(duoc.map((e) => e.studentId)));
   const ap = () => {
     if (apBac === null) return;
     setBacMoi((b) => { const n = { ...b }; for (const e of duoc) if (tick.has(e.studentId)) n[e.studentId] = apBac; return n; });
+    boKq(duoc.filter((e) => tick.has(e.studentId)).map((e) => e.studentId));
     setRieng((r) => { const n = new Set(r); for (const e of duoc) if (tick.has(e.studentId)) n.delete(e.studentId); return n; });
   };
   const chonRieng = (sid: number, v: string) => {
     setBacMoi((b) => { const n = { ...b }; if (v === '') delete n[sid]; else n[sid] = Number(v); return n; });
     setRieng((r) => { const n = new Set(r); if (v === '') n.delete(sid); else n.add(sid); return n; });
+    boKq([sid]);
   };
 
   const luu = async () => {
     if (!gui.length) return;
     setBusy(true); setLoiLuu(null);
     const ids = gui.map((e) => e.studentId);
+    const daGui = new Map(gui.map((e) => [e.studentId, bacMoi[e.studentId]]));
+    /* Tháng từng em: bậc 0 không gắn tháng · em khai mới lấy ô tháng · em đã khai chỉ khi người dùng chạm ô tháng (không gửi = giữ tháng cũ). */
+    const thangCua = (e: EmLo) => (daGui.get(e.studentId) === 0 ? null : e.capBac.khai === null || thangCham ? thang || null : undefined);
+    const theoId = new Map(gui.map((e) => [e.studentId, e]));
     const okMoi: KqEm[] = [];
+    setKqHoanTac(new Map());
     try {
       await guiTheoLo(ids, CO_LO['cap-bac'], (lo) => api.post<{ em: KqEm[] }>(`/classes/${classId}/y-thuc/lo/cap-bac`, {
-        em: lo.map((sid) => ({ studentId: sid, bac: bacMoi[sid] })), thang: thang || undefined, ghiChu: ghiChu.trim() || undefined,
+        em: lo.map((sid) => ({ studentId: sid, bac: daGui.get(sid), thang: thangCua(theoId.get(sid)!) })), ghiChu: ghiChu.trim() || undefined,
       }), (em) => {
         okMoi.push(...em.filter((x) => x.ok));
         setKq((m) => { const n = new Map(m); for (const x of em) n.set(x.studentId, x); return n; });
         const xong = new Set(em.filter((x) => x.ok).map((x) => x.studentId));
-        setBacMoi((b) => { const n = { ...b }; for (const sid of xong) delete n[sid]; return n; });
+        /* Chỉ xoá ô bậc khi vẫn đúng giá trị đã gửi — người dùng đổi lại trong lúc đang gửi thì giữ lần đổi đó. */
+        setBacMoi((b) => { const n = { ...b }; for (const sid of xong) if (n[sid] === daGui.get(sid)) delete n[sid]; return n; });
         setRieng((r) => { const n = new Set(r); for (const sid of xong) n.delete(sid); return n; });
         setTick((s) => { const n = new Set(s); for (const sid of xong) n.delete(sid); return n; });
       });
@@ -106,7 +118,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
         em: loVua.map((x) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc ?? null })),
       });
       const hong = r.em.filter((x) => !x.ok);
-      setLoVua([]); setKq(new Map(hong.map((x) => [x.studentId, x])));
+      setLoVua([]); setKq(new Map()); setKqHoanTac(new Map(hong.map((x) => [x.studentId, x])));
       onDone?.(); lamMoi(); reload();
       if (hong.length) toast.push('error', t('{n} em chưa hoàn tác được — thử lại.', { n: hong.length }));
       else toast.push('ok', t('Đã hoàn tác'));
@@ -141,7 +153,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
   const COT = '[@container(min-width:600px)]:grid-cols-[56px_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,13rem)_minmax(0,1fr)] [@container(min-width:600px)]:items-center';
   return (
     <KhungPanel tieuDe={tieuDe} onDong={onClose} rong="rong"
-      dau={{ loai: t('VIỆC'), han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined,
+      dau={{ loai: han ? t('VIỆC') : undefined, han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined,
         dong2: [lop ?? data.classCode, t('{n} HV', { n: ds.length }), t('bậc cao nhất em đã bị xử lý trước khi dùng web')] }}
       chan={{
         daSua: gui.length > 0,
@@ -173,7 +185,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="inline-flex items-center gap-2">{t('Tháng')}
-              <ONgay kieu="thang" value={thang} onChange={setThang} toiDa={homNay ? homNay.slice(0, 7) : null} ariaLabel={t('Tháng xử lý')} gon />
+              <ONgay kieu="thang" value={thang} onChange={(v) => { setThang(v); setThangCham(true); }} toiDa={homNay ? homNay.slice(0, 7) : null} ariaLabel={t('Tháng xử lý')} gon />
             </span>
             <label className="flex min-w-0 flex-[1_1_8rem] items-center gap-2">
               <span className="max-sm:sr-only">{t('Ghi chú')}</span>
@@ -189,10 +201,12 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
           {ds.map((e) => {
             const khoa = !e.capBac.duoc;
             const k = kq.get(e.studentId);
+            const kh = kqHoanTac.get(e.studentId);
             const doi = bacMoi[e.studentId] !== undefined && bacMoi[e.studentId] !== e.capBac.khai;
             const vuaLuu = loVua.some((x) => x.studentId === e.studentId) && !doi;
             const ha = doi && e.capBac.khai !== null && bacMoi[e.studentId] < e.capBac.khai;
             const ghi = khoa ? <span className="text-[12px] text-faint">{e.capBac.lyDo ? dichChu(e.capBac.lyDo) : t('chỉ QL sửa')}</span>
+              : kh?.loi ? <span role="alert" className="text-[12px] font-semibold text-bad">{t('Chưa hoàn tác: {loi}', { loi: dichChu(kh.loi) })}</span>
               : k && !k.ok && k.loi ? <span role="alert" className="text-[12px] font-semibold text-bad">{t('Chưa lưu: {loi}', { loi: dichChu(k.loi) })}</span>
               : doi ? <span className={`text-[12px] font-semibold ${ha ? 'text-soon' : 'text-[color:var(--accent)]'}`}>{nhanDoi(e)}</span>
               : vuaLuu ? <span className="text-[12px] font-semibold text-ok">✓ {t('Đã lưu')}</span> : null;
@@ -201,8 +215,11 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
                 style={{ borderColor: 'var(--line)' }}>
                 <span className="row-span-4 pt-0.5 [@container(min-width:600px)]:row-span-1 [@container(min-width:600px)]:pt-0">
                   {!khoa && (
-                    <input type="checkbox" className="h-4 w-4 cursor-pointer max-sm:m-[14px] max-sm:-ml-0" checked={tick.has(e.studentId)}
-                      onChange={() => doiTick(e.studentId)} aria-label={t('Áp cho {ten}', { ten: e.ten })} />
+                    /* Vùng bấm 44 px (cả nhãn bọc ô tick), ô 16 px như mockup. */
+                    <label className="-m-3.5 inline-flex h-11 w-11 cursor-pointer items-center justify-center sm:m-0 sm:h-auto sm:w-auto">
+                      <input type="checkbox" className="h-4 w-4 cursor-pointer" checked={tick.has(e.studentId)}
+                        onChange={() => doiTick(e.studentId)} aria-label={t('Áp cho {ten}', { ten: e.ten })} />
+                    </label>
                   )}
                 </span>
                 <span className={`truncate text-sm font-semibold ${khoa ? 'text-faint' : 'text-slate-100'}`}>{e.ten}</span>
