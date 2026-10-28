@@ -16,10 +16,10 @@ export function Card({ title, action, children, className = '', bodyClass = 'p-4
   return (
     <section className={`card ${className}`}>
       {(title || action) && (
-        <header className="flex items-center justify-between gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
+        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
           {/* OV-11i (P2-4): không có tiêu đề thì không vẽ <h2> rỗng (trình đọc màn hình đọc "heading, trống"). */}
           {/* D4 bổ sung: tiêu đề khối 17 / 700 chữ chính như mockup V5 (`h-khoi`), thay 14 / 600 chữ phụ — tầng rõ hơn, ít chữ đậm cùng cỡ. */}
-          {title ? <h2 className="h-khoi text-lg font-bold text-slate-100">{title}</h2> : <span />}
+          {title ? <h2 className="h-khoi min-w-0 text-lg font-bold text-slate-100">{title}</h2> : <span />}
           {action}
         </header>
       )}

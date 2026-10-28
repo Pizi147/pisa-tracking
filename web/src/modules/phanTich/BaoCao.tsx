@@ -6,7 +6,7 @@ import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { ChiSo, PhanTram, TheoChiNhanh, kyChu, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
+import { ChiSo, PhanTram, TheoChiNhanh, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
 import { thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
@@ -53,7 +53,8 @@ export function BaoCao(pv: PhamViPhanTich) {
   if (loi) return <ErrorState message={loi.message} hint={loi.hint} onRetry={() => { tq.reload(); bc.reload(); }} />;
   if (!tq.data || !bc.data) return <Skeleton rows={8} />;
   const d = tq.data, b = bc.data;
-  const ky = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : kyChu(d.ky);
+  /* RA-UI-5: khoảng tuần đã ghi ở bộ lọc ngay trên — ô chỉ số ghi "trong kỳ" như Tổng quan, không lặp "W1 SEP – W2 SEP" ở 4 ô. */
+  const ky = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : t('trong kỳ');
   const nguon = (o: string) => `/phan-tich/bao-cao/o?${q}&o=${encodeURIComponent(o)}`;
   const nguonCase = `/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong&chuY=1&${q}`;
   const chonCn = (id: number) => { const n = new URLSearchParams(params); n.set('cn', String(id)); setParams(n); };
@@ -122,7 +123,7 @@ function TienBo({ hang, nguon }: { hang: NonNullable<BaoCaoKq['tienBo']>; nguon:
   const oCua = (h: H, c: CotBang): ReactNode => {
     if (c.key === 'kn') return <span className="inline-block min-w-[32px] rounded border px-1.5 text-center text-xs font-bold text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>{tenMonNgan(null, h.skill)}</span>;
     if (rateView(so(h, c.key), h.tong).kind !== 'value') return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
-    return <OSo giaTri={h.tong} nhan={String(so(h, c.key))} tieuDe={t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} nguon={nguon(`tien-bo:${h.skill}`)} vung={c.key}
+    return <OSo giaTri={so(h, c.key)} nhan={String(so(h, c.key))} tieuDe={t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} nguon={nguon(`tien-bo:${h.skill}`)} vung={c.key}
       className={c.key === 'tang' ? 'text-ok' : c.key === 'giam' ? 'text-bad' : ''} />;
   };
   return (
