@@ -162,7 +162,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
 
   return (
-    <header className="space-y-3">
+    <header className="space-y-2">
       {/* PR-DH (Q-0310-4): Quay lại + Lớp trước/sau theo danh sách vừa mở; mở thẳng bằng link thì theo các lớp cùng khung ở Học viên & Lớp. */}
       <ThanhTruocSau loai="lop" id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
         chiTiet={CHE_DO_NHAN[sp.get('che-do') as CheDoHocVien] ?? TAB_HO_SO_LOP_NHAN[sp.get('tab') as TabHoSoLop]}
@@ -176,7 +176,7 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
         <DaiChiXem>{t('Lớp đã kết thúc')}{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ` — ${t('chỉ xem')}`}</DaiChiXem>
       )}
       {/* UI-HO-SO-LOP (`dieu-chinh-cuoi.html` khu b): mã lớp + nhãn nhỏ xám / giá trị đậm (P2) — GVCN · Học viên · Lượt gần nhất · Đạt · SOS; + Case · ⋯ bên phải. */}
-      <div className="flex flex-wrap items-center gap-x-[22px] gap-y-2.5">
+      <div className="flex flex-wrap items-center gap-x-[22px] gap-y-2">
         <h1 className="m-0 text-xl font-bold leading-tight text-slate-100" title={dich(data.programme?.name ?? data.kind)}>{data.code}</h1>
         <NhanGt n={t('GVCN')} g={gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-soon">{t('Chưa có GVCN')}</span>} />
         <NhanGt n={t('Học viên')} g={<span className="tabular-nums">{s?.studentCount ?? 0}</span>} />
