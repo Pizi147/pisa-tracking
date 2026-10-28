@@ -14,7 +14,7 @@ import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Pri
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
-import { huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
+import { huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { boMonCuaLuot, lichGopCua, canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
@@ -1327,6 +1327,8 @@ export function regularAttemptDetail(p: Principal, attemptId: number) {
     /** HSL-LT: Case mở · PA thêm của các Case của lượt — Lịch sử môn / Lịch sử lượt (như FT). */
     lichSuCase: lichSuCaseCua(rows[0].cases.map((c: { id: number }) => c.id)),
     lopHienTai: lopHienTaiCua(a.student_id, a.class_id),
+    /** LUOT-TEN-GV: GV môn được phân công của lớp lúc Test, từng môn của bảng (null = chưa phân công) — cùng luật danh sách lượt. */
+    nguoiLam: nguoiLamCuaLuot(a.class_id, bang.programme.skills, a.kind),
     huy: huyCua(rows[0].status, history),
     canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
     history,
