@@ -15,7 +15,7 @@ export function DauTich({ className = '' }: { className?: string }) {
 /** Mũi tên mở/gập 12 px nét 1.5 — phải khi gập, xuống khi mở. */
 export function MuiTenGap({ mo }: { mo: boolean }) {
   return (
-    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" className={`inline-block shrink-0 transition-transform ${mo ? 'rotate-90' : ''}`}
+    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" className={`inline-block shrink-0 transition-transform motion-reduce:transition-none ${mo ? 'rotate-90' : ''}`}
       fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4.5 2.5 8 6l-3.5 3.5" />
     </svg>

@@ -13,7 +13,8 @@ Luật 28/10: hình ảnh sát mockup, tính năng giữ V4.
 |---|---|---|---|
 | H1 | Tiêu đề "Ý thức & Phối hợp" 17 px đậm + "+ Ghi vi phạm" nút chính | `StudentYThucSection` đầu | KHỚP |
 | H2 | Khối Thang `surface-2` viền đậm, bo 10: "Thang xử lý vi phạm · chuỗi" + góc phải Xác nhận / Sửa cấp bậc | `ThangYThuc` (+ `onSuaKhai`) | KHỚP |
-| H3 | Bậc: đã qua ✓ viền xanh lá · lần này viền nhấn đậm nền nhấn nhạt · còn lại viền mảnh; một dòng mờ mép, ≤ 600 px xuống dòng đủ tên | `BacO` + `<ol>` (`sm:` thay `@container 600`) | KHỚP |
+| H3 | Bậc: đã qua ✓ viền xanh lá · lần này viền nhấn đậm nền nhấn nhạt · còn lại viền mảnh; một dòng mờ mép, ≤ 600 px xuống dòng đủ tên | `BacO` + `<ol>` (`@container 600` đo theo chính khối Thang — cả panel Công việc hẹp) | KHỚP |
+| H2b | Đề xuất chờ QL / đã duyệt: chip viền đứt vàng ngay trên thang, bậc kế không còn "lần này" | `ThangYThuc` (`d.deXuat`) | KHỚP |
 | H4 | Xác nhận xử lý (nút chính + chấm hồng; trạng thái chỉ Mới → nút thường) · Đề xuất QL duyệt · ⓘ | `xuLyChinh`, `NutLuat` | KHỚP |
 | H5 | Dòng trạng thái hai ô `Duyệt · thu hồi` \| `Báo PH (TVV)`; 375 xếp dọc | `TrangThaiDong` (ô = `DuyetThuHoi` / `BaoPh` tab lớp) | KHỚP |
 | H6 | Cả hai ô trống → một dòng mờ có nhãn | `TrangThaiDong` nhánh rỗng | KHỚP |
@@ -30,11 +31,11 @@ Luật 28/10: hình ảnh sát mockup, tính năng giữ V4.
 | H17 | "▸ Nhật ký · chuỗi (n)" gập; mở sẵn khi em không còn gì chờ; trong: bộ lọc một hàng + nhóm + dòng thời gian + dòng đếm + Xem cả lịch sử | thẻ Nhật ký | KHỚP |
 | H18 | Lỗi tải: câu + Tải lại (không ⚠) | `ErrorState`; Phối hợp `LoiTaiNho` | KHỚP |
 | H19 | Toast "✓ Đã ghi nhận … · Hoàn tác" | `toast.hoanTac` | KHỚP |
-| H20 | QL: "Duyệt" / "Từ chối…" ngay trong ô Duyệt | bấm chữ đề xuất → panel Xem lần xử lý (thẻ yêu cầu có Duyệt / Từ chối) | KHÁC [XM] — một chỗ duyệt (thẻ yêu cầu `duyet/TheYeuCau.tsx` thuộc session khác, không đụng); thêm nút tại chỗ cần PR riêng |
+| H20 | QL: "Duyệt" / "Từ chối…" ngay trong ô Duyệt | bấm chữ đề xuất (link gạch chân, nhãn "Xem lần xử lý …") → panel Xem lần xử lý (thẻ yêu cầu có Duyệt / Từ chối) | KHÁC [XM] — một chỗ duyệt (thẻ yêu cầu `duyet/TheYeuCau.tsx` thuộc session khác, không đụng); thêm nút tại chỗ cần PR riêng |
 | H21 | Chấm tab "●" (quá hạn đỏ) ở hàng tab hồ sơ | hàng tab `StudentDetailPage` giữ như cũ | GIỮ — hàng tab hồ sơ ngoài phạm vi PR |
 | H22 | Khung ngoài tab | bỏ `Card` bọc tab (thẻ lồng thẻ) | KHỚP |
 
-**Đếm:** 21 dòng (trừ H21 GIỮ) — KHỚP 19 · KHÁC [XM] 2 (H15 giữ thao tác V4, H20 một chỗ duyệt). **19/21 = 90,5 %**.
+**Đếm:** 22 dòng (trừ H21 GIỮ) — KHỚP 20 · KHÁC [XM] 2 (H15 giữ thao tác V4, H20 một chỗ duyệt). **20/22 = 90,9 %**.
 
 ## Thao tác TRƯỚC → SAU
 

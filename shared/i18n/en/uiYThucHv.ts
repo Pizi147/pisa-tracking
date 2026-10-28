@@ -15,6 +15,10 @@ export const EN_UI_Y_THUC_HV = {
   '— chưa có lần xử lý cần báo': '— no action to report yet',
   'QL đã duyệt {nhan} · chờ "Đã thực hiện"': 'Manager approved {nhan} · waiting for "Done"',
   'chưa tới mức bắt buộc': 'not yet required',
+  'Xem lần xử lý {nhan}': 'View action {nhan}',
+  'đề xuất chờ QL': 'proposed, awaiting manager',
+  'QL đã duyệt': 'manager approved',
+  '· kế tiếp': '· next',
   'Xác nhận hay Đề xuất?': 'Confirm or propose?',
   'Xác nhận xử lý: lưu ngay bậc lần này. Đề xuất QL duyệt: QL duyệt trước khi làm (WL, phương án khác).':
     'Confirm action: saves this step now. Propose for approval: the manager approves first (WL, other actions).',

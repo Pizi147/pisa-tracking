@@ -56,7 +56,9 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
   const [moViPhamId, setMoViPhamId] = useState<number | null>(null);
   const [moNhatKy, setMoNhatKy] = useState<boolean | null>(null);
   const [baoPhMo, setBaoPhMo] = useState(false);
-  const [dangGhi, setDangGhi] = useState(false);
+  /* Vi phạm đang gửi Ghi nhận — chỉ dòng đó hiện "Đang lưu…"; mọi nút Ghi nhận khoá tới khi xong (không gửi chồng). */
+  const [dangGhiIds, setDangGhiIds] = useState<number[]>([]);
+  const dangGhi = dangGhiIds.length > 0;
   const phoiHopRef = useRef<HTMLElement>(null);
   const { mo, panels } = usePanelYThuc({ onDone: reload });
 
@@ -84,14 +86,14 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
   const lamMoi = () => { DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x)); reload(); };
   /* Ghi nhận có Hoàn tác (luật không khoá cứng); khoá nút khi đang gửi — không gửi hai lần. */
   const ghiNhan = async (ids: number[], bo = false) => {
-    setDangGhi(true);
+    setDangGhiIds(ids);
     try {
       await api.post(`/students/${studentId}/y-thuc/${bo ? 'bo-ghi-nhan' : 'ghi-nhan'}`, { violationIds: ids });
       if (bo) toast.push('ok', t('Đã bỏ ghi nhận'));
       else toast.hoanTac(t('Đã ghi nhận {length} vi phạm', { length: ids.length }), () => void ghiNhan(ids, true));
       lamMoi();
     } catch (e: any) { toast.push('error', e.message); }
-    finally { setDangGhi(false); }
+    finally { setDangGhiIds([]); }
   };
 
   const coGhiNhan = (v: ViPhamV4) => d.canManage && (v.trangThai === 'moi' || (v.trangThai === 'qua_han' && v.lyDoQuaHan === 'xem'));
@@ -120,7 +122,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
     key: `x${x.id}`, ngay: x.ngay, vach: true,
     cot2: <span className="text-[12px] font-bold  text-slate-400">{t('Xử lý')}</span>,
     tieuDe: <span className="font-bold">{dich(x.nhan)}</span>,
-    dongPhu: [t('{soViPham} vi phạm', { soViPham: x.soViPham }), x.nguoi, x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null, x.status !== 'done' ? x.statusLabel : null].filter(Boolean).join(' · '),
+    dongPhu: [t('{soViPham} vi phạm', { soViPham: x.soViPham }), x.nguoi, x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null, x.status !== 'done' ? dich(x.statusLabel) : null].filter(Boolean).join(' · '),
     cuoi: <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'xem', id: x.id })}>{t('Xem')}</button>,
   } : {
     key: `v${x.id}`, ngay: x.ngay,
@@ -161,12 +163,14 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
         <section className="card min-w-0" aria-labelledby={`yt-vp-${studentId}`}>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pb-1.5 pt-3">
             <h3 id={`yt-vp-${studentId}`} className="m-0 text-sm font-bold text-slate-100">{t('Vi phạm chưa xong')}</h3>
+            {/* Số chỉ khi dòng đầu khối chưa nói số (quá hạn / đề xuất) — không lặp. */}
+            {chuaXong.length > 0 && (d.nhom === 'qua_han' || !!d.deXuat) && <span className="text-[13px] font-medium text-dim">{t('{n} vi phạm', { n: chuaXong.length })}</span>}
             <NutLuat label={t('Luật xử lý vi phạm')}>
               {t('≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý, hạn 3 ngày. Vi phạm lẻ: Ghi nhận (đã xem, không cần xử lý) hoặc xử lý nếu nghiêm trọng.')}
             </NutLuat>
             {moiIds.length >= 2 && (
               <button type="button" className="btn btn-sm btn-primary ml-auto min-h-[44px] sm:min-h-0" disabled={dangGhi} onClick={() => void ghiNhan(moiIds)}>
-                {CUA_TOI}{dangGhi ? t('Đang lưu…') : t('Ghi nhận tất cả ({n})', { n: moiIds.length })}
+                {CUA_TOI}{dangGhiIds.length > 1 ? t('Đang lưu…') : t('Ghi nhận tất cả ({n})', { n: moiIds.length })}
               </button>
             )}
           </div>
@@ -177,7 +181,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
                 : t('Em không có vi phạm nào chưa xong.')}
             </p>
           ) : (
-            <KhoiViPham d={d} ds={chuaXong} homNay={homNay} moId={moViPhamId} dangGhi={dangGhi} coGhiNhan={coGhiNhan} moiIds={moiIds}
+            <KhoiViPham d={d} ds={chuaXong} homNay={homNay} moId={moViPhamId} dangGhiIds={dangGhiIds} coGhiNhan={coGhiNhan} moiIds={moiIds}
               onMo={(id) => setMoViPhamId((c) => (c === id ? null : id))} onGhiNhan={(ids) => void ghiNhan(ids)} chiTiet={chiTiet} />
           )}
         </section>
@@ -209,7 +213,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
                 muc={[{ key: 'tat-ca', nhan: t('Tất cả') }, { key: 'can', nhan: t('Cần xử lý'), so: soCan || null }, { key: 'cho', nhan: t('Chờ duyệt') }, { key: 'xong', nhan: t('Đã xử lý') }]} />
               <select className="field ml-auto min-h-[44px] w-auto py-1 text-xs sm:min-h-0" aria-label={t('Nhóm vi phạm')} value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
                 <option value="">{t('Mọi nhóm')}</option>
-                {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}</option>)}
+                {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{dich(VIOLATION_CATEGORY_LABEL[c as ViolationCategory])}</option>)}
               </select>
             </div>
             <DongThoiGian bien="day-du" muc={muc}
@@ -258,7 +262,7 @@ function TrangThaiDong({ x, homNay, canManage, onXem, onDaThucHien, onBaoPh }: {
     <div className="card grid grid-cols-1 text-[13px] [@container(min-width:600px)]:grid-cols-2">
       <div className="grid content-start gap-1 px-3.5 py-2.5">
         {nhan(t('Duyệt · thu hồi'))}
-        <div><DuyetThuHoi x={x} homNay={homNay} canManage={canManage} onXem={onXem} /></div>
+        <div><DuyetThuHoi x={x} homNay={homNay} canManage={canManage} onXem={onXem} link /></div>
         {canManage && x.deXuat?.status === 'da_duyet' && (
           <div><button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onDaThucHien(x.deXuat!.id)}>{CUA_TOI}{t('Đánh dấu đã thực hiện')}</button></div>
         )}
@@ -278,8 +282,8 @@ function TrangThaiDong({ x, homNay, canManage, onXem, onDaThucHien, onBaoPh }: {
  * KHỐI VI PHẠM CHƯA XONG (mockup `.vp`): nền vàng nhạt (quá hạn: đỏ nhạt + ⚠, chỉ khối này) · dòng đầu đậm nói hạn và lý do ·
  * mỗi vi phạm một dòng (ngày · tên, mở tại chỗ · nhóm + người ghi · Ghi nhận, hoặc nhãn khi khác trạng thái khối).
  */
-function KhoiViPham({ d, ds, homNay, moId, dangGhi, coGhiNhan, moiIds, onMo, onGhiNhan, chiTiet }: {
-  d: YThucHocVien; ds: ViPhamV4[]; homNay: string; moId: number | null; dangGhi: boolean;
+function KhoiViPham({ d, ds, homNay, moId, dangGhiIds, coGhiNhan, moiIds, onMo, onGhiNhan, chiTiet }: {
+  d: YThucHocVien; ds: ViPhamV4[]; homNay: string; moId: number | null; dangGhiIds: number[];
   coGhiNhan: (v: ViPhamV4) => boolean; moiIds: number[];
   onMo: (id: number) => void; onGhiNhan: (ids: number[]) => void; chiTiet: (id: number) => ReactNode;
 }) {
@@ -306,8 +310,8 @@ function KhoiViPham({ d, ds, homNay, moId, dangGhi, coGhiNhan, moiIds, onMo, onG
         {ds.map((v) => {
           const mo = moId === v.id;
           const nut = coGhiNhan(v)
-            ? <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${motMoi ? ' btn-primary' : ''}`} disabled={dangGhi}
-                title={t('Đã xem, không cần xử lý')} onClick={() => onGhiNhan([v.id])}>{motMoi && CUA_TOI}{dangGhi ? t('Đang lưu…') : t('Ghi nhận')}</button>
+            ? <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${motMoi ? ' btn-primary' : ''}`} disabled={dangGhiIds.length > 0}
+                title={t('Đã xem, không cần xử lý')} onClick={() => onGhiNhan([v.id])}>{motMoi && CUA_TOI}{dangGhiIds.includes(v.id) ? t('Đang lưu…') : t('Ghi nhận')}</button>
             : v.trangThai !== ttKhoi ? <NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} /> : null;
           return (
             <li key={v.id} className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-x-2 gap-y-0.5 border-t py-1.5 [border-color:color-mix(in_srgb,var(--text)_10%,transparent)] [@container(min-width:600px)]:grid-cols-[44px_minmax(0,1fr)_auto]">

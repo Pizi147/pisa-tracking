@@ -104,7 +104,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
     <div className={gon || xanh ? 'rounded-[10px] border border-doing-line bg-doing-bg' : 'rounded-lg border'} style={gon || xanh ? undefined : { borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
       <div role="button" tabIndex={0} aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
+        onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
         className={`grid gap-x-3 gap-y-1 items-center cursor-pointer bam grid-cols-2 ${gon ? 'px-3.5 py-3' : 'px-3 py-2.5'} md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]`}>
         <div className="col-span-2 md:col-span-1 min-w-0">
           <span className={`flex items-center gap-1 font-semibold text-slate-100 ${gon ? 'text-[15px]' : 'text-sm'}`}>{gon && <MuiTenGap mo={open} />}{cot1 === 'luot' ? mtSos : luot.studentName}</span>
@@ -123,7 +123,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           <span className={gon ? 'block text-sm text-dim' : 'block text-sm font-semibold text-slate-100'}>{t('{label} việc hoàn thành', { label: luot.summary.label })}</span>
           {cot1 === 'luot' ? (
             onGoAcademic ? (
-              <button type="button" className="link text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer text-left"
+              <button type="button" className="link min-h-[44px] text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer text-left sm:min-h-0"
                 onClick={(e) => { e.stopPropagation(); onGoAcademic(); }}>
                 {t('Hỗ trợ học thuật xem ở tab Học thuật')}
               </button>
@@ -147,7 +147,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           ))}
           {/* PR-S5F-b: lượt Giữa khoá lớp thường (`nhanDot`) không thêm việc — máy chủ chỉ nhận ở lượt Mock FT có SOS. */}
           {luot.canAct && !adding && !luot.nhanDot && (
-            <button type="button" className="btn btn-sm mt-2" onClick={() => setAdding(true)}>{t('+ Thêm việc')}</button>
+            <button type="button" className="btn btn-sm mt-2 min-h-[44px] sm:min-h-0" onClick={() => setAdding(true)}>{t('+ Thêm việc')}</button>
           )}
           {adding && (
             <div className="mt-2">

@@ -45,7 +45,7 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
   const rutGon = d.dongThang.length > BAC_MACH_CHINH + 1;
   const hien = rutGon ? d.dongThang.slice(-(BAC_HIEN_SAU_WL2 + 1)) : d.dongThang;
   return (
-    <section className="surface-2 space-y-2 rounded-lg border px-3 py-2.5" style={{ borderColor: 'var(--line-strong)' }}
+    <section className="surface-2 space-y-2 rounded-lg border px-3 py-2.5 [container-type:inline-size]" style={{ borderColor: 'var(--line-strong)' }}
       aria-label={t('Thang xử lý vi phạm ({nhanChuoi})', { nhanChuoi })}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <h3 className="m-0 text-[12px] font-semibold text-slate-400">{t('Thang xử lý vi phạm · {nhanChuoi}', { nhanChuoi })}</h3>
@@ -61,17 +61,27 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
           </p>
         ) : null}
       </div>
-      {/* UI-Y-THUC-HV (mockup v7 `.thang`): từ sm MỘT dòng, tràn thì mờ dần ở mép phải (PR-S3F #12); dưới sm xuống dòng, đủ tên từng bậc. */}
-      <ol className="m-0 flex w-full min-w-0 list-none flex-wrap items-center gap-x-1.5 gap-y-1.5 p-0 text-[13px] whitespace-nowrap sm:flex-nowrap sm:overflow-hidden sm:[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)]">
+      {/* UI-Y-THUC-HV (mockup v7 `.thang`, `@container 600`): khối rộng ≥ 600 px MỘT dòng, tràn thì mờ dần ở mép phải (PR-S3F #12);
+          hẹp hơn (375, panel Công việc) xuống dòng, đủ tên từng bậc — đo theo chính khối, không theo màn. */}
+      <ol className="m-0 flex w-full min-w-0 list-none flex-wrap items-center gap-x-1.5 gap-y-1.5 p-0 text-[13px] whitespace-nowrap [@container(min-width:600px)]:flex-nowrap [@container(min-width:600px)]:overflow-hidden [@container(min-width:600px)]:[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)]">
         {rutGon && (
           <li className="shrink-0 text-slate-500" aria-label={t('{x} bậc trước đó đã xử lý', { x: d.dongThang.length - hien.length })}>…</li>
         )}
         {hien.map((b, i) => (
           <Fragment key={b.kind}>
             {(i > 0 || rutGon) && <li aria-hidden className="shrink-0 text-slate-600">›</li>}
-            <BacO b={b} title={b.trangThai === 'khai' ? khaiTitle : undefined} />
+            <BacO b={b} title={b.trangThai === 'khai' ? khaiTitle : undefined} coDeXuat={!!d.deXuat} />
           </Fragment>
         ))}
+        {/* Mockup `.bac.de-xuat`: đề xuất đang chờ / đã duyệt nằm ngay trên thang (viền đứt vàng) — bậc kế tiếp không còn "lần này". */}
+        {d.deXuat && (
+          <>
+            <li aria-hidden className="shrink-0 text-slate-600">›</li>
+            <li className="inline-flex shrink-0 items-center rounded border border-dashed border-soon px-[7px] py-px font-bold text-soon">
+              {dich(d.deXuat.nhan)} · {d.deXuat.status === 'cho_duyet' ? t('đề xuất chờ QL') : t('QL đã duyệt')}
+            </li>
+          </>
+        )}
       </ol>
       {coNut && (xuLyDuoc || onDeXuat) && (
         <div className="flex flex-wrap items-center gap-2">
@@ -87,22 +97,23 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
   );
 }
 
-function BacO({ b, title }: { b: BacThangDong; title?: string }) {
+function BacO({ b, title, coDeXuat }: { b: BacThangDong; title?: string; coDeXuat: boolean }) {
   const daQua = b.trangThai === 'qua' || b.trangThai === 'khai';
   /* V5 (mockup `.bac`, cùng chip ThangNho tab lớp): đã qua ✓ viền xanh lá · lần này viền nhấn đậm · còn lại viền mảnh. */
-  const lop = b.trangThai === 'lan-nay'
+  const lanNay = b.trangThai === 'lan-nay' && !coDeXuat;
+  const lop = lanNay
     ? 'border border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-[7px] font-bold text-[color:var(--accent)]'
     : b.trangThai === 'khai' ? 'border border-ok-line px-[7px] text-ok opacity-75'
     : b.trangThai === 'qua' ? 'border border-ok-line px-[7px] text-ok'
     : 'border border-[color:var(--line)] px-[7px] text-faint';
-  const moTa = b.trangThai === 'lan-nay' ? t('{nhan}, lần xử lý kế tiếp', { nhan: b.nhan })
-    : daQua ? t('{nhan}, đã xử lý{x}', { nhan: b.nhan, x: b.trangThai === 'khai' ? t(' (cấp bậc xác nhận từ trước)') : '' })
+  const moTa = b.trangThai === 'lan-nay' ? t('{nhan}, lần xử lý kế tiếp', { nhan: dich(b.nhan) })
+    : daQua ? `${t('{nhan}, đã xử lý{x}', { nhan: dich(b.nhan), x: b.trangThai === 'khai' ? t(' (cấp bậc xác nhận từ trước)') : '' })}${title ? ` — ${title}` : ''}`
     : dich(b.nhan);
   return (
     <li className={`inline-flex shrink-0 items-center gap-1 rounded py-px ${lop}`} title={title} aria-label={moTa}>
       {daQua && <DauTich />}
       <span>{dich(b.nhan)}</span>
-      {b.trangThai === 'lan-nay' && <span className="font-normal">{t('· lần này')}</span>}
+      {b.trangThai === 'lan-nay' && <span className="font-normal">{lanNay ? t('· lần này') : t('· kế tiếp')}</span>}
     </li>
   );
 }

@@ -427,10 +427,15 @@ function ThangNho({ x, lanNay }: { x: DongEm; lanNay: boolean }) {
 /** Dùng chung với tab Ý thức hồ sơ HV (UI-Y-THUC-HV) — một khái niệm một chữ. */
 export type HangTrangThai = Pick<DongEm, 'thuHoi' | 'deXuat' | 'tuChoi' | 'xuLyGanNhat' | 'baoPh'>;
 
-export function DuyetThuHoi({ x, homNay, canManage, onXem }: { x: HangTrangThai; homNay: string; canManage: boolean; onXem: (id: number) => void }) {
+export function DuyetThuHoi({ x, homNay, canManage, onXem, link = false }: {
+  x: HangTrangThai; homNay: string; canManage: boolean; onXem: (id: number) => void;
+  /** Tab HV (mockup v7): chữ lần xử lý là link gạch chân — lối vào Xem lần xử lý (Thu hồi, QL duyệt). Tab lớp: chữ mờ như mockup V5. */
+  link?: boolean;
+}) {
   const nut = (id: number, chu: ReactNode, phu?: ReactNode) => (
-    <button type="button" className="group/xem block min-h-[44px] border-0 bg-transparent p-0 text-left text-[13px] text-dim appearance-none sm:min-h-0" onClick={() => onXem(id)}>
-      <span className="group-hover/xem:text-[color:var(--accent)] group-hover/xem:underline">{chu}</span>{phu}
+    <button type="button" className="group/xem block min-h-[44px] border-0 bg-transparent p-0 text-left text-[13px] text-dim appearance-none sm:min-h-0" onClick={() => onXem(id)}
+      aria-label={typeof chu === 'string' ? t('Xem lần xử lý {nhan}', { nhan: chu }) : undefined}>
+      <span className={link ? 'font-semibold text-[color:var(--accent)] underline underline-offset-2' : 'group-hover/xem:text-[color:var(--accent)] group-hover/xem:underline'}>{chu}</span>{phu}
     </button>
   );
   if (x.thuHoi?.cho) return nut(x.thuHoi.id, dich(x.thuHoi.nhan), <span className="block text-soon">{t('Đang xin thu hồi · chờ QL')}</span>);

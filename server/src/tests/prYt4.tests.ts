@@ -866,10 +866,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     }
   });
   /* UI-Y-THUC-HV (mockup v7 chủ SP duyệt 28/10 thay luật 02/10 ở màn hẹp): từ sm MỘT dòng + mờ mép; dưới sm xuống dòng, đủ tên bậc. */
-  check('YT4 (8) · Thang: từ sm MỘT dòng (sm:flex-nowrap + mờ mép), dưới sm xuống dòng đủ tên; dấu tích là SVG (không ký tự ✓)', () => {
+  check('YT4 (8) · Thang: khối ≥ 600 px MỘT dòng (+ mờ mép), hẹp hơn xuống dòng đủ tên; dấu tích là SVG (không ký tự ✓)', () => {
     const s = docW(`${YT}/ThangYThuc.tsx`);
     const thang = /<ol[^>]*>/.exec(s)?.[0] ?? '';
-    assert(/sm:flex-nowrap/.test(thang) && /whitespace-nowrap/.test(thang) && /sm:\[mask-image/.test(thang) && /\bflex-wrap\b/.test(thang), 'một dòng từ sm, xuống dòng dưới sm');
+    assert(/\[@container\(min-width:600px\)\]:flex-nowrap/.test(thang) && /whitespace-nowrap/.test(thang) && /\[@container\(min-width:600px\)\]:\[mask-image/.test(thang) && /\bflex-wrap\b/.test(thang), 'một dòng từ sm, xuống dòng dưới sm');
     assert(!/hidden sm:inline/.test(s) && /<DauTich/.test(s) && !/✓/.test(boChuThich(s)), 'đủ tên + SVG');
     assert(/<svg/.test(docW(`${YT}/NhanViPham.tsx`)) && /strokeWidth="1.5"/.test(docW(`${YT}/NhanViPham.tsx`)), 'SVG nét 1.5');
   });
