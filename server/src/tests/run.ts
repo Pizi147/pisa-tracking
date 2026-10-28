@@ -8574,13 +8574,19 @@ check('PR-N · N1 do-phu-danh-gia: HV có dữ liệu đủ điều kiện / HV 
   assert(!r.ids.includes(G.id), 'G chưa có đợt nào thì chưa "cần được đánh giá"');
   assert(!r.ids.includes(H.id), 'H chỉ có đợt đã huỷ thì không cần đánh giá');
   assert(r.n === r.ids.length, 'Số phải là độ dài của tập mẫu số');
-  /* Sự thật độc lập: em đang học có đợt không huỷ đã đến lịch; tử số = đợt gần nhất đủ điểm mọi kỹ năng bắt buộc. */
+  /* Sự thật độc lập: em đang học có đợt không huỷ đã đến lịch; tử số = đợt gần nhất đủ điểm mọi kỹ năng bắt buộc.
+   * T34 (`latestAttempts` 'due'): MT lịch sử chưa đủ điểm không phải "cần được đánh giá" (nhập bù, không hạn). LOC-HIEN-TAI: lộ ra khi ca dựng PR-G nay
+   * dời MT3 W3 SEP của "Học Viên Nhập Một" sang W4 SEP — em chỉ còn MT1 / MT2 lịch sử chưa điểm đã tới lịch (trước đây câu này đếm em, hàm thì không). */
   const today = demoToday();
   const need = (conn.prepare(
     `SELECT DISTINCT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
       WHERE s.archived_at IS NULL AND EXISTS (
         SELECT 1 FROM assessment_attempts a JOIN report_periods pr ON pr.id = a.planned_period_id
-         WHERE a.student_id = s.id AND a.status != 'cancelled' AND pr.week_start <= ?)`,
+         WHERE a.student_id = s.id AND a.status != 'cancelled' AND pr.week_start <= ?
+           AND (a.lich_su = 0 OR NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled'
+             AND (SELECT COUNT(DISTINCT sc.skill) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)
+                    AND sc.skill IN (k.skill, CASE WHEN k.skill = 'writing' THEN 'writing1' END, CASE WHEN k.skill = 'writing' THEN 'writing2' END))
+                 < CASE WHEN k.skill = 'writing' THEN 2 ELSE 1 END)))`,
   ).all(today) as any[]).map((x) => x.id as number).sort((x, y) => x - y);
   assert(JSON.stringify([...r.ids].sort((x: number, y: number) => x - y)) === JSON.stringify(need),
     `Mẫu số: hàm ${r.ids.length} em, sự thật ${need.length} em`);
