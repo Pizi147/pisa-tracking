@@ -133,7 +133,10 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* LUAT-34: chụp lại — phép kiểm chạy trước trên MB FT 101 đổi theo luật 4 sửa 21/10 (PR-G: "-" ghi muộn → thẻ QL / Hoàn tác, W1 "-" + W2 có điểm
    * dời cả W; prOv1b / prOv11a "-" ghi muộn dời tuần kế) và luật 3 (`moi` = góc GVBM: ô có điểm ở hàng Đủ điểm nay `canEdit` true). */
   /* CHU-THI: chụp lại — chỉ đổi chữ ô "Không dự thi · Tuần W…" → "Vắng · Tuần W…" (3 ô; đã so JSON origin/main ↔ nhánh, ngoài dấu thời gian). */
-  const ANH_CHUP = { tuan: '5eebef0957d73f55', moi: '8ce504d4483bd6bf' };   // P9a XET-LAI (sau gộp P7): bộ demo Xét lại (4 em, 4 bài Final, lệnh chuyển) chạy trước các bộ kiểm → id lượt dời, nội dung không đổi — trước (P7): tuan 7ee672d985157810 · moi 55c53358319c7b46
+  /* LOC-HIEN-TAI (chủ SP 28/10): chụp lại — bảng điểm lớp đang học bỏ hàng em Kết thúc học / Lưu trữ (hàng mờ OV-1d) và lượt lộ trình cũ cùng loại;
+   * `idsTuan` / DL-2 theo lượt đối chiếu độc lập tập lượt bằng SQL (`HIEN_TAI`). Băm đo ở lượt chạy đủ bộ 28/10 trước khi sửa ca dựng PR-G (run.ts chạy
+   * trước, ghi thẳng MB FT 101) — check chung của PTA lệch thì chụp lại theo số in ra. Trước: tuan 5eebef0957d73f55 · moi 8ce504d4483bd6bf. */
+  const ANH_CHUP = { tuan: 'c09bc2d877387483', moi: 'a356a00773a5fa6c' };   // P9a XET-LAI (sau gộp P7): bộ demo Xét lại (4 em, 4 bài Final, lệnh chuyển) chạy trước các bộ kiểm → id lượt dời, nội dung không đổi — trước (P7): tuan 7ee672d985157810 · moi 55c53358319c7b46
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
