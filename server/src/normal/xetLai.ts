@@ -10,7 +10,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { coTheRaLenh } from '../classes/quyenChuyenLop.ts';
 import { huongChuyenMotEm, lopDichHopLe, lopHienTaiCua, danhSachLopDich } from '../classes/luatLoTrinh.ts';
-import { huyLenh, raLenh, soHoacKck, thongBaoSapNhan } from '../classes/lenhChuyen.ts';
+import { huyLenh, khoiPhucLenh as khoiPhucLenhHuy, raLenh, soHoacKck, thongBaoSapNhan } from '../classes/lenhChuyen.ts';
 import { hoanTacKetThuc, hoanTacTamDung, setStudentStatus } from '../students/students.ts';
 import { dongBoCheTaiFinal, tyLeTongLo } from './cuoiKhoa.ts';
 import { dongBoMt0 } from '../fasttrack/mt0.ts';
@@ -364,8 +364,11 @@ function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId:
     cot.chu = `${nhan} → ${dich.code}`;
   } else {
     if (!it.lyDo) throw badRequest('Ghi lý do ngắn');
-    setStudentStatus(p, e.studentId, it.trangThai ?? 'inactive', today, it.lyDo);
     cot.chu = it.trangThai === 'finished' ? 'Kết thúc học' : 'Tạm dừng';
+    /* RA-LUONG-16: lệnh chuyển lớp chưa thi hành của em → huỷ cùng quyết định (trước đây treo: bàn giao, "Sắp nhận" vẫn chạy cho em đã nghỉ); Hoàn tác khôi phục lệnh. */
+    const cho = conn.prepare(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(e.studentId) as any;
+    if (cho) { huyLenh(p, cho.id, `Xét lại lộ trình: ${cot.chu}`); cot.lenhCu = JSON.stringify({ huyId: cho.id }); }
+    setStudentStatus(p, e.studentId, it.trangThai ?? 'inactive', today, it.lyDo);
   }
   const id = Number(conn.prepare(
     `INSERT INTO xet_lai_lo_trinh (student_id, lenh_id, lop_id, ly_do_ma, moc, quyet_dinh, chu, lenh_moi_id, lenh_cu, quyet_cu, ly_do_text, tu_dong, nguoi_id, luc) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
@@ -471,6 +474,8 @@ function daoQuyet(p: Principal, id: number, studentId?: number): QuyetCu {
     const st = (conn.prepare('SELECT status FROM students WHERE id = ?').get(x.student_id) as any)?.status;
     if (st !== quyet) throw conflict('Trạng thái học viên đã đổi sau quyết định — sửa ở hồ sơ học viên.');
     if (quyet === 'finished') hoanTacKetThuc(p, x.student_id); else hoanTacTamDung(p, x.student_id);
+    const huyId = x.lenh_cu ? JSON.parse(x.lenh_cu).huyId : null;
+    if (huyId) { const r = khoiPhucLenhHuy(p, [huyId]); if (r.failed.length) throw conflict(r.failed[0].message); }
   }
   conn.prepare('DELETE FROM journey_events WHERE dedup_key = ?').run(`xet_lai:${id}`);
   conn.prepare('DELETE FROM xet_lai_lo_trinh WHERE id = ?').run(id);

@@ -403,7 +403,7 @@ export default function StudentDetailPage() {
 
       {tab === 'y-thuc' && (
         /* UI-Y-THUC-HV: các khối của tab tự là thẻ (mockup v7) — không bọc thêm một thẻ ngoài (thẻ lồng thẻ). */
-        <StudentYThucSection studentId={data.id} thuong={!!cy.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
+        <StudentYThucSection studentId={data.id} thuong={!!cy?.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
       )}
 
       {tab === 'hanh-trinh' && <CacLoTrinh studentId={data.id} onTongKet={moTongKet} onBuocTiep={moBuocTiep} onHocThuat={() => setTab('hoc-thuat')} />}
