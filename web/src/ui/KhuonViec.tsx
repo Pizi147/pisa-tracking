@@ -190,14 +190,21 @@ function useHoanTac(hoanTac: (() => Promise<void>) | undefined, onHoanTac?: () =
   return { con, busy, loi, bam };
 }
 
-function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => Promise<void>; onHoanTac?: () => void }) {
+/** Nút "Hoàn tác" 10 giây + câu lỗi của lần đảo (403 / 409 nói lý do + bước tiếp) — chân "✓ Đã lưu", dải việc vừa lưu, dòng "✓ …" của Số liệu. */
+export function NutHoanTac({ hoanTac, onHoanTac }: { hoanTac?: () => Promise<void>; onHoanTac?: () => void }) {
   const { con, busy, loi, bam } = useHoanTac(hoanTac, onHoanTac);
+  return <>
+    {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
+    {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
+  </>;
+}
+
+function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => Promise<void>; onHoanTac?: () => void }) {
   return (
     <p className="m-0 flex min-h-6 flex-wrap items-center gap-2 border-t pt-2.5 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
       <span className="font-semibold text-done">✓ {t('Đã lưu')} <span className="tabular-nums">{luc}</span></span>
       <span className="flex-1" />
-      {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
-      {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
+      <NutHoanTac hoanTac={hoanTac} onHoanTac={onHoanTac} />
     </p>
   );
 }
@@ -207,14 +214,12 @@ function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => P
  * có đường đảo máy chủ). Hoàn tác xong nơi gọi mở lại việc đó để làm lại.
  */
 export function DaiVuaLuu({ x, ai, onHoanTac }: { x: DaLuuPanel; ai: string | null; onHoanTac: () => void }) {
-  const { con, busy, loi, bam } = useHoanTac(x.hoanTac, onHoanTac);
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[4px_10px_10px_4px] bg-ok-bg py-2.5 pl-[15px] pr-3 text-[13px]" style={{ boxShadow: 'inset 3px 0 0 var(--ok)' }} role="status">
       <b className="font-bold text-ok">✓ {x.chu}</b>
       <span className="min-w-0 text-slate-300">{[ai, x.phu].filter(Boolean).join(' · ')}</span>
       <span className="flex-1" />
-      {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
-      {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
+      <NutHoanTac hoanTac={x.hoanTac} onHoanTac={onHoanTac} />
     </div>
   );
 }

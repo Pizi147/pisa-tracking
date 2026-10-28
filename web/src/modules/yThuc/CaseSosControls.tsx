@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, Truong, traLaiO, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
@@ -16,13 +16,23 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChonNhom, viDuNhanXet } from '../fasttrack/NhanXet.tsx';
 import { skillShort } from '../../lib/format.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, HOAN_TAC_PA_MS, INTERVENTION_KIND_LABEL, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
   dsLoi, duongHoSoHocVien, kiemGhiRoKhac, tenMonNgan, tuanLich, reasonNeedsText,
   datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
   type CaseDismissReason,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
+
+/**
+ * HOAN-TAC-XN: chỗ xác nhận không có dải (lưu xong về Case / sang bước kế) — toast "✓ … · Hoàn tác (n)" 10 giây như dải panel. Lỗi đảo (403 / 409)
+ * báo đúng câu máy chủ (lý do + bước tiếp).
+ */
+function toastHoanTac(toast: ReturnType<typeof useToast>, chu: string, hoanTac: () => Promise<void>) {
+  toast.push('ok', chu, { ms: HOAN_TAC_PA_MS, demLui: true, hanhDong: { nhan: t('Hoàn tác'), onBam: () => {
+    hoanTac().then(() => toast.push('ok', t('Đã hoàn tác')), (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
+  } } });
+}
 
 /** P14 DICH: ô nhận xét của lượt theo kỹ năng Case — Writing có hai ô (Task 1 / 2) nên không có nút ở dòng gộp. */
 const oDich = (attemptId: number, topic: string | null | undefined): NguonDich | null =>
@@ -100,11 +110,13 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
   const ct = data.chuongTrinh ?? null;
   const pa = (data.interventions ?? []).find((x: any) => x.kind === 'bo_tro' && x.status === 'planned') ?? null;
   const goc: GiaTriPa | null = pa ? { ...paMoi(pa.kind), description: pa.description ?? '', soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa) } : null;
-  const [nhom, setNhom] = useState<string[]>([]);
-  const [moTa, setMoTa] = useNhap('xac-nhan-case-mo-ta', '');
+  /* HOAN-TAC-XN: mọi ô của form qua `useNhap` theo Case — Hoàn tác trả lại đúng nội dung vừa gửi (`traLaiO`). */
+  const o = { nhom: `xac-nhan-case-nhom:${caseId}`, moTa: `xac-nhan-case-mo-ta:${caseId}`, sua: `xac-nhan-case-sua:${caseId}`, pa: `xac-nhan-case-pa:${caseId}` };
+  const [nhom, setNhom] = useNhap<string[]>(o.nhom, []);
+  const [moTa, setMoTa] = useNhap(o.moTa, '');
   const xoaNhap = useXoaNhap();
-  const [sua, setSua] = useState(false);
-  const [v, setV] = useState<GiaTriPa | null>(goc);
+  const [sua, setSua] = useNhap(o.sua, false);
+  const [v, setV] = useNhap<GiaTriPa | null>(o.pa, goc);
   const [busy, setBusy] = useState(false);
   const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
   const lf = useLoiForm();
@@ -130,11 +142,17 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
       }
       await api.post(`/cases/${caseId}/xac-nhan`, { nhom, moTa: moTa.trim(), ...(paSua && Object.keys(paSua).length ? { pa: paSua } : {}) });
       invalidateCases();
-      xoaNhap();
+      const traNhap = xoaNhap();
       const chu = pa ? t('Đã xác nhận Case — PA Bổ trợ bắt đầu từ hôm nay') : t('Đã xác nhận Case');
+      /* HOAN-TAC-XN: Case về "Chờ xác nhận Case" (PA Bổ trợ về chờ), chữ mô tả về lại ô khi mở lại việc. */
+      const hoanTac = async () => {
+        await api.post(`/cases/${caseId}/hoan-tac-xac-nhan`);
+        traNhap(); traLaiO(o.nhom, nhom); traLaiO(o.moTa, moTa); traLaiO(o.sua, sua); traLaiO(o.pa, v);
+        invalidateCases();
+      };
       /* "· việc tiếp ›": dải ở đầu việc kế nói kết quả — không thêm toast. */
-      if (diTiep && tiep) tiep.lam({ chu });
-      else { toast.push('ok', chu); onXong(); }
+      if (diTiep && tiep) tiep.lam({ chu, hoanTac });
+      else { toastHoanTac(toast, chu, hoanTac); onXong(); }
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
   const nut = <NutVaTiep chu={t('Xác nhận Case')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
@@ -188,7 +206,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
   /* 6b-3: nội dung đang gõ ở nháp của việc — ✕ khi đang "Xem Case" (form ẩn) vẫn hỏi, mở lại việc thì chữ còn. */
   const [v, setV] = useNhap<GiaTriPa>(`xac-nhan-pa:${pa.id}`, goc);
   const xoaNhap = useXoaNhap();
-  const [batDau, setBatDau] = useState(homNay);
+  const [batDau, setBatDau] = useNhap(`xac-nhan-pa-bat-dau:${pa.id}`, homNay);
   const [cheDo, setCheDo] = useState<'xac-nhan' | 'doi' | 'ktd'>('xac-nhan');
   const doi = useDoiPa(pa.kind);
   const [busy, setBusy] = useState(false);
@@ -224,10 +242,16 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
         });
         invalidateCases();
         const iv = (ct?.interventions ?? []).find((x: any) => x.id === pa.id);
-        xoaNhap();
+        const traNhap = xoaNhap();
         const x = {
           chu: t('Đã xác nhận PA'),
           phu: [tenLoai, t('từ {tuanLich}', { tuanLich: tuanLich(batDau, homNay) }), iv?.actionDue ? t('hạn kết quả {ngay}', { ngay: ngan(iv.actionDue) }) : null].filter(Boolean).join(' · '),
+          /* HOAN-TAC-XN: PA về chờ xác nhận (việc "Xác nhận PA" hiện lại cùng hạn), nội dung đã gõ về lại ô khi mở lại việc. */
+          hoanTac: async () => {
+            await api.post(`/interventions/${pa.id}/hoan-tac-xac-nhan`);
+            traNhap(); traLaiO(`xac-nhan-pa:${pa.id}`, v); traLaiO(`xac-nhan-pa-bat-dau:${pa.id}`, batDau);
+            invalidateCases();
+          },
         };
         if (diTiep && tiep) tiep.lam(x); else onXong(x);
       }
@@ -367,7 +391,7 @@ export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: C
   const chinh = (data.issues ?? []).find((i: any) => i.role === 'primary');
   const moTaCu = chinh?.observation ?? null;
   const idMoTa = (chinh?.id ?? null) as number | null;
-  const [cach, setCach] = useState<'dung' | 'giu' | 'viet'>(x.nhanXet ? 'dung' : 'viet');
+  const [cach, setCach] = useNhap<'dung' | 'giu' | 'viet'>(`xac-nhan-s-cach-${data.id}`, x.nhanXet ? 'dung' : 'viet');
   const [moTa, setMoTa] = useNhap(`xac-nhan-s-${data.id}`, '');
   const xoaNhap = useXoaNhap();
   const [busy, setBusy] = useState(false);
@@ -380,8 +404,12 @@ export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: C
     try {
       await api.post(`/cases/${data.id}/xac-nhan-s`, { cach, ...(cach === 'viet' ? { moTa: moTa.trim() } : {}) });
       invalidateCases(); invalidate('/attempts');
-      xoaNhap();
-      toast.push('ok', t('Đã xác nhận Case'));
+      const traNhap = xoaNhap();
+      toastHoanTac(toast, t('Đã xác nhận Case'), async () => {
+        await api.post(`/cases/${data.id}/hoan-tac-xac-nhan-s`);
+        traNhap(); traLaiO(`xac-nhan-s-cach-${data.id}`, cach); traLaiO(`xac-nhan-s-${data.id}`, moTa);
+        invalidateCases(); invalidate('/attempts');
+      });
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };

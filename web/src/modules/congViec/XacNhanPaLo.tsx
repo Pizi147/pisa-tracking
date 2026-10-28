@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { CanLam, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
+import { CanLam, DaiVuaLuu, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -45,6 +45,8 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const [loiMay, setLoiMay] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [tienDo, setTienDo] = useState<{ n: number; m: number } | null>(null);
+  /* HOAN-TAC-XN: PA của lần gửi gần nhất — dải "✓ Đã xác nhận n em · Hoàn tác" (10 s) đảo đúng các PA này; `lan` đổi = dải mới, đếm lại. */
+  const [vuaXn, setVuaXn] = useState<{ lan: number; ids: number[] } | null>(null);
   const lf = useLoiForm();
 
   const conLai = ds.filter((x) => !xong.has(x.key));
@@ -85,6 +87,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
     const m = hang.length;
     const loiMoi: Record<string, string> = {};
     let daXong = 0;
+    const okLan: number[] = [];
     setBusy(true);
     setTienDo({ n: 0, m });
     try {
@@ -94,6 +97,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
         for (const l of kq.loi) loiMoi[theoPa.get(l.id) ?? String(l.id)] = l.loi;
         if (kq.ok.length) {
           daXong += kq.ok.length;
+          okLan.push(...kq.ok);
           setXong((s) => new Set([...s, ...kq.ok.map((id) => theoPa.get(id)!).filter(Boolean)]));
         }
         /* Máy chủ dừng sớm vì gần hết giờ lời gọi: PA chưa làm gửi lại ở lô sau; cả lô chưa làm = máy chủ bận thật → dừng, báo. */
@@ -110,9 +114,25 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
       if (daXong) {
         onDaLam();
         for (const d of ['/cases', '/students', '/tong-quan', '/my-work']) invalidate(d);
+        setVuaXn((v) => ({ lan: (v?.lan ?? 0) + 1, ids: okLan }));
       }
     }
   };
+  /* Hoàn tác cả lần gửi (`/interventions/hoan-tac-xac-nhan-pa-lo`): em đảo được về lại danh sách (chữ chung / riêng còn nguyên trong ô); em không đảo được
+     giữ ✓, dải báo lý do đầu tiên của máy chủ (403 / 409 + bước tiếp), bấm lại chỉ gửi các em đó. */
+  const hoanTacLo = vuaXn ? async () => {
+    const kq = await api.post<{ ok: number[]; loi: { id: number; loi: string }[] }>('/interventions/hoan-tac-xac-nhan-pa-lo', { ids: vuaXn.ids });
+    const theoPa = new Map(ds.map((x) => [x.paId, x.key]));
+    if (kq.ok.length) {
+      setXong((s) => { const n = new Set(s); for (const id of kq.ok) n.delete(theoPa.get(id) ?? ''); return n; });
+      onDaLam();
+      for (const d of ['/cases', '/students', '/tong-quan', '/my-work']) invalidate(d);
+    }
+    if (kq.loi.length) {
+      setVuaXn({ lan: vuaXn.lan, ids: kq.loi.map((l) => l.id) });
+      throw new Error(kq.loi[0].loi);
+    }
+  } : undefined;
 
   const coLoi = conLai.some((x) => loiMay[x.key]);
   const nut = conLai.length ? (
@@ -131,9 +151,9 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
       chan={{ v3: true, chinh: nut, daSua: daSua && !!conLai.length, conThieu: lf.conThieu(loi), dongTren: conLai.length && (busy || daSua) ? <TrangThaiLuu tt={busy ? 'dang' : 'nhap'} /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         {xong.size > 0 && (
-          <div role="status" className="flex flex-col gap-1">
-            <span className="text-[15px] font-bold text-ok">✓ {t('Đã xác nhận {n} em', { n: xong.size })}</span>
-            <span className="text-[13px] text-slate-400">{ds.filter((x) => xong.has(x.key)).map((x) => x.studentName).join(' · ')}</span>
+          <div className="flex flex-col gap-1">
+            <DaiVuaLuu key={vuaXn?.lan ?? 0} ai={null} onHoanTac={() => setVuaXn(null)}
+              x={{ chu: t('Đã xác nhận {n} em', { n: xong.size }), phu: ds.filter((x) => xong.has(x.key)).map((x) => x.studentName).join(' · '), hoanTac: hoanTacLo }} />
             {!conLai.length && nut && <div className="pt-2 max-sm:hidden">{nut}</div>}
           </div>
         )}

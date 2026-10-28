@@ -217,7 +217,9 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   if (view.loai === 'xac-nhan' && data.trangThaiV4?.k === 'cho-nguyen-nhan') {
     return <XacNhanCasePanel {...chung} data={data} onXong={xong} tiep={tiepViec()} />;
   }
-  if (view.loai === 'xac-nhan-s' && data.choXacNhanS?.coTheXacNhan) {
+  /* HOAN-TAC-XN: Hoàn tác Xác nhận Case S khi đã sang Xác nhận PA → Case chưa mô tả, chờ xác nhận lại: hiện lại bước đó (PA chưa xác nhận được). */
+  const choLaiS = view.loai === 'xac-nhan-pa' && !(data.issues ?? []).some((i: any) => i.role === 'primary');
+  if ((view.loai === 'xac-nhan-s' || choLaiS) && data.choXacNhanS?.coTheXacNhan) {
     return <XacNhanSPanel {...chung} data={data} onXong={() => { if (paCho[0]) { reload(); onChanged?.(); sangViec({ loai: 'xac-nhan-pa', paId: paCho[0].id }); } else xong(); }} />;
   }
   if ((view.loai === 'ghi-nhan-xet' || view.loai === 'xac-nhan') && data.trangThaiV4?.k === 'cho-nhan-xet') {
