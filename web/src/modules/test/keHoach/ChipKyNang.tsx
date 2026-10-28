@@ -80,7 +80,7 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
          * môn) = tuần khoá lớp thường + điểm tổng ✓/✗ hoặc chữ trạng thái. Tuần chưa có hàng môn (MT tương lai) → trạng thái ngay dòng 1.
          */
         return (
-          <span key={d.tuanDu ?? `chua-${i}`} className="grid min-w-0 grid-cols-[54px_minmax(0,1fr)] items-center gap-x-1 gap-y-[2px]">
+          <span key={d.tuanDu ?? `chua-${i}`} className={`grid min-w-0 grid-cols-[54px_minmax(0,1fr)] gap-x-1 gap-y-[2px] ${coMon ? 'items-center' : 'items-baseline'}`}>
             <span className={`whitespace-nowrap text-[13px] leading-5 tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{d.tuan ?? '—'}</span>
             {coMon ? (
               <span className="flex min-h-5 min-w-0 flex-wrap items-center gap-[2px]">
@@ -92,7 +92,7 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
                 ))}
               </span>
             ) : (
-              <span className="flex min-h-5 min-w-0 items-center gap-x-1.5">
+              <span className="flex min-h-5 min-w-0 items-baseline gap-x-1.5">
                 {i === 0 && nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
                 {ketQuaChu}
               </span>
