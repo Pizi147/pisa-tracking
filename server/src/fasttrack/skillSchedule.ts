@@ -2,10 +2,10 @@ import { capNhatConOCho } from './conOCho.ts';
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
-  khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
+  gvcnDoiMtCu, khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
-import { can, explain, require_, type Principal } from '../permissions.ts';
+import { can, explain, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
@@ -862,14 +862,20 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   today?: string;
 } = {}) {
   const { attempt, row } = loadOne(attemptId, skill);
-  requireMoveSkillSchedule(
-    p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
-    'Bạn không có quyền đổi lịch Test của kỹ năng này.',
-  );
+  const homNay = opts.today ?? demoToday();
+  const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
+  /* Chủ SP 28/10: GVCN lớp đó dời MT tuần ĐÃ QUA (sang tuần đã qua / tuần này) như Quản lý — kể cả FT, kể cả có điểm. */
+  const gvcnCu = !opts.khiTao && !opts.ghiBuDau && !!period && isCoreTeacherOf(p, attempt.class_id, homNay)
+    && gvcnDoiMtCu({ tuanCuKetThuc: row.week_end, tuanMoiBatDau: period.week_start, homNay });
+  if (!gvcnCu) {
+    requireMoveSkillSchedule(
+      p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
+      'Bạn không có quyền đổi lịch Test của kỹ năng này.',
+    );
+  }
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ. Mở lại trước khi đổi lịch.');
   if (!row.required) throw loi(400, 'Kỹ năng {x} không nằm trong phạm vi yêu cầu của đợt này.', { x: tenMon(null, skill) });
 
-  const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần');
   if (periodId === row.planned_period_id) throw badRequest('Tuần mới trùng tuần hiện tại.');
   if (!opts.ghiBuDau) chanCuoiTuan(p, attempt, [row.week_start, period.week_start]);
@@ -880,8 +886,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
    * em vào web; GVCN / GV chỉ từ tuần này. Sau khi lưu, lượt Mock tính lại cờ MT cũ theo tuần muộn nhất (`tinhLaiMtCu`).
    */
   const lichSu = !!attempt.lich_su && !opts.khiTao && !opts.ghiBuDau;
-  const homNay = opts.today ?? demoToday();
-  const quanLy = can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id });
+  const quanLy = gvcnCu || can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id });
   if (!opts.khiTao && !opts.ghiBuDau) {
     const cau = kiemTuanXep({ ketThuc: [period.week_end], homNay, quanLy }).cau;
     if (cau) throw badRequest(cau);

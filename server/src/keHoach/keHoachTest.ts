@@ -17,7 +17,7 @@ import {
   bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam,
   type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
-import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, classScopeSql, lopFtChoGvSpeaking, require_, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
@@ -37,6 +37,19 @@ import { sExCuaHv } from '../cham/sExpert.ts';
 const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
 const CAU_XAC_NHAN = 'Xác nhận lại nếu vẫn muốn xếp vào tuần này.';
 const PLAN_MSG = 'Chỉ Quản lý xếp được lịch Test.';
+const XEM_MSG = 'Bạn không dạy lớp này.';
+
+/**
+ * Chủ SP 28/10: GV thấy Kế hoạch Test của MỌI lớp mình dạy (GVCN, GVBM, GV chấm S chéo) — CHỈ XEM. Ghi vẫn theo `PLAN_WEEK` ở từng hàm ghi.
+ * Trả hàm kiểm theo lớp (tính `lopFtChoGvSpeaking` một lần).
+ */
+function xemDuoc(p: Principal): (classId: number) => boolean {
+  const lopS = new Set(lopFtChoGvSpeaking(p));
+  return (classId) => can(p, PERMISSIONS.PLAN_WEEK, { classId }) || teachesClass(p, classId) || lopS.has(classId);
+}
+const requireXem = (p: Principal, classId: number) => { if (!xemDuoc(p)(classId)) throw forbidden(XEM_MSG); };
+/** Lớp này người xem chỉ xem được, không xếp (không `PLAN_WEEK`). */
+const chiXemLop = (p: Principal, classId: number) => !can(p, PERMISSIONS.PLAN_WEEK, { classId });
 
 /** Bộ môn xếp lịch của lớp thường (bảng `programme_skills`, Pre FOU `tong_hop`) — K4-16. */
 const boMonThuong = (prog: { code: string; skills: readonly string[] } | null): KyNangKH[] =>
@@ -71,7 +84,8 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     )
     .all(...params) as any[];
   rows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
-  const inScope = rows.filter((r) => can(p, PERMISSIONS.PLAN_WEEK, { classId: r.id }));
+  const xem = xemDuoc(p);
+  const inScope = rows.filter((r) => xem(r.id));
 
   const ftClassIds = inScope.filter((r) => r.mode !== 'ratio').map((r) => r.id as number);
   const thuongIds = inScope.filter((r) => r.mode === 'ratio').map((r) => r.id as number);
@@ -173,6 +187,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
         hvChuaCoLich: hvChuaCoLich.get(r.id) ?? 0,
         canXepLai: canXepLai.get(r.id) ?? 0,
         tomTat: loai === 'ft' ? tomTatFT(r.id) : tomTatThuong(r.id),
+        chiXem: chiXemLop(p, r.id),
       };
     }),
   };
@@ -275,7 +290,7 @@ export type DotFT = {
 
 export function luoiFT(p: Principal, classId: number, today: string = demoToday()) {
   const conn = db();
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId }, PLAN_MSG);
+  requireXem(p, classId);
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
 
@@ -400,7 +415,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   /* OV-15c (C21): ghi chú lịch thi — một câu cho cả lớp. */
   const gc = docGhiChu(classId, students.map((s) => ({ id: s.id as number, cycleId: (s.cycle_id ?? null) as number | null })), true);
   const sEx = sExCuaHv(p, studentIds, today);   // SV-S-EXPERT: lượt S Ex của em, tách khỏi ô MT
-  return { classId, classCode: cls.code as string, cot, hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {}, sEx: sEx.get(h.studentId) ?? [] })), ghiChuLop: gc.lop };
+  return { classId, classCode: cls.code as string, chiXem: chiXemLop(p, classId), cot, hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {}, sEx: sEx.get(h.studentId) ?? [] })), ghiChuLop: gc.lop };
 }
 
 // ---------------------------------------------------------------- PR-LM: bảng lịch MT ở panel Lộ trình
@@ -780,7 +795,7 @@ function docLopThuong(classId: number) {
 
 export function luoiThuong(p: Principal, classId: number, today: string = demoToday()) {
   const conn = db();
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId }, PLAN_MSG);
+  requireXem(p, classId);
   const { cls, prog } = docLopThuong(classId);
   const progress = classProgress(classId);
   const bo = boMonThuong(prog);
@@ -867,7 +882,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
   const cw = progress.currentWeek;
   const tuanCp = (n: number) => (progress.startWeekStart && progress.mocLap ? addDays(progress.startWeekStart, 7 * (n * progress.mocLap - 1)) : null);
   return {
-    classId, classCode: cls.code as string, chuongTrinh: progress.programmeCode as string | null,
+    classId, classCode: cls.code as string, chiXem: chiXemLop(p, classId), chuongTrinh: progress.programmeCode as string | null,
     khaiGiang: progress.startWeekStart, tongTuan: progress.totalWeeks,
     tuanHienTai: progress.mocLap ? (cw && cw >= 1 ? `tuần ${cw}` : null)
       : cw && progress.totalWeeks ? (cw > progress.totalWeeks ? 'sau khoá' : cw >= 1 ? tuanKhoaCua(cw, progress.totalWeeks) : null) : null,
@@ -1311,9 +1326,10 @@ export function lichSuGhiChu(p: Principal, i: { classId: number; studentId?: num
 
 // ---------------------------------------------------------------- OV-15c: tìm lớp, học viên hoặc email (C18)
 
-/** Lớp đang hoạt động trong phạm vi Kế hoạch Test (PLAN_WEEK), lọc chi nhánh — một câu, kèm GVCN và số em. */
-function lopTrongPhamVi(p: Principal, branchId: number | null) {
-  if (!can(p, PERMISSIONS.PLAN_WEEK, { anyScope: true })) throw forbidden(PLAN_MSG);
+/** Lớp đang hoạt động trong phạm vi Kế hoạch Test, lọc chi nhánh — một câu, kèm GVCN và số em. `xem`: cả lớp GV chỉ xem (tìm); trống = lớp xếp được (xuất). */
+function lopTrongPhamVi(p: Principal, branchId: number | null, xem = false) {
+  const duoc = xem ? xemDuoc(p) : (id: number) => can(p, PERMISSIONS.PLAN_WEEK, { classId: id });
+  if (!xem && !can(p, PERMISSIONS.PLAN_WEEK, { anyScope: true })) throw forbidden(PLAN_MSG);
   return (db().prepare(
     `SELECT c.id, c.code, c.branch_id, pg.scoring_mode AS mode, br.name AS chi_nhanh,
             (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') AS so_hv,
@@ -1321,14 +1337,14 @@ function lopTrongPhamVi(p: Principal, branchId: number | null) {
               WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id DESC LIMIT 1) AS gvcn
        FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code LEFT JOIN branches br ON br.id = c.branch_id
       WHERE c.status = 'active'${branchId ? ' AND c.branch_id = ?' : ''}`).all(...(branchId ? [branchId] : [])) as any[])
-    .filter((r) => can(p, PERMISSIONS.PLAN_WEEK, { classId: r.id }))
+    .filter((r) => duoc(r.id))
     .sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
 }
 
 const TIM_TOI_DA = 8;
 /** GET /ke-hoach-test/tim?q= — Lớp (mã, bỏ khoảng / gạch) và Học viên đang học (tên có / không dấu, email không phân biệt hoa thường). */
 export function timKeHoach(p: Principal, i: { q: string; branchId: number | null }) {
-  const lop = lopTrongPhamVi(p, i.branchId);
+  const lop = lopTrongPhamVi(p, i.branchId, true);
   const q = i.q.trim();
   if (!q) return { lop: [], hocVien: [] };
   const qMa = chuanHoaMaLop(q);

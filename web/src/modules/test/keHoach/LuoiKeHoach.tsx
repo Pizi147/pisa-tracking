@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Empty, Th } from '../../../ui/ui.tsx';
 import { duongDotTest, duongHoSoHocVien, type KyNangKH } from '@shared/domain/index.ts';
 import { OMt } from '../../../ui/OMt.tsx';
@@ -15,7 +15,7 @@ import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
 import { MT_TOI_DA, tuanNamChu } from '@shared/domain/index.ts';
 import {
-  dotCuaEm, emXongDot, khoaDot, nhanDot,
+  dotCuaEm, emXongDot, khoaBaiThuong, khoaDot, nhanDot,
   type DongSEx, type DotChon, type DotFT, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
 } from './kieu.ts';
 
@@ -47,6 +47,9 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   const [hetHang, setHetHang] = useState(false);
   const [sEx, setSEx] = useState<{ hang: HangFT; dong: DongSEx | null } | null>(null);
   const homNay = useNgayNghiepVu().homNay;
+  const navigate = useNavigate();
+  /* Chủ SP 28/10: lớp GV dạy mà không xếp được — chỉ xem: ô mở trang lượt (đổi trang), không hộp xếp / + MT / sửa ghi chú. */
+  const chiXem = !!data.chiXem;
   const cuon = useRef<HTMLDivElement>(null);
 
   const cots: Cot[] = useMemo(() => {
@@ -94,11 +97,11 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
 
   return (
     <div ref={cuon} className="overflow-x-auto">
-      <table className="text-sm" style={{ tableLayout: 'fixed', width: RONG_TEN + cots.length * rongDot + (loai === 'ft' ? RONG_SEX : 0), minWidth: '100%' }}>
+      <table className="text-sm" style={{ tableLayout: 'fixed', width: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0), minWidth: '100%' }}>
         <colgroup>
           <col style={{ width: RONG_TEN }} />
           {cots.map((c) => <col key={c.key} style={{ width: rongDot }} />)}
-          {loai === 'ft' && <col style={{ width: RONG_SEX }} />}
+          {loai === 'ft' && !chiXem && <col style={{ width: RONG_SEX }} />}
         </colgroup>
         <thead>
           <tr>
@@ -109,7 +112,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                 {c.phu && <span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
               </Th>
             ))}
-            {loai === 'ft' && (
+            {loai === 'ft' && !chiXem && (
               <Th align="center"><span className="sr-only">{t('Lượt thêm')}</span></Th>
             )}
           </tr>
@@ -126,7 +129,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
               </td>
               {cots.map((c) => {
                 const dot = o(h, c);
-                const moHop = (el: HTMLElement) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: null });
+                const moTrang = () => dot.attemptId !== null && navigate(duongDotTest({ id: dot.attemptId, kind: c.dot.loai === 'ft' ? 'mock' : khoaBaiThuong(c.dot.kind), classId: data.classId, studentId: h.studentId }));
+                const moHop = (el: HTMLElement) => (chiXem ? moTrang() : setHop({ anchor: el, hang: h, cot: c, kyNangDau: null }));
                 return (
                   <td key={c.key} className={`td py-1.5 align-middle ${loai === 'ft' ? 'text-center' : ''}`}>
                     {loai === 'ft' && c.dot.loai === 'ft' ? (
@@ -139,13 +143,13 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                       ) : dot.huy ? (
                         /* PR-OV4a: số MT chỉ có lượt đã huỷ — chữ "Đã huỷ" (không chỉ màu), viền đứt; bấm mở hộp Khôi phục. */
                         <OMt v={{ so: c.dot.attemptNo, attemptId: null, kn: {}, cu: false }} homNay={homNay} huy
-                          chon={huy?.hang.studentId === h.studentId && huy.cot.key === c.key} ghiChu="Bấm để xem / khôi phục"
-                          onClick={(el) => setHuy({ attemptId: dot.huy!, anchor: el, hang: h as HangFT, cot: c })} />
+                          chon={huy?.hang.studentId === h.studentId && huy.cot.key === c.key} ghiChu={chiXem ? undefined : 'Bấm để xem / khôi phục'}
+                          {...(chiXem ? {} : { onClick: (el: HTMLElement) => setHuy({ attemptId: dot.huy!, anchor: el, hang: h as HangFT, cot: c }) })} />
                       ) : (
                         <OMt v={{ so: c.dot.attemptNo, attemptId: null, kn: {}, cu: false }} homNay={homNay}
                           chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key}
                           /* Em chưa tới lượt (số MT liền mạch, K4-08): không bấm. Ô trống tới lượt: bấm mở hộp đợt mới. */
-                          {...(c.dot.attemptNo !== (h as HangFT).soKeTiep
+                          {...(chiXem ? {} : c.dot.attemptNo !== (h as HangFT).soKeTiep
                             ? { ghiChu: `Xếp MT trước rồi mới tới ${nhanDot(c.dot)}` }
                             : { onClick: moHop, ghiChu: `Bấm để xếp ${nhanDot(c.dot)}` })} />
                       )
@@ -155,7 +159,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                       <div className="flex flex-wrap items-center gap-1.5">
                         <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} ct={(data as LuoiThuongData).chuongTrinh} khaiGiang={khaiGiang} tongTuan={tongTuan}
                           deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
-                          onMo={(skill, el) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill })} />
+                          onMo={(skill, el) => (chiXem ? moTrang() : setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill }))} />
                         {/* PR-MT0 (mockup ④): ô MT0 ngay sau Final — tên môn IELTS (`ct` null); bấm mở hồ sơ Mock để dời / nhập. */}
                         {c.key === 'final' && (h as HangThuong).mt0 && homNay && (() => {
                           const m = (h as HangThuong).mt0!;
@@ -166,11 +170,11 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                     )}
                     {/* C21: ghi chú lịch thi một dòng dưới chip — bấm sửa tại chỗ (Enter lưu · Esc huỷ). Chỉ ghi chú, không dời lịch. */}
                     <GhiChuTaiCho khoa={{ classId: data.classId, studentId: h.studentId, dot: khoaDot(c.dot) }} ghiChu={h.ghiChu?.[khoaDot(c.dot)] ?? null}
-                      onDoi={onReload} nhan={t('Ghi chú lịch Test {dot}', { dot: nhanDot(c.dot) })} className="mx-auto mt-0.5 max-w-[168px]" />
+                      onDoi={onReload} nhan={t('Ghi chú lịch Test {dot}', { dot: nhanDot(c.dot) })} className="mx-auto mt-0.5 max-w-[168px]" chiDoc={chiXem} />
                   </td>
                 );
               })}
-              {loai === 'ft' && (
+              {loai === 'ft' && !chiXem && (
                 <td className="td py-1.5 text-center align-middle">
                   <div className="mx-auto flex max-w-[152px] flex-col gap-1">
                     {[...((h as HangFT).sEx ?? [])].sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id).map((x) => (
@@ -195,7 +199,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
           ))}
           {hangs.length < tatCa.length && (
             <tr>
-              <td colSpan={1 + cots.length + (loai === 'ft' ? 1 : 0)} className="td sticky-col py-2 text-[13px] text-slate-400">
+              <td colSpan={1 + cots.length + (loai === 'ft' && !chiXem ? 1 : 0)} className="td sticky-col py-2 text-[13px] text-slate-400">
                 {t('+ {n} HV', { n: tatCa.length - hangs.length })} ·{' '}
                 <button type="button" className="link appearance-none border-0 bg-transparent p-0 max-sm:min-h-[44px]" onClick={() => setHetHang(true)}>
                   {t('Hiện tất cả {n}', { n: tatCa.length })}
@@ -210,7 +214,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         {data.ghiChuLop && <b className="text-slate-300">{t('Ghi chú lớp · {lop}', { lop: data.classCode })}</b>}
         <div className="min-w-0 flex-1">
           <GhiChuTaiCho khoa={{ classId: data.classId }} ghiChu={data.ghiChuLop ?? null} onDoi={onReload}
-            nhan={t('Ghi chú lớp · {lop}', { lop: data.classCode })} them={t('+ Ghi chú lớp')} />
+            nhan={t('Ghi chú lớp · {lop}', { lop: data.classCode })} them={t('+ Ghi chú lớp')} chiDoc={chiXem} />
         </div>
         {data.ghiChuLop && <span className="text-[12px] text-slate-500">{[data.ghiChuLop.ai, fmtDateTime(data.ghiChuLop.luc)].filter(Boolean).join(' · ')}</span>}
       </div>

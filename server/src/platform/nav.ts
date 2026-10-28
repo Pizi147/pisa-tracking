@@ -5,7 +5,8 @@
  * Một hàm thuần để phép kiểm gọi thẳng được (server/src/tests/khung.tests.ts).
  */
 import { PERMISSIONS, laVaiQuanLy, type NavQuyen } from '../../../shared/domain/index.ts';
-import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, can, classScopeSql, lopFtChoGvSpeaking, scopeFor, type Principal } from '../permissions.ts';
+import { demoToday } from '../demoConfig.ts';
 import { db } from '../db.ts';
 import { canSeeBoard } from '../worklist/mgmttasks.ts';
 import { coPhamViXuat, phamViXuatMt } from '../phanTich/xuatMt.ts';
@@ -39,6 +40,8 @@ export function navOf(p: Principal): NavQuyen {
     /* OV-11f (TQ-8): QL / Quản trị kiêm TVV ở vai gốc giữ Tổng quan QL; Học viên của tôi chỉ khi Góc nhìn = TVV (vai QL bị lọc khỏi `roleKeys`). */
     hvCuaToi,
     test, testGrade: test, testSchedule: test, testPlan: test && plan,
+    /* Chủ SP 28/10: GV xem Kế hoạch Test lớp mình dạy (chỉ xem). */
+    testPlanXem: test && (plan || p.assignments.some((a) => activeAt(a, demoToday())) || lopFtChoGvSpeaking(p).length > 0),
     work: (viec && (attempt || board || meeting)) || viecTvv,
     workSupport: support || viecTvv, workOps: viec && board, workReports: viec && meeting,
     /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */

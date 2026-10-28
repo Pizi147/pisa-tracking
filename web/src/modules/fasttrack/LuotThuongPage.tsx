@@ -35,7 +35,7 @@ import { dongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
 import { ChonDot, ConLaiLuot, Info, LichSuGon, VungMoKn, viecCaseLuot, type ViecConLai } from './MockDetailPage.tsx';
 import { attemptHref, fmtDate } from '../../lib/format.ts';
 import {
-  CHU_THAO_TAC, CHU_THEM_PA, NAV_RONG, PERMISSIONS, duongDotTest, duongNhapDiemCu, moDiemLopCu, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangCha, trangThaiTT, tuanLich,
+  CHU_THAO_TAC, CHU_THEM_PA, NAV_RONG, PERMISSIONS, duongDotTest, duongNhapDiemCu, moDiemLopCu, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangCha, trangThaiTT, tuanDaQua, tuanLich,
   vaiXemHocVien, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -237,7 +237,7 @@ export default function LuotThuongPage() {
           onClose={() => { setNgan(null); reload(); }} onChanged={reload} />
       )}
       {hop && (
-        <HopThaoTacMt key={`${hop.t}:${hop.k}`} thaoTac={hop.t} attemptId={r.attemptId} skill={hop.k} ct={ct} laThuong quanLy={d.canPlan}
+        <HopThaoTacMt key={`${hop.t}:${hop.k}`} thaoTac={hop.t} attemptId={r.attemptId} skill={hop.k} ct={ct} laThuong quanLy={d.canPlan} gvcn={!!d.laGvcn}
           row={{ periodId: null, weekStart: r.skillSchedule.find((s) => s.skill === hop.k)?.weekStart ?? null, deadline: r.skillSchedule.find((s) => s.skill === hop.k)?.deadline ?? null }}
           onClose={() => setHop(null)} onDone={reload} />
       )}
@@ -265,7 +265,7 @@ function thaoTacMon(d: ChiTiet, k: string, homNay: string, can: (p: string) => b
   if (d.dong.status === 'cancelled' || !s) return { chinh: null, menu: [] };
   const coDiem = (d.dong.result.skills.find((x) => x.skill === k)?.score ?? null) !== null;
   const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s.weekStart ?? null, coDiem, sit: s.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
-  const tat = thaoTacKyNang(tt, { nhapDiem: s.canEdit, quanLy: d.canPlan, gvcn: !!d.laGvcn, laFt: false, dotHoanTat: !!d.dong.hoanTat, doiLich: s.doiLich,
+  const tat = thaoTacKyNang(tt, { nhapDiem: s.canEdit, quanLy: d.canPlan, gvcn: !!d.laGvcn, laFt: false, dotHoanTat: !!d.dong.hoanTat, doiLich: s.doiLich, quaTuan: tuanDaQua(s.weekStart, homNay),
     huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy });
   const chinh = tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? tat.chinh : null;
   return { chinh, menu: tat.menu };

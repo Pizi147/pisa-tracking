@@ -29,6 +29,7 @@ export const EN_OV15C = {
   '(đã xoá)': '(cleared)',
   'Enter lưu · Esc huỷ': 'Enter saves · Esc cancels',
   'Ghi chú lớp · {lop}': 'Class note · {lop}',
+  'Chọn tuần đã qua hoặc tuần này — tuần tới do Quản lý xếp': 'Pick a past week or this week — managers schedule later weeks',
   '+ Ghi chú lớp': '+ Class note',
   // Tìm
   'Tìm lớp, học viên hoặc email…': 'Search class, student or email…',

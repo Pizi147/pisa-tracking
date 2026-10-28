@@ -10,7 +10,7 @@ import { useKhoaCuoiTuan, useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { Nhan } from '../../ui/Nhan.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, kiemLyDoThaoTac, kiemTuanXep, luatVangThuong, mondayOfDate, ngay, tenMon, tuanLich, type KetQuaVang,
+  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, kiemLyDoThaoTac, kiemTuanXep, tuanDaQua, luatVangThuong, mondayOfDate, ngay, tenMon, tuanLich, type KetQuaVang,
   type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -54,6 +54,8 @@ export type HopThaoTacProps = {
   thaoTac: ThaoTac | null; attemptId: number; skill: string; ct: string | null; laThuong: boolean;
   /** Quản lý / Quản trị xếp được tuần đã qua (T4, chip "Tuần đã qua"); người khác bị khoá từ tuần này (K2-33). */
   quanLy: boolean;
+  /** Chủ SP 28/10: GVCN lớp đó — dời kỹ năng tuần ĐÃ QUA sang tuần đã qua / tuần này (máy chủ `gvcnDoiMtCu`). */
+  gvcn?: boolean;
   row: { periodId: number | null; weekStart: string | null; deadline?: string | null };
   /** Huỷ điểm Writing (FT): ô W1/W2 đang có điểm; `oMacDinh` = ô tích sẵn (dòng W2 chỉ tích W2). */
   oCoDiem?: string[]; oMacDinh?: string[];
@@ -70,7 +72,7 @@ export type HopThaoTacProps = {
  * Máy chủ kiểm lại mọi luật; câu lỗi của máy chủ hiện nguyên văn TRONG panel (không đóng panel, không mất chữ đã gõ).
  * Khung: `KhungPanel` (I4, PR-LM) — chân theo luật S3: chưa sửa "Đóng", đã sửa "Huỷ thay đổi"; thao tác nguy hiểm nút chính đỏ.
  */
-export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, row, oCoDiem = [], oMacDinh, trongHop, hocVien, lop, onClose, onDone }: HopThaoTacProps) {
+export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, gvcn = false, row, oCoDiem = [], oMacDinh, trongHop, hocVien, lop, onClose, onDone }: HopThaoTacProps) {
   const toast = useToast();
   const lf = useLoiForm();
   const { homNay } = useNgayNghiepVu();
@@ -93,7 +95,9 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   const coTuan = tt === 'dat-lich' || tt === 'xep-lai' || tt === 'doi-lich' || tt === 'khoi-phuc';
   /* K2-33: GVCN dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. Quản lý được (T4): chỉ hiện chip vàng.
      PR-MTa T21: Khôi phục (chỉ Quản lý) cũng chọn được tuần đã qua — em đã thi thật. */
-  const tuanNay = homNay && !quanLy && tt !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
+  /* Chủ SP 28/10: GVCN dời MT tuần đã qua → tuần đích ≤ tuần này (thay "từ tuần này trở đi"). */
+  const gvcnCu = !quanLy && gvcn && tt === 'doi-lich' && !!homNay && tuanDaQua(row.weekStart, homNay);
+  const tuanNay = homNay && !quanLy && !gvcnCu && tt !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
   const quaTuan = quanLy && coTuan && tt !== 'khoi-phuc' && !!tuan && tuan.periodId !== row.periodId && !!homNay
     && kiemTuanXep({ ketThuc: [addDaysStr(tuan.weekStart.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
   const chonW = tt === 'huy-diem' && !laThuong && oCoDiem.length > 1;
@@ -104,7 +108,8 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   const loi: LoiTruong[] = [
     ...(kiemLyDoThaoTac(tt, lyDo) ? [{ khoa: 'ly-do', nhan: t('Lý do'), lyDo: t('Chưa điền') }] : []),
     ...(coTuan && (!tuan || (tt === 'doi-lich' && tuan.periodId === row.periodId)) ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Chọn tuần khác tuần hiện tại') }]
-      : coTuan && tuanNay && tuan!.weekStart < tuanNay ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Tuần đã qua — chọn từ tuần này trở đi') }] : []),
+      : coTuan && tuanNay && tuan!.weekStart < tuanNay ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Tuần đã qua — chọn từ tuần này trở đi') }]
+      : gvcnCu && tuan!.weekStart.slice(0, 10) > mondayOfDate(homNay!) ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Chọn tuần đã qua hoặc tuần này — tuần tới do Quản lý xếp') }] : []),
     ...(tt === 'doi-han' && !han ? [{ khoa: 'han', nhan: t('Hạn chấm mới'), lyDo: t('Chưa chọn') }] : []),
     ...(chonW && !o.length ? [{ khoa: 'o', nhan: t('Ô cần huỷ'), lyDo: t('Chưa chọn') }] : []),
   ];
