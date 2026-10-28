@@ -3270,11 +3270,12 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của Case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
-/** VIEW-CASE-LUOT: lượt mà Case đang gắn (`sos_cases.attempt_id`) — id, loại, lớp (web dựng đường bằng `duongDotTest`), nhãn "MT2" / "Progress Test". */
-function luotCuaCase(attemptId: number | null | undefined): { id: number; kind: string; classId: number | null; dot: string } | null {
+/** VIEW-CASE-LUOT: lượt mà Case đang gắn (`sos_cases.attempt_id`) — id, loại, lớp (web dựng đường bằng `duongDotTest`), nhãn "MT2" / "Progress Test", tuần của lượt. */
+function luotCuaCase(attemptId: number | null | undefined): { id: number; kind: string; classId: number | null; dot: string; tuan: string | null } | null {
   if (!attemptId) return null;
-  const a = db().prepare('SELECT id, kind, class_id, attempt_no FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  return a ? { id: a.id, kind: a.kind, classId: a.class_id ?? null, dot: nhanDot(a.kind, a.attempt_no ?? null) } : null;
+  const a = db().prepare(`SELECT a.id, a.kind, a.class_id, a.attempt_no, rp.week_start FROM assessment_attempts a
+     LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id = ?`).get(attemptId) as any;
+  return a ? { id: a.id, kind: a.kind, classId: a.class_id ?? null, dot: nhanDot(a.kind, a.attempt_no ?? null), tuan: a.week_start ?? null } : null;
 }
 
 function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null,

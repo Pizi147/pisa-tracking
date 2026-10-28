@@ -9,7 +9,7 @@ import { NhanTrangThai, Outcome } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CHIP_VUONG, Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
-import { MuiTen, NhanTamDung, TenCase, type LuotCase } from './SkillBoard.tsx';
+import { LinkLuot, MuiTen, NhanTamDung, TenCase, type LuotCase } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
@@ -208,7 +208,10 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
           {t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '') })}
         </p>
       )}
-      <DauMuc dau tieuDe="Case" phu={<span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} kn={data.topic} /></span>}>
+      {/* VIEW-CASE-LUOT (mockup panel-pilot đầu mục Case): có lượt → đầu mục "Case MT3 · W2 SEP ↗", tên Case (phần giữa + SOS) là dòng đầu ngay dưới; Case tay giữ tên ở đầu mục. */}
+      <DauMuc dau tieuDe="Case" phu={data.luot ? <LinkLuot luot={data.luot} kn={data.topic} />
+        : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
+        {data.luot && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
         {/* Case A (luật chữ): nhãn 13 phụ / giá trị 15; điểm là giá trị chính (màu kết quả + ✓ / ✗). "Ghi nhận" → "Mô tả" (N8, chủ SP 27/10). */}
         <dl className="m-0 grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-2 max-sm:grid-cols-1 max-sm:gap-y-0.5">
           {diem && <><dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Điểm')}</dt><dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2">{diem}</dd></>}
