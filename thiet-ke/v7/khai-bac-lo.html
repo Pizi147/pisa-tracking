@@ -61,7 +61,7 @@ button, select, input { font: inherit; color: inherit; }
 @container (max-width: 600px) { .btn { min-height: 44px; } .link { min-height: 44px; } }
 
 /* panel phải (KhungPanel rong) */
-.panel { position: absolute; top: 0; right: 0; bottom: 0; width: 760px; background: var(--surface); border-left: 1px solid var(--line-strong); display: grid; grid-template-rows: auto auto 1fr auto; box-shadow: -12px 0 32px rgba(0,0,0,.25); }
+.panel { position: absolute; top: 0; right: 0; bottom: 0; width: 760px; background: var(--surface); border-left: 1px solid var(--line-strong); display: grid; grid-template-rows: auto auto 1fr auto; grid-template-columns: minmax(0, 1fr); box-shadow: -12px 0 32px rgba(0,0,0,.25); }
 @container (max-width: 600px) { .panel { width: 100%; border-left: 0; } }
 .p-dau { display: flex; gap: 10px; align-items: flex-start; padding: 14px 18px 10px; border-bottom: 1px solid var(--line); }
 .p-dau h3 { margin: 0; font-size: 17px; font-weight: 700; } .p-dau .phu-de { font-size: 13px; color: var(--text-dim); }
@@ -74,6 +74,11 @@ button, select, input { font: inherit; color: inherit; }
 .tick { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
 .tick input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
 @container (max-width: 600px) { .tick { min-height: 44px; } }
+.cong-cu .ap { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cong-cu .h2 { flex-wrap: wrap; } .cong-cu .thang { display: inline-flex; gap: 6px; align-items: center; flex: none; }
+.cong-cu .gc { flex: 1 1 120px; min-width: 0; display: flex; gap: 8px; align-items: center; } .cong-cu .gc input { flex: 1; min-width: 0; }
+.bang th.w-tick { font-size: 12px; white-space: nowrap; }
+@container (max-width: 600px) { .cong-cu .ap .o-chon { max-width: 150px; } .cong-cu .gc > span { display: none; } }
 .mo { color: var(--text-faint); } .dim { color: var(--text-dim); }
 .than { overflow-y: auto; }
 .bang { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -109,7 +114,7 @@ button, select, input { font: inherit; color: inherit; }
   <nav class="dk" aria-label="Chọn trạng thái">
     <b>Trạng thái</b>
     <a href="?tt=sua" data-tt="sua">Đang sửa (đã áp bậc cho 4 em)</a>
-    <a href="?tt=da-luu" data-tt="da-luu">Đã lưu · Hoàn tác · 1 em lỗi</a>
+    <a href="?tt=da-luu" data-tt="da-luu">Đã lưu · Hoàn tác · 1 em lỗi (GVCN: khoá · QL: Thử lại)</a>
     <b>Vai</b>
     <a href="?vai=gvcn" data-vai="gvcn">GVCN</a>
     <a href="?vai=ql" data-vai="ql">QL</a>
@@ -119,10 +124,10 @@ button, select, input { font: inherit; color: inherit; }
   </nav>
   <dl class="ghi">
     <dt>Mở từ</dt><dd>Tab Ý thức hồ sơ lớp: nút "Khai / sửa cấp bậc" ở đầu thẻ (cạnh "Chọn nhiều") · việc "Xác nhận cấp bậc" ở Công việc (dòng gộp theo lớp). Panel mở với MỌI em của lớp — không cần Chọn nhiều trước.</dd>
-    <dt>Thao tác</dt><dd>① "Chọn tất cả" (một chạm; em khoá không được chọn) hoặc tick từng em · ② chọn bậc ở "Áp bậc … cho n em đã chọn" → Áp (đổi ô bậc của các em đó, chưa lưu) · ③ sửa riêng ô bậc dòng nào cũng được · ④ <b>Lưu n em</b>. Em không đổi bậc thì không gửi.</dd>
+    <dt>Thao tác</dt><dd>① "Chọn tất cả" (một chạm; ô gạch khi mới tick một phần) hoặc tick từng em — <b>ô tick chỉ để Áp</b> · ② chọn bậc → "Áp cho n em" (đổi ô Bậc mới của các em đó, chưa lưu) · ③ sửa riêng ô Bậc mới dòng nào cũng được · ④ <b>Lưu n em</b> — lưu theo ô Bậc mới ("— giữ nguyên —" không gửi). Nhãn dòng bằng chữ: Khai mới · Nâng từ … · <b>↓ Hạ từ …</b> (không chặn, không hỏi lại).</dd>
     <dt>Tối giản</dt><dd>Ghi chú KHÔNG bắt buộc (một ô chung cho cả lô; bỏ trống → "Xác nhận theo lớp MB FT 101" như hiện nay) · tháng mặc định tháng này, sửa được · bỏ hàng 7 chip mỗi em → một ô chọn bậc mỗi dòng.</dd>
     <dt>Quyền</dt><dd>Như khai từng em (máy chủ quyết): GVCN khai / sửa khi chuỗi chưa có lần xử lý trên web; QL sửa cả sau đó. Em không đủ quyền: dòng khoá + lý do. Lưu: một lần gọi theo lô, em lỗi báo riêng dòng đó (giữ ô đã chọn + Thử lại), em khác vẫn lưu; nhật ký từng em.</dd>
-    <dt>Sau lưu</dt><dd>Dải "✓ Đã lưu n em · Hoàn tác" (trả bậc cũ cho đúng các em vừa lưu) · panel ở lại để thấy kết quả · Đóng.</dd>
+    <dt>Sau lưu</dt><dd>Dải "✓ Đã lưu n em · Hoàn tác" (trả bậc cũ cho đúng các em vừa lưu) ở trên công cụ · panel DÙNG TIẾP được (ô bậc về "giữ nguyên", Lưu lại khi đổi tiếp) · em lỗi: GVCN gặp "em vừa có xử lý trên web" → dòng khoá "chỉ QL sửa" (không mời Thử lại); lỗi mạng / máy chủ → giữ ô đã chọn + Thử lại. Đóng / ✕ khi còn đổi chưa lưu → hỏi "Bỏ thay đổi của n em?" (khung panel `daSua` sẵn có).</dd>
     <dt>Giữ</dt><dd>Khai / sửa từng em ở hồ sơ HV (`KhaiBacPanel`, ghi chú vẫn tuỳ chọn như lô) · Chọn nhiều → Xác nhận cấp bậc (cùng panel này, chỉ các em đã chọn).</dd>
   </dl>
   <section class="hai-khung" aria-label="Khung giao diện">
@@ -141,60 +146,72 @@ button, select, input { font: inherit; color: inherit; }
     if ((q.get(k) || (k === 'tt' ? 'sua' : k === 'vai' ? 'gvcn' : 'dark')) === v) a.setAttribute('aria-current', 'true');
   });
   var BAC = ['Chưa có xử lý', 'Report 1', 'Report 2', 'WL 1', 'Report 4 + Meeting CX/GĐCN', 'Report 5', 'WL 2'];
-  /* [tên, bậc hiện tại (null = chưa khai), ghi hiện tại, bậc mới, chọn, khoá (gvcn)] */
+  /* [tên, bậc hiện tại (null = chưa khai), ghi hiện tại, bậc mới (null = giữ nguyên), tick "Áp cho", khoá với GVCN, sửa riêng] */
   var EM = [
     ['Đỗ Minh Khôi', null, 'Chưa khai', 3, true, false],
     ['Hoàng Bảo Ngọc', null, 'Chưa khai', 3, true, false],
     ['Kiều Thảo Nhi', 1, 'Report 1 · khai 20/08', 3, true, false],
-    ['Lê Quang Huy', null, 'Chưa khai', 2, true, false, 'riêng'],
+    ['Lê Quang Huy', null, 'Chưa khai', 2, true, false, true],
     ['Lương Gia Bảo', 6, 'WL 2 · có xử lý trên web', null, false, true],
     ['Mạc Tuấn Kiệt', null, 'Chưa khai', null, false, false],
-    ['Nguyễn Minh An', 1, 'Report 1 · khai 02/09', null, false, false],
+    ['Nguyễn Minh An', 6, 'WL 2 · khai 02/09', 3, true, false],
     ['Phạm Bảo Ngọc', null, 'Chưa khai', null, false, false],
     ['Vũ Hải Đăng', 3, 'WL 1 · có xử lý trên web', null, false, true]
   ];
-  function chon(bac, doi, nhan) {
-    return '<select class="o-chon' + (doi ? ' doi' : '') + '" aria-label="Bậc mới của ' + nhan + '"><option>— giữ nguyên —</option>' +
+  var daLuu = tt === 'da-luu';
+  var LOI = 2;   /* Kiều Thảo Nhi: lỗi riêng khi lưu */
+  function chon(bac, doi, nhan, goi) {
+    return '<select class="o-chon' + (doi ? ' doi' : '') + '" aria-label="' + nhan + '"><option>' + (goi || '— giữ nguyên —') + '</option>' +
       BAC.map(function (b, i) { return '<option' + (bac === i ? ' selected' : '') + '>' + b + '</option>'; }).join('') + '</select>';
   }
+  /* Nhãn đổi bằng CHỮ (không chỉ màu): khai mới · nâng · ↓ hạ — không chặn, không hỏi lại. */
+  function nhanDoi(e) {
+    var rieng = e[6] ? ' · sửa riêng' : '';
+    if (e[1] === null) return 'Khai mới' + rieng;
+    return (e[3] < e[1] ? '↓ Hạ từ ' : 'Nâng từ ') + BAC[e[1]] + rieng;
+  }
   function hang(e, i) {
-    var khoa = e[5] && !ql, daLuu = tt === 'da-luu';
-    var loi = daLuu && i === 2, ok = daLuu && e[4] && !loi;
-    var ghi = khoa ? '<span class="ghi-chu-hang">Đã có xử lý trên web · chỉ QL sửa</span>'
-      : loi ? '<span class="ghi-chu-hang loi">Chưa lưu: em vừa có lần xử lý trên web · <button class="link" type="button">Thử lại</button></span>'
-      : ok ? '<span class="ghi-chu-hang ok">✓ Đã lưu</span>'
-      : e[3] !== null ? '<span class="ghi-chu-hang doi">' + (e[6] ? 'Sửa riêng' : 'Đổi') + '</span>' : '';
+    var khoaGoc = e[5] && !ql;
+    var loi = daLuu && i === LOI, ok = daLuu && e[3] !== null && !loi && !khoaGoc;
+    var khoa = khoaGoc || (loi && !ql);
+    var ghi = khoaGoc ? '<span class="ghi-chu-hang">Đã có xử lý trên web · chỉ QL sửa</span>'
+      : loi && !ql ? '<span class="ghi-chu-hang loi">Chưa lưu: em vừa có lần xử lý trên web · chỉ QL sửa</span>'
+      : loi ? '<span class="ghi-chu-hang loi">Chưa lưu: mất kết nối · <button class="link" type="button">Thử lại</button></span>'
+      : ok ? '<span class="ghi-chu-hang ok">✓ Đã lưu · ' + BAC[e[3]] + '</span>'
+      : e[3] !== null ? '<span class="ghi-chu-hang doi">' + nhanDoi(e) + '</span>' : '';
     var hien = ok ? BAC[e[3]] : e[2];
+    var bacMoi = daLuu && !loi ? null : e[3];
     return '<tr class="' + (khoa ? 'khoa' : e[4] && !daLuu ? 'chon' : '') + '">' +
-      '<td class="w-tick"><label class="tick"><input type="checkbox"' + (e[4] && !daLuu ? ' checked' : '') + (khoa || ok ? ' disabled' : '') + ' aria-label="Chọn ' + e[0] + '"></label></td>' +
+      '<td class="w-tick">' + (khoa ? '' : '<label class="tick"><input type="checkbox"' + (e[4] && !daLuu ? ' checked' : '') + ' aria-label="Áp cho ' + e[0] + '"></label>') + '</td>' +
       '<td class="ten">' + e[0] + '</td>' +
       '<td class="c-hien dim">' + hien + '</td>' +
-      '<td class="c-moi">' + (khoa ? '<span class="mo">—</span>' : ok ? '<span class="mo">—</span>' : chon(e[3], e[3] !== null, e[0])) + '</td>' +
+      '<td class="c-moi">' + (khoa ? '<span class="mo">—</span>' : chon(bacMoi, bacMoi !== null, 'Bậc mới của ' + e[0])) + '</td>' +
       '<td>' + ghi + '</td></tr>';
   }
   function web() {
-    var soChon = EM.filter(function (e) { return e[4]; }).length, soKhoa = ql ? 0 : EM.filter(function (e) { return e[5]; }).length;
-    var daLuu = tt === 'da-luu';
+    var duocChon = EM.filter(function (e) { return !(e[5] && !ql); }).length;
+    var soChon = daLuu ? 0 : EM.filter(function (e) { return e[4]; }).length;
+    var soKhoa = EM.length - duocChon;
     var nen = '<div class="nen-lop" aria-hidden="true"><div class="dong"><h2>Ý thức &amp; Phối hợp</h2><span class="btn">Chọn nhiều</span><span class="btn">Khai / sửa cấp bậc</span><span class="btn chinh">+ Ghi vi phạm</span></div><div class="the"></div></div><div class="phu"></div>';
     var dau = '<div class="p-dau"><div><h3>Khai / sửa cấp bậc vi phạm</h3><div class="phu-de">MB FT 101 · ' + EM.length + ' HV · bậc cao nhất em đã bị xử lý trước khi dùng web</div></div><button class="btn ma dong-x" type="button" aria-label="Đóng">✕</button></div>';
-    var cc = daLuu
-      ? '<div class="dai-ok" role="status">✓ Đã lưu 3 em: WL 1 (2 em) · Report 2 (1 em) <button class="link" type="button">Hoàn tác</button><span class="dim">1 em chưa lưu — xem dòng đỏ</span></div>'
-      : '<div class="cong-cu">' +
-        '<div class="h"><label class="tick"><input type="checkbox" aria-label="Chọn tất cả"' + (soChon === EM.length - soKhoa ? ' checked' : '') + '> Chọn tất cả (' + (EM.length - soKhoa) + ')</label>' +
-        '<span class="dim">Đã chọn <b class="so">' + soChon + '</b></span>' +
-        '<span style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap">Áp bậc ' + chon(3, false, 'các em đã chọn').replace('— giữ nguyên —', 'Chọn bậc…') + ' cho ' + soChon + ' em <button class="btn" type="button">Áp</button></span></div>' +
-        '<div class="h"><span style="display:inline-flex;gap:6px;align-items:center">Tháng xử lý <input class="o-chon so" value="10/2026" aria-label="Tháng xử lý (mm/yyyy)" style="width:88px"><button class="btn" type="button" aria-label="Mở lịch tháng">▦</button></span>' +
-        '<label style="flex:1;min-width:220px;display:flex;gap:8px;align-items:center">Ghi chú <input class="o-chon" style="flex:1" placeholder="Tuỳ chọn · chung cho cả lô" aria-label="Ghi chú chung"></label></div></div>';
-    var bang = '<div class="than"><table class="bang"><thead><tr><th class="w-tick"><span class="sr" style="position:absolute;clip:rect(0 0 0 0)">Chọn</span></th><th>Học viên</th><th>Bậc hiện tại</th><th>Bậc mới</th><th></th></tr></thead><tbody>' +
+    var ok = daLuu ? '<div class="dai-ok" role="status">✓ Đã lưu 4 em: WL 1 (3 em) · Report 2 (1 em) <button class="link" type="button">Hoàn tác</button><span class="dim">1 em chưa lưu — xem dòng đỏ</span></div>' : '';
+    var cc = '<div class="cong-cu">' +
+      '<div class="h"><label class="tick"><input type="checkbox" class="mot-phan" aria-label="Chọn tất cả"> Chọn tất cả (' + duocChon + ')</label>' +
+      '<span class="ap">Áp bậc ' + chon(daLuu ? null : 3, false, 'Bậc áp cho các em đã tick', 'Chọn bậc…') +
+      '<button class="btn" type="button"' + (soChon ? '' : ' disabled') + '>Áp cho ' + soChon + ' em</button></span></div>' +
+      '<div class="h h2"><span class="thang">Tháng <input class="o-chon so" value="10/2026" aria-label="Tháng xử lý (mm/yyyy)" style="width:80px"><button class="btn" type="button" aria-label="Mở lịch tháng">▦</button></span>' +
+      '<label class="gc"><span>Ghi chú</span> <input class="o-chon" placeholder="Tuỳ chọn · chung cả lô" aria-label="Ghi chú chung"></label></div></div>';
+    var bang = '<div class="than"><table class="bang"><thead><tr><th class="w-tick">Áp cho</th><th>Học viên</th><th>Bậc hiện tại</th><th>Bậc mới</th><th></th></tr></thead><tbody>' +
       EM.map(hang).join('') + '</tbody></table></div>';
-    var soDoi = EM.filter(function (e) { return e[3] !== null && !(e[5] && !ql); }).length;
-    var chan = daLuu
-      ? '<div class="chan"><span class="trai">Em đã lưu không đổi lại ở đây; muốn đổi tiếp → mở lại panel.</span><button class="btn" type="button">Đóng</button></div>'
-      : '<div class="chan"><span class="trai">' + soDoi + ' em đổi bậc · ' + (soKhoa ? soKhoa + ' em khoá (đã có xử lý trên web)' : 'QL sửa được mọi em') + '</span><button class="btn ma" type="button">Huỷ</button><button class="btn chinh" type="button"><span class="cua-toi" aria-hidden="true"></span>Lưu ' + soDoi + ' em</button></div>';
-    return nen + '<aside class="panel" role="dialog" aria-label="Khai / sửa cấp bậc vi phạm">' + dau + cc + bang + chan + '</aside>';
+    var soDoi = daLuu ? (ql ? 1 : 0) : EM.filter(function (e) { return e[3] !== null && !(e[5] && !ql); }).length;
+    var chan = '<div class="chan"><span class="trai">' + (soDoi ? soDoi + ' em đổi bậc' : 'Chưa đổi em nào') + (soKhoa ? ' · ' + soKhoa + ' em khoá (chỉ QL sửa)' : '') + '</span>' +
+      '<button class="btn ma" type="button">' + (soDoi ? 'Huỷ' : 'Đóng') + '</button><button class="btn chinh" type="button"' + (soDoi ? '' : ' disabled') + '>Lưu ' + soDoi + ' em</button></div>';
+    return nen + '<aside class="panel" role="dialog" aria-label="Khai / sửa cấp bậc vi phạm">' + dau + '<div class="tren">' + ok + cc + '</div>' + bang + chan + '</aside>';
   }
   document.getElementById('w1440').innerHTML = web();
   document.getElementById('w375').innerHTML = web();
+  /* "Chọn tất cả" chọn một phần: dấu gạch (indeterminate) khi 0 < đã tick < số em chọn được. */
+  if (!daLuu) document.querySelectorAll('.mot-phan').forEach(function (x) { x.indeterminate = true; });
 })();
 </script>
 </body>
