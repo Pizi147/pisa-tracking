@@ -11,6 +11,7 @@ import { can, type Principal } from '../permissions.ts';
 import { BANG_QUY_DOI_GOC, PERMISSIONS, kiemBangQuyDoi, laVaiQuanLy, type BangQuyDoi } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, nowIso } from '../util.ts';
 import { writeAudit } from './audit.ts';
+import { nho } from './nguCanhRequest.ts';
 
 /** Cùng câu ở cuối `schema.sql` (migrate `prBandQuyDoi` chạy câu này). */
 export const DDL_BANG_QUY_DOI = `CREATE TABLE IF NOT EXISTS bang_quy_doi (
@@ -26,12 +27,13 @@ export const DDL_BANG_QUY_DOI = `CREATE TABLE IF NOT EXISTS bang_quy_doi (
 type DongPb = { id: number; listening: string; reading: string; ly_do: string | null; khoi_phuc_tu: number | null; tao_luc: string; ten: string | null };
 const bangCua = (r: { listening: string; reading: string }): BangQuyDoi => ({ listening: JSON.parse(r.listening), reading: JSON.parse(r.reading) });
 
-/** Bảng đang dùng + số phiên bản (0 = gốc). Một câu đọc mỗi lần — không nhớ đệm, để mọi máy chủ (Netlify) cùng thấy bản vừa lưu. */
+/** Bảng đang dùng + số phiên bản (0 = gốc). Không nhớ giữa các request — mọi máy chủ (Netlify) cùng thấy bản vừa lưu. */
 function hienHanh(): { id: number; bang: BangQuyDoi } {
   const r = db().prepare('SELECT id, listening, reading FROM bang_quy_doi ORDER BY id DESC LIMIT 1').get() as DongPb | undefined;
   return r ? { id: r.id, bang: bangCua(r) } : { id: 0, bang: BANG_QUY_DOI_GOC };
 }
-export const bangHienHanh = (): BangQuyDoi => hienHanh().bang;
+/** Nhớ trong MỘT request (`nho`: chỉ GET, xoá khi có ghi) — một câu đọc cho cả trang, không một câu mỗi ô (rà #666). */
+export const bangHienHanh = (): BangQuyDoi => nho('bang-quy-doi', () => hienHanh().bang);
 
 /** Ô khác nhau giữa hai bảng: `{ "L 18": [5, 5.5] }` — nhật ký + số ô đổi của mỗi phiên bản. */
 function oDoi(cu: BangQuyDoi, moi: BangQuyDoi): Record<string, [number, number]> {
@@ -65,7 +67,7 @@ export function xemBangQuyDoi(p: Principal) {
 
 /**
  * Lưu một phiên bản mới: bảng gửi lên (`listening`, `reading`) hoặc chép lại phiên bản `khoiPhucTu` (Hoàn tác / khôi phục; 0 = gốc).
- * `tuPhienBan` = phiên bản người sửa đang thấy — khác bản đang dùng → 409 (không đè bản người khác vừa lưu). Giống hệt bảng đang dùng → không thêm phiên bản.
+ * `tuPhienBan` (bắt buộc) = phiên bản người sửa đang thấy — khác bản đang dùng → 409 (không đè bản người khác vừa lưu). Giống hệt bảng đang dùng → không thêm phiên bản.
  */
 export function luuBangQuyDoi(p: Principal, input: { listening?: unknown; reading?: unknown; lyDo?: unknown; khoiPhucTu?: unknown; tuPhienBan?: unknown }) {
   if (!can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) throw forbidden('Chỉ Quản trị hệ thống sửa được bảng quy đổi.');
@@ -73,7 +75,12 @@ export function luuBangQuyDoi(p: Principal, input: { listening?: unknown; readin
   const conn = db();
   return tx(() => {
     const ht = hienHanh();
-    if (input.tuPhienBan !== undefined && input.tuPhienBan !== ht.id) {
+    /* Rà #666: phiên bản đang thấy BẮT BUỘC (không có → không biết có đè bản người khác vừa lưu không); bảng mới và khôi phục không gửi cùng lúc. */
+    if (!Number.isInteger(input.tuPhienBan)) throw badRequest('Thiếu phiên bản đang sửa — tải lại bảng rồi lưu lại.');
+    if (input.khoiPhucTu !== undefined && (input.listening !== undefined || input.reading !== undefined)) {
+      throw badRequest('Gửi bảng mới hoặc phiên bản cần khôi phục, không cả hai.');
+    }
+    if (input.tuPhienBan !== ht.id) {
       throw conflict('Bảng quy đổi vừa được người khác lưu — tải lại để xem bản mới rồi sửa tiếp.');
     }
     let moi: BangQuyDoi;

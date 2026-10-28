@@ -55,7 +55,7 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
     assert(giam.length === 1 && giam[0].cau === 20 && giam[0].loi === 'Listening 20 câu: 4.5 thấp hơn 19 câu (5.0) — band không giảm khi số câu tăng.', `giảm: ${JSON.stringify(giam)}`);
     const giam4 = dm.kiemBangQuyDoi({ listening: GOC.listening.map((v: number, n: number) => (n === 35 ? 7 : v)), reading: GOC.reading });
     assert(giam4.length === 1 && giam4[0].cau === 35 && /Listening 35 câu: 7.0 thấp hơn 34 câu \(7.5\)/.test(giam4[0].loi), `giảm ở 35: ${JSON.stringify(giam4)}`);
-    const e = loi(() => thu(() => bqd.luuBangQuyDoi(P.admin, { listening: GOC.listening.map((v: number, n: number) => (n === 35 ? 7 : v)), reading: GOC.reading })));
+    const e = loi(() => thu(() => bqd.luuBangQuyDoi(P.admin, { listening: GOC.listening.map((v: number, n: number) => (n === 35 ? 7 : v)), reading: GOC.reading, tuPhienBan: 0 })));
     assert(e?.status === 400 && /Listening 35 câu/.test(e.message) && e.details?.loi?.[0]?.cau === 35, `máy chủ chặn bảng giảm: ${e?.status} ${e?.message}`);
   });
 
@@ -75,7 +75,7 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
     dung(luot);
     attempts.saveScore(P.lrTeacher, luot, 'listening', { rawScore: 26 }, TRONG);
     assert(bandL() === 6, `gốc: 26 câu = 6, có ${bandL()}`);
-    bqd.luuBangQuyDoi(P.admin, { ...moi(), lyDo: 'Phép kiểm' });
+    bqd.luuBangQuyDoi(P.admin, { ...moi(), lyDo: 'Phép kiểm', tuPhienBan: 0 });
     assert(bandL() === 6, 'đổi bảng không được đổi band đã lưu');
     attempts.saveScore(P.lrTeacher, luot, 'listening', { nhanXet: 'Phần 4 chậm' }, TRONG);
     assert(bandL() === 6, `sửa nhận xét giữ band cũ, có ${bandL()}`);
@@ -100,9 +100,9 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
     const ht = bqd.luuBangQuyDoi(P.admin, { khoiPhucTu: 0, tuPhienBan: v1.id, lyDo: 'Hoàn tác' });
     assert(JSON.stringify(bqd.bangHienHanh()) === JSON.stringify(GOC), 'Hoàn tác về bảng gốc');
     assert(ht.phienBan.length === 3 && ht.phienBan[0].khoiPhucTu === 0 && ht.phienBan[1].id === v1.id, 'Hoàn tác thêm phiên bản, giữ bản đã sửa');
-    bqd.luuBangQuyDoi(P.admin, { khoiPhucTu: v1.id });
+    bqd.luuBangQuyDoi(P.admin, { khoiPhucTu: v1.id, tuPhienBan: ht.phienBan[0].id });
     assert(bqd.bangHienHanh().listening[26] === 6.5, 'khôi phục lại phiên bản 1');
-    assert(loi(() => bqd.luuBangQuyDoi(P.admin, { khoiPhucTu: 99999 }))?.status === 400, 'phiên bản không có → 400');
+    assert(loi(() => bqd.luuBangQuyDoi(P.admin, { khoiPhucTu: 99999, tuPhienBan: bqd.xemBangQuyDoi(P.admin).phienBan[0].id }))?.status === 400, 'phiên bản không có → 400');
   }));
 
   check('BQD-5 · migrate bản chính (chưa có bảng): v1 bảng cũ + v2 Listening theo IDP; Reading giữ; chạy lặp không làm gì', () => thu(() => {
@@ -122,5 +122,19 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
       `lịch sử v2, v1 (không có "Bảng gốc" ảo): ${JSON.stringify(x.phienBan.map((p: any) => p.id))}`);
     m.migratePrBandQuyDoi(conn, mg.applied);
     assert(mg.applied.length === 1 && all('SELECT 1 FROM bang_quy_doi').length === 2, 'chạy lặp không làm gì');
+  }));
+
+  check('BQD-6 · rà #666: thiếu phiên bản đang sửa → 400; gửi cả bảng lẫn khôi phục → 400; ô cũ có số câu mà band NULL được tính band khi ghi khác', () => thu(() => {
+    const e1 = loi(() => bqd.luuBangQuyDoi(P.admin, moi()));
+    assert(e1?.status === 400 && /phiên bản đang sửa/.test(e1.message), `thiếu tuPhienBan: ${e1?.status} ${e1?.message}`);
+    const e2 = loi(() => bqd.luuBangQuyDoi(P.admin, { ...moi(), khoiPhucTu: 0, tuPhienBan: 0 }));
+    assert(e2?.status === 400 && /không cả hai/.test(e2.message), `cả hai: ${e2?.status} ${e2?.message}`);
+    assert(!all('SELECT 1 FROM bang_quy_doi').length, 'lưu bị chặn không ghi phiên bản');
+    assert(luot, 'cần một lượt MT ở MB FT 101');
+    dung(luot);
+    attempts.saveScore(P.lrTeacher, luot, 'listening', { rawScore: 26 }, TRONG);
+    conn.prepare(`UPDATE assessment_scores SET band = NULL WHERE attempt_id = ? AND skill = 'listening'`).run(luot);
+    attempts.saveScore(P.lrTeacher, luot, 'listening', { rawTotal: 40 }, TRONG);   // ghi chỉ tổng số câu (không gửi số câu đúng)
+    assert(bandL() === 6, `ô cũ band NULL → tính lại khi ghi tổng, có ${bandL()}`);
   }));
 }
