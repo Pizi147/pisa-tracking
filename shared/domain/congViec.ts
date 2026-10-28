@@ -320,9 +320,13 @@ export type LocNguoiViec = (typeof LOC_NGUOI_VIEC)[number];
 export const LOC_NGUOI_VIEC_LABEL: Record<LocNguoiViec, string> = { toi: t('Của tôi'), gv: t('Của GV'), 'tat-ca': t('Tất cả') };
 /** "Của GV" = mọi việc không phải của người xem, kể cả việc chưa có người phụ trách (để Phân công). */
 export const khopNguoiViec = (it: { mine: boolean }, loc: LocNguoiViec): boolean => loc === 'tat-ca' || (loc === 'toi') === it.mine;
-export function demNguoiViec(ds: readonly { mine: boolean }[]): Record<LocNguoiViec, number> {
-  const toi = ds.filter((x) => x.mine).length;
-  return { toi, gv: ds.length - toi, 'tat-ca': ds.length };
+/** RA-LUONG-1: đếm VIỆC (`demViec` trên việc con) như đầu trang "n việc", không đếm dòng gộp — trước đây QL thấy "Tất cả 96" cạnh "155 việc". */
+export function demNguoiViec<T extends { mine: boolean; key: string; group: string; studentId: number | null; kns?: string[]; con?: readonly T[] | null }>(
+  ds: readonly T[],
+): Record<LocNguoiViec, number> {
+  const la = ds.flatMap((x) => (x.con?.length ? x.con.map((c) => ({ ...c, mine: c.mine ?? x.mine })) : [x]));
+  const toi = demViec(la.filter((x) => x.mine)).viec, tatCa = demViec(la).viec;
+  return { toi, gv: tatCa - toi, 'tat-ca': tatCa };
 }
 
 // ====================================================================== V5 UI-CONG-VIEC — dòng theo em, vạch hạn (T01, T14)

@@ -92,9 +92,16 @@ export async function runPrOv15dTests(t: YThucTestKit) {
   });
 
   check('OV15d-6 · lọc người Công việc: Của tôi + Của GV = Tất cả (một danh sách, cùng hàm đếm)', () => {
-    const ds = [{ mine: true }, { mine: false, ownerId: 5 }, { mine: false, ownerId: null }] as any[];
+    const ds = [{ key: 'a', group: 'cause', studentId: 1, mine: true }, { key: 'b', group: 'cause', studentId: 2, mine: false, ownerId: 5 },
+      { key: 'c', group: 'cause', studentId: 3, mine: false, ownerId: null }] as any[];
     const dem = d.demNguoiViec(ds);
     assert(dem.toi === 1 && dem.gv === 2 && dem['tat-ca'] === 3, JSON.stringify(dem));
+    /* RA-LUONG-1: dòng gộp đếm từng việc con, Nhập điểm đếm theo kỹ năng — cùng đơn vị "n việc" đầu trang (`demViec`). */
+    const gop = [{ key: 'g', group: 'ghi_nhan_xet', studentId: null, mine: false, ownerId: 5, con: [
+      { key: 'g1', group: 'ghi_nhan_xet', studentId: 1, mine: false }, { key: 'g2', group: 'ghi_nhan_xet', studentId: 2, mine: false }] },
+      { key: 's', group: 'score', studentId: null, mine: true, kns: ['listening', 'reading'] }] as any[];
+    const dem2 = d.demNguoiViec(gop);
+    assert(dem2.toi === 2 && dem2.gv === 2 && dem2['tat-ca'] === d.demViec(gop.flatMap((x: any) => x.con ?? [x])).viec, `RA-LUONG-1 đếm việc: ${JSON.stringify(dem2)}`);
     assert(d.khopNguoiViec(ds[0], 'toi') && !d.khopNguoiViec(ds[0], 'gv') && d.khopNguoiViec(ds[1], 'gv') && d.khopNguoiViec(ds[2], 'tat-ca'), 'khớp');
   });
 
