@@ -18,7 +18,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { oNhapHoc } from '../fasttrack/scoring.ts';
 import { cheDoCua, type CheDo } from '../normal/regular.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { chamSheet } from './canCham.ts';
 
 /** Tra lớp rồi kiểm quyền — TRƯỚC mọi truy vấn dữ liệu HV. */
@@ -50,7 +50,8 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
          JOIN classes c ON c.id = a.class_id
          JOIN students s ON s.id = a.student_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
+        WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'
+          AND (c.status = 'finished' OR ${LUOT_HIEN_TAI_SQL('a', 's', true)})`,   // lỗi chủ SP 28/10: cùng tập hàng bảng điểm lớp (lớp đã kết thúc giữ lịch sử)
     ).all(...lo) as any[]) {
       const ft = cheDoCua(a.programme_code) === 'ielts_band';
       let m: MaLuot;
@@ -143,7 +144,7 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
          FROM enrollments e JOIN students s ON s.id = e.student_id AND ${HV_DANG_HOC_SQL('s')}
         WHERE e.class_id = ? AND e.status = 'active'
           AND NOT EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.student_id = s.id AND a.class_id = e.class_id
-                           AND a.kind = 'mock' AND a.attempt_no = ? AND a.status != 'cancelled')
+                           AND a.kind = 'mock' AND a.attempt_no = ? AND a.status != 'cancelled' AND ${LUOT_HIEN_TAI_SQL('a', 's')})
         ORDER BY s.full_name`,
     ).all(classId, m.so) as { studentId: number; fullName: string; studentCode: string }[])
     : [];

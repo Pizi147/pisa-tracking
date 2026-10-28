@@ -22,7 +22,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
@@ -150,6 +150,7 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
   if (o.branchId) { where.push('c.branch_id = ?'); params.push(o.branchId); }
   const rows = db().prepare(
     `SELECT a.class_id, a.student_id, a.attempt_no, c.code FROM assessment_attempts a
+       JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại; cùng tập hàng Điểm theo lớp (em Tạm dừng giữ như cũ)
        JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
       WHERE ${where.join(' AND ')} ORDER BY c.code, rp.week_start`,
   ).all(...params) as any[];
@@ -574,7 +575,7 @@ function hangLopTuan(
               ask.skill, ask.sit_status, ask.deadline_override AS han_mon, ask.bo_task
          FROM assessment_attempts a
          JOIN attempt_skills ask ON ask.attempt_id = a.id
-         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}   -- PR-S6F-a Q2: cùng tập khối Nợ / badge
+         JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- PR-S6F-a Q2 + lỗi chủ SP 28/10: cùng tập khối Nợ / badge
          JOIN classes c ON c.id = a.class_id
          JOIN branches b ON b.id = c.branch_id
         WHERE ${where}

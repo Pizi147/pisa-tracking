@@ -4,6 +4,7 @@
  * một giao dịch rồi cuộn lại (`thu`); kỳ vọng trạng thái sau · đếm · thẻ · chuông · Case.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';   // LOC-HIEN-TAI: ca dựng chỉ chọn lượt hiện tại (bảng điểm lớp bỏ lượt lộ trình cũ)
 
 export async function runMtTrangThaiTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId } = t;
@@ -40,7 +41,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
 
   /* Lượt MT CUỐI của mỗi em đang học MB FT 101 — không có lượt sau để luật thứ tự đợt (T15) chặn lần dời. */
   const luot = all(
-    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL AND ${LUOT_LO_TRINH_CUOI_SQL('a')}
       JOIN enrollments e ON e.student_id = s.id AND e.class_id = a.class_id AND e.status = 'active'
      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
        AND a.attempt_no = (SELECT MAX(x.attempt_no) FROM assessment_attempts x WHERE x.cycle_id = a.cycle_id AND x.kind = 'mock')

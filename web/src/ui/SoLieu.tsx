@@ -153,7 +153,7 @@ const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.ts
  * PANEL DANH SÁCH CỦA MỘT CON SỐ — hệ panel v3 (OV-12e, P12, mockup v3 §10). Đầu: tên số liệu + "⚠ n quá hạn" / "n Case · quá hạn lên đầu".
  * Mỗi dòng = đầu thu gọn (việc + chip hạn / em · lớp · ngữ cảnh · người làm nếu không phải bạn). Bấm dòng → MỞ RỘNG TẠI CHỖ: người làm được thấy
  * khối Cần làm (Xác nhận PA làm ngay trong dòng; việc dài → THAY nội dung panel bằng panel làm việc sẵn có, "← Danh sách" về đúng dòng);
- * người khác thấy câu tình trạng. Link "Xem hồ sơ ↗" tách khỏi nút làm. Số ở đầu = số dòng (cùng tập máy chủ trả; dòng vừa xong mà máy chủ không còn
+ * người khác thấy câu tình trạng. Link "Hồ sơ" cuối dòng tách khỏi nút làm. Số ở đầu = số dòng (cùng tập máy chủ trả; dòng vừa xong mà máy chủ không còn
  * trả vẫn giữ chỗ cũ với "✓", không đếm). "Cách tính" ở cuối danh sách.
  */
 export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong, cachTinh, trong }: {
@@ -268,12 +268,12 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     );
   }
 
-  /* 6c-2 (PTA 28/10, "một danh sách một kiểu mở" + tách nút làm việc / link xem hồ sơ): MỌI dòng có ↗ CÙNG một chỗ — cuối dòng 1 — là link đổi trang
-     tới hồ sơ; thân dòng chỉ bấm được khi có việc mở tại chỗ; dòng chỉ đọc thì thân không bấm. Không còn dòng mà cả dòng là link. */
+  /* 6c-2 (PTA 28/10, "một danh sách một kiểu mở" + tách nút làm việc / link xem hồ sơ): MỌI dòng có link "Hồ sơ" CÙNG một chỗ — cuối dòng 1 — là link đổi trang
+     tới hồ sơ (BO-MUI-TEN 28/10: chữ thay ký hiệu mũi tên — tên em nằm trong nút mở nên không làm link được); thân dòng chỉ bấm được khi có việc mở tại chỗ; dòng chỉ đọc thì thân không bấm. Không còn dòng mà cả dòng là link. */
   const nutHoSo = (r: DongSoLieu) => (
     <Link to={r.href} aria-label={t('Mở hồ sơ {ten}', { ten: r.em?.ten ?? r.title })} title={t('Mở hồ sơ {ten}', { ten: r.em?.ten ?? r.title })}
-      className="flex min-h-[44px] min-w-[44px] shrink-0 justify-center pt-2.5 text-[15px] leading-6 text-slate-400 no-underline hover:text-slate-100 sm:min-w-[40px]">
-      <span aria-hidden>↗</span>
+      className="flex min-h-[44px] shrink-0 pl-2 pr-4 pt-2.5 text-[13px] font-semibold leading-6 text-[color:var(--accent)] no-underline hover:underline">
+      {t('Hồ sơ')}
     </Link>
   );
 
@@ -339,8 +339,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{i === 0 && r.em ? <b className="font-bold text-slate-200">{x}</b> : x}</span>)}
       </span>
     );
-    /* 6c-2 (bảng kê mục 1 [RỖNG], mockup M6 khu K ②): dòng người xem KHÔNG làm được thì không mở rộng (trước: mở ra chỉ lặp chữ + "Mở trang ↗") —
-       thân dòng chỉ đọc (không bấm), dòng tự đủ việc · tình trạng · người · hạn; hồ sơ qua ↗ cuối dòng như mọi dòng.
+    /* 6c-2 (bảng kê mục 1 [RỖNG], mockup M6 khu K ②): dòng người xem KHÔNG làm được thì không mở rộng (trước: mở ra chỉ lặp chữ + "Mở trang") —
+       thân dòng chỉ đọc (không bấm), dòng tự đủ việc · tình trạng · người · hạn; hồ sơ qua link "Hồ sơ" cuối dòng như mọi dòng.
        Dòng có việc làm được giữ mở rộng (Xác nhận PA tại chỗ / mở việc). */
     if (!v?.lam && !r.xong) {
       const chipHan = v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;

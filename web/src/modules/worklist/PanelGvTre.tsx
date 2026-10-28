@@ -82,7 +82,7 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
         dau={{ dong2: data ? [
           /* V11: phạm vi + tuần dữ liệu trước tổng. */
           [data.chiNhanh ?? t('Mọi chi nhánh'), homNay ? tuanLich(homNay) : null].filter(Boolean).join(' · '),
-          motGv && motGv.gvId > 0 ? <Link className="font-semibold text-slate-100 no-underline hover:underline" to={`/giao-vien/${motGv.gvId}`}>{t('Hồ sơ GV')}<span aria-hidden className="ml-0.5 text-xs text-[color:var(--accent)]">↗</span></Link> : null,
+          motGv && motGv.gvId > 0 ? <Link className="font-semibold text-slate-100 no-underline hover:underline" to={`/giao-vien/${motGv.gvId}`}>{t('Hồ sơ GV')}</Link> : null,
           [cauHinh.theoGv ? t('{n} GV', { n: data.soGv }) : null, t('{n} bài', { n: data.soBai })].filter(Boolean).join(' · '),
           data.soBaiChuaCoGv ? t('+ {n} bài chưa có GV', { n: data.soBaiChuaCoGv }) : null,
           soDu ? t('{n} dòng vừa đủ', { n: soDu }) : null,
@@ -115,7 +115,7 @@ function NhomGv({ g, mo, onMo, dai = true }: { g: NhomHien; mo: string; onMo: (k
       {dai && <h3 className="sticky top-0 z-[1] -mx-4 m-0 flex min-h-[40px] flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 text-[15px] font-bold leading-[1.35] text-slate-100"
         style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
         {g.gvId > 0
-          ? <Link to={`/giao-vien/${g.gvId}`} className="text-slate-100 no-underline hover:underline">{g.ten}<span aria-hidden className="ml-0.5 text-xs text-[color:var(--accent)]">↗</span></Link>
+          ? <Link to={`/giao-vien/${g.gvId}`} className="text-slate-100 no-underline hover:underline">{g.ten}</Link>
           : <span>{tenNhom(g)}</span>}
         <span className={`${CHIP_VUONG} text-slate-200`} style={{ borderColor: 'var(--line-strong)' }}>{t('{n} bài', { n: g.soBai })}</span>
         {g.gvId === 0 && <span className="text-[13px] font-medium text-slate-400">{t('lớp chưa phân công GV môn')}</span>}
@@ -168,7 +168,7 @@ function ViewEm({ g, d, toi, loai, veNhan, onLui, onNhap, onDong }: {
 }) {
   const { ngan } = useNgayNghiepVu();
   const nguoiNhap = g.gvId > 0
-    ? <>{t('người nhập')} <Link className="font-bold text-slate-100 no-underline hover:underline" to={`/giao-vien/${g.gvId}`}>{g.ten}<span aria-hidden className="ml-0.5 text-xs text-[color:var(--accent)]">↗</span></Link></>
+    ? <>{t('người nhập')} <Link className="font-bold text-slate-100 no-underline hover:underline" to={`/giao-vien/${g.gvId}`}>{g.ten}</Link></>
     : tenNhom(g);
   const cuaToi = g.gvId === toi;
   const chuChan = !d.nhapHo ? t('Chỉ GV chấm, Quản lý hoặc Admin của chi nhánh nhập được bài này.')
@@ -234,7 +234,7 @@ function BangEm({ d }: { d: DongGvTre }) {
       {hang.map((h) => (
         <div key={h.id} role="row" className="grid min-h-[44px] items-center gap-x-2 border-b px-4 py-2 text-[15px]" style={{ gridTemplateColumns: cot, borderColor: 'var(--line)' }}>
           <span role="cell" className="min-w-0 truncate">
-            <Link className="font-medium text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(h.id)}>{h.ten}<span aria-hidden className="ml-0.5 text-xs text-[color:var(--accent)]">↗</span></Link>
+            <Link className="font-medium text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(h.id)}>{h.ten}</Link>
           </span>
           {h.o.map((v, i) => ('diem' in v ? <span key={i} role="cell" className="text-center tabular-nums text-slate-100">{v.diem}</span>
             : 'trong' in v ? <span key={i} role="cell" className="text-center text-[13px] font-semibold text-late">{t('trống')}</span>

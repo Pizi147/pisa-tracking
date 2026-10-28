@@ -1082,9 +1082,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        "Chờ ghi nhận xét" → "Chờ mô tả Case", lý do "bài chưa có nhận xét (nguyên nhân Case)" → "Case chưa có mô tả", hint nhóm. Đã kiểm: thay ngược bốn chữ đó
        trong JSON trước khi băm → cả 11 băm trùng ảnh cũ. Trước: GVCN toi 3ec58e6c5f038a5b, GVBM toi 5da1466b01c6787d, GVCN_THUONG toi 3ec58e6c5f038a5b,
        QL tat-ca 7833387f3be72dc5, QT tat-ca 1c4725c92e5fe58c, QT tat-ca cn 97e0e1570f6369be, QL gvcn 8b8a066eaa52e514, GVS toi 1f37a0df4f07d06d */
-    'QL toi': 'e1049bc984a18aca', 'QT toi': '7de7b28ab5fe8b93', 'GVCN toi': '82fc3ddf32d43f10', 'GVBM toi': 'e852965c7d7de6a4',
-    'GVCN_THUONG toi': '82fc3ddf32d43f10', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '22c0808af745c50f', 'QT tat-ca': 'b54f972219247783',
-    'QT tat-ca cn': 'fdc0016b89453d9d', 'QL gvcn': '87927080df295343', 'GVS toi': '858db2ced1555af8',
+    /* LOC-HIEN-TAI (chủ SP 28/10): chụp lại 8 băm (GVBM, ADMIN, GVS giữ) — đổi CÓ CHỦ Ý: việc Nhập điểm / Chốt tuần / MT cũ chưa nhập / Lịch Test chỉ còn
+       lượt hiện tại (lộ trình mới nhất cùng loại, em đang học; MT chưa làm sau thi thật không còn) — dữ liệu ×3 có em học lại / lưu trữ / thi thật. Chưa so
+       JSON từng dòng với main — nguyên nhân lệch đọc từ mã + phép kiểm prLocHienTai LHT-1…8. Trước: QL toi e1049bc984a18aca, QT toi 7de7b28ab5fe8b93,
+       GVCN toi 82fc3ddf32d43f10, GVCN_THUONG toi 82fc3ddf32d43f10, QL tat-ca 22c0808af745c50f, QT tat-ca b54f972219247783, QT tat-ca cn fdc0016b89453d9d, QL gvcn 87927080df295343 */
+    'QL toi': 'e52a0d6a5bb7537d', 'QT toi': '5115a3184a27f3d9', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': 'e852965c7d7de6a4',
+    'GVCN_THUONG toi': '836db9c7acdd8e39', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '28f8ecdd8a2ebf00', 'QT tat-ca': 'e91857dde5acb3fe',
+    'QT tat-ca cn': '9461a089ce103418', 'QL gvcn': 'ceb5c556bc540613', 'GVS toi': '858db2ced1555af8',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

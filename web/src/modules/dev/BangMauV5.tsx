@@ -96,7 +96,7 @@ function BangDiem() {
   const [mo, setMo] = useState<number | null>(2);
   const o = (h: HangHv, c: DinhNghiaCot): ReactNode => {
     switch (c.key) {
-      case 'ten': return <a href="#v5-m5" className="font-semibold text-slate-100 no-underline hover:underline">{h.ten} <span aria-hidden className="font-normal text-slate-500">↗</span></a>;
+      case 'ten': return <a href="#v5-m5" className="font-semibold text-slate-100 no-underline hover:underline">{h.ten}</a>;
       case 'target': return h.target;
       case 'l': case 'r': case 'w': case 's': case 'ovr': {
         const [so, kq] = h[c.key];
@@ -179,7 +179,7 @@ export function BangMauV5() {
             <button type="button" className="btn btn-ghost text-[color:var(--accent)]">Đóng</button><button type="button" className="btn" disabled>Lưu</button>
           </div>
           
-          <HangBd ten="Tên + ↗" phu="mở hồ sơ"><a href="#v5-m4" className="font-semibold text-slate-100 no-underline hover:underline">Nguyễn Minh An <span aria-hidden className="font-normal text-slate-500">↗</span></a></HangBd>
+          <HangBd ten="Tên (link)" phu="mở hồ sơ"><a href="#v5-m4" className="font-semibold text-slate-100 no-underline hover:underline">Nguyễn Minh An</a></HangBd>
           <HangBd ten="Số gạch chân" phu="OSo"><SoBam>15/20</SoBam><span className="font-medium tabular-nums text-slate-500">0</span></HangBd>
           <HangBd ten="ⓘ" phu="giải thích"><NutLuat label="Giải thích Đạt MT">Đạt MT = Overall ≥ kỳ vọng của lượt.</NutLuat></HangBd>
         </div>

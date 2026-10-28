@@ -133,19 +133,35 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* LUAT-34: chụp lại — phép kiểm chạy trước trên MB FT 101 đổi theo luật 4 sửa 21/10 (PR-G: "-" ghi muộn → thẻ QL / Hoàn tác, W1 "-" + W2 có điểm
    * dời cả W; prOv1b / prOv11a "-" ghi muộn dời tuần kế) và luật 3 (`moi` = góc GVBM: ô có điểm ở hàng Đủ điểm nay `canEdit` true). */
   /* CHU-THI: chụp lại — chỉ đổi chữ ô "Không dự thi · Tuần W…" → "Vắng · Tuần W…" (3 ô; đã so JSON origin/main ↔ nhánh, ngoài dấu thời gian). */
-  const ANH_CHUP = { tuan: '969ecc1615209675', moi: '947dc8a53f89ff6d' };   // UI-Y-THUC-LOP: phép kiểm prYt4 mới tạo thêm lớp + 2 em trước bộ này → id lượt dời, nội dung không đổi — trước: tuan 5eebef0957d73f55 · moi 8ce504d4483bd6bf. P9a XET-LAI (sau gộp P7): bộ demo Xét lại (4 em, 4 bài Final, lệnh chuyển) chạy trước các bộ kiểm → id lượt dời, nội dung không đổi — trước (P7): tuan 7ee672d985157810 · moi 55c53358319c7b46
+  /* LOC-HIEN-TAI (chủ SP 28/10): chụp lại — bảng điểm lớp đang học bỏ hàng em Kết thúc học / Lưu trữ (hàng mờ OV-1d) và lượt lộ trình cũ cùng loại;
+   * `idsTuan` / DL-2 theo lượt đối chiếu độc lập tập lượt bằng SQL (`HIEN_TAI`). Băm đo ở check chung đợt 2 của PTA (main 8d260d5c + #665–#669): cộng
+   * hai đổi — gộp UI-Y-THUC-LOP #662 (prYt4 tạo thêm lớp + 2 em → id lượt dời; main chụp tuan 969ecc1615209675 · moi 947dc8a53f89ff6d) và vị từ lượt
+   * hiện tại (kể cả ca dựng PR-G chỉ chọn lượt hiện tại). Trước: tuan 5eebef0957d73f55 · moi 8ce504d4483bd6bf. P9a XET-LAI (sau gộp P7): bộ demo Xét lại
+   * (4 em, 4 bài Final, lệnh chuyển) chạy trước các bộ kiểm → id lượt dời, nội dung không đổi — trước (P7): tuan 7ee672d985157810 · moi 55c53358319c7b46 */
+  const ANH_CHUP = { tuan: '4efea5d316cb9203', moi: '459e593a8e284577' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
-      WHERE a.class_id = ? AND a.status != 'cancelled'
+      WHERE a.class_id = ? AND a.status != 'cancelled' AND ${HIEN_TAI}
         AND (a.planned_period_id = ? OR EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1 AND k.planned_period_id = ?))
       ORDER BY a.id`).all(LOP, periodId, periodId) as any[]).map((r) => r.id).join(',');
+  /* LOC-HIEN-TAI (chủ SP 28/10): bảng điểm lớp đang học chỉ còn LƯỢT HIỆN TẠI — em đang học hoặc Tạm dừng, lộ trình mới nhất, MT chưa làm sau thi thật
+   * không còn (MB FT 101 có em Kết thúc học Ngô Thanh Tùng, hàng mờ OV-1d bỏ). Viết lại độc lập bằng SQL; `a` lượt, `s` em. */
+  const HIEN_TAI = `s.archived_at IS NULL AND s.status IN ('active', 'inactive')
+    AND a.cycle_id = (SELECT cy.id FROM learning_cycles cy JOIN learning_cycles cg ON cg.id = a.cycle_id
+                       WHERE cy.student_id = a.student_id AND (cy.route IS NULL) = (cg.route IS NULL) ORDER BY cy.seq DESC LIMIT 1)
+    AND NOT (a.status = 'planned' AND EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.id = a.cycle_id AND cy.route IS NOT NULL
+               AND (cy.thi_that_khong_thi = 1 OR (cy.thi_that_l IS NOT NULL AND cy.thi_that_r IS NOT NULL AND cy.thi_that_w IS NOT NULL AND cy.thi_that_s IS NOT NULL)
+                    OR cy.outcome_score IS NOT NULL OR COALESCE(cy.outcome, 'unknown') != 'unknown')
+               AND (cy.buoc_tiep IS NULL OR cy.buoc_tiep IN ('ket_thuc', 'tam_dung', 'lo_trinh_moi')))
+             AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)))`;
   const idsCua = (sheet: any) => sheet.rows.map((r: any) => r.attemptId).sort((x: number, y: number) => x - y).join(',');
 
   check('DL-2 classScoreSheet theo lượt: đúng mọi attempt MT2 của lớp, kể cả tuần NULL; ô đã có điểm mang điểm cũ; không lọc tuần', () => {
     const sheet = svc.classScoreSheet(QL, LOP, { theo: 'luot', attemptNo: 2 }, TODAY);
     const mong = (conn.prepare(
-      `SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'mock' AND a.attempt_no = 2 AND a.status != 'cancelled' ORDER BY a.id`,
+      `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.attempt_no = 2 AND a.status != 'cancelled' AND ${HIEN_TAI} ORDER BY a.id`,
     ).all(LOP) as any[]).map((r) => r.id).join(',');
     assert(idsCua(sheet) === mong, `${idsCua(sheet)} ≠ ${mong}`);
     assert(sheet.rows.every((r: any) => r.attemptNo === 2), 'có hàng không phải MT2');
@@ -300,7 +316,8 @@ export async function runPrDlTests(t: YThucTestKit) {
       const ds = dl.danhSachLuot(QL, LOP, TODAY);
       assert(ds.classId === LOP && ds.mode === 'ielts_band', 'đầu');
       const so = (conn.prepare(`SELECT attempt_no AS n, COUNT(*) AS c, MIN(rp.week_start) AS t FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' GROUP BY attempt_no ORDER BY attempt_no`).all(LOP) as any[]);
+        JOIN students s ON s.id = a.student_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND ${HIEN_TAI} GROUP BY attempt_no ORDER BY attempt_no`).all(LOP) as any[]);
       assert(JSON.stringify(ds.luot.map((l: any) => l.ma).sort()) === JSON.stringify(so.map((r) => `mt:${r.n}`).sort()), 'tập lượt');
       for (const r of so) {
         const l = luotCua(ds, `mt:${r.n}`);
@@ -308,7 +325,8 @@ export async function runPrDlTests(t: YThucTestKit) {
         assert(l.duDiem <= l.coLich && l.oTrong >= 0, 'đếm âm');
       }
       /* Fix 1 (chủ sản phẩm 05/10): lượt là "lịch sử" chỉ khi MỌI attempt (không huỷ) của lượt là lịch sử. */
-      const moiLs = get(`SELECT MIN(lich_su) AS m FROM assessment_attempts WHERE class_id = ? AND kind = 'mock' AND attempt_no = 1 AND status != 'cancelled'`, LOP).m;
+      const moiLs = get(`SELECT MIN(a.lich_su) AS m FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.attempt_no = 1 AND a.status != 'cancelled' AND ${HIEN_TAI}`, LOP).m;
       assert(luotCua(ds, 'mt:1').lichSu === (moiLs === 1), `MT1 lichSu ${luotCua(ds, 'mt:1').lichSu} vs MIN(lich_su) ${moiLs}`);
     });
 
@@ -368,12 +386,12 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(b.chuaCoLich.some((h: any) => h.studentId === chi && h.fullName === 'DL Chi' && typeof h.studentCode === 'string'), 'Chi phải trong chuaCoLich');
       assert(!b.chuaCoLich.some((h: any) => h.studentId === anh.sid || h.studentId === binh.sid), 'em có MT2 không ở chuaCoLich');
       assert(soAttempt() === truoc, 'đường đọc tạo attempt');
-      /* Đếm của lượt khớp đúng số hàng bảng hiện — kể cả khi có em đã lưu trữ (bảng FT không lọc em lưu trữ). */
+      /* Đếm của lượt khớp đúng số hàng bảng hiện — kể cả khi có em đã lưu trữ. LOC-HIEN-TAI (chủ SP 28/10): em lưu trữ nay KHÔNG còn hàng (trước: hàng mờ OV-1d). */
       assert(b.luot.coLich === b.ft.rows.length, `coLich ${b.luot.coLich} ≠ ${b.ft.rows.length} hàng`);
       try {
         conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(TODAY, binh.sid);
         const b2 = dl.bangTheoLuot(QL, LOP, 'mt:2', TODAY);
-        assert(b2.ft.rows.some((r: any) => r.attemptId === binh.aid) && b2.luot.coLich === b2.ft.rows.length,
+        assert(!b2.ft.rows.some((r: any) => r.attemptId === binh.aid) && b2.luot.coLich === b2.ft.rows.length,
           `em lưu trữ: coLich ${b2.luot.coLich} ≠ ${b2.ft.rows.length} hàng`);
       } finally { conn.prepare('UPDATE students SET archived_at = NULL WHERE id = ?').run(binh.sid); }
     });
@@ -385,7 +403,8 @@ export async function runPrDlTests(t: YThucTestKit) {
          OV-11e (T19): ô TRỐNG chỉ khi kỹ năng đã tới tuần thi; đủ điểm vẫn xét mọi ô. */
       const o = conn.prepare(`SELECT k.attempt_id, k.skill, k.planned_period_id, rp.week_start FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
         LEFT JOIN report_periods rp ON rp.id = k.planned_period_id
-        WHERE a.class_id = ? AND a.kind = 'mock' AND a.attempt_no = 2 AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`).all(LOP) as any[];
+        JOIN students s ON s.id = a.student_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.attempt_no = 2 AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled' AND ${HIEN_TAI}`).all(LOP) as any[];
       const trong = new Map<number, number>();
       let tong = 0;
       for (const k of o) for (const nhap of k.skill === 'writing' ? ['writing1', 'writing2'] : [k.skill]) {

@@ -347,7 +347,7 @@ export default function App() {
             MÀN QUẢN TRỊ CHỈ GẮN VÀO KHI NGƯỜI XEM CÓ QUYỀN. Máy chủ vẫn chặn API; không có quyền thì đưa thẳng về
             Tổng quan thay vì để trang tải rồi báo 403.
           */}
-          <Route path="/quan-tri" element={nav.admin ? <AdminPage /> : <Navigate to="/" replace />} />
+          <Route path="/quan-tri" element={nav.admin || nav.bangQuyDoi ? <AdminPage /> : <Navigate to="/" replace />} />
           <Route path="/ho-so-ca-nhan" element={<ProfilePage />} />
           <Route path="/giao-vien/:id" element={<HoSoGiaoVienPage />} />
           <Route path="/huong-dan" element={<HuongDanPage />} />

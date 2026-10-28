@@ -147,22 +147,58 @@ export function tomTatLuuDong(cacO: readonly (TrangThaiLuuO | null | undefined)[
 }
 export const chuOChuaLuu = (n: number) => t('{n} ô chưa lưu', { n });
 
-/*
- * Bảng quy đổi số câu đúng → band của trung tâm (sheet 'Bang quy doi'), index = số câu 0–40. Hộp nhập điểm xem trước band khi gõ.
- * shortcut: bản sao của `LISTENING_BY_RAW` / `READING_BY_RAW` ở server/src/fasttrack/scoring.ts (OV-4b không sửa scoring.ts — vùng OV-1c);
- * phép kiểm OV4b-0 so từng số. Gộp về một chỗ khi có PR được sửa scoring.ts.
+/**
+ * BẢNG QUY ĐỔI số câu đúng → band (L / R), index = số câu 0–40 (BAND-QUY-DOI, chủ SP 28/10). Bảng ĐANG DÙNG nằm ở DB (`bang_quy_doi`, mỗi lần
+ * sửa một phiên bản; Quản trị sửa ở Quản trị › Bảng quy đổi): máy chủ đọc `bangHienHanh()`, web lấy `/ref/bang-quy-doi`. Cả hai tính band qua
+ * `bandTuSoCau` — một hàm, một nguồn.
  */
-const L_THEO_CAU = [
-  0, 0, 1, 2.5, 2.5, 3, 3, 3.5, 3.5, 3.5, 4, 4, 4, 4.5, 4.5, 4.5, 5, 5, 5, 5,
-  5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
-];
-const R_THEO_CAU = [
-  0, 0, 1, 1.5, 2.5, 2.5, 3, 3, 3.5, 3.5, 4, 4, 4, 4.5, 4.5, 5, 5, 5, 5, 5.5,
-  5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
-];
-/** Band của `n` câu đúng (L/R). Ngoài 0–40 hoặc không nguyên → null. */
-export function bandTuSoCau(skill: 'listening' | 'reading', n: number): number | null {
-  return Number.isInteger(n) && n >= 0 && n <= 40 ? (skill === 'listening' ? L_THEO_CAU : R_THEO_CAU)[n] : null;
+export type BangQuyDoi = { listening: number[]; reading: number[] };
+/** Bảng GỐC của trung tâm (sheet 'Bang quy doi') — phiên bản 0, dùng khi DB chưa có phiên bản nào; seed / phép kiểm dò số câu theo bảng này. */
+export const BANG_QUY_DOI_GOC: BangQuyDoi = {
+  listening: [
+    0, 0, 1, 2.5, 2.5, 3, 3, 3.5, 3.5, 3.5, 4, 4, 4, 4.5, 4.5, 4.5, 5, 5, 5, 5,
+    5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
+  ],
+  reading: [
+    0, 0, 1, 1.5, 2.5, 2.5, 3, 3, 3.5, 3.5, 4, 4, 4, 4.5, 4.5, 5, 5, 5, 5, 5.5,
+    5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
+  ],
+};
+const theoKhoang = (ds: [number, number, number][]): (number | null)[] =>
+  Array.from({ length: 41 }, (_, n) => ds.find(([tu, den]) => n >= tu && n <= den)?.[2] ?? null);
+/**
+ * BẢNG THAM CHIẾU IDP (chỉ đọc, KHÔNG phải dữ liệu sửa được) — bảng "trung bình" IDP công bố, mỗi đề lệch nhẹ; `null` = IDP không công bố.
+ * Nguồn (tra 28/10/2026): Listening ielts.idp.com/vietnam/results/scores/listening · Academic Reading ielts.idp.com/southafrica/results/scores/reading.
+ * Màn Quản trị › Bảng quy đổi hiện cạnh bảng đang dùng (tô ô lệch) + nút "Áp bảng IDP" (ô `null` giữ số đang có).
+ */
+export const BANG_IDP: { listening: (number | null)[]; reading: (number | null)[] } = {
+  listening: theoKhoang([[39, 40, 9], [37, 38, 8.5], [35, 36, 8], [32, 34, 7.5], [30, 31, 7], [26, 29, 6.5], [23, 25, 6], [18, 22, 5.5], [16, 17, 5], [13, 15, 4.5], [11, 12, 4]]),
+  reading: theoKhoang([[39, 40, 9], [37, 38, 8.5], [35, 36, 8], [33, 34, 7.5], [30, 32, 7], [27, 29, 6.5], [23, 26, 6], [19, 22, 5.5], [15, 18, 5], [13, 14, 4.5],
+    [10, 12, 4], [8, 9, 3.5], [6, 7, 3], [4, 5, 2.5]]),
+};
+/** Band của `n` câu đúng (L/R) theo `bang`. Ngoài 0–40 hoặc không nguyên → null. */
+export function bandTuSoCau(bang: BangQuyDoi, skill: 'listening' | 'reading', n: number): number | null {
+  return Number.isInteger(n) && n >= 0 && n <= 40 ? bang[skill][n] : null;
+}
+/** Một lỗi của bảng quy đổi — `cau` = số câu của ô sai (null = cả cột); `ngan` = lý do ngắn (≤ 7 ký tự) hiện ngay dưới ô (màn Quản trị). */
+export type LoiBangQuyDoi = { skill: 'listening' | 'reading'; cau: number | null; loi: string; ngan: string };
+/** Bảng hợp lệ: mỗi kỹ năng đủ 41 ô (0–40 câu), band 0–9 bậc 0.5, KHÔNG giảm khi số câu tăng. Rỗng = hợp lệ. Máy chủ + web cùng gọi. */
+export function kiemBangQuyDoi(b: unknown): LoiBangQuyDoi[] {
+  const loi: LoiBangQuyDoi[] = [];
+  for (const skill of ['listening', 'reading'] as const) {
+    const ten = skill === 'listening' ? 'Listening' : 'Reading';
+    const cot = (b as Partial<BangQuyDoi> | null)?.[skill];
+    if (!Array.isArray(cot) || cot.length !== 41) { loi.push({ skill, cau: null, loi: t('{ten}: cần đủ 41 ô (0–40 câu).', { ten }), ngan: t('thiếu ô') }); continue; }
+    cot.forEach((v, n) => {
+      if (v === null || v === undefined || Number.isNaN(v)) loi.push({ skill, cau: n, loi: t('{ten} {n} câu: chưa có band.', { ten, n }), ngan: t('trống') });
+      else if (kiemBand(v) !== null) loi.push({ skill, cau: n, loi: t('{ten} {n} câu: band từ 0 đến 9, bậc 0.5 (đang là {v}).', { ten, n, v }), ngan: t('bậc 0.5') });
+      else if (n > 0 && kiemBand(cot[n - 1]) === null && v < cot[n - 1]) {
+        const a = v.toFixed(1), m = n - 1, truoc = cot[m].toFixed(1);
+        loi.push({ skill, cau: n, loi: t('{ten} {n} câu: {a} thấp hơn {m} câu ({b}) — band không giảm khi số câu tăng.', { ten, n, a, m, b: truoc }), ngan: `≥ ${truoc}` });
+      }
+    });
+  }
+  return loi;
 }
 /** Câu lỗi số câu ngoài 0–40 (hộp nhập điểm, chủ SP mockup §3). */
 export const LOI_SO_CAU_KHOANG = t('số câu đúng từ 0 đến 40.');
