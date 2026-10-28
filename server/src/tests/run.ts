@@ -44,9 +44,10 @@ const ROOT = path.resolve(__dirname, '../../..');
 const [NHOM, SO_NHOM] = (process.env.PISA_NHOM ?? '1/1').split('/').map(Number);
 const { THOI_GIAN_TEP } = await import('./thoiGianTep.ts');
 const TACH = [
-  'prTd7b', 'prLocHienTai', 'tongQuan', 'prSvTqGv', 'prOv5a', 'prOv12d', 'prTd3', 'banChinh', 'prOv12h', 'prOv13a', 'prUiPhanTich',
-  'prGv', 'prNv', 'prOv13o', 'prGop', 'prOv8a', 'prLcb', 'prSvTvvViec', 'prSvYtTvv', 'prOv15e', 'prVaiA', 'prOv12e', 'prCvLoi', 'prHvl',
-  'prOv12c', 'prHk2', 'prSvSo1', 'anToan', 'prMt0', 'prS6fB', 'prOv9', 'prOv15d', 'prSl2', 'prOv15h1',
+  'prTd7b', 'prOv5a', 'prOv12d', 'prTd3', 'prOv12h', 'prOv13a', 
+  'prGop', 'prOv8a', 'prSvTvvViec', 'prSvYtTvv', 'prOv15e', 
+  'prGva', 'prDonB', 'prKv', 'prCt', 'prLt2b', 'prLc', 'prK26', 'prMta', 'prBv',
+  'prOv12c', 'prHk2', 'prSvSo1', 'prMt0', 'prOv15d', 'prSl2', 'prOv15h1',
 ];
 const NHOM_CUA = new Map<string, number>();
 if (SO_NHOM > 1) {
@@ -63,6 +64,12 @@ const CHI_TEP = process.env.PISA_CHI_TEP?.split(',').map((s) => s.trim().replace
 let trongTep = false;
 let tepHienTai = '';
 const thoiGian: Record<string, number> = {};
+/** Số phép kiểm đã chạy theo tệp (đạt + không đạt) — so tổng trước / sau khi đổi cách chia nhóm. */
+const soPhep: Record<string, number> = {};
+/** `PISA_DEM_DONG=1`: số dòng mỗi tệp thêm vào DB (tệp làm DB phình thì mọi tệp sau chạy chậm — ứng viên `TACH`). */
+const dongThem: Record<string, number> = {};
+const demDong = () => process.env.PISA_DEM_DONG ? (db().prepare(`SELECT (SELECT COUNT(*) FROM assessment_attempts) + (SELECT COUNT(*) FROM attempt_skills) + (SELECT COUNT(*) FROM students) + (SELECT COUNT(*) FROM sos_cases) + (SELECT COUNT(*) FROM case_interventions) + (SELECT COUNT(*) FROM notifications) n`).get() as any).n as number : 0;
+const demPhep = () => { soPhep[tepHienTai || 'run.ts'] = (soPhep[tepHienTai || 'run.ts'] ?? 0) + 1; };
 /** Bọc module `./ten.tests.ts`: hàm `run*` của nhóm khác thành rỗng; của nhóm mình thì đo giờ + đánh dấu đang trong tệp. */
 function bocTep<T extends object>(ten: string, m: T): T {
   const cuaToi = CHI_TEP ? CHI_TEP.includes(ten) : nhomCua(ten) === NHOM;
@@ -73,9 +80,10 @@ function bocTep<T extends object>(ten: string, m: T): T {
       return (...a: unknown[]) => {
         if (!cuaToi) return undefined;
         const t0 = Date.now();
+        const d0 = demDong();
         trongTep = true;
         tepHienTai = ten;
-        const xong = () => { trongTep = false; tepHienTai = ''; thoiGian[ten] = (thoiGian[ten] ?? 0) + Date.now() - t0; };
+        const xong = () => { trongTep = false; tepHienTai = ''; thoiGian[ten] = (thoiGian[ten] ?? 0) + Date.now() - t0; if (d0) dongThem[ten] = (dongThem[ten] ?? 0) + demDong() - d0; };
         /* Tệp ném lỗi ngoài phép kiểm (dựng dữ liệu hỏng): ghi KHÔNG ĐẠT rồi chạy tiếp tệp sau, không chết cả bộ. */
         const loi = (e: any) => { xong(); failures.push(`[${ten}] ném lỗi ngoài phép kiểm: ${e?.stack ?? e}`); console.log(`  ✗ ${ten}.tests.ts ném lỗi: ${e?.message ?? e}`); };
         let r: any;
@@ -168,6 +176,7 @@ const failures: string[] = [];
 
 function check(name: string, fn: () => void) {
   if (imLang()) { try { fn(); } catch { /* nhóm 1 in + đếm */ } return; }
+  demPhep();
   try { fn(); passed++; console.log(`  ✓ ${name}`); }
   catch (e: any) {
     failures.push(`${tepHienTai ? `[${tepHienTai}] ` : ''}${name}: ${e.message}`);
@@ -176,6 +185,7 @@ function check(name: string, fn: () => void) {
 }
 async function checkAsync(name: string, fn: () => Promise<void>) {
   if (imLang()) { try { await fn(); } catch { /* nhóm 1 in + đếm */ } return; }
+  demPhep();
   try { await fn(); passed++; console.log(`  ✓ ${name}`); }
   catch (e: any) {
     failures.push(`${tepHienTai ? `[${tepHienTai}] ` : ''}${name}: ${e.message}`);
@@ -9755,7 +9765,7 @@ await runPrKhtGonTests({ check, assert } as any);
 const { runPrRaLuongTests } = bocTep('prRaLuong', await import('./prRaLuong.tests.ts'));
 await runPrRaLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
 if (process.env.PISA_NHOM) {
-  console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
+  console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);
 }
 console.log(`\n${'='.repeat(60)}`);

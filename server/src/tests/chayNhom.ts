@@ -27,6 +27,8 @@ viec.push(chay('tốc độ', 'tocDo.run.js', {}));
 let dat = 0;
 const loi: string[] = [];
 const thoiGian: Record<string, number> = {};
+const soPhep: Record<string, number> = {};
+const dongThem: Record<string, number> = {};
 const tomTat: string[] = [];
 for (const v of viec) {
   const k = await v;
@@ -39,9 +41,13 @@ for (const v of viec) {
   dat += kq.dat;
   loi.push(...kq.loi);
   Object.assign(thoiGian, kq.thoiGian);
+  Object.assign(dongThem, kq.dongThem);
+  for (const [t, n] of Object.entries(kq.soPhep as Record<string, number>)) soPhep[t] = (soPhep[t] ?? 0) + n;
   tomTat.push(`${k.ten} ${k.giay} s · ${kq.maxRssMb} MB`);
 }
 
+/* Ghi lại để so lần sau (dist-server/data, không vào git): thời gian + số phép kiểm theo tệp. */
+fs.writeFileSync(path.resolve(DIR, '../../../data/lan-cuoi.json'), JSON.stringify({ thoiGian, soPhep, dongThem }));
 if (process.env.PISA_GHI_THOI_GIAN === '1' && loi.length === 0) {
   const tep = path.resolve(DIR, '../../../../server/src/tests/thoiGianTep.ts');
   const cu = fs.readFileSync(tep, 'utf8');
