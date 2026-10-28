@@ -53,7 +53,7 @@ export function BoiCanh({ dong, them }: { dong: [string, ReactNode][]; them?: Re
 }
 
 /**
- * ĐẦU PANEL v3 (OV-12e) — cho `KhungPanel dau`: chip hạn (chỉ người làm) · dòng 2 = em ↗ (link xem hồ sơ, tách khỏi nút làm) · lớp · ngữ cảnh.
+ * ĐẦU PANEL v3 (OV-12e) — cho `KhungPanel dau`: chip hạn (chỉ người làm) · dòng 2 = tên em (link xem hồ sơ, tách khỏi nút làm) · lớp · ngữ cảnh.
  * Không mã HV, không chi nhánh, không lặp ngày (mockup v3 §1).
  */
 export function dauViec({ han, em, lop, ngCanh }: {
@@ -62,7 +62,7 @@ export function dauViec({ han, em, lop, ngCanh }: {
   return {
     han, loai: t('VIỆC'),   // M6 6b-1: panel việc khai nhãn loại — khung không đoán theo `dau`
     dong2: [
-      em ? <Link className="font-bold text-slate-100 no-underline hover:underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(em.id)}>{em.ten}<span aria-hidden className="ml-0.5 text-xs text-[color:var(--accent)]">↗</span></Link> : null,
+      em ? <Link className="font-bold text-slate-100 no-underline hover:underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(em.id)}>{em.ten}</Link> : null,
       lop ?? null, ngCanh ?? null,
     ],
   };

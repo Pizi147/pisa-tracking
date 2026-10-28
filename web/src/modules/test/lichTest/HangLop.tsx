@@ -106,7 +106,7 @@ export const COT_DAU_LICH_TEST = [160, 125, 125] as const;
 
 /**
  * HÀNG LỚP của Lịch tuần (UI-LICH-TUAN, dieu-chinh-cuoi khu a): MỘT DÒNG gọn, không hàng tiêu đề cột —
- *   ▾ MB FT 101 · 22 HV · MT3 20 · MT2 1 · L R W S · 64/86 bài · hạn 23/09 · Đang chấm · ↗ (hồ sơ lớp)
+ *   ▾ MB FT 101 · 22 HV · MT3 20 · MT2 1 · L R W S · 64/86 bài · hạn 23/09 · Đang chấm (mã lớp = link hồ sơ lớp)
  * Mở ra là bảng từng HV làm Test trong tuần (lưới chấm tại chỗ đúng tuần thi của hàng, kèm cột S Ex). Màn hẹp: ▾ mã · x/y · hạn.
  */
 export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClassId, urlKn, conTro, onDaLuu, chuaLuu, baoChuaLuu, sEx }: {
@@ -126,7 +126,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
   /** SV-S-EXPERT: lượt S Ex của tuần — cột S Ex trong lưới FT. */
   sEx: LichTest['sEx'];
 }) {
-  const cot = hep ? [null, 92, 82] : [174, null, ...(coChiNhanh ? [110] : []), 110, 180, 220, 44];   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
+  const cot = hep ? [null, 92, 82] : [174, null, ...(coChiNhanh ? [110] : []), 110, 180, 220];   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
   const soCot = cot.length;
   /* Lớp kế (sau lớp này, vòng lên) còn bài của người xem — cùng số "… của bạn: còn n bài" ở hàng lớp. */
   const onHet = (l: LopLichTest) => () => {
@@ -144,7 +144,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
         return (
           <tbody key={k}>
             <HangNhom mo={mo} onMo={() => onMo(l)} nhan={t('lớp {classCode}', { classCode: l.classCode })} className={mo ? 'dang-mo' : ''}
-              tieuDe={<span className="block truncate text-[15px] font-bold text-slate-100" title={l.classCode}>{l.classCode}</span>}>
+              tieuDe={<Link to={`/hoc-vien/lop/${l.classId}`} className="ten-ho-so block truncate text-[15px] font-bold" title={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}>{l.classCode}</Link>}>
               {hep ? (
                 <>
                   <td className="px-2 text-right"><TienDo l={l} /></td>
@@ -157,10 +157,6 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
                   <td className="px-3 font-normal"><TienDo l={l} /></td>
                   <td className="whitespace-nowrap px-3 font-normal"><HanHang l={l} /></td>
                   <td className="px-3 font-normal"><NhanLop l={l} chuaLuu={chuaLuu[k]} /></td>
-                  <td className="px-1 text-center">
-                    <Link to={`/hoc-vien/lop/${l.classId}`} title={t('Hồ sơ lớp')} aria-label={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}
-                      className="inline-flex h-8 w-8 items-center justify-center font-normal text-slate-400 no-underline hover:text-slate-100">↗</Link>
-                  </td>
                 </>
               )}
             </HangNhom>

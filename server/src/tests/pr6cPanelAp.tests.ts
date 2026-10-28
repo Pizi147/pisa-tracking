@@ -146,10 +146,10 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     assert(/const dong = busy \? \(\) => \{\} : daSua \? \(\) => setHoi\(true\) : onClose;/.test(dr) && /export function HopBoChu\(/.test(dr), 'ConfirmDialog chưa hỏi khi còn chữ');
   });
 
-  /* ---------------------------------------------------------------- 6c-2 (PTA 28/10): một danh sách một kiểu mở — ↗ cùng chỗ mọi dòng */
-  check('6c-2 panel số: mọi kiểu dòng (Case nhóm, chỉ đọc, làm được) có ↗ hồ sơ cuối dòng; dòng chỉ đọc thân không bấm; không dòng nào cả dòng là link', () => {
+  /* ---------------------------------------------------------------- 6c-2 (PTA 28/10): một danh sách một kiểu mở — link "Hồ sơ" cùng chỗ mọi dòng (BO-MUI-TEN: không còn ↗) */
+  check('6c-2 panel số: mọi kiểu dòng (Case nhóm, chỉ đọc, làm được) có link "Hồ sơ" cuối dòng; dòng chỉ đọc thân không bấm; không dòng nào cả dòng là link', () => {
     const s = doc('web/src/ui/SoLieu.tsx').replace(/\r\n/g, '\n');
-    assert((s.match(/\{nutHoSo\(r\)\}/g) ?? []).length === 3, 'thiếu ↗ ở một kiểu dòng');
+    assert((s.match(/\{nutHoSo\(r\)\}/g) ?? []).length === 3, 'thiếu link "Hồ sơ" ở một kiểu dòng');
     assert(!/<Link to=\{r\.href\} className="min-w-0 flex-1/.test(s) && !/t\('Xem hồ sơ'\)/.test(s), 'còn dòng mà cả tên là link / "Xem hồ sơ" lặp trong phần mở rộng');
     const chiDoc = s.slice(s.indexOf('if (!v?.lam && !r.xong) {'), s.indexOf('const nen = moRong'));
     assert(!/<button/.test(chiDoc), 'dòng chỉ đọc còn thân bấm được');

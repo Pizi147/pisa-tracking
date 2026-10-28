@@ -6,7 +6,7 @@ import { reportEditWindow } from '../platform/week.ts';
 import { metricSet } from './metrics.ts';
 import { lopCuaTap } from './chuongTrinh.ts';
 import { listCases } from '../cases/cases.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 /**
  * VIỆC SINH RA TỪ DỮ LIỆU.
@@ -115,7 +115,7 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
          JOIN enrollments e ON e.student_id = s.id AND e.status='active'
          JOIN classes c ON c.id = e.class_id
          LEFT JOIN programmes pg ON pg.code = c.programme_code
-         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status='active'
+         JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status='active' AND NOT ${DA_THI_THAT_SQL('cy')}   -- PTA 28/10: đã thi thật không còn "chưa có tuần MT"
         WHERE ${HV_DANG_HOC_SQL('s')} AND c.branch_id IN (${ph})
           AND COALESCE(pg.scoring_mode, '') != 'ratio'
           AND NOT EXISTS (SELECT 1 FROM assessment_attempts a

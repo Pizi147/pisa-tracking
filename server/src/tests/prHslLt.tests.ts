@@ -17,6 +17,7 @@ export async function runPrHslLtTests(t: any) {
   const d: any = await import('../../../shared/domain/index.ts');
   const regular: any = await import('../normal/regular.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const cases: any = await import('../cases/cases.ts');
   console.log('\nHSL-LT · trang lượt lớp thường /luot-test/:id: đường dẫn · cycleId + lichSuCase · điểm vào · dùng lại thành phần');
 
   const thu = <T>(fn: () => T): T => {
@@ -70,5 +71,22 @@ export async function runPrHslLtTests(t: any) {
     assert(!/`\/(mock|luot)-test\/\$\{/.test(s), 'tự ghép đường lượt');
     /* Hồ sơ Mock chuyển cửa lượt không phải FT qua attemptHref (= duongDotTest) → trang lượt lớp thường. */
     assert(/<Navigate to=\{attemptHref\(\{ id: data\.id, kind: data\.kind, classId: data\.classId, studentId: data\.student\.id \}\)\} replace \/>/.test(doc('web/src/modules/fasttrack/MockDetailPage.tsx')), 'MockDetailPage chuyển cửa');
+  });
+
+  check('VIEW-CASE-LUOT · caseDetail + thẻ bảng kỹ năng trả `luot` của Case (id · loại · lớp · nhãn MT{n} / Progress Test); TenCase dựng link bằng duongDotTest (+ kn), không tự ghép đường', () => {
+    const caseSvc: any = cases;
+    const th = get(`SELECT sc.id, sc.attempt_id, sc.student_id, sc.cycle_id, a.kind, a.class_id FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+       WHERE a.kind = 'progress' AND sc.status != 'done' ORDER BY sc.id LIMIT 1`);
+    const ft = get(`SELECT sc.id, sc.attempt_id, a.attempt_no FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.kind = 'mock' ORDER BY sc.id LIMIT 1`);
+    assert(th && ft, 'demo phải có Case lớp thường + Case FT gắn lượt');
+    const d = caseSvc.caseDetail(P.mbManager, th.id);
+    assert(d.luot && d.luot.id === th.attempt_id && d.luot.kind === 'progress' && d.luot.classId === th.class_id && d.luot.dot === 'Progress Test', `luot thường: ${JSON.stringify(d.luot)}`);
+    assert(caseSvc.caseDetail(P.mbManager, ft.id).luot?.dot === `MT${ft.attempt_no}`, 'luot FT = MT{n}');
+    const the = caseSvc.skillSupportBoard(P.mbManager, th.student_id, th.cycle_id).rows.flatMap((r: any) => r.cases).find((c: any) => c.id === th.id);
+    assert(the && JSON.stringify(the.luot) === JSON.stringify(d.luot), `thẻ bảng kỹ năng: ${JSON.stringify(the?.luot)}`);
+    const sb = doc('web/src/modules/cases/SkillBoard.tsx');
+    assert(/duongDotTest\(\{ id: luot\.id, kind: luot\.kind, classId: luot\.classId \}, kn\)/.test(sb), 'TenCase dựng đường bằng duongDotTest');
+    assert(/<TenCase c=\{c\} luot=\{c\.luot\} kn=\{c\.topic\} \/>/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'khối Case hồ sơ HV truyền luot');
+    assert(/luot=\{data\.luot\} kn=\{data\.topic\}/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'thân Case (Ngăn Case / panel) truyền luot');
   });
 }

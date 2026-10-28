@@ -1,6 +1,6 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
@@ -14,7 +14,7 @@ import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Pri
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
-import { huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
+import { huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { boMonCuaLuot, lichGopCua, canMoveSkillSchedule, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
@@ -1104,7 +1104,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE ${where}${chiLuot ? '' : ` AND (s.archived_at IS NULL OR s.status = 'inactive')`}   -- P7: em Tạm dừng ở Lưu trữ vẫn nhập bù / sửa điểm cũ
+        WHERE ${where}${chiLuot ? '' : cls.status === 'finished' ? ` AND (s.archived_at IS NULL OR s.status = 'inactive')` : ` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`}   -- lỗi chủ SP 28/10: lớp đang học chỉ lượt hiện tại (em Tạm dừng giữ như P7); lớp đã kết thúc giữ như cũ
         ORDER BY a.kind DESC, s.full_name`,
     )
     .all(...params) as any[];
@@ -1327,6 +1327,8 @@ export function regularAttemptDetail(p: Principal, attemptId: number) {
     /** HSL-LT: Case mở · PA thêm của các Case của lượt — Lịch sử môn / Lịch sử lượt (như FT). */
     lichSuCase: lichSuCaseCua(rows[0].cases.map((c: { id: number }) => c.id)),
     lopHienTai: lopHienTaiCua(a.student_id, a.class_id),
+    /** LUOT-TEN-GV: GV môn được phân công của lớp lúc Test, từng môn của bảng (null = chưa phân công) — cùng luật danh sách lượt. */
+    nguoiLam: nguoiLamCuaLuot(a.class_id, bang.programme.skills, a.kind),
     huy: huyCua(rows[0].status, history),
     canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
     history,

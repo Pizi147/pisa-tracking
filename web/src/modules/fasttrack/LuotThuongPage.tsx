@@ -32,7 +32,7 @@ import { KHOA_HOAN_TAT_HINT, ODiemThuong, datPhanTram } from './ScoreEntry.tsx';
 import { ONhanXet } from './NhanXet.tsx';
 import { CaseLuotKn } from './CaseLuotKn.tsx';
 import { dongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
-import { ChonDot, ConLaiLuot, Info, LichSuGon, VungMoKn, viecCaseLuot, type ViecConLai } from './MockDetailPage.tsx';
+import { ChonDot, ConLaiLuot, Info, LichSuGon, VungMoKn, tenNguoiLam, viecCaseLuot, type ViecConLai } from './MockDetailPage.tsx';
 import { attemptHref, fmtDate } from '../../lib/format.ts';
 import {
   CHU_THAO_TAC, CHU_THEM_PA, NAV_RONG, PERMISSIONS, duongDotTest, duongNhapDiemCu, moDiemLopCu, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangCha, trangThaiTT, tuanDaQua, tuanLich,
@@ -46,6 +46,8 @@ type NguonLs = Parameters<typeof dongLuot>[0];
 type ChiTiet = Omit<ThuongSheet, 'rows'> & {
   dong: Dong; cycleId: number | null; lichSuCase: LichSuCase[];
   lopHienTai: { id: number; code: string } | null;
+  /** LUOT-TEN-GV: GV môn được phân công của lớp lúc Test (null = chưa phân công). */
+  nguoiLam?: Record<string, string | null>;
   huy: { lyDo: string | null; ai: string | null; khi: string } | null;
   canCancel: boolean;
   history: NguonLs['history']; scoreHistory: NguonLs['scoreHistory'];
@@ -135,7 +137,7 @@ export default function LuotThuongPage() {
         </div>
       )}
 
-      {/* ① ĐẦU HỒ SƠ — ai (↗ hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Đạt từ; "Nhập điểm lớp ›" bên phải. */}
+      {/* ① ĐẦU HỒ SƠ — ai (link hồ sơ HV) · lượt nào · lớp lúc Test · lịch · Đạt từ; "Nhập điểm lớp ›" bên phải. */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <DuongVe cha={trangCha('luot', { studentId: r.studentId, tenHv: r.studentName })} ten={`${r.kindLabel} · ${r.studentName}`} chiTiet={d.class.code} />
@@ -143,7 +145,7 @@ export default function LuotThuongPage() {
             <h1 className="m-0 min-w-0 break-words text-xl font-bold text-slate-100">
               <span className="sr-only">{t('Hồ sơ lượt Test ·')} </span>
               <Link to={`/hoc-vien/${r.studentId}`} className="text-inherit no-underline hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" title={t('Hồ sơ học viên')}>
-                {r.studentName}<span aria-hidden className="ml-1 text-base text-slate-400">↗</span>
+                {r.studentName}
               </Link>
             </h1>
             <span className="inline-flex items-center gap-2">
@@ -161,7 +163,17 @@ export default function LuotThuongPage() {
           </div>
           <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5">
             <NhanGt n={t('Lớp lúc Test')} g={<>{d.class.code}{d.lopHienTai && <span className="ml-1 text-xs font-medium text-slate-400">· {t('nay {x}', { x: d.lopHienTai.code })}</span>}</>} />
-            <NhanGt n={t('Lịch')} g={<span className="tabular-nums">{tuanThi ?? t('Chưa chốt tuần')}</span>} />
+            <NhanGt n={t('Lịch')} g={!tuanThi.length ? t('Chưa chốt tuần') : tuanThi.length === 1 ? <span className="tabular-nums">{tuanThi[0].tuan}</span> : (
+              /* Nhiều tuần: nhóm theo tuần, tuần sớm trước — "W3 AUG R, G+V, P · W3 SEP L"; mỗi nhóm không xuống dòng giữa chừng. */
+              <span className="inline-flex flex-wrap gap-x-2 gap-y-0.5">
+                {tuanThi.map((n, i) => (
+                  <span key={n.tuan} className="whitespace-nowrap tabular-nums">
+                    {i > 0 && <span aria-hidden className="mr-2 font-normal text-slate-600">·</span>}
+                    {n.tuan} <span className="text-xs font-medium text-slate-500">{n.mon.join(', ')}</span>
+                  </span>
+                ))}
+              </span>
+            )} />
             <NhanGt n={t('Đạt từ')} g={<span className="tabular-nums">{Math.round(d.passThreshold * 100)}%</span>} />
           </div>
         </div>
@@ -246,17 +258,15 @@ export default function LuotThuongPage() {
   );
 }
 
-/** Tuần thi của lượt: một tuần → tuần đó; nhiều tuần → "L, R: W3 SEP · P: W4 SEP". Tuần đang xếp của từng môn (môn dời bằng "-": tuần gốc gạch ở cột Lịch). */
-function tuanLuot(r: Dong, ct: string | null, homNay: string): string | null {
-  const nhom: { tuan: string; mon: string[] }[] = [];
+/** Tuần thi của lượt, nhóm theo tuần, tuần sớm trước (môn trong nhóm theo thứ tự bảng). Tuần đang xếp của từng môn (môn dời bằng "-": tuần gốc gạch ở cột Lịch). */
+function tuanLuot(r: Dong, ct: string | null, homNay: string): { tuan: string; mon: string[] }[] {
+  const nhom: { tuan: string; ws: string; mon: string[] }[] = [];
   for (const s of r.skillSchedule) {
     if (!s.weekStart) continue;
-    const tuan = tuanLich(s.weekStart, homNay);
-    const cu = nhom.find((n) => n.tuan === tuan);
-    if (cu) cu.mon.push(tenMonNgan(ct, s.skill)); else nhom.push({ tuan, mon: [tenMonNgan(ct, s.skill)] });
+    const cu = nhom.find((n) => n.ws === s.weekStart);
+    if (cu) cu.mon.push(tenMonNgan(ct, s.skill)); else nhom.push({ tuan: tuanLich(s.weekStart, homNay), ws: s.weekStart, mon: [tenMonNgan(ct, s.skill)] });
   }
-  if (!nhom.length) return null;
-  return nhom.length === 1 ? nhom[0].tuan : nhom.map((n) => `${n.mon.join(', ')}: ${n.tuan}`).join(' · ');
+  return nhom.sort((a, b) => a.ws.localeCompare(b.ws));
 }
 
 /** Nút chính + menu ⋯ của một môn — cùng `thaoTacKyNang` (laFt = false) với menu ⋯ ô của bảng điểm lớp; nhập / sửa điểm làm ngay trong ô nên không lặp. */
@@ -288,14 +298,14 @@ function conLaiThuong(d: ChiTiet, homNay: string, theCase: Map<number, CaseCard>
     if (!s) continue;
     const { cell, trong, quaHan } = oThuong(r, k, homNay);
     const n = tenMonNgan(ct, k);
-    const cua = (viec: string, chon: string | null) => ds.push({ khoa: `${k}:${viec}`, nhan: n, viec, quaHan, mo: chon !== null && !chiDoc ? () => mo.moDong(k, chon) : undefined });
+    const cua = (viec: string, chon: string | null, ai?: string | null) => ds.push({ khoa: `${k}:${viec}`, nhan: n, viec, ai, quaHan, mo: chon !== null && !chiDoc ? () => mo.moDong(k, chon) : undefined });
     if (cell.diem !== null || s.khongDuThi) continue;
     if (s.progress === 'absent') {
       const chinh = thaoTac(k).chinh;
       cua(CHU_THAO_TAC['xep-lai'], chinh === 'xep-lai' ? '[data-chinh]' : null);
     } else if (trong) cua(CHU_THAO_TAC['nhap-diem'], 'input');
-    else if (s.progress === 'due' || s.progress === 'sat') cua(t('Chờ điểm'), null);
-    else if (s.progress === 'upcoming' && s.noShow && s.weekStart) cua(t('Làm bài {tuan}', { tuan: tuanLich(s.weekStart, homNay) }), null);
+    else if (s.progress === 'due' || s.progress === 'sat') cua(t('Chờ điểm'), null, tenNguoiLam(d.nguoiLam, [k]));
+    else if (s.progress === 'upcoming' && s.noShow && s.weekStart) cua(t('Làm bài {tuan}', { tuan: tuanLich(s.weekStart, homNay) }), null, tenNguoiLam(d.nguoiLam, [k]));
   }
   for (const c of r.cases) {
     const the = theCase.get(c.id);
@@ -374,7 +384,10 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
           </div>
           <div role="cell" aria-colindex={4} className="min-w-0 space-y-1 md:col-start-4 md:row-start-1">
             <Status kind={tt.kind}>{tt.chu}</Status>
-            {han && <div className={`text-xs ${quaHan ? 'text-late' : 'text-slate-400'}`}>{quaHan ? `⚠ ${han}` : han}</div>}
+            {/* Quá hạn: đỏ khi là việc của người xem; việc người khác "⚠" + chữ mờ (cùng màu chip "Còn lại" của người khác). */}
+            {han && <div className={`text-xs ${quaHan && canEdit && !chiDoc ? 'text-late' : 'text-slate-400'}`}>{quaHan ? `⚠ ${han}` : han}</div>}
+            {/* LUOT-TEN-GV: môn còn nợ mà người xem không nhập được — tên GV môn (khung "Chờ điểm · hạn …" + tên). */}
+            {!coDiem && !dung && !s.khongDuThi && !huy && !(canEdit && !chiDoc) && <div className="text-xs text-slate-500">{tenNguoiLam(d.nguoiLam, [k])}</div>}
           </div>
         </div>
         <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm md:contents">

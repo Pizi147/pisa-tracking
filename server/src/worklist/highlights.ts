@@ -5,6 +5,7 @@ import { addDays } from '../util.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { mondayOf, weekInfo } from '../platform/week.ts';
 import { classProgressMany } from '../classes/schedule.ts';
+import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 
 /**
  * SỰ KIỆN NỔI BẬT — thay cho khối "Mốc của lớp" cũ (mục 3.5).
@@ -148,6 +149,7 @@ export function highlights(p: Principal, f: { branchId?: number | null; program?
         `SELECT a.class_id, a.attempt_no, rp.week_start, COUNT(DISTINCT a.student_id) AS n
            FROM assessment_attempts a
            JOIN report_periods rp ON rp.id = a.planned_period_id
+           JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
           WHERE a.status != 'cancelled' AND a.kind = 'mock'
             AND rp.week_start IN (${mondays.map(() => '?').join(',')})
             AND a.class_id IN (${classIds.map(() => '?').join(',')})

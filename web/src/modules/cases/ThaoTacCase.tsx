@@ -125,7 +125,7 @@ export function phanNgayThemPa(h: ReturnType<typeof useThemPa>) {
 /**
  * THÊM PHƯƠNG ÁN (mục 8.2) — PR-PA (§8): một form PA (`FormPa`): Loại · Nội dung · Số buổi · Người dạy / Người thực hiện (không bắt buộc)
  * · Ngày bắt đầu. PA đã làm trước đây là liên kết phụ cuối form (K3-18). OV-12e (mockup v3 §6): khuôn panel v3 — đầu "Thêm PA" + chip hạn /
- * em ↗ · lớp · ngữ cảnh (nơi gọi truyền `dau`), MỘT khối Cần làm (form + nút chính "Thêm PA" / "Gửi QL duyệt"), Bối cảnh ≤ 3 dòng, chân trạng thái lưu;
+ * em (link) · lớp · ngữ cảnh (nơi gọi truyền `dau`), MỘT khối Cần làm (form + nút chính "Thêm PA" / "Gửi QL duyệt"), Bối cảnh ≤ 3 dòng, chân trạng thái lưu;
  * Bắt đầu = ô ngày gõ được + nút lịch (`ChonNgayGan` = `ONgay`, không sau hôm nay), mặc định hôm nay.
  */
 export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh, tiep: tiepViec }: ChungPanel & {

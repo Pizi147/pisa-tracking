@@ -8,6 +8,7 @@
  * Mỗi ca cuộn lại (`thu`).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';   // LOC-HIEN-TAI: ca dựng chỉ chọn lượt hiện tại (bảng điểm lớp bỏ lượt lộ trình cũ)
 
 export async function runPrOv11aTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
@@ -37,7 +38,7 @@ export async function runPrOv11aTests(t: YThucTestKit) {
   const W = week.ensurePeriod(WS).id as number, W1 = week.ensurePeriod(WS1).id as number, W2 = week.ensurePeriod('2026-11-16').id as number;
 
   const luot = all(
-    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL AND ${LUOT_LO_TRINH_CUOI_SQL('a')}
       JOIN enrollments e ON e.student_id = s.id AND e.class_id = a.class_id AND e.status = 'active'
      WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
        AND a.attempt_no = (SELECT MAX(x.attempt_no) FROM assessment_attempts x WHERE x.cycle_id = a.cycle_id AND x.kind = 'mock')

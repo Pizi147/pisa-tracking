@@ -67,7 +67,7 @@ export default function LuuTruPage() {
     if (branchId) s.set('branchId', String(branchId));
     return `/hoc-vien-lop/luu-tru?${s.toString()}`;
   })();
-  const { data, loading, error, reload } = useApi<DuLieuLuuTru>(qs);
+  const { data, loading, error, reload, cu } = useApi<DuLieuLuuTru>(qs, [], { giuCu: true });
 
   const quayLai = useQuayLaiHoc(reload);
   /* Chọn nhiều: em quay lại được một bấm (lớp cũ còn chạy) làm ngay; em cần chọn lớp / lộ trình báo "làm từng em" — không đoán thay người dùng. */
@@ -114,6 +114,7 @@ export default function LuuTruPage() {
 
       {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
       {loading && !data && <Skeleton rows={6} />}
+      <div className={cu ? 'dang-tai-lai space-y-3' : 'space-y-3'} aria-busy={cu || undefined}>
       {data && tab === 'lop' && (
         data.lop.length === 0
           ? <Card><Empty title={loc ? t('Không có lớp khớp "{loc}"', { loc }) : t('Chưa có lớp nào kết thúc')} /></Card>
@@ -152,7 +153,7 @@ export default function LuuTruPage() {
                 return (
                   <div key={s.id} className={`card flex flex-wrap items-center gap-x-2.5 gap-y-1.5 p-3 ${chon.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
                     {chon.bat && s.coTheQuayLai && <OChon chon={chon} id={s.id} ten={s.fullName} />}
-                    <Link to={`/hoc-vien/${s.id}`} className="ten-ho-so">{s.fullName}</Link>
+                    <Link to={`/hoc-vien/${s.id}`} className="ten-ho-so khong-mui">{s.fullName}</Link>
                     <Nhan tone={dung ? 'doing' : 'soon'}>{dung ? t('Tạm dừng · Có thể quay lại') : t('Kết thúc học')}</Nhan>
                     <span className="min-w-0 flex-1 text-xs text-slate-500">
                       {[s.lopCuoi ?? t('chưa từng học lớp nào'), s.loTrinh ? `FT ${s.loTrinh}` : null, dung ? t('từ {ngay}', { ngay: ngay(s.archivedAt) }) : ngay(s.archivedAt), s.chiNhanh].filter(Boolean).join(' · ')}
@@ -172,6 +173,7 @@ export default function LuuTruPage() {
       {data && tab === 'hv' && (
         <ThanhChonNhieu chon={chon} viec={[{ key: 'quay-lai', nhan: t('Quay lại học') }]} onViec={() => void quayLaiNhieu([...chon.chon])} />
       )}
+      </div>
       {quayLai.panels}
       {moLai && (
         <MoLaiLopPanel classId={moLai.id} classCode={moLai.code} chiNhanh={moLai.chiNhanh} ketThuc={moLai.finishedAt ? ngay(moLai.finishedAt) : null}

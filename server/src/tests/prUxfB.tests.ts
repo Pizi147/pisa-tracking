@@ -267,8 +267,9 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   check('UXF-b (7) · quét chữ: panel Tạm dừng có câu "n vi phạm Ý thức đang chờ xử lý"; dòng em Ý thức nhánh tuChoi không in "vi phạm / 2 tuần"', () => {
     assert(/vi phạm Ý thức đang chờ xử lý/.test(doc('web/src/modules/students/StudentManagePanel.tsx')) && /soViPhamMo=\{data\.dauHoSo\?\.soViPhamMo\}/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'O2');
     const cy = doc('web/src/modules/yThuc/ClassYThucCard.tsx');
-    const nhanh = cy.slice(cy.indexOf('x.tuChoi ?'), cy.indexOf('x.soBatBuoc > 0'));
-    assert(nhanh.includes('chọn cách xử lý khác') && !/vi phạm \/ 2 tuần/.test(nhanh), 'VN26');
+    /* UI-Y-THUC-LOP: nhánh tuChoi nằm ở khối Duyệt · thu hồi (DuyetThuHoi), chữ theo mockup "chọn cách khác". */
+    const nhanh = cy.slice(cy.indexOf('if (x.tuChoi)'), cy.indexOf('if (x.xuLyGanNhat)'));
+    assert(nhanh.includes('chọn cách khác') && !/vi phạm \/ 2 tuần/.test(nhanh), 'VN26');
   });
 
   // ------------------------------------------------------------------ Task 8 · chữ nhỏ: lý do nhiều dòng (VN01), "hạn hết T2" (VN28)

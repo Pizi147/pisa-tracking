@@ -8,7 +8,7 @@
  *
  * Quyền: MỌI hàm ở đây gọi `require_(PLAN_WEEK, { classId })` TRƯỚC khi đọc gì của lớp/em (QL chi nhánh khác → 403).
  */
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   CO_DIEM_SQL, KY_NANG_KE_HOACH, khoaCuoiTuan, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
@@ -100,7 +100,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     for (const r of conn
       .prepare(
         `SELECT e.class_id AS class_id, s.id AS student_id, c.lich_mt, c.route AS lop_route, cy.route,
-                CASE WHEN cy.id IS NOT NULL AND NOT EXISTS (
+                CASE WHEN cy.id IS NOT NULL AND NOT ${DA_THI_THAT_SQL('cy')} AND NOT EXISTS (   -- PTA 28/10: đã thi thật thì không còn nhắc xếp MT
                   SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned'
                     AND a.planned_period_id IS NOT NULL) THEN 1 ELSE 0 END AS chua_co_lich,   -- PR-LM: lượt đã huỷ lịch (tuần NULL) không phải "có lịch"
                 (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_XONG_SQL('a')}) AS so_mt_xong
@@ -124,7 +124,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
            JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
            JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
            JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
-          WHERE a.class_id IN (${phOf(ftClassIds.length)}) AND a.status != 'cancelled'`,
+          WHERE a.class_id IN (${phOf(ftClassIds.length)}) AND a.status != 'cancelled' AND ${LUOT_CON_KE_HOACH_SQL('a')}`,   // PTA 28/10: MT chưa làm sau thi thật không còn là kế hoạch
       )
       .all(...ftClassIds) as any[]) {
       if (!luotCuaLop.has(r.class_id)) luotCuaLop.set(r.class_id, []);
@@ -158,7 +158,8 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
           WHERE e.class_id IN (${phOf(thuongIds.length)}) AND ${HV_DANG_HOC_SQL('s')}
             AND NOT EXISTS (
               SELECT 1 FROM assessment_attempts a
-               WHERE a.student_id = s.id AND a.class_id = e.class_id AND a.kind IN ('progress', 'final', 'checkpoint') AND a.status != 'cancelled')
+               WHERE a.student_id = s.id AND a.class_id = e.class_id AND a.kind IN ('progress', 'final', 'checkpoint') AND a.status != 'cancelled'
+                 AND ${LUOT_HIEN_TAI_SQL('a', 's')})   -- lỗi chủ SP 28/10: bài lộ trình cũ không tính là "đã có lịch"
           GROUP BY e.class_id`,
       )
       .all(...thuongIds) as any[]) hvChuaCoLich.set(r.class_id, r.n);
@@ -312,7 +313,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
           `SELECT a.*, cy.route AS route, cy.khong_cam_ket AS cy_kck   -- V5 SV-SO1 / UI-CHAM-TEST: kỳ vọng + Overall (\`resultOf\`) không hỏi lộ trình lẻ từng lượt
              FROM assessment_attempts a
              JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
-            WHERE a.kind = 'mock' AND a.student_id IN (${phOf(studentIds.length)})
+            WHERE a.kind = 'mock' AND a.student_id IN (${phOf(studentIds.length)}) AND ${LUOT_CON_KE_HOACH_SQL('a')}   -- PTA 28/10: MT chưa làm sau thi thật không còn là kế hoạch
             ORDER BY a.attempt_no`,
         )
         .all(...studentIds) as any[])
@@ -814,7 +815,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
     .prepare(
       `SELECT a.* FROM assessment_attempts a
          JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active' AND e.class_id = a.class_id
-         JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
+         JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
         WHERE a.class_id = ? AND a.kind IN ('progress', 'final', 'checkpoint') AND a.status != 'cancelled'
         ORDER BY a.attempt_no DESC`,
     )
@@ -823,6 +824,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
   const mt0s = conn.prepare(
     `SELECT a.* FROM assessment_attempts a
        JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active' AND e.class_id = a.class_id
+       JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}
       WHERE a.class_id = ? AND a.kind = 'mt0' AND a.status != 'cancelled'`,
   ).all(classId) as any[];
   const attemptIds = [...attempts, ...mt0s].map((a) => a.id);
@@ -1409,6 +1411,7 @@ function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
         `SELECT DISTINCT a.class_id, a.student_id FROM attempt_skills k
            JOIN assessment_attempts a ON a.id = k.attempt_id AND a.status = 'planned' AND a.lich_su = 0 AND a.kind = 'mock'
            JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
+           JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
           WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status IN ('absent', 'cancelled')
             AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.skill = k.skill AND r.status = 'pending')`,
       )
@@ -1447,7 +1450,7 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
   theoLo([...new Set(cycleIds)], (lo, ph) => {
     luot.push(...conn.prepare(
       `SELECT a.id, a.cycle_id, a.attempt_no, a.status, c.code FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id
-        WHERE a.cycle_id IN (${ph}) AND a.kind = 'mock' ORDER BY a.attempt_no, a.id`).all(...lo) as any[]);
+        WHERE a.cycle_id IN (${ph}) AND a.kind = 'mock' AND ${LUOT_CON_KE_HOACH_SQL('a')} ORDER BY a.attempt_no, a.id`).all(...lo) as any[]);   // PTA 28/10
   });
   const skill = loadSkillRows(luot.filter((a) => a.status !== 'cancelled').map((a) => a.id));
   const hv: HvKeHoach[] = em.map((e) => {
