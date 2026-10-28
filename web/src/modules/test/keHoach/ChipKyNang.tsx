@@ -12,7 +12,7 @@ import { t } from '@shared/i18n/index.ts';
  */
 const VACH: Partial<Record<LoaiTtGon, string>> = {
   nay: 'shadow-[inset_3px_0_0_rgb(var(--doing-rgb))]',
-  tre: '!bg-bad-bg !border-bad-line shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]',   // `bg-transparent` của khung ô đè nền trễ — nên `!`
+  tre: 'shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]',
   vang: 'shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]',
 };
 const MAU_TT: Record<LoaiTtGon, string> = {
@@ -55,7 +55,9 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
     o.khongThi, o.vang,
   ].filter(Boolean).join(', ');
   /* Chủ SP 28/10: khung ô MT rõ hẳn — viền mảnh + nền tối hơn thẻ (`--bg`); ô trễ chấm vẫn nền đỏ nhạt (VACH đè). */
-  const lop = `${O_LUOI} rounded-md border border-[var(--line)] !bg-[var(--bg)] hover:!bg-[var(--nut-hover)] ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
+  /* `O_LUOI` có `border-0 bg-transparent` (dùng chung) — khung ô MT phải `!`; ô trễ: nền + viền đỏ nhạt thay nền tối (một lớp nền, không chồng). */
+  const tre = o.tt?.loai === 'tre';
+  const lop = `${O_LUOI} rounded-md !border ${tre ? '!border-bad-line !bg-bad-bg' : '!border-[var(--line-strong)] !bg-[var(--bg)] hover:!bg-[var(--nut-hover)]'} ${o.tt ? VACH[o.tt.loai] ?? '' : ''} ${chon ? 'ring-2 ring-inset ring-[var(--text)]' : ''}`;
   /* "xếp lại S" / "chờ duyệt" không thuộc dòng tuần nào (môn đang vắng) — đặt ở dòng đầu khi dòng đó chưa có chữ. */
   const ttO = o.tt?.loai === 'vang' ? o.tt : null;
   const noi = (
@@ -67,7 +69,7 @@ export function ODotGon({ o, nhan, ketQua, khoa, chon, onMo, href, tinh = false,
         const tt = soTre > 1 ? { chu: t('trễ chấm'), loai: 'tre' as const } : i === 0 && ttO && !d.tt ? ttO : d.tt;
         return (
           <span key={d.tuanDu ?? `chua-${i}`} className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-[3px]">
-            <span className={`w-[58px] shrink-0 whitespace-nowrap text-sm tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{d.tuan ?? '—'}</span>
+            <span className={`mr-0.5 w-[58px] min-w-[58px] shrink-0 whitespace-nowrap text-sm tabular-nums ${mo ? 'font-medium text-dim' : 'font-semibold text-slate-100'}`}>{d.tuan ?? '—'}</span>
             {i === 0 && nhanKhoa && <span className="whitespace-nowrap text-xs tabular-nums text-faint">{nhanKhoa}</span>}
             {o.hienMon && d.mon.map((m) => (
               <span key={m.k} title={`${m.ten} · ${CHU_MON[m.loai]}`}
