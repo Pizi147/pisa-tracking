@@ -122,7 +122,7 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 11. **Giờ thật lọt vào dữ liệu demo** (#559, 24/10): mốc tính hạn ghi `nowIso()` (giờ thật) trong khi `demoToday()` cố định 14/09 → hạn trôi theo ngày chạy, phép kiểm băm (TD4-a) xanh hôm trước đỏ hôm sau dù không ai sửa mã. Mốc tính hạn dùng `nowNghiepVu()` (`demoConfig.ts`); nghi phép kiểm đỏ theo ngày → chạy lại với đồng hồ giả (`Date` bọc qua `--require`) để xác nhận trước khi sửa.
 
 ### 1.6. Luật overhaul 21/10 — chủ SP duyệt #486 (mỗi luật một dòng; nguồn trong `docs/superpowers/specs/2026-10-20-ke-hoach-overhaul/`)
-Không đổi luật nghiệp vụ nào ngoài các dòng N1–N22 (N11–N19: chủ SP 25/10 chọn khuyến nghị cả 12 câu của thiết kế `docs/superpowers/specs/2026-10-24-cai-tien-da-chot-design.md` mục 6; N20–N22: chủ SP 25/10 sau mockup V6). Luật giao diện: `DESIGN.md` mục "Luật V5" (mới nhất) rồi "Luật 21/10".
+Không đổi luật nghiệp vụ nào ngoài các dòng N1–N30 (N11–N19: chủ SP 25/10 chọn khuyến nghị cả 12 câu của thiết kế `docs/superpowers/specs/2026-10-24-cai-tien-da-chot-design.md` mục 6; N20–N22: chủ SP 25/10 sau mockup V6). Luật giao diện: `DESIGN.md` mục "Luật V5" (mới nhất) rồi "Luật 21/10".
 
 | # | Luật | Nguồn |
 |---|---|---|
@@ -161,6 +161,10 @@ Không đổi luật nghiệp vụ nào ngoài các dòng N1–N22 (N11–N19: c
 | N24 | **Rà soát đêm 29/10 — chủ SP trả lời Q-RL (29/10):** ① kết quả lớp thường có môn "Không dự thi" tính trên **các môn đã thi**, ghi rõ môn không dự thi (Q-RL1) · ② thao tác xoá (học viên, Case, PA có kết quả, vi phạm, tệp bằng chứng) + Kết thúc PA, Bỏ việc Báo PH, Duyệt / Từ chối: **xoá mềm + Hoàn tác + Khôi phục** (Q-RL2, PR riêng sau V8) · ③ mở **Lộ trình mới** → việc Phối hợp SOS còn chờ của lộ trình cũ đóng, lý do "Kết thúc lộ trình" (Q-RL3) · ④ Xét lại "Học lại" chọn lớp **mọi chi nhánh** như Chuyển lớp một em (Q-RL6) | ra-luong.md mục 6; RA-LUONG-4 |
 | N25 | **Chuyển lớp một em tuần 9–10 (chủ SP 29/10, Q4):** có lựa chọn **theo luồng chuyển tiếp lộ trình** (như Cuối khoá) — chọn thì có Test đi kèm, **tạo luôn** cho tuần đó (MT0 tuần Final khi Lên FT) · **MT0 (Q5):** giữ — MT0 cùng tuần Final mặc định, hạn chấm **T4 tuần sau** | ra-luong.md Q-RL4, Q-RL5 |
 | N26 | **Mockup v8 (chủ SP 29/10):** duyệt `thiet-ke/v8/` (Hồ sơ lớp, Tổng quan, Công việc QL, Phân tích) — web khớp hình ảnh **càng gần càng tốt, nhất là màu, shading, tầng nền ↔ thành phần thông tin**; 13 câu README chưa trả lời → làm như mockup vẽ · menu ⋯ hàng học viên: **+ Case · + Ghi vi phạm · Xác nhận xử lý · Nhập điểm** │ Sửa thông tin · Chuyển lớp (MENU-DONG) | `docs/superpowers/plans/2026-10-29-v8-trien-khai.md` |
+| N27 | **Panel Lịch thi hồ sơ lớp (chủ SP 30/10):** chỉ em của đúng lớp; **một danh sách** (không tách Đã chốt / Dự kiến; em chỉ có tháng dự kiến cũng vào), thi gần nhất trước | #706 |
+| N28 | **Thùng rác (Q-RL2, 30/10):** xoá HV / Case / PA / vi phạm / tệp + đảo trạng thái chụp vào `thung_rac` / `ghi_dao`, giữ **30 ngày**, Khôi phục ở Quản trị › Đã xoá + /hoc-vien/luu-tru | #700 #701 #705 |
+| N29 | **Phân công GV (chủ SP duyệt 30/10):** đổi GV hiệu lực "Ngay hôm nay" hoặc "Từ tuần …"; Case / PA đang mở của GV cũ ở lớp + môn đó chuyển GV mới, điểm đã chấm giữ tên GV cũ; GV cũ chỉ xem lớp cũ ≥ 1 tuần và tới khi bàn giao xong; việc bàn giao hạn 5 ngày (hàm chung), mỗi em một góp ý mỗi kỹ năng; **kỹ năng ở lớp mới vẫn đúng GV cũ dạy → không cần bàn giao** (cả bàn giao chuyển lớp) | `docs/superpowers/specs/2026-10-30-phan-cong-gv-design.md` |
+| N30 | **Panel + dòng đọc (chủ SP 30/10):** mỗi dòng panel cho thấy **chính lý do** em nằm trong danh sách, bớt chữ giải thích (ⓘ khi cần) · Turso < 450 triệu dòng / tháng — tính năng tăng đọc phải cảnh báo chủ SP (CLAUDE.md) | `docs/superpowers/specs/2026-10-30-dot-toc-do-panel-design.md` |
 
 ## 2. Đã làm (đã merge vào `main`, kiểm bằng danh sách PR GitHub 12/10)
 

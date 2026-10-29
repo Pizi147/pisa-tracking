@@ -526,3 +526,33 @@ Luật: hàng GV đầu hồ sơ lớp: ô có lịch `"{môn} {A} → {B} từ 
 - Task B4 (lưu nháp nhận xét chung bàn giao chuyển lớp khi rời ô): LÀM — chống mất chữ; luật ≥ 15 ký tự khi Xác nhận giữ.
 - Các quyết định khác của người soạn (bảng `doi_phan_cong`, ba bảng phiếu mới, gộp theo lớp + GV cũ + hiệu lực, 768–1023 dùng thẻ, Hoàn tác qua `ghi_dao`, GV cũ chỉ mở ATTEMPT_VIEW + STUDENT_VIEW): ĐỒNG Ý.
 - **Chủ SP 30/10 (thêm vào PR-B, phần khung bàn giao chung):** bàn giao CHUYỂN LỚP — kỹ năng nào ở lớp mới vẫn do ĐÚNG GV cũ dạy (cùng kỹ năng, cùng người nhận) thì KHÔNG cần bàn giao: dòng môn ghi "Cùng GV · không cần bàn giao", không tính thiếu, không tạo việc cho GV đó. [PTA đoán] GVCN lớp cũ = GVCN lớp mới → nhận xét chung của GVCN không bắt buộc. Phép kiểm cho cả hai.
+
+## Prompt cho chủ SP dán vào session mới (PTA 30/10 — PR-A đã merge #714)
+
+### PR-B `ban-giao-gv` (song song PR-C)
+```
+Bạn là session code PR-B "BAN-GIAO-GV" của PISA Tracking (Opus 5.5, effort medium; không Fable). Đặt tên session "BAN-GIAO-GV".
+Đọc: CLAUDE.md (gồm "Dòng đọc Turso"), plan.md mục 1 (1.2, 1.4, 1.6 N29), docs/pisa-slot/KIEM-NHANH.txt, đặc tả docs/superpowers/specs/2026-10-30-phan-cong-gv-design.md (HẾT),
+mockup thiet-ke/v9/phan-cong-gv.html + phan-cong-gv-ghi-chu.md, kế hoạch docs/superpowers/plans/2026-10-30-phan-cong-gv.md (Global Constraints, Review Focus, Tự quyết, PTA duyệt, PR-B Task B1–B5).
+Thêm (PTA 30/10): luật chủ SP "kỹ năng ở lớp mới vẫn đúng GV cũ dạy → không cần bàn giao" (mục PTA duyệt) + gom câu `luuPhanCong` theo lô (ghi chú ponytail TRAN_GHI_LO; từ kế hoạch toc-do) nếu chạm cùng tệp.
+Làm từng Task bằng superpowers:executing-plans (mỗi Task superpowers:test-driven-development, đỏ trước), karpathy-guidelines + ponytail; PR có web: /ponytail lite đầu phiên.
+Nhánh mới từ origin/main mới nhất, worktree .claude/worktrees/ban-giao-gv. Cổng riêng (không 4000/5173). Kiểm theo KIEM-NHANH; KHÔNG npm run check đầy đủ. Có migrate → ghi tên + cách kiểm trong mô tả PR.
+Panel bàn giao là làm lại màn: ảnh cặp mockup | web (1440 tối + 375 sáng) + khop-khac.md (bảng truy vết + thao tác TRƯỚC → SAU); chủ SP duyệt ảnh trước merge.
+Trước khi mở PR: impeccable audit + web-design-guidelines, /ponytail-review. Mở PR vào main, KHÔNG merge (PTA rà sâu /security-review + /code-review high).
+Xong nhắn "PTA Plan" bằng SendMessage (link PR, ảnh, ước dòng đọc mới). Chỉ tắt tiến trình của worktree mình.
+```
+
+### PR-C `goc-phan-cong-gv` (song song PR-B)
+```
+Bạn là session code PR-C "GOC-PHAN-CONG-GV" của PISA Tracking (Opus 5.5, effort medium; không Fable). Đặt tên session "GOC-PHAN-CONG-GV". /ponytail lite đầu phiên.
+Đọc: CLAUDE.md (gồm "Dòng đọc Turso", luật giao diện, "Nâng cấp không chép mockup"), DESIGN.md, plan.md mục 1 (1.2, 1.3b, 1.4, 1.6), docs/pisa-slot/KIEM-NHANH.txt,
+đặc tả docs/superpowers/specs/2026-10-30-phan-cong-gv-design.md (HẾT), mockup thiet-ke/v9/phan-cong-gv.html + phan-cong-gv-ghi-chu.md (chuẩn HÌNH ẢNH, học sát),
+kế hoạch docs/superpowers/plans/2026-10-30-phan-cong-gv.md (Global Constraints, Review Focus, Tự quyết, PTA duyệt, PR-C Task C1–C6).
+Lưu ý chồng tệp: SUA-NHO-UI (kế hoạch 2026-10-30-sua-nho.md U4) thêm `NguoiTrongDs.tat` ở PeoplePicker.tsx — nếu đã merge thì dùng, chưa thì không tự thêm.
+Làm từng Task bằng superpowers:executing-plans (mỗi Task superpowers:test-driven-development), karpathy-guidelines + ponytail; impeccable: layout, clarify, harden, adapt trong phạm vi; polish được (màn mới).
+Nhánh mới từ origin/main mới nhất, worktree .claude/worktrees/goc-phan-cong-gv. Cổng riêng. Kiểm theo KIEM-NHANH (+ PISA_CHI_TEP=prNenTypoMau,prSang,prS4f,prEn,prBang0,suaLoiNong); KHÔNG npm run check đầy đủ.
+Màn mới: ảnh cặp toàn trang mockup | web (1440 tối + 375 sáng, + 768) + khop-khac.md (bảng truy vết, ≥ 90 % KHỚP); chủ SP duyệt ảnh trước merge.
+Trước khi mở PR: impeccable audit + web-design-guidelines, /ponytail-review. Mở PR vào main, KHÔNG merge. Xong nhắn "PTA Plan" (link PR, ảnh, % KHỚP). Chỉ tắt tiến trình của worktree mình.
+```
+
+### PR-D `ho-so-lop-luu-pc` — PTA đưa khi PR-C đã merge (và PR-B đã merge: cùng chạm hồ sơ lớp; LOP-1-LOP cũng sửa DauTrangLop.tsx — không chạy song song).
