@@ -35,11 +35,9 @@ export type CheDoHocVien = 'diem' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
 export const CHE_DO_NHAN: Record<CheDoHocVien, string> = {
   diem: t('Tổng hợp'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
 };
-export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, onThemHocVien, onSuaThongTin }: {
+export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, onThemHocVien }: {
   lop: HoSoLop; cheDo: CheDoHocVien; moChon?: boolean; onCheDo: (m: CheDoHocVien) => void;
   onDoi: () => void; onThemHocVien: () => void;
-  /** PR-SL: mở panel Sửa thông tin học viên (cả lớp) — chỉ truyền khi người xem sửa được học viên của lớp. */
-  onSuaThongTin?: () => void;
 }) {
   /* OV-6b2: lớp liên tục (PET, KET…) — không cách xem Lộ trình tiếp theo. */
   const thuong = lop.programme?.scoringMode === 'ratio';
@@ -71,20 +69,24 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   /* `?viec=chuyen-tiep` (lớp FT): bật sẵn chọn nhiều — một lần. */
   useEffect(() => { if (moChon && coTheChon && !chon.bat) chon.batTat(); }, [moChon]); // eslint-disable-line react-hooks/exhaustive-deps
   const doiCheDo = (m: CheDoHocVien) => { if (m !== 'diem') chon.bo(); onCheDo(m); };
+  /*
+   * V8-HSL (mockup v8, chủ SP duyệt 29/10): Cách xem là nút đoạn liền ĐẦU hàng công cụ của thẻ bảng (Tổng hợp FT: cùng hàng lọc · lượt · Chọn nhiều).
+   * "Sửa thông tin" dời sang ⋯ đầu trang › Lớp › Sửa thông tin học viên (cùng panel `SuaCaLopPanel`). Cách xem khác (mockup không vẽ): hàng riêng như cũ.
+   */
+  const cachXem = (
+    <BoLocDoan v8 ariaLabel={t('Cách xem')} value={cheDo} onChange={doiCheDo}
+      muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
+  );
+  const nutChon = coTheChon ? (
+    <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}
+      className={`btn h-[30px] px-2.5 text-[13px] max-sm:h-11 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{chon.bat ? '✓ ' : ''}{t('Chọn nhiều')}</button>
+  ) : null;
+  const trongThe = cheDo === 'diem' && !thuong;
   return (
     <div className="space-y-2">
-      {/* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8): GIỮ hàng "Cách xem" ở vị trí V4 — [XM] truy vết V5 ghi BỎ, chờ PTA Plan. */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <BoLocDoan ariaLabel={t('Cách xem')} value={cheDo} onChange={doiCheDo}
-          muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
-        <span className="flex flex-wrap items-center gap-2">
-          {onSuaThongTin && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>{t('Sửa thông tin')}</button>}
-          {coTheChon && (
-            <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}
-              className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'btn-ghost'}`}>{t('Chọn nhiều học viên')}</button>
-          )}
-        </span>
-      </div>
+      {!trongThe && (
+        <div className="flex flex-wrap items-center justify-between gap-2">{cachXem}{nutChon}</div>
+      )}
       {cheDo === 'thong-tin'
         ? (
           <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -100,7 +102,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
           ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
               chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} />
           : <BangHoSoLop classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
-              onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
+              onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} cachXem={cachXem} nutChon={nutChon} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
           viec={[...(!thuong && lop.viewer.coTheChuyenTiep ? [{ key: 'chuyen-lop', nhan: t('Chuyển lớp…') }] : []),

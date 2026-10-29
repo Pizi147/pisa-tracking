@@ -36,4 +36,14 @@ export const EN_UI_HO_SO_LOP = {
   'Đã đánh giá {n} / {tong}': 'Reviewed {n} / {tong}',
   'Đề xuất bước tiếp': 'Proposed next step',
   'Đã có người sửa lúc {luc} ({ai}) — bấm Lưu lần nữa để ghi đè': 'Someone saved this at {luc} ({ai}) — press Save again to overwrite',
+  /* V8-HSL */
+  'tuần {n}': 'week {n}',
+  'khai giảng {ngay}': 'started {ngay}',
+  'Cách tính Đạt': 'How Pass is counted',
+  'Em đạt kỳ vọng ở lượt gần nhất đã đủ điểm của từng em / số em có lượt đủ điểm. Cùng kết luận với cột Kết quả.': "Students meeting expectation in their latest fully scored attempt / students with a fully scored attempt. Same verdict as the Result column.",
+  '+{n} ở Công việc ›': '+{n} in Tasks ›',
+  'Đạt theo kỹ năng': 'Pass by skill',
+  'W = (W1 + 2 × W2) / 3 — dòng phụ: W1 · W2': 'W = (W1 + 2 × W2) / 3 — subline: W1 · W2',
+  'Đạt theo môn': 'Pass by subject',
+  'ô = HV đạt / HV có điểm': 'cell = passed / scored',
 } satisfies Record<string, Dich>;

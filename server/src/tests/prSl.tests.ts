@@ -82,7 +82,8 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(pn.includes('/sua-ca-lop/xem-truoc') && pn.includes('daSua: soEm > 0') && pn.includes('Bỏ những gì vừa sửa?'), 'xem trước + luật S3 + hỏi khi đóng');
     assert(pn.includes('if (busy) return;'), 'đang lưu thì Esc / nền / ✕ không đóng panel (chống mất lưới khi lưu lỗi)');
     assert(doc('shared/domain/hocVienLop.ts').includes("'Sửa thông tin học viên'"), 'mục ⋯ (PR-OV3a: menuHoSoLop)');
-    assert(doc('web/src/modules/classes/TabHocVienLop.tsx').includes(">{t('Sửa thông tin')}</button>"), 'nút ở tab Học viên');
+    /* V8-HSL (mockup v8 đã duyệt 29/10, Q-7): nút "Sửa thông tin" ở hàng Cách xem DỜI vào ⋯ đầu trang › Lớp › Sửa thông tin học viên (cùng panel). */
+    assert(!doc('web/src/modules/classes/TabHocVienLop.tsx').includes(">{t('Sửa thông tin')}</button>") && /viec === 'sua-hoc-vien' && <SuaCaLopPanel/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'Sửa thông tin học viên mở từ ⋯ đầu trang');
   });
   check('SL-4 · D11: Truong và Field nối dòng lỗi vào ô bằng aria-describedby (một hook useNoiLoi)', () => {
     assert(/aria-describedby/.test(doc('web/src/ui/loiForm.tsx')), 'useNoiLoi');
