@@ -41,7 +41,7 @@ export function DaXoaAdmin() {
     { key: 'muc', nhan: t('Mục'), kieu: 'ten' },
     { key: 'ai', nhan: t('Người xoá'), kieu: 'chu', rong: 170 },
     { key: 'luc', nhan: t('Lúc xoá'), kieu: 'chu', rong: 150 },
-    { key: 'den', nhan: t('Còn đến'), kieu: 'tuan', rong: 110 },
+    { key: 'den', nhan: t('Giữ đến'), kieu: 'tuan', rong: 110 },
     { key: 'nut', nhan: '', kieu: 'nut', rong: 280 },
   ];
   const oCua = (m: MucRac, c: CotBang) => {

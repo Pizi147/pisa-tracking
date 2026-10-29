@@ -7,7 +7,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
-import { BoChup, ghiThungRac } from './thungRac.ts';
+import { BoChup, bangCuaLoai, ghiThungRac, tepConTrongRac } from './thungRac.ts';
 import { ghiNhanViecNenKhoTep, khoTepHienTai } from './khoTep.ts';
 
 /**
@@ -240,6 +240,7 @@ const conDongKhac = (urls: string[]): Set<string> => {
   for (let k = 0; k < urls.length; k += 400) {
     const lo = urls.slice(k, k + 400);
     for (const r of db().prepare(`SELECT DISTINCT url FROM attachments WHERE kind = 'file' AND url IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) giu.add(r.url as string);
+    for (const u of tepConTrongRac(lo)) giu.add(u);   // Q-RL2a: khoá còn trong mục thùng rác chưa khôi phục / chưa hết hạn — giữ cho Khôi phục
   }
   return giu;
 };
@@ -316,9 +317,14 @@ export async function removeAttachment(p: Principal, id: number): Promise<{ thun
   const conn = db();
   const chup = new BoChup(conn);
   return tx(() => {
+    const bangChu = bangCuaLoai(r.owner_type);
+    if (bangChu) chup.ghiGoc(bangChu, r.owner_id);   // khôi phục so lại: id bản ghi chủ có thể đã thuộc bản ghi khác
     chup.chay('DELETE FROM attachments WHERE id = ?', id);
     if (r.kind === 'file') chup.tep.push(r.url);
-    const thungRacId = ghiThungRac(conn, { loai: 'tep', doiTuongId: id, nhan: r.display_name ?? 'Tệp', nguoi: p.userId, chup });
+    /* Mục ở "Đã xoá" ghi kèm học viên của bản ghi chủ (nếu bản ghi chủ có cột học viên). */
+    const hv = bangChu ? (() => { try { return conn.prepare(`SELECT s.id, s.full_name FROM ${bangChu} x JOIN students s ON s.id = x.student_id WHERE x.id = ?`).get(r.owner_id) as any; } catch { return null; } })() : null;
+    const thungRacId = ghiThungRac(conn, { loai: 'tep', doiTuongId: id, nhan: [r.display_name ?? 'Tệp', hv?.full_name].filter(Boolean).join(' · '),
+      hocVienId: hv?.id ?? null, nguoi: p.userId, chup });
     writeAudit({
       actorUserId: p.userId, action: 'attachment.delete', entityType: 'attachment', entityId: id, entityLabel: r.display_name,
       before: { ownerType: r.owner_type, ownerId: r.owner_id, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by }, after: { thungRacId },

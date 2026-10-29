@@ -414,7 +414,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(maLoi(() => xoaHV.xoaHocVien(P.admin, 99_999_999, { maXacNhan: 'x' })) === 404, 'id lạ xoá phải 404');
   });
 
-  check('PR-XOA X10 · Số câu SQL: xoá ≤ 58 (P9a XET-LAI thêm 1 câu xoá xét lại; SV-S-EXPERT thêm 1 câu xoá lượt S Expert; SV-BAI-LOP thêm 1 câu xoá bài trên lớp; OV-15c thêm 1 câu xoá ghi chú lịch thi; OV-12g thêm 1 câu xoá góp ý tuần; OV-12h thêm 1 câu xoá buổi Tutor; OV-3b thêm 1 câu xoá nháp; PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp; PR-LUI-a1 thêm 1 câu kiểm tệp dùng chung) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
+  check('PR-XOA X10 · Số câu SQL: xoá ≤ 59 (Q-RL2a thêm 1 câu kiểm tệp còn trong thùng rác; P9a XET-LAI thêm 1 câu xoá xét lại; SV-S-EXPERT thêm 1 câu xoá lượt S Expert; SV-BAI-LOP thêm 1 câu xoá bài trên lớp; OV-15c thêm 1 câu xoá ghi chú lịch thi; OV-12g thêm 1 câu xoá góp ý tuần; OV-12h thêm 1 câu xoá buổi Tutor; OV-3b thêm 1 câu xoá nháp; PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp; PR-LUI-a1 thêm 1 câu kiểm tệp dùng chung) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
     const it = taoHocVienDuDuLieu();
     const nhieu = taoHocVienDuDuLieu({ soLuotThem: 5 });
     const xemIt = demTruyVan(() => { xoaHV.xemXoaHocVien(P.admin, it.sid); });
@@ -424,7 +424,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 58, `xoá tốn ${nIt} câu (> 58)`);   // UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
+      assert(nIt <= 59, `xoá tốn ${nIt} câu (> 59)`);   // UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });
