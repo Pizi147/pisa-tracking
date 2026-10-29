@@ -24,7 +24,7 @@ import {
 import { HttpError, addDays, badRequest, conflict, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
+import { nho, nhoTheoId, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
@@ -2583,6 +2583,46 @@ const LOP_CUA_CASE = 'COALESCE(cur.class_id, a.class_id)';
 const CN_CUA_CASE = 'COALESCE(cc.branch_id, ac.branch_id)';
 
 /**
+ * PHỤ LIỆU DÒNG CASE — lượt MT mới nhất (tên Case tự sinh), PHƯƠNG ÁN ĐANG CHẠY, KẾT QUẢ GẦN NHẤT: hai ô "đang làm gì"
+ * và "lần gần nhất ăn thua đến đâu" khiến một dòng Case đọc được mà không phải mở ra. MỘT câu cho cả danh sách (không hỏi từng Case).
+ * S3 (giảm dòng đọc Turso): chỉ đọc Case của danh sách đang trả (đi chỉ mục `case_id`), nhớ THEO CASE trong request GET (`nhoTheoId`) — Học viên & Lớp /
+ * Tổng quan gọi danh sách theo từng chi nhánh: lần sau chỉ hỏi Case chưa nhớ, không trả thiếu phụ liệu (trước: TD7 đọc cả bốn bảng một lần mỗi request;
+ * bảng kỹ năng `case_issues` đọc mà không nơi nào dùng — bỏ). Cùng luật chọn với bản cũ: PA = dòng id lớn nhất; kết quả = observed_on lớn nhất rồi id lớn nhất.
+ */
+export function phuDsCase(caseIds: number[]) {
+  const dong = nhoTheoId('ds-case-phu:', caseIds, (thieu) => {
+    const out = new Map<number, any[]>();
+    const j = JSON.stringify(thieu);
+    for (const r of db().prepare(
+      `SELECT 'm' AS k, case_id, MAX(attempt_no) AS a, NULL AS b, NULL AS c, NULL AS id FROM case_milestones
+        WHERE case_id IN (SELECT value FROM json_each(?)) AND attempt_no IS NOT NULL GROUP BY case_id
+       UNION ALL SELECT 'p', case_id, kind, description, action_due, id FROM case_interventions
+        WHERE case_id IN (SELECT value FROM json_each(?)) AND status IN ('planned','started') AND COALESCE(approval_state,'') != 'pending'
+       UNION ALL SELECT 'f', case_id, outcome, next_step, observed_on, id FROM case_followups
+        WHERE case_id IN (SELECT value FROM json_each(?)) AND outcome IS NOT NULL`,
+    ).all(j, j, j) as any[]) {
+      if (!out.has(r.case_id)) out.set(r.case_id, []);
+      out.get(r.case_id)!.push(r);
+    }
+    return out;
+  });
+  const latestAttemptByCase = new Map<number, number>();
+  const planOf = new Map<number, { kind: string; description: string | null; due: string | null }>();
+  const lastResultOf = new Map<number, { outcome: string | null; nextStep: string | null; on: string }>();
+  for (const [caseId, ds] of dong) {
+    let pa: any = null, kq: any = null;
+    for (const r of [...ds].sort((x, y) => x.id - y.id)) {
+      if (r.k === 'm') latestAttemptByCase.set(caseId, r.a);
+      else if (r.k === 'p') pa = r;   // id tăng dần → dòng cuối là id lớn nhất
+      else if (!kq || (r.c ?? '') >= (kq.c ?? '')) kq = r;   // 'f': observed_on lớn nhất (NULL nhỏ nhất như ORDER BY … DESC), hoà thì id lớn nhất
+    }
+    if (pa) planOf.set(caseId, { kind: pa.a, description: pa.b, due: pa.c });
+    if (kq) lastResultOf.set(caseId, { outcome: kq.a, nextStep: kq.b, on: kq.c });
+  }
+  return { latestAttemptByCase, planOf, lastResultOf };
+}
+
+/**
  * PHẦN SQL + LỌC QUYỀN + DỰNG `MappedCase` của `listCases` — tách riêng để nhớ trong request theo bộ lọc SQL
  * (`khoaDsCase`), không phụ thuộc `queue`/`classKind`/`skill` (lọc trong bộ nhớ ở `listCases`, không đổi).
  */
@@ -2670,67 +2710,6 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
     )
     .all(...params) as any[];
 
-  /* TD7: bốn bảng phụ dưới (đọc cả bảng, không theo bộ lọc) nhớ MỘT lần mỗi request GET — Học viên & Lớp / Tổng quan gọi danh sách Case
-     theo từng chi nhánh (tới 5 lần), trước mỗi lần đọc lại cả bốn bảng. Người gọi không sửa kết quả. */
-  const { latestAttemptByCase, planOf, lastResultOf, skillsByCase } = nho('ds-case-phu', () => {
-  /*
-   * LƯỢT MT MỚI NHẤT của từng Case, lấy MỘT LẦN cho cả danh sách.
-   *
-   * Tên Case tự sinh theo mốc mới nhất, nên cần con số này. Hỏi từng Case một thì một bảng
-   * ba trăm dòng sinh ba trăm câu truy vấn — đúng kiểu chậm mà không ai biết vì sao.
-   */
-  const latestAttemptByCase = new Map<number, number>();
-  for (const r of conn
-    .prepare(
-      `SELECT case_id, MAX(attempt_no) AS n FROM case_milestones
-        WHERE attempt_no IS NOT NULL GROUP BY case_id`,
-    )
-    .all() as any[]) {
-    latestAttemptByCase.set(r.case_id, r.n);
-  }
-
-  /*
-   * PHƯƠNG ÁN ĐANG CHẠY và KẾT QUẢ GẦN NHẤT của từng Case, lấy MỘT LẦN cho cả danh sách.
-   *
-   * Đây là hai thứ khiến một dòng Case đọc được mà không phải mở ra: "đang làm gì" và "lần
-   * gần nhất ăn thua đến đâu". Trước vòng này dòng Case chỉ nói "đang xử lý · 2 việc" —
-   * đúng nhưng vô dụng, vì nó không nói đang làm gì cho em cả.
-   */
-  const planOf = new Map<number, { kind: string; description: string | null; due: string | null }>();
-  for (const r of conn
-    .prepare(
-      `SELECT case_id, kind, description, action_due FROM case_interventions
-        WHERE status IN ('planned','started') AND COALESCE(approval_state,'') != 'pending'
-        ORDER BY id DESC`,
-    )
-    .all() as any[]) {
-    if (!planOf.has(r.case_id)) {
-      planOf.set(r.case_id, { kind: r.kind, description: r.description, due: r.action_due });
-    }
-  }
-  const lastResultOf = new Map<number, { outcome: string | null; nextStep: string | null; on: string }>();
-  for (const r of conn
-    .prepare(
-      `SELECT case_id, outcome, next_step, observed_on FROM case_followups
-        WHERE outcome IS NOT NULL ORDER BY observed_on DESC, id DESC`,
-    )
-    .all() as any[]) {
-    if (!lastResultOf.has(r.case_id)) {
-      lastResultOf.set(r.case_id, { outcome: r.outcome, nextStep: r.next_step, on: r.observed_on });
-    }
-  }
-
-  /* Kỹ năng của một Case = kỹ năng của các dòng phân loại. Một Case có thể chạm nhiều kỹ năng. */
-  const skillsByCase = new Map<number, string[]>();
-  for (const r of conn
-    .prepare('SELECT case_id, skill FROM case_issues WHERE skill IS NOT NULL').all() as any[]) {
-    const cur = skillsByCase.get(r.case_id) ?? [];
-    if (!cur.includes(r.skill)) cur.push(r.skill);
-    skillsByCase.set(r.case_id, cur);
-  }
-  return { latestAttemptByCase, planOf, lastResultOf, skillsByCase };
-  });
-
   /*
    * PR-TD: nạp trước chi nhánh/lớp của MỌI HV trong một lô, để `can()` dưới đây không hỏi DB từng dòng một.
    * BỎ QUA khi vai đang có phạm vi TOÀN HỆ THỐNG (`scope.all`, ví dụ Quản trị hệ thống): `can()` luôn `true` ngay ở
@@ -2740,8 +2719,9 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
    */
   if (!scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).all) napTruocPhamVi(rows.map((r) => r.eff_student_id));
 
-  const all: MappedCase[] = rows
-    .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop_quyen_id, studentId: r.eff_student_id }))
+  const thay = rows.filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop_quyen_id, studentId: r.eff_student_id }));
+  const { latestAttemptByCase, planOf, lastResultOf } = phuDsCase(thay.map((r) => r.id as number));
+  const all: MappedCase[] = thay
     .map((r) => ({
       id: r.id,
       originKind: r.origin_kind,
