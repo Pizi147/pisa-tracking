@@ -6,6 +6,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, ErrorState, OChiSo, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
+import { LOP_OSO, VUNG_BAM_SO } from '../../ui/SoLieu.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -44,7 +45,7 @@ export function DauTrangTq({ phamVi, ben, ky }: { phamVi: ReactNode; ben?: React
   const { homNay } = useNgayNghiepVu();
   return (
     <header className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-2">
-      <h1 className="m-0 text-xl font-bold text-slate-100">{t('Tổng quan')}</h1>
+      <h1 className="m-0 text-[22px] font-bold leading-[1.3] text-slate-100">{t('Tổng quan')}</h1>
       <span className="text-sm text-slate-400">{phamVi}{homNay && <> · <b className="font-bold text-[color:var(--accent)]">{tuanLich(homNay)}</b></>}
         {ky && <> · {t('kỳ {ky}', { ky: kyChu(ky) })}</>}</span>
       {ben && <span className="flex flex-wrap items-center gap-2 max-sm:w-full sm:ml-auto">{ben}</span>}
@@ -55,7 +56,7 @@ export function DauTrangTq({ phamVi, ben, ky }: { phamVi: ReactNode; ben?: React
 /** Ô chỉ số V5: tên (+ "?") · giá trị · mẫu số · kỳ xem. */
 export function ChiSo({ ten, giaTri, mau, ky, luat }: { ten: string; giaTri: ReactNode; mau?: ReactNode; ky?: string; luat?: ReactNode }) {
   return (
-    <OChiSo ten={<span className="inline-flex items-center gap-1.5">{ten}{luat && <NutLuat label={ten}>{luat}</NutLuat>}</span>} giaTri={giaTri} mau={mau}>
+    <OChiSo className="max-sm:p-3" ten={<span className="inline-flex items-center gap-1.5">{ten}{luat && <NutLuat label={ten}>{luat}</NutLuat>}</span>} giaTri={giaTri} mau={mau}>
       {ky && <div className="text-xs text-slate-500">{ky}</div>}
     </OChiSo>
   );
@@ -67,16 +68,39 @@ export function PhanTram({ x, nguon, tieuDe, gon, vung }: { x: TyLeV5 | null; ng
   if (!x) return <span className="text-slate-500">—</span>;
   const v = rateView(x.dat, x.mau);
   if (v.kind !== 'value') return gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')} aria-label={t('Chưa có dữ liệu')}>—</span>
-    : <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>;
+    : <ChuaCoDl />;
   return <OSo giaTri={x.mau} nhan={`${v.percent} %`} nguon={nguon} tieuDe={tieuDe} vung={vung} />;
+}
+/** V8-TQ (mockup `.chua-dl`): "– Chưa có dữ liệu" là viên viền đứt — cùng dáng "Chưa đủ dữ liệu", không chữ đậm trơn. */
+export const ChuaCoDl = () => (
+  <span className="chua-dl my-1 inline-flex h-[26px] items-center self-start rounded border border-dashed px-2 text-[13px] font-semibold text-slate-500" style={{ borderColor: 'var(--thieu-vien)' }}>– {t('Chưa có dữ liệu')}</span>
+);
+/** Ô số dẫn sang trang khác (TVV / CX): cùng dáng ô số (gạch chân nhấn); 0 mờ, không bấm. */
+const SoDen = ({ n, to }: { n: number; to: string }) => (n > 0 ? <Link to={to} className={`${VUNG_BAM_SO} ${LOP_OSO}`}>{n}</Link> : <span className="font-medium text-slate-500">{n}</span>);
+const Cham = () => <span className="font-normal text-slate-500" aria-hidden>·</span>;
+
+/**
+ * SOS MỘT KIỂU (mockup v8: Lớp cần chú ý, Lớp tôi chủ nhiệm, đầu Hồ sơ lớp): chip mức (MAU-MUC) + ô số HV ngoài chip + "HV" chữ phụ, mỗi mức một cụm
+ * không xuống dòng; mức 0 không vẽ. 1440 một dòng, 375 xuống dòng giữa các cụm.
+ */
+export function SosDem({ muc, o }: { muc: readonly number[]; o: (i: number, n: number) => ReactNode }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-3.5 gap-y-1.5 sm:flex-nowrap">
+      {muc.map((n, i) => n > 0 && (
+        <span key={i} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+          <span className={`${CHIP_SOS} ${lopSos(i + 1)}`}>SOS {i + 1}</span>{o(i, n)}<span className="sd-dv text-[13px] font-normal text-slate-400">HV</span>
+        </span>
+      ))}
+    </span>
+  );
 }
 export const tuMau = (x: TyLeV5 | null, donVi: string) => (x && x.mau ? `${x.dat}/${x.mau} ${donVi}` : null);
 
-/** Bố cục B: trái (tình hình) · phải 360 (Chờ duyệt / Điều hướng); < 1100 một cột, cột phải lên trước. */
+/** Bố cục B: trái (tình hình) · phải 360 (Chờ duyệt / Điều hướng); < 1280 một cột, cột phải lên trước (V8: bảng trái cần ~860 px — cột SOS 340). */
 function BoCuc({ trai, phai }: { trai: ReactNode; phai: ReactNode }) {
   return (
-    <div className="grid items-start gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="flex min-w-0 flex-col gap-4 max-[1099px]:order-2">{trai}</div>
+    <div className="grid items-start gap-4 min-[1280px]:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="flex min-w-0 flex-col gap-4 max-[1279px]:order-2">{trai}</div>
       <div className="flex min-w-0 flex-col gap-4">{phai}</div>
     </div>
   );
@@ -88,10 +112,10 @@ export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: s
     <Card title={tieuDe} bodyClass="p-0">
       <ul className="m-0 list-none p-0">
         {dong.map((d, i) => (
-          <li key={i} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-            <Link to={d.to} className="bam grid min-h-[44px] grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-slate-100 no-underline">
+          <li key={i} className="border-t" style={{ borderColor: 'var(--line)' }}>
+            <Link to={d.to} className="bam grid min-h-[44px] grid-cols-[minmax(0,1fr)_auto] gap-x-2.5 gap-y-0.5 px-4 py-2.5 leading-[1.45] text-slate-100 no-underline">
               <span className="text-sm font-medium">{d.t1}</span>
-              <span aria-hidden className="row-span-2 self-center font-bold text-[color:var(--accent)]">›</span>
+              <span aria-hidden className="row-span-2 self-center text-[15px] font-bold text-[color:var(--accent)]">›</span>
               {d.t2 && <span className="text-xs text-slate-500">{d.t2}</span>}
             </Link>
           </li>
@@ -103,12 +127,15 @@ export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: s
 const So = ({ n }: { n: number }) => <b className="tabular-nums">{n}</b>;
 
 /** Công tắc hai nút ngoài tiêu đề bảng (đầu thẻ). */
-export function CongTac<K extends string>({ value, onChange, muc }: { value: K; onChange: (k: K) => void; muc: [K, string][] }) {
+/** `v8` (mockup v8 `.doan.nho`): khối liền cao 30 (375: 44 full bề rộng, chia đều), mục chọn đậm chữ chính + gạch đáy 2 px nhấn. */
+export function CongTac<K extends string>({ value, onChange, muc, v8 }: { value: K; onChange: (k: K) => void; muc: [K, string][]; v8?: boolean }) {
   return (
-    <span role="group" aria-label={t('Lọc')} className="inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
-      {muc.map(([k, nhan]) => (
-        <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)}
-          className={`min-h-[44px] px-3 text-[13px] sm:min-h-[30px] ${value === k ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
+    <span role="group" aria-label={t('Lọc')} className={`inline-flex overflow-hidden rounded-lg border ${v8 ? 'max-sm:w-full' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
+      {muc.map(([k, nhan], i) => (
+        <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)} style={v8 ? { borderColor: 'var(--line-strong)' } : undefined}
+          className={v8 ? `min-h-[44px] whitespace-nowrap px-2.5 text-[13px] max-sm:flex-1 max-sm:text-sm sm:min-h-[28px] ${i ? 'border-l' : ''} ${value === k
+            ? 'bg-[color:var(--accent-soft)] font-bold text-slate-100 shadow-[inset_0_-2px_0_var(--accent)]' : 'font-medium text-slate-400 hover:text-slate-200'}`
+            : `min-h-[44px] px-3 text-[13px] sm:min-h-[30px] ${value === k ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]' : 'text-slate-400'}`}>{nhan}</button>
       ))}
     </span>
   );
@@ -131,20 +158,21 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
     return n <= 0 ? t('hôm nay') : t('{n} ngày', { n });
   };
   return (
-    <Card title={<>{t('Chờ bạn duyệt')} <span className="font-normal text-slate-500">· {hop.the.length}</span></>} bodyClass="p-0">
+    <Card title={<>{t('Chờ bạn duyệt')} <span className="ml-1.5 font-normal text-slate-500">{t('{n} đề xuất', { n: hop.the.length })}</span></>} bodyClass="p-0">
       <ul data-hd="tq-can-xu-ly" className="m-0 list-none p-0">
         {hop.the.slice(0, 5).map((y) => (
-          <li key={y.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+          <li key={y.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
+            {/* V8: dòng không cắt chữ (xuống dòng). */}
             <button type="button" onClick={() => setMo(y)}
-              className={`bam grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-4 py-2.5 text-left ${mo?.id === y.id ? 'dang-mo' : ''}`}>
-              <span className="truncate text-sm font-medium text-slate-100">{y.nhanLoai}{y.hocVien && <> · <b className="font-semibold">{y.hocVien}</b></>}</span>
-              <span className="whitespace-nowrap text-xs text-slate-400">{cho(y)}</span>
-              <span className="col-span-2 truncate text-xs text-slate-500">{[y.lop, y.phu, y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
+              className={`bam grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2.5 gap-y-0.5 px-4 py-2.5 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
+              <span className="text-sm font-medium text-slate-100">{y.nhanLoai}{y.hocVien && <> · <b className="font-bold">{y.hocVien}</b></>}</span>
+              <span className="self-start whitespace-nowrap pt-0.5 text-xs text-slate-400">{cho(y)}</span>
+              <span className="text-xs text-slate-500">{[y.lop, y.phu, y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
             </button>
           </li>
         ))}
       </ul>
-      <Link to="/cong-viec/cho-duyet" className="block border-t px-4 py-2.5 text-sm font-semibold no-underline" style={{ borderColor: 'var(--line)' }}>{t('Hộp duyệt ›')}</Link>
+      <Link to="/cong-viec/cho-duyet" className="block border-t px-4 py-2.5 text-sm font-semibold text-[color:var(--accent)] no-underline" style={{ borderColor: 'var(--line)' }}>{t('Hộp duyệt ›')}</Link>
       {mo && (
         <KhungPanel loai={t('DUYỆT')} tieuDe={mo.tieuDe} onDong={() => setMo(null)}>
           <TheYeuCau yc={mo} gon onXong={() => { setMo(null); onXong(); }} />
@@ -157,8 +185,9 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
 /* ───────────── QL (một chi nhánh) ───────────── */
 
 const COT_LOP: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten' }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 110 }, { key: 'sos', nhan: t('SOS hiện tại'), kieu: 'chu', rong: 260 },
-  { key: 'case', nhan: t('Case chưa PA'), kieu: 'so', rong: 110 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'so', rong: 110 },
+  /* V8: SOS 340 căn trái một dòng (chip + số ngoài chip); 375 thẻ lưới — SOS (`chu`) hàng riêng dưới. */
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true }, { key: 'dat', nhan: t('Đạt MT'), kieu: 'phan-tram', rong: 120 }, { key: 'sos', nhan: t('SOS hiện tại'), kieu: 'chu', rong: 340 },
+  { key: 'case', nhan: t('Case chưa PA'), kieu: 'so', rong: 130 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'so', rong: 130 },
 ];
 const coVanDe = (l: DongLop) => l.sos.some((n) => n > 0) || l.caseChuaPa > 0 || l.thiThangNay > 0 || (!!l.datMt && l.datMt.dat < l.datMt.mau);
 
@@ -173,17 +202,8 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
     if (c.key === 'dat') return <PhanTram gon x={l.datMt} nguon={qBc(d, `&o=dat-mt&lop=${l.id}`)} tieuDe={t('Đạt MT · {lop}', { lop: l.ma })} />;
     if (c.key === 'sos') {
       if (!l.sos.some((n) => n > 0)) return <span className="text-slate-500">—</span>;
-      /* Chủ SP 23/10: chip chỉ ghi mức, số HV đứng ngoài chip (đọc rõ "SOS 3 · 5 HV", không dính màu chip) — bấm số → panel danh sách em. */
-      return (
-        <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-          {l.sos.map((n, i) => n > 0 && (
-            <span key={i} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-              <span className={`${CHIP_SOS} ${lopSos(i + 1)}`}>SOS {i + 1}</span>
-              <OSo giaTri={n} nhan={t('{n} HV', { n })} tieuDe={`SOS ${i + 1} · ${l.ma}`} nguon={qCn(d, `sos${i + 1}`, l.khoa)} />
-            </span>
-          ))}
-        </span>
-      );
+      /* Chủ SP 23/10: chip chỉ ghi mức, số HV đứng ngoài chip — bấm số → panel danh sách em. */
+      return <SosDem muc={l.sos} o={(i, n) => <OSo giaTri={n} tieuDe={`SOS ${i + 1} · ${l.ma}`} nguon={qCn(d, `sos${i + 1}`, l.khoa)} />} />;
     }
     if (c.key === 'case') return <OSo giaTri={l.caseChuaPa} tieuDe={t('Case chưa chốt PA · {lop}', { lop: l.ma })} nguon={qCn(d, 'caseChuaChot', l.khoa)} />;
     return <OSo giaTri={l.thiThangNay} tieuDe={t('Thi tháng này · {lop}', { lop: l.ma })} nguon={qBc(d, `&o=thi-thang-nay&lop=${l.id}`)} />;
@@ -193,7 +213,7 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
   return (
     <Card bodyClass="p-0" title={t('Lớp cần chú ý')}>
       <div data-hd="tq-lop-chu-y">
-        <Bang ten={t('Lớp cần chú ý')} cot={COT_LOP} hang={ds} khoa={(l) => l.id} oCua={oCua} phuCua={phuCua} khung={false}
+        <Bang ten={t('Lớp cần chú ý')} cot={COT_LOP} hang={ds} khoa={(l) => l.id} oCua={oCua} phuCua={phuCua} khung={false} theLuoi
           rong={{ tieuDe: t('Không lớp nào cần chú ý'), goiY: t('Không SOS, không Case chưa PA, không HV thi tháng này.'), nut: <Link to="/hoc-vien" className="link">{t('Học viên & Lớp ›')}</Link> }} />
       </div>
     </Card>
@@ -201,12 +221,12 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
 }
 
 const COT_GV_HC: readonly CotBang[] = [
-  { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 130 },
-  { key: 'diem', nhan: t('Chấm Test đúng hạn'), kieu: 'phan-tram', rong: 150 }, { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 120 },
+  { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 150 },
+  { key: 'diem', nhan: t('Chấm Test đúng hạn'), kieu: 'phan-tram', rong: 180 }, { key: 'tre', nhan: t('Quá hạn'), kieu: 'so', rong: 130 },
 ];
 const COT_GV_HT: readonly CotBang[] = [
-  { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'phan-tram', rong: 150 },
-  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 120 }, { key: 'pa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 120 },
+  { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'phan-tram', rong: 180 },
+  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 120 }, { key: 'pa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 150 },
 ];
 export const tyLeGv = (o: OPtGv | undefined): TyLeV5 | null => (!o || o.k === 'na' ? null : o.k === 'rong' ? { dat: 0, mau: 0 } : { dat: o.dung, mau: o.tong });
 export const gopKq = (kq: Record<string, OPtGv>): TyLeV5 | null => {
@@ -247,11 +267,11 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const phuCua = (h: HangGv, c: CotBang) => (c.key === 'gv' ? phuGv(h) : c.key === 'tre' ? ((tre.get(h.id) ?? 0) ? t('bài') : null) : tuMau(giaTri(h, c), DV[c.key]));
   return (
     <Card bodyClass="p-0" title={t('GV cần chú ý')}
-      action={<CongTac value={ht ? 'ht' : 'hc'} onChange={(k) => setLoai(k)} muc={[['hc', t('Hành chính')], ['ht', t('Học thuật')]]} />}>
+      action={<CongTac v8 value={ht ? 'ht' : 'hc'} onChange={(k) => setLoai(k)} muc={[['hc', t('Hành chính')], ['ht', t('Học thuật')]]} />}>
       {pt.error ? <ErrorState message={pt.error.message} hint={pt.error.hint} onRetry={pt.reload} />
         : !pt.data ? <Skeleton rows={3} className="p-4" />
           : <Bang ten={t('GV cần chú ý')} cot={ht ? COT_GV_HT.filter((c) => d.ct === 'ft' || c.key !== 'tb') : COT_GV_HC}
-            hang={pt.data.hang} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua} khung={false} rong={{ tieuDe: t('Chi nhánh chưa có GV nào trong kỳ') }} />}
+            hang={pt.data.hang} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua} khung={false} theLuoi rong={{ tieuDe: t('Chi nhánh chưa có GV nào trong kỳ') }} />}
     </Card>
   );
 }
@@ -312,7 +332,7 @@ const COT_CN_BC: readonly CotBang[] = [
 ];
 export const ptChu = (x: TyLeV5 | null, gon = false) => (!x ? <span className="text-slate-500">—</span>
   : x.mau ? <span className="font-semibold tabular-nums">{Math.round((100 * x.dat) / x.mau)} %</span>
-    : gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span> : <span className="text-sm font-medium text-slate-500">– {t('Chưa có dữ liệu')}</span>);
+    : gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span> : <ChuaCoDl />);
 
 export function TheoChiNhanh({ d, cx, baoCao, onChiNhanh }: { d: TongQuanV5Data; cx?: boolean; /** Báo cáo HV (kỳ chọn tự do): cột "Thi trong kỳ" + SOS 2–3. */ baoCao?: boolean; onChiNhanh: (id: number) => void }) {
   type H = DongCn & { tong?: boolean };
@@ -335,7 +355,7 @@ export function TheoChiNhanh({ d, cx, baoCao, onChiNhanh }: { d: TongQuanV5Data;
     : c.key === 'tt' ? tuMau(h.thiThat, t('HV')) : null);
   return (
     <Card title={t('Theo chi nhánh')} bodyClass="p-0">
-      <Bang ten={t('Theo chi nhánh')} cot={cx ? COT_CN_CX : baoCao ? COT_CN_BC : COT_CN} hang={hang} khoa={(h) => h.khoa} oCua={oCua} phuCua={phuCua} khung={false} deu
+      <Bang ten={t('Theo chi nhánh')} cot={cx ? COT_CN_CX : baoCao ? COT_CN_BC : COT_CN} hang={hang} khoa={(h) => h.khoa} oCua={oCua} phuCua={phuCua} khung={false} deu theLuoi
         onHang={cx ? undefined : (h) => { if (!h.tong) onChiNhanh(h.id); }} rong={{ tieuDe: t('Chưa có lớp nào trong khung này') }} />
     </Card>
   );
@@ -381,7 +401,7 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
           mau={ft ? tuMau(d.thiThat, t('HV')) : t('chỉ Fast Track')} />
         <ChiSo ten={t('HV SOS 2–3')} ky={t('hiện tại')} giaTri={<b className="tabular-nums">{sos23}</b>} />
         <ChiSo ten={t('Chờ KQ · bước tiếp')} ky={t('hiện tại')}
-          giaTri={hv.data ? <span className="inline-flex gap-1.5"><Link to={den('da-thi')} className="link">{hv.data.dem['da-thi']}</Link>·<Link to={den('cho-buoc-tiep')} className="link">{hv.data.dem['cho-buoc-tiep']}</Link></span> : '…'}
+          giaTri={hv.data ? <span className="inline-flex items-baseline gap-2"><SoDen n={hv.data.dem['da-thi']} to={den('da-thi')} /><Cham /><SoDen n={hv.data.dem['cho-buoc-tiep']} to={den('cho-buoc-tiep')} /></span> : '…'}
           mau={t('HV chờ KQ · chưa chốt bước tiếp')} />
       </DaiChiSo>
       <BoCuc trai={d.chiNhanh ? <TheoChiNhanh d={d} cx onChiNhanh={onChiNhanh} /> : <LopCanChuY d={d} />}
@@ -399,7 +419,7 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
 
 type ChiSoGv = { tu: string; den: string; ketQua: OPtGv; tienBo: OPtGv };
 /** GV (chủ SP 23/10; Head tutor tạm dùng chung): Việc của tôi (+ quá hạn) · Case đang xử lý · Đạt kỳ vọng Test (kỹ năng tôi dạy) · Tiến bộ. */
-/** `lopToiDay(phai)`: khối trái tự đặt cột Điều hướng (SV-TQ-GV — khối chủ nhiệm trải cả bề ngang dưới khi 1100–1439). */
+/** `lopToiDay(phai)`: khối trái tự đặt cột Điều hướng (V8-TQ: kỹ năng tôi dạy + chủ nhiệm xếp chồng cột trái). */
 export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => ReactNode }) {
   const { session } = useSession();
   const id = session?.user?.id;
@@ -442,20 +462,22 @@ export function TongQuanTvvV5() {
   const choKq = hv.data?.dem['da-thi'] ?? 0, buoc = hv.data?.dem['cho-buoc-tiep'] ?? 0;
   return (
     <>
-      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">
+      {/* V8: 3 chỉ số — 1440 ba cột đều; < 1024 thẻ đầu full bề rộng (không thẻ mồ côi nửa hàng). */}
+      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 max-lg:[&>*:first-child]:col-span-2">
         <ChiSo ten={t('Báo PH đúng hạn')} ky={kyChu(d.ky)} luat={t('Việc Báo PH đã báo trước hạn / việc Báo PH phát sinh trong kỳ.')}
           giaTri={<PhanTram x={{ dat: d.baoPh.dung, mau: d.baoPh.tong }} nguon="/tong-quan/tvv/o?o=bao-ph" tieuDe={t('Báo PH đúng hạn')} />}
           mau={d.baoPh.tong ? <>{d.baoPh.dung}/{d.baoPh.tong} {t('việc')}{d.baoPh.treXong > 0 && <> · {t('xong trễ {n}', { n: d.baoPh.treXong })}</>}</> : t('chưa việc nào phát sinh trong kỳ')} />
-        <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} giaTri={<Link to="/hoc-vien?phamVi=cua-toi&thi=1" className="link">{d.thiThangNay}</Link>} mau={t('HV có ngày thi đã chốt')} />
+        <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} giaTri={<SoDen n={d.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" />} mau={t('HV có ngày thi đã chốt')} />
         <ChiSo ten={t('Chờ KQ · Lộ trình tiếp')} ky={t('hiện tại')}
-          giaTri={<span className="inline-flex gap-1.5"><Link to={den('da-thi')} className="link">{choKq}</Link>·<Link to={den('cho-buoc-tiep')} className="link">{buoc}</Link></span>}
+          giaTri={<span className="inline-flex items-baseline gap-2"><SoDen n={choKq} to={den('da-thi')} /><Cham /><SoDen n={buoc} to={den('cho-buoc-tiep')} /></span>}
           mau={t('{a} chờ KQ · {b} chưa chốt bước tiếp', { a: choKq, b: buoc })} />
       </div>
       <BoCuc
         trai={<DiTiep tieuDe={t('Thi thật')} dong={[
-          { to: '/hoc-vien?phamVi=cua-toi&thi=1', t1: <>{t('Thi tháng này')} · <So n={d.thiThangNay} /> HV</> },
-          { to: den('da-thi'), t1: <>{t('Chờ KQ thi thật')} · <So n={choKq} /> HV</> },
-          { to: den('cho-buoc-tiep'), t1: <>{t('Chưa chốt lộ trình tiếp')} · <So n={buoc} /> HV</> },
+          /* V8: dòng phụ nói đích đổi trang (như Điều hướng). */
+          { to: '/hoc-vien?phamVi=cua-toi&thi=1', t1: <>{t('Thi tháng này')} · <So n={d.thiThangNay} /> HV</>, t2: t('Học viên & Lớp · HV của tôi · lọc "Thi tháng này"') },
+          { to: den('da-thi'), t1: <>{t('Chờ KQ thi thật')} · <So n={choKq} /> HV</>, t2: t('Học viên & Lớp · HV của tôi · Đã thi') },
+          { to: den('cho-buoc-tiep'), t1: <>{t('Chưa chốt lộ trình tiếp')} · <So n={buoc} /> HV</>, t2: t('Học viên & Lớp · HV của tôi · Chờ bước tiếp') },
         ]} />}
         phai={<DiTiep dong={[
           { to: '/cong-viec', t1: <><So n={viec?.viec ?? 0} /> {t('việc của tôi')}</>, t2: t('Công việc') },

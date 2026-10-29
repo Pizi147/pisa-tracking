@@ -74,4 +74,8 @@ export const EN_UI_TONG_QUAN = {
   "Case tôi phụ trách": "Cases I own",
   "HV SOS 2–3": "Students at SOS 2–3",
   "Học viên & Lớp · Đang SOS": "Students & Classes · In SOS",
+  /* V8-TQ (mockup v8 tong-quan.html) */
+  "Học viên & Lớp · HV của tôi · lọc \"Thi tháng này\"": "Students & Classes · My students · filter \"Exam this month\"",
+  "Học viên & Lớp · HV của tôi · Đã thi": "Students & Classes · My students · Exam taken",
+  "Học viên & Lớp · HV của tôi · Chờ bước tiếp": "Students & Classes · My students · Awaiting next step",
 };

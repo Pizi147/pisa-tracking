@@ -184,11 +184,11 @@ export async function runPrBang0Tests(t: YThucTestKit) {
     chiGiam('<table>', theo(/<table\b/).filter((f) => f !== 'web/src/ui/Bang.tsx'), MIEN_TABLE);
   });
 
-  check('BANG-4 · Bang / ODiem: cỡ chữ trong ô ∈ {12, 13, 14, 15} (28 chỉ ODiem lon; 17 ODiem to — hồ sơ lớp V5 "điểm to", UI-HO-SO-LOP)', () => {
+  check('BANG-4 · Bang / ODiem: cỡ chữ trong ô ∈ {12, 13, 14, 15} (28 chỉ ODiem lon; 17 ODiem to — hồ sơ lớp V5 "điểm to", UI-HO-SO-LOP; 17 số thẻ lưới 375 `theLuoi` — mockup v8 tong-quan `.luoi-so .g`, V8-TQ)', () => {
     for (const f of ['web/src/ui/Bang.tsx', 'web/src/ui/ODiem.tsx']) {
       const s = nguon.find((x) => x.f === f)?.text;
       assert(s, `thiếu ${f}`);
-      const co = [...s!.matchAll(/text-\[(\d+)px\]/g)].map((m) => Number(m[1])).filter((n) => ![12, 13, 14, 15].includes(n) && !(f.endsWith('ODiem.tsx') && (n === 28 || n === 17)));
+      const co = [...s!.matchAll(/text-\[(\d+)px\]/g)].map((m) => Number(m[1])).filter((n) => ![12, 13, 14, 15].includes(n) && !(f.endsWith('ODiem.tsx') && (n === 28 || n === 17)) && !(f.endsWith('Bang.tsx') && n === 17 && /luoi-g text-\[17px\]/.test(s!)));
       assert(co.length === 0, `${f}: cỡ ngoài ô bảng ${co.join(', ')}`);
     }
   });

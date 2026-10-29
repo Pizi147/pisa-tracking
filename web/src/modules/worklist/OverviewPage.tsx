@@ -38,10 +38,10 @@ export default function OverviewPage() {
   const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}` : null, [branchId, khung, vai]);
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
-  const congTac = <CongTacKhung trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />;
+  const congTac = <CongTacKhung v8 trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />;
   const chiNhanh = <BranchFilter branchId={branchId} onBranch={setBranchId} />;
   const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode, ky?: { tu: string; den: string } | null) => (
-    <div className="page space-y-4">
+    <div className="page tq-v8 space-y-4">
       <DauTrangTq phamVi={phamVi} ben={ben} ky={ky} />
       <DaiMoiDung />
       {than}
