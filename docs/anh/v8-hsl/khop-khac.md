@@ -70,7 +70,7 @@ Bảng / thẻ đủ cột · tên → hồ sơ · ⋯ hàng em mở + Esc · W 
 
 ## Critique (Nielsen, tự chấm sau khi làm, một ngữ cảnh)
 Trạng thái 4 · Ngôn ngữ 4 · Kiểm soát 3 · Nhất quán 4 · Phòng lỗi 3 · Nhận ra 4 · Linh hoạt 3 · Tối giản 4 · Sửa lỗi 3 · Trợ giúp 4 = **36 / 40**. Không P0 / P1.
-P2 còn: trang 375 dài (33 thẻ, chưa phân trang — như mockup); Ý thức lọc nhóm / công tắc chưa lên hàng công cụ ([XM]); thẻ Case dưới hàng khác dáng mockup.
+P2 còn: trang 375 dài (33 thẻ, chưa phân trang — như mockup); Ý thức lọc nhóm / công tắc GIỮ chỗ cũ — **PTA Plan quyết 29/10**: đúng nghĩa lọc từng khối (Nhật ký / Phối hợp), không phải lọc cả bảng; thẻ Case dưới hàng khác dáng mockup.
 `impeccable detect` các tệp sửa: 0 anti-pattern.
 
 ## Phép kiểm sửa mốc (Q-7, mockup v8 đã duyệt)
