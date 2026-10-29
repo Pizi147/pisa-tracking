@@ -339,4 +339,33 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
       assert(maLoi(() => pc.doiMocCho(p, [r.lo], { loai: 'hom-nay' }))?.status === 403, `${ten} đổi mốc`);
     }
   }));
+
+  /* ---------------------------------------------------------------- A5 · GV cũ chỉ xem lớp cũ có hạn */
+  const perm: any = await import('../permissions.ts');
+  const PM = (await import('../../../shared/domain/index.ts')).PERMISSIONS;
+  check('A5 · đổi R ngay (GV R không còn ô nào): xem lượt + học viên được; nhập điểm R, báo Case, ghi vi phạm không', () => thu(() => {
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    const c = loadPrincipal(gC);
+    assert(perm.can(c, PM.ATTEMPT_VIEW, { classId: X }) && perm.can(c, PM.STUDENT_VIEW, { classId: X }) && perm.can(c, PM.STUDENT_VIEW, { studentId: emX }), 'xem được');
+    assert(!perm.can(c, PM.SCORE_EDIT, { classId: X, skill: 'reading' }) && !perm.can(c, PM.SOS_REPORT, { classId: X }) && !perm.can(c, PM.VIOLATION_RECORD, { classId: X }), 'không sửa');
+  }));
+  check('A5 · hết mốc (hiệu lực + 8 ngày): không xem; scopeFor(ATTEMPT_VIEW) hôm nay có lớp, +8 không', () => thu(() => {
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    const c = loadPrincipal(gC);
+    assert(!perm.can(c, PM.ATTEMPT_VIEW, { classId: X, date: addDays(TODAY, 8) }), '+8 không xem');
+    assert(perm.scopeFor(c, PM.ATTEMPT_VIEW, TODAY).classIds.includes(X) && !perm.scopeFor(c, PM.ATTEMPT_VIEW, addDays(TODAY, 8)).classIds.includes(X), 'scopeFor');
+  }));
+  check('A5 · classOverview của GV cũ đọc được, không có quyền nhập điểm / + Case', () => thu(() => {
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    const v = classes.classOverview(loadPrincipal(gC), X).viewer;
+    assert(!v.canEnterScores && !v.canReportCase && !v.canRecordViolation, JSON.stringify(v));
+  }));
+  check('A5 · GV chi nhánh khác / TVV không được thêm quyền gì (scopeFor trước = sau lần đổi)', () => thu(() => {
+    const cpGv = loadPrincipal(nguoi([{ role: 'teacher', branches: ['CP'] }]));
+    const tvv = loadPrincipal(nguoi([{ role: 'consultant', branches: ['MB'] }]));
+    const sc = (p: any) => JSON.stringify([perm.scopeFor(p, PM.ATTEMPT_VIEW), perm.scopeFor(p, PM.STUDENT_VIEW), perm.can(p, PM.ATTEMPT_VIEW, { classId: X })]);
+    const truoc = [sc(cpGv), sc(tvv)];
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    assert(sc(loadPrincipal(cpGv.userId)) === truoc[0] && sc(loadPrincipal(tvv.userId)) === truoc[1], 'không đổi');
+  }));
 }

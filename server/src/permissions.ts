@@ -47,6 +47,8 @@ export type Principal = {
   daXemHuongDan?: boolean;
   /** OV-14c: kỹ năng khai ở hồ sơ (`user_skills`, Quản trị › Kỹ năng) — `speaking` = GV Speaking chấm chéo. Đọc cùng câu phiên. */
   kyNang?: string[];
+  /** PC-GV-A: lớp vừa bị đổi khỏi (GV cũ) — CHỈ XEM (`ATTEMPT_VIEW`, `STUDENT_VIEW`) từ hiệu lực tới `den`. Đọc cùng câu phiên. */
+  xemTam?: { classId: number; tu: string; den: string; doiId: number }[];
 };
 
 export type Ctx = {
@@ -80,7 +82,9 @@ export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_f
     WHERE up.user_id = u.id) AS u_rieng,
   (SELECT json_group_array(json_array(ta.id, ta.class_id, ta.skill, ta.is_core, ta.effective_from, ta.effective_to))
      FROM teacher_assignments ta WHERE ta.user_id = u.id AND ta.status = 'active') AS u_phan_cong,
-  (SELECT json_group_array(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS u_ky_nang`;
+  (SELECT json_group_array(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS u_ky_nang,
+  (SELECT json_group_array(json_array(d.class_id, d.hieu_luc, d.xem_den, d.id)) FROM doi_phan_cong d
+    WHERE d.nguoi_cu = u.id AND d.trang_thai = 'da_ap' AND d.xem_den IS NOT NULL) AS u_xem_tam`;
 
 export function loadPrincipal(userId: number): Principal {
   const row = db().prepare(`SELECT ${COT_PRINCIPAL} FROM users u WHERE u.id = ?`).get(userId) as any;
@@ -126,6 +130,7 @@ export function principalTuDong(row: any): Principal {
     ngonNgu: row.u_ngon_ngu ?? null,
     daXemHuongDan: row.u_da_xem_hd === 1,
     kyNang: row.u_ky_nang ? JSON.parse(row.u_ky_nang) : [],
+    xemTam: (row.u_xem_tam ? JSON.parse(row.u_xem_tam) as any[][] : []).map(([classId, tu, den, doiId]) => ({ classId, tu, den, doiId })),
     grants,
     /* `granted` không phải một vai trò — nó chỉ là chỗ chứa quyền cấp riêng. */
     roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))],
@@ -354,6 +359,17 @@ function grantCovers(g: Grant, ctx: Ctx): boolean {
 }
 
 /**
+ * PC-GV-A: GV CŨ CHỈ XEM lớp cũ (chủ SP 30/10) — tối thiểu 1 tuần từ hiệu lực (PR-B kéo tới khi xong bàn giao). Ngữ cảnh lớp, hoặc em
+ * (mọi lớp em từng ghi danh, như `hasAssignment`), trong [hiệu lực, `den`]. Chỉ mở `ATTEMPT_VIEW` + `STUDENT_VIEW` — mọi quyền sửa không đổi.
+ */
+export function xemTamCo(p: Principal, ctx: Ctx): boolean {
+  if (!p.xemTam?.length) return false;
+  const date = ctx.date ?? demoToday();
+  const lop = ctx.classId ? [ctx.classId] : ctx.studentId ? classesOfStudent(ctx.studentId) : [];
+  return p.xemTam.some((x) => x.tu <= date && date <= x.den && lop.includes(x.classId));
+}
+
+/**
  * Ràng buộc thêm cho vai trò Giáo viên. Giáo viên không có quyền nào về lịch, và GVCN
  * không vì chủ nhiệm mà có quyền sửa mọi kỹ năng.
  */
@@ -368,9 +384,9 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
     case PERMISSIONS.ATTEMPT_VIEW:
       /* PR-S4F: GV Speaking chấm S chéo KHÔNG mở ở đây (mở cho mọi lần kiểm có classId: Case, tín hiệu, roster…) — chỉ mở ở hai đường
          chấm `attemptDetail` / `classScoreSheet` (`requireXemLuotCham`) và Lịch Test (`lopFtChoGvSpeaking`). */
-      return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'any') || xemTamCo(p, ctx);
     case PERMISSIONS.STUDENT_VIEW:
-      return ctx.anyScope === true || hasAssignment(p, ctx, 'any');
+      return ctx.anyScope === true || hasAssignment(p, ctx, 'any') || xemTamCo(p, ctx);
 
     /*
      * BÁO VẤN ĐỀ MỚI (sổ §13.12: "GV trong lớp có thể báo vấn đề") — rộng, bất kỳ môn nào
@@ -514,6 +530,10 @@ export function scopeFor(p: Principal, permission: string, date = demoToday()): 
     found = true;
     if (g.roleKey === 'teacher') {
       for (const a of p.assignments) if (activeAt(a, date)) classIds.add(a.classId);
+      /* PC-GV-A: GV cũ chỉ xem lớp cũ có hạn — cùng luật `xemTamCo`. */
+      if (permission === PERMISSIONS.ATTEMPT_VIEW || permission === PERMISSIONS.STUDENT_VIEW) {
+        for (const x of p.xemTam ?? []) if (x.tu <= date && date <= x.den) classIds.add(x.classId);
+      }
       continue;
     }
     if (g.branchId === null) all = true;
