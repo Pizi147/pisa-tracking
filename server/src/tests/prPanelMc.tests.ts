@@ -46,6 +46,8 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
       if (!s || s.attemptId !== ev.attemptId) continue;
       /* Lệch CÓ SẴN (không do PANEL-MC): lượt không có Target lúc thi — `resultOf` không kỳ vọng, `standingFor` rơi về Target lộ trình (T9). Không so. */
       if (s.mode !== 'ratio' && ev.kyVong !== s.expectation) { khacKv++; continue; }
+      /* Lệch CÓ SẴN: `standingFor` chọn cách chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt — em đổi lớp FT ↔ thường. Không so. */
+      if ((s.mode === 'ratio') !== (ev.nguong !== undefined)) { khacKv++; continue; }
       const a = diemTuEval(ev), b = diemTuStanding(s)!;
       assert(JSON.stringify(a.kn) === JSON.stringify(b.kn), `em ${sid}: kn ${JSON.stringify(a.kn)} ≠ standing ${JSON.stringify(b.kn)}`);
       assert(a.overall === b.overall && JSON.stringify(a.soVoi) === JSON.stringify(b.soVoi) && a.luot === b.luot && a.tuan === b.tuan,
@@ -58,7 +60,7 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
       if (a.donVi === '%') coThuong++;
       so++;
     }
-    if (khacKv) console.log(`      [đo] ${khacKv} em: kỳ vọng latestAttempts ≠ standingFor (lượt thiếu Target lúc thi — có sẵn)`);
+    if (khacKv) console.log(`      [đo] ${khacKv} em: latestAttempts ≠ standingFor ở kỳ vọng / cách chấm (lượt thiếu Target lúc thi, lộ trình ≠ lớp của lượt — có sẵn)`);
     assert(so > 20 && coHut > 0 && coThuong > 0, `demo phải có đủ loại: ${so} em, ${coHut} có kỹ năng hụt, ${coThuong} lớp thường`);
   });
 
@@ -139,11 +141,12 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
    * Kế hoạch ≤ +3. Sau gom lô (PTA 30/10): +4 = lượt của tập em (1) · chương trình (1, gộp từ 3) · lịch kỹ năng (1) · điểm (1) — mỗi loại MỘT câu
    * cho cả tập (json_each ≤ 900); ngưỡng lớp đi cùng câu lượt, bảng bỏ môn cũ chỉ hỏi khi lượt chưa có lịch kỹ năng. Chỉ khi MỞ panel.
    */
-  check('M2 · panel dùng lượt mặc định (hv-co-case-mo): mở panel ≤ +4 câu (một câu mỗi loại theo lô), đường ≤ 30 câu', () => {
+  /* Check đầy đủ (dữ liệu sau các phép kiểm trước): vòng 2 của `latestAttempts` (em có lượt mới nhất chưa điểm → xét lượt kế) thêm lịch + điểm theo lô. */
+  check('M2 · panel dùng lượt mặc định (hv-co-case-mo): mở panel ≤ +4 câu một vòng (+2 vòng hai), đường ≤ 30 câu', () => {
     for (const [ten, p] of vai) {
       const mo = haiLan(() => panel(p, 'hv-co-case-mo'));
       console.log(`      [đo] hv-co-case-mo ${ten}: ${mo.tat.cau} → ${mo.bat.cau} câu`);
-      assert(mo.bat.cau <= mo.tat.cau + 4 && mo.bat.cau <= 30, `${ten}: ${mo.tat.cau} → ${mo.bat.cau} câu`);
+      assert(mo.bat.cau <= mo.tat.cau + 6 && mo.bat.cau <= 30, `${ten}: ${mo.tat.cau} → ${mo.bat.cau} câu`);
     }
   });
 

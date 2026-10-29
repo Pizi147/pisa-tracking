@@ -259,7 +259,8 @@ async function mayChu(t: YThucTestKit) {
     const mot = dem(loc({ chiNhanh: String(mb.id), tg: 'tuan', tu: tuan, den: tuan }));
     const nhieu = dem(loc({ chiNhanh: String(mb.id) }));
     assert(mot.luot > 0 && nhieu.luot > mot.luot, `một tuần ${mot.luot} lượt, mọi đợt ${nhieu.luot} lượt`);
-    assert(mot.n === nhieu.n && nhieu.n <= 8, `một tuần ${mot.n} câu (${mot.luot} lượt) · mọi đợt ${nhieu.n} câu (${nhieu.luot} lượt)`);
+    /* PANEL-MC: bảng bỏ môn cũ (`attempt_skill_skips`) chỉ hỏi khi có lượt CHƯA có lịch kỹ năng — 0 / 1 câu tuỳ dữ liệu, không theo số lượt (không N+1). */
+    assert(Math.abs(mot.n - nhieu.n) <= 1 && nhieu.n <= 8, `một tuần ${mot.n} câu (${mot.luot} lượt) · mọi đợt ${nhieu.n} câu (${nhieu.luot} lượt)`);
     console.log(`    (đo) MB một tuần: ${mot.n} câu / ${mot.luot} lượt · MB MT1–MT8: ${nhieu.n} câu / ${nhieu.luot} lượt`);
   });
 
