@@ -124,4 +124,21 @@ export async function runPrChuongNheTests(t: any) {
     });
     for (const x of [P.mbManager, P.admin, P.coreTeacher]) datMoc(x.userId, null);
   });
+
+  await checkAsync('C2 · ghi mốc lỗi (giả lỗi DB) → GET /notifications vẫn 200, vẫn đồng bộ', async () => {
+    const p = P.mbManager;
+    const gia = () => conn.prepare(`INSERT OR IGNORE INTO notifications (user_id, kind, title, dedup_key, created_at) VALUES (?, 'cham_qua_han', 'việc đã xong', 'tudong:cham:0:0:cn', ?)`).run(p.userId, TODAY);
+    const loiCu = console.error;
+    await voiApp(async (goi) => {
+      await goi(p.userId, '/ref/branches');
+      datMoc(p.userId, null); gia();
+      conn.exec(`CREATE TEMP TRIGGER cn_gia_loi BEFORE UPDATE OF chuong_dong_bo_luc ON users BEGIN SELECT RAISE(ABORT, 'giả lỗi ghi mốc'); END`);
+      console.error = () => {};
+      try {
+        const r = await goi(p.userId, '/notifications');
+        assert(r.status === 200, `ghi mốc lỗi mà chuông ${r.status}`);
+        assert(!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = 'tudong:cham:0:0:cn'`).get(p.userId), 'ghi mốc lỗi: vẫn phải đồng bộ');
+      } finally { console.error = loiCu; conn.exec('DROP TRIGGER IF EXISTS cn_gia_loi'); }
+    });
+  });
 }

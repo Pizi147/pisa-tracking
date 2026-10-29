@@ -14,6 +14,7 @@ import { activeAt, type Principal } from '../permissions.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { addDays, nowIso } from '../util.ts';
+import { demoToday } from '../demoConfig.ts';
 
 /** "Tới hạn" = hạn trong 7 ngày tới (hoặc đã qua). */
 export const CHOT_TOI_HAN_NGAY = 7;
@@ -41,7 +42,8 @@ export function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
    * CHUONG-NHE: chỉ đọc lượt của lớp người này đang dạy — việc `score` + `mine` chỉ sinh ở lớp có phân công hiệu lực (`mySkills`, `activeAt`);
    * Chốt lộ trình / Báo PH / Case không đọc lượt. QL / QT không dạy lớp nào → không đọc lượt.
    */
-  const classIds = viecMuonDayDuKhiKiem.bat ? undefined : [...new Set(p.assignments.filter((a) => activeAt(a, homNay)).map((a) => a.classId))];
+  const ngay = demoToday();   // cùng ngày `myWork` / `mySkills` dùng để quyết `mine`
+  const classIds = viecMuonDayDuKhiKiem.bat ? undefined : [...new Set(p.assignments.filter((a) => activeAt(a, ngay)).map((a) => a.classId))];
   const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']), classIds }).items ?? []) as WorkItem[];
 
   /* 1. Bài quá hạn chấm của chính GV — gom theo lớp · đợt; bấm mở việc đầu của nhóm trong Công việc. */
@@ -145,7 +147,8 @@ export function daGhi(p: Pick<Principal, 'userId' | 'chuongDongBoLuc'>) {
 export function dongBoKhiMoChuong(p: Principal, homNay: string) {
   if (p.chuongDongBoLuc && Date.now() - Date.parse(p.chuongDongBoLuc) < CHU_KY_MS) return;
   const luc = nowIso();
-  db().prepare('UPDATE users SET chuong_dong_bo_luc = ? WHERE id = ?').run(luc, p.userId);
+  /* Ghi mốc lỗi (Turso / SQLITE_BUSY) không làm hỏng chuông: vẫn đồng bộ, lần mở kế thử ghi lại. */
+  try { db().prepare('UPDATE users SET chuong_dong_bo_luc = ? WHERE id = ?').run(luc, p.userId); } catch (e) { console.error('[chuong-moc]', e); }
   p.chuongDongBoLuc = luc;
   try { dongBoThongBaoTuDong(p, homNay); } catch (e) { console.error('[thong-bao-tu-dong]', e); }   // lỗi không làm hỏng chuông
 }
