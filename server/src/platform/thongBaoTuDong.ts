@@ -10,7 +10,7 @@
  */
 import { chenNhieuDong, db, theoLo } from '../db.ts';
 import { tenMon, thuNgay } from '../../../shared/domain/index.ts';
-import type { Principal } from '../permissions.ts';
+import { activeAt, type Principal } from '../permissions.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { addDays, nowIso } from '../util.ts';
@@ -32,9 +32,17 @@ export const CAU_CASE_CUA_NGUOI = `SELECT sc.id, s.full_name AS ten, COALESCE(sc
        FROM sos_cases sc JOIN students s ON s.id = sc.student_id LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
       WHERE sc.owner_user_id = ? AND sc.status != 'done' AND sc.tam = 0 AND s.archived_at IS NULL`;
 
-function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
+/** CHUONG-NHE: phép kiểm bật → `viecMuon` đọc lượt cả phạm vi như trước (so "giống hệt đường đủ"). */
+export const viecMuonDayDuKhiKiem = { bat: false };
+
+export function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   const muon = new Map<string, Muon>();
-  const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']) }).items ?? []) as WorkItem[];
+  /*
+   * CHUONG-NHE: chỉ đọc lượt của lớp người này đang dạy — việc `score` + `mine` chỉ sinh ở lớp có phân công hiệu lực (`mySkills`, `activeAt`);
+   * Chốt lộ trình / Báo PH / Case không đọc lượt. QL / QT không dạy lớp nào → không đọc lượt.
+   */
+  const classIds = viecMuonDayDuKhiKiem.bat ? undefined : [...new Set(p.assignments.filter((a) => activeAt(a, homNay)).map((a) => a.classId))];
+  const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']), classIds }).items ?? []) as WorkItem[];
 
   /* 1. Bài quá hạn chấm của chính GV — gom theo lớp · đợt; bấm mở việc đầu của nhóm trong Công việc. */
   const cham = new Map<string, WorkItem[]>();
