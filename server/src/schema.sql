@@ -789,6 +789,8 @@ CREATE TABLE assessment_scores (
 CREATE INDEX idx_score_attempt ON assessment_scores(attempt_id);
 /* TD7a: ô S Mock chờ GV phụ trách xem ("Xem nhận xét Speaking") — chỉ mục một phần, câu xem_nx_s khỏi quét cả bảng. */
 CREATE INDEX idx_score_cho_phu_trach ON assessment_scores(attempt_id) WHERE skill = 'speaking' AND cho_phu_trach_xem = 1;
+/* S1: lượt GV đã chấm Speaking (chỉ số MỘT GV — `napBai`) — chỉ mục một phần, không quét cả bảng điểm. */
+CREATE INDEX idx_score_examiner ON assessment_scores(examiner_user_id) WHERE examiner_user_id IS NOT NULL;
 
 -- Ước lượng của giáo viên. Tách hoàn toàn khỏi điểm chính thức, chỉ ghi thêm dòng mới
 -- nên có sẵn lịch sử. Không bao giờ ghi đè điểm Mock.

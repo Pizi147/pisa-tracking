@@ -10,6 +10,8 @@ export async function runPrSvTqGvTests(t: any) {
   const hoSo: any = await import('../giaoVien/hoSo.ts');
   const perm: any = await import('../permissions.ts');
   const { demoToday }: any = await import('../demoConfig.ts');
+  const fs = await import('node:fs');
+  const nguCanh: any = await import('../platform/nguCanhRequest.ts');
   console.log('\nSV-TQ-GV · Tổng quan GV hai khối');
   const ma = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
 
@@ -91,5 +93,107 @@ export async function runPrSvTqGvTests(t: any) {
     assert(ma(() => pt.oChiSoHoSoGv(P.subjectTeacher, P.coreTeacher.userId, { cot: 'ket-qua' })) === 403, 'GV đọc được hồ sơ GV khác');
     const lop = tq.lopToiDayHaiKhoi(P.coreTeacher).chuNhiem[0];
     assert(ma(() => tq.oLopToiDay(P.coreTeacher, { ct: lop.khung, classId: lop.classId, cot: 'x' })) === 400, 'cột lạ không 400');
+  });
+
+  /* S1 (giảm dòng đọc Turso): Tổng quan GV tính `chiSoHoSoGv` MỘT lần — `/hai-khoi` trả `chiSo`, web thôi GET `/giao-vien/:id/chi-so` ở trang này. */
+  check('S1 · Tổng quan GV: `/hai-khoi` chạy `chiSoHoSoGv` đúng MỘT lần, `chiSo` = `/giao-vien/:id/chi-so` kỳ mặc định; web không gọi thêm `/chi-so`', () => {
+    let hep = '';
+    for (const p of [P.coreTeacher, P.subjectTeacher, P.sTeacher, P.normalCoreTeacher]) {
+      const goc = conn.prepare;
+      let n = 0;
+      /* Câu ngữ cảnh của `nguCanhCuaGv` — mỗi lần `chiSoHoSoGv` chạy đúng một lần. */
+      conn.prepare = function (this: unknown, sql: string) {
+        if (/SELECT DISTINCT c\.branch_id, c\.is_fast_track FROM teacher_assignments ta/.test(sql)) n++;
+        if (/sc\.examiner_user_id = \?\)\)/.test(sql)) hep = sql;
+        return goc.call(this, sql);
+      };
+      let r: any;
+      try { r = tq.lopToiDayHaiKhoi(p); } finally { conn.prepare = goc; }
+      assert(n === 1, `${p.fullName}: chiSoHoSoGv chạy ${n} lần trong /hai-khoi`);
+      const cs = pt.chiSoHoSoGv(p, p.userId, {});
+      assert(JSON.stringify(r.chiSo) === JSON.stringify({ tu: cs.tu, den: cs.den, ketQua: cs.ketQua, tienBo: cs.tienBo }), `${p.fullName}: chiSo ≠ /chi-so`);
+    }
+    /* `napBai` thu hẹp đi MULTI-INDEX OR (lớp · em · GV chấm qua idx_score_examiner), không quét lượt cả chi nhánh. */
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${hep}`).all(...Array((hep.match(/\?/g) ?? []).length).fill(1)) as any[]).map((x) => x.detail as string);
+    assert(hep && plan.includes('MULTI-INDEX OR') && plan.some((d) => d.includes('idx_score_examiner')), `kế hoạch napBai thu hẹp: ${plan.join(' | ')}`);
+    const web = fs.readFileSync(new URL('../../../../web/src/modules/worklist/TongQuanV5.tsx', import.meta.url), 'utf8');
+    const gv = web.slice(web.indexOf('export function TongQuanGvV5'), web.indexOf('export function TongQuanTvvV5'));
+    assert(gv.includes(`'/tong-quan/lop-toi-day/hai-khoi'`) && !gv.includes('/chi-so`'), 'TongQuanGvV5 còn GET /giao-vien/:id/chi-so');
+  });
+
+  /* S1: `napBai` của MỘT GV chỉ nạp lượt gán được cho GV (lớp GV phân công · em từng ghi danh lớp đó · ô GV đã chấm) — số, panel KHÔNG đổi so với đường đủ. */
+  check('S1 · mọi GV có phân công: chỉ số hồ sơ GV + panel (hồ sơ, Phân tích GV, Chấm điểm) đường thu hẹp = đường đủ (cả chi nhánh + khung)', () => {
+    const loi: string[] = [];
+    const json = (fn: () => unknown) => { try { return JSON.stringify(fn()); } catch (e: any) { loi.push(String(e?.message)); return `lỗi ${e?.status ?? e?.message}`; } };
+    const hai = (fn: () => unknown) => { pt.napDayDuKhiKiem.bat = true; try { const du = json(fn); pt.napDayDuKhiKiem.bat = false; return [du, json(fn)]; } finally { pt.napDayDuKhiKiem.bat = false; } };
+    const sai: string[] = [];
+    let coSo = 0;
+    const KY = { tu: '2026-03-02', den: '2026-09-14' };
+    const gvs = (conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE status IN ('active', 'ended') ORDER BY user_id`).all() as any[]).map((x) => x.user_id as number);
+    for (const gv of gvs) {
+      const p = perm.loadPrincipal(gv);
+      for (const [ten, fn] of [
+        ['chi-so', () => pt.chiSoHoSoGv(p, gv, {})], ['chi-so dài', () => pt.chiSoHoSoGv(p, gv, KY)],
+        ...['cham-diem', 'ket-qua', 'tien-bo', 'thi-that'].map((cot) => [`o ${cot}`, () => pt.oChiSoHoSoGv(p, gv, { ...KY, cot })]),
+      ] as [string, () => unknown][]) {
+        const [du, hep] = hai(fn);
+        if (du !== hep) sai.push(`GV ${gv} ${ten}`);
+        if (ten === 'chi-so dài' && /"k":"so","dung":\d+,"tong":[1-9]/.test(hep)) coSo++;
+      }
+    }
+    for (const { cn, ft } of conn.prepare(`SELECT DISTINCT branch_id AS cn, is_fast_track AS ft FROM classes`).all() as any[]) {
+      const f = { cn, ct: ft ? 'ft' : 'thuong', ...KY };
+      const gvCn = (conn.prepare(`SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.branch_id = ? AND c.is_fast_track = ? AND ta.status IN ('active', 'ended')`).all(cn, ft) as any[]).map((x) => x.user_id);
+      for (const gv of gvCn) {
+        for (const cot of ['cham-diem', 'ket-qua', 'tien-bo', ...(ft ? ['dat-mt'] : [])]) {
+          const [du, hep] = hai(() => pt.oChiSoGv(P.admin, { ...f, gv, cot }));
+          if (du !== hep) sai.push(`Phân tích GV cn ${cn} ${f.ct} GV ${gv} ${cot}`);
+        }
+        const [du, hep] = hai(() => pt.oChamDiemGv(P.admin, { ...f, gv }));
+        if (du !== hep) sai.push(`Chấm điểm cn ${cn} ${f.ct} GV ${gv}`);
+      }
+    }
+    assert(!loi.length && coSo >= 5, `lỗi ${loi.slice(0, 3).join(' | ')} · GV có số ${coSo}`);
+    assert(!sai.length, `đường thu hẹp ≠ đường đủ: ${sai.join(' | ')}`);
+  });
+
+  /*
+   * S1: demo không có lượt nào chỉ vào được qua vế "em từng ghi danh lớp GV" hoặc "GV đã chấm" — dựng hai tình huống (cuộn lại sau kiểm):
+   * (a) lượt dời sang lớp khác cùng chi nhánh, em vẫn ghi danh lớp GV lúc thi → ô vẫn của GV; (b) GV ngoài lớp chấm Speaking Mock → ô của người chấm.
+   */
+  check('S1 · đường thu hẹp giữ ô qua ghi danh lúc thi (lượt ở lớp khác) và ô Speaking GV chấm chéo ngoài lớp', () => {
+    const { xoaNho } = nguCanh;
+    const KY = { tu: '2026-03-02', den: '2026-09-14' };
+    const c = pt.nguCanhPtGv(P.admin, { cn: conn.prepare(`SELECT branch_id FROM classes WHERE code = 'MB FT 101'`).get().branch_id, ct: 'ft', ...KY });
+    const nap = pt.napBai(P.admin, c);
+    const dong = pt.tapChamDiem(c, nap).dong;
+    const coPc = (gv: number, lop: number) => c.pc.some((a: any) => a.gv === gv && a.lop === lop);
+    const ghiDanh = (sid: number) => new Set((conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ?`).all(sid) as any[]).map((r) => r.class_id));
+    const oCua = (gv: number, id: number, hep: boolean) => {
+      pt.napDayDuKhiKiem.bat = !hep;
+      try { xoaNho(); return pt.oChiSoHoSoGv(perm.loadPrincipal(gv), gv, { ...KY, cot: 'cham-diem' }).rows.some((r: any) => r.id === id); } finally { pt.napDayDuKhiKiem.bat = false; }
+    };
+    /* (a) ô thường (không chấm chéo) của GV G0 ở lớp L em ghi danh; lượt dời sang L2 cùng chi nhánh mà G0 không phân công. */
+    const a = nap.o.find((x: any) => x.skill !== 'speaking' && dong.get(x.id) && x.classId === conn.prepare(`SELECT class_id FROM assessment_attempts WHERE id = ?`).get(x.attemptId).class_id
+      && ghiDanh(x.studentId).has(x.classId));
+    assert(a, 'không tìm được ô (a)');
+    const g0 = dong.get(a.id).gv;
+    const l2 = [...c.lop.keys()].find((l) => l !== a.classId && !coPc(g0, l));
+    /* (b) ô Speaking Mock đã ghi người chấm; đổi người chấm sang X — có phân công ở chi nhánh + khung, không ở lớp lúc thi / lớp lượt, em không ghi danh lớp nào của X. */
+    const b = nap.o.find((x: any) => x.kind === 'mock' && x.skill === 'speaking' && x.examinerUserId && dong.get(x.id));
+    assert(b && l2, `không tìm được ô (b) / lớp L2: ${!!b} ${l2}`);
+    const lopB = conn.prepare(`SELECT class_id FROM assessment_attempts WHERE id = ?`).get(b.attemptId).class_id;
+    const x = [...new Set(c.pc.map((p: any) => p.gv))].find((gv: any) => gv !== b.examinerUserId && !coPc(gv, b.classId) && !coPc(gv, lopB)
+      && ![...ghiDanh(b.studentId)].some((l) => coPc(gv, l))) as number;
+    assert(x, 'không tìm được GV chấm chéo ngoài lớp');
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE id = ?`).run(l2, a.attemptId);
+      conn.prepare(`UPDATE assessment_scores SET examiner_user_id = ? WHERE attempt_id = ? AND skill = 'speaking'`).run(x, b.attemptId);
+      for (const [gv, id, ten] of [[g0, a.id, '(a) ghi danh lúc thi'], [x, b.id, '(b) GV chấm chéo']] as [number, number, string][]) {
+        const du = oCua(gv, id, false), hep = oCua(gv, id, true);
+        assert(du && hep, `${ten}: ô ${id} của GV ${gv} — đường đủ ${du}, thu hẹp ${hep}`);
+      }
+    } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
 }

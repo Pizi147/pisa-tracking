@@ -89,6 +89,7 @@ import { migratePrTd7b } from './migrate/prTd7b.ts';
 import { migratePrCvLoi } from './migrate/prCvLoi.ts';
 import { migratePrSvLoTrinh } from './migrate/prSvLoTrinh.ts';
 import { migratePrMonDangKy } from './migrate/prMonDangKy.ts';
+import { migratePrS1 } from './migrate/prS1.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -414,6 +415,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* SV-BAI-LOP-2 (SAU SV-BAI-LOP): bai_tren_lop — tên bài / điểm / thang trống được + cột band (dựng lại bảng, giữ dữ liệu; chạy lặp không đổi). */ buoc(() => migratePrSvBaiLop2(conn, applied));
     /* Q-RL2a THUNG-RAC: bảng thung_rac — bản chụp mục đã xoá để Hoàn tác / Khôi phục 30 ngày (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrThungRac(conn, applied));
     /* BAND-QUY-DOI: bảng bang_quy_doi — phiên bản bảng quy đổi số câu → band (chỉ thêm bảng, rỗng = bảng gốc; chạy lặp được). */ buoc(() => migratePrBandQuyDoi(conn, applied));
+    /* S1: chỉ mục một phần assessment_scores(examiner_user_id) — chỉ số MỘT GV lấy lượt GV đã chấm chéo không quét cả bảng điểm (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrS1(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
