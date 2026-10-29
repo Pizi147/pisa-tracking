@@ -328,6 +328,9 @@ export const DUONG_DO: MucDo[] = [
   // ---------------------------------------------------------------- OV-15e — Báo cáo + Kết quả thi (QL, QT; GVCN → 403) + panel chỉ số GV
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/bao-cao?ct=ft', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  /* QUET-THEO-KY Q3: Báo cáo HV MỘT GET — Tổng quan + `baoCao` (web chỉ gọi đường này; `/phan-tich/bao-cao` giữ cho nơi khác). */
+  { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/v5?ct=ft&kemBaoCao=1', maChuDich: { GVCN: 403 } },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&o=bai-qua-han' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/ket-qua-thi?loai=mock&xep=sos&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
@@ -858,6 +861,12 @@ export const TRAN: Record<string, number> = {
   'GVCN /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=kq-mt:mt2:dat': 14,   // SV-SO3: đo 4 (403)
   'QT /phan-tich/bao-cao?ct=ft': 76,   // đo 58
   'GVCN /phan-tich/bao-cao?ct=ft': 14,   // đo 4
+  /* QUET-THEO-KY Q3: Báo cáo HV một GET (trước: /tong-quan/v5 + /phan-tich/bao-cao = QL ft 65 + 65 câu, QT 60 + 61). max(đo+10, ⌈đo×1,3⌉), cắt ở trần cứng 100. */
+  'QL /tong-quan/v5?ct=ft&kemBaoCao=1': 100,   // đo 89
+  'QT /tong-quan/v5?ct=ft&kemBaoCao=1': 100,   // đo 77
+  'GVCN /tong-quan/v5?ct=ft&kemBaoCao=1': 14,   // 403, đo 4
+  'QL /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 88,   // đo 67
+  'QT /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 67,   // đo 51
   'QL /phan-tich/bao-cao?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20': 64,   // đo 49
   'QT /phan-tich/bao-cao?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20': 58,   // đo 44
   'QL /phan-tich/bao-cao/o?ct=ft&o=bai-qua-han': 42,   // đo 32
@@ -886,6 +895,9 @@ export const TRAN: Record<string, number> = {
 export const TRAN_DONG: Record<string, number> = {
   /* PR CHUONG-NHE: chuông — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trong mốc QL 34 · GVCN 47 · GVBM 16 · GVCN_THUONG 47; QT đồng bộ vì vừa ghi 345, trước 853). */
   'QL /notifications': 84, 'GVCN /notifications': 97, 'GVBM /notifications': 66, 'GVCN_THUONG /notifications': 97, 'QT /notifications': 449,
+  /* QUET-THEO-KY Q3: Báo cáo HV một GET — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trước hai GET: QL ft 2 629 + 2 443, QT 3 419 + 3 310 dòng). */
+  'QL /tong-quan/v5?ct=ft&kemBaoCao=1': 4280, 'QT /tong-quan/v5?ct=ft&kemBaoCao=1': 5207,   // đo 3 292 · 4 005
+  'QL /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 3475, 'QT /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 4094,   // đo 2 673 · 3 149
   /* PC-GV-A: góc Phân công GV — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (235 dòng: lớp + phân công + ứng viên chi nhánh). */
   'QL /hoc-vien-lop/phan-cong?branchId=1': 306, 'QT /hoc-vien-lop/phan-cong?branchId=1': 306, 'CX /hoc-vien-lop/phan-cong?branchId=1': 306,
   /* HSL-MAY-CHU: trần = max(đo+50, ⌈đo×1,3⌉), đo 27/10 (100 · 64 · 100 dòng). */

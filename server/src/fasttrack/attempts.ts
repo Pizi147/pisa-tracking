@@ -751,6 +751,9 @@ export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[
   return nguoiLamMon(classId !== null ? ownersByClass([classId]).get(classId) ?? {} : {}, skills, kind);
 }
 
+/** QUET-THEO-KY Q1: CHỈ phép kiểm bật — `listAttempts` `kemChuaTuan` đi câu `OR` cũ để so với `UNION ALL`. */
+export const listAttemptsOrKhiKiem = { bat: false };
+
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
@@ -785,9 +788,17 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   const today = demoToday();
   /* `my_scores` = `conBaiCanCham` (có môn đang chờ nhập) ⊆ CON_O_SQL → lọc ở SQL, JSON trùng. */
-  if (f.chiConO || f.need === 'my_scores') {
-    where.push(f.kemChuaTuan ? `(${CON_O_SQL} OR (a.planned_period_id IS NULL AND a.status = 'planned'))` : CON_O_SQL);
-    params.push(today);
+  /*
+   * QUET-THEO-KY Q1: `kemChuaTuan` tách `OR` thành `UNION ALL` — `OR` làm SQLite bỏ chỉ mục ô chờ (SCAN cả bảng lượt). Vế 2 loại lượt đã thuộc vế 1
+   * (`planned` ≠ cancelled ⇒ thuộc vế 1 ⇔ `o_cho_tu <= hôm nay`) nên không trùng; điều kiện chung (kể cả `chiTruocTuan`) lặp ở hai vế.
+   */
+  const conO = f.chiConO || f.need === 'my_scores';
+  const tachHaiVe = conO && !!f.kemChuaTuan && !listAttemptsOrKhiKiem.bat;
+  if (conO) {
+    if (!tachHaiVe) {
+      where.push(f.kemChuaTuan ? `(${CON_O_SQL} OR (a.planned_period_id IS NULL AND a.status = 'planned'))` : CON_O_SQL);
+      params.push(today);
+    }
     if (f.chiTruocTuan) { where.push('a.o_cho_tu < ?'); params.push(f.chiTruocTuan); }
   }
   // Tuần kết quả LUÔN là tuần kế hoạch của lượt, kể cả khi các kỹ năng mock lệch tuần.
@@ -797,9 +808,13 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     params.push(`%${f.q}%`, `%${f.q.toLowerCase()}%`, `%${f.q.toUpperCase()}%`, `%${f.q}%`);
   }
 
-  const rows = conn
-    .prepare(`${ATTEMPT_SELECT} WHERE ${where.join(' AND ')} ORDER BY pr.week_start DESC, s.full_name`)
-    .all(...params) as any[];
+  const w = where.join(' AND ');
+  /* `a.id` phá hoà: trùng tuần + tên thì thứ tự không còn tuỳ SQLite. Câu ghép: ORDER BY theo tên cột kết quả. */
+  const rows = (tachHaiVe
+    ? conn.prepare(`${ATTEMPT_SELECT} WHERE ${w} AND ${CON_O_SQL}
+        UNION ALL ${ATTEMPT_SELECT} WHERE ${w} AND a.planned_period_id IS NULL AND a.status = 'planned' AND (a.o_cho_tu IS NULL OR a.o_cho_tu > ?)
+        ORDER BY period_start DESC, full_name, id`).all(...params, today, ...params, today)
+    : conn.prepare(`${ATTEMPT_SELECT} WHERE ${w} ORDER BY pr.week_start DESC, s.full_name, a.id`).all(...params)) as any[];
 
   const bundle = loadBundle(rows.map((r) => r.id));
   /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
