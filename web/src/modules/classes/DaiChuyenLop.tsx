@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Han } from '../../ui/Han.tsx';
-import { CHU_CHUYEN_LOP, mondayOfDate, ngay, thuNgay, tuanLich, type DaiHocVien, type DaiLop } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, mondayOfDate, ngay, shortDate, thuNgay, tuanLich, type DaiHocVien, type DaiLop } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -20,11 +20,13 @@ function Dai({ nhan, do: doHan, children, nut }: { nhan: string; do?: boolean; c
 }
 
 /** Hồ sơ lớp, dải ngay dưới đầu trang: A (nguồn — Kết thúc khoá / Bàn giao) và H (đích — Sắp nhận). */
-export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
+export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, onBanGiaoGv }: {
   dai: DaiLop | null; homNay: string | null;
   onChuyenTiep: () => void;
   /** Mở panel Bàn giao: `lop` = lớp NGUỒN (mặc định lớp đang xem), `mon` = mở bảng GVBM của môn đó. */
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
+  /** PR-B: mở panel bàn giao khi đổi GV. */
+  onBanGiaoGv?: (id: number) => void;
 }) {
   if (!dai) return null;
   const lt = dai.loTrinh;
@@ -61,6 +63,7 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
           <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: m.daGhi, b: m.tong })}</b>{m.han && <> · <Han loai="viec-van-hanh" han={m.han} /></>}
         </Dai>
       ))}
+      <DaiDoiGv dai={dai} h={h} onMo={onBanGiaoGv} />
       {dai.sapNhan && (
         <Dai nhan={t('Sắp nhận')}
           nut={dai.sapNhan.daXacNhan > 0 ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ lop: dai.sapNhan!.tuLop[0].id })}>{t('Xem')}</button> : undefined}>
@@ -68,6 +71,40 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
         </Dai>
       )}
     </div>
+  );
+}
+
+/**
+ * PR-B (mockup v9 khu 9): GV cũ CHỈ XEM — dải xám vạch trung tính "Chỉ xem · {môn} đã giao cho {GV mới} từ {ngày} · …" + nút việc "Bàn giao · n/N em";
+ * việc bàn giao khi đổi GV của lớp: người viết "Bàn giao · n/N em", QL / GV mới "Xem" / "Đọc bàn giao".
+ */
+function DaiDoiGv({ dai, h, onMo }: { dai: DaiLop; h: string; onMo?: (id: number) => void }) {
+  const x = dai.xemTam;
+  const nutBg = (id: number, du: number, tong: number, chinh = true) => onMo && (
+    <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chinh ? 'btn-primary' : ''}`} onClick={() => onMo(id)}>{t('Bàn giao · {a}/{b} em', { a: du, b: tong })}</button>
+  );
+  return (
+    <>
+      {x && (
+        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-l-[3px] px-3 py-2 text-sm text-slate-300"
+          style={{ borderColor: 'var(--line)', borderLeftColor: 'var(--line-strong, var(--line))', background: 'var(--surface-2, transparent)' }}>
+          <span className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+            <b className="text-slate-100">{t('Chỉ xem')}</b>{' · '}
+            {x.banGiao
+              ? t('{mon} đã giao cho {ten} từ {ngay} · còn xem tới khi xong bàn giao, ít nhất tới {den}', { mon: x.monNgan.join(', '), ten: x.nguoiMoi.ten, ngay: shortDate(x.tu, h), den: shortDate(x.den, h) })
+              : t('{mon} đã giao cho {ten} từ {ngay} · còn xem tới {den}', { mon: x.monNgan.join(', '), ten: x.nguoiMoi.ten, ngay: shortDate(x.tu, h), den: shortDate(x.den, h) })}
+          </span>
+          {x.banGiao && <span className="flex shrink-0">{nutBg(x.banGiao.id, x.banGiao.du, x.banGiao.tong)}</span>}
+        </div>
+      )}
+      {dai.banGiaoGv.filter((b) => b.id !== x?.banGiao?.id).map((b) => (
+        <Dai key={b.id} nhan={b.xong ? t('Bàn giao {mon} từ {ten}', { mon: b.monNgan.join(', '), ten: b.nguoiCu }) : t('Bàn giao {mon} cho {ten}', { mon: b.monNgan.join(', '), ten: b.nguoiMoi })}
+          nut={b.xong ? onMo && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onMo(b.id)}>{t('Đọc bàn giao')}</button>
+            : b.vai === 'viet' ? nutBg(b.id, b.du, b.tong) : onMo && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onMo(b.id)}>{t('Xem')}</button>}>
+          {b.xong ? t('Đã xác nhận') : <><b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: b.du, b: b.tong })}</b> · <Han loai="viec-van-hanh" han={b.han} /></>}
+        </Dai>
+      ))}
+    </>
   );
 }
 

@@ -19,6 +19,7 @@ import { NganCase } from '../students/NganCase.tsx';
 import { tenNganCase, type CaseDetail } from '../cases/CasePanel.tsx';
 import { DoiNguoiPhuTrach } from '../cases/DoiNguoiPhuTrach.tsx';
 import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
+import { BanGiaoGvPanel } from '../classes/BanGiaoGvPanel.tsx';
 import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { DaThucHienPanel } from '../yThuc/DaThucHienPanel.tsx';
 import { KhaiBacPanel } from '../yThuc/KhaiBacPanel.tsx';
@@ -159,6 +160,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       if (!laViecChamCheo(it) && (it.con || it.periodId)) return <PanelNhapDiemTuan key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
       return <PanelNhapDiem key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'ban_giao':
+      /* PR-B: bàn giao khi đổi GV — `ban_giao_gv:{id}`. */
+      if (it.key.startsWith('ban_giao_gv:')) return <BanGiaoGvPanel key={it.key} id={Number(it.key.split(':')[1])} onClose={onDong} onDone={doi} />;
       return <BanGiaoPanel key={it.key} classId={it.classId!} mon={it.key.startsWith('ban_giao_mon:') ? it.key.split(':')[2] ?? null : null} onClose={onDong} onDone={doi} />;
     case 'yt_xu_ly': case 'yt_xem':
       if (laLo(it)) {

@@ -85,12 +85,14 @@ export type ViecDauTrang = ViecMenuLop | 'chuyen-tiep' | 'ban-giao' | 'phan-cong
  *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
  * Mỗi nút chỉ hiện khi người xem làm được (Q9).
  */
-export function DauTrangLop({ data, onViec, onBanGiao, thanhViec }: {
+export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }: {
   data: HoSoLop; onViec: (v: ViecDauTrang) => void;
   /** V8-HSL hàng ⑤: thanh "Việc của tôi" (ThanhViecLop) nằm trong đầu trang, sau dải lớp chuyển. */
   thanhViec?: ReactNode;
   /** PR-CT: mở panel Bàn giao từ dải (lớp NGUỒN mặc định là lớp đang xem; `mon` = bảng GVBM). */
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
+  /** PR-B: mở panel bàn giao khi đổi GV (id việc). */
+  onBanGiaoGv?: (id: number) => void;
 }) {
   const navigate = useNavigate();
   const [sp] = useSearchParams();
@@ -245,7 +247,7 @@ export function DauTrangLop({ data, onViec, onBanGiao, thanhViec }: {
         )}
       </div>
 
-      <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} />
+      <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} onBanGiaoGv={onBanGiaoGv} />
       {/* ⑤ "Việc của tôi" một hàng (ThanhViecLop — nơi gọi truyền vào). */}
       {thanhViec}
     </header>
