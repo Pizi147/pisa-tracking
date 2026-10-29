@@ -58,6 +58,21 @@ export function kiemLopLoTrinhMoi(route: string, lop: { code: string; ft: boolea
   const can = route === 'RF' ? 'RF' : 'LT';
   return loai === can ? null : `${lop.code} là lớp ${loai} — lộ trình ${route} cần lớp ${can}. Chọn "Lớp khác".`;
 }
+/** Lớp đích của ô "Lớp khác" (Lộ trình mới) — cùng dạng `/students/:id/hoc-lai/lop-dich`. */
+export type LopLoTrinhMoi = { id: number; code: string; ft: boolean; route: string | null; branchCode: string; siSo?: number | null };
+/**
+ * SUA-NHO-UI U4 (XM-3, mockup v6 lo-trinh-moi khung 1–2): danh sách ô "Lớp khác" — lớp thường không bao giờ hiện; lớp đúng loại trước
+ * (giữ thứ tự vào), lớp FT sai loại sau, mờ + lý do ngắn ("lớp RF") để người dùng thấy vì sao không chọn được. Luật loại = `kiemLopLoTrinhMoi`.
+ */
+export function lopChonLoTrinhMoi(route: string, lop: readonly LopLoTrinhMoi[]): { id: number; ma: string; phu: string; tat?: string }[] {
+  const ft = lop.filter((l) => l.ft);
+  const dung = ft.filter((l) => !kiemLopLoTrinhMoi(route, l));
+  const sai = ft.filter((l) => kiemLopLoTrinhMoi(route, l));
+  return [
+    ...dung.map((l) => ({ id: l.id, ma: l.code, phu: [`FT ${l.route ?? ''}`.trim(), l.branchCode, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ') })),
+    ...sai.map((l) => ({ id: l.id, ma: l.code, phu: `FT ${l.route ?? ''}`.trim(), tat: t('lớp {loai}', { loai: l.route === 'RF' ? 'RF' : 'LT' }) })),
+  ];
+}
 /** Tên hiển thị của mã lộ trình: "Khác" → tên đã ghi (không có thì "Khác"); mã khác giữ nguyên ("LT2"). */
 export const tenRoute = (c: { route?: string | null; route_ten?: string | null; routeTen?: string | null }): string | null =>
   c.route === ROUTE_KHAC ? (c.route_ten ?? c.routeTen ?? '').trim() || t('Khác') : c.route ?? null;
