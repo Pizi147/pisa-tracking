@@ -18,7 +18,7 @@ export const OGv = forwardRef<HTMLButtonElement, {
     return (
       <div className="pc-o-xem" data-to={to || undefined}>
         {ten ? <span className={to ? 'font-bold' : ''}>{ten}</span> : <span className="trong">– {t('Chưa có')}</span>}
-        {phu && <span className="p">{phu}</span>}
+        {phu && <span className={`p ${trangThai}`}>{phu}</span>}
       </div>
     );
   }

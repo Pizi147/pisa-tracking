@@ -16,7 +16,7 @@ export type VeDongPc = {
 
 /**
  * BẢNG LỚP 1440 (mockup v9 khu 1): dải nhóm "Fast Track · n lớp" / "Lớp thường · n lớp" → nhóm con theo chương trình (tiêu đề cột riêng) → dòng lớp.
- * Cột Lớp 200 px · 5 cột môn + GVCN chia đều phần còn lại (bảng giãn hết khung — chủ SP 30/10) · cột Lưu 120 px (không có khi chỉ xem).
+ * Cột Lớp 200 px · cột môn của chương trình + GVCN chia đều phần còn lại (bảng giãn hết khung, không cột trống — chủ SP 30/10) · cột Lưu 120 px chỉ khi nhóm có dòng cần nút.
  * GVCN luôn cột cuối, nền `surface-2` cả cột + vạch nhấn trái (`data-tinh`, chủ SP 30/10). `tong` = số lớp của cả chi nhánh theo nhóm (dòng lọc
  * không đổi số nhóm — mockup). Phím ← ↑ → ↓ đi giữa ô (`data-o`), Enter / Space mở, Ctrl + Enter lưu dòng.
  */
@@ -25,23 +25,25 @@ export function BangLopPc({ lop, tong, chiXem, ve, duoiThe }: {
 }) {
   const n = nhomLopPc(lop);
   const nt = nhomLopPc(tong);
-  let hang = 0;
+  /* Số dòng trước mỗi nhóm — chỉ số hàng của phím mũi tên (`data-o`) liền mạch qua các nhóm. */
+  const thuTu = [...n.ft, ...n.thuong.flatMap((g) => g.lop)];
   const bang = (ds: LopPc[], ten: string) => {
-    const mau = cotLop(ds[0]);
-    const soMon = Math.max(5, mau.length);
+    const mau = cotLop(ds[0]).filter(Boolean);
+    /* Chủ SP 30/10: cột kỹ năng + GVCN giãn đều hết khung — không chừa cột môn trống (nhóm 4 kỹ năng); cột Lưu chỉ khi nhóm có dòng cần nút. */
+    const soMon = Math.max(1, mau.length);
+    const coLuu = !chiXem && ds.some((l) => ve.cuoi(l) !== null);
     const cot: CotBang[] = [
       { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 200 },
       ...Array.from({ length: soMon }, (_, i): CotBang => ({ key: `m${i}`, nhan: mau[i]?.nhan ?? '', kieu: 'chu', goiY: mau[i] ? tenMon(ds[0].ct, mau[i]!.khoa) : undefined })),
       { key: 'gvcn', nhan: t('GVCN'), kieu: 'chu', tinh: true },
-      ...(chiXem ? [] : [{ key: 'luu', nhan: '', kieu: 'nut', rong: 120 } as CotBang]),
+      ...(coLuu ? [{ key: 'luu', nhan: '', kieu: 'nut', rong: 120 } as CotBang] : []),
     ];
     return (
-      <div className="pc-bang">
+      <div className={`pc-bang ${coLuu ? 'co-luu' : ''}`}>
         <Bang ten={ten} cot={cot} hang={ds} khoa={(l) => l.id} khung={false} the375={false}
           hangRieng={(l) => {
-            const h = hang++;
-            const mon = cotLop(l);
-            const pre = mon.length === 0;
+            const h = thuTu.indexOf(l);
+            const mon = cotLop(l).filter(Boolean);
             return (
               <Fragment key={l.id}>
                 <tr className={ve.lop(l)} onKeyDown={(e) => ve.onPhim(l, e)}>
@@ -49,11 +51,11 @@ export function BangLopPc({ lop, tong, chiXem, ve, duoiThe }: {
                     <Link to={`/hoc-vien/lop/${l.id}`} className="ten-ho-so khong-mui pc-ten-lop">{l.code}</Link>
                     {ve.phu(l)}
                   </OBang>
-                  {pre
+                  {mon.length === 0
                     ? <OBang c={cot[1]} colSpan={soMon} className="pc-khong-mon">{t('Không chia môn — GVCN dạy luôn')}</OBang>
                     : cot.slice(1, 1 + soMon).map((c, i) => <OBang key={c.key} c={c}>{mon[i] ? ve.o(l, mon[i]!.khoa, h, i) : null}</OBang>)}
-                  <OBang c={cot[1 + soMon]}>{ve.o(l, 'gvcn', h, soMon)}</OBang>
-                  {!chiXem && <OBang c={cot[cot.length - 1]}>{ve.cuoi(l)}</OBang>}
+                  <OBang c={cot[1 + soMon]}>{ve.o(l, 'gvcn', h, 5)}</OBang>
+                  {coLuu && <OBang c={cot[2 + soMon]}>{ve.cuoi(l)}</OBang>}
                 </tr>
                 {ve.loiHang(l) && (
                   <tr className="pc-loi-hang"><td colSpan={cot.length}><div role="alert" className="bao">{ve.loiHang(l)}</div></td></tr>

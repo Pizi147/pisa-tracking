@@ -548,7 +548,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           q={params.get('tim') ?? ''} onQ={(v) => setParam({ tim: v || null })}
           coTheTaoLop={!!data?.coTheTaoLop} onTaoLop={() => setTaoLop(true)} onNhap={setNhapPc}
           chonCn={(branches.data?.length ?? 0) > 0 && (
-            <OChiNhanh branches={branches.data ?? []} branchId={null} tatCa={false}
+            <OChiNhanh branches={branches.data ?? []} branchId={null} tatCa
               onBranch={(id) => { if (id === null) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
           )} />
       )}

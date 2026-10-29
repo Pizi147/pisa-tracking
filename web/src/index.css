@@ -521,11 +521,13 @@
   /* bảng lớp qua `Bang` (BANG-3): 6 cột GV không rộng px — chia đều phần còn lại; không cuộn ngang từ 1024 (tên dài cắt "…" + title) */
   .pc-bang .table-scroll { overflow: visible; }
   .pc-bang .bang { min-width: 0 !important; }
-  .pc-bang .bang col:not(:first-child):not(:last-child) { width: auto !important; }
+  .pc-bang .bang col:not(:first-child) { width: auto !important; }
+  .pc-bang.co-luu .bang col:last-child { width: 120px !important; }
   .pc-bang .bang > thead > tr > th { height: 34px; padding: 0 16px; font-size: 13px; font-weight: 600; color: var(--text-dim); border-top: 1px solid var(--line); vertical-align: middle; }
   .pc-bang .bang > thead > tr > th:first-child { padding-left: 28px; }
   .pc-bang .bang > tbody > tr > td { height: 50px; padding: 5px 4px; vertical-align: middle; font-size: 15px; overflow: visible; }
-  .pc-bang .bang > tbody > tr:last-child > td { border-bottom: 0; box-shadow: none; }
+  .pc-bang .bang > tbody > tr:last-child > td { border-bottom: 0; }
+  .pc-bang .bang > tbody > tr:last-child > td:not([data-tinh]) { box-shadow: none; }
   .pc-bang .bang > tbody > tr > td.pc-lop { padding: 6px 8px 6px 28px; white-space: normal; }
   .pc-ten-lop { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pc-lop .pc-phu, .pc-lop .pc-nhan-nhap, .pc-lop .pc-nhan-cho { display: block; }
@@ -575,6 +577,7 @@
   .pc-o-xem > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pc-o-xem .trong { color: rgb(var(--soon-rgb)); font-weight: 600; }
   .pc-o-xem .p { font-size: 12px; color: rgb(var(--soon-rgb)); font-weight: 600; }
+  .pc-o-xem .p.cho-doi { color: rgb(var(--doing-rgb)); }
   .pc-so-nhap { color: var(--accent); font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .pc-so0 { color: var(--text-faint); font-weight: 400; }
 
@@ -598,7 +601,7 @@
   .pc-the-dau h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); }
   .pc-the-dau .phu { font-size: 13px; color: var(--text-dim); }
   .pc-the-dau .phai { margin-left: auto; }
-  .pc-xep { height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--o-nhap-vien); background: var(--o-nhap-nen); color: var(--text); font-size: 13px; font-weight: 500; }
+  .pc-xep { width: auto; height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--o-nhap-vien); background: var(--o-nhap-nen); color: var(--text); font-size: 13px; font-weight: 500; }
   .pc-bang-tong .bang > thead > tr > th { background: var(--surface-2); height: 36px; vertical-align: middle; }
   .pc-bang-tong .bang > tbody > tr > td { height: 42px; padding: 0 16px; vertical-align: middle; }
   .pc-bang-tong .bang > tbody > tr.dang-to > td { background: var(--surface-2); }
@@ -636,7 +639,8 @@
   .pc-hai-nut { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .pc-hai-nut .btn { min-height: 44px; justify-content: center; }
 
-  .pc-thanh-luu { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line-strong); background: var(--surface-2); position: sticky; bottom: 0; z-index: 4; font-size: 14px; }
+  .pc-thanh-luu { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line-strong); background: var(--surface-2); position: sticky; bottom: 0; z-index: 20; font-size: 14px; }
+  :is(.pc-hang-nut, .pc-hai-nut, .pc-thanh-luu) .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
   .pc-thanh-luu .phai { margin-left: auto; display: inline-flex; gap: 8px; }
   .pc-rong { text-align: center; padding: 44px 16px; display: grid; gap: 10px; justify-items: center; color: var(--text-dim); }
   .pc-rong .tieu { font-size: 15px; font-weight: 600; color: var(--text); }
