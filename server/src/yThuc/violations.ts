@@ -12,7 +12,8 @@ import { badRequest, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
-import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
+import { purgeAttachmentsOf } from '../platform/attachments.ts';
+import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import {
   EDIT_VIOLATION_MESSAGE, KEY_TAKEN_MESSAGE, activeClassOf, canEditViolation, requireRecordViolation, requireViewClass, requireViewStudent,
 } from './access.ts';
@@ -435,7 +436,7 @@ export function editViolation(p: Principal, id: number, patch: {
  *
  * Trả về số biện pháp đã bị gỡ vi phạm (để giao diện nói "đã gỡ khỏi n biện pháp").
  */
-export function deleteViolation(p: Principal, id: number): { ok: true; removedFromMeasures: number } {
+export function deleteViolation(p: Principal, id: number): { ok: true; removedFromMeasures: number; thungRacId: number } {
   const row = loadRow(id);
   requireViewStudent(p, row.student_id);
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
@@ -443,15 +444,19 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
   /* V4-12 (PR-YT4): không còn "Đang chuẩn bị" nên không chặn gì. Xoá vi phạm trong lần xử lý đã xong: lần xử lý còn, số vi phạm giảm,
      bậc KHÔNG lùi (bậc đọc từ `kind` của lần xử lý). */
   /* Tệp trong kho chỉ xoá SAU KHI giao dịch chốt — giao dịch lui thì dòng còn mà tệp mất là không hoàn tác được. */
-  const khoaTep: string[] = [];
-  const result = tx(() => {
+  /* Q-RL2a: chụp vào thùng rác cùng giao dịch — Hoàn tác / Khôi phục 30 ngày; tệp trong kho giữ tới khi dọn thùng rác. */
+  const chup = new BoChup(db());
+  return tx(() => {
     const measureIds = (db().prepare('SELECT measure_id FROM measure_violations WHERE violation_id = ? ORDER BY measure_id').all(id) as any[])
       .map((r) => r.measure_id as number);
-    const files = purgeAttachmentsOf('violation', id, p.userId, khoaTep);
-    db().prepare('DELETE FROM measure_violations WHERE violation_id = ?').run(id);
-    db().prepare('DELETE FROM violation_history WHERE violation_id = ?').run(id);
-    db().prepare('DELETE FROM violations WHERE id = ?').run(id);
+    chup.chupXoa('attachments', `owner_type = 'violation' AND owner_id = ?`, id);
+    const files = purgeAttachmentsOf('violation', id, p.userId, chup.tep);
+    chup.chay('DELETE FROM measure_violations WHERE violation_id = ?', id);
+    chup.chay('DELETE FROM violation_history WHERE violation_id = ?', id);
+    chup.chay('DELETE FROM violations WHERE id = ?', id);
     chotHanXuLy([row.student_id]);
+    const thungRacId = ghiThungRac(db(), { loai: 'vi_pham', doiTuongId: id, nhan: `${row.student_code} · ${VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory]}`,
+      hocVienId: row.student_id, classId: row.class_id ?? null, nguoi: p.userId, chup });
     writeAudit({
       actorUserId: p.userId, action: 'violation.delete', entityType: 'violation', entityId: id,
       entityLabel: `${row.student_code} · ${VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory]}`,
@@ -460,11 +465,10 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
         occurredOn: row.occurred_on, reportedOn: row.reported_on, reportedBy: row.reported_by, ten: row.ten ?? null, description: row.description,
         measureIds, attachments: files,
       },
+      after: { thungRacId },
     });
-    return { ok: true as const, removedFromMeasures: measureIds.length };
+    return { ok: true as const, removedFromMeasures: measureIds.length, thungRacId };
   });
-  xoaTepSauGiaoDich(khoaTep);
-  return result;
 }
 
 // ---------------------------------------------------------------- đọc

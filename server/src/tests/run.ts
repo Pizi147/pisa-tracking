@@ -8815,8 +8815,12 @@ await checkAsync('PR-N · N5 Tệp: lưu ngoài cơ sở dữ liệu, không l�
   }
   await assertRejects(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'lon.pdf', data: Buffer.alloc(attachmentsSvc.MAX_FILE_BYTES + 1) }), /10 ?MB|dung lượng|quá lớn/i, 'Đã nhận tệp quá lớn');
   await assertRejects(() => attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'rong.pdf', data: Buffer.alloc(0) }), /rỗng/i, 'Đã nhận tệp rỗng');
-  await attachmentsSvc.removeAttachment(P.mbManager, row.id);
-  assert(!fs.existsSync(absPath), 'Xoá dòng thì tệp trên đĩa cũng phải được xoá');
+  const { thungRacId } = await attachmentsSvc.removeAttachment(P.mbManager, row.id);
+  /* Q-RL2a: gỡ tệp giữ tệp trên đĩa (thùng rác, Khôi phục 30 ngày); dọn thùng rác quá hạn mới xoá. */
+  assert(fs.existsSync(absPath), 'Gỡ tệp: tệp trên đĩa giữ cho Khôi phục');
+  conn.prepare(`UPDATE thung_rac SET xoa_luc = '2000-01-01T00:00:00.000Z' WHERE id = ?`).run(thungRacId);
+  (await import('../platform/thungRac.ts')).donThungRac();
+  assert(!fs.existsSync(absPath), 'Dọn thùng rác quá hạn thì tệp trên đĩa phải được xoá');
 });
 
 await checkAsync('PR-N · N5 Tên tệp có đường dẫn (../) không bao giờ làm tệp rơi ra ngoài thư mục tải lên và không lộ vào tên hiển thị', async () => {
@@ -9210,6 +9214,8 @@ await runPrLuiA1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-LUI-a2 (Case + Chờ duyệt: Người phụ trách, Mở lại, Từ chối nhiều, Huỷ quyết định, Sửa / Xoá Case)
 const { runPrLuiA2Tests } = bocTep('prLuiA2', await import('./prLuiA2.tests.ts'));
 await runPrLuiA2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+const { runPrThungRacTests } = bocTep('prThungRac', await import('./prThungRac.tests.ts'));
+await runPrThungRacTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 // ==================================================================== PR-KHUNG (một thanh cuộn, chữ không cắt, nút không tràn)
 const { runPrKhungTests } = bocTep('prKhung', await import('./prKhung.tests.ts'));

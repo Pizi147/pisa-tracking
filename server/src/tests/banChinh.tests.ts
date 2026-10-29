@@ -212,8 +212,12 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     assert(/^sos_case\/[0-9a-f-]{36}\.pdf$/.test(khoa), `Khoá trong kho sai dạng: ${khoa}`);
     const o = await attachmentsSvc.openAttachment(t.admin, row.id);
     assert(o.kind === 'file' && o.duLieu.toString() === 'xin chao', 'Mở tệp phải ra đúng nội dung đã lưu');
-    await attachmentsSvc.removeAttachment(t.admin, row.id);
-    assert(khoGia.size === truoc, 'Xoá dòng thì tệp trong kho cũng phải được xoá');
+    const { thungRacId } = await attachmentsSvc.removeAttachment(t.admin, row.id);
+    /* Q-RL2a: gỡ tệp giữ tệp trong kho (thùng rác, Khôi phục 30 ngày); dọn thùng rác quá hạn mới xoá khỏi kho. */
+    assert(khoGia.size === truoc + 1, 'Gỡ tệp: tệp trong kho giữ cho Khôi phục');
+    (await import('../db.ts')).db().prepare(`UPDATE thung_rac SET xoa_luc = '2000-01-01T00:00:00.000Z' WHERE id = ?`).run(thungRacId);
+    (await import('../platform/thungRac.ts')).donThungRac();
+    assert(khoGia.size === truoc, 'Dọn thùng rác quá hạn thì tệp trong kho cũng phải được xoá');
   });
   datKhoTepChoKiemThu(null);
 

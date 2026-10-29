@@ -15,6 +15,7 @@ import { can, loadPrincipal, permissionSummary, require_, scopeFor, type Princip
 import { writeAudit } from '../platform/audit.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
+import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
 import * as timNguoiSvc from '../platform/timNguoi.ts';
 import { chonTutor } from '../tutors/chon.ts';
 import * as tutorSvc from '../tutors/trang.ts';
@@ -1262,8 +1263,8 @@ api.get('/attachments/:id/download', requireAuth, wrap(async (req, res) => {
 
 api.delete('/attachments/:id', requireAuth, wrap(async (req) => {
   maybeSimulateSaveFailure();
-  await attachmentSvc.removeAttachment(principalOf(req), pInt(req, 'id'));
-  return { ok: true };
+  const { thungRacId } = await attachmentSvc.removeAttachment(principalOf(req), pInt(req, 'id'));
+  return { ok: true, thungRacId };
 }));
 
 /**
@@ -2478,6 +2479,12 @@ api.put('/s-expert/:id', requireAuth, wrap((req) => {
 api.delete('/s-expert/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sExSvc.xoaSEx(principalOf(req), pInt(req, 'id'));
+}));
+/* Q-RL2a THÙNG RÁC: Quản trị › Đã xoá (đọc) · Khôi phục một mục (Hoàn tác 5 s của web gọi cùng đường) — quyền như thao tác gốc. */
+api.get('/thung-rac', requireAuth, wrap((req) => khoiPhucRacSvc.danhSachRac(principalOf(req))));
+api.post('/thung-rac/:id/khoi-phuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return khoiPhucRacSvc.khoiPhucRac(principalOf(req), pInt(req, 'id'));
 }));
 api.post('/s-expert/:id/khoi-phuc', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

@@ -84,6 +84,7 @@ import { migratePrSvYtTvv } from './migrate/prSvYtTvv.ts';
 import { migratePrOv15g } from './migrate/prOv15g.ts';
 import { migratePrOv15i1 } from './migrate/prOv15i1.ts';
 import { migratePrXetLai } from './migrate/prXetLai.ts';
+import { migratePrThungRac } from './migrate/prThungRac.ts';
 import { migratePrTd7b } from './migrate/prTd7b.ts';
 import { migratePrCvLoi } from './migrate/prCvLoi.ts';
 import { migratePrSvLoTrinh } from './migrate/prSvLoTrinh.ts';
@@ -411,6 +412,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* P7 SV-LO-TRINH (N11, N12): em Tạm dừng cũ vào Lưu trữ (ngày pause gần nhất) · cột learning_cycles.route_ten · route KHAC ngừng (chạy lặp không đổi). */ buoc(() => migratePrSvLoTrinh(conn, applied));
     /* P13 KET-PET (N18): Checkpoint PET / KET tách L · R · W · S — bộ môn mặc định, lớp đang chạy, đợt chưa có điểm; đợt đã có điểm giữ L+S / R+W (chạy lặp không đổi). */ buoc(() => migratePrKetPet(conn, applied));
     /* SV-BAI-LOP-2 (SAU SV-BAI-LOP): bai_tren_lop — tên bài / điểm / thang trống được + cột band (dựng lại bảng, giữ dữ liệu; chạy lặp không đổi). */ buoc(() => migratePrSvBaiLop2(conn, applied));
+    /* Q-RL2a THUNG-RAC: bảng thung_rac — bản chụp mục đã xoá để Hoàn tác / Khôi phục 30 ngày (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrThungRac(conn, applied));
     /* BAND-QUY-DOI: bảng bang_quy_doi — phiên bản bảng quy đổi số câu → band (chỉ thêm bảng, rỗng = bảng gốc; chạy lặp được). */ buoc(() => migratePrBandQuyDoi(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
