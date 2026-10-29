@@ -70,7 +70,7 @@ export function LopToiDay() {
           <h2 id="lop-toi-day" className="m-0 text-sm font-semibold text-slate-200">{t('Lớp tôi dạy')}</h2>
           {/* G9: không nút trong tiêu đề bảng — "?" của cột Dưới kỳ vọng / Chưa đạt nằm cạnh tiêu đề thẻ. */}
           <NutLuat label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat>
-          {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} donVi={t('lớp')} onChange={(k) => { daBam.current = true; setKhung(k === 'thuong' ? 'thuong' : 'ft'); }} />}
+          {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} onChange={(k) => { daBam.current = true; setKhung(k === 'thuong' ? 'thuong' : 'ft'); }} />}
         </div>
       </header>
       {loading || !data ? <div className="p-4"><Skeleton rows={3} /></div> : !data.rows.length ? (
