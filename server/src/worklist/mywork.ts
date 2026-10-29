@@ -16,6 +16,7 @@ import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
+import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
 import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
@@ -775,6 +776,18 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao&mon=${v.mon}`, statusLabel: 'Chờ bàn giao',
       });
     }
+  }
+  /* PR-B: bàn giao khi đổi GV — một việc mỗi (lớp, GV cũ, hiệu lực); việc không người viết (GV cũ và GVCN đều nghỉ) → QL chi nhánh. */
+  for (const v of !co('ban_giao') ? [] : viecBanGiaoGv(tatCa ? null : p.userId, f.branchId)
+    .filter((v) => v.userId === p.userId || ((tatCa || v.userId === null) && can(p, PERMISSIONS.CASE_APPROVE, { classId: v.lopId })))) {
+    items.push({
+      group: 'ban_giao' as const, urgency: urgencyOf(v.han, today), studentId: null, studentName: `Lớp ${v.code}`, classId: v.lopId, classCode: v.code,
+      attemptId: null, attemptNo: null, caseId: null, level: null, ownerId: v.userId, owner: null, mine: v.userId === p.userId, due: v.han, emIds: v.emIds,
+      key: `ban_giao_gv:${v.id}`, count: v.tong - v.du,
+      contextLabel: `cho ${v.nguoiMoi} · ${v.du}/${v.tong} em`, reason: `${v.tong - v.du} em chưa đủ góp ý bàn giao`,
+      tieuDe: `Bàn giao ${v.code} · ${v.monNgan.join(', ')}`, actionLabel: 'Bàn giao',
+      href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao-gv&id=${v.id}`, statusLabel: 'Chờ bàn giao',
+    });
   }
 
   // ------------------------------------------------- 4. vấn đề mở mà chưa có phương án nào

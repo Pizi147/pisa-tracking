@@ -9775,6 +9775,9 @@ await runPrS2LichKyNangTests({ check, assert, conn } as any);
 // ==================================================================== PC-GV-A (Phân công GV có hiệu lực — máy chủ)
 const { runPrPhanCongGvTests } = bocTep('prPhanCongGv', await import('./prPhanCongGv.tests.ts'));
 await runPrPhanCongGvTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== PR-B BAN-GIAO-GV (việc bàn giao khi đổi GV + khung bàn giao chung)
+const { runPrBanGiaoGvTests } = bocTep('prBanGiaoGv', await import('./prBanGiaoGv.tests.ts'));
+await runPrBanGiaoGvTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== S3 (bỏ câu con theo dòng: TVV, Học viên & Lớp, phụ liệu Case, lượt mới nhất — giảm dòng đọc Turso)
 const { runPrS3CauConTests } = bocTep('prS3CauCon', await import('./prS3CauCon.tests.ts'));
 await runPrS3CauConTests({ check, assert, conn } as any);

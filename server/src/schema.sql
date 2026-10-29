@@ -2316,3 +2316,44 @@ CREATE TABLE doi_phan_cong (
 CREATE INDEX ix_doi_pc_lop ON doi_phan_cong (class_id, trang_thai);
 CREATE INDEX ix_doi_pc_cu ON doi_phan_cong (nguoi_cu, trang_thai);
 CREATE INDEX ix_doi_pc_cho ON doi_phan_cong (trang_thai, hieu_luc);
+
+-- PR-B BAN-GIAO-GV: việc bàn giao khi đổi GV (`classes/banGiaoGv.ts`) — một việc (lớp, GV cũ, hiệu lực), mỗi cột một người nhận, góp ý mỗi em mỗi cột.
+CREATE TABLE ban_giao_gv (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  nguoi_cu INTEGER NOT NULL REFERENCES users(id),
+  nguoi_lam INTEGER REFERENCES users(id),   -- NULL = QL chi nhánh
+  hieu_luc TEXT NOT NULL,
+  han TEXT NOT NULL,
+  trang_thai TEXT NOT NULL,                 -- mo | xong | huy
+  nhan_xet_chung TEXT,
+  tu_dien TEXT,                             -- bản chụp tự điền lúc xác nhận
+  tao_luc TEXT NOT NULL,
+  tao_boi INTEGER NOT NULL REFERENCES users(id),
+  xong_luc TEXT,
+  xong_boi INTEGER,
+  xong_thay INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX ix_bg_gv_lop ON ban_giao_gv (class_id, trang_thai);
+CREATE INDEX ix_bg_gv_cu ON ban_giao_gv (nguoi_cu, trang_thai);
+CREATE TABLE ban_giao_gv_mon (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ban_giao_id INTEGER NOT NULL REFERENCES ban_giao_gv(id),
+  mon TEXT NOT NULL,                        -- kỹ năng | 'gvcn'
+  nguoi_moi INTEGER NOT NULL REFERENCES users(id),
+  doi_id INTEGER NOT NULL REFERENCES doi_phan_cong(id),
+  trang_thai TEXT NOT NULL                  -- mo | huy
+);
+CREATE INDEX ix_bg_gv_mon_doi ON ban_giao_gv_mon (doi_id);
+CREATE INDEX ix_bg_gv_mon_bg ON ban_giao_gv_mon (ban_giao_id);
+CREATE TABLE ban_giao_gv_em (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ban_giao_id INTEGER NOT NULL REFERENCES ban_giao_gv(id),
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  mon TEXT NOT NULL,
+  noi_dung TEXT NOT NULL,
+  nguoi_ghi INTEGER NOT NULL REFERENCES users(id),
+  dien_thay INTEGER NOT NULL DEFAULT 0,
+  ghi_luc TEXT NOT NULL,
+  UNIQUE (ban_giao_id, student_id, mon)
+);
