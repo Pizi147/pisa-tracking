@@ -202,3 +202,5 @@ export function kiemDongPc(l: LopPc, chon: ChonDongPc, gv: readonly GvPc[]): Loi
 export function lopSauNhap(lop: readonly LopPc[], nhap: Readonly<Record<number, ChonDongPc>>): LopPc[] {
   return lop.map((l) => (nhap[l.id] ? { ...l, slots: moRongPhanCong(l.ct, l.kyNang, slotsDongPc(l, nhap[l.id])) } : l));
 }
+/** Kết quả `POST /phan-cong/luu` (máy chủ `KetQuaLuu`): `lo` = khoá Hoàn tác; mỗi lớp `cho` = lịch đổi tương lai (chưa áp). */
+export type KetQuaLuuPc = { lo: number | null; lop: { classId: number; cho: boolean; soO: number }[] };
