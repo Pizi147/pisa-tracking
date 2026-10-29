@@ -177,23 +177,22 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   const soPhoiHop = coord.data?.pendingCount ?? 0;
 
   return (
-    <Card title={<span className="whitespace-nowrap">{t('Ý thức & Phối hợp')}</span>}
-      action={(
-        <span className="flex flex-wrap items-center justify-end gap-2">
-          {d.canManage && (
-            <button type="button" aria-pressed={chonN.bat} onClick={() => { chonN.batTat(); setGhiNhanKq(null); }}
-              className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chonN.bat ? 'border-[color:var(--accent)] text-[color:var(--accent)]' : ''}`}>
-              {chonN.bat ? '✓ ' : ''}{t('Chọn nhiều')}
-            </button>
-          )}
-          {/* KHAI-BAC-LO: một panel mọi em của lớp — không cần Chọn nhiều trước. */}
-          {d.canManage && (
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setLoMo({ viec: 'cap-bac', ids: null })}>{t('Khai / sửa cấp bậc')}</button>
-          )}
-          {d.canRecord && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button>}
-        </span>
-      )}
-      bodyClass="p-0">
+    /* V8-HSL (mockup v8 C): không tiêu đề khối — MỘT hàng công cụ: + Ghi vi phạm · Khai / sửa cấp bậc …… Chọn nhiều. */
+    <Card bodyClass="p-0">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
+        <h2 className="sr-only">{t('Ý thức & Phối hợp')}</h2>
+        {d.canRecord && <button type="button" className="btn btn-primary h-9 max-sm:h-11" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button>}
+        {/* KHAI-BAC-LO: một panel mọi em của lớp — không cần Chọn nhiều trước. */}
+        {d.canManage && (
+          <button type="button" className="btn h-9 max-sm:h-11" onClick={() => setLoMo({ viec: 'cap-bac', ids: null })}>{t('Khai / sửa cấp bậc')}</button>
+        )}
+        {d.canManage && (
+          <button type="button" aria-pressed={chonN.bat} onClick={() => { chonN.batTat(); setGhiNhanKq(null); }}
+            className={`btn ml-auto h-[30px] px-2.5 text-[13px] max-sm:h-11 ${chonN.bat ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>
+            {chonN.bat ? '✓ ' : ''}{t('Chọn nhiều')}
+          </button>
+        )}
+      </div>
       {!coHang && !(chonN.bat && chuaKhai.length) ? (
         <div className="p-4"><Empty title={t('Không em nào cần xử lý Ý thức')} hint={t('Vi phạm mới, việc bắt buộc và đề xuất chờ QL sẽ hiện ở đây.')} /></div>
       ) : (
@@ -299,18 +298,19 @@ const COT = 'lg:grid-cols-[200px_minmax(0,1.4fr)_minmax(0,1fr)_180px_150px] lg:g
 
 /** Nhóm hàng (mockup `.yt-nhom`): tiêu đề nhóm 14 px đậm + đếm; hàng tiêu đề cột (`.yt-dau`) vẽ dưới tiêu đề nhóm ĐẦU TIÊN. */
 function NhomHang({ chu, dem, children }: { chu: string; dem: ReactNode; children: ReactNode }) {
+  /* V8-HSL (mockup v8 C): tiêu đề cột MỘT lần trên nhóm đầu; mỗi nhóm là DẢI nền phụ cao 40, vạch trái 3 px, chữ 15 đậm + chip đếm có đơn vị. */
   return (
     <section aria-label={chu} className="group/nhom">
-      <div className="flex flex-wrap items-baseline gap-x-2 border-t px-4 pb-1.5 pt-3 group-first/nhom:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <h3 className="m-0 text-sm font-bold text-slate-100">{chu}</h3>
-        <span className="text-[13px] font-medium text-dim">{dem}</span>
-      </div>
       <div aria-hidden className={`hidden border-b px-4 py-2 text-[13px] font-semibold text-dim group-first/nhom:lg:grid ${COT}`} style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
         <span>{t('Học viên')}</span>
         <span>{t('Vi phạm chờ xử lý')}</span>
         <span>{t('Bậc xử lý')}</span>
         <span>{t('Duyệt · thu hồi')}</span>
         <span>{t('Báo PH (TVV)')}</span>
+      </div>
+      <div className="flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 border-b px-4 py-1.5" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--hang-lon-vach)' }}>
+        <h3 className="m-0 text-base font-bold text-slate-100">{chu}</h3>
+        <span className="inline-flex h-[22px] items-center rounded border px-[7px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dem}</span>
       </div>
       {children}
     </section>
