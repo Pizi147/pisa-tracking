@@ -12,3 +12,5 @@ BO SUNG 29/10 (dot cuoi truot 9 phep kiem luat giao dien): PR co sua web/ phai c
 BO SUNG 29/10 (#690): chay rieng vai tep phep kiem khong can script tam:
   npm run build:server && PISA_CHI_TEP=prEn,prSang,prNenTypoMau node dist-server/server/src/tests/run.js   (~15 s; ten tep khong duoi .tests.ts)
   Dong do co ten tep [prX]. Ca do khi chay roi ma check day du dat (phu thuoc thu tu) -> ghi ro trong PR.
+BO SUNG 30/10 (CN-1): tep trong DOC_LAP (run.ts) chay tren DB GOC = ban chep DB ngay sau seed (server/src/tests/dbGoc.ts) -> chay rieng = chay trong bo.
+  Thu chuyen them tep: PISA_DOC_LAP=<danh sach cu>,<tep> PISA_CHI_TEP=<tep> node dist-server/server/src/tests/run.js (xanh + so phep tep khong doi).

@@ -138,7 +138,10 @@ export async function runPrDlTests(t: YThucTestKit) {
    * hai đổi — gộp UI-Y-THUC-LOP #662 (prYt4 tạo thêm lớp + 2 em → id lượt dời; main chụp tuan 969ecc1615209675 · moi 947dc8a53f89ff6d) và vị từ lượt
    * hiện tại (kể cả ca dựng PR-G chỉ chọn lượt hiện tại). Trước: tuan 5eebef0957d73f55 · moi 8ce504d4483bd6bf. P9a XET-LAI (sau gộp P7): bộ demo Xét lại
    * (4 em, 4 bài Final, lệnh chuyển) chạy trước các bộ kiểm → id lượt dời, nội dung không đổi — trước (P7): tuan 7ee672d985157810 · moi 55c53358319c7b46 */
-  const ANH_CHUP = { tuan: '4efea5d316cb9203', moi: '459e593a8e284577' };
+  /* CN-1: chụp lại trên DB gốc (prDl trong `DOC_LAP` của run.ts) — băm chỉ phụ thuộc seed, không còn phụ thuộc thứ tự. Đã so JSON `cu` / `moi`
+   * chuỗi ↔ gốc: chỉ lệch hàng em do phép kiểm khác tạo (Học Viên Nhập Một…, PRN…, Em Theo Tuần Chung…), điểm / tuần em seed do phép kiểm khác
+   * sửa (Lê Quang Huy, Nguyễn Minh An, Trần Thu Hà, Vũ Hải Đăng), mốc giờ ghi và email thử của em tạo (`emailThu` đếm từ số lúc chụp gốc). Trước (chuỗi): tuan 4efea5d316cb9203 · moi 459e593a8e284577 */
+  const ANH_CHUP = { tuan: 'cc83e6fa32c0aa95', moi: 'cd797edcce2c831f' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
