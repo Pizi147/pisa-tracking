@@ -1,4 +1,4 @@
-import { db, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
   CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_SYNC_REVIVE_REASONS, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
@@ -177,14 +177,13 @@ export function dongBoBaoPhCuaBai(attemptId: number) {
   dongBoBaoPh(a, monBaoPh(attemptId, mon));
 }
 
-/** Những em (trong `studentIds`) còn việc Báo phụ huynh qua TVV CHƯA làm — MỘT câu theo lô 400 (cột Việc tiếp theo của GVCN, PR-LT2a).
+/** Những em (trong `studentIds`) còn việc Báo phụ huynh qua TVV CHƯA làm — MỘT câu (một tham số JSON — S5) (cột Việc tiếp theo của GVCN, PR-LT2a).
  *  TD6: JOIN lượt thay `attempt_id IN (SELECT … FROM assessment_attempts)` — câu cũ quét cả bảng lượt. */
 export function emCoBaoPhChuaLam(studentIds: readonly number[]): Set<number> {
   const out = new Set<number>();
-  for (let i = 0; i < studentIds.length; i += 400) {
-    const lo = studentIds.slice(i, i + 400);
-    for (const r of db().prepare(`SELECT DISTINCT x.student_id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id AND a.kind != 'final' WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' AND x.student_id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) out.add(r.student_id as number);
-  }
+  theoLoJson(studentIds, (json) => {
+    for (const r of db().prepare(`SELECT DISTINCT x.student_id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id AND a.kind != 'final' WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' AND x.student_id IN (${DS_JSON})`).all(json) as any[]) out.add(r.student_id as number);
+  });
   return out;
 }
 
@@ -368,7 +367,7 @@ export function dongPhoiHopLop(classIds: number[]) {
   /* MỘT lượt đọc cho MỌI lớp mình chủ nhiệm (số câu không tăng theo số lớp — PR-LT2a thêm hai lớp demo làm lộ N+1 theo lớp), rồi chia lại theo lớp em đang học.
      Cùng luật đếm với `coordinationOfClass`: lượt chưa hoàn thành. Lớp mình chủ nhiệm nên không cần `requireViewClass`. */
   const conn = db();
-  const ph = classIds.map(() => '?').join(',');
+  const ph = DS_JSON, json = JSON.stringify(classIds);   // S5: một tham số JSON
   /*
    * PR-VAI-a (K5-10): dòng này nay là VIỆC trong `/my-work` (gọi mỗi lần mở Tổng quan/Công việc) — không dựng cả lượt (`turnsOf`, ~10 câu)
    * chỉ để biết lượt nào chưa xong. CÙNG luật của `turnsOf`: lượt = (lượt Test, các việc của nó), xong theo `coordinationSummary` trên trạng
@@ -380,7 +379,7 @@ export function dongPhoiHopLop(classIds: number[]) {
        JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled'
                                  AND COALESCE(a.kind, 'mock') = 'mock'   -- PR-S6F-a Q11: chỉ lượt Mock FT; lớp thường có việc phoi_hop riêng
       ORDER BY x.attempt_id, x.id`,
-  ).all(...classIds) as any[];
+  ).all(json) as any[];
   const luot = new Map<number, { lop: number; trangThai: string[]; han: string[] }>();
   for (const r of rows) {
     const l = luot.get(r.attempt_id) ?? luot.set(r.attempt_id, { lop: r.lop_dang_hoc, trangThai: [], han: [] }).get(r.attempt_id)!;
@@ -395,7 +394,7 @@ export function dongPhoiHopLop(classIds: number[]) {
     dem.set(l.lop, (dem.get(l.lop) ?? 0) + 1);
     for (const h of l.han) if (!hanLop.has(l.lop) || h < hanLop.get(l.lop)!) hanLop.set(l.lop, h);
   }
-  const ma = new Map((conn.prepare(`SELECT id, code FROM classes WHERE id IN (${ph})`).all(...classIds) as any[]).map((c) => [c.id as number, c.code as string]));
+  const ma = new Map((conn.prepare(`SELECT id, code FROM classes WHERE id IN (${ph})`).all(json) as any[]).map((c) => [c.id as number, c.code as string]));
   for (const classId of classIds) {
     const pendingCount = dem.get(classId) ?? 0;
     if (pendingCount > 0 && ma.has(classId)) {

@@ -1,6 +1,6 @@
 import { phamViXemViec } from './xemViec.ts';
 import { caseChuaCoNguoi } from '../cases/owner.ts';
-import { db, theoLo } from '../db.ts';
+import { DS_JSON, db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
@@ -1165,8 +1165,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
            JOIN classes c ON c.id = e.class_id
           WHERE cy.status = 'active' AND cy.route IS NOT NULL
             AND cy.target_score IS NULL   /* OV-9: em KCK chưa có Target cũng thiếu Target */
-            AND e.class_id IN (${lopCn.map(() => '?').join(',')}) AND (? IS NULL OR c.branch_id = ?)`,
-      ).all(...lopCn, f.branchId ?? null, f.branchId ?? null) as any[];
+            AND e.class_id IN (${DS_JSON}) AND (? IS NULL OR c.branch_id = ?)`,
+      ).all(JSON.stringify(lopCn), f.branchId ?? null, f.branchId ?? null) as any[];
       /* PR-VAI-a (từ UXF-a, mywork.ts:927): sắp lớp theo `soSanhLop` (MB FT 9 trước MB FT 10), rồi tên em. */
       for (const h of ds
         .sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
@@ -1287,9 +1287,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       `SELECT s.id, s.full_name, e.class_id, c.code, c.branch_id FROM enrollments e
          JOIN students s ON s.id = e.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN classes c ON c.id = e.class_id
-        WHERE e.status = 'active' AND e.class_id IN (${lopCn.map(() => '?').join(',')}) AND substr(s.created_at, 1, 10) BETWEEN ? AND ?
+        WHERE e.status = 'active' AND e.class_id IN (${DS_JSON}) AND substr(s.created_at, 1, 10) BETWEEN ? AND ?
         ORDER BY s.full_name`,
-    ).all(...lopCn, addDays(today, -13), today) as any[] : [];
+    ).all(JSON.stringify(lopCn), addDays(today, -13), today) as any[] : [];
     const trang = trangThaiYThuc([...new Set([...uv.map((r) => r.id), ...emMoi.map((r) => r.id as number)])], today);
     const khaiTheoLop = new Map<number, any[]>();
     for (const r of emMoi) {
@@ -1427,8 +1427,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (ownerIds.length) {
     const names = new Map<number, string>();
     for (const r of conn
-      .prepare(`SELECT id, full_name FROM users WHERE id IN (${ownerIds.map(() => '?').join(',')})`)
-      .all(...ownerIds) as any[]) names.set(r.id, r.full_name);
+      .prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`)
+      .all(JSON.stringify(ownerIds)) as any[]) names.set(r.id, r.full_name);
     for (const it of items) {
       if (it.ownerId === null) continue;   // đã có tên chữ, hoặc thật sự chưa có ai
       it.owner = it.ownerId === p.userId ? null : (names.get(it.ownerId) ?? null);   // việc của chính người xem: không ghi tên (J7)

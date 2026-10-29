@@ -5,7 +5,7 @@
  *   Thi thật: lộ trình FT có kết quả thi thật (đủ 4 kỹ năng hoặc Không thi) với ngày thi trong khoảng; Bước tiếp đọc / chọn bằng `buocTiep.ts`.
  * Báo cáo (`baoCao.ts`) đếm Mock bằng CHÍNH `mockTrongKhoang` → số Đạt / Chưa đạt / Chưa đủ điểm = số hàng khi bấm.
  */
-import { db, theoLo } from '../db.ts';
+import { DS_JSON, db, theoLo, theoLoJson } from '../db.ts';
 import {
   KN_THI, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, ketQuaMock, xepDongMock,
   type DongMock, type DongThiThat, type KetQuaMock, type KetQuaMockKq, type KetQuaThiThatKq, type LuaChonSauThi, type XepMock,
@@ -50,8 +50,8 @@ export function mockTrongKhoang(p: Principal, f: LocKetQuaThi, o: { luot?: any[]
   if (!luot.length) return [];
   const conn = db();
   const ten = new Map<number, string>();
-  theoLo([...new Set(luot.map((a) => a.student_id as number))], (lo, ph) => {
-    for (const s of conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${ph})`).all(...lo) as any[]) ten.set(s.id, s.full_name);
+  theoLoJson([...new Set(luot.map((a) => a.student_id as number))], (json) => {
+    for (const s of conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${DS_JSON})`).all(json) as any[]) ten.set(s.id, s.full_name);
   });
   const bundle = loadBundle(luot.map((a) => a.id));
   const kq = new Map(luot.map((a) => [a.id as number, resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? [])]));

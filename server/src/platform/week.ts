@@ -1,4 +1,4 @@
-import { chenNhieuDong, db, theoLo } from '../db.ts';
+import { DS_JSON, chenNhieuDong, db, theoLoJson } from '../db.ts';
 import { addDays, nowIso, parseDate } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho } from './nguCanhRequest.ts';
@@ -128,8 +128,8 @@ export function ensurePeriods(dates: readonly string[]): Map<string, { id: numbe
   const tuan = [...new Set([...info.values()].map((w) => w.weekStart))];
   const conn = db();
   const idOf = new Map<string, number>();
-  const doc = (ds: string[]) => theoLo(ds, (lo, ph) => {
-    for (const r of conn.prepare(`SELECT id, week_start FROM report_periods WHERE week_start IN (${ph})`).all(...lo) as any[]) {
+  const doc = (ds: string[]) => theoLoJson(ds, (json) => {
+    for (const r of conn.prepare(`SELECT id, week_start FROM report_periods WHERE week_start IN (${DS_JSON})`).all(json) as any[]) {
       idOf.set(r.week_start, r.id);
     }
   });

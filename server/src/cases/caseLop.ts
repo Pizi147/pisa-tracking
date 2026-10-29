@@ -3,10 +3,10 @@
  * không phụ thuộc số Case. Dùng cho roster lớp (cột Việc tiếp theo / Theo dõi), trang Học viên & Lớp và `GET /classes/:id/can-ho-tro`.
  *
  * Luật KHÔNG viết lại: `trangThaiCaseV4` + `viecTiepCuaCase` (`shared/domain/sosV4.ts`) — cùng đầu vào như `caseDetail` (cases.ts) — và
- * `mocChuPa`. Lô 400, MỖI BẢNG MỘT CÂU: `sosCaseStateMany` · `sos_cases` (tên riêng, lý do hệ thống đóng) · `case_interventions` ⟕ users ·
+ * `mocChuPa`. Lô `LO_JSON` (một tham số JSON — S5), MỖI BẢNG MỘT CÂU: `sosCaseStateMany` · `sos_cases` (tên riêng, lý do hệ thống đóng) · `case_interventions` ⟕ users ·
  * `case_milestones`. TUYỆT ĐỐI không gọi `sosCaseState(id)` / `mtKeTheoPa(id)` / `caseCardOf` trong vòng lặp (N+1 trên Turso).
  */
-import { db } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
 import {
   INTERVENTION_KIND_LABEL, PERMISSIONS, SYSTEM_CLOSE_REASON_LABEL, vaiXemHocVien, URGENCY_LABEL, mocChuPa, hanThemPa, tenCaseSos, tenPaViecTiep, trangThaiCaseV4, viecTiepCuaCase,
   type InterventionKind, type ViecTiepCase,
@@ -39,7 +39,6 @@ export type CaseChiTiet = {
   banGiaoTu: string | null;
 };
 
-const LO = 400;
 const cua = <T>(m: Map<number, T[]>, k: number) => m.get(k) ?? [];
 const gom = <T extends { case_id: number }>(rows: T[]) => {
   const m = new Map<number, T[]>();
@@ -58,19 +57,18 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
   const goc = new Map<number, any>();
   const paTheoCase = new Map<number, any[]>();
   const mocTheoCase = new Map<number, any[]>();
-  for (let i = 0; i < ids.length; i += LO) {
-    const chunk = ids.slice(i, i + LO);
-    const ph = chunk.map(() => '?').join(',');
-    for (const r of conn.prepare(`SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN (${ph})`).all(...chunk) as any[]) goc.set(r.id, r);
+  theoLoJson(ids, (json) => {   // S5: một tham số JSON
+    const ph = DS_JSON;
+    for (const r of conn.prepare(`SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN (${ph})`).all(json) as any[]) goc.set(r.id, r);
     for (const [k, v] of gom(conn.prepare(
       `SELECT iv.case_id, iv.id, iv.kind, iv.description, iv.status, iv.preset, iv.confirmed_at, iv.approval_state, iv.action_due, iv.followup_due,
               iv.moc_quy_che, iv.created_at, iv.performer_name, iv.superseded_by, iv.closed_reason, u.full_name AS performer_account
          FROM case_interventions iv LEFT JOIN users u ON u.id = iv.performer_user_id
-        WHERE iv.case_id IN (${ph}) AND iv.status != 'cancelled' ORDER BY iv.case_id, iv.id`).all(...chunk) as any[])) paTheoCase.set(k, v);
+        WHERE iv.case_id IN (${ph}) AND iv.status != 'cancelled' ORDER BY iv.case_id, iv.id`).all(json) as any[])) paTheoCase.set(k, v);
     for (const [k, v] of gom(conn.prepare(
       `SELECT case_id, attempt_no, created_at FROM case_milestones WHERE case_id IN (${ph}) AND kind IN ('opened', 'repeat')
-          AND attempt_no IS NOT NULL ORDER BY case_id, created_at DESC, id DESC`).all(...chunk) as any[])) mocTheoCase.set(k, v);
-  }
+          AND attempt_no IS NOT NULL ORDER BY case_id, created_at DESC, id DESC`).all(json) as any[])) mocTheoCase.set(k, v);
+  });
 
   const mtCuoi = mtCuoiCuaLoTrinh([...goc.values()].filter((g) => cua(paTheoCase, g.id).some((iv) => iv.moc_quy_che === 'until_exam')).map((g) => g.cycle_id));   // OV-13a (B): chữ mốc "đến MT{n}" khi chưa có ngày thi
   for (const c of ds) {

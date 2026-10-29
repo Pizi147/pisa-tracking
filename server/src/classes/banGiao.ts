@@ -1,5 +1,5 @@
 import { boMonCt } from '../normal/regular.ts';
-import { db, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
@@ -382,17 +382,17 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
   }
   const ids = [...new Set(pc.map((r) => r.class_id as number))];
   const lenh: any[] = [];
-  theoLo(ids, (lo, ph) => {
+  theoLoJson(ids, (json) => {
     lenh.push(...conn.prepare(
       `SELECT l.id, l.student_id, l.lop_nguon_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich
          FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id LEFT JOIN classes d ON d.id = l.lop_dich_id
-        WHERE l.lop_nguon_id IN (${ph}) AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ORDER BY s.full_name`,
-    ).all(...lo) as any[]);
+        WHERE l.lop_nguon_id IN (${DS_JSON}) AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ORDER BY s.full_name`,
+    ).all(json) as any[]);
   });
   if (!lenh.length) return [];
   const daGhi = new Set<string>();   // `${lenhId}:${mon}`
-  theoLo(lenh.map((l) => l.id as number), (lo, ph) => {
-    for (const r of conn.prepare(`SELECT lenh_id, mon FROM ban_giao_mon WHERE lam_lai = 0 AND lenh_id IN (${ph})`).all(...lo) as any[]) daGhi.add(`${r.lenh_id}:${r.mon}`);
+  theoLoJson(lenh.map((l) => l.id as number), (json) => {
+    for (const r of conn.prepare(`SELECT lenh_id, mon FROM ban_giao_mon WHERE lam_lai = 0 AND lenh_id IN (${DS_JSON})`).all(json) as any[]) daGhi.add(`${r.lenh_id}:${r.mon}`);
   });
   const out: ViecBanGiao[] = [];
   for (const x of lop.values()) {

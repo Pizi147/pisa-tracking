@@ -5,7 +5,7 @@
  * thuần `dotDaHoanTat` (`shared/domain/keHoachTest.ts`) mà cả máy chủ và giao diện cùng gọi. File này chỉ lo phần
  * ĐỌC DATABASE cho luật đó — một câu hỏi (N đợt một lúc) để `classScoreSheet`/`regularSheet` không rơi vào N+1.
  */
-import { db } from '../db.ts';
+import { DS_JSON, db } from '../db.ts';
 import { dotDaHoanTat, mondayOfDate, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
@@ -24,7 +24,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   const out = new Map<number, HoanTatInfo>();
   if (!attemptIds.length) return out;
   const conn = db();
-  const ph = attemptIds.map(() => '?').join(',');
+  const ph = DS_JSON, json = JSON.stringify(attemptIds);   // S5: một tham số JSON (trước: một `?` mỗi lượt, không chia lô)
 
   const modeOf = new Map<number, 'ielts_band' | 'ratio'>();
   /*
@@ -44,7 +44,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
          LEFT JOIN programmes p ON p.code = c.programme_code
         WHERE a.id IN (${ph})`,
     )
-    .all(...attemptIds) as any[]) {
+    .all(json) as any[]) {
     modeOf.set(r.id, scoringModeOf({ kind: r.kind, scoring_mode: r.mode ?? 'band' }) === 'ratio' ? 'ratio' : 'ielts_band');   // F03: MT0 lớp thường chấm band
     if (r.lich_su) nhapCuoiLichSu.set(r.id, r.nhap_cuoi ? addDays(mondayOfDate(addDays(String(r.nhap_cuoi), 7)), 6) : null);
   }
@@ -65,7 +65,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
       `SELECT attempt_id, skill, band, raw_score, no_show_period_id
          FROM assessment_scores WHERE attempt_id IN (${ph})`,
     )
-    .all(...attemptIds) as any[]) {
+    .all(json) as any[]) {
     if (!scoresOf.has(r.attempt_id)) scoresOf.set(r.attempt_id, []);
     scoresOf.get(r.attempt_id)!.push({
       skill: r.skill, band: r.band ?? null, rawScore: r.raw_score ?? null, dauTuan: r.no_show_period_id ?? null,

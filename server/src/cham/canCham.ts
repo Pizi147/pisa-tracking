@@ -10,7 +10,7 @@
  * này là FT hay lớp thường.
  */
 import { notFound } from '../util.ts';
-import { db } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
@@ -146,7 +146,7 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
             AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL OR sc.no_show_period_id IS NOT NULL))
         < (CASE WHEN k.skill = 'writing' THEN (CASE WHEN k.bo_task IS NULL THEN 2 ELSE 1 END) ELSE 1 END))`];   // P8: chỉ học một task Writing
   const params: unknown[] = [];
-  if (o.classIds) { where.push(`a.class_id IN (${o.classIds.map(() => '?').join(',')})`); params.push(...o.classIds); }
+  if (o.classIds) { where.push(`a.class_id IN (${DS_JSON})`); params.push(JSON.stringify(o.classIds)); }
   if (o.branchId) { where.push('c.branch_id = ?'); params.push(o.branchId); }
   const rows = db().prepare(
     `SELECT a.class_id, a.student_id, a.attempt_no, c.code FROM assessment_attempts a
@@ -171,14 +171,6 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
   }).sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode }));   // PR-UXF-a U1
 }
 
-/** Chia lô cho câu `IN (...)` — SQLite giới hạn số tham số của một câu lệnh. */
-function theoLo<T>(ids: T[], hoi: (lo: T[], ph: string) => void) {
-  for (let i = 0; i < ids.length; i += 400) {
-    const lo = ids.slice(i, i + 400);
-    hoi(lo, lo.map(() => '?').join(','));
-  }
-}
-
 /**
  * Dựng dòng phụ "lùi lịch" cho từng dòng Nợ tuần trước từ các ô có bằng chứng dời. Một dòng chỉ có MỘT dòng phụ: môn lùi
  * gặp đầu tiên; `hv` là mọi em của dòng có CHÍNH môn đó bị dời (Q15).
@@ -199,19 +191,19 @@ function dungLuiLich(
   const theoMa = new Map<string, string>();
   const vang = new Map<string, string>();   // `${attemptId}:${kỹ năng đánh giá}` → mã tuần cũ
 
-  theoLo([...new Set(doi.map((x) => x.moved.fromPeriodId).filter((x): x is number => !!x))], (lo, ph) => {
-    for (const r of conn.prepare(`SELECT id, code, week_start FROM report_periods WHERE id IN (${ph})`).all(...lo) as any[]) {
+  theoLoJson([...new Set(doi.map((x) => x.moved.fromPeriodId).filter((x): x is number => !!x))], (json) => {
+    for (const r of conn.prepare(`SELECT id, code, week_start FROM report_periods WHERE id IN (${DS_JSON})`).all(json) as any[]) {
       tuan.set(r.id, { code: r.code, weekStart: r.week_start });
     }
   });
-  theoLo([...new Set(doi.filter((x) => x.moved.by === 'absence').map((x) => x.attemptId))], (lo, ph) => {
+  theoLoJson([...new Set(doi.filter((x) => x.moved.by === 'absence').map((x) => x.attemptId))], (json) => {
     for (const r of conn.prepare(
       `SELECT attempt_id, field, old_value FROM attempt_schedule_history
-        WHERE action = 'skill_week_moved_absence' AND attempt_id IN (${ph}) ORDER BY id`,
-    ).all(...lo) as any[]) vang.set(`${r.attempt_id}:${r.field}`, r.old_value);
+        WHERE action = 'skill_week_moved_absence' AND attempt_id IN (${DS_JSON}) ORDER BY id`,
+    ).all(json) as any[]) vang.set(`${r.attempt_id}:${r.field}`, r.old_value);
   });
-  theoLo([...new Set(vang.values())].filter(Boolean), (lo, ph) => {
-    for (const r of conn.prepare(`SELECT code, week_start FROM report_periods WHERE code IN (${ph})`).all(...lo) as any[]) {
+  theoLoJson([...new Set(vang.values())].filter(Boolean), (json) => {
+    for (const r of conn.prepare(`SELECT code, week_start FROM report_periods WHERE code IN (${DS_JSON})`).all(json) as any[]) {
       theoMa.set(r.code, r.week_start);
     }
   });
@@ -405,8 +397,8 @@ export function oQuaHanCham(
   /* OV-14b: khung đang xem (công tắc FT / Lớp thường) — cùng luật `khungDong` của các khối (MT0 thuộc Lớp thường); FT + thường = cả hai. */
   const khungLuot = new Map<number, Khung>();
   if (o.khung) {
-    theoLo([...new Set(r.ids.map((id) => Math.floor(id / 10)))], (lo, ph) => {
-      for (const a of db().prepare(`SELECT id, kind, class_id FROM assessment_attempts WHERE id IN (${ph})`).all(...lo) as any[]) {
+    theoLoJson([...new Set(r.ids.map((id) => Math.floor(id / 10)))], (json) => {
+      for (const a of db().prepare(`SELECT id, kind, class_id FROM assessment_attempts WHERE id IN (${DS_JSON})`).all(json) as any[]) {
         khungLuot.set(a.id, khungDong({ mode: cheDoCua(programmeOfClass(a.class_id)?.code), kind: a.kind }));
       }
     });
@@ -587,12 +579,12 @@ function hangLopTuan(
 
   /* Điểm + dấu "-" của mọi lượt trong tuần: MỘT câu gom lô (thay các câu con lồng theo từng dòng). */
   const diemCua = new Map<number, OiemLuu[]>();
-  theoLo([...new Set(rows.map((r) => r.id as number))], (lo, ph) => {
+  theoLoJson([...new Set(rows.map((r) => r.id as number))], (json) => {
     for (const x of conn.prepare(
       `SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id, sc.no_show_settled_at, sc.no_show_late, sc.no_show_cu,
               CASE WHEN ${O_FT_XONG_SQL('sc', 'a')} THEN 1 ELSE 0 END AS band_xong
-         FROM assessment_scores sc JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.attempt_id IN (${ph})`,
-    ).all(...lo) as any[]) {
+         FROM assessment_scores sc JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.attempt_id IN (${DS_JSON})`,
+    ).all(json) as any[]) {
       (diemCua.get(x.attempt_id) ?? diemCua.set(x.attempt_id, []).get(x.attempt_id)!).push(x);
     }
   });

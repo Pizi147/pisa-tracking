@@ -1,4 +1,4 @@
-import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
@@ -787,14 +787,14 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
 /** Em `active` CHƯA CÓ quyết định chuyển lớp đang chờ của mỗi lớp (chưa quyết = chưa có lệnh, Q3/Q30-4). Em đã có ĐỀ XUẤT chờ Quản lý duyệt không tính (đã có thẻ ở Chờ duyệt). Một câu cho cả lô lớp. */
 export function emChuaCoLenh(classIds: readonly number[]): Map<number, number[]> {
   const out = new Map<number, number[]>();
-  theoLo([...classIds], (lo, ph) => {
+  theoLoJson([...classIds], (json) => {
     for (const r of db().prepare(
       `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-        WHERE e.class_id IN (${ph}) AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
+        WHERE e.class_id IN (${DS_JSON}) AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
           AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')
           AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop' AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = e.student_id)
         ORDER BY e.class_id, e.student_id`,
-    ).all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, []).get(r.class_id)!).push(r.student_id);
+    ).all(json) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, []).get(r.class_id)!).push(r.student_id);
   });
   return out;
 }
