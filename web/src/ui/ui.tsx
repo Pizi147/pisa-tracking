@@ -515,8 +515,28 @@ type BoLocDoanProps<K extends string> = {
   muc: { key: K; nhan: string; so?: number | string | null; title?: string }[]; value: K; onChange: (k: K) => void; ariaLabel: string;
   /** VIEC-NHO-2: nhóm giữ chỗ nhưng tắt (mờ 40 %, không bấm, không nút nào chọn) — chữ là lý do khi rê chuột. */
   tat?: string;
+  /** V8-HSL (mockup v8 `.doan`): khối liền cao 36 (375: 44, chia đều), chữ 14, mục chọn đậm + gạch đáy 2 px nhấn, không ✓. */
+  v8?: boolean;
 };
-export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, tat }: BoLocDoanProps<K>) {
+export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, tat, v8 }: BoLocDoanProps<K>) {
+  if (v8) {
+    return (
+      <div role="group" aria-label={ariaLabel} aria-disabled={tat ? true : undefined} title={tat}
+        className={`inline-flex h-9 max-w-full shrink-0 overflow-hidden rounded-lg border max-sm:h-11 max-sm:w-full ${tat ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
+        {muc.map((m, i) => {
+          const chon = !tat && m.key === value;
+          return (
+            <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line-strong)' }}
+              className={`inline-flex min-w-0 items-center gap-1.5 whitespace-nowrap px-3 text-sm disabled:pointer-events-none max-sm:flex-1 max-sm:justify-center max-sm:px-1 max-sm:text-[13px] ${i ? 'border-l' : ''} ${
+                chon ? 'bg-[color:var(--accent-soft)] font-bold text-slate-100 shadow-[inset_0_-2px_0_var(--accent)]' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
+              <span className="min-w-0 truncate">{m.nhan}</span>
+              {m.so != null && <span className="text-[12px] font-semibold tabular-nums text-slate-500 max-sm:hidden">{m.so}</span>}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   /* OV-14b (rà UX 17/10, thay PR-KHUNG G5 vuốt ngang): điện thoại nút đoạn XUỐNG DÒNG — mỗi nút một viền như hàng chip, không nút nào bị cắt.
      RA-UI-7 (PTA 29/10, mockup v7 cong-viec-2 / ke-hoach-test 375 — duyệt sau OV-14b): ≤ 3 mục giữ MỘT khối liền như máy tính; > 3 mục vẫn xuống dòng. */
   const lien = muc.length <= 3;
