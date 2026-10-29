@@ -119,5 +119,49 @@ export async function runPrQuetTheoKyTests(t: any) {
     }
     assert(!loi.length, [...new Set(loi)].join(' || '));
   });
-  void checkAsync;
+
+  /* ------------------------------------------------------------------ Q3 Báo cáo một request */
+  const { createApp } = await import('../app.ts');
+  const { createSession } = await import('../auth.ts');
+  const { soCauSql }: any = await import('../platform/nguCanhRequest.ts');
+  const motNguoi = (role: string) => (conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? ORDER BY ur.user_id LIMIT 1`).get(role) as any)?.id as number | undefined;
+  const U: Record<string, number | undefined> = { QL: P.mbManager.userId, QT: P.admin.userId, GVCN: P.coreTeacher.userId, CX: motNguoi('cx'), TVV: motNguoi('consultant') };
+  const server = createApp().listen(0);
+  try {
+    const goi = async (vai: string, url: string) => {
+      const res = await fetch(`http://127.0.0.1:${(server.address() as any).port}/api${url}`, { headers: { cookie: `pisa_demo_session=${createSession(U[vai]!)}` } });
+      const txt = await res.text();
+      return { status: res.status, json: res.status === 200 ? JSON.parse(txt) : null };
+    };
+    const LOC = ['ct=ft', 'ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20'];
+
+    await checkAsync('Q3 · /tong-quan/v5?…&kemBaoCao=1: baoCao = JSON /phan-tich/bao-cao, phần còn lại = JSON /tong-quan/v5 (QL, QT × ft, thường theo tuần)', async () => {
+      for (const vai of ['QL', 'QT']) for (const q of LOC) {
+        const gop = await goi(vai, `/tong-quan/v5?${q}&kemBaoCao=1`), tq = await goi(vai, `/tong-quan/v5?${q}`), bc = await goi(vai, `/phan-tich/bao-cao?${q}`);
+        assert(gop.status === 200 && tq.status === 200 && bc.status === 200, `${vai} ${q}: mã ${gop.status} / ${tq.status} / ${bc.status}`);
+        const { baoCao, ...conLai } = gop.json;
+        assert(JSON.stringify(baoCao) === JSON.stringify(bc.json), `${vai} ${q}: baoCao ≠ /phan-tich/bao-cao`);
+        assert(JSON.stringify(conLai) === JSON.stringify(tq.json), `${vai} ${q}: phần Tổng quan ≠ /tong-quan/v5`);
+      }
+    });
+
+    await checkAsync('Q3 · RF5 cùng quyền: GVCN kemBaoCao=1 → 403; CX, TVV: mã = mã xấu hơn của hai đường cũ; không kemBaoCao → không có baoCao', async () => {
+      const g = await goi('GVCN', '/tong-quan/v5?ct=ft&kemBaoCao=1');
+      assert(g.status === 403, `GVCN: ${g.status} (mong 403)`);
+      for (const vai of ['CX', 'TVV']) {
+        if (!U[vai]) continue;
+        const gop = await goi(vai, '/tong-quan/v5?ct=ft&kemBaoCao=1'), tq = await goi(vai, '/tong-quan/v5?ct=ft'), bc = await goi(vai, '/phan-tich/bao-cao?ct=ft');
+        assert(gop.status === Math.max(tq.status, bc.status), `${vai}: gộp ${gop.status} ≠ max(${tq.status}, ${bc.status})`);
+      }
+      const ql = await goi('QL', '/tong-quan/v5?ct=ft');
+      assert(ql.status === 200 && !('baoCao' in ql.json), 'không kemBaoCao mà vẫn có baoCao');
+    });
+
+    await checkAsync('Q3 · câu (gộp) < câu (tq) + câu (bc) — QL MB ft', async () => {
+      const dem = async (url: string) => { const c0 = soCauSql(); await goi('QL', url); return soCauSql() - c0; };
+      const gop = await dem('/tong-quan/v5?ct=ft&kemBaoCao=1'), tq = await dem('/tong-quan/v5?ct=ft'), bc = await dem('/phan-tich/bao-cao?ct=ft');
+      console.log(`    câu QL ft: gộp ${gop} · tq ${tq} + bc ${bc} = ${tq + bc}`);
+      assert(gop < tq + bc, `gộp ${gop} ≥ ${tq} + ${bc}`);
+    });
+  } finally { server.close(); }
 }
