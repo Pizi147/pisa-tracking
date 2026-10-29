@@ -252,7 +252,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ### 30/10 (đêm) — PR-B BAN-GIAO-GV #731 để lại
 - [XM] Gom câu `luuPhanCong` theo lô (`TRAN_GHI_LO.luuPhanCong8Lop`, ~23 câu / lớp) — chưa làm ở PR-B; PR riêng (kế hoạch toc-do).
 - `tocDoDuong.ts`: thêm đường `GET /ban-giao-gv/:id` khi seed demo có việc bàn giao GV.
-- Hỏi chủ SP: hạn việc bàn giao khi hiệu lực "Từ tuần" sau (hàm chung tạo + 5 ngày, có thể quá hạn trước hiệu lực) · GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán]).
+- Hỏi chủ SP: GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán], đã làm). (Hạn việc khi "Từ tuần": PTA quyết = max(tạo, hiệu lực) + 5 — đã làm.)
 
 ### Backlog phát sinh đêm 30/10 (PTA rà PR)
 - **QUYEN-LIEN-HE (PR riêng, quyền):** luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
