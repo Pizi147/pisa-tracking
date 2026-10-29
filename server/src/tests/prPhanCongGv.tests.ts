@@ -120,7 +120,9 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
   /* gA: GVCN + L + S · gC: R · gD: W1, W2 — lớp X, Y, Z cùng bức tranh. gB, gF: chưa dạy. */
   const [gA, gB, gC, gD, gF] = [nguoi(), nguoi(), nguoi(), nguoi(), nguoi()];
   const X = lopMoi('MB PCGV-X'), Y = lopMoi('MB PCGV-Y'), Z = lopMoi('MB PCGV-Z');
-  for (const l of [X, Y, Z]) { gan(l, gA, null); gan(l, gA, 'listening'); gan(l, gC, 'reading'); gan(l, gD, 'writing1'); gan(l, gD, 'writing2'); gan(l, gA, 'speaking'); }
+  /* Thêm 5 lớp cùng bức tranh — đo lưu / Hoàn tác 8 lớp (trần một lần lưu). */
+  const THEM = [1, 2, 3, 4, 5].map((i) => lopMoi(`MB PCGV-L${i}`));
+  for (const l of [X, Y, Z, ...THEM]) { gan(l, gA, null); gan(l, gA, 'listening'); gan(l, gC, 'reading'); gan(l, gD, 'writing1'); gan(l, gD, 'writing2'); gan(l, gA, 'speaking'); }
   xoaNho();
   const QL = P.mbManager;
   const slotsCua = (l: number) => all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, l)
@@ -264,7 +266,8 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const cL = caseMoi(emX, 'listening', gA), pa = paMoi(cL, gA);
     const doi = [{ khoa: 'listening', nguoiCu: gA, nguoiMoi: gB }];
     const m = own.chonViecChuyen(X, 'FT', doi, () => new Set(['speaking']));
-    assert(JSON.stringify(m.get('listening')) === JSON.stringify({ caseIds: [cL], paIds: [pa] }) && chu(cL) === gA, JSON.stringify([...m]));
+    const v = m.get('listening');
+    assert(JSON.stringify([v?.caseIds, v?.paIds]) === JSON.stringify([[cL], [pa]]) && chu(cL) === gA, JSON.stringify([...m]));
   }));
 
   /* ---------------------------------------------------------------- A4 · tới hạn · Đổi mốc · Huỷ lịch đổi · Hoàn tác */
@@ -445,14 +448,22 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
   }));
 
   const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
-  check('A6 · POST /phan-cong/luu 3 lớp một ô (hôm nay) ≤ TRAN_GHI_LO.luuPhanCong3Lop câu', () => {
+  check('A6 · lưu 8 lớp một ô (hôm nay, mỗi lớp 1 Case + 1 PA chuyển) ≤ TRAN_GHI_LO.luuPhanCong8Lop · Hoàn tác cả lô ≤ hoanTacPhanCong8Lop', () => {
     thu(() => {
-      const vao = [X, Y, Z].map((l) => ({ classId: l, slots: doiO(l, 'listening', gB) }));
-      const a = ngc.soCauSql();
-      pc.luuPhanCong(QL, { lop: vao });
+      const tam = [X, Y, Z, ...THEM];
+      for (const l of tam) { const em = emMoi(l); paMoi(caseMoi(em, 'listening', gA), gA); }
+      xoaNho();
+      const vao = tam.map((l) => ({ classId: l, slots: doiO(l, 'listening', gB) }));
+      let a = ngc.soCauSql();
+      const r = pc.luuPhanCong(QL, { lop: vao });
       const n = ngc.soCauSql() - a;
-      console.log(`    (đo: lưu 3 lớp một ô = ${n} câu)`);
-      assert(n <= (TRAN_GHI_LO as any).luuPhanCong3Lop, `${n} câu > trần ${(TRAN_GHI_LO as any).luuPhanCong3Lop}`);
+      a = ngc.soCauSql();
+      pc.hoanTacLuu(QL, { lo: r.lo });
+      const n2 = ngc.soCauSql() - a;
+      console.log(`    (đo: lưu 8 lớp = ${n} câu · Hoàn tác 8 lớp = ${n2} câu)`);
+      assert(n <= (TRAN_GHI_LO as any).luuPhanCong8Lop && n2 <= (TRAN_GHI_LO as any).hoanTacPhanCong8Lop,
+        `${n} / ${n2} câu > trần ${(TRAN_GHI_LO as any).luuPhanCong8Lop} / ${(TRAN_GHI_LO as any).hoanTacPhanCong8Lop}`);
+      assert(tam.every((l) => ai(l, 'listening')[0] === gA), 'Hoàn tác đủ 8 lớp');
     });
   });
 
@@ -472,8 +483,8 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     assert(ai(X, 'listening')[0] === gB, 'không đảo');
   }));
   check('Rà-2 · quá trần số lớp một lần lưu → 400', () => thu(() => {
-    const e = maLoi(() => pc.luuPhanCong(QL, { lop: Array.from({ length: 13 }, (_, i) => ({ classId: 900000 + i, slots: [] })) }));
-    assert(e?.status === 400 && /tối đa 12 lớp/.test(e.message), e?.message);
+    const e = maLoi(() => pc.luuPhanCong(QL, { lop: Array.from({ length: 9 }, (_, i) => ({ classId: 900000 + i, slots: [] })) }));
+    assert(e?.status === 400 && /tối đa 8 lớp/.test(e.message), e?.message);
   }));
   check('Rà-3 · lịch tới hạn lỗi: quét các ngày sau vẫn chỉ MỘT thông báo cho người tạo', () => thu(() => {
     const r = henL(gB);
@@ -502,5 +513,45 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(X);
     const k = pc.apDoiDenHan(TODAY);
     assert(k.daAp === 0 && k.loi === 0 && ai(X, 'listening')[0] === gA, JSON.stringify(k));
+  }));
+
+  /* ---------------------------------------------------------------- PTA rà sâu 30/10 */
+  const xkt: any = await import('../classes/xoaKetThucLop.ts');
+  check('PTA-P2 · xoá lớp trống đã có lần đổi phân công → xoá được (không lỗi khoá ngoài), không còn dòng doi_phan_cong', () => thu(() => {
+    const W = lopMoi('MB PCGV-W'); gan(W, gA, null); gan(W, gA, 'listening'); gan(W, gC, 'reading'); xoaNho();
+    pc.luuPhanCong(QL, { lop: [{ classId: W, slots: doiO(W, 'reading', gB) }] });
+    pc.luuPhanCong(QL, { lop: [{ classId: W, slots: doiO(W, 'reading', gF) }], hieuLuc: { loai: 'tuan', tuanId: T14 } });
+    xkt.xoaLop(P.admin, W, { maLop: 'MB PCGV-W' });
+    assert(!one(`SELECT 1 FROM classes WHERE id = ?`, W) && !one(`SELECT 1 FROM doi_phan_cong WHERE class_id = ?`, W), 'đã xoá');
+  }));
+  check('PTA-P3 · áp muộn (hiệu lực 3 ngày trước): effective_from và xem_den tính từ HÔM NAY, không ghi lùi', () => thu(() => {
+    const r = henL(gB);
+    conn.prepare(`UPDATE doi_phan_cong SET hieu_luc = ? WHERE id = ?`).run(addDays(TODAY, -3), r.lo);
+    pc.apDoiDenHan(TODAY);
+    const moi = one(`SELECT effective_from f FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' AND status = 'active'`, X, gB);
+    const cu = one(`SELECT effective_to t FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' ORDER BY id DESC LIMIT 1`, X, gA);
+    const dong = one(`SELECT xem_den FROM doi_phan_cong WHERE id = ?`, r.lo);
+    assert(moi?.f === TODAY && cu?.t === TODAY && dong.xem_den === addDays(TODAY, 7), JSON.stringify({ moi, cu, dong }));
+  }));
+  check('PTA-P3 · Huỷ lịch L A→B, rồi đổi NGAY L A→C, Hoàn tác huỷ → 409 (không dựng lại lịch lỗi thời)', () => thu(() => {
+    const r = henL(gB);
+    const h = pc.huyCho(QL, [r.lo]);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gF) }] });
+    assert(maLoi(() => pc.hoanTacLuu(QL, { dao: h.dao }))?.status === 409, '409');
+    assert(one(`SELECT trang_thai t FROM doi_phan_cong WHERE id = ?`, r.lo).t === 'huy', 'giữ huỷ');
+  }));
+  check('PTA-nhỏ · Chưa có → B: B nhận thông báo phan_cong_moi', () => thu(() => {
+    pc.luuPhanCong(QL, { lop: [{ classId: Z, slots: slotsCua(Z).filter((x: any) => x.skill !== 'reading') }] });
+    const r = pc.luuPhanCong(QL, { lop: [{ classId: Z, slots: slotsCua(Z).concat([{ userId: gF, skill: 'reading', isCore: false }]) }] });
+    const tb = one(`SELECT title FROM notifications WHERE user_id = ? AND kind = 'phan_cong_moi' AND dedup_key = ?`, gF, `phan_cong_moi:${r.lo}`);
+    assert(tb && /MB PCGV-Z · R/.test(tb.title), JSON.stringify(tb));
+  }));
+  check('PTA-nhỏ · PA của GVBM cũ trên Case không kỹ năng: GV cũ rời lớp → sang GVCN; còn dạy lớp → giữ', () => thu(() => {
+    const c0 = caseMoi(emX, null, gA), pa = paMoi(c0, gC);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    assert(one(`SELECT performer_user_id u FROM case_interventions WHERE id = ?`, pa).u === gA, 'sang GVCN');
+    const pa2 = paMoi(c0, gD);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'writing1', gB) }] });
+    assert(one(`SELECT performer_user_id u FROM case_interventions WHERE id = ?`, pa2).u === gD, 'còn dạy W2 → giữ');
   }));
 }

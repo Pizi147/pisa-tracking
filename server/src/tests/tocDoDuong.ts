@@ -956,8 +956,10 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
-  /** PC-GV-A: POST /phan-cong/luu 3 lớp mỗi lớp một ô, hôm nay (lõi chung: kiểm + ghi_dao + áp + chuyển Case / PA + nhật ký) — đo trong prPhanCongGv. */
-  luuPhanCong3Lop: 114,   // đo 87 câu (~29 câu / lớp) → max(87 + 10, ⌈87 × 1,3⌉). ponytail: tăng theo số lớp (~29 câu / lớp, 10 lớp ≈ 300 câu ≈ 9 s Turso) — gom câu đọc theo lô nếu "Lưu cả n lớp" hay chạm 503
+  /** PC-GV-A: POST /phan-cong/luu 8 lớp (trần một lần lưu) mỗi lớp một ô + 1 Case + 1 PA chuyển, hôm nay — lõi chung (kiểm + ghi_dao + áp + chuyển + nhật ký); đo trong prPhanCongGv. */
+  luuPhanCong8Lop: 241,   // đo 185 câu (~23 câu / lớp; trước gom: 281) → max(185 + 10, ⌈185 × 1,3⌉). ponytail: còn ~23 câu / lớp (đọc phân công / Case / PA / môn gộp từng lớp) — gom theo lô nếu cần nâng trần 8 lớp
+  /** PC-GV-A: POST /phan-cong/hoan-tac cả lô 8 lớp trên (daoLai đọc / xoá theo lô, bỏ dòng không đổi). */
+  hoanTacPhanCong8Lop: 62,   // đo 47 câu (trước 68) → max(47 + 10, ⌈47 × 1,3⌉)
   /** TU-b: POST /tutors/tai-len lưu 50 dòng (40 mới + 10 cập nhật) — đọc tutors + chi nhánh một lần, ghi gom một câu upsert, một nhật ký. */
   taiLenTutor: 24,   // đo 14 câu, 11 dòng → max(14 + 10, ⌈14 × 1,3⌉)
   /** OV-15f: PUT /hoc-vien-lop/lich-thi/:cycleId (kết luận + ghi chú: quyền, đọc / ghi 5 cột lich_thi_*, nhật ký) */

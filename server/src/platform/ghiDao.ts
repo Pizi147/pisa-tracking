@@ -10,13 +10,28 @@ import { conflict, nowIso } from '../util.ts';
 type Dong = Record<string, unknown>;
 type Muc = { k: 'sua' | 'tao'; bang: string; truoc: Dong[]; sau: Dong[] };
 
+/** PC-GV-A: đọc nguyên dòng theo rowid, một câu mỗi 500 dòng (thay một câu mỗi dòng) — lưu / Hoàn tác phân công nhiều lớp chụp hàng chục dòng. */
+function docTheoRowid(conn: any, bang: string, rowids: readonly unknown[]): Map<unknown, Dong> {
+  const co = new Map<unknown, Dong>();
+  for (let i = 0; i < rowids.length; i += 500) {
+    const lo = rowids.slice(i, i + 500);
+    for (const r of conn.prepare(`SELECT rowid AS __r, * FROM ${bang} WHERE rowid IN (${lo.map(() => '?').join(',')})`).all(...lo) as Dong[]) co.set(r.__r, r);
+  }
+  return co;
+}
+
 export class GhiDao {
   muc: Muc[] = [];
   constructor(private conn: any) {}
   /** Chụp NGUYÊN dòng sắp bị sửa (gọi TRƯỚC thao tác). */
   sua(bang: string, dieuKien: string, ...args: unknown[]): void {
     const truoc = this.conn.prepare(`SELECT rowid AS __r, * FROM ${bang} WHERE ${dieuKien}`).all(...args) as Dong[];
-    if (truoc.length) this.muc.push({ k: 'sua', bang, truoc, sau: [] });
+    if (!truoc.length) return;
+    /* PC-GV-A: cùng bảng → gộp vào MỘT mục (chụp / so / đảo theo lô một câu mỗi bảng); dòng đã chụp giữ bản chụp ĐẦU (đúng "trước"). */
+    const cu = this.muc.find((m) => m.k === 'sua' && m.bang === bang);
+    if (!cu) { this.muc.push({ k: 'sua', bang, truoc, sau: [] }); return; }
+    const co = new Set(cu.truoc.map((d) => d.__r));
+    cu.truoc.push(...truoc.filter((d) => !co.has(d.__r)));
   }
   /** Chạy `fn`; dòng MỚI xuất hiện trong `bang WHERE dieuKien` ghi là "thêm" (đảo xoá đi). */
   theoDoi<T>(bang: string, dieuKien: string, args: unknown[], fn: () => T): T {
@@ -28,13 +43,8 @@ export class GhiDao {
   }
   /** Chụp trạng thái SAU thao tác của mọi dòng đã ghi (gọi SAU thao tác, trước khi lưu). */
   chot(): void {
-    /* PC-GV-A: một câu mỗi mục (lô ≤ 500 rowid) thay vì một câu mỗi dòng — lưu phân công nhiều lớp chụp hàng chục dòng. */
     for (const m of this.muc) {
-      const co = new Map<unknown, Dong>();
-      for (let i = 0; i < m.truoc.length; i += 500) {
-        const lo = m.truoc.slice(i, i + 500).map((d) => d.__r);
-        for (const r of this.conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid IN (${lo.map(() => '?').join(',')})`).all(...lo) as Dong[]) co.set(r.__r, r);
-      }
+      const co = docTheoRowid(this.conn, m.bang, m.truoc.map((d) => d.__r));
       m.sau = m.truoc.map((d) => co.get(d.__r) ?? { __r: d.__r, __mat: 1 });
     }
   }
@@ -42,7 +52,8 @@ export class GhiDao {
   boKhongDoi(bang: string): void {
     for (const m of this.muc) {
       if (m.k !== 'sua' || m.bang !== bang) continue;
-      m.truoc = m.truoc.filter((d) => JSON.stringify(d) !== JSON.stringify(this.conn.prepare(`SELECT rowid AS __r, * FROM ${bang} WHERE rowid = ?`).get(d.__r)));
+      const co = docTheoRowid(this.conn, bang, m.truoc.map((d) => d.__r));
+      m.truoc = m.truoc.filter((d) => JSON.stringify(d) !== JSON.stringify(co.get(d.__r)));
     }
     this.muc = this.muc.filter((m) => m.truoc.length);
   }
@@ -78,25 +89,32 @@ const giongNhau = (a: Dong | undefined, b: Dong) => !!a && JSON.stringify(a) ===
 
 /**
  * ĐẢO một bản ghi (trong giao dịch của nơi gọi). Mọi dòng hiện tại phải còn đúng "sau" — kiểm HẾT trước khi ghi gì; rồi xoá dòng thêm, trả dòng sửa.
- * Mỗi câu ghi phải đổi đúng một dòng (changes = 0 → 409). Đánh dấu bản ghi đã đảo.
+ * Mỗi câu ghi phải đổi đúng số dòng của nó (thiếu → 409); đọc / xoá theo lô (PC-GV-A). Đánh dấu bản ghi đã đảo.
  */
 export function daoLai(conn: any, g: BanGhiDao, nguoi: number): void {
   if (g.dao_luc) throw conflict('Thao tác này đã được hoàn tác.');
   const muc = JSON.parse(g.du_lieu) as Muc[];
-  for (const m of muc) for (const s of m.sau) {
-    if (s.__mat) throw conflict(KHAC(m.bang));   // dòng đã mất ngay lúc chốt (không đảo được)
-    const hienTai = conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid = ?`).get(s.__r) as Dong | undefined;
-    if (!giongNhau(boQua(m.bang, hienTai), boQua(m.bang, s)!)) throw conflict(KHAC(m.bang));
+  for (const m of muc) {
+    const co = docTheoRowid(conn, m.bang, m.sau.map((s) => s.__r));
+    for (const s of m.sau) {
+      if (s.__mat) throw conflict(KHAC(m.bang));   // dòng đã mất ngay lúc chốt (không đảo được)
+      if (!giongNhau(boQua(m.bang, co.get(s.__r)), boQua(m.bang, s)!)) throw conflict(KHAC(m.bang));
+    }
   }
   for (const m of [...muc].reverse()) {
-    for (const d of m.truoc) {
-      if (m.k === 'tao') {
-        if (!conn.prepare(`DELETE FROM ${m.bang} WHERE rowid = ?`).run(d.__r).changes) throw conflict(KHAC(m.bang));
-      } else {
-        const cot = Object.keys(d).filter((c) => c !== '__r');
-        if (!conn.prepare(`UPDATE ${m.bang} SET ${cot.map((c) => `${c} = ?`).join(', ')} WHERE rowid = ?`).run(...cot.map((c) => d[c]), d.__r).changes) {
-          throw conflict(KHAC(m.bang));
-        }
+    if (m.k === 'tao') {
+      for (let i = 0; i < m.truoc.length; i += 500) {
+        const lo = m.truoc.slice(i, i + 500).map((d) => d.__r);
+        if (conn.prepare(`DELETE FROM ${m.bang} WHERE rowid IN (${lo.map(() => '?').join(',')})`).run(...lo).changes !== lo.length) throw conflict(KHAC(m.bang));
+      }
+      continue;
+    }
+    for (const [i, d] of m.truoc.entries()) {
+      /* Dòng thao tác không đổi (chụp rộng) — hiện tại đã đúng "sau" = "trước", khỏi ghi. */
+      if (JSON.stringify(d) === JSON.stringify(m.sau[i])) continue;
+      const cot = Object.keys(d).filter((c) => c !== '__r');
+      if (!conn.prepare(`UPDATE ${m.bang} SET ${cot.map((c) => `${c} = ?`).join(', ')} WHERE rowid = ?`).run(...cot.map((c) => d[c]), d.__r).changes) {
+        throw conflict(KHAC(m.bang));
       }
     }
   }
@@ -107,8 +125,10 @@ export function daoLai(conn: any, g: BanGhiDao, nguoi: number): void {
 export function daoDuoc(g: BanGhiDao | null): boolean {
   if (!g || g.dao_luc) return false;
   const conn = db();
-  return (JSON.parse(g.du_lieu) as Muc[]).every((m) => m.sau.every((s) => !s.__mat
-    && giongNhau(boQua(m.bang, conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid = ?`).get(s.__r) as Dong | undefined), boQua(m.bang, s)!)));
+  return (JSON.parse(g.du_lieu) as Muc[]).every((m) => {
+    const co = docTheoRowid(conn, m.bang, m.sau.map((s) => s.__r));
+    return m.sau.every((s) => !s.__mat && giongNhau(boQua(m.bang, co.get(s.__r)), boQua(m.bang, s)!));
+  });
 }
 
 /** Giữ bản ghi đảo `GIU_NGAY_DAO` ngày (như thùng rác) — cron thứ Hai xoá bản ghi cũ hơn (đã đảo hay chưa); Huỷ quyết định vốn chỉ trong ngày. */

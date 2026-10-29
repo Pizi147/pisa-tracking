@@ -3,7 +3,7 @@ import { CASE_CATEGORY_SKILL, MON_GOP, PERMISSIONS, caseThuocO, caseTopicLabel, 
 import { can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
-import { loi, nowIso } from '../util.ts';
+import { conflict, loi, nowIso } from '../util.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { kiemXemCase } from './cases.ts';
 
@@ -234,12 +234,16 @@ export function caseThieuChuLop(classId: number): number[] {
 /**
  * Case / PA SẼ chuyển khi đổi người (KHÔNG ghi) — dùng chung cho xem trước hộp Lưu và lúc áp. Chỉ cặp có người giao + người nhận khác nhau.
  * Case mở `owner = GV cũ` thuộc ô (`caseThuocO`; ô môn ưu tiên trước ô GVCN); PA `planned | started` GV cũ thực hiện, Case thuộc lớp + ô.
+ * PTA 30/10: PA của GV cũ trên Case KHÔNG kỹ năng mà GV cũ không còn dạy lớp (không môn, không GVCN) → GVCN sau đổi (khoá `GVCN_LOP`).
  * `conDay(u)` = kỹ năng u CÒN dạy ở lớp sau đổi. Hai câu đọc cho cả lớp.
  */
-export function chonViecChuyen(classId: number, ct: string | null, doi: readonly DoiO[], conDay: (userId: number) => ReadonlySet<string>):
-  Map<string, { caseIds: number[]; paIds: number[] }> {
+export const GVCN_LOP = '_gvcn';
+/** Id Case / PA sẽ chuyển + người cũ đã đọc (`c{id}` / `p{id}`) — lúc áp dùng lại, không đọc lại từng dòng. */
+export type ViecChuyen = { caseIds: number[]; paIds: number[]; cu: Map<string, { u: number; caseId?: number }> };
+export function chonViecChuyen(classId: number, ct: string | null, doi: readonly DoiO[], conDay: (userId: number) => ReadonlySet<string>,
+  gvcnSau: number | null = null): Map<string, ViecChuyen> {
   const cap = doi.filter(laCapBanGiao);
-  const m = new Map(cap.map((d) => [d.khoa, { caseIds: [] as number[], paIds: [] as number[] }]));
+  const m = new Map<string, ViecChuyen>(cap.map((d) => [d.khoa, { caseIds: [], paIds: [], cu: new Map() }]));
   if (!cap.length) return m;
   const cu = [...new Set(cap.map((d) => d.nguoiCu!))];
   const ph = cu.map(() => '?').join(',');
@@ -252,15 +256,22 @@ export function chonViecChuyen(classId: number, ct: string | null, doi: readonly
   const da = new Set<number>();
   for (const r of conn.prepare(`SELECT sc.id, sc.owner_user_id AS u, sc.category ${CASE_MO_CUA_LOP} AND sc.owner_user_id IN (${ph}) ORDER BY sc.id`).all(classId, ...cu) as any[]) {
     const d = !da.has(r.id) && theoO(r.u, r.category);
-    if (d) { da.add(r.id); m.get(d.khoa)!.caseIds.push(r.id); }
+    if (d) { da.add(r.id); m.get(d.khoa)!.caseIds.push(r.id); m.get(d.khoa)!.cu.set(`c${r.id}`, { u: r.u }); }
   }
   da.clear();
+  const roiLop = (u: number) => gvcnSau !== null && gvcnSau !== u && conDay(u).size === 0;
   for (const r of conn.prepare(
-    `SELECT iv.id, iv.performer_user_id AS u, sc.category FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+    `SELECT iv.id, iv.case_id, iv.performer_user_id AS u, sc.category FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
        ${NOI_CASE_LOP} AND iv.status IN ('planned', 'started') AND iv.performer_user_id IN (${ph}) ORDER BY iv.id`,
   ).all(classId, ...cu) as any[]) {
-    const d = !da.has(r.id) && theoO(r.u, r.category);
-    if (d) { da.add(r.id); m.get(d.khoa)!.paIds.push(r.id); }
+    if (da.has(r.id)) continue;
+    da.add(r.id);
+    const d = theoO(r.u, r.category);
+    const khoa = d ? d.khoa : !(CASE_CATEGORY_SKILL[r.category as string] ?? null) && roiLop(r.u) ? GVCN_LOP : null;
+    if (!khoa) continue;
+    if (!m.has(khoa)) m.set(khoa, { caseIds: [], paIds: [], cu: new Map() });
+    m.get(khoa)!.paIds.push(r.id);
+    m.get(khoa)!.cu.set(`p${r.id}`, { u: r.u, caseId: r.case_id });
   }
   return m;
 }
@@ -268,51 +279,59 @@ export function chonViecChuyen(classId: number, ct: string | null, doi: readonly
 /**
  * ÁP chuyển việc (TRONG tx của lần đổi): Case → người phụ trách mới + `sos_case_history` (owner_user_id); PA → người thực hiện mới
  * (`performer_name` xoá) + lịch sử `pa_performer` (mẫu `banGiaoPaQuyChe`). Điểm / bài GV cũ đã chấm không đụng. Mỗi GV mới MỘT thông báo
- * cho lớp (`phan_cong_moi`). Trả số đã chuyển theo ô.
+ * cho lớp (`phan_cong_moi`, cả ô trước trống — PTA 30/10). Đọc / ghi theo lô (một câu mỗi loại, không mỗi Case). Trả số đã chuyển theo ô.
  */
 export function chuyenViecKhiDoi(o: {
   classId: number; ct: string | null; doi: readonly (DoiO & { id?: number })[]; conDay: (userId: number) => ReadonlySet<string>;
-  actorId: number | null; luc: string; code: string;
+  actorId: number | null; luc: string; code: string; gvcnSau?: number | null;
   /** Đã chọn sẵn (để chụp `ghi_dao` trước khi ghi) — không truyền thì tự chọn. */
-  chon?: Map<string, { caseIds: number[]; paIds: number[] }>;
+  chon?: Map<string, ViecChuyen>;
 }): Map<string, { soCase: number; soPa: number }> {
   const conn = db();
-  const chon = o.chon ?? chonViecChuyen(o.classId, o.ct, o.doi, o.conDay);
+  const chon = o.chon ?? chonViecChuyen(o.classId, o.ct, o.doi, o.conDay, o.gvcnSau ?? null);
   const kq = new Map<string, { soCase: number; soPa: number }>();
+  const nhan = (khoa: string) => (khoa === 'gvcn' || khoa === GVCN_LOP ? 'GVCN' : tenMonNgan(o.ct, khoa));
   const cap = o.doi.filter(laCapBanGiao);
-  if (!cap.length) return kq;
-  const nguoi = [...new Set(cap.flatMap((d) => [d.nguoiCu!, d.nguoiMoi!]))];
-  const ten = new Map((conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${nguoi.map(() => '?').join(',')})`).all(...nguoi) as any[])
-    .map((u) => [u.id as number, u.full_name as string]));
-  const nhan = (khoa: string) => (khoa === 'gvcn' ? 'GVCN' : tenMonNgan(o.ct, khoa));
+  const nhanMoi = o.doi.filter((d) => d.nguoiMoi !== null && d.nguoiMoi !== d.nguoiCu);
+  if (!nhanMoi.length) return kq;
+  const coPa = [...chon.values()].some((v) => v.paIds.length);
+  const nguoi = coPa ? [...new Set([...cap.flatMap((d) => [d.nguoiCu!, d.nguoiMoi!]), ...(o.gvcnSau ? [o.gvcnSau] : [])])] : [];
+  const ten = new Map(nguoi.length ? (conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${inHang(nguoi)})`).all(...nguoi) as any[])
+    .map((u) => [u.id as number, u.full_name as string]) : []);
+  /* Lịch sử Case + PA của cả lớp: MỘT câu chèn (cuối hàm). */
+  const ls: unknown[][] = [];
+  const ghiLs = (rows: unknown[][]) => { ls.push(...rows); };
   for (const [khoa, v] of chon) {
     const ds = cap.filter((d) => d.khoa === khoa);
-    const moi = ds[0].nguoiMoi!;
-    const cu = ds.map((d) => d.nguoiCu!);
-    const inCu = cu.map(() => '?').join(',');
-    let soCase = 0, soPa = 0;
-    for (const id of v.caseIds) {
-      const c = conn.prepare('SELECT owner_user_id FROM sos_cases WHERE id = ?').get(id) as any;
-      if (!c || conn.prepare(`UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id IN (${inCu})`).run(moi, o.luc, id, ...cu).changes !== 1) continue;
-      conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', ?, ?, ?, ?)`)
-        .run(id, String(c.owner_user_id), String(moi), o.actorId, o.luc);
-      soCase += 1;
+    const moi = khoa === GVCN_LOP ? o.gvcnSau! : ds[0].nguoiMoi!;
+    const cu = khoa === GVCN_LOP ? [...new Set(cap.map((d) => d.nguoiCu!))] : ds.map((d) => d.nguoiCu!);
+    /* Người cũ đọc ở `chonViecChuyen` cùng tx (không ai ghi chen) → một UPDATE mỗi loại; số dòng đổi phải khớp, không thì 409 (cuộn cả lần lưu). */
+    const caseCu = v.caseIds.filter((id) => cu.includes(v.cu.get(`c${id}`)?.u ?? -1));
+    if (caseCu.length) {
+      if (conn.prepare(`UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id IN (${inHang(caseCu)}) AND owner_user_id IN (${inHang(cu)})`)
+        .run(moi, o.luc, ...caseCu, ...cu).changes !== caseCu.length) throw conflict('Case vừa đổi người phụ trách — tải lại rồi lưu.');
+      ghiLs(caseCu.map((id) => [id, 'owner_user_id', String(v.cu.get(`c${id}`)!.u), String(moi), o.actorId, o.luc]));
     }
-    for (const id of v.paIds) {
-      const r = conn.prepare('SELECT case_id, performer_user_id FROM case_interventions WHERE id = ?').get(id) as any;
-      if (!r || conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, performer_name = NULL, updated_at = ? WHERE id = ? AND performer_user_id IN (${inCu})`)
-        .run(moi, o.luc, id, ...cu).changes !== 1) continue;
-      const tenCu = ten.get(r.performer_user_id) ?? '—';
-      conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'pa_performer', ?, ?, ?, ?)`)
-        .run(r.case_id, tenCu, `${tenCu} → ${ten.get(moi) ?? ''} (phân công ${o.code} · ${nhan(khoa)})`, o.actorId, o.luc);
-      soPa += 1;
+    const paCu = v.paIds.filter((id) => cu.includes(v.cu.get(`p${id}`)?.u ?? -1));
+    if (paCu.length) {
+      if (conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, performer_name = NULL, updated_at = ? WHERE id IN (${inHang(paCu)}) AND performer_user_id IN (${inHang(cu)})`)
+        .run(moi, o.luc, ...paCu, ...cu).changes !== paCu.length) throw conflict('PA vừa đổi người thực hiện — tải lại rồi lưu.');
+      ghiLs(paCu.map((id) => {
+        const x = v.cu.get(`p${id}`)!;
+        const tenCu = ten.get(x.u) ?? '—';
+        return [x.caseId, 'pa_performer', tenCu, `${tenCu} → ${ten.get(moi) ?? ''} (phân công ${o.code} · ${nhan(khoa)})`, o.actorId, o.luc];
+      }));
     }
-    kq.set(khoa, { soCase, soPa });
+    kq.set(khoa, { soCase: caseCu.length, soPa: paCu.length });
+  }
+  for (let i = 0; i < ls.length; i += 100) {   // ≤ 600 tham số một câu
+    const lo = ls.slice(i, i + 100);
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES ${lo.map(() => '(?,?,?,?,?,?)').join(',')}`).run(...lo.flat());
   }
   /* Một thông báo mỗi GV mới của lớp: các ô nhận + số Case / PA chuyển. */
-  for (const moi of new Set(cap.map((d) => d.nguoiMoi!))) {
+  for (const moi of new Set(nhanMoi.map((d) => d.nguoiMoi!))) {
     if (moi === o.actorId) continue;
-    const ds = cap.filter((d) => d.nguoiMoi === moi);
+    const ds = nhanMoi.filter((d) => d.nguoiMoi === moi);
     const khoa = [...new Set(ds.map((d) => d.khoa))];
     const soCase = khoa.reduce((n, k) => n + (kq.get(k)?.soCase ?? 0), 0);
     const soPa = khoa.reduce((n, k) => n + (kq.get(k)?.soPa ?? 0), 0);
@@ -321,3 +340,4 @@ export function chuyenViecKhiDoi(o: {
   }
   return kq;
 }
+const inHang = (ds: readonly unknown[]) => ds.map(() => '?').join(',');

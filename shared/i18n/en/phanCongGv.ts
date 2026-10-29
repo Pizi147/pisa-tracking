@@ -12,5 +12,7 @@ export const EN_PHAN_CONG_GV = {
   'Không còn bản ghi để hoàn tác.': 'Nothing left to undo.',
   'Phân công GV dành cho Quản lý.': 'Teacher assignment is for managers.',
   'Không tìm thấy chi nhánh': 'Branch not found',
-  'Không hoàn tác được: ô này đã có lịch đổi mới hơn — huỷ lịch đó trước.': 'Cannot undo: this slot has a newer scheduled change — cancel that first.',
+  'Case vừa đổi người phụ trách — tải lại rồi lưu.': 'A Case owner just changed — reload and save again.',
+  'PA vừa đổi người thực hiện — tải lại rồi lưu.': 'An action plan performer just changed — reload and save again.',
+  'Không hoàn tác được: ô này đã có lần đổi mới hơn — sửa trực tiếp ở bảng phân công.': 'Cannot undo: this slot has a newer change — edit it directly in the assignment table.',
 };

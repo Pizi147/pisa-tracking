@@ -79,6 +79,8 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('y_thuc_khai_bac', 'khai_boi', DV, 'xác nhận cấp bậc vi phạm'), c('y_thuc_khai_bac', 'sua_boi', DV, 'xác nhận cấp bậc vi phạm'),
   c('lenh_chuyen_lop', 'nguoi_ra_lenh', DV, 'quyết định chuyển lớp'), c('lenh_chuyen_lop', 'huy_boi', DV, 'quyết định chuyển lớp'),
   c('lenh_chuyen_lop', 'xac_nhan_boi', DV, 'bàn giao'), c('ban_giao_mon', 'nguoi_ghi', DV, 'bàn giao'),
+  /* PC-GV-A: đổi phân công có hiệu lực (người giao · người nhận · người lưu). */
+  c('doi_phan_cong', 'nguoi_cu', DV, 'đổi phân công'), c('doi_phan_cong', 'nguoi_moi', DV, 'đổi phân công'), c('doi_phan_cong', 'tao_boi', DV, 'đổi phân công'),
   c('gop_y_tuan', 'ghi_boi', DV, 'góp ý hàng tuần'),   // OV-12g
   c('bai_tren_lop', 'ghi_boi', DV, 'tiến độ trên lớp'), c('bai_tren_lop', 'sua_boi', DV, 'tiến độ trên lớp'),   // SV-BAI-LOP
   c('s_expert', 'them_boi', DV, 'S Expert'), c('s_expert', 'sua_boi', DV, 'S Expert'), c('s_expert', 'cham_boi', DV, 'S Expert'), c('s_expert', 'xoa_boi', DV, 'S Expert'),   // SV-S-EXPERT · SV-LOP

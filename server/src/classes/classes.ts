@@ -1118,7 +1118,9 @@ export function kiemTruocPhanCong(
  */
 export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[], ngay: string,
   /** PR-QU: thêm vào nhật ký (`via`, `truoc`, `sau`). */
-  meta?: Record<string, unknown>): { added: number; ended: number } {
+  meta?: Record<string, unknown>,
+  /** PC-GV-A: mã lớp đã đọc (lưu nhiều lớp) — khỏi đọc lại cho nhật ký. */
+  maLop?: string): { added: number; ended: number } {
   const conn = db();
   const keyOf = (userId: number, skill: string | null, isCore: boolean | number) => `${userId}|${skill ?? ''}|${isCore ? 1 : 0}`;
   const wanted = new Map(slots.map((s) => [keyOf(s.userId, s.skill, s.isCore), s] as const));
@@ -1149,7 +1151,7 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
   /* CV-LOI (A13): phân công vừa có người cho môn / GVCN → Case mở chưa có người phụ trách của lớp tự có chủ, cùng giao dịch, có lịch sử. */
   if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso() });
   if (added || ended) {
-    const code = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
+    const code = maLop ?? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
     writeAudit({
       actorUserId: p.userId, action: 'class.assign', entityType: 'class', entityId: classId,
       entityLabel: code, after: { added, ended, ...meta },
