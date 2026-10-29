@@ -49,12 +49,9 @@ export async function runPrUiConLaiTests(t: any) {
     assert(!pv.timGiaoVien(ql, 'n').length, '1 ký tự → rỗng');
   });
 
-  check('UICL-5 (k3) · Hoàn tác 5 s ở thẻ duyệt chỉ cho đúng các loại máy chủ huỷ được (`khiHuy`) — web không hứa điều máy chủ từ chối', () => {
-    const may = fs.readFileSync(path.join(REPO, 'server/src/duyet/loaiYeuCau.ts'), 'utf8').replace(/\r\n/g, '\n');   // TL-V5: checkout Windows (autocrlf) — regex dưới tách mục theo "\n"
-    const coHuy = [...may.matchAll(/loai: '([a-z_]+)',[\s\S]*?(?=\n  \{\n    loai:|\n\];)/g)].filter((m) => /khiHuy:/.test(m[0])).map((m) => m[1]).sort();
-    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/TheYeuCau.tsx'), 'utf8').match(/HUY_DUOC = new Set<string>\(\[([^\]]*)\]/)?.[1] ?? '';
-    const ds = [...web.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
-    assert(JSON.stringify(coHuy) === JSON.stringify(ds), `máy chủ ${coHuy} ≠ web ${ds}`);
+  check('UICL-5 (k3, Q-RL2c) · Hoàn tác 5 s ở thẻ duyệt theo cờ `coTheHuy` máy chủ trả về sau quyết định — web không hứa điều máy chủ từ chối (không danh sách loại cứng)', () => {
+    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/TheYeuCau.tsx'), 'utf8');
+    assert(!/HUY_DUOC/.test(web) && /kq\?\.coTheHuy/.test(web), 'Hoàn tác 5 s phải theo cờ coTheHuy máy chủ trả về');
   });
 
   check('UICL-6 (chủ SP 24/10) · ô điểm thiếu nhận xét MT: viền vàng, KHÔNG chữ dưới điểm (lưới + ô lớn hồ sơ MT); câu nhắc còn ở tooltip / tên đọc màn', () => {
@@ -77,7 +74,7 @@ export async function runPrUiConLaiTests(t: any) {
     assert(/<CayDuyet ds=\{dsHien\}/.test(h) && /createPortal\(/.test(h) && /\bkhuPanel,\r?\n/.test(h), 'bản gọn = cây + panel vào cột phải');
     assert(/onDuyet\(y\)/.test(h) && /onMo\(y, 'tu-choi'\)/.test(h) && /onMo\(y, 'tra-loi'\)/.test(h) && /t\('Mở ›'\)/.test(h), 'thao tác của dòng');
     assert(/huy-quyet-dinh/.test(h) && /t\('Yêu cầu tiếp ›'\)/.test(h) && /if \(gon && id\) \{ next\.delete\('viec'\)/.test(h), 'Hoàn tác · Yêu cầu tiếp · bỏ panel việc');
-    assert(/moSan === 'tu-choi' \|\| moSan === 'tra-loi'/.test(the) && /onXong\(yc\.id, xongChu\)/.test(the), 'panel mở sẵn ô + câu kết quả');
+    assert(/moSan === 'tu-choi' \|\| moSan === 'tra-loi'/.test(the) && /onXong\(yc\.id, xongChu(, huyDuoc)?\)/.test(the), 'panel mở sẵn ô + câu kết quả');
     const iTrai = cv.indexOf('{coDuyet && ('), iDs = cv.indexOf('<DanhSachViec nhom=');
     assert(iTrai > 0 && iTrai < iDs && cv.indexOf('lg:grid lg:grid-cols-[520px') < iTrai, 'Chờ bạn duyệt trong cột trái, trước nhóm việc');
     assert(!/chờ bạn duyệt', \{ n: demDuyet/.test(cv) && /kieu="chon" chuTatCa=\{t\('Mọi khung'\)\}/.test(cv) && /next\.delete\('the'\);/.test(cv), 'bỏ chữ trùng đầu trang · Mọi khung · mở việc bỏ panel duyệt');

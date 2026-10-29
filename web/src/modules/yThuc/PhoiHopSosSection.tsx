@@ -319,7 +319,11 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
     try {
       await api.post(`/phoi-hop-sos/${actionId}/remove`, { reasonCode: reason, reasonText: reasonNeedsText(reason) ? text.trim() : undefined });
       invalidate('/classes'); invalidate('/students');
-      toast.push('ok', t('Đã bỏ việc này'));
+      /* Q-RL2c: Hoàn tác 5 s = Khôi phục (mo-lai trả nguyên dòng trước khi bỏ). */
+      toast.hoanTac(t('Đã bỏ việc này'), () => {
+        api.post(`/phoi-hop-sos/${actionId}/mo-lai`).then(() => { invalidate('/classes'); invalidate('/students'); onChanged?.(); },
+          (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
+      }, { key: `phoi-hop-bo:${actionId}` });
       onChanged?.(); onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };

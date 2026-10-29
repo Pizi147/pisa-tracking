@@ -16,7 +16,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'attempt.skip_skill': 'Bỏ khỏi đợt', 'attempt.sit_status': 'Ghi đã làm bài / vắng', 'attempt.skill_week': 'Dời lịch Test',
   'case.auto_from_sos': 'Tạo Case từ SOS', 'case.auto_from_giua_khoa': 'Tạo Case từ Progress Test', 'case.bo_tro.nop_ke_hoach': 'Nộp kế hoạch bổ trợ', 'case.backfill': 'Nhập bù Case đã xong', 'case.backfill.done': 'Nhập bù Case đã xong',
   'case.classify': 'Phân loại Case', 'case.close': 'Đóng Case', 'case.disposition': 'Kết luận Case', 'case.dismiss': 'Không cần theo dõi',
-  'case.intervention': 'Thêm PA', 'case.intervention.complete': 'Kết thúc PA', 'case.outcome': 'Hoàn thành Case',
+  'case.intervention': 'Thêm PA', 'case.intervention.complete': 'Kết thúc PA', 'case.intervention.reopen': 'Mở lại PA đã kết thúc', 'case.outcome': 'Hoàn thành Case',
   'case.reopen': 'Mở lại Case', 'case.edit': 'Sửa Case', 'case.xac_nhan_s': 'Xác nhận Case Speaking', 'case.delete': 'Xoá Case', 'case.follow_until': 'Đổi hạn theo dõi Case', 'intervention.delete': 'Xoá PA', 'intervention.undo_add': 'Hoàn tác thêm PA',
   'case.plan.approved': 'Duyệt đề xuất PA', 'case.plan.declined': 'Từ chối đề xuất PA', 'case.plan.comment': 'Góp ý đề xuất PA',
   'case.preset.confirm': 'Xác nhận PA theo quy chế', 'case.preset.replace': 'Thay PA theo quy chế', 'case.confirm': 'Xác nhận Case',
@@ -40,7 +40,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'discipline.revoke_request': 'Xin thu hồi lần xử lý', 'discipline.revoke': 'Thu hồi lần xử lý', 'discipline.revoke_undo': 'Huỷ thu hồi lần xử lý',   // LUAT-5
   'case.owner_assign': 'Gán người phụ trách Case',   // SUA-NO-RA (migrate prCvLoi)
   'case.owner_change': 'Đổi người phụ trách Case',   // R1-NO-CU (D17)
-  'discipline.bao_ph': 'Ghi kết quả báo phụ huynh', 'discipline.bao_ph_bo': 'Bỏ việc báo phụ huynh',   // SV-YT-TVV
+  'discipline.bao_ph': 'Ghi kết quả báo phụ huynh', 'discipline.bao_ph_bo': 'Bỏ việc báo phụ huynh', 'discipline.bao_ph_khoi_phuc': 'Khôi phục việc báo phụ huynh',   // SV-YT-TVV
   'ke_hoach.hang_loat': 'Xếp lịch Test hàng loạt',
   'measure.add_violations': 'Gom thêm vi phạm vào lần xử lý', 'measure.confirm': 'Xác nhận đã xử lý vi phạm', 'measure.create': 'Tạo lần xử lý vi phạm',
   'measure.delete': 'Xoá lần xử lý vi phạm', 'measure.edit': 'Sửa lần xử lý vi phạm', 'measure.note': 'Ghi chú lần xử lý vi phạm',

@@ -533,7 +533,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
       {goc === 'lich-thi' && (
         <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })}
-          onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} />
+          onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} loc={trongLoc} />
       )}
 
       {xuat && (

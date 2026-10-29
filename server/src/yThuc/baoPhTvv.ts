@@ -15,7 +15,8 @@ import {
   HAN_BAO_PH_NGAY, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
-import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
@@ -114,6 +115,8 @@ export type ViecBaoPhView = {
   lan: { ketQua: KetQuaBaoPh; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null; luc: string }[];
   lienHe: { ten: string | null; quanHe: string | null; sdt: string | null };
   coTheGhi: boolean;
+  /** Q-RL2c: việc NGƯỜI DÙNG đã bỏ, người xem có quyền bỏ, lần xử lý còn, chưa ai đổi tiếp → nút "Khôi phục". */
+  khoiPhucDuoc: boolean;
   /** UI-CV-TVV (mockup `tvv.html` khối bối cảnh): lần xử lý GVCN đã lưu — người lưu · giờ lưu · lớp · nội dung (vi phạm + ghi chú GVCN). */
   boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null };
   /** T22: GVCN đang xin thu hồi lần xử lý (thẻ chờ QL) — TVV chỉ cần biết, lịch sử báo PH giữ. */
@@ -162,6 +165,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     /* SĐT phụ huynh chỉ cho người làm việc (TVV / QL) — người chỉ xem trạng thái (GV) không cần. */
     lan, lienHe: ghi ? { ten: v.parent_name ?? null, quanHe: v.parent_relation ?? null, sdt: v.parent_phone ?? null } : { ten: null, quanHe: null, sdt: null },
     coTheGhi: v.trang_thai !== 'bo' && xl === 'con' && ghi,
+    khoiPhucDuoc: v.trang_thai === 'bo' && xl === 'con' && ghi && laLyDoNguoiDung(v.bo_ly_do) && daoDuocHoacCu(id),
     boiCanh: { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(v.measure_id ?? null, v.m_note ?? null) },
     thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
   };
@@ -210,11 +214,41 @@ export function boViecBaoPh(p: Principal, id: number, v: { lyDo?: unknown; lyDoK
   requireGhi(p, x);
   if (x.trang_thai !== 'mo') throw badRequest('Chỉ bỏ được việc đang mở.');
   tx(() => {
+    const g = new GhiDao(db());   // Q-RL2c: chụp dòng trước khi bỏ → Hoàn tác / Khôi phục trả y nguyên
+    g.sua('viec_bao_ph', 'id = ?', id);
     const doi = db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_ly_do_chu = ?, bo_boi = ?, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`)
       .run(lyDo, reasonNeedsText(lyDo) ? chu : null, p.userId, nowIso(), id).changes;
     if (!doi) throw badRequest('Việc vừa được cập nhật — mở lại.');
+    luuGhiDao(db(), { loai: LOAI_BO, bang: 'viec_bao_ph', id, nguoi: p.userId, ghi: g });
     writeAudit({ actorUserId: p.userId, action: 'discipline.bao_ph_bo', entityType: 'discipline_measure', entityId: x.measure_id,
       entityLabel: `${x.student_code} · bỏ Báo PH · ${x.nhan}`, before: { trangThai: 'mo' }, after: { trangThai: 'bo', lyDo, chu } });
+  });
+  return xemViecBaoPh(p, id);
+}
+
+const LOAI_BO = 'bo_bao_ph';
+const laLyDoNguoiDung = (code: string | null): boolean => (COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(code ?? '');
+/** Có bản ghi đảo → còn đảo được; không có (việc bỏ trước Q-RL2c) → mở lại theo cách cũ được. */
+const daoDuocHoacCu = (id: number): boolean => { const r = timGhiDao(db(), LOAI_BO, 'viec_bao_ph', id); return !r || daoDuoc(r); };
+
+/**
+ * Q-RL2c (N24 ②): Hoàn tác / Khôi phục việc NGƯỜI DÙNG đã bỏ → dòng y như trước khi bỏ (đang mở, hạn giữ). Quyền = quyền bỏ, theo việc HIỆN TẠI.
+ * Việc hệ thống đóng (thu hồi / từ chối / rút) hay lần xử lý không còn: không khôi phục tay. Việc bỏ trước Q-RL2c (không có bản ghi đảo): mở lại cách cũ.
+ */
+export function khoiPhucViecBaoPh(p: Principal, id: number): ViecBaoPhView {
+  const x = loadViec(id);
+  requireGhi(p, x);
+  if (x.trang_thai !== 'bo') throw conflict('Việc Báo PH này không ở trạng thái Đã bỏ — không có gì để khôi phục.');
+  if (!laLyDoNguoiDung(x.bo_ly_do)) throw conflict('Việc này do hệ thống đóng theo lần xử lý — không khôi phục tay được.');
+  const xl = xuLyCon(x);
+  if (xl !== 'con') throw conflict(`${LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong]} — không khôi phục việc Báo PH được.`);
+  tx(() => {
+    const r = timGhiDao(db(), LOAI_BO, 'viec_bao_ph', id);
+    if (r) daoLai(db(), r, p.userId);
+    else if (!db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL
+                 WHERE id = ? AND trang_thai = 'bo' AND bo_ly_do = ?`).run(id, x.bo_ly_do).changes) throw conflict('Việc vừa được cập nhật — mở lại.');
+    writeAudit({ actorUserId: p.userId, action: 'discipline.bao_ph_khoi_phuc', entityType: 'discipline_measure', entityId: x.measure_id,
+      entityLabel: `${x.student_code} · khôi phục Báo PH · ${x.nhan}`, before: { trangThai: 'bo', lyDo: x.bo_ly_do, chu: x.bo_ly_do_chu ?? null }, after: { trangThai: 'mo' } });
   });
   return xemViecBaoPh(p, id);
 }

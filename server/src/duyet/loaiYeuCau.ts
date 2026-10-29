@@ -9,7 +9,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  INTERVENTION_KIND_LABEL, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  CO_DIEM_SQL, INTERVENTION_KIND_LABEL, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -28,6 +28,7 @@ import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, kiemGiaTriDeXuat, lyDoDeXuat } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
+import type { BanGhiDao } from '../platform/ghiDao.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, demChuaCoLenh, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
 import { duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
@@ -82,6 +83,18 @@ export type DinhNghiaLoai = {
   khiHuy?: (p: Principal, yc: YeuCauRow) => void;
   huyDuoc?: (conn: any, ds: YeuCauRow[]) => Set<number>;
   /**
+   * Q-RL2c (N24 ②): loại KHÔNG có `khiHuy` — các dòng nguồn quyết định này đổi; hộp chụp chúng (cùng thẻ) bằng `GhiDao` lúc quyết, Huỷ quyết định
+   * = `daoLai` (409 nếu dòng nào đã đổi sau). `k`: 'sua' chụp dòng sẽ sửa · 'them' theo dõi dòng mới · 'ca' cả hai. Không khai = quyết định đó không huỷ.
+   */
+  dao?: {
+    duyet?: (yc: YeuCauRow) => DongDao[]; tuChoi?: (yc: YeuCauRow) => DongDao[];
+    /**
+     * Việc làm SAU quyết định ở DÒNG KHÁC (không có trong ảnh chụp) khiến đảo sai → câu chặn (409); null = không chặn. Gọi lúc Huỷ và lúc tính cờ
+     * Hoàn tác của một thẻ. `yc` là thẻ hiện tại (đã quyết, có `xu_ly_luc`), `g` là bản ghi đảo.
+     */
+    chan?: (conn: any, yc: YeuCauRow & { xu_ly_luc?: string | null }, g: BanGhiDao) => string | null;
+  };
+  /**
    * OV-7a: NGƯỜI GỬI sửa / rút thẻ còn chờ (loại trong `LOAI_NGUOI_XIN_SUA`) — chạy TRONG tx của hộp. `khiSua` kiểm như lúc gửi và trả phần thẻ mới;
    * `khiRut` đảo bảng nguồn (thẻ đã đóng trước), đẩy khoá tệp cần xoá sau giao dịch vào `khoaTep`.
    */
@@ -102,6 +115,10 @@ export type DinhNghiaLoai = {
     duLieu?: Record<string, unknown>;
   };
 };
+
+export type DongDao = { bang: string; dk: string; args: unknown[]; k: 'sua' | 'them' | 'ca' };
+/** Q-RL2c: Hành trình của em (thêm) — mọi loại đụng hồ sơ em dùng chung. */
+const hanhTrinh = (yc: YeuCauRow): DongDao[] => (yc.hoc_vien_id ? [{ bang: 'journey_events', dk: 'student_id = ?', args: [yc.hoc_vien_id], k: 'them' }] : []);
 
 /** Nạp dòng nguồn của một lô thẻ bằng MỘT câu (`sql` có `IN (?)` trên id đối tượng) → Map id thẻ → dòng nguồn. */
 export function napTheoDoiTuong(conn: any, ds: YeuCauRow[], sql: string): Map<number, any> {
@@ -292,6 +309,31 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: d.moi, reason: yc.ly_do });   // số hoặc KCK (Q29-1)
       else updateCycle(p, cyc.id, { route: String(d.moi) });
     },
+    /* Q-RL2c: Target / lộ trình của lộ trình đang chạy + Target lượt Mock + bản ghi đổi Target + Hành trình. Trường "màn gốc" / Từ chối: chỉ thẻ. */
+    dao: {
+      duyet: (yc) => {
+        const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat };
+        if (!TRUONG_TU_AP.includes(d.truong) || yc.hoc_vien_id == null) return [];
+        const sid = yc.hoc_vien_id;
+        return [
+          { bang: 'learning_cycles', dk: `student_id = ? AND status = 'active'`, args: [sid], k: 'sua' },
+          { bang: 'assessment_attempts', dk: `kind = 'mock' AND cycle_id IN (SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active')
+              AND NOT ${CO_DIEM_SQL('assessment_attempts')}`, args: [sid], k: 'sua' },
+          { bang: 'cycle_target_revisions', dk: 'cycle_id IN (SELECT id FROM learning_cycles WHERE student_id = ?)', args: [sid], k: 'them' },
+          ...hanhTrinh(yc),
+        ];
+      },
+      tuChoi: () => [],
+      /* Lượt Mock (chưa có điểm lúc duyệt, đã nhận Target mới) nay có điểm: lượt có điểm giữ Target lúc làm bài, tín hiệu / Case đã tính theo Target mới
+         → không đảo (chủ ý chặn cả lô, không đảo từng phần). */
+      chan: (conn, yc, g) => {
+        if (yc.trang_thai !== 'duyet') return null;
+        const ids = (JSON.parse(g.du_lieu) as { bang: string; truoc: { id: number }[] }[]).filter((m) => m.bang === 'assessment_attempts').flatMap((m) => m.truoc.map((x) => x.id));
+        if (!ids.length) return null;
+        return conn.prepare(`SELECT 1 FROM assessment_attempts a WHERE a.id IN (${ids.map(() => '?').join(',')}) AND ${CO_DIEM_SQL('a')} LIMIT 1`).get(...ids)
+          ? 'Đã nhập điểm Mock sau khi đổi Target — lượt có điểm giữ Target lúc làm bài, không huỷ quyết định được. Đổi Target lại bằng Đề xuất sửa.' : null;
+      },
+    },
     /* OV-7a: người gửi sửa giá trị mới + lý do (trường giữ — đổi trường thì Rút rồi gửi lại). */
     khiSua: (_p, yc, v) => {
       const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat };
@@ -384,6 +426,27 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiTuChoi: (p, yc, lyDo) => tuChoiKhongTheoDoi(db(), yc, p.userId, lyDo),
     khiSua: (_p, yc, v) => suaKhongTheoDoi(db(), yc, v),
     khiRut: (_p, yc) => rutKhongTheoDoi(db(), yc),
+    /* Q-RL2c: Duyệt đóng Case + huỷ PA còn sống + mốc, lịch sử, Hành trình, việc Báo PH của các bài nối với Case; Từ chối đổi hạn xác nhận + mốc. */
+    dao: {
+      duyet: (yc) => [
+        { bang: 'sos_cases', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'case_interventions', dk: `case_id = ? AND status IN ('planned', 'started')`, args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'sos_case_history', dk: 'case_id = ?', args: [yc.doi_tuong_id], k: 'them' },
+        { bang: 'case_milestones', dk: 'case_id = ?', args: [yc.doi_tuong_id], k: 'them' },
+        { bang: 'sos_coordination_actions', dk: `kind = 'bao_ph_tvv' AND attempt_id IN (SELECT attempt_id FROM case_signals WHERE case_id = ?)`, args: [yc.doi_tuong_id], k: 'ca' },
+        ...hanhTrinh(yc),
+      ],
+      tuChoi: (yc) => [
+        { bang: 'sos_cases', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'case_milestones', dk: 'case_id = ?', args: [yc.doi_tuong_id], k: 'them' },
+      ],
+      /* Duyệt đóng Case → quét-khi-đọc tự đóng thẻ Đề xuất PA / Xin ý kiến của các PA (không trong ảnh chụp; Đổi PA còn trả PA gốc). Đảo sẽ để PA chờ duyệt
+         không thẻ → chặn: thẻ còn chờ (sắp tự đóng) hoặc đã tự đóng từ lúc quyết. Cùng mốc `mocNghiepVu` với `xu_ly_luc` của thẻ. */
+      chan: (conn, yc) => (yc.trang_thai === 'duyet' && conn.prepare(
+        `SELECT 1 FROM yeu_cau_duyet k WHERE k.loai IN ('de_xuat_pa', 'xin_y_kien') AND k.doi_tuong_id IN (SELECT id FROM case_interventions WHERE case_id = ?)
+            AND (k.trang_thai = 'cho' OR (k.trang_thai = 'tu_dong' AND k.xu_ly_luc >= ?)) LIMIT 1`).get(yc.doi_tuong_id, yc.xu_ly_luc ?? '')
+        ? 'Case có Đề xuất PA / Xin ý kiến đã tự đóng khi Case đóng — không huỷ quyết định được. Cần theo dõi tiếp thì tạo Case mới.' : null),
+    },
     /* S4-7: Case đóng vì lý do khác (điểm sửa thành đạt, lượt huỷ, đổi chương trình) → thẻ tự đóng. */
     chet: { sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done')`, lyDo: 'Case đã đóng' },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
@@ -412,6 +475,21 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       if (doi) dongViecTheoXuLy(yc.doi_tuong_id, 'system_tu_choi', lyDo, p.userId);   // SV-YT-TVV (Q-D1 ①): chỉ khi lần xử lý thật sự vừa bị từ chối
       /* PR-Pb2-b (Q14): vi phạm chưa từng bắt buộc nay thành Cần xử lý → chốt hạn; đã chốt thì giữ. */
       if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
+    },
+    /* Q-RL2c: lần xử lý (cả hai) · Từ chối thêm việc Báo PH của lần đó + hạn chốt các vi phạm của em. */
+    dao: {
+      duyet: (yc) => [{ bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' }],
+      tuChoi: (yc) => [
+        { bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'violations', dk: 'id IN (SELECT violation_id FROM measure_violations WHERE measure_id = ?)', args: [yc.doi_tuong_id], k: 'sua' },
+      ],
+      /* Sau Từ chối, GVCN xác nhận / gửi lần xử lý MỚI cho chính các vi phạm đó (dòng violations không đổi) → đảo sẽ để hai lần xử lý sống, thang bậc
+         tính hai lần → chặn khi vi phạm của lần này đã nằm trong lần xử lý khác tạo sau (id lớn hơn), còn hiệu lực. */
+      chan: (conn, yc) => (yc.trang_thai === 'tu_choi' && conn.prepare(
+        `SELECT 1 FROM measure_violations mv JOIN measure_violations k ON k.violation_id = mv.violation_id AND k.measure_id > mv.measure_id
+           JOIN discipline_measures m ON m.id = k.measure_id WHERE mv.measure_id = ? AND m.status NOT IN ('tu_choi', 'thu_hoi') LIMIT 1`).get(yc.doi_tuong_id)
+        ? 'Vi phạm của đề xuất này đã nằm trong lần xử lý khác — không huỷ quyết định được. Sửa ở tab Ý thức của em.' : null),
     },
     /* OV-7a: GVCN sửa ghi chú (bằng chứng thêm / bỏ ở panel lần xử lý — thẻ đếm lại) hoặc Rút (lần xử lý chờ duyệt xoá như Xoá lần xử lý). */
     khiSua: (p, yc, v) => {
@@ -510,6 +588,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return { lyDo: k.lyDo, duLieu: { lopDichId: k.toClassId, tuan: k.tuan } };
     },
     khiRut: () => {},
+    /* Q-RL2c: Từ chối chỉ đổi thẻ (Duyệt = ra lệnh — có đường huỷ lệnh riêng). */
+    dao: { tuChoi: () => [] },
     /* Em không còn học, hoặc đã có quyết định chuyển lớp từ đường khác → thẻ không còn ý nghĩa. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = y.hoc_vien_id AND e.status = 'active')

@@ -2277,3 +2277,17 @@ CREATE TABLE thung_rac (
 );
 CREATE INDEX ix_thung_rac_luc ON thung_rac (xoa_luc);
 CREATE INDEX ix_thung_rac_doi_tuong ON thung_rac (loai, doi_tuong_id);
+
+-- Q-RL2c GHI-ĐẢO (N24 ②): nhật ký để Hoàn tác thao tác ĐỔI TRẠNG THÁI (Kết thúc PA, Bỏ việc Báo PH / Phối hợp SOS, Duyệt / Từ chối) — `platform/ghiDao.ts`.
+CREATE TABLE ghi_dao (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  loai TEXT NOT NULL,               -- 'ket_thuc_pa' | 'bo_bao_ph' | 'bo_phoi_hop' | 'quyet_dinh' …
+  bang TEXT NOT NULL,               -- bảng của đối tượng chính
+  doi_tuong_id INTEGER NOT NULL,
+  du_lieu TEXT NOT NULL,            -- JSON [{k:'sua'|'tao', bang, truoc[], sau[]}] — dòng có rowid (__r)
+  nguoi INTEGER,
+  luc TEXT NOT NULL,
+  dao_boi INTEGER,
+  dao_luc TEXT                      -- đã hoàn tác
+);
+CREATE INDEX ix_ghi_dao_doi_tuong ON ghi_dao (bang, doi_tuong_id, loai);

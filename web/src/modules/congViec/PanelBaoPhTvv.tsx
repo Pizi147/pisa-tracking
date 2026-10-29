@@ -8,6 +8,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, daysBetween, kiemGhiRoKhac, luuRoiTiep, reasonNeedsText, shortDate, type KetQuaBaoPh,
@@ -21,6 +22,8 @@ type ViecBaoPh = {
   lan: { ketQua: KetQuaBaoPh; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null; luc: string }[];
   lienHe: { ten: string | null; quanHe: string | null; sdt: string | null };
   coTheGhi: boolean; nhanXuLy: string | null;
+  /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
+  khoiPhucDuoc: boolean;
   boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null };
   thuHoiCho: { lyDo: string | null } | null;
 };
@@ -34,6 +37,12 @@ export const lucVn = (iso: string) => {
 export const gioVnNay = () => lucVn(new Date().toISOString()).slice(6);
 /** "0912 345 678" — chỉ để đọc; `tel:` giữ số gốc. */
 const sdtDoc = (s: string) => s.replace(/\D/g, '').replace(/^(\d{4})(\d{3})(\d+)$/, '$1 $2 $3');
+const KHOA_BAO_PH = ['/my-work', '/tong-quan', '/students', '/y-thuc', '/classes'];
+/** Q-RL2c: Hoàn tác (toast) / Khôi phục (chân panel) việc đã bỏ — cùng một lời gọi. */
+const khoiPhucBaoPh = async (id: number) => {
+  await api.post(`/y-thuc/bao-ph/${id}/khoi-phuc`);
+  for (const k of KHOA_BAO_PH) invalidate(k);
+};
 
 /**
  * BÁO PH (UI-CV-TVV, mockup `thiet-ke/v5/tvv.html` panelBph; C15, T10, T15, T16, T21, T22) — TVV ghi kết quả báo phụ huynh sau lần xử lý vi phạm.
@@ -54,6 +63,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
   const [loi, setLoi] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<{ kq: KetQuaBaoPh; luc: string; lan: number } | null>(null);
   const [bo, setBo] = useState(false);
+  const [dangKp, setDangKp] = useState(false);
+  const toast = useToast();
   const lf = useLoiForm();
 
   const em = { id: it.studentId!, ten: it.studentName };
@@ -80,10 +91,15 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
       await api.post('/y-thuc/bao-ph/ghi', { viecIds: [v.id], ketQua: kq, ngay: ngay || hn, ghiChu: ghiChu.trim() || null });
       xoaNhap(); setTt(null);
       setDaLuu({ kq, luc: gioVnNay(), lan: v.lan.filter((l) => l.ketQua === 'chua_lien_he').length + 1 });
-      for (const k of ['/my-work', '/tong-quan', '/students', '/y-thuc']) invalidate(k);
+      for (const k of KHOA_BAO_PH) invalidate(k);
       reload(); onDaLam();
       return true;
     } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); return false; }
+  };
+  const khoiPhuc = async () => {
+    setDangKp(true);
+    try { await khoiPhucBaoPh(v.id); toast.push('ok', t('Đã khôi phục')); reload(); onDaLam(); }
+    catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setDangKp(false); }
   };
   const suaLai = () => { setKq(daLuu?.kq ?? ''); setDaLuu(null); };
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;
@@ -105,6 +121,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
       : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void (onTiep ? luuRoiTiep(luu, onTiep) : luu())}>{onTiep ? t('Lưu · việc tiếp ›') : t('Lưu')}</button>,
   } : {
     huy: null, trai: <span className="text-slate-400">{v.nhanXuLy ?? (v.trangThai === 'xong' ? t('Việc đã xong · lịch sử giữ khi thu hồi') : v.trangThai === 'bo' ? t('Đã bỏ') : null)}</span>,
+    phu: v.khoiPhucDuoc ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={dangKp} onClick={() => void khoiPhuc()}>{t('Khôi phục')}</button> : null,
     chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>,
   };
 
@@ -130,7 +147,12 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
             </span>
           )],
         ]} />
-        {bo && <BoViec id={v.id} onDong={() => setBo(false)} onDaBo={() => { setBo(false); xoaNhap(); reload(); onDaLam(); }} />}
+        {bo && <BoViec id={v.id} onDong={() => setBo(false)} onDaBo={() => {
+          setBo(false); xoaNhap(); reload(); onDaLam();
+          toast.hoanTac(t('Đã bỏ việc này'), () => {
+            khoiPhucBaoPh(v.id).then(() => { reload(); onDaLam(); }, (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
+          }, { key: `bao-ph-bo:${v.id}` });
+        }} />}
         {sua && !bo && (
           <>
             <Truong nhan={t('Kết quả')} as="div" loi={lf.loiCua(loiO, 'kq')}>
@@ -174,7 +196,7 @@ function BoViec({ id, onDong, onDaBo }: { id: number; onDong: () => void; onDaBo
     setBusy(true); setLoi(null);
     try {
       await api.post(`/y-thuc/bao-ph/${id}/bo`, { lyDo, lyDoKhac: reasonNeedsText(lyDo) ? chu.trim() : undefined });
-      invalidate('/my-work'); invalidate('/tong-quan');
+      for (const k of KHOA_BAO_PH) invalidate(k);
       onDaBo();
     } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };

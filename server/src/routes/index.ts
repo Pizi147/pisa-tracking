@@ -1483,6 +1483,11 @@ api.post('/y-thuc/bao-ph/:id/bo', requireAuth, wrap((req) => {
   const b = yThucBody(req);
   return baoPhSvc.boViecBaoPh(principalOf(req), pInt(req, 'id'), { lyDo: b.lyDo, lyDoKhac: b.lyDoKhac });
 }));
+/* Q-RL2c: Khôi phục việc Báo PH đã bỏ (Hoàn tác 5 s của web gọi cùng đường) — quyền như Bỏ. */
+api.post('/y-thuc/bao-ph/:id/khoi-phuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return baoPhSvc.khoiPhucViecBaoPh(principalOf(req), pInt(req, 'id'));
+}));
 
 /**
  * DRILL-DOWN DÙNG CHUNG CỦA MỌI CON SỐ (hợp đồng số liệu, PR-F). MỘT route, mọi chỉ số: nhận `id` của
@@ -2302,7 +2307,7 @@ api.post('/yeu-cau/tu-choi-nhieu', requireAuth, wrap((req) => {
   const b = (req.body ?? {}) as Record<string, any>;
   return yeuCauSvc.tuChoiNhieu(principalOf(req), b.ids, b.lyDo);
 }));
-/* PR-LUI-a2: Huỷ quyết định bấm nhầm trong ngày (chỉ loại có đường đảo — Đề xuất PA). */
+/* PR-LUI-a2 + Q-RL2c: Huỷ quyết định bấm nhầm trong ngày — loại có `khiHuy` (Đề xuất PA, Thu hồi Ý thức) hoặc có bản ghi đảo `ghi_dao` (sửa thông tin, Không cần theo dõi, Ý thức, Từ chối các loại). */
 api.post('/yeu-cau/:id/huy-quyet-dinh', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.huyQuyetDinh(principalOf(req), pInt(req, 'id'));
@@ -2416,6 +2421,11 @@ api.delete('/cases/:id', requireAuth, wrap((req) => {
 api.post('/interventions/:id/ket-thuc', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.ketThucPaQuyChe(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** Q-RL2c (N24 ②): Hoàn tác / Mở lại PA đã kết thúc sớm — quyền như Kết thúc PA (Case hiện tại); đã có thay đổi sau → 409 (`hoanTacKetThucPa`). */
+api.post('/interventions/:id/hoan-tac-ket-thuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.hoanTacKetThucPa(principalOf(req), pInt(req, 'id'));
 }));
 api.delete('/interventions/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

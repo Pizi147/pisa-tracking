@@ -10,7 +10,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillShort } from '../../lib/format.ts';
 import {
-  dsThangLichThi, nhanThang, thangTrongKhoang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich,
+  dsThangLichThi, nhanThang, thangTrongKhoang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, xepLichThi,
   type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -41,9 +41,6 @@ const KN_MINI = ['L', 'R', 'W1', 'W2', 'S'] as const;
 const NHOM = ['chua-chot-ngay', 'da-chot-ngay', 'du-kien', 'chua-co'] as const;
 type Nhom = (typeof NHOM)[number];
 const nhomCua = (l: LichThi): Nhom => (l.trangThai === 'da-thi' ? 'da-chot-ngay' : l.trangThai);
-const TEN_NHOM: Record<Nhom, string> = {
-  'chua-chot-ngay': t('Chưa chốt ngày — đã tới tháng'), 'da-chot-ngay': t('Đã chốt ngày'), 'du-kien': t('Dự kiến'), 'chua-co': t('Chưa có tháng thi'),
-};
 
 /** `?thang=` của trang → khoảng [từ, đến]; mặc định tháng này → tháng sau (V4 khung 3: 09/2026 → 10/2026). */
 export function khoangThang(thangUrl: string | null, homNay: string): [string, string] {
@@ -90,12 +87,14 @@ export function MiniKn({ kn, kv }: { kn: Kn; kv: number | null }) {
 
 /**
  * HỌC VIÊN & LỚP › LỊCH THI (UI-HV-LOP — V4 `mockup-v4-hoc-vien-lop.html` khung 3 + trường của `mockup-ov14-5`): Tháng dự kiến [từ] → [đến];
- * nhóm theo trạng thái (Chưa chốt ngày — đã tới tháng · Đã chốt ngày · Dự kiến · Chưa có tháng thi gập); hàng: Học viên (lớp · TVV) · MT gần nhất ·
+ * MỘT danh sách thi gần nhất trước (chủ SP 29/10 — trước là nhóm Chưa chốt ngày · Đã chốt ngày · Dự kiến · Chưa có tháng thi); lọc Lớp / khung của trang; hàng: Học viên (lớp · TVV) · MT gần nhất ·
  * Target · Lịch thi · Ghi chú · [Chốt ngày] [Dời tháng] · ▸ mở chi tiết dưới hàng. Lưu ngay (`PUT /hoc-vien-lop/lich-thi/:cycleId`, có nhật ký).
  * `duongGoc`: đuôi truy vấn của trang (`?q=&phamVi=&branchId=`) — cùng phạm vi các góc kia. Khoảng tháng trên URL (`thang=từ,đến`).
  */
-export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren }: {
+export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren, loc }: {
   duongGoc: string; thangUrl: string | null; onDoiThang: (thang: string[]) => void;
+  /** Bộ lọc Lớp / khung của trang (cùng `trongLoc` của các góc khác) — chủ SP 29/10: chọn CP FT 116 mà còn em CP FT 130 là lỗi. */
+  loc?: (classId: number, ft: boolean) => boolean;
   /** Em đang hiện (trừ nhóm gập) — nút Xuất đầu trang lấy đúng danh sách này. */
   onIds?: (ids: number[]) => void;
   ds?: NguCanhDs;
@@ -109,24 +108,12 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
   const { data, loading, error, reload, cu } = useApi<Trang>(duong, [duong], { giuCu: true });
   const [rows, setRows] = useState<HangHien[]>([]);
   useEffect(() => { setRows((data?.rows ?? []).map((r) => ({ ...r, doiSang: null }))); }, [data]);
-  const [moChuaCo, setMoChuaCo] = useState(false);
   const [mo, setMo] = useState<Set<number>>(new Set());
   const [hop, setHop] = useState<Hop | null>(null);
 
-  type DongBang = { loai: 'nhom'; khoa: string; nhom: Nhom; so: number } | { loai: 'hang'; khoa: string; nhom: Nhom; r: HangHien };
-  const theoNhom = useMemo(() => {
-    const m = new Map<Nhom, HangHien[]>(NHOM.map((k) => [k, []]));
-    for (const r of rows) m.get(r.doiSang ? 'du-kien' : nhomCua(r.lichThi))!.push(r);
-    return m;
-  }, [rows]);
-  const dongBang: DongBang[] = NHOM.flatMap((k) => {
-    const ds_ = theoNhom.get(k)!;
-    if (!ds_.length) return [];
-    return [{ loai: 'nhom' as const, khoa: `n:${k}`, nhom: k, so: ds_.length },
-      ...(k === 'chua-co' && !moChuaCo ? [] : ds_.map((r) => ({ loai: 'hang' as const, khoa: `h:${r.studentId}`, nhom: k, r })))];
-  });
-  const hienIds = rows.filter((r) => moChuaCo || nhomCua(r.lichThi) !== 'chua-co' || r.doiSang).map((r) => r.studentId);
-  useEffect(() => { onIds?.(hienIds); }, [hienIds.join(',')]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* Chủ SP 29/10 (luật mới): MỘT danh sách, thi gần nhất trước — không tách nhóm Đã chốt ngày / Chưa chốt / Dự kiến; em chưa có tháng ở cuối. */
+  const hien = useMemo(() => xepLichThi(rows.filter((r) => !loc || loc(r.classId, !r.thuong))), [rows, loc]);
+  useEffect(() => { onIds?.(hien.map((r) => r.studentId)); }, [hien.map((r) => r.studentId).join(',')]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const sua = (id: number, f: (r: HangHien) => HangHien) => setRows((x) => x.map((r) => (r.studentId === id ? f(r) : r)));
   /** Lưu MỘT kết luận + ghi chú; lỗi thì giữ hộp đang mở (chữ đang gõ còn nguyên) và cho Thử lại. */
@@ -144,7 +131,8 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
       .catch((e: any) => sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'loi', loi: e?.message ?? t('Không lưu được'), lai: () => luu(r, body) } })));
   };
   const doiMo = (id: number) => setMo((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const dem = { b: theoNhom.get('chua-chot-ngay')!.length, a: theoNhom.get('da-chot-ngay')!.length, dk: theoNhom.get('du-kien')!.length };
+  const demTrangThai = (k: Nhom) => hien.filter((r) => !r.doiSang && nhomCua(r.lichThi) === k).length;
+  const dem = { b: demTrangThai('chua-chot-ngay'), a: demTrangThai('da-chot-ngay'), dk: demTrangThai('du-kien') + hien.filter((r) => r.doiSang).length };
 
   return (
     <div className="card overflow-hidden !p-0">
@@ -162,22 +150,13 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren 
       </div>
       {error && <div className="p-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>}
       {loading && !data && <div className="p-3"><Skeleton rows={5} /></div>}
-      {data && rows.length === 0 && <Card><Empty title={t('Không có HV có lịch thi trong {khoang}.', { khoang: `${nhanThang(tu)} → ${nhanThang(den)}` })} /></Card>}
-      {data && rows.length > 0 && (
+      {data && hien.length === 0 && <Card><Empty title={t('Không có HV có lịch thi trong {khoang}.', { khoang: `${nhanThang(tu)} → ${nhanThang(den)}` })} /></Card>}
+      {data && hien.length > 0 && (
         <div className={cu ? 'dang-tai-lai' : undefined} aria-busy={cu || undefined}>
-        <Bang ten={t('Lịch thi')} cot={COT_LICH} hang={dongBang} khoa={(x) => x.khoa} khung={false} the375={false} dinh
-          hangRieng={(x) => x.loai === 'nhom' ? (
-            <tr className="bg-[color:var(--surface-2)]">
-              <td colSpan={COT_LICH.length} className="px-3 py-2 text-[13px] font-semibold text-slate-100">
-                {x.nhom === 'chua-co'
-                  ? <button type="button" aria-expanded={moChuaCo} onClick={() => setMoChuaCo(!moChuaCo)} className="min-h-[44px] cursor-pointer appearance-none border-0 bg-transparent p-0 font-semibold text-slate-100 sm:min-h-0">
-                      {moChuaCo ? '▾' : '▸'} {TEN_NHOM[x.nhom]} · <span className="tabular-nums">{x.so}</span></button>
-                  : <>{TEN_NHOM[x.nhom]} · <span className="tabular-nums">{x.so}</span></>}
-              </td>
-            </tr>
-          ) : (
-            <DongLichThi r={x.r} ds={ds} mo={mo.has(x.r.studentId)} onMo={() => doiMo(x.r.studentId)} nhom={x.nhom}
-              hop={hop?.id === x.r.studentId ? hop.kieu : null} onHop={(kieu) => setHop(kieu ? { id: x.r.studentId, kieu } : null)} onLuu={(b) => luu(x.r, b)} />
+        <Bang ten={t('Lịch thi')} cot={COT_LICH} hang={hien} khoa={(r) => r.studentId} khung={false} the375={false} dinh
+          hangRieng={(r) => (
+            <DongLichThi r={r} ds={ds} mo={mo.has(r.studentId)} onMo={() => doiMo(r.studentId)} nhom={r.doiSang ? 'du-kien' : nhomCua(r.lichThi)}
+              hop={hop?.id === r.studentId ? hop.kieu : null} onHop={(kieu) => setHop(kieu ? { id: r.studentId, kieu } : null)} onLuu={(b) => luu(r, b)} />
           )} />
         </div>
       )}
