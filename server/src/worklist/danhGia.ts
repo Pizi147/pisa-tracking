@@ -133,21 +133,25 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
   const out = new Map<number, any[]>();
   for (let i = 0; i < studentIds.length; i += 400) {
     const chunk = studentIds.slice(i, i + 400);
+    const ph = chunk.map(() => '?').join(',');
     for (const r of db()
       .prepare(
+        /* S3: lộ trình của lượt nối một lần (trước: hai câu con cùng dòng), lộ trình FT đang chạy đọc một lần mỗi EM (trước: câu con theo từng lượt). */
         `SELECT a.*, c.programme_code, pr.week_start AS period_start, pr.week_end AS period_end,
-                (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
+                cy.route AS route, cy.khong_cam_ket AS cy_kck,
                 /* OV-11f (PT-3): lộ trình FAST TRACK đang chạy của em (nếu có) — SOS / dưới kỳ vọng chỉ đọc lượt của lộ trình này, không rơi về Final lớp thường cũ. */
-                (SELECT cy2.id FROM learning_cycles cy2 WHERE cy2.student_id = a.student_id AND cy2.status = 'active' AND cy2.route IS NOT NULL
-                  ORDER BY cy2.id DESC LIMIT 1) AS cy_ft_dang_chay,
+                ft.id AS cy_ft_dang_chay,
                 /* TD7: lượt không ô nào có band / điểm thô thì chắc chắn scored = 0 — latestAttempts bỏ qua, không nạp lịch + điểm. */
                 ${CO_DIEM_SQL('a')} AS _co_diem
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-          WHERE a.student_id IN (${chunk.map(() => '?').join(',')}) AND a.status != 'cancelled'`,
+           LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id
+           LEFT JOIN (SELECT student_id, MAX(id) AS id FROM learning_cycles WHERE student_id IN (${ph}) AND status = 'active' AND route IS NOT NULL
+                       GROUP BY student_id) ft ON ft.student_id = a.student_id
+          WHERE a.student_id IN (${ph}) AND a.status != 'cancelled'`,
       )
-      .all(...chunk) as any[]) {
+      .all(...chunk, ...chunk) as any[]) {
       if (!out.has(r.student_id)) out.set(r.student_id, []);
       out.get(r.student_id)!.push(r);
     }

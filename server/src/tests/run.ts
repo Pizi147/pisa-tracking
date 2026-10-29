@@ -9775,6 +9775,12 @@ await runPrS2LichKyNangTests({ check, assert, conn } as any);
 // ==================================================================== PC-GV-A (Phân công GV có hiệu lực — máy chủ)
 const { runPrPhanCongGvTests } = bocTep('prPhanCongGv', await import('./prPhanCongGv.tests.ts'));
 await runPrPhanCongGvTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== S3 (bỏ câu con theo dòng: TVV, Học viên & Lớp, phụ liệu Case, lượt mới nhất — giảm dòng đọc Turso)
+const { runPrS3CauConTests } = bocTep('prS3CauCon', await import('./prS3CauCon.tests.ts'));
+await runPrS3CauConTests({ check, assert, conn } as any);
+// ==================================================================== S4 (giới hạn lượt quét đường đọc — giảm dòng đọc Turso)
+const { runPrS4GioiHanQuetTests } = bocTep('prS4GioiHanQuet', await import('./prS4GioiHanQuet.tests.ts'));
+await runPrS4GioiHanQuetTests({ check, checkAsync, assert, conn } as any);
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);

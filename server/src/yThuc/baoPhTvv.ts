@@ -255,6 +255,9 @@ export function khoiPhucViecBaoPh(p: Principal, id: number): ViecBaoPhView {
 
 // ---------------------------------------------------------------- việc của tôi (`/my-work`)
 
+/** S3: chỉ phép kiểm bật — câu cũ `(x = ? OR ? = 1)` (quét cả bảng) để so với câu theo nhánh: TVV đi chỉ mục idx_student_consultant. */
+export const baoPhCuKhiKiem = { bat: false };
+
 /**
  * Việc Báo PH đang mở, em đang học (Tạm dừng → ẩn — K7). Người giữ: TVV của em; em không có TVV → QL trong phạm vi em là người giữ.
  * `tatCa` (QL "Của GV"): cả việc TVV giữ trong phạm vi. Một câu; TVV chỉ đọc em của mình.
@@ -275,8 +278,8 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
        LEFT JOIN discipline_measures m ON m.id = v.measure_id
        LEFT JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id AND x.status = 'active')
        LEFT JOIN classes c ON c.id = e.class_id
-      WHERE v.trang_thai = 'mo' AND (s.consultant_user_id = ? OR ? = 1) ORDER BY v.han, v.id`,
-  ).all(p.userId, ql ? 1 : 0) as any[];
+      WHERE v.trang_thai = 'mo'${baoPhCuKhiKiem.bat ? ' AND (s.consultant_user_id = ? OR ? = 1)' : ql ? '' : ' AND s.consultant_user_id = ?'} ORDER BY v.han, v.id`,
+  ).all(...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : ql ? [] : [p.userId])) as any[];
   const items: WorkItem[] = [];
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;
