@@ -1329,7 +1329,7 @@ await checkAsync(`OV-15f · Xuất Excel danh sách HV mẫu Theo dõi SOS cả 
   assert(n <= TRAN_GHI_LO.xuatDanhSachSos, `${n} câu > trần ${TRAN_GHI_LO.xuatDanhSachSos}`);
 });
 
-for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_GHI_LO.dongBoThongBaoGVCN]] as const) {
+for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_GHI_LO.dongBoThongBaoGVCN], ['QT', TRAN_GHI_LO.dongBoThongBaoQT]] as const) {
   check(`OV-15d · đồng bộ thông báo tự động (dongBoThongBaoTuDong) ${vai} ≤ ${tran} câu SQL`, () => {
     const { dongBoThongBaoTuDong } = td15d;
     const p = loadPrincipal(USER[vai]);

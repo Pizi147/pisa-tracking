@@ -162,7 +162,8 @@ CREATE TABLE users (
   deleted_at TEXT,
   created_at TEXT NOT NULL,
   ngon_ngu TEXT,                                      -- PR-EN: 'vi' | 'en'; NULL = chưa chọn (web theo máy)
-  da_xem_huong_dan INTEGER                            -- HD-a: 1 = đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?"; NULL = chưa
+  da_xem_huong_dan INTEGER,                           -- HD-a: 1 = đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?"; NULL = chưa
+  chuong_dong_bo_luc TEXT                             -- CHUONG-NHE: mốc đồng bộ thông báo tự động gần nhất; NULL = lần mở chuông kế đồng bộ ngay
 );
 
 /* Email phụ. Email đăng nhập vẫn nằm ở `users.email` và không lặp lại ở đây. */

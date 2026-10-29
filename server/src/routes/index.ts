@@ -160,8 +160,8 @@ api.use((req, _res, next) => {
 
 /* OV-15h1: ghi thành công → lần mở chuông kế của người đó đồng bộ thông báo tự động ngay (việc vừa xong hết khỏi "Cần làm", không chờ 5 phút). */
 api.use((req, res, next) => {
-  const id = req.method !== 'GET' ? req.principal?.userId : undefined;
-  if (id) res.on('finish', () => { if (res.statusCode < 400) daGhi(id); });
+  const p = req.method !== 'GET' ? req.principal : undefined;
+  if (p) res.on('finish', () => { if (res.statusCode < 400) { try { daGhi(p); } catch (e) { console.error('[chuong-da-ghi]', e); } } });
   next();
 });
 
