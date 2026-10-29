@@ -102,6 +102,7 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 | Thời gian trên màn | Mã tuần `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký |
 | Chép DB SQLite | Chép cả `.sqlite`, `.sqlite-wal`, `.sqlite-shm` |
 | Turso | Không tham số đặt tên; `UNION` ≤ 20 vế; ≤ 900 tham số; `BEGIN IMMEDIATE`; đường API mới có trần ở `tocDoDuong.ts` |
+| Dòng đọc Turso (30/10) | Gói Free 500 triệu / tháng → giữ < 450 triệu (< 15 triệu / ngày). Đọc đúng phạm vi (lớp / em / kỳ), không đọc cả chi nhánh rồi lọc, không gọi trùng, lưu xong chỉ tải lại phần đổi. Đường > ~30 câu / ~2 000 dòng hoặc tính năng tăng đọc → cảnh báo chủ SP kèm ước số dòng / ngày + cách nhẹ hơn (CLAUDE.md) |
 | Cổng | Không dùng 4000/5173 khi chạy song song: đặt `PORT` (API) và `WEB_PORT` (web), mỗi session một cặp riêng |
 | Đăng nhập demo | `POST /api/demo/session {userId}` (admin=1, QL=2, GVCN=7, GVBM=9, GVBM Writing=10) hoặc tab "Vào nhanh" |
 | DB bản chính | Không bao giờ `netlify deploy --prod`, `--context production`, hay chạm DB `pisatracking` — đó là bước tay của chủ sản phẩm (`TRIEN_KHAI.md`) |
@@ -536,6 +537,7 @@ Mọi PR có giao diện: `audit` + `web-design-guidelines` cuối PR (1.2 bư�
 ### 9.0. Phần chung — mọi prompt session code đều ngầm gồm
 ```
 Đọc trước: CLAUDE.md, plan.md (mục 1 Luật làm việc, mục 3 Quyết định, mục 4 dòng của PR này); PR OV: thêm đặc tả docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md (mục của PR) + mockup.
+Dòng đọc Turso (CLAUDE.md, 30/10): đọc ít nhất có thể; đường API mới / đổi có trần ở tocDoDuong.ts; tăng đọc đáng kể → ghi ước số dòng / ngày trong mô tả PR và báo PTA Plan.
 Đầu phiên: nói rõ mình đang chạy model nào. Model ghi trên prompt (khuyến nghị) HOẶC phương án B đều được chạy tiếp — ghi model thật vào mô tả PR. Chỉ DỪNG báo chủ sản phẩm khi là model khác cả hai (vd Haiku) hoặc Fable (cấm, 06/10).
 Nhánh mới từ origin/main mới nhất. Làm theo plan.md mục 1.2 + 1.3b: Task ngay trong session (executing-plans, KHÔNG subagent),
 test-driven-development (đỏ trước), systematic-debugging khi lỗi lạ, brainstorming chỉ khi cần chủ SP quyết (dừng, hỏi).
