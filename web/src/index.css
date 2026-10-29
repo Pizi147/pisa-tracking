@@ -507,7 +507,7 @@
   .dd .k.h b { font-weight: 700; }
   .dd .k.thieu b { font-weight: 400; color: var(--text-faint); }
   .dd .k.nhan { margin: 0 -4px; border-radius: 4px; padding: 0 4px; background: var(--accent-soft); }
-  .dd .k.cua { margin: -2px -4px; border: 2px solid var(--accent); border-radius: 6px; padding: 0 2px; background: var(--accent-soft); }
+  .dd .k.cua { margin: -2px -4px; border: 2px solid var(--accent); border-radius: 4px; padding: 0 2px; background: var(--accent-soft); }
   .dd .ov { justify-self: end; white-space: nowrap; font-size: 13px; font-weight: 500; color: var(--text-faint); }
   .dd .ov b { margin: 0 2px 0 4px; font-size: 14px; font-weight: 700; }
   @media (max-width: 639px) {

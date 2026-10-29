@@ -223,7 +223,9 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const laThi = hien.length > 0 && hien.every((r) => r.soVoi?.nhan === 'Target');
   /* Thi thật: tab thứ ba "Vượt" (Overall / kỹ năng cao hơn Target — tập con của Đạt). */
   const coTab = (soChua > 0 && soDat > 0) || (soVuot > 0 && soVuot < hien.length);
-  const [tab, setTab] = useState<'chua' | 'dat' | 'vuot'>(soChua > 0 ? 'chua' : 'dat');
+  /* PANEL-CHUNG: chưa bấm tab thì theo dữ liệu (Chưa đạt nếu có) — state khởi tạo lúc dữ liệu chưa về từng mở nhầm tab Đạt. */
+  const [tabChon, setTab] = useState<'chua' | 'dat' | 'vuot' | null>(null);
+  const tab = tabChon ?? (soChua > 0 ? 'chua' : 'dat');
   const hienTab = coTab ? hien.filter((r) => (tab === 'vuot' ? r.vuot : r.ketQua === tab)) : thuTu;
   /* OV-15e: panel số liệu phân trang 10 / 20 / 50 (thanh đầu + cuối); dòng đang mở (`?dong=`) ở trang sau vẫn mở được khi lật tới. */
   const pt = usePhanTrang(hienTab.length, tieuDe, dv ?? t('mục'));
@@ -385,7 +387,9 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     const lop = r.lop ?? (r.em ? null : r.sub.split(' · ')[0] || null);
     const tuan = r.diemHv?.tuan ? tuanLich(r.diemHv.tuan) : null;
     const ngCanh = r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh ?? (r.em && r.title !== ten ? r.title : null);
-    const daCo = new Set([ten, lop, ngCanh, r.title, r.diemHv?.luot, tuan]);
+    /* Đoạn của `sub` đã hiện chỗ khác (tên, lớp, lượt · tuần của dòng điểm, chữ xu hướng của chip) không lặp ở hàng 3. */
+    const daCo = new Set([ten, lop, ngCanh, r.title, r.diemHv?.luot, tuan,
+      ...(r.xuHuong ? [t('Tăng'), t('Giữ nguyên'), t('Giảm'), t('Cải thiện'), t('Chưa cải thiện')] : [])]);
     const chipHan = !r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
     const han = !chipHan && !r.xong ? hanCua(r) : null;
     const xh = r.xuHuong ? chuXuHuong(r.xuHuong) : null;
@@ -485,7 +489,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase || goc.some((r) => r.diemHv) ? 'rong' : 'hep'}
+    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase || goc.some((r) => r.diemHv || r.xuHuong) ? 'rong' : 'hep'}
       /* NEN-PANEL: không dòng nào làm được ở đây = panel báo cáo (07 mục 3). */
       loai={nhomCase ? t('SỐ LIỆU · TỔNG QUAN') : hien.some((r) => r.viec?.lam) ? t('VIỆC') : t('BÁO CÁO · CHỈ ĐỌC')}
       dau={{
@@ -502,8 +506,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           <>
             {coTab && (
               <div role="tablist" aria-label={t('Kết quả')} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
-                {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). */}
-                {([['chua', laThi ? 'Fail' : t('Chưa đạt'), soChua, '▼ '], ['dat', laThi ? 'Pass' : t('Đạt'), soDat, '▲ '], ...(soVuot ? [['vuot', 'Exceed', soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
+                {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). PANEL-V10: tab không ▲ ▼ (▲ ▼ chỉ cho tiến độ). */}
+                {([['chua', laThi ? 'Fail' : t('Chưa đạt'), soChua, ''], ['dat', laThi ? 'Pass' : t('Đạt'), soDat, ''], ...(soVuot ? [['vuot', 'Exceed', soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
                   <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
                     className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tab === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
                     {dau}{nhan} <span className="tabular-nums">{n}</span>

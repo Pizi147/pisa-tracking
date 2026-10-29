@@ -365,7 +365,7 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     /* PANEL-MC (5b ý 4): dòng điểm = CHÍNH lượt MT trong kỳ đã dùng tính % (`d.luot`, 0 câu) — thay `diemCase` Overall cũ; `sub` còn lớp · lượt · tuần. */
     const rows = rowsFor('hoc-vien', ids, undefined, p, false, new Map(ids.map((s) => [s, diemTuMock(d.luot.get(s)!)]))).map((row) => {
       const x = d.luot.get(row.id)!;
-      return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`].join(' · ') };
+      return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`].join(' · '), ketQua: d.dat.has(row.id) ? 'dat' as const : 'chua' as const };   // PANEL-CHUNG: tab Chưa đạt · Đạt (mockup p2)
     });
     return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows };
   }
