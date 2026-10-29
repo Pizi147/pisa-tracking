@@ -357,11 +357,12 @@ export async function runPrEnTests(t: any) {
       if (x.khoa) {
         soKhoa++;
         if (!(x.khoa in EN) && /\p{L}{2}/u.test(x.khoa.replace(/\{\w+\}/g, ''))) thieu.add(`${noi}: ${x.khoa}`);
-        const b = Object.fromEntries(Object.entries(x.bien ?? {}).map(([k, v]) => {
-          if (v && typeof v === 'object') { xet(v as any, noi); return [k, v]; }
-          return [k, typeof v === 'string' && VIET.test(v) && !(v in EN) ? 'X' : v];
-        }));
-        const ra = i18n.dichSang('en', x.khoa, b);
+        for (const v of Object.values(x.bien ?? {})) if (v && typeof v === 'object') xet(v as any, noi);
+        /* CN-1: thay chữ dữ liệu ở MỌI tầng biến — câu lồng ("{viec} quá hạn {n} ngày" chứa "PA {pa} chờ Quản lý duyệt") trước còn để tên PA
+           của tầng trong nên đỏ khi PA đó còn chờ duyệt (check đầy đủ xanh chỉ vì tệp trước đã duyệt PA đó). */
+        const an = (bien: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(Object.entries(bien).map(([k, v]) =>
+          [k, v && typeof v === 'object' ? { ...v, bien: an((v as any).bien ?? {}) } : typeof v === 'string' && VIET.test(v) && !(v in EN) ? 'X' : v]));
+        const ra = i18n.dichSang('en', x.khoa, an(x.bien ?? {}));
         if (VIET.test(ra)) sot.add(`${noi}: ${ra}`);
       } else if (VIET.test(i18n.dichMau('en', x.chu))) sot.add(`${noi}: ${x.chu}`);
     };
