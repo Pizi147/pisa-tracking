@@ -62,6 +62,21 @@ const SELECT = `
     LEFT JOIN users gu ON gu.id = v.ghi_nhan_boi`;
 
 /** `em`: trạng thái Ý thức của học viên đó (nơi gọi theo lô truyền vào); thiếu thì tự hỏi cửa trạng thái cho riêng em. */
+
+/**
+ * DON-LUONG K23 (ra-luong L40): em không có lớp đang học → câu nói lý do + bước tiếp (mã 400 giữ). Ghi danh mới nhất: Tạm dừng → Quay lại học;
+ * đã chuyển / kết thúc ở lớp cũ → ghi ở lớp em đang học (không còn); chưa từng xếp lớp → xếp lớp trước. Một câu, chỉ khi bị chặn.
+ */
+function chanGhiViPham(studentId: number) {
+  const r = db().prepare(
+    `SELECT e.status, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? ORDER BY e.id DESC LIMIT 1`,
+  ).get(studentId) as { status: string; code: string } | undefined;
+  if (!r) return loi(400, 'Em chưa xếp lớp — xếp lớp trước khi ghi vi phạm.');
+  if (r.status === 'paused') return loi(400, 'Em đang tạm dừng — Quay lại học trước khi ghi vi phạm.');
+  if (r.status === 'transferred') return loi(400, 'Em đã chuyển khỏi {lop} — ghi ở lớp em đang học.', { lop: r.code });
+  return loi(400, 'Em đã thôi học ở {lop} — không ghi vi phạm mới.', { lop: r.code });
+}
+
 export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
   const tm = tachTenMoTa(r.ten, r.description, r.category);
   const tt = (em ?? trangThaiYThuc([r.student_id]).get(r.student_id)!).viPham.get(r.id);
@@ -244,9 +259,7 @@ export function recordViolation(p: Principal, input: {
   const student = loadStudent(input.studentId);
   requireRecordViolation(p, input.studentId);
   const classId = activeClassOf(input.studentId);
-  if (!classId) {
-    throw badRequest('Học viên này chưa xếp lớp hoặc không còn đang học — chưa ghi được vi phạm.');
-  }
+  if (!classId) throw chanGhiViPham(input.studentId);
 
   const key = input.idempotencyKey?.trim() || null;
   if (key) {
@@ -328,7 +341,7 @@ export function recordViolations(p: Principal, input: {
       if (!student) throw notFound('Không tìm thấy học viên');
       requireRecordViolation(p, sid);
       const classId = activeClassOf(sid);
-      if (!classId) throw badRequest('Học viên này chưa xếp lớp hoặc không còn đang học — chưa ghi được vi phạm.');
+      if (!classId) throw chanGhiViPham(sid);
       const cu = dong.map((_, i) => daGhiTheoKhoa(p, sid, daCo.get(khoa(sid, i))));
       if (cu.every((x) => x !== null)) { ok.push({ studentId: sid, ids: cu as number[] }); continue; }
       const emT = truoc.get(sid)!;

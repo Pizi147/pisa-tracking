@@ -105,6 +105,24 @@ export async function runDonLuongTests(t: YThucTestKit) {
     assert(one(`SELECT COUNT(*) n FROM sos_case_history WHERE case_id = ?`, c.id).n === truoc, 'không lịch sử');
   }));
 
+  /* ---------------------------------------------------------------- K23 */
+  const vp: any = await import('../yThuc/violations.ts');
+  check('K23 · ghi vi phạm em Tạm dừng / em đã chuyển khỏi lớp: 400 nói lý do + bước tiếp', () => thu(() => {
+    /* Em đang học ở lớp chi nhánh MB (QL MB ghi được — chỉ còn chặn vì không có lớp đang học). */
+    const c = one(`SELECT e.student_id, e.class_id FROM enrollments e JOIN classes c ON c.id = e.class_id AND c.branch_id = ? JOIN students s ON s.id = e.student_id
+      AND s.status = 'active' AND s.archived_at IS NULL WHERE e.status = 'active' ORDER BY e.id LIMIT 1`, MB);
+    const lop = one(`SELECT code FROM classes WHERE id = ?`, c.class_id).code;
+    const ghi = () => { try { vp.recordViolation(P.mbManager, { studentId: c.student_id, ten: 'Đi muộn', occurredOn: t.TODAY }); return null; } catch (e: any) { return e; } };
+    conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'`).run(c.student_id);
+    xoaNho();
+    const e1 = ghi();
+    assert(e1?.status === 400 && e1.message === 'Em đang tạm dừng — Quay lại học trước khi ghi vi phạm.', `${e1?.status} ${e1?.message}`);
+    conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE student_id = ? AND status = 'paused'`).run(c.student_id);
+    xoaNho();
+    const e2 = ghi();
+    assert(e2?.status === 400 && e2.message === `Em đã chuyển khỏi ${lop} — ghi ở lớp em đang học.`, `${e2?.status} ${e2?.message}`);
+  }));
+
   check('K6 · câu tìm dấu "-" theo tuần đi chỉ mục idx_scores_no_show', () => {
     const plan = all(`EXPLAIN QUERY PLAN SELECT sc.attempt_id FROM assessment_scores sc WHERE sc.no_show_period_id = ?`, 1).map((r) => r.detail).join(' | ');
     assert(/idx_scores_no_show/.test(plan), plan);

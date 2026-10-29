@@ -63,7 +63,9 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
     ngCanh: c ? (
       <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
         {[ngayThi && t('thi IELTS {ngay}', { ngay: ngay(ngayThi, hn) }), target !== null && `Target ${target.toFixed(1)}`].filter(Boolean).join(' · ')}
-        {coKq ? <Nhan tone="doing">{t('Đã có kết quả · Chưa chốt bước tiếp')}</Nhan> : <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>}
+        {/* DON-LUONG K14: đã chốt bước tiếp (kể cả vừa "Mở lộ trình" — đọc lại bước tiếp) → chip nói bước đã chọn, không còn "Chưa chốt". */}
+        {coKq && bt.data?.chon ? <Nhan tone="ok">{t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[bt.data.chon as keyof typeof NHAN_SAU_THI] })}</Nhan>
+          : coKq ? <Nhan tone="doing">{t('Đã có kết quả · Chưa chốt bước tiếp')}</Nhan> : <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>}
       </span>
     ) : null,
   });
@@ -132,7 +134,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   if (chon === 'lo_trinh_moi' && !khoaBuoc2) {
     return (
       <PanelLoTrinhMoi bt={b} hocVien={em} lop={lop} dau={dau} onClose={onDong} quayLai={{ nhan: t('Sau thi'), onClick: () => setChon(null) }}
-        onSaved={() => { LAM_MOI.forEach((k) => invalidate(k)); setChon(null); setDaChot(gioVnNay()); bt.reload(); onDaLam(); }} />
+        onSaved={() => { LAM_MOI.forEach((k) => invalidate(k)); setChon(null); setDaChot(gioVnNay()); cy.reload(); bt.reload(); onDaLam(); }} />
     );
   }
 
