@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
+import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
@@ -22,9 +23,9 @@ export function MenuPa({ iv, ten, soKetQua, onSua, xoa, ketThuc = false }: { iv:
   const xoaPa = async () => {
     setBusy(true);
     try {
-      await api.del(`/interventions/${iv.id}`);
+      const r = await api.del<{ thungRacId?: number }>(`/interventions/${iv.id}`);
       lamMoi();
-      toast.push('ok', t('Đã xoá PA'));
+      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá PA'), lamMoi);
       setHoi(null);
     } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
   };

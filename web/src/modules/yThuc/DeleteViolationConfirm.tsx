@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
+import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
@@ -21,9 +22,10 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
     if (!violationId) return;
     setBusy(true);
     try {
-      await api.del(`/violations/${violationId}`);
-      invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
-      toast.push('ok', t('Đã xoá vi phạm'));
+      const r = await api.del<{ thungRacId?: number }>(`/violations/${violationId}`);
+      const lamMoi = () => { invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc'); };
+      lamMoi();
+      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá vi phạm'), lamMoi);
       onClose(); onDone?.();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };

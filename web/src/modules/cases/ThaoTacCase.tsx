@@ -4,6 +4,7 @@ import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -409,9 +410,10 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
   const xoa = async () => {
     setBusy(true);
     try {
-      await api.del(`/cases/${c.id}`);
-      invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau');
-      toast.push('ok', t('Đã xoá Case'));
+      const r = await api.del<{ thungRacId?: number }>(`/cases/${c.id}`);
+      const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau'); };
+      lamMoi();
+      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá Case · {ten}', { ten: tenCase }), lamMoi);
       onDeleted();
     } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); setHoiXoa(false); } finally { setBusy(false); }
   };
