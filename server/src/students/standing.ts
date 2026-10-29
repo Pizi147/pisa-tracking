@@ -80,6 +80,8 @@ export type Standing = {
   tyLeTong: number | null;
   /** OV-6b1: ngưỡng đạt của lớp của lượt đó (lớp thường). */
   nguong?: number;
+  /** PANEL-MC: FT — lượt đó đã chốt (OV-1c); dòng điểm "tạm" khi `false` (cùng luật `diemTuEval`). Lớp thường: không có. */
+  chot?: boolean;
   /** PANEL-MC: từng kỹ năng / môn của lượt đó — CÙNG kiểu `latestAttempts` (band FT · % lớp thường, đạt / dưới kỳ vọng) cho dòng điểm `DiemHv`. */
   skills: Record<string, SkillEval>;
 
@@ -319,6 +321,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.required = r.required.length;
       s.overall = r.overall;
       s.expectation = r.expectation;
+      s.chot = r.chot;
       s.belowSkills = r.verdicts
         .filter((v) => v.passed === false && v.band !== null)
         .map((v) => ({ skill: v.skill, band: v.band as number }));

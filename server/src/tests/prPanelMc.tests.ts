@@ -10,7 +10,7 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
   console.log('\nPANEL-MC · dòng điểm đúng lượt + dữ liệu panel');
   const d: any = await import('../../../shared/domain/index.ts');
   const { latestAttempts, studentsInScope } = await import('../worklist/danhGia.ts');
-  const { diemTuEval, diemTuStanding } = await import('../worklist/diemDong.ts');
+  const { diemTuEval, diemTuStanding, diemTuMock } = await import('../worklist/diemDong.ts');
   const { standingFor } = await import('../students/standing.ts');
   const metrics: any = await import('../worklist/metrics.ts');
   const { chayTrongRequest, soCauSql } = await import('../platform/nguCanhRequest.ts');
@@ -321,4 +321,56 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     assert(!/SCAN (a|audit_logs)\b(?! USING)/.test(ke), `audit_logs bị quét cả bảng: ${ke}`);
   });
 
+
+  /* ---------------------------------------------------------------- rà sâu PTA (30/10) */
+  const kqt: any = await import('../phanTich/ketQuaThi.ts');
+
+  check('RS · Báo cáo SOS trong kỳ (sos:tong:n, sos:<lớp>:n) + HV đã thi: dòng điểm = lượt MT TRONG KỲ tạo mức đó (MT lớn nhất), không lượt hiện tại; 0 câu thêm', () => {
+    const f = { branchId: null, ct: 'ft', ...ky };
+    const mk = kqt.mockTrongKhoang(P.mbManager, { branchId: null, tu: ky.tu, den: ky.den }, { boCase: true });
+    const hien = latestAttempts(studentsInScope(P.mbManager, null), 'valid', TODAY);
+    let so = 0, khacHienTai = 0;
+    for (const muc of [1, 2, 3]) {
+      const { tat, bat } = haiLan(() => bc.oBaoCao(P.mbManager, { ...f, o: `sos:tong:${muc}` }));
+      assert(bat.cau === tat.cau && bat.kq.n === tat.kq.n, `SOS ${muc}: ${tat.cau} → ${bat.cau} câu`);
+      for (const r of bat.kq.rows) {
+        const mt = Math.max(...mk.filter((d: any) => d.studentId === r.id && d.sos === muc).map((d: any) => d.mt));
+        assert(r.diemHv?.luot === `MT${mt}`, `SOS ${muc} em ${r.id}: dòng ${r.diemHv?.luot} ≠ MT${mt} trong kỳ`);
+        if (hien.get(r.id) && diemTuEval(hien.get(r.id)!).luot !== r.diemHv.luot) khacHienTai++;
+        so++;
+      }
+      const lop = bat.kq.rows[0] && mk.find((d: any) => d.studentId === bat.kq.rows[0].id && d.sos === muc)?.classId;
+      if (lop) {
+        const o = bc.oBaoCao(P.mbManager, { ...f, o: `sos:${lop}:${muc}` });
+        for (const r of o.rows) {
+          const mt = Math.max(...mk.filter((d: any) => d.studentId === r.id && d.sos === muc && d.classId === lop).map((d: any) => d.mt));
+          assert(r.diemHv?.luot === `MT${mt}`, `SOS ${muc} lớp ${lop} em ${r.id}: ${r.diemHv?.luot} ≠ MT${mt}`);
+        }
+      }
+    }
+    assert(so > 0, 'demo phải có em SOS trong kỳ');
+    console.log(`      [đo] ${so} dòng SOS trong kỳ · ${khacHienTai} dòng có lượt trong kỳ ≠ lượt hiện tại (trước sửa sẽ hiện sai)`);
+    const da = bc.oBaoCao(P.mbManager, { ...f, o: 'hv-da-thi' });
+    for (const r of da.rows) {
+      const mt = Math.max(...mk.filter((d: any) => d.studentId === r.id).map((d: any) => d.mt));
+      assert(r.diemHv?.luot === `MT${mt}`, `HV đã thi em ${r.id}: ${r.diemHv?.luot} ≠ MT${mt}`);
+    }
+    const th = bc.oBaoCao(P.mbManager, { branchId: null, ct: 'thuong', ...ky, o: 'hv-da-thi' });
+    assert(th.rows.length > 0 && th.rows.every((r: any) => r.diemHv && r.diemHv.donVi === '%'), `lớp thường HV đã thi: ${JSON.stringify(th.rows[0]?.diemHv)}`);
+  });
+
+  check('RS · DongMock: môn bỏ không ✓ / ✗; cờ tạm theo lượt chưa chốt (không theo SOS)', () => {
+    const mk = kqt.mockTrongKhoang(P.admin, { branchId: null, tu: ky.tu, den: ky.den }, { boCase: true });
+    for (const d of mk) {
+      const x = d && diemTuMock(d);
+      assert(x.tam === !d.chot, `lượt ${d.attemptId}: tam ${x.tam} ≠ chưa chốt ${!d.chot}`);
+    }
+    assert(mk.some((d: any) => !d.chot && !d.sos), 'demo phải có lượt chưa chốt không SOS');
+    const bo = conn.prepare(`SELECT attempt_id FROM attempt_skills WHERE required = 0 AND skill IN ('listening','reading','speaking') LIMIT 50`).all() as any[];
+    for (const { attempt_id } of bo) {
+      const d = mk.find((x: any) => x.attemptId === attempt_id);
+      const sk = (conn.prepare(`SELECT skill FROM attempt_skills WHERE attempt_id = ? AND required = 0`).all(attempt_id) as any[]).map((r) => r.skill);
+      if (d) for (const k of sk) if (d.kn[k]) assert(d.kn[k].dat === null, `lượt ${attempt_id}: môn bỏ ${k} có dat ${d.kn[k].dat}`);
+    }
+  });
 }

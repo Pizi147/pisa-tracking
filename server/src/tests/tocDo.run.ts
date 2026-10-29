@@ -33,7 +33,7 @@ const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permis
 const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
-const { DUONG_DO, MOI_VAI, TRAN, TRAN_DONG, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
@@ -231,6 +231,9 @@ function urlFor(mau: string): string {
     .replace('{cn}', String(CN))
     .replace('{gv}', String(USER.GVCN));
 }
+/* PANEL-MC: khoá trần được viết bằng chỗ thay như URL (`{ycPa}`…) — id lấy từ dữ liệu lúc chạy, không viết cứng. Khoá đã là id thật giữ nguyên. */
+const TRAN: Record<string, number> = Object.fromEntries(Object.entries(TRAN_MAU).map(([k, v]) => [urlFor(k), v]));
+const TRAN_DONG: Record<string, number> = Object.fromEntries(Object.entries(TRAN_DONG_MAU).map(([k, v]) => [urlFor(k), v]));
 
 async function callHttpUser(userId: number, method: string, url: string, body?: unknown) {
   doTurso.nhan = `${method} ${url}`;

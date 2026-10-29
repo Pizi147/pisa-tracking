@@ -7,7 +7,7 @@
  */
 import { DS_JSON, db, theoLo, theoLoJson } from '../db.ts';
 import {
-  KN_THI, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, ketQuaMock, xepDongMock,
+  KN_THI, NHAN_SAU_THI, kyNangDaBo, boMonDaBo, PERMISSIONS, chuTargetKck, ketQuaMock, xepDongMock,
   type DongMock, type DongThiThat, type KetQuaMock, type KetQuaMockKq, type KetQuaThiThatKq, type LuaChonSauThi, type XepMock,
 } from '../../../shared/domain/index.ts';
 import { forbidden } from '../util.ts';
@@ -76,11 +76,12 @@ export function mockTrongKhoang(p: Principal, f: LocKetQuaThi, o: { luot?: any[]
     return {
       attemptId: a.id, studentId: a.student_id, ten: ten.get(a.student_id) ?? '', classId: a.class_id, lop: a.class_code ?? '', mt: a.attempt_no, tuan: a.week_start,
       ovr: r.overall, kyVong: r.expectation,
+      /* PANEL-MC: môn em đã bỏ (P8, `kyNangDaBo` — cùng luật mức SOS) không ✓ / ✗. */
       kn: Object.fromEntries(KN_THI.map((k) => {
         const v = r.verdicts.find((x) => x.skill === k);
-        return [k, { band: v?.band ?? null, dat: v?.passed ?? null }];
+        return [k, { band: v?.band ?? null, dat: kyNangDaBo(boMonDaBo(bundle.skips.get(a.id) ?? []), k) ? null : v?.passed ?? null }];
       })) as DongMock['kn'],
-      ketQua: ket, sos: r.sosLevel && r.sosLevel > 0 ? r.sosLevel : null, sosTam: !!r.provisional && (r.sosLevel ?? 0) > 0,
+      ketQua: ket, sos: r.sosLevel && r.sosLevel > 0 ? r.sosLevel : null, sosTam: !!r.provisional && (r.sosLevel ?? 0) > 0, chot: r.chot,
       casePa: t?.trangThai ?? null, caseId: c?.id ?? null, viecTiep,
     };
   });

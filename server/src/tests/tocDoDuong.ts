@@ -458,15 +458,15 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/case-mo': 19,
   'QL /metrics/bai-qua-han-nhap-diem?rows=1': 30,   // PR-UXF-a Task 5: đo 25 → max(25+10, ⌈25×1.3⌉)
   'QT /metrics/bai-qua-han-nhap-diem?rows=1': 28,   // PR-UXF-a Task 5: đo 23
-  /* PANEL-MC: mở panel — dòng HV kèm điểm đúng lượt (đo 10 = ô số + dòng; lượt đi cùng tập, 0 câu thêm; chương trình 1 câu thay 3) · Lịch sử một thẻ Chờ duyệt (đo QL 6 · QT 5 qua HTTP; id 15 = thẻ PA chờ duyệt của chi nhánh MB trên bộ demo). */
+  /* PANEL-MC: mở panel — dòng HV kèm điểm đúng lượt (đo 10 = ô số + dòng; lượt đi cùng tập, 0 câu thêm; chương trình 1 câu thay 3) · Lịch sử một thẻ Chờ duyệt (đo QL 6 · QT 5 qua HTTP; `{ycPa}` = thẻ PA chờ duyệt của chi nhánh MB, lấy lúc chạy). */
   'QL /metrics/hv-sos-hien-tai?rows=1': 20,
   'QT /metrics/hv-sos-hien-tai?rows=1': 20,
   'QL /metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading': 20,
   'QT /metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading': 20,
   'QL /yeu-cau?hop=cho-duyet&boiCanh=1': 41,   // PANEL-MC: không cờ đo 27 · cờ đo 31 (QT 30) = + lượt · chương trình · lịch kỹ năng · điểm (mỗi loại 1 câu theo lô); số Lịch sử đếm trong câu đọc thẻ
   'QT /yeu-cau?hop=cho-duyet&boiCanh=1': 40,
-  'QL /lich-su?loai=yeu-cau&id=15': 16,
-  'QT /lich-su?loai=yeu-cau&id=15': 15,
+  'QL /lich-su?loai=yeu-cau&id={ycPa}': 16,
+  'QT /lich-su?loai=yeu-cau&id={ycPa}': 15,
   'QL /metrics/hv-sos-hien-tai': 23,
   'QT /metrics/hv-sos-hien-tai': 23,
   'QL /metrics/hv-duoi-ky-vong-mon': 23,
@@ -901,8 +901,12 @@ export const TRAN: Record<string, number> = {
 export const TRAN_DONG: Record<string, number> = {
   'QL /metrics/hv-sos-hien-tai?rows=1': 1440,   // PANEL-MC: đo 1107
   'QT /metrics/hv-sos-hien-tai?rows=1': 2092,   // PANEL-MC: đo 1609
-  'QL /lich-su?loai=yeu-cau&id=15': 88,   // PANEL-MC: đo 38 (≤ 50 dòng nhật ký + phạm vi)
-  'QT /lich-su?loai=yeu-cau&id=15': 54,   // PANEL-MC: đo 4
+  'QL /metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading': 1412,   // PANEL-MC: đo 1086
+  'QT /metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading': 2062,   // PANEL-MC: đo 1586
+  'QL /yeu-cau?hop=cho-duyet&boiCanh=1': 468,   // PANEL-MC: đo 360 (thẻ + lượt / lịch / điểm em các thẻ + đếm nhật ký trong câu thẻ)
+  'QT /yeu-cau?hop=cho-duyet&boiCanh=1': 470,   // PANEL-MC: đo 361
+  'QL /lich-su?loai=yeu-cau&id={ycPa}': 88,   // PANEL-MC: đo 38 (≤ 50 dòng nhật ký + phạm vi)
+  'QT /lich-su?loai=yeu-cau&id={ycPa}': 54,   // PANEL-MC: đo 4
   /* PC-GV-A: góc Phân công GV — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (235 dòng: lớp + phân công + ứng viên chi nhánh). */
   'QL /hoc-vien-lop/phan-cong?branchId=1': 306, 'QT /hoc-vien-lop/phan-cong?branchId=1': 306, 'CX /hoc-vien-lop/phan-cong?branchId=1': 306,
   /* HSL-MAY-CHU: trần = max(đo+50, ⌈đo×1,3⌉), đo 27/10 (100 · 64 · 100 dòng). */

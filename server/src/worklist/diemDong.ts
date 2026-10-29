@@ -33,7 +33,7 @@ export function diemTuEval(ev: AttemptEval): DiemHv {
 /** Đạt MT / Kết quả MT (FT): bốn kỹ năng có sẵn `dat` của chính lượt (`tapDatMt`). */
 export function diemTuMock(d: DongMock): DiemHv {
   return {
-    luot: `MT${d.mt}`, tuan: d.tuan, tam: d.sosTam,
+    luot: `MT${d.mt}`, tuan: d.tuan, tam: !d.chot,
     kn: KN_THI.map((k) => ({ k: NHAN_KN_THI[k], v: d.kn[k].band, dat: d.kn[k].band === null ? null : d.kn[k].dat })),
     overall: d.ovr, soVoi: d.kyVong === null ? null : { nhan: 'KV', v: d.kyVong },
   };
@@ -43,7 +43,7 @@ export function diemTuMock(d: DongMock): DiemHv {
 export function diemTuStanding(st: Standing): DiemHv | null {
   if (st.attemptId === null) return null;
   const ratio = st.mode === 'ratio';
-  return ghep(nhanLuot(st.attemptKind, st.attemptNo), st.attemptWeekStart, st.provisional, ratio, st.skills, st.chuongTrinh,
+  return ghep(nhanLuot(st.attemptKind, st.attemptNo), st.attemptWeekStart, st.provisional || st.chot === false, ratio, st.skills, st.chuongTrinh,
     ratio ? (st.tyLeTong === null ? null : st.tyLeTong * 100) : st.overall,
     ratio ? (st.nguong === undefined ? null : st.nguong * 100) : st.expectation);
 }
