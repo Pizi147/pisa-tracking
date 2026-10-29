@@ -122,14 +122,21 @@ export async function runPrSvTqGvTests(t: any) {
   });
 
   /* S1: `napBai` của MỘT GV chỉ nạp lượt gán được cho GV (lớp GV phân công · em từng ghi danh lớp đó · ô GV đã chấm) — số, panel KHÔNG đổi so với đường đủ. */
-  check('S1 · mọi GV có phân công: chỉ số hồ sơ GV + panel (hồ sơ, Phân tích GV, Chấm điểm) đường thu hẹp = đường đủ (cả chi nhánh + khung)', () => {
+  check('S1 · GV nhiều lượt nhất (10 toàn hệ thống, 3 mỗi chi nhánh + khung): chỉ số hồ sơ GV + panel (hồ sơ, Phân tích GV, Chấm điểm) đường thu hẹp = đường đủ (cả chi nhánh + khung)', () => {
     const loi: string[] = [];
     const json = (fn: () => unknown) => { try { return JSON.stringify(fn()); } catch (e: any) { loi.push(String(e?.message)); return `lỗi ${e?.status ?? e?.message}`; } };
-    const hai = (fn: () => unknown) => { pt.napDayDuKhiKiem.bat = true; try { const du = json(fn); pt.napDayDuKhiKiem.bat = false; return [du, json(fn)]; } finally { pt.napDayDuKhiKiem.bat = false; } };
+    /* Mỗi lời gọi một bộ nhớ request riêng (như GET thật) — không đọc lại cùng tập trong một lời gọi, không dùng chung giữa hai đường. */
+    const hai = (fn: () => unknown) => { pt.napDayDuKhiKiem.bat = true; try { const du = json(() => nguCanh.trongBoNho(fn)); pt.napDayDuKhiKiem.bat = false; return [du, json(() => nguCanh.trongBoNho(fn))]; } finally { pt.napDayDuKhiKiem.bat = false; } };
     const sai: string[] = [];
     let coSo = 0;
     const KY = { tu: '2026-03-02', den: '2026-09-14' };
-    const gvs = (conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE status IN ('active', 'ended') ORDER BY user_id`).all() as any[]).map((x) => x.user_id as number);
+    /*
+     * Check đầy đủ (#707): DB nhóm 1 đã phình (phép kiểm trước thêm GV / lớp) — so MỌI GV × hai đường đủ làm run.js chết (0xC0000409) sau 25 phút.
+     * Chỉ so GV có nhiều lượt nhất (lớp của GV), đủ phủ GVCN / GVBM / Speaking của demo; tình huống biên ở phép kiểm dưới.
+     */
+    const GV_HANG = `SELECT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id JOIN assessment_attempts a ON a.class_id = ta.class_id
+      WHERE ta.status IN ('active', 'ended') %s GROUP BY ta.user_id ORDER BY COUNT(DISTINCT a.id) DESC, ta.user_id LIMIT ?`;
+    const gvs = (conn.prepare(GV_HANG.replace('%s', '')).all(10) as any[]).map((x) => x.user_id as number);
     for (const gv of gvs) {
       const p = perm.loadPrincipal(gv);
       for (const [ten, fn] of [
@@ -141,9 +148,9 @@ export async function runPrSvTqGvTests(t: any) {
         if (ten === 'chi-so dài' && /"k":"so","dung":\d+,"tong":[1-9]/.test(hep)) coSo++;
       }
     }
-    for (const { cn, ft } of conn.prepare(`SELECT DISTINCT branch_id AS cn, is_fast_track AS ft FROM classes`).all() as any[]) {
+    for (const { cn, ft } of conn.prepare(`SELECT c.branch_id AS cn, c.is_fast_track AS ft FROM classes c JOIN assessment_attempts a ON a.class_id = c.id GROUP BY 1, 2 ORDER BY COUNT(*) DESC LIMIT 4`).all() as any[]) {
       const f = { cn, ct: ft ? 'ft' : 'thuong', ...KY };
-      const gvCn = (conn.prepare(`SELECT DISTINCT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.branch_id = ? AND c.is_fast_track = ? AND ta.status IN ('active', 'ended')`).all(cn, ft) as any[]).map((x) => x.user_id);
+      const gvCn = (conn.prepare(GV_HANG.replace('%s', 'AND c.branch_id = ? AND c.is_fast_track = ?')).all(cn, ft, 3) as any[]).map((x) => x.user_id);
       for (const gv of gvCn) {
         for (const cot of ['cham-diem', 'ket-qua', 'tien-bo', ...(ft ? ['dat-mt'] : [])]) {
           const [du, hep] = hai(() => pt.oChiSoGv(P.admin, { ...f, gv, cot }));
