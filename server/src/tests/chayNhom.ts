@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const N = Math.max(1, Number(process.env.PISA_SO_NHOM) || 2);
+const N = Math.max(1, Number(process.env.PISA_SO_NHOM) || 3);
 const t0 = Date.now();
 
 type Ket = { ten: string; ma: number; ra: string; giay: number };

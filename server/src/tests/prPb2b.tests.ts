@@ -408,6 +408,8 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const nay = luotThu(conn, svc.createAttempt, P.admin, { studentId: e3.sid, cycleId: e3.cy, classId: MB_FT, no: 2, periodId: week.ensurePeriod(tuanNay).id });
     const diem = (aid: number, band: number) => conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, nhap_dau_ngay) VALUES (?, 'listening', 20, 40, ?, ?)`).run(aid, band, D);
     diem(truoc.id, 5.5); diem(nay.id, 6.0);
+    /* CN-2: tự dựng — bài nay đủ 4 kỹ năng (V5 C09: chỉ lượt có Overall vào mẫu Kết quả); trước dựa vào em đủ điểm tuần này do prHsm để lại. */
+    for (const k of ['reading', 'writing1', 'writing2', 'speaking']) conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, nhap_dau_ngay) VALUES (?, ?, 20, 40, 6.0, ?)`).run(nay.id, k, D);
     const e4 = emMoi('MB FT 101');
     boLichTuTao(conn, e4.cy);
     conn.prepare(`UPDATE learning_cycles SET khong_cam_ket = 1, target_score = NULL WHERE id = ?`).run(e4.cy);

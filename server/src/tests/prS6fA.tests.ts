@@ -264,6 +264,13 @@ export async function runPrS6fATests(t: YThucTestKit) {
   boLichTuTao(conn, eT.cy);
   const aT = luotThu(conn, svc.createAttempt, P.admin, { studentId: eT.sid, cycleId: eT.cy, classId: MB_FT, no: 3, periodId: week.ensurePeriod(tuanNay).id });
   svc.saveScore(P.admin, aT.id, 'listening', { rawScore: 30 }, TODAY);
+  /* CN-2: tự dựng — một em MB FT 101 đủ 4 kỹ năng tuần này (V5 C09: mẫu Kết quả chỉ lấy lượt có Overall) để GV L có ô Kết quả; trước dựa vào em prHsm để lại. */
+  {
+    const eK = emVaoLop(MB_FT);
+    boLichTuTao(conn, eK.cy);
+    const aK = luotThu(conn, svc.createAttempt, P.admin, { studentId: eK.sid, cycleId: eK.cy, classId: MB_FT, no: 3, periodId: week.ensurePeriod(tuanNay).id });
+    for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band, nhap_dau_ngay) VALUES (?, ?, 20, 40, 6.0, ?)`).run(aK.id, k, TODAY);
+  }
   const lopY = lopMoi('MB FT S6FA Y');
 
   check('S6F-a (4a) · em chuyển lớp giữ khoá sau MT: ô L đúng hạn + Kết quả L vẫn tính cho GV lớp cũ; ô W2 trễ tính cho GV W2 lớp cũ; không ai ở lớp mới', () => {

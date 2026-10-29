@@ -45,13 +45,15 @@ const GIU_CHUOI = new Set([
   'dbGoc',            // so DB chuỗi với bản gốc (DG-1)
   'prSeedUx',         // chỉ đọc bộ demo ngay sau seed — đứng đầu chuỗi
   'anToan', 'prToc',  // tiến trình con đọc tệp DB_PATH (không phải bản gốc)
-  /* Phép soi TOÀN DB: giữ ở chuỗi để còn soi dữ liệu các tệp chuỗi + phần viết thẳng (rủi ro #734: trên bản gốc chỉ thấy seed). */
-  'prEn', 'prS3CauCon',
+  /* Phép so "đường mới = đường cũ" trên TOÀN DB: giữ ở chuỗi để còn soi dữ liệu các tệp chuỗi + phần viết thẳng (rủi ro #734). prEn thì
+     KHÔNG: dữ liệu chuỗi chỉ thêm chữ thử do phép kiểm tự ghi ("thử sos", "Ghi nhận riêng để kiểm quyền…") → EN-TB / EN-VIEC đỏ oan;
+     chữ giao diện thật đã có đủ trong seed (bản gốc). */
+  'prS3CauCon',
   /* Đỏ trên DB gốc — dựa vào dữ liệu tệp khác để lại; CN-2 chưa sửa (tệp nhẹ, ghi trong PR): */
   'sosV3', 'prSos',   // Case seed chưa có Mô tả → không xác nhận được PA
-  'prYt4', 'prPb2b', 'prS6fA', 'prUx1', 'keHoachTest', 'xoaDuLieu', 'prVaiB', 'prOv13p', 'prGop', 'prOv12c', 'prOv13a',
-  'prTk',             // TK-5 đỏ khi chạy riêng cả trên chuỗi (có sẵn trên main)
-  'prMt', 'luatMayChu',   // [BB]: để lại lộ trình đóng thiếu bản chụp trên bản gốc
+  'prYt4', 'prUx1', 'keHoachTest', 'xoaDuLieu', 'prVaiB', 'prGop', 'prOv12c', 'prOv13a',
+  'luatMayChu',       // keHoachTest dùng lượt nó tạo (cùng sosV3) — dò chia đôi CN-2
+  'prChuongNhe',      // C1 so tỷ lệ dòng đọc (đường mới < đường đủ ÷ 3): trên bản gốc nhỏ 166 vs 489 ÷ 3 — cần DB cỡ chuỗi
 ]);
 const DOC_LAP_ENV = process.env.PISA_DOC_LAP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
 const docLapCua = (ten: string) => (DOC_LAP_ENV ? DOC_LAP_ENV.includes(ten) : !GIU_CHUOI.has(ten));
@@ -59,8 +61,38 @@ const docLapCua = (ten: string) => (DOC_LAP_ENV ? DOC_LAP_ENV.includes(ten) : !G
  * Thời gian mỗi tệp độc lập (ms, làm tròn 100 — đo ở check đầy đủ CN-2, `lan-cuoi.json`) để chia tham lam vào N nhóm; tệp mới chưa có → 1 000.
  * Nhóm 1 khởi đầu bằng CHUOI_MS (seed + phần viết thẳng + các tệp `GIU_CHUOI`).
  */
-const CHUOI_MS = 0;
-const THOI_GIAN_MS: Record<string, number> = {};
+const CHUOI_MS = 76000;
+const THOI_GIAN_MS: Record<string, number> = {
+  banChinh: 36200, tongQuan: 33000, prDeploy: 10600, prTd7b: 7200, prSvTqGv: 6800, prW1GopTaiLai: 4000, prOv13q: 3800, prMt: 3500, yThuc: 3400,
+  prQuetTheoKy: 3400, prGv: 3200, prPb2b: 3000, prS6fA: 2900, prEn: 2600, prOv13k: 2400, prVaiA: 2300, prTd3: 2300, prOv13m: 2300, prCt: 2100,
+  luatMayChu: 2000, prHk2: 2000, prDonA: 1900, prNv: 1800, prTk: 1800, hocVienLop: 1700, prS6fB: 1700, prOv15e: 1700, prUiPhanTich: 1600,
+  prLt3: 1500, prTd2bc: 1500, prOv12d: 1500, prSvYtTvv: 1500, prHvl: 1400, prMt0: 1400, prQrl2cDuyet: 1400, prUxfA: 1300, prCl: 1300,
+  prLocHienTai: 1300, chamDiem: 1200, phanTich: 1200, prLt2b: 1200, prSo: 1200, prPa: 1200, prOv12e: 1200, prOv13j: 1200, prSvSo2: 1200, prLcb: 1100,
+  prOv15e2: 1100, prS5JsonEach: 1100, hoSoHocVien: 1000, lenLop: 1000, prS3Chu: 1000, prDl: 1000, prOv2a: 1000, prSvSExpert: 1000, prXetLai: 1000,
+  congViec: 900, prS4f: 900, prOv13h: 900, prOv13p: 900, prOv15c: 900, prOv15h1: 900, prSvTvvViec: 900, prLt2a: 800, prPb2a: 800, prMta: 800,
+  prThungRac: 800, prCt2: 800, prOv8b: 800, prOv10b: 800, prOv11g: 800, prOv15f: 800, prSl1: 800, prSl2: 800, prSvNxCase: 800, prHoanTacXn: 800,
+  prChuongNhe: 800, nenGiaoDien: 700, prUxG: 700, prOv11c: 600, panelUx3: 600, suaLoiNong: 600, prMon: 600, prXuat: 600, prMtb: 600, prBv: 600,
+  prKv: 600, prOv12f: 600, prOv13o: 600, prOv14c: 600, prOv15g: 600, prOv15i1: 600, prBaoCaoLichSu: 600, prPhanCongGv: 600, prDuyet: 500,
+  prXlmt: 500, prSl: 500, prQrl2cPa: 500, prQtTk: 500, prLc: 500, prOv4a: 500, prOv10c: 500, prOv12a: 500, prOv13b: 500, prOv13i: 500, prOv13g: 500,
+  prPtGvOverall: 500, prSvSo1: 500, prSvLop: 500, prUiHoSoLop: 500, prKetPet: 500, prS4GioiHanQuet: 500, dieuChinhPa: 400, form: 400, prS3f: 400,
+  prS5fA: 400, prLuiA2: 400, prOv5a: 400, prOv8a: 400, prUx2: 400, prOv13f: 400, prOv15h2: 400, prLtSv: 400, prCvLoi: 400, prUiCvTvv: 400,
+  prUiHvLop: 400, prViecDungVai: 400, prS2LichKyNang: 400, prOv11f: 300, prHsm: 300, prUxfB: 300, prDonB: 300, prQu: 300, prGva: 300, prK26: 300,
+  fixChotLenFt: 300, prMtGon: 300, prVn3: 300, prVn4: 300, prOv3a: 300, prOv7b: 300, prOv11e: 300, prOv11b: 300, prOv11d: 300, prOv12h: 300,
+  prOv13e: 300, prHf: 300, prOv13d: 300, prOv13c: 300, prOv13l: 300, prOv15d: 300, prTu: 300, mtTrangThai: 300, prNenTypoMau: 300, prChuThi: 300,
+  prUiTongQuan: 300, prCuoiKhoa: 300, prMonDangKy: 300, prPilotCase: 300, prRaLuong: 300, yThucGon: 200, prLop: 200, thanhPhanChung: 200,
+  prS5fb: 200, prNt: 200, prLuiA1: 200, prViecNho: 200, prTen: 200, prVn5: 200, prOv1a: 200, prOv2b: 200, prOv3b: 200, prOv1b: 200, prOv1c: 200,
+  prOv7a: 200, prOv9: 200, prOv14b: 200, prOv14a: 200, prTub: 200, prSvSo3: 200, prUiChamTest: 200, prUiConLai: 200, prMtDem: 200, prDich: 200,
+  prSvLoTrinh: 200, prPilotGvTre: 200, prOv11h: 100, khung: 100, hanhTrinh: 100, prNhap: 100, prKck: 100, prSang: 100, prUxd: 100, prHk1: 100,
+  prPh: 100, prLm: 100, prBn: 100, prGvb: 100, prBc: 100, prPhh: 100, prDh: 100, prU12: 100, prLuiB: 100, prQrl2cYThuc: 100, prKhung: 100,
+  prOChon: 100, fixXepBaiThuong: 100, prTd2d: 100, fixKqGanNhat: 100, fixDtlOmt: 100, prHan: 100, prViecNho2: 100, prLtGon: 100, prKiemDuLieuMt: 100,
+  prHop1: 100, prDon: 100, prVn6: 100, prCache: 100, prOv2c: 100, prOv4b: 100, prBandQuyDoi: 100, prOv6b1: 100, prOv3c: 100, prOv5b: 100,
+  prOv6b2: 100, prOv10a: 100, prOv1d: 100, prOv4c: 100, prOv11a: 100, prOv11i: 100, prOv12b: 100, prOv12g: 100, prHd: 100, prVn1: 100, prOv15a: 100,
+  prOv15b: 100, prOv15i2: 100, prBang0: 100, prLuat5: 100, prSuaNoRa: 100, prKhungLoi: 100, caseLo: 100, prSvBaiLop: 100, prNenPanel: 100,
+  prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
+  prKhoaLich: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
+  prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
+  prSuaNhoQuyen: 100,
+};
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
 let chia: Map<string, number> = new Map();
@@ -181,7 +213,7 @@ runSeed();
 const { chupDbGoc, moBanGoc, chiaThamLam } = await import('./dbGoc.ts');
 /* Danh sách tệp độc lập = tên đăng ký `bocTep` trong tệp này (đọc mã nguồn: biết hết trước khi chạy, để mọi nhóm chia giống nhau). */
 chia = chiaThamLam(Object.fromEntries(
-  [...fs.readFileSync(path.join(ROOT, 'server/src/tests/run.ts'), 'utf8').matchAll(/bocTep\('(\w+)'/g)].map((m) => m[1]).filter(docLapCua)
+  [...fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').matchAll(/bocTep\('(\w+)'/g)].map((m) => m[1]).filter(docLapCua)
     .map((t) => [t, THOI_GIAN_MS[t] ?? 1000])), CHUOI_MS, SO_NHOM);
 const { batBienDb } = await import('./prTk.tests.ts');
 chupDbGoc();
