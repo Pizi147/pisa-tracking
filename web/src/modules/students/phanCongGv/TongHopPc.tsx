@@ -40,7 +40,7 @@ function BangTong({ loai, dem, demNhap, gv, to, onTo, toiDa }: {
   const hien = toiDa && !du ? rows.slice(0, toiDa) : rows;
   const tieu = loai === 'day' ? t('Giảng dạy') : t('GVCN');
   const cot: CotBang[] = [
-    { key: 'gv', nhan: t('GV'), kieu: 'ten' },
+    { key: 'gv', nhan: t('GV'), kieu: 'ten', linhHoat: true },   // co giãn + cắt "…": bảng 375 vừa 343 px, không cuộn ngang
     { key: 'ft', nhan: 'FT', kieu: 'so', rong: toiDa ? 48 : 92 },
     { key: 'th', nhan: t('Lớp thường'), kieu: 'so', rong: toiDa ? 86 : 120 },
     { key: 'tong', nhan: t('Tổng'), kieu: 'so', rong: toiDa ? 52 : 92 },

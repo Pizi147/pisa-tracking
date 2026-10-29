@@ -8,7 +8,7 @@ Mockup: `thiet-ke/v9/phan-cong-gv.html` (chủ SP duyệt 30/10) · ảnh cặp 
 | # | Khung | Thành phần | Ảnh | Kết quả |
 |---|---|---|---|---|
 | 1 | k1 · 1440 QL bình thường | `GocPhanCongGv` · `BangLopPc` · `TongHopPc` | cap-k1-1440 | KHỚP (GIỮ nút cũ "Xuất Excel · n HV" thay "Xuất Excel · 16 lớp" — đặc tả 2b) |
-| 2 | k1 · 375 thẻ lớp | `TheLopPc` (`rutGonThe`) | cap-k1-375 | KHỚP: mỗi nhóm 3 thẻ đầu + thẻ có ô thiếu / nháp / chờ đổi / đang sửa luôn hiện, còn lại "… n lớp FT nữa" (bấm mở cả nhóm); đang tìm / lọc Thiếu GV thì hiện đủ. Tổng hợp 6 / 4 dòng + "Xem đủ n GV" |
+| 2 | k1 · 375 thẻ lớp | `TheLopPc` (`rutGonThe`) | cap-k1-375 | KHỚP: mỗi nhóm 3 thẻ đầu + thẻ có ô thiếu / nháp / chờ đổi / đang sửa luôn hiện, còn lại "… n lớp FT nữa" (bấm mở cả nhóm); đang tìm / lọc Thiếu GV thì hiện đủ. Tổng hợp 6 / 4 dòng + "Xem đủ n GV"; đủ 4 cột GV · FT · Lớp thường · Tổng trong 343 px (cột số 48 / 86 / 52, tên GV co giãn + cắt "…", không cuộn ngang — sửa theo PTA rà lần 2) |
 | 3 | k2 · 1440 tô sáng | `TongHopPc` · `DaiToPc` | cap-k2-1440 | KHỚP |
 | 4 | k2 · 375 dải tô dính | `TheLopPc` · `DaiToPc gon` | cap-k2-375 | KHỚP |
 | 5 | k3 · 1440 dòng nháp, lỗi GVCN, ô ▾ mở | `OGv` · `ChonGvPc` · `BangLopPc` | cap-k3-1440 | KHỚP (danh sách chọn = `ChonNguoi` sẵn có: ô gõ + nhóm "Đang dạy lớp này" / "GV khác · CN") |
