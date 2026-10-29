@@ -391,7 +391,7 @@ export const EN_R1_EN = {
   'Đã huỷ quyết định chuyển lớp': 'Transfer decision cancelled',
   /* Q4 (chủ SP 29/10): Chuyển lớp một em tuần trước Final → hết tuần Final. */
   'Theo luồng chuyển tiếp lộ trình': 'Follow the end-of-course transition',
-  'Có Test đi kèm như Cuối khoá (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển giữa khoá.': 'Tests come along as at end of course (Move up to FT gets MT0 in the Final week). Untick: mid-course transfer.',
+  'Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển ngay, không Test đi kèm.': 'Tests come along (Move up to FT gets MT0 in the Final week). Untick: transfer now, no tests.',
   'Gửi đề xuất': 'Send request',
   'Duyệt và quyết định': 'Approve and decide',
   'Sửa đề xuất chuyển lớp': 'Edit transfer request',

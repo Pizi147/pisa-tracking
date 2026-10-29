@@ -281,7 +281,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
             {chonTheoCk && (
               <label className="flex min-h-[44px] cursor-pointer items-start gap-2 text-[13px] text-slate-300 sm:min-h-0">
                 <input type="checkbox" className="mt-0.5 h-4 w-4" checked={theoCk} disabled={busy} onChange={(e) => { setTheoCk(e.target.checked); setToClassId(null); }} />
-                <span>{t('Theo luồng chuyển tiếp lộ trình')}<span className="block text-xs text-slate-500">{t('Có Test đi kèm như Cuối khoá (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển giữa khoá.')}</span></span>
+                <span>{t('Theo luồng chuyển tiếp lộ trình')}<span className="block text-xs text-slate-500">{t('Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển ngay, không Test đi kèm.')}</span></span>
               </label>
             )}
             <Truong nhan={t('Lớp chuyển đến')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'lop')}>
