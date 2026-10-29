@@ -411,7 +411,7 @@ export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
   'vi-pham': t('+ Ghi vi phạm'), 'xu-ly-y-thuc': t('Xác nhận xử lý'), case: '+ Case', 'nhap-diem': t('Nhập điểm'), 'sua-thong-tin': t('Sửa thông tin'),
   'lo-trinh-tiep': t('Cuối khoá…'), 'chuyen-lop': t('Chuyển lớp…'), 'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
 };
-/** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Ghi vi phạm · Case · Nhập điểm). */
+/** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Case · Ghi vi phạm · Xác nhận xử lý · Nhập điểm). */
 export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'];
 /**
  * Hai mục thuộc PR-LT (đợt 5). "Lộ trình tiếp theo" (OV-3b: chỉ Quản lý) mở hộp Lộ trình của em ở bảng lớp (`duongLoTrinhLop`);
@@ -429,9 +429,10 @@ export function mucMenuDongHocVien(i: {
 }, bat: { loTrinhTiepTheo: boolean; chuyenLop: boolean } = MENU_DONG_CHO_PR_LT): MucMenuDong[] {
   const out: MucMenuDong[] = [];
   if (!i.dangHoc) return out;
+  /* MENU-DONG (chủ SP 29/10, v8): + Case · + Ghi vi phạm · Xác nhận xử lý · Nhập điểm {đợt} │ vạch │ việc hiếm (Sửa thông tin · Cuối khoá… · Chuyển lớp…). */
+  if (i.coTheBaoCase) out.push('case');
   if (i.coTheGhiViPham) out.push('vi-pham');
   if (i.coTheXuLyYThuc) out.push('xu-ly-y-thuc');
-  if (i.coTheBaoCase) out.push('case');
   if (i.coTheNhapDiem) out.push('nhap-diem');
   /* PR-OV2b: Sửa thông tin một em ngay tại dòng (panel như ⋯ hồ sơ HV). */
   if (i.coTheSuaHocVien) out.push('sua-thong-tin');
