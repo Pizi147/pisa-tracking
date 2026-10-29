@@ -110,10 +110,12 @@ export type SkillRow = {
  * TD2-a: đúng các cột của `SkillRow` thay vì `ask.*` — danh sách đọc hàng nghìn dòng mỗi request; người/lúc (`*_by`, `*_at`,
  * `created_at`, `updated_at`) không màn nào đọc từ đây (nhật ký có bảng riêng).
  */
-const SELECT_SKILLS = `
+/* S2: `mon_luot` KHÔNG còn là câu con theo từng dòng (Turso tính dòng quét của câu con mỗi dòng) — danh sách đọc môn MỘT lần mỗi lượt trong
+   cùng câu (`MON_THEO_LO`), một lượt đọc qua câu con KHÔNG tương quan (`MON_MOT_LUOT_SQL`, SQLite tính một lần). */
+const SELECT_SKILLS = (mon = 'NULL') => `
   SELECT ask.id, ask.attempt_id, ask.skill, ask.required, ask.scope_reason, ask.planned_period_id, ask.plan_source, ask.sit_status,
          ask.sit_note, ask.deadline_override, ask.deadline_override_reason, ask.absence_move_count, ask.absent_from_no_show, ask.huy_vang, ask.bo_task,
-         pr.week_start, pr.week_end, pr.code AS period_code, ${monLuotSql('ask')} AS mon_luot
+         pr.week_start, pr.week_end, pr.code AS period_code, ${mon} AS mon_luot
     FROM attempt_skills ask
     LEFT JOIN report_periods pr ON pr.id = ask.planned_period_id`;
 
@@ -191,7 +193,7 @@ export function lichGopCua(ids: readonly number[]): Map<number, { skill: string 
 
 export function ensureSkillRows(attemptId: number): SkillRow[] {
   const conn = db();
-  const existing = conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[];
+  const existing = conn.prepare(`${SELECT_SKILLS(MON_MOT_LUOT_SQL)} WHERE ask.attempt_id = ?`).all(attemptId, attemptId) as SkillRow[];
   const bo = boMonCuaLuot(conn, attemptId, existing);
   if (bo.every((k) => existing.some((r) => r.skill === k))) return sortRows(existing, bo);
 
@@ -215,7 +217,7 @@ export function ensureSkillRows(attemptId: number): SkillRow[] {
   }
   apMonChoLuotMoi([attemptId]);   // P8: lượt mới theo môn đăng ký
   capNhatConOCho([attemptId]);   // TD7b: dòng lịch mới (kể cả phạm vi "không mock" cũ) có thể đổi ô chờ
-  return sortRows(conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id = ?`).all(attemptId) as SkillRow[], bo);
+  return sortRows(conn.prepare(`${SELECT_SKILLS(MON_MOT_LUOT_SQL)} WHERE ask.attempt_id = ?`).all(attemptId, attemptId) as SkillRow[], bo);
 }
 
 function sortRows(rows: SkillRow[], bo: readonly string[] = ASSESSED_SKILLS): SkillRow[] {
@@ -237,8 +239,16 @@ export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
     const conn = db();
     for (let i = 0; i < ids.length; i += 900) {   // cùng cỡ lô với loadBundle (PR-MT)
       const chunk = ids.slice(i, i + 900);
-      const ph = chunk.map(() => '?').join(',');
-      for (const r of conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id IN (${ph})`).all(...chunk) as SkillRow[]) {
+      const mon = new Map<number, string>();
+      const rows: SkillRow[] = [];
+      /* Danh sách id buộc MỘT lần (CTE `ids`) cho cả hai nhánh. */
+      for (const r of conn.prepare(`WITH ids(id) AS (VALUES ${chunk.map(() => '(?)').join(',')})
+          ${SELECT_SKILLS()} WHERE ask.attempt_id IN ids ${MON_THEO_LO}`).all(...chunk) as SkillRow[]) {
+        if (r.id === null) mon.set(r.attempt_id, r.mon_luot!);
+        else rows.push(r);
+      }
+      for (const r of rows) {
+        r.mon_luot = mon.get(r.attempt_id) ?? null;
         if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
         out.get(r.attempt_id)!.push(r);
       }
@@ -301,6 +311,17 @@ export function monLuotSql(bang: string) {   // ledger: MT0 không áp môn
   return `(SELECT cy.mon_dang_ky FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE a.id = ${bang}.attempt_id AND a.kind != 'mt0')`;
 }
 const MON_LUOT_SQL = monLuotSql('k');
+/** S2: cùng luật cho MỘT lượt (tham số `?` = id lượt) — câu con không tương quan, SQLite tính một lần cho cả câu, không thêm lượt mạng. */
+export const MON_MOT_LUOT_SQL = `(SELECT cy.mon_dang_ky FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE a.id = ? AND a.kind != 'mt0')`;
+/**
+ * S2 (giảm dòng đọc Turso): nhánh nối vào `SELECT_SKILLS` của `loadSkillRows` — môn đăng ký MỘT lần mỗi lượt (MT0 / không lộ trình / đủ môn → không
+ * có dòng = null, cùng luật `monLuotSql`) thay vì câu con theo từng dòng lịch (4–5 dòng / lượt). Dòng môn: `id` NULL, `attempt_id`, `mon_luot`.
+ * Cùng một câu (không thêm lượt mạng); 19 cột như `SELECT_SKILLS`.
+ */
+const MON_THEO_LO = `
+  UNION ALL SELECT NULL, a.id, ${Array(16).fill('NULL').join(', ')}, cy.mon_dang_ky
+    FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
+   WHERE a.id IN ids AND a.kind != 'mt0' AND cy.mon_dang_ky IS NOT NULL`;
 const KHONG_HOC_SQL = `(CASE k.skill WHEN 'writing' THEN NOT EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value IN ('writing1', 'writing2'))
   ELSE NOT EXISTS (SELECT 1 FROM json_each(${MON_LUOT_SQL}) j WHERE j.value = k.skill) END)`;
 const BO_TASK_SQL = `(CASE WHEN k.skill = 'writing' AND (SELECT COUNT(*) FROM json_each(${MON_LUOT_SQL}) j WHERE j.value IN ('writing1', 'writing2')) = 1
