@@ -39,11 +39,13 @@ type Props = {
   invalid?: boolean;
   /** Trong lưới (Thêm học viên): không vẽ dòng phụ tuần và dòng lỗi dưới ô — hàng cao đều; hai dòng đó vào `title` của ô gõ. */
   gon?: boolean;
+  /** V8-PT (mockup `.o-tuan`): nút lịch nằm TRONG ô (mép phải), ô cao 36 chữ 14 — hàng lọc Phân tích. */
+  nutTrong?: boolean;
   /** `gon`: id dòng lỗi người gọi vẽ dưới ô (lưới) — nối vào `aria-describedby` (D11). */
   moTa?: string;
 };
 
-export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, goiY, disabled, ariaLabel, id, onBlur, invalid, gon, moTa }: Props) {
+export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, goiY, disabled, ariaLabel, id, onBlur, invalid, gon, moTa, nutTrong }: Props) {
   const { homNay } = useNgayNghiepVu();
   const luat: LuatONgay = { toiThieu, toiDa, moc, catHomNay };
   const [text, setText] = useState(hienONgay(value, kieu, homNay));
@@ -66,14 +68,16 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
   const phu = phuONgay(value, kieu, homNay);
   return (
     <span className="block min-w-0">
-      <span className="flex min-w-0 items-stretch gap-1.5">
-        <input id={idO} className={`field min-w-0 flex-1 tabular-nums${gon && (invalid || loi) ? ' border-late' : ''}`}
+      <span className={`flex min-w-0 items-stretch ${nutTrong ? 'relative' : 'gap-1.5'}`}>
+        <input id={idO} className={`field min-w-0 flex-1 tabular-nums${gon && (invalid || loi) ? ' border-late' : ''}${nutTrong ? ' h-9 !py-0 pr-10 text-sm font-medium max-sm:h-11' : ''}`}
           title={gon ? [phu, loi].filter(Boolean).join(' · ') || undefined : undefined} inputMode={kieu === 'tuan' ? 'text' : 'numeric'} autoComplete="off" value={text} disabled={disabled}
           placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : kieu === 'tuan' ? t('W4 SEP hoặc dd/mm') : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
           aria-describedby={gon ? moTa : [phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
           onChange={(e) => setText(e.target.value)} onBlur={() => { chot(); onBlur?.(); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); chot(); } else if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); setMo(true); } }} />
-        <button ref={nut} type="button" className="btn flex-none min-h-[44px] min-w-[44px] justify-center px-0 sm:min-h-0 sm:min-w-[36px]"
+        <button ref={nut} type="button" className={nutTrong
+          ? 'absolute inset-y-0 right-0 flex w-10 cursor-pointer items-center justify-center border-0 bg-transparent text-[color:var(--text-dim)] max-sm:w-11'
+          : 'btn flex-none min-h-[44px] min-w-[44px] justify-center px-0 sm:min-h-0 sm:min-w-[36px]'}
           aria-label={kieu === 'thang' ? t('Mở lịch tháng') : t('Mở lịch')} aria-haspopup="dialog" aria-expanded={mo} disabled={disabled}
           onClick={() => setMo((v) => !v)}><BieuTuongLich /></button>
       </span>

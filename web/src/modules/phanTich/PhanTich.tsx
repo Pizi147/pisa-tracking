@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -13,7 +13,7 @@ import { KetQuaThi } from './KetQuaThi.tsx';
 import { PhanTichGiaoVien } from './PhanTichGiaoVien.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
 import { YThucPhoiHop } from './YThucPhoiHop.tsx';
-import type { PhamViPhanTich } from './dungChung.tsx';
+import { KheHangLoc, OChon, type PhamViPhanTich } from './dungChung.tsx';
 import { dich as dichGoc, t } from '@shared/i18n/index.ts';
 import {
   GOC_NHIN, PERMISSIONS, chuongTrinhTuThamSo, gocNhinTuThamSo, khoangTuUrl, nhanGocNhin, thamSoKhoang, thamSoXoaKhiDoiGoc,
@@ -94,17 +94,24 @@ export function PhanTich() {
   }, [classId, classesApi.data, ct, goc]);
 
   const pv: PhamViPhanTich = { branchId, ct: laYThuc ? null : ctLop, khoang, classId: coLop ? classId : null };
+  /* V8-PT: hai khe của hàng lọc — tab đặt ô riêng (giữa) và Xuất / In / ⋯ (cuối phải) qua `VaoHangLoc`. */
+  const [dau, setDau] = useState<HTMLSpanElement | null>(null);
+  const [giua, setGiua] = useState<HTMLSpanElement | null>(null);
+  const [phai, setPhai] = useState<HTMLSpanElement | null>(null);
 
   return (
     <div className="space-y-3">
       <div data-hd="pt-goc" className="print:hidden">
         <HangTab ariaLabel={t('Phân tích')} value={goc} onChange={setGoc} tabs={gocCo.map((k) => ({ key: k, label: dichGoc(nhanGocNhin(k, ct)) }))} />
       </div>
-      <div className="flex flex-wrap items-center gap-2 print:hidden">
+      {/* V8-PT (P2): MỘT hàng lọc, mọi ô cao 36 chữ 14 — [chương trình | ô đoạn đầu của tab] · [Toàn bộ | Chọn khoảng tuần] · tuần → tuần · Mọi lớp ▾ ·
+          ô riêng tab · (phải) Xuất / In / ⋯. 375: ô đoạn và thời gian hết hàng, ô chọn hai cột. */}
+      <div className="flex flex-wrap items-center gap-2 print:hidden" data-hd="pt-hang-loc">
         {coCt && <ChonChuongTrinh value={ct} onChange={setCt} />}
+        <span ref={setDau} className="contents" />
         <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo />
         {coLop && (
-          <select className="field w-40 text-sm max-sm:min-h-[44px]" value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
+          <OChon className="max-sm:w-[calc(50%-4px)]" dangLoc={!!classId} value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
             <option value="">{t('Mọi lớp')}</option>
             {classes.filter((c) => !c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
             {classes.some((c) => c.ket_thuc) && (
@@ -112,18 +119,23 @@ export function PhanTich() {
                 {classes.filter((c) => c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
               </optgroup>
             )}
-          </select>
+          </OChon>
         )}
-        {/* "In" (V4, Báo cáo HV): giấy sáng A4 ngang — cuối hàng lọc như mockup. */}
-        {goc === 'bao-cao' && <button type="button" className="btn btn-sm max-sm:hidden sm:ml-auto" onClick={() => window.print()}>{t('In')}</button>}
+        <span ref={setGiua} className="contents" />
+        <span ref={setPhai} className="ml-auto flex items-center gap-2 empty:hidden">
+          {/* "In" (V4, Báo cáo HV): giấy sáng A4 ngang — cuối hàng lọc như mockup. */}
+          {goc === 'bao-cao' && <button type="button" className="btn h-9 max-sm:hidden" onClick={() => window.print()}>{t('In')}</button>}
+        </span>
       </div>
 
-      {goc === 'bao-cao' && <BaoCao {...pv} />}
-      {goc === 'tong-hop' && <TongHopTestSos {...pv} ct={ct} />}
-      {goc === 'ket-qua-thi' && <KetQuaThi {...pv} />}
-      {goc === 'hieu-qua-pa' && <HieuQuaPa {...pv} ct={ct} />}
-      {goc === 'y-thuc' && <YThucPhoiHop {...pv} ct={null} />}
-      {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} ct={ct} khoang={khoang} />}
+      <KheHangLoc.Provider value={{ dau, giua, phai }}>
+        {goc === 'bao-cao' && <BaoCao {...pv} />}
+        {goc === 'tong-hop' && <TongHopTestSos {...pv} ct={ct} />}
+        {goc === 'ket-qua-thi' && <KetQuaThi {...pv} />}
+        {goc === 'hieu-qua-pa' && <HieuQuaPa {...pv} ct={ct} />}
+        {goc === 'y-thuc' && <YThucPhoiHop {...pv} ct={null} />}
+        {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} ct={ct} khoang={khoang} />}
+      </KheHangLoc.Provider>
     </div>
   );
 }
