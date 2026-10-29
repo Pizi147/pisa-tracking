@@ -324,6 +324,8 @@ export type PhieuBanGiaoDto = {
   /** `ql`: Quản lý lớp nguồn — OV-7a: sửa được phiếu đã xác nhận cả sau ngày thi hành. */
   nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; xacNhan: boolean; xemTuNguon: boolean; ql: boolean };
   tong: number; daXacNhan: number; hanGvcn: string | null;
+  /** Tên em có `hanGvcn` (hạn sớm nhất trong các em chưa xác nhận). */
+  hanGvcnEm: string | null;
   theoMon: { ma: string; daGhi: number; tong: number; han: string | null }[];
   ds: PhieuEm[];
 };

@@ -12,7 +12,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { bangLop, can, editableSkills, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, lopXemTam, scopeFor, type Principal } from '../permissions.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { classProgressMany, lichMtCua, missingForStudent } from './schedule.ts';
 import { standingFor, type Standing } from '../students/standing.ts';
@@ -56,6 +56,8 @@ export type TrangHocVienLop = {
   coTheThemHocVien: boolean;
   /** Số ở mục ⋯ "Lưu trữ" đầu trang (PR-LT, Q16) — cùng phạm vi, cùng hàm với `/hoc-vien-lop/luu-tru` (khớp G-10 theo cấu tạo). */
   demLuuTru: { lop: number; hv: number };
+  /** PC-GV-A (PTA 30/10): lớp GV vừa bị đổi khỏi — "Chỉ xem · đã bàn giao" tới `den`; không là hàng / không tính chip, việc, chỉ số. */
+  lopChiXem: { id: number; code: string; den: string }[];
 };
 
 const demRong = (): Record<LocHocVien, number> => demLoc([], 'tat-ca');
@@ -103,6 +105,36 @@ export function idsHocVienLop(p: Principal): { rows: { id: number; scoringMode: 
   return { rows: lops.map((c) => ({ id: c.id as number, scoringMode: (c.scoring_mode ?? null) as string | null })) };
 }
 
+/** S3: chỉ phép kiểm đặt — sáu cột câu con theo từng em (câu cũ, giữ trong phép kiểm) để so với `SO_LUOT_SQL`. */
+export const hocVienLopCuKhiKiem = { soLuot: null as string | null };
+
+/**
+ * Sáu số lượt của lộ trình cho dòng em (cột Lộ trình, cờ "thiếu mốc tiếp theo") — MỘT câu con đọc lượt của lộ trình MỘT lần, trả sáu số ghép chuỗi
+ * (`tachSoLuot` tách lại trong JS). S3 (giảm dòng đọc Turso): trước là sáu câu con tương quan, mỗi câu đọc lại mọi lượt của lộ trình. Cùng điều kiện
+ * từng số; em không lộ trình / lộ trình chưa lượt → 0 như COUNT / EXISTS cũ. Câu chính, số câu, số dòng trả và thứ tự dòng không đổi
+ * (câu theo lô riêng từng thử: thêm một dòng trả mỗi lộ trình → vượt trần dòng TD3-b-2). Điều kiện rẻ đặt trước câu con "huỷ hết kỹ năng"
+ * (`CASE` không tự xếp lại như WHERE): tuần đã qua / lượt chưa xong không chạy câu con đó — điều kiện lặp lại, cùng nghĩa.
+ */
+const SO_LUOT_SQL = `(SELECT printf('%d,%d,%d,%d,%d,%d',
+              COALESCE(SUM(CASE WHEN a.status = 'planned' AND a.kind != 'mt0' THEN 1 ELSE 0 END), 0),   /* PR-MT0: MT0 không đếm */
+              COALESCE(MAX(CASE WHEN a.kind = 'final' AND a.status != 'cancelled' THEN 1 ELSE 0 END), 0),
+              /* K2-05: FT đếm theo luật mốc kế tiếp (lichMt.ts) — MT lịch sử / tuần đã qua không phải "mốc tiếp theo". */
+              COALESCE(SUM(CASE WHEN a.kind != 'mt0' AND a.status = 'planned' AND rp.week_start >= ? AND ${MOC_KE_TIEP_SQL('a', 'rp')} THEN 1 ELSE 0 END), 0),
+              /* PR-LM: lượt đã huỷ lịch không phải "đã tới MT" */
+              COALESCE(MAX(CASE WHEN a.status != 'cancelled' AND a.kind != 'mt0' AND (a.status != 'planned' OR a.planned_period_id IS NOT NULL) THEN a.attempt_no END), 0),
+              /* P2 MT-DEM: bộ đếm Lộ trình = lượt MT đã xong / đã tạo (lichMt.ts). */
+              COALESCE(SUM(CASE WHEN a.status = 'done' AND ${LUOT_MT_XONG_SQL('a')} THEN 1 ELSE 0 END), 0),
+              COALESCE(SUM(CASE WHEN ${LUOT_MT_TINH_SQL('a')} THEN 1 ELSE 0 END), 0))
+            FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = cy.id) AS so_luot`;
+const COT_SO_LUOT = ['so_luot_ke_hoach', 'co_cuoi_khoa', 'so_moc_ke_tiep', 'mt_cuoi', 'so_mt_xong', 'so_mt_tong'] as const;
+function tachSoLuot(hv: any[]): void {
+  for (const h of hv) {
+    const so = String(h.so_luot).split(',').map(Number);
+    delete h.so_luot;
+    COT_SO_LUOT.forEach((k, i) => { h[k] = so[i]; });
+  }
+}
+
 export function danhSachHocVienLop(
   p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null; them?: boolean; chuaTvv?: boolean } = {},
 ): TrangHocVienLop {
@@ -117,6 +149,10 @@ export function danhSachHocVienLop(
   const phamVi = { coThe, dangDung, chiNhanh };
   const dl = danhSachLuuTru(p, {});
   const demLuuTru = { lop: dl.lop.length, hv: dl.hocVien.length };
+  const xt = lopXemTam(p, today);
+  const maLopXt = new Map(xt.length ? (conn.prepare(`SELECT id, code FROM classes WHERE id IN (${xt.map(() => '?').join(',')})`).all(...xt.map((x) => x.classId)) as any[])
+    .map((r) => [r.id as number, r.code as string]) : []);
+  const lopChiXem = xt.filter((x) => maLopXt.has(x.classId)).map((x) => ({ id: x.classId, code: maLopXt.get(x.classId)!, den: x.den }));
   /* Đang tìm: hỏi theo mọi lớp trong phạm vi (không lọc tìm); không tìm thì đọc cờ của các hàng (dưới). */
   const themTheoPhamVi = (f.q ?? '').trim()
     ? (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).some((c) => can(p, PERMISSIONS.STUDENT_ADD, { classId: c.id }))
@@ -128,11 +164,11 @@ export function danhSachHocVienLop(
     /* Phạm vi quyết luôn badge chấm bài: "Lớp tôi dạy" đếm phần mình phải chấm (Q12 — thay cặp nút Tôi / Tất cả). */
     scope: dangDung === 'toi' ? 'mine' : 'managed',
   });
-  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: false, demLuuTru };
+  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: false, demLuuTru, lopChiXem };
   const lopToi = new Set(phanCong.map((a) => a.classId));
   const lops = dangDung === 'toi' ? base.rows.filter((r) => lopToi.has(r.id))
     : dangDung === 'cua-toi' ? base.rows.filter((r) => lopCuaToi.has(r.id)) : base.rows;
-  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: !!themTheoPhamVi, demLuuTru };
+  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: !!themTheoPhamVi, demLuuTru, lopChiXem };
 
   const ids = lops.map((r) => r.id);
   const ph = ids.map(() => '?').join(',');
@@ -150,21 +186,13 @@ export function danhSachHocVienLop(
    * HIỆN TẠI của từng em, dùng lại để gom Case về đúng lớp em đang học, thay vì tự viết thêm một
    * câu SQL enrollment→class riêng (như hàm dựng riêng cũ ở `dongHocVien.ts` từng làm).
    */
+  const thu2 = mondayOfDate(demoToday());   // tuần này — mốc kế tiếp (SO_LUOT_SQL dùng hai lần)
   const hv = conn.prepare(
     `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.email, s.status,
             cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.khong_cam_ket, cy.baseline_attempt_id, cy.baseline_score,
             cy.route, cy.exam_period_id, cy.exam_date, cy.thi_that_ngay, erp.week_start AS exam_week_start, erp.code AS exam_week_code, tv.full_name AS tvv,
             c.lich_mt AS lop_lich_mt, c.route AS lop_route,
-            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned' AND a.kind != 'mt0') AS so_luot_ke_hoach,   /* PR-MT0: MT0 không đếm */
-            EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.kind = 'final' AND a.status != 'cancelled') AS co_cuoi_khoa,
-            /* K2-05: FT đếm theo luật mốc kế tiếp (lichMt.ts) — MT lịch sử / tuần đã qua không phải "mốc tiếp theo". */
-            (SELECT COUNT(*) FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
-              WHERE a.cycle_id = cy.id AND a.kind != 'mt0' AND ${MOC_KE_TIEP_SQL('a', 'rp')}) AS so_moc_ke_tiep,
-            (SELECT COALESCE(MAX(a.attempt_no), 0) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status != 'cancelled' AND a.kind != 'mt0'
-              AND (a.status != 'planned' OR a.planned_period_id IS NOT NULL)) AS mt_cuoi,   /* PR-LM: lượt đã huỷ lịch không phải "đã tới MT" */
-            /* P2 MT-DEM: bộ đếm Lộ trình = lượt MT đã xong / đã tạo (lichMt.ts). */
-            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_XONG_SQL('a')}) AS so_mt_xong,
-            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_TINH_SQL('a')}) AS so_mt_tong
+            ${hocVienLopCuKhiKiem.soLuot ?? SO_LUOT_SQL}
        FROM enrollments e
        JOIN classes c ON c.id = e.class_id
        JOIN students s ON s.id = e.student_id
@@ -172,7 +200,8 @@ export function danhSachHocVienLop(
        LEFT JOIN report_periods erp ON erp.id = cy.exam_period_id
        LEFT JOIN users tv ON tv.id = s.consultant_user_id
       WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${dangDung === 'cua-toi' ? ' AND s.consultant_user_id = ?' : ''}${f.chuaTvv ? ' AND s.consultant_user_id IS NULL' : ''}`,
-  ).all(mondayOfDate(demoToday()), ...ids, ...(dangDung === 'cua-toi' ? [p.userId] : [])) as any[];
+  ).all(...(hocVienLopCuKhiKiem.soLuot ? [thu2] : [thu2, thu2]), ...ids, ...(dangDung === 'cua-toi' ? [p.userId] : [])) as any[];
+  if (!hocVienLopCuKhiKiem.soLuot) tachSoLuot(hv);
   const lopCuaHv = new Map<number, number>(hv.map((h) => [h.id as number, h.class_id as number]));
 
   /*
@@ -310,7 +339,7 @@ export function danhSachHocVienLop(
   }
 
   const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheThemHocVien);
-  return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru };
+  return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru, lopChiXem };
 }
 
 /**

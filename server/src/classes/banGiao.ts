@@ -222,12 +222,14 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   const ql = coTheRaLenh(p, lopId);
   /* OV-13h (chủ SP 15/10): không còn khoá theo ngày chuyển lớp — GVBM / GVCN lớp nguồn sửa mọi lúc. */
   for (const e of ds) e.suaDuoc = !!e.xacNhan && e.trangThaiLenh !== 'huy' && (ql || q.xacNhan || monGhi.length > 0);
+  /* Lỗi chủ SP 30/10: hạn đầu panel = hạn SỚM NHẤT của em chưa xác nhận — trả kèm tên em đó. */
+  const som = thay.filter((r) => !r.xac_nhan_luc && r.han_gvcn).sort((a, b) => a.han_gvcn.localeCompare(b.han_gvcn))[0];
   return {
     lop: { id: nguon.id, code: nguon.code, ct, ft: !!nguon.is_fast_track, mon: monDs },
     homNay,
     nguoiXem: { gvcn: q.laGvcn, qlThay: q.qlThay, monGhi, xacNhan: q.xacNhan, xemTuNguon: q.doNguon, ql },
     tong: ds.length, daXacNhan: ds.filter((e) => e.xacNhan).length,
-    hanGvcn: thay.filter((r) => !r.xac_nhan_luc).map((r) => r.han_gvcn as string | null).filter(Boolean).sort()[0] ?? null,
+    hanGvcn: som?.han_gvcn ?? null, hanGvcnEm: som?.full_name ?? null,
     theoMon: monDs.map((m) => ({
       ma: m.ma, daGhi: ds.filter((e) => { const x = e.mon.find((y) => y.ma === m.ma); return !!x?.noiDung && !x.lamLai; }).length, tong: ds.length,
       han: thay.map((r) => r.han_gvbm as string | null).filter(Boolean).sort()[0] ?? null,

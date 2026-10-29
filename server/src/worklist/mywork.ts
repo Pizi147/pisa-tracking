@@ -30,6 +30,7 @@ import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { ctxSuaCaseNhieu, laGvcnLopDangHoc } from '../cases/cases.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
+import { quetGioiHan } from '../platform/nguCanhRequest.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
@@ -624,7 +625,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   /* ponytail: dựng một phần (`chiNhom`) bỏ hai lời quét ghi này — GET đầy đủ kế tiếp quét. */
   if (!f.chiNhom) {
-    sweepExpiredMoves();
+    quetGioiHan('doi-qua-han', () => { sweepExpiredMoves(); });   // S4: không ghi gì từ lần quét trước (< 60 s) thì không đọc lại
   }
 
   // ------------------------------------------- 2b. GHI KẾT QUẢ PA (K5-02, T75, §5.6; OV-12a: kỳ hai tuần) — một PA một dòng

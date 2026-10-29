@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 import { chanGiaoDichNeuSapHetGio, conLaiMs, KHONG_MO_GIAO_DICH_KHI_CON_MS } from './platform/hanGio.ts';
-import { demCau, demDong, xoaNho } from './platform/nguCanhRequest.ts';
+import { daGhiDb, demCau, demDong, xoaNho } from './platform/nguCanhRequest.ts';
 import { HttpError } from './util.ts';
 
 /** Câu SQL vừa prepare gần nhất — chỉ để ghi log khi giao dịch hỏng (gán trong khối vá `prepare` bên dưới). */
@@ -52,7 +52,7 @@ let sqlGanNhat = '';
       continue;
     }
     proto[ten] = function (this: unknown, ...args: unknown[]) {
-      if (ten === 'run') xoaNho();
+      if (ten === 'run') { xoaNho(); daGhiDb(); }   // S4: ghi → lượt quét đường đọc kế chạy ngay (`quetGioiHan`)
       /* Z2c-d: ghi lẻ NGOÀI giao dịch (mốc dùng phiên, lần thử đăng nhập…) gặp khoá của người khác thì chờ như tx(). */
       const out = ten === 'run' && !instance?.inTransaction
         ? choKhoaGhi(() => goc.apply(this, motNull(args)))
@@ -80,6 +80,12 @@ let sqlGanNhat = '';
   const TOI_DA_CAU = 1000;
   type Bao = { stmt: unknown; pluckMode: boolean; daLuu?: boolean; sql?: string; raw(b: boolean): void; safeIntegers(b: boolean): void };
   const boNho = new WeakMap<object, Map<string, Bao>>();
+  /* S4: `exec` (giao dịch, DDL, ghi nhiều câu của lệnh / phép kiểm) cũng là ghi với `quetGioiHan`. */
+  const execGoc = Database.prototype.exec;
+  Database.prototype.exec = function (this: object, sql: string) {
+    daGhiDb();
+    return execGoc.call(this, sql);
+  } as unknown as typeof Database.prototype.exec;
   const prepareGoc = Database.prototype.prepare;
   Database.prototype.prepare = function (this: object, sql: string) {
     let theoCau = boNho.get(this);

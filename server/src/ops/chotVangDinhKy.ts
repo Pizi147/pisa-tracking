@@ -9,6 +9,7 @@ import { sinhCheckpointKeTiep } from '../normal/regular.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { donThungRac } from '../platform/thungRac.ts';
 import { donGhiDao } from '../platform/ghiDao.ts';
+import { apDoiDenHan } from '../classes/phanCongGv.ts';
 
 /**
  * QUÉT ĐỊNH KỲ SÁNG THỨ HAI (RB-1, PR-AN): thi hành quyết định chuyển lớp tới hạn + chuông "Speaking quá hạn chấm". Netlify gọi hàm `chot-vang`
@@ -44,6 +45,8 @@ export function chotVangDinhKy(o: {
   if (!o.chuyen) try { donThungRac(); } catch (e) { console.error('[chot-vang] dọn thùng rác', e); }
   /* Q-RL2c: bản ghi để Hoàn tác (ghi_dao) quá 30 ngày → xoá (Mở lại / Khôi phục sau đó báo không còn bản ghi). */
   if (!o.chuyen) try { donGhiDao(); } catch (e) { console.error('[chot-vang] dọn ghi_dao', e); }
+  /* PC-GV-A: lịch đổi phân công GV tới tuần hiệu lực → áp (lỗi luật giữ lịch + báo người tạo); chạy lặp vô hại. */
+  if (!o.chuyen) try { apDoiDenHan(ngay); } catch (e) { console.error('[chot-vang] đổi phân công', e); }
   /* PR-LT3 (T18, D3): chuông "Speaking quá hạn chấm" cho GVBM Speaking + GVCN — cùng lượt quét thứ Hai; lỗi không làm hỏng lượt quét. */
   try { baoChamCheoQuaHan(ngay); } catch (e) { console.error('[chot-vang] chuông chấm chéo', e); }
   /* OV-6b2: lớp liên tục — em đã qua tuần thi Checkpoint (chưa đủ điểm) có Checkpoint kế tiếp; lỗi không làm hỏng lượt quét. */

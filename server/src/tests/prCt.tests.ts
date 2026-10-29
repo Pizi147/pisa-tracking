@@ -601,6 +601,14 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(e0.soMonDaGhi === 2 && e0.phieu.nhan === 'Môn 2/4' && e0.tuDien && !e0.tuDienDaChup && e0.mon.find((m: any) => m.ma === monR).dienThay, JSON.stringify(e0.phieu));
     assert(lop.nguoiXem.gvcn && lop.nguoiXem.xacNhan && lop.nguoiXem.monGhi.length === 4, JSON.stringify(lop.nguoiXem));
     assert(bg.phieuBanGiao(gvbmL, { lopNguonId: n5 }).nguoiXem.monGhi.join() === monL, 'GVBM L chỉ ghi được môn L');
+    /* BAN-GIAO-HAN (lỗi chủ SP 30/10): mỗi em có hạn riêng; đầu panel = hạn sớm nhất + đúng tên em đó (không phải em đứng đầu danh sách). */
+    assert(lop.ds.every((e: any) => e.hanGvcn), 'mỗi em có hạn GVCN riêng');
+    const [a, b] = lop.ds;
+    conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE id = ?').run('2026-01-01', b.lenhId);
+    const som = bg.phieuBanGiao(gvcn5, { lopNguonId: n5 });
+    conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE id = ?').run(b.hanGvcn, b.lenhId);
+    assert(som.hanGvcn === '2026-01-01' && som.hanGvcnEm === b.ten && som.ds.find((e: any) => e.lenhId === a.lenhId).hanGvcn === a.hanGvcn,
+      JSON.stringify({ han: som.hanGvcn, em: som.hanGvcnEm, b: b.ten }));
     assert(bg.phieuBanGiao(P.mbManager, { lopNguonId: n5 }).nguoiXem.xacNhan === false, 'QL chưa quá hạn: không xác nhận');
     assert(maLoi(() => bg.phieuBanGiao(gvDich, { lopNguonId: n5 })) === 403, 'GV lớp chuyển đến trước xác nhận → 403');
     assert(maLoi(() => bg.phieuBanGiao(gvDich, { lenhId: lenhCua(em5[0]).id })) === 403, 'GV lớp chuyển đến (một phiếu) → 403');

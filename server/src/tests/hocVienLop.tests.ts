@@ -581,9 +581,11 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa (17, fix planning) · danhSachHocVienLop: số câu lệnh không tăng theo số Case (chỉ theo số chi nhánh/lớp)', () => {
     const ft = classId('MB FT 101');
-    const truoc = demTruyVan(() => { hvl.danhSachHocVienLop(P.admin, {}); });
+    /* S4: `quetYeuCau` giới hạn theo tiến trình (quét lại sau ghi) — gọi một lần trước khi đo để cả hai lần đo cùng KHÔNG có lượt quét, chỉ đo danh sách. */
+    const do_ = () => { hvl.danhSachHocVienLop(P.admin, {}); return demTruyVan(() => { hvl.danhSachHocVienLop(P.admin, {}); }); };
+    const truoc = do_();
     themNhieuCase(ft, 18); // phình thêm 18 Case (+ 18 học viên/lượt/lộ trình) vào MỘT lớp đã có sẵn — không thêm lớp/chi nhánh nào.
-    const sau = demTruyVan(() => { hvl.danhSachHocVienLop(P.admin, {}); });
+    const sau = do_();
     assert(sau <= truoc + 3,
       `Thêm 18 Case khiến danhSachHocVienLop tăng từ ${truoc} lên ${sau} câu lệnh — nghi vấn quét theo từng Case (N+1)`);
   });

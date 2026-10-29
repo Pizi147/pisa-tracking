@@ -21,6 +21,7 @@ import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { dongBoTuLenh } from './loTrinhTiep.ts';
 import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
 import { dongBoMt0 } from '../fasttrack/mt0.ts';
+import { quetDoiDenHan } from './phanCongGv.ts';
 
 /**
  * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp chuyển đến nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi — hoặc
@@ -636,6 +637,8 @@ export function quetLenhDenHan(homNay = demoToday()): void {
   nho(`thi-hanh-lenh:${homNay}`, () => { try { thiHanhLenhDenHan(homNay); } catch (e) { console.error('[chuyen-lop] quét khi đọc', e); } return true; });
   /* OV-13m: Lộ trình mới sau thi "Hẹn bắt đầu" tới tuần — cùng lượt quét (lỗi đã bắt trong hàm). */
   nho(`bat-dau-hen:${homNay}`, () => { batDauHenDenHan(homNay); return true; });
+  /* PC-GV-A: lịch đổi phân công GV tới tuần hiệu lực — cùng lượt quét (lỗi đã bắt trong hàm). */
+  quetDoiDenHan(homNay);
 }
 
 const inHang = (ids: readonly number[]) => ids.map(() => '?').join(',');
