@@ -7,7 +7,7 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  ATTEMPT_KIND_SHORT, NHOM_THEO_COT, PERMISSIONS, tenPaGon, outcomeLabelFor, vaiXemHocVien, chuanHoaMaLop,
+  ATTEMPT_KIND_SHORT, NHOM_THEO_COT, chipSosTuKetQua, PERMISSIONS, tenPaGon, outcomeLabelFor, vaiXemHocVien, chuanHoaMaLop,
   type AttemptKind, type LienHe, type NhomXuLy, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -21,6 +21,7 @@ import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { phamViTrang } from './hocVienLop.ts';
 import { standingFor } from '../students/standing.ts';
+import { diemTuStanding } from '../worklist/diemDong.ts';
 import { sauThiCuaEm } from '../loTrinh/thiThat.ts';
 
 export type CaseTomTat = {
@@ -185,8 +186,10 @@ export function panelMotEm(p: Principal, studentId: number) {
   return {
     em: { id: s.id as number, ten: s.full_name as string, ma: s.student_code as string, lop: s.lop_id ? { id: s.lop_id as number, code: s.lop_code as string, ft: !!s.is_fast_track } : null,
       tvv: em.tvv, lienHe: em.lienHe },
-    /* Dòng 2 đầu panel: lượt gần nhất · SOS (không mã HV — panel v3 "Đã lược bỏ"). */
-    luot: st ? { nhan: st.attemptLabel, sosLevel: st.sosLevel ?? null } : null,
+    /* Dòng 2 đầu panel: lượt gần nhất · SOS (không mã HV — panel v3 "Đã lược bỏ"). PANEL-MC (B5): + tạm, kỹ năng hụt, số cho hộp "Vì sao SOS" (CÙNG `chipSosTuKetQua` của bảng). */
+    luot: st ? (() => { const chip = chipSosTuKetQua(st); return { nhan: st.attemptLabel, sosLevel: st.sosLevel ?? null, tam: st.provisional, kyNang: chip?.kyNang ?? [], soLieu: chip?.soLieu ?? [] }; })() : null,
+    /* PANEL-MC (B5): dòng điểm của lượt gần nhất (`standingFor` đã gọi — 0 câu). */
+    diem: st ? diemTuStanding(st) : null,
     cases,
     /* OV-13q: dòng "Đã thi · chờ kết quả · hạn …" + nút Nhập kết quả / Chọn bước tiếp / Gia hạn (cùng hàm với việc Công việc). */
     sauThi: sauThiCuaEm(p, studentId),

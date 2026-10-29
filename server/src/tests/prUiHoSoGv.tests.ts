@@ -22,7 +22,7 @@ export async function runPrUiHoSoGvTests(t: any) {
     const thuTu = p.rows.map((r: any) => r.ketQua).join(',');
     assert(!/dat,chua/.test(thuTu), `Chưa đạt phải lên trước: ${thuTu}`);
     for (const r of p.rows) {
-      assert(r.diem?.length === 4 && r.diem.some((x: any) => x.cua) && r.soVoi?.nhan === 'Target' && typeof r.soVoi.v === 'number', JSON.stringify(r));
+      assert(r.diemHv?.kn.length === 4 && r.diemHv.kn.some((x: any) => x.cua) && r.soVoi?.nhan === 'Target' && typeof r.soVoi.v === 'number', JSON.stringify(r));
     }
     const dat = pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', loc: 'dat' }).n;
     const chua = pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', loc: 'chua' }).n;
@@ -32,7 +32,7 @@ export async function runPrUiHoSoGvTests(t: any) {
     assert(/Lọc phải/.test(loi), 'loc lạ → 400');
     /* Vượt Target: Overall > Target, tập con của Đạt; ô = panel `loc=vuot`. */
     const vuot = pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', loc: 'vuot' });
-    assert(vuot.n === cs.thiThatVuot && vuot.rows.every((r: any) => r.ketQua === 'dat' && r.overall > r.soVoi.v), JSON.stringify({ n: vuot.n, o: cs.thiThatVuot }));
+    assert(vuot.n === cs.thiThatVuot && vuot.rows.every((r: any) => r.ketQua === 'dat' && r.diemHv.overall > r.soVoi.v), JSON.stringify({ n: vuot.n, o: cs.thiThatVuot }));
     /* Theo kỹ năng: mỗi kỹ năng = panel `thi-that-ky:<kỹ năng>` (số đạt / số dòng). */
     assert(cs.thiThatTheoKyNang.length >= 1, 'có ít nhất một kỹ năng thi thật');
     for (const k of cs.thiThatTheoKyNang) {

@@ -6,7 +6,7 @@
 import { db, theoLo } from '../db.ts';
 import {
   COT_KQ_MT, LUOT_KQ_MT, NHAN_COT_KQ_MT, NHAN_LUOT_KQ_MT, PERMISSIONS, addDaysIso, baiId, cotKqMt, khoangTruoc, luotKqMt, tachBaiId, tenMonNgan, tuanLich,
-  type BaoCaoKq, type ChuongTrinh, type CotKqMt, type DongKqMt, type KetQuaMtKq, type DongMock, type DongSosBc, type GvQuaHanBc, type LuotKqMt,
+  type BaoCaoKq, type ChuongTrinh, type CotKqMt, type DongKqMt, type KetQuaMtKq, type DongMock, type DongSosBc, type GvQuaHanBc, type LuotKqMt, type DiemHv,
 } from '../../../shared/domain/index.ts';
 import { badRequest } from '../util.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -20,6 +20,7 @@ import { ketQuaThiThatKq, mockTrongKhoang } from './ketQuaThi.ts';
 import { kckCuaLuot } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 import { tienBoTheoKyNang } from './giaoVien.ts';
+import { diemTuMock } from '../worklist/diemDong.ts';
 
 /** `classId` (UI-TONG-QUAN): chỉ panel Đạt MT / Thi tháng này của MỘT lớp (Tổng quan › Lớp cần chú ý) — tập em theo lớp của lượt / lớp đang học. */
 export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string; classId?: number | null };
@@ -144,7 +145,8 @@ export function tapThiThangNayLop(p: Principal, f: { branchId?: number | null; c
   return out;
 }
 
-type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: number | null; lop: string; nhan: string };
+/** PANEL-MC: `diem` — dòng điểm của CHÍNH lượt / lần thi làm em vào ô (MT: `diemTuMock`; thi thật: bốn band so Target), 0 câu. */
+type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: number | null; lop: string; nhan: string; diem: DiemHv };
 
 /**
  * KẾT QUẢ MT (SV-SO3, `10` mục 5) — hàng → em → kết quả. MT: lượt MT0 (lớp thường hoặc FT) / MT lớp FT có tuần thi trong kỳ, đã có ít nhất một band
@@ -191,7 +193,7 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
     out.set(l, new Map([...m].map(([s, d]) => {
       const tg = cua.get(d.attemptId)!.target_at_attempt;
       const target = tg === null || tg === undefined ? null : Number(tg);
-      return [s, { cot: cotKqMt(d.ovr, target), ovr: d.ovr, target, truoc: d.ovr === null ? null : truoc(cycleCua(d), d.mt), lop: d.lop, nhan: `MT${d.mt} · ${tuanLich(d.tuan)}` }];
+      return [s, { cot: cotKqMt(d.ovr, target), ovr: d.ovr, target, truoc: d.ovr === null ? null : truoc(cycleCua(d), d.mt), lop: d.lop, nhan: `MT${d.mt} · ${tuanLich(d.tuan)}`, diem: diemTuMock(d) }];
     })));
   }
   out.set('thi', new Map([...thi].map(([s, r]) => {
@@ -200,7 +202,12 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
     /* Đạt Target = kết luận lúc nhập (`outcome`, như tab Kết quả thi) — không so lại Target hiện tại; chưa đạt thì khoảng thiếu theo Target lộ trình. */
     const theoTarget = cotKqMt(r.ovr, target);
     const cot: CotKqMt = r.dat === true ? 'dat' : r.dat === false ? (theoTarget === 'dat' ? 'thieu-0.5' : theoTarget) : 'chua-du';
-    return [s, { cot, ovr: r.ovr, target, truoc: r.ovr === null ? null : truoc(r.cycleId, Infinity), lop: r.lop ?? '', nhan: t('thi {ngay}', { ngay }) }];
+    /* Thi thật so Target (đặc tả 5b ý 2) — Target của lần thi như cột `cot`. */
+    const diem: DiemHv = {
+      luot: t('Thi thật'), tuan: r.ngayThi, tam: false, overall: r.ovr, soVoi: target === null ? null : { nhan: 'Target', v: target },
+      kn: ([['L', r.l], ['R', r.r], ['W', r.w], ['S', r.s]] as const).map(([k, v]) => ({ k, v, dat: v === null || target === null ? null : v >= target })),
+    };
+    return [s, { cot, ovr: r.ovr, target, truoc: r.ovr === null ? null : truoc(r.cycleId, Infinity), lop: r.lop ?? '', nhan: t('thi {ngay}', { ngay }), diem }];
   })));
   return out;
 }
@@ -310,7 +317,7 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const em = tapKqMt(p, f).get(l)!;
     const ids = [...em].filter(([, e]) => e.cot === cot).map(([s]) => s).sort((a, b) => a - b);
     const so = (x: number) => x.toFixed(1);
-    const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => {
+    const rows = rowsFor('hoc-vien', ids, undefined, p, false, new Map(ids.map((s) => [s, em.get(s)!.diem]))).map((row) => {
       const e = em.get(row.id)!;
       const lech = e.ovr !== null && e.truoc !== null ? e.ovr - e.truoc : null;
       return { ...row, sub: [e.lop, e.nhan, e.ovr === null ? t('chưa đủ điểm') : `Overall ${so(e.ovr)}`, e.target === null ? null : `Target ${so(e.target)}`,
@@ -331,10 +338,10 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const d = f.classId ? { ...d0, mau: new Set([...d0.mau].filter(cuaLop)), dat: new Set([...d0.dat].filter(cuaLop)) } : d0;
     if (f.o === 'dat-mt-chua-du') return ra('hoc-vien', d.chuaDu, t('chưa đủ dữ liệu (ngoài mẫu Đạt MT)'));
     const ids = [...d.mau].sort((a, b) => Number(d.dat.has(a)) - Number(d.dat.has(b)) || a - b);
-    const rows = rowsFor('hoc-vien', ids, undefined, p).map((row) => {
+    /* PANEL-MC (5b ý 4): dòng điểm = CHÍNH lượt MT trong kỳ đã dùng tính % (`d.luot`, 0 câu) — thay `diemCase` Overall cũ; `sub` còn lớp · lượt · tuần. */
+    const rows = rowsFor('hoc-vien', ids, undefined, p, false, new Map(ids.map((s) => [s, diemTuMock(d.luot.get(s)!)]))).map((row) => {
       const x = d.luot.get(row.id)!;
-      /* 6c-2 (critique): điểm so kỳ vọng gửi có cấu trúc (`diemCase`, nhãn Overall) — web vẽ cùng một cách với dòng Case (✓ / ✗ + thiếu); `sub` còn lớp · lượt · tuần. */
-      return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`].join(' · '), diemCase: { so: x.ovr!, kyVong: x.kyVong!, luot: null, nhan: 'Overall' } };
+      return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`].join(' · ') };
     });
     return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows };
   }
@@ -352,7 +359,8 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const r = metricSet(p, 'pa-co-ket-qua', { branchId: f.branchId ?? null, program: f.ct, from: f.tu, to: f.den });
     const cai = new Set(r.numeratorIds ?? []);
     const ids = [...r.ids].sort((a, b) => Number(cai.has(a)) - Number(cai.has(b)) || a - b);
-    const rows = rowsFor('phuong-an', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, cai.has(row.id) ? t('Cải thiện') : t('Chưa cải thiện')].filter(Boolean).join(' · ') }));
+    const rows = rowsFor('phuong-an', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, cai.has(row.id) ? t('Cải thiện') : t('Chưa cải thiện')].filter(Boolean).join(' · '),
+      xuHuong: { huong: cai.has(row.id) ? 'cai-thien' as const : 'chua-cai-thien' as const } }));
     return { n: ids.length, tieuDe: t('PA cải thiện · {a}/{b} PA', { a: cai.size, b: ids.length }), rows };
   }
   const tb = /^tien-bo:(\w+)$/.exec(f.o);
@@ -364,7 +372,8 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const dung = new Set(x?.dung ?? []), giam = new Set(x?.giam ?? []);
     const hang = (id: number) => (dung.has(id) ? 0 : giam.has(id) ? 2 : 1);
     const ids = [...(x?.tong ?? [])].sort((a, b) => hang(b) - hang(a) || a - b);   // giảm trước
-    const rows = rowsFor('bai', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, [t('Tăng'), t('Giữ nguyên'), t('Giảm')][hang(row.id)]].filter(Boolean).join(' · ') }));
+    const rows = rowsFor('bai', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, [t('Tăng'), t('Giữ nguyên'), t('Giảm')][hang(row.id)]].filter(Boolean).join(' · '),
+      xuHuong: { huong: (['tang', 'giu', 'giam'] as const)[hang(row.id)], ...x?.doi.get(row.id) } }));
     return { n: ids.length, tieuDe: t('Tiến bộ {kn} · {dung}/{tong}', { kn: tenMonNgan(null, tb[1]), dung: dung.size, tong: ids.length }), rows };
   }
   if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã làm bài');

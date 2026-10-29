@@ -40,10 +40,12 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     const ids = studentsInScope(P.admin, null);
     const { kq: lat } = doCau(() => latestAttempts(ids, 'valid', TODAY));
     const st = standingFor([...lat.keys()]);
-    let so = 0, coHut = 0, coThuong = 0;
+    let so = 0, coHut = 0, coThuong = 0, khacKv = 0;
     for (const [sid, ev] of lat) {
       const s = st.get(sid);
       if (!s || s.attemptId !== ev.attemptId) continue;
+      /* Lệch CÓ SẴN (không do PANEL-MC): lượt không có Target lúc thi — `resultOf` không kỳ vọng, `standingFor` rơi về Target lộ trình (T9). Không so. */
+      if (s.mode !== 'ratio' && ev.kyVong !== s.expectation) { khacKv++; continue; }
       const a = diemTuEval(ev), b = diemTuStanding(s)!;
       assert(JSON.stringify(a.kn) === JSON.stringify(b.kn), `em ${sid}: kn ${JSON.stringify(a.kn)} ≠ standing ${JSON.stringify(b.kn)}`);
       assert(a.overall === b.overall && JSON.stringify(a.soVoi) === JSON.stringify(b.soVoi) && a.luot === b.luot && a.tuan === b.tuan,
@@ -56,6 +58,7 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
       if (a.donVi === '%') coThuong++;
       so++;
     }
+    if (khacKv) console.log(`      [đo] ${khacKv} em: kỳ vọng latestAttempts ≠ standingFor (lượt thiếu Target lúc thi — có sẵn)`);
     assert(so > 20 && coHut > 0 && coThuong > 0, `demo phải có đủ loại: ${so} em, ${coHut} có kỹ năng hụt, ${coThuong} lớp thường`);
   });
 
@@ -161,5 +164,108 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
       } else assert(row.nguoi === (c?.chamCheo ? 'chấm chéo' : null), `bài ${row.id}: không người mà nguoi = ${row.nguoi}`);
     }
     assert(coNguoi > 0, 'demo phải có bài quá hạn có người giữ việc');
+  });
+
+  /* ---------------------------------------------------------------- M3 */
+  const bc: any = await import('../phanTich/baoCao.ts');
+  const hq: any = await import('../phanTich/hieuQuaPa.ts');
+  const cnMb = (conn.prepare(`SELECT branch_id FROM classes WHERE id = ?`).get(lopFt) as any).branch_id as number;
+  const ky = { tu: d.addDaysIso(TODAY, -120), den: TODAY };
+
+  check('M3 · Đạt MT: dòng điểm = lượt MT trong kỳ đã tính % (diemTuMock), số câu như khi tắt; bỏ diemCase', () => {
+    const f = { branchId: null, ct: 'ft', ...ky, o: 'dat-mt' };
+    const { tat, bat } = haiLan(() => bc.oBaoCao(P.mbManager, f));
+    assert(bat.kq.n > 0 && bat.kq.n === tat.kq.n, `Đạt MT n ${tat.kq.n} → ${bat.kq.n}`);
+    assert(bat.cau === tat.cau, `Đạt MT: ${tat.cau} → ${bat.cau} câu`);
+    const luot = bc.tapDatMt(P.mbManager, f).luot;
+    for (const r of bat.kq.rows) {
+      assert(r.diemHv?.luot === `MT${luot.get(r.id).mt}` && r.diemHv.tuan === luot.get(r.id).tuan && !('diemCase' in r), `em ${r.id}: ${JSON.stringify(r.diemHv)}`);
+    }
+  });
+
+  check('M3 · Kết quả MT: mỗi dòng có diemHv (MT: lượt của ô · thi thật: so Target), số câu như khi tắt', () => {
+    for (const o of ['kq-mt:mt1:dat', 'kq-mt:mt2:chua-du', 'kq-mt:thi:dat', 'kq-mt:mt3+:thieu-0.5']) {
+      const { tat, bat } = haiLan(() => bc.oBaoCao(P.mbManager, { branchId: null, ct: 'ft', ...ky, o }));
+      assert(bat.cau === tat.cau && bat.kq.n === tat.kq.n, `${o}: ${tat.cau} → ${bat.cau} câu`);
+      for (const r of bat.kq.rows) assert(r.diemHv && r.diemHv.kn.length === 4 && (o.includes(':thi:') ? r.diemHv.soVoi?.nhan !== 'KV' : r.diemHv.luot.startsWith('MT')), `${o} em ${r.id}: ${JSON.stringify(r.diemHv)}`);
+    }
+  });
+
+  check('M3 · Tiến bộ kỹ năng: xuHuong khớp chữ sub cũ (Tăng / Giữ nguyên / Giảm) + điểm hai lượt; số câu như khi tắt', () => {
+    const r = bc.baoCao(P.mbManager, { branchId: cnMb, ct: 'ft', ...ky });
+    let so = 0;
+    for (const x of r.tienBo) {
+      const { tat, bat } = haiLan(() => bc.oBaoCao(P.mbManager, { branchId: cnMb, ct: 'ft', ...ky, o: `tien-bo:${x.skill}` }));
+      assert(bat.cau === tat.cau, `${x.skill}: ${tat.cau} → ${bat.cau} câu`);
+      for (const row of bat.kq.rows) {
+        const chu = row.sub.split(' · ').pop();
+        const mong = { Tăng: 'tang', 'Giữ nguyên': 'giu', Giảm: 'giam' }[chu as string];
+        assert(row.xuHuong?.huong === mong, `bài ${row.id}: "${chu}" ≠ ${row.xuHuong?.huong}`);
+        const { truoc, sau } = row.xuHuong;
+        assert(typeof truoc?.v === 'number' && typeof sau?.v === 'number' && Math.sign(sau.v - truoc.v) === { tang: 1, giu: 0, giam: -1 }[mong as 'tang'], `bài ${row.id}: ${JSON.stringify(row.xuHuong)}`);
+        so++;
+      }
+    }
+    assert(so > 0, 'demo phải có mục tiến bộ');
+  });
+
+  check('M3 · PA cải thiện: xuHuong cai-thien / chua-cai-thien khớp sub', () => {
+    const p = bc.oBaoCao(P.mbManager, { branchId: null, ct: 'ft', ...ky, o: 'pa-co-ket-qua' });
+    for (const r of p.rows) assert(r.xuHuong?.huong === (r.sub.endsWith('Chưa cải thiện') ? 'chua-cai-thien' : 'cai-thien'), `PA ${r.id}: ${r.sub} · ${r.xuHuong?.huong}`);
+  });
+
+  await t.checkAsync('M3 · PA chưa có kết quả (Hiệu quả PA): mỗi dòng kèm việc Ghi kết quả — lam theo ghiDuocPaMany (QT được; người thực hiện được); câu ≤ trước + 3', async () => {
+    const { loadPrincipal } = await import('../permissions.ts');
+    const f = { branchId: null, ct: 'ft', classId: null, soTuan: 8, dong: 'chua-ghi-ket-qua', cot: 'pa' };
+    const { tat, bat } = haiLan(() => hq.oHieuQuaPa(P.admin, f));
+    const o = bat.kq;
+    assert(o.n > 0 && o.rows.every((r: any) => r.viec?.loai === 'ghi-ket-qua' && r.viec.lam === true), `QT: ${JSON.stringify(o.rows.map((r: any) => r.viec))}`);
+    assert(bat.cau <= tat.cau + 3, `câu ${tat.cau} → ${bat.cau}`);
+    const iv = conn.prepare('SELECT performer_user_id AS u FROM case_interventions WHERE id = ?').get(o.rows[0].id) as any;
+    if (iv?.u) {
+      const pGv = loadPrincipal(iv.u);
+      const r0 = metrics.rowsFor('phuong-an', [o.rows[0].id], metrics.PA_CHUA_CO_KET_QUA, pGv, true)[0];
+      assert(r0.viec?.lam === true, 'người thực hiện PA phải ghi được');
+    }
+    /* QL chi nhánh khác không ghi được: ba QL ba chi nhánh — ít nhất một ngoài chi nhánh của PA. */
+    const lam = [P.mbManager, P.cpManager, P.bcManager].map((q) => metrics.rowsFor('phuong-an', [o.rows[0].id], metrics.PA_CHUA_CO_KET_QUA, q, true)[0].viec?.lam);
+    assert(lam.includes(false), `QL ba chi nhánh đều ghi được: ${lam}`);
+  });
+
+  /* ---------------------------------------------------------------- M4 */
+  const hvSos: any = await import('../classes/hocVienSos.ts');
+  const classesMod: any = await import('../classes/classes.ts');
+
+  check('M4 · panel một em: diem có đúng số ✗ = mức SOS (FT), luot.soLieu có kỳ vọng + band kỹ năng hụt; 0 câu thêm (diemTuStanding thuần)', () => {
+    const ids = studentsInScope(P.admin, null);
+    const st = standingFor(ids);
+    const em = [...st.values()].find((x) => x.mode === 'ielts_band' && x.sosLevel === 2 && !x.provisional);
+    assert(em, 'demo phải có em FT SOS 2 đã chốt');
+    const r = hvSos.panelMotEm(P.admin, em!.studentId);
+    assert(r.diem && r.diem.kn.filter((k: any) => k.dat === false).length === 2, `diem: ${JSON.stringify(r.diem)}`);
+    assert(r.luot.sosLevel === 2 && r.luot.kyNang.length === 2 && r.luot.tam === false, `luot: ${JSON.stringify(r.luot)}`);
+    const nhan = r.luot.soLieu.map(([k]: [string]) => k);
+    assert(nhan.some((k: string) => k.startsWith('Kỳ vọng')) && r.luot.kyNang.every((k: string) => nhan.includes(k)), `soLieu: ${JSON.stringify(r.luot.soLieu)}`);
+    const { cau } = doCau(() => diemTuStanding(em!));
+    assert(cau === 0, `diemTuStanding ${cau} câu`);
+    /* Em chưa thi lượt nào có điểm → diem null. */
+    const chua = [...st.values()].find((x) => x.attemptId === null);
+    if (chua) assert(hvSos.panelMotEm(P.admin, chua.studentId).diem === null, 'em chưa có điểm mà có diem');
+  });
+
+  check('M4 · roster: tvv = họ tên TVV (consultant_user_id) cùng câu; em không TVV → null; GV lớp khác vẫn 403', () => {
+    const rows = classesMod.classRoster(P.mbManager, lopFt);
+    assert(rows.length > 0, 'lớp trống');
+    let co = 0;
+    for (const r of rows) {
+      const u = conn.prepare(`SELECT u.full_name FROM students s LEFT JOIN users u ON u.id = s.consultant_user_id WHERE s.id = ?`).get(r.id) as any;
+      assert(r.tvv === (u?.full_name ?? null), `em ${r.id}: tvv ${r.tvv} ≠ ${u?.full_name}`);
+      if (r.tvv) co++;
+    }
+    assert(co > 0, 'demo phải có em có TVV');
+    const lopKhac = (conn.prepare(`SELECT c.id FROM classes c WHERE c.status = 'active' AND c.id NOT IN (SELECT class_id FROM teacher_assignments WHERE user_id = ?) LIMIT 1`).get(P.subjectTeacher.userId) as any).id;
+    let loi = '';
+    try { classesMod.classRoster(P.subjectTeacher, lopKhac); } catch (e: any) { loi = String(e.status ?? e.statusCode ?? e.message); }
+    assert(/403|ngoài phạm vi/.test(loi), `GV lớp không dạy: "${loi}"`);
   });
 }

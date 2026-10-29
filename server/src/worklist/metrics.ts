@@ -142,17 +142,20 @@ export type MetricRow = {
   /** Câu tình trạng khi không có việc để làm (Chờ Quản lý duyệt · không theo dõi…). */
   tinhTrang?: string | null;
   /**
-   * UI-HO-SO-GV (chủ SP 23/10): dòng KẾT QUẢ — điểm từng kỹ năng của lượt (`cua` = kỹ năng GV đang xem phụ trách, panel làm nổi + chênh với `soVoi`),
-   * Overall, mốc so (Target thi thật / kỳ vọng MT) và kết luận (tab Chưa đạt · Đạt của panel).
+   * UI-HO-SO-GV (chủ SP 23/10): dòng KẾT QUẢ — mốc so (Target thi thật / kỳ vọng MT / "Đạt từ" lớp thường) và kết luận (tab Chưa đạt · Đạt của panel).
+   * PANEL-MC (T3): điểm từng kỹ năng + Overall + `cua` chuyển vào `diemHv` (bỏ `diem`, `overall`, `donVi`).
    */
-  diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua';
-  /** `%`: điểm lớp thường (tỉ lệ) — panel ghi "72 %", chênh theo điểm %. Vắng = band. */
-  donVi?: '%';
+  soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua';
   /** Thi thật vượt Target (tập con của Đạt) — tab "Vượt" của panel. */
   vuot?: boolean;
   /** PANEL-MC (N30): dòng HV — điểm ĐÚNG lượt làm em vào con số (✓ / ✗ từng kỹ năng, Overall, mốc so). null = em chưa có lượt có điểm. */
   diemHv?: DiemHv | null;
+  /** PANEL-MC: Tiến bộ kỹ năng (tăng / giảm / giữ — điểm hai lượt) · PA cải thiện — chip đầu dòng (▲ ▼ chỉ cho tiến độ). `sub` cũ giữ. */
+  xuHuong?: { huong: 'tang' | 'giam' | 'giu' | 'cai-thien' | 'chua-cai-thien'; truoc?: { luot: string; v: number }; sau?: { luot: string; v: number } } | null;
 };
+
+/** PANEL-MC (B6): `metricId` của `rowsFor('phuong-an')` cho panel "PA chưa có kết quả" — dòng kèm việc Ghi kết quả. */
+export const PA_CHUA_CO_KET_QUA = 'pa-chua-co-ket-qua';
 
 /** PANEL-MC: CHỈ phép kiểm bật — `rowsFor` không gắn trường mới, để so "giống hệt" n / ids / thứ tự / trường cũ trước → sau. */
 export const diemHvKhiKiem = { tat: false };
@@ -311,6 +314,10 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           : chay && r.action_due && r.sid ? {
             chu: t('Kết quả PA'), loai: 'ghi-ket-qua', loaiHan: 'cap-nhat-pa', han: r.action_due, caseId: r.case_id, paId: r.id,
             lam: !!ghiDuoc.get(r.id),   // cùng `ghiDuoc` của Ngăn Case
+          }
+          /* PANEL-MC (B6): "PA chưa có kết quả" (kết quả "Chưa đủ dữ liệu") — việc Ghi kết quả bổ sung, cùng quyền `ghiDuoc`, không hạn. */
+          : metricId === PA_CHUA_CO_KET_QUA && r.sid ? {
+            chu: t('Ghi kết quả'), loai: 'ghi-ket-qua', loaiHan: 'cap-nhat-pa', han: null, caseId: r.case_id, paId: r.id, lam: !!ghiDuoc.get(r.id),
           } : null;
         byId.set(r.id, {
           id: r.id, title: r.title, sub: [r.full_name].filter(Boolean).join(' · '),

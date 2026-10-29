@@ -117,7 +117,7 @@ import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
 import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
-import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
+import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../worklist/metrics.ts';
 import { NHOM_VIEC_TVV, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
@@ -1199,7 +1199,7 @@ api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => 
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
   const need = effectiveness.plansNeedingEvaluation({ classId: id, category, fromDate: qStr(req, 'from') ?? null });
-  return { count: need.count, rows: rowsFor('phuong-an', need.ids) };
+  return { count: need.count, rows: rowsFor('phuong-an', need.ids, PA_CHUA_CO_KET_QUA, p, true) };   // PANEL-MC (B6): kèm việc Ghi kết quả (`lam` = `ghiDuocPaMany`)
 }));
 
 /**
