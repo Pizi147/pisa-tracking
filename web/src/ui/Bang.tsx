@@ -13,7 +13,7 @@ export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
  * Tiêu đề chỉ nhận chữ (`nhan`, `phu`) — cấm ô nhập / nút trong `th`. < 640 px: thẻ từ cùng định nghĩa cột.
  * Hàng bấm được (`onHang`) = `.bam` + Enter; đang mở = `.dang-mo`; bảng ≥ 8 cột không bấm = dò hàng `.do-hang`.
  */
-export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, chat, hangRieng, cuoi, the375 = true, dinh, khung = true, deu, lopHang, sauThe, theRieng }: {
+export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congCu, onHang, dangMo, rong, day, chat, hangRieng, cuoi, the375 = true, dinh, khung = true, deu, lopHang, sauThe, theRieng, theLuoi }: {
   /** Tên bảng cho trình đọc màn + công cụ đo `do-bang`. */
   ten: string;
   cot: readonly DinhNghiaCot[];
@@ -49,6 +49,11 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   khung?: boolean;
   /** UI-PHAN-TICH: cột tên giữ `rong` của nó, phần dư chia đều cho MỌI cột theo tỉ lệ — bảng ít cột số không dồn hết sang phải. */
   deu?: boolean;
+  /**
+   * V8-TQ (mockup v8 `tong-quan.html` 375): thẻ là MỘT lưới — tên (+ chip) · dòng phụ; rồi mỗi cột số một cột lưới: nhãn 13 trên (căn đáy) · số 17 ·
+   * mẫu 12 (chỉ khi thẻ có mẫu) — nhãn gãy 2 dòng thì số vẫn thẳng hàng; > 4 cột số → 3 cột / hàng. Cột chữ (`chu`, vd SOS) nằm hàng riêng dưới lưới.
+   */
+  theLuoi?: boolean;
 }) {
   const rongCua = (c: DinhNghiaCot) => (deu && c.rong ? c.rong : rongCot(c, cot));
   const dienThoai = useDienThoai();
@@ -66,10 +71,35 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
     const o = (h: H, k: string) => oCua(h, theoKey.get(k)!);
     /* Ô rộng 120 khi có điểm tỉ lệ hoặc nhãn dài (vd "Việc đúng hạn") — 76 px làm nhãn + số tràn chồng sang ô bên (UI-TONG-QUAN 8b). */
     const tiLe = cot.some((x) => x.kieu === 'diem-ti-le') || phan.diem.some((k) => theoKey.get(k)!.nhan.length > 8);
+    const soLuoi = cot.filter((c) => !phan.dau.includes(c.key) && c.kieu !== 'chu');
+    const rieng = cot.filter((c) => !phan.dau.includes(c.key) && c.kieu === 'chu');
+    const luoi = (h: H) => {
+      const mau = soLuoi.map((c) => phuCua?.(h, c));
+      const coMau = mau.some(coPhu);
+      const phuDau = phuCua?.(h, theoKey.get(phan.dau[0])!);
+      return <>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px]">
+          {phan.dau.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}
+          {coPhu(phuDau) && <span className="basis-full text-[13px] text-slate-500">{phuDau}</span>}
+        </div>
+        {soLuoi.length > 0 && (
+          <div className="grid gap-x-2.5" style={{ gridTemplateColumns: `repeat(${soLuoi.length > 4 ? 3 : soLuoi.length}, minmax(0, 1fr))` }}>
+            {soLuoi.map((c, i) => (
+              <div key={c.key} className={`grid ${coMau ? 'row-span-3' : 'row-span-2'} gap-y-px [grid-template-rows:subgrid]`}>
+                <span className="luoi-n self-end text-[13px] font-medium leading-[1.3] text-slate-400">{c.nhan}</span>
+                <span className="luoi-g text-[17px] font-bold tabular-nums">{o(h, c.key)}</span>
+                {coMau && <span className="luoi-p text-xs text-slate-500">{coPhu(mau[i]) ? mau[i] : ' '}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+        {rieng.map((c) => <div key={c.key} className="grid gap-1"><span className="text-[13px] font-medium text-slate-400">{c.nhan}</span><div className="min-w-0">{o(h, c.key)}</div></div>)}
+      </>;
+    };
     than = hang.map((h) => (
-      <article key={khoa(h)} className={`border-t px-3 py-2.5 first:border-t-0 ${lop(h)}`} style={{ borderColor: 'var(--line)' }}
+      <article key={khoa(h)} className={`border-t ${theLuoi && !theRieng ? 'grid gap-2.5 px-3.5 py-3' : 'px-3 py-2.5 first:border-t-0'} ${lop(h)}`} style={{ borderColor: 'var(--line)' }}
         tabIndex={onHang ? 0 : undefined} onClick={onHang ? () => onHang(h) : undefined} onKeyDown={phim(h)}>
-        {theRieng ? theRieng(h) : <>
+        {theRieng ? theRieng(h) : theLuoi ? luoi(h) : <>
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">{phan.dau.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}</div>
         {phuCua && coPhu(phuCua(h, theoKey.get(phan.dau[0])!)) && <div className="text-[13px] text-slate-400">{phuCua(h, theoKey.get(phan.dau[0])!)}</div>}
         {phan.diem.length > 0 && (
@@ -96,7 +126,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   } else {
     than = (
       <div className={`table-scroll ${dinh ? 'bang-dinh' : ''} ${dinh === '1440' ? 'bang-dinh-1440' : ''}`}>
-        <table className="bang" data-day={day || undefined} data-chat={chat || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.kieu === 'ten' ? 205 : 240)), 0) }}>
+        <table className="bang" data-day={day || undefined} data-chat={chat || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.linhHoat ? 140 : c.kieu === 'ten' ? 205 : 240)), 0) }}>
           <colgroup>{cot.map((c) => { const r = rongCua(c); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
             {nhom && (

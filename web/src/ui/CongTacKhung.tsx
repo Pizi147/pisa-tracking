@@ -35,7 +35,7 @@ export function nhoKhung(trang: Trang, k: KhungLoc) {
   try { localStorage.setItem(khoa(trang), k); } catch { /* không lưu được thì thôi — lần sau về mặc định */ }
 }
 
-export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa = false, kieu = 'doan', chuTatCa }: {
+export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa = false, kieu = 'doan', chuTatCa, v8 }: {
   trang: Trang; value: KhungLoc; onChange: (k: KhungLoc) => void;
   /** Số hiện cạnh tên khung (lớp, việc…); khung có số 0 coi như không có dữ liệu. */
   dem?: Partial<Record<KhungLoc, number>>;
@@ -46,6 +46,8 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
   kieu?: 'doan' | 'chon' | 'chip';
   /** `chon` không tiền tố "Loại lớp:" — mục đầu là chữ này (Công việc V8: "Mọi khung"), mục sau "Fast Track · n". */
   chuTatCa?: string;
+  /** V8 (mockup v8 `.doan`): nút đoạn liền cao 36 (375: 44 full bề rộng), mục chọn đậm + gạch đáy — `BoLocDoan v8`. */
+  v8?: boolean;
 }) {
   /* UX-2 (5): hiện theo lớp trong phạm vi người xem; chưa biết phạm vi thì theo dữ liệu đang xem như cũ. */
   const coDuLieu = khungCuaPhamVi ? (['ft', 'thuong'] as const).filter((k) => khungCuaPhamVi![k]) : (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
@@ -87,7 +89,7 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
     );
   }
   return (
-    <BoLocDoan<KhungLoc> ariaLabel={t('Khung lớp')} value={value}
+    <BoLocDoan<KhungLoc> ariaLabel={t('Khung lớp')} value={value} v8={v8}
       onChange={(k) => { nhoKhung(trang, k); onChange(k); }}
       muc={[
         ...(coTatCa ? [{ key: 'tat-ca' as const, nhan: t('Tất cả'), so: donVi ? null : dem?.['tat-ca'] ?? null }] : []),

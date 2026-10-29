@@ -39,10 +39,14 @@ export type DinhNghiaCot = {
   tinh?: boolean;
   /** Cột đầu của một nhóm cần tách rõ (vạch dọc đậm cả tiêu đề lẫn ô — UI-PHAN-TICH: Hành chính | Học thuật). */
   tach?: boolean;
+  /** Cột nhận phần dư thay thứ tự mặc định (V8-TQ: cột Lớp linh hoạt, cột chữ SOS rộng cố định như mockup). */
+  linhHoat?: boolean;
 };
 
 /** Key của MỘT cột linh hoạt: việc › chữ › tên; không có cột chữ → null. */
 export function cotLinhHoat(cot: readonly DinhNghiaCot[]): string | null {
+  const rieng = cot.find((x) => x.linhHoat);
+  if (rieng) return rieng.key;
   for (const k of ['viec', 'chu', 'ten'] as const) {
     const c = cot.find((x) => x.kieu === k);
     if (c) return c.key;
