@@ -149,6 +149,19 @@ export async function runDonLuongTests(t: YThucTestKit) {
     }
   }));
 
+  /* ---------------------------------------------------------------- A8 */
+  const xuat: any = await import('../phanTich/xuatMt.ts');
+  const dXuat: any = await import('../../../shared/domain/xuatMt.ts');
+  check('A8 · xuất theo đợt lớp PET có Checkpoint: đợt Checkpoint có dòng (như Progress); docBoLoc nhận "checkpoint"', () => {
+    const pet = one(`SELECT c.id, c.branch_id FROM classes c WHERE c.code = 'MB PET 01'`);
+    assert(pet && one(`SELECT 1 FROM assessment_attempts WHERE class_id = ? AND kind = 'checkpoint' AND status != 'cancelled'`, pet.id), 'seed cần Checkpoint ở MB PET 01');
+    const f = dXuat.docBoLocXuatMt({ khung: 'thuong', chiNhanh: [pet.branch_id], lop: [pet.id], tg: 'dot', dot: ['checkpoint'], cot: 'gon', du: 0 });
+    assert(typeof f === 'object' && f.thoiGian.dot.includes('checkpoint'), `bộ lọc: ${JSON.stringify(f)}`);
+    const d = xuat.duLieuXuatMt(P.mbManager, f);
+    assert(d.dem.luot > 0, `Checkpoint: ${d.dem.luot} lượt`);
+    assert(dXuat.nhanKhoaDot('checkpoint') === 'Checkpoint', dXuat.nhanKhoaDot('checkpoint'));
+  });
+
   check('K6 · câu tìm dấu "-" theo tuần đi chỉ mục idx_scores_no_show', () => {
     const plan = all(`EXPLAIN QUERY PLAN SELECT sc.attempt_id FROM assessment_scores sc WHERE sc.no_show_period_id = ?`, 1).map((r) => r.detail).join(' | ');
     assert(/idx_scores_no_show/.test(plan), plan);
