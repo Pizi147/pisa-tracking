@@ -307,7 +307,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
   const lopMo = mo ? lop.find((l) => l.id === mo.classId) : null;
   const lopCho = hopCho ? lop.find((l) => l.id === hopCho.classId) : null;
   const tim = (
-    <input className="field pc-tim" aria-label={t('Tìm lớp, GV')} placeholder={t('Tìm lớp, GV')} value={q} onChange={(e) => onQ(e.target.value)} />
+    <input className="field pc-tim" aria-label={t('Tìm lớp, GV')} placeholder={t('Tìm lớp, GV')} autoComplete="off" spellCheck={false} value={q} onChange={(e) => onQ(e.target.value)} />
   );
   const nutThieu = (
     <button type="button" className="nut-loc" aria-pressed={thieu} title={t('Ô Chưa có + ô của GV đã nghỉ')} onClick={() => setThieu((v) => !v)}>
@@ -317,7 +317,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
   const rong = !lop.length
     ? <div className="pc-rong"><span className="tieu">{t('Chi nhánh chưa có lớp nào')}</span>{coTheTaoLop && onTaoLop && <button type="button" className="btn btn-primary" onClick={onTaoLop}>{t('+ Lớp mới')}</button>}</div>
     : !hien.length
-      ? <div className="pc-rong"><span className="tieu">{q.trim() ? t('Không có lớp hay GV khớp "{q}"', { q: q.trim() }) : t('Không có lớp khớp bộ lọc')}</span>
+      ? <div className="pc-rong"><span className="tieu">{q.trim() ? t('Không có lớp hay GV khớp “{q}”', { q: q.trim() }) : t('Không có lớp khớp bộ lọc')}</span>
           <button type="button" className="btn btn-ghost" onClick={() => { onQ(''); setThieu(false); }}>{t('Xoá tìm · {n} lớp', { n: lop.length })}</button></div>
       : null;
 

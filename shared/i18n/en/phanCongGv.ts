@@ -53,7 +53,7 @@ export const EN_PHAN_CONG_GV = {
   "Hồ sơ GV ›": "Teacher profile ›",
   "Không chia môn — GVCN dạy luôn": "No subject split — the homeroom teacher teaches all",
   "Không có GV khớp «{chu}»": "No teacher matches «{chu}»",
-  "Không có lớp hay GV khớp \"{q}\"": "No class or teacher matches \"{q}\"",
+  "Không có lớp hay GV khớp “{q}”": "No class or teacher matches “{q}”",
   "Không có lớp khớp bộ lọc": "No class matches the filter",
   "Không hoàn tác được": "Could not undo",
   "Không đọc được": "Could not load",
