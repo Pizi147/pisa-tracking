@@ -4,7 +4,13 @@
  *  · góc Lịch thi: chi tiết dưới hàng (5 ô MT gần nhất, Test sắp tới, Case đang mở, lịch sử lịch thi mới trước ≤ 3);
  *  · khoảng tháng [từ → đến] của góc Lịch thi (`thangTrongKhoang`).
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 type Kit = { check: (n: string, f: () => void) => void; assert: (c: unknown, m: string) => void; conn: any; P: any; TODAY: string; addDays: (d: string, n: number) => string };
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 export async function runPrUiHvLopTests(t: Kit) {
   const { check, assert, conn, P, TODAY, addDays } = t;
@@ -85,5 +91,24 @@ export async function runPrUiHvLopTests(t: Kit) {
     const vt = r.rows.flatMap((x: any) => x.cases).filter((c: any) => c.viecTiep);
     assert(vt.length > 0 && vt.every((c: any) => 'nguoi' in c.viecTiep), 'thiếu trường nguoi');
     assert(vt.some((c: any) => c.viecTiep.nguoi), 'seed: phải có việc tiếp có người làm');
+  });
+
+  check('LT-29/10 (chủ SP) · Lịch thi: MỘT danh sách thi gần nhất trước (ngày chốt · tuần · đầu tháng dự kiến; chưa có tháng cuối); lọc Lớp / khung của trang áp vào góc Lịch thi', () => {
+    const L = (o: any) => ({ trangThai: 'du-kien', ngay: null, thang: null, tuan: null, ...o });
+    const ds = [
+      { ten: 'Chưa có', lichThi: L({ trangThai: 'chua-co' }) },
+      { ten: 'Dự kiến 11', lichThi: L({ thang: '2026-11' }) },
+      { ten: 'Chốt 20/10', lichThi: L({ trangThai: 'da-chot-ngay', ngay: '2026-10-20', thang: '2026-10' }) },
+      { ten: 'Dời sang 10', lichThi: L({ thang: '2026-12' }), doiSang: '2026-10' },
+      { ten: 'Tuần 12/10', lichThi: L({ trangThai: 'chua-chot-ngay', thang: '2026-10', tuan: '2026-10-12' }) },
+      { ten: 'An dự kiến 11', lichThi: L({ thang: '2026-11' }) },
+    ];
+    const ra = d.xepLichThi(ds).map((x: any) => x.ten);
+    assert(JSON.stringify(ra) === JSON.stringify(['Dời sang 10', 'Tuần 12/10', 'Chốt 20/10', 'An dự kiến 11', 'Dự kiến 11', 'Chưa có']), `thứ tự: ${ra.join(' | ')}`);
+    const goc = fs.readFileSync(path.join(REPO, 'web/src/modules/students/GocLichThi.tsx'), 'utf8');
+    const trang = fs.readFileSync(path.join(REPO, 'web/src/modules/students/StudentsPage.tsx'), 'utf8');
+    assert(/<GocLichThi[\s\S]{0,600}?\bloc=\{trongLoc\}/.test(trang), 'StudentsPage không truyền bộ lọc Lớp / khung (trongLoc) cho góc Lịch thi');
+    assert(/xepLichThi\(rows\.filter\(\(r\) => !loc \|\| loc\(r\.classId, !r\.thuong\)\)\)/.test(goc), 'góc Lịch thi không lọc theo loc / không xếp xepLichThi');
+    assert(!/loai: 'nhom'/.test(goc), 'góc Lịch thi còn dòng nhóm');
   });
 }

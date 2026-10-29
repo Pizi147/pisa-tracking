@@ -194,3 +194,14 @@ export function bangThongTinXuatDs(o: { dieuKien: string; luc: string; pham: 'lo
     ['Người xuất', o.nguoi],
   ];
 }
+
+/**
+ * Mốc xếp của MỘT em ở Lịch thi (chủ SP 29/10: một danh sách, THI GẦN NHẤT TRƯỚC — không tách nhóm Đã chốt / Chưa chốt / Dự kiến): ngày thi đã chốt ·
+ * tuần dự kiến · đầu tháng dự kiến (`doiSang` = tháng vừa dời tới); chưa có tháng → cuối.
+ */
+export const mocXepLichThi = (l: LichThi, doiSang?: string | null): string =>
+  (doiSang ? `${doiSang}-01` : l.ngay ?? l.tuan ?? (l.thang ? `${l.thang}-01` : '9999-12-31'));
+/** Xếp danh sách Lịch thi: mốc tăng dần, cùng mốc theo tên (tiếng Việt). Không đổi mảng gốc. */
+export function xepLichThi<T extends { lichThi: LichThi; ten: string; doiSang?: string | null }>(ds: readonly T[]): T[] {
+  return [...ds].sort((a, b) => mocXepLichThi(a.lichThi, a.doiSang).localeCompare(mocXepLichThi(b.lichThi, b.doiSang)) || a.ten.localeCompare(b.ten, 'vi'));
+}
