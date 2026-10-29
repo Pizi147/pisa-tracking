@@ -851,7 +851,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any, email
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound();
-  /* P7 [ĐX]: em Tạm dừng (Lưu trữ) — chỉ thông tin liên hệ (TVV gọi mời học lại). Chủ SP không đồng ý thì bỏ vế sau `&&`. */
+  /* P7 → chủ SP chốt 30/10: em Tạm dừng (Lưu trữ) — chỉ thông tin liên hệ (TVV gọi mời học lại); nút "Sửa thông tin" ngay ở Lưu trữ (cờ `coTheSuaThongTin`, luuTru.ts). */
   if (s.archived_at && !(s.status === 'inactive' && Object.keys(patch ?? {}).every((k) => (TRUONG_LIEN_HE_TAM_DUNG as readonly string[]).includes(k)))) throw badRequest(CAU_LUU_TRU);
   // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
   const map: Record<string, string> = {

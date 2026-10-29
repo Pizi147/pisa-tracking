@@ -9790,6 +9790,9 @@ await runPrChuongNheTests({ check, checkAsync, assert, conn, P, TODAY } as any);
 // ==================================================================== QUET-THEO-KY (quét theo chỉ mục, theo kỳ — giảm dòng đọc Turso)
 const { runPrQuetTheoKyTests } = bocTep('prQuetTheoKy', await import('./prQuetTheoKy.tests.ts'));
 await runPrQuetTheoKyTests({ check, checkAsync, assert, conn, P, classId } as any);
+// ==================================================================== SUA-NHO-QUYEN (Chưa có kỹ năng tính người đang dạy · Sửa thông tin em tạm dừng ở Lưu trữ)
+const { runPrSuaNhoQuyenTests } = bocTep('prSuaNhoQuyen', await import('./prSuaNhoQuyen.tests.ts'));
+await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);
