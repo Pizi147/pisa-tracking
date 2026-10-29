@@ -82,6 +82,11 @@ export type DinhNghiaLoai = {
   khiHuy?: (p: Principal, yc: YeuCauRow) => void;
   huyDuoc?: (conn: any, ds: YeuCauRow[]) => Set<number>;
   /**
+   * Q-RL2c (N24 ②): loại KHÔNG có `khiHuy` — các dòng nguồn quyết định này đổi; hộp chụp chúng (cùng thẻ) bằng `GhiDao` lúc quyết, Huỷ quyết định
+   * = `daoLai` (409 nếu dòng nào đã đổi sau). `k`: 'sua' chụp dòng sẽ sửa · 'them' theo dõi dòng mới · 'ca' cả hai. Không khai = quyết định đó không huỷ.
+   */
+  dao?: { duyet?: (yc: YeuCauRow) => DongDao[]; tuChoi?: (yc: YeuCauRow) => DongDao[] };
+  /**
    * OV-7a: NGƯỜI GỬI sửa / rút thẻ còn chờ (loại trong `LOAI_NGUOI_XIN_SUA`) — chạy TRONG tx của hộp. `khiSua` kiểm như lúc gửi và trả phần thẻ mới;
    * `khiRut` đảo bảng nguồn (thẻ đã đóng trước), đẩy khoá tệp cần xoá sau giao dịch vào `khoaTep`.
    */
@@ -102,6 +107,10 @@ export type DinhNghiaLoai = {
     duLieu?: Record<string, unknown>;
   };
 };
+
+export type DongDao = { bang: string; dk: string; args: unknown[]; k: 'sua' | 'them' | 'ca' };
+/** Q-RL2c: Hành trình của em (thêm) — mọi loại đụng hồ sơ em dùng chung. */
+const hanhTrinh = (yc: YeuCauRow): DongDao[] => (yc.hoc_vien_id ? [{ bang: 'journey_events', dk: 'student_id = ?', args: [yc.hoc_vien_id], k: 'them' }] : []);
 
 /** Nạp dòng nguồn của một lô thẻ bằng MỘT câu (`sql` có `IN (?)` trên id đối tượng) → Map id thẻ → dòng nguồn. */
 export function napTheoDoiTuong(conn: any, ds: YeuCauRow[], sql: string): Map<number, any> {
@@ -292,6 +301,21 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: d.moi, reason: yc.ly_do });   // số hoặc KCK (Q29-1)
       else updateCycle(p, cyc.id, { route: String(d.moi) });
     },
+    /* Q-RL2c: Target / lộ trình của lộ trình đang chạy + Target lượt Mock + bản ghi đổi Target + Hành trình. Trường "màn gốc" / Từ chối: chỉ thẻ. */
+    dao: {
+      duyet: (yc) => {
+        const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat };
+        if (!TRUONG_TU_AP.includes(d.truong) || yc.hoc_vien_id == null) return [];
+        const sid = yc.hoc_vien_id;
+        return [
+          { bang: 'learning_cycles', dk: `student_id = ? AND status = 'active'`, args: [sid], k: 'sua' },
+          { bang: 'assessment_attempts', dk: `kind = 'mock' AND cycle_id IN (SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active')`, args: [sid], k: 'sua' },
+          { bang: 'cycle_target_revisions', dk: 'cycle_id IN (SELECT id FROM learning_cycles WHERE student_id = ?)', args: [sid], k: 'them' },
+          ...hanhTrinh(yc),
+        ];
+      },
+      tuChoi: () => [],
+    },
     /* OV-7a: người gửi sửa giá trị mới + lý do (trường giữ — đổi trường thì Rút rồi gửi lại). */
     khiSua: (_p, yc, v) => {
       const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat };
@@ -384,6 +408,21 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiTuChoi: (p, yc, lyDo) => tuChoiKhongTheoDoi(db(), yc, p.userId, lyDo),
     khiSua: (_p, yc, v) => suaKhongTheoDoi(db(), yc, v),
     khiRut: (_p, yc) => rutKhongTheoDoi(db(), yc),
+    /* Q-RL2c: Duyệt đóng Case + huỷ PA còn sống + mốc, lịch sử, Hành trình, việc Báo PH của các bài nối với Case; Từ chối đổi hạn xác nhận + mốc. */
+    dao: {
+      duyet: (yc) => [
+        { bang: 'sos_cases', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'case_interventions', dk: `case_id = ? AND status IN ('planned', 'started')`, args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'sos_case_history', dk: 'case_id = ?', args: [yc.doi_tuong_id], k: 'them' },
+        { bang: 'case_milestones', dk: 'case_id = ?', args: [yc.doi_tuong_id], k: 'them' },
+        { bang: 'sos_coordination_actions', dk: `kind = 'bao_ph_tvv' AND attempt_id IN (SELECT attempt_id FROM case_signals WHERE case_id = ?)`, args: [yc.doi_tuong_id], k: 'ca' },
+        ...hanhTrinh(yc),
+      ],
+      tuChoi: (yc) => [
+        { bang: 'sos_cases', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'case_milestones', dk: 'case_id = ?', args: [yc.doi_tuong_id], k: 'them' },
+      ],
+    },
     /* S4-7: Case đóng vì lý do khác (điểm sửa thành đạt, lượt huỷ, đổi chương trình) → thẻ tự đóng. */
     chet: { sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done')`, lyDo: 'Case đã đóng' },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
@@ -412,6 +451,15 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       if (doi) dongViecTheoXuLy(yc.doi_tuong_id, 'system_tu_choi', lyDo, p.userId);   // SV-YT-TVV (Q-D1 ①): chỉ khi lần xử lý thật sự vừa bị từ chối
       /* PR-Pb2-b (Q14): vi phạm chưa từng bắt buộc nay thành Cần xử lý → chốt hạn; đã chốt thì giữ. */
       if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
+    },
+    /* Q-RL2c: lần xử lý (cả hai) · Từ chối thêm việc Báo PH của lần đó + hạn chốt các vi phạm của em. */
+    dao: {
+      duyet: (yc) => [{ bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' }],
+      tuChoi: (yc) => [
+        { bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'sua' },
+        ...(yc.hoc_vien_id ? [{ bang: 'violations', dk: 'student_id = ?', args: [yc.hoc_vien_id], k: 'sua' as const }] : []),
+      ],
     },
     /* OV-7a: GVCN sửa ghi chú (bằng chứng thêm / bỏ ở panel lần xử lý — thẻ đếm lại) hoặc Rút (lần xử lý chờ duyệt xoá như Xoá lần xử lý). */
     khiSua: (p, yc, v) => {
@@ -510,6 +558,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return { lyDo: k.lyDo, duLieu: { lopDichId: k.toClassId, tuan: k.tuan } };
     },
     khiRut: () => {},
+    /* Q-RL2c: Từ chối chỉ đổi thẻ (Duyệt = ra lệnh — có đường huỷ lệnh riêng). */
+    dao: { tuChoi: () => [] },
     /* Em không còn học, hoặc đã có quyết định chuyển lớp từ đường khác → thẻ không còn ý nghĩa. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = y.hoc_vien_id AND e.status = 'active')

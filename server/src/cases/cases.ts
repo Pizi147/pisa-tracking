@@ -45,6 +45,7 @@ import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, tenGiuaCua } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
+import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 
 /**
@@ -1597,23 +1598,64 @@ export function ketThucPaQuyChe(p: Principal, interventionId: number, input: { l
   const ten = (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind);
   return tx(() => {
     /* OV-13b: PA gốc đang chờ đổi PA → thẻ tự đóng + PA mới huỷ, gỡ con trỏ (Duyệt / Huỷ / Từ chối sau đó không còn đụng PA đã kết thúc). */
-    for (const y of conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND json_extract(du_lieu, '$.thayPaId') = ?`)
-      .all(interventionId) as any[]) {
-      chotYeuCau(conn, { loai: 'de_xuat_pa', doiTuongLoai: 'intervention', doiTuongId: y.doi_tuong_id }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'PA gốc đã kết thúc' });
-      rutDoiPa(y);
-    }
-    conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = 'ket_thuc_som', updated_at = ? WHERE id = ?`)
-      .run(today, nowIso(), interventionId);
-    conn.prepare(`INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at) VALUES (?, 'ket_thuc_pa', ?, ?, ?, ?)`)
-      .run(iv.case_id, today, `${ten} — ${lyDo}`, p.userId, nowIso());
-    dongBoTrangThaiCase(iv.case_id);
-    addJourney({
-      studentId: c.eff_student_id, cycleId: c.eff_cycle_id, eventType: 'intervention', eventDate: today, title: `Kết thúc PA: ${ten.slice(0, 60)}`, detail: lyDo,
-      refTable: 'case_interventions', refId: interventionId, createdBy: p.userId, dedupKey: `pa-ket-thuc:${interventionId}`,
-    });
+    const ys = conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND json_extract(du_lieu, '$.thayPaId') = ?`)
+      .all(interventionId) as any[];
+    /* Q-RL2c (N24 ②): chụp để "Mở lại PA" — sửa: PA gốc + PA mới của thẻ đổi PA, thẻ, chuông cũ cùng khoá; thêm: mốc, Hành trình, chuông mới.
+       Dòng Case không chụp: trạng thái Case suy từ PA (`dongBoTrangThaiCase` chạy lại sau khi đảo). */
+    const g = new GhiDao(conn);
+    const dsPa = [interventionId, ...ys.map((y) => y.doi_tuong_id as number)];
+    g.sua('case_interventions', `id IN (${dsPa.map(() => '?').join(',')})`, ...dsPa);
+    if (ys.length) g.sua('yeu_cau_duyet', `id IN (${ys.map(() => '?').join(',')})`, ...ys.map((y) => y.id));
+    const khoaChuong = ys.flatMap((y) => [`duyet_ket_qua:${y.id}`, `tu_duyet:${y.id}`]);
+    const dkChuong = khoaChuong.length ? `dedup_key IN (${khoaChuong.map(() => '?').join(',')})` : '0';
+    g.sua('notifications', dkChuong, ...khoaChuong);
+    g.theoDoi('notifications', dkChuong, khoaChuong, () => g.theoDoi('case_milestones', `case_id = ? AND kind = 'ket_thuc_pa'`, [iv.case_id], () =>
+      g.theoDoi('journey_events', 'dedup_key = ?', [`pa-ket-thuc:${interventionId}`], () => {
+        for (const y of ys) {
+          chotYeuCau(conn, { loai: 'de_xuat_pa', doiTuongLoai: 'intervention', doiTuongId: y.doi_tuong_id }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'PA gốc đã kết thúc' });
+          rutDoiPa(y);
+        }
+        conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = 'ket_thuc_som', updated_at = ? WHERE id = ?`)
+          .run(today, nowIso(), interventionId);
+        conn.prepare(`INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at) VALUES (?, 'ket_thuc_pa', ?, ?, ?, ?)`)
+          .run(iv.case_id, today, `${ten} — ${lyDo}`, p.userId, nowIso());
+        dongBoTrangThaiCase(iv.case_id);
+        addJourney({
+          studentId: c.eff_student_id, cycleId: c.eff_cycle_id, eventType: 'intervention', eventDate: today, title: `Kết thúc PA: ${ten.slice(0, 60)}`, detail: lyDo,
+          refTable: 'case_interventions', refId: interventionId, createdBy: p.userId, dedupKey: `pa-ket-thuc:${interventionId}`,
+        });
+      })));
+    luuGhiDao(conn, { loai: 'ket_thuc_pa', bang: 'case_interventions', id: interventionId, nguoi: p.userId, ghi: g });
     writeAudit({
       actorUserId: p.userId, action: 'case.intervention.complete', entityType: 'case_intervention', entityId: interventionId, entityLabel: ten,
       before: { status: iv.status, followupDue: iv.followup_due ?? null }, after: { status: 'completed', closedReason: 'ket_thuc_som', lyDo },
+    });
+    return caseDetail(p, iv.case_id);
+  });
+}
+
+/**
+ * MỞ LẠI PA ĐÃ KẾT THÚC SỚM (Q-RL2c, N24 ② — Hoàn tác 5 s + nút "Mở lại PA"): đảo đúng lần `ketThucPaQuyChe` mới nhất — PA về đang chạy, thẻ đổi PA
+ * (nếu đã tự đóng) về chờ, mốc / Hành trình / chuông của lần đó gỡ. Quyền = quyền Kết thúc PA theo Case HIỆN TẠI. Đã có thay đổi sau (ghi kết quả, sửa PA,
+ * thẻ đã xử lý, chuông đã đọc…) hoặc Case đã hoàn thành → 409, không đảo nửa chừng. Nhật ký `case.intervention.reopen`.
+ */
+export function hoanTacKetThucPa(p: Principal, interventionId: number) {
+  const conn = db();
+  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án.');
+  const c = loadCase(iv.case_id);
+  if (!coTheKetThucPa(p, c)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Quản lý mở lại PA đã kết thúc.');
+  if (c.status === 'done') throw conflict('Case đã hoàn thành — Mở lại Case trước khi mở lại PA.');
+  return tx(() => {
+    const r = timGhiDao(conn, 'ket_thuc_pa', 'case_interventions', interventionId);
+    if (!r) throw conflict('PA này không có lần Kết thúc PA nào để hoàn tác.');
+    daoLai(conn, r, p.userId);
+    dongBoTrangThaiCase(iv.case_id);
+    const sau = conn.prepare('SELECT status, closed_reason FROM case_interventions WHERE id = ?').get(interventionId) as any;
+    writeAudit({
+      actorUserId: p.userId, action: 'case.intervention.reopen', entityType: 'case_intervention', entityId: interventionId,
+      entityLabel: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind),
+      before: { status: iv.status, closedReason: iv.closed_reason ?? null }, after: { status: sau?.status ?? null, closedReason: sau?.closed_reason ?? null, ghiDaoId: r.id },
     });
     return caseDetail(p, iv.case_id);
   });
@@ -2120,6 +2162,8 @@ export function caseDetail(p: Principal, caseId: number) {
     paMoiDoi.add(y.doi_tuong_id);
     if (!doiPaCua.has(d.thayPaId)) doiPaCua.set(d.thayPaId, y);
   }
+  /* Q-RL2c: "Mở lại PA" — chỉ PA đã kết thúc sớm mới đọc bản ghi đảo (không thêm câu cho PA khác). */
+  const quyenKetThuc = c.status !== 'done' && coTheKetThucPa(p, c);
 
   const interventions = (conn
     .prepare(
@@ -2161,6 +2205,9 @@ export function caseDetail(p: Principal, caseId: number) {
       cycleStartedOn: iv.cycle_started_on ?? null,
       /** Khép lại VÌ SAO: `done` đã xong · `superseded` bị thay bằng phương án khác. */
       closedReason: iv.closed_reason ?? null,
+      /** Q-RL2c: ⋯ "Mở lại PA" — PA kết thúc sớm, người xem kết thúc được, chưa ai đổi gì sau lần Kết thúc PA. */
+      coTheHoanTacKetThuc: iv.closed_reason === 'ket_thuc_som' && quyenKetThuc
+        && daoDuoc(timGhiDao(conn, 'ket_thuc_pa', 'case_interventions', iv.id)),
       supersededBy: iv.superseded_by ?? null,
       /* HẠN của chu kỳ đang chạy — hai tuần với Case học thuật, một tuần với Ý thức/Khác. */
       actionDue: iv.action_due ?? null,
@@ -2416,7 +2463,7 @@ export function caseDetail(p: Principal, caseId: number) {
       canClose: canCloseCase(p, c),
       canApprove: quanLyCase,
       /** OV-13a (C): menu ⋯ PA "Kết thúc PA" cho PA theo quy chế đang chạy — GVCN lớp đang học · Quản lý. */
-      coTheKetThucPa: c.status !== 'done' && coTheKetThucPa(p, c),
+      coTheKetThucPa: quyenKetThuc,
       /* PR-LUI-a2: Mở lại (Case đã hoàn thành) · Sửa · Xoá Case (QL/QT, Case báo tay chưa có PA ghi kết quả) · Kỹ năng khoá khi đã có PA. */
       coTheMoLai: c.status === 'done' && coTheMoLaiCase(p, c) && !chanMoLai(c),
       coTheSua: suaDuoc && !(sosSt.fromSos && !sosSt.hasCause && !sosSt.laMt),   // SV-NX-CASE: Case MT ghi / sửa mô tả lúc nào cũng được

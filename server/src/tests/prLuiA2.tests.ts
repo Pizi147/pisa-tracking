@@ -267,7 +267,7 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     const ds = yc.hopChoDuyet(QL, { xem: 'da-xu-ly' }).the;
     const co = (id: number) => ds.find((x: any) => x.id === id)?.coTheHuy === true;
     assert(co(tA) && !co(tB) && !co(tC), JSON.stringify([tA, tB, tC].map((id) => ds.find((x: any) => x.id === id)?.coTheHuy)));
-    assert(!ds.some((x: any) => x.loai !== 'de_xuat_pa' && x.coTheHuy), 'loại khác có coTheHuy');
+    assert(!ds.some((x: any) => ['lich_thi', 'xin_y_kien', 'ke_hoach_bo_tro'].includes(x.loai) && x.coTheHuy), 'loại không đảo được có coTheHuy');   // Q-RL2c: thêm loại có đường đảo (ghi_dao)
   }));
 
   // ---------------------------------------------------------------- a2-6 · Sửa / Xoá Case, Xoá PA, nhật ký hạn theo dõi

@@ -7,10 +7,11 @@
  */
 import { db, theoLo, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { HttpError, badRequest, chuTuDo, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
-import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
+import { nho, trongBoNho, xoaNho } from '../platform/nguCanhRequest.ts';
+import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import {
   PERMISSIONS, LOAI_NGUOI_XIN_SUA, LOAI_YC_META, LY_DO_RUT, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
   nhomCuaLoai, sapThe,
@@ -417,17 +418,42 @@ function quyetDinh<T>(p: Principal, id: number, lam: (yc: YeuCauRow, meta: LoaiY
 }
 const doiTuongCua = (yc: YeuCauRow) => ({ loai: yc.loai, doiTuongLoai: yc.doi_tuong_loai, doiTuongId: yc.doi_tuong_id });
 
+/** Q-RL2c: khoá bản ghi đảo của một quyết định ở hộp (thẻ là đối tượng). */
+const GD = { loai: 'quyet_dinh', bang: 'yeu_cau_duyet' } as const;
+const daoCua = (loai: string, trangThai: string) => {
+  const d = dinhNghiaCua(loai)?.dao;
+  return trangThai === 'duyet' ? d?.duyet : trangThai === 'tu_choi' ? d?.tuChoi : undefined;
+};
+/**
+ * Q-RL2c: chạy quyết định (bảng nguồn + chốt thẻ); loại có `dao` cho quyết định này → chụp thẻ + dòng nguồn bằng `GhiDao` cùng giao dịch để Huỷ quyết định
+ * đảo được. Chuông và nhật ký không chụp (lịch sử giữ; Huỷ đổi khoá chuông như cũ).
+ */
+function voiGhiDao(p: Principal, yc: YeuCauRow, trangThai: 'duyet' | 'tu_choi', lam: () => void): void {
+  const ds = daoCua(yc.loai, trangThai)?.(yc);
+  if (!ds) return lam();
+  const conn = db();
+  const g = new GhiDao(conn);
+  g.sua('yeu_cau_duyet', 'id = ?', yc.id);
+  for (const d of ds) if (d.k !== 'them') g.sua(d.bang, d.dk, ...d.args);
+  ds.filter((d) => d.k !== 'sua').reduce<() => void>((f, d) => () => g.theoDoi(d.bang, d.dk, d.args, f), lam)();
+  luuGhiDao(conn, { ...GD, id: yc.id, nguoi: p.userId, ghi: g });
+}
+/** Sau quyết định (trong tx): thẻ này còn Huỷ quyết định được không — web hiện Hoàn tác 5 s theo cờ này. */
+const coTheHuyNgay = (id: number) => theHuyDuoc(db(), [docThe(id)]).has(id);
+
 export function duyetYeuCau(p: Principal, id: number, v: { ghiChu?: string | null; duLieu?: unknown } = {}) {
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut === 'tra-loi') throw badRequest('Xin ý kiến chỉ cần Trả lời, không có Duyệt.');
     if (meta.kieuNut === 'nhac') throw badRequest('Báo QL chỉ để biết — bấm Mở.');
     const ghiChu = chuTuDo(v.ghiChu, 'Ghi chú', 2000);   // PR-Dọn (Q4, quét #24)
-    dinhNghiaCua(yc.loai)?.khiDuyet?.(p, yc, { ghiChu, duLieu: v.duLieu });
-    chotYeuCau(db(), doiTuongCua(yc), 'duyet', { nguoiDuyet: p.userId, lyDo: ghiChu });
+    voiGhiDao(p, yc, 'duyet', () => {
+      dinhNghiaCua(yc.loai)?.khiDuyet?.(p, yc, { ghiChu, duLieu: v.duLieu });
+      chotYeuCau(db(), doiTuongCua(yc), 'duyet', { nguoiDuyet: p.userId, lyDo: ghiChu });
+    });
     const tuDuyet = laTuDuyet(yc.nguoi_xin, p.userId);
     writeAudit({ actorUserId: p.userId, action: 'request.approve', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: meta.nhan,
       after: { ghiChu, tuDuyet } });
-    return { ok: true, id, trangThai: 'duyet' as const, tuDuyet };
+    return { ok: true, id, trangThai: 'duyet' as const, tuDuyet, coTheHuy: coTheHuyNgay(id) };
   });
 }
 
@@ -436,10 +462,12 @@ export function tuChoiYeuCau(p: Principal, id: number, lyDo: unknown) {
   if (!ld) throw badRequest('Ghi lý do từ chối.');   // T7 (PR-MTa): không tối thiểu ký tự
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut !== 'duyet-tu-choi') throw badRequest('Yêu cầu này không có Từ chối.');
-    dinhNghiaCua(yc.loai)?.khiTuChoi?.(p, yc, ld);
-    chotYeuCau(db(), doiTuongCua(yc), 'tu_choi', { nguoiDuyet: p.userId, lyDo: ld });
+    voiGhiDao(p, yc, 'tu_choi', () => {
+      dinhNghiaCua(yc.loai)?.khiTuChoi?.(p, yc, ld);
+      chotYeuCau(db(), doiTuongCua(yc), 'tu_choi', { nguoiDuyet: p.userId, lyDo: ld });
+    });
     writeAudit({ actorUserId: p.userId, action: 'request.decline', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: meta.nhan, after: { lyDo: ld } });
-    return { ok: true, id, trangThai: 'tu_choi' as const };
+    return { ok: true, id, trangThai: 'tu_choi' as const, coTheHuy: coTheHuyNgay(id) };
   });
 }
 
@@ -571,11 +599,13 @@ function lamNhieu(p: Principal, ids: unknown, viec: 'duyệt' | 'từ chối', l
 /** Ngày nghiệp vụ (giờ Việt Nam) của một mốc ISO — `xu_ly_luc` ghi bằng `mocNghiepVu`. */
 const ngayCua = (iso: string) => new Date(Date.parse(iso) + 7 * 3_600_000).toISOString().slice(0, 10);
 
-/** Vì sao thẻ KHÔNG huỷ được quyết định ở mức thẻ (null = được; bảng nguồn còn kiểm riêng ở `khiHuy`). */
+/** Vì sao thẻ KHÔNG huỷ được quyết định ở mức thẻ (null = được; bảng nguồn còn kiểm riêng ở `khiHuy` / bản ghi đảo). */
 function lyDoKhongHuy(yc: YeuCauRow & { xu_ly_luc?: string | null }): string | null {
   if (yc.trang_thai === 'cho') return 'Yêu cầu này chưa có quyết định.';
-  if (!dinhNghiaCua(yc.loai)?.khiHuy) return 'Loại yêu cầu này không huỷ quyết định được.';
+  const def = dinhNghiaCua(yc.loai);
+  if (!def?.khiHuy && !def?.dao) return 'Loại yêu cầu này không huỷ quyết định được.';
   if (yc.trang_thai !== 'duyet' && yc.trang_thai !== 'tu_choi') return 'Yêu cầu này đã tự đóng — không huỷ quyết định được.';
+  if (!def.khiHuy && !daoCua(yc.loai, yc.trang_thai)) return 'Loại yêu cầu này không huỷ quyết định được.';   // Q-RL2c: vd Duyệt chuyển lớp — huỷ lệnh riêng
   if (!yc.xu_ly_luc || ngayCua(yc.xu_ly_luc) !== demoToday()) return 'Chỉ huỷ được quyết định trong ngày.';
   return null;
 }
@@ -595,13 +625,16 @@ function theHuyDuoc(conn: any, rows: any[]): Set<number> {
   for (const d of DINH_NGHIA_LOAI) {
     const cua = ung.filter((r) => r.loai === d.loai);
     if (cua.length && d.huyDuoc) for (const id of d.huyDuoc(conn, cua)) kq.add(id);
+    /* Q-RL2c: loại đảo bằng bản ghi — còn bản ghi + mọi dòng còn đúng như sau quyết định. Chỉ thẻ quyết hôm nay (đã lọc) nên ít. */
+    else if (cua.length && !d.khiHuy) for (const r of cua) if (daoDuoc(timGhiDao(conn, GD.loai, GD.bang, r.id))) kq.add(r.id);
   }
   return kq;
 }
 
 /**
- * HUỶ QUYẾT ĐỊNH bấm nhầm (PR-LUI-a2, chủ sản phẩm 06/10 Q3): chỉ loại có `khiHuy` (Đề xuất PA), quyết TRONG NGÀY. Bảng nguồn đảo trước, thẻ về
- * `cho` sau — cùng một giao dịch. Chuông cho người gửi. Quyền theo phạm vi CỦA THẺ.
+ * HUỶ QUYẾT ĐỊNH bấm nhầm (PR-LUI-a2, chủ sản phẩm 06/10 Q3): quyết TRONG NGÀY. Loại có `khiHuy` (Đề xuất PA, Thu hồi Ý thức): bảng nguồn đảo trước,
+ * thẻ về `cho` sau. Q-RL2c: loại có `dao` (Đề xuất sửa, Không cần theo dõi, Ý thức, Từ chối chuyển lớp) → `daoLai` trả thẻ + dòng nguồn về y như trước
+ * (409 nếu đã có thay đổi sau). Cùng một giao dịch. Chuông cho người gửi. Quyền theo phạm vi CỦA THẺ (bản ghi hiện tại).
  */
 export function huyQuyetDinh(p: Principal, id: number) {
   const truoc = docThe(id);
@@ -610,17 +643,26 @@ export function huyQuyetDinh(p: Principal, id: number) {
     const conn = db();
     const yc = conn.prepare('SELECT * FROM yeu_cau_duyet WHERE id = ?').get(id) as any;
     const loi = lyDoKhongHuy(yc);
-    if (loi) throw badRequest(loi);
+    if (loi) throw yc.trang_thai === 'cho' ? conflict(loi) : badRequest(loi);   // Q-RL2c: huỷ lần hai (thẻ đã về chờ) → 409
     const meta = metaCua(yc.loai);
     /* SUA-NO-RA (LUAT-5-a): mỗi (loại, đối tượng) chỉ một thẻ chờ — có thẻ mới đang chờ thì chặn có lý do, không đảo bảng nguồn rồi vỡ chỉ mục. */
     if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_loai = ? AND doi_tuong_id = ? AND trang_thai = 'cho' AND id != ?`)
       .get(yc.loai, yc.doi_tuong_loai, yc.doi_tuong_id, id)) {
       throw badRequest('Đã có yêu cầu mới đang chờ cho cùng việc này — xử lý yêu cầu đó, không huỷ quyết định cũ được.');
     }
-    dinhNghiaCua(yc.loai)!.khiHuy!(p, yc);
-    const doi = conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'cho', nguoi_duyet = NULL, ly_do_tu_choi = NULL, tra_loi = NULL, ly_do_dong = NULL,
-        tu_duyet = 0, xu_ly_luc = NULL WHERE id = ? AND trang_thai = ?`).run(id, yc.trang_thai).changes as number;
-    if (!doi) throw badRequest('Yêu cầu này vừa đổi. Danh sách đã được làm mới.');
+    const def = dinhNghiaCua(yc.loai)!;
+    if (def.khiHuy) {
+      def.khiHuy(p, yc);
+      const doi = conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'cho', nguoi_duyet = NULL, ly_do_tu_choi = NULL, tra_loi = NULL, ly_do_dong = NULL,
+          tu_duyet = 0, xu_ly_luc = NULL WHERE id = ? AND trang_thai = ?`).run(id, yc.trang_thai).changes as number;
+      if (!doi) throw badRequest('Yêu cầu này vừa đổi. Danh sách đã được làm mới.');
+    } else {
+      const r = timGhiDao(conn, GD.loai, GD.bang, id);
+      if (!r) throw conflict('Quyết định này ghi trước khi có Hoàn tác — không huỷ được, sửa trực tiếp ở màn gốc.');
+      daoLai(conn, r, p.userId);   // thẻ (đã chụp) về `cho` cùng dòng nguồn; dòng nào đã khác → 409, không đảo gì
+      if ((conn.prepare('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?').get(id) as any)?.trang_thai !== 'cho') throw conflict('Yêu cầu này vừa đổi. Danh sách đã được làm mới.');
+      xoaNho();   // trạng thái Ý thức / Case nhớ trong request đã cũ
+    }
     /* Chuông kết quả cũ đổi khoá (giữ làm lịch sử) — quyết lại vẫn báo được người gửi. */
     const duoi = `:huy:${nowIso()}`;
     conn.prepare('UPDATE notifications SET dedup_key = dedup_key || ? WHERE dedup_key IN (?, ?)').run(duoi, `duyet_ket_qua:${id}`, `tu_duyet:${id}`);

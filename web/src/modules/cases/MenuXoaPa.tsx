@@ -10,7 +10,7 @@ import { t } from '@shared/i18n/index.ts';
 
 /**
  * Nút ⋯ của dòng PA (PR-PA §8, mockup pa-dong-bo §8): `Sửa PA` (người ghi được Kết quả, PA đang chạy) · `Kết thúc PA` (OV-13a C: PA theo quy chế đang chạy,
- * GVCN lớp đang học / Quản lý — hộp nhỏ, Lý do ≥ 10 ký tự) · `Xoá PA` (Quản lý / Quản trị) — luật ở `nutDongPa` (shared). Xoá hỏi một dòng (mẫu
+ * GVCN lớp đang học / Quản lý — hộp nhỏ, Lý do ≥ 10 ký tự; Q-RL2c: toast Hoàn tác + `Mở lại PA` ở PA đã kết thúc sớm khi `iv.coTheHoanTacKetThuc`) · `Xoá PA` (Quản lý / Quản trị) — luật ở `nutDongPa` (shared). Xoá hỏi một dòng (mẫu
  * `DeleteViolationConfirm`). Không mục nào thì không vẽ nút.
  */
 export function MenuPa({ iv, ten, soKetQua, onSua, xoa, ketThuc = false }: { iv: any; ten: string; soKetQua: number; onSua?: () => void; xoa: boolean; ketThuc?: boolean }) {
@@ -30,6 +30,12 @@ export function MenuPa({ iv, ten, soKetQua, onSua, xoa, ketThuc = false }: { iv:
     } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
   };
   const ngan = lyDo.trim().length < LY_DO_KET_THUC_PA_TOI_THIEU;
+  /* Q-RL2c (N24 ②): đảo Kết thúc PA — toast Hoàn tác 5 s và ⋯ "Mở lại PA" về sau (máy chủ kiểm quyền + chưa ai đổi gì sau đó). */
+  const key = `ket-thuc-pa-${iv.id}`;
+  const moLaiPa = async () => {
+    try { await api.post(`/interventions/${iv.id}/hoan-tac-ket-thuc`); lamMoi(); toast.push('ok', t('Đã mở lại PA'), { key }); }
+    catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }
+  };
   const ketThucPa = async () => {
     setThu(true);
     if (ngan) return;
@@ -37,13 +43,14 @@ export function MenuPa({ iv, ten, soKetQua, onSua, xoa, ketThuc = false }: { iv:
     try {
       await api.post(`/interventions/${iv.id}/ket-thuc`, { lyDo: lyDo.trim() });
       lamMoi();
-      toast.push('ok', t('Đã kết thúc PA'));
+      toast.hoanTac(t('Đã kết thúc PA'), () => { void moLaiPa(); }, { key });
       setHoi(null); setLyDo(''); setThu(false);
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }   // lỗi: giữ chữ đang gõ
   };
   const muc = [
     ...(onSua ? [{ key: 'sua', nhan: t('Sửa PA'), onChon: onSua }] : []),
     ...(ketThuc ? [{ key: 'ket-thuc', nhan: t('Kết thúc PA'), onChon: () => setHoi('ket-thuc') }] : []),
+    ...(iv.coTheHoanTacKetThuc ? [{ key: 'mo-lai', nhan: t('Mở lại PA'), onChon: () => { void moLaiPa(); } }] : []),
     ...(xoa ? [{ key: 'xoa', nhan: t('Xoá PA'), nguyHiem: true, onChon: () => setHoi('xoa') }] : []),
   ];
   return (

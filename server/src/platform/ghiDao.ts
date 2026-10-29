@@ -48,6 +48,15 @@ export function timGhiDao(conn: any, loai: string, bang: string, id: number): Ba
     .get(loai, bang, id) as BanGhiDao | undefined) ?? null;
 }
 
+/** Cột thay đổi mà KHÔNG phải thay đổi nghiệp vụ — bỏ qua khi so "còn đúng sau": người nhận đọc chuông (`read_at`) không chặn Hoàn tác. */
+const BO_QUA: Record<string, readonly string[]> = { notifications: ['read_at'] };
+const boQua = (bang: string, d: Dong | undefined): Dong | undefined => {
+  const cot = BO_QUA[bang];
+  if (!d || !cot) return d;
+  const x = { ...d };
+  for (const c of cot) delete x[c];
+  return x;
+};
 const KHAC = (bang: string) => `Không hoàn tác được: đã có thay đổi sau thao tác này (${bang}) — sửa trực tiếp ở màn đó.`;
 const giongNhau = (a: Dong | undefined, b: Dong) => !!a && JSON.stringify(a) === JSON.stringify(b);
 
@@ -61,7 +70,7 @@ export function daoLai(conn: any, g: BanGhiDao, nguoi: number): void {
   for (const m of muc) for (const s of m.sau) {
     if (s.__mat) throw conflict(KHAC(m.bang));   // dòng đã mất ngay lúc chốt (không đảo được)
     const hienTai = conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid = ?`).get(s.__r) as Dong | undefined;
-    if (!giongNhau(hienTai, s)) throw conflict(KHAC(m.bang));
+    if (!giongNhau(boQua(m.bang, hienTai), boQua(m.bang, s)!)) throw conflict(KHAC(m.bang));
   }
   for (const m of [...muc].reverse()) {
     for (const d of m.truoc) {
@@ -83,5 +92,5 @@ export function daoDuoc(g: BanGhiDao | null): boolean {
   if (!g || g.dao_luc) return false;
   const conn = db();
   return (JSON.parse(g.du_lieu) as Muc[]).every((m) => m.sau.every((s) => !s.__mat
-    && giongNhau(conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid = ?`).get(s.__r) as Dong | undefined, s)));
+    && giongNhau(boQua(m.bang, conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid = ?`).get(s.__r) as Dong | undefined), boQua(m.bang, s)!)));
 }
