@@ -22,6 +22,8 @@ export default {
       '2xl': ['28px', '1.1'], // số lớn
     },
     extend: {
+      /* NEN-V8: bóng nổi (menu, panel, hộp, toast) theo mockup v8 — một biến `--bong-noi` (index.css) cho tối và sáng. */
+      boxShadow: { lg: 'var(--bong-noi)', xl: 'var(--bong-noi)', '2xl': 'var(--bong-noi)' },
       colors: {
         // NEN-TYPO-MAU: kết quả điểm — chỉ tô chính con số / ký hiệu ✓ ✗ (`text-kq-vuot`), không nền.
         'kq-vuot': v('kq-vuot'), 'kq-bang': v('kq-bang'), 'kq-duoi': v('kq-duoi'),
