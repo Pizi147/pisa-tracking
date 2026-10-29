@@ -312,7 +312,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     { ten: laThuong ? t('Bài kiểm tra') : t('Lượt MT'), ky: t('trong kỳ'), gt: soTong('luot'), mau: demTheo(theo, data.hang.length) },
     ...(laThuong ? [] : [
       { ten: t('Đạt'), gt: soTong('dat'), nho: luot ? `${Math.round(((tong.dat ?? 0) * 100) / luot)} %` : undefined, mau: t('trên {n} lượt', { n: luot }) },
-      { ten: t('SOS'), rong2: true, gt: <span className="flex flex-wrap items-center gap-1.5 py-1">{chipSos}</span>,
+      { ten: 'SOS', rong2: true, gt: <span className="flex flex-wrap items-center gap-1.5 py-1">{chipSos}</span>,
         mau: t('{n} lượt', { n: (tong.sos1 ?? 0) + (tong.sos2 ?? 0) + (tong.sos3 ?? 0) }) },
     ]),
     { ten: t('Thiếu điểm'), gt: soTong('chuaDu'), mau: laThuong ? undefined : t('gồm SOS tạm') },
@@ -342,7 +342,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const rong = data && !coBang ? (
     data.scopeEmpty ? <Empty title={t('Bạn chưa được cấp phạm vi nào')} />
       : <Empty title={t('Chưa có lượt nào có điểm')} hint={khoang.kieu === 'toan-bo' ? undefined : t('trong {ky}', { ky: nhanKy })}
-          action={khoang.kieu === 'toan-bo' ? undefined : <button type="button" className="btn btn-sm" onClick={xemToanBo}>{t('Xem Toàn bộ')}</button>} />
+          action={khoang.kieu === 'toan-bo' ? undefined : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={xemToanBo}>{t('Xem Toàn bộ')}</button>} />
   ) : null;
 
   return (

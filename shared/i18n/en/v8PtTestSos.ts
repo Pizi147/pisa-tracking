@@ -11,7 +11,6 @@ export const EN_V8_PT_TEST_SOS = {
   '{n} lượt MT': (b) => soNhieu(b.n, 'MT attempt', 'MT attempts'),
   'trên {n} lượt': (b) => `of ${soNhieu(b.n, 'attempt', 'attempts')}`,
   'trên {n} Case': (b) => `of ${soNhieu(b.n, 'Case', 'Cases')}`,
-  'SOS': 'SOS',
   'Thiếu điểm': 'Missing scores',
   'gồm SOS tạm': 'incl. provisional SOS',
   'Dưới kỳ vọng · HV': 'Below expectation · students',

@@ -79,10 +79,11 @@ export function VaoHangLoc({ o = 'giua', children }: { o?: KheLoc; children: Rea
 
 /** Một thẻ chỉ số (`.chi-so`): tên 13 · "trong kỳ" mờ · số 28 / 700 (số trơn hoặc `SoO` bấm được) · chữ nhỏ cạnh số · dòng mẫu 12 mờ. */
 export type ChiSo = { ten: ReactNode; ky?: ReactNode; gt: ReactNode; nho?: ReactNode; mau?: ReactNode; rong2?: boolean };
+const COT_CHI_SO: Record<number, string> = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6' };
 /** DẢI THẺ CHỈ SỐ đầu tab (V8-PT, G7: cùng hàm với dòng Tổng / bảng). 1440: một hàng đều cột; 375: hai cột, thẻ `rong2` trải hai cột. */
 export function DaiChiSo({ ds }: { ds: ChiSo[] }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:[grid-template-columns:repeat(var(--cot),minmax(0,1fr))]" style={{ ['--cot' as string]: ds.length }}>
+    <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${COT_CHI_SO[ds.length] ?? 'lg:grid-cols-5'}`}>
       {ds.map((c, i) => (
         <div key={i} className={`flex min-w-0 flex-col gap-0.5 rounded-xl border px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3 ${c.rong2 ? 'max-lg:col-span-2' : ''}`}
           style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
