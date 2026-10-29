@@ -8,7 +8,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
-import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
+import { badRequest, forbidden, loi as loiCo, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import {
   can, classScopeSql, coTheXemLuotCham, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
@@ -32,6 +32,7 @@ import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { duocSuaCaLop } from './suaCaLop.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
+import { luuPhanCong } from './phanCongGv.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -1057,13 +1058,15 @@ export function classTeachers(p: Principal, classId: number) {
       from: a.effective_from, to: a.effective_to,
     })),
     viewer: { canAssign, canAssignSubject },
-    /** SUA-NO-RA (CV-LOI-a): phiên bản = các dòng phân công đang chạy — gửi kèm khi lưu; người khác vừa đổi thì máy chủ trả 409. */
-    phienBan: phienBanPhanCong(active),
+    /** SUA-NO-RA (CV-LOI-a): phiên bản = các dòng phân công đang chạy (+ lịch đổi chờ) — gửi kèm khi lưu; người khác vừa đổi thì máy chủ trả 409. */
+    phienBan: phienBanPhanCong(active, conn.prepare(`SELECT id FROM doi_phan_cong WHERE class_id = ? AND trang_thai = 'cho'`).all(classId) as any[]),
   };
 }
 
-/** Phiên bản phân công của lớp: id các dòng `active` (mọi lần đổi kết thúc / thêm dòng → id khác). */
-const phienBanPhanCong = (ds: { id: number }[]) => ds.map((a) => a.id).sort((a, b) => a - b).join(',');
+/** Phiên bản phân công của lớp: id các dòng `active` (mọi lần đổi kết thúc / thêm dòng → id khác) + id dòng lịch đổi `cho` (PC-GV-A;
+ *  không có lịch đổi thì chuỗi y như cũ). */
+export const phienBanPhanCong = (ds: { id: number }[], cho: { id: number }[] = []) => ds.map((a) => a.id).sort((a, b) => a - b).join(',')
+  + (cho.length ? '|' + cho.map((a) => a.id).sort((a, b) => a - b).join(',') : '');
 
 /**
  * Đọc danh sách ô phân công gửi lên (dữ liệu từ ngoài) thành `SlotPhanCong` sạch. GVCN không mang kỹ năng; GV bộ môn phải có kỹ năng.
@@ -1091,14 +1094,21 @@ export function docSlots(raw: unknown): SlotPhanCong[] {
  */
 export function kiemTruocPhanCong(
   classId: number | null, branchId: number, chuongTrinh: string | null, kyNang: string[], slots: SlotPhanCong[],
+  /** PC-GV-A: ứng viên đã đọc (→ null) + người giữ ô không còn là ứng viên (`nghi` | `ngoai-cn`). Không truyền = đọc ứng viên như cũ. */
+  duocXep?: Map<number, 'nghi' | 'ngoai-cn' | null>,
 ): void {
+  const nhanCua = (khoa: string) => oPhanCong(chuongTrinh, kyNang).find((o) => o.khoa === khoa)?.nhan ?? tenMonNgan(chuongTrinh, khoa);
   const loi = kiemPhanCong(chuongTrinh, kyNang, slots)[0];
-  if (loi) {
-    const nhanO = oPhanCong(chuongTrinh, kyNang).find((o) => o.khoa === loi.khoa)?.nhan ?? tenMonNgan(chuongTrinh, loi.khoa);
-    throw badRequest(`${nhanO}: ${loi.lyDo}`);
+  if (loi) throw badRequest(`${nhanCua(loi.khoa)}: ${loi.lyDo}`, { khoa: loi.khoa });
+  const xep = duocXep ?? new Map(teacherCandidatesBranch(branchId, classId).map((u) => [u.id as number, null]));
+  const sai = slots.find((s) => xep.get(s.userId) !== null);
+  if (!sai) return;
+  const khoa = sai.isCore || sai.skill === 'tong_hop' ? 'gvcn' : sai.skill!;
+  if (xep.get(sai.userId) === 'nghi') {
+    const ten = (db().prepare('SELECT full_name FROM users WHERE id = ?').get(sai.userId) as any)?.full_name ?? '';
+    throw loiCo(400, '{o}: {ten} đã nghỉ — chọn người thay hoặc Bỏ trống', { o: nhanCua(khoa), ten }, { khoa });
   }
-  const duocXep = new Set(teacherCandidatesBranch(branchId, classId).map((u) => u.id as number));
-  if (slots.some((s) => !duocXep.has(s.userId))) throw badRequest('Người này không có vai trò giảng dạy ở chi nhánh của lớp.');
+  throw badRequest('Người này không có vai trò giảng dạy ở chi nhánh của lớp.', { khoa });
 }
 
 /**
@@ -1108,7 +1118,9 @@ export function kiemTruocPhanCong(
  */
 export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[], ngay: string,
   /** PR-QU: thêm vào nhật ký (`via`, `truoc`, `sau`). */
-  meta?: Record<string, unknown>): { added: number; ended: number } {
+  meta?: Record<string, unknown>,
+  /** PC-GV-A: mã lớp đã đọc (lưu nhiều lớp) — khỏi đọc lại cho nhật ký. */
+  maLop?: string): { added: number; ended: number } {
   const conn = db();
   const keyOf = (userId: number, skill: string | null, isCore: boolean | number) => `${userId}|${skill ?? ''}|${isCore ? 1 : 0}`;
   const wanted = new Map(slots.map((s) => [keyOf(s.userId, s.skill, s.isCore), s] as const));
@@ -1139,7 +1151,7 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
   /* CV-LOI (A13): phân công vừa có người cho môn / GVCN → Case mở chưa có người phụ trách của lớp tự có chủ, cùng giao dịch, có lịch sử. */
   if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso() });
   if (added || ended) {
-    const code = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
+    const code = maLop ?? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
     writeAudit({
       actorUserId: p.userId, action: 'class.assign', entityType: 'class', entityId: classId,
       entityLabel: code, after: { added, ended, ...meta },
@@ -1164,58 +1176,12 @@ export function monGopConCan(classId: number): Set<string> {
   ).all(classId, ...gop, classId, ...gop) as any[]).map((r) => r.m as string));
 }
 
-/** Ô GVCN của một bức tranh phân công: dòng `isCore` + ô Tổng hợp Pre FOU (GVCN tự nhận, G2/T56) — GVCN không tự đổi ô này. */
-function oCore(slots: readonly { userId: number; skill: string | null; isCore: boolean }[]): string {
-  return slots.filter((s) => s.isCore || s.skill === 'tong_hop').map((s) => `${s.userId}|${s.isCore ? 'core' : s.skill}`).sort().join(',');
-}
-
 /**
- * Phân công GV của lớp đã có: kiểm ba luật TRƯỚC (`kiemTruocPhanCong`), rồi ghi trong một giao dịch.
- * PR-QU (A): Quản lý (`class.assign`) đổi mọi ô; GVCN của lớp (`class.assign_subject`, suy ra) chỉ đổi ô GV BỘ MÔN — chạm ô GVCN thì 403,
- * không ghi gì. GVCN đổi thì nhật ký ghi `via:'gvcn'` kèm trước/sau, và Quản lý chi nhánh nhận thông báo (để biết, không duyệt — G3).
+ * Phân công GV của lớp đã có (`PUT /classes/:id/teachers`, đường cũ): PC-GV-A — đi qua lõi chung `luuPhanCong` (một lớp, hiệu lực hôm nay):
+ * cùng ba luật, cùng quyền (QL mọi ô; GVCN chỉ ô bộ môn — chạm GVCN 403; GVCN đổi thì QL nhận thông báo), cùng 409 phiên bản. Trả bức tranh mới.
  */
 export function setClassTeachers(p: Principal, classId: number, input: { slots?: TeacherSlot[]; phienBan?: unknown }) {
-  const conn = db();
-  const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
-  if (!cls) throw notFound('Không tìm thấy lớp');
-  const full = can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
-  if (!full) {
-    require_(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId, branchId: cls.branch_id },
-      'Chỉ Quản lý hoặc GVCN của lớp mới phân công giáo viên.');
-  }
-
-  const prog = programmeOfClass(classId);
-  const ct = prog?.code ?? null;
-  const classSkills: string[] = prog?.skills ?? [...ENTRY_SKILLS];
-  /* Pre FOU: GVCN tự nhận ô môn duy nhất — đổi GVCN thì ô đó đổi theo, dòng cũ kết thúc như mọi ô (T56). */
-  const slots = moRongPhanCong(ct, classSkills, docSlots(input.slots));
-  const docCu = () => conn.prepare(`SELECT id, user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(classId) as any[];
-  /* SUA-NO-RA (CV-LOI-a): bức tranh gửi lên đọc từ phiên bản cũ → không ghi đè phân công người khác vừa đổi (kiểm lại trong giao dịch).
-     Không gửi phiên bản = đường cũ (phép kiểm, công cụ). */
-  const kiemPhienBan = (ds: any[]) => {
-    if (input.phienBan !== undefined && String(input.phienBan) !== phienBanPhanCong(ds)) {
-      throw conflict('Phân công lớp vừa đổi bởi người khác. Đã tải lại — chọn lại rồi lưu.');
-    }
-  };
-  const dongCu = docCu();
-  kiemPhienBan(dongCu);
-  const cu = dongCu.map((a) => ({ userId: a.user_id as number, skill: a.skill as string | null, isCore: a.is_core === 1 }));
-  if (!full && oCore(cu) !== oCore(slots)) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Quản lý chi nhánh.');
-  /* P13: môn gộp cũ đang có dòng phân công (giữ cho ô / Case cũ) là môn hợp lệ khi bức tranh gửi lại — không 400 "Lớp không có môn này". */
-  const monGopCo = [...new Set(cu.map((x) => x.skill).filter((k): k is string => !!k && Object.hasOwn(MON_GOP, k) && !classSkills.includes(k)))];
-  kiemTruocPhanCong(classId, cls.branch_id, ct, [...classSkills, ...monGopCo], slots);
-
-  const tom = (ds: typeof cu) => ds.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort();
-  return tx(() => {
-    kiemPhienBan(docCu());
-    const r = ghiPhanCong(p, classId, slots, demoToday(), { via: full ? 'quan_ly' : 'gvcn', truoc: tom(cu), sau: tom(slots) });
-    if (!full && (r.added || r.ended)) {
-      for (const id of quanLyCuaChiNhanh(cls.branch_id)) {
-        if (id === p.userId) continue;
-        notify({ userId: id, kind: 'phan_cong_gvcn', title: `${p.fullName} (GVCN) đã đổi phân công GV bộ môn lớp ${cls.code}`,
-          entityType: 'class', entityId: classId, dedupKey: `phan_cong_gvcn:${classId}:${nowIso()}`, duong: `/hoc-vien/lop/${classId}` });
-      }
-    }
-    return classTeachers(p, classId);
-  });
+  if (!db().prepare('SELECT 1 FROM classes WHERE id = ?').get(classId)) throw notFound('Không tìm thấy lớp');
+  luuPhanCong(p, { lop: [{ classId, slots: input.slots ?? [], ...(input.phienBan !== undefined ? { phienBan: String(input.phienBan) } : {}) }] });
+  return classTeachers(p, classId);
 }

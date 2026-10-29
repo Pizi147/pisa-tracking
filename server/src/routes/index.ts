@@ -63,6 +63,7 @@ import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as lenhSvc from '../classes/lenhChuyen.ts';
+import * as phanCongGvSvc from '../classes/phanCongGv.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as dichSvc from '../dich/dich.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
@@ -1526,6 +1527,29 @@ api.put('/classes/:id/teachers', requireAuth, wrap((req) => {
   return classSvc.setClassTeachers(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** PC-GV-A: lưu phân công NHIỀU lớp một lần, có hiệu lực (Ngay hôm nay / Từ tuần …) — một giao dịch, `lo` = khoá Hoàn tác. */
+api.post('/phan-cong/luu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return phanCongGvSvc.luuPhanCong(principalOf(req), req.body ?? {});
+}));
+/** PC-GV-A: xem trước hộp Lưu — mỗi cặp đổi người: số Case / PA sẽ chuyển, ai viết bàn giao, số em (không ghi). */
+api.post('/phan-cong/xem-truoc', requireAuth, wrap((req) => phanCongGvSvc.xemTruocLuu(principalOf(req), req.body ?? {})));
+/** PC-GV-A: Hoàn tác một lần lưu (`lo`) hoặc Đổi mốc / Huỷ lịch đổi (`dao`) — 409 khi đã có thay đổi sau. */
+api.post('/phan-cong/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  phanCongGvSvc.hoanTacLuu(principalOf(req), { lo: req.body?.lo, dao: req.body?.dao });
+  return { ok: true };
+}));
+/** PC-GV-A: lịch đổi chờ — Đổi mốc (tuần khác / Ngay hôm nay) · Huỷ lịch đổi. */
+api.post('/phan-cong/cho/doi-moc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return phanCongGvSvc.doiMocCho(principalOf(req), req.body?.ids, req.body?.hieuLuc);
+}));
+api.post('/phan-cong/cho/huy', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return phanCongGvSvc.huyCho(principalOf(req), req.body?.ids);
+}));
+
 /** Tạo lớp = lớp + phân công trong MỘT giao dịch (YC-1); tên lớp do máy ghép từ chương trình/lộ trình/số (T1). */
 api.post('/classes', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1560,6 +1584,11 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   });
 }));
 
+/** PC-GV-A: góc Phân công GV — cả chi nhánh một lần (QL / Quản trị sửa, CX xem; GV / TVV 403). */
+api.get('/hoc-vien-lop/phan-cong', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return phanCongGvSvc.trangPhanCongGv(principalOf(req), qInt(req, 'branchId') ?? null);
+}));
 /** Trước/Sau của hồ sơ lớp mở bằng link (PR-TD2-b): id + cách chấm của `/hoc-vien-lop` mặc định, không nạp lượt. */
 api.get('/hoc-vien-lop/ids', requireAuth, wrap((req) => hocVienLopSvc.idsHocVienLop(principalOf(req))));
 /* OV-10b: Học viên & Lớp của TVV / CX — mỗi em một dòng theo việc của vai, chip = `chipHocVien` (cùng ô Tổng quan). */

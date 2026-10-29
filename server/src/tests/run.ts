@@ -9772,6 +9772,9 @@ await runPrW1GopTaiLaiTests({ check, checkAsync, assert } as any);
 // ==================================================================== S2 (lịch kỹ năng gắn môn theo lô + standingFor nạp theo vòng — giảm dòng đọc Turso)
 const { runPrS2LichKyNangTests } = bocTep('prS2LichKyNang', await import('./prS2LichKyNang.tests.ts'));
 await runPrS2LichKyNangTests({ check, assert, conn } as any);
+// ==================================================================== PC-GV-A (Phân công GV có hiệu lực — máy chủ)
+const { runPrPhanCongGvTests } = bocTep('prPhanCongGv', await import('./prPhanCongGv.tests.ts'));
+await runPrPhanCongGvTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== S3 (bỏ câu con theo dòng: TVV, Học viên & Lớp, phụ liệu Case, lượt mới nhất — giảm dòng đọc Turso)
 const { runPrS3CauConTests } = bocTep('prS3CauCon', await import('./prS3CauCon.tests.ts'));
 await runPrS3CauConTests({ check, assert, conn } as any);
