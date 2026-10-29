@@ -9874,6 +9874,9 @@ await runPrQuetTheoKyTests({ check, checkAsync, assert, conn, P, classId } as an
 // ==================================================================== SUA-NHO-QUYEN (Chưa có kỹ năng tính người đang dạy · Sửa thông tin em tạm dừng ở Lưu trữ)
 const { runPrSuaNhoQuyenTests } = bocTep('prSuaNhoQuyen', await import('./prSuaNhoQuyen.tests.ts'));
 await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
+// ==================================================================== LOP-1-LOP (hồ sơ lớp đọc lượt một lớp; badge quá hạn từ viec-theo-em — giảm dòng đọc Turso)
+const { runPrLop1LopTests } = bocTep('prLop1Lop', await import('./prLop1Lop.tests.ts'));
+await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY } as any);
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, docLap: [...chia.values()].filter((k) => k === NHOM).length, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);
