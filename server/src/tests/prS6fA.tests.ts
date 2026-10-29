@@ -353,8 +353,19 @@ export async function runPrS6fATests(t: YThucTestKit) {
   });
   check('S6F-a (4h) · Hiệu quả PA quy chế: hàng con theo thứ tự cố định (khoá INTERVENTION_KIND_LABEL), không theo số PA', () => {
     const thu = Object.keys(d.INTERVENTION_KIND_LABEL);
+    /* CN-3a (rà #743): tự dựng — Case SOS FT ở MB có HAI PA quy chế khác loại, đã xác nhận, xong trong khoảng, có kết quả theo dõi (hàng có ≥ 2 hàng con).
+       Trước vòng lặp chạy trên danh sách rỗng nên không kiểm gì. */
+    const c = get(`SELECT sc.id FROM sos_cases sc JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
+      WHERE sc.sos_level >= 1 ORDER BY sc.id LIMIT 1`, MB_FT);
+    assert(c, 'cần một Case SOS ở MB FT 101');
+    for (const kind of ['tutor', 'self_study']) {
+      const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, preset, confirmed_at, started_date, completed_date, created_at)
+        VALUES (?, ?, 'PA quy chế (S6F-a 4h)', 'completed', 1, ?, ?, ?, ?)`).run(c.id, kind, `${tuanNay}T00:00:00Z`, tuanNay, t.addDays(tuanNay, 1), now()).lastInsertRowid);
+      conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, outcome, observed_on, created_at) VALUES (?, ?, 'improved', ?, ?)`).run(c.id, iv, t.addDays(tuanNay, 1), now());
+    }
     for (const kh of [{ tu: '2026-06-15', den: tuanNay }, { tu: '2026-08-24', den: tuanNay }]) {
       const r = hq.hieuQuaPa(P.mbManager, { branchId: MB, ct: 'ft', soTuan: 4, ...kh });
+      assert(r.quyChe.hang.length > 0 && r.quyChe.hang.some((h: any) => (h.con ?? []).length >= 2), `phải có hàng PA quy chế có ≥ 2 hàng con: ${JSON.stringify(r.quyChe.hang)}`);
       for (const h of r.quyChe.hang) {
         const vt = (h.con ?? []).map((c: any) => thu.indexOf(c.khoa.split('|')[1]));
         assert(vt.every((v: number, i: number) => i === 0 || vt[i - 1] <= v), `${h.nhan}: ${(h.con ?? []).map((c: any) => c.khoa).join(', ')}`);

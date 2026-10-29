@@ -10,6 +10,7 @@ const doc = (rel: string) => fs.readFileSync(path.join(REPO, rel), 'utf8');
 export async function runPrUxfBTests(t: YThucTestKit) {
   const { check, assert } = t;
   const d: any = await import('../../../shared/domain/index.ts');
+  const week: any = await import('../platform/week.ts');
   console.log('\nPR-UXF-b · Mã tuần toàn web + việc sót');
 
   // ------------------------------------------------------------------ Task 1 · ô chọn tuần, bộ chọn tuần
@@ -167,9 +168,30 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(d.docThamSoHoSo((k: string) => q.get(k)).muc === 'ket-luan-khoa', 'đọc lại');
     assert(d.docThamSoHoSo((k: string) => (k === 'muc' ? 'xyz' : null)).muc === undefined, 'muc lạ');
   });
-  check('UXF-b (5) → PR-KV · việc "Kỳ vọng đầu ra · lớp" (QL): href mở panel ở trang lớp nguồn (?viec=ky-vong) — không còn mở hồ sơ từng em', () => {
+  check('UXF-b (5) → PR-KV → P9b · việc "Kỳ vọng đầu ra · lớp" (QL): href mở trang con Cuối khoá của lớp nguồn (?xem=cuoi-khoa) — không còn mở hồ sơ từng em', () => {
+    /* CN-3a (rà #743): tự dựng — em BE có lệnh lên FT + MT0 đủ điểm, chưa kết luận kỳ vọng (như VAI-a 2d); trước dựa vào dữ liệu tệp khác,
+       trên DB gốc danh sách rỗng nên vòng lặp không kiểm gì. */
+    const conn = t.conn, NOW = new Date().toISOString(), TODAY = t.TODAY;
+    const cid = t.classId('MB BE 04');
+    const br = (conn.prepare('SELECT branch_id, programme_code FROM classes WHERE id = ?').get(cid) as any);
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES ('PISA-UXFB-KV', 'Học viên UXFB KV', 'hoc vien uxfb kv', ?, 'active', ?)`)
+      .run(br.branch_id, NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-06-01', ?)`).run(sid, cid, NOW);
+    const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, NULL, ?, '2026-06-01', 'active', ?)`)
+      .run(sid, br.programme_code, NOW).lastInsertRowid);
+    const thu2 = week.mondayOf(TODAY);
+    conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at) VALUES (?,?,2,'final',?,?, 'planned', ?)`)
+      .run(cy, sid, cid, week.ensurePeriod(thu2).id, NOW);
+    conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc) VALUES (?, ?, 'fast_track', 'cuoi_khoa', ?, ?, ?, ?)`)
+      .run(sid, cid, t.addDays(thu2, 7), t.P.mbManager.userId, TODAY, NOW);
+    const mt0 = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?,0,'mt0',?, 'planned', ?)`)
+      .run(cy, sid, cid, NOW).lastInsertRowid);
+    for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,4)').run(mt0, k);
     const items = (myworkSvc.myWork(t.P.mbManager, {}) as any).items.filter((x: any) => x.group === 'ky_vong_dau_ra');
-    for (const x of items) assert(x.href === `/hoc-vien/lop/${x.classId}?viec=ky-vong`, x.href);
+    assert(items.length > 0, 'phải có việc "Kỳ vọng đầu ra · lớp" để kiểm');
+    /* CN-3a: P9b đưa Kỳ vọng vào trang con Cuối khoá (`?xem=cuoi-khoa`; link cũ `?viec=ky-vong` web tự chuyển — ClassOverviewPage) — kỳ vọng cũ
+       không ai thấy vì danh sách trước luôn rỗng ở phép này. */
+    for (const x of items) assert(x.href === `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`, x.href);
   });
   check('UXF-b (5) · mốc MT trong lịch sử Case: có đường tới đợt qua duongDotTest', () => {
     const m = t.conn.prepare('SELECT case_id FROM case_milestones WHERE attempt_id IS NOT NULL LIMIT 1').get() as any;

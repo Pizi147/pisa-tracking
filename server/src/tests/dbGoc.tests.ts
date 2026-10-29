@@ -5,7 +5,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runDbGocTests(t: YThucTestKit) {
   const { check, assert, conn, classId } = t;
   const { db } = await import('../db.ts');
-  const { moBanGoc, chiaThamLam } = await import('./dbGoc.ts');
+  const { moBanGoc, chiaThamLam, nhomCuaTep } = await import('./dbGoc.ts');
   const { chepDbKiem } = await import('./banSaoDb.ts');
   const { scoringModeOf } = await import('../fasttrack/skillSchedule.ts');
   const { batBienDb } = await import('./prTk.tests.ts');
@@ -90,7 +90,11 @@ export async function runDbGocTests(t: YThucTestKit) {
     const tai = [2, 0, 0];
     for (const [ten, k] of m) tai[k - 1] += (tg as any)[ten];
     assert(Math.max(...tai) - Math.min(...tai) <= 5, `tải ${tai}`);
-    assert((m.get('x') ?? 1) === 1, 'tệp ngoài danh sách → nhóm 1');
+    /* CN-3a (rà #743): kiểm thật hàm run.ts dùng (`nhomCuaTep`) — trước `(m.get('x') ?? 1) === 1` luôn đúng. */
+    const ngoai = [...m.entries()].find(([, k]) => k !== 1)![0];   // tệp ở nhóm ≠ 1 khi độc lập
+    assert(nhomCuaTep(m, false, ngoai) === 1, 'tệp ngoài DOC_LAP (chuỗi) → nhóm 1 dù có trong bảng chia');
+    assert(nhomCuaTep(m, true, ngoai) === m.get(ngoai), 'tệp độc lập → nhóm theo bảng chia');
+    assert(nhomCuaTep(m, true, 'x') === 1, 'tệp độc lập chưa có trong bảng chia → nhóm 1');
     assert([...chiaThamLam(tg, 2, 1).values()].every((k) => k === 1), 'một nhóm → mọi tệp 1');
     assert(JSON.stringify([...chiaThamLam(tg, 2, 3)]) === JSON.stringify([...m]), 'tất định');
   });
