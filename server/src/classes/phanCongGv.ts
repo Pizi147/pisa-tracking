@@ -23,8 +23,8 @@ import { docSlots, ghiPhanCong, kiemTruocPhanCong, phienBanPhanCong, teacherCand
 
 export type LuuLopVao = { classId: number; slots: TeacherSlot[]; phienBan?: string; banGiao?: Record<string, boolean> };
 export type KetQuaLuu = { lo: number | null; lop: { classId: number; cho: boolean; soO: number }[] };
-/** Một lần lưu tối đa bấy nhiêu lớp (ca GV nghỉ nhiều lớp vẫn dư). */
-const TOI_DA_LOP = 60;
+/** Một lần lưu tối đa bấy nhiêu lớp — vừa thời gian một giao dịch Turso (~29 câu / lớp, `TRAN_GHI_LO.luuPhanCong3Lop`); GV nghỉ thường ≤ 10 lớp. */
+const TOI_DA_LOP = 12;
 
 type DongDoi = { id: number; khoa: string; nguoi_cu: number | null; nguoi_moi: number | null };
 /** Người được xếp ở chi nhánh: ứng viên → null; người giữ ô mà không còn là ứng viên → 'nghi' | 'ngoai-cn'. */
@@ -80,7 +80,7 @@ function docHienTai(ids: readonly number[]) {
   const active = new Map<number, any[]>(ids.map((id) => [id, []]));
   const cho = new Map<number, any[]>(ids.map((id) => [id, []]));
   for (const r of conn.prepare(`SELECT id, class_id, user_id, skill, is_core FROM teacher_assignments WHERE status = 'active' AND class_id IN (${inHang(ids.length)})`).all(...ids) as any[]) active.get(r.class_id)!.push(r);
-  for (const r of conn.prepare(`SELECT id, class_id, khoa FROM doi_phan_cong WHERE trang_thai = 'cho' AND class_id IN (${inHang(ids.length)})`).all(...ids) as any[]) cho.get(r.class_id)!.push(r);
+  for (const r of conn.prepare(`SELECT id, class_id, khoa, nguoi_cu, nguoi_moi, hieu_luc FROM doi_phan_cong WHERE trang_thai = 'cho' AND class_id IN (${inHang(ids.length)})`).all(...ids) as any[]) cho.get(r.class_id)!.push(r);
   return { active, cho };
 }
 
@@ -92,16 +92,22 @@ type LopChuan = { classId: number; code: string; branchId: number; ct: string | 
  * `details.{classId, khoa}`), rồi MỘT giao dịch: kiểm lại phiên bản; ô có lịch đổi chờ → dòng cũ huỷ (thay bằng lần đổi sau); chèn dòng đổi;
  * hôm nay → áp ngay (`apDoiLop`); tuần sau → `cho`. Mọi dòng ghi chụp `ghi_dao` để Hoàn tác (`lo` = khoá).
  */
-export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuLucVao }): KetQuaLuu {
+/** Danh sách lớp gửi lên (lưu / xem trước): 1–60 lớp, id nguyên dương không trùng, lớp có thật. */
+function docLopVao(body: { lop?: unknown }) {
   const vao = Array.isArray(body?.lop) ? (body.lop as LuuLopVao[]) : null;
   if (!vao?.length) throw badRequest('Chưa có lớp nào để lưu.');
   if (vao.length > TOI_DA_LOP) throw loi(400, 'Mỗi lần lưu tối đa {n} lớp.', { n: TOI_DA_LOP });
   const ids = vao.map((l) => Number(l?.classId));
   if (ids.some((id) => !Number.isInteger(id) || id <= 0) || new Set(ids).size !== ids.length) throw badRequest('Danh sách lớp không hợp lệ.');
+  const cls = new Map((db().prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${inHang(ids.length)})`).all(...ids) as any[]).map((c) => [c.id as number, c]));
+  if (cls.size !== ids.length) throw notFound('Không tìm thấy lớp');
+  return { vao, ids, cls };
+}
+
+export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuLucVao }): KetQuaLuu {
+  const { vao, ids, cls } = docLopVao(body);
   const { ngay, homNay } = ngayHieuLuc(body.hieuLuc);
   const conn = db();
-  const cls = new Map((conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${inHang(ids.length)})`).all(...ids) as any[]).map((c) => [c.id as number, c]));
-  if (cls.size !== ids.length) throw notFound('Không tìm thấy lớp');
 
   const nhieu = vao.length > 1;
   const kiemPhienBan = (l: LuuLopVao, active: any[], cho: any[]) => {
@@ -131,11 +137,23 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     const monGopCo = [...new Set(cu.map((x) => x.skill).filter((k): k is string => !!k && Object.hasOwn(MON_GOP, k) && !kyNang.includes(k)))];
     try {
       kiemTruocPhanCong(classId, c.branch_id, ct, [...kyNang, ...monGopCo], slots, duocXepCua(xepNho, c.branch_id, slots.map((s) => s.userId)));
+      /* Từ tuần: bức tranh LÚC HIỆU LỰC = hiện tại + lịch chờ khác tới hạn trước / cùng tuần + lần đổi này — hai lịch hợp lệ riêng mà sai khi gộp
+         thì báo ngay, không đợi tới hạn mới lỗi. */
+      if (!homNay) {
+        const khoaDoi = new Set(doi.map((d) => d.khoa));
+        const choTruoc = truoc.cho.get(classId)!.filter((r) => r.hieu_luc <= ngay && !khoaDoi.has(r.khoa))
+          .map((r): DoiO => ({ khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi }));
+        if (choTruoc.length) {
+          const luc = moRongPhanCong(ct, kyNang, apDoi(cu, [...choTruoc, ...doi], kyNang));
+          kiemTruocPhanCong(classId, c.branch_id, ct, kyNang, luc, duocXepCua(xepNho, c.branch_id, luc.map((s) => s.userId)));
+        }
+      }
     } catch (e) {
       if (e instanceof HttpError && e.status === 400) {
         const khoa = (e.details as any)?.khoa ?? null;
-        const x = new HttpError(400, nhieu ? `${c.code} · ${e.message}` : e.message, { classId, khoa });
-        if (!nhieu) { x.khoa = e.khoa; x.bien = e.bien; }
+        /* Nhiều lớp: tiền tố mã lớp cho bản Việt; giữ khoá + biến để web Anh dịch phần lỗi, mã lớp ở `details.classCode`. */
+        const x = new HttpError(400, nhieu ? `${c.code} · ${e.message}` : e.message, { classId, khoa, classCode: c.code });
+        x.khoa = e.khoa; x.bien = e.bien;
         throw x;
       }
       throw e;
@@ -167,11 +185,12 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
         moi.push(id);
         return { id, khoa: d.khoa, nguoi_cu: d.nguoiCu, nguoi_moi: d.nguoiMoi };
       });
-      if (homNay) {
-        /* Luôn áp ở "hôm nay" (kể cả không ô nào đổi) — đúng đường cũ: dòng môn gộp cũ hết việc thì kết thúc như mọi lần lưu. */
-        const r = apDoiLop(p, l.classId, rows, ngay, { g, duocXep: xepNho.get(l.branchId), via: l.full ? 'quan_ly' : 'gvcn',
-          lop: { branch_id: l.branchId, code: l.code, ct: l.ct, kyNang: l.kyNang } });
-        if (!l.full && (r.added || r.ended)) {
+      /* Luôn áp ở "hôm nay" (kể cả không ô nào đổi) — đúng đường cũ: dòng môn gộp cũ hết việc thì kết thúc như mọi lần lưu. */
+      const r = homNay ? apDoiLop(p, l.classId, rows, ngay, { g, duocXep: xepNho.get(l.branchId), via: l.full ? 'quan_ly' : 'gvcn',
+        lop: { branch_id: l.branchId, code: l.code, ct: l.ct, kyNang: l.kyNang } }) : null;
+      {
+        /* GVCN đổi GV bộ môn (ngay hoặc lịch từ tuần sau) → QL chi nhánh biết ngay lúc lưu (để biết, không duyệt — G3). */
+        if (!l.full && (r ? r.added || r.ended : rows.length)) {
           for (const id of quanLyCuaChiNhanh(l.branchId)) {
             if (id === p.userId) continue;
             notify({ userId: id, kind: 'phan_cong_gvcn', title: `${p.fullName} (GVCN) đã đổi phân công GV bộ môn lớp ${l.code}`,
@@ -244,8 +263,8 @@ export function apDoiDenHan(homNay = demoToday()): { daAp: number; loi: number }
   const kq = { daAp: 0, loi: 0 };
   const conn = db();
   const nhom = conn.prepare(
-    `SELECT DISTINCT class_id, hieu_luc FROM doi_phan_cong
-      WHERE trang_thai = 'cho' AND hieu_luc <= ? AND (thu_ngay IS NULL OR thu_ngay < ?) ORDER BY hieu_luc, class_id LIMIT ?`,
+    `SELECT DISTINCT d.class_id, d.hieu_luc FROM doi_phan_cong d JOIN classes c ON c.id = d.class_id AND c.status = 'active'
+      WHERE d.trang_thai = 'cho' AND d.hieu_luc <= ? AND (d.thu_ngay IS NULL OR d.thu_ngay < ?) ORDER BY d.hieu_luc, d.class_id LIMIT ?`,
   ).all(homNay, homNay, NHOM_TOI_DA) as any[];   // ponytail: 40 nhóm/lượt, lượt quét sau làm tiếp
   for (const n of nhom) {
     try {
@@ -263,7 +282,7 @@ export function apDoiDenHan(homNay = demoToday()): { daAp: number; loi: number }
           conn.prepare(`UPDATE doi_phan_cong SET loi = ?, thu_ngay = ? WHERE id IN (${inHang(ids.length)})`).run(e.message.slice(0, 300), homNay, ...ids);
           const code = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(n.class_id) as any)?.code ?? '';
           notify({ userId: rows[0].tao_boi, kind: 'phan_cong_loi', title: `Chưa đổi được phân công ${code}: ${e.message}`.slice(0, 300),
-            entityType: 'class', entityId: n.class_id, dedupKey: `phan_cong_loi:${n.class_id}:${n.hieu_luc}:${homNay}`, duong: `/hoc-vien/lop/${n.class_id}` });
+            entityType: 'class', entityId: n.class_id, dedupKey: `phan_cong_loi:${n.class_id}:${n.hieu_luc}`, duong: `/hoc-vien/lop/${n.class_id}` });
           kq.loi += 1;
           return;
         }
@@ -303,7 +322,8 @@ function dongCho(ids: unknown): any[] {
 }
 
 /** ĐỔI MỐC lịch chờ: sang tuần khác, hoặc "Ngay hôm nay" → áp ngay (Case / PA chuyển). `dao` = khoá Hoàn tác. */
-export function doiMocCho(p: Principal, ids: unknown, hieuLuc: HieuLucVao): { lo: number | null; dao: number } {
+export function doiMocCho(p: Principal, ids: unknown, hieuLuc: HieuLucVao | undefined): { lo: number | null; dao: number } {
+  if (!hieuLuc) throw badRequest('Hiệu lực không hợp lệ.');
   kiemQuyenDong(p, dongCho(ids));
   const { ngay, homNay } = ngayHieuLuc(hieuLuc);
   const conn = db();
@@ -315,7 +335,9 @@ export function doiMocCho(p: Principal, ids: unknown, hieuLuc: HieuLucVao): { lo
     g.sua('doi_phan_cong', dk, ...rid);
     if (homNay) {
       theoDoiMoi(g, ['teacher_assignments', 'sos_case_history', 'notifications'], () => {
-        for (const classId of new Set(rows.map((r) => r.class_id as number))) apDoiLop(p, classId, rows.filter((r) => r.class_id === classId), ngay, { g });
+        for (const classId of new Set(rows.map((r) => r.class_id as number))) {
+          apDoiLop(p, classId, rows.filter((r) => r.class_id === classId), ngay, { g, via: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) ? 'quan_ly' : 'gvcn' });
+        }
       });
       conn.prepare(`UPDATE doi_phan_cong SET trang_thai = 'da_ap', hieu_luc = ?, ap_luc = ?, xem_den = CASE WHEN nguoi_cu IS NULL THEN NULL ELSE ? END, loi = NULL, thu_ngay = NULL
                      WHERE ${dk}`).run(ngay, nowIso(), xemDen(ngay), ...rid);
@@ -355,9 +377,15 @@ export function hoanTacLuu(p: Principal, o: { lo?: unknown; dao?: unknown }): vo
       : timGhiDao(conn, 'phan_cong.luu', 'doi_phan_cong', Number(o.lo));
     if (!g) throw notFound('Không còn bản ghi để hoàn tác.');
     const muc = JSON.parse(g.du_lieu) as { k: string; bang: string; truoc: any[]; sau: any[] }[];
-    const dong = muc.filter((m) => m.bang === 'doi_phan_cong').flatMap((m) => (m.k === 'tao' ? m.sau : m.truoc));
+    const dong = muc.filter((m) => m.bang === 'doi_phan_cong').flatMap((m) => (m.k === 'tao' ? m.sau : m.truoc)).filter((d) => d.class_id);
     if (!dong.length) throw notFound('Không còn bản ghi để hoàn tác.');
     kiemQuyenDong(p, dong);
+    /* Ô của bản ghi đã có lịch đổi chờ MỚI HƠN (lưu sau thao tác này) → đảo sẽ thành hai lịch một ô / lịch trỏ người không còn giữ ô — chặn. */
+    const oDong = [...new Map(dong.map((d) => [`${d.class_id}|${d.khoa}`, d])).values()];
+    if (conn.prepare(`SELECT 1 FROM doi_phan_cong WHERE trang_thai = 'cho' AND id > ? AND (${oDong.map(() => '(class_id = ? AND khoa = ?)').join(' OR ')}) LIMIT 1`)
+      .get(Math.max(...dong.map((d) => d.id as number)), ...oDong.flatMap((d) => [d.class_id, d.khoa]))) {
+      throw conflict('Không hoàn tác được: ô này đã có lịch đổi mới hơn — huỷ lịch đó trước.');
+    }
     daoLai(conn, g, p.userId);
     writeAudit({ actorUserId: p.userId, action: 'class.assign.hoan_tac', entityType: 'class', entityId: dong[0].class_id,
       after: { loai: g.loai, ghiDao: g.id, lop: [...new Set(dong.map((d) => d.class_id))] } });
@@ -436,13 +464,7 @@ export function trangPhanCongGv(p: Principal, branchId: number | null): TrangPha
  * lúc áp), ai viết bàn giao (`nguoiVietBanGiao`, GVCN của bức tranh hiện tại), số em. Quyền như lưu.
  */
 export function xemTruocLuu(p: Principal, body: { lop?: unknown }): XemTruocLuu {
-  const vao = Array.isArray(body?.lop) ? (body.lop as LuuLopVao[]) : null;
-  if (!vao?.length || vao.length > TOI_DA_LOP) throw badRequest('Danh sách lớp không hợp lệ.');
-  const ids = vao.map((l) => Number(l?.classId));
-  if (ids.some((id) => !Number.isInteger(id) || id <= 0) || new Set(ids).size !== ids.length) throw badRequest('Danh sách lớp không hợp lệ.');
-  const conn = db();
-  const cls = new Map((conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${inHang(ids.length)})`).all(...ids) as any[]).map((c) => [c.id as number, c]));
-  if (cls.size !== ids.length) throw notFound('Không tìm thấy lớp');
+  const { vao, ids, cls } = docLopVao(body);
   const hienTai = docHienTai(ids);
   const tienDo = classProgressMany(ids);
   const xepNho = new Map<number, DuocXep>();

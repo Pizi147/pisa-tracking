@@ -12,4 +12,5 @@ export const EN_PHAN_CONG_GV = {
   'Không còn bản ghi để hoàn tác.': 'Nothing left to undo.',
   'Phân công GV dành cho Quản lý.': 'Teacher assignment is for managers.',
   'Không tìm thấy chi nhánh': 'Branch not found',
+  'Không hoàn tác được: ô này đã có lịch đổi mới hơn — huỷ lịch đó trước.': 'Cannot undo: this slot has a newer scheduled change — cancel that first.',
 };

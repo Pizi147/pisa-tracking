@@ -1532,9 +1532,9 @@ api.post('/phan-cong/luu', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return phanCongGvSvc.luuPhanCong(principalOf(req), req.body ?? {});
 }));
-/** PC-GV-A: Hoàn tác một lần lưu (`lo`) hoặc Đổi mốc / Huỷ lịch đổi (`dao`) — 409 khi đã có thay đổi sau. */
 /** PC-GV-A: xem trước hộp Lưu — mỗi cặp đổi người: số Case / PA sẽ chuyển, ai viết bàn giao, số em (không ghi). */
 api.post('/phan-cong/xem-truoc', requireAuth, wrap((req) => phanCongGvSvc.xemTruocLuu(principalOf(req), req.body ?? {})));
+/** PC-GV-A: Hoàn tác một lần lưu (`lo`) hoặc Đổi mốc / Huỷ lịch đổi (`dao`) — 409 khi đã có thay đổi sau. */
 api.post('/phan-cong/hoan-tac', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   phanCongGvSvc.hoanTacLuu(principalOf(req), { lo: req.body?.lo, dao: req.body?.dao });

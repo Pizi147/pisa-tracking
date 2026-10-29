@@ -439,4 +439,52 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
       assert(n <= (TRAN_GHI_LO as any).luuPhanCong3Lop, `${n} câu > trần ${(TRAN_GHI_LO as any).luuPhanCong3Lop}`);
     });
   });
+
+  /* ---------------------------------------------------------------- Rà cuối (reviewer): Hoàn tác không tạo hai lịch chờ một ô · trần lớp · lịch chờ gộp */
+  check('Rà-1a · Huỷ lịch L A→B, lưu lịch L A→C cùng tuần, Hoàn tác huỷ → 409 (không thành hai lịch chờ một ô)', () => thu(() => {
+    const r = henL(gB);
+    const h = pc.huyCho(QL, [r.lo]);
+    henL(gF);
+    const e = maLoi(() => pc.hoanTacLuu(QL, { dao: h.dao }));
+    assert(e?.status === 409, `${e?.status} ${e?.message}`);
+    assert(one(`SELECT COUNT(*) n FROM doi_phan_cong WHERE class_id = ? AND khoa = 'listening' AND trang_thai = 'cho'`, X).n === 1, 'một lịch chờ');
+  }));
+  check('Rà-1b · Lưu ngay L A→B, rồi lịch L B→C từ tuần sau, Hoàn tác lần lưu ngay → 409', () => thu(() => {
+    const r1 = pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
+    henL(gF);
+    assert(maLoi(() => pc.hoanTacLuu(QL, { lo: r1.lo }))?.status === 409, '409');
+    assert(ai(X, 'listening')[0] === gB, 'không đảo');
+  }));
+  check('Rà-2 · quá trần số lớp một lần lưu → 400', () => thu(() => {
+    const e = maLoi(() => pc.luuPhanCong(QL, { lop: Array.from({ length: 13 }, (_, i) => ({ classId: 900000 + i, slots: [] })) }));
+    assert(e?.status === 400 && /tối đa 12 lớp/.test(e.message), e?.message);
+  }));
+  check('Rà-3 · lịch tới hạn lỗi: quét các ngày sau vẫn chỉ MỘT thông báo cho người tạo', () => thu(() => {
+    const r = henL(gB);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'speaking', gC) }] });
+    conn.prepare(`UPDATE doi_phan_cong SET hieu_luc = ? WHERE id = ?`).run(TODAY, r.lo);
+    pc.apDoiDenHan(TODAY); pc.apDoiDenHan(addDays(TODAY, 1)); pc.apDoiDenHan(addDays(TODAY, 2));
+    assert(one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'phan_cong_loi'`, QL.userId).n === 1, 'một thông báo');
+  }));
+  check('Rà-4 · lịch S GVCN→C tuần X (GVCN còn L), rồi lịch L GVCN→B cùng tuần X → 400 (gộp lại GVCN hết môn), không chờ tới hạn mới lỗi', () => thu(() => {
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'speaking', gC) }], hieuLuc: { loai: 'tuan', tuanId: T14 } });
+    const e = maLoi(() => pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }], hieuLuc: { loai: 'tuan', tuanId: T14 } }));
+    assert(e?.status === 400 && /GVCN phải dạy/.test(e.message) && e.details?.classId === X, `${e?.status} ${e?.message}`);
+  }));
+  check('Rà-5 · GVCN lưu lịch đổi ô bộ môn từ tuần sau → QL nhận thông báo ngay', () => thu(() => {
+    pc.luuPhanCong(loadPrincipal(gA), { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }], hieuLuc: { loai: 'tuan', tuanId: T14 } });
+    assert(one(`SELECT COUNT(*) n FROM notifications WHERE kind = 'phan_cong_gvcn' AND entity_id = ?`, X).n >= 1, 'QL biết');
+  }));
+  check('Rà-6 · Đổi mốc không gửi hiệu lực → 400, không áp', () => thu(() => {
+    const r = henL(gB);
+    assert(maLoi(() => pc.doiMocCho(QL, [r.lo], undefined))?.status === 400, '400');
+    assert(one(`SELECT trang_thai t FROM doi_phan_cong WHERE id = ?`, r.lo).t === 'cho', 'còn chờ');
+  }));
+  check('Rà-8 · lớp đã kết thúc: lịch chờ tới hạn không áp, không báo', () => thu(() => {
+    const r = henL(gB);
+    conn.prepare(`UPDATE doi_phan_cong SET hieu_luc = ? WHERE id = ?`).run(TODAY, r.lo);
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(X);
+    const k = pc.apDoiDenHan(TODAY);
+    assert(k.daAp === 0 && k.loi === 0 && ai(X, 'listening')[0] === gA, JSON.stringify(k));
+  }));
 }
