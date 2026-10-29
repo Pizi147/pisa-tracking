@@ -2336,6 +2336,7 @@ CREATE TABLE ban_giao_gv (
 );
 CREATE INDEX ix_bg_gv_lop ON ban_giao_gv (class_id, trang_thai);
 CREATE INDEX ix_bg_gv_cu ON ban_giao_gv (nguoi_cu, trang_thai);
+CREATE INDEX ix_bg_gv_mo ON ban_giao_gv (trang_thai, nguoi_lam);   -- Công việc: việc đang mở của một người
 CREATE TABLE ban_giao_gv_mon (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ban_giao_id INTEGER NOT NULL REFERENCES ban_giao_gv(id),

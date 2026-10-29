@@ -21,6 +21,7 @@ export const BAN_GIAO_GV_SQL = `CREATE TABLE ban_giao_gv (
 );
 CREATE INDEX ix_bg_gv_lop ON ban_giao_gv (class_id, trang_thai);
 CREATE INDEX ix_bg_gv_cu ON ban_giao_gv (nguoi_cu, trang_thai);
+CREATE INDEX ix_bg_gv_mo ON ban_giao_gv (trang_thai, nguoi_lam);
 CREATE TABLE ban_giao_gv_mon (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ban_giao_id INTEGER NOT NULL REFERENCES ban_giao_gv(id),
@@ -44,7 +45,11 @@ CREATE TABLE ban_giao_gv_em (
 );`;
 
 export function migratePrBanGiaoGv(conn: any, applied: string[]) {
-  if (conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'ban_giao_gv'").get()) return;
+  if (conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'ban_giao_gv'").get()) {
+    /* Bản có bảng mà thiếu chỉ mục việc đang mở (rà sâu #731) → tạo bù. */
+    if (!conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'ix_bg_gv_mo'").get()) conn.exec('CREATE INDEX ix_bg_gv_mo ON ban_giao_gv (trang_thai, nguoi_lam)');
+    return;
+  }
   conn.exec(BAN_GIAO_GV_SQL);
   applied.push('PR-B: bảng ban_giao_gv · ban_giao_gv_mon · ban_giao_gv_em (việc bàn giao khi đổi GV).');
 }

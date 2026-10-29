@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -68,16 +68,22 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
     ? t('Bàn giao {lop} · {mon} cho {ten}', { lop: dto.lop.code, mon: nhanCotDs, ten: [...new Set(dto.cot.map((c) => c.nguoiMoi.ten))].join(', ') })
     : t('Bàn giao {lop} · {mon} từ {ten}', { lop: dto.lop.code, mon: nhanCotDs, ten: dto.nguoiCu.ten });
 
-  const luuGop = (sid: number, m: string) => async (chu: string) => {
-    await api.put(`/ban-giao-gv/${dto.id}/gop-y`, { studentId: sid, mon: m, noiDung: chu });
-    setDaLuu((x) => ({ ...x, [`${sid}|${m}`]: chu }));
-    invalidate('/my-work');
+  /* Lần lưu-khi-rời-ô đang chạy (bấm Xác nhận làm ô mất focus → lưu ô đó trước, rồi mới kiểm đủ). */
+  const dangLuu = useRef(new Set<Promise<unknown>>());
+  const luuGop = (sid: number, m: string) => (chu: string) => {
+    const p = api.put(`/ban-giao-gv/${dto.id}/gop-y`, { studentId: sid, mon: m, noiDung: chu })
+      .then(() => { setDaLuu((x) => ({ ...x, [`${sid}|${m}`]: chu })); invalidate('/my-work'); });
+    dangLuu.current.add(p);
+    void p.finally(() => dangLuu.current.delete(p)).catch(() => undefined);
+    return p;
   };
   const denThieu = () => { const e = thieu[0]; if (!e) return; setChon(e.id); requestAnimationFrame(() => document.getElementById(`bg-gv-em-${e.id}`)?.focus()); };
   const xacNhan = async () => {
-    if (thieu.length) { denThieu(); return; }
+    const coCho = dangLuu.current.size > 0;
+    if (!coCho && thieu.length) { denThieu(); return; }
     setBusy(true);
     try {
+      await Promise.allSettled([...dangLuu.current]);   // còn thiếu thật → máy chủ trả "Còn n em thiếu góp ý." (toast)
       await api.post(`/ban-giao-gv/${dto.id}/xac-nhan`, {});
       invalidate('/my-work'); invalidate('/classes');
       toast.push('ok', t('Đã xác nhận bàn giao {lop}', { lop: dto.lop.code }));

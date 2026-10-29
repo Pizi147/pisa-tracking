@@ -161,6 +161,27 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     const e = maLoi(() => pc.hoanTacLuu(QL, { lo: r2.lo }));
     assert(e?.status === 409 && /góp ý/.test(e.message) && viecCua(X).length === 1, e?.message);
   }));
+  check('B1 · RF3 Hoàn tác: cột THÊM vào việc có sẵn đã có góp ý → 409; việc vừa tạo đã có cột của lần lưu sau → 409 (không 500 khoá ngoại)', () => thu(() => {
+    const r1 = luu(X, { listening: gB });
+    const r2 = luu(X, { gvcn: gB });
+    const v = viecCua(X);
+    assert(v.length === 1 && cotCua(v[0].id).length === 2, 'GVCN gộp vào việc L');
+    const e1 = maLoi(() => pc.hoanTacLuu(QL, { lo: r1.lo }));
+    assert(e1?.status === 409 && viecCua(X).length === 1, `lo1: ${e1?.status} ${e1?.message}`);
+    bg.ghiGopYGv(loadPrincipal(gA), v[0].id, { studentId: emX[0], mon: 'gvcn', noiDung: 'Mẹ theo sát' });
+    const e2 = maLoi(() => pc.hoanTacLuu(QL, { lo: r2.lo }));
+    assert(e2?.status === 409 && cotCua(v[0].id).length === 2, `lo2: ${e2?.status} ${e2?.message}`);
+  }));
+  check('B1 · lịch chờ A→B (tuần +14) bị thay bằng A→C tuần +21 → việc theo hiệu lực + hạn của lịch mới', () => thu(() => {
+    luu(X, { listening: gB }, { hieuLuc: { loai: 'tuan', tuanId: T14 } });
+    luu(X, { listening: gF }, { hieuLuc: { loai: 'tuan', tuanId: tuan(addDays(T2, 21)) } });
+    const v = viecCua(X);
+    assert(v.length === 1 && v[0].hieu_luc === addDays(T2, 21) && v[0].han === addDays(T2, 25) && cotCua(v[0].id)[0].nguoi_moi === gF, JSON.stringify(v));
+  }));
+  check('B1 · chỉ mục ix_bg_gv_mo: câu việc đang mở của một người dùng chỉ mục (không quét cả bảng)', () => {
+    const plan = all(`EXPLAIN QUERY PLAN SELECT id FROM ban_giao_gv b WHERE b.trang_thai = 'mo' AND (b.nguoi_lam = ? OR b.nguoi_lam IS NULL)`, gA).map((r) => r.detail).join(' | ');
+    assert(/ix_bg_gv_mo/.test(plan), plan);
+  });
   check('B1 · GV cũ còn việc mở → xem lớp ngày +30 được; xác nhận xong + quá xem_den → hết', () => thu(() => {
     luu(X, { listening: gB, speaking: gB, gvcn: gB });
     const v = viecCua(X)[0];
@@ -183,6 +204,9 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     assert(maLoi(() => bg.ghiGopYGv(loadPrincipal(gC), v.id, { studentId: emX[0], mon: 'listening', noiDung: 'x' }))?.status === 403, 'GVBM khác 403');
     assert(maLoi(() => bg.phieuBanGiaoGv(loadPrincipal(gB), v.id))?.status === 403, 'B trước xác nhận 403');
     assert(maLoi(() => bg.ghiGopYGv(loadPrincipal(gA), v.id, { studentId: emX[0], mon: 'reading', noiDung: 'x' }))?.status === 400, 'cột lạ 400');
+    luu(X, { listening: gA });   // về lại A → việc huỷ
+    assert(one(`SELECT trang_thai FROM ban_giao_gv WHERE id = ?`, v.id).trang_thai === 'huy', 'việc huỷ');
+    assert(maLoi(() => bg.phieuBanGiaoGv(loadPrincipal(gA), v.id))?.status === 403, 'rà sâu #731: GV cũ đọc việc đã huỷ → 403');
   }));
   check('B2 · xác nhận thiếu 1 em → 400 "Còn 1 em thiếu góp ý."; đủ → xong, B nhận đúng 1 thông báo, B đọc được, tự điền chụp', () => thu(() => {
     luu(X, { listening: gB });

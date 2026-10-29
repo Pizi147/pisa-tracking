@@ -46,7 +46,7 @@ export function dongBoViecBanGiao(p: Principal, o: { classId: number; ct: string
   const conn = db();
   const homNay = demoToday();
   const cot = conn.prepare(
-    `SELECT m.id, m.ban_giao_id, m.mon, m.nguoi_moi, m.doi_id, b.nguoi_cu AS bg_cu FROM ban_giao_gv_mon m JOIN ban_giao_gv b ON b.id = m.ban_giao_id
+    `SELECT m.id, m.ban_giao_id, m.mon, m.nguoi_moi, m.doi_id, b.nguoi_cu AS bg_cu, b.hieu_luc AS bg_hl FROM ban_giao_gv_mon m JOIN ban_giao_gv b ON b.id = m.ban_giao_id
       WHERE b.class_id = ? AND b.trang_thai = 'mo' AND m.trang_thai = 'mo'`,
   ).all(o.classId) as any[];
   const daDung = new Set<number>();
@@ -62,6 +62,11 @@ export function dongBoViecBanGiao(p: Principal, o: { classId: number; ct: string
       const d = o.doi.find((x) => x.khoa === c.mon && x.nguoiCu === c.bg_cu);
       if (d) daDung.add(d.id);
       doiCot(c, d && laCapBanGiao(d) && d.taoBanGiao ? d : null);
+      /* Lịch bị thay bằng lịch khác tuần → việc theo hiệu lực (và hạn) của lịch mới. */
+      if (d && d.hieuLuc !== c.bg_hl) {
+        g.sua('ban_giao_gv', 'id = ?', c.ban_giao_id);
+        conn.prepare(`UPDATE ban_giao_gv SET hieu_luc = ?, han = ? WHERE id = ?`).run(d.hieuLuc, hanViec(d.hieuLuc), c.ban_giao_id);
+      }
       continue;
     }
     /* ponytail: chỉ đổi tiếp NGAY mới đổi người nhận; B → C từ tuần sau giữ B tới khi áp (huỷ lịch đó không phải dò ngược cột). */
@@ -125,9 +130,19 @@ export function doiMocViecTheoDoi(doiIds: readonly number[], hieuLuc: string, g:
   db().prepare(`UPDATE ban_giao_gv SET hieu_luc = ?, han = ? WHERE ${dk}`).run(hieuLuc, hanViec(hieuLuc), ...doiIds);
 }
 
-/** Hoàn tác lần lưu phân công: việc vừa tạo mà GV cũ đã viết góp ý → chặn (không xoá chữ người khác vừa viết). */
-export function coGopYTrongViec(bgIds: readonly number[]): boolean {
-  return !!bgIds.length && !!db().prepare(`SELECT 1 FROM ban_giao_gv_em WHERE ban_giao_id IN (${inHang(bgIds.length)}) LIMIT 1`).get(...bgIds);
+/**
+ * Hoàn tác lần lưu phân công được không (phần việc bàn giao): chặn khi việc vừa tạo đã có góp ý, khi cột vừa THÊM vào việc có sẵn đã có góp ý
+ * (cùng việc + cột), hoặc khi việc vừa tạo đã có cột của lần lưu sau trỏ vào (xoá việc sẽ gãy khoá ngoại). Không xoá chữ người khác vừa viết.
+ */
+export function hoanTacViecDuoc(bgIds: readonly number[], cotIds: readonly number[]): boolean {
+  const conn = db();
+  if (bgIds.length && conn.prepare(`SELECT 1 FROM ban_giao_gv_em WHERE ban_giao_id IN (${inHang(bgIds.length)}) LIMIT 1`).get(...bgIds)) return false;
+  if (cotIds.length && conn.prepare(
+    `SELECT 1 FROM ban_giao_gv_mon m JOIN ban_giao_gv_em e ON e.ban_giao_id = m.ban_giao_id AND e.mon = m.mon WHERE m.id IN (${inHang(cotIds.length)}) LIMIT 1`,
+  ).get(...cotIds)) return false;
+  return !bgIds.length || !conn.prepare(
+    `SELECT 1 FROM ban_giao_gv_mon WHERE ban_giao_id IN (${inHang(bgIds.length)})${cotIds.length ? ` AND id NOT IN (${inHang(cotIds.length)})` : ''} LIMIT 1`,
+  ).get(...bgIds, ...cotIds);
 }
 
 // ==================================================================== phiếu
@@ -174,7 +189,8 @@ function emCuaPhieu(b: any): { ds: { id: number; ten: string }[]; chup: Record<s
 export function phieuBanGiaoGv(p: Principal, id: number): PhieuBanGiaoGvDto {
   const b = docViec(id);
   const q = quyenViec(p, b);
-  const doc = q.viet || q.ql || b.nguoi_cu === p.userId || (b.trang_thai === 'xong' && can(p, PERMISSIONS.STUDENT_VIEW, { classId: b.class_id }));
+  /* GV cũ chỉ đọc việc CÒN MỞ của mình — việc huỷ không có bản chụp, đọc sẽ lộ dữ liệu em hiện tại (rà sâu #731). */
+  const doc = q.viet || q.ql || (b.nguoi_cu === p.userId && b.trang_thai === 'mo') || (b.trang_thai === 'xong' && can(p, PERMISSIONS.STUDENT_VIEW, { classId: b.class_id }));
   if (!doc) throw forbidden('Bạn không có quyền đọc bàn giao này.');
   const conn = db();
   const ct = (b.ct ?? null) as string | null;

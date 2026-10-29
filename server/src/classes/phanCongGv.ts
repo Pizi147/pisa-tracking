@@ -20,7 +20,7 @@ import { allProgrammes, programmeByCode, programmeOfClass } from '../normal/regu
 import { classProgressMany } from './schedule.ts';
 import { caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi } from '../cases/owner.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
-import { coGopYTrongViec, doiMocViecTheoDoi, dongBoViecBanGiao, huyViecTheoDoi } from './banGiaoGv.ts';
+import { doiMocViecTheoDoi, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi } from './banGiaoGv.ts';
 
 export type LuuLopVao = { classId: number; slots: TeacherSlot[]; phienBan?: string; banGiao?: Record<string, boolean> };
 /** `viec` = số việc bàn giao mới (PR-B). */
@@ -408,8 +408,9 @@ export function hoanTacLuu(p: Principal, o: { lo?: unknown; dao?: unknown }): vo
       .get(Math.max(...dong.map((d) => d.id as number)), ...oDong.flatMap((d) => [d.class_id, d.khoa]))) {
       throw conflict('Không hoàn tác được: ô này đã có lần đổi mới hơn — sửa trực tiếp ở bảng phân công.');
     }
-    /* PR-B: việc bàn giao vừa tạo mà GV cũ đã viết góp ý → không xoá chữ người khác vừa viết. */
-    if (coGopYTrongViec(muc.filter((m) => m.bang === 'ban_giao_gv' && m.k === 'tao').flatMap((m) => m.truoc.map((d) => Number(d.__r))))) {
+    /* PR-B: việc / cột bàn giao vừa tạo đã có góp ý, hoặc việc vừa tạo đã có cột của lần lưu sau → không đảo (không xoá chữ người khác vừa viết). */
+    const taoCua = (bang: string) => muc.filter((m) => m.bang === bang && m.k === 'tao').flatMap((m) => m.truoc.map((d) => Number(d.__r)));
+    if (!hoanTacViecDuoc(taoCua('ban_giao_gv'), taoCua('ban_giao_gv_mon'))) {
       throw conflict('Không hoàn tác được: việc bàn giao vừa tạo đã có góp ý — sửa trực tiếp ở bảng phân công.');
     }
     daoLai(conn, g, p.userId);
