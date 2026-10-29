@@ -63,6 +63,10 @@ export const DUONG_DO: MucDo[] = [
   /* PR-UXF-a Task 5: danh sách bấm ra "bài chưa nhập điểm quá hạn" — mỗi dòng một bài (ô điểm). */
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/bai-qua-han-nhap-diem?rows=1' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/hv-sos-hien-tai' },
+  /* PANEL-MC: mở panel (rows=1) — dòng HV kèm điểm đúng lượt (0 câu thêm: lượt đi cùng tập) · Lịch sử một thẻ Chờ duyệt. */
+  { trang: 'Tổng quan QL · panel', vai: ['QL', 'QT'], url: '/metrics/hv-sos-hien-tai?rows=1' },
+  { trang: 'Tổng quan QL · panel', vai: ['QL', 'QT'], url: '/metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading' },
+  { trang: 'Công việc · panel duyệt', vai: ['QL', 'QT', 'GVCN'], url: '/lich-su?loai=yeu-cau&id={ycPa}', maChuDich: { GVCN: 403 } },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/hv-duoi-ky-vong-mon' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/hv-co-case-mo' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/do-phu-danh-gia' },
@@ -101,6 +105,7 @@ export const DUONG_DO: MucDo[] = [
   /* PR-DUYET: hộp Chờ duyệt (GV 403), Yêu cầu của tôi, số đếm cho badge/dải Tổng quan. */
   { trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/yeu-cau?hop=cho-duyet', maChuDich: { GVCN: 403 } },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/yeu-cau?hop=cho-duyet&xem=da-xu-ly' },
+  { trang: 'Công việc · panel duyệt', vai: ['QL', 'QT'], url: '/yeu-cau?hop=cho-duyet&boiCanh=1' },   // PANEL-MC: + chip SOS, điểm, Lịch sử · n
   { trang: 'Công việc', vai: ['GVCN', 'GVBM'], url: '/yeu-cau?hop=cua-toi' },
   { trang: 'Công việc', vai: MOI_VAI, url: '/yeu-cau/dem' },
   /* PR-VAI-a (Q12, Q16): Lớp tôi dạy thay Học viên cần hỗ trợ; badge việc quá hạn của GV. */
@@ -453,6 +458,15 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/case-mo': 19,
   'QL /metrics/bai-qua-han-nhap-diem?rows=1': 30,   // PR-UXF-a Task 5: đo 25 → max(25+10, ⌈25×1.3⌉)
   'QT /metrics/bai-qua-han-nhap-diem?rows=1': 28,   // PR-UXF-a Task 5: đo 23
+  /* PANEL-MC: mở panel — dòng HV kèm điểm đúng lượt (đo 14 = ô số + dòng; lượt đi cùng tập, 0 câu thêm) · Lịch sử một thẻ Chờ duyệt (đo QL 6 · QT 5 qua HTTP; id 15 = thẻ PA chờ duyệt của chi nhánh MB trên bộ demo). */
+  'QL /metrics/hv-sos-hien-tai?rows=1': 24,
+  'QT /metrics/hv-sos-hien-tai?rows=1': 24,
+  'QL /metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading': 24,
+  'QT /metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading': 24,
+  'QL /yeu-cau?hop=cho-duyet&boiCanh=1': 50,   // PANEL-MC: không cờ đo 27 · cờ đo 38 (QT 37) = + standingFor em các thẻ (nhiều vòng) + 1 câu đếm nhật ký
+  'QT /yeu-cau?hop=cho-duyet&boiCanh=1': 50,
+  'QL /lich-su?loai=yeu-cau&id=15': 16,
+  'QT /lich-su?loai=yeu-cau&id=15': 15,
   'QL /metrics/hv-sos-hien-tai': 23,
   'QT /metrics/hv-sos-hien-tai': 23,
   'QL /metrics/hv-duoi-ky-vong-mon': 23,
@@ -885,6 +899,10 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  'QL /metrics/hv-sos-hien-tai?rows=1': 1485,   // PANEL-MC: đo 1142
+  'QT /metrics/hv-sos-hien-tai?rows=1': 2139,   // PANEL-MC: đo 1645
+  'QL /lich-su?loai=yeu-cau&id=15': 88,   // PANEL-MC: đo 38 (≤ 50 dòng nhật ký + phạm vi)
+  'QT /lich-su?loai=yeu-cau&id=15': 54,   // PANEL-MC: đo 4
   /* PC-GV-A: góc Phân công GV — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (235 dòng: lớp + phân công + ứng viên chi nhánh). */
   'QL /hoc-vien-lop/phan-cong?branchId=1': 306, 'QT /hoc-vien-lop/phan-cong?branchId=1': 306, 'CX /hoc-vien-lop/phan-cong?branchId=1': 306,
   /* HSL-MAY-CHU: trần = max(đo+50, ⌈đo×1,3⌉), đo 27/10 (100 · 64 · 100 dòng). */

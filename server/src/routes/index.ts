@@ -2321,7 +2321,7 @@ api.get('/yeu-cau', requireAuth, wrap((req) => {
   return yeuCauSvc.hopChoDuyet(p, {
     phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' || xem === 'de-biet' ? xem : 'cho',
     studentId: qInt(req, 'studentId') ?? null, branchId: qInt(req, 'branchId') ?? null, classId: qInt(req, 'lop') ?? null,
-    quaHan: qStr(req, 'quaHan') === '1',
+    quaHan: qStr(req, 'quaHan') === '1', boiCanh: qStr(req, 'boiCanh') === '1',   // PANEL-MC: panel duyệt QL xin chip SOS + điểm + Lịch sử · n
   });
 }));
 /* OV-15h1: `branchId` — "Chờ bạn duyệt" ở Công việc đếm theo chi nhánh đang lọc (badge menu không gửi: mọi chi nhánh). */

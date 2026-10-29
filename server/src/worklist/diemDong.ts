@@ -3,12 +3,13 @@
  * Ba nguồn, mỗi nguồn là "lượt làm em vào con số" của một loại panel (đặc tả 30/10 mục 5b ý 4):
  * `AttemptEval` (tập hiện trạng — `latestAttempts`), `DongMock` (Đạt MT / Kết quả MT), `Standing` (panel một em).
  */
-import { ASSESSED_SKILLS, KN_THI, NHAN_KN_THI, nhanBaiThuong, tenMonNgan, type DiemHv, type DongMock, type KnDiem } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, KN_THI, NHAN_KN_THI, khoaBai, nhanBai, tenMonNgan, type DiemHv, type DongMock, type KnDiem } from '../../../shared/domain/index.ts';
 import type { AttemptEval, SkillEval } from './danhGia.ts';
 import type { Standing } from '../students/standing.ts';
 
+/** "MT3" (Mock / MT0) · "Progress Test" · "Final Test" · "Checkpoint 2" — CÙNG `nhanBai` của dòng bài lớp thường. */
 const nhanLuot = (kind: string | null, no: number | null) =>
-  kind === 'final' || kind === 'progress' ? nhanBaiThuong(kind) : `MT${no ?? '?'}`;
+  !kind || kind === 'mock' || kind === 'mt0' ? `MT${no ?? '?'}` : nhanBai(khoaBai(kind, no));
 
 /** `dat`: chưa đủ căn cứ / môn bỏ → null; còn lại = không dưới kỳ vọng của chính lượt. */
 const knTu = (skills: Record<string, SkillEval>, ratio: boolean, ct: string | null): KnDiem[] =>
@@ -42,7 +43,7 @@ export function diemTuMock(d: DongMock): DiemHv {
 export function diemTuStanding(st: Standing): DiemHv | null {
   if (st.attemptId === null) return null;
   const ratio = st.mode === 'ratio';
-  return ghep(st.attemptLabel ?? nhanLuot(st.attemptKind, st.attemptNo), st.attemptWeekStart, st.provisional, ratio, st.skills, st.chuongTrinh,
+  return ghep(nhanLuot(st.attemptKind, st.attemptNo), st.attemptWeekStart, st.provisional, ratio, st.skills, st.chuongTrinh,
     ratio ? (st.tyLeTong === null ? null : st.tyLeTong * 100) : st.overall,
     ratio ? (st.nguong === undefined ? null : st.nguong * 100) : st.expectation);
 }

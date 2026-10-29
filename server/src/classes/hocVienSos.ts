@@ -183,11 +183,12 @@ export function panelMotEm(p: Principal, studentId: number) {
   const tt = tomTatCase(ds);
   const cases = [...tt.values()].sort((a, b) => Number(a.done) - Number(b.done) || (b.attemptNo ?? 0) - (a.attemptNo ?? 0) || b.id - a.id);
   const st = standingFor([studentId]).get(studentId);
+  const chip = st ? chipSosTuKetQua(st) : null;
   return {
     em: { id: s.id as number, ten: s.full_name as string, ma: s.student_code as string, lop: s.lop_id ? { id: s.lop_id as number, code: s.lop_code as string, ft: !!s.is_fast_track } : null,
       tvv: em.tvv, lienHe: em.lienHe },
     /* Dòng 2 đầu panel: lượt gần nhất · SOS (không mã HV — panel v3 "Đã lược bỏ"). PANEL-MC (B5): + tạm, kỹ năng hụt, số cho hộp "Vì sao SOS" (CÙNG `chipSosTuKetQua` của bảng). */
-    luot: st ? (() => { const chip = chipSosTuKetQua(st); return { nhan: st.attemptLabel, sosLevel: st.sosLevel ?? null, tam: st.provisional, kyNang: chip?.kyNang ?? [], soLieu: chip?.soLieu ?? [] }; })() : null,
+    luot: st ? { nhan: st.attemptLabel, sosLevel: st.sosLevel ?? null, tam: st.provisional, kyNang: chip?.kyNang ?? [], soLieu: chip?.soLieu ?? [] } : null,
     /* PANEL-MC (B5): dòng điểm của lượt gần nhất (`standingFor` đã gọi — 0 câu). */
     diem: st ? diemTuStanding(st) : null,
     cases,

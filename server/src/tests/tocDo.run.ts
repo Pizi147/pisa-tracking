@@ -182,6 +182,9 @@ const KASE = (
     .get(HV) as any
 )?.id as number | undefined;
 /** TU-a: một PA Tutor đang chạy của lớp mẫu — đường `/tutors/chon?paId={paTutor}` (ô chọn tutor của Ghi kết quả). */
+/** PANEL-MC: thẻ Chờ duyệt có đối tượng PA (Lịch sử yêu cầu gộp nhật ký thẻ + PA + Case). */
+const YC_PA = (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE doi_tuong_loai = 'intervention' AND trang_thai = 'cho'
+   AND chi_nhanh_id = (SELECT branch_id FROM classes WHERE id = ?) ORDER BY id LIMIT 1`).get(LOP_FT) as any)?.id as number;   // chi nhánh của QL đo
 const PA_TUTOR = (conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
     JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
    WHERE iv.kind = 'tutor' AND iv.status = 'started' ORDER BY iv.id LIMIT 1`).get(LOP_FT) as any)?.id as number;
@@ -224,6 +227,7 @@ function urlFor(mau: string): string {
     .replace('{lopKetThuc}', String(LOP_KET_THUC))
     .replace('{case}', String(KASE))
     .replace('{paTutor}', String(PA_TUTOR))
+    .replace('{ycPa}', String(YC_PA))
     .replace('{cn}', String(CN))
     .replace('{gv}', String(USER.GVCN));
 }

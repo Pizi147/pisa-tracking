@@ -332,6 +332,8 @@ export function hopChoDuyet(p: Principal, f: {
   phanLoai?: PhanLoai | null; xem?: 'cho' | 'de-biet' | 'da-xu-ly'; studentId?: number | null; branchId?: number | null; classId?: number | null;
   /** PR-VAI-a (Q17): chỉ thẻ quá hạn — cùng điều kiện `quaHan` của `demHop`; chip vẫn đếm cả hộp (như lọc phân loại). */
   quaHan?: boolean;
+  /** PANEL-MC: kèm chip SOS / dòng điểm / số Lịch sử (`ganBoiCanh`) — chỉ panel duyệt Công việc xin; Tổng quan, hồ sơ HV không trả thêm câu. */
+  boiCanh?: boolean;
 } = {}) {
   require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống mở được hộp Chờ duyệt.');
   const homNay = demoToday();
@@ -365,7 +367,7 @@ export function hopChoDuyet(p: Principal, f: {
   const ngu = napNguCanh(conn, rows, homNay);
   const huyDuoc = xem === 'da-xu-ly' ? theHuyDuoc(conn, rows) : new Set<number>();
   const the = rows.map((r) => (huyDuoc.has(r.id) ? { ...theRa(r, ngu), coTheHuy: true } : theRa(r, ngu)));
-  if (xem === 'cho') ganBoiCanh(the);
+  if (xem === 'cho' && f.boiCanh) ganBoiCanh(the);
   return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc, khacChiNhanh };
 }
 
@@ -373,8 +375,7 @@ export function hopChoDuyet(p: Principal, f: {
  * PANEL-MC (T11): nhật ký của MỘT thẻ = dòng `audit_logs` của chính thẻ (`yeu_cau_duyet`) + của đối tượng gốc (`doi_tuong_loai` → `entity_type`)
  * + của Case khi đối tượng là PA. Có chỉ mục `idx_audit_entity`; dùng chung cho số "Lịch sử · n" và danh sách — không lệch nhau.
  */
-const LOAI_NHAT_KY: Record<string, string> = { intervention: 'case_intervention', attempt: 'assessment_attempt' };
-const ENTITY_SQL = `CASE y.doi_tuong_loai ${Object.entries(LOAI_NHAT_KY).map(([k, v]) => `WHEN '${k}' THEN '${v}'`).join(' ')} ELSE y.doi_tuong_loai END`;
+const ENTITY_SQL = `CASE y.doi_tuong_loai WHEN 'intervention' THEN 'case_intervention' WHEN 'attempt' THEN 'assessment_attempt' ELSE y.doi_tuong_loai END`;
 const NOI_NHAT_KY = `JOIN audit_logs a ON (a.entity_type = 'yeu_cau_duyet' AND a.entity_id = y.id)
   OR (a.entity_type = ${ENTITY_SQL} AND a.entity_id = y.doi_tuong_id)
   OR (y.doi_tuong_loai = 'intervention' AND a.entity_type = 'sos_case' AND a.entity_id = (SELECT iv.case_id FROM case_interventions iv WHERE iv.id = y.doi_tuong_id))`;
