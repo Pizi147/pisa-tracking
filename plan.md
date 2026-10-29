@@ -509,6 +509,26 @@ OV-11d: câu SELECT "lộ trình FT đã đóng mà em còn ghi danh" (`SQL_DONG
 OV-3b đổi Lộ trình đề xuất GVCN → nháp: xem `kiem-truoc-ov3b`. Ba lệnh chỉ đọc chạy được NGAY.
 
 ## 6. Model, effort, skill cho từng PR (OV)
+
+### 6.0. Đợt 30/10 (tốc độ · panel · Phân công GV · sửa nhỏ · dọn) — PTA ghi model + effort cho MỌI session; "B" = được chạy Sonnet
+| Session | Chính | Phương án B | Vì sao |
+|---|---|---|---|
+| CHUONG-NHE | Opus 5.5 · medium | Sonnet 5.5 · high | máy chủ + migrate; kế hoạch chi tiết |
+| QUET-THEO-KY | Opus 5.5 · high | — | SQL / chỉ mục / UNION ALL phải không mất dòng |
+| LOP-1-LOP | Opus 5.5 · medium | Sonnet 5.5 · high | |
+| VO-HIEU-HEP | Opus 5.5 · medium | Sonnet 5.5 · high | chỉ web, có bước đo |
+| TRANG-LON | Opus 5.5 · high | — | đổi cấu trúc `myWork` |
+| PANEL-V10 (mockup) | Opus 5.5 · high | — | chất lượng thiết kế, critique ≥ 35 |
+| BAN-GIAO-GV (PR-B) | Opus 5.5 · medium | — | dữ liệu + quyền, rà sâu |
+| GOC-PHAN-CONG-GV (PR-C) | Opus 5.5 · medium | Sonnet 5.5 · high | màn mới theo mockup v9 |
+| PR-D hồ sơ lớp Lưu | Sonnet 5.5 · high | Opus 5.5 · low | sửa nhỏ |
+| SUA-NHO-UI | Opus 5.5 · medium | Sonnet 5.5 · high | giao diện, ảnh cặp |
+| SUA-NHO-QUYEN | Opus 5.5 · medium | — | quyền |
+| CN-1 / CN-2 | Opus 5.5 · medium | — | hạ tầng phép kiểm |
+| CN-3 | Opus 5.5 · medium | Sonnet 5.5 · high | gỡ phép trùng có bảng bằng chứng |
+| DON-MA | Sonnet 5.5 · high | Opus 5.5 · low | xoá mã chết |
+| DON-LUONG | Opus 5.5 · medium | — | lỗi luồng + migrate chỉ mục |
+| DON-HINH · V8-PT-2 · V8-HSL-2 | Opus 5.5 · medium | Sonnet 5.5 · high | giao diện theo mockup |
 Chọn model ở ô chọn model **trước khi dán prompt**. **Không Fable**; không Haiku. Người rà: session planning (Opus 5.5).
 
 | PR | Khuyến nghị | Phương án B | Ponytail | Impeccable | Ghi chú |
