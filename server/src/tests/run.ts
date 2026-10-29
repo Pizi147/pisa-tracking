@@ -34,31 +34,37 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
 
 /*
- * CHIA NHÓM (GON-MA-2): `chayNhom.ts` chạy N bản tệp này song song, mỗi bản `PISA_NHOM=k/N`, database + thư mục tệp riêng.
- * Nhóm 1 chạy MỌI tệp `*.tests.ts` theo đúng thứ tự cũ, trừ các tệp trong `TACH`; các tệp `TACH` chạy ở nhóm 2…N (chia lần lượt).
- * Chậm là do DB phình dần (nhóm 1 cuối bộ ~9× dòng so với DB vừa seed), nên tệp chạy ở DB nhỏ nhanh hơn nhiều. Nhưng nhiều tệp dựa
- * vào dữ liệu tệp trước để lại (DL-2 `prDl` còn so mã băm cố định của trạng thái tuần tự) → chỉ tách tệp ĐÃ THỬ: đứng SAU `prDl`,
- * xanh khi chạy ở nhóm 2 VÀ bỏ khỏi nhóm 1 không làm tệp sau đỏ. Phần viết thẳng trong tệp này (~9 s) chạy ở mọi nhóm (mục sau
- * dùng lại hằng số của nó), chỉ nhóm 1 in + đếm. Không có `PISA_NHOM` = chạy hết như cũ.
- * Muốn tách thêm: `PISA_TACH=<danh sách cũ>,<tệp> npm run check` xanh, rồi thêm vào `TACH`.
+ * CN-1/CN-2 · DB GỐC: tệp "độc lập" chạy trên bản chép DB chụp NGAY SAU seed (`dbGoc.ts`) — không thấy dữ liệu tệp khác để lại, ghi gì
+ * cũng bỏ khi xong, nên chạy riêng (`PISA_CHI_TEP`) = chạy trong bộ và chia nhóm tuỳ ý. Tệp đứng trước prTk thì sau tệp có thêm phép
+ * `[BB] <tệp>` (bất biến soi toàn DB của prTk chạy trên dữ liệu tệp đó). MỌI tệp là độc lập (tệp mới cũng vậy — tự dựng dữ liệu), trừ
+ * `GIU_CHUOI`: chạy theo thứ tự cũ trên DB chuỗi của nhóm 1 (seed + phần viết thẳng của tệp này + các tệp chuỗi trước nó).
+ * `PISA_DOC_LAP=a,b` thay danh sách: CHỈ các tệp đó độc lập (thử chuyển tệp mà không sửa mã).
  */
 const [NHOM, SO_NHOM] = (process.env.PISA_NHOM ?? '1/1').split('/').map(Number);
-/** `PISA_TACH=a,b` thay danh sách dưới — để thử tách thêm tệp mà không sửa mã. */
-const TACH = process.env.PISA_TACH ? process.env.PISA_TACH.split(',') : [
-  'prMt0', 'prHk2', 'prTd3', 'prGop', 'prOv5a', 'prOv8a', 'prOv12c', 'prOv12h', 'prOv12d', 'prOv13a', 'prOv15d', 'prOv15e', 'prOv15h1',
-  'prTd7b', 'prSl2', 'prSvYtTvv', 'prSvSo1', 'prSvTvvViec',
-];
+const GIU_CHUOI = new Set([
+  'dbGoc',            // so DB chuỗi với bản gốc (DG-1)
+  'prSeedUx',         // chỉ đọc bộ demo ngay sau seed — đứng đầu chuỗi
+  'anToan', 'prToc',  // tiến trình con đọc tệp DB_PATH (không phải bản gốc)
+  /* Phép soi TOÀN DB: giữ ở chuỗi để còn soi dữ liệu các tệp chuỗi + phần viết thẳng (rủi ro #734: trên bản gốc chỉ thấy seed). */
+  'prEn', 'prS3CauCon',
+  /* Đỏ trên DB gốc — dựa vào dữ liệu tệp khác để lại; CN-2 chưa sửa (tệp nhẹ, ghi trong PR): */
+  'sosV3', 'prSos',   // Case seed chưa có Mô tả → không xác nhận được PA
+  'prYt4', 'prPb2b', 'prS6fA', 'prUx1', 'keHoachTest', 'xoaDuLieu', 'prVaiB', 'prOv13p', 'prGop', 'prOv12c', 'prOv13a',
+  'prTk',             // TK-5 đỏ khi chạy riêng cả trên chuỗi (có sẵn trên main)
+  'prMt', 'luatMayChu',   // [BB]: để lại lộ trình đóng thiếu bản chụp trên bản gốc
+]);
+const DOC_LAP_ENV = process.env.PISA_DOC_LAP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
+const docLapCua = (ten: string) => (DOC_LAP_ENV ? DOC_LAP_ENV.includes(ten) : !GIU_CHUOI.has(ten));
 /*
- * CN-1 · DB GỐC: tệp trong `DOC_LAP` chạy trên bản chép DB chụp NGAY SAU seed (`dbGoc.ts`) — không thấy dữ liệu tệp khác để lại, ghi gì
- * cũng bỏ khi xong, nên chạy riêng (`PISA_CHI_TEP`) = chạy trong bộ. Tệp đứng trước prTk thì sau tệp có thêm phép `[BB] <tệp>` (bất biến
- * soi toàn DB của prTk chạy trên dữ liệu tệp đó). `PISA_DOC_LAP=a,b` thay danh sách để thử chuyển thêm tệp mà không sửa mã.
+ * Thời gian mỗi tệp độc lập (ms, làm tròn 100 — đo ở check đầy đủ CN-2, `lan-cuoi.json`) để chia tham lam vào N nhóm; tệp mới chưa có → 1 000.
+ * Nhóm 1 khởi đầu bằng CHUOI_MS (seed + phần viết thẳng + các tệp `GIU_CHUOI`).
  */
-const DOC_LAP = process.env.PISA_DOC_LAP ? process.env.PISA_DOC_LAP.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, '')) : [
-  'prGva', 'prDonB', 'prKv', 'prCt', 'prLt2b', 'prLc', 'prK26', 'prMta', 'prDl', 'prEn',
-  'prBaoCaoLichSu',   // PBC-5 đỏ trong chuỗi khi 10 tệp trên rời chuỗi (ngày "sau mọi hạn" chỉ đọc deadline_override); trên DB gốc xanh, 7 phép như cũ
-];
+const CHUOI_MS = 0;
+const THOI_GIAN_MS: Record<string, number> = {};
 let quaTk = false;
-const nhomCua = (ten: string) => (SO_NHOM > 1 && TACH.includes(ten) ? 2 + (TACH.indexOf(ten) % (SO_NHOM - 1)) : 1);
+/** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
+let chia: Map<string, number> = new Map();
+const nhomCua = (ten: string) => (docLapCua(ten) ? chia.get(ten) ?? 1 : 1);
 /** `PISA_CHI_TEP=prA,prB`: chỉ chạy các tệp này (+ phần viết thẳng) — chạy riêng phép kiểm của một PR. */
 const CHI_TEP = process.env.PISA_CHI_TEP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
 let trongTep = false;
@@ -66,14 +72,14 @@ let tepHienTai = '';
 const thoiGian: Record<string, number> = {};
 /** Số phép kiểm đã chạy theo tệp (đạt + không đạt) — so tổng trước / sau khi đổi cách chia nhóm. */
 const soPhep: Record<string, number> = {};
-/** `PISA_DEM_DONG=1`: số dòng mỗi tệp thêm vào DB (tệp làm DB phình thì mọi tệp sau chạy chậm — ứng viên `TACH`). */
+/** `PISA_DEM_DONG=1`: số dòng mỗi tệp thêm vào DB (tệp chuỗi làm DB phình thì mọi tệp chuỗi sau chạy chậm). */
 const dongThem: Record<string, number> = {};
 const demDong = () => process.env.PISA_DEM_DONG ? (db().prepare(`SELECT (SELECT COUNT(*) FROM assessment_attempts) + (SELECT COUNT(*) FROM attempt_skills) + (SELECT COUNT(*) FROM students) + (SELECT COUNT(*) FROM sos_cases) + (SELECT COUNT(*) FROM case_interventions) + (SELECT COUNT(*) FROM notifications) n`).get() as any).n as number : 0;
 const demPhep = () => { soPhep[tepHienTai || 'run.ts'] = (soPhep[tepHienTai || 'run.ts'] ?? 0) + 1; };
 /** Bọc module `./ten.tests.ts`: hàm `run*` của nhóm khác thành rỗng; của nhóm mình thì đo giờ + đánh dấu đang trong tệp. */
 function bocTep<T extends object>(ten: string, m: T): T {
   const cuaToi = CHI_TEP ? CHI_TEP.includes(ten) : nhomCua(ten) === NHOM;
-  const docLap = DOC_LAP.includes(ten);
+  const docLap = docLapCua(ten);
   const soiBB = docLap && !quaTk;
   if (ten === 'prTk') quaTk = true;
   return new Proxy(m, {
@@ -172,7 +178,11 @@ const { addDays } = await import('../util.ts');
 
 runSeed();
 /* CN-1: chụp DB gốc NGAY sau seed, trước mọi ghi (giống nhau ở mọi nhóm) — tệp `DOC_LAP` chạy trên bản chép của nó. */
-const { chupDbGoc, moBanGoc } = await import('./dbGoc.ts');
+const { chupDbGoc, moBanGoc, chiaThamLam } = await import('./dbGoc.ts');
+/* Danh sách tệp độc lập = tên đăng ký `bocTep` trong tệp này (đọc mã nguồn: biết hết trước khi chạy, để mọi nhóm chia giống nhau). */
+chia = chiaThamLam(Object.fromEntries(
+  [...fs.readFileSync(path.join(ROOT, 'server/src/tests/run.ts'), 'utf8').matchAll(/bocTep\('(\w+)'/g)].map((m) => m[1]).filter(docLapCua)
+    .map((t) => [t, THOI_GIAN_MS[t] ?? 1000])), CHUOI_MS, SO_NHOM);
 const { batBienDb } = await import('./prTk.tests.ts');
 chupDbGoc();
 
@@ -9833,7 +9843,7 @@ await runPrQuetTheoKyTests({ check, checkAsync, assert, conn, P, classId } as an
 const { runPrSuaNhoQuyenTests } = bocTep('prSuaNhoQuyen', await import('./prSuaNhoQuyen.tests.ts'));
 await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
 if (process.env.PISA_NHOM) {
-  console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
+  console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, docLap: [...chia.values()].filter((k) => k === NHOM).length, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);
 }
 console.log(`\n${'='.repeat(60)}`);

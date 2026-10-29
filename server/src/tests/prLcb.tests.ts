@@ -58,6 +58,12 @@ export async function runPrLcbTests(t: YThucTestKit) {
   /** N20 (P9b): hạn Chốt lộ trình = thứ Năm tuần trước tuần Final (tuần `final` tính từ 1). */
   const hanN20 = (start: string, final: number) => addDays(start, 7 * (final - 2) + 3);
   const ganGv = (classId: number, n: number, skill: string | null, core = false) => {
+    /* CN: tự dựng — seed chỉ có vài GV MB; GV thứ n trước do tệp khác tạo. Thiếu thì tạo GV MB mới cho đủ. */
+    for (let k = get(`SELECT COUNT(*) n FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ?`, MB).n as number; k <= n; k++) {
+      const u = conn.prepare(`INSERT INTO users (code, full_name, email, approval_state, status, created_at) VALUES (?, ?, ?, 'approved', 'active', ?)`)
+        .run(`LCB-GV${k}`, `GV LCb ${k}`, `gv.lcb.${k}@demo.test`, NOW).lastInsertRowid;
+      conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, created_at) VALUES (?, (SELECT id FROM roles WHERE key = 'teacher'), ?, ?)`).run(u, MB, NOW);
+    }
     const uid = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1 OFFSET ?`, MB, n).id as number;
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`)
       .run(uid, classId, skill, core ? 1 : 0, NOW);
