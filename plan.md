@@ -244,6 +244,17 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 30/10 — chủ SP chốt "theo lời khuyên PTA hết" (thứ tự làm từ trên xuống)
+1. **TOC-DO** (trước Phân công GV): log Netlify 29/10 — `GET /my-work` 5,6 s · 80 câu · 3 295 dòng; `/classes/:id/viec-theo-em` 3,9 s · 78 câu; `/classes/:id/overview` 2,9 s · 57 câu; `/cham/lich-test` 2,3 s; `/cham/lich-test/qua-han` 1,5 s. Chung câu top `SELECT sc.*, COALESCE(sc.student_id…` (346 dòng). Mục tiêu: mỗi đường ≤ 1 s, giảm số câu; trần mới ở `tocDoDuong.ts`. Có lúc Turso "connection closed before message completed" (đã tự nối lại). Rà sâu `/code-review high` (logic máy chủ).
+2. **Phân công GV** PR-B + PR-C song song, rồi PR-D (`docs/superpowers/plans/2026-10-30-phan-cong-gv.md`).
+3. **BANG-EM-GON** (mockup trước, chủ SP duyệt rồi mới code): bảng em ở hồ sơ lớp quá nhiều ô màu (SOS đỏ, từng ô điểm kỹ năng đỏ, hạn đỏ, WL, Dự kiến). Hướng: chỉ việc cần làm có màu; điểm kỹ năng chữ thường, chỉ tô kỹ năng dưới Target; chip SOS nhỏ lại.
+4. **SUA-NHO-XM** (một PR nhỏ, có ảnh cặp): (a) giữ nút "Xếp nhiều MT…" như web (D4 — không đổi); (b) công tắc Fast Track theo mockup "Fast Track 4", 375 "Lọc ▾" lên cùng hàng; (c) `HopKyNang`: "Xóa" dời vào ⋯; (d) `ErrorState` dùng chung đổi sang dải `.bao-loi` mockup v8 (nền đỏ nhạt, ⚠, chữ trái, Thử lại bên phải) — mọi màn.
+5. **Tồn ra-ui 375**: chân panel Huỷ | Lưu cùng hàng · Kế hoạch Test "Lọc ▾" rơi hàng · "+ MT ▾" xa cột cuối — gộp vào SUA-NHO-XM nếu cùng tệp.
+6. **CHECK-NHANH** (sau 1–3, việc lớn): phép kiểm tự dựng dữ liệu (gon-ma.md mục 3, đề xuất 1) — mục tiêu check ≤ 50 % thời gian hiện nay.
+7. **Còn mở từ ra-luong:** Q-RL4 (chuyển lớp một em tuần trước Final → không MT0 / Xét lại) · Q-RL5 (MT0 khi Lên FT sau Final sinh ra đã quá hạn) · văng phiên 401 chưa tái hiện.
+8. **Dọn:** xoá DB `pisatracking-261027` (token đã lộ); DB `261028` xoá ~06/11; worktree `claude-6c-nho`, nhánh `pta-dot4` + `compassionate-gauss-…-pta`, ứng dụng ~14 GB — chủ SP tự gỡ ứng dụng.
+- Đã làm 30/10: DESIGN.md chữ phụ "≥ 7:1" → "≥ 4,5:1" cho khớp phép kiểm `prOv15a` (NEN-V5).
+
 ### SÁNG 27/10 — kết quả đêm (PTA Plan)
 - **Đã merge (R1 xong phần code):** #601 BO-DAN-EXCEL · #599 EN-2 · #600 PHAN-CAP-TEST (chủ SP duyệt ảnh + bỏ dòng "n học viên · Fast Track / Lớp thường") · #606 NO-CU (đổi người phụ trách Case, security-review đạt) · #607 NO-NHO (Case W2 khi đổi môn, khoá ghi góp ý tuần, MDK-15) · #608 EN-2b · #609 TEN-CHI-SO. Mỗi PR check đầy đủ xanh trên bản gộp main.
 - **Mockup chờ chủ SP duyệt (PR mở, KHÔNG merge):** M4 hồ sơ lượt Test #603 (artifact https://claude.ai/artifact/E6NLFryD83JGNnCqQVq7ae, 2 câu hỏi) · M5 + M5b #604 (https://claude.ai/artifact/VQVd5d1rau5PJXqMHQvBoY, 4 câu hỏi) · 6a + M6 #605 (https://claude.ai/artifact/EkZ9sFcZEqbwaXtHyiQ25c, Q1–Q8; bảng kê 6a 415 dòng, 10 lỗi chính đọc từ mã).
