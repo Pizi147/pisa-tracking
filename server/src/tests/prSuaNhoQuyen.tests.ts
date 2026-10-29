@@ -10,6 +10,7 @@ export async function runPrSuaNhoQuyenTests(t: { check: any; assert: any; conn: 
   const { danhSachLuuTru } = await import('../classes/luuTru.ts');
   const students: any = await import('../students/students.ts');
   const { loadPrincipal } = await import('../permissions.ts');
+  const { studentProfile } = await import('../students/profile.ts');
   const { xoaNho, soCauSql, chayTrongRequest } = await import('../platform/nguCanhRequest.ts');
   console.log('\nSUA-NHO-QUYEN — Chưa có kỹ năng tính người đang dạy · Sửa thông tin em tạm dừng ở Lưu trữ');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -94,6 +95,13 @@ export async function runPrSuaNhoQuyenTests(t: { check: any; assert: any; conn: 
     }
     const e = nem(() => students.updateStudent(P.mbManager, sid, { phone: '0912000111' }));
     assert(e?.message === d.CAU_LUU_TRU, `máy chủ chặn: ${e?.message} · ${JSON.stringify(get('SELECT status, archived_at FROM students WHERE id = ?', sid))}`);
+  }));
+
+  check('SNQ-6 · em Tạm dừng: /students/:id vẫn trả lộ trình đang học (panel Sửa thông tin hiện nhãn lộ trình, không "Em chưa có lộ trình")', () => thu(() => {
+    const sid = emLop();
+    students.setStudentStatus(P.mbManager, sid, 'inactive', TODAY);
+    const h = studentProfile(P.mbManager, sid) as any;
+    assert(!!h.archivedAt && h.status === 'inactive' && !!h.cycle?.label, `cycle: ${JSON.stringify(h.cycle?.label)} · archived ${h.archivedAt}`);
   }));
 
   check('SNQ-5 · danhSachLuuTru (QL) không thêm câu vì cờ mới', () => thu(() => {
