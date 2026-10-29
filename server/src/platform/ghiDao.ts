@@ -94,3 +94,10 @@ export function daoDuoc(g: BanGhiDao | null): boolean {
   return (JSON.parse(g.du_lieu) as Muc[]).every((m) => m.sau.every((s) => !s.__mat
     && giongNhau(boQua(m.bang, conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid = ?`).get(s.__r) as Dong | undefined), boQua(m.bang, s)!)));
 }
+
+/** Giữ bản ghi đảo `GIU_NGAY_DAO` ngày (như thùng rác) — cron thứ Hai xoá bản ghi cũ hơn (đã đảo hay chưa); Huỷ quyết định vốn chỉ trong ngày. */
+export const GIU_NGAY_DAO = 30;
+export function donGhiDao(homNayIso = nowIso()): number {
+  const moc = new Date(Date.parse(homNayIso) - GIU_NGAY_DAO * 86_400_000).toISOString();
+  return db().prepare('DELETE FROM ghi_dao WHERE luc < ?').run(moc).changes as number;
+}

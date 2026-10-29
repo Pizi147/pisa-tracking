@@ -1645,8 +1645,9 @@ export function hoanTacKetThucPa(p: Principal, interventionId: number) {
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
   if (!coTheKetThucPa(p, c)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Quản lý mở lại PA đã kết thúc.');
-  if (c.status === 'done') throw conflict('Case đã hoàn thành — Mở lại Case trước khi mở lại PA.');
   return tx(() => {
+    /* Trong giao dịch: Case vừa được Đóng chen giữa lúc kiểm và lúc đảo không lọt qua. */
+    if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(iv.case_id) as any)?.status === 'done') throw conflict('Case đã hoàn thành — Mở lại Case trước khi mở lại PA.');
     const r = timGhiDao(conn, 'ket_thuc_pa', 'case_interventions', interventionId);
     if (!r) throw conflict('PA này không có lần Kết thúc PA nào để hoàn tác.');
     daoLai(conn, r, p.userId);

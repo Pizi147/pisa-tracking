@@ -147,4 +147,60 @@ export async function runPrQrl2cDuyetTests(t: YThucTestKit) {
     conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'duyet', xu_ly_luc = ? WHERE id = ?`).run(yc.mocNghiepVu(), khac.id);
     assert(chuLoi(() => yc.huyQuyetDinh(P.admin, khac.id)) === 'Loại yêu cầu này không huỷ quyết định được.', 'lich_thi');
   }));
+
+  // ------------------------------------------------------------------ rà sâu PTA: việc làm SAU quyết định ở dòng ngoài ảnh chụp → chặn (`dao.chan`)
+  check('QRL2cD-9 · Ý thức Từ chối M1 → GVCN gửi M2 cho đúng các vi phạm đó → Huỷ 409 (không hai lần xử lý sống); vi phạm KHÁC của em đổi sau không chặn', () => thu(() => {
+    const { measureId, id } = guiWl3();
+    const sid = mot('SELECT student_id FROM discipline_measures WHERE id = ?', measureId).student_id as number;
+    const khac = viol.recordViolation(P.subjectTeacher, { studentId: sid, category: 'homework', ten: 'Vi phạm ngoài đề xuất', occurredOn: addDays(TODAY, -5) }).violation.id;
+    yc.tuChoiYeuCau(QL, id, 'Chưa đủ căn cứ');
+    conn.prepare(`UPDATE violations SET ten = 'Vi phạm ngoài đề xuất (sửa)' WHERE id = ?`).run(khac);
+    yc.huyQuyetDinh(QL, id);   // chỉ chụp vi phạm của đề xuất → vi phạm khác đổi không chặn
+    yc.tuChoiYeuCau(QL, id, 'Chưa đủ căn cứ');
+    const ids = hang('SELECT violation_id FROM measure_violations WHERE measure_id = ?', measureId).map((r) => r.violation_id);
+    const m2 = xu.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: ids, note: 'Gửi lại với bằng chứng mới' });
+    att.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: m2.id, url: 'https://example.com/bang-chung-2', displayName: 'Biên bản 2' });
+    xu.guiDeXuat(gvcn, m2.id);
+    const truoc = anh();
+    const e = (() => { try { yc.huyQuyetDinh(QL, id); return null; } catch (x: any) { return x; } })();
+    assert(e?.status === 409 && /lần xử lý khác/.test(e.message), `M2 sống → 409: ${e?.status} ${e?.message}`);
+    assert(!lech(truoc, anh()).length && mot('SELECT status FROM discipline_measures WHERE id = ?', measureId).status === 'tu_choi', '409 không đổi gì');
+  }));
+  check('QRL2cD-10 · Không cần theo dõi Duyệt khi PA của Case có thẻ Xin ý kiến đang chờ → không có Hoàn tác; quét đóng thẻ → Huỷ 409 (PA không kẹt chờ duyệt không thẻ)', () => thu(() => {
+    const the = theKtd();
+    assert(the, 'không dựng được thẻ Không cần theo dõi');
+    /* Dựng thẳng trạng thái PTA nêu: PA còn sống của Case có thẻ Xin ý kiến đang chờ (đường giao diện bị chặn lúc thẻ Không cần theo dõi chờ). */
+    const iv = mot(`SELECT id FROM case_interventions WHERE case_id = ? AND status IN ('planned', 'started') ORDER BY id LIMIT 1`, the.doi_tuong_id);
+    assert(iv, 'Case không có PA còn sống');
+    const paId = yc.taoYeuCau(conn, { loai: 'xin_y_kien', doiTuongLoai: 'intervention', doiTuongId: iv.id, hocVienId: the.hoc_vien_id, nguoiXin: the.nguoi_xin, lyDo: 'Em có nên đổi PA?' });
+    assert(paId, 'không tạo được thẻ Xin ý kiến');
+    const pa = { id: paId };
+    const kq = yc.duyetYeuCau(QL, the.id);
+    assert(kq.coTheHuy === false, 'thẻ Xin ý kiến sắp tự đóng → không hiện Hoàn tác');
+    yc.quetYeuCau();
+    assert(mot('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', pa.id).trang_thai === 'tu_dong', 'quét đóng thẻ Xin ý kiến');
+    const truoc = anh();
+    const e = (() => { try { yc.huyQuyetDinh(QL, the.id); return null; } catch (x: any) { return x; } })();
+    assert(e?.status === 409 && /tự đóng khi Case đóng/.test(e.message), `${e?.status} ${e?.message}`);
+    assert(!lech(truoc, anh()).length, '409 không đổi gì');
+  }));
+  check('QRL2cD-11 · Duyệt sửa Target → nhập điểm một kỹ năng lượt Mock (chưa có điểm lúc duyệt) → Huỷ 409; lượt giữ Target mới', () => thu(() => {
+    const sid = moiEm();
+    const { id } = dxs.guiDeXuatSua(gvcn, sid, { truong: 'target', moi: 7.5, lyDo: 'PH muốn mục tiêu cao hơn' });
+    yc.duyetYeuCau(QL, id);
+    const luot = mot(`SELECT a.id FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
+      WHERE c.student_id = ? AND c.status = 'active' AND a.kind = 'mock' AND a.target_at_attempt = 7.5 ORDER BY a.id LIMIT 1`, sid);
+    assert(luot, 'em không có lượt Mock nhận Target mới');
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?, 'listening', 6)`).run(luot.id);
+    const truoc = anh();
+    const e = (() => { try { yc.huyQuyetDinh(QL, id); return null; } catch (x: any) { return x; } })();
+    assert(e?.status === 409 && /nhập điểm Mock/.test(e.message), `${e?.status} ${e?.message}`);
+    assert(!lech(truoc, anh()).length && mot('SELECT target_at_attempt FROM assessment_attempts WHERE id = ?', luot.id).target_at_attempt === 7.5, '409 không đổi gì');
+  }));
+  check('QRL2cD-12 · Hàng loạt không tính cờ Hoàn tác từng thẻ (trần câu SQL) — một thẻ vẫn tính', () => thu(() => {
+    const a = lenh.guiDeXuatChuyenLop(gvcn, moiEm(), { lyDo: 'Em theo không kịp lớp' }).id;
+    const b = lenh.guiDeXuatChuyenLop(gvcn, moiEm(), { lyDo: 'Em theo không kịp lớp' }).id;
+    assert(yc.tuChoiYeuCau(QL, a, 'Chờ thêm một MT', { boCo: true }).coTheHuy === undefined, 'lô: không tính');
+    assert(yc.tuChoiYeuCau(QL, b, 'Chờ thêm một MT').coTheHuy === true, 'một thẻ: tính');
+  }));
 }

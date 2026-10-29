@@ -49,8 +49,13 @@ export function khoiPhucRac(p: Principal, id: number): { ok: true; loai: string;
       if (loadCase(dongGoc(m, 'case_interventions').case_id).status === 'done') throw conflict('Case đã hoàn thành — Mở lại Case trước khi khôi phục PA.');   // cùng chặn của Xoá PA
     }
   }
-  const moiId = khoiPhucMuc(p.userId, m, BANG_CHINH[m.loai], () => {
-    if (m.loai === 'pa') dongBoTrangThaiCase(dongGoc(m, 'case_interventions').case_id);
+  const moiId = khoiPhucMuc(p.userId, m, BANG_CHINH[m.loai], (conn) => {
+    if (m.loai === 'pa') {
+      /* Kiểm lại TRONG giao dịch (Case vừa Đóng chen giữa) — ném thì cả lượt khôi phục lui. */
+      const caseId = dongGoc(m, 'case_interventions').case_id;
+      if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(caseId) as any)?.status === 'done') throw conflict('Case đã hoàn thành — Mở lại Case trước khi khôi phục PA.');
+      dongBoTrangThaiCase(caseId);
+    }
     if (m.loai === 'vi_pham') chotHanXuLy([dongGoc(m, 'violations').student_id]);
   });
   return { ok: true, loai: m.loai, doiTuongId: moiId };
