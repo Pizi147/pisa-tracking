@@ -184,6 +184,8 @@ export type RegularResult = {
   passThreshold: number;
   /** K5-44, MH7: Σ điểm / Σ tổng — CHỈ khi đủ mọi môn (thiếu → null), không làm tròn. Pre FOU hiện đúng số này. */
   tyLeTong: number | null;
+  /** Q-RL1 (chủ SP 29/10): môn "Không dự thi" (dấu "-" ≥ 2 tuần, không điểm) — ra khỏi bộ môn cần đủ; kết quả tính trên môn đã thi, giao diện ghi rõ. */
+  khongDuThi: string[];
 };
 
 /**
@@ -198,9 +200,12 @@ export type RegularResult = {
  * kỹ năng của chương trình luôn đủ.
  */
 export function evaluateRegular(
-  skills: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null }[], ct?: string | null,
+  skillsVao: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null; no_show_cu?: number | null }[], ct?: string | null,
   nguong: number = RATIO_PASS_THRESHOLD,   // OV-6b1: ngưỡng đạt của LỚP — `nguongDatLop(classId)`
 ): RegularResult {
+  /* Q-RL1 (chủ SP 29/10): môn Không dự thi (chưa có điểm) không còn làm kết quả "chưa đủ môn" mãi — tính trên các môn đã thi. */
+  const khongDuThi = skillsVao.filter((k) => rows.some((r) => r.skill === k && !!r.no_show_cu && r.raw_score == null));
+  const skills = skillsVao.filter((k) => !khongDuThi.includes(k));
   const results: RegularSkillResult[] = skills.map((skill) => {
     const row = rows.find((r) => r.skill === skill);
     const { outcome, ratio } = ratioResult(row?.raw_score ?? null, row?.raw_total ?? null, nguong);
@@ -240,6 +245,7 @@ export function evaluateRegular(
     tyLeTong: complete
       ? results.reduce((s, r) => s + (r.score ?? 0), 0) / results.reduce((s, r) => s + (r.total ?? 0), 0)
       : null,
+    khongDuThi,
   };
 }
 
@@ -261,7 +267,7 @@ export function regularResultOf(attemptId: number): RegularResult {
   const conn = db();
   const a = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   const prog = a?.class_id ? programmeOfClass(a.class_id) : null;
-  const rows = conn.prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
+  const rows = conn.prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
   return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows)) : [], rows, prog?.code, nguongDatLop(a?.class_id));
 }

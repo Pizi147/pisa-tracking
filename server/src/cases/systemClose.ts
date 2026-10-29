@@ -49,6 +49,28 @@ export function programmeOfCase(c: { cycle_id?: number | null; category?: string
   return null;
 }
 
+/**
+ * Q-RL3 (chủ SP 29/10): "Lộ trình mới" — việc Phối hợp SOS còn chờ (Báo PH qua TVV, gặp CX, GVCN meeting…) của lượt Test thuộc lộ trình cũ đóng cùng
+ * Case / PA (`removed`, lý do hệ thống "Kết thúc lộ trình" — giữ dòng + lịch sử). Trả id để Hoàn tác Lộ trình mới mở lại đúng chúng.
+ */
+export function dongPhoiHopLoTrinh(cycleIds: readonly number[], on: string): number[] {
+  if (!cycleIds.length) return [];
+  const conn = db();
+  const ids = (conn.prepare(`SELECT x.id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
+      WHERE x.status = 'pending' AND a.cycle_id IN (${cycleIds.map(() => '?').join(',')})`).all(...cycleIds) as any[]).map((r) => r.id as number);
+  theoLo(ids, (lo, ph) => {
+    conn.prepare(`UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_ket_thuc_lo_trinh', removed_by = NULL, removed_at = ?, updated_at = ?
+      WHERE id IN (${ph})`).run(on, nowIso(), ...lo);
+  });
+  return ids;
+}
+export function moLaiPhoiHopLoTrinh(ids: readonly number[]): void {
+  theoLo([...ids], (lo, ph) => {
+    db().prepare(`UPDATE sos_coordination_actions SET status = 'pending', remove_reason_code = NULL, removed_by = NULL, removed_at = NULL, updated_at = ?
+      WHERE id IN (${ph}) AND status = 'removed' AND remove_reason_code = 'system_ket_thuc_lo_trinh'`).run(nowIso(), ...lo);
+  });
+}
+
 export function closeCasesBySystem(input: {
   actorUserId: number | null; studentId: number; reason: SystemCloseReason; on: string;
   /** Chỉ Case/tín hiệu của các lộ trình này. Bỏ trống = mọi lộ trình của em. */

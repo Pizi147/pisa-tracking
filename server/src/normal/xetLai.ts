@@ -241,7 +241,7 @@ export function emXetLaiLoTrinh(p: Principal, branchId: number | null, today: st
 }
 
 /**
- * GET /classes/:id/xet-lai — panel. QL lớp đó: đủ dòng + lớp Học lại (chương trình cũ) / Lên (bậc kế · FT, dòng (c)), cùng chi nhánh. GVCN lớp ĐÍCH
+ * GET /classes/:id/xet-lai — panel. QL lớp đó: đủ dòng + lớp Học lại (chương trình cũ) / Lên (bậc kế · FT, dòng (c)), mọi chi nhánh (Q-RL6). GVCN lớp ĐÍCH
  * (em đã vào lớp này): chỉ xem, không gợi ý / phụ huynh / lý do chốt / bàn giao (`chiXem`) + ô nhận xét. Người khác: `em: []` (không 403 — như đường cũ).
  * `studentId`: chỉ em đó (lối vào từ hồ sơ HV).
  */
@@ -261,7 +261,8 @@ export function xemXetLai(p: Principal, classId: number, studentId: number | nul
   const lopLen: Record<string, { id: number; code: string; phu: string }[]> = {};
   const ctCu = [...new Set(em.map((e) => e.lopNguon.ct).filter(Boolean))] as string[];
   if (ql && ctCu.length) {
-    const ds = danhSachLopDich(classId, true).lop.filter((x) => x.chiNhanhId === lop.branch_id);
+    /* Q-RL6 (chủ SP 29/10): Học lại / Lên ở thẻ Xét lại = đường Chuyển lớp một em — MỌI chi nhánh (N17 chỉ giới hạn cả lớp); lớp cùng chi nhánh đứng trước. */
+    const ds = danhSachLopDich(classId, true).lop.slice().sort((a, b) => Number(a.chiNhanhId !== lop.branch_id) - Number(b.chiNhanhId !== lop.branch_id));
     const chon = (f: (x: (typeof ds)[number]) => boolean) => ds.filter(f)
       .map((x) => ({ id: x.id, code: x.code, ft: !!x.ft, phu: [x.ft ? `FT${x.route ? ` ${x.route}` : ''}` : x.ma, x.branchCode, x.tuan ? `tuần ${x.tuan.slice(1).split('/')[0]}` : null, `${(x as any).siSo ?? 0} em`].filter(Boolean).join(' · ') }));
     for (const ct of ctCu) {
@@ -344,8 +345,8 @@ function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId:
     if (!dich) throw badRequest(len ? 'Chọn lớp' : 'Chọn lớp học lại');
     const ke = NORMAL_LADDER[e.lopNguon.ct as ProgrammeCode] ?? null;
     const dung = len ? (!!dich.is_fast_track || dich.programme_code === ke) : (dich.programme_code === e.lopNguon.ct && !dich.is_fast_track);
-    if (!dung || dich.branch_id !== e.lopHienTai.chiNhanhId) {
-      throw badRequest(len ? `Lớp phải là lớp ${ke ?? ''} hoặc FT cùng chi nhánh.` : `Lớp học lại phải là lớp ${e.lopNguon.ct ?? ''} cùng chi nhánh.`);
+    if (!dung) {   // Q-RL6: mọi chi nhánh, như Chuyển lớp một em
+      throw badRequest(len ? `Lớp phải là lớp ${ke ?? ''} hoặc FT.` : `Lớp học lại phải là lớp ${e.lopNguon.ct ?? ''}.`);
     }
     if (!it.tuan || !tuanHopLe(it.tuan, today)) throw badRequest('Chọn tuần bắt đầu.');
     const enr = lopHienTaiCua(e.studentId);

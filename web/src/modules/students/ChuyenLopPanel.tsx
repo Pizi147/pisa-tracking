@@ -22,7 +22,7 @@ type LopDich = {
   id: number; code: string; chiNhanhId: number; branchCode: string | null; ma: string | null; ft: boolean; route: string | null;
   tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number;
 };
-type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean } };
+type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean; coTheChon?: boolean } };
 type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null; hanGvcn?: string | null };
 export type XemChuyenLopData = {
   hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null };
@@ -110,10 +110,14 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const { homNay } = useNgayNghiepVu();
   const dt = useDienThoai();
   const dx = cheDo === 'de-xuat';
-  const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${studentId}`, [studentId]);
+  /* Q4 (chủ SP 29/10): tuần trước Final → hết tuần Final, Quản lý chọn có "theo luồng chuyển tiếp lộ trình" (Test đi kèm) hay không — mặc định có. */
+  const [theoCk, setTheoCk] = useState(true);
+  const thamTheo = `theoCuoiKhoa=${theoCk ? 1 : 0}`;
+  const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${studentId}&${thamTheo}`, [studentId, theoCk]);
   const [toClassId, setToClassId] = useState<number | null>(duyet?.lopDichId ?? null);
   /* GVCN không có quyền xem luật ra lệnh (403) — chỉ Quản lý gọi đường xem trước. */
-  const xem = useApi<XemChuyenLopData>(dx ? null : (toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}` : `/students/${studentId}/chuyen-lop`), [studentId, toClassId, dx]);
+  const xem = useApi<XemChuyenLopData>(dx ? null : (toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}&${thamTheo}` : `/students/${studentId}/chuyen-lop?${thamTheo}`), [studentId, toClassId, dx, theoCk]);
+  const chonTheoCk = !dx && !duyet && !!lopDich.data?.nguon.coTheChon;
   const [tuan, setTuan] = useState(duyet?.tuan ?? '');
   const [lyDo, setLyDo] = useState(duyet?.lyDo ?? '');
   const [mucTieu, setMucTieu] = useState('');
@@ -200,7 +204,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã duyệt và quyết định chuyển lớp'));
       } else {
         /* PR-CL (B1, D15): ra mới hoặc sửa lệnh đang chờ — cùng một đường, máy chủ tính bối cảnh + hướng. */
-        const r = await api.post<{ daChuyen?: number[] }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui });
+        const r = await api.post<{ daChuyen?: number[] }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, ...(chonTheoCk ? { theoCuoiKhoa: theoCk } : {}) });
         if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã lưu quyết định chuyển lớp'));
       }
     } catch (e: any) { toast.push('error', ngayNay ? `${t('Không lưu được — chưa chuyển')} · ${loiMayChu(e)}` : loiMayChu(e)); } finally { setBusy(false); }
@@ -274,6 +278,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
           )}
 
           <Khoi tieuDe={dx ? t('Đề xuất') : t('Lớp chuyển đến')}>
+            {chonTheoCk && (
+              <label className="flex min-h-[44px] cursor-pointer items-start gap-2 text-[13px] text-slate-300 sm:min-h-0">
+                <input type="checkbox" className="mt-0.5 h-4 w-4" checked={theoCk} disabled={busy} onChange={(e) => { setTheoCk(e.target.checked); setToClassId(null); }} />
+                <span>{t('Theo luồng chuyển tiếp lộ trình')}<span className="block text-xs text-slate-500">{t('Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển ngay, không Test đi kèm.')}</span></span>
+              </label>
+            )}
             <Truong nhan={t('Lớp chuyển đến')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'lop')}>
               <ChonLop ds={ds} value={toClassId} onChange={setToClassId} ariaLabel={t('Lớp chuyển đến')}
                 id={lf.oId('lop')} onBlur={lf.roi('lop')} invalid={!!lf.loiCua(loi, 'lop')} tat={busy} />
