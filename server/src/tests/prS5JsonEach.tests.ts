@@ -139,7 +139,7 @@ export async function runPrS5JsonEachTests(t: YThucTestKit) {
     assert(ngoai === theoChuoi.size, `json_each phải là danh sách IN (LIST SUBQUERY) ở mọi câu: ${ngoai}/${theoChuoi.size}`);
   });
 
-  check('S5-b2 · kế hoạch mỗi câu json_each GIỐNG câu cũ `IN (?,?,…)` dựng lại từ cùng tham số (cùng bảng, cùng chỉ mục, cùng thứ tự vòng)', () => {
+  check('S5-b2 · kế hoạch mỗi câu json_each KHÔNG TỆ HƠN câu cũ `IN (?,?,…)` dựng lại từ cùng tham số (không SCAN bảng nào mà câu cũ SEARCH)', () => {
     /* Vị trí `?` ngoài chuỗi '…' và chú thích — để biết tham số nào là danh sách JSON. */
     const viTriHoi = (sql: string) => {
       const out: number[] = [];
@@ -178,10 +178,13 @@ export async function runPrS5JsonEachTests(t: YThucTestKit) {
       const moi = mang((conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail));
       const cu = mang((conn.prepare(`EXPLAIN QUERY PLAN ${cuSql}`).all(...cuArgs) as any[]).map((r) => r.detail));
       soSanh++;
-      if (moi !== cu) lech.push(`${sql.replace(/\s+/g, ' ').slice(0, 90)}\n          cũ: ${cu}\n          mới: ${moi}`);
+      /* Check đầy đủ (DB nhóm đã phình): json_each có thể cho kế hoạch TỐT HƠN (vd SCAN m → SEARCH m theo chỉ mục) — chỉ lỗi khi mới SCAN bảng mà cũ không. */
+      const scan = (k: string) => new Set(k.split(' ; ').filter((d) => /^SCAN /.test(d)).map((d) => d.split(' ')[1]));
+      const cuScan = scan(cu);
+      if ([...scan(moi)].some((b) => !cuScan.has(b))) lech.push(`${sql.replace(/\s+/g, ' ').slice(0, 90)}\n          cũ: ${cu}\n          mới: ${moi}`);
     }
     assert(soSanh >= 50, `chỉ so được ${soSanh} câu`);
-    assert(!lech.length, `${lech.length}/${soSanh} câu đổi kế hoạch:\n        ${lech.join('\n        ')}`);
+    assert(!lech.length, `${lech.length}/${soSanh} câu kế hoạch TỆ HƠN (SCAN mới):\n        ${lech.join('\n        ')}`);
   });
 
   check(`S5-c · số chuỗi SQL khác nhau ở đường nóng giảm: json_each một chuỗi mỗi câu, danh sách IN (?,?,…) còn lại ≤ ${TRAN_PHAN_MANH}`, () => {
