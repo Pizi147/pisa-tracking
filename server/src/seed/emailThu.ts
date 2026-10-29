@@ -4,3 +4,6 @@
  */
 let n = 0;
 export const emailThu = () => `hv.${++n}@demo.test`;
+/** CN-1 (tests/dbGoc.ts): bản chép DB gốc đếm tiếp từ số lúc chụp, như chạy riêng — email em tạo không phụ thuộc tệp chạy trước. */
+export const soEmailThu = () => n;
+export const datSoEmailThu = (k: number) => { n = k; };

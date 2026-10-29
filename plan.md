@@ -251,6 +251,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ### Backlog phát sinh đêm 30/10 (PTA rà PR)
 - **QUYEN-LIEN-HE (PR riêng, quyền):** luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
+- **PANEL [XM] (#736 PANEL-CHUNG):** XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
+- **LECH-CACH-CHAM (một nguồn):** em đổi lớp FT ↔ lớp thường: `standingFor` chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt → ✓ / ✗ từng kỹ năng ở panel (diemTuEval) có thể khác hồ sơ / SOS. Lỗi có từ trước, #733 phép M1 tạm bỏ qua em đó (in số em bỏ qua). Sửa: một hàm chọn cách chấm cho lượt (theo chương trình lớp của lượt) dùng cả hai đường.
 - **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
 
 ### 30/10 (tối) — chủ SP duyệt mockup PANEL-V10 #723 (KHÔNG mockup lại; chỉnh ghi ở đây, kế hoạch code phải theo)
@@ -467,7 +469,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   - Công việc: MT0 lớp thường chỉ số Nợ điểm đếm W1 + W2, Công việc đếm Writing 1 bài (`listAttempts` nhánh ratio) · panel Nhập điểm mở "Cả lớp" có hai thanh chip · em cuối của dòng gộp xong rơi xuống cuối · "Nhắc tất cả" khi lọc hạn nhắc từng việc con (nhiều chuông hơn) · dòng gộp "1 em" mất "2 việc" · tiêu đề PanelViec vẫn đổi theo việc khi chip giữ L · `nhomMiniTestCho` / `boKetQuaChoMiniTest` IN không chia lô.
   - Vắng: lưới tuần gốc không có hàng em khi mọi kỹ năng đã dời · Khôi phục phần thi xoá dấu "-" (vết chỉ còn nhật ký) · Kết quả lớp thường có môn Không dự thi vẫn "chưa đủ môn".
   - Tổng quan: Kế hoạch Test chưa có lọc theo em ("xong MT3" mở panel danh sách) · Đánh dấu đã đọc ở Góc nhìn khác gọi từng thông báo (lô 20).
-  - Quản trị: "Chưa có kỹ năng" chỉ xét vai GV (QL dạy mà không vai GV không có ô — chủ SP xác nhận nếu cần).
+  - ~~Quản trị: "Chưa có kỹ năng" chỉ xét vai GV (QL dạy mà không vai GV không có ô — chủ SP xác nhận nếu cần).~~ Xong SUA-NHO-QUYEN (chủ SP 30/10: tính cả người đang được phân công dạy).
   - KCK: lượt huỷ trước deploy rồi khôi phục chưa có dấu `kck_at_attempt` (đọc cờ hiện tại tới lần tính lại) · migrate `prOv11e` ~4–5 câu / lượt — **đo thời gian khi tập dượt bản sao chính**.
   - Phân tích: chương trình QT tự tạo ngoài PET / KET chưa có bảng kỹ năng riêng; Xuất "theo đợt" lớp thường chỉ Progress / Final.
   - Giao diện: `web/src/lib/api.ts` nhận 403 theo câu chữ (`ponytail:`) · app không đọc `prefers-color-scheme` (bấm thử 375 sáng phải bật nút).

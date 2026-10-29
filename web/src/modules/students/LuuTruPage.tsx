@@ -11,7 +11,8 @@ import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
 import { DaXoaAdmin } from '../platform/DaXoaAdmin.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from './chonNhieuHocVien.tsx';
 import { useQuayLaiHoc } from './QuayLaiHoc.tsx';
-import { duongHoSoHocVien, ngay } from '@shared/domain/index.ts';
+import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
+import { NHAN_VIEC_QUAN_LY, duongHoSoHocVien, ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 type LopLuuTru = {
@@ -25,6 +26,8 @@ type HocVienLuuTru = {
   archivedAt: string; cycleIdCuoi: number | null;
   /** P7 (k5): em Tạm dừng (giữ chỗ lớp) hay Kết thúc học — cả hai ở Lưu trữ; một nút Quay lại học. */
   trangThai: 'tam-dung' | 'ket-thuc'; loTrinh: string | null; coTheQuayLai: boolean;
+  /** SUA-NHO-QUYEN: "Sửa thông tin" (email, liên hệ) em Tạm dừng — máy chủ tính cùng cổng PATCH. */
+  coTheSuaThongTin: boolean;
 };
 type DuLieuLuuTru = { lop: LopLuuTru[]; hocVien: HocVienLuuTru[]; phamVi: { chiNhanh: number | null } };
 
@@ -48,6 +51,7 @@ export default function LuuTruPage() {
   const [draftQ, setDraftQ] = useState(q);
   const loc = q.trim();
   const [moLai, setMoLai] = useState<LopLuuTru | null>(null);
+  const [suaEm, setSuaEm] = useState<HocVienLuuTru | null>(null);
   /* PR-LUI-b → P7: "Chọn nhiều học viên" — thanh dính đáy "Quay lại học · n em"; từng em đi đúng hướng máy chủ chọn (`useQuayLaiHoc`). */
   const chon = useChonNhieu();
 
@@ -157,11 +161,14 @@ export default function LuuTruPage() {
                     {chon.bat && s.coTheQuayLai && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                     <Link to={`/hoc-vien/${s.id}`} className="ten-ho-so khong-mui">{s.fullName}</Link>
                     <Nhan tone={dung ? 'doing' : 'soon'}>{dung ? t('Tạm dừng · Có thể quay lại') : t('Kết thúc học')}</Nhan>
-                    <span className="min-w-0 flex-1 text-xs text-slate-500">
+                    <span className="min-w-0 flex-1 text-xs text-slate-500 max-sm:basis-full">
                       {[s.lopCuoi ?? t('chưa từng học lớp nào'), s.loTrinh ? `FT ${s.loTrinh}` : null, dung ? t('từ {ngay}', { ngay: ngay(s.archivedAt) }) : ngay(s.archivedAt), s.chiNhanh].filter(Boolean).join(' · ')}
                     </span>
                     {!chon.bat && s.cycleIdCuoi != null && (
                       <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">{t('Tổng kết')}</Link>
+                    )}
+                    {!chon.bat && s.coTheSuaThongTin && (
+                      <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaEm(s)}>{NHAN_VIEC_QUAN_LY.info}</button>
                     )}
                     {!chon.bat && s.coTheQuayLai && (
                       <button type="button" className={dung ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={quayLai.dangMo === s.id}
@@ -179,6 +186,10 @@ export default function LuuTruPage() {
       )}
       </div>
       {quayLai.panels}
+      {suaEm && (
+        <SuaThongTinMotEm viec="info" studentId={suaEm.id} studentName={suaEm.fullName} lop={suaEm.lopCuoi}
+          onClose={() => setSuaEm(null)} onDone={() => setSuaEm(null)} />
+      )}
       {moLai && (
         <MoLaiLopPanel classId={moLai.id} classCode={moLai.code} chiNhanh={moLai.chiNhanh} ketThuc={moLai.finishedAt ? ngay(moLai.finishedAt) : null}
           onClose={() => setMoLai(null)} onDone={reload} />
