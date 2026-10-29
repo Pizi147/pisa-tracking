@@ -1,7 +1,8 @@
 /**
- * `npm run check` / `npm test` (GON-MA-2): chạy `run.js` chia PISA_SO_NHOM nhóm (mặc định 3) song song, cùng lúc với `tocDo.run.js`
- * (database riêng sẵn). In log từng tiến trình theo thứ tự, rồi một dòng tổng như `run.js` cũ. Mã thoát ≠ 0 khi một tiến trình đỏ / chết.
- * `PISA_GHI_THOI_GIAN=1`: ghi lại `thoiGianTep.ts` từ lần chạy này (cân lại nhóm khi tệp mới làm lệch).
+ * `npm run check` / `npm test` (GON-MA-2): chạy `run.js` chia PISA_SO_NHOM nhóm song song (mặc định 2: nhóm 1 + nhóm các tệp `TACH`
+ * của `run.ts`; `=1` tuần tự như cũ), cùng lúc với `tocDo.run.js` (database riêng sẵn). In log từng tiến trình theo thứ tự, rồi một
+ * dòng tổng như `run.js` cũ. Mã thoát ≠ 0 khi một tiến trình đỏ / chết.
+ * Ghi `dist-server/data/lan-cuoi.json` (thời gian + số phép kiểm theo tệp; `PISA_DEM_DONG=1` thêm số dòng mỗi tệp thêm vào DB) để so lần sau.
  */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -9,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const N = Math.max(1, Number(process.env.PISA_SO_NHOM) || 3);
+const N = Math.max(1, Number(process.env.PISA_SO_NHOM) || 2);
 const t0 = Date.now();
 
 type Ket = { ten: string; ma: number; ra: string; giay: number };
@@ -45,16 +46,7 @@ for (const v of viec) {
   for (const [t, n] of Object.entries(kq.soPhep as Record<string, number>)) soPhep[t] = (soPhep[t] ?? 0) + n;
   tomTat.push(`${k.ten} ${k.giay} s · ${kq.maxRssMb} MB`);
 }
-
-/* Ghi lại để so lần sau (dist-server/data, không vào git): thời gian + số phép kiểm theo tệp. */
 fs.writeFileSync(path.resolve(DIR, '../../../data/lan-cuoi.json'), JSON.stringify({ thoiGian, soPhep, dongThem }));
-if (process.env.PISA_GHI_THOI_GIAN === '1' && loi.length === 0) {
-  const tep = path.resolve(DIR, '../../../../server/src/tests/thoiGianTep.ts');
-  const cu = fs.readFileSync(tep, 'utf8');
-  const dong = Object.entries(thoiGian).sort((a, b) => b[1] - a[1]).map(([ten, ms]) => `  ${ten}: ${Math.max(1, Math.round(ms / 100))},`);
-  fs.writeFileSync(tep, cu.replace(/= \{[\s\S]*\};\s*$/, `= {\n${dong.join('\n')}\n};\n`));
-  console.log(`Đã ghi ${dong.length} tệp vào ${tep}`);
-}
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(loi.length === 0
