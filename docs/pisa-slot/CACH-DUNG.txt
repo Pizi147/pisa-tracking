@@ -1,0 +1,11 @@
+LUAT O CHECK (PTA Plan 28/10) — toi da 2 check toan may.
+Giu o (W = ten worktree cua ban, vd loc-hien-tai-95bb81):
+  for i in $(seq 1 240); do for n in 1 2; do if mkdir C:/Users/Admin/AppData/Local/Temp/pisa-slot/check-$n 2>/dev/null; then echo W > C:/Users/Admin/AppData/Local/Temp/pisa-slot/check-$n/ai; N=$n; break 2; fi; done; sleep 15; done
+Chay: [ -n "$N" ] && npm run check > log 2>&1
+Tra o (CHI khi o la cua minh):
+  O=C:/Users/Admin/AppData/Local/Temp/pisa-slot/check-$N; [ "$(cat $O/ai 2>/dev/null)" = W ] && rm -r $O
+Khong bao gio rmdir / rm o ma file ai khong phai ten minh.
+
+CAP NHAT 29/10 (PTA, sau #690 check song song): `npm run check` nay chay 2 nhom run.js + tocDo cung luc (dinh RAM ~5-6 GB).
+  => TOI DA 2 check toan may: session code CHI dung check-1; check-3 cua PTA. KHONG dung check-2 nua.
+  Can chay tuan tu nhu cu: PISA_SO_NHOM=1 npm run check.

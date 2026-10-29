@@ -1,0 +1,14 @@
+LUAT KIEM NHANH (chu SP duyet 28/10 toi) — thay "moi PR chay npm run check day du".
+Session code, truoc khi mo / cap nhat PR:
+  1. npm run typecheck   (tsc web + server)
+  2. node scripts/kiem-esbuild.mjs
+  3. npm run build:server roi chay RIENG cac tep phep kiem cua PR + phep kiem cu ban da sua
+     (script nho import tung tep *.tests.ts nhu run.ts lam; hoac cach ban da dung de "chay lai rieng").
+  Khong can o check (nhe). KHONG chay npm run check day du / run.js toan bo.
+  Ghi vao mo ta PR: lenh da chay + ket qua. Ghi ro "chua chay check day du — PTA chay chung khi merge".
+PTA Plan: chay MOT npm run check day du chung (o check-3) khi merge moi dot 2–4 PR; do thi tim PR gay loi, tra ve sua.
+BO SUNG 29/10 (dot cuoi truot 9 phep kiem luat giao dien): PR co sua web/ phai chay THEM cac tep kiem luat giao dien:
+  prNenTypoMau, prSang, prS4f, prEn, prBang0, suaLoiNong (.tests.ts) — chung khong nam trong typecheck / esbuild.
+BO SUNG 29/10 (#690): chay rieng vai tep phep kiem khong can script tam:
+  npm run build:server && PISA_CHI_TEP=prEn,prSang,prNenTypoMau node dist-server/server/src/tests/run.js   (~15 s; ten tep khong duoi .tests.ts)
+  Dong do co ten tep [prX]. Ca do khi chay roi ma check day du dat (phu thuoc thu tu) -> ghi ro trong PR.
