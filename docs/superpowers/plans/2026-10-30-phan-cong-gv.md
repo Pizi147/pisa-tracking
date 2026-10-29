@@ -525,3 +525,4 @@ Luật: hàng GV đầu hồ sơ lớp: ô có lịch `"{môn} {A} → {B} từ 
 - CX: tên GV chữ thường (không link) — KHÁC có lý do.
 - Task B4 (lưu nháp nhận xét chung bàn giao chuyển lớp khi rời ô): LÀM — chống mất chữ; luật ≥ 15 ký tự khi Xác nhận giữ.
 - Các quyết định khác của người soạn (bảng `doi_phan_cong`, ba bảng phiếu mới, gộp theo lớp + GV cũ + hiệu lực, 768–1023 dùng thẻ, Hoàn tác qua `ghi_dao`, GV cũ chỉ mở ATTEMPT_VIEW + STUDENT_VIEW): ĐỒNG Ý.
+- **Chủ SP 30/10 (thêm vào PR-B, phần khung bàn giao chung):** bàn giao CHUYỂN LỚP — kỹ năng nào ở lớp mới vẫn do ĐÚNG GV cũ dạy (cùng kỹ năng, cùng người nhận) thì KHÔNG cần bàn giao: dòng môn ghi "Cùng GV · không cần bàn giao", không tính thiếu, không tạo việc cho GV đó. [PTA đoán] GVCN lớp cũ = GVCN lớp mới → nhận xét chung của GVCN không bắt buộc. Phép kiểm cho cả hai.
