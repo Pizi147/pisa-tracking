@@ -160,8 +160,8 @@ api.use((req, _res, next) => {
 
 /* OV-15h1: ghi thành công → lần mở chuông kế của người đó đồng bộ thông báo tự động ngay (việc vừa xong hết khỏi "Cần làm", không chờ 5 phút). */
 api.use((req, res, next) => {
-  const id = req.method !== 'GET' ? req.principal?.userId : undefined;
-  if (id) res.on('finish', () => { if (res.statusCode < 400) daGhi(id); });
+  const p = req.method !== 'GET' ? req.principal : undefined;
+  if (p) res.on('finish', () => { if (res.statusCode < 400) { try { daGhi(p); } catch (e) { console.error('[chuong-da-ghi]', e); } } });
   next();
 });
 
@@ -2194,7 +2194,9 @@ api.get('/tong-quan/ql', requireAuth, wrap((req) => {
 api.get('/tong-quan/v5', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   /* UI-PHAN-TICH: Báo cáo HV gửi khoảng đang chọn (`kieu`/`tu`/`den`) — vắng = kỳ mặc định của Tổng quan. */
-  return tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req) });
+  const tq = tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req) });
+  /* QUET-THEO-KY Q3: Báo cáo HV MỘT request — kèm CHÍNH `/phan-tich/bao-cao` (cùng hàm, cùng quyền); dưới `/tong-quan` để `invalidate('/tong-quan')` vẫn trúng. */
+  return qStr(req, 'kemBaoCao') === '1' ? { ...tq, baoCao: baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req)) } : tq;
 }));
 /** UI-TONG-QUAN: Tổng quan TVV (Báo PH đúng hạn · Thi tháng này) + panel `o=bao-ph`. */
 api.get('/tong-quan/tvv', requireAuth, wrap((req) => {

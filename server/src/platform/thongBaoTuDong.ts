@@ -6,14 +6,15 @@
  *  · SV-YT-TVV: việc Báo PH sau lưu xử lý — người giữ HIỆN TẠI (TVV / QL khi em chưa có TVV), MỘT thông báo mỗi người (1 việc: tên em; nhiều: "· n em"),
  *    hạn sớm nhất, "Quá hạn · …" khi có việc quá hạn — không tràn chuông (50 dòng) khi QL giữ nhiều việc.
  * ĐỒNG BỘ, không chỉ thêm: thông báo của việc đã xong tự hết (xoá), thông báo còn việc thì cập nhật chữ; dedup theo (người, đối tượng).
- * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người. Không email / push.
+ * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người (mốc ở DB). Không email / push.
  */
 import { chenNhieuDong, db, theoLo } from '../db.ts';
 import { tenMon, thuNgay } from '../../../shared/domain/index.ts';
-import type { Principal } from '../permissions.ts';
+import { activeAt, type Principal } from '../permissions.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { addDays, nowIso } from '../util.ts';
+import { demoToday } from '../demoConfig.ts';
 
 /** "Tới hạn" = hạn trong 7 ngày tới (hoặc đã qua). */
 export const CHOT_TOI_HAN_NGAY = 7;
@@ -32,9 +33,18 @@ export const CAU_CASE_CUA_NGUOI = `SELECT sc.id, s.full_name AS ten, COALESCE(sc
        FROM sos_cases sc JOIN students s ON s.id = sc.student_id LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
       WHERE sc.owner_user_id = ? AND sc.status != 'done' AND sc.tam = 0 AND s.archived_at IS NULL`;
 
-function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
+/** CHUONG-NHE: phép kiểm bật → `viecMuon` đọc lượt cả phạm vi như trước (so "giống hệt đường đủ"). */
+export const viecMuonDayDuKhiKiem = { bat: false };
+
+export function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
   const muon = new Map<string, Muon>();
-  const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']) }).items ?? []) as WorkItem[];
+  /*
+   * CHUONG-NHE: chỉ đọc lượt của lớp người này đang dạy — việc `score` + `mine` chỉ sinh ở lớp có phân công hiệu lực (`mySkills`, `activeAt`);
+   * Chốt lộ trình / Báo PH / Case không đọc lượt. QL / QT không dạy lớp nào → không đọc lượt.
+   */
+  const ngay = demoToday();   // cùng ngày `myWork` / `mySkills` dùng để quyết `mine`
+  const classIds = viecMuonDayDuKhiKiem.bat ? undefined : [...new Set(p.assignments.filter((a) => activeAt(a, ngay)).map((a) => a.classId))];
+  const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']), classIds }).items ?? []) as WorkItem[];
 
   /* 1. Bài quá hạn chấm của chính GV — gom theo lớp · đợt; bấm mở việc đầu của nhóm trong Công việc. */
   const cham = new Map<string, WorkItem[]>();
@@ -117,22 +127,28 @@ export function dongBoThongBaoTuDong(p: Principal, homNay: string): number {
   return het.length + doi.length;
 }
 
-/** Lần đồng bộ gần nhất của mỗi người (bộ nhớ tiến trình) — mở chuông liên tục không tính lại việc mỗi lần. */
+/**
+ * Mở chuông liên tục không tính lại việc mỗi lần. CHUONG-NHE: mốc lần đồng bộ gần nhất ở DB (`users.chuong_dong_bo_luc`, đọc cùng câu phiên — 0 câu
+ * thêm) thay bộ nhớ tiến trình: Netlify mở tiến trình mới nên trước đây gần như mỗi lần mở chuông đều đồng bộ.
+ */
 const CHU_KY_MS = 5 * 60_000;
-const lanCuoi = new Map<number, number>();
 /**
  * OV-15h1: người này vừa ghi thành công (POST/PUT/PATCH/DELETE) — việc của họ có thể vừa xong, nên lần mở chuông kế đồng bộ ngay (không chờ 5 phút).
- * shortcut: nhớ theo tiến trình — việc xong do NGƯỜI KHÁC làm (QL nhập điểm thay GV) vẫn chờ chu kỳ; bản chính nhiều bản hàm thì có thể trượt
- * sang bản khác. Cần chặt hơn thì lưu mốc ghi vào DB.
+ * Mốc đã NULL thì không ghi gì (0 câu).
+ * shortcut: mốc theo người (DB) — việc xong do NGƯỜI KHÁC làm (QL nhập điểm thay GV) vẫn chờ chu kỳ.
  * ponytail: OV-15i1 ý 12 — chưa làm "hết ngay khi người khác làm xong": cách rẻ duy nhất là mọi lần ghi xoá mốc của MỌI người, khi đó mỗi lần mở chuông
  * sau bất kỳ lần ghi nào đều đồng bộ (~30 câu `myWork`, đo QT 33 vs 4) — nặng hơn cái lợi; muốn đúng người thì đường ghi điểm / Case phải tự gọi `daGhi(gv)`.
  */
-export function daGhi(userId: number) { lanCuoi.delete(userId); }
-/** CHỈ phép kiểm (tests/dbGoc.ts): đổi DB thì mốc đồng bộ của mọi người không còn đúng. */
-export function xoaMocDongBo() { lanCuoi.clear(); }
+export function daGhi(p: Pick<Principal, 'userId' | 'chuongDongBoLuc'>) {
+  if (p.chuongDongBoLuc == null) return;
+  db().prepare('UPDATE users SET chuong_dong_bo_luc = NULL WHERE id = ?').run(p.userId);
+  p.chuongDongBoLuc = null;
+}
 export function dongBoKhiMoChuong(p: Principal, homNay: string) {
-  const now = Date.now();
-  if (now - (lanCuoi.get(p.userId) ?? 0) < CHU_KY_MS) return;
-  lanCuoi.set(p.userId, now);
+  if (p.chuongDongBoLuc && Date.now() - Date.parse(p.chuongDongBoLuc) < CHU_KY_MS) return;
+  const luc = nowIso();
+  /* Ghi mốc lỗi (Turso / SQLITE_BUSY) không làm hỏng chuông: vẫn đồng bộ, lần mở kế thử ghi lại. */
+  try { db().prepare('UPDATE users SET chuong_dong_bo_luc = ? WHERE id = ?').run(luc, p.userId); } catch (e) { console.error('[chuong-moc]', e); }
+  p.chuongDongBoLuc = luc;
   try { dongBoThongBaoTuDong(p, homNay); } catch (e) { console.error('[thong-bao-tu-dong]', e); }   // lỗi không làm hỏng chuông
 }

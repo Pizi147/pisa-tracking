@@ -9823,6 +9823,12 @@ await runPrS4GioiHanQuetTests({ check, checkAsync, assert, conn } as any);
 // ==================================================================== S5 (danh sách IN ở đường nóng thành json_each một tham số — giảm phân mảnh câu Turso)
 const { runPrS5JsonEachTests } = bocTep('prS5JsonEach', await import('./prS5JsonEach.tests.ts'));
 await runPrS5JsonEachTests({ check, checkAsync, assert, conn, P, classId } as any);
+// ==================================================================== CHUONG-NHE (chuông chỉ đọc lượt lớp đang dạy, mốc đồng bộ ở DB — giảm dòng đọc Turso)
+const { runPrChuongNheTests } = bocTep('prChuongNhe', await import('./prChuongNhe.tests.ts'));
+await runPrChuongNheTests({ check, checkAsync, assert, conn, P, TODAY } as any);
+// ==================================================================== QUET-THEO-KY (quét theo chỉ mục, theo kỳ — giảm dòng đọc Turso)
+const { runPrQuetTheoKyTests } = bocTep('prQuetTheoKy', await import('./prQuetTheoKy.tests.ts'));
+await runPrQuetTheoKyTests({ check, checkAsync, assert, conn, P, classId } as any);
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);

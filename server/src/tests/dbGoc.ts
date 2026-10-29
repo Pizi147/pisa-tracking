@@ -11,15 +11,14 @@ import { DB_PATH, datKetNoiChoPhepKiem, db } from '../db.ts';
 import { daGhiDb, xoaNho } from '../platform/nguCanhRequest.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { datSoEmailThu, soEmailThu } from '../seed/emailThu.ts';
-import { xoaMocDongBo } from '../platform/thongBaoTuDong.ts';
 import { datTepDangDung, tepDbDangDung } from './banSaoDb.ts';
 
 const GOC = path.join(path.dirname(DB_PATH), 'goc.sqlite');
 /** Trạng thái tiến trình đi cùng DB gốc: số đếm `emailThu` lúc chụp. */
 let emailGoc = 0;
 
-/** Bộ nhớ đệm cấp module đọc từ DB: bỏ khi đổi kết nối (`daGhiDb` = lượt quét `quetGioiHan` kế chạy lại; mốc đồng bộ chuông thông báo). */
-function boNhoDem() { xoaNho(); clearScoringModeCache(); daGhiDb(); xoaMocDongBo(); }
+/** Bộ nhớ đệm cấp module đọc từ DB: bỏ khi đổi kết nối (`daGhiDb` = lượt quét `quetGioiHan` kế chạy lại). */
+function boNhoDem() { xoaNho(); clearScoringModeCache(); daGhiDb(); }
 
 /** Gộp WAL vào tệp rồi chép DB_PATH → `goc.sqlite` cạnh nó. */
 export function chupDbGoc(): string {

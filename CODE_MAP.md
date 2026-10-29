@@ -332,7 +332,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | Lịch sắp tới | `web/src/modules/worklist/Highlights.tsx` · `server/src/worklist/highlights.ts` |
 | Admin: khối Mock Test | `web/src/modules/worklist/MockTestAdmin.tsx` · `server/src/worklist/tongQuanMt.ts` |
 | TVV / CX: Học viên của tôi | `server/src/worklist/hvCuaToi.ts` (`chipHocVien`) |
-| Thông báo tự động (đồng bộ khi mở chuông) | `server/src/platform/thongBaoTuDong.ts` (`dongBoThongBaoTuDong`) |
+| Thông báo tự động (đồng bộ khi mở chuông) | `server/src/platform/thongBaoTuDong.ts` (`dongBoThongBaoTuDong`; mốc 5 phút ở `users.chuong_dong_bo_luc` — migrate `server/src/migrate/prChuongNhe.ts`) |
 | Vận hành: giao việc, việc con, Tạm ngưng | `web/src/modules/worklist/{MgmtTasksPage,ManagerTasks}.tsx` · `server/src/worklist/mgmttasks.ts` · `shared/domain/worklist.ts` |
 | Báo cáo đơn vị | `web/src/modules/worklist/MeetingPage.tsx` · `server/src/worklist/meeting.ts` · `shared/domain/baoCaoDonVi.ts` |
 | "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` (`mySkills`, `editableSkills`) |
