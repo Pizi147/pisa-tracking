@@ -20,6 +20,7 @@ import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';   // LOC-HIEN-T
 export async function runPrOv13kTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, TODAY, P, addDays, classId } = t;
   const attempts: any = await import('../fasttrack/attempts.ts');
+  const { chepDbKiem } = await import('./banSaoDb.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
@@ -211,10 +212,9 @@ export async function runPrOv13kTests(t: YThucTestKit) {
   check('OV13k-10 · migrate ĐẦY ĐỦ trên DB đang có (bản sao DB demo, bỏ 4 cột OV-13k): xanh, đủ cột, lần hai không áp lại OV-13k', () => {
     const fs = require('node:fs') as typeof import('node:fs'), os = require('node:os') as typeof import('node:os');
     const pathMod = require('node:path') as typeof import('node:path'), cp = require('node:child_process') as typeof import('node:child_process');
-    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'z2-ov13k-'));
+    /* KIEM-BAN-SAO: chép tệp DB + WAL (`chepDbKiem`) thay `VACUUM INTO` — VACUUM trên kết nối dùng chung hỏng khi còn câu dở (chạy song song). */
+    const { thuMuc: dir, tep: f } = chepDbKiem('ov13k');
     try {
-      const f = pathMod.join(dir, 'cu.sqlite');
-      conn.exec(`VACUUM INTO '${f.replace(/'/g, "''")}'`);
       /* DB "trước OV-13k": dựng lại assessment_scores từ chính câu CREATE đang có, bỏ 4 cột (DROP COLUMN không được với cột có REFERENCES). */
       const c = new Database(f);
       const BON = ['nhan_xet_phu_trach', 'nhan_xet_phu_trach_by', 'nhan_xet_phu_trach_at', 'cho_phu_trach_xem'];

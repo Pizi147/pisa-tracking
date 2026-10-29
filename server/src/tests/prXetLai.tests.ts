@@ -3,7 +3,6 @@
  * XL-1 luật thuần · XL-2 migrate thẻ Mini Test · XL-3 GET panel = việc · XL-4 POST lô · XL-5 tự giữ + Hoàn tác · XL-6 tốc độ.
  */
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -23,8 +22,7 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
   const { createApp } = await import('../app.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const { trongBoNho } = await import('../platform/nguCanhRequest.ts');
-  const dbMod: any = await import('../db.ts');
-  const { default: SqliteDb } = await import('libsql');
+  const { voiBanSaoDb } = await import('./banSaoDb.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const QL = P.mbManager;
@@ -138,28 +136,13 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
    * Giả DB cũ (chưa bảng) trên BẢN SAO RIÊNG của database kiểm — KIEM-CHAP-CHON: trước đây cất / trả bảng bằng DROP / RENAME ngay trên kết nối
    * dùng chung. SQLite từ chối DDL ("database table is locked") khi trên kết nối còn BẤT KỲ câu lệnh dở nào hoặc một kết nối khác cùng tệp
    * đang đọc (libsql dùng chung bộ đệm) — chập chờn khi `npm run check` chạy song song; lệnh trả bảng trong `finally` hỏng → bảng kẹt tên
-   * `xet_lai_cat`, mọi phép kiểm sau báo "no such table: xet_lai_lo_trinh". Nay: chép tệp DB + WAL (không cần khoá), mở kết nối riêng, cho
-   * `db()` trỏ vào nó trong lúc chạy `fn`, xong trả lại và xoá bản sao — DB dùng chung không bị DDL nào.
+   * `xet_lai_cat`, mọi phép kiểm sau báo "no such table: xet_lai_lo_trinh". Nay chạy trên bản sao riêng (`voiBanSaoDb`, banSaoDb.ts).
    */
-  const voiDbCu = (fn: (ban: any) => void) => {
-    const goc = dbMod.DB_PATH as string;
-    /* Thư mục tạm tiền tố `z2-`: run.ts tự dọn sau 1 giờ — Windows không cho xoá tệp ngay khi câu lệnh đã nhớ (db.ts) chưa được dọn. */
-    const thuMuc = fs.mkdtempSync(path.join(os.tmpdir(), 'z2-xl2-'));
-    const tep = path.join(thuMuc, 'db-cu.sqlite');
-    for (const duoi of ['', '-wal']) if (fs.existsSync(goc + duoi)) fs.copyFileSync(goc + duoi, tep + duoi);
-    const ban = new SqliteDb(tep);
-    const cu = dbMod.db();
-    try {
-      ban.exec('DROP INDEX IF EXISTS ix_xet_lai_hv; DROP INDEX IF EXISTS ux_xet_lai_tu_dong; DROP TABLE xet_lai_lo_trinh');
-      ban.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
-      dbMod.datKetNoiChoPhepKiem(ban);
-      fn(ban);
-    } finally {
-      dbMod.datKetNoiChoPhepKiem(cu);
-      ban.close();
-      try { fs.rmSync(thuMuc, { recursive: true, force: true }); } catch { /* Windows còn giữ tệp — run.ts dọn sau */ }
-    }
-  };
+  const voiDbCu = (fn: (ban: any) => void) => voiBanSaoDb('xl2', (ban) => {
+    ban.exec('DROP INDEX IF EXISTS ix_xet_lai_hv; DROP INDEX IF EXISTS ux_xet_lai_tu_dong; DROP TABLE xet_lai_lo_trinh');
+    ban.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
+    fn(ban);
+  });
   check('XL-2 · migrate: DB cũ (chưa bảng) → tạo bảng + mốc tự giữ một lần; thẻ "Mini Test chưa đạt" của em KHÔNG có dòng (d) giữ nguyên; chạy hai lần không đổi gì, không tính tập; DB mã hiện hành không đổi', () => {
     const sid = get('SELECT id FROM students ORDER BY id LIMIT 1').id;
     const id = theMini(sid, 999001);

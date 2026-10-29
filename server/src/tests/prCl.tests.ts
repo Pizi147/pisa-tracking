@@ -16,6 +16,7 @@ export async function runPrClTests(t: YThucTestKit) {
   const mt0: any = await import('../fasttrack/mt0.ts');
   const hanhTrinh: any = await import('../students/hanhTrinh.ts');
   const migLcb: any = await import('../migrate/prLcb.ts');
+  const { voiBanSaoDb } = await import('./banSaoDb.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { createApp } = await import('../app.ts');
@@ -383,18 +384,24 @@ export async function runPrClTests(t: YThucTestKit) {
     const fou = lop('FOU', 8);
     const x = em(fou.id, { ma: 'FOU' });
     conn.prepare(`INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, created_at, updated_at) VALUES (?,?, 'hoc_lai', ?, ?)`).run(x.sid, fou.id, NOW, NOW);
-    conn.exec('ALTER TABLE lo_trinh_tiep_theo DROP COLUMN huong_gvcn');
-    let nem: any = null;
-    conn.exec('ALTER TABLE lenh_chuyen_lop RENAME TO lenh_chuyen_lop_tam');
-    try { nem = loi(() => migLcb.migratePrLcb(conn, [])); } finally { conn.exec('ALTER TABLE lenh_chuyen_lop_tam RENAME TO lenh_chuyen_lop'); }
-    assert(nem && !cot(), `lần lỗi: ${nem?.message ?? 'không ném'} · cột ${cot()}`);
-    const lan2: string[] = [];
-    migLcb.migratePrLcb(conn, lan2);
-    assert(cot() && lan2.length && get('SELECT huong_gvcn FROM lo_trinh_tiep_theo WHERE student_id = ?', x.sid)?.huong_gvcn === 'hoc_lai', `lần 2: ${JSON.stringify(lan2)}`);
-    const truoc = JSON.stringify(all('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id'));
-    const lan3: string[] = [];
-    migLcb.migratePrLcb(conn, lan3);
-    assert(!lan3.length && JSON.stringify(all('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id')) === truoc, `lần 3: ${JSON.stringify(lan3)}`);
+    /* KIEM-BAN-SAO: bỏ cột / đổi tên bảng trên BẢN SAO riêng (`voiBanSaoDb`, `tx()` của migrate cũng chạy trên đó) — không DDL trên DB dùng chung. */
+    voiBanSaoDb('cl-l', (ban) => {
+      const cotB = () => (ban.prepare('SELECT name FROM pragma_table_info(?)').all('lo_trinh_tiep_theo') as any[]).some((c: any) => c.name === 'huong_gvcn');
+      const allB = (sql: string) => JSON.stringify(ban.prepare(sql).all());
+      ban.exec('ALTER TABLE lo_trinh_tiep_theo DROP COLUMN huong_gvcn');
+      ban.exec('ALTER TABLE lenh_chuyen_lop RENAME TO lenh_chuyen_lop_tam');
+      let nem: any = null;
+      try { nem = loi(() => migLcb.migratePrLcb(ban, [])); } finally { ban.exec('ALTER TABLE lenh_chuyen_lop_tam RENAME TO lenh_chuyen_lop'); }
+      assert(nem && !cotB(), `lần lỗi: ${nem?.message ?? 'không ném'} · cột ${cotB()}`);
+      const lan2: string[] = [];
+      migLcb.migratePrLcb(ban, lan2);
+      assert(cotB() && lan2.length && ban.prepare('SELECT huong_gvcn FROM lo_trinh_tiep_theo WHERE student_id = ?').get(x.sid)?.huong_gvcn === 'hoc_lai', `lần 2: ${JSON.stringify(lan2)}`);
+      const truoc = allB('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id');
+      const lan3: string[] = [];
+      migLcb.migratePrLcb(ban, lan3);
+      assert(!lan3.length && allB('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id') === truoc, `lần 3: ${JSON.stringify(lan3)}`);
+    });
+    assert(cot(), 'DB dùng chung vẫn còn cột huong_gvcn');
   });
 
   // ------------------------------------------------------------------ (m) quyền qua HTTP

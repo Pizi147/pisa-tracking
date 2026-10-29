@@ -13,6 +13,7 @@ export async function runPrOv4aTests(t: YThucTestKit) {
   const skillSch: any = await import('../fasttrack/skillSchedule.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const keHoach: any = await import('../keHoach/keHoachTest.ts');
+  const { voiBanSaoDb } = await import('./banSaoDb.ts');
   const accounts: any = await import('../platform/accounts.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { kiemDuLieuMt } = await import('../ops/kiemDuLieuMt.ts');
@@ -223,16 +224,16 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     assert(h2.luot === null && h2.huy?.attemptId === e.m2 && h2.existingAttemptId === null, JSON.stringify(h2));
   }));
 
-  check('OV4a-9 · migrate PR-OV4a: thêm loai + dong_json, dòng cũ = doi_vuot; chạy lại không đổi gì', () => thu(() => {
-    /* Bảng như trước PR (PR-MTa) — đổi tên bảng thật đi trong giao dịch (cuộn lại sau). */
-    conn.exec('ALTER TABLE ket_qua_huy RENAME TO ket_qua_huy_ov4a');
-    conn.exec(`CREATE TABLE ket_qua_huy (id INTEGER PRIMARY KEY, attempt_id INTEGER NOT NULL, vuot_boi_attempt_id INTEGER, diem_json TEXT NOT NULL, lich_json TEXT NOT NULL,
+  check('OV4a-9 · migrate PR-OV4a: thêm loai + dong_json, dòng cũ = doi_vuot; chạy lại không đổi gì', () => voiBanSaoDb('ov4a-9', (ban) => {
+    /* Bảng như trước PR (PR-MTa) — KIEM-BAN-SAO: đổi tên bảng trên BẢN SAO riêng, không DDL trên DB dùng chung. */
+    ban.exec('ALTER TABLE ket_qua_huy RENAME TO ket_qua_huy_ov4a');
+    ban.exec(`CREATE TABLE ket_qua_huy (id INTEGER PRIMARY KEY, attempt_id INTEGER NOT NULL, vuot_boi_attempt_id INTEGER, diem_json TEXT NOT NULL, lich_json TEXT NOT NULL,
       so_diem INTEGER NOT NULL, ly_do TEXT NOT NULL, huy_boi INTEGER, huy_luc TEXT NOT NULL, khoi_phuc_boi INTEGER, khoi_phuc_luc TEXT, ly_do_khoi_phuc TEXT)`);
-    conn.prepare(`INSERT INTO ket_qua_huy (attempt_id, diem_json, lich_json, so_diem, ly_do, huy_luc) VALUES (1, '[]', '[]', 0, 'cũ', ?)`).run(TODAY);
-    const a1: string[] = []; migratePrOv4(conn, a1);
-    const a2: string[] = []; migratePrOv4(conn, a2);
+    ban.prepare(`INSERT INTO ket_qua_huy (attempt_id, diem_json, lich_json, so_diem, ly_do, huy_luc) VALUES (1, '[]', '[]', 0, 'cũ', ?)`).run(TODAY);
+    const a1: string[] = []; migratePrOv4(ban, a1);
+    const a2: string[] = []; migratePrOv4(ban, a2);
     assert(a1.length === 1 && a2.length === 0, JSON.stringify({ a1, a2 }));
-    assert(all(`SELECT loai, dong_json FROM ket_qua_huy`).every((r) => r.loai === 'doi_vuot' && r.dong_json === null), 'dòng cũ phải là doi_vuot');
+    assert((ban.prepare(`SELECT loai, dong_json FROM ket_qua_huy`).all() as any[]).every((r) => r.loai === 'doi_vuot' && r.dong_json === null), 'dòng cũ phải là doi_vuot');
   }));
   /*
    * Mọi lượt Mock còn hiệu lực CÓ điểm trên dữ liệu cuối run.ts (thay VN4-2 "trùng cách cũ"): huỷ rồi khôi phục → mọi thứ huỷ chạm trở lại đúng như trước
