@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V9 · Phân công GV</title>
+<link rel="stylesheet" href="../v5/v5-nen.css">
+<link rel="stylesheet" href="../v7/bang-mau-moi.css">
+<style>
+/*
+ * V9 · PHÂN CÔNG GV (30/10, chờ chủ SP duyệt) — góc mới ở Học viên & Lớp + hộp hỏi bàn giao + panel bàn giao đổi GV.
+ * Đặc tả: docs/superpowers/specs/2026-10-30-phan-cong-gv-design.md (mục 2, 2b). Hình ảnh theo v8 (ho-so-lop.html): token web `.sau` của
+ * bang-mau-moi.css, thành phần v5-nen.css. Khung 1440 TỐI · 375 SÁNG. Ghi chú vàng nằm NGOÀI khung, không lên web.
+ */
+.sau {
+  --phong: 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif; --phong-so: 'Inter', 'Be Vietnam Pro', system-ui, sans-serif;
+  --nen: var(--bg); --be-mat: var(--surface); --be-mat-2: var(--surface-2); --be-mat-noi: var(--surface); --vien: var(--line); --vien-dam: var(--line-strong);
+  --vien-o: var(--o-nhap-vien); --chu: var(--text); --chu-2: var(--text-dim); --chu-3: var(--text-faint);
+  --nhan: var(--accent); --nhan-hover: var(--accent-strong); --nhan-nen: var(--accent-soft); --nhan-vien: var(--accent-line); --focus: var(--accent);
+  --hover: var(--nut-hover); --dang-mo: var(--accent-soft);
+  --loi: var(--bad); --loi-nen: var(--bad-bg); --loi-vien: var(--bad-line); --canh-bao: var(--soon); --canh-bao-nen: var(--soon-bg); --canh-bao-vien: var(--soon-line);
+  --dat: var(--ok); --dat-nen: var(--ok-bg); --dat-vien: var(--ok-line); --dang: var(--doing); --dang-nen: var(--doing-bg); --dang-vien: var(--doing-line);
+  --thieu: var(--text-faint); --thieu-nen: var(--surface-2); --thieu-vien: #66789f;
+  --nut-chinh-nen: #22406c; --nut-chinh-vien: #4d72a8; --nut-chinh-chu: #eaf1fb; --nut-chinh-hover: #2a4c7e;
+  --bong: 0 8px 24px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4); --man-che: rgb(0 0 0 / .55);
+  --note-bg: #2a2410; --note-line: #7d6420; --note-text: #f2e2a8;
+  color: var(--text); color-scheme: dark;
+}
+[data-theme="light"] .sau {
+  --thieu-vien: #8690ab;
+  --nut-chinh-nen: var(--accent); --nut-chinh-vien: var(--accent); --nut-chinh-chu: #fff; --nut-chinh-hover: var(--accent-strong);
+  --bong: 0 8px 24px rgba(17,26,66,.14), 0 1px 3px rgba(17,26,66,.10); --man-che: rgb(17 26 66 / .45);
+  color-scheme: light;
+}
+body.sau { margin: 0; background: var(--bg); font: 15px/1.5 var(--phong); }
+.so, .oso, td.so { font-family: var(--phong-so); font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+a { color: var(--accent); text-decoration: none; }
+
+/* ---------- phần đọc mockup (KHÔNG phải giao diện) ---------- */
+.trang-ghi { padding: 24px 28px 64px; display: grid; gap: 40px; }
+.ghi-dau { display: grid; gap: 10px; max-width: 1840px; }
+.ghi-dau h1 { font-size: 22px; }
+.ghi-dau p, .ghi { color: var(--note-text); background: var(--note-bg); border: 1px dashed var(--note-line); border-radius: 8px; padding: 10px 14px; font-size: 13px; margin: 0; max-width: 1840px; }
+.ghi ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.ghi b, .ghi-dau p b { color: #fff3c4; }
+.muc-luc { display: flex; flex-wrap: wrap; gap: 8px; }
+.muc-luc a { font: 600 13px var(--phong); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line-strong); color: var(--text); }
+.khu { display: grid; gap: 12px; }
+.khu > h2 { font-size: 17px; font-weight: 700; }
+.hang-khung { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.hang-khung figure { margin: 0; display: grid; gap: 6px; }
+.hang-khung figcaption { font-size: 13px; font-weight: 700; color: var(--note-text); background: var(--note-bg); border: 1px dashed var(--note-line); border-radius: 6px; padding: 3px 8px; justify-self: start; }
+
+/* ---------- GIAO DIỆN WEB ---------- */
+.man, .dt { background: var(--bg); color: var(--text); border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; font-size: 15px; line-height: 1.45; }
+.man { width: 1440px; } .dt { width: 375px; } .cat { width: 960px; } .cat-rong { width: 1040px; } .cat-nho { width: 640px; }
+.cat .tt .tim, .cat-nho .tt .tim { display: none; } .cat-nho .tt .m:not(.dang) { display: none; }
+.khung-trong { background: var(--bg); position: relative; }
+.tt { height: 56px; background: var(--dieu-huong-nen); color: var(--dieu-huong-chu); display: flex; align-items: center; padding: 0 20px; gap: 2px; font-size: 14px; }
+.tt .logo { display: inline-flex; align-items: baseline; gap: 6px; margin-right: 22px; }
+.tt .logo b { color: var(--hong); font-size: 22px; font-weight: 800; letter-spacing: .02em; }
+.tt .logo span { color: #fff; font-size: 12px; letter-spacing: .24em; }
+.tt .m { height: 56px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-bottom: 3px solid transparent; font-weight: 500; white-space: nowrap; }
+.tt .m.dang { color: #fff; font-weight: 700; border-bottom-color: var(--hong); }
+.tt .m i { font: 700 12px/20px var(--phong-so); font-style: normal; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: rgba(255,255,255,.16); color: #fff; text-align: center; }
+.tt .phai { margin-left: auto; display: inline-flex; align-items: center; gap: 14px; }
+.tt .tim { width: 250px; height: 36px; border: 1px solid var(--dieu-huong-vien); border-radius: 8px; display: inline-flex; align-items: center; justify-content: space-between; padding: 0 10px; color: var(--dieu-huong-chu); font-size: 14px; }
+.tt .tim kbd { font: 11px var(--phong-so); border: 1px solid var(--dieu-huong-vien); border-radius: 4px; padding: 0 4px; }
+.tt .ic { position: relative; width: 36px; height: 36px; display: inline-grid; place-items: center; color: #fff; }
+.tt .ic sup { position: absolute; top: 2px; right: -2px; min-width: 18px; height: 18px; border-radius: 9px; background: #fff; color: #0a1a3a; font: 700 11px/18px var(--phong-so); text-align: center; }
+.tt .tk { height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--dieu-huong-vien); display: inline-flex; align-items: center; color: #fff; font-size: 14px; }
+.tt .av { width: 32px; height: 32px; border-radius: 50%; background: #fff; color: #273c8f; display: inline-grid; place-items: center; font-weight: 700; font-size: 14px; }
+.dt .tt { padding: 0 12px 0 16px; }
+.noi { padding: 16px 24px 28px; display: grid; gap: 16px; }
+.dt .noi { padding: 12px 16px 24px; gap: 12px; }
+.noi > * { min-width: 0; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); font: 600 14px var(--phong); white-space: nowrap; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn-chinh { background: var(--nut-chinh-nen); border-color: var(--nut-chinh-vien); color: var(--nut-chinh-chu); }
+.btn-ma { background: transparent; border-color: transparent; color: var(--accent); }
+.btn-nho { height: 30px; padding: 0 10px; font-size: 13px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.ba-cham { width: 36px; padding: 0; font-weight: 700; letter-spacing: .05em; }
+.btn-nho.ba-cham { width: 30px; }
+.dt .btn { height: 44px; } .dt .btn-nho { height: 44px; min-width: 44px; }
+.ten { color: var(--text); font-weight: 600; }
+.ten:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.ten-gv { color: var(--text); font-weight: 500; }
+.ten-gv:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.phu { font-size: 12px; color: var(--text-faint); }
+.mo { color: var(--text-dim); }
+.lk { color: var(--accent); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.ky { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 4px; font: 700 12px var(--phong); color: var(--accent); background: var(--accent-soft); white-space: nowrap; }
+.ii { width: 28px; height: 28px; border: 0; background: none; color: var(--text-faint); padding: 0; display: inline-grid; place-items: center; cursor: help; flex: none; border-radius: 6px; }
+.ii:hover { background: var(--nut-hover); color: var(--text-dim); }
+.o-chon-sel { height: 36px; padding: 0 30px 0 12px; border-radius: 8px; border: 1px solid var(--o-nhap-vien); background: var(--o-nhap-nen); color: var(--text); font: 500 14px var(--phong); display: inline-flex; align-items: center; position: relative; white-space: nowrap; cursor: pointer; }
+.o-chon-sel::after { content: "▾"; position: absolute; right: 11px; font-size: 11px; color: var(--text-faint); }
+.o-chon-sel.nho { height: 30px; font-size: 13px; padding: 0 26px 0 10px; }
+.dt .o-chon-sel { height: 44px; font-size: 16px; }
+.o { font: 15px var(--phong); color: var(--text); background: var(--o-nhap-nen); border: 1px solid var(--o-nhap-vien); border-radius: 8px; height: 40px; padding: 0 10px; width: 100%; }
+.o::placeholder { color: var(--text-faint); }
+textarea.o { height: auto; min-height: 92px; padding: 8px 10px; resize: vertical; line-height: 1.45; display: block; }
+.o.dang-go { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dt .o { font-size: 16px; height: 44px; } .dt textarea.o { height: auto; }
+.tim-o { height: 36px; width: 240px; font-size: 14px; padding-left: 34px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239eacc8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 11px center; }
+.dt .tim-o { width: 100%; height: 44px; }
+
+/* đầu trang Học viên & Lớp: h1 · khung · chi nhánh │ Xuất · + Thêm · ⋯ */
+.dau-trang { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.dau-trang h1 { font-size: 22px; font-weight: 700; margin-right: 6px; }
+.dau-trang .phai { margin-left: auto; display: inline-flex; gap: 8px; align-items: center; }
+.vien { height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--text-dim); font: 500 13px var(--phong); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.vien .so { font-weight: 700; }
+.vien[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.dt .vien { height: 40px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tab { height: 42px; padding: 0 12px; border: 0; background: none; border-bottom: 2px solid transparent; color: var(--text-dim); font: 500 15px var(--phong); white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.tab .so { font-size: 13px; color: var(--text-faint); font-weight: 600; }
+.tab[aria-selected="true"] { color: var(--text); font-weight: 700; border-bottom-color: var(--accent); }
+.dt .tabs { margin: 0 -16px; padding: 0 8px; gap: 0; overflow-x: auto; scrollbar-width: none; } .dt .tab { padding: 0 10px; font-size: 14px; height: 44px; }
+.dt .tabs[data-cuon] { -webkit-mask-image: linear-gradient(90deg, transparent 0, transparent 20px, #000 60px); mask-image: linear-gradient(90deg, transparent 0, transparent 20px, #000 60px); } /* còn tab bên trái: mép mờ */
+
+/* thẻ + hàng công cụ ngoài bảng (G9) */
+.the { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.bang-the { overflow: clip; }
+.cong-cu { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.cong-cu .ke { width: 1px; height: 24px; background: var(--line-strong); }
+.cong-cu .phai { margin-left: auto; display: inline-flex; gap: 12px; align-items: center; font-size: 13px; color: var(--text-faint); }
+.cong-cu .phai b { color: var(--text-dim); font-family: var(--phong-so); font-weight: 600; }
+.dt .cong-cu { padding: 12px; }
+.bao-chi-xem { display: flex; gap: 8px; align-items: center; padding: 9px 12px; border-radius: 8px; background: var(--surface-2); color: var(--text-dim); font-size: 14px; }
+.bao-chi-xem svg { flex: none; }
+
+/* ---------- BẢNG LỚP (bố cục B) ---------- */
+.nhom-1 { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px; background: var(--surface-2); box-shadow: inset 3px 0 0 var(--hang-lon-vach); border-top: 1px solid var(--line); font: 700 15px var(--phong); }
+.bang-the > .nhom-1:first-of-type { border-top: 0; }
+.dem-n { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 4px; border: 1px solid var(--line-strong); font: 600 12px var(--phong); color: var(--text-dim); white-space: nowrap; }
+.nhom-2 { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px 0 28px; border-top: 1px solid var(--line); font: 600 14px var(--phong); color: var(--text-dim); }
+.nhom-2 .ma-ct { font: 600 12px var(--phong); color: var(--text-faint); }
+.pc { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 15px; }
+.pc th { font-size: 13px; font-weight: 600; color: var(--text-dim); text-align: left; background: transparent; padding: 0 16px; height: 34px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pc th:first-child { padding-left: 28px; }
+.pc td { padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; height: 50px; }
+.pc tbody tr:last-child > * { border-bottom: 0; }
+.pc .lop { padding: 6px 8px 6px 28px; }
+.pc tbody th.lop { font: 400 15px/1.4 var(--phong); color: var(--text); height: auto; border-top: 0; text-align: left; white-space: normal; }
+.pc .lop .ten { font-size: 15px; display: block; white-space: nowrap; }
+.pc .lop .phu { display: block; white-space: nowrap; }
+.pc td.khong-mon { color: var(--text-faint); font-size: 13px; padding-left: 16px; }
+.pc td.cuoi { padding-right: 12px; }
+.pc tbody tr:hover > * { background: color-mix(in srgb, var(--nut-hover) 55%, transparent); }
+.pc tr.nhap .lop { box-shadow: inset 3px 0 0 var(--accent); }
+.pc tr.nhap > * { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+.pc tr.da-luu .lop { box-shadow: inset 3px 0 0 var(--ok-line); }
+.nhan-nhap { display: inline-flex; align-items: center; gap: 5px; font: 600 12px var(--phong); color: var(--soon); white-space: nowrap; }
+.nhan-nhap::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.nhan-luu { font: 600 12px var(--phong); color: var(--ok); white-space: nowrap; }
+.hang-nut { display: flex; gap: 6px; justify-content: flex-end; align-items: center; position: relative; }
+.hang-nut .phu-luu { font-size: 12px; color: var(--ok); font-weight: 600; white-space: nowrap; }
+
+/* ô chọn GV ▾ — dáng ô nhập nhẹ: không viền tới khi rê / focus (bảng đọc được), ▾ luôn hiện */
+.o-gv { width: 100%; min-height: 38px; display: flex; align-items: center; gap: 4px; padding: 3px 6px 3px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); font: 500 14px/1.3 var(--phong); text-align: left; cursor: pointer; position: relative; }
+.o-gv .t { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.o-gv .t > span:first-child { white-space: nowrap; }
+.o-gv .t .p { font: 400 12px/1.25 var(--phong); color: var(--text-faint); white-space: nowrap; }
+.o-gv::after { content: ""; width: 10px; height: 6px; flex: none; background: var(--text-dim); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23000' stroke-width='1.8'/%3E%3C/svg%3E") no-repeat center; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23000' stroke-width='1.8'/%3E%3C/svg%3E") no-repeat center; }
+.o-gv:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--line-strong); }
+.o-gv.cho-doi { background: var(--doing-bg); border: 1px dashed var(--doing-line); }
+.o-gv.cho-doi .t .p { color: var(--doing); font-weight: 600; }
+.o-gv.khac-doi { border: 1px dashed var(--doing-line); }
+.o-gv.khac-doi .t .p { color: var(--doing); font-weight: 600; }
+.so-nhap { color: var(--accent); font-weight: 700; font-family: var(--phong-so); white-space: nowrap; }
+.nhan-cho { display: block; font: 600 12px var(--phong); color: var(--doing); white-space: nowrap; }
+.btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.thanh-luu { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line-strong); background: var(--surface-2); position: relative; }
+.thanh-luu .dem { font-weight: 700; } .thanh-luu .phai { margin-left: auto; display: inline-flex; gap: 8px; }
+.nhom-cap { display: grid; gap: 6px; }
+.nhom-cap > .tl { font: 700 13px var(--phong); color: var(--text); display: flex; gap: 8px; align-items: baseline; }
+.nhom-cap > .tl .phu { font-weight: 400; }
+.ds-chon .cho-bao { margin: 2px 8px 6px; padding: 8px 10px; border-radius: 8px; background: var(--doing-bg); border: 1px dashed var(--doing-line); display: grid; gap: 6px; font-size: 13px; }
+.ds-chon .cho-bao b { color: var(--doing); }
+.o-gv:hover { background: var(--nut-hover); border-color: var(--line-strong); }
+.o-gv.trong { background: var(--soon-bg); color: var(--soon); font-weight: 600; }
+.o-gv.trong .t > span:first-child::before { content: "– "; }
+.o-gv.nghi { background: var(--soon-bg); }
+.o-gv.nghi .t .p { color: var(--soon); font-weight: 600; }
+.o-gv.doi { background: var(--accent-soft); border: 1px solid var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.o-gv.loi { border: 1px solid var(--bad); box-shadow: inset 0 0 0 1px var(--bad); background: var(--bad-bg); }
+.o-gv[aria-expanded="true"] { outline: 2px solid var(--accent); outline-offset: 2px; }
+.o-gv.to { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--hong); font-weight: 700; }
+.o-gv.to .t > span:first-child::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--hong); margin-right: 6px; vertical-align: middle; }
+.loi-o { display: block; margin: 3px 4px 0; font: 600 12px/1.3 var(--phong); color: var(--bad); }
+.loi-o::before { content: "⚠ "; }
+.o-xem { padding: 0 10px; font-size: 14px; display: grid; gap: 1px; }
+.o-xem .trong { color: var(--soon); font-weight: 600; } .o-xem .p { font-size: 12px; color: var(--soon); font-weight: 600; }
+.loi-hang td { background: var(--bad-bg) !important; height: auto !important; padding: 8px 16px 8px 28px !important; }
+.loi-hang .bao { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.loi-hang .bao b { color: var(--bad); }
+
+/* dải "đang tô" (bấm GV ở tổng hợp) — hồng = dấu nhận diện / chữ khớp (V2, V14), không mang nghĩa lỗi */
+.dai-to { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 16px; background: var(--surface-2); box-shadow: inset 3px 0 0 var(--hong); border-bottom: 1px solid var(--line); font-size: 14px; }
+.dai-to b { font-weight: 700; } .dai-to .so { font-weight: 700; }
+.dai-to .phai { margin-left: auto; display: inline-flex; gap: 8px; align-items: center; }
+.cham-hong { width: 8px; height: 8px; border-radius: 50%; background: var(--hong); flex: none; }
+
+/* danh sách chọn GV (ChonNguoi kiểu ds) */
+.ds-chon { position: absolute; z-index: 6; width: 340px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: var(--bong); padding: 8px 0 6px; font-size: 14px; text-align: left; }
+.ds-chon .o { height: 36px; font-size: 14px; margin: 0 8px 4px; width: calc(100% - 16px); }
+.ds-chon .tdm { font: 600 12px var(--phong); color: var(--text-faint); padding: 8px 14px 2px; }
+.ds-chon .mm { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 0 8px; padding: 6px 14px; align-items: start; cursor: pointer; }
+.ds-chon .mm:hover, .ds-chon .mm.dang { background: var(--nut-hover); }
+.ds-chon .mm .v { color: var(--accent); font-weight: 700; }
+.ds-chon .mm .n { font-weight: 600; color: var(--text); }
+.ds-chon .mm .p { grid-column: 2; font-size: 12px; color: var(--text-faint); }
+.ds-chon .mm .p b { color: var(--text-dim); font-weight: 600; font-family: var(--phong-so); }
+.ds-chon hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+.ds-chon .bo { color: var(--text-dim); font-weight: 500; }
+
+/* ---------- TỔNG HỢP ---------- */
+.hai-tong { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.dt .hai-tong { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.the-dau { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.the-dau h2 { font-size: 15px; font-weight: 700; }
+.the-dau .phu { font-size: 13px; color: var(--text-dim); }
+.the-dau .phai { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
+.dt .the-dau { padding: 10px 12px; }
+.tong { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 15px; }
+.tong th { font-size: 13px; font-weight: 600; color: var(--text-dim); background: var(--surface-2); text-align: left; padding: 0 16px; height: 36px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tong th.c, .tong td.c { text-align: center; }
+.tong td { padding: 0 16px; height: 42px; border-bottom: 1px solid var(--line); }
+.tong td.c { font-family: var(--phong-so); font-variant-numeric: tabular-nums; }
+.tong td.c.tong-cot { font-weight: 700; }
+.tong td .so0 { color: var(--text-faint); font-weight: 400; }
+.tong tbody tr { cursor: pointer; }
+.tong tbody tr:hover td { background: var(--nut-hover); }
+.tong .nut-gv { appearance: none; border: 0; background: none; padding: 0; color: var(--text); font: 500 15px var(--phong); text-align: left; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.tong tr.dang-to td { background: var(--surface-2) !important; }
+.tong tr.dang-to td:first-child { box-shadow: inset 3px 0 0 var(--hong); }
+.tong tr.dang-to .nut-gv { font-weight: 700; }
+.tong tr.dang-to .nut-gv::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--hong); }
+.tong tfoot td { background: var(--surface-2); font-weight: 700; font-size: 14px; height: 38px; border-bottom: 0; cursor: default; }
+.tong tfoot td.c { font-family: var(--phong-so); }
+.dt .tong th, .dt .tong td { padding: 0 10px; }
+.dt .tong td { height: 44px; }
+.nhan-nghi { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--soon-bg); color: var(--soon); font: 600 12px var(--phong); white-space: nowrap; }
+
+/* ---------- 375: thẻ lớp — người dạy gom theo GV (đọc), "Sửa" ra ô từng môn ---------- */
+.ds-lop { display: grid; }
+.the-lop { padding: 12px 14px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
+.the-lop:first-child { border-top: 0; }
+.the-lop.nhap { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+.lop-dau { display: flex; align-items: center; gap: 8px; }
+.lop-dau .ten { font-size: 15px; }
+.lop-dau .btn { margin-left: auto; }
+.gv-ds { margin: 0; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 10px; font-size: 14px; }
+.gv-ds dt { font: 600 12px/20px var(--phong); color: var(--text-faint); }
+.gv-ds dd { margin: 0; line-height: 20px; }
+.gv-ds dd.trong { color: var(--soon); font-weight: 600; }
+.gv-ds dd.to { font-weight: 700; } .gv-ds dd.to::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--hong); margin-right: 6px; vertical-align: middle; }
+.gv-ds dt.to { color: var(--hong-chu); }
+.luoi-sua { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+.luoi-sua > label { font: 700 13px var(--phong); color: var(--text-dim); }
+.luoi-sua .o-gv { min-height: 44px; border-color: var(--o-nhap-vien); background: var(--o-nhap-nen); font-size: 15px; }
+.luoi-sua .o-gv.doi { background: var(--accent-soft); border-color: var(--accent); }
+.hai-nut { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nhom-1.dt-n { min-height: 40px; padding: 0 14px; }
+.nhom-2.dt-n { padding-left: 14px; }
+
+/* ---------- HỘP LƯU / HỎI BÀN GIAO (hộp neo, thang 2) ---------- */
+.hop { position: absolute; z-index: 7; width: 480px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: var(--bong); text-align: left; font-size: 14px; }
+.hop-dau { padding: 14px 18px 10px; border-bottom: 1px solid var(--line); display: grid; gap: 2px; }
+.hop-dau h3 { font-size: 17px; font-weight: 700; }
+.hop-dau .ng { font-size: 13px; color: var(--text-dim); }
+.hop-than { padding: 14px 18px; display: grid; gap: 14px; }
+.hop-chan { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.hop-chan .trai { margin-right: auto; font-size: 12px; color: var(--text-faint); }
+.nhan-t { font: 600 13px var(--phong); color: var(--text-dim); margin-bottom: 6px; display: block; }
+.hieu-luc { display: flex; flex-wrap: wrap; gap: 8px; }
+.hieu-luc label { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid var(--o-nhap-vien); border-radius: 8px; cursor: pointer; font: 500 14px var(--phong); background: var(--o-nhap-nen); }
+.hieu-luc label.chon { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 600; }
+.hieu-luc input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.hieu-luc .o-chon-sel { height: 30px; font-size: 13px; padding: 0 24px 0 8px; margin-left: 2px; }
+.hieu-luc .so { color: var(--text-faint); font-weight: 400; font-size: 13px; }
+.chu-hl { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
+.ds-cap { display: grid; gap: 6px; }
+.cap { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); }
+.cap .tao { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-soft); font: 600 13px var(--phong); color: var(--text); cursor: pointer; white-space: nowrap; }
+.cap input { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
+.dt .cap .tao { min-height: 44px; }
+.cap .doi-ng { font-size: 14px; }
+.cap .doi-ng .cu { color: var(--text-dim); }
+.cap .doi-ng .moi { font-weight: 600; }
+.cap .ct { grid-column: 2 / -1; font-size: 12px; color: var(--text-faint); }
+.cap .ct b { color: var(--text-dim); font-weight: 600; font-family: var(--phong-so); }
+.ket-bg { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--text-dim); }
+.ket-bg b { color: var(--text); font-weight: 600; }
+.chu-xem { font-size: 12px; color: var(--text-faint); display: flex; gap: 6px; align-items: flex-start; }
+.dt .hop { width: auto; left: 0; right: 0; bottom: 0; border-radius: 16px 16px 0 0; }
+.dt .hop .hop-chan .btn { flex: 1; }
+.dt .hieu-luc label { min-height: 44px; flex: 1 1 100%; }
+.che { position: absolute; inset: 0; background: var(--man-che); z-index: 6; }
+
+/* toast */
+.toast { position: absolute; z-index: 8; display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: var(--bong); font-size: 14px; }
+.toast .ok { color: var(--ok); font-weight: 700; }
+
+/* ---------- PANEL (KhungPanel) ---------- */
+.pn { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; overflow: clip; }
+.pn-dau { padding: 12px 20px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.pn-h1 { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.loai { display: flex; align-items: center; gap: 6px; font: 700 12px/1.4 var(--phong); letter-spacing: .06em; color: var(--text-faint); }
+.loai::before { content: ""; width: 14px; height: 3px; border-radius: 2px; background: var(--hong); }
+.x { margin-left: auto; appearance: none; border: 0; background: transparent; color: var(--text-dim); width: 36px; height: 36px; border-radius: 8px; font-size: 17px; cursor: pointer; flex: none; }
+.dt .x { width: 44px; height: 44px; margin-right: -8px; }
+.pn-dau h2 { font-size: 17px; font-weight: 700; line-height: 1.35; }
+.pn-ngu { font-size: 14px; color: var(--text-dim); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; }
+.pn-ngu > span + span::before { content: "·"; margin: 0 7px; color: var(--text-faint); }
+.pn-ngu b { color: var(--text); font-weight: 600; font-family: var(--phong-so); }
+.pn-than { padding: 16px 20px 20px; display: grid; gap: 16px; align-content: start; }
+.pn > .pn-than { flex: 1; min-height: 0; overflow: auto; }
+.dt .pn-dau { padding: 6px 16px 12px; } .dt .pn-than { padding: 12px 16px 20px; }
+.pn-chan { border-top: 1px solid var(--line-strong); padding: 10px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--surface); }
+.pn-chan .trai { flex: 1; min-width: 0; font-size: 13px; color: var(--text-dim); display: inline-flex; gap: 8px 12px; align-items: center; flex-wrap: wrap; }
+.dt .pn-chan { padding: 10px 16px 14px; } .dt .pn-chan .trai { flex-basis: 100%; } .dt .pn-chan .btn { flex: 1; }
+.han { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font: 600 12px var(--phong); white-space: nowrap; background: var(--surface-2); color: var(--text-dim); }
+.han.nay { background: var(--soon-bg); color: var(--soon); } .han.nay::before { content: "⚠ "; }
+.thieu-len { color: var(--soon); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.tt-luu { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.tt-luu.da { color: var(--ok); } .tt-luu.nhap { color: var(--soon); } .tt-luu.loi { color: var(--bad); }
+
+/* nhận xét chung cả lớp — mở tại chỗ ▸ / ▾ */
+.chung { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.chung > .dau { display: flex; align-items: flex-start; gap: 8px; min-height: 44px; padding: 11px 14px; font: 600 14px var(--phong); color: var(--text); cursor: pointer; }
+.chung > .dau .tg { color: var(--text-faint); font-size: 12px; width: 12px; }
+.chung > .dau .phu { font-weight: 400; font-size: 13px; color: var(--text-dim); }
+.chung > .than { padding: 0 14px 14px; display: grid; gap: 6px; }
+
+/* master-detail (mẫu F của BanGiaoPanel) */
+.md { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
+.ds-em-dau { display: flex; align-items: center; justify-content: space-between; font: 600 12px var(--phong); color: var(--text-faint); margin-bottom: 6px; }
+.ds-em-dau kbd { font: 600 12px var(--phong-so); border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 4px; color: var(--text-dim); }
+.ds-em { list-style: none; margin: 0; padding: 0; border-radius: 10px; background: var(--surface-2); overflow: hidden; }
+.ds-em li { padding: 8px 12px; border-top: 1px solid var(--line); cursor: pointer; display: grid; gap: 1px; }
+.ds-em li:first-child { border-top: 0; }
+.ds-em li:hover { background: var(--nut-hover); }
+.ds-em li[aria-selected="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent), inset 3px 0 0 var(--accent); }
+.ds-em .h1e { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ds-em .tn { font-size: 14px; color: var(--text); white-space: nowrap; }
+.ds-em .p { font-size: 12px; color: var(--text-faint); white-space: nowrap; font-family: var(--phong-so); }
+.ds-em .p .ok { color: var(--ok); } .ds-em .p .thieu { color: var(--soon); font-weight: 600; }
+.bd.bd-td.xong { color: var(--ok); }
+.phieu { display: grid; gap: 16px; min-width: 0; }
+.phieu-dau { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.phieu-dau h3 { font-size: 15px; font-weight: 700; }
+.phieu-dau .phu { font-size: 13px; }
+.phieu-dau .tiep { margin-left: auto; }
+.doc-o { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; font-size: 14px; line-height: 1.55; margin: 0; }
+.doc-o .ai { display: block; margin-top: 4px; font-size: 12px; color: var(--text-faint); }
+.boi-canh { background: var(--surface-2); border-radius: 8px; padding: 10px 14px; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 6px 14px; font-size: 14px; margin: 0; align-items: baseline; }
+.boi-canh .tde { grid-column: 1 / -1; font: 600 12px var(--phong); color: var(--text-faint); }
+.boi-canh dt { color: var(--text-dim); font-size: 13px; font-weight: 500; } .boi-canh dd { margin: 0; }
+.dt .boi-canh { grid-template-columns: minmax(0, 1fr); gap: 0; } .dt .boi-canh dd { margin-bottom: 6px; }
+.diem { font-family: var(--phong-so); font-weight: 700; white-space: nowrap; }
+.diem.bang-kv { color: var(--kq-bang); } .diem.duoi { color: var(--kq-duoi); } .diem.vuot { color: var(--kq-vuot); }
+.diem.bang-kv::before, .diem.vuot::before { content: "✓ "; } .diem.duoi::before { content: "✗ "; }
+.cot-o { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.dt .cot-o { grid-template-columns: minmax(0, 1fr); }
+.truong { display: grid; gap: 6px; align-content: start; }
+.truong .nhan { display: flex; align-items: center; gap: 8px; font: 700 15px/1.35 var(--phong); color: var(--text); }
+.truong .nhan .bb { color: var(--bad); }
+.truong .nhan .phu-t { font: 400 13px var(--phong); color: var(--text-faint); }
+.truong .duoi { display: flex; justify-content: space-between; gap: 8px; }
+
+/* Công việc (V18) — rút gọn đủ dáng nhóm / dòng việc */
+.nhom-cv { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: clip; }
+.nhom-cv .dai { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 14px 0 13px; background: var(--surface-2); border-left: 3px solid var(--accent); border-bottom: 1px solid var(--line); font: 700 15px var(--phong); }
+.nhom-cv .dai .dem { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 4px; border: 1px solid var(--line-strong); background: var(--surface); font: 600 12px var(--phong); color: var(--text); }
+.viec-cv { display: grid; grid-template-columns: 28px minmax(0, 1fr) 136px 112px; column-gap: 12px; align-items: center; min-height: 56px; padding: 6px 16px; border-top: 1px solid var(--line); cursor: pointer; }
+.viec-cv:first-of-type { border-top: 0; }
+.viec-cv.chon { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.viec-cv .av { width: 28px; height: 28px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); display: inline-grid; place-items: center; }
+.viec-cv .t1 { font: 500 15px/1.35 var(--phong); }
+.viec-cv .t2 { font-size: 13px; color: var(--text-dim); }
+.viec-cv .btn { width: 100%; }
+
+/* hồ sơ lớp (v8) — rút gọn đầu trang */
+.dau-lop { display: grid; gap: 6px; }
+.dau-lop .hang-0 { font-size: 13px; color: var(--text-dim); }
+.dau-lop .hang-1 { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
+.dau-lop h1 { font-size: 22px; font-weight: 700; }
+.dau-lop .meta { font-size: 14px; color: var(--text-dim); } .dau-lop .meta b { color: var(--text); font-weight: 600; font-family: var(--phong-so); }
+.dau-lop .hd { margin-left: auto; display: inline-flex; gap: 8px; }
+.hang-gv { font-size: 13px; color: var(--text-dim); display: flex; flex-wrap: wrap; gap: 2px 14px; }
+.hang-gv span { white-space: nowrap; } .hang-gv abbr { text-decoration: none; font-weight: 500; margin-right: 4px; } .hang-gv a { color: var(--text); font-weight: 500; }
+.dai-xem { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line-strong); font-size: 14px; color: var(--text-dim); }
+.dai-xem b { color: var(--text); font-weight: 700; }
+.dai-xem .phai { margin-left: auto; }
+.dt .dai-xem .phai { margin-left: 0; width: 100%; } .dt .dai-xem .phai .btn { width: 100%; }
+
+/* panel Thông tin lớp › Phân công (đang có trên web, chỉ thêm hộp hỏi bàn giao) */
+.luoi-pc { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: 6px 10px; align-items: center; }
+.luoi-pc > label { font: 700 12px var(--phong); color: var(--text-dim); }
+.luoi-pc .o-gv { border-color: var(--o-nhap-vien); background: var(--o-nhap-nen); min-height: 40px; font-size: 15px; }
+.luoi-pc .o-gv.doi { background: var(--accent-soft); border-color: var(--accent); }
+.phan-tt { border: 1px solid var(--line); border-radius: 10px; }
+.phan-tt > .dau { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 700 15px var(--phong); }
+.phan-tt > .dau .phai { margin-left: auto; }
+.phan-tt > .than { padding: 12px 14px; display: grid; gap: 10px; }
+.phan-tt.gap > .dau { border-bottom: 0; }
+
+/* rỗng */
+.rong { text-align: center; padding: 44px 16px; display: grid; gap: 10px; justify-items: center; color: var(--text-dim); }
+.rong .tieu { font-size: 15px; font-weight: 600; color: var(--text); }
+</style>
+</head>
+<body class="sau">
+<main class="trang-ghi">
+  <div class="ghi-dau">
+    <h1>V9 · Phân công GV — góc mới ở Học viên &amp; Lớp + bàn giao khi đổi GV</h1>
+    <p>Khung 1440 TỐI · 375 SÁNG. Demo chi nhánh <b>Cẩm Phả</b>, hôm nay <b>thứ Sáu 30/10 · W5 OCT</b>. Hai chuyện xuyên suốt: <b>①</b> CP FT 137 — Ms. Hà Hoàng (L + GVCN) → Mr. Phong Đỗ · <b>②</b> CP BE 07 (lớp thường) — Speaking Ms. Gemino Thea → Mr. Miguel.
+      Mọi số ở bảng tổng hợp do script trong tệp đếm từ chính dữ liệu bảng lớp (một nguồn). Ghi chú vàng = ngoài web. Chi tiết, bảng TRƯỚC → SAU: <code>phan-cong-gv-ghi-chu.md</code>.</p>
+    <nav class="muc-luc" aria-label="Trạng thái">
+      <a href="#k1">1 · QL · bình thường</a><a href="#k2">2 · Tô sáng một GV</a><a href="#k3">3 · Dòng nháp · ô ▾ mở · lỗi luật</a><a href="#k4">4 · GV đã nghỉ · người khác vừa đổi</a>
+      <a href="#k5">5 · Hộp Lưu + hỏi bàn giao · sau lưu</a><a href="#k6">6 · Việc + panel bàn giao</a><a href="#k7">7 · CX chỉ xem</a><a href="#k8">8 · Rỗng</a><a href="#k9">9 · Hồ sơ lớp: Sửa phân công · GV cũ chỉ xem</a>
+    </nav>
+  </div>
+  <div id="noi-dung"></div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  /* ================= DỮ LIỆU DEMO (một nguồn — bảng tổng hợp đếm từ đây) ================= */
+  var GV = {
+    dung:   { t: 'Mr. Dũng Nguyễn',     kn: 'L, R' },
+    hang:   { t: 'Ms. Thanh Hằng Trần', kn: 'L, R, W' },
+    phong:  { t: 'Mr. Phong Đỗ',        kn: 'L, R, W1' },
+    miguel: { t: 'Mr. Miguel',          kn: 'W, S' },
+    ha:     { t: 'Ms. Hà Hoàng',        kn: 'L, R' },
+    thea:   { t: 'Ms. Gemino Thea',     kn: 'S' },
+    yen:    { t: 'Ms. Yến Nguyễn',      kn: 'L, R, W' },
+    uyen:   { t: 'Ms. Uyên Lưu',        kn: 'L, R, W2' },
+    linh:   { t: 'Ms. Linh Nguyễn',     kn: 'L, R, W' },
+    anh:    { t: 'Ms. Ánh Nguyễn',      kn: 'L, R, W' },
+    duy:    { t: 'Mr. Duy Anh Nguyễn',  kn: 'W' },
+    lien:   { t: 'Ms. Liên Vũ',         kn: 'W2', nghi: 1 },
+    chau:   { t: 'Ms. Châu Nguyễn',     kn: 'L, S' }
+  };
+  /* cột môn theo chương trình (oPhanCong + tenMonNgan): FT L R W1 W2 S · FOU L R G+V P · BE L R W S · Pre FOU chỉ GVCN (dạy luôn) */
+  var COT = { FT: ['L', 'R', 'W1', 'W2', 'S'], FOU: ['L', 'R', 'G+V', 'P'], BE: ['L', 'R', 'W', 'S'], PREFOU: [] };
+  var TEN_MON = { L: 'Listening', R: 'Reading', W1: 'Writing Task 1', W2: 'Writing Task 2', S: 'Speaking', W: 'Writing', 'G+V': 'Grammar + Vocabulary', P: 'Pronunciation' };
+  var LOP = [
+    { ma: 'CP FT 116', ct: 'FT', phu: 'LT1 · 16 HV', o: { L: 'ha', R: 'ha', W1: 'miguel', W2: 'miguel', S: 'thea', CN: 'ha' } },
+    { ma: 'CP FT 130', ct: 'FT', phu: 'LT2 · 14 HV', o: { L: 'dung', R: 'hang', W1: 'yen', W2: 'yen', S: 'miguel', CN: 'dung' } },
+    { ma: 'CP FT 131', ct: 'FT', phu: 'LT2 · 15 HV', o: { L: 'ha', R: 'phong', W1: 'uyen', W2: 'lien', S: 'thea', CN: 'phong' } },
+    { ma: 'CP FT 137', ct: 'FT', phu: 'LT1 · 12 HV', o: { L: 'ha', R: 'linh', W1: 'duy', W2: 'duy', S: 'miguel', CN: 'ha' } },
+    { ma: 'CP FT 138', ct: 'FT', phu: 'LT1 · 13 HV', o: { L: 'phong', R: 'ha', W1: 'yen', W2: 'anh', S: 'thea', CN: 'anh' } },
+    { ma: 'CP FT 139', ct: 'FT', phu: 'LT3 · 11 HV', o: { L: 'hang', R: 'hang', W1: 'miguel', W2: 'uyen', S: '', CN: 'hang' } },
+    { ma: 'CP FT 140', ct: 'FT', phu: 'LT1 · 18 HV', o: { L: 'dung', R: 'ha', W1: 'linh', W2: 'linh', S: 'miguel', CN: 'linh' } },
+    { ma: 'CP FT 141', ct: 'FT', phu: 'LT2 · 16 HV', o: { L: 'ha', R: 'dung', W1: 'duy', W2: 'yen', S: 'thea', CN: 'duy' } },
+    { ma: 'CP FT 142', ct: 'FT', phu: 'LT3 · 10 HV', o: { L: 'phong', R: 'linh', W1: 'anh', W2: 'anh', S: 'miguel', CN: 'phong' } },
+    { ma: 'CP RF 01',  ct: 'FT', phu: 'RF · 9 HV',   o: { L: 'uyen', R: 'uyen', W1: '', W2: '', S: 'thea', CN: 'uyen' } },
+    { ma: 'CP FOU 12', ct: 'FOU', phu: 'tuần 3/8 · 15 HV', o: { L: 'anh', R: 'anh', 'G+V': 'anh', P: 'miguel', CN: 'anh' } },
+    { ma: 'CP FOU 14', ct: 'FOU', phu: 'tuần 6/8 · 12 HV', o: { L: 'yen', R: 'yen', 'G+V': 'yen', P: 'thea', CN: 'yen' } },
+    { ma: 'CP BE 07',  ct: 'BE', phu: 'tuần 6/10 · 14 HV', o: { L: 'linh', R: 'linh', W: 'duy', S: 'thea', CN: 'linh' } },
+    { ma: 'CP BE 09',  ct: 'BE', phu: 'tuần 2/10 · 13 HV', o: { L: 'dung', R: 'hang', W: 'hang', S: 'miguel', CN: 'hang' } },
+    { ma: 'CP PreFOU 03', ct: 'PREFOU', phu: 'tuần 4/5 · 10 HV', o: { CN: 'uyen' } },
+    { ma: 'CP PreFOU 05', ct: 'PREFOU', phu: 'tuần 1/5 · 11 HV', o: { CN: 'ha' } }
+  ];
+  var NHOM_THUONG = [['FOU', 'Foundation'], ['BE', 'Beginner'], ['PREFOU', 'Pre Foundation']];
+  var lopCua = function (ma) { return LOP.filter(function (l) { return l.ma === ma; })[0]; };
+  var laFt = function (l) { return l.ct === 'FT'; };
+
+  /* ĐẾM (cùng nguồn): Giảng dạy = mỗi môn của một lớp là 1 (W1, W2 riêng); Pre FOU: GVCN dạy luôn = 1 (ô tong_hop). GVCN = số lớp chủ nhiệm. */
+  function dem() {
+    var d = {};
+    Object.keys(GV).forEach(function (k) { d[k] = { ft: 0, th: 0, cnFt: 0, cnTh: 0 }; });
+    LOP.forEach(function (l) {
+      var ft = laFt(l);
+      COT[l.ct].forEach(function (c) { var g = l.o[c]; if (g) d[g][ft ? 'ft' : 'th']++; });
+      if (l.ct === 'PREFOU' && l.o.CN) d[l.o.CN].th++;
+      if (l.o.CN) d[l.o.CN][ft ? 'cnFt' : 'cnTh']++;
+    });
+    return d;
+  }
+  var D = dem();
+  var soO = function (g) { return D[g].ft + D[g].th; };
+  var soCn = function (g) { return D[g].cnFt + D[g].cnTh; };
+  var oThieu = LOP.reduce(function (n, l) { return n + COT[l.ct].filter(function (c) { return !l.o[c] || GV[l.o[c]].nghi; }).length + (!l.o.CN ? 1 : 0); }, 0);
+  var lopCuaGv = function (g) { return LOP.filter(function (l) { return Object.keys(l.o).some(function (c) { return l.o[c] === g; }); }); };
+
+  /* ================= MẢNH DỰNG ================= */
+  var SVG_TIM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+  var SVG_CHUONG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>';
+  var SVG_MAT = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var SVG_BG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="5.5" r="2"/><circle cx="11" cy="9.5" r="2"/><path d="M2 13c.4-2 1.7-3 3.5-3M8.5 3.5h4M10.5 1.5l2 2-2 2"/></svg>';
+  var II = function (nhan) { return '<button class="ii" aria-label="' + nhan + '" title="' + nhan + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>'; };
+  var CACH_DEM = 'Bấm tên GV để tô các ô của GV đó ở bảng lớp. Cách đếm: mỗi môn của một lớp là 1 — W1, W2 tính riêng; dạy L và R một lớp = 2. Lớp Pre FOU: GVCN dạy luôn = 1. Đếm người đang dạy hôm nay — ô chờ đổi tính từ tuần hiệu lực.';
+
+  function nav(dt, ten, viec, dangViec, cx) {
+    if (dt) return '<header class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span class="ic">' + SVG_TIM + '</span><span class="ic">' + SVG_CHUONG + '<sup>12</sup></span><span class="av">' + ten.replace(/^(Ms\.|Mr\.) /, '').charAt(0) + '</span></span></header>';
+    return '<header class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>' +
+      '<span class="m">Tổng quan</span><span class="m' + (dangViec ? '' : ' dang') + '">Học viên &amp; Lớp</span><span class="m">Test</span>' + (cx ? '' : '<span class="m' + (dangViec ? ' dang' : '') + '">Công việc <i>' + (viec || 23) + '</i></span>') + '<span class="m">Phân tích</span>' +
+      '<span class="phai"><span class="tim">Tìm học viên, lớp… <kbd>Ctrl K</kbd></span><span class="ic">' + SVG_CHUONG + '<sup>12</sup></span><span class="tk">' + ten + '</span></span></header>';
+  }
+  function khung(dt, ten, ruot, o) {
+    o = o || {};
+    return '<div class="' + (dt ? 'dt' : 'man') + (o.lop ? ' ' + o.lop : '') + '"' + (dt ? ' data-theme="light"' : '') + '><div class="sau khung-trong"' + (o.cao ? ' style="min-height:' + o.cao + 'px"' : '') + '>' +
+      (o.khongNav ? '' : nav(dt, ten, o.viec, o.dangViec, o.cx)) + '<div class="noi"' + (o.noi ? ' style="' + o.noi + '"' : '') + '>' + ruot + '</div>' + (o.phu || '') + '</div></div>';
+  }
+  function cap(dt, chu) { return '<figcaption>' + (dt ? '375 · sáng · ' : '1440 · tối · ') + chu + '</figcaption>'; }
+  function hinh(dt, chu, html) { return '<figure>' + cap(dt, chu) + html + '</figure>'; }
+  function khu(id, tieu, hinhs, ghi) {
+    return '<section class="khu" id="' + id + '"><h2>' + tieu + '</h2><div class="hang-khung">' + hinhs.join('') + '</div>' +
+      (ghi ? '<div class="ghi"><ul>' + ghi.map(function (g) { return '<li>' + g + '</li>'; }).join('') + '</ul></div>' : '') + '</section>';
+  }
+
+  /* đầu trang Học viên & Lớp (HV-LOP-SUA: chương trình · chi nhánh ở hàng đầu trang) + hàng góc */
+  function dauTrang(dt, o) {
+    o = o || {};
+    var nFt = o.rong ? 0 : LOP.filter(laFt).length, nTh = o.rong ? 0 : LOP.length - nFt;
+    var khungLoc = '<button class="vien" aria-pressed="true">Fast Track <span class="so">' + nFt + '</span></button><button class="vien" aria-pressed="true">Lớp thường <span class="so">' + nTh + '</span></button>';
+    var cn = '<span class="o-chon-sel" role="button" aria-label="Chi nhánh">' + (o.cn || 'Cẩm Phả') + '</span>';
+    var tabs = '<div class="tabs" role="tablist" aria-label="Chế độ xem"' + (dt ? ' data-cuon="1"' : '') + '>' +
+      '<button class="tab" role="tab" aria-selected="false">Tất cả <span class="so">' + (o.rong ? 0 : 209) + '</span></button>' +
+      '<button class="tab" role="tab" aria-selected="false">Đang SOS <span class="so">' + (o.rong ? 0 : 38) + '</span></button>' +
+      '<button class="tab" role="tab" aria-selected="false">Lịch thi <span class="so">' + (o.rong ? 0 : 21) + '</span></button>' +
+      '<button class="tab" role="tab" aria-selected="true">Phân công GV</button></div>';
+    var xuat = '<button class="btn btn-nho"' + (o.rong ? ' disabled' : '') + '>Xuất Excel · ' + (o.rong ? 0 : LOP.length) + ' lớp</button>';
+    if (dt) {
+      return '<div class="dau-trang"><h1>Học viên &amp; Lớp</h1><span class="phai"><button class="btn btn-nho ba-cham" aria-label="Thao tác trang">⋯</button></span></div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px">' + khungLoc + cn + '</div>' + tabs;
+    }
+    return '<div class="dau-trang"><h1>Học viên &amp; Lớp</h1>' + khungLoc + cn +
+      '<span class="phai">' + xuat + (o.cx ? '' : '<button class="btn btn-nho btn-chinh">+ Thêm học viên</button>') + '<button class="btn btn-nho ba-cham" aria-label="Thao tác trang">⋯</button></span></div>' + tabs;
+  }
+  function congCu(dt, o) {
+    o = o || {};
+    var tim = '<input class="o tim-o" aria-label="Tìm lớp, GV" placeholder="Tìm lớp, GV"' + (o.tim ? ' value="' + o.tim + '"' : '') + '>';
+    var thieu = '<button class="vien" aria-pressed="false" title="Ô Chưa có + ô của GV đã nghỉ">Thiếu GV · <span class="so">' + (o.rong ? 0 : oThieu) + '</span> ô</button>';
+    if (dt) return '<div class="cong-cu">' + tim + '<div style="display:flex;gap:8px;align-items:center;width:100%">' + thieu + '<span class="phu" style="margin-left:auto;font-size:13px"><b class="so" style="color:var(--text-dim)">' + (o.rong ? 0 : LOP.length) + '</b> lớp · <b class="so" style="color:var(--text-dim)">13</b> GV</span></div></div>';
+    return '<div class="cong-cu">' + tim + thieu + '<span class="phai"><span><b>' + (o.rong ? 0 : LOP.length) + '</b> lớp · <b>13</b> GV <span class="phu">(1 đã nghỉ)</span></span>' + II('Cách dùng: bấm một ô để đổi GV — đổi xong bấm Lưu cuối dòng (sửa nhiều lớp: Lưu cả n lớp ở chân bảng). Bấm tên GV ở bảng tổng hợp để tô các ô của GV đó. Bàn phím: mũi tên đi giữa ô, Enter mở danh sách, Esc đóng.') + '</span></div>';
+  }
+
+  /* ô một môn: o = { cx, nhap:{c:{moi, cu}}, loi:{c:'...'}, mo:c, to:g } */
+  function oCell(l, c, o) {
+    var g = l.o[c], nhap = o.nhap && o.nhap[c], loi = o.loi && o.loi[c];
+    if (nhap) g = nhap.moi;
+    var gv = g ? GV[g] : null;
+    if (o.cx) {
+      if (!gv) return '<div class="o-xem"><span class="trong">– Chưa có</span></div>';
+      return '<div class="o-xem"><a class="ten-gv">' + gv.t + '</a>' + (gv.nghi ? '<span class="p">⚠ đã nghỉ</span>' : '') + '</div>';
+    }
+    var cho = o.cho && o.cho[c], khacDoi = o.khacDoi === c;
+    var cls = 'o-gv' + (!gv ? ' trong' : '') + (gv && gv.nghi ? ' nghi' : '') + (nhap ? ' doi' : '') + (loi ? ' loi' : '') + (cho ? ' cho-doi' : '') + (khacDoi ? ' khac-doi' : '') + (o.to && g === o.to ? ' to' : '');
+    var nhanO = (c === 'CN' ? 'GVCN' : (TEN_MON[c] || c)) + ' ' + l.ma;
+    var idLoi = loi ? 'loi-' + l.ma.replace(/\W/g, '') + c : '';
+    var trongO = !gv ? '<span>Chưa có</span>' : '<span>' + gv.t + '</span>' + (gv.nghi ? '<span class="p">⚠ đã nghỉ</span>' : '') + (nhap && nhap.cu ? '<span class="p">trước: ' + GV[nhap.cu].t + '</span>' : '') +
+      (cho ? '<span class="p">→ ' + GV[cho.moi].t + '</span>' : '') + (khacDoi ? '<span class="p">↻ người khác vừa đổi</span>' : '');
+    return '<button class="' + cls + '" aria-haspopup="listbox" aria-expanded="' + (o.mo === c) + '"' + (loi ? ' aria-invalid="true" aria-describedby="' + idLoi + '"' : '') + ' aria-label="' + nhanO + ': ' + (gv ? gv.t : 'Chưa có') + (gv && gv.nghi ? ', đã nghỉ' : '') + (nhap && nhap.cu ? ', nháp, trước: ' + GV[nhap.cu].t : '') + (cho ? ', từ ' + cho.tu + ' đổi sang ' + GV[cho.moi].t : '') + (khacDoi ? ', người khác vừa đổi' : '') + (o.to && g === o.to ? ', đang tô' : '') + '"><span class="t">' + trongO + '</span></button>' +
+      (loi ? '<span class="loi-o" id="' + idLoi + '">' + loi + '</span>' : '');
+  }
+  var COLS = '<colgroup><col>' + new Array(7).join('<col style="width:184px">') + '<col style="width:120px"></colgroup>';
+  function hangLop(l, o) {
+    o = o || {};
+    var r = (o.hang && o.hang[l.ma]) || {};
+    var oo = { cx: o.cx, to: o.to, nhap: r.nhap, loi: r.loi, mo: r.mo, cho: r.cho, khacDoi: r.khacDoi };
+    if (r.dat) l = { ma: l.ma, ct: l.ct, phu: l.phu, o: Object.assign({}, l.o, r.dat) };
+    var cot = COT[l.ct];
+    var cells = '';
+    if (l.ct === 'PREFOU') cells = '<td colspan="5" class="khong-mon">Không chia môn — GVCN dạy luôn</td>';
+    else for (var i = 0; i < 5; i++) cells += cot[i] ? '<td' + (r.mo === cot[i] ? ' style="position:relative"' : '') + '>' + oCell(l, cot[i], oo) + (r.mo === cot[i] && o.dsChon ? o.dsChon : '') + '</td>' : '<td></td>';
+    cells += '<td style="position:relative">' + oCell(l, 'CN', oo) + (r.mo === 'CN' && o.dsChon ? o.dsChon : '') + '</td>';
+    var nhap = !!r.nhap, soDoi = nhap ? Object.keys(r.nhap).length : 0;
+    var cuoi = '';
+    var idLoi1 = r.loi ? 'loi-' + l.ma.replace(/\W/g, '') + Object.keys(r.loi)[0] : '';
+    if (nhap && !o.cx) cuoi = '<div class="hang-nut"><button class="btn btn-nho" aria-label="Huỷ sửa ' + l.ma + '">Huỷ</button><button class="btn btn-nho btn-chinh" aria-label="Lưu ' + l.ma + '"' + (r.loi || r.khoaLuu ? ' aria-disabled="true" aria-describedby="' + idLoi1 + '" title="' + (r.lyDo || 'Sửa ô báo lỗi trước khi lưu') + '"' : '') + '>Lưu</button>' + (r.hop || '') + '</div>';
+    if (r.daLuu) cuoi = '<div class="hang-nut"><span class="phu-luu">✓ Đã lưu</span></div>';
+    if (r.cho && !o.cx) cuoi = '<div class="hang-nut"><button class="btn btn-nho" aria-haspopup="dialog" aria-expanded="' + !!r.hopCho + '">Chờ đổi</button>' + (r.hopCho || '') + '</div>';
+    var phu = nhap ? '<span class="nhan-nhap">Nháp · ' + soDoi + ' ô đổi</span>' : r.cho ? '<span class="nhan-cho">Chờ đổi · ' + r.choTu + '</span>' : '<span class="phu">' + l.phu + '</span>';
+    var tr = '<tr class="' + (nhap ? 'nhap' : '') + (r.daLuu ? ' da-luu' : '') + '"><th scope="row" class="lop"><a class="ten">' + l.ma + '</a>' + phu + '</th>' + cells + '<td class="cuoi">' + cuoi + '</td></tr>';
+    if (r.loiHang) tr += '<tr class="loi-hang"><td colspan="8"><div class="bao" role="alert"><span><b>⚠ ' + r.loiHang[0] + '</b> ' + r.loiHang[1] + '</span></div></td></tr>';
+    return tr;
+  }
+  function theadNhom(ct) {
+    var cot = COT[ct], th = '<th>Lớp</th>';
+    if (ct === 'PREFOU') th += '<th colspan="5"></th>';
+    else for (var i = 0; i < 5; i++) th += '<th>' + (cot[i] ? '<abbr title="' + TEN_MON[cot[i]] + '" style="text-decoration:none">' + cot[i] + '</abbr>' : '') + '</th>';
+    return '<thead><tr>' + th + '<th>GVCN</th><th aria-label="Lưu"></th></tr></thead>';
+  }
+  function bangLop(o) {
+    o = o || {};
+    var ds = o.chiLop ? LOP.filter(function (l) { return o.chiLop.indexOf(l.ma) >= 0; }) : LOP;
+    var ft = ds.filter(laFt);
+    var h = '';
+    if (ft.length && !o.boFt) h += '<div class="nhom-1">Fast Track <span class="dem-n">' + LOP.filter(laFt).length + ' lớp</span></div><table class="pc"' + (o.cx ? '' : ' role="grid"') + '>' + COLS + theadNhom('FT') + '<tbody>' + ft.map(function (l) { return hangLop(l, o); }).join('') + '</tbody></table>';
+    var th = ds.filter(function (l) { return !laFt(l); });
+    if (th.length && !o.boThuong) {
+      h += '<div class="nhom-1">Lớp thường <span class="dem-n">' + LOP.filter(function (l) { return !laFt(l); }).length + ' lớp</span></div>';
+      NHOM_THUONG.forEach(function (n) {
+        var ls = th.filter(function (l) { return l.ct === n[0]; });
+        if (!ls.length) return;
+        h += '<div class="nhom-2">' + n[1] + ' <span class="ma-ct">' + (n[0] === 'PREFOU' ? 'Pre FOU' : n[0]) + '</span><span class="dem-n" style="margin-left:4px">' + LOP.filter(function (l) { return l.ct === n[0]; }).length + ' lớp</span></div>' +
+          '<table class="pc"' + (o.cx ? '' : ' role="grid"') + '>' + COLS + theadNhom(n[0]) + '<tbody>' + ls.map(function (l) { return hangLop(l, o); }).join('') + '</tbody></table>';
+      });
+    }
+    return h;
+  }
+  function daiTo(g, dt, nhapSo) {
+    var ls = lopCuaGv(g);
+    if (dt) return '<div class="dai-to" style="padding:10px 12px"><span class="cham-hong" aria-hidden="true"></span><span>Đang tô <b>' + GV[g].t + '</b> · dạy <span class="so">' + soO(g) + '</span> · GVCN <span class="so">' + soCn(g) + '</span></span>' +
+      '<span style="display:flex;gap:8px;width:100%"><button class="btn btn-nho" style="flex:1">Chỉ hiện ' + ls.length + ' lớp</button><button class="btn btn-nho" aria-label="Bỏ tô">✕ Bỏ tô</button></span></div>';
+    var so = nhapSo ? 'dạy <span class="so-nhap">' + soO(g) + ' → ' + nhapSo[0] + '</span> môn · GVCN <span class="so-nhap">' + soCn(g) + ' → ' + nhapSo[1] + '</span> lớp <span class="phu">(tính cả nháp)</span>'
+      : 'dạy <span class="so">' + soO(g) + '</span> môn · GVCN <span class="so">' + soCn(g) + '</span> lớp · ở <span class="so">' + ls.length + '</span> lớp';
+    return '<div class="dai-to" role="status"><span class="cham-hong" aria-hidden="true"></span><span>Đang tô <b>' + GV[g].t + '</b> · ' + so + '</span>' +
+      '<span class="phai"><button class="btn btn-nho">Chỉ hiện ' + ls.length + ' lớp</button><a class="lk">Hồ sơ GV ›</a><button class="btn btn-nho btn-ma" aria-label="Bỏ tô">✕ Bỏ tô</button></span></div>';
+  }
+  function theBangLop(o) {
+    o = o || {};
+    return '<section class="the bang-the" aria-label="Phân công theo lớp"' + (o.tran ? ' style="overflow:visible"' : '') + '>' + (o.cx ? '' : congCu(false, o)) + (o.to ? daiTo(o.to, false, o.toNhap) : '') + bangLop(o) + (o.cuoiThe || '') + '</section>';
+  }
+
+  /* bảng tổng hợp — bấm dòng = tô ô của GV ở bảng lớp; xếp bằng ô chọn NGOÀI tiêu đề bảng (G9) */
+  function bangTong(loai, o) {
+    o = o || {};
+    var ds = Object.keys(GV).map(function (g) {
+      var x = D[g];
+      var a = loai === 'day' ? [x.ft, x.th] : [x.cnFt, x.cnTh];
+      return { g: g, a: a[0], b: a[1], t: a[0] + a[1] };
+    });
+    if (loai === 'cn') ds = ds.filter(function (r) { return r.t > 0 || !GV[r.g].nghi; });
+    ds.sort(function (p, q) { return q.t - p.t || GV[p.g].t.localeCompare(GV[q.g].t, 'vi'); });
+    var soGv = ds.length;
+    if (o.toiDa) ds = ds.slice(0, o.toiDa);
+    var so = function (n) { return n ? n : '<span class="so0">0</span>'; };
+    var sumA = 0, sumB = 0;
+    var body = ds.map(function (r) {
+      sumA += r.a; sumB += r.b;
+      return '<tr class="' + (o.to === r.g ? 'dang-to' : '') + '"><td><button class="nut-gv" title="Tô các ô của GV này" aria-pressed="' + (o.to === r.g) + '">' + GV[r.g].t + '</button>' + (GV[r.g].nghi ? ' <span class="nhan-nghi">đã nghỉ</span>' : '') + '</td>' +
+        '<td class="c">' + so(r.a) + '</td><td class="c">' + so(r.b) + '</td><td class="c tong-cot">' + so(r.t) + '</td></tr>';
+    }).join('');
+    var tieu = loai === 'day' ? 'Giảng dạy' : 'GVCN';
+    var phu = loai === 'day' ? 'số môn đang dạy' : 'số lớp chủ nhiệm';
+    var dt = o.dt;
+    var cols = dt ? '<colgroup><col><col style="width:48px"><col style="width:86px"><col style="width:52px"></colgroup>' : '<colgroup><col><col style="width:92px"><col style="width:120px"><col style="width:92px"></colgroup>';
+    var foot = o.toiDa ? '' : '<tfoot><tr><td>Tổng</td><td class="c">' + sumA + '</td><td class="c">' + sumB + '</td><td class="c">' + (sumA + sumB) + '</td></tr></tfoot>';
+    return '<section class="the bang-the" aria-label="' + tieu + '"><div class="the-dau"><h2>' + tieu + '</h2><span class="phu">' + phu + '</span>' + II(loai === 'day' ? CACH_DEM : 'Bấm tên GV để tô các lớp GV đó chủ nhiệm. Đếm GVCN hôm nay — ô chờ đổi tính từ tuần hiệu lực.') +
+      '<span class="phai"><span class="o-chon-sel nho" role="button" aria-label="Xếp theo">Xếp: Tổng</span></span></div>' +
+      '<table class="tong">' + cols + '<thead><tr><th>GV</th><th class="c">FT</th><th class="c">Lớp thường</th><th class="c">Tổng</th></tr></thead><tbody>' + body + '</tbody>' + foot + '</table>' +
+      (o.toiDa ? '<div style="padding:8px 12px;border-top:1px solid var(--line)"><button class="btn btn-nho btn-ma">Xem đủ ' + soGv + ' GV</button></div>' : '') + '</section>';
+  }
+  function haiTong(o) { o = o || {}; return '<div class="hai-tong">' + bangTong('day', o) + bangTong('cn', o) + '</div>'; }
+
+  /* danh sách chọn GV mở ở ô GVCN của CP FT 137 (người đang dạy lớp này lên đầu — GVCN phải dạy ít nhất một môn) */
+  function dsChonGvcn() {
+    var mm = function (g, p, v, dang) {
+      return '<div class="mm' + (dang ? ' dang' : '') + '" role="option" aria-selected="' + !!v + '"><span class="v">' + (v ? '✓' : '') + '</span><span class="n">' + GV[g].t + '</span><span class="p">' + p + '</span></div>';
+    };
+    var sl = function (g) { return 'dạy <b>' + soO(g) + '</b> · GVCN <b>' + soCn(g) + '</b>'; };
+    return '<div class="ds-chon" role="listbox" aria-label="GVCN CP FT 137: chọn GV" style="right:-8px;top:88px">' +
+      '<input class="o" placeholder="Gõ tên GV…" aria-label="Tìm GV">' +
+      mm('ha', 'hiện tại · không còn dạy môn nào ở lớp này (nháp)', true) +
+      '<div class="tdm">Đang dạy lớp này</div>' +
+      mm('phong', 'L lớp này (nháp) · ' + sl('phong'), false, true) + mm('linh', 'R lớp này · ' + sl('linh')) + mm('duy', 'W1, W2 lớp này · ' + sl('duy')) + mm('miguel', 'S lớp này · ' + sl('miguel')) +
+      '<div class="tdm">GV khác · Cẩm Phả</div>' + mm('chau', sl('chau')) + mm('dung', sl('dung')) +
+      '<div class="phu" style="padding:2px 14px 4px">+ 6 GV nữa · cuộn hoặc gõ tên</div><hr><div class="mm"><span class="v"></span><span class="n bo">Bỏ trống (Chưa có)</span></div></div>';
+  }
+
+  function capHtml(c) {
+    var ct = (c.ct || '').replace(/^Chuyển sang/, 'Luôn chuyển sang');
+    return '<div class="cap"><span class="ky">' + c.mon + '</span><span class="doi-ng"><span class="cu">' + GV[c.cu].t + (GV[c.cu].nghi ? ' (đã nghỉ)' : '') + '</span> → <span class="moi">' + GV[c.moi].t + '</span></span>' +
+      '<label class="tao"><input type="checkbox" checked aria-label="Tạo việc bàn giao ' + c.mon + ' cho ' + GV[c.cu].t + '">Tạo việc bàn giao</label>' +
+      (ct ? '<span class="ct">' + ct + '</span>' : '') + '</div>';
+  }
+  /* hộp Lưu + hỏi bàn giao (một hộp cho cả dòng) */
+  function hopLuu(o) {
+    var hl = o.tuTuan
+      ? '<label><input type="radio" name="hl' + o.id + '">Ngay hôm nay <span class="so">30/10</span></label><label class="chon"><input type="radio" name="hl' + o.id + '" checked>Từ tuần <span class="o-chon-sel" role="button" aria-label="Tuần hiệu lực">W1 NOV</span></label>'
+      : '<label class="chon"><input type="radio" name="hl' + o.id + '" checked>Ngay hôm nay <span class="so">30/10</span></label><label><input type="radio" name="hl' + o.id + '">Từ tuần <span class="o-chon-sel" role="button" aria-label="Tuần hiệu lực">W1 NOV</span></label>';
+    var caps = o.caps.map(capHtml).join('');
+    return '<div class="hop" role="dialog" aria-label="Lưu phân công ' + o.lop + '" style="' + o.vt + '">' +
+      '<div class="hop-dau"><h3>Lưu phân công · ' + o.lop + '</h3><span class="ng">' + o.ng + '</span></div>' +
+      '<div class="hop-than">' +
+        '<div><span class="nhan-t">Hiệu lực</span><div class="hieu-luc" role="radiogroup" aria-label="Hiệu lực">' + hl + '</div>' +
+          '<div class="chu-hl">' + o.chuHl + '</div></div>' +
+        '<div><span class="nhan-t">Đổi người</span><div class="ds-cap">' + caps + '</div></div>' +
+        '<div class="ket-bg">' + o.ket + '</div>' +
+        '<div class="chu-xem">' + SVG_MAT.replace('width="18" height="18"', 'width="14" height="14"') + '<span>' + o.xem + ' Điểm đã chấm giữ tên GV cũ.</span></div>' +
+      '</div>' +
+      '<div class="hop-chan"><button class="btn' + (o.dt ? '' : ' btn-nho') + '">Quay lại sửa</button><button class="btn btn-chinh' + (o.dt ? '' : ' btn-nho') + '">' + o.nut + '</button></div></div>';
+  }
+  var HOP_137 = hopLuu({
+    id: 'a', lop: 'CP FT 137', ng: '2 ô đổi · 12 HV', tuTuan: 1, vt: 'right:0;top:42px',
+    chuHl: 'Tới hết W5 OCT Ms. Hà Hoàng dạy như cũ. Từ W1 NOV (02/11) Mr. Phong Đỗ dạy, nhận Case / PA / việc.',
+    caps: [{ mon: 'L', cu: 'ha', moi: 'phong', ct: 'Chuyển sang Mr. Phong Đỗ: <b>1</b> Case · <b>1</b> PA · <b>2</b> việc.' },
+      { mon: 'GVCN', cu: 'ha', moi: 'phong', ct: 'Chuyển sang Mr. Phong Đỗ: <b>3</b> việc Ý thức · <b>1</b> Phối hợp SOS.' }],
+    ket: '<span>→ <b>1 việc</b> cho Ms. Hà Hoàng · 2 cột L, GVCN × 12 em = <b>24 góp ý</b> · <span class="han">hạn 04/11</span></span>',
+    xem: 'Ms. Hà Hoàng vẫn xem lớp này tới khi xong bàn giao, ít nhất tới 09/11.',
+    nut: 'Lưu · tạo 1 việc bàn giao'
+  });
+
+  /* ---------- 375: thẻ lớp ---------- */
+  function gomTheoNguoi(l) {
+    var keys = COT[l.ct].concat(l.ct === 'PREFOU' ? [] : []).concat(['CN']);
+    var m = [], vt = {};
+    keys.forEach(function (c) {
+      var g = l.o[c] || ''; var nhan = c === 'CN' ? (l.ct === 'PREFOU' ? 'GVCN · dạy luôn' : 'GVCN') : c;
+      var k = g || ('trong' + c);
+      if (!(k in vt)) { vt[k] = m.length; m.push({ g: g, nhan: [] }); }
+      m[vt[k]].nhan.push(nhan);
+    });
+    return m;
+  }
+  function theLop(l, o) {
+    o = o || {};
+    var dong = gomTheoNguoi(l).map(function (x) {
+      var gv = x.g ? GV[x.g] : null, to = o.to && x.g === o.to;
+      return '<dt' + (to ? ' class="to"' : '') + '>' + x.nhan.join(' · ') + '</dt>' + (gv ? '<dd' + (to ? ' class="to"' : '') + (gv.nghi ? ' class="trong"' : '') + '>' + (gv.nghi ? gv.t + ' · đã nghỉ' : '<a class="ten-gv">' + gv.t + '</a>') + '</dd>' : '<dd class="trong">– Chưa có</dd>');
+    }).join('');
+    return '<article class="the-lop"><div class="lop-dau"><a class="ten">' + l.ma + '</a><span class="phu">' + l.phu + '</span>' + (o.cx ? '' : '<button class="btn btn-nho" aria-label="Sửa phân công ' + l.ma + '">Sửa</button>') + '</div><dl class="gv-ds">' + dong + '</dl></article>';
+  }
+  function dsTheLop(ds, o) {
+    o = o || {};
+    var ft = ds.filter(laFt), th = ds.filter(function (l) { return !laFt(l); });
+    var h = '';
+    if (ft.length) h += '<div class="nhom-1 dt-n">Fast Track <span class="dem-n">' + (o.demFt || ft.length) + ' lớp</span></div><div class="ds-lop">' + ft.map(function (l) { return theLop(l, o); }).join('') + '</div>' + (o.conFt ? '<div class="nhom-2 dt-n" style="justify-content:center;color:var(--text-faint);font-weight:500">… ' + o.conFt + '</div>' : '');
+    if (th.length) {
+      h += '<div class="nhom-1 dt-n">Lớp thường <span class="dem-n">' + (o.demTh || th.length) + ' lớp</span></div>';
+      NHOM_THUONG.forEach(function (n) {
+        var ls = th.filter(function (l) { return l.ct === n[0]; });
+        if (ls.length) h += '<div class="nhom-2 dt-n">' + n[1] + ' <span class="dem-n">' + LOP.filter(function (l) { return l.ct === n[0]; }).length + ' lớp</span></div><div class="ds-lop">' + ls.map(function (l) { return theLop(l, o); }).join('') + '</div>';
+      });
+    }
+    return h;
+  }
+
+  /* ================= KHU ================= */
+  var html = '';
+  var QL = 'Nguyễn Khánh Vy · QL';
+
+  /* ---------- 1 · bình thường ---------- */
+  html += khu('k1', '1 · QL · góc Phân công GV · bình thường', [
+    hinh(false, 'QL Cẩm Phả · 16 lớp (10 FT · 6 lớp thường) · tổng hợp dưới bảng', khung(false, QL, dauTrang(false) + theBangLop() + haiTong())),
+    hinh(true, 'thẻ lớp · người dạy gom theo GV · 5/16 thẻ', khung(true, QL, dauTrang(true) + '<section class="the bang-the">' + congCu(true) +
+      dsTheLop([lopCua('CP FT 116'), lopCua('CP FT 131'), lopCua('CP FT 139'), lopCua('CP BE 07'), lopCua('CP PreFOU 03')], { demFt: 10, demTh: 6, conFt: '7 lớp FT nữa' }) + '</section>' +
+      bangTong('day', { dt: 1, toiDa: 6 }) + bangTong('cn', { dt: 1, toiDa: 4 })))
+  ], [
+    '<b>Bố cục B — tổng hợp XUỐNG DƯỚI, hai bảng cạnh nhau</b> (mục 2.2 cho phép khi chật): 6 ô FT cần ~176 px mỗi ô để tên đầy đủ "Ms. Thanh Hằng Trần" không cắt → bảng lớp ~1 300 px, không còn chỗ cho cột phải.',
+    'Bốn tầng: dải nhóm (Fast Track · Lớp thường — 15 / 700, nền surface-2, vạch trung tính) → nhóm con theo chương trình (Foundation · Beginner · Pre Foundation, 14 / 600, mỗi nhóm tiêu đề cột riêng) → tiêu đề cột 13 / 600 → dòng lớp (mã 15 / 600 là link hồ sơ lớp + dòng phụ lộ trình / tuần · HV).',
+    'Cột GVCN luôn ở CÙNG một chỗ (cột cuối) ở mọi nhóm để dò dọc; FOU / BE để trống cột thứ 5; Pre FOU một dòng "Không chia môn — GVCN dạy luôn" (chữ web sẵn có).',
+    'Ô = ô chọn ▾ nhẹ (không viền tới khi rê / focus — bảng 16 × 6 ô vẫn đọc được). "– Chưa có" vàng có chữ; GV đã nghỉ: tên + "⚠ đã nghỉ" vàng (CP FT 131 · W2). Lọc "Thiếu GV · ' + oThieu + ' ô" = ô Chưa có + ô của người đã nghỉ [đề xuất].',
+    'Tổng hợp: Ms. Hà Hoàng FT = ' + D.ha.ft + ' (khớp sheet). Pre FOU tính 1 ở Giảng dạy (GVCN dạy luôn). Ms. Châu Nguyễn 0 vẫn hiện. Dòng Tổng = số ô có người ở bảng lớp (kiểm cùng nguồn). Xếp bằng ô "Xếp: Tổng ▾" ngoài tiêu đề bảng (G9 cấm nút trong th).',
+    '375: thẻ lớp gom người theo GV ("L · R · GVCN  Ms. Hà Hoàng") để 16 thẻ không dài ~5 000 px; bấm <b>Sửa</b> mới ra ô từng môn (khu 3). Tab góc cuộn ngang, tab đang chọn luôn trong khung, mép trái mờ báo còn tab.'
+  ]);
+
+  /* ---------- 2 · tô sáng ---------- */
+  var to = 'ha';
+  html += khu('k2', '2 · Bấm một GV ở tổng hợp → tô mọi ô của GV đó', [
+    hinh(false, 'bấm "Ms. Hà Hoàng" ở Giảng dạy', khung(false, QL, dauTrang(false) + theBangLop({ to: to }) + haiTong({ to: to }))),
+    hinh(true, 'dải đang tô dính đầu bảng · 3/7 thẻ có Ms. Hà Hoàng', khung(true, QL, dauTrang(true) + '<section class="the bang-the">' + daiTo(to, true) +
+      dsTheLop([lopCua('CP FT 116'), lopCua('CP FT 131'), lopCua('CP PreFOU 05')], { to: to, demFt: 10, demTh: 6, conFt: 'cuộn: 4 lớp FT nữa có Ms. Hà Hoàng' }) + '</section>' +
+      bangTong('day', { dt: 1, toiDa: 5, to: to })))
+  ], [
+    'Tô = nền hồng nhạt + vạch hồng 3 px + chấm tròn + chữ đậm (không chỉ màu). Hồng ở đây là dấu NHẬN DIỆN / "chữ khớp" (V2, V14) — không nghĩa lỗi. Bấm lại dòng hoặc "✕ Bỏ tô" để bỏ.',
+    'Tô dùng nền trung tính + vạch / chấm hồng (không nền hồng — tránh lẫn nền lỗi). Dải "Đang tô" dính đầu bảng lớp (tổng hợp nằm dưới, bấm xong trang cuộn lên ô đầu tiên): số môn · số lớp GVCN · số lớp — cùng hàm đếm với tổng hợp. "Chỉ hiện 7 lớp" = điền ô tìm bằng tên GV (một bộ lọc, không thêm kiểu lọc mới). "Hồ sơ GV ›" = link chữ (tên trong dòng tổng hợp là nút bật tô, G6).',
+    'Ô số tổng hợp không gạch chân: cả dòng là nút tô — tô chính là "danh sách đúng tập tạo ra số" (G7) ngay trên bảng lớp.'
+  ]);
+
+  /* ---------- 3 · dòng nháp ---------- */
+  var nhap137 = { 'CP FT 137': { nhap: { L: { moi: 'phong', cu: 'ha' } }, loi: { CN: 'GVCN phải dạy ít nhất một môn' }, mo: 'CN', lyDo: 'GVCN phải dạy ít nhất một môn — đổi GVCN, hoặc giao Ms. Hà Hoàng một môn' } };
+  var luoiSua = function () {
+    var l = lopCua('CP BE 07');
+    var dong = ['L', 'R', 'W', 'S', 'CN'].map(function (c) {
+      var g = l.o[c], doi = c === 'S';
+      if (doi) g = 'miguel';
+      return '<label>' + (c === 'CN' ? 'GVCN' : c) + '</label><button class="o-gv' + (doi ? ' doi' : '') + '" aria-label="' + (c === 'CN' ? 'GVCN' : TEN_MON[c]) + ' CP BE 07"><span class="t"><span>' + GV[g].t + '</span>' + (doi ? '<span class="p">trước: Ms. Gemino Thea</span>' : '') + '</span></button>';
+    }).join('');
+    return '<article class="the-lop nhap"><div class="lop-dau"><a class="ten">CP BE 07</a><span class="nhan-nhap">Nháp · 1 ô đổi</span></div>' +
+      '<div class="luoi-sua">' + dong + '</div><div class="hai-nut"><button class="btn">Huỷ</button><button class="btn btn-chinh">Lưu</button></div></article>';
+  };
+  html += khu('k3', '3 · Sửa theo DÒNG: ô đổi viền nhấn · ô ▾ đang mở · lỗi luật ở ô GVCN · Lưu tắt', [
+    hinh(false, 'CP FT 137: L Ms. Hà Hoàng → Mr. Phong Đỗ, GVCN còn Ms. Hà Hoàng → lỗi; QL đang mở ô GVCN', khung(false, QL, dauTrang(false) + theBangLop({ hang: nhap137, dsChon: dsChonGvcn(), boThuong: 1, tran: 1 }), { noi: 'padding-bottom:330px' })),
+    hinh(true, 'lớp thường CP BE 07 · Sửa → ô từng môn · S đổi · hợp lệ', khung(true, QL, dauTrang(true) + '<section class="the bang-the">' + congCu(true) +
+      '<div class="nhom-1 dt-n">Lớp thường <span class="dem-n">6 lớp</span></div><div class="nhom-2 dt-n">Beginner <span class="dem-n">2 lớp</span></div><div class="ds-lop">' + luoiSua() + theLop(lopCua('CP BE 09')) + '</div></section>'))
+  ], [
+    'Đổi một ô → dòng vào NHÁP: vạch nhấn đầu dòng + chữ "Nháp · n ô đổi" (không chỉ màu), ô đổi viền nhấn + dòng phụ "trước: …"; cuối dòng <b>Lưu · Huỷ</b>. Ba luật kiểm trên cả dòng ngay khi chọn (cùng <code>kiemPhanCong</code> máy chủ dùng).',
+    'Lỗi hiện TẠI ô: "⚠ GVCN phải dạy ít nhất một môn"; Lưu tắt, rê / focus nói lý do. Sửa: chọn Mr. Phong Đỗ ở ô GVCN (người đang dạy lớp này đứng đầu danh sách) → Lưu bật.',
+    'Danh sách chọn = ChonNguoi đang có (gõ tên + danh sách): GV có vai giảng dạy ở chi nhánh lớp, người hiện tại ✓; dòng phụ "dạy n · GVCN n" lấy CÙNG số tổng hợp; ô môn: người khai được kỹ năng đó lên đầu + "dạy được …" như web; cuối "Bỏ trống (Chưa có)". GV đã nghỉ không có trong danh sách.',
+    'Bảng tổng hợp đếm theo bản ĐÃ LƯU (dòng nháp chưa tính) — số trong danh sách chọn giúp quyết. [PTA quyết: hay tính cả nháp?]',
+    '375: bấm "Sửa" ở thẻ → ô từng môn 44 px (một thẻ sửa một lúc); Lưu · Huỷ chia đôi ở chân thẻ.',
+    'Không mất nháp: dòng nháp vẫn hiện khi lọc / tìm (ghim đầu nhóm); rời trang, đổi tab góc hay chi nhánh khi còn dòng nháp → hỏi MỘT lần "n lớp chưa lưu".',
+    'Bàn phím: Tab vào bảng → ← ↑ → ↓ đi giữa các ô, Enter / Space mở danh sách, gõ chữ để lọc, Esc đóng (giữ giá trị cũ), Ctrl + Enter = Lưu dòng. Lưu tắt dùng aria-disabled (vẫn focus được, đọc được lý do); lỗi ô nối aria-describedby; ô 14 px = "lưới dày" (G13).'
+  ]);
+
+  /* ---------- 4 · GV đã nghỉ · 409 ---------- */
+  var hang4 = {
+    'CP FT 131': { nhap: { R: { moi: 'linh', cu: 'phong' } }, loi: { W2: 'Đã nghỉ — chọn người thay hoặc Bỏ trống' }, lyDo: 'Đổi ô W2 (GV đã nghỉ) trước khi lưu' },
+    'CP FT 139': { nhap: { S: { moi: 'miguel', cu: '' } }, khacDoi: 'W2', loiHang: ['Người khác vừa đổi ô W2 lớp này.', 'Đã tải bản mới: ô bạn đang sửa giữ nguyên, ô W2 theo bản mới — kiểm lại rồi bấm Lưu.'] }
+  };
+  html += khu('k4', '4 · Ô của GV đã nghỉ chặn Lưu · người khác vừa đổi (409) · không mất ô đang sửa', [
+    hinh(false, 'CP FT 131 còn W2 Ms. Liên Vũ (đã nghỉ) · CP FT 139 lưu bị 409', khung(false, QL, theBangLop({ hang: hang4, chiLop: ['CP FT 130', 'CP FT 131', 'CP FT 138', 'CP FT 139'] }), { lop: '', khongNav: 0 }))
+  ], [
+    'GV nghỉ / khoá còn giữ ô: ô vàng "⚠ đã nghỉ"; dòng chỉ Lưu được khi đổi hết ô đó — lỗi nói rõ tên + ô (đặc tả 2b). Dòng không ai sửa thì không chặn gì (chỉ báo).',
+    'CP FT 139: S "Chưa có" → Mr. Miguel (A trống → không hỏi bàn giao). Lưu → máy chủ 409 → dải lỗi mở dưới hàng (G4 bảng rộng), giữ ô người dùng đã sửa, ô người khác vừa đổi theo bản mới (<code>gopChonSau409</code> đang có). Lưu bấm lại được. Ô người khác vừa đổi (W2) viền đứt xanh + "↻ người khác vừa đổi" để thấy ngay ô nào khác.'
+  ]);
+
+  /* ---------- 5 · hộp Lưu + hỏi bàn giao ---------- */
+  var hang5 = { 'CP FT 137': { nhap: { L: { moi: 'phong', cu: 'ha' }, CN: { moi: 'phong', cu: 'ha' } }, hop: HOP_137 } };
+  var hopBe = hopLuu({
+    id: 'b', dt: 1, lop: 'CP BE 07', ng: '1 ô đổi · 14 HV', vt: '',
+    chuHl: 'Mr. Miguel dạy Speaking và nhận Case / PA / việc từ hôm nay.',
+    caps: [{ mon: 'S', cu: 'thea', moi: 'miguel', ct: 'Chuyển sang Mr. Miguel: <b>2</b> Case · <b>1</b> PA.' }],
+    ket: '<span>→ <b>1 việc</b> cho Ms. Gemino Thea · Speaking × 14 em = <b>14 góp ý</b> · <span class="han">hạn 04/11</span></span>',
+    xem: 'Ms. Gemino Thea vẫn xem lớp này tới khi xong bàn giao, ít nhất tới 06/11.',
+    nut: 'Lưu · tạo 1 việc'
+  });
+  var sauLuu = { 'CP BE 07': { daLuu: 1, dat: { S: 'miguel' } }, 'CP FT 137': { cho: { L: { moi: 'phong', tu: 'W1 NOV' }, CN: { moi: 'phong', tu: 'W1 NOV' } }, choTu: 'W1 NOV', hopCho: '' } };
+  sauLuu['CP FT 137'].hopCho = '<div class="hop" role="dialog" aria-label="Chờ đổi CP FT 137" style="right:0;top:40px;width:380px">' +
+      '<div class="hop-dau"><h3>Chờ đổi · CP FT 137</h3><span class="ng">từ W1 NOV (02/11)</span></div><div class="hop-than" style="gap:10px">' +
+      '<div class="ds-cap">' + capHtml({ mon: 'L', cu: 'ha', moi: 'phong' }).replace(/<label class="tao">[\s\S]*?<\/label>/, '') + capHtml({ mon: 'GVCN', cu: 'ha', moi: 'phong' }).replace(/<label class="tao">[\s\S]*?<\/label>/, '') + '</div>' +
+      '<div class="ket-bg"><span>Việc bàn giao của Ms. Hà Hoàng: <b>8/12 em</b> đã viết · <span class="han">hạn 04/11</span></span></div>' +
+      '<div class="chu-xem"><span>Huỷ lịch đổi = huỷ cả việc bàn giao; phần đã viết giữ ở lịch sử lớp, Hoàn tác được.</span></div></div>' +
+      '<div class="hop-chan"><button class="btn btn-nho">Đổi mốc…</button><button class="btn btn-nho">Huỷ lịch đổi (L, GVCN)</button></div></div>';
+  var hang5d = {
+    'CP FT 116': { nhap: { L: { moi: 'chau', cu: 'ha' }, R: { moi: 'chau', cu: 'ha' }, CN: { moi: 'chau', cu: 'ha' } } },
+    'CP FT 131': { nhap: { L: { moi: 'dung', cu: 'ha' }, W2: { moi: 'yen', cu: 'lien' } } },
+    'CP FT 138': { nhap: { R: { moi: 'linh', cu: 'ha' } } }
+  };
+  var hopChung = '<div class="hop" role="dialog" aria-label="Lưu phân công 3 lớp" style="right:0;top:calc(100% + 8px);width:560px">' +
+    '<div class="hop-dau"><h3>Lưu phân công · 3 lớp</h3><span class="ng">6 ô đổi · CP FT 116 · CP FT 131 · CP FT 138</span></div><div class="hop-than">' +
+    '<div><span class="nhan-t">Hiệu lực · chung cho 3 lớp</span><div class="hieu-luc" role="radiogroup" aria-label="Hiệu lực"><label class="chon"><input type="radio" name="hld" checked>Ngay hôm nay <span class="so">30/10</span></label><label><input type="radio" name="hld">Từ tuần <span class="o-chon-sel" role="button" aria-label="Tuần hiệu lực">W1 NOV</span></label></div>' +
+    '<div class="chu-hl">Lớp cần mốc khác: bấm Lưu ở cuối dòng lớp đó.</div></div>' +
+    '<div><span class="nhan-t">Đổi người</span><div class="ds-cap">' +
+      '<div class="nhom-cap"><span class="tl">CP FT 116 <span class="phu">· 1 việc · 3 cột</span></span>' + capHtml({ mon: 'L', cu: 'ha', moi: 'chau', ct: 'Chuyển sang Ms. Châu Nguyễn: <b>1</b> Case.' }) + capHtml({ mon: 'R', cu: 'ha', moi: 'chau' }) + capHtml({ mon: 'GVCN', cu: 'ha', moi: 'chau', ct: 'Chuyển sang Ms. Châu Nguyễn: <b>2</b> Case · <b>1</b> PA · <b>2</b> việc Ý thức.' }) + '</div>' +
+      '<div class="nhom-cap"><span class="tl">CP FT 131 <span class="phu">· 2 việc</span></span>' + capHtml({ mon: 'L', cu: 'ha', moi: 'dung', ct: 'Chuyển sang Mr. Dũng Nguyễn: <b>1</b> Case.' }) + capHtml({ mon: 'W2', cu: 'lien', moi: 'yen', ct: 'Ms. Liên Vũ đã nghỉ → việc bàn giao do <b>GVCN Mr. Phong Đỗ</b> viết.' }) + '</div>' +
+      '<div class="nhom-cap"><span class="tl">CP FT 138 <span class="phu">· 1 việc</span></span>' + capHtml({ mon: 'R', cu: 'ha', moi: 'linh' }) + '</div>' +
+    '</div></div>' +
+    '<div class="ket-bg"><span>→ <b>4 việc · 91 góp ý</b>: Ms. Hà Hoàng 3 việc (76) · Mr. Phong Đỗ 1 việc (15) · <span class="han">hạn 04/11</span></span></div>' +
+    '<div class="chu-xem">' + SVG_MAT.replace('width="18" height="18"', 'width="14" height="14"') + '<span>Ms. Hà Hoàng vẫn xem 3 lớp này tới khi xong bàn giao, ít nhất tới 06/11. Điểm đã chấm giữ tên GV cũ.</span></div></div>' +
+    '<div class="hop-chan"><button class="btn btn-nho">Quay lại sửa</button><button class="btn btn-nho btn-chinh">Lưu 3 lớp · tạo 4 việc</button></div></div>';
+  var thanhLuu = '<div class="thanh-luu"><span><span class="dem so">3 lớp</span> đang sửa · 6 ô</span><span class="phai"><button class="btn btn-nho">Huỷ hết</button><button class="btn btn-nho btn-chinh" aria-expanded="true">Lưu cả 3 lớp…</button></span>' + hopChung + '</div>';
+  html += khu('k5', '5 · Bấm Lưu → MỘT hộp cho cả dòng: hiệu lực + các cặp A → B (mỗi cặp một ô tích, mặc định có) · sau lưu', [
+    hinh(false, 'CP FT 137 · hai cặp cùng GV cũ → 1 việc 2 cột · hiệu lực từ W1 NOV', khung(false, QL, theBangLop({ tran: 1, hang: hang5, chiLop: ['CP FT 131', 'CP FT 137', 'CP FT 138', 'CP FT 139', 'CP FT 140', 'CP FT 141', 'CP FT 142'] }), { noi: 'padding-bottom:360px' })),
+    hinh(true, 'lớp thường CP BE 07 · hộp thành tấm dưới · Ngay hôm nay', khung(true, QL, dauTrang(true) + '<section class="the bang-the"><div class="ds-lop">' + luoiSua() + '</div></section>', { cao: 900, phu: '<div class="che"></div>' + hopBe })),
+    hinh(false, 'sau Lưu: CP FT 137 chờ đổi từ W1 NOV (Chờ đổi mở: Đổi mốc · Huỷ lịch đổi) · CP BE 07 đổi ngay · toast Hoàn tác', khung(false, QL, theBangLop({ tran: 1, hang: sauLuu, chiLop: ['CP FT 131', 'CP FT 137', 'CP FT 138', 'CP BE 07', 'CP BE 09'] }), { khongNav: 1, noi: 'padding-bottom:150px',
+      phu: '<div class="toast" role="status" style="right:24px;bottom:16px"><span class="ok">✓</span><span>Đã lưu phân công CP BE 07 · tạo 1 việc bàn giao cho Ms. Gemino Thea</span><button class="btn btn-nho">Hoàn tác</button></div>' })),
+    hinh(false, 'nhiều dòng nháp (QL thay Ms. Hà Hoàng ở 3 lớp) → Lưu cả 3 lớp → MỘT hộp, cặp gom theo lớp', khung(false, QL, theBangLop({ tran: 1, to: 'ha', tim: 'Ms. Hà Hoàng', hang: hang5d, chiLop: ['CP FT 116', 'CP FT 131', 'CP FT 137', 'CP FT 138'], boThuong: 1, cuoiThe: thanhLuu, toNhap: [4, 2] }), { noi: 'padding-bottom:900px' }))
+  ], [
+    '<b>Hiệu lực</b> (chủ SP 30/10): "Ngay hôm nay" hoặc "Từ tuần [W1 NOV ▾]" (ô tuần sẵn có). Câu dưới nói ĐÚNG hậu quả theo lựa chọn: trước mốc GV cũ dạy như cũ; từ mốc GV mới dạy + nhận Case / PA / việc.',
+    'Mỗi cặp A → B theo môn một ô tích "Tạo việc bàn giao" (mặc định có) — ô tích CHỈ quyết có tạo việc bàn giao. Dòng "Luôn chuyển sang B: n Case · n PA · n việc" nằm ngoài vùng bấm: việc đang mở luôn chuyển, bỏ tích không giữ Case lại cho A. Cùng GV cũ + cùng lớp → dòng "→ 1 việc · 2 cột L, GVCN".',
+    'Một dòng chữ nhỏ quyền xem: "GV cũ vẫn xem lớp này tới khi xong bàn giao, ít nhất tới {hiệu lực + 7 ngày}" (lâu hơn của hai mốc).',
+    'Nút chính nói kết quả: "Lưu · tạo 1 việc bàn giao"; bỏ hết ô tích → "Lưu". "Quay lại sửa" về dòng nháp, không mất ô đã đổi. A trống (Chưa có → B) hoặc B trống (A → Chưa có): không có cặp → Lưu thẳng, không hộp.',
+    'Sau lưu: dòng "✓ Đã lưu", toast + <b>Hoàn tác</b> (đảo cả phân công lẫn việc vừa chuyển / việc bàn giao vừa tạo); bảng tổng hợp đổi số ngay, không tải lại cả bảng (<code>invalidateGop</code>).',
+    'Mặc định hiệu lực = "Ngay hôm nay" (khung 1440 vẽ lúc QL đã chọn "Từ tuần"). Hai lựa chọn là MỘT ô chọn kiểu (radio), không phải hàng chip "hôm nay · tuần trước" mà G10 cấm — theo quyết định chủ SP 30/10.',
+    '<b>Chờ đổi</b> (hiệu lực ở tương lai): ô nền xanh nhạt viền đứt "Ms. Hà Hoàng / → Mr. Phong Đỗ" + dòng lớp "Chờ đổi · W1 NOV"; tổng hợp đếm người đang dạy HÔM NAY (ⓘ nói rõ). Bấm "Chờ đổi" cuối dòng → Đổi mốc / Huỷ lịch đổi (huỷ cả việc bàn giao, Case / PA chưa chuyển); bấm ô = chọn người khác cùng mốc. Hồ sơ lớp, hàng GV: "L Ms. Hà Hoàng → Mr. Phong Đỗ từ W1 NOV".',
+    '[đề xuất] Khi có dòng nháp, số của GV đang tô hiện "cũ → mới" màu nhấn + "(tính cả nháp)" (khung cuối: dạy 8 → 4, GVCN 3 → 2); bảng tổng hợp làm cùng cách ở cột Tổng. Trả lời câu hỏi ở khu 3. Khuyến nghị: mọi chỗ có số (tổng hợp, danh sách chọn, dải tô) cùng hiện "cũ → mới" khi có nháp — một nguồn (G7).',
+    'Hộp nêu TẢI của GV cũ: "n cột × N em = n góp ý" (khung nhiều dòng: 4 việc · 91 góp ý) để QL thấy trước khi tạo.',
+    'Dòng chờ đổi có nút <b>Chờ đổi</b> ở cột cuối (chỗ Lưu · Huỷ): hộp nhỏ nói rõ phạm vi (L, GVCN · 1 việc) + <b>Đổi mốc…</b> · <b>Huỷ lịch đổi</b> — huỷ cả việc bàn giao, phần đã viết giữ ở lịch sử lớp, Hoàn tác được. Danh sách chọn của ô chỉ còn lựa chọn người.',
+    'Không có "Lưu nhiều dòng" (nếu chủ SP chưa duyệt): hộp nhớ hiệu lực vừa chọn trong phiên, lớp thứ hai trở đi chỉ còn một bấm Lưu.',
+    '[đề xuất] <b>Lưu nhiều dòng</b>: từ 2 dòng nháp → thanh dính chân bảng "n lớp đang sửa · Huỷ hết · Lưu cả n lớp…" → MỘT hộp: một hiệu lực chung, cặp gom theo lớp, mỗi (GV cũ + lớp) một việc. Ca hay gặp — GV nghỉ: bấm GV ở tổng hợp → "Chỉ hiện n lớp" → chọn người thay từng lớp → lưu một lần. Lưu cuối dòng vẫn dùng được khi một lớp cần mốc khác.',
+    'GV cũ đã nghỉ (CP FT 131 · W2): dòng phụ của cặp nói người viết thay — GVCN lớp (QL chi nhánh nếu chính GVCN nghỉ).',
+    'Hạn việc bàn giao = 5 ngày từ khi tạo (04/11) theo đặc tả. [PTA quyết — khuyến nghị: hạn = hiệu lực + 5 ngày (Ngay hôm nay thì như cũ); hiệu lực W3 NOV mà hạn 04/11 thì việc quá hạn trước khi đổi người.]'
+  ]);
+
+  /* ---------- 6 · việc + panel bàn giao ---------- */
+  var EM137 = [
+    ['Bùi Thảo Vy', 2, 2], ['Chu Nhật Minh', 2, 2], ['Đỗ Minh Khôi', 2, 2], ['Hoàng Bảo Ngọc', 2, 2], ['Kiều Thảo Nhi', 2, 2], ['Lê Gia Huy', 1, 0],
+    ['Lý Minh Châu', 2, 2], ['Phạm Khánh Linh', 2, 2], ['Trần Thu Hà', 2, 2], ['Trịnh Bảo Ngọc', 1, 0], ['Vũ Hải Đăng', 0, 0], ['Vũ Ngọc Lan', 0, 0]
+  ];
+  function dsEm(ds, chon, hai, dt, tong, doc) {
+    return '<div><div class="ds-em-dau"><span>Học viên · ' + (tong || ds.length) + ' em</span>' + (dt ? '' : '<span><kbd>↑</kbd> <kbd>↓</kbd> đi từng em</span>') + '</div><ul class="ds-em" role="listbox" aria-label="Học viên cần bàn giao">' + ds.map(function (e) {
+      var du = hai ? e[1] === 2 : e[1] >= 1;
+      var chip = du ? '<span class="bd bd-td xong">Đủ</span>' : (e[1] > 0 ? '<span class="bd bd-td sap">Thiếu ' + (hai ? 'GVCN' : '') + '</span>' : '<span class="bd bd-td cho">Chưa có</span>');
+      var p = hai ? '<span class="' + (e[2] >= 1 || e[1] >= 1 ? 'ok' : 'thieu') + '">L ' + (e[1] >= 1 ? '✓' : '–') + '</span> · <span class="' + (e[1] === 2 ? 'ok' : 'thieu') + '">GVCN ' + (e[1] === 2 ? '✓' : '–') + '</span>' : '<span class="' + (du ? 'ok' : 'thieu') + '">S ' + (du ? '✓' : '–') + '</span>';
+      return '<li role="option" aria-selected="' + (e[0] === chon) + '"><span class="h1e"><span class="tn">' + e[0] + '</span>' + (doc ? '' : chip) + '</span><span class="p">' + p + '</span></li>';
+    }).join('') + '</ul></div>';
+  }
+  function panel137(dt) {
+    var dau = '<div class="pn-dau"><div class="pn-h1">' + (dt ? '<button class="btn btn-ma" style="padding:0 8px;margin-left:-8px">‹ Công việc</button>' : '') + '<span class="loai">VIỆC · BÀN GIAO</span><button class="x" aria-label="Đóng">✕</button></div>' +
+      '<h2>Bàn giao CP FT 137 · L, GVCN cho Mr. Phong Đỗ</h2>' +
+      '<div class="pn-ngu"><span><b>12</b> em</span><span><b>8/12</b> em đủ góp ý</span><span><span class="han">hạn 04/11</span></span><span>hiệu lực W1 NOV</span></div></div>';
+    var chung = '<div class="chung"><div class="dau" role="button" aria-expanded="false"><span class="tg">▸</span><span>Nhận xét chung cả lớp <span class="phu">· tuỳ chọn · chưa viết</span></span></div></div>';
+    var phieu = '<div class="phieu"><div class="phieu-dau"><h3>Lê Gia Huy</h3><span class="bd bd-td sap">Thiếu GVCN</span><span class="phu">em 6/12</span>' + (dt ? '' : '<button class="btn btn-nho tiep">Em tiếp: Trịnh Bảo Ngọc ↓</button>') + '</div>' +
+      '<dl class="boi-canh"><span class="tde">Tự điền · chỉ đọc</span><dt>Kết quả</dt><dd>MT3 · W2 OCT · L <span class="diem duoi">5.5</span> kỳ vọng 6.5 · Overall <span class="diem bang-kv">6.0</span></dd>' +
+        '<dt>Case đang mở</dt><dd>Case Listening · PA Luyện nghe 2 tuần — chuyển sang Mr. Phong Đỗ từ W1 NOV</dd><dt>Ý thức</dt><dd>2 vi phạm W4 OCT · đã gặp GVCN</dd></dl>' +
+      '<div class="cot-o">' +
+        '<div class="truong"><span class="nhan"><span class="ky">L</span>Listening <span class="bb" aria-hidden="true">*</span><span class="phu-t">bắt buộc</span></span>' +
+          '<textarea class="o" rows="5" aria-label="Góp ý Listening cho Lê Gia Huy">Nghe ý chính tốt, hay sót số và tên riêng ở Part 1. Đang chạy PA nghe 2 tuần (kỳ 1 xong, tiến bộ nhẹ). Nhắc em viết tắt khi nghe.</textarea>' +
+          '<span class="duoi"><span class="tt-luu da">✓ Đã lưu</span></span></div>' +
+        '<div class="truong"><span class="nhan"><span class="ky">GVCN</span>Chủ nhiệm <span class="bb" aria-hidden="true">*</span><span class="phu-t">bắt buộc</span></span>' +
+          '<textarea class="o dang-go" rows="5" aria-label="Góp ý GVCN cho Lê Gia Huy" placeholder="Tình hình chung, phụ huynh, ý thức…">Mẹ theo sát, nhắn Zalo buổi tối. Hay đi muộn thứ Hai</textarea>' +
+          '<span class="duoi"><span class="tt-luu nhap">● Đang gõ · lưu khi rời ô</span></span></div>' +
+      '</div>' + (dt ? '<button class="btn" style="width:100%">Em tiếp: Trịnh Bảo Ngọc ↓</button>' : '') + '</div>';
+    var chan = '<div class="pn-chan"><span class="trai"><span>Tự lưu khi rời ô</span><span class="thieu-len">Còn 4 em thiếu góp ý ↑</span></span><button class="btn">Đóng</button><button class="btn btn-chinh" aria-disabled="true" title="Còn 4 em thiếu góp ý">Xác nhận bàn giao</button></div>';
+    var than = '<div class="pn-than">' + chung + (dt ? dsEm(EM137.slice(3, 8), 'Lê Gia Huy', true, true, 12) + '<div class="phu" style="margin-top:-8px">cuộn danh sách để xem đủ 12 em</div>' + phieu : '<div class="md">' + dsEm(EM137, 'Lê Gia Huy', true) + phieu + '</div>') + '</div>';
+    return '<div class="pn" role="dialog" aria-label="Bàn giao CP FT 137"' + (dt ? ' style="border-radius:0;border:0"' : ' style="height:100%"') + '>' + dau + than + chan + '</div>';
+  }
+  function panelDoc() {
+    var dau = '<div class="pn-dau"><div class="pn-h1"><span class="loai">BÀN GIAO · ĐỌC</span><button class="x" aria-label="Đóng">✕</button></div>' +
+      '<h2>Bàn giao CP FT 137 · L, GVCN từ Ms. Hà Hoàng</h2>' +
+      '<div class="pn-ngu"><span><b>12</b> em</span><span>xác nhận 03/11 bởi Ms. Hà Hoàng</span><span>hiệu lực W1 NOV</span></div></div>';
+    var chung = '<div class="chung"><div class="dau" role="button" aria-expanded="true"><span class="tg">▾</span><span>Nhận xét chung cả lớp</span></div><div class="than"><p class="doc-o">Lớp chăm, hay nói tiếng Việt khi làm nhóm. 3 em hay đi muộn thứ Hai (đã báo PH). Listening cả lớp yếu Part 3–4: cho nghe 2 lần, lần 2 điền.<span class="ai">— Ms. Hà Hoàng, 03/11</span></p></div></div>';
+    var phieu = '<div class="phieu"><div class="phieu-dau"><h3>Lê Gia Huy</h3><span class="phu">em 6/12</span></div>' +
+      '<dl class="boi-canh"><span class="tde">Tự điền · chụp lúc xác nhận</span><dt>Kết quả</dt><dd>MT3 · W2 OCT · L <span class="diem duoi">5.5</span> kỳ vọng 6.5 · Overall <span class="diem bang-kv">6.0</span></dd><dt>Case đang mở</dt><dd>Case Listening · PA Luyện nghe 2 tuần — bạn phụ trách từ W1 NOV</dd><dt>Ý thức</dt><dd>2 vi phạm W4 OCT · đã gặp GVCN</dd></dl>' +
+      '<div class="cot-o"><div class="truong"><span class="nhan"><span class="ky">L</span>Listening</span><p class="doc-o">Nghe ý chính tốt, hay sót số và tên riêng ở Part 1. Đang chạy PA nghe 2 tuần (kỳ 1 xong, tiến bộ nhẹ). Nhắc em viết tắt khi nghe.<span class="ai">— Ms. Hà Hoàng, 02/11</span></p></div>' +
+      '<div class="truong"><span class="nhan"><span class="ky">GVCN</span>Chủ nhiệm</span><p class="doc-o">Mẹ theo sát, nhắn Zalo buổi tối. Hay đi muộn thứ Hai — đã nhắc 2 lần, lần 3 báo PH.<span class="ai">— Ms. Hà Hoàng, 03/11</span></p></div></div></div>';
+    var chan = '<div class="pn-chan"><span class="trai"><span>Chỉ đọc</span></span><button class="btn">Đóng</button></div>';
+    var du = EM137.map(function (e) { return [e[0], 2, 2]; });
+    return '<div class="pn" role="dialog" aria-label="Đọc bàn giao CP FT 137" style="height:100%">' + dau + '<div class="pn-than">' + chung + '<div class="md">' + dsEm(du, 'Lê Gia Huy', true, false, 12, true) + phieu + '</div></div>' + chan + '</div>';
+  }
+  var EMBE = [['Đặng Bảo An', 1], ['Đỗ Gia Hân', 1], ['Hà Minh Quân', 1], ['Lê Bảo Châu', 1], ['Lương Khánh Vy', 1], ['Ngô Minh Phúc', 1], ['Nguyễn Hải My', 1],
+    ['Phan Tuệ Lâm', 1], ['Phạm Gia Bảo', 1], ['Tạ Minh Khang', 1], ['Trần An Nhiên', 1], ['Trương Bảo Long', 1], ['Vũ Minh Thư', 1], ['Vương Khả Hân', 1]];
+  function panelBe() {
+    var dau = '<div class="pn-dau"><div class="pn-h1"><span class="loai">VIỆC · BÀN GIAO</span><button class="x" aria-label="Đóng">✕</button></div>' +
+      '<h2>Bàn giao CP BE 07 · Speaking cho Mr. Miguel</h2>' +
+      '<div class="pn-ngu"><span><b>14</b> em</span><span><b>14/14</b> em đủ góp ý</span><span><span class="han">hạn 04/11</span></span><span>hiệu lực 30/10</span></div></div>';
+    var chung = '<div class="chung"><div class="dau" role="button" aria-expanded="true"><span class="tg">▾</span><span>Nhận xét chung cả lớp <span class="phu">· tuỳ chọn</span></span></div><div class="than">' +
+      '<textarea class="o" rows="2" aria-label="Nhận xét chung cả lớp">Lớp nhỏ tuổi, thích trò chơi đóng vai; 4 em ngại nói, cho nói theo cặp trước. Phát âm đuôi -s còn yếu cả lớp.</textarea><span class="tt-luu da">✓ Đã lưu</span></div></div>';
+    var phieu = '<div class="phieu"><div class="phieu-dau"><h3>Ngô Minh Phúc</h3><span class="bd bd-td xong">Đủ</span><span class="phu">em 6/14</span><button class="btn btn-nho tiep">Em tiếp: Nguyễn Hải My ↓</button></div>' +
+      '<dl class="boi-canh"><span class="tde">Tự điền · chỉ đọc</span><dt>Kết quả</dt><dd>Progress · tuần 5/10 · S <span class="diem duoi">14/25</span> · L <span class="diem vuot">21/25</span></dd><dt>Case đang mở</dt><dd>Case Speaking · chưa có PA — chuyển sang Mr. Miguel</dd><dt>Ý thức</dt><dd>Không có</dd></dl>' +
+      '<div class="truong"><span class="nhan"><span class="ky">S</span>Speaking <span class="bb" aria-hidden="true">*</span><span class="phu-t">bắt buộc</span></span>' +
+        '<textarea class="o" rows="4" aria-label="Góp ý Speaking cho Ngô Minh Phúc">Hiểu câu hỏi nhưng trả lời một từ. Cho em câu mẫu "I like … because …" là nói được 2–3 câu. Ngồi cạnh bạn Hân thì mạnh dạn hơn.</textarea>' +
+        '<span class="duoi"><span class="tt-luu da">✓ Đã lưu</span><span class="phu">112 ký tự</span></span></div></div>';
+    var chan = '<div class="pn-chan"><span class="trai"><span>Tự lưu khi rời ô</span><span style="color:var(--ok);font-weight:600">✓ Đủ 14/14 em</span></span><button class="btn">Đóng</button><button class="btn btn-chinh">Xác nhận bàn giao</button></div>';
+    return '<div class="pn" role="dialog" aria-label="Bàn giao CP BE 07" style="height:100%">' + dau + '<div class="pn-than">' + chung + '<div class="md">' + dsEm(EMBE, 'Ngô Minh Phúc', false) + phieu + '</div></div>' + chan + '</div>';
+  }
+  var congViecHa = '<div style="display:grid;gap:12px"><div class="dau-trang"><h1>Công việc</h1><span class="mo" style="font-size:14px"><b class="so" style="color:var(--text)">9</b> việc · Ms. Hà Hoàng</span></div>' +
+    '<section class="nhom-cv" aria-label="Vận hành"><div class="dai">Vận hành <span class="dem">2 việc</span></div>' +
+    '<div class="viec-cv chon"><span class="av">' + SVG_BG + '</span><span><span class="t1">Bàn giao CP FT 137 · L, GVCN</span><br><span class="t2">cho Mr. Phong Đỗ · 8/12 em</span></span><span><span class="han">hạn 04/11</span></span><button class="btn btn-nho btn-chinh">Bàn giao</button></div>' +
+    '<div class="viec-cv"><span class="av">' + SVG_BG + '</span><span><span class="t1">Gọi lại PH 2 em</span><br><span class="t2">CP FT 116 · QL giao 28/10</span></span><span><span class="han">hạn 06/11</span></span><button class="btn btn-nho">Cập nhật</button></div></section></div>';
+  html += khu('k6', '6 · Việc của GV cũ trong Công việc → panel bàn giao (mẫu F của bàn giao chuyển lớp)', [
+    hinh(false, 'Công việc của Ms. Hà Hoàng · nhóm Vận hành', khung(false, 'Ms. Hà Hoàng · GV', congViecHa, { lop: 'cat-nho', viec: 9, dangViec: 1 })),
+    hinh(false, 'hai cột L + GVCN · 8/12 em · Xác nhận tắt', khung(false, 'Ms. Hà Hoàng · GV', panel137(false), { khongNav: 1, noi: 'padding:16px;height:860px;display:block' })),
+    hinh(false, 'một kỹ năng · lớp thường CP BE 07 Speaking · 14/14 · nhận xét chung mở', khung(false, 'Ms. Gemino Thea · GV', panelBe(), { khongNav: 1, noi: 'padding:16px;height:900px;display:block' })),
+    hinh(true, 'panel toàn màn · danh sách trên, phiếu dưới', khung(true, 'Ms. Hà Hoàng', panel137(true), { khongNav: 1, noi: 'padding:0' })),
+    hinh(false, 'GV mới Mr. Phong Đỗ đọc bàn giao (hồ sơ lớp › dải Bàn giao) · hai cột', khung(false, 'Mr. Phong Đỗ · GV', panelDoc(), { khongNav: 1, noi: 'padding:16px;height:760px;display:block' }))
+  ], [
+    'Việc ở nhóm <b>Vận hành</b> của GV cũ (dòng lớp, ô vuông biểu tượng, hạn cột cố định — V18): "Bàn giao {lớp} · {môn} · cho {GV mới} · n/N em". Hạn 5 ngày; quá hạn = đỏ như mọi việc, không chặn. QL thấy ở "Tất cả", <b>Điền thay</b> được (như bàn giao chuyển lớp).',
+    'Panel = <code>BanGiaoPanel</code> mẫu F, bề rộng "toàn": trái danh sách em + trạng thái (✓ Đủ / Thiếu … / Chưa có — chữ, không chỉ màu) + dòng phụ từng cột (L ✓ · GVCN –), ↑ / ↓ đi từng em; phải phiếu em đang chọn: "Tự điền · chỉ đọc" (kết quả, Case đang mở, ý thức) rồi MỘT ô mỗi kỹ năng được bàn giao (bắt buộc).',
+    'Cùng GV cũ + cùng lớp + nhiều kỹ năng → MỘT việc, phiếu có một cột cho từng kỹ năng (L | GVCN cạnh nhau ở 1440, chồng ở 375). Vai GVCN = một "kỹ năng": tình hình chung, phụ huynh, ý thức.',
+    '"Nhận xét chung cả lớp": tuỳ chọn, gập ▸ mặc định. Lưu khi rời ô (chữ "● Đang gõ · lưu khi rời ô" → "✓ Đã lưu"), không mất chữ. "Xác nhận bàn giao" chỉ bật khi đủ mọi em × mọi cột; tắt thì chân nói lý do + "Còn 4 em thiếu góp ý ↑" đưa tới em thiếu đầu tiên.',
+    'GV mới: một thông báo khi việc xong; đọc phiếu ở hồ sơ lớp (dải "Bàn giao" mẫu Đọc như chuyển lớp) — không có việc phải làm. Khung cuối: cùng bố cục F, chỉ đọc, "Tự điền · chụp lúc xác nhận", tên + ngày người viết dưới mỗi ô, chân chỉ "Đóng".',
+    '375: panel toàn màn, "‹ Công việc" về đúng chỗ; danh sách em trên (cuộn), phiếu dưới, ô từng cột chồng nhau 44 px chữ 16; nút chân chia đều.'
+  ]);
+
+  /* ---------- 7 · CX ---------- */
+  html += khu('k7', '7 · CX — chỉ xem: không ô ▾, không Lưu', [
+    hinh(false, 'CX Phạm Thu Hà · tên GV là link hồ sơ', khung(false, 'Phạm Thu Hà · CX', dauTrang(false, { cx: 1 }) +
+      '<div class="bao-chi-xem" role="status">' + SVG_MAT + '<span>Chỉ xem — đổi phân công là việc của Quản lý chi nhánh.</span></div>' + theBangLop({ cx: 1 }) + haiTong(), { cx: 1 })),
+    hinh(true, 'thẻ lớp không có Sửa', khung(true, 'Phạm Thu Hà', dauTrang(true, { cx: 1 }) + '<div class="bao-chi-xem" role="status">' + SVG_MAT + '<span>Chỉ xem — đổi phân công là việc của Quản lý chi nhánh.</span></div>' +
+      '<section class="the bang-the">' + dsTheLop([lopCua('CP FT 116'), lopCua('CP FT 131'), lopCua('CP BE 07')], { cx: 1, demFt: 10, demTh: 6, conFt: '8 lớp FT nữa' }) + '</section>'))
+  ], [
+    'Thấy góc: QL, Quản trị, CX (GV / TVV không thấy). Sửa: QL + Quản trị [PTA quyết]. CX: cùng bảng, ô là chữ (tên GV là link hồ sơ GV), không cột Lưu, không "+ Thêm học viên" (theo quyền như web); tô sáng từ tổng hợp vẫn dùng được.',
+    'Dải "Chỉ xem" dùng câu web sẵn có (Thông tin lớp › Phân công). Quyền máy chủ đúng vai: API ghi phân công từ chối CX dù gọi thẳng.'
+  ]);
+
+  /* ---------- 8 · rỗng ---------- */
+  html += khu('k8', '8 · Rỗng — chi nhánh chưa có lớp (1440) · tìm không ra (375)', [
+    hinh(false, 'chi nhánh Hạ Long mới mở · 13 GV đã có tài khoản', khung(false, QL, dauTrang(false, { rong: 1, cn: 'Hạ Long' }) +
+      '<section class="the bang-the">' + congCu(false, { rong: 1 }) + '<div class="rong"><span class="tieu">Chi nhánh chưa có lớp nào</span><button class="btn btn-chinh">+ Lớp mới</button></div></section>' +
+      '<div class="hai-tong">' + [bangTong('day', { toiDa: 5 }), bangTong('cn', { toiDa: 5 })].map(function (h) { return h.replace(/(<td class="c">)(\d+)(<\/td>)/g, '$1<span class="so0">0</span>$3').replace(/(<td class="c tong-cot">)(\d+)(<\/td>)/g, '$1<span class="so0">0</span>$3').replace('Xem đủ 13 GV', 'Xem đủ 13 GV · đều 0'); }).join('') + '</div>')),
+    hinh(true, 'tìm "Minh" không khớp lớp / GV nào', khung(true, QL, dauTrang(true) + '<section class="the bang-the">' + congCu(true, { tim: 'Minh' }) +
+      '<div class="rong"><span class="tieu">Không có lớp hay GV khớp "Minh"</span><button class="btn btn-ma">Xoá tìm · 16 lớp</button></div></section>'))
+  ], [
+    'Rỗng có MỘT nút làm tiếp (+ Lớp mới — QL có quyền tạo lớp; CX không có nút). Bảng Giảng dạy vẫn liệt kê GV có vai giảng dạy ở chi nhánh, tất cả 0 — để thấy người đang trống.',
+    'Quản trị đang xem phạm vi "toàn hệ thống": góc này cần MỘT chi nhánh (GV theo chi nhánh) → thay bảng bằng "Chọn chi nhánh để xem phân công" + ô chi nhánh (không vẽ). Lỗi tải / đang tải: như mọi góc (ErrorState + Thử lại · Skeleton theo hình bảng).'
+  ]);
+
+  /* ---------- 9 · hồ sơ lớp ---------- */
+  var panelTtLop = '<div style="position:relative;width:480px"><div class="pn" role="dialog" aria-label="Thông tin lớp CP BE 07">' +
+    '<div class="pn-dau"><div class="pn-h1"><span class="loai">THÔNG TIN LỚP</span><button class="x" aria-label="Đóng">✕</button></div><h2>CP BE 07</h2><div class="pn-ngu"><span>Beginner</span><span><b>14</b> HV</span><span>tuần <b>6/10</b></span></div></div>' +
+    '<div class="pn-than" style="gap:12px"><div class="phan-tt gap"><div class="dau">Lớp<span class="phai"><button class="btn btn-nho">Sửa</button></span></div></div>' +
+    '<div class="phan-tt"><div class="dau">Phân công<span class="nhan-nhap" style="margin-left:6px">Nháp · 1 ô đổi</span></div><div class="than"><div class="luoi-pc">' +
+      ['CN', 'L', 'R', 'W', 'S'].map(function (c) {
+        var g = lopCua('CP BE 07').o[c], doi = c === 'S'; if (doi) g = 'miguel';
+        return '<label>' + (c === 'CN' ? 'GVCN' : c) + '</label><button class="o-gv' + (doi ? ' doi' : '') + '" aria-label="' + (c === 'CN' ? 'GVCN' : TEN_MON[c]) + ': ' + GV[g].t + (doi ? ', nháp, trước: Ms. Gemino Thea' : '') + '"><span class="t"><span>' + GV[g].t + '</span>' + (doi ? '<span class="p">trước: Ms. Gemino Thea</span>' : '') + '</span></button>';
+      }).join('') +
+    '</div><span class="phu" style="font-size:12px">Mỗi ô một người. Một người nhận nhiều ô được.</span><span class="lk" style="font-weight:500;font-size:12px">▸ Đã từng dạy lớp này (2)</span></div></div></div>' +
+    '<div class="pn-chan" style="justify-content:flex-end"><button class="btn">Huỷ</button><button class="btn btn-chinh">Lưu phân công</button></div></div>' +
+    hopLuu({ id: 'c', lop: 'CP BE 07', ng: '1 ô đổi · 14 HV', vt: 'left:500px;bottom:0',
+      chuHl: 'Mr. Miguel dạy Speaking và nhận Case / PA / việc từ hôm nay.',
+      caps: [{ mon: 'S', cu: 'thea', moi: 'miguel', ct: 'Chuyển sang Mr. Miguel: <b>2</b> Case · <b>1</b> PA.' }],
+      ket: '<span>→ <b>1 việc</b> cho Ms. Gemino Thea · Speaking × 14 em = <b>14 góp ý</b> · <span class="han">hạn 04/11</span></span>',
+      xem: 'Ms. Gemino Thea vẫn xem lớp này tới khi xong bàn giao, ít nhất tới 06/11.', nut: 'Lưu · tạo 1 việc bàn giao' }) + '</div>';
+  var daiXem = function (dt) {
+    return '<div class="dai-xem" role="status"><span>' + SVG_MAT.replace('aria-hidden="true"', 'aria-hidden="true" style="vertical-align:-4px;margin-right:8px"') + '<b>Chỉ xem</b> · Speaking đã giao cho <a class="ten-gv">Mr. Miguel</a> từ 30/10 · còn xem tới khi xong bàn giao, ít nhất tới 06/11</span>' +
+      '<span class="phai"><button class="btn btn-nho btn-chinh">Bàn giao · 9/14 em</button></span></div>';
+  };
+  var hoSoGvCu = function (dt) {
+    return '<div class="dau-lop"><span class="hang-0">‹ Công việc</span><div class="hang-1"><h1>CP BE 07</h1><span class="meta">Beginner · <b>14</b> HV · tuần <b>6/10</b></span></div>' +
+      '<div class="hang-gv"><span><abbr>GVCN</abbr><a>Ms. Linh Nguyễn</a></span><span><abbr>L · R</abbr><a>Ms. Linh Nguyễn</a></span><span><abbr>W</abbr><a>Mr. Duy Anh Nguyễn</a></span><span><abbr>S</abbr><a>Mr. Miguel</a></span></div></div>' + daiXem(dt) +
+      '<div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Học viên</button><button class="tab" role="tab" aria-selected="false">Ý thức &amp; Phối hợp</button>' + (dt ? '' : '<button class="tab" role="tab" aria-selected="false">Phân tích lớp</button>') + '</div>' +
+      '<section class="the" style="padding:14px 16px;color:var(--text-dim);font-size:14px">Bảng học viên · điểm · Case — chỉ đọc (không Nhập điểm, + Case, ⋯ sửa).</section>';
+  };
+  html += khu('k9', '9 · Hồ sơ lớp: cùng câu hỏi ở ⋯ › Thông tin lớp › Phân công · GV cũ chỉ xem sau hiệu lực', [
+    hinh(false, 'QL · Thông tin lớp › Phân công › Sửa → Lưu phân công → cùng hộp', khung(false, QL, panelTtLop, { lop: 'cat-rong', khongNav: 1, noi: 'padding:16px 24px;min-height:640px' })),
+    hinh(false, 'Ms. Gemino Thea mở CP BE 07 sau hiệu lực · chưa xong bàn giao', khung(false, 'Ms. Gemino Thea · GV', hoSoGvCu(false), { lop: 'cat', viec: 6 })),
+    hinh(true, 'GV cũ · dải chỉ xem', khung(true, 'Ms. Gemino Thea', hoSoGvCu(true)))
+  ], [
+    'Thông tin lớp › Phân công giữ nguyên (lưới ô, "Đã từng dạy lớp này", FOU Tách / Gộp, GVCN chỉ đổi ô bộ môn): chỉ thêm — bấm "Lưu phân công" mà có cặp A → B → CÙNG hộp hiệu lực + bàn giao (cùng đường lưu với bảng).',
+    'GV cũ sau hiệu lực: hồ sơ lớp chỉ đọc (hồ sơ, học viên, điểm), dải xám vạch trung tính "Chỉ xem · {môn} đã giao cho {GV mới} từ {ngày} · còn xem tới khi xong bàn giao, ít nhất tới {ngày}" + nút việc "Bàn giao · n/N em" (mở panel khu 6). Hết mốc (lâu hơn của 1 tuần và xong bàn giao) → mất quyền xem, lớp không còn trong danh sách của GV.',
+    'Hàng GV bộ môn đầu hồ sơ lớp đã đổi tên S → Mr. Miguel (đúng phân công mới); GV cũ không còn nút Nhập điểm / + Case ở lớp này.'
+  ]);
+
+  document.getElementById('noi-dung').innerHTML = html;
+  document.getElementById('noi-dung').style.cssText = 'display:grid;gap:44px';
+  /* 375: tab góc đang chọn luôn trong khung */
+  var cuon = function () { Array.prototype.forEach.call(document.querySelectorAll('[data-cuon]'), function (t) { t.scrollLeft += t.children[1].getBoundingClientRect().left - t.getBoundingClientRect().left - 8; }); };
+  cuon(); window.addEventListener('load', cuon); if (document.fonts) document.fonts.ready.then(cuon);
+})();
+</script>
+</body>
+</html>
