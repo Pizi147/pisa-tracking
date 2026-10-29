@@ -103,7 +103,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
           </span>
         ),
         chinh: viet && cho ? (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy}
+          <button type="button" className={`btn btn-primary min-h-[44px] sm:min-h-0 ${thieu.length ? "opacity-50" : ""}`} onClick={xacNhan} disabled={busy}
             aria-disabled={thieu.length > 0} title={thieu.length ? t('Còn {n} em thiếu góp ý', { n: thieu.length }) : undefined}>{t('Xác nhận bàn giao')}</button>
         ) : undefined,
       }}>

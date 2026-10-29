@@ -119,7 +119,7 @@ function daiBanGiaoGv(p: Principal, classId: number, ct: string | null, rows: an
   const tong = rows.find((r) => r.k === 'hv')?.a ?? 0;
   const banGiaoGv: DaiLop['banGiaoGv'] = [];
   for (const b of rows.filter((r) => r.k === 'bgv')) {
-    const c = cot.filter((x) => x.a === b.a);
+    const c = cot.filter((x) => x.a === b.a).sort((x, y) => Number(x.b === 'gvcn') - Number(y.b === 'gvcn'));   // kỹ năng trước, GVCN cuối (như phiếu)
     if (!c.length) continue;
     const mo = b.c === 'mo';
     const viet = mo && (b.e === p.userId || (ql && (b.e === null || homNay > b.d)));

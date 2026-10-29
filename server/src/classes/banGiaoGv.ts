@@ -176,7 +176,7 @@ export function phieuBanGiaoGv(p: Principal, id: number): PhieuBanGiaoGvDto {
   const conn = db();
   const ct = (b.ct ?? null) as string | null;
   const cot = (conn.prepare(
-    `SELECT m.mon, m.nguoi_moi, u.full_name FROM ban_giao_gv_mon m JOIN users u ON u.id = m.nguoi_moi WHERE m.ban_giao_id = ? AND m.trang_thai = 'mo' ORDER BY m.id`,
+    `SELECT m.mon, m.nguoi_moi, u.full_name FROM ban_giao_gv_mon m JOIN users u ON u.id = m.nguoi_moi WHERE m.ban_giao_id = ? AND m.trang_thai = 'mo' ORDER BY m.mon = 'gvcn', m.id`,
   ).all(id) as any[]).map((r) => ({ mon: r.mon as string, nhan: nhanCotBg(ct, r.mon), ten: r.mon === 'gvcn' ? 'Chủ nhiệm' : tenMon(ct, r.mon), nguoiMoi: { id: r.nguoi_moi as number, ten: r.full_name as string } }));
   const { ds, chup } = emCuaPhieu(b);
   const tuDien = chup ? null : tuDienTheoLo({ id: b.class_id, ct }, ds.map((e) => ({ id: e.id, student_id: e.id, lop_dich_id: null })));
@@ -275,7 +275,7 @@ export function viecBanGiaoGv(userId: number | null, branchId?: number | null): 
     `SELECT b.id, b.class_id, b.nguoi_lam, b.han, c.code, c.programme_code AS ct, m.mon, u.full_name AS moi
        FROM ban_giao_gv b JOIN classes c ON c.id = b.class_id
        JOIN ban_giao_gv_mon m ON m.ban_giao_id = b.id AND m.trang_thai = 'mo' JOIN users u ON u.id = m.nguoi_moi
-      WHERE ${dk.join(' AND ')} ORDER BY b.han, b.id, m.id`,
+      WHERE ${dk.join(' AND ')} ORDER BY b.han, b.id, m.mon = 'gvcn', m.id`,
   ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined)) as any[];
   if (!rows.length) return [];
   const viec = new Map<number, { r: any; cot: string[]; moi: string[] }>();

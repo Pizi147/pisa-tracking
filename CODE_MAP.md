@@ -354,6 +354,8 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Xét lại lộ trình (lô, Hoàn tác) | `web/src/modules/classes/PanelXetLai.tsx` · `server/src/normal/xetLai.ts` (`tapXetLai`) · `server/src/normal/cuoiKhoa.ts` (`emXetLaiLoTrinh`) |
 | FT → lớp thường (MT0, Mock chưa điểm) | `server/src/fasttrack/mt0.ts` (`keHoachVeThuong`, `huyKhiVeThuong`) |
 | Phiếu bàn giao · quyền chuyển lớp | `web/src/modules/classes/BanGiaoPanel.tsx` · `server/src/classes/banGiao.ts` (`suaBanGiao`) · `server/src/classes/quyenChuyenLop.ts` |
+| PR-B: khung bàn giao chung · "Cùng GV · không cần bàn giao" · nháp nhận xét chung | `web/src/modules/classes/banGiaoChung.tsx` (`DsEmBanGiao`, `TuDienEm`, `OGopY`) · `server/src/classes/banGiao.ts` (`cungGvTuPhanCong`, `luuNhapNhanXet`) |
+| PR-B: bàn giao khi đổi GV (việc, phiếu, dải GV cũ chỉ xem) | `server/src/classes/banGiaoGv.ts` (`dongBoViecBanGiao`, `phieuBanGiaoGv`, `viecBanGiaoGv`) · `web/src/modules/classes/BanGiaoGvPanel.tsx` · `daiChuyenLop.ts` (`daiBanGiaoGv`) · `DaiChuyenLop.tsx` (`DaiDoiGv`) · migrate `prBanGiaoGv.ts` |
 | Các dải trạng thái ở hồ sơ lớp / HV | `web/src/modules/classes/DaiChuyenLop.tsx` · `server/src/classes/daiChuyenLop.ts` |
 | Thẻ Chờ duyệt liên quan | `server/src/duyet/loaiYeuCau.ts` · `shared/domain/yeuCauDuyet.ts` |
 | Bảng `lenh_chuyen_lop`, `ban_giao_mon` · demo | `server/src/schema.sql` · `server/src/seed/ctSeed.ts` |
