@@ -3,7 +3,7 @@
  * không phụ thuộc số Case. Dùng cho roster lớp (cột Việc tiếp theo / Theo dõi), trang Học viên & Lớp và `GET /classes/:id/can-ho-tro`.
  *
  * Luật KHÔNG viết lại: `trangThaiCaseV4` + `viecTiepCuaCase` (`shared/domain/sosV4.ts`) — cùng đầu vào như `caseDetail` (cases.ts) — và
- * `mocChuPa`. Lô 400, MỖI BẢNG MỘT CÂU: `sosCaseStateMany` · `sos_cases` (tên riêng, lý do hệ thống đóng) · `case_interventions` ⟕ users ·
+ * `mocChuPa`. Lô `LO_JSON` (một tham số JSON — S5), MỖI BẢNG MỘT CÂU: `sosCaseStateMany` · `sos_cases` (tên riêng, lý do hệ thống đóng) · `case_interventions` ⟕ users ·
  * `case_milestones`. TUYỆT ĐỐI không gọi `sosCaseState(id)` / `mtKeTheoPa(id)` / `caseCardOf` trong vòng lặp (N+1 trên Turso).
  */
 import { DS_JSON, db, theoLoJson } from '../db.ts';
@@ -39,7 +39,6 @@ export type CaseChiTiet = {
   banGiaoTu: string | null;
 };
 
-const LO = 400;
 const cua = <T>(m: Map<number, T[]>, k: number) => m.get(k) ?? [];
 const gom = <T extends { case_id: number }>(rows: T[]) => {
   const m = new Map<number, T[]>();

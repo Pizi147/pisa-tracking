@@ -66,7 +66,8 @@ export async function runPrS5JsonEachTests(t: YThucTestKit) {
 
   /* Đường nóng (b, c): GV / QL / TVV / GVCN lớp thường. */
   const lopFt = classId('MB FT 101'), lopThuong = classId('MB FOU 12');
-  const hv = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 1`).get(lopFt) as any).id;
+  /* Em GVCN mở được hồ sơ LÚC CHẠY (phép kiểm trước — vd PC-GV-A — có thể đổi phân công / lớp của em đầu danh sách): thử lần lượt, chọn em đầu tiên trả 200. */
+  const ungVienHv = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 20`).all(lopFt) as any[]).map((r) => r.id as number);
   const tvv = (conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id
     WHERE r.key = 'consultant' AND b.code = 'CP' ORDER BY ur.user_id LIMIT 1`).get() as any).id;
   const U = { GVCN: P.coreTeacher.userId, GVBM: P.subjectTeacher.userId, QL: P.mbManager.userId, GVCN_THUONG: P.normalCoreTeacher.userId, TVV: tvv };
@@ -78,7 +79,7 @@ export async function runPrS5JsonEachTests(t: YThucTestKit) {
     ['TVV', '/tong-quan/tvv'], ['TVV', '/tong-quan/viec-cua-toi'], ['TVV', '/hoc-vien-lop/theo-vai'],
     ['GVCN', '/hoc-vien-lop'], ['GVBM', '/hoc-vien-lop'], ['QL', '/hoc-vien-lop'], ['QL', '/hoc-vien-lop?phamVi=chi-nhanh'],
     ['GVCN', '/cham/lich-test'], ['QL', '/cham/lich-test'],
-    ['GVCN', `/classes/${lopFt}/roster`], ['QL', `/classes/${lopFt}/roster`], ['GVCN', `/students/${hv}`],
+    ['GVCN', `/classes/${lopFt}/roster`], ['QL', `/classes/${lopFt}/roster`],
   ];
   /* Ghi mọi câu (văn bản + tham số) ở `all` / `run` — `get` của câu dùng lại đi qua `all` (db.ts PR-BN). Gỡ móc ngay sau khi gọi xong. */
   const ghi: { sql: string; args: unknown[] }[] = [];
@@ -86,6 +87,11 @@ export async function runPrS5JsonEachTests(t: YThucTestKit) {
   const goc = { all: stProto.all, run: stProto.run };
   const server = createApp().listen(0);
   try {
+    const goi = (vai: keyof typeof U, url: string) => fetch(`http://127.0.0.1:${(server.address() as any).port}/api${url}`, { headers: { cookie: `pisa_demo_session=${createSession(U[vai])}` } });
+    let hv: number | undefined;
+    for (const id of ungVienHv) { const r = await goi('GVCN', `/students/${id}`); await r.text(); if (r.status === 200) { hv = id; break; } }
+    assert(hv !== undefined, `GVCN không mở được hồ sơ em nào trong ${ungVienHv.length} em lớp MB FT 101`);
+    DUONG.push(['GVCN', `/students/${hv}`]);
     for (const m of ['all', 'run'] as const) {
       stProto[m] = function (this: { sql?: string }, ...args: unknown[]) {
         if (this.sql) ghi.push({ sql: this.sql, args });

@@ -175,6 +175,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   const classesMod: any = await import('../classes/classes.ts');
   const dongHv: any = await import('../classes/dongHocVien.ts');
   const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const { LO_JSON } = await import('../db.ts');
   const moTatCa = () => casesMod.listCases(P.admin, {}).rows.filter((c: any) => c.status !== 'done' && c.studentId !== null) as any[];
 
   check('PR-HVL (2) · sosCaseStateMany khớp định nghĩa độc lập (`awaitingCauseCaseIds`, `LA_CASE_SOS`) trên mọi Case demo; Case lạ → rỗng', () => {
@@ -210,8 +211,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(mo.length > 6, 'cần nhiều Case');
     const dem = (ds: any[]) => { const a = soCauSql(); caseLop.chiTietCaseMo(ds); return soCauSql() - a; };
     const it = dem(mo.slice(0, 3)); const tat = dem(mo);
-    /* PR-LT2a: Giữa khoá tự tạo Case nên Case mở có thể vượt 400 — mỗi LÔ 400 thêm đúng 4 câu (một câu mỗi bảng), không thêm theo số Case. */
-    eq(tat, it + 4 * (Math.ceil(mo.length / 400) - 1), 'Chênh số câu giữa 3 Case và mọi Case (chỉ theo số lô 400)');
+    /* PR-LT2a: Case mở có thể vượt 400 — mỗi LÔ thêm đúng 4 câu (một câu mỗi bảng), không thêm theo số Case. S5: lô = `LO_JSON` (một tham số JSON). */
+    eq(tat, it + 4 * (Math.ceil(mo.length / LO_JSON) - 1), `Chênh số câu giữa 3 Case và mọi Case (chỉ theo số lô ${LO_JSON})`);
     assert(it <= 6, `${it} câu cho một lô`);
   });
 
