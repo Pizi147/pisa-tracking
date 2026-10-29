@@ -9787,6 +9787,9 @@ await runPrS5JsonEachTests({ check, checkAsync, assert, conn, P, classId } as an
 // ==================================================================== PANEL-MC (dòng điểm đúng lượt + dữ liệu panel — PANEL-V10, N30)
 const { runPrPanelMcTests } = bocTep('prPanelMc', await import('./prPanelMc.tests.ts'));
 await runPrPanelMcTests({ check, checkAsync, assert, conn, P, TODAY } as any);
+// ==================================================================== PANEL-CHUNG (mẫu dòng điểm + dòng panel có lý do — PANEL-V10)
+const { runPrPanelChungTests } = bocTep('prPanelChung', await import('./prPanelChung.tests.ts'));
+await runPrPanelChungTests({ check, checkAsync, assert, conn } as any);
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);

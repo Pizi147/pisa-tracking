@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { khoaSoLieu, metricById } from '@shared/domain/index.ts';
+import { khoaSoLieu, metricById, tenMonNgan } from '@shared/domain/index.ts';
 import { useMoSoLieu } from '../lib/quayLai.ts';
 import { useApi } from '../lib/useApi.ts';
 import { DanhSachSoLieu, mauOSo, NganDanhSach, VUNG_BAM_SO, type DongSoLieu, type PhamViSoLieu } from './SoLieu.tsx';
@@ -59,5 +59,7 @@ export function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string;
   if (!open) return null;
   /* OV-12e: cùng panel mở rộng dòng với ô số trong sổ (`NganDanhSach`). M6 6b-1 (bảng kê 0.2): tiêu đề = chữ nơi gọi (kèm ngữ cảnh: chi nhánh, lớp)
      — không đổi sang tiêu đề máy chủ khi tải xong (đầu panel không nhảy, không mất ngữ cảnh). */
-  return <NganDanhSach tieuDe={tieuDe} data={data} loading={loading} error={error} reload={reload} onDong={onClose} />;
+  /* PANEL-V10: chỉ số theo một kỹ năng (`skill=` trong nguồn) → cột đó nền nhấn trong dòng điểm. */
+  const kn = new URLSearchParams(nguon.split('?')[1] ?? '').get('skill');
+  return <NganDanhSach tieuDe={tieuDe} data={data} loading={loading} error={error} reload={reload} onDong={onClose} knNhan={kn ? tenMonNgan(null, kn) : null} />;
 }
