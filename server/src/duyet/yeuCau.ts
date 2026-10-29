@@ -6,6 +6,7 @@
  * nằm ở `loaiYeuCau.ts` (giao kèo). Thẻ "chết" đóng bằng QUÉT KHI ĐỌC (Q2), không có tiến trình nền.
  */
 import { db, theoLo, tx } from '../db.ts';
+import { t } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
@@ -14,11 +15,14 @@ import { nho, quetGioiHan, trongBoNho, xoaNho } from '../platform/nguCanhRequest
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import {
   PERMISSIONS, LOAI_NGUOI_XIN_SUA, LOAI_YC_META, LY_DO_RUT, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
-  nhomCuaLoai, sapThe,
+  nhomCuaLoai, sapThe, chipSosTuKetQua,
   type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto,
 } from '../../../shared/domain/index.ts';
 import { DINH_NGHIA_LOAI, dinhNghiaCua, type NguCanhThe, type YeuCauRow } from './loaiYeuCau.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
+import { standingFor } from '../students/standing.ts';
+import { diemTuStanding } from '../worklist/diemDong.ts';
+import { diemHvKhiKiem } from '../worklist/metrics.ts';
 
 const P_DUYET = PERMISSIONS.REQUEST_APPROVE;
 /** "Đã xử lý" trong hộp và "bị từ chối" ở Tổng quan GV nhìn lại 30 ngày; "Yêu cầu của tôi" 60 ngày. */
@@ -361,7 +365,54 @@ export function hopChoDuyet(p: Principal, f: {
   const ngu = napNguCanh(conn, rows, homNay);
   const huyDuoc = xem === 'da-xu-ly' ? theHuyDuoc(conn, rows) : new Set<number>();
   const the = rows.map((r) => (huyDuoc.has(r.id) ? { ...theRa(r, ngu), coTheHuy: true } : theRa(r, ngu)));
+  if (xem === 'cho') ganBoiCanh(the);
   return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc, khacChiNhanh };
+}
+
+/**
+ * PANEL-MC (T11): nhật ký của MỘT thẻ = dòng `audit_logs` của chính thẻ (`yeu_cau_duyet`) + của đối tượng gốc (`doi_tuong_loai` → `entity_type`)
+ * + của Case khi đối tượng là PA. Có chỉ mục `idx_audit_entity`; dùng chung cho số "Lịch sử · n" và danh sách — không lệch nhau.
+ */
+const LOAI_NHAT_KY: Record<string, string> = { intervention: 'case_intervention', attempt: 'assessment_attempt' };
+const ENTITY_SQL = `CASE y.doi_tuong_loai ${Object.entries(LOAI_NHAT_KY).map(([k, v]) => `WHEN '${k}' THEN '${v}'`).join(' ')} ELSE y.doi_tuong_loai END`;
+const NOI_NHAT_KY = `JOIN audit_logs a ON (a.entity_type = 'yeu_cau_duyet' AND a.entity_id = y.id)
+  OR (a.entity_type = ${ENTITY_SQL} AND a.entity_id = y.doi_tuong_id)
+  OR (y.doi_tuong_loai = 'intervention' AND a.entity_type = 'sos_case' AND a.entity_id = (SELECT iv.case_id FROM case_interventions iv WHERE iv.id = y.doi_tuong_id))`;
+
+/** Thẻ Chờ duyệt: chip SOS + dòng điểm (MỘT `standingFor` cho mọi em của các thẻ) + số Lịch sử (MỘT câu GROUP BY). */
+function ganBoiCanh(the: TheYeuCauDto[]) {
+  if (!the.length || diemHvKhiKiem.tat) return;
+  const st = standingFor([...new Set(the.map((x) => x.hocVienId).filter((x): x is number => x != null))]);
+  const so = new Map<number, number>();
+  theoLo(the.map((x) => x.id), (lo, ph) => {
+    for (const r of db().prepare(`SELECT y.id, COUNT(a.id) AS n FROM yeu_cau_duyet y ${NOI_NHAT_KY} WHERE y.id IN (${ph}) GROUP BY y.id`).all(...lo) as any[]) so.set(r.id, r.n);
+  });
+  for (const x of the) {
+    const s = x.hocVienId != null ? st.get(x.hocVienId) : undefined;
+    x.sos = s && (s.sosLevel ?? 0) > 0 ? { muc: s.sosLevel!, tam: s.provisional, kyNang: chipSosTuKetQua(s)?.kyNang ?? [] } : null;
+    x.diemHv = s ? diemTuStanding(s) : null;
+    x.soLichSu = so.get(x.id) ?? 0;
+  }
+}
+
+const NHAN_HANH_DONG: Record<string, string> = {
+  'request.create': 'Gửi yêu cầu', 'request.approve': 'Duyệt', 'request.decline': 'Từ chối', 'request.withdraw': 'Rút yêu cầu',
+  'request.edit': 'Sửa yêu cầu', 'request.answer': 'Trả lời', 'request.answer_edit': 'Sửa trả lời', 'request.undo': 'Hoàn tác',
+};
+
+/** `GET /lich-su?loai=yeu-cau&id=` — quyền = quyền xem thẻ ở hộp Chờ duyệt (`trongPhamVi`); ≤ 50 dòng mới nhất trước. */
+export function lichSuYeuCau(p: Principal, id: number): { dong: { luc: string; nguoi: string | null; chu: string }[] } {
+  if (!Number.isInteger(id) || id < 1) throw badRequest('Thiếu đối tượng cần xem lịch sử.');
+  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống mở được hộp Chờ duyệt.');
+  const conn = db();
+  const y = conn.prepare('SELECT * FROM yeu_cau_duyet WHERE id = ?').get(id) as any;
+  if (!y || !trongPhamVi(p, [y]).length) throw forbidden('Yêu cầu này nằm ngoài phạm vi bạn được xem.');
+  const dong = conn.prepare(
+    `SELECT a.action, a.entity_label, a.created_at, u.full_name FROM yeu_cau_duyet y ${NOI_NHAT_KY} LEFT JOIN users u ON u.id = a.actor_user_id
+      WHERE y.id = ? ORDER BY a.id DESC LIMIT 50`,
+  ).all(id) as any[];
+  return { dong: dong.map((r) => ({ luc: r.created_at, nguoi: r.full_name ?? null,
+    chu: NHAN_HANH_DONG[r.action] ? t(NHAN_HANH_DONG[r.action] as Parameters<typeof t>[0]) : [r.action, r.entity_label].filter(Boolean).join(' · ') })) };
 }
 
 /** Yêu cầu của tôi: mọi thẻ đang chờ + thẻ đã xử lý trong 60 ngày gần nhất. */

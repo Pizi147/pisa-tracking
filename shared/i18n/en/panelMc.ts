@@ -7,4 +7,10 @@ export const EN_PANEL_MC = {
   '{goc}, dưới Target {moc}': (b) => `${b.goc}, below Target ${b.moc}`,
   '{goc}, dưới ngưỡng {moc}': (b) => `${b.goc}, below pass mark ${b.moc}`,
   'chấm chéo': 'cross-marking',
+  /* Lịch sử yêu cầu (`/lich-su?loai=yeu-cau`). */
+  'Gửi yêu cầu': 'Request sent',
+  'Rút yêu cầu': 'Request withdrawn',
+  'Sửa yêu cầu': 'Request edited',
+  'Trả lời': 'Answered',
+  'Sửa trả lời': 'Answer edited',
 } satisfies Record<string, Dich>;

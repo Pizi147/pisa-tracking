@@ -2595,8 +2595,10 @@ api.get('/students/:id', requireAuth, wrap((req) => {
 api.get('/students/:id/lich-su-sua', requireAuth, wrap((req) => lichSuSuaSvc.lichSuSua(principalOf(req), pInt(req, 'id'),
   { loai: qStr(req, 'loai'), truoc: qInt(req, 'truoc') })));
 /* OV-15g (C22): Lịch sử thay đổi — một đường cho mọi đối tượng (`loai` = hv | lop | phan-cong | gop-y | nhap-hv | thi-that | o); quyền = quyền xem đối tượng. */
-api.get('/lich-su', requireAuth, wrap((req) => lichSuSvc.lichSu(principalOf(req),
-  { loai: qStr(req, 'loai'), id: qInt(req, 'id'), loc: qStr(req, 'loc'), tiep: qInt(req, 'tiep') })));
+/* PANEL-MC (T11): `loai=yeu-cau` — nhật ký một thẻ Chờ duyệt (`{ dong: [{ luc, nguoi, chu }] }`), quyền = quyền xem thẻ. */
+api.get('/lich-su', requireAuth, wrap((req) => (qStr(req, 'loai') === 'yeu-cau'
+  ? yeuCauSvc.lichSuYeuCau(principalOf(req), qInt(req, 'id') ?? 0)
+  : lichSuSvc.lichSu(principalOf(req), { loai: qStr(req, 'loai'), id: qInt(req, 'id'), loc: qStr(req, 'loc'), tiep: qInt(req, 'tiep') }))));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
