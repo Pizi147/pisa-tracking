@@ -253,6 +253,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **QUYEN-LIEN-HE (PR riêng, quyền):** luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
 - **PANEL [XM] (#736 PANEL-CHUNG):** XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
 - **LECH-CACH-CHAM (một nguồn):** em đổi lớp FT ↔ lớp thường: `standingFor` chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt → ✓ / ✗ từng kỹ năng ở panel (diemTuEval) có thể khác hồ sơ / SOS. Lỗi có từ trước, #733 phép M1 tạm bỏ qua em đó (in số em bỏ qua). Sửa: một hàm chọn cách chấm cho lượt (theo chương trình lớp của lượt) dùng cả hai đường.
+- **TAB-A11Y:** tab Chưa đạt · Đạt (panel số, `SoLieu.tsx`) và các `role="tab"` khác chưa có `aria-controls`, chưa đi bằng phím ← → (có từ trước; nguồn rà #736). Sửa ở thành phần tab chung một lần.
 - **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
 
 ### 30/10 (tối) — chủ SP duyệt mockup PANEL-V10 #723 (KHÔNG mockup lại; chỉnh ghi ở đây, kế hoạch code phải theo)
