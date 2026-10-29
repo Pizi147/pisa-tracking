@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { createPortal } from 'react-dom';
-import { api, invalidate } from '../../lib/api.ts';
+import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from '../cham/thongBaoVang.ts';
 import { Info, Status } from '../../ui/ui.tsx';
@@ -182,11 +182,10 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       if (r?.goVang?.tuanVe) {
         toast.push('ok', t('Đã bỏ vắng {x}{x2} · {x3} {tuanVe}', { x: ENTRY_SKILL_SHORT[skill as EntrySkill], x2: tenHv ? ` · ${tenHv}` : '', x3: r.goVang.giuLich ? t('giữ') : t('về'), tuanVe: r.goVang.tuanVe }));
       }
-      invalidate('/attempts');
-      invalidate('/tong-quan');
-      invalidate('/classes');
-      invalidate('/students');
-      invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
+      /* W1: điểm thường → gộp vô hiệu 1,5 s (mỗi ô từng kéo cả lưới lớp + /my-work tải lại); "-" / bỏ vắng / khôi phục đổi lịch → ngay.
+         PR-S6F-a: /my-work có trong danh sách — badge quá hạn của GV vẫn tải lại sau khi nhập điểm. */
+      const ds = ['/attempts', '/tong-quan', '/classes', '/students', '/my-work'];
+      if (patch.noShow !== undefined || patch.khoiPhuc || r?.goVang) ds.forEach(invalidate); else invalidateGop(...ds);
       /* K4: gõ "-" và nút "Vắng" (điện thoại) cùng đi qua đây — một thông báo ngắn; LUAT-34: kèm "Hoàn tác" 10 giây (= gỡ "-"). */
       if (patch.noShow === true) {
         thongBaoVang(toast, `${attemptId}:${skill}`, ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv, r?.vang, () => void save(skill, { noShow: false }));

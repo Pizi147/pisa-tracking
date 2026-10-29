@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, api, boLoiGoiDangBay, cachedGet, onInvalidate, theHe } from './api.ts';
+import { ApiError, api, boLoiGoiDangBay, cachedGet, onInvalidate, theHe, xaGop } from './api.ts';
 
 /*
  * PR-S6F-b (D14): GET ĐANG BAY cùng đường dẫn dùng chung MỘT lời gọi — Tổng quan có nhiều khối cùng đọc `/my-work`, `/tong-quan/quan-ly`.
@@ -114,6 +114,7 @@ export function batDauTai<T>(path: string | null, b: {
   }
   // Đổi sang truy vấn khác thì mới bỏ dữ liệu cũ đi.
   if (currentPath.current !== path) {
+    xaGop(path);   // W1: còn vô hiệu đang gộp cho đường này → xả trước, không dùng bản lưu cũ
     const banXem = daXem.get(path) as T | undefined;
     /* HV-LOC: trang lọc / tìm theo truy vấn — gỡ dữ liệu làm trang cha hiện khung chờ, gỡ luôn ô đang gõ (mất focus, hỏng bộ gõ). */
     if (banXem === undefined && b.giuCu && coDuLieu.current) b.setCu?.(true);

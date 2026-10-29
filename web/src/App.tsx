@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
+import { xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { useGhiNguon, useTieuDeTab } from './lib/quayLai.ts';
@@ -196,6 +197,8 @@ export default function App() {
   const toast = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  /* W1: đổi trang (rời trang nhập điểm…) → xả mọi vô hiệu đang gộp, badge / Công việc đúng ngay khi nhìn. */
+  useEffect(() => { xaGop(); }, [location.pathname]);
   useGhiNguon();   // PR-OV5b: nguồn của nút "‹ Quay lại" ở mọi hồ sơ
   useTieuDeTab(!!session?.authenticated);   // OV-11i (P1-3): tiêu đề tab theo màn
   /* HOTFIX-3: đã có dữ liệu mà tải lại nền lỗi → giữ bảng, báo nhỏ (một toast cho mọi khối). */
