@@ -93,6 +93,7 @@ import { migratePrMonDangKy } from './migrate/prMonDangKy.ts';
 import { migratePrS1 } from './migrate/prS1.ts';
 import { migratePrPhanCongGv } from './migrate/prPhanCongGv.ts';
 import { migratePrChuongNhe } from './migrate/prChuongNhe.ts';
+import { migrateDonLuong } from './migrate/donLuong.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -422,6 +423,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* S1: chỉ mục một phần assessment_scores(examiner_user_id) — chỉ số MỘT GV lấy lượt GV đã chấm chéo không quét cả bảng điểm (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrS1(conn, applied));
     /* PC-GV-A: bảng doi_phan_cong — đổi phân công có hiệu lực, lịch đổi tương lai, GV cũ chỉ xem có hạn (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrPhanCongGv(conn, applied));
     /* CHUONG-NHE: cột users.chuong_dong_bo_luc — mốc đồng bộ chuông ở DB thay bộ nhớ tiến trình (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrChuongNhe(conn, applied));
+    /* DON-LUONG K6: chỉ mục idx_scores_no_show — lưới tuần gốc có hàng em vắng dời hết (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migrateDonLuong(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

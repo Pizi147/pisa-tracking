@@ -2317,3 +2317,6 @@ CREATE TABLE doi_phan_cong (
 CREATE INDEX ix_doi_pc_lop ON doi_phan_cong (class_id, trang_thai);
 CREATE INDEX ix_doi_pc_cu ON doi_phan_cong (nguoi_cu, trang_thai);
 CREATE INDEX ix_doi_pc_cho ON doi_phan_cong (trang_thai, hieu_luc);
+
+-- DON-LUONG K6: em vắng dời hết vẫn có hàng ở lưới tuần gốc (`classScoreSheet`, vế UNION theo chỉ mục).
+CREATE INDEX IF NOT EXISTS idx_scores_no_show ON assessment_scores (no_show_period_id) WHERE no_show_period_id IS NOT NULL;

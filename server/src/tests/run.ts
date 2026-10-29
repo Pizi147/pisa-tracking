@@ -9835,6 +9835,9 @@ await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== LOP-1-LOP (hồ sơ lớp đọc lượt một lớp; badge quá hạn từ viec-theo-em — giảm dòng đọc Turso)
 const { runPrLop1LopTests } = bocTep('prLop1Lop', await import('./prLop1Lop.tests.ts'));
 await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY } as any);
+// ==================================================================== DON-LUONG (luồng còn sót ra-luong + OV-11)
+const { runDonLuongTests } = bocTep('donLuong', await import('./donLuong.tests.ts'));
+await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);
