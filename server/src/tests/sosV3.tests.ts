@@ -101,7 +101,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · T1 Lý do bỏ việc: bốn lý do chọn nhanh + `system_sos_changed` (chỉ hệ thống dùng); ba lý do đóng case `Không cần theo dõi`', () => {
     assert(JSON.stringify(domain.COORDINATION_USER_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other']),
       `Bốn lý do sai: ${domain.COORDINATION_USER_REMOVE_REASONS}`);
-    assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy', 'system_bang_doi']), 'Tám mã lý do (PR-MT thêm system_luot_huy — huỷ cả lượt, T67; PR-MTa thêm system_ket_qua_huy — kết quả MT huỷ do dời vượt; OV-13n thêm system_bang_doi — bảng §5.3 đổi)');
+    assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy', 'system_bang_doi', 'system_ket_thuc_lo_trinh']), 'Chín mã lý do (PR-MT thêm system_luot_huy — huỷ cả lượt, T67; PR-MTa thêm system_ket_qua_huy — kết quả MT huỷ do dời vượt; OV-13n thêm system_bang_doi — bảng §5.3 đổi; Q-RL3 thêm system_ket_thuc_lo_trinh — Lộ trình mới đóng việc Phối hợp)');
     assert(domain.COORDINATION_REMOVE_REASON_LABEL.not_needed === 'Không cần trong trường hợp này'
       && domain.COORDINATION_REMOVE_REASON_LABEL.handled_otherwise === 'Đã xử lý theo cách khác'
       && domain.COORDINATION_REMOVE_REASON_LABEL.duplicate_measure === 'Trùng với lần xử lý khác'

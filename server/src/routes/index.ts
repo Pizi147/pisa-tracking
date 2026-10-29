@@ -2583,7 +2583,9 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   const enr = luatLoTrinhSvc.lopHienTaiCua(sid);
   if (enr) {
     const dich = luatLoTrinhSvc.lopDichHopLe(Number(toClassId), enr.class_id);
-    const { boiCanh, huong } = luatLoTrinhSvc.huongChuyenMotEm(enr, dich);
+    /* Q4 (chủ SP 29/10): tuần trước Final → hết tuần Final, Quản lý chọn có theo luồng chuyển tiếp lộ trình (Test đi kèm) hay không — mặc định có. */
+    const theo = coTheoCuoiKhoa(req.body?.theoCuoiKhoa);
+    const { boiCanh, huong } = luatLoTrinhSvc.huongChuyenMotEm(enr, dich, demoToday(), luatLoTrinhSvc.tuCuoiKhoaCua(enr, demoToday(), theo));
     /* R-C3 (M3: Target / KCK chỉ khi lệnh cũ và hướng mới đều Lên FT): sửa lệnh `cho` mà không gửi Target / Dự kiến thi → giữ giá trị của lệnh (không ghi đè lặng lẽ bằng Target khoá / trống). */
     const cu = db().prepare(`SELECT huong, muc_tieu, khong_cam_ket, ngay_thi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
     const vang = (v: unknown) => v === undefined || v === null || v === '';
@@ -2611,16 +2613,18 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
 }));
 
 /** Q3: danh sách chi nhánh + lớp chuyển đến cho panel Chuyển lớp — không lộ học viên lớp khác. */
+/** Q4: cờ "theo luồng chuyển tiếp lộ trình" của Chuyển lớp một em — '1' / true · '0' / false · khác = mặc định (`boiCanhMotEm`). */
+const coTheoCuoiKhoa = (v: unknown): boolean | undefined => (v === true || v === '1' ? true : v === false || v === '0' ? false : undefined);
 api.get('/chuyen-lop/lop-dich', requireAuth, wrap((req) => {
   const sid = qInt(req, 'studentId');
   if (!sid) throw badRequest('Cần studentId.');
-  return luatLoTrinhSvc.lopDichChoChuyen(principalOf(req), sid);
+  return luatLoTrinhSvc.lopDichChoChuyen(principalOf(req), sid, coTheoCuoiKhoa(qStr(req, 'theoCuoiKhoa')));
 }));
 
 /** Case đang mở + luật áp dụng khi đã chọn lớp chuyển đến (Q13, Q14). */
 api.get('/students/:id/chuyen-lop', requireAuth, wrap((req) => {
   const toClassId = qInt(req, 'toClassId');
-  return luatLoTrinhSvc.xemChuyenLop(principalOf(req), pInt(req, 'id'), toClassId ?? null);
+  return luatLoTrinhSvc.xemChuyenLop(principalOf(req), pInt(req, 'id'), toClassId ?? null, coTheoCuoiKhoa(qStr(req, 'theoCuoiKhoa')));
 }));
 
 /** Lộ trình tiếp theo (PR-LT, Q1) — dự định sau lớp đang học, ghi trước khi thật sự chuyển. */

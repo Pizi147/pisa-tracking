@@ -344,7 +344,7 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
             <span className="text-xs font-bold leading-[34px] text-slate-300">{t('Lớp')}</span>
             <span className="w-[300px] max-w-full">
               <ChonLop ds={ds} value={chon.lop} onChange={(id) => onChon({ ...chon, lop: id, hoiTarget: false })} ariaLabel={t('Lớp của {ten}', { ten: e.ten })} tat={busy}
-                invalid={laLoi(loi, LOI_LOP.len) || laLoi(loi, LOI_LOP.hoc_lai)} khongKhop={t('Chưa có lớp {ct} đang học ở chi nhánh này', { ct: len ? ke : ct })} placeholder={len ? ke : ct} />
+                invalid={laLoi(loi, LOI_LOP.len) || laLoi(loi, LOI_LOP.hoc_lai)} khongKhop={t('Chưa có lớp {ct} đang học', { ct: len ? ke : ct })} placeholder={len ? ke : ct} />
             </span>
           </div>
           {hoiTarget && (

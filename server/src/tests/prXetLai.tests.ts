@@ -183,7 +183,8 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const g = trongBoNho(() => xl.xemXetLai(QL, BE_D.id, null));
     assert(v && v.count === g.em.length && v.count >= 2 && v.actionLabel === 'Xét lại ›' && v.href === `/hoc-vien/lop/${BE_D.id}?viec=xet-lai` && v.due === g.han
       && v.tieuDe === `Xét lại lộ trình · ${BE_D.code} · ${v.count} em` && /46 %/.test(v.contextLabel), `việc ${JSON.stringify(v)} · GET ${g.em.length} ${g.han}`);
-    assert(g.lopHocLai.FOU?.some((l: any) => l.id === FOU_D.id) && !g.lopHocLai.FOU.some((l: any) => l.id === FOU_CP.id) && !g.chiXem, `lớp học lại: ${JSON.stringify(g.lopHocLai)}`);
+    assert(g.lopHocLai.FOU?.some((l: any) => l.id === FOU_D.id) && g.lopHocLai.FOU.some((l: any) => l.id === FOU_CP.id)   // Q-RL6: mọi chi nhánh
+      && g.lopHocLai.FOU.findIndex((l: any) => l.id === FOU_D.id) < g.lopHocLai.FOU.findIndex((l: any) => l.id === FOU_CP.id) && !g.chiXem, `lớp học lại (cùng chi nhánh trước): ${JSON.stringify(g.lopHocLai)}`);
     assert(viec(QL, CHO.fou.id)?.count === 1, 'lệnh chưa thi hành: việc ở lớp cũ');
     assert(!viec(P.cpManager, BE_D.id) && !viec(GVCN_BE, BE_D.id) && !viec(GVBM_BE, BE_D.id) && viec(P.admin, BE_D.id), 'QL CP / GVCN / GVBM không việc, QT có');
     const gv = trongBoNho(() => xl.xemXetLai(GVCN_BE, BE_D.id, null));
@@ -223,8 +224,8 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const l0 = lenhCua(CHO.sid);
     const soLenh = () => get('SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE student_id = ?', CHO.sid).n;
     const n0 = soLenh();
-    const sai = xl.luuXetLai(QL, CHO.fou.id, [{ studentId: CHO.sid, quyetDinh: 'hoc_lai', toClassId: FOU_CP.id, tuan: THU_HAI }]);
-    assert(sai.failed.length === 1 && /cùng chi nhánh/.test(sai.failed[0].message), JSON.stringify(sai));
+    const sai = xl.luuXetLai(QL, CHO.fou.id, [{ studentId: CHO.sid, quyetDinh: 'hoc_lai', toClassId: BE_D.id, tuan: THU_HAI }]);
+    assert(sai.failed.length === 1 && /Lớp học lại phải là lớp FOU/.test(sai.failed[0].message), JSON.stringify(sai));   // Q-RL6: khác chương trình vẫn lỗi; khác chi nhánh được (XL-RL6)
     const r2 = xl.luuXetLai(QL, CHO.fou.id, [{ studentId: CHO.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: THU_HAI }]);
     assert(!r2.failed.length, JSON.stringify(r2));
     const l1 = lenhCua(CHO.sid);
@@ -503,6 +504,12 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const h = xl.hoanTacXetLai(QL, S.fou.id, [r.ok[0].id]);
     assert(!h.failed.length && get('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', lenh.id).trang_thai === 'cho'
       && get('SELECT status FROM students WHERE id = ?', S.sid).status === 'active', `Hoàn tác: ${JSON.stringify(h)}`);
+  });
+
+  check('XL-RL6 (Q-RL6 chủ SP 29/10) · thẻ Xét lại: Học lại sang lớp FOU chi nhánh KHÁC → lưu được, như Chuyển lớp một em', () => {
+    const S = kb(45, 'len_lop');
+    const r = xl.luuXetLai(QL, S.fou.id, [{ studentId: S.sid, quyetDinh: 'hoc_lai', toClassId: FOU_CP.id, tuan: THU_HAI }]);
+    assert(!r.failed.length && lenhCua(S.sid).lop_dich_id === FOU_CP.id, `khác chi nhánh: ${JSON.stringify(r)} ${JSON.stringify(lenhCua(S.sid))}`);
   });
 
   check('XL-14 · coXetLaiMiniTest chỉ đúng Mini Test gây dòng (d)', () => {

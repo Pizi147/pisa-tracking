@@ -54,8 +54,8 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
       `SELECT a.id, a.kind, c.programme_code, c.nguong_dat FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
     ).all(...lo) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, nguong: r.nguong_dat ?? null });
     /* P13: cùng câu đọc dòng lịch MÔN GỘP cũ (`la_lich` = 1) — bộ môn theo lượt (`daGhiLuot`), vẫn 2 câu cho cả lô. */
-    for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
-        UNION ALL SELECT attempt_id, skill, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(...lo, ...lo, ...GOP) as any[]) {
+    for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(...lo, ...lo, ...GOP) as any[]) {
       const m = r.la_lich ? lichGop : diem;
       if (!m.has(r.attempt_id)) m.set(r.attempt_id, []);
       m.get(r.attempt_id)!.push(r);
