@@ -14,6 +14,7 @@ export async function runPrLop1LopTests(t: any) {
   const attempts: any = await import('../fasttrack/attempts.ts');
   const { demViec, laVaiQuanLy, vaiXemHocVien } = await import('../../../shared/domain/index.ts');
   const { soDongSql, chayTrongRequest, xoaNho, demHienTai } = await import('../platform/nguCanhRequest.ts');
+  const { addDays } = await import('../util.ts');
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const nguoiVai = (role: string) => loadPrincipal((conn.prepare(
     `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? ORDER BY ur.user_id LIMIT 1`).get(role) as any).id);
@@ -118,6 +119,41 @@ export async function runPrLop1LopTests(t: any) {
       assert(sauGv.soQuaHanLop === badgeCu(gv, lop) && sauQl.soQuaHanLop === badgeCu(P.mbManager, lop), 'sau lưu: lệch công thức cũ');
       assert(sauGv.soQuaHanLop <= truocGv - 1 && sauQl.soQuaHanLop <= truocQl - 1, `không giảm: GV ${truocGv}→${sauGv.soQuaHanLop}, QL ${truocQl}→${sauQl.soQuaHanLop}`);
       assert(!sauGv.cuaToi.some((it: any) => it.key === viec.key), 'việc vừa nhập vẫn còn trong cuaToi');
+    } finally { conn.exec('ROLLBACK'); xoaNho(); }
+  });
+
+  /*
+   * RF1 dựng dữ liệu (PTA 30/10): khối Case / PA / Báo PH / Bước tiếp / TVV của `myWork` lấy lớp = COALESCE(…, lớp đang học) nên em đang học không có việc
+   * `classId null` từ đó; chỗ DUY NHẤT `classIds` có thể làm mất việc là LƯỢT không gắn lớp (`class_id NULL`) của em đang học — việc Nhập điểm của lượt đó
+   * mang `classId null` nếu đường đủ có đọc. Dựng: (a) một lượt quá hạn của em lớp 3 bỏ `class_id`; (b) một Case không gắn lượt (`attempt_id NULL`) của em
+   * khác lớp 3. Mọi vai: `viec-theo-em` (theoEm + cuaToi) giống hệt đường đủ, badge = công thức cũ; Case (b) có mặt ở QL.
+   */
+  check('L1 · RF1 dựng dữ liệu: lượt class_id NULL của em đang học + Case không gắn lượt — viec-theo-em + badge như đường đủ', () => {
+    const lop = lopActive.find((l) => l.id === 3)!;
+    /* Lượt có việc Nhập điểm quá hạn của một em lớp 3 (QL đường đủ) — bỏ class_id thì việc đó chỉ còn ở đường đủ nếu đường đủ đọc lượt không gắn lớp. */
+    const viec0 = (Object.values(chay(P.mbManager, 3, true).r.theoEm).flat() as any[]).find((it) => it.group === 'score' && it.attemptId && it.urgency === 'overdue');
+    assert(viec0, 'dữ liệu demo: cần việc Nhập điểm quá hạn của em lớp 3');
+    const luot = { id: viec0.attemptId as number, student_id: viec0.studentId as number };
+    const em2 = (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = 3 AND status = 'active' AND student_id != ? ORDER BY student_id LIMIT 1`).get(luot.student_id) as any).student_id;
+    const cy = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1`).get(em2) as any).id;
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      conn.prepare('UPDATE assessment_attempts SET class_id = NULL WHERE id = ?').run(luot.id);
+      const caseId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, detected_at, created_at)
+        VALUES (?, ?, 'reading', 'reading', 'teacher_report', 'open', 1, ?, ?)`).run(em2, cy, addDays(TODAY, -20), `${addDays(TODAY, -20)}T00:00:00Z`).lastInsertRowid);
+      let coCase = false, soNullDu = 0;
+      for (const [ten, p] of VAI) {
+        const moi = chay(p, 3, false), du = chay(p, 3, true);
+        assert((moi.loi ?? null) === (du.loi ?? null), `${ten}: lỗi ${moi.loi} ≠ ${du.loi}`);
+        if (du.loi) continue;
+        const { soQuaHanLop: sm, ...m } = moi.r, { soQuaHanLop: sd, ...d } = du.r;
+        assert(JSON.stringify(m) === JSON.stringify(d), `${ten}: ${JSON.stringify(m).slice(0, 300)} ≠ ${JSON.stringify(d).slice(0, 300)}`);
+        if (sd !== null) assert(sm === sd && sm === badgeCu(p, lop), `${ten}: badge ${sm} / đường đủ ${sd} / công thức cũ ${badgeCu(p, lop)}`);
+        soNullDu += Object.values(du.r.theoEm).flat().filter((it: any) => it.classId === null).length;
+        if (Object.values(du.r.theoEm).flat().some((it: any) => it.caseId === caseId)) coCase = true;
+      }
+      assert(coCase, 'Case không gắn lượt phải có trong viec-theo-em (QL)');
+      console.log(`    (RF1 dựng: lượt ${luot.id} bỏ class_id, việc classId null ở đường đủ: ${soNullDu}; Case ${caseId} không gắn lượt có mặt)`);
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
 
