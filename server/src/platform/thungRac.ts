@@ -11,7 +11,7 @@ import { xoaTepSauGiaoDich } from './attachments.ts';
  * Tệp trong kho giữ `GIU_NGAY` ngày rồi `donThungRac` (cron) xoá hẳn.
  */
 export const GIU_NGAY = 30;
-export type LoaiRac = 'case' | 'pa' | 'vi_pham' | 'tep';
+export type LoaiRac = 'case' | 'pa' | 'vi_pham' | 'tep' | 'hoc_vien';
 
 type Ban =
   | { k: 'xoa'; bang: string; dong: Record<string, unknown>[] }
@@ -68,9 +68,16 @@ export class BoChup {
   /**
    * Chạy MỘT câu `DELETE FROM b WHERE …` hoặc `UPDATE b SET c = NULL[, d = NULL] WHERE …` (bộ câu xoá sẵn có) — chụp trước rồi chạy.
    * Tham số dạng `?1` dùng lại được trong câu chụp (cùng câu WHERE).
+   * Bảng không có con CASCADE / SET NULL: xoá và chụp MỘT câu (`DELETE … RETURNING *`) — Xoá học viên ~47 câu xoá, mỗi câu Turso ~50–100 ms
+   * (trần hàm 10 s); bảng có con: chụp trước (con bị kéo theo không có trong RETURNING).
    */
   chay(sql: string, ...args: unknown[]): void {
     const x = /^\s*DELETE FROM (\w+) WHERE ([\s\S]+)$/i.exec(sql);
+    if (x && !fkCua(this.conn, x[1]).length) {
+      const dong = this.conn.prepare(`${sql} RETURNING *`).all(...args) as Record<string, unknown>[];
+      if (dong.length) this.ban.push({ k: 'xoa', bang: x[1], dong });
+      return;
+    }
     if (x) this.chupXoa(x[1], x[2], ...args);
     else {
       const u = /^\s*UPDATE (\w+) SET ([\s\S]+?) WHERE ([\s\S]+)$/i.exec(sql);
@@ -92,8 +99,11 @@ export function ghiThungRac(conn: any, o: {
     JSON.stringify({ ban: o.chup.ban, tep: o.chup.tep } satisfies DuLieuRac), o.nguoi, nowIso()).lastInsertRowid);
 }
 
+const THIEU_GOC = 'Không khôi phục được: mục gốc của nó đã không còn (vd Case hoặc học viên đã bị xoá) — khôi phục mục gốc trước.';
 /** Chèn / trả lại các bản chụp theo thứ tự ngược. Lỗi ràng buộc → câu tiếng Việt có lý do + bước tiếp (giao dịch của nơi gọi lui hết). */
 function traLai(conn: any, ban: Ban[]): void {
+  /* Khoá ngoại kiểm ở CUỐI lần trả (dòng cùng bảng trỏ nhau — PA `superseded_by` PA mới hơn — chèn theo id thì cha chưa có); hết hiệu lực khi giao dịch xong. */
+  conn.pragma('defer_foreign_keys = ON');
   for (const b of [...ban].reverse()) {
     for (const d of b.dong) {
       try {
@@ -107,10 +117,13 @@ function traLai(conn: any, ban: Ban[]): void {
       } catch (e: any) {
         const m = String(e?.message ?? e);
         if (/UNIQUE|PRIMARY KEY/i.test(m)) throw conflict(`Không khôi phục được: đã có dữ liệu mới dùng lại chỗ của mục này (${b.bang}). Tạo lại bằng tay nếu cần.`);
-        if (/FOREIGN KEY/i.test(m)) throw conflict('Không khôi phục được: mục gốc của nó đã không còn (vd Case hoặc học viên đã bị xoá) — khôi phục mục gốc trước.');
+        if (/FOREIGN KEY/i.test(m)) throw conflict(THIEU_GOC);
         throw e;
       }
     }
+  }
+  for (const bang of new Set(ban.map((b) => b.bang))) {
+    if ((conn.prepare('SELECT 1 FROM pragma_foreign_key_check(?) LIMIT 1').all(bang) as unknown[]).length) throw conflict(THIEU_GOC);
   }
 }
 

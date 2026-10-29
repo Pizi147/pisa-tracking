@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
@@ -9,6 +9,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { CHU_XAC_NHAN_XOA, NHAN_VIEC_HANG_LOAT, dsLoi, khopXacNhanXoa, type ViecHangLoat, type XemTruocHangLoat } from '@shared/domain/index.ts';
 import { chayHangLoat, hoanTacHangLoat } from './hangLoatEm.ts';
+import { hoanTacXoaLo, lamMoiHocVien } from '../../lib/thungRac.ts';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
 
 const TEN_HUONG: Record<string, string> = { len_lop: t('Lên'), fast_track: t('Lên FT'), hoc_lai: t('Học lại'), bao_luu: t('Tạm dừng học (bảo lưu)'), dung_hoc: t('Dừng học hẳn'), chuyen_lop: t('Chuyển lớp FT') };
@@ -19,7 +20,8 @@ const CO_NGAY: ViecHangLoat[] = ['ket-thuc', 'hoc-lai'];
 /**
  * PANEL XEM TRƯỚC LÀM NHIỀU HỌC VIÊN (PR-LUI-b, 06/10) — bấm một việc ở thanh dính đáy (hồ sơ lớp, Lưu trữ) thì ra đây: số hệ quả, học viên bị bỏ qua
  * (kèm lý do), lý do chung, rồi xác nhận. Gửi từng lô 8; lỗi giữa chừng giữ phần đã lưu, nút đổi thành "Thử lại n học viên". Xong thì toast Hoàn tác.
- * OV-12a: Xoá — liệt kê em + dữ liệu sẽ mất, gõ XOÁ, nút đỏ, mỗi request một em; không Hoàn tác.
+ * OV-12a: Xoá — liệt kê em + dữ liệu sẽ mất, gõ XOÁ, nút đỏ, mỗi request một em. Q-RL2b: toast Hoàn tác cả lô = khôi phục thùng rác từng em đã xoá
+ * (lô lỗi một phần: toast ngay cho phần đã xoá, Thử lại thì toast mới gồm cả lô).
  */
 export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   viec: ViecHangLoat; ids: number[]; maLop?: string | null; onClose: () => void; onDone: () => void;
@@ -40,6 +42,8 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   const [tienDo, setTienDo] = useState<{ xong: number; tong: number } | null>(null);
   const [chuaLuu, setChuaLuu] = useState<{ studentId: number; message: string }[]>([]);
   const [daLuu, setDaLuu] = useState<number[]>([]);
+  /* Q-RL2b: id thùng rác của mọi em đã xoá qua các lần Thử lại; Hoàn tác bỏ id đã khôi phục (ref: toast sống cả khi panel đã đóng). */
+  const racRef = useRef<number[]>([]);
   const nap = () => {
     setLoiXem(null);
     api.post<XemTruocHangLoat>('/hang-loat-hoc-vien/xem-truoc', { viec, studentIds: ids }).then(setXem).catch((e: any) => setLoiXem(e.message));
@@ -69,12 +73,23 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
     for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
     const tatCa = [...daLuu, ...kq.ok];
     setDaLuu(tatCa);
+    if (viec === 'xoa') {
+      lamMoiHocVien();
+      racRef.current = [...racRef.current, ...(kq.thungRac ?? [])];
+      const chu = kq.failed.length ? chuKetQua(tatCa.length, kq.failed.length) : t('Đã xoá {n} học viên', { n: tatCa.length });
+      if (!racRef.current.length && kq.failed.length) toast.push('error', chu, { key: 'hang-loat:xoa' });
+      else hoanTacXoaLo(toast, racRef.current, chu, 'hang-loat:xoa', (xong) => {
+        racRef.current = racRef.current.filter((id) => !xong.includes(id));
+        lamMoiHocVien(); onDone();
+      });
+      if (kq.failed.length) { setChuaLuu(kq.failed); return; }
+      onDone(); onClose(); return;
+    }
     if (kq.failed.length) {
       setChuaLuu(kq.failed);
       toast.push('error', chuKetQua(tatCa.length, kq.failed.length));
       return;
     }
-    if (viec === 'xoa') { toast.push('ok', t('Đã xoá {n} học viên', { n: tatCa.length })); onDone(); onClose(); return; }
     toast.hoanTac(`${nhanViec(viec)} ${t('{n} học viên', { n: tatCa.length })}`, async () => {
       const r = await hoanTacHangLoat(viec, tatCa);
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
@@ -129,7 +144,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
             )}
             {viec === 'xoa' && (
               <>
-                <p className="m-0 text-sm text-slate-200">{t('Xoá hẳn hồ sơ và mọi dữ liệu của các em này.')} <span className="text-soon">{t('Không hoàn tác được.')}</span></p>
+                <p className="m-0 text-sm text-slate-200">{t('Xoá hồ sơ và mọi dữ liệu của các em này.')} <span className="text-slate-400">{t('Khôi phục được trong 30 ngày (Quản trị › Đã xoá hoặc Lưu trữ).')}</span></p>
                 <ul className="m-0 list-none space-y-0.5 p-0" aria-label={t('Học viên sẽ xoá')}>
                   {xem.rows.filter((r) => !r.lyDoBo).map((r) => (
                     <li key={r.studentId} className="text-sm text-slate-200">{r.ten}{r.lop && <span className="text-slate-400"> · {r.lop}</span>}</li>

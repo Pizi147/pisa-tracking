@@ -414,7 +414,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(maLoi(() => xoaHV.xoaHocVien(P.admin, 99_999_999, { maXacNhan: 'x' })) === 404, 'id lạ xoá phải 404');
   });
 
-  check('PR-XOA X10 · Số câu SQL: xoá ≤ 58 (P9a XET-LAI thêm 1 câu xoá xét lại; SV-S-EXPERT thêm 1 câu xoá lượt S Expert; SV-BAI-LOP thêm 1 câu xoá bài trên lớp; OV-15c thêm 1 câu xoá ghi chú lịch thi; OV-12g thêm 1 câu xoá góp ý tuần; OV-12h thêm 1 câu xoá buổi Tutor; OV-3b thêm 1 câu xoá nháp; PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp; PR-LUI-a1 thêm 1 câu kiểm tệp dùng chung) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
+  check('PR-XOA X10 · Số câu SQL: xoá ≤ 70 (Q-RL2b thùng rác: chụp bằng DELETE … RETURNING, chỉ bảng có con CASCADE / SET NULL thêm câu SELECT trước — 58 → 66; P9a XET-LAI thêm 1 câu xoá xét lại; SV-S-EXPERT thêm 1 câu xoá lượt S Expert; SV-BAI-LOP thêm 1 câu xoá bài trên lớp; OV-15c thêm 1 câu xoá ghi chú lịch thi; OV-12g thêm 1 câu xoá góp ý tuần; OV-12h thêm 1 câu xoá buổi Tutor; OV-3b thêm 1 câu xoá nháp; PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp; PR-LUI-a1 thêm 1 câu kiểm tệp dùng chung) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
     const it = taoHocVienDuDuLieu();
     const nhieu = taoHocVienDuDuLieu({ soLuotThem: 5 });
     const xemIt = demTruyVan(() => { xoaHV.xemXoaHocVien(P.admin, it.sid); });
@@ -424,7 +424,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 58, `xoá tốn ${nIt} câu (> 58)`);   // UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
+      assert(nIt <= 70, `xoá tốn ${nIt} câu (> 70)`);   // UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });
@@ -464,7 +464,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const r = xoaHV.xoaHocVien(P.admin, sid, { maXacNhan: 'PISA-XOA-RONG' });
     const sau = demBang();
     assert(r.ok && !conn.prepare('SELECT 1 FROM students WHERE id = ?').get(sid), 'em rỗng phải xoá được');
-    const lech = MOI_BANG.filter((b) => sau[b] !== truoc[b] - (b === 'students' ? 1 : 0) + (b === 'audit_logs' ? 1 : 0));
+    const lech = MOI_BANG.filter((b) => sau[b] !== truoc[b] - (b === 'students' ? 1 : 0) + (b === 'audit_logs' || b === 'thung_rac' ? 1 : 0));   // Q-RL2b: +1 mục thùng rác
     assert(!lech.length, `bảng khác bị đổi: ${lech.join(', ')}`);
   });
 
@@ -517,7 +517,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const lech: string[] = [];
     for (const b of MOI_BANG) {
       let mongDoi = truocXoa[b] - (dongS.get(b)?.size ?? 0);
-      if (b === 'audit_logs') mongDoi += 1;
+      if (b === 'audit_logs' || b === 'thung_rac') mongDoi += 1;   // Q-RL2b: +1 mục thùng rác
       if (b === 'attachments') mongDoi -= memS.tep.length;
       if (b === 'notifications') mongDoi -= memS.thongBao.length;
       if (sau[b] !== mongDoi) lech.push(`${b}: ${truocXoa[b]} → ${sau[b]} (mong ${mongDoi})`);
@@ -526,8 +526,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(sau.tasks === truocXoa.tasks, 'tasks phải giữ nguyên');
   });
 
-  await t.checkAsync('PR-XOA X7 · Kho tệp: đúng 5 khoá tệp của S bị xoá, SAU khi giao dịch chốt', async () => {
+  await t.checkAsync('PR-XOA X7 · Kho tệp (Q-RL2b): xoá em GIỮ tệp (thùng rác 30 ngày); dọn thùng rác quá hạn → đúng 5 khoá tệp của S bị xoá, ngoài giao dịch', async () => {
     await khoTepMod.choViecNenKhoTep();
+    assert(tepDaXoa.length === 0, `xoá em mà kho mất tệp: ${tepDaXoa.map((x) => x.khoa).join(', ')}`);
+    conn.prepare(`UPDATE thung_rac SET xoa_luc = '2000-01-01T00:00:00.000Z' WHERE loai = 'hoc_vien' AND doi_tuong_id = ?`).run(S.sid);
+    khoTepMod.datKhoTepChoKiemThu(khoGia);
+    try { (await import('../platform/thungRac.ts')).donThungRac(); await khoTepMod.choViecNenKhoTep(); } finally { khoTepMod.datKhoTepChoKiemThu(null); }
     const khoa = tepDaXoa.map((x) => x.khoa).sort();
     assert(JSON.stringify(khoa) === JSON.stringify([...S.tep].sort()), `khoá bị xoá: ${khoa.join(', ')}`);
     assert(tepDaXoa.every((x) => !x.trongGiaoDich), 'xoá tệp lúc giao dịch còn mở');
@@ -574,7 +578,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const pn = docNguon('web/src/modules/students/XoaHocVienPanel.tsx');
     assert(/<KhungPanel\b/.test(pn) && /btn btn-danger/.test(pn) && /disabled=\{busy \|\| !khop\}/.test(pn), 'thiếu khuôn / nút đỏ theo mã');
     /* PR-N1 A7: không lộ lệnh npm trên màn hình — câu nhắc sao lưu nói với người dùng, không nói lệnh. */
-    assert(pn.includes('Nên nhờ Quản trị sao lưu trước lần xoá đầu.') && pn.includes('Không khôi phục được (trừ từ bản sao lưu).'), 'thiếu dòng nhắc');
+    assert(pn.includes('Khôi phục được trong 30 ngày (Quản trị › Đã xoá hoặc Lưu trữ).'), 'thiếu dòng nhắc khôi phục (Q-RL2b)');
     assert(!/SectionNote|fmtDate\(|<Modal\b/.test(pn), 'panel xoá HV dùng thứ bị cấm');
     assert(/tabular-nums/.test(pn), 'cột số phải tabular-nums');
     const trang = docNguon('web/src/modules/students/StudentDetailPage.tsx');

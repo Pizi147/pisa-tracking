@@ -3,7 +3,7 @@
  * Quản trị), kiểm ở MÁY CHỦ. Chọn nhiều › Xoá (`hangLoat.ts`) đi qua đúng hàm này, mỗi em một request.
  *
  * Xoá HẲN mọi dòng gắn em, trực tiếp và gián tiếp, trong MỘT giao dịch: lỗi ở bất kỳ câu nào → cuộn lại, không dòng nào mất,
- * không tệp nào mất. Tệp trong kho (Netlify Blobs / ổ đĩa) chỉ xoá SAU khi giao dịch chốt (`xoaTepSauGiaoDich`).
+ * không tệp nào mất. Q-RL2b: tệp trong kho GIỮ (thùng rác 30 ngày) — `donThungRac` xoá khi quá hạn.
  *
  * DANH SÁCH BẢNG VIẾT CỨNG (Q6): dựng từ `PRAGMA foreign_key_list` lúc chạy là 62 câu mỗi lần trên Turso. Phép kiểm
  * `xoaDuLieu.tests.ts` (X1, X2, X4) dựng lại đồ thị từ PRAGMA và ĐỎ khi một bảng mới trỏ tới học viên mà mảng dưới đây quên.
@@ -17,7 +17,7 @@ import { CHU_XAC_NHAN_XOA, PERMISSIONS, khopXacNhanXoa } from '../../../shared/d
 import { HttpError, badRequest, notFound, loi } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
+import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 
 const CHI_QL = 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới xoá được học viên.';
@@ -149,7 +149,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
  * Hàm Netlify bị cắt ở 10 s (Q7): 37 câu × tới ~100 ms trên Turso ≈ 4 s. `tx` tự chặn khi còn < 2,5 s là chưa đủ cho việc dài
  * này — còn ít hơn chừng này thì không bắt đầu xoá.
  */
-export const XOA_CAN_CON_MS = 6_000;
+export const XOA_CAN_CON_MS = 7_000;   // Q-RL2b: chụp vào thùng rác (đa số câu DELETE … RETURNING, vài câu SELECT trước) — thêm 1 s
 
 /** "Những gì sẽ mất" — đúng thứ tự hiển thị của panel. */
 const LOAI_MAT: { khoa: string; nhan: string; sql: string }[] = [
@@ -189,13 +189,15 @@ export type XemXoaHocVien = {
   congViecGoLienKet: number;
 };
 
-type Em = { id: number; student_code: string; full_name: string; email: string | null; status: string; lop: string | null; lop_dang_hoc: number };
+type Em = { id: number; student_code: string; full_name: string; email: string | null; status: string; lop: string | null; lop_dang_hoc: number;
+  branch_id: number | null; lop_id: number | null };
 
 function docEm(sid: number): Em {
   const s = db().prepare(
-    `SELECT s.id, s.student_code, s.full_name, s.email, s.status,
+    `SELECT s.id, s.student_code, s.full_name, s.email, s.status, s.branch_id,
             (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
               WHERE e.student_id = s.id AND e.status IN ('active','paused') ORDER BY e.id DESC LIMIT 1) AS lop,
+            (SELECT e.class_id FROM enrollments e WHERE e.student_id = s.id ORDER BY (e.status IN ('active','paused')) DESC, e.id DESC LIMIT 1) AS lop_id,
             EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active') AS lop_dang_hoc
        FROM students s WHERE s.id = ?1`,
   ).get(sid) as Em | undefined;
@@ -223,34 +225,36 @@ export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
   };
 }
 
-/** POST /students/:id/xoa { maXacNhan } — xoá vĩnh viễn. Gõ XOÁ (OV-13f: mã HV không hiện trên màn — như Xoá nhiều em) hoặc đúng mã học viên. */
-export function xoaHocVien(p: Principal, studentId: number, input: { maXacNhan?: unknown }): { ok: true; ma: string; soDong: Record<string, number> } {
+/**
+ * POST /students/:id/xoa { maXacNhan } — xoá. Gõ XOÁ (OV-13f: mã HV không hiện trên màn — như Xoá nhiều em) hoặc đúng mã học viên.
+ * Q-RL2b (N24 ②): mọi dòng sắp mất / bị NULL chụp vào thùng rác cùng giao dịch → Hoàn tác / Khôi phục 30 ngày; tệp trong kho giữ tới khi dọn.
+ */
+export function xoaHocVien(p: Principal, studentId: number, input: { maXacNhan?: unknown }): { ok: true; ma: string; soDong: Record<string, number>; thungRacId: number } {
   const s = docEm(studentId);   // OV-12a: em đã bị xoá → 404 trước
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
   const go = String(input.maXacNhan ?? '').trim();
   if (go !== s.student_code && !khopXacNhanXoa(go)) throw loi(400, 'Gõ {CHU_XAC_NHAN_XOA} để xác nhận xoá.', { CHU_XAC_NHAN_XOA });
-  const khoaTep: string[] = [];
-  const soDong = tx(() => {
+  const chup = new BoChup(db());
+  return tx(() => {
     const con = conLaiMs();
     if (con !== null && con < XOA_CAN_CON_MS) throw new HttpError(503, 'Máy chủ đang bận, chưa xoá gì. Thử lại sau ít phút.');
     const conn = db();
     const dem = demMat(studentId).soDong;
     for (const c of CAU_XOA_HOC_VIEN) {
       if (c.bang === 'attachments#tep') {
-        for (const r of conn.prepare(c.sql).all(studentId) as { url: string }[]) khoaTep.push(r.url);
+        for (const r of conn.prepare(c.sql).all(studentId) as { url: string }[]) chup.tep.push(r.url);
         continue;
       }
-      conn.prepare(c.sql).run(studentId);
+      chup.chay(c.sql, studentId);
     }
+    const thungRacId = ghiThungRac(conn, { loai: 'hoc_vien', doiTuongId: studentId, nhan: `${s.full_name} · ${s.student_code}${s.lop ? ` · ${s.lop}` : ''}`,
+      classId: s.lop_id, branchId: s.branch_id, nguoi: p.userId, chup });
     writeAudit({
       actorUserId: p.userId, action: 'student.delete', entityType: 'student', entityId: studentId,
       entityLabel: `${s.full_name} · ${s.student_code}`,
       before: { ma: s.student_code, ten: s.full_name, lop: s.lop ?? null, trangThai: s.status },
-      after: { soDong: dem, soTep: khoaTep.length },
+      after: { soDong: dem, soTep: chup.tep.length, thungRacId },
     });
-    return dem;
+    return { ok: true as const, ma: s.student_code, soDong: dem, thungRacId };
   });
-  /* SAU khi chốt (khuôn Task 6e): giao dịch lui thì không tệp nào mất; xoá tệp lỗi chỉ ghi log. */
-  xoaTepSauGiaoDich(khoaTep);
-  return { ok: true, ma: s.student_code, soDong };
 }

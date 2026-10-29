@@ -8,6 +8,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
+import { DaXoaAdmin } from '../platform/DaXoaAdmin.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from './chonNhieuHocVien.tsx';
 import { useQuayLaiHoc } from './QuayLaiHoc.tsx';
 import { duongHoSoHocVien, ngay } from '@shared/domain/index.ts';
@@ -33,6 +34,7 @@ type TabLuuTru = 'lop' | 'hv';
  * KHU LƯU TRỮ (PR-LT, Q16/Q22, chủ sản phẩm 23/09) — lớp đã kết thúc · học viên đã lưu trữ,
  * ẩn khỏi Học viên & Lớp mặc định nhưng vẫn tra cứu được ở đây. P7 (N11, mockup V6 `trang-thai-hv.html` k5): em Tạm dừng cũng ở đây (nhãn
  * "Tạm dừng · Có thể quay lại"), MỘT nút Quay lại học cho cả hai loại (thay Bỏ lưu trữ + Học lại); chọn nhiều → "Quay lại học · n em".
+ * Q-RL2b: tab Học viên có thêm khối "Đã xoá" (thùng rác 30 ngày, `DaXoaAdmin loai="hoc_vien"`).
  */
 export default function LuuTruPage() {
   const navigate = useNavigate();
@@ -170,6 +172,8 @@ export default function LuuTruPage() {
               })}
             </div>
       )}
+      {/* Q-RL2b: học viên đã xoá 30 ngày (thùng rác) — Khôi phục tại dòng; rỗng thì không vẽ. */}
+      {tab === 'hv' && <DaXoaAdmin loai="hoc_vien" loc={loc} />}
       {data && tab === 'hv' && (
         <ThanhChonNhieu chon={chon} viec={[{ key: 'quay-lai', nhan: t('Quay lại học') }]} onViec={() => void quayLaiNhieu([...chon.chon])} />
       )}

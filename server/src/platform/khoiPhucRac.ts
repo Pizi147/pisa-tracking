@@ -16,7 +16,10 @@ const dongGoc = (m: MucRac, bang: string) =>
   (JSON.parse(m.du_lieu) as DuLieuRac).ban.find((b) => b.k === 'xoa' && b.bang === bang)?.dong[0] as any;
 
 function kiemQuyen(p: Principal, m: MucRac): void {
-  if (m.loai === 'case' || m.loai === 'pa') {
+  if (m.loai === 'hoc_vien') {
+    /* Q-RL2b: như Xoá học viên (`CYCLE_EDIT` — Quản lý của em / Quản trị); em đã không còn nên xét theo lớp cuối / chi nhánh lúc xoá. */
+    require_(p, PERMISSIONS.CYCLE_EDIT, m.class_id ? { classId: m.class_id } : { branchId: m.branch_id }, 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới khôi phục được học viên.');
+  } else if (m.loai === 'case' || m.loai === 'pa') {
     require_(p, PERMISSIONS.CASE_APPROVE, { classId: m.class_id, studentId: m.hoc_vien_id }, 'Chỉ Quản lý khôi phục được Case / PA.');
   } else if (m.loai === 'vi_pham') {
     const v = dongGoc(m, 'violations');
