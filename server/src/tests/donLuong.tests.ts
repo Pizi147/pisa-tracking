@@ -121,6 +121,10 @@ export async function runDonLuongTests(t: YThucTestKit) {
     xoaNho();
     const e2 = ghi();
     assert(e2?.status === 400 && e2.message === `Em đã chuyển khỏi ${lop} — ghi ở lớp em đang học.`, `${e2?.status} ${e2?.message}`);
+    conn.prepare(`UPDATE enrollments SET status = 'completed' WHERE student_id = ? AND status = 'transferred'`).run(c.student_id);
+    xoaNho();
+    const e3 = ghi();
+    assert(e3?.status === 400 && e3.message === `Em đã học xong khoá ở ${lop} — xếp lớp mới trước khi ghi vi phạm.`, `${e3?.status} ${e3?.message}`);
   }));
 
   /* ---------------------------------------------------------------- K42a + A6 */
@@ -137,6 +141,15 @@ export async function runDonLuongTests(t: YThucTestKit) {
     const ds = tb.thongBaoCua(u);
     const dong = ds.find((r: any) => r.id === cu);
     assert(dong && dong.con_viec === 1 && ds.length <= tb.THONG_BAO_TOI_DA + tb.CAN_LAM_DA_DOC_THEM && ds.indexOf(dong) >= tb.THONG_BAO_TOI_DA, `có ${!!dong} · ${ds.length} dòng · vị trí ${ds.indexOf(dong)}`);
+  }));
+  check('K42a · trang đầu toàn dòng ĐÃ ĐỌC mới (60) + Case giao đã đọc cũ hơn → vẫn có (lọc n.id < dòng đã đọc cũ nhất của trang)', () => thu(() => {
+    const c = caseL();
+    const u = c.owner_user_id as number;
+    conn.prepare(`UPDATE case_interventions SET status = 'cancelled' WHERE case_id = ?`).run(c.id);
+    const cu = thongBao(u, 'case_giao', { doc: true, entity: ['sos_case', c.id] });
+    for (let i = 0; i < 60; i++) thongBao(u, 'thu_moi', { doc: true });
+    const ds = tb.thongBaoCua(u);
+    assert(ds.some((r: any) => r.id === cu) && ds.length <= tb.THONG_BAO_TOI_DA + tb.CAN_LAM_DA_DOC_THEM, `${ds.length} dòng`);
   }));
   check('A6 · docNhieu: chỉ đánh dấu dòng của người gọi (id người khác bỏ qua, không lỗi); > 200 id hoặc id sai → 400', () => thu(() => {
     const [u, v] = [gv(), gv()];

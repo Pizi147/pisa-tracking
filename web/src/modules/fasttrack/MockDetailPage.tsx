@@ -764,10 +764,14 @@ function lichGocKn(d: Detail, k: string, homNay: string): { goc: string; phu: st
  * "đã vắng {tuần} · khôi phục {dd/mm}" từ nhật ký lịch đã nạp (`history`, +0 câu). Lần khôi phục MỚI NHẤT của kỹ năng.
  */
 export function dongKhoiPhucVang(history: Detail['history'], k: string, homNay: string): string | null {
-  const h = history.find((x) => x.action === 'skill_part_restored' && x.field === k);   // `history` mới trước
-  if (!h) return null;
-  const tuan = h.oldValue ? (() => { const x = docTuanLich(h.oldValue, homNay); return x ? tuanLich(x, homNay) : h.oldValue; })() : null;
-  return tuan ? t('đã vắng {tuan} · khôi phục {ngay}', { tuan, ngay: fmtDate(h.createdAt).slice(0, 5) }) : t('khôi phục {ngay}', { ngay: fmtDate(h.createdAt).slice(0, 5) });
+  const i = history.findIndex((x) => x.action === 'skill_part_restored' && x.field === k);   // `history` mới trước
+  if (i < 0) return null;
+  /* Rà sâu #742: chỉ khi phần thi bị huỷ VÌ VẮNG trước lần khôi phục (Khôi phục còn chạy sau huỷ do thẻ Xin dời hết hạn / QL từ chối — không phải vắng);
+     tuần lấy từ chính dòng huỷ vì vắng. */
+  const huy = history.slice(i + 1).find((x) => x.action === 'skill_cancelled_absence' && x.field === k);
+  if (!huy?.oldValue) return null;
+  const x = docTuanLich(huy.oldValue, homNay);
+  return t('đã vắng {tuan} · khôi phục {ngay}', { tuan: x ? tuanLich(x, homNay) : huy.oldValue, ngay: fmtDate(history[i].createdAt).slice(0, 5) });
 }
 
 /**

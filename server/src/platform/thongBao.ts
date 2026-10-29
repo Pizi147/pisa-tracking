@@ -29,10 +29,13 @@ const CASE_CUA_THE = (y: string) => `(CASE ${y}.doi_tuong_loai WHEN 'sos_case' T
 
 /** DON-LUONG K42a: dòng "Cần làm" ĐÃ ĐỌC bị dòng mới đẩy khỏi 50 dòng đầu — lấy thêm tối đa bấy nhiêu, xếp sau (thứ tự 50 dòng đầu giữ). */
 export const CAN_LAM_DA_DOC_THEM = 20;
+/** Loại thông báo có nhánh `con_viec` = 1 trong `thongBaoCua` (giữ khớp nhánh CASE; `case_signal` lọc theo `entity_type`). */
+const KIND_CAN_LAM = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly', 'case_giao', 'phoi_hop', 'sos', 'sos_new', 'dang_ky', 'schedule_move',
+  'duyet_moi', 'duyet_qua_han', 'bao_len', 'duyet_tu_choi'] as const;
 
 export function thongBaoCua(userId: number) {
   /* Một mẫu câu cho cả hai lượt đọc (50 dòng đầu · dòng Cần làm đã đọc bị đẩy ra) — `con_viec` cùng một luật. */
-  const cau = (duoi: string) => `SELECT x.*, s.full_name AS ten_hv,
+  const cau = (trong: string, duoi: string) => `SELECT x.*, s.full_name AS ten_hv,
               (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
                 WHERE e.student_id = x.student_id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS lop
          FROM (
@@ -91,15 +94,22 @@ export function thongBaoCua(userId: number) {
              LEFT JOIN discipline_measures dm ON n.entity_type = 'discipline_measure' AND dm.id = n.entity_id
              LEFT JOIN yeu_cau_duyet ycd ON n.entity_type = 'yeu_cau_duyet' AND ycd.id = n.entity_id
              LEFT JOIN users uu ON n.kind = 'dang_ky' AND n.entity_type = 'user' AND uu.id = n.entity_id
-            WHERE n.user_id = ?
+            WHERE n.user_id = ? ${trong}
          ) x
          LEFT JOIN students s ON s.id = x.student_id
         ${duoi}`;
-  const rows = db().prepare(cau(`ORDER BY (x.read_at IS NULL) DESC, x.id DESC LIMIT ${THONG_BAO_TOI_DA}`)).all(userId) as any[];
-  /* K42a: trang đầu đầy → dòng Cần làm đã đọc ngoài trang (một câu, chỉ khi đầy). Ý thức (`con_viec` tính ở dưới) không vào lượt này. */
+  const rows = db().prepare(cau('', `ORDER BY (x.read_at IS NULL) DESC, x.id DESC LIMIT ${THONG_BAO_TOI_DA}`)).all(userId) as any[];
+  /*
+   * K42a: trang đầu đầy → dòng Cần làm ĐÃ ĐỌC ngoài trang (một câu, chỉ khi đầy). Lọc ở WHERE BÊN TRONG (rà sâu #742): chỉ dòng đã đọc cũ hơn dòng
+   * đã đọc cũ nhất của trang, chỉ loại có thể còn việc (`KIND_CAN_LAM`) — không quét lại mọi thông báo. Ý thức (`con_viec` tính ở dưới) không vào lượt này.
+   */
   if (rows.length >= THONG_BAO_TOI_DA) {
-    rows.push(...db().prepare(cau(`WHERE x.read_at IS NOT NULL AND x.con_viec = 1 AND x.id NOT IN (SELECT value FROM json_each(?))
-        ORDER BY x.id DESC LIMIT ${CAN_LAM_DA_DOC_THEM}`)).all(userId, JSON.stringify(rows.map((r) => r.id))) as any[]);
+    const daDoc = rows.filter((r) => r.read_at).map((r) => r.id as number);
+    const moc = daDoc.length ? Math.min(...daDoc) : Number.MAX_SAFE_INTEGER;
+    rows.push(...db().prepare(cau(
+      `AND n.read_at IS NOT NULL AND n.id < ? AND (n.kind IN (${KIND_CAN_LAM.map((k) => `'${k}'`).join(', ')}) OR n.entity_type = 'case_signal')`,
+      `WHERE x.con_viec = 1 ORDER BY x.id DESC LIMIT ${CAN_LAM_DA_DOC_THEM}`,
+    )).all(userId, moc) as any[]);
   }
   /* SL1 (N1): hạn của dòng — lưu sẵn (tự động, Case giao) → hạn thẻ duyệt → hạn việc tiếp của Case (`xuLyCaseMany`, một câu mỗi lô). */
   const caseCan = [...new Set(rows.filter((r) => !r.han && r.entity_type === 'sos_case').map((r) => r.entity_id as number))];

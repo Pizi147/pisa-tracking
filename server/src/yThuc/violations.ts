@@ -74,6 +74,7 @@ function chanGhiViPham(studentId: number) {
   if (!r) return loi(400, 'Em chưa xếp lớp — xếp lớp trước khi ghi vi phạm.');
   if (r.status === 'paused') return loi(400, 'Em đang tạm dừng — Quay lại học trước khi ghi vi phạm.');
   if (r.status === 'transferred') return loi(400, 'Em đã chuyển khỏi {lop} — ghi ở lớp em đang học.', { lop: r.code });
+  if (r.status === 'completed') return loi(400, 'Em đã học xong khoá ở {lop} — xếp lớp mới trước khi ghi vi phạm.', { lop: r.code });
   return loi(400, 'Em đã thôi học ở {lop} — không ghi vi phạm mới.', { lop: r.code });
 }
 

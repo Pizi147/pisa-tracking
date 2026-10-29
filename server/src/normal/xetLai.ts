@@ -527,7 +527,7 @@ export function ghiNhanXetGvcnMoi(p: Principal, classId: number, studentId: numb
     if (q) {
       throw loi(409, 'QL đã quyết {buoc} lúc {ngay} — nhận xét không còn cần.', {
         buoc: ({ tiep_tuc: 'Tiếp tục', hoc_lai: 'Học lại', len: 'Lên lớp', dung: 'Tạm dừng/ Kết thúc học' } as Record<string, string>)[q.quyet_dinh] ?? q.quyet_dinh,
-        ngay: `${q.luc.slice(8, 10)}/${q.luc.slice(5, 7)}`,
+        ngay: ((d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`)(todayInBusinessTz(new Date(q.luc))),   // ngày VN (rà sâu #742: `luc` UTC)
       });
     }
   }
