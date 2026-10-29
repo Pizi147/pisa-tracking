@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, invalidate } from '../../lib/api.ts';
+import { api } from '../../lib/api.ts';
+import { hoanTacXoa, lamMoiHocVien } from '../../lib/thungRac.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
@@ -18,8 +19,8 @@ export type XemXoaHocVien = {
 
 /**
  * ⋮ HỒ SƠ HV › XOÁ HỌC VIÊN (PR-XOA, đặc tả §1) — chỉ Quản trị hệ thống; máy chủ kiểm quyền và kiểm lại mã. Panel nêu em là ai, bảng
- * "Những gì sẽ mất" (hai cột thẳng, số canh phải), "Không khôi phục được"; chỉ khi GÕ XOÁ (OV-13f: mã HV không hiện — như Xoá nhiều em) thì nút đỏ "Xoá vĩnh viễn" mới bật.
- * Xoá xong về Học viên & Lớp (hồ sơ không còn).
+ * "Những gì sẽ mất" (hai cột thẳng, số canh phải); chỉ khi GÕ XOÁ (OV-13f: mã HV không hiện — như Xoá nhiều em) thì nút đỏ "Xoá" mới bật.
+ * Xoá xong về Học viên & Lớp + toast Hoàn tác (Q-RL2b: thùng rác 30 ngày, khôi phục ở Quản trị › Đã xoá hoặc Lưu trữ).
  */
 export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
   studentId: number; studentName: string; lop?: string | null; onClose: () => void;
@@ -39,10 +40,9 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
     if (!d) return;
     setBusy(true);
     try {
-      await api.post(`/students/${studentId}/xoa`, { maXacNhan: go.trim() });
-      invalidate('/students'); invalidate('/hoc-vien-lop'); invalidate('/classes');
-      invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/cases');
-      toast.push('ok', t('Đã xoá học viên {ten}', { ten: d.ten }));
+      const r = await api.post<{ thungRacId?: number }>(`/students/${studentId}/xoa`, { maXacNhan: go.trim() });
+      lamMoiHocVien();
+      hoanTacXoa(toast, r.thungRacId, t('Đã xoá học viên · {ten}', { ten: d.ten }), lamMoiHocVien);
       onClose();
       navigate('/hoc-vien', { replace: true });
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -51,7 +51,7 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
   return (
     <KhungPanel tieuDe={t('Xoá học viên')} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !khop} onClick={xoa}>{t('Xoá vĩnh viễn')}</button>,
+        chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !khop} onClick={xoa}>{t('Xoá')}</button>,
       }}>
       {xem.error ? <div className="pt-3"><ErrorState message={xem.error.message} hint={xem.error.hint} onRetry={xem.reload} /></div>
         : !d ? <div className="pt-3"><Skeleton rows={4} /></div> : (
@@ -82,8 +82,7 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
               )}
             </Khoi>
             <Khoi tieuDe={t('Xác nhận')}>
-              <p className="m-0 text-sm text-soon">{t('Không khôi phục được (trừ từ bản sao lưu).')}</p>
-              <p className="m-0 text-xs text-slate-400">{t('Nên nhờ Quản trị sao lưu trước lần xoá đầu.')}</p>
+              <p className="m-0 text-xs text-slate-400">{t('Khôi phục được trong 30 ngày (Quản trị › Đã xoá hoặc Lưu trữ).')}</p>
               <Truong nhan={t('Gõ {chu} để xác nhận', { chu: CHU_XAC_NHAN_XOA })} batBuoc loi={lf.loiCua(loi, 'go-lai')}>
                 <input className="field w-full" {...lf.o(loi, 'go-lai')} value={go} onChange={(e) => setGo(e.target.value)} autoComplete="off" spellCheck={false} />
               </Truong>

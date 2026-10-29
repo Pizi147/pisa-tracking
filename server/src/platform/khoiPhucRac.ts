@@ -14,12 +14,15 @@ import { GIU_NGAY, docMucRac, khoiPhucMuc, kiemGoc, type DuLieuRac, type MucRac 
  * Case: Quản lý của học viên; PA: Quản lý trong phạm vi Case; vi phạm: người ghi · GVCN · Quản lý của học viên; tệp: quyền gỡ tệp của bản ghi chủ.
  * Danh sách "Đã xoá" (Quản trị) chỉ hiện mục người xem khôi phục được (Quản trị: mọi mục, kể cả đã khôi phục / hết hạn).
  */
-const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', vi_pham: 'violations', tep: 'attachments' };
+const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', vi_pham: 'violations', tep: 'attachments', hoc_vien: 'students' };
 const duLieu = (m: MucRac) => JSON.parse(m.du_lieu) as DuLieuRac;
 const dongGoc = (m: MucRac, bang: string) => duLieu(m).ban.find((b) => b.k === 'xoa' && b.bang === bang)?.dong[0] as any;
 
 function kiemQuyen(p: Principal, m: MucRac): void {
-  if (m.loai === 'case') {
+  if (m.loai === 'hoc_vien') {
+    /* Q-RL2b: như Xoá học viên (`CYCLE_EDIT` — Quản lý của em / Quản trị); em đã không còn nên xét theo lớp cuối / chi nhánh lúc xoá. */
+    require_(p, PERMISSIONS.CYCLE_EDIT, m.class_id ? { classId: m.class_id } : { branchId: m.branch_id }, 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới khôi phục được học viên.');
+  } else if (m.loai === 'case') {
     require_(p, PERMISSIONS.CASE_APPROVE, { studentId: dongGoc(m, 'sos_cases').student_id }, 'Chỉ Quản lý khôi phục được Case.');
   } else if (m.loai === 'pa') {
     const c = loadCase(dongGoc(m, 'case_interventions').case_id);   // Case HIỆN TẠI (đã so dấu — đúng Case lúc xoá)

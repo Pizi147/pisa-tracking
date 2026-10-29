@@ -160,7 +160,7 @@ export function chay(p: Principal, input: {
       const e = em.get(id)!;
       try {
         /* Xoá: giao dịch + chặn sắp hết giờ (6 s) + xoá tệp SAU khi chốt nằm trong `xoaHocVien` — không bọc thêm `tx` (tệp không được xoá trước khi lô chốt). */
-        if (viec === 'xoa') { xoaHocVien(p, id, { maXacNhan: e.s.student_code }); kq.ok.push(id); continue; }
+        if (viec === 'xoa') { const r = xoaHocVien(p, id, { maXacNhan: e.s.student_code }); kq.ok.push(id); (kq.thungRac ??= []).push(r.thungRacId); continue; }
         tx(() => {
           chanGiaoDichNeuSapHetGio();   // sắp hết giờ → 503 "chưa lưu" cho em này (và các em sau)
           if (viec === 'tam-dung') setStudentStatus(p, id, 'inactive', date ?? demoToday(), lyDo ?? undefined);

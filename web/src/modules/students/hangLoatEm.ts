@@ -18,6 +18,7 @@ export async function chayHangLoat(
         viec, studentIds: lo[i], lyDo: o.lyDo || undefined, date: o.date || undefined, moLaiLop: o.moLaiLop === true, lopMoiId: o.lopMoiId, xacNhan: o.xacNhan,
       });
       kq.ok.push(...r.ok); kq.failed.push(...r.failed);
+      if (r.thungRac?.length) (kq.thungRac ??= []).push(...r.thungRac);   // Q-RL2b: Xoá — id thùng rác từng em đã xoá
     } catch (e: any) {
       for (const sid of lo.slice(i).flat()) kq.failed.push({ studentId: sid, message: e.message });
       break;
@@ -29,6 +30,7 @@ export async function chayHangLoat(
 /**
  * Hoàn tác = làm việc NGƯỢC cho đúng các học viên đã làm được: Kết thúc học → `hoan-tac-ket-thuc` (mở lại đúng Case / PA đã đóng), Học lại → `hoan-tac-hoc-lai`
  * (gỡ ghi danh / lộ trình mới; có dữ liệu thì máy chủ từ chối kèm câu rõ), lưu trữ ↔ bỏ lưu trữ, huỷ ↔ khôi phục chuyển lớp.
+ * Xoá không đi đường này: Hoàn tác = khôi phục thùng rác (`hoanTacXoaLo`, Q-RL2b).
  */
 export async function hoanTacHangLoat(viec: Exclude<ViecHangLoat, 'xoa'>, ids: number[]): Promise<KetQuaHangLoat> {
   return chayHangLoat(VIEC_NGUOC[viec], ids, {});

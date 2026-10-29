@@ -13,7 +13,7 @@ import { xoaTepSauGiaoDich } from './attachments.ts';
  * Tệp trong kho giữ `GIU_NGAY` ngày rồi `donThungRac` (cron) xoá hẳn.
  */
 export const GIU_NGAY = 30;
-export type LoaiRac = 'case' | 'pa' | 'vi_pham' | 'tep';
+export type LoaiRac = 'case' | 'pa' | 'vi_pham' | 'tep' | 'hoc_vien';
 
 type Dong = Record<string, unknown>;
 type Ban =

@@ -9,6 +9,8 @@ export async function runPrThungRacTests(t: YThucTestKit) {
   const viol: any = await import('../yThuc/violations.ts');
   const rac: any = await import('../platform/thungRac.ts');
   const kp: any = await import('../platform/khoiPhucRac.ts');
+  const xoaHV: any = await import('../students/xoaHocVien.ts');
+  const hl: any = await import('../students/hangLoat.ts');
   const khoMod: any = await import('../platform/khoTep.ts');
   console.log('\nQ-RL2a THUNG-RAC · xoá → Hoàn tác / Khôi phục');
 
@@ -46,7 +48,7 @@ export async function runPrThungRacTests(t: YThucTestKit) {
   /** Ảnh mọi bảng nghiệp vụ (bỏ nhật ký / chuông / thùng rác / cấu hình — chỉ ghi thêm). So trước xoá và sau khôi phục. */
   const BO = new Set(['audit_logs', 'notifications', 'thung_rac', 'demo_config', 'sqlite_sequence']);
   const anh = () => Object.fromEntries((hang(`SELECT name FROM sqlite_master WHERE type = 'table'`) as any[])
-    .filter((x) => !BO.has(x.name)).map((x) => [x.name, JSON.stringify(hang(`SELECT * FROM ${x.name} ORDER BY rowid`))]));
+    .filter((x) => !BO.has(x.name)).map((x) => [x.name, JSON.stringify(hang(`SELECT * FROM ${x.name}`).map((r) => JSON.stringify(r)).sort())]));   // không theo thứ tự: bảng khoá ghép (measure_violations) chèn lại được rowid mới
   const soAnh = (a: Record<string, string>, b: Record<string, string>) => Object.keys(a).filter((k) => a[k] !== b[k]);
 
   check('TR-1 · Xoá Case báo tay (PA + thẻ chờ + tệp) → Khôi phục: mọi bảng y hệt; mục thùng rác ghi người / lúc khôi phục; khôi phục lần hai 409', () => thu(() => {
@@ -75,7 +77,7 @@ export async function runPrThungRacTests(t: YThucTestKit) {
     assert(!mot('SELECT 1 FROM case_followups WHERE intervention_id = ?', ivId), 'kết quả chưa đi theo PA');
     kp.khoiPhucRac(QL, r.thungRacId);
     /* Case được đồng bộ lại trạng thái theo PA (cùng `dongBoTrangThaiCase`) — chỉ `updated_at` được phép đổi. */
-    const boGio = (j: string) => JSON.stringify(JSON.parse(j).map((x: any) => ({ ...x, updated_at: null })));
+    const boGio = (j: string) => JSON.stringify(JSON.parse(j).map((x: string) => ({ ...JSON.parse(x), updated_at: null })));
     const sau = anh();
     const lech = soAnh(truoc, sau).filter((k) => k !== 'sos_cases' || boGio(truoc[k]) !== boGio(sau[k]));
     assert(!lech.length, `bảng lệch: ${lech.join(', ')}`);
@@ -229,5 +231,40 @@ export async function runPrThungRacTests(t: YThucTestKit) {
     const id = rac.ghiThungRac(conn, { loai: 'tep', doiTuongId: lid, nhan: 'thử', nguoi: QL.userId, chup: ch });
     assert(/đã thay đổi hoặc không còn/.test(chuLoi(() => rac.khoiPhucMuc(QL.userId, rac.docMucRac(id), 'attachments'))), 'phải 409');
     assert(!mot('SELECT khoi_phuc_luc FROM thung_rac WHERE id = ?', id).khoi_phuc_luc, 'đánh dấu đã khôi phục');
+  }));
+
+  // ---------------------------------------------------------------- Q-RL2b · Xoá học viên
+  /** Em seed MB có nhiều dữ liệu nhất (lượt Test, Case, vi phạm…) — đụng nhiều bảng nhất trong ~47 bảng của em. */
+  const emGiau = (branch = 'MB') => mot(`SELECT s.id, s.student_code ma FROM students s JOIN branches b ON b.id = s.branch_id WHERE b.code = ?
+      ORDER BY (SELECT COUNT(*) FROM assessment_attempts a WHERE a.student_id = s.id) + 3 * (SELECT COUNT(*) FROM sos_cases c WHERE c.student_id = s.id)
+        + 3 * (SELECT COUNT(*) FROM violations v WHERE v.student_id = s.id) DESC LIMIT 1`, branch);
+  const soBangCo = (sid: number) => xoaHV.BANG_CUA_HOC_VIEN.filter((b: string) => {
+    try { return !!mot(`SELECT 1 FROM ${b} WHERE ${b === 'students' ? 'id' : 'student_id'} = ? LIMIT 1`, sid); } catch { return false; }
+  }).length;
+
+  check('TR-8 · Xoá MỘT học viên nhiều dữ liệu (≥ 8 bảng của em) → Khôi phục: mọi bảng nghiệp vụ y hệt; quyền khôi phục như Xoá (GV 403)', () => thu(() => {
+    const em = emGiau();
+    const n = soBangCo(em.id);
+    assert(n >= 8, `em seed chỉ có dữ liệu ở ${n} bảng`);
+    const truoc = anh();
+    const r = xoaHV.xoaHocVien(QL, em.id, { maXacNhan: em.ma });
+    assert(r.thungRacId && !mot('SELECT 1 FROM students WHERE id = ?', em.id), 'chưa xoá');
+    assert(maLoi(() => kp.khoiPhucRac(P.lrTeacher, r.thungRacId)) === 403, 'GV khôi phục học viên');
+    kp.khoiPhucRac(QL, r.thungRacId);
+    const lech = soAnh(truoc, anh());
+    assert(!lech.length, `bảng lệch sau khôi phục HV: ${lech.join(', ')}`);
+  }));
+
+  check('TR-9 · Xoá HÀNG LOẠT lỗi một phần: em trong phạm vi xoá + chụp (mỗi em một mục), em ngoài phạm vi giữ nguyên; Khôi phục các mục → y hệt', () => thu(() => {
+    const a = moiEm(), b = moiEm();
+    const ngoai = emGiau('CP');
+    assert(ngoai, 'không có em chi nhánh CP');
+    const truoc = anh();
+    const kq = hl.chay(QL, { viec: 'xoa', studentIds: [a, ngoai.id, b], xacNhan: d.CHU_XAC_NHAN_XOA });
+    assert(kq.ok.length === 2 && kq.failed.length === 1 && kq.failed[0].studentId === ngoai.id && kq.thungRac?.length === 2, JSON.stringify(kq));
+    assert(mot('SELECT 1 FROM students WHERE id = ?', ngoai.id) && !mot('SELECT 1 FROM students WHERE id = ?', a), 'em lỗi phải giữ, em đúng phải xoá');
+    for (const id of kq.thungRac) kp.khoiPhucRac(QL, id);
+    const lech = soAnh(truoc, anh());
+    assert(!lech.length, `bảng lệch: ${lech.join(', ')}`);
   }));
 }

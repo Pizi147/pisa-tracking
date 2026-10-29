@@ -51,4 +51,6 @@ export type XemTruocHangLoat = {
     /** P7, chỉ Tạm dừng / Kết thúc học: khối "Khi lưu, web sẽ" của cả lô (`tomTatTrangThai` — cùng hàm hộp một em). */
     tomTat?: string[] };
 };
-export type KetQuaHangLoat = { ok: number[]; failed: { studentId: number; message: string }[] };
+export type KetQuaHangLoat = { ok: number[]; failed: { studentId: number; message: string }[];
+  /** Q-RL2b: Xoá — id mục thùng rác của từng em đã xoá (Hoàn tác cả lô). */
+  thungRac?: number[] };
