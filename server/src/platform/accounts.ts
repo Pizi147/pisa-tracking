@@ -626,6 +626,29 @@ export function listAccounts(p: Principal) {
   const users = conn
     .prepare(`SELECT u.*, ${COT_PRINCIPAL} FROM users u WHERE u.approval_state != 'pending' ORDER BY u.full_name COLLATE NOCASE`)
     .all() as any[];
+  /* SUA-NHO-QUYEN: bốn câu MỖI tài khoản (N+1) → một câu mỗi bảng cho cả danh sách, nhóm theo người bằng Map (thứ tự trong từng người
+   * giữ như cũ). Đọc cả bảng: tài khoản chờ duyệt ít, rẻ hơn lọc `IN (…)` theo lô. */
+  const theoNguoi = <T>(rows: any[], f: (r: any) => T) => {
+    const m = new Map<number, T[]>();
+    for (const r of rows) { const { user_id, ...x } = r; (m.get(user_id) ?? m.set(user_id, []).get(user_id)!).push(f(x)); }
+    return m;
+  };
+  const roles = theoNguoi(conn.prepare(
+    `SELECT ur.user_id, r.key AS role, r.name_vi AS roleName, b.code AS branchCode, b.name AS branchName
+       FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+       LEFT JOIN branches b ON b.id = ur.branch_id
+      WHERE ur.status = 'active' ORDER BY ur.user_id, r.id, b.id`,
+  ).all() as any[], (x) => x);
+  const skills = theoNguoi(conn.prepare('SELECT user_id, skill FROM user_skills ORDER BY user_id, skill').all() as any[], (x) => x.skill as string);
+  const extraEmails = theoNguoi(conn.prepare('SELECT user_id, email FROM user_emails ORDER BY user_id, id').all() as any[], (x) => x.email as string);
+  const extra = theoNguoi(conn.prepare(
+    `SELECT up.user_id, p.key AS permission, p.name_vi AS name, b.code AS branchCode
+       FROM user_permissions up JOIN permissions p ON p.id = up.permission_id
+       LEFT JOIN branches b ON b.id = up.branch_id
+      ORDER BY up.user_id, p.id, up.branch_id`,
+  ).all() as any[], (x) => x);
+  /* SUA-NHO-QUYEN (chủ SP 30/10): "Chưa có kỹ năng" tính cả người đang được phân công dạy (kể cả QL không vai GV). */
+  const dangDay = new Set((conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE status = 'active'`).all() as any[]).map((r) => r.user_id as number));
   return users.map((u) => ({
     id: u.id, code: u.code, fullName: u.full_name, email: u.email, phone: u.phone,
     title: u.title, status: u.status, approvalState: u.approval_state,
@@ -640,24 +663,11 @@ export function listAccounts(p: Principal) {
     hasPassword: !!u.password_hash,
     /** OV-14c: được tính là GV Speaking chấm chéo (`laGvSpeaking`, cùng hàm với quyền) — chip "Chấm Speaking". */
     chamSpeaking: laGvSpeaking(principalTuDong(u)),
-    roles: (conn
-      .prepare(
-        `SELECT r.key AS role, r.name_vi AS roleName, b.code AS branchCode, b.name AS branchName
-           FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-           LEFT JOIN branches b ON b.id = ur.branch_id
-          WHERE ur.user_id = ? AND ur.status = 'active' ORDER BY r.id, b.id`,
-      )
-      .all(u.id) as any[]),
-    skills: (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ?').all(u.id) as any[]).map((r) => r.skill),
-    extraEmails: (conn.prepare('SELECT email FROM user_emails WHERE user_id = ? ORDER BY id').all(u.id) as any[]).map((r) => r.email),
-    extra: (conn
-      .prepare(
-        `SELECT p.key AS permission, p.name_vi AS name, b.code AS branchCode
-           FROM user_permissions up JOIN permissions p ON p.id = up.permission_id
-           LEFT JOIN branches b ON b.id = up.branch_id
-          WHERE up.user_id = ? ORDER BY p.id`,
-      )
-      .all(u.id) as any[]),
+    roles: roles.get(u.id) ?? [],
+    skills: skills.get(u.id) ?? [],
+    extraEmails: extraEmails.get(u.id) ?? [],
+    extra: extra.get(u.id) ?? [],
+    dangDay: dangDay.has(u.id),
   }));
 }
 
