@@ -249,6 +249,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### Backlog phát sinh đêm 30/10 (PTA rà PR)
+- **QUYEN-LIEN-HE (PR riêng, quyền):** luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
+- **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
+
 ### 30/10 (tối) — chủ SP duyệt mockup PANEL-V10 #723 (KHÔNG mockup lại; chỉnh ghi ở đây, kế hoạch code phải theo)
 - **Điểm kỹ năng = đạt / không đạt, KHÔNG phải lên / xuống:** bỏ ▼ / ▲ ở điểm (▲ ▼ chỉ dùng cho TIẾN ĐỘ / so lượt trước). Kỹ năng hụt: màu + **✗**, đạt: **✓** — đúng kiểu ô Overall (không phân biệt chỉ bằng màu). Áp panel + bảng em + HV & Lớp. G12 giữ (✓/✗ trước số).
 - **Tên TVV dưới tên HV (bảng em hồ sơ lớp): nhỏ hơn mockup một nấc** (vẫn chữ phụ mờ).
