@@ -35,7 +35,7 @@ export function nhoKhung(trang: Trang, k: KhungLoc) {
   try { localStorage.setItem(khoa(trang), k); } catch { /* không lưu được thì thôi — lần sau về mặc định */ }
 }
 
-export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa = false, kieu = 'doan' }: {
+export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa = false, kieu = 'doan', chuTatCa }: {
   trang: Trang; value: KhungLoc; onChange: (k: KhungLoc) => void;
   /** Số hiện cạnh tên khung (lớp, việc…); khung có số 0 coi như không có dữ liệu. */
   dem?: Partial<Record<KhungLoc, number>>;
@@ -44,6 +44,8 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
   coTatCa?: boolean;
   /** `chon` = ô chọn "Loại lớp: …" (Học viên & Lớp, K1 — không có hai chữ "Tất cả" cạnh nhau); `chip` = chip rời (Lịch tuần V5, dieu-chinh-cuoi khu a); mặc định phân đoạn. */
   kieu?: 'doan' | 'chon' | 'chip';
+  /** `chon` không tiền tố "Loại lớp:" — mục đầu là chữ này (Công việc V8: "Mọi khung"), mục sau "Fast Track · n". */
+  chuTatCa?: string;
 }) {
   /* UX-2 (5): hiện theo lớp trong phạm vi người xem; chưa biết phạm vi thì theo dữ liệu đang xem như cũ. */
   const coDuLieu = khungCuaPhamVi ? (['ft', 'thuong'] as const).filter((k) => khungCuaPhamVi![k]) : (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
@@ -51,6 +53,14 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
   const nhan = (ten: string, k: KhungLoc) => (dem?.[k] != null && donVi ? `${ten} · ${dem[k]} ${donVi}` : ten);
   if (kieu === 'chon') {
     const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null ? `${ten} · ${dem[k]}${donVi ? ` ${donVi}` : ''}` : ten);
+    if (chuTatCa) return (
+      <select className="field h-8 w-auto !py-0 text-[13px] font-semibold max-sm:min-h-[44px] max-sm:w-full" aria-label={t('Khung lớp')} value={value}
+        onChange={(e) => { const k = e.target.value as KhungLoc; nhoKhung(trang, k); onChange(k); }}>
+        <option value="tat-ca">{chuTatCa}</option>
+        <option value="ft">{chu('Fast Track', 'ft')}</option>
+        <option value="thuong">{chu(t('Lớp thường'), 'thuong')}</option>
+      </select>
+    );
     return (
       <select className="field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full" aria-label={t('Loại lớp')} value={value}
         onChange={(e) => { const k = e.target.value as KhungLoc; nhoKhung(trang, k); onChange(k); }}>

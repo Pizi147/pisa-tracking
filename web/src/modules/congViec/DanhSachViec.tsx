@@ -22,11 +22,11 @@ type ChungDong = {
 };
 
 /* CONG-VIEC-2 (mockup `thiet-ke/v7/cong-viec-2.html` "Luật tầng"): cột hạn + cột nút cố định ở ≥ 640 px — mắt quét một cột. */
-const COT_VIEC = 'sm:grid-cols-[minmax(0,1fr)_136px_112px]';
+export const COT_VIEC = 'sm:grid-cols-[minmax(0,1fr)_136px_112px]';
 /* Nút tên việc có `scroll-mt-14`: Tab tới một việc thì dải nhóm dính (48 px) không che nó. */
 const COT_LOP = 'grid-cols-[28px_minmax(0,1fr)] sm:grid-cols-[28px_minmax(0,1fr)_136px_112px]';
 /* Nét cây (tầng 3 dưới tên em): dọc ở 30 px (375: 26), ngang 12 px vào giữa dòng; dòng cuối dừng ở giữa. */
-const NET_CAY = "relative before:absolute before:left-[26px] sm:before:left-[30px] before:top-0 before:bottom-0 before:w-px before:bg-[color:var(--line-strong)] before:content-[''] last:before:bottom-1/2 "
+export const NET_CAY = "relative before:absolute before:left-[26px] sm:before:left-[30px] before:top-0 before:bottom-0 before:w-px before:bg-[color:var(--line-strong)] before:content-[''] last:before:bottom-1/2 "
   + "after:absolute after:left-[26px] sm:after:left-[30px] after:top-1/2 after:h-px after:w-3 after:bg-[color:var(--line-strong)] after:content-['']";
 
 /** Biểu tượng nét 16 px của nhóm việc (mockup `IC`) — nhóm phân biệt bằng tên + biểu tượng, một màu nhấn. */
@@ -43,11 +43,11 @@ const DUONG_IC: Record<string, ReactNode> = {
   duyet: <><circle cx="8" cy="8" r="5.5" /><path d="M5.6 8.2l1.7 1.7 3.2-3.4" /></>,
   lop: <><circle cx="6" cy="6" r="2.2" /><circle cx="11.2" cy="6.6" r="1.7" /><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3" /></>,
 };
-const IconNhom = ({ k }: { k: string }) => (
+export const IconNhom = ({ k }: { k: string }) => (
   <svg viewBox="0 0 16 16" aria-hidden className="h-4 w-4 shrink-0 fill-none stroke-current" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">{DUONG_IC[k] ?? DUONG_IC.lop}</svg>
 );
 /** Chữ đầu tên em (vòng tròn tầng 2): hai từ cuối ("Vũ Hải Đăng" → "HĐ"). */
-const chuDau = (ten: string) => {
+export const chuDau = (ten: string) => {
   const w = ten.trim().split(/\s+/);
   return (w.length > 1 ? w[w.length - 2][0] + w[w.length - 1][0] : w[0].slice(0, 2)).toUpperCase();
 };
