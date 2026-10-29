@@ -12,7 +12,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { bangLop, can, editableSkills, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, lopXemTam, scopeFor, type Principal } from '../permissions.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { classProgressMany, lichMtCua, missingForStudent } from './schedule.ts';
 import { standingFor, type Standing } from '../students/standing.ts';
@@ -56,6 +56,8 @@ export type TrangHocVienLop = {
   coTheThemHocVien: boolean;
   /** Số ở mục ⋯ "Lưu trữ" đầu trang (PR-LT, Q16) — cùng phạm vi, cùng hàm với `/hoc-vien-lop/luu-tru` (khớp G-10 theo cấu tạo). */
   demLuuTru: { lop: number; hv: number };
+  /** PC-GV-A (PTA 30/10): lớp GV vừa bị đổi khỏi — "Chỉ xem · đã bàn giao" tới `den`; không là hàng / không tính chip, việc, chỉ số. */
+  lopChiXem: { id: number; code: string; den: string }[];
 };
 
 const demRong = (): Record<LocHocVien, number> => demLoc([], 'tat-ca');
@@ -117,6 +119,10 @@ export function danhSachHocVienLop(
   const phamVi = { coThe, dangDung, chiNhanh };
   const dl = danhSachLuuTru(p, {});
   const demLuuTru = { lop: dl.lop.length, hv: dl.hocVien.length };
+  const xt = lopXemTam(p, today);
+  const maLopXt = new Map(xt.length ? (conn.prepare(`SELECT id, code FROM classes WHERE id IN (${xt.map(() => '?').join(',')})`).all(...xt.map((x) => x.classId)) as any[])
+    .map((r) => [r.id as number, r.code as string]) : []);
+  const lopChiXem = xt.filter((x) => maLopXt.has(x.classId)).map((x) => ({ id: x.classId, code: maLopXt.get(x.classId)!, den: x.den }));
   /* Đang tìm: hỏi theo mọi lớp trong phạm vi (không lọc tìm); không tìm thì đọc cờ của các hàng (dưới). */
   const themTheoPhamVi = (f.q ?? '').trim()
     ? (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).some((c) => can(p, PERMISSIONS.STUDENT_ADD, { classId: c.id }))
@@ -128,11 +134,11 @@ export function danhSachHocVienLop(
     /* Phạm vi quyết luôn badge chấm bài: "Lớp tôi dạy" đếm phần mình phải chấm (Q12 — thay cặp nút Tôi / Tất cả). */
     scope: dangDung === 'toi' ? 'mine' : 'managed',
   });
-  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: false, demLuuTru };
+  if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: false, demLuuTru, lopChiXem };
   const lopToi = new Set(phanCong.map((a) => a.classId));
   const lops = dangDung === 'toi' ? base.rows.filter((r) => lopToi.has(r.id))
     : dangDung === 'cua-toi' ? base.rows.filter((r) => lopCuaToi.has(r.id)) : base.rows;
-  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: !!themTheoPhamVi, demLuuTru };
+  if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, coTheThemHocVien: !!themTheoPhamVi, demLuuTru, lopChiXem };
 
   const ids = lops.map((r) => r.id);
   const ph = ids.map(() => '?').join(',');
@@ -310,7 +316,7 @@ export function danhSachHocVienLop(
   }
 
   const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheThemHocVien);
-  return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru };
+  return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru, lopChiXem };
 }
 
 /**

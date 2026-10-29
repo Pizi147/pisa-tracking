@@ -369,6 +369,17 @@ export function xemTamCo(p: Principal, ctx: Ctx): boolean {
   return p.xemTam.some((x) => x.tu <= date && date <= x.den && lop.includes(x.classId));
 }
 
+/** PC-GV-A: lớp GV cũ CHỈ XEM ở ngày này (còn hạn, không còn phân công nào ở lớp đó) — mỗi lớp một dòng, `den` muộn nhất. */
+export function lopXemTam(p: Principal, date = demoToday()): { classId: number; den: string }[] {
+  const dang = new Set(p.assignments.filter((a) => activeAt(a, date)).map((a) => a.classId));
+  const m = new Map<number, string>();
+  for (const x of p.xemTam ?? []) {
+    if (x.tu > date || date > x.den || dang.has(x.classId)) continue;
+    if (!m.has(x.classId) || m.get(x.classId)! < x.den) m.set(x.classId, x.den);
+  }
+  return [...m].map(([classId, den]) => ({ classId, den }));
+}
+
 /**
  * Ràng buộc thêm cho vai trò Giáo viên. Giáo viên không có quyền nào về lịch, và GVCN
  * không vì chủ nhiệm mà có quyền sửa mọi kỹ năng.
@@ -529,11 +540,9 @@ export function scopeFor(p: Principal, permission: string, date = demoToday()): 
     if (!g.permissions.has(permission)) continue;
     found = true;
     if (g.roleKey === 'teacher') {
+      /* PC-GV-A (PTA 30/10): lớp GV cũ chỉ xem (`xemTam`) KHÔNG vào phạm vi danh sách — không tính vào việc / chỉ số của GV cũ; trang
+         Học viên & Lớp liệt kê riêng (`lopXemTam`, "Chỉ xem · đã bàn giao"), mở hồ sơ qua `can` (`xemTamCo`). */
       for (const a of p.assignments) if (activeAt(a, date)) classIds.add(a.classId);
-      /* PC-GV-A: GV cũ chỉ xem lớp cũ có hạn — cùng luật `xemTamCo`. */
-      if (permission === PERMISSIONS.ATTEMPT_VIEW || permission === PERMISSIONS.STUDENT_VIEW) {
-        for (const x of p.xemTam ?? []) if (x.tu <= date && date <= x.den) classIds.add(x.classId);
-      }
       continue;
     }
     if (g.branchId === null) all = true;

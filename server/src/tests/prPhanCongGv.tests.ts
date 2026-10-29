@@ -342,6 +342,8 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
 
   /* ---------------------------------------------------------------- A5 · GV cũ chỉ xem lớp cũ có hạn */
   const perm: any = await import('../permissions.ts');
+  const mwHvl: any = await import('../classes/hocVienLop.ts');
+  const mwMod: any = await import('../worklist/mywork.ts');
   const PM = (await import('../../../shared/domain/index.ts')).PERMISSIONS;
   check('A5 · đổi R ngay (GV R không còn ô nào): xem lượt + học viên được; nhập điểm R, báo Case, ghi vi phạm không', () => thu(() => {
     pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
@@ -349,11 +351,25 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     assert(perm.can(c, PM.ATTEMPT_VIEW, { classId: X }) && perm.can(c, PM.STUDENT_VIEW, { classId: X }) && perm.can(c, PM.STUDENT_VIEW, { studentId: emX }), 'xem được');
     assert(!perm.can(c, PM.SCORE_EDIT, { classId: X, skill: 'reading' }) && !perm.can(c, PM.SOS_REPORT, { classId: X }) && !perm.can(c, PM.VIOLATION_RECORD, { classId: X }), 'không sửa');
   }));
-  check('A5 · hết mốc (hiệu lực + 8 ngày): không xem; scopeFor(ATTEMPT_VIEW) hôm nay có lớp, +8 không', () => thu(() => {
+  check('A5 · hết mốc (hiệu lực + 8 ngày): không xem; PTA 30/10: lớp cũ KHÔNG vào phạm vi danh sách / việc / chỉ số (scopeFor không có lớp)', () => thu(() => {
     pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
     const c = loadPrincipal(gC);
     assert(!perm.can(c, PM.ATTEMPT_VIEW, { classId: X, date: addDays(TODAY, 8) }), '+8 không xem');
-    assert(perm.scopeFor(c, PM.ATTEMPT_VIEW, TODAY).classIds.includes(X) && !perm.scopeFor(c, PM.ATTEMPT_VIEW, addDays(TODAY, 8)).classIds.includes(X), 'scopeFor');
+    for (const q of [PM.ATTEMPT_VIEW, PM.STUDENT_VIEW]) assert(!perm.scopeFor(c, q, TODAY).classIds.includes(X), `scopeFor ${q} không có lớp cũ`);
+  }));
+  check('A5 · PTA 30/10: Công việc / Tổng quan GV cũ không tính lớp cũ; trang Học viên & Lớp trả lớp cũ ở lopChiXem (Chỉ xem · đã bàn giao), hết mốc thì mất', () => thu(() => {
+    const hvl: any = mwHvl;
+    const mw: any = mwMod;
+    const c0 = loadPrincipal(gC);
+    const truoc = JSON.stringify(mw.myWork(c0).items?.map((x: any) => x.classId).filter((id: any) => id === X) ?? []);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    const c = loadPrincipal(gC);
+    const viec = (mw.myWork(c).items ?? []).filter((x: any) => x.classId === X);
+    assert(viec.length === 0, `việc lớp cũ: ${viec.length} (trước ${truoc})`);
+    const tr = hvl.danhSachHocVienLop(c, {});
+    assert(!tr.rows.some((r: any) => r.id === X), 'không là hàng lớp thường');
+    assert(tr.lopChiXem?.length === 1 && tr.lopChiXem[0].id === X && tr.lopChiXem[0].code === 'MB PCGV-X' && tr.lopChiXem[0].den === addDays(TODAY, 7), JSON.stringify(tr.lopChiXem));
+    assert(perm.lopXemTam(c, addDays(TODAY, 8)).length === 0, 'hết mốc');
   }));
   check('A5 · classOverview của GV cũ đọc được, không có quyền nhập điểm / + Case', () => thu(() => {
     pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
