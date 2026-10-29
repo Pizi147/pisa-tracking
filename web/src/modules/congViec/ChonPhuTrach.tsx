@@ -65,7 +65,7 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
   /* Menu vừa mở (chưa vào ô chọn) → focus mục đầu. */
   useEffect(() => { if (open && !picking) tro(0); }, [open, picking]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const nhan = chiChonGv ? (typeof value === 'number' ? (ten ?? '…') : t('một GV…'))
+  const nhan = chiChonGv ? (typeof value === 'number' ? (ten ?? '…') : t('Một GV'))
     : value === 'toi' ? t('Tôi') : value === 'tat-ca' ? t('Tất cả trong phạm vi') : (ten ?? '…');
   const muc = [
     { nhan: t('Tôi'), chon: () => { onChange('toi'); dongVeNut(); } },
@@ -74,10 +74,11 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
   ];
 
   return (
-    <div className="relative inline-flex items-center gap-1" ref={box}>
-      <button ref={nut} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-haspopup="menu" aria-expanded={open}
-        onClick={() => { setOpen((o) => !o); setPicking(!!chiChonGv); }}>
-        {chiChonGv ? t('Xem việc của') : t('Người phụ trách')}: {nhan}
+    <div className={`relative inline-flex items-center gap-1 ${chiChonGv ? 'max-sm:w-full' : ''}`} ref={box}>
+      <button ref={nut} type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chiChonGv ? 'h-8 justify-between gap-2 px-3 text-[13px] font-semibold max-sm:w-full max-sm:text-base' : ''}`} aria-haspopup="menu" aria-expanded={open}
+        aria-label={chiChonGv ? `${t('Xem việc của')}: ${nhan}` : undefined} onClick={() => { setOpen((o) => !o); setPicking(!!chiChonGv); }}>
+        {/* V8-CV (mockup "Một GV ▾"): ô chọn GV chỉ ghi giá trị; nhãn đầy đủ ở aria-label. */}
+        {chiChonGv ? nhan : <>{t('Người phụ trách')}: {nhan}</>}
         {/* ▾ ở chữ Inter 12px chỉ còn một chấm → vẽ SVG nét mảnh. */}
         <svg aria-hidden width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l3 3 3-3" /></svg>
       </button>

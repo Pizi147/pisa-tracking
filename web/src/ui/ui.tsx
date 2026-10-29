@@ -1,4 +1,4 @@
-import { Fragment, useId, useState, type MouseEvent, type ReactNode } from 'react';
+import { Fragment, useId, useState, type MouseEvent, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { GIAI_THICH_KCK, KCK, chuTrangThai, loaiHoSo, trangCha, type TrangThai } from '@shared/domain/index.ts';
 import { fmtBand } from '../lib/format.ts';
@@ -554,4 +554,14 @@ export function NhanTrangThai({ t, soNgay, title, chu }: {
   const chuHien = chu ?? chuTrangThai(t, soNgay);
   return <span title={title} className={`${CHIP_VUONG} ${NHAN_LOP[t]}`}>
     {t === 'qua-han' && !chuHien.includes('⚠') ? `⚠ ${chuHien}` : chuHien}</span>;
+}
+
+/** V8 (mockup "Mọi khung ▾ · Mọi hạn ▾"): ô chọn gốc (bàn phím, đọc màn hình như cũ) mang dáng nút nhỏ — cùng viền, nền, chữ, mũi tên với nút menu "Một GV ▾". */
+export function ChonDangNut({ className = '', children, ...p }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <span className={`relative inline-flex ${className}`}>
+      <select {...p} className="btn btn-sm h-8 w-full cursor-pointer appearance-none py-0 pl-3 pr-7 text-left text-[13px] font-semibold max-sm:min-h-[44px]">{children}</select>
+      <svg aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l3 3 3-3" /></svg>
+    </span>
+  );
 }
