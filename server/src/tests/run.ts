@@ -32,7 +32,66 @@ import { emailThu } from '../seed/emailThu.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
-process.env.PISA_DB = path.join(ROOT, 'data', 'test.sqlite');
+
+/*
+ * CHIA NHÓM (GON-MA-2): `chayNhom.ts` chạy N bản tệp này song song, mỗi bản `PISA_NHOM=k/N`, database + thư mục tệp riêng.
+ * Nhóm 1 chạy MỌI tệp `*.tests.ts` theo đúng thứ tự cũ, trừ các tệp trong `TACH`; các tệp `TACH` chạy ở nhóm 2…N (chia lần lượt).
+ * Chậm là do DB phình dần (nhóm 1 cuối bộ ~9× dòng so với DB vừa seed), nên tệp chạy ở DB nhỏ nhanh hơn nhiều. Nhưng nhiều tệp dựa
+ * vào dữ liệu tệp trước để lại (DL-2 `prDl` còn so mã băm cố định của trạng thái tuần tự) → chỉ tách tệp ĐÃ THỬ: đứng SAU `prDl`,
+ * xanh khi chạy ở nhóm 2 VÀ bỏ khỏi nhóm 1 không làm tệp sau đỏ. Phần viết thẳng trong tệp này (~9 s) chạy ở mọi nhóm (mục sau
+ * dùng lại hằng số của nó), chỉ nhóm 1 in + đếm. Không có `PISA_NHOM` = chạy hết như cũ.
+ * Muốn tách thêm: `PISA_TACH=<danh sách cũ>,<tệp> npm run check` xanh, rồi thêm vào `TACH`.
+ */
+const [NHOM, SO_NHOM] = (process.env.PISA_NHOM ?? '1/1').split('/').map(Number);
+/** `PISA_TACH=a,b` thay danh sách dưới — để thử tách thêm tệp mà không sửa mã. */
+const TACH = process.env.PISA_TACH ? process.env.PISA_TACH.split(',') : [
+  'prMt0', 'prHk2', 'prTd3', 'prGop', 'prOv5a', 'prOv8a', 'prOv12c', 'prOv12h', 'prOv12d', 'prOv13a', 'prOv15d', 'prOv15e', 'prOv15h1',
+  'prTd7b', 'prSl2', 'prSvYtTvv', 'prSvSo1', 'prSvTvvViec',
+];
+const nhomCua = (ten: string) => (SO_NHOM > 1 && TACH.includes(ten) ? 2 + (TACH.indexOf(ten) % (SO_NHOM - 1)) : 1);
+/** `PISA_CHI_TEP=prA,prB`: chỉ chạy các tệp này (+ phần viết thẳng) — chạy riêng phép kiểm của một PR. */
+const CHI_TEP = process.env.PISA_CHI_TEP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
+let trongTep = false;
+let tepHienTai = '';
+const thoiGian: Record<string, number> = {};
+/** Số phép kiểm đã chạy theo tệp (đạt + không đạt) — so tổng trước / sau khi đổi cách chia nhóm. */
+const soPhep: Record<string, number> = {};
+/** `PISA_DEM_DONG=1`: số dòng mỗi tệp thêm vào DB (tệp làm DB phình thì mọi tệp sau chạy chậm — ứng viên `TACH`). */
+const dongThem: Record<string, number> = {};
+const demDong = () => process.env.PISA_DEM_DONG ? (db().prepare(`SELECT (SELECT COUNT(*) FROM assessment_attempts) + (SELECT COUNT(*) FROM attempt_skills) + (SELECT COUNT(*) FROM students) + (SELECT COUNT(*) FROM sos_cases) + (SELECT COUNT(*) FROM case_interventions) + (SELECT COUNT(*) FROM notifications) n`).get() as any).n as number : 0;
+const demPhep = () => { soPhep[tepHienTai || 'run.ts'] = (soPhep[tepHienTai || 'run.ts'] ?? 0) + 1; };
+/** Bọc module `./ten.tests.ts`: hàm `run*` của nhóm khác thành rỗng; của nhóm mình thì đo giờ + đánh dấu đang trong tệp. */
+function bocTep<T extends object>(ten: string, m: T): T {
+  const cuaToi = CHI_TEP ? CHI_TEP.includes(ten) : nhomCua(ten) === NHOM;
+  return new Proxy(m, {
+    get(t, k) {
+      const f = (t as any)[k];
+      if (typeof f !== 'function' || !String(k).startsWith('run')) return f;
+      return (...a: unknown[]) => {
+        if (!cuaToi) return undefined;
+        const t0 = performance.now();   // không dùng Date.now: nhiều phép kiểm giả đồng hồ
+        const d0 = demDong();
+        trongTep = true;
+        tepHienTai = ten;
+        const xong = () => { trongTep = false; tepHienTai = ''; thoiGian[ten] = (thoiGian[ten] ?? 0) + Math.round(performance.now() - t0); if (d0) dongThem[ten] = (dongThem[ten] ?? 0) + demDong() - d0; };
+        /* Tệp ném lỗi ngoài phép kiểm (dựng dữ liệu hỏng): ghi KHÔNG ĐẠT rồi chạy tiếp tệp sau, không chết cả bộ. */
+        const loi = (e: any) => { xong(); failures.push(`[${ten}] ném lỗi ngoài phép kiểm: ${e?.stack ?? e}`); console.log(`  ✗ ${ten}.tests.ts ném lỗi: ${e?.message ?? e}`); };
+        let r: any;
+        try { r = f(...a); } catch (e) { loi(e); return undefined; }
+        if (r && typeof r.then === 'function') return r.then((v: unknown) => { xong(); return v; }, loi);
+        xong();
+        return r;
+      };
+    },
+  });
+}
+/** Phép kiểm viết thẳng ở nhóm ≠ 1: vẫn chạy (dựng trạng thái cho mục sau) nhưng không in, không đếm. */
+const imLang = () => NHOM !== 1 && !trongTep;
+
+process.env.PISA_DB = SO_NHOM > 1
+  ? path.join(ROOT, 'data', `nhom-${NHOM}`, 'test.sqlite')
+  : path.join(ROOT, 'data', 'test.sqlite');
+fs.mkdirSync(path.dirname(process.env.PISA_DB), { recursive: true });
 /*
  * PR-Z2: biến Turso THẮNG `PISA_DB` trong `cauHinhDb`. Bộ phép kiểm gọi `runSeed()` (xoá mọi bảng) — nên gỡ biến Turso TRƯỚC khi
  * nạp `db.ts`, để `npm run check` trong một cửa sổ đang có token không bao giờ chạm database thật.
@@ -97,7 +156,7 @@ const SEED_MAX: Record<string, number> = {};
   }
 }
 /* PR-YT4 (Task 11): ảnh chụp Ý thức của bộ demo NGAY sau seed — phép kiểm demo (yThuc.tests.ts) soi ảnh này, không soi DB đã bị các mục trên ghi thêm. */
-const DEMO_Y_THUC = await (await import('./yThuc.tests.ts')).chupDemoYThuc((await import('../db.ts')).db(), demoToday());
+const DEMO_Y_THUC = await (bocTep('yThuc', await import('./yThuc.tests.ts'))).chupDemoYThuc((await import('../db.ts')).db(), demoToday());
 
 /* Mã nhóm Ý thức của mô hình Case đã bỏ 21/09/2026 — chỉ để khẳng định nó KHÔNG còn xuất hiện; ghép chuỗi để không còn chữ đó nằm trơ trong mã. */
 const GONE = 'behav' + 'iour';
@@ -106,16 +165,20 @@ let passed = 0;
 const failures: string[] = [];
 
 function check(name: string, fn: () => void) {
+  if (imLang()) { try { fn(); } catch { /* nhóm 1 in + đếm */ } return; }
+  demPhep();
   try { fn(); passed++; console.log(`  ✓ ${name}`); }
   catch (e: any) {
-    failures.push(`${name}: ${e.message}`);
+    failures.push(`${tepHienTai ? `[${tepHienTai}] ` : ''}${name}: ${e.message}`);
     console.log(`  ✗ ${name}\n      ${e.message}`);
   }
 }
 async function checkAsync(name: string, fn: () => Promise<void>) {
+  if (imLang()) { try { await fn(); } catch { /* nhóm 1 in + đếm */ } return; }
+  demPhep();
   try { await fn(); passed++; console.log(`  ✓ ${name}`); }
   catch (e: any) {
-    failures.push(`${name}: ${e.message}`);
+    failures.push(`${tepHienTai ? `[${tepHienTai}] ` : ''}${name}: ${e.message}`);
     console.log(`  ✗ ${name}
       ${e.message}`);
   }
@@ -142,7 +205,7 @@ async function assertRejects(fn: () => Promise<unknown>, match: RegExp, msg: str
 
 const conn = db();
 /* SEED-UX: phép kiểm chỉ đọc bộ demo — chạy NGAY sau seed, trước mọi mục ghi thêm. */
-await (await import('./prSeedUx.tests.ts')).runPrSeedUxTests({ check, assert, conn } as any);
+await (bocTep('prSeedUx', await import('./prSeedUx.tests.ts'))).runPrSeedUxTests({ check, assert, conn } as any);
 /**
  * PR-S3F #8: `setIssues` chặn Case SOS chưa xác nhận nguyên nhân (đường chính là `xacNhanCase`). Phép kiểm cũ chỉ cần "Case đã có nguyên nhân"
  * để dựng tình huống của nó → ghi thẳng như dữ liệu cũ, đúng như `setIssues` từng làm (ghi nguyên nhân + đồng bộ trạng thái Case).
@@ -252,20 +315,20 @@ console.log('\n0. Bộ demo vừa dựng có nhất quán không');
 
 /* PR-T (rulebook v3): tình huống demo §9 — phải soi TRƯỚC mọi phép kiểm khác, vì nhiều phép kiểm chọn học viên "sạch case" rồi ghi thêm vào chính những em đó. */
 {
-  const { runSosV3DemoTests } = await import('./sosV3.tests.ts');
+  const { runSosV3DemoTests } = bocTep('sosV3', await import('./sosV3.tests.ts'));
   await runSosV3DemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
-  const { runPrDuyetDemoTests } = await import('./prDuyet.tests.ts');
+  const { runPrDuyetDemoTests } = bocTep('prDuyet', await import('./prDuyet.tests.ts'));
   await runPrDuyetDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
-  const { runPrHvlDemoTests } = await import('./prHvl.tests.ts');
+  const { runPrHvlDemoTests } = bocTep('prHvl', await import('./prHvl.tests.ts'));
   await runPrHvlDemoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
   /* PR-OV11c: một cách đếm ở Công việc — so số của bộ demo (Tổng quan "58 bài" = Công việc lọc Quá hạn); mỗi phép kiểm cuộn lại. */
-  const { runPrOv11cTests } = await import('./prOv11c.tests.ts');
+  const { runPrOv11cTests } = bocTep('prOv11c', await import('./prOv11c.tests.ts'));
   await runPrOv11cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
   /* PR-OV11f: Tổng quan · chuông — số ở ô = nơi nó mở, chuông chỉ việc còn mở (so số bộ demo); mỗi phép kiểm cuộn lại. */
-  const { runPrOv11fTests } = await import('./prOv11f.tests.ts');
+  const { runPrOv11fTests } = bocTep('prOv11f', await import('./prOv11f.tests.ts'));
   await runPrOv11fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
   /* PR-OV11h: Phân tích · PET / KET — Checkpoint có mặt ở mọi nơi (so số bộ demo MB PET 01); mỗi phép kiểm cuộn lại. */
-  const { runPrOv11hTests } = await import('./prOv11h.tests.ts');
+  const { runPrOv11hTests } = bocTep('prOv11h', await import('./prOv11h.tests.ts'));
   await runPrOv11hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 }
 
@@ -8823,874 +8886,878 @@ await checkAsync('PR-N · N5 Phương án thừa hưởng quyền của case ch�
 });
 
 // ==================================================================== PR-HV (hồ sơ học viên + Ý thức v3)
-const { runHoSoHocVienTests } = await import('./hoSoHocVien.tests.ts');
+const { runHoSoHocVienTests } = bocTep('hoSoHocVien', await import('./hoSoHocVien.tests.ts'));
 await runHoSoHocVienTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-J (Ý thức: Vi phạm và Biện pháp xử lý)
 
 /* Phép kiểm của module thứ chín ở file riêng — xem đầu `yThuc.tests.ts`. */
-const { runYThucTests } = await import('./yThuc.tests.ts');
+const { runYThucTests } = bocTep('yThuc', await import('./yThuc.tests.ts'));
 await runYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX, demoYThuc: DEMO_Y_THUC });
 
 // ==================================================================== PR-T (rulebook v3: SOS tự tạo Case · Phối hợp SOS · xoá vi phạm)
 
-const { runSosV3Tests } = await import('./sosV3.tests.ts');
+const { runSosV3Tests } = bocTep('sosV3', await import('./sosV3.tests.ts'));
 await runSosV3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-S1 (luật máy chủ)
 
-const { runLuatMayChuTests } = await import('./luatMayChu.tests.ts');
+const { runLuatMayChuTests } = bocTep('luatMayChu', await import('./luatMayChu.tests.ts'));
 await runLuatMayChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-S2 (điều chỉnh PA học thuật · cập nhật tuần rút gọn)
 
-const { runDieuChinhPaTests } = await import('./dieuChinhPa.tests.ts');
+const { runDieuChinhPaTests } = bocTep('dieuChinhPa', await import('./dieuChinhPa.tests.ts'));
 await runDieuChinhPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Z2 (bản chính trên Netlify + Turso)
 
-const { runBanChinhTests } = await import('./banChinh.tests.ts');
+const { runBanChinhTests } = bocTep('banChinh', await import('./banChinh.tests.ts'));
 await runBanChinhTests({ check, checkAsync, assert, assertThrows, conn, admin: P.admin });
 
 // ==================================================================== PR-O (khung 4 khu vực + hàm ngày/tuần G-6)
 
-const { runKhungTests } = await import('./khung.tests.ts');
+const { runKhungTests } = bocTep('khung', await import('./khung.tests.ts'));
 await runKhungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Qa (Học viên & Lớp + Hồ sơ lớp)
 
-const { runHocVienLopTests } = await import('./hocVienLop.tests.ts');
+const { runHocVienLopTests } = bocTep('hocVienLop', await import('./hocVienLop.tests.ts'));
 await runHocVienLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-AN (an toàn trước người dùng thật)
-const { runAnToanTests } = await import('./anToan.tests.ts');
+const { runAnToanTests } = bocTep('anToan', await import('./anToan.tests.ts'));
 await runAnToanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 
 // ==================================================================== PR-Pa (Tổng quan)
 
-const { runTongQuanTests } = await import('./tongQuan.tests.ts');
+const { runTongQuanTests } = bocTep('tongQuan', await import('./tongQuan.tests.ts'));
 await runTongQuanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Rc1 (Cần chấm · Lịch Test · lưới chấm)
 
-const { runChamDiemTests } = await import('./chamDiem.tests.ts');
+const { runChamDiemTests } = bocTep('chamDiem', await import('./chamDiem.tests.ts'));
 await runChamDiemTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Form (chọn người, bằng chứng trong form)
 
-const { runFormTests } = await import('./form.tests.ts');
+const { runFormTests } = bocTep('form', await import('./form.tests.ts'));
 await runFormTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Pb (Phân tích: Tổng hợp Test + SOS, Vấn đề học viên)
 
-const { runPhanTichTests } = await import('./phanTich.tests.ts');
+const { runPhanTichTests } = bocTep('phanTich', await import('./phanTich.tests.ts'));
 await runPhanTichTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Qb (Hồ sơ học viên: Hành trình theo lịch)
 
-const { runHanhTrinhTests } = await import('./hanhTrinh.tests.ts');
+const { runHanhTrinhTests } = bocTep('hanhTrinh', await import('./hanhTrinh.tests.ts'));
 await runHanhTrinhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-YT2 (Ý thức đầy đủ)
 
-const { runYThucGonTests } = await import('./yThucGon.tests.ts');
+const { runYThucGonTests } = bocTep('yThucGon', await import('./yThucGon.tests.ts'));
 await runYThucGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Rc2 (Kế hoạch Test)
 
-const { runKeHoachTestTests } = await import('./keHoachTest.tests.ts');
+const { runKeHoachTestTests } = bocTep('keHoachTest', await import('./keHoachTest.tests.ts'));
 await runKeHoachTestTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Ra (Công việc: Hỗ trợ học viên · Vận hành · Báo cáo đơn vị)
 
-const { runCongViecTests } = await import('./congViec.tests.ts');
+const { runCongViecTests } = bocTep('congViec', await import('./congViec.tests.ts'));
 await runCongViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-LT (Lên lớp, chuyển lớp)
 
-const { runLenLopTests } = await import('./lenLop.tests.ts');
+const { runLenLopTests } = bocTep('lenLop', await import('./lenLop.tests.ts'));
 await runLenLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-UX0 (Nền giao diện: màu nghĩa, hàng lớn/nhỏ, badge, khuôn panel)
 
-const { runNenGiaoDienTests } = await import('./nenGiaoDien.tests.ts');
+const { runNenGiaoDienTests } = bocTep('nenGiaoDien', await import('./nenGiaoDien.tests.ts'));
 await runNenGiaoDienTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-UX3 (Panel Học viên & Lớp theo khuôn chung + badge còn lại)
 
-const { runPanelUx3Tests } = await import('./panelUx3.tests.ts');
+const { runPanelUx3Tests } = bocTep('panelUx3', await import('./panelUx3.tests.ts'));
 await runPanelUx3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-XOA (Xoá học viên, xoá tài khoản, lưu trữ tự động — chỉ Quản trị hệ thống)
 
-const { runXoaDuLieuTests } = await import('./xoaDuLieu.tests.ts');
+const { runXoaDuLieuTests } = bocTep('xoaDuLieu', await import('./xoaDuLieu.tests.ts'));
 await runXoaDuLieuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-N1 (Sửa lỗi nóng + sửa sai sự thật)
-const { runSuaLoiNongTests } = await import('./suaLoiNong.tests.ts');
+const { runSuaLoiNongTests } = bocTep('suaLoiNong', await import('./suaLoiNong.tests.ts'));
 await runSuaLoiNongTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-LOP (Tạo lớp, tên lớp, RF, Pre FOU, phân công)
-const { runPrLopTests } = await import('./prLop.tests.ts');
+const { runPrLopTests } = bocTep('prLop', await import('./prLop.tests.ts'));
 await runPrLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-NEN (Nền giao diện: ô ngày, Khác, chọn người, trạng thái, panel, bàn phím)
 
-const { runThanhPhanChungTests } = await import('./thanhPhanChung.tests.ts');
+const { runThanhPhanChungTests } = bocTep('thanhPhanChung', await import('./thanhPhanChung.tests.ts'));
 await runThanhPhanChungTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-DUYET (Hộp Chờ duyệt)
 
-const { runPrDuyetTests } = await import('./prDuyet.tests.ts');
+const { runPrDuyetTests } = bocTep('prDuyet', await import('./prDuyet.tests.ts'));
 await runPrDuyetTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-MT (Lịch MT tự tạo, MT lịch sử, đánh số, RF, dời do vắng)
-const { runPrMtTests } = await import('./prMt.tests.ts');
+const { runPrMtTests } = bocTep('prMt', await import('./prMt.tests.ts'));
 await runPrMtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-NHAP (Thêm học viên: email, ngày thi, cột theo tiêu đề)
-const { runPrNhapTests } = await import('./prNhap.tests.ts');
+const { runPrNhapTests } = bocTep('prNhap', await import('./prNhap.tests.ts'));
 await runPrNhapTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-TOC (Thêm học viên theo lô, kiểm dữ liệu nhập)
-const { runPrTocTests } = await import('./prToc.tests.ts');
+const { runPrTocTests } = bocTep('prToc', await import('./prToc.tests.ts'));
 await runPrTocTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-MON (Hệ môn học, Pre FOU một ô Tổng hợp, hai khung FT / Lớp thường)
-const { runPrMonTests } = await import('./prMon.tests.ts');
+const { runPrMonTests } = bocTep('prMon', await import('./prMon.tests.ts'));
 await runPrMonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-SOS (SOS v4 — Xác nhận Case → Xác nhận PA, Không cần theo dõi qua Quản lý)
-const { runPrSosTests } = await import('./prSos.tests.ts');
+const { runPrSosTests } = bocTep('prSos', await import('./prSos.tests.ts'));
 await runPrSosTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-YT4 (Ý thức v4: một hàm trạng thái, thang bắt buộc, QL duyệt)
-const { runPrYt4Tests } = await import('./prYt4.tests.ts');
+const { runPrYt4Tests } = bocTep('prYt4', await import('./prYt4.tests.ts'));
 await runPrYt4Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-XLMT (Xếp lịch MT nhiều lớp, thao tác MT theo trạng thái)
-const { runPrXlmtTests, runPrXlmtMayChu } = await import('./prXlmt.tests.ts');
+const { runPrXlmtTests, runPrXlmtMayChu } = bocTep('prXlmt', await import('./prXlmt.tests.ts'));
 await runPrXlmtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 await runPrXlmtMayChu({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-KCK (Target "không cam kết" — không SOS, Q29-1)
-const { runPrKckTests } = await import('./prKck.tests.ts');
+const { runPrKckTests } = bocTep('prKck', await import('./prKck.tests.ts'));
 await runPrKckTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-S3F (sửa sau rà cuối đợt 3)
-const { runPrS3fTests } = await import('./prS3f.tests.ts');
+const { runPrS3fTests } = bocTep('prS3f', await import('./prS3f.tests.ts'));
 await runPrS3fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-HSM (hồ sơ Mock, nhận xét W/S, GV chấm)
-const { runPrHsmTests } = await import('./prHsm.tests.ts');
+const { runPrHsmTests } = bocTep('prHsm', await import('./prHsm.tests.ts'));
 await runPrHsmTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-XUAT (Xuất Excel kết quả Mock Test / Test lớp thường)
-const { runPrXuatTests } = await import('./prXuat.tests.ts');
+const { runPrXuatTests } = bocTep('prXuat', await import('./prXuat.tests.ts'));
 await runPrXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-HVL (Học viên & Lớp + hồ sơ lớp)
-const { runPrHvlTests } = await import('./prHvl.tests.ts');
+const { runPrHvlTests } = bocTep('prHvl', await import('./prHvl.tests.ts'));
 await runPrHvlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-SANG (giao diện sáng/tối, phông, cỡ chữ)
-const { runPrSangTests } = await import('./prSang.tests.ts');
+const { runPrSangTests } = bocTep('prSang', await import('./prSang.tests.ts'));
 await runPrSangTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-S4F (sửa sau rà cuối đợt 4)
-const { runPrS4fTests } = await import('./prS4f.tests.ts');
+const { runPrS4fTests } = bocTep('prS4f', await import('./prS4f.tests.ts'));
 await runPrS4fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-LT2a (lớp thường · Giữa khoá)
-const { runPrLt2aTests } = await import('./prLt2a.tests.ts');
+const { runPrLt2aTests } = bocTep('prLt2a', await import('./prLt2a.tests.ts'));
 await runPrLt2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-GV (hồ sơ giáo viên)
-const { runPrGvTests } = await import('./prGv.tests.ts');
+const { runPrGvTests } = bocTep('prGv', await import('./prGv.tests.ts'));
 await runPrGvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-LT2b (Cuối khoá lớp thường)
-const { runPrLt2bTests } = await import('./prLt2b.tests.ts');
+const { runPrLt2bTests } = bocTep('prLt2b', await import('./prLt2b.tests.ts'));
 await runPrLt2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-CT (quyết định chuyển lớp do Quản lý quyết + bàn giao)
-const { runPrCtTests } = await import('./prCt.tests.ts');
+const { runPrCtTests } = bocTep('prCt', await import('./prCt.tests.ts'));
 await runPrCtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-S5F-a (sửa sau rà cuối đợt 5 — chuyển lớp, bàn giao, Cuối khoá)
-const { runPrS5fATests } = await import('./prS5fA.tests.ts');
+const { runPrS5fATests } = bocTep('prS5fA', await import('./prS5fA.tests.ts'));
 await runPrS5fATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-S5F-b (sửa sau rà cuối đợt 5 — Giữa khoá, hồ sơ GV, tốc độ)
-const { runPrS5fbTests } = await import('./prS5fb.tests.ts');
+const { runPrS5fbTests } = bocTep('prS5fb', await import('./prS5fb.tests.ts'));
 await runPrS5fbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-Pb2-a (bỏ Cả hai, bỏ Danh sách Case, Hiệu quả PA, Tổng hợp lớp thường)
-const { runPrPb2aTests } = await import('./prPb2a.tests.ts');
+const { runPrPb2aTests } = bocTep('prPb2a', await import('./prPb2a.tests.ts'));
 await runPrPb2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-VAI-a (Tổng quan theo vai · Công việc · chuông)
-const { runPrVaiATests } = await import('./prVaiA.tests.ts');
+const { runPrVaiATests } = bocTep('prVaiA', await import('./prVaiA.tests.ts'));
 await runPrVaiATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-UXF-a (số liệu khớp + sót lớp thường)
-const { runPrUxfATests } = await import('./prUxfA.tests.ts');
+const { runPrUxfATests } = bocTep('prUxfA', await import('./prUxfA.tests.ts'));
 await runPrUxfATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
-const { runPrVaiBTests } = await import('./prVaiB.tests.ts');
+const { runPrVaiBTests } = bocTep('prVaiB', await import('./prVaiB.tests.ts'));
 await runPrVaiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-Pb2-b (Phân tích giáo viên · FOU 2 GV · hồ sơ GV · ngày nghiệp vụ mới)
-const { runPrPb2bTests } = await import('./prPb2b.tests.ts');
+const { runPrPb2bTests } = bocTep('prPb2b', await import('./prPb2b.tests.ts'));
 await runPrPb2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-S6F-a (sửa sau rà đợt 6 lượt 1 — máy chủ / dữ liệu)
-const { runPrS6fATests } = await import('./prS6fA.tests.ts');
+const { runPrS6fATests } = bocTep('prS6fA', await import('./prS6fA.tests.ts'));
 await runPrS6fATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
-const { runPrS6fBTests } = await import('./prS6fB.tests.ts');
+const { runPrS6fBTests } = bocTep('prS6fB', await import('./prS6fB.tests.ts'));
 await runPrS6fBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-Dọn-a (quyền, an toàn, một luật một khái niệm, xoá mã chết, tốc độ)
-const { runPrDonATests } = await import('./prDonA.tests.ts');
+const { runPrDonATests } = bocTep('prDonA', await import('./prDonA.tests.ts'));
 await runPrDonATests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-UXD (điện thoại 375 px)
-const { runPrUxdTests } = await import('./prUxd.tests.ts');
+const { runPrUxdTests } = bocTep('prUxd', await import('./prUxd.tests.ts'));
 await runPrUxdTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
-const { runPrUxfBTests } = await import('./prUxfB.tests.ts');
+const { runPrUxfBTests } = bocTep('prUxfB', await import('./prUxfB.tests.ts'));
 await runPrUxfBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-S3 (chữ cuối trên web)
-const { runPrS3ChuTests } = await import('./prS3Chu.tests.ts');
+const { runPrS3ChuTests } = bocTep('prS3Chu', await import('./prS3Chu.tests.ts'));
 await runPrS3ChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-DEPLOY (chuẩn bị reset bản chính)
-const { runPrDeployTests } = await import('./prDeploy.tests.ts');
+const { runPrDeployTests } = bocTep('prDeploy', await import('./prDeploy.tests.ts'));
 await runPrDeployTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-Dọn-b (giao diện quản trị, Vận hành, lưu trữ, việc nhỏ)
-const { runPrDonBTests } = await import('./prDonB.tests.ts');
+const { runPrDonBTests } = bocTep('prDonB', await import('./prDonB.tests.ts'));
 await runPrDonBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== UX-G (trạng thái nói đúng, một màu một nghĩa)
-const { runPrUxGTests } = await import('./prUxG.tests.ts');
+const { runPrUxGTests } = bocTep('prUxG', await import('./prUxG.tests.ts'));
 await runPrUxGTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-HK1 (trước deploy: H3–H5; K1/K3 đo bằng Playwright)
-const { runPrHk1Tests } = await import('./prHk1.tests.ts');
+const { runPrHk1Tests } = bocTep('prHk1', await import('./prHk1.tests.ts'));
 runPrHk1Tests({ check, assert });
 
 // ==================================================================== PR-PH (phiên đăng nhập không báo đăng xuất giả)
-const { runPrPhTests } = await import('./prPh.tests.ts');
+const { runPrPhTests } = bocTep('prPh', await import('./prPh.tests.ts'));
 runPrPhTests({ check, assert });
 
 // ==================================================================== PR-LM (lịch MT linh hoạt: dời vượt → huỷ lịch lượt bị vượt)
-const { runPrLmTests, runPrLmMayChu } = await import('./prLm.tests.ts');
+const { runPrLmTests, runPrLmMayChu } = bocTep('prLm', await import('./prLm.tests.ts'));
 await runPrLmTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 await runPrLmMayChu({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-QU (quyền tạo lớp, GVCN phân công, tạo lớp hàng loạt, Quản trị quyền)
-const { runPrQuTests } = await import('./prQu.tests.ts');
+const { runPrQuTests } = bocTep('prQu', await import('./prQu.tests.ts'));
 await runPrQuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-GVa (giao việc: khoá gửi, chi nhánh form, kỳ)
-const { runPrGvaTests } = await import('./prGva.tests.ts');
+const { runPrGvaTests } = bocTep('prGva', await import('./prGva.tests.ts'));
 await runPrGvaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 
 // ==================================================================== PR-NT (Target + Dự kiến thi lớp thường, dán không cần tiêu đề)
-const { runPrNtTests } = await import('./prNt.tests.ts');
+const { runPrNtTests } = bocTep('prNt', await import('./prNt.tests.ts'));
 await runPrNtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-BN (nhớ câu lệnh đã chuẩn bị — RAM bộ phép kiểm)
-const { runPrBnTests } = await import('./prBn.tests.ts');
+const { runPrBnTests } = bocTep('prBn', await import('./prBn.tests.ts'));
 await runPrBnTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-GVb (Chờ duyệt: duyệt nhiều ở Tất cả, Để QL biết, U01)
-const { runPrGvbTests } = await import('./prGvb.tests.ts');
+const { runPrGvbTests } = bocTep('prGvb', await import('./prGvb.tests.ts'));
 await runPrGvbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-BC (Báo cáo đơn vị + Quản trị › Tài khoản)
-const { runPrBcTests } = await import('./prBc.tests.ts');
+const { runPrBcTests } = bocTep('prBc', await import('./prBc.tests.ts'));
 await runPrBcTests({ check, assert });
 // ==================================================================== PR-PHH (Báo phụ huynh lưu bản chụp 4 nội dung lúc xác nhận)
-const { runPrPhhTests } = await import('./prPhh.tests.ts');
+const { runPrPhhTests } = bocTep('prPhh', await import('./prPhh.tests.ts'));
 await runPrPhhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 // ==================================================================== PR-SO (số liệu một nguồn & dọn mã máy chủ)
-const { runPrSoTests } = await import('./prSo.tests.ts');
+const { runPrSoTests } = bocTep('prSo', await import('./prSo.tests.ts'));
 await runPrSoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-DH (bảng Học viên & Lớp, điều hướng hồ sơ)
-const { runPrDhTests } = await import('./prDh.tests.ts');
+const { runPrDhTests } = bocTep('prDh', await import('./prDh.tests.ts'));
 await runPrDhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-U12 (bảng kết quả lớp thường ở hồ sơ HV)
-const { runPrU12Tests } = await import('./prU12.tests.ts');
+const { runPrU12Tests } = bocTep('prU12', await import('./prU12.tests.ts'));
 await runPrU12Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-K26 (Lộ trình tiếp theo theo dải % Cuối khoá)
-const { runPrK26Tests } = await import('./prK26.tests.ts');
+const { runPrK26Tests } = bocTep('prK26', await import('./prK26.tests.ts'));
 await runPrK26Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-SL (Sửa thông tin cả lớp: xem trước + lưu một giao dịch)
-const { runPrSlTests } = await import('./prSl.tests.ts');
+const { runPrSlTests } = bocTep('prSl', await import('./prSl.tests.ts'));
 await runPrSlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-NV (Nhắc việc gom theo người, khoá Mini Test / Cuối khoá)
-const { runPrNvTests } = await import('./prNv.tests.ts');
+const { runPrNvTests } = bocTep('prNv', await import('./prNv.tests.ts'));
 await runPrNvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-DL (Điểm theo lớp)
-const { runPrDlTests } = await import('./prDl.tests.ts');
+const { runPrDlTests } = bocTep('prDl', await import('./prDl.tests.ts'));
 await runPrDlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-MTa (luật Test / Mock Test máy chủ: T1 T2 T3 T4 T7 T10 T11)
-const { runPrMtaTests } = await import('./prMta.tests.ts');
+const { runPrMtaTests } = bocTep('prMta', await import('./prMta.tests.ts'));
 await runPrMtaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-MTb (giao diện Test / Mock Test: máy chủ panel "MT mới", tick kỹ năng, hạn chấm)
-const { runPrMtbTests } = await import('./prMtb.tests.ts');
+const { runPrMtbTests } = bocTep('prMtb', await import('./prMtb.tests.ts'));
 await runPrMtbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-LUI-b (đường lui Học viên & Lớp)
-const { runPrLuiBTests } = await import('./prLuiB.tests.ts');
+const { runPrLuiBTests } = bocTep('prLuiB', await import('./prLuiB.tests.ts'));
 await runPrLuiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-LT3 (Lịch Test ba khối + Speaking chấm chéo) — cuối cùng: thêm HV thử vào MB FT 101
-const { runPrLt3Tests } = await import('./prLt3.tests.ts');
+const { runPrLt3Tests } = bocTep('prLt3', await import('./prLt3.tests.ts'));
 await runPrLt3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-MT0 (lượt Mock số 0 cho em lớp thường lên FT)
-const { runPrMt0Tests } = await import('./prMt0.tests.ts');
+const { runPrMt0Tests } = bocTep('prMt0', await import('./prMt0.tests.ts'));
 await runPrMt0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-BV (xoá "-" trả lại như cũ + đường lui điểm) — trước PR-TK (PR-TK luôn cuối)
-const { runPrBvTests } = await import('./prBv.tests.ts');
+const { runPrBvTests } = bocTep('prBv', await import('./prBv.tests.ts'));
 await runPrBvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-TK (Tổng kết lộ trình) — LUÔN Ở CUỐI: phép kiểm bất biến soi mọi dữ liệu các phép kiểm trước để lại
-const { runPrTkTests } = await import('./prTk.tests.ts');
+const { runPrTkTests } = bocTep('prTk', await import('./prTk.tests.ts'));
 await runPrTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-LUI-a1 (Ý thức: ghi nhiều, Vi phạm + Mô tả, tệp dùng chung)
-const { runPrLuiA1Tests } = await import('./prLuiA1.tests.ts');
+const { runPrLuiA1Tests } = bocTep('prLuiA1', await import('./prLuiA1.tests.ts'));
 await runPrLuiA1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-LUI-a2 (Case + Chờ duyệt: Người phụ trách, Mở lại, Từ chối nhiều, Huỷ quyết định, Sửa / Xoá Case)
-const { runPrLuiA2Tests } = await import('./prLuiA2.tests.ts');
+const { runPrLuiA2Tests } = bocTep('prLuiA2', await import('./prLuiA2.tests.ts'));
 await runPrLuiA2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-KHUNG (một thanh cuộn, chữ không cắt, nút không tràn)
-const { runPrKhungTests } = await import('./prKhung.tests.ts');
+const { runPrKhungTests } = bocTep('prKhung', await import('./prKhung.tests.ts'));
 await runPrKhungTests({ check, assert });
 
 // ==================================================================== PR-HK2 (Badge & chữ)
-const { runPrHk2Tests } = await import('./prHk2.tests.ts');
+const { runPrHk2Tests } = bocTep('prHk2', await import('./prHk2.tests.ts'));
 await runPrHk2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-O-CHON (ô chọn người gõ được — dùng lại ChonNguoi)
-const { runPrOChonTests } = await import('./prOChon.tests.ts');
+const { runPrOChonTests } = bocTep('prOChon', await import('./prOChon.tests.ts'));
 await runPrOChonTests({ check, assert });
 // ==================================================================== PR-QT-TK (Quản trị sửa thông tin tài khoản)
-const { runPrQtTkTests } = await import('./prQtTk.tests.ts');
+const { runPrQtTkTests } = bocTep('prQtTk', await import('./prQtTk.tests.ts'));
 await runPrQtTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== FIX-XEP-BAI-THUONG (lớp thường: Progress trước Final theo loại)
-const { runFixXepBaiThuongTests } = await import('./fixXepBaiThuong.tests.ts');
+const { runFixXepBaiThuongTests } = bocTep('fixXepBaiThuong', await import('./fixXepBaiThuong.tests.ts'));
 await runFixXepBaiThuongTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-TD2-d (phiên + quyền một câu SQL)
-const { runPrTd2dTests } = await import('./prTd2d.tests.ts');
+const { runPrTd2dTests } = bocTep('prTd2d', await import('./prTd2d.tests.ts'));
 await runPrTd2dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== FIX-KQ-GAN-NHAT-THUONG (lớp thường: kết quả gần nhất theo loại)
-const { runFixKqGanNhatTests } = await import('./fixKqGanNhat.tests.ts');
+const { runFixKqGanNhatTests } = bocTep('fixKqGanNhat', await import('./fixKqGanNhat.tests.ts'));
 await runFixKqGanNhatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== FIX-DTL-OMT (hồ sơ Mock từ Điểm theo lớp; ô MT chờ ≠ chưa xếp)
-const { runFixDtlOmtTests } = await import('./fixDtlOmt.tests.ts');
+const { runFixDtlOmtTests } = bocTep('fixDtlOmt', await import('./fixDtlOmt.tests.ts'));
 await runFixDtlOmtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-TD2-b+c (Trước/Sau nhẹ, bớt request trùng)
-const { runPrTd2bcTests } = await import('./prTd2bc.tests.ts');
+const { runPrTd2bcTests } = bocTep('prTd2bc', await import('./prTd2bc.tests.ts'));
 await runPrTd2bcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== FIX-CHOT-LEN-FT (Chốt lên FT tự xong khi đã có lộ trình / bàn giao)
-const { runFixChotLenFtTests } = await import('./fixChotLenFt.tests.ts');
+const { runFixChotLenFtTests } = bocTep('fixChotLenFt', await import('./fixChotLenFt.tests.ts'));
 await runFixChotLenFtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== VIEC-NHO (6 việc nhỏ 08/10)
-const { runPrViecNhoTests } = await import('./prViecNho.tests.ts');
+const { runPrViecNhoTests } = bocTep('prViecNho', await import('./prViecNho.tests.ts'));
 await runPrViecNhoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-HAN-XAC-NHAN (hạn xác nhận 5 ngày; Gấp / SOS 3: 3 ngày)
-const { runPrHanTests } = await import('./prHan.tests.ts');
+const { runPrHanTests } = bocTep('prHan', await import('./prHan.tests.ts'));
 await runPrHanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== VIEC-NHO-2 (Nhắc tất cả ở Của GV, lọc Chờ duyệt, GV chấm S)
-const { runPrViecNho2Tests } = await import('./prViecNho2.tests.ts');
+const { runPrViecNho2Tests } = bocTep('prViecNho2', await import('./prViecNho2.tests.ts'));
 await runPrViecNho2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-LCa (luồng cuối khoá → lộ trình tiếp: mỗi quyết định nhập một lần)
-const { runPrLcTests } = await import('./prLc.tests.ts');
+const { runPrLcTests } = bocTep('prLc', await import('./prLc.tests.ts'));
 await runPrLcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-LCb (Chốt lộ trình · panel Lộ trình tiếp theo)
-const { runPrLcbTests } = await import('./prLcb.tests.ts');
+const { runPrLcbTests } = bocTep('prLcb', await import('./prLcb.tests.ts'));
 await runPrLcbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-PA (PA đồng bộ một mẫu §8)
-const { runPrPaTests } = await import('./prPa.tests.ts');
+const { runPrPaTests } = bocTep('prPa', await import('./prPa.tests.ts'));
 await runPrPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-CL (Chuyển lớp làm lại: FT → Thường, Cuối khoá, lớp chuyển đến)
-const { runPrClTests } = await import('./prCl.tests.ts');
+const { runPrClTests } = bocTep('prCl', await import('./prCl.tests.ts'));
 await runPrClTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-CT2 (chế tài cuối khoá)
-const { runPrCt2Tests } = await import('./prCt2.tests.ts');
+const { runPrCt2Tests } = bocTep('prCt2', await import('./prCt2.tests.ts'));
 await runPrCt2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-KV (Kỳ vọng đầu ra cả lớp)
-const { runPrKvTests } = await import('./prKv.tests.ts');
+const { runPrKvTests } = bocTep('prKv', await import('./prKv.tests.ts'));
 await runPrKvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 // ==================================================================== PR-GOP (gộp việc theo lớp × loại việc)
-const { runPrGopTests } = await import('./prGop.tests.ts');
+const { runPrGopTests } = bocTep('prGop', await import('./prGop.tests.ts'));
 await runPrGopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-LTGON (lớp thường: đổi mốc dời bài theo; "-" trùng Final hoà vào)
-const { runPrLtGonTests } = await import('./prLtGon.tests.ts');
+const { runPrLtGonTests } = bocTep('prLtGon', await import('./prLtGon.tests.ts'));
 await runPrLtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-MTGON (chống kẹt Mock Test, chủ sản phẩm 08/10)
-const { runPrMtGonTests } = await import('./prMtGon.tests.ts');
+const { runPrMtGonTests } = bocTep('prMtGon', await import('./prMtGon.tests.ts'));
 await runPrMtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-KIEM-DU-LIEU-MT (lệnh kiểm chỉ đọc dữ liệu MT)
-const { runPrKiemDuLieuMtTests } = await import('./prKiemDuLieuMt.tests.ts');
+const { runPrKiemDuLieuMtTests } = bocTep('prKiemDuLieuMt', await import('./prKiemDuLieuMt.tests.ts'));
 await runPrKiemDuLieuMtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-HOP1 (một hộp, một đường lưu dời lịch MT)
-const { runPrHop1Tests } = await import('./prHop1.tests.ts');
+const { runPrHop1Tests } = bocTep('prHop1', await import('./prHop1.tests.ts'));
 await runPrHop1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-VN3 (việc nhỏ dồn lại)
-const { runPrVn3Tests } = await import('./prVn3.tests.ts');
+const { runPrVn3Tests } = bocTep('prVn3', await import('./prVn3.tests.ts'));
 await runPrVn3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-TD3 (tốc độ đợt 2: đọc ít dòng)
-const { runPrTd3Tests } = await import('./prTd3.tests.ts');
+const { runPrTd3Tests } = bocTep('prTd3', await import('./prTd3.tests.ts'));
 await runPrTd3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-TEN (tên bài Progress Test / Final Test)
-const { runPrTenTests } = await import('./prTen.tests.ts');
+const { runPrTenTests } = bocTep('prTen', await import('./prTen.tests.ts'));
 await runPrTenTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-VN4 (huỷ lượt theo lô + vi-pham-theo-nhom)
-const { runPrVn4Tests } = await import('./prVn4.tests.ts');
+const { runPrVn4Tests } = bocTep('prVn4', await import('./prVn4.tests.ts'));
 await runPrVn4Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-DON (dọn ghi chú cũ)
-const { runPrDonTests } = await import('./prDon.tests.ts');
+const { runPrDonTests } = bocTep('prDon', await import('./prDon.tests.ts'));
 await runPrDonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-VN5 (huỷ bài lớp thường + bản chụp sau huỷ)
-const { runPrVn5Tests } = await import('./prVn5.tests.ts');
+const { runPrVn5Tests } = bocTep('prVn5', await import('./prVn5.tests.ts'));
 await runPrVn5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-VN6 (MT0 hoàn tất, bổ trợ Final sau FT, nhắc một chuông)
-const { runPrVn6Tests } = await import('./prVn6.tests.ts');
+const { runPrVn6Tests } = bocTep('prVn6', await import('./prVn6.tests.ts'));
 await runPrVn6Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
-const { runPrCacheTests } = await import('./prCache.tests.ts');
+const { runPrCacheTests } = bocTep('prCache', await import('./prCache.tests.ts'));
 await runPrCacheTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV1a (MT0 nhập đúng bảng, Điểm theo lớp, lệnh kiểm chỉ đọc)
-const { runPrOv1aTests } = await import('./prOv1a.tests.ts');
+const { runPrOv1aTests } = bocTep('prOv1a', await import('./prOv1a.tests.ts'));
 await runPrOv1aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV3a (hồ sơ lớp: ⋯, Thông tin lớp, Tổng hợp, Đầu vào FT)
-const { runPrOv3aTests } = await import('./prOv3a.tests.ts');
+const { runPrOv3aTests } = bocTep('prOv3a', await import('./prOv3a.tests.ts'));
 await runPrOv3aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV2a (vai TVV / CX / Admin, quyền, đổi góc nhìn)
-const { runPrOv2aTests } = await import('./prOv2a.tests.ts');
+const { runPrOv2aTests } = bocTep('prOv2a', await import('./prOv2a.tests.ts'));
 await runPrOv2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV2b (hồ sơ HV: Sửa thông tin, TVV, email + ngày sinh, Target, điểm đầu vào)
-const { runPrOv2bTests } = await import('./prOv2b.tests.ts');
+const { runPrOv2bTests } = bocTep('prOv2b', await import('./prOv2b.tests.ts'));
 await runPrOv2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV2c (email học viên không bắt buộc)
-const { runPrOv2cTests } = await import('./prOv2c.tests.ts');
+const { runPrOv2cTests } = bocTep('prOv2c', await import('./prOv2c.tests.ts'));
 await runPrOv2cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV3b (Lộ trình nháp / chốt, hạn, bàn giao làm lại, Kết quả đầu ra)
-const { runPrOv3bTests } = await import('./prOv3b.tests.ts');
+const { runPrOv3bTests } = bocTep('prOv3b', await import('./prOv3b.tests.ts'));
 await runPrOv3bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV1b (dấu "-" = Vắng, Không dự thi, Bỏ vắng, dòng lớp phần của bạn)
-const { runPrOv1bTests } = await import('./prOv1b.tests.ts');
+const { runPrOv1bTests } = bocTep('prOv1b', await import('./prOv1b.tests.ts'));
 await runPrOv1bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV4a (Huỷ cả lượt giữ điểm ẩn + Khôi phục lượt)
-const { runPrOv4aTests } = await import('./prOv4a.tests.ts');
+const { runPrOv4aTests } = bocTep('prOv4a', await import('./prOv4a.tests.ts'));
 await runPrOv4aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV4b (hộp nhập điểm MT: nhận xét 4 kỹ năng, W1 / W2 riêng, nhận xét lớp thường)
-const { runPrOv4bTests } = await import('./prOv4b.tests.ts');
+const { runPrOv4bTests } = bocTep('prOv4b', await import('./prOv4b.tests.ts'));
 await runPrOv4bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== BAND-QUY-DOI (bảng quy đổi band ở DB, Quản trị sửa)
-const { runPrBandQuyDoiTests } = await import('./prBandQuyDoi.tests.ts');
+const { runPrBandQuyDoiTests } = bocTep('prBandQuyDoi', await import('./prBandQuyDoi.tests.ts'));
 await runPrBandQuyDoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV6b1 (Quản trị › Chương trình: cấu hình, bản chụp lớp, tuần MT FT, ngưỡng đạt)
-const { runPrOv6b1Tests } = await import('./prOv6b1.tests.ts');
+const { runPrOv6b1Tests } = bocTep('prOv6b1', await import('./prOv6b1.tests.ts'));
 await runPrOv6b1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV1c (SOS MT tạm thời → chốt → xoá, migrate prOv1c)
-const { runPrOv1cTests } = await import('./prOv1c.tests.ts');
+const { runPrOv1cTests } = bocTep('prOv1c', await import('./prOv1c.tests.ts'));
 await runPrOv1cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV3c (Kết quả đầu ra lớp trước ở hồ sơ lớp FT, 4 tuần theo đợt)
-const { runPrOv3cTests } = await import('./prOv3c.tests.ts');
+const { runPrOv3cTests } = bocTep('prOv3c', await import('./prOv3c.tests.ts'));
 await runPrOv3cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV5a (Công việc tại chỗ: gom Xác nhận nguyên nhân, xác nhận nhóm)
-const { runPrOv5aTests } = await import('./prOv5a.tests.ts');
+const { runPrOv5aTests } = bocTep('prOv5a', await import('./prOv5a.tests.ts'));
 await runPrOv5aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV5b (Quay lại đúng nơi bắt đầu: chồng nguồn, trang cha, tên nguồn)
-const { runPrOv5bTests } = await import('./prOv5b.tests.ts');
+const { runPrOv5bTests } = bocTep('prOv5b', await import('./prOv5b.tests.ts'));
 await runPrOv5bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV6b2 (chương trình mới: Liên tục, Checkpoint lặp, môn gộp + PET / KET)
-const { runPrOv6b2Tests } = await import('./prOv6b2.tests.ts');
+const { runPrOv6b2Tests } = bocTep('prOv6b2', await import('./prOv6b2.tests.ts'));
 await runPrOv6b2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV7a (sửa sau khi lưu 1/2: bàn giao, Ý thức, Phối hợp, Mini Test, rút / sửa đề xuất, sửa trả lời)
-const { runPrOv7aTests } = await import('./prOv7a.tests.ts');
+const { runPrOv7aTests } = bocTep('prOv7a', await import('./prOv7a.tests.ts'));
 await runPrOv7aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV8a (Bước tiếp sau thi thật: QL chọn Kết thúc · Học tiếp · Học lại; việc QL)
-const { runPrOv8aTests } = await import('./prOv8a.tests.ts');
+const { runPrOv8aTests } = bocTep('prOv8a', await import('./prOv8a.tests.ts'));
 await runPrOv8aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV7b (sửa sau khi lưu 2/2: Kết quả PA gần nhất, Xem lại, GV Mở lại Case)
-const { runPrOv7bTests } = await import('./prOv7b.tests.ts');
+const { runPrOv7bTests } = bocTep('prOv7b', await import('./prOv7b.tests.ts'));
 await runPrOv7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV8b (quyền TVV: Target, Tạm dừng / Quay lại / Thôi học, kết quả thi thật, ô TVV theo chi nhánh)
-const { runPrOv8bTests } = await import('./prOv8b.tests.ts');
+const { runPrOv8bTests } = bocTep('prOv8b', await import('./prOv8b.tests.ts'));
 await runPrOv8bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV9 (KCK nhẹ: dấu riêng, Target giữ, Case nhẹ không hạn / PA / Phối hợp)
-const { runPrOv9Tests } = await import('./prOv9.tests.ts');
+const { runPrOv9Tests } = bocTep('prOv9', await import('./prOv9.tests.ts'));
 await runPrOv9Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV10a (nút / link đúng quyền: TVV · CX · Admin)
-const { runPrOv10aTests } = await import('./prOv10a.tests.ts');
+const { runPrOv10aTests } = bocTep('prOv10a', await import('./prOv10a.tests.ts'));
 await runPrOv10aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV10c (Tổng quan theo vai: Admin Mock Test · TVV Học viên của tôi · CX Số liệu)
-const { runPrOv10cTests } = await import('./prOv10c.tests.ts');
+const { runPrOv10cTests } = bocTep('prOv10c', await import('./prOv10c.tests.ts'));
 await runPrOv10cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV1d (lưới chấm FT: Bỏ vắng từ tuần gốc, em không còn đang học chỉ đọc)
-const { runPrOv1dTests } = await import('./prOv1d.tests.ts');
+const { runPrOv1dTests } = bocTep('prOv1d', await import('./prOv1d.tests.ts'));
 await runPrOv1dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV10b (Liên hệ SĐT em + phụ huynh; Học viên & Lớp / hồ sơ theo vai TVV · CX)
-const { runPrOv10bTests } = await import('./prOv10b.tests.ts');
+const { runPrOv10bTests } = bocTep('prOv10b', await import('./prOv10b.tests.ts'));
 await runPrOv10bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV4c (W / S: Band tự tính từ 4 tiêu chí; nhập Band thẳng chỉ ở MT cũ)
-const { runPrOv4cTests } = await import('./prOv4c.tests.ts');
+const { runPrOv4cTests } = bocTep('prOv4c', await import('./prOv4c.tests.ts'));
 await runPrOv4cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV11a (vắng · thi bù · hộp nhập điểm: hoàn tất, Vắng sau tuần thi, lớp thường "-")
-const { runPrOv11aTests } = await import('./prOv11a.tests.ts');
+const { runPrOv11aTests } = bocTep('prOv11a', await import('./prOv11a.tests.ts'));
 await runPrOv11aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV11e (Lịch Test phần của bạn · Điểm theo lớp · huỷ / khôi phục nguyên trạng · KCK theo lượt)
-const { runPrOv11eTests } = await import('./prOv11e.tests.ts');
+const { runPrOv11eTests } = bocTep('prOv11e', await import('./prOv11e.tests.ts'));
 await runPrOv11eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV11b (Quản trị · tài khoản: không tự khoá, Duyệt lại, vai thiếu CN, nhật ký)
-const { runPrOv11bTests } = await import('./prOv11b.tests.ts');
+const { runPrOv11bTests } = bocTep('prOv11b', await import('./prOv11b.tests.ts'));
 await runPrOv11bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV11i (giao diện chung: a11y · 375 · tương phản)
-const { runPrOv11iTests } = await import('./prOv11i.tests.ts');
+const { runPrOv11iTests } = bocTep('prOv11i', await import('./prOv11i.tests.ts'));
 await runPrOv11iTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV11d (hồ sơ HV · Case: không kẹt sau Tạm dừng / Lưu trữ / Bước tiếp; nút hiện = máy chủ cho)
-const { runPrOv11dTests } = await import('./prOv11d.tests.ts');
+const { runPrOv11dTests } = bocTep('prOv11d', await import('./prOv11d.tests.ts'));
 await runPrOv11dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV11g (Học viên & Lớp · hồ sơ lớp: Thiếu thông tin, em Kết thúc học, lớp đã kết thúc)
-const { runPrOv11gTests } = await import('./prOv11g.tests.ts');
+const { runPrOv11gTests } = bocTep('prOv11g', await import('./prOv11g.tests.ts'));
 await runPrOv11gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12a (hạn ghi kết quả PA hai tuần · QL xoá lớp trống / nhiều HV · TVV Bước tiếp sau thi)
-const { runPrOv12aTests } = await import('./prOv12a.tests.ts');
+const { runPrOv12aTests } = bocTep('prOv12a', await import('./prOv12a.tests.ts'));
 await runPrOv12aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-EN (bản tiếng Anh: từ điển, ngôn ngữ theo tài khoản, mã lỗi, quét nguồn)
-const { runPrEnTests } = await import('./prEn.tests.ts');
+const { runPrEnTests } = bocTep('prEn', await import('./prEn.tests.ts'));
 await runPrEnTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12b (nhận xét MT bắt buộc · nhóm nguyên nhân khi dưới kỳ vọng · Excel cột nhận xét)
-const { runPrOv12bTests } = await import('./prOv12b.tests.ts');
+const { runPrOv12bTests } = bocTep('prOv12b', await import('./prOv12b.tests.ts'));
 await runPrOv12bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12c (Case SOS MT từ nhận xét · Progress "Xác nhận Case" · xoá Case khi em đạt · migrate)
-const { runPrOv12cTests } = await import('./prOv12c.tests.ts');
+const { runPrOv12cTests } = bocTep('prOv12c', await import('./prOv12c.tests.ts'));
 await runPrOv12cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12h (bỏ Nhắc · kết quả PA từng em · Tutor theo buổi · meeting CX hạn 5 ngày)
-const { runPrOv12hTests } = await import('./prOv12h.tests.ts');
+const { runPrOv12hTests } = bocTep('prOv12h', await import('./prOv12h.tests.ts'));
 await runPrOv12hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12g (Góp ý hàng tuần ở hồ sơ lớp: ghi / sửa / xoá · quyền · 4 tuần · migrate)
-const { runPrOv12gTests } = await import('./prOv12g.tests.ts');
+const { runPrOv12gTests } = bocTep('prOv12g', await import('./prOv12g.tests.ts'));
 await runPrOv12gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12f (Học viên & Lớp ba góc nhìn: Đang SOS theo tuần, quyền theo vai, panel một em)
-const { runPrOv12fTests } = await import('./prOv12f.tests.ts');
+const { runPrOv12fTests } = bocTep('prOv12f', await import('./prOv12f.tests.ts'));
 await runPrOv12fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13e (đăng ký có chọn vai · requested_role · duyệt điền sẵn · migrate)
-const { runPrOv13eTests } = await import('./prOv13e.tests.ts');
+const { runPrOv13eTests } = bocTep('prOv13e', await import('./prOv13e.tests.ts'));
 await runPrOv13eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12d (Tổng hợp nhóm Xử lý 3 cột · Tổng quan Case chờ duyệt cùng hàm · hồ sơ MT khối Case & phương án)
-const { runPrOv12dTests } = await import('./prOv12d.tests.ts');
+const { runPrOv12dTests } = bocTep('prOv12d', await import('./prOv12d.tests.ts'));
 await runPrOv12dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV12e (hệ panel v3 · chip hạn 3 mức · Quyết định 3 nút · panel số liệu mở rộng dòng)
-const { runPrOv12eTests } = await import('./prOv12e.tests.ts');
+const { runPrOv12eTests } = bocTep('prOv12e', await import('./prOv12e.tests.ts'));
 await runPrOv12eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== HOTFIX 15/10 (nhận xét sau hoàn tất qua HTTP · Sửa Case MT không Mô tả)
-const { runPrHfTests } = await import('./prHf.tests.ts');
+const { runPrHfTests } = bocTep('prHf', await import('./prHf.tests.ts'));
 await runPrHfTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13b (Đề xuất PA khác · Xác nhận PA Nội dung + Bắt đầu · ghi nhanh · Hoàn tác)
-const { runPrOv13bTests } = await import('./prOv13b.tests.ts');
+const { runPrOv13bTests } = bocTep('prOv13b', await import('./prOv13b.tests.ts'));
 await runPrOv13bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== HD-a (Hướng dẫn trên web: mục theo màn · Chỉ cho tôi trỏ data-hd có thật · nhớ dải Mới dùng)
-const { runPrHdTests } = await import('./prHd.tests.ts');
+const { runPrHdTests } = bocTep('prHd', await import('./prHd.tests.ts'));
 await runPrHdTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV13a (Case tạm · PA quy chế hết kẹt A/B/C · migrate prOv13a)
-const { runPrOv13aTests } = await import('./prOv13a.tests.ts');
+const { runPrOv13aTests } = bocTep('prOv13a', await import('./prOv13a.tests.ts'));
 await runPrOv13aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13i (TVV / CX sửa thông tin cả lớp, kể cả Target)
-const { runPrOv13iTests } = await import('./prOv13i.tests.ts');
+const { runPrOv13iTests } = bocTep('prOv13i', await import('./prOv13i.tests.ts'));
 await runPrOv13iTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13j (Lịch sử sửa thông tin học viên: đường ghi có audit theo trường · API · quyền · phân trang)
-const { runPrOv13jTests } = await import('./prOv13j.tests.ts');
+const { runPrOv13jTests } = bocTep('prOv13j', await import('./prOv13j.tests.ts'));
 await runPrOv13jTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13d (Ý thức nhiều em cùng lúc: lô xử lý · Ghi nhận · Xác nhận cấp bậc có bậc 0)
-const { runPrOv13dTests } = await import('./prOv13d.tests.ts');
+const { runPrOv13dTests } = bocTep('prOv13d', await import('./prOv13d.tests.ts'));
 await runPrOv13dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13h (gỡ chặn cứng người đúng nhiệm vụ — qua HTTP; chạy cuối: không bọc giao dịch)
-const { runPrOv13hTests } = await import('./prOv13h.tests.ts');
+const { runPrOv13hTests } = bocTep('prOv13h', await import('./prOv13h.tests.ts'));
 await runPrOv13hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13c (gom Công việc theo tuần + lớp + mức SOS · Xác nhận PA cùng lúc · Nhập điểm theo tuần thi)
-const { runPrOv13cTests } = await import('./prOv13c.tests.ts');
+const { runPrOv13cTests } = bocTep('prOv13c', await import('./prOv13c.tests.ts'));
 await runPrOv13cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13g (Speaking chấm chéo trong Công việc của GV Speaking — một dòng gộp, không quá hạn)
-const { runPrOv13gTests } = await import('./prOv13g.tests.ts');
+const { runPrOv13gTests } = bocTep('prOv13g', await import('./prOv13g.tests.ts'));
 await runPrOv13gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13l (Chuyển lớp "Ngay hôm nay" · hạn bàn giao 7 ngày · điểm đi theo lộ trình)
-const { runPrOv13lTests } = await import('./prOv13l.tests.ts');
+const { runPrOv13lTests } = bocTep('prOv13l', await import('./prOv13l.tests.ts'));
 await runPrOv13lTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13k (Speaking chấm chéo — GV phụ trách được báo, nhận xét riêng, sửa nhóm, chốt Case; qua HTTP)
-const { runPrOv13kTests } = await import('./prOv13k.tests.ts');
+const { runPrOv13kTests } = bocTep('prOv13k', await import('./prOv13k.tests.ts'));
 await runPrOv13kTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13o (việc nhỏ sau rà OV-13: KCK xem trước, lịch sử sửa, Lớp tôi dạy chấm chéo, lịch sử MT)
-const { runPrOv13oTests } = await import('./prOv13o.tests.ts');
+const { runPrOv13oTests } = bocTep('prOv13o', await import('./prOv13o.tests.ts'));
 await runPrOv13oTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13m (Bước tiếp sau thi thật — Đã xong · Lộ trình mới · Tạm dừng · Thôi học, qua HTTP)
-const { runPrOv13mTests } = await import('./prOv13m.tests.ts');
+const { runPrOv13mTests } = bocTep('prOv13m', await import('./prOv13m.tests.ts'));
 await runPrOv13mTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13p (TVV / CX tạo lớp + thêm học viên — student.add, qua HTTP)
-const { runPrOv13pTests } = await import('./prOv13p.tests.ts');
+const { runPrOv13pTests } = bocTep('prOv13p', await import('./prOv13p.tests.ts'));
 await runPrOv13pTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== UX-1 (sửa gấp đánh giá UX 16/10: bảng chi nhánh, đếm HV & Lớp, Case chưa có PA, Lịch Test)
-const { runPrUx1Tests } = await import('./prUx1.tests.ts');
+const { runPrUx1Tests } = bocTep('prUx1', await import('./prUx1.tests.ts'));
 await runPrUx1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== UX-2 (tiếp đánh giá UX 16/10: Quá hạn chấm = Bài quá hạn, Case chưa chốt PA quá hạn, menu Công việc, tự mở việc, khung theo phạm vi)
-const { runPrUx2Tests } = await import('./prUx2.tests.ts');
+const { runPrUx2Tests } = bocTep('prUx2', await import('./prUx2.tests.ts'));
 await runPrUx2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13q (Đã thi xong · hạn 1 tuần + Gia hạn — qua HTTP theo vai, migrate, EXPLAIN)
-const { runPrOv13qTests } = await import('./prOv13q.tests.ts');
+const { runPrOv13qTests } = bocTep('prOv13q', await import('./prOv13q.tests.ts'));
 await runPrOv13qTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13f (ẩn mã HV + Email là định danh, không trùng — qua HTTP)
-const { runPrOv13fTests } = await import('./prOv13f.tests.ts');
+const { runPrOv13fTests } = bocTep('prOv13f', await import('./prOv13f.tests.ts'));
 await runPrOv13fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== VN-1 (rà OV-13f: Target bước 0,5 mọi đường, email ở Xoá HV, đổi email cho nhau)
-const { runPrVn1Tests } = await import('./prVn1.tests.ts');
+const { runPrVn1Tests } = bocTep('prVn1', await import('./prVn1.tests.ts'));
 await runPrVn1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-14b (sửa nhỏ sau rà UX 17/10: Đã thi · chờ kết quả, Đang SOS Toàn bộ, Quá hạn chấm theo khung)
-const { runPrOv14bTests } = await import('./prOv14b.tests.ts');
+const { runPrOv14bTests } = bocTep('prOv14b', await import('./prOv14b.tests.ts'));
 await runPrOv14bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-14a (lưu chắc chắn, không mất chữ — audit 17/10 F01–F12)
-const { runPrOv14aTests } = await import('./prOv14a.tests.ts');
+const { runPrOv14aTests } = bocTep('prOv14a', await import('./prOv14a.tests.ts'));
 await runPrOv14aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-14c (Chấm Speaking: GV Speaking theo kỹ năng hồ sơ, chi nhánh grant, từ thứ Hai tuần thi)
-const { runPrOv14cTests } = await import('./prOv14c.tests.ts');
+const { runPrOv14cTests } = bocTep('prOv14c', await import('./prOv14c.tests.ts'));
 await runPrOv14cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15a (nền: token màu, chip SOS, ký hiệu, giao diện theo máy, hạn chỉ ngày)
-const { runPrOv15aTests } = await import('./prOv15a.tests.ts');
+const { runPrOv15aTests } = bocTep('prOv15a', await import('./prOv15a.tests.ts'));
 await runPrOv15aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15b (lưới điểm: cột của việc, ✓/✗, bỏ tab Điểm theo lớp, Lịch Test hai khung, "Nhập bởi" chỉ khi có điểm)
-const { runPrOv15bTests } = await import('./prOv15b.tests.ts');
+const { runPrOv15bTests } = bocTep('prOv15b', await import('./prOv15b.tests.ts'));
 await runPrOv15bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15d (Công việc một danh sách, Tổng quan QL A, thông báo tự động thay Nhắc)
-const { runPrOv15dTests } = await import('./prOv15d.tests.ts');
+const { runPrOv15dTests } = bocTep('prOv15d', await import('./prOv15d.tests.ts'));
 await runPrOv15dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15c (Kế hoạch Test: Xóa = bỏ tuần, năm, tìm HV / email, ghi chú lịch thi, xuất 13 cột + điểm)
-const { runPrOv15cTests } = await import('./prOv15c.tests.ts');
+const { runPrOv15cTests } = bocTep('prOv15c', await import('./prOv15c.tests.ts'));
 await runPrOv15cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15e (Phân tích thanh trên, Báo cáo, Kết quả thi, Phân tích GV, bộ chọn thời gian, phân trang)
-const { runPrOv15eTests } = await import('./prOv15e.tests.ts');
+const { runPrOv15eTests } = bocTep('prOv15e', await import('./prOv15e.tests.ts'));
 await runPrOv15eTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15e2 (sửa lẻ sau rà OV-15e: lượt Mock không subquery tương quan, link ?tg cũ, Báo cáo TVV / CX)
-const { runPrOv15e2Tests } = await import('./prOv15e2.tests.ts');
+const { runPrOv15e2Tests } = bocTep('prOv15e2', await import('./prOv15e2.tests.ts'));
 await runPrOv15e2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15f (Học viên & Lớp: Lịch thi, Xuất Excel danh sách HV, phân trang)
-const { runPrOv15fTests } = await import('./prOv15f.tests.ts');
+const { runPrOv15fTests } = bocTep('prOv15f', await import('./prOv15f.tests.ts'));
 await runPrOv15fTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TU-a (Tutor: migrate, vai Head tutor, buổi tutor 3 ô, /tutors/chon)
-const { runPrTuTests } = await import('./prTu.tests.ts');
+const { runPrTuTests } = bocTep('prTu', await import('./prTu.tests.ts'));
 await runPrTuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15h1 (Tổng quan QL một đường, Lớp cần chú ý, Trễ chấm, Cần bạn quyết ≤ 7 ngày, thông báo theo lô, Chờ bạn duyệt theo chi nhánh)
-const { runPrOv15h1Tests } = await import('./prOv15h1.tests.ts');
+const { runPrOv15h1Tests } = bocTep('prOv15h1', await import('./prOv15h1.tests.ts'));
 await runPrOv15h1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15g (Lịch sử thay đổi C22: một đường đọc /lich-su, ghi đủ ở máy chủ, quyền, phân trang)
-const { runPrOv15gTests } = await import('./prOv15g.tests.ts');
+const { runPrOv15gTests } = bocTep('prOv15g', await import('./prOv15g.tests.ts'));
 await runPrOv15gTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15h2 (Học viên & Lớp + xuất + dọn: ghi chú cùng giao dịch, 13 cột em hai lớp, chốt ngày, Bộ lọc thêm, Dán Excel lớp thường)
-const { runPrOv15h2Tests } = await import('./prOv15h2.tests.ts');
+const { runPrOv15h2Tests } = bocTep('prOv15h2', await import('./prOv15h2.tests.ts'));
 await runPrOv15h2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15i1 (việc lẻ Lịch sử thay đổi + chuông: góp ý đi chỉ mục, con trỏ ô điểm, quyền thi-that, lô một mục, batDau)
-const { runPrOv15i1Tests } = await import('./prOv15i1.tests.ts');
+const { runPrOv15i1Tests } = bocTep('prOv15i1', await import('./prOv15i1.tests.ts'));
 await runPrOv15i1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15i2 (Dán Excel thử lại / trần môn / email lớp thường / Hoàn tác "- → x", bỏ huyLuot, xuất điểm Test, tutor theo lớp)
-const { runPrOv15i2Tests } = await import('./prOv15i2.tests.ts');
+const { runPrOv15i2Tests } = bocTep('prOv15i2', await import('./prOv15i2.tests.ts'));
 await runPrOv15i2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== LT-SV (lịch thi thật: trạng thái A / B, hết "tháng = đã thi", việc Chốt ngày thi, ngày đã qua, Sắp tới)
-const { runPrLtSvTests } = await import('./prLtSv.tests.ts');
+const { runPrLtSvTests } = bocTep('prLtSv', await import('./prLtSv.tests.ts'));
 await runPrLtSvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== CV-LOI (Case không chủ tự gán · một dòng Phân công · Xếp lại bài vắng theo quyền · hạn Mini Test)
-const { runPrCvLoiTests } = await import('./prCvLoi.tests.ts');
+const { runPrCvLoiTests } = bocTep('prCvLoi', await import('./prCvLoi.tests.ts'));
 await runPrCvLoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
-const { runPrTd7bTests } = await import('./prTd7b.tests.ts');
+const { runPrTd7bTests } = bocTep('prTd7b', await import('./prTd7b.tests.ts'));
 await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TU-b (trang Tutor: Cần chú ý, bảng / panel, phạm vi QL, thêm sửa xoá, nhận xét, tải danh sách, gộp tên)
-const { runPrTubTests } = await import('./prTub.tests.ts');
+const { runPrTubTests } = bocTep('prTub', await import('./prTub.tests.ts'));
 await runPrTubTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== LUAT-34 (bảng chuyển trạng thái Mock Test T01–T31 · chuyenVang · Luật 3 sửa sau lưu)
-const { runMtTrangThaiTests } = await import('./mtTrangThai.tests.ts');
+const { runMtTrangThaiTests } = bocTep('mtTrangThai', await import('./mtTrangThai.tests.ts'));
 await runMtTrangThaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== NEN-TYPO-MAU (thang chữ 12–28, 3 token kết quả: tương phản 9 nền + mù màu, hệ trạng thái HTT)
-const { runPrNenTypoMauTests } = await import('./prNenTypoMau.tests.ts');
+const { runPrNenTypoMauTests } = bocTep('prNenTypoMau', await import('./prNenTypoMau.tests.ts'));
 await runPrNenTypoMauTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== BANG-0 (Bang + 13 kiểu cột, ODiem, phép kiểm BANG-1…5 — danh sách miễn chỉ giảm)
-const { runPrBang0Tests } = await import('./prBang0.tests.ts');
+const { runPrBang0Tests } = bocTep('prBang0', await import('./prBang0.tests.ts'));
 await runPrBang0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== LUAT-5 (luật 5: thu hồi / không tăng bậc qua QL, lý do bắt buộc, "Đã thu hồi" giữ dòng)
-const { runPrLuat5Tests } = await import('./prLuat5.tests.ts');
+const { runPrLuat5Tests } = bocTep('prLuat5', await import('./prLuat5.tests.ts'));
 await runPrLuat5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SUA-NO-RA (nợ rà sâu CV-LOI #499 + LUAT-5 #495: phân công có phiên bản, migrate một lần, thẻ thu hồi)
-const { runPrSuaNoRaTests } = await import('./prSuaNoRa.tests.ts');
+const { runPrSuaNoRaTests } = bocTep('prSuaNoRa', await import('./prSuaNoRa.tests.ts'));
 await runPrSuaNoRaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== KHUNG-LOI (thứ tự menu, thanh trên "Thêm ▾" / thanh dưới ≤ 5, chú giải màu ô MT, tiêu đề, "Nếu duyệt" ghi ngày)
-const { runPrKhungLoiTests } = await import('./prKhungLoi.tests.ts');
+const { runPrKhungLoiTests } = bocTep('prKhungLoi', await import('./prKhungLoi.tests.ts'));
 await runPrKhungLoiTests({ check, assert } as any);
 // ==================================================================== CASE-NHIEU (Tạo Case nhiều kỹ năng: một giao dịch, người phụ trách, trùng / chờ xác nhận, gửi lại, quyền, tệp)
-const { runCaseLoTests } = await import('./caseLo.tests.ts');
+const { runCaseLoTests } = bocTep('caseLo', await import('./caseLo.tests.ts'));
 await runCaseLoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
-const { runPrSl1Tests } = await import('./prSl1.tests.ts');
+const { runPrSl1Tests } = bocTep('prSl1', await import('./prSl1.tests.ts'));
 await runPrSl1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
-const { runPrSl2Tests } = await import('./prSl2.tests.ts');
+const { runPrSl2Tests } = bocTep('prSl2', await import('./prSl2.tests.ts'));
 await runPrSl2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== CHU-THI (Rulebook §21.4: Thi = thi thật, Test = "làm bài" — chặn chữ cũ trong tệp Test)
-const { runPrChuThiTests } = await import('./prChuThi.tests.ts');
+const { runPrChuThiTests } = bocTep('prChuThi', await import('./prChuThi.tests.ts'));
 await runPrChuThiTests({ checkAsync, assert } as any);
 // ==================================================================== SV-YT-TVV (việc Báo PH của TVV sau lưu xử lý vi phạm — K1–K12, thu hồi / từ chối / rút, quyền)
-const { runPrSvYtTvvTests } = await import('./prSvYtTvv.tests.ts');
+const { runPrSvYtTvvTests } = bocTep('prSvYtTvv', await import('./prSvYtTvv.tests.ts'));
 await runPrSvYtTvvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== V5 Phân tích GV theo Overall (C08–C10), bỏ gợi ý MT4 (C20)
-const { runPrPtGvOverallTests } = await import('./prPtGvOverall.tests.ts');
+const { runPrPtGvOverallTests } = bocTep('prPtGvOverall', await import('./prPtGvOverall.tests.ts'));
 await runPrPtGvOverallTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
-const { runPrSvBaiLopTests } = await import('./prSvBaiLop.tests.ts');
+const { runPrSvBaiLopTests } = bocTep('prSvBaiLop', await import('./prSvBaiLop.tests.ts'));
 await runPrSvBaiLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 SV-SO2 (Overall ở Phân tích lớp / hồ sơ GV, Đạt MT theo HV, Việc / Điểm đúng hạn, hồ sơ GV theo kỳ, panel chỉ đọc)
-const { runPrSvSo2Tests } = await import('./prSvSo2.tests.ts');
+const { runPrSvSo2Tests } = bocTep('prSvSo2', await import('./prSvSo2.tests.ts'));
 await runPrSvSo2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
-const { runPrSvSo3Tests } = await import('./prSvSo3.tests.ts');
+const { runPrSvSo3Tests } = bocTep('prSvSo3', await import('./prSvSo3.tests.ts'));
 await runPrSvSo3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== V5 SV-SO1 (đơn vị đếm Công việc, S chéo không nợ, thiếu nhận xét ≠ xong, không gợi ý MT4, theo dõi, chuông = tin)
-const { runPrSvSo1Tests } = await import('./prSvSo1.tests.ts');
+const { runPrSvSo1Tests } = bocTep('prSvSo1', await import('./prSvSo1.tests.ts'));
 await runPrSvSo1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SV-TVV-VIEC (4 việc TVV: một người giữ = TVV của em / QL; Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật)
-const { runPrSvTvvViecTests } = await import('./prSvTvvViec.tests.ts');
+const { runPrSvTvvViecTests } = bocTep('prSvTvvViec', await import('./prSvTvvViec.tests.ts'));
 await runPrSvTvvViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SV-S-EXPERT (lượt S Expert: chỉ QL / Admin thêm, GV S chấm, không vào tính toán, lịch sử)
-const { runPrSvSExpertTests } = await import('./prSvSExpert.tests.ts');
+const { runPrSvSExpertTests } = bocTep('prSvSExpert', await import('./prSvSExpert.tests.ts'));
 await runPrSvSExpertTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== SV-LOP (Đánh giá đầu ra chờ Final, việc theo em từ /my-work, W1 / W2; nợ rà S Ex ở SSEX-8…12)
-const { runPrSvLopTests } = await import('./prSvLop.tests.ts');
+const { runPrSvLopTests } = bocTep('prSvLop', await import('./prSvLop.tests.ts'));
 await runPrSvLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 NEN-PANEL (nháp theo việc, hộp bỏ chữ, Lưu và tiếp, chân lưu, 375 + bàn phím)
-const { runPrNenPanelTests } = await import('./prNenPanel.tests.ts');
+const { runPrNenPanelTests } = bocTep('prNenPanel', await import('./prNenPanel.tests.ts'));
 await runPrNenPanelTests({ check, checkAsync, assert } as any);
 // ==================================================================== V5 UI-CONG-VIEC (dòng theo em T01, vạch hạn T14)
-const { runPrUiCongViecTests } = await import('./prUiCongViec.tests.ts');
+const { runPrUiCongViecTests } = bocTep('prUiCongViec', await import('./prUiCongViec.tests.ts'));
 await runPrUiCongViecTests({ check, assert } as any);
 // ==================================================================== V5 UI-CHAM-TEST (Kế hoạch Test 3 MT + Overall, lý do "Đã huỷ")
-const { runPrUiChamTestTests } = await import('./prUiChamTest.tests.ts');
+const { runPrUiChamTestTests } = bocTep('prUiChamTest', await import('./prUiChamTest.tests.ts'));
 await runPrUiChamTestTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 UI-CV-TVV (TVV có Công việc chỉ việc của mình, dòng từng em, bối cảnh Báo PH)
-const { runPrUiCvTvvTests } = await import('./prUiCvTvv.tests.ts');
+const { runPrUiCvTvvTests } = bocTep('prUiCvTvv', await import('./prUiCvTvv.tests.ts'));
 await runPrUiCvTvvTests({ check, checkAsync, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== V5 UI-LICH-TUAN (Lịch tuần: HV theo lượt, dải số một tuần, chuyển hướng /nhap-diem)
-const { runPrUiLichTuanTests } = await import('./prUiLichTuan.tests.ts');
+const { runPrUiLichTuanTests } = bocTep('prUiLichTuan', await import('./prUiLichTuan.tests.ts'));
 await runPrUiLichTuanTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== V5 UI-HO-SO-LOP (Việc cần làm của người xem, roster bỏ viecTiepTheo, Đánh giá đầu ra C17)
-const { runPrUiHoSoLopTests } = await import('./prUiHoSoLop.tests.ts');
+const { runPrUiHoSoLopTests } = bocTep('prUiHoSoLop', await import('./prUiHoSoLop.tests.ts'));
 await runPrUiHoSoLopTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== V5 LUAT-NX-MT (nhận xét chỉ nhắc, xếp MT nới lỏng, ghi chú vắng, S Ex ở Hành trình)
-const { runPrLuatNxMtTests } = await import('./prLuatNxMt.tests.ts');
+const { runPrLuatNxMtTests } = bocTep('prLuatNxMt', await import('./prLuatNxMt.tests.ts'));
 await runPrLuatNxMtTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== SV-NX-CASE (N8: MT mới nhất nhắc nhận xét, mô tả Case theo nhận xét, Xác nhận Case S chấm chéo)
-const { runPrSvNxCaseTests } = await import('./prSvNxCase.tests.ts');
+const { runPrSvNxCaseTests } = bocTep('prSvNxCase', await import('./prSvNxCase.tests.ts'));
 await runPrSvNxCaseTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== V5 UI-HV-LOP (hàng HV: TVV + lịch thi; Lịch thi: chi tiết dưới hàng, khoảng tháng)
-const { runPrUiHvLopTests } = await import('./prUiHvLop.tests.ts');
+const { runPrUiHvLopTests } = bocTep('prUiHvLop', await import('./prUiHvLop.tests.ts'));
 await runPrUiHvLopTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== V5 UI-TONG-QUAN (Tổng quan mọi vai — số = Báo cáo, Σ tử / Σ mẫu, quyền)
-const { runPrUiTongQuanTests } = await import('./prUiTongQuan.tests.ts');
+const { runPrUiTongQuanTests } = bocTep('prUiTongQuan', await import('./prUiTongQuan.tests.ts'));
 await runPrUiTongQuanTests({ check, assert, conn, P } as any);
 // ==================================================================== V5 UI-HO-SO-GV (thi thật · panel có điểm · lọc Đạt / Chưa đạt · Case theo trạng thái)
-const { runPrUiHoSoGvTests } = await import('./prUiHoSoGv.tests.ts');
+const { runPrUiHoSoGvTests } = bocTep('prUiHoSoGv', await import('./prUiHoSoGv.tests.ts'));
 await runPrUiHoSoGvTests({ check, assert, conn, P } as any);
 // ==================================================================== V5 UI-PHAN-TICH (Báo cáo HV = Tổng quan, Phân tích GV cột mới = panel, Toàn bộ)
-const { runPrUiPhanTichTests } = await import('./prUiPhanTich.tests.ts');
+const { runPrUiPhanTichTests } = bocTep('prUiPhanTich', await import('./prUiPhanTich.tests.ts'));
 await runPrUiPhanTichTests({ check, assert, conn, P } as any);
 // ==================================================================== V5 UI-CON-LAI (nợ #528: badge việc của tôi chỉ việc mine, quá hạn theo kỹ năng)
-const { runPrUiConLaiTests } = await import('./prUiConLai.tests.ts');
+const { runPrUiConLaiTests } = bocTep('prUiConLai', await import('./prUiConLai.tests.ts'));
 await runPrUiConLaiTests({ check, assert, P } as any);
 // ==================================================================== V5 SV-TQ-GV (Tổng quan GV hai khối — số = hồ sơ GV / Phân tích, quyền)
-const { runPrSvTqGvTests } = await import('./prSvTqGv.tests.ts');
+const { runPrSvTqGvTests } = bocTep('prSvTqGv', await import('./prSvTqGv.tests.ts'));
 await runPrSvTqGvTests({ check, assert, conn, P } as any);
 // ==================================================================== SUA-CHAM-LAI (Đ4 lý do Chưa đủ dữ liệu)
-const { runPrSuaChamLaiTests } = await import('./prSuaChamLai.tests.ts');
+const { runPrSuaChamLaiTests } = bocTep('prSuaChamLai', await import('./prSuaChamLai.tests.ts'));
 await runPrSuaChamLaiTests({ check, assert } as any);
 // ==================================================================== P2 MT-DEM (bộ đếm MT đã xong / đã tạo, thôi nhắc xếp thêm)
-const { runPrMtDemTests } = await import('./prMtDem.tests.ts');
+const { runPrMtDemTests } = bocTep('prMtDem', await import('./prMtDem.tests.ts'));
 await runPrMtDemTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== P1 DIEM-TIEU-CHI (tiêu chí W / S số nguyên)
-const { runPrDiemTieuChiTests } = await import('./prDiemTieuChi.tests.ts');
+const { runPrDiemTieuChiTests } = bocTep('prDiemTieuChi', await import('./prDiemTieuChi.tests.ts'));
 await runPrDiemTieuChiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== P3 UI-CHUNG (Mới dùng PISA TRACKING? · bỏ Góp ý hàng tuần · menu ⋯ · đầu bảng dính)
-const { runPrUiChungTests } = await import('./prUiChung.tests.ts');
+const { runPrUiChungTests } = bocTep('prUiChung', await import('./prUiChung.tests.ts'));
 await runPrUiChungTests({ check, assert, P } as any);
 // ==================================================================== P4 CHON-LOP (một ô chọn lớp gõ → tìm → chọn)
-const { runPrChonLopTests } = await import('./prChonLop.tests.ts');
+const { runPrChonLopTests } = bocTep('prChonLop', await import('./prChonLop.tests.ts'));
 await runPrChonLopTests({ check, assert } as any);
 // ==================================================================== P6 KHOA-LICH (T6 → CN khoá đổi lịch MT 3 tuần, trừ Quản trị hệ thống)
-const { runPrKhoaLichTests } = await import('./prKhoaLich.tests.ts');
+const { runPrKhoaLichTests } = bocTep('prKhoaLich', await import('./prKhoaLich.tests.ts'));
 await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== P9a XET-LAI (Xét lại lộ trình N21: 4 trường hợp, hạn, panel, lô, Hoàn tác, tự giữ)
-const { runPrXetLaiTests } = await import('./prXetLai.tests.ts');
+const { runPrXetLaiTests } = bocTep('prXetLai', await import('./prXetLai.tests.ts'));
 await runPrXetLaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== P14 DICH (nút Dịch chữ GV nhập — fetch giả)
-const { runPrDichTests } = await import('./prDich.tests.ts');
+const { runPrDichTests } = bocTep('prDich', await import('./prDich.tests.ts'));
 await runPrDichTests({ check, checkAsync, assert, conn, P } as any);
 // ==================================================================== P12 BAO-CAO-LICH-SU (báo cáo quá khứ theo Target / lớp / trạng thái lúc đó; Q12)
-const { runPrBaoCaoLichSuTests } = await import('./prBaoCaoLichSu.tests.ts');
+const { runPrBaoCaoLichSuTests } = bocTep('prBaoCaoLichSu', await import('./prBaoCaoLichSu.tests.ts'));
 await runPrBaoCaoLichSuTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== P11 VIEC-DUNG-VAI (cột Việc đúng vai: GV việc của mình, QL gộp theo môn)
-const { runPrViecDungVaiTests } = await import('./prViecDungVai.tests.ts');
+const { runPrViecDungVaiTests } = bocTep('prViecDungVai', await import('./prViecDungVai.tests.ts'));
 await runPrViecDungVaiTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== P7 SV-LO-TRINH (một nút Tạm dừng/ Kết thúc học · Quay lại học · Bước tiếp 2 hướng · Lộ trình mới)
-const { runPrSvLoTrinhTests } = await import('./prSvLoTrinh.tests.ts');
+const { runPrSvLoTrinhTests } = bocTep('prSvLoTrinh', await import('./prSvLoTrinh.tests.ts'));
 await runPrSvLoTrinhTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== P9b CUOI-KHOA (trang Cuối khoá lớp thường, hạn chốt N20, N17, N22)
-const { runPrCuoiKhoaTests } = await import('./prCuoiKhoa.tests.ts');
+const { runPrCuoiKhoaTests } = bocTep('prCuoiKhoa', await import('./prCuoiKhoa.tests.ts'));
 await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
 // ==================================================================== P13 KET-PET (thang Cambridge, Target + thi thật KET / PET, Checkpoint 4 môn)
-const { runPrKetPetTests } = await import('./prKetPet.tests.ts');
+const { runPrKetPetTests } = bocTep('prKetPet', await import('./prKetPet.tests.ts'));
 await runPrKetPetTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== R1-LUU-TIEP (chọn bài còn thiếu kế tiếp)
-const { runR1LuuTiepTests } = await import('./r1LuuTiep.tests.ts');
+const { runR1LuuTiepTests } = bocTep('r1LuuTiep', await import('./r1LuuTiep.tests.ts'));
 await runR1LuuTiepTests({ check, assert });
 // ==================================================================== R1-SUA-NHO (trục tuần Hành trình, đường lượt lớp thường không vòng)
-const { runR1SuaNhoTests } = await import('./r1SuaNho.tests.ts');
+const { runR1SuaNhoTests } = bocTep('r1SuaNho', await import('./r1SuaNho.tests.ts'));
 await runR1SuaNhoTests({ check, assert });
 // ==================================================================== P8 MON-DANG-KY (môn đăng ký L · R · W1 · W2 · S theo lộ trình FT — N13, N22 ④)
-const { runPrMonDangKyTests } = await import('./prMonDangKy.tests.ts');
+const { runPrMonDangKyTests } = bocTep('prMonDangKy', await import('./prMonDangKy.tests.ts'));
 await runPrMonDangKyTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY, classId, addDays } as any);
-const { runR1NoNhoTests } = await import('./r1NoNho.tests.ts');
+const { runR1NoNhoTests } = bocTep('r1NoNho', await import('./r1NoNho.tests.ts'));
 await runR1NoNhoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);
-const { runTenChiSoTests } = await import('./tenChiSo.tests.ts');
+const { runTenChiSoTests } = bocTep('tenChiSo', await import('./tenChiSo.tests.ts'));
 await runTenChiSoTests({ check, assert });
 // ==================================================================== R1-NO-CU (đổi người phụ trách Case — D17)
-const { runR1NoCuTests } = await import('./r1NoCu.tests.ts');
+const { runR1NoCuTests } = bocTep('r1NoCu', await import('./r1NoCu.tests.ts'));
 await runR1NoCuTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== UI-CHART-D (dữ liệu chỉ đọc cho chart D: điểm W1 / W2 + nhận xét MT mọi lượt, thi thật)
-const { runUiChartDTests } = await import('./uiChartD.tests.ts');
+const { runUiChartDTests } = bocTep('uiChartD', await import('./uiChartD.tests.ts'));
 await runUiChartDTests({ check, assert, conn, P } as any);
 // ==================================================================== SV-BAI-LOP-2 (M5 PR ①: Tiến độ trên lớp band / nhận xét tuỳ chọn, gopY[], Hoàn tác thêm PA)
-const { runPrSvBaiLop2Tests } = await import('./prSvBaiLop2.tests.ts');
+const { runPrSvBaiLop2Tests } = bocTep('prSvBaiLop2', await import('./prSvBaiLop2.tests.ts'));
 await runPrSvBaiLop2Tests({ check, assert, conn, P, classId } as any);
 // ==================================================================== M6 6b-1 KHUNG-NGAN-XEP (ngăn xếp view ?xem=, ‹ lùi một view)
-const { runPrKhungNganXepTests } = await import('./prKhungNganXep.tests.ts');
+const { runPrKhungNganXepTests } = bocTep('prKhungNganXep', await import('./prKhungNganXep.tests.ts'));
 await runPrKhungNganXepTests({ check, assert } as any);
 // ==================================================================== M6 6b-2 PILOT-CASE (nhóm theo bước, việc trong dòng, Case A, lưu về Case)
-const { runPrPilotCaseTests } = await import('./prPilotCase.tests.ts');
+const { runPrPilotCaseTests } = bocTep('prPilotCase', await import('./prPilotCase.tests.ts'));
 await runPrPilotCaseTests({ check, assert, conn, P } as any);
 // ==================================================================== M6 6b-3 PILOT-VIEC (Xem Case trong panel việc, Xác nhận · việc tiếp ›, dải Hoàn tác)
-const { runPrPilotViecTests } = await import('./prPilotViec.tests.ts');
+const { runPrPilotViecTests } = bocTep('prPilotViec', await import('./prPilotViec.tests.ts'));
 await runPrPilotViecTests({ check, assert } as any);
 // ==================================================================== M6 6b-4 PILOT-GV-TRE (panel GV chấm quá hạn: Admin gvQuaHan · QL treCham, Nhập hộ)
-const { runPrPilotGvTreTests } = await import('./prPilotGvTre.tests.ts');
+const { runPrPilotGvTreTests } = bocTep('prPilotGvTre', await import('./prPilotGvTre.tests.ts'));
 await runPrPilotGvTreTests({ check, assert, conn, P } as any);
 // ==================================================================== 6c-1 PANEL-AP (chống mất chữ, lỗi tải ≠ rỗng, không panel chồng, nợ 6b)
-const { runPr6cPanelApTests } = await import('./pr6cPanelAp.tests.ts');
+const { runPr6cPanelApTests } = bocTep('pr6cPanelAp', await import('./pr6cPanelAp.tests.ts'));
 await runPr6cPanelApTests({ check, assert, conn, P } as any);
 // ==================================================================== HSL-MAY-CHU (M4 PR 1: hồ sơ một lượt Test — S Ex, lớp hiện tại, GET /regular/attempts/:id)
-const { runPrHslMayChuTests } = await import('./prHslMayChu.tests.ts');
+const { runPrHslMayChuTests } = bocTep('prHslMayChu', await import('./prHslMayChu.tests.ts'));
 await runPrHslMayChuTests({ check, assert, conn, P, classId, TODAY, addDays } as any);
-const { runPrHslLtTests } = await import('./prHslLt.tests.ts');
+const { runPrHslLtTests } = bocTep('prHslLt', await import('./prHslLt.tests.ts'));
 await runPrHslLtTests({ check, assert, conn, P, classId, TODAY } as any);
-const { runPrLuotTenGvTests } = await import('./prLuotTenGv.tests.ts');
+const { runPrLuotTenGvTests } = bocTep('prLuotTenGv', await import('./prLuotTenGv.tests.ts'));
 await runPrLuotTenGvTests({ check, assert, conn, P, classId } as any);
-const { runPrLuotKhoiPhucTests } = await import('./prLuotKhoiPhuc.tests.ts');
+const { runPrLuotKhoiPhucTests } = bocTep('prLuotKhoiPhuc', await import('./prLuotKhoiPhuc.tests.ts'));
 await runPrLuotKhoiPhucTests({ check, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== HOAN-TAC-XN (luật N3: Hoàn tác Xác nhận PA · lô PA · Xác nhận Case · Xác nhận Case S)
-const { runPrHoanTacXnTests } = await import('./prHoanTacXn.tests.ts');
+const { runPrHoanTacXnTests } = bocTep('prHoanTacXn', await import('./prHoanTacXn.tests.ts'));
 await runPrHoanTacXnTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== LOC-HIEN-TAI (lỗi chủ SP 28/10: danh sách hiện tại = lộ trình mới nhất + em đang học)
-const { runPrLocHienTaiTests } = await import('./prLocHienTai.tests.ts');
+const { runPrLocHienTaiTests } = bocTep('prLocHienTai', await import('./prLocHienTai.tests.ts'));
 await runPrLocHienTaiTests({ check, assert, conn, P, classId, TODAY } as any);
 // ==================================================================== QUYEN-LICH-MT (chủ SP 28/10: GVCN dời MT tuần đã qua · GV xem Kế hoạch Test)
-const { runPrQuyenLichMtTests } = await import('./prQuyenLichMt.tests.ts');
+const { runPrQuyenLichMtTests } = bocTep('prQuyenLichMt', await import('./prQuyenLichMt.tests.ts'));
 await runPrQuyenLichMtTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== KHT-GON (mockup #659: ô Kế hoạch Test bản gọn)
-const { runPrKhtGonTests } = await import('./prKhtGon.tests.ts');
+const { runPrKhtGonTests } = bocTep('prKhtGon', await import('./prKhtGon.tests.ts'));
 await runPrKhtGonTests({ check, assert } as any);
 // ==================================================================== RA-LUONG (rà soát luồng đêm 29/10)
-const { runPrRaLuongTests } = await import('./prRaLuong.tests.ts');
+const { runPrRaLuongTests } = bocTep('prRaLuong', await import('./prRaLuong.tests.ts'));
 await runPrRaLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
+if (process.env.PISA_NHOM) {
+  console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
+  process.exit(failures.length === 0 ? 0 : 1);
+}
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

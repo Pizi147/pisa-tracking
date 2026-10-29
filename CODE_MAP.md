@@ -112,7 +112,7 @@ Từ vựng nghiệp vụ dùng chung: `shared/domain/` (xuất qua `shared/doma
 - `server/src/migrate/` — mỗi đợt một tệp `pr<Ma>.ts`, gọi theo thứ tự từ `server/src/migrate.ts`; `server/src/migrate/run.ts` = `npm run migrate`. Chạy lặp an toàn. Bảng gốc: `server/src/schema.sql`.
 - `server/src/seed/` — bộ demo (mục dưới); `<tínhNăng>Seed.ts` = dữ liệu demo theo tính năng, gọi từ `seed.ts`.
 - `server/src/ops/` — lệnh `npm run …`: `run*.ts` là điểm chạy, luật ở tệp cùng tên (initBanChinh, runInit, themChiNhanh, saoLuu, runSaoLuu, khoiPhuc, runKhoiPhuc, thuTurso, xoaKhoTep, kiemSauInit, chotVangDinhKy, demBoTroTrung, kiemOLop, kiemDuLieuMt, kiemTieuChiLe). Lệnh kiểm trước một lần (`kiem-truoc-*`) đã xoá sau deploy 28/10 (GON-MA-3) — cần thì lấy lại từ git.
-- `server/src/tests/` — `run.ts` gọi mọi `*.tests.ts`; `tocDo.run.ts` đo tốc độ riêng.
+- `server/src/tests/` — `chayNhom.ts` = phần phép kiểm của `npm run check` / `npm test`: chạy `run.ts` chia `PISA_SO_NHOM` nhóm song song (mặc định 2; `=1` tuần tự như cũ) + `tocDo.run.ts` cùng lúc. `run.ts` gọi mọi `*.tests.ts` (danh sách `TACH` = tệp chạy ở nhóm 2…N; `PISA_CHI_TEP=a,b` chạy riêng vài tệp).
 
 ---
 
