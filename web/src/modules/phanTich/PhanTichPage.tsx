@@ -23,8 +23,9 @@ export default function PhanTichPage() {
     <div className="page space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 print:hidden">
         <div className="flex flex-wrap items-baseline gap-x-3">
-          <h1 className="m-0 text-xl font-bold text-slate-100">{t('Phân tích')}</h1>
-          {homNay && <span className="text-xs text-slate-500">{t('Dữ liệu đến {ngay}', { ngay: ngay(homNay) })}</span>}
+          {/* V8-PT (mockup `.dau-trang`): tiêu đề 22 / 700, ngày dữ liệu 13 mờ. */}
+          <h1 className="m-0 text-[22px] font-bold text-slate-100">{t('Phân tích')}</h1>
+          {homNay && <span className="text-[13px] text-[color:var(--text-faint)]">{t('Dữ liệu đến {ngay}', { ngay: ngay(homNay) })}</span>}
         </div>
         <BranchFilter branchId={branchId} onBranch={setBranchId} />
       </div>

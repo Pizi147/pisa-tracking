@@ -1,32 +1,37 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
-import { NutLuat } from '../../ui/NutLuat.tsx';
+import { CHIP_SOS, Nhan, lopSos } from '../../ui/Nhan.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DINH_TRAI, DongTomTat, SoO as OSo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DaiChiSo, DauThe, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
-  CHUONG_TRINH_LABEL, NGUONG_IT_DU_LIEU, nhanKhoang, type DongHieuQuaPa, type HieuQuaPaKetQua,
+  NGUONG_IT_DU_LIEU, nhanKhoang, rateView, type DongHieuQuaPa, type HieuQuaPaKetQua,
 } from '@shared/domain/index.ts';
 
 /**
- * HIỆU QUẢ PA (PR-UX4, mockup 16 §4; PR-Pb2-a T61, K1-23, P9, P9b, P12) — hai khối:
+ * HIỆU QUẢ PA (PR-UX4, mockup 16 §4; PR-Pb2-a T61, K1-23, P9, P9b, P12; V8-PT khung A5 / C3) — thẻ chỉ số + hai thẻ bảng CÙNG LƯỚI CỘT:
  *   1. PA do giáo viên thêm: vấn đề (nhóm nguyên nhân chính) → loại PA; "Nên dùng" chỉ ở loại PA đủ mẫu, cải thiện ≥ 70% và cao nhất trong vấn đề.
- *   2. PA theo quy chế: FT theo SOS 1 · 2 · 3, lớp thường theo Bổ trợ Giữa khoá / sau Cuối khoá — thứ tự cố định, không so, không xếp hạng.
- * Lọc `gv` (người phụ trách Case) đến từ URL (Hợp đồng a↔b: link từ hồ sơ GV / bảng giáo viên); tên GV lấy từ máy chủ. OV-15e: khoảng = bộ chọn chung.
+ *   2. PA theo quy chế: dòng PHẲNG (FT: chip SOS n + loại PA; lớp thường: Bổ trợ Giữa khoá / sau Cuối khoá) — thứ tự cố định, không so, không xếp hạng.
+ * Lọc `gv` (người phụ trách Case) đến từ URL (Hợp đồng a↔b: link từ hồ sơ GV / bảng giáo viên) → chip "GV: … ✕" trên hàng lọc; tên GV lấy từ máy chủ.
+ * 375: bảng giữ ≤ 4 cột số — thời gian + Nên dùng xuống dòng phụ dưới tên.
  */
+type DongQc = { d: DongHieuQuaPa; cha: DongHieuQuaPa | null };
+/** FT: mỗi (mức SOS, loại PA) một dòng; lớp thường: mỗi loại bổ trợ một dòng. */
+const phangQuyChe = (hang: DongHieuQuaPa[]): DongQc[] => hang.flatMap((h): DongQc[] => (h.con?.length ? h.con.map((d) => ({ d, cha: h })) : [{ d: h, cha: null }]));
+
 export function HieuQuaPa(props: PhamViPhanTich) {
   const [params, setParams] = useSearchParams();
   const them: Record<string, string> = {};
   if (params.get('gv')) them.gv = params.get('gv')!;
   const query = thamSoLoc(props, them);
   const { data, loading, error, reload } = useApi<HieuQuaPaKetQua>(`/phan-tich/hieu-qua-pa?${query}`, [query]);
+  const dongQc = data ? phangQuyChe(data.quyChe.hang) : [];
   const ptGv = usePhanTrang(data?.gvThem.hang.length ?? 0, query, 'vấn đề');
-  const ptQc = usePhanTrang(data?.quyChe.hang.length ?? 0, query, 'nhóm');
-  const branches = useApi<any[]>('/ref/branches');
+  const ptQc = usePhanTrang(dongQc.length, query, 'dòng');
   const nguon = (dong: string, cot: string) => `/phan-tich/hieu-qua-pa/o?${query}&dong=${encodeURIComponent(dong)}&cot=${encodeURIComponent(cot)}`;
   const boLoc = (...khoa: string[]) => {
     const next = new URLSearchParams(params);
@@ -34,170 +39,219 @@ export function HieuQuaPa(props: PhamViPhanTich) {
     setParams(next, { replace: false });
   };
 
-  /* Mở sẵn hàng lớn đủ dữ liệu (≥ 5 PA); nhóm "vấn đề khác" luôn đóng. */
+  /* Mở sẵn vấn đề đủ dữ liệu (≥ 5 PA); nhóm "vấn đề khác" luôn đóng. */
   const [mo, setMo] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!data) return;
-    setMo(new Set([...data.gvThem.hang, ...data.quyChe.hang].filter((h) => !h.itDuLieu).map((h) => h.khoa)));
+    setMo(new Set(data.gvThem.hang.filter((h) => !h.itDuLieu).map((h) => h.khoa)));
   }, [data]);
   const doiMo = (khoa: string) => setMo((cu) => { const n = new Set(cu); if (n.has(khoa)) n.delete(khoa); else n.add(khoa); return n; });
 
-  const oSo = (d: DongHieuQuaPa, coNenDung: boolean) => (
-    <>
-      <td className="text-right tabular-nums"><OSo giaTri={d.soPa} nguon={nguon(d.khoa, 'pa')} tieuDe={`${d.nhan} · PA có kết quả`} /></td>
-      <td className="text-right tabular-nums"><OSo giaTri={d.hocVien} nguon={nguon(d.khoa, 'hv')} tieuDe={`${d.nhan} · học viên`} /></td>
-      <td className="pl-5 text-[12px]">
-        <TyLe n={d.caiThien} N={d.soPa}
-          soN={<OSo giaTri={d.caiThien} nguon={nguon(d.khoa, 'cai-thien')} tieuDe={`${d.nhan} · có cải thiện`} />} />
-      </td>
-      <td className="pr-4 text-right tabular-nums text-[12px]">{d.tvTuan !== null ? `${d.tvTuan} tuần` : <span className="text-faint">—</span>}</td>
-      {coNenDung && (
-        <td>
-          {d.nenDung ? <Nhan tone="ok" title="Cải thiện từ 70%, đủ mẫu và cao nhất trong vấn đề này">Nên dùng</Nhan>
-            : d.itDuLieu && d.khoa !== 'chua-phan-loai' ? <Nhan tone="muted" title={`Dưới ${NGUONG_IT_DU_LIEU} PA có kết quả — chưa đủ để so sánh`}>Ít dữ liệu</Nhan> : null}
+  const goiY = (d: DongHieuQuaPa) => (d.nenDung ? t('Nên dùng') : d.itDuLieu && d.khoa !== 'chua-phan-loai' ? t('Ít dữ liệu') : null);
+  /** Có cải thiện: 1440 vạch tỷ lệ + n / N · %; 375 n + %. */
+  const caiThien = (d: DongHieuQuaPa, ten: string) => {
+    const v = rateView(d.caiThien, d.soPa);
+    if (v.kind !== 'value') return <TyLe n={d.caiThien} N={d.soPa} />;
+    return (
+      <span className="inline-flex items-center gap-2 tabular-nums">
+        <span aria-hidden className="h-1.5 w-16 shrink-0 overflow-hidden rounded-[3px] border max-sm:hidden" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
+          <i className="block h-full" style={{ width: `${v.percent}%`, background: 'var(--ok)' }} />
+        </span>
+        <OSo giaTri={d.caiThien} nguon={nguon(d.khoa, 'cai-thien')} tieuDe={`${ten} · có cải thiện`} />
+        <span className="text-[color:var(--text-faint)] max-sm:text-xs"><span className="max-sm:hidden">/ {v.N} · </span>{v.percent} %</span>
+      </span>
+    );
+  };
+  const oSo = (d: DongHieuQuaPa, ten: string, coGoiY: boolean) => {
+    const g = coGoiY ? goiY(d) : null;
+    return (
+      <>
+        <td className="td text-center tabular-nums"><OSo giaTri={d.soPa} nguon={nguon(d.khoa, 'pa')} tieuDe={`${ten} · PA có kết quả`} /></td>
+        <td className="td text-center tabular-nums"><OSo giaTri={d.hocVien} nguon={nguon(d.khoa, 'hv')} tieuDe={`${ten} · học viên`} /></td>
+        <td className="td max-sm:text-center">{caiThien(d, ten)}</td>
+        <td className="td text-center tabular-nums max-sm:hidden">{d.tvTuan !== null ? t('{n} tuần', { n: d.tvTuan }) : <span className="text-[color:var(--text-faint)]">—</span>}</td>
+        <td className="td max-sm:hidden">
+          {g && <Nhan tone={d.nenDung ? 'ok' : 'muted'} title={d.nenDung ? 'Cải thiện từ 70%, đủ mẫu và cao nhất trong vấn đề này' : `Dưới ${NGUONG_IT_DU_LIEU} PA có kết quả — chưa đủ để so sánh`}>{g}</Nhan>}
         </td>
-      )}
-    </>
-  );
+      </>
+    );
+  };
 
-  /** Ô đầu: tên + (P9b) chữ nhỏ "k PA chạy cùng PA khác". */
-  const tenDong = (d: DongHieuQuaPa) => (
-    <span className="block min-w-0">
-      <span className="block truncate">{d.nhan}</span>
-      {d.dongThoi > 0 && <span className="block text-xs text-slate-500 tabular-nums">{d.dongThoi} PA chạy cùng PA khác</span>}
-    </span>
-  );
-  const hangLon = (d: DongHieuQuaPa, coNenDung: boolean) => (
+  /** Ô đầu: tên + (P9b) "k PA chạy cùng PA khác" + (375) dòng phụ thời gian · Nên dùng. */
+  const tenDong = (d: DongHieuQuaPa, ten: ReactNode = d.nhan) => {
+    const phu375 = [d.tvTuan !== null ? t('{n} tuần', { n: d.tvTuan }) : null, goiY(d)].filter(Boolean).join(' · ');
+    return (
+      <span className="block min-w-0">
+        <span className="block sm:truncate">{ten}</span>
+        {d.dongThoi > 0 && <span className="block text-xs font-normal tabular-nums text-[color:var(--text-faint)]">{d.dongThoi} PA chạy cùng PA khác</span>}
+        {phu375 && <span className="block text-xs font-normal text-[color:var(--text-faint)] sm:hidden">{phu375}</span>}
+      </span>
+    );
+  };
+  const HANG_LON = `${DINH_TRAI} [&>td]:h-11 [&>td]:text-sm`;   // dòng nhóm 14 / 700, cao 44 (mockup `.bang tr.hang-lon`)
+  const HANG_CON = `${DINH_TRAI} [&>td]:h-[38px] [&>td]:text-sm`;
+  const hangLon = (d: DongHieuQuaPa) => (
     <Fragment key={d.khoa}>
       {d.con?.length ? (
-        <HangNhom mo={mo.has(d.khoa)} onMo={() => doiMo(d.khoa)} nhan={d.nhan} tieuDe={tenDong(d)} className={DINH_TRAI}>{oSo(d, coNenDung)}</HangNhom>
+        <HangNhom mo={mo.has(d.khoa)} onMo={() => doiMo(d.khoa)} nhan={d.nhan} tieuDe={tenDong(d)} className={HANG_LON}>{oSo(d, d.nhan, true)}</HangNhom>
       ) : (
         /* PR-S6F-a Q20: hàng "Case chưa chọn nhóm nguyên nhân" mờ — PA có thật nhưng chưa biết thuộc vấn đề nào. */
-        <tr className={`hang-lon ${DINH_TRAI}${d.khoa === 'chua-phan-loai' ? ' text-slate-400' : ''}`}><td className="px-3">{tenDong(d)}</td>{oSo(d, coNenDung)}</tr>
+        <tr className={`hang-lon ${HANG_LON}${d.khoa === 'chua-phan-loai' ? ' text-slate-400' : ''}`}><td className="td">{tenDong(d)}</td>{oSo(d, d.nhan, true)}</tr>
       )}
       {mo.has(d.khoa) && d.con?.map((c) => (
-        <HangCon key={c.khoa} className={DINH_TRAI}><td>{tenDong(c)}</td>{oSo(c, coNenDung)}</HangCon>
+        <HangCon key={c.khoa} className={HANG_CON}><td className="td">{tenDong(c)}</td>{oSo(c, `${d.nhan} · ${c.nhan}`, true)}</HangCon>
       ))}
     </Fragment>
   );
+  /** Dòng quy chế phẳng (mockup `.hang-lon.phang`): 14 / 700, không nền nhóm, không ▸. */
+  const hangQc = ({ d, cha }: DongQc) => {
+    const muc = cha ? /^qc:sos(\d)$/.exec(cha.khoa)?.[1] : undefined;
+    const ten = cha ? `${cha.nhan} · ${d.nhan}` : d.nhan;
+    const nhan = muc
+      ? <span className="inline-flex items-center gap-2"><span className={`${CHIP_SOS} ${lopSos(Number(muc))}`}>SOS {muc}</span><span className="min-w-0 truncate">{d.nhan}</span></span>
+      : ten;
+    return <tr key={d.khoa} className={`${DINH_TRAI} font-bold [&>td]:h-11 [&>td]:text-sm`}><td className="td">{tenDong(d, nhan)}</td>{oSo(d, ten, false)}</tr>;
+  };
 
-  const dauBang = (cotDau: string, coNenDung: boolean) => (
+  /* Hai bảng cùng lưới cột (mockup A5): 1440 tên 34 % · 90 · 90 · 240 · 160 · Gợi ý; 375 tên 43 % · 15 % · 14 % · Cải thiện 28 %. */
+  const dauBang = (cotDau: string, coGoiY: boolean) => (
     <>
       <colgroup>
-        <col style={{ width: coNenDung ? '32%' : '38%' }} /><col style={{ width: 72 }} /><col style={{ width: 84 }} />
-        <col style={{ width: 170 }} /><col style={{ width: 120 }} />{coNenDung && <col style={{ width: 96 }} />}
+        <col className="w-[43%] sm:w-[34%]" /><col className="w-[15%] sm:w-[90px]" /><col className="w-[14%] sm:w-[90px]" />
+        <col className="w-[28%] sm:w-[240px]" /><col className="w-0 sm:w-[160px]" /><col className="w-0 sm:w-auto" />
       </colgroup>
       <thead>
         <tr>
           <Th className="sticky-col">{cotDau}</Th>
-          <Th align="right" hint="PA đã kết thúc có kết quả xác định">Số PA</Th>
-          <Th align="right" hint="Học viên khác nhau của các PA trong dòng — một em nhiều PA chỉ tính một lần">Học viên</Th>
-          <Th className="pl-5" hint="Tiến bộ rõ + Tiến bộ một phần, trên số PA của dòng">Có cải thiện</Th>
-          <Th align="right" className="pr-4" hint={`Trung vị số tuần từ ngày bắt đầu đến ngày có kết quả, chỉ PA có cải thiện; hiện khi từ ${NGUONG_IT_DU_LIEU} PA`}>Thời gian thường mất</Th>
-          {coNenDung && <Th>{' '}</Th>}
+          <Th align="center">{t('Số PA')}</Th>
+          <Th align="center">{t('HV')}</Th>
+          <Th className="max-sm:text-center"><span className="max-sm:hidden">{t('Có cải thiện')}</span><span className="sm:hidden">{t('Cải thiện')}</span></Th>
+          <Th align="center" className="max-sm:hidden">{t('Thời gian thường mất')}</Th>
+          <Th className="max-sm:hidden">{coGoiY ? t('Gợi ý') : ' '}</Th>
         </tr>
       </thead>
     </>
   );
+  const BANG = 'w-full table-fixed text-sm sm:min-w-[700px]';
 
-  /* Dòng ngữ cảnh (P9): {khung} · {chi nhánh} · {khoảng}. Khoảng theo URL `tu`/`den` hiện bằng mã tuần. */
-  const tenChiNhanh = props.branchId ? branches.data?.find((b) => b.id === props.branchId)?.name ?? '' : 'Tất cả chi nhánh';
   const khoang = nhanKhoang(props.khoang).chinh;
+  const tongPa = data ? data.gvThem.tomTat.paCoKetQua + data.quyChe.tomTat.paCoKetQua : 0;
+  const tongCt = data ? data.gvThem.tomTat.caiThien + data.quyChe.tomTat.caiThien : 0;
+  const pctCt = rateView(tongCt, tongPa);
+  const chuaTinh = (giaTri: number, dong: string, cot: string, chu: string) => (
+    <span><b className="mr-1 text-[15px] font-bold tabular-nums text-[color:var(--text)]"><OSo giaTri={giaTri} nguon={nguon(dong, cot)} tieuDe={chu} /></b>{chu}</span>
+  );
+  const cachDoc = (
+    <>
+      <p className="m-0">"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên PA đã kết thúc có kết quả xác định. PA huỷ vì "không cần theo dõi" không tính. Học viên: một em nhiều PA chỉ tính một lần.</p>
+      <p className="m-0">Dưới {NGUONG_IT_DU_LIEU} PA ghi "Ít dữ liệu". "Thời gian thường mất" = trung vị từ ngày bắt đầu đến ngày có kết quả của PA có cải thiện, chỉ hiện khi từ {NGUONG_IT_DU_LIEU} PA.</p>
+    </>
+  );
 
   return (
-    <Card bodyClass="p-0">
-      {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
-        : loading || !data ? <div className="p-4"><Skeleton rows={8} /></div>
-        : data.scopeEmpty ? <div className="p-4"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>
+    <div className="space-y-3">
+      {params.get('gv') && (
+        <VaoHangLoc o="giua">
+          {data?.loc.gv ? (
+            <button type="button" onClick={() => boLoc('gv')} title="Bỏ lọc giáo viên" className="nut-loc nut-loc-dang text-[color:var(--text)]">
+              {t('GV: {ten}', { ten: data.loc.gv.ten })} <span aria-hidden>✕</span>
+            </button>
+          ) : data && (
+            <button type="button" onClick={() => boLoc('gv')} className="btn h-9">Không xem được giáo viên này — bỏ lọc</button>
+          )}
+        </VaoHangLoc>
+      )}
+      {error ? <Card><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>
+        : loading || !data ? <Card><Skeleton rows={8} /></Card>
+        : data.scopeEmpty ? <Card><Empty title="Bạn chưa được cấp phạm vi nào" /></Card>
         : (
           <>
-            <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
-              <span>{[props.ct ? CHUONG_TRINH_LABEL[props.ct] : null, tenChiNhanh, khoang].filter(Boolean).join(' · ')}</span>
-              {data.loc.gv && (
-                <button type="button" onClick={() => boLoc('gv')} title="Bỏ lọc giáo viên"
-                  className="nut-loc nut-loc-dang">
-                  Giáo viên: {data.loc.gv.ten} <span aria-hidden>✕</span>
-                </button>
-              )}
-              {params.get('gv') && !data.loc.gv && (
-                <button type="button" onClick={() => boLoc('gv')} className="btn btn-sm">Không xem được giáo viên này — bỏ lọc</button>
-              )}
-            </div>
+            {/* Thẻ chỉ số — cùng số với đầu hai thẻ bảng (tóm tắt máy chủ). "Chưa tính" = ba số "Để số liệu đủ tin" cũ ở chân bảng. */}
+            <DaiChiSo ds={[
+              { ten: t('PA có kết quả'), ky: t('trong kỳ'), gt: tongPa, mau: t('GV thêm {a} · quy chế {b}', { a: data.gvThem.tomTat.paCoKetQua, b: data.quyChe.tomTat.paCoKetQua }) },
+              { ten: t('Có cải thiện'), gt: tongCt, nho: pctCt.kind === 'value' ? `${pctCt.percent} %` : undefined, mau: t('tiến bộ rõ + một phần') },
+              {
+                ten: t('Chưa tính'), rong2: true,
+                gt: (
+                  <span className="mt-1 grid w-full gap-1 text-[13px] font-normal leading-normal text-[color:var(--text-dim)] [font-family:inherit]">
+                    {chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', 'PA chờ kết quả')}
+                    {chuaTinh(data.caseChuaPhanLoai, 'case-chua-phan-loai', 'case', 'Case chưa chọn nhóm nguyên nhân')}
+                    <span title="PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào">
+                      {chuaTinh(data.chuaRoNguon, 'chua-ro-nguon', 'pa', 'PA chưa rõ nơi học lúc làm PA')}
+                    </span>
+                  </span>
+                ),
+              },
+            ]} />
 
             {/* ---------------------------------------------------------------- 1. PA do giáo viên thêm */}
-            <DongTomTat
-              chinh={`PA do giáo viên thêm · ${data.gvThem.tomTat.paCoKetQua} PA có kết quả`}
-              phu={data.gvThem.tomTat.paCoKetQua ? `${data.gvThem.tomTat.caiThien} có cải thiện · ${data.gvThem.tomTat.vanDeDuDuLieu} vấn đề đủ dữ liệu` : undefined}
-              luat={(
-                <NutLuat label="Cách đọc">
-                  <p className="m-0">"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên PA đã kết thúc có kết quả xác định. PA huỷ vì "không cần theo dõi" không tính.</p>
-                  <p className="m-0">Dưới {NGUONG_IT_DU_LIEU} PA ghi "Ít dữ liệu". "Thời gian thường mất" = trung vị từ ngày bắt đầu đến ngày có kết quả của PA có cải thiện, chỉ hiện khi từ {NGUONG_IT_DU_LIEU} PA.</p>
-                  <p className="m-0">Tính theo nơi em học lúc làm PA. "Nên dùng" = từ {NGUONG_IT_DU_LIEU} PA, cải thiện từ 70% và cao nhất trong vấn đề.</p>
-                </NutLuat>
-              )} />
-            {data.gvThem.hang.length === 0 && !data.gvThem.gom
-              ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
-              : (
-                <>
-                <div className="px-3"><PhanTrang {...ptGv.thanh} /></div>
-                <div className="table-scroll">
-                  <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 700 }}>
-                    {dauBang('Vấn đề / loại PA', true)}
-                    <tbody>
-                      {ptGv.cat(data.gvThem.hang).map((d) => hangLon(d, true))}
-                      {data.gvThem.gom && (
-                        <Fragment>
-                          <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan="vấn đề khác"
-                            tieuDe={<span className="block truncate text-slate-300">{data.gvThem.gom.soVanDe} vấn đề khác, mỗi vấn đề ≤ 2 PA có kết quả</span>}
-                            soCotDau={6} className={DINH_TRAI} />
-                          {mo.has('gom') && data.gvThem.gom.hang.map((d) => (
-                            <HangCon key={d.khoa} className={DINH_TRAI}><td>{tenDong(d)}</td>{oSo(d, true)}</HangCon>
-                          ))}
-                        </Fragment>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="px-3"><PhanTrang {...ptGv.thanh} duoi /></div>
-                </>
-              )}
-
-            {/* ---------------------------------------------------------------- 2. PA theo quy chế */}
-            <div className="border-t" style={{ borderColor: 'var(--line)' }}>
-              <DongTomTat
-                chinh={`PA theo quy chế · ${data.quyChe.tomTat.paCoKetQua} PA có kết quả`}
-                phu={`${data.quyChe.tomTat.paCoKetQua ? `${data.quyChe.tomTat.caiThien} có cải thiện · ` : ''}PA bắt buộc theo quy chế — không so, không xếp hạng`}
-                luat={props.ct === 'ft' ? (
-                  <NutLuat label="Cách đọc">
-                    <p className="m-0">Xếp theo mức SOS hiện tại của Case: Case trượt lại thì PA cũ hiện ở hàng mức mới.</p>
-                  </NutLuat>
-                ) : undefined} />
-              {data.quyChe.hang.length === 0
-                ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
+            <Card bodyClass="p-0">
+              <DauThe ten={t('PA do GV thêm')} dem={t('{n} PA', { n: data.gvThem.tomTat.paCoKetQua })}
+                phu={data.gvThem.tomTat.paCoKetQua ? t('{n} có cải thiện', { n: data.gvThem.tomTat.caiThien }) : undefined}
+                cachTinh={(
+                  <>
+                    {cachDoc}
+                    <p className="m-0">Tính theo nơi em học lúc làm PA. "Nên dùng" = từ {NGUONG_IT_DU_LIEU} PA, cải thiện từ 70% và cao nhất trong vấn đề.</p>
+                  </>
+                )} />
+              {data.gvThem.hang.length === 0 && !data.gvThem.gom
+                ? <p className="m-0 px-4 py-3 text-sm text-[color:var(--text-dim)]">Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
                 : (
                   <>
-                  <div className="px-3"><PhanTrang {...ptQc.thanh} /></div>
-                  <div className="table-scroll">
-                    <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 620 }}>
-                      {dauBang(props.ct === 'thuong' ? 'Loại bổ trợ' : 'Mức SOS / loại PA', false)}
-                      <tbody>{ptQc.cat(data.quyChe.hang).map((d) => hangLon(d, false))}</tbody>
-                    </table>
-                  </div>
-                  <div className="px-3"><PhanTrang {...ptQc.thanh} duoi /></div>
+                    <div ref={ptGv.thanh.dauBang} />
+                    <div className="table-scroll">
+                      <table className={BANG}>
+                        {dauBang(t('Vấn đề / loại PA'), true)}
+                        <tbody>
+                          {ptGv.cat(data.gvThem.hang).map(hangLon)}
+                          {data.gvThem.gom && (
+                            <Fragment>
+                              <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan="vấn đề khác" soCotDau={6} className={HANG_LON}
+                                tieuDe={(
+                                  <span className="block min-w-0">
+                                    <span className="block truncate">{t('{n} vấn đề khác', { n: data.gvThem.gom.soVanDe })}</span>
+                                    <span className="block text-xs font-normal text-[color:var(--text-faint)]">{t('mỗi vấn đề ≤ 2 PA có kết quả')}</span>
+                                  </span>
+                                )} />
+                              {mo.has('gom') && data.gvThem.gom.hang.map((d) => (
+                                <HangCon key={d.khoa} className={HANG_CON}><td className="td">{tenDong(d)}</td>{oSo(d, d.nhan, true)}</HangCon>
+                              ))}
+                            </Fragment>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="px-3"><PhanTrang {...ptGv.thanh} duoi /></div>
                   </>
                 )}
-            </div>
+            </Card>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
-              <span>Để số liệu đủ tin:</span>
-              <span><b className="font-semibold text-slate-100"><OSo giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA chờ kết quả" /></b> PA chờ kết quả</span>
-              <span><b className="font-semibold text-slate-100"><OSo giaTri={data.caseChuaPhanLoai} nguon={nguon('case-chua-phan-loai', 'case')} tieuDe="Case chưa chọn nhóm nguyên nhân" /></b> Case chưa chọn nhóm nguyên nhân</span>
-              <span title="PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào">
-                <b className="font-semibold text-slate-100"><OSo giaTri={data.chuaRoNguon} nguon={nguon('chua-ro-nguon', 'pa')} tieuDe="PA chưa rõ nơi học lúc làm PA" /></b> PA chưa rõ nơi học lúc làm PA
-              </span>
-            </div>
+            {/* ---------------------------------------------------------------- 2. PA theo quy chế */}
+            <Card bodyClass="p-0">
+              <DauThe ten={t('PA theo quy chế')} dem={t('{n} PA', { n: data.quyChe.tomTat.paCoKetQua })} phu={t('bắt buộc · không so, không xếp hạng')}
+                cachTinh={(
+                  <>
+                    {cachDoc}
+                    {props.ct === 'ft' && <p className="m-0">Xếp theo mức SOS hiện tại của Case: Case trượt lại thì PA cũ hiện ở hàng mức mới.</p>}
+                  </>
+                )} />
+              {dongQc.length === 0
+                ? <p className="m-0 px-4 py-3 text-sm text-[color:var(--text-dim)]">Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
+                : (
+                  <>
+                    <div ref={ptQc.thanh.dauBang} />
+                    <div className="table-scroll">
+                      <table className={BANG}>
+                        {dauBang(props.ct === 'thuong' ? t('Loại bổ trợ') : t('Mức SOS / loại PA'), false)}
+                        <tbody>{ptQc.cat(dongQc).map(hangQc)}</tbody>
+                      </table>
+                    </div>
+                    <div className="px-3"><PhanTrang {...ptQc.thanh} duoi /></div>
+                  </>
+                )}
+            </Card>
           </>
         )}
-    </Card>
+    </div>
   );
 }
