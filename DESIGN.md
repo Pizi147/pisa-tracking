@@ -159,7 +159,7 @@ Phần bên dưới mục này là **bản ghi mã hiện tại**; dòng ghi "�
 | G10 | **Thời gian:** bộ lọc chỉ Từ tuần – Đến tuần (`Khoảng tuần`); **"Toàn bộ" chỉ ở 6 tab Phân tích**; thi thật giữ tháng / ngày; không hàng nút / chip "Tuần này · Tuần trước", "Ngay hôm nay · W4 SEP" (V5: khoảng tự do, không trần — V9; ô một tuần có nút **Tuần này** cạnh ‹ › — #560) | 02 2.5 (V2 I.1, V3 II.5), 4.7 B12, B13 (X-06) |
 | G11 | Thứ tự menu: Tổng quan → Học viên & Lớp → Test → Công việc → Phân tích → Tutor | 02 2.4 (V1 I.2) |
 | G12 | Màu kết quả tô **chính con số điểm** (✓ / ✗ trước số), mọi chỗ có điểm; không % trong ô ("✗ 17/25") | 02 2.4 (V1 I.3), 4.7 A6 |
-| G13 | Thang chữ **12 · 13 · 14 · 15 · 17 · 22 · 28** (ô bảng / ô nhập 15, lưới điểm 14, nhãn 13, tối thiểu 12); không in hoa | 02 4.7 A4; 04 mục 2.2 |
+| G13 | Thang chữ **12 · 13 · 14 · 15 · 17 · 22 · 28** (ô bảng / ô nhập 15, lưới điểm 14, nhãn 13, tối thiểu 12 — **ngoại lệ duy nhất: tên TVV dưới tên HV ở bảng em hồ sơ lớp 11 px, chữ phụ mờ — chủ SP 30/10**); không in hoa | 02 4.7 A4; 04 mục 2.2 |
 | G14 | **Đang chọn** = nền nhấn nhạt + vạch trái 3 px, khác hẳn vòng focus 2 px; vạch trái hàng nhóm màu trung tính — **trừ dải nhóm danh sách theo bước** (V21: vạch theo bước, chủ SP 27/10 — màu luôn kèm tên nhóm) | 02 4.7 A11; 04 mục 6.3; M6 vòng 2
 
 ## Overview
