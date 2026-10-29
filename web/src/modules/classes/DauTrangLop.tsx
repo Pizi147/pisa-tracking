@@ -6,7 +6,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate, onInvalidate } from '../../lib/api.ts';
+import { api, onInvalidate } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { CHE_DO_NHAN, type CheDoHocVien } from './TabHocVienLop.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -101,11 +101,12 @@ export function DauTrangLop({ data, onViec, onBanGiao, thanhViec }: {
   const gvcn = data.coreTeachers[0] ?? null;
   const tomTat = useTomTatLop(data, homNay);
   /* OV-13b · LOP-1-LOP: badge "n việc quá hạn" = `soQuaHanLop` của viec-theo-em (cùng danh sách việc `myWork` với Công việc, cùng `demViec`; GV chỉ việc
-     của mình) — cùng đường ThanhViecLop nên một GET; thôi đọc `/my-work` cả chi nhánh. */
+     của mình) — cùng đường ThanhViecLop nên một GET; QL / QT thôi đọc `/my-work?nguoi=tat-ca` cả chi nhánh (GV vẫn có `/my-work` của khung App). */
   const viec = useApi<ViecLop>(duongViecLop(data.id), [data.id]);
   const soViecQuaHan = viec.data?.soQuaHanLop ?? 0;
-  /* Thao tác Case / PA… chỉ vô hiệu `/my-work` — trước PR badge đọc `/my-work` nên tự tải lại; giữ vậy (thanh Việc cùng đường cũng tải lại). */
-  useEffect(() => onInvalidate((x) => { if (x === '/my-work') invalidate(duongViecLop(data.id)); }), [data.id]);
+  /* Thao tác Case / PA… chỉ vô hiệu `/my-work` — trước PR badge đọc `/my-work` nên tự tải lại; giữ vậy. `reload` (không `invalidate`): lưu điểm vô hiệu
+     cả `/classes` lẫn `/my-work` → dùng lại GET vừa bắt đầu, không gọi đôi. */
+  useEffect(() => onInvalidate((x) => { if (x === '/my-work') viec.reload(); }), [viec.reload]);
   const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,

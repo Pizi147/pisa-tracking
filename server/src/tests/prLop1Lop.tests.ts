@@ -34,7 +34,10 @@ export async function runPrLop1LopTests(t: any) {
         return x;
       });
       return { r, dong: soDongSql() - d0, luot };
-    } catch (e: any) { return { loi: String(e?.status ?? e?.message), dong: 0 } as any; }
+    } catch (e: any) {
+      if (e?.status !== 403) throw e;   // chỉ 403 (ngoài phạm vi) là kết quả hợp lệ — lỗi khác phải làm phép kiểm đỏ
+      return { loi: '403', dong: 0 } as any;
+    }
     finally { vt.viecLopDayDuKhiKiem.bat = false; }
   };
 
