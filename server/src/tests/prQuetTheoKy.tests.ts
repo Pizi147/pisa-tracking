@@ -74,5 +74,50 @@ export async function runPrQuetTheoKyTests(t: any) {
     }
     assert(!loi.length, [...new Set(loi)].join(' || '));
   });
+
+  /* ------------------------------------------------------------------ Q2 napBai cả chi nhánh theo kỳ */
+  const pt: any = await import('../phanTich/giaoVien.ts');
+  const { xoaNho }: any = await import('../platform/nguCanhRequest.ts');
+  const cnCua = (ma: string) => (conn.prepare(`SELECT id FROM branches WHERE code = ?`).get(ma) as any).id as number;
+  const KY = { tu: '2026-03-02', den: '2026-09-14' };
+  const NGU_CANH: [string, any, object][] = [
+    ['QL ft', P.mbManager, { ct: 'ft' }], ['QL thuong 2026-09', P.mbManager, { ct: 'thuong', thang: '2026-09' }], ['QL ft khoảng', P.mbManager, { ct: 'ft', ...KY }],
+    ['QL thuong khoảng', P.mbManager, { ct: 'thuong', ...KY }], ['QT MB ft khoảng', P.admin, { cn: cnCua('MB'), ct: 'ft', ...KY }], ['QT CP ft khoảng', P.admin, { cn: cnCua('CP'), ct: 'ft', ...KY }],
+  ];
+  const khoaNap = (n: any) => JSON.stringify({
+    o: [...n.o].sort((x: any, y: any) => x.attemptId - y.attemptId || (x.skill < y.skill ? -1 : x.skill > y.skill ? 1 : 0)),
+    a: [...n.attempts.keys()].sort((x: number, y: number) => x - y),
+  });
+
+  check('Q2 · napBai(gv=null) giống hệt đường đủ (QL MB ft / thuong tháng / khoảng, QT MB + CP): ô + khoá lượt', () => {
+    let co = 0;
+    for (const [ten, p, f] of NGU_CANH) {
+      const c = pt.nguCanhPtGv(p, f);
+      xoaNho();
+      const moi = pt.napBai(p, c);
+      xoaNho();
+      const cu = voiCo(pt.napDayDuKhiKiem, () => pt.napBai(p, c));
+      assert(khoaNap(moi) === khoaNap(cu), `${ten}: ô mới ${moi.o.length} / lượt ${moi.attempts.size} ≠ đủ ${cu.o.length} / ${cu.attempts.size}`);
+      /* Cùng THỨ TỰ ô (lượt theo lớp, id — như đường đủ đi idx_attempt_class): tập con dùng `o` theo thứ tự không đổi. */
+      assert(JSON.stringify(moi.o.map((x: any) => x.id)) === JSON.stringify(cu.o.map((x: any) => x.id)), `${ten}: thứ tự ô khác đường đủ`);
+      co += moi.o.length;
+    }
+    assert(co > 0, 'seed: không ô nào trong kỳ');
+  });
+
+  check('Q2 · EXPLAIN câu napBai cả chi nhánh: có idx_attempt_skills_period, không SCAN assessment_attempts', () => {
+    const tho: { sql: string; args: unknown[] }[] = [];
+    const stProto = Object.getPrototypeOf(conn.prepare('SELECT 1'));
+    const gocAll = stProto.all;
+    stProto.all = function (this: { sql?: string }, ...args: unknown[]) { if (this.sql && /a\.id IN \(SELECT k\.attempt_id FROM attempt_skills k/.test(this.sql)) tho.push({ sql: this.sql, args }); return gocAll.apply(this, args); };
+    try { for (const [, p, f] of NGU_CANH) { xoaNho(); pt.napBai(p, pt.nguCanhPtGv(p, f)); } } finally { stProto.all = gocAll; }
+    assert(tho.length > 0, 'không bắt được câu napBai theo kỳ');
+    const loi: string[] = [];
+    for (const { sql, args } of tho) {
+      const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);      if (plan.some((d) => /^SCAN a\b/.test(d))) loi.push(`SCAN a — ${plan.join(' | ')}`);
+      if (!plan.some((d) => /idx_attempt_skills_period/.test(d))) loi.push(`không idx_attempt_skills_period — ${plan.join(' | ')}`);
+    }
+    assert(!loi.length, [...new Set(loi)].join(' || '));
+  });
   void checkAsync;
 }

@@ -141,8 +141,18 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
                         WHERE k.attempt_id = a.id AND r2.week_start BETWEEN ? AND ?)
                OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start BETWEEN ? AND ?))`,
   );
-  if (gv == null || napDayDuKhiKiem.bat) {
+  if (napDayDuKhiKiem.bat) {
     for (const lo of theoLo([...c.lop.keys()])) rows.push(...chon(`a.class_id IN (${cho(lo.length)})`).all(...lo, c.tu, c.den, c.tu, c.den) as any[]);
+  } else if (gv == null) {
+    /*
+     * QUET-THEO-KY Q2: cả chi nhánh → đi từ TUẦN trong kỳ (lịch kỹ năng `idx_attempt_skills_period` · tuần của lượt `idx_attempt_period`), không
+     * `class_id IN (cả chi nhánh)` + EXISTS từng lượt (đọc mọi lượt mọi kỳ của chi nhánh). `loc` là tập cha của vế EXISTS / NOT EXISTS của `chon`
+     * (giữ nguyên cho đúng luật cũ); lớp ngoài chi nhánh + khung lọc bằng JS như S1. Phép kiểm: prQuetTheoKy "Q2".
+     */
+    const loc = `(a.id IN (SELECT k.attempt_id FROM attempt_skills k JOIN report_periods r2 ON r2.id = k.planned_period_id WHERE r2.week_start BETWEEN ? AND ?)
+                OR a.planned_period_id IN (SELECT id FROM report_periods WHERE week_start BETWEEN ? AND ?))`;
+    if (c.lop.size) rows.push(...(chon(loc).all(c.tu, c.den, c.tu, c.den, c.tu, c.den, c.tu, c.den) as any[])
+      .filter((r) => c.lop.has(r.class_id)).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
   } else {
     /*
      * S1 (giảm dòng đọc Turso): MỘT GV → chỉ lượt có thể gán cho GV đó, không mọi lượt của chi nhánh + khung. Mọi tập dùng `napBai` gán người qua
