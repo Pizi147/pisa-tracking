@@ -9,4 +9,6 @@ export const EN_DON_LUONG = {
   'Em đã thôi học ở {lop} — không ghi vi phạm mới.': 'The student has left {lop} — no new incidents can be logged.',
   /* K39b */
   'QL đã quyết {buoc} lúc {ngay} — nhận xét không còn cần.': 'The manager already decided {buoc} on {ngay} — the note is no longer needed.',
+  /* A6 */
+  'Danh sách thông báo không hợp lệ (tối đa {n} dòng).': 'Invalid notification list (at most {n} rows).',
 } satisfies Record<string, Dich>;

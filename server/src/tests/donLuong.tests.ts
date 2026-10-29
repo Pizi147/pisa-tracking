@@ -123,6 +123,32 @@ export async function runDonLuongTests(t: YThucTestKit) {
     assert(e2?.status === 400 && e2.message === `Em đã chuyển khỏi ${lop} — ghi ở lớp em đang học.`, `${e2?.status} ${e2?.message}`);
   }));
 
+  /* ---------------------------------------------------------------- K42a + A6 */
+  const tb: any = await import('../platform/thongBao.ts');
+  const thongBao = (u: number, kind: string, o: { doc?: boolean; entity?: [string, number] } = {}) => Number(conn.prepare(
+    `INSERT INTO notifications (user_id, kind, title, entity_type, entity_id, dedup_key, created_at, read_at) VALUES (?,?,?,?,?,?,?,?)`,
+  ).run(u, kind, `Thử ${kind}`, o.entity?.[0] ?? null, o.entity?.[1] ?? null, `dl:${kind}:${Math.random()}`, NOW, o.doc ? NOW : null).lastInsertRowid);
+  check('K42a · 60 thông báo mới + 1 "Cần làm" đã đọc cũ → dòng Cần làm vẫn trong chuông (xếp sau); tổng ≤ 70 dòng', () => thu(() => {
+    const c = caseL();
+    const u = c.owner_user_id as number;
+    conn.prepare(`UPDATE case_interventions SET status = 'cancelled' WHERE case_id = ?`).run(c.id);   // Case giao còn việc = chưa có PA
+    const cu = thongBao(u, 'case_giao', { doc: true, entity: ['sos_case', c.id] });
+    for (let i = 0; i < 60; i++) thongBao(u, 'thu_moi');
+    const ds = tb.thongBaoCua(u);
+    const dong = ds.find((r: any) => r.id === cu);
+    assert(dong && dong.con_viec === 1 && ds.length <= tb.THONG_BAO_TOI_DA + tb.CAN_LAM_DA_DOC_THEM && ds.indexOf(dong) >= tb.THONG_BAO_TOI_DA, `có ${!!dong} · ${ds.length} dòng · vị trí ${ds.indexOf(dong)}`);
+  }));
+  check('A6 · docNhieu: chỉ đánh dấu dòng của người gọi (id người khác bỏ qua, không lỗi); > 200 id hoặc id sai → 400', () => thu(() => {
+    const [u, v] = [gv(), gv()];
+    const a = thongBao(u, 'thu_a'), b = thongBao(u, 'thu_b'), khac = thongBao(v, 'thu_khac');
+    assert(tb.docNhieu(u, [a, b, khac], t.TODAY) === 2, 'đánh dấu 2 dòng của u');
+    assert(one('SELECT read_at FROM notifications WHERE id = ?', khac).read_at === null, 'dòng người khác giữ chưa đọc');
+    for (const sai of [Array.from({ length: 201 }, (_, i) => i + 1), [], ['x'], [0]]) {
+      let e: any = null; try { tb.docNhieu(u, sai, t.TODAY); } catch (x: any) { e = x; }
+      assert(e?.status === 400, `ids ${JSON.stringify(sai).slice(0, 20)} → ${e?.status}`);
+    }
+  }));
+
   check('K6 · câu tìm dấu "-" theo tuần đi chỉ mục idx_scores_no_show', () => {
     const plan = all(`EXPLAIN QUERY PLAN SELECT sc.attempt_id FROM assessment_scores sc WHERE sc.no_show_period_id = ?`, 1).map((r) => r.detail).join(' | ');
     assert(/idx_scores_no_show/.test(plan), plan);
