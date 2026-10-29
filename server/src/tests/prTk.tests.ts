@@ -605,9 +605,12 @@ export async function runPrTkTests(t: YThucTestKit) {
 
   // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
   /* TK-5 bất biến phụ "điểm bản chụp = điểm sống" chỉ kiểm trong phép kiểm TK-5 ở trên: nhiều phép kiểm khác (PR khác) sửa / xoá điểm của lộ trình đã đóng bằng SQL thẳng nên soi toàn DB ở cuối sẽ báo oan. */
-  await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => {
-    const thieu = all(`SELECT c.id, c.student_id, c.status FROM learning_cycles c WHERE c.status IN ('completed', 'abandoned')
-                        AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id) LIMIT 10`);
-    assert(thieu.length === 0, `lộ trình đóng thiếu bản chụp: ${JSON.stringify(thieu)}`);
-  });
+  await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => batBienDb(t));
+}
+
+/** Bất biến soi MỌI dữ liệu trong DB — CN-1: run.ts gọi lại sau mỗi tệp `DOC_LAP` đứng trước prTk (`[BB] <tệp>`). */
+export function batBienDb(t: { conn: any; assert: (c: unknown, m: string) => void; seedMax: Record<string, number> }): void {
+  const thieu = t.conn.prepare(`SELECT c.id, c.student_id, c.status FROM learning_cycles c WHERE c.status IN ('completed', 'abandoned')
+                      AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id) LIMIT 10`).all();
+  t.assert(thieu.length === 0, `lộ trình đóng thiếu bản chụp: ${JSON.stringify(thieu)}`);
 }

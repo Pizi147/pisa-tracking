@@ -11,6 +11,11 @@ import path from 'node:path';
 import Database from 'libsql';
 import { DB_PATH, datKetNoiChoPhepKiem, db } from '../db.ts';
 
+/** Tệp DB `db()` đang trỏ tới: DB_PATH, hoặc bản chép DB gốc trong lúc tệp `DOC_LAP` chạy (dbGoc.ts). */
+let tepDangDung = DB_PATH;
+export function tepDbDangDung(): string { return tepDangDung; }
+export function datTepDangDung(tep: string): void { tepDangDung = tep; }
+
 /**
  * Chép tệp DB kiểm + WAL sang thư mục tạm tiền tố `z2-` (run.ts dọn sau 1 giờ — Windows không cho xoá ngay khi câu lệnh đã nhớ ở db.ts
  * chưa được dọn). Không chạy lệnh nào trên kết nối dùng chung (khác `VACUUM INTO`); tiến trình kiểm chạy đồng bộ nên tệp + WAL nhất quán.
@@ -18,7 +23,7 @@ import { DB_PATH, datKetNoiChoPhepKiem, db } from '../db.ts';
 export function chepDbKiem(tienTo: string): { thuMuc: string; tep: string } {
   const thuMuc = fs.mkdtempSync(path.join(os.tmpdir(), `z2-${tienTo}-`));
   const tep = path.join(thuMuc, 'ban-sao.sqlite');
-  for (const duoi of ['', '-wal']) if (fs.existsSync(DB_PATH + duoi)) fs.copyFileSync(DB_PATH + duoi, tep + duoi);
+  for (const duoi of ['', '-wal']) if (fs.existsSync(tepDangDung + duoi)) fs.copyFileSync(tepDangDung + duoi, tep + duoi);
   return { thuMuc, tep };
 }
 

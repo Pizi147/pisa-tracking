@@ -48,6 +48,15 @@ const TACH = process.env.PISA_TACH ? process.env.PISA_TACH.split(',') : [
   'prMt0', 'prHk2', 'prTd3', 'prGop', 'prOv5a', 'prOv8a', 'prOv12c', 'prOv12h', 'prOv12d', 'prOv13a', 'prOv15d', 'prOv15e', 'prOv15h1',
   'prTd7b', 'prSl2', 'prSvYtTvv', 'prSvSo1', 'prSvTvvViec',
 ];
+/*
+ * CN-1 · DB GỐC: tệp trong `DOC_LAP` chạy trên bản chép DB chụp NGAY SAU seed (`dbGoc.ts`) — không thấy dữ liệu tệp khác để lại, ghi gì
+ * cũng bỏ khi xong, nên chạy riêng (`PISA_CHI_TEP`) = chạy trong bộ. Tệp đứng trước prTk thì sau tệp có thêm phép `[BB] <tệp>` (bất biến
+ * soi toàn DB của prTk chạy trên dữ liệu tệp đó). `PISA_DOC_LAP=a,b` thay danh sách để thử chuyển thêm tệp mà không sửa mã.
+ */
+const DOC_LAP = process.env.PISA_DOC_LAP ? process.env.PISA_DOC_LAP.split(',') : [
+  'prGva', 'prDonB', 'prKv', 'prCt', 'prLt2b', 'prLc', 'prK26', 'prMta', 'prDl', 'prEn',
+];
+let quaTk = false;
 const nhomCua = (ten: string) => (SO_NHOM > 1 && TACH.includes(ten) ? 2 + (TACH.indexOf(ten) % (SO_NHOM - 1)) : 1);
 /** `PISA_CHI_TEP=prA,prB`: chỉ chạy các tệp này (+ phần viết thẳng) — chạy riêng phép kiểm của một PR. */
 const CHI_TEP = process.env.PISA_CHI_TEP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
@@ -63,6 +72,9 @@ const demPhep = () => { soPhep[tepHienTai || 'run.ts'] = (soPhep[tepHienTai || '
 /** Bọc module `./ten.tests.ts`: hàm `run*` của nhóm khác thành rỗng; của nhóm mình thì đo giờ + đánh dấu đang trong tệp. */
 function bocTep<T extends object>(ten: string, m: T): T {
   const cuaToi = CHI_TEP ? CHI_TEP.includes(ten) : nhomCua(ten) === NHOM;
+  const docLap = DOC_LAP.includes(ten);
+  const soiBB = docLap && !quaTk;
+  if (ten === 'prTk') quaTk = true;
   return new Proxy(m, {
     get(t, k) {
       const f = (t as any)[k];
@@ -70,10 +82,26 @@ function bocTep<T extends object>(ten: string, m: T): T {
       return (...a: unknown[]) => {
         if (!cuaToi) return undefined;
         const t0 = performance.now();   // không dùng Date.now: nhiều phép kiểm giả đồng hồ
+        const ban = docLap ? moBanGoc(ten) : null;
+        const chuoi = conn;
+        if (ban) {
+          conn = ban.conn;
+          if (a[0] && typeof a[0] === 'object' && 'conn' in a[0]) a[0] = { ...a[0], conn: ban.conn };
+        }
         const d0 = demDong();
         trongTep = true;
         tepHienTai = ten;
-        const xong = () => { trongTep = false; tepHienTai = ''; thoiGian[ten] = (thoiGian[ten] ?? 0) + Math.round(performance.now() - t0); if (d0) dongThem[ten] = (dongThem[ten] ?? 0) + demDong() - d0; };
+        /* Chạy cả khi tệp ném lỗi (`loi` gọi `xong`): kết nối chuỗi luôn được trả lại. */
+        const xong = () => {
+          thoiGian[ten] = (thoiGian[ten] ?? 0) + Math.round(performance.now() - t0);
+          if (d0) dongThem[ten] = (dongThem[ten] ?? 0) + demDong() - d0;
+          if (ban) {
+            if (soiBB) { tepHienTai = `[BB] ${ten}`; check(`[BB] ${ten}`, () => batBienDb({ conn: ban.conn, assert, seedMax: SEED_MAX })); }
+            ban.dong();
+            conn = chuoi;
+          }
+          trongTep = false; tepHienTai = '';
+        };
         /* Tệp ném lỗi ngoài phép kiểm (dựng dữ liệu hỏng): ghi KHÔNG ĐẠT rồi chạy tiếp tệp sau, không chết cả bộ. */
         const loi = (e: any) => { xong(); failures.push(`[${ten}] ném lỗi ngoài phép kiểm: ${e?.stack ?? e}`); console.log(`  ✗ ${ten}.tests.ts ném lỗi: ${e?.message ?? e}`); };
         let r: any;
@@ -139,6 +167,10 @@ const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
 
 runSeed();
+/* CN-1: chụp DB gốc NGAY sau seed, trước mọi ghi (giống nhau ở mọi nhóm) — tệp `DOC_LAP` chạy trên bản chép của nó. */
+const { chupDbGoc, moBanGoc } = await import('./dbGoc.ts');
+const { batBienDb } = await import('./prTk.tests.ts');
+chupDbGoc();
 
 /*
  * MỐC ID NGAY SAU KHI DỰNG BỘ DEMO.
@@ -203,9 +235,12 @@ async function assertRejects(fn: () => Promise<unknown>, match: RegExp, msg: str
   assert(threw, `${msg} — thao tác đáng lẽ phải bị từ chối nhưng lại thành công`);
 }
 
-const conn = db();
+/* `let`: trong lúc tệp `DOC_LAP` chạy, `conn` (và mọi hàm trợ giúp đọc nó) trỏ bản chép DB gốc — xem `bocTep`. */
+let conn = db();
 /* SEED-UX: phép kiểm chỉ đọc bộ demo — chạy NGAY sau seed, trước mọi mục ghi thêm. */
 await (bocTep('prSeedUx', await import('./prSeedUx.tests.ts'))).runPrSeedUxTests({ check, assert, conn } as any);
+/* CN-1: phép kiểm của chính DB gốc — chạy khi chuỗi còn bằng seed (DG-1 so số lượt). */
+await (bocTep('dbGoc', await import('./dbGoc.tests.ts'))).runDbGocTests({ check, assert, conn, classId: (c: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(c) as any).id, seedMax: SEED_MAX } as any);
 /**
  * PR-S3F #8: `setIssues` chặn Case SOS chưa xác nhận nguyên nhân (đường chính là `xacNhanCase`). Phép kiểm cũ chỉ cần "Case đã có nguyên nhân"
  * để dựng tình huống của nó → ghi thẳng như dữ liệu cũ, đúng như `setIssues` từng làm (ghi nguyên nhân + đồng bộ trạng thái Case).
