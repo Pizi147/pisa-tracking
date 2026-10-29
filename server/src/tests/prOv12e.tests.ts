@@ -76,10 +76,10 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     assert(/v\.ganHan && !v\.homNay/.test(doc('web/src/ui/Han.tsx')), 'Han');
   });
 
-  check('OV12e-2b · ⋯ cạnh tên em: "Xác nhận xử lý" ngay sau Ghi vi phạm khi em cần xử lý Ý thức, không có thì không hiện', () => {
+  check('OV12e-2b · ⋯ cạnh tên em: "Xác nhận xử lý" ngay sau Ghi vi phạm (sau + Case — MENU-DONG 29/10) khi em cần xử lý Ý thức, không có thì không hiện', () => {
     const q = { laLopThuong: false, dangHoc: true, coTheGhiViPham: true, coTheBaoCase: true, coTheNhapDiem: false, coTheSuaHocVien: false, coTheChuyenLop: false };
     const co = dm.mucMenuDongHocVien({ ...q, coTheXuLyYThuc: true });
-    assert(co[0] === 'vi-pham' && co[1] === 'xu-ly-y-thuc' && dm.MUC_MENU_DONG_NHAN['xu-ly-y-thuc'] === 'Xác nhận xử lý', JSON.stringify(co));
+    assert(co.join() === 'case,vi-pham,xu-ly-y-thuc' && dm.MUC_MENU_DONG_NHAN['xu-ly-y-thuc'] === 'Xác nhận xử lý', JSON.stringify(co));
     assert(!dm.mucMenuDongHocVien(q).includes('xu-ly-y-thuc'), 'không cần xử lý thì không có mục');
   });
 
