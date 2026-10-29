@@ -53,8 +53,9 @@ const TACH = process.env.PISA_TACH ? process.env.PISA_TACH.split(',') : [
  * cũng bỏ khi xong, nên chạy riêng (`PISA_CHI_TEP`) = chạy trong bộ. Tệp đứng trước prTk thì sau tệp có thêm phép `[BB] <tệp>` (bất biến
  * soi toàn DB của prTk chạy trên dữ liệu tệp đó). `PISA_DOC_LAP=a,b` thay danh sách để thử chuyển thêm tệp mà không sửa mã.
  */
-const DOC_LAP = process.env.PISA_DOC_LAP ? process.env.PISA_DOC_LAP.split(',') : [
+const DOC_LAP = process.env.PISA_DOC_LAP ? process.env.PISA_DOC_LAP.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, '')) : [
   'prGva', 'prDonB', 'prKv', 'prCt', 'prLt2b', 'prLc', 'prK26', 'prMta', 'prDl', 'prEn',
+  'prBaoCaoLichSu',   // PBC-5 đỏ trong chuỗi khi 10 tệp trên rời chuỗi (ngày "sau mọi hạn" chỉ đọc deadline_override); trên DB gốc xanh, 7 phép như cũ
 ];
 let quaTk = false;
 const nhomCua = (ten: string) => (SO_NHOM > 1 && TACH.includes(ten) ? 2 + (TACH.indexOf(ten) % (SO_NHOM - 1)) : 1);
@@ -82,13 +83,16 @@ function bocTep<T extends object>(ten: string, m: T): T {
       return (...a: unknown[]) => {
         if (!cuaToi) return undefined;
         const t0 = performance.now();   // không dùng Date.now: nhiều phép kiểm giả đồng hồ
-        const ban = docLap ? moBanGoc(ten) : null;
+        let ban: ReturnType<typeof moBanGoc> | null = null;
+        try { if (docLap) ban = moBanGoc(ten); } catch (e: any) {
+          failures.push(`[${ten}] không mở được DB gốc: ${e?.message ?? e}`); console.log(`  ✗ ${ten}.tests.ts không mở được DB gốc: ${e?.message ?? e}`); return undefined;
+        }
         const chuoi = conn;
         if (ban) {
           conn = ban.conn;
           if (a[0] && typeof a[0] === 'object' && 'conn' in a[0]) a[0] = { ...a[0], conn: ban.conn };
         }
-        const d0 = demDong();
+        const d0 = ban ? 0 : demDong();   // tệp DOC_LAP không làm DB chuỗi phình — không ghi dongThem
         trongTep = true;
         tepHienTai = ten;
         /* Chạy cả khi tệp ném lỗi (`loi` gọi `xong`): kết nối chuỗi luôn được trả lại. */
@@ -96,8 +100,8 @@ function bocTep<T extends object>(ten: string, m: T): T {
           thoiGian[ten] = (thoiGian[ten] ?? 0) + Math.round(performance.now() - t0);
           if (d0) dongThem[ten] = (dongThem[ten] ?? 0) + demDong() - d0;
           if (ban) {
-            if (soiBB) { tepHienTai = `[BB] ${ten}`; check(`[BB] ${ten}`, () => batBienDb({ conn: ban.conn, assert, seedMax: SEED_MAX })); }
-            ban.dong();
+            if (soiBB) { tepHienTai = `[BB] ${ten}`; check('bất biến prTk trên dữ liệu tệp', () => batBienDb({ conn: ban!.conn, assert, seedMax: SEED_MAX })); }
+            ban!.dong();
             conn = chuoi;
           }
           trongTep = false; tepHienTai = '';

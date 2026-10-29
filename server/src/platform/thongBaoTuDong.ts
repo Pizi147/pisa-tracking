@@ -128,6 +128,8 @@ const lanCuoi = new Map<number, number>();
  * sau bất kỳ lần ghi nào đều đồng bộ (~30 câu `myWork`, đo QT 33 vs 4) — nặng hơn cái lợi; muốn đúng người thì đường ghi điểm / Case phải tự gọi `daGhi(gv)`.
  */
 export function daGhi(userId: number) { lanCuoi.delete(userId); }
+/** CHỈ phép kiểm (tests/dbGoc.ts): đổi DB thì mốc đồng bộ của mọi người không còn đúng. */
+export function xoaMocDongBo() { lanCuoi.clear(); }
 export function dongBoKhiMoChuong(p: Principal, homNay: string) {
   const now = Date.now();
   if (now - (lanCuoi.get(p.userId) ?? 0) < CHU_KY_MS) return;
