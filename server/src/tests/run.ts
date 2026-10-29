@@ -9769,6 +9769,9 @@ await runPrRaLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== W1 (gộp tải lại sau lưu điểm — giảm dòng đọc Turso)
 const { runPrW1GopTaiLaiTests } = bocTep('prW1GopTaiLai', await import('./prW1GopTaiLai.tests.ts'));
 await runPrW1GopTaiLaiTests({ check, checkAsync, assert } as any);
+// ==================================================================== S4 (giới hạn lượt quét đường đọc — giảm dòng đọc Turso)
+const { runPrS4GioiHanQuetTests } = bocTep('prS4GioiHanQuet', await import('./prS4GioiHanQuet.tests.ts'));
+await runPrS4GioiHanQuetTests({ check, checkAsync, assert, conn } as any);
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);
