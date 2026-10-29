@@ -622,11 +622,22 @@ function theHuyDuoc(conn: any, rows: any[]): Set<number> {
   }, 500);
   const ung = ung0.filter((r) => !coCho.has(r.id));
   const kq = new Set<number>();
+  /* Q-RL2c: loại đảo bằng bản ghi. Danh sách (Đã xử lý): MỘT câu — thẻ còn bản ghi đảo chưa dùng (trần câu SQL PR-TD); so từng dòng nguồn để lúc bấm
+     Huỷ (đổi sau → 409 nói rõ). Một thẻ (sau Duyệt / Từ chối): so kỹ (`daoDuoc`) — toast Hoàn tác chỉ hiện khi chắc đảo được. */
+  const daoCua = (cua: any[]): number[] => {
+    if (cua.length === 1) return daoDuoc(timGhiDao(conn, GD.loai, GD.bang, cua[0].id)) ? [cua[0].id] : [];
+    const ids: number[] = [];
+    theoLo(cua.map((r) => r.id as number), (lo, ph) => {
+      for (const r of conn.prepare(`SELECT DISTINCT doi_tuong_id AS id FROM ghi_dao WHERE loai = ? AND bang = ? AND dao_luc IS NULL AND doi_tuong_id IN (${ph})`)
+        .all(GD.loai, GD.bang, ...lo) as any[]) ids.push(r.id);
+    }, 500);
+    return ids;
+  };
+  const conDao = ung.filter((r) => { const d = DINH_NGHIA_LOAI.find((x) => x.loai === r.loai); return d && !d.huyDuoc && !d.khiHuy; });
+  for (const id of daoCua(conDao)) kq.add(id);
   for (const d of DINH_NGHIA_LOAI) {
     const cua = ung.filter((r) => r.loai === d.loai);
     if (cua.length && d.huyDuoc) for (const id of d.huyDuoc(conn, cua)) kq.add(id);
-    /* Q-RL2c: loại đảo bằng bản ghi — còn bản ghi + mọi dòng còn đúng như sau quyết định. Chỉ thẻ quyết hôm nay (đã lọc) nên ít. */
-    else if (cua.length && !d.khiHuy) for (const r of cua) if (daoDuoc(timGhiDao(conn, GD.loai, GD.bang, r.id))) kq.add(r.id);
   }
   return kq;
 }

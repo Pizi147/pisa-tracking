@@ -61,10 +61,10 @@ export async function runPrQrl2cDuyetTests(t: YThucTestKit) {
     assert(mot('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', `${ten}: thẻ về chờ`);
     assert(maLoi(() => yc.huyQuyetDinh(QL, id)) === 409, `${ten}: huỷ lần hai 409`);
   };
-  /** Đã đổi sau quyết định → 409, không đảo gì; cờ coTheHuy tắt. */
+  /** Đã đổi sau quyết định → bấm Huỷ 409, không đảo gì. (Danh sách Đã xử lý chỉ đọc MỘT câu — còn bản ghi đảo — vì trần câu SQL PR-TD; so từng
+   *  dòng nguồn lúc bấm. Toast Hoàn tác ngay sau quyết định vẫn so kỹ.) */
   const doiSauThi409 = (id: number, doi: () => void, ten: string) => {
     doi();
-    assert(daXuLy(id)?.coTheHuy !== true, `${ten}: đã đổi sau → không hiện Huỷ quyết định`);
     const truoc = anh();
     assert(maLoi(() => yc.huyQuyetDinh(QL, id)) === 409, `${ten}: đã đổi sau → 409`);
     assert(!lech(truoc, anh()).length, `${ten}: 409 không đổi gì`);

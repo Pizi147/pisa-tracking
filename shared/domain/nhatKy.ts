@@ -16,7 +16,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'attempt.skip_skill': 'Bỏ khỏi đợt', 'attempt.sit_status': 'Ghi đã làm bài / vắng', 'attempt.skill_week': 'Dời lịch Test',
   'case.auto_from_sos': 'Tạo Case từ SOS', 'case.auto_from_giua_khoa': 'Tạo Case từ Progress Test', 'case.bo_tro.nop_ke_hoach': 'Nộp kế hoạch bổ trợ', 'case.backfill': 'Nhập bù Case đã xong', 'case.backfill.done': 'Nhập bù Case đã xong',
   'case.classify': 'Phân loại Case', 'case.close': 'Đóng Case', 'case.disposition': 'Kết luận Case', 'case.dismiss': 'Không cần theo dõi',
-  'case.intervention': 'Thêm PA', 'case.intervention.complete': 'Kết thúc PA', 'case.outcome': 'Hoàn thành Case',
+  'case.intervention': 'Thêm PA', 'case.intervention.complete': 'Kết thúc PA', 'case.intervention.reopen': 'Mở lại PA đã kết thúc', 'case.outcome': 'Hoàn thành Case',
   'case.reopen': 'Mở lại Case', 'case.edit': 'Sửa Case', 'case.xac_nhan_s': 'Xác nhận Case Speaking', 'case.delete': 'Xoá Case', 'case.follow_until': 'Đổi hạn theo dõi Case', 'intervention.delete': 'Xoá PA', 'intervention.undo_add': 'Hoàn tác thêm PA',
   'case.plan.approved': 'Duyệt đề xuất PA', 'case.plan.declined': 'Từ chối đề xuất PA', 'case.plan.comment': 'Góp ý đề xuất PA',
   'case.preset.confirm': 'Xác nhận PA theo quy chế', 'case.preset.replace': 'Thay PA theo quy chế', 'case.confirm': 'Xác nhận Case',
