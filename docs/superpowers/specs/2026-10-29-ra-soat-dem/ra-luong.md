@@ -188,6 +188,19 @@ Lấy từ `plan.md` mục 4 "Ghi chú không chặn còn mở" và Rulebook 20.
 - `moveableSkills` (máy chủ trả ở hồ sơ Mock) web không đọc — dọn khi đụng.
 - plan.md mục 4 dòng "Hồ sơ MT: lượt không có `classId`… (HOP1)" — xoá sau khi RA-LUONG-3 merge.
 
+## 6b. Chủ SP trả lời 29/10 (nguyên văn) và việc đã làm
+> "Q4: Nên có phương án khi chuyển lớp trong tuần 9+10 như thế là có theo luồng chuyển tiếp lộ trình để có test đi kèm hay không? Nếu có thì tạo test luôn cho tuần đó.
+> Q5: Vẫn là MT0 phải ở cùng tuần với Final mặc định, hạn t4 tuần sau chấm. Còn lại theo khuyến nghị"
+
+| # | Quyết định | Làm |
+|---|---|---|
+| Q-RL1 | theo khuyến nghị | `evaluateRegular`: môn Không dự thi (không điểm) ra khỏi bộ môn cần đủ, kết quả tính trên môn đã thi, `khongDuThi` ghi tên — PR RA-LUONG-4 |
+| Q-RL2 | theo khuyến nghị (xoá mềm + Hoàn tác + Khôi phục) | lớn — PR riêng, PTA xếp lịch |
+| Q-RL3 | theo khuyến nghị | Lộ trình mới đóng việc Phối hợp SOS chờ của lộ trình cũ ("Kết thúc lộ trình"), Hoàn tác mở lại — PR RA-LUONG-4 |
+| Q-RL4 (Q4) | có lựa chọn ở tuần trước Final + tuần Final | `boiCanhMotEm`: ô "Theo luồng chuyển tiếp lộ trình" (mặc định có) ở Chuyển lớp một em; có → Cuối khoá (Lên FT có MT0 tuần Final, Xét lại, hạn bàn giao Cuối khoá); bỏ → giữa khoá — PR RA-LUONG-4 |
+| Q-RL5 (Q5) | giữ: MT0 cùng tuần Final, hạn chấm thứ Tư tuần sau | không đổi mã |
+| Q-RL6 | theo khuyến nghị | thẻ Xét lại Học lại / Lên chọn lớp mọi chi nhánh (cùng chi nhánh trước) — PR RA-LUONG-4 |
+
 ## 6. Câu hỏi CẦN CHỦ SP (gom, không hỏi lẻ)
 
 | # | Câu hỏi | Khuyến nghị |
