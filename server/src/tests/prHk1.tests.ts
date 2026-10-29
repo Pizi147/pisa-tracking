@@ -22,11 +22,9 @@ export function runPrHk1Tests({ check, assert }: Pick<YThucTestKit, 'check' | 'a
     assert(nhan && !/\bborder\b/.test(nhan) && /bg-muted-bg/.test(nhan), `nhãn phân loại: ${nhan.trim()}`);
     assert(!/borderColor: 'var\(--line-strong\)' \}\}>\{yc\.nhanPhanLoai\}/.test(s), 'nhãn phân loại còn viền var(--line-strong)');
   });
-  check('H5 · chú giải màu ở Phân tích là chú giải (ô màu + chữ), không phải chip có viền như nút', () => {
+  check('H5 · (V8-PT, mockup v8 chủ SP duyệt 29/10) Phân tích Test + SOS không còn chú giải màu riêng — đầu cột ghi chữ Đạt / SOS n, giải thích ở ⓘ Cách tính đầu thẻ', () => {
     const s = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
-    const khoi = s.split('aria-label="Chú giải màu kết quả"')[1]?.split('</span>}')[0] ?? '';
-    assert(khoi, 'không thấy khối chú giải');
-    assert(!/<button|onClick|aria-pressed/.test(khoi), 'chú giải có hành vi bấm — nếu là bộ lọc thì cần aria-pressed');
-    assert(!/rounded-md border px-1\.5/.test(khoi), 'chú giải còn kiểu chip viền như nút');
+    assert(!s.includes('aria-label="Chú giải màu kết quả"'), 'còn khối chú giải màu');
+    assert(/cachTinh=\{/.test(s), 'thiếu ⓘ Cách tính ở đầu thẻ');
   });
 }

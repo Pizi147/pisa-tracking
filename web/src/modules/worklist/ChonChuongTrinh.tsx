@@ -1,12 +1,13 @@
 import { CHUONG_TRINH, CHUONG_TRINH_LABEL, type ChuongTrinh } from '@shared/domain/index.ts';
+import { DOAN, doanNut } from '../phanTich/dungChung.tsx';
 
 /** Thanh ngữ cảnh (§3.2, P6b): Fast Track · Lớp thường (PR-Pb2-a: bỏ nút gộp). Một nhóm nút liền, nút đang chọn tô màu nhấn. */
 export function ChonChuongTrinh({ value, onChange }: { value: ChuongTrinh; onChange: (v: ChuongTrinh) => void }) {
   return (
-    <div role="group" aria-label="Chương trình" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
+    /* V8-PT: ô đoạn của hàng lọc Phân tích (`.doan`, cao 36). */
+    <div role="group" aria-label="Chương trình" className={DOAN}>
       {CHUONG_TRINH.map((k) => (
-        <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)}
-          className={`min-h-[38px] px-3 text-[15px] border-0 cursor-pointer max-sm:min-h-[44px] ${value === k ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+        <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)} className={doanNut(value === k)}>
           {CHUONG_TRINH_LABEL[k]}
         </button>
       ))}

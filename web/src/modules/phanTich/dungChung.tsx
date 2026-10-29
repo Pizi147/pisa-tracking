@@ -1,5 +1,8 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { createPortal } from 'react-dom';
 import { OSo } from '../../ui/OSo.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
+import { t } from '@shared/i18n/index.ts';
 import type { ChuongTrinh, KhoangNgay } from '@shared/domain/index.ts';
 
 /**
@@ -43,3 +46,76 @@ export function DongTomTat({ chinh, phu, luat }: { chinh: ReactNode; phu?: React
 
 /** `↑3` đỏ (nhiều hơn) · `↓1` xanh lá (ít hơn) · `=` xám — cùng luật với `nhanSoVoiTruoc` của luật thuần. */
 export const MAU_SO_VOI_TRUOC = { bad: 'text-bad', ok: 'text-ok', muted: 'text-faint' } as const;
+
+/* ------------------------------------------------------------------ V8-PT (mockup `thiet-ke/v8/phan-tich.html`, chủ SP duyệt 29/10) */
+
+/** Ô đoạn của hàng lọc (`.doan`): cao 36 (375: 44, hết bề rộng), chữ 14, viền ô nhập; mục đang chọn nền nhấn nhạt + chữ đậm + vạch đáy nhấn. */
+export const DOAN = 'inline-flex h-9 shrink-0 overflow-hidden rounded-lg border border-[color:var(--o-nhap-vien)] max-sm:h-11 max-sm:w-full';
+export const doanNut = (bat: boolean) => `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-0 px-3 text-sm [&+button]:border-l [&+button]:border-[color:var(--o-nhap-vien)] max-sm:flex-1 max-sm:px-1.5 max-sm:text-[15px] ${
+  bat ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)] shadow-[inset_0_-2px_0_var(--accent)]' : 'bg-[color:var(--o-nhap-nen)] font-medium text-[color:var(--text-dim)] hover:text-[color:var(--text)]'}`;
+
+/** Ô chọn của hàng lọc (`.o-chon`): ô chọn gốc (bàn phím, đọc màn hình) dáng ô nhập cao 36, chữ 14, mũi tên nét mảnh; `dangLoc` = viền nhấn khi đang lọc. */
+export function OChon({ className = '', dangLoc = false, children, ...p }: SelectHTMLAttributes<HTMLSelectElement> & { dangLoc?: boolean }) {
+  return (
+    <span className={`relative inline-flex shrink-0 ${className}`}>
+      <select {...p} className={`h-9 w-full cursor-pointer appearance-none rounded-lg border bg-[color:var(--o-nhap-nen)] pl-3 pr-8 text-sm text-[color:var(--text)] max-sm:h-11 ${
+        dangLoc ? 'border-[color:var(--accent)] font-bold shadow-[inset_0_0_0_1px_var(--accent)]' : 'border-[color:var(--o-nhap-vien)] font-medium'}`}>{children}</select>
+      <svg aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--text-faint)]" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4 4-4" /></svg>
+    </span>
+  );
+}
+
+/** Ba khe của hàng lọc chung (`PhanTich`): `dau` = ô đoạn đầu hàng thay chương trình (Kết quả Test: Mock Test | Thi thật), `giua` = ô riêng của tab
+ *  sau Mọi lớp (Theo tuần ▾, Mọi kết quả ▾, Gọn | Đầy đủ, Tìm GV, chip GV ✕), `phai` = cuối hàng (Xuất Excel · In · ⋯). */
+export type KheLoc = 'dau' | 'giua' | 'phai';
+export const KheHangLoc = createContext<Record<KheLoc, HTMLElement | null> | null>(null);
+/** Đưa ô của tab lên hàng lọc chung; ngoài Phân tích (không có khe) thì vẽ tại chỗ. */
+export function VaoHangLoc({ o = 'giua', children }: { o?: KheLoc; children: ReactNode }) {
+  const khe = useContext(KheHangLoc);
+  if (!khe) return <>{children}</>;
+  const el = khe[o];
+  return el ? createPortal(children, el) : null;
+}
+
+/** Một thẻ chỉ số (`.chi-so`): tên 13 · "trong kỳ" mờ · số 28 / 700 (số trơn hoặc `SoO` bấm được) · chữ nhỏ cạnh số · dòng mẫu 12 mờ. */
+export type ChiSo = { ten: ReactNode; ky?: ReactNode; gt: ReactNode; nho?: ReactNode; mau?: ReactNode; rong2?: boolean };
+const COT_CHI_SO: Record<number, string> = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6' };
+/** DẢI THẺ CHỈ SỐ đầu tab (V8-PT, G7: cùng hàm với dòng Tổng / bảng). 1440: một hàng đều cột; 375: hai cột, thẻ `rong2` trải hai cột. */
+export function DaiChiSo({ ds }: { ds: ChiSo[] }) {
+  return (
+    <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${COT_CHI_SO[ds.length] ?? 'lg:grid-cols-5'}`}>
+      {ds.map((c, i) => (
+        <div key={i} className={`flex min-w-0 flex-col gap-0.5 rounded-xl border px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3 ${c.rong2 ? 'max-lg:col-span-2' : ''}`}
+          style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
+          <span className="text-[13px] font-medium text-[color:var(--text-dim)] sm:whitespace-nowrap">
+            {c.ten}{c.ky && <i className="font-normal not-italic text-[color:var(--text-faint)] max-sm:block"><span className="max-sm:hidden"> · </span>{c.ky}</i>}
+          </span>
+          <span className="flex flex-wrap items-baseline gap-x-2 text-[28px] font-bold leading-tight tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)]">
+            {c.gt}{c.nho && <small className="text-[13px] font-medium text-[color:var(--text-dim)]">{c.nho}</small>}
+          </span>
+          {c.mau && <span className="text-xs text-[color:var(--text-faint)]">{c.mau}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** ĐẦU THẺ BẢNG (`.the-dau`): tên 15 / 700 · chip đếm · phụ 13 · (phải) điều khiển + ⓘ Cách tính — ⓘ ra khỏi đầu cột (G9). */
+export function DauThe({ ten, dem, phu, phai, cachTinh }: { ten: ReactNode; dem?: ReactNode; phu?: ReactNode; phai?: ReactNode; cachTinh?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
+      <h2 className="m-0 text-[15px] font-bold text-[color:var(--text)]">{ten}</h2>
+      {dem != null && (
+        <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
+          style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{dem}</span>
+      )}
+      {phu && <span className="text-[13px] text-[color:var(--text-dim)]">{phu}</span>}
+      {(phai || cachTinh) && (
+        <span className="ml-auto flex items-center gap-2">
+          {phai}
+          {cachTinh && <NutLuat phai label={t('Cách tính')}>{cachTinh}</NutLuat>}
+        </span>
+      )}
+    </div>
+  );
+}

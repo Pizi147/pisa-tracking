@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { ChiSo, PhanTram, TheoChiNhanh, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
-import { thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { PhanTram, TheoChiNhanh, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
+import { DaiChiSo, DauThe, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
   COT_KQ_MT, NHAN_COT_KQ_MT, NHAN_LUOT_KQ_MT, rateView, tenMonNgan,
@@ -31,11 +31,13 @@ const COT_TB: readonly CotBang[] = [
 ];
 const pt = (n: number, mau: number) => (mau ? `${Math.round((100 * n) / mau)} %` : null);
 
+/** V8-PT: thẻ bảng (`.the`) — đầu thẻ `DauThe` (tên 15 / 700 · phụ 13 · ⓘ Cách tính bên phải). */
 function Khoi({ tieuDe, phu, luat, children }: { tieuDe: string; phu?: ReactNode; luat?: ReactNode; children: ReactNode }) {
   return (
-    <Card className="h-full" bodyClass="p-0" title={<span className="inline-flex flex-wrap items-center gap-x-2">{tieuDe}{phu && <span className="text-xs font-normal text-slate-500">{phu}</span>}{luat && <NutLuat label={tieuDe}>{luat}</NutLuat>}</span>}>
+    <section className="card h-full overflow-clip">
+      <DauThe ten={tieuDe} phu={phu} cachTinh={luat} />
       {children}
-    </Card>
+    </section>
   );
 }
 
@@ -62,22 +64,25 @@ export function BaoCao(pv: PhamViPhanTich) {
   const pa = { dat: b.casePa.paCaiThien, mau: b.casePa.paKetQua };
 
   return (
-    <div className="bao-cao space-y-4">
+    <div className="bao-cao space-y-3">
       <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } }'}</style>
-      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">
-        <ChiSo ten={t('Đạt MT')} ky={ky} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}
-          giaTri={ft ? <PhanTram x={d.datMt} nguon={nguon('dat-mt')} tieuDe={t('Đạt MT')} /> : chiFt} mau={ft ? tuMau(d.datMt, t('HV')) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('Đạt Target thi thật')} ky={ky} giaTri={ft ? ptChu(d.thiThat) : chiFt}
-          mau={ft ? (d.thiThat?.mau ? tuMau(d.thiThat, t('HV có KQ')) : t('chưa HV nào có KQ')) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('Thi trong kỳ')} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi trong kỳ')} nguon={nguon('thi-dot-nay')} />} mau={t('HV có ngày thi trong kỳ')} />
-        <ChiSo ten={t('Case có PA')} ky={t('hiện tại')} giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={nguonCase} tieuDe={t('Case đang mở')} />}
-          mau={d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null} />
-        <ChiSo ten={t('PA cải thiện')} ky={ky} luat={t('PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).')}
-          giaTri={<PhanTram x={pa} nguon={nguon('pa-co-ket-qua')} tieuDe={t('PA có kết quả trong kỳ')} />} mau={tuMau(pa, t('PA có kết quả'))} />
+      {/* V8-PT (mockup B1): dải thẻ chỉ số chung — "tên · trong kỳ", không lặp khoảng tuần (đã ở hàng lọc); ⓘ luật giữ, đứng sau "trong kỳ". */}
+      <div data-hd="tq-tom-tat">
+        <DaiChiSo ds={[
+          { ten: t('Đạt MT'), ky: <>{ky} <NutLuat label={t('Đạt MT')}>{t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}</NutLuat></>,
+            gt: ft ? <PhanTram x={d.datMt} nguon={nguon('dat-mt')} tieuDe={t('Đạt MT')} /> : chiFt, mau: ft ? tuMau(d.datMt, t('HV')) : t('chỉ Fast Track') },
+          { ten: t('Đạt Target thi thật'), ky, gt: ft ? ptChu(d.thiThat) : chiFt,
+            mau: ft ? (d.thiThat?.mau ? tuMau(d.thiThat, t('HV có KQ')) : t('chưa HV nào có KQ')) : t('chỉ Fast Track') },
+          { ten: t('Thi trong kỳ'), gt: <OSo giaTri={d.thiThangNay} tieuDe={t('Thi trong kỳ')} nguon={nguon('thi-dot-nay')} />, mau: t('HV có ngày thi') },
+          { ten: t('Case có PA'), ky: t('hiện tại'), gt: <PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={nguonCase} tieuDe={t('Case đang mở')} />,
+            mau: d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null },
+          { ten: t('PA cải thiện'), ky: <>{ky} <NutLuat label={t('PA cải thiện')}>{t('PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).')}</NutLuat></>,
+            gt: <PhanTram x={pa} nguon={nguon('pa-co-ket-qua')} tieuDe={t('PA có kết quả trong kỳ')} />, mau: tuMau(pa, t('PA có kết quả')), rong2: true },
+        ]} />
       </div>
 
       {d.chiNhanh ? <TheoChiNhanh d={d} baoCao onChiNhanh={chonCn} /> : ft && (
-        <div className="grid items-stretch gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_440px] print:grid-cols-[minmax(0,1fr)_440px]">
+        <div className="grid items-stretch gap-3 min-[1100px]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] print:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <KetQuaMt api={kq} nguon={nguon} phamVi={`FT ${d.tenChiNhanh ?? ''}`.trim()} />
           {b.tienBo && <TienBo hang={b.tienBo} nguon={nguon} />}
         </div>
@@ -108,7 +113,8 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
   const phuCua = (h: DongKqMt, c: CotBang) => (c.key === 'luot' ? (h.luot === 'thi' ? t('{n} HV có KQ', { n: h.hv }) : t('{n} HV', { n: h.hv }))
     : c.key === 'truoc' || c.key === 'chua-du' ? null : pt(h.dem[c.key as keyof DongKqMt['dem']], h.mau));
   return (
-    <Khoi tieuDe={t('Kết quả MT')} phu={t('{pv} · lượt của từng HV trong kỳ', { pv: phamVi })} luat={luat}>
+    /* V8-PT: "FT · chi nhánh" trùng hàng lọc / đầu trang → chỉ hiện khi in (hàng lọc ẩn trên giấy). */
+    <Khoi tieuDe={t('Kết quả MT')} luat={luat} phu={<><span className="hidden print:inline">{phamVi} · </span>{t('lượt của từng HV trong kỳ')}</>}>
       {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} onRetry={api.reload} />
         : !api.data ? <Skeleton rows={5} className="p-4" />
           : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={dienThoai ? api.data.rows.filter((h) => h.hv || h.luot === 'thi') : api.data.rows} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu />}

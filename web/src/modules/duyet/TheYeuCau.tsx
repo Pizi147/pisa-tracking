@@ -18,7 +18,7 @@ import { DeXuatSuaPanel } from './DeXuatSuaPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Loại thẻ máy chủ cho "Huỷ quyết định" (`khiHuy` ở `server/src/duyet/loaiYeuCau.ts`) — chỉ những loại này có Hoàn tác 5 s. */
-const HUY_DUOC = new Set<string>(['de_xuat_pa', 'thu_hoi_y_thuc']);
+export const HUY_DUOC = new Set<string>(['de_xuat_pa', 'thu_hoi_y_thuc']);
 
 /**
  * MỘT THẺ YÊU CẦU (PR-DUYET, mockup M8, đặc tả §7.6) — MỘT khuôn cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`) và hồ sơ HV
@@ -32,10 +32,10 @@ const HUY_DUOC = new Set<string>(['de_xuat_pa', 'thu_hoi_y_thuc']);
  */
 type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' | 'sua' | 'sua-tra-loi' | 'rut' } | null;
 
-export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel }: {
+export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel, moSan }: {
   yc: TheYeuCauDto;
-  /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. */
-  onXong: (id: number) => void;
+  /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. `chu` = câu kết quả (chỉ khi chính người dùng vừa quyết). */
+  onXong: (id: number, chu?: string) => void;
   /** Bản gọn (Ngăn Case): không lặp học viên/lớp, không nút Mở. */
   gon?: boolean;
   /** Yêu cầu của tôi: không có nút quyết định. */
@@ -48,6 +48,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   onThemPa?: (caseId: number) => void;
   /** UI-CON-LAI k3: nằm trong panel duyệt của Hộp duyệt — một cột, tiêu đề ở đầu panel, lý do đọc hết, "Nếu duyệt" thành khối hậu quả, nút ở cuối. */
   panel?: boolean;
+  /** V8-CV: mở panel từ nút của dòng — Duyệt… (bước chọn tuần / ghi chú / lệnh chuyển lớp), Từ chối…, Trả lời… mở sẵn ô tương ứng. */
+  moSan?: 'duyet' | 'tu-choi' | 'tra-loi';
 }) {
   const toast = useToast();
   const { homNay, ngan } = useNgayNghiepVu();
@@ -117,7 +119,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       if (HUY_DUOC.has(yc.loai) && /\/(duyet|tu-choi)$/.test(duongDan)) toast.hoanTac(xongChu, () => { void huy(); }, { key: `yc-${yc.id}` });
       else toast.push('ok', xongChu);
       setO(null);
-      onXong(yc.id);
+      onXong(yc.id, xongChu);
     } catch (e: any) {
       /* Người khác đã xử lý / thẻ tự đóng: nói rõ rồi làm mới — không để người dùng bấm lại vào một thẻ đã chết. */
       if (e?.status === 400 && /đã được xử lý/.test(e.message ?? '')) { toast.push('error', e.message); onXong(yc.id); return; }
@@ -133,6 +135,15 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (canGhiChu) return moO('ghi-chu', nut);
     void gui(`/yeu-cau/${yc.id}/duyet`, {}, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }));
   };
+  const daMoSan = useRef(false);
+  useEffect(() => {
+    if (!moSan || daMoSan.current || !cho) return;
+    daMoSan.current = true;
+    if (moSan === 'tu-choi' || moSan === 'tra-loi') setO({ loai: moSan });
+    else if (yc.duLieu?.moPanelChuyenLop) setMoChuyenLop(true);
+    else if (yc.loai === 'lich_thi') setO({ loai: 'tuan' });
+    else if (canGhiChu) setO({ loai: 'ghi-chu' });
+  }, [moSan]);   // eslint-disable-line react-hooks/exhaustive-deps
   const guiO = () => {
     setDaBam(true);
     if (!o) return;
@@ -228,7 +239,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
 
         <div className={`flex flex-col gap-1.5 ${panel ? 'items-end border-t pt-3 text-right' : 'sm:items-end sm:text-right'}`} style={panel ? { borderColor: 'var(--line)' } : undefined}>
           {cho ? (
-            tang1 && (
+            tang1 && !panel && (
               <div className="tabular-nums">
                 <div className={`text-sm font-bold ${hanV!.tone === 'overdue' ? 'text-late' : hanV!.ganHan ? 'text-soon' : 'text-slate-100'}`}>{tang1}</div>
                 <div className="text-[12px] text-slate-400">{hanV!.han}</div>
@@ -285,7 +296,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                   </button>
                 )}
               </>}
-              {!gon && yc.mo && <Link to={yc.mo} className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0">{t('Mở')}</Link>}
+              {!gon && yc.mo && <Link to={yc.mo} className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0">{t('Mở ›')}</Link>}
             </div>
           )}
         </div>
@@ -345,7 +356,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       {moChuyenLop && yc.hocVienId != null && (
         <ChuyenLopPanel open cheDo="lenh" studentId={yc.hocVienId} studentName={yc.hocVien ?? undefined} lop={yc.lop}
           duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo }}
-          onClose={() => setMoChuyenLop(false)} onDone={() => onXong(yc.id)} />
+          onClose={() => setMoChuyenLop(false)} onDone={() => onXong(yc.id, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }))} />
       )}
     </article>
   );
