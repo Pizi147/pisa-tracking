@@ -409,6 +409,7 @@ export const EN_A = {
   'Dữ liệu đến:': 'Data up to:',
   'chưa có người phụ trách': 'no owner yet',
   'hạn {ngay}': 'due {ngay}',
+  'hạn sớm nhất {ngay}': 'earliest due {ngay}',
   'Đúng những mục tạo nên con số vừa bấm': 'Exactly the items behind this number',
   'Không có dữ liệu trong phạm vi': 'No data in scope',
   'Không có {dv} nào trong tập này': 'No {dv} in this set',
