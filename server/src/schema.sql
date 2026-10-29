@@ -2291,3 +2291,28 @@ CREATE TABLE ghi_dao (
   dao_luc TEXT                      -- đã hoàn tác
 );
 CREATE INDEX ix_ghi_dao_doi_tuong ON ghi_dao (bang, doi_tuong_id, loai);
+
+-- PC-GV-A: đổi phân công có hiệu lực — mỗi dòng một ô đổi (`khoa` = 'gvcn' | kỹ năng); trang_thai cho | da_ap | huy (`classes/phanCongGv.ts`).
+CREATE TABLE doi_phan_cong (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  lo INTEGER,                       -- id dòng đầu của lần lưu (khoá Hoàn tác)
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  khoa TEXT NOT NULL,
+  nguoi_cu INTEGER REFERENCES users(id),
+  nguoi_moi INTEGER REFERENCES users(id),
+  hieu_luc TEXT NOT NULL,
+  trang_thai TEXT NOT NULL,
+  tao_ban_giao INTEGER NOT NULL DEFAULT 0,
+  xem_den TEXT,                     -- GV cũ chỉ xem lớp tới ngày này
+  tao_boi INTEGER NOT NULL REFERENCES users(id),
+  tao_luc TEXT NOT NULL,
+  ap_luc TEXT,
+  huy_luc TEXT,
+  huy_boi INTEGER,
+  ly_do_huy TEXT,
+  loi TEXT,                         -- lịch đổi tới hạn mà sai luật: giữ 'cho' + câu lỗi
+  thu_ngay TEXT                     -- đã thử áp hôm nay (không thử lại trong ngày)
+);
+CREATE INDEX ix_doi_pc_lop ON doi_phan_cong (class_id, trang_thai);
+CREATE INDEX ix_doi_pc_cu ON doi_phan_cong (nguoi_cu, trang_thai);
+CREATE INDEX ix_doi_pc_cho ON doi_phan_cong (trang_thai, hieu_luc);

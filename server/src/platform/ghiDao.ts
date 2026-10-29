@@ -30,6 +30,14 @@ export class GhiDao {
   chot(): void {
     for (const m of this.muc) m.sau = m.truoc.map((d) => this.conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid = ?`).get(d.__r) as Dong ?? { __r: d.__r, __mat: 1 });
   }
+  /** PC-GV-A: bỏ dòng "sửa" của `bang` mà thao tác KHÔNG đổi (chụp rộng trước khi biết dòng nào bị ghi) — Hoàn tác không bị chặn bởi dòng không liên quan. */
+  boKhongDoi(bang: string): void {
+    for (const m of this.muc) {
+      if (m.k !== 'sua' || m.bang !== bang) continue;
+      m.truoc = m.truoc.filter((d) => JSON.stringify(d) !== JSON.stringify(this.conn.prepare(`SELECT rowid AS __r, * FROM ${bang} WHERE rowid = ?`).get(d.__r)));
+    }
+    this.muc = this.muc.filter((m) => m.truoc.length);
+  }
   /** Có ghi gì không (thao tác không đổi dòng nào thì khỏi lưu). */
   get rong() { return !this.muc.length; }
 }

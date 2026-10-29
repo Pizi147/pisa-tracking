@@ -63,6 +63,7 @@ import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as lenhSvc from '../classes/lenhChuyen.ts';
+import * as phanCongGvSvc from '../classes/phanCongGv.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as dichSvc from '../dich/dich.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
@@ -1524,6 +1525,12 @@ api.get('/classes/:id/teachers', requireAuth, wrap((req) => {
 api.put('/classes/:id/teachers', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return classSvc.setClassTeachers(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** PC-GV-A: lưu phân công NHIỀU lớp một lần, có hiệu lực (Ngay hôm nay / Từ tuần …) — một giao dịch, `lo` = khoá Hoàn tác. */
+api.post('/phan-cong/luu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return phanCongGvSvc.luuPhanCong(principalOf(req), req.body ?? {});
 }));
 
 /** Tạo lớp = lớp + phân công trong MỘT giao dịch (YC-1); tên lớp do máy ghép từ chương trình/lộ trình/số (T1). */
