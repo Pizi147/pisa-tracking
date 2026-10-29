@@ -40,14 +40,17 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     const ids = studentsInScope(P.admin, null);
     const { kq: lat } = doCau(() => latestAttempts(ids, 'valid', TODAY));
     const st = standingFor([...lat.keys()]);
-    let so = 0, coHut = 0, coThuong = 0, khacKv = 0;
+    let so = 0, coHut = 0, coThuong = 0, khacKv = 0, khacNguon = 0;
     for (const [sid, ev] of lat) {
       const s = st.get(sid);
       if (!s || s.attemptId !== ev.attemptId) continue;
       /* Lệch CÓ SẴN (không do PANEL-MC): lượt không có Target lúc thi — `resultOf` không kỳ vọng, `standingFor` rơi về Target lộ trình (T9). Không so. */
       if (s.mode !== 'ratio' && ev.kyVong !== s.expectation) { khacKv++; continue; }
-      /* Lệch CÓ SẴN: `standingFor` chọn cách chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt — em đổi lớp FT ↔ thường. Không so. */
-      if ((s.mode === 'ratio') !== (ev.nguong !== undefined)) { khacKv++; continue; }
+      /*
+       * Lệch CÓ SẴN ở ĐẦU VÀO (không do PANEL-MC): `standingFor` lấy cách chấm + mã chương trình từ LỘ TRÌNH (`mode`, `chuongTrinh` — có thể rỗng → tên môn chung
+       * L R W S), `evaluateAttemptRow` từ LỚP CỦA LƯỢT (`scoringMode`, `programme_code` → G+V, P…). So trực tiếp hai đầu vào đó; khác thì không so.
+       */
+      if ((s.mode === 'ratio') !== (ev.nguong !== undefined) || (s.mode === 'ratio' && (s.chuongTrinh ?? null) !== (ev.chuongTrinh ?? null))) { khacNguon++; continue; }
       const a = diemTuEval(ev), b = diemTuStanding(s)!;
       assert(JSON.stringify(a.kn) === JSON.stringify(b.kn), `em ${sid}: kn ${JSON.stringify(a.kn)} ≠ standing ${JSON.stringify(b.kn)}`);
       assert(a.overall === b.overall && JSON.stringify(a.soVoi) === JSON.stringify(b.soVoi) && a.luot === b.luot && a.tuan === b.tuan,
@@ -60,8 +63,9 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
       if (a.donVi === '%') coThuong++;
       so++;
     }
-    if (khacKv) console.log(`      [đo] ${khacKv} em: latestAttempts ≠ standingFor ở kỳ vọng / cách chấm (lượt thiếu Target lúc thi, lộ trình ≠ lớp của lượt — có sẵn)`);
-    assert(so > 20 && coHut > 0 && coThuong > 0, `demo phải có đủ loại: ${so} em, ${coHut} có kỹ năng hụt, ${coThuong} lớp thường`);
+    console.log(`      [đo] so ${so} em · bỏ qua ${khacKv} em kỳ vọng khác nguồn (thiếu Target lúc thi) · ${khacNguon} em cách chấm / chương trình lộ trình ≠ lớp của lượt (có sẵn)`);
+    /* Không xanh giả: phần bỏ qua phải nhỏ so với phần được so. */
+    assert(so > 20 && so >= 4 * (khacKv + khacNguon) && coHut > 0 && coThuong > 0, `demo phải có đủ loại: so ${so} em (bỏ ${khacKv + khacNguon}), ${coHut} có kỹ năng hụt, ${coThuong} lớp thường`);
   });
 
   check('M1 · RF1: kỹ năng chưa điểm → v null, dat null; môn bỏ → dat null; lớp thường đơn vị % + mốc "ngưỡng"; FT luôn L R W S', () => {
