@@ -67,7 +67,7 @@ export const HD_QL: HuongDan = {
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      muc: [{ id: 'ql-pt-goc', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo HV</b> · <b>Phân tích GV</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', '<b>Báo cáo HV</b> (mặc định): 5 số như Tổng quan, <b>Kết quả MT</b> (MT0 → MT3+ · Thi thật), <b>Tiến bộ theo kỹ năng</b>; <b>In</b> ra A4 ngang.', '<b>Phân tích GV</b>: một bảng <b>Gọn</b> / <b>Đầy đủ</b> — Hành chính | Học thuật, bấm số mở danh sách.'],
+      muc: [{ id: 'ql-pt-goc', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo HV</b> · <b>Phân tích GV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', '<b>Báo cáo HV</b> (mặc định): 5 số như Tổng quan, <b>Kết quả MT</b> (MT0 → MT3+ · Thi thật), <b>Tiến bộ theo kỹ năng</b>; <b>In</b> ra A4 ngang.', '<b>Phân tích GV</b>: một bảng <b>Gọn</b> / <b>Đầy đủ</b> — Hành chính | Học thuật, bấm số mở danh sách.'],
         chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
       { id: 'ql-pt-thoi-gian', ten: 'Khoảng thời gian', buoc: ['<b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.', 'Bảng dài: 10 dòng một trang, chọn 20 / 50 ở đầu hoặc cuối bảng.'],
         chi: { hd: 'pt-thoi-gian', duong: '/phan-tich', chu: 'Đổi khoảng cho mọi tab ở đây.' } }],
