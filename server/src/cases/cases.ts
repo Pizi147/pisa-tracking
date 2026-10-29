@@ -2594,7 +2594,7 @@ export function phuDsCase(caseIds: number[]) {
     const out = new Map<number, any[]>();
     const j = JSON.stringify(thieu);
     for (const r of db().prepare(
-      `SELECT 'm' AS k, case_id, MAX(attempt_no) AS a, NULL AS b, NULL AS c, NULL AS id FROM case_milestones
+      `SELECT 'm' AS k, case_id AS case_id, MAX(attempt_no) AS a, NULL AS b, NULL AS c, NULL AS id FROM case_milestones
         WHERE case_id IN (SELECT value FROM json_each(?)) AND attempt_no IS NOT NULL GROUP BY case_id
        UNION ALL SELECT 'p', case_id, kind, description, action_due, id FROM case_interventions
         WHERE case_id IN (SELECT value FROM json_each(?)) AND status IN ('planned','started') AND COALESCE(approval_state,'') != 'pending'
