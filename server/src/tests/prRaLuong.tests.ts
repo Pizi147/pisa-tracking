@@ -16,6 +16,8 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_hangLoat: any = await import('../students/hangLoat.ts');
   const require_systemClose: any = await import('../cases/systemClose.ts');
   const require_regular: any = await import('../normal/regular.ts');
+  const require_luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
+  const require_schedule: any = await import('../classes/schedule.ts');
   const require_keHoach: any = await import('../keHoach/keHoachTest.ts');
   const require_thongBao: any = await import('../platform/thongBao.ts');
   const require_chotVang: any = await import('../ops/chotVangDinhKy.ts');
@@ -200,6 +202,31 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     assert(r.complete && r.required === 3 && r.khongDuThi.join() === 'speaking' && Math.abs(r.tyLeTong - 70 / 90) < 1e-9 && !r.provisional, JSON.stringify(r));
     const cu = rg.evaluateRegular(['listening', 'speaking'], [{ skill: 'listening', raw_score: 30, raw_total: 40 }, { skill: 'speaking', raw_score: null, raw_total: null }], 'FOU');
     assert(!cu.complete && cu.khongDuThi.length === 0, 'chưa có điểm mà không phải Không dự thi → vẫn thiếu');
+  });
+
+  check('Q4 (chủ SP 29/10) · Chuyển lớp một em: từ thứ Hai tuần trước Final tới hết tuần Final được CHỌN theo luồng chuyển tiếp (mặc định có); trước đó giữa khoá; FT không', () => {
+    const ll: any = require_luatLoTrinh;
+    const sch: any = require_schedule;
+    const d: any = require_d;
+    const lop = conn.prepare(`SELECT id AS class_id, is_fast_track, programme_code FROM classes WHERE status = 'active'`).all() as any[];
+    const pr = sch.classProgressMany(lop.map((x) => x.class_id));
+    let trong = 0, truoc = 0;
+    for (const enr of lop) {
+      const p = pr.get(enr.class_id);
+      const r = ll.boiCanhMotEm(enr, TODAY);
+      if (enr.is_fast_track) { assert(!r.tuCuoiKhoa && !r.coTheChon, `FT ${enr.class_id}`); continue; }
+      if (!p?.finalWeekStart || p.phase === 'finished') continue;
+      const nhac = d.mocLoTrinh(p.finalWeekStart).nhacTu;
+      const sauFinal = week.mondayOf(TODAY) > week.mondayOf(p.finalWeekStart);
+      if (!sauFinal && week.mondayOf(TODAY) >= nhac) {
+        trong++;
+        assert(r.coTheChon && r.tuCuoiKhoa && !ll.boiCanhMotEm(enr, TODAY, false).tuCuoiKhoa, `trong cửa sổ ${enr.class_id}: ${JSON.stringify(r)}`);
+      } else if (week.mondayOf(TODAY) < nhac && !sch.mocKetKhoa(p, TODAY).hetKhoa) {
+        truoc++;
+        assert(!r.coTheChon && !r.tuCuoiKhoa && !ll.boiCanhMotEm(enr, TODAY, true).tuCuoiKhoa, `trước cửa sổ ${enr.class_id}: ${JSON.stringify(r)}`);
+      }
+    }
+    assert(trong > 0 && truoc > 0, `seed phải có lớp thường trong và trước cửa sổ (${trong}, ${truoc})`);
   });
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {
