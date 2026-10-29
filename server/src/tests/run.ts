@@ -63,6 +63,7 @@ const docLapCua = (ten: string) => (DOC_LAP_ENV ? DOC_LAP_ENV.includes(ten) : !G
  */
 const CHUOI_MS = 76000;
 const THOI_GIAN_MS: Record<string, number> = {
+  prLop1Lop: 7500,
   banChinh: 36200, tongQuan: 33000, prDeploy: 10600, prTd7b: 7200, prSvTqGv: 6800, prW1GopTaiLai: 4000, prOv13q: 3800, prMt: 3500, yThuc: 3400,
   prQuetTheoKy: 3400, prGv: 3200, prPb2b: 3000, prS6fA: 2900, prEn: 2600, prOv13k: 2400, prVaiA: 2300, prTd3: 2300, prOv13m: 2300, prCt: 2100,
   luatMayChu: 2000, prHk2: 2000, prDonA: 1900, prNv: 1800, prTk: 1800, hocVienLop: 1700, prS6fB: 1700, prOv15e: 1700, prUiPhanTich: 1600,
