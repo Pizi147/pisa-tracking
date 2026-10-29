@@ -10,7 +10,8 @@ export async function runPrLop1LopTests(t: any) {
   console.log('\nLOP-1-LOP · hồ sơ lớp đọc một lớp');
   const vt: any = await import('../classes/viecTheoEm.ts');
   const { myWork } = await import('../worklist/mywork.ts');
-  const { loadPrincipal } = await import('../permissions.ts');
+  const { loadPrincipal, laGvSpeaking, lopFtChoGvSpeaking } = await import('../permissions.ts');
+  const { phamViXemViec } = await import('../worklist/xemViec.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const { demViec, laVaiQuanLy, vaiXemHocVien } = await import('../../../shared/domain/index.ts');
   const { soDongSql, chayTrongRequest, xoaNho, demHienTai } = await import('../platform/nguCanhRequest.ts');
@@ -154,6 +155,33 @@ export async function runPrLop1LopTests(t: any) {
       }
       assert(coCase, 'Case không gắn lượt phải có trong viec-theo-em (QL)');
       console.log(`    (RF1 dựng: lượt ${luot.id} bỏ class_id, việc classId null ở đường đủ: ${soNullDu}; Case ${caseId} không gắn lượt có mặt)`);
+    } finally { conn.exec('ROLLBACK'); xoaNho(); }
+  });
+
+  /* PTA rà #735 (c): Admin có `score.override` kiêm GV Speaking đi nhánh `tat-ca` (`phamViXemViec` = 'cham-diem') — `myWork` tatCa không gộp `lopCheo`.
+     Demo không có người như vậy → dựng (Admin MB + vai GV + kỹ năng speaking), so mọi lớp FT của chi nhánh với đường đủ và badge cũ. */
+  check('L1 · Admin kiêm GV Speaking (S chéo, nhánh tat-ca): viec-theo-em + badge như đường đủ / công thức cũ', () => {
+    const ad = conn.prepare(`SELECT ur.user_id AS id, ur.branch_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin' AND ur.branch_id = ? LIMIT 1`)
+      .get(lopActive.find((l) => l.id === 3)!.branch_id) as any;
+    assert(ad, 'dữ liệu demo: cần Admin của chi nhánh lớp 3');
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) SELECT ?, id, ?, 'active', ? FROM roles WHERE key = 'teacher'`).run(ad.id, ad.branch_id, `${TODAY}T00:00:00Z`);
+      conn.prepare(`INSERT OR IGNORE INTO user_skills (user_id, skill) VALUES (?, 'speaking')`).run(ad.id);
+      xoaNho();
+      const p = loadPrincipal(ad.id);
+      assert(laGvSpeaking(p) && phamViXemViec(p) === 'cham-diem' && lopFtChoGvSpeaking(p).length > 0, 'người dựng phải là Admin (cham-diem) kiêm GV Speaking có lớp S chéo');
+      let so = 0;
+      for (const l of lopActive.filter((x) => x.branch_id === ad.branch_id)) {
+        const moi = chay(p, l.id, false), du = chay(p, l.id, true);
+        assert((moi.loi ?? null) === (du.loi ?? null), `lớp ${l.id}: lỗi ${moi.loi} ≠ ${du.loi}`);
+        if (du.loi) continue;
+        const { soQuaHanLop: sm, ...m } = moi.r, { soQuaHanLop: sd, ...d } = du.r;
+        assert(JSON.stringify(m) === JSON.stringify(d), `lớp ${l.id}: ${JSON.stringify(m).slice(0, 300)} ≠ ${JSON.stringify(d).slice(0, 300)}`);
+        assert(sm === sd && sm === badgeCu(p, l), `lớp ${l.id}: badge ${sm} / đường đủ ${sd} / công thức cũ ${badgeCu(p, l)}`);
+        so++;
+      }
+      assert(so > 0, 'phải so được ít nhất một lớp');
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
 

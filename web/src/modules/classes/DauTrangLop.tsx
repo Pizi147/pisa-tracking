@@ -6,7 +6,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { api, onInvalidate } from '../../lib/api.ts';
+import { api, invalidate, onInvalidate } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { CHE_DO_NHAN, type CheDoHocVien } from './TabHocVienLop.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -104,9 +104,16 @@ export function DauTrangLop({ data, onViec, onBanGiao, thanhViec }: {
      của mình) — cùng đường ThanhViecLop nên một GET; QL / QT thôi đọc `/my-work?nguoi=tat-ca` cả chi nhánh (GV vẫn có `/my-work` của khung App). */
   const viec = useApi<ViecLop>(duongViecLop(data.id), [data.id]);
   const soViecQuaHan = viec.data?.soQuaHanLop ?? 0;
-  /* Thao tác Case / PA… chỉ vô hiệu `/my-work` — trước PR badge đọc `/my-work` nên tự tải lại; giữ vậy. `reload` (không `invalidate`): lưu điểm vô hiệu
-     cả `/classes` lẫn `/my-work` → dùng lại GET vừa bắt đầu, không gọi đôi. */
-  useEffect(() => onInvalidate((x) => { if (x === '/my-work') viec.reload(); }), [viec.reload]);
+  /* Thao tác Case / PA… chỉ vô hiệu `/my-work` — trước PR badge đọc `/my-work` nên tự tải lại; giữ vậy và vô hiệu đúng đường này để badge + thanh "Việc của
+     tôi" cùng tải lại (một GET). Lưu điểm vô hiệu `/classes` rồi `/my-work` cùng nhịp → đường đã tải lại theo `/classes`, bỏ qua để không gọi đôi. */
+  useEffect(() => {
+    const duong = duongViecLop(data.id);
+    let vuaTai = false;
+    return onInvalidate((x) => {
+      if (x !== null && duong.startsWith(x)) { vuaTai = true; queueMicrotask(() => { vuaTai = false; }); }
+      else if (x === '/my-work' && !vuaTai) invalidate(duong);
+    });
+  }, [data.id]);
   const bGoc = badgeLop({
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
