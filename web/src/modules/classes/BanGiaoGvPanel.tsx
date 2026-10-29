@@ -46,7 +46,11 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
     const cu = dto.em.find((e) => e.studentId === sid)?.gopY[m] ?? null;
     return moi !== undefined ? { noiDung: moi, nguoiGhi: cu?.nguoiGhi ?? '', ghiLuc: cu?.ghiLuc ?? '', dienThay: dto.nguoiXem.thay } : cu;
   };
-  const tt = (sid: number) => trangThaiEmBg(cot, Object.fromEntries(cot.map((m) => [m, gopY(sid, m)])), nhanCot);
+  const tt = (sid: number) => {
+    const x = trangThaiEmBg(cot, Object.fromEntries(cot.map((m) => [m, gopY(sid, m)])), nhanCot);
+    const thieuCot = cot.filter((m) => !gopY(sid, m)).map(nhanCot).join(', ');
+    return { khoa: x.khoa, nhan: x.khoa === 'du' ? t('Đủ') : x.khoa === 'chua' ? t('Chưa có') : t('Thiếu {ds}', { ds: thieuCot }) };
+  };
   const ds = dto.em.map((e) => ({ ...e, id: e.studentId }));
   const du = ds.filter((e) => tt(e.id).khoa === 'du').length;
   const thieu = ds.filter((e) => tt(e.id).khoa !== 'du');
@@ -104,7 +108,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
         ),
         chinh: viet && cho ? (
           <button type="button" className={`btn btn-primary min-h-[44px] sm:min-h-0 ${thieu.length ? "opacity-50" : ""}`} onClick={xacNhan} disabled={busy}
-            aria-disabled={thieu.length > 0} title={thieu.length ? t('Còn {n} em thiếu góp ý', { n: thieu.length }) : undefined}>{t('Xác nhận bàn giao')}</button>
+            aria-disabled={thieu.length > 0} title={thieu.length ? t('Còn {n} em thiếu góp ý', { n: thieu.length }) : undefined}>{busy ? t('Đang lưu…') : t('Xác nhận bàn giao')}</button>
         ) : undefined,
       }}>
       <div className="space-y-4 pt-3">
@@ -125,10 +129,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
         {!em ? <p className="m-0 text-sm text-slate-400">{t('Lớp không còn em nào đang học.')}</p> : (
           <div className="grid gap-4 md:grid-cols-[280px_minmax(0,1fr)]">
             <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={ds} chon={em.id} onChon={setChon}
-              trangThai={docThoi && !cho ? undefined : (e) => {
-                const x = tt(e.id);
-                return { khoa: x.khoa, nhan: x.khoa === 'du' ? t('Đủ') : x.khoa === 'chua' ? t('Chưa có') : t('Thiếu {ds}', { ds: x.nhan.replace(/^Thiếu /, '') }) };
-              }}
+              trangThai={docThoi && !cho ? undefined : (e) => tt(e.id)}
               phu={(e) => (
                 <span className="min-w-0 truncate">
                   {cot.map((m, k) => {
@@ -141,7 +142,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
             <div className="min-w-0 space-y-4">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 id={`bg-gv-em-${em.id}`} tabIndex={-1} className="m-0 text-base font-semibold text-slate-100 outline-none">{em.ten}</h3>
-                {cho && <Nhan tone={tt(em.id).khoa === 'du' ? 'ok' : tt(em.id).khoa === 'thieu' ? 'soon' : 'muted'}>{tt(em.id).khoa === 'du' ? t('Đủ') : tt(em.id).khoa === 'chua' ? t('Chưa có') : t('Thiếu {ds}', { ds: tt(em.id).nhan.replace(/^Thiếu /, '') })}</Nhan>}
+                {cho && (() => { const x = tt(em.id); return <Nhan tone={x.khoa === 'du' ? 'ok' : x.khoa === 'thieu' ? 'soon' : 'muted'}>{x.nhan}</Nhan>; })()}
                 <span className="text-xs tabular-nums text-slate-500">{t('em {a}/{b}', { a: i + 1, b: ds.length })}</span>
                 {tiep && <button type="button" className="btn btn-sm ml-auto max-md:hidden" onClick={() => setChon(tiep.id)}>{t('Em tiếp: {ten} ↓', { ten: tiep.ten })}</button>}
               </div>

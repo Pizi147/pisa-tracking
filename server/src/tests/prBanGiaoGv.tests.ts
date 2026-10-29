@@ -125,6 +125,15 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     const c = cotCua(v[0].id);
     assert(v.length === 1 && c.length === 1 && c[0].nguoi_moi === gF && c[0].trang_thai === 'mo' && v[0].hieu_luc === addDays(T2, 14), JSON.stringify({ v, c }));
   }));
+  check('B1 · PTA 30/10: hiệu lực Từ tuần → hạn = hiệu lực + 4; Đổi mốc → hạn theo mốc mới; Ngay hôm nay → hôm nay + 4', () => thu(() => {
+    const r = luu(X, { listening: gB }, { hieuLuc: { loai: 'tuan', tuanId: T14 } });
+    assert(viecCua(X)[0].han === addDays(T2, 14 + 4), `hạn ${viecCua(X)[0].han}`);
+    pc.doiMocCho(QL, [r.lo], { loai: 'tuan', tuanId: tuan(addDays(T2, 21)) });
+    const v = viecCua(X)[0];
+    assert(v.han === addDays(T2, 21 + 4) && v.hieu_luc === addDays(T2, 21), JSON.stringify(v));
+    pc.doiMocCho(QL, [r.lo], { loai: 'hom-nay' });
+    assert(viecCua(X)[0].han === addDays(TODAY, 4), `hôm nay ${viecCua(X)[0].han}`);
+  }));
   check('B1 · A đã nghỉ (hết vai) → người viết = GVCN lớp; A là GVCN và nghỉ → người viết NULL (QL)', () => thu(() => {
     conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ?`).run(gD);
     xoaNho();

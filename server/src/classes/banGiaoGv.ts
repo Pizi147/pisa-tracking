@@ -23,6 +23,9 @@ const inHang = (n: number) => Array.from({ length: n }, () => '?').join(',');
 
 export type DoiBg = { id: number; khoa: string; nguoiCu: number | null; nguoiMoi: number | null; hieuLuc: string; taoBanGiao: boolean };
 
+/** Hạn việc: 5 ngày tính cả ngày tạo; hiệu lực "Từ tuần" sau → tính từ hiệu lực (PTA 30/10: không quá hạn trước khi đổi người). */
+const hanViec = (hieuLuc: string) => { const h = demoToday(); return hanBanGiaoGv(hieuLuc > h ? hieuLuc : h); };
+
 /** Việc hết cột đang mở → `huy` (góp ý đã viết giữ làm lịch sử). */
 function dongViecHetCot(ids: readonly number[], g: GhiDao) {
   if (!ids.length) return;
@@ -92,7 +95,7 @@ export function dongBoViecBanGiao(p: Principal, o: { classId: number; ct: string
       const viet = nguoiVietBanGiao({ cuNghi: nghi(nguoiCu!), nguoiCu: nguoiCu!, gvcn, gvcnNghi: gvcn !== null && nghi(gvcn) });
       bg = Number(conn.prepare(
         `INSERT INTO ban_giao_gv (class_id, nguoi_cu, nguoi_lam, hieu_luc, han, trang_thai, tao_luc, tao_boi) VALUES (?,?,?,?,?, 'mo', ?, ?)`,
-      ).run(o.classId, nguoiCu, viet.id, hieuLuc, hanBanGiaoGv(homNay), luc, p.userId).lastInsertRowid);
+      ).run(o.classId, nguoiCu, viet.id, hieuLuc, hanViec(hieuLuc), luc, p.userId).lastInsertRowid);
       moi += 1;
     }
     for (const d of ds) {
@@ -114,12 +117,12 @@ export function huyViecTheoDoi(doiIds: readonly number[], g: GhiDao): void {
   dongViecHetCot(bg, g);
 }
 
-/** ĐỔI MỐC lịch chờ → việc trỏ các dòng đó đổi hiệu lực theo (chữ "hiệu lực W? MON" của việc đúng lịch). */
+/** ĐỔI MỐC lịch chờ → việc trỏ các dòng đó đổi hiệu lực + hạn theo mốc mới. */
 export function doiMocViecTheoDoi(doiIds: readonly number[], hieuLuc: string, g: GhiDao): void {
   if (!doiIds.length) return;
   const dk = `trang_thai = 'mo' AND id IN (SELECT ban_giao_id FROM ban_giao_gv_mon WHERE trang_thai = 'mo' AND doi_id IN (${inHang(doiIds.length)}))`;
   g.sua('ban_giao_gv', dk, ...doiIds);
-  db().prepare(`UPDATE ban_giao_gv SET hieu_luc = ? WHERE ${dk}`).run(hieuLuc, ...doiIds);
+  db().prepare(`UPDATE ban_giao_gv SET hieu_luc = ?, han = ? WHERE ${dk}`).run(hieuLuc, hanViec(hieuLuc), ...doiIds);
 }
 
 /** Hoàn tác lần lưu phân công: việc vừa tạo mà GV cũ đã viết góp ý → chặn (không xoá chữ người khác vừa viết). */
