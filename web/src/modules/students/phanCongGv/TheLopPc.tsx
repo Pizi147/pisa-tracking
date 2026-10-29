@@ -1,18 +1,21 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { nhomLopPc, oDongPc, tenMonNgan, type ChonDongPc, type LopPc } from '@shared/domain/index.ts';
+import { nhomLopPc, oDongPc, rutGonThe, tenMonNgan, type ChonDongPc, type LopPc } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
  * THẺ LỚP < 1024 px (mockup v9 khu 1, 3 — 375; 768–1023 dùng cùng thẻ, lưới 2 cột từ 640): đầu thẻ mã lớp (link) + phụ + "Sửa"; người dạy
  * GOM THEO GV ("L · R · GVCN  Ms. Hà Hoàng", Pre FOU "GVCN · dạy luôn", "– Chưa có" vàng). "Sửa" → ô từng môn 44 px (một thẻ sửa một lúc),
- * chân thẻ Huỷ · Lưu chia đôi. CX: không "Sửa".
+ * chân thẻ Huỷ · Lưu chia đôi. CX: không "Sửa". `gon` (375, không tìm / lọc): mỗi nhóm 3 thẻ đầu + thẻ `ghim` (ô thiếu / nháp / chờ đổi /
+ * đang sửa), còn lại gom sau "… n lớp nữa" (mockup v9 khu 1) — bấm mở cả nhóm.
  */
-export function TheLopPc({ lop, tong, chiXem, chon, ten, nghi, to, dangSua, phu, o, cuoi, lopThe, onSua }: {
+export function TheLopPc({ lop, tong, chiXem, chon, ten, nghi, to, dangSua, phu, o, cuoi, lopThe, onSua, gon, ghim }: {
   lop: LopPc[]; tong: LopPc[]; chiXem: boolean; chon: (l: LopPc) => ChonDongPc; ten: (id: number) => string; nghi: (id: number) => boolean;
   to: number | null; dangSua: number | null; phu: (l: LopPc) => ReactNode; o: (l: LopPc, khoa: string) => ReactNode;
   cuoi: (l: LopPc) => ReactNode; lopThe: (l: LopPc) => string; onSua: (l: LopPc) => void;
+  gon: boolean; ghim: (l: LopPc) => boolean;
 }) {
+  const [moNhom, setMoNhom] = useState<Set<string>>(new Set());
   const n = nhomLopPc(lop);
   const nt = nhomLopPc(tong);
   const nhan = (l: LopPc, k: string) => (k === 'gvcn' ? (oDongPc(l).length === 1 ? t('GVCN · dạy luôn') : t('GVCN')) : tenMonNgan(l.ct, k));
@@ -56,12 +59,25 @@ export function TheLopPc({ lop, tong, chiXem, chon, ten, nghi, to, dangSua, phu,
       </article>
     );
   };
+  const nhom = (key: string, ds: LopPc[], ft: boolean) => {
+    const r = gon && !moNhom.has(key) ? rutGonThe(ds, ghim) : { hien: ds, con: 0 };
+    return (
+      <>
+        <div className="pc-ds-lop">{r.hien.map(the)}</div>
+        {r.con > 0 && (
+          <button type="button" className="pc-con-lop" onClick={() => setMoNhom((s) => new Set(s).add(key))}>
+            … {ft ? t('{n} lớp FT nữa', { n: r.con }) : t('{n} lớp nữa', { n: r.con })}
+          </button>
+        )}
+      </>
+    );
+  };
   return (
     <>
       {n.ft.length > 0 && (
         <>
           <div className="pc-nhom-1 gon">Fast Track <span className="pc-dem-n">{t('{n} lớp', { n: nt.ft.length })}</span></div>
-          <div className="pc-ds-lop">{n.ft.map(the)}</div>
+          {nhom('ft', n.ft, true)}
         </>
       )}
       {n.thuong.length > 0 && (
@@ -70,7 +86,7 @@ export function TheLopPc({ lop, tong, chiXem, chon, ten, nghi, to, dangSua, phu,
           {n.thuong.map((g) => (
             <Fragment key={g.ct}>
               <div className="pc-nhom-2 gon">{g.ten} <span className="pc-dem-n">{t('{n} lớp', { n: nt.thuong.find((x) => x.ct === g.ct)?.lop.length ?? g.lop.length })}</span></div>
-              <div className="pc-ds-lop">{g.lop.map(the)}</div>
+              {nhom(g.ct, g.lop, false)}
             </Fragment>
           ))}
         </>

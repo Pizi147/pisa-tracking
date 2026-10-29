@@ -128,4 +128,6 @@ export const EN_PHAN_CONG_GV = {
   "↻ người khác vừa đổi": "↻ someone else just changed this",
   "⚠ ngoài chi nhánh": "⚠ outside the branch",
   "⚠ đã nghỉ": "⚠ left",
+  "{n} lớp FT nữa": "{n} more FT classes",
+  "{n} lớp nữa": "{n} more classes",
 };

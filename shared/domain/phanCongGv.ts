@@ -204,3 +204,9 @@ export function lopSauNhap(lop: readonly LopPc[], nhap: Readonly<Record<number, 
 }
 /** Kết quả `POST /phan-cong/luu` (máy chủ `KetQuaLuu`): `lo` = khoá Hoàn tác; mỗi lớp `cho` = lịch đổi tương lai (chưa áp). */
 export type KetQuaLuuPc = { lo: number | null; lop: { classId: number; cho: boolean; soO: number }[] };
+
+/** 375 (mockup v9 khu 1): mỗi nhóm thẻ hiện `toiDa` thẻ đầu + mọi thẻ ghim (ô thiếu / nháp / chờ đổi / đang sửa); còn lại gom "… n lớp nữa". */
+export function rutGonThe<T>(ds: readonly T[], ghim: (x: T) => boolean, toiDa = 3): { hien: T[]; con: number } {
+  const hien = ds.filter((x, i) => i < toiDa || ghim(x));
+  return { hien, con: ds.length - hien.length };
+}

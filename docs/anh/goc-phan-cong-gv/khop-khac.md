@@ -1,18 +1,18 @@
 # PR-C Góc Phân công GV — khớp / khác mockup v9
 
 Mockup: `thiet-ke/v9/phan-cong-gv.html` (chủ SP duyệt 30/10) · ảnh cặp trong thư mục này: trái mockup, phải web (1440 tối, 375 sáng; dữ liệu seed demo chi nhánh MB, không phải dữ liệu Cẩm Phả của mockup).
-Ảnh chụp bằng Playwright từ máy dev (QL = vai 2, CX = vai 24).
+Ảnh chụp bằng Playwright từ máy dev (QL = vai 2, CX = vai 24). Ảnh 375: web ép giao diện SÁNG (`pisa-giao-dien=light` + `colorScheme: light`, nền web đo được rgb(243, 245, 249)) — chụp lại 31/10 theo PTA rà.
 
 ## Bảng truy vết khung → thành phần → ảnh
 
 | # | Khung | Thành phần | Ảnh | Kết quả |
 |---|---|---|---|---|
 | 1 | k1 · 1440 QL bình thường | `GocPhanCongGv` · `BangLopPc` · `TongHopPc` | cap-k1-1440 | KHỚP (GIỮ nút cũ "Xuất Excel · n HV" thay "Xuất Excel · 16 lớp" — đặc tả 2b) |
-| 2 | k1 · 375 thẻ lớp | `TheLopPc` | cap-k1-375 | KHỚP |
+| 2 | k1 · 375 thẻ lớp | `TheLopPc` (`rutGonThe`) | cap-k1-375 | KHỚP: mỗi nhóm 3 thẻ đầu + thẻ có ô thiếu / nháp / chờ đổi / đang sửa luôn hiện, còn lại "… n lớp FT nữa" (bấm mở cả nhóm); đang tìm / lọc Thiếu GV thì hiện đủ. Tổng hợp 6 / 4 dòng + "Xem đủ n GV" |
 | 3 | k2 · 1440 tô sáng | `TongHopPc` · `DaiToPc` | cap-k2-1440 | KHỚP |
 | 4 | k2 · 375 dải tô dính | `TheLopPc` · `DaiToPc gon` | cap-k2-375 | KHỚP |
 | 5 | k3 · 1440 dòng nháp, lỗi GVCN, ô ▾ mở | `OGv` · `ChonGvPc` · `BangLopPc` | cap-k3-1440 | KHỚP (danh sách chọn = `ChonNguoi` sẵn có: ô gõ + nhóm "Đang dạy lớp này" / "GV khác · CN") |
-| 6 | k3 · 375 Sửa thẻ | `TheLopPc` | cap-k3-375 | KHỚP |
+| 6 | k3 · 375 Sửa thẻ | `TheLopPc` | cap-k3-375 | KHỚP (thẻ FT 101 đổi L; mockup thẻ BE 07 đổi S) |
 | 7 | k4 · 1440 409 | `OGv khac-doi` · dải lỗi dưới hàng | cap-k4-1440 | KHỚP (seed không có GV đã nghỉ → ô "⚠ đã nghỉ" kiểm bằng phép kiểm `C4 · RF1-web`, không có ảnh) |
 | 8 | k5 · 1440 hộp Lưu Từ tuần | `HopLuuPhanCong` | cap-k5a-1440 | KHỚP · BỎ "· n việc" trong dòng Luôn chuyển (tự quyết, PTA duyệt) |
 | 9 | k5 · 375 tấm dưới | `HopLuuPhanCong neo='tam-duoi'` | cap-k5-375 | KHỚP |

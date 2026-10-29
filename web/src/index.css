@@ -632,6 +632,9 @@
   .pc-gv-ds dd.to { font-weight: 700; }
   .pc-gv-ds dd.to::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--hong); margin-right: 6px; vertical-align: middle; }
   .pc-gv-ds dt.to { color: var(--hong-chu); }
+  .pc-con-lop { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; border: 0; border-top: 1px solid var(--line); background: transparent;
+    color: var(--text-faint); font-size: 14px; font-weight: 500; cursor: pointer; }
+  .pc-con-lop:hover { color: var(--accent); }
   .pc-luoi-sua { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
   .pc-luoi-sua > .nhan { font-size: 13px; font-weight: 700; color: var(--text-dim); }
   .pc-luoi-sua .pc-o-gv { min-height: 44px; border-color: var(--o-nhap-vien); background-color: var(--o-nhap-nen); font-size: 15px; }

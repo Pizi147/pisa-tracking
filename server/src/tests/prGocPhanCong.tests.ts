@@ -129,4 +129,9 @@ export async function runPrGocPhanCongTests(t: YThucTestKit) {
       assert(doi.length === 0, `${l.code}: ${JSON.stringify(doi)}`);
     }
   });
+  check('C6 · rutGonThe: 3 thẻ đầu + thẻ ghim (giữ thứ tự), con = phần gom; nhóm ≤ 3 thẻ không gom', () => {
+    const r = d.rutGonThe([1, 2, 3, 4, 5, 6, 7], (x: number) => x === 6);
+    assert(r.hien.join() === '1,2,3,6' && r.con === 3, JSON.stringify(r));
+    assert(d.rutGonThe([1, 2], () => false).con === 0, 'nhóm nhỏ');
+  });
 }

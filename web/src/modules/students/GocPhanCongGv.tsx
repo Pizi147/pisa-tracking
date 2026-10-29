@@ -16,7 +16,7 @@ import { TheLopPc } from './phanCongGv/TheLopPc.tsx';
 import { ThanhLuuPc } from './phanCongGv/ThanhLuuPc.tsx';
 import {
   chonCuaLop, demPhanCong, doiTheoO, duongHoSoGiaoVien, gopChonSau409, kiemDongPc, laCapBanGiao, laVaiQuanLy, locLopPc, lopSauNhap, moRongPhanCong,
-  nhanDayDuoc, oDongPc, oPhanCong, oThieuPc, slotsDongPc, tenMonNgan, tuanLich,
+  nhanDayDuoc, oDongPc, oPhanCong, oThieuLop, oThieuPc, slotsDongPc, tenMonNgan, tuanLich,
   type ChonDongPc, type DemGv, type GvPc, type KetQuaLuuPc, type LopPc, type SlotPhanCong, type TrangPhanCongGv,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -350,6 +350,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
         )}
         {rong ?? (hep
           ? <TheLopPc lop={hien} tong={lop} chiXem={chiXem} chon={chonDong} ten={(id) => ten(id)} nghi={(id) => !!gvMap.get(id)?.nghi} to={to}
+              gon={dt && !q.trim() && !thieu} ghim={(l) => !!nhap[l.id] || l.cho.length > 0 || dangSuaThe === l.id || oThieuLop(l, gv) > 0}
               dangSua={dangSuaThe} phu={phuDong} o={(l, k) => oCua(l, k)} cuoi={(l) => nutCuoi(l, true)}
               lopThe={(l) => (nhap[l.id] || dangSuaThe === l.id ? 'nhap' : daLuu.has(l.id) ? 'da-luu' : '')}
               onSua={(l) => { if (dangSuaThe !== null && dangSuaThe !== l.id && nhap[dangSuaThe]) { oRef.current.get(`${dangSuaThe}|gvcn`)?.scrollIntoView({ block: 'center' }); return; } setDangSuaThe(l.id); }} />
