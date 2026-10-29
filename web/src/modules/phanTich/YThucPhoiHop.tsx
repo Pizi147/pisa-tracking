@@ -5,9 +5,9 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
-import { NutLuat } from '../../ui/NutLuat.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DINH_TRAI, MAU_SO_VOI_TRUOC, SoO as OSo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DaiChiSo, DauThe, MAU_SO_VOI_TRUOC, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { t } from '@shared/i18n/index.ts';
 import {
   COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, NHOM_EM_LABEL, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
@@ -16,7 +16,8 @@ import {
 /**
  * Ý THỨC (PR-UX4, mockup 16 §5; PR-YT4 K1-25) — HAI danh sách: "Học viên cần chú ý" (em Quá hạn · Bắt buộc xử lý · Chờ QL duyệt, kèm bậc
  * hiện tại và bậc kế trên thang) và "Lớp nhiều vi phạm" (nói chuyện với GVCN). Phối hợp SOS ở Việc cần làm của GVCN nên không lặp ở đây.
- * Mọi số mở đúng danh sách bằng `/phan-tich/y-thuc/o` (G-10). Bảng "Xử lý theo loại" chỉ có trong ⤓ Xuất Excel.
+ * Mọi số mở đúng danh sách bằng `/phan-tich/y-thuc/o` (G-10). Bảng "Xử lý theo loại" chỉ có trong ⤓ Xuất Excel (cuối hàng lọc).
+ * V8-PT (khung B3): thẻ chỉ số đầu tab — HV cần chú ý đếm từ danh sách HV; Vi phạm · Chưa xử lý · Lớp có vi phạm CỘNG từ bảng Lớp (cùng số).
  */
 const nhanNhom = (x: DongHvCanChuY) => (x.nhom === 'qua_han'
   ? <NhanTrangThai t="qua-han" />
@@ -129,33 +130,60 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     </div>
   );
 
-  const khungLuat = (
-    <NutLuat label="Cách chọn học viên">
+  const cachChon = (
+    <>
       <p className="m-0">Học viên đang học đang Quá hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ QL duyệt.</p>
       <p className="m-0">Bậc kế theo thang Report 1 › Report 2 › WL 1 › Report 4 + Meeting CX/GĐCN › WL 2 › WL 3 (cần QL). Đề xuất ngoài thang không đổi bậc.</p>
-    </NutLuat>
+    </>
   );
 
+  /** Thẻ chỉ số: lớp = mọi dòng lớp của bảng (cả nhóm "lớp khác") — tổng cột = số trên thẻ. */
+  const chiSo = (d: YThucPhanTichKetQua) => {
+    const lop = [...d.lop, ...(d.gom?.hang ?? [])];
+    const cong = (k: 'viPham' | 'chuaXuLy' | 'hvCoViPham') => lop.reduce((s, x) => s + x[k], 0);
+    const viPham = cong('viPham');
+    const hv = cong('hvCoViPham');
+    const siSo = lop.length && lop.every((x) => x.siSo !== null) ? lop.reduce((s, x) => s + (x.siSo ?? 0), 0) : null;
+    const dem = (n: DongHvCanChuY['nhom']) => d.hvCanChuY.filter((x) => x.nhom === n).length;
+    const nhom = [
+      dem('qua_han') && t('{n} quá hạn', { n: dem('qua_han') }),
+      dem('bat_buoc') && t('{n} bắt buộc xử lý', { n: dem('bat_buoc') }),
+      dem('cho_duyet') && t('{n} chờ QL duyệt', { n: dem('cho_duyet') }),
+    ].filter(Boolean).join(' · ');
+    return (
+      <DaiChiSo ds={[
+        { ten: t('HV cần chú ý'), ky: t('hôm nay'), gt: d.hvCanChuY.length, mau: nhom || undefined },
+        { ten: t('Vi phạm'), ky: t('trong kỳ'), gt: viPham },
+        { ten: t('Chưa xử lý'), gt: cong('chuaXuLy'), mau: viPham ? t('trên {n} vi phạm', { n: viPham }) : undefined },
+        { ten: t('Lớp có vi phạm'), gt: lop.length, mau: siSo ? `${hv}/${siSo} HV` : hv ? t('{n} HV', { n: hv }) : undefined },
+      ]} />
+    );
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      <VaoHangLoc o="phai">
+        <button type="button" className="btn h-9" disabled={!demoDate || !data} onClick={xuatExcel}>⤓ {t('Xuất Excel')}</button>
+      </VaoHangLoc>
       {error ? <Card><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>
         : loading || !data ? <Card><Skeleton rows={6} /></Card>
         : data.scopeEmpty ? <Card><Empty title="Bạn chưa được cấp phạm vi nào" /></Card>
         : (
           <>
-            <Card bodyClass="p-0"
-              title={<span className="inline-flex flex-wrap items-baseline gap-x-2">Học viên cần chú ý <span className="text-xs font-normal text-slate-500">· quá hạn, bắt buộc xử lý hoặc chờ QL duyệt</span> {khungLuat}</span>}
-              action={<button type="button" className="btn btn-sm" disabled={!demoDate} onClick={xuatExcel}>⤓ Xuất Excel</button>}>
+            {chiSo(data)}
+            <Card bodyClass="p-0">
+              <DauThe ten={t('Học viên cần chú ý')} dem={t('{n} HV', { n: data.hvCanChuY.length })} cachTinh={cachChon} />
               {data.hvCanChuY.length === 0
                 ? <div className="p-4"><Empty title={`Không có học viên nào cần chú ý trong ${nhanKy}`} hint="Thử khoảng thời gian dài hơn." /></div>
-                : <><div className="px-3"><PhanTrang {...ptHv.thanh} /></div>{bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
+                : <><div ref={ptHv.thanh.dauBang} />{bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
             </Card>
-            <Card bodyClass="p-0" title={<span>Lớp nhiều vi phạm <span className="text-xs font-normal text-slate-500">· xếp theo vi phạm chưa xử lý</span></span>}>
+            <Card bodyClass="p-0">
+              <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: data.lop.length + (data.gom?.soLop ?? 0) })} phu={t('xếp theo vi phạm chưa xử lý')} />
               {data.lop.length === 0 && !data.gom
                 ? <div className="p-4"><Empty title={`Chưa có vi phạm nào trong ${nhanKy}`} hint="Số có khi đã ghi vi phạm — thử khoảng thời gian dài hơn." /></div>
                 : (
                   <>
-                  <div className="px-3"><PhanTrang {...ptLop.thanh} /></div>
+                  <div ref={ptLop.thanh.dauBang} />
                   <div className="table-scroll">
                     <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 640 }}>
                       <colgroup><col style={{ width: '27%' }} /><col style={{ width: 80 }} /><col style={{ width: 90 }} /><col style={{ width: 100 }} /><col style={{ width: 100 }} /><col style={{ width: '23%' }} /></colgroup>

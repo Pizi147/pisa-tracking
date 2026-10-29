@@ -122,7 +122,7 @@ export function PhanTich() {
           </OChon>
         )}
         <span ref={setGiua} className="contents" />
-        <span ref={setPhai} className="flex items-center gap-2 empty:hidden sm:ml-auto max-sm:w-full max-sm:[&>*]:flex-1">
+        <span ref={setPhai} className="ml-auto flex items-center gap-2 empty:hidden">
           {/* "In" (V4, Báo cáo HV): giấy sáng A4 ngang — cuối hàng lọc như mockup. */}
           {goc === 'bao-cao' && <button type="button" className="btn h-9 max-sm:hidden" onClick={() => window.print()}>{t('In')}</button>}
         </span>
