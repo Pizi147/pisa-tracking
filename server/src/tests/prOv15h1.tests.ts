@@ -117,7 +117,7 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
       td.dongBoKhiMoChuong(p, TODAY);
       const con = () => !!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = 'tudong:cham:0:0:0'`).get(p.userId);
       assert(con(), 'trong chu kỳ 5 phút, không ghi gì: chưa đồng bộ lại');
-      td.daGhi(p.userId);
+      td.daGhi(p);
       td.dongBoKhiMoChuong(p, TODAY);
       assert(!con(), 'vừa ghi xong: lần mở chuông kế đồng bộ ngay, thông báo của việc đã xong hết');
     } finally { conn.prepare = goc; conn.exec('ROLLBACK'); xoaNho(); }

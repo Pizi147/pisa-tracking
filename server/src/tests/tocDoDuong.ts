@@ -745,8 +745,7 @@ export const TRAN: Record<string, number> = {
   'GVCN /notifications': 13,
   'GVBM /notifications': 13,
   'GVCN_THUONG /notifications': 13,
-  'QT /notifications': 40,   // OV-15h1: QT vừa ghi (POST) ở phép kiểm trước → lần mở chuông này đồng bộ thông báo tự động ngay (`daGhi`), đo 33; không ghi thì vẫn ~13
-  /* OV-15i1 (ý 12): đo lại 20/10 vẫn 33 (đồng bộ vì vừa ghi; sau nhân ×3: 4) — đo + 30 % = 43 > 40, nên giữ 40 (= đo + 21 %); không hạ thêm được khi chưa làm nhẹ lần đồng bộ (`myWork`). */
+  'QT /notifications': 37,   // OV-15h1: QT vừa ghi (POST) ở phép kiểm trước → lần mở chuông này đồng bộ ngay (`daGhi`). PR CHUONG-NHE: đo 27 (trước 35) — đồng bộ chỉ đọc lượt lớp đang dạy; trong mốc 4
   'QL /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
   'GVCN /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: GV nay thấy lớp mình dạy (chỉ xem) → chạy các câu đếm theo lớp (HV, lượt, cần xếp lại, tiến độ) như QL; đo 15 / 14
   'GVBM /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: GV nay thấy lớp mình dạy (chỉ xem) → chạy các câu đếm theo lớp (HV, lượt, cần xếp lại, tiến độ) như QL; đo 15 / 14
@@ -894,6 +893,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* PR CHUONG-NHE: chuông — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trong mốc QL 34 · GVCN 47 · GVBM 16 · GVCN_THUONG 47; QT đồng bộ vì vừa ghi 345, trước 853). */
+  'QL /notifications': 84, 'GVCN /notifications': 97, 'GVBM /notifications': 66, 'GVCN_THUONG /notifications': 97, 'QT /notifications': 449,
   /* QUET-THEO-KY Q3: Báo cáo HV một GET — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trước hai GET: QL ft 2 629 + 2 443, QT 3 419 + 3 310 dòng). */
   'QL /tong-quan/v5?ct=ft&kemBaoCao=1': 4280, 'QT /tong-quan/v5?ct=ft&kemBaoCao=1': 5207,   // đo 3 292 · 4 005
   'QL /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 3475, 'QT /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 4094,   // đo 2 673 · 3 149
@@ -1001,8 +1002,9 @@ export const TRAN_GHI_LO = {
   hoanTacXacNhanCase: 114,   // đo 87 câu (~40 là `caseDetail` trả về) → max(87 + 10, ⌈87 × 1,3⌉)
   hoanTacXacNhanCaseS: 103,   // đo 79 câu (~40 là `caseDetail` trả về) → max(79 + 10, ⌈79 × 1,3⌉)
   /** OV-15d: đồng bộ thông báo tự động của MỘT người (`dongBoThongBaoTuDong`, khi mở chuông ≤ 1 lần / 5 phút) — QL / GVCN, trong giao dịch rồi cuộn lại. */
-  dongBoThongBaoQL: 41,   // đo 31 câu (×3) → max(31 + 10, ⌈31 × 1,3⌉)
-  dongBoThongBaoGVCN: 50,   // đo 38 câu (×3, 1 081 dòng) → max(38 + 10, ⌈38 × 1,3⌉)
+  dongBoThongBaoQL: 33,   // PR CHUONG-NHE: đo 23 câu, 308 dòng (×3; trước 33 câu, 1 189 dòng — QL không dạy lớp nên không đọc lượt) → max(23 + 10, ⌈23 × 1,3⌉)
+  dongBoThongBaoGVCN: 43,   // PR CHUONG-NHE: đo 33 câu (×3, 1 101 dòng; trước cũng 33 — GVCN đọc lượt lớp mình dạy như cũ) → max(33 + 10, ⌈33 × 1,3⌉)
+  dongBoThongBaoQT: 33,   // PR CHUONG-NHE: đo 23 câu, 312 dòng (×3; trước 33 câu, 1 703 dòng) → max(23 + 10, ⌈23 × 1,3⌉)
   /** POST /notifications/doc-het — một câu UPDATE (S6F-a 10e) + phiên/quyền. PR-Dọn (9d): trần đặt sau khi đo. */
   docHet: 19,   // đo 9 câu → max(9 + 10, ⌈9 × 1,3⌉)
   /** POST /intake/commit — 35 em lớp FT (lịch MT mặc định, có em "Đã thi tới MT", ngày thi, tuần riêng). Trước PR-TOC 1949, sau 44 (49 sau gộp PR-MON + rà #121: đọc chương trình lớp, đọc lại khoá trong giao dịch). */
