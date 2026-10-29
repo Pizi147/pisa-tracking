@@ -61,6 +61,8 @@ export function ganChuCaseThieu(o: {
   nguon?: string;
 }): number {
   const conn = db();
+  /* DON-LUONG K8: em vừa xếp / chuyển lớp → Case có chủ mà chủ không dạy kỹ năng đó ở lớp mới thì theo lớp mới trước (cùng giao dịch). */
+  if (o.studentIds?.length) doiChuCaseTheoLopMoi({ studentIds: o.studentIds, actorId: o.actorId, luc: o.luc });
   /* Em đang học (không Tạm dừng / Lưu trữ), Case không tạm (Case tạm chưa là việc — OV-13a). `studentIds`: chỉ các em vừa xếp / chuyển lớp. */
   const theoEm = o.studentIds?.length ? `AND s.id IN (${o.studentIds.map(() => '?').join(',')})` : '';
   const rows = conn.prepare(
@@ -80,6 +82,43 @@ export function ganChuCaseThieu(o: {
     conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', NULL, ?, ?, ?)`)
       .run(r.id, String(chu), o.actorId, o.luc);
     if (o.nguon) writeAudit({ actorUserId: o.actorId, action: 'case.owner_assign', entityType: 'case', entityId: r.id, after: { ownerUserId: chu, _nguon: o.nguon } });
+    n += 1;
+  }
+  return n;
+}
+
+/**
+ * DON-LUONG K8 (ra-luong L50, Rulebook P03): em chuyển / xếp lớp → Case đang mở (không tạm) có chủ mà chủ KHÔNG dạy kỹ năng của Case ở lớp
+ * đang học (Case không kỹ năng: không là GVCN lớp đó) → chủ mới theo luật tạo Case (`chonChuCase`: GV môn → GVCN lớp mới); lớp mới không ai →
+ * giữ chủ cũ. Lịch sử + báo người nhận như "Đổi người…". PA Bổ trợ Giữa khoá không tự khép (giữ). Một câu đọc Case cả lô + một câu phân công
+ * mỗi lớp đích (thường một). Trả số Case đổi chủ.
+ */
+export function doiChuCaseTheoLopMoi(o: { studentIds: readonly number[]; actorId: number | null; luc: string }): number {
+  const conn = db();
+  const rows = conn.prepare(
+    `SELECT sc.id, sc.category, sc.topic, sc.goc_programme_code, sc.owner_user_id, cur.class_id, s.full_name
+       FROM sos_cases sc
+       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+       JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id) AND ${HV_DANG_HOC_SQL('s')}
+       JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+      WHERE sc.status != 'done' AND sc.tam = 0 AND sc.owner_user_id IS NOT NULL AND s.id IN (${o.studentIds.map(() => '?').join(',')})`,
+  ).all(...o.studentIds) as any[];
+  const pc = new Map<number, PhanCong[]>();
+  let n = 0;
+  for (const r of rows) {
+    if (!pc.has(r.class_id)) pc.set(r.class_id, phanCongLop(r.class_id));
+    const ds = pc.get(r.class_id)!;
+    const skill = CASE_CATEGORY_SKILL[r.category as keyof typeof CASE_CATEGORY_SKILL] ?? null;
+    const conDay = ds.some((x) => x.user_id === r.owner_user_id && (skill ? x.skill === skill : x.is_core === 1));
+    const moi = conDay ? null : chonChuCase(ds, r.category)?.user_id ?? null;
+    if (moi === null || moi === r.owner_user_id) continue;
+    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ?').run(moi, o.luc, r.id, r.owner_user_id).changes !== 1) continue;
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', ?, ?, ?, ?)`)
+      .run(r.id, String(r.owner_user_id), String(moi), o.actorId, o.luc);
+    if (moi !== o.actorId) {
+      notify({ userId: moi, kind: 'case_giao', title: `Phụ trách Case ${r.topic ? caseTopicLabel(r.topic, r.goc_programme_code) : ''} · ${r.full_name ?? ''}`,
+        entityType: 'sos_case', entityId: r.id, dedupKey: `case_giao:${r.id}` });
+    }
     n += 1;
   }
   return n;

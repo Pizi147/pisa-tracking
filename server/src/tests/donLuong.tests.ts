@@ -56,6 +56,55 @@ export async function runDonLuongTests(t: YThucTestKit) {
     doiVang(a, ['writing']);
     assert(hang(a, a.w).length === 1, `${hang(a, a.w).length} hàng`);
   }));
+  /* ---------------------------------------------------------------- K8 */
+  const owner: any = await import('../cases/owner.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const accounts: any = await import('../platform/accounts.ts');
+  let seq = 0;
+  const gv = () => accounts.createAccount(P.admin, {
+    email: `donluong.${++seq}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-donluong', fullName: `Thử DL ${seq}`, roles: [{ role: 'teacher', branches: ['MB'] }],
+  }).userId as number;
+  const MB = one(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
+  const lopMoi = (code: string, ds: [number, string | null][]) => {
+    const start = week.mondayOf(t.TODAY);
+    const id = intake.createClass(P.admin, { code, branchId: MB, kind: 'FT', isFastTrack: true, route: 'LT1', startDate: start, startPeriodId: week.ensurePeriod(start).id }).id as number;
+    for (const [u, k] of ds) conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?,'2026-01-01','active',?)`).run(u, id, k, k === null ? 1 : 0, NOW);
+    return id;
+  };
+  /** Case Listening đang mở có chủ của một em đang học (seed). */
+  const caseL = () => one(
+    `SELECT sc.id, sc.owner_user_id, e.student_id, e.class_id FROM sos_cases sc JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+      JOIN students s ON s.id = sc.student_id AND s.status = 'active' AND s.archived_at IS NULL
+      WHERE sc.status != 'done' AND sc.tam = 0 AND sc.category = 'listening' AND sc.owner_user_id IS NOT NULL ORDER BY sc.id LIMIT 1`);
+  const chuyen = (sid: number, lop: number) => {
+    conn.prepare(`UPDATE enrollments SET class_id = ? WHERE student_id = ? AND status = 'active'`).run(lop, sid);
+    owner.ganChuCaseThieu({ studentIds: [sid], actorId: P.mbManager.userId, luc: NOW });
+  };
+  check('K8 · chuyển em sang lớp không có GV L: Case L của GV cũ → GVCN lớp mới (lịch sử + báo); lớp mới có GV L → về GV đó; chuyển lại lớp cũ → chủ cũ', () => thu(() => {
+    const c = caseL();
+    assert(c, 'seed cần Case Listening mở có chủ');
+    const [gCn, gL] = [gv(), gv()];
+    const khongL = lopMoi('MB DL-K8-A', [[gCn, null], [gCn, 'reading']]);
+    chuyen(c.student_id, khongL);
+    assert(one('SELECT owner_user_id FROM sos_cases WHERE id = ?', c.id).owner_user_id === gCn, 'GVCN lớp mới');
+    assert(one(`SELECT COUNT(*) n FROM sos_case_history WHERE case_id = ? AND field = 'owner_user_id' AND new_value = ?`, c.id, String(gCn)).n === 1, 'lịch sử');
+    assert(one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key = ?`, gCn, `case_giao:${c.id}`).n === 1, 'báo người nhận');
+    const coL = lopMoi('MB DL-K8-B', [[gCn, null], [gL, 'listening']]);
+    chuyen(c.student_id, coL);
+    assert(one('SELECT owner_user_id FROM sos_cases WHERE id = ?', c.id).owner_user_id === gL, 'GV L lớp mới');
+    chuyen(c.student_id, c.class_id);
+    const ve = one('SELECT owner_user_id FROM sos_cases WHERE id = ?', c.id).owner_user_id;
+    assert(ve === c.owner_user_id || one(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' AND status = 'active'`, c.class_id, ve), `về lớp cũ: ${ve}`);
+  }));
+  check('K8 · chủ Case vẫn dạy kỹ năng đó ở lớp mới → giữ nguyên (không lịch sử)', () => thu(() => {
+    const c = caseL();
+    const lop = lopMoi('MB DL-K8-C', [[gv(), null], [c.owner_user_id, 'listening']]);
+    const truoc = one(`SELECT COUNT(*) n FROM sos_case_history WHERE case_id = ?`, c.id).n;
+    chuyen(c.student_id, lop);
+    assert(one('SELECT owner_user_id FROM sos_cases WHERE id = ?', c.id).owner_user_id === c.owner_user_id, 'giữ chủ');
+    assert(one(`SELECT COUNT(*) n FROM sos_case_history WHERE case_id = ?`, c.id).n === truoc, 'không lịch sử');
+  }));
+
   check('K6 · câu tìm dấu "-" theo tuần đi chỉ mục idx_scores_no_show', () => {
     const plan = all(`EXPLAIN QUERY PLAN SELECT sc.attempt_id FROM assessment_scores sc WHERE sc.no_show_period_id = ?`, 1).map((r) => r.detail).join(' | ');
     assert(/idx_scores_no_show/.test(plan), plan);
