@@ -23,7 +23,7 @@ import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platf
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
-  setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, monLuotSql,
+  setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, MON_MOT_LUOT_SQL,
   type SkillRow, type SkillScheduleView,
   chanCuoiTuan, tuanCacKyNang,
 } from './skillSchedule.ts';
@@ -125,7 +125,7 @@ export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
  */
 export function skipsOf(attemptId: number): AssessedSkill[] {
   return nho(`bo-mon:${attemptId}`, () => {
-    const rows = db().prepare(`SELECT skill, required, bo_task, scope_reason, ${monLuotSql('attempt_skills')} AS mon_luot FROM attempt_skills WHERE attempt_id = ?`).all(attemptId) as any[];
+    const rows = db().prepare(`SELECT skill, required, bo_task, scope_reason, ${MON_MOT_LUOT_SQL} AS mon_luot FROM attempt_skills WHERE attempt_id = ?`).all(attemptId, attemptId) as any[];
     if (rows.length) return [...rows.filter((r) => !r.required).map((r) => r.skill), ...boTaskCuaDong(rows)] as AssessedSkill[];   // P8: + task Writing bỏ
     return (db().prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(attemptId) as any[])
       .map((r) => r.skill as AssessedSkill)
