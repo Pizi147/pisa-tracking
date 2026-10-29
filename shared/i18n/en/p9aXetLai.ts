@@ -7,7 +7,7 @@ export const EN_P9A_XET_LAI = {
   "(chưa có Final)": "(before Final)",
   "Bổ trợ Final": "Final support",
   "Chuyển {tu} → {den} ngay hôm nay — không hoàn tác": "Move {tu} → {den} today — cannot be undone",
-  "Chưa có lớp {ct} đang học ở chi nhánh này": "No running {ct} class in this branch",
+  "Chưa có lớp {ct} đang học": "No running {ct} class",
   "Chưa quyết {n}": "Undecided {n}",
   "Chọn lớp học lại": "Choose a class to repeat",
   "Chọn tuần bắt đầu.": "Choose a start week.",

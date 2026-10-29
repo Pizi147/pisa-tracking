@@ -1,7 +1,7 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_KHAC, coMt0, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
+  PERMISSIONS, ROUTE_KHAC, coMt0, mocLoTrinh, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -9,7 +9,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
-import { chuyenCaseSangLoTrinh, closeCasesBySystem, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
+import { chuyenCaseSangLoTrinh, closeCasesBySystem, closeCasesOnProgrammeSwitch, dongPhoiHopLoTrinh, programmeOfCase } from '../cases/systemClose.ts';
 import { banGiaoPaQuyChe, datLaiHanCase } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
@@ -61,9 +61,24 @@ export function lopDichHopLe(toClassId: number, lopNguonId: number): any | null 
 
 type EnrNguon = { class_id: number; is_fast_track: any; programme_code: string | null };
 
-/** Lớp thường đã tới Cuối khoá (từ tuần Final) — cùng mốc `tuCuoiKhoa` của `raLenh` / Chuyển tiếp lớp. Lớp FT: không bao giờ. */
-export function tuCuoiKhoaCua(enr: EnrNguon, homNay = demoToday()): boolean {
-  return !enr.is_fast_track && mocKetKhoa(classProgressMany([enr.class_id]).get(enr.class_id), homNay).tuCuoiKhoa;
+/**
+ * Chuyển lớp MỘT em — bối cảnh Cuối khoá hay giữa khoá. Lớp FT: không bao giờ. Q4 (chủ SP 29/10): từ thứ Hai tuần TRƯỚC Final (lúc mở việc Chốt lộ
+ * trình, `mocLoTrinh.nhacTu`) tới hết tuần Final, Quản lý CHỌN "theo luồng chuyển tiếp lộ trình" (Test đi kèm: Lên FT có MT0 tuần Final, Xét lại, hạn bàn
+ * giao Cuối khoá) hay chuyển giữa khoá — mặc định có (`theo` bỏ trống). Đã hết khoá: luôn Cuối khoá; trước cửa sổ: luôn giữa khoá (như cũ).
+ */
+export function boiCanhMotEm(enr: EnrNguon, homNay = demoToday(), theo?: boolean | null): { tuCuoiKhoa: boolean; coTheChon: boolean } {
+  if (enr.is_fast_track) return { tuCuoiKhoa: false, coTheChon: false };
+  const pr = classProgressMany([enr.class_id]).get(enr.class_id);
+  const moc = mocKetKhoa(pr, homNay);
+  const thu2 = mondayOf(homNay);
+  /* Tuần Final thường là tuần cuối khoá (đã "hết khoá") — vẫn cho chọn tới hết tuần Final (chủ SP: "tuần 9 + 10"); sau đó ép Cuối khoá như cũ. */
+  if (!pr?.finalWeekStart || pr.phase === 'finished' || thu2 > mondayOf(pr.finalWeekStart)) return { tuCuoiKhoa: moc.tuCuoiKhoa, coTheChon: false };
+  if (thu2 < mocLoTrinh(pr.finalWeekStart).nhacTu) return { tuCuoiKhoa: moc.tuCuoiKhoa, coTheChon: false };
+  return { tuCuoiKhoa: theo ?? true, coTheChon: true };
+}
+/** Lớp thường đã tới Cuối khoá — cùng mốc `tuCuoiKhoa` của `raLenh` / Chuyển tiếp lớp; Chuyển lớp một em theo `boiCanhMotEm` (Q4). */
+export function tuCuoiKhoaCua(enr: EnrNguon, homNay = demoToday(), theo?: boolean | null): boolean {
+  return boiCanhMotEm(enr, homNay, theo).tuCuoiKhoa;
 }
 
 /**
@@ -86,18 +101,18 @@ export function huongChuyenMotEm(
  * chương trình kế tiếp (vị từ `kiemDongChuyenTiep` của `raLenh`); giữa khoá / nguồn FT: mọi lớp đang hoạt động. Sĩ số chỉ cho người ra quyết định
  * (`class.edit` ở lớp em đang học) — GVCN đề xuất không thấy số học viên lớp khác.
  */
-export function lopDichChoChuyen(p: Principal, sid: number) {
+export function lopDichChoChuyen(p: Principal, sid: number, theo?: boolean | null) {
   const enr = lopHienTaiCua(sid);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
   /* PR-CT: danh sách lớp là dữ liệu chỉ đọc, không lộ học viên — GVCN cần nó để chọn "Lớp chuyển đến" khi Đề xuất chuyển lớp. Ra lệnh vẫn chỉ Quản lý (`raLenh`). */
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền xem lớp chuyển đến của học viên này.');
   const ds = danhSachLopDich(enr.class_id, can(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }));
-  const tuCuoiKhoa = tuCuoiKhoaCua(enr);
+  const { tuCuoiKhoa, coTheChon } = boiCanhMotEm(enr, demoToday(), theo);
   const maTu = (enr.programme_code ?? null) as ProgrammeCode | null;
   const lop = !tuCuoiKhoa ? ds.lop : ds.lop.filter((c) => !kiemDongChuyenTiep({
     huong: huongMotEm({ ft: false, ma: maTu }, c, true) as 'len_lop' | 'hoc_lai' | 'fast_track', toClassId: c.id, toClass: { ma: c.ma, ft: c.ft }, mucTieu: 5,
   }, { maTu }));
-  return { ...ds, lop, nguon: { ft: !!enr.is_fast_track, tuCuoiKhoa } };
+  return { ...ds, lop, nguon: { ft: !!enr.is_fast_track, tuCuoiKhoa, coTheChon } };
 }
 
 /** Lớp ĐANG hoạt động để chọn làm lớp chuyển đến (trừ lớp `boQuaLopId`) + chi nhánh — dùng chung Chuyển lớp và Học lại sang lớp mới (PR-LUI-b). */
@@ -455,7 +470,10 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   if (luat.dongCase) closeCasesOnProgrammeSwitch(p.userId, d.sid, luat.dongCase, d.ngay);
   /* OV-13m (rà #422): lộ trình đã xong sang lớp khác = như "Lớp này" / Thôi học — Case còn mở của lộ trình cũ hệ thống đóng ("kết thúc khoá"), không bàn giao cho GV lớp mới. */
   /* P7 (N12, Q2): lý do riêng "Kết thúc lộ trình" (PA đang chạy "Dừng — kết thúc lộ trình", không vào Hiệu quả PA) — chỉ đường Lộ trình mới. */
-  if (sauThi && cuoiCycle) closeCasesBySystem({ actorUserId: p.userId, studentId: d.sid, reason: 'ket_thuc_lo_trinh', on: d.ngay, cycleIds: [cuoiCycle.id] });
+  if (sauThi && cuoiCycle) {
+    closeCasesBySystem({ actorUserId: p.userId, studentId: d.sid, reason: 'ket_thuc_lo_trinh', on: d.ngay, cycleIds: [cuoiCycle.id] });
+    dongPhoiHopLoTrinh([cuoiCycle.id], d.ngay);   // Q-RL3
+  }
   /* PR-LT2b: lên / học lại / sang FT từ lớp thường — Case đi theo + Cuối khoá (bổ trợ miễn phí, Báo PH, Tutor FT). Sau `closeCasesOnProgrammeSwitch`. */
   if (luat.khoa === 'dong-mo' && (luat.endKind === 'len_lop' || luat.endKind === 'hoc_lai' || luat.endKind === 'sang_ft') && !tuLop.ft) {
     sauChuyenCuoiKhoa(p, [{
@@ -512,7 +530,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
  * `huongChuyenMotEm` (luật đúng như lúc ra lệnh), Target đã có khi Lên FT, MT0, việc FT → thường (`keHoachVeThuong` — cùng kế hoạch lúc thi hành)
  * và khối "Khi chuyển, web sẽ" (`dongKhiChuyen`) — web chỉ vẽ.
  */
-export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | null) {
+export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | null, theo?: boolean | null) {
   const enr = lopHienTaiCua(sid);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');   // PR-CT (Q30-1)
@@ -530,7 +548,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
   const cyc = conn.prepare(`SELECT cy.*, sp.week_start FROM learning_cycles cy LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
                              WHERE cy.student_id = ? AND cy.status = 'active'`).get(sid) as any;
   const pr = ft ? undefined : classProgressMany([enr.class_id]).get(enr.class_id);
-  const tuCuoiKhoa = !ft && mocKetKhoa(pr, homNay).tuCuoiKhoa;
+  const tuCuoiKhoa = boiCanhMotEm(enr, homNay, theo).tuCuoiKhoa;   // Q4
 
   let luat: LuatDoiLop | null = null;
   let goiY = new Map<number, { id: number; ten: string } | null>();
