@@ -13,4 +13,7 @@ export const EN_DON_LUONG = {
   'Danh sách thông báo không hợp lệ (tối đa {n} dòng).': 'Invalid notification list (at most {n} rows).',
   /* A8 */
   'Lớp thường chỉ có đợt Progress Test, Checkpoint và Final Test.': 'Regular classes only have Progress Test, Checkpoint and Final Test rounds.',
+  /* Chủ SP 30/10 câu 1 — hồ sơ lượt */
+  'đã vắng {tuan} · khôi phục {ngay}': 'absent {tuan} · restored {ngay}',
+  'khôi phục {ngay}': 'restored {ngay}',
 } satisfies Record<string, Dich>;

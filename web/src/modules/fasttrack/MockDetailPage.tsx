@@ -760,6 +760,17 @@ function lichGocKn(d: Detail, k: string, homNay: string): { goc: string; phu: st
 }
 
 /**
+ * DON-LUONG (chủ SP 30/10 câu 1): kỹ năng đã huỷ vì vắng rồi QL Khôi phục — dữ liệu giữ như nay (Khôi phục xoá "-"), hồ sơ lượt ghi một dòng
+ * "đã vắng {tuần} · khôi phục {dd/mm}" từ nhật ký lịch đã nạp (`history`, +0 câu). Lần khôi phục MỚI NHẤT của kỹ năng.
+ */
+export function dongKhoiPhucVang(history: Detail['history'], k: string, homNay: string): string | null {
+  const h = history.find((x) => x.action === 'skill_part_restored' && x.field === k);   // `history` mới trước
+  if (!h) return null;
+  const tuan = h.oldValue ? (() => { const x = docTuanLich(h.oldValue, homNay); return x ? tuanLich(x, homNay) : h.oldValue; })() : null;
+  return tuan ? t('đã vắng {tuan} · khôi phục {ngay}', { tuan, ngay: fmtDate(h.createdAt).slice(0, 5) }) : t('khôi phục {ngay}', { ngay: fmtDate(h.createdAt).slice(0, 5) });
+}
+
+/**
  * BẢNG KẾT QUẢ CỦA LƯỢT (khung M4-A ④–⑥, HSL-FT): một dòng mỗi kỹ năng L · R · W · S — lịch (gốc gạch → thực tế), ô điểm (bấm = hộp nhập điểm
  * neo ô, như dải ô lớn cũ — `useODiem`), trạng thái + hạn, có / chưa nhận xét, Case, nút chính + ⋯. Bấm dòng mở vùng ngay dưới (một dòng một lúc):
  * Nhận xét | Case & phương án ngang nhau, dải Lịch sử kỹ năng dưới cả hai; 375 xếp dọc. S Ex dưới bảng (chỉ đọc, ngoài Overall / SOS).
@@ -847,6 +858,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
                   {goc && <><s className="text-slate-500" title={t('Lịch gốc')}>{goc.goc}</s><span className="mx-1 text-slate-500">→</span></>}
                   <span className="font-semibold text-slate-200">{tuanLich(r.weekStart, homNay)}</span>
                   {goc ? <span className="block text-xs text-slate-500" title={goc.title ?? undefined}>{goc.phu}</span>
+                    : dongKhoiPhucVang(d.history, k, homNay) ? <span className="block text-xs text-slate-500">{dongKhoiPhucVang(d.history, k, homNay)}</span>
                     : r.planSource === 'manual' && <span className="block text-xs text-slate-500">{t('đã xếp riêng')}</span>}
                 </span>
               ) : <Tag pending>{t('Chưa xếp tuần')}</Tag>}
