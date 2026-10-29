@@ -9,8 +9,9 @@ import type { WorkItem } from '../worklist/WorkList.tsx';
 import { shortDate, viecKeTiep } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
-/** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp. */
-export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[] };
+/** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
+ * LOP-1-LOP: `soQuaHanLop` = badge "n việc quá hạn" đầu hồ sơ lớp (cùng lần `myWork`, cùng `demViec`); `null` = vai không có badge (TVV / CX / Admin). */
+export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[]; soQuaHanLop: number | null };
 export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-em?chi=toi`;
 const TOI_DA = 3;   // mockup khu b: một hàng ba ô; còn lại ở Công việc
 

@@ -370,6 +370,7 @@ export const TRAN: Record<string, number> = {
   /* HSL-MAY-CHU: một lượt lớp thường — trần = max(đo+10, ⌈đo×1,3⌉), đo 27/10 (27 · 24 · 27). */
   'QL /regular/attempts/24': 37, 'QT /regular/attempts/24': 34, 'GVCN_THUONG /regular/attempts/24': 37,
   /* UI-HO-SO-LOP (22/10): thanh Việc cần làm = `/my-work` của người xem lọc theo lớp (đo GV 61 · QL / QT 78 = cùng số `/my-work`) — trần như `/my-work` (+2);
+     LOP-1-LOP: đo GV 60–61 · QL / QT 79 (trước 61–62 · 80) — câu gần như không đổi (các khối khác của `myWork` đọc theo chi nhánh rồi lọc — chờ TRANG-LON); trần giữ;
      Đánh giá đầu ra lớp thường đo 8 / 7 / 9 — trần max(đo+10, ⌈đo×1,3⌉). */
   'GVCN /classes/3/viec-theo-em?chi=toi': 63, 'GVBM /classes/3/viec-theo-em?chi=toi': 63, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 63,
   'QL /classes/3/viec-theo-em?chi=toi': 80, 'QT /classes/3/viec-theo-em?chi=toi': 80,
@@ -897,6 +898,10 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* LOP-1-LOP: hồ sơ lớp chỉ đọc lượt của lớp (`myWork({ classIds })`) — đo QL / QT 1 278 (trước 1 448), GVCN / GVCN_THUONG 854 (trước 935), GVBM 850 (trước 958);
+     badge quá hạn nay trong cùng đường (trước thêm `/my-work` QL 1 414 · GV 921–944 dòng). Trần = max(đo + 50, ⌈đo × 1,3⌉). */
+  'QL /classes/3/viec-theo-em?chi=toi': 1662, 'QT /classes/3/viec-theo-em?chi=toi': 1662,
+  'GVCN /classes/3/viec-theo-em?chi=toi': 1111, 'GVBM /classes/3/viec-theo-em?chi=toi': 1105, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 1111,
   /* PR CHUONG-NHE: chuông — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trong mốc QL 34 · GVCN 47 · GVBM 16 · GVCN_THUONG 47; QT đồng bộ vì vừa ghi 345, trước 853). */
   'QL /notifications': 84, 'GVCN /notifications': 97, 'GVBM /notifications': 66, 'GVCN_THUONG /notifications': 97, 'QT /notifications': 449,
   /* QUET-THEO-KY Q3: Báo cáo HV một GET — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trước hai GET: QL ft 2 629 + 2 443, QT 3 419 + 3 310 dòng). */
