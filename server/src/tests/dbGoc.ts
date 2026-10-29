@@ -10,9 +10,12 @@ import Database from 'libsql';
 import { DB_PATH, datKetNoiChoPhepKiem, db } from '../db.ts';
 import { daGhiDb, xoaNho } from '../platform/nguCanhRequest.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
+import { datSoEmailThu, soEmailThu } from '../seed/emailThu.ts';
 import { datTepDangDung, tepDbDangDung } from './banSaoDb.ts';
 
 const GOC = path.join(path.dirname(DB_PATH), 'goc.sqlite');
+/** Trạng thái tiến trình đi cùng DB gốc: số đếm `emailThu` lúc chụp. */
+let emailGoc = 0;
 
 /** Bộ nhớ đệm cấp module đọc từ DB: bỏ khi đổi kết nối (`daGhiDb` = lượt quét `quetGioiHan` kế chạy lại). */
 function boNhoDem() { xoaNho(); clearScoringModeCache(); daGhiDb(); }
@@ -22,6 +25,7 @@ export function chupDbGoc(): string {
   db().pragma('wal_checkpoint(TRUNCATE)');
   for (const duoi of ['-wal', '-shm']) if (fs.existsSync(GOC + duoi)) fs.rmSync(GOC + duoi);
   fs.copyFileSync(DB_PATH, GOC);
+  emailGoc = soEmailThu();
   return GOC;
 }
 
@@ -35,12 +39,15 @@ export function moBanGoc(ten: string): { conn: Database.Database; tep: string; d
   conn.pragma('foreign_keys = ON');
   const cu = db();
   const tepCu = tepDbDangDung();
+  const emailCu = soEmailThu();
   datKetNoiChoPhepKiem(conn);
   datTepDangDung(tep);
+  datSoEmailThu(emailGoc);
   boNhoDem();
   const dong = () => {
     datKetNoiChoPhepKiem(cu);
     datTepDangDung(tepCu);
+    datSoEmailThu(emailCu);
     boNhoDem();
     try { conn.close(); } catch { /* đã đóng */ }
     try { fs.rmSync(thuMuc, { recursive: true, force: true }); } catch { /* Windows còn giữ tệp — run.ts dọn z2- sau 1 giờ */ }

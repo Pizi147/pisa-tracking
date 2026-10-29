@@ -9,6 +9,7 @@ export async function runDbGocTests(t: YThucTestKit) {
   const { chepDbKiem } = await import('./banSaoDb.ts');
   const { scoringModeOf } = await import('../fasttrack/skillSchedule.ts');
   const { batBienDb } = await import('./prTk.tests.ts');
+  const { emailThu } = await import('../seed/emailThu.ts');
   console.log('\nCN-1 · DB gốc');
   const dem = (c: any) => (c.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n as number;
   const ten = (c: any, id: number) => (c.prepare('SELECT full_name n FROM students WHERE id = ?').get(id) as any).n as string;
@@ -35,21 +36,24 @@ export async function runDbGocTests(t: YThucTestKit) {
     } finally { b.dong(); }
   });
 
-  check('DG-3 · đổi sysconfig trong bản gốc A → mở bản gốc B đọc lại giá trị seed', () => {
+  check('DG-3 · đổi sysconfig + cách chấm + số đếm email thử trong bản gốc A → mở bản gốc B đọc lại giá trị seed', () => {
     const lop = classId('MB FT 101');
     const cfg = (c: any) => (c.prepare(`SELECT value v FROM demo_config WHERE key = 'normal_pass_threshold'`).get() as any).v;
     const seedCfg = cfg(conn);
     const seedMode = scoringModeOf({ class_id: lop });
+    let emailA = '';
     const a = moBanGoc('dg3a');
     try {
       a.conn.prepare(`UPDATE demo_config SET value = '0.1' WHERE key = 'normal_pass_threshold'`).run();
       a.conn.prepare(`UPDATE programmes SET scoring_mode = ? WHERE code = (SELECT programme_code FROM classes WHERE id = ?)`).run(seedMode === 'band' ? 'ratio' : 'band', lop);
       assert(scoringModeOf({ class_id: lop }) !== seedMode, 'A thấy cách chấm vừa đổi (bộ nhớ đệm đã bỏ khi mở)');
+      emailA = emailThu(); emailThu();
     } finally { a.dong(); }
     const b = moBanGoc('dg3b');
     try {
       assert(cfg(b.conn) === seedCfg, `B: ${cfg(b.conn)}`);
       assert(scoringModeOf({ class_id: lop }) === seedMode, 'B: cách chấm seed (không giữ bộ nhớ đệm của A)');
+      assert(emailThu() === emailA, 'B: email thử đếm lại từ số lúc chụp gốc (em tạo trong B không phụ thuộc A)');
     } finally { b.dong(); }
     assert(scoringModeOf({ class_id: lop }) === seedMode, 'chuỗi: cách chấm seed');
   });
