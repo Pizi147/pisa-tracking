@@ -79,7 +79,7 @@ export const HD_ADMIN: HuongDan = {
         { id: 'ad-kh-xep', ten: 'Xếp lịch nhiều lớp', buoc: ['<b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường).', 'Chip <b>Cần xếp lại</b>: em vắng cần xếp lại.'],
           chi: { hd: 'kht-loc', duong: '/test/ke-hoach', chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' } },
         { id: 'ad-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm chip kỹ năng: chọn tuần, <b>Lưu</b>.', '<b>⋯</b>: <b>Xếp lịch</b> · <b>Dời lịch Test</b> · <b>Sửa điểm</b> · <b>Trả lời đề nghị dời</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'] },
-        { id: 'ad-kh-xoa', ten: 'Xóa lịch, ghi chú', buoc: ['Chân hộp: <b>Xóa</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã làm bài: nút mờ).', 'Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.'] },
+        { id: 'ad-kh-xoa', ten: 'Xóa lịch, ghi chú', buoc: ['⋯ đầu hộp › <b>Xóa lịch</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã làm bài: mục mờ).', 'Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.'] },
         { id: 'ad-kh-xuat', ten: 'Tìm, xuất Excel', buoc: ['<b>Tìm lớp, học viên hoặc email…</b>: chọn em → lớp mở, hàng em được đánh dấu.', '<b>Xuất Excel</b> (Kế hoạch Test 13 cột) · <b>Xuất điểm Test</b>.'] },
       ],
     },

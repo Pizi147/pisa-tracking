@@ -342,11 +342,14 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
     return () => { document.removeEventListener('keydown', esc); window.removeEventListener('resize', dat); };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). OV-15c: bỏ "Huỷ MT{n}" (thay bằng Xóa ở chân hộp). */
+  /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). OV-15c: bỏ "Huỷ MT{n}".
+     SUA-NHO-UI U3 (critique 30/10): "Xóa lịch" ít dùng, rời chân hộp (tránh bấm nhầm cạnh Lưu) vào ⋯ — FT + lớp thường; mục mờ, lý do ở `title`. */
   const hoSo = attemptId !== null && dot.loai === 'ft' ? duongDotTest({ id: attemptId, kind: 'mock', classId }, null) : null;
-  const mucDau = attemptId === null || dot.loai !== 'ft' ? [] : [
-    { key: 'nhat-ky', nhan: CHU_MUC_HOP['nhat-ky'], onChon: () => setNhatKy('ca-luot') },
+  const mucDau = attemptId === null ? [] : [
+    ...(dot.loai === 'ft' ? [{ key: 'nhat-ky', nhan: CHU_MUC_HOP['nhat-ky'], onChon: () => setNhatKy('ca-luot') }] : []),
     ...(hoSo && hoSo !== pathname ? [{ key: 'ho-so', nhan: t('Mở hồ sơ MT'), onChon: () => { onClose(); navigate(hoSo); } }] : []),
+    { key: 'xoa', nhan: t('Xóa lịch'), nguyHiem: true, keTruoc: dot.loai === 'ft', tat: !!(lyDoXoa || daSua || doiGhi || busy),
+      title: lyDoXoa ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined), onChon: () => setHoi(true) },
   ];
   const nutLuu = canhBao.length && !force ? t('Vẫn xếp vào tuần này') : t('Lưu');
   const nhanChung = loai === 'thuong' && chung?.weekStart ? nhanTuanKhoa(chung.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
@@ -429,7 +432,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
           <p className="m-0 text-xs text-slate-400">{t('Đợt về Chưa xếp, lịch sử vẫn xem được.')}</p>
           {loiXoa && <p className="m-0 text-xs text-bad" role="alert">⚠ {loiXoa}</p>}
           <div className="flex items-center justify-end gap-2">
-            {/* Nút Xóa ở chân vừa biến mất — đưa focus vào câu hỏi (nút an toàn), không rơi về body. */}
+            {/* Menu ⋯ vừa đóng — đưa focus vào câu hỏi (nút an toàn), không rơi về body. */}
             <button type="button" autoFocus className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setHoi(false); setLoiXoa(null); }}>{t('Đóng')}</button>
             <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{busy ? t('Đang xóa…') : t('Xóa')}</button>
           </div>
@@ -438,17 +441,11 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
         <div className="border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
           <div className="flex items-center gap-2">
             <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua || doiGhi ? huyDoi : onClose} disabled={busy}>{daSua || doiGhi ? t('Huỷ thay đổi') : t('Đóng')}</button>
-            {attemptId !== null && (
-              /* Xóa ngay phải Đóng (mục 6): mờ khi có điểm / đã thi / chưa xếp, hoặc đang sửa dở (lưu / huỷ thay đổi trước). */
-              <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy || !!lyDoXoa || daSua || doiGhi}
-                title={lyDoXoa ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined)} onClick={() => setHoi(true)}>{t('Xóa')}</button>
-            )}
             <span className="flex-1" />
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { if (canhBao.length) setForce(true); void luu(); }} disabled={!luuDuoc}>
               {busy ? t('Đang lưu…') : nutLuu}
             </button>
           </div>
-          {lyDoXoa && lyDoXoa !== t('Chưa xếp lịch') && !cauChan.includes(lyDoXoa) && <p className="m-0 mt-1 text-xs text-slate-400">{lyDoXoa}</p>}
         </div>
       )}
       {thaoTac && attemptId !== null && (
