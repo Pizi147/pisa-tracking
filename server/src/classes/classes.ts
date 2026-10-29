@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { DS_JSON, db, tx } from '../db.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
@@ -179,7 +179,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
   if (!classes.length) return { rows: [], scopeEmpty: false };
 
   const ids = classes.map((c) => c.id);
-  const ph = ids.map(() => '?').join(',');
+  const ph = DS_JSON, json = JSON.stringify(ids);   // S5: một tham số JSON
   const today = demoToday();
   /*
    * TD3-b: số đếm không nạp cả bundle — Case mở (luật huy hiệu của `loadBundle`: mức cao nhất > 0, còn Case chưa xong) đếm bằng SQL;
@@ -196,7 +196,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
         GROUP BY a.id
        HAVING MAX(x.sos_level) > 0 AND MAX(x.status IN ('open', 'in_progress') AND ${CASE_THAT('x')}) = 1)
       GROUP BY class_id`,
-  ).all(...ids) as any[]) openCases.set(r.class_id, r.n);
+  ).all(json) as any[]) openCases.set(r.class_id, r.n);
   const attempts = conn
     .prepare(
       `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
@@ -209,7 +209,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.class_id IN (${ph}) AND a.status != 'cancelled' AND ${CON_O_SQL}`,
     )
-    .all(...ids, today) as any[];
+    .all(json, today) as any[];
   const bundle = loadBundle(attempts.map((a) => a.id));
 
   const needScores = new Map<number, number>();
@@ -378,7 +378,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
   const { conn, finished, students, lop } = hocVienCuaLop(p, classId, q, kemKetThuc);
   if (!students.length) return [];
   const sids = students.map((s) => s.id);
-  const ph = sids.map(() => '?').join(',');
+  const ph = DS_JSON, json = JSON.stringify(sids);   // S5: một tham số JSON
   const attempts = conn
     .prepare(
       `SELECT a.*, cy.seq AS cycle_seq, cy.route, cy.khong_cam_ket AS cy_kck, pr.code AS period_code, pr.week_start
@@ -388,7 +388,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
         WHERE a.student_id IN (${ph})
         ORDER BY cy.seq, a.attempt_no`,
     )
-    .all(...sids) as any[];
+    .all(json) as any[];
   const bundle = loadBundle(attempts.map((a) => a.id));
   /* UI-HO-SO-LOP (luật LUAT-NX-MT / NEN-SUA): tuần cũ của kỹ năng đã dời do vắng — ô điểm bảng lớp ghi "vắng W3 SEP". MỘT câu cho cả lớp, chỉ lớp FT. */
   const vangCu = new Map<number, Record<string, string>>();
@@ -431,7 +431,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
         WHERE sc.student_id IN (${ph}) AND sc.status != 'done' AND ${CASE_THAT('sc')}`,
     )
-    .all(...sids) as any[];
+    .all(json) as any[];
   const activeCycle = new Map<number, number | null>(students.map((s) => [s.id, s.cycle_id ?? null]));
   /*
    * CASE CỦA LỘ TRÌNH TRƯỚC LÀ VIỆC BÀN GIAO, KHÔNG PHẢI MỨC SOS CỦA LỚP NÀY.

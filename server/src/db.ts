@@ -388,6 +388,27 @@ export function theoLo<T>(ds: readonly T[], fn: (lo: T[], ph: string) => void, c
 }
 
 /**
+ * S5: DANH SÁCH `IN` MỘT THAM SỐ JSON — `x IN (${DS_JSON})` + tham số `JSON.stringify(ds)`. `IN (?,?,…)` sinh một chuỗi SQL cho MỖI độ dài:
+ * Turso nhóm Top Queries theo chuỗi (phân mảnh), bộ nhớ câu PR-BN nhớ từng bản. Đây là MỘT chuỗi cho mọi độ dài.
+ * json_each trả INTEGER cho số, TEXT cho chuỗi; so với cột thì SQLite ép theo kiểu cột như với `?` — vẫn dùng chỉ mục
+ * (EXPLAIN: `SEARCH t USING INDEX … (col=?)` / `INTEGER PRIMARY KEY`, json_each là vòng ngoài — phép kiểm prS5JsonEach).
+ * Chỉ số / chuỗi (không null, Buffer, boolean). Đặt `(${DS_JSON})` ở chỗ trước là `(${ph})`.
+ */
+export const DS_JSON = 'SELECT value FROM json_each(?)';
+/**
+ * Lô của `theoLoJson`: một tham số không chạm trần 900, nhưng giữ trần độ dài chuỗi gửi qua mạng (10 000 id ≤ ~80 KB JSON). Trang thường
+ * dưới vài nghìn id nên chỉ một câu; danh sách lớn hơn tách lô như cũ.
+ */
+export const LO_JSON = 10_000;
+/** Như `theoLo` nhưng `fn(json, lo)` — `json` là tham số DUY NHẤT cho `IN (${DS_JSON})` (dùng lại nhiều chỗ trong câu thì truyền lại `json`). */
+export function theoLoJson<T extends number | string>(ds: readonly T[], fn: (json: string, lo: T[]) => void, co = LO_JSON): void {
+  for (let i = 0; i < ds.length; i += co) {
+    const lo = ds.slice(i, i + co);
+    fn(JSON.stringify(lo), lo);
+  }
+}
+
+/**
  * PR-GVa (F01 = D13): KHOÁ GỬI mỗi lần mở form. Dòng `bang` của `nguoiCot = nguoiId` có khoá `khoa` → id, không có → null.
  * Khoá gắn người tạo: cùng mã từ người khác không trả dòng của người kia. `bang`/`nguoiCot` là hằng trong mã, không bao giờ từ thân yêu cầu.
  * Nơi gọi kiểm quyền và dữ liệu nhập TRƯỚC rồi mới tra khoá.

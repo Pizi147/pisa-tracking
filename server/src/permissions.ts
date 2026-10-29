@@ -1,4 +1,4 @@
-import { db, theoLo } from './db.ts';
+import { DS_JSON, db, theoLoJson } from './db.ts';
 import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
@@ -245,15 +245,15 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
   const coActive = new Set<number>();
   for (const id of idsCanNap) { lopCua.set(id, []); lopDangHoc.set(id, []); cnDangHoc.set(id, new Set()); cnMoiGhiDanh.set(id, new Set()); }
 
-  theoLo(idsCanNap, (lo, cho) => {   // TD4: lô 900 tham số (trần Turso) — trước 400
+  theoLoJson(idsCanNap, (json) => {   // S5: một tham số JSON (trước TD4: lô 900 tham số)
     /* TD4: ghi danh + `students.branch_id` MỘT câu (trước hai câu mỗi lô) — em không ghi danh nào vẫn ra một dòng (`trang_thai` NULL). */
     for (const r of db()
       .prepare(
         `SELECT s.id AS sid, s.branch_id AS sbid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid
            FROM students s LEFT JOIN enrollments e ON e.student_id = s.id LEFT JOIN classes c ON c.id = e.class_id
-          WHERE s.id IN (${cho})`,
+          WHERE s.id IN (${DS_JSON})`,
       )
-      .all(...lo) as any[]) {
+      .all(json) as any[]) {
       if (r.sbid != null) { cnMoiGhiDanh.get(r.sid)!.add(r.sbid); cnDangHoc.get(r.sid)!.add(r.sbid); }
       if (r.trang_thai == null) continue;
       lopCua.get(r.sid)!.push(r.cid);
@@ -532,6 +532,10 @@ export function classScopeSql(scope: Scope, alias = 'c'): { sql: string; params:
   if (scope.all) return { sql: '1=1', params: [] };
   const parts: string[] = [];
   const params: unknown[] = [];
+  /*
+   * S5: GIỮ danh sách `?,?,…` — đổi sang json_each làm SQLite đổi kế hoạch: `classes` theo idx_class_status thay idx_class_branch, và câu
+   * "Chốt tuần MT" của Công việc (OR với `o_cho_tu`) bỏ chỉ mục cờ idx_attempt_o_cho_lop (TD7b đỏ). Danh sách ngắn (số lớp / chi nhánh của người xem).
+   */
   if (scope.branchIds.length) {
     parts.push(`${alias}.branch_id IN (${scope.branchIds.map(() => '?').join(',')})`);
     params.push(...scope.branchIds);

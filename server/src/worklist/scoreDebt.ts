@@ -1,4 +1,4 @@
-import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
@@ -36,13 +36,13 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
   /* TD4: nhớ theo lớp trong request GET — Công việc gọi lại cùng tập lớp (danh sách lượt, "Tất cả", người giữ kết quả PA). */
   const theoLop = nhoTheoId(`pc:${ngay}:`, [...new Set(classIds)], (thieu) => {
     const m = new Map<number, any[]>();
-    theoLo(thieu, (lo, ph) => {
+    theoLoJson(thieu, (json) => {
       for (const r of db()
         .prepare(`SELECT ta.id, ta.class_id, ta.skill, ta.user_id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
-                   WHERE ta.class_id IN (${ph}) AND ta.status = 'active' AND ta.skill IS NOT NULL
+                   WHERE ta.class_id IN (${DS_JSON}) AND ta.status = 'active' AND ta.skill IS NOT NULL
                      AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id`)
-        .all(...lo, ngay, ngay) as any[]) (m.get(r.class_id) ?? m.set(r.class_id, []).get(r.class_id)!).push(r);
-    }, THAM_SO_TOI_DA - 2);   // + 2 tham số ngày
+        .all(json, ngay, ngay) as any[]) (m.get(r.class_id) ?? m.set(r.class_id, []).get(r.class_id)!).push(r);
+    });
     return m;
   });
   const out = new Map<string, { userId: number; ten: string }>();
@@ -66,8 +66,9 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
   /* PR-UXF-a T65 → PR-S6F-a Q2: em không đang học (Tạm dừng, Kết thúc học, lưu trữ) không sinh nợ điểm. Hồ sơ HV vẫn hiện ô (đường riêng). */
   const where = [`a.status != 'cancelled'`, `cl.status = 'active'`, LUOT_HIEN_TAI_SQL('a', 's'), LUOT_TINH_NO_SQL('a')];
   const args: unknown[] = [];
+  /* S5: chi nhánh giữ `?,?,…` (json_each làm `classes` bỏ idx_class_branch); danh sách lớp lọc thẳng trên lượt nên đổi được. */
   if (branchIds) { where.push(`cl.branch_id IN (${branchIds.map(() => '?').join(',')})`); args.push(...branchIds); }
-  if (classIds) { where.push(`a.class_id IN (${classIds.map(() => '?').join(',') || 'NULL'})`); args.push(...classIds); }
+  if (classIds) { where.push(`a.class_id IN (${DS_JSON})`); args.push(JSON.stringify(classIds)); }
   const rows = conn
     .prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,

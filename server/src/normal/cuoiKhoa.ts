@@ -1,4 +1,4 @@
-import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';
 import {
   CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
@@ -49,18 +49,19 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
   const luot = new Map<number, { kind: string; ct: string | null; nguong: number | null }>();
   const diem = new Map<number, any[]>();
   const lichGop = new Map<number, any[]>();
-  theoLo([...new Set(attemptIds)], (lo, ph) => {
+  theoLoJson([...new Set(attemptIds)], (json) => {   // S5: một tham số JSON
+    const ph = DS_JSON;
     for (const r of conn.prepare(
       `SELECT a.id, a.kind, c.programme_code, c.nguong_dat FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
-    ).all(...lo) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, nguong: r.nguong_dat ?? null });
+    ).all(json) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, nguong: r.nguong_dat ?? null });
     /* P13: cùng câu đọc dòng lịch MÔN GỘP cũ (`la_lich` = 1) — bộ môn theo lượt (`daGhiLuot`), vẫn 2 câu cho cả lô. */
     for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
-        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(...lo, ...lo, ...GOP) as any[]) {
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(json, json, ...GOP) as any[]) {
       const m = r.la_lich ? lichGop : diem;
       if (!m.has(r.attempt_id)) m.set(r.attempt_id, []);
       m.get(r.attempt_id)!.push(r);
     }
-  }, Math.floor((THAM_SO_TOI_DA - GOP.length) / 2));
+  });
   const chuongTrinh = allProgrammes();
   for (const [id, l] of luot) {
     const prog = l.ct ? chuongTrinh.get(l.ct) : null;
@@ -841,14 +842,14 @@ export function laNguoiGiuMiniTestCuaPa(p: Principal, iv: { nhom_bo_tro?: string
 /** Em còn Mini Test CHƯA ghi (MỘT câu + người giữ theo lô): hạn, Case + PA để mở form, người giữ việc (`nguoiGiuMiniTest`). */
 export function emConMiniTest(sids: readonly number[]): Map<number, { han: string; caseId: number | null; paId: number | null; gv: number | null }> {
   const dong: any[] = [];
-  theoLo([...sids], (lo, ph) => {
+  theoLoJson([...sids], (json) => {
     dong.push(...db().prepare(
       `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, MIN(iv.case_id) AS case_id, MIN(CASE WHEN iv.status IN ('planned', 'started') THEN iv.id END) AS pa_id,
               MIN(sc.owner_user_id) AS owner,
               (SELECT e.class_id FROM enrollments e WHERE e.student_id = m.student_id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS lop
          FROM mini_test m LEFT JOIN case_interventions iv ON iv.nhom_bo_tro = m.nhom_bo_tro LEFT JOIN sos_cases sc ON sc.id = iv.case_id
-        WHERE m.ty_le IS NULL AND m.student_id IN (${ph}) GROUP BY m.id ORDER BY m.id`,
-    ).all(...lo) as any[]);
+        WHERE m.ty_le IS NULL AND m.student_id IN (${DS_JSON}) GROUP BY m.id ORDER BY m.id`,
+    ).all(json) as any[]);
   });
   const giu = nguoiGiuMiniTest(dong.map((r) => ({ id: r.id, nhom: r.nhom_bo_tro, lop: r.lop ?? null, owner: r.owner ?? null })));
   return new Map(dong.map((r) => [r.student_id as number, { han: r.han, caseId: r.case_id ?? null, paId: r.pa_id ?? null, gv: giu.get(r.id) ?? null }]));

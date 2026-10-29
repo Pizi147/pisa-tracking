@@ -1,4 +1,4 @@
-import { db, theoLo } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { PERMISSIONS, tachBaiId, tenMonNgan, soSanhLop, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import type { Principal } from '../permissions.ts';
@@ -41,13 +41,13 @@ export function treCham(p: Principal, branchId: number | null, ct: ChuongTrinh) 
     for (const k of c?.nguoi.length ? c.nguoi : [c?.chamCheo ? -1 : 0]) (baiCua.get(k) ?? baiCua.set(k, []).get(k)!).push(b);
   }
   const luot = new Map<number, { code: string | null; ct: string | null }>();
-  theoLo([...new Set(r.ids.map((b) => tachBaiId(b).attemptId))], (lo, ph) => {
-    for (const a of db().prepare(`SELECT a.id, c.code, c.programme_code FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`)
-      .all(...lo) as any[]) luot.set(a.id, { code: a.code ?? null, ct: a.programme_code ?? null });
+  theoLoJson([...new Set(r.ids.map((b) => tachBaiId(b).attemptId))], (json) => {
+    for (const a of db().prepare(`SELECT a.id, c.code, c.programme_code FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${DS_JSON})`)
+      .all(json) as any[]) luot.set(a.id, { code: a.code ?? null, ct: a.programme_code ?? null });
   });
   const ten = new Map<number, string>();
-  theoLo([...baiCua.keys()].filter((k) => k > 0), (lo, ph) => {
-    for (const u of db().prepare(`SELECT id, full_name FROM users WHERE id IN (${ph})`).all(...lo) as any[]) ten.set(u.id, u.full_name);
+  theoLoJson([...baiCua.keys()].filter((k) => k > 0), (json) => {
+    for (const u of db().prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`).all(json) as any[]) ten.set(u.id, u.full_name);
   });
   const homNay = demoToday();
   const dong: GvTre[] = [...baiCua].map(([khoa, ds]) => {

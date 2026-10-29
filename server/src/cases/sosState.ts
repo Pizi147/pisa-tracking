@@ -1,4 +1,4 @@
-import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, db, theoLo, theoLoJson } from '../db.ts';
 import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { CASE_DISMISS_REASON_LABEL, cotXuLy, hanThemPa, trangThaiCaseV4, type CaseDismissReason, type CotXuLy, type TrangThaiCaseV4 } from '../../../shared/domain/index.ts';
 
@@ -109,12 +109,11 @@ export const CO_THE_KHONG_THEO_DOI = (sc = 'sc') => `EXISTS (SELECT 1 FROM yeu_c
 
 const SOS_STATE_RONG: SosCaseState = { fromSos: false, hasCause: false, laMt: false, choNhanXet: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false, choDoiPa: false, tam: false };
 
-/** Trạng thái SOS của NHIỀU Case một lượt (PR-HVL): một câu SELECT cho mỗi lô 400, không hỏi từng Case. Case không tồn tại → trạng thái rỗng. */
+/** Trạng thái SOS của NHIỀU Case một lượt (PR-HVL): một câu SELECT (một tham số JSON — S5), không hỏi từng Case. Case không tồn tại → trạng thái rỗng. */
 export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCaseState> {
   const out = new Map<number, SosCaseState>();
   const conn = db();
-  for (let i = 0; i < caseIds.length; i += 400) {
-    const chunk = caseIds.slice(i, i + 400);
+  theoLoJson(caseIds, (json) => {
     const rows = conn.prepare(`SELECT sc.id, sc.status, sc.dismiss_reason_code, sc.dismiss_reason_text, sc.han_xac_nhan, sc.tam,
       ${LA_CASE_SOS('sc')} AS from_sos, ${LA_CASE_MT('sc')} AS la_mt,
       EXISTS (SELECT 1 FROM case_issues WHERE case_id = sc.id AND role = 'primary') AS has_cause,
@@ -123,7 +122,7 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
       (SELECT y.han_duyet FROM yeu_cau_duyet y WHERE y.loai = 'khong_theo_doi' AND y.doi_tuong_loai = 'sos_case' AND y.doi_tuong_id = sc.id
           AND y.trang_thai = 'cho' ORDER BY y.id DESC LIMIT 1) AS han_the,
       ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the
-    FROM sos_cases sc WHERE sc.id IN (${chunk.map(() => '?').join(',')})`).all(...chunk) as any[];
+    FROM sos_cases sc WHERE sc.id IN (${DS_JSON})`).all(json) as any[];
     for (const c of rows) {
       const fromSos = !!c.from_sos;
       const hasCause = !!c.has_cause;
@@ -144,7 +143,7 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
         tam: !!c.tam && c.status !== 'done',
       });
     }
-  }
+  });
   return out;
 }
 
@@ -156,19 +155,18 @@ export function sosCaseState(caseId: number): SosCaseState {
 /** Trong tập Case cho trước, những Case đang `Chờ xác nhận Case` (một truy vấn cho cả tập, không hỏi từng Case). MỘT định nghĩa. OV-12c: không Case MT. */
 export function awaitingCauseCaseIds(caseIds: number[]): number[] {
   const out: number[] = [];
-  for (let i = 0; i < caseIds.length; i += 400) {
-    const chunk = caseIds.slice(i, i + 400);
+  theoLoJson(caseIds, (json) => {
     out.push(...(db()
       .prepare(
         `SELECT sc.id FROM sos_cases sc
-          WHERE sc.id IN (${chunk.map(() => '?').join(',')}) AND sc.status != 'done'
+          WHERE sc.id IN (${DS_JSON}) AND sc.status != 'done'
             AND ${LA_CASE_SOS('sc')} AND NOT ${LA_CASE_MT('sc')}
             AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
             AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
           ORDER BY sc.id`,
       )
-      .all(...chunk) as any[]).map((r) => r.id as number));
-  }
+      .all(json) as any[]).map((r) => r.id as number));
+  });
   return out;
 }
 
@@ -204,8 +202,8 @@ export function xuLyCaseMany(caseIds: readonly number[], homNay: string): Map<nu
   /* OV-15h1: nhớ theo Case trong request (GET) — Tổng quan QL hỏi lại cùng các Case ở Case chưa chốt PA, quá hạn, phân rã. */
   const dong = nhoTheoId(`xu-ly:${homNay}:`, [...caseIds], (thieu) => {
     const m = new Map<number, ReturnType<typeof xuLyCuaDong>[]>();
-    theoLo(thieu, (lo, ph) => {
-      for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${ph})`).all(...lo) as any[]) m.set(r.id as number, [xuLyCuaDong(r, homNay)]);
+    theoLoJson(thieu, (json) => {
+      for (const r of db().prepare(`SELECT ${XU_LY_COT_SQL} FROM sos_cases sc WHERE sc.id IN (${DS_JSON})`).all(json) as any[]) m.set(r.id as number, [xuLyCuaDong(r, homNay)]);
     });
     return m;
   });

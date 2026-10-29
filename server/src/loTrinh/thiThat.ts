@@ -3,7 +3,7 @@
  * (`ketQuaThiThat`, so với Target; lộ trình đã đóng thì so với Target trong BẢN CHỤP — Target lúc đóng). Không còn ô chọn kết luận tay.
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
-import { db, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { PERMISSIONS, canNamGan, diemThiHopLe, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -250,9 +250,9 @@ export function datHanSauThi(p: Principal, cycleId: number, input: { han?: unkno
 export type NhanSauThiEm = Pick<TrangThaiSauThi, 'giaiDoan' | 'han' | 'quaHan' | 'daGiaHan'>;
 export function sauThiTheoEm(ids: number[], today = demoToday()): Map<number, NhanSauThiEm> {
   const out = new Map<number, NhanSauThiEm>();
-  theoLo(ids, (lo, ph) => {
+  theoLoJson(ids, (json) => {
     for (const c of db().prepare(`SELECT c.student_id, ${COT_SAU_THI} FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
-       WHERE c.student_id IN (${ph}) AND c.route IS NOT NULL AND ${LO_TRINH_MOI_NHAT}`).all(...lo) as any[]) {
+       WHERE c.student_id IN (${DS_JSON}) AND c.route IS NOT NULL AND ${LO_TRINH_MOI_NHAT}`).all(json) as any[]) {
       const st = trangThaiSauThi(c, today);
       if (st.giaiDoan === 'da_thi_cho_kq' || st.giaiDoan === 'cho_buoc_tiep') out.set(c.student_id, { giaiDoan: st.giaiDoan, han: st.han, quaHan: st.quaHan, daGiaHan: st.daGiaHan });
     }

@@ -1,4 +1,4 @@
-import { db, theoLo } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
 import {
   COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, soSanhLop, tachBaiId, type ChuongTrinh, type CotBang,
 } from '../../../shared/domain/index.ts';
@@ -88,11 +88,10 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
   const tapLop = new Map<number, Tap>();
   for (const c of lop) tapLop.set(c.id, tapRong());
   if (lop.length) {
-    const ph = lop.map(() => '?').join(',');
     for (const r of conn.prepare(
       `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-        WHERE e.status = 'active' AND s.archived_at IS NULL AND e.class_id IN (${ph})`,
-    ).all(...lop.map((c) => c.id)) as any[]) tapLop.get(r.class_id)!.hocVien.add(r.student_id);
+        WHERE e.status = 'active' AND s.archived_at IS NULL AND e.class_id IN (${DS_JSON})`,
+    ).all(JSON.stringify(lop.map((c) => c.id))) as any[]) tapLop.get(r.class_id)!.hocVien.add(r.student_id);
   }
   const hvSet = (xs?: number[]) => new Set(xs ?? []);
   const sDuoi = hvSet(duoi.ids), sSos = hvSet(sos.ids), sDu = hvSet(phu.numeratorIds), sMau = hvSet(phu.ids);
@@ -108,8 +107,8 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
   for (const id of caseMo.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.caseMo.add(id); }
   for (const id of thieu.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.thieuPa.add(id); }
   const emCase = new Map<number, number>();
-  theoLo(chot.ids, (lo, ph) => {
-    for (const r of conn.prepare(`SELECT id, student_id FROM sos_cases WHERE id IN (${ph})`).all(...lo) as any[]) emCase.set(r.id, r.student_id);
+  theoLoJson(chot.ids, (json) => {
+    for (const r of conn.prepare(`SELECT id, student_id FROM sos_cases WHERE id IN (${DS_JSON})`).all(json) as any[]) emCase.set(r.id, r.student_id);
   });
   for (const id of chot.ids) {
     const l = lopCuaCase.get(id)?.classId;
@@ -225,8 +224,8 @@ function chiaCotChuY(p: Principal, base: { branchId: number | null; program: Chu
     theoHv('daThiChoKq', [...sauThiTheoEm([...tong.hocVien], today)].filter(([, x]) => x.giaiDoan === 'da_thi_cho_kq').map(([sid]) => sid));
   }
   const bai = metricSet(p, 'bai-qua-han-nhap-diem', base).ids;
-  theoLo([...new Set(bai.map((b) => tachBaiId(b).attemptId))], (lo, ph) => {
-    for (const a of db().prepare(`SELECT student_id, class_id FROM assessment_attempts WHERE id IN (${ph})`).all(...lo) as any[]) {
+  theoLoJson([...new Set(bai.map((b) => tachBaiId(b).attemptId))], (json) => {
+    for (const a of db().prepare(`SELECT student_id, class_id FROM assessment_attempts WHERE id IN (${DS_JSON})`).all(json) as any[]) {
       tong.chuaDiem.add(a.student_id);
       tapLop.get(a.class_id)?.chuaDiem.add(a.student_id);
     }

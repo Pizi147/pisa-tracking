@@ -1,5 +1,5 @@
 import { capNhatConOCho } from './conOCho.ts';
-import { db, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE,
   CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
@@ -92,27 +92,26 @@ export function scoresOf(attemptId: number): ScoreRow[] {
 }
 
 /**
- * Điểm của NHIỀU lượt (chia lô 900 tham số), nhớ theo từng lượt trong request GET dưới CÙNG khoá `diem:` của `scoresOf` (TD2-a) —
+ * Điểm của NHIỀU lượt (một tham số JSON — S5), nhớ theo từng lượt trong request GET dưới CÙNG khoá `diem:` của `scoresOf` (TD2-a) —
  * `loadBundle`, hồ sơ HV và `scoresOf` dùng chung một lần đọc. Chỉ lượt có điểm mới có trong Map.
  */
 export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
   return nhoTheoId('diem:', attemptIds, (ids) => {
     const out = new Map<number, ScoreRow[]>();
     const conn = db();
-    for (let i = 0; i < ids.length; i += 900) {
-      const chunk = ids.slice(i, i + 900);
+    theoLoJson(ids, (json) => {
       for (const r of conn
         .prepare(
           `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start,
                   nb.full_name AS no_show_by_name, pt.full_name AS nhan_xet_phu_trach_by_name, ${DIEM_HUY_SQL} FROM assessment_scores s
              LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id LEFT JOIN users nb ON nb.id = s.no_show_by
-             LEFT JOIN users pt ON pt.id = s.nhan_xet_phu_trach_by LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${chunk.map(() => '?').join(',')})`,
+             LEFT JOIN users pt ON pt.id = s.nhan_xet_phu_trach_by LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${DS_JSON})`,
         )
-        .all(...chunk) as (ScoreRow & { attempt_id: number })[]) {
+        .all(json) as (ScoreRow & { attempt_id: number })[]) {
         if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
         out.get(r.attempt_id)!.push(r);
       }
-    }
+    });
     return out;
   });
 }
@@ -149,16 +148,15 @@ export type AttemptBundle = {
   }>;
 };
 
-/** Đọc theo lô 900 tham số (SQLite / Turso) → dòng gom theo `attempt_id` — dạng `nhoTheoId` cần. */
+/** Đọc theo lô (một tham số JSON, `ph` = `DS_JSON` — S5) → dòng gom theo `attempt_id` — dạng `nhoTheoId` cần. */
 function docTheoLo<T extends { attempt_id: number }>(ids: number[], sql: (ph: string) => string): Map<number, T[]> {
   const out = new Map<number, T[]>();
-  for (let i = 0; i < ids.length; i += 900) {
-    const chunk = ids.slice(i, i + 900);
-    for (const r of db().prepare(sql(chunk.map(() => '?').join(','))).all(...chunk) as T[]) {
+  theoLoJson(ids, (json) => {
+    for (const r of db().prepare(sql(DS_JSON)).all(json) as T[]) {
       if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
       out.get(r.attempt_id)!.push(r);
     }
-  }
+  });
   return out;
 }
 
@@ -430,11 +428,11 @@ export function pendingInputOf(cells: SkillCell[]): PendingCell[] {
  */
 export function tuanVangCu(attemptIds: number[]): Map<string, string> {
   const out = new Map<string, string>();
-  theoLo([...new Set(attemptIds)], (lo, ph) => {
+  theoLoJson([...new Set(attemptIds)], (json) => {
     for (const r of db().prepare(
       `SELECT attempt_id, field, old_value FROM attempt_schedule_history
-        WHERE action = 'skill_week_moved_absence' AND attempt_id IN (${ph}) AND old_value IS NOT NULL ORDER BY id`,
-    ).all(...lo) as any[]) out.set(`${r.attempt_id}:${r.field}`, r.old_value);
+        WHERE action = 'skill_week_moved_absence' AND attempt_id IN (${DS_JSON}) AND old_value IS NOT NULL ORDER BY id`,
+    ).all(json) as any[]) out.set(`${r.attempt_id}:${r.field}`, r.old_value);
   });
   return out;
 }
@@ -777,7 +775,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   if (f.classId) { where.push('a.class_id = ?'); params.push(f.classId); }
   if (f.classIds) {
     if (!f.classIds.length) return { rows: [], scopeEmpty: false };
-    where.push(`a.class_id IN (${f.classIds.map(() => '?').join(',')})`); params.push(...f.classIds);
+    where.push(`a.class_id IN (${DS_JSON})`); params.push(JSON.stringify(f.classIds));
   }
   /* PR-S6F-a Q2: một điều kiện "em đang học" — cả danh sách "cần chấm" (`my_scores`), đích của badge "n bài chờ chấm" (số = danh sách). */
   /* PR-Dọn (Q9): và CÙNG luật Nợ điểm (`scoreDebt.ts`) — lớp đã kết thúc không sinh việc nhập điểm. */

@@ -6,7 +6,7 @@
  * Nạp theo lô 400 id, BA câu cho cả lô (vi phạm + lần xử lý + liên kết · lộ trình + khai bậc · ghi danh hiện tại + ngày Quay lại),
  * nhớ theo request (`nho`) nên một request hỏi cùng em nhiều lần chỉ nạp một lần.
  */
-import { db } from '../db.ts';
+import { DS_JSON, db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coNho, coKhoa, datNho, nho, xoaNho } from '../platform/nguCanhRequest.ts';
 import {
@@ -79,7 +79,8 @@ export function trangThaiYThuc(studentIds: readonly number[], homNay = demoToday
 
 function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   const conn = db();
-  const ph = cho(lo.length);
+  /* S5: danh sách em một tham số JSON (`DS_JSON`) — cùng chuỗi SQL cho mọi cỡ lô. */
+  const ph = DS_JSON, json = JSON.stringify(lo);
   /*
    * Vi phạm (`loai` 0) và lần xử lý + liên kết (`loai` 1) chung MỘT câu UNION ALL — mỗi câu trên Turso ~20–50 ms. Cột chung đặt tên
    * trung tính; ý nghĩa theo `loai` ghi ngay dưới.
@@ -99,7 +100,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
                 AND y.doi_tuong_id = m.id AND y.trang_thai = 'cho')
        FROM discipline_measures m LEFT JOIN measure_violations mv ON mv.measure_id = m.id
       WHERE m.student_id IN (${ph}) AND m.status != 'nhap'
-     ORDER BY 1, 6, 2`).all(...lo, ...lo) as any[]) {
+     ORDER BY 1, 6, 2`).all(json, json) as any[]) {
     if (r.loai === 0) {
       const a = vp.get(r.student_id) ?? []; vp.set(r.student_id, a);
       a.push({ id: r.id, category: r.a, occurredOn: r.b, reportedOn: r.c, ghiNhanLuc: r.d ?? null, cycleId: r.cycle_id ?? null, classId: r.e ?? null });
@@ -121,7 +122,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, k.bac, k.thang, k.ghi_chu, k.khai_luc, u.full_name AS boi
        FROM learning_cycles lc LEFT JOIN y_thuc_khai_bac k ON k.chuoi_cycle_id = lc.id AND k.student_id = lc.student_id
        LEFT JOIN users u ON u.id = k.khai_boi
-      WHERE lc.student_id IN (${ph})`).all(...lo) as any[]) {
+      WHERE lc.student_id IN (${ph})`).all(json) as any[]) {
     const a = lt.get(r.student_id) ?? []; lt.set(r.student_id, a);
     a.push({ id: r.id, seq: r.seq, route: r.route ?? null, status: r.status });
     if (r.bac != null) {
@@ -138,7 +139,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
             (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active'
                 AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id LIMIT 1) AS gvcn
        FROM students s LEFT JOIN enrollments e ON e.student_id = s.id AND e.status IN ('active', 'paused')
-      WHERE s.id IN (${ph}) ORDER BY e.id`).all(homNay, homNay, ...lo) as any[]) {
+      WHERE s.id IN (${ph}) ORDER BY e.id`).all(homNay, homNay, json) as any[]) {
     gd.set(r.id, { lopId: r.class_id ?? null, batDau: r.started_at ?? null, gvcn: r.gvcn ?? null, tamDung: r.s_status === 'inactive' });
     if (r.quay_lai) quayLai.set(r.id, r.quay_lai);
   }

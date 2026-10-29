@@ -8,7 +8,7 @@
  * trên Turso. Xem `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/task-17-planning-fix-report.md`.
  */
 import { ATTEMPT_KIND_SHORT, PERMISSIONS, bacHoacNgoaiThang, soThuTuLuot, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
-import { db } from '../db.ts';
+import { DS_JSON, db } from '../db.ts';
 import { activeAt, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
@@ -122,14 +122,12 @@ export function viecHocVienTheoLop(p: Principal, o: {
   }
   /* PR-S4F #5: quét trước khi đếm, như mọi đường đọc hộp (K5-17) — không thì badge đếm thiếu thẻ Báo QL mà hộp (quét rồi) có. */
   quetYeuCau(o.homNay);
-  /* Thẻ đang chờ Quản lý (`yeu_cau_duyet`): theo em (`hoc_vien_id`) hoặc theo lớp (`lop_id`) — MỘT câu cho mỗi lô 400. */
-  const chia = <T,>(a: readonly T[]) => Array.from({ length: Math.ceil(a.length / 400) }, (_, i) => a.slice(i * 400, i * 400 + 400));
-  const nhomHv = chia(emIds); const nhomLop = chia([...o.emTheoLop.keys()]);
+  /* Thẻ đang chờ Quản lý (`yeu_cau_duyet`): theo em (`hoc_vien_id`) hoặc theo lớp (`lop_id`) — MỘT câu, hai tham số JSON (S5; danh sách rỗng = không khớp). */
+  const lopIds = [...o.emTheoLop.keys()];
   const the = new Map<number, { hv: number | null; lop: number | null }>();
-  for (let i = 0; i < Math.max(nhomHv.length, nhomLop.length); i++) {
-    const hv = nhomHv[i] ?? []; const lp = nhomLop[i] ?? [];
-    const dk = [hv.length ? `hoc_vien_id IN (${hv.map(() => '?').join(',')})` : '', lp.length ? `lop_id IN (${lp.map(() => '?').join(',')})` : ''].filter(Boolean).join(' OR ');
-    for (const r of db().prepare(`SELECT id, loai, hoc_vien_id, lop_id FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND (${dk})`).all(...hv, ...lp) as any[]) {
+  if (emIds.length || lopIds.length) {
+    for (const r of db().prepare(`SELECT id, loai, hoc_vien_id, lop_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'
+        AND (hoc_vien_id IN (${DS_JSON}) OR lop_id IN (${DS_JSON}))`).all(JSON.stringify(emIds), JSON.stringify(lopIds)) as any[]) {
       /* PR-GVb (J5b): "chờ duyệt" chỉ thẻ QL phải quyết — Báo QL nằm ở tab Nhắc việc, không vào badge (cùng `nhomCuaLoai` của hộp). */
       if (nhomCuaLoai(r.loai) === 'de-biet') continue;
       the.set(r.id, { hv: r.hoc_vien_id ?? null, lop: r.lop_id ?? null });

@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { tachBaiId, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { parseObligation } from './metrics.ts';
@@ -15,17 +15,15 @@ import { parseObligation } from './metrics.ts';
  *   vi phạm / PA xử lý  qua học viên
  *   lớp                 chính lớp đó (PR-VAI-a)
  * Chương trình = `classes.is_fast_track`. Không tìm được lớp → `isFt = null`: chỉ có mặt ở chỉ số gộp (không lọc khung).
- * Truy vấn theo lô 400 — không một câu mỗi phần tử.
+ * Truy vấn theo lô (một tham số JSON — S5) — không một câu mỗi phần tử.
  */
 export type LopCuaPhanTu = { classId: number | null; code: string | null; isFt: boolean | null };
 const RONG: LopCuaPhanTu = { classId: null, code: null, isFt: null };
 
-function theoLo<T>(ids: number[], fn: (chunk: number[], ph: string) => T[]): T[] {
+/** S5: `fn(json)` — `json` là tham số duy nhất của `IN (${DS_JSON})` (theo lô `theoLoJson`). */
+function theoLo<T>(ids: number[], fn: (json: string) => T[]): T[] {
   const out: T[] = [];
-  for (let i = 0; i < ids.length; i += 400) {
-    const chunk = ids.slice(i, i + 400);
-    out.push(...fn(chunk, chunk.map(() => '?').join(',')));
-  }
+  theoLoJson(ids, (json) => { out.push(...fn(json)); });
   return out;
 }
 const lopTu = (r: any): LopCuaPhanTu =>
@@ -39,12 +37,12 @@ const nhoLop = (tienTo: string, ids: number[], doc: (thieu: number[]) => Map<num
 function lopHocVien(ids: number[]): Map<number, LopCuaPhanTu> {
   return nhoLop('lop-hv:', ids, (thieu) => {
     const out = new Map<number, LopCuaPhanTu>();
-    for (const r of theoLo(thieu, (chunk, ph) => db().prepare(
+    for (const r of theoLo(thieu, (json) => db().prepare(
       `SELECT e.student_id AS id, c.id AS class_id, c.code, c.is_fast_track
          FROM enrollments e JOIN classes c ON c.id = e.class_id
-        WHERE e.student_id IN (${ph})
+        WHERE e.student_id IN (${DS_JSON})
         ORDER BY e.student_id, CASE WHEN e.status = 'active' THEN 0 ELSE 1 END, e.id DESC`,
-    ).all(...chunk) as any[])) if (!out.has(r.id)) out.set(r.id, lopTu(r));
+    ).all(json) as any[])) if (!out.has(r.id)) out.set(r.id, lopTu(r));
     return out;
   });
 }
@@ -52,11 +50,11 @@ function lopCase(ids: number[]): Map<number, LopCuaPhanTu> {
   return nhoLop('lop-case:', ids, (thieu) => {
     const out = new Map<number, LopCuaPhanTu>();
     const hvCuaCase = new Map<number, number>();
-    for (const r of theoLo(thieu, (chunk, ph) => db().prepare(
+    for (const r of theoLo(thieu, (json) => db().prepare(
       `SELECT sc.id, COALESCE(sc.student_id, a.student_id) AS sid, c.id AS class_id, c.code, c.is_fast_track
          FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN classes c ON c.id = a.class_id WHERE sc.id IN (${ph})`,
-    ).all(...chunk) as any[])) {
+         LEFT JOIN classes c ON c.id = a.class_id WHERE sc.id IN (${DS_JSON})`,
+    ).all(json) as any[])) {
       if (r.class_id) out.set(r.id, lopTu(r)); else if (r.sid) hvCuaCase.set(r.id, r.sid);
     }
     const hv = lopHocVien([...new Set(hvCuaCase.values())]);
@@ -80,8 +78,8 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
     case 'hoc-vien': return lopHocVien(ids);
     case 'case': return lopCase(ids);
     case 'phuong-an':
-      return quaCase(theoLo(ids, (chunk, ph) => conn.prepare(
-        `SELECT id, case_id AS caseId FROM case_interventions WHERE id IN (${ph})`).all(...chunk) as any[]));
+      return quaCase(theoLo(ids, (json) => conn.prepare(
+        `SELECT id, case_id AS caseId FROM case_interventions WHERE id IN (${DS_JSON})`).all(json) as any[]));
     case 'nghia-vu': {
       const ivOf = new Map(ids.map((id) => [id, parseObligation(id).interventionId]));
       const iv = lopCuaTap('phuong-an', [...new Set(ivOf.values())]);
@@ -90,9 +88,9 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
     case 'bai-thi': case 'dot-test': case 'luot-sos':
       return nhoLop('lop-luot:', ids, (thieu) => {
         const out = new Map<number, LopCuaPhanTu>();
-        for (const r of theoLo(thieu, (chunk, ph) => conn.prepare(
+        for (const r of theoLo(thieu, (json) => conn.prepare(
           `SELECT a.id, c.id AS class_id, c.code, c.is_fast_track FROM assessment_attempts a
-             LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
+             LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${DS_JSON})`).all(json) as any[])) out.set(r.id, lopTu(r));
         return out;
       });
     case 'bai': {
@@ -103,16 +101,16 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
     case 'lop': {
       /* PR-VAI-a: phần tử là chính lớp đó. */
       const out = new Map<number, LopCuaPhanTu>();
-      for (const r of theoLo(ids, (chunk, ph) => conn.prepare(
-        `SELECT id, id AS class_id, code, is_fast_track FROM classes WHERE id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
+      for (const r of theoLo(ids, (json) => conn.prepare(
+        `SELECT id, id AS class_id, code, is_fast_track FROM classes WHERE id IN (${DS_JSON})`).all(json) as any[])) out.set(r.id, lopTu(r));
       return out;
     }
     case 'vi-pham':
-      return quaHocVien(theoLo(ids, (chunk, ph) => conn.prepare(
-        `SELECT id, student_id AS sid FROM violations WHERE id IN (${ph})`).all(...chunk) as any[]));
+      return quaHocVien(theoLo(ids, (json) => conn.prepare(
+        `SELECT id, student_id AS sid FROM violations WHERE id IN (${DS_JSON})`).all(json) as any[]));
     case 'bien-phap':
-      return quaHocVien(theoLo(ids, (chunk, ph) => conn.prepare(
-        `SELECT id, student_id AS sid FROM discipline_measures WHERE id IN (${ph})`).all(...chunk) as any[]));
+      return quaHocVien(theoLo(ids, (json) => conn.prepare(
+        `SELECT id, student_id AS sid FROM discipline_measures WHERE id IN (${DS_JSON})`).all(json) as any[]));
     default:
       return new Map();
   }

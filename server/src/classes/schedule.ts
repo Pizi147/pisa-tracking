@@ -1,5 +1,5 @@
 import { capNhatConOCho, capNhatConOChoLop } from '../fasttrack/conOCho.ts';
-import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, ROUTE_KHAC, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, docLichMt, kiemSoMtMoi, laMtCu, lichMtGoc, tuanHocCuaMt, tuanLich,
@@ -421,19 +421,19 @@ export function classProgressMany(classIds: number[]): Map<number, ClassProgress
   const out = new Map<number, ClassProgress>();
   if (!classIds.length) return out;
   const conn = db();
-  /* PR-LCb (R-B2): theo lô — Turso nhận tối đa ~900 tham số một câu (ứng viên lớp chuyển đến mọi chi nhánh có thể vượt). */
+  /* PR-LCb (R-B2): theo lô — Turso nhận tối đa ~900 tham số một câu (ứng viên lớp chuyển đến mọi chi nhánh có thể vượt). S5: một tham số JSON. */
   const classes: any[] = [];
-  theoLo(classIds, (lo, ph) => { classes.push(...(conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(...lo) as any[])); });
+  theoLoJson(classIds, (json) => { classes.push(...(conn.prepare(`SELECT * FROM classes WHERE id IN (${DS_JSON})`).all(json) as any[])); });
   const periodIds = [...new Set(classes.map((c) => c.start_period_id).filter(Boolean))];
   const periods = new Map<number, any>();
-  theoLo(periodIds, (lo, ph) => {
-    for (const r of conn.prepare(`SELECT * FROM report_periods WHERE id IN (${ph})`).all(...lo) as any[]) {
+  theoLoJson(periodIds, (json) => {
+    for (const r of conn.prepare(`SELECT * FROM report_periods WHERE id IN (${DS_JSON})`).all(json) as any[]) {
       periods.set(r.id, { id: r.id, ...weekInfo(r.week_start) });
     }
   });
   const counts = new Map<number, number>();
   const canXepByClass = new Map<number, number>();
-  theoLo(classes.map((c) => c.id as number), (lo, ph) => { for (const r of conn
+  theoLoJson(classes.map((c) => c.id as number), (json) => { for (const r of conn
     .prepare(
       `SELECT e.class_id, COUNT(*) n,
               SUM(CASE WHEN EXISTS (
@@ -445,14 +445,14 @@ export function classProgressMany(classIds: number[]): Map<number, ClassProgress
               ) THEN 0 ELSE 1 END) can_xep_lop
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
-        WHERE e.class_id IN (${ph}) AND e.status = 'active'
+        WHERE e.class_id IN (${DS_JSON}) AND e.status = 'active'
           AND ${HV_DANG_HOC_SQL('s')}
         GROUP BY e.class_id`,
     )
-    .all(demoToday(), ...lo) as any[]) {
+    .all(demoToday(), json) as any[]) {
     counts.set(r.class_id, r.n);
     canXepByClass.set(r.class_id, r.can_xep_lop ?? 0);
-  } }, THAM_SO_TOI_DA - 1);
+  } });
 
   const progs = allProgrammes();   // nhớ trong request (`nho`) — PR-Dọn Q22: bỏ tham số truyền tay
   for (const c of classes) {
@@ -799,9 +799,9 @@ export function missingForClasses(classIds: number[]): Map<number, { items: Miss
   const out = new Map<number, { items: MissingInfo[]; missingSkills: string[] }>();
   if (!classIds.length) return out;
   const conn = db();
-  const ph = classIds.map(() => '?').join(',');
+  const ph = DS_JSON, json = JSON.stringify(classIds);   // S5: một tham số JSON
 
-  const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(...classIds) as any[];
+  const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(json) as any[];
   let programmes: Map<string, ProgrammeInfo> | undefined;   // nạp một lần, chỉ khi có lớp cần
   const byClass = new Map<number, any[]>();
   for (const a of conn
@@ -809,7 +809,7 @@ export function missingForClasses(classIds: number[]): Map<number, { items: Miss
       `SELECT class_id, skill, is_core FROM teacher_assignments
         WHERE class_id IN (${ph}) AND status = 'active'`,
     )
-    .all(...classIds) as any[]) {
+    .all(json) as any[]) {
     if (!byClass.has(a.class_id)) byClass.set(a.class_id, []);
     byClass.get(a.class_id)!.push(a);
   }
