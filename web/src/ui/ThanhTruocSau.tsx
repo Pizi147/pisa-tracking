@@ -14,7 +14,7 @@ const doc = (loai: NguCanhDs['loai'], id: number): NguCanhDs | null => {
 type Cha = TenTrang & { url: string };
 /* V8-HSL: dáng gọn (chữ, không khung) — vùng chạm 44 px ở điện thoại bằng `after`. */
 const GON_VE = "relative inline-flex max-w-full items-center gap-1 border-0 bg-transparent p-0 text-[13px] font-medium text-slate-400 hover:text-slate-100 after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-[''] sm:after:hidden";
-const GON_NUT = "relative inline-grid h-6 w-7 place-items-center rounded-md border-0 bg-transparent text-slate-400 hover:bg-[color:var(--nut-hover)] hover:text-slate-100 after:absolute after:-inset-2 after:content-[''] sm:after:hidden";
+const GON_NUT = "relative inline-grid h-6 w-7 place-items-center rounded-md border-0 bg-transparent text-slate-400 hover:bg-[color:var(--nut-hover)] hover:text-slate-100 after:absolute after:-inset-2.5 after:content-[''] sm:after:hidden";
 
 /**
  * NÚT "‹ {tên nguồn}" ĐẦU MỌI HỒ SƠ (PR-OV5b, mockup M1 §6): về đúng URL + vị trí cuộn của nơi bắt đầu (`web/src/lib/quayLai.ts`);

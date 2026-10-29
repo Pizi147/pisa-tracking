@@ -196,7 +196,7 @@ export function DauTrangLop({ data, onViec, onBanGiao, thanhViec }: {
       {/* ② nhận diện + nút cố định (PR-OV3a). 375: nút xuống một hàng, chia đều. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <h1 className="m-0 text-[22px] font-bold leading-[1.3] text-slate-100">{data.code}</h1>
-        <span className="flex flex-wrap items-baseline text-[14px] text-slate-400 max-sm:basis-full">
+        <span className="flex flex-wrap items-baseline text-sm text-slate-400 max-sm:basis-full">
           {meta.map((m, i) => <span key={i} className={`whitespace-nowrap ${i === 3 ? 'max-sm:hidden' : ''}`}>{i > 0 && <span aria-hidden>{' · '}</span>}{m}</span>)}
         </span>
         <div className="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:[&>button:not([aria-haspopup])]:flex-1">

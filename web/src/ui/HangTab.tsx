@@ -40,7 +40,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
         return (
           <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => onChange(t.key)}
             className={`min-h-[44px] whitespace-nowrap px-2.5 sm:px-3 py-2 -mb-px sm:min-h-0 border-b-2 appearance-none bg-transparent cursor-pointer ${
-              v8 ? 'max-sm:px-2 max-sm:text-[14px] sm:h-[42px] sm:py-0 text-[15px]' : cap === 'con' ? 'text-xs' : 'text-sm'
+              v8 ? 'max-sm:px-2 max-sm:text-sm sm:h-[42px] sm:py-0 text-base' : cap === 'con' ? 'text-xs' : 'text-sm'
             } ${active ? `border-[color:var(--accent)] ${v8 ? 'font-bold' : 'font-semibold'} text-slate-100` : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
             {t.label}
             {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label={CAN_XU_LY} title={CAN_XU_LY}>●</span>}

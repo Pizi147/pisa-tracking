@@ -527,7 +527,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
           const chon = !tat && m.key === value;
           return (
             <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line-strong)' }}
-              className={`inline-flex min-w-0 items-center gap-1.5 whitespace-nowrap px-3 text-[14px] disabled:pointer-events-none max-sm:flex-1 max-sm:justify-center max-sm:px-1 max-sm:text-[13px] ${i ? 'border-l' : ''} ${
+              className={`inline-flex min-w-0 items-center gap-1.5 whitespace-nowrap px-3 text-sm disabled:pointer-events-none max-sm:flex-1 max-sm:justify-center max-sm:px-1 max-sm:text-[13px] ${i ? 'border-l' : ''} ${
                 chon ? 'bg-[color:var(--accent-soft)] font-bold text-slate-100 shadow-[inset_0_-2px_0_var(--accent)]' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
               <span className="min-w-0 truncate">{m.nhan}</span>
               {m.so != null && <span className="text-[12px] font-semibold tabular-nums text-slate-500 max-sm:hidden">{m.so}</span>}

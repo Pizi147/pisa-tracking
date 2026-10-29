@@ -33,11 +33,11 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
     <>
       {ds.length > 0 && (
         /* V8-HSL hàng ⑤ (mockup v8 `.hang-viec`): "Việc của tôi · n" + tối đa 3 ô cao 36 trên MỘT hàng + "+n ở Công việc ›". 375: ô xếp dọc. */
-        <section aria-label={t('Việc của tôi')} className="grid items-center gap-2 pt-0.5 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))_auto]">
+        <section aria-label={t('Việc của tôi')} className="grid items-center gap-1.5 pt-0.5 lg:gap-2 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))_auto]">
           <span className="whitespace-nowrap pr-1 text-[13px] font-medium text-slate-400">{t('Việc của tôi')} · <b className="tabular-nums text-slate-100">{ds.length}</b></span>
           {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => moTuThanh(it)} />)}
           {ds.length > TOI_DA && (
-            <Link to="/cong-viec" className="link justify-self-end whitespace-nowrap text-[14px] font-semibold max-lg:py-2">{t('+{n} ở Công việc ›', { n: ds.length - TOI_DA })}</Link>
+            <Link to="/cong-viec" className="link relative justify-self-end whitespace-nowrap text-sm font-semibold after:absolute after:inset-x-0 after:-inset-y-3 after:content-[''] lg:after:hidden">{t('+{n} ở Công việc ›', { n: ds.length - TOI_DA })}</Link>
           )}
         </section>
       )}
@@ -65,7 +65,7 @@ function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () =
     <button type="button" onClick={onMo} aria-expanded={dangMo} title={`${ten} — ${dich(it.actionLabel)}`}
       className={`flex h-9 min-w-0 items-center gap-2 rounded-lg border border-l-[3px] px-3 text-left max-lg:h-auto max-lg:min-h-[44px] max-lg:flex-wrap max-lg:py-1.5 ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)] hover:bg-[color:var(--nut-hover)]'}`}
       style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
-      <span className="min-w-0 truncate text-[14px] font-semibold text-slate-100">{ten}</span>
+      <span className="min-w-0 truncate text-sm font-semibold text-slate-100">{ten}</span>
       {it.group === 'score' && it.soBai ? <span className="whitespace-nowrap text-[13px] tabular-nums text-slate-400">{t('{soBai} bài', { soBai: it.soBai })}</span> : null}
       {han && (
         <span className={`${CHIP_TRON} ml-auto shrink-0 tabular-nums ${

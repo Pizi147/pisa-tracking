@@ -54,7 +54,7 @@ const ketQua = (r: Hang): 'sos' | 'dat' | 'thieu' | 'khac' => {
 
 /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8): GIỮ Target (mockup `ho-so-lop.html`), cột Phụ huynh của TVV / CX (OV-10b) và ⋯ thao tác từng dòng (V4). */
 const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
-  { key: 'ten', nhan: t('Học viên'), kieu: 'ten' },
+  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 220 },
   { key: 'target', nhan: 'Target', kieu: 'so', rong: 72 },
   { key: 'mt', nhan: 'MT', kieu: 'so', rong: 64 },
   { key: 'l', nhan: 'L', kieu: 'diem', rong: 76 }, { key: 'r', nhan: 'R', kieu: 'diem', rong: 76 },
@@ -140,7 +140,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
       case 'target': return <TargetText band={r.cycle?.target} kck={r.cycle?.khongCamKet} />;
       case 'ph': return r.lienHe ? <OPhuHuynh l={r.lienHe} /> : <span className="text-faint">—</span>;
       case 'nut': return <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })} />;
-      case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-200 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
+      case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="font-semibold text-slate-100 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
       case 'l': case 'r': case 'w': case 's': case 'ovr': return oDiem(r, h, c.key);
       case 'kq': return <OKetQua r={r} h={h} kq={kq.get(r.id)!} />;
       case 'thi': return <OLichThi l={r.lichThi} homNay={homNay} the={dienThoai} />;
@@ -214,12 +214,13 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   };
   const lopHang = (r: Hang) => `${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
   const caseMo = (r: Hang) => (caseCua.get(r.id) ?? []).map((ca) => <TheCase key={ca.id} c={ca} ngan={ngan} onMo={(view) => setNgan2({ caseId: ca.id, view, hv: r.fullName })} />);
-  const hangCua = (r: Hang) => (
+  const hangCua = (r: Hang) => { const coPhuHang = COT.some((c) => !!phuCua(r, c)); return (
     <Fragment key={r.id}>
       <tr className={`${mo === r.id ? 'dang-mo' : ''} ${lopHang(r)}`}>
         {COT.map((c) => {
           const phu = phuCua(r, c);
-          return <OBang key={c.key} c={c} className={c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}>{oCua(r, c)}{phu && <span className="bang-phu -mx-3 whitespace-nowrap" data-phu-odiem="">{phu}</span>}</OBang>;
+          /* V8-HSL: hàng 48 / 60 px (có dòng phụ) như mockup — đệm dọc 8. */
+          return <OBang key={c.key} c={c} className={`!align-middle !py-2 ${coPhuHang ? '!h-[60px]' : '!h-12'} ${c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}`}>{oCua(r, c)}{phu && <span className="bang-phu -mx-3 whitespace-nowrap" data-phu-odiem="">{phu}</span>}</OBang>;
         })}
       </tr>
       {mo === r.id && (
@@ -232,7 +233,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
         </tr>
       )}
     </Fragment>
-  );
+  ); };
 
   return (
     <section className="card overflow-clip">
@@ -241,7 +242,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
         {cachXem && <span aria-hidden className="h-6 w-px bg-[color:var(--line-strong)] max-sm:hidden" />}
         {(['tat-ca', 'sos', 'thieu'] as const).map((k) => (
           <button key={k} type="button" aria-pressed={loc === k} onClick={() => { setLoc(k); setMo(null); }}
-            className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-10 ${loc === k ? CHIP_CHON : CHIP_THUONG}`}>
+            className={`relative h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-10 max-sm:after:absolute max-sm:after:inset-x-0 max-sm:after:-inset-y-0.5 max-sm:after:content-[''] ${loc === k ? CHIP_CHON : CHIP_THUONG}`}>
             {k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? 'SOS' : t('Chưa đủ dữ liệu')} <span className="font-bold tabular-nums">{dem[k]}</span>
           </button>
         ))}
@@ -256,7 +257,8 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
           </span>
         )}
       </div>
-      <Bang ten={t('Học viên lớp {lop}', { lop: maLop })} cot={COT} hang={ds} khoa={(r) => r.id}
+      {/* V8-HSL: cột chia đều như mockup (`deu`) — cột tên không nuốt hết phần dư; ô căn giữa dọc (tên ngang hàng điểm). */}
+      <Bang deu ten={t('Học viên lớp {lop}', { lop: maLop })} cot={COT} hang={ds} khoa={(r) => r.id}
         oCua={oCua} phuCua={phuCua} hangRieng={hangCua} theRieng={theEm} lopHang={lopHang} dangMo={(r) => mo === r.id}
         sauThe={(r) => mo === r.id && <div id={`case-${r.id}`} className="mt-2 flex flex-col gap-2.5">{caseMo(r)}</div>}
         khung={false} dinh rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca'
