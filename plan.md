@@ -249,6 +249,11 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 30/10 (đêm) — PR-B BAN-GIAO-GV #731 để lại
+- [XM] Gom câu `luuPhanCong` theo lô (`TRAN_GHI_LO.luuPhanCong8Lop`, ~23 câu / lớp) — chưa làm ở PR-B; PR riêng (kế hoạch toc-do).
+- `tocDoDuong.ts`: thêm đường `GET /ban-giao-gv/:id` khi seed demo có việc bàn giao GV.
+- Hỏi chủ SP: hạn việc bàn giao khi hiệu lực "Từ tuần" sau (hàm chung tạo + 5 ngày, có thể quá hạn trước hiệu lực) · GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán]).
+
 ### 30/10 (tối) — chủ SP duyệt mockup PANEL-V10 #723 (KHÔNG mockup lại; chỉnh ghi ở đây, kế hoạch code phải theo)
 - **Điểm kỹ năng = đạt / không đạt, KHÔNG phải lên / xuống:** bỏ ▼ / ▲ ở điểm (▲ ▼ chỉ dùng cho TIẾN ĐỘ / so lượt trước). Kỹ năng hụt: màu + **✗**, đạt: **✓** — đúng kiểu ô Overall (không phân biệt chỉ bằng màu). Áp panel + bảng em + HV & Lớp. G12 giữ (✓/✗ trước số).
 - **Tên TVV dưới tên HV (bảng em hồ sơ lớp): nhỏ hơn mockup một nấc** (vẫn chữ phụ mờ).
