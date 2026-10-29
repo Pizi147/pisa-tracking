@@ -3,6 +3,7 @@
  * XL-1 luật thuần · XL-2 migrate thẻ Mini Test · XL-3 GET panel = việc · XL-4 POST lô · XL-5 tự giữ + Hoàn tác · XL-6 tốc độ.
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -22,6 +23,8 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
   const { createApp } = await import('../app.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const { trongBoNho } = await import('../platform/nguCanhRequest.ts');
+  const dbMod: any = await import('../db.ts');
+  const { default: SqliteDb } = await import('libsql');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const QL = P.mbManager;
@@ -131,14 +134,30 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
   const theMini = (sid: number, mtId: number) => Number(conn.prepare(
     `INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, trang_thai, tao_luc) VALUES ('bao_len_mini_test', 'bao-len', 'mini_test', ?, ?, 'cho', ?)`,
   ).run(mtId, sid, NOW).lastInsertRowid);
-  /** Giả DB cũ (chưa bảng): cất bảng hiện có sang tên khác, chạy `fn`, xong trả lại (các phép kiểm khác đã có dòng). */
-  const voiDbCu = (fn: () => void) => {
-    conn.exec('ALTER TABLE xet_lai_lo_trinh RENAME TO xet_lai_cat; DROP INDEX IF EXISTS ix_xet_lai_hv; DROP INDEX IF EXISTS ux_xet_lai_tu_dong');
-    try { fn(); } finally {
-      conn.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
-      conn.exec(`DROP TABLE IF EXISTS xet_lai_lo_trinh; ALTER TABLE xet_lai_cat RENAME TO xet_lai_lo_trinh;
-        CREATE INDEX ix_xet_lai_hv ON xet_lai_lo_trinh (student_id, lenh_id);
-        CREATE UNIQUE INDEX ux_xet_lai_tu_dong ON xet_lai_lo_trinh (student_id, lenh_id, moc) WHERE tu_dong = 1;`);
+  /**
+   * Giả DB cũ (chưa bảng) trên BẢN SAO RIÊNG của database kiểm — KIEM-CHAP-CHON: trước đây cất / trả bảng bằng DROP / RENAME ngay trên kết nối
+   * dùng chung. SQLite từ chối DDL ("database table is locked") khi trên kết nối còn BẤT KỲ câu lệnh dở nào hoặc một kết nối khác cùng tệp
+   * đang đọc (libsql dùng chung bộ đệm) — chập chờn khi `npm run check` chạy song song; lệnh trả bảng trong `finally` hỏng → bảng kẹt tên
+   * `xet_lai_cat`, mọi phép kiểm sau báo "no such table: xet_lai_lo_trinh". Nay: chép tệp DB + WAL (không cần khoá), mở kết nối riêng, cho
+   * `db()` trỏ vào nó trong lúc chạy `fn`, xong trả lại và xoá bản sao — DB dùng chung không bị DDL nào.
+   */
+  const voiDbCu = (fn: (ban: any) => void) => {
+    const goc = dbMod.DB_PATH as string;
+    /* Thư mục tạm tiền tố `z2-`: run.ts tự dọn sau 1 giờ — Windows không cho xoá tệp ngay khi câu lệnh đã nhớ (db.ts) chưa được dọn. */
+    const thuMuc = fs.mkdtempSync(path.join(os.tmpdir(), 'z2-xl2-'));
+    const tep = path.join(thuMuc, 'db-cu.sqlite');
+    for (const duoi of ['', '-wal']) if (fs.existsSync(goc + duoi)) fs.copyFileSync(goc + duoi, tep + duoi);
+    const ban = new SqliteDb(tep);
+    const cu = dbMod.db();
+    try {
+      ban.exec('DROP INDEX IF EXISTS ix_xet_lai_hv; DROP INDEX IF EXISTS ux_xet_lai_tu_dong; DROP TABLE xet_lai_lo_trinh');
+      ban.prepare('DELETE FROM demo_config WHERE key = ?').run(xl.MOC_TU_GIU);
+      dbMod.datKetNoiChoPhepKiem(ban);
+      fn(ban);
+    } finally {
+      dbMod.datKetNoiChoPhepKiem(cu);
+      ban.close();
+      try { fs.rmSync(thuMuc, { recursive: true, force: true }); } catch { /* Windows còn giữ tệp — run.ts dọn sau */ }
     }
   };
   check('XL-2 · migrate: DB cũ (chưa bảng) → tạo bảng + mốc tự giữ một lần; thẻ "Mini Test chưa đạt" của em KHÔNG có dòng (d) giữ nguyên; chạy hai lần không đổi gì, không tính tập; DB mã hiện hành không đổi', () => {
@@ -147,16 +166,23 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const a0: string[] = [], a1: string[] = [], a2: string[] = [];
     mig.migratePrXetLai(conn, a0);
     assert(!a0.length && !get(`SELECT 1 FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU), `DB mã hiện hành: ${JSON.stringify(a0)}`);
-    voiDbCu(() => {
-      mig.migratePrXetLai(conn, a1);
-      assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', 'thẻ không có dòng (d) phải giữ');
-      assert(get(`SELECT value FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU)?.value === TODAY && a1.some((x) => /mốc tự giữ/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
-      /* Lần 2 (bảng đã có, thẻ chờ vẫn còn): không câu nào ngoài kiểm bảng — không tính tập Xét lại mỗi lần khởi động. */
-      let n = 0; const goc = conn.prepare.bind(conn);
-      (conn as any).prepare = (sql: string) => { n += 1; return goc(sql); };
-      try { mig.migratePrXetLai(conn, a2); } finally { (conn as any).prepare = goc; }
-      assert(!a2.length && n === 1, `lần 2: ${JSON.stringify(a2)} · ${n} câu`);
-    });
+    /* KIEM-CHAP-CHON: một câu đang dở trên kết nối dùng chung (như lúc chạy song song) không được làm hỏng phép kiểm hay DB dùng chung. */
+    const doDang = conn.prepare('SELECT id FROM students');
+    doDang.run();
+    try {
+      voiDbCu((ban) => {
+        const g = (sql: string, ...a: unknown[]) => ban.prepare(sql).get(...a) as any;
+        mig.migratePrXetLai(ban, a1);
+        assert(g('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', 'thẻ không có dòng (d) phải giữ');
+        assert(g(`SELECT value FROM demo_config WHERE key = ?`, xl.MOC_TU_GIU)?.value === TODAY && a1.some((x) => /mốc tự giữ/.test(x)), `lần 1: ${JSON.stringify(a1)}`);
+        /* Lần 2 (bảng đã có, thẻ chờ vẫn còn): không câu nào ngoài kiểm bảng — không tính tập Xét lại mỗi lần khởi động. */
+        let n = 0; const goc = ban.prepare.bind(ban);
+        ban.prepare = (sql: string) => { n += 1; return goc(sql); };
+        try { mig.migratePrXetLai(ban, a2); } finally { delete ban.prepare; }
+        assert(!a2.length && n === 1, `lần 2: ${JSON.stringify(a2)} · ${n} câu`);
+      });
+    } finally { doDang.all(); }   // chạy lại hết một lượt = đặt lại câu dở
+    assert(get(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'xet_lai_lo_trinh'`), 'DB dùng chung vẫn còn bảng xet_lai_lo_trinh');
     conn.prepare('DELETE FROM yeu_cau_duyet WHERE id = ?').run(id);
   });
 
@@ -319,10 +345,13 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`, mt.id), 'không còn thẻ Báo lên');
     /* Thẻ cũ (trước deploy) của em đã có dòng (d) → migrate đóng; "Đã xét lại" đúng quyết định trước. */
     const the = theMini(B.sid, mt.id), theKhac = theMini(B.sid, mt.id + 900_000);
-    voiDbCu(() => mig.migratePrXetLai(conn, []));
-    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', the).trang_thai === 'tu_dong', 'thẻ có dòng (d) đúng Mini Test: đóng');
-    assert(get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', theKhac).trang_thai === 'cho', 'thẻ Mini Test khác: giữ');
-    conn.prepare('DELETE FROM yeu_cau_duyet WHERE id = ?').run(theKhac);
+    voiDbCu((ban) => {
+      mig.migratePrXetLai(ban, []);
+      const tt = (id: number) => ban.prepare('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?').get(id)?.trang_thai;
+      assert(tt(the) === 'tu_dong', 'thẻ có dòng (d) đúng Mini Test: đóng');
+      assert(tt(theKhac) === 'cho', 'thẻ Mini Test khác: giữ');
+    });
+    for (const id of [the, theKhac]) conn.prepare('DELETE FROM yeu_cau_duyet WHERE id = ?').run(id);
     assert(e.xetLaiTruoc?.quyetDinh === 'tiep_tuc' && e.xetLaiTruoc.chu === 'Tiếp tục BE' && !e.xetLaiTruoc.tuDong, `Đã xét lại: ${JSON.stringify(e.xetLaiTruoc)}`);
     const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: B.sid, quyetDinh: 'tiep_tuc' }]);
     assert(!r.failed.length && !dong(B.sid), `Tiếp tục lần hai: ${JSON.stringify(r)}`);
