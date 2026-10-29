@@ -1,6 +1,6 @@
 /**
- * `npm run check` / `npm test` (GON-MA-2): chạy `run.js` chia PISA_SO_NHOM nhóm song song (mặc định 2: nhóm 1 + nhóm các tệp `TACH`
- * của `run.ts`; `=1` tuần tự như cũ), cùng lúc với `tocDo.run.js` (database riêng sẵn). In log từng tiến trình theo thứ tự, rồi một
+ * `npm run check` / `npm test` (GON-MA-2, CN-2): chạy `run.js` chia PISA_SO_NHOM nhóm song song (tệp độc lập chia tham lam theo thời gian —
+ * `chiaThamLam` trong dbGoc.ts; nhóm 1 còn phần chuỗi; `=1` một tiến trình), cùng lúc với `tocDo.run.js` (database riêng sẵn). In log từng tiến trình theo thứ tự, rồi một
  * dòng tổng như `run.js` cũ. Mã thoát ≠ 0 khi một tiến trình đỏ / chết.
  * Ghi `dist-server/data/lan-cuoi.json` (thời gian + số phép kiểm theo tệp; `PISA_DEM_DONG=1` thêm số dòng mỗi tệp thêm vào DB) để so lần sau.
  */
@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const N = Math.max(1, Number(process.env.PISA_SO_NHOM) || 2);
+const N = Math.max(1, Number(process.env.PISA_SO_NHOM) || 3);
 const t0 = Date.now();
 
 type Ket = { ten: string; ma: number; ra: string; giay: number };
@@ -44,7 +44,7 @@ for (const v of viec) {
   Object.assign(thoiGian, kq.thoiGian);
   Object.assign(dongThem, kq.dongThem);
   for (const [t, n] of Object.entries(kq.soPhep as Record<string, number>)) soPhep[t] = (soPhep[t] ?? 0) + n;
-  tomTat.push(`${k.ten} ${k.giay} s · ${kq.maxRssMb} MB`);
+  tomTat.push(`${k.ten} ${k.giay} s · ${kq.maxRssMb} MB · doc lap: ${kq.docLap} tệp`);
 }
 fs.writeFileSync(path.resolve(DIR, '../../../data/lan-cuoi.json'), JSON.stringify({ thoiGian, soPhep, dongThem }));
 
