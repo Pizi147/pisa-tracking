@@ -7,7 +7,7 @@
  */
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, invalidate } from '../../lib/api.ts';
+import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from './thongBaoVang.ts';
@@ -165,9 +165,9 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
       const r = await api.put<any>(`/regular/attempts/${attemptId}/scores/${skill}`, body);
       /* Không `invalidate('/cham')`: Lịch Test tự tải lại dải số GỘP 1,5 s sau lần lưu cuối (PR-UX1 Q14) qua `onReload` —
          tải lại mỗi ô làm nặng Turso. Lưới (`/classes/:id/cham`) vẫn tải lại qua `/classes`. */
-      invalidate('/regular'); invalidate('/classes'); invalidate('/attempts');
-      invalidate('/students'); invalidate('/tong-quan');
-      invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
+      /* W1: điểm thường → gộp vô hiệu 1,5 s; "-" (vắng, đổi lịch) → ngay. PR-S6F-a: badge /my-work vẫn tải lại sau khi nhập điểm. */
+      const ds = ['/regular', '/classes', '/attempts', '/students', '/tong-quan', '/my-work'];
+      if ('noShow' in body) ds.forEach(invalidate); else invalidateGop(...ds);
       tt.thanhCong(skill);
       onReload();
       return r ?? {};

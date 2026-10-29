@@ -56,6 +56,29 @@ export function invalidate(prefix: string) {
   listeners.forEach((l) => l(prefix));
 }
 
+/*
+ * W1 (giảm dòng đọc Turso, PTA 30/10): lưu MỖI ô điểm từng gọi `invalidate` ngay cho /classes, /my-work, /students, /tong-quan, /attempts →
+ * mỗi ô kéo cả lưới lớp + /my-work (badge luôn gắn) tải lại. `invalidateGop` gom tiền tố, vô hiệu MỘT lần 1,5 s sau lần gọi cuối.
+ * Số vẫn đúng khi người dùng NHÌN: trang / khối nào gắn hoặc đổi đường khớp tiền tố đang chờ thì xả ngay (`xaGop(path)` trong `batDauTai`),
+ * đổi trang thì xả hết (App) — không nơi nào còn báo việc đã xong.
+ */
+export const GOP_VO_HIEU_MS = 1500;
+const choGop = new Set<string>();
+let henGop: ReturnType<typeof setTimeout> | null = null;
+export function invalidateGop(...prefixes: string[]) {
+  for (const p of prefixes) choGop.add(p);
+  if (henGop) clearTimeout(henGop);
+  henGop = setTimeout(() => { henGop = null; xaGop(); }, GOP_VO_HIEU_MS);
+}
+/** Xả ngay các tiền tố đang chờ: không truyền = tất cả; truyền `path` = chỉ tiền tố mà `path` bắt đầu bằng. */
+export function xaGop(path?: string) {
+  const ds = [...choGop].filter((p) => path === undefined || path.startsWith(p));
+  if (!ds.length) return;
+  for (const p of ds) choGop.delete(p);
+  if (!choGop.size && henGop) { clearTimeout(henGop); henGop = null; }
+  ds.forEach(invalidate);
+}
+
 /** OV-14a (F03): như `invalidate` nhưng KHÔNG gọi tải lại — chỉ để lời gọi đang bay của tiền tố này về sau bị bỏ (đã tự cập nhật tại chỗ). */
 export function boLoiGoiDangBay(prefix: string) { demXoa(prefix); }
 

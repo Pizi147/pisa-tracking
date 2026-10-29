@@ -9760,6 +9760,9 @@ await runPrKhtGonTests({ check, assert } as any);
 // ==================================================================== RA-LUONG (rà soát luồng đêm 29/10)
 const { runPrRaLuongTests } = bocTep('prRaLuong', await import('./prRaLuong.tests.ts'));
 await runPrRaLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== W1 (gộp tải lại sau lưu điểm — giảm dòng đọc Turso)
+const { runPrW1GopTaiLaiTests } = bocTep('prW1GopTaiLai', await import('./prW1GopTaiLai.tests.ts'));
+await runPrW1GopTaiLaiTests({ check, checkAsync, assert } as any);
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);
