@@ -1532,6 +1532,21 @@ api.post('/phan-cong/luu', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return phanCongGvSvc.luuPhanCong(principalOf(req), req.body ?? {});
 }));
+/** PC-GV-A: Hoàn tác một lần lưu (`lo`) hoặc Đổi mốc / Huỷ lịch đổi (`dao`) — 409 khi đã có thay đổi sau. */
+api.post('/phan-cong/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  phanCongGvSvc.hoanTacLuu(principalOf(req), { lo: req.body?.lo, dao: req.body?.dao });
+  return { ok: true };
+}));
+/** PC-GV-A: lịch đổi chờ — Đổi mốc (tuần khác / Ngay hôm nay) · Huỷ lịch đổi. */
+api.post('/phan-cong/cho/doi-moc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return phanCongGvSvc.doiMocCho(principalOf(req), req.body?.ids, req.body?.hieuLuc);
+}));
+api.post('/phan-cong/cho/huy', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return phanCongGvSvc.huyCho(principalOf(req), req.body?.ids);
+}));
 
 /** Tạo lớp = lớp + phân công trong MỘT giao dịch (YC-1); tên lớp do máy ghép từ chương trình/lộ trình/số (T1). */
 api.post('/classes', requireAuth, wrap((req) => {

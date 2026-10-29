@@ -266,4 +266,77 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const m = own.chonViecChuyen(X, 'FT', doi, () => new Set(['speaking']));
     assert(JSON.stringify(m.get('listening')) === JSON.stringify({ caseIds: [cL], paIds: [pa] }) && chu(cL) === gA, JSON.stringify([...m]));
   }));
+
+  /* ---------------------------------------------------------------- A4 · tới hạn · Đổi mốc · Huỷ lịch đổi · Hoàn tác */
+  const demTa = (l: number) => one(`SELECT COUNT(*) n FROM teacher_assignments WHERE class_id = ?`, l).n as number;
+  const henL = (u: number) => pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', u) }], hieuLuc: { loai: 'tuan', tuanId: T14 } });
+  check('A4 · tới hạn: lịch L A→B (giả tới hạn hôm nay) → apDoiDenHan áp: da_ap, effective_from = hiệu lực, Case L chuyển; chạy lần hai không làm gì', () => thu(() => {
+    const cL = caseMoi(emX, 'listening', gA);
+    const r = henL(gB);
+    conn.prepare(`UPDATE doi_phan_cong SET hieu_luc = ? WHERE id = ?`).run(TODAY, r.lo);
+    const k1 = pc.apDoiDenHan(TODAY);
+    const dong = one(`SELECT * FROM doi_phan_cong WHERE id = ?`, r.lo);
+    const moi = one(`SELECT effective_from FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' AND status = 'active'`, X, gB);
+    assert(k1.daAp === 1 && dong.trang_thai === 'da_ap' && dong.xem_den === addDays(TODAY, 7) && moi?.effective_from === TODAY && chu(cL) === gB, JSON.stringify({ k1, dong, moi }));
+    const n = demTa(X);
+    const k2 = pc.apDoiDenHan(TODAY);
+    assert(k2.daAp === 0 && demTa(X) === n, JSON.stringify(k2));
+  }));
+  check('A4 · RF4: lịch L GVCN→B hợp lệ lúc lưu; đổi NGAY S GVCN→C; tới hạn → không áp, giữ cho + lỗi "GVCN phải dạy", thu_ngay; người tạo đúng 1 thông báo; quét lại không ghi', () => thu(() => {
+    const r = henL(gB);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'speaking', gC) }] });
+    conn.prepare(`UPDATE doi_phan_cong SET hieu_luc = ? WHERE id = ?`).run(TODAY, r.lo);
+    const truoc = JSON.stringify(slotsCua(X));
+    pc.apDoiDenHan(TODAY);
+    const dong = one(`SELECT * FROM doi_phan_cong WHERE id = ?`, r.lo);
+    assert(dong.trang_thai === 'cho' && /GVCN phải dạy/.test(dong.loi ?? '') && dong.thu_ngay === TODAY && JSON.stringify(slotsCua(X)) === truoc, JSON.stringify(dong));
+    const tb = () => one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND kind = 'phan_cong_loi'`, QL.userId).n;
+    const dongDoi = () => JSON.stringify(all(`SELECT * FROM doi_phan_cong WHERE class_id = ? ORDER BY id`, X));
+    assert(tb() === 1, `thông báo ${tb()}`);
+    const d0 = dongDoi();
+    pc.apDoiDenHan(TODAY);
+    assert(tb() === 1 && dongDoi() === d0, 'quét lại trong ngày không ghi');
+  }));
+  check('A4 · Hoàn tác lưu ngay: phân công, chủ Case, người thực hiện PA, thông báo về như trước; ghi_dao có dao_luc', () => thu(() => {
+    const cL = caseMoi(emX, 'listening', gA), pa = paMoi(cL, gA);
+    const truoc = JSON.stringify(all(`SELECT * FROM teacher_assignments WHERE class_id = ? ORDER BY id`, X));
+    const r = pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
+    assert(chu(cL) === gB, 'đã chuyển');
+    pc.hoanTacLuu(QL, { lo: r.lo });
+    assert(JSON.stringify(all(`SELECT * FROM teacher_assignments WHERE class_id = ? ORDER BY id`, X)) === truoc, 'phân công về như trước');
+    assert(chu(cL) === gA && one(`SELECT performer_user_id u FROM case_interventions WHERE id = ?`, pa).u === gA, 'Case / PA về A');
+    assert(!one(`SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'phan_cong_moi'`, gB) && !one(`SELECT 1 FROM doi_phan_cong WHERE id = ?`, r.lo), 'thông báo + dòng đổi gỡ');
+    assert(one(`SELECT dao_luc FROM ghi_dao WHERE loai = 'phan_cong.luu' AND doi_tuong_id = ?`, r.lo)?.dao_luc, 'dao_luc');
+  }));
+  check('A4 · RF3: lưu ngay → đổi chủ Case vừa chuyển → Hoàn tác 409, phân công KHÔNG đổi', () => thu(() => {
+    const cL = caseMoi(emX, 'listening', gA);
+    const r = pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
+    own.doiChuCase(QL, cL, { ownerId: gA, ownerCu: gB });
+    const n = one(`SELECT COUNT(*) n FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, X).n;
+    const e = maLoi(() => pc.hoanTacLuu(QL, { lo: r.lo }));
+    assert(e?.status === 409 && /Không hoàn tác được/.test(e.message), `${e?.status} ${e?.message}`);
+    assert(one(`SELECT COUNT(*) n FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, X).n === n && ai(X, 'listening')[0] === gB, 'không đảo nửa chừng');
+  }));
+  check('A4 · Huỷ lịch đổi → huy; Hoàn tác huỷ → cho lại; Đổi mốc sang Ngay hôm nay → áp ngay', () => thu(() => {
+    const r = henL(gB);
+    const h = pc.huyCho(QL, [r.lo]);
+    assert(one(`SELECT trang_thai t FROM doi_phan_cong WHERE id = ?`, r.lo).t === 'huy', 'huỷ');
+    pc.hoanTacLuu(QL, { dao: h.dao });
+    assert(one(`SELECT trang_thai t FROM doi_phan_cong WHERE id = ?`, r.lo).t === 'cho', 'hoàn tác huỷ');
+    const m = pc.doiMocCho(QL, [r.lo], { loai: 'hom-nay' });
+    const dong = one(`SELECT * FROM doi_phan_cong WHERE id = ?`, r.lo);
+    assert(dong.trang_thai === 'da_ap' && dong.hieu_luc === TODAY && ai(X, 'listening')[0] === gB && m.dao, JSON.stringify(dong));
+    const r2 = pc.luuPhanCong(QL, { lop: [{ classId: Y, slots: doiO(Y, 'reading', gB) }], hieuLuc: { loai: 'tuan', tuanId: T14 } });
+    pc.doiMocCho(QL, [r2.lo], { loai: 'tuan', tuanId: tuan(addDays(T2, 21)) });
+    assert(one(`SELECT hieu_luc h FROM doi_phan_cong WHERE id = ?`, r2.lo).h === addDays(T2, 21), 'đổi mốc sang tuần khác');
+  }));
+  check('A4 · CX / GVBM gọi Hoàn tác, Huỷ / Đổi mốc lịch đổi → 403', () => thu(() => {
+    const r = henL(gB);
+    const cx = loadPrincipal(nguoi([{ role: 'cx', branches: [] }]));
+    for (const [ten, p] of [['CX', cx], ['GVBM', loadPrincipal(gC)]] as const) {
+      assert(maLoi(() => pc.hoanTacLuu(p, { lo: r.lo }))?.status === 403, `${ten} hoàn tác`);
+      assert(maLoi(() => pc.huyCho(p, [r.lo]))?.status === 403, `${ten} huỷ`);
+      assert(maLoi(() => pc.doiMocCho(p, [r.lo], { loai: 'hom-nay' }))?.status === 403, `${ten} đổi mốc`);
+    }
+  }));
 }
