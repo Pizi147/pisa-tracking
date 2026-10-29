@@ -39,7 +39,7 @@ KHÁC (có lý do):
 | Xem thêm · Mở hộp duyệt › · n ở chi nhánh khác · Xem | chân khối | chân nhóm ("yêu cầu") |
 | Gập / mở nhóm Chờ bạn duyệt | có | có (đang mở panel duyệt thì nhóm không gập) |
 | Của tôi / Của GV / Tất cả · Một GV | nút đoạn + "Xem việc của: một GV…" | như cũ, nhãn "Một GV" (aria-label giữ "Xem việc của") |
-| Lọc khung FT / Lớp thường | nút đoạn "✓ Tất cả · FT · Lớp thường" | ô chọn "Mọi khung ▾" (số trong mục), nhớ như cũ |
+| Lọc khung FT / Lớp thường | nút đoạn "✓ Tất cả · FT · Lớp thường" | ô chọn "Mọi khung ▾" (số trong mục), nhớ như cũ; "Mọi khung" / "Mọi hạn" là ô chọn gốc mang dáng nút "Một GV ▾" (`ChonDangNut`, PTA rà 29/10); 375 số ô lẻ thì ô cuối hết hàng |
 | Chi nhánh · Mọi hạn · chip lọc ✕ · Xoá lọc | có | như cũ |
 | Mở việc · Lưu · việc tiếp › · Em này còn · Hết việc nhóm · Gia hạn · Làm thay / Nhập hộ | panel phải | như cũ; mở việc thì đóng panel duyệt (một panel một lúc) |
 | Bỏ chữ đang gõ? khi đổi dòng | có ở panel việc | có cả panel duyệt (thử tay) |

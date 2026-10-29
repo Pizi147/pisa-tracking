@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
-import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { DaiNhom, DanhSachViec, tenBoEm, viecThat } from './DanhSachViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -339,7 +339,7 @@ export function HoTroHocVienTab() {
           {xong.size > 0 && <span className="text-xs tabular-nums text-ok">✓ {t('{n} xong hôm nay', { n: xong.size })}</span>}
           {/* V8-CV (P2): MỘT "Tất cả" (phạm vi có số) · Một GV ▾ · Mọi khung ▾ (thay nút đoạn FT / Lớp thường) · chi nhánh ▾ · Mọi hạn ▾.
               375: phạm vi một khối liền hết bề rộng, ô chọn lưới 2 × 2 cao 44 px. */}
-          <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-2 [&>*]:max-sm:min-w-0">
+          <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-2 [&>*]:max-sm:min-w-0 [&>*:last-child:nth-child(even)]:max-sm:col-span-2">
             {laQuanLy && data && (
               <>
                 {!chiChamDiem && <span className="max-sm:col-span-2 [&_button]:text-[13px] [&>div]:max-sm:flex [&>div>div]:max-sm:flex-1 [&_button]:max-sm:flex-1 [&_button]:max-sm:justify-center [&_button]:max-sm:text-[15px]">
@@ -353,12 +353,12 @@ export function HoTroHocVienTab() {
             {haiKhung && <CongTacKhung trang="cong-viec" coTatCa kieu="chon" chuTatCa={t('Mọi khung')} value={khung} dem={{ ft: demKhung.ft, thuong: demKhung.thuong }} onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />}
             <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
             {/* Mockup "Mọi hạn ▾" — P7: hạn ghi ngày thật, không "tuần này". */}
-            <select className="field h-8 w-auto !py-0 text-[13px] font-semibold max-sm:min-h-[44px] max-sm:w-full" aria-label={t('Lọc theo hạn')} value={loc === 'qua-han' || loc === 'den-het-tuan' ? loc : 'tat-ca'}
+            <ChonDangNut className="max-sm:w-full" aria-label={t('Lọc theo hạn')} value={loc === 'qua-han' || loc === 'den-het-tuan' ? loc : 'tat-ca'}
               onChange={(e) => setParam('loc', e.target.value === 'tat-ca' ? null : e.target.value)}>
               <option value="tat-ca">{t('Mọi hạn')}</option>
               <option value="qua-han">{t('Quá hạn')} · {demHan['qua-han'] ?? 0}</option>
               <option value="den-het-tuan">{t('Hạn đến {ngay}', { ngay: shortDate(cuoiTuan, homNay) })} · {demHan['den-het-tuan'] ?? 0}</option>
-            </select>
+            </ChonDangNut>
           </span>
         </header>
         {chipLoc.length > 0 && (

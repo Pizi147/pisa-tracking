@@ -1,4 +1,4 @@
-import { BoLocDoan } from './ui.tsx';
+import { BoLocDoan, ChonDangNut } from './ui.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -54,12 +54,12 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
   if (kieu === 'chon') {
     const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null ? `${ten} · ${dem[k]}${donVi ? ` ${donVi}` : ''}` : ten);
     if (chuTatCa) return (
-      <select className="field h-8 w-auto !py-0 text-[13px] font-semibold max-sm:min-h-[44px] max-sm:w-full" aria-label={t('Khung lớp')} value={value}
+      <ChonDangNut className="max-sm:w-full" aria-label={t('Khung lớp')} value={value}
         onChange={(e) => { const k = e.target.value as KhungLoc; nhoKhung(trang, k); onChange(k); }}>
         <option value="tat-ca">{chuTatCa}</option>
         <option value="ft">{chu('Fast Track', 'ft')}</option>
         <option value="thuong">{chu(t('Lớp thường'), 'thuong')}</option>
-      </select>
+      </ChonDangNut>
     );
     return (
       <select className="field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full" aria-label={t('Loại lớp')} value={value}
