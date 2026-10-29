@@ -6,8 +6,8 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILLS, MON_GOP, PERMISSIONS, apDoi, doiTheoO, moRongPhanCong, xemDen,
-  type DoiO, type HieuLucVao, type SlotPhanCong,
+  ENTRY_SKILLS, MON_GOP, PERMISSIONS, apDoi, doiTheoO, laCapBanGiao, moRongPhanCong, nguoiVietBanGiao, tenMonNgan, xemDen,
+  type DoiChoPc, type DoiO, type GvPc, type HieuLucVao, type LopPc, type SlotPhanCong, type TrangPhanCongGv, type XemTruocLuu,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf, periodById } from '../platform/week.ts';
@@ -16,7 +16,8 @@ import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { GhiDao, daoLai, luuGhiDao, timGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
 import { HttpError, badRequest, conflict, forbidden, loi, notFound, nowIso } from '../util.ts';
-import { programmeOfClass } from '../normal/regular.ts';
+import { programmeByCode, programmeOfClass } from '../normal/regular.ts';
+import { classProgressMany } from './schedule.ts';
 import { caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi } from '../cases/owner.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
 
@@ -36,15 +37,18 @@ const slotCua = (r: any): SlotPhanCong => ({ userId: r.user_id, skill: r.skill ?
  * Người KHÔNG còn là ứng viên của chi nhánh mà vẫn giữ ô: `nghi` = tài khoản không còn hoạt động (xoá / khoá) hoặc hết mọi vai giảng dạy;
  * còn vai ở chi nhánh khác → `ngoai-cn`. Một câu cho cả tập.
  */
-export function phanLoaiNguoi(ids: readonly number[]): Map<number, 'nghi' | 'ngoai-cn'> {
-  const m = new Map<number, 'nghi' | 'ngoai-cn'>();
+export function phanLoaiNguoi(ids: readonly number[]): Map<number, { loai: 'nghi' | 'ngoai-cn'; ten: string; kyNang: string[] }> {
+  const m = new Map<number, { loai: 'nghi' | 'ngoai-cn'; ten: string; kyNang: string[] }>();
   if (!ids.length) return m;
   for (const r of db().prepare(
-    `SELECT u.id, u.status, EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+    `SELECT u.id, u.status, u.full_name, (SELECT GROUP_CONCAT(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS skills,
+            EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
              WHERE ur.user_id = u.id AND ur.status = 'active' AND r.key IN ('teacher', 'manager')) AS con_vai
        FROM users u WHERE u.id IN (${inHang(ids.length)})`,
-  ).all(...ids) as any[]) m.set(r.id, r.status !== 'active' || !r.con_vai ? 'nghi' : 'ngoai-cn');
-  for (const id of ids) if (!m.has(id)) m.set(id, 'nghi');
+  ).all(...ids) as any[]) {
+    m.set(r.id, { loai: r.status !== 'active' || !r.con_vai ? 'nghi' : 'ngoai-cn', ten: r.full_name ?? '', kyNang: String(r.skills ?? '').split(',').filter(Boolean) });
+  }
+  for (const id of ids) if (!m.has(id)) m.set(id, { loai: 'nghi', ten: '', kyNang: [] });
   return m;
 }
 
@@ -56,7 +60,7 @@ function duocXepCua(nho: Map<number, DuocXep>, branchId: number, nguoiGiu: reado
     nho.set(branchId, m);
   }
   const thieu = [...new Set(nguoiGiu)].filter((id) => !m!.has(id));
-  for (const [id, v] of phanLoaiNguoi(thieu)) m.set(id, v);
+  for (const [id, v] of phanLoaiNguoi(thieu)) m.set(id, v.loai);
   return m;
 }
 
@@ -146,7 +150,7 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     const luc = nowIso();
     const moi: number[] = [];
     const kq = theoDoiMoi(g, ['doi_phan_cong', 'teacher_assignments', 'sos_case_history', 'notifications'], () => lop.map((l) => {
-      const khoa = [...new Set(l.doi.map((d) => d.khoa))];
+      const khoa = [...new Set(l.doi.map((d) => d.khoa))].filter((k) => sau.cho.get(l.classId)!.some((c) => c.khoa === k));
       if (khoa.length) {
         const dk = `class_id = ? AND trang_thai = 'cho' AND khoa IN (${inHang(khoa.length)})`;
         g.sua('doi_phan_cong', dk, l.classId, ...khoa);
@@ -165,7 +169,8 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
       });
       if (homNay) {
         /* Luôn áp ở "hôm nay" (kể cả không ô nào đổi) — đúng đường cũ: dòng môn gộp cũ hết việc thì kết thúc như mọi lần lưu. */
-        const r = apDoiLop(p, l.classId, rows, ngay, { g, duocXep: xepNho.get(l.branchId), via: l.full ? 'quan_ly' : 'gvcn' });
+        const r = apDoiLop(p, l.classId, rows, ngay, { g, duocXep: xepNho.get(l.branchId), via: l.full ? 'quan_ly' : 'gvcn',
+          lop: { branch_id: l.branchId, code: l.code, ct: l.ct, kyNang: l.kyNang } });
         if (!l.full && (r.added || r.ended)) {
           for (const id of quanLyCuaChiNhanh(l.branchId)) {
             if (id === p.userId) continue;
@@ -199,12 +204,12 @@ function theoDoiMoi<T>(g: GhiDao, bang: readonly string[], fn: () => T): T {
  * `moRongPhanCong` → kiểm ba luật + người xếp được → `ghiPhanCong`. Ném lỗi luật (nơi gọi quyết: lưu → 400; quét → giữ `cho` + lỗi).
  */
 export function apDoiLop(p: Principal, classId: number, rows: DongDoi[], ngay: string,
-  o: { g?: GhiDao; duocXep?: DuocXep; via?: string } = {}): { added: number; ended: number } {
+  o: { g?: GhiDao; duocXep?: DuocXep; via?: string; lop?: { branch_id: number; code: string; ct: string | null; kyNang: string[] } } = {}): { added: number; ended: number } {
   const conn = db();
-  const c = conn.prepare('SELECT branch_id, code FROM classes WHERE id = ?').get(classId) as any;
-  const prog = programmeOfClass(classId);
-  const ct = prog?.code ?? null;
-  const kyNang: string[] = prog?.skills ?? [...ENTRY_SKILLS];
+  const c = o.lop ?? conn.prepare('SELECT branch_id, code FROM classes WHERE id = ?').get(classId) as any;
+  const prog = o.lop ? null : programmeOfClass(classId);
+  const ct: string | null = o.lop ? o.lop.ct : prog?.code ?? null;
+  const kyNang: string[] = o.lop ? o.lop.kyNang : prog?.skills ?? [...ENTRY_SKILLS];
   const cu = (conn.prepare(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(classId) as any[]).map(slotCua);
   const doi: DoiO[] = rows.map((r) => ({ khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi }));
   const slots = moRongPhanCong(ct, kyNang, apDoi(cu, doi, kyNang));
@@ -357,4 +362,116 @@ export function hoanTacLuu(p: Principal, o: { lo?: unknown; dao?: unknown }): vo
     writeAudit({ actorUserId: p.userId, action: 'class.assign.hoan_tac', entityType: 'class', entityId: dong[0].class_id,
       after: { loai: g.loai, ghiDao: g.id, lop: [...new Set(dong.map((d) => d.class_id))] } });
   });
+}
+
+/* ================= A6 · góc Phân công GV (đọc theo chi nhánh) · xem trước hộp Lưu ================= */
+
+/** Thấy góc: QL / Quản trị (`class.assign` phủ chi nhánh — cũng là quyền sửa) + CX (chỉ xem). GV, TVV, Admin MT không. */
+export function quyenPhanCongGv(p: Principal, branchId: number): { xem: boolean; sua: boolean } {
+  const sua = can(p, PERMISSIONS.CLASS_ASSIGN, { branchId });
+  return { xem: sua || p.grants.some((g) => g.roleKey === 'cx' && (g.branchId === null || g.branchId === branchId)), sua };
+}
+
+/** Chi nhánh người xem mở được góc (grant toàn hệ thống → mọi chi nhánh). */
+function chiNhanhXem(p: Principal): number[] {
+  const gr = p.grants.filter((g) => g.roleKey === 'cx' || (g.roleKey !== 'teacher' && g.permissions.has(PERMISSIONS.CLASS_ASSIGN)));
+  if (gr.some((g) => g.branchId === null)) return (db().prepare('SELECT id FROM branches ORDER BY id').all() as any[]).map((r) => r.id as number);
+  return [...new Set(gr.map((g) => g.branchId as number))];
+}
+
+/**
+ * GÓC PHÂN CÔNG GV (`GET /hoc-vien-lop/phan-cong?branchId=`) — tải MỘT lần theo chi nhánh, số câu CỐ ĐỊNH (không theo số lớp): lớp active ·
+ * phân công đang chạy · lịch đổi chờ · tiến độ + số HV (`classProgressMany`) · ứng viên chi nhánh · người giữ ô không còn là ứng viên.
+ * `gv` = ứng viên ∪ người giữ ô (không ai khác — không lộ GV chi nhánh khác). Web đếm hai bảng tổng hợp bằng `demPhanCong(lop)`.
+ */
+export function trangPhanCongGv(p: Principal, branchId: number | null): TrangPhanCongGv {
+  const homNay = demoToday();
+  let cn = branchId;
+  if (cn === null) {
+    const ds = chiNhanhXem(p);
+    if (!ds.length) throw forbidden('Phân công GV dành cho Quản lý.');
+    if (ds.length > 1) return { chiNhanh: null, canChonChiNhanh: true, sua: false, homNay, lop: [], gv: [] };
+    cn = ds[0];
+  }
+  const q = quyenPhanCongGv(p, cn);
+  if (!q.xem) throw forbidden('Phân công GV dành cho Quản lý.');
+  quetDoiDenHan(homNay);
+  const conn = db();
+  const b = conn.prepare('SELECT id, code FROM branches WHERE id = ?').get(cn) as any;
+  if (!b) throw notFound('Không tìm thấy chi nhánh');
+  const LOP = `SELECT id FROM classes WHERE branch_id = ? AND status = 'active'`;
+  const lopRows = conn.prepare(`SELECT id, code, programme_code, is_fast_track, route FROM classes WHERE branch_id = ? AND status = 'active' ORDER BY code`).all(cn) as any[];
+  const theoLop = <T>(rows: any[], f: (r: any) => T) => {
+    const m = new Map<number, T[]>(lopRows.map((l) => [l.id as number, []]));
+    for (const r of rows) m.get(r.class_id)?.push(f(r));
+    return m;
+  };
+  const ta = theoLop(conn.prepare(`SELECT id, class_id, user_id, skill, is_core FROM teacher_assignments WHERE status = 'active' AND class_id IN (${LOP})`).all(cn) as any[], (r) => r);
+  const cho = theoLop(conn.prepare(`SELECT id, class_id, khoa, nguoi_cu, nguoi_moi, hieu_luc, loi FROM doi_phan_cong WHERE trang_thai = 'cho' AND class_id IN (${LOP}) ORDER BY id`).all(cn) as any[],
+    (r): DoiChoPc => ({ id: r.id, khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi, hieuLuc: r.hieu_luc, loi: r.loi }));
+  const tienDo = classProgressMany(lopRows.map((l) => l.id as number));
+  const ungVien = teacherCandidatesBranch(cn);
+  const laUngVien = new Set(ungVien.map((u) => u.id as number));
+  const giu = phanLoaiNguoi([...new Set([...ta.values()].flat().map((r) => r.user_id as number))].filter((id) => !laUngVien.has(id)));
+  const lop: LopPc[] = lopRows.map((l) => {
+    const prog = programmeByCode(l.programme_code);
+    const td = tienDo.get(l.id);
+    const ft = l.is_fast_track === 1;
+    const dong = ta.get(l.id)!;
+    return {
+      id: l.id, code: l.code, ct: prog?.code ?? null, ft, route: l.route ?? null, soHv: td?.activeStudents ?? 0,
+      tuan: !ft && td?.currentWeek && td.totalWeeks ? { n: td.currentWeek, tong: td.totalWeeks } : null,
+      kyNang: prog?.skills ? [...prog.skills] : [...ENTRY_SKILLS], slots: dong.map(slotCua), phienBan: phienBanPhanCong(dong, cho.get(l.id)!), cho: cho.get(l.id)!,
+    };
+  });
+  const gv: GvPc[] = [
+    ...ungVien.map((u) => ({ id: u.id as number, ten: u.full_name as string, kyNang: String(u.skills ?? '').split(',').filter(Boolean), nghi: null })),
+    ...[...giu].map(([id, v]) => ({ id, ten: v.ten, kyNang: v.kyNang, nghi: v.loai })),
+  ].sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+  return { chiNhanh: { id: b.id, code: b.code }, canChonChiNhanh: false, sua: q.sua, homNay, lop, gv };
+}
+
+/**
+ * XEM TRƯỚC HỘP LƯU (`POST /phan-cong/xem-truoc`, không ghi): mỗi cặp có người giao + người nhận — số Case / PA sẽ chuyển (`chonViecChuyen`, cùng hàm
+ * lúc áp), ai viết bàn giao (`nguoiVietBanGiao`, GVCN của bức tranh hiện tại), số em. Quyền như lưu.
+ */
+export function xemTruocLuu(p: Principal, body: { lop?: unknown }): XemTruocLuu {
+  const vao = Array.isArray(body?.lop) ? (body.lop as LuuLopVao[]) : null;
+  if (!vao?.length || vao.length > TOI_DA_LOP) throw badRequest('Danh sách lớp không hợp lệ.');
+  const ids = vao.map((l) => Number(l?.classId));
+  if (ids.some((id) => !Number.isInteger(id) || id <= 0) || new Set(ids).size !== ids.length) throw badRequest('Danh sách lớp không hợp lệ.');
+  const conn = db();
+  const cls = new Map((conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${inHang(ids.length)})`).all(...ids) as any[]).map((c) => [c.id as number, c]));
+  if (cls.size !== ids.length) throw notFound('Không tìm thấy lớp');
+  const hienTai = docHienTai(ids);
+  const tienDo = classProgressMany(ids);
+  const xepNho = new Map<number, DuocXep>();
+  return {
+    lop: vao.map((l) => {
+      const classId = Number(l.classId);
+      const c = cls.get(classId);
+      const full = can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
+      if (!full) require_(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId, branchId: c.branch_id }, 'Chỉ Quản lý hoặc GVCN của lớp mới phân công giáo viên.');
+      const prog = programmeOfClass(classId);
+      const ct = prog?.code ?? null;
+      const kyNang: string[] = prog?.skills ?? [...ENTRY_SKILLS];
+      const cu = hienTai.active.get(classId)!.map(slotCua);
+      const doi = doiTheoO(ct, kyNang, cu, moRongPhanCong(ct, kyNang, docSlots(l.slots)));
+      if (!full && doi.some((d) => d.khoa === 'gvcn')) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Quản lý chi nhánh.', { classId });
+      const sau = moRongPhanCong(ct, kyNang, apDoi(cu, doi, kyNang));
+      const conDay = (u: number) => new Set(sau.filter((s) => s.userId === u && !s.isCore && s.skill).map((s) => s.skill!));
+      const chon = chonViecChuyen(classId, ct, doi, conDay);
+      const gvcn = cu.find((s) => s.isCore)?.userId ?? null;
+      const cap = doi.filter(laCapBanGiao);
+      const xep = duocXepCua(xepNho, c.branch_id, [...cap.map((d) => d.nguoiCu!), ...(gvcn !== null ? [gvcn] : [])]);
+      return {
+        classId, code: c.code, soEm: tienDo.get(classId)?.activeStudents ?? 0,
+        cap: cap.map((d) => ({
+          ...d, nhan: d.khoa === 'gvcn' ? 'GVCN' : tenMonNgan(ct, d.khoa),
+          soCase: chon.get(d.khoa)?.caseIds.length ?? 0, soPa: chon.get(d.khoa)?.paIds.length ?? 0,
+          nguoiViet: nguoiVietBanGiao({ cuNghi: xep.get(d.nguoiCu!) === 'nghi', nguoiCu: d.nguoiCu!, gvcn, gvcnNghi: gvcn !== null && xep.get(gvcn) === 'nghi' }),
+        })),
+      };
+    }),
+  };
 }

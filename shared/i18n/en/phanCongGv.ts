@@ -10,4 +10,6 @@ export const EN_PHAN_CONG_GV = {
   'Lịch đổi vừa thay đổi — tải lại.': 'The scheduled change was just updated — reload.',
   'Chỉ Quản lý (hoặc GVCN với ô bộ môn lớp mình) mới đổi được phân công này.': 'Only a manager (or the homeroom teacher, for subject slots of their class) can change this assignment.',
   'Không còn bản ghi để hoàn tác.': 'Nothing left to undo.',
+  'Phân công GV dành cho Quản lý.': 'Teacher assignment is for managers.',
+  'Không tìm thấy chi nhánh': 'Branch not found',
 };

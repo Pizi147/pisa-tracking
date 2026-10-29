@@ -368,4 +368,75 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
     assert(sc(loadPrincipal(cpGv.userId)) === truoc[0] && sc(loadPrincipal(tvv.userId)) === truoc[1], 'không đổi');
   }));
+
+  /* ---------------------------------------------------------------- A6 · GET góc theo chi nhánh · xem trước hộp Lưu · số câu cố định */
+  const ngc: any = await import('../platform/nguCanhRequest.ts');
+  check('A6 · QL MB: mọi lớp active của MB, slots đúng teacher_assignments, gv = ứng viên MB ∪ người giữ ô', () => thu(() => {
+    const tr = pc.trangPhanCongGv(QL, MB);
+    const lopSql = all(`SELECT id FROM classes WHERE branch_id = ? AND status = 'active' ORDER BY id`, MB).map((r) => r.id).join(',');
+    assert(tr.sua === true && tr.chiNhanh?.id === MB && tr.lop.map((l: any) => l.id).sort((a: number, b: number) => a - b).join(',') === lopSql, 'tập lớp');
+    const x = tr.lop.find((l: any) => l.id === X);
+    const k = (ds: any[]) => ds.map((s: any) => `${s.isCore ? 'gvcn' : s.skill}:${s.userId}`).sort().join(',');
+    assert(x && k(x.slots) === k(slotsCua(X)) && x.ft === true && x.soHv >= 1 && x.phienBan === classes.classTeachers(QL, X).phienBan, JSON.stringify(x));
+    const ungVien = new Set(classes.teacherCandidatesBranch(MB).map((u: any) => u.id));
+    const giu = new Set(tr.lop.flatMap((l: any) => l.slots.map((s: any) => s.userId)));
+    assert(tr.gv.every((g: any) => ungVien.has(g.id) || giu.has(g.id)) && [...ungVien].every((id) => tr.gv.some((g: any) => g.id === id)), 'gv');
+  }));
+  check('A6 · CX đọc được (sua = false); GVCN, GVBM, TVV, Admin MT → 403', () => thu(() => {
+    const cx = loadPrincipal(nguoi([{ role: 'cx', branches: [] }]));
+    const tr = pc.trangPhanCongGv(cx, MB);
+    assert(tr.sua === false && tr.lop.length > 0, 'CX xem');
+    const adminMt = loadPrincipal(nguoi([{ role: 'office_admin', branches: ['MB'] }]));
+    const tvv = loadPrincipal(nguoi([{ role: 'consultant', branches: ['MB'] }]));
+    for (const [ten, p] of [['GVCN', loadPrincipal(gA)], ['GVBM', loadPrincipal(gC)], ['TVV', tvv], ['Admin MT', adminMt]] as const) {
+      const e = maLoi(() => pc.trangPhanCongGv(p, MB));
+      assert(e?.status === 403, `${ten} phải 403, được ${e?.status}`);
+    }
+    const tq = pc.trangPhanCongGv(P.admin, null);
+    assert(tq.canChonChiNhanh === true && tq.chiNhanh === null && tq.lop.length === 0, 'Quản trị nhiều chi nhánh: chọn chi nhánh');
+  }));
+  check('A6 · demPhanCong(trang.lop) khớp đếm SQL trực tiếp (một nguồn)', () => thu(() => {
+    const tr = pc.trangPhanCongGv(QL, MB);
+    const m = d.demPhanCong(tr.lop);
+    const sql = all(`SELECT ta.user_id u, SUM(ta.is_core = 0 AND c.is_fast_track = 1) ft, SUM(ta.is_core = 0 AND c.is_fast_track = 0) th,
+        SUM(ta.is_core = 1 AND c.is_fast_track = 1) cnFt, SUM(ta.is_core = 1 AND c.is_fast_track = 0) cnTh
+      FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE ta.status = 'active' AND c.status = 'active' AND c.branch_id = ? GROUP BY ta.user_id`, MB);
+    for (const r of sql) {
+      const x = m.get(r.u);
+      assert(x && x.ft === r.ft && x.th === r.th && x.cnFt === r.cnFt && x.cnTh === r.cnTh, `GV ${r.u}: ${JSON.stringify(x)} ≠ ${JSON.stringify(r)}`);
+    }
+    assert(m.size === sql.length, `${m.size} ≠ ${sql.length}`);
+  }));
+  check('A6 · xemTruocLuu đổi L có 1 Case L của A → soCase 1, người viết GV cũ, soEm; lưu thật chuyển đúng Case đó', () => thu(() => {
+    const cL = caseMoi(emX, 'listening', gA);
+    const xt = pc.xemTruocLuu(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
+    const cap = xt.lop[0].cap;
+    assert(cap.length === 1 && cap[0].soCase === 1 && cap[0].soPa === 0 && cap[0].nhan === 'L' && cap[0].nguoiViet.loai === 'gv-cu' && cap[0].nguoiViet.id === gA, JSON.stringify(xt));
+    assert(xt.lop[0].soEm >= 1 && xt.lop[0].code === 'MB PCGV-X' && chu(cL) === gA, 'không ghi');
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
+    assert(chu(cL) === gB, 'cùng Case');
+    assert(maLoi(() => pc.xemTruocLuu(loadPrincipal(gC), { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] }))?.status === 403, 'GVBM 403');
+  }));
+  check('A6 · số câu SQL của GET góc không tăng theo số lớp (thêm 2 lớp có phân công: chênh 0)', () => thu(() => {
+    const dem = () => ngc.trongBoNho(() => { const a = ngc.soCauSql(); pc.trangPhanCongGv(QL, MB); return ngc.soCauSql() - a; });
+    dem();
+    const n1 = dem();
+    for (const code of ['MB PCGV-T1', 'MB PCGV-T2']) { const l = lopMoi(code); gan(l, gA, null); gan(l, gA, 'listening'); gan(l, gF, 'reading'); }
+    xoaNho();
+    dem();
+    const n2 = dem();
+    assert(n1 === n2, `${n1} → ${n2}`);
+  }));
+
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+  check('A6 · POST /phan-cong/luu 3 lớp một ô (hôm nay) ≤ TRAN_GHI_LO.luuPhanCong3Lop câu', () => {
+    thu(() => {
+      const vao = [X, Y, Z].map((l) => ({ classId: l, slots: doiO(l, 'listening', gB) }));
+      const a = ngc.soCauSql();
+      pc.luuPhanCong(QL, { lop: vao });
+      const n = ngc.soCauSql() - a;
+      console.log(`    (đo: lưu 3 lớp một ô = ${n} câu)`);
+      assert(n <= (TRAN_GHI_LO as any).luuPhanCong3Lop, `${n} câu > trần ${(TRAN_GHI_LO as any).luuPhanCong3Lop}`);
+    });
+  });
 }

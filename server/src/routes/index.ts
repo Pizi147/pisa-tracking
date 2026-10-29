@@ -1533,6 +1533,8 @@ api.post('/phan-cong/luu', requireAuth, wrap((req) => {
   return phanCongGvSvc.luuPhanCong(principalOf(req), req.body ?? {});
 }));
 /** PC-GV-A: Hoàn tác một lần lưu (`lo`) hoặc Đổi mốc / Huỷ lịch đổi (`dao`) — 409 khi đã có thay đổi sau. */
+/** PC-GV-A: xem trước hộp Lưu — mỗi cặp đổi người: số Case / PA sẽ chuyển, ai viết bàn giao, số em (không ghi). */
+api.post('/phan-cong/xem-truoc', requireAuth, wrap((req) => phanCongGvSvc.xemTruocLuu(principalOf(req), req.body ?? {})));
 api.post('/phan-cong/hoan-tac', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   phanCongGvSvc.hoanTacLuu(principalOf(req), { lo: req.body?.lo, dao: req.body?.dao });
@@ -1582,6 +1584,11 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   });
 }));
 
+/** PC-GV-A: góc Phân công GV — cả chi nhánh một lần (QL / Quản trị sửa, CX xem; GV / TVV 403). */
+api.get('/hoc-vien-lop/phan-cong', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return phanCongGvSvc.trangPhanCongGv(principalOf(req), qInt(req, 'branchId') ?? null);
+}));
 /** Trước/Sau của hồ sơ lớp mở bằng link (PR-TD2-b): id + cách chấm của `/hoc-vien-lop` mặc định, không nạp lượt. */
 api.get('/hoc-vien-lop/ids', requireAuth, wrap((req) => hocVienLopSvc.idsHocVienLop(principalOf(req))));
 /* OV-10b: Học viên & Lớp của TVV / CX — mỗi em một dòng theo việc của vai, chip = `chipHocVien` (cùng ô Tổng quan). */

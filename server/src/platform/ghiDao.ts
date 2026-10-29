@@ -28,7 +28,15 @@ export class GhiDao {
   }
   /** Chụp trạng thái SAU thao tác của mọi dòng đã ghi (gọi SAU thao tác, trước khi lưu). */
   chot(): void {
-    for (const m of this.muc) m.sau = m.truoc.map((d) => this.conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid = ?`).get(d.__r) as Dong ?? { __r: d.__r, __mat: 1 });
+    /* PC-GV-A: một câu mỗi mục (lô ≤ 500 rowid) thay vì một câu mỗi dòng — lưu phân công nhiều lớp chụp hàng chục dòng. */
+    for (const m of this.muc) {
+      const co = new Map<unknown, Dong>();
+      for (let i = 0; i < m.truoc.length; i += 500) {
+        const lo = m.truoc.slice(i, i + 500).map((d) => d.__r);
+        for (const r of this.conn.prepare(`SELECT rowid AS __r, * FROM ${m.bang} WHERE rowid IN (${lo.map(() => '?').join(',')})`).all(...lo) as Dong[]) co.set(r.__r, r);
+      }
+      m.sau = m.truoc.map((d) => co.get(d.__r) ?? { __r: d.__r, __mat: 1 });
+    }
   }
   /** PC-GV-A: bỏ dòng "sửa" của `bang` mà thao tác KHÔNG đổi (chụp rộng trước khi biết dòng nào bị ghi) — Hoàn tác không bị chặn bởi dòng không liên quan. */
   boKhongDoi(bang: string): void {
