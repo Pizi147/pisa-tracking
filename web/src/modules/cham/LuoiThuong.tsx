@@ -144,6 +144,8 @@ export function tongPhoBien(rows: Row[], k: string): number | null {
 
 /* BANG-1: rộng cột theo kiểu của `Bang`; ô môn sửa được chứa Nhận xét · đúng / tổng · ⋯ trên MỘT hàng → 236 px. */
 const COT_MON = 236;
+/** U0 (chủ SP 30/10): ô có ⋯ ở mép phải chừa đệm phải = nút (28 px) + 2 lề 4 px — ⋯ không đè tuần / số / "Nhận xét" của ô, kể cả khi rê. */
+const O_CO_MENU = 'group relative !pr-9';
 const COT_KQ = 260;
 
 /**
@@ -424,7 +426,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
          */
         if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
           return (
-            <OBang key={k} c={cc[k]} className="group relative text-slate-500" data-kn={k} tabIndex={0}
+            <OBang key={k} c={cc[k]} className={`${O_CO_MENU} text-slate-500`} data-kn={k} tabIndex={0}
               title={t('{tenMon}: làm bài tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>
               <span className="inline-flex items-baseline gap-1">{tuanLich(s.weekStart, homNay)}{menuO(k)}</span>
             </OBang>
@@ -432,7 +434,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
         }
         if (dung) {
           return (
-            <OBang key={k} c={cc[k]} className="group relative" data-kn={k} tabIndex={0}>
+            <OBang key={k} c={cc[k]} className={O_CO_MENU} data-kn={k} tabIndex={0}>
               <span className="inline-flex items-center gap-1">
                 <span className="text-xs text-slate-500" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
                 {menuO(k)}
@@ -441,7 +443,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
           );
         }
         return (
-          <OBang key={k} c={cc[k]} className={`group relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k} tabIndex={canEdit ? undefined : 0}
+          <OBang key={k} c={cc[k]} className={`${O_CO_MENU} ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k} tabIndex={canEdit ? undefined : 0}
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
             {/* BANG-1: Nhận xét · đúng / tổng một hàng; ⋯ ở mép phải ô, ẩn tới khi rê chuột / focus vào ô (điện thoại luôn hiện). */}
