@@ -447,8 +447,11 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
   const lenh: any[] = [];
   theoLoJson(ids, (json) => {
     lenh.push(...conn.prepare(
-      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich
-         FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id LEFT JOIN classes d ON d.id = l.lop_dich_id
+      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich,
+              n.programme_code AS ct_nguon, d.programme_code AS ct_dich,
+              CASE WHEN l.xac_nhan_luc IS NULL AND l.lop_dich_id IS NOT NULL THEN (SELECT json_group_array(json_array(ta.class_id, ta.user_id, ta.skill, ta.is_core))
+                FROM teacher_assignments ta WHERE ta.status = 'active' AND ta.class_id IN (l.lop_nguon_id, l.lop_dich_id)) END AS pc_json
+         FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id JOIN classes n ON n.id = l.lop_nguon_id LEFT JOIN classes d ON d.id = l.lop_dich_id
         WHERE l.lop_nguon_id IN (${DS_JSON}) AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ORDER BY s.full_name`,
     ).all(json) as any[]);
   });
@@ -457,8 +460,17 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
   theoLoJson(lenh.map((l) => l.id as number), (json) => {
     for (const r of conn.prepare(`SELECT lenh_id, mon FROM ban_giao_mon WHERE lam_lai = 0 AND lenh_id IN (${DS_JSON})`).all(json) as any[]) daGhi.add(`${r.lenh_id}:${r.mon}`);
   });
-  /* Chủ SP 30/10: môn ở lớp mới vẫn đúng GV cũ dạy → không cần bàn giao (một câu phân công lớp nguồn + đích của mọi lệnh chưa xác nhận). */
-  const cung = cungGvTheoLo(lenh.filter((l) => !l.xac_nhan_luc));
+  /* Chủ SP 30/10: môn ở lớp mới vẫn đúng GV cũ dạy → không cần bàn giao (phân công lớp nguồn + đích đi cùng câu lệnh — không thêm lượt). */
+  const pcLop: PhanCongLop = new Map();
+  for (const l of lenh.filter((x) => x.pc_json)) {
+    if (!pcLop.has(l.lop_nguon_id)) pcLop.set(l.lop_nguon_id, { ct: l.ct_nguon ?? null, rows: [] });
+    if (!pcLop.has(l.lop_dich_id)) pcLop.set(l.lop_dich_id, { ct: l.ct_dich ?? null, rows: [] });
+    for (const [classId, user_id, skill, is_core] of JSON.parse(l.pc_json) as any[][]) {
+      const x = pcLop.get(classId)!;
+      if (!x.rows.some((r) => r.user_id === user_id && r.skill === skill && r.is_core === is_core)) x.rows.push({ user_id, skill, is_core });
+    }
+  }
+  const cung = cungGvTuPhanCong(lenh.filter((l) => !l.xac_nhan_luc), pcLop);
   const canMon = (l: any, m: string) => !daGhi.has(`${l.id}:${m}`) && !cung.get(l.id)?.mon.has(m);
   const out: ViecBanGiao[] = [];
   for (const x of lop.values()) {
