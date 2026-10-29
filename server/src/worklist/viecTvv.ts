@@ -46,6 +46,9 @@ export function tvvCuaEm(ids: readonly number[]): Map<number, number | null> {
   return out;
 }
 
+/** S3: chỉ phép kiểm bật — chạy câu cũ (điều kiện OR) để so với câu mới. */
+export const viecTvvCuKhiKiem = { bat: false };
+
 const laQl = (p: Principal) => can(p, PERMISSIONS.CYCLE_EDIT, { anyScope: true });
 /** GV / GVCN không giữ việc TVV nào — khỏi tốn câu. */
 export const coTheGiuViecTvv = (p: Principal) => p.roleKeys.includes('consultant') || laQl(p);
@@ -61,6 +64,14 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
   if ((!o.chot && !o.boSung) || !coTheGiuViecTvv(p)) return [];
   const ql = laQl(p);
   const giu = nguoiGiuTvv(p, o.today);
+  /* S3: điều kiện dựng theo nhánh — `(x = ? OR ? = 1)` làm SQLite quét cả bảng students; TVV đi chỉ mục idx_student_consultant. */
+  const dk = ['s.archived_at IS NULL'];
+  const thamSo: unknown[] = [];
+  if (viecTvvCuKhiKiem.bat) { dk.push('(s.consultant_user_id = ? OR ? = 1)', '(? IS NULL OR COALESCE(c.branch_id, s.branch_id) = ?)'); thamSo.push(p.userId, ql ? 1 : 0, o.branchId, o.branchId); }
+  else {
+    if (!ql) { dk.push('s.consultant_user_id = ?'); thamSo.push(p.userId); }
+    if (o.branchId != null) { dk.push('COALESCE(c.branch_id, s.branch_id) = ?'); thamSo.push(o.branchId); }
+  }
   const ds = db().prepare(
     `SELECT s.id, s.full_name, s.dob, s.email, s.status, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS branch_id, c.is_fast_track,
             cy.id AS cycle_id, cy.route, cy.start_period_id, cy.target_score, cy.exam_month, cy.exam_date, cy.thi_that_ngay, cy.exam_period_id,
@@ -71,8 +82,8 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
        JOIN classes c ON c.id = e.class_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
        LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
-      WHERE s.archived_at IS NULL AND (s.consultant_user_id = ? OR ? = 1) AND (? IS NULL OR COALESCE(c.branch_id, s.branch_id) = ?)`,   /* em Tạm dừng: vẫn Bổ sung hồ sơ (như chip), không Chốt ngày thi */
-  ).all(p.userId, ql ? 1 : 0, o.branchId, o.branchId) as any[];
+      WHERE ${dk.join(' AND ')}`,   /* em Tạm dừng: vẫn Bổ sung hồ sơ (như chip), không Chốt ngày thi */
+  ).all(...thamSo) as any[];
   const out: WorkItem[] = [];
   const theoNguoi = new Map<number, { mine: boolean; em: Set<number>; truong: Map<string, number> }>();
   const daChot = new Set<number>();
