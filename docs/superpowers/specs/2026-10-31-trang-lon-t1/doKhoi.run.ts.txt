@@ -1,0 +1,116 @@
+/* DO-KHOI (TRANG-LON T1, tạm — không commit): câu SQL theo khối hàm của từng đường × vai. */
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '../../..');
+process.env.PISA_DB = path.join(ROOT, 'data', 'test-dokhoi.sqlite');
+for (const k of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BAN_CHINH', 'PISA_CHO_PHEP_SEED_TURSO']) delete process.env[k];
+for (const s of ['', '-wal', '-shm']) if (fs.existsSync(process.env.PISA_DB + s)) fs.rmSync(process.env.PISA_DB + s);
+const { db } = await import('../db.ts');
+const { runSeed } = await import('../seed/seed.ts');
+const { createApp } = await import('../app.ts');
+const { createSession } = await import('../auth.ts');
+const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+runSeed();
+Error.stackTraceLimit = 80;
+const conn = db();
+const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+const lop = (c: string) => one('SELECT id FROM classes WHERE code = ?', c).id as number;
+const byRole = (r: string, b: string | null) => one(`SELECT ur.user_id id FROM user_roles ur JOIN roles ro ON ro.id = ur.role_id LEFT JOIN branches br ON br.id = ur.branch_id WHERE ro.key = ? AND ${b ? 'br.code = ?' : 'ur.branch_id IS NULL'} ORDER BY ur.user_id LIMIT 1`, ...(b ? [r, b] : [r])).id;
+const core = (c: string) => one('SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 LIMIT 1', lop(c)).id;
+const sub = (c: string) => one(`SELECT ta.user_id id FROM teacher_assignments ta WHERE ta.class_id = ? AND ta.is_core = 0 AND ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1) LIMIT 1`, lop(c), lop(c)).id;
+const U: Record<string, number> = { QL: byRole('manager', 'MB'), QT: byRole('system_admin', null), GVCN: core('MB FT 101'), GVBM: sub('MB FT 101'), GVCN_THUONG: core('MB FOU 12') };
+const L = lop('MB FT 101'), CN = one('SELECT branch_id b FROM classes WHERE id = ?', L).b;
+const DUONG: [string, string[]][] = [
+  ['/my-work', ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG']],
+  ['/my-work?nguoi=tat-ca', ['QL', 'QT']],
+  ['/hoc-vien-lop', ['QL', 'QT', 'GVCN']],
+  [`/hoc-vien-lop?phamVi=chi-nhanh&branchId=${CN}`, ['QL']],
+  ['/tong-quan/v5?ct=ft', ['QL', 'QT']],
+  [`/classes/${L}/overview`, ['QL', 'QT', 'GVCN']],
+  [`/classes/${L}/viec-theo-em?chi=toi`, ['QL', 'GVCN']],
+  [`/classes/${L}/roster`, ['QL', 'GVCN']],
+  [`/classes/${L}/diem-theo-luot`, ['QL', 'GVCN']],
+  [`/classes/${L}/diem-theo-luot/mt:2`, ['QL', 'GVCN']],
+];
+const server = createApp().listen(0);
+const port = (server.address() as any).port;
+const DIST = path.join(ROOT, 'dist-server', 'server', 'src');
+
+type Fr = { fn: string; file: string; line: number };
+function frames(st: string): Fr[] {
+  const out: Fr[] = [];
+  for (const raw of st.split('\n').slice(1)) {
+    const l = raw.trim().replace(/^at /, '');
+    if (!l.includes('dist-server') || l.includes('node_modules')) continue;
+    const m = l.match(/^(.*?)\s*\(?file:\/\/\/.*?dist-server\/server\/src\/([\w/]+\.js):(\d+)/);
+    if (!m) continue;
+    const fr = { fn: m[1].replace(/^(Module|Object)\./, '').replace(/^async /, ''), file: m[2], line: +m[3] };
+    if (/^(db|platform\/nguCanhRequest)\.js$/.test(fr.file)) continue;
+    out.push(fr);
+  }
+  return out;
+}
+const jsCache = new Map<string, string[]>();
+function muc(file: string, line: number): string {
+  if (!jsCache.has(file)) jsCache.set(file, fs.existsSync(path.join(DIST, file)) ? fs.readFileSync(path.join(DIST, file), 'utf8').split('\n') : []);
+  const ls = jsCache.get(file)!;
+  for (let i = line - 1; i >= 0; i--) { const m = ls[i]?.match(/\/\/ -{5,}\s*(.*)/); if (m) return m[1].slice(0, 48); }
+  return `dòng ${line}`;
+}
+const nhan = (f: Fr) => f.fn || f.file;
+function phanKhoi(fr: Fr[]): string {
+  if (fr.some((x) => /quetLenhDenHan|quetYeuCau|sweepExpiredMoves/.test(x.fn))) return 'QUÉT (quetLenhDenHan / quetYeuCau / sweepExpiredMoves)';
+  if (fr.some((x) => /maybeSimulateReadError/.test(x.fn))) return 'demo_config (maybeSimulateReadError)';
+  const r = fr.findIndex((x) => x.file.startsWith('routes/'));
+  if (r < 0) return `PHIÊN / quyền: ${fr.slice(0, 2).map(nhan).join(' < ')}`;
+  if (r === 0) return `route ${fr[0].file}:${fr[0].line}`;
+  const top = fr[r - 1];
+  const inline = (f: Fr) => (f.file === 'worklist/mywork.js' && f.fn === 'myWork' ? `[${muc(f.file, f.line)}]` : `@${f.line}`);
+  if (r === 1) return `${nhan(top)} › ${inline(top)}`;
+  const sub = fr[r - 2];
+  const s2 = `${nhan(top)} › ${sub.file === top.file && sub.fn === top.fn ? inline(top) : `${nhan(sub)}${sub.file !== top.file ? ` (${sub.file})` : ''}`}`;
+  const sub3 = r >= 3 ? fr[r - 3] : null;
+  return sub3 ? `${s2} › ${nhan(sub3)}${sub3.file !== sub.file ? ` (${sub3.file})` : `@${sub.line}`}` : s2;
+}
+
+const out: string[] = [];
+const tom: string[] = [];
+for (const [url, vais] of DUONG) for (const vai of vais) {
+  for (const lan of [1, 2]) {
+    (globalThis as any).__ghi = [];
+    const c0 = soCauSql();
+    const r = await fetch(`http://127.0.0.1:${port}/api${url}`, { headers: { cookie: `pisa_demo_session=${createSession(U[vai])}` } });
+    await r.text();
+    const ghi = (globalThis as any).__ghi as { sql: string; k: number; st: string }[];
+    (globalThis as any).__ghi = undefined;
+    const n = soCauSql() - c0, dong = ghi.reduce((s, g) => s + g.k, 0);
+    if (lan === 1) continue;
+    const nhom = new Map<string, { c: number; d: number; sql: string }>();
+    let quet = 0;
+    for (const g of ghi) {
+      const k = phanKhoi(frames(g.st));
+      if (k.startsWith('QUÉT')) quet++;
+      const v = nhom.get(k) ?? { c: 0, d: 0, sql: g.sql.replace(/\s+/g, ' ').trim().slice(0, 70) };
+      v.c++; v.d += g.k; nhom.set(k, v);
+    }
+    tom.push(`${vai} ${url} · ${n} câu · ${dong} dòng · quét ${quet}`);
+    out.push(`\n=== ${vai} ${url} · ${r.status} · ${n} câu (đọc ${ghi.length}, quét ${quet}) · ${dong} dòng`);
+    for (const [k, v] of [...nhom].sort((a, b) => b[1].c - a[1].c || b[1].d - a[1].d)) out.push(`  ${String(v.c).padStart(3)} câu ${String(v.d).padStart(5)} dòng · ${k}   — ${v.sql}`);
+    /* chuỗi 6 tầng dưới route (từ ngoài vào), gộp theo chuỗi + 60 ký tự SQL — để thấy câu lặp giữa các khối */
+    const chuoi = new Map<string, { c: number; d: number }>();
+    for (const g of ghi) {
+      const fr = frames(g.st); const r = fr.findIndex((x) => x.file.startsWith('routes/'));
+      const ch = (r > 0 ? fr.slice(Math.max(0, r - 6), r).reverse() : fr.slice(0, 3)).map((x) => `${nhan(x)}:${x.line}`).join(' > ');
+      const k = `${ch}  ⟨${g.sql.replace(/\s+/g, ' ').trim().slice(0, 60)}⟩`;
+      const v = chuoi.get(k) ?? { c: 0, d: 0 }; v.c++; v.d += g.k; chuoi.set(k, v);
+    }
+    out.push('  -- chuỗi:');
+    for (const [k, v] of chuoi) out.push(`    ${v.c}× ${v.d}d · ${k}`);
+  }
+}
+fs.writeFileSync(path.join(ROOT, 'data', 'do-khoi.txt'), out.join('\n'));
+server.close();
+console.log(tom.join('\n'));
+process.exit(0);
