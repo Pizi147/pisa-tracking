@@ -148,20 +148,17 @@ export default function ClassOverviewPage() {
   return (
     <XetLaiCtx.Provider value={ctxXetLai}>
     <div className="page space-y-4 max-sm:space-y-3">
-      <DauTrangLop data={data} onViec={moViec}
+      <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
 
-      {!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
-
-      <HangTab ariaLabel={t('Hồ sơ lớp')} value={tab}
+      <HangTab v8 ariaLabel={t('Hồ sơ lớp')} value={tab}
         onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null })}
         tabs={dsTab.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
 
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
         <TabHocVienLop lop={data} cheDo={cheDo} moChon={moChon} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null, tuan: null })}
-          onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}
-          onSuaThongTin={data.viewer.coTheSuaCaLop && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />
+          onDoi={xong} onThemHocVien={() => setViec('hoc-vien')} />
       )}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
