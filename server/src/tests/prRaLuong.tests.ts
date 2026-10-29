@@ -15,6 +15,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_perm: any = await import('../permissions.ts');
   const require_hangLoat: any = await import('../students/hangLoat.ts');
   const require_systemClose: any = await import('../cases/systemClose.ts');
+  const require_regular: any = await import('../normal/regular.ts');
   const require_keHoach: any = await import('../keHoach/keHoachTest.ts');
   const require_thongBao: any = await import('../platform/thongBao.ts');
   const require_chotVang: any = await import('../ops/chotVangDinhKy.ts');
@@ -188,6 +189,17 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     const bt = fsMod.readFileSync('server/src/loTrinh/buocTiep.ts', 'utf8') as string;
     const ll = fsMod.readFileSync('server/src/classes/luatLoTrinh.ts', 'utf8') as string;
     assert(/dongPhoiHopLoTrinh\(\[c\.id\], o\.date\)/.test(bt) && /moLaiPhoiHopLoTrinh\(g\.dongPhoiHop\)/.test(bt) && /dongPhoiHopLoTrinh\(\[cuoiCycle\.id\]/.test(ll), 'hai đường Lộ trình mới + Hoàn tác phải gọi');
+  });
+
+  check('Q-RL1 (chủ SP 29/10) · lớp thường: môn "Không dự thi" (không điểm) ra khỏi bộ môn cần đủ — kết quả tính trên môn đã thi, ghi tên môn không dự thi', () => {
+    const rg: any = require_regular;
+    const r = rg.evaluateRegular(['listening', 'reading', 'writing', 'speaking'], [
+      { skill: 'listening', raw_score: 30, raw_total: 40 }, { skill: 'reading', raw_score: 32, raw_total: 40 },
+      { skill: 'writing', raw_score: 8, raw_total: 10 }, { skill: 'speaking', raw_score: null, raw_total: null, no_show_cu: 1 },
+    ], 'FOU');
+    assert(r.complete && r.required === 3 && r.khongDuThi.join() === 'speaking' && Math.abs(r.tyLeTong - 70 / 90) < 1e-9 && !r.provisional, JSON.stringify(r));
+    const cu = rg.evaluateRegular(['listening', 'speaking'], [{ skill: 'listening', raw_score: 30, raw_total: 40 }, { skill: 'speaking', raw_score: null, raw_total: null }], 'FOU');
+    assert(!cu.complete && cu.khongDuThi.length === 0, 'chưa có điểm mà không phải Không dự thi → vẫn thiếu');
   });
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {

@@ -95,8 +95,8 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
   const lichGop = new Map<number, { skill: string }[]>();   // P13: dòng lịch MÔN GỘP cũ — bộ môn theo lượt (`daGhiLuot`), cùng câu với điểm
   const gop = Object.keys(MON_GOP);
   theoLo(luot.map((a) => a.id as number), (lo, ph) => {
-    for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, band AS band, raw_score AS raw_score, raw_total AS raw_total, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
-        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${gop.map(() => '?').join(',')})`).all(...lo, ...lo, ...gop) as any[]) {
+    for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, band AS band, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${gop.map(() => '?').join(',')})`).all(...lo, ...lo, ...gop) as any[]) {
       const m: Map<number, any[]> = r.la_lich ? lichGop : diem;
       m.set(r.attempt_id, [...(m.get(r.attempt_id) ?? []), r]);
     }
