@@ -97,7 +97,9 @@ const THOI_GIAN_MS: Record<string, number> = {
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
 let chia: Map<string, number> = new Map();
-const nhomCua = (ten: string) => (docLapCua(ten) ? chia.get(ten) ?? 1 : 1);
+/** Gán khi nạp `dbGoc.ts` (cùng `chia`). */
+let nhomCuaTep: typeof import('./dbGoc.ts').nhomCuaTep = () => 1;
+const nhomCua = (ten: string) => nhomCuaTep(chia, docLapCua(ten), ten);
 /** `PISA_CHI_TEP=prA,prB`: chỉ chạy các tệp này (+ phần viết thẳng) — chạy riêng phép kiểm của một PR. */
 const CHI_TEP = process.env.PISA_CHI_TEP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
 let trongTep = false;
@@ -211,7 +213,8 @@ const { addDays } = await import('../util.ts');
 
 runSeed();
 /* CN-1: chụp DB gốc NGAY sau seed, trước mọi ghi (giống nhau ở mọi nhóm) — tệp `DOC_LAP` chạy trên bản chép của nó. */
-const { chupDbGoc, moBanGoc, chiaThamLam } = await import('./dbGoc.ts');
+const { chupDbGoc, moBanGoc, chiaThamLam, nhomCuaTep: nhomCuaTepGoc } = await import('./dbGoc.ts');
+nhomCuaTep = nhomCuaTepGoc;
 /* Danh sách tệp độc lập = tên đăng ký `bocTep` trong tệp này (đọc mã nguồn: biết hết trước khi chạy, để mọi nhóm chia giống nhau). */
 chia = chiaThamLam(Object.fromEntries(
   [...fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').matchAll(/bocTep\('(\w+)'/g)].map((m) => m[1]).filter(docLapCua)
@@ -9878,6 +9881,12 @@ await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== LOP-1-LOP (hồ sơ lớp đọc lượt một lớp; badge quá hạn từ viec-theo-em — giảm dòng đọc Turso)
 const { runPrLop1LopTests } = bocTep('prLop1Lop', await import('./prLop1Lop.tests.ts'));
 await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY } as any);
+/* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
+if (NHOM === 1) {
+  tepHienTai = '[BB] chuỗi';
+  check('bất biến prTk trên DB chuỗi (tệp GIU_CHUOI + phần viết thẳng)', () => batBienDb({ conn, assert, seedMax: SEED_MAX }));
+  tepHienTai = '';
+}
 if (process.env.PISA_NHOM) {
   console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, docLap: [...chia.values()].filter((k) => k === NHOM).length, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);

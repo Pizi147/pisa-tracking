@@ -69,3 +69,8 @@ export function chiaThamLam(thoiGian: Record<string, number>, chuoiMs: number, n
   }
   return ra;
 }
+
+/** CN-3a: nhóm của MỘT tệp — tệp chuỗi (không độc lập) luôn nhóm 1; tệp độc lập theo `chia`, chưa có trong `chia` (chưa đăng ký) → 1. */
+export function nhomCuaTep(chia: ReadonlyMap<string, number>, docLap: boolean, ten: string): number {
+  return docLap ? chia.get(ten) ?? 1 : 1;
+}
