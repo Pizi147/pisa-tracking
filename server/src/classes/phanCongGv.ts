@@ -184,7 +184,7 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
           `INSERT INTO doi_phan_cong (lo, class_id, khoa, nguoi_cu, nguoi_moi, hieu_luc, trang_thai, tao_ban_giao, xem_den, tao_boi, tao_luc, ap_luc)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
         ).run(moi[0] ?? null, l.classId, d.khoa, d.nguoiCu, d.nguoiMoi, ngay, homNay ? 'da_ap' : 'cho', taoBanGiao,
-          homNay && d.nguoiCu !== null ? xemDen(ngay) : null, p.userId, luc, homNay ? luc : null).lastInsertRowid);
+          homNay && laCapBanGiao(d) ? xemDen(ngay) : null, p.userId, luc, homNay ? luc : null).lastInsertRowid);
         moi.push(id);
         return { id, khoa: d.khoa, nguoi_cu: d.nguoiCu, nguoi_moi: d.nguoiMoi };
       });
@@ -294,7 +294,7 @@ export function apDoiDenHan(homNay = demoToday(), o: { toiDa?: number; ms?: numb
           kq.loi += 1;
           return;
         }
-        conn.prepare(`UPDATE doi_phan_cong SET trang_thai = 'da_ap', ap_luc = ?, xem_den = CASE WHEN nguoi_cu IS NULL THEN NULL ELSE ? END, loi = NULL, thu_ngay = NULL
+        conn.prepare(`UPDATE doi_phan_cong SET trang_thai = 'da_ap', ap_luc = ?, xem_den = CASE WHEN nguoi_cu IS NULL OR nguoi_moi IS NULL OR nguoi_moi = nguoi_cu THEN NULL ELSE ? END, loi = NULL, thu_ngay = NULL
                        WHERE id IN (${inHang(ids.length)})`).run(nowIso(), xemDen(ngayAp), ...ids);
         kq.daAp += ids.length;
       });
@@ -352,7 +352,7 @@ export function doiMocCho(p: Principal, ids: unknown, hieuLuc: HieuLucVao | unde
           apDoiLop(p, classId, rows.filter((r) => r.class_id === classId), ngay, { g, via: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) ? 'quan_ly' : 'gvcn' });
         }
       });
-      conn.prepare(`UPDATE doi_phan_cong SET trang_thai = 'da_ap', hieu_luc = ?, ap_luc = ?, xem_den = CASE WHEN nguoi_cu IS NULL THEN NULL ELSE ? END, loi = NULL, thu_ngay = NULL
+      conn.prepare(`UPDATE doi_phan_cong SET trang_thai = 'da_ap', hieu_luc = ?, ap_luc = ?, xem_den = CASE WHEN nguoi_cu IS NULL OR nguoi_moi IS NULL OR nguoi_moi = nguoi_cu THEN NULL ELSE ? END, loi = NULL, thu_ngay = NULL
                      WHERE ${dk}`).run(ngay, nowIso(), xemDen(ngay), ...rid);
       g.boKhongDoi('sos_cases');
     } else {

@@ -47,7 +47,7 @@ export type Principal = {
   daXemHuongDan?: boolean;
   /** OV-14c: kỹ năng khai ở hồ sơ (`user_skills`, Quản trị › Kỹ năng) — `speaking` = GV Speaking chấm chéo. Đọc cùng câu phiên. */
   kyNang?: string[];
-  /** PC-GV-A: lớp vừa bị đổi khỏi (GV cũ) — CHỈ XEM (`ATTEMPT_VIEW`, `STUDENT_VIEW`) từ hiệu lực tới `den`. Đọc cùng câu phiên. */
+  /** PC-GV-A: lớp vừa bị ĐỔI khỏi (A → B; bỏ người không có) — CHỈ XEM (`ATTEMPT_VIEW`, `STUDENT_VIEW`) từ hiệu lực tới `den`. Đọc cùng câu phiên. */
   xemTam?: { classId: number; tu: string; den: string; doiId: number }[];
 };
 
@@ -83,8 +83,8 @@ export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_f
   (SELECT json_group_array(json_array(ta.id, ta.class_id, ta.skill, ta.is_core, ta.effective_from, ta.effective_to))
      FROM teacher_assignments ta WHERE ta.user_id = u.id AND ta.status = 'active') AS u_phan_cong,
   (SELECT json_group_array(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS u_ky_nang,
-  (SELECT json_group_array(json_array(d.class_id, d.hieu_luc, d.xem_den, d.id)) FROM doi_phan_cong d
-    WHERE d.nguoi_cu = u.id AND d.trang_thai = 'da_ap' AND d.xem_den IS NOT NULL) AS u_xem_tam`;
+  (SELECT json_group_array(json_array(d.class_id, d.hieu_luc, d.xem_den, d.id)) FROM (SELECT class_id, hieu_luc, xem_den, id FROM doi_phan_cong
+    WHERE nguoi_cu = u.id AND trang_thai = 'da_ap' AND xem_den IS NOT NULL ORDER BY id) d) AS u_xem_tam`;
 
 export function loadPrincipal(userId: number): Principal {
   const row = db().prepare(`SELECT ${COT_PRINCIPAL} FROM users u WHERE u.id = ?`).get(userId) as any;

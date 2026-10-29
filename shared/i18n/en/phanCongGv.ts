@@ -1,5 +1,10 @@
 /** PC-GV (đặc tả 2026-10-30-phan-cong-gv-design.md): Phân công GV có hiệu lực — câu máy chủ (PR-A). Khoá = chữ Việt. */
 export const EN_PHAN_CONG_GV = {
+  /* Thông báo (máy chủ lưu chữ Việt, web dịch theo mẫu) */
+  'Bạn nhận {lop} · {mon} · {soCase} Case · {soPa} PA': 'You now teach {lop} · {mon} · {soCase} Case · {soPa} action plans',
+  'Bạn nhận {lop} · {mon}': 'You now teach {lop} · {mon}',
+  'Chưa đổi được phân công {lop}: {loi}': 'Could not change the assignment of {lop}: {loi}',
+  'Hoàn tác phân công giáo viên': 'Undo teacher assignment',
   '{o}: {ten} đã nghỉ — chọn người thay hoặc Bỏ trống': '{o}: {ten} has left — pick a replacement or leave it empty',
   'Mỗi lần lưu tối đa {n} lớp.': 'At most {n} classes per save.',
   'Chưa có lớp nào để lưu.': 'No class to save.',

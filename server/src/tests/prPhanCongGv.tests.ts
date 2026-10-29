@@ -554,4 +554,41 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'writing1', gB) }] });
     assert(one(`SELECT performer_user_id u FROM case_interventions WHERE id = ?`, pa2).u === gD, 'còn dạy W2 → giữ');
   }));
+
+  /* ---------------------------------------------------------------- PTA check đầy đủ 30/10: xem tạm CHỈ cho cặp A → B; bỏ người / GV không liên quan → 403 mọi đường */
+  const viol: any = await import('../yThuc/violations.ts');
+  const phoiHop: any = await import('../yThuc/phoiHop.ts');
+  const tep: any = await import('../platform/attachments.ts');
+  const hoSo: any = await import('../students/profile.ts');
+  const bi403 = (fn: () => unknown) => [403, 404].includes(maLoi(fn)?.status ?? 200);
+  let vid = 0;
+  const viPhamMoi = () => { vid = viol.recordViolation(QL, { studentId: emX, category: 'homework', description: 'Không nộp bài Writing Task 2 buổi này' }).violation.id; };
+  const cacDuong = (p: any) => ({
+    lopTongQuan: bi403(() => classes.classOverview(p, X)),
+    viPhamLop: bi403(() => viol.listViolations(p, { activeInClassId: X })),
+    phoiHopLop: bi403(() => phoiHop.coordinationOfClass(p, X, {})),
+    phoiHopEm: bi403(() => phoiHop.coordinationOfStudent(p, emX)),
+    hoSoEm: bi403(() => hoSo.studentProfile(p, emX)),
+    tepViPham: bi403(() => tep.listAttachments(p, 'violation', vid)),
+  });
+  check('PTA-Q1 · bỏ người (S của GVCN → Chưa có, ô khác giữ) và R GV → Chưa có: GV R bị bỏ mất quyền xem NGAY (không xem tạm), mọi đường 403', () => thu(() => {
+    viPhamMoi();
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: slotsCua(X).filter((x: any) => x.skill !== 'reading') }] });
+    const c = loadPrincipal(gC);
+    assert(!perm.can(c, PM.ATTEMPT_VIEW, { classId: X }) && !perm.can(c, PM.STUDENT_VIEW, { classId: X }) && !perm.can(c, PM.STUDENT_VIEW, { studentId: emX }), 'can');
+    assert(!one(`SELECT xem_den FROM doi_phan_cong WHERE class_id = ? AND nguoi_cu = ?`, X, gC).xem_den, 'không có xem_den');
+    const d0 = cacDuong(c);
+    assert(Object.values(d0).every(Boolean), `còn mở: ${JSON.stringify(d0)}`);
+  }));
+  check('PTA-Q2 · GV không liên quan (chưa từng dạy lớp, không dòng đổi) → mọi đường 403; GV cũ A → B trong hạn → các đường xem 200', () => thu(() => {
+    viPhamMoi();
+    const la = loadPrincipal(nguoi());
+    const d1 = cacDuong(la);
+    assert(Object.values(d1).every(Boolean), `GV lạ còn mở: ${JSON.stringify(d1)}`);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    const d2 = cacDuong(loadPrincipal(gC));
+    assert(!d2.lopTongQuan && !d2.hoSoEm, `GV cũ xem tạm: ${JSON.stringify(d2)}`);
+    const d3 = cacDuong(loadPrincipal(gF));
+    assert(Object.values(d3).every(Boolean), `GV khác (không liên quan lần đổi) còn mở: ${JSON.stringify(d3)}`);
+  }));
 }
