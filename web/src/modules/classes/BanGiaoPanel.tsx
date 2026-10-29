@@ -4,11 +4,11 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
-import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, ngay, tuanLich, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, deadlineView, ngay, shortDate, tuanLich, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -115,11 +115,17 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
   };
 
   const chuaMon = em ? em.mon.filter((m) => !m.noiDung || m.lamLai) : [];
+  /* Lỗi chủ SP 30/10: số ngày quá hạn bàn giao của từng em (null = chưa quá / đã xác nhận). */
+  const quaHan = (e: { hanGvcn: string | null; xacNhan: unknown }) => {
+    const v = !e.xacNhan && e.hanGvcn ? deadlineView({ kind: 'viec-van-hanh', due: e.hanGvcn, today: homNay }) : null;
+    return v?.tone === 'overdue' ? v.daysOverdue : null;
+  };
+  const quaHanSom = quaHan({ hanGvcn: dto.hanGvcn, xacNhan: null });
   const dong = 'grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm';
 
   return (
     <KhungPanel quayLai={quayLai} rong="toan" tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
-      ngCanh={<span className="tabular-nums">{t('{n} em', { n: dto.tong })} · {t('{a}/{b} đã xác nhận', { a: dto.daXacNhan, b: dto.tong })}{dto.hanGvcn && <> · <Han loai="viec-van-hanh" han={dto.hanGvcn} /></>}</span>}
+      ngCanh={<span className="tabular-nums">{t('{n} em', { n: dto.tong })} · {t('{a}/{b} đã xác nhận', { a: dto.daXacNhan, b: dto.tong })}{dto.hanGvcn && <> · {t('hạn sớm nhất {ngay}', { ngay: shortDate(dto.hanGvcn, homNay) })}{quaHanSom != null && <> · {dto.hanGvcnEm} <QuaHan ngay={quaHanSom} /></>}</>}</span>}
       chan={{
         daSua: daSuaNx,
         huy: suaPhieu
@@ -150,8 +156,9 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
                   <span className="min-w-0 truncate text-sm text-slate-100">{e.ten}</span>
                   <Nhan tone={e.phieu.khoa === 'da-xac-nhan' ? 'ok' : e.phieu.khoa === 'mon' ? 'soon' : 'muted'}>{dich(e.phieu.nhan)}</Nhan>
                 </div>
-                <div className="truncate text-xs text-slate-500">
-                  {e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `${t('Tạm dừng học (bảo lưu)')}${e.ngayXemLai ? ` · ${t('xem lại {tuan}', { tuan: tuanLich(e.ngayXemLai, homNay) })}` : ''}` : tuanLich(e.tuan, homNay)}
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <span className="min-w-0 truncate">{e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `${t('Tạm dừng học (bảo lưu)')}${e.ngayXemLai ? ` · ${t('xem lại {tuan}', { tuan: tuanLich(e.ngayXemLai, homNay) })}` : ''}` : tuanLich(e.tuan, homNay)}</span>
+                  {quaHan(e) != null && <QuaHan ngay={quaHan(e)} />}
                 </div>
               </li>
             ))}
@@ -164,6 +171,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
               </h3>
               {!em.xacNhan && chuaMon.length > 0 && <Nhan tone="soon">{t('Chờ môn {ds}', { ds: chuaMon.map((m) => m.ngan).join(', ') })}</Nhan>}
               {em.xacNhan && <Nhan tone="ok">{t('Đã xác nhận')}</Nhan>}
+              {!em.xacNhan && em.hanGvcn && <Han loai="viec-van-hanh" han={em.hanGvcn} />}
             </div>
 
             <section aria-label={t('Hệ thống tự điền')} className="surface-2 rounded-lg p-3">
