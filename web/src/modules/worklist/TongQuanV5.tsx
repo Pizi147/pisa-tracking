@@ -423,12 +423,13 @@ type ChiSoGv = { tu: string; den: string; ketQua: OPtGv; tienBo: OPtGv };
 export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => ReactNode }) {
   const { session } = useSession();
   const id = session?.user?.id;
-  const cs = useApi<ChiSoGv>(id ? `/giao-vien/${id}/chi-so` : null, [id]);
+  /* S1: chỉ số GV lấy từ CÙNG GET của khối hai bảng (`HaiKhoiGv` — `useApi` gộp một request), không GET thêm chỉ số hồ sơ GV (tính lại y hệt). */
+  const cs = useApi<{ chiSo: ChiSoGv }>('/tong-quan/lop-toi-day/hai-khoi', []).data?.chiSo;
   const viec = useApi<{ summary: { viec: number; viecQuaHan: number } }>(session?.nav?.workSupport ? '/my-work' : null, []).data?.summary;
   const nguonCase = `/giao-vien/${id}/o?cot=case-mo`;
   const caseMo = useApi<{ n: number }>(id ? nguonCase : null, [id]).data?.n;
   const o = (x: OPtGv | undefined, cot: string, nhan: string) => <PhanTram x={tyLeGv(x)} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}`} tieuDe={nhan} />;
-  const ky = cs.data ? kyChu(cs.data) : undefined;
+  const ky = cs ? kyChu(cs) : undefined;
   return (
     <>
       <DaiChiSo>
@@ -437,8 +438,8 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => Re
           mau={viec?.viecQuaHan ? <span className="font-semibold text-bad">⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span> : t('không việc nào quá hạn')} />}
         <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} />}
           mau={t('Case tôi phụ trách')} />
-        <ChiSo ten={t('Đạt kỳ vọng Test')} ky={ky} giaTri={o(cs.data?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test'))} mau={tuMau(tyLeGv(cs.data?.ketQua), t('lượt Test'))} />
-        <ChiSo ten={t('Tiến bộ')} ky={ky} giaTri={o(cs.data?.tienBo, 'tien-bo', t('HV tiến bộ'))} mau={tuMau(tyLeGv(cs.data?.tienBo), t('lượt'))} />
+        <ChiSo ten={t('Đạt kỳ vọng Test')} ky={ky} giaTri={o(cs?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test'))} mau={tuMau(tyLeGv(cs?.ketQua), t('lượt Test'))} />
+        <ChiSo ten={t('Tiến bộ')} ky={ky} giaTri={o(cs?.tienBo, 'tien-bo', t('HV tiến bộ'))} mau={tuMau(tyLeGv(cs?.tienBo), t('lượt'))} />
       </DaiChiSo>
       {lopToiDay(<DiTiep dong={[
           ...(session?.nav?.work ? [{ to: '/cong-viec', t1: <><So n={viec?.viec ?? 0} /> {t('việc của tôi')}</>, t2: t('Công việc') }] : []),

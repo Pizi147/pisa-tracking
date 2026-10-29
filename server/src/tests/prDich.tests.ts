@@ -20,6 +20,7 @@ export async function runPrDichTests(t: any) {
   const { loadPrincipal }: any = await import('../permissions.ts');
   const { migratePrDich }: any = await import('../migrate/prDich.ts');
   const { cauHinhDich }: any = await import('../moiTruong.ts');
+  const { voiBanSaoDb }: any = await import('./banSaoDb.ts');
   console.log('\nP14 DICH');
 
   check('DICH-1 · doanNgonNgu / canDich', () => {
@@ -33,7 +34,8 @@ export async function runPrDichTests(t: any) {
     assert(nn.canDich('Good job', 'vi') === true && nn.canDich('12345', 'en') === false, 'canDich en / số');
   });
 
-  check('DICH-2 · migrate prDich: tạo đúng bảng như schema.sql, chạy lần hai không đổi', () => {
+  /* KIEM-BAN-SAO: DROP TABLE trên BẢN SAO (`conn` dưới là bản sao) — kết nối dùng chung còn câu dở thì "database table is locked" (check #707). */
+  check('DICH-2 · migrate prDich: tạo đúng bảng như schema.sql, chạy lần hai không đổi', () => voiBanSaoDb('dich2', (conn: any) => {
     const sqlCua = () => (conn.prepare("SELECT name, sql FROM sqlite_master WHERE name IN ('ban_dich','dich_luot','idx_dich_luot_ngay') ORDER BY name").all() as any[])
       .map((r) => `${r.name}:${String(r.sql).replace(/\s+/g, ' ')}`).join('|');
     const truoc = sqlCua();
@@ -49,7 +51,7 @@ export async function runPrDichTests(t: any) {
       const a2: string[] = []; migratePrDich(conn, a2);
       assert(a2.length === 0 && sqlCua() === truoc, 'chạy lần hai đổi gì đó');
     } finally { conn.exec('ROLLBACK TO dich2; RELEASE dich2'); }
-  });
+  }));
 
   check('DICH-W · web: mọi nơi đọc chữ GV nhập dùng ChuDich với (bảng, cột) trong danh sách; ChuDich không gửi chữ; cờ phiên dichBat', () => {
     const cd = doc('web/src/ui/ChuDich.tsx');

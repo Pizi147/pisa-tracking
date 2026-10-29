@@ -113,6 +113,8 @@ type OBai = {
   kind: string; examinerUserId: number | null;
 };
 type NapBai = { o: OBai[]; attempts: Map<number, any>; bundle: ReturnType<typeof loadBundle> };
+/** S1: CHỈ phép kiểm bật — `napBai` của MỘT GV đi đường đủ (cả chi nhánh + khung) để so số với đường thu hẹp. */
+export const napDayDuKhiKiem = { bat: false };
 
 /**
  * Mọi ô điểm (một kỹ năng một lượt) có TUẦN THI CỦA CHÍNH Ô ĐÓ trong khoảng, ở lớp của chi nhánh + khung — `skillCells` / `regularSkillViews` như `scoreDebt.ts`.
@@ -121,11 +123,10 @@ type NapBai = { o: OBai[]; attempts: Map<number, any>; bundle: ReturnType<typeof
  * ponytail: chỉ nạp lượt ĐANG ở lớp của chi nhánh + khung — lượt đã dời sang lớp chi nhánh khác không còn ở bảng chi nhánh cũ (chuyển chi nhánh giữ khoá hiếm);
  * cần thì nạp thêm theo ghi danh.
  */
-export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
+export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
   const conn = db();
   const rows: any[] = [];
-  for (const lo of theoLo([...c.lop.keys()])) {
-    rows.push(...conn.prepare(
+  const chon = (loc: string) => conn.prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
               -- P12 (E6): Target + KCK LÚC LƯỢT (như resultOf) — đổi Target / KCK lộ trình sau đó không viết lại kỳ đã qua
               a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, cy.route, s.full_name AS hv_ten, s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived
@@ -135,11 +136,27 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
          LEFT JOIN programmes pg ON pg.code = cl.programme_code
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
          LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id
-        WHERE a.class_id IN (${cho(lo.length)}) AND a.status != 'cancelled'
+        WHERE ${loc} AND a.status != 'cancelled'
           AND (EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods r2 ON r2.id = k.planned_period_id
                         WHERE k.attempt_id = a.id AND r2.week_start BETWEEN ? AND ?)
                OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start BETWEEN ? AND ?))`,
-    ).all(...lo, c.tu, c.den, c.tu, c.den) as any[]);
+  );
+  if (gv == null || napDayDuKhiKiem.bat) {
+    for (const lo of theoLo([...c.lop.keys()])) rows.push(...chon(`a.class_id IN (${cho(lo.length)})`).all(...lo, c.tu, c.den, c.tu, c.den) as any[]);
+  } else {
+    /*
+     * S1 (giảm dòng đọc Turso): MỘT GV → chỉ lượt có thể gán cho GV đó, không mọi lượt của chi nhánh + khung. Mọi tập dùng `napBai` gán người qua
+     * `c.nguoiLuc(lớp lúc thi, …)` — trả người có dòng phân công Ở LỚP ĐÓ (`c.pc`) — hoặc qua `examiner_user_id` (Speaking Mock chấm chéo, T18).
+     * Lớp lúc thi ∈ {lớp của lượt} ∪ {lớp em từng ghi danh} (`lopLucThi`) ⇒ lượt góp số cho GV thì: lớp của lượt ∈ G, HOẶC em từng ghi danh một lớp
+     * ∈ G, HOẶC GV đã chấm một ô của lượt (G = lớp GV có phân công ở ngữ cảnh). Mỗi ô tính từ CHÍNH lượt đó + ghi danh / tạm dừng / điểm cũ của em
+     * (nạp theo em) → tập nhỏ hơn cho cùng số. Lớp của lượt ngoài chi nhánh + khung bỏ như đường đủ. Không `class_id IN (cả chi nhánh)` để SQLite
+     * đi MULTI-INDEX OR (chỉ mục lớp · em · rowid). Phép kiểm: prSvTqGv "S1".
+     */
+    const g = [...new Set(c.pc.filter((a) => a.gv === gv).map((a) => a.lop))];
+    const loc = `(a.class_id IN (${cho(g.length)}) OR a.student_id IN (SELECT e.student_id FROM enrollments e WHERE e.class_id IN (${cho(g.length)}))
+                OR a.id IN (SELECT sc.attempt_id FROM assessment_scores sc WHERE sc.examiner_user_id = ?))`;
+    rows.push(...(chon(loc).all(...g, ...g, gv, c.tu, c.den, c.tu, c.den) as any[])
+      .filter((r) => c.lop.has(r.class_id)).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
   }
   const bundle = loadBundle(rows.map((r) => r.id));
   const programmes = allProgrammes();
@@ -546,7 +563,7 @@ export function oChamDiemGv(p: Principal, f: LocPtGv & { gv: number }): {
   /* PR-S6F-a: chỉ GV có phân công ở lớp của chi nhánh + khung — không trả tên tài khoản bất kỳ qua `gv=`. */
   const ten = c.pc.find((a) => a.gv === f.gv)?.ten;
   if (!ten) throw notFound('Giáo viên không có lớp ở chi nhánh này.');
-  const r = tapChamDiem(c, napBai(p, c));
+  const r = tapChamDiem(c, napBai(p, c, f.gv));
   const rows = [...r.dong.values()].filter((d) => d.gv === f.gv);
   const conn = db();
   /* Lần sửa có lý do: FT ghi theo lượt + nhãn kỹ năng, lớp thường theo dòng điểm — một câu mỗi lô. Nhật ký ghi giờ UTC → ngày VN. */
@@ -605,7 +622,7 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
   /* `dat-mt` / `thi-that` (UI-PHAN-TICH): CHÍNH tập Kết quả, chỉ mục MT / chỉ mục thi thật — cùng cách tách với ô bảng. */
   const kq = /^(ket-qua|dat-mt|thi-that)(?::(\w+))?$/.exec(cot);
   if (kq || cot === 'tien-bo') {
-    const nap = napBai(p, c);
+    const nap = napBai(p, c, gv);
     /* `boThi` (hồ sơ GV) / `dat-mt` (Phân tích GV): kết quả Test không gộp thi thật; `thi-that`: chỉ mục thi thật; `ket-qua`: tất cả (giữ link cũ). */
     const muc = kq ? mucKetQua(c, nap).filter((m) => (kq[1] === 'thi-that' ? m.x.kind === 'thi-that' : !(boThi || kq[1] === 'dat-mt') || m.x.kind !== 'thi-that')) : [];
     const tapKq = kq ? tapKetQua(c, muc) : null;
@@ -652,7 +669,7 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
     return ra(nhan, 'lượt Test', dongTheoTap(tap, theoBai(o, new Set(tap?.dung ?? []), ky, kq ? diemLuot : undefined)));
   }
   if (cot === 'cham-diem') {
-    const dong = [...tapChamDiem(c, napBai(p, c)).dong.values()].filter((d) => d.gv === gv)
+    const dong = [...tapChamDiem(c, napBai(p, c, gv)).dong.values()].filter((d) => d.gv === gv)
       .sort((a, b) => Number(a.dung) - Number(b.dung) || a.lop.localeCompare(b.lop, 'vi') || a.hocVien.localeCompare(b.hocVien, 'vi') || a.id - b.id);
     return ra(t('Điểm đúng hạn'), 'bài', dong.map((d) => ({
       dung: d.dung,
@@ -753,7 +770,7 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
   const hangCua = (c: NguCanhPtGv, classId: number) => hang.get(classId)
     ?? hang.set(classId, { ma: c.lop.get(classId)!.ma, khung: c.khung, ct: c.lop.get(classId)!.ct, khai: c.lop.get(classId)!.khai, xong: c.lop.get(classId)!.xong, skill: new Set(), kq: [], luot: new Map() }).get(classId)!;
   for (const c of g.ds) {
-    const nap = napBai(p, c);
+    const nap = napBai(p, c, gvId);
     cham.push(tapChamDiem(c, nap).tap.get(gvId));
     ghi.push(tapGhiKetQuaPa(xemChiNhanh(c.cn), c).tap.get(gvId));
     /* Chủ SP 23/10: thi thật (IELTS thật) KHÁC phạm trù Test — kết quả / lượt chỉ tính MT, Progress, Final; thi thật tính riêng (`thiThatCuaGv`). */
@@ -843,7 +860,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
   const mt = /^thi-that(?:-lop:(\d+)|-ky:(\w+))?$/.exec(q.cot);
   if (mt) {
     const thi = new Map<string, ThiGv>();
-    for (const c of g.ds.filter((x) => x.khung === 'ft' && (!q.cn || x.cn === q.cn))) { const muc = mucKetQua(c, napBai(p, c)).filter((m) => m.x.kind === 'thi-that'); thiThatCuaGv(c, muc, tapKetQua(c, muc), gvId, thi); }
+    for (const c of g.ds.filter((x) => x.khung === 'ft' && (!q.cn || x.cn === q.cn))) { const muc = mucKetQua(c, napBai(p, c, gvId)).filter((m) => m.x.kind === 'thi-that'); thiThatCuaGv(c, muc, tapKetQua(c, muc), gvId, thi); }
     const datCua = (x: ThiGv) => (mt[2] ? !!x.datKn.get(mt[2]) : x.dat);
     const ds = [...thi.values()].filter((x) => (!mt[1] || x.classId === Number(mt[1])) && (!mt[2] || x.datKn.has(mt[2])))
       .sort((a, b) => Number(datCua(a)) - Number(datCua(b)) || a.ngay.localeCompare(b.ngay) || a.ten.localeCompare(b.ten, 'vi'));

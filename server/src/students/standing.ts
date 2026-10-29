@@ -140,6 +140,9 @@ const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
 const labelOf = (kind: string | null, no: number | null) =>
   kind === 'final' || kind === 'progress' ? nhanBaiThuong(kind) : `MT${no ?? '?'}`;
 
+/** S2: CHỈ phép kiểm bật — `standingFor` nạp bundle mọi lượt có điểm một lần (đường cũ) để so với đường nạp theo vòng. */
+export const standingNapDuKhiKiem = { bat: false };
+
 /**
  * Tính tình trạng cho MỘT LOẠT học viên trong một lần.
  *
@@ -193,8 +196,13 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
         ORDER BY a.attempt_no`,
     )
     .all(...cycleIds) as any[];
-  /* TD3-b: chỉ lượt có dòng điểm mới được đọc bundle (vòng dưới bỏ qua lượt `!scores.length`) — không nạp lịch + điểm lượt chưa thi. */
-  const bundle = loadBundle(attempts.filter((a) => a._co_diem).map((a) => a.id));
+  /*
+   * TD3-b: chỉ lượt có dòng điểm mới được đọc bundle (vòng dưới bỏ qua lượt `!scores.length`) — không nạp lịch + điểm lượt chưa thi.
+   * S2 (giảm dòng đọc Turso): nạp THEO VÒNG — vòng 1 chỉ ứng viên mới nhất của mỗi em; em nào ứng viên bị loại (chưa kỹ năng nào đủ điểm) thì
+   * vòng sau nạp ứng viên kế tiếp. Không đọc `bundle.cases` → `boCase`. Phép kiểm bật `standingNapDuKhiKiem` để so với đường nạp đủ cũ.
+   */
+  const bundleDu = standingNapDuKhiKiem.bat ? loadBundle(attempts.filter((a) => a._co_diem).map((a) => a.id), { boCase: true }) : null;
+  const napBundle = (ids: number[]) => bundleDu ?? loadBundle(ids, { boCase: true });
 
   const byStudent = new Map<number, any[]>();
   for (const a of attempts) {
@@ -221,6 +229,8 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   let programmes: ReturnType<typeof allProgrammes> | null = null;
   const boMonCua = (ct: string | null) => boMonLich(ct, (programmes ??= allProgrammes()).get(ct ?? '')?.skills);
   const homNay = demoToday();
+  /* Em còn ứng viên: `ung` = lượt (mới nhất trước) qua lọc M-14 và có dòng điểm — đúng thứ tự vòng duyệt cũ, `k` = ứng viên đang xét. */
+  const cho: { s: Standing; cycle: any; ratio: boolean; ung: any[]; k: number }[] = [];
   for (const [studentId, cycle] of cycleOf) {
     const s = out.get(studentId)!;
     /* P13: chương trình chỉ có ở bảng (KET / PET liên tục…) cũng chấm theo tỷ lệ — hằng số trước, mã không có hằng số mới đọc bảng (FT không đọc thêm). */
@@ -249,64 +259,72 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
      * "Có điểm" chứ không phải "đã chốt": một lượt mới nhập hai trong bốn kỹ năng vẫn nói
      * được điều gì đó, chỉ là nói kèm chữ TẠM THỜI. Bỏ qua nó để lấy lượt cũ đầy đủ hơn là
      * giấu mất tin mới nhất — và đó chính là tin người đọc đang cần.
+     *
+     * M-14: MT lịch sử có tuần thi NGOÀI 4 tuần trước ngày tạo không phải "hiện trạng" (cùng luật `latestAttempts`, danhGia.ts).
      */
-    for (let i = list.length - 1; i >= 0; i -= 1) {
-      const a = list[i];
-      /* M-14: MT lịch sử có tuần thi NGOÀI 4 tuần trước ngày tạo không phải "hiện trạng" (cùng luật `latestAttempts`, danhGia.ts). */
-      if (!luotSinhViecRow(a, homNay)) continue;
-      const scores = bundle.scores.get(a.id) ?? [];
-      if (!scores.length) continue;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
-      /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
-      const rr = ratio ? evaluateRegular(boMonTheoLuot(boMonCua(cycle.programme_code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, cycle.programme_code, nguongDatLop(a.class_id)) : null;
-      const skips = ratio ? [] : bundle.skips.get(a.id) ?? [];
-      const ri = ratio ? null : evaluateAttempt(
-        /* T9 (23/09): kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không phải Target hiện tại của lộ
-         * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
-         * Target sau này. */
-        a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
-        entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
-        kyNangXongThieu(bundle.skillRows.get(a.id) ?? [], scores as any), kckCuaLuot({ ...a, khong_cam_ket: cycle.khong_cam_ket }),   // OV-11e (Q8)
-      );
-      /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */
-      if ((rr ? rr.scored : ri!.scoredRequired) === 0) continue;
-      s.attemptId = a.id;
-      s.attemptNo = a.attempt_no;
-      s.attemptKind = a.kind ?? 'mock';
-      s.attemptClassId = a.class_id ?? null;
-      s.attemptLabel = labelOf(a.kind, a.attempt_no);
-      s.periodCode = a.period_code ?? null;
+    const ung = list.filter((a) => a._co_diem && luotSinhViecRow(a, homNay)).reverse();
+    if (ung.length) cho.push({ s, cycle, ratio, ung, k: 0 });
+    else if (s.required === 0) s.required = ratio ? boMonCua(cycle.programme_code).length : ASSESSED_SKILLS.length;
+  }
 
-      if (rr) {
-        const r = rr;
-        s.sosLevel = r.sosLevel;
-        s.provisional = r.provisional;
-        s.scored = r.scored;
-        s.required = r.required;
-        s.failed = r.failedCount;
-        s.tyLeTong = r.tyLeTong;
-        s.nguong = r.passThreshold;
-        s.khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(cycle.programme_code ?? '');
-        s.failedSkills = r.skills
-          .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)
-          .map((x) => ({ skill: x.skill, score: x.score as number, total: x.total as number }));
-      } else {
-        const r = ri!;
-        s.sosLevel = r.sosLevel;
-        s.kckDuoi = r.kckDuoi;
-        s.provisional = r.provisional;
-        s.scored = r.scoredRequired;
-        s.required = r.required.length;
-        s.overall = r.overall;
-        s.expectation = r.expectation;
-        s.belowSkills = r.verdicts
-          .filter((v) => v.passed === false && v.band !== null)
-          .map((v) => ({ skill: v.skill, band: v.band as number }));
-      }
-      break;
+  /* Trả true = đã lấy lượt này làm kết quả gần nhất; false = xuống ứng viên cũ hơn. */
+  const xet = ({ s, cycle, ratio }: (typeof cho)[number], a: any, bundle: ReturnType<typeof loadBundle>): boolean => {
+    const scores = bundle.scores.get(a.id) ?? [];
+    if (!scores.length) return false;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
+    /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
+    const rr = ratio ? evaluateRegular(boMonTheoLuot(boMonCua(cycle.programme_code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, cycle.programme_code, nguongDatLop(a.class_id)) : null;
+    const skips = ratio ? [] : bundle.skips.get(a.id) ?? [];
+    const ri = ratio ? null : evaluateAttempt(
+      /* T9 (23/09): kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không phải Target hiện tại của lộ
+       * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
+       * Target sau này. */
+      a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
+      entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
+      kyNangXongThieu(bundle.skillRows.get(a.id) ?? [], scores as any), kckCuaLuot({ ...a, khong_cam_ket: cycle.khong_cam_ket }),   // OV-11e (Q8)
+    );
+    /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */
+    if ((rr ? rr.scored : ri!.scoredRequired) === 0) return false;
+    s.attemptId = a.id;
+    s.attemptNo = a.attempt_no;
+    s.attemptKind = a.kind ?? 'mock';
+    s.attemptClassId = a.class_id ?? null;
+    s.attemptLabel = labelOf(a.kind, a.attempt_no);
+    s.periodCode = a.period_code ?? null;
+
+    if (rr) {
+      const r = rr;
+      s.sosLevel = r.sosLevel;
+      s.provisional = r.provisional;
+      s.scored = r.scored;
+      s.required = r.required;
+      s.failed = r.failedCount;
+      s.tyLeTong = r.tyLeTong;
+      s.nguong = r.passThreshold;
+      s.khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(cycle.programme_code ?? '');
+      s.failedSkills = r.skills
+        .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)
+        .map((x) => ({ skill: x.skill, score: x.score as number, total: x.total as number }));
+    } else {
+      const r = ri!;
+      s.sosLevel = r.sosLevel;
+      s.kckDuoi = r.kckDuoi;
+      s.provisional = r.provisional;
+      s.scored = r.scoredRequired;
+      s.required = r.required.length;
+      s.overall = r.overall;
+      s.expectation = r.expectation;
+      s.belowSkills = r.verdicts
+        .filter((v) => v.passed === false && v.band !== null)
+        .map((v) => ({ skill: v.skill, band: v.band as number }));
     }
-    if (s.attemptId === null && s.required === 0) {
-      s.required = ratio ? boMonCua(cycle.programme_code).length : ASSESSED_SKILLS.length;
-    }
+    return true;
+  };
+  for (let dang = cho; dang.length;) {
+    const bundle = napBundle(dang.map((e) => e.ung[e.k].id));
+    dang = dang.filter((e) => !xet(e, e.ung[e.k], bundle) && ++e.k < e.ung.length);
+  }
+  for (const { s, cycle, ratio } of cho) {
+    if (s.attemptId === null && s.required === 0) s.required = ratio ? boMonCua(cycle.programme_code).length : ASSESSED_SKILLS.length;
   }
   return out;
 }

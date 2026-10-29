@@ -9769,6 +9769,9 @@ await runPrRaLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== W1 (gộp tải lại sau lưu điểm — giảm dòng đọc Turso)
 const { runPrW1GopTaiLaiTests } = bocTep('prW1GopTaiLai', await import('./prW1GopTaiLai.tests.ts'));
 await runPrW1GopTaiLaiTests({ check, checkAsync, assert } as any);
+// ==================================================================== S2 (lịch kỹ năng gắn môn theo lô + standingFor nạp theo vòng — giảm dòng đọc Turso)
+const { runPrS2LichKyNangTests } = bocTep('prS2LichKyNang', await import('./prS2LichKyNang.tests.ts'));
+await runPrS2LichKyNangTests({ check, assert, conn } as any);
 // ==================================================================== S4 (giới hạn lượt quét đường đọc — giảm dòng đọc Turso)
 const { runPrS4GioiHanQuetTests } = bocTep('prS4GioiHanQuet', await import('./prS4GioiHanQuet.tests.ts'));
 await runPrS4GioiHanQuetTests({ check, checkAsync, assert, conn } as any);

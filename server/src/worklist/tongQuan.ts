@@ -357,6 +357,7 @@ function thiThangNayCuaGv(p: Principal, ct: 'ft' | 'thuong') {
  * bài chờ chấm · Test sắp tới) và **Lớp tôi chủ nhiệm** (lớp GVCN: Dưới kỳ vọng · SOS · Case đang mở · Thi tháng này). Không đếm lại: hàng lớp = `lopToiDay`
  * (V4, cả hai khung), Đạt / Tiến bộ = `chiSoHoSoGv(...).hocThuatTheoLop` (cùng số hồ sơ GV, kỳ mặc định), Thi tháng này = `tapThiThangNayLop`.
  * Mỗi số bấm được: cột V4 + Thi tháng này → `/tong-quan/lop-toi-day/o`; Đạt / Tiến bộ → `/giao-vien/:id/chi-so/o?cot=ket-qua-lop|tien-bo-lop:<lớp>`.
+ * `chiSo` (S1): bốn số đầu trang GV (`ketQua`, `tienBo`) — cùng lần `chiSoHoSoGv`, bằng `/giao-vien/:id/chi-so` kỳ mặc định.
  */
 export function lopToiDayHaiKhoi(p: Principal) {
   /* Lớp thường chỉ đọc khi GV có lớp thường (`coThuong` của lần đọc FT) — GV chỉ dạy FT không tốn thêm câu. */
@@ -364,8 +365,9 @@ export function lopToiDayHaiKhoi(p: Principal) {
   const hang = [...ft.rows.map((r) => ({ ...r, khung: 'ft' as const })), ...(ft.coThuong ? lopToiDay(p, { ct: 'thuong' }).rows.map((r) => ({ ...r, khung: 'thuong' as const })) : [])];
   /* Lớp chỉ GVCN (không kỹ năng) mà còn bài chờ chấm của tôi vẫn vào khối dạy — không giấu bài. */
   const day = hang.filter((r) => r.kyNang.length || r.baiCho);
-  const cs = day.length ? chiSoHoSoGv(p, p.userId, {}) : null;
-  const ht = new Map(cs?.hocThuatTheoLop.map((h) => [h.classId, h]) ?? []);
+  /* S1: MỘT lần `chiSoHoSoGv` cho cả trang — thẻ "Đạt kỳ vọng Test" / "Tiến bộ" đầu trang đọc `chiSo` ở đây (trước gọi thêm `/giao-vien/:id/chi-so`, tính lại y hệt). */
+  const cs = chiSoHoSoGv(p, p.userId, {});
+  const ht = new Map(day.length ? cs.hocThuatTheoLop.map((h) => [h.classId, h]) : []);
   const cn = hang.filter((r) => r.gvcn);
   const thi = new Map<number, number>();
   for (const khung of ['ft', 'thuong'] as const) {
@@ -373,7 +375,8 @@ export function lopToiDayHaiKhoi(p: Principal) {
     for (const x of thiThangNayCuaGv(p, khung).values()) thi.set(x.lop, (thi.get(x.lop) ?? 0) + 1);
   }
   return {
-    ky: cs ? { tu: cs.tu, den: cs.den } : null,
+    ky: day.length ? { tu: cs.tu, den: cs.den } : null,
+    chiSo: { tu: cs.tu, den: cs.den, ketQua: cs.ketQua, tienBo: cs.tienBo },
     day: day.map((r) => {
       const h = ht.get(r.classId);
       return {
