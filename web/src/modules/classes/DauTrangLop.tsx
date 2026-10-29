@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
 import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -84,8 +85,10 @@ export type ViecDauTrang = ViecMenuLop | 'chuyen-tiep' | 'ban-giao' | 'phan-cong
  *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
  * Mỗi nút chỉ hiện khi người xem làm được (Q9).
  */
-export function DauTrangLop({ data, onViec, onBanGiao }: {
+export function DauTrangLop({ data, onViec, onBanGiao, thanhViec }: {
   data: HoSoLop; onViec: (v: ViecDauTrang) => void;
+  /** V8-HSL hàng ⑤: thanh "Việc của tôi" (ThanhViecLop) nằm trong đầu trang, sau dải lớp chuyển. */
+  thanhViec?: ReactNode;
   /** PR-CT: mở panel Bàn giao từ dải (lớp NGUỒN mặc định là lớp đang xem; `mon` = bảng GVBM). */
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
 }) {
@@ -157,14 +160,29 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
     return m.key === 'lich-su' && data.coGopY ? [...dau, muc, { key: 'lich-su-gop-y', nhan: t('Lịch sử góp ý tuần'), onChon: () => onViec('lich-su-gop-y') }] : [...dau, muc];
   });
 
-  /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8 — nâng cấp, không chép mockup): GIỮ nút Nhập điểm · + Case · ⋯ và mọi badge ở vị trí V4; màu / chữ V5. */
+  /* V8-HSL (mockup v8 `ho-so-lop.html`, chủ SP duyệt 29/10): đầu trang 4 hàng ~170 px — ① ‹ nguồn · trước / sau ② mã lớp + chương trình · HV · tuần ·
+     khai giảng | Nhập điểm · + Case · ⋯ ③ GVCN + GV bộ môn một dòng 13 px ④ số (Lượt gần nhất · Đạt ⓘ · SOS chip mức + số HV ngoài chip) | badge đổi
+     trang "›" ⑤ Việc của tôi. GIỮ mọi nút / badge / đích (bảng thao tác `thiet-ke/v8/ho-so-lop-ghi-chu.md`). */
   const bConLai = b;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
+  const meta: ReactNode[] = [
+    dich(data.programme?.name ?? data.kind),
+    <><b className="font-semibold tabular-nums text-slate-100">{s?.studentCount ?? 0}</b> HV</>,
+    s?.currentWeek ? <>{t('tuần {n}', { n: '' }).trim()} <b className="font-semibold tabular-nums text-slate-100">{s.currentWeek}{s.totalWeeks ? `/${s.totalWeeks}` : ''}</b></> : null,
+    data.startDate ? t('khai giảng {ngay}', { ngay: `${data.startDate.slice(8, 10)}/${data.startDate.slice(5, 7)}` }) : null,
+  ].filter(Boolean);
+  const nutBadge = (x: BadgeLop) => {
+    const bam = bamBadge(x);
+    /* G6: badge đổi trang có "›". */
+    return bam
+      ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={bam}>{x.nhan} <span aria-hidden className="font-bold">›</span></Nhan>
+      : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{x.nhan}</Nhan>;
+  };
 
   return (
-    <header className="space-y-2">
+    <header className="flex flex-col gap-1.5">
       {/* PR-DH (Q-0310-4): Quay lại + Lớp trước/sau theo danh sách vừa mở; mở thẳng bằng link thì theo các lớp cùng khung ở Học viên & Lớp. */}
-      <ThanhTruocSau loai="lop" id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
+      <ThanhTruocSau loai="lop" gon id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
         chiTiet={CHE_DO_NHAN[sp.get('che-do') as CheDoHocVien] ?? TAB_HO_SO_LOP_NHAN[sp.get('tab') as TabHoSoLop]}
         duong={(cid) => `/hoc-vien/lop/${cid}${sp.get('tab') ? `?tab=${sp.get('tab')}` : ''}`}
         dsDuPhong={async () => {
@@ -175,54 +193,77 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
         /* HL-10 (Q4): Quản lý của lớp vẫn sửa điểm (máy chủ `kiemLopKetThuc`) — "chỉ xem" chỉ cho người khác. */
         <DaiChiXem>{t('Lớp đã kết thúc')}{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ` — ${t('chỉ xem')}`}</DaiChiXem>
       )}
-      {/* UI-HO-SO-LOP (`dieu-chinh-cuoi.html` khu b): mã lớp + nhãn nhỏ xám / giá trị đậm (P2) — GVCN · Học viên · Lượt gần nhất · Đạt · SOS; + Case · ⋯ bên phải. */}
-      <div className="flex flex-wrap items-center gap-x-[22px] gap-y-2">
-        <h1 className="m-0 text-xl font-bold leading-tight text-slate-100" title={dich(data.programme?.name ?? data.kind)}>{data.code}</h1>
-        <NhanGt n={t('GVCN')} g={gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-soon">{t('Chưa có GVCN')}</span>} />
-        <NhanGt n={t('Học viên')} g={<span className="tabular-nums">{s?.studentCount ?? 0}</span>} />
-        {tomTat?.luot && <NhanGt n={t('Lượt gần nhất')} g={tomTat.luot} />}
-        {tomTat?.dat && (
-          <NhanGt n={tomTat.dat.nhan} g={(
-            <span className="tabular-nums text-dat">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %{' '}
-              <span className="text-[13px] font-medium text-slate-500">{tomTat.dat.so}/{tomTat.dat.tong}</span></span>
-          )} />
-        )}
-        {tomTat && tomTat.sos.length > 0 && (
-          <NhanGt n="SOS" g={(
-            <span className="flex flex-wrap items-center gap-1.5">
-              {tomTat.sos.map(([muc, n]) => <span key={muc} className={`${CHIP_SOS} ${lopSos(muc)}`} title={t('SOS {muc}: {n} HV', { muc, n })}>{muc} · {n}</span>)}
-            </span>
-          )} />
-        )}
-        <div className="ml-auto flex items-center gap-2 max-sm:ml-0">
-          {data.viewer.canEnterScores && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
+      {/* ② nhận diện + nút cố định (PR-OV3a). 375: nút xuống một hàng, chia đều. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <h1 className="m-0 text-[22px] font-bold leading-[1.3] text-slate-100">{data.code}</h1>
+        <span className="flex flex-wrap items-baseline text-[14px] text-slate-400 max-sm:basis-full">
+          {meta.map((m, i) => <span key={i} className={`whitespace-nowrap ${i === 3 ? 'max-sm:hidden' : ''}`}>{i > 0 && <span aria-hidden>{' · '}</span>}{m}</span>)}
+        </span>
+        <div className="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:[&>button:not([aria-haspopup])]:flex-1">
+          {data.viewer.canEnterScores && <button type="button" className="btn h-9 justify-center max-sm:h-11" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
           {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
-          {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onViec('case')}>+ Case</button>}
-          <MenuDong muc={menu} nhan={t('Thao tác khác')} />
+          {data.viewer.canReportCase && <button type="button" className="btn h-9 justify-center max-sm:h-11" onClick={() => onViec('case')}>+ Case</button>}
+          <MenuDong muc={menu} nhan={t('Thao tác khác')} lopNut={NUT_BA_CHAM} />
         </div>
       </div>
 
-      <DongGiaoVienBoMon nhom={nhom} />
+      {/* ③ GVCN + GV bộ môn một dòng 13 px — tên chữ thường (link hồ sơ GV khi được xem), không xanh to. */}
+      <DongGiaoVienBoMon nhom={[...(gvcn ? [{ nhan: t('GVCN'), title: t('Giáo viên chủ nhiệm'), id: gvcn.id, ten: gvcn.name, kyNang: [] }] : []), ...nhom]} />
 
-      {bConLai.hien.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {bConLai.hien.map((x) => {
-            const bam = bamBadge(x);
-            return bam
-              ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={bam}>{x.nhan}</Nhan>
-              : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{x.nhan}</Nhan>;
-          })}
-          {bConLai.an.length > 0 && (
-            <MenuDong kieu="chip" bieuTuong={`+${bConLai.an.length}`} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
-              muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
-          )}
-        </div>
-      )}
+      {/* ④ số của lớp | badge đổi trang. */}
+      <div className="flex min-h-7 flex-wrap items-center gap-x-[26px] gap-y-2">
+        {tomTat?.luot && <So n={t('Lượt gần nhất')} g={tomTat.luot} />}
+        {tomTat?.dat && (
+          <So n={tomTat.dat.nhan} g={(
+            <span className="inline-flex items-baseline gap-1">
+              <span className="tabular-nums text-dat">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %</span>
+              <span className="mr-1 text-[13px] font-medium tabular-nums text-slate-500">{tomTat.dat.so}/{tomTat.dat.tong} HV</span>
+              <NutLuat label={t('Cách tính Đạt')}>{t('Em đạt kỳ vọng ở lượt gần nhất đã đủ điểm của từng em / số em có lượt đủ điểm. Cùng kết luận với cột Kết quả.')}</NutLuat>
+            </span>
+          )} />
+        )}
+        {tomTat && tomTat.sos.length > 0 && (
+          <So ngang n="SOS" g={(
+            <span className="inline-flex flex-wrap items-center gap-x-3.5 gap-y-1">
+              {tomTat.sos.map(([muc, n]) => (
+                <span key={muc} className="inline-flex items-center gap-1.5 whitespace-nowrap" title={t('SOS {muc}: {n} HV', { muc, n })}>
+                  <span className={`${CHIP_SOS} ${lopSos(muc)}`}>SOS {muc}</span>
+                  <span className="tabular-nums">{n}</span><span className="text-[13px] font-medium text-slate-400">HV</span>
+                </span>
+              ))}
+            </span>
+          )} />
+        )}
+        {(bConLai.hien.length > 0 || bConLai.an.length > 0) && (
+          <div className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0">
+            {bConLai.hien.map(nutBadge)}
+            {bConLai.an.length > 0 && (
+              <MenuDong kieu="chip" bieuTuong={`+${bConLai.an.length}`} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
+                muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
+            )}
+          </div>
+        )}
+      </div>
 
       <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} />
+      {/* ⑤ "Việc của tôi" một hàng (ThanhViecLop — nơi gọi truyền vào). */}
+      {thanhViec}
     </header>
   );
 }
+
+/** Ô số hàng ④ (mockup `.ng`): nhãn 13 nhạt + giá trị 15 đậm cùng đường cơ sở. */
+function So({ n, g, ngang }: { n: ReactNode; g: ReactNode; ngang?: boolean }) {
+  return (
+    /* 375 (mockup): nhãn trên, giá trị dưới — trừ SOS (một hàng chip). */
+    <span className={`inline-flex items-baseline gap-2 whitespace-nowrap ${ngang ? '' : 'max-sm:flex-col max-sm:items-start max-sm:gap-0'}`}>
+      <span className="text-[13px] font-medium text-slate-400">{n}</span>
+      <span className="text-[15px] font-bold text-slate-100">{g}</span>
+    </span>
+  );
+}
+/* Nút ⋯ đầu trang cao 36 (mockup `.btn.ba-cham`) — cùng hàng nút Nhập điểm / + Case; điện thoại 44. */
+const NUT_BA_CHAM = 'btn h-9 w-9 shrink-0 !px-0 font-bold tracking-wider max-sm:h-11 max-sm:w-11';
 
 /** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2) — hồ sơ lớp + hồ sơ HV. */
 export function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
@@ -264,22 +305,23 @@ function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
   const mot = (g: NhomGiaoVien, i: number, luonHien: boolean) => (
     <span key={`${g.nhan}-${i}`}
       className={`items-baseline gap-1 whitespace-nowrap ${luonHien || i < 2 ? 'inline-flex' : i < 5 ? 'hidden sm:inline-flex' : 'hidden'}`}>
-      <abbr className="font-medium text-slate-500 no-underline" title={g.title}>{g.nhan}</abbr>
+      <abbr className="font-medium text-slate-400 no-underline" title={g.title}>{g.nhan}</abbr>
       {g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>}
     </span>
   );
   return (
-    <div className="text-xs">
+    /* V8-HSL hàng ③: 13 px, tên chữ chính đậm vừa (không link xanh to). */
+    <div className="text-[13px] text-slate-400 [&_.ten-ho-so]:font-medium">
       {/* HL-18: cắt chiều ngang thôi (`overflow-x-clip`) — vùng chạm 44 px của tên GV / "+k" ở 375 không bị cắt theo chiều dọc. */}
       <div className="flex items-center gap-3.5 overflow-x-clip whitespace-nowrap">
         {nhom.map((g, i) => mot(g, i, false))}
         {nhom.length > 2 && (
-          <button type="button" aria-expanded={du} className="link relative border-0 bg-transparent p-0 text-xs sm:hidden after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-['']" onClick={() => setDu((v) => !v)}>
+          <button type="button" aria-expanded={du} className="link relative border-0 bg-transparent p-0 text-[13px] sm:hidden after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-['']" onClick={() => setDu((v) => !v)}>
             +{nhom.length - 2}
           </button>
         )}
         {nhom.length > 5 && (
-          <button type="button" className="link hidden border-0 bg-transparent p-0 text-xs sm:inline" onClick={() => setDu((v) => !v)}>
+          <button type="button" className="link hidden border-0 bg-transparent p-0 text-[13px] sm:inline" onClick={() => setDu((v) => !v)}>
             +{nhom.length - 5}
           </button>
         )}

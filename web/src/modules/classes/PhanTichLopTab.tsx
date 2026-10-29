@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { VanDeKyNang } from './ClassIssueBoard.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -39,12 +40,19 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
     : t('Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Bấm một dòng để xem vấn đề hay gặp.');
 
   return (
-    <div className="card table-scroll">
+    /* V8-HSL (mockup v8 D): hàng công cụ trên bảng — tên bảng · số HV · cách đọc ô · ⓘ cách tính (G9: ⓘ ra khỏi đầu cột). */
+    <section className="card overflow-clip" aria-label={t('Đạt theo kỹ năng')}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+        <h2 className="m-0 text-[15px] font-bold text-slate-100">{ft ? t('Đạt theo kỹ năng') : t('Đạt theo môn')}</h2>
+        <span className="text-[13px] text-slate-400">{t('{n} HV', { n: data.soHocVien })} · {t('ô = HV đạt / HV có điểm')}</span>
+        <NutLuat label={t('Cách tính')}>{goiY}</NutLuat>
+      </div>
+    <div className="table-scroll">
       <table className="w-full min-w-[560px] table-fixed text-sm">
         <colgroup><col className="w-40" />{data.cot.map((c) => <col key={c.key} />)}</colgroup>
         <thead>
           <tr>
-            <Th hint={goiY}>{ft ? t('Kỹ năng') : t('Môn')}</Th>
+            <Th>{ft ? t('Kỹ năng') : t('Môn')}</Th>
             {data.cot.map((c) => <Th key={c.key} align="center">{dich(c.nhan)}</Th>)}
           </tr>
         </thead>
@@ -56,8 +64,9 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
                 <td key={c.key} className="text-center tabular-nums">
                   {!o || o.tong === 0
                     ? <span className="text-slate-500">—</span>
-                    : <span className={o.dat * 2 < o.tong ? 'text-rose-200' : 'text-slate-200'} title={t('{dat}/{tong} HV đạt', { dat: o.dat, tong: o.tong })}>
-                        {ft ? `${o.dat}/${o.tong}` : t('{dat}/{tong} HV đạt', { dat: o.dat, tong: o.tong })}
+                    /* G12: ô dưới một nửa đạt = "✗ 8/18" chữ dưới kỳ vọng (ký hiệu + màu, không chỉ màu). */
+                    : <span className={o.dat * 2 < o.tong ? 'font-semibold text-kq-duoi' : 'text-slate-200'} title={t('{dat}/{tong} HV đạt', { dat: o.dat, tong: o.tong })}>
+                        {o.dat * 2 < o.tong && <span aria-hidden>✗ </span>}{ft ? `${o.dat}/${o.tong}` : t('{dat}/{tong} HV đạt', { dat: o.dat, tong: o.tong })}
                       </span>}
                 </td>
               );
@@ -76,7 +85,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
               <Fragment key={d.key}>
                 {/* PR-UX4 (Q22, N-2): hàng kỹ năng là hàng lớn — mũi tên do `HangNhom` vẽ, không còn ▸ tự vẽ. */}
                 <HangNhom mo={mo === d.key} onMo={() => setMo(mo === d.key ? null : d.key)} nhan={d.tenDayDu}
-                  tieuDe={<abbr className="text-slate-100 no-underline" title={dich(d.tenDayDu)}>{dich(d.nhan)}</abbr>}>
+                  tieuDe={<span className="font-medium text-slate-100">{dich(d.tenDayDu)}</span>}>
                   {oCac}
                 </HangNhom>
                 {mo === d.key && (
@@ -88,5 +97,6 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
         </tbody>
       </table>
     </div>
+    </section>
   );
 }

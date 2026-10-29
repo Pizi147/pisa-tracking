@@ -15,7 +15,9 @@ const CAN_XU_LY = t('Cần xử lý');
 /** `donVi` (SL2): chữ sau số trên chip ("7 em") — số không đứng trơ khi tab không nói đơn vị. */
 export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; donVi?: string; canhBao?: boolean };
 
-export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, cap = 'chinh' }: {
+export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, cap = 'chinh', v8 }: {
+  /** V8-HSL (mockup v8 `.tab`): tab trang 15 px, cao 42, chọn đậm 700 — màn đã làm theo v8. */
+  v8?: boolean;
   tabs: HangTabMuc<K>[]; value: K; onChange: (k: K) => void; ariaLabel: string;
   /** 'chinh' = hàng tab của trang (chữ text-sm), 'con' = tab con trong một khối (text-xs). */
   cap?: 'chinh' | 'con';
@@ -38,8 +40,8 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
         return (
           <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => onChange(t.key)}
             className={`min-h-[44px] whitespace-nowrap px-2.5 sm:px-3 py-2 -mb-px sm:min-h-0 border-b-2 appearance-none bg-transparent cursor-pointer ${
-              cap === 'con' ? 'text-xs' : 'text-sm'
-            } ${active ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
+              v8 ? 'max-sm:px-2 max-sm:text-[14px] sm:h-[42px] sm:py-0 text-[15px]' : cap === 'con' ? 'text-xs' : 'text-sm'
+            } ${active ? `border-[color:var(--accent)] ${v8 ? 'font-bold' : 'font-semibold'} text-slate-100` : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
             {t.label}
             {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label={CAN_XU_LY} title={CAN_XU_LY}>●</span>}
             {!!t.so && t.so > 0 && (

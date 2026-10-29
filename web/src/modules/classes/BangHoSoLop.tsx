@@ -41,7 +41,7 @@ type KyO = 'l' | 'r' | 'w' | 'w1' | 'w2' | 's' | 'ovr';
 const BAND = { l: 'listening', r: 'reading', s: 'speaking', w1: 'writing1', w2: 'writing2' } as const;
 /* Chip lọc — cùng dáng chip của `CongTacKhung` (kieu chip). */
 const CHIP_CHON = 'font-semibold border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]';
-const CHIP_THUONG = 'font-medium border-[color:var(--line-strong)] bg-transparent text-slate-300 hover:text-slate-100';
+const CHIP_THUONG = 'font-medium border-[color:var(--line-strong)] bg-transparent text-slate-400 hover:text-slate-100';
 
 /** Lượt hiện của em (P8 — lượt của TỪNG HV): lượt máy chủ kết luận (`standing`, cùng `standingFor` của Học viên & Lớp); chưa có → lượt mới nhất có điểm. */
 const mocCua = (r: Hang): Moc | null => (r.history.find((h) => h.id === r.standing?.attemptId) ?? r.history[0] ?? null) as Moc | null;
@@ -58,7 +58,7 @@ const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
   { key: 'target', nhan: 'Target', kieu: 'so', rong: 72 },
   { key: 'mt', nhan: 'MT', kieu: 'so', rong: 64 },
   { key: 'l', nhan: 'L', kieu: 'diem', rong: 76 }, { key: 'r', nhan: 'R', kieu: 'diem', rong: 76 },
-  { key: 'w', nhan: 'W', phu: 'W1 · W2', kieu: 'diem', rong: 104 }, { key: 's', nhan: 'S', kieu: 'diem', rong: 76 },
+  { key: 'w', nhan: 'W', goiY: t('W = (W1 + 2 × W2) / 3 — dòng phụ: W1 · W2'), kieu: 'diem', rong: 104 }, { key: 's', nhan: 'S', kieu: 'diem', rong: 76 },
   { key: 'ovr', nhan: 'Overall', kieu: 'diem', rong: 92 },
   { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 150 }, { key: 'thi', nhan: t('Ngày thi'), kieu: 'chip', rong: 136 },
   { key: 'cp', nhan: 'Case + PA', kieu: 'chip', rong: 138 },
@@ -74,8 +74,10 @@ const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
  * < 640 px (RA-UI-8, mockup 375): mỗi em một thẻ (`Bang` chế độ thẻ) — tên + Kết quả · Ngày thi, đủ điểm L R W S Overall (dòng phụ W1 · W2 / vắng
  * dưới ô), Target · MT; hàng cuối Case + PA bên trái, ⋯ bên phải; Case mở ngay cuối thẻ (`sauThe`).
  */
-export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien }: {
+export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien, cachXem, nutChon }: {
   classId: number; maLop: string; quyen: QuyenDong; onDoi: () => void; onThemHocVien?: () => void;
+  /** V8-HSL: nút đoạn Cách xem (tab Học viên) đứng ĐẦU hàng công cụ của thẻ bảng; `nutChon` = "Chọn nhiều" (QL) cuối hàng. */
+  cachXem?: ReactNode; nutChon?: ReactNode;
   /** PR-LUI-b: "Chọn nhiều học viên" (Quản lý) — bật thì ô chọn cạnh tên. */
   chon?: ChonNhieu;
 }) {
@@ -148,7 +150,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
         const soPa = ca.reduce((n, x) => n + x.interventionCount, 0);
         return (
           <button type="button" aria-expanded={mo === r.id} aria-controls={`case-${r.id}`} onClick={() => setMo(mo === r.id ? null : r.id)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] ${mo === r.id ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'text-slate-200'}`}
+            className={`inline-flex h-[30px] items-center gap-1 whitespace-nowrap rounded-lg border px-2.5 text-[13px] font-medium max-sm:h-9 ${mo === r.id ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'text-slate-100'}`}
             style={mo === r.id ? undefined : { borderColor: 'var(--line-strong)' }}>
             <b className="tabular-nums">{ca.length}</b> Case · <b className="tabular-nums">{soPa}</b> PA{mo === r.id && <span aria-hidden>▾</span>}
           </button>
@@ -168,30 +170,45 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
     return w1 === null && w2 === null ? null : `${w1 === null ? '—' : fmtBand(w1)} · ${w2 === null ? '—' : fmtBand(w2)}`;
   };
   /*
-   * THẺ EM 375 (mockup `ho-so-lop.html` `.the-dt`): tên + Kết quả · một hàng điểm L R W1 W2 S OVR (14 px, nhãn 12 xám, khe 12; "vắng …" nhỏ ngay sau
-   * ô) · dòng phụ Target · MT · Ngày thi (· Phụ huynh) · hàng cuối Case + PA trái, ⋯ phải. Cùng ô / thao tác với bảng 1440.
+   * THẺ EM 375 (mockup v8 `.the-em`, chủ SP duyệt 29/10): đầu thẻ tên (+ ô chọn) · Kết quả · ⋯ (44 px) · nhãn phụ (mới vào / thiếu / Ý thức / Xét lại) ·
+   * lưới điểm 5 CỘT CỐ ĐỊNH L R W S Overall trên nền phụ (cột thẳng giữa các thẻ; nhãn 12 trên, điểm 15 dưới, dòng phụ W1 · W2 / "vắng …" trong ô) ·
+   * chân: Target · MT · lịch thi (· Phụ huynh) …… nút Case + PA. Cùng ô / thao tác với bảng 1440.
    */
   const cotTheo = new Map(COT.map((c) => [c.key, c]));
   const o = (r: Hang, k: string) => oCua(r, cotTheo.get(k)!);
   const theEm = (r: Hang): ReactNode => {
     const h = mocCua(r);
-    const vang = (kn: string) => (h?.vangCu?.[kn] ? <span className="text-[12px] text-faint">{chuDoiVang(h.vangCu[kn], homNay)}</span> : null);
+    const coNhan = r.moiVao || r.missing.length > 0 || !!r.canhBaoYThuc;
     return (
       <div className="flex flex-col gap-2">
-        <div className="flex min-w-0 flex-wrap items-start gap-2 text-[15px]">{o(r, 'ten')}{o(r, 'kq')}</div>
-        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 text-[14px]">
-          {(['l', 'r', 'w1', 'w2', 's', 'ovr'] as const).map((k) => (
-            <span key={k} className="inline-flex items-baseline gap-1">
-              <span className="text-[12px] text-slate-400">{k === 'ovr' ? 'OVR' : k.toUpperCase()}</span>{oDiem(r, h, k)}{k !== 'ovr' && vang(k === 'w1' || k === 'w2' ? 'writing' : BAND[k])}
-            </span>
-          ))}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+          <span className="inline-flex min-w-0 items-center gap-2.5 text-[15px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}<TenEm s={r} ds={ngCanh} /></span>
+          {o(r, 'kq')}
+          <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })}
+            lopNut="btn h-11 w-11 shrink-0 !px-0 text-[13px] font-bold tracking-wider" />
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-slate-400">
-          <span>Target <b className="font-semibold tabular-nums text-slate-200">{o(r, 'target')}</b></span><span aria-hidden>·</span>
-          <span>MT <b className="font-semibold text-slate-200">{o(r, 'mt')}</b></span>
-          {o(r, 'thi')}{quyen.theoVai && o(r, 'ph')}
+        <ChipXetLaiDong sid={r.id} />
+        {coNhan && <span className="flex flex-wrap items-center gap-1.5">{r.moiVao && <MoiVao />}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></span>}
+        <dl className="m-0 grid grid-cols-5 rounded-lg bg-[color:var(--surface-2)] px-1 py-1.5">
+          {(['l', 'r', 'w', 's', 'ovr'] as const).map((k) => {
+            const phu = phuCua(r, cotTheo.get(k)!);
+            return (
+              <div key={k} className="flex min-w-0 flex-col items-center">
+                <dt className="text-[12px] font-semibold text-slate-500">{k === 'ovr' ? 'Overall' : k.toUpperCase()}</dt>
+                <dd className="m-0 text-[15px]">{oDiem(r, h, k)}</dd>
+                {phu && <dd className="m-0 text-center text-[12px] leading-[1.25] tabular-nums text-slate-500">{phu}</dd>}
+              </div>
+            );
+          })}
+        </dl>
+        <div className="flex items-center gap-2 text-[13px] text-slate-400">
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span>Target <b className="font-semibold tabular-nums text-slate-100">{o(r, 'target')}</b></span><span aria-hidden>·</span>
+            <b className="font-semibold text-slate-100">{o(r, 'mt')}</b>
+            {o(r, 'thi')}{quyen.theoVai && o(r, 'ph')}
+          </span>
+          <span className="ml-auto shrink-0">{o(r, 'cp')}</span>
         </div>
-        <div className="flex items-center justify-between gap-2">{o(r, 'cp')}{o(r, 'nut')}</div>
       </div>
     );
   };
@@ -219,23 +236,33 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien 
 
   return (
     <section className="card overflow-clip">
-      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
+        {cachXem}
+        {cachXem && <span aria-hidden className="h-6 w-px bg-[color:var(--line-strong)] max-sm:hidden" />}
         {(['tat-ca', 'sos', 'thieu'] as const).map((k) => (
           <button key={k} type="button" aria-pressed={loc === k} onClick={() => { setLoc(k); setMo(null); }}
-            className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-11 ${loc === k ? CHIP_CHON : CHIP_THUONG}`}>
-            {k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? 'SOS' : t('Chưa đủ dữ liệu')} <span className="tabular-nums">{dem[k]}</span>
+            className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-10 ${loc === k ? CHIP_CHON : CHIP_THUONG}`}>
+            {k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? 'SOS' : t('Chưa đủ dữ liệu')} <span className="font-bold tabular-nums">{dem[k]}</span>
           </button>
         ))}
-        {tuan.length > 0 && (
-          <span className="ml-auto text-[13px] text-slate-400 max-sm:ml-0 max-sm:w-full max-sm:text-right">
-            {t('Lượt của từng HV')} · {tuanLich(tuan[0], homNay)}{tuan[tuan.length - 1] !== tuan[0] ? ` – ${tuanLich(tuan[tuan.length - 1], homNay)}` : ''}
+        {(tuan.length > 0 || nutChon) && (
+          <span className="ml-auto inline-flex items-center gap-3 max-sm:ml-0 max-sm:w-full max-sm:flex-wrap">
+            {tuan.length > 0 && (
+              <span className="whitespace-nowrap text-[13px] text-slate-500">
+                {t('Lượt của từng HV')} · {tuanLich(tuan[0], homNay)}{tuan[tuan.length - 1] !== tuan[0] ? ` – ${tuanLich(tuan[tuan.length - 1], homNay)}` : ''}
+              </span>
+            )}
+            {nutChon && <span className="max-sm:ml-auto">{nutChon}</span>}
           </span>
         )}
       </div>
       <Bang ten={t('Học viên lớp {lop}', { lop: maLop })} cot={COT} hang={ds} khoa={(r) => r.id}
         oCua={oCua} phuCua={phuCua} hangRieng={hangCua} theRieng={theEm} lopHang={lopHang} dangMo={(r) => mo === r.id}
         sauThe={(r) => mo === r.id && <div id={`case-${r.id}`} className="mt-2 flex flex-col gap-2.5">{caseMo(r)}</div>}
-        khung={false} dinh rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca' && onThemHocVien ? <button type="button" className="btn btn-sm" onClick={onThemHocVien}>{t('Thêm học viên')}</button> : undefined }} />
+        khung={false} dinh rong={{ tieuDe: loc === 'tat-ca' ? t('Lớp chưa có học viên') : t('Không có học viên nào'), nut: loc === 'tat-ca'
+          ? (onThemHocVien ? <button type="button" className="btn btn-sm" onClick={onThemHocVien}>{t('Thêm học viên')}</button> : undefined)
+          /* V8-HSL (mockup E): lọc rỗng → một bấm về Tất cả. */
+          : <button type="button" className="btn btn-sm" onClick={() => setLoc('tat-ca')}>{t('Tất cả')} <b className="tabular-nums">{dem['tat-ca']}</b></button> }} />
       {pop && (() => { const r = tatCa.find((x) => x.id === pop.sid); const h = r && mocCua(r); return h ? <PopThanhPhan attemptId={h.id} kn={pop.kn} nut={pop.nut} tong={h.writing ?? null} onDong={() => setPop(null)} /> : null; })()}
       {tt.panels}
       {ngan2 && (

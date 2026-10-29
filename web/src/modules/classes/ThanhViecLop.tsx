@@ -2,11 +2,11 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
-import { ChipHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { PanelViec } from '../congViec/PanelViec.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { LOAI_HAN_CUA_VIEC, shortDate, viecKeTiep } from '@shared/domain/index.ts';
+import { shortDate, viecKeTiep } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp. */
@@ -32,12 +32,12 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
   return (
     <>
       {ds.length > 0 && (
-        <section aria-label={t('Việc cần làm')} className="flex flex-col gap-1.5">
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-            {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => moTuThanh(it)} />)}
-          </div>
+        /* V8-HSL hàng ⑤ (mockup v8 `.hang-viec`): "Việc của tôi · n" + tối đa 3 ô cao 36 trên MỘT hàng + "+n ở Công việc ›". 375: ô xếp dọc. */
+        <section aria-label={t('Việc của tôi')} className="grid items-center gap-2 pt-0.5 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))_auto]">
+          <span className="whitespace-nowrap pr-1 text-[13px] font-medium text-slate-400">{t('Việc của tôi')} · <b className="tabular-nums text-slate-100">{ds.length}</b></span>
+          {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => moTuThanh(it)} />)}
           {ds.length > TOI_DA && (
-            <Link to="/cong-viec" className="link self-end text-[13px]">{t('+{n} việc khác ở Công việc ›', { n: ds.length - TOI_DA })}</Link>
+            <Link to="/cong-viec" className="link justify-self-end whitespace-nowrap text-[14px] font-semibold max-lg:py-2">{t('+{n} ở Công việc ›', { n: ds.length - TOI_DA })}</Link>
           )}
         </section>
       )}
@@ -47,28 +47,32 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
   );
 }
 
-/** Một ô việc (mockup `.viec`): tên đậm · dòng phụ (số bài, trạng thái hạn, hạn) · nút bên phải. */
+/* Mockup v8: tên kỹ năng trong ô việc viết tắt "Nhập điểm L · R" — ô 36 px một dòng. */
+const TAT: Record<string, string> = { 'Writing Task 1': 'W1', 'Writing Task 2': 'W2', Listening: 'L', Reading: 'R', Writing: 'W', Speaking: 'S' };
+const gonKyNang = (s: string) => s.replace(/Writing Task [12]|Listening|Reading|Writing|Speaking/g, (k) => TAT[k]).replace(/\b(L|R|W1|W2|W|S), (?=(L|R|W1|W2|W|S)\b)/g, '$1 · ');
+
+/**
+ * Một ô việc (mockup v8 `.viec`): CẢ Ô là nút mở panel việc tại trang — tên việc đậm 14 · phụ 13 (số bài) · viên hạn bên phải
+ * (quá hạn đỏ ⚠ · hôm nay vàng · còn lại xám). Vạch trái 3 px theo hạn (mockup đã duyệt).
+ */
 function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const vach = it.urgency === 'overdue' ? 'rgb(var(--bad-rgb))' : it.urgency === 'today' ? 'rgb(var(--soon-line-rgb))' : 'var(--accent)';
-  const tieuDe = dich(it.tieuDe);
+  const tieuDe = gonKyNang(dich(it.tieuDe));
   const ten = it.studentId !== null && !tieuDe.includes(it.studentName) ? `${tieuDe} · ${it.studentName}` : tieuDe;
+  const han = it.due ? (it.urgency === 'today' ? t('hạn hôm nay') : t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })) : null;
   return (
-    <div className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 rounded-[10px] border border-l-4 px-3 py-2.5 ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)]'}`}
+    <button type="button" onClick={onMo} aria-expanded={dangMo} title={`${ten} — ${dich(it.actionLabel)}`}
+      className={`flex h-9 min-w-0 items-center gap-2 rounded-lg border border-l-[3px] px-3 text-left max-lg:h-auto max-lg:min-h-[44px] max-lg:flex-wrap max-lg:py-1.5 ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)] hover:bg-[color:var(--nut-hover)]'}`}
       style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
-      <span className="min-w-0 truncate text-[14px] font-bold text-slate-100" title={ten}>{ten}</span>
-      <button type="button" className={['btn btn-sm row-span-2 max-sm:min-h-[44px]', it.group === 'score' && 'btn-primary'].filter(Boolean).join(' ')} onClick={onMo} aria-expanded={dangMo}>
-        {dich(it.actionLabel)}
-      </button>
-      <span className="flex min-w-0 flex-wrap items-center gap-2 text-[13px] text-slate-400">
-        {it.group === 'score' && it.soBai ? <span className="tabular-nums">{t('{soBai} bài', { soBai: it.soBai })}</span> : null}
-        {it.due && (it.urgency === 'normal'
-          ? <span>{t('hạn')} <b className="font-bold tabular-nums text-slate-200">{shortDate(it.due, homNay)}</b></span>
-          : <>
-              <ChipHan loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />
-              <b className={`font-bold tabular-nums ${it.urgency === 'overdue' ? 'text-bad' : 'text-slate-200'}`}>{it.urgency === 'overdue' && <span aria-hidden className="text-xs">⚠ </span>}{shortDate(it.due, homNay)}</b>
-            </>)}
-      </span>
-    </div>
+      <span className="min-w-0 truncate text-[14px] font-semibold text-slate-100">{ten}</span>
+      {it.group === 'score' && it.soBai ? <span className="whitespace-nowrap text-[13px] tabular-nums text-slate-400">{t('{soBai} bài', { soBai: it.soBai })}</span> : null}
+      {han && (
+        <span className={`${CHIP_TRON} ml-auto shrink-0 tabular-nums ${
+          it.urgency === 'overdue' ? 'bg-bad-bg text-bad' : it.urgency === 'today' ? 'bg-soon-bg text-soon' : 'bg-[color:var(--surface-2)] text-slate-400'}`}>
+          {it.urgency === 'overdue' && <span aria-hidden className="mr-0.5">⚠</span>}{han}
+        </span>
+      )}
+    </button>
   );
 }

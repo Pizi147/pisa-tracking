@@ -177,23 +177,22 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   const soPhoiHop = coord.data?.pendingCount ?? 0;
 
   return (
-    <Card title={<span className="whitespace-nowrap">{t('Ý thức & Phối hợp')}</span>}
-      action={(
-        <span className="flex flex-wrap items-center justify-end gap-2">
-          {d.canManage && (
-            <button type="button" aria-pressed={chonN.bat} onClick={() => { chonN.batTat(); setGhiNhanKq(null); }}
-              className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chonN.bat ? 'border-[color:var(--accent)] text-[color:var(--accent)]' : ''}`}>
-              {chonN.bat ? '✓ ' : ''}{t('Chọn nhiều')}
-            </button>
-          )}
-          {/* KHAI-BAC-LO: một panel mọi em của lớp — không cần Chọn nhiều trước. */}
-          {d.canManage && (
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setLoMo({ viec: 'cap-bac', ids: null })}>{t('Khai / sửa cấp bậc')}</button>
-          )}
-          {d.canRecord && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button>}
-        </span>
-      )}
-      bodyClass="p-0">
+    /* V8-HSL (mockup v8 C): không tiêu đề khối — MỘT hàng công cụ: + Ghi vi phạm · Khai / sửa cấp bậc …… Chọn nhiều. */
+    <Card bodyClass="p-0">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
+        <h2 className="sr-only">{t('Ý thức & Phối hợp')}</h2>
+        {d.canRecord && <button type="button" className="btn btn-primary h-9 max-sm:h-11" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button>}
+        {/* KHAI-BAC-LO: một panel mọi em của lớp — không cần Chọn nhiều trước. */}
+        {d.canManage && (
+          <button type="button" className="btn h-9 max-sm:h-11" onClick={() => setLoMo({ viec: 'cap-bac', ids: null })}>{t('Khai / sửa cấp bậc')}</button>
+        )}
+        {d.canManage && (
+          <button type="button" aria-pressed={chonN.bat} onClick={() => { chonN.batTat(); setGhiNhanKq(null); }}
+            className={`btn ml-auto h-[30px] px-2.5 text-[13px] max-sm:h-11 ${chonN.bat ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>
+            {chonN.bat ? '✓ ' : ''}{t('Chọn nhiều')}
+          </button>
+        )}
+      </div>
       {!coHang && !(chonN.bat && chuaKhai.length) ? (
         <div className="p-4"><Empty title={t('Không em nào cần xử lý Ý thức')} hint={t('Vi phạm mới, việc bắt buộc và đề xuất chờ QL sẽ hiện ở đây.')} /></div>
       ) : (

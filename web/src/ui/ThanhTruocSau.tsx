@@ -12,14 +12,19 @@ const doc = (loai: NguCanhDs['loai'], id: number): NguCanhDs | null => {
 };
 
 type Cha = TenTrang & { url: string };
+/* V8-HSL: dáng gọn (chữ, không khung) — vùng chạm 44 px ở điện thoại bằng `after`. */
+const GON_VE = "relative inline-flex max-w-full items-center gap-1 border-0 bg-transparent p-0 text-[13px] font-medium text-slate-400 hover:text-slate-100 after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-[''] sm:after:hidden";
+const GON_NUT = "relative inline-grid h-6 w-7 place-items-center rounded-md border-0 bg-transparent text-slate-400 hover:bg-[color:var(--nut-hover)] hover:text-slate-100 after:absolute after:-inset-2 after:content-[''] sm:after:hidden";
 
 /**
  * NÚT "‹ {tên nguồn}" ĐẦU MỌI HỒ SƠ (PR-OV5b, mockup M1 §6): về đúng URL + vị trí cuộn của nơi bắt đầu (`web/src/lib/quayLai.ts`);
  * đã đi qua nhiều hồ sơ thì menu "Các bước" về từng bước. Chưa có nguồn (mở link thẳng / tải lại) → `cha`.
  * `ten` / `chiTiet`: tên của CHÍNH hồ sơ này — hiện ở nút / menu của hồ sơ kế tiếp nếu đi tiếp từ đây.
  */
-export function DuongVe({ cha, ten, chiTiet, tieuDe, children }: {
+export function DuongVe({ cha, ten, chiTiet, tieuDe, children, gon }: {
   cha: Cha; ten?: string | null; chiTiet?: string | null;
+  /** V8-HSL (mockup v8 hồ sơ lớp hàng ①): "‹ nguồn" chữ 13 px nhạt, không khung nút — hàng cao 24 px; điện thoại vẫn chạm 44 px (`after`). */
+  gon?: boolean;
   /** OV-11i: tiêu đề tab (mặc định `ten`). */
   tieuDe?: string | null; children?: ReactNode;
 }) {
@@ -28,12 +33,12 @@ export function DuongVe({ cha, ten, chiTiet, tieuDe, children }: {
   const ve = useVe();
   const dich = chong[0] ?? cha;
   return (
-    <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
-      <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-[32px]" onClick={() => ve(dich.url, !chong.length)}
+    <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] ${gon ? 'min-h-6' : 'mb-1.5'}`}>
+      <button type="button" className={gon ? GON_VE : 'btn btn-sm min-h-[44px] max-w-full sm:min-h-[32px]'} onClick={() => ve(dich.url, !chong.length)}
         title={t('Về {vai}', { vai: dich.ten }) + (dich.chiTiet ? ` · ${dich.chiTiet}` : '')}>
         <span aria-hidden>‹</span><span className="min-w-0 truncate">{dich.ten}</span>
       </button>
-      {dich.chiTiet && <span className="min-w-0 truncate text-slate-500">{dich.chiTiet}</span>}
+      {dich.chiTiet && !gon && <span className="min-w-0 truncate text-slate-500">{dich.chiTiet}</span>}
       {chong.length > 1 && (
         <Menu label={t('Các bước ({n})', { n: chong.length })} align="left" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-[32px]"
           items={chong.map((b) => ({ label: `‹ ${b.ten}`, hint: b.chiTiet, onClick: () => ve(b.url) }))} />
@@ -48,7 +53,8 @@ export function DuongVe({ cha, ten, chiTiet, tieuDe, children }: {
  * Danh sách: (1) `location.state.ds` — danh sách vừa mở, đúng bộ lọc + thứ tự đang dùng; (2) `sessionStorage` (tải lại trang);
  * (3) `dsDuPhong` (mở thẳng bằng link: lớp của em, A→Z). Chuyển hồ sơ dùng `replace` để "Quay lại" vẫn về danh sách, không qua từng hồ sơ.
  */
-export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet }: {
+export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet, gon }: {
+  gon?: boolean;
   loai: NguCanhDs['loai']; id: number; duong: (id: number) => string;
   dsDuPhong?: () => Promise<{ ids: number[]; nhan: string }>;
   cha: Cha; ten?: string | null; chiTiet?: string | null;
@@ -81,18 +87,18 @@ export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet }:
     return () => document.removeEventListener('keydown', phim);
   }); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const nut = 'btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 disabled:opacity-40';
+  const nut = gon ? `${GON_NUT} disabled:opacity-40` : 'btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 disabled:opacity-40';
   return (
     /* OV-11i (P1-3): tab hồ sơ HV ghi tên em, hồ sơ lớp ghi mã lớp — bỏ chữ "Hồ sơ (lớp)" của tên nút Quay lại. */
-    <DuongVe cha={cha} ten={ten} chiTiet={chiTiet} tieuDe={ten?.replace(loai === 'lop' ? /^Hồ sơ lớp / : /^Hồ sơ /, '')}>
+    <DuongVe cha={cha} ten={ten} chiTiet={chiTiet} tieuDe={ten?.replace(loai === 'lop' ? /^Hồ sơ lớp / : /^Hồ sơ /, '')} gon={gon}>
       {ben && ds && (
         <span className="ml-auto flex items-center gap-1 text-xs text-slate-400" role="group" aria-label={t('Chuyển trong danh sách {ds}', { ds: ds.nhan })}>
           <button type="button" className={nut} disabled={ben.truoc === null} onClick={() => sang(ben.truoc)} aria-label={t('Trước')} title={t('Trước ( [ )')}>
-            ‹<span className="max-sm:sr-only"> {t('Trước')}</span>
+            ‹{!gon && <span className="max-sm:sr-only"> {t('Trước')}</span>}
           </button>
-          <span className="tabular-nums" title={ds.nhan}><b className="font-semibold text-slate-200">{ben.viTri}/{ben.tong}</b><span className="max-sm:sr-only"> · {ds.nhan}</span></span>
+          <span className={`tabular-nums ${gon ? 'text-[13px]' : ''}`} title={ds.nhan}><b className={`font-semibold ${gon ? 'text-slate-100' : 'text-slate-200'}`}>{ben.viTri}/{ben.tong}</b><span className={gon ? '' : 'max-sm:sr-only'}> · {ds.nhan}</span></span>
           <button type="button" className={nut} disabled={ben.sau === null} onClick={() => sang(ben.sau)} aria-label="Sau" title="Sau ( ] )">
-            <span className="max-sm:sr-only">{t('Sau')} </span>›
+            {!gon && <span className="max-sm:sr-only">{t('Sau')} </span>}›
           </button>
         </span>
       )}
