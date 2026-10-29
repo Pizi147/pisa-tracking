@@ -16,6 +16,7 @@ import { notify, quanLyCuaChiNhanh } from '../platform/audit.ts';
 import { GhiDao, luuGhiDao } from '../platform/ghiDao.ts';
 import { HttpError, badRequest, conflict, forbidden, loi, notFound, nowIso } from '../util.ts';
 import { programmeOfClass } from '../normal/regular.ts';
+import { caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi } from '../cases/owner.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
 
 export type LuuLopVao = { classId: number; slots: TeacherSlot[]; phienBan?: string; banGiao?: Record<string, boolean> };
@@ -199,7 +200,7 @@ function theoDoiMoi<T>(g: GhiDao, bang: readonly string[], fn: () => T): T {
 export function apDoiLop(p: Principal, classId: number, rows: DongDoi[], ngay: string,
   o: { g?: GhiDao; duocXep?: DuocXep; via?: string } = {}): { added: number; ended: number } {
   const conn = db();
-  const c = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any;
+  const c = conn.prepare('SELECT branch_id, code FROM classes WHERE id = ?').get(classId) as any;
   const prog = programmeOfClass(classId);
   const ct = prog?.code ?? null;
   const kyNang: string[] = prog?.skills ?? [...ENTRY_SKILLS];
@@ -207,7 +208,18 @@ export function apDoiLop(p: Principal, classId: number, rows: DongDoi[], ngay: s
   const doi: DoiO[] = rows.map((r) => ({ khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi }));
   const slots = moRongPhanCong(ct, kyNang, apDoi(cu, doi, kyNang));
   kiemTruocPhanCong(classId, c.branch_id, ct, kyNang, slots, o.duocXep ?? duocXepCua(new Map(), c.branch_id, slots.map((s) => s.userId)));
-  o.g?.sua('teacher_assignments', `class_id = ? AND status = 'active'`, classId);
+  /* Case / PA của GV cũ ở ô đổi → GV mới (A3). Chụp ĐÚNG các dòng sẽ ghi (+ Case thiếu chủ `ghiPhanCong` có thể gán) trước khi ghi. */
+  const conDay = (u: number) => new Set(slots.filter((s) => s.userId === u && !s.isCore && s.skill).map((s) => s.skill!));
+  const chon = chonViecChuyen(classId, ct, doi, conDay);
+  if (o.g) {
+    const caseIds = [...new Set([...[...chon.values()].flatMap((v) => v.caseIds), ...caseThieuChuLop(classId)])];
+    const paIds = [...chon.values()].flatMap((v) => v.paIds);
+    if (caseIds.length) o.g.sua('sos_cases', `id IN (${inHang(caseIds.length)})`, ...caseIds);
+    if (paIds.length) o.g.sua('case_interventions', `id IN (${inHang(paIds.length)})`, ...paIds);
+    o.g.sua('teacher_assignments', `class_id = ? AND status = 'active'`, classId);
+  }
+  const chuyen = chuyenViecKhiDoi({ classId, ct, doi: rows.map((r, i) => ({ ...doi[i], id: r.id })), conDay, actorId: p.userId, luc: nowIso(), code: c.code, chon });
   const tom = (ds: SlotPhanCong[]) => ds.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort();
-  return ghiPhanCong(p, classId, slots, ngay, { via: o.via ?? 'quan_ly', truoc: tom(cu), sau: tom(slots), doi: rows.map((r) => r.id) });
+  return ghiPhanCong(p, classId, slots, ngay,
+    { via: o.via ?? 'quan_ly', truoc: tom(cu), sau: tom(slots), doi: rows.map((r) => r.id), chuyen: Object.fromEntries(chuyen) });
 }

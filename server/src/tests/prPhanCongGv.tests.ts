@@ -197,4 +197,73 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const v = classes.setClassTeachers(QL, Y, { slots: doiO(Y, 'reading', gF), phienBan: classes.classTeachers(QL, Y).phienBan });
     assert(v.bySkill.some((x: any) => x.skill === 'reading' && x.userId === gF) && v.core[0]?.userId === gA, 'PUT cũ trả bức tranh mới');
   }));
+
+  /* ---------------------------------------------------------------- A3 · chuyển Case / PA sang người mới */
+  const util: any = await import('../util.ts');
+  const kh: any = await import('../keHoach/keHoachTest.ts');
+  const at: any = await import('../fasttrack/attempts.ts');
+  const own: any = await import('../cases/owner.ts');
+  let soEm = 0;
+  const emMoi = (l: number) => {
+    const ten = `Thử PCGV HV ${++soEm}`;
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-PCGV-${soEm}`, ten, util.normalizeName(ten), MB, NOW).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, l, start, NOW);
+    conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, start_period_id, started_at, status, created_at)
+      VALUES (?,1,'LT1','FT',6.5,?,?, 'active', ?)`).run(sid, tuan(start), start, NOW);
+    return sid;
+  };
+  const caseMoi = (sid: number, category: string | null, owner: number | null) => Number(conn.prepare(
+    `INSERT INTO sos_cases (student_id, category, topic, owner_user_id, status, created_at, origin_kind) VALUES (?,?,?,?, 'open', ?, 'teacher_report')`,
+  ).run(sid, category, category, owner, NOW).lastInsertRowid);
+  const paMoi = (caseId: number, performer: number) => Number(conn.prepare(
+    `INSERT INTO case_interventions (case_id, kind, status, performer_user_id, created_at) VALUES (?, 'teaching_adjust', 'started', ?, ?)`,
+  ).run(caseId, performer, NOW).lastInsertRowid);
+  const chu = (caseId: number) => one(`SELECT owner_user_id AS u FROM sos_cases WHERE id = ?`, caseId).u;
+  const emX = emMoi(X);
+  xoaNho();
+
+  check('A3 · đổi L ngay: Case L mở của A → B (có lịch sử); Case R của A giữ A; PA L A thực hiện → B', () => thu(() => {
+    const cL = caseMoi(emX, 'listening', gA), cR = caseMoi(emX, 'reading', gA), pa = paMoi(cL, gA);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
+    assert(chu(cL) === gB && chu(cR) === gA, `L ${chu(cL)} R ${chu(cR)}`);
+    const h = one(`SELECT * FROM sos_case_history WHERE case_id = ? AND field = 'owner_user_id' ORDER BY id DESC LIMIT 1`, cL);
+    assert(h && h.old_value === String(gA) && h.new_value === String(gB) && h.actor_user_id === QL.userId, JSON.stringify(h));
+    const p = one(`SELECT performer_user_id AS u, performer_name AS n FROM case_interventions WHERE id = ?`, pa);
+    assert(p.u === gB && p.n === null, JSON.stringify(p));
+    assert(one(`SELECT 1 FROM sos_case_history WHERE case_id = ? AND field = 'pa_performer'`, cL), 'lịch sử PA');
+  }));
+  check('A3 · đổi GVCN, A còn dạy L: Case R (A giữ vì là GVCN) → B; Case L giữ A; Case không kỹ năng → B', () => thu(() => {
+    const cL = caseMoi(emX, 'listening', gA), cR = caseMoi(emX, 'reading', gA), c0 = caseMoi(emX, null, gA);
+    const moi = doiO(X, 'gvcn', gB).concat([{ userId: gB, skill: 'speaking', isCore: false }]).filter((x: any) => !(x.skill === 'speaking' && x.userId === gA));
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: moi }] });
+    assert(ai(X, 'gvcn')[0] === gB, 'GVCN mới');
+    assert(chu(cR) === gB && chu(cL) === gA && chu(c0) === gB, `R ${chu(cR)} L ${chu(cL)} 0 ${chu(c0)}`);
+  }));
+  check('A3 · điểm A đã nhập giữ entered_by A sau khi đổi L', () => thu(() => {
+    const id = kh.xepMoi(QL, { studentId: emX, attemptNo: 1, tuan: Object.fromEntries(['listening', 'reading', 'writing', 'speaking'].map((k) => [k, tuan(T2)])), force: true }).id as number;
+    at.saveScore(QL, id, 'listening', { band: 6 }, TODAY);
+    conn.prepare(`UPDATE assessment_scores SET entered_by = ? WHERE attempt_id = ? AND skill = 'listening'`).run(gA, id);
+    const truoc = JSON.stringify(one(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, id));
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
+    assert(JSON.stringify(one(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, id)) === truoc, 'ô điểm không đổi');
+  }));
+  check('A3 · B nhận MỘT thông báo phan_cong_moi (có số Case · PA); lưu lại cùng ô không báo lần hai', () => thu(() => {
+    caseMoi(emX, 'listening', gA);
+    const r = pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: slotsCua(X) }] });
+    const tb = all(`SELECT * FROM notifications WHERE user_id = ? AND kind = 'phan_cong_moi'`, gB);
+    assert(tb.length === 1 && tb[0].dedup_key === `phan_cong_moi:${r.lo}` && /MB PCGV-X · L · 1 Case/.test(tb[0].title) && tb[0].duong === `/hoc-vien/lop/${X}`, JSON.stringify(tb));
+  }));
+  check('A3 · bỏ người (A → Chưa có): không chuyển Case', () => thu(() => {
+    const cR = caseMoi(emX, 'reading', gC);
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: slotsCua(X).filter((x: any) => x.skill !== 'reading') }] });
+    assert(chu(cR) === gC, `R ${chu(cR)}`);
+  }));
+  check('A3 · chonViecChuyen trả cùng Case / PA mà chuyenViecKhiDoi ghi (không ghi gì khi chọn)', () => thu(() => {
+    const cL = caseMoi(emX, 'listening', gA), pa = paMoi(cL, gA);
+    const doi = [{ khoa: 'listening', nguoiCu: gA, nguoiMoi: gB }];
+    const m = own.chonViecChuyen(X, 'FT', doi, () => new Set(['speaking']));
+    assert(JSON.stringify(m.get('listening')) === JSON.stringify({ caseIds: [cL], paIds: [pa] }) && chu(cL) === gA, JSON.stringify([...m]));
+  }));
 }
