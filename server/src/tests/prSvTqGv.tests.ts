@@ -134,8 +134,11 @@ export async function runPrSvTqGvTests(t: any) {
      * Check đầy đủ (#707): DB nhóm 1 đã phình (phép kiểm trước thêm GV / lớp) — so MỌI GV × hai đường đủ làm run.js chết (0xC0000409) sau 25 phút.
      * Chỉ so GV có nhiều lượt nhất (lớp của GV), đủ phủ GVCN / GVBM / Speaking của demo; tình huống biên ở phép kiểm dưới.
      */
+    /* Chỉ tài khoản mở được hồ sơ GV (`phamViHoSoGv`: đang hoạt động + vai giáo viên) — phép kiểm trước có thể khoá / bỏ vai GV. */
     const GV_HANG = `SELECT ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id JOIN assessment_attempts a ON a.class_id = ta.class_id
-      WHERE ta.status IN ('active', 'ended') %s GROUP BY ta.user_id ORDER BY COUNT(DISTINCT a.id) DESC, ta.user_id LIMIT ?`;
+      JOIN users u ON u.id = ta.user_id AND u.status = 'active'
+      WHERE ta.status IN ('active', 'ended') AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ta.user_id AND ur.status = 'active' AND r.key = 'teacher')
+        %s GROUP BY ta.user_id ORDER BY COUNT(DISTINCT a.id) DESC, ta.user_id LIMIT ?`;
     const gvs = (conn.prepare(GV_HANG.replace('%s', '')).all(10) as any[]).map((x) => x.user_id as number);
     for (const gv of gvs) {
       const p = perm.loadPrincipal(gv);
@@ -178,29 +181,41 @@ export async function runPrSvTqGvTests(t: any) {
     const ghiDanh = (sid: number) => new Set((conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ?`).all(sid) as any[]).map((r) => r.class_id));
     const oCua = (gv: number, id: number, hep: boolean) => {
       pt.napDayDuKhiKiem.bat = !hep;
-      try { xoaNho(); return pt.oChiSoHoSoGv(perm.loadPrincipal(gv), gv, { ...KY, cot: 'cham-diem' }).rows.some((r: any) => r.id === id); } finally { pt.napDayDuKhiKiem.bat = false; }
+      try { xoaNho(); return pt.oChiSoHoSoGv(perm.loadPrincipal(gv), gv, { ...KY, cot: 'cham-diem' }).rows.some((r: any) => r.id === id); } catch { return false; } finally { pt.napDayDuKhiKiem.bat = false; }
+    };
+    const lopLuot = (id: number) => conn.prepare(`SELECT class_id FROM assessment_attempts WHERE id = ?`).get(id).class_id;
+    /*
+     * Thử từng ứng viên trong SAVEPOINT (cuộn lại mỗi lần): ứng viên nào sau khi đổi mà đường ĐỦ vẫn thấy ô của GV (dữ liệu nhóm kiểm đã phình có
+     * ô mà ghi danh / phân công khác demo) thì đường thu hẹp phải thấy y hệt. Cần ít nhất một ứng viên như vậy cho mỗi tình huống.
+     */
+    const thu = (ten: string, ds: { gv: number; id: number; doi: () => void }[]) => {
+      let co = 0;
+      for (const u of ds.slice(0, 15)) {
+        conn.exec('SAVEPOINT s1thu');
+        try {
+          u.doi();
+          if (!oCua(u.gv, u.id, false)) continue;
+          co++;
+          assert(oCua(u.gv, u.id, true), `${ten}: ô ${u.id} của GV ${u.gv} — đường đủ thấy, thu hẹp KHÔNG`);
+        } finally { conn.exec('ROLLBACK TO s1thu; RELEASE s1thu'); xoaNho(); }
+        if (co >= 3) break;
+      }
+      assert(co > 0, `${ten}: không ứng viên nào đường đủ còn thấy ô sau khi đổi`);
     };
     /* (a) ô thường (không chấm chéo) của GV G0 ở lớp L em ghi danh; lượt dời sang L2 cùng chi nhánh mà G0 không phân công. */
-    const a = nap.o.find((x: any) => x.skill !== 'speaking' && dong.get(x.id) && x.classId === conn.prepare(`SELECT class_id FROM assessment_attempts WHERE id = ?`).get(x.attemptId).class_id
-      && ghiDanh(x.studentId).has(x.classId));
-    assert(a, 'không tìm được ô (a)');
-    const g0 = dong.get(a.id).gv;
-    const l2 = [...c.lop.keys()].find((l) => l !== a.classId && !coPc(g0, l));
+    thu('(a) ghi danh lúc thi', nap.o.filter((x: any) => x.skill !== 'speaking' && dong.get(x.id) && x.classId === lopLuot(x.attemptId) && ghiDanh(x.studentId).has(x.classId))
+      .flatMap((a: any) => {
+        const g0 = dong.get(a.id).gv;
+        const l2 = [...c.lop.keys()].find((l) => l !== a.classId && !coPc(g0, l));
+        return l2 ? [{ gv: g0, id: a.id, doi: () => conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE id = ?`).run(l2, a.attemptId) }] : [];
+      }));
     /* (b) ô Speaking Mock đã ghi người chấm; đổi người chấm sang X — có phân công ở chi nhánh + khung, không ở lớp lúc thi / lớp lượt, em không ghi danh lớp nào của X. */
-    const b = nap.o.find((x: any) => x.kind === 'mock' && x.skill === 'speaking' && x.examinerUserId && dong.get(x.id));
-    assert(b && l2, `không tìm được ô (b) / lớp L2: ${!!b} ${l2}`);
-    const lopB = conn.prepare(`SELECT class_id FROM assessment_attempts WHERE id = ?`).get(b.attemptId).class_id;
-    const x = [...new Set(c.pc.map((p: any) => p.gv))].find((gv: any) => gv !== b.examinerUserId && !coPc(gv, b.classId) && !coPc(gv, lopB)
-      && ![...ghiDanh(b.studentId)].some((l) => coPc(gv, l))) as number;
-    assert(x, 'không tìm được GV chấm chéo ngoài lớp');
-    conn.exec('BEGIN IMMEDIATE');
-    try {
-      conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE id = ?`).run(l2, a.attemptId);
-      conn.prepare(`UPDATE assessment_scores SET examiner_user_id = ? WHERE attempt_id = ? AND skill = 'speaking'`).run(x, b.attemptId);
-      for (const [gv, id, ten] of [[g0, a.id, '(a) ghi danh lúc thi'], [x, b.id, '(b) GV chấm chéo']] as [number, number, string][]) {
-        const du = oCua(gv, id, false), hep = oCua(gv, id, true);
-        assert(du && hep, `${ten}: ô ${id} của GV ${gv} — đường đủ ${du}, thu hẹp ${hep}`);
-      }
-    } finally { conn.exec('ROLLBACK'); xoaNho(); }
+    thu('(b) GV chấm chéo', nap.o.filter((x: any) => x.kind === 'mock' && x.skill === 'speaking' && x.examinerUserId && dong.get(x.id))
+      .flatMap((b: any) => {
+        const lopB = lopLuot(b.attemptId);
+        const x = [...new Set(c.pc.map((p: any) => p.gv))].find((gv: any) => gv !== b.examinerUserId && !coPc(gv, b.classId) && !coPc(gv, lopB)
+          && ![...ghiDanh(b.studentId)].some((l) => coPc(gv, l))) as number | undefined;
+        return x ? [{ gv: x, id: b.id, doi: () => conn.prepare(`UPDATE assessment_scores SET examiner_user_id = ? WHERE attempt_id = ? AND skill = 'speaking'`).run(x, b.attemptId) }] : [];
+      }));
   });
 }
