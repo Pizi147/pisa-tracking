@@ -251,6 +251,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ### Backlog phát sinh đêm 30/10 (PTA rà PR)
 - **QUYEN-LIEN-HE (PR riêng, quyền):** luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
+- **PANEL [XM] (#736 PANEL-CHUNG):** XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
 - **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
 
 ### 30/10 (tối) — chủ SP duyệt mockup PANEL-V10 #723 (KHÔNG mockup lại; chỉnh ghi ở đây, kế hoạch code phải theo)
