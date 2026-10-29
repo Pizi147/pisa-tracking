@@ -87,7 +87,7 @@ export async function runDonLuongTests(t: YThucTestKit) {
     const khongL = lopMoi('MB DL-K8-A', [[gCn, null], [gCn, 'reading']]);
     chuyen(c.student_id, khongL);
     assert(one('SELECT owner_user_id FROM sos_cases WHERE id = ?', c.id).owner_user_id === gCn, 'GVCN lớp mới');
-    assert(one(`SELECT COUNT(*) n FROM sos_case_history WHERE case_id = ? AND field = 'owner_user_id' AND new_value = ?`, c.id, String(gCn)).n === 1, 'lịch sử');
+    assert(one(`SELECT COUNT(*) n FROM sos_case_history WHERE case_id = ? AND field = 'owner' AND new_value = 'bàn giao khi chuyển lớp'`, c.id).n === 1, 'lịch sử');
     assert(one(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key = ?`, gCn, `case_giao:${c.id}`).n === 1, 'báo người nhận');
     const coL = lopMoi('MB DL-K8-B', [[gCn, null], [gL, 'listening']]);
     chuyen(c.student_id, coL);
@@ -109,8 +109,10 @@ export async function runDonLuongTests(t: YThucTestKit) {
   const vp: any = await import('../yThuc/violations.ts');
   check('K23 · ghi vi phạm em Tạm dừng / em đã chuyển khỏi lớp: 400 nói lý do + bước tiếp', () => thu(() => {
     /* Em đang học ở lớp chi nhánh MB (QL MB ghi được — chỉ còn chặn vì không có lớp đang học). */
+    /* Em đang học ở lớp chi nhánh MB, chỉ MỘT ghi danh (không phụ thuộc lịch sử lớp do tệp khác để lại khi chạy đủ bộ). */
     const c = one(`SELECT e.student_id, e.class_id FROM enrollments e JOIN classes c ON c.id = e.class_id AND c.branch_id = ? JOIN students s ON s.id = e.student_id
-      AND s.status = 'active' AND s.archived_at IS NULL WHERE e.status = 'active' ORDER BY e.id LIMIT 1`, MB);
+      AND s.status = 'active' AND s.archived_at IS NULL WHERE e.status = 'active'
+        AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = e.student_id) = 1 ORDER BY e.id LIMIT 1`, MB);
     const lop = one(`SELECT code FROM classes WHERE id = ?`, c.class_id).code;
     const ghi = () => { try { vp.recordViolation(P.mbManager, { studentId: c.student_id, ten: 'Đi muộn', occurredOn: t.TODAY }); return null; } catch (e: any) { return e; } };
     conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'`).run(c.student_id);

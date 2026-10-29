@@ -54,3 +54,23 @@ export function moBanGoc(ten: string): { conn: Database.Database; tep: string; d
   };
   return { conn, tep, dong };
 }
+
+/**
+ * CN-2: chia tệp độc lập vào nhóm 1…n THAM LAM — tệp lâu trước, mỗi tệp vào nhóm đang nhẹ nhất; nhóm 1 khởi đầu bằng `chuoiMs` (phần chuỗi).
+ * Thuần (không đọc DB) — run.ts gọi lúc nạp, mọi nhóm ra cùng kết quả.
+ */
+export function chiaThamLam(thoiGian: Record<string, number>, chuoiMs: number, n: number): Map<string, number> {
+  const tai = Array.from({ length: Math.max(1, n) }, (_, i) => (i === 0 ? chuoiMs : 0));
+  const ra = new Map<string, number>();
+  for (const [ten, ms] of Object.entries(thoiGian).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))) {
+    const k = tai.indexOf(Math.min(...tai));
+    tai[k] += ms;
+    ra.set(ten, k + 1);
+  }
+  return ra;
+}
+
+/** CN-3a: nhóm của MỘT tệp — tệp chuỗi (không độc lập) luôn nhóm 1; tệp độc lập theo `chia`, chưa có trong `chia` (chưa đăng ký) → 1. */
+export function nhomCuaTep(chia: ReadonlyMap<string, number>, docLap: boolean, ten: string): number {
+  return docLap ? chia.get(ten) ?? 1 : 1;
+}

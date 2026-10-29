@@ -69,7 +69,8 @@ const SELECT = `
  */
 function chanGhiViPham(studentId: number) {
   const r = db().prepare(
-    `SELECT e.status, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? ORDER BY e.id DESC LIMIT 1`,
+    `SELECT e.status, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?
+      ORDER BY e.status = 'paused' DESC, e.started_at DESC, e.id DESC LIMIT 1`,   // Tạm dừng là trạng thái hiện tại; còn lại ghi danh mới nhất
   ).get(studentId) as { status: string; code: string } | undefined;
   if (!r) return loi(400, 'Em chưa xếp lớp — xếp lớp trước khi ghi vi phạm.');
   if (r.status === 'paused') return loi(400, 'Em đang tạm dừng — Quay lại học trước khi ghi vi phạm.');

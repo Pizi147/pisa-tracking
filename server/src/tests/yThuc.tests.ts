@@ -316,7 +316,7 @@ export async function runYThucTests(t: YThucTestKit) {
     /* Học viên đã rời lớp thì không còn "học viên của lớp". */
     const gone = makeStudent('V01 đã nghỉ');
     conn.prepare("UPDATE enrollments SET status = 'completed' WHERE student_id = ?").run(gone.id);
-    assertThrows(() => record(gvbm, gone.id), /chưa xếp lớp|đang học/, 'Ghi vi phạm cho em không còn học ở lớp nào');
+    assertThrows(() => record(gvbm, gone.id), /chưa xếp lớp|đang học|xếp lớp mới/, 'Ghi vi phạm cho em không còn học ở lớp nào');   // DON-LUONG K23: học xong khoá → "xếp lớp mới trước khi ghi vi phạm"
   });
 
   check('PR-J · V02 Bắt buộc học viên · nhóm · ô Vi phạm 3–60 ký tự (PR-LUI-a1); môn, Mô tả và tệp là tùy chọn', () => {

@@ -103,8 +103,9 @@ function doiChuTheoLopMoi(rows: { id: number; topic: string | null; goc_programm
     const moi = r.con_day ? null : r.moi_mon ?? r.moi_cn;
     if (moi === null || moi === r.owner_user_id) continue;
     if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ?').run(moi, o.luc, r.id, r.owner_user_id).changes !== 1) continue;
-    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', ?, ?, ?, ?)`)
-      .run(r.id, String(r.owner_user_id), String(moi), o.actorId, o.luc);
+    /* Cùng quy ước lịch sử của bàn giao chủ Case khi chuyển lớp (`luatLoTrinh` / `cuoiKhoa`): field 'owner', "bàn giao khi chuyển lớp". */
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner', ?, 'bàn giao khi chuyển lớp', ?, ?)`)
+      .run(r.id, r.owner_user_id, o.actorId, o.luc);
     if (moi !== o.actorId) {
       notify({ userId: moi, kind: 'case_giao', title: `Phụ trách Case ${r.topic ? caseTopicLabel(r.topic, r.goc_programme_code) : ''} · ${r.full_name ?? ''}`,
         entityType: 'sos_case', entityId: r.id, dedupKey: `case_giao:${r.id}` });
