@@ -14,6 +14,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_mywork: any = await import('../worklist/mywork.ts');
   const require_perm: any = await import('../permissions.ts');
   const require_hangLoat: any = await import('../students/hangLoat.ts');
+  const require_systemClose: any = await import('../cases/systemClose.ts');
   const require_keHoach: any = await import('../keHoach/keHoachTest.ts');
   const require_thongBao: any = await import('../platform/thongBao.ts');
   const require_chotVang: any = await import('../ops/chotVangDinhKy.ts');
@@ -171,6 +172,22 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     assert(/sweepExpiredMoves\(\)/.test(nguon), 'chotVangDinhKy chưa gọi sweepExpiredMoves');
     const a = cv.chotVangDinhKy({ ngay: TODAY }), b = cv.chotVangDinhKy({ ngay: TODAY });
     assert(a.boQua === null && b.boQua === null && b.daChuyen === 0, `chạy hai lần: ${JSON.stringify([a, b])}`);
+  });
+
+  check('Q-RL3 (chủ SP 29/10) · Lộ trình mới đóng việc Phối hợp SOS chờ của lộ trình cũ (lý do "Kết thúc lộ trình", giữ dòng); Hoàn tác mở lại đúng chúng', () => {
+    const sc: any = require_systemClose;
+    const x = conn.prepare(`SELECT x.id, a.cycle_id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
+        WHERE x.status = 'pending' AND a.cycle_id IS NOT NULL ORDER BY x.id LIMIT 1`).all()[0] as any;
+    assert(x, 'seed phải có việc Phối hợp SOS chờ');
+    const tt = () => conn.prepare('SELECT status, remove_reason_code r FROM sos_coordination_actions WHERE id = ?').all(x.id)[0] as any;
+    const ids = sc.dongPhoiHopLoTrinh([x.cycle_id], TODAY) as number[];
+    try {
+      assert(ids.includes(x.id) && tt().status === 'removed' && tt().r === 'system_ket_thuc_lo_trinh', `đóng: ${JSON.stringify(tt())}`);
+    } finally { sc.moLaiPhoiHopLoTrinh(ids); }
+    assert(tt().status === 'pending' && tt().r === null, `mở lại: ${JSON.stringify(tt())}`);
+    const bt = fsMod.readFileSync('server/src/loTrinh/buocTiep.ts', 'utf8') as string;
+    const ll = fsMod.readFileSync('server/src/classes/luatLoTrinh.ts', 'utf8') as string;
+    assert(/dongPhoiHopLoTrinh\(\[c\.id\], o\.date\)/.test(bt) && /moLaiPhoiHopLoTrinh\(g\.dongPhoiHop\)/.test(bt) && /dongPhoiHopLoTrinh\(\[cuoiCycle\.id\]/.test(ll), 'hai đường Lộ trình mới + Hoàn tác phải gọi');
   });
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {

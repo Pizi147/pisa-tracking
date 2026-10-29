@@ -27,7 +27,7 @@ import { dauVaoTuLoTrinh, type LoTrinhMoiSauThi } from '../classes/luatLoTrinh.t
 import { lichMtCua } from '../classes/schedule.ts';
 import { mondayOf } from '../platform/week.ts';
 import { thongBaoTrangThai } from '../students/trangThaiHv.ts';
-import { closeCasesBySystem, moLaiCaseHeThongDong, type ChupCaseDong } from '../cases/systemClose.ts';
+import { closeCasesBySystem, dongPhoiHopLoTrinh, moLaiCaseHeThongDong, moLaiPhoiHopLoTrinh, type ChupCaseDong } from '../cases/systemClose.ts';
 import { ghiBanChup } from './banChup.ts';
 import { docTarget } from '../fasttrack/cycles.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
@@ -214,6 +214,8 @@ type GhiBuocTiep = {
   /** P7 (N12): lựa chọn panel Lộ trình mới (đường hẹn / lệnh chuyển lớp đọc lại) · Case lộ trình cũ đóng "Kết thúc lộ trình" lần này (Hoàn tác mở lại đúng chúng). */
   loTrinhMoi?: LoTrinhMoiSauThi;
   dongCaseLt?: { chup: ChupCaseDong[]; tinHieu: number[] };
+  /** Q-RL3: việc Phối hợp SOS của lộ trình cũ đóng lần này — hoàn tác mở lại. */
+  dongPhoiHop?: number[];
 };
 /** Bản chụp mới nhất của lộ trình (hai tham số: cycle_id, cycle_id). */
 const BAN_CHUP_MOI = 'cycle_id = ? AND lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = ?)';
@@ -242,6 +244,7 @@ function hoanTac(p: Principal, c: any) {
       if (g.ketThucHoc) hoanTacKetThuc(p, c.student_id);   // OV-11d: em còn ghi danh lúc chọn → trả về đang học như trước
       /* P7: Case của lộ trình cũ đóng "Kết thúc lộ trình" lần này → mở lại đúng chúng (PA về trạng thái cũ). */
       if (g.dongCaseLt?.chup.length) moLaiCaseHeThongDong({ actorUserId: p.userId, studentId: c.student_id, reason: 'ket_thuc_lo_trinh', chup: g.dongCaseLt.chup, tinHieu: g.dongCaseLt.tinHieu, lyDo: 'Hoàn tác Lộ trình mới' });
+      if (g.dongPhoiHop?.length) moLaiPhoiHopLoTrinh(g.dongPhoiHop);
     }
     /* Lộ trình mới chọn lúc em Tạm dừng (Quay lại học) → hoàn tác = Tạm dừng lại, lựa chọn về "Tạm dừng". */
     if (g.tuTamDung && (conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any)?.status === 'active') {
@@ -274,6 +277,8 @@ function batDauBangHocLai(q: Principal, c: any, o: { date: string; lopMoiId: num
   if (ghi.loTrinhMoi) {
     const cs = closeCasesBySystem({ actorUserId: q.userId, studentId: c.student_id, reason: 'ket_thuc_lo_trinh', on: o.date, cycleIds: [c.id] });
     if (cs.chup.length || cs.withdrawnSignalIds.length) ghi.dongCaseLt = { chup: cs.chup, tinHieu: cs.withdrawnSignalIds };
+    const ph = dongPhoiHopLoTrinh([c.id], o.date);
+    if (ph.length) ghi.dongPhoiHop = ph;
   }
   if ((conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any).status !== 'finished') {
     setStudentStatus(q, c.student_id, 'finished', o.date, LY_DO_MOI);
