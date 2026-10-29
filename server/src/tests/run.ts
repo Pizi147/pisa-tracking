@@ -9214,6 +9214,12 @@ await runPrLuiA1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-LUI-a2 (Case + Chờ duyệt: Người phụ trách, Mở lại, Từ chối nhiều, Huỷ quyết định, Sửa / Xoá Case)
 const { runPrLuiA2Tests } = bocTep('prLuiA2', await import('./prLuiA2.tests.ts'));
 await runPrLuiA2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+const { runPrQrl2cPaTests } = bocTep('prQrl2cPa', await import('./prQrl2cPa.tests.ts'));
+await runPrQrl2cPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+const { runPrQrl2cYThucTests } = bocTep('prQrl2cYThuc', await import('./prQrl2cYThuc.tests.ts'));
+await runPrQrl2cYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+const { runPrQrl2cDuyetTests } = bocTep('prQrl2cDuyet', await import('./prQrl2cDuyet.tests.ts'));
+await runPrQrl2cDuyetTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrThungRacTests } = bocTep('prThungRac', await import('./prThungRac.tests.ts'));
 await runPrThungRacTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
