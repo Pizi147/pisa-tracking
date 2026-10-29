@@ -13,7 +13,7 @@ import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { IconNhom, NET_CAY, chuDau } from '../congViec/DanhSachViec.tsx';
-import { HUY_DUOC, TheYeuCau } from './TheYeuCau.tsx';
+import { TheYeuCau } from './TheYeuCau.tsx';
 import {
   LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
@@ -132,11 +132,11 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
     boChuRoi(() => { setMoSan(o ? { id: y.id, o } : null); setVuaXong(null); moThe(y.id); });
   };
   /* Quyết ở panel: Công việc giữ panel thành thẻ kết quả; hộp đầy đủ đóng panel như cũ. Bị người khác xử lý trước (không `chu`) → đóng. */
-  const xongPanel = (id: number, chu?: string) => {
+  const xongPanel = (id: number, chu?: string, huy?: boolean) => {
     if (gon && chu) {
       const i = ds.findIndex((x) => x.id === id);
       const tiep = [...ds.slice(i + 1), ...ds.slice(0, Math.max(i, 0))].find((x) => x.trangThai === 'cho')?.id ?? null;
-      setVuaXong({ id, chu, huy: HUY_DUOC.has(ds[i]?.loai ?? ''), tiep });
+      setVuaXong({ id, chu, huy: !!huy, tiep });
     } else moThe(null);
     xong();
   };
@@ -157,10 +157,10 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
     if (dangGui) return;
     setDangGui(y.id);
     try {
-      await api.post(`/yeu-cau/${y.id}/duyet`, {});
+      const kq = await api.post<{ coTheHuy?: boolean }>(`/yeu-cau/${y.id}/duyet`, {});
       lamMoi();
       const chu = t('Đã duyệt: {tieuDe}', { tieuDe: y.tieuDe });
-      if (HUY_DUOC.has(y.loai)) toast.hoanTac(chu, () => { void huyQd(y.id); }, { key: `yc-${y.id}` });
+      if (kq?.coTheHuy) toast.hoanTac(chu, () => { void huyQd(y.id); }, { key: `yc-${y.id}` });
       else toast.push('ok', chu);
     } catch (e: any) {
       toast.push('error', e instanceof ApiError ? e.message : t('Mất kết nối, chưa lưu gì. Kiểm tra mạng rồi bấm lại.'));
@@ -388,7 +388,7 @@ type MoSan = 'duyet' | 'tu-choi' | 'tra-loi';
 
 /** PANEL DUYỆT (UI-CON-LAI k3, V8-CV) — một khuôn cho Hộp duyệt và Công việc: loại · tên · em · lớp · chip hạn, thân là thẻ ở dạng panel. */
 function PanelDuyet({ yc, moSan, onDong, onXong, onThemPa }: {
-  yc: TheYeuCauDto; moSan?: MoSan; onDong: () => void; onXong: (id: number, chu?: string) => void; onThemPa: (caseId: number) => void;
+  yc: TheYeuCauDto; moSan?: MoSan; onDong: () => void; onXong: (id: number, chu?: string, huy?: boolean) => void; onThemPa: (caseId: number) => void;
 }) {
   return (
     <KhungTaiCho.Provider value>

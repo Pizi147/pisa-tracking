@@ -5,9 +5,10 @@ import {
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { napTruocPhamVi, type Principal } from '../permissions.ts';
-import { badRequest, loi, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, conflict, loi, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday, nowNghiepVu } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
+import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { kckCuaLuot, loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
@@ -521,11 +522,15 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
     if (sai) throw loi(400, 'Lý do "Khác": {loi}.', { loi: sai });
   }
   tx(() => {
-    db()
+    const g = new GhiDao(db());   // Q-RL2c: chụp dòng trước khi bỏ → Hoàn tác / Khôi phục trả y nguyên (ghi chú, tệp, ngày tạo…)
+    g.sua('sos_coordination_actions', 'id = ?', id);
+    const doi = db()
       .prepare(
-        `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = ?, remove_reason_text = ?, removed_by = ?, removed_at = ?, updated_at = ? WHERE id = ?`,
+        `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = ?, remove_reason_text = ?, removed_by = ?, removed_at = ?, updated_at = ? WHERE id = ? AND status = 'pending'`,
       )
-      .run(code, reasonNeedsText(code) ? text : null, p.userId, nowIso(), nowIso(), id);
+      .run(code, reasonNeedsText(code) ? text : null, p.userId, nowIso(), nowIso(), id).changes;
+    if (!doi) throw badRequest('Việc vừa được cập nhật — mở lại.');
+    luuGhiDao(db(), { loai: LOAI_BO_PHOI_HOP, bang: 'sos_coordination_actions', id, nguoi: p.userId, ghi: g });
     writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.remove', entityType: 'sos_coordination_action', entityId: id,
       entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`, before: { status: r.status }, after: { status: 'removed', reason: code, text: text || null },
@@ -534,6 +539,8 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
   return viewOf(id);
 }
 
+const LOAI_BO_PHOI_HOP = 'bo_phoi_hop';
+
 /**
  * OV-7a: việc "Đã xong" bấm nhầm → "Đưa lại Cần xử lý" (bỏ ngày / người / bản chụp Báo PH; ghi chú giữ để lưu lại); việc người dùng đã Bỏ → "Khôi phục".
  * Việc HỆ THỐNG bỏ (mức SOS đổi, lượt huỷ) theo điểm — không khôi phục tay. Số liệu Phối hợp đọc trạng thái hiện tại nên tự đếm lại.
@@ -541,12 +548,15 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
 export function moLaiCoordination(p: Principal, id: number): CoordinationAction {
   const r = loadAction(id);
   requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
-  if (r.status === 'pending') throw badRequest('Việc này đang ở trạng thái Cần xử lý.');
+  if (r.status === 'pending') throw conflict('Việc này đang ở trạng thái Cần xử lý.');   // Q-RL2c: bấm lần hai / đã có người mở lại → 409
   if (r.status === 'removed' && !(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(r.remove_reason_code)) {
     throw badRequest('Việc này do hệ thống bỏ theo điểm — không khôi phục tay được.');
   }
   tx(() => {
-    db().prepare(
+    /* Q-RL2c: việc người dùng bỏ có bản ghi đảo → trả NGUYÊN dòng trước khi bỏ (409 nếu đã có thay đổi sau); việc bỏ trước Q-RL2c → cách cũ. */
+    const g = r.status === 'removed' ? timGhiDao(db(), LOAI_BO_PHOI_HOP, 'sos_coordination_actions', id) : null;
+    if (g) daoLai(db(), g, p.userId);
+    else db().prepare(
       `UPDATE sos_coordination_actions SET status = 'pending', performed_on = NULL, performed_by = NULL, performer_name = NULL, noi_dung_luc_bao = NULL,
               remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`,
     ).run(nowIso(), id);
@@ -554,7 +564,7 @@ export function moLaiCoordination(p: Principal, id: number): CoordinationAction 
       actorUserId: p.userId, action: 'sos_coordination.reopen', entityType: 'sos_coordination_action', entityId: id,
       entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`,
       before: { status: r.status, performedOn: r.performed_on, performerName: r.performer_name, removeReason: r.remove_reason_code, removeText: r.remove_reason_text },
-      after: { status: 'pending' },
+      after: { status: 'pending', ...(g ? { hoanTac: true } : {}) },
     });
   });
   return viewOf(id);

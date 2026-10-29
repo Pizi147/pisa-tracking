@@ -17,9 +17,6 @@ import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import { DeXuatSuaPanel } from './DeXuatSuaPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
-/** Loại thẻ máy chủ cho "Huỷ quyết định" (`khiHuy` ở `server/src/duyet/loaiYeuCau.ts`) — chỉ những loại này có Hoàn tác 5 s. */
-export const HUY_DUOC = new Set<string>(['de_xuat_pa', 'thu_hoi_y_thuc']);
-
 /**
  * MỘT THẺ YÊU CẦU (PR-DUYET, mockup M8, đặc tả §7.6) — MỘT khuôn cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`) và hồ sơ HV
  * (PR-VAI). Hàng 1: nhãn phân loại (cùng bề rộng) · việc · học viên · lớp. Hàng 2–3: ai xin, lý do (tối đa 2 dòng, "Xem thêm").
@@ -34,8 +31,9 @@ type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' | 'sua' | 'sua-tra-l
 
 export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel, moSan }: {
   yc: TheYeuCauDto;
-  /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. `chu` = câu kết quả (chỉ khi chính người dùng vừa quyết). */
-  onXong: (id: number, chu?: string) => void;
+  /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. `chu` = câu kết quả (chỉ khi chính người dùng vừa quyết).
+   *  `huy` = máy chủ báo quyết định vừa rồi còn Huỷ được (Q-RL2c: cờ `coTheHuy` trả về sau Duyệt / Từ chối). */
+  onXong: (id: number, chu?: string, huy?: boolean) => void;
   /** Bản gọn (Ngăn Case): không lặp học viên/lớp, không nút Mở. */
   gon?: boolean;
   /** Yêu cầu của tôi: không có nút quyết định. */
@@ -111,15 +109,15 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (busy) return;
     setBusy(true); setLoiMay(null);
     try {
-      if (put) await api.put(duongDan, than);
-      else await api.post(duongDan, than);
+      const kq = put ? await api.put<{ coTheHuy?: boolean }>(duongDan, than) : await api.post<{ coTheHuy?: boolean }>(duongDan, than);
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
-      /* UI-CON-LAI k3: quyết định CỦA CHÍNH MÌNH vừa bấm → Hoàn tác 5 s (đường "Huỷ quyết định" sẵn có — máy chủ kiểm lại quyền + trong ngày);
-         chỉ loại máy chủ cho huỷ. Sau 5 s muốn đổi thì qua "Huỷ quyết định" ở Đã xử lý / Thu hồi có duyệt — không vòng qua bước duyệt. */
-      if (HUY_DUOC.has(yc.loai) && /\/(duyet|tu-choi)$/.test(duongDan)) toast.hoanTac(xongChu, () => { void huy(); }, { key: `yc-${yc.id}` });
+      /* UI-CON-LAI k3: quyết định CỦA CHÍNH MÌNH vừa bấm → Hoàn tác 5 s (đường "Huỷ quyết định" sẵn có — máy chủ kiểm lại quyền + trong ngày).
+         Q-RL2c: theo cờ `coTheHuy` máy chủ trả về sau Duyệt / Từ chối (không danh sách loại cứng ở web). Sau 5 s: "Huỷ quyết định" ở Đã xử lý. */
+      const huyDuoc = !!kq?.coTheHuy && /\/(duyet|tu-choi)$/.test(duongDan);
+      if (huyDuoc) toast.hoanTac(xongChu, () => { void huy(); }, { key: `yc-${yc.id}` });
       else toast.push('ok', xongChu);
       setO(null);
-      onXong(yc.id, xongChu);
+      onXong(yc.id, xongChu, huyDuoc);
     } catch (e: any) {
       /* Người khác đã xử lý / thẻ tự đóng: nói rõ rồi làm mới — không để người dùng bấm lại vào một thẻ đã chết. */
       if (e?.status === 400 && /đã được xử lý/.test(e.message ?? '')) { toast.push('error', e.message); onXong(yc.id); return; }
