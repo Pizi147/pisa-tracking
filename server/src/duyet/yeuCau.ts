@@ -15,13 +15,13 @@ import { nho, quetGioiHan, trongBoNho, xoaNho } from '../platform/nguCanhRequest
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import {
   PERMISSIONS, LOAI_NGUOI_XIN_SUA, LOAI_YC_META, LY_DO_RUT, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
-  nhomCuaLoai, sapThe, chipSosTuKetQua,
+  nhomCuaLoai, sapThe,
   type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto,
 } from '../../../shared/domain/index.ts';
 import { DINH_NGHIA_LOAI, dinhNghiaCua, type NguCanhThe, type YeuCauRow } from './loaiYeuCau.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
-import { standingFor } from '../students/standing.ts';
-import { diemTuStanding } from '../worklist/diemDong.ts';
+import { latestAttempts } from '../worklist/danhGia.ts';
+import { diemTuEval } from '../worklist/diemDong.ts';
 import { diemHvKhiKiem } from '../worklist/metrics.ts';
 
 const P_DUYET = PERMISSIONS.REQUEST_APPROVE;
@@ -342,7 +342,10 @@ export function hopChoDuyet(p: Principal, f: {
   /* PR-GVb (J5b): `de-biet` = thẻ Báo QL đang chờ, đọc cùng câu với `cho`, tách nhóm sau khi lọc phạm vi. */
   const xem = f.xem === 'da-xu-ly' || f.xem === 'de-biet' ? f.xem : 'cho';
   let rows = trongPhamVi(p, xem !== 'da-xu-ly'
-    ? conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]
+    /* PANEL-MC: `boiCanh` — số Lịch sử đếm NGAY trong câu đọc thẻ (không câu thứ hai). */
+    ? conn.prepare(f.boiCanh && xem === 'cho'
+      ? `SELECT y.*, (SELECT COUNT(*) FROM audit_logs a WHERE ${DK_NHAT_KY}) AS so_lich_su FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho'`
+      : `SELECT * FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]
     : conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai != 'cho' AND xu_ly_luc >= ?`).all(tuNgay(NGAY_DA_XU_LY)) as any[]);
   if (f.studentId) rows = rows.filter((r) => r.hoc_vien_id === f.studentId);
   /* SL1 (A7-01, X-03): hộp theo chi nhánh của trang — thẻ đang chờ ở chi nhánh khác không giấu, chỉ đếm để hiện dòng "n thẻ ở chi nhánh khác". */
@@ -367,7 +370,7 @@ export function hopChoDuyet(p: Principal, f: {
   const ngu = napNguCanh(conn, rows, homNay);
   const huyDuoc = xem === 'da-xu-ly' ? theHuyDuoc(conn, rows) : new Set<number>();
   const the = rows.map((r) => (huyDuoc.has(r.id) ? { ...theRa(r, ngu), coTheHuy: true } : theRa(r, ngu)));
-  if (xem === 'cho' && f.boiCanh) ganBoiCanh(the);
+  if (xem === 'cho' && f.boiCanh) ganBoiCanh(the, rows);
   return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc, khacChiNhanh };
 }
 
@@ -376,22 +379,24 @@ export function hopChoDuyet(p: Principal, f: {
  * + của Case khi đối tượng là PA. Có chỉ mục `idx_audit_entity`; dùng chung cho số "Lịch sử · n" và danh sách — không lệch nhau.
  */
 const ENTITY_SQL = `CASE y.doi_tuong_loai WHEN 'intervention' THEN 'case_intervention' WHEN 'attempt' THEN 'assessment_attempt' ELSE y.doi_tuong_loai END`;
-const NOI_NHAT_KY = `JOIN audit_logs a ON (a.entity_type = 'yeu_cau_duyet' AND a.entity_id = y.id)
+const DK_NHAT_KY = `(a.entity_type = 'yeu_cau_duyet' AND a.entity_id = y.id)
   OR (a.entity_type = ${ENTITY_SQL} AND a.entity_id = y.doi_tuong_id)
   OR (y.doi_tuong_loai = 'intervention' AND a.entity_type = 'sos_case' AND a.entity_id = (SELECT iv.case_id FROM case_interventions iv WHERE iv.id = y.doi_tuong_id))`;
+const NOI_NHAT_KY = `JOIN audit_logs a ON ${DK_NHAT_KY}`;
 
-/** Thẻ Chờ duyệt: chip SOS + dòng điểm (MỘT `standingFor` cho mọi em của các thẻ) + số Lịch sử (MỘT câu GROUP BY). */
-function ganBoiCanh(the: TheYeuCauDto[]) {
+/**
+ * Thẻ Chờ duyệt: chip SOS + dòng điểm — MỘT `latestAttempts` cho mọi em của các thẻ (CÙNG hàm chỉ số "SOS hiện tại"; lượt + lịch kỹ năng + điểm theo lô,
+ * không đọc lộ trình / Case như `standingFor`) + số Lịch sử (đã đếm trong câu đọc thẻ — `so_lich_su`).
+ */
+function ganBoiCanh(the: TheYeuCauDto[], rows: any[]) {
   if (!the.length || diemHvKhiKiem.tat) return;
-  const st = standingFor([...new Set(the.map((x) => x.hocVienId).filter((x): x is number => x != null))]);
-  const so = new Map<number, number>();
-  theoLo(the.map((x) => x.id), (lo, ph) => {
-    for (const r of db().prepare(`SELECT y.id, COUNT(a.id) AS n FROM yeu_cau_duyet y ${NOI_NHAT_KY} WHERE y.id IN (${ph}) GROUP BY y.id`).all(...lo) as any[]) so.set(r.id, r.n);
-  });
+  const luot = latestAttempts([...new Set(the.map((x) => x.hocVienId).filter((x): x is number => x != null))].sort((a, b) => a - b), 'valid', demoToday());
+  const so = new Map(rows.map((r) => [r.id as number, Number(r.so_lich_su ?? 0)]));
   for (const x of the) {
-    const s = x.hocVienId != null ? st.get(x.hocVienId) : undefined;
-    x.sos = s && (s.sosLevel ?? 0) > 0 ? { muc: s.sosLevel!, tam: s.provisional, kyNang: chipSosTuKetQua(s)?.kyNang ?? [] } : null;
-    x.diemHv = s ? diemTuStanding(s) : null;
+    const ev = x.hocVienId != null ? luot.get(x.hocVienId) : undefined;
+    const d = ev ? diemTuEval(ev) : null;
+    x.sos = ev && d && (ev.sosLevel ?? 0) > 0 ? { muc: ev.sosLevel!, tam: d.tam, kyNang: d.kn.filter((k) => k.dat === false).map((k) => k.k) } : null;
+    x.diemHv = d;
     x.soLichSu = so.get(x.id) ?? 0;
   }
 }

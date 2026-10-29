@@ -226,7 +226,7 @@ export type TheYeuCauDto = {
   duLieu: Record<string, unknown> | null;
   /** PR-LUI-a2: tab Đã xử lý — Quản lý huỷ được quyết định này (loại có đường đảo, quyết hôm nay, nguồn chưa chạy). */
   coTheHuy?: boolean;
-  /** PANEL-MC (DUYET-QL, chỉ tab Chờ duyệt): SOS hiện tại của em (`standingFor`; null = không em / không SOS) — chip ở dòng thẻ. */
+  /** PANEL-MC (DUYET-QL, chỉ tab Chờ duyệt): SOS hiện tại của em (`latestAttempts`, như chỉ số SOS hiện tại; null = không em / không SOS) — chip ở dòng thẻ. */
   sos?: { muc: number; tam: boolean; kyNang: string[] } | null;
   /** PANEL-MC: dòng điểm lượt gần nhất của em — bối cảnh trong panel duyệt. */
   diemHv?: DiemHv | null;

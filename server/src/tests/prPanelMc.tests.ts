@@ -136,14 +136,14 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
   });
 
   /*
-   * Kế hoạch ước ≤ +3; đo 30/10: +8 (attemptsNewestFirst 1 + mỗi vòng lịch kỹ năng / điểm / bỏ môn cũ + chương trình, ngưỡng lớp). Chỉ khi MỞ panel,
-   * chỉ tập id của panel (không cả chi nhánh); đường vẫn dưới ~30 câu. Trần +10 (ghi mô tả PR, báo PTA) — ponytail: muốn ≤ +3 thì gắn luotHv ở metricSetGoc.
+   * Kế hoạch ≤ +3. Sau gom lô (PTA 30/10): +4 = lượt của tập em (1) · chương trình (1, gộp từ 3) · lịch kỹ năng (1) · điểm (1) — mỗi loại MỘT câu
+   * cho cả tập (json_each ≤ 900); ngưỡng lớp đi cùng câu lượt, bảng bỏ môn cũ chỉ hỏi khi lượt chưa có lịch kỹ năng. Chỉ khi MỞ panel.
    */
-  check('M2 · panel dùng lượt mặc định (hv-co-case-mo): mở panel ≤ +10 câu, đường ≤ 30 câu', () => {
+  check('M2 · panel dùng lượt mặc định (hv-co-case-mo): mở panel ≤ +4 câu (một câu mỗi loại theo lô), đường ≤ 30 câu', () => {
     for (const [ten, p] of vai) {
       const mo = haiLan(() => panel(p, 'hv-co-case-mo'));
       console.log(`      [đo] hv-co-case-mo ${ten}: ${mo.tat.cau} → ${mo.bat.cau} câu`);
-      assert(mo.bat.cau <= mo.tat.cau + 10 && mo.bat.cau <= 30, `${ten}: ${mo.tat.cau} → ${mo.bat.cau} câu`);
+      assert(mo.bat.cau <= mo.tat.cau + 4 && mo.bat.cau <= 30, `${ten}: ${mo.tat.cau} → ${mo.bat.cau} câu`);
     }
   });
 
@@ -280,10 +280,10 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
       assert(JSON.stringify(tat.kq.the.map(boMoiThe)) === JSON.stringify(bat.kq.the.map(boMoiThe)) && JSON.stringify(tat.kq.dem) === JSON.stringify(bat.kq.dem), `${ten}: thẻ cũ đổi`);
       console.log(`      [đo] /yeu-cau?hop=cho-duyet ${ten}: ${tat.cau} → ${bat.cau} câu`);
       /*
-       * Kế hoạch ước QL ≤ +2; đo +2 → +11 tuỳ dữ liệu (standingFor nhiều em: các vòng lịch / điểm). Vì vậy chỉ dựng khi xin `boiCanh` (panel duyệt);
-       * Tổng quan / hồ sơ HV gọi không cờ → 0 câu thêm (phép dưới). Trần +12, đường ≤ 30 câu — ghi mô tả PR, báo PTA.
+       * Kế hoạch ≤ +2–3. Sau gom lô: +4 = lượt (1) · chương trình (1) · lịch kỹ năng (1) · điểm (1) của MỌI em các thẻ (latestAttempts theo lô);
+       * số Lịch sử đếm trong câu đọc thẻ (0 câu). Chỉ khi xin `boiCanh` (panel duyệt); không cờ → 0 câu thêm (phép dưới).
        */
-      assert(bat.cau <= tat.cau + 12 && bat.cau <= 30, `${ten}: ${tat.cau} → ${bat.cau} câu`);
+      assert(bat.cau <= tat.cau + 4 && bat.cau <= 30, `${ten}: ${tat.cau} → ${bat.cau} câu`);
       const khong = haiLan(() => yc.hopChoDuyet(p, { xem: 'cho' }));
       assert(khong.bat.cau === khong.tat.cau && khong.bat.kq.the.every((x: any) => !('soLichSu' in x)), `${ten} không boiCanh: ${khong.tat.cau} → ${khong.bat.cau} câu`);
       const xl = haiLan(() => yc.hopChoDuyet(p, { xem: 'da-xu-ly', boiCanh: true }));
@@ -291,14 +291,18 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     }
   });
 
-  check('M5 · chip SOS + dòng điểm ở thẻ Chờ duyệt = standingFor của em; thẻ không em → null', () => {
+  check('M5 · chip SOS + dòng điểm ở thẻ Chờ duyệt = lượt hiện tại (latestAttempts, như chỉ số SOS hiện tại); thẻ không em → null', () => {
     const the = yc.hopChoDuyet(P.admin, { xem: 'cho', boiCanh: true }).the;
-    const st = standingFor([...new Set(the.map((x: any) => x.hocVienId).filter(Boolean))] as number[]);
+    const lat = latestAttempts(studentsInScope(P.admin, null), 'valid', TODAY);
+    const sosHt = new Set(metrics.metricSet(P.admin, 'hv-sos-hien-tai', {}).ids);
+    let coSos = 0;
     for (const x of the) {
-      const s = x.hocVienId ? st.get(x.hocVienId) : null;
-      assert((x.sos?.muc ?? null) === (s && s.sosLevel! > 0 ? s.sosLevel : null), `thẻ ${x.id}: sos ${JSON.stringify(x.sos)} ≠ ${s?.sosLevel}`);
-      assert(JSON.stringify(x.diemHv ?? null) === JSON.stringify(s ? diemTuStanding(s) : null), `thẻ ${x.id}: diemHv lệch`);
+      const ev = x.hocVienId ? lat.get(x.hocVienId) : null;
+      assert(!!x.sos === (!!x.hocVienId && sosHt.has(x.hocVienId)), `thẻ ${x.id}: chip SOS ${JSON.stringify(x.sos)} ≠ SOS hiện tại`);
+      if (x.sos) { coSos++; assert(x.sos.muc === ev!.sosLevel, `thẻ ${x.id}: mức ${x.sos.muc} ≠ ${ev!.sosLevel}`); }
+      assert(JSON.stringify(x.diemHv ?? null) === JSON.stringify(ev ? diemTuEval(ev) : null), `thẻ ${x.id}: diemHv lệch`);
     }
+    assert(coSos > 0, 'demo phải có thẻ của em SOS');
   });
 
   check('M5 · Lịch sử yêu cầu: soLichSu = số dòng /lich-su?loai=yeu-cau; GVBM → 403; ≤ 3 câu, ≤ 50 dòng; câu đếm đi chỉ mục audit', () => {
@@ -311,8 +315,10 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     let loi = '';
     try { yc.lichSuYeuCau(P.subjectTeacher, pa.id); } catch (e: any) { loi = String(e.status ?? e.statusCode ?? ''); }
     assert(loi === '403', `GVBM: "${loi}"`);
-    const ke = (conn.prepare(`EXPLAIN QUERY PLAN SELECT y.id, COUNT(a.id) AS n FROM yeu_cau_duyet y JOIN audit_logs a ON (a.entity_type = 'yeu_cau_duyet' AND a.entity_id = y.id)
-      OR (a.entity_type = CASE y.doi_tuong_loai WHEN 'intervention' THEN 'case_intervention' ELSE y.doi_tuong_loai END AND a.entity_id = y.doi_tuong_id) WHERE y.id IN (?, ?) GROUP BY y.id`).all(1, 2) as any[]).map((r) => r.detail).join(' | ');
+    const ke = (conn.prepare(`EXPLAIN QUERY PLAN SELECT y.*, (SELECT COUNT(*) FROM audit_logs a WHERE (a.entity_type = 'yeu_cau_duyet' AND a.entity_id = y.id)
+      OR (a.entity_type = CASE y.doi_tuong_loai WHEN 'intervention' THEN 'case_intervention' ELSE y.doi_tuong_loai END AND a.entity_id = y.doi_tuong_id)) AS n
+      FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho'`).all() as any[]).map((r) => r.detail).join(' | ');
     assert(!/SCAN (a|audit_logs)\b(?! USING)/.test(ke), `audit_logs bị quét cả bảng: ${ke}`);
   });
+
 }
