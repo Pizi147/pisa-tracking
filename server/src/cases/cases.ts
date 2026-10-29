@@ -44,6 +44,7 @@ import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDi
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, tenGiuaCua } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
+import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 
 /**
@@ -1521,25 +1522,36 @@ const CAU_XOA_CASE: readonly string[] = [
  * XOÁ CASE TẠO NHẦM (PR-LUI-a2, mockup mục 19; chủ sản phẩm 06/10 Q6) — chỉ Quản lý / Quản trị, chỉ Case báo tay, chưa PA nào có kết quả. Xoá hẳn
  * dòng ở mọi bảng trỏ Case; PA chưa làm đi theo; thẻ Chờ duyệt đang chờ tự đóng; nhật ký `case.delete` chụp Case + PA. Tệp xoá SAU khi chốt.
  */
-export function xoaCase(p: Principal, caseId: number): { ok: true } {
+export function xoaCase(p: Principal, caseId: number): { ok: true; thungRacId: number } {
   const conn = db();
   const c = loadCase(caseId);
   require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được Case.');
   const chan = chanXoaCase(c);
   if (chan) throw badRequest(chan);
-  const khoaTep: string[] = [];
-  tx(() => {
+  /* Q-RL2a: chụp mọi dòng sắp mất / đổi vào thùng rác cùng giao dịch — Hoàn tác / Khôi phục 30 ngày; tệp trong kho giữ tới khi dọn thùng rác. */
+  const chup = new BoChup(conn);
+  return tx(() => {
     const pa = conn.prepare('SELECT * FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
-    for (const iv of pa) chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', { lyDo: 'Case đã xoá' });
-    chotYeuCau(conn, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, 'tu_dong', { lyDo: 'Case đã xoá' });
+    chup.ghiGoc('students', c.student_id ?? c.eff_student_id);   // khôi phục so lại: id em có thể đã thuộc em khác
+    const DK_THE = `trang_thai = 'cho' AND ((doi_tuong_loai = 'sos_case' AND doi_tuong_id = ?1)
+      OR (doi_tuong_loai = 'intervention' AND doi_tuong_id IN (${CASE_I})))`;
+    const the = (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE ${DK_THE}`).all(caseId) as any[]).map((r) => `duyet_ket_qua:${r.id}`);
+    chup.chupSua('yeu_cau_duyet', DK_THE, caseId);
+    /* Chuông "Tự đóng: Case đã xoá" gửi người xin — khôi phục gỡ / trả lại (thẻ về Chờ duyệt). */
+    chup.theoDoi('notifications', the.length ? `dedup_key IN (${the.map(() => '?').join(',')})` : '0', the, () => {
+      for (const iv of pa) chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', { lyDo: 'Case đã xoá' });
+      chotYeuCau(conn, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, 'tu_dong', { lyDo: 'Case đã xoá' });
+    });
     for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND ((owner_type = 'sos_case' AND owner_id = ?1)
-        OR (owner_type = 'case_intervention' AND owner_id IN (${CASE_I})))`).all(caseId) as any[]) khoaTep.push(r.url);
-    for (const sql of CAU_XOA_CASE) conn.prepare(sql).run(caseId);
+        OR (owner_type = 'case_intervention' AND owner_id IN (${CASE_I})))`).all(caseId) as any[]) chup.tep.push(r.url);
+    for (const sql of CAU_XOA_CASE) chup.chay(sql, caseId);
+    const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
+    const thungRacId = ghiThungRac(conn, { loai: 'case', doiTuongId: caseId, nhan: [caseTitleOf(c), hv].filter(Boolean).join(' · '),
+      hocVienId: c.eff_student_id, classId: c.class_id, nguoi: p.userId, chup });
     writeAudit({ actorUserId: p.userId, action: 'case.delete', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
-      before: { case: c, pa, soTep: khoaTep.length } });
+      before: { case: c, pa, soTep: chup.tep.length }, after: { thungRacId } });
+    return { ok: true as const, thungRacId };
   });
-  xoaTepSauGiaoDich(khoaTep);
-  return { ok: true };
 }
 
 /**
@@ -1611,7 +1623,7 @@ export function ketThucPaQuyChe(p: Principal, interventionId: number, input: { l
  * XOÁ PA (PR-LUI-a2, chủ sản phẩm 06/10 Q6) — chỉ Quản lý / Quản trị, kể cả PA đã ghi kết quả. Xoá PA + mọi kết quả tuần + lịch sử điều chỉnh + tệp;
  * thẻ Chờ duyệt đang chờ của PA tự đóng; nhật ký chụp PA + mọi kết quả. Hết PA → Case về "Mới mở". PA quy chế / Bổ trợ do hệ thống sinh: không xoá.
  */
-export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId: number } {
+export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId: number; thungRacId: number } {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án');
@@ -1620,23 +1632,33 @@ export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId:
   // ponytail: PA quy chế / Bổ trợ (máy sinh, gắn nhóm + Mini Test) chặn xoá — thêm đường riêng nếu chủ sản phẩm cần.
   if (iv.preset === 1 || (SYSTEM_KINDS as readonly string[]).includes(iv.kind)) throw badRequest('PA do hệ thống tạo — không xoá được.');
   if (c.status === 'done') throw badRequest('Case đã hoàn thành — Mở lại trước khi xoá PA.');
-  const khoaTep: string[] = [];
-  tx(() => {
+  /* Q-RL2a: chụp vào thùng rác cùng giao dịch (kể cả PA đã có kết quả) — tệp trong kho giữ tới khi dọn thùng rác. */
+  const chup = new BoChup(conn);
+  return tx(() => {
     const ketQua = conn.prepare('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id').all(interventionId) as any[];
-    goPaTrongTx(conn, iv, { lyDo: 'PA đã xoá' }, khoaTep);
+    goPaTrongTx(conn, iv, { lyDo: 'PA đã xoá' }, chup.tep, chup);
+    const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
+    const thungRacId = ghiThungRac(conn, { loai: 'pa', doiTuongId: interventionId, nhan: [iv.description ?? iv.kind, caseTitleOf(c), hv].filter(Boolean).join(' · '),
+      hocVienId: c.eff_student_id, classId: c.class_id, nguoi: p.userId, chup });
     writeAudit({ actorUserId: p.userId, action: 'intervention.delete', entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: iv.description ?? iv.kind, before: { pa: iv, ketQua, soTep: khoaTep.length } });
+      entityLabel: iv.description ?? iv.kind, before: { pa: iv, ketQua, soTep: chup.tep.length }, after: { thungRacId } });
+    return { ok: true as const, caseId: iv.case_id as number, thungRacId };
   });
-  xoaTepSauGiaoDich(khoaTep);
-  return { ok: true, caseId: iv.case_id };
 }
 
 /** Gỡ MỘT PA trong giao dịch (Xoá PA · Hoàn tác thêm PA): thẻ Chờ duyệt đang chờ của PA tự đóng, xoá con → cha, Case đồng bộ (hết PA → "Mới mở"). */
-function goPaTrongTx(conn: any, iv: any, the: { nguoiDuyet?: number; lyDo: string }, khoaTep: string[]): void {
-  chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', the);
+function goPaTrongTx(conn: any, iv: any, the: { nguoiDuyet?: number; lyDo: string }, khoaTep: string[], chup?: BoChup): void {
+  if (chup) {
+    chup.ghiGoc('sos_cases', iv.case_id);   // khôi phục so lại: id Case có thể đã thuộc Case khác
+    const DK_THE = `trang_thai = 'cho' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?`;
+    const theKhoa = (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE ${DK_THE}`).all(iv.id) as any[]).map((r) => `duyet_ket_qua:${r.id}`);
+    chup.chupSua('yeu_cau_duyet', DK_THE, iv.id);
+    chup.theoDoi('notifications', theKhoa.length ? `dedup_key IN (${theKhoa.map(() => '?').join(',')})` : '0', theKhoa,
+      () => { chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', the); });
+  } else chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', the);
   for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND owner_type = 'case_intervention' AND owner_id = ?`)
     .all(iv.id) as any[]) khoaTep.push(r.url);
-  for (const sql of CAU_XOA_PA) conn.prepare(sql).run(iv.id);
+  for (const sql of CAU_XOA_PA) if (chup) chup.chay(sql, iv.id); else conn.prepare(sql).run(iv.id);
   if (conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? LIMIT 1').get(iv.case_id)) dongBoTrangThaiCase(iv.case_id);
   else conn.prepare(`UPDATE sos_cases SET status = 'open', updated_at = ? WHERE id = ?`).run(nowIso(), iv.case_id);
 }

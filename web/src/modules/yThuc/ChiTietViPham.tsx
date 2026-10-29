@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
+import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -45,9 +46,10 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
   const xoa = async () => {
     setBusy(true); setErrXoa(null);
     try {
-      await api.del(`/violations/${violationId}`);
-      invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc');
-      toast.push('ok', t('Đã xoá vi phạm'));
+      const r = await api.del<{ thungRacId?: number }>(`/violations/${violationId}`);
+      const lamMoi = () => { invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc'); };
+      lamMoi();
+      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá vi phạm'), lamMoi);
       onDaXoa();
     } catch (e: any) {
       /* Q15: lỗi 400 hiện ngay dưới, KHÔNG đóng hộp hỏi — người dùng vừa đọc lý do vừa quyết định bước tiếp theo. */

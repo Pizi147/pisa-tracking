@@ -249,7 +249,11 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
       await att.removeAttachment(gvbm, dongB);
       assert(await kho().doc(url) !== null, 'gỡ dòng của B mà C còn thì tệp phải còn');
       viol.deleteViolation(gvbm, c);
-      assert(await kho().doc(url) === null, 'dòng cuối đi thì kho xoá');
+      /* Q-RL2a: dòng cuối đi → tệp GIỮ trong kho (thùng rác, Khôi phục 30 ngày); dọn thùng rác quá hạn mới xoá. */
+      assert(await kho().doc(url) !== null, 'dòng cuối đi: tệp giữ cho Khôi phục');
+      conn.prepare(`UPDATE thung_rac SET xoa_luc = '2000-01-01T00:00:00.000Z' WHERE khoi_phuc_luc IS NULL AND het_han_luc IS NULL`).run();
+      (await import('../platform/thungRac.ts')).donThungRac();
+      assert(await kho().doc(url) === null, 'dọn thùng rác quá hạn thì kho xoá');
     } finally { await kho().xoa(url); }
   }));
 

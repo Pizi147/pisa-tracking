@@ -7,6 +7,7 @@ import { demoToday } from '../demoConfig.ts';
 import { baoChamCheoQuaHan } from '../cham/chamCheo.ts';
 import { sinhCheckpointKeTiep } from '../normal/regular.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
+import { donThungRac } from '../platform/thungRac.ts';
 
 /**
  * QUÉT ĐỊNH KỲ SÁNG THỨ HAI (RB-1, PR-AN): thi hành quyết định chuyển lớp tới hạn + chuông "Speaking quá hạn chấm". Netlify gọi hàm `chot-vang`
@@ -38,6 +39,8 @@ export function chotVangDinhKy(o: {
   /* RA-LUONG-18 (Rulebook P08): huỷ phần thi có đề nghị dời quá hạn trả lời — trước CHỈ chạy khi có người mở Công việc / Test; chạy lặp vô hại.
      Thẻ Chờ duyệt quá hạn (`quetYeuCau`) không chạy ở đây: QL mở Chờ duyệt / Công việc hằng ngày là quét, và hàm đó đọc "hôm nay" theo ngày truyền vào. */
   if (!o.chuyen) try { sweepExpiredMoves(); } catch (e) { console.error('[chot-vang] dời quá hạn', e); }
+  /* Q-RL2a: mục thùng rác quá 30 ngày (giờ thật) → bỏ bản chụp + xoá tệp kho không còn dòng nào dùng; chạy lặp vô hại. */
+  if (!o.chuyen) try { donThungRac(); } catch (e) { console.error('[chot-vang] dọn thùng rác', e); }
   /* PR-LT3 (T18, D3): chuông "Speaking quá hạn chấm" cho GVBM Speaking + GVCN — cùng lượt quét thứ Hai; lỗi không làm hỏng lượt quét. */
   try { baoChamCheoQuaHan(ngay); } catch (e) { console.error('[chot-vang] chuông chấm chéo', e); }
   /* OV-6b2: lớp liên tục — em đã qua tuần thi Checkpoint (chưa đủ điểm) có Checkpoint kế tiếp; lỗi không làm hỏng lượt quét. */

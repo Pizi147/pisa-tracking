@@ -3,6 +3,7 @@
  * nghiệp vụ ở đây: mọi thứ ở `server/src/ops/chotVangDinhKy.ts`. Kết quả in ra log (Netlify › Logs › Functions › chot-vang).
  */
 import { chotVangDinhKy } from '../../server/src/ops/chotVangDinhKy.ts';
+import { choViecNenKhoTep } from '../../server/src/platform/khoTep.ts';
 
 /* File này CHỈ chạy trên Netlify — luôn là bản chính (cùng lý do `api.ts`). */
 process.env.BAN_CHINH = '1';
@@ -10,6 +11,8 @@ process.env.BAN_CHINH = '1';
 export const handler = async () => {
   try {
     const kq = chotVangDinhKy();
+    /* Q-RL2a: dọn thùng rác xoá tệp trong Blobs ở nền — chờ xong trước khi hàm tắt (không thì tệp mồ côi mãi). */
+    await choViecNenKhoTep();
     console.log('[chot-vang]', JSON.stringify(kq));
     return { statusCode: 200, body: JSON.stringify(kq) };
   } catch (e) {

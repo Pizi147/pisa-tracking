@@ -7,6 +7,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
+import { BoChup, bangCuaLoai, ghiThungRac, tepConTrongRac } from './thungRac.ts';
 import { ghiNhanViecNenKhoTep, khoTepHienTai } from './khoTep.ts';
 
 /**
@@ -45,7 +46,7 @@ export function uploadsDir(): string {
 
 // ---------------------------------------------------------------- nơi chủ và quyền
 
-type OwnerAccess = {
+export type OwnerAccess = {
   requireView: (p: Principal) => void; requireEdit: (p: Principal) => void;
   /** Gỡ MỘT tệp (người tải lên = `uploadedBy`). Không có thì dùng `requireEdit`. */
   requireRemove?: (p: Principal, uploadedBy: number) => void;
@@ -56,7 +57,7 @@ type OwnerAccess = {
  * nhận một tệp không ai kiểm quyền được. Vi phạm và biện pháp xử lý (PR-J, 21/09/2026) đã có nơi chủ; quyền xem/sửa của
  * chúng do chính module Ý thức quyết định (`server/src/yThuc/access.ts`).
  */
-function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
+export function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
   if (!(OWNER_TYPES as readonly string[]).includes(ownerType)) throw loi(400, 'Loại bản ghi "{ownerType}" không hợp lệ.', { ownerType });
   if (!Number.isInteger(ownerId) || ownerId <= 0) throw badRequest('Bản ghi chủ không hợp lệ.');
   if (ownerType === 'sos_case') return caseOwner(ownerId);
@@ -239,6 +240,7 @@ const conDongKhac = (urls: string[]): Set<string> => {
   for (let k = 0; k < urls.length; k += 400) {
     const lo = urls.slice(k, k + 400);
     for (const r of db().prepare(`SELECT DISTINCT url FROM attachments WHERE kind = 'file' AND url IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) giu.add(r.url as string);
+    for (const u of tepConTrongRac(lo)) giu.add(u);   // Q-RL2a: khoá còn trong mục thùng rác chưa khôi phục / chưa hết hạn — giữ cho Khôi phục
   }
   return giu;
 };
@@ -304,17 +306,29 @@ export function purgeAttachmentsOf(
   return rows.length;
 }
 
-export async function removeAttachment(p: Principal, id: number): Promise<void> {
+/**
+ * Q-RL2a: gỡ tệp = chụp dòng vào thùng rác (một giao dịch) — Hoàn tác / Khôi phục 30 ngày; tệp trong kho GIỮ tới khi dọn thùng rác (`donThungRac`).
+ * Trả id mục thùng rác.
+ */
+export async function removeAttachment(p: Principal, id: number): Promise<{ thungRacId: number }> {
   const r = load(id);
   const quyen = ownerAccess(r.owner_type, r.owner_id);
   if (quyen.requireRemove) quyen.requireRemove(p, r.uploaded_by); else quyen.requireEdit(p);
-  db().prepare('DELETE FROM attachments WHERE id = ?').run(id);
-  writeAudit({
-    actorUserId: p.userId, action: 'attachment.delete', entityType: 'attachment', entityId: id, entityLabel: r.display_name,
-    before: { ownerType: r.owner_type, ownerId: r.owner_id, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by },
+  const conn = db();
+  const chup = new BoChup(conn);
+  return tx(() => {
+    const bangChu = bangCuaLoai(r.owner_type);
+    if (bangChu) chup.ghiGoc(bangChu, r.owner_id);   // khôi phục so lại: id bản ghi chủ có thể đã thuộc bản ghi khác
+    chup.chay('DELETE FROM attachments WHERE id = ?', id);
+    if (r.kind === 'file') chup.tep.push(r.url);
+    /* Mục ở "Đã xoá" ghi kèm học viên của bản ghi chủ (nếu bản ghi chủ có cột học viên). */
+    const hv = bangChu ? (() => { try { return conn.prepare(`SELECT s.id, s.full_name FROM ${bangChu} x JOIN students s ON s.id = x.student_id WHERE x.id = ?`).get(r.owner_id) as any; } catch { return null; } })() : null;
+    const thungRacId = ghiThungRac(conn, { loai: 'tep', doiTuongId: id, nhan: [r.display_name ?? 'Tệp', hv?.full_name].filter(Boolean).join(' · '),
+      hocVienId: hv?.id ?? null, nguoi: p.userId, chup });
+    writeAudit({
+      actorUserId: p.userId, action: 'attachment.delete', entityType: 'attachment', entityId: id, entityLabel: r.display_name,
+      before: { ownerType: r.owner_type, ownerId: r.owner_id, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by }, after: { thungRacId },
+    });
+    return { thungRacId };
   });
-  /* Dòng bảng + audit TRƯỚC, tệp trong kho SAU; xoá tệp lỗi thì chỉ còn một tệp mồ côi — không ném. */
-  if (r.kind === 'file' && !conDongKhac([r.url]).size) {
-    try { await khoTepHienTai(uploadsDir()).xoa(r.url); } catch (e) { console.error('[kho tệp] không xoá được', r.url, e); }
-  }
 }

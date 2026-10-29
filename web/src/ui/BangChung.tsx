@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { ApiError, api, invalidate } from '../lib/api.ts';
+import { hoanTacXoa } from '../lib/thungRac.ts';
+import { useToast } from './Toast.tsx';
 import { useApi } from '../lib/useApi.ts';
 import { fmtDate } from '../lib/format.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, CHU_KHOI_BANG_CHUNG, laLienKet, tenAnhDan } from '@shared/domain/index.ts';
@@ -42,6 +44,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
   const { data, loading, error, reload } = useApi<{ rows: Row[] }>(
     `/attachments?ownerType=${ownerType}&ownerId=${ownerId}`, [ownerType, ownerId],
   );
+  const toast = useToast();
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [linkOpen, setLinkOpen] = useState(false);
   const [url, setUrl] = useState('');
@@ -160,7 +163,12 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
 
   const remove = async (id: number) => {
     setRowError(null);
-    try { await api.del(`/attachments/${id}`); setConfirmId(null); invalidate('/attachments'); onChanged?.(); }
+    try {
+      const r = await api.del<{ thungRacId?: number }>(`/attachments/${id}`);
+      const lamMoi = () => { invalidate('/attachments'); onChanged?.(); };
+      setConfirmId(null); lamMoi();
+      hoanTacXoa(toast, r?.thungRacId, t('Đã gỡ tệp'), lamMoi);
+    }
     catch (e) { setRowError({ id, message: e instanceof ApiError ? e.message : t('Không gỡ được — thử lại.') }); }
   };
 

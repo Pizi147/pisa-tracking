@@ -2256,3 +2256,22 @@ CREATE TABLE IF NOT EXISTS bang_quy_doi (
   nguoi_id INTEGER REFERENCES users(id),
   tao_luc TEXT NOT NULL
 );
+
+-- Q-RL2a THÙNG RÁC (N24 ②): bản chụp mục đã xoá (Case, PA, vi phạm, tệp…) — Hoàn tác / Khôi phục ở Quản trị › Đã xoá trong 30 ngày (`platform/thungRac.ts`).
+CREATE TABLE thung_rac (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  loai TEXT NOT NULL,               -- 'case' | 'pa' | 'vi_pham' | 'tep'
+  doi_tuong_id INTEGER NOT NULL,    -- id gốc của mục đã xoá
+  nhan TEXT NOT NULL,               -- tên hiện ra ở Đã xoá
+  hoc_vien_id INTEGER,
+  class_id INTEGER,
+  branch_id INTEGER,
+  du_lieu TEXT NOT NULL,            -- JSON { ban: [{k:'xoa'|'null'|'sua', bang, dong[]}], tep: [khoá kho] }
+  xoa_boi INTEGER,
+  xoa_luc TEXT NOT NULL,
+  khoi_phuc_boi INTEGER,
+  khoi_phuc_luc TEXT,
+  het_han_luc TEXT                  -- quá 30 ngày: đã bỏ bản chụp + xoá tệp kho
+);
+CREATE INDEX ix_thung_rac_luc ON thung_rac (xoa_luc);
+CREATE INDEX ix_thung_rac_doi_tuong ON thung_rac (loai, doi_tuong_id);
