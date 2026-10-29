@@ -26,6 +26,8 @@
     --bg: #050a16;   /* P3 (chủ SP 22/10): xanh bớt ngả tím, tối hơn V5 #0b1026; thẻ tách nền ≥ 1,15 : 1 (OV-15a) */
     --surface: #111c33;
     --surface-2: #172440;
+    /* NEN-V8 (= thiet-ke/v5/v5-nen.css --bong-noi): bóng menu / panel / hộp đủ đậm để nổi trên nền tối. */
+    --bong-noi: 0 8px 24px rgb(0 0 0 / .5), 0 1px 3px rgb(0 0 0 / .4);
     --line: #22324f;
     --line-strong: #33496f;
 
@@ -108,6 +110,7 @@
   :root[data-theme="light"] {
     color-scheme: light;
     --bg: #f3f5f9;  --surface: #ffffff;  --surface-2: #f2f4f9;
+    --bong-noi: 0 8px 24px rgb(17 26 66 / .14), 0 1px 3px rgb(17 26 66 / .10);
     --line: #d9deea;  --line-strong: #b0b8cd;
     --accent: #273c8f;  --accent-strong: #1f3077;  --accent-ink-rgb: 255 255 255;
     --accent-soft: #eef1fa;  --accent-line: #8c9cd6;
@@ -214,7 +217,7 @@
    * (nhóm không chỉ phân biệt bằng màu); mục 14 / 500 cao ≥ 36 px (≥ 44 px ở 375); mục nguy hiểm có vạch đỏ ngay trên. Sáng: hộp menu
    * nền trắng để tách khỏi nền trang (surface-2 sáng gần trùng --bg).
    */
-  :root[data-theme="light"] .menu-hop { background: var(--surface); }
+  .menu-hop { background: var(--surface); }   /* NEN-V8: cả tối (mockup v8 menu nền khối, bóng `--bong-noi` tách khỏi trang) */
   .menu-nhom { padding: 6px 12px; font-size: 12px; font-weight: 600; line-height: 1.4; color: var(--text-dim); }
   .menu-nhom:not(:first-child) { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
   .menu-muc { display: block; width: 100%; min-height: 36px; padding: 8px 12px; border: 0; border-radius: 6px; background: transparent;
@@ -344,7 +347,7 @@
     background: var(--surface-2); color: var(--text-dim);
     font-size: 13px; font-weight: 600; line-height: 1.45;   /* NEN-TYPO-MAU: đầu cột 13 px, không in hoa */
     padding: 0.6rem 0.75rem; text-align: left;
-    border-bottom: 1px solid var(--line-strong); white-space: nowrap;
+    border-bottom: 1px solid var(--line); white-space: nowrap;   /* NEN-V8: = mockup v8 `.bang th` (vạch mảnh) */
   }
   .td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 15px; }   /* NEN-TYPO-MAU: ô bảng 15 px (lưới điểm 14 ở BANG-1) */
   /* OV-15a (C06): SỐ căn giữa + chữ số thẳng cột; chữ dài căn trái (mặc định). Ô số = `tabular-nums`; đầu cột số (`text-right` cũ) căn theo. */
