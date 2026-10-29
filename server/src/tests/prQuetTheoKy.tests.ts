@@ -38,18 +38,23 @@ export async function runPrQuetTheoKyTests(t: any) {
     assert(co > 0, 'seed: không lượt nào');
   });
 
-  check('Q1 · RF4 lượt vừa có ô chờ vừa chưa xếp tuần: xuất hiện đúng 1 lần', () => {
+  /* Ô chờ hôm nay = thuộc cả hai vế cũ (chỉ một lần); NULL / sau hôm nay = chỉ vế 2 (vẫn có). */
+  check('Q1 · RF4 lượt chưa xếp tuần: có ô chờ (cả hai vế) / không ô chờ / ô chờ sau hôm nay → đúng 1 lần, = câu OR cũ', () => {
     const r = at.listAttempts(P.mbManager, goc).rows.find((x: any) => x.status === 'planned' && x.planned_period_id !== null);
     assert(r, 'seed: không lượt planned có tuần');
-    conn.exec('BEGIN IMMEDIATE');
-    try {
-      conn.prepare('UPDATE assessment_attempts SET planned_period_id = NULL, o_cho_tu = ? WHERE id = ?').run(demoToday(), r.id);
-      for (const [vai, p] of [['QL', P.mbManager], ['QT', P.admin]] as [string, any][]) {
-        const ds = ids(p, {});
-        assert(ds.filter((id: number) => id === r.id).length === 1, `${vai}: lượt ${r.id} xuất hiện ${ds.filter((id: number) => id === r.id).length} lần`);
-        assert(JSON.stringify(ds) === JSON.stringify(voiCo(at.listAttemptsOrKhiKiem, () => ids(p, {}))), `${vai}: khác câu OR cũ`);
-      }
-    } finally { conn.exec('ROLLBACK'); }
+    const sau = (conn.prepare(`SELECT date(?, '+7 day') AS d`).get(demoToday()) as any).d;
+    for (const [ten, oCho] of [['ô chờ hôm nay', demoToday()], ['không ô chờ', null], ['ô chờ sau hôm nay', sau]] as [string, string | null][]) {
+      conn.exec('BEGIN IMMEDIATE');
+      try {
+        conn.prepare('UPDATE assessment_attempts SET planned_period_id = NULL, o_cho_tu = ? WHERE id = ?').run(oCho, r.id);
+        for (const [vai, p] of [['QL', P.mbManager], ['QT', P.admin]] as [string, any][]) {
+          const ds = ids(p, {});
+          const lan = ds.filter((id: number) => id === r.id).length;
+          assert(lan === 1, `${ten} · ${vai}: lượt ${r.id} xuất hiện ${lan} lần`);
+          assert(JSON.stringify(ds) === JSON.stringify(voiCo(at.listAttemptsOrKhiKiem, () => ids(p, {}))), `${ten} · ${vai}: khác câu OR cũ`);
+        }
+      } finally { conn.exec('ROLLBACK'); }
+    }
   });
 
   check('Q1 · myWork QL nguoi=tat-ca (+ QL, GVCN của tôi): items JSON giống hệt khi bật cờ', () => {
@@ -149,7 +154,7 @@ export async function runPrQuetTheoKyTests(t: any) {
       const g = await goi('GVCN', '/tong-quan/v5?ct=ft&kemBaoCao=1');
       assert(g.status === 403, `GVCN: ${g.status} (mong 403)`);
       for (const vai of ['CX', 'TVV']) {
-        if (!U[vai]) continue;
+        assert(U[vai], `seed: không có người vai ${vai}`);
         const gop = await goi(vai, '/tong-quan/v5?ct=ft&kemBaoCao=1'), tq = await goi(vai, '/tong-quan/v5?ct=ft'), bc = await goi(vai, '/phan-tich/bao-cao?ct=ft');
         assert(gop.status === Math.max(tq.status, bc.status), `${vai}: gộp ${gop.status} ≠ max(${tq.status}, ${bc.status})`);
       }

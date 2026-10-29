@@ -792,8 +792,9 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
    * QUET-THEO-KY Q1: `kemChuaTuan` tách `OR` thành `UNION ALL` — `OR` làm SQLite bỏ chỉ mục ô chờ (SCAN cả bảng lượt). Vế 2 loại lượt đã thuộc vế 1
    * (`planned` ≠ cancelled ⇒ thuộc vế 1 ⇔ `o_cho_tu <= hôm nay`) nên không trùng; điều kiện chung (kể cả `chiTruocTuan`) lặp ở hai vế.
    */
-  const tachHaiVe = !!f.kemChuaTuan && (f.chiConO || f.need === 'my_scores') && !listAttemptsOrKhiKiem.bat;
-  if (f.chiConO || f.need === 'my_scores') {
+  const conO = f.chiConO || f.need === 'my_scores';
+  const tachHaiVe = conO && !!f.kemChuaTuan && !listAttemptsOrKhiKiem.bat;
+  if (conO) {
     if (!tachHaiVe) {
       where.push(f.kemChuaTuan ? `(${CON_O_SQL} OR (a.planned_period_id IS NULL AND a.status = 'planned'))` : CON_O_SQL);
       params.push(today);
