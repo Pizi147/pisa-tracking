@@ -4,7 +4,7 @@ import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound, loi } from '../util.ts';
@@ -45,7 +45,8 @@ function choDuyetCaseIds(ids: number[], today: string, chiQuaHan = false): numbe
   return chiQuaHan ? out.sort((a, b) => a - b) : out;   // quá hạn xếp theo id như trước
 }
 import { improvementRate, planOutcomes } from '../cases/effectiveness.ts';
-import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai } from './danhGia.ts';
+import { doPhuDanhGia, hvDuoiKyVongMon, hvSosHienTai, latestAttempts, type AttemptEval } from './danhGia.ts';
+import { diemTuEval } from './diemDong.ts';
 import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.ts';
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 import { locTheoChuongTrinh } from './chuongTrinh.ts';
@@ -99,6 +100,8 @@ export type MetricResult = {
   hanCu?: string | null;
   /** OV-11f (TQ-3): dòng phụ RIÊNG của chỉ số cho từng phần tử (lớp cần Chốt lộ trình: "2 em chưa chọn · hạn 20/09") — thay dòng phụ chung của đơn vị. */
   dongPhu?: Map<number, string>;
+  /** PANEL-MC: lượt hiện tại của từng em đã dùng để dựng tập (`latestAttempts` của tập hiện trạng) — dòng điểm panel lấy từ đây, 0 câu. */
+  luotHv?: Map<number, AttemptEval>;
   /** Phạm vi rỗng — không có gì để đếm. KHÔNG được hiểu thành toàn hệ thống. */
   empty: boolean;
   note: string | null;
@@ -147,7 +150,12 @@ export type MetricRow = {
   donVi?: '%';
   /** Thi thật vượt Target (tập con của Đạt) — tab "Vượt" của panel. */
   vuot?: boolean;
+  /** PANEL-MC (N30): dòng HV — điểm ĐÚNG lượt làm em vào con số (✓ / ✗ từng kỹ năng, Overall, mốc so). null = em chưa có lượt có điểm. */
+  diemHv?: DiemHv | null;
 };
+
+/** PANEL-MC: CHỈ phép kiểm bật — `rowsFor` không gắn trường mới, để so "giống hệt" n / ids / thứ tự / trường cũ trước → sau. */
+export const diemHvKhiKiem = { tat: false };
 
 /** Ngữ cảnh quyền sửa một Case (cùng `sosEditCtx` ở cases.ts): lớp hiện tại của em trước, lớp của lượt sau. */
 const ctxCase = (r: { lop_id: number | null; sid: number | null; topic: string | null }) =>
@@ -199,7 +207,9 @@ function viecCuaCase(rows: any[], p: Principal | undefined): Map<number, { viec:
  * Tập ID đã qua quyền ở `metricSet`; hàm này không nhận phạm vi nên không thể mở rộng hay thu hẹp nó.
  * V5 C22: panel số / báo cáo là CHỈ ĐỌC — dòng không mang `viec` (nút làm việc), trừ khu làm việc gọi `kemViec` (Lịch Test · Quá hạn chấm).
  */
-export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, p?: Principal, kemViec = false): MetricRow[] {
+export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, p?: Principal, kemViec = false,
+  /** 'hoc-vien' (PANEL-MC): Map em → `DiemHv` của lượt riêng nơi gọi đè lượt mặc định; `false` = không gắn; bỏ trống = lượt hiện tại (`latestAttempts` 'valid'). */
+  diem?: Map<number, DiemHv> | false): MetricRow[] {
   const conn = db();
   const byId = new Map<number, MetricRow>();
   const chunks = <T>(list: T[]) => Array.from({ length: Math.ceil(list.length / 400) }, (_, i) => list.slice(i * 400, i * 400 + 400));
@@ -330,7 +340,8 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         const tuan = tuanMon.get(`${x.attemptId}|${x.skill}`) ?? tuanMon.get(`${x.attemptId}|${assessedSkillOf(x.skill)}`) ?? r.week_start ?? null;
         const ten = r.kind === 'mock' ? `MT${r.attempt_no}` : ATTEMPT_KIND_SHORT[r.kind as AttemptKind] ?? r.kind;
         byId.set(x.id, {
-          id: x.id, title: `${ten} · ${r.full_name} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
+          /* PANEL-MC (T5): tiêu đề không còn tên em — tên đã ở `em` (link hồ sơ); "MT2 · R". */
+          id: x.id, title: `${ten} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
           sub: [r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
           href: duongDotTest({ id: r.id, kind: r.kind, classId: r.class_id }, x.skill),   // PR-UXF-b: có kỹ năng → hồ sơ lượt mở đúng ô (FT hồ sơ Mock, lớp thường trang lượt — HSL-LT)
           em: { id: r.student_id, ten: r.full_name }, lop: r.class_code ?? null, ngCanh: `${ten} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
@@ -433,6 +444,14 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
       }
     }
   }
+  /*
+   * PANEL-MC (N30, đặc tả 5b ý 4): dòng HV kèm điểm của lượt làm em vào con số. Mặc định = lượt hiện tại (`latestAttempts` nhớ trong request theo tập id:
+   * tập con của panel là khoá khác → ≤ 3 câu khi MỞ panel; ô số không gọi `rowsFor`). Nơi gọi có lượt riêng / đã nạp truyền `diem`.
+   */
+  if (unit === 'hoc-vien' && diem !== false && !diemHvKhiKiem.tat && ids.length) {
+    const mot = diem ?? new Map([...latestAttempts(ids, 'valid', demoToday())].map(([sid, ev]) => [sid, diemTuEval(ev)]));
+    for (const [id, r] of byId) r.diemHv = mot.get(id) ?? null;
+  }
   /* Giữ đúng thứ tự của tập ID; ID không tra được vẫn hiện — không im lặng làm rơi bản ghi khỏi danh sách. */
   return ids.map((id) => {
     const r = byId.get(id) ?? { id, title: `#${id}`, sub: '', href: '#' };
@@ -460,8 +479,28 @@ export function metricResponse(r: MetricResult, withRows: boolean, p?: Principal
   if (!withRows) return lean;
   return {
     ...lean, ids: r.ids, numeratorIds: r.numeratorIds, denominatorIds: r.denominatorIds, splitIds: r.splits, byKindIds: r.byKind,
-    rows: rowsFor(r.unit, r.ids, r.id, p).map((x) => (r.dongPhu?.has(x.id) ? { ...x, sub: r.dongPhu.get(x.id)! } : x)),
+    rows: ganChiTiet(r, rowsFor(r.unit, r.ids, r.id, p, false, r.luotHv && new Map([...r.luotHv].map(([sid, ev]) => [sid, diemTuEval(ev)])))
+      .map((x) => (r.dongPhu?.has(x.id) ? { ...x, sub: r.dongPhu.get(x.id)! } : x))),
   };
+}
+
+/**
+ * PANEL-MC (T5): dòng BÀI của panel số có người giữ việc + hạn từ `chiTiet` (CÙNG câu sinh tập) — "Hà chấm" / "… chấm chéo".
+ * Tên người: một câu `users` theo lô, chỉ khi mở panel (`rows=1`). Tên gọi = từ cuối họ tên, như mọi chip người ở web.
+ */
+function ganChiTiet(r: MetricResult, rows: MetricRow[]): MetricRow[] {
+  if (r.unit !== 'bai' || !r.chiTiet || diemHvKhiKiem.tat) return rows;
+  const uid = [...new Set([...r.chiTiet.values()].flatMap((c) => c.nguoi))];
+  const ten = new Map<number, string>();
+  theoLo(uid, (lo, ph) => {
+    for (const u of db().prepare(`SELECT id, full_name FROM users WHERE id IN (${ph})`).all(...lo) as any[]) ten.set(u.id, String(u.full_name).trim().split(/\s+/).pop()!);
+  });
+  return rows.map((x) => {
+    const c = r.chiTiet!.get(x.id);
+    if (!c) return x;
+    const nguoi = c.nguoi.map((u) => ten.get(u)).filter(Boolean).join(' · ');
+    return { ...x, nguoi: nguoi ? (c.chamCheo ? `${nguoi} ${t('chấm chéo')}` : nguoi) : c.chamCheo ? t('chấm chéo') : null, han: c.han[0] ?? null };
+  });
 }
 
 /** Các chỉ số ĐÃ CÓ hàm tập ID. Chỉ số khác trong sổ chưa dùng được. */
@@ -864,7 +903,7 @@ function metricSetGoc(
       return done(pendingApprovalPlans(openCases().map((c: any) => c.id as number)));
     case 'hv-sos-hien-tai': {
       const r = hvSosHienTai(p, branchId ?? null, today);
-      return done(r.ids, { splits: r.splits });
+      return done(r.ids, { splits: r.splits, luotHv: r.luotHv });
     }
     case 'hv-duoi-ky-vong-mon': {
       const skill = f.skill ? String(f.skill) : null;
@@ -872,7 +911,7 @@ function metricSetGoc(
         throw loi(400, 'Môn "{skill}" không hợp lệ — chọn một trong Listening, Reading, Writing, Speaking.', { skill });
       }
       const r = hvDuoiKyVongMon(p, branchId ?? null, today, skill);
-      if (!f.ctLop) return done(r.ids, { denominatorIds: r.denominatorIds });
+      if (!f.ctLop) return done(r.ids, { denominatorIds: r.denominatorIds, luotHv: r.luotHv });
       /* Q11: câu lớp thường theo chương trình ("FOU: 5/22 học viên chưa đạt") — lọc cả tử lẫn mẫu theo chương trình lớp em ĐANG học, theo lô. */
       const giu = new Set<number>();
       for (let i = 0; i < r.denominatorIds.length; i += 400) {
@@ -882,7 +921,7 @@ function metricSetGoc(
             WHERE e.status = 'active' AND c.programme_code = ? AND e.student_id IN (${lo.map(() => '?').join(',')})`,
         ).all(f.ctLop, ...lo) as any[]) giu.add(x.student_id);
       }
-      return done(r.ids.filter((x) => giu.has(x)), { denominatorIds: r.denominatorIds.filter((x) => giu.has(x)) });
+      return done(r.ids.filter((x) => giu.has(x)), { denominatorIds: r.denominatorIds.filter((x) => giu.has(x)), luotHv: r.luotHv });
     }
     case 'do-phu-danh-gia': {
       const r = doPhuDanhGia(p, branchId ?? null, today);

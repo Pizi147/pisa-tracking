@@ -28,6 +28,10 @@ export type SkillEval = {
   evaluable: boolean;
   /** Dưới kỳ vọng của CHÍNH đợt đó (không phải target hiện tại). */
   under: boolean;
+  /** PANEL-MC: band (FT) · % (lớp thường, 0–100 chưa làm tròn) — dòng điểm `DiemHv`. */
+  v: number | null;
+  /** PANEL-MC: môn em đã bỏ (P8) — dòng điểm không ✓ / ✗. */
+  bo?: boolean;
 };
 
 export type AttemptEval = {
@@ -55,6 +59,10 @@ export type AttemptEval = {
   tyLeTong?: number | null;
   /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — dải Cuối khoá đọc cùng ngưỡng. */
   nguong?: number;
+  /** PANEL-MC: FT Overall (đủ bốn kỹ năng) · lớp thường % tổng (đủ môn); kỳ vọng của lượt (FT) · ngưỡng % (lớp thường); mã chương trình (tên môn). */
+  overall: number | null;
+  kyVong: number | null;
+  chuongTrinh: string | null;
 };
 
 /**
@@ -70,11 +78,12 @@ export function evaluateAttemptRow(
     const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores)), scores, prog.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
     const skills: Record<string, SkillEval> = {};
     for (const s of r.skills) {
-      skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail' };
+      skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail', v: s.ratio === null ? null : s.ratio * 100 };
     }
     return {
       complete: r.complete, scored: r.scored, required: r.required, sosLevel: r.sosLevel, provisional: r.provisional, skills,
       khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong, nguong: r.passThreshold,
+      overall: r.tyLeTong === null ? null : r.tyLeTong * 100, kyVong: r.passThreshold * 100, chuongTrinh: prog.code,
     };
   }
   const r = resultOf(a, scores, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
@@ -82,11 +91,12 @@ export function evaluateAttemptRow(
   /* RA-LUONG-9 (N13 P8): môn em đã bỏ (bài đã chấm giữ điểm) không còn "dưới kỳ vọng" / kỹ năng SOS — cùng luật mức SOS (`scoring.ts` `kyNangDaBo`). */
   const boMon = boMonDaBo(bundle.skips.get(a.id) ?? []);
   for (const v of r.verdicts) {
-    skills[v.skill] = { evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false && !kyNangDaBo(boMon, v.skill) };
+    skills[v.skill] = { evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false && !kyNangDaBo(boMon, v.skill), v: v.band, ...(kyNangDaBo(boMon, v.skill) ? { bo: true } : {}) };
   }
   return {
     complete: r.complete, scored: r.scoredRequired, required: r.required.length,
     sosLevel: r.sosLevel, provisional: r.provisional, chot: r.chot, skills,
+    overall: r.overall, kyVong: r.expectation, chuongTrinh: a.programme_code ?? null,
   };
 }
 
@@ -247,7 +257,7 @@ export function hvSosHienTai(p: Principal, branchId: number | null, today: strin
     if ((ev.sosLevel ?? 0) <= 0) continue;
     (ev.provisional ? tamThoi : ketQuaCuoi).push(sid);
   }
-  return { ids: sortIds([...tamThoi, ...ketQuaCuoi]), splits: { tamThoi: sortIds(tamThoi), ketQuaCuoi: sortIds(ketQuaCuoi) } };
+  return { ids: sortIds([...tamThoi, ...ketQuaCuoi]), splits: { tamThoi: sortIds(tamThoi), ketQuaCuoi: sortIds(ketQuaCuoi) }, luotHv: latest };
 }
 
 /**
@@ -263,7 +273,7 @@ export function hvDuoiKyVongMon(p: Principal, branchId: number | null, today: st
     if (picked.some((s) => s.evaluable)) evaluable.push(sid);
     if (picked.some((s) => s.evaluable && s.under)) under.push(sid);
   }
-  return { ids: sortIds(under), denominatorIds: sortIds(evaluable) };
+  return { ids: sortIds(under), denominatorIds: sortIds(evaluable), luotHv: latest };
 }
 
 /**

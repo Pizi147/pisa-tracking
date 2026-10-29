@@ -2,11 +2,11 @@ import { db } from '../db.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
 import { entryBandsOf, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
-import { luotSinhViecRow } from '../worklist/danhGia.ts';
+import { luotSinhViecRow, type SkillEval } from '../worklist/danhGia.ts';
 
 /**
  * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI CỦA MỘT HỌC VIÊN — MỘT định nghĩa cho cả hệ thống.
@@ -48,6 +48,8 @@ export type Standing = {
   /** "MT2", "Cuối khoá" — tên người đọc, để câu tóm tắt nói rõ mức này của bài nào. */
   attemptLabel: string | null;
   periodCode: string | null;
+  /** PANEL-MC: thứ Hai tuần thi của lượt đó — dòng điểm ghi `MT2 · W3 OCT`. */
+  attemptWeekStart: string | null;
 
   /**
    * Mức SOS của CHÍNH lượt đó. NULL nghĩa là chưa kết luận được — chưa thi, hoặc thi rồi mà
@@ -78,6 +80,8 @@ export type Standing = {
   tyLeTong: number | null;
   /** OV-6b1: ngưỡng đạt của lớp của lượt đó (lớp thường). */
   nguong?: number;
+  /** PANEL-MC: từng kỹ năng / môn của lượt đó — CÙNG kiểu `latestAttempts` (band FT · % lớp thường, đạt / dưới kỳ vọng) cho dòng điểm `DiemHv`. */
+  skills: Record<string, SkillEval>;
 
   /** Lượt kế tiếp đã lên kế hoạch mà chưa có điểm — để nói "đang chờ kết quả MT3". */
   nextAttemptNo: number | null;
@@ -130,9 +134,9 @@ export function standingLine(s: Standing): string {
 
 const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   studentId, cycleId, mode: null,
-  attemptId: null, attemptNo: null, attemptKind: null, attemptClassId: null, attemptLabel: null, periodCode: null,
+  attemptId: null, attemptNo: null, attemptKind: null, attemptClassId: null, attemptLabel: null, periodCode: null, attemptWeekStart: null,
   sosLevel: null, kckDuoi: false, provisional: false, scored: 0, required: 0, failed: null,
-  overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: null, khongChiaMon: false, tyLeTong: null,
+  overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: null, khongChiaMon: false, tyLeTong: null, skills: {},
   nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, nextWeekStart: null, nextKyVong: null, nhanLuotChuaXep: null,
   openCases: 0, handoverCases: 0,
 });
@@ -290,6 +294,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     s.attemptClassId = a.class_id ?? null;
     s.attemptLabel = labelOf(a.kind, a.attempt_no);
     s.periodCode = a.period_code ?? null;
+    s.attemptWeekStart = a.weekStart ?? null;
 
     if (rr) {
       const r = rr;
@@ -304,6 +309,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.failedSkills = r.skills
         .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)
         .map((x) => ({ skill: x.skill, score: x.score as number, total: x.total as number }));
+      s.skills = Object.fromEntries(r.skills.map((x) => [x.skill, { evaluable: x.outcome !== 'missing', under: x.outcome === 'fail', v: x.ratio === null ? null : x.ratio * 100 }]));
     } else {
       const r = ri!;
       s.sosLevel = r.sosLevel;
@@ -316,6 +322,12 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.belowSkills = r.verdicts
         .filter((v) => v.passed === false && v.band !== null)
         .map((v) => ({ skill: v.skill, band: v.band as number }));
+      /* CÙNG luật `evaluateAttemptRow` (danhGia.ts): môn em đã bỏ (P8) không "dưới kỳ vọng", đánh dấu `bo` để dòng điểm không ✓ / ✗. */
+      const boMon = boMonDaBo(skips.map((x: any) => x.skill ?? x));
+      s.skills = Object.fromEntries(r.verdicts.map((v) => [v.skill, {
+        evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false && !kyNangDaBo(boMon, v.skill), v: v.band,
+        ...(kyNangDaBo(boMon, v.skill) ? { bo: true } : {}),
+      }]));
     }
     return true;
   };
