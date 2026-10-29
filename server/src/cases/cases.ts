@@ -1532,10 +1532,16 @@ export function xoaCase(p: Principal, caseId: number): { ok: true; thungRacId: n
   const chup = new BoChup(conn);
   return tx(() => {
     const pa = conn.prepare('SELECT * FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
-    chup.chupSua('yeu_cau_duyet', `trang_thai = 'cho' AND ((doi_tuong_loai = 'sos_case' AND doi_tuong_id = ?1)
-      OR (doi_tuong_loai = 'intervention' AND doi_tuong_id IN (${CASE_I})))`, caseId);
-    for (const iv of pa) chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', { lyDo: 'Case đã xoá' });
-    chotYeuCau(conn, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, 'tu_dong', { lyDo: 'Case đã xoá' });
+    chup.ghiGoc('students', c.student_id ?? c.eff_student_id);   // khôi phục so lại: id em có thể đã thuộc em khác
+    const DK_THE = `trang_thai = 'cho' AND ((doi_tuong_loai = 'sos_case' AND doi_tuong_id = ?1)
+      OR (doi_tuong_loai = 'intervention' AND doi_tuong_id IN (${CASE_I})))`;
+    const the = (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE ${DK_THE}`).all(caseId) as any[]).map((r) => `duyet_ket_qua:${r.id}`);
+    chup.chupSua('yeu_cau_duyet', DK_THE, caseId);
+    /* Chuông "Tự đóng: Case đã xoá" gửi người xin — khôi phục gỡ / trả lại (thẻ về Chờ duyệt). */
+    chup.theoDoi('notifications', the.length ? `dedup_key IN (${the.map(() => '?').join(',')})` : '0', the, () => {
+      for (const iv of pa) chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', { lyDo: 'Case đã xoá' });
+      chotYeuCau(conn, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, 'tu_dong', { lyDo: 'Case đã xoá' });
+    });
     for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND ((owner_type = 'sos_case' AND owner_id = ?1)
         OR (owner_type = 'case_intervention' AND owner_id IN (${CASE_I})))`).all(caseId) as any[]) chup.tep.push(r.url);
     for (const sql of CAU_XOA_CASE) chup.chay(sql, caseId);
@@ -1642,8 +1648,14 @@ export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId:
 
 /** Gỡ MỘT PA trong giao dịch (Xoá PA · Hoàn tác thêm PA): thẻ Chờ duyệt đang chờ của PA tự đóng, xoá con → cha, Case đồng bộ (hết PA → "Mới mở"). */
 function goPaTrongTx(conn: any, iv: any, the: { nguoiDuyet?: number; lyDo: string }, khoaTep: string[], chup?: BoChup): void {
-  chup?.chupSua('yeu_cau_duyet', `trang_thai = 'cho' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?`, iv.id);
-  chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', the);
+  if (chup) {
+    chup.ghiGoc('sos_cases', iv.case_id);   // khôi phục so lại: id Case có thể đã thuộc Case khác
+    const DK_THE = `trang_thai = 'cho' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?`;
+    const theKhoa = (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE ${DK_THE}`).all(iv.id) as any[]).map((r) => `duyet_ket_qua:${r.id}`);
+    chup.chupSua('yeu_cau_duyet', DK_THE, iv.id);
+    chup.theoDoi('notifications', theKhoa.length ? `dedup_key IN (${theKhoa.map(() => '?').join(',')})` : '0', theKhoa,
+      () => { chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', the); });
+  } else chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', the);
   for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND owner_type = 'case_intervention' AND owner_id = ?`)
     .all(iv.id) as any[]) khoaTep.push(r.url);
   for (const sql of CAU_XOA_PA) if (chup) chup.chay(sql, iv.id); else conn.prepare(sql).run(iv.id);

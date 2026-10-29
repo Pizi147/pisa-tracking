@@ -6,7 +6,7 @@ export const EN_Q_RL2A = {
   'Đã gỡ tệp': 'File removed',
   'Người xoá': 'Deleted by',
   'Lúc xoá': 'Deleted at',
-  'Còn đến': 'Kept until',
+  'Giữ đến': 'Kept until',
   'Đã khôi phục · {ten} · {ngay}': 'Restored · {ten} · {ngay}',
   'Đã xoá hẳn': 'Permanently deleted',
   'Không có mục nào đã xoá trong 30 ngày.': 'Nothing deleted in the last 30 days.',

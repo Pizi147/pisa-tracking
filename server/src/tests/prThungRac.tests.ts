@@ -11,6 +11,7 @@ export async function runPrThungRacTests(t: YThucTestKit) {
   const kp: any = await import('../platform/khoiPhucRac.ts');
   const xoaHV: any = await import('../students/xoaHocVien.ts');
   const hl: any = await import('../students/hangLoat.ts');
+  const khoMod: any = await import('../platform/khoTep.ts');
   console.log('\nQ-RL2a THUNG-RAC · xoá → Hoàn tác / Khôi phục');
 
   const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -94,14 +95,20 @@ export async function runPrThungRacTests(t: YThucTestKit) {
     assert(mot('SELECT 1 FROM case_interventions WHERE id = ? AND case_id = ?', ivId, caseId), 'PA về Case');
   }));
 
-  check('TR-4 · Trùng id: Case mới chiếm lại id của Case đã xoá → khôi phục 409 nói rõ, dữ liệu mới giữ nguyên', () => thu(() => {
-    const sid = moiEm();
-    const caseId = taoCase(sid);
+  check('TR-4 · Case mới (em khác) chiếm lại id của Case đã xoá → khôi phục được với id MỚI; Case mới giữ nguyên; Case cùng em cùng kỹ năng đang mở → 409 nói rõ', () => thu(() => {
+    const caseId = taoCase(moiEm());
     const r = cases.xoaCase(QL, caseId);
-    const moi = taoCase(sid);
-    if (moi !== caseId) return;   // id không bị dùng lại (bảng AUTOINCREMENT) — không có ca trùng
-    assert(/dùng lại chỗ/.test(chuLoi(() => kp.khoiPhucRac(QL, r.thungRacId))), 'trùng id phải báo');
-    assert(mot('SELECT title FROM sos_cases WHERE id = ?', moi), 'Case mới mất');
+    const moi = taoCase(moiEm());
+    const moiTruoc = JSON.stringify(mot('SELECT * FROM sos_cases WHERE id = ?', moi));
+    const k = kp.khoiPhucRac(QL, r.thungRacId);
+    if (moi === caseId) assert(k.doiTuongId !== caseId, 'id trùng mà giữ id cũ');
+    assert(JSON.stringify(mot('SELECT * FROM sos_cases WHERE id = ?', moi)) === moiTruoc, 'Case mới bị đổi');
+    /* Cùng em, cùng kỹ năng: Case mới đang mở chiếm khoá chống trùng → 409 có lý do. */
+    const sid = moiEm();
+    const c2 = taoCase(sid);
+    const r2 = cases.xoaCase(QL, c2);
+    taoCase(sid);
+    assert(/đã có dữ liệu mới trùng/.test(chuLoi(() => kp.khoiPhucRac(QL, r2.thungRacId))), 'Case trùng kỹ năng phải 409');
   }));
 
   check('TR-5 · Quyền như thao tác gốc: GV không khôi phục Case / PA (403), không thấy mục ở Đã xoá; QL thấy + khôi phục được; Quản trị thấy mọi mục', () => thu(() => {
@@ -142,6 +149,88 @@ export async function runPrThungRacTests(t: YThucTestKit) {
     assert(mot('SELECT het_han_luc FROM thung_rac WHERE id = ?', r1.thungRacId).het_han_luc, 'mục cũ chưa hết hạn');
     assert(!mot('SELECT het_han_luc FROM thung_rac WHERE id = ?', r2.thungRacId).het_han_luc, 'mục mới bị dọn');
     assert(/quá 30 ngày/.test(chuLoi(() => kp.khoiPhucRac(QL, r1.thungRacId))), 'khôi phục mục hết hạn');
+  }));
+
+  // ---------------------------------------------------------------- rà sâu PTA #700
+  const dongCase = (caseId: number, ivId: number) => {
+    cases.updateResult(P.lrTeacher, ivId, { decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết', soBuoi: 0 });
+    cases.closeCaseOutcome(QL, caseId, { outcome: 'much_better', note: 'MT3 Listening lên 6.0, không còn sai dạng điền số' });
+  };
+
+  check('TR-10 · Id cha bị dùng lại: PA của Case C (em A) đã xoá, C xoá, Case mới của em B nhận lại id C → khôi phục PA 409, không gắn vào Case em B', () => thu(() => {
+    const cA = taoCase(moiEm());
+    const iv = themPa(cA);
+    const rPa = cases.xoaPa(QL, iv);
+    cases.xoaCase(QL, cA);
+    const cB = taoCase(moiEm());
+    if (cB !== cA) return;   // id không bị dùng lại — không có ca
+    assert(/khôi phục mục gốc trước/.test(chuLoi(() => kp.khoiPhucRac(QL, rPa.thungRacId))), 'PA phải 409 khi Case cha là bản ghi khác');
+    assert(!mot('SELECT 1 FROM case_interventions WHERE case_id = ?', cB), 'PA gắn nhầm vào Case em B');
+    assert(!kp.danhSachRac(QL).find((x: any) => x.id === rPa.thungRacId)?.khoiPhucDuoc, 'Đã xoá còn cho khôi phục');
+  }));
+
+  check('TR-11 · Bảng lá có dòng mới dùng lại id (Case mới + PA + Hành trình + chuông sau khi xoá) → Khôi phục vẫn được: id mới + ánh xạ khoá; dữ liệu mới giữ', () => thu(() => {
+    const cX = taoCase(moiEm());
+    const ivX = themPa(cX);
+    const demCon = (c: number) => ({ pa: hang('SELECT id FROM case_interventions WHERE case_id = ?', c).length,
+      hanhTrinh: hang(`SELECT id FROM journey_events WHERE ref_table = 'sos_cases' AND ref_id = ?`, c).length,
+      paHanhTrinh: hang(`SELECT j.id FROM journey_events j JOIN case_interventions i ON i.id = j.ref_id WHERE j.ref_table = 'case_interventions' AND i.case_id = ?`, c).length });
+    const truoc = demCon(cX);
+    const r = cases.xoaCase(QL, cX);
+    const cY = taoCase(moiEm());
+    themPa(cY);
+    const yTruoc = JSON.stringify(mot('SELECT * FROM sos_cases WHERE id = ?', cY));
+    const k = kp.khoiPhucRac(QL, r.thungRacId);
+    if (cY === cX) assert(k.doiTuongId !== cX, 'id trùng mà vẫn giữ id cũ');
+    assert(JSON.stringify(demCon(k.doiTuongId)) === JSON.stringify(truoc), `con của Case khôi phục ${JSON.stringify(demCon(k.doiTuongId))} ≠ ${JSON.stringify(truoc)}`);
+    assert(JSON.stringify(mot('SELECT * FROM sos_cases WHERE id = ?', cY)) === yTruoc && demCon(cY).pa === 1, 'Case mới bị đổi');
+    assert(mot('SELECT 1 FROM case_interventions WHERE id = ? OR case_id = ?', ivX, k.doiTuongId), 'PA không về');
+  }));
+
+  await checkAsync('TR-12 · Tệp dùng chung (chép sang vi phạm khác): hai vi phạm vào thùng rác, mục B quá hạn bị dọn → tệp GIỮ (mục A còn hạn); khôi phục A mở được tệp', async () => {
+    const kho = () => khoMod.khoTepHienTai(att.uploadsDir());
+    conn.exec('BEGIN IMMEDIATE');
+    let url = '';
+    try {
+      const sid = moiEm();
+      const v1 = viol.recordViolation(QL, { studentId: sid, category: 'homework', description: 'Không nộp bài Writing Task 2 buổi này' } as any) as any;
+      const v2 = viol.recordViolation(QL, { studentId: sid, category: 'homework', description: 'Không nộp bài Reading buổi này' } as any) as any;
+      const id1 = v1.id ?? v1.violation?.id, id2 = v2.id ?? v2.violation?.id;
+      const goc = await att.addFile(QL, { ownerType: 'violation', ownerId: id1, fileName: 'anh.jpg', data: Buffer.from('anh') });
+      att.chepTep(QL, { tuId: goc.id, ownerType: 'violation', ownerIds: [id2] });
+      url = mot('SELECT url FROM attachments WHERE id = ?', goc.id).url;
+      const r1 = viol.deleteViolation(QL, id1);
+      const r2 = viol.deleteViolation(QL, id2);
+      conn.prepare(`UPDATE thung_rac SET xoa_luc = '2000-01-01T00:00:00.000Z' WHERE id = ?`).run(r2.thungRacId);
+      rac.donThungRac();
+      await khoMod.choViecNenKhoTep();
+      assert(await kho().doc(url) !== null, 'tệp bị xoá khỏi kho dù mục A còn hạn');
+      kp.khoiPhucRac(QL, r1.thungRacId);
+      const row = mot(`SELECT id FROM attachments WHERE owner_type = 'violation' AND owner_id = ? AND url = ?`, id1, url);
+      assert(row && (await att.openAttachment(QL, row.id)).duLieu?.toString() === 'anh', 'khôi phục A không mở được tệp');
+    } finally { conn.exec('ROLLBACK'); if (url) await kho().xoa(url).catch(() => {}); }
+  });
+
+  check('TR-13 · Khôi phục PA khi Case đã Hoàn thành → 409 "Mở lại Case" (cùng chặn của Xoá PA), không đổi gì', () => thu(() => {
+    const c = taoCase(moiEm());
+    const iv1 = themPa(c);
+    const iv2 = themPa(c, { description: 'Tự học Listening — nghe chép thêm buổi tối' });
+    const r = cases.xoaPa(QL, iv2);
+    dongCase(c, iv1);
+    assert(/Mở lại Case/.test(chuLoi(() => kp.khoiPhucRac(QL, r.thungRacId))), 'phải chặn Case đã hoàn thành');
+    assert(!mot('SELECT 1 FROM case_interventions WHERE id = ?', iv2), 'PA đã về dù bị chặn');
+  }));
+
+  check('TR-14 · Dòng cần trả (sửa) không còn → 409 nói rõ, không khôi phục nửa chừng (UPDATE … changes = 0)', () => thu(() => {
+    const c = taoCase(moiEm());
+    const link = att.addLink(QL, { ownerType: 'sos_case', ownerId: c, url: 'https://example.com/tr14' });
+    const lid = link.id ?? mot(`SELECT id FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ? ORDER BY id DESC LIMIT 1`, c).id;
+    const ch = new rac.BoChup(conn);
+    ch.chupSua('attachments', 'id = ?', lid);
+    conn.prepare('DELETE FROM attachments WHERE id = ?').run(lid);
+    const id = rac.ghiThungRac(conn, { loai: 'tep', doiTuongId: lid, nhan: 'thử', nguoi: QL.userId, chup: ch });
+    assert(/đã thay đổi hoặc không còn/.test(chuLoi(() => rac.khoiPhucMuc(QL.userId, rac.docMucRac(id), 'attachments'))), 'phải 409');
+    assert(!mot('SELECT khoi_phuc_luc FROM thung_rac WHERE id = ?', id).khoi_phuc_luc, 'đánh dấu đã khôi phục');
   }));
 
   // ---------------------------------------------------------------- Q-RL2b · Xoá học viên

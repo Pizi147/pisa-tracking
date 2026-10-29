@@ -449,13 +449,15 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
   return tx(() => {
     const measureIds = (db().prepare('SELECT measure_id FROM measure_violations WHERE violation_id = ? ORDER BY measure_id').all(id) as any[])
       .map((r) => r.measure_id as number);
+    chup.ghiGoc('students', row.student_id);
     chup.chupXoa('attachments', `owner_type = 'violation' AND owner_id = ?`, id);
     const files = purgeAttachmentsOf('violation', id, p.userId, chup.tep);
     chup.chay('DELETE FROM measure_violations WHERE violation_id = ?', id);
     chup.chay('DELETE FROM violation_history WHERE violation_id = ?', id);
     chup.chay('DELETE FROM violations WHERE id = ?', id);
     chotHanXuLy([row.student_id]);
-    const thungRacId = ghiThungRac(db(), { loai: 'vi_pham', doiTuongId: id, nhan: `${row.student_code} · ${VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory]}`,
+    const tenHv = (db().prepare('SELECT full_name FROM students WHERE id = ?').get(row.student_id) as any)?.full_name;
+    const thungRacId = ghiThungRac(db(), { loai: 'vi_pham', doiTuongId: id, nhan: [VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory], tenHv, row.student_code].filter(Boolean).join(' · '),
       hocVienId: row.student_id, classId: row.class_id ?? null, nguoi: p.userId, chup });
     writeAudit({
       actorUserId: p.userId, action: 'violation.delete', entityType: 'violation', entityId: id,
