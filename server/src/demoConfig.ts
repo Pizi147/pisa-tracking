@@ -21,18 +21,19 @@ const DEFAULTS: Record<string, string> = {
  * mỗi lần như cũ — `setConfig` đi qua `run()` nên tự làm mất bộ nhớ, không cần lo đọc phải giá trị cũ.
  */
 export function getConfig(key: string): string {
-  return nhoThamChieu('cfg:' + key, () => {
-    // Database có thể chưa được seed (chưa có bảng nào). Khi đó dùng giá trị mặc định
-    // thay vì ném lỗi, để ứng dụng vẫn mở được và hiển thị hướng dẫn tạo dữ liệu.
-    try {
+  // Database có thể chưa được seed (chưa có bảng nào). Khi đó dùng giá trị mặc định
+  // thay vì ném lỗi, để ứng dụng vẫn mở được và hiển thị hướng dẫn tạo dữ liệu.
+  // TL-NEN: bắt NGOÀI `nhoThamChieu` — giá trị mặc định khi lỗi (cả Turso lỗi tạm) không bị nhớ theo tiến trình.
+  try {
+    return nhoThamChieu('cfg:' + key, () => {
       const row = db().prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as
         | { value: string }
         | undefined;
       return row?.value ?? DEFAULTS[key] ?? '';
-    } catch {
-      return DEFAULTS[key] ?? '';
-    }
-  });
+    });
+  } catch {
+    return DEFAULTS[key] ?? '';
+  }
 }
 
 export function setConfig(key: string, value: string) {

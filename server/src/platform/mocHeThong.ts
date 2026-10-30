@@ -77,15 +77,15 @@ export function quetTheoMoc(khoa: KhoaQuet, homNay: string, fn: () => void): boo
     const conn = db();
     /*
      * `RETURNING` qua `all()`, không `run()`: câu nhận lượt chỉ chạm `moc_he_thong` — không xoá bộ nhớ request, không tắt nhớ bảng tham chiếu.
-     * Không qua chờ khoá của `run()` → khoá bận thì bỏ lượt này (GET kế thử lại), trang vẫn mở.
+     * Nhận lượt lỗi (khoá bận, Hrana…) → VẪN quét như trước PR (+ log): không bao giờ tắt quét âm thầm.
      */
     let r: unknown[];
     try {
       r = conn.prepare('UPDATE moc_he_thong SET luc = ?, ngay = ? WHERE khoa = ? AND (luc IS NULL OR ngay IS NOT ? OR luc < ?) RETURNING khoa')
         .all(new Date(bayGio).toISOString(), homNay, khoa, homNay, new Date(bayGio - QUET_DOC_MS).toISOString()) as unknown[];
     } catch (e) {
-      console.error('[moc-quet] không nhận được lượt quét', e);
-      return false;
+      console.error('[moc-quet] không nhận được lượt quét — vẫn quét', e);
+      r = [khoa];
     }
     if (r.length !== 1) return false;
     try { fn(); } catch (e) {

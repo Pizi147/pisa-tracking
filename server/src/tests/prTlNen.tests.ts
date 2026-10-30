@@ -23,6 +23,7 @@ export async function runPrTlNenTests(t: any) {
   const { moBanGoc } = await import('./dbGoc.ts');
   const { addDays } = await import('../util.ts');
   const week: any = await import('../platform/week.ts');
+  const skill: any = await import('../fasttrack/skillSchedule.ts');
 
   const c = () => db() as any;
   const soThamChieu = () => (c().prepare(`SELECT so FROM moc_he_thong WHERE khoa = 'tham-chieu'`).get() as any)?.so as number;
@@ -198,6 +199,44 @@ export async function runPrTlNenTests(t: any) {
     assert(sau.some((s) => /FROM programmes p/.test(s)), 'sau ghi vẫn dùng nhớ tiến trình');
   });
 
+  /** Cho `prepare` ném lỗi với câu khớp `re` trong lúc `fn` chạy (giả Turso lỗi tạm). */
+  const loiCau = <T,>(re: RegExp, fn: () => T): T => {
+    const k = c(); const goc = k.prepare;
+    k.prepare = function (this: unknown, sql: string) { if (re.test(sql)) throw new Error('giả lỗi Turso'); return goc.call(this, sql); };
+    try { return fn(); } finally { delete k.prepare; }
+  };
+
+  check('N1-h · cách chấm theo lớp trong request ghi: Map khoá `so` — chương trình đổi ở "tiến trình khác" (không gọi clearScoringModeCache) → đọc lại', () => {
+    const ss: any = skill;
+    const r = c().prepare(`SELECT c.id, p.code, p.scoring_mode FROM classes c JOIN programmes p ON p.code = c.programme_code LIMIT 1`).get() as any;
+    const cheDo = () => ngu.chayTrongRequest('POST', () => { ngu.datMoc({ thamChieu: soThamChieu(), quet: {} }); return ss.scoringModeOf({ class_id: r.id, kind: 'mt' }); });
+    const truoc = cheDo();
+    c().exec('BEGIN IMMEDIATE');
+    try {
+      c().prepare('UPDATE programmes SET scoring_mode = ? WHERE code = ?').run(r.scoring_mode === 'ratio' ? 'ielts_band' : 'ratio', r.code);
+      const sau = cheDo();
+      assert(sau !== truoc, `vẫn cách chấm cũ: ${truoc} → ${sau}`);
+    } finally { c().exec('ROLLBACK'); }
+    assert(cheDo() === truoc, 'sau ROLLBACK không về cách chấm cũ');
+  });
+
+  check('N1-i · getConfig khi đọc lỗi tạm: trả mặc định nhưng KHÔNG nhớ theo tiến trình — lần kế đọc đúng', () => {
+    const m = { thamChieu: soThamChieu(), quet: {} };
+    const doc = () => ngu.chayTrongRequest('GET', () => { ngu.datMoc(m); return getConfig('scenario_mode'); });
+    const that = c().prepare(`SELECT value FROM demo_config WHERE key = 'scenario_mode'`).get() as any;
+    c().prepare(`INSERT INTO demo_config (key, value, updated_at) VALUES ('scenario_mode', 'loading', ?) ON CONFLICT(key) DO UPDATE SET value = 'loading'`).run(new Date().toISOString());
+    try {
+      const m2 = { thamChieu: soThamChieu(), quet: {} };
+      const loi = loiCau(/FROM demo_config WHERE key = \?/, () => ngu.chayTrongRequest('GET', () => { ngu.datMoc(m2); return getConfig('scenario_mode'); }));
+      assert(loi === 'normal', `lỗi phải trả mặc định: ${loi}`);
+      Object.assign(m, m2);
+      assert(doc() === 'loading', `mặc định lúc lỗi bị nhớ: ${doc()}`);
+    } finally {
+      if (that) c().prepare(`UPDATE demo_config SET value = ? WHERE key = 'scenario_mode'`).run(that.value);
+      else c().prepare(`DELETE FROM demo_config WHERE key = 'scenario_mode'`).run();
+    }
+  });
+
   // ---------------------------------------------------------------- N2
   await checkAsync('N2-a · mốc còn hạn, cùng ngày → GET /my-work QL: 0 câu quét', async () => {
     await voiMayChu(async (goi) => {
@@ -279,6 +318,16 @@ export async function runPrTlNenTests(t: any) {
     try { ngu.chayTrongRequest('GET', () => { ngu.datMoc(m); moc.quetTheoMoc('quet:yeu-cau', TODAY, () => { throw new Error('hong'); }); }); } catch (e: any) { loi = e.message; }
     const q = c().prepare(`SELECT luc FROM moc_he_thong WHERE khoa = 'quet:yeu-cau'`).get() as any;
     assert(loi === 'hong' && q.luc === null, `${loi} · ${q.luc}`);
+  });
+
+  check('N2-k · nhận lượt lỗi (giả lỗi Turso ở câu UPDATE … RETURNING) → VẪN quét, không tắt quét', () => {
+    datMocQuet(null);
+    const m = moc.docMoc(JSON.stringify({ 'quet:lenh': [null, null, null] }));
+    let n = 0;
+    const loi = console.error; console.error = () => {};
+    try { loiCau(/^UPDATE moc_he_thong SET luc = \?, ngay = \?/, () => ngu.chayTrongRequest('GET', () => { ngu.datMoc(m); moc.quetTheoMoc('quet:lenh', TODAY, () => { n++; }); })); }
+    finally { console.error = loi; }
+    assert(n === 1, `quét ${n} lần`);
   });
 
   check('N2-g2 · thiếu dòng mốc của khoá → vẫn quét mỗi lần (không tắt hẳn lượt quét); trongBoNho trong POST giữ mốc phiên', () => {
