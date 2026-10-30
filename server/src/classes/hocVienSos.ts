@@ -8,6 +8,7 @@
 import { db, theoLo } from '../db.ts';
 import {
   ATTEMPT_KIND_SHORT, NHOM_THEO_COT, chipSosTuKetQua, PERMISSIONS, tenPaGon, outcomeLabelFor, vaiXemHocVien, chuanHoaMaLop,
+  trangThaiLichThi,
   type AttemptKind, type LienHe, type NhomXuLy, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -23,6 +24,7 @@ import { phamViTrang } from './hocVienLop.ts';
 import { standingFor } from '../students/standing.ts';
 import { diemTuStanding } from '../worklist/diemDong.ts';
 import { sauThiCuaEm } from '../loTrinh/thiThat.ts';
+import { examPlanOf } from '../fasttrack/cycles.ts';
 
 export type CaseTomTat = {
   id: number; topic: string | null; kyNang: string | null;
@@ -184,9 +186,18 @@ export function panelMotEm(p: Principal, studentId: number) {
   const cases = [...tt.values()].sort((a, b) => Number(a.done) - Number(b.done) || (b.attemptNo ?? 0) - (a.attemptNo ?? 0) || b.id - a.id);
   const st = standingFor([studentId]).get(studentId);
   const chip = st ? chipSosTuKetQua(st) : null;
+  /* PANEL-RIENG (B5, mockup `.em-dau .gt`): hàng Lớp · Target · TVV · Thi — lộ trình mới nhất của em (+1 câu, 1 dòng). Lịch thi cùng hàm đầu hồ sơ (`trangThaiLichThi`). */
+  const lt = db().prepare(
+    `SELECT c.target_score, c.khong_cam_ket, c.exam_date, c.exam_month, c.exam_period_id, c.thi_that_ngay, pr.code AS exam_week_code, pr.week_start AS exam_week_start
+       FROM learning_cycles c LEFT JOIN report_periods pr ON pr.id = c.exam_period_id
+      WHERE c.student_id = ? ORDER BY (c.status = 'active') DESC, c.seq DESC LIMIT 1`,
+  ).get(studentId) as any;
+  const lich = lt ? trangThaiLichThi(lt, examPlanOf(lt), demoToday()) : null;
   return {
     em: { id: s.id as number, ten: s.full_name as string, ma: s.student_code as string, lop: s.lop_id ? { id: s.lop_id as number, code: s.lop_code as string, ft: !!s.is_fast_track } : null,
-      tvv: em.tvv, lienHe: em.lienHe },
+      tvv: em.tvv, lienHe: em.lienHe,
+      target: lt ? (lt.target_score != null ? `${Number(lt.target_score).toFixed(1)}${lt.khong_cam_ket ? ' KCK' : ''}` : lt.khong_cam_ket ? 'KCK' : null) : null,
+      lichThi: lich && lich.trangThai !== 'chua-co' ? lich : null },
     /* Dòng 2 đầu panel: lượt gần nhất · SOS (không mã HV — panel v3 "Đã lược bỏ"). PANEL-MC (B5): + tạm, kỹ năng hụt, số cho hộp "Vì sao SOS" (CÙNG `chipSosTuKetQua` của bảng). */
     luot: st ? { nhan: st.attemptLabel, sosLevel: st.sosLevel ?? null, tam: st.provisional, kyNang: chip?.kyNang ?? [], soLieu: chip?.soLieu ?? [] } : null,
     /* PANEL-MC (B5): dòng điểm của lượt gần nhất (`standingFor` đã gọi — 0 câu). */

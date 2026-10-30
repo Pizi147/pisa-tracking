@@ -716,7 +716,9 @@
   }
   /* PANEL-V10 (`thiet-ke/v10/panel-thong-tin.html` `.dd`, chủ SP 30/10): MỘT mẫu dòng điểm HV — lượt · 4 kỹ năng cột 64 px thẳng hàng · Overall mép phải.
      ✓ / ✗ trước số (không ▲ ▼ ở điểm); đạt và hụt cùng màu ô Overall (`text-kq-bang` / `text-kq-duoi`, như `DiemKq`). 375: hai hàng, 4 cột chia đều. */
-  .dd { display: grid; grid-template-columns: 132px repeat(4, 64px) minmax(0, 1fr); align-items: baseline; column-gap: 4px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .dd { --so-kn: 4; --rong-kn: 64px; --rong-lu: 132px; display: grid; grid-template-columns: var(--rong-lu) repeat(var(--so-kn), var(--rong-kn)) minmax(0, 1fr); align-items: baseline; column-gap: 4px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  /* Lớp thường (%): "G+V ✗ 44 %" cần ~80 px — PANEL-RIENG (B7) đo ô tràn đè nhãn môn kế ở 64 px. */
+  .dd.pt { --rong-kn: 84px; }
   .dd .lu { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; font-size: 13px; font-weight: 500; color: var(--text-dim); }
   .dd .tam-chu { border: 1px dashed var(--line-strong); border-radius: 4px; padding: 0 5px; font-size: 12px; line-height: 18px; color: var(--text-dim); }
   .dd .k { white-space: nowrap; color: var(--text-dim); }
@@ -729,10 +731,15 @@
   .dd .ov { justify-self: end; white-space: nowrap; font-size: 13px; font-weight: 500; color: var(--text-faint); }
   .dd .ov b { margin: 0 2px 0 4px; font-size: 14px; font-weight: 700; }
   @media (max-width: 639px) {
-    .dd { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 2px; }
-    .dd .lu { grid-column: 1 / 3; grid-row: 1; }
-    .dd .ov { grid-column: 3 / 5; grid-row: 1; }
+    .dd { grid-template-columns: repeat(var(--so-kn), minmax(0, 1fr)); row-gap: 2px; }
+    .dd .lu { grid-column: 1 / span 2; grid-row: 1; }
+    .dd .ov { grid-column: 3 / -1; grid-row: 1; }
     .dd .k { grid-row: 2; }
+    /* % lớp thường ("G+V ✗ 44 %" ~80 px) không vừa 4 cột / 300 px: lượt │ Tổng, rồi môn 2 × 2. */
+    .dd.pt { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dd.pt .lu { grid-column: 1; }
+    .dd.pt .ov { grid-column: 2; }
+    .dd.pt .k { grid-row: auto; }
   }
   /* Chip xu hướng (Tiến bộ kỹ năng · PA cải thiện) — ▲ ▼ CHỈ ở đây (tiến độ so lượt trước), ký hiệu luôn đi kèm chữ. */
   .xh { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 3px; min-width: 92px; height: 22px; padding: 0 7px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface); font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; color: var(--text-dim); }

@@ -25,7 +25,7 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     try { var tat = doCau(fn); } finally { metrics.diemHvKhiKiem.tat = false; }
     return { tat, bat: doCau(fn) };
   };
-  const boMoi = (row: any) => { const { diemHv: _a, nguoi: _b, han: _c, title: _d, ...cu } = row; return cu; };
+  const boMoi = (row: any) => { const { diemHv: _a, nguoi: _b, han: _c, title: _d, chuaPhanCong: _e, ...cu } = row; return cu; };   // PANEL-RIENG: + chuaPhanCong
 
   check('M1 · dauDiem / nhanDocDiem: ✓ / ✗ / không ký hiệu; câu đọc có điểm + mốc', () => {
     assert(d.dauDiem(true) === '✓' && d.dauDiem(false) === '✗' && d.dauDiem(null) === null, 'dauDiem sai');

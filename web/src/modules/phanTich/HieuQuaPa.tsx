@@ -7,6 +7,7 @@ import { CHIP_SOS, Nhan, lopSos } from '../../ui/Nhan.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { DINH_TRAI, DaiChiSo, DauThe, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
   NGUONG_IT_DU_LIEU, nhanKhoang, rateView, type DongHieuQuaPa, type HieuQuaPaKetQua,
@@ -138,8 +139,10 @@ export function HieuQuaPa(props: PhamViPhanTich) {
   const tongPa = data ? data.gvThem.tomTat.paCoKetQua + data.quyChe.tomTat.paCoKetQua : 0;
   const tongCt = data ? data.gvThem.tomTat.caiThien + data.quyChe.tomTat.caiThien : 0;
   const pctCt = rateView(tongCt, tongPa);
-  const chuaTinh = (giaTri: number, dong: string, cot: string, chu: string) => (
-    <span><b className="mr-1 text-[15px] font-bold tabular-nums text-[color:var(--text)]"><OSo giaTri={giaTri} nguon={nguon(dong, cot)} tieuDe={chu} /></b>{chu}</span>
+  const chuaTinh = (giaTri: number, dong: string, cot: string, chu: string, giaiThich?: string) => (
+    <span className="inline-flex flex-wrap items-center gap-x-1.5"><span><b className="mr-1 text-[15px] font-bold tabular-nums text-[color:var(--text)]"><OSo giaTri={giaTri} nguon={nguon(dong, cot)} tieuDe={chu} /></b>{chu}</span>
+      {/* PANEL-RIENG (B6): ⓘ nói vì sao không tính. */}
+      {giaiThich && <NutLuat label={giaiThich}>{giaiThich}</NutLuat>}</span>
   );
   const cachDoc = (
     <>
@@ -174,7 +177,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                 ten: t('Chưa tính'), rong2: true,
                 gt: (
                   <span className="mt-1 grid w-full gap-1 text-[13px] font-normal leading-normal text-[color:var(--text-dim)] [font-family:inherit]">
-                    {chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', 'PA chờ kết quả')}
+                    {chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', t('PA chưa có kết quả'), t('Không tính vào bảng hiệu quả tới khi có kết quả'))}
                     {chuaTinh(data.caseChuaPhanLoai, 'case-chua-phan-loai', 'case', 'Case chưa chọn nhóm nguyên nhân')}
                     <span title="PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào">
                       {chuaTinh(data.chuaRoNguon, 'chua-ro-nguon', 'pa', 'PA chưa rõ nơi học lúc làm PA')}

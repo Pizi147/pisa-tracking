@@ -12,7 +12,9 @@ import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OTarget, OTuanBatDau, type XemChuyenLopData } from '../students/ChuyenLopPanel.tsx';
 import { KHOI_VANG } from './chuyenLopChung.tsx';
-import { canHoiTarget, chuTyLeXetLai, docOTarget, kyHieuLop, laChuyenNgay, ngay, tenBacKe, tuanChonDuoc, tuanLich, type ProgrammeCode } from '@shared/domain/index.ts';
+import { NutLuat } from '../../ui/NutLuat.tsx';
+import { DongDiem } from '../../ui/SoLieu.tsx';
+import { RATIO_PASS_THRESHOLD, canHoiTarget, chuTyLeXetLai, docOTarget, kyHieuLop, laChuyenNgay, ngay, tenBacKe, tuanChonDuoc, tuanLich, type DiemHv, type ProgrammeCode } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 type Quyet = 'tiep_tuc' | 'hoc_lai' | 'len' | 'dung';
@@ -222,13 +224,18 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
 
 const chungCua = (ds: (Quyet | null)[]): Quyet | null => (ds.length && ds.every((x) => x === ds[0]) ? ds[0] : null);
 
+/** Quyết định đang soạn của MỘT em: "Học lại BE → MB BE 14 từ W3 NOV" — chân "Khi lưu:" gộp theo nhóm, dòng vàng của thẻ (PANEL-RIENG B7) dùng riêng. */
+function chuQuyet(e: EmXetLai, c: Chon, lopChu: string | null, homNay: string | null): string {
+  return c.quyet === 'tiep_tuc' ? tiepTucChu(e)
+    : c.quyet === 'dung' ? (c.trangThai === 'finished' ? t('Kết thúc học') : t('Tạm dừng'))
+      : `${chuyenChu(e)}${c.lop ? ` → ${lopChu ?? ''}` : ''}${c.tuan ? ` ${homNay && laChuyenNgay(c.tuan, homNay) ? t('ngay hôm nay') : t('từ {tuan}', { tuan: tuanLich(c.tuan, homNay) })}` : ''}`;
+}
+
 /** "2 em Tiếp tục BE · 1 em Học lại → MB FOU 14 từ W2 OCT" — dòng chân "Khi lưu:" (mockup khung 3). */
 function tomTatLuu(ds: { e: EmXetLai; c: Chon }[], d: Pick<DuLieu, 'lopHocLai' | 'lopLen'>, homNay: string | null): string {
   const nhom = new Map<string, number>();
   for (const { e, c } of ds) {
-    const k = c.quyet === 'tiep_tuc' ? tiepTucChu(e)
-      : c.quyet === 'dung' ? (c.trangThai === 'finished' ? t('Kết thúc học') : t('Tạm dừng'))
-        : `${chuyenChu(e)}${c.lop ? ` → ${lopCua(d, e).find((l) => l.id === c.lop)?.code ?? ''}` : ''}${c.tuan ? ` ${homNay && laChuyenNgay(c.tuan, homNay) ? t('ngay hôm nay') : t('từ {tuan}', { tuan: tuanLich(c.tuan, homNay) })}` : ''}`;
+    const k = chuQuyet(e, c, lopCua(d, e).find((l) => l.id === c.lop)?.code ?? null, homNay);
     nhom.set(k, (nhom.get(k) ?? 0) + 1);
   }
   return [...nhom].map(([k, n]) => t('{n} em {viec}', { n, viec: k })).join(' · ');
@@ -284,15 +291,10 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
         {chiXem && <span className="ml-auto flex items-center gap-1.5 text-[13px] text-slate-400">{t('QL quyết')} · <ChipHan loai="viec-van-hanh" han={e.han} /></span>}
         {!chiXem && xong && !daLuu?.daChuyen && <button type="button" className="btn btn-sm btn-ghost ml-auto min-h-[44px] sm:min-h-0" onClick={onSua} disabled={busy}>{t('Sửa')}</button>}
       </div>
+      {/* PANEL-RIENG (B7, mockup `.xl-em`): dòng điểm Final lớp thường (% từng môn ✓ / ✗ so ngưỡng, Tổng / ngưỡng) — lý do xét lại thấy ngay. */}
+      {!xong && e.final.tyLe !== null && <div className="px-3.5 pb-2 pl-[42px] max-sm:pl-3.5"><DongDiem d={diemFinal(e)} rongLuot={64} /></div>}
       {!xong && (
         <dl className="m-0 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 px-3.5 pb-2.5 pl-[42px] max-sm:grid-cols-1 max-sm:pl-3.5">
-          {e.final.tyLe !== null && (
-            <Dong n={t('Final {ct}', { ct })}>
-              <b className={`tabular-nums ${e.final.tyLe < 0.7 ? 'text-bad' : ''}`}>{e.final.tyLe < 0.7 && <span aria-hidden>✗ </span>}{chuTyLeXetLai(e.final.tyLe)}</b>
-              {' · '}<span className="tabular-nums">{e.final.mon.map((m, i) => (
-                <span key={m.mon} className={m.dat ? '' : 'text-bad'}>{i > 0 && ' · '}{!m.dat && '✗ '}{m.mon} {m.pt ?? '—'}</span>))}</span>
-            </Dong>
-          )}
           {e.xetLaiTruoc && <Dong n={t('Đã xét lại')}>{e.xetLaiTruoc.chu ?? '—'} · {e.xetLaiTruoc.tuDong ? t('tự giữ') : e.xetLaiTruoc.nguoi ? `QL ${tenGoi(e.xetLaiTruoc.nguoi)}` : ''} {ngay(e.xetLaiTruoc.luc.slice(0, 10), homNay)}</Dong>}
           <Dong n={t('Đã chốt')}>{[e.daChot.chu, nguoiChot && `${nguoiChot} ${ngay(e.daChot.luc, homNay)}`].filter(Boolean).join(' · ')}{e.lyDo.ma === 'b' ? ` ${t('(chưa có Final)')}` : ''}{!chiXem && e.daChot.lyDo && <> · <span className="text-slate-300">“{e.daChot.lyDo}”</span></>}</Dong>
           {!chiXem && e.goiY && <Dong n={t('Gợi ý')}>{e.goiY}</Dong>}
@@ -311,6 +313,14 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
     </article>
   );
 }
+
+/** Final của thẻ em → mẫu dòng điểm chung (`DongDiem`, 0 câu — dữ liệu panel đã có). Tổng làm tròn XUỐNG như `chuTyLeXetLai` (0.6999 vẫn ✗ 69 %). */
+const diemFinal = (e: EmXetLai): DiemHv => ({
+  luot: 'Final', tuan: null, tam: false, donVi: '%',
+  kn: e.final.mon.map((m) => ({ k: m.mon, v: m.pt, dat: m.pt == null ? null : m.dat })),
+  overall: e.final.tyLe === null ? null : Math.floor(e.final.tyLe * 100 + 1e-9),
+  soVoi: { nhan: 'ngưỡng', v: Math.round(RATIO_PASS_THRESHOLD * 100) },
+});
 
 /** "Nguyễn Khánh Vy" → "Vy" (mockup: "QL Vy 17/09", "TVV Lan"). */
 const tenGoi = (ten: string) => ten.trim().split(/\s+/).pop() ?? ten;
@@ -359,7 +369,11 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
             <span className="min-w-0 flex-1"><OTuanBatDau tuanChon={tuanChon} tuan={chon.tuan} setTuan={(v) => onChon({ ...chon, tuan: v })} homNay={homNay} oProps={{ 'aria-label': t('Tuần bắt đầu') }} /></span>
           </div>
           {chon.lop && (
-            <div className="rounded-lg border p-3" style={KHOI_VANG} role="note">
+            /* PANEL-RIENG (B7, mockup `.khi-luu`): MỘT dòng vàng "Khi lưu: {quyết định của em}" — hậu quả lớn vẫn trước mắt; ⓘ mở đủ 4 ý (chữ giữ nguyên). */
+            <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-slate-200" style={KHOI_VANG} role="note">
+              <b className="whitespace-nowrap font-bold">{t('Khi lưu:')}</b>
+              <span className="min-w-0 flex-1">{chuQuyet(e, chon, lopChu, homNay)}</span>
+              <NutLuat phai label={t('Khi lưu, web sẽ')}>
               <p className="m-0 mb-1 text-xs font-bold text-slate-200">{t('Khi lưu, web sẽ')}</p>
               <ul className="m-0 list-disc space-y-0.5 pl-5 text-[13px] text-slate-200">
                 {e.daThiHanh
@@ -370,6 +384,7 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
                 {e.daThiHanh && <li>{t('Phiếu bàn giao GVCN {lop}', { lop: e.lopHienTai.code })}</li>}
                 <li>{t('Hành trình: “QL xét lại: {viec}”', { viec: chuyenChu(e) })}</li>
               </ul>
+              </NutLuat>
             </div>
           )}
         </div>

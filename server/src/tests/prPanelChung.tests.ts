@@ -39,8 +39,9 @@ export async function runPrPanelChungTests(t: YThucTestKit) {
   });
 
   check('C1 · index.css có khối PANEL-V10: lưới 132px repeat(4, 64px), 375 hai hàng, chip .xh', () => {
-    assert(/\.dd \{[^}]*grid-template-columns: 132px repeat\(4, 64px\) minmax\(0, 1fr\)/.test(css), 'thiếu lưới .dd');
-    assert(/@media \(max-width: 639px\) \{\s*\.dd \{ grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/.test(css), 'thiếu .dd 375');
+    /* PANEL-RIENG: số cột / bề rộng qua biến (mặc định 4 × 64 px; lớp thường % 88 px). */
+    assert(/\.dd \{[^}]*--so-kn: 4; --rong-kn: 64px; --rong-lu: 132px;[^}]*grid-template-columns: var\(--rong-lu\) repeat\(var\(--so-kn\), var\(--rong-kn\)\) minmax\(0, 1fr\)/.test(css), 'thiếu lưới .dd');
+    assert(/@media \(max-width: 639px\) \{\s*\.dd \{ grid-template-columns: repeat\(var\(--so-kn\), minmax\(0, 1fr\)\)/.test(css), 'thiếu .dd 375');
     assert(/\.xh \{/.test(css) && /\.xh\.tang/.test(css) && /\.xh\.giam/.test(css), 'thiếu .xh');
   });
 

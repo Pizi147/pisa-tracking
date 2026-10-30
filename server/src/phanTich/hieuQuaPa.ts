@@ -238,7 +238,7 @@ export function oHieuQuaPa(p: Principal, f: FilterHieuQuaPa & { dong: string; co
   const sx = (xs: Iterable<number>) => [...xs].sort((a, b) => a - b);
   if (f.dong === 'chua-ghi-ket-qua') {
     const ids = sx(r.chuaGhiIds);
-    return { n: ids.length, tieuDe: `${ids.length} PA chờ kết quả`, rows: rowsFor('phuong-an', ids, PA_CHUA_CO_KET_QUA, p, true) };   // PANEL-MC (B6): kèm việc Ghi kết quả
+    return { n: ids.length, tieuDe: `${ids.length} PA chưa có kết quả`, rows: rowsFor('phuong-an', ids, PA_CHUA_CO_KET_QUA, p, true) };   // PANEL-MC (B6): kèm việc Ghi kết quả
   }
   if (f.dong === 'case-chua-phan-loai') {
     const ids = sx(r.caseChuaPhanLoai);

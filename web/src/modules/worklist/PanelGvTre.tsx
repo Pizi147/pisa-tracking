@@ -5,6 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { XemCha, useThamSoUrl, useXem } from '../../lib/quayLai.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CHIP_VUONG, ChipHan } from '../../ui/Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -79,11 +80,20 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
   } else {
     noiDung = (
       <KhungPanel tieuDe={tieuDe} loai={cauHinh.loai} onDong={onDong}
-        dau={{ dong2: data ? [
+        dau={{
+          /* PANEL-RIENG (XM-1, mockup v10 `.pn-tieu`): số bài ngay sau tên + ⓘ Cách tính; dòng 2 chỉ còn phạm vi / bối cảnh. */
+          tieu: (
+            <>
+              <span className="min-w-0">{tieuDe}</span>
+              {data && <span className="whitespace-nowrap"><span className="tabular-nums">{data.soBai}</span> <span className="text-sm font-medium text-slate-400">{t('bài')}</span></span>}
+              <NutLuat label={t('Cách tính')}>{cauHinh.cachTinh} {homNay && t('Dữ liệu đến {ngay}.', { ngay: ngan(homNay) })}</NutLuat>
+            </>
+          ),
+          dong2: data ? [
           /* V11: phạm vi + tuần dữ liệu trước tổng. */
           [data.chiNhanh ?? t('Mọi chi nhánh'), homNay ? tuanLich(homNay) : null].filter(Boolean).join(' · '),
           motGv && motGv.gvId > 0 ? <Link className="font-semibold text-slate-100 no-underline hover:underline" to={`/giao-vien/${motGv.gvId}`}>{t('Hồ sơ GV')}</Link> : null,
-          [cauHinh.theoGv ? t('{n} GV', { n: data.soGv }) : null, t('{n} bài', { n: data.soBai })].filter(Boolean).join(' · '),
+          cauHinh.theoGv ? t('{n} GV', { n: data.soGv }) : null,
           data.soBaiChuaCoGv ? t('+ {n} bài chưa có GV', { n: data.soBaiChuaCoGv }) : null,
           soDu ? t('{n} dòng vừa đủ', { n: soDu }) : null,
         ] : [] }}>
@@ -96,10 +106,6 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
             {t('Speaking chấm chéo chưa ai nhận: {n} bài — chờ chấm, không tính quá hạn.', { n: data.choCham })}
           </p>
         )}
-        <details className="mt-4 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          <summary className="min-h-[44px] cursor-pointer text-[13px] font-semibold text-[color:var(--accent)] sm:min-h-0">{t('Cách tính')}</summary>
-          <p className="m-0 mt-2 max-w-[60ch] text-xs leading-relaxed text-slate-400">{cauHinh.cachTinh} {homNay && t('Dữ liệu đến {ngay}.', { ngay: ngan(homNay) })}</p>
-        </details>
       </KhungPanel>
     );
   }
