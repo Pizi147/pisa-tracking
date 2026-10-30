@@ -11,7 +11,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillShort } from '../../lib/format.ts';
 import {
-  chuMiniKn, datKv, dsThangLichThi, nhanThang, thangTrongKhoang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, xepLichThi,
+  chuMiniKn, datKv, dauDiem, dsThangLichThi, nhanThang, thangTrongKhoang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, xepLichThi,
   type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -72,15 +72,16 @@ export const kqOverall = (ovr: number | null | undefined, kv: number | null | un
  */
 export function MiniKn({ kn, kv, kck }: { kn: Kn; kv: number | null; kck?: boolean }) {
   return (
-    <span className="mt-1 grid w-max grid-cols-[46px_46px_54px_54px_46px] gap-x-1 text-[13px] leading-5 tabular-nums text-slate-100">
+    <span className="mt-1 grid w-max grid-cols-[44px_44px_54px_54px_44px] gap-x-1.5 text-[13px] leading-5 tabular-nums text-slate-100">
       {KN_MINI.map((k) => {
-        const dat = datKv(kn[k], kv, kck);
+        const v = kn[k];
+        const dat = datKv(v, kv, kck);
+        /* Ký hiệu sát số (cột hẹp); trình đọc màn đọc chữ đủ "W1 ✗ 5.0". */
         return (
-          <span key={k} className="whitespace-nowrap" title={dat === false ? t('Dưới kỳ vọng') : undefined}>
+          <span key={k} className="whitespace-nowrap" title={dat === false ? t('Dưới kỳ vọng') : undefined} role="img" aria-label={`${k} ${chuMiniKn(v, kv, kck)}${dat === false ? `, ${t('Dưới kỳ vọng')}` : ''}`}>
             <span className="mr-0.5 font-medium text-faint">{k}</span>
-            {kn[k] == null ? <span className="font-normal text-faint">—</span>
-              : <span className={dat === false ? `font-bold ${lopKq('duoi')}` : dat ? `font-medium ${lopKq('bang')}` : 'font-medium'}>{chuMiniKn(kn[k], kv, kck)}</span>}
-            {dat === false && <span className="sr-only"> {t('Dưới kỳ vọng')}</span>}
+            {v == null ? <span className="font-normal text-faint">—</span>
+              : <span className={dat === false ? `font-bold ${lopKq('duoi')}` : dat ? `font-medium ${lopKq('bang')}` : 'font-medium'}>{dauDiem(dat)}{v.toFixed(1)}</span>}
           </span>
         );
       })}

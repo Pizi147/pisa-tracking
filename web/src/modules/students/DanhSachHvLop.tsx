@@ -132,10 +132,10 @@ function OMtGan({ g }: { g: HangHv }) {
 const COT_HV: CotBang[] = [
   { key: 'ten', nhan: t('Học viên'), kieu: 'ten' },
   { key: 'lo', nhan: t('Lộ trình'), kieu: 'chu', rong: 104 },
-  { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 284 },
+  { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 300 },
   { key: 'ho', nhan: t('Hỗ trợ'), kieu: 'chu', rong: 140 },
   { key: 'y', nhan: t('Ý thức'), kieu: 'chu', rong: 112 },
-  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 180 },
+  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 164 },
   { key: 'nut', nhan: '', kieu: 'nut' },
   /* HV-LOP-VIEC (PANEL-V10 #hvl, T8): Việc 300 px cố định ở mép phải, ⋯ ngay trước; Học viên giãn. */
   { key: 'viec', nhan: t('Việc'), kieu: 'viec', rong: 300 },
