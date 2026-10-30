@@ -6,13 +6,21 @@ type Kq = 'vuot' | 'bang' | 'duoi' | null;
 const chuKq = (kq: 'vuot' | 'bang' | 'duoi') => (kq === 'duoi' ? t('Dưới kỳ vọng') : kq === 'bang' ? t('Bằng kỳ vọng') : t('Vượt kỳ vọng'));
 
 /**
+ * PANEL-V10 (chủ SP 30/10 + PTA Q1): `chiToHut` — điểm là ĐẠT / KHÔNG ĐẠT như ô Overall: vượt và bằng cùng "đạt" (✓, màu Overall đạt `text-kq-bang`),
+ * dưới = ✗ màu `text-kq-duoi`. Không chiToHut: ba mức vượt / bằng / dưới như cũ (C05).
+ */
+export function lopODiem(kq: Kq, chiToHut?: boolean): string {
+  return chiToHut && kq === 'vuot' ? lopKq('bang') : lopKq(kq);
+}
+
+/**
  * Ô ĐIỂM MỘT MẪU (BANG-0, 04 mục 7) — thay 7+ dáng ô điểm (BANG-1 chuyển 29 nơi). Tô CHÍNH con số + ✓ / ✗ đứng TRƯỚC (màu `lopKq`);
  * chỗ ký hiệu giữ cả khi không có ký hiệu để số thẳng cột. KCK dưới kỳ vọng = trung tính + chữ "KCK" (13/10).
  * - `doc` 56 px · `sua` hộp 64 × 32 (trống = viền đứt; dấu lưu góc trên phải, xám; lỗi = viền đỏ + "Lưu lại") ·
  *   `ti-le` "✗ 17/25" (căn theo "/", mẫu số khác tổng của cột = chữ vàng + "đề khác") · `lon` 28 px (hồ sơ Mock).
  * - Một dòng phụ 12 px (`phu`) dưới ô — ưu tiên "thiếu nhận xét" > "vắng lần n" > "n câu" do nơi gọi chọn.
  */
-export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, luu, onBam, onLuuLai, nhan, kyVong }: {
+export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, luu, onBam, onLuuLai, nhan, kyVong, chiToHut }: {
   /** UI-HO-SO-LOP: `to` = chữ 17 px (bảng hồ sơ lớp — "điểm to, rõ", `09-anh2`). */
   kieu?: 'doc' | 'sua' | 'ti-le' | 'lon' | 'to';
   /** Chữ số đã định dạng ("6.5", "17"); null = chưa có. */
@@ -27,12 +35,14 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
   onLuuLai?: () => void;
   /** Tên kỹ năng / cột cho trình đọc màn ("L") + kỳ vọng ("6.5"). */
   nhan?: string; kyVong?: string;
+  /** PANEL-V10: đạt / không đạt (vượt = bằng = ✓ màu Overall đạt) — bảng em hồ sơ lớp, Học viên & Lớp. */
+  chiToHut?: boolean;
 }) {
   const kqHien: Kq = kck && kq === 'duoi' ? null : kq;
-  const mau = lopKq(kqHien);
+  const mau = lopODiem(kqHien, chiToHut);
   const ten = [nhan, so ?? t('Chưa có'), kq ? `— ${kck && kq === 'duoi' ? 'KCK' : chuKq(kq)}${kyVong ? ` ${kyVong}` : ''}` : ''].filter(Boolean).join(' ');
   /* Chỗ ký hiệu giữ khi ô có số mà không có ký hiệu (số thẳng cột); ô trống không giữ ("—" nằm giữa). */
-  const kyHieu = so === null ? null : <span className="inline-block w-[14px] shrink-0 text-center" aria-hidden>{kqHien && <DauKetQua kq={kqHien} />}</span>;
+  const kyHieu = so === null ? null : <span className="inline-block w-[14px] shrink-0 text-center" aria-hidden>{kqHien && <DauKetQua kq={chiToHut && kqHien === 'vuot' ? 'bang' : kqHien} />}</span>;
   const deKhac = kieu === 'ti-le' && tong != null && tongCot != null && tong !== tongCot;
   const so_ = so === null ? <span className="text-faint">—</span> : kieu === 'ti-le'
     ? <>

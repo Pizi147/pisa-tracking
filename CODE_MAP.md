@@ -324,6 +324,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | Chấm Speaking trong Công việc | `web/src/modules/congViec/PanelChamSpeaking.tsx` |
 | Chỉ số, panel số liệu (số = số dòng) | `server/src/worklist/metrics.ts` (`rowsFor`) · `web/src/ui/{SoLieu,OSo}.tsx` · `shared/domain/metrics.ts` |
 | Kết quả Test từng HV (nền chỉ số hiện trạng) | `server/src/worklist/danhGia.ts` |
+| Dòng điểm HV trong panel (✓ / ✗ từng kỹ năng đúng lượt — PANEL-V10, N30) | `shared/domain/diemDong.ts` (`DiemHv`, `dauDiem`, `nhanDocDiem`) · `server/src/worklist/diemDong.ts` (`diemTuEval`, `diemTuMock`, `diemTuStanding`) · `MetricRow.diemHv` (`rowsFor`) |
 | Tín hiệu từ dữ liệu (không phải task) | `server/src/worklist/signals.ts` (`signalsFor`) · `web/src/modules/worklist/SignalList.tsx` |
 | Lọc Fast Track · Lớp thường cho mọi chỉ số | `shared/domain/tongQuan.ts` · `server/src/worklist/chuongTrinh.ts` · `web/src/modules/worklist/ChonChuongTrinh.tsx` · `web/src/ui/CongTacKhung.tsx` |
 | Tổng quan QL (Lớp cần chú ý, Cần bạn quyết, Trễ chấm) | `server/src/worklist/tongQuanQl.ts` (`tongQuanQl`) · `bangChiNhanh.ts` |
@@ -364,6 +365,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 |---|---|
 | Một bảng `yeu_cau_duyet` cho mọi loại thẻ (thêm loại = thêm MỘT phần tử) | `server/src/duyet/loaiYeuCau.ts` (`DINH_NGHIA_LOAI`) · `shared/domain/yeuCauDuyet.ts` (`LOAI_YEU_CAU`, `demHop`) |
 | Lõi: tạo, duyệt, từ chối, trả lời, sửa / rút | `server/src/duyet/yeuCau.ts` (`taoYeuCau`, `duyetYeuCau`, `duyetNhieu`, `suaYeuCau`, `rutYeuCau`) |
+| Thẻ Chờ duyệt: chip SOS, dòng điểm, Lịch sử · n (`GET /lich-su?loai=yeu-cau`) | `server/src/duyet/yeuCau.ts` (`ganBoiCanh`, `lichSuYeuCau`) |
 | Đề xuất sửa thông tin HV | `server/src/duyet/deXuatSua.ts` · `web/src/modules/duyet/DeXuatSuaPanel.tsx` |
 
 ### Phân tích · giáo viên

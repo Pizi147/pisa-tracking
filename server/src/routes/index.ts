@@ -117,7 +117,7 @@ import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
 import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
-import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
+import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../worklist/metrics.ts';
 import { NHOM_VIEC_TVV, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
@@ -1199,7 +1199,7 @@ api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => 
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
   const need = effectiveness.plansNeedingEvaluation({ classId: id, category, fromDate: qStr(req, 'from') ?? null });
-  return { count: need.count, rows: rowsFor('phuong-an', need.ids) };
+  return { count: need.count, rows: rowsFor('phuong-an', need.ids, PA_CHUA_CO_KET_QUA, p, true) };   // PANEL-MC (B6): kèm việc Ghi kết quả (`lam` = `ghiDuocPaMany`)
 }));
 
 /**
@@ -2323,7 +2323,7 @@ api.get('/yeu-cau', requireAuth, wrap((req) => {
   return yeuCauSvc.hopChoDuyet(p, {
     phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' || xem === 'de-biet' ? xem : 'cho',
     studentId: qInt(req, 'studentId') ?? null, branchId: qInt(req, 'branchId') ?? null, classId: qInt(req, 'lop') ?? null,
-    quaHan: qStr(req, 'quaHan') === '1',
+    quaHan: qStr(req, 'quaHan') === '1', boiCanh: qStr(req, 'boiCanh') === '1',   // PANEL-MC: panel duyệt QL xin chip SOS + điểm + Lịch sử · n
   });
 }));
 /* OV-15h1: `branchId` — "Chờ bạn duyệt" ở Công việc đếm theo chi nhánh đang lọc (badge menu không gửi: mọi chi nhánh). */
@@ -2597,8 +2597,10 @@ api.get('/students/:id', requireAuth, wrap((req) => {
 api.get('/students/:id/lich-su-sua', requireAuth, wrap((req) => lichSuSuaSvc.lichSuSua(principalOf(req), pInt(req, 'id'),
   { loai: qStr(req, 'loai'), truoc: qInt(req, 'truoc') })));
 /* OV-15g (C22): Lịch sử thay đổi — một đường cho mọi đối tượng (`loai` = hv | lop | phan-cong | gop-y | nhap-hv | thi-that | o); quyền = quyền xem đối tượng. */
-api.get('/lich-su', requireAuth, wrap((req) => lichSuSvc.lichSu(principalOf(req),
-  { loai: qStr(req, 'loai'), id: qInt(req, 'id'), loc: qStr(req, 'loc'), tiep: qInt(req, 'tiep') })));
+/* PANEL-MC (T11): `loai=yeu-cau` — nhật ký một thẻ Chờ duyệt (`{ dong: [{ luc, nguoi, chu }] }`), quyền = quyền xem thẻ. */
+api.get('/lich-su', requireAuth, wrap((req) => (qStr(req, 'loai') === 'yeu-cau'
+  ? yeuCauSvc.lichSuYeuCau(principalOf(req), qInt(req, 'id') ?? 0)
+  : lichSuSvc.lichSu(principalOf(req), { loai: qStr(req, 'loai'), id: qInt(req, 'id'), loc: qStr(req, 'loc'), tiep: qInt(req, 'tiep') }))));
 
 api.patch('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

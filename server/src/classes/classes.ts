@@ -348,9 +348,10 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string, kemKetThuc = f
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.khong_cam_ket,
                     cy.baseline_attempt_id, cy.baseline_score, cy.baseline_listening, cy.baseline_reading, cy.baseline_writing, cy.baseline_speaking,
                     cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.thi_that_ngay, sp.week_start AS start_week,
-                    ep.code AS exam_week_code, ep.week_start AS exam_week_start
+                    ep.code AS exam_week_code, ep.week_start AS exam_week_start, tv.full_name AS tvv_ten
                FROM enrollments e
                JOIN students s ON s.id = e.student_id
+               LEFT JOIN users tv ON tv.id = s.consultant_user_id   -- PANEL-MC (D): TVV dưới tên HV — cùng câu, thêm một cột
                LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
                LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
                LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
@@ -641,7 +642,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
       }));
 
     return {
-      id: s.id, studentCode: s.student_code, fullName: s.full_name, status: s.status,
+      id: s.id, studentCode: s.student_code, fullName: s.full_name, status: s.status, tvv: (s.tvv_ten ?? null) as string | null,
       /*
        * CÁCH CHẤM CỦA LỚP đi kèm từng dòng, để bảng biết bày bộ cột nào (mục 5.1 · 5.2).
        * Lặp lại ở mỗi dòng là thừa một chút, nhưng nó giữ cho mọi màn đang đọc danh sách

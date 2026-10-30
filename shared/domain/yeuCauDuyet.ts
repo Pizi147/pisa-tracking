@@ -7,6 +7,7 @@
 import { hanTheoNgay, HAN_DUYET_NGAY } from './cases.ts';
 import type { TrangThai } from './trangThai.ts';
 import { t } from '../i18n/index.ts';
+import type { DiemHv } from './diemDong.ts';
 
 export const PHAN_LOAI = ['hoc-thuat', 'y-thuc', 'lich-thi', 'thong-tin-hv', 'bao-len'] as const;
 export type PhanLoai = (typeof PHAN_LOAI)[number];
@@ -225,6 +226,12 @@ export type TheYeuCauDto = {
   duLieu: Record<string, unknown> | null;
   /** PR-LUI-a2: tab Đã xử lý — Quản lý huỷ được quyết định này (loại có đường đảo, quyết hôm nay, nguồn chưa chạy). */
   coTheHuy?: boolean;
+  /** PANEL-MC (DUYET-QL, chỉ tab Chờ duyệt): SOS hiện tại của em (`latestAttempts`, như chỉ số SOS hiện tại; null = không em / không SOS) — chip ở dòng thẻ. */
+  sos?: { muc: number; tam: boolean; kyNang: string[] } | null;
+  /** PANEL-MC: dòng điểm lượt gần nhất của em — bối cảnh trong panel duyệt. */
+  diemHv?: DiemHv | null;
+  /** PANEL-MC: số dòng nhật ký của thẻ (thẻ + đối tượng gốc + Case của PA) — "Lịch sử · n"; mở bằng `GET /lich-su?loai=yeu-cau&id=`. */
+  soLichSu?: number;
 };
 
 /** PR-GVb (J5b): `cho` = thẻ PHẢI QUYẾT (= chip "Tất cả" = badge); `quaHan` = trong đó thẻ đỏ; `deBiet`/`deBietQuaHan` = thẻ Nhắc việc, KHÔNG cộng vào `cho` — xem `demHop`. */

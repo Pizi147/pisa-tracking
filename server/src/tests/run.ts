@@ -9887,6 +9887,12 @@ await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== QUYEN-LIEN-HE (luật 13/10: ô Liên hệ chỉ QL / Quản trị / TVV / CX / Admin — máy chủ)
 const { runPrQuyenLienHeTests } = bocTep('prQuyenLienHe', await import('./prQuyenLienHe.tests.ts'));
 await runPrQuyenLienHeTests({ check, assert, conn, P, TODAY } as any);
+// ==================================================================== PANEL-MC (dòng điểm đúng lượt + dữ liệu panel — PANEL-V10, N30)
+const { runPrPanelMcTests } = bocTep('prPanelMc', await import('./prPanelMc.tests.ts'));
+await runPrPanelMcTests({ check, checkAsync, assert, conn, P, TODAY } as any);
+// ==================================================================== PANEL-CHUNG (mẫu dòng điểm + dòng panel có lý do — PANEL-V10)
+const { runPrPanelChungTests } = bocTep('prPanelChung', await import('./prPanelChung.tests.ts'));
+await runPrPanelChungTests({ check, checkAsync, assert, conn } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
