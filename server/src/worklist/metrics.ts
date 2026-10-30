@@ -425,7 +425,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         `SELECT t.id, t.title, t.due_date, b.name AS branch_name FROM tasks t LEFT JOIN branches b ON b.id = t.branch_id WHERE t.id IN (${ph})`,
       ).all(...chunk) as any[]) {
         byId.set(r.id, {
-          id: r.id, title: r.title, sub: [r.branch_name ?? 'Toàn hệ thống', r.due_date ? `hạn ${String(r.due_date).slice(8, 10)}/${String(r.due_date).slice(5, 7)}` : null].filter(Boolean).join(' · '), href: `/cong-viec?mo-viec=${r.id}`,
+          id: r.id, title: r.title, sub: [r.branch_name ?? 'Toàn hệ thống', r.due_date ? `hạn ${String(r.due_date).slice(8, 10)}/${String(r.due_date).slice(5, 7)}` : null].filter(Boolean).join(' · '), href: `/cong-viec?viec=mgmt:${r.id}`,
           /* OV-12e: việc Vận hành mở đúng ngăn Vận hành tại chỗ (chỉ số này chỉ Quản lý thấy; máy chủ kiểm lại khi lưu). */
           viec: { chu: t('Xử lý'), loai: 'van-hanh', loaiHan: 'viec-van-hanh', han: r.due_date ?? null, lam: !!p },
         });
