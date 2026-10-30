@@ -379,7 +379,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Báo cáo (in A4) | `web/src/modules/phanTich/BaoCao.tsx` · `server/src/phanTich/baoCao.ts` · `shared/domain/baoCaoPhanTich.ts` |
 | Test + SOS, nhóm Xử lý Case | `web/src/modules/phanTich/TongHopTestSos.tsx` · `server/src/phanTich/tongHop.ts` · `server/src/cases/sosState.ts` (`xuLyCaseMany`) |
 | Kết quả thi (Mock / thi thật), lớp lúc thi thật | `web/src/modules/phanTich/KetQuaThi.tsx` · `server/src/phanTich/{ketQuaThi,lopLucThi}.ts` · `shared/domain/ketQuaThi.ts` |
-| Phân tích GV (không KPI, không xếp hạng) | `web/src/modules/phanTich/PhanTichGiaoVien.tsx` · `server/src/phanTich/giaoVien.ts` (`phanTichGiaoVien`, `tapChamDiem`) · `shared/domain/phanTichGv.ts` |
+| Phân tích GV (không KPI, không xếp hạng) | `web/src/modules/phanTich/PhanTichGiaoVien.tsx` · `server/src/phanTich/giaoVien.ts` (`phanTichGiaoVien`, `tapChamDiem`; `napBai` cả chi nhánh đi từ `attempt_skills.branch_id` theo kỳ — cột giữ bằng trigger, migrate `server/src/migrate/prTlNapBai.ts`) · `shared/domain/phanTichGv.ts` |
 | Hồ sơ GV, việc của GV, phạm vi xem | `server/src/giaoVien/{hoSo,phamVi}.ts` (`viecHoSoGv`, `phamViHoSoGv`) · `shared/domain/hoSoGiaoVien.ts` |
 | Ý thức trong Phân tích | `web/src/modules/phanTich/YThucPhoiHop.tsx` · `server/src/phanTich/yThucPhanTich.ts` |
 | Phân trang 10 / 20 / 50 | `web/src/ui/PhanTrang.tsx` (`usePhanTrang`) · `shared/domain/phanTrang.ts` |
