@@ -16,7 +16,7 @@ const DAI = 120;
 const giaTri = (x: Truong, v: string | null) => (v === null ? <i>{t('trống')}</i> : x.heThong ? dich(v) : v);
 
 /** "15/10 14:02" theo giờ máy; khác năm nay thì kèm năm. */
-function lucNgan(iso: string): string {
+export function lucNgan(iso: string): string {
   const d = new Date(iso);
   const h = (n: number) => String(n).padStart(2, '0');
   const nam = d.getFullYear() !== new Date().getFullYear() ? `/${d.getFullYear()}` : '';

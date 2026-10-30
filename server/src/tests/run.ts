@@ -9905,6 +9905,9 @@ await runPrSuaNhoUiTests({ check, assert } as any);
 // ==================================================================== BANG-EM-GON (bảng em hồ sơ lớp gọn + TVV — PANEL-V10 #be)
 const { runPrBangEmGonTests } = bocTep('prBangEmGon', await import('./prBangEmGon.tests.ts'));
 await runPrBangEmGonTests({ check, assert } as any);
+// ==================================================================== DUYET-QL (panel duyệt Công việc QL — PANEL-V10 khu C)
+const { runPrDuyetQlTests } = bocTep('prDuyetQl', await import('./prDuyetQl.tests.ts'));
+await runPrDuyetQlTests({ check, assert } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
