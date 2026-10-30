@@ -100,8 +100,6 @@ type Detail = {
     /** PR-XLMT: GVCN của lớp — Báo vắng / Xếp lại bài vắng (`thaoTacKyNang`). */
     laGvcn: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
-    /** Kỹ năng dời lịch/xác nhận thi được — GVCN·GVBM Normal + Quản lý mọi kỹ năng (SCH-01). */
-    moveableSkills: string[];
     canEditSos: boolean; editableSkills: string[];
   };
 };
@@ -189,7 +187,7 @@ export default function MockDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!data, knUrl]);
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
 
   /*
@@ -1218,7 +1216,7 @@ function TraLoiDeNghiModal({ row, detail, onClose, onDone }: {
       onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
       <div className="pt-3">
       {ds.loading ? <Skeleton rows={3} />
-        : ds.error ? <ErrorState message={ds.error.message} onRetry={ds.reload} />
+        : ds.error ? <ErrorState message={ds.error.message} status={ds.error.status} onRetry={ds.reload} />
           : the ? <TheYeuCau yc={the} gon onXong={xong} />
             : (
               <div className="space-y-2">

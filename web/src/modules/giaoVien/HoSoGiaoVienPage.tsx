@@ -77,7 +77,7 @@ export function HoSoGiaoVienPage() {
   const ky = `tu=${tu}&den=${den}`;
   const cs = useApi<ChiSoHoSoGv>(id && !kyLoi ? `/giao-vien/${id}/chi-so?${ky}` : null, [id, ky]);
   const viec = useApi<{ viec: NhomSo[] }>(`/giao-vien/${id}/viec`, [id]);
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={8} />;
   const { gv } = data;
   const nguoiXem = { userId: session?.user?.id ?? 0, laQuanLy: laVaiQuanLy(session?.roles) };
@@ -143,7 +143,7 @@ function NhanDau({ nhan, children }: { nhan: string; children: ReactNode }) {
   );
 }
 
-type ApiCs = { data: ChiSoHoSoGv | null; loading: boolean; error: { message: string; hint?: string } | null; reload: () => void };
+type ApiCs = { data: ChiSoHoSoGv | null; loading: boolean; error: { message: string; hint?: string; status?: number } | null; reload: () => void };
 
 // ------------------------------------------------------------------ dải chỉ số (một thẻ, các ô ngăn bằng vạch — khung khu e)
 
@@ -195,7 +195,7 @@ function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   ];
   return (
     <section aria-label={t('Chỉ số')} className="card overflow-clip">
-      {cs.error && <div className="border-b p-3" style={{ borderColor: 'var(--line)' }}><ErrorState message={cs.error.message} hint={cs.error.hint} onRetry={cs.reload} /></div>}
+      {cs.error && <div className="border-b p-3" style={{ borderColor: 'var(--line)' }}><ErrorState message={cs.error.message} hint={cs.error.hint} status={cs.error.status} onRetry={cs.reload} /></div>}
       <div className="grid grid-cols-2 lg:grid-cols-4">
         {ds.map((x) => (
           <div key={x.ten} className="flex min-w-0 flex-col gap-0.5 border-b border-r px-4 py-3.5" style={{ borderColor: 'var(--line)' }}>
@@ -338,7 +338,7 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
           <NutLuat label={t('Học thuật')} phai>{t('Đạt kỳ vọng Test theo quy tắc Overall; lượt = một lượt Test của một HV × kỹ năng GV dạy, gán theo lớp em học lúc Test. Thi thật (IELTS) tính riêng. Bảng lớp: lớp đang học khai giảng lâu nhất lên đầu, rồi lớp đáng lo; lớp đã kết thúc ở cuối.')}</NutLuat>
         </span>
       )}>
-      {cs.error ? <ErrorState message={cs.error.message} hint={cs.error.hint} onRetry={cs.reload} />
+      {cs.error ? <ErrorState message={cs.error.message} hint={cs.error.hint} status={cs.error.status} onRetry={cs.reload} />
         : !d ? <Skeleton rows={3} className="p-4" />
         : (
           <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
@@ -470,14 +470,14 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
 
 function KhoiViec({ gvId, nguoiXem, homNay, ngan, viec }: {
   gvId: number; nguoiXem: { userId: number; laQuanLy: boolean }; homNay: string; ngan: (iso: string) => string;
-  viec: { data: { viec: NhomSo[] } | null; loading: boolean; error: { message: string; hint?: string } | null; reload: () => void };
+  viec: { data: { viec: NhomSo[] } | null; loading: boolean; error: { message: string; hint?: string; status?: number } | null; reload: () => void };
 }) {
   const { data, loading, error, reload } = viec;
   return (
     <Card
       title={<>{t('Việc đang tồn')}<Goi chu={t('Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}
       action={<span className="text-xs text-slate-400">{t('hôm nay {ngay} · tuần', { ngay: ngan(homNay) })} <span className="tabular-nums text-slate-200">{tuanLich(homNay, homNay)}</span></span>}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={2} />
         : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

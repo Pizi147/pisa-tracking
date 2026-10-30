@@ -59,7 +59,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
   const navigate = useNavigate();
   const { data, loading, error, reload } = useApi<TongKetLop>(`/classes/${classId}/tong-ket`, [classId]);
   const [mo, setMo] = useState<number | null>(null);
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={6} />;
   const ft = data.lop.loai === 'ft';
   const mot = (d: Dong) => (d.loTrinhId ? setMo(d.loTrinhId) : navigate(`/hoc-vien/${d.studentId}`));

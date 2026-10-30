@@ -581,8 +581,10 @@ export function boKetQuaChoMiniTest<T extends { kind: string; nhom_bo_tro: strin
 ): (daiDien: T) => boolean {
   const nhom = [...new Set(rows.filter((r) => laPaBoTro(r.kind) && r.nhom_bo_tro).map((r) => r.nhom_bo_tro as string))];
   if (!nhom.length) return () => false;
-  const cho = new Set((db().prepare(`SELECT DISTINCT nhom_bo_tro FROM mini_test WHERE ty_le IS NULL AND nhom_bo_tro IN (${nhom.map(() => '?').join(',')})`)
-    .all(...nhom) as any[]).map((r) => r.nhom_bo_tro as string));
+  const cho = new Set<string>();
+  theoLoJson(nhom, (json) => {
+    for (const r of db().prepare(`SELECT DISTINCT nhom_bo_tro FROM mini_test WHERE ty_le IS NULL AND nhom_bo_tro IN (${DS_JSON})`).all(json) as any[]) cho.add(r.nhom_bo_tro as string);
+  });
   return (r) => !!r.nhom_bo_tro && cho.has(r.nhom_bo_tro)
     && laLanGhiCuoi({ preset: true, followupDue: r.followup_due ?? null, actionDue: r.action_due ?? null, mienPhi: r.kind === 'bo_tro_mien_phi' }, today);
 }

@@ -225,8 +225,6 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     for (const cam of ['CapNhatTuanForm', 'ActionDialog', 'OutcomeDialog', 'loai="cap-nhat-pa"', 'fmtDate(', 'Cập nhật PA']) {
       assert(!sb.includes(cam), `SkillBoard còn "${cam}"`);
     }
-    assert(/<HangNhom\b/.test(sb) && /<HangCon\b/.test(sb) && /<thead>/.test(sb), 'SkillBoard phải dùng HangNhom/HangCon và tiêu đề cột một lần');
-    assert(/onMoCase/.test(sb), 'SkillBoard mở ngăn Case qua onMoCase');
     assert(!doc('web/src/ui/KetQuaDot.tsx').includes("'⚠'"), "KetQuaDot còn '⚠'");
   });
 
@@ -378,8 +376,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   });
 
   check('UX3 (5) · SkillBoard: hạn ghi kết quả chỉ từ actionDue (followupDue là ngày dự kiến kết thúc, không phải hạn — F11)', () => {
-    /* PR-VAI-b (Task 6): `nextStepOf` chuyển thành hàm thuần `viecTiepHang` (shared) — SkillBoard gọi nó cho cột Việc tiếp. */
-    assert(/viecTiepHang\(row\.cases, homNay\)/.test(docSach('web/src/modules/cases/SkillBoard.tsx')), 'SkillBoard không dùng viecTiepHang');
+    /* PR-VAI-b (Task 6): `nextStepOf` chuyển thành hàm thuần `viecTiepHang` (shared). DON-MA: `SkillBoard()` (bảng 4 cột) đã xoá, không còn nơi gọi để soi. */
     const src = docSach('shared/domain/hoSoHocVien.ts');
     const m = /export function viecTiepHang[\s\S]*?\r?\n}\r?\n/.exec(src);
     assert(m, 'không thấy viecTiepHang');

@@ -1404,7 +1404,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: t.progressLabel,
       tieuDe: t.title,
       actionLabel: 'Cập nhật',
-      href: `/cong-viec?mo-viec=${t.id}`,
+      href: `/cong-viec?viec=mgmt:${t.id}`,
       ownerId: p.userId, owner: null, mine: true,
       due: t.due, statusLabel: t.progressLabel,
     });

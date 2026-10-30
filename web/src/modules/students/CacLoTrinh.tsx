@@ -74,7 +74,7 @@ export function CacLoTrinh({ studentId, onTongKet, onHocThuat, onBuocTiep }: {
         <h2 className="m-0 text-sm font-semibold text-slate-200">{t('Các lộ trình')}</h2>
         {data && data.length > 0 && <span className="text-xs font-semibold tabular-nums text-slate-500">{data.length}</span>}
       </header>
-      {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
+      {error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
       {loading && !data && <div className="p-4"><Skeleton rows={3} /></div>}
       {data && data.length === 0 && <Empty title={t('Chưa có lộ trình nào')} />}
       {data && data.length > 0 && (

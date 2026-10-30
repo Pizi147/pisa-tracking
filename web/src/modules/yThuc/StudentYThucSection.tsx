@@ -80,7 +80,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coSub, !!d]);
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !d) return <Skeleton rows={5} />;
 
   const lamMoi = () => { DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x)); reload(); };

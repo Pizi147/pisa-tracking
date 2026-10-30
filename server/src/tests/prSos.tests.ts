@@ -479,19 +479,6 @@ export async function runPrSosTests(t: YThucTestKit) {
   const doc = (f: string) => fs.readFileSync(path.join(REPO, f), 'utf8');
   const hamCua = (src: string, ten: string) => /* thân một hàm cấp cao nhất: từ `function ten` tới hàm kế tiếp */
     (new RegExp(`function ${ten}\\b[\\s\\S]*?(?=\\r?\\n(?:export )?function |$)`).exec(src) ?? [''])[0];
-  check('SOS (8) · SkillBoard: HangCase + HangPA, không HangCaseVaPa / "Xác minh SOS" / "Chờ QL" / du-kien-ket-thuc; SOS chỉ trong chip tên; NhanTrangThai; nextStepOf đọc việc tiếp v4', () => {
-    const sb = doc('web/src/modules/cases/SkillBoard.tsx');
-    assert(/function HangCase\b/.test(sb) && /function HangPA\b/.test(sb) && !/HangCaseVaPa|function HangPa\b/.test(sb), 'thiếu HangCase/HangPA');
-    assert(!/Xác minh SOS|Chờ QL|du-kien-ket-thuc/.test(sb), 'còn chữ cũ');
-    const hangCase = hamCua(sb, 'HangCase');
-    assert(!/<Level/.test(hangCase) && /<NhanTrangThai/.test(hangCase) && /<TenCase/.test(hangCase), 'hàng Case: SOS chỉ trong chip tên, một nhãn trạng thái');
-    assert(!/followupDue/.test(hamCua(sb, 'HangPA')), 'HangPA còn hiện dự kiến kết thúc');
-    /* PR-VAI-b (Task 6): `nextStepOf` → hàm thuần `viecTiepHang` (shared), vẫn đọc việc tiếp v4. */
-    const hs = doc('shared/domain/hoSoHocVien.ts');
-    assert(/viecTiepHang\(row\.cases/.test(sb) && /viecTiep/.test(hs.slice(hs.indexOf('export function viecTiepHang'))), 'nextStepOf chưa dùng việc tiếp v4');
-    assert(/Chưa đạt · không mở Case/.test(sb) && /Không theo dõi \(Quản lý duyệt/.test(sb), 'CotCase thiếu chữ K3-06');
-    assert((sb.match(/<CotPhai/g) ?? []).length >= 4 && /khoiSos/.test(sb), 'cột phải / khoiSos');
-  });
   check('SOS (8) · Hành trình: trangThaiHop nhãn §7.3 (K3-29); viecTiepPhuongAn có Chờ xác nhận / Ghi kết quả cuối', () => {
     const h = d.trangThaiHop({ caseMo: [{ mo: '2026-08-01', soPa: 1, choNguyenNhan: true }], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: null }, '2026-09-22');
     assert(h?.chu === 'Cần làm · chờ xác nhận Case', JSON.stringify(h));

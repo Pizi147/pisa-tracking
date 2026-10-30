@@ -134,7 +134,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   if (error) {
     return (
       <KhungPanel tieuDe="Case" hocVien={hocVien} lop={lop} onDong={onClose}>
-        <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
       </KhungPanel>
     );
   }

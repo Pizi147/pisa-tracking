@@ -31,7 +31,7 @@ export function YeuCauCuaToi({ gon = false }: {
       </section>
     );
   }
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading) return <Card><Skeleton rows={5} /></Card>;
   const ds = data?.the ?? [];
   if (!ds.length) {

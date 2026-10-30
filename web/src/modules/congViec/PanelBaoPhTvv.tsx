@@ -77,7 +77,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
     ngCanh: han ? <><b className="font-semibold text-slate-100">{t('hạn 23:59 {ngay}', { ngay: shortDate(han, hn) })}</b>
       {' '}({xong ? t('đã xong') : han >= hn ? t('còn {n} ngày', { n: daysBetween(hn, han) }) : t('quá hạn')})</> : null,
   });
-  if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!v) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
 
   const sua = !daLuu && v.coTheGhi;

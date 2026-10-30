@@ -119,7 +119,7 @@ export function KeHoachTestTab() {
   const lopChon = [...moList].reverse().map((id) => data?.lop.find((l) => l.id === id)).find((l) => l && l.loai === loai) ?? null;
   const lyDoTat = hopMo ? 'Đóng hộp kỹ năng trước' : undefined;
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data || (tuan && hl.loading && !hl.data)) return <div className="space-y-3"><Skeleton rows={8} /></div>;
   if (!data.lop.length) return <div className="card"><Empty title="Bạn không có lớp nào để xem lịch Test" /></div>;
 

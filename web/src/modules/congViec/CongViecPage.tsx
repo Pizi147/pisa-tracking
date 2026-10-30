@@ -21,10 +21,16 @@ export default function CongViecPage() {
   const tab = tabCongViecTuDuong(seg);
 
   if (!tabs.length) return <Navigate to="/" replace />;
+  /* DON-MA: lối cũ `?mo-viec=<id>` (chuông đã lưu, kể cả việc đã xong) → người có bảng Vận hành mở việc ở đó (`open=`), còn lại mở tại chỗ `viec=mgmt:<id>`. */
+  const moViec = params.get('mo-viec');
+  if (moViec) {
+    if (tabs.includes('van-hanh')) return <Navigate to={`${DUONG_TAB_CONG_VIEC['van-hanh']}?open=${moViec}`} replace />;
+    if (tabs.includes('ho-tro')) return <Navigate to={`${DUONG_TAB_CONG_VIEC['ho-tro']}?viec=mgmt:${moViec}`} replace />;
+  }
   if (!tab || !tabs.includes(tab)) {
-    /* NỢ PR-O (#58): việc Vận hành giao cho GV mà GV không có quyền vào bảng Vận hành — giữ đúng việc đó bằng `mo-viec` (panel tại chỗ). */
+    /* NỢ PR-O (#58): việc Vận hành giao cho GV mà GV không có quyền vào bảng Vận hành — giữ đúng việc đó bằng `viec=mgmt:<id>` (panel tại chỗ). */
     const open = params.get('open');
-    if (open && tabs.includes('ho-tro')) return <Navigate to={`/cong-viec?mo-viec=${open}`} replace />;
+    if (open && tabs.includes('ho-tro')) return <Navigate to={`/cong-viec?viec=mgmt:${open}`} replace />;
     return <Navigate to={DUONG_TAB_CONG_VIEC[tabs.includes('ho-tro') ? 'ho-tro' : tabs[0]]} replace />;
   }
   if (tab === 'ho-tro') return <div className="page"><HoTroHocVienTab /></div>;

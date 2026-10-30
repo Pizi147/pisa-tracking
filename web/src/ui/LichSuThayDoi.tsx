@@ -139,7 +139,7 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
               ariaLabel={t('Lọc lịch sử')} />
           </div>
         )}
-        {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
+        {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
           : loading && !data ? <div className="pt-3"><Skeleton rows={5} /></div>
           : !ds.length ? (tiep === null ? <Empty title={t('Chưa có thay đổi nào')} /> : dangTai ? <div className="pt-3"><Skeleton rows={3} /></div> : null)
           : (

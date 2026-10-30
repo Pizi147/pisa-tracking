@@ -362,7 +362,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       <MenuDong nhan={t('Cột hiện · Xuất kết quả từng lượt')} muc={mucMenu} lopNut="btn h-9 min-w-9 justify-center px-0 text-sm font-semibold max-sm:h-11" />
     </VaoHangLoc>
 
-    {error ? <Card bodyClass="p-0"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>
+    {error ? <Card bodyClass="p-0"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
       : loading || !data ? (
         <div className="space-y-3">
           <DaiChiSo ds={SKEL_SO} />

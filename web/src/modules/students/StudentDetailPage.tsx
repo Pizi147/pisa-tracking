@@ -160,7 +160,7 @@ export default function StudentDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!data, p.dot, p.kn, p.muc]);
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
 
   const cy = data.cycle;
@@ -368,7 +368,7 @@ export default function StudentDetailPage() {
                 </div>
                 <KhoiMockTest cy={cy} attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
               </>
-            ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
+            ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
               : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
               : homNay && <HanhTrinhKn studentId={data.id} kn={chon} row={hangChon} attempts={data.attempts} cy={cy} homNay={homNay} tenKn={tenChon}
                 tamDung={data.dauHoSo?.thongTin?.khoangDung} onMoCase={(caseId, paId) => moCase(caseId, { paId })} toTuan={toTuan} />}
@@ -380,7 +380,7 @@ export default function StudentDetailPage() {
           */}
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             {homNay && <TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan} />}
-            {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} /></div>
+            {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
               : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
               : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
                 onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? baoCase : undefined}

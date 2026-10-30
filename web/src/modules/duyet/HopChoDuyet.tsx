@@ -220,7 +220,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
       xong();
     } finally { setBusy(false); }
   };
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   const dem = data?.dem;
   const dsHien = gon ? ds.slice(0, soHien) : ds;
   /* Dòng giữ chỗ chèn lại đúng vị trí cũ (bỏ nếu thẻ đã về danh sách — Hoàn tác / người khác huỷ). */

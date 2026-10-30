@@ -115,7 +115,7 @@ export function SuaThongTinMotEm({ viec = 'info', studentId, studentName, lop, o
 }) {
   const { data, error, reload } = useApi<any>(`/students/${studentId}`, [studentId]);
   const [deXuat, setDeXuat] = useState(false);
-  if (error) return <KhungPanel tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!data) return <KhungPanel tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
   return (
     <StudentManagePanel viec={deXuat ? 'de-xuat-sua' : viec} onClose={onClose} lop={lop} cycle={data.cycle} attempts={data.attempts ?? []} onDone={onDone}
@@ -202,7 +202,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data || !!chan}>{tieuDe}</button>,
       }}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <Skeleton rows={4} /> : (
           <Khoi tieuDe={tieuDe}>
             {chan ? <p className="m-0 text-sm text-late">{chan}</p> : null}
