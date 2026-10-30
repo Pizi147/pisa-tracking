@@ -1,5 +1,5 @@
 /**
- * PHÉP KIỂM BANG-EM-GON (PANEL-V10 `#be`, chủ SP 30/10): bảng em hồ sơ lớp gọn — chỉ tô kỹ năng hụt (✓ / ✗), chip SOS nhỏ không kỹ năng,
+ * PHÉP KIỂM BANG-EM-GON (PANEL-V10 `#be`, chủ SP 30/10): bảng em hồ sơ lớp gọn — đạt ✓ màu Overall đạt · hụt ✗, chip SOS nhỏ không kỹ năng,
  * Đạt / ngày thi / mới vào là chữ, TVV 11 px dưới tên. Thành phần web không chạy được ở đây → quét nguồn (như prPanelChung).
  */
 import fs from 'node:fs';
@@ -24,7 +24,7 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
   const chip = doc('web/src/ui/ChipSos.tsx');
   const css = doc('web/src/index.css');
 
-  check('B1 · ô điểm chỉ tô hụt (chiToHut, cỡ gọn 15 px); OKetQua chip SOS nhỏ không kỹ năng; Đạt / Chưa đủ là chữ; OLichThi không còn NhanLich', () => {
+  check('B1 · ô điểm đạt ✓ màu Overall đạt · hụt ✗ (chiToHut, cỡ gọn 15 px); OKetQua chip SOS nhỏ không kỹ năng; Đạt / Chưa đủ là chữ; OLichThi không còn NhanLich', () => {
     assert(/<ODiem kieu="gon"[^>]*chiToHut/.test(bang), 'ô điểm bảng em chưa chiToHut + gon');
     assert(odiem.includes("kieu === 'gon' && kqHien !== 'duoi' ? 'font-medium' : 'font-bold'"), 'ODiem thiếu kieu gon 15 px / 500 (hụt 700)');
     const kq = than(bang, 'function OKetQua');
