@@ -2361,3 +2361,24 @@ CREATE TABLE ban_giao_gv_em (
   ghi_luc TEXT NOT NULL,
   UNIQUE (ban_giao_id, student_id, mon)
 );
+
+/* TL-NEN (TRANG-LON S3): mốc chung toàn hệ thống, đọc kèm câu phiên (auth.ts). 'tham-chieu' = phiên bản bảng tham chiếu (trigger tg_tc_*, khởi đầu ngẫu nhiên
+ * để reset DB không lặp số cũ); 'quet:*' = lượt quét đường đọc cuối (luc, ngay nghiệp vụ; NULL = GET kế quét). migrate/prTlNen.ts. */
+CREATE TABLE moc_he_thong (khoa TEXT PRIMARY KEY, so INTEGER, luc TEXT, ngay TEXT);
+INSERT INTO moc_he_thong (khoa, so) VALUES ('tham-chieu', abs(random() % 1000000000000) + 1),
+  ('quet:yeu-cau', NULL), ('quet:lenh', NULL), ('quet:doi-qua-han', NULL);
+CREATE TRIGGER tg_tc_classes_ins AFTER INSERT ON classes BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_classes_upd AFTER UPDATE ON classes BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_classes_del AFTER DELETE ON classes BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programmes_ins AFTER INSERT ON programmes BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programmes_upd AFTER UPDATE ON programmes BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programmes_del AFTER DELETE ON programmes BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programme_skills_ins AFTER INSERT ON programme_skills BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programme_skills_upd AFTER UPDATE ON programme_skills BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programme_skills_del AFTER DELETE ON programme_skills BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programme_checkpoints_ins AFTER INSERT ON programme_checkpoints BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programme_checkpoints_upd AFTER UPDATE ON programme_checkpoints BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_programme_checkpoints_del AFTER DELETE ON programme_checkpoints BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_demo_config_ins AFTER INSERT ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_demo_config_upd AFTER UPDATE ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_demo_config_del AFTER DELETE ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;

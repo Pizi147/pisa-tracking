@@ -4,6 +4,8 @@ import { db } from './db.ts';
 import { COT_PRINCIPAL, principalTuDong, type Principal } from './permissions.ts';
 import { coTheDoiGocNhin } from '../../shared/domain/index.ts';
 import { HttpError, nowIso } from './util.ts';
+import { datMoc } from './platform/nguCanhRequest.ts';
+import { COT_MOC, docMoc } from './platform/mocHeThong.ts';
 
 /**
  * Auth của bản demo: session do SERVER cấp, gắn với một seeded user.
@@ -50,11 +52,11 @@ export function resolveSession(token: string | undefined): Principal | null {
    * AN-6 (PR-AN, quyết định 4.11): phiên chỉ có hiệu lực cho tài khoản ĐÃ DUYỆT và đang hoạt động. Hôm nay chỉ đường đăng nhập
    * phát phiên và nó đã từ chối tài khoản chờ duyệt — lớp này để một đường phát phiên thêm sau này không mở cửa cho họ.
    * PR-TD2-d: cùng câu JOIN đó đọc luôn principal (`COT_PRINCIPAL`) — cả bước kiểm phiên là MỘT lượt hỏi database. Phiên không
-   * hợp lệ thì phần principal đọc thừa và bỏ đi; không nhớ gì giữa các request.
+   * hợp lệ thì phần principal đọc thừa và bỏ đi; không nhớ gì giữa các request. TL-NEN: + mốc chung `moc_he_thong` (`COT_MOC`, 4 dòng).
    */
   const row = db()
     .prepare(
-      `SELECT s.created_at, s.last_seen_at, s.goc_nhin, u.approval_state, u.status AS user_status, ${COT_PRINCIPAL}
+      `SELECT s.created_at, s.last_seen_at, s.goc_nhin, u.approval_state, u.status AS user_status, ${COT_PRINCIPAL}, ${COT_MOC}
          FROM demo_sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?`,
     )
     .get(token) as any;
@@ -68,6 +70,7 @@ export function resolveSession(token: string | undefined): Principal | null {
   if (Date.now() - Date.parse(row.last_seen_at ?? row.created_at) > GHI_LAI_MOC_DUNG_SAU_PHUT * 60_000) {
     db().prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(nowIso(), token);
   }
+  datMoc(docMoc(row.u_moc));   // TL-NEN: mốc chung (bảng tham chiếu, quét) — sau ghi mốc dùng, ghi đó không chạm bảng tham chiếu
   return apGocNhin(principalTuDong(row), row.goc_nhin ?? null);
 }
 

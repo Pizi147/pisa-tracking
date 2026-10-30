@@ -3,6 +3,7 @@ import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, type WorkScope } from '../..
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 import { coKhoa, coNho, datNho, nho } from './platform/nguCanhRequest.ts';
+import { nhoThamChieu } from './platform/mocHeThong.ts';
 
 /**
  * Quyền = Permission của role × Phạm vi chi nhánh của CHÍNH grant đó × Phân công lớp/kỹ năng.
@@ -149,10 +150,10 @@ export const activeAt = (a: Assignment, date: string) =>
 /**
  * PR-TD: bảng lớp CẢ BẢNG, nạp một câu lần đầu cần trong request (bảng nhỏ, vài trăm dòng — khác hẳn ghi danh, lớn
  * dần theo năm, nên KHÔNG nạp cả bảng đó). `branchOfClass`/`classIsFastTrack` không nhận `p` (đặc tả hàm cũ) nên
- * không đi qua đối tượng principal được — đọc thẳng bộ nhớ request qua `nho`/`coNho`.
+ * không đi qua đối tượng principal được — đọc thẳng bộ nhớ request qua `nho`/`coNho`. TL-NEN: nhớ theo tiến trình, khoá phiên bản DB (`nhoThamChieu`).
  */
 export function bangLop(): Map<number, { branchId: number | null; isFastTrack: boolean; ct: string | null }> {
-  return nho('bang-lop', () => {
+  return nhoThamChieu('bang-lop', () => {
     const map = new Map<number, { branchId: number | null; isFastTrack: boolean; ct: string | null }>();
     for (const r of db().prepare('SELECT id, branch_id, is_fast_track, programme_code FROM classes').all() as any[]) {
       map.set(r.id, { branchId: r.branch_id, isFastTrack: !!r.is_fast_track, ct: r.programme_code ?? null });

@@ -265,6 +265,12 @@ async function callHttp(vai: Vai, method: string, url: string, body?: unknown) {
 
 /** Đếm câu SQL của MỘT lượt gọi HTTP — gọi TUẦN TỰ (không song song, để số không lẫn giữa các lượt gọi). */
 async function doSql(vai: Vai, method: string, url: string): Promise<{ n: number; dong: number; status: number }> {
+  /*
+   * TL-NEN: quét đường đọc chạy theo mốc DB (60 s / sau ghi qua API / sang ngày) — các lượt ghi lô ở tệp này xoá mốc. Đo GET với mốc CÒN HẠN
+   * (như phần lớn GET thật); `PISA_DO_QUET=1` đo khi quét chạy (mốc NULL). Đặt trước khi tính câu — không vào số đo.
+   */
+  if (method === 'GET') conn.prepare(`UPDATE moc_he_thong SET luc = ?, ngay = ? WHERE khoa LIKE 'quet:%'`)
+    .run(process.env.PISA_DO_QUET === '1' ? null : new Date().toISOString(), demoToday15d());
   const truoc = soCauSql(), dongTruoc = soDongSql();
   if (process.env.PISA_DEM_SQL === '1') console.log(`[vai] ${vai}`);   // TD3-0: dòng `[sql]` ngay sau là của vai này
   const { status } = await callHttp(vai, method, url);
@@ -687,6 +693,8 @@ async function doMotLuot(dong?: Map<string, number>, lap?: string[]): Promise<Ma
 const dongTruocNhan = new Map<string, number>();
 const docLap: string[] = [];
 const truocNhan = await doMotLuot(dongTruocNhan, docLap);
+/* TL-NEN: `PISA_IN_DO=<tệp>` ghi số câu / dòng từng (vai × đường) ra JSON — cột trước → sau của mô tả PR. */
+if (process.env.PISA_IN_DO) fs.writeFileSync(process.env.PISA_IN_DO, JSON.stringify(Object.fromEntries([...truocNhan].map(([k, n]) => [k, [n, dongTruocNhan.get(k)]])), null, 1));
 
 check('TD2-a · không đọc lặp — mỗi request GET: câu lịch kỹ năng / câu điểm không trả cùng một lượt hai lần', () => {
   assert(docLap.length === 0, `Đọc lặp:\n${docLap.join('\n')}`);
@@ -990,13 +998,16 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
     ['thẻ Báo lên Ý thức', /y\.loai = 'bao_len_y_thuc' AND y\.doi_tuong_id = s\.id/, ['yeu_cau_duyet'], 'idx_ycd_loai_doi_tuong_cho'],
   ];
   const ghi: { sql: string; args: unknown[] }[] = [];
+  const PISA_DO_QUET_GOC = process.env.PISA_DO_QUET;
   doQuet.ghi = ghi;
+  process.env.PISA_DO_QUET = '1';   // TL-NEN: câu "thẻ Báo lên Ý thức" nằm trong lượt quét — đo khi quét chạy
   try {
     for (const [vai, url] of [['CX', '/tong-quan/hoc-vien'], ['GVCN', '/my-work'], ['QL', '/classes/{lopFT}/diem-theo-luot/mt:2'], ['TVV', '/hoc-vien-lop/theo-vai']] as [Vai, string][]) {
       assert((await doSql(vai, 'GET', urlFor(url))).status === 200, `${vai} ${url} không 200`);
     }
   } finally {
     doQuet.ghi = null;
+    if (!PISA_DO_QUET_GOC) delete process.env.PISA_DO_QUET;
   }
   const quet: string[] = [];
   for (const [ten, re, lon, chiMuc] of CAU) {

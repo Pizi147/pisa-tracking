@@ -54,6 +54,7 @@ import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, docNhieu, thongBaoCua } from '../platform/thongBao.ts';
 import { dongBoKhiMoChuong } from '../platform/thongBaoTuDong.ts';
 import { daGhi } from '../platform/thongBaoTuDong.ts';   // OV-15h1
+import { xoaMocQuetSauGhi } from '../platform/mocHeThong.ts';
 import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
 import * as tongQuanV5Svc from '../worklist/tongQuanV5.ts';   // UI-TONG-QUAN
 import * as yeuCauSvc from '../duyet/yeuCau.ts';
@@ -163,6 +164,19 @@ api.use((req, _res, next) => {
 api.use((req, res, next) => {
   const p = req.method !== 'GET' ? req.principal : undefined;
   if (p) res.on('finish', () => { if (res.statusCode < 400) { try { daGhi(p); } catch (e) { console.error('[chuong-da-ghi]', e); } } });
+  next();
+});
+
+/*
+ * TL-NEN (chủ SP 31/10): ghi thành công qua API → mốc quét đường đọc về NULL → GET kế của BẤT KỲ ai (tiến trình nào) quét ngay — việc vừa xong
+ * không còn báo chờ. Không tính đổi góc nhìn / phiên demo / đăng nhập (không đổi dữ liệu quét đọc). Xoá KHÔNG dựa mốc đọc lúc vào: một GET song song
+ * có thể nhận lượt quét (đọc dữ liệu trước lần ghi này) sau khi request này đọc phiên — +1 câu mỗi lần ghi.
+ */
+const KHONG_XOA_MOC = /^\/(session\/goc-nhin|demo\/session|auth\/)/;
+api.use((req, res, next) => {
+  if (req.method !== 'GET' && req.principal && !KHONG_XOA_MOC.test(req.path.toLowerCase())) {
+    res.on('finish', () => { if (res.statusCode < 400) { try { xoaMocQuetSauGhi(); } catch (e) { console.error('[moc-quet]', e); } } });
+  }
   next();
 });
 

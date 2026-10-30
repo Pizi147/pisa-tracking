@@ -7,7 +7,8 @@ import {
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, explain, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { coGhiTrongRequest, coNho, layMoc, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { nhoThamChieu, xoaNhoThamChieu, type MocHeThong } from '../platform/mocHeThong.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { rutDeNghiDoi } from './absence.ts';
@@ -131,12 +132,22 @@ const SELECT_SKILLS = (mon = 'NULL') => `
  *
  * Bộ nhớ đệm bị xoá mỗi khi chương trình học được sửa, nên nó không bao giờ giữ một câu
  * trả lời đã cũ. Hàng thô nào đã JOIN sẵn cột `scoring_mode` thì dùng luôn, không hỏi lại.
+ * TL-NEN: GET có phiên, chưa ghi → `nhoThamChieu` (khoá phiên bản DB — tiến trình khác sửa chương trình cũng đọc lại). Map riêng còn cho lời gọi
+ * ngoài GET có phiên (request ghi, GET sau ghi, phép kiểm gọi thẳng, lệnh định kỳ) để không thành N+1 — nhớ `so` của mốc phiên, khác `so` thì
+ * bỏ hết (tiến trình khác sửa chương trình / lớp → request kế đọc lại).
  */
 const modeByClass = new Map<number, ScoringMode>();
+let soModeByClass: number | null = null;
+
+/** TD4: cách chấm của MỌI lớp một câu (bảng lớp vài trăm dòng) — trước một câu mỗi lớp, N+1 ở Công việc khi hàm mới khởi động. */
+const docCheDoLop = (): Map<number, ScoringMode> => new Map(
+  (db().prepare(`SELECT c.id, p.scoring_mode AS mode FROM classes c LEFT JOIN programmes p ON p.code = c.programme_code`).all() as any[])
+    .map((r) => [r.id as number, r.mode === 'ratio' ? 'ratio' : 'band']));
 
 /** Quản trị hệ thống sửa chương trình học thì bỏ hết câu trả lời đã nhớ. */
 export function clearScoringModeCache() {
   modeByClass.clear();
+  xoaNhoThamChieu();
 }
 
 export function scoringModeOf(
@@ -145,12 +156,12 @@ export function scoringModeOf(
   if (attempt.kind === 'mt0') return 'band';   // PR-MT0: MT0 chấm band dù nằm ở lớp thường
   if (attempt.scoring_mode) return attempt.scoring_mode === 'ratio' ? 'ratio' : 'band';
   if (!attempt.class_id) return attempt.kind && attempt.kind !== 'mock' ? 'ratio' : 'band';
+  const so = (layMoc() as MocHeThong | undefined)?.thamChieu ?? null;
+  if (coNho() && so != null && !coGhiTrongRequest()) return nhoThamChieu('che-do-lop', docCheDoLop).get(attempt.class_id) ?? 'band';
+  if (so != null && so !== soModeByClass) { modeByClass.clear(); soModeByClass = so; }
   const cached = modeByClass.get(attempt.class_id);
   if (cached) return cached;
-  /* TD4: gặp lớp chưa nhớ thì nạp cách chấm của MỌI lớp một câu (bảng lớp vài trăm dòng) — trước một câu mỗi lớp, N+1 ở Công việc khi hàm mới khởi động. */
-  for (const r of db().prepare(`SELECT c.id, p.scoring_mode AS mode FROM classes c LEFT JOIN programmes p ON p.code = c.programme_code`).all() as any[]) {
-    modeByClass.set(r.id, r.mode === 'ratio' ? 'ratio' : 'band');
-  }
+  for (const [id, mode] of docCheDoLop()) modeByClass.set(id, mode);
   const mode = modeByClass.get(attempt.class_id) ?? 'band';
   modeByClass.set(attempt.class_id, mode);
   return mode;

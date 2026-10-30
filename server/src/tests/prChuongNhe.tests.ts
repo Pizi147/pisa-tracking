@@ -10,7 +10,9 @@ export async function runPrChuongNheTests(t: any) {
   console.log('\nCHUONG-NHE · chuông nhẹ (lượt lớp đang dạy, mốc đồng bộ ở DB)');
   const td: any = await import('../platform/thongBaoTuDong.ts');
   const { loadPrincipal, activeAt } = await import('../permissions.ts');
-  const { soCauSql, soDongSql, chayTrongRequest, xoaNho, demHienTai } = await import('../platform/nguCanhRequest.ts');
+  const { soCauSql, soDongSql, chayTrongRequest, xoaNho, demHienTai, datMoc: datMocRequest } = await import('../platform/nguCanhRequest.ts');
+  /* TL-NEN: như GET có phiên thật ngay sau một lượt quét — mốc quét còn hạn (quét đường đọc không chạy), không nhớ bảng tham chiếu theo tiến trình. */
+  const MOC_CON_HAN = () => { const q = { luc: new Date().toISOString(), ngay: TODAY }; return { thamChieu: null, quet: { 'quet:yeu-cau': q, 'quet:lenh': q, 'quet:doi-qua-han': q } }; };
   const mig: any = await import('../migrate/prChuongNhe.ts');
   const { createApp } = await import('../app.ts');
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -22,7 +24,7 @@ export async function runPrChuongNheTests(t: any) {
     try {
       const d0 = soDongSql();
       let cau: string[] = [];
-      const m = chayTrongRequest('GET', () => { const r = td.viecMuon(p, TODAY); cau = [...(demHienTai()?.theoCau.keys() ?? [])]; return r; }) as Map<string, unknown>;
+      const m = chayTrongRequest('GET', () => { datMocRequest(MOC_CON_HAN()); const r = td.viecMuon(p, TODAY); cau = [...(demHienTai()?.theoCau.keys() ?? [])]; return r; }) as Map<string, unknown>;
       return { json: JSON.stringify([...m].sort((a, b) => a[0].localeCompare(b[0]))), khoa: [...m.keys()], dong: soDongSql() - d0, cau };
     } finally { td.viecMuonDayDuKhiKiem.bat = false; }
   };

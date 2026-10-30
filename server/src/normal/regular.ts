@@ -16,6 +16,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import { chanKhoiPhucThuong, huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
+import { nhoThamChieu } from '../platform/mocHeThong.ts';
 import { boMonCuaLuot, lichGopCua, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { catDiemO, diemHuyMo, dongBanCat } from '../fasttrack/ketQuaHuy.ts';
@@ -63,9 +64,9 @@ export type CheDo = 'ielts_band' | 'ratio';
 export const cheDoCua = (programmeCode: string | null | undefined): CheDo =>
   allProgrammes().get(programmeCode ?? '')?.scoringMode === 'ratio' ? 'ratio' : 'ielts_band';
 
-/** PR-TD: ba câu SQL cho CẢ hệ thống chương trình, nhớ trong request GET — gọi lặp mỗi lớp/mỗi lượt trong một request. */
+/** PR-TD: ba câu SQL cho CẢ hệ thống chương trình, nhớ trong request GET — gọi lặp mỗi lớp/mỗi lượt trong một request. TL-NEN: + theo tiến trình, khoá phiên bản DB. */
 export function allProgrammes(): Map<string, ProgrammeInfo> {
-  return nho('chuong-trinh', () => {
+  return nhoThamChieu('chuong-trinh', () => {
     /* PANEL-MC (luật Turso): MỘT câu thay ba — môn + mốc gom JSON theo chương trình, xếp lại ở đây (cùng thứ tự `seq, skill` / `study_week` như ba câu cũ). */
     const out = new Map<string, ProgrammeInfo>();
     for (const p of db().prepare(
@@ -274,7 +275,7 @@ export function regularResultOf(attemptId: number): RegularResult {
 }
 
 /** Lớp có ngưỡng đạt khác 70 % — MỘT câu, nhớ trong request GET (thường rỗng: chỉ lớp mở sau khi Quản trị đổi "Đạt từ"). */
-export const nguongDatKhacMacDinh = (): Map<number, number> => nho('nguong-dat-lop', () => new Map(
+export const nguongDatKhacMacDinh = (): Map<number, number> => nhoThamChieu('nguong-dat-lop', () => new Map(
   (db().prepare(`SELECT id, nguong_dat FROM classes WHERE nguong_dat IS NOT NULL AND nguong_dat != ?`).all(RATIO_PASS_THRESHOLD) as any[])
     .map((r) => [r.id as number, r.nguong_dat as number])));
 
