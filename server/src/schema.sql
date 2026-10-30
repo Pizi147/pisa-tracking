@@ -575,6 +575,8 @@ CREATE TABLE assessment_attempts (
 CREATE INDEX idx_attempt_student ON assessment_attempts(student_id);
 CREATE INDEX idx_attempt_period ON assessment_attempts(planned_period_id);
 CREATE INDEX idx_attempt_class ON assessment_attempts(class_id);
+/* TL-NAPBAI: vế lượt KHÔNG lịch kỹ năng của `napBai` cả chi nhánh — lớp chi nhánh + khung, tuần trong kỳ (idx_attempt_period đọc mọi chi nhánh). */
+CREATE INDEX idx_attempt_lop_tuan ON assessment_attempts(class_id, planned_period_id);
 /* TD6: lượt của một em ở một lớp — trước đây duyệt mọi lượt của lớp cho từng em. */
 CREATE INDEX idx_attempt_student_class ON assessment_attempts(student_id, class_id);
 /* TD7: lượt MT lịch sử chưa nhập (một phần) — trước đọc mọi lượt của mọi lớp đang chạy. */
@@ -687,10 +689,27 @@ CREATE TABLE attempt_skills (
 
   created_at TEXT NOT NULL,
   updated_at TEXT,
+  -- TL-NAPBAI: chi nhánh lớp của lượt — chỉ trigger ghi (thêm lịch, lượt đổi lớp, lớp đổi chi nhánh); lượt không lớp → NULL.
+  branch_id INTEGER,
   UNIQUE (attempt_id, skill)
 );
 CREATE INDEX idx_attempt_skills_attempt ON attempt_skills(attempt_id);
 CREATE INDEX idx_attempt_skills_period ON attempt_skills(planned_period_id);
+/* TL-NAPBAI: `napBai` cả chi nhánh đi từ ô kỹ năng của chi nhánh trong kỳ (không đọc ô mọi chi nhánh — #724). */
+CREATE INDEX idx_attempt_skills_cn_tuan ON attempt_skills(branch_id, planned_period_id, attempt_id);
+CREATE TRIGGER trg_attempt_skills_cn AFTER INSERT ON attempt_skills
+BEGIN
+  UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = NEW.attempt_id)
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER trg_attempt_doi_lop_cn AFTER UPDATE OF class_id ON assessment_attempts WHEN NEW.class_id IS NOT OLD.class_id
+BEGIN
+  UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM classes c WHERE c.id = NEW.class_id) WHERE attempt_id = NEW.id;
+END;
+CREATE TRIGGER trg_lop_doi_cn AFTER UPDATE OF branch_id ON classes WHEN NEW.branch_id IS NOT OLD.branch_id
+BEGIN
+  UPDATE attempt_skills SET branch_id = NEW.branch_id WHERE attempt_id IN (SELECT a.id FROM assessment_attempts a WHERE a.class_id = NEW.id);
+END;
 
 /*
  * ĐỀ NGHỊ DỜI LỊCH DO VẮNG — mục 10.6.
