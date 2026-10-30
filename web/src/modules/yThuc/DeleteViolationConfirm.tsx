@@ -6,6 +6,14 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { t } from '@shared/i18n/index.ts';
 
+/** Xoá vi phạm + làm mới + toast Hoàn tác — MỘT đường cho hộp xác nhận (DeleteViolationConfirm) và Chi tiết (ChiTietViPham). Lỗi để nơi gọi xử lý. */
+export async function xoaViPham(toast: ReturnType<typeof useToast>, violationId: number): Promise<void> {
+  const r = await api.del<{ thungRacId?: number }>(`/violations/${violationId}`);
+  const lamMoi = () => { invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc'); };
+  lamMoi();
+  hoanTacXoa(toast, r?.thungRacId, t('Đã xoá vi phạm'), lamMoi);
+}
+
 /**
  * XOÁ VI PHẠM — hộp xác nhận MỘT DÒNG (rulebook v3, V11′–V14′): không lý do, không gõ chữ.
  * PR-YT4 (V4-12): vi phạm nằm trong lần xử lý đã xong thì lần xử lý vẫn giữ, bậc không lùi.
@@ -22,10 +30,7 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
     if (!violationId) return;
     setBusy(true);
     try {
-      const r = await api.del<{ thungRacId?: number }>(`/violations/${violationId}`);
-      const lamMoi = () => { invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc'); };
-      lamMoi();
-      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá vi phạm'), lamMoi);
+      await xoaViPham(toast, violationId);
       onClose(); onDone?.();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
