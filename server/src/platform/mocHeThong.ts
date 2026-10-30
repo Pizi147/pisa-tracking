@@ -71,8 +71,9 @@ export function quetTheoMoc(khoa: KhoaQuet, homNay: string, fn: () => void): boo
     const m = layMoc() as MocHeThong | undefined;
     if (!m) { fn(); return true; }
     const q = m.quet[khoa];
+    if (!q) { fn(); return true; }   // thiếu dòng mốc (DB dựng thiếu / bị xoá): quét như chưa có mốc — không bao giờ tắt hẳn lượt quét
     const bayGio = Date.now();
-    if (q?.luc && q.ngay === homNay && bayGio - Date.parse(q.luc) < QUET_DOC_MS) return false;
+    if (q.luc && q.ngay === homNay && bayGio - Date.parse(q.luc) < QUET_DOC_MS) return false;
     const conn = db();
     /*
      * `RETURNING` qua `all()`, không `run()`: câu nhận lượt chỉ chạm `moc_he_thong` — không xoá bộ nhớ request, không tắt nhớ bảng tham chiếu.
@@ -93,11 +94,6 @@ export function quetTheoMoc(khoa: KhoaQuet, homNay: string, fn: () => void): boo
     }
     return true;
   });
-}
-
-/** Có mốc quét nào khác NULL không — móc ghi chỉ tốn câu khi cần. */
-export function moiMocQuet(m: MocHeThong | null | undefined): boolean {
-  return !!m && Object.values(m.quet).some((q) => q?.luc != null);
 }
 
 /** Một lần ghi thành công qua API → GET kế (của bất kỳ ai, tiến trình nào) quét lại. */

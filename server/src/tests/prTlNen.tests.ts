@@ -281,6 +281,18 @@ export async function runPrTlNenTests(t: any) {
     assert(loi === 'hong' && q.luc === null, `${loi} · ${q.luc}`);
   });
 
+  check('N2-g2 · thiếu dòng mốc của khoá → vẫn quét mỗi lần (không tắt hẳn lượt quét); trongBoNho trong POST giữ mốc phiên', () => {
+    const m = moc.docMoc(JSON.stringify({ 'tham-chieu': [1, null, null] }));
+    let n = 0;
+    for (let i = 0; i < 2; i++) ngu.chayTrongRequest('GET', () => { ngu.datMoc(m); moc.quetTheoMoc('quet:lenh', TODAY, () => { n++; }); });
+    assert(n === 2, `thiếu dòng: quét ${n} lần`);
+    const q = { luc: new Date().toISOString(), ngay: TODAY };
+    const conHanM = { thamChieu: null, quet: { 'quet:lenh': q } };
+    n = 0;
+    ngu.chayTrongRequest('POST', () => { ngu.datMoc(conHanM); ngu.trongBoNho(() => moc.quetTheoMoc('quet:lenh', TODAY, () => { n++; })); });
+    assert(n === 0, 'trongBoNho trong POST bỏ qua mốc còn hạn');
+  });
+
   await checkAsync('N2-h · giống hệt: 5 đường × QL, QT, GVCN — JSON khi quét chạy === ngay sau (không quét)', async () => {
     await voiMayChu(async (goi) => {
       const sai: string[] = [];

@@ -152,7 +152,7 @@ export function xoaNho(): void {
 export function trongBoNho<T>(fn: () => T): T {
   const s = kho.getStore();
   if (s && s.nho !== null) return fn();
-  return kho.run({ nho: new Map(), dem: s?.dem ?? demMoi() }, fn);
+  return kho.run({ nho: new Map(), dem: s?.dem ?? demMoi(), moc: s?.moc, coGhi: s?.coGhi }, fn);   // TL-NEN: giữ mốc phiên — quét vẫn theo mốc
 }
 
 /** Gọi mỗi lần chạy một câu SQL thật (`get`/`run`/`iterate` — KHÔNG gọi cho `all`, xem chú thích ở db.ts). */

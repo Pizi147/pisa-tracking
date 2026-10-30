@@ -7,7 +7,7 @@ import {
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, explain, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { coNho, layMoc, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { coGhiTrongRequest, coNho, layMoc, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu, xoaNhoThamChieu } from '../platform/mocHeThong.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
@@ -132,7 +132,7 @@ const SELECT_SKILLS = (mon = 'NULL') => `
  *
  * Bộ nhớ đệm bị xoá mỗi khi chương trình học được sửa, nên nó không bao giờ giữ một câu
  * trả lời đã cũ. Hàng thô nào đã JOIN sẵn cột `scoring_mode` thì dùng luôn, không hỏi lại.
- * TL-NEN: GET có phiên → `nhoThamChieu` (khoá phiên bản DB — tiến trình khác sửa chương trình cũng đọc lại). Map riêng còn cho lời gọi
+ * TL-NEN: GET có phiên, chưa ghi → `nhoThamChieu` (khoá phiên bản DB — tiến trình khác sửa chương trình cũng đọc lại). Map riêng còn cho lời gọi
  * ngoài GET có phiên (request ghi, phép kiểm gọi thẳng, lệnh định kỳ) để không thành N+1.
  * shortcut: request ghi ở tiến trình này vẫn có thể thấy cách chấm cũ khi tiến trình KHÁC vừa đổi chương trình; cần hơn thì khoá Map theo `so`.
  */
@@ -155,7 +155,7 @@ export function scoringModeOf(
   if (attempt.kind === 'mt0') return 'band';   // PR-MT0: MT0 chấm band dù nằm ở lớp thường
   if (attempt.scoring_mode) return attempt.scoring_mode === 'ratio' ? 'ratio' : 'band';
   if (!attempt.class_id) return attempt.kind && attempt.kind !== 'mock' ? 'ratio' : 'band';
-  if (coNho() && layMoc()) return nhoThamChieu('che-do-lop', docCheDoLop).get(attempt.class_id) ?? 'band';
+  if (coNho() && layMoc() && !coGhiTrongRequest()) return nhoThamChieu('che-do-lop', docCheDoLop).get(attempt.class_id) ?? 'band';
   const cached = modeByClass.get(attempt.class_id);
   if (cached) return cached;
   for (const [id, mode] of docCheDoLop()) modeByClass.set(id, mode);
