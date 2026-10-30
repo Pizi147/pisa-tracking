@@ -1,6 +1,6 @@
 /**
  * TL-NAPBAI: CHI NHÁNH của lịch kỹ năng — cột `attempt_skills.branch_id` (= chi nhánh lớp của lượt) + chỉ mục (chi nhánh, tuần), (lớp, tuần) để `napBai` cả chi nhánh
- * đi thẳng từ ô kỹ năng của chi nhánh trong kỳ (không đọc ô mọi chi nhánh — bài học #724). Cột giữ bằng trigger: thêm lịch, lượt đổi lớp, lớp đổi chi nhánh —
+ * đi thẳng từ ô kỹ năng của chi nhánh trong kỳ (không đọc ô mọi chi nhánh — bài học #724). Cột giữ bằng trigger: thêm lịch, lượt đổi lớp, lớp đổi chi nhánh (+ lượt chèn sau ô, ô đổi lượt) —
  * mọi đường ghi (API, seed, ops, phép kiểm) đều trúng. Chạy lặp được; dữ liệu cũ chỉ điền khi vừa thêm cột / thiếu trigger (migrate cục bộ trước khôi phục).
  */
 /** (chi nhánh, tuần) cho ô kỹ năng · (lớp, tuần) cho vế lượt KHÔNG lịch kỹ năng — `idx_attempt_period` đọc lượt trong kỳ của mọi chi nhánh. */
@@ -19,6 +19,18 @@ END`],
 CREATE TRIGGER trg_attempt_doi_lop_cn AFTER UPDATE OF class_id ON assessment_attempts WHEN NEW.class_id IS NOT OLD.class_id
 BEGIN
   UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM classes c WHERE c.id = NEW.class_id) WHERE attempt_id = NEW.id;
+END`],
+  /* Thứ tự ghi bất kỳ (khôi phục Thùng rác, ops): lượt chèn SAU ô kỹ năng · ô kỹ năng đổi lượt. Đường thường: dò chỉ mục 0 dòng. */
+  ['trg_attempt_moi_cn', `
+CREATE TRIGGER trg_attempt_moi_cn AFTER INSERT ON assessment_attempts
+BEGIN
+  UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM classes c WHERE c.id = NEW.class_id) WHERE attempt_id = NEW.id;
+END`],
+  ['trg_attempt_skills_doi_luot_cn', `
+CREATE TRIGGER trg_attempt_skills_doi_luot_cn AFTER UPDATE OF attempt_id ON attempt_skills WHEN NEW.attempt_id IS NOT OLD.attempt_id
+BEGIN
+  UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = NEW.attempt_id)
+  WHERE id = NEW.id;
 END`],
   ['trg_lop_doi_cn', `
 CREATE TRIGGER trg_lop_doi_cn AFTER UPDATE OF branch_id ON classes WHEN NEW.branch_id IS NOT OLD.branch_id
@@ -50,8 +62,8 @@ export function migratePrTlNapBai(conn: any, applied: string[]) {
   }
   /* Thiếu cột / trigger nghĩa là có thể đã ghi lịch mà không giữ cột — điền lại một lần theo lớp của lượt (lượt không lớp → NULL). */
   if (dien) {
-    conn.exec(`UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
-                WHERE a.id = attempt_skills.attempt_id)`);
+    const cn = `(SELECT c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = attempt_skills.attempt_id)`;
+    conn.exec(`UPDATE attempt_skills SET branch_id = ${cn} WHERE branch_id IS NOT ${cn}`);
   }
   if (done.length) applied.push(`TL-NAPBAI: ${done.join(', ')}.`);
 }

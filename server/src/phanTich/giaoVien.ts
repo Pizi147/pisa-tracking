@@ -148,7 +148,7 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
      * TL-NAPBAI (Q2 làm lại sau #724): cả chi nhánh → đi từ Ô KỸ NĂNG CỦA CHI NHÁNH trong kỳ (`idx_attempt_skills_cn_tuan`, cột giữ bằng trigger) ∪ lượt
      * KHÔNG lịch kỹ năng của lớp chi nhánh + khung có tuần trong kỳ (`idx_attempt_lop_tuan`), không `class_id IN (cả chi nhánh)` + EXISTS từng lượt (mọi kỳ).
      * `CROSS JOIN` ép SQLite đi `luot` trước rồi tìm lượt theo khoá — không trông vào planner. Vế EXISTS / NOT EXISTS của `chon` giữ nguyên (đúng luật cũ);
-     * lớp ngoài khung (ô kỹ năng chi nhánh là mọi khung) lọc bằng `c.lop`. Phép kiểm: prTlNapBai "B2".
+     * lớp ngoài khung (ô kỹ năng chi nhánh là mọi khung) lọc bằng `c.lop` ngay sau khoá lượt, trước các phép nối. Phép kiểm: prTlNapBai "B2".
      */
     const lop = JSON.stringify([...c.lop.keys()]);
     const cte = `WITH ky(id) AS (SELECT id FROM report_periods WHERE week_start BETWEEN ? AND ?),
@@ -156,8 +156,8 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
                   UNION SELECT a2.id FROM assessment_attempts a2 WHERE a2.class_id IN (${DS_JSON}) AND a2.planned_period_id IN (SELECT id FROM ky)
                     AND NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a2.id))
 `;
-    if (c.lop.size) rows.push(...(chon('1', 'luot x CROSS JOIN assessment_attempts a ON a.id = x.id', cte).all(c.tu, c.den, c.cn, lop, c.tu, c.den, c.tu, c.den) as any[])
-      .filter((r) => c.lop.has(r.class_id)).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
+    if (c.lop.size) rows.push(...(chon(`a.class_id IN (${DS_JSON})`, 'luot x CROSS JOIN assessment_attempts a ON a.id = x.id', cte)
+      .all(c.tu, c.den, c.cn, lop, lop, c.tu, c.den, c.tu, c.den) as any[]).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
   } else {
     /*
      * S1 (giảm dòng đọc Turso): MỘT GV → chỉ lượt có thể gán cho GV đó, không mọi lượt của chi nhánh + khung. Mọi tập dùng `napBai` gán người qua

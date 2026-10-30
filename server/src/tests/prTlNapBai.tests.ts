@@ -52,7 +52,7 @@ export async function runPrTlNapBaiTests(t: any) {
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
 
-  check('B1-a · migrate chạy hai lần không lỗi; schema.sql có cột cuối bảng, chỉ mục, 3 trigger', () => {
+  check('B1-a · migrate chạy hai lần không lỗi; schema.sql có cột cuối bảng, 2 chỉ mục, 5 trigger trùng nguyên văn migrate', () => {
     const ap: string[] = [];
     mig.migratePrTlNapBai(conn, ap); mig.migratePrTlNapBai(conn, ap);
     assert(ap.length === 0, `DB mới (schema.sql) mà migrate còn thêm: ${ap.join(' | ')}`);
@@ -60,10 +60,11 @@ export async function runPrTlNapBaiTests(t: any) {
     assert(cot[cot.length - 1] === 'branch_id', `cột cuối: ${cot[cot.length - 1]}`);
     const sql = fs.readFileSync(path.resolve(process.cwd(), 'server/src/schema.sql'), 'utf8');
     assert(/branch_id INTEGER,\s*UNIQUE \(attempt_id, skill\)/.test(sql), 'schema.sql: branch_id không phải cột cuối attempt_skills');
-    assert(sql.includes('CREATE INDEX idx_attempt_skills_cn_tuan ON attempt_skills(branch_id, planned_period_id, attempt_id);'), 'schema.sql thiếu chỉ mục');
-    for (const [ten] of mig.TRIGGER_TL_NAPBAI) {
-      assert(sql.includes(`CREATE TRIGGER ${ten} `), `schema.sql thiếu trigger ${ten}`);
-      assert(get("SELECT 1 AS c FROM sqlite_master WHERE type = 'trigger' AND name = ?", ten), `DB thiếu trigger ${ten}`);
+    /* DB phép kiểm dựng từ schema.sql → DDL trong DB phải trùng nguyên văn hằng của migrate (không lệch hai bản). */
+    const gon = (x: string) => x.replace(/\s+/g, ' ').trim();
+    for (const [ten, ddl] of [...mig.CHI_MUC_TL_NAPBAI, ...mig.TRIGGER_TL_NAPBAI]) {
+      const r = get('SELECT sql FROM sqlite_master WHERE name = ?', ten);
+      assert(r && gon(r.sql) === gon(ddl), `${ten}: schema.sql khác migrate — ${r?.sql ?? 'thiếu'}`);
     }
     /* DB cũ (chưa cột / trigger): migrate thêm + điền theo lớp của lượt; trong giao dịch, bỏ khi xong. */
     conn.exec('BEGIN IMMEDIATE');
@@ -72,13 +73,13 @@ export async function runPrTlNapBaiTests(t: any) {
       conn.exec('UPDATE attempt_skills SET branch_id = NULL');
       const ap2: string[] = [];
       mig.migratePrTlNapBai(conn, ap2);
-      assert(ap2.length === 1 && ap2[0].includes('trg_lop_doi_cn'), `migrate: ${ap2.join(' | ')}`);
+      assert(ap2.length === 1 && mig.TRIGGER_TL_NAPBAI.every(([t]: [string]) => ap2[0].includes(t)), `migrate: ${ap2.join(' | ')}`);
       assert(get(SQL_LECH_CN).n === 0, 'điền lại dữ liệu cũ sai');
       assert(get('SELECT COUNT(*) AS n FROM attempt_skills WHERE branch_id IS NOT NULL').n > 0, 'seed: không lịch kỹ năng có lớp');
     } finally { conn.exec('ROLLBACK'); }
   });
 
-  check('B1-b · thêm lịch kỹ năng → branch_id đúng; lượt đổi sang lớp chi nhánh khác → đổi theo; lớp đổi chi nhánh → đổi theo', () => {
+  check('B1-b · thêm lịch kỹ năng → branch_id đúng; lượt đổi sang lớp chi nhánh khác / lớp đổi chi nhánh / ô đổi lượt / lượt chèn sau ô → đổi theo', () => {
     const r = get(`SELECT a.id, a.class_id, c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
                     WHERE EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id) ORDER BY a.id LIMIT 1`);
     const khac = get('SELECT c.id, c.branch_id FROM classes c WHERE c.branch_id != ? ORDER BY c.id LIMIT 1', r.branch_id);
@@ -96,6 +97,16 @@ export async function runPrTlNapBaiTests(t: any) {
       assert(JSON.stringify(cnLich(r.id)) === JSON.stringify([r.branch_id]), `lớp đổi chi nhánh: ${cnLich(r.id)} ≠ ${r.branch_id}`);
       conn.prepare('UPDATE assessment_attempts SET class_id = NULL WHERE id = ?').run(r.id);
       assert(JSON.stringify(cnLich(r.id)) === JSON.stringify([null]), `lượt không lớp: ${cnLich(r.id)}`);
+      /* Thứ tự ghi của khôi phục: ô kỹ năng chèn trước lượt (khoá ngoại hoãn) · ô đổi sang lượt khác. */
+      const sau = get(`SELECT a.id, c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.branch_id != ? ORDER BY a.id LIMIT 1`, r.branch_id);
+      conn.prepare(`UPDATE attempt_skills SET attempt_id = ?, skill = 'tl-napbai' WHERE attempt_id = ? AND skill = ?`).run(sau.id, r.id, moi);
+      assert(get(`SELECT branch_id FROM attempt_skills WHERE attempt_id = ? AND skill = 'tl-napbai'`, sau.id).branch_id === sau.branch_id, 'ô đổi lượt: branch_id không theo lượt mới');
+      conn.pragma('defer_foreign_keys = ON');
+      const idMoi = get('SELECT MAX(id) + 1000 AS n FROM assessment_attempts').n;
+      conn.prepare(`INSERT INTO attempt_skills (attempt_id, skill, created_at) VALUES (?, 'listening', '2026-10-01')`).run(idMoi);
+      conn.prepare(`INSERT INTO assessment_attempts (id, cycle_id, student_id, attempt_no, class_id, status, created_at)
+                    SELECT ?, cycle_id, student_id, attempt_no + 1000, ?, 'planned', created_at FROM assessment_attempts WHERE id = ?`).run(idMoi, khac.id, r.id);
+      assert(JSON.stringify(cnLich(idMoi)) === JSON.stringify([r.branch_id]), `lượt chèn sau ô: ${cnLich(idMoi)} ≠ ${r.branch_id}`);
       assert(get(SQL_LECH_CN).n === 0, 'bất biến lệch sau các bước');
     } finally { conn.exec('ROLLBACK'); }
   });

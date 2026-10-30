@@ -689,7 +689,7 @@ CREATE TABLE attempt_skills (
 
   created_at TEXT NOT NULL,
   updated_at TEXT,
-  -- TL-NAPBAI: chi nhánh lớp của lượt — chỉ trigger ghi (thêm lịch, lượt đổi lớp, lớp đổi chi nhánh); lượt không lớp → NULL.
+  -- TL-NAPBAI: chi nhánh lớp của lượt — chỉ trigger ghi (thêm lịch / lượt, lượt đổi lớp, ô đổi lượt, lớp đổi chi nhánh); lượt không lớp → NULL.
   branch_id INTEGER,
   UNIQUE (attempt_id, skill)
 );
@@ -705,6 +705,15 @@ END;
 CREATE TRIGGER trg_attempt_doi_lop_cn AFTER UPDATE OF class_id ON assessment_attempts WHEN NEW.class_id IS NOT OLD.class_id
 BEGIN
   UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM classes c WHERE c.id = NEW.class_id) WHERE attempt_id = NEW.id;
+END;
+CREATE TRIGGER trg_attempt_moi_cn AFTER INSERT ON assessment_attempts
+BEGIN
+  UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM classes c WHERE c.id = NEW.class_id) WHERE attempt_id = NEW.id;
+END;
+CREATE TRIGGER trg_attempt_skills_doi_luot_cn AFTER UPDATE OF attempt_id ON attempt_skills WHEN NEW.attempt_id IS NOT OLD.attempt_id
+BEGIN
+  UPDATE attempt_skills SET branch_id = (SELECT c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = NEW.attempt_id)
+  WHERE id = NEW.id;
 END;
 CREATE TRIGGER trg_lop_doi_cn AFTER UPDATE OF branch_id ON classes WHEN NEW.branch_id IS NOT OLD.branch_id
 BEGIN
