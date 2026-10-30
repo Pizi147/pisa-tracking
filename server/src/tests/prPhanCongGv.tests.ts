@@ -354,8 +354,9 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     assert(perm.can(c, PM.ATTEMPT_VIEW, { classId: X }) && perm.can(c, PM.STUDENT_VIEW, { classId: X }) && perm.can(c, PM.STUDENT_VIEW, { studentId: emX }), 'xem được');
     assert(!perm.can(c, PM.SCORE_EDIT, { classId: X, skill: 'reading' }) && !perm.can(c, PM.SOS_REPORT, { classId: X }) && !perm.can(c, PM.VIOLATION_RECORD, { classId: X }), 'không sửa');
   }));
+  /* PR-B: còn việc bàn giao mở thì GV cũ xem tới khi xong (lâu hơn của hai mốc) — hai phép kiểm mốc 7 ngày dưới đây lưu KHÔNG tạo việc bàn giao. */
   check('A5 · hết mốc (hiệu lực + 8 ngày): không xem; PTA 30/10: lớp cũ KHÔNG vào phạm vi danh sách / việc / chỉ số (scopeFor không có lớp)', () => thu(() => {
-    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB), banGiao: { reading: false } }] });
     const c = loadPrincipal(gC);
     assert(!perm.can(c, PM.ATTEMPT_VIEW, { classId: X, date: addDays(TODAY, 8) }), '+8 không xem');
     for (const q of [PM.ATTEMPT_VIEW, PM.STUDENT_VIEW]) assert(!perm.scopeFor(c, q, TODAY).classIds.includes(X), `scopeFor ${q} không có lớp cũ`);
@@ -365,7 +366,7 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const mw: any = mwMod;
     const c0 = loadPrincipal(gC);
     const truoc = JSON.stringify(mw.myWork(c0).items?.map((x: any) => x.classId).filter((id: any) => id === X) ?? []);
-    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
+    pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB), banGiao: { reading: false } }] });
     const c = loadPrincipal(gC);
     const viec = (mw.myWork(c).items ?? []).filter((x: any) => x.classId === X);
     assert(viec.length === 0, `việc lớp cũ: ${viec.length} (trước ${truoc})`);

@@ -102,6 +102,10 @@ export function xoaLop(p: Principal, classId: number, input: { maLop?: unknown }
   if (String(input.maLop ?? '').trim() !== c.code) throw badRequest('Gõ lại đúng mã lớp để xác nhận xoá.');
   const conn = db();
   tx(() => {
+    /* PR-B: việc bàn giao đổi GV của lớp trống (trỏ `doi_phan_cong`) — xoá trước. */
+    conn.prepare('DELETE FROM ban_giao_gv_em WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)').run(classId);
+    conn.prepare('DELETE FROM ban_giao_gv_mon WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)').run(classId);
+    conn.prepare('DELETE FROM ban_giao_gv WHERE class_id = ?').run(classId);
     conn.prepare('DELETE FROM doi_phan_cong WHERE class_id = ?').run(classId);   // PC-GV-A: lịch / lần đổi phân công của lớp trống
     conn.prepare('DELETE FROM teacher_assignments WHERE class_id = ?').run(classId);
     conn.prepare('DELETE FROM class_skills WHERE class_id = ?').run(classId);

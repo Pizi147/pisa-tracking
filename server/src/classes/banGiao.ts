@@ -3,7 +3,7 @@ import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
-import { badRequest, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -47,6 +47,56 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: 
   };
 }
 
+// ==================================================================== CÙNG GV (chủ SP 30/10)
+
+/** Phân công đang chạy theo lớp: chương trình + dòng (người, kỹ năng, GVCN). */
+export type PhanCongLop = Map<number, { ct: string | null; rows: { user_id: number; skill: string | null; is_core: number }[] }>;
+export type CungGv = { mon: Set<string>; gvcn: boolean };
+
+/**
+ * CHỦ SP 30/10: kỹ năng ở lớp mới vẫn do ĐÚNG GV cũ dạy → không cần bàn giao (dòng môn "Cùng GV · không cần bàn giao", không tính thiếu, không
+ * tạo việc cho GV đó). Môn `m` của lệnh "cùng GV" khi mọi GV dạy `m` ở lớp nguồn cũng dạy `m` ở lớp chuyển đến. [PTA đoán] GVCN lớp cũ = GVCN lớp
+ * mới → nhận xét chung không bắt buộc. Thuần — nơi gọi đọc phân công (`docPhanCongLop` hoặc một vế UNION sẵn có).
+ */
+export function cungGvTuPhanCong(lenh: readonly { id: number; lop_nguon_id: number; lop_dich_id: number | null }[], pc: PhanCongLop): Map<number, CungGv> {
+  const out = new Map<number, CungGv>();
+  const day = (classId: number, m: string) => {
+    const x = pc.get(classId);
+    return new Set((x?.rows ?? []).filter((r) => r.skill && kyNangPhuTrach(x!.ct, m).includes(r.skill)).map((r) => r.user_id));
+  };
+  const gvcn = (classId: number) => pc.get(classId)?.rows.find((r) => !!r.is_core)?.user_id ?? null;
+  for (const l of lenh) {
+    if (!l.lop_dich_id) continue;
+    const mon = new Set(boMonCt(pc.get(l.lop_nguon_id)?.ct ?? null).filter((m) => {
+      const a = day(l.lop_nguon_id, m);
+      const b = day(l.lop_dich_id!, m);
+      return a.size > 0 && [...a].every((u) => b.has(u));
+    }));
+    const g = gvcn(l.lop_nguon_id);
+    out.set(l.id, { mon, gvcn: g !== null && g === gvcn(l.lop_dich_id) });
+  }
+  return out;
+}
+
+/** Phân công đang chạy của các lớp (kể cả lớp chưa ai dạy — để có chương trình). Một câu mỗi lô. */
+export function docPhanCongLop(ids: readonly number[]): PhanCongLop {
+  const m: PhanCongLop = new Map();
+  theoLoJson([...new Set(ids)], (json) => {
+    for (const r of db().prepare(
+      `SELECT c.id AS class_id, c.programme_code AS ct, ta.user_id, ta.skill, ta.is_core FROM classes c
+         LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.status = 'active' WHERE c.id IN (${DS_JSON})`,
+    ).all(json) as any[]) {
+      const x = m.get(r.class_id) ?? { ct: (r.ct ?? null) as string | null, rows: [] as { user_id: number; skill: string | null; is_core: number }[] };
+      if (r.user_id) x.rows.push({ user_id: r.user_id, skill: r.skill ?? null, is_core: r.is_core });
+      m.set(r.class_id, x);
+    }
+  });
+  return m;
+}
+
+export const cungGvTheoLo = (lenh: readonly { id: number; lop_nguon_id: number; lop_dich_id: number | null }[]) =>
+  lenh.some((l) => l.lop_dich_id) ? cungGvTuPhanCong(lenh, docPhanCongLop(lenh.flatMap((l) => (l.lop_dich_id ? [l.lop_nguon_id, l.lop_dich_id] : [])))) : new Map<number, CungGv>();
+
 // ==================================================================== phần TỰ ĐIỀN (chỉ đọc) — theo lô
 
 /**
@@ -67,7 +117,7 @@ function ketQuaTheoLo(nguon: { id: number; ct: string | null }, sids: readonly n
 }
 
 /** Kết quả gần nhất · Case đang mở + người nhận gợi ý · Ý thức · việc còn dở của MỌI em một lần (không hỏi lại theo em). Mọi lệnh cùng MỘT lớp nguồn. */
-function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number; student_id: number; lop_dich_id: number | null }[]): Map<number, TuDien> {
+export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number; student_id: number; lop_dich_id: number | null }[]): Map<number, TuDien> {
   const out = new Map<number, TuDien>();
   if (!ds.length) return out;
   const conn = db();
@@ -184,6 +234,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       }
     });
   }
+  const cung = cungGvTheoLo(thay);
   const chuaXacNhan = thay.filter((r) => !r.xac_nhan_luc);
   const tuDien = tuDienTheoLo({ id: lopId, ct }, chuaXacNhan);
   /* PR-S5F-a: phiếu đã chụp vẫn đọc dòng Kết quả MỚI của lớp thường (sửa điểm Cuối khoá sau khi xác nhận) — không giữ chữ cũ. */
@@ -199,10 +250,10 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       const x = dong.get(m.ma);
       return {
         ...m, noiDung: x?.noi_dung ?? null, nguoiGhi: x?.ten_ghi ?? null, ghiLuc: x?.ghi_luc ?? null, dienThay: !!x?.dien_thay, gvbm: gvbmCua(m.ma),
-        lamLai: !!x?.lam_lai, id: (x?.id ?? null) as number | null,
+        lamLai: !!x?.lam_lai, id: (x?.id ?? null) as number | null, cungGv: !!cung.get(r.id)?.mon.has(m.ma),
       };
     });
-    const daGhi = mon.filter((m) => m.noiDung && !m.lamLai).length;
+    const daGhi = mon.filter((m) => (m.noiDung && !m.lamLai) || m.cungGv).length;
     const chup = r.tu_dien ? (JSON.parse(r.tu_dien) as { tuDien: TuDien; gvbmChuaBanGiao: string[] }) : null;
     return {
       lenhId: r.id, studentId: r.student_id, ten: r.full_name, maHv: r.student_code, huong: r.huong, trangThaiLenh: r.trang_thai,
@@ -212,8 +263,8 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       tuDien: chup ? { ...chup.tuDien, ketQua: ketQuaMoi.get(r.student_id) ?? chup.tuDien.ketQua } : tuDien.get(r.id) ?? null, tuDienDaChup: !!chup,
       mon, nhanXetChung: r.nhan_xet_chung ?? null,
       xacNhan: r.xac_nhan_luc ? { boi: r.xn_ten ?? null, luc: r.xac_nhan_luc, thay: !!r.xac_nhan_thay } : null,
-      gvbmChuaBanGiao: chup?.gvbmChuaBanGiao ?? mon.filter((m) => !m.noiDung || m.lamLai).map((m) => m.ngan),
-      suaDuoc: false,
+      gvbmChuaBanGiao: chup?.gvbmChuaBanGiao ?? mon.filter((m) => (!m.noiDung || m.lamLai) && !m.cungGv).map((m) => m.ngan),
+      suaDuoc: false, gvcnCung: !!cung.get(r.id)?.gvcn,
     };
   });
 
@@ -231,7 +282,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
     tong: ds.length, daXacNhan: ds.filter((e) => e.xacNhan).length,
     hanGvcn: som?.han_gvcn ?? null, hanGvcnEm: som?.full_name ?? null,
     theoMon: monDs.map((m) => ({
-      ma: m.ma, daGhi: ds.filter((e) => { const x = e.mon.find((y) => y.ma === m.ma); return !!x?.noiDung && !x.lamLai; }).length, tong: ds.length,
+      ma: m.ma, daGhi: ds.filter((e) => { const x = e.mon.find((y) => y.ma === m.ma); return (!!x?.noiDung && !x.lamLai) || !!x?.cungGv; }).length, tong: ds.length,
       han: thay.map((r) => r.han_gvbm as string | null).filter(Boolean).sort()[0] ?? null,
     })),
     ds,
@@ -249,10 +300,10 @@ function docLenhPhieu(id: number): any {
   return l;
 }
 
-/** Môn chưa có câu bàn giao (tên ngắn) — ghi vào bản chụp lúc xác nhận / sửa. */
-function chuaBanGiaoCua(lenhId: number, ct: string | null): string[] {
-  const da = new Set((db().prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ? AND lam_lai = 0').all(lenhId) as any[]).map((r) => r.mon as string));
-  return boMonCt(ct).filter((m) => !da.has(m)).map((m) => tenMonNgan(ct, m));
+/** Môn chưa có câu bàn giao (tên ngắn; bỏ môn cùng GV — chủ SP 30/10) — ghi vào bản chụp lúc xác nhận / sửa. */
+function chuaBanGiaoCua(l: { id: number; lop_nguon_id: number; lop_dich_id: number | null; ct: string | null }, cung = cungGvTheoLo([l]).get(l.id)): string[] {
+  const da = new Set((db().prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ? AND lam_lai = 0').all(l.id) as any[]).map((r) => r.mon as string));
+  return boMonCt(l.ct).filter((m) => !da.has(m) && !cung?.mon.has(m)).map((m) => tenMonNgan(l.ct, m));
 }
 
 /** Một dòng môn (UPSERT). GVBM đúng môn ghi; GVCN (hoặc Quản lý khi thay được) điền thay → `dien_thay`. OV-7a / OV-13h: sau xác nhận vẫn sửa được, cả sau ngày chuyển lớp (chủ SP 15/10). */
@@ -278,7 +329,7 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
     if (tuDien) {
       /* Phiếu đã chụp: "GVBM chưa bàn giao" đếm lại — phần tự điền giữ bản chụp. */
       const chup = JSON.parse(tuDien);
-      db().prepare('UPDATE lenh_chuyen_lop SET tu_dien = ?, sua_luc = ? WHERE id = ?').run(JSON.stringify({ ...chup, gvbmChuaBanGiao: chuaBanGiaoCua(lenhId, l.ct) }), mocNghiepVu(), lenhId);
+      db().prepare('UPDATE lenh_chuyen_lop SET tu_dien = ?, sua_luc = ? WHERE id = ?').run(JSON.stringify({ ...chup, gvbmChuaBanGiao: chuaBanGiaoCua(l) }), mocNghiepVu(), lenhId);
     }
     writeAudit({ actorUserId: p.userId, action: 'ban_giao.ghi_mon', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name,
       before: cu ? { lenhId, mon, noiDung: cu.noi_dung } : undefined, after: { lenhId, mon, noiDung: text, dienThay: !q.gvbmDungMon } });
@@ -294,16 +345,18 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
   if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
   if (l.xac_nhan_luc) throw conflict('Phiếu đã được xác nhận.');
   const nx = String(nhanXetChung ?? '').trim();
-  if (nx.length < NHAN_XET_TOI_THIEU) throw loi(400, 'Nhận xét chung cần ít nhất {NHAN_XET_TOI_THIEU} ký tự.', { NHAN_XET_TOI_THIEU });
+  const cung = cungGvTheoLo([l]).get(l.id);
+  /* Chủ SP 30/10 [PTA đoán]: GVCN lớp mới cũng là GVCN lớp cũ → nhận xét chung không bắt buộc. */
+  if (!cung?.gvcn && nx.length < NHAN_XET_TOI_THIEU) throw loi(400, 'Nhận xét chung cần ít nhất {NHAN_XET_TOI_THIEU} ký tự.', { NHAN_XET_TOI_THIEU });
   tx(() => {
     const conn = db();
     const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;
-    const chuaBanGiao = chuaBanGiaoCua(lenhId, l.ct);
+    const chuaBanGiao = chuaBanGiaoCua(l, cung);
     const luc = mocNghiepVu();
     const r = conn.prepare(
       `UPDATE lenh_chuyen_lop SET nhan_xet_chung = ?, tu_dien = ?, xac_nhan_boi = ?, xac_nhan_luc = ?, xac_nhan_thay = ?, sua_luc = ?
         WHERE id = ? AND xac_nhan_luc IS NULL`,
-    ).run(nx, JSON.stringify({ tuDien, gvbmChuaBanGiao: chuaBanGiao }), p.userId, luc, q.xacNhanThay ? 1 : 0, luc, lenhId);
+    ).run(nx || null, JSON.stringify({ tuDien, gvbmChuaBanGiao: chuaBanGiao }), p.userId, luc, q.xacNhanThay ? 1 : 0, luc, lenhId);
     if (!r.changes) throw conflict('Phiếu vừa được xác nhận.');
     writeAudit({ actorUserId: p.userId, action: 'ban_giao.xac_nhan', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, after: { lenhId, thay: q.xacNhanThay, gvbmChuaBanGiao: chuaBanGiao } });
     baoBanGiao(p, l, nx);
@@ -326,6 +379,15 @@ function baoBanGiao(p: Principal, l: any, nx: string) {
   }
 }
 
+/** PR-B: nhận xét chung của GVCN lưu NHÁP khi rời ô (chống mất chữ) — chỉ khi chưa xác nhận, KHÔNG kiểm ≥ 15 (Xác nhận vẫn kiểm). */
+export function luuNhapNhanXet(p: Principal, lenhId: number, chu: unknown): void {
+  const l = docLenhPhieu(lenhId);
+  if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không xác nhận bàn giao được.');
+  if (!quyenBanGiao(p, l, undefined, { ct: l.ct }).xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
+  const nx = chuTuDo(chu, 'Nhận xét chung', 2000);
+  if (!db().prepare('UPDATE lenh_chuyen_lop SET nhan_xet_chung = ? WHERE id = ? AND xac_nhan_luc IS NULL').run(nx, lenhId).changes) throw badRequest('Phiếu đã xác nhận — dùng Sửa.');
+}
+
 /**
  * OV-7a: SỬA phiếu đã xác nhận — GVCN lớp nguồn (hoặc Quản lý xác nhận thay), mọi lúc (OV-13h, chủ SP 15/10 — bỏ khoá ngày chuyển lớp). Lưu lại = nhận xét chung
  * mới + chụp lại phần tự điền; người / lúc xác nhận đầu giữ. Hành trình: sự kiện cũ đổi khoá (giữ làm lịch sử) rồi ghi sự kiện mới.
@@ -337,13 +399,14 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
   if (!q.xacNhan && !coTheRaLenh(p, l.lop_nguon_id)) throw forbidden('Chỉ GVCN lớp nguồn hoặc Quản lý sửa được nhận xét chung của bàn giao.');
   const nx = String(nhanXetChung ?? '').trim();
-  if (nx.length < NHAN_XET_TOI_THIEU) throw loi(400, 'Nhận xét chung cần ít nhất {NHAN_XET_TOI_THIEU} ký tự.', { NHAN_XET_TOI_THIEU });
+  const cung = cungGvTheoLo([l]).get(l.id);
+  if (!cung?.gvcn && nx.length < NHAN_XET_TOI_THIEU) throw loi(400, 'Nhận xét chung cần ít nhất {NHAN_XET_TOI_THIEU} ký tự.', { NHAN_XET_TOI_THIEU });
   tx(() => {
     const conn = db();
     const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;
     conn.prepare('UPDATE lenh_chuyen_lop SET nhan_xet_chung = ?, tu_dien = ?, sua_luc = ? WHERE id = ?')
-      .run(nx, JSON.stringify({ tuDien, gvbmChuaBanGiao: chuaBanGiaoCua(lenhId, l.ct) }), mocNghiepVu(), lenhId);
-    if (nx !== l.nhan_xet_chung) {
+      .run(nx || null, JSON.stringify({ tuDien, gvbmChuaBanGiao: chuaBanGiaoCua(l, cung) }), mocNghiepVu(), lenhId);
+    if (nx !== (l.nhan_xet_chung ?? '')) {
       conn.prepare(`UPDATE journey_events SET dedup_key = dedup_key || ? WHERE dedup_key = ?`).run(`:sua:${nowIso()}`, `ban_giao:${lenhId}`);
       baoBanGiao(p, l, nx);
     }
@@ -384,8 +447,11 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
   const lenh: any[] = [];
   theoLoJson(ids, (json) => {
     lenh.push(...conn.prepare(
-      `SELECT l.id, l.student_id, l.lop_nguon_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich
-         FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id LEFT JOIN classes d ON d.id = l.lop_dich_id
+      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich,
+              n.programme_code AS ct_nguon, d.programme_code AS ct_dich,
+              CASE WHEN l.xac_nhan_luc IS NULL AND l.lop_dich_id IS NOT NULL THEN (SELECT json_group_array(json_array(ta.class_id, ta.user_id, ta.skill, ta.is_core))
+                FROM teacher_assignments ta WHERE ta.status = 'active' AND ta.class_id IN (l.lop_nguon_id, l.lop_dich_id)) END AS pc_json
+         FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id JOIN classes n ON n.id = l.lop_nguon_id LEFT JOIN classes d ON d.id = l.lop_dich_id
         WHERE l.lop_nguon_id IN (${DS_JSON}) AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ORDER BY s.full_name`,
     ).all(json) as any[]);
   });
@@ -394,6 +460,18 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
   theoLoJson(lenh.map((l) => l.id as number), (json) => {
     for (const r of conn.prepare(`SELECT lenh_id, mon FROM ban_giao_mon WHERE lam_lai = 0 AND lenh_id IN (${DS_JSON})`).all(json) as any[]) daGhi.add(`${r.lenh_id}:${r.mon}`);
   });
+  /* Chủ SP 30/10: môn ở lớp mới vẫn đúng GV cũ dạy → không cần bàn giao (phân công lớp nguồn + đích đi cùng câu lệnh — không thêm lượt). */
+  const pcLop: PhanCongLop = new Map();
+  for (const l of lenh.filter((x) => x.pc_json)) {
+    if (!pcLop.has(l.lop_nguon_id)) pcLop.set(l.lop_nguon_id, { ct: l.ct_nguon ?? null, rows: [] });
+    if (!pcLop.has(l.lop_dich_id)) pcLop.set(l.lop_dich_id, { ct: l.ct_dich ?? null, rows: [] });
+    for (const [classId, user_id, skill, is_core] of JSON.parse(l.pc_json) as any[][]) {
+      const x = pcLop.get(classId)!;
+      if (!x.rows.some((r) => r.user_id === user_id && r.skill === skill && r.is_core === is_core)) x.rows.push({ user_id, skill, is_core });
+    }
+  }
+  const cung = cungGvTuPhanCong(lenh.filter((l) => !l.xac_nhan_luc), pcLop);
+  const canMon = (l: any, m: string) => !daGhi.has(`${l.id}:${m}`) && !cung.get(l.id)?.mon.has(m);
   const out: ViecBanGiao[] = [];
   for (const x of lop.values()) {
     const { lopId } = x;
@@ -402,7 +480,7 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
     if (!chuaXn.length) continue;
     const mons = boMonCt(x.ct);
     if (x.gvcn) {
-      const thieu = mons.filter((m) => chuaXn.some((l) => !daGhi.has(`${l.id}:${m}`))).map((m) => tenMonNgan(x.ct, m));
+      const thieu = mons.filter((m) => chuaXn.some((l) => canMon(l, m))).map((m) => tenMonNgan(x.ct, m));
       out.push({
         loai: 'gvcn', userId: x.userId, lopId, code: x.code, n: cua.length, daXacNhan: cua.length - chuaXn.length, chua: thieu,
         han: chuaXn.map((l) => l.han_gvcn as string).filter(Boolean).sort()[0] ?? '',
@@ -412,10 +490,11 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
     }
     for (const m of mons) {
       if (!kyNangPhuTrach(x.ct, m).some((k) => x.kyNang.has(k))) continue;
-      const chua = chuaXn.filter((l) => !daGhi.has(`${l.id}:${m}`));
+      const chua = chuaXn.filter((l) => canMon(l, m));
       if (!chua.length) continue;
+      const canGhi = chuaXn.filter((l) => !cung.get(l.id)?.mon.has(m));   // em cùng GV không tính vào việc của GVBM
       out.push({
-        loai: 'gvbm', userId: x.userId, lopId, code: x.code, mon: m, monNgan: tenMonNgan(x.ct, m), daGhi: chuaXn.length - chua.length, n: chuaXn.length,
+        loai: 'gvbm', userId: x.userId, lopId, code: x.code, mon: m, monNgan: tenMonNgan(x.ct, m), daGhi: canGhi.length - chua.length, n: canGhi.length,
         han: chua.map((l) => l.han_gvbm as string).filter(Boolean).sort()[0] ?? '',
         emIds: chua.map((l) => l.student_id as number),
       });

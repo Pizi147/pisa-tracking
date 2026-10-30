@@ -29,6 +29,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'xet_lai.quyet': 'Xét lại lộ trình', 'xet_lai.hoan_tac': 'Hoàn tác xét lại lộ trình', 'xet_lai.nhan_xet': 'Nhận xét xét lại (GVCN lớp mới)',
   'lenh_chuyen.tao': 'Quyết định chuyển lớp', 'lenh_chuyen.sua': 'Sửa quyết định chuyển lớp', 'lenh_chuyen.huy': 'Huỷ quyết định chuyển lớp', 'lenh_chuyen.khoi_phuc': 'Khôi phục quyết định chuyển lớp',
   'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao', 'ban_giao.sua': 'Sửa bàn giao đã xác nhận',
+  'ban_giao_gv.gop_y': 'Góp ý bàn giao đổi GV', 'ban_giao_gv.nhan_xet': 'Nhận xét chung bàn giao đổi GV', 'ban_giao_gv.xac_nhan': 'Xác nhận bàn giao đổi GV',
   'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.progress.doi_bai': 'Dời bài theo mốc lớp', 'class.transition': 'Chuyển tiếp lớp',
   'class.sua_ca_lop': 'Sửa thông tin cả lớp',   // OV-15i1: một mục cho cả lô (Lịch sử lớp)
   'cycle.baseline.clear': 'Xoá điểm đầu vào', 'cycle.baseline.set': 'Ghi điểm đầu vào', 'cycle.create': 'Mở lộ trình',

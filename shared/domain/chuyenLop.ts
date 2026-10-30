@@ -273,6 +273,10 @@ export type DaiLop = {
   chuaChuyenDuoc: { n: number; loi: string } | null;
   /** OV-3c: lớp FT — số đợt em vào từ FOU/BE/ELE còn trong 4 tuần (cách xem "Kết quả đầu ra"); 0 = ẩn. */
   kqdrDot: number;
+  /** PR-B: việc bàn giao đổi GV của lớp — đang mở (người viết `viet`, QL / GV cũ `doc`) và đã xong ≤ 14 ngày (GV mới, QL — `doc`). */
+  banGiaoGv: { id: number; monNgan: string[]; nguoiMoi: string; nguoiCu: string; du: number; tong: number; han: string; vai: 'viet' | 'doc'; xong: boolean }[];
+  /** PR-B: người xem là GV cũ chỉ xem lớp này (đã hết ô, còn hạn): `den` = "ít nhất tới"; `banGiao` = việc bàn giao còn mở của chính người đó. */
+  xemTam: { monNgan: string[]; nguoiMoi: { id: number; ten: string }; tu: string; den: string; banGiao: { id: number; du: number; tong: number } | null } | null;
   viewer: { coTheRaLenh: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
 };
 
@@ -304,6 +308,8 @@ export type PhieuMon = {
   lamLai: boolean;
   /** P14 DICH: id dòng `ban_giao_mon` (null = môn chưa ghi) — nút Dịch câu GVBM. */
   id: number | null;
+  /** Chủ SP 30/10: môn ở lớp mới vẫn đúng GV cũ dạy → "Cùng GV · không cần bàn giao", không tính thiếu. */
+  cungGv: boolean;
 };
 export type PhieuEm = {
   lenhId: number; studentId: number; ten: string; maHv: string; huong: string; trangThaiLenh: string;
@@ -317,6 +323,8 @@ export type PhieuEm = {
   gvbmChuaBanGiao: string[];
   /** OV-7a: phiếu đã xác nhận mà người xem còn sửa được (tới ngày thi hành lệnh; sau đó chỉ Quản lý). */
   suaDuoc: boolean;
+  /** Chủ SP 30/10 [PTA đoán]: GVCN lớp mới = GVCN lớp cũ → nhận xét chung không bắt buộc. */
+  gvcnCung: boolean;
 };
 export type PhieuBanGiaoDto = {
   lop: { id: number; code: string; ct: string | null; ft: boolean; mon: { ma: string; ten: string; ngan: string }[] };

@@ -207,6 +207,17 @@ const USER: Record<Vai, number> = {
 };
 /** Quản lý chi nhánh CP — dùng riêng ở Task 2 phép kiểm (c)/(e) (chi nhánh KHÁC với MB của mọi vai trên). */
 const QL_CP = userByRole('manager', 'CP');
+/** PR-B: một việc bàn giao đổi GV ĐÃ XÁC NHẬN ở MB FT 101 (GVBM → GVCN môn L, chưa chụp tự điền) — đường `/ban-giao-gv/{bgGv}`. Đã xác nhận nên
+ *  không vào Công việc (băm /my-work giữ); dòng đổi phân công `huy` nên không đổi quyền xem. */
+const BG_GV = (() => {
+  const luc = new Date().toISOString();
+  const doi = Number(conn.prepare(`INSERT INTO doi_phan_cong (class_id, khoa, nguoi_cu, nguoi_moi, hieu_luc, trang_thai, tao_boi, tao_luc) VALUES (?, 'listening', ?, ?, ?, 'huy', ?, ?)`)
+    .run(LOP_FT, USER.GVBM, USER.GVCN, demoToday15d(), USER.QL, luc).lastInsertRowid);
+  const id = Number(conn.prepare(`INSERT INTO ban_giao_gv (class_id, nguoi_cu, nguoi_lam, hieu_luc, han, trang_thai, tao_luc, tao_boi, xong_luc, xong_boi) VALUES (?,?,?,?,?, 'xong', ?,?,?,?)`)
+    .run(LOP_FT, USER.GVBM, USER.GVBM, demoToday15d(), demoToday15d(), luc, USER.QL, luc, USER.GVBM).lastInsertRowid);
+  conn.prepare(`INSERT INTO ban_giao_gv_mon (ban_giao_id, mon, nguoi_moi, doi_id, trang_thai) VALUES (?, 'listening', ?, ?, 'mo')`).run(id, USER.GVCN, doi);
+  return id;
+})();
 
 const server = createApp().listen(0);
 /* Giữa hai lượt gọi có đoạn đo đồng bộ dài (nhân dữ liệu, vòng mọi vai) > 5 s mặc định: máy chủ đóng kết nối giữ sống, fetch kế tiếp dùng lại → ECONNRESET. */
@@ -228,6 +239,7 @@ function urlFor(mau: string): string {
     .replace('{case}', String(KASE))
     .replace('{paTutor}', String(PA_TUTOR))
     .replace('{ycPa}', String(YC_PA))
+    .replace('{bgGv}', String(BG_GV))
     .replace('{cn}', String(CN))
     .replace('{gv}', String(USER.GVCN));
 }
@@ -1057,6 +1069,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  */
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
+  /* PR-B (30/10): chụp lại GVBM toi · QL / QT tat-ca · QT tat-ca cn · GVS toi — đổi CÓ CHỦ Ý (luật chủ SP 30/10 "Cùng GV · không cần bàn giao"): seed kịch bản 6
+     MB FOU 23 → lớp đích cùng GV mọi môn, nên mất các việc "Bàn giao môn …" của GVBM và chữ "chờ môn …" ở việc GVCN. So JSON origin/main ↔ nhánh: lệch CHỈ các dòng đó. */
   const ANH: Record<string, string> = {
     /* RA-LUONG-1 K2/K3 (29/10): chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: dòng gộp Speaking chấm chéo (QL / QT "Tất cả", gom theo lớp)
        giữ đuôi `|cc` như việc lẻ (`khoaGopCua`). So JSON ×1 origin/main ↔ nhánh: lệch CHỈ khoá dòng `gop:score:3:u0` → `gop:score:3:u0|cc`; mọi dòng khác, `items`,
@@ -1096,9 +1110,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        lượt hiện tại (lộ trình mới nhất cùng loại, em đang học; MT chưa làm sau thi thật không còn) — dữ liệu ×3 có em học lại / lưu trữ / thi thật. Chưa so
        JSON từng dòng với main — nguyên nhân lệch đọc từ mã + phép kiểm prLocHienTai LHT-1…8. Trước: QL toi e1049bc984a18aca, QT toi 7de7b28ab5fe8b93,
        GVCN toi 82fc3ddf32d43f10, GVCN_THUONG toi 82fc3ddf32d43f10, QL tat-ca 22c0808af745c50f, QT tat-ca b54f972219247783, QT tat-ca cn fdc0016b89453d9d, QL gvcn 87927080df295343 */
-    'QL toi': 'e52a0d6a5bb7537d', 'QT toi': '5115a3184a27f3d9', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': 'e852965c7d7de6a4',
-    'GVCN_THUONG toi': '836db9c7acdd8e39', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'c2a5042336d7086f', 'QT tat-ca': '7a5fc1548d6ba369',
-    'QT tat-ca cn': '285870aeea37680e', 'QL gvcn': 'ceb5c556bc540613', 'GVS toi': '858db2ced1555af8',
+    'QL toi': 'e52a0d6a5bb7537d', 'QT toi': '5115a3184a27f3d9', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': '71283ff70674504b',
+    'GVCN_THUONG toi': '836db9c7acdd8e39', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'cf1b31474244ae4e', 'QT tat-ca': 'cd79349e0bcf3f62',
+    'QT tat-ca cn': '7cfbd540beff0e8c', 'QL gvcn': 'ceb5c556bc540613', 'GVS toi': 'b4b4e5024a108eca',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1246,9 +1260,10 @@ check('TD4-b (×3) · /my-work mọi vai: dòng ≤ 70 % mốc trước TD4 (V5 
     /* SV-YT-TVV + SV-TVV-VIEC (21/10): QL / QT "Của tôi" +2 câu — việc Báo PH (một câu) + Chốt ngày thi / Bổ sung hồ sơ (một câu cho cả hai). */
     /* MAIN-DO (BU_MT2 SEED-UX): +1 câu QL / QT như trần TRAN; dòng ×3 mọi vai +~150 (58a2d268 → 9a078719, QL 2 202 → 2 352) — mốc dòng QL 5 647 → 5 880. */
     /* PC-GV-A +1 câu (quét lịch đổi phân công GV tới hạn trong `quetLenhDenHan`). */
-    'QL /my-work': [74, 5880], 'QT /my-work': [74, 7775],   /* P9a XET-LAI +2 câu (tập Xét lại) */   /* SV-NX-CASE +1 (MT mới nhất của em: một câu / trang) */   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
-    'GVCN /my-work': [66, 4502], 'GVBM /my-work': [66, 5140], 'GVCN_THUONG /my-work': [66, 4502],
-    'QL /my-work?nguoi=tat-ca': [84, 6721], 'QT /my-work?nguoi=tat-ca': [84, 9176],   /* PC-GV-A +1 */   /* P9a XET-LAI +2 câu */   /* MAIN-DO +1 (BU_MT2); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay") */ [`QL /my-work?nguoi=${USER.GVCN}`]: [72, 4530],
+    /* PR-B +1 câu (việc bàn giao khi đổi GV). */
+    'QL /my-work': [75, 5880], 'QT /my-work': [75, 7775],   /* P9a XET-LAI +2 câu (tập Xét lại) */   /* SV-NX-CASE +1 (MT mới nhất của em: một câu / trang) */   /* SEED-UX: +1 QL / QT (em "Đã thi · chờ KQ" theo ngày) */
+    'GVCN /my-work': [67, 4502], 'GVBM /my-work': [67, 5140], 'GVCN_THUONG /my-work': [67, 4502],
+    'QL /my-work?nguoi=tat-ca': [85, 6721], 'QT /my-work?nguoi=tat-ca': [85, 9176],   /* PC-GV-A +1 */   /* P9a XET-LAI +2 câu */   /* MAIN-DO +1 (BU_MT2); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay") */ [`QL /my-work?nguoi=${USER.GVCN}`]: [73, 4530],
   };
   const sai: string[] = [];
   for (const [k, [cau, dong]] of Object.entries(MOC)) {
