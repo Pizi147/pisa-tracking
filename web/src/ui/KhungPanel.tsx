@@ -162,7 +162,7 @@ export const HienLaiPanel = createContext<(() => void) | null>(null);
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh, quayLai, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, onDong, children }: {
+export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh, quayLai, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, dayCot, onDong, children }: {
   tieuDe: string; hocVien?: string | null; lop?: string | null;
   /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". M6 6b-1: khung KHÔNG
    *  đoán theo `dau` — panel việc khai qua `dauViec` (`dau.loai`) hoặc prop này; `null` = không vẽ. */
@@ -198,6 +198,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
   };
   /** 6c (lỗi 5): như `chan.daSua` cho panel KHÔNG có chân (form + nút lưu nằm trong thân). */
   daSua?: boolean;
+  /** DUYET-QL (mockup v8 / v10 #cv): panel tại chỗ ≥ 1024 cao hết khung nhìn của cột — thân cuộn, chân ở ĐÁY (không bám ngay dưới nội dung ngắn). */
+  dayCot?: boolean;
   onDong: () => void; children: ReactNode;
 }) {
   const id = useId();
@@ -373,7 +375,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
     return (
       /* 375 toàn màn (08 NEN-PANEL, `.dt-toan`): `-mx-4` bù đệm `p-4` của <main> — thẻ tràn sát hai mép, không bo góc. */
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
-        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
+        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 ${dayCot ? 'lg:h-[calc(100dvh-11rem)]' : 'lg:max-h-[calc(100dvh-8rem)]'} ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}>{voi(than)}</KhungTaiCho.Provider></KhungTrongCot.Provider>
       </section>
     );

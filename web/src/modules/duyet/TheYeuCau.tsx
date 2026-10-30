@@ -113,7 +113,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     void gui(`/yeu-cau/${yc.id}/rut`, {}, t('Đã rút — Quản lý không còn thấy yêu cầu này'));
   };
   /* Đóng ô: nút gốc vẫn trong DOM (chỉ mờ khi ô mở) — đợi React bỏ `disabled` rồi mới trả focus. */
-  const dongO = () => { setO(null); setLoiMay(null); setTimeout(() => nutMo.current?.focus(), 0); };
+  /* DUYET-QL: nút mở ô có thể đã rời trang (chân dính đổi nút) — trả focus về nút còn trên trang. */
+  const dongO = () => { setO(null); setLoiMay(null); setTimeout(() => (nutMo.current?.isConnected ? nutMo.current : chanEl?.querySelector('button'))?.focus(), 0); };
 
   const gui = async (duongDan: string, than: Record<string, unknown>, xongChu: string, put = false) => {
     if (busy) return;

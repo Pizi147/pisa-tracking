@@ -416,7 +416,7 @@ function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: {
   const chuTiep = tiep ? t('Tiếp: {tieuDe}', { tieuDe: [dich(tiep.tieuDe), tiep.hocVien].filter(Boolean).join(' · ') }) : null;
   return (
     <KhungTaiCho.Provider value>
-      <KhungPanel tieuDe={dich(yc.tieuDe)} loai={`${t('VIỆC · DUYỆT')} · ${dich(yc.nhanPhanLoai).toLocaleUpperCase('vi')}`}
+      <KhungPanel dayCot tieuDe={dich(yc.tieuDe)} loai={`${t('VIỆC · DUYỆT')} · ${dich(yc.nhanPhanLoai).toLocaleUpperCase('vi')}`}
         dau={{ han: !xong && yc.trangThai === 'cho' && yc.hanDuyet ? <ChipHan loai="duyet" han={yc.hanDuyet} /> : undefined,
           dong2: [
             yc.hocVien && (yc.hocVienId != null ? <Link to={`/hoc-vien/${yc.hocVienId}`} className="link">{yc.hocVien}</Link> : yc.hocVien),

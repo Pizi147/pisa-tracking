@@ -56,4 +56,10 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
     const f = than(doc('server/src/duyet/yeuCau.ts'), 'export function lichSuYeuCau');
     assert(f.includes('nhanHanhDongNhatKy(r.action)') && !/\[r\.action, r\.entity_label\]/.test(f), 'lichSuYeuCau còn trả mã thô');
   });
+
+  check('D2 (rà #754) · 1440 panel duyệt cao hết cột, chân ở đáy; đóng ô trả focus về nút còn trên trang', () => {
+    const kp = doc('web/src/ui/KhungPanel.tsx');
+    assert(/dayCot \? 'lg:h-\[calc\(100dvh-[0-9.]+rem\)\]'/.test(kp) && /<KhungPanel dayCot /.test(than(hop, 'function PanelDuyet')), 'panel duyệt chưa cao hết cột');
+    assert(/nutMo\.current\?\.isConnected \? nutMo\.current : chanEl\?\.querySelector\('button'\)/.test(the), 'dongO chưa trả focus về nút còn trên trang');
+  });
 }
