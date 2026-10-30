@@ -41,3 +41,15 @@ export function nhanDocDiem(kn: KnDiem, soVoi: DiemHv['soVoi']): string {
     : soVoi.nhan === 'ngưỡng' ? t('{goc}, dưới ngưỡng {moc}', { goc, moc })
     : t('{goc}, dưới kỳ vọng {moc}', { goc, moc });
 }
+
+/** Đạt / không đạt của một điểm band so kỳ vọng (Học viên & Lớp `MiniKn`): null khi chưa có điểm, không kỳ vọng, hoặc KCK dưới kỳ vọng (trung tính như `ODiem kck`). */
+export function datKv(v: number | null, kv: number | null, kck?: boolean): boolean | null {
+  if (v === null || kv === null) return null;
+  return v >= kv ? true : kck ? null : false;
+}
+
+/** Chữ ô điểm mini: "✗ 5.0" · "✓ 6.5" · "6.0" (không căn cứ) · "—" (chưa có). */
+export function chuMiniKn(v: number | null, kv: number | null, kck?: boolean): string {
+  if (v === null) return '—';
+  return [dauDiem(datKv(v, kv, kck)), v.toFixed(1)].filter(Boolean).join(' ');
+}
