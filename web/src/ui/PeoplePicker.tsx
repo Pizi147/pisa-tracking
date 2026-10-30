@@ -171,7 +171,9 @@ export type NguoiTrongDs = { id: number; ten: string; phu?: string;
   /** TU-a: tiêu đề nhóm vẽ trước dòng đầu của nhóm ("Monbay · L", "Khác", "Tutor", "Giáo viên"). */
   nhom?: string;
   /** TU-a: dòng là một tutor (`/tutors/chon`), không phải tài khoản. */
-  tutor?: TutorChon };
+  tutor?: TutorChon;
+  /** SUA-NHO-UI U4: dòng hiện mờ, không chọn được (bấm, ↑ ↓, Enter, rời ô bỏ qua); chữ = lý do ngắn, đứng sau `phu`. */
+  tat?: string };
 
 type ChonNguoiOption =
   | { kind: 'trong' }
@@ -283,11 +285,11 @@ export function ChonNguoi({
     if (them) out.push({ kind: 'them' });
     return out;
   }, [choTrong, choToi, rows, choNgoai, term, them]);
-  /** Dòng "tên ngoài" chưa đủ 2 ký tự: hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
-  const tat = (opt: ChonNguoiOption) => opt.kind === 'ngoai' && opt.text.length < 2;
+  /** Dòng "tên ngoài" chưa đủ 2 ký tự / dòng nơi gọi tắt (`row.tat`): hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
+  const tat = (opt: ChonNguoiOption) => (opt.kind === 'ngoai' && opt.text.length < 2) || (opt.kind === 'nguoi' && !!opt.row.tat);
   const chonDuoc = options.flatMap((o, i) => (tat(o) ? [] : [i]));
   /* Đang gõ: TÔ SÁNG SẴN người khớp đầu — thấy trước Enter sẽ chọn ai (không chọn ngầm dòng không tô sáng). */
-  useEffect(() => { setActiveIndex(term.trim() ? options.findIndex((o) => o.kind === 'nguoi') : -1); }, [term, options]);
+  useEffect(() => { setActiveIndex(term.trim() ? options.findIndex((o) => o.kind === 'nguoi' && !tat(o)) : -1); }, [term, options]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const chon = (opt: ChonNguoiOption) => {
     if (tat(opt)) return;
@@ -310,7 +312,7 @@ export function ChonNguoi({
   const roiO = () => {
     setOpen(false);
     setActiveIndex(-1);
-    const nguoi = loading ? null : chotChuGo(term, options.filter((o) => o.kind === 'nguoi'));
+    const nguoi = loading ? null : chotChuGo(term, options.filter((o) => o.kind === 'nguoi' && !tat(o)));
     if (nguoi) { chon(nguoi); return; }
     setTerm('');
     if (coChuThayThe) setEditing(false);
@@ -422,8 +424,8 @@ export function ChonNguoi({
                 )}
                 {opt.kind === 'nguoi' && (
                   <>
-                    <div className="text-sm text-slate-100">{opt.row.ten}</div>
-                    {opt.row.phu && <div className="text-xs text-slate-500">{opt.row.phu}</div>}
+                    <div className={`text-sm ${opt.row.tat ? 'text-slate-500' : 'text-slate-100'}`}>{opt.row.ten}</div>
+                    {(opt.row.phu || opt.row.tat) && <div className="text-xs text-slate-500">{[opt.row.phu, opt.row.tat].filter(Boolean).join(' · ')}</div>}
                   </>
                 )}
                 {opt.kind === 'ngoai' && (tat(opt)

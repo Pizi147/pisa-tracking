@@ -225,7 +225,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
     const cho = l.cho.find((x) => x.khoa === khoa);
     const khac = !!khacDoi[l.id]?.includes(khoa);
     const doi = v !== a;
-    const trangThai: TrangThaiO = loi ? 'loi' : khac ? 'khac-doi' : doi ? 'doi' : cho ? 'cho-doi' : !g ? 'trong' : g.nghi ? 'nghi' : 'binh-thuong';
+    const trangThai: TrangThaiO = loi ? 'loi' : khac ? 'khac-doi' : doi ? 'da-doi' : cho ? 'cho-doi' : !g ? 'trong' : g.nghi ? 'nghi' : 'binh-thuong';
     const phu = khac ? t('↻ người khác vừa đổi') : doi ? t('trước: {ten}', { ten: a ? ten(Number(a)) : t('Chưa có') })
       : g?.nghi ? (g.nghi === 'nghi' ? t('⚠ đã nghỉ') : t('⚠ ngoài chi nhánh')) : cho ? `→ ${ten(cho.nguoiMoi)}` : undefined;
     const k = `${l.id}|${khoa}`;

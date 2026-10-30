@@ -81,6 +81,9 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('lenh_chuyen_lop', 'xac_nhan_boi', DV, 'bàn giao'), c('ban_giao_mon', 'nguoi_ghi', DV, 'bàn giao'),
   /* PC-GV-A: đổi phân công có hiệu lực (người giao · người nhận · người lưu). */
   c('doi_phan_cong', 'nguoi_cu', DV, 'đổi phân công'), c('doi_phan_cong', 'nguoi_moi', DV, 'đổi phân công'), c('doi_phan_cong', 'tao_boi', DV, 'đổi phân công'),
+  /* PR-B: việc bàn giao khi đổi GV (GV cũ · người viết · người tạo · GV mới · người ghi góp ý). */
+  c('ban_giao_gv', 'nguoi_cu', DV, 'bàn giao đổi GV'), c('ban_giao_gv', 'nguoi_lam', DV, 'bàn giao đổi GV'), c('ban_giao_gv', 'tao_boi', DV, 'bàn giao đổi GV'),
+  c('ban_giao_gv_mon', 'nguoi_moi', DV, 'bàn giao đổi GV'), c('ban_giao_gv_em', 'nguoi_ghi', DV, 'bàn giao đổi GV'),
   c('gop_y_tuan', 'ghi_boi', DV, 'góp ý hàng tuần'),   // OV-12g
   c('bai_tren_lop', 'ghi_boi', DV, 'tiến độ trên lớp'), c('bai_tren_lop', 'sua_boi', DV, 'tiến độ trên lớp'),   // SV-BAI-LOP
   c('s_expert', 'them_boi', DV, 'S Expert'), c('s_expert', 'sua_boi', DV, 'S Expert'), c('s_expert', 'cham_boi', DV, 'S Expert'), c('s_expert', 'xoa_boi', DV, 'S Expert'),   // SV-S-EXPERT · SV-LOP

@@ -196,9 +196,9 @@ export function loadBundle(attemptIds: number[], o: { boCase?: boolean } = {}): 
    * dòng ở đây (mục 18.1). OV-6b2: hai câu dưới nhớ THEO LƯỢT trong request GET (`nhoTheoId`, như lịch kỹ năng và điểm) — một trang gọi
    * `loadBundle` hai lần cùng tập lượt không đọc lại, nên mỗi lô 900 lượt thêm đúng một câu mỗi bảng.
    */
-  for (const [id, rows] of nhoTheoId('skip-cu:', attemptIds, (ids) => docTheoLo<{ attempt_id: number; skill: string }>(ids,
+  /* PANEL-MC (luật Turso): bảng cũ chỉ dùng cho lượt CHƯA có lịch kỹ năng — lượt đã có thì không hỏi (trước: hỏi mọi lượt rồi bỏ qua). */
+  for (const [id, rows] of nhoTheoId('skip-cu:', attemptIds.filter((id) => !bundle.skillRows.get(id)?.length), (ids) => docTheoLo<{ attempt_id: number; skill: string }>(ids,
     (ph) => `SELECT attempt_id, skill FROM attempt_skill_skips WHERE attempt_id IN (${ph})`))) {
-    if (bundle.skillRows.get(id)?.length) continue;
     bundle.skips.set(id, rows.map((r) => r.skill as AssessedSkill));
   }
   /*

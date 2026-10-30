@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -8,6 +8,7 @@ import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
+import { DsEmBanGiao, TuDienEm } from './banGiaoChung.tsx';
 import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, deadlineView, ngay, shortDate, tuanLich, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -16,6 +17,8 @@ import { dich, t } from '@shared/i18n/index.ts';
  *   F  GVCN lớp cũ (hoặc Quản lý xác nhận thay): trái danh sách em + trạng thái phiếu, phải phiếu của em đang chọn — Hệ thống tự điền (chỉ đọc), mỗi môn một câu của
  *      GVBM (Điền thay; OV-12h bỏ Nhắc), Nhận xét chung (bắt buộc ≥ 15 ký tự) → Xác nhận bàn giao. ↑/↓ đi từng em. Dưới 820 px: danh sách trên, phiếu dưới.
  *   G  GVBM của môn: bảng mỗi em một câu, lưu khi rời ô.
+ *   PR-B: danh sách em + tự điền dùng khung chung (`banGiaoChung.tsx`, cùng panel bàn giao đổi GV); nhận xét chung lưu nháp khi rời ô (Xác nhận vẫn
+ *   kiểm ≥ 15 ký tự). Chủ SP 30/10: môn ở lớp mới vẫn đúng GV cũ dạy → "Cùng GV · không cần bàn giao"; GVCN cùng người → nhận xét chung tuỳ chọn.
  *   Đọc: GV / Quản lý lớp mới, hoặc bất kỳ ai không ghi được — cùng bố cục F, chỉ đọc, hiện "Xác nhận bởi …".
  * Lối vào: Công việc › việc Bàn giao · hồ sơ lớp › dải Bàn giao / Sắp nhận · hồ sơ học viên › dải Sắp chuyển (mở thẳng em đó — `lenhId`).
  */
@@ -58,25 +61,28 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
   const [dienThay, setDienThay] = useState<{ lenhId: number; mon: string; chu: string } | null>(null);
   /* OV-7a: phiếu đã xác nhận — "Sửa" mở lại ô nhận xét + câu từng môn (tới ngày thi hành lệnh; sau đó chỉ Quản lý). */
   const [dangSua, setDangSua] = useState(false);
-  const dsRef = useRef<HTMLUListElement>(null);
+  const [nxLuu, setNxLuu] = useState<'yen' | 'luu' | 'da' | 'loi'>('yen');
   const ghi = dto.nguoiXem.xemTuNguon && dto.nguoiXem.xacNhan;   // được viết nhận xét + xác nhận (GVCN, hoặc Quản lý thay)
   const suaPhieu = !!em?.xacNhan && dangSua;
   const docThoi = !ghi && !suaPhieu;
 
-  useEffect(() => { setDaBam(false); setDienThay(null); setDangSua(false); }, [chon]);
+  useEffect(() => { setDaBam(false); setDienThay(null); setDangSua(false); setNxLuu('yen'); }, [chon]);
   const nhap = em ? nhanXet[em.lenhId] ?? em.nhanXetChung ?? '' : '';
-  const thieu = nhap.trim().length < NHAN_XET_TOI_THIEU;
+  /* Chủ SP 30/10 [PTA đoán]: GVCN lớp mới cũng là GVCN lớp cũ → nhận xét chung không bắt buộc. */
+  const canNx = !!em && !em.gvcnCung;
+  const thieu = canNx && nhap.trim().length < NHAN_XET_TOI_THIEU;
   const dsXn = dto.ds.filter((e) => !e.xacNhan).length;
   /* 6c (lỗi 5): nhận xét đã gõ khác bản đã lưu, hoặc ô điền thay đang mở. */
   const daSuaNx = !!dienThay || dto.ds.some((e) => nhanXet[e.lenhId] !== undefined && nhanXet[e.lenhId] !== (e.nhanXetChung ?? ''));
 
-  const phim = (e: KeyboardEvent<HTMLUListElement>) => {
-    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-    e.preventDefault();
-    const i = dto.ds.findIndex((x) => x.lenhId === em?.lenhId);
-    const j = Math.max(0, Math.min(dto.ds.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)));
-    setChon(dto.ds[j].lenhId);
-    dsRef.current?.querySelectorAll<HTMLElement>('[role="option"]')[j]?.focus();
+  /* PR-B: nhận xét chung lưu NHÁP khi rời ô (chưa xác nhận) — không mất chữ khi đóng panel / đổi em. */
+  const luuNhapNx = async () => {
+    if (!em || em.xacNhan || !ghi || nhanXet[em.lenhId] === undefined || nhap === (em.nhanXetChung ?? '')) return;
+    setNxLuu('luu');
+    try {
+      await api.put(`/lenh-chuyen/${em.lenhId}/nhan-xet-nhap`, { nhanXetChung: nhap });
+      setNxLuu('da'); invalidate('/lenh-chuyen'); reload();
+    } catch { setNxLuu('loi'); }
   };
 
   const xacNhan = async () => {
@@ -121,7 +127,6 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
     return v?.tone === 'overdue' ? v.daysOverdue : null;
   };
   const quaHanSom = quaHan({ hanGvcn: dto.hanGvcn, xacNhan: null });
-  const dong = 'grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm';
 
   return (
     <KhungPanel quayLai={quayLai} rong="toan" tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
@@ -135,34 +140,26 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
           <p className="m-0 px-4 pt-2 text-right text-xs text-slate-400">{t('Môn còn trống sẽ ghi “GVBM chưa bàn giao”.')}</p>
         ) : undefined,
         chinh: ghi && em && !em.xacNhan ? (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || !nhap.trim()} title={!nhap.trim() ? t('Viết nhận xét chung trước khi xác nhận') : undefined}>{dich(CHU_CHUYEN_LOP.banGiao)}</button>
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || (canNx && !nhap.trim())} title={canNx && !nhap.trim() ? t('Viết nhận xét chung trước khi xác nhận') : undefined}>{dich(CHU_CHUYEN_LOP.banGiao)}</button>
         ) : suaPhieu ? (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuSua} disabled={busy}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
         ) : em?.xacNhan && em.suaDuoc && (ghi || dto.nguoiXem.ql) ? (
           <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>{t('Sửa')}</button>
         ) : undefined,
         conThieu: daBam && thieu && em && (ghi || suaPhieu) ? [{ nhan: t('Nhận xét chung'), oId: 'o-nhan-xet' }] : undefined,
+        trai: ghi && em && !em.xacNhan ? <span className="text-xs text-slate-500">{t('Tự lưu khi rời ô')}</span> : undefined,
       }}>
       {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">{t('Không có em nào cần bàn giao.')}</p>}
       {em && (
         <div className="grid gap-4 pt-3 md:grid-cols-[280px_minmax(0,1fr)]">
-          <ul ref={dsRef} role="listbox" aria-label={t('Học viên cần bàn giao')} onKeyDown={phim}
-            className="m-0 list-none divide-y rounded-lg p-0 surface-2" style={{ borderColor: 'var(--line)' }}>
-            {dto.ds.map((e) => (
-              <li key={e.lenhId} role="option" aria-selected={e.lenhId === em.lenhId} tabIndex={e.lenhId === em.lenhId ? 0 : -1}
-                onClick={() => setChon(e.lenhId)} onFocus={() => setChon(e.lenhId)}
-                className={`cursor-pointer px-3 py-2 outline-none ${e.lenhId === em.lenhId ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'bam'}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="min-w-0 truncate text-sm text-slate-100">{e.ten}</span>
-                  <Nhan tone={e.phieu.khoa === 'da-xac-nhan' ? 'ok' : e.phieu.khoa === 'mon' ? 'soon' : 'muted'}>{dich(e.phieu.nhan)}</Nhan>
-                </div>
-                <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
-                  <span className="min-w-0 truncate">{e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `${t('Tạm dừng học (bảo lưu)')}${e.ngayXemLai ? ` · ${t('xem lại {tuan}', { tuan: tuanLich(e.ngayXemLai, homNay) })}` : ''}` : tuanLich(e.tuan, homNay)}</span>
-                  {quaHan(e) != null && <QuaHan ngay={quaHan(e)} />}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={dto.ds.map((e) => ({ ...e, id: e.lenhId }))} chon={em.lenhId} onChon={setChon}
+            trangThai={(e) => ({ khoa: e.phieu.khoa === 'da-xac-nhan' ? 'du' : e.phieu.khoa === 'mon' ? 'thieu' : 'muted', nhan: dich(e.phieu.nhan) })}
+            phu={(e) => (
+              <>
+                <span className="min-w-0 truncate">{e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `${t('Tạm dừng học (bảo lưu)')}${e.ngayXemLai ? ` · ${t('xem lại {tuan}', { tuan: tuanLich(e.ngayXemLai, homNay) })}` : ''}` : tuanLich(e.tuan, homNay)}</span>
+                {quaHan(e) != null && <QuaHan ngay={quaHan(e)} />}
+              </>
+            )} />
 
           <div className="min-w-0 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -174,20 +171,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
               {!em.xacNhan && em.hanGvcn && <Han loai="viec-van-hanh" han={em.hanGvcn} />}
             </div>
 
-            <section aria-label={t('Hệ thống tự điền')} className="surface-2 rounded-lg p-3">
-              <h4 className="mb-2 mt-0 text-[12px] font-semibold text-slate-500">{t('Tự điền · chỉ đọc')}{em.tuDienDaChup && ` · ${t('chụp lúc xác nhận')}`}</h4>
-              {em.tuDien ? (
-                <div className={dong}>
-                  <span className="text-slate-500">{t('Kết quả')}</span><span className="text-slate-200">{dich(em.tuDien.ketQua)}</span>
-                  <span className="text-slate-500">{t('Case đang mở')}</span>
-                  <span className="text-slate-200">
-                    {em.tuDien.caseMo.length ? em.tuDien.caseMo.map((c) => `${dich(c.ten)}${c.nguoiNhan ? ` · ${t('người nhận gợi ý: {ten}', { ten: c.nguoiNhan })}` : ''}`).join(' · ') : t('Không có')}
-                  </span>
-                  <span className="text-slate-500">{t('Ý thức')}</span><span className="text-slate-200">{dich(em.tuDien.yThuc)}</span>
-                  <span className="text-slate-500">{t('Việc còn dở')}</span><span className="text-slate-200">{dich(em.tuDien.viecConDo)}</span>
-                </div>
-              ) : <p className="m-0 text-sm text-slate-400">{t('Chưa có dữ liệu tự điền.')}</p>}
-            </section>
+            <TuDienEm tuDien={em.tuDien} daChup={em.tuDienDaChup} />
 
             <section aria-label={t('Thông tin bàn giao của GVBM')}>
               <h4 className="mb-2 mt-0 text-[12px] font-semibold text-slate-500">
@@ -198,7 +182,9 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
                   <li key={m.ma} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-3 text-sm">
                     <abbr title={m.ten} className="font-bold text-slate-300 no-underline">{m.ngan}</abbr>
                     <div className="min-w-0">
-                      {m.noiDung ? (
+                      {m.cungGv && !m.noiDung ? (
+                        <span className="text-slate-400">{t('Cùng GV · không cần bàn giao')}</span>
+                      ) : m.noiDung ? (
                         <span className="text-slate-200"><ChuDich chu={m.noiDung} nguon={m.id ? { bang: 'ban_giao_mon', id: m.id, cot: 'noi_dung' } : null} /> <span className="text-slate-500">— {m.nguoiGhi}, {ngay(m.ghiLuc, homNay)}{m.dienThay ? ` ${t('(điền thay)')}` : ''}{m.lamLai ? '' : ' ✓'}</span>
                           {m.lamLai && <> <Nhan tone="soon">{t('Cần làm lại')}</Nhan></>}</span>
                       ) : em.xacNhan ? (
@@ -229,12 +215,18 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
               </ul>
             </section>
 
-            <Truong nhan={t('Nhận xét chung của GVCN')} batBuoc={(ghi && !em.xacNhan) || suaPhieu} dem={(ghi && !em.xacNhan) || suaPhieu ? { co: nhap.trim().length, can: NHAN_XET_TOI_THIEU } : undefined}
+            <Truong nhan={t('Nhận xét chung của GVCN')} batBuoc={canNx && ((ghi && !em.xacNhan) || suaPhieu)} dem={canNx && ((ghi && !em.xacNhan) || suaPhieu) ? { co: nhap.trim().length, can: NHAN_XET_TOI_THIEU } : undefined}
               loi={daBam && thieu && (ghi || suaPhieu) ? t('Cần ít nhất {n} ký tự', { n: NHAN_XET_TOI_THIEU }) : null}>
               <textarea id="o-nhan-xet" className="field w-full" rows={3} readOnly={docThoi || (!!em.xacNhan && !suaPhieu)} aria-invalid={daBam && thieu && (ghi || suaPhieu)}
                 value={nhap} placeholder={docThoi ? undefined : t('Ví dụ: Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo.')}
-                onChange={(e) => setNhanXet((m) => ({ ...m, [em.lenhId]: e.target.value }))} />
+                onChange={(e) => { setNhanXet((m) => ({ ...m, [em.lenhId]: e.target.value })); setNxLuu('yen'); }} onBlur={() => void luuNhapNx()} />
             </Truong>
+            {ghi && !em.xacNhan && (nxLuu !== 'yen' || !canNx) && (
+              <p className="m-0 -mt-2 text-xs text-slate-500" aria-live="polite">
+                {nxLuu === 'luu' ? t('Đang lưu…') : nxLuu === 'da' ? t('✓ Đã lưu') : nxLuu === 'loi' ? <span className="text-late">{t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.')}</span> : null}
+                {!canNx && nxLuu === 'yen' && t('GVCN lớp mới là bạn — nhận xét chung không bắt buộc.')}
+              </p>
+            )}
             {/* P14 DICH: dịch nhận xét ĐÃ LƯU (chưa gõ đổi) — bản dịch hiện dưới ô, không vào ô; ngoài <label> để nút không bấm nhầm vào ô. */}
             {em.nhanXetChung && nhap === em.nhanXetChung && (
               <p className="m-0 -mt-2 whitespace-pre-wrap break-words text-[13px] text-slate-300"><ChuDich chu={em.nhanXetChung} nguon={{ bang: 'lenh_chuyen_lop', id: em.lenhId, cot: 'nhan_xet_chung' }} anGoc /></p>
@@ -262,7 +254,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
   const [loi, setLoi] = useState<Record<number, string>>({});
   const [luu, setLuu] = useState<Record<number, boolean>>({});
   const oMon = (e: PhieuEm) => e.mon.find((x) => x.ma === mon);
-  const daCo = (e: PhieuEm) => !!oMon(e)?.noiDung && !oMon(e)?.lamLai;
+  const daCo = (e: PhieuEm) => (!!oMon(e)?.noiDung && !oMon(e)?.lamLai) || !!oMon(e)?.cungGv;
   const soDaCo = dto.ds.filter(daCo).length;
   const han = useMemo(() => dto.theoMon.find((x) => x.ma === mon)?.han ?? null, [dto, mon]);
 
@@ -306,6 +298,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
                 {e.lopDich && <span className="block text-xs text-slate-500">→ {e.lopDich.code} · {tuanLich(e.tuan, homNay)}</span>}</span>
               <span role="cell" className="min-w-0 text-xs text-slate-400">{e.tuDien?.ketQua ? dich(e.tuDien.ketQua) : '—'}</span>
               <span role="cell" className="min-w-0">
+                {oMon(e)?.cungGv && !cu ? <span className="text-sm text-slate-400">{t('Cùng GV · không cần bàn giao')}</span> : <>
                 <input id={`o-bg-${e.lenhId}`} className="field w-full" maxLength={300} readOnly={khoa} aria-label={t('Bàn giao môn {mon} của {ten}', { mon: m0.ngan, ten: e.ten })}
                   aria-invalid={!!loi[e.lenhId]} placeholder={t('Viết một câu…')} value={chu[e.lenhId] ?? cu}
                   onChange={(ev) => { setChu((x) => ({ ...x, [e.lenhId]: ev.target.value })); setLuu((x) => ({ ...x, [e.lenhId]: false })); }}
@@ -318,6 +311,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
                     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghi(e, true)}>{t('Giữ và lưu')}</button>
                   </span>
                 )}
+                </>}
               </span>
             </div>
           );

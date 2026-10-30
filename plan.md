@@ -252,6 +252,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ### 31/10 sáng — chủ SP duyệt ảnh #736, #732, #731, #726 (kèm chỉnh)
 - **Nút ⋯ trong ô lưới điểm (luật):** đứng NGAY SAU nội dung ô, cùng hàng, giữa theo chiều dọc với dòng chữ đầu (vd "✗ 14 /25 ⋯"); không đè chữ / số; máy có chuột chỉ hiện khi rê / focus, cảm ứng hiện sẵn (#732 làm đúng kiểu này).
 - **Bảng lớp góc Phân công GV (#726) — thay ý "giãn hết" 30/10:** chừa MỘT cột cố định ở mép phải cho nút dòng (Huỷ / Lưu, Chờ đổi…) ở MỌI nhóm, để cột kỹ năng / GVCN không thụt ra thụt vào giữa các nhóm; cột GVCN thẳng hàng giữa nhóm FT và nhóm lớp thường. 375: bảng tổng hợp đủ cột "Tổng".
+### 30/10 (đêm) — PR-B BAN-GIAO-GV #731 để lại
+- [XM] Gom câu `luuPhanCong` theo lô (`TRAN_GHI_LO.luuPhanCong8Lop`, ~23 câu / lớp) — chưa làm ở PR-B; PR riêng (kế hoạch toc-do).
+- `tocDoDuong.ts`: thêm đường `GET /ban-giao-gv/:id` khi seed demo có việc bàn giao GV.
+- Hỏi chủ SP: GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán], đã làm). (Hạn việc khi "Từ tuần": PTA quyết = max(tạo, hiệu lực) + 5 — đã làm.)
 
 ### Backlog phát sinh đêm 30/10 (PTA rà PR)
 - ~~**QUYEN-LIEN-HE (PR riêng, quyền):**~~ (đang làm — PR QUYEN-LIEN-HE) luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
@@ -278,6 +282,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 8. **Dọn:** xoá DB `pisatracking-261027` (token đã lộ); DB `261028` xoá ~06/11; worktree `claude-6c-nho`, nhánh `pta-dot4` + `compassionate-gauss-…-pta`, ứng dụng ~14 GB — chủ SP tự gỡ ứng dụng.
 - **[XM] PR-C Góc Phân công GV (để sau / chờ chủ SP):** hộp Chờ đổi chưa hiện "Việc bàn giao của A: a/b em đã viết" (cần dữ liệu PR-B) · ô tuần hiệu lực là ô chọn 12 tuần tới (mockup "W1 NOV ▾"), không `WeekPicker` · "✓ Đã lưu" xám (luật K-HTT-3), mockup xanh · dòng môn gộp cũ (PET L+S) không tính vào số "cũ → mới" của dòng nháp.
 - Đã làm 30/10: DESIGN.md chữ phụ "≥ 7:1" → "≥ 4,5:1" cho khớp phép kiểm `prOv15a` (NEN-V5).
+- **Để sau (SUA-NHO-UI, 30/10 đêm):** `HanPhu` hạn xa TVV 2 dòng (`DanhSachViec.tsx:399-404`) · Chấm Test 375 tiêu đề dòng gãy (`ChamTestTab.tsx:204-215`) · cột Trạng thái hồ sơ lượt rộng (`MockDetailPage.tsx:930`) · ô "Lớp khác": dòng phụ 2 dòng (ô chọn chung) vs mockup v6 1 dòng phụ bên phải · tồn ra-ui 375 "chân panel Huỷ | Lưu cùng hàng", "+ MT ▾ xa cột cuối".
 
 ### SÁNG 27/10 — kết quả đêm (PTA Plan)
 - **Đã merge (R1 xong phần code):** #601 BO-DAN-EXCEL · #599 EN-2 · #600 PHAN-CAP-TEST (chủ SP duyệt ảnh + bỏ dòng "n học viên · Fast Track / Lớp thường") · #606 NO-CU (đổi người phụ trách Case, security-review đạt) · #607 NO-NHO (Case W2 khi đổi môn, khoá ghi góp ý tuần, MDK-15) · #608 EN-2b · #609 TEN-CHI-SO. Mỗi PR check đầy đủ xanh trên bản gộp main.

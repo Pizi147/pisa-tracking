@@ -31,6 +31,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
   'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test', 'lenh_chuyen_lop', 'ban_giao_mon', 'ket_qua_huy',
   'ban_chup_lo_trinh', 'ban_chup_luot', 'case_followup_buoi', 'gop_y_tuan', 'ghi_chu_lich_thi', 'bai_tren_lop', 'viec_bao_ph', 'viec_bao_ph_lan', 's_expert', 'danh_gia_dau_ra', 'xet_lai_lo_trinh',
+  'ban_giao_gv_em',   // PR-B: góp ý bàn giao đổi GV của em
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -85,6 +86,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'notifications', sql: `DELETE FROM notifications WHERE ${DK_THONG_BAO}` },
   /* PR-CT: quyết định chuyển lớp + dòng bàn giao của em (lệnh trỏ thẻ Chờ duyệt nên xoá TRƯỚC thẻ) */
   { bang: 'xet_lai_lo_trinh', sql: `DELETE FROM xet_lai_lo_trinh WHERE student_id = ?1 OR lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})) OR lenh_moi_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },   // P9a XET-LAI
+  { bang: 'ban_giao_gv_em', sql: 'DELETE FROM ban_giao_gv_em WHERE student_id = ?1' },   // PR-B: góp ý bàn giao đổi GV (việc của lớp giữ)
   { bang: 'ban_giao_mon', sql: `DELETE FROM ban_giao_mon WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
   { bang: 'lenh_chuyen_lop', sql: `DELETE FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})` },
   /* PR-DUYET: thẻ Chờ duyệt của em (đối tượng là PA/đề nghị dời/lộ trình của em — xoá cùng em) */

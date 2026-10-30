@@ -3,7 +3,7 @@ import { ChonNguoi, type NguoiTrongDs } from '../../../ui/PeoplePicker.tsx';
 import { NoiNeo } from '../../classes/HopLuuPhanCong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
-export type TrangThaiO = 'binh-thuong' | 'trong' | 'nghi' | 'doi' | 'loi' | 'cho-doi' | 'khac-doi';
+export type TrangThaiO = 'binh-thuong' | 'trong' | 'nghi' | 'da-doi' | 'loi' | 'cho-doi' | 'khac-doi';
 
 /**
  * Ô GV của góc Phân công GV (mockup v9 `.o-gv`): nút dáng ô nhập nhẹ (viền khi rê / focus, ▾ luôn hiện). Trạng thái có CHỮ, không chỉ màu:

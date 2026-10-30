@@ -1,6 +1,6 @@
 import { Fragment, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, deadlineView, maView, metricById, nhanQuaHan, thamSoCt, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type NhomCaseChuaChot } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, dauDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
@@ -49,46 +49,56 @@ export type DongSoLieu = {
   nhom?: NhomCaseChuaChot | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
-  /** UI-HO-SO-GV: dòng kết quả — điểm từng kỹ năng (`cua` = kỹ năng GV phụ trách), Overall, mốc so, kết luận (tab Chưa đạt · Đạt). */
-  diem?: { k: string; v: number | null; cua: boolean }[]; overall?: number | null; soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; donVi?: '%'; vuot?: boolean;
+  /** UI-HO-SO-GV: dòng kết quả — mốc so, kết luận (tab Chưa đạt · Đạt · Vượt). Điểm từng kỹ năng nay ở `diemHv` (PANEL-MC). */
+  soVoi?: { nhan: string; v: number } | null; ketQua?: 'dat' | 'chua'; vuot?: boolean;
+  /** PANEL-V10 (N30): điểm ĐÚNG lượt làm em vào con số — `null` = em chưa có lượt có điểm; vắng = dòng không phải HV. */
+  diemHv?: DiemHv | null;
+  /** PANEL-V10: Tiến bộ kỹ năng / PA cải thiện — chip đầu dòng + điểm hai lượt. */
+  xuHuong?: { huong: 'tang' | 'giam' | 'giu' | 'cai-thien' | 'chua-cai-thien'; truoc?: { luot: string; v: number }; sau?: { luot: string; v: number } } | null;
 };
 
 /**
- * Điểm của một dòng kết quả (chủ SP 23/10): kỹ năng GV phụ trách nổi bật (viền + nền nhấn + đậm) kèm chênh với mốc so (▲ vượt / ▼ thiếu — ký hiệu,
- * không chỉ màu); kỹ năng khác chữ thường xám; rồi Overall và mốc (Target / kỳ vọng).
+ * DÒNG ĐIỂM MỘT MẪU (PANEL-V10, mockup `.dd`; chủ SP 30/10): lượt · tuần · "tạm" │ từng kỹ năng ✓ / ✗ TRƯỚC số (đạt / không đạt của CHÍNH lượt — không ▲ ▼)
+ * │ Overall ✓ / ✗ + mốc so. Đạt và hụt cùng màu ô Overall (`DiemKq`: `text-kq-bang` / `text-kq-duoi`); chưa đủ căn cứ: không ký hiệu.
+ * `knNhan` = kỹ năng của chỉ số đang xem (nền nhấn) · `cua` (hồ sơ GV) = kỹ năng GV phụ trách (viền nhấn, XM-2) · `kck` = hụt không tô đỏ (như `ODiem`).
  */
-function DiemDong({ r }: { r: DongSoLieu }) {
-  const so = r.soVoi?.v ?? null;
-  const pt = r.donVi === '%';
-  const chu = (v: number) => (pt ? `${Math.round(v)} %` : v.toFixed(1));
-  /* Chủ SP 23/10: đang xem một GV → kỹ năng GV phụ trách nổi bật hẳn (ô to, viền nhấn dày, chữ trắng đậm, chênh với mốc so);
-     kỹ năng khác nhỏ, mờ. Overall + mốc so dồn mép phải. Panel rộng (720) để cả dãy một hàng. */
+export function DongDiem({ d, knNhan, kck }: { d: DiemHv; knNhan?: string | null; kck?: boolean }) {
+  const pt = d.donVi === '%';
+  const so = (v: number) => (pt ? `${Math.round(v)} %` : v.toFixed(1));
+  const mau = (dat: boolean | null) => (dat === null ? '' : dat ? 'text-kq-bang' : kck ? '' : 'text-kq-duoi');
+  const ovDat = d.overall != null && d.soVoi ? d.overall >= d.soVoi.v : null;
   return (
-    <span className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 tabular-nums sm:flex-nowrap">
-      {r.diem!.map((d) => {
-        /* Bằng đúng mốc so → không ký hiệu (chủ SP 23/10: không "▲0.0"). */
-        const lech0 = d.cua && d.v !== null && so !== null ? Math.round((d.v - so) * 10) / 10 : null;
-        const lech = lech0 === 0 ? null : lech0;
-        return d.cua ? (
-          <span key={d.k} className="inline-flex shrink-0 items-baseline gap-1 rounded-md border-2 border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-1.5 py-0.5 text-[15px] font-bold text-slate-100">
-            <span className="text-xs text-[color:var(--accent)]">{d.k}</span>{d.v === null ? '—' : chu(d.v)}
-            {lech !== null && (
-              <span className={`text-xs ${lech >= 0 ? 'text-ok' : 'text-bad'}`} aria-label={lech >= 0 ? t('vượt {n}', { n: chu(lech) }) : t('thiếu {n}', { n: chu(Math.abs(lech)) })}>
-                {lech >= 0 ? '▲' : '▼'}{pt ? Math.round(Math.abs(lech)) : Math.abs(lech).toFixed(1)}
-              </span>
-            )}
-          </span>
-        ) : (
-          <span key={d.k} className="inline-flex shrink-0 items-baseline gap-1 px-1 text-xs text-slate-500">{d.k} {d.v === null ? '—' : chu(d.v)}</span>
-        );
-      })}
-      <span className="ml-auto whitespace-nowrap pl-2 text-[13px] text-slate-400">
-        {r.overall != null && <>Overall <b className="font-bold text-slate-100">{r.overall.toFixed(1)}</b> </>}
-        {r.soVoi && <>· {r.soVoi.nhan} <b className="font-bold text-slate-200">{chu(r.soVoi.v)}</b></>}
+    <span className="dd mt-1" style={d.kn.length !== 4 ? { gridTemplateColumns: `132px repeat(${d.kn.length}, 64px) minmax(0, 1fr)` } : undefined}>
+      <span className="lu">
+        <span>{[d.luot, d.tuan && tuanLich(d.tuan)].filter(Boolean).join(' · ')}</span>
+        {d.tam && <span className="tam-chu" title={t('Lượt chưa chốt điểm')}>{t('tạm')}</span>}
+      </span>
+      {d.kn.map((k) => (
+        <span key={k.k} role="img" aria-label={nhanDocDiem(k, d.soVoi)} title={k.dat === false ? nhanDocDiem(k, d.soVoi) : undefined}
+          className={`k${k.v === null ? ' thieu' : k.dat === false && !kck ? ' h' : ''}${k.cua ? ' cua' : knNhan === k.k ? ' nhan' : ''}`}>
+          <i aria-hidden>{k.k}</i><b aria-hidden className={mau(k.dat)}>{k.v === null ? '—' : `${dauDiem(k.dat) ? `${dauDiem(k.dat)} ` : ''}${so(k.v)}`}</b>
+        </span>
+      ))}
+      <span className="ov">
+        {pt ? t('Tổng') : 'Overall'}
+        {d.overall == null ? <b className="font-medium text-faint">—</b> : <b className={mau(ovDat)}>{ovDat === null ? '' : ovDat ? '✓ ' : '✗ '}{so(d.overall)}</b>}
+        {d.soVoi && <span>/ {pt ? t('ngưỡng') : d.soVoi.nhan} {so(d.soVoi.v)}</span>}
       </span>
     </span>
   );
 }
+
+/** PANEL-V10: chữ chip xu hướng — ▲ ▼ CHỈ cho tiến độ (so lượt trước), ký hiệu đi trước chữ: "▲ Tăng 1.0" · "▼ Giảm 0.5" · "= Không đổi" · "Cải thiện". */
+export function chuXuHuong(x: NonNullable<DongSoLieu['xuHuong']>): { lop: string; chu: string } {
+  const lech = x.truoc && x.sau ? Math.abs(x.sau.v - x.truoc.v).toFixed(1) : null;
+  if (x.huong === 'tang') return { lop: 'tang', chu: [`▲ ${t('Tăng')}`, lech].filter(Boolean).join(' ') };
+  if (x.huong === 'giam') return { lop: 'giam', chu: [`▼ ${t('Giảm')}`, lech].filter(Boolean).join(' ') };
+  if (x.huong === 'giu') return { lop: '', chu: `= ${t('Không đổi')}` };
+  return x.huong === 'cai-thien' ? { lop: 'ct', chu: t('Cải thiện') } : { lop: '', chu: t('Chưa cải thiện') };
+}
+
+/** PANEL-V10: lớp chỉ hiện khi tiêu đề panel chưa ghi lớp đó ("SOS 2 · MB FT 101" thì dòng không lặp "MB FT 101"). */
+export const hienLop = (tieuDe: string, lop: string | null | undefined): boolean => !!lop && !tieuDe.includes(lop);
 
 type Drill = {
   id: string; unit: ChiSo['donVi']; n: number; numerator: number | null;
@@ -156,8 +166,10 @@ const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.ts
  * người khác thấy câu tình trạng. Link "Hồ sơ" cuối dòng tách khỏi nút làm. Số ở đầu = số dòng (cùng tập máy chủ trả; dòng vừa xong mà máy chủ không còn
  * trả vẫn giữ chỗ cũ với "✓", không đếm). "Cách tính" ở cuối danh sách.
  */
-export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong, cachTinh, trong }: {
+export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong, cachTinh, trong, knNhan }: {
   tieuDe: string; dv?: string | null;
+  /** PANEL-V10: kỹ năng của chỉ số ("R" ở Dưới kỳ vọng · R) — cột đó trong dòng điểm có nền nhấn (cột lý do). */
+  knNhan?: string | null;
   data: { n: number; rows: DongSoLieu[] } | null; loading: boolean; error: ApiError | null; reload: () => void; onDong: () => void;
   cachTinh?: ReactNode; trong?: string;
 }) {
@@ -211,7 +223,9 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const laThi = hien.length > 0 && hien.every((r) => r.soVoi?.nhan === 'Target');
   /* Thi thật: tab thứ ba "Vượt" (Overall / kỹ năng cao hơn Target — tập con của Đạt). */
   const coTab = (soChua > 0 && soDat > 0) || (soVuot > 0 && soVuot < hien.length);
-  const [tab, setTab] = useState<'chua' | 'dat' | 'vuot'>(soChua > 0 ? 'chua' : 'dat');
+  /* PANEL-CHUNG: chưa bấm tab thì theo dữ liệu (Chưa đạt nếu có) — state khởi tạo lúc dữ liệu chưa về từng mở nhầm tab Đạt. */
+  const [tabChon, setTab] = useState<'chua' | 'dat' | 'vuot' | null>(null);
+  const tab = tabChon ?? (soChua > 0 ? 'chua' : 'dat');
   const hienTab = coTab ? hien.filter((r) => (tab === 'vuot' ? r.vuot : r.ketQua === tab)) : thuTu;
   /* OV-15e: panel số liệu phân trang 10 / 20 / 50 (thanh đầu + cuối); dòng đang mở (`?dong=`) ở trang sau vẫn mở được khi lật tới. */
   const pt = usePhanTrang(hienTab.length, tieuDe, dv ?? t('mục'));
@@ -327,67 +341,10 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     );
   });
 
-  const veDong = (r: DongSoLieu & { xong?: string }) => {
+  /* Khối làm tại chỗ của dòng đang mở (Xác nhận PA bấm thẳng · việc khác mở panel làm việc) — dùng chung cho dòng HV và dòng cũ. */
+  const veMoRong = (r: DongSoLieu & { xong?: string }) => {
     const v = r.viec ?? null;
-    const moRong = mo === r.id && !r.xong;
-    /* UI-HO-SO-GV: dòng chỉ có `lop` (không em / ngữ cảnh) trước đây mất cả câu `sub` — nay chỉ dùng đầu dòng v3 khi có em hoặc ngữ cảnh. */
-    const dong2 = r.em || r.ngCanh
-      ? [r.em?.ten, r.lop, r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh, r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
-      : [r.sub];
-    const dong2Chu = dong2.some(Boolean) && (
-      <span className="text-[13px] leading-snug text-slate-400">
-        {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{i === 0 && r.em ? <b className="font-bold text-slate-200">{x}</b> : x}</span>)}
-      </span>
-    );
-    /* 6c-2 (bảng kê mục 1 [RỖNG], mockup M6 khu K ②): dòng người xem KHÔNG làm được thì không mở rộng (trước: mở ra chỉ lặp chữ + "Mở trang") —
-       thân dòng chỉ đọc (không bấm), dòng tự đủ việc · tình trạng · người · hạn; hồ sơ qua link "Hồ sơ" cuối dòng như mọi dòng.
-       Dòng có việc làm được giữ mở rộng (Xác nhận PA tại chỗ / mở việc). */
-    if (!v?.lam && !r.xong) {
-      const chipHan = v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
-      const hanRieng = !chipHan && hanCua(r);
-      const conNguoi = !!r.nguoi && r.nguoiId !== toi && !(r.em || r.ngCanh);   // dòng chỉ `sub`: `dong2` chưa có người phụ trách
-      return (
-        <li key={r.id} data-dong={r.id} className="flex border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-2.5 pl-4 pr-1">
-          <span className="flex w-full items-center gap-2.5">
-            <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-slate-100">
-              {r.em?.ten ?? r.title}
-              {r.em && r.title && <span className="text-[13px] font-normal text-slate-400"> · {r.title}</span>}
-            </span>
-            {chipHan}
-          </span>
-          {r.diemCase && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={doanDiem(r.diemCase)} /></span>}
-          {r.em || r.ngCanh
-            ? <span className="text-[13px] leading-snug text-slate-400"><Doan ds={dong2.slice(1).filter((x) => x !== r.title)} /></span>
-            : r.sub && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={r.sub.split(' · ')} /></span>}
-          {(v || r.tinhTrang || conNguoi || hanRieng) && (
-            <span className="text-[13px] leading-snug text-slate-300">
-              <Doan ds={[v && dich(v.chu), r.tinhTrang && dich(r.tinhTrang), conNguoi && r.nguoi, hanRieng && <HanDong han={hanRieng} loai={r.viec?.loaiHan} />]} />
-            </span>
-          )}
-          {r.diem?.length ? <DiemDong r={r} /> : null}
-          </div>
-          {nutHoSo(r)}
-        </li>
-      );
-    }
-    const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
     return (
-      <li key={r.id} data-dong={r.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)', ...nen }}>
-        <div className="flex">
-        <button type="button" aria-expanded={r.xong ? undefined : moRong} disabled={!!r.xong} onClick={() => setMo(moRong ? null : r.id)}
-          className="flex min-h-[44px] min-w-0 flex-1 appearance-none flex-col gap-0.5 border-0 bg-transparent py-2.5 pl-4 pr-1 text-left hover:bg-[color:var(--accent-soft)] disabled:cursor-default disabled:hover:bg-transparent">
-          <span className="flex w-full items-center gap-2.5">
-            <span className={`min-w-0 flex-1 text-sm font-bold ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>{v ? dich(v.chu) : r.title}</span>
-            {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>
-              : v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
-          </span>
-          {dong2Chu}
-          {r.diem?.length ? <DiemDong r={r} /> : null}
-        </button>
-        {nutHoSo(r)}
-        </div>
-        {moRong && (
           <div className="flex flex-col gap-3 px-4 pb-4 pt-1">
             {/* 6c-2: chỉ dòng làm được mới mở rộng (dòng chỉ đọc trả sớm ở trên). */}
             {v?.lam && (
@@ -415,13 +372,124 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
               </CanLam>
             )}
           </div>
-        )}
+    );
+  };
+
+  /*
+   * PANEL-V10 (N30, mockup `.dg`): dòng HV — hàng 1 tên (link hồ sơ HV) · lớp (chỉ khi tiêu đề chưa ghi) · lý do bên phải (chip xu hướng / chip hạn /
+   * nút việc riêng / "✓ đã làm"); hàng 2 dòng điểm đúng lượt; hàng 3 ngữ cảnh (link trang của dòng) · dòng phụ (GIỮ `sub`) · tình trạng · hạn · người.
+   * Tên là link nên không còn link "Hồ sơ" riêng; việc làm được là NÚT riêng (tách nút làm với link xem). Xác nhận PA giữ mở rộng tại chỗ.
+   */
+  const veDongHv = (r: DongSoLieu & { xong?: string }) => {
+    const v = r.viec ?? null;
+    const moRong = mo === r.id && !r.xong;
+    const ten = r.em?.ten ?? r.title;
+    const lop = r.lop ?? (r.em ? null : r.sub.split(' · ')[0] || null);
+    const tuan = r.diemHv?.tuan ? tuanLich(r.diemHv.tuan) : null;
+    const ngCanh = r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh ?? (r.em && r.title !== ten ? r.title : null);
+    /* Đoạn của `sub` đã hiện chỗ khác (tên, lớp, lượt · tuần của dòng điểm, chữ xu hướng của chip) không lặp ở hàng 3. */
+    const daCo = new Set([ten, lop, ngCanh, r.title, r.diemHv?.luot, tuan,
+      ...(r.xuHuong ? [t('Tăng'), t('Giữ nguyên'), t('Giảm'), t('Cải thiện'), t('Chưa cải thiện')] : [])]);
+    const chipHan = !r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
+    const han = !chipHan && !r.xong ? hanCua(r) : null;
+    const xh = r.xuHuong ? chuXuHuong(r.xuHuong) : null;
+    const phu: ReactNode[] = [
+      ngCanh && (r.em ? <Link to={r.href} className="text-[color:var(--accent)] no-underline hover:underline">{ngCanh}</Link> : ngCanh),
+      ...r.sub.split(' · ').filter((x) => x && !daCo.has(x)),
+      v && !v.lam && dich(v.chu), r.tinhTrang && dich(r.tinhTrang),
+      han && <HanDong han={han} loai={r.viec?.loaiHan} />,
+      r.nguoi && r.nguoiId !== toi && r.nguoi,
+    ];
+    return (
+      <li key={r.id} data-dong={r.id} className="border-t px-4 pb-[11px] pt-2.5 first:border-t-0" style={{ borderColor: 'var(--line)', ...(r.xong ? { background: 'rgb(var(--ok-bg-rgb))' } : moRong ? { background: 'var(--accent-soft)' } : {}) }}>
+        <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1.5">
+          {xh && <span className={`xh ${xh.lop}`}>{xh.chu}</span>}
+          <Link to={r.em ? duongHoSoHocVien(r.em.id) : r.href} className="text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-[11px] max-sm:py-[11px]">{ten}</Link>
+          {hienLop(tieuDe, lop) && <span className="whitespace-nowrap text-[13px] text-slate-400">{lop}</span>}
+          <span className="ml-auto inline-flex items-center gap-2">
+            {r.xuHuong?.truoc && r.xuHuong.sau && <span className="doi">{r.xuHuong.truoc.luot} <b>{r.xuHuong.truoc.v.toFixed(1)}</b> → {r.xuHuong.sau.luot} <b>{r.xuHuong.sau.v.toFixed(1)}</b></span>}
+            {chipHan}
+            {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>
+              : v?.lam && (
+                <button type="button" className="btn btn-sm min-h-[32px] max-sm:min-h-[44px]" aria-expanded={v.loai === 'xac-nhan-pa' && v.pa ? moRong : undefined}
+                  onClick={() => (v.loai === 'xac-nhan-pa' && v.pa ? setMo(moRong ? null : r.id) : moViec(r))}>{dich(v.chu)}</button>
+              )}
+          </span>
+        </div>
+        {r.diemHv ? <DongDiem d={r.diemHv} knNhan={knNhan} />
+          : r.diemCase && <div className="mt-1 text-[13px] leading-snug text-slate-400"><Doan ds={doanDiem(r.diemCase)} /></div>}
+        {phu.some(Boolean) && <div className="mt-1 text-[13px] leading-snug text-slate-400"><Doan ds={phu} /></div>}
+        {moRong && <div className="-mx-4">{veMoRong(r)}</div>}
+      </li>
+    );
+  };
+
+  const veDong = (r: DongSoLieu & { xong?: string }) => {
+    /* Dòng có em / có điểm HV → mẫu dòng HV (PANEL-V10); dòng khác (lớp, vận hành, bài không em) giữ dáng cũ + link "Hồ sơ". */
+    if (r.em || r.diemHv !== undefined) return veDongHv(r);
+    const v = r.viec ?? null;
+    const moRong = mo === r.id && !r.xong;
+    /* UI-HO-SO-GV: dòng chỉ có `lop` (không ngữ cảnh) trước đây mất cả câu `sub` — nay chỉ dùng đầu dòng v3 khi có ngữ cảnh. */
+    const dong2 = r.ngCanh
+      ? [r.lop, r.ngayThiThat ? t('Thi thật {ngay}', { ngay: r.ngayThiThat }) : r.ngCanh, r.nguoi && r.nguoiId !== toi && !v?.lam ? r.nguoi : null]
+      : [r.sub];
+    const dong2Chu = dong2.some(Boolean) && (
+      <span className="text-[13px] leading-snug text-slate-400">
+        {dong2.filter(Boolean).map((x, i) => <span key={i}>{i > 0 && <span aria-hidden className="mx-1.5 text-slate-500">·</span>}{x}</span>)}
+      </span>
+    );
+    /* 6c-2 (bảng kê mục 1 [RỖNG], mockup M6 khu K ②): dòng người xem KHÔNG làm được thì không mở rộng (trước: mở ra chỉ lặp chữ + "Mở trang") —
+       thân dòng chỉ đọc (không bấm), dòng tự đủ việc · tình trạng · người · hạn; hồ sơ qua link "Hồ sơ" cuối dòng như mọi dòng.
+       Dòng có việc làm được giữ mở rộng (Xác nhận PA tại chỗ / mở việc). */
+    if (!v?.lam && !r.xong) {
+      const chipHan = v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
+      const hanRieng = !chipHan && hanCua(r);
+      const conNguoi = !!r.nguoi && r.nguoiId !== toi && !r.ngCanh;   // dòng chỉ `sub`: `dong2` chưa có người phụ trách
+      return (
+        <li key={r.id} data-dong={r.id} className="flex border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-2.5 pl-4 pr-1">
+          <span className="flex w-full items-center gap-2.5">
+            <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-slate-100">
+              {r.title}
+            </span>
+            {chipHan}
+          </span>
+          {r.diemCase && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={doanDiem(r.diemCase)} /></span>}
+          {r.ngCanh
+            ? <span className="text-[13px] leading-snug text-slate-400"><Doan ds={dong2.filter((x) => x !== r.title)} /></span>
+            : r.sub && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={r.sub.split(' · ')} /></span>}
+          {(v || r.tinhTrang || conNguoi || hanRieng) && (
+            <span className="text-[13px] leading-snug text-slate-300">
+              <Doan ds={[v && dich(v.chu), r.tinhTrang && dich(r.tinhTrang), conNguoi && r.nguoi, hanRieng && <HanDong han={hanRieng} loai={r.viec?.loaiHan} />]} />
+            </span>
+          )}
+          </div>
+          {nutHoSo(r)}
+        </li>
+      );
+    }
+    const nen = moRong ? { background: 'var(--accent-soft)' } : undefined;
+    return (
+      <li key={r.id} data-dong={r.id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)', ...nen }}>
+        <div className="flex">
+        <button type="button" aria-expanded={r.xong ? undefined : moRong} disabled={!!r.xong} onClick={() => setMo(moRong ? null : r.id)}
+          className="flex min-h-[44px] min-w-0 flex-1 appearance-none flex-col gap-0.5 border-0 bg-transparent py-2.5 pl-4 pr-1 text-left hover:bg-[color:var(--accent-soft)] disabled:cursor-default disabled:hover:bg-transparent">
+          <span className="flex w-full items-center gap-2.5">
+            <span className={`min-w-0 flex-1 text-sm font-bold ${r.xong ? 'text-slate-300' : 'text-slate-100'}`}>{v ? dich(v.chu) : r.title}</span>
+            {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>
+              : v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null}
+          </span>
+          {dong2Chu}
+        </button>
+        {nutHoSo(r)}
+        </div>
+        {moRong && veMoRong(r)}
       </li>
     );
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase || goc.some((r) => r.diem?.length) ? 'rong' : 'hep'}
+    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase || goc.some((r) => r.diemHv || r.xuHuong) ? 'rong' : 'hep'}
       /* NEN-PANEL: không dòng nào làm được ở đây = panel báo cáo (07 mục 3). */
       loai={nhomCase ? t('SỐ LIỆU · TỔNG QUAN') : hien.some((r) => r.viec?.lam) ? t('VIỆC') : t('BÁO CÁO · CHỈ ĐỌC')}
       dau={{
@@ -438,8 +506,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           <>
             {coTab && (
               <div role="tablist" aria-label={t('Kết quả')} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
-                {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). */}
-                {([['chua', laThi ? 'Fail' : t('Chưa đạt'), soChua, '▼ '], ['dat', laThi ? 'Pass' : t('Đạt'), soDat, '▲ '], ...(soVuot ? [['vuot', 'Exceed', soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
+                {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). PANEL-V10: tab không ▲ ▼ (▲ ▼ chỉ cho tiến độ). */}
+                {([['chua', laThi ? 'Fail' : t('Chưa đạt'), soChua, ''], ['dat', laThi ? 'Pass' : t('Đạt'), soDat, ''], ...(soVuot ? [['vuot', 'Exceed', soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
                   <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
                     className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tab === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
                     {dau}{nhan} <span className="tabular-nums">{n}</span>
@@ -474,7 +542,7 @@ export function DanhSachSoLieu({ id, giaTri, phamVi, extra, open, onClose, ten }
   if (!cs || !open) return null;
   const dv = METRIC_UNIT_LABEL[cs.donVi];
   return (
-    <NganDanhSach tieuDe={ten ?? cs.ten} dv={dv} onDong={onClose} cachTinh={<CachTinh cs={cs} />}
+    <NganDanhSach tieuDe={ten ?? cs.ten} dv={dv} onDong={onClose} cachTinh={<CachTinh cs={cs} />} knNhan={extra?.skill ? tenMonNgan(null, extra.skill) : null}
       data={data ? { n: data.n, rows: data.rows ?? [] } : null} loading={loading} error={error} reload={reload}
       trong={data?.empty ? t('Không có dữ liệu trong phạm vi') : t('Không có {dv} nào trong tập này', { dv })} />
   );

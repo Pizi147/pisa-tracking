@@ -73,8 +73,8 @@ export const EN_OV15E = {
   // Hướng dẫn (màn Phân tích)
   'Sáu tab phân tích': 'Six analysis tabs',
   'Tab phân tích': 'Analysis tabs',
-  '<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.': '<b>Report</b> · <b>Test + SOS</b> · <b>Test results</b> · <b>PA effectiveness</b> · <b>Teacher analysis</b> · <b>Conduct</b>.',
-  '<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.': '<b>Report</b> · <b>Test + SOS</b> · <b>Test results</b> · <b>PA effectiveness</b> · <b>Conduct</b>.',
+  '<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Phân tích GV</b> · <b>Ý thức</b>.': '<b>Report</b> · <b>Test + SOS</b> · <b>Test / exam results</b> · <b>PA effectiveness</b> · <b>Teacher analysis</b> · <b>Conduct</b>.',
+  '<b>Báo cáo</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.': '<b>Report</b> · <b>Test + SOS</b> · <b>Test / exam results</b> · <b>PA effectiveness</b> · <b>Conduct</b>.',
   '<b>Báo cáo</b> (mặc định): 2 tuần vừa qua cho buổi họp; <b>In</b> ra một trang A4 ngang.': '<b>Report</b> (default): the last 2 weeks for the meeting; <b>Print</b> fits one landscape A4 page.',
   'Chọn tab ở hàng này.': 'Pick a tab in this row.',
   'Một <b>Khoảng thời gian</b> cho mọi tab (mặc định 2 tuần vừa qua); bấm số mở danh sách, làm tại chỗ.': 'One <b>Period</b> for every tab (default: last 2 weeks); click a number to open the list and act there.',

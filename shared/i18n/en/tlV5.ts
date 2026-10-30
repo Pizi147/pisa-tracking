@@ -9,10 +9,10 @@ export const EN_TL_V5 = {
   'Ba tab <b>Học thuật</b> · <b>Ý thức & Phối hợp</b> · <b>Lộ trình & lớp</b>: chỉ xem.':
     'Three tabs <b>Academic</b> · <b>Conduct & SOS</b> · <b>Pathways & classes</b>: view only.',
   // ---------------------------------------------------------------- Phân tích (mọi vai)
-  '<b>Báo cáo HV</b> · <b>Phân tích GV</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.':
-    '<b>Student report</b> · <b>Teacher analysis</b> · <b>Test + SOS</b> · <b>Test results</b> · <b>PA effectiveness</b> · <b>Conduct</b>.',
-  '<b>Báo cáo HV</b> · <b>Test + SOS</b> · <b>Kết quả Test</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.':
-    '<b>Student report</b> · <b>Test + SOS</b> · <b>Test results</b> · <b>PA effectiveness</b> · <b>Conduct</b>.',
+  '<b>Báo cáo HV</b> · <b>Phân tích GV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.':
+    '<b>Student report</b> · <b>Teacher analysis</b> · <b>Test + SOS</b> · <b>Test / exam results</b> · <b>PA effectiveness</b> · <b>Conduct</b>.',
+  '<b>Báo cáo HV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.':
+    '<b>Student report</b> · <b>Test + SOS</b> · <b>Test / exam results</b> · <b>PA effectiveness</b> · <b>Conduct</b>.',
   '<b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.':
     '<b>From week → To week</b> for every tab (default: last 2 weeks), plus <b>All weeks</b> · <b>Choose weeks</b>; click a number to open a read-only list.',
   'Mọi chi nhánh; <b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.':

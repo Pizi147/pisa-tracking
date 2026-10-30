@@ -9,7 +9,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { NutMon } from '../../ui/NutMon.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ENTRY_SKILLS, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, thuNgay, tuanChonDuoc, tuanLich } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, lopChonLoTrinhMoi, thuNgay, tuanChonDuoc, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { KhoiKhiLuu } from './HopTamDungKetThuc.tsx';
 import type { TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
@@ -84,7 +84,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const xem = useApi<XemTruoc>(`/cycles/${bt.cycleId}/lo-trinh-moi/xem-truoc${q ? `?${q}` : ''}`, [q]);
   const r = route ?? xem.data?.routeGoiY ?? null;
   const dsLop = useApi<{ lop: LopDich[] }>(lopKhac ? `/students/${bt.studentId}/hoc-lai/lop-dich` : null, [lopKhac, bt.studentId]);
-  /* Chỉ lớp đúng loại lộ trình (luật chung `kiemLopLoTrinhMoi`) — ô gõ lớp của P4 không có mục tắt, lớp sai loại không bày. */
+  /* Lớp đúng loại lộ trình (luật chung `kiemLopLoTrinhMoi`) — tìm mã lớp đã chọn. Ô "Lớp khác" bày cả lớp FT sai loại, mờ + lý do (U4). */
   const lopDung = (dsLop.data?.lop ?? []).filter((l) => r && !kiemLopLoTrinhMoi(r, { code: l.code, ft: l.ft, route: l.route }));
   const loiTen = khac && !ten.trim() ? t('Ghi tên lộ trình "Khác".') : null;
   const loiMon = mon?.length === 0 ? t('Chọn ít nhất một môn.') : null;
@@ -178,7 +178,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
             {lopKhac && (
               <ChonLop ariaLabel={t('Lớp khác')} value={lopMoiId} onChange={setLopMoiId} invalid={bamLuu && !lopMoiId}
                 khongKhop={dsLop.data ? t('Không có lớp {lt} đang chạy', { lt: r === 'RF' ? 'RF' : khac ? 'FT' : 'LT' }) : t('Đang tải…')}
-                ds={lopDung.map((l) => ({ id: l.id, ma: l.code, phu: [`FT ${l.route ?? ''}`.trim(), l.branchCode, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ') }))} />
+                ds={r ? lopChonLoTrinhMoi(r, dsLop.data?.lop ?? []) : []} />
             )}
             {loiLop && !(lopKhac && !lopMoiId && !bamLuu) && <p role="alert" className="m-0 text-[13px] text-bad">{loiLop}</p>}
           </>

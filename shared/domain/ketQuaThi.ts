@@ -32,6 +32,8 @@ export type DongMock = {
   ketQua: KetQuaMock;
   /** Mức SOS của lượt (null = không SOS / KCK); `sosTam` = lượt chưa chốt. */
   sos: number | null; sosTam: boolean;
+  /** PANEL-MC: lượt đã chốt (OV-1c `AttemptResult.chot`) — dòng điểm "tạm" theo cờ này, không theo SOS. */
+  chot: boolean;
   /** Trạng thái Case của lượt ("Case trống PA", "PA đang chạy") + việc tiếp ("Lập PA · Trần Ngọc Hà" / "Nhập điểm S"). */
   casePa: string | null; caseId: number | null; viecTiep: string | null;
 };

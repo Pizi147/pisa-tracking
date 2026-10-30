@@ -92,7 +92,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -9863,6 +9863,9 @@ await runPrPhanCongGvTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== PC-GV-C (góc Phân công GV — hàm thuần web)
 const { runPrGocPhanCongTests } = bocTep('prGocPhanCong', await import('./prGocPhanCong.tests.ts'));
 await runPrGocPhanCongTests({ check, assert } as any);
+// ==================================================================== PR-B BAN-GIAO-GV (việc bàn giao khi đổi GV + khung bàn giao chung)
+const { runPrBanGiaoGvTests } = bocTep('prBanGiaoGv', await import('./prBanGiaoGv.tests.ts'));
+await runPrBanGiaoGvTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== S3 (bỏ câu con theo dòng: TVV, Học viên & Lớp, phụ liệu Case, lượt mới nhất — giảm dòng đọc Turso)
 const { runPrS3CauConTests } = bocTep('prS3CauCon', await import('./prS3CauCon.tests.ts'));
 await runPrS3CauConTests({ check, assert, conn } as any);
@@ -9890,6 +9893,15 @@ await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== QUYEN-LIEN-HE (luật 13/10: ô Liên hệ chỉ QL / Quản trị / TVV / CX / Admin — máy chủ)
 const { runPrQuyenLienHeTests } = bocTep('prQuyenLienHe', await import('./prQuyenLienHe.tests.ts'));
 await runPrQuyenLienHeTests({ check, assert, conn, P, TODAY } as any);
+// ==================================================================== PANEL-MC (dòng điểm đúng lượt + dữ liệu panel — PANEL-V10, N30)
+const { runPrPanelMcTests } = bocTep('prPanelMc', await import('./prPanelMc.tests.ts'));
+await runPrPanelMcTests({ check, checkAsync, assert, conn, P, TODAY } as any);
+// ==================================================================== PANEL-CHUNG (mẫu dòng điểm + dòng panel có lý do — PANEL-V10)
+const { runPrPanelChungTests } = bocTep('prPanelChung', await import('./prPanelChung.tests.ts'));
+await runPrPanelChungTests({ check, checkAsync, assert, conn } as any);
+// ==================================================================== SUA-NHO-UI (lớp sai loại ở ô Lớp khác — Lộ trình mới)
+const { runPrSuaNhoUiTests } = bocTep('prSuaNhoUi', await import('./prSuaNhoUi.tests.ts'));
+await runPrSuaNhoUiTests({ check, assert } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

@@ -12,6 +12,7 @@ import { IntakePanel } from '../students/IntakePanel.tsx';
 import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
 import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
+import { BanGiaoGvPanel } from './BanGiaoGvPanel.tsx';
 import { PanelXetLai, XetLaiCtx, duongXetLai, type EmXetLai } from './PanelXetLai.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { ThongTinLopPanel } from './ThongTinLopPanel.tsx';
@@ -54,6 +55,8 @@ export default function ClassOverviewPage() {
   useEffect(() => { try { localStorage.setItem('pisa.khoiDiemLop', moDiem ? '1' : '0'); } catch { /* chế độ riêng tư */ } }, [moDiem]);
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
   const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
+  /* PR-B: panel bàn giao khi đổi GV đang mở (id việc). */
+  const [bgGv, setBgGv] = useState<number | null>(null);
   const [caseFor, setCaseFor] = useState(0);
   /*
    * PR-TD2-c: tab Học viên (mặc định của lớp đang chạy) cần roster + danh sách lượt điểm — bắt đầu tải CÙNG LÚC với `/overview`
@@ -108,6 +111,10 @@ export default function ClassOverviewPage() {
       setBg({ mon: params.get('mon'), lenhId: Number(params.get('lenh')) || null, lop: null });
       setViec('ban-giao');
       doiThamSo({ viec: null, mon: null, lenh: null });
+    } else if (data && v === 'ban-giao-gv' && Number(params.get('id'))) {
+      /* PR-B: việc / thông báo bàn giao khi đổi GV — `?viec=ban-giao-gv&id=`. Máy chủ chặn người không có quyền đọc. */
+      setBgGv(Number(params.get('id')));
+      doiThamSo({ viec: null, id: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
@@ -149,7 +156,7 @@ export default function ClassOverviewPage() {
     <XetLaiCtx.Provider value={ctxXetLai}>
     <div className="page space-y-4 max-sm:space-y-3">
       <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
-        onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
+        onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
       <HangTab v8 ariaLabel={t('Hồ sơ lớp')} value={tab}
         onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null })}
@@ -169,6 +176,7 @@ export default function ClassOverviewPage() {
       {viec === 'lich-su' && <LichSuThayDoi loai="lop" id={data.id} dong2={[data.code]} onClose={dong} />}
       {viec === 'lich-su-gop-y' && <LichSuThayDoi loai="gop-y" id={data.id} dong2={[t('Góp ý hàng tuần'), data.code]} onClose={dong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
+      {bgGv !== null && <BanGiaoGvPanel id={bgGv} onClose={() => setBgGv(null)} onDone={xong} />}
       {(viec === 'thong-tin' || viec === 'phan-cong') && (
         <ThongTinLopPanel lop={data} phan={viec === 'phan-cong' ? 'phan-cong' : null} onClose={dong} onDone={xong}
           onChuyenTiep={thuong && data.viewer.coTheChuyenTiep ? () => moViec('chuyen-tiep') : undefined} />

@@ -35,26 +35,24 @@ export function nhoKhung(trang: Trang, k: KhungLoc) {
   try { localStorage.setItem(khoa(trang), k); } catch { /* không lưu được thì thôi — lần sau về mặc định */ }
 }
 
-export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa = false, kieu = 'doan', chuTatCa, v8 }: {
+export function CongTacKhung({ trang, value, onChange, dem, coTatCa = false, kieu = 'doan', chuTatCa, v8 }: {
   trang: Trang; value: KhungLoc; onChange: (k: KhungLoc) => void;
   /** Số hiện cạnh tên khung (lớp, việc…); khung có số 0 coi như không có dữ liệu. */
   dem?: Partial<Record<KhungLoc, number>>;
-  /** Chữ sau số: `Fast Track · 3 lớp`. Trống = chỉ số. */
-  donVi?: string;
   coTatCa?: boolean;
   /** `chon` = ô chọn "Loại lớp: …" (Học viên & Lớp, K1 — không có hai chữ "Tất cả" cạnh nhau); `chip` = chip rời (Lịch tuần V5, dieu-chinh-cuoi khu a); mặc định phân đoạn. */
   kieu?: 'doan' | 'chon' | 'chip';
-  /** `chon` không tiền tố "Loại lớp:" — mục đầu là chữ này (Công việc V8: "Mọi khung"), mục sau "Fast Track · n". */
+  /** `chon` không tiền tố "Loại lớp:" — mục đầu là chữ này (Công việc V8: "Mọi khung"), mục sau "Fast Track n". */
   chuTatCa?: string;
   /** V8 (mockup v8 `.doan`): nút đoạn liền cao 36 (375: 44 full bề rộng), mục chọn đậm + gạch đáy — `BoLocDoan v8`. */
   v8?: boolean;
 }) {
+  /* SUA-NHO-UI U2 (chủ SP 30/10 "làm hết cả thể"): MỌI kiểu (đoạn · chip · ô chọn) gọn "Fast Track 4" — số sau tên, không "·", không đơn vị. */
   /* UX-2 (5): hiện theo lớp trong phạm vi người xem; chưa biết phạm vi thì theo dữ liệu đang xem như cũ. */
   const coDuLieu = khungCuaPhamVi ? (['ft', 'thuong'] as const).filter((k) => khungCuaPhamVi![k]) : (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
   if (coDuLieu.length < 2) return null;
-  const nhan = (ten: string, k: KhungLoc) => (dem?.[k] != null && donVi ? `${ten} · ${dem[k]} ${donVi}` : ten);
   if (kieu === 'chon') {
-    const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null ? `${ten} · ${dem[k]}${donVi ? ` ${donVi}` : ''}` : ten);
+    const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null ? `${ten} ${dem[k]}` : ten);
     if (chuTatCa) return (
       <ChonDangNut className="max-sm:w-full" aria-label={t('Khung lớp')} value={value}
         onChange={(e) => { const k = e.target.value as KhungLoc; nhoKhung(trang, k); onChange(k); }}>
@@ -73,7 +71,6 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
     );
   }
   if (kieu === 'chip') {
-    const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null && k !== 'tat-ca' ? `${ten} · ${dem[k]}` : ten);
     const muc: [KhungLoc, string][] = [...(coTatCa ? [['tat-ca', t('Tất cả')] as [KhungLoc, string]] : []), ['ft', 'Fast Track'], ['thuong', t('Lớp thường')]];
     return (
       <span className="inline-flex flex-wrap items-center gap-2" role="group" aria-label={t('Khung lớp')}>
@@ -82,7 +79,7 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
             className={`h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-11 ${value === k
               ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent)]'
               : 'border-[color:var(--line-strong)] font-medium bg-[color:var(--surface)] text-slate-300 hover:text-slate-100'}`}>
-            {chu(ten, k)}
+            {ten}{dem?.[k] != null && k !== 'tat-ca' && <span className="ml-1.5 tabular-nums opacity-80">{dem[k]}</span>}
           </button>
         ))}
       </span>
@@ -91,10 +88,11 @@ export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa 
   return (
     <BoLocDoan<KhungLoc> ariaLabel={t('Khung lớp')} value={value} v8={v8}
       onChange={(k) => { nhoKhung(trang, k); onChange(k); }}
+      /* SUA-NHO-UI U2 (chủ SP 30/10): đoạn gọn "Fast Track 4" mọi màn — số đứng sau tên, không đơn vị. */
       muc={[
-        ...(coTatCa ? [{ key: 'tat-ca' as const, nhan: t('Tất cả'), so: donVi ? null : dem?.['tat-ca'] ?? null }] : []),
-        { key: 'ft', nhan: nhan('Fast Track', 'ft'), so: donVi ? null : dem?.ft ?? null },
-        { key: 'thuong', nhan: nhan(t('Lớp thường'), 'thuong'), so: donVi ? null : dem?.thuong ?? null },
+        ...(coTatCa ? [{ key: 'tat-ca' as const, nhan: t('Tất cả'), so: dem?.['tat-ca'] ?? null }] : []),
+        { key: 'ft', nhan: 'Fast Track', so: dem?.ft ?? null },
+        { key: 'thuong', nhan: t('Lớp thường'), so: dem?.thuong ?? null },
       ]} />
   );
 }

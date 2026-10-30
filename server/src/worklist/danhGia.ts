@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { db } from '../db.ts';
-import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, moiNhatTruoc, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, moiNhatTruoc, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo, RATIO_PASS_THRESHOLD } from '../../../shared/domain/index.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
@@ -28,6 +28,10 @@ export type SkillEval = {
   evaluable: boolean;
   /** Dưới kỳ vọng của CHÍNH đợt đó (không phải target hiện tại). */
   under: boolean;
+  /** PANEL-MC: band (FT) · % (lớp thường, 0–100 chưa làm tròn) — dòng điểm `DiemHv`. */
+  v: number | null;
+  /** PANEL-MC: môn em đã bỏ (P8) — dòng điểm không ✓ / ✗. */
+  bo?: boolean;
 };
 
 export type AttemptEval = {
@@ -55,6 +59,10 @@ export type AttemptEval = {
   tyLeTong?: number | null;
   /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — dải Cuối khoá đọc cùng ngưỡng. */
   nguong?: number;
+  /** PANEL-MC: FT Overall (đủ bốn kỹ năng) · lớp thường % tổng (đủ môn); kỳ vọng của lượt (FT) · ngưỡng % (lớp thường); mã chương trình (tên môn). */
+  overall: number | null;
+  kyVong: number | null;
+  chuongTrinh: string | null;
 };
 
 /**
@@ -67,14 +75,16 @@ export function evaluateAttemptRow(
   const scores = bundle.scores.get(a.id) ?? [];
   const prog = a.programme_code ? programmes.get(a.programme_code) : null;
   if (prog?.scoringMode === 'ratio') {
-    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores)), scores, prog.code, nguongDatLop(a.class_id));   // P13: bộ môn theo lượt
+    const nguong = 'lop_nguong_dat' in a ? a.lop_nguong_dat || RATIO_PASS_THRESHOLD : nguongDatLop(a.class_id);   // cùng luật `nguongDatLop` (thiếu → 70 %)
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores)), scores, prog.code, nguong);   // P13: bộ môn theo lượt
     const skills: Record<string, SkillEval> = {};
     for (const s of r.skills) {
-      skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail' };
+      skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail', v: s.ratio === null ? null : s.ratio * 100 };
     }
     return {
       complete: r.complete, scored: r.scored, required: r.required, sosLevel: r.sosLevel, provisional: r.provisional, skills,
       khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong, nguong: r.passThreshold,
+      overall: r.tyLeTong === null ? null : r.tyLeTong * 100, kyVong: r.passThreshold * 100, chuongTrinh: prog.code,
     };
   }
   const r = resultOf(a, scores, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
@@ -82,11 +92,12 @@ export function evaluateAttemptRow(
   /* RA-LUONG-9 (N13 P8): môn em đã bỏ (bài đã chấm giữ điểm) không còn "dưới kỳ vọng" / kỹ năng SOS — cùng luật mức SOS (`scoring.ts` `kyNangDaBo`). */
   const boMon = boMonDaBo(bundle.skips.get(a.id) ?? []);
   for (const v of r.verdicts) {
-    skills[v.skill] = { evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false && !kyNangDaBo(boMon, v.skill) };
+    skills[v.skill] = { evaluable: v.required && v.band !== null && v.passed !== null, under: v.passed === false && !kyNangDaBo(boMon, v.skill), v: v.band, ...(kyNangDaBo(boMon, v.skill) ? { bo: true } : {}) };
   }
   return {
     complete: r.complete, scored: r.scoredRequired, required: r.required.length,
     sosLevel: r.sosLevel, provisional: r.provisional, chot: r.chot, skills,
+    overall: r.overall, kyVong: r.expectation, chuongTrinh: a.programme_code ?? null,
   };
 }
 
@@ -137,7 +148,8 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
     for (const r of db()
       .prepare(
         /* S3: lộ trình của lượt nối một lần (trước: hai câu con cùng dòng), lộ trình FT đang chạy đọc một lần mỗi EM (trước: câu con theo từng lượt). */
-        `SELECT a.*, c.programme_code, pr.week_start AS period_start, pr.week_end AS period_end,
+        /* PANEL-MC: `lop_nguong_dat` — ngưỡng lớp đi cùng câu lượt, `evaluateAttemptRow` không hỏi riêng bảng lớp (`nguongDatLop`). */
+        `SELECT a.*, c.programme_code, c.nguong_dat AS lop_nguong_dat, pr.week_start AS period_start, pr.week_end AS period_end,
                 cy.route AS route, cy.khong_cam_ket AS cy_kck,
                 /* OV-11f (PT-3): lộ trình FAST TRACK đang chạy của em (nếu có) — SOS / dưới kỳ vọng chỉ đọc lượt của lộ trình này, không rơi về Final lớp thường cũ. */
                 ft.id AS cy_ft_dang_chay,
@@ -247,7 +259,7 @@ export function hvSosHienTai(p: Principal, branchId: number | null, today: strin
     if ((ev.sosLevel ?? 0) <= 0) continue;
     (ev.provisional ? tamThoi : ketQuaCuoi).push(sid);
   }
-  return { ids: sortIds([...tamThoi, ...ketQuaCuoi]), splits: { tamThoi: sortIds(tamThoi), ketQuaCuoi: sortIds(ketQuaCuoi) } };
+  return { ids: sortIds([...tamThoi, ...ketQuaCuoi]), splits: { tamThoi: sortIds(tamThoi), ketQuaCuoi: sortIds(ketQuaCuoi) }, luotHv: latest };
 }
 
 /**
@@ -263,7 +275,7 @@ export function hvDuoiKyVongMon(p: Principal, branchId: number | null, today: st
     if (picked.some((s) => s.evaluable)) evaluable.push(sid);
     if (picked.some((s) => s.evaluable && s.under)) under.push(sid);
   }
-  return { ids: sortIds(under), denominatorIds: sortIds(evaluable) };
+  return { ids: sortIds(under), denominatorIds: sortIds(evaluable), luotHv: latest };
 }
 
 /**

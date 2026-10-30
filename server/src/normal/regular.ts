@@ -66,19 +66,20 @@ export const cheDoCua = (programmeCode: string | null | undefined): CheDo =>
 /** PR-TD: ba câu SQL cho CẢ hệ thống chương trình, nhớ trong request GET — gọi lặp mỗi lớp/mỗi lượt trong một request. */
 export function allProgrammes(): Map<string, ProgrammeInfo> {
   return nho('chuong-trinh', () => {
-    const conn = db();
+    /* PANEL-MC (luật Turso): MỘT câu thay ba — môn + mốc gom JSON theo chương trình, xếp lại ở đây (cùng thứ tự `seq, skill` / `study_week` như ba câu cũ). */
     const out = new Map<string, ProgrammeInfo>();
-    for (const p of conn.prepare('SELECT * FROM programmes').all() as any[]) {
+    for (const p of db().prepare(
+      `SELECT p.*, (SELECT json_group_array(json_array(ps.seq, ps.skill)) FROM programme_skills ps WHERE ps.programme_code = p.code) AS mon_json,
+              (SELECT json_group_array(json_array(pc.study_week, pc.kind)) FROM programme_checkpoints pc WHERE pc.programme_code = p.code) AS moc_json
+         FROM programmes p`,
+    ).all() as any[]) {
+      const mon = (JSON.parse(p.mon_json ?? '[]') as [number, string][]).sort((a, b) => a[0] - b[0] || (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0));
+      const moc = (JSON.parse(p.moc_json ?? '[]') as [number, string][]).sort((a, b) => a[0] - b[0]);
       out.set(p.code, {
         code: p.code, name: p.name, weeks: p.weeks, scoringMode: p.scoring_mode, active: p.status === 'active',
-        skills: [], checkpoints: [], nguongDat: p.nguong_dat ?? null, lapMoiTuan: p.lap_moi_tuan ?? null,
+        skills: mon.map((m) => m[1]), checkpoints: moc.map(([studyWeek, kind]) => ({ kind: kind as AttemptKind, studyWeek })),
+        nguongDat: p.nguong_dat ?? null, lapMoiTuan: p.lap_moi_tuan ?? null,
       });
-    }
-    for (const r of conn.prepare('SELECT programme_code, skill FROM programme_skills ORDER BY seq, skill').all() as any[]) {
-      out.get(r.programme_code)?.skills.push(r.skill);
-    }
-    for (const r of conn.prepare('SELECT programme_code, kind, study_week FROM programme_checkpoints ORDER BY study_week').all() as any[]) {
-      out.get(r.programme_code)?.checkpoints.push({ kind: r.kind as AttemptKind, studyWeek: r.study_week });
     }
     return out;
   });
