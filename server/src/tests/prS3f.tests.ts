@@ -141,7 +141,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     const hang = (cases.skillSupportBoard(P.admin, st.id) as any).rows.find((r: any) => r.category === 'listening');
     assert(hang.band != null && hang.missed === null && hang.kck === true, JSON.stringify({ band: hang.band, missed: hang.missed, kck: hang.kck }));
     const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src/modules', f), 'utf8');
-    assert(/row\.missed === false[\s\S]{0,160}Đạt kỳ vọng/.test(web('cases/SkillBoard.tsx')) && !/row\.band !== null && !row\.missed/.test(web('cases/SkillBoard.tsx')), 'SkillBoard vẫn dùng !row.missed');
+    assert(!/row\.band !== null && !row\.missed/.test(web('cases/TheKyNang.tsx')) && /row\.missed === false/.test(web('cases/TheKyNang.tsx')), 'TheKyNang vẫn dùng !row.missed');
     /* PR-VAI-b (Task 3): câu tóm tắt dựng ở máy chủ (`cauTomTat`) — em KCK có điểm không bao giờ "đạt kỳ vọng" (cùng ý câu cũ ở web). */
     const cau = d.cauTomTat({ dacBiet: { loai: 'kck' }, ketQua: { dau: 'MT1', ratio: false, sos: null, dat: null, overall: 5, kck: true, soDat: 0, soMon: 4, monTruot: [], phanTram: null },
       hoTro: [], viec: [], yThuc: null, homNay: '2026-09-14' });
