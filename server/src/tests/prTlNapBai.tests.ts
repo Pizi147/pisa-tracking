@@ -119,6 +119,7 @@ export async function runPrTlNapBaiTests(t: any) {
   const mb = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
   const cns = all('SELECT id FROM branches ORDER BY id').map((x) => x.id as number);
   const LOC: [string, object][] = [['ct=ft', { ct: 'ft' }], ['ct=thuong&thang=2026-09', { ct: 'thuong', thang: '2026-09' }],
+    ['8 tuần 2026-07-27..2026-09-14', { ct: 'ft', tu: '2026-07-27', den: '2026-09-14' }], ['9 tuần 2026-07-20..2026-09-14', { ct: 'thuong', tu: '2026-07-20', den: '2026-09-14' }],
     ['khoảng 2026-03-02..2026-09-14', { ct: 'ft', tu: '2026-03-02', den: '2026-09-14' }]];
   const voiCo = <T,>(du: boolean, fn: () => T): T => { pt.napDayDuKhiKiem.bat = du; try { xoaNho(); return chayTrongRequest('GET', fn) as T; } finally { pt.napDayDuKhiKiem.bat = false; } };
   const napJson = (p: any, f: object) => {
@@ -127,7 +128,7 @@ export async function runPrTlNapBaiTests(t: any) {
     return JSON.stringify({ o, a: [...n.attempts.keys()].sort((x: number, y: number) => x - y) });
   };
 
-  check('B2-a · giống hệt: napBai(gv = null) + bảng Phân tích GV — QL MB × 3 khoảng, QT × mọi chi nhánh × 3 khoảng: đường mới = đường đủ', () => {
+  check('B2-a · giống hệt: napBai(gv = null) + bảng Phân tích GV — QL MB × 5 khoảng, QT × mọi chi nhánh × 5 khoảng: đường mới = đường đủ', () => {
     let co = 0;
     const ds: [string, any, object][] = [...LOC.map(([t, f]) => [`QL MB ${t}`, P.mbManager, { cn: mb, ...f }] as [string, any, object]),
       ...cns.flatMap((cn) => LOC.map(([t, f]) => [`QT cn=${cn} ${t}`, P.admin, { cn, ...f }] as [string, any, object]))];
@@ -167,45 +168,28 @@ export async function runPrTlNapBaiTests(t: any) {
   });
 
   /*
-   * Dòng phải quét (Turso tính tiền) ước theo đúng đường chỉ mục, cùng một mô hình cho hai đường: mỗi lượt ứng viên = 1 (khoá / mục chỉ mục) + EXISTS
-   * (đọc ô kỹ năng của lượt theo idx_attempt_skills_attempt tới ô đầu tiên trong kỳ; không ô nào → mọi ô + 1 lần dò NOT EXISTS).
-   *   Cũ: ứng viên = mọi lượt của lớp chi nhánh + khung (idx_attempt_class, mọi kỳ).
-   *   Mới: mục idx_attempt_skills_cn_tuan của chi nhánh trong kỳ + vế 2 (mục idx_attempt_lop_tuan + dò NOT EXISTS) + ứng viên = lượt của `luot`.
+   * Bước máy ảo SQLite (`sqlite_stmt.nstep`, SQLITE_STMTSTATUS_VM_STEP — cách PTA đo #759) của câu nạp lượt (`chon`) đường mới / đường lớp, mỗi chi nhánh
+   * × khoảng. FT ≤ NAP_THEO_KY_TUAN tuần: đường kỳ, không đắt hơn đường lớp quá 200; dài hơn / khung thường: đường lớp.
    */
-  check('B2-d · dòng phải quét (ước theo đường chỉ mục): in bảng mới / cũ; chi nhánh nhỏ nhất (có lớp) ≤ 1/3 ô kỹ năng MỌI chi nhánh trong kỳ (#724 đọc chéo chi nhánh)', () => {
-    const tuan = new Map(all('SELECT id, week_start FROM report_periods').map((r) => [r.id, r.week_start as string]));
-    const oCua = new Map<number, { cn: number | null; ky: number | null }[]>();
-    for (const k of all('SELECT attempt_id, branch_id, planned_period_id FROM attempt_skills ORDER BY attempt_id, id')) {
-      (oCua.get(k.attempt_id) ?? oCua.set(k.attempt_id, []).get(k.attempt_id)!).push({ cn: k.branch_id, ky: k.planned_period_id });
-    }
-    const luotAll = all('SELECT id, class_id, planned_period_id FROM assessment_attempts');
-    const bang: string[] = [], xa: string[] = [];
-    for (const [ten, f] of LOC) {
-      let oMoiCn = 0;
-      const ds: [number, number][] = [];
-      for (const cn of cns) {
-        const c = pt.nguCanhPtGv(P.admin, { cn, ...f });
-        const trong = (ky: number | null) => { const w = ky == null ? null : tuan.get(ky); return w != null && w >= c.tu && w <= c.den; };
-        const exists = (id: number) => { const ds = oCua.get(id) ?? []; const i = ds.findIndex((o) => trong(o.ky)); return i >= 0 ? i + 1 : ds.length + 1; };
-        const lopLuot = luotAll.filter((a) => c.lop.has(a.class_id));
-        const cu = lopLuot.reduce((t, a) => t + 1 + exists(a.id), 0);
-        const oCn = [...oCua].flatMap(([id, ds]) => ds.filter((o) => o.cn === cn && trong(o.ky)).map(() => id));
-        const ve2 = lopLuot.filter((a) => trong(a.planned_period_id));
-        const luot = new Set([...oCn, ...ve2.filter((a) => !oCua.has(a.id)).map((a) => a.id)]);
-        const moi = oCn.length + 2 * ve2.length + [...luot].reduce((t, id) => t + 1 + exists(id), 0);
-        oMoiCn = [...oCua.values()].flat().filter((o) => trong(o.ky)).length;
-        bang.push(`${ten} cn=${cn} (${c.lop.size} lớp): cũ ${cu} → mới ${moi}`);
-        if (c.lop.size) ds.push([cn, moi]);
-      }
-      bang.push(`${ten}: ô kỹ năng mọi chi nhánh trong kỳ ${oMoiCn}`);
-      const nho = Math.min(...ds.map(([, m]) => m));
-      if (nho * 3 > oMoiCn) xa.push(`${ten}: chi nhánh nhỏ nhất ${nho} > 1/3 × ${oMoiCn}`);
+  check('B2-d · bước VM câu nạp lượt: FT ≤ 8 tuần đi theo kỳ, mới ≤ cũ + 200; > 8 tuần / khung thường đi theo lớp (in bảng)', () => {
+    const goc = conn.prepare;
+    const buoc = () => get(`SELECT COALESCE(SUM(nstep), 0) AS n FROM sqlite_stmt WHERE sql LIKE '%AS period_start%hv_archived%'`).n as number;
+    const bang: string[] = [], sai: string[] = [];
+    for (const [ten, f] of LOC) for (const cn of cns) {
+      const c = pt.nguCanhPtGv(P.admin, { cn, ...f });
+      if (!c.lop.size) continue;
+      const tuan = (Date.parse(c.den) - Date.parse(c.tu)) / (7 * 864e5) + 1;
+      const do_ = (du: boolean) => {
+        let theoKy = false;
+        conn.prepare = function (this: unknown, x: string) { if (/WITH ky\(id\)/.test(x)) theoKy = true; return goc.call(this, x); };
+        try { const b0 = buoc(); voiCo(du, () => pt.napBai(P.admin, pt.nguCanhPtGv(P.admin, { cn, ...f }))); return { n: buoc() - b0, theoKy }; } finally { conn.prepare = goc; }
+      };
+      const cu = do_(true), moi = do_(false);
+      bang.push(`${ten} cn=${cn} (${tuan} tuần, ${c.lop.size} lớp): cũ ${cu.n} → mới ${moi.n}${moi.theoKy ? ' (theo kỳ)' : ' (theo lớp)'}`);
+      if (moi.theoKy !== (tuan <= pt.NAP_THEO_KY_TUAN && c.khung === 'ft')) sai.push(`${ten} cn=${cn}: ${tuan} tuần mà ${moi.theoKy ? 'theo kỳ' : 'theo lớp'}`);
+      if (moi.n > cu.n + 200) sai.push(`${ten} cn=${cn}: mới ${moi.n} > cũ ${cu.n} + 200`);
     }
     console.log('    ' + bang.join('\n    '));
-    /*
-     * Kế hoạch ghi thêm "mới ≤ cũ mọi chi nhánh": KHÔNG đạt trên demo — lịch sử demo ≈ khoảng xem, nên đường cũ (mọi lượt mọi kỳ của lớp khung) rẻ;
-     * đường mới đọc mọi ô kỹ năng chi nhánh trong kỳ (mọi khung). Đường mới chỉ phụ thuộc khoảng, đường cũ lớn theo lịch sử — ghi bảng trong PR, PTA quyết.
-     */
-    assert(xa.length === 0, xa.join('; '));
+    assert(bang.length > 0 && !sai.length, sai.join('; '));
   });
 }

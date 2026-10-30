@@ -427,7 +427,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* CHUONG-NHE: cột users.chuong_dong_bo_luc — mốc đồng bộ chuông ở DB thay bộ nhớ tiến trình (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrChuongNhe(conn, applied));
     /* DON-LUONG K6: chỉ mục idx_scores_no_show — lưới tuần gốc có hàng em vắng dời hết (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migrateDonLuong(conn, applied));
     /* PR-B BAN-GIAO-GV: ban_giao_gv · ban_giao_gv_mon · ban_giao_gv_em — việc bàn giao khi đổi GV (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBanGiaoGv(conn, applied));
-    /* TL-NAPBAI: attempt_skills.branch_id + chỉ mục (chi nhánh, tuần) + 3 trigger giữ cột — napBai cả chi nhánh theo kỳ (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNapBai(conn, applied));
+    /* TL-NAPBAI: attempt_skills.branch_id + chỉ mục (chi nhánh, tuần), (lớp, tuần) + 5 trigger giữ cột — napBai cả chi nhánh theo kỳ (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNapBai(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
