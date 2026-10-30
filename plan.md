@@ -257,6 +257,13 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - `tocDoDuong.ts`: thêm đường `GET /ban-giao-gv/:id` khi seed demo có việc bàn giao GV.
 - Hỏi chủ SP: GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán], đã làm). (Hạn việc khi "Từ tuần": PTA quyết = max(tạo, hiệu lực) + 5 — đã làm.)
 
+### 31/10 trưa — chủ SP trả lời 5 câu
+1. Kỹ năng đạt = ✓ + cùng màu ô Overall đạt — GIỮ.
+2. GVCN lớp mới = GVCN lớp cũ → nhận xét chung bàn giao chuyển lớp KHÔNG bắt buộc — ĐÚNG (#731 đã làm).
+3. TRANG-LON: làm S3 (rủi ro thấp) trước — DUYỆT, gồm nghĩa mới của quét: quetYeuCau / quetLenhDenHan chạy mỗi 60 s toàn hệ thống (mốc trong DB) + ngay sau mỗi lần ghi, thay vì mỗi tiến trình. S1 xét sau nếu còn chậm; không S2. Kế hoạch `docs/superpowers/plans/2026-10-31-trang-lon.md`.
+4. Session code CHẠY check đầy đủ (~3 phút) trước khi mở PR (thay luật 28/10 "chỉ kiểm nhanh"); PTA vẫn check chung khi merge.
+5. Người kiêm GV + TVV: ĐƯỢC sửa ô Liên hệ (vai TVV thắng) — sửa `coONhapLienHe` web + máy chủ cùng lúc (PR LIEN-HE-TVV).
+
 ### Backlog phát sinh đêm 30/10 (PTA rà PR)
 - ~~**QUYEN-LIEN-HE (PR riêng, quyền):**~~ (đang làm — PR QUYEN-LIEN-HE) luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
 - **PANEL [XM] (#736 PANEL-CHUNG):** XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
