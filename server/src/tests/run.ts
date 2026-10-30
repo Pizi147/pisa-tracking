@@ -9902,6 +9902,9 @@ await runPrPanelChungTests({ check, checkAsync, assert, conn } as any);
 // ==================================================================== SUA-NHO-UI (lớp sai loại ở ô Lớp khác — Lộ trình mới)
 const { runPrSuaNhoUiTests } = bocTep('prSuaNhoUi', await import('./prSuaNhoUi.tests.ts'));
 await runPrSuaNhoUiTests({ check, assert } as any);
+// ==================================================================== BANG-EM-GON (bảng em hồ sơ lớp gọn + TVV — PANEL-V10 #be)
+const { runPrBangEmGonTests } = bocTep('prBangEmGon', await import('./prBangEmGon.tests.ts'));
+await runPrBangEmGonTests({ check, assert } as any);
 // ==================================================================== DUYET-QL (panel duyệt Công việc QL — PANEL-V10 khu C)
 const { runPrDuyetQlTests } = bocTep('prDuyetQl', await import('./prDuyetQl.tests.ts'));
 await runPrDuyetQlTests({ check, assert } as any);

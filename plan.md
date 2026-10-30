@@ -257,12 +257,22 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - `tocDoDuong.ts`: thêm đường `GET /ban-giao-gv/:id` khi seed demo có việc bàn giao GV.
 - Hỏi chủ SP: GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán], đã làm). (Hạn việc khi "Từ tuần": PTA quyết = max(tạo, hiệu lực) + 5 — đã làm.)
 
+### 31/10 trưa — chủ SP trả lời 5 câu
+1. Kỹ năng đạt = ✓ + cùng màu ô Overall đạt — GIỮ.
+2. GVCN lớp mới = GVCN lớp cũ → nhận xét chung bàn giao chuyển lớp KHÔNG bắt buộc — ĐÚNG (#731 đã làm).
+3. TRANG-LON: làm S3 (rủi ro thấp) trước — DUYỆT, gồm nghĩa mới của quét: quetYeuCau / quetLenhDenHan chạy mỗi 60 s toàn hệ thống (mốc trong DB) + ngay sau mỗi lần ghi, thay vì mỗi tiến trình. S1 xét sau nếu còn chậm; không S2. Kế hoạch `docs/superpowers/plans/2026-10-31-trang-lon.md`.
+4. Session code CHẠY check đầy đủ (~3 phút) trước khi mở PR (thay luật 28/10 "chỉ kiểm nhanh"); PTA vẫn check chung khi merge.
+5. Người kiêm GV + TVV: ĐƯỢC sửa ô Liên hệ (vai TVV thắng) — sửa `coONhapLienHe` web + máy chủ cùng lúc (PR LIEN-HE-TVV).
+
 ### Backlog phát sinh đêm 30/10 (PTA rà PR)
 - ~~**QUYEN-LIEN-HE (PR riêng, quyền):**~~ (đang làm — PR QUYEN-LIEN-HE) luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
 - **PANEL [XM] (#736 PANEL-CHUNG):** XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
 - **LECH-CACH-CHAM (một nguồn):** em đổi lớp FT ↔ lớp thường: `standingFor` chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt → ✓ / ✗ từng kỹ năng ở panel (diemTuEval) có thể khác hồ sơ / SOS. Lỗi có từ trước, #733 phép M1 tạm bỏ qua em đó (in số em bỏ qua). Sửa: một hàm chọn cách chấm cho lượt (theo chương trình lớp của lượt) dùng cả hai đường.
 - **TAB-A11Y:** tab Chưa đạt · Đạt (panel số, `SoLieu.tsx`) và các `role="tab"` khác chưa có `aria-controls`, chưa đi bằng phím ← → (có từ trước; nguồn rà #736). Sửa ở thành phần tab chung một lần.
 - **QUYEN-THEO-CN:** quyền sửa liên hệ (`coONhapLienHe`) và một số cờ Lưu trữ xét theo VAI toàn tài khoản, không theo chi nhánh (`luuTru.ts:122`, `students.ts:776`): QL chi nhánh A kiêm GVCN chi nhánh B vẫn đổi được liên hệ em ở B (web cũng vậy). Luật cũ — hỏi chủ SP có cần xét vai theo chi nhánh của em không. (Nguồn: rà #746.)
+- **MA-MO-COI-THE (rà #755):** `TheKyNangDs`, `TheGon`, `TheKyNang` nay mồ côi; phép kiểm `prS3f`, `prUxfB` (6), `prVaiB` đang soi `TheKyNang.tsx` (canh mã chết) → xoá cả mã lẫn phép (CN-3 / DON-MA-2). Bỏ `mo-viec` khỏi `THAM_SO_DICH` khi lối chuyển hướng ổn.
+- **DUYET-QL a11y (rà #754, nếu chưa sửa trong PR):** đóng ô Từ chối / Trả lời trả focus về nút còn trên trang (`TheYeuCau.tsx:116`).
+- **[XM-BE-1] BANG-EM-GON thẻ 375:** mockup v10 `#be` 375 vẽ dòng điểm `DongDiem` (lượt · 4 kỹ năng · Overall); PR giữ lưới 5 ô v8 (ô ✓ / ✗ mới) vì `DongDiem` mất W1 · W2, "vắng …" và bấm W / S → điểm thành phần. Hỏi chủ SP: giữ lưới hay thêm hai thứ đó vào `DongDiem`.
 - **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
 
 ### 30/10 (tối) — chủ SP duyệt mockup PANEL-V10 #723 (KHÔNG mockup lại; chỉnh ghi ở đây, kế hoạch code phải theo)

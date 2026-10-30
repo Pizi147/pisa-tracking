@@ -8,7 +8,7 @@ import { CHIP_SOS as CHIP, lopSos } from './Nhan.tsx';
  * CHIP SOS — mọi màn (Học viên & Lớp, lưới điểm, Case, hồ sơ…). Bấm chip = hộp "Vì sao SOS n" ngay cạnh (tiêu đề → kết luận đậm → số → việc),
  * KHÔNG nút `?` cạnh (chủ SP 19/10). Esc / bấm ra ngoài / cuộn thì đóng. Hộp vẽ qua portal, vị trí cố định — không bị khung cuộn của bảng cắt.
  */
-export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong, soLieu, viec, tinh }: VaoChipSos & {
+export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong, soLieu, viec, tinh, nho }: VaoChipSos & {
   /** Đã có cột kỹ năng riêng cạnh chip → chip chỉ "SOS n"; hộp giải thích vẫn đếm kỹ năng. */
   hienKyNang?: boolean;
   /** Dòng số trong hộp: [nhãn, giá trị] — vd ["Kỳ vọng MT3", "6.5"], ["L", "6.0"]. */
@@ -17,6 +17,8 @@ export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong,
   viec?: ReactNode;
   /** Chip nằm trong một nút / link khác (tên Case bấm mở Case): chỉ vẽ, không mở hộp — không lồng nút trong nút. */
   tinh?: boolean;
+  /** BANG-EM-GON (mockup v10 `.cs.nho`): chip nhỏ cao 20, đệm 6 — bảng có cột điểm. */
+  nho?: boolean;
 }) {
   const [cho, setCho] = useState<CSSProperties | null>(null);
   const nut = useRef<HTMLButtonElement>(null);
@@ -37,8 +39,9 @@ export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong,
     };
   }, [cho]);
   if (muc <= 0) return null;
+  const CHIP_ = nho ? `${CHIP} !h-5 !min-w-0 !px-1.5` : CHIP;
   const vao = { muc, kyNang, tam, dot, ten, thuong };
-  if (tinh) return <span className={`${CHIP} ${lopSos(muc, tam)}`}>{chuChipSos(hienKyNang ? vao : { muc, tam })}</span>;
+  if (tinh) return <span className={`${CHIP_} ${lopSos(muc, tam)}`}>{chuChipSos(hienKyNang ? vao : { muc, tam })}</span>;
   const g = giaiThichSos(vao);
   const mo = () => {
     const r = nut.current!.getBoundingClientRect();
@@ -50,7 +53,7 @@ export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong,
   return (
     <>
       <button ref={nut} type="button" aria-haspopup="dialog" aria-expanded={!!cho} aria-controls={cho ? idHop : undefined} onClick={() => (cho ? setCho(null) : mo())}
-        className={`${CHIP} ${lopSos(muc, tam)} relative cursor-pointer ${muc <= 1 ? 'hover:bg-[color:var(--accent-soft)]' : 'hover:brightness-110'} max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']`}>
+        className={`${CHIP_} ${lopSos(muc, tam)} relative cursor-pointer ${muc <= 1 ? 'hover:bg-[color:var(--accent-soft)]' : 'hover:brightness-110'} max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']`}>
         {chuChipSos(hienKyNang ? vao : { muc, tam })}
       </button>
       {cho && createPortal(
