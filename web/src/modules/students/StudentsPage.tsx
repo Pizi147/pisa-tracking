@@ -225,7 +225,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     id: d.id, classId: d.lop?.id ?? 0, loc: ['tat-ca'] as LocHocVien[], khung: d.lop && !d.lop.ft ? 'thuong' as const : 'ft' as const, ten: d.ten, ma: d.ma, tvv: d.tvv,
     ...(d.status === 'finished' ? { ketThuc: true as const } : {}),
   }))], [data, vaiTrang]);
-  const vaiBang: VaiBang | undefined = vaiTrang ? { em: vaiTrang.em, coViec, onMoEm: (id) => setPanelEm({ id, caseMo: null }) } : undefined;
+  const moEm = (id: number) => setPanelEm({ id, caseMo: null });
+  const vaiBang: VaiBang | undefined = vaiTrang ? { em: vaiTrang.em, coViec, onMoEm: moEm } : undefined;
   /*
    * Việc theo em, gấp nhất trước (quá hạn → hạn sớm). Việc nhiều em (`emIds`) tính cho từng em.
    * P11 VIEC-DUNG-VAI: GV chỉ việc CỦA MÌNH (`mine`) — ô Việc, chip "Có việc quá hạn", "Cần chú ý trước" cùng nguồn này; QL / Admin đủ việc, ô Việc gộp theo môn.
@@ -499,8 +500,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           ) : (
             <>
               {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
-              {dienThoai ? <TheHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} />
-                : <BangHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} />}
+              {dienThoai ? <TheHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onMoEm={moEm} onDoi={lamMoi} vai={vaiBang} />
+                : <BangHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onMoEm={moEm} onDoi={lamMoi} vai={vaiBang} />}
               {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
             </>
           )}
@@ -564,7 +565,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         <PanelViec it={viecMo} onDong={() => setViecMo(null)} onTiep={null} onDaLam={lamMoi} />
       )}
       {panelEm && (
-        <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} onClose={() => setPanelEm(null)}
+        <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} viecTrang={viecHien.get(panelEm.id)?.map((x) => x.it)} onClose={() => setPanelEm(null)}
           onDoi={lamMoi} />
       )}
       {taoLop && (
