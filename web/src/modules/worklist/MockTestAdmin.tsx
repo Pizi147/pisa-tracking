@@ -29,7 +29,7 @@ type TongQuanMt = {
 export function MockTestAdmin({ branchId }: { branchId: number | null }) {
   const { data, loading, error, reload } = useApi<TongQuanMt>(branchId ? `/tong-quan/mock-test?branchId=${branchId}` : '/tong-quan/mock-test', [branchId]);
   const { homNay } = useNgayNghiepVu();
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={4} />;
 
   const cn = branchId ? `&cn=${branchId}` : '';

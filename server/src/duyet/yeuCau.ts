@@ -16,7 +16,7 @@ import { quetTheoMoc } from '../platform/mocHeThong.ts';
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import {
   PERMISSIONS, LOAI_NGUOI_XIN_SUA, LOAI_YC_META, LY_DO_RUT, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
-  nhomCuaLoai, sapThe,
+  nhanHanhDongNhatKy, nhomCuaLoai, sapThe,
   type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto,
 } from '../../../shared/domain/index.ts';
 import { DINH_NGHIA_LOAI, dinhNghiaCua, type NguCanhThe, type YeuCauRow } from './loaiYeuCau.ts';
@@ -419,7 +419,7 @@ export function lichSuYeuCau(p: Principal, id: number): { dong: { luc: string; n
       WHERE y.id = ? ORDER BY a.id DESC LIMIT 50`,
   ).all(id) as any[];
   return { dong: dong.map((r) => ({ luc: r.created_at, nguoi: r.full_name ?? null,
-    chu: NHAN_HANH_DONG[r.action] ? t(NHAN_HANH_DONG[r.action] as Parameters<typeof t>[0]) : [r.action, r.entity_label].filter(Boolean).join(' · ') })) };
+    chu: NHAN_HANH_DONG[r.action] ? t(NHAN_HANH_DONG[r.action] as Parameters<typeof t>[0]) : [nhanHanhDongNhatKy(r.action), r.entity_label].filter(Boolean).join(' · ') })) };   // DUYET-QL: nhãn nhật ký chung, không lộ mã máy
 }
 
 /** Yêu cầu của tôi: mọi thẻ đang chờ + thẻ đã xử lý trong 60 ngày gần nhất. */

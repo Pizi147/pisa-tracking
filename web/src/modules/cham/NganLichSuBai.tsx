@@ -22,7 +22,7 @@ export function NganLichSuBai({ attemptId, skill, ct, tenHv, trongHop, onClose }
   return (
     <KhungPanel tieuDe={skill ? t('Lịch sử · {tenMon}', { tenMon: tenMon(ct, skill) }) : t('Lịch sử')} hocVien={tenHv} onDong={onClose} longTrong={trongHop} z={trongHop ? 'z-[70]' : undefined}>
       <div className="pt-3">
-        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : loading || !data ? <Skeleton rows={4} />
             : <DongThoiGianLuot ct={ct} gioiHan={20} history={data.history.filter((h) => cuaMon(h.field))}
               scoreHistory={data.scoreHistory.filter((h) => laMon(h.skill))} />}

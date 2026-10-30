@@ -89,7 +89,7 @@ export function ChamTestTab() {
   const thuTu = [...nhom.qua, ...nhom.nay, ...nhom.cheo, ...nhom.sau];
   const conTrenMayChu = new Set(thuTu.map((x) => x.key));
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (!data || !homNay || !cuoiTuan) return <Skeleton rows={8} />;
 
   const cua = [...nhom.qua, ...nhom.nay, ...nhom.sau];

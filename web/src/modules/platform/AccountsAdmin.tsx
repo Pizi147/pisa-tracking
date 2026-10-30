@@ -71,7 +71,7 @@ export function AccountsAdmin() {
    */
   /* 6c (lỗi 6): chỉ 403 mới là thiếu quyền — lỗi mạng / máy chủ thì nói thật + Thử lại. */
   if (accounts.error && accounts.error.status !== 403) {
-    return <Card title="Tài khoản"><ErrorState message={accounts.error.message} hint={accounts.error.hint} onRetry={accounts.reload} /></Card>;
+    return <Card title="Tài khoản"><ErrorState message={accounts.error.message} hint={accounts.error.hint} status={accounts.error.status} onRetry={accounts.reload} /></Card>;
   }
   if (accounts.error) {
     return (

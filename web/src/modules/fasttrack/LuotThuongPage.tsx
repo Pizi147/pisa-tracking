@@ -96,7 +96,7 @@ export default function LuotThuongPage() {
 
   /* Lượt FT / MT0 mở nhầm đường này (máy chủ 404) → hồ sơ Mock; nó tự chuyển tiếp lượt không phải FT, nên không vòng. */
   if ((error as { status?: number } | null)?.status === 404) return <Navigate to={duongDotTest({ id: Number(id) })} replace />;
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
 
   const d = data;

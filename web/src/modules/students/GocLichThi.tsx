@@ -6,11 +6,12 @@ import { Card, Empty, ErrorState, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { NhanLich } from '../../ui/Nhan.tsx';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
+import { lopKq } from '../../ui/BieuTuong.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillShort } from '../../lib/format.ts';
 import {
-  dsThangLichThi, nhanThang, thangTrongKhoang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, xepLichThi,
+  chuMiniKn, datKv, dauDiem, dsThangLichThi, nhanThang, thangTrongKhoang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, xepLichThi,
   type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -66,18 +67,21 @@ export const kqOverall = (ovr: number | null | undefined, kv: number | null | un
   ovr == null || kv == null ? null : ovr > kv ? 'vuot' as const : ovr === kv ? 'bang' as const : 'duoi' as const;
 
 /**
- * Dải 5 ô L R W1 W2 S (W1 W2 riêng) — HV-LOP-GON (chủ SP 28/10, mockup V5 `.mini-kn`): số 13 / 600, nhãn mờ; ô cột cố định nên các hàng thẳng cột;
- * ô dưới kỳ vọng = nền đỏ nhạt + chữ đỏ (thấy ngay, không cần đọc số) + tên cho trình đọc màn.
+ * Dải 5 ô L R W1 W2 S (W1 W2 riêng) — HV-LOP-GON (chủ SP 28/10, mockup V5 `.mini-kn`): nhãn mờ; ô cột cố định nên các hàng thẳng cột.
+ * HV-LOP-VIEC (PANEL-V10, chủ SP 30/10 + PTA Q1): đạt / không đạt như ô Overall — hụt "✗" `kq-duoi` 700, đạt "✓" màu Overall đạt 500; không nền đỏ ô; KCK dưới kỳ vọng trung tính.
  */
-export function MiniKn({ kn, kv }: { kn: Kn; kv: number | null }) {
+export function MiniKn({ kn, kv, kck }: { kn: Kn; kv: number | null; kck?: boolean }) {
   return (
-    <span className="mt-1 grid w-max grid-cols-[36px_36px_44px_44px_36px] gap-x-1 text-[13px] font-semibold leading-5 tabular-nums text-slate-100">
+    <span className="mt-1 grid w-max grid-cols-[46px_46px_58px_58px_46px] gap-x-1 text-[13px] leading-5 tabular-nums text-slate-100">
       {KN_MINI.map((k) => {
-        const duoi = kn[k] != null && kv != null && kn[k]! < kv;
+        const v = kn[k];
+        const dat = datKv(v, kv, kck);
+        /* Ký hiệu sát số (cột hẹp); trình đọc màn đọc chữ đủ "W1 ✗ 5.0". */
         return (
-          <span key={k} className={`whitespace-nowrap rounded px-1 ${duoi ? 'bg-bad-bg text-bad' : ''}`} title={duoi ? t('Dưới kỳ vọng') : undefined}>
-            <span className={`mr-0.5 font-medium ${duoi ? '' : 'text-faint'}`}>{k}</span>{kn[k] != null ? kn[k]!.toFixed(1) : <span className="font-normal text-faint">—</span>}
-            {duoi && <span className="sr-only"> {t('Dưới kỳ vọng')}</span>}
+          <span key={k} className="whitespace-nowrap" title={dat === false ? t('Dưới kỳ vọng') : undefined} role="img" aria-label={`${k} ${chuMiniKn(v, kv, kck)}${dat === false ? `, ${t('Dưới kỳ vọng')}` : ''}`}>
+            <span className="mr-0.5 font-medium text-faint">{k}</span>
+            {v == null ? <span className="font-normal text-faint">—</span>
+              : <span className={dat === false ? `font-bold ${lopKq('duoi')}` : dat ? `font-medium ${lopKq('bang')}` : 'font-medium'}>{dauDiem(dat)}{v.toFixed(1)}</span>}
           </span>
         );
       })}
@@ -148,7 +152,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
           </span>
         )}
       </div>
-      {error && <div className="p-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>}
+      {error && <div className="p-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>}
       {loading && !data && <div className="p-3"><Skeleton rows={5} /></div>}
       {data && hien.length === 0 && <Card><Empty title={t('Không có HV có lịch thi trong {khoang}.', { khoang: `${nhanThang(tu)} → ${nhanThang(den)}` })} /></Card>}
       {data && hien.length > 0 && (
@@ -293,7 +297,7 @@ function ChiTietDuoiHang({ r }: { r: HangHien }) {
         <div className="grid gap-4 text-[13px] text-slate-200 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className={tde}>{[st?.attemptLabel, st?.expectation != null ? t('kỳ vọng {kv}', { kv: st.expectation.toFixed(1) }) : null].filter(Boolean).join(' · ') || t('MT gần nhất')}</div>
-            {c.kn ? <MiniKn kn={c.kn} kv={st?.expectation ?? null} /> : <span className="text-slate-500">—</span>}
+            {c.kn ? <MiniKn kn={c.kn} kv={st?.expectation ?? null} kck={r.kck} /> : <span className="text-slate-500">—</span>}
           </div>
           <div>
             <div className={tde}>{t('Test sắp tới')}</div>

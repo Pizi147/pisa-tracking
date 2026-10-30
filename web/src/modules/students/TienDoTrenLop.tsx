@@ -82,7 +82,7 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe }: {
       <div className="flex flex-col gap-2 px-4 py-3">
         {mo === 'moi' && data && <FormTienDo duong={duong} bai={null} lop={data.lop} lopNay={lopNay} knDau={kn} ct={ct} homNay={homNay} onHuy={() => setMo(null)} onXong={xong} />}
         {vua && vua.id === null && baoXong}
-        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : !data ? <Skeleton rows={3} />
           : !ds.length ? (mo !== 'moi' && <p className="m-0 py-2 text-[14px] text-slate-400">{t('Chưa có ghi nhận nào.')}</p>)
           : (

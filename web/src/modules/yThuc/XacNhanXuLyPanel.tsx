@@ -77,7 +77,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
 
   if (!studentId) return null;
   const tieuDe = cheDo === 'de-xuat' ? t('Đề xuất QL duyệt') : t('Xác nhận xử lý');
-  if (loiTai) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={reload} /></KhungPanel>;
+  if (loiTai) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
   const dau = (han: boolean) => dauViec({ han: han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null, em: { id: d.studentId, ten: d.ten }, lop, ngCanh: t('Ý thức') });
 

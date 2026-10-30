@@ -300,6 +300,21 @@
   .btn-ghost { background: transparent; border-color: transparent; }
   .btn-ghost:hover:not(:disabled) { background: rgb(var(--phu-rgb) / 0.1); }
 
+  /* HV-LOP-VIEC (PANEL-V10 `#hvl`): ô Việc 300 px — nút việc một dòng 28 px 13 / 600 (hạn trong nút), quá hạn viền + nền đỏ nhạt; việc người khác chữ 12 px mờ; "+n việc" mở panel một em. */
+  .viec-n { display: inline-flex; align-items: center; height: 28px; max-width: 100%; min-width: 0; padding: 0 8px; border-radius: 6px; border: 1px solid var(--line-strong);
+    background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  .viec-n:hover { border-color: var(--text-faint); }
+  .viec-n.qua { border-color: rgb(var(--bad-line-rgb)); background: rgb(var(--bad-bg-rgb)); color: rgb(var(--bad-rgb)); }
+  .viec-khac { display: inline-flex; max-width: 100%; min-width: 0; padding: 0; border: 0; background: none; font-size: 12px; color: var(--text-faint); white-space: nowrap; cursor: pointer; text-align: left; }
+  .viec-khac:hover { text-decoration: underline; }
+  .viec-them { padding: 0; border: 0; background: none; font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; }
+  .viec-them:hover { text-decoration: underline; }
+  @media (max-width: 639.98px) {
+    .viec-n { height: auto; min-height: 36px; padding-block: 6px; white-space: normal; text-align: left; }
+    .viec-n > .truncate, .viec-khac > .truncate { white-space: normal; }
+    .viec-khac, .viec-them { min-height: 44px; align-items: center; }
+  }
+
   /*
    * NÚT LỌC DẠNG VIÊN THUỐC (PR-HK2, T4) — là NÚT, không phải badge: chữ 13 px (NEN), cao 32 (điện thoại 44). Dáng đã duyệt ở Học viên & Lớp.
    * Đang lọc = `aria-pressed="true"` (nút bật/tắt) hoặc `.nut-loc-dang` (nút "bỏ lọc ✕" luôn ở trạng thái đang lọc).
@@ -726,6 +741,8 @@
   .xh.ct { color: rgb(var(--doing-rgb)); border-color: rgb(var(--doing-line-rgb)); }
   .doi { white-space: nowrap; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text-dim); }
   .doi b { font-weight: 600; color: rgb(var(--chu-1-rgb)); }
+  /* BANG-EM-GON (v10 `#be` `.tvv`): tên TVV dưới tên HV — chữ phụ mờ 11 px / 400 (chủ SP 30/10 "nhỏ hơn mockup một nấc", ngoại lệ G13 riêng dòng này). */
+  .tvv { white-space: nowrap; font-size: 11px; font-weight: 400; line-height: 1.35; color: var(--text-faint); }
 }
 
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */

@@ -51,7 +51,7 @@ export function BaoCao(pv: PhamViPhanTich) {
   const motCn = !!tq.data && !tq.data.chiNhanh;
   const kq = useApi<KetQuaMtKq>(ft && motCn ? `/phan-tich/bao-cao/ket-qua-mt?${q}` : null, [q, motCn]);
 
-  if (tq.error) return <ErrorState message={tq.error.message} hint={tq.error.hint} onRetry={tq.reload} />;
+  if (tq.error) return <ErrorState message={tq.error.message} hint={tq.error.hint} status={tq.error.status} onRetry={tq.reload} />;
   if (!tq.data) return <Skeleton rows={8} />;
   const d = tq.data, b = tq.data.baoCao;
   /* RA-UI-5: khoảng tuần đã ghi ở bộ lọc ngay trên — ô chỉ số ghi "trong kỳ" như Tổng quan, không lặp "W1 SEP – W2 SEP" ở 4 ô. */
@@ -114,7 +114,7 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
   return (
     /* V8-PT: "FT · chi nhánh" trùng hàng lọc / đầu trang → chỉ hiện khi in (hàng lọc ẩn trên giấy). */
     <Khoi tieuDe={t('Kết quả MT')} luat={luat} phu={<><span className="hidden print:inline">{phamVi} · </span>{t('lượt của từng HV trong kỳ')}</>}>
-      {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} onRetry={api.reload} />
+      {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} status={api.error.status} onRetry={api.reload} />
         : !api.data ? <Skeleton rows={5} className="p-4" />
           : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={dienThoai ? api.data.rows.filter((h) => h.hv || h.luot === 'thi') : api.data.rows} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu />}
     </Khoi>

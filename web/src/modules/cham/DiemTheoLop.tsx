@@ -155,7 +155,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
   };
 
   let noiDung;
-  if (ds.error && !ds.data) noiDung = <ErrorState message={ds.error.message} hint={ds.error.hint} onRetry={ds.reload} />;
+  if (ds.error && !ds.data) noiDung = <ErrorState message={ds.error.message} hint={ds.error.hint} status={ds.error.status} onRetry={ds.reload} />;
   else if (ds.loading || !ds.data) noiDung = <Skeleton rows={6} />;
   else if (!dsLuot.length) {
     noiDung = <Empty title={t('Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.')} />;
@@ -231,7 +231,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
 
         <div id={`bang-${classId}`} role="tabpanel" aria-label={dangXem?.nhan}>
           {bang.error && b && <LoiTaiLai message={bang.error.message} onRetry={bang.reload} />}
-          {bang.error && !b ? <ErrorState message={bang.error.message} hint={bang.error.hint} onRetry={bang.reload} />
+          {bang.error && !b ? <ErrorState message={bang.error.message} hint={bang.error.hint} status={bang.error.status} onRetry={bang.reload} />
             : !b ? <Skeleton rows={6} />
               : chiAttempt && chiAttempt.size === 0 && !hangMo.length
                 ? <Empty title={t('Lượt này không còn ô trống.')} hint={t('Bỏ chọn "Chỉ ô còn trống" để xem cả bảng.')} />

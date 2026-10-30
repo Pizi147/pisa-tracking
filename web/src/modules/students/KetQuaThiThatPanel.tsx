@@ -64,7 +64,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
     return <PanelBuocTiep cycleId={cycleId} hocVien={c ? { id: c.student_id, ten: studentName } : null} lop={lop} quayLai={quayLai}
       onSuaKetQua={() => { setBuocTiep(false); reload(); }} onClose={() => { onDone(); onClose(); }} />;
   }
-  if (error) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!c || !form) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
 
   const st = sauThi.data;

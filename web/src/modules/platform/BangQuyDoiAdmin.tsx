@@ -58,7 +58,7 @@ export function BangQuyDoiAdmin() {
   const [busy, setBusy] = useState(false);
 
   if (error && error.status === 403) return <Forbidden message="Phần này dành cho Quản trị hệ thống và Quản lý." />;
-  if (error) return <Card title="Bảng quy đổi band"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;
+  if (error) return <Card title="Bảng quy đổi band"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>;
   if (loading || !data) return <Card><Skeleton rows={10} /></Card>;
 
   const dangDung = data.phienBan[0];

@@ -2,7 +2,6 @@ import { Fragment, useId, useState, type MouseEvent, type ReactNode, type Select
 import { Link, useLocation } from 'react-router-dom';
 import { GIAI_THICH_KCK, KCK, chuTrangThai, loaiHoSo, trangCha, type TrangThai } from '@shared/domain/index.ts';
 import { fmtBand } from '../lib/format.ts';
-import { laCauLoi403, laCauLoi404 } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
@@ -256,10 +255,11 @@ export function Empty({ title, hint, action }: { title: string; hint?: string; a
   );
 }
 
-export function ErrorState({ message, hint, onRetry }: { message: string; hint?: string; onRetry?: () => void }) {
+/** `status` = mã HTTP của lỗi (`ApiError.status`): 403 / 404 thử lại vẫn vậy (OV-11i, UI-CON-LAI k6) nên thay "Thử lại" bằng nút về; không truyền thì như lỗi thường. */
+export function ErrorState({ message, hint, status, onRetry }: { message: string; hint?: string; status?: number; onRetry?: () => void }) {
   const { pathname } = useLocation();
   const session = useSession()?.session;   // khung lỗi có thể vẽ ngoài SessionProvider
-  const k403 = laCauLoi403(message), k404 = !k403 && laCauLoi404(message);
+  const k403 = status === 403, k404 = status === 404;
   /* UI-CON-LAI k6: nói loại lỗi + đường khác. 404 hồ sơ HV → tìm trong lưu trữ; 403 hồ sơ GV người khác → hồ sơ của chính mình (nếu là GV). */
   const hsHv = k404 && /^\/hoc-vien\/\d+$/.test(pathname);
   const hsGvToi = k403 && /^\/giao-vien\/\d+$/.test(pathname) && session?.user && session.roles?.includes('teacher') ? `/giao-vien/${session.user.id}` : null;

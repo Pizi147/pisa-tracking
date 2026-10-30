@@ -268,7 +268,7 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   return (
     <Card bodyClass="p-0" title={t('GV cần chú ý')}
       action={<CongTac v8 value={ht ? 'ht' : 'hc'} onChange={(k) => setLoai(k)} muc={[['hc', t('Hành chính')], ['ht', t('Học thuật')]]} />}>
-      {pt.error ? <ErrorState message={pt.error.message} hint={pt.error.hint} onRetry={pt.reload} />
+      {pt.error ? <ErrorState message={pt.error.message} hint={pt.error.hint} status={pt.error.status} onRetry={pt.reload} />
         : !pt.data ? <Skeleton rows={3} className="p-4" />
           : <Bang ten={t('GV cần chú ý')} cot={ht ? COT_GV_HT.filter((c) => d.ct === 'ft' || c.key !== 'tb') : COT_GV_HC}
             hang={pt.data.hang} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua} khung={false} theLuoi rong={{ tieuDe: t('Chi nhánh chưa có GV nào trong kỳ') }} />}
@@ -456,7 +456,7 @@ export function TongQuanTvvV5() {
   const tq = useApi<TqTvv>('/tong-quan/tvv', []);
   const hv = useApi<SoHv>('/tong-quan/hoc-vien', []);
   const viec = useApi<{ summary: { viec: number } }>('/my-work', []).data?.summary;
-  if (tq.error) return <ErrorState message={tq.error.message} hint={tq.error.hint} onRetry={tq.reload} />;
+  if (tq.error) return <ErrorState message={tq.error.message} hint={tq.error.hint} status={tq.error.status} onRetry={tq.reload} />;
   if (!tq.data) return <Skeleton rows={4} />;
   const d = tq.data;
   const den = (chip: string) => `/hoc-vien?phamVi=cua-toi&view=${chip}`;

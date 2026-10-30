@@ -61,11 +61,11 @@ export function KetQuaThi(props: PhamViPhanTich) {
 
 /** Vùng dữ liệu chung hai bên: lỗi / tải / rỗng trong thẻ; có dữ liệu → bảng (1440) hoặc thẻ từng lượt (375); phân trang CHỈ dưới. */
 function VungBang({ dau, error, reload, loading, rong, pt, bang, the }: {
-  dau: ReactNode; error: { message: string; hint?: string } | null | undefined; reload: () => void; loading: boolean; rong: ReactNode | null;
+  dau: ReactNode; error: { message: string; hint?: string; status?: number } | null | undefined; reload: () => void; loading: boolean; rong: ReactNode | null;
   pt: ThanhPhanTrang; bang: ReactNode; the: ReactNode;
 }) {
   const dienThoai = useDienThoai();
-  if (error) return <Card bodyClass="p-0">{dau}<div className="p-4"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div></Card>;
+  if (error) return <Card bodyClass="p-0">{dau}<div className="p-4"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div></Card>;
   if (loading) return <Card bodyClass="p-0">{dau}<div className="p-4"><Skeleton rows={8} /></div></Card>;
   if (rong) return <Card bodyClass="p-0">{dau}<div className="p-4">{rong}</div></Card>;
   /* 375 (mockup C2): thẻ từng lượt đứng riêng, không khung bảng; phân trang ngay dưới thẻ cuối. */

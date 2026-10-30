@@ -33,7 +33,7 @@ sau đó viết tắt. Luật thuần (không đụng DB, máy chủ và web cù
 | Công việc (một danh sách, panel làm tại chỗ `?viec=`) | `web/src/modules/congViec/{CongViecPage,HoTroHocVienTab,DanhSachViec,PanelViec}.tsx` | `GET /my-work` → `server/src/worklist/mywork.ts` |
 | Công việc của TVV (Báo PH · Sau thi · Chốt ngày thi) | `web/src/modules/congViec/{PanelBaoPhTvv,PanelSauThi}.tsx` | `server/src/worklist/viecTvv.ts` · `server/src/yThuc/baoPhTvv.ts` |
 | Hộp Chờ duyệt · Yêu cầu của tôi | `web/src/modules/duyet/{HopChoDuyet,TheYeuCau,YeuCauCuaToi}.tsx` | `GET /yeu-cau` → `server/src/duyet/{yeuCau,loaiYeuCau}.ts` |
-| Học viên & Lớp (góc Tất cả · Đang SOS · Cần làm · Lịch thi, dải lớp) | `web/src/modules/students/{StudentsPage,DanhSachHvLop,BangHocVienLop,BangSos}.tsx` | `GET /hoc-vien-lop` → `server/src/classes/hocVienLop.ts` · `hocVienSos.ts` (`dangSos`) |
+| Học viên & Lớp (góc Tất cả · Đang SOS · Cần làm · Lịch thi, dải lớp) | `web/src/modules/students/{StudentsPage,DanhSachHvLop,BangHocVienLop}.tsx` (+ `BangSos.tsx`: chỉ kiểu `DongSos` / `TrangSos` / `CaseTomTat`, `ViecTiepDong`) | `GET /hoc-vien-lop` → `server/src/classes/hocVienLop.ts` · `hocVienSos.ts` (`dangSos`) |
 | Học viên & Lớp › góc Phân công GV (QL · Quản trị sửa, CX xem) | `web/src/modules/students/GocPhanCongGv.tsx` · `phanCongGv/{BangLopPc,OGv,TongHopPc,TheLopPc,ThanhLuuPc}.tsx` · hộp Lưu / Chờ đổi `web/src/modules/classes/HopLuuPhanCong.tsx` · hàm thuần `shared/domain/phanCongGv.ts` (`locLopPc`, `nhomLopPc`, `cotLop`, `hangTongHop`, `kiemDongPc`) | `GET /hoc-vien-lop/phan-cong` · `POST /phan-cong/{xem-truoc,luu,hoan-tac,cho/doi-moc,cho/huy}` → `server/src/classes/phanCongGv.ts` |
 | Panel một em (Học viên & Lớp) | `web/src/modules/students/PanelMotEm.tsx` | `GET /hoc-vien-lop/em/:id` → `server/src/classes/hocVienSos.ts` (`panelMotEm`) |
 | Học viên & Lớp theo vai (TVV · CX · Admin) | `web/src/modules/students/HocVienTheoVai.tsx` | `GET /hoc-vien-lop/theo-vai` → `server/src/classes/hocVienTheoVai.ts` |
@@ -211,7 +211,7 @@ Dựng **từ hành trình học viên**, viết tay, không sinh ngẫu nhiên.
 | Không nhập trước tuần thi · dời vượt lượt sau | `server/src/fasttrack/skillSchedule.ts` (`kiemDaToiTuanThi`, `kiemVuot`, `boTuanLuot`) · `shared/domain/lichMt.ts` (`luotBiVuot`) |
 | Cờ "còn ô chờ điểm" của lượt | `server/src/fasttrack/conOCho.ts` (`capNhatConOCho`, `capNhatConOChoLop`) |
 | Đếm "bài cần chấm" (một chỗ) · ai phụ trách bài thiếu | `shared/domain/fasttrack.ts` → `pendingSkillsOf` · `server/src/fasttrack/attempts.ts` (`ownersOf`, `classScoreSheet`) |
-| Ô điểm ± kỳ vọng, bốn màu | `web/src/modules/cases/SkillBoard.tsx` (`ScoreCell`, `scoreTone`) · `server/src/cases/cases.ts` → `skillSupportBoard` |
+| Ô điểm ± kỳ vọng, bốn màu | `web/src/modules/cases/SkillBoard.tsx` (`DongMt`, `gapText`, `SCORE_CHIP_ROW`) · `server/src/cases/cases.ts` → `skillSupportBoard` |
 | Ô MT dùng chung (trạng thái đợt) | `shared/domain/oMt.ts` (`oMt`, `chipDongKyNang`) · `web/src/ui/OMt.tsx` (`OMt`) |
 | Thao tác một kỹ năng theo trạng thái | `shared/domain/thaoTacMt.ts` (`thaoTacKyNang`, `menuHopKyNang`) · `web/src/modules/fasttrack/HopThaoTacMt.tsx` |
 | Hộp nhập điểm MT, band W / S tự tính | `web/src/modules/fasttrack/HopNhapDiem.tsx` (`ODiemMt`, `HopNhapDiem`) · `shared/domain/chamDiem.ts` (`duocNhapBandThang`) · `attempts.ts` → `saveScore` |
@@ -290,7 +290,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | PA Bổ trợ · PA đại diện nhóm Bổ trợ | `server/src/cases/boTro.ts` · `shared/domain/daiDienBoTro.ts` |
 | Buổi Tutor trong kết quả PA | `web/src/modules/cases/BuoiTutorO.tsx` · `server/src/cases/cases.ts` (`ghiBuoiTutor`) · `server/src/tutors/chon.ts` |
 | Hệ thống tự đóng Case | `server/src/cases/systemClose.ts` (`closeCasesBySystem`, `closeCasesOnProgrammeSwitch`) |
-| Bảng kỹ năng ở hồ sơ, Case + PA dưới hàng kỹ năng | `web/src/modules/cases/SkillBoard.tsx` (`HangCase`, `HangPA`) |
+| Bảng kỹ năng ở hồ sơ, Case + PA dưới hàng kỹ năng | `web/src/modules/cases/TheKyNang.tsx` (`KhoiCase`, `KhoiPa`; `SkillBoard.tsx` giữ kiểu + `TenCase` / `NhanLoai` dùng chung) |
 | Hiệu quả PA (đếm thành công / thất bại, n/N) | `server/src/cases/effectiveness.ts` (`planOutcomes`) · `server/src/phanTich/hieuQuaPa.ts` · `web/src/modules/phanTich/HieuQuaPa.tsx` |
 | Lớp + chương trình gốc của Case | `server/src/cases/sos.ts` (`caseKhacChuongTrinh`) |
 
@@ -300,7 +300,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 |---|---|
 | Luật Ý thức (thang, bắt buộc, sáu nhãn) | `shared/domain/yThuc.ts` (`THANG`, `batBuocTu`, `trangThaiViPham`) · nhãn lịch sử, cảnh báo trùng `shared/domain/yThucGon.ts` |
 | Một cửa trạng thái mọi em | `server/src/yThuc/trangThai.ts` (`trangThaiYThuc`, `emCuaLop`) |
-| Ghi / sửa / xoá vi phạm, ghi nhiều | `server/src/yThuc/violations.ts` (`recordViolations`) · `web/src/modules/yThuc/{RecordViolationPanel,ChiTietViPham,DeleteViolationConfirm}.tsx` |
+| Ghi / sửa / xoá vi phạm, ghi nhiều | `server/src/yThuc/violations.ts` (`recordViolations`) · `web/src/modules/yThuc/{RecordViolationPanel,ChiTietViPham,DeleteViolationConfirm}.tsx` (xoá: `xoaViPham` một hàm) |
 | Xác nhận xử lý · Khai bậc · Đề xuất · Đã thực hiện · Thu hồi | `server/src/yThuc/xuLy.ts` (`thuHoiXuLy`, `suaXuLy`) · `web/src/modules/yThuc/{XacNhanXuLyPanel,KhaiBacPanel,DaThucHienPanel,XemXuLyPanel}.tsx` |
 | Nhiều em cùng lúc ở mức lớp (lô) | `server/src/yThuc/lo.ts` (`loXuLy`, `loCapBac`) · `web/src/modules/yThuc/{LoYThucPanel,KhaiBacLoPanel}.tsx` |
 | Tab Ý thức lớp · tab Ý thức HV | `server/src/yThuc/board.ts` (`bangYThucLop`) · `web/src/modules/yThuc/{ClassYThucCard,StudentYThucSection}.tsx` |

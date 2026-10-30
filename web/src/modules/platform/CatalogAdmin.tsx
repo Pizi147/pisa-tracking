@@ -63,7 +63,7 @@ export function CatalogAdmin() {
   /* 6c (lỗi 6): chỉ 403 mới là thiếu quyền — lỗi mạng / máy chủ thì nói thật + Thử lại. */
   const loiTai = routes.error ?? programmes.error;
   if (loiTai && loiTai.status !== 403) {
-    return <Card title="Chương trình"><ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={() => { routes.reload(); programmes.reload(); }} /></Card>;
+    return <Card title="Chương trình"><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={() => { routes.reload(); programmes.reload(); }} /></Card>;
   }
   if (loiTai) {
     return (

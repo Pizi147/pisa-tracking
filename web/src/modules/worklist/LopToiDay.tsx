@@ -39,7 +39,7 @@ export function LopToiDay() {
   useEffect(() => {
     if (data && !daBam.current && khungLopToiDay(khung, data.coFt, data.coThuong) !== ct) setKhung(khungLopToiDay(khung, data.coFt, data.coThuong));
   }, [data, khung, ct]);
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (data && !data.coFt && !data.coThuong) return null;
   const so = (h: Hang, cot: 'duoiKyVong' | 'sos' | 'caseMo' | 'bai-cho' | 'bai-qua-han', n: number, ten: string, className = 'font-semibold') => (
     <OSo giaTri={n} nguon={`/tong-quan/lop-toi-day/o?ct=${ct}&classId=${h.classId}&cot=${cot}`} tieuDe={`${h.code} · ${ten}`} className={`${className} max-sm:relative max-sm:before:absolute max-sm:before:-inset-x-2 max-sm:before:-inset-y-3 max-sm:before:content-['']`} />
@@ -171,7 +171,7 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
   const { data, error, reload } = useApi<HaiKhoi>('/tong-quan/lop-toi-day/hai-khoi', []);
   const cotPhai = <div className="flex min-w-0 flex-col gap-4 max-[1279px]:order-first">{phai}</div>;
   const luoi = (trai: ReactNode) => <div data-hd="tq-lop-toi-day" className={LUOI_GV}><div className="flex min-w-0 flex-col gap-4">{trai}</div>{cotPhai}</div>;
-  if (error) return luoi(<div className={O_MOT}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>);
+  if (error) return luoi(<div className={O_MOT}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>);
   if (!data) return luoi(<Card className={O_MOT} title={t('Kỹ năng tôi dạy')} bodyClass="p-4"><Skeleton rows={3} /></Card>);
   if (!data.day.length && !data.chuNhiem.length) {
     if (!session?.roles?.includes('teacher')) return luoi(null);   // Head tutor (góc nhìn GV, không dạy lớp): không thẻ rỗng

@@ -4,6 +4,7 @@
 //   vd: node scripts/anh-cap.mjs thiet-ke/mockup-ov14-6-sua-19-10-2026-10-19.html "#m3 .w1440" /hoc-vien/lop/3 2 1440 docs/anh/pr-x/cap-1440.png
 // <khung>: bộ chọn CSS của khung trong mockup (mỗi tệp mockup đặt tên khác: `#m3 .w1440`, `.khung >> nth=2`…); `-` = cả trang mockup.
 // <đường web>: viết `hoc-vien/lop/3` (không `/` đầu) khi chạy trong Git Bash — Git Bash đổi `/…` thành đường Windows.
+// BAM="nút 1|nút 2": bấm trước khi chụp (vd panel sau Duyệt, Lịch sử mở).
 // <vai>: userId demo (1 Quản trị · 2 QL · 7 GVCN · 9 GVBM · 23 TVV · 24 CX). Giao diện: 375 → sáng, còn lại tối; GIAO_DIEN=sang|toi để đổi.
 // Web chụp hết chiều cao <main id="noi-dung"> (trang chỉ cuộn trong main): khung nhìn kéo dài tới khi không còn phần cuộn.
 // Mặc định ra `docs/anh/cap/<tên mockup>-<bề rộng>.png`. Playwright: `npm i --no-save playwright` hoặc PW=<đường tới playwright>.
@@ -41,6 +42,11 @@ if (!r.ok()) { console.error(`Đăng nhập vai ${vai}: ${r.status()}`); process
 const pw = await ctx.newPage();
 await pw.goto(`${BASE}/${duong.replace(/^\//, '')}`, { waitUntil: 'networkidle' });
 await pw.waitForTimeout(600);
+// DUYET-QL: BAM="Duyệt|Lịch sử" — bấm lần lượt các nút (tên đúng như trình đọc màn hình đọc, khớp đầu chữ) trước khi chụp — trạng thái sau thao tác.
+for (const ten of (process.env.BAM ?? '').split('|').filter(Boolean)) {
+  await pw.getByRole('button', { name: new RegExp(`^${ten.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }).last().click();
+  await pw.waitForTimeout(900);
+}
 for (let i = 0; i < 5; i++) {   // kéo dài khung nhìn tới khi main hết cuộn (bảng nạp thêm khi cao lên)
   const thua = await pw.evaluate(() => { const m = document.getElementById('noi-dung') ?? document.scrollingElement; return m.scrollHeight - m.clientHeight; });
   if (thua <= 1) break;

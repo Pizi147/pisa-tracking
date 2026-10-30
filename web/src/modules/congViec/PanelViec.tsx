@@ -271,7 +271,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
   return (
     <KhungPanel tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}
       chan={chanViecTiep(onTiep, !!data && !!homNay && conBaiLuoi(data, chiAttempt, kns, homNay) === 0)}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
             <div className="luoi-trong-panel -mx-4 px-2">
@@ -290,7 +290,7 @@ function PanelBaoPh({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void;
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} dau={dauViec({ em: { id: it.studentId!, ten: it.studentName }, lop: it.classCode, ngCanh: it.contextLabel })} onDong={onDong}>
       <div className="pt-3">
-        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="luot" onChanged={() => { reload(); onDaLam(); }} />}
       </div>
     </KhungPanel>
@@ -402,7 +402,7 @@ function PanelPhanCongMon({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =>
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong}
       dau={dauViec({ em: it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: it.contextLabel })}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={3} /></div>
           : (
             <div className="flex flex-col gap-3 pt-3">
@@ -430,7 +430,7 @@ function PanelChonPhuTrach({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong}
       dau={dauViec({ em: it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: it.contextLabel })}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={3} /></div>
           : (
             <div className="flex flex-col gap-3 pt-3">
@@ -519,7 +519,7 @@ function PanelPhoiHop({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => voi
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} dau={dau} onDong={onDong}>
       <div className="pt-3">
-        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="hocVien" onChanged={() => { reload(); onDaLam(); }} />}
       </div>
     </KhungPanel>

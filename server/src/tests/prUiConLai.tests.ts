@@ -64,14 +64,14 @@ export async function runPrUiConLaiTests(t: any) {
   check('UICL-7 (k3, chủ SP 24/10) · Hộp duyệt đầy đủ = danh sách dòng gọn + panel duyệt TẠI CHỖ (`?the=`, mẫu Chấm Test); bản gọn (V8-CV: dòng cây); hàng loạt giữ', () => {
     const h = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/HopChoDuyet.tsx'), 'utf8');
     assert(/<DongYeuCau /.test(h) && /<KhungTaiCho\.Provider value>/.test(h) && /<PanelDuyet key=\{theMo\.id\}/.test(h) && /<TheYeuCau yc=\{yc\} panel /.test(h), 'danh sách + panel');
-    assert(/next\.set\('the', String\(id\)\)/.test(h) && /ds\.length > 0 && gon &&/.test(h) && /chonMot\(ds, s, y\.id, v\)/.test(h), '?the= · bản gọn · hàng loạt');
+    assert(/next\.set\('the', String\(id\)\)/.test(h) && /(ds|dsCay)\.length > 0 && gon &&/.test(h) && /chonMot\(ds, s, y\.id, v\)/.test(h), '?the= · bản gọn · hàng loạt');
   });
 
   check('V8-CV (mockup v8 cong-viec-ql, chủ SP duyệt 29/10) · Chờ bạn duyệt là nhóm đầu cột trái (dòng cây, panel duyệt ở cột phải); một panel một lúc; Mọi khung là ô chọn; giữ Duyệt tại dòng · Từ chối… · Trả lời… · Mở › · Hoàn tác', () => {
     const h = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/HopChoDuyet.tsx'), 'utf8');
     const cv = fs.readFileSync(path.join(REPO, 'web/src/modules/congViec/HoTroHocVienTab.tsx'), 'utf8');
     const the = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/TheYeuCau.tsx'), 'utf8');
-    assert(/<CayDuyet ds=\{dsHien\}/.test(h) && /createPortal\(/.test(h) && /\bkhuPanel,\r?\n/.test(h), 'bản gọn = cây + panel vào cột phải');
+    assert(/<CayDuyet ds=\{(dsHien|dsCay)\}/.test(h) && /createPortal\(/.test(h) && /\bkhuPanel,\r?\n/.test(h), 'bản gọn = cây + panel vào cột phải');
     assert(/onDuyet\(y\)/.test(h) && /onMo\(y, 'tu-choi'\)/.test(h) && /onMo\(y, 'tra-loi'\)/.test(h) && /t\('Mở ›'\)/.test(h), 'thao tác của dòng');
     assert(/huy-quyet-dinh/.test(h) && /t\('Yêu cầu tiếp ›'\)/.test(h) && /if \(gon && id\) \{ next\.delete\('viec'\)/.test(h), 'Hoàn tác · Yêu cầu tiếp · bỏ panel việc');
     assert(/moSan === 'tu-choi' \|\| moSan === 'tra-loi'/.test(the) && /onXong\(yc\.id, xongChu(, huyDuoc)?\)/.test(the), 'panel mở sẵn ô + câu kết quả');

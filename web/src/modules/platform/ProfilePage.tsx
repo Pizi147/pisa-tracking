@@ -59,7 +59,7 @@ export default function ProfilePage() {
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
   const [busy, setBusy] = useState(false);
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={6} />;
 
   const d = draft ?? {

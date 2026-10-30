@@ -8,7 +8,7 @@ import { fmtBand, skillShort } from '../../lib/format.ts';
 import { Bang, OBang } from '../../ui/Bang.tsx';
 import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
+import { Nhan, NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ErrorState, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
@@ -19,13 +19,12 @@ import { OChon, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
-import { MoiVao } from './DaiChuyenLop.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import type { CaseDetail, ViewCase } from '../cases/CasePanel.tsx';
 import {
-  chipSosTuKetQua, chuDoiVang, ketQuaGanNhat, lyDoChuaDu, type KetQuaVao, duongDotTest, duongHoSoHocVien, nhanThangDuKien, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
+  chipSosTuKetQua, chuDoiVang, ketQuaGanNhat, lyDoChuaDu, type KetQuaVao, duongDotTest, duongHoSoHocVien, nhanThang, outcomeLabelFor, soKyVong, tieuChiCua, tuanLich, type DinhNghiaCot, type EntrySkill, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -54,22 +53,24 @@ const ketQua = (r: Hang): 'sos' | 'dat' | 'thieu' | 'khac' => {
 
 /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8): GIỮ Target (mockup `ho-so-lop.html`), cột Phụ huynh của TVV / CX (OV-10b) và ⋯ thao tác từng dòng (V4). */
 const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
-  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 220 },
-  { key: 'target', nhan: 'Target', kieu: 'so', rong: 72 },
-  { key: 'mt', nhan: 'MT', kieu: 'so', rong: 64 },
-  { key: 'l', nhan: 'L', kieu: 'diem', rong: 76 }, { key: 'r', nhan: 'R', kieu: 'diem', rong: 76 },
-  { key: 'w', nhan: 'W', goiY: t('W = (W1 + 2 × W2) / 3 — dòng phụ: W1 · W2'), kieu: 'diem', rong: 104 }, { key: 's', nhan: 'S', kieu: 'diem', rong: 76 },
-  { key: 'ovr', nhan: 'Overall', kieu: 'diem', rong: 92 },
+  /* BANG-EM-GON: bề rộng theo tỉ lệ mockup v10 `#be`, tổng giữ như cũ để 1280 không tràn (tên 240 thay 300; S 80 cho "vắng W1 SEP"); TVV / CX thêm cột Phụ huynh → tên 220. */
+  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: theoVai ? 220 : 240 },
+  { key: 'target', nhan: 'Target', kieu: 'so', rong: 84 },
+  { key: 'mt', nhan: 'MT', kieu: 'so', rong: 60 },
+  { key: 'l', nhan: 'L', kieu: 'diem', rong: 72 }, { key: 'r', nhan: 'R', kieu: 'diem', rong: 72 },
+  { key: 'w', nhan: 'W', goiY: t('W = (W1 + 2 × W2) / 3 — dòng phụ: W1 · W2'), kieu: 'diem', rong: 90 }, { key: 's', nhan: 'S', kieu: 'diem', rong: 80 },
+  { key: 'ovr', nhan: 'Overall', kieu: 'diem', rong: 86 },
   { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 150 }, { key: 'thi', nhan: t('Ngày thi'), kieu: 'chip', rong: 136 },
-  { key: 'cp', nhan: 'Case + PA', kieu: 'chip', rong: 138 },
+  { key: 'cp', nhan: 'Case + PA', kieu: 'chip', rong: 122 },
   ...(theoVai ? [{ key: 'ph', nhan: t('Phụ huynh'), kieu: 'chip' as const, rong: 170 }] : []),
   { key: 'nut', nhan: '', kieu: 'nut' },
 ];
 
 /**
  * BẢNG HỌC VIÊN · LỚP FAST TRACK (V5 `dieu-chinh-cuoi.html` khu b; R4: `Bang` / `ODiem`): chip lọc Tất cả · SOS · Chưa đủ dữ liệu + "Lượt của từng HV · tuần"
- * (P8) · cột MT (lượt của em) · L R W S Overall — điểm to (`ODiem` 17 px), W hiện MỘT lần + dòng phụ "W1 · W2" (W1, W2 riêng — C18) · bấm W / S → điểm
- * thành phần ngay tại chỗ (popover) · Kết quả: SOS thay "Chưa đạt" · Ngày thi chip nhỏ · Case + PA: bấm mở các Case của em ngay dưới hàng, PA gắn từng
+ * (P8) · cột MT (lượt của em) · L R W S Overall — BANG-EM-GON (v10 `#be`): điểm gọn 15 px chữ thường, đạt ✓ / hụt ✗ (`chiToHut`), W hiện MỘT lần + dòng phụ
+ * "W1 · W2" (C18) · bấm W / S → điểm thành phần ngay tại chỗ (popover) · Kết quả: chip SOS nhỏ (SOS thay "Chưa đạt") · "✓ Đạt", ngày thi, mới vào là chữ ·
+ * TVV chữ nhỏ dưới tên · Case + PA: bấm mở các Case của em ngay dưới hàng, PA gắn từng
  * Case; thao tác (Ghi KQ PA · Sửa · Lịch sử) mở panel Case của Công việc tại trang (`NganCase`). Việc của em ở thanh Việc cần làm (cột Việc bỏ).
  * < 640 px (RA-UI-8, mockup 375): mỗi em một thẻ (`Bang` chế độ thẻ) — tên + Kết quả · Ngày thi, đủ điểm L R W S Overall (dòng phụ W1 · W2 / vắng
  * dưới ô), Target · MT; hàng cuối Case + PA bên trái, ⋯ bên phải; Case mở ngay cuối thẻ (`sauThe`).
@@ -91,7 +92,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   const [pop, setPop] = useState<{ sid: number; kn: 'w' | 's'; nut: HTMLElement } | null>(null);
   const [ngan2, setNgan2] = useState<{ caseId: number; view: ViewCase; hv: string } | null>(null);
   const dienThoai = useDienThoai();
-  if (roster.error) return <ErrorState message={roster.error.message} hint={roster.error.hint} onRetry={roster.reload} />;
+  if (roster.error) return <ErrorState message={roster.error.message} hint={roster.error.hint} status={roster.error.status} onRetry={roster.reload} />;
   if (!roster.data) return <div className="card p-4"><Skeleton rows={6} /></div>;
 
   const caseCua = new Map<number, CaseLop[]>();
@@ -104,6 +105,8 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
     .map((x) => x?.weekStart).filter((w): w is string => !!w).sort();
   const ngCanh: NguCanhDs = { loai: 'hoc-vien', ids: ds.map((s) => s.id), nhan: t('Lớp {lop}', { lop: maLop }) };
   const xong = () => { invalidate(`/cases?classId=${classId}`); cases.reload(); roster.reload(); onDoi(); };
+  /* `moiVao` = vào lớp từ đầu tuần này → tuần của hôm nay. */
+  const nhanPhu = (r: Hang) => <>{r.moiVao && <span className="whitespace-nowrap text-[12px] text-faint">{t('mới vào')} {tuanLich(homNay, homNay)}</span>}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></>;
 
   /* Thẻ 375 (mockup: "vẫn tách W1 · W2", C18) dùng thêm w1 / w2; bấm W1 / W2 / W / S → điểm thành phần. */
   const oDiem = (r: Hang, h: Moc | null, k: KyO) => {
@@ -113,7 +116,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
     if (k === 'w' ? kh.includes('writing1') && kh.includes('writing2') : k !== 'ovr' && kh.includes(BAND[k])) return <OKhongHoc nhan={k.toUpperCase()} />;
     if (k === 'ovr' && h.overall == null && h.khongDuBoMon && h.scoredRequired === h.requiredCount) return <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>;
     const v = k === 'ovr' ? h.overall : k === 'w' ? h.writing ?? null : h.bands?.[BAND[k]] ?? null;
-    const o = <ODiem kieu={dienThoai ? 'doc' : 'to'} so={v === null ? null : fmtBand(v)} kq={h.lichSu ? null : soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
+    const o = <ODiem kieu="gon" chiToHut so={v === null ? null : fmtBand(v)} kq={h.lichSu ? null : soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
     const kn = k === 's' ? 's' : k === 'w' || k === 'w1' || k === 'w2' ? 'w' : null;
     if (!kn || v === null) return o;
     const dangMo = pop?.sid === r.id && pop.kn === kn;
@@ -132,8 +135,8 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
           {chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
           <span className="flex min-w-0 flex-col items-start">
             <TenEm s={r} ds={ngCanh} />
-            {/* Nhãn cạnh tên (mới vào · thiếu thông tin · Ý thức) xuống dòng dưới tên — tên không bị cắt ở cột 205 px. */}
-            <ChipXetLaiDong sid={r.id} />{(r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="flex flex-wrap items-center gap-1.5">{r.moiVao && <MoiVao />}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></span>}
+            {/* Dòng dưới tên (mockup v10 `.chip-phu`): TVV (chữ mờ) · mới vào (chữ) · thiếu thông tin · Ý thức — chỉ việc cần làm có màu. */}
+            <ChipXetLaiDong sid={r.id} />{(r.tvv || r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="mt-0.5 flex flex-wrap items-center gap-1.5">{r.tvv && <span className="tvv">TVV {r.tvv}</span>}{nhanPhu(r)}</span>}
           </span>
         </span>
       );
@@ -182,13 +185,14 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
     return (
       <div className="flex flex-col gap-2">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
-          <span className="inline-flex min-w-0 items-center gap-2.5 text-[15px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}<TenEm s={r} ds={ngCanh} /></span>
+          <span className="inline-flex min-w-0 items-center gap-2.5 text-[15px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
+            <span className="flex min-w-0 flex-col items-start"><TenEm s={r} ds={ngCanh} />{r.tvv && <span className="tvv">TVV {r.tvv}</span>}</span></span>
           {o(r, 'kq')}
           <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })}
             lopNut="btn h-11 w-11 shrink-0 !px-0 text-[13px] font-bold tracking-wider" />
         </div>
         <ChipXetLaiDong sid={r.id} />
-        {coNhan && <span className="flex flex-wrap items-center gap-1.5">{r.moiVao && <MoiVao />}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></span>}
+        {coNhan && <span className="flex flex-wrap items-center gap-1.5">{nhanPhu(r)}</span>}
         <dl className="m-0 grid grid-cols-5 rounded-lg bg-[color:var(--surface-2)] px-1 py-1.5">
           {(['l', 'r', 'w', 's', 'ovr'] as const).map((k) => {
             const phu = phuCua(r, cotTheo.get(k)!);
@@ -279,27 +283,31 @@ function TenEm({ s, ds }: { s: Hang; ds: NguCanhDs }) {
   return <Link className="truncate font-semibold text-slate-100 no-underline hover:underline" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>;
 }
 
-/** Kết quả lượt của em: SOS (thay "Chưa đạt" — không hai badge) · Đạt · Chưa đủ dữ liệu; em KCK / đã kết thúc giữ kết luận cũ (`KetLuan`). */
+/**
+ * Kết quả lượt của em: SOS (thay "Chưa đạt" — không hai badge) · Đạt · Chưa đủ dữ liệu; em KCK / đã kết thúc giữ kết luận cũ (`KetLuan`).
+ * BANG-EM-GON: chip SOS NHỎ, không "· R, W" (cột điểm đã ✗ đúng kỹ năng; hộp Vì sao SOS vẫn đếm kỹ năng); "✓ Đạt" / "– Chưa đủ dữ liệu" là chữ.
+ */
 function OKetQua({ r, h, kq }: { r: Hang; h: Moc | null; kq: ReturnType<typeof ketQua> }) {
-  if (kq === 'sos') return <ChipSos {...chipSosTuKetQua(r.standing ?? null)!} ten={r.fullName} />;
-  if (kq === 'dat') return <NhanKq kq="dat">{t('Đạt')}</NhanKq>;
+  if (kq === 'sos') return <ChipSos {...chipSosTuKetQua(r.standing ?? null)!} ten={r.fullName} hienKyNang={false} nho />;
+  if (kq === 'dat') return <span className="whitespace-nowrap text-[13px] text-dim"><span aria-hidden>{'✓ '}</span>{t('Đạt')}</span>;
   if (kq === 'thieu') {
     /* Đ4: lý do ngắn ở tooltip + tên đọc màn (không thêm chữ trên màn — P1). */
     const ly = lyDoChuaDu(r.standing ?? null);
-    return <NhanKq kq="thieu" title={ly ?? undefined}>{t('Chưa đủ dữ liệu')}{ly && <span className="sr-only"> · {ly}</span>}</NhanKq>;
+    return <span className="whitespace-nowrap text-[13px] text-faint" title={ly ?? undefined}><span aria-hidden>{'– '}</span>{t('Chưa đủ dữ liệu')}{ly && <span className="sr-only"> · {ly}</span>}</span>;
   }
   if (r.kckDuoi) return <ChipDuoiKck />;
   return <KetLuan row={r} cotMocTrong={!h} />;
 }
 
-/** Ngày thi — chip nhỏ (`NhanLich`) chỉ khi có lịch: Thi dd/mm (đã chốt) · Đã thi · Dự kiến MM/YYYY (P5); chưa có lịch → "—" nhạt (Đ6, V7 không lạm dụng badge). */
+/** Ngày thi — chữ 13 px (BANG-EM-GON, không chip): "Thi **dd/mm**" (đã chốt) · Đã thi · "Dự kiến **MM/YYYY**" (P5); chưa có lịch → "—" nhạt (Đ6). */
 function OLichThi({ l, homNay, the }: { l?: LichThi; homNay: string; the?: boolean }) {
   /* Thẻ 375: không vẽ "—" lẻ cạnh chip Kết quả — chỉ còn tên đọc màn. */
   if ((!l || l.trangThai === 'chua-co') && the) return <span className="sr-only">{t('Chưa có lịch')}</span>;
   if (!l || l.trangThai === 'chua-co') return <span className="text-slate-500" title={t('Chưa có lịch')}><span aria-hidden>—</span><span className="sr-only">{t('Chưa có lịch')}</span></span>;
-  if (l.trangThai === 'da-chot-ngay' && l.ngay) return <NhanLich loai="co">{t('Thi {ngay}', { ngay: `${l.ngay.slice(8, 10)}/${l.ngay.slice(5, 7)}` })}</NhanLich>;
-  if (l.trangThai === 'da-thi') return <NhanLich loai="da-thi">{t('Đã thi')}</NhanLich>;
-  return <NhanLich loai="du-kien" title={l.tuan ? tuanLich(l.tuan, homNay) : undefined}>{nhanThangDuKien(l.thang!)}</NhanLich>;
+  const CHU = 'whitespace-nowrap text-[13px] text-dim [&_b]:font-semibold [&_b]:tabular-nums [&_b]:text-slate-100';
+  if (l.trangThai === 'da-chot-ngay' && l.ngay) return <span className={CHU}>{t('Thi')} <b>{`${l.ngay.slice(8, 10)}/${l.ngay.slice(5, 7)}`}</b></span>;
+  if (l.trangThai === 'da-thi') return <span className={CHU}>{t('Đã thi')}</span>;
+  return <span className={CHU} title={l.tuan ? tuanLich(l.tuan, homNay) : undefined}>{t('Dự kiến')} <b>{nhanThang(l.thang!)}</b></span>;
 }
 
 /**
