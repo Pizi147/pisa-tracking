@@ -12,8 +12,8 @@
 | PR | Nội dung | Tình trạng |
 |---|---|---|
 | #733 + #736 | PANEL-MC (máy chủ) + PANEL-CHUNG (dòng điểm ✓/✗ panel chung) | check đầy đủ main+#733+#736 ĐẠT 4863/4863 (bản 42a61fecc). Merge CÙNG LÚC sau duyệt ảnh #736 (`docs/anh/panel-chung`) |
-| #731 | Phân công GV PR-B bàn giao đổi GV | rà sâu: 1 lỗi quyền + 4 điểm đã sửa; cần check đầy đủ lại trên main mới trước merge |
-| #732 | SUA-NHO-UI (⋯ không đè ô lưới, dải lỗi .bao-loi, "Fast Track n" mọi màn, Xóa lịch vào ⋯, lớp sai loại mờ, tab "Kết quả Test / Thi") | ảnh `docs/anh/sua-nho-ui-3010/`; cần check đầy đủ |
+| #731 | Phân công GV PR-B bàn giao đổi GV | rà sâu: 1 lỗi quyền + 4 điểm đã sửa; đã gộp main 8d909b26b, check đầy đủ ĐẠT 4877 (8d612558c; thêm bảng mới vào công cụ xoá dữ liệu học viên) |
+| #732 | SUA-NHO-UI (⋯ không đè ô lưới, dải lỗi .bao-loi, "Fast Track n" mọi màn, Xóa lịch vào ⋯, lớp sai loại mờ, tab "Kết quả Test / Thi") | ảnh `docs/anh/sua-nho-ui-3010/`; đã gộp main, check đầy đủ ĐẠT 4856 (281e6a568) |
 | #726 | Phân công GV PR-C góc web (session CLOUD — PTA không nhắn được) | còn lỗi 375: bảng tổng hợp mất cột "Tổng"; chủ SP dán tin nhắn PTA cho session cloud |
 
 ## 3. Câu hỏi chủ SP (sáng 31/10)
@@ -29,7 +29,7 @@
 - Sau duyệt ảnh: merge #733 + #736 → PANEL-RIENG ‖ DUYET-QL, BANG-EM-GON ‖ HV-LOP-VIEC (không song song PR-B / PR-D / PR-C cùng màn) · #732 → DON-MA → CN-3 (gỡ phép trùng) · #731 + #726 → PR-D.
 - TRANG-LON theo lựa chọn câu 4 (TL-NEN, TL-VIEC, TL-HVL, TL-TQ, TL-NAPBAI).
 - DON-HINH, V8-PT-2, V8-HSL-2 sau khối panel. Backlog plan.md mục 4: LECH-CACH-CHAM, TAB-A11Y, QUYEN-THEO-CN, PANEL [XM].
-- Theo dõi: nhóm 1 check chết 0xC0000005 (libsql) chập chờn 2 lần đêm 31/10 — chạy lại đạt.
+- Theo dõi: nhóm 1 check chết 0xC0000005 (libsql, native) chập chờn 3 lần đêm 31/10 (một lần quanh yThuc) — chạy lại đạt. Nếu lặp: tìm gốc (PR riêng).
 
 ## 5. Session đang mở (local)
 - BAN-GIAO-GV (#731; đã làm DON-LUONG #742, QUYEN-LIEN-HE #746) · SUA-NHO-UI (#732) · PANEL-MC (#733, #736) · CN-1 (CN-1/2/3a xong; chờ CN-3 gỡ phép trùng sau DON-MA). Đã archive: CHUONG-NHE, QUET-THEO-KY, PANEL-V10, SUA-NHO-QUYEN, LOP-1-LOP.
