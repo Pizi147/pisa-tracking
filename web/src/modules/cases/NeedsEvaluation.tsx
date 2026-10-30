@@ -29,7 +29,7 @@ export function NeedsEvaluation({ count, url }: { count: number; url: string }) 
         <KhungPanel tieuDe={t('{count} phương án — Cần bổ sung đánh giá', { count })} onDong={() => setOpen(false)}
           ngCanh={t('Không tính vào bảng hiệu quả cho tới khi có kết quả xác định')}>
           <div className="pt-3">
-            {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+            {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
               : loading || !data ? <Skeleton rows={4} />
               : !data.rows.length ? <Empty title={t('Không còn phương án nào cần bổ sung')} />
               : (

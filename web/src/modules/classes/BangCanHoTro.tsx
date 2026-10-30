@@ -82,7 +82,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
 
   if (trang.error || roster.error) {
     const e = (trang.error ?? roster.error)!;
-    return <ErrorState message={e.message} hint={e.hint} onRetry={() => { trang.reload(); roster.reload(); }} />;
+    return <ErrorState message={e.message} hint={e.hint} status={e.status} onRetry={() => { trang.reload(); roster.reload(); }} />;
   }
   if (!d || !roster.data) return <Skeleton rows={4} />;
   if (!d.em.length) return <Empty title={t('Không có học viên nào đang có Case mở')} />;

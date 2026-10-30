@@ -23,7 +23,7 @@ export function BanGiaoGvPanel({ id, onClose, onDone, quayLai }: {
   if (error) {
     return (
       <KhungPanel quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
-        <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
       </KhungPanel>
     );
   }

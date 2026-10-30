@@ -208,7 +208,7 @@ export function LichTestTab() {
     cuon('lich-test-k3');
   };
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (!data) return <Skeleton rows={6} />;
   if (data.scopeEmpty) return <div className="card"><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></div>;
 

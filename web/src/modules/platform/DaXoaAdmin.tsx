@@ -68,7 +68,7 @@ export function DaXoaAdmin({ loai, loc = '' }: { loai?: MucRac['loai']; loc?: st
       <section className="space-y-2" aria-label={t('Đã xoá')}>
         <h2 className="m-0 text-[15px] font-bold text-slate-100">{t('Đã xoá')}</h2>
         <p className="m-0 text-xs text-slate-500">{t('Giữ 30 ngày, sau đó xoá hẳn.')}</p>
-        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : <Bang ten={t('Đã xoá')} cot={COT} hang={hang} khoa={(m) => m.id} oCua={oCua} lopHang={(m) => (m.khoiPhucDuoc ? '' : 'opacity-70')} />}
       </section>
     );
@@ -77,7 +77,7 @@ export function DaXoaAdmin({ loai, loc = '' }: { loai?: MucRac['loai']; loc?: st
   return (
     <div className="space-y-2">
       <p className="m-0 text-xs text-slate-500">{t('Giữ 30 ngày, sau đó xoá hẳn.')}</p>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} /> : !data ? <Skeleton rows={6} /> : (
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : !data ? <Skeleton rows={6} /> : (
         <Bang ten={t('Đã xoá')} cot={COT} hang={data} khoa={(m) => m.id} oCua={oCua} lopHang={(m) => (m.khoiPhucDuoc ? '' : 'opacity-70')}
           rong={{ tieuDe: t('Không có mục nào đã xoá trong 30 ngày.') }} />
       )}

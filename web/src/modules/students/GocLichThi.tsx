@@ -148,7 +148,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
           </span>
         )}
       </div>
-      {error && <div className="p-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>}
+      {error && <div className="p-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>}
       {loading && !data && <div className="p-3"><Skeleton rows={5} /></div>}
       {data && hien.length === 0 && <Card><Empty title={t('Không có HV có lịch thi trong {khoang}.', { khoang: `${nhanThang(tu)} → ${nhanThang(den)}` })} /></Card>}
       {data && hien.length > 0 && (

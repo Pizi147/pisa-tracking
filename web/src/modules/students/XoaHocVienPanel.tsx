@@ -53,7 +53,7 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
       chan={{
         chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !khop} onClick={xoa}>{t('Xoá')}</button>,
       }}>
-      {xem.error ? <div className="pt-3"><ErrorState message={xem.error.message} hint={xem.error.hint} onRetry={xem.reload} /></div>
+      {xem.error ? <div className="pt-3"><ErrorState message={xem.error.message} hint={xem.error.hint} status={xem.error.status} onRetry={xem.reload} /></div>
         : !d ? <div className="pt-3"><Skeleton rows={4} /></div> : (
           <>
             <Khoi tieuDe={t('Học viên')}>

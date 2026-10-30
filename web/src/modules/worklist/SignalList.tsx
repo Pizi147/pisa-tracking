@@ -32,7 +32,7 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
   if (periodId) qs.set('periodId', String(periodId));
   const { data, loading, error, reload } = useApi<Signal[]>(`/signals${qs.toString() ? `?${qs}` : ''}`);
 
-  if (error) return <Card title="Việc đang tồn"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>;
+  if (error) return <Card title="Việc đang tồn"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>;
   if (loading) return <Card title="Việc đang tồn"><Skeleton rows={3} /></Card>;
   if (!data?.length) {
     return (

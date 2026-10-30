@@ -111,7 +111,7 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
 
   return (
     <KhungPanel tieuDe={ten} dau={dau} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
             <div className="space-y-2 pt-2">

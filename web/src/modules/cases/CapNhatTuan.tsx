@@ -502,7 +502,7 @@ export function SuaKetQuaPanel({ followupId, ...rest }: { followupId: number } &
   if (!data) {
     return (
       <KhungPanel tieuDe={t('Sửa kết quả')} hocVien={rest.hocVien} lop={rest.lop} quayLai={rest.quayLai} onDong={rest.onClose}>
-        {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} /> : <div className="pt-3"><Skeleton rows={6} /></div>}
+        {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : <div className="pt-3"><Skeleton rows={6} /></div>}
       </KhungPanel>
     );
   }

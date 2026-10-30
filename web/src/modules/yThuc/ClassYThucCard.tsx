@@ -111,7 +111,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
       daXuLy: d.nhom.da_xu_ly.filter((x) => !choPh(x)).map((x) => ({ x, nhom: 'da_xu_ly' as NhomEm })),
     };
   }, [d]);
-  if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
+  if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} />;
   if (board.loading || !d || !nhomHang) return <Card title={t('Ý thức & Phối hợp')}><Skeleton rows={4} /></Card>;
 
   /* OV-13d: em chưa có vi phạm nhưng còn phải xác nhận cấp bậc (em mới vào web) — chỉ hiện khi Chọn nhiều. */
@@ -497,7 +497,7 @@ function ChiTietEm({ studentId, lanTai, homNay, onPanel, onLamMoi, onGhiNhan }: 
   const hv = hvY.data;
   const khung = (c: ReactNode) => <div className="border-t px-4 py-3 lg:pl-8" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>{c}</div>;
   /* PR-S3F #12: lỗi tải hồ sơ Ý thức của em không xoay mãi. */
-  if (hvY.error) return khung(<ErrorState message={hvY.error.message} hint={hvY.error.hint} onRetry={hvY.reload} />);
+  if (hvY.error) return khung(<ErrorState message={hvY.error.message} hint={hvY.error.hint} status={hvY.error.status} onRetry={hvY.reload} />);
   if (!hv) return khung(<Skeleton rows={3} />);
   const xuLy = hv.dongThoiGian.filter((x) => x.loai === 'xu-ly') as Extract<YThucHocVien['dongThoiGian'][number], { loai: 'xu-ly' }>[];
   return khung(

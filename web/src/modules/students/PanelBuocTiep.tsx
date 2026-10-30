@@ -63,7 +63,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   if (lichSu) {
     return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[em?.ten || null, lop ?? bt?.lopNay?.code ?? null]} quayLai={{ nhan: tieuDe, onClick: () => setLichSu(false) }} onClose={onClose} />;
   }
-  if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!bt) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
 
   const hn = homNay ?? '';

@@ -74,7 +74,7 @@ export default function AdminPage() {
       {tab === 'catalog' && <CatalogAdmin />}
       {tab === 'band' && <BangQuyDoiAdmin />}
       {tab === 'da-xoa' && <DaXoaAdmin />}
-      {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
+      {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
       {tab === 'config' && (loading || !data) && !error && <Skeleton rows={8} />}
       {tab === 'config' && data && <ConfigTab data={data} onDone={reload} />}
     </div>
@@ -173,7 +173,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     return { coSan, daDoi: doi.has(khoa(r, p)), lyDoKhoa };
   };
 
-  if (mt.error) return <Card title="Quyền theo vai trò"><ErrorState message={mt.error.message} hint={mt.error.hint} onRetry={mt.reload} /></Card>;
+  if (mt.error) return <Card title="Quyền theo vai trò"><ErrorState message={mt.error.message} hint={mt.error.hint} status={mt.error.status} onRetry={mt.reload} /></Card>;
   if (!d) return <Card title="Quyền theo vai trò"><Skeleton rows={8} /></Card>;
 
   const moTa = MO_TA_QUYEN as Record<string, { nhom: string; moTa: string; phamVi?: string } | undefined>;

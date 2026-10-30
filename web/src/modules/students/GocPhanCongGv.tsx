@@ -303,7 +303,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
     if (id !== null) requestAnimationFrame(() => document.querySelector('[data-to="true"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   };
 
-  if (trang.error) return <ErrorState message={trang.error.message} hint={trang.error.hint} onRetry={trang.reload} />;
+  if (trang.error) return <ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} />;
   if (!data) return <div className="card p-4"><Skeleton rows={8} /></div>;
   if (data.canChonChiNhanh) {
     return <div className="card pc-rong"><span className="tieu">{t('Chọn chi nhánh để xem phân công')}</span>{chonCn}</div>;

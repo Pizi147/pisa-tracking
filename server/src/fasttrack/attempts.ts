@@ -11,7 +11,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -1301,13 +1301,6 @@ export function attemptDetail(p: Principal, attemptId: number) {
       /** Xử lý vắng (dời lần đầu / xin duyệt) — GVCN của lớp và Quản lý; giáo viên bộ môn thì không. */
       canHandleAbsence: canRequestAbsence(p, a),
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
-      /**
-       * Xác nhận đã thi / vắng CHO TỪNG KỸ NĂNG — cùng quyền với việc dời lịch kỹ năng đó
-       * (sổ SCH-01, SCH-02: một capability, không lệch giữa hai thao tác). Không còn một cờ
-       * `canSetSitStatus` chung cho cả đợt — giao diện đọc `moveableSkills` theo từng kỹ
-       * năng, đúng cho cả Quản lý (mọi kỹ năng) lẫn GVCN/GVBM lớp thường (đúng phần phụ trách).
-       */
-      moveableSkills: a.class_id ? moveableSkills(p, a.class_id, ENTRY_SKILLS) : [],
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
       /* Không có kỹ năng cụ thể ở mức cả đợt — dùng SOS_REPORT (rộng), đúng nghĩa "báo được". */
       canEditSos: can(p, PERMISSIONS.SOS_REPORT, { classId: a.class_id, studentId: a.student_id }),

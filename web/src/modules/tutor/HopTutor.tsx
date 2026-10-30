@@ -134,7 +134,7 @@ export function HopGop({ ds, onDong, onThem }: { ds: DongTutor[]; onDong: () => 
         <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>
         <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={gui || !muc.length} onClick={gop}>{t('Gộp {n} tên', { n: muc.length })}</button>
       </>}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={4} />
         : !data.length ? <p className="m-0 text-sm text-slate-400">{t('Không còn tên gõ tay nào.')}</p> : (
           <ul className="m-0 list-none space-y-2 p-0">

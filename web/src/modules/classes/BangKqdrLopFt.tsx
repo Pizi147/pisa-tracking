@@ -28,7 +28,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
   const { data, loading, error, reload } = useApi<{ bang: Bang[] }>(`/classes/${classId}/ket-qua-dau-ra`, [classId]);
   const { homNay } = useNgayNghiepVu();
   const dt = useDienThoai();
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading && !data) return <Skeleton rows={5} />;
   if (!data?.bang.length) return <div className="card"><Empty title={t('Không còn đợt nào trong 4 tuần')} hint={t('Tra Kết quả đầu ra ở Hồ sơ học viên › Hành trình.')} /></div>;
   const tuan = (d: string) => <span className="tabular-nums">{tuanLich(d, homNay)}</span>;

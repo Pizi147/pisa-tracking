@@ -208,7 +208,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
           </button>
         ),
       }}>
-      {du.error ? <ErrorState message={du.error.message} hint={du.error.hint} onRetry={du.reload} />
+      {du.error ? <ErrorState message={du.error.message} hint={du.error.hint} status={du.error.status} onRetry={du.reload} />
         : !d ? <Skeleton rows={6} />
         : !d.rows.length ? <p className="pt-3 text-sm text-slate-400">{t('Lớp chưa có học viên đang học.')}</p>
         : (

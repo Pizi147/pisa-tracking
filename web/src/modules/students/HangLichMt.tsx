@@ -188,7 +188,7 @@ function DaiDiemMt({ attemptId, homNay, onDoi, onDong }: { attemptId: number; ho
   const ct = useApi<any>(`/attempts/${attemptId}`, [attemptId]);
   const { save } = useSaveScore(attemptId, () => { ct.reload(); onDoi(); });
   const [mo, setMo] = useState<string | null>(null);
-  if (ct.error) return <ErrorState message={ct.error.message} hint={ct.error.hint} onRetry={ct.reload} />;
+  if (ct.error) return <ErrorState message={ct.error.message} hint={ct.error.hint} status={ct.error.status} onRetry={ct.reload} />;
   if (!ct.data) return <Skeleton rows={2} />;
   return (
     <div className="space-y-2">

@@ -126,7 +126,7 @@ export function MeetingBoard() {
   const soVanDaGiao = useManagerTaskCount(periodId, cn);
   const soTinHieuDangTon = useSignalCount(periodId, cnBranchId);
 
-  if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
+  if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} />;
 
   /* D9: lọc chi nhánh chỉ THU HẸP tập máy chủ đã cho; ba số đếm theo tập đã lọc chi nhánh, chưa lọc trạng thái. */
   const unitsCn = locDonViBaoCao(units, { chiNhanh: cn, trangThai: null });

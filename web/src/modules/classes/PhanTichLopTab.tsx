@@ -32,7 +32,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
     document.getElementById(`pt-lop-${mo}`)?.scrollIntoView({ block: 'center' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={5} />;
   const ft = data.loai === 'ft';
   const goiY = ft

@@ -112,7 +112,7 @@ export function TasksBoard() {
     hangSo: Record<string, number>;
   }>(`/mgmt-tasks?${qs}`, [qs.toString()]);
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (data?.scopeEmpty) {
     return (
       <Forbidden

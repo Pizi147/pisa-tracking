@@ -91,7 +91,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   const [pop, setPop] = useState<{ sid: number; kn: 'w' | 's'; nut: HTMLElement } | null>(null);
   const [ngan2, setNgan2] = useState<{ caseId: number; view: ViewCase; hv: string } | null>(null);
   const dienThoai = useDienThoai();
-  if (roster.error) return <ErrorState message={roster.error.message} hint={roster.error.hint} onRetry={roster.reload} />;
+  if (roster.error) return <ErrorState message={roster.error.message} hint={roster.error.hint} status={roster.error.status} onRetry={roster.reload} />;
   if (!roster.data) return <div className="card p-4"><Skeleton rows={6} /></div>;
 
   const caseCua = new Map<number, CaseLop[]>();

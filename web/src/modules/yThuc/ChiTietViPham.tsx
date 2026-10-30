@@ -35,7 +35,7 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
   const [xemLichSu, setXemLichSu] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  if (loiTai) return <ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={reload} />;
+  if (loiTai) return <ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} />;
   if (!d) return <Skeleton rows={3} />;
 
   const soLanSua = demLanSua(d.history);
