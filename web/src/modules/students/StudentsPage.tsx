@@ -22,6 +22,7 @@ import { PanelMotEm } from './PanelMotEm.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { GocLichThi, khoangThang } from './GocLichThi.tsx';
 import { NganXuatDs } from './NganXuatDs.tsx';
+import { GocPhanCongGv } from './GocPhanCongGv.tsx';
 import { BangHvGon, BangSosGon, TheHvGon, coPaQuaHan, type EmVai, type HvGon, type LopGon, type NhomLop, type VaiBang, type ViecEm } from './DanhSachHvLop.tsx';
 import {
   LOC_CASE, LOC_HOC_VIEN_NHAN, LOC_KET_QUA, LOC_KY_NANG, NHAN_LOC_CASE, NHAN_LOC_KET_QUA, KIEU_KHOANG, badgeHienTheoVai, badgeLop, docLocThem, duongLichTest,
@@ -92,7 +93,7 @@ const CHIP_VAI_NHAN: Record<(typeof CHIP_VAI_TRANG)[number], { nhan: string; goi
 const PHAM_VI_VAI: Record<'tvv' | 'cx', PhamVi[]> = { tvv: ['cua-toi', 'chi-nhanh'], cx: ['tat-ca', 'chi-nhanh'] };
 
 
-type Goc = 'tat-ca' | 'sos' | 'lich-thi';
+type Goc = 'tat-ca' | 'sos' | 'lich-thi' | 'phan-cong';
 /** Việc gấp nhất trước: quá hạn → hạn sớm. */
 const gapTruoc = (a: ViecEm, b: ViecEm) => Number(b.quaHan) - Number(a.quaHan) || (a.han ?? '9').localeCompare(b.han ?? '9');
 const KN_NGAN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
@@ -119,7 +120,12 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const doc = docThamSoLoc(params.get('view'));
   /* Link cũ: `view=can-lam` / `qua-han` (Cần làm đã bỏ) → Tất cả + chip "Có việc quá hạn"; `cho-duyet` / `thieu_tt` → Tất cả. */
   const gocUrl = docGoc(params.get('view'), params.get('loc'));
-  const goc: Goc = gocUrl.goc === 'lich-thi' ? 'lich-thi' : gocUrl.goc === 'sos' && !admin ? 'sos' : 'tat-ca';
+  /* PC-GV-C: góc Phân công GV — QL, Quản trị, CX (GV / TVV không thấy; máy chủ 403). */
+  const coGocPc = laVaiQuanLy(session?.roles) || vai === 'cx';
+  const goc: Goc = gocUrl.goc === 'lich-thi' ? 'lich-thi' : gocUrl.goc === 'sos' && !admin ? 'sos' : gocUrl.goc === 'phan-cong' && coGocPc ? 'phan-cong' : 'tat-ca';
+  /* Số dòng nháp của góc Phân công GV — hỏi MỘT lần trước khi đổi góc / chi nhánh (không mất ô đã đổi). */
+  const [nhapPc, setNhapPc] = useState(0);
+  const boNhapPc = () => !nhapPc || window.confirm(t('{n} lớp chưa lưu phân công — rời đi sẽ mất các ô đã đổi.', { n: nhapPc }));
   const locQuaHan = vai !== 'cx' && (params.get('qh') === '1' || (gocUrl.goc === 'can-lam' && (gocUrl.loc === 'qua-han' || gocUrl.loc === null)));   // CX không có Công việc → không có lọc này
   const locThiThang = params.get('thi') === '1';
   const locDaThi = params.get('loc') === 'da-thi' || params.get('view') === 'da-thi';   // OV-14b: "Đã thi · chờ kết quả" (cùng chip TVV / CX) — giữ; Tổng quan TVV / CX gửi `view=`
@@ -311,7 +317,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const tenCn = pv?.dangDung === 'chi-nhanh' ? (branches.data ?? []).find((b) => b.id === pv.chiNhanh)?.name ?? null : null;
   const dsHocVien: NguCanhDs = { loai: 'hoc-vien', nhan: t('Học viên & Lớp'), ids: goc === 'sos' ? sosRows.map((r) => r.studentId) : hvLoc.map((h) => h.id) };
   /* L5 (PTA 24/10): số trên trang = dòng đang thấy — em đã kết thúc học (mờ ở lớp cuối) tính ở tab, dải, phân trang VÀ Xuất. */
-  const idsXuat = goc === 'tat-ca' ? [...new Set(hvLoc.map((h) => h.id))]
+  const idsXuat = goc === 'tat-ca' || goc === 'phan-cong' ? [...new Set(hvLoc.map((h) => h.id))]
     : goc === 'sos' ? [...new Set(sosRows.map((r) => r.studentId))] : idsLichThi;
   const chuLocThem = [...locThem.case.map((k) => t(NHAN_LOC_CASE[k])), ...locThem.kn.map((k) => KN_NGAN[k]), ...locThem.kq.map((k) => t(NHAN_LOC_KET_QUA[k])),
     locThem.tu && locThem.den ? nhanKhoang({ kieu: kieuKhoang, tu: locThem.tu, den: locThem.den }).chinh : null];
@@ -323,7 +329,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const batLoc = (khoa: 'lc' | 'lk' | 'lq', ds: readonly string[], k: string) => setParam({ [khoa]: (ds.includes(k) ? ds.filter((x) => x !== k) : [...ds, k]).join(',') || null });
   const caXuat = { nhan: tenCn ? t('Cả chi nhánh') : t('Tất cả'), ids: [...new Set(dsEm.map((h) => h.id))] };
 
-  const doiGoc = (g: Goc) => setParam({ view: g === 'tat-ca' ? null : g, loc: null, muc: null, qh: locQuaHan && g === 'tat-ca' ? '1' : null });
+  const doiGoc = (g: Goc) => { if (boNhapPc()) setParam({ view: g === 'tat-ca' ? null : g, loc: null, muc: null, qh: locQuaHan && g === 'tat-ca' ? '1' : null }); };
   /* Chip vai và "Đã thi · chờ kết quả" cùng `loc` — bật chip này tắt chip kia (như bảng V4 của vai); `view=` của link cũ bỏ khi bấm. */
   const batChipVai = (k: string | null) => setParam({ loc: k, view: null });
 
@@ -347,14 +353,14 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     <>
       {pv && coThePv.length > 1 && (
         <select className={SELECT_GON} aria-label={t('Phạm vi')} value={pv.dangDung}
-          onChange={(e) => setParam({ phamVi: e.target.value, cn: null, branchId: null })}>
+          onChange={(e) => { if (boNhapPc()) setParam({ phamVi: e.target.value, cn: null, branchId: null }); }}>
           {coThePv.map((v) => <option key={v} value={v}>{dich(PHAM_VI_NHAN[v])}</option>)}
         </select>
       )}
       {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
         /* D3: cùng ô chi nhánh gọn mọi trang (nhãn trong ô). */
         <OChiNhanh branches={branches.data ?? []} branchId={pv.chiNhanh ?? null} tatCa={false}
-          onBranch={(id) => { if (id === null) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
+          onBranch={(id) => { if (id === null || !boNhapPc()) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
       )}
     </>
   );
@@ -412,6 +418,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         { key: 'tat-ca', label: t('Tất cả'), so: data && (!laVai || vaiTrang) ? soEm(goc0) : null },
         ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
         { key: 'lich-thi', label: t('Lịch thi'), so: data ? demLich : null },
+        ...(coGocPc ? [{ key: 'phan-cong' as const, label: t('Phân công GV') }] : []),
       ]} />
 
       {goc !== 'tat-ca' && lopDangLoc && 'needScores' in lopDangLoc && <DaiLop lop={lopDangLoc as LopTrenTrang} vai={vai} dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} soViecQuaHan={new Set(goc0.filter(coQuaHan).map((h) => h.id)).size}
@@ -534,6 +541,17 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       {goc === 'lich-thi' && (
         <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })}
           onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} loc={trongLoc} />
+      )}
+
+      {/* key: đổi chi nhánh (đã OK "rời đi sẽ mất") → góc dựng lại, nháp chi nhánh cũ không theo sang. */}
+      {goc === 'phan-cong' && (
+        <GocPhanCongGv key={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? 0 : 0} branchId={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? null : null} khung={khung}
+          q={params.get('tim') ?? ''} onQ={(v) => setParam({ tim: v || null })}
+          coTheTaoLop={!!data?.coTheTaoLop} onTaoLop={() => setTaoLop(true)} onNhap={setNhapPc}
+          chonCn={(branches.data?.length ?? 0) > 0 && (
+            <OChiNhanh branches={branches.data ?? []} branchId={null} tatCa
+              onBranch={(id) => { if (id === null) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
+          )} />
       )}
 
       {xuat && (
