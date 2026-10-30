@@ -15,11 +15,11 @@ Cách chụp: `KHUNG_BASE=http://localhost:5611 [BAM="Duyệt"|"Lịch sử"] no
 | "Sau khi duyệt" | `neuDuyet` (khối vàng) | `cv0-1440` | GIỮ |
 | Ghi chú cho GV (không bắt buộc) | — | — | KHÁC: web chỉ hỏi ghi chú ở loại `canGhiChu` (Duyệt…); Đề xuất PA duyệt một bấm (GIỮ luật cũ) [XM-D2] |
 | "Lịch sử · n ▸" gập | `LichSuYeuCau` — ẩn khi 0; mở mới gọi `GET /lich-su?loai=yeu-cau&id=`; dòng "30/10 06:48 **Người** việc" (nhãn nhật ký chung `nhanHanhDongNhatKy`, không lộ mã máy) | `cv2-375` | KHỚP |
-| `#cv` nth=1 · vừa Duyệt | panel ở lại: khối "✓ Đã duyệt: … · Hoàn tác" + bối cảnh chỉ đọc; chân "✓ Đã lưu · Tiếp: … · **Yêu cầu tiếp ›**"; đầu panel bỏ chip hạn | `cv1-1440` | KHỚP. KHÁC: số Lịch sử là số lúc mở (chưa cộng dòng vừa duyệt) |
+| `#cv` nth=1 · vừa Duyệt | panel ở lại: khối "✓ Đã duyệt: … · Hoàn tác" + bối cảnh chỉ đọc; chân "✓ Đã lưu · Tiếp: … · **Yêu cầu tiếp ›**"; đầu panel bỏ chip hạn | `cv1-1440` | KHỚP. KHÁC: "✓ Đã lưu" màu xám (luật K-HTT-3, mockup xanh) · số Lịch sử là số lúc mở (chưa cộng dòng vừa duyệt) |
 | dòng "Chờ bạn duyệt" vừa Duyệt | `DongDuyet` giữ chỗ (nền ok) "✓ {kết quả}" + Hoàn tác — cả Duyệt tại dòng lẫn ở panel; số "n yêu cầu" giảm 1 | `cv1-1440` | KHỚP. KHÁC: chữ "✓ Đã duyệt: {tên yêu cầu}" (cùng câu toast) thay "✓ Đã duyệt · {em}" — em đã ở đầu khối |
 | chip SOS ở dòng Chờ bạn duyệt | `ChipSos` ở đầu khối em của `CayDuyet` (mọi yêu cầu của em chung một khối) | `cv0-1440` | KHỚP nghĩa; vị trí theo khối em (V8-CV), không lặp mỗi dòng |
 | thanh "Duyệt n yêu cầu" | như cũ | — | GIỮ (bấm thử: tích 1 → "Duyệt 1 yêu cầu") |
-| hộp đầy đủ `/cong-viec/cho-duyet` | cùng `PanelDuyet` → cũng có chân dính | — | GIỮ dữ liệu cũ: không xin `boiCanh` (không chip SOS / Điểm / Lịch sử — ngoài phạm vi mockup, tiết kiệm câu) |
+| hộp đầy đủ `/cong-viec/cho-duyet` | cùng `PanelDuyet` → cũng có chân dính (thẻ đang chờ; tab Đã xử lý giữ nút trong thân) | — | GIỮ dữ liệu cũ: không xin `boiCanh` (không chip SOS / Điểm / Lịch sử — ngoài phạm vi mockup, tiết kiệm câu) |
 
 Tỉ lệ KHỚP: 9 / 11 dòng có thành phần khớp (82 % theo dòng); theo diện tích panel (đầu, thân, chân, danh sách) ≥ 90 % — phần KHÁC là chữ bối cảnh máy chủ và ô ghi chú không bắt buộc (luật cũ).
 

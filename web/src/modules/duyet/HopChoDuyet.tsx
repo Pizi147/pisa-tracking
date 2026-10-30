@@ -411,6 +411,8 @@ function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: {
   xong?: { chu: string; onHoanTac?: () => void; onTiep: (y: TheYeuCauDto) => void };
 }) {
   const [chanEl, setChanEl] = useState<HTMLElement | null>(null);
+  /* Thẻ đã xử lý (tab Đã xử lý · Sửa trả lời… · Huỷ quyết định) giữ nút trong thân như cũ — chân dính chỉ cho thẻ đang chờ quyết. */
+  const cho = yc.trangThai === 'cho';
   const chuTiep = tiep ? t('Tiếp: {tieuDe}', { tieuDe: [dich(tiep.tieuDe), tiep.hocVien].filter(Boolean).join(' · ') }) : null;
   return (
     <KhungTaiCho.Provider value>
@@ -423,17 +425,16 @@ function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: {
           ].filter(Boolean) }}
         chan={xong ? {
           huy: tiep ? null : { nhan: t('Đóng'), onClick: onDong },
-          trai: <span className="min-w-0 truncate text-dim"><b className="font-semibold text-ok">{t('✓ Đã lưu')}</b>{chuTiep && ` · ${chuTiep}`}</span>,
+          trai: <span className="min-w-0 truncate text-dim"><b className="font-semibold text-dim">{t('✓ Đã lưu')}</b>{chuTiep && ` · ${chuTiep}`}</span>,
           chinh: tiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => xong.onTiep(tiep)}>{t('Yêu cầu tiếp ›')}</button> : undefined,
-        } : {
+        } : !cho ? undefined : {
           huy: null,
           trai: chuTiep && <span className="min-w-0 truncate text-dim" title={chuTiep}>{chuTiep}</span>,
           chinh: <span ref={setChanEl} className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:[&>.btn]:flex-1 max-sm:[&>.btn]:justify-center" />,
         }}
         onDong={onDong}>
         {xong ? (
-          <div role="status" className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2.5 text-[13px]"
-            style={{ borderColor: 'var(--ok-line)', background: 'var(--ok-bg)' }}>
+          <div role="status" className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-ok-line bg-ok-bg px-3 py-2.5 text-[13px]">
             <b className="min-w-0 flex-1 font-semibold text-ok">✓ {dich(xong.chu)}</b>
             {xong.onHoanTac && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={xong.onHoanTac}>{t('Hoàn tác')}</button>}
           </div>
@@ -449,7 +450,7 @@ function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: {
             )}
           </div>
         )}
-        {xong ? null : <TheYeuCau yc={yc} panel moSan={moSan} onXong={onXong} onThemPa={onThemPa} chanEl={chanEl} />}
+        {xong ? null : <TheYeuCau yc={yc} panel moSan={moSan} onXong={onXong} onThemPa={onThemPa} chanEl={cho ? chanEl : undefined} />}
         <LichSuYeuCau id={yc.id} n={yc.soLichSu ?? 0} />
       </KhungPanel>
     </KhungTaiCho.Provider>
@@ -531,12 +532,12 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
   const { ngan } = useNgayNghiepVu();
   /* DUYET-QL: dòng vừa quyết — giữ chỗ, nền ok, "✓ {kết quả}" + Hoàn tác (loại máy chủ cho huỷ). */
   if (y.giu) return (
-    <div role="status" className={`grid min-h-[56px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 py-2 pr-3 sm:pr-4 ${em ? 'pl-[40px] sm:pl-[44px]' : 'pl-3 sm:pl-4'}`}
-      style={{ background: 'var(--ok-bg)', boxShadow: dang === y.id ? 'inset 3px 0 0 var(--accent)' : undefined }}>
+    <div role="status" className={`grid min-h-[56px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 bg-ok-bg py-2 pr-3 sm:pr-4 ${em ? 'pl-[40px] sm:pl-[44px]' : 'pl-3 sm:pl-4'}`}
+      style={{ boxShadow: dang === y.id ? 'inset 3px 0 0 var(--accent)' : undefined }}>
       <span aria-hidden className={em ? 'w-5' : 'w-7'} />
       <span className="grid min-w-0 gap-px">
-        <span className="truncate text-[15px] leading-snug text-dim">{dich(y.tieuDe)}</span>
-        <span className="min-w-0 truncate text-[13px] font-semibold text-ok">✓ {dich(y.giu.chu)}</span>
+        <span className="truncate text-[15px] leading-normal text-dim">{dich(y.tieuDe)}</span>
+        <span className="min-w-0 truncate text-[13px] font-semibold leading-normal text-ok">✓ {dich(y.giu.chu)}</span>
       </span>
       {y.giu.huy && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" onClick={() => onHoanTac(y.id)}>{t('Hoàn tác')}</button>}
     </div>

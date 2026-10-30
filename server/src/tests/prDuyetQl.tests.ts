@@ -25,7 +25,7 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
 
   check('D1 · PanelDuyet truyền chan cho KhungPanel (huy null, trái "Tiếp: …"); TheYeuCau ở panel đưa nút quyết vào chân (portal), không vẽ trong thân', () => {
     const pd = than(hop, 'function PanelDuyet');
-    assert(/<KhungPanel[\s\S]*chan=\{xong \? \{[\s\S]*\} : \{/.test(pd), 'PanelDuyet chưa truyền chan');
+    assert(/<KhungPanel[\s\S]*chan=\{xong \? \{[\s\S]*\} : !cho \? undefined : \{/.test(pd) && pd.includes('chanEl={cho ? chanEl : undefined}'), 'PanelDuyet chưa truyền chan');
     assert(/huy: null/.test(pd) && pd.includes("t('Tiếp: {tieuDe}'"), 'chân thiếu huy: null / "Tiếp: …"');
     assert(/chanEl=\{/.test(pd), 'PanelDuyet chưa đưa chỗ chân cho TheYeuCau');
     assert(/createPortal\(o \? nutO : nutQuyet, chanEl\)/.test(the), 'TheYeuCau chưa đưa nút quyết vào chân');
