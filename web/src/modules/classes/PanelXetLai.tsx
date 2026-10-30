@@ -400,7 +400,11 @@ function NhanXetGvcn({ e, classId }: { e: EmXetLai; classId: number }) {
     if (chu.trim() === cu.trim()) return;
     setLuu('dang');
     try { await api.put(`/classes/${classId}/xet-lai/${e.studentId}/nhan-xet`, { nhanXet: chu.trim() || null }); setCu(chu); setLuu('da'); }
-    catch (err: any) { setLuu({ loi: err?.message ?? t('Không lưu được') }); }
+    catch (err: any) {
+      setLuu({ loi: err?.message ?? t('Không lưu được') });
+      /* DON-LUONG K39b: QL vừa quyết (409) → em rời danh sách xét lại — tải lại để thẻ em biến đi, câu lỗi nói bước đã quyết. */
+      if (err?.status === 409) invalidate(duongXetLai(classId).split('?')[0]);
+    }
   };
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-dashed px-3.5 pb-3 pt-2.5 pl-[42px] max-sm:pl-3.5" style={{ borderColor: 'var(--line)' }}>

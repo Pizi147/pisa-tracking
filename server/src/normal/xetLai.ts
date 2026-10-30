@@ -518,6 +518,19 @@ export function hoanTacXetLai(p: Principal, classId: number, idsVao: unknown) {
 export function ghiNhanXetGvcnMoi(p: Principal, classId: number, studentId: number, chu: unknown) {
   const cn = chiNhanhLop(classId);
   const e = tapXetLai(demoToday(), cn === undefined ? [] : [cn]).find((x) => x.lopHienTai.id === classId && x.studentId === studentId);
+  /* DON-LUONG K39b: QL đã quyết (em rời tập xét lại) mà GVCN lớp mới gửi muộn (panel cũ) → 409 nói bước đã quyết, không 403 không bước tiếp. */
+  if (!e && isCoreTeacherOf(p, classId)) {
+    const q = db().prepare(
+      `SELECT x.quyet_dinh, x.luc FROM xet_lai_lo_trinh x JOIN lenh_chuyen_lop l ON l.id = x.lenh_id
+        WHERE x.student_id = ? AND l.lop_dich_id = ? AND x.quyet_dinh IS NOT NULL ORDER BY x.id DESC LIMIT 1`,
+    ).get(studentId, classId) as { quyet_dinh: string; luc: string } | undefined;
+    if (q) {
+      throw loi(409, 'QL đã quyết {buoc} lúc {ngay} — nhận xét không còn cần.', {
+        buoc: ({ tiep_tuc: 'Tiếp tục', hoc_lai: 'Học lại', len: 'Lên lớp', dung: 'Tạm dừng/ Kết thúc học' } as Record<string, string>)[q.quyet_dinh] ?? q.quyet_dinh,
+        ngay: ((d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`)(todayInBusinessTz(new Date(q.luc))),   // ngày VN (rà sâu #742: `luc` UTC)
+      });
+    }
+  }
   if (!e || e.daChot.lopDichId !== classId || !isCoreTeacherOf(p, classId)) throw forbidden('Chỉ GVCN lớp mới của em ghi được nhận xét này.');
   const nd = chuTuDo(chu, 'Nhận xét', 1000) ?? null;
   return tx(() => {

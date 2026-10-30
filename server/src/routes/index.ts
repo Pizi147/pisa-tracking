@@ -51,7 +51,7 @@ import * as buocTiepSvc from '../loTrinh/buocTiep.ts';
 import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
-import { docHet, thongBaoCua } from '../platform/thongBao.ts';
+import { docHet, docNhieu, thongBaoCua } from '../platform/thongBao.ts';
 import { dongBoKhiMoChuong } from '../platform/thongBaoTuDong.ts';
 import { daGhi } from '../platform/thongBaoTuDong.ts';   // OV-15h1
 import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
@@ -2863,6 +2863,8 @@ api.get('/notifications', requireAuth, wrap((req) => {
 
 /** PR-VAI-a (Q18): "Đọc hết" — một câu UPDATE, chỉ thông báo của chính người gọi; không xoá dòng. */
 api.post('/notifications/doc-het', requireAuth, wrap((req) => ({ daDoc: docHet(principalOf(req).userId, demoToday()) })));
+/** DON-LUONG A6: đánh dấu đã đọc nhiều dòng một lệnh — ≤ 200 id nguyên dương, chỉ dòng của người gọi. */
+api.post('/notifications/doc-nhieu', requireAuth, wrap((req) => ({ daDoc: docNhieu(principalOf(req).userId, req.body?.ids, demoToday()) })));
 
 api.post('/notifications/:id/read', requireAuth, wrap((req) => {
   const p = principalOf(req);

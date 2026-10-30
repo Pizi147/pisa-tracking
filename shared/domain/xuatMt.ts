@@ -15,7 +15,7 @@ export type KhungXuat = 'ft' | 'thuong';
 export type ThoiGianXuat =
   | { kieu: 'tuan'; tu: string; den: string }          // thứ Hai YYYY-MM-DD
   | { kieu: 'thang'; tu: string; den: string }         // YYYY-MM
-  | { kieu: 'dot'; dot: string[] };                    // 'mt:1'…'mt:8' | 'giua' | 'cuoi'
+  | { kieu: 'dot'; dot: string[] };                    // 'mt:1'…'mt:8' | 'giua' | 'checkpoint' | 'cuoi'
 export type BoLocXuatMt = {
   khung: KhungXuat; chiNhanh: number[]; lop: number[]; thoiGian: ThoiGianXuat; chiDuDiem: boolean; cot: 'gon' | 'day-du';
 };
@@ -25,7 +25,9 @@ export const XUAT_TOI_DA_LUOT = 10_000;
 const XUAT_TOI_DA_TUAN = 104;
 const XUAT_TOI_DA_THANG = 24;
 export const DOT_XUAT_FT = ['mt:1', 'mt:2', 'mt:3', 'mt:4', 'mt:5', 'mt:6', 'mt:7', 'mt:8'] as const;
-export const DOT_XUAT_THUONG = ['giua', 'cuoi'] as const;
+/** DON-LUONG A8: lớp thường đủ đợt — Progress · Checkpoint (PET / KET liên tục) · Final; `kindCuaDot` ra loại lượt. */
+export const DOT_XUAT_THUONG = ['giua', 'checkpoint', 'cuoi'] as const;
+export const kindCuaDot = (k: string) => (k === 'giua' ? 'progress' : k === 'cuoi' ? 'final' : k);
 
 const TUAN_MS = 7 * 86_400_000;
 const laNgayIso = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
@@ -78,7 +80,7 @@ export function docBoLocXuatMt(o: Record<string, unknown>): BoLocXuatMt | string
     if (!ds || !ds.length) return 'Chọn ít nhất một đợt.';
     const hopLe: readonly string[] = khung === 'ft' ? DOT_XUAT_FT : DOT_XUAT_THUONG;
     const sai = ds.find((x) => !hopLe.includes(x));
-    if (sai) return khung === 'ft' ? 'Khung Fast Track chỉ có đợt MT1 đến MT8.' : 'Lớp thường chỉ có đợt Progress Test và Final Test.';
+    if (sai) return khung === 'ft' ? 'Khung Fast Track chỉ có đợt MT1 đến MT8.' : 'Lớp thường chỉ có đợt Progress Test, Checkpoint và Final Test.';
     thoiGian = { kieu: 'dot', dot: [...new Set(ds)] };
   } else return 'Chọn cách lọc thời gian: theo tuần, theo tháng hoặc theo đợt.';
   return { khung, chiNhanh, lop, thoiGian, chiDuDiem: du, cot };
@@ -100,7 +102,7 @@ export function queryXuatMt(f: BoLocXuatMt): string {
 
 // ------------------------------------------------------------------ nhãn
 
-export const nhanKhoaDot = (k: string) => (k === 'giua' ? ATTEMPT_KIND_SHORT.progress : k === 'cuoi' ? ATTEMPT_KIND_SHORT.final : k.startsWith('mt:') ? `MT${k.slice(3)}` : k);
+export const nhanKhoaDot = (k: string) => (k === 'giua' ? ATTEMPT_KIND_SHORT.progress : k === 'cuoi' ? ATTEMPT_KIND_SHORT.final : k === 'checkpoint' ? ATTEMPT_KIND_SHORT.checkpoint : k.startsWith('mt:') ? `MT${k.slice(3)}` : k);
 const maTuanCoNam = (thuHai: string) => `${tuanLich(thuHai)} ${owningMonthOf(thuHai).year}`;
 /** Thứ Hai của tuần ĐẦU của tháng sở hữu tuần `thuHai` (tuần thuộc tháng chứa ngày thứ Năm của nó) — mặc định "từ tuần" của ngăn xuất. */
 export function tuanDauThangCua(thuHai: string): string {

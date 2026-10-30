@@ -2582,12 +2582,15 @@ export function classScoreSheet(
    * HÀNG NÀO HIỆN RA ĐỂ CHẤM.
    */
   if (period) {
-    /* TD5: IN (… UNION …) thay OR + EXISTS — hai nhánh đều đi chỉ mục tuần (idx_attempt_period, idx_attempt_skills_period). */
+    /* TD5: IN (… UNION …) thay OR + EXISTS — hai nhánh đều đi chỉ mục tuần (idx_attempt_period, idx_attempt_skills_period).
+       DON-LUONG K6: vế ba — em có dấu "-" của tuần này mà mọi kỹ năng đã dời (chỉ mục idx_scores_no_show) vẫn có hàng ở tuần gốc,
+       ô "Vắng → W? MON" như em dời một phần. */
     sql += ` AND a.id IN (
       SELECT a2.id FROM assessment_attempts a2 WHERE a2.planned_period_id = ?
       UNION SELECT ask.attempt_id FROM attempt_skills ask WHERE ask.planned_period_id = ? AND ask.required = 1
+      UNION SELECT sc.attempt_id FROM assessment_scores sc WHERE sc.no_show_period_id = ?
     )`;
-    params.push(period.id, period.id);
+    params.push(period.id, period.id, period.id);
   } else if (chon.theo === 'luot') {
     sql += ` AND a.kind = 'mock' AND a.attempt_no = ?`;
     params.push(chon.attemptNo);

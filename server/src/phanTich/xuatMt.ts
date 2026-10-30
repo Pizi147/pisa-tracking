@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_NAME, chuTargetKck, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, chuNhomNguyenNhan, docNhomNguyenNhan, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
+  PERMISSIONS, ROUTE_NAME, chuTargetKck, kindCuaDot, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, chuNhomNguyenNhan, docNhomNguyenNhan, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
   soSanhLop, tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
   type BoLocXuatMt, type Cell, type DongFT, type DongThuong, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
@@ -160,7 +160,7 @@ function manhThoiGian(f: BoLocXuatMt): { sql: string; params: (string | number)[
   if (t.kieu === 'tuan') return { sql: 't.week_start BETWEEN ? AND ?', params: [t.tu, t.den] };
   if (t.kieu === 'thang') return { sql: '(t.year * 100 + t.month) BETWEEN ? AND ?', params: [Number(t.tu.replace('-', '')), Number(t.den.replace('-', ''))] };
   if (f.khung === 'ft') return { sql: `a.attempt_no IN (${dauHoi(t.dot.length)})`, params: t.dot.map((k) => Number(k.slice(3))) };
-  return { sql: `a.kind IN (${dauHoi(t.dot.length)})`, params: t.dot.map((k) => (k === 'giua' ? 'progress' : 'final')) };
+  return { sql: `a.kind IN (${dauHoi(t.dot.length)})`, params: t.dot.map(kindCuaDot) };   // DON-LUONG A8: cả Checkpoint
 }
 
 /**
