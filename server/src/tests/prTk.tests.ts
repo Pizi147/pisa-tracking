@@ -614,4 +614,8 @@ export function batBienDb(t: { conn: any; assert: (c: unknown, m: string) => voi
   const thieu = t.conn.prepare(`SELECT c.id, c.student_id, c.status FROM learning_cycles c WHERE c.status IN ('completed', 'abandoned')
                       AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id) LIMIT 10`).all();
   t.assert(thieu.length === 0, `lộ trình đóng thiếu bản chụp: ${JSON.stringify(thieu)}`);
+  /* TL-NAPBAI B1-c: chi nhánh của lịch kỹ năng = chi nhánh lớp của lượt (trigger giữ) — soi sau dữ liệu mọi tệp. */
+  const lech = t.conn.prepare(`SELECT COUNT(*) AS n FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+                      LEFT JOIN classes c ON c.id = a.class_id WHERE k.branch_id IS NOT c.branch_id`).get().n;
+  t.assert(lech === 0, `${lech} dòng attempt_skills có branch_id khác chi nhánh lớp của lượt`);
 }
