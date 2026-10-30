@@ -33,7 +33,7 @@ const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permis
 const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
-const { DUONG_DO, MOI_VAI, TRAN, TRAN_DONG, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
@@ -182,6 +182,9 @@ const KASE = (
     .get(HV) as any
 )?.id as number | undefined;
 /** TU-a: một PA Tutor đang chạy của lớp mẫu — đường `/tutors/chon?paId={paTutor}` (ô chọn tutor của Ghi kết quả). */
+/** PANEL-MC: thẻ Chờ duyệt có đối tượng PA (Lịch sử yêu cầu gộp nhật ký thẻ + PA + Case). */
+const YC_PA = (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE doi_tuong_loai = 'intervention' AND trang_thai = 'cho'
+   AND chi_nhanh_id = (SELECT branch_id FROM classes WHERE id = ?) ORDER BY id LIMIT 1`).get(LOP_FT) as any)?.id as number;   // chi nhánh của QL đo
 const PA_TUTOR = (conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
     JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
    WHERE iv.kind = 'tutor' AND iv.status = 'started' ORDER BY iv.id LIMIT 1`).get(LOP_FT) as any)?.id as number;
@@ -224,9 +227,13 @@ function urlFor(mau: string): string {
     .replace('{lopKetThuc}', String(LOP_KET_THUC))
     .replace('{case}', String(KASE))
     .replace('{paTutor}', String(PA_TUTOR))
+    .replace('{ycPa}', String(YC_PA))
     .replace('{cn}', String(CN))
     .replace('{gv}', String(USER.GVCN));
 }
+/* PANEL-MC: khoá trần được viết bằng chỗ thay như URL (`{ycPa}`…) — id lấy từ dữ liệu lúc chạy, không viết cứng. Khoá đã là id thật giữ nguyên. */
+const TRAN: Record<string, number> = Object.fromEntries(Object.entries(TRAN_MAU).map(([k, v]) => [urlFor(k), v]));
+const TRAN_DONG: Record<string, number> = Object.fromEntries(Object.entries(TRAN_DONG_MAU).map(([k, v]) => [urlFor(k), v]));
 
 async function callHttpUser(userId: number, method: string, url: string, body?: unknown) {
   doTurso.nhan = `${method} ${url}`;

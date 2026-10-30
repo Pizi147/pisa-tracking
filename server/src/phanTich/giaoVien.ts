@@ -7,7 +7,7 @@
  * Ghi kết quả PA, PA hiệu quả → người phụ trách Case. Phân công hiệu lực ở ngày d: `effective_from ≤ d ≤ effective_to` (ngày đổi: dòng mới thắng).
  */
 import {
-  COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, mondayOfDate, kyNangPhuTrach, laChamCheo, nhanDotNgan, oTuTap, tenMonNgan, boMonLich,
+  ratioResult, kyNangDaBo, boMonDaBo, COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, mondayOfDate, kyNangPhuTrach, laChamCheo, nhanDotNgan, oTuTap, tenMonNgan, boMonLich,
   type ChiSoHoSoGv, type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
@@ -19,7 +19,7 @@ import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts
 import { allProgrammes, nguongDatLop } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
 import { metricSet, parseObligation, rowsFor, type MetricRow } from '../worklist/metrics.ts';
-import { expectationFor } from '../fasttrack/scoring.ts';
+import { assessedSkillOf, expectationFor } from '../fasttrack/scoring.ts';
 import { tuanLich as tuanLichNgan } from '../../../shared/domain/hienThiNgay.ts';
 import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
@@ -346,7 +346,8 @@ function tapKetQua(c: NguCanhPtGv, muc: readonly MucKq[]): Map<string, TapKq> {
 }
 
 /** Q21 (FT): mục = ô có điểm mà em ĐÃ có điểm kỹ năng đó ở lượt MT gần nhất trước đó (bất kỳ lớp); tiến bộ ⇔ band cao hơn. W1, W2 riêng. KCK vẫn tính. */
-type TapKn = Map<string, { dung: number[]; giam: number[]; tong: number[] }>;
+/** PANEL-MC: `doi` — điểm hai lượt của từng mục (lượt trước → lượt này), dựng trong CÙNG vòng (0 câu) cho chip Tăng / Giảm ở panel. */
+type TapKn = Map<string, { dung: number[]; giam: number[]; tong: number[]; doi: Map<number, { truoc: { luot: string; v: number }; sau: { luot: string; v: number } }> }>;
 function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<number>>; theoLop?: Map<number, Tap>; theoKyNang: TapKn } {
   const tap: Tap = new Map();
   const lop = new Map<number, Set<number>>();
@@ -354,18 +355,18 @@ function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<n
   const theoLop = new Map<number, Tap>();
   /* UI-PHAN-TICH (Báo cáo HV · Tiến bộ theo kỹ năng): CÙNG mục, gom theo kỹ năng cho cả chi nhánh (không cần người dạy): tăng (`dung`) · giảm · còn lại giữ nguyên. */
   const theoKyNang: TapKn = new Map();
-  const kn = (skill: string) => theoKyNang.get(skill) ?? theoKyNang.set(skill, { dung: [], giam: [], tong: [] }).get(skill)!;
+  const kn = (skill: string) => theoKyNang.get(skill) ?? theoKyNang.set(skill, { dung: [], giam: [], tong: [], doi: new Map() }).get(skill)!;
   const coBand = nap.o.filter((x) => x.band !== null && (nap.attempts.get(x.attemptId)?.kind ?? 'mock') === 'mock');
   const em = [...new Set(coBand.map((x) => x.studentId))];
-  const truoc = new Map<string, { tuan: string; id: number; band: number }[]>();
+  const truoc = new Map<string, { tuan: string; id: number; band: number; no: number }[]>();
   for (const lo of theoLo(em)) {
     for (const r of db().prepare(
-      `SELECT a.id, a.student_id, s.skill, s.band, COALESCE(rp.week_start, '') AS tuan
+      `SELECT a.id, a.student_id, a.attempt_no, s.skill, s.band, COALESCE(rp.week_start, '') AS tuan
          FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.student_id IN (${cho(lo.length)}) AND COALESCE(a.kind, 'mock') = 'mock' AND a.status != 'cancelled' AND s.band IS NOT NULL`,
     ).all(...lo) as any[]) {
       const k = `${r.student_id}|${r.skill}`;
-      truoc.set(k, [...(truoc.get(k) ?? []), { tuan: r.tuan, id: r.id, band: r.band }]);
+      truoc.set(k, [...(truoc.get(k) ?? []), { tuan: r.tuan, id: r.id, band: r.band, no: r.attempt_no }]);
     }
   }
   for (const x of coBand) {
@@ -375,6 +376,7 @@ function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<n
       .sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id).pop();
     if (!cu) continue;
     kn(x.skill).tong.push(x.id);
+    kn(x.skill).doi.set(x.id, { truoc: { luot: `MT${cu.no}`, v: cu.band }, sau: { luot: `MT${nap.attempts.get(x.attemptId)?.attempt_no ?? '?'}`, v: x.band! } });
     if (x.band! > cu.band) kn(x.skill).dung.push(x.id);
     else if (x.band! < cu.band) kn(x.skill).giam.push(x.id);
     const gv = c.nguoiLuc(x.classId, x.skill, x.tuan);
@@ -647,10 +649,17 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
         /* Lớp thường: % từng môn (điểm / tổng) so với ngưỡng đạt của lớp — cùng `ratioResult` của bảng điểm. */
         const sc = (nap.bundle.scores.get(x.attemptId) ?? []).filter((r: any) => r.raw_score != null && r.raw_total);
         if (!sc.length) return {};
+        /* PANEL-MC (T3): `diemHv` thay `diem` / `donVi`; đạt = % ≥ ngưỡng lớp (cùng `ratioResult`). */
+        const nguong = Math.round(nguongDatLop(x.classId) * 100);
         return {
-          ngCanh: `${x.bai} · ${tuanLichNgan(x.tuan)}`, donVi: '%',
-          diem: sc.map((r: any) => ({ k: tenMonNgan(ct, r.skill), v: Math.round((1000 * r.raw_score) / r.raw_total) / 10, cua: c.nguoiLuc(x.classId, r.skill, x.tuan) === gv })),
-          soVoi: { nhan: t('Đạt từ'), v: Math.round(nguongDatLop(x.classId) * 100) },
+          ngCanh: `${x.bai} · ${tuanLichNgan(x.tuan)}`,
+          diemHv: {
+            luot: x.bai, tuan: x.tuan, tam: false, overall: null, soVoi: { nhan: 'ngưỡng', v: nguong }, donVi: '%',
+            /* Đạt xét trên tỷ lệ CHÍNH XÁC (`ratioResult`), không trên % đã làm tròn để hiện. */
+            kn: sc.map((r: any) => ({ k: tenMonNgan(ct, r.skill), v: Math.round((1000 * r.raw_score) / r.raw_total) / 10,
+              dat: ratioResult(r.raw_score, r.raw_total, nguongDatLop(x.classId)).outcome === 'pass', cua: c.nguoiLuc(x.classId, r.skill, x.tuan) === gv })),
+          },
+          soVoi: { nhan: t('Đạt từ'), v: nguong },
         };
       }
       const thi = x.kind === 'thi-that';
@@ -658,11 +667,17 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
         : new Map((nap.bundle.scores.get(x.attemptId) ?? []).map((r: any) => [r.skill as string, (r.band ?? null) as number | null]));
       if (![...band.values()].some((v) => v !== null)) return {};
       const ds = (thi ? ['listening', 'reading', 'writing1', 'speaking'] : COT_KET_QUA_GV[c.khung].filter((k) => band.has(k))).map((k) => ({
-        k: thi && k === 'writing1' ? 'W' : tenMonNgan(ct, k), v: band.get(k) ?? null,
+        sk: k, k: thi && k === 'writing1' ? 'W' : tenMonNgan(ct, k), v: band.get(k) ?? null,
         cua: thi && k === 'writing1' ? [c.nguoiLuc(x.classId, 'writing1', x.tuan), c.nguoiLuc(x.classId, 'writing2', x.tuan)].includes(gv) : c.nguoiLuc(x.classId, k, x.tuan) === gv,
       }));
       const m = theoMuc.get(x.id);
-      return { ngCanh: `${x.bai} · ${tuanLichNgan(x.tuan)}`, diem: ds, overall: m?.ovr ?? null, soVoi: m?.kv != null ? { nhan: thi ? 'Target' : t('kỳ vọng'), v: m.kv } : null };
+      const kv = m?.kv ?? null;
+      /* PANEL-MC (T3): ✓ / ✗ từng kỹ năng so mốc của lượt (kỳ vọng MT · Target thi thật); `cua` (viền nhấn kỹ năng của GV — XM-2) giữ trên từng kỹ năng. */
+      return { ngCanh: `${x.bai} · ${tuanLichNgan(x.tuan)}`, soVoi: kv !== null ? { nhan: thi ? 'Target' : t('kỳ vọng'), v: kv } : null,
+        diemHv: { luot: x.bai, tuan: x.tuan, tam: false, overall: m?.ovr ?? null, soVoi: kv !== null ? { nhan: thi ? 'Target' : 'KV', v: kv } : null,
+          /* Task Writing lẻ (W1 / W2 ở MT) không có kết luận riêng — kỳ vọng xét trên W gộp — và môn em đã bỏ (P8): không ✓ / ✗. */
+          kn: ds.map(({ sk, ...k }) => ({ ...k, dat: k.v === null || kv === null || (!thi && (sk === 'writing1' || sk === 'writing2'))
+            || kyNangDaBo(boMonDaBo(thi ? [] : nap.bundle.skips.get(x.attemptId) ?? []), assessedSkillOf(sk)) ? null : k.v >= kv })) } };
     };
     const nhan = !kq ? t('HV tiến bộ') : kq[1] === 'dat-mt' ? t('Đạt kỳ vọng Test') : kq[1] === 'thi-that' ? t('Kết quả thi thật')
       : kq[2] ? t('Đạt kỳ vọng Test {mon}', { mon: tenMonNgan(null, kq[2]) }) : t('Đạt kỳ vọng Test');
@@ -841,7 +856,7 @@ export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null
    */
   const gop = new Map<string, MetricRow>();
   for (const x of r.rows) {
-    if (!x.diem) { gop.set(`#${x.id}:${gop.size}`, x); continue; }
+    if (!x.diemHv) { gop.set(`#${x.id}:${gop.size}`, x); continue; }
     const khoa = `${x.href}|${x.lop}|${x.ngCanh}`;
     const cu = gop.get(khoa);
     if (!cu) gop.set(khoa, { ...x });
@@ -865,8 +880,9 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
     const ds = [...thi.values()].filter((x) => (!mt[1] || x.classId === Number(mt[1])) && (!mt[2] || x.datKn.has(mt[2])))
       .sort((a, b) => Number(datCua(a)) - Number(datCua(b)) || a.ngay.localeCompare(b.ngay) || a.ten.localeCompare(b.ten, 'vi'));
     const rows: MetricRow[] = ds.map((x, i) => ({
-      ketQua: datCua(x) ? 'dat' : 'chua', vuot: vuotThi(x, mt[2]), overall: x.ovr, ngCanh: `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, ngayThiThat: `${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, soVoi: x.kv !== null ? { nhan: 'Target', v: x.kv } : null,
-      diem: (['listening', 'reading', 'writing1', 'speaking'] as const).map((k) => ({ k: k === 'writing1' ? 'W' : tenMonNgan(null, k), v: x.band.get(k) ?? null, cua: x.cua.has(k) })),
+      ketQua: datCua(x) ? 'dat' : 'chua', vuot: vuotThi(x, mt[2]), ngCanh: `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, ngayThiThat: `${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, soVoi: x.kv !== null ? { nhan: 'Target', v: x.kv } : null,
+      diemHv: { luot: t('Thi thật'), tuan: x.ngay, tam: false, overall: x.ovr, soVoi: x.kv !== null ? { nhan: 'Target', v: x.kv } : null,
+        kn: (['listening', 'reading', 'writing1', 'speaking'] as const).map((k) => { const v = x.band.get(k) ?? null; return { k: k === 'writing1' ? 'W' : tenMonNgan(null, k), v, dat: v === null || x.kv === null ? null : v >= x.kv, cua: x.cua.has(k) }; }) },
       /* một em có thể thi hai lần trong kỳ — id theo dòng */ id: i + 1, title: x.ten, href: `/hoc-vien/${x.sid}`, lop: x.ma,
       sub: [x.ma, `${t('Thi thật')} ${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, x.ovr !== null ? `Overall ${x.ovr.toFixed(1)}` : null,
         x.kv !== null ? `Target ${x.kv.toFixed(1)}` : null, datCua(x) ? t('Đạt') : t('Chưa đạt')].filter(Boolean).join(' · '),

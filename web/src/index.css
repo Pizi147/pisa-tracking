@@ -495,6 +495,34 @@
   @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
   /* HV-LOC: đổi lọc / tìm — giữ bảng cũ, mờ nhẹ tới khi bản mới về (không khung chờ, không gỡ ô đang gõ). */
   .dang-tai-lai { opacity: 0.55; transition: opacity 120ms; }
+
+  /* PANEL-V10 (`thiet-ke/v10/panel-thong-tin.html` `.dd`, chủ SP 30/10): MỘT mẫu dòng điểm HV — lượt · 4 kỹ năng cột 64 px thẳng hàng · Overall mép phải.
+     ✓ / ✗ trước số (không ▲ ▼ ở điểm); đạt và hụt cùng màu ô Overall (`text-kq-bang` / `text-kq-duoi`, như `DiemKq`). 375: hai hàng, 4 cột chia đều. */
+  .dd { display: grid; grid-template-columns: 132px repeat(4, 64px) minmax(0, 1fr); align-items: baseline; column-gap: 4px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .dd .lu { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; font-size: 13px; font-weight: 500; color: var(--text-dim); }
+  .dd .tam-chu { border: 1px dashed var(--line-strong); border-radius: 4px; padding: 0 5px; font-size: 12px; line-height: 18px; color: var(--text-dim); }
+  .dd .k { white-space: nowrap; color: var(--text-dim); }
+  .dd .k i { margin-right: 4px; font-size: 12px; font-weight: 500; font-style: normal; color: var(--text-faint); }
+  .dd .k b { font-weight: 500; }
+  .dd .k.h b { font-weight: 700; }
+  .dd .k.thieu b { font-weight: 400; color: var(--text-faint); }
+  .dd .k.nhan { margin: 0 -4px; border-radius: 4px; padding: 0 4px; background: var(--accent-soft); }
+  .dd .k.cua { margin: -2px -4px; border: 2px solid var(--accent); border-radius: 4px; padding: 0 2px; background: var(--accent-soft); }
+  .dd .ov { justify-self: end; white-space: nowrap; font-size: 13px; font-weight: 500; color: var(--text-faint); }
+  .dd .ov b { margin: 0 2px 0 4px; font-size: 14px; font-weight: 700; }
+  @media (max-width: 639px) {
+    .dd { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 2px; }
+    .dd .lu { grid-column: 1 / 3; grid-row: 1; }
+    .dd .ov { grid-column: 3 / 5; grid-row: 1; }
+    .dd .k { grid-row: 2; }
+  }
+  /* Chip xu hướng (Tiến bộ kỹ năng · PA cải thiện) — ▲ ▼ CHỈ ở đây (tiến độ so lượt trước), ký hiệu luôn đi kèm chữ. */
+  .xh { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 3px; min-width: 92px; height: 22px; padding: 0 7px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface); font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; color: var(--text-dim); }
+  .xh.tang { color: rgb(var(--ok-rgb)); border-color: rgb(var(--ok-line-rgb)); }
+  .xh.giam { color: rgb(var(--bad-rgb)); border-color: rgb(var(--bad-line-rgb)); }
+  .xh.ct { color: rgb(var(--doing-rgb)); border-color: rgb(var(--doing-line-rgb)); }
+  .doi { white-space: nowrap; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+  .doi b { font-weight: 600; color: rgb(var(--chu-1-rgb)); }
 }
 
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */
