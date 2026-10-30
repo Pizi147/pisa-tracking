@@ -2,7 +2,7 @@
 
 Mockup: `thiet-ke/v9/phan-cong-gv.html` (chủ SP duyệt 30/10) · ảnh cặp trong thư mục này: trái mockup, phải web (1440 tối, 375 sáng; dữ liệu seed demo chi nhánh MB, không phải dữ liệu Cẩm Phả của mockup).
 Ảnh chụp bằng Playwright từ máy dev (QL = vai 2, CX = vai 24). Ảnh 375: web ép giao diện SÁNG (`pisa-giao-dien=light` + `colorScheme: light`, nền web đo được rgb(243, 245, 249)) — chụp lại 31/10 theo PTA rà.
-31/10 chiều (chủ SP duyệt ảnh, 2 chỉnh): chụp lại cap-k1 / k2 / k3-1440 và cap-k1-375 bằng `scripts/anh-cap.mjs` (k2, k3 thêm bước bấm). cap-k4 / k5a / k5b / k5c / k7-1440 giữ ảnh cũ: chỉ khác bề rộng cột (cột nút đã có sẵn ở các ảnh đó vì có dòng nháp / chờ đổi). Đo 375: hai bảng tổng hợp 341 px trong thẻ 343 px, cột GV 155 · FT 48 · Lớp thường 86 · Tổng 52, không cuộn ngang.
+31/10 chiều (chủ SP duyệt ảnh, 2 chỉnh): chụp lại cap-k1 / k2 / k3-1440 và cap-k1-375 bằng `scripts/anh-cap.mjs` (k2, k3 thêm bước bấm). cap-k4 / k5a / k5b / k5c / k7-1440 giữ ảnh cũ: chỉ khác bề rộng cột (k4 / k5 đã có cột nút vì có dòng nháp / chờ đổi; k7 CX không có cột nút, chỉ GVCN thành 184 px). Đo 375: hai bảng tổng hợp 341 px trong thẻ 343 px, cột GV 155 · FT 48 · Lớp thường 86 · Tổng 52, không cuộn ngang.
 
 ## Bảng truy vết khung → thành phần → ảnh
 
