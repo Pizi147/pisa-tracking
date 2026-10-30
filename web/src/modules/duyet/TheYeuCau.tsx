@@ -1,9 +1,11 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { NhanTrangThai, NutChon } from '../../ui/ui.tsx';
+import { DongDiem } from '../../ui/SoLieu.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -29,7 +31,7 @@ import { dich, t } from '@shared/i18n/index.ts';
  */
 type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' | 'sua' | 'sua-tra-loi' | 'rut' } | null;
 
-export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel, moSan }: {
+export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel, moSan, chanEl }: {
   yc: TheYeuCauDto;
   /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. `chu` = câu kết quả (chỉ khi chính người dùng vừa quyết).
    *  `huy` = máy chủ báo quyết định vừa rồi còn Huỷ được (Q-RL2c: cờ `coTheHuy` trả về sau Duyệt / Từ chối). */
@@ -48,6 +50,9 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   panel?: boolean;
   /** V8-CV: mở panel từ nút của dòng — Duyệt… (bước chọn tuần / ghi chú / lệnh chuyển lớp), Từ chối…, Trả lời… mở sẵn ô tương ứng. */
   moSan?: 'duyet' | 'tu-choi' | 'tra-loi';
+  /** DUYET-QL (mockup v10 #cv): chân dính của panel duyệt — nút quyết (và nút gửi của ô đang mở) vẽ vào đây qua portal, thân chỉ còn nội dung.
+   *  `undefined` = thẻ tự vẽ nút như cũ; `null` = chân chưa gắn (một khung hình). */
+  chanEl?: HTMLElement | null;
 }) {
   const toast = useToast();
   const { homNay, ngan } = useNgayNghiepVu();
@@ -83,7 +88,12 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [moPanelSua, setMoPanelSua] = useState(false);
   const [lyDoKtd, setLyDoKtd] = useState<string>('');
 
-  useEffect(() => { if (o && o.loai !== 'tuan' && o.loai !== 'rut') oNhap.current?.focus(); }, [o]);
+  useEffect(() => {
+    if (!o || o.loai === 'tuan' || o.loai === 'rut') return;
+    oNhap.current?.focus();
+    /* DUYET-QL: chân dính che đáy thân — đưa ô vừa mở ra giữa vùng nhìn. */
+    if (chanEl !== undefined) oNhap.current?.scrollIntoView({ block: 'center' });
+  }, [o]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const moO = (loai: NonNullable<O>['loai'], nut: HTMLButtonElement, chuDau = '') => {
     nutMo.current = nut; setO({ loai }); setChu(chuDau); setDaBam(false); setLoiMay(null);
@@ -192,6 +202,34 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     : !chu.trim() ? t('Chưa điền')   // T7 (PR-MTa): không tối thiểu ký tự
     : o.loai === 'sua' && !thuHoi && chu.trim().length < 10 ? t('Mô tả cần ít nhất 10 ký tự') : null;
   const moTaPhu = [!gon && yc.hocVien, !gon && yc.lop, yc.phu].filter(Boolean).join(' · ');
+  /* DUYET-QL: ở chân panel thứ tự như mockup (Từ chối… · Duyệt chính bên phải); thẻ tự vẽ giữ Duyệt trước. */
+  const btnChan = chanEl !== undefined ? 'btn min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0';
+  const nutDuyet = (
+    <button key="d" type="button" className={`${btnChan} btn-primary`} disabled={busy || !!o}
+      aria-expanded={o?.loai === 'tuan' || o?.loai === 'ghi-chu'}
+      onClick={(e) => duyet(e.currentTarget)}>{busy && !o ? t('Đang lưu…') : duyetCoBuoc ? t('Duyệt…') : t('Duyệt')}</button>
+  );
+  const nutTuChoi = (
+    <button key="tc" type="button" className={btnChan} disabled={busy || !!o} aria-expanded={o?.loai === 'tu-choi'}
+      onClick={(e) => moO('tu-choi', e.currentTarget)}>{t('Từ chối…')}</button>
+  );
+  const nutQuyet = !coNut ? null : yc.kieuNut === 'duyet-tu-choi' ? <>{chanEl !== undefined ? [nutTuChoi, nutDuyet] : [nutDuyet, nutTuChoi]}</> : yc.kieuNut !== 'tra-loi' ? null : <>
+    {onThemPa && typeof yc.duLieu?.caseId === 'number' && chanEl !== undefined && (
+      <button type="button" className={btnChan} onClick={() => onThemPa(yc.duLieu!.caseId as number)}>{t('+ Thêm PA')}</button>
+    )}
+    <button type="button" className={`${btnChan} btn-primary`} disabled={busy || !!o} aria-expanded={o?.loai === 'tra-loi'}
+      onClick={(e) => moO('tra-loi', e.currentTarget)}>{t('Trả lời…')}</button>
+    {onThemPa && typeof yc.duLieu?.caseId === 'number' && chanEl === undefined && (
+      <button type="button" className={btnChan} onClick={() => onThemPa(yc.duLieu!.caseId as number)}>{t('+ Thêm PA')}</button>
+    )}
+  </>;
+  const nutO = o && <>
+    <button type="button" className={btnChan} onClick={dongO} disabled={busy}>{o.loai !== 'tuan' && o.loai !== 'rut' && chu.trim() ? t('Huỷ thay đổi') : t('Đóng')}</button>
+    <button type="button" className={`${btnChan} ${o.loai === 'rut' ? 'btn-danger' : 'btn-primary'}`} onClick={guiO} disabled={busy}>
+      {busy ? t('Đang gửi…') : o.loai === 'tu-choi' ? t('Gửi từ chối') : o.loai === 'tra-loi' ? t('Gửi trả lời') : o.loai === 'tuan' ? t('Trả lời đề nghị dời')
+        : o.loai === 'rut' ? t('Rút đề xuất') : o.loai === 'sua' || o.loai === 'sua-tra-loi' ? t('Lưu') : t('Duyệt')}
+    </button>
+  </>;
 
   return (
     <article id={`the-${yc.id}`} data-the-id={yc.id} aria-label={`${dich(yc.nhanPhanLoai)}: ${dich(yc.tieuDe)}`}
@@ -219,6 +257,12 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${gon || panel ? '' : 'sm:pl-[6.5rem]'}`}>
             <div ref={khungDong} className={panel ? 'rounded-lg bg-[color:var(--surface-2)] px-3 py-2.5' : moHet ? '' : 'line-clamp-2'}>
               {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{dich(d)}</p>)}
+              {/* DUYET-QL: điểm lượt làm em vào SOS (`diemHv` máy chủ đã gắn — 0 câu thêm), cùng mẫu dòng điểm mọi panel. */}
+              {panel && yc.diemHv && (
+                <dl className="m-0 mt-2 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
+                  <dt className="pt-1.5 text-[13px] text-dim">{t('Điểm')}</dt><dd className="m-0 min-w-0"><DongDiem d={yc.diemHv} /></dd>
+                </dl>
+              )}
             </div>
             {(biCat || moHet) && !panel && (
               <button type="button" className="mt-0.5 min-h-[44px] text-[12px] text-[color:var(--accent-strong)] hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
@@ -276,24 +320,9 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               {t('Bạn tự gửi · tự duyệt được')}
             </span>
           )}
-          {(coNut || yc.mo) && (
+          {(chanEl === undefined && nutQuyet || (!gon && yc.mo)) && (
             <div className="flex flex-wrap gap-1.5 sm:justify-end">
-              {coNut && yc.kieuNut === 'duyet-tu-choi' && <>
-                <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!o}
-                  aria-expanded={o?.loai === 'tuan' || o?.loai === 'ghi-chu'}
-                  onClick={(e) => duyet(e.currentTarget)}>{busy && !o ? t('Đang lưu…') : duyetCoBuoc ? t('Duyệt…') : t('Duyệt')}</button>
-                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'tu-choi'}
-                  onClick={(e) => moO('tu-choi', e.currentTarget)}>{t('Từ chối…')}</button>
-              </>}
-              {coNut && yc.kieuNut === 'tra-loi' && <>
-                <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'tra-loi'}
-                  onClick={(e) => moO('tra-loi', e.currentTarget)}>{t('Trả lời…')}</button>
-                {onThemPa && typeof yc.duLieu?.caseId === 'number' && (
-                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onThemPa(yc.duLieu!.caseId as number)}>
-                    {t('+ Thêm PA')}
-                  </button>
-                )}
-              </>}
+              {chanEl === undefined && nutQuyet}
               {!gon && yc.mo && <Link to={yc.mo} className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0">{t('Mở ›')}</Link>}
             </div>
           )}
@@ -330,15 +359,10 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             </div>
           )}
           {loiMay && <p role="alert" className="m-0 text-[12px] text-late">{loiMay}</p>}
-          <div className="flex flex-wrap justify-end gap-1.5">
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={dongO} disabled={busy}>{o.loai !== 'tuan' && o.loai !== 'rut' && chu.trim() ? t('Huỷ thay đổi') : t('Đóng')}</button>
-            <button type="button" className={`btn btn-sm ${o.loai === 'rut' ? 'btn-danger' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={guiO} disabled={busy}>
-              {busy ? t('Đang gửi…') : o.loai === 'tu-choi' ? t('Gửi từ chối') : o.loai === 'tra-loi' ? t('Gửi trả lời') : o.loai === 'tuan' ? t('Trả lời đề nghị dời')
-                : o.loai === 'rut' ? t('Rút đề xuất') : o.loai === 'sua' || o.loai === 'sua-tra-loi' ? t('Lưu') : t('Duyệt')}
-            </button>
-          </div>
+          {chanEl === undefined && <div className="flex flex-wrap justify-end gap-1.5">{nutO}</div>}
         </div>
       )}
+      {chanEl && createPortal(o ? nutO : nutQuyet, chanEl)}
       {!o && loiMay && <p role="alert" className="m-0 mt-2 text-[12px] text-late">{loiMay}</p>}
       {moPanelSua && yc.hocVienId != null && yc.loai === 'sua_thong_tin' && (
         <DeXuatSuaPanel studentId={yc.hocVienId} studentName={yc.hocVien ?? ''} lop={yc.lop}
