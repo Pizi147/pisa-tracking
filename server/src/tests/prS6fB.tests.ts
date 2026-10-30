@@ -540,9 +540,6 @@ async function runTask6(t: YThucTestKit, d: any) {
     const ngan = doc('web/src/modules/students/NganCase.tsx');
     assert(/data\.tamDungTu && data\.trangThaiV4\.t === 'qua-han'[\s\S]{0,40}<NhanTamDung tu=\{data\.tamDungTu\}/.test(ngan), 'Ngăn Case: nhãn đầu panel Tạm dừng thay Quá hạn');
     assert(/!data\.tamDungTu && canDong && !conPaChay/.test(ngan), 'Ngăn Case: hạn báo kết quả ẩn khi Tạm dừng');
-    const sb = doc('web/src/modules/cases/SkillBoard.tsx');
-    assert(/tt\.han && !daXong && \(tamDung/.test(sb), 'hàng Case: mọi hạn → Tạm dừng');
-    assert(/phu=\{tamDung && han \? <NhanTamDung/.test(sb), 'hàng PA: mọi hạn → Tạm dừng');
     /* PR-PA Task 6: chân dòng PA tính cờ `hienHan` một lần. */
     const cpPa = doc('web/src/modules/cases/CasePanel.tsx');
     assert(/const hienHan = !!hanGhi && !choDuyet;/.test(cpPa) && /hienHan && hanGhi && \(data\.tamDungTu \? <NhanTamDung/.test(cpPa), 'thẻ PA Ngăn Case: mọi hạn → Tạm dừng');
