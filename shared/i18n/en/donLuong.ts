@@ -16,4 +16,6 @@ export const EN_DON_LUONG = {
   'Lớp thường chỉ có đợt Progress Test, Checkpoint và Final Test.': 'Regular classes only have Progress Test, Checkpoint and Final Test rounds.',
   /* Chủ SP 30/10 câu 1 — hồ sơ lượt */
   'đã vắng {tuan} · khôi phục {ngay}': 'absent {tuan} · restored {ngay}',
+  /* K8 — chuông khi Case đổi chủ theo lớp mới (cùng mẫu "Đổi người…" của R1-NO-CU) */
+  'Phụ trách Case {mon} · {ten}': 'You own the Case {mon} · {ten}',
 } satisfies Record<string, Dich>;
