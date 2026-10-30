@@ -726,6 +726,8 @@
   .xh.ct { color: rgb(var(--doing-rgb)); border-color: rgb(var(--doing-line-rgb)); }
   .doi { white-space: nowrap; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text-dim); }
   .doi b { font-weight: 600; color: rgb(var(--chu-1-rgb)); }
+  /* BANG-EM-GON (v10 `#be` `.tvv`): tên TVV dưới tên HV — chữ phụ mờ 11 px / 400 (chủ SP 30/10 "nhỏ hơn mockup một nấc", ngoại lệ G13 riêng dòng này). */
+  .tvv { white-space: nowrap; font-size: 11px; font-weight: 400; line-height: 1.35; color: var(--text-faint); }
 }
 
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */

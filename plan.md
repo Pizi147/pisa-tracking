@@ -272,6 +272,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **QUYEN-THEO-CN:** quyền sửa liên hệ (`coONhapLienHe`) và một số cờ Lưu trữ xét theo VAI toàn tài khoản, không theo chi nhánh (`luuTru.ts:122`, `students.ts:776`): QL chi nhánh A kiêm GVCN chi nhánh B vẫn đổi được liên hệ em ở B (web cũng vậy). Luật cũ — hỏi chủ SP có cần xét vai theo chi nhánh của em không. (Nguồn: rà #746.)
 - **MA-MO-COI-THE (rà #755):** `TheKyNangDs`, `TheGon`, `TheKyNang` nay mồ côi; phép kiểm `prS3f`, `prUxfB` (6), `prVaiB` đang soi `TheKyNang.tsx` (canh mã chết) → xoá cả mã lẫn phép (CN-3 / DON-MA-2). Bỏ `mo-viec` khỏi `THAM_SO_DICH` khi lối chuyển hướng ổn.
 - **DUYET-QL a11y (rà #754, nếu chưa sửa trong PR):** đóng ô Từ chối / Trả lời trả focus về nút còn trên trang (`TheYeuCau.tsx:116`).
+- **[XM-BE-1] BANG-EM-GON thẻ 375:** mockup v10 `#be` 375 vẽ dòng điểm `DongDiem` (lượt · 4 kỹ năng · Overall); PR giữ lưới 5 ô v8 (ô ✓ / ✗ mới) vì `DongDiem` mất W1 · W2, "vắng …" và bấm W / S → điểm thành phần. Hỏi chủ SP: giữ lưới hay thêm hai thứ đó vào `DongDiem`.
 - **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
 
 ### 30/10 (tối) — chủ SP duyệt mockup PANEL-V10 #723 (KHÔNG mockup lại; chỉnh ghi ở đây, kế hoạch code phải theo)
