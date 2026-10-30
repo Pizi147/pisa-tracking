@@ -65,6 +65,7 @@ import * as transitionSvc from '../classes/transition.ts';
 import * as lenhSvc from '../classes/lenhChuyen.ts';
 import * as phanCongGvSvc from '../classes/phanCongGv.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
+import * as banGiaoGvSvc from '../classes/banGiaoGv.ts';
 import * as dichSvc from '../dich/dich.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
@@ -1997,6 +1998,33 @@ api.post('/lenh-chuyen/:id/xac-nhan', requireAuth, wrap((req) => {
 api.put('/lenh-chuyen/:id/ban-giao', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   banGiaoSvc.suaBanGiao(principalOf(req), pInt(req, 'id'), String(req.body?.nhanXetChung ?? ''));
+  return { ok: true };
+}));
+/* PR-B: nhận xét chung của GVCN lưu nháp khi rời ô (chưa xác nhận) — Xác nhận vẫn kiểm ≥ 15 ký tự. */
+api.put('/lenh-chuyen/:id/nhan-xet-nhap', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoSvc.luuNhapNhanXet(principalOf(req), pInt(req, 'id'), req.body?.nhanXetChung);
+  return { ok: true };
+}));
+
+/** PR-B: bàn giao khi đổi GV — phiếu, góp ý mỗi em mỗi cột (lưu khi rời ô), nhận xét chung (tuỳ chọn), xác nhận. */
+api.get('/ban-giao-gv/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return banGiaoGvSvc.phieuBanGiaoGv(principalOf(req), pInt(req, 'id'));
+}));
+api.put('/ban-giao-gv/:id/gop-y', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoGvSvc.ghiGopYGv(principalOf(req), pInt(req, 'id'), req.body ?? {});
+  return { ok: true };
+}));
+api.put('/ban-giao-gv/:id/nhan-xet', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoGvSvc.ghiNhanXetChungGv(principalOf(req), pInt(req, 'id'), req.body?.nhanXetChung);
+  return { ok: true };
+}));
+api.post('/ban-giao-gv/:id/xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  banGiaoGvSvc.xacNhanBanGiaoGv(principalOf(req), pInt(req, 'id'));
   return { ok: true };
 }));
 

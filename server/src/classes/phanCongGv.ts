@@ -20,9 +20,11 @@ import { allProgrammes, programmeByCode, programmeOfClass } from '../normal/regu
 import { classProgressMany } from './schedule.ts';
 import { caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi } from '../cases/owner.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
+import { doiMocViecTheoDoi, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi } from './banGiaoGv.ts';
 
 export type LuuLopVao = { classId: number; slots: TeacherSlot[]; phienBan?: string; banGiao?: Record<string, boolean> };
-export type KetQuaLuu = { lo: number | null; lop: { classId: number; cho: boolean; soO: number }[] };
+/** `viec` = số việc bàn giao mới (PR-B). */
+export type KetQuaLuu = { lo: number | null; lop: { classId: number; cho: boolean; soO: number }[]; viec: number };
 /** Một lần lưu tối đa bấy nhiêu lớp — vừa ngân sách 10 s một lời gọi Netlify (PTA 30/10; đo `TRAN_GHI_LO.luuPhanCong8Lop`). */
 const TOI_DA_LOP = 8;
 
@@ -170,15 +172,17 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     const g = new GhiDao(conn);
     const luc = nowIso();
     const moi: number[] = [];
-    const kq = theoDoiMoi(g, ['doi_phan_cong', 'teacher_assignments', 'sos_case_history', 'notifications'], () => lop.map((l) => {
+    let viec = 0;
+    const kq = theoDoiMoi(g, ['ban_giao_gv_mon', 'ban_giao_gv', 'doi_phan_cong', 'teacher_assignments', 'sos_case_history', 'notifications'], () => lop.map((l) => {
       const khoa = [...new Set(l.doi.map((d) => d.khoa))].filter((k) => sau.cho.get(l.classId)!.some((c) => c.khoa === k));
+      const thay = sau.cho.get(l.classId)!.filter((c) => khoa.includes(c.khoa)).map((c) => c.id as number);
       if (khoa.length) {
         const dk = `class_id = ? AND trang_thai = 'cho' AND khoa IN (${inHang(khoa.length)})`;
         g.sua('doi_phan_cong', dk, l.classId, ...khoa);
         conn.prepare(`UPDATE doi_phan_cong SET trang_thai = 'huy', huy_luc = ?, huy_boi = ?, ly_do_huy = 'thay bằng lần đổi sau' WHERE ${dk}`)
           .run(luc, p.userId, l.classId, ...khoa);
       }
-      const rows: DongDoi[] = l.doi.map((d) => {
+      const rows: (DongDoi & { taoBanGiao: number })[] = l.doi.map((d) => {
         const taoBanGiao = d.nguoiCu !== null && d.nguoiMoi !== null && (l.vao.banGiao?.[d.khoa] ?? true) ? 1 : 0;
         const id = Number(conn.prepare(
           `INSERT INTO doi_phan_cong (lo, class_id, khoa, nguoi_cu, nguoi_moi, hieu_luc, trang_thai, tao_ban_giao, xem_den, tao_boi, tao_luc, ap_luc)
@@ -186,8 +190,11 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
         ).run(moi[0] ?? null, l.classId, d.khoa, d.nguoiCu, d.nguoiMoi, ngay, homNay ? 'da_ap' : 'cho', taoBanGiao,
           homNay && laCapBanGiao(d) ? xemDen(ngay) : null, p.userId, luc, homNay ? luc : null).lastInsertRowid);
         moi.push(id);
-        return { id, khoa: d.khoa, nguoi_cu: d.nguoiCu, nguoi_moi: d.nguoiMoi };
+        return { id, khoa: d.khoa, nguoi_cu: d.nguoiCu, nguoi_moi: d.nguoiMoi, taoBanGiao };
       });
+      /* PR-B: việc bàn giao theo các dòng vừa chèn (tạo / gộp cột / đổi người nhận / huỷ khi đổi về người cũ). */
+      viec += dongBoViecBanGiao(p, { classId: l.classId, ct: l.ct, slotsTruoc: sau.active.get(l.classId)!.map(slotCua), thay, duocXep: xepNho.get(l.branchId),
+        doi: rows.map((r) => ({ id: r.id, khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi, hieuLuc: ngay, taoBanGiao: r.taoBanGiao === 1 })) }, g);
       /* Luôn áp ở "hôm nay" (kể cả không ô nào đổi) — đúng đường cũ: dòng môn gộp cũ hết việc thì kết thúc như mọi lần lưu. */
       const r = homNay ? apDoiLop(p, l.classId, rows, ngay, { g, duocXep: xepNho.get(l.branchId), via: l.full ? 'quan_ly' : 'gvcn',
         lop: { branch_id: l.branchId, code: l.code, ct: l.ct, kyNang: l.kyNang } }) : null;
@@ -209,7 +216,7 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
       g.boKhongDoi('sos_cases');
       luuGhiDao(conn, { loai: 'phan_cong.luu', bang: 'doi_phan_cong', id: lo, nguoi: p.userId, ghi: g });
     }
-    return { lo, lop: kq };
+    return { lo, lop: kq, viec };
   });
 }
 
@@ -346,6 +353,7 @@ export function doiMocCho(p: Principal, ids: unknown, hieuLuc: HieuLucVao | unde
     const rid = rows.map((r) => r.id as number);
     const dk = `id IN (${inHang(rid.length)})`;
     g.sua('doi_phan_cong', dk, ...rid);
+    doiMocViecTheoDoi(rid, ngay, g);
     if (homNay) {
       theoDoiMoi(g, ['teacher_assignments', 'sos_case_history', 'notifications'], () => {
         for (const classId of new Set(rows.map((r) => r.class_id as number))) {
@@ -374,6 +382,7 @@ export function huyCho(p: Principal, ids: unknown): { dao: number } {
     const g = new GhiDao(conn);
     g.sua('doi_phan_cong', dk, ...rid);
     conn.prepare(`UPDATE doi_phan_cong SET trang_thai = 'huy', huy_luc = ?, huy_boi = ?, ly_do_huy = 'Huỷ lịch đổi' WHERE ${dk}`).run(nowIso(), p.userId, ...rid);
+    huyViecTheoDoi(rid, g);   // PR-B: huỷ cả việc bàn giao của lịch đó (góp ý đã viết giữ làm lịch sử)
     return { dao: luuGhiDao(conn, { loai: 'phan_cong.huy', bang: 'doi_phan_cong', id: rid[0], nguoi: p.userId, ghi: g }) };
   });
 }
@@ -398,6 +407,11 @@ export function hoanTacLuu(p: Principal, o: { lo?: unknown; dao?: unknown }): vo
     if (conn.prepare(`SELECT 1 FROM doi_phan_cong WHERE trang_thai IN ('cho', 'da_ap') AND id > ? AND (${oDong.map(() => '(class_id = ? AND khoa = ?)').join(' OR ')}) LIMIT 1`)
       .get(Math.max(...dong.map((d) => d.id as number)), ...oDong.flatMap((d) => [d.class_id, d.khoa]))) {
       throw conflict('Không hoàn tác được: ô này đã có lần đổi mới hơn — sửa trực tiếp ở bảng phân công.');
+    }
+    /* PR-B: việc / cột bàn giao vừa tạo đã có góp ý, hoặc việc vừa tạo đã có cột của lần lưu sau → không đảo (không xoá chữ người khác vừa viết). */
+    const taoCua = (bang: string) => muc.filter((m) => m.bang === bang && m.k === 'tao').flatMap((m) => m.truoc.map((d) => Number(d.__r)));
+    if (!hoanTacViecDuoc(taoCua('ban_giao_gv'), taoCua('ban_giao_gv_mon'))) {
+      throw conflict('Không hoàn tác được: việc bàn giao vừa tạo đã có góp ý — sửa trực tiếp ở bảng phân công.');
     }
     daoLai(conn, g, p.userId);
     writeAudit({ actorUserId: p.userId, action: 'class.assign.hoan_tac', entityType: 'class', entityId: dong[0].class_id,

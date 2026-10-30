@@ -741,6 +741,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/hoc-vien-lop/ids': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/hoc-vien-lop/theo-vai': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/lenh-chuyen/ban-giao': 'PanelViec (OV-13b) — chỉ khi bấm việc',
+    '/ban-giao-gv/': 'PanelViec (PR-B) — panel bàn giao đổi GV, chỉ khi bấm việc',
     '/lo-trinh/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/mgmt-tasks': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/mgmt-tasks/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
