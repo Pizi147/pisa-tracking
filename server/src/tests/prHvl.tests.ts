@@ -207,7 +207,10 @@ export async function runPrHvlTests(t: YThucTestKit) {
   });
 
   check('PR-HVL (2) · số câu SQL của chiTietCaseMo cố định: 3 Case và mọi Case mở cùng số câu (một câu mỗi bảng theo lô)', () => {
-    const mo = moTatCa();
+    /* CN: tự dựng — mẫu 3 Case đầu phải có Case có PA mốc "đến MT" (`until_exam`: thêm câu `mtCuoiCuaLoTrinh`) như tập mọi Case; trước dựa vào thứ tự
+       Case do tệp khác để lại. */
+    const coMocMt = new Set((conn.prepare(`SELECT DISTINCT case_id FROM case_interventions WHERE moc_quy_che = 'until_exam' AND status != 'cancelled'`).all() as any[]).map((r) => r.case_id));
+    const mo = moTatCa().sort((a: any, b: any) => Number(coMocMt.has(b.id)) - Number(coMocMt.has(a.id)));
     assert(mo.length > 6, 'cần nhiều Case');
     const dem = (ds: any[]) => { const a = soCauSql(); caseLop.chiTietCaseMo(ds); return soCauSql() - a; };
     const it = dem(mo.slice(0, 3)); const tat = dem(mo);

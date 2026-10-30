@@ -95,6 +95,7 @@ export async function runPrMtTests(t: YThucTestKit) {
 
   const mig: any = await import('../migrate/prMt.ts');
   const { default: Database } = await import('libsql');
+  const banChup: any = await import('../loTrinh/banChup.ts');
   check('PR-MT (2) · migratePrMt: DB cũ thêm cột lich_su mặc định 0, chạy lại không đổi gì; DB từ schema.sql đã có cột (T78)', () => {
     const mem = new Database(':memory:');
     mem.exec('CREATE TABLE assessment_attempts (id INTEGER PRIMARY KEY, attempt_no INTEGER)');
@@ -116,6 +117,8 @@ export async function runPrMtTests(t: YThucTestKit) {
     const them = (n: number, status: string) => t.conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, status, created_at)
       VALUES (?,?,?, 'mock', ?, ?)`).run(cid, sid, n, status, now);
     them(1, 'done'); them(2, 'cancelled'); them(3, 'planned');
+    /* CN-2: lộ trình đóng phải có bản chụp (bất biến PR-TK) — dựng thẳng thì ghi luôn, như mọi đường đóng thật. */
+    banChup.ghiBanChup(t.conn, [cid], { lyDo: 'sua_tay', ngay: now });
     const nhay = mig.lotrinhNhaySo(t.conn).find((x: any) => x.hv === 'PRMT-NHAY');
     assert(nhay?.so === 'MT1, MT3', JSON.stringify(nhay));
     const huy = mig.luotHuyGiua(t.conn).filter((x: any) => x.hv === 'PRMT-NHAY');

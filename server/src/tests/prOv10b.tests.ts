@@ -114,11 +114,14 @@ export async function runPrOv10bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV10b-5 · GVCN (có `student.edit_info`) lưu được qua API; ô nhập chỉ hiện cho QL / Quản trị / TVV / CX / Admin', () => {
+  /* QUYEN-LIEN-HE (luật chủ SP 13/10 nay ở máy chủ): GVCN gửi thẳng API đổi liên hệ → 403 (trước: lưu được); TVV / QL lưu như cũ. */
+  check('OV10b-5 · QUYEN-LIEN-HE: GVCN đổi liên hệ qua API → 403, TVV lưu được; ô nhập chỉ hiện cho QL / Quản trị / TVV / CX / Admin', () => {
     thu(() => {
       const v = vai();
-      students.updateStudent(v.GVCN, em[0], { parentPhone: '0987 112 334' });
-      assert(hs(em[0]).parent_phone === '0987 112 334', 'GVCN lưu qua API');
+      let e: any = null; try { students.updateStudent(v.GVCN, em[0], { parentPhone: '0987 112 334' }); } catch (x) { e = x; }
+      assert(e?.status === 403 && hs(em[0]).parent_phone !== '0987 112 334', `GVCN qua API: ${e?.status}`);
+      students.updateStudent(v.TVV, em[0], { parentPhone: '0987 112 334' });
+      assert(hs(em[0]).parent_phone === '0987 112 334', 'TVV lưu qua API');
       for (const k of ['TVV', 'CX', 'QL', 'QT', 'ADMIN'] as const) assert(profile.studentProfile(v[k], em[0]).viewer.nhapLienHe === true, `${k} phải thấy ô nhập`);
       for (const k of ['GVCN', 'GVBM'] as const) assert(profile.studentProfile(v[k], em[0]).viewer.nhapLienHe === false, `${k} không thấy ô nhập`);
     });

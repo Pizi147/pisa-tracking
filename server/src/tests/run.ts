@@ -34,21 +34,72 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
 
 /*
- * CHIA NHÓM (GON-MA-2): `chayNhom.ts` chạy N bản tệp này song song, mỗi bản `PISA_NHOM=k/N`, database + thư mục tệp riêng.
- * Nhóm 1 chạy MỌI tệp `*.tests.ts` theo đúng thứ tự cũ, trừ các tệp trong `TACH`; các tệp `TACH` chạy ở nhóm 2…N (chia lần lượt).
- * Chậm là do DB phình dần (nhóm 1 cuối bộ ~9× dòng so với DB vừa seed), nên tệp chạy ở DB nhỏ nhanh hơn nhiều. Nhưng nhiều tệp dựa
- * vào dữ liệu tệp trước để lại (DL-2 `prDl` còn so mã băm cố định của trạng thái tuần tự) → chỉ tách tệp ĐÃ THỬ: đứng SAU `prDl`,
- * xanh khi chạy ở nhóm 2 VÀ bỏ khỏi nhóm 1 không làm tệp sau đỏ. Phần viết thẳng trong tệp này (~9 s) chạy ở mọi nhóm (mục sau
- * dùng lại hằng số của nó), chỉ nhóm 1 in + đếm. Không có `PISA_NHOM` = chạy hết như cũ.
- * Muốn tách thêm: `PISA_TACH=<danh sách cũ>,<tệp> npm run check` xanh, rồi thêm vào `TACH`.
+ * CN-1/CN-2 · DB GỐC: tệp "độc lập" chạy trên bản chép DB chụp NGAY SAU seed (`dbGoc.ts`) — không thấy dữ liệu tệp khác để lại, ghi gì
+ * cũng bỏ khi xong, nên chạy riêng (`PISA_CHI_TEP`) = chạy trong bộ và chia nhóm tuỳ ý. Tệp đứng trước prTk thì sau tệp có thêm phép
+ * `[BB] <tệp>` (bất biến soi toàn DB của prTk chạy trên dữ liệu tệp đó). MỌI tệp là độc lập (tệp mới cũng vậy — tự dựng dữ liệu), trừ
+ * `GIU_CHUOI`: chạy theo thứ tự cũ trên DB chuỗi của nhóm 1 (seed + phần viết thẳng của tệp này + các tệp chuỗi trước nó).
+ * `PISA_DOC_LAP=a,b` thay danh sách: CHỈ các tệp đó độc lập (thử chuyển tệp mà không sửa mã).
  */
 const [NHOM, SO_NHOM] = (process.env.PISA_NHOM ?? '1/1').split('/').map(Number);
-/** `PISA_TACH=a,b` thay danh sách dưới — để thử tách thêm tệp mà không sửa mã. */
-const TACH = process.env.PISA_TACH ? process.env.PISA_TACH.split(',') : [
-  'prMt0', 'prHk2', 'prTd3', 'prGop', 'prOv5a', 'prOv8a', 'prOv12c', 'prOv12h', 'prOv12d', 'prOv13a', 'prOv15d', 'prOv15e', 'prOv15h1',
-  'prTd7b', 'prSl2', 'prSvYtTvv', 'prSvSo1', 'prSvTvvViec',
-];
-const nhomCua = (ten: string) => (SO_NHOM > 1 && TACH.includes(ten) ? 2 + (TACH.indexOf(ten) % (SO_NHOM - 1)) : 1);
+const GIU_CHUOI = new Set([
+  'dbGoc',            // so DB chuỗi với bản gốc (DG-1)
+  'prSeedUx',         // chỉ đọc bộ demo ngay sau seed — đứng đầu chuỗi
+  'anToan', 'prToc',  // tiến trình con đọc tệp DB_PATH (không phải bản gốc)
+  /* Phép so "đường mới = đường cũ" trên TOÀN DB: giữ ở chuỗi để còn soi dữ liệu các tệp chuỗi + phần viết thẳng (rủi ro #734). prEn thì
+     KHÔNG: dữ liệu chuỗi chỉ thêm chữ thử do phép kiểm tự ghi ("thử sos", "Ghi nhận riêng để kiểm quyền…") → EN-TB / EN-VIEC đỏ oan;
+     chữ giao diện thật đã có đủ trong seed (bản gốc). */
+  'prS3CauCon',
+  /* Đỏ trên DB gốc — dựa vào dữ liệu tệp khác để lại; CN-2 chưa sửa (tệp nhẹ, ghi trong PR): */
+  'sosV3', 'prSos',   // Case seed chưa có Mô tả → không xác nhận được PA
+  'prYt4', 'prUx1', 'keHoachTest', 'xoaDuLieu', 'prVaiB', 'prGop', 'prOv12c', 'prOv13a',
+  'luatMayChu',       // keHoachTest dùng lượt nó tạo (cùng sosV3) — dò chia đôi CN-2
+  'prChuongNhe',      // C1 so tỷ lệ dòng đọc (đường mới < đường đủ ÷ 3): trên bản gốc nhỏ 166 vs 489 ÷ 3 — cần DB cỡ chuỗi
+]);
+const DOC_LAP_ENV = process.env.PISA_DOC_LAP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
+const docLapCua = (ten: string) => (DOC_LAP_ENV ? DOC_LAP_ENV.includes(ten) : !GIU_CHUOI.has(ten));
+/*
+ * Thời gian mỗi tệp độc lập (ms, làm tròn 100 — đo ở check đầy đủ CN-2, `lan-cuoi.json`) để chia tham lam vào N nhóm; tệp mới chưa có → 1 000.
+ * Nhóm 1 khởi đầu bằng CHUOI_MS (seed + phần viết thẳng + các tệp `GIU_CHUOI`).
+ */
+const CHUOI_MS = 76000;
+const THOI_GIAN_MS: Record<string, number> = {
+  prLop1Lop: 7500,
+  banChinh: 36200, tongQuan: 33000, prDeploy: 10600, prTd7b: 7200, prSvTqGv: 6800, prW1GopTaiLai: 4000, prOv13q: 3800, prMt: 3500, yThuc: 3400,
+  prQuetTheoKy: 3400, prGv: 3200, prPb2b: 3000, prS6fA: 2900, prEn: 2600, prOv13k: 2400, prVaiA: 2300, prTd3: 2300, prOv13m: 2300, prCt: 2100,
+  luatMayChu: 2000, prHk2: 2000, prDonA: 1900, prNv: 1800, prTk: 1800, hocVienLop: 1700, prS6fB: 1700, prOv15e: 1700, prUiPhanTich: 1600,
+  prLt3: 1500, prTd2bc: 1500, prOv12d: 1500, prSvYtTvv: 1500, prHvl: 1400, prMt0: 1400, prQrl2cDuyet: 1400, prUxfA: 1300, prCl: 1300,
+  prLocHienTai: 1300, chamDiem: 1200, phanTich: 1200, prLt2b: 1200, prSo: 1200, prPa: 1200, prOv12e: 1200, prOv13j: 1200, prSvSo2: 1200, prLcb: 1100,
+  prOv15e2: 1100, prS5JsonEach: 1100, hoSoHocVien: 1000, lenLop: 1000, prS3Chu: 1000, prDl: 1000, prOv2a: 1000, prSvSExpert: 1000, prXetLai: 1000,
+  congViec: 900, prS4f: 900, prOv13h: 900, prOv13p: 900, prOv15c: 900, prOv15h1: 900, prSvTvvViec: 900, prLt2a: 800, prPb2a: 800, prMta: 800,
+  prThungRac: 800, prCt2: 800, prOv8b: 800, prOv10b: 800, prOv11g: 800, prOv15f: 800, prSl1: 800, prSl2: 800, prSvNxCase: 800, prHoanTacXn: 800,
+  prChuongNhe: 800, nenGiaoDien: 700, prUxG: 700, prOv11c: 600, panelUx3: 600, suaLoiNong: 600, prMon: 600, prXuat: 600, prMtb: 600, prBv: 600,
+  prKv: 600, prOv12f: 600, prOv13o: 600, prOv14c: 600, prOv15g: 600, prOv15i1: 600, prBaoCaoLichSu: 600, prPhanCongGv: 600, prDuyet: 500,
+  prXlmt: 500, prSl: 500, prQrl2cPa: 500, prQtTk: 500, prLc: 500, prOv4a: 500, prOv10c: 500, prOv12a: 500, prOv13b: 500, prOv13i: 500, prOv13g: 500,
+  prPtGvOverall: 500, prSvSo1: 500, prSvLop: 500, prUiHoSoLop: 500, prKetPet: 500, prS4GioiHanQuet: 500, dieuChinhPa: 400, form: 400, prS3f: 400,
+  prS5fA: 400, prLuiA2: 400, prOv5a: 400, prOv8a: 400, prUx2: 400, prOv13f: 400, prOv15h2: 400, prLtSv: 400, prCvLoi: 400, prUiCvTvv: 400,
+  prUiHvLop: 400, prViecDungVai: 400, prS2LichKyNang: 400, prOv11f: 300, prHsm: 300, prUxfB: 300, prDonB: 300, prQu: 300, prGva: 300, prK26: 300,
+  fixChotLenFt: 300, prMtGon: 300, prVn3: 300, prVn4: 300, prOv3a: 300, prOv7b: 300, prOv11e: 300, prOv11b: 300, prOv11d: 300, prOv12h: 300,
+  prOv13e: 300, prHf: 300, prOv13d: 300, prOv13c: 300, prOv13l: 300, prOv15d: 300, prTu: 300, mtTrangThai: 300, prNenTypoMau: 300, prChuThi: 300,
+  prUiTongQuan: 300, prCuoiKhoa: 300, prMonDangKy: 300, prPilotCase: 300, prRaLuong: 300, yThucGon: 200, prLop: 200, thanhPhanChung: 200,
+  prS5fb: 200, prNt: 200, prLuiA1: 200, prViecNho: 200, prTen: 200, prVn5: 200, prOv1a: 200, prOv2b: 200, prOv3b: 200, prOv1b: 200, prOv1c: 200,
+  prOv7a: 200, prOv9: 200, prOv14b: 200, prOv14a: 200, prTub: 200, prSvSo3: 200, prUiChamTest: 200, prUiConLai: 200, prMtDem: 200, prDich: 200,
+  prSvLoTrinh: 200, prPilotGvTre: 200, prOv11h: 100, khung: 100, hanhTrinh: 100, prNhap: 100, prKck: 100, prSang: 100, prUxd: 100, prHk1: 100,
+  prPh: 100, prLm: 100, prBn: 100, prGvb: 100, prBc: 100, prPhh: 100, prDh: 100, prU12: 100, prLuiB: 100, prQrl2cYThuc: 100, prKhung: 100,
+  prOChon: 100, fixXepBaiThuong: 100, prTd2d: 100, fixKqGanNhat: 100, fixDtlOmt: 100, prHan: 100, prViecNho2: 100, prLtGon: 100, prKiemDuLieuMt: 100,
+  prHop1: 100, prDon: 100, prVn6: 100, prCache: 100, prOv2c: 100, prOv4b: 100, prBandQuyDoi: 100, prOv6b1: 100, prOv3c: 100, prOv5b: 100,
+  prOv6b2: 100, prOv10a: 100, prOv1d: 100, prOv4c: 100, prOv11a: 100, prOv11i: 100, prOv12b: 100, prOv12g: 100, prHd: 100, prVn1: 100, prOv15a: 100,
+  prOv15b: 100, prOv15i2: 100, prBang0: 100, prLuat5: 100, prSuaNoRa: 100, prKhungLoi: 100, caseLo: 100, prSvBaiLop: 100, prNenPanel: 100,
+  prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
+  prKhoaLich: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
+  prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100,
+};
+let quaTk = false;
+/** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
+let chia: Map<string, number> = new Map();
+/** Gán khi nạp `dbGoc.ts` (cùng `chia`). */
+let nhomCuaTep: typeof import('./dbGoc.ts').nhomCuaTep = () => 1;
+const nhomCua = (ten: string) => nhomCuaTep(chia, docLapCua(ten), ten);
 /** `PISA_CHI_TEP=prA,prB`: chỉ chạy các tệp này (+ phần viết thẳng) — chạy riêng phép kiểm của một PR. */
 const CHI_TEP = process.env.PISA_CHI_TEP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
 let trongTep = false;
@@ -56,13 +107,16 @@ let tepHienTai = '';
 const thoiGian: Record<string, number> = {};
 /** Số phép kiểm đã chạy theo tệp (đạt + không đạt) — so tổng trước / sau khi đổi cách chia nhóm. */
 const soPhep: Record<string, number> = {};
-/** `PISA_DEM_DONG=1`: số dòng mỗi tệp thêm vào DB (tệp làm DB phình thì mọi tệp sau chạy chậm — ứng viên `TACH`). */
+/** `PISA_DEM_DONG=1`: số dòng mỗi tệp thêm vào DB (tệp chuỗi làm DB phình thì mọi tệp chuỗi sau chạy chậm). */
 const dongThem: Record<string, number> = {};
 const demDong = () => process.env.PISA_DEM_DONG ? (db().prepare(`SELECT (SELECT COUNT(*) FROM assessment_attempts) + (SELECT COUNT(*) FROM attempt_skills) + (SELECT COUNT(*) FROM students) + (SELECT COUNT(*) FROM sos_cases) + (SELECT COUNT(*) FROM case_interventions) + (SELECT COUNT(*) FROM notifications) n`).get() as any).n as number : 0;
 const demPhep = () => { soPhep[tepHienTai || 'run.ts'] = (soPhep[tepHienTai || 'run.ts'] ?? 0) + 1; };
 /** Bọc module `./ten.tests.ts`: hàm `run*` của nhóm khác thành rỗng; của nhóm mình thì đo giờ + đánh dấu đang trong tệp. */
 function bocTep<T extends object>(ten: string, m: T): T {
   const cuaToi = CHI_TEP ? CHI_TEP.includes(ten) : nhomCua(ten) === NHOM;
+  const docLap = docLapCua(ten);
+  const soiBB = docLap && !quaTk;
+  if (ten === 'prTk') quaTk = true;
   return new Proxy(m, {
     get(t, k) {
       const f = (t as any)[k];
@@ -70,10 +124,29 @@ function bocTep<T extends object>(ten: string, m: T): T {
       return (...a: unknown[]) => {
         if (!cuaToi) return undefined;
         const t0 = performance.now();   // không dùng Date.now: nhiều phép kiểm giả đồng hồ
-        const d0 = demDong();
+        let ban: ReturnType<typeof moBanGoc> | null = null;
+        try { if (docLap) ban = moBanGoc(ten); } catch (e: any) {
+          failures.push(`[${ten}] không mở được DB gốc: ${e?.message ?? e}`); console.log(`  ✗ ${ten}.tests.ts không mở được DB gốc: ${e?.message ?? e}`); return undefined;
+        }
+        const chuoi = conn;
+        if (ban) {
+          conn = ban.conn;
+          if (a[0] && typeof a[0] === 'object' && 'conn' in a[0]) a[0] = { ...a[0], conn: ban.conn };
+        }
+        const d0 = ban ? 0 : demDong();   // tệp DOC_LAP không làm DB chuỗi phình — không ghi dongThem
         trongTep = true;
         tepHienTai = ten;
-        const xong = () => { trongTep = false; tepHienTai = ''; thoiGian[ten] = (thoiGian[ten] ?? 0) + Math.round(performance.now() - t0); if (d0) dongThem[ten] = (dongThem[ten] ?? 0) + demDong() - d0; };
+        /* Chạy cả khi tệp ném lỗi (`loi` gọi `xong`): kết nối chuỗi luôn được trả lại. */
+        const xong = () => {
+          thoiGian[ten] = (thoiGian[ten] ?? 0) + Math.round(performance.now() - t0);
+          if (d0) dongThem[ten] = (dongThem[ten] ?? 0) + demDong() - d0;
+          if (ban) {
+            if (soiBB) { tepHienTai = `[BB] ${ten}`; check('bất biến prTk trên dữ liệu tệp', () => batBienDb({ conn: ban!.conn, assert, seedMax: SEED_MAX })); }
+            ban!.dong();
+            conn = chuoi;
+          }
+          trongTep = false; tepHienTai = '';
+        };
         /* Tệp ném lỗi ngoài phép kiểm (dựng dữ liệu hỏng): ghi KHÔNG ĐẠT rồi chạy tiếp tệp sau, không chết cả bộ. */
         const loi = (e: any) => { xong(); failures.push(`[${ten}] ném lỗi ngoài phép kiểm: ${e?.stack ?? e}`); console.log(`  ✗ ${ten}.tests.ts ném lỗi: ${e?.message ?? e}`); };
         let r: any;
@@ -139,6 +212,15 @@ const { demoToday } = await import('../demoConfig.ts');
 const { addDays } = await import('../util.ts');
 
 runSeed();
+/* CN-1: chụp DB gốc NGAY sau seed, trước mọi ghi (giống nhau ở mọi nhóm) — tệp `DOC_LAP` chạy trên bản chép của nó. */
+const { chupDbGoc, moBanGoc, chiaThamLam, nhomCuaTep: nhomCuaTepGoc } = await import('./dbGoc.ts');
+nhomCuaTep = nhomCuaTepGoc;
+/* Danh sách tệp độc lập = tên đăng ký `bocTep` trong tệp này (đọc mã nguồn: biết hết trước khi chạy, để mọi nhóm chia giống nhau). */
+chia = chiaThamLam(Object.fromEntries(
+  [...fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').matchAll(/bocTep\('(\w+)'/g)].map((m) => m[1]).filter(docLapCua)
+    .map((t) => [t, THOI_GIAN_MS[t] ?? 1000])), CHUOI_MS, SO_NHOM);
+const { batBienDb } = await import('./prTk.tests.ts');
+chupDbGoc();
 
 /*
  * MỐC ID NGAY SAU KHI DỰNG BỘ DEMO.
@@ -203,9 +285,12 @@ async function assertRejects(fn: () => Promise<unknown>, match: RegExp, msg: str
   assert(threw, `${msg} — thao tác đáng lẽ phải bị từ chối nhưng lại thành công`);
 }
 
-const conn = db();
+/* `let`: trong lúc tệp `DOC_LAP` chạy, `conn` (và mọi hàm trợ giúp đọc nó) trỏ bản chép DB gốc — xem `bocTep`. */
+let conn = db();
 /* SEED-UX: phép kiểm chỉ đọc bộ demo — chạy NGAY sau seed, trước mọi mục ghi thêm. */
 await (bocTep('prSeedUx', await import('./prSeedUx.tests.ts'))).runPrSeedUxTests({ check, assert, conn } as any);
+/* CN-1: phép kiểm của chính DB gốc — chạy khi chuỗi còn bằng seed (DG-1 so số lượt). */
+await (bocTep('dbGoc', await import('./dbGoc.tests.ts'))).runDbGocTests({ check, assert, conn, classId: (c: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(c) as any).id, seedMax: SEED_MAX } as any);
 /**
  * PR-S3F #8: `setIssues` chặn Case SOS chưa xác nhận nguyên nhân (đường chính là `xacNhanCase`). Phép kiểm cũ chỉ cần "Case đã có nguyên nhân"
  * để dựng tình huống của nó → ghi thẳng như dữ liệu cũ, đúng như `setIssues` từng làm (ghi nguyên nhân + đồng bộ trạng thái Case).
@@ -9784,10 +9869,35 @@ await runPrS4GioiHanQuetTests({ check, checkAsync, assert, conn } as any);
 // ==================================================================== S5 (danh sách IN ở đường nóng thành json_each một tham số — giảm phân mảnh câu Turso)
 const { runPrS5JsonEachTests } = bocTep('prS5JsonEach', await import('./prS5JsonEach.tests.ts'));
 await runPrS5JsonEachTests({ check, checkAsync, assert, conn, P, classId } as any);
+// ==================================================================== CHUONG-NHE (chuông chỉ đọc lượt lớp đang dạy, mốc đồng bộ ở DB — giảm dòng đọc Turso)
+const { runPrChuongNheTests } = bocTep('prChuongNhe', await import('./prChuongNhe.tests.ts'));
+await runPrChuongNheTests({ check, checkAsync, assert, conn, P, TODAY } as any);
+// ==================================================================== QUET-THEO-KY (quét theo chỉ mục, theo kỳ — giảm dòng đọc Turso)
+const { runPrQuetTheoKyTests } = bocTep('prQuetTheoKy', await import('./prQuetTheoKy.tests.ts'));
+await runPrQuetTheoKyTests({ check, checkAsync, assert, conn, P, classId } as any);
+// ==================================================================== SUA-NHO-QUYEN (Chưa có kỹ năng tính người đang dạy · Sửa thông tin em tạm dừng ở Lưu trữ)
+const { runPrSuaNhoQuyenTests } = bocTep('prSuaNhoQuyen', await import('./prSuaNhoQuyen.tests.ts'));
+await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
+// ==================================================================== LOP-1-LOP (hồ sơ lớp đọc lượt một lớp; badge quá hạn từ viec-theo-em — giảm dòng đọc Turso)
+const { runPrLop1LopTests } = bocTep('prLop1Lop', await import('./prLop1Lop.tests.ts'));
+await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY } as any);
+// ==================================================================== DON-LUONG (luồng còn sót ra-luong + OV-11)
+const { runDonLuongTests } = bocTep('donLuong', await import('./donLuong.tests.ts'));
+await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== QUYEN-LIEN-HE (luật 13/10: ô Liên hệ chỉ QL / Quản trị / TVV / CX / Admin — máy chủ)
+const { runPrQuyenLienHeTests } = bocTep('prQuyenLienHe', await import('./prQuyenLienHe.tests.ts'));
+await runPrQuyenLienHeTests({ check, assert, conn, P, TODAY } as any);
+// ==================================================================== SUA-NHO-UI (lớp sai loại ở ô Lớp khác — Lộ trình mới)
 const { runPrSuaNhoUiTests } = bocTep('prSuaNhoUi', await import('./prSuaNhoUi.tests.ts'));
 await runPrSuaNhoUiTests({ check, assert } as any);
+/* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
+if (NHOM === 1) {
+  tepHienTai = '[BB] chuỗi';
+  check('bất biến prTk trên DB chuỗi (tệp GIU_CHUOI + phần viết thẳng)', () => batBienDb({ conn, assert, seedMax: SEED_MAX }));
+  tepHienTai = '';
+}
 if (process.env.PISA_NHOM) {
-  console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
+  console.log('@@KQ ' + JSON.stringify({ dat: passed, loi: failures, thoiGian, soPhep, dongThem, docLap: [...chia.values()].filter((k) => k === NHOM).length, maxRssMb: Math.round(process.resourceUsage().maxRSS / 1024) }));
   process.exit(failures.length === 0 ? 0 : 1);
 }
 console.log(`\n${'='.repeat(60)}`);

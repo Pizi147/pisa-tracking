@@ -251,9 +251,10 @@ export async function runPrTkTests(t: YThucTestKit) {
   const attemptsSvc: any = await import('../fasttrack/attempts.ts');
   await checkAsync('TK-5 · em Kết thúc học, MT thiếu S → nhập bù S: bản chụp có S, OVR, SOS mới; kỳ vọng giữ; đổi route rồi sửa tiếp vẫn giữ', () => thu(() => {
     /* OV-13l: lượt có S đã ghi vắng / huỷ không dùng được cho "nhập bù S" — bỏ qua (dữ liệu sau run.ts có em giữ lộ trình khi chuyển lớp). */
-    const fx = get(`SELECT c.id, c.student_id FROM learning_cycles c WHERE c.route IS NOT NULL AND c.status = 'active' AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = c.id AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) AND NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = 'speaking' AND k.sit_status != 'scheduled')) ORDER BY c.id LIMIT 1`, NGAY);
+    /* CN-2: tự dựng — lượt PHẢI có S bắt buộc đang `scheduled` (trước: "không có S đã thi/vắng" vớ cả lượt không có S trong phạm vi → saveScore 400 khi chạy riêng). */
+    const fx = get(`SELECT c.id, c.student_id FROM learning_cycles c WHERE c.route IS NOT NULL AND c.status = 'active' AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = c.id AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) AND EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = 'speaking' AND k.required = 1 AND k.sit_status = 'scheduled')) ORDER BY c.id LIMIT 1`, NGAY);
     assert(fx, 'tiền đề: lộ trình FT đang chạy có lượt đã tới tuần thi và có điểm');
-    const luot = get(`SELECT a.id FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) AND NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = 'speaking' AND k.sit_status != 'scheduled') ORDER BY a.attempt_no DESC LIMIT 1`, fx.id, NGAY);
+    const luot = get(`SELECT a.id FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) AND EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = 'speaking' AND k.required = 1 AND k.sit_status = 'scheduled') ORDER BY a.attempt_no DESC LIMIT 1`, fx.id, NGAY);
     attemptsSvc.saveScore(P.admin, luot.id, 'speaking', { criteria: [null, null, null, null] });   // thiếu S
     studentsSvc.setStudentStatus(P.admin, fx.student_id, 'finished', NGAY, 'Nghỉ học');
     const dongS = () => get(`SELECT * FROM ban_chup_luot WHERE ban_chup_id = (SELECT MAX(id) FROM ban_chup_lo_trinh WHERE cycle_id = ?) AND attempt_id = ? AND ky_nang = 'speaking'`, fx.id, luot.id);
@@ -605,9 +606,12 @@ export async function runPrTkTests(t: YThucTestKit) {
 
   // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
   /* TK-5 bất biến phụ "điểm bản chụp = điểm sống" chỉ kiểm trong phép kiểm TK-5 ở trên: nhiều phép kiểm khác (PR khác) sửa / xoá điểm của lộ trình đã đóng bằng SQL thẳng nên soi toàn DB ở cuối sẽ báo oan. */
-  await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => {
-    const thieu = all(`SELECT c.id, c.student_id, c.status FROM learning_cycles c WHERE c.status IN ('completed', 'abandoned')
-                        AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id) LIMIT 10`);
-    assert(thieu.length === 0, `lộ trình đóng thiếu bản chụp: ${JSON.stringify(thieu)}`);
-  });
+  await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => batBienDb(t));
+}
+
+/** Bất biến soi MỌI dữ liệu trong DB — CN-1: run.ts gọi lại sau mỗi tệp `DOC_LAP` đứng trước prTk (`[BB] <tệp>`). */
+export function batBienDb(t: { conn: any; assert: (c: unknown, m: string) => void; seedMax: Record<string, number> }): void {
+  const thieu = t.conn.prepare(`SELECT c.id, c.student_id, c.status FROM learning_cycles c WHERE c.status IN ('completed', 'abandoned')
+                      AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id) LIMIT 10`).all();
+  t.assert(thieu.length === 0, `lộ trình đóng thiếu bản chụp: ${JSON.stringify(thieu)}`);
 }

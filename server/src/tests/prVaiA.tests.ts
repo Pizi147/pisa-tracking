@@ -12,6 +12,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
   const { nguoiGiuKetQua } = await import('../cases/giuKetQua.ts');
   const { demoToday } = await import('../demoConfig.ts');
   const tq: any = await import('../worklist/tongQuan.ts');
+  const meetingSvc: any = await import('../worklist/meeting.ts');
   const classes: any = await import('../classes/classes.ts');
   const chuongTrinh: any = await import('../worklist/chuongTrinh.ts');
   console.log('\nPR-VAI-a · Tổng quan theo vai');
@@ -143,8 +144,11 @@ export async function runPrVaiATests(t: YThucTestKit) {
   };
 
   check('VAI-a (2a) · van-hanh-can-quyet-dinh = listMgmtTasks + khopHang("can-quyet-dinh") = hangSo của tab Vận hành; tạm ngưng tới hạn xem lại → +1, mở lại → −1', () => {
-    const goc = conn.prepare(`SELECT id, progress, review_on FROM tasks WHERE parent_task_id IS NULL AND kind = 'branch_ops' AND branch_id = ?
+    const moVh = () => conn.prepare(`SELECT id, progress, review_on FROM tasks WHERE parent_task_id IS NULL AND kind = 'branch_ops' AND branch_id = ?
       AND progress NOT IN ('done','stopped','paused') ORDER BY id LIMIT 1`).get(MB) as any;
+    /* CN: tự dựng — seed không có việc Vận hành MB đang mở (trước do tệp khác để lại) → tạo một việc bằng đường thật. */
+    if (!moVh()) meetingSvc.createTask(P.admin, { kind: 'branch_ops', title: 'VAI-a việc Vận hành', branchId: MB, idempotencyKey: 'vai-a-vh-00001' });
+    const goc = moVh();
     assert(goc, 'bộ demo phải có một việc Vận hành MB đang mở');
     const hai = () => {
       const r = metricsSvc.metricSet(P.mbManager, 'van-hanh-can-quyet-dinh', { branchId: MB });

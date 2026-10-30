@@ -22,6 +22,7 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
   const require_thongBao: any = await import('../platform/thongBao.ts');
   const require_chotVang: any = await import('../ops/chotVangDinhKy.ts');
   const require_d: any = await import('../../../shared/domain/index.ts');
+  const require_viecTheoEm: any = await import('../classes/viecTheoEm.ts');
   console.log('\nRA-LUONG · rà soát luồng đêm 29/10');
 
   const nem = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
@@ -88,10 +89,21 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     finally { conn.prepare('UPDATE sos_cases SET tam = ?, kck = ? WHERE id = ?').run(c.tam, c.kck, c.id); }
   });
 
+  /* LOP-1-LOP: số đếm ở máy chủ (`soQuaHanLop` của `/classes/:id/viec-theo-em`) — luật giữ nguyên: đếm bằng `demViec`; web chỉ hiển thị số đó. */
   check('RA-LUONG-10 · Hồ sơ lớp: badge "n việc quá hạn" đếm bằng `demViec` (cùng đơn vị Công việc / Tổng quan), không đếm dòng', () => {
-    const nguon = fsMod.readFileSync('web/src/modules/classes/DauTrangLop.tsx', 'utf8') as string;
-    const dong = nguon.split('\n').find((l) => l.includes('const soViecQuaHan')) ?? '';
-    assert(/demViec\(/.test(dong) && !/demQuaHan/.test(nguon), `soViecQuaHan: ${dong.trim()}`);
+    const may = fsMod.readFileSync('server/src/classes/viecTheoEm.ts', 'utf8') as string;
+    const dongMay = may.split('\n').find((l) => l.includes('const soQuaHanLop')) ?? '';
+    assert(/demViec\(/.test(dongMay) && /\.viec\b/.test(dongMay), `máy chủ soQuaHanLop: ${dongMay.trim()}`);
+    const web = fsMod.readFileSync('web/src/modules/classes/DauTrangLop.tsx', 'utf8') as string;
+    const dongWeb = web.split('\n').find((l) => l.includes('const soViecQuaHan')) ?? '';
+    assert(/soQuaHanLop/.test(dongWeb) && !/demViec|demQuaHan|\.length/.test(dongWeb), `web soViecQuaHan: ${dongWeb.trim()}`);
+    /* Số: QL lớp MB FT 101 — `soQuaHanLop` = `demViec` trên CÙNG items (việc quá hạn gắn lớp của `myWork` Tất cả) — khác số dòng khi có Nhập điểm nhiều kỹ năng. */
+    const { viecTheoEmCuaLop } = require_viecTheoEm;
+    const lop = (conn.prepare(`SELECT id, branch_id FROM classes WHERE code = 'MB FT 101'`).get() as any);
+    const items = (require_mywork.myWork(P.mbManager, { branchId: lop.branch_id, nguoi: 'tat-ca', classIds: [lop.id] }).items as any[])
+      .filter((it) => it.urgency === 'overdue' && it.classId === lop.id);
+    const so = viecTheoEmCuaLop(P.mbManager, lop.id, { chiToi: true }).soQuaHanLop;
+    assert(items.length > 0 && so === require_d.demViec(items).viec, `soQuaHanLop ${so} ≠ demViec ${require_d.demViec(items).viec} (${items.length} dòng)`);
   });
 
   check('RA-LUONG-12 · Hàng loạt học viên: lỗi máy chủ ở em giữa lô → em trước đã lưu vẫn báo "ok" + em đó và em sau "chưa lưu", không ném 500 cả lô', () => {

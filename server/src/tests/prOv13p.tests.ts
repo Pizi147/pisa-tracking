@@ -31,7 +31,11 @@ export async function runPrOv13pTests(t: YThucTestKit) {
   /* Em đang học ở Cẩm Phả (chuyển lớp / lưu trữ) + một lớp CP khác làm đích chuyển. */
   const em = one(`SELECT e.student_id id, e.class_id lop FROM enrollments e JOIN classes c ON c.id = e.class_id
       WHERE c.branch_id = ? AND c.status = 'active' AND e.status = 'active' ORDER BY e.student_id LIMIT 1`, CP);
-  const lopCpKhac = one(`SELECT id FROM classes WHERE branch_id = ? AND status = 'active' AND id != ? ORDER BY id LIMIT 1`, CP, em?.lop)?.id;
+  /* CN-2: tự dựng — seed chỉ có một lớp CP đang học (lớp đích trước do tệp khác tạo) → thiếu thì tạo một lớp CP cùng loại. */
+  const lopCpCo = () => one(`SELECT id FROM classes WHERE branch_id = ? AND status = 'active' AND id != ? ORDER BY id LIMIT 1`, CP, em?.lop)?.id;
+  if (em?.lop && !lopCpCo()) conn.prepare(`INSERT INTO classes (code, branch_id, kind, is_fast_track, programme_code, status, created_at)
+    SELECT 'CP OV13P 1', branch_id, kind, is_fast_track, programme_code, 'active', created_at FROM classes WHERE id = ?`).run(em.lop);
+  const lopCpKhac = lopCpCo();
 
   check('OV13p-0 · seed: TVV / CX có class.create + student.add, không class.assign / student.edit; vai có student.edit đều có student.add', () => {
     assert(em?.id && lopCpKhac, JSON.stringify({ em, lopCpKhac }));

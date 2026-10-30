@@ -240,6 +240,118 @@ export async function runPrEnTests(t: any) {
     assert(sai.length === 0, sai.join(' · '));
   });
 
+  /*
+   * CN-3a (rà #743): prEn chạy trên bản DB gốc — seed chỉ sinh 14 loại thông báo. Dựng mỗi loại thông báo GV còn thiếu MỘT lần bằng chính
+   * hàm máy chủ sinh ra nó (chữ tiêu đề / nội dung là chữ thật của máy chủ), TRƯỚC `duLieu` (tên em / lớp / lý do mới là dữ liệu).
+   * EN-TB soi thông báo của GVCN, GVBM + mỗi loại một người nhận; EN-TB-LOAI giữ tập loại không teo lại.
+   */
+  const LOAI_TB_GV = ['cham_qua_han', 'cham_cheo_qua_han', 'case_chua_chot_pa', 'doi_lich_thuong', 'huy_lenh', 'lam_lai_ban_giao', 'phan_cong_moi', 'discipline'];
+  const loiDung: string[] = [];
+  {
+    const TODAY = t.TODAY;
+    const QL = P.mbManager;
+    const thu = (ten: string, fn: () => void) => { try { fn(); } catch (e: any) { loiDung.push(`${ten}: ${e?.message ?? e}`); } };
+    const td: any = await import('../platform/thongBaoTuDong.ts');
+    const mywork: any = await import('../worklist/mywork.ts');
+    const { xuLyCaseMany } = await import('../cases/sosState.ts');
+    const { loadPrincipal } = await import('../permissions.ts');
+    const chamCheo: any = await import('../cham/chamCheo.ts');
+    const att: any = await import('../fasttrack/attempts.ts');
+    const { luotThu } = await import('./luotThu.ts');
+    const week: any = await import('../platform/week.ts');
+    const ss: any = await import('../fasttrack/skillSchedule.ts');
+    const intake: any = await import('../classes/intake.ts');
+    const lenh: any = await import('../classes/lenhChuyen.ts');
+    const bg: any = await import('../classes/banGiao.ts');
+    const pc: any = await import('../classes/phanCongGv.ts');
+    const viPham: any = await import('../yThuc/violations.ts');
+    const d: any = await import('../../../shared/domain/index.ts');
+    const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+    const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
+    const FT101 = get(`SELECT id FROM classes WHERE code = 'MB FT 101'`).id as number;
+    const NOW = new Date().toISOString();
+    let seq = 0;
+    const emMoi = (lop: number, ma: string | null) => {
+      seq += 1;
+      const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+        .run(`PISA-ENTB${seq}`, `Hoc vien ENTB ${seq}`, `hoc vien entb ${seq}`, MB, NOW).lastInsertRowid);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lop, TODAY, NOW);
+      const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, ?, ?, ?, ?, 'active', ?)`)
+        .run(sid, ma ? null : 'LT1', ma ?? 'FT', ma ? null : 6.5, TODAY, NOW).lastInsertRowid);
+      return { sid, cy };
+    };
+    /* cham_qua_han + case_chua_chot_pa: đồng bộ thông báo tự động (như mở chuông) cho GV có bài quá hạn / người phụ trách Case chưa chốt PA quá hạn. */
+    thu('cham_qua_han', () => {
+      const coQuaHan = (p: any) => (mywork.myWork(p, { chiNhom: new Set(['score']) }).items as any[]).some((x) => x.group === 'score' && x.mine && x.urgency === 'overdue');
+      td.dongBoThongBaoTuDong([P.w1Teacher, P.w2Teacher, P.lrTeacher, P.coreTeacher, P.subjectTeacher, P.sTeacher].find(coQuaHan), TODAY);
+    });
+    thu('case_chua_chot_pa', () => {
+      const mo = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc JOIN students s ON s.id = sc.student_id
+        WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL AND sc.tam = 0 AND s.archived_at IS NULL`).all() as any[];
+      const xl = xuLyCaseMany(mo.map((c) => c.id), TODAY);
+      const qh = mo.find((c) => xl.get(c.id)?.cot === 'choDuyet' && xl.get(c.id)?.quaHan);
+      td.dongBoThongBaoTuDong(loadPrincipal(qh.owner_user_id), TODAY);
+    });
+    /* cham_cheo_qua_han: em mới MB FT 101, MT5 chỉ Speaking thi 2 tuần trước, chưa chấm → lượt quét thứ Hai. */
+    thu('cham_cheo_qua_han', () => {
+      const hai = week.ensurePeriod(t.addDays(d.mondayOfDate(TODAY), -14)).id;
+      const e = emMoi(FT101, null);
+      const a = luotThu(conn, att.createAttempt, P.admin, { studentId: e.sid, cycleId: e.cy, classId: FT101, no: 5, periodId: hai });
+      conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(hai, a.id);
+      conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(a.id);
+      conn.prepare(`UPDATE attempt_skills SET required = 0 WHERE attempt_id = ? AND skill != 'speaking'`).run(a.id);
+      chamCheo.baoChamCheoQuaHan(TODAY);
+    });
+    /* doi_lich_thuong: QL dời một bài Progress Test của lớp thường → GVCN; bản cả lớp. */
+    thu('doi_lich_thuong', () => {
+      const a = get(`SELECT a.id, a.class_id, a.student_id, a.kind, a.attempt_no FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
+        WHERE c.code = 'MB FOU 12' AND a.kind = 'progress' AND a.status != 'cancelled' ORDER BY a.id LIMIT 1`);
+      ss.baoGvcnDoiLichThuong(QL, a, t.addDays(d.mondayOfDate(TODAY), 7), TODAY);
+      ss.baoGvcnDoiLichThuongLop(QL, a.class_id, 'progress', 2, TODAY);
+    });
+    /* lam_lai_ban_giao + huy_lenh: lệnh lên lớp đã bàn giao → đổi lớp đích (làm lại) → huỷ (như OV3b-6). */
+    thu('lam_lai_ban_giao, huy_lenh', () => {
+      const lopMoi = (kind: string, ft: boolean, tuanHienTai: number) => {
+        seq += 1;
+        const bat = d.mondayOfDate(t.addDays(TODAY, -7 * (tuanHienTai - 1)));
+        return (intake.createClass(P.admin, { code: `MB-ENTB${seq}`, branchId: MB, kind, isFastTrack: ft, route: ft ? 'LT1' : null, startDate: bat,
+          startPeriodId: week.ensurePeriod(bat).id }) as any).id as number;
+      };
+      const be = lopMoi('BE', false, 8), ele1 = lopMoi('ELE', false, 1), ele2 = lopMoi('ELE', false, 1);
+      const [g0, g1] = [P.coreTeacher.userId, P.subjectTeacher.userId];
+      const gan = (lop: number, u: number, skill: string | null, core: number) => conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core,
+        effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`).run(u, lop, skill, core, NOW);
+      gan(be, g0, null, 1); gan(be, g1, 'writing', 0);
+      const B = emMoi(be, 'BE').sid;
+      lenh.raLenh(QL, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: B, huong: 'len_lop', toClassId: ele1, tuan: (d.tuanChonDuoc(TODAY) as string[])[0] }] });
+      const l = get(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`, B);
+      bg.ghiMon(loadPrincipal(g1), l.id, 'writing', 'Viết ổn, cần thêm từ nối.');
+      bg.xacNhanBanGiao(loadPrincipal(g0), l.id, 'Em chăm, theo kịp lớp.');
+      lenh.suaLenh(QL, l.id, { toClassId: ele2 });
+      lenh.huyLenh(QL, l.id, 'Em xin học lại');
+    });
+    /* phan_cong_moi: QL đổi GV Listening của MB FT 101 sang GV khác → người nhận mới. */
+    thu('phan_cong_moi', () => {
+      const slots = (conn.prepare(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(FT101) as any[])
+        .map((r) => ({ userId: r.user_id, skill: r.skill, isCore: r.is_core === 1 }));
+      const cu = slots.find((x) => x.skill === 'listening')?.userId;
+      const moi = get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ? AND ur.user_id != ?
+        ORDER BY ur.user_id LIMIT 1`, MB, cu).id;
+      pc.luuPhanCong(QL, { lop: [{ classId: FT101, slots: slots.filter((x) => x.skill !== 'listening').concat([{ userId: moi, skill: 'listening', isCore: false }]) }] });
+    });
+    /* discipline: QL ghi vi phạm cho em MB FT 101 → GVCN lớp. */
+    thu('discipline', () => {
+      const em = get(`SELECT e.student_id id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND e.status = 'active'
+        AND s.status = 'active' ORDER BY e.student_id LIMIT 1`, FT101).id;
+      viPham.recordViolation(QL, { studentId: em, category: 'homework', description: 'Không làm bài tập về nhà', occurredOn: TODAY });
+    });
+  }
+  check('EN-TB-LOAI · dựng đủ các loại thông báo GV (bằng hàm máy chủ thật) — tập loại trong DB ⊇ danh sách cố định', () => {
+    const co = new Set((conn.prepare('SELECT DISTINCT kind FROM notifications').all() as any[]).map((r) => r.kind as string));
+    const thieu = LOAI_TB_GV.filter((k) => !co.has(k));
+    assert(!loiDung.length && !thieu.length, `thiếu ${thieu.join(', ')} · lỗi dựng: ${loiDung.join(' | ')}`);
+  });
+
   /**
    * Chữ còn dấu Việt sau khi dịch, bỏ đoạn là DỮ LIỆU: tên người / lớp / chi nhánh, chữ người gõ (tiêu đề Case, mô tả, ghi chú, lý do…) — giá trị
    * của các cột tên / chữ tự do trong DB. Không lấy bảng `notifications` (chính chữ cần kiểm) và cột nhãn hệ thống (không che chữ chưa dịch).
@@ -287,7 +399,10 @@ export async function runPrEnTests(t: any) {
     await voiMay(async (goi) => {
       const sot: string[] = [];
       let n = 0;
-      for (const ai of [GV, GV2]) {
+      /* CN-3a: + mỗi loại thông báo GV đã dựng (LOAI_TB_GV) một người nhận. */
+      const nguoiNhan = (conn.prepare(`SELECT MIN(user_id) u FROM notifications WHERE kind IN (${LOAI_TB_GV.map(() => '?').join(',')}) GROUP BY kind`)
+        .all(...LOAI_TB_GV) as any[]).map((r) => r.u as number);
+      for (const ai of [...new Set([GV, GV2, ...nguoiNhan])]) {
         const r = await goi(ai, '/notifications');
         assert(r.status === 200, `/notifications → ${r.status}`);
         const chu: string[] = []; gom(await r.json(), new Set(['title', 'body']), chu);
@@ -357,11 +472,12 @@ export async function runPrEnTests(t: any) {
       if (x.khoa) {
         soKhoa++;
         if (!(x.khoa in EN) && /\p{L}{2}/u.test(x.khoa.replace(/\{\w+\}/g, ''))) thieu.add(`${noi}: ${x.khoa}`);
-        const b = Object.fromEntries(Object.entries(x.bien ?? {}).map(([k, v]) => {
-          if (v && typeof v === 'object') { xet(v as any, noi); return [k, v]; }
-          return [k, typeof v === 'string' && VIET.test(v) && !(v in EN) ? 'X' : v];
-        }));
-        const ra = i18n.dichSang('en', x.khoa, b);
+        for (const v of Object.values(x.bien ?? {})) if (v && typeof v === 'object') xet(v as any, noi);
+        /* CN-1: thay chữ dữ liệu ở MỌI tầng biến — câu lồng ("{viec} quá hạn {n} ngày" chứa "PA {pa} chờ Quản lý duyệt") trước còn để tên PA
+           của tầng trong nên đỏ khi PA đó còn chờ duyệt (check đầy đủ xanh chỉ vì tệp trước đã duyệt PA đó). */
+        const an = (bien: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(Object.entries(bien).map(([k, v]) =>
+          [k, v && typeof v === 'object' ? { ...v, bien: an((v as any).bien ?? {}) } : typeof v === 'string' && VIET.test(v) && !(v in EN) ? 'X' : v]));
+        const ra = i18n.dichSang('en', x.khoa, an(x.bien ?? {}));
         if (VIET.test(ra)) sot.add(`${noi}: ${ra}`);
       } else if (VIET.test(i18n.dichMau('en', x.chu))) sot.add(`${noi}: ${x.chu}`);
     };

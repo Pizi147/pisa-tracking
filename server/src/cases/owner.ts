@@ -61,16 +61,20 @@ export function ganChuCaseThieu(o: {
   nguon?: string;
 }): number {
   const conn = db();
-  /* Em đang học (không Tạm dừng / Lưu trữ), Case không tạm (Case tạm chưa là việc — OV-13a). `studentIds`: chỉ các em vừa xếp / chuyển lớp. */
+  /* Em đang học (không Tạm dừng / Lưu trữ), Case không tạm (Case tạm chưa là việc — OV-13a). `studentIds`: chỉ các em vừa xếp / chuyển lớp.
+     DON-LUONG K8: với `studentIds` cùng câu đọc thêm Case CÓ chủ (đổi chủ theo lớp mới — `doiChuTheoLopMoi`), không thêm lượt. */
   const theoEm = o.studentIds?.length ? `AND s.id IN (${o.studentIds.map(() => '?').join(',')})` : '';
-  const rows = conn.prepare(
-    `SELECT sc.id, sc.category, COALESCE(a.class_id, cur.class_id) AS class_id
+  const tatCa = conn.prepare(
+    `SELECT sc.id, sc.category, sc.topic, sc.goc_programme_code, sc.owner_user_id, COALESCE(a.class_id, cur.class_id) AS class_id, cur.class_id AS lop_hien_tai, s.full_name
+            ${theoEm ? `, ${CHU_THEO_LOP_SQL}` : ''}
        FROM sos_cases sc
        LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
        JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id) AND ${HV_DANG_HOC_SQL('s')}
        LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-      WHERE sc.status != 'done' AND sc.owner_user_id IS NULL AND sc.tam = 0 AND (? IS NULL OR COALESCE(a.class_id, cur.class_id) = ?) ${theoEm}`,
+      WHERE sc.status != 'done' AND ${theoEm ? '1 = 1' : 'sc.owner_user_id IS NULL'} AND sc.tam = 0 AND (? IS NULL OR COALESCE(a.class_id, cur.class_id) = ?) ${theoEm}`,
   ).all(o.classId ?? null, o.classId ?? null, ...(o.studentIds ?? [])) as any[];
+  if (theoEm) doiChuTheoLopMoi(tatCa.filter((r) => r.owner_user_id !== null && r.lop_hien_tai !== null), o);
+  const rows = tatCa.filter((r) => r.owner_user_id === null);
   let n = 0;
   for (const r of rows) {
     const chu = suggestCaseOwner({ classId: r.class_id ?? null, category: r.category ?? null });
@@ -84,6 +88,41 @@ export function ganChuCaseThieu(o: {
   }
   return n;
 }
+
+/**
+ * DON-LUONG K8 (ra-luong L50, Rulebook P03): em chuyển / xếp lớp → Case đang mở (không tạm) có chủ mà chủ KHÔNG dạy kỹ năng của Case ở lớp
+ * đang học (Case không kỹ năng: không là GVCN lớp đó) → chủ mới theo luật tạo Case (`chonChuCase`: GV môn → GVCN lớp mới); lớp mới không ai →
+ * giữ chủ cũ. Lịch sử + báo người nhận như "Đổi người…". PA Bổ trợ Giữa khoá không tự khép (giữ). Case đọc chung câu của `ganChuCaseThieu`;
+ * một câu phân công mỗi lớp đích chỉ khi có Case có chủ (thường một). Trả số Case đổi chủ.
+ */
+function doiChuTheoLopMoi(rows: { id: number; topic: string | null; goc_programme_code: string | null; owner_user_id: number; full_name: string | null;
+  con_day: number; moi_mon: number | null; moi_cn: number | null }[], o: { actorId: number | null; luc: string }): number {
+  const conn = db();
+  let n = 0;
+  for (const r of rows) {
+    const moi = r.con_day ? null : r.moi_mon ?? r.moi_cn;
+    if (moi === null || moi === r.owner_user_id) continue;
+    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ?').run(moi, o.luc, r.id, r.owner_user_id).changes !== 1) continue;
+    /* Cùng quy ước lịch sử của bàn giao chủ Case khi chuyển lớp (`luatLoTrinh` / `cuoiKhoa`): field 'owner', "bàn giao khi chuyển lớp". */
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner', ?, 'bàn giao khi chuyển lớp', ?, ?)`)
+      .run(r.id, r.owner_user_id, o.actorId, o.luc);
+    if (moi !== o.actorId) {
+      notify({ userId: moi, kind: 'case_giao', title: `Phụ trách Case ${r.topic ? caseTopicLabel(r.topic, r.goc_programme_code) : ''} · ${r.full_name ?? ''}`,
+        entityType: 'sos_case', entityId: r.id, dedupKey: `case_giao:${r.id}` });
+    }
+    n += 1;
+  }
+  return n;
+}
+
+/**
+ * K8 trong cùng câu đọc Case (không thêm lượt — thi hành lệnh chuyển lớp gọi theo từng em): chủ còn dạy kỹ năng Case ở lớp đang học (`con_day`;
+ * Case không kỹ năng → chủ là GVCN), GV môn đầu tiên (`moi_mon`), GVCN (`moi_cn`) — cùng luật `chonChuCase` (theo thứ tự id phân công).
+ */
+const CHU_THEO_LOP_SQL = `EXISTS (SELECT 1 FROM teacher_assignments t WHERE t.class_id = cur.class_id AND t.status = 'active' AND t.user_id = sc.owner_user_id
+      AND (CASE WHEN sc.category IN (${Object.keys(CASE_CATEGORY_SKILL).map((k) => `'${k}'`).join(', ')}) THEN t.skill = sc.category ELSE t.is_core = 1 END)) AS con_day,
+    (SELECT t.user_id FROM teacher_assignments t WHERE t.class_id = cur.class_id AND t.status = 'active' AND t.skill = sc.category ORDER BY t.id LIMIT 1) AS moi_mon,
+    (SELECT t.user_id FROM teacher_assignments t WHERE t.class_id = cur.class_id AND t.status = 'active' AND t.is_core = 1 ORDER BY t.id LIMIT 1) AS moi_cn`;
 
 /**
  * CV-LOI: CASE CHƯA CÓ NGƯỜI PHỤ TRÁCH mà người xem phải xử lý — MỘT nguồn cho dòng việc Công việc (`no_owner`) và số Tổng quan

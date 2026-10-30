@@ -51,7 +51,7 @@ import * as buocTiepSvc from '../loTrinh/buocTiep.ts';
 import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
-import { docHet, thongBaoCua } from '../platform/thongBao.ts';
+import { docHet, docNhieu, thongBaoCua } from '../platform/thongBao.ts';
 import { dongBoKhiMoChuong } from '../platform/thongBaoTuDong.ts';
 import { daGhi } from '../platform/thongBaoTuDong.ts';   // OV-15h1
 import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
@@ -160,8 +160,8 @@ api.use((req, _res, next) => {
 
 /* OV-15h1: ghi thành công → lần mở chuông kế của người đó đồng bộ thông báo tự động ngay (việc vừa xong hết khỏi "Cần làm", không chờ 5 phút). */
 api.use((req, res, next) => {
-  const id = req.method !== 'GET' ? req.principal?.userId : undefined;
-  if (id) res.on('finish', () => { if (res.statusCode < 400) daGhi(id); });
+  const p = req.method !== 'GET' ? req.principal : undefined;
+  if (p) res.on('finish', () => { if (res.statusCode < 400) { try { daGhi(p); } catch (e) { console.error('[chuong-da-ghi]', e); } } });
   next();
 });
 
@@ -1148,7 +1148,7 @@ api.get('/classes', requireAuth, wrap((req) => {
 /** SV-LOP (C19): việc theo em của hồ sơ lớp — từng việc của `/my-work`, việc của người xem trước (`viecTheoEm.ts`). */
 api.get('/classes/:id/viec-theo-em', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'));
+  return viecTheoEmCuaLop(principalOf(req), pInt(req, 'id'), { chiToi: qStr(req, 'chi') === 'toi' });
 }));
 
 /** UI-HO-SO-LOP (C17): nhận xét + đề xuất bước tiếp của GVCN khi đánh giá đầu ra lớp thường (`danhGiaDauRa.ts`). */
@@ -2194,7 +2194,9 @@ api.get('/tong-quan/ql', requireAuth, wrap((req) => {
 api.get('/tong-quan/v5', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   /* UI-PHAN-TICH: Báo cáo HV gửi khoảng đang chọn (`kieu`/`tu`/`den`) — vắng = kỳ mặc định của Tổng quan. */
-  return tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req) });
+  const tq = tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req) });
+  /* QUET-THEO-KY Q3: Báo cáo HV MỘT request — kèm CHÍNH `/phan-tich/bao-cao` (cùng hàm, cùng quyền); dưới `/tong-quan` để `invalidate('/tong-quan')` vẫn trúng. */
+  return qStr(req, 'kemBaoCao') === '1' ? { ...tq, baoCao: baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req)) } : tq;
 }));
 /** UI-TONG-QUAN: Tổng quan TVV (Báo PH đúng hạn · Thi tháng này) + panel `o=bao-ph`. */
 api.get('/tong-quan/tvv', requireAuth, wrap((req) => {
@@ -2861,6 +2863,8 @@ api.get('/notifications', requireAuth, wrap((req) => {
 
 /** PR-VAI-a (Q18): "Đọc hết" — một câu UPDATE, chỉ thông báo của chính người gọi; không xoá dòng. */
 api.post('/notifications/doc-het', requireAuth, wrap((req) => ({ daDoc: docHet(principalOf(req).userId, demoToday()) })));
+/** DON-LUONG A6: đánh dấu đã đọc nhiều dòng một lệnh — ≤ 200 id nguyên dương, chỉ dòng của người gọi. */
+api.post('/notifications/doc-nhieu', requireAuth, wrap((req) => ({ daDoc: docNhieu(principalOf(req).userId, req.body?.ids, demoToday()) })));
 
 api.post('/notifications/:id/read', requireAuth, wrap((req) => {
   const p = principalOf(req);
