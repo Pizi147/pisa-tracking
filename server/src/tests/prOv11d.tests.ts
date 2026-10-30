@@ -63,7 +63,9 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     xoaNho();
     assert(one('SELECT status FROM students WHERE id = ?', sid).status === 'inactive', 'chưa Tạm dừng');
     assert(loi(() => students.updateStudent(GVCN, sid, { note: 'Ghi chú sau Tạm dừng' }))?.message === d.CAU_LUU_TRU, 'P7: hồ sơ em Tạm dừng (Lưu trữ) chỉ xem');
-    students.updateStudent(GVCN, sid, { parentPhone: '0912345678' });
+    /* QUYEN-LIEN-HE (luật 13/10 nay ở máy chủ): liên hệ em Tạm dừng — GVCN 403, QL / TVV sửa được (TVV gọi mời học lại). */
+    assert(loi(() => students.updateStudent(GVCN, sid, { parentPhone: '0912345678' }))?.status === 403, 'GVCN không sửa liên hệ');
+    students.updateStudent(P.mbManager, sid, { parentPhone: '0912345678' });
     assert(one('SELECT parent_phone FROM students WHERE id = ?', sid).parent_phone === '0912345678', 'P7 [ĐX]: sửa được thông tin liên hệ em Tạm dừng');
     assert(yThuc.canManageDiscipline(GVCN, sid), 'GVCN phải xử lý được Ý thức em Tạm dừng');
     const hs = profile.studentProfile(GVCN, sid);

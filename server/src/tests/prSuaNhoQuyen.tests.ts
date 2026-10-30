@@ -74,11 +74,12 @@ export async function runPrSuaNhoQuyenTests(t: { check: any; assert: any; conn: 
     const sid = emLop();
     students.setStudentStatus(P.mbManager, sid, 'inactive', TODAY);
     const kq: string[] = [];
-    for (const [ten, p] of vai()) {
+    /* QUYEN-LIEN-HE: mỗi vai một SĐT KHÁC — gửi lại đúng số vai trước vừa lưu là "không đổi" (không chặn), không thử được quyền. */
+    for (const [i, [ten, p]] of vai().entries()) {
       xoaNho();
       const co = !!danhSachLuuTru(p).hocVien.find((s) => s.id === sid)?.coTheSuaThongTin;
       xoaNho();
-      const sua = !nem(() => students.updateStudent(p, sid, { parentPhone: '0912000111' }));
+      const sua = !nem(() => students.updateStudent(p, sid, { parentPhone: `09120001${10 + i}` }));
       assert(co === sua, `${ten}: cờ ${co} ≠ PATCH ${sua}`);
       kq.push(`${ten}=${co}`);
     }
