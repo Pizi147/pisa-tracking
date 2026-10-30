@@ -54,7 +54,7 @@ export async function runDonMaTests(t: any) {
 
   await checkAsync('DON-MA · boKetQuaChoMiniTest 950 lượt (giả) không vượt 900 tham số (json_each như S5) và vẫn đúng', async () => {
     const ck: any = await import('../normal/cuoiKhoa.ts');
-    const hamSrc = /export function boKetQuaChoMiniTest[\s\S]*?\n}\n/.exec(doc('server/src/normal/cuoiKhoa.ts'))?.[0] ?? '';
+    const hamSrc = /export function boKetQuaChoMiniTest[\s\S]*?\r?\n}\r?\n/.exec(doc('server/src/normal/cuoiKhoa.ts'))?.[0] ?? '';
     assert(/json_each|DS_JSON|theoLoJson/.test(hamSrc) && !/map\(\(\) => '\?'\)/.test(hamSrc), 'boKetQuaChoMiniTest còn IN (?,?,…) theo số nhóm');
     const hoc = conn.prepare(`SELECT a.student_id AS sid, a.id AS aid, c.id AS cid FROM assessment_attempts a JOIN learning_cycles c ON c.student_id = a.student_id LIMIT 1`).get() as any;
     assert(hoc, 'seed không có em có lộ trình');
