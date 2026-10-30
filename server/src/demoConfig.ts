@@ -1,7 +1,7 @@
 import { db } from './db.ts';
 import { nowIso, todayInBusinessTz, isIsoDate } from './util.ts';
 import { laBanChinh } from './moiTruong.ts';
-import { nho } from './platform/nguCanhRequest.ts';
+import { nhoThamChieu } from './platform/mocHeThong.ts';
 
 /**
  * Đồng hồ demo: mọi phép tính hạn/tuần dùng ngày này thay cho ngày thật,
@@ -21,7 +21,7 @@ const DEFAULTS: Record<string, string> = {
  * mỗi lần như cũ — `setConfig` đi qua `run()` nên tự làm mất bộ nhớ, không cần lo đọc phải giá trị cũ.
  */
 export function getConfig(key: string): string {
-  return nho('cfg:' + key, () => {
+  return nhoThamChieu('cfg:' + key, () => {
     // Database có thể chưa được seed (chưa có bảng nào). Khi đó dùng giá trị mặc định
     // thay vì ném lỗi, để ứng dụng vẫn mở được và hiển thị hướng dẫn tạo dữ liệu.
     try {

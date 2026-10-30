@@ -11,7 +11,8 @@ import { demoToday } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
-import { nho, quetGioiHan, trongBoNho, xoaNho } from '../platform/nguCanhRequest.ts';
+import { trongBoNho, xoaNho } from '../platform/nguCanhRequest.ts';
+import { quetTheoMoc } from '../platform/mocHeThong.ts';
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import {
   PERMISSIONS, LOAI_NGUOI_XIN_SUA, LOAI_YC_META, LY_DO_RUT, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
@@ -218,8 +219,8 @@ export function chotYeuCau(
  * Không có gì để ghi thì không mở giao dịch.
  */
 export function quetYeuCau(homNay = demoToday()): void {
-  /* S4: ngoài nhớ theo request, giới hạn theo tiến trình — không ghi gì từ lần quét trước (< 60 s) thì không đọc lại (`quetGioiHan`). */
-  nho(`quet-yeu-cau:${homNay}`, () => { quetGioiHan(`yeu-cau:${homNay}`, () => quetThat(homNay)); return true; });
+  /* TL-NEN: quét theo mốc DB toàn hệ thống — ≥ 60 s, sau một lần ghi qua API, hoặc sang ngày (`quetTheoMoc`). */
+  quetTheoMoc('quet:yeu-cau', homNay, () => quetThat(homNay));
 }
 
 function quetThat(homNay: string) {

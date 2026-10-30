@@ -7,6 +7,7 @@ import {
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, loadPrincipal, require_, type Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
+import { quetTheoMoc } from '../platform/mocHeThong.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 import { mondayOf } from '../platform/week.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
@@ -632,13 +633,18 @@ function thiHanhMotNhom(g: { lop_nguon_id: number; tuan_bat_dau: string; boi_can
   return { mat, con, loiDong };
 }
 
-/** Quét khi đọc: một lần mỗi request GET (`nho`) — thêm 1 câu khi không có gì đến hạn. Lỗi thi hành không làm hỏng trang đang đọc. */
+/**
+ * Quét khi đọc: một lần mỗi request GET — thêm 1 câu khi không có gì đến hạn. Lỗi thi hành không làm hỏng trang đang đọc.
+ * TL-NEN: theo mốc DB toàn hệ thống (`quetTheoMoc`) — ≥ 60 s, sau một lần ghi qua API, hoặc sang ngày nghiệp vụ (lệnh tới hạn chạy ngay GET đầu ngày).
+ */
 export function quetLenhDenHan(homNay = demoToday()): void {
-  nho(`thi-hanh-lenh:${homNay}`, () => { try { thiHanhLenhDenHan(homNay); } catch (e) { console.error('[chuyen-lop] quét khi đọc', e); } return true; });
-  /* OV-13m: Lộ trình mới sau thi "Hẹn bắt đầu" tới tuần — cùng lượt quét (lỗi đã bắt trong hàm). */
-  nho(`bat-dau-hen:${homNay}`, () => { batDauHenDenHan(homNay); return true; });
-  /* PC-GV-A: lịch đổi phân công GV tới tuần hiệu lực — cùng lượt quét (lỗi đã bắt trong hàm). */
-  quetDoiDenHan(homNay);
+  quetTheoMoc('quet:lenh', homNay, () => {
+    try { thiHanhLenhDenHan(homNay); } catch (e) { console.error('[chuyen-lop] quét khi đọc', e); }
+    /* OV-13m: Lộ trình mới sau thi "Hẹn bắt đầu" tới tuần — cùng lượt quét (lỗi đã bắt trong hàm). */
+    batDauHenDenHan(homNay);
+    /* PC-GV-A: lịch đổi phân công GV tới tuần hiệu lực — cùng lượt quét (lỗi đã bắt trong hàm). */
+    quetDoiDenHan(homNay);
+  });
 }
 
 const inHang = (ids: readonly number[]) => ids.map(() => '?').join(',');

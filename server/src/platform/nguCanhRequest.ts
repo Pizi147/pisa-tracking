@@ -18,8 +18,10 @@ type Kho = {
   nho: Map<string, unknown> | null;
   /** n = số câu SQL, dong = số dòng các câu trả về (TD2-0: `[cham]` in cả hai); top = 3 câu đọc nhiều dòng nhất (TD3-0). */
   dem: Dem;
-  /** S4: request GET (bộ nhớ của `trongBoNho` ngoài request không tính) — ghi trong GET không đếm vào `soLanGhi`. */
-  get?: boolean;
+  /** TL-NEN: mốc chung đọc kèm câu phiên (`MocHeThong`, platform/mocHeThong.ts) — không có = không có phiên. */
+  moc?: unknown;
+  /** TL-NEN: request này đã ghi DB (sau bước kiểm phiên) → không dùng nhớ tiến trình của bảng tham chiếu nữa. */
+  coGhi?: boolean;
 };
 
 /**
@@ -37,29 +39,31 @@ let tongCau = 0;
 let tongDong = 0;
 
 export function chayTrongRequest<T>(method: string, fn: () => T): T {
-  return kho.run({ nho: method === 'GET' ? new Map() : null, dem: demMoi(), get: method === 'GET' }, fn);
+  return kho.run({ nho: method === 'GET' ? new Map() : null, dem: demMoi() }, fn);
 }
 
-/*
- * S4 (giảm dòng đọc Turso): lượt quét ở đường đọc (`quetYeuCau`, dời lịch quá hạn) chạy ở MỌI GET mở hộp / badge / Công việc — mỗi lần đọc lại
- * các bảng chờ dù không có gì đổi. Giới hạn THEO TIẾN TRÌNH: bỏ qua nếu đã quét trong `QUET_DOC_MS` VÀ từ đó tiến trình không ghi gì ngoài GET
- * (request ghi, lệnh, phép kiểm, seed). Ghi trong chính tiến trình → lần đọc kế quét ngay, nên việc vừa xong không còn báo chờ ở nơi người ghi
- * nhìn. ponytail: ghi ở tiến trình (instance Netlify) KHÁC chỉ được thấy sau tối đa `QUET_DOC_MS`; cần hơn thì đọc mốc ghi chung trong DB.
- */
-let soLanGhi = 0;
-/** db.ts gọi ở mỗi `run` / `exec`. Ghi trong request GET là chính các lượt quét / mốc phiên — không làm quét lại. */
+/** db.ts gọi ở mỗi `run` / `exec`: request đang chạy đã ghi DB (TL-NEN — bảng tham chiếu có thể vừa đổi, xem `nhoThamChieu`). */
 export function daGhiDb(): void {
-  if (!kho.getStore()?.get) soLanGhi++;
+  const s = kho.getStore();
+  if (s) s.coGhi = true;
 }
-export const QUET_DOC_MS = 60_000;
-const lanQuet = new Map<string, { luc: number; ghi: number }>();
-/** Chạy `fn` trừ khi khoá này đã quét < `ms` trước VÀ chưa có ghi nào ngoài GET từ đó. Trả true khi đã chạy. */
-export function quetGioiHan(khoa: string, fn: () => void, ms = QUET_DOC_MS): boolean {
-  const truoc = lanQuet.get(khoa);
-  if (truoc && truoc.ghi === soLanGhi && Date.now() - truoc.luc < ms) return false;
-  fn();
-  lanQuet.set(khoa, { luc: Date.now(), ghi: soLanGhi });
-  return true;
+
+/** Đặt mốc chung của request (`resolveSession`, SAU ghi mốc dùng phiên — ghi đó không chạm bảng tham chiếu). Không có kho → bỏ qua. */
+export function datMoc(m: unknown): void {
+  const s = kho.getStore();
+  if (!s) return;
+  s.moc = m;
+  s.coGhi = false;
+}
+
+/** Mốc chung của request hiện tại (undefined = ngoài request hoặc không có phiên). */
+export function layMoc(): unknown {
+  return kho.getStore()?.moc;
+}
+
+/** Request hiện tại đã ghi DB từ lúc đặt mốc chưa? */
+export function coGhiTrongRequest(): boolean {
+  return !!kho.getStore()?.coGhi;
 }
 
 /**

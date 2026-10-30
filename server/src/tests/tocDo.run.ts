@@ -687,6 +687,8 @@ async function doMotLuot(dong?: Map<string, number>, lap?: string[]): Promise<Ma
 const dongTruocNhan = new Map<string, number>();
 const docLap: string[] = [];
 const truocNhan = await doMotLuot(dongTruocNhan, docLap);
+/* TL-NEN: `PISA_IN_DO=<tệp>` ghi số câu / dòng từng (vai × đường) ra JSON — cột trước → sau của mô tả PR. */
+if (process.env.PISA_IN_DO) fs.writeFileSync(process.env.PISA_IN_DO, JSON.stringify(Object.fromEntries([...truocNhan].map(([k, n]) => [k, [n, dongTruocNhan.get(k)]])), null, 1));
 
 check('TD2-a · không đọc lặp — mỗi request GET: câu lịch kỹ năng / câu điểm không trả cùng một lượt hai lần', () => {
   assert(docLap.length === 0, `Đọc lặp:\n${docLap.join('\n')}`);

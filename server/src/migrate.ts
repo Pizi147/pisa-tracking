@@ -95,6 +95,7 @@ import { migratePrPhanCongGv } from './migrate/prPhanCongGv.ts';
 import { migratePrChuongNhe } from './migrate/prChuongNhe.ts';
 import { migrateDonLuong } from './migrate/donLuong.ts';
 import { migratePrBanGiaoGv } from './migrate/prBanGiaoGv.ts';
+import { migratePrTlNen } from './migrate/prTlNen.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -426,6 +427,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* CHUONG-NHE: cột users.chuong_dong_bo_luc — mốc đồng bộ chuông ở DB thay bộ nhớ tiến trình (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrChuongNhe(conn, applied));
     /* DON-LUONG K6: chỉ mục idx_scores_no_show — lưới tuần gốc có hàng em vắng dời hết (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migrateDonLuong(conn, applied));
     /* PR-B BAN-GIAO-GV: ban_giao_gv · ban_giao_gv_mon · ban_giao_gv_em — việc bàn giao khi đổi GV (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBanGiaoGv(conn, applied));
+    /* TL-NEN: bảng moc_he_thong (phiên bản bảng tham chiếu + mốc quét đường đọc) + 15 trigger tg_tc_* (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNen(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

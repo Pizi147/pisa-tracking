@@ -52,7 +52,7 @@ let sqlGanNhat = '';
       continue;
     }
     proto[ten] = function (this: unknown, ...args: unknown[]) {
-      if (ten === 'run') { xoaNho(); daGhiDb(); }   // S4: ghi → lượt quét đường đọc kế chạy ngay (`quetGioiHan`)
+      if (ten === 'run') { xoaNho(); daGhiDb(); }   // TL-NEN: request đã ghi → phần còn lại không dùng nhớ bảng tham chiếu theo tiến trình
       /* Z2c-d: ghi lẻ NGOÀI giao dịch (mốc dùng phiên, lần thử đăng nhập…) gặp khoá của người khác thì chờ như tx(). */
       const out = ten === 'run' && !instance?.inTransaction
         ? choKhoaGhi(() => goc.apply(this, motNull(args)))
@@ -80,7 +80,7 @@ let sqlGanNhat = '';
   const TOI_DA_CAU = 1000;
   type Bao = { stmt: unknown; pluckMode: boolean; daLuu?: boolean; sql?: string; raw(b: boolean): void; safeIntegers(b: boolean): void };
   const boNho = new WeakMap<object, Map<string, Bao>>();
-  /* S4: `exec` (giao dịch, DDL, ghi nhiều câu của lệnh / phép kiểm) cũng là ghi với `quetGioiHan`. */
+  /* TL-NEN: `exec` (giao dịch, DDL, ghi nhiều câu) cũng là ghi với `nhoThamChieu`. */
   const execGoc = Database.prototype.exec;
   Database.prototype.exec = function (this: object, sql: string) {
     daGhiDb();
