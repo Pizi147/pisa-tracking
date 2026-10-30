@@ -14,3 +14,5 @@ BO SUNG 29/10 (#690): chay rieng vai tep phep kiem khong can script tam:
   Dong do co ten tep [prX]. Ca do khi chay roi ma check day du dat (phu thuoc thu tu) -> ghi ro trong PR.
 BO SUNG 30/10 (CN-1): tep trong DOC_LAP (run.ts) chay tren DB GOC = ban chep DB ngay sau seed (server/src/tests/dbGoc.ts) -> chay rieng = chay trong bo.
   Thu chuyen them tep: PISA_DOC_LAP=<danh sach cu>,<tep> PISA_CHI_TEP=<tep> node dist-server/server/src/tests/run.js (xanh + so phep tep khong doi).
+
+CAP NHAT 31/10 (chu SP duyet): check day du nay ~3 phut => session code CHAY npm run check day du (o check-1 hoac check-2) TRUOC khi mo / cap nhat PR, ghi ket qua vao mo ta PR. Buoc 1-3 o tren van dung de kiem nhanh trong luc lam. PTA van chay check chung khi merge.
