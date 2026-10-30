@@ -53,15 +53,15 @@ const ketQua = (r: Hang): 'sos' | 'dat' | 'thieu' | 'khac' => {
 
 /* UI-HO-SO-LOP (chủ SP 22/10, 10 mục 8): GIỮ Target (mockup `ho-so-lop.html`), cột Phụ huynh của TVV / CX (OV-10b) và ⋯ thao tác từng dòng (V4). */
 const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
-  /* BANG-EM-GON: bề rộng theo mockup v10 `#be` (tên 300); TVV / CX thêm cột Phụ huynh → tên giữ 220 để bảng không tràn 1440. */
-  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: theoVai ? 220 : 300 },
+  /* BANG-EM-GON: bề rộng theo tỉ lệ mockup v10 `#be`, tổng giữ như cũ để 1280 không tràn (tên 240 thay 300; S 80 cho "vắng W1 SEP"); TVV / CX thêm cột Phụ huynh → tên 220. */
+  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: theoVai ? 220 : 240 },
   { key: 'target', nhan: 'Target', kieu: 'so', rong: 84 },
   { key: 'mt', nhan: 'MT', kieu: 'so', rong: 60 },
   { key: 'l', nhan: 'L', kieu: 'diem', rong: 72 }, { key: 'r', nhan: 'R', kieu: 'diem', rong: 72 },
-  { key: 'w', nhan: 'W', goiY: t('W = (W1 + 2 × W2) / 3 — dòng phụ: W1 · W2'), kieu: 'diem', rong: 90 }, { key: 's', nhan: 'S', kieu: 'diem', rong: 72 },
+  { key: 'w', nhan: 'W', goiY: t('W = (W1 + 2 × W2) / 3 — dòng phụ: W1 · W2'), kieu: 'diem', rong: 90 }, { key: 's', nhan: 'S', kieu: 'diem', rong: 80 },
   { key: 'ovr', nhan: 'Overall', kieu: 'diem', rong: 86 },
-  { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 150 }, { key: 'thi', nhan: t('Ngày thi'), kieu: 'chip', rong: 150 },
-  { key: 'cp', nhan: 'Case + PA', kieu: 'chip', rong: 126 },
+  { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 150 }, { key: 'thi', nhan: t('Ngày thi'), kieu: 'chip', rong: 136 },
+  { key: 'cp', nhan: 'Case + PA', kieu: 'chip', rong: 122 },
   ...(theoVai ? [{ key: 'ph', nhan: t('Phụ huynh'), kieu: 'chip' as const, rong: 170 }] : []),
   { key: 'nut', nhan: '', kieu: 'nut' },
 ];
