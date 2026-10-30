@@ -24,7 +24,7 @@ import { doiMocViecTheoDoi, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi }
 
 export type LuuLopVao = { classId: number; slots: TeacherSlot[]; phienBan?: string; banGiao?: Record<string, boolean> };
 /** `viec` = số việc bàn giao mới (PR-B). */
-export type KetQuaLuu = { lo: number | null; lop: { classId: number; cho: boolean; soO: number }[]; viec: number };
+export type KetQuaLuu = { lo: number | null; lop: { classId: number; cho: boolean; soO: number; phienBan: string }[]; viec: number };
 /** Một lần lưu tối đa bấy nhiêu lớp — vừa ngân sách 10 s một lời gọi Netlify (PTA 30/10; đo `TRAN_GHI_LO.luuPhanCong8Lop`). */
 const TOI_DA_LOP = 8;
 
@@ -216,7 +216,9 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
       g.boKhongDoi('sos_cases');
       luuGhiDao(conn, { loai: 'phan_cong.luu', bang: 'doi_phan_cong', id: lo, nguoi: p.userId, ghi: g });
     }
-    return { lo, lop: kq, viec };
+    /* Phiên bản sau lưu (2 câu cho cả lô): web sửa lại dòng vừa lưu trước lần khớp lại không bị 409 với chính mình. */
+    const xong = docHienTai(ids);
+    return { lo, lop: kq.map((x) => ({ ...x, phienBan: phienBanPhanCong(xong.active.get(x.classId)!, xong.cho.get(x.classId)!) })), viec };
   });
 }
 

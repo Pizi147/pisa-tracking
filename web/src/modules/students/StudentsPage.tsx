@@ -543,8 +543,9 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} loc={trongLoc} />
       )}
 
+      {/* key: đổi chi nhánh (đã OK "rời đi sẽ mất") → góc dựng lại, nháp chi nhánh cũ không theo sang. */}
       {goc === 'phan-cong' && (
-        <GocPhanCongGv branchId={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? null : null} khung={khung}
+        <GocPhanCongGv key={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? 0 : 0} branchId={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? null : null} khung={khung}
           q={params.get('tim') ?? ''} onQ={(v) => setParam({ tim: v || null })}
           coTheTaoLop={!!data?.coTheTaoLop} onTaoLop={() => setTaoLop(true)} onNhap={setNhapPc}
           chonCn={(branches.data?.length ?? 0) > 0 && (

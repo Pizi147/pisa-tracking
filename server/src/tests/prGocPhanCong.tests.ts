@@ -129,6 +129,21 @@ export async function runPrGocPhanCongTests(t: YThucTestKit) {
       assert(doi.length === 0, `${l.code}: ${JSON.stringify(doi)}`);
     }
   });
+  check('C5 · rà #726 CHẶN 1: nháp dựng trên bản cũ, QL khác vừa đổi ô KHÁC → bản mới về: gộp giữ ô mình sửa + ô người kia đổi, Lưu gửi phiên bản mới (không trả lại thay đổi của người kia)', () => {
+    const cu = { ...lopMa('CP FT 137'), phienBan: 'v1' };
+    const nho = { phienBan: 'v1', goc: d.chonCuaLop(cu) };
+    const nhap = { ...nho.goc, listening: ID.phong, gvcn: ID.phong };   // mình đổi L + GVCN
+    const moi = { ...cu, phienBan: 'v2', slots: cu.slots.map((s: any) => (s.skill === 'reading' ? { ...s, userId: ID.yen } : s)) };   // người khác đổi R
+    assert(d.gopNhapBanMoi(nho, cu, nhap) === null, 'cùng phiên bản → không gộp');
+    const g = d.gopNhapBanMoi(nho, moi, nhap);
+    assert(g.chon.listening === ID.phong && g.chon.gvcn === ID.phong && g.chon.reading === ID.yen, `gộp: ${JSON.stringify(g.chon)}`);
+    assert(g.khac.join() === 'reading' && g.nho.phienBan === 'v2' && g.nho.goc.reading === ID.yen, JSON.stringify(g));
+    const gui = d.slotsDongPc(moi, g.chon);
+    assert(gui.some((s: any) => s.skill === 'reading' && s.userId === ID.yen), 'Lưu giữ R của người khác (lỗi cũ: gửi lại R = Linh với phiên bản mới)');
+    /* Người khác đổi đúng ô mình đã sửa sang cùng người → hết nháp (không còn "Nháp · 0 ô đổi"). */
+    const trung = { ...cu, phienBan: 'v3', slots: cu.slots.map((s: any) => (s.skill === 'listening' || s.isCore ? { ...s, userId: ID.phong } : s)) };
+    assert(d.gopNhapBanMoi(nho, trung, nhap).chon === null, 'nháp trùng bản mới → null');
+  });
   check('C6 · rutGonThe: 3 thẻ đầu + thẻ ghim (giữ thứ tự), con = phần gom; nhóm ≤ 3 thẻ không gom', () => {
     const r = d.rutGonThe([1, 2, 3, 4, 5, 6, 7], (x: number) => x === 6);
     assert(r.hien.join() === '1,2,3,6' && r.con === 3, JSON.stringify(r));

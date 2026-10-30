@@ -4,7 +4,7 @@
  */
 import { hanTheoNgay } from './cases.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, kyNangPhuTrach } from './normal.ts';
-import { kiemPhanCong, moRongPhanCong, oPhanCong, type LoiPhanCong, type OPhanCong, type SlotPhanCong } from './phanCong.ts';
+import { gopChonSau409, kiemPhanCong, moRongPhanCong, oPhanCong, type LoiPhanCong, type OPhanCong, type SlotPhanCong } from './phanCong.ts';
 import { soSanhLop } from './tenLop.ts';
 import { addDaysIso } from './sos.ts';
 
@@ -127,6 +127,23 @@ export function slotsDongPc(l: LopPc, chon: ChonDongPc): SlotPhanCong[] {
   });
 }
 
+/** Bản gốc của một dòng nháp: phiên bản + bức tranh lúc dòng vào nháp. Lưu gửi phiên bản NÀY (không phải bản đang tải). */
+export type GocNhapPc = { phienBan: string; goc: ChonDongPc };
+
+/**
+ * Bản mới của lớp về (tải lại sau lưu dòng khác / Hoàn tác / Chờ đổi / 409) khi dòng còn nháp: cùng phiên bản → null (không làm gì).
+ * Khác → gộp ba bản như 409 (`gopChonSau409`): ô đã sửa giữ, ô chưa sửa theo bản mới — không trả lại thay đổi của người khác.
+ * `khac` = ô người khác vừa đổi; `chon` null khi nháp sau gộp trùng bản mới (hết nháp, không còn "Nháp · 0 ô đổi").
+ */
+export function gopNhapBanMoi(nho: GocNhapPc, l: LopPc, nhap: ChonDongPc): { chon: ChonDongPc | null; khac: string[]; nho: GocNhapPc } | null {
+  if (l.phienBan === nho.phienBan) return null;
+  const m = chonCuaLop(l);
+  const { chon } = gopChonSau409(nho.goc, m, nhap);
+  const khac = oDongPc(l).filter((k) => (m[k] ?? '') !== (nho.goc[k] ?? ''));
+  const conNhap = oDongPc(l).some((k) => (chon[k] ?? '') !== (m[k] ?? ''));
+  return { chon: conNhap ? chon : null, khac, nho: { phienBan: l.phienBan, goc: m } };
+}
+
 /** Ô thiếu GV ("Thiếu GV · n ô"): ô Chưa có + ô của người không còn là ứng viên (`nghi` / `ngoai-cn`). */
 export function oThieuLop(l: LopPc, gv: readonly GvPc[]): number {
   const nghi = new Set(gv.filter((g) => g.nghi).map((g) => g.id));
@@ -203,7 +220,7 @@ export function lopSauNhap(lop: readonly LopPc[], nhap: Readonly<Record<number, 
   return lop.map((l) => (nhap[l.id] ? { ...l, slots: moRongPhanCong(l.ct, l.kyNang, slotsDongPc(l, nhap[l.id])) } : l));
 }
 /** Kết quả `POST /phan-cong/luu` (máy chủ `KetQuaLuu`): `lo` = khoá Hoàn tác; mỗi lớp `cho` = lịch đổi tương lai (chưa áp). */
-export type KetQuaLuuPc = { lo: number | null; lop: { classId: number; cho: boolean; soO: number }[] };
+export type KetQuaLuuPc = { lo: number | null; lop: { classId: number; cho: boolean; soO: number; phienBan: string }[] };
 
 /** 375 (mockup v9 khu 1): mỗi nhóm thẻ hiện `toiDa` thẻ đầu + mọi thẻ ghim (ô thiếu / nháp / chờ đổi / đang sửa); còn lại gom "… n lớp nữa". */
 export function rutGonThe<T>(ds: readonly T[], ghim: (x: T) => boolean, toiDa = 3): { hien: T[]; con: number } {
