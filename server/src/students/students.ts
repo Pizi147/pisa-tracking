@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILLS, JOURNEY_GROUP, chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
   type LoaiLop, type ProgrammeCode,
-  CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU, TRUONG_LIEN_HE_TAM_DUNG,
+  CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU, TRUONG_LIEN_HE_TAM_DUNG, TRUONG_LIEN_HE, coONhapLienHe,
 } from '../../../shared/domain/index.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -764,6 +764,24 @@ export function chuanHoaSuaHoSo(patch: any) {
   return patch;
 }
 
+/** Cột `students` của từng ô Liên hệ. */
+const COT_LIEN_HE = { phone: 'phone', parentName: 'parent_name', parentRelation: 'parent_relation', parentPhone: 'parent_phone' } as const;
+
+/**
+ * QUYEN-LIEN-HE (luật chủ SP 13/10, rà sâu #729): ô Liên hệ (SĐT em, tên / quan hệ / SĐT phụ huynh) chỉ QL, Quản trị, TVV, CX, Admin đổi được
+ * (`coONhapLienHe` — cùng hàm web ẩn ô). GV gửi thẳng API mà ĐỔI giá trị → 403; gửi lại nguyên giá trị (sau chuẩn hoá) không chặn.
+ * `vao` = patch gửi lên (chưa chuẩn hoá), `s` = dòng `students`. Một cửa cho mọi đường ghi: PATCH hồ sơ (`updateStudent`) · Sửa cả lớp (xem trước + lưu).
+ */
+export function chanDoiLienHe(p: Principal, vao: Record<string, unknown> | null | undefined, s: Record<string, any>): void {
+  if (coONhapLienHe(p.roleKeys)) return;
+  for (const k of TRUONG_LIEN_HE) {
+    if (vao?.[k] === undefined) continue;
+    let moi: unknown;
+    try { moi = chuanHoaSuaHoSo({ [k]: vao[k] })[k]; } catch { moi = Symbol('sai'); }   // sai định dạng vẫn là đổi
+    if ((moi ?? null) !== (s[COT_LIEN_HE[k]] ?? null)) throw loi(403, 'Chỉ Quản lý, TVV hoặc CX sửa được thông tin liên hệ — báo TVV / Quản lý cập nhật.');
+  }
+}
+
 /** PR-OV2b: tài khoản vai TVV còn hoạt động (đã duyệt, chưa xoá, vai chưa gỡ). */
 const TVV_SQL = `SELECT u.id, u.full_name, ur.branch_id, b.name AS cn FROM users u
   JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'consultant'
@@ -851,6 +869,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any, email
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound();
+  chanDoiLienHe(p, patch, s);   // QUYEN-LIEN-HE: GV không đổi ô Liên hệ (máy chủ, không chỉ ẩn ô)
   /* P7 → chủ SP chốt 30/10: em Tạm dừng (Lưu trữ) — chỉ thông tin liên hệ (TVV gọi mời học lại); nút "Sửa thông tin" ngay ở Lưu trữ (cờ `coTheSuaThongTin`, luuTru.ts). */
   if (s.archived_at && !(s.status === 'inactive' && Object.keys(patch ?? {}).every((k) => (TRUONG_LIEN_HE_TAM_DUNG as readonly string[]).includes(k)))) throw badRequest(CAU_LUU_TRU);
   // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.

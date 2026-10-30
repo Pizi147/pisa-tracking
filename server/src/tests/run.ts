@@ -9884,6 +9884,9 @@ await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODA
 // ==================================================================== DON-LUONG (luồng còn sót ra-luong + OV-11)
 const { runDonLuongTests } = bocTep('donLuong', await import('./donLuong.tests.ts'));
 await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== QUYEN-LIEN-HE (luật 13/10: ô Liên hệ chỉ QL / Quản trị / TVV / CX / Admin — máy chủ)
+const { runPrQuyenLienHeTests } = bocTep('prQuyenLienHe', await import('./prQuyenLienHe.tests.ts'));
+await runPrQuyenLienHeTests({ check, assert, conn, P, TODAY } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
