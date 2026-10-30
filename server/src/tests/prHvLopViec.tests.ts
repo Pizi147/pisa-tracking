@@ -63,6 +63,21 @@ export async function runPrHvLopViecTests(t: YThucTestKit) {
     assert(mk.includes('chuMiniKn') && mk.includes("lopKq('duoi')") && mk.includes("lopKq('bang')"), 'màu / ký hiệu');
   });
 
+  check('H1 · "+n việc" không mất việc ngoài Case: PanelMotEm có khối "Việc khác" từ việc trang đã nạp, làm tại chỗ (PanelViec thay nội dung, ← tên em)', () => {
+    const pm = doc('web/src/modules/students/PanelMotEm.tsx');
+    assert(pm.includes("t('Việc khác')") && /viecTrang \?\?/.test(pm), 'thiếu khối Việc khác dùng viecTrang');
+    assert(/!\(x\.caseId && VIEC_CUA_NHOM\[x\.group\]\)/.test(pm), 'Việc khác phải gồm mọi việc ngoài khối Case');
+    assert(/<QuayLaiPanel\.Provider value=\{\{ nhan: ten/.test(pm) && pm.includes('<PanelViec it={viecKhacMo}'), 'PanelViec thay nội dung + ← tên em');
+    assert(/lamTaiCho\(v\)[\s\S]{0,500}to=\{v\.href\}/.test(pm), 'việc không làm tại chỗ → link trang của việc');
+    assert(/viecTrang=\{viecHien\.get\(panelEm\.id\)/.test(trang), 'StudentsPage truyền việc đã nạp (0 câu thêm)');
+    const kp = doc('web/src/ui/KhungPanel.tsx');
+    assert(/quayLaiRieng \?\? quayLaiNgoai/.test(kp) && /<QuayLaiPanel\.Provider value=\{null\}>/.test(kp), 'KhungPanel: ← từ nơi mở chỉ cho panel ngoài cùng');
+  });
+
+  check('H1 · MiniKn ở chi tiết dưới hàng Lịch thi truyền kck (em KCK không ✗)', () => {
+    assert(/<MiniKn kn=\{c\.kn\} kv=\{st\?\.expectation \?\? null\} kck=\{r\.kck\} \/>/.test(goc), 'ChiTietDuoiHang thiếu kck');
+  });
+
   check('H1 · OMtGan: Overall ODiem chiToHut', () => {
     assert(/<ODiem so=\{chuSo\(m\.ovr\)\}[^>]*chiToHut/.test(ds), 'OMtGan Overall chưa chiToHut');
   });

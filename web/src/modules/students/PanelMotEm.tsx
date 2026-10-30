@@ -4,12 +4,13 @@ import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, QuayLaiPanel } from '../../ui/KhungPanel.tsx';
 import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { BoiCanh, CanLam } from '../../ui/KhuonViec.tsx';
 import { skillShort } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganCase } from './NganCase.tsx';
+import { PanelViec, lamTaiCho } from '../congViec/PanelViec.tsx';
 import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { chuChuaNguyenNhan, type CaseTomTat } from './BangSos.tsx';
@@ -46,10 +47,12 @@ const NUT_CUA_NHOM: Record<string, string> = {
  * Cần làm (việc lấy từ `/my-work` — cùng nguồn Công việc / góc Cần làm), Case khác gập. Bấm việc → Ngăn Case sẵn có THAY nội dung panel ("← tên em"),
  * lưu xong về đúng panel này (không panel lồng panel). TVV / CX chỉ đọc + Phụ huynh.
  */
-export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
+export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
   studentId: number;
   /** Case của việc vừa bấm — mở sẵn, đưa lên đầu. */
   caseMo?: number | null;
+  /** HV-LOP-VIEC: việc của em trang đã nạp (ô Việc Học viên & Lớp, cùng số "+n việc") — khối "Việc khác" dùng nó, không gọi thêm. */
+  viecTrang?: WorkItem[];
   onClose: () => void; onDoi?: () => void;
 }) {
   const { session } = useSession();
@@ -66,6 +69,8 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
   /* OV-13q: việc sau thi THAY nội dung panel (như Ngăn Case, "← tên em"); Gia hạn là hộp nhỏ đè. */
   const [sauThiMo, setSauThiMo] = useState<'thi-that' | 'buoc-tiep' | null>(null);
   const [giaHan, setGiaHan] = useState(false);
+  /* HV-LOP-VIEC: việc ngoài Case (Nhập điểm, Điền Target, Ý thức, Báo PH…) làm tại chỗ — PanelViec THAY nội dung panel, "← tên em" về đây. */
+  const [viecKhacMo, setViecKhacMo] = useState<WorkItem | null>(null);
   const { homNay } = useNgayNghiepVu();
 
   const daDoi = () => { reload(); work.reload(); invalidate('/hoc-vien-lop'); onDoi?.(); };
@@ -78,6 +83,13 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
       ? <KetQuaThiThatPanel cycleId={data.sauThi.cycleId} studentName={ten} lop={lop} quayLai={veEm} onClose={onClose} onDone={daDoi} />
       : <PanelBuocTiep cycleId={data.sauThi.cycleId} hocVien={{ id: studentId, ten }} lop={lop} quayLai={veEm} onClose={onClose} onDone={daDoi} />;
   }
+  if (viecKhacMo) {
+    return (
+      <QuayLaiPanel.Provider value={{ nhan: ten, onClick: () => { setViecKhacMo(null); reload(); } }}>
+        <PanelViec it={viecKhacMo} onDong={onClose} onTiep={null} onDaLam={daDoi} />
+      </QuayLaiPanel.Provider>
+    );
+  }
   if (view) {
     return (
       <NganCase key={`${view.caseId}:${view.viec ?? ''}:${view.paId ?? ''}`} caseId={view.caseId} viec={view.viec} paId={view.paId}
@@ -89,6 +101,10 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
     .filter((x) => x.caseId === caseId && x.studentId === studentId && VIEC_CUA_NHOM[x.group]);
   const cases = [...(data?.cases ?? [])].sort((a, b) => Number(b.id === caseMo) - Number(a.id === caseMo)
     || Number(viecCua(b.id).length > 0) - Number(viecCua(a.id).length > 0));
+  /* Việc khác = việc của em không thuộc khối Case (Case có view riêng) và không phải việc sau thi (khối riêng ở trên). */
+  const SAU_THI = new Set(['thi_that', 'buoc_tiep']);
+  const viecKhac = (viecTrang ?? (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x])))
+    .filter((x) => x.studentId === studentId && !(x.caseId && VIEC_CUA_NHOM[x.group]) && !(data?.sauThi && SAU_THI.has(x.group)));
   /* Case có việc của người xem mở sẵn (TVV / CX gập hết). */
   const dangMo = (c: CaseTomTat) => mo.has(c.id) || (!chiDoc && viecCua(c.id).length > 0 && !mo.has(-c.id));
   const doiMo = (c: CaseTomTat) => setMo((cu) => {
@@ -140,6 +156,25 @@ export function PanelMotEm({ studentId, caseMo, onClose, onDoi }: {
                   <span className="min-w-0 flex-1"><OPhuHuynh l={data.em.lienHe} /></span>
                   {data.em.lienHe.parentPhone && <a className="btn btn-sm min-h-[44px] sm:min-h-[32px]" href={`tel:${data.em.lienHe.parentPhone.replace(/[^\d+]/g, '')}`}>{t('Gọi')}</a>}
                 </div>
+              )}
+              {viecKhac.length > 0 && (
+                <section className="space-y-1.5" aria-label={t('Việc khác')}>
+                  <h3 className="m-0 text-xs font-semibold text-slate-400">{t('Việc khác')}</h3>
+                  {viecKhac.map((v) => (
+                    <CanLam key={v.key}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-bold text-slate-100">{dich(v.tieuDe)}</span>
+                          {v.owner && !v.mine && <span className="block text-xs text-slate-400">{dich(v.owner)}</span>}
+                        </span>
+                        {v.due && LOAI_HAN_CUA_VIEC[v.group] && <ChipHan loai={LOAI_HAN_CUA_VIEC[v.group]!} han={v.due} />}
+                        {lamTaiCho(v)
+                          ? <button type="button" className="btn btn-primary min-h-[44px] max-sm:w-full sm:min-h-[36px]" onClick={() => setViecKhacMo(v)}>{v.actionLabel ? dich(v.actionLabel) : t('Mở')}</button>
+                          : <Link className="btn min-h-[44px] max-sm:w-full sm:min-h-[36px]" to={v.href}>{v.actionLabel ? dich(v.actionLabel) : t('Mở')} ›</Link>}
+                      </div>
+                    </CanLam>
+                  ))}
+                </section>
               )}
               {!cases.length && <p className="m-0 py-3 text-sm text-slate-400">{t('Em chưa có Case nào.')}</p>}
               {cases.map((c) => {

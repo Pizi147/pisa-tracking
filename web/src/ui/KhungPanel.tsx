@@ -153,6 +153,9 @@ export const KhungTrongCot = createContext(false);
 export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; khoa?: boolean; dai?: ReactNode } | null>(null);
 /** M6 6b-3: lớp panel đang ẨN (form việc khi đang "Xem Case" trong panel việc) — cần hỏi "Bỏ chữ?" thì hiện lại lớp đó trước (hộp hỏi vẽ trong panel). */
 export const HienLaiPanel = createContext<(() => void) | null>(null);
+/** HV-LOP-VIEC: nơi mở một panel việc THAY nội dung panel của mình (panel một em → PanelViec) cấp "← tên em" cho panel NGOÀI CÙNG bên trong
+ *  (không phải sửa từng panel việc); prop `quayLai` riêng thắng; panel / hộp lồng trong không nhận lại. */
+export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; xem?: boolean } | null>(null);
 
 /**
  * KHUÔN PANEL CHUNG (PR-UX0, N-4 — mockup 15 (1)). Ngăn phải 480px (V5 07 mục 4: 420–480; form dạng bảng `rong` = 720px), 375px toàn màn.
@@ -162,7 +165,7 @@ export const HienLaiPanel = createContext<(() => void) | null>(null);
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh, quayLai, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, onDong, children }: {
+export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh, quayLai: quayLaiRieng, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, onDong, children }: {
   tieuDe: string; hocVien?: string | null; lop?: string | null;
   /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". M6 6b-1: khung KHÔNG
    *  đoán theo `dau` — panel việc khai qua `dauViec` (`dau.loai`) hoặc prop này; `null` = không vẽ. */
@@ -202,6 +205,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
 }) {
   const id = useId();
   const khung = useRef<HTMLDivElement>(null);
+  const quayLaiNgoai = useContext(QuayLaiPanel);
+  const quayLai = quayLaiRieng ?? quayLaiNgoai ?? undefined;
   const dongRef = useRef(onDong);
   dongRef.current = onDong;
   const trongCot = useContext(KhungTrongCot);
@@ -367,7 +372,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
         {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => setHoi(null)} onBo={boChu} />}
     </>
   );
-  const voi = (x: ReactNode) => <TrongKhung.Provider value>{x}</TrongKhung.Provider>;
+  const voi = (x: ReactNode) => <TrongKhung.Provider value><QuayLaiPanel.Provider value={null}>{x}</QuayLaiPanel.Provider></TrongKhung.Provider>;
   if (taiCho) {
     /* OV-14c: Esc từ hộp nằm trong portal (hộp nhập điểm) nổi bọt qua cây React — chỉ đóng panel khi Esc phát ra TRONG khung panel. */
     return (

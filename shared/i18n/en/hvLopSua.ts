@@ -3,6 +3,7 @@ import type { Bien } from '../en.ts';
 
 export const EN_HV_LOP_SUA = {
   'Xem thêm {n}': 'Show {n} more',
+  'Việc khác': 'Other tasks',
   /* HV-LOP-VIEC: hạn trong nút việc "Nhập điểm MT3 · L · ⚠ quá 3 ngày". */
   'quá {n} ngày': (b: Bien) => (Number(b.n) === 1 ? '1 day overdue' : `${b.n} days overdue`),
   'Theo vai': 'By role',

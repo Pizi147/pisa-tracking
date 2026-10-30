@@ -72,7 +72,7 @@ export const kqOverall = (ovr: number | null | undefined, kv: number | null | un
  */
 export function MiniKn({ kn, kv, kck }: { kn: Kn; kv: number | null; kck?: boolean }) {
   return (
-    <span className="mt-1 grid w-max grid-cols-[44px_44px_54px_54px_44px] gap-x-1.5 text-[13px] leading-5 tabular-nums text-slate-100">
+    <span className="mt-1 grid w-max grid-cols-[46px_46px_58px_58px_46px] gap-x-1 text-[13px] leading-5 tabular-nums text-slate-100">
       {KN_MINI.map((k) => {
         const v = kn[k];
         const dat = datKv(v, kv, kck);
@@ -297,7 +297,7 @@ function ChiTietDuoiHang({ r }: { r: HangHien }) {
         <div className="grid gap-4 text-[13px] text-slate-200 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className={tde}>{[st?.attemptLabel, st?.expectation != null ? t('kỳ vọng {kv}', { kv: st.expectation.toFixed(1) }) : null].filter(Boolean).join(' · ') || t('MT gần nhất')}</div>
-            {c.kn ? <MiniKn kn={c.kn} kv={st?.expectation ?? null} /> : <span className="text-slate-500">—</span>}
+            {c.kn ? <MiniKn kn={c.kn} kv={st?.expectation ?? null} kck={r.kck} /> : <span className="text-slate-500">—</span>}
           </div>
           <div>
             <div className={tde}>{t('Test sắp tới')}</div>

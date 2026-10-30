@@ -565,7 +565,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         <PanelViec it={viecMo} onDong={() => setViecMo(null)} onTiep={null} onDaLam={lamMoi} />
       )}
       {panelEm && (
-        <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} onClose={() => setPanelEm(null)}
+        <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} viecTrang={viecHien.get(panelEm.id)?.map((x) => x.it)} onClose={() => setPanelEm(null)}
           onDoi={lamMoi} />
       )}
       {taoLop && (
