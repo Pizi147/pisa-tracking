@@ -548,6 +548,14 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             </Truong>
           )}
         </Khoi>
+      ) : cycle ? (
+        /* SUA-NHO-QUYEN: em Tạm dừng (chỉ sửa liên hệ) — lộ trình đứng yên, hiện chỉ đọc; trước đây rơi vào câu "Em chưa có lộ trình". */
+        <Khoi tieuDe={t('Lộ trình đang học')}>
+          <p className="m-0 text-sm text-slate-200">
+            {cycle.ratio ? (cycle.programmeName ?? dichChu(cycle.label)) : dichChu(cycle.label)}
+            {cycle.endWeek && <span className="text-slate-500"> · {t('kết thúc {tuan}', { tuan: tuanLich(cycle.endWeek.weekStart, homNay) })}</span>}
+          </p>
+        </Khoi>
       ) : (
         <Khoi tieuDe={t('Lộ trình đang học')}>
           <p className="m-0 text-sm text-slate-400">{t('Em chưa có lộ trình — Dự kiến thi, Target, Điểm đầu vào sửa được sau khi em vào lớp.')}</p>

@@ -15,6 +15,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const week: any = await import('../platform/week.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const regular: any = await import('../normal/regular.ts');
+  const banChup: any = await import('../loTrinh/banChup.ts');
   const cases: any = await import('../cases/cases.ts');
   const fsMod = await import('node:fs');
   const pathMod = await import('node:path');
@@ -433,6 +434,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const other = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
       VALUES (?, 2, NULL, 'FOU', ?, 'completed', ?)`).run(hv.sid, '2026-05-04', NOW).lastInsertRowid);
+    /* CN-2: lộ trình đóng phải có bản chụp (bất biến PR-TK) — dựng thẳng thì ghi luôn, như mọi đường đóng thật. */
+    banChup.ghiBanChup(conn, [other], { lyDo: 'sua_tay', ngay: TODAY });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = caseCua(hv.sid, 'listening');
     assert(c.cycle_id === hv.cycleId && c.cycle_id !== other, 'Case phải nằm đúng khoá của lượt');

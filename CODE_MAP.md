@@ -27,7 +27,7 @@ sau đó viết tắt. Luật thuần (không đụng DB, máy chủ và web cù
 |---|---|---|
 | Khung 4 khu vực, thanh trên / dưới, link cũ chuyển hướng | `web/src/App.tsx` (`ThanhTren`) · `shared/domain/dieuHuong.ts` (`chiaMucThanh`, `chiaThanhDuoi`) | `server/src/platform/nav.ts` → `navOf` |
 | Đăng nhập, vào nhanh tài khoản demo, thanh Công cụ demo | `web/src/modules/platform/{WelcomePage,DemoBar}.tsx` | `/demo/session` → `server/src/platform/accounts.ts` |
-| Thanh trên: tìm kiếm (`/`, Ctrl K), Thông báo, menu Tài khoản | `web/src/modules/platform/Header.tsx` · `shared/domain/duongHoSo.ts` | `GET /tim/giao-vien` → `server/src/giaoVien/phamVi.ts` (`timGiaoVien`) · `server/src/platform/thongBao.ts` (`thongBaoCua`, `docHet`) |
+| Thanh trên: tìm kiếm (`/`, Ctrl K), Thông báo, menu Tài khoản | `web/src/modules/platform/Header.tsx` · `shared/domain/duongHoSo.ts` | `GET /tim/giao-vien` → `server/src/giaoVien/phamVi.ts` (`timGiaoVien`) · `server/src/platform/thongBao.ts` (`thongBaoCua` + Cần làm đã đọc ngoài 50 dòng, `docHet`, `docNhieu`) |
 | Tổng quan theo vai (QL · QT / CX · GV · TVV · Admin) | `web/src/modules/worklist/{OverviewPage,TongQuanV5,LopToiDay,MockTestAdmin,Highlights}.tsx` | `GET /tong-quan/v5` → `server/src/worklist/{tongQuanV5,tongQuan,tongQuanQl,tongQuanMt,bangChiNhanh}.ts` |
 | Panel "GV chấm quá hạn" | `web/src/modules/worklist/PanelGvTre.tsx` | `GET /tong-quan/gv-tre` → `server/src/worklist/gvTre.ts` · `tongQuanQl.ts` (`treCham`) |
 | Công việc (một danh sách, panel làm tại chỗ `?viec=`) | `web/src/modules/congViec/{CongViecPage,HoTroHocVienTab,DanhSachViec,PanelViec}.tsx` | `GET /my-work` → `server/src/worklist/mywork.ts` |
@@ -113,7 +113,7 @@ Từ vựng nghiệp vụ dùng chung: `shared/domain/` (xuất qua `shared/doma
 - `server/src/migrate/` — mỗi đợt một tệp `pr<Ma>.ts`, gọi theo thứ tự từ `server/src/migrate.ts`; `server/src/migrate/run.ts` = `npm run migrate`. Chạy lặp an toàn. Bảng gốc: `server/src/schema.sql`.
 - `server/src/seed/` — bộ demo (mục dưới); `<tínhNăng>Seed.ts` = dữ liệu demo theo tính năng, gọi từ `seed.ts`.
 - `server/src/ops/` — lệnh `npm run …`: `run*.ts` là điểm chạy, luật ở tệp cùng tên (initBanChinh, runInit, themChiNhanh, saoLuu, runSaoLuu, khoiPhuc, runKhoiPhuc, thuTurso, xoaKhoTep, kiemSauInit, chotVangDinhKy, demBoTroTrung, kiemOLop, kiemDuLieuMt, kiemTieuChiLe). Lệnh kiểm trước một lần (`kiem-truoc-*`) đã xoá sau deploy 28/10 (GON-MA-3) — cần thì lấy lại từ git.
-- `server/src/tests/` — `chayNhom.ts` = phần phép kiểm của `npm run check` / `npm test`: chạy `run.ts` chia `PISA_SO_NHOM` nhóm song song (mặc định 2; `=1` tuần tự như cũ) + `tocDo.run.ts` cùng lúc. `run.ts` gọi mọi `*.tests.ts` (danh sách `TACH` = tệp chạy ở nhóm 2…N; `PISA_CHI_TEP=a,b` chạy riêng vài tệp).
+- `server/src/tests/` — `chayNhom.ts` = phần phép kiểm của `npm run check` / `npm test`: chạy `run.ts` chia `PISA_SO_NHOM` nhóm song song (mặc định 3; `=1` một tiến trình) + `tocDo.run.ts` cùng lúc. `run.ts` gọi mọi `*.tests.ts`; `PISA_CHI_TEP=a,b` chạy riêng vài tệp. `dbGoc.ts` (CN-1/2): DB chụp ngay sau seed; mọi tệp trừ `GIU_CHUOI` của `run.ts` chạy trên bản chép mới của nó (`PISA_DOC_LAP=a,b` thử), chia nhóm tham lam theo `THOI_GIAN_MS` (`chiaThamLam`); tệp đứng trước prTk có thêm phép `[BB] <tệp>` (`batBienDb`). Tệp phép kiểm mới phải tự dựng dữ liệu (không dựa vào tệp khác).
 
 ---
 
@@ -261,7 +261,7 @@ Một lưới cho hai loại lớp: `chamSheet` trả `mode` (`ielts_band` / `ra
 | Kế hoạch Test FT + lớp thường (lưới HV × đợt, chip kỹ năng, hộp một đợt) | `web/src/modules/test/keHoach/{LopKeHoach,LuoiKeHoach,ChipKyNang,HopKyNang,TuanNho}.tsx` · `shared/domain/keHoachTest.ts` |
 | Xếp lịch MT nhiều lớp / theo học viên | `web/src/modules/test/keHoach/{NganXepLichMt,NganXepHangLoat,XepTheoHocVien}.tsx` · `server/src/keHoach/keHoachTest.ts` (`xepHangLoat`, `thiLai`) |
 | Kế hoạch Test: tìm, ghi chú lịch thi, Xuất | `web/src/modules/test/keHoach/{TimLop,TimKeHoach,GhiChuLichThi,NganXuatKeHoach,NganXuatDiem}.tsx` · `taiXlsx.ts` · `shared/domain/keHoachOv15c.ts` |
-| Xuất Excel kết quả Test | `web/src/modules/test/NganXuatMt.tsx` · `shared/domain/xuatMt.ts` · `server/src/phanTich/xuatMt.ts` (`duLieuXuatMt`) |
+| Xuất Excel kết quả Test | `web/src/modules/test/NganXuatMt.tsx` · `shared/domain/xuatMt.ts` · `server/src/phanTich/xuatMt.ts` (`duLieuXuatMt`; đợt lớp thường Progress · Checkpoint · Final — `kindCuaDot`) |
 | Báo "n ô chưa lưu" lên đầu trang | `web/src/ui/SaveState.tsx` (`SaveIndicator`, `useBaoLuu`) |
 
 ### Case
@@ -279,7 +279,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | Vòng đời Case, PA, kết quả | `server/src/cases/cases.ts` (`reportIssue`, `updateResult`, `closeBlockers`, `normalizeMetrics`) |
 | Form + Case (một hoặc nhiều kỹ năng) | `web/src/modules/cases/QuickReport.tsx` · `server/src/cases/cases.ts` (`reportIssue`, `reportIssues`) |
 | Từ vựng Case: hạng mục, nguyên nhân, PA, kết quả, hạn | `shared/domain/cases.ts` (`CASE_CATEGORIES`, `ISSUE_TAXONOMY`, `INTERVENTION_KINDS`, `FOLLOWUP_OUTCOMES`, `cycleDeadline`, `signalVerifyDue`) |
-| Người phụ trách Case (đổi, tự gán khi thiếu) | `web/src/modules/cases/DoiNguoiPhuTrach.tsx` · `server/src/cases/owner.ts` (`doiChuCase`, `ganChuCaseThieu`) |
+| Người phụ trách Case (đổi, tự gán khi thiếu) | `web/src/modules/cases/DoiNguoiPhuTrach.tsx` · `server/src/cases/owner.ts` (`doiChuCase`, `ganChuCaseThieu` — kèm đổi chủ theo lớp mới khi chuyển lớp, DON-LUONG K8) |
 | Người thực hiện (một kiểu chọn, một chỗ kiểm) | `shared/domain/nguoiThucHien.ts` · `server/src/cases/nguoiThucHien.ts` (`chuanHoaNguoiThucHien`) · `web/src/ui/PeoplePicker.tsx` (`ChonNguoi`) |
 | PA một mẫu (Thêm · Sửa · Thay · Xác nhận) | `web/src/modules/cases/FormPa.tsx` · `shared/domain/paDongBo.ts` · `server/src/cases/taoPa.ts` (`chenPa`) |
 | Ghi kết quả PA, ghi gọn, Hoàn tác, Sửa lần ghi | `web/src/modules/cases/{CapNhatTuan,GhiNhanh}.tsx` · `server/src/cases/cases.ts` (`updateResult`, `hoanTacKetQua`, `suaChuKetQua`, `daoKetQua`) · `giuKetQua.ts` (`nguoiGiuKetQua`) |
@@ -333,7 +333,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | Lịch sắp tới | `web/src/modules/worklist/Highlights.tsx` · `server/src/worklist/highlights.ts` |
 | Admin: khối Mock Test | `web/src/modules/worklist/MockTestAdmin.tsx` · `server/src/worklist/tongQuanMt.ts` |
 | TVV / CX: Học viên của tôi | `server/src/worklist/hvCuaToi.ts` (`chipHocVien`) |
-| Thông báo tự động (đồng bộ khi mở chuông) | `server/src/platform/thongBaoTuDong.ts` (`dongBoThongBaoTuDong`) |
+| Thông báo tự động (đồng bộ khi mở chuông) | `server/src/platform/thongBaoTuDong.ts` (`dongBoThongBaoTuDong`; mốc 5 phút ở `users.chuong_dong_bo_luc` — migrate `server/src/migrate/prChuongNhe.ts`) |
 | Vận hành: giao việc, việc con, Tạm ngưng | `web/src/modules/worklist/{MgmtTasksPage,ManagerTasks}.tsx` · `server/src/worklist/mgmttasks.ts` · `shared/domain/worklist.ts` |
 | Báo cáo đơn vị | `web/src/modules/worklist/MeetingPage.tsx` · `server/src/worklist/meeting.ts` · `shared/domain/baoCaoDonVi.ts` |
 | "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` (`mySkills`, `editableSkills`) |

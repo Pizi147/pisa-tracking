@@ -162,7 +162,8 @@ CREATE TABLE users (
   deleted_at TEXT,
   created_at TEXT NOT NULL,
   ngon_ngu TEXT,                                      -- PR-EN: 'vi' | 'en'; NULL = chưa chọn (web theo máy)
-  da_xem_huong_dan INTEGER                            -- HD-a: 1 = đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?"; NULL = chưa
+  da_xem_huong_dan INTEGER,                           -- HD-a: 1 = đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?"; NULL = chưa
+  chuong_dong_bo_luc TEXT                             -- CHUONG-NHE: mốc đồng bộ thông báo tự động gần nhất; NULL = lần mở chuông kế đồng bộ ngay
 );
 
 /* Email phụ. Email đăng nhập vẫn nằm ở `users.email` và không lặp lại ở đây. */
@@ -2316,3 +2317,6 @@ CREATE TABLE doi_phan_cong (
 CREATE INDEX ix_doi_pc_lop ON doi_phan_cong (class_id, trang_thai);
 CREATE INDEX ix_doi_pc_cu ON doi_phan_cong (nguoi_cu, trang_thai);
 CREATE INDEX ix_doi_pc_cho ON doi_phan_cong (trang_thai, hieu_luc);
+
+-- DON-LUONG K6: em vắng dời hết vẫn có hàng ở lưới tuần gốc (`classScoreSheet`, vế UNION theo chỉ mục).
+CREATE INDEX IF NOT EXISTS idx_scores_no_show ON assessment_scores (no_show_period_id) WHERE no_show_period_id IS NOT NULL;

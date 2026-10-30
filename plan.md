@@ -249,6 +249,24 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 31/10 sáng — chủ SP duyệt ảnh #736, #732, #731, #726 (kèm chỉnh)
+- **Nút ⋯ trong ô lưới điểm (luật):** đứng NGAY SAU nội dung ô, cùng hàng, giữa theo chiều dọc với dòng chữ đầu (vd "✗ 14 /25 ⋯"); không đè chữ / số; máy có chuột chỉ hiện khi rê / focus, cảm ứng hiện sẵn (#732 làm đúng kiểu này).
+- **Bảng lớp góc Phân công GV (#726) — thay ý "giãn hết" 30/10:** chừa MỘT cột cố định ở mép phải cho nút dòng (Huỷ / Lưu, Chờ đổi…) ở MỌI nhóm, để cột kỹ năng / GVCN không thụt ra thụt vào giữa các nhóm; cột GVCN thẳng hàng giữa nhóm FT và nhóm lớp thường. 375: bảng tổng hợp đủ cột "Tổng".
+
+### Backlog phát sinh đêm 30/10 (PTA rà PR)
+- ~~**QUYEN-LIEN-HE (PR riêng, quyền):**~~ (đang làm — PR QUYEN-LIEN-HE) luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
+- **PANEL [XM] (#736 PANEL-CHUNG):** XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
+- **LECH-CACH-CHAM (một nguồn):** em đổi lớp FT ↔ lớp thường: `standingFor` chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt → ✓ / ✗ từng kỹ năng ở panel (diemTuEval) có thể khác hồ sơ / SOS. Lỗi có từ trước, #733 phép M1 tạm bỏ qua em đó (in số em bỏ qua). Sửa: một hàm chọn cách chấm cho lượt (theo chương trình lớp của lượt) dùng cả hai đường.
+- **TAB-A11Y:** tab Chưa đạt · Đạt (panel số, `SoLieu.tsx`) và các `role="tab"` khác chưa có `aria-controls`, chưa đi bằng phím ← → (có từ trước; nguồn rà #736). Sửa ở thành phần tab chung một lần.
+- **QUYEN-THEO-CN:** quyền sửa liên hệ (`coONhapLienHe`) và một số cờ Lưu trữ xét theo VAI toàn tài khoản, không theo chi nhánh (`luuTru.ts:122`, `students.ts:776`): QL chi nhánh A kiêm GVCN chi nhánh B vẫn đổi được liên hệ em ở B (web cũng vậy). Luật cũ — hỏi chủ SP có cần xét vai theo chi nhánh của em không. (Nguồn: rà #746.)
+- **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
+
+### 30/10 (tối) — chủ SP duyệt mockup PANEL-V10 #723 (KHÔNG mockup lại; chỉnh ghi ở đây, kế hoạch code phải theo)
+- **Điểm kỹ năng = đạt / không đạt, KHÔNG phải lên / xuống:** bỏ ▼ / ▲ ở điểm (▲ ▼ chỉ dùng cho TIẾN ĐỘ / so lượt trước). Kỹ năng hụt: màu + **✗**, đạt: **✓** — đúng kiểu ô Overall (không phân biệt chỉ bằng màu). Áp panel + bảng em + HV & Lớp. G12 giữ (✓/✗ trước số).
+- **Tên TVV dưới tên HV (bảng em hồ sơ lớp): nhỏ hơn mockup một nấc** (vẫn chữ phụ mờ).
+- 5 câu mockup theo khuyến nghị: (2) chip SOS bỏ "· R, W" ở bảng có cột điểm · (3) "PA chưa có kết quả" · (4) Xét lại "Khi lưu" 1 dòng + ⓘ cho Học tiếp / Học lại, Dừng → Kết thúc học giữ khối đủ · (5) HV & Lớp tối đa 2 nút việc + "+n ›". Câu (1) thay bằng ý trên (✓ / ✗ như Overall).
+- **LỖI ⋯ BỊ CẮT / ĐÈ (chủ SP nhắc nhiều lần, PTA sót — ra-ui a6, mục OV "⋯ lớp thường đè 41 % ô tổng"):** lưới Điểm Test của lớp (`web/src/modules/cham/LuoiThuong.tsx:384` — `absolute right-1 top-1/2`) nút ⋯ nằm đè lên chữ "W1 NOV" / số trong ô. Sửa: ô chừa chỗ riêng cho ⋯ (không đè chữ / số ở mọi bề rộng), kiểm cả lưới FT và mọi ô bảng có ⋯ cùng kiểu; `do-bang` 1440 / 1280 / 375 xanh. → Task đầu tiên của SUA-NHO-UI.
+
 ### 30/10 — chủ SP chốt "theo lời khuyên PTA hết" (thứ tự làm từ trên xuống)
 1. **TOC-DO** (trước Phân công GV): log Netlify 29/10 — `GET /my-work` 5,6 s · 80 câu · 3 295 dòng; `/classes/:id/viec-theo-em` 3,9 s · 78 câu; `/classes/:id/overview` 2,9 s · 57 câu; `/cham/lich-test` 2,3 s; `/cham/lich-test/qua-han` 1,5 s. Chung câu top `SELECT sc.*, COALESCE(sc.student_id…` (346 dòng). Mục tiêu: mỗi đường ≤ 1 s, giảm số câu; trần mới ở `tocDoDuong.ts`. Có lúc Turso "connection closed before message completed" (đã tự nối lại). Rà sâu `/code-review high` (logic máy chủ).
 2. **Phân công GV** PR-B + PR-C song song, rồi PR-D (`docs/superpowers/plans/2026-10-30-phan-cong-gv.md`).
@@ -458,7 +476,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   - Công việc: MT0 lớp thường chỉ số Nợ điểm đếm W1 + W2, Công việc đếm Writing 1 bài (`listAttempts` nhánh ratio) · panel Nhập điểm mở "Cả lớp" có hai thanh chip · em cuối của dòng gộp xong rơi xuống cuối · "Nhắc tất cả" khi lọc hạn nhắc từng việc con (nhiều chuông hơn) · dòng gộp "1 em" mất "2 việc" · tiêu đề PanelViec vẫn đổi theo việc khi chip giữ L · `nhomMiniTestCho` / `boKetQuaChoMiniTest` IN không chia lô.
   - Vắng: lưới tuần gốc không có hàng em khi mọi kỹ năng đã dời · Khôi phục phần thi xoá dấu "-" (vết chỉ còn nhật ký) · Kết quả lớp thường có môn Không dự thi vẫn "chưa đủ môn".
   - Tổng quan: Kế hoạch Test chưa có lọc theo em ("xong MT3" mở panel danh sách) · Đánh dấu đã đọc ở Góc nhìn khác gọi từng thông báo (lô 20).
-  - Quản trị: "Chưa có kỹ năng" chỉ xét vai GV (QL dạy mà không vai GV không có ô — chủ SP xác nhận nếu cần).
+  - ~~Quản trị: "Chưa có kỹ năng" chỉ xét vai GV (QL dạy mà không vai GV không có ô — chủ SP xác nhận nếu cần).~~ Xong SUA-NHO-QUYEN (chủ SP 30/10: tính cả người đang được phân công dạy).
   - KCK: lượt huỷ trước deploy rồi khôi phục chưa có dấu `kck_at_attempt` (đọc cờ hiện tại tới lần tính lại) · migrate `prOv11e` ~4–5 câu / lượt — **đo thời gian khi tập dượt bản sao chính**.
   - Phân tích: chương trình QT tự tạo ngoài PET / KET chưa có bảng kỹ năng riêng; Xuất "theo đợt" lớp thường chỉ Progress / Final.
   - Giao diện: `web/src/lib/api.ts` nhận 403 theo câu chữ (`ponytail:`) · app không đọc `prefers-color-scheme` (bấm thử 375 sáng phải bật nút).

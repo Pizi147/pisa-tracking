@@ -7,7 +7,7 @@ import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
 import { can, require_, type Ctx, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, loi, loi as loiHttp, notFound, nowIso } from '../util.ts';
-import { chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
+import { chanDoiLienHe, chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
   docDiemXuatPhat, docDuKienThi, docTargetCua, docTuanBatDau, duocDoiTarget, loiDoiTarget, reviseTarget, setBaseline, updateCycle,
 } from '../fasttrack/cycles.ts';
@@ -154,6 +154,8 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
       if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })) throw loiHttp(403, 'Bạn không có quyền sửa học viên {full_name}.', { full_name: s.full_name });
       if (r.startWeek !== undefined) throw forbidden(CHI_SUA_THONG_TIN);
     }
+    /* QUYEN-LIEN-HE: cột Liên hệ — GV đổi giá trị → 403 ngay ở xem trước (cả lô), như ô web ẩn với GV. */
+    chanDoiLienHe(p, r as Record<string, unknown>, s);
     /* P8 (chủ SP 26/10 đêm): Môn học — QL, Quản trị, GVCN, TVV đúng phạm vi (`duocDoiMon`); CX, GV bộ môn không. */
     if (r.monDangKy !== undefined && !duocDoiMon(p, { studentId: s.id })) throw loi(403, 'Bạn không có quyền đổi môn học của {ten}.', { ten: s.full_name });
     let doiTarget = false;

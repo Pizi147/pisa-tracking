@@ -17,7 +17,7 @@ import {
 /**
  * BÁO CÁO HV (UI-PHAN-TICH, `thiet-ke/v5/phan-tich.html`; `10` mục 5; chủ SP 23/10 vòng 2 — sắp lại cả trang) — chỉ kết quả + hỗ trợ của HỌC VIÊN (việc GV ở tab
  * Phân tích GV). KHÔNG đếm lại: dải số + Theo chi nhánh = CHÍNH `/tong-quan/v5` (cùng hàm Tổng quan, gửi kỳ đang chọn); Kết quả MT = `tapKqMt` (SV-SO3);
- * Tiến bộ theo kỹ năng + PA cải thiện = `/phan-tich/bao-cao`. Mọi số gạch chân mở panel CHỈ ĐỌC đúng tập (C22). "Thi đợt này" = ngày thi trong kỳ đang chọn.
+ * Tiến bộ theo kỹ năng + PA cải thiện = `/phan-tich/bao-cao` (kèm trong cùng GET `/tong-quan/v5?…&kemBaoCao=1`). Mọi số gạch chân mở panel CHỈ ĐỌC đúng tập (C22). "Thi đợt này" = ngày thi trong kỳ đang chọn.
  * Bố cục: một dải 5 số → hai bảng cạnh nhau cùng chiều cao (Kết quả MT · Tiến bộ theo kỹ năng); QT chưa chọn chi nhánh → Theo chi nhánh. "In" (V4) giữ.
  */
 const COT_KQ: readonly CotBang[] = [
@@ -46,15 +46,14 @@ export function BaoCao(pv: PhamViPhanTich) {
   const ct = pv.ct ?? 'ft';
   const ft = ct === 'ft';
   const q = thamSoLoc({ ...pv, ct, classId: null });
-  const tq = useApi<TongQuanV5Data>(`/tong-quan/v5?${q}`, [q]);
-  const bc = useApi<BaoCaoKq>(`/phan-tich/bao-cao?${q}`, [q]);
+  /* QUET-THEO-KY Q3: MỘT GET — Tổng quan + `baoCao` (= `/phan-tich/bao-cao`, cùng hàm) dưới `/tong-quan` để mọi `invalidate('/tong-quan')` vẫn trúng. */
+  const tq = useApi<TongQuanV5Data & { baoCao: BaoCaoKq }>(`/tong-quan/v5?${q}&kemBaoCao=1`, [q]);
   const motCn = !!tq.data && !tq.data.chiNhanh;
   const kq = useApi<KetQuaMtKq>(ft && motCn ? `/phan-tich/bao-cao/ket-qua-mt?${q}` : null, [q, motCn]);
 
-  const loi = tq.error ?? bc.error;
-  if (loi) return <ErrorState message={loi.message} hint={loi.hint} onRetry={() => { tq.reload(); bc.reload(); }} />;
-  if (!tq.data || !bc.data) return <Skeleton rows={8} />;
-  const d = tq.data, b = bc.data;
+  if (tq.error) return <ErrorState message={tq.error.message} hint={tq.error.hint} onRetry={tq.reload} />;
+  if (!tq.data) return <Skeleton rows={8} />;
+  const d = tq.data, b = tq.data.baoCao;
   /* RA-UI-5: khoảng tuần đã ghi ở bộ lọc ngay trên — ô chỉ số ghi "trong kỳ" như Tổng quan, không lặp "W1 SEP – W2 SEP" ở 4 ô. */
   const ky = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : t('trong kỳ');
   const nguon = (o: string) => `/phan-tich/bao-cao/o?${q}&o=${encodeURIComponent(o)}`;

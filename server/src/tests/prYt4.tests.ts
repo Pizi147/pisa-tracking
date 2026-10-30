@@ -5,6 +5,7 @@ import { emailThu } from '../seed/emailThu.ts';
 export async function runPrYt4Tests(t: YThucTestKit) {
   const { check, assert } = t;
   const d = await import('../../../shared/domain/index.ts');
+  const banChup: any = await import('../loTrinh/banChup.ts');
   console.log('\nPR-YT4 · Ý thức v4');
 
   // ------------------------------------------------------------------ Task 1 · luật thuần (ngày cố định: 14/09/2026 là Thứ Hai)
@@ -535,6 +536,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const sid = hv();
     const cy = (conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq').get(sid) as any).id as number;
     conn.prepare(`UPDATE learning_cycles SET route = NULL, programme_code = 'FOU', status = 'completed', seq = 1 WHERE id = ?`).run(cy);
+    /* CN-3a (rà #743): lộ trình đóng phải có bản chụp (bất biến PR-TK) — dựng thẳng thì ghi luôn, như mọi đường đóng thật. */
+    banChup.ghiBanChup(conn, [cy], { lyDo: 'sua_tay', ngay: TODAY });
     const be = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 2, NULL, 'BE', '2026-08-03', 'active', ?)`)
       .run(sid, new Date().toISOString()).lastInsertRowid);
     conn.prepare(`INSERT INTO discipline_measures (student_id, cycle_id, kind, status, performed_on, note, created_at, created_by) VALUES (?, ?, 'report_1', 'done', ?, 'Report 1 ở khoá FOU', ?, ?)`)
@@ -542,6 +545,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const e = em(sid);
     assert(e.chuoi.join() === `${cy},${be}` && e.bac === 1 && e.keTiep.kind === 'report_2' && e.nhanChuoi === 'lớp thường', JSON.stringify({ c: e.chuoi, b: e.bac }));
     conn.prepare(`UPDATE learning_cycles SET status = 'completed' WHERE id = ?`).run(be);
+    banChup.ghiBanChup(conn, [be], { lyDo: 'sua_tay', ngay: TODAY });
     conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 3, 'LT1', '2026-09-07', 'active', ?)`).run(sid, new Date().toISOString());
     const f = em(sid);
     assert(f.bac === 0 && f.keTiep.kind === 'report_1' && f.nhanChuoi === 'LT1', JSON.stringify({ c: f.chuoi, b: f.bac }));

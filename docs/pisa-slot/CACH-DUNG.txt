@@ -9,3 +9,7 @@ Khong bao gio rmdir / rm o ma file ai khong phai ten minh.
 CAP NHAT 29/10 (PTA, sau #690 check song song): `npm run check` nay chay 2 nhom run.js + tocDo cung luc (dinh RAM ~5-6 GB).
   => TOI DA 2 check toan may: session code CHI dung check-1; check-3 cua PTA. KHONG dung check-2 nua.
   Can chay tuan tu nhu cu: PISA_SO_NHOM=1 npm run check.
+
+CAP NHAT 31/10 (PTA, sau #743 CN-2): npm run check ~3 phut, dinh RAM ~2,4 GB (3 nhom) + toc do.
+  => TOI DA 3 check toan may: session code dung check-1 hoac check-2; check-3 cua PTA.
+  Session code DUOC chay check day du (~3 phut) truoc khi mo PR khi PR dung server/ hoac nhieu tep kiem (khong bat buoc — chu SP chot sang 31/10).

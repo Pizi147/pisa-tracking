@@ -3,7 +3,9 @@ import { chuanTieuDe } from './nhapHocVien.ts';
 
 /** QUẢN TRỊ › TÀI KHOẢN — lọc/nhóm/phân loại ở trình duyệt (PR-BC, L3). Không đổi `/admin/accounts`. */
 export type TaiKhoanLoc = { id: number; code: string; fullName: string; email: string | null; skills: string[];
-  roles: { role: string; branchCode: string | null }[]; extra: unknown[] };
+  roles: { role: string; branchCode: string | null }[]; extra: unknown[];
+  /** SUA-NHO-QUYEN: có ít nhất một phân công dạy đang hiệu lực (`teacher_assignments.status = 'active'`). */
+  dangDay?: boolean };
 /** chiNhanh: 'tat-ca' | 'toan-he-thong' | mã chi nhánh; vai: 'tat-ca' | Role; kyNang: 'tat-ca' | 'L'|'R'|'W'|'S';
  *  phanLoai: null | 'chua-vai' | 'chua-email' | 'chua-ky-nang' */
 export type BoLocTaiKhoan = { chiNhanh: string; vai: string; kyNang: string; q: string; phanLoai: string | null };
@@ -15,9 +17,9 @@ const cnKhop = (cn: string, g: { branchCode: string | null }) =>
   cn === 'tat-ca' || (cn === 'toan-he-thong' ? g.branchCode === null : g.branchCode === cn);
 
 function thuocPhanLoai(u: TaiKhoanLoc, pl: string): boolean {
-  /* OV-11b (QT-10d): "Chưa có kỹ năng" chỉ đếm người dạy (vai Giáo viên) — kỹ năng không có nghĩa với QT / TVV / CX / Admin. */
+  /* OV-11b (QT-10d): "Chưa có kỹ năng" chỉ đếm người dạy — chủ SP 30/10: vai Giáo viên HOẶC đang được phân công dạy (kể cả QL không vai GV). */
   return pl === 'chua-vai' ? u.roles.length === 0 : pl === 'chua-email' ? !u.email
-    : pl === 'chua-ky-nang' ? u.skills.length === 0 && u.roles.some((g) => g.role === 'teacher') : true;
+    : pl === 'chua-ky-nang' ? u.skills.length === 0 && (u.roles.some((g) => g.role === 'teacher') || !!u.dangDay) : true;
 }
 
 export function locTaiKhoan<T extends TaiKhoanLoc>(rows: T[], loc: BoLocTaiKhoan): T[] {
