@@ -1,5 +1,5 @@
 import { db, theoLo } from '../db.ts';
-import { PERMISSIONS, chuanHoaMaLop, coONhapLienHe, soSanhLop, tenRoute, type ProgrammeCode } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, chuanHoaMaLop, soSanhLop, tenRoute, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '../permissions.ts';
 
 /**
@@ -118,8 +118,8 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
         coTheQuayLai: s.status === 'inactive'
           ? can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id }) || can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })
           : can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id }),
-        /* QUYEN-LIEN-HE: sửa ở Lưu trữ chỉ là ô liên hệ (TVV gọi mời học lại) — GV không đổi liên hệ (luật 13/10, máy chủ 403) nên không có nút. */
-        coTheSuaThongTin: s.status === 'inactive' && coONhapLienHe(p.roleKeys)
+        /* Chủ SP 30/10 (#729): GVCN ở Lưu trữ vẫn có nút — panel chỉ hiện Email (ẩn Liên hệ); QUYEN-LIEN-HE: máy chủ chặn GV đổi liên hệ. */
+        coTheSuaThongTin: s.status === 'inactive'
           && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: s.id })),
         cycleIdCuoi: cycleCuoi.get(s.id) ?? null,
       }));

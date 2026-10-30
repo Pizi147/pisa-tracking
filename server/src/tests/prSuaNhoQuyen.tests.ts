@@ -74,12 +74,13 @@ export async function runPrSuaNhoQuyenTests(t: { check: any; assert: any; conn: 
     const sid = emLop();
     students.setStudentStatus(P.mbManager, sid, 'inactive', TODAY);
     const kq: string[] = [];
-    /* QUYEN-LIEN-HE: mỗi vai một SĐT KHÁC — gửi lại đúng số vai trước vừa lưu là "không đổi" (không chặn), không thử được quyền. */
+    /* QUYEN-LIEN-HE: cờ = nút "Sửa thông tin" (GV: chỉ Email — chủ SP 30/10 #729; Liên hệ máy chủ chặn GV, kiểm ở prQuyenLienHe) → thử bằng Email,
+       mỗi vai một địa chỉ khác (gửi lại đúng giá trị vai trước là "không đổi"). */
     for (const [i, [ten, p]] of vai().entries()) {
       xoaNho();
       const co = !!danhSachLuuTru(p).hocVien.find((s) => s.id === sid)?.coTheSuaThongTin;
       xoaNho();
-      const sua = !nem(() => students.updateStudent(p, sid, { parentPhone: `09120001${10 + i}` }));
+      const sua = !nem(() => students.updateStudent(p, sid, { email: `snq3.vai${i}@vidu.vn` }));
       assert(co === sua, `${ten}: cờ ${co} ≠ PATCH ${sua}`);
       kq.push(`${ten}=${co}`);
     }
