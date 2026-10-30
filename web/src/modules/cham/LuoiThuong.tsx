@@ -380,9 +380,11 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
     const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat, doiLich: s?.doiLich, quaTuan: tuanDaQua(s?.weekStart, homNay),
       huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy });
     const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
-    /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯. */
+    /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯.
+       U0 (chủ SP 30/10): ⋯ nằm TRONG dòng đầu của ô (cùng hàng tuần / số / "Nhận xét", căn baseline) — không đè, không lệch dọc;
+       ẩn bằng `invisible` nên vẫn giữ chỗ (rê vào ô không làm chữ nhảy). */
     return (
-      <span className="absolute right-1 top-1/2 -translate-y-1/2 sm:[@media(hover:hover)]:hidden sm:[@media(hover:hover)]:group-hover:block sm:[@media(hover:hover)]:group-focus-within:block">
+      <span className="inline-flex shrink-0 sm:[@media(hover:hover)]:invisible sm:[@media(hover:hover)]:group-hover:visible sm:[@media(hover:hover)]:group-focus-within:visible">
         <MenuDong nhan={t('Thao tác · {tenMon} · {studentName}', { tenMon: tenMon(ct, k), studentName: row.studentName })} muc={[
           ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => (x === 'khoi-phuc-diem' ? void khoiPhuc(k) : setHop({ t: x, k })), nguyHiem: x === 'huy-diem' })),
           { key: 'lich-su', nhan: t('Lịch sử'), onChon: () => setLichSu(k), keTruoc: ds.length > 0 },
@@ -471,8 +473,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
                 if (e.key === 'ArrowUp') { e.preventDefault(); onMove(rowIndex, ci, -1); }
               }}
             />
-            </div>
             {menuO(k)}
+            </div>
             {quaHan && (
               <div className="text-xs leading-4 text-slate-400" data-phu-odiem=""
                 title={t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) })}>{quaHan}</div>

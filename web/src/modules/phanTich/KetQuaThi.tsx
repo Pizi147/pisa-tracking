@@ -99,7 +99,7 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
     if (!data) return;
     const XLSX = await import('xlsx');
     const aoa: (string | number)[][] = [
-      [`Kết quả Test · Mock Test · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
+      [`Kết quả Test / Thi · Mock Test · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
       ['Học viên', 'Lớp', 'MT', 'Tuần', 'OVR', 'L', 'R', 'W', 'S', 'Kỳ vọng', 'Kết quả', 'SOS', 'Case / PA', 'Việc tiếp'],
       ...rows.map((r) => [r.ten, r.lop, `MT${r.mt}`, tuanLich(r.tuan, homNay), fmtBand(r.ovr), ...KN_THI.map((k) => fmtBand(r.kn[k].band)), fmtBand(r.kyVong),
         NHAN_KET_QUA_MOCK[r.ketQua], r.sos ? `SOS ${r.sos}${r.sosTam ? ' tạm' : ''}` : '', r.casePa ?? '', r.viecTiep ?? '']),
@@ -245,7 +245,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
     if (!data) return;
     const XLSX = await import('xlsx');
     const aoa: (string | number)[][] = [
-      [`Kết quả Test · Thi thật · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
+      [`Kết quả Test / Thi · Thi thật · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
       ['Học viên', 'Lớp', 'Ngày thi', 'OVR', 'L', 'R', 'W', 'S', 'Target', 'Đạt Target', 'Bước tiếp', 'Người chọn', 'Ngày chọn'],
       ...rows.map((r) => [r.ten, r.lop ?? '', r.khongThi ? 'Không thi' : ngay(r.ngayThi, homNay), fmtBand(r.ovr), fmtBand(r.l), fmtBand(r.r), fmtBand(r.w), fmtBand(r.s), r.target,
         r.dat === null ? '' : r.dat ? 'Đạt' : 'Chưa đạt', r.buocTiepChu ?? 'Chưa chọn', r.nguoiChon ?? '', r.ngayChon ? ngay(r.ngayChon, homNay) : '']),

@@ -50,7 +50,8 @@ export async function runPrOChonTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
 
   check('OC5 · đang gõ: tô sáng sẵn người khớp đầu; Enter chỉ chọn dòng đang tô sáng (không chọn ngầm)', () => {
     const pp = doc('web/src/ui/PeoplePicker.tsx');
-    assert(/setActiveIndex\(term\.trim\(\) \? options\.findIndex\(\(o\) => o\.kind === 'nguoi'\)/.test(pp), 'chưa tô sáng sẵn người khớp đầu khi gõ');
+    /* SUA-NHO-UI U4: người khớp đầu CHỌN ĐƯỢC (bỏ qua dòng `tat` mờ). */
+    assert(/setActiveIndex\(term\.trim\(\) \? options\.findIndex\(\(o\) => o\.kind === 'nguoi'( && !tat\(o\))?\)/.test(pp), 'chưa tô sáng sẵn người khớp đầu khi gõ');
     assert(!/const dau = /.test(pp), 'Enter còn chọn người không tô sáng');
     assert(/e\.key === 'Enter'\) \{[\s\S]{0,200}if \(activeIndex >= 0 && activeIndex < options\.length\) \{ e\.preventDefault\(\); chon\(options\[activeIndex\]\)/.test(pp), 'Enter không theo dòng tô sáng');
   });
