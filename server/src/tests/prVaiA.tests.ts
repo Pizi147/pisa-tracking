@@ -164,7 +164,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       conn.prepare(`UPDATE tasks SET progress = 'doing', review_on = NULL WHERE id = ?`).run(goc.id);
       eq(hai(), truoc, 'mở lại → về như cũ');
     } finally { conn.prepare('UPDATE tasks SET progress = ?, review_on = ? WHERE id = ?').run(goc.progress, goc.review_on, goc.id); }
-    assert(metricsSvc.rowsFor('viec-van-hanh', [goc.id])[0].href === `/cong-viec?viec=mgmt:${goc.id}`, 'dòng mở đúng việc');
+    assert(metricsSvc.rowsFor('viec-van-hanh', [goc.id])[0].href === `/cong-viec/van-hanh?open=${goc.id}`, 'dòng mở đúng việc');
   });
 
   /* PR-LCb: `hv-chua-co-lenh-chuyen` đã bỏ — cùng ý (hai đường một tập, ra quyết định một em → −1) viết lại trên `lop-chua-chot-len-ft`. */

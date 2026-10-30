@@ -24,12 +24,12 @@ export async function runDonMaTests(t: any) {
     assert(/xoaViPham\(/.test(doc('web/src/modules/yThuc/ChiTietViPham.tsx')), 'ChiTietViPham chưa gọi xoaViPham');
   });
 
-  check('DON-MA · href việc Vận hành = /cong-viec?viec=mgmt:<id> (metrics + myWork), không còn mo-viec', () => {
+  check('DON-MA · href việc Vận hành: chỉ số (QL) = /cong-viec/van-hanh?open=<id>, myWork (người được giao) = /cong-viec?viec=mgmt:<id>, không còn mo-viec', () => {
     for (const f of ['server/src/worklist/metrics.ts', 'server/src/worklist/mywork.ts']) {
       const s = doc(f);
       assert(!/mo-viec/.test(s), `${f} còn mo-viec`);
     }
-    assert(/\/cong-viec\?viec=mgmt:\$\{r\.id\}/.test(doc('server/src/worklist/metrics.ts')), 'metrics: href chưa là viec=mgmt:<id>');
+    assert(/\/cong-viec\/van-hanh\?open=\$\{r\.id\}/.test(doc('server/src/worklist/metrics.ts')), 'metrics: href chưa là van-hanh?open=<id>');
     assert(/\/cong-viec\?viec=mgmt:\$\{t\.id\}/.test(doc('server/src/worklist/mywork.ts')), 'myWork: href chưa là viec=mgmt:<id>');
   });
 
@@ -37,7 +37,7 @@ export async function runDonMaTests(t: any) {
     const cv = doc('web/src/modules/congViec/CongViecPage.tsx');
     const ht = doc('web/src/modules/congViec/HoTroHocVienTab.tsx');
     assert(/viec=mgmt:/.test(cv) && !/\?mo-viec=\$/.test(cv), 'CongViecPage: ?open= chưa đổi sang viec=mgmt:');
-    assert(/params\.get\('mo-viec'\)/.test(ht + cv) && /<Navigate[^>]*replace/.test(ht + cv), 'chưa có Navigate replace cho mo-viec cũ');
+    assert(/params\.get\('mo-viec'\)/.test(cv) && /tabs\.includes\('van-hanh'\)\) return <Navigate[^>]*van-hanh'\]\}\?open=/.test(cv), 'mo-viec cũ: người có bảng Vận hành chưa được chuyển tới van-hanh?open=');
     assert(!/NganViecVanHanh/.test(ht), 'HoTroHocVienTab còn NganViecVanHanh phủ trang cho mo-viec');
   });
 
