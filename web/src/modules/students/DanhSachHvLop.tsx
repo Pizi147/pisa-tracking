@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
@@ -15,7 +15,7 @@ import { ChipLichThi, MiniKn, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
-import { SO_DONG_VIEC_MAC_DINH, chuPhuHuynh, gopViecTheoMon, monCuaViec, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { SO_DONG_VIEC_MAC_DINH, chuPhuHuynh, daysBetween, gopViecTheoMon, monCuaViec, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
@@ -68,46 +68,35 @@ function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
   );
 }
 
-/** Hạn của một việc = chip tiến độ (mockup V5 `.bd-td`): quá hạn ⚠ · hôm nay `soon` · còn lại xám chờ. */
-function HanViec({ x }: { x: ViecEm }) {
-  const { homNay } = useNgayNghiepVu();
-  if (!x.han) return null;
-  const ngay = shortDate(x.han, homNay);
-  if (x.quaHan) return <span className="shrink-0"><span className="sr-only">{t('Quá hạn')} </span><Nhan tone="late">{ngay}</Nhan></span>;
-  return <span className="shrink-0 tabular-nums"><Nhan tone={x.it.urgency === 'today' ? 'soon' : 'muted'}>{ngay}</Nhan></span>;
-}
-
 /**
- * Ô Việc (HV-LOP-SUA, chủ SP 27/10 "phân tầng rõ"): mỗi việc MỘT dòng — tên việc (bấm = làm tại chỗ như Công việc) · hạn là chip cùng dòng căn phải;
- * 2 dòng gấp nhất, "Xem thêm n" mở hết tại chỗ. QL / Admin (`gopMon`, P11): mỗi môn một dòng (việc gấp nhất của môn + "+n") — Σ dòng + "+n" = số việc thật.
+ * Ô Việc (HV-LOP-VIEC, PANEL-V10 khung `#hvl`): cột 300 px mép phải — tối đa `SO_DONG_VIEC_MAC_DINH` nút, mỗi nút MỘT dòng "Nhập điểm MT3 · L · ⚠ quá 3 ngày"
+ * (hạn gộp vào nút; quá hạn = viền + nền đỏ nhạt; `title` = chữ đủ). Việc của người khác (QL / Admin xem) chữ 12 px mờ + tên người giữ — vẫn bấm làm tại chỗ như Công việc.
+ * Còn lại → "+n việc" mở panel một em tại chỗ (T9 / Q2: không "›"). QL / Admin (`gopMon`, P11): mỗi môn một dòng (việc gấp nhất của môn); "+n" = mọi việc thật chưa hiện.
  * Việc cấp lớp nằm ở hàng lớp (nơi gọi lọc), không lặp ở từng em.
  */
-export function OViec({ v, onMo, gopMon }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void; gopMon?: boolean }) {
-  const [mo, setMo] = useState(false);
+export function OViec({ v, onMo, onMoEm, gopMon }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void; onMoEm?: () => void; gopMon?: boolean }) {
+  const { homNay } = useNgayNghiepVu();
   if (!v?.length) return trong;
-  const dong = gopMon ? gopViecTheoMon(v, (x) => monCuaViec(x.it)) : v.map((x) => ({ mon: null, dau: x, them: 0 }));
-  const hien = mo ? dong : dong.slice(0, SO_DONG_VIEC_MAC_DINH);
+  const hien = (gopMon ? gopViecTheoMon(v, (x) => monCuaViec(x.it)).map((d) => d.dau) : v).slice(0, SO_DONG_VIEC_MAC_DINH);
+  const con = v.length - hien.length;
   /* Ô Việc nằm trên dòng của em → bỏ " · {tên em}" cuối tên việc (không lặp). */
   const chuCua = (x: ViecEm) => { const c = dich(x.chu); const duoi = ` · ${x.it.studentName}`; return x.it.studentName && c.endsWith(duoi) ? c.slice(0, -duoi.length) : c; };
+  const han = (x: ViecEm) => (!x.han ? null : x.quaHan ? `⚠ ${t('quá {n} ngày', { n: Math.max(1, daysBetween(x.han, homNay)) })}` : t('hạn {ngay}', { ngay: shortDate(x.han, homNay) }));
   return (
-    /* SUA-375: điện thoại nút cao 36 → cách 6 px, không dính nhau. */
-    <span className="block min-w-0 space-y-1 max-sm:space-y-1.5">
-      {hien.map(({ dau: x, them }) => (
-        <span key={x.it.key} className="flex min-w-0 items-center gap-1.5">
-          {/* D10 (chủ SP 27/10, mockup V5 `.viec-o .nut`): việc = nút viền nhỏ màu chữ thường (không link xanh) · chip hạn ngay sau; trạng thái nằm ở chip. */}
-          {/* SUA-375: điện thoại tên việc xuống dòng trong nút (không cắt "…"), nút cao tối thiểu 36. */}
-          <button type="button" className="btn btn-sm h-[30px] min-w-0 max-w-full shrink justify-start max-sm:h-auto max-sm:min-h-[36px] max-sm:whitespace-normal max-sm:py-1.5 max-sm:text-left"
-            title={dich(x.chu)} onClick={() => onMo(x.it)}><span className="sm:truncate">{chuCua(x)}</span></button>
-          {them > 0 && <span className="shrink-0 text-xs text-dim">{t('+{n} việc', { n: them })}</span>}
-          <HanViec x={x} />
-        </span>
-      ))}
-      {dong.length > SO_DONG_VIEC_MAC_DINH && (
-        <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
-          className="block appearance-none border-0 bg-transparent p-0 text-left text-xs font-medium text-[color:var(--accent)] hover:underline max-sm:min-h-[44px]">
-          {mo ? t('Thu gọn') : t('Xem thêm {n}', { n: dong.length - SO_DONG_VIEC_MAC_DINH })}
-        </button>
-      )}
+    <span className="grid min-w-0 justify-items-start gap-1 max-sm:gap-1.5">
+      {hien.map((x) => {
+        const nguoi = !x.it.mine && x.it.owner ? x.it.owner.trim().split(/\s+/).at(-1) : null;
+        const chu = [chuCua(x), han(x), nguoi].filter(Boolean).join(' · ');
+        return (
+          <button key={x.it.key} type="button" className={nguoi ? 'viec-khac' : `viec-n${x.quaHan ? ' qua' : ''}`} title={[dich(x.chu), han(x), x.it.owner && !x.it.mine ? x.it.owner : null].filter(Boolean).join(' · ')}
+            onClick={() => onMo(x.it)}>
+            {x.quaHan && <span className="sr-only">{t('Quá hạn')} </span>}<span className="truncate">{chu}</span>
+          </button>
+        );
+      })}
+      {con > 0 && (onMoEm
+        ? <button type="button" className="viec-them" onClick={onMoEm}>{t('+{n} việc', { n: con })}</button>
+        : <span className="text-xs text-dim">{t('+{n} việc', { n: con })}</span>)}
     </span>
   );
 }
@@ -132,27 +121,31 @@ function OMtGan({ g }: { g: HangHv }) {
     <span className="block">
       {/* HV-LOP-GON: Overall nổi (15 / 700, màu kết quả) · kỳ vọng + tuần là chữ phụ mờ 12. */}
       <span className="flex items-baseline gap-1.5">
-        <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} kck={g.loTrinh.kck} nhan="Overall" />
+        <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} kck={g.loTrinh.kck} nhan="Overall" chiToHut />
         <span className="whitespace-nowrap text-xs tabular-nums text-faint">/ KV {chuSo(m.kyVong) ?? '—'} · {m.tuan ? tuanLich(m.tuan, homNay) : `MT${m.mt}`}</span>
       </span>
-      <MiniKn kn={m.kn} kv={m.kyVong} />
+      <MiniKn kn={m.kn} kv={m.kyVong} kck={g.loTrinh.kck} />
     </span>
   );
 }
 
 const COT_HV: CotBang[] = [
-  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 210 },
+  { key: 'ten', nhan: t('Học viên'), kieu: 'ten' },
   { key: 'lo', nhan: t('Lộ trình'), kieu: 'chu', rong: 104 },
-  { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 224 },
+  { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 284 },
   { key: 'ho', nhan: t('Hỗ trợ'), kieu: 'chu', rong: 140 },
   { key: 'y', nhan: t('Ý thức'), kieu: 'chu', rong: 112 },
   { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 180 },
-  { key: 'viec', nhan: t('Việc'), kieu: 'viec' },
   { key: 'nut', nhan: '', kieu: 'nut' },
+  /* HV-LOP-VIEC (PANEL-V10 #hvl, T8): Việc 300 px cố định ở mép phải, ⋯ ngay trước; Học viên giãn. */
+  { key: 'viec', nhan: t('Việc'), kieu: 'viec', rong: 300 },
 ];
 /** CX (không có Công việc): cột Việc thành cột Phụ huynh giãn (SĐT bấm gọi). TVV: không cột Phụ huynh (chủ SP 27/10 — SĐT ở thẻ 375 và hồ sơ). */
-const cotHv = (vai?: VaiBang): CotBang[] => (!vai || vai.coViec ? COT_HV
-  : COT_HV.map((c): CotBang => (c.key === 'viec' ? { key: 'ph', nhan: t('Phụ huynh'), kieu: 'viec' } : c)));
+const cotHv = (vai?: VaiBang): CotBang[] => (!vai || vai.coViec ? COT_HV : [
+  /* CX giữ bố cục cũ: Học viên 210 · … · Phụ huynh giãn · ⋯ cuối. */
+  ...COT_HV.filter((c) => c.key !== 'viec' && c.key !== 'nut').map((c) => (c.key === 'ten' ? { ...c, rong: 210 } : c)),
+  { key: 'ph', nhan: t('Phụ huynh'), kieu: 'viec' }, COT_HV.find((c) => c.key === 'nut')!,
+]);
 
 /** Ô Lịch thi: chip lịch; TVV / CX thêm nhãn sau thi (bấm = panel một em: nhập KQ / chọn bước tiếp / gia hạn tại chỗ). Em ngoài danh sách lớp (Tạm dừng…) chưa có `lich` → dự kiến thi. */
 function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) => void }) {
@@ -176,8 +169,10 @@ export type NhomLop = { id: number; nhan: string; dau: ReactNode; mo: boolean; o
  * rồi mỗi em một dòng — Học viên · Lộ trình · MT gần nhất (Overall / KV + 5 kỹ năng) · Hỗ trợ · Ý thức · Lịch thi · Việc · ⋯ (thao tác của em, giữ — `10` mục 8).
  * Bỏ Xu hướng (chủ SP 27/10). Em lớp thường: cột MT để "—" (không có lượt MT).
  */
-export function BangHvGon({ nhom, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
-  nhom: NhomLop[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
+export function BangHvGon({ nhom, lop, viec, gopMon, nguCanh, onMoViec, onMoEm, onDoi, vai }: {
+  nhom: NhomLop[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void;
+  /** "+n việc" → panel một em tại chỗ (mọi vai có Công việc). */
+  onMoEm?: (id: number) => void; onDoi: () => void; vai?: VaiBang;
 }) {
   const o = (h: HvGon, c: CotBang) => {
     const g = h.hang;
@@ -193,7 +188,7 @@ export function BangHvGon({ nhom, lop, viec, gopMon, nguCanh, onMoViec, onDoi, v
       case 'ho': return g ? <OHoTro h={g.hoTro} /> : trong;
       case 'y': return g?.yThuc ? <Nhan tone="doing">{dich(g.yThuc)}</Nhan> : trong;
       case 'lich': return ev ? <OLich h={h} ev={ev} onMoEm={vai?.onMoEm} /> : <ChipLichThi l={h.lich} />;
-      case 'viec': return <OViec v={viec.get(h.id)} onMo={onMoViec} gopMon={gopMon} />;
+      case 'viec': return <OViec v={viec.get(h.id)} onMo={onMoViec} onMoEm={onMoEm && (() => onMoEm(h.id))} gopMon={gopMon} />;
       case 'ph': return ev ? <span className="block text-sm"><OPhuHuynh l={ev.lienHe} /></span> : trong;
       default: return <MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} />;
     }
@@ -225,8 +220,8 @@ export function TheHvGon({ nhom, ...p }: Omit<Parameters<typeof TheHvLop>[0], 'd
   );
 }
 
-function TheHvLop({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
-  ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onDoi: () => void; vai?: VaiBang;
+function TheHvLop({ ds, lop, viec, gopMon, nguCanh, onMoViec, onMoEm, onDoi, vai }: {
+  ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onMoEm?: (id: number) => void; onDoi: () => void; vai?: VaiBang;
 }) {
   return (
     <div>
@@ -244,9 +239,9 @@ function TheHvLop({ ds, lop, viec, gopMon, nguCanh, onMoViec, onDoi, vai }: {
               <span className="shrink-0"><MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} /></span>
             </div>
             <div className="text-xs text-slate-400">
-              {v?.length ? <OViec v={v} onMo={onMoViec} gopMon={gopMon} />
+              {v?.length ? <OViec v={v} onMo={onMoViec} onMoEm={onMoEm && (() => onMoEm(h.id))} gopMon={gopMon} />
                 : g?.mtGan ? <span className="inline-flex items-baseline gap-1">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /> · Overall
-                    <ODiem so={chuSo(g.mtGan.ovr)} kq={kqOverall(g.mtGan.ovr, g.mtGan.kyVong)} kck={g.loTrinh.kck} nhan="Overall" /> MT{g.mtGan.mt}</span>
+                    <ODiem so={chuSo(g.mtGan.ovr)} kq={kqOverall(g.mtGan.ovr, g.mtGan.kyVong)} kck={g.loTrinh.kck} nhan="Overall" chiToHut /> MT{g.mtGan.mt}</span>
                 : '—'}
             </div>
             {ev?.sauThi && vai && (

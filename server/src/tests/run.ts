@@ -9899,6 +9899,9 @@ await runPrPanelMcTests({ check, checkAsync, assert, conn, P, TODAY } as any);
 // ==================================================================== PANEL-CHUNG (mẫu dòng điểm + dòng panel có lý do — PANEL-V10)
 const { runPrPanelChungTests } = bocTep('prPanelChung', await import('./prPanelChung.tests.ts'));
 await runPrPanelChungTests({ check, checkAsync, assert, conn } as any);
+// ==================================================================== HV-LOP-VIEC (Học viên & Lớp: cột Việc 300 px mép phải — PANEL-V10)
+const { runPrHvLopViecTests } = bocTep('prHvLopViec', await import('./prHvLopViec.tests.ts'));
+await runPrHvLopViecTests({ check, assert } as any);
 // ==================================================================== SUA-NHO-UI (lớp sai loại ở ô Lớp khác — Lộ trình mới)
 const { runPrSuaNhoUiTests } = bocTep('prSuaNhoUi', await import('./prSuaNhoUi.tests.ts'));
 await runPrSuaNhoUiTests({ check, assert } as any);
