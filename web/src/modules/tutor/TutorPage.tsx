@@ -132,7 +132,7 @@ export default function TutorPage() {
       )}
 
       <Card bodyClass="p-0">
-        {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
+        {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
           : loading || !data ? <div className="p-4"><Skeleton rows={8} /></div>
           : !rows.length ? (
             <div className="p-4">

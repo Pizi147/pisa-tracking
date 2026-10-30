@@ -44,7 +44,7 @@ export function XoaLopPanel({ classId, classCode, onClose }: { classId: number; 
       chan={{
         chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !khop || !!chan} onClick={xoa}>{t('Xoá lớp')}</button>,
       }}>
-      {tt.error ? <div className="pt-3"><ErrorState message={tt.error.message} hint={tt.error.hint} onRetry={tt.reload} /></div>
+      {tt.error ? <div className="pt-3"><ErrorState message={tt.error.message} hint={tt.error.hint} status={tt.error.status} onRetry={tt.reload} /></div>
         : !tt.data ? <div className="pt-3"><Skeleton rows={3} /></div> : (
           <Khoi tieuDe={t('Xác nhận xoá')}>
             <p className="m-0 text-sm text-slate-200">
@@ -93,7 +93,7 @@ export function KetThucLopPanel({ classId, classCode, onClose, onDone, diTiep }:
       chan={{
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !tt.data || !!chan} onClick={ketThuc}>{t('Kết thúc lớp')}</button>,
       }}>
-      {tt.error ? <div className="pt-3"><ErrorState message={tt.error.message} hint={tt.error.hint} onRetry={tt.reload} /></div>
+      {tt.error ? <div className="pt-3"><ErrorState message={tt.error.message} hint={tt.error.hint} status={tt.error.status} onRetry={tt.reload} /></div>
         : !tt.data ? <div className="pt-3"><Skeleton rows={3} /></div> : (
           <Khoi tieuDe={t('Xác nhận kết thúc')}>
             <p className="m-0 text-sm text-slate-200">

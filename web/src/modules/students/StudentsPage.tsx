@@ -225,7 +225,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     id: d.id, classId: d.lop?.id ?? 0, loc: ['tat-ca'] as LocHocVien[], khung: d.lop && !d.lop.ft ? 'thuong' as const : 'ft' as const, ten: d.ten, ma: d.ma, tvv: d.tvv,
     ...(d.status === 'finished' ? { ketThuc: true as const } : {}),
   }))], [data, vaiTrang]);
-  const vaiBang: VaiBang | undefined = vaiTrang ? { em: vaiTrang.em, coViec, onMoEm: (id) => setPanelEm({ id, caseMo: null }) } : undefined;
+  const moEm = (id: number) => setPanelEm({ id, caseMo: null });
+  const vaiBang: VaiBang | undefined = vaiTrang ? { em: vaiTrang.em, coViec, onMoEm: moEm } : undefined;
   /*
    * Việc theo em, gấp nhất trước (quá hạn → hạn sớm). Việc nhiều em (`emIds`) tính cho từng em.
    * P11 VIEC-DUNG-VAI: GV chỉ việc CỦA MÌNH (`mine`) — ô Việc, chip "Có việc quá hạn", "Cần chú ý trước" cùng nguồn này; QL / Admin đủ việc, ô Việc gộp theo môn.
@@ -424,7 +425,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       {goc !== 'tat-ca' && lopDangLoc && 'needScores' in lopDangLoc && <DaiLop lop={lopDangLoc as LopTrenTrang} vai={vai} dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} soViecQuaHan={new Set(goc0.filter(coQuaHan).map((h) => h.id)).size}
         onThemHocVien={() => setThem(chiLop ? { id: chiLop, code: lopDangLoc.code } : null)} onBo={() => setParam({ classId: null })} />}
 
-      {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} onRetry={trang.reload} />}
+      {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} />}
       {trang.loading && !data && <Skeleton rows={6} />}
 
       {goc === 'tat-ca' && data && (
@@ -487,7 +488,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
             </div>
           )}
           <div className={trang.cu ? 'dang-tai-lai' : undefined} aria-busy={trang.cu || undefined}>
-          {theoVai.error && <div className="p-3"><ErrorState message={theoVai.error.message} hint={theoVai.error.hint} onRetry={theoVai.reload} /></div>}
+          {theoVai.error && <div className="p-3"><ErrorState message={theoVai.error.message} hint={theoVai.error.hint} status={theoVai.error.status} onRetry={theoVai.reload} /></div>}
           {laVai && !vaiTrang && !theoVai.error ? <div className="p-3"><Skeleton rows={6} /></div>
           : laVai && pv?.dangDung === 'cua-toi' && dsEm.length === 0 && !q.trim() ? (
             <Empty title={t('Chưa có học viên nào của bạn')} hint={t('Học viên có TVV là bạn sẽ hiện ở đây.')}
@@ -499,8 +500,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           ) : (
             <>
               {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
-              {dienThoai ? <TheHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} />
-                : <BangHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} />}
+              {dienThoai ? <TheHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onMoEm={moEm} onDoi={lamMoi} vai={vaiBang} />
+                : <BangHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onMoEm={moEm} onDoi={lamMoi} vai={vaiBang} />}
               {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
             </>
           )}
@@ -523,7 +524,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
             </button>
           </div>
           <div className={sos.cu ? 'dang-tai-lai' : undefined} aria-busy={sos.cu || undefined}>
-          {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} /></div>
+          {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} status={sos.error.status} onRetry={sos.reload} /></div>
             : !sos.data ? <div className="p-3"><Skeleton rows={6} /></div>
             : sosRows.length === 0 ? <Empty title={t('Không có học viên SOS')} />
             : (
@@ -564,7 +565,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         <PanelViec it={viecMo} onDong={() => setViecMo(null)} onTiep={null} onDaLam={lamMoi} />
       )}
       {panelEm && (
-        <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} onClose={() => setPanelEm(null)}
+        <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} viecTrang={viecHien.get(panelEm.id)?.map((x) => x.it)} onClose={() => setPanelEm(null)}
           onDoi={lamMoi} />
       )}
       {taoLop && (

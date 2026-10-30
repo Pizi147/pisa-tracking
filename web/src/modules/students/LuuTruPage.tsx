@@ -118,7 +118,7 @@ export default function LuuTruPage() {
           { key: 'hv', label: t('Học viên đã lưu trữ'), so: data?.hocVien.length },
         ]} />
 
-      {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
+      {error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
       {loading && !data && <Skeleton rows={6} />}
       <div className={cu ? 'dang-tai-lai space-y-3' : 'space-y-3'} aria-busy={cu || undefined}>
       {data && tab === 'lop' && (

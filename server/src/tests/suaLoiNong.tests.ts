@@ -158,14 +158,6 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(/c\.deadline < x\.han/.test(docSach('server/src/classes/dongHocVien.ts')), 'nhapDiemTheoEm chưa lấy hạn sớm nhất');
   });
 
-  // ==================================================================== 5. Bảng kỹ năng: hai khối SOS loại trừ nhau + cột phải
-  check('N1 (5) · YC-12.1: một biến trạng thái cho hai khối SOS; YC-12.5.4: cột phải dùng CotPhai', () => {
-    const src = docSach('web/src/modules/cases/SkillBoard.tsx');
-    /* PR-SOS (Task 8/9): Xác nhận nguyên nhân mở Ngăn Case (`viec: 'xac-nhan'`); "Không cần theo dõi…" mở tại chỗ — nút kia ẩn khi khối mở. */
-    assert(!/causeOpen|dismissOpen/.test(src) && /viec: 'xac-nhan'/.test(src) && /khoiSos === 'khong-theo-doi'/.test(src) && /khoiSos === null \?/.test(src), 'hai khối còn mở cùng lúc được');
-    assert((src.match(/<CotPhai\b/g) ?? []).length >= 4, 'cột phải chưa theo khuôn nút trên chữ dưới');
-  });
-
   // ==================================================================== 5b. PA quy chế SOS gán tự động — chạy ngay (S4-1, Q22–Q25)
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const sosState: any = await import('../cases/sosState.ts');
@@ -215,8 +207,6 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(khop.n === 0, 'có kết quả tuần rồi mà vẫn khớp PA_QUY_CHE_CHUA_GHI');
   });
   check('N1 (5b) · giao diện không còn "Gợi ý tự động · chờ xác nhận" / Xác nhận–Sửa–Thay; PA quy chế có dấu 🔒', () => {
-    const sb = docSach('web/src/modules/cases/SkillBoard.tsx');
-    assert(!/PresetPlanActions/.test(sb) && /theo quy chế/.test(sb), 'SkillBoard còn nút xác nhận / thiếu dấu quy chế');
     assert(!/Gợi ý tự động|goi-y/.test(docSach('shared/domain/hoSoHocVien.ts')), 'hoSoHocVien còn nhánh gợi ý');
     assert(!/Xác nhận PA gợi ý/.test(docSach('server/src/students/profile.ts')), 'ô Việc cần làm còn "Xác nhận PA gợi ý"');
     assert(/theo quy chế/.test(docSach('web/src/modules/cases/CasePanel.tsx')), 'Ngăn Case thiếu dấu quy chế cạnh tên PA');

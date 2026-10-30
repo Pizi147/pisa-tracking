@@ -29,7 +29,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   const toast = useToast();
   const lf = useLoiForm();
   const [xem, setXem] = useState<XemTruocHangLoat | null>(null);
-  const [loiXem, setLoiXem] = useState<string | null>(null);
+  const [loiXem, setLoiXem] = useState<{ message: string; status?: number } | null>(null);
   const [lyDo, setLyDo] = useState('');
   const [ngayHl, setNgayHl] = useState('');
   const [goXoa, setGoXoa] = useState('');
@@ -46,7 +46,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   const racRef = useRef<number[]>([]);
   const nap = () => {
     setLoiXem(null);
-    api.post<XemTruocHangLoat>('/hang-loat-hoc-vien/xem-truoc', { viec, studentIds: ids }).then(setXem).catch((e: any) => setLoiXem(e.message));
+    api.post<XemTruocHangLoat>('/hang-loat-hoc-vien/xem-truoc', { viec, studentIds: ids }).then(setXem).catch((e: any) => setLoiXem({ message: e.message, status: e.status }));
   };
   useEffect(nap, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -113,7 +113,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
           </button>
         ),
       }}>
-      {loiXem ? <ErrorState message={loiXem} onRetry={nap} /> : !xem ? <Skeleton rows={4} /> : (
+      {loiXem ? <ErrorState message={loiXem.message} status={loiXem.status} onRetry={nap} /> : !xem ? <Skeleton rows={4} /> : (
         <>
           <Khoi tieuDe={nhanViec(viec)}>
             <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums text-slate-300">

@@ -71,7 +71,7 @@ function NoiDungLop({ lop, onHienDien, chiCanXepLai, hvChon }: { lop: LopKH; onH
   const ft = useApi<LuoiFTData>(lop.loai === 'ft' ? `/ke-hoach-test/ft/${lop.id}` : null);
   const th = useApi<LuoiThuongData>(lop.loai === 'thuong' ? `/ke-hoach-test/thuong/${lop.id}` : null);
   const s = lop.loai === 'ft' ? ft : th;
-  if (s.error) return <div className="p-3"><ErrorState message={s.error.message} hint={s.error.hint} onRetry={s.reload} /></div>;
+  if (s.error) return <div className="p-3"><ErrorState message={s.error.message} hint={s.error.hint} status={s.error.status} onRetry={s.reload} /></div>;
   if (s.loading || !s.data) return <div className="p-3"><Skeleton rows={4} /></div>;
   return <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} chiCanXepLai={chiCanXepLai} hvChon={hvChon} />;
 }

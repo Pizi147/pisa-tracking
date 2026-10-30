@@ -13,6 +13,8 @@ export async function runPrQuyenLienHeTests(t: YThucTestKit) {
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { apGocNhin } = await import('../auth.ts');
+  const hs: any = await import('../students/profile.ts');
+  const { coONhapLienHe } = await import('../../../shared/domain/index.ts');
   const await_accounts: any = await import('../platform/accounts.ts');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); } };
@@ -54,7 +56,7 @@ export async function runPrQuyenLienHeTests(t: YThucTestKit) {
     }
   }));
   /* Vai kiêm: quyền theo VAI ĐANG LÀM (`roleKeys` sau góc nhìn) — cùng `coONhapLienHe` web dùng ẩn ô. Góc nhìn chỉ có ở tài khoản có vai QL / Quản trị
-     (`coTheDoiGocNhin`); tài khoản GV + TVV không đổi góc nhìn — vai GV thắng (web cũng ẩn ô Liên hệ) → 403. */
+     (`coTheDoiGocNhin`); tài khoản GV + TVV không đổi góc nhìn — vai TVV thắng (LIEN-HE-TVV, phép LHT dưới). */
   const taoKiem = (ten: string, roles: any[]) => {
     const u = await_accounts.createAccount(P.admin, { email: `qlh.${ten}${await_accounts.EMAIL_SUFFIX}`, password: 'matkhau-qlh', fullName: `Thử QLH ${ten}`, roles }).userId as number;
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,'reading',0,'2026-01-01','active',?)`)
@@ -70,9 +72,35 @@ export async function runPrQuyenLienHeTests(t: YThucTestKit) {
     assert(gv.roleKeys.join() === 'teacher', `góc nhìn: ${gv.roleKeys}`);
     assert(maLoi(() => st.updateStudent(gv, em, { parentPhone: '0913 999 888' }))?.status === 403, 'góc nhìn GV 403');
   }));
-  check('QLH · tài khoản kiêm GV + TVV (không có góc nhìn): vai GV thắng → 403, như web ẩn ô', () => thu(() => {
+  /* LIEN-HE-TVV (chủ SP 31/10, plan.md mục 4 ý 5): kiêm GV + TVV — vai TVV thắng, sửa được Liên hệ ở mọi đường; GV thuần vẫn 403 (các phép trên). */
+  check('LHT · coONhapLienHe: GV + TVV được; GV thuần, GV + CX không', () => {
+    const f = coONhapLienHe;
+    assert(f(['teacher', 'consultant']) === true && f(['consultant', 'teacher']) === true, 'GV + TVV');
+    assert(f(['teacher']) === false && f(['teacher', 'cx']) === false && f([]) === false, 'GV thuần / GV + CX');
+  });
+  check('LHT · kiêm GV + TVV: PATCH hồ sơ (cả Bổ sung SĐT em) lưu được; hồ sơ bật ô Liên hệ (web hiện ô)', () => thu(() => {
     const p = taoKiem('gvtvv', [{ role: 'teacher', branches: ['MB'] }, { role: 'consultant', branches: ['MB'] }]);
-    assert(maLoi(() => st.updateStudent(p, em, { parentPhone: '0913 111 222' }))?.status === 403, 'GV + TVV 403');
+    st.updateStudent(p, em, { parentPhone: '0913 111 222' });
+    st.updateStudent(p, em, { phone: '0987 111 222' });
+    const s = one('SELECT phone, parent_phone FROM students WHERE id = ?', em);
+    assert(/0913/.test(s.parent_phone) && /0987/.test(s.phone), JSON.stringify(s));
+    assert(hs.studentProfile(p, em).viewer.nhapLienHe === true, 'hồ sơ: nhapLienHe');
+  }));
+  check('LHT · kiêm GV + TVV: em Tạm dừng ở Lưu trữ — đổi liên hệ được; GV thuần (GVCN) 403', () => thu(() => {
+    const p = taoKiem('gvtvv2', [{ role: 'teacher', branches: ['MB'] }, { role: 'consultant', branches: ['MB'] }]);
+    conn.prepare(`UPDATE students SET status = 'inactive', archived_at = ? WHERE id = ?`).run(new Date().toISOString(), em);
+    xoaNho();
+    st.updateStudent(p, em, { parentPhone: '0914 111 222' });
+    assert(/0914/.test(one('SELECT parent_phone FROM students WHERE id = ?', em).parent_phone), 'Lưu trữ: GV + TVV lưu');
+    assert(maLoi(() => st.updateStudent(P.coreTeacher, em, { parentPhone: '0914 999 888' }))?.status === 403, 'Lưu trữ: GVCN 403');
+  }));
+  check('LHT · kiêm GV + TVV: Sửa cả lớp — cột Liên hệ hiện, xem trước + lưu được', () => thu(() => {
+    const p = taoKiem('gvtvv3', [{ role: 'teacher', branches: ['MB'] }, { role: 'consultant', branches: ['MB'] }]);
+    assert(scl.duLieuSuaCaLop(p, lop).nhapLienHe === true, 'nhapLienHe');
+    const lo = { rows: [{ studentId: em, parentPhone: '0915 222 333' }] };
+    scl.xemTruocSuaCaLop(p, lop, lo);
+    scl.luuSuaCaLop(p, lop, lo);
+    assert(/0915/.test(one('SELECT parent_phone FROM students WHERE id = ?', em).parent_phone), 'Sửa cả lớp: GV + TVV lưu');
   }));
   check('QLH · Sửa cả lớp: GVCN gửi cột liên hệ đổi giá trị → 403 ở xem trước và lưu (cả lô không ghi); cột khác vẫn lưu; QL đổi được', () => thu(() => {
     const truoc = one('SELECT parent_phone FROM students WHERE id = ?', em).parent_phone;

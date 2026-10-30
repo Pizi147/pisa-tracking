@@ -8,7 +8,7 @@ import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { DaiNhom, DanhSachViec, tenBoEm, viecThat } from './DanhSachViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { CreateTask, NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
+import { CreateTask } from '../worklist/MgmtTasksPage.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopToiDay } from '../worklist/LopToiDay.tsx';
@@ -85,7 +85,6 @@ export function HoTroHocVienTab() {
   const nhom: MaNhomViec | null = (NHOM_VIEC as readonly string[]).includes(nhomTs ?? '') ? (nhomTs as MaNhomViec) : null;
   /* OV-11f (TQ-2): `loai=` (từ Tổng quan, vd "PA chưa có Kết quả") lọc ĐÚNG loại việc — số ở ô = số việc nơi mở; đổi nhóm / Xoá lọc thì bỏ. */
   const loai = !params.get('nhom') && params.get('loai') ? params.get('loai') : null;
-  const moViec = params.get('mo-viec') ? Number(params.get('mo-viec')) : null;
   const viec = params.get('viec');
 
   const setParam = (k: string, v: string | null) => {
@@ -388,7 +387,7 @@ export function HoTroHocVienTab() {
             </section>
           )}
           {/* V5: lỗi tải chỉ ở vùng danh sách — đầu trang, bộ lọc giữ. */}
-          {error && <Card><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>}
+          {error && <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>}
           {!error && loading && !data && <Card><Skeleton rows={8} /></Card>}
           {data && data.scopeEmpty && <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>}
           {chiCc && <p className="m-0 mb-3 text-sm text-slate-400">{t('Bạn không có việc đang mở.')}</p>}
@@ -469,14 +468,9 @@ export function HoTroHocVienTab() {
         </div>
       </div>
 
-      {/*
-        PR-Ra, nợ PR-O (#58): lối cũ `?mo-viec=` (chuông, việc Vận hành giao cho GV) vẫn mở panel Vận hành — phủ trang như trước. Bấm dòng
-        việc Vận hành ở danh sách nay mở tại chỗ (`viec=mgmt:{id}`).
-      */}
       {/* OV-13q: Gia hạn sau thi ngay ở dòng việc — hộp nhỏ đè lên, không đổi việc đang mở. */}
       {giaHan && <HopGiaHan x={{ cycleId: giaHan.cycleId!, han: giaHan.due, daGiaHan: !!giaHan.daGiaHan }} hocVien={giaHan.studentName} lop={giaHan.classCode} onClose={() => setGiaHan(null)} />}
       <CreateTask open={giaoViec} onClose={() => setGiaoViec(false)} onDone={() => invalidate('/my-work')} branchId={branchId} />
-      <NganViecVanHanh taskId={moViec} onClose={() => setParam('mo-viec', null)} onDone={() => invalidate('/my-work')} />
     </div>
   );
 }

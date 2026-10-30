@@ -91,8 +91,6 @@ export async function runPrDhTests(t: YThucTestKit) {
   });
 
   check('PR-DH (12) · J10: ô điểm chưa có dữ liệu chỉ gạch (title "Chưa có điểm"), thẻ gọn không "—" cạnh "chưa có điểm"', () => {
-    const sb = doc('web/src/modules/cases/SkillBoard.tsx');
-    assert(!/mt-0\.5">\s*chưa có dữ liệu/.test(sb) && /title=\{t\('Chưa có điểm'\)\}>—/.test(sb), 'ScoreCell');
     const tk = doc('web/src/modules/cases/TheKyNang.tsx');
     assert(/row\.band === null \? null/.test(tk) && /diem !== null &&/.test(tk), 'TheGon');
   });

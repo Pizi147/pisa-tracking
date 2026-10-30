@@ -27,7 +27,7 @@ type Board = {
  */
 export function VanDeKyNang({ classId, category }: { classId: number; category: string }) {
   const { data, loading, error, reload } = useApi<Board>(`/classes/${classId}/issue-board?category=${category}`, [classId, category]);
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={4} />;
   const mon = dich(caseCategoryLabel(category));
   const nguon = (cot: string, kind?: string) => `/classes/${classId}/issue-board/o?category=${category}&cot=${cot}${kind ? `&kind=${kind}` : ''}`;

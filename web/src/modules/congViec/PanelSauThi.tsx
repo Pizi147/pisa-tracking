@@ -71,7 +71,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   });
   if (lichSu) return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[em.ten, lop]} quayLai={{ nhan: t('Sau thi'), onClick: () => setLichSu(false) }} onClose={onDong} />;
   const loiTai = cy.error ?? bt.error;
-  if (loiTai) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={() => { cy.reload(); bt.reload(); }} /></KhungPanel>;
+  if (loiTai) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={() => { cy.reload(); bt.reload(); }} /></KhungPanel>;
   /* `buoc-tiep` trả null khi chưa có kết quả thi thật — bước 2 khoá. */
   if (!c || !diem || (bt.loading && !bt.data)) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
   const b = bt.data ?? { chon: null, han: null, coTheChon: false, hen: null, hoanTacDuoc: false, lopNay: null } as unknown as TrangThaiBuocTiep;

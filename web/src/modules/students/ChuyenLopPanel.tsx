@@ -255,7 +255,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
           <p className="m-0 px-4 pt-2 text-xs text-slate-400">{t('GVCN {lop} bàn giao, hạn hết {han}.', { lop: dangHoc.lop.code, han: ngay(hanGvcn, homNay) })}</p>
         ) : undefined,
       }}>
-      {loiNap ? <ErrorState message={loiNap.message} hint={loiNap.hint} onRetry={() => { lopDich.reload(); xem.reload(); }} />
+      {loiNap ? <ErrorState message={loiNap.message} hint={loiNap.hint} status={loiNap.status} onRetry={() => { lopDich.reload(); xem.reload(); }} />
         : lopDich.loading || (!dx && !nen) ? <div className="mt-3"><Skeleton rows={5} /></div> : (
         <>
           {!dx && dangHoc && (
@@ -419,7 +419,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
 
   const tieuDe = data ? `${t('Chuyển lớp')} · ${data.lop.code} · ${t('{n} em', { n: ds.length })}` : t('Chuyển lớp');
   const dong = () => { if (!busy) onClose(); };
-  if (error) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (loading || !data) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
   if (!ds.length) {
     return <KhungPanel tieuDe={tieuDe} onDong={onClose} chan={{}}><p className="mt-3 text-sm text-slate-400">{t('Không còn em cần xét lại.')}</p></KhungPanel>;
